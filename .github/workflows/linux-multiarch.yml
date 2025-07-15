@@ -31,14 +31,14 @@ jobs:
 
       - name: Set up build directory
         run: |
-          mkdir -p "$(pwd)"/build-out
+          mkdir -p "$(pwd)"/build-out/build
           mkdir -p "$(pwd)"/.ccache
 
       - name: Cache dependencies
         uses: actions/cache@v4
         with:
           path: |
-            build-out/deps
+            build-out/build/deps
             build-aux/cache
           key: deps-linux-${{ matrix.arch }}-${{ hashFiles('configure.ac', 'Makefile.am') }}
           restore-keys: |
