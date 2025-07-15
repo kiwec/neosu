@@ -48,7 +48,7 @@ int main(int argc, char *argv[]) {
     std::string lowerPackageName = PACKAGE_NAME;
     std::ranges::transform(lowerPackageName, lowerPackageName.begin(), [](char c) { return std::tolower(c); });
 
-    // setup some common app metadata (SDL says these should be called as early as possible)
+    // set up some common app metadata (SDL says these should be called as early as possible)
     SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_NAME_STRING, PACKAGE_NAME);
     SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_VERSION_STRING, PACKAGE_VERSION);
     SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_IDENTIFIER_STRING,
