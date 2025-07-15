@@ -4,6 +4,7 @@ echo "Building for target: $HOST"
 set -e
 
 export MAKEFLAGS="-j$(nproc)"
+export CCACHE_DIR="${CCACHE_DIR:-"/src/.ccache"}"
 
 # Building..
 ./autogen.sh

@@ -6,6 +6,9 @@ on:
       - dev
   workflow_dispatch:
 
+env:
+  CCACHE_DIR: /tmp/.ccache
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -27,12 +30,23 @@ jobs:
 
       - name: Set up build directory
         run: |
-          mkdir -p "$(pwd)"/build
+          mkdir -p "$(pwd)"/build-out
+          mkdir -p ${{ env.CCACHE_DIR }}
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            build-out/deps
+            build-aux/cache
+          key: deps-win-${{ matrix.arch }}-${{ hashFiles('configure.ac', 'Makefile.am') }}
+          restore-keys: |
+            deps-win-${{ matrix.arch }}-${{ hashFiles('configure.ac', 'Makefile.am') }}
 
       - name: ccache
         uses: actions/cache@v4
         with:
-          path: ~/.ccache
+          path: ${{ env.CCACHE_DIR }}
           key: ccache-win-${{ matrix.arch }}-${{ github.sha }}
           restore-keys: |
             ccache-win-${{ matrix.arch }}-
@@ -49,11 +63,10 @@ jobs:
       - name: Building neosu
         run: |
           MAKEFLAGS="-j$(nproc)" ./autogen.sh
-          MAKEFLAGS="-j$(nproc)" ./configure --host=${{ matrix.host }}
-          MAKEFLAGS="-j$(nproc)" make install
+          cd build-out && MAKEFLAGS="-j$(nproc)" ../configure --host=${{ matrix.host }} && CCACHE_DIR="${{ env.CCACHE_DIR }}" MAKEFLAGS="-j$(nproc)" make install
 
 #          ./configure --disable-system-deps --enable-static --disable-native --with-audio="bass,soloud" --host=${{ matrix.host }}
       - uses: actions/upload-artifact@v4
         with:
           name: neosu-win-${{ matrix.arch }}
-          path: ./dist
+          path: build-out/dist

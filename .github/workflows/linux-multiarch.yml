@@ -24,7 +24,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Docker Setup Buildx
+      - name: Set up docker buildx
         uses: docker/setup-buildx-action@v3.10.0
         with:
           driver: docker
@@ -34,10 +34,20 @@ jobs:
           mkdir -p "$(pwd)"/build-out
           mkdir -p "$(pwd)"/.ccache
 
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            build-out/deps
+            build-aux/cache
+          key: deps-linux-${{ matrix.arch }}-${{ hashFiles('configure.ac', 'Makefile.am') }}
+          restore-keys: |
+            deps-linux-${{ matrix.arch }}-${{ hashFiles('configure.ac', 'Makefile.am') }}
+
       - name: ccache
         uses: actions/cache@v4
         with:
-          path: ./.ccache
+          path: .ccache
           key: ccache-linux-${{ matrix.arch }}-${{ github.sha }}
           restore-keys: |
             ccache-linux-${{ matrix.arch }}-
@@ -49,10 +59,11 @@ jobs:
           -t neosu-builder .
           docker run --rm \
             -e HOST=${{ matrix.host }} \
-            -e CCACHE_DIR=/ccache \
-            --mount type=bind,source="$(pwd)"/build-out,target=/src/build-out \
+            -e CCACHE_DIR=/src/.ccache \
             --mount type=bind,source="$(pwd)",target=/src \
-            --mount type=bind,source="$(pwd)"/.ccache,target=/ccache \
+            --mount type=bind,source="$(pwd)"/build-out,target=/src/build-out \
+            --mount type=bind,source="$(pwd)"/build-aux,target=/src/build-aux \
+            --mount type=bind,source="$(pwd)"/.ccache,target=/src/.ccache \
             neosu-builder
 
       - uses: actions/upload-artifact@v4
