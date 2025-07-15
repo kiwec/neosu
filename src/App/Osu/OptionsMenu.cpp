@@ -1715,7 +1715,7 @@ void OptionsMenu::updateLayout() {
             case 7:  // slider
                 if(this->elements[i].cvar != NULL) {
                     if(this->elements[i].elements.size() == 3) {
-                        CBaseUISlider *sliderPointer = dynamic_cast<CBaseUISlider *>(this->elements[i].elements[1]);
+                        auto *sliderPointer = dynamic_cast<CBaseUISlider *>(this->elements[i].elements[1]);
                         if(sliderPointer != NULL) {
                             // allow users to overscale certain values via the console
                             if(this->elements[i].allowOverscale &&
@@ -1736,10 +1736,10 @@ void OptionsMenu::updateLayout() {
             case 8:  // textbox
                 if(this->elements[i].cvar != NULL) {
                     if(this->elements[i].elements.size() == 1) {
-                        CBaseUITextbox *textboxPointer = dynamic_cast<CBaseUITextbox *>(this->elements[i].elements[0]);
+                        auto *textboxPointer = dynamic_cast<CBaseUITextbox *>(this->elements[i].elements[0]);
                         if(textboxPointer != NULL) textboxPointer->setText(this->elements[i].cvar->getString().c_str());
                     } else if(this->elements[i].elements.size() == 2) {
-                        CBaseUITextbox *textboxPointer = dynamic_cast<CBaseUITextbox *>(this->elements[i].elements[1]);
+                        auto *textboxPointer = dynamic_cast<CBaseUITextbox *>(this->elements[i].elements[1]);
                         if(textboxPointer != NULL) textboxPointer->setText(this->elements[i].cvar->getString().c_str());
                     }
                 }
@@ -1953,18 +1953,18 @@ void OptionsMenu::updateLayout() {
             CBaseUIElement *e = this->elements[i].elements[0];
 
             int sideMarginAdd = 0;
-            CBaseUILabel *labelPointer = dynamic_cast<CBaseUILabel *>(e);
+            auto *labelPointer = dynamic_cast<CBaseUILabel *>(e);
             if(labelPointer != NULL) {
                 labelPointer->onResized();  // HACKHACK: framework, setSize*() does not update string metrics
                 labelPointer->setSizeToContent(0, 0);
                 sideMarginAdd += elementTextStartOffset;
             }
 
-            CBaseUIButton *buttonPointer = dynamic_cast<CBaseUIButton *>(e);
+            auto *buttonPointer = dynamic_cast<CBaseUIButton *>(e);
             if(buttonPointer != NULL)
                 buttonPointer->onResized();  // HACKHACK: framework, setSize*() does not update string metrics
 
-            CBaseUICheckbox *checkboxPointer = dynamic_cast<CBaseUICheckbox *>(e);
+            auto *checkboxPointer = dynamic_cast<CBaseUICheckbox *>(e);
             if(checkboxPointer != NULL) {
                 checkboxPointer->onResized();  // HACKHACK: framework, setWidth*() does not update string metrics
                 checkboxPointer->setWidthToContent(0);
@@ -1986,15 +1986,15 @@ void OptionsMenu::updateLayout() {
             int spacing = 15 * dpiScale;
 
             int sideMarginAdd = 0;
-            CBaseUILabel *labelPointer = dynamic_cast<CBaseUILabel *>(e1);
+            auto *labelPointer = dynamic_cast<CBaseUILabel *>(e1);
             if(labelPointer != NULL) sideMarginAdd += elementTextStartOffset;
 
-            CBaseUIButton *buttonPointer = dynamic_cast<CBaseUIButton *>(e1);
+            auto *buttonPointer = dynamic_cast<CBaseUIButton *>(e1);
             if(buttonPointer != NULL)
                 buttonPointer->onResized();  // HACKHACK: framework, setSize*() does not update string metrics
 
             // button-button spacing
-            CBaseUIButton *buttonPointer2 = dynamic_cast<CBaseUIButton *>(e2);
+            auto *buttonPointer2 = dynamic_cast<CBaseUIButton *>(e2);
             if(buttonPointer != NULL && buttonPointer2 != NULL) spacing *= 0.35f;
 
             if(isKeyBindButton) {
@@ -2033,11 +2033,11 @@ void OptionsMenu::updateLayout() {
 
                 const int buttonSize = elementWidth / 3 - 2 * buttonButtonLabelOffset;
 
-                CBaseUIButton *button1Pointer = dynamic_cast<CBaseUIButton *>(e1);
+                auto *button1Pointer = dynamic_cast<CBaseUIButton *>(e1);
                 if(button1Pointer != NULL)
                     button1Pointer->onResized();  // HACKHACK: framework, setSize*() does not update string metrics
 
-                CBaseUIButton *button2Pointer = dynamic_cast<CBaseUIButton *>(e2);
+                auto *button2Pointer = dynamic_cast<CBaseUIButton *>(e2);
                 if(button2Pointer != NULL)
                     button2Pointer->onResized();  // HACKHACK: framework, setSize*() does not update string metrics
 
@@ -2053,7 +2053,7 @@ void OptionsMenu::updateLayout() {
 
                 // this is a big mess, because some elements rely on fixed initial widths from default strings, combined
                 // with variable font dpi on startup, will clean up whenever
-                CBaseUILabel *label1Pointer = dynamic_cast<CBaseUILabel *>(e1);
+                auto *label1Pointer = dynamic_cast<CBaseUILabel *>(e1);
                 if(label1Pointer != NULL) {
                     label1Pointer->onResized();  // HACKHACK: framework, setSize*() does not update string metrics
                     if(this->elements[i].label1Width > 0.0f)
@@ -2063,10 +2063,10 @@ void OptionsMenu::updateLayout() {
                                                 dpiScale);
                 }
 
-                CBaseUISlider *sliderPointer = dynamic_cast<CBaseUISlider *>(e2);
+                auto *sliderPointer = dynamic_cast<CBaseUISlider *>(e2);
                 if(sliderPointer != NULL) sliderPointer->setBlockSize(20 * dpiScale, 20 * dpiScale);
 
-                CBaseUILabel *label2Pointer = dynamic_cast<CBaseUILabel *>(e3);
+                auto *label2Pointer = dynamic_cast<CBaseUILabel *>(e3);
                 if(label2Pointer != NULL) {
                     label2Pointer->onResized();  // HACKHACK: framework, setSize*() does not update string metrics
                     label2Pointer->setSizeX(label2Pointer->getRelSize().x * (96.0f / this->elements[i].relSizeDPI) *
@@ -2644,7 +2644,7 @@ void OptionsMenu::onSliderChange(CBaseUISlider *slider) {
                                                      100.0f);  // round to 2 decimal places
 
                 if(this->elements[i].elements.size() == 3) {
-                    CBaseUILabel *labelPointer = dynamic_cast<CBaseUILabel *>(this->elements[i].elements[2]);
+                    auto *labelPointer = dynamic_cast<CBaseUILabel *>(this->elements[i].elements[2]);
                     labelPointer->setText(this->elements[i].cvar->getString().c_str());
                 }
 
@@ -2665,7 +2665,7 @@ void OptionsMenu::onSliderChangeOneDecimalPlace(CBaseUISlider *slider) {
                                                      10.0f);  // round to 1 decimal place
 
                 if(this->elements[i].elements.size() == 3) {
-                    CBaseUILabel *labelPointer = dynamic_cast<CBaseUILabel *>(this->elements[i].elements[2]);
+                    auto *labelPointer = dynamic_cast<CBaseUILabel *>(this->elements[i].elements[2]);
                     labelPointer->setText(this->elements[i].cvar->getString().c_str());
                 }
 
@@ -2686,7 +2686,7 @@ void OptionsMenu::onSliderChangeTwoDecimalPlaces(CBaseUISlider *slider) {
                                                      100.0f);  // round to 2 decimal places
 
                 if(this->elements[i].elements.size() == 3) {
-                    CBaseUILabel *labelPointer = dynamic_cast<CBaseUILabel *>(this->elements[i].elements[2]);
+                    auto *labelPointer = dynamic_cast<CBaseUILabel *>(this->elements[i].elements[2]);
                     labelPointer->setText(this->elements[i].cvar->getString().c_str());
                 }
 
@@ -2707,7 +2707,7 @@ void OptionsMenu::onSliderChangeOneDecimalPlaceMeters(CBaseUISlider *slider) {
                                                      10.0f);  // round to 1 decimal place
 
                 if(this->elements[i].elements.size() == 3) {
-                    CBaseUILabel *labelPointer = dynamic_cast<CBaseUILabel *>(this->elements[i].elements[2]);
+                    auto *labelPointer = dynamic_cast<CBaseUILabel *>(this->elements[i].elements[2]);
                     labelPointer->setText(UString::format("%.1f m", this->elements[i].cvar->getFloat()));
                 }
 
@@ -2727,7 +2727,7 @@ void OptionsMenu::onSliderChangeInt(CBaseUISlider *slider) {
                     this->elements[i].cvar->setValue(std::round(slider->getFloat()));  // round to int
 
                 if(this->elements[i].elements.size() == 3) {
-                    CBaseUILabel *labelPointer = dynamic_cast<CBaseUILabel *>(this->elements[i].elements[2]);
+                    auto *labelPointer = dynamic_cast<CBaseUILabel *>(this->elements[i].elements[2]);
                     labelPointer->setText(this->elements[i].cvar->getString().c_str());
                 }
 
@@ -2747,7 +2747,7 @@ void OptionsMenu::onSliderChangeIntMS(CBaseUISlider *slider) {
                     this->elements[i].cvar->setValue(std::round(slider->getFloat()));  // round to int
 
                 if(this->elements[i].elements.size() == 3) {
-                    CBaseUILabel *labelPointer = dynamic_cast<CBaseUILabel *>(this->elements[i].elements[2]);
+                    auto *labelPointer = dynamic_cast<CBaseUILabel *>(this->elements[i].elements[2]);
                     std::string text = this->elements[i].cvar->getString();
                     text.append(" ms");
                     labelPointer->setText(text.c_str());
@@ -2768,7 +2768,7 @@ void OptionsMenu::onSliderChangeFloatMS(CBaseUISlider *slider) {
                 if(this->elements[i].cvar != NULL) this->elements[i].cvar->setValue(slider->getFloat());
 
                 if(this->elements[i].elements.size() == 3) {
-                    CBaseUILabel *labelPointer = dynamic_cast<CBaseUILabel *>(this->elements[i].elements[2]);
+                    auto *labelPointer = dynamic_cast<CBaseUILabel *>(this->elements[i].elements[2]);
                     UString text = UString::format("%i", (int)std::round(this->elements[i].cvar->getFloat() * 1000.0f));
                     text.append(" ms");
                     labelPointer->setText(text);
@@ -2792,7 +2792,7 @@ void OptionsMenu::onSliderChangePercent(CBaseUISlider *slider) {
                 if(this->elements[i].elements.size() == 3) {
                     int percent = std::round(this->elements[i].cvar->getFloat() * 100.0f);
 
-                    CBaseUILabel *labelPointer = dynamic_cast<CBaseUILabel *>(this->elements[i].elements[2]);
+                    auto *labelPointer = dynamic_cast<CBaseUILabel *>(this->elements[i].elements[2]);
                     labelPointer->setText(UString::format("%i%%", percent));
                 }
 
@@ -2875,7 +2875,7 @@ void OptionsMenu::onSliderChangeSliderQuality(CBaseUISlider *slider) {
                 }
 
                 if(this->elements[i].elements.size() == 3) {
-                    CBaseUILabel *labelPointer = dynamic_cast<CBaseUILabel *>(this->elements[i].elements[2]);
+                    auto *labelPointer = dynamic_cast<CBaseUILabel *>(this->elements[i].elements[2]);
 
                     int percent = std::round((slider->getPercent()) * 100.0f);
                     UString text = UString::format(percent > 49 ? "%i !" : "%i", percent);
@@ -2901,7 +2901,7 @@ void OptionsMenu::onSliderChangeLetterboxingOffset(CBaseUISlider *slider) {
                 if(this->elements[i].elements.size() == 3) {
                     const int percent = std::round(newValue * 100.0f);
 
-                    CBaseUILabel *labelPointer = dynamic_cast<CBaseUILabel *>(this->elements[i].elements[2]);
+                    auto *labelPointer = dynamic_cast<CBaseUILabel *>(this->elements[i].elements[2]);
                     labelPointer->setText(UString::format("%i%%", percent));
                 }
 
@@ -2926,7 +2926,7 @@ void OptionsMenu::onSliderChangeUIScale(CBaseUISlider *slider) {
                 if(this->elements[i].elements.size() == 3) {
                     const int percent = std::round(newValue * 100.0f);
 
-                    CBaseUILabel *labelPointer = dynamic_cast<CBaseUILabel *>(this->elements[i].elements[2]);
+                    auto *labelPointer = dynamic_cast<CBaseUILabel *>(this->elements[i].elements[2]);
                     labelPointer->setText(UString::format("%i%%", percent));
                 }
 
@@ -3075,8 +3075,8 @@ void OptionsMenu::onHighQualitySlidersConVarChange(const UString &newValue) {
             for(int e = 0; e < this->elements[i].elements.size(); e++) {
                 this->elements[i].elements[e]->setEnabled(enabled);
 
-                UISlider *sliderPointer = dynamic_cast<UISlider *>(this->elements[i].elements[e]);
-                CBaseUILabel *labelPointer = dynamic_cast<CBaseUILabel *>(this->elements[i].elements[e]);
+                auto *sliderPointer = dynamic_cast<UISlider *>(this->elements[i].elements[e]);
+                auto *labelPointer = dynamic_cast<CBaseUILabel *>(this->elements[i].elements[e]);
 
                 if(sliderPointer != NULL) sliderPointer->setFrameColor(enabled ? 0xffffffff : 0xff000000);
                 if(labelPointer != NULL) labelPointer->setTextColor(enabled ? 0xffffffff : 0xff000000);
@@ -3101,7 +3101,7 @@ void OptionsMenu::onCategoryClicked(CBaseUIButton *button) {
     this->scheduleSearchUpdate();
 
     // scroll to category
-    OptionsMenuCategoryButton *categoryButton = dynamic_cast<OptionsMenuCategoryButton *>(button);
+    auto *categoryButton = dynamic_cast<OptionsMenuCategoryButton *>(button);
     if(categoryButton != NULL) this->options->scrollToElement(categoryButton->getSection(), 0, 100 * Osu::getUIScale());
 }
 
@@ -3142,7 +3142,7 @@ void OptionsMenu::onResetClicked(CBaseUIButton *button) {
                     break;
                 case 7:  // slider
                     if(this->elements[i].elements.size() == 3) {
-                        CBaseUISlider *sliderPointer = dynamic_cast<CBaseUISlider *>(this->elements[i].elements[1]);
+                        auto *sliderPointer = dynamic_cast<CBaseUISlider *>(this->elements[i].elements[1]);
                         if(sliderPointer != NULL) {
                             sliderPointer->setValue(this->elements[i].cvar->getDefaultFloat(), false);
                             sliderPointer->fireChangeCallback();
