@@ -708,7 +708,7 @@ void RoomScreen::on_player_failed(i32 slot_id) {
 FinishedScore RoomScreen::get_approximate_score() {
     FinishedScore score;
     score.player_id = bancho->user_id;
-    score.playerName = bancho->username.toUtf8();
+    score.playerName = bancho->get_username();
     score.diff2 = osu->getSelectedBeatmap()->getSelectedDifficulty2();
 
     for(auto &i : bancho->room.slots) {

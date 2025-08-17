@@ -164,7 +164,7 @@ void md5_f(const UString& file_path, u8* hash) {
 }  // namespace hash
 
 namespace conv {
-std::vector<u8> encode64(const u8* src, size_t len) {
+std::string encode64(const u8* src, size_t len) {
 #ifdef USE_OPENSSL
     // calculate output size: base64 encoding produces 4 chars for every 3 input bytes
     size_t encoded_len = 4 * ((len + 2) / 3);
@@ -172,8 +172,7 @@ std::vector<u8> encode64(const u8* src, size_t len) {
 
     int actual_len = EVP_EncodeBlock(temp.data(), src, static_cast<int>(len));
     if(actual_len > 0) {
-        temp.resize(static_cast<size_t>(actual_len));
-        return temp;
+        return std::string{(const char*)temp.data(), actual_len};
     }
 #endif
 
@@ -181,12 +180,12 @@ std::vector<u8> encode64(const u8* src, size_t len) {
     size_t out_len;
     u8* result = base64_encode(src, len, &out_len);
     if(result) {
-        std::vector<u8> vec(result, result + out_len);
+        std::string res{(const char*)result, out_len};
         delete[] result;
-        return vec;
+        return res;
     }
 
-    return {};
+    return "";
 }
 
 std::vector<u8> decode64(const u8* src, size_t len) {

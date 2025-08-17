@@ -440,10 +440,9 @@ void RankingScreen::onWatchClicked() {
 }
 
 void RankingScreen::setScore(FinishedScore score) {
-    bool is_same_player = !score.playerName.compare(cv::name.getString());
-
     this->score = score;
 
+    bool is_same_player = !score.playerName.compare(bancho->get_username());
     this->retry_btn->bVisible2 = is_same_player && !bancho->is_in_a_multi_room();
 
     if(!this->score.has_possible_replay()) {  // e.g. mcosu scores will never have replays
@@ -535,7 +534,7 @@ void RankingScreen::setBeatmapInfo(Beatmap *beatmap, DatabaseBeatmap *diff2) {
     this->score.diff2 = diff2;
     this->songInfo->setFromBeatmap(beatmap, diff2);
 
-    const std::string scorePlayer = this->score.playerName.empty() ? cv::name.getString() : this->score.playerName;
+    const std::string scorePlayer = this->score.playerName.empty() ? bancho->get_username() : this->score.playerName;
     this->songInfo->setPlayer(this->bIsUnranked ? "neosu" : scorePlayer);
 
     // @PPV3: update m_score.ppv3_score, this->score.ppv3_aim_stars, this->score.ppv3_speed_stars,

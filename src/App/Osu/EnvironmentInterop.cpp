@@ -3,6 +3,7 @@
 #include "Downloader.h"  // for extract_beatmapset
 #include "File.h"
 #include "MainMenu.h"
+#include "NeosuUrl.h"
 #include "OptionsMenu.h"
 #include "Osu.h"
 #include "Skin.h"
@@ -59,50 +60,6 @@ void handle_osz(const char *osz_path) {
     // prevent song browser from picking main menu song after database loads
     // (we just loaded and selected another song, so previous no longer applies)
     SAFE_DELETE(osu->mainMenu->preloaded_beatmapset);
-}
-
-void handle_neosu_url(const char *url) {
-    if(strstr(url, "neosu://login/") == url) {
-        // Disable autologin, in case there's an error while logging in
-        // Will be reenabled after the login succeeds
-        cv::mp_autologin.setValue(false);
-
-        osu->getOptionsMenu()->setLoginLoadingState(true);
-
-        // TODO @kiwec: make request to https://neosu.net/oauth/btoken with bancho.oauth_verifier + the code in
-        //              neosu://login/<code> to get access token and refresh token
-        //              then use c.neosu.net with access token
-        //              OR, replace existing c. login packet?
-
-        // TODO @kiwec: set bancho.username, cv_name (cv_name accessed in many places!)
-
-        return;
-    }
-
-    if(!strcmp(url, "neosu://run")) {
-        // nothing to do
-        return;
-    }
-
-    if(strstr(url, "neosu://join_lobby/") == url) {
-        // TODO @kiwec: lobby id
-        return;
-    }
-
-    if(strstr(url, "neosu://select_map/") == url) {
-        // TODO @kiwec: beatmapset + md5 combo
-        return;
-    }
-
-    if(strstr(url, "neosu://spectate/") == url) {
-        // TODO @kiwec: user id
-        return;
-    }
-
-    if(strstr(url, "neosu://watch_replay/") == url) {
-        // TODO @kiwec: replay md5
-        return;
-    }
 }
 }  // namespace
 

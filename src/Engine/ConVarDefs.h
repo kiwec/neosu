@@ -52,7 +52,7 @@ extern void _update();
 
 #define OSU_VERSION_DATEONLY 0
 
-extern void spectate_by_username();
+extern void spectate_by_username(const UString &username);
 extern void loudness_cb(const UString &, const UString &);
 extern void _osuOptionsSliderQualityWrapper(float);
 namespace RichPresence {
@@ -61,10 +61,6 @@ extern void onRichPresenceChange(const UString &, const UString &);
 extern void _osu_songbrowser_search_hardcoded_filter(const UString &, const UString &);
 extern void _vprof(float);
 extern void _volume(const UString &, const UString &);
-namespace BANCHO::Net {
-extern void reconnect();
-extern void disconnect();
-}  // namespace BANCHO::Net
 #endif
 
 // ########################################################################################################################
@@ -113,6 +109,7 @@ CONVAR(showconsolebox, "showconsolebox");
 CONVAR(shutdown, "shutdown", FCVAR_BANCHO_COMPATIBLE, []() -> void { engine ? engine->shutdown() : (void)0; });
 CONVAR(spectate, "spectate", FCVAR_HIDDEN, CFUNC(spectate_by_username));
 CONVAR(update, "update", FCVAR_PRIVATE, CFUNC(_update));
+CONVAR(complete_oauth, "complete_oauth", FCVAR_PRIVATE, CFUNC(BANCHO::Net::complete_oauth));
 
 }  // namespace cmd
 
@@ -843,16 +840,9 @@ CONVAR(mouse_raw_input, "mouse_raw_input", false, FCVAR_BANCHO_COMPATIBLE);
 CONVAR(mouse_sensitivity, "mouse_sensitivity", 1.0f, FCVAR_BANCHO_COMPATIBLE);
 CONVAR(mp_autologin, "mp_autologin", false, FCVAR_BANCHO_COMPATIBLE | FCVAR_PRIVATE);
 CONVAR(mp_oauth_token, "mp_oauth_token", "", FCVAR_BANCHO_COMPATIBLE | FCVAR_PRIVATE | FCVAR_HIDDEN);
-
-// Plaintext password, unused since v39. Left for migrating to new cvar (see MainMenu.cpp).
-CONVAR(mp_password, "mp_password", "", FCVAR_BANCHO_COMPATIBLE | FCVAR_PRIVATE | FCVAR_HIDDEN | FCVAR_NOSAVE);
-
+CONVAR(mp_password, "mp_password", "", FCVAR_BANCHO_COMPATIBLE | FCVAR_PRIVATE | FCVAR_HIDDEN | FCVAR_INTERNAL);
 CONVAR(mp_password_md5, "mp_password_md5", "", FCVAR_BANCHO_COMPATIBLE | FCVAR_PRIVATE | FCVAR_HIDDEN);
-CONVAR(mp_password_temporary, "mp_password_temporary", "",
-       FCVAR_BANCHO_COMPATIBLE | FCVAR_PRIVATE | FCVAR_HIDDEN | FCVAR_INTERNAL);
 CONVAR(mp_server, "mp_server", "akatsuki.gg", FCVAR_BANCHO_COMPATIBLE | FCVAR_PRIVATE);
-CONVAR(mp_disconnect, "mp_disconnect", FCVAR_BANCHO_COMPATIBLE, CFUNC(BANCHO::Net::disconnect));
-CONVAR(mp_reconnect, "mp_reconnect", FCVAR_BANCHO_COMPATIBLE, CFUNC(BANCHO::Net::reconnect));
 CONVAR(name, "name", "Guest", FCVAR_BANCHO_COMPATIBLE | FCVAR_PRIVATE);
 CONVAR(nightcore_enjoyer, "nightcore_enjoyer", false, FCVAR_BANCHO_COMPATIBLE);
 CONVAR(normalize_loudness, "normalize_loudness", true, FCVAR_BANCHO_COMPATIBLE, "normalize loudness across songs");

@@ -82,7 +82,7 @@ void fetch_online_scores(DatabaseBeatmap *beatmap) {
     curl_free(encoded_filename);
     curl_easy_cleanup(curl);
     path.append(UString::format("&m=0&i=%d&mods=%u&h=&a=0&us=%s&ha=%s", beatmap->getSetID(),
-                                osu->modSelector->getModFlags(), bancho->username.toUtf8(), bancho->pw_md5.hash.data())
+                                osu->modSelector->getModFlags(), bancho->get_username().c_str(), bancho->pw_md5.hash.data())
                     .toUtf8());
 
     APIRequest request;

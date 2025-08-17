@@ -46,9 +46,6 @@ struct APIRequest {
 
 namespace BANCHO::Net {
 
-void disconnect();
-void reconnect();
-
 // Send an API request.
 void send_api_request(const APIRequest& request);
 
@@ -64,6 +61,9 @@ void update_networking();
 
 // Clean up networking. Should be called once when exiting neosu.
 void cleanup_networking();
+
+// Callback for complete_oauth command
+void complete_oauth(const UString &code);
 
 extern UString cho_token;
 

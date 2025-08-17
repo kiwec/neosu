@@ -31,7 +31,6 @@ struct Bancho final {
 
     std::string endpoint;
     i32 user_id{0};
-    UString username;
     MD5Hash pw_md5;
     u8 oauth_challenge[32]{};
     u8 oauth_verifier[32]{};
@@ -75,9 +74,12 @@ struct Bancho final {
     [[nodiscard]] inline bool is_in_a_multi_room() const { return this->room.nb_players > 0; }
     [[nodiscard]] inline bool is_playing_a_multi_map() const { return this->match_started; }
     [[nodiscard]] inline bool is_online() const { return this->user_id > 0; }
+    [[nodiscard]] std::string get_username() const;
     [[nodiscard]] bool can_submit_scores() const;
 
     static void change_login_state(bool logged);
+    void disconnect();
+    void reconnect();
 
    private:
     // internal helpers
@@ -87,6 +89,9 @@ struct Bancho final {
     [[nodiscard]] UString get_disk_uuid_blkid() const;
 
     bool print_new_channels{true};
+
+    // use get_username() to avoid having to check for online status
+    std::string username;
 
     // cached on first get
     mutable UString disk_uuid;

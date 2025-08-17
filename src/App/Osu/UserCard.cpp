@@ -224,7 +224,7 @@ void UserCard::mouse_update(bool *propagate_clicks) {
             total_score = my->total_score;
         }
     } else {
-        this->sText = cv::name.getString().c_str();
+        this->sText = bancho->get_username().c_str();
     }
 
     // calculatePlayerStats() does nothing unless username changed or scores changed

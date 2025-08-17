@@ -87,7 +87,7 @@ void UserStatsScreen::rebuildScoreButtons() {
     this->m_userCard->updateUserStats();
 
     i32 i = 0;
-    std::vector<FinishedScore *> scores = db->getPlayerPPScores(cv::name.getString()).ppScores;
+    std::vector<FinishedScore *> scores = db->getPlayerPPScores(bancho->get_username()).ppScores;
     for(auto &score : scores | std::views::reverse) {
         if(i >= cv::ui_top_ranks_max.getInt()) break;
         const float weight = Database::getWeightForIndex(i);

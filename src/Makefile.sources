@@ -35,6 +35,7 @@ neosu_SOURCES = \
 	src/App/Osu/ModFPoSu.cpp \
 	src/App/Osu/ModSelector.cpp \
 	src/App/Osu/Multiplayer.cpp \
+	src/App/Osu/NeosuUrl.cpp \
 	src/App/Osu/NotificationOverlay.cpp \
 	src/App/Osu/OptionsMenu.cpp \
 	src/App/Osu/Osu.cpp \

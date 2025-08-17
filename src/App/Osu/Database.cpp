@@ -1,6 +1,7 @@
 // Copyright (c) 2016, PG, All rights reserved.
 #include "Database.h"
 
+#include "Bancho.h"
 #include "SString.h"
 #include "MD5Hash.h"
 #include "ByteBufferedFile.h"
@@ -457,7 +458,7 @@ std::vector<UString> Database::getPlayerNamesWithPPScores() {
     }
 
     // always add local user, even if there were no scores
-    tempNames.insert(cv::name.getString());
+    tempNames.insert(bancho->get_username());
 
     std::vector<UString> names;
     names.reserve(tempNames.size());
@@ -479,7 +480,7 @@ std::vector<UString> Database::getPlayerNamesWithScoresForUserSwitcher() {
     }
 
     // always add local user, even if there were no scores
-    tempNames.insert(cv::name.getString());
+    tempNames.insert(bancho->get_username());
 
     std::vector<UString> names;
     names.reserve(tempNames.size());

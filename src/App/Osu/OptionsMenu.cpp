@@ -1202,7 +1202,7 @@ OptionsMenu::OptionsMenu() : ScreenBackable() {
     this->nameTextbox = this->addTextbox(cv::name.getString().c_str(), &cv::name);
     this->elemContainers.back()->render_condition = RenderCondition::PASSWORD_AUTH;
     const auto &md5pass = cv::mp_password_md5.getString();
-    this->passwordTextbox = this->addTextbox(md5pass.empty() ? "" : md5pass.c_str(), &cv::mp_password_temporary);
+    this->passwordTextbox = this->addTextbox(md5pass.empty() ? "" : md5pass.c_str(), &cv::mp_password);
     this->passwordTextbox->is_password = true;
     this->elemContainers.back()->render_condition = RenderCondition::PASSWORD_AUTH;
     {
@@ -1539,7 +1539,7 @@ void OptionsMenu::mouse_update(bool *propagate_clicks) {
     if(this->osuFolderTextbox->hitEnter()) cv::osu_folder.setValue(this->osuFolderTextbox->getText());
 
     cv::name.setValue(this->nameTextbox->getText());
-    cv::mp_password_temporary.setValue(this->passwordTextbox->getText());
+    cv::mp_password.setValue(this->passwordTextbox->getText());
     cv::mp_server.setValue(this->serverTextbox->getText());
     if(this->nameTextbox->hitEnter()) {
         this->nameTextbox->stealFocus();
@@ -1767,10 +1767,9 @@ void OptionsMenu::updateLayout() {
                     if(element->baseElems.size() == 1) {
                         auto *textboxPointer = dynamic_cast<CBaseUITextbox *>(element->baseElems[0]);
                         if(textboxPointer != nullptr) {
-                            // HACKHACK: don't override textbox with the mp_password_temporary (which gets deleted
-                            // on login)
+                            // HACKHACK: don't override textbox with mp_password (which gets deleted on login)
                             UString textToSet{cv->getString().c_str()};
-                            if(cv == &cv::mp_password_temporary && cv::mp_password_temporary.getString().empty()) {
+                            if(cv == &cv::mp_password && cv::mp_password.getString().empty()) {
                                 textToSet = cv::mp_password_md5.getString().c_str();
                             }
                             textboxPointer->setText(textToSet);
@@ -2597,28 +2596,30 @@ void OptionsMenu::onLogInClicked(bool left, bool right) {
     }
     soundEngine->play(osu->getSkin()->getMenuHit());
 
+    // Clear mp_oauth_token if the user is connecting to a non-oauth server
+    // This makes it easy to check what we need to do when building the login packet
+    if(!this->should_use_oauth_login()) {
+        cv::mp_oauth_token.setValue("");
+    }
+
     if((right && this->logInButton->is_loading) || bancho->is_online()) {
-        BANCHO::Net::disconnect();
+        bancho->disconnect();
 
         // Manually clicked disconnect button: clear oauth token
         cv::mp_oauth_token.setValue("");
     } else {
-        // debugLog("DEBUG: manually clicked login, password: {} md5: {}\n", cv::mp_password_temporary.getString(),
-        //           cv::mp_password_md5.getString());
-        if(this->should_use_oauth_login()) {
+        if(this->should_use_oauth_login() && cv::mp_oauth_token.getString().empty()) {
             bancho->endpoint = cv::mp_server.getString();
 
             crypto::rng::get_bytes(&bancho->oauth_challenge[0], 32);
             crypto::hash::sha256(&bancho->oauth_challenge[0], 32, &bancho->oauth_verifier[0]);
 
             auto challenge_b64 = crypto::conv::encode64(&bancho->oauth_challenge[0], 32);
-            auto scheme = cv::use_https.getBool() ? "https://" : "http://";
-            auto url = fmt::format("{:s}{:s}/connect?challenge={}", scheme, bancho->endpoint,
-                                   (const char *)challenge_b64.data());
+            auto url = fmt::format("https://{}/connect/{}", bancho->endpoint, challenge_b64);
 
             env->openURLInDefaultBrowser(url);
         } else {
-            BANCHO::Net::reconnect();
+            bancho->reconnect();
         }
     }
 }

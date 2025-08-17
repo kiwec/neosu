@@ -95,7 +95,7 @@ void submit_score(FinishedScore score) {
         auto iv_b64 = crypto::conv::encode64(iv, sizeof(iv));
         part = curl_mime_addpart(request.mime);
         curl_mime_name(part, "iv");
-        curl_mime_data(part, (const char *)iv_b64.data(), CURL_ZERO_TERMINATED);
+        curl_mime_data(part, iv_b64.c_str(), iv_b64.length());
     }
     {
         size_t s_client_hashes_encrypted = 0;
@@ -104,12 +104,12 @@ void submit_score(FinishedScore score) {
         auto client_hashes_b64 = crypto::conv::encode64(client_hashes_encrypted, s_client_hashes_encrypted);
         part = curl_mime_addpart(request.mime);
         curl_mime_name(part, "s");
-        curl_mime_data(part, (const char *)client_hashes_b64.data(), CURL_ZERO_TERMINATED);
+        curl_mime_data(part, client_hashes_b64.c_str(), client_hashes_b64.length());
     }
     {
         UString score_data;
         score_data.append(score.diff2->getMD5Hash().hash.data());
-        score_data.append(UString::format(":%s", bancho->username.toUtf8()));
+        score_data.append(UString::format(":%s", bancho->get_username().c_str()));
         {
             auto idiot_check = UString::format("chickenmcnuggets%d", score.num300s + score.num100s);
             idiot_check.append(UString::format("o15%d%d", score.num50s, score.numGekis));
@@ -117,7 +117,7 @@ void submit_score(FinishedScore score) {
             idiot_check.append(UString::format("uu%s", score.diff2->getMD5Hash().hash.data()));
             idiot_check.append(UString::format("%d%s", score.comboMax, score.perfect ? "True" : "False"));
             idiot_check.append(
-                UString::format("%s%d%s", bancho->username.toUtf8(), score.score, GRADES[(int)score.grade]));
+                UString::format("%s%d%s", bancho->get_username().c_str(), score.score, GRADES[(int)score.grade]));
             idiot_check.append(UString::format("%uQ%s", score.mods.to_legacy(), score.passed ? "True" : "False"));
             idiot_check.append(UString::format("0%d%s", OSU_VERSION_DATEONLY, score_time));
             idiot_check.append(bancho->client_hashes);
@@ -149,7 +149,7 @@ void submit_score(FinishedScore score) {
 
         part = curl_mime_addpart(request.mime);
         curl_mime_name(part, "score");
-        curl_mime_data(part, (const char *)score_data_b64.data(), CURL_ZERO_TERMINATED);
+        curl_mime_data(part, score_data_b64.c_str(), score_data_b64.length());
     }
     {
         size_t s_compressed_data = 0;

@@ -591,7 +591,7 @@ void Chat::handle_command(const UString &msg) {
 
         Packet packet;
         packet.id = SEND_PRIVATE_MESSAGE;
-        proto::write_string(&packet, (char *)bancho->username.toUtf8());
+        proto::write_string(&packet, (char *)bancho->get_username().c_str());
         proto::write_string(&packet, (char *)invite_msg.toUtf8());
         proto::write_string(&packet, (char *)username.toUtf8());
         proto::write<i32>(&packet, bancho->user_id);
@@ -807,7 +807,7 @@ void Chat::mark_as_read(ChatChannel *chan) {
 
     APIRequest request;
     request.type = MARK_AS_READ;
-    request.path = UString::format("/web/osu-markasread.php?u=%s&h=%s&channel=%s", bancho->username.toUtf8(),
+    request.path = UString::format("/web/osu-markasread.php?u=%s&h=%s&channel=%s", bancho->get_username().c_str(),
                                    bancho->pw_md5.hash.data(), channel_urlencoded);
     request.mime = nullptr;
 
@@ -899,7 +899,7 @@ void Chat::addMessage(UString channel_name, const ChatMessage &msg, bool mark_un
         // TODO @kiwec: highlight + send toast?
     }
 
-    bool is_pm = msg.author_id > 0 && channel_name[0] != '#' && msg.author_name != bancho->username;
+    bool is_pm = msg.author_id > 0 && channel_name[0] != '#' && msg.author_name.toUtf8() != bancho->get_username();
     if(is_pm) {
         // If it's a PM, the channel title should be the one who sent the message
         channel_name = msg.author_name;
@@ -916,7 +916,7 @@ void Chat::addMessage(UString channel_name, const ChatMessage &msg, bool mark_un
         }
     }
 
-    bool mentioned = SString::contains_ncase(msg.text.toUtf8(), bancho->username.toUtf8());
+    bool mentioned = SString::contains_ncase(msg.text.toUtf8(), bancho->get_username());
     mentioned &= msg.author_id != bancho->user_id;
     if(mentioned && cv::chat_notify_on_mention.getBool()) {
         auto notif = UString::format("You were mentioned in %s", channel_name.toUtf8());
@@ -962,7 +962,7 @@ void Chat::addMessage(UString channel_name, const ChatMessage &msg, bool mark_un
     if(is_pm && this->away_msg.length() > 0) {
         Packet packet;
         packet.id = SEND_PRIVATE_MESSAGE;
-        proto::write_string(&packet, (char *)bancho->username.toUtf8());
+        proto::write_string(&packet, (char *)bancho->get_username().c_str());
         proto::write_string(&packet, (char *)this->away_msg.toUtf8());
         proto::write_string(&packet, (char *)msg.author_name.toUtf8());
         proto::write<i32>(&packet, bancho->user_id);
@@ -972,7 +972,7 @@ void Chat::addMessage(UString channel_name, const ChatMessage &msg, bool mark_un
         this->addMessage(channel_name, ChatMessage{
                                            .tms = time(nullptr),
                                            .author_id = bancho->user_id,
-                                           .author_name = bancho->username,
+                                           .author_name = bancho->get_username().c_str(),
                                            .text = this->away_msg,
                                        });
     }
@@ -1202,7 +1202,7 @@ void Chat::leave(const UString &channel_name) {
 void Chat::send_message(const UString &msg) {
     Packet packet;
     packet.id = this->selected_channel->name[0] == '#' ? SEND_PUBLIC_MESSAGE : SEND_PRIVATE_MESSAGE;
-    proto::write_string(&packet, (char *)bancho->username.toUtf8());
+    proto::write_string(&packet, (char *)bancho->get_username().c_str());
     proto::write_string(&packet, (char *)msg.toUtf8());
     proto::write_string(&packet, (char *)this->selected_channel->name.toUtf8());
     proto::write<i32>(&packet, bancho->user_id);
@@ -1212,7 +1212,7 @@ void Chat::send_message(const UString &msg) {
     this->addMessage(this->selected_channel->name, ChatMessage{
                                                        .tms = time(nullptr),
                                                        .author_id = bancho->user_id,
-                                                       .author_name = bancho->username,
+                                                       .author_name = bancho->get_username().c_str(),
                                                        .text = msg,
                                                    });
 }

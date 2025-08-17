@@ -373,7 +373,7 @@ DatabaseBeatmap* download_beatmap(i32 beatmap_id, MD5Hash beatmap_md5, float* pr
 
         APIRequest request;
         request.type = GET_BEATMAPSET_INFO;
-        request.path = UString::format("/web/osu-search-set.php?b=%d&u=%s&h=%s", beatmap_id, bancho->username.toUtf8(),
+        request.path = UString::format("/web/osu-search-set.php?b=%d&u=%s&h=%s", beatmap_id, bancho->get_username().c_str(),
                                        bancho->pw_md5.hash.data());
         request.extra_int = beatmap_id;
         BANCHO::Net::send_api_request(request);
@@ -448,7 +448,7 @@ DatabaseBeatmap* download_beatmap(i32 beatmap_id, i32 beatmapset_id, float* prog
 
         APIRequest request;
         request.type = GET_BEATMAPSET_INFO;
-        request.path = UString::format("/web/osu-search-set.php?b=%d&u=%s&h=%s", beatmap_id, bancho->username.toUtf8(),
+        request.path = UString::format("/web/osu-search-set.php?b=%d&u=%s&h=%s", beatmap_id, bancho->get_username().c_str(),
                                        bancho->pw_md5.hash.data());
         request.extra_int = beatmap_id;
         BANCHO::Net::send_api_request(request);

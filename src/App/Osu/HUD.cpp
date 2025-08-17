@@ -278,7 +278,7 @@ void HUD::drawDummy() {
     if(cv::draw_inputoverlay.getBool()) this->drawInputOverlay(0, 0, 0, 0);
 
     SCORE_ENTRY scoreEntry;
-    scoreEntry.name = cv::name.getString().c_str();
+    scoreEntry.name = bancho->get_username().c_str();
     scoreEntry.combo = 420;
     scoreEntry.score = 12345678;
     scoreEntry.accuracy = 1.0f;
@@ -1298,7 +1298,7 @@ std::vector<SCORE_ENTRY> HUD::getCurrentScores() {
             playerScoreEntry.name = osu->watched_user_name;
             playerScoreEntry.player_id = osu->watched_user_id;
         } else {
-            playerScoreEntry.name = cv::name.getString().c_str();
+            playerScoreEntry.name = bancho->get_username().c_str();
             playerScoreEntry.player_id = bancho->user_id;
         }
         playerScoreEntry.entry_id = 0;

@@ -1,0 +1,79 @@
+// Copyright (c) 2025, kiwec, All rights reserved.
+#include "crypto.h"
+#include "Bancho.h"
+#include "ConVar.h"
+#include "Engine.h"
+#include "NetworkHandler.h"
+#include "NotificationOverlay.h"
+#include "OptionsMenu.h"
+#include "Osu.h"
+#include "SString.h"
+
+
+void handle_neosu_url(const char *url) {
+    if(strstr(url, "neosu://login/") == url) {
+        // Disable autologin, in case there's an error while logging in
+        // Will be reenabled after the login succeeds
+        cv::mp_autologin.setValue(false);
+
+        auto params = SString::split(url, "/");
+        if(params.size() != 5) {
+            debugLog("Expected 5 login parameters, got {}!\n", params.size());
+            return;
+        }
+
+        osu->getOptionsMenu()->setLoginLoadingState(true);
+
+        auto endpoint = params[3];
+        auto code = params[4];
+        auto proof = crypto::conv::encode64(bancho->oauth_verifier, 32);
+        auto url = UString::fmt("https://{}/connect/{}/{}", endpoint, code, proof);
+
+        NetworkHandler::RequestOptions options;
+        options.timeout = 30;
+        options.connectTimeout = 5;
+        options.userAgent = bancho->user_agent.toUtf8();
+        options.followRedirects = true;
+
+        networkHandler->httpRequestAsync(
+            url,
+            [](NetworkHandler::Response response) {
+                if(response.success) {
+                    cv::mp_oauth_token.setValue(response.body);
+                    bancho->reconnect();
+                } else {
+                    osu->getOptionsMenu()->setLoginLoadingState(false);
+                    osu->notificationOverlay->addToast("Login failed.", ERROR_TOAST);
+                }
+            },
+            options
+        );
+
+        return;
+    }
+
+    if(!strcmp(url, "neosu://run")) {
+        // nothing to do
+        return;
+    }
+
+    if(strstr(url, "neosu://join_lobby/") == url) {
+        // TODO @kiwec: lobby id
+        return;
+    }
+
+    if(strstr(url, "neosu://select_map/") == url) {
+        // TODO @kiwec: beatmapset + md5 combo
+        return;
+    }
+
+    if(strstr(url, "neosu://spectate/") == url) {
+        // TODO @kiwec: user id
+        return;
+    }
+
+    if(strstr(url, "neosu://watch_replay/") == url) {
+        // TODO @kiwec: replay md5
+        return;
+    }
+}

@@ -3610,14 +3610,11 @@ FinishedScore Beatmap::saveAndSubmitScore(bool quit) {
     score.unixTimestamp =
         std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 
-    // @neonet: check if we're connected to neonet
     if(bancho->is_online()) {
         score.player_id = bancho->user_id;
-        score.playerName = bancho->username.toUtf8();
         score.server = bancho->endpoint;
-    } else {
-        score.playerName = cv::name.getString();
     }
+    score.playerName = bancho->get_username();
     score.passed = isComplete && !isZero && !osu->getScore()->hasDied();
     score.grade = score.passed ? osu->getScore()->getGrade() : FinishedScore::Grade::F;
     score.diff2 = this->selectedDifficulty2;

@@ -1214,7 +1214,7 @@ CBaseUIContainer *SongBrowser::setVisible(bool visible) {
         }
 
         // update user name/stats
-        osu->onUserCardChange(cv::name.getString().c_str());
+        osu->onUserCardChange(bancho->get_username().c_str());
 
         // HACKHACK: workaround for BaseUI framework deficiency (missing mouse events. if a mouse button is being held,
         // and then suddenly a BaseUIElement gets put under it and set visible, and then the mouse button is released,
@@ -2605,7 +2605,7 @@ void SongBrowser::onDatabaseLoadingFinished() {
     RichPresence::onSongBrowser();
 
     // update user name/stats
-    osu->onUserCardChange(cv::name.getString().c_str());
+    osu->onUserCardChange(bancho->get_username().c_str());
 
     if(cv::songbrowser_search_hardcoded_filter.getString().length() > 0) this->onSearchUpdate();
 

@@ -2,7 +2,6 @@
 #include "BanchoNetworking.h"
 
 #include <ctime>
-
 #include <mutex>
 
 #ifndef _MSC_VER
@@ -23,6 +22,7 @@
 #include "Engine.h"
 #include "File.h"
 #include "Lobby.h"
+#include "NeosuUrl.h"
 #include "NetworkHandler.h"
 #include "OptionsMenu.h"
 #include "ResourceManager.h"
@@ -290,147 +290,10 @@ void handle_api_response(Packet packet) {
 // this is a global var
 UString cho_token = "";
 
-void disconnect() {
-    Bancho::change_login_state(false);
-
-    // Logout
-    // This is a blocking call, but we *do* want this to block when quitting the game.
-    if(bancho->is_online()) {
-        Packet packet;
-        proto::write<u16>(&packet, LOGOUT);
-        proto::write<u8>(&packet, 0);
-        proto::write<u32>(&packet, 4);
-        proto::write<u32>(&packet, 0);
-
-        NetworkHandler::RequestOptions options;
-        options.timeout = 5;
-        options.connectTimeout = 5;
-        options.userAgent = "osu!";
-        options.postData = std::string(reinterpret_cast<char *>(packet.memory), packet.pos);
-
-        auto version_header = UString::format("x-mcosu-ver: %s", bancho->neosu_version.toUtf8());
-        options.headers["x-mcosu-ver"] = bancho->neosu_version.toUtf8();
-
-        {
-            std::scoped_lock<std::mutex> lock{auth_mutex};
-            if(!auth_header.empty()) {
-                size_t colon_pos = auth_header.find(':');
-                if(colon_pos != std::string::npos) {
-                    std::string token = auth_header.substr(colon_pos + 1);
-                    SString::trim(&token);
-                    options.headers["osu-token"] = token;
-                }
-            }
-        }
-
-        auto scheme = cv::use_https.getBool() ? "https://" : "http://";
-        auto query_url = UString::format("%sc.%s/", scheme, bancho->endpoint.c_str());
-
-        // use sync request for logout to ensure it completes
-        NetworkHandler::Response response = networkHandler->performSyncRequest(query_url, options);
-
-        free(packet.memory);
-    }
-
-    try_logging_in = false;
-    {
-        std::scoped_lock<std::mutex> lock{auth_mutex};
-        auth_header = "";
-    }
-    free(outgoing.memory);
-    outgoing = Packet();
-
-    bancho->user_id = 0;
-    osu->userButton->setID(0);
-
-    bancho->endpoint = "";
-    bancho->spectating = false;
-    bancho->spectated_player_id = 0;
-    bancho->spectators.clear();
-    bancho->fellow_spectators.clear();
-    bancho->server_icon_url = "";
-    if(bancho->server_icon != nullptr) {
-        resourceManager->destroyResource(bancho->server_icon);
-        bancho->server_icon = nullptr;
-    }
-
-    bancho->score_submission_policy = ServerPolicy::NO_PREFERENCE;
-    osu->optionsMenu->update_login_button();
-    osu->optionsMenu->scheduleLayoutUpdate();
-
-    for(auto &pair : BANCHO::User::online_users) {
-        delete pair.second;
-    }
-    BANCHO::User::online_users.clear();
-    BANCHO::User::friends.clear();
-
-    osu->chat->onDisconnect();
-
-    // XXX: We should toggle between "offline" sorting options and "online" ones
-    //      Online ones would be "Local scores", "Global", "Country", "Selected mods" etc
-    //      While offline ones would be "By score", "By pp", etc
-    osu->songBrowser2->onSortScoresChange(UString("Sort by pp"), 0);
-
-    Downloader::abort_downloads();
-}
-
-void reconnect() {
-    disconnect();
-
-    // Disable autologin, in case there's an error while logging in
-    // Will be reenabled after the login succeeds
-    cv::mp_autologin.setValue(false);
-
-    bancho->username = cv::name.getString().c_str();
-    bancho->endpoint = cv::mp_server.getString();
-
-    // Admins told me they don't want any clients to connect
-    constexpr auto server_blacklist = std::array{
-        "ppy.sh",  // haven't asked, but the answer is obvious
-        "gatari.pw",
-    };
-    for(const char *endpoint : server_blacklist) {
-        if(!strcmp(endpoint, bancho->endpoint.c_str())) {
-            osu->notificationOverlay->addToast("This server does not allow neosu clients.", ERROR_TOAST);
-            return;
-        }
-    }
-
-    {
-        auto *tempConVar = &cv::mp_password_temporary;
-        if(!tempConVar->getString().empty() &&
-           tempConVar->getString() != cv::mp_password_md5.getString())  // HACK: find a better way to do this...
-        {
-            const char *tempStr{tempConVar->getString().c_str()};
-            const auto hash{Bancho::md5((u8 *)tempStr, strlen(tempStr))};
-            cv::mp_password_md5.setValue(hash.hash.data());
-            tempConVar->setValue("");
-        }
-    }
-    if(cv::mp_password_md5.getString().length() != 32) {
-        // debugLog("no password, md5: {} length: {}\n", cv::mp_password_md5.getString().length(),
-        // cv::mp_password_md5.getString());
-        //  No password: don't try to log in
-        return;
-    }
-
-    bancho->pw_md5 = {cv::mp_password_md5.getString().c_str()};
-    //    bancho->pw_md5 = Bancho::md5((u8 *)pw, strlen(pw));
-
-    // Admins told me they don't want score submission enabled
-    constexpr auto submit_blacklist = std::array{
-        "akatsuki.gg",
-        "ripple.moe",
-    };
-    for(const char *endpoint : submit_blacklist) {
-        if(!strcmp(endpoint, bancho->endpoint.c_str())) {
-            bancho->score_submission_policy = ServerPolicy::NO;
-            break;
-        }
-    }
-
-    osu->getOptionsMenu()->setLoginLoadingState(true);
-    try_logging_in = true;
+// Used as fallback for Linux or other setups where neosu:// protocol handler doesn't work
+void complete_oauth(const UString &code) {
+    auto url = fmt::format("neosu://login/{}/{}", bancho->endpoint, code.toUtf8());
+    handle_neosu_url(url.c_str());
 }
 
 void update_networking() {
@@ -592,3 +455,136 @@ void cleanup_networking() {
 }
 
 }  // namespace BANCHO::Net
+
+
+
+void Bancho::disconnect() {
+    Bancho::change_login_state(false);
+
+    // Logout
+    // This is a blocking call, but we *do* want this to block when quitting the game.
+    if(bancho->is_online()) {
+        Packet packet;
+        proto::write<u16>(&packet, LOGOUT);
+        proto::write<u8>(&packet, 0);
+        proto::write<u32>(&packet, 4);
+        proto::write<u32>(&packet, 0);
+
+        NetworkHandler::RequestOptions options;
+        options.timeout = 5;
+        options.connectTimeout = 5;
+        options.userAgent = "osu!";
+        options.postData = std::string(reinterpret_cast<char *>(packet.memory), packet.pos);
+
+        auto version_header = UString::format("x-mcosu-ver: %s", bancho->neosu_version.toUtf8());
+        options.headers["x-mcosu-ver"] = bancho->neosu_version.toUtf8();
+
+        {
+            std::scoped_lock<std::mutex> lock{BANCHO::Net::auth_mutex};
+            if(!BANCHO::Net::auth_header.empty()) {
+                size_t colon_pos = BANCHO::Net::auth_header.find(':');
+                if(colon_pos != std::string::npos) {
+                    std::string token = BANCHO::Net::auth_header.substr(colon_pos + 1);
+                    SString::trim(&token);
+                    options.headers["osu-token"] = token;
+                }
+            }
+        }
+
+        auto scheme = cv::use_https.getBool() ? "https://" : "http://";
+        auto query_url = UString::format("%sc.%s/", scheme, bancho->endpoint.c_str());
+
+        // use sync request for logout to ensure it completes
+        NetworkHandler::Response response = networkHandler->performSyncRequest(query_url, options);
+
+        free(packet.memory);
+    }
+
+    BANCHO::Net::try_logging_in = false;
+    {
+        std::scoped_lock<std::mutex> lock2{BANCHO::Net::auth_mutex};
+        BANCHO::Net::auth_header = "";
+    }
+    free(BANCHO::Net::outgoing.memory);
+    BANCHO::Net::outgoing = Packet();
+
+    bancho->user_id = 0;
+    osu->userButton->setID(0);
+
+    bancho->endpoint = "";
+    bancho->spectating = false;
+    bancho->spectated_player_id = 0;
+    bancho->spectators.clear();
+    bancho->fellow_spectators.clear();
+    bancho->server_icon_url = "";
+    if(bancho->server_icon != nullptr) {
+        resourceManager->destroyResource(bancho->server_icon);
+        bancho->server_icon = nullptr;
+    }
+
+    bancho->score_submission_policy = ServerPolicy::NO_PREFERENCE;
+    osu->optionsMenu->update_login_button();
+    osu->optionsMenu->scheduleLayoutUpdate();
+
+    for(auto &pair : BANCHO::User::online_users) {
+        delete pair.second;
+    }
+    BANCHO::User::online_users.clear();
+    BANCHO::User::friends.clear();
+
+    osu->chat->onDisconnect();
+
+    // XXX: We should toggle between "offline" sorting options and "online" ones
+    //      Online ones would be "Local scores", "Global", "Country", "Selected mods" etc
+    //      While offline ones would be "By score", "By pp", etc
+    osu->songBrowser2->onSortScoresChange(UString("Sort by pp"), 0);
+
+    Downloader::abort_downloads();
+}
+
+void Bancho::reconnect() {
+    this->disconnect();
+
+    // Disable autologin, in case there's an error while logging in
+    // Will be reenabled after the login succeeds
+    cv::mp_autologin.setValue(false);
+
+    // XXX: Put this in cv::mp_password callback?
+    if(!cv::mp_password.getString().empty()) {
+        const char *password = cv::mp_password.getString().c_str();
+        const auto hash{Bancho::md5((u8 *)password, strlen(password))};
+        cv::mp_password_md5.setValue(hash.hash.data());
+        cv::mp_password.setValue("");
+    }
+
+    this->endpoint = cv::mp_server.getString();
+    this->username = cv::name.getString().c_str();
+    this->pw_md5 = {cv::mp_password_md5.getString().c_str()};
+
+    // Admins told me they don't want any clients to connect
+    constexpr auto server_blacklist = std::array{
+        "ppy.sh",  // haven't asked, but the answer is obvious
+        "gatari.pw",
+    };
+    for(const char *forbidden_server : server_blacklist) {
+        if(!strcmp(forbidden_server, this->endpoint.c_str())) {
+            osu->notificationOverlay->addToast("This server does not allow neosu clients.", ERROR_TOAST);
+            return;
+        }
+    }
+
+    // Admins told me they don't want score submission enabled
+    constexpr auto submit_blacklist = std::array{
+        "akatsuki.gg",
+        "ripple.moe",
+    };
+    for(const char *lame_server : submit_blacklist) {
+        if(!strcmp(lame_server, this->endpoint.c_str())) {
+            this->score_submission_policy = ServerPolicy::NO;
+            break;
+        }
+    }
+
+    osu->getOptionsMenu()->setLoginLoadingState(true);
+    BANCHO::Net::try_logging_in = true;
+}

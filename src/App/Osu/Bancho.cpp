@@ -82,7 +82,7 @@ void Bancho::handle_packet(Packet *packet) {
             std::string replays_dir = fmt::format(MCENGINE_DATA_DIR "replays/{}", this->endpoint);
             env->createDirectory(replays_dir);
 
-            osu->onUserCardChange(this->username);
+            osu->onUserCardChange(this->username.c_str());
 
             // XXX: We should toggle between "offline" sorting options and "online" ones
             //      Online ones would be "Local scores", "Global", "Country", "Selected mods" etc
@@ -93,10 +93,11 @@ void Bancho::handle_packet(Packet *packet) {
             osu->optionsMenu->scheduleLayoutUpdate();
         } else {
             cv::mp_autologin.setValue(false);
+            cv::mp_oauth_token.setValue("");
 
             debugLog("Failed to log in, server returned code {:d}.\n", this->user_id);
             UString errmsg =
-                UString::format("Failed to log in: %s (code %d)\n", BANCHO::Net::cho_token.toUtf8(), this->user_id);
+                UString::fmt("Failed to log in: {} (code {})\n", BANCHO::Net::cho_token.toUtf8(), this->user_id);
             if(new_user_id == -2) {
                 errmsg = "Client version is too old to connect to this server.";
             } else if(new_user_id == -3 || new_user_id == -4) {
@@ -111,7 +112,7 @@ void Bancho::handle_packet(Packet *packet) {
                 if(BANCHO::Net::cho_token == UString("user-already-logged-in")) {
                     errmsg = "Already logged in on another client.";
                 } else if(BANCHO::Net::cho_token == UString("unknown-username")) {
-                    errmsg = UString::format("No account by the username '%s' exists.", this->username.toUtf8());
+                    errmsg = UString::fmt("No account by the username '{}' exists.", this->username);
                 } else if(BANCHO::Net::cho_token == UString("incorrect-credentials")) {
                     errmsg = "This username is not registered.";
                 } else if(BANCHO::Net::cho_token == UString("incorrect-password")) {
@@ -187,7 +188,7 @@ void Bancho::handle_packet(Packet *packet) {
         proto::read<u8>(packet);
         if(logged_out_id == this->user_id) {
             debugLog("Logged out.\n");
-            BANCHO::Net::disconnect();
+            bancho->disconnect();
         } else {
             BANCHO::User::logout_user(logged_out_id);
         }
@@ -388,7 +389,7 @@ void Bancho::handle_packet(Packet *packet) {
     } else if(packet->id == USER_PRESENCE) {
         i32 raw_id = proto::read<i32>(packet);
         i32 presence_user_id = abs(raw_id);  // IRC clients are sent with negative IDs, hence the abs()
-        UString presence_username = proto::read_string(packet);
+        auto presence_username = proto::read_string(packet);
 
         UserInfo *user = BANCHO::User::get_user_info(presence_user_id);
         user->irc_user = raw_id < 0;
@@ -400,6 +401,12 @@ void Bancho::handle_packet(Packet *packet) {
         user->longitude = proto::read<f32>(packet);
         user->latitude = proto::read<f32>(packet);
         user->global_rank = proto::read<i32>(packet);
+
+        // Server can decide what username we use
+        if(presence_user_id == this->user_id) { 
+            this->username = presence_username.toUtf8();
+            osu->onUserCardChange(presence_username);
+        }
 
         osu->chat->updateUserList();
     } else if(packet->id == USER_PRESENCE_SINGLE) {
@@ -417,7 +424,7 @@ void Bancho::handle_packet(Packet *packet) {
         // Some servers send "restart" packets when password is incorrect
         // So, don't retry unless actually logged in
         if(this->is_online()) {
-            BANCHO::Net::reconnect();
+            bancho->reconnect();
         }
     } else if(packet->id == MATCH_INVITE) {
         UString sender = proto::read_string(packet);
@@ -462,11 +469,11 @@ void Bancho::handle_packet(Packet *packet) {
     } else if(packet->id == VERSION_UPDATE) {
         // (nothing to do)
     } else if(packet->id == VERSION_UPDATE_FORCED) {
-        BANCHO::Net::disconnect();
+        bancho->disconnect();
         osu->notificationOverlay->addToast("This server requires a newer client version.", ERROR_TOAST);
     } else if(packet->id == ACCOUNT_RESTRICTED) {
         osu->notificationOverlay->addToast("Account restricted.", ERROR_TOAST);
-        BANCHO::Net::disconnect();
+        bancho->disconnect();
     } else if(packet->id == MATCH_ABORT) {
         osu->room->on_match_aborted();
     } else {
@@ -477,39 +484,41 @@ void Bancho::handle_packet(Packet *packet) {
 Packet Bancho::build_login_packet() {
     // Request format:
     // username\npasswd_md5\nosu_version|utc_offset|display_city|client_hashes|pm_private\n
-    Packet packet;
+    std::string req;
 
-    proto::write_bytes(&packet, (u8 *)this->username.toUtf8(), this->username.lengthUtf8());
-    proto::write<u8>(&packet, '\n');
-
-    proto::write_bytes(&packet, (u8 *)this->pw_md5.hash.data(), 32);
-    proto::write<u8>(&packet, '\n');
+    if(cv::mp_oauth_token.getString().empty()) {
+        req.append(this->username);
+        req.append("\n");
+        req.append(this->pw_md5.hash.data(), 32);
+        req.append("\n");
+    } else {
+        req.append("$oauth");
+        req.append("\n");
+        req.append(cv::mp_oauth_token.getString());
+        req.append("\n");
+    }
 
     // OSU_VERSION is something like "b20200201.2"
-    // This check is so you avoid forgetting the 'b' when changing versions.
+    // This assert is so you avoid forgetting the 'b' when changing versions.
     assert(OSU_VERSION[0] == 'b');
-
-    proto::write_bytes(&packet, (u8 *)OSU_VERSION, sizeof(OSU_VERSION) - 1);
-    proto::write<u8>(&packet, '|');
+    req.append(OSU_VERSION "|");
 
     // UTC offset
     time_t now = time(nullptr);
     auto gmt = gmtime(&now);
     auto local_time = localtime(&now);
-    int utc_offset = difftime(mktime(local_time), mktime(gmt)) / 3600;
+    i32 utc_offset = difftime(mktime(local_time), mktime(gmt)) / 3600;
     if(utc_offset < 0) {
-        proto::write<u8>(&packet, '-');
+        req.append("-");
         utc_offset *= -1;
     }
-    proto::write<u8>(&packet, '0' + utc_offset);
-    proto::write<u8>(&packet, '|');
+    req.push_back('0' + utc_offset);
+    req.append("|");
 
     // Don't dox the user's city
-    proto::write<u8>(&packet, '0');
-    proto::write<u8>(&packet, '|');
+    req.append("0|");
 
     const char *osu_path = Environment::getPathToSelf().c_str();
-
     MD5Hash osu_path_md5 = md5((u8 *)osu_path, strlen(osu_path));
 
     // XXX: Should get MAC addresses from network adapters
@@ -525,15 +534,23 @@ Packet Bancho::build_login_packet() {
 
     this->client_hashes = UString::fmt("{:s}:{:s}:{:s}:{:s}:{:s}:", osu_path_md5.hash.data(), adapters,
                                        adapters_md5.hash.data(), install_md5.hash.data(), disk_md5.hash.data());
-    proto::write_bytes(&packet, (u8 *)this->client_hashes.toUtf8(), this->client_hashes.lengthUtf8());
+    req.append(this->client_hashes.toUtf8());
+    req.append("|");
 
     // Allow PMs from strangers
-    proto::write<u8>(&packet, '|');
-    proto::write<u8>(&packet, '0');
+    req.append("0\n");
 
-    proto::write<u8>(&packet, '\n');
-
+    Packet packet;
+    proto::write_bytes(&packet, (u8 *)req.c_str(), req.length());
     return packet;
+}
+
+std::string Bancho::get_username() const {
+    if(this->is_online()) {
+        return this->username;
+    } else {
+        return cv::name.getString();
+    }
 }
 
 bool Bancho::can_submit_scores() const {
