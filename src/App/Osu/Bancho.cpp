@@ -68,6 +68,7 @@ void Bancho::handle_packet(Packet *packet) {
         i32 new_user_id = proto::read<i32>(packet);
         this->user_id = new_user_id;
         osu->optionsMenu->update_login_button();
+        osu->optionsMenu->setLoginLoadingState(false);
 
         Bancho::change_login_state(new_user_id > 0);
 

@@ -109,7 +109,7 @@ CONVAR(showconsolebox, "showconsolebox");
 CONVAR(shutdown, "shutdown", FCVAR_BANCHO_COMPATIBLE, []() -> void { engine ? engine->shutdown() : (void)0; });
 CONVAR(spectate, "spectate", FCVAR_HIDDEN, CFUNC(spectate_by_username));
 CONVAR(update, "update", FCVAR_PRIVATE, CFUNC(_update));
-CONVAR(complete_oauth, "complete_oauth", FCVAR_PRIVATE, CFUNC(BANCHO::Net::complete_oauth));
+CONVAR(complete_oauth, "complete_oauth", FCVAR_PRIVATE | FCVAR_NOSAVE, CFUNC(BANCHO::Net::complete_oauth));
 
 }  // namespace cmd
 
@@ -1153,6 +1153,7 @@ CONVAR(spec_share_map, "spec_share_map", true, FCVAR_BANCHO_COMPATIBLE,
 CONVAR(spinner_fade_out_time_multiplier, "spinner_fade_out_time_multiplier", 0.7f, FCVAR_LOCKED);
 CONVAR(spinner_use_ar_fadein, "spinner_use_ar_fadein", false, FCVAR_BANCHO_COMPATIBLE,
        "whether spinners should fade in with AR (same as circles), or with hardcoded 400 ms fadein time (osu!default)");
+CONVAR(ssl_verifypeer, "ssl_verifypeer", true, FCVAR_BANCHO_COMPATIBLE | FCVAR_PRIVATE);
 CONVAR(stars_ignore_clamped_sliders, "stars_ignore_clamped_sliders", true, FCVAR_BANCHO_COMPATIBLE,
        "skips processing sliders limited by osu_slider_curve_max_length");
 CONVAR(stars_slider_curve_points_separation, "stars_slider_curve_points_separation", 20.0f, FCVAR_BANCHO_COMPATIBLE,

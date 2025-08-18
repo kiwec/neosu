@@ -454,6 +454,7 @@ bool Environment::unsetEnvVariable(const std::string &varToUnset) noexcept {
     return false;
 }
 
+// NOTE: This isn't the same as 'real' URL encoding, '/' is not encoded!
 std::string Environment::encodeStringToURL(const std::string &stringToConvert) noexcept {
     std::ostringstream escaped;
     escaped.fill('0');

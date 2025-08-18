@@ -25,9 +25,9 @@ void handle_neosu_url(const char *url) {
         osu->getOptionsMenu()->setLoginLoadingState(true);
 
         auto endpoint = params[3];
-        auto code = params[4];
-        auto proof = crypto::conv::encode64(bancho->oauth_verifier, 32);
-        auto url = UString::fmt("https://{}/connect/{}/{}", endpoint, code, proof);
+        auto code = env->encodeStringToURL(params[4]);
+        auto proof = env->encodeStringToURL(crypto::conv::encode64(bancho->oauth_verifier, 32));
+        auto url = UString::fmt("https://{}/connect/finish?code={}&proof={}", endpoint, code, proof);
 
         NetworkHandler::RequestOptions options;
         options.timeout = 30;

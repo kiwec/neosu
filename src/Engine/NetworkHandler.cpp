@@ -211,7 +211,8 @@ void NetworkHandler::setupCurlHandle(CURL* handle, NetworkRequest* request) {
     curl_easy_setopt(handle, CURLOPT_WRITEDATA, request);
     curl_easy_setopt(handle, CURLOPT_HEADERFUNCTION, headerCallback);
     curl_easy_setopt(handle, CURLOPT_HEADERDATA, request);
-    curl_easy_setopt(handle, CURLOPT_SSL_VERIFYPEER, true);
+    curl_easy_setopt(handle, CURLOPT_SSL_VERIFYHOST, cv::ssl_verifypeer.getBool() ? 2L : 0L);
+    curl_easy_setopt(handle, CURLOPT_SSL_VERIFYPEER, cv::ssl_verifypeer.getBool() ? 1L : 0L);
     curl_easy_setopt(handle, CURLOPT_NOSIGNAL, 1L);
     curl_easy_setopt(handle, CURLOPT_FAILONERROR, 1L);  // fail on HTTP responses >= 400
 

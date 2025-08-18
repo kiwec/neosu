@@ -292,7 +292,8 @@ UString cho_token = "";
 
 // Used as fallback for Linux or other setups where neosu:// protocol handler doesn't work
 void complete_oauth(const UString &code) {
-    auto url = fmt::format("neosu://login/{}/{}", bancho->endpoint, code.toUtf8());
+    auto url = fmt::format("neosu://login/{}/{}", cv::mp_server.getString(), code.toUtf8());
+    debugLog("Manually logging in: {}\n", url);
     handle_neosu_url(url.c_str());
 }
 
@@ -524,6 +525,7 @@ void Bancho::disconnect() {
 
     bancho->score_submission_policy = ServerPolicy::NO_PREFERENCE;
     osu->optionsMenu->update_login_button();
+    osu->optionsMenu->setLoginLoadingState(false);
     osu->optionsMenu->scheduleLayoutUpdate();
 
     for(auto &pair : BANCHO::User::online_users) {

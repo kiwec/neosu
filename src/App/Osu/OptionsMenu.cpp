@@ -1415,8 +1415,8 @@ void OptionsMenu::update_login_button() {
     } else {
         bool oauth = this->should_use_oauth_login();
         this->logInButton->setText(oauth ? "Log in with osu!" : "Log in");
-        this->logInButton->setColor(oauth ? 0xffff66ff : 0xff00ff00);
-        this->logInButton->is_loading = false;
+        this->logInButton->setColor(oauth ? 0xffff74ff : 0xff00ff00);  // XXX: ugly, due to 85% brightness
+        // intentionally not updating loading state here
     }
 }
 
@@ -1538,9 +1538,17 @@ void OptionsMenu::mouse_update(bool *propagate_clicks) {
     // apply textbox changes on enter key
     if(this->osuFolderTextbox->hitEnter()) cv::osu_folder.setValue(this->osuFolderTextbox->getText());
 
+    // HACKHACK (should just use callback)
+    // XXX: disable serverTextbox while logging in
+    // XXX: jank logic split between update_login_button/setLogingLoadingState
+    if(cv::mp_server.getString() != this->serverTextbox->getText().toUtf8()) {
+        cv::mp_server.setValue(this->serverTextbox->getText());
+        this->update_login_button();
+        this->scheduleLayoutUpdate();  // toggle user/pass fields based on oauthness
+    }
+
     cv::name.setValue(this->nameTextbox->getText());
     cv::mp_password.setValue(this->passwordTextbox->getText());
-    cv::mp_server.setValue(this->serverTextbox->getText());
     if(this->nameTextbox->hitEnter()) {
         this->nameTextbox->stealFocus();
         this->passwordTextbox->focus();
@@ -1735,6 +1743,7 @@ void OptionsMenu::updateLayout() {
     this->updating_layout = true;
 
     bool oauth = this->should_use_oauth_login();
+    this->update_login_button();
 
     // set all elements to the current convar values, and update the reset button states
     for(auto &element : this->elemContainers) {
@@ -1854,9 +1863,13 @@ void OptionsMenu::updateLayout() {
         if(this->elemContainers[i]->render_condition == RenderCondition::WASAPI_ENABLED &&
            !(soundEngine->getOutputDriverType() == SoundEngine::OutputDriver::BASS_WASAPI))
             continue;
+
+        // XXX: we should hide the checkbox for hardcoded servers that ban it (before connecting)
+        //      ...and disable serverTextbox editing while connected
         if(this->elemContainers[i]->render_condition == RenderCondition::SCORE_SUBMISSION_POLICY &&
-           bancho->score_submission_policy != ServerPolicy::NO_PREFERENCE)
+           (bancho->score_submission_policy != ServerPolicy::NO_PREFERENCE || oauth))
             continue;
+
         if(this->elemContainers[i]->render_condition == RenderCondition::PASSWORD_AUTH && oauth) continue;
 
         // searching logic happens here:
@@ -2611,12 +2624,11 @@ void OptionsMenu::onLogInClicked(bool left, bool right) {
         if(this->should_use_oauth_login() && cv::mp_oauth_token.getString().empty()) {
             bancho->endpoint = cv::mp_server.getString();
 
-            crypto::rng::get_bytes(&bancho->oauth_challenge[0], 32);
-            crypto::hash::sha256(&bancho->oauth_challenge[0], 32, &bancho->oauth_verifier[0]);
+            crypto::rng::get_bytes(&bancho->oauth_verifier[0], 32);
+            crypto::hash::sha256(&bancho->oauth_verifier[0], 32, &bancho->oauth_challenge[0]);
 
-            auto challenge_b64 = crypto::conv::encode64(&bancho->oauth_challenge[0], 32);
-            auto url = fmt::format("https://{}/connect/{}", bancho->endpoint, challenge_b64);
-
+            auto challenge_b64 = env->encodeStringToURL(crypto::conv::encode64(&bancho->oauth_challenge[0], 32));
+            auto url = fmt::format("https://{}/connect/start?challenge={}", bancho->endpoint, challenge_b64);
             env->openURLInDefaultBrowser(url);
         } else {
             bancho->reconnect();
