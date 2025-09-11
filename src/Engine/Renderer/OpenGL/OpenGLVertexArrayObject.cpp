@@ -1,5 +1,6 @@
 // Copyright (c) 2017, PG, All rights reserved.
 #include "OpenGLVertexArrayObject.h"
+#include <SDL3/SDL_video.h>
 
 #ifdef MCENGINE_FEATURE_OPENGL
 
@@ -91,6 +92,14 @@ void OpenGLVertexArrayObject::init() {
         glBindVertexArray(this->iVertexArray);
     }
 
+    // Need to manually load extensions on older OpenGL platforms
+    if (!glGenBuffers || !glBindBuffer || !glBufferData)
+    {
+        glGenBuffers = (PFNGLGENBUFFERSPROC)SDL_GL_GetProcAddress("glGenBuffers");
+        glBindBuffer = (PFNGLBINDBUFFERPROC)SDL_GL_GetProcAddress("glBindBuffer");
+        glBufferData = (PFNGLBUFFERDATAPROC)SDL_GL_GetProcAddress("glBufferData");
+    }
+
     // build and fill vertex buffer
     {
         glGenBuffers(1, &this->iVertexBuffer);
@@ -180,6 +189,10 @@ void OpenGLVertexArrayObject::initAsync() { this->bAsyncReady = true; }
 
 void OpenGLVertexArrayObject::destroy() {
     VertexArrayObject::destroy();
+
+    // Need to manually load extensions on older OpenGL platforms
+    if (!glDeleteBuffers)
+        glDeleteBuffers = (PFNGLDELETEBUFFERSPROC)SDL_GL_GetProcAddress("glDeleteBuffers");
 
     if(this->iVertexBuffer > 0) glDeleteBuffers(1, &this->iVertexBuffer);
 
