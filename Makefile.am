@@ -231,6 +231,8 @@ $(DEPS_CACHE)/discordsdk-$(DISCORDSDK_VERSION).source: $(DEPS_CACHE)/discordsdk-
 	$(MKDIR_P) lib/windows/i686 && $(UNZIP) -qjo discordsdk.zip lib/x86/discord_game_sdk.dll.lib -d lib/windows/i686/ && \
 	$(MKDIR_P) lib/windows/x86_64 && $(UNZIP) -qjo discordsdk.zip lib/x86_64/discord_game_sdk.dll -d lib/windows/x86_64/ && \
 	$(MKDIR_P) lib/windows/x86_64 && $(UNZIP) -qjo discordsdk.zip lib/x86_64/discord_game_sdk.dll.lib -d lib/windows/x86_64/ && \
+	$(MKDIR_P) lib/linux/x86_64 && $(UNZIP) -qjo discordsdk.zip lib/x86_64/discord_game_sdk.so -d lib/linux/x86_64/ && \
+	mv lib/linux/x86_64/discord_game_sdk.so lib/linux/x86_64/libdiscord_game_sdk.so && \
 	touch $@
 
 $(DEPS_CACHE)/curl-$(CURL_VERSION)/certbundle/cacert.pem:
@@ -489,19 +491,13 @@ $(DEPS_PREFIX)/SoundTouch-$(SOUNDTOUCH_VERSION).built:
 	$(MKDIR_P) $(DEPS_PREFIX) && touch $@
 endif # USE_SOLOUD
 
-if WIN_PLATFORM
 DISCORDSDK_CFLAGS := -I$(DEPS_CACHE)/discordsdk-$(DISCORDSDK_VERSION)/include
 DISCORDSDK_LIBS := -L$(DEPS_CACHE)/discordsdk-$(DISCORDSDK_VERSION)/lib/$(SYSNAME)/$(host_cpu)
-DISCORDSDK_INSTALL_LIBS := $(DEPS_CACHE)/discordsdk-$(DISCORDSDK_VERSION)/lib/$(SYSNAME)/$(host_cpu)/discord_game_sdk$(DLLEXT)
+DISCORDSDK_INSTALL_LIBS := $(DEPS_CACHE)/discordsdk-$(DISCORDSDK_VERSION)/lib/$(SYSNAME)/$(host_cpu)/$(LIBPREFIX)discord_game_sdk$(DLLEXT)
 
 $(DEPS_PREFIX)/discordsdk-$(DISCORDSDK_VERSION).built: $(DEPS_CACHE)/discordsdk-$(DISCORDSDK_VERSION).source
 	$(MKDIR_P) $(DEPS_PREFIX)
 	touch $@
-else
-$(DEPS_PREFIX)/discordsdk-$(DISCORDSDK_VERSION).built:
-	$(MKDIR_P) $(DEPS_PREFIX)
-	touch $@
-endif
 
 if USE_BASS
 AUDIO_CFLAGS += -I$(DEPS_CACHE)/bass-$(BASS_VERSION)/bass/include -I$(DEPS_CACHE)/bass-$(BASS_VERSION)/bassfx/include -I$(DEPS_CACHE)/bass-$(BASS_VERSION)/bassmix/include \
@@ -945,8 +941,8 @@ install-libs:
 	find $(srcdir)/$(ASSETS_DIR)/fonts -type f -exec $(INSTALL) -Dm 644 '{''}' "$(DESTDIR)$(bindir)/fonts" ';'
 	find $(srcdir)/$(ASSETS_DIR)/materials -mindepth 1 -maxdepth 1 -type f -exec $(INSTALL) -Dm 644 '{''}' "$(DESTDIR)$(bindir)/materials" ';'
 	find $(srcdir)/$(ASSETS_DIR)/materials/default -mindepth 1 -maxdepth 1 -type f -exec $(INSTALL) -Dm 644 '{''}' "$(DESTDIR)$(bindir)/materials/default" ';'
-if WIN_PLATFORM
 	@cp -P $(DISCORDSDK_INSTALL_LIBS) "$(DESTDIR)$(bindir)/$(LIBDEST)"
+if WIN_PLATFORM
 if BUILD_MIMALLOC
 	@cp -P "$(DEPS_PREFIX)/bin/mimalloc"{,-redirect$(if $(filter x86_64,$(host_cpu)),,32)}".dll" "$(DESTDIR)$(bindir)/$(LIBDEST)"
 endif
