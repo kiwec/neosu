@@ -3,8 +3,6 @@
 
 static bool initialized = false;
 
-#ifdef MCENGINE_PLATFORM_WINDOWS
-
 #include "Bancho.h"
 #include "Beatmap.h"
 #include "ConVar.h"
@@ -32,7 +30,6 @@ struct IDiscordActivityEvents activities_events{};
 struct IDiscordRelationshipEvents relationships_events{};
 struct IDiscordUserEvents users_events{};
 
-#ifdef _WIN64
 void on_discord_log(void * /*cdata*/, enum EDiscordLogLevel level, const char *message) {
     //(void)cdata;
     if(level == DiscordLogLevel_Error) {
@@ -42,15 +39,11 @@ void on_discord_log(void * /*cdata*/, enum EDiscordLogLevel level, const char *m
     }
 }
 
-#endif
-
 dynutils::lib_obj *discord_handle{nullptr};
 
 }  // namespace
-#endif
 
 void init_discord_sdk() {
-#ifdef _WIN32
     discord_handle = dynutils::load_lib("discord_game_sdk");
     if(!discord_handle) {
         debugLog("Failed to load Discord SDK! (error {:s})\n", dynutils::get_error());
@@ -101,47 +94,32 @@ void init_discord_sdk() {
     // dapp.relationships = dapp.core->get_relationship_manager(dapp.core);
 
     initialized = true;
-#else
-    // not enabled on linux cuz the sdk is broken there
-#endif
 }
 
 void tick_discord_sdk() {
     if(!initialized) return;
-
-#ifdef _WIN32
     dapp.core->run_callbacks(dapp.core);
-#else
-    // not enabled on linux cuz the sdk is broken there
-#endif
 }
 
 void destroy_discord_sdk() {
     // not doing anything because it will fucking CRASH if you close discord first
-#ifdef _WIN32
     if(discord_handle) {
         dynutils::unload_lib(discord_handle);
     }
-#endif
 }
 
 void clear_discord_presence() {
     if(!initialized) return;
 
-#ifdef _WIN32
     // TODO @kiwec: test if this works
     struct DiscordActivity activity{};
     memset(&activity, 0, sizeof(activity));
     dapp.activities->update_activity(dapp.activities, &activity, nullptr, nullptr);
-#else
-    // not enabled on linux cuz the sdk is broken there
-#endif
 }
 
 void set_discord_presence([[maybe_unused]] struct DiscordActivity *activity) {
     if(!initialized) return;
 
-#ifdef _WIN32
     if(!cv::rich_presence.getBool()) return;
 
     // activity->type: int
@@ -188,9 +166,6 @@ void set_discord_presence([[maybe_unused]] struct DiscordActivity *activity) {
     }
 
     dapp.activities->update_activity(dapp.activities, activity, nullptr, nullptr);
-#else
-    // not enabled on linux cuz the sdk is broken there
-#endif
 }
 
 // void (DISCORD_API *send_request_reply)(struct IDiscordActivityManager* manager, DiscordUserId user_id, enum
