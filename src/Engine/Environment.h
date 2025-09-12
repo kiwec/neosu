@@ -33,6 +33,7 @@ extern Environment *env;
 class Environment {
    public:
     struct Interop {
+        void handle_osz(const char *path);
         void handle_cmdline_args(const std::vector<UString> &args);
         void handle_cmdline_args() { env ? handle_cmdline_args(env->getCommandLine()) : (void)0; }
         void register_file_associations();

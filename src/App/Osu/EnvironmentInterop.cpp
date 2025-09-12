@@ -9,8 +9,6 @@
 #include "Skin.h"
 #include "SongBrowser/SongBrowser.h"
 
-namespace {  // static namespace
-
 // drag-drop/file associations/registry stuff below
 void handle_osk(const char *osk_path) {
     Skin::unpack(osk_path);
@@ -22,7 +20,7 @@ void handle_osk(const char *osk_path) {
     osu->optionsMenu->updateSkinNameLabel();
 }
 
-void handle_osz(const char *osz_path) {
+void Environment::Interop::handle_osz(const char *osz_path) {
     File osz(osz_path);
     i32 set_id = Downloader::extract_beatmapset_id(osz.readFile(), osz.getFileSize());
     if(set_id < 0) {
@@ -61,7 +59,6 @@ void handle_osz(const char *osz_path) {
     // (we just loaded and selected another song, so previous no longer applies)
     SAFE_DELETE(osu->mainMenu->preloaded_beatmapset);
 }
-}  // namespace
 
 void Environment::Interop::handle_cmdline_args(const std::vector<UString> &args) {
     bool need_to_reload_database = false;

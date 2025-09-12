@@ -2,6 +2,7 @@
 #include "Database.h"
 
 #include "Bancho.h"
+#include "Downloader.h"
 #include "SString.h"
 #include "MD5Hash.h"
 #include "ByteBufferedFile.h"
@@ -28,6 +29,9 @@
 #include <algorithm>
 #include <cstring>
 #include <utility>
+#include <filesystem>
+
+namespace fs = std::filesystem;
 
 std::unique_ptr<Database> db = nullptr;
 
@@ -157,6 +161,14 @@ void Database::AsyncDBLoader::initAsync() {
 
     if(!this->bNeedRawLoad) {
         load_collections();
+    }
+
+    // If any .osz files are in "maps", extract and add them to the DB.
+    // Very helpful for users that don't have an osu!stable folder (and don't want to have one).
+    for(const auto &entry : fs::directory_iterator{MCENGINE_DATA_DIR "maps"}) {
+        if(!entry.is_regular_file() || entry.path().extension() != ".osz") continue;
+        env->getEnvInterop().handle_osz(entry.path().c_str());
+        fs::remove(entry); // delete when done
     }
 
     this->bAsyncReady = true;
