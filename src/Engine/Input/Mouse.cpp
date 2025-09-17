@@ -88,11 +88,8 @@ void Mouse::update() {
     this->vRawDelta = {0.f, 0.f};
 
     // <rel, abs> pair
-    const auto envCachedMotion{env->consumeMousePositionCache()};
-    vec2 newRel{envCachedMotion.first};
+    auto [newRel, newAbs] = env->consumeMousePositionCache();
     if(vec::length(newRel) <= 0.f) return;  // early return for no motion
-
-    vec2 newAbs{envCachedMotion.second};
 
     // vRawDelta doesn't include sensitivity or clipping, which is useful for fposu
     this->vRawDelta = newRel;

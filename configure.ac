@@ -124,6 +124,9 @@ AC_SUBST([BEAR])
 AC_CHECK_PROG([WINE], [wine], [wine]) # this feels stupid, but i wanna make a shortcut from outside a windows environment to add "-sound xyz" for non-default audio subsystems
 AC_SUBST([WINE])
 
+AC_CHECK_PROG([MOLD], [mold], [mold])
+AC_CHECK_PROG([LLD], [lld], [lld])
+
 AC_ARG_ENABLE([optimize],
     AS_HELP_STRING([--enable-optimize], [Optimize for speed (default: yes)]))
 AC_ARG_ENABLE([native],
@@ -138,6 +141,8 @@ AC_ARG_ENABLE([tsan],
     AS_HELP_STRING([--enable-tsan], [Enable TSan/UBSan (turns debug on as well) (default: no)]))
 AC_ARG_ENABLE([clang],
     AS_HELP_STRING([--enable-clang], [Use clang/clang++ instead of gcc/g++ (default: no)]))
+AC_ARG_ENABLE([mold],
+    AS_HELP_STRING([--enable-mold], [Use the mold linker instead of lld/bfd (faster link time, non-Windows only) (default: off if LTO is enabled, on (if available) otherwise)]))
 AC_ARG_ENABLE([omp],
     AS_HELP_STRING([--enable-omp], [Use and link with OpenMP for faster parallel processing (default: no)]))
 AC_ARG_ENABLE([ime],
@@ -302,9 +307,9 @@ AS_IF([test "x$enable_asan" = "xyes" || test "x$enable_tsan" = "xyes"], [
 AS_IF([test "x$enable_clang" = "xyes"], [
     CC=clang
     CXX=clang++
-    CXXFLAGS="$CXXFLAGS -Qunused-arguments -fuse-ld=lld -Wno-c2x-extensions"
-    CFLAGS="$CFLAGS -Qunused-arguments -fuse-ld=lld"
-    LDFLAGS="$LDFLAGS -fuse-ld=lld"
+    CXXFLAGS="$CXXFLAGS -Qunused-arguments -Wno-c2x-extensions"
+    CFLAGS="$CFLAGS -Qunused-arguments"
+    LDFLAGS="$LDFLAGS"
     CLANG=yes
     _cid="Clang"
     AC_SUBST([CLANG])
@@ -446,6 +451,30 @@ export CXX="$PWD/build/cxx"
 
 AC_SUBST([CC])
 AC_SUBST([CXX])
+
+# linker setup
+using_mold=no
+AS_IF([test -n "$MOLD" && test "$host_os" = "linux-gnu" &&
+      { test "x$enable_mold" = "xyes" || { test "x$enable_mold" != "xno" && test "x$enable_lto" != "xyes" ; } ; }], [
+    AX_CHECK_COMPILE_FLAG([-fuse-ld=mold], [
+        AX_CHECK_LINK_FLAG([-fuse-ld=mold], [
+            CXXFLAGS="$CXXFLAGS -fuse-ld=mold"
+            CFLAGS="$CFLAGS -fuse-ld=mold"
+            LDFLAGS="$LDFLAGS -fuse-ld=mold"
+            using_mold=yes
+        ])
+    ])
+])
+
+AS_IF([test -n "$LLD" && test "x$using_mold" = "xno" && test "x$enable_clang" = "xyes"], [
+    AX_CHECK_COMPILE_FLAG([-fuse-ld=lld], [
+        AX_CHECK_LINK_FLAG([-fuse-ld=lld], [
+            CXXFLAGS="$CXXFLAGS -fuse-ld=lld"
+            CFLAGS="$CFLAGS -fuse-ld=lld"
+            LDFLAGS="$LDFLAGS -fuse-ld=lld"
+        ])
+    ])
+])
 
 # putting this part here so that $CC is defined to the final value
 AS_IF([test "$host_os" = "mingw32"], [
@@ -973,6 +1002,7 @@ neosu build configuration:
     Preprocessor flags: ${CPPFLAGS}
     ccache:             ${CCACHE-no}
     clang:              ${CLANG-no}
+    mold:               ${using_mold-no}
     C++ compiler:       ${CXX}
     C++ flags:          ${CXXFLAGS}
     C compiler:         ${CC}
