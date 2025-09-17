@@ -20,7 +20,6 @@ std::vector<i32> friends;
 std::vector<UserInfo*> presence_requests;
 std::vector<UserInfo*> stats_requests;
 
-
 void enqueue_presence_request(UserInfo* info) {
     if(info->has_presence) return;
     if(std::find(presence_requests.begin(), presence_requests.end(), info) != presence_requests.end()) return;
@@ -92,7 +91,6 @@ void logout_user(i32 user_id) {
                 osu->notificationOverlay->addToast(text, STATUS_TOAST, {}, ToastElement::TYPE::CHAT);
             }
 
-            delete it->second;
             online_users.erase(it);
 
             osu->chat->updateUserList();
@@ -103,7 +101,7 @@ void logout_user(i32 user_id) {
 }
 
 void logout_all_users() {
-    for(auto &pair : all_users) {
+    for(auto& pair : all_users) {
         delete pair.second;
     }
     all_users.clear();
