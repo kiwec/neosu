@@ -37,7 +37,7 @@ struct UserInfo {
     // Received when spectating
     LiveReplayBundle::Action spec_action = LiveReplayBundle::Action::NONE;
 
-    bool is_friend();
+    [[nodiscard]] bool is_friend() const;
 };
 
 namespace BANCHO::User {

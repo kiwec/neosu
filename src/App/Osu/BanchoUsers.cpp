@@ -22,20 +22,20 @@ std::vector<UserInfo*> stats_requests;
 
 void enqueue_presence_request(UserInfo* info) {
     if(info->has_presence) return;
-    if(std::find(presence_requests.begin(), presence_requests.end(), info) != presence_requests.end()) return;
+    if(!std::ranges::contains(presence_requests, info)) return;
     presence_requests.push_back(info);
 }
 
 void enqueue_stats_request(UserInfo* info) {
     if(info->irc_user) return;
     if(info->stats_tms + 5000 > Timing::getTicksMS()) return;
-    if(std::find(stats_requests.begin(), stats_requests.end(), info) != stats_requests.end()) return;
+    if(!std::ranges::contains(stats_requests, info)) return;
     stats_requests.push_back(info);
 }
 
 void request_presence_batch() {
     std::vector<i32> actual_requests;
-    for(auto req : presence_requests) {
+    for(const auto* req : presence_requests) {
         if(req->has_presence) continue;
         actual_requests.push_back(req->user_id);
     }
@@ -46,7 +46,7 @@ void request_presence_batch() {
     Packet packet;
     packet.id = USER_PRESENCE_REQUEST;
     BANCHO::Proto::write<u16>(&packet, actual_requests.size());
-    for(auto user_id : actual_requests) {
+    for(const auto& user_id : actual_requests) {
         BANCHO::Proto::write<i32>(&packet, user_id);
     }
     BANCHO::Net::send_packet(packet);
@@ -54,7 +54,7 @@ void request_presence_batch() {
 
 void request_stats_batch() {
     std::vector<i32> actual_requests;
-    for(auto req : stats_requests) {
+    for(const auto* req : stats_requests) {
         if(req->irc_user) continue;
         if(req->stats_tms + 5000 > Timing::getTicksMS()) continue;
         actual_requests.push_back(req->user_id);
@@ -66,7 +66,7 @@ void request_stats_batch() {
     Packet packet;
     packet.id = USER_STATS_REQUEST;
     BANCHO::Proto::write<u16>(&packet, actual_requests.size());
-    for(auto user_id : actual_requests) {
+    for(const auto& user_id : actual_requests) {
         BANCHO::Proto::write<i32>(&packet, user_id);
     }
     BANCHO::Net::send_packet(packet);
@@ -79,24 +79,21 @@ void login_user(i32 user_id) {
 }
 
 void logout_user(i32 user_id) {
-    for(auto it = online_users.begin(); it != online_users.end(); it++) {
-        if(it->first == user_id) {
-            debugLog("{:s} has disconnected.\n", it->second->name.toUtf8());
-            if(it->first == BanchoState::spectated_player_id) {
-                stop_spectating();
-            }
+    if(online_users.contains(user_id)) {
+        const auto* user_info = online_users[user_id];
 
-            if(it->second->is_friend() && cv::notify_friend_status_change.getBool()) {
-                auto text = UString::format("%s is now offline", it->second->name.toUtf8());
-                osu->notificationOverlay->addToast(text, STATUS_TOAST, {}, ToastElement::TYPE::CHAT);
-            }
-
-            online_users.erase(it);
-
-            osu->chat->updateUserList();
-
-            return;
+        debugLog("{:s} has disconnected.\n", user_info->name);
+        if(user_id == BanchoState::spectated_player_id) {
+            stop_spectating();
         }
+
+        if(user_info->is_friend() && cv::notify_friend_status_change.getBool()) {
+            auto text = UString::fmt("{} is now offline", user_info->name);
+            osu->notificationOverlay->addToast(text, STATUS_TOAST, {}, ToastElement::TYPE::CHAT);
+        }
+
+        online_users.erase(user_id);
+        osu->chat->updateUserList();
     }
 }
 
@@ -112,9 +109,9 @@ void logout_all_users() {
 }
 
 UserInfo* find_user(const UString& username) {
-    for(auto pair : all_users) {
-        if(pair.second->name == username) {
-            return pair.second;
+    for(const auto& [_, info] : all_users) {
+        if(info->name == username) {
+            return info;
         }
     }
 
@@ -122,19 +119,20 @@ UserInfo* find_user(const UString& username) {
 }
 
 UserInfo* find_user_starting_with(UString prefix, const UString& last_match) {
+    if(prefix.isEmpty()) return nullptr;
+
+    prefix.lowerCase();
+    // cycle through matches
     bool matched = last_match.length() == 0;
-    for(auto pair : all_users) {
-        auto user = pair.second;
+    for(const auto& [_, user] : online_users) {
         if(!matched) {
             if(user->name == last_match) {
                 matched = true;
             }
             continue;
         }
-        UString lowerName{user->name};
-        lowerName.lowerCase();
-        prefix.lowerCase();
-        if(lowerName.startsWith(prefix)) {
+        // if it starts with prefix
+        if(user->name.findIgnoreCase(prefix) == 0) {
             return user;
         }
     }
@@ -147,20 +145,20 @@ UserInfo* find_user_starting_with(UString prefix, const UString& last_match) {
 }
 
 UserInfo* try_get_user_info(i32 user_id, bool wants_presence) {
-    auto it = all_users.find(user_id);
-    if(it != all_users.end()) {
+    if(all_users.contains(user_id)) {
+        auto* user_info = all_users[user_id];
         if(wants_presence) {
-            enqueue_presence_request(it->second);
+            enqueue_presence_request(user_info);
         }
 
-        return it->second;
+        return user_info;
     }
 
     return nullptr;
 }
 
 UserInfo* get_user_info(i32 user_id, bool wants_presence) {
-    auto info = try_get_user_info(user_id, wants_presence);
+    auto* info = try_get_user_info(user_id, wants_presence);
     if(!info) {
         info = new UserInfo();
         info->user_id = user_id;
@@ -180,7 +178,4 @@ UserInfo* get_user_info(i32 user_id, bool wants_presence) {
 
 using namespace BANCHO::User;
 
-bool UserInfo::is_friend() {
-    auto it = std::ranges::find(friends, this->user_id);
-    return it != friends.end();
-}
+bool UserInfo::is_friend() const { return std::ranges::contains(friends, this->user_id); }
