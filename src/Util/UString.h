@@ -269,8 +269,8 @@ class UString {
     int fromUtf8(const char *utf8, int length = -1);
     void updateUtf8();
 
-    std::wstring sUnicode;
-    std::string sUtf8;
+    std::wstring sUnicode{L""};
+    std::string sUtf8{""};
 
     int iLengthUnicode = ASCII_FLAG;  // start with ascii flag set
     int iLengthUtf8 = 0;

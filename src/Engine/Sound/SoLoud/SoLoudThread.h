@@ -17,6 +17,7 @@
 #include <future>
 #include <functional>
 #include <chrono>
+#include <cassert>
 
 class SoLoudThreadWrapper {
     NOCOPY_NOMOVE(SoLoudThreadWrapper)
@@ -60,13 +61,30 @@ class SoLoudThreadWrapper {
     };
 
    public:
-    SoLoudThreadWrapper() noexcept { this->start_worker_thread(); }
+    SoLoudThreadWrapper(bool threaded = true) noexcept : threaded(threaded) {
+        if(this->threaded) {
+            this->start_worker_thread();
+        } else {
+            this->soloud = std::make_unique<SoLoud::Soloud>();
+            this->initialized = true;
+        }
+    }
 
-    ~SoLoudThreadWrapper() noexcept { this->shutdown_worker_thread(); }
+    ~SoLoudThreadWrapper() noexcept {
+        if(this->threaded) {
+            this->shutdown_worker_thread();
+        } else {
+            if(this->soloud) {
+                this->soloud->deinit();
+                this->soloud.reset();
+            }
+        }
+    }
 
     // synchronous access: executes on audio thread but waits for completion
     template <typename F>
     auto sync(F&& func) -> std::invoke_result_t<F> {
+        if(!this->threaded) return func();
         using ReturnType = std::invoke_result_t<F>;
 
         if constexpr(std::is_void_v<ReturnType>) {
@@ -122,6 +140,7 @@ class SoLoudThreadWrapper {
     // asynchronous access: returns future for result
     template <typename F>
     auto async(F&& func) -> std::future<std::invoke_result_t<F>> {
+        assert(this->threaded && "can't run SoLoud calls async without threading.");
         using ReturnType = std::invoke_result_t<F>;
 
         auto task = std::make_unique<Task<ReturnType>>(std::forward<F>(func));
@@ -139,6 +158,10 @@ class SoLoudThreadWrapper {
     // fire-and-forget: no return value, no waiting
     template <typename F>
     void fire_and_forget(F&& func) {
+        if(!this->threaded) {
+            func();
+            return;
+        }
         auto task = std::make_unique<FireAndForgetTask>(std::forward<F>(func));
 
         {
@@ -160,6 +183,9 @@ class SoLoudThreadWrapper {
     SoLoud::result init(unsigned int aFlags = SoLoud::Soloud::CLIP_ROUNDOFF,
                         unsigned int aBackend = SoLoud::Soloud::AUTO, unsigned int aSamplerate = SoLoud::Soloud::AUTO,
                         unsigned int aBufferSize = SoLoud::Soloud::AUTO, unsigned int aChannels = 2) {
+        if(!this->threaded) {
+            return this->soloud->init(aFlags, aBackend, aSamplerate, aBufferSize, aChannels);
+        }
         // create task manually to implement timeout
         auto task =
             std::make_unique<Task<SoLoud::result>>([this, aFlags, aBackend, aSamplerate, aBufferSize, aChannels]() {
@@ -304,12 +330,15 @@ class SoLoudThreadWrapper {
     }
 
     // async position update helper (so we don't need to run tasks recursively)
-    void updateCachedPosition(SoLoud::handle aVoiceHandle, std::atomic<double> &cacheTime, std::atomic<double> &cachedPosition) {
+    void updateCachedPosition(SoLoud::handle aVoiceHandle, std::atomic<double>& cacheTime,
+                              std::atomic<double>& cachedPosition) {
         this->fire_and_forget([this, aVoiceHandle, &cacheTime, &cachedPosition]() {
             cachedPosition.store(this->soloud->getStreamPosition(aVoiceHandle), std::memory_order_release);
             cacheTime.store(Timing::getTimeReal(), std::memory_order_release);
         });
     }
+
+    [[nodiscard]] constexpr bool isThreaded() const { return this->threaded; }
 
    private:
     void start_worker_thread() {
@@ -441,6 +470,7 @@ class SoLoudThreadWrapper {
     std::condition_variable init_cv;
 
     bool initialized{false};
+    bool threaded{true};
 };
 
 #endif

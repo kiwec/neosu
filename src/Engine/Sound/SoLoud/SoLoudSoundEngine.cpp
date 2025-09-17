@@ -36,7 +36,15 @@ SoundEngine::OutputDriver SoLoudSoundEngine::getMAorSDLCV() {
 
 SoLoudSoundEngine::SoLoudSoundEngine() : SoundEngine() {
     if(!soloud) {
-        soloud = std::make_unique<SoLoudThreadWrapper>();
+        bool threaded = true;
+        auto args = env->getLaunchArgs();
+        auto threadedString = args["-sound"].value_or("soloud");
+        SString::trim(&threadedString);
+        SString::to_lower(threadedString);
+        if(threadedString == "soloud-nt") {
+            threaded = false;
+        }
+        soloud = std::make_unique<SoLoudThreadWrapper>(threaded);
     }
 
     cv::snd_freq.setValue(SoLoud::Soloud::AUTO);  // let it be auto-negotiated (the snd_freq callback will adjust if
@@ -546,12 +554,12 @@ bool SoLoudSoundEngine::initializeOutputDevice(const OUTPUT_DEVICE &device) {
     this->onMaxActiveChange(cv::snd_sanity_simultaneous_limit.getFloat());
 
     debugLog(
-        "SoundEngine: Initialized SoLoud with output device = \"{:s}\" flags: 0x{:x}, backend: {:s}, sampleRate: {}, "
-        "bufferSize: {}, channels: {}, "
-        "maxActiveVoiceCount: {}\n",
-        this->currentOutputDevice.name.toUtf8(), static_cast<unsigned int>(flags), soloud->getBackendString(),
-        soloud->getBackendSamplerate(), soloud->getBackendBufferSize(), soloud->getBackendChannels(),
-        this->iMaxActiveVoices);
+        "SoundEngine: Initialized SoLoud ({}) with output device = \"{:s}\" flags: 0x{:x}, backend: {:s}, sampleRate: "
+        "{}, "
+        "bufferSize: {}, channels: {}\n",
+        soloud->isThreaded() ? "multi-threaded" : "single-thread", this->currentOutputDevice.name.toUtf8(),
+        static_cast<unsigned int>(flags), soloud->getBackendString(), soloud->getBackendSamplerate(),
+        soloud->getBackendBufferSize(), soloud->getBackendChannels());
 
     // init global volume
     this->setMasterVolume(this->fMasterVolume);

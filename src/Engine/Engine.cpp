@@ -108,9 +108,9 @@ Engine::Engine() {
             auto soundString = args["-sound"].value_or("soloud");
             SString::trim(&soundString);
             SString::to_lower(soundString);
-            if(Env::cfg(AUD::BASS) && soundString == "bass")
+            if(Env::cfg(AUD::BASS) && soundString.contains("bass"))
                 type = SoundEngine::BASS;
-            else if(Env::cfg(AUD::SOLOUD) && soundString == "soloud")
+            else if(Env::cfg(AUD::SOLOUD) && soundString.contains("soloud"))
                 type = SoundEngine::SOLOUD;
         }
         soundEngine.reset(SoundEngine::createSoundEngine(type));
