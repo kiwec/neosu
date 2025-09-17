@@ -43,7 +43,6 @@ struct zarray {
     }
 
     void resize(size_t new_nb) {
-        assert((static_cast<long long>(this->nb) - new_nb) >= 0);
         if(new_nb < this->nb) {
             memset(&this->memory[new_nb], 0, (this->nb - new_nb) * sizeof(T));
         } else if(new_nb > this->max) {
