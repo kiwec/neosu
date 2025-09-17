@@ -1048,6 +1048,7 @@ CONVAR(minimize_on_focus_lost_if_borderless_windowed_fullscreen,
 CONVAR(minimize_on_focus_lost_if_fullscreen, "minimize_on_focus_lost_if_fullscreen", true, CLIENT | SKINS | SERVER);
 CONVAR(mouse_raw_input, "mouse_raw_input", false, CLIENT | SKINS | SERVER);
 CONVAR(mouse_sensitivity, "mouse_sensitivity", 1.0f, CLIENT | SKINS | SERVER);
+CONVAR(pen_input, "pen_input", true, CLIENT | SKINS | SERVER, "support OTD Artist Mode and native tablet drivers' pen events");
 CONVAR(nightcore_enjoyer, "nightcore_enjoyer", false, CLIENT | SKINS | SERVER);
 CONVAR(normalize_loudness, "normalize_loudness", true, CLIENT | SKINS | SERVER, "normalize loudness across songs");
 CONVAR(notelock_stable_tolerance2b, "notelock_stable_tolerance2b", 3, CLIENT | SERVER | PROTECTED | GAMEPLAY,

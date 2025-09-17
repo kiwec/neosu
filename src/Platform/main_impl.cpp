@@ -292,7 +292,7 @@ SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
                                                           : -120 * std::abs(static_cast<int>(event->wheel.y)));
             break;
 
-        case SDL_EVENT_PEN_MOTION: // ignored, see comment in configureEvents
+        case SDL_EVENT_PEN_MOTION:  // ignored, see comment in configureEvents
             break;
 
         default:
@@ -479,6 +479,10 @@ void SDLMain::configureEvents() {
     // we don't actually have to handle it in the event handler ourselves, but SDL_GetMouseState does not include pen motion events if it's disabled
     // this is weird because SDL_EVENT_MOUSE_MOTION does not work this way... whatever
     SDL_SetEventEnabled(SDL_EVENT_PEN_MOTION, true);
+
+    // allow callback to enable/disable too
+    cv::pen_input.setCallback(
+        [](float on) -> void { SDL_SetEventEnabled(SDL_EVENT_PEN_MOTION, !!static_cast<int>(on)); });
 
     // touch
     SDL_SetEventEnabled(SDL_EVENT_FINGER_DOWN, false);
