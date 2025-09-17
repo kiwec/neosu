@@ -81,7 +81,7 @@ Osu::Osu() {
     osu = this;
     srand(crypto::rng::get_rand<u32>());
 
-    if(env->isDebugBuild()) {
+    if(Env::cfg(BUILD::DEBUG)) {
         BanchoState::neosu_version = UString::fmt("dev-{}", cv::build_timestamp.getVal<u64>());
     } else if(cv::is_bleedingedge.getBool()) {
         BanchoState::neosu_version = UString::fmt("bleedingedge-{}", cv::build_timestamp.getVal<u64>());
@@ -564,8 +564,8 @@ void Osu::draw() {
     if(this->isInPlayMode()) {
         Beatmap *beatmap = this->getSelectedBeatmap();
         vec2 cursorPos = beatmap->getCursorPos();
-        bool drawSecondTrail =
-            (cv::mod_autoplay.getBool() || cv::mod_autopilot.getBool() || beatmap->is_watching || BanchoState::spectating);
+        bool drawSecondTrail = (cv::mod_autoplay.getBool() || cv::mod_autopilot.getBool() || beatmap->is_watching ||
+                                BanchoState::spectating);
         bool updateAndDrawTrail = true;
         if(cv::mod_fposu.getBool()) {
             cursorPos = this->getScreenSize() / 2.0f;
@@ -1303,7 +1303,7 @@ void Osu::toggleSongBrowser() {
         auto diff2 = this->songBrowser2->lastSelectedBeatmap;
         if(diff2 != nullptr) {
             BanchoState::room.map_name = UString::format("%s - %s [%s]", diff2->getArtist().c_str(),
-                                                    diff2->getTitle().c_str(), diff2->getDifficultyName().c_str());
+                                                         diff2->getTitle().c_str(), diff2->getDifficultyName().c_str());
             BanchoState::room.map_md5 = diff2->getMD5Hash();
             BanchoState::room.map_id = diff2->getID();
 
@@ -1719,7 +1719,8 @@ void Osu::onFocusGained() {
 
 void Osu::onFocusLost() {
     if(this->isInPlayMode() && !this->getSelectedBeatmap()->isPaused() && cv::pause_on_focus_loss.getBool()) {
-        if(!BanchoState::is_playing_a_multi_map() && !this->getSelectedBeatmap()->is_watching && !BanchoState::spectating) {
+        if(!BanchoState::is_playing_a_multi_map() && !this->getSelectedBeatmap()->is_watching &&
+           !BanchoState::spectating) {
             this->getSelectedBeatmap()->pause(false);
             this->pauseMenu->setVisible(true);
             this->modSelector->setVisible(false);
@@ -1912,7 +1913,7 @@ void Osu::updateConfineCursor() {
                                   this->getModAuto() ||                                                       //
                                   this->getModAutopilot() ||                                                  //
                                   (this->getSelectedBeatmap() && this->getSelectedBeatmap()->is_watching) ||  //
-                                  BanchoState::spectating;                                                         //
+                                  BanchoState::spectating;                                                    //
 
     bool confine_cursor = might_confine && !force_no_confine;
     if(confine_cursor) {

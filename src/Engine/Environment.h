@@ -203,12 +203,6 @@ class Environment {
     [[nodiscard]] inline bool envDebug() const { return m_bEnvDebug; }
     [[nodiscard]] inline bool isWine() const { return s_bIsWine; }
 
-#ifdef _DEBUG
-    [[nodiscard]] inline bool isDebugBuild() const { return true; }
-#else
-    [[nodiscard]] inline bool isDebugBuild() const { return false; }
-#endif
-
    protected:
     std::unordered_map<std::string, std::optional<std::string>> m_mArgMap;
     std::vector<std::string> m_vCmdLine;

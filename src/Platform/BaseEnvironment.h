@@ -15,6 +15,12 @@ enum class OS : uint8_t {
     MAC = 1 << 3,
     NONE = 0,
 };
+enum class BUILD : uint8_t {
+    RELEASE = 1 << 0,
+    EDGE = 1 << 1,
+    DEBUG = 1 << 2,
+    NONE = 0,
+};
 enum class FEAT : uint8_t {
     STEAM = 1 << 0,
     DISCORD = 1 << 1,
@@ -37,6 +43,9 @@ enum class REND : uint8_t {
 
 constexpr OS operator|(OS lhs, OS rhs) {
     return static_cast<OS>(static_cast<uint8_t>(lhs) | static_cast<uint8_t>(rhs));
+}
+constexpr BUILD operator|(BUILD lhs, BUILD rhs) {
+    return static_cast<BUILD>(static_cast<uint8_t>(lhs) | static_cast<uint8_t>(rhs));
 }
 constexpr FEAT operator|(FEAT lhs, FEAT rhs) {
     return static_cast<FEAT>(static_cast<uint8_t>(lhs) | static_cast<uint8_t>(rhs));
@@ -63,6 +72,19 @@ consteval OS getOS() {
 #error "Compiling for an unknown target!"
     return OS::NONE;
 #endif
+}
+
+consteval BUILD getBuildType() {
+    return
+#if defined(CI_DEVBUILD)  // not used!
+        BUILD::EDGE |
+#endif
+#if defined(_DEBUG)
+        BUILD::DEBUG |
+#else
+        BUILD::RELEASE |
+#endif
+        BUILD::NONE;
 }
 
 // miscellaneous compile-time features
@@ -132,6 +154,8 @@ template <typename T>
 consteval bool matchesCurrentConfig(T mask) {
     if constexpr(std::is_same_v<T, OS>) {
         return (static_cast<uint8_t>(mask) & static_cast<uint8_t>(getOS())) != 0;
+    } else if constexpr(std::is_same_v<T, BUILD>) {
+        return (static_cast<uint8_t>(mask) & static_cast<uint8_t>(getBuildType())) != 0;
     } else if constexpr(std::is_same_v<T, FEAT>) {
         return (static_cast<uint8_t>(mask) & static_cast<uint8_t>(getFeatures())) != 0;
     } else if constexpr(std::is_same_v<T, AUD>) {
@@ -160,6 +184,7 @@ consteval bool cfg(T first, Rest... rest) {
 }  // namespace Env
 
 using Env::AUD;
+using Env::BUILD;
 using Env::FEAT;
 using Env::OS;
 using Env::REND;
