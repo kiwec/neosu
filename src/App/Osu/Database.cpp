@@ -582,14 +582,14 @@ Database::PlayerPPScores Database::getPlayerPPScores(const std::string &playerNa
 }
 
 Database::PlayerStats Database::calculatePlayerStats(const std::string &playerName) {
-    if(!this->bDidScoresChangeForStats.load() && playerName == this->prevPlayerStats.name.toUtf8())
+    if(!this->bDidScoresChangeForStats.load() && playerName == this->prevPlayerStats.name.utf8View())
         return this->prevPlayerStats;
 
     const PlayerPPScores ps = this->getPlayerPPScores(playerName);
 
     // delay caching until we actually have scores loaded
     std::scoped_lock lock(this->scores_mtx);
-    if(ps.ppScores.size() > 0) this->bDidScoresChangeForStats = false;
+    if(ps.ppScores.size() > 0 || db->isFinished()) this->bDidScoresChangeForStats = false;
 
     // "If n is the amount of scores giving more pp than a given score, then the score's weight is 0.95^n"
     // "Total pp = PP[1] * 0.95^0 + PP[2] * 0.95^1 + PP[3] * 0.95^2 + ... + PP[n] * 0.95^(n-1)"
