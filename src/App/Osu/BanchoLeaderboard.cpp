@@ -74,18 +74,25 @@ void fetch_online_scores(DatabaseBeatmap *beatmap) {
     //       (assuming it's some hash that includes all relevant map files)
     url.append("&h=");
 
-    auto filter = cv::songbrowser_scores_filteringtype.getString();
-    if(filter == "Global") {
-        url.append("&v=1");
-    } else if(filter == "Selected mods") {
-        url.append("&v=2");
-    } else if(filter == "Friends") {
-        url.append("&v=3");
-    } else if(filter == "Country") {
-        url.append("&v=4");
-    } else {
-        url.append("&v=1");
+    char lb_type = '1';  // Global / default
+    const char &filter_first_letter{cv::songbrowser_scores_filteringtype.getString()[0]};
+    switch(filter_first_letter) {
+        case 'S':  // Selected mods
+            lb_type = '2';
+            break;
+        case 'F':  // Friends
+            lb_type = '3';
+            break;
+        case 'C':  // Country
+            lb_type = '4';
+            break;
+        default:  // Global / default
+            break;
     }
+
+    // leaderboard type filter
+    url.append("&v=");
+    url.append(lb_type);
 
     // Map info
     std::string map_filename = env->getFileNameFromFilePath(beatmap->getFilePath());
@@ -152,7 +159,7 @@ void process_leaderboard_response(Packet response) {
     char *pb_score = Parsing::strtok_x('\n', &body);
     (void)pb_score;
 
-    char* score_line = nullptr;
+    char *score_line = nullptr;
     while((score_line = Parsing::strtok_x('\n', &body))[0] != '\0') {
         FinishedScore score = parse_score(score_line);
         score.beatmap_hash = beatmap_hash;
