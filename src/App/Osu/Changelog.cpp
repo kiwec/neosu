@@ -27,6 +27,19 @@ Changelog::Changelog() : ScreenBackable() {
 
     std::vector<CHANGELOG> changelogs;
 
+    CHANGELOG v41_01;
+    v41_01.title = "41.01 (2025-09-17)";
+    v41_01.changes = {
+        R"(- Fixed multiple easy-to-trigger crashes while logged in)",
+        R"(- Fixed online leaderboards from ez-pp.farm)",
+        R"(- Fixed some song select performance issues with new user profiles)",
+        R"(- Fixed some audio-related issues)",
+        R"(  - Users on very low end PCs with audio dropouts can try the "-sound soloud-nt" (or "-sound bass") executable launch argument)",
+        R"(- Added a new "pen_input" ConVar as a way to potentially work around tablet issues on Wayland)",
+        R"(  - On by default, you probably don't need to touch this)",
+    };
+    changelogs.push_back(v41_01);
+
     CHANGELOG v41_00;
     v41_00.title = "41.00 (2025-09-17)";
     v41_00.changes = {
