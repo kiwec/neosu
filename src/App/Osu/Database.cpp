@@ -2,6 +2,7 @@
 #include "Database.h"
 
 #include "Bancho.h"
+#include "Downloader.h"
 #include "SString.h"
 #include "MD5Hash.h"
 #include "ByteBufferedFile.h"
@@ -142,7 +143,6 @@ void Database::AsyncDBLoader::initAsync() {
 
 done:
     db->dbPathsToImport.clear();
-
     this->bAsyncReady = true;
     if(cv::debug_db.getBool() || cv::debug_async_db.getBool()) debugLog("(AsyncDBLoader) done\n");
 }

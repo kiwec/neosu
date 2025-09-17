@@ -2,6 +2,8 @@
 *.sln
 *.vcxproj.filters
 *.vcxproj.user
+neosu
+.ltocache-gcc
 
 .cache/
 build/

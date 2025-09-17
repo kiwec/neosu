@@ -39,6 +39,7 @@ class Environment {
         Interop() = delete;
         Interop(Environment *env_ptr) : m_env(env_ptr) {}
         ~Interop() { m_env = nullptr; }
+        void handle_osz(const char *path);
         void handle_cmdline_args(const std::vector<std::string> &args);
         void handle_cmdline_args() { handle_cmdline_args(m_env->getCommandLine()); }
         void setup_system_integrations();
