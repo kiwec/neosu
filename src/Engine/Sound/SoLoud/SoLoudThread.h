@@ -61,7 +61,7 @@ class SoLoudThreadWrapper {
     };
 
    public:
-    SoLoudThreadWrapper(bool threaded = true) noexcept : threaded(threaded) {
+    SoLoudThreadWrapper(bool threaded = false) noexcept : threaded(threaded) {
         if(this->threaded) {
             this->start_worker_thread();
         } else {
@@ -84,7 +84,7 @@ class SoLoudThreadWrapper {
     // synchronous access: executes on audio thread but waits for completion
     template <typename F>
     auto sync(F&& func) -> std::invoke_result_t<F> {
-        if(!this->threaded) return func();
+        if(likely(!this->threaded)) return func();
         using ReturnType = std::invoke_result_t<F>;
 
         if constexpr(std::is_void_v<ReturnType>) {
@@ -158,7 +158,7 @@ class SoLoudThreadWrapper {
     // fire-and-forget: no return value, no waiting
     template <typename F>
     void fire_and_forget(F&& func) {
-        if(!this->threaded) {
+        if(likely(!this->threaded)) {
             func();
             return;
         }
@@ -183,7 +183,7 @@ class SoLoudThreadWrapper {
     SoLoud::result init(unsigned int aFlags = SoLoud::Soloud::CLIP_ROUNDOFF,
                         unsigned int aBackend = SoLoud::Soloud::AUTO, unsigned int aSamplerate = SoLoud::Soloud::AUTO,
                         unsigned int aBufferSize = SoLoud::Soloud::AUTO, unsigned int aChannels = 2) {
-        if(!this->threaded) {
+        if(likely(!this->threaded)) {
             return this->soloud->init(aFlags, aBackend, aSamplerate, aBufferSize, aChannels);
         }
         // create task manually to implement timeout
@@ -470,7 +470,7 @@ class SoLoudThreadWrapper {
     std::condition_variable init_cv;
 
     bool initialized{false};
-    bool threaded{true};
+    bool threaded{false};
 };
 
 #endif

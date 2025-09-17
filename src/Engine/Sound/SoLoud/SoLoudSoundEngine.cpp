@@ -36,13 +36,13 @@ SoundEngine::OutputDriver SoLoudSoundEngine::getMAorSDLCV() {
 
 SoLoudSoundEngine::SoLoudSoundEngine() : SoundEngine() {
     if(!soloud) {
-        bool threaded = true;
+        bool threaded = false;
         auto args = env->getLaunchArgs();
         auto threadedString = args["-sound"].value_or("soloud");
         SString::trim(&threadedString);
         SString::to_lower(threadedString);
-        if(threadedString == "soloud-nt") {
-            threaded = false;
+        if(threadedString == "soloud-threaded") {
+            threaded = true;
         }
         soloud = std::make_unique<SoLoudThreadWrapper>(threaded);
     }
@@ -458,8 +458,10 @@ bool SoLoudSoundEngine::initializeOutputDevice(const OUTPUT_DEVICE &device) {
     if(this->isReady()) {
         // this isn't technically required, but might it be, if audio device initialization hangs and we have to detach the soloud thread
         // should be fixable in soloud itself, probably
-        for(const auto &soundRes : resourceManager->getSounds()) {
-            soundRes->release();
+        if (soloud->isThreaded()) {
+            for(auto *soundRes : resourceManager->getSounds()) {
+                soundRes->release();
+            }
         }
         soloud->deinit();
         this->bReady = false;
