@@ -916,8 +916,10 @@ void Osu::onKeyDown(KeyboardEvent &key) {
 
     // F8 toggle chat
     if(key == (KEYCODE)cv::TOGGLE_CHAT.getInt()) {
-        // When options menu is open, instead of toggling chat, always open chat
-        if(this->optionsMenu->isVisible()) {
+        if(!BanchoState::is_online()) {
+            this->optionsMenu->askForLoginDetails();
+        } else if(this->optionsMenu->isVisible()) {
+            // When options menu is open, instead of toggling chat, always open chat
             this->optionsMenu->setVisible(false);
             this->chat->user_wants_chat = true;
             this->chat->updateVisibility();
@@ -929,8 +931,10 @@ void Osu::onKeyDown(KeyboardEvent &key) {
 
     // F9 toggle extended chat
     if(key == (KEYCODE)cv::TOGGLE_EXTENDED_CHAT.getInt()) {
-        // When options menu is open, instead of toggling extended chat, always enable it
-        if(this->optionsMenu->isVisible()) {
+        if(!BanchoState::is_online()) {
+            this->optionsMenu->askForLoginDetails();
+        } else if(this->optionsMenu->isVisible()) {
+            // When options menu is open, instead of toggling extended chat, always enable it
             this->optionsMenu->setVisible(false);
             this->chat->user_wants_chat = true;
             this->chat->user_list->setVisible(true);
