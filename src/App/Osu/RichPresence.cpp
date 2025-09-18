@@ -4,7 +4,7 @@
 #include "Bancho.h"
 #include "BanchoNetworking.h"
 #include "BanchoUsers.h"
-#include "Beatmap.h"
+#include "Playfield.h"
 #include "Chat.h"
 #include "ConVar.h"
 #include "Database.h"
@@ -65,13 +65,10 @@ void RichPresence::setBanchoStatus(const char* info_text, Action action) {
     MD5Hash map_md5("");
     i32 map_id = 0;
 
-    auto selected_beatmap = osu->getSelectedBeatmap();
-    if(selected_beatmap != nullptr) {
-        auto diff = selected_beatmap->getSelectedDifficulty2();
-        if(diff != nullptr) {
-            map_md5 = diff->getMD5Hash();
-            map_id = diff->getID();
-        }
+    auto diff = osu->playfield->getSelectedDifficulty2();
+    if(diff != nullptr) {
+        map_md5 = diff->getMD5Hash();
+        map_id = diff->getID();
     }
 
     char fancy_text[1024] = {0};
@@ -95,13 +92,10 @@ void RichPresence::updateBanchoMods() {
     MD5Hash map_md5("");
     i32 map_id = 0;
 
-    auto selected_beatmap = osu->getSelectedBeatmap();
-    if(selected_beatmap != nullptr) {
-        auto diff = selected_beatmap->getSelectedDifficulty2();
-        if(diff != nullptr) {
-            map_md5 = diff->getMD5Hash();
-            map_id = diff->getID();
-        }
+    auto diff = osu->playfield->getSelectedDifficulty2();
+    if(diff != nullptr) {
+        map_md5 = diff->getMD5Hash();
+        map_id = diff->getID();
     }
 
     Packet packet;
@@ -129,8 +123,8 @@ void RichPresence::onMainMenu() {
 
     activity.type = DiscordActivityType_Listening;
 
-    auto diff2 = osu->getSelectedBeatmap()->getSelectedDifficulty2();
-    auto music = osu->getSelectedBeatmap()->getMusic();
+    auto diff2 = osu->playfield->getSelectedDifficulty2();
+    auto music = osu->playfield->getMusic();
     bool listening = diff2 != nullptr && music != nullptr && music->isPlaying();
     if(listening) {
         diff2str(diff2, activity.details, false);
@@ -165,7 +159,7 @@ void RichPresence::onSongBrowser() {
 }
 
 void RichPresence::onPlayStart() {
-    auto diff2 = osu->getSelectedBeatmap()->getSelectedDifficulty2();
+    auto diff2 = osu->playfield->getSelectedDifficulty2();
 
     static DatabaseBeatmap* last_diff = nullptr;
     static int64_t tms = 0;

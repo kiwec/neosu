@@ -8,7 +8,7 @@
 #include "BackgroundImageHandler.h"
 #include "Bancho.h"
 #include "BanchoNetworking.h"
-#include "Beatmap.h"
+#include "Playfield.h"
 #include "CBaseUIButton.h"
 #include "CBaseUIContainer.h"
 #include "ConVar.h"
@@ -532,7 +532,7 @@ std::pair<bool, float> MainMenu::getTimingpointPulseAmount() {
 
     float pulse = (div - fmod(engine->getTime(), div)) / div;
 
-    const auto &selectedMap = osu->getSelectedBeatmap();
+    const auto &selectedMap = osu->playfield;
     if(!selectedMap) {
         return {false, pulse};
     }
@@ -795,11 +795,11 @@ void MainMenu::draw() {
     float alpha = 1.0f;
     if(cv::songbrowser_background_fade_in_duration.getFloat() > 0.0f) {
         // handle fadein trigger after handler is finished loading
-        const bool ready = osu->getSelectedBeatmap()->getSelectedDifficulty2() != nullptr &&
+        const bool ready = osu->playfield->getSelectedDifficulty2() != nullptr &&
                            osu->getBackgroundImageHandler()->getLoadBackgroundImage(
-                               osu->getSelectedBeatmap()->getSelectedDifficulty2()) != nullptr &&
+                               osu->playfield->getSelectedDifficulty2()) != nullptr &&
                            osu->getBackgroundImageHandler()
-                               ->getLoadBackgroundImage(osu->getSelectedBeatmap()->getSelectedDifficulty2())
+                               ->getLoadBackgroundImage(osu->playfield->getSelectedDifficulty2())
                                ->isReady();
 
         if(!ready)
@@ -1031,9 +1031,9 @@ void MainMenu::mouse_update(bool *propagate_clicks) {
     this->pauseButton->setPaused(true);
 
     if(soundEngine->isReady()) {
-        auto *music = osu->getSelectedBeatmap()->getMusic();
+        auto *music = osu->playfield->getMusic();
 
-        // try getting existing playing music track, even if osu->getSelectedBeatmap()->getMusic() did not have one
+        // try getting existing playing music track, even if osu->playfield->getMusic() did not have one
         if(!music) {
             music = resourceManager->getSound("BEATMAP_MUSIC");
         }
@@ -1051,7 +1051,7 @@ void MainMenu::mouse_update(bool *propagate_clicks) {
 
                 // load timing points if needed
                 // XXX: file io, don't block main thread
-                auto *diff2 = osu->getSelectedBeatmap()->getSelectedDifficulty2();
+                auto *diff2 = osu->playfield->getSelectedDifficulty2();
                 if(diff2 && diff2->getTimingpoints().empty()) {
                     diff2->loadMetadata(false);
                 }
@@ -1102,7 +1102,7 @@ void MainMenu::selectRandomBeatmap() {
             return;
         }
 
-        sb->getSelectedBeatmap()->deselect();
+        osu->playfield->deselectBeatmap();
         SAFE_DELETE(this->preloaded_beatmapset);
 
         constexpr int RETRY_SETS{10};
@@ -1206,7 +1206,7 @@ CBaseUIContainer *MainMenu::setVisible(bool visible) {
             BANCHO::Proto::write<u16>(&packet, 0);
             BANCHO::Proto::write<u8>(&packet, LiveReplayBundle::Action::NONE);
             BANCHO::Proto::write<ScoreFrame>(&packet, ScoreFrame::get());
-            BANCHO::Proto::write<u16>(&packet, osu->getSelectedBeatmap()->spectator_sequence++);
+            BANCHO::Proto::write<u16>(&packet, osu->playfield->spectator_sequence++);
             BANCHO::Net::send_packet(packet);
         }
 
@@ -1480,10 +1480,10 @@ void MainMenu::onExitButtonPressed() {
 }
 
 void MainMenu::onPausePressed() {
-    if(osu->getSelectedBeatmap()->isPreviewMusicPlaying()) {
-        osu->getSelectedBeatmap()->pausePreviewMusic();
+    if(osu->playfield->isPreviewMusicPlaying()) {
+        osu->playfield->pausePreviewMusic();
     } else {
-        auto music = osu->getSelectedBeatmap()->getMusic();
+        auto music = osu->playfield->getMusic();
         if(music != nullptr) {
             soundEngine->play(music);
         }

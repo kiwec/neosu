@@ -5,7 +5,7 @@
 #include <string.h>
 
 #include "Bancho.h"
-#include "Beatmap.h"
+#include "Playfield.h"
 #include "Osu.h"
 
 namespace BANCHO::Proto {
@@ -335,7 +335,7 @@ ScoreFrame ScoreFrame::get() {
                     score->getNum100s() == 0);
 
     return ScoreFrame{
-        .time = (i32)osu->getSelectedBeatmap()->getCurMusicPos(),  // NOTE: might be incorrect
+        .time = (i32)osu->playfield->getCurMusicPos(),  // NOTE: might be incorrect
         .slot_id = slot_id,
         .num300 = (u16)score->getNum300s(),
         .num100 = (u16)score->getNum100s(),
@@ -347,7 +347,7 @@ ScoreFrame ScoreFrame::get() {
         .max_combo = (u16)score->getComboMax(),
         .current_combo = (u16)score->getCombo(),
         .is_perfect = perfect,
-        .current_hp = (u8)(osu->getSelectedBeatmap()->getHealth() * 200.0),
+        .current_hp = (u8)(osu->playfield->getHealth() * 200.0),
         .tag = 0,         // tag gamemode currently not supported
         .is_scorev2 = 0,  // scorev2 currently not supported
     };

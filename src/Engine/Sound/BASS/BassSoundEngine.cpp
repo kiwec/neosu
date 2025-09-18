@@ -5,7 +5,7 @@
 
 #include "BassManager.h"
 #include "BassSoundEngine.h"
-#include "Beatmap.h"
+#include "Playfield.h"
 #include "CBaseUILabel.h"
 #include "ConVar.h"
 #include "Database.h"
@@ -581,9 +581,9 @@ bool BassSoundEngine::hasExclusiveOutput() {
 void BassSoundEngine::setOutputDevice(const SoundEngine::OUTPUT_DEVICE &device) {
     bool was_playing = false;
     unsigned long prevMusicPositionMS = 0;
-    if(osu->getSelectedBeatmap()->getMusic() != nullptr) {
-        was_playing = osu->getSelectedBeatmap()->getMusic()->isPlaying();
-        prevMusicPositionMS = osu->getSelectedBeatmap()->getMusic()->getPositionMS();
+    if(osu->playfield->getMusic() != nullptr) {
+        was_playing = osu->playfield->getMusic()->isPlaying();
+        prevMusicPositionMS = osu->playfield->getMusic()->getPositionMS();
     }
 
     // TODO: This is blocking main thread, can freeze for a long time on some sound cards
@@ -606,16 +606,16 @@ void BassSoundEngine::setOutputDevice(const SoundEngine::OUTPUT_DEVICE &device) 
     osu->optionsMenu->onOutputDeviceResetUpdate();
 
     // start playing music again after audio device changed
-    if(osu->getSelectedBeatmap()->getMusic() != nullptr) {
+    if(osu->playfield->getMusic() != nullptr) {
         if(osu->isInPlayMode()) {
-            osu->getSelectedBeatmap()->unloadMusic();
-            osu->getSelectedBeatmap()->loadMusic();
-            osu->getSelectedBeatmap()->getMusic()->setLoop(false);
-            osu->getSelectedBeatmap()->getMusic()->setPositionMS(prevMusicPositionMS);
+            osu->playfield->unloadMusic();
+            osu->playfield->loadMusic();
+            osu->playfield->getMusic()->setLoop(false);
+            osu->playfield->getMusic()->setPositionMS(prevMusicPositionMS);
         } else {
-            osu->getSelectedBeatmap()->unloadMusic();
-            osu->getSelectedBeatmap()->select();
-            osu->getSelectedBeatmap()->getMusic()->setPositionMS(prevMusicPositionMS);
+            osu->playfield->unloadMusic();
+            osu->playfield->selectBeatmap();
+            osu->playfield->getMusic()->setPositionMS(prevMusicPositionMS);
         }
     }
 

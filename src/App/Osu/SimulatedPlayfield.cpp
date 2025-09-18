@@ -1,4 +1,4 @@
-#include "SimulatedBeatmap.h"
+#include "SimulatedPlayfield.h"
 
 #include <algorithm>
 
@@ -16,7 +16,7 @@
 #include "Mouse.h"
 #include "ResourceManager.h"
 
-SimulatedBeatmap::SimulatedBeatmap(DatabaseBeatmap *diff2, Replay::Mods mods_) {
+SimulatedPlayfield::SimulatedPlayfield(DatabaseBeatmap *diff2, Replay::Mods mods_) {
     this->selectedDifficulty2 = diff2;
     this->mods = mods_;
     this->live_score.mods = mods_;
@@ -43,13 +43,13 @@ SimulatedBeatmap::SimulatedBeatmap(DatabaseBeatmap *diff2, Replay::Mods mods_) {
     this->start();
 }
 
-SimulatedBeatmap::~SimulatedBeatmap() {
+SimulatedPlayfield::~SimulatedPlayfield() {
     for(auto &hitobject : this->hitobjects) {
         delete hitobject;
     }
 }
 
-void SimulatedBeatmap::simulate_to(i32 music_pos) {
+void SimulatedPlayfield::simulate_to(i32 music_pos) {
     if(this->spectated_replay.size() < 2) return;
 
     LegacyReplay::Frame current_frame = this->spectated_replay[this->current_frame_idx];
@@ -106,7 +106,7 @@ void SimulatedBeatmap::simulate_to(i32 music_pos) {
     }
 }
 
-bool SimulatedBeatmap::start() {
+bool SimulatedPlayfield::start() {
     // reset everything, including deleting any previously loaded hitobjects from another diff which we might just have
     // played
     this->resetScore();
@@ -125,7 +125,7 @@ bool SimulatedBeatmap::start() {
 
     // sort hitobjects by endtime
     this->hitobjectsSortedByEndTime = this->hitobjects;
-    std::ranges::sort(this->hitobjectsSortedByEndTime, Beatmap::sortHitObjectByEndTimeComp);
+    std::ranges::sort(this->hitobjectsSortedByEndTime, Playfield::sortHitObjectByEndTimeComp);
 
     // after the hitobjects have been loaded we can calculate the stacks
     this->calculateStacks();
@@ -137,16 +137,16 @@ bool SimulatedBeatmap::start() {
     return true;
 }
 
-void SimulatedBeatmap::fail(bool force_death) {
+void SimulatedPlayfield::fail(bool force_death) {
     (void)force_death;
 
-    debugLog("SimulatedBeatmap::fail called!\n");
+    debugLog("SimulatedPlayfield::fail called!\n");
     this->bFailed = true;
 }
 
-void SimulatedBeatmap::cancelFailing() { this->bFailed = false; }
+void SimulatedPlayfield::cancelFailing() { this->bFailed = false; }
 
-u32 SimulatedBeatmap::getScoreV1DifficultyMultiplier_full() const {
+u32 SimulatedPlayfield::getScoreV1DifficultyMultiplier_full() const {
     // NOTE: We intentionally get CS/HP/OD from beatmap data, not "real" CS/HP/OD
     //       Since this multiplier is only used for ScoreV1
     u32 breakTimeMS = this->getBreakDurationTotal();
@@ -158,7 +158,7 @@ u32 SimulatedBeatmap::getScoreV1DifficultyMultiplier_full() const {
         38.0f * 5.0f);
 }
 
-f32 SimulatedBeatmap::getCS_full() const {
+f32 SimulatedPlayfield::getCS_full() const {
     float CSdifficultyMultiplier = 1.0f;
     if((ModMasks::eq(this->mods.flags, Replay::ModFlags::HardRock))) CSdifficultyMultiplier = 1.3f;
     if((ModMasks::eq(this->mods.flags, Replay::ModFlags::Easy))) CSdifficultyMultiplier = 0.5f;
@@ -182,7 +182,7 @@ f32 SimulatedBeatmap::getCS_full() const {
     return CS;
 }
 
-f32 SimulatedBeatmap::getHP_full() const {
+f32 SimulatedPlayfield::getHP_full() const {
     float HPdifficultyMultiplier = 1.0f;
     if((ModMasks::eq(this->mods.flags, Replay::ModFlags::HardRock))) HPdifficultyMultiplier = 1.4f;
     if((ModMasks::eq(this->mods.flags, Replay::ModFlags::Easy))) HPdifficultyMultiplier = 0.5f;
@@ -193,7 +193,7 @@ f32 SimulatedBeatmap::getHP_full() const {
     return HP;
 }
 
-f32 SimulatedBeatmap::getRawAR_full() const {
+f32 SimulatedPlayfield::getRawAR_full() const {
     float ARdifficultyMultiplier = 1.0f;
     if((ModMasks::eq(this->mods.flags, Replay::ModFlags::HardRock))) ARdifficultyMultiplier = 1.4f;
     if((ModMasks::eq(this->mods.flags, Replay::ModFlags::Easy))) ARdifficultyMultiplier = 0.5f;
@@ -201,7 +201,7 @@ f32 SimulatedBeatmap::getRawAR_full() const {
     return std::clamp<f32>(this->selectedDifficulty2->getAR() * ARdifficultyMultiplier, 0.0f, 10.0f);
 }
 
-f32 SimulatedBeatmap::getAR_full() const {
+f32 SimulatedPlayfield::getAR_full() const {
     f32 AR = this->getRawAR();
     if(this->mods.ar_override >= 0.0f) AR = this->mods.ar_override;
     if(this->mods.ar_overridenegative < 0.0f) AR = this->mods.ar_overridenegative;
@@ -226,7 +226,7 @@ f32 SimulatedBeatmap::getAR_full() const {
     return AR;
 }
 
-f32 SimulatedBeatmap::getRawOD_full() const {
+f32 SimulatedPlayfield::getRawOD_full() const {
     float ODdifficultyMultiplier = 1.0f;
     if((ModMasks::eq(this->mods.flags, Replay::ModFlags::HardRock))) ODdifficultyMultiplier = 1.4f;
     if((ModMasks::eq(this->mods.flags, Replay::ModFlags::Easy))) ODdifficultyMultiplier = 0.5f;
@@ -234,7 +234,7 @@ f32 SimulatedBeatmap::getRawOD_full() const {
     return std::clamp<f32>(this->selectedDifficulty2->getOD() * ODdifficultyMultiplier, 0.0f, 10.0f);
 }
 
-f32 SimulatedBeatmap::getOD_full() const {
+f32 SimulatedPlayfield::getOD_full() const {
     f32 OD = this->getRawOD();
 
     if(this->mods.od_override >= 0.0f) OD = this->mods.od_override;
@@ -245,13 +245,13 @@ f32 SimulatedBeatmap::getOD_full() const {
     return OD;
 }
 
-bool SimulatedBeatmap::isKey1Down() const { return this->current_keys & (LegacyReplay::M1 | LegacyReplay::K1); }
-bool SimulatedBeatmap::isKey2Down() const { return this->current_keys & (LegacyReplay::M2 | LegacyReplay::K2); }
-bool SimulatedBeatmap::isClickHeld() const { return this->isKey1Down() || this->isKey2Down(); }
+bool SimulatedPlayfield::isKey1Down() const { return this->current_keys & (LegacyReplay::M1 | LegacyReplay::K1); }
+bool SimulatedPlayfield::isKey2Down() const { return this->current_keys & (LegacyReplay::M2 | LegacyReplay::K2); }
+bool SimulatedPlayfield::isClickHeld() const { return this->isKey1Down() || this->isKey2Down(); }
 
-u32 SimulatedBeatmap::getLength() const { return this->selectedDifficulty2->getLengthMS(); }
+u32 SimulatedPlayfield::getLength() const { return this->selectedDifficulty2->getLengthMS(); }
 
-u32 SimulatedBeatmap::getLengthPlayable() const {
+u32 SimulatedPlayfield::getLengthPlayable() const {
     if(this->hitobjects.size() > 0)
         return (u32)((this->hitobjects[this->hitobjects.size() - 1]->click_time +
                       this->hitobjects[this->hitobjects.size() - 1]->duration) -
@@ -260,7 +260,7 @@ u32 SimulatedBeatmap::getLengthPlayable() const {
         return this->getLength();
 }
 
-u32 SimulatedBeatmap::getBreakDurationTotal() const {
+u32 SimulatedPlayfield::getBreakDurationTotal() const {
     u32 breakDurationTotal = 0;
     for(auto i : this->breaks) {
         breakDurationTotal += (u32)(i.endTime - i.startTime);
@@ -269,7 +269,7 @@ u32 SimulatedBeatmap::getBreakDurationTotal() const {
     return breakDurationTotal;
 }
 
-DatabaseBeatmap::BREAK SimulatedBeatmap::getBreakForTimeRange(long startMS, long positionMS, long endMS) const {
+DatabaseBeatmap::BREAK SimulatedPlayfield::getBreakForTimeRange(long startMS, long positionMS, long endMS) const {
     DatabaseBeatmap::BREAK curBreak;
 
     curBreak.startTime = -1;
@@ -284,7 +284,7 @@ DatabaseBeatmap::BREAK SimulatedBeatmap::getBreakForTimeRange(long startMS, long
     return curBreak;
 }
 
-LiveScore::HIT SimulatedBeatmap::addHitResult(HitObject *hitObject, LiveScore::HIT hit, i32 delta, bool isEndOfCombo,
+LiveScore::HIT SimulatedPlayfield::addHitResult(HitObject *hitObject, LiveScore::HIT hit, i32 delta, bool isEndOfCombo,
                                               bool ignoreOnHitErrorBar, bool hitErrorBarOnly, bool ignoreCombo,
                                               bool ignoreScore, bool ignoreHealth) {
     // handle perfect & sudden death
@@ -309,7 +309,7 @@ LiveScore::HIT SimulatedBeatmap::addHitResult(HitObject *hitObject, LiveScore::H
     // health
     LiveScore::HIT returnedHit = LiveScore::HIT::HIT_MISS;
     if(!ignoreHealth) {
-        this->addHealth(this->live_score.getHealthIncrease((BeatmapInterface *)this, hit), true);
+        this->addHealth(this->live_score.getHealthIncrease((PlayfieldInterface *)this, hit), true);
 
         // geki/katu handling
         if(isEndOfCombo) {
@@ -339,7 +339,7 @@ LiveScore::HIT SimulatedBeatmap::addHitResult(HitObject *hitObject, LiveScore::H
     return returnedHit;
 }
 
-void SimulatedBeatmap::addSliderBreak() {
+void SimulatedPlayfield::addSliderBreak() {
     // handle perfect & sudden death
     if(ModMasks::eq(this->mods.flags, Replay::ModFlags::Perfect)) {
         this->fail();
@@ -353,9 +353,9 @@ void SimulatedBeatmap::addSliderBreak() {
     this->live_score.addSliderBreak();
 }
 
-void SimulatedBeatmap::addScorePoints(int points, bool isSpinner) { this->live_score.addPoints(points, isSpinner); }
+void SimulatedPlayfield::addScorePoints(int points, bool isSpinner) { this->live_score.addPoints(points, isSpinner); }
 
-void SimulatedBeatmap::addHealth(f64 percent, bool isFromHitResult) {
+void SimulatedPlayfield::addHealth(f64 percent, bool isFromHitResult) {
     // never drain before first hitobject
     if(this->iCurMusicPos < this->hitobjects[0]->click_time) return;
 
@@ -388,14 +388,14 @@ void SimulatedBeatmap::addHealth(f64 percent, bool isFromHitResult) {
     }
 }
 
-long SimulatedBeatmap::getPVS() {
+long SimulatedPlayfield::getPVS() {
     // this is an approximation with generous boundaries, it doesn't need to be exact (just good enough to filter 10000
     // hitobjects down to a few hundred or so) it will be used in both positive and negative directions (previous and
     // future hitobjects) to speed up loops which iterate over all hitobjects
     return this->getApproachTime() + GameRules::getFadeInTime() + (long)GameRules::getHitWindowMiss() + 1500;  // sanity
 }
 
-void SimulatedBeatmap::resetScore() {
+void SimulatedPlayfield::resetScore() {
     this->current_keys = 0;
     this->last_keys = 0;
     this->current_frame_idx = 0;
@@ -406,7 +406,7 @@ void SimulatedBeatmap::resetScore() {
     this->live_score.reset();
 }
 
-void SimulatedBeatmap::update(f64 frame_time) {
+void SimulatedPlayfield::update(f64 frame_time) {
     if(this->hitobjects.empty()) return;
 
     auto last_hitobject = this->hitobjectsSortedByEndTime[this->hitobjectsSortedByEndTime.size() - 1];
@@ -738,9 +738,9 @@ void SimulatedBeatmap::update(f64 frame_time) {
     }
 }
 
-vec2 SimulatedBeatmap::pixels2OsuCoords(vec2 pixelCoords) const { return pixelCoords; }
+vec2 SimulatedPlayfield::pixels2OsuCoords(vec2 pixelCoords) const { return pixelCoords; }
 
-vec2 SimulatedBeatmap::osuCoords2Pixels(vec2 coords) const {
+vec2 SimulatedPlayfield::osuCoords2Pixels(vec2 coords) const {
     if((ModMasks::eq(this->mods.flags, Replay::ModFlags::HardRock))) coords.y = GameRules::OSU_COORD_HEIGHT - coords.y;
 
     // wobble
@@ -779,9 +779,9 @@ vec2 SimulatedBeatmap::osuCoords2Pixels(vec2 coords) const {
     return coords;
 }
 
-vec2 SimulatedBeatmap::osuCoords2RawPixels(vec2 coords) const { return coords; }
+vec2 SimulatedPlayfield::osuCoords2RawPixels(vec2 coords) const { return coords; }
 
-vec2 SimulatedBeatmap::osuCoords2LegacyPixels(vec2 coords) const {
+vec2 SimulatedPlayfield::osuCoords2LegacyPixels(vec2 coords) const {
     if((ModMasks::eq(this->mods.flags, Replay::ModFlags::HardRock))) coords.y = GameRules::OSU_COORD_HEIGHT - coords.y;
 
     // VR center
@@ -791,15 +791,15 @@ vec2 SimulatedBeatmap::osuCoords2LegacyPixels(vec2 coords) const {
     return coords;
 }
 
-vec2 SimulatedBeatmap::getCursorPos() const { return this->interpolatedMousePos; }
+vec2 SimulatedPlayfield::getCursorPos() const { return this->interpolatedMousePos; }
 
-vec2 SimulatedBeatmap::getFirstPersonCursorDelta() const {
+vec2 SimulatedPlayfield::getFirstPersonCursorDelta() const {
     return this->vPlayfieldCenter - ((ModMasks::eq(this->mods.flags, Replay::ModFlags::Autopilot))
                                          ? this->vAutoCursorPos
                                          : this->getCursorPos());
 }
 
-void SimulatedBeatmap::updateAutoCursorPos() {
+void SimulatedPlayfield::updateAutoCursorPos() {
     this->vAutoCursorPos = this->vPlayfieldCenter;
     this->vAutoCursorPos.y *= 2.5f;  // start moving in offscreen from bottom
 
@@ -871,12 +871,12 @@ void SimulatedBeatmap::updateAutoCursorPos() {
     }
 }
 
-void SimulatedBeatmap::updatePlayfieldMetrics() {
+void SimulatedPlayfield::updatePlayfieldMetrics() {
     this->vPlayfieldSize = GameRules::getPlayfieldSize();
     this->vPlayfieldCenter = GameRules::getPlayfieldCenter();
 }
 
-void SimulatedBeatmap::updateHitobjectMetrics() {
+void SimulatedPlayfield::updateHitobjectMetrics() {
     this->fRawHitcircleDiameter = GameRules::getRawHitCircleDiameter(this->getCS());
     this->fXMultiplier = GameRules::getHitCircleXMultiplier();
     this->fHitcircleDiameter = GameRules::getRawHitCircleDiameter(this->getCS()) * GameRules::getHitCircleXMultiplier();
@@ -891,7 +891,7 @@ void SimulatedBeatmap::updateHitobjectMetrics() {
     this->fSliderFollowCircleDiameter = this->fHitcircleDiameter * sliderFollowCircleDiameterMultiplier;
 }
 
-void SimulatedBeatmap::calculateStacks() {
+void SimulatedPlayfield::calculateStacks() {
     this->updateHitobjectMetrics();
 
     debugLog("Beatmap: Calculating stacks ...\n");
@@ -1024,7 +1024,7 @@ void SimulatedBeatmap::calculateStacks() {
     }
 }
 
-void SimulatedBeatmap::computeDrainRate() {
+void SimulatedPlayfield::computeDrainRate() {
     this->fDrainRate = 0.0;
     this->fHpMultiplierNormal = 1.0;
     this->fHpMultiplierComboEnd = 1.0;
@@ -1240,14 +1240,14 @@ void SimulatedBeatmap::computeDrainRate() {
     }
 }
 
-f32 SimulatedBeatmap::getApproachTime_full() const {
+f32 SimulatedPlayfield::getApproachTime_full() const {
     return (ModMasks::eq(this->mods.flags, Replay::ModFlags::Mafham))
                ? this->getLength() * 2
                : GameRules::mapDifficultyRange(this->getAR(), GameRules::getMinApproachTime(),
                                                GameRules::getMidApproachTime(), GameRules::getMaxApproachTime());
 }
 
-f32 SimulatedBeatmap::getRawApproachTime_full() const {
+f32 SimulatedPlayfield::getRawApproachTime_full() const {
     return (ModMasks::eq(this->mods.flags, Replay::ModFlags::Mafham))
                ? this->getLength() * 2
                : GameRules::mapDifficultyRange(this->getRawAR(), GameRules::getMinApproachTime(),

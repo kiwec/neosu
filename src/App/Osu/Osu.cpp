@@ -9,7 +9,7 @@
 #include "BackgroundImageHandler.h"
 #include "Bancho.h"
 #include "BanchoNetworking.h"
-#include "Beatmap.h"
+#include "Playfield.h"
 #include "CBaseUIScrollView.h"
 #include "CBaseUISlider.h"
 #include "CBaseUITextbox.h"
@@ -197,6 +197,7 @@ Osu::Osu() {
     this->frameBuffer2 = resourceManager->createRenderTarget(0, 0, 64, 64);
 
     // load a few select subsystems very early
+    this->playfield = new Playfield();
     this->notificationOverlay = new NotificationOverlay();
     this->score = new LiveScore(false);
     this->updateHandler = new UpdateHandler();
@@ -395,6 +396,7 @@ Osu::~Osu() {
     SAFE_DELETE(this->score);
     SAFE_DELETE(this->skin);
     SAFE_DELETE(this->backgroundImageHandler);
+    SAFE_DELETE(this->playfield);
 
     osu = nullptr;
 }
@@ -417,17 +419,16 @@ void Osu::draw() {
 
     // draw everything in the correct order
     if(this->isInPlayMode()) {  // if we are playing a beatmap
-        Beatmap *beatmap = this->getSelectedBeatmap();
         const bool isFPoSu = (cv::mod_fposu.getBool());
 
         if(isFPoSu) this->playfieldBuffer->enable();
 
-        beatmap->draw();
+        this->playfield->draw();
 
         auto actual_flashlight_enabled = cv::mod_actual_flashlight.getBool();
         if(cv::mod_flashlight.getBool() || actual_flashlight_enabled) {
             // Convert screen mouse -> osu mouse pos
-            vec2 cursorPos = beatmap->getCursorPos();
+            vec2 cursorPos = this->playfield->getCursorPos();
             vec2 mouse_position = cursorPos - GameRules::getPlayfieldOffset();
             mouse_position /= GameRules::getPlayfieldScaleFactor();
 
@@ -454,7 +455,7 @@ void Osu::draw() {
             if(cv::mod_flashlight.getBool()) {
                 // Dim screen when holding a slider
                 float opacity = 1.f;
-                if(beatmap->holding_slider && !cv::avoid_flashes.getBool()) {
+                if(this->playfield->holding_slider && !cv::avoid_flashes.getBool()) {
                     opacity = 0.2f;
                 }
 
@@ -472,7 +473,7 @@ void Osu::draw() {
             if(actual_flashlight_enabled) {
                 // Brighten screen when holding a slider
                 float opacity = 1.f;
-                if(beatmap->holding_slider && !cv::avoid_flashes.getBool()) {
+                if(this->playfield->holding_slider && !cv::avoid_flashes.getBool()) {
                     opacity = 0.8f;
                 }
 
@@ -516,10 +517,10 @@ void Osu::draw() {
         fadingCursorAlpha =
             1.0f -
             std::clamp<float>((float)this->score->getCombo() / cv::mod_fadingcursor_combo.getFloat(), 0.0f, 1.0f);
-        if(this->pauseMenu->isVisible() || beatmap->isContinueScheduled() || !cv::mod_fadingcursor.getBool())
+        if(this->pauseMenu->isVisible() || this->playfield->isContinueScheduled() || !cv::mod_fadingcursor.getBool())
             fadingCursorAlpha = 1.0f;
         if(isFPoSu && cv::fposu_draw_cursor_trail.getBool())
-            this->hud->drawCursorTrail(beatmap->getCursorPos(), fadingCursorAlpha);
+            this->hud->drawCursorTrail(this->playfield->getCursorPos(), fadingCursorAlpha);
 
         if(isFPoSu) {
             this->playfieldBuffer->disable();
@@ -562,9 +563,8 @@ void Osu::draw() {
 
     // draw cursor
     if(this->isInPlayMode()) {
-        Beatmap *beatmap = this->getSelectedBeatmap();
-        vec2 cursorPos = beatmap->getCursorPos();
-        bool drawSecondTrail = (cv::mod_autoplay.getBool() || cv::mod_autopilot.getBool() || beatmap->is_watching ||
+        vec2 cursorPos = this->playfield->getCursorPos();
+        bool drawSecondTrail = (cv::mod_autoplay.getBool() || cv::mod_autopilot.getBool() || this->playfield->is_watching ||
                                 BanchoState::spectating);
         bool updateAndDrawTrail = true;
         if(cv::mod_fposu.getBool()) {
@@ -620,24 +620,23 @@ void Osu::update() {
     }
 
     if(this->music_unpause_scheduled && soundEngine->isReady()) {
-        if(this->getSelectedBeatmap()->getMusic() != nullptr) {
-            soundEngine->play(this->getSelectedBeatmap()->getMusic());
+        if(this->playfield->getMusic() != nullptr) {
+            soundEngine->play(this->playfield->getMusic());
         }
         this->music_unpause_scheduled = false;
     }
 
-    // main beatmap update
+    // main playfield update
     this->bSeeking = false;
     if(this->isInPlayMode()) {
-        auto beatmap = this->getSelectedBeatmap();
-        beatmap->update();
+        playfield->update();
 
         // NOTE: force keep loaded background images while playing
         this->backgroundImageHandler->scheduleFreezeCache();
 
         // skip button clicking
-        bool can_skip = beatmap->isInSkippableSection() && !this->bClickedSkipButton;
-        can_skip &= !beatmap->isPaused() && !this->volumeOverlay->isBusy();
+        bool can_skip = playfield->isInSkippableSection() && !this->bClickedSkipButton;
+        can_skip &= !playfield->isPaused() && !this->volumeOverlay->isBusy();
         if(can_skip) {
             const bool isAnyOsuKeyDown =
                 (this->bKeyboardKey1Down || this->bKeyboardKey12Down || this->bKeyboardKey2Down ||
@@ -662,18 +661,18 @@ void Osu::update() {
 
         // skipping
         if(this->bSkipScheduled) {
-            const bool isLoading = beatmap->isLoading();
+            const bool isLoading = playfield->isLoading();
 
-            if(beatmap->isInSkippableSection() && !beatmap->isPaused() && !isLoading) {
-                bool can_skip_intro = (cv::skip_intro_enabled.getBool() && beatmap->iCurrentHitObjectIndex < 1);
-                bool can_skip_break = (cv::skip_breaks_enabled.getBool() && beatmap->iCurrentHitObjectIndex > 0);
+            if(playfield->isInSkippableSection() && !playfield->isPaused() && !isLoading) {
+                bool can_skip_intro = (cv::skip_intro_enabled.getBool() && playfield->iCurrentHitObjectIndex < 1);
+                bool can_skip_break = (cv::skip_breaks_enabled.getBool() && playfield->iCurrentHitObjectIndex > 0);
                 if(BanchoState::is_playing_a_multi_map()) {
                     can_skip_intro = BanchoState::room.all_players_skipped;
                     can_skip_break = false;
                 }
 
                 if(can_skip_intro || can_skip_break) {
-                    beatmap->skipEmptySection();
+                    playfield->skipEmptySection();
                 }
             }
 
@@ -682,35 +681,35 @@ void Osu::update() {
 
         // Reset m_bClickedSkipButton on mouse up
         // We only use m_bClickedSkipButton to prevent seeking when clicking the skip button
-        if(this->bClickedSkipButton && !beatmap->isInSkippableSection()) {
+        if(this->bClickedSkipButton && !playfield->isInSkippableSection()) {
             if(!mouse->isLeftDown()) {
                 this->bClickedSkipButton = false;
             }
         }
 
         // scrubbing/seeking
-        this->bSeeking = (this->bSeekKey || beatmap->is_watching);
+        this->bSeeking = (this->bSeekKey || playfield->is_watching);
         this->bSeeking &= !this->volumeOverlay->isBusy();
         this->bSeeking &= !BanchoState::is_playing_a_multi_map() && !this->bClickedSkipButton;
         this->bSeeking &= !BanchoState::spectating;
         if(this->bSeeking) {
             f32 mousePosX = std::round(mouse->getPos().x);
             f32 percent = std::clamp<f32>(mousePosX / (f32)this->getScreenWidth(), 0.0f, 1.0f);
-            f32 seek_to_ms = percent * (beatmap->getStartTimePlayable() + beatmap->getLengthPlayable());
+            f32 seek_to_ms = percent * (playfield->getStartTimePlayable() + playfield->getLengthPlayable());
 
             if(mouse->isLeftDown()) {
                 if(mousePosX != this->fPrevSeekMousePosX || !cv::scrubbing_smooth.getBool()) {
                     this->fPrevSeekMousePosX = mousePosX;
 
                     // special case: allow cancelling the failing animation here
-                    if(beatmap->hasFailed()) beatmap->cancelFailing();
+                    if(playfield->hasFailed()) playfield->cancelFailing();
 
                     // when seeking during gameplay, add nofail for convenience
-                    if(!beatmap->is_watching && !cv::mod_nofail.getBool()) {
+                    if(!playfield->is_watching && !cv::mod_nofail.getBool()) {
                         cv::mod_nofail.setValue(true);
                     }
 
-                    beatmap->seekMS(seek_to_ms);
+                    playfield->seekMS(seek_to_ms);
                 }
             } else {
                 this->fPrevSeekMousePosX = -1.0f;
@@ -726,8 +725,8 @@ void Osu::update() {
             this->fQuickRetryTime = 0.0f;
 
             if(!BanchoState::is_playing_a_multi_map()) {
-                beatmap->restart(true);
-                beatmap->update();
+                playfield->restart(true);
+                playfield->update();
                 this->pauseMenu->setVisible(false);
             }
         }
@@ -841,7 +840,7 @@ void Osu::update() {
 }
 
 bool Osu::isInPlayModeAndNotPaused() {
-    return isInPlayMode() && !(getSelectedBeatmap() != nullptr && getSelectedBeatmap()->isPaused());
+    return isInPlayMode() && !this->playfield->isPaused();
 }
 
 void Osu::updateMods() {
@@ -849,9 +848,9 @@ void Osu::updateMods() {
     osu->getScore()->setCheated();
 
     if(this->isInPlayMode()) {
-        // notify the possibly running beatmap of mod changes
+        // notify the possibly running playfield of mod changes
         // e.g. recalculating stacks dynamically if HR is toggled
-        this->getSelectedBeatmap()->onModUpdate();
+        this->playfield->onModUpdate();
     }
 
     // handle windows key disable/enable
@@ -904,7 +903,7 @@ void Osu::onKeyDown(KeyboardEvent &key) {
     }
 
     if(key == (KEYCODE)cv::TOGGLE_MAP_BACKGROUND.getInt()) {
-        auto diff = this->getSelectedBeatmap()->getSelectedDifficulty2();
+        auto diff = this->playfield->getSelectedDifficulty2();
         if(!diff) {
             this->notificationOverlay->addNotification("No beatmap is currently selected.");
         } else {
@@ -954,39 +953,37 @@ void Osu::onKeyDown(KeyboardEvent &key) {
     // boss key (minimize + mute)
     if(key == (KEYCODE)cv::BOSS_KEY.getInt()) {
         env->minimize();
-        this->bWasBossKeyPaused = this->getSelectedBeatmap()->isPreviewMusicPlaying();
-        this->getSelectedBeatmap()->pausePreviewMusic(false);
+        this->bWasBossKeyPaused = this->playfield->isPreviewMusicPlaying();
+        this->playfield->pausePreviewMusic(false);
     }
 
     // local hotkeys (and gameplay keys)
 
     // while playing (and not in options)
     if(this->isInPlayMode() && !this->optionsMenu->isVisible() && !this->chat->isVisible()) {
-        auto beatmap = this->getSelectedBeatmap();
-
         // instant replay
-        if((beatmap->isPaused() || beatmap->hasFailed())) {
+        if((this->playfield->isPaused() || this->playfield->hasFailed())) {
             if(!key.isConsumed() && key == (KEYCODE)cv::INSTANT_REPLAY.getInt()) {
-                if(!beatmap->is_watching && !BanchoState::spectating) {
+                if(!this->playfield->is_watching && !BanchoState::spectating) {
                     FinishedScore score;
-                    score.replay = beatmap->live_replay;
-                    score.beatmap_hash = beatmap->getSelectedDifficulty2()->getMD5Hash();
+                    score.replay = this->playfield->live_replay;
+                    score.beatmap_hash = this->playfield->getSelectedDifficulty2()->getMD5Hash();
                     score.mods = this->getScore()->mods;
 
                     score.playerName = BanchoState::get_username();
                     score.player_id = std::max(0, BanchoState::get_uid());
 
-                    f64 pos_seconds = beatmap->getTime() - cv::instant_replay_duration.getFloat();
+                    f64 pos_seconds = this->playfield->getTime() - cv::instant_replay_duration.getFloat();
                     u32 pos_ms = (u32)(std::max(0.0, pos_seconds) * 1000.0);
-                    beatmap->cancelFailing();
-                    beatmap->watch(score, pos_ms);
+                    this->playfield->cancelFailing();
+                    this->playfield->watch(score, pos_ms);
                     return;
                 }
             }
         }
 
         // while playing and not paused
-        if(!this->getSelectedBeatmap()->isPaused()) {
+        if(!this->playfield->isPaused()) {
             // K1
             {
                 const bool isKeyLeftClick = (key == (KEYCODE)cv::LEFT_CLICK.getInt());
@@ -999,9 +996,9 @@ void Osu::onKeyDown(KeyboardEvent &key) {
 
                     this->onKey1Change(true, false);
 
-                    if(!this->getSelectedBeatmap()->hasFailed()) key.consume();
+                    if(!this->playfield->hasFailed()) key.consume();
                 } else if(isKeyLeftClick || isKeyLeftClick2) {
-                    if(!this->getSelectedBeatmap()->hasFailed()) key.consume();
+                    if(!this->playfield->hasFailed()) key.consume();
                 }
             }
 
@@ -1017,15 +1014,15 @@ void Osu::onKeyDown(KeyboardEvent &key) {
 
                     this->onKey2Change(true, false);
 
-                    if(!this->getSelectedBeatmap()->hasFailed()) key.consume();
+                    if(!this->playfield->hasFailed()) key.consume();
                 } else if(isKeyRightClick || isKeyRightClick2) {
-                    if(!this->getSelectedBeatmap()->hasFailed()) key.consume();
+                    if(!this->playfield->hasFailed()) key.consume();
                 }
             }
 
             // Smoke
             if(key == (KEYCODE)cv::SMOKE.getInt()) {
-                this->getSelectedBeatmap()->current_keys |= LegacyReplay::Smoke;
+                this->playfield->current_keys |= LegacyReplay::Smoke;
                 key.consume();
             }
 
@@ -1071,7 +1068,7 @@ void Osu::onKeyDown(KeyboardEvent &key) {
                 (!this->bKeyboardKey1Down && !this->bKeyboardKey12Down)) &&
                ((KEY_F1 != (KEYCODE)cv::RIGHT_CLICK.getInt() && KEY_F1 != (KEYCODE)cv::RIGHT_CLICK_2.getInt()) ||
                 (!this->bKeyboardKey2Down && !this->bKeyboardKey22Down)) &&
-               !this->bF1 && !this->getSelectedBeatmap()->hasFailed() &&
+               !this->bF1 && !this->playfield->hasFailed() &&
                !BanchoState::is_playing_a_multi_map())  // only if not failed though
             {
                 this->bF1 = true;
@@ -1081,13 +1078,13 @@ void Osu::onKeyDown(KeyboardEvent &key) {
             // quick save/load
             if(!BanchoState::is_playing_a_multi_map()) {
                 if(key == (KEYCODE)cv::QUICK_SAVE.getInt())
-                    this->fQuickSaveTime = this->getSelectedBeatmap()->getTime();
+                    this->fQuickSaveTime = this->playfield->getTime();
 
                 if(key == (KEYCODE)cv::QUICK_LOAD.getInt()) {
                     // special case: allow cancelling the failing animation here
-                    if(this->getSelectedBeatmap()->hasFailed()) this->getSelectedBeatmap()->cancelFailing();
+                    if(this->playfield->hasFailed()) this->playfield->cancelFailing();
 
-                    this->getSelectedBeatmap()->seekMS(this->fQuickSaveTime);
+                    this->playfield->seekMS(this->fQuickSaveTime);
                 }
             }
 
@@ -1101,9 +1098,9 @@ void Osu::onKeyDown(KeyboardEvent &key) {
                     if(forward) diff += cv::seek_delta.getInt();
                     if(diff != 0) {
                         // special case: allow cancelling the failing animation here
-                        if(this->getSelectedBeatmap()->hasFailed()) this->getSelectedBeatmap()->cancelFailing();
+                        if(this->playfield->hasFailed()) this->playfield->cancelFailing();
 
-                        this->getSelectedBeatmap()->seekMS(this->getSelectedBeatmap()->getTime() + diff);
+                        this->playfield->seekMS(this->playfield->getTime() + diff);
                     }
                 }
             }
@@ -1146,12 +1143,12 @@ void Osu::onKeyDown(KeyboardEvent &key) {
 
                 if(!BanchoState::is_playing_a_multi_map()) {
                     // bit of a misnomer, this pauses OR unpauses the music
-                    this->getSelectedBeatmap()->pause();
+                    this->playfield->pause();
                 }
 
-                if(this->pauseMenu->isVisible() && this->getSelectedBeatmap()->hasFailed()) {
+                if(this->pauseMenu->isVisible() && this->playfield->hasFailed()) {
                     // quit if we try to 'escape' the pause menu when dead (satisfying ragequit mechanic)
-                    this->getSelectedBeatmap()->stop(true);
+                    this->playfield->stop(true);
                 } else {
                     // else just toggle the pause menu
                     this->pauseMenu->setVisible(!this->pauseMenu->isVisible());
@@ -1161,19 +1158,19 @@ void Osu::onKeyDown(KeyboardEvent &key) {
             // local offset
             if(key == (KEYCODE)cv::INCREASE_LOCAL_OFFSET.getInt()) {
                 long offsetAdd = keyboard->isAltDown() ? 1 : 5;
-                this->getSelectedBeatmap()->getSelectedDifficulty2()->setLocalOffset(
-                    this->getSelectedBeatmap()->getSelectedDifficulty2()->getLocalOffset() + offsetAdd);
+                this->playfield->getSelectedDifficulty2()->setLocalOffset(
+                    this->playfield->getSelectedDifficulty2()->getLocalOffset() + offsetAdd);
                 this->notificationOverlay->addNotification(
                     UString::format("Local beatmap offset set to %ld ms",
-                                    this->getSelectedBeatmap()->getSelectedDifficulty2()->getLocalOffset()));
+                                    this->playfield->getSelectedDifficulty2()->getLocalOffset()));
             }
             if(key == (KEYCODE)cv::DECREASE_LOCAL_OFFSET.getInt()) {
                 long offsetAdd = -(keyboard->isAltDown() ? 1 : 5);
-                this->getSelectedBeatmap()->getSelectedDifficulty2()->setLocalOffset(
-                    this->getSelectedBeatmap()->getSelectedDifficulty2()->getLocalOffset() + offsetAdd);
+                this->playfield->getSelectedDifficulty2()->setLocalOffset(
+                    this->playfield->getSelectedDifficulty2()->getLocalOffset() + offsetAdd);
                 this->notificationOverlay->addNotification(
                     UString::format("Local beatmap offset set to %ld ms",
-                                    this->getSelectedBeatmap()->getSelectedDifficulty2()->getLocalOffset()));
+                                    this->playfield->getSelectedDifficulty2()->getLocalOffset()));
             }
         }
     }
@@ -1211,8 +1208,8 @@ void Osu::onKeyUp(KeyboardEvent &key) {
         }
 
         // Smoke
-        if(this->getSelectedBeatmap() && (key == (KEYCODE)cv::SMOKE.getInt())) {
-            this->getSelectedBeatmap()->current_keys &= ~LegacyReplay::Smoke;
+        if(this->playfield && (key == (KEYCODE)cv::SMOKE.getInt())) {
+            this->playfield->current_keys &= ~LegacyReplay::Smoke;
             key.consume();
         }
     }
@@ -1257,7 +1254,7 @@ void Osu::onChar(KeyboardEvent &e) {
 void Osu::onButtonChange(ButtonIndex button, bool down) {
     using enum ButtonIndex;
     if((button != BUTTON_LEFT && button != BUTTON_RIGHT) ||
-       (this->isInPlayMode() && !this->getSelectedBeatmap()->isPaused() && cv::disable_mousebuttons.getBool()))
+       (this->isInPlayMode() && !this->playfield->isPaused() && cv::disable_mousebuttons.getBool()))
         return;
 
     switch(button) {
@@ -1403,8 +1400,7 @@ void Osu::onPlayEnd(FinishedScore score, bool quit, bool /*aborted*/) {
         if(!cv::mod_endless.getBool()) {
             // NOTE: the order of these two calls matters
             this->rankingScreen->setScore(std::move(score));
-            this->rankingScreen->setBeatmapInfo(this->getSelectedBeatmap(),
-                                                this->getSelectedBeatmap()->getSelectedDifficulty2());
+            this->rankingScreen->setBeatmapInfo(this->playfield->getSelectedDifficulty2());
 
             soundEngine->play(this->skin->getApplause());
         } else {
@@ -1432,12 +1428,6 @@ void Osu::onPlayEnd(FinishedScore score, bool quit, bool /*aborted*/) {
     this->updateWindowsKeyDisable();
 }
 
-Beatmap *Osu::getSelectedBeatmap() {
-    if(this->songBrowser2 != nullptr) return this->songBrowser2->getSelectedBeatmap();
-
-    return nullptr;
-}
-
 float Osu::getDifficultyMultiplier() {
     float difficultyMultiplier = 1.0f;
 
@@ -1460,7 +1450,7 @@ float Osu::getScoreMultiplier() {
     float multiplier = 1.0f;
 
     // Dumb formula, but the values for HT/DT were dumb to begin with
-    f32 s = this->getSelectedBeatmap()->getSpeedMultiplier();
+    f32 s = this->playfield->getSpeedMultiplier();
     if(s > 1.f) {
         multiplier *= (0.24 * s) + 0.76;
     } else if(s < 1.f) {
@@ -1484,7 +1474,7 @@ float Osu::getScoreMultiplier() {
 }
 
 float Osu::getAnimationSpeedMultiplier() {
-    float animationSpeedMultiplier = this->getSelectedBeatmap()->getSpeedMultiplier();
+    float animationSpeedMultiplier = this->playfield->getSpeedMultiplier();
 
     if(cv::animation_speed_override.getFloat() >= 0.0f) return std::max(cv::animation_speed_override.getFloat(), 0.05f);
 
@@ -1620,7 +1610,7 @@ void Osu::updateWindowsKeyDisable() {
     if(cv::debug_osu.getBool()) debugLog("Osu::updateWindowsKeyDisable()\n");
     const bool isPlayerPlaying =
         engine->hasFocus() && this->isInPlayMode() &&
-        (!this->getSelectedBeatmap()->isPaused() || this->getSelectedBeatmap()->isRestartScheduled()) &&
+        (!this->playfield->isPaused() || this->playfield->isRestartScheduled()) &&
         !cv::mod_autoplay.getBool();
     if(cv::win_disable_windows_key_while_playing.getBool()) {
         env->grabKeyboard(isPlayerPlaying);
@@ -1706,11 +1696,8 @@ void Osu::onFocusGained() {
     if(this->bWasBossKeyPaused) {
         this->bWasBossKeyPaused = false;
 
-        // make sure beatmap is fully constructed before accessing it
-        Beatmap *selectedBeatmap = this->getSelectedBeatmap();
-        if(selectedBeatmap != nullptr) {
-            selectedBeatmap->pausePreviewMusic();
-        }
+        // make sure playfield is fully constructed before accessing it
+        this->playfield->pausePreviewMusic();
     }
 
     this->updateWindowsKeyDisable();
@@ -1718,10 +1705,10 @@ void Osu::onFocusGained() {
 }
 
 void Osu::onFocusLost() {
-    if(this->isInPlayMode() && !this->getSelectedBeatmap()->isPaused() && cv::pause_on_focus_loss.getBool()) {
-        if(!BanchoState::is_playing_a_multi_map() && !this->getSelectedBeatmap()->is_watching &&
+    if(this->isInPlayMode() && !this->playfield->isPaused() && cv::pause_on_focus_loss.getBool()) {
+        if(!BanchoState::is_playing_a_multi_map() && !this->playfield->is_watching &&
            !BanchoState::spectating) {
-            this->getSelectedBeatmap()->pause(false);
+            this->playfield->pause(false);
             this->pauseMenu->setVisible(true);
             this->modSelector->setVisible(false);
         }
@@ -1740,7 +1727,7 @@ bool Osu::onShutdown() {
     debugLog("Osu::onShutdown()\n");
 
     if(!cv::alt_f4_quits_even_while_playing.getBool() && this->isInPlayMode()) {
-        this->getSelectedBeatmap()->stop();
+        this->playfield->stop();
         return false;
     }
 
@@ -1796,7 +1783,7 @@ void Osu::onSkinChange(const UString &newValue) {
 
 void Osu::updateAnimationSpeed() {
     if(this->getSkin() != nullptr) {
-        float speed = this->getAnimationSpeedMultiplier() / this->getSelectedBeatmap()->getSpeedMultiplier();
+        float speed = this->getAnimationSpeedMultiplier() / this->playfield->getSpeedMultiplier();
         this->getSkin()->setAnimationSpeed(speed >= 0.0f ? speed : 0.0f);
     }
 }
@@ -1805,7 +1792,7 @@ void Osu::onAnimationSpeedChange() { this->updateAnimationSpeed(); }
 
 void Osu::onSpeedChange(const UString &newValue) {
     float speed = newValue.toFloat();
-    this->getSelectedBeatmap()->setSpeed(speed >= 0.0f ? speed : this->getSelectedBeatmap()->getSpeedMultiplier());
+    this->playfield->setSpeed(speed >= 0.0f ? speed : this->playfield->getSpeedMultiplier());
     this->updateAnimationSpeed();
 
     // Update mod menu UI
@@ -1830,7 +1817,7 @@ void Osu::onThumbnailsToggle() {
     osu->getSongBrowser()->thumbnailYRatio = cv::draw_songbrowser_thumbnails.getBool() ? 1.333333f : 0.f;
 }
 
-void Osu::onPlayfieldChange() { this->getSelectedBeatmap()->onModUpdate(); }
+void Osu::onPlayfieldChange() { this->playfield->onModUpdate(); }
 
 void Osu::onUIScaleChange(const UString &oldValue, const UString &newValue) {
     const float oldVal = oldValue.toFloat();
@@ -1871,7 +1858,7 @@ void Osu::updateCursorVisibility() {
     bool forced_visible = false;
 
     if(this->isInPlayMode() && (cv::mod_autoplay.getBool() || cv::mod_autopilot.getBool() ||
-                                this->getSelectedBeatmap()->is_watching || BanchoState::spectating)) {
+                                this->playfield->is_watching || BanchoState::spectating)) {
         forced_visible = true;
     }
 
@@ -1912,7 +1899,7 @@ void Osu::updateConfineCursor() {
                                   (!playing_fposu_nonabs && cv::confine_cursor_never.getBool()) ||            //
                                   this->getModAuto() ||                                                       //
                                   this->getModAutopilot() ||                                                  //
-                                  (this->getSelectedBeatmap() && this->getSelectedBeatmap()->is_watching) ||  //
+                                  (this->playfield && this->playfield->is_watching) ||  //
                                   BanchoState::spectating;                                                    //
 
     bool confine_cursor = might_confine && !force_no_confine;
@@ -1947,28 +1934,26 @@ void Osu::onKey1Change(bool pressed, bool isMouse) {
     if(this->bKeyboardKey12Down) numKeys1Down++;
     if(this->bMouseKey1Down) numKeys1Down++;
 
-    const bool isKeyPressed1Allowed =
-        (numKeys1Down == 1);  // all key1 keys (incl. multiple bindings) act as one single key with state handover
+    // all key1 keys (incl. multiple bindings) act as one single key with state handover
+    const bool isKeyPressed1Allowed = (numKeys1Down == 1);
 
-    // WARNING: if paused, keyReleased*() will be called out of sequence every time due to the fix. do not put actions
-    // in it
-    if(this->isInPlayMode() /* && !getSelectedBeatmap()->isPaused()*/)  // NOTE: allow keyup even while beatmap is
-                                                                        // paused, to correctly not-continue immediately
-                                                                        // due to pressed keys
-    {
+    // WARNING: if paused, keyReleased*() will be called out of sequence every time due to the fix.
+    //          do not put actions in it
+    // NOTE: allow keyup even while beatmap is paused, to correctly not-continue immediately due to pressed keys
+    if(this->isInPlayMode()) {
         if(!(isMouse && cv::disable_mousebuttons.getBool())) {
             // quickfix
             if(cv::disable_mousebuttons.getBool()) this->bMouseKey1Down = false;
 
-            if(pressed && isKeyPressed1Allowed && !this->getSelectedBeatmap()->isPaused())  // see above note
-                this->getSelectedBeatmap()->keyPressed1(isMouse);
+            if(pressed && isKeyPressed1Allowed && !this->playfield->isPaused())  // see above note
+                this->playfield->keyPressed1(isMouse);
             else if(!this->bKeyboardKey1Down && !this->bKeyboardKey12Down && !this->bMouseKey1Down)
-                this->getSelectedBeatmap()->keyReleased1(isMouse);
+                this->playfield->keyReleased1(isMouse);
         }
     }
 
     // cursor anim + ripples
-    const bool doAnimate = !(this->isInPlayMode() && !this->getSelectedBeatmap()->isPaused() && isMouse &&
+    const bool doAnimate = !(this->isInPlayMode() && !this->playfield->isPaused() && isMouse &&
                              cv::disable_mousebuttons.getBool());
     if(doAnimate) {
         if(pressed && isKeyPressed1Allowed) {
@@ -1986,28 +1971,26 @@ void Osu::onKey2Change(bool pressed, bool isMouse) {
     if(this->bKeyboardKey22Down) numKeys2Down++;
     if(this->bMouseKey2Down) numKeys2Down++;
 
-    const bool isKeyPressed2Allowed =
-        (numKeys2Down == 1);  // all key2 keys (incl. multiple bindings) act as one single key with state handover
+    // all key2 keys (incl. multiple bindings) act as one single key with state handover
+    const bool isKeyPressed2Allowed = (numKeys2Down == 1);
 
-    // WARNING: if paused, keyReleased*() will be called out of sequence every time due to the fix. do not put actions
-    // in it
-    if(this->isInPlayMode() /* && !getSelectedBeatmap()->isPaused()*/)  // NOTE: allow keyup even while beatmap is
-                                                                        // paused, to correctly not-continue immediately
-                                                                        // due to pressed keys
-    {
+    // WARNING: if paused, keyReleased*() will be called out of sequence every time due to the fix.
+    //          do not put actions in it
+    // NOTE: allow keyup even while beatmap is paused, to correctly not-continue immediately due to pressed keys
+    if(this->isInPlayMode()) {
         if(!(isMouse && cv::disable_mousebuttons.getBool())) {
             // quickfix
             if(cv::disable_mousebuttons.getBool()) this->bMouseKey2Down = false;
 
-            if(pressed && isKeyPressed2Allowed && !this->getSelectedBeatmap()->isPaused())  // see above note
-                this->getSelectedBeatmap()->keyPressed2(isMouse);
+            if(pressed && isKeyPressed2Allowed && !this->playfield->isPaused())  // see above note
+                this->playfield->keyPressed2(isMouse);
             else if(!this->bKeyboardKey2Down && !this->bKeyboardKey22Down && !this->bMouseKey2Down)
-                this->getSelectedBeatmap()->keyReleased2(isMouse);
+                this->playfield->keyReleased2(isMouse);
         }
     }
 
     // cursor anim + ripples
-    const bool doAnimate = !(this->isInPlayMode() && !this->getSelectedBeatmap()->isPaused() && isMouse &&
+    const bool doAnimate = !(this->isInPlayMode() && !this->playfield->isPaused() && isMouse &&
                              cv::disable_mousebuttons.getBool());
     if(doAnimate) {
         if(pressed && isKeyPressed2Allowed) {
@@ -2114,9 +2097,9 @@ void Osu::setupSoloud() {
     static unsigned long prev_position_ms = 0;
 
     static auto outputChangedBeforeCallback = []() -> void {
-        if(osu && osu->getSelectedBeatmap() && osu->getSelectedBeatmap()->getMusic()) {
-            was_playing = osu->getSelectedBeatmap()->getMusic()->isPlaying();
-            prev_position_ms = osu->getSelectedBeatmap()->getMusic()->getPositionMS();
+        if(osu && osu->playfield && osu->playfield->getMusic()) {
+            was_playing = osu->playfield->getMusic()->isPlaying();
+            prev_position_ms = osu->playfield->getMusic()->getPositionMS();
         } else {
             was_playing = false;
             prev_position_ms = 0;
@@ -2131,16 +2114,16 @@ void Osu::setupSoloud() {
             osu->optionsMenu->onOutputDeviceResetUpdate();
 
             // start playing music again after audio device changed
-            if(osu->getSelectedBeatmap() && osu->getSelectedBeatmap()->getMusic()) {
+            if(osu->playfield && osu->playfield->getMusic()) {
                 if(osu->isInPlayMode()) {
-                    osu->getSelectedBeatmap()->unloadMusic();
-                    osu->getSelectedBeatmap()->loadMusic();
-                    osu->getSelectedBeatmap()->getMusic()->setLoop(false);
-                    osu->getSelectedBeatmap()->getMusic()->setPositionMS(prev_position_ms);
+                    osu->playfield->unloadMusic();
+                    osu->playfield->loadMusic();
+                    osu->playfield->getMusic()->setLoop(false);
+                    osu->playfield->getMusic()->setPositionMS(prev_position_ms);
                 } else {
-                    osu->getSelectedBeatmap()->unloadMusic();
-                    osu->getSelectedBeatmap()->select();
-                    osu->getSelectedBeatmap()->getMusic()->setPositionMS(prev_position_ms);
+                    osu->playfield->unloadMusic();
+                    osu->playfield->selectBeatmap();
+                    osu->playfield->getMusic()->setPositionMS(prev_position_ms);
                 }
             }
 

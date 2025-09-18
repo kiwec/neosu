@@ -5,7 +5,6 @@
 
 #include <random>
 
-class Beatmap;
 class BeatmapCarousel;
 class Database;
 class DatabaseBeatmap;
@@ -110,8 +109,6 @@ class SongBrowser final : public ScreenBackable {
 
     [[nodiscard]] inline bool isInSearch() const { return this->bInSearch; }
     [[nodiscard]] inline bool isRightClickScrolling() const { return this->bSongBrowserRightClickScrolling; }
-
-    [[nodiscard]] inline Beatmap *getSelectedBeatmap() const { return this->beatmap; }
 
     inline InfoLabel *getInfoLabel() { return this->songInfo; }
 
@@ -270,7 +267,6 @@ class SongBrowser final : public ScreenBackable {
 
     // behaviour
     DatabaseBeatmap *lastSelectedBeatmap = nullptr;
-    Beatmap *beatmap;
     bool bHasSelectedAndIsPlaying;
     float fPulseAnimation;
     float fBackgroundFadeInTime;

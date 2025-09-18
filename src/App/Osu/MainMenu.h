@@ -9,7 +9,6 @@
 #include "ResourceManager.h"
 
 class Image;
-class Beatmap;
 class DatabaseBeatmap;
 typedef DatabaseBeatmap BeatmapDifficulty;
 typedef DatabaseBeatmap BeatmapSet;

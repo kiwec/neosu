@@ -14,7 +14,7 @@ void set_discord_presence(struct DiscordActivity * /*activity*/) {}
 static bool initialized = false;
 
 #include "Bancho.h"
-#include "Beatmap.h"
+#include "Playfield.h"
 #include "ConVar.h"
 #include "Engine.h"
 #include "Osu.h"
@@ -159,8 +159,8 @@ void set_discord_presence([[maybe_unused]] struct DiscordActivity *activity) {
     strcpy(&activity->assets.small_image[0], "None");
     activity->assets.small_text[0] = '\0';
 
-    auto diff2 = osu->getSelectedBeatmap()->getSelectedDifficulty2();
-    auto music = osu->getSelectedBeatmap()->getMusic();
+    auto diff2 = osu->playfield->getSelectedDifficulty2();
+    auto music = osu->playfield->getMusic();
     bool listening = diff2 != nullptr && music != nullptr && music->isPlaying();
     bool playing = diff2 != nullptr && osu->isInPlayMode();
     if(listening || playing) {

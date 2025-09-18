@@ -4,12 +4,11 @@
 #include "MD5Hash.h"
 
 class UIAvatar;
-class Beatmap;
 struct ScoreboardSlot;
-
 class McFont;
 class ConVar;
 class Image;
+class Playfield;
 class Shader;
 class VertexArrayObject;
 
@@ -41,7 +40,7 @@ class HUD : public OsuScreen {
         bool secondTrail = false);  // NOTE: only use if drawCursor() with updateAndDrawTrail = false (FPoSu)
     void drawCursorRipples();
     void drawFps();
-    void drawHitErrorBar(Beatmap *beatmap);
+    void drawHitErrorBar(Playfield *pf);
     void drawPlayfieldBorder(vec2 playfieldCenter, vec2 playfieldSize, float hitcircleDiameter);
     void drawPlayfieldBorder(vec2 playfieldCenter, vec2 playfieldSize, float hitcircleDiameter, float borderSize);
     void drawLoadingSmall(const UString &text);

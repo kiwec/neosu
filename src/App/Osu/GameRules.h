@@ -1,6 +1,6 @@
 #pragma once
 // Copyright (c) 2016, PG, All rights reserved.
-#include "Beatmap.h"
+#include "Playfield.h"
 #include "ConVar.h"
 #include "Osu.h"
 
@@ -17,7 +17,7 @@ class GameRules {
     //************************//
 
     // this scales the fadeout duration with the current speed multiplier
-    static inline float getFadeOutTime(Beatmap * /*beatmap*/) {
+    static inline float getFadeOutTime() {
         const float fade_out_time = cv::hitobject_fade_out_time.getFloat();
         const float multiplier_min = cv::hitobject_fade_out_time_speed_multiplier_min.getFloat();
         return fade_out_time * (1.0f / std::max(osu->getAnimationSpeedMultiplier(), multiplier_min));
@@ -104,11 +104,11 @@ class GameRules {
     }
 
     // raw spins required per second
-    static inline INLINE_BODY float getSpinnerSpinsPerSecond(BeatmapInterface *beatmap) {
+    static inline INLINE_BODY float getSpinnerSpinsPerSecond(PlayfieldInterface *beatmap) {
         return mapDifficultyRange(beatmap->getOD(), 3.0f, 5.0f, 7.5f);
     }
 
-    static inline INLINE_BODY float getSpinnerRotationsForSpeedMultiplier(BeatmapInterface *beatmap,
+    static inline INLINE_BODY float getSpinnerRotationsForSpeedMultiplier(PlayfieldInterface *beatmap,
                                                                           long spinnerDuration, float speedMultiplier) {
         /// return (int)((float)spinnerDuration / 1000.0f * getSpinnerSpinsPerSecond(beatmap)); // actual
         return (int)((((float)spinnerDuration / 1000.0f * getSpinnerSpinsPerSecond(beatmap)) * 0.5f) *
@@ -117,7 +117,7 @@ class GameRules {
 
     // spinner length compensated rotations
     // respect all mods and overrides
-    static inline INLINE_BODY float getSpinnerRotationsForSpeedMultiplier(BeatmapInterface *beatmap,
+    static inline INLINE_BODY float getSpinnerRotationsForSpeedMultiplier(PlayfieldInterface *beatmap,
                                                                           long spinnerDuration) {
         return getSpinnerRotationsForSpeedMultiplier(beatmap, spinnerDuration, beatmap->getSpeedMultiplier());
     }

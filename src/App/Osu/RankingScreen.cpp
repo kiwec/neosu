@@ -5,7 +5,7 @@
 
 #include "AnimationHandler.h"
 #include "Bancho.h"
-#include "Beatmap.h"
+#include "Playfield.h"
 #include "CBaseUIContainer.h"
 #include "CBaseUIImage.h"
 #include "CBaseUILabel.h"
@@ -401,7 +401,7 @@ CBaseUIContainer *RankingScreen::setVisible(bool visible) {
 
 void RankingScreen::onRetryClicked() {
     this->setVisible(false);
-    if(osu->getSelectedBeatmap()->play()) {
+    if(osu->playfield->play()) {
         osu->songBrowser2->setVisible(false);
     }
 }
@@ -495,9 +495,9 @@ void RankingScreen::setScore(FinishedScore score) {
     if(eq(score.mods.flags, ApproachDifferent)) this->enabledExperimentalMods.push_back(&cv::mod_approach_different);
 }
 
-void RankingScreen::setBeatmapInfo(Beatmap *beatmap, DatabaseBeatmap *diff2) {
+void RankingScreen::setBeatmapInfo(DatabaseBeatmap *diff2) {
     this->score.diff2 = diff2;
-    this->songInfo->setFromBeatmap(beatmap, diff2);
+    this->songInfo->setFromBeatmap(diff2);
 
     const std::string scorePlayer =
         this->score.playerName.empty() ? BanchoState::get_username() : this->score.playerName;

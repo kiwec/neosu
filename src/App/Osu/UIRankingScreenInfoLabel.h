@@ -5,8 +5,6 @@
 #include "CBaseUIElement.h"
 
 class McFont;
-
-class Beatmap;
 class DatabaseBeatmap;
 
 class UIRankingScreenInfoLabel : public CBaseUIElement {
@@ -15,7 +13,7 @@ class UIRankingScreenInfoLabel : public CBaseUIElement {
 
     void draw() override;
 
-    void setFromBeatmap(Beatmap *beatmap, DatabaseBeatmap *diff2);
+    void setFromBeatmap(DatabaseBeatmap *diff2);
 
     void setArtist(std::string artist) { this->sArtist = std::move(artist); }
     void setTitle(std::string title) { this->sTitle = std::move(title); }

@@ -7,8 +7,6 @@
 #include <atomic>
 #include <vector>
 
-class Beatmap;
-
 class SliderCurve;
 class ConVar;
 

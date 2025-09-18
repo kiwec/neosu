@@ -5,7 +5,7 @@
 #include "DatabaseBeatmap.h"
 #include "DifficultyCalculator.h"
 #include "Engine.h"
-#include "SimulatedBeatmap.h"
+#include "SimulatedPlayfield.h"
 #include "score.h"
 
 // TODO
@@ -160,7 +160,7 @@ static void run_sct(const std::unordered_map<MD5Hash, std::vector<FinishedScore>
         }
 
         auto diff = db->getBeatmapDifficulty(score.beatmap_hash);
-        SimulatedBeatmap smap(diff, score.mods);
+        SimulatedPlayfield smap(diff, score.mods);
         smap.spectated_replay = score.replay;
         smap.simulate_to(diff->getLengthMS());
 

@@ -1,16 +1,16 @@
-#include "BeatmapInterface.h"
+#include "PlayfieldInterface.h"
 
 #include "GameRules.h"
 
 #define X(rettype, methodname, refresh_time, impl) \
-    rettype BeatmapInterface::methodname() const { CACHED_METHOD_IMPL(rettype, refresh_time, impl) }
+    rettype PlayfieldInterface::methodname() const { CACHED_METHOD_IMPL(rettype, refresh_time, impl) }
 CACHED_BASE_METHODS
 #undef X
 
 #undef CACHED_BASE_METHODS
 #undef CACHED_METHOD_IMPL
 
-LiveScore::HIT BeatmapInterface::getHitResult(i32 delta) {
+LiveScore::HIT PlayfieldInterface::getHitResult(i32 delta) {
     // "stable-like" hit windows, see https://github.com/ppy/osu/pull/33882
     f32 window300 = std::floor(this->getHitWindow300()) - 0.5f;
     f32 window100 = std::floor(this->getHitWindow100()) - 0.5f;

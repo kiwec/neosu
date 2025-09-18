@@ -8,7 +8,7 @@
 #include "Bancho.h"
 #include "BanchoNetworking.h"
 #include "BanchoUsers.h"
-#include "Beatmap.h"
+#include "Playfield.h"
 #include "CBaseUIButton.h"
 #include "CBaseUIContainer.h"
 #include "CBaseUILabel.h"
@@ -277,7 +277,7 @@ void RoomScreen::mouse_update(bool *propagate_clicks) {
         RichPresence::onMultiplayerLobby();
     }
 
-    this->pauseButton->setPaused(!osu->getSelectedBeatmap()->isPreviewMusicPlaying());
+    this->pauseButton->setPaused(!osu->playfield->isPreviewMusicPlaying());
 
     this->contextMenu->mouse_update(propagate_clicks);
     if(!*propagate_clicks) return;
@@ -525,7 +525,7 @@ void RoomScreen::on_map_change() {
 
     // Deselect current map
     this->pauseButton->setPaused(true);
-    osu->songBrowser2->beatmap->deselect();
+    osu->playfield->deselectBeatmap();
 
     if(BanchoState::room.map_id == 0) {
         this->map_title->setText("(no map selected)");
@@ -580,7 +580,7 @@ void RoomScreen::on_room_joined(Room room) {
     // Close all screens and stop any activity the player is in
     stop_spectating();
     if(osu->isInPlayMode()) {
-        osu->getSelectedBeatmap()->stop(true);
+        osu->playfield->stop(true);
     }
     osu->rankingScreen->setVisible(false);
     osu->songBrowser2->setVisible(false);
@@ -661,14 +661,14 @@ void RoomScreen::on_room_updated(Room room) {
 
 void RoomScreen::on_match_started(Room room) {
     BanchoState::room = std::move(room);
-    if(osu->getSelectedBeatmap() == nullptr) {
+    if(osu->playfield->getSelectedDifficulty2() == nullptr) {
         debugLog("We received MATCH_STARTED without being ready, wtf!\n");
         return;
     }
 
     this->last_packet_tms = time(nullptr);
 
-    if(osu->getSelectedBeatmap()->play()) {
+    if(osu->playfield->play()) {
         this->bVisible = false;
         BanchoState::match_started = true;
         osu->songBrowser2->bHasSelectedAndIsPlaying = true;
@@ -725,7 +725,7 @@ FinishedScore RoomScreen::get_approximate_score() {
     score.player_id = BanchoState::get_uid();
     score.playerName = BanchoState::get_username();
 
-    score.diff2 = osu->getSelectedBeatmap()->getSelectedDifficulty2();
+    score.diff2 = osu->playfield->getSelectedDifficulty2();
 
     for(auto &i : BanchoState::room.slots) {
         auto slot = &i;

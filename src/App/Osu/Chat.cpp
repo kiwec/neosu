@@ -5,7 +5,7 @@
 #include "Bancho.h"
 #include "BanchoNetworking.h"
 #include "BanchoUsers.h"
-#include "Beatmap.h"
+#include "Playfield.h"
 #include "CBaseUIButton.h"
 #include "CBaseUIContainer.h"
 #include "CBaseUILabel.h"
@@ -456,7 +456,7 @@ void Chat::handle_command(const UString &msg) {
     }
 
     if(msg == "/np") {
-        auto diff = osu->getSelectedBeatmap()->getSelectedDifficulty2();
+        auto diff = osu->playfield->getSelectedDifficulty2();
         if(diff == nullptr) {
             this->addSystemMessage("You are not listening to anything.");
             return;
@@ -1251,10 +1251,9 @@ bool Chat::isVisibilityForced() {
 }
 
 void Chat::updateVisibility() {
-    auto selected_beatmap = osu->getSelectedBeatmap();
-    bool can_skip = (selected_beatmap != nullptr) && (selected_beatmap->isInSkippableSection());
+    bool can_skip = osu->playfield->isInSkippableSection();
     bool is_spectating = cv::mod_autoplay.getBool() || (cv::mod_autopilot.getBool() && cv::mod_relax.getBool()) ||
-                         (selected_beatmap != nullptr && selected_beatmap->is_watching) || BanchoState::spectating;
+                         osu->playfield->is_watching || BanchoState::spectating;
     bool is_clicking_circles = osu->isInPlayMode() && !can_skip && !is_spectating && !osu->pauseMenu->isVisible();
     if(BanchoState::is_playing_a_multi_map() && !BanchoState::room.all_players_loaded) {
         is_clicking_circles = false;

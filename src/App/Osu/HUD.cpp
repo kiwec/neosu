@@ -6,7 +6,7 @@
 #include "AnimationHandler.h"
 #include "Bancho.h"
 #include "BanchoUsers.h"
-#include "Beatmap.h"
+#include "Playfield.h"
 #include "CBaseUIContainer.h"
 #include "ConVar.h"
 #include "Database.h"
@@ -74,8 +74,7 @@ HUD::HUD() : OsuScreen() {
 HUD::~HUD() {}
 
 void HUD::draw() {
-    Beatmap *beatmap = osu->getSelectedBeatmap();
-    if(beatmap == nullptr) return;  // sanity check
+    Playfield *pf = osu->playfield;
 
     if(cv::draw_hud.getBool()) {
         if(cv::draw_inputoverlay.getBool()) {
@@ -90,25 +89,25 @@ void HUD::draw() {
         g->pushTransform();
         {
             if(osu->getModTarget() && cv::draw_target_heatmap.getBool()) {
-                g->translate(0, beatmap->fHitcircleDiameter *
+                g->translate(0, pf->fHitcircleDiameter *
                                     (1.0f / (cv::hud_scale.getFloat() * cv::hud_statistics_scale.getFloat())));
             }
 
-            auto diff2 = beatmap->getSelectedDifficulty2();
+            auto diff2 = pf->getSelectedDifficulty2();
             this->drawStatistics(
-                osu->getScore()->getNumMisses(), osu->getScore()->getNumSliderBreaks(), beatmap->iMaxPossibleCombo,
-                this->live_stars, diff2->pp.total_stars, beatmap->getMostCommonBPM(),
-                beatmap->getApproachRateForSpeedMultiplier(), beatmap->getCS(),
-                beatmap->getOverallDifficultyForSpeedMultiplier(), beatmap->getHP(), beatmap->getNPS(),
-                beatmap->getND(), osu->getScore()->getUnstableRate(), this->live_pp, diff2->pp.pp,
-                ((int)beatmap->getHitWindow300() - 0.5f) *
-                    (1.0f / beatmap->getSpeedMultiplier()),  // see InfoLabel::update()
+                osu->getScore()->getNumMisses(), osu->getScore()->getNumSliderBreaks(), pf->iMaxPossibleCombo,
+                this->live_stars, diff2->pp.total_stars, pf->getMostCommonBPM(),
+                pf->getApproachRateForSpeedMultiplier(), pf->getCS(),
+                pf->getOverallDifficultyForSpeedMultiplier(), pf->getHP(), pf->getNPS(),
+                pf->getND(), osu->getScore()->getUnstableRate(), this->live_pp, diff2->pp.pp,
+                ((int)pf->getHitWindow300() - 0.5f) *
+                    (1.0f / pf->getSpeedMultiplier()),  // see InfoLabel::update()
                 osu->getScore()->getHitErrorAvgCustomMin(), osu->getScore()->getHitErrorAvgCustomMax());
         }
         g->popTransform();
 
         // health anim
-        const double currentHealth = beatmap->getHealth();
+        const double currentHealth = pf->getHealth();
         const double elapsedMS = engine->getFrameTime() * 1000.0;
         const double frameAimTime = 1000.0 / 60.0;
         const double frameRatio = elapsedMS / frameAimTime;
@@ -119,11 +118,11 @@ void HUD::draw() {
         }
 
         if(cv::hud_scorebar_hide_during_breaks.getBool()) {
-            if(!anim->isAnimating(&this->fScoreBarBreakAnim) && !beatmap->isWaiting()) {
-                if(this->fScoreBarBreakAnim == 0.0f && beatmap->isInBreak()) {
+            if(!anim->isAnimating(&this->fScoreBarBreakAnim) && !pf->isWaiting()) {
+                if(this->fScoreBarBreakAnim == 0.0f && pf->isInBreak()) {
                     anim->moveLinear(&this->fScoreBarBreakAnim, 1.0f, cv::hud_scorebar_hide_anim_duration.getFloat(),
                                      true);
-                } else if(this->fScoreBarBreakAnim == 1.0f && !beatmap->isInBreak()) {
+                } else if(this->fScoreBarBreakAnim == 1.0f && !pf->isInBreak()) {
                     anim->moveLinear(&this->fScoreBarBreakAnim, 0.0f, cv::hud_scorebar_hide_anim_duration.getFloat(),
                                      true);
                 }
@@ -135,22 +134,22 @@ void HUD::draw() {
         // NOTE: special case for FPoSu, if players manually set fposu_draw_scorebarbg_on_top to 1
         if(cv::draw_scorebarbg.getBool() && cv::mod_fposu.getBool() && cv::fposu_draw_scorebarbg_on_top.getBool())
             this->drawScorebarBg(
-                cv::hud_scorebar_hide_during_breaks.getBool() ? (1.0f - beatmap->getBreakBackgroundFadeAnim()) : 1.0f,
+                cv::hud_scorebar_hide_during_breaks.getBool() ? (1.0f - pf->getBreakBackgroundFadeAnim()) : 1.0f,
                 this->fScoreBarBreakAnim);
 
         if(cv::draw_scorebar.getBool())
             this->drawHPBar(
                 this->fHealth,
-                cv::hud_scorebar_hide_during_breaks.getBool() ? (1.0f - beatmap->getBreakBackgroundFadeAnim()) : 1.0f,
+                cv::hud_scorebar_hide_during_breaks.getBool() ? (1.0f - pf->getBreakBackgroundFadeAnim()) : 1.0f,
                 this->fScoreBarBreakAnim);
 
         // NOTE: moved to draw behind hitobjects in Beatmap::draw()
         if(cv::mod_fposu.getBool()) {
             if(cv::draw_hiterrorbar.getBool() &&
-               (beatmap == nullptr ||
-                (!beatmap->isSpinnerActive() || !cv::hud_hiterrorbar_hide_during_spinner.getBool())) &&
-               !beatmap->isLoading()) {
-                this->drawHitErrorBar(beatmap->getHitWindow300(), beatmap->getHitWindow100(), beatmap->getHitWindow50(),
+               (pf == nullptr ||
+                (!pf->isSpinnerActive() || !cv::hud_hiterrorbar_hide_during_spinner.getBool())) &&
+               !pf->isLoading()) {
+                this->drawHitErrorBar(pf->getHitWindow300(), pf->getHitWindow100(), pf->getHitWindow50(),
                                       GameRules::getHitWindowMiss(), osu->getScore()->getUnstableRate());
             }
         }
@@ -163,12 +162,12 @@ void HUD::draw() {
         this->fScoreHeight = osu->getSkin()->getScore0()->getHeight() * this->getScoreScale();
 
         if(cv::draw_progressbar.getBool())
-            this->drawProgressBar(beatmap->getPercentFinishedPlayable(), beatmap->isWaiting());
+            this->drawProgressBar(pf->getPercentFinishedPlayable(), pf->isWaiting());
 
         if(cv::draw_accuracy.getBool()) this->drawAccuracy(osu->getScore()->getAccuracy() * 100.0f);
 
         if(osu->getModTarget() && cv::draw_target_heatmap.getBool())
-            this->drawTargetHeatmap(beatmap->fHitcircleDiameter);
+            this->drawTargetHeatmap(pf->fHitcircleDiameter);
     } else if(!cv::hud_shift_tab_toggles_everything.getBool()) {
         if(cv::draw_inputoverlay.getBool()) {
             const bool isAutoClicking = (osu->getModAuto() || osu->getModRelax());
@@ -180,33 +179,33 @@ void HUD::draw() {
         // NOTE: moved to draw behind hitobjects in Beatmap::draw()
         if(cv::mod_fposu.getBool()) {
             if(cv::draw_hiterrorbar.getBool() &&
-               (beatmap == nullptr ||
-                (!beatmap->isSpinnerActive() || !cv::hud_hiterrorbar_hide_during_spinner.getBool())) &&
-               !beatmap->isLoading()) {
-                this->drawHitErrorBar(beatmap->getHitWindow300(), beatmap->getHitWindow100(), beatmap->getHitWindow50(),
+               (pf == nullptr ||
+                (!pf->isSpinnerActive() || !cv::hud_hiterrorbar_hide_during_spinner.getBool())) &&
+               !pf->isLoading()) {
+                this->drawHitErrorBar(pf->getHitWindow300(), pf->getHitWindow100(), pf->getHitWindow50(),
                                       GameRules::getHitWindowMiss(), osu->getScore()->getUnstableRate());
             }
         }
     }
 
-    if(beatmap->shouldFlashSectionPass()) this->drawSectionPass(beatmap->shouldFlashSectionPass());
-    if(beatmap->shouldFlashSectionFail()) this->drawSectionFail(beatmap->shouldFlashSectionFail());
+    if(pf->shouldFlashSectionPass()) this->drawSectionPass(pf->shouldFlashSectionPass());
+    if(pf->shouldFlashSectionFail()) this->drawSectionFail(pf->shouldFlashSectionFail());
 
-    if(beatmap->shouldFlashWarningArrows()) this->drawWarningArrows(beatmap->fHitcircleDiameter);
+    if(pf->shouldFlashWarningArrows()) this->drawWarningArrows(pf->fHitcircleDiameter);
 
-    if(beatmap->isContinueScheduled() && cv::draw_continue.getBool())
-        this->drawContinue(beatmap->getContinueCursorPoint(), beatmap->fHitcircleDiameter);
+    if(pf->isContinueScheduled() && cv::draw_continue.getBool())
+        this->drawContinue(pf->getContinueCursorPoint(), pf->fHitcircleDiameter);
 
     if(cv::draw_scrubbing_timeline.getBool() && osu->isSeeking()) {
         static std::vector<BREAK> breaks;
         breaks.clear();
 
         if(cv::draw_scrubbing_timeline_breaks.getBool()) {
-            const unsigned long lengthPlayableMS = beatmap->getLengthPlayable();
-            const unsigned long startTimePlayableMS = beatmap->getStartTimePlayable();
+            const unsigned long lengthPlayableMS = pf->getLengthPlayable();
+            const unsigned long startTimePlayableMS = pf->getStartTimePlayable();
             const unsigned long endTimePlayableMS = startTimePlayableMS + lengthPlayableMS;
 
-            const std::vector<DatabaseBeatmap::BREAK> &beatmapBreaks = beatmap->getBreaks();
+            const std::vector<DatabaseBeatmap::BREAK> &beatmapBreaks = pf->getBreaks();
 
             breaks.reserve(beatmapBreaks.size());
 
@@ -228,19 +227,19 @@ void HUD::draw() {
         }
 
         // Fix percent to include time before first hitobject (HACK)
-        f32 true_percent = beatmap->getPercentFinishedPlayable();
-        if(!beatmap->isWaiting()) {
-            f32 true_length = beatmap->getStartTimePlayable() + beatmap->getLengthPlayable();
-            true_percent = std::clamp(beatmap->getTime() / true_length, 0.f, 1.f);
+        f32 true_percent = pf->getPercentFinishedPlayable();
+        if(!pf->isWaiting()) {
+            f32 true_length = pf->getStartTimePlayable() + pf->getLengthPlayable();
+            true_percent = std::clamp(pf->getTime() / true_length, 0.f, 1.f);
         }
 
-        this->drawScrubbingTimeline(beatmap->getTime(), beatmap->getLengthPlayable(), beatmap->getStartTimePlayable(),
+        this->drawScrubbingTimeline(pf->getTime(), pf->getLengthPlayable(), pf->getStartTimePlayable(),
                                     true_percent, breaks);
     }
 
-    if(!osu->isSkipScheduled() && beatmap->isInSkippableSection() &&
-       ((cv::skip_intro_enabled.getBool() && beatmap->iCurrentHitObjectIndex < 1) ||
-        (cv::skip_breaks_enabled.getBool() && beatmap->iCurrentHitObjectIndex > 0)))
+    if(!osu->isSkipScheduled() && pf->isInSkippableSection() &&
+       ((cv::skip_intro_enabled.getBool() && pf->iCurrentHitObjectIndex < 1) ||
+        (cv::skip_breaks_enabled.getBool() && pf->iCurrentHitObjectIndex > 0)))
         this->drawSkip();
 
     u32 nb_spectators = BanchoState::spectating ? BanchoState::fellow_spectators.size() : BanchoState::spectators.size();
@@ -1221,8 +1220,7 @@ std::vector<SCORE_ENTRY> HUD::getCurrentScores() {
     static std::vector<SCORE_ENTRY> scores;
     scores.clear();
 
-    auto beatmap = osu->getSelectedBeatmap();
-    if(!beatmap) return scores;
+    auto pf = osu->playfield;
 
     if(BanchoState::is_in_a_multi_room()) {
         for(auto &i : BanchoState::room.slots) {
@@ -1238,7 +1236,7 @@ std::vector<SCORE_ENTRY> HUD::getCurrentScores() {
                 slot->num_miss = (u16)osu->getScore()->getNumMisses();
                 slot->current_combo = (u16)osu->getScore()->getCombo();
                 slot->total_score = (i32)osu->getScore()->getScore();
-                slot->current_hp = beatmap->getHealth() * 200;
+                slot->current_hp = pf->getHealth() * 200;
             }
 
             auto user_info = BANCHO::User::get_user_info(slot->player_id, true);
@@ -1255,7 +1253,7 @@ std::vector<SCORE_ENTRY> HUD::getCurrentScores() {
             if(slot->has_quit()) {
                 slot->current_hp = 0;
                 scoreEntry.name = UString::format("%s [quit]", user_info->name.toUtf8());
-            } else if(beatmap != nullptr && beatmap->isInSkippableSection() && beatmap->iCurrentHitObjectIndex < 1) {
+            } else if(pf->isInSkippableSection() && pf->iCurrentHitObjectIndex < 1) {
                 if(slot->skipped) {
                     // XXX: Draw pretty "Skip" image instead
                     scoreEntry.name = UString::format("%s [skip]", user_info->name.toUtf8());
@@ -1300,7 +1298,7 @@ std::vector<SCORE_ENTRY> HUD::getCurrentScores() {
         SCORE_ENTRY playerScoreEntry;
         if(osu->getModAuto() || (osu->getModAutopilot() && osu->getModRelax())) {
             playerScoreEntry.name = "neosu";
-        } else if(beatmap->is_watching || BanchoState::spectating) {
+        } else if(pf->is_watching || BanchoState::spectating) {
             playerScoreEntry.name = osu->watched_user_name;
             playerScoreEntry.player_id = osu->watched_user_id;
         } else {
@@ -1334,9 +1332,7 @@ std::vector<SCORE_ENTRY> HUD::getCurrentScores() {
 }
 
 void HUD::resetScoreboard() {
-    Beatmap *beatmap = osu->getSelectedBeatmap();
-    if(beatmap == nullptr) return;
-    DatabaseBeatmap *diff2 = beatmap->getSelectedDifficulty2();
+    DatabaseBeatmap *diff2 = osu->playfield->getSelectedDifficulty2();
     if(diff2 == nullptr) return;
 
     this->beatmap_md5 = diff2->getMD5Hash();
@@ -1362,9 +1358,7 @@ void HUD::resetScoreboard() {
 }
 
 void HUD::updateScoreboard(bool animate) {
-    Beatmap *beatmap = osu->getSelectedBeatmap();
-    if(beatmap == nullptr) return;
-    DatabaseBeatmap *diff2 = beatmap->getSelectedDifficulty2();
+    DatabaseBeatmap *diff2 = osu->playfield->getSelectedDifficulty2();
     if(diff2 == nullptr) return;
 
     if(!cv::scoreboard_animations.getBool()) {
@@ -1448,11 +1442,11 @@ void HUD::drawContinue(vec2 cursor, float hitcircleDiameter) {
     g->popTransform();
 }
 
-void HUD::drawHitErrorBar(Beatmap *beatmap) {
+void HUD::drawHitErrorBar(Playfield *pf) {
     if(cv::draw_hud.getBool() || !cv::hud_shift_tab_toggles_everything.getBool()) {
         if(cv::draw_hiterrorbar.getBool() &&
-           (!beatmap->isSpinnerActive() || !cv::hud_hiterrorbar_hide_during_spinner.getBool()) && !beatmap->isLoading())
-            this->drawHitErrorBar(beatmap->getHitWindow300(), beatmap->getHitWindow100(), beatmap->getHitWindow50(),
+           (!pf->isSpinnerActive() || !cv::hud_hiterrorbar_hide_during_spinner.getBool()) && !pf->isLoading())
+            this->drawHitErrorBar(pf->getHitWindow300(), pf->getHitWindow100(), pf->getHitWindow50(),
                                   GameRules::getHitWindowMiss(), osu->getScore()->getUnstableRate());
     }
 }
@@ -1965,7 +1959,7 @@ void HUD::drawScrubbingTimeline(u32 beatmapTime, u32 beatmapLengthPlayable, u32 
 
     // Auto-hide scrubbing timeline when watching a replay
     f64 galpha = 1.0f;
-    if(osu->getSelectedBeatmap()->is_watching) {
+    if(osu->playfield->is_watching) {
         f64 time_since_last_move = new_cursor_movement - (last_cursor_movement + 1.0f);
         galpha = fmax(0.f, fmin(1.0f - time_since_last_move, 1.0f));
     }
@@ -1990,8 +1984,8 @@ void HUD::drawScrubbingTimeline(u32 beatmapTime, u32 beatmapLengthPlayable, u32 
 
     // draw strain graph
     if(cv::draw_scrubbing_timeline_strain_graph.getBool()) {
-        const std::vector<f64> &aimStrains = osu->getSelectedBeatmap()->aimStrains;
-        const std::vector<f64> &speedStrains = osu->getSelectedBeatmap()->speedStrains;
+        const std::vector<f64> &aimStrains = osu->playfield->aimStrains;
+        const std::vector<f64> &speedStrains = osu->playfield->speedStrains;
 
         u32 nb_strains = aimStrains.size();
         if(aimStrains.size() > 0 && aimStrains.size() == speedStrains.size()) {
@@ -2343,7 +2337,7 @@ float HUD::getCursorScaleFactor() {
 
     float mapScale = 1.0f;
     if(cv::automatic_cursor_size.getBool() && osu->isInPlayMode())
-        mapScale = 1.0f - 0.7f * (float)(osu->getSelectedBeatmap()->getCS() - 4.0f) / 5.0f;
+        mapScale = 1.0f - 0.7f * (float)(osu->playfield->getCS() - 4.0f) / 5.0f;
 
     return ((float)osu->getScreenHeight() / spriteRes) * mapScale;
 }

@@ -1,10 +1,8 @@
 #pragma once
-#include "Beatmap.h"
+#include "Playfield.h"
 
 class ConVar;
-
 class ModFPoSu;
-class Beatmap;
 class SkinImage;
 class SliderCurve;
 class VertexArrayObject;
@@ -28,14 +26,14 @@ enum {
 
 class HitObject {
    public:
-    static void drawHitResult(Beatmap *beatmap, vec2 rawPos, LiveScore::HIT result, float animPercentInv,
+    static void drawHitResult(Playfield *pf, vec2 rawPos, LiveScore::HIT result, float animPercentInv,
                               float hitDeltaRangePercent);
     static void drawHitResult(Skin *skin, float hitcircleDiameter, float rawHitcircleDiameter, vec2 rawPos,
                               LiveScore::HIT result, float animPercentInv, float hitDeltaRangePercent);
 
    public:
     HitObject(long time, HitSamples samples, int comboNumber, bool isEndOfCombo, int colorCounter, int colorOffset,
-              BeatmapInterface *beatmap);
+              PlayfieldInterface *beatmap);
     virtual ~HitObject() { ; }
 
     virtual void draw() { ; }
@@ -104,8 +102,8 @@ class HitObject {
     HITRESULTANIM hitresultanim2;
 
    protected:
-    BeatmapInterface *bi = nullptr;
-    Beatmap *bm = nullptr;  // NULL when simulating
+    PlayfieldInterface *pi = nullptr;
+    Playfield *pf = nullptr;  // NULL when simulating
 
     long iDelta;  // this must be signed
     long iApproachTime;
@@ -135,10 +133,10 @@ class HitObject {
 class Circle final : public HitObject {
    public:
     // main
-    static void drawApproachCircle(Beatmap *beatmap, vec2 rawPos, int number, int colorCounter, int colorOffset,
+    static void drawApproachCircle(Playfield *pf, vec2 rawPos, int number, int colorCounter, int colorOffset,
                                    float colorRGBMultiplier, float approachScale, float alpha,
                                    bool overrideHDApproachCircle = false);
-    static void drawCircle(Beatmap *beatmap, vec2 rawPos, int number, int colorCounter, int colorOffset,
+    static void drawCircle(Playfield *pf, vec2 rawPos, int number, int colorCounter, int colorOffset,
                            float colorRGBMultiplier, float approachScale, float alpha, float numberAlpha,
                            bool drawNumber = true, bool overrideHDApproachCircle = false);
     static void drawCircle(Skin *skin, vec2 pos, float hitcircleDiameter, float numberScale, float overlapScale,
@@ -146,7 +144,7 @@ class Circle final : public HitObject {
                            float alpha, float numberAlpha, bool drawNumber = true,
                            bool overrideHDApproachCircle = false);
     static void drawCircle(Skin *skin, vec2 pos, float hitcircleDiameter, Color color, float alpha = 1.0f);
-    static void drawSliderStartCircle(Beatmap *beatmap, vec2 rawPos, int number, int colorCounter, int colorOffset,
+    static void drawSliderStartCircle(Playfield *pf, vec2 rawPos, int number, int colorCounter, int colorOffset,
                                       float colorRGBMultiplier, float approachScale, float alpha, float numberAlpha,
                                       bool drawNumber = true, bool overrideHDApproachCircle = false);
     static void drawSliderStartCircle(Skin *skin, vec2 pos, float hitcircleDiameter, float numberScale,
@@ -154,7 +152,7 @@ class Circle final : public HitObject {
                                       int colorOffset = 0, float colorRGBMultiplier = 1.0f, float approachScale = 1.0f,
                                       float alpha = 1.0f, float numberAlpha = 1.0f, bool drawNumber = true,
                                       bool overrideHDApproachCircle = false);
-    static void drawSliderEndCircle(Beatmap *beatmap, vec2 rawPos, int number, int colorCounter, int colorOffset,
+    static void drawSliderEndCircle(Playfield *pf, vec2 rawPos, int number, int colorCounter, int colorOffset,
                                     float colorRGBMultiplier, float approachScale, float alpha, float numberAlpha,
                                     bool drawNumber = true, bool overrideHDApproachCircle = false);
     static void drawSliderEndCircle(Skin *skin, vec2 pos, float hitcircleDiameter, float numberScale,
@@ -174,7 +172,7 @@ class Circle final : public HitObject {
 
    public:
     Circle(int x, int y, long time, HitSamples samples, int comboNumber, bool isEndOfCombo, int colorCounter,
-           int colorOffset, BeatmapInterface *beatmap);
+           int colorOffset, PlayfieldInterface *beatmap);
     ~Circle() override;
 
     void draw() override;
@@ -222,7 +220,7 @@ class Slider final : public HitObject {
     Slider(char stype, int repeat, float pixelLength, std::vector<vec2> points, std::vector<float> ticks,
            float sliderTime, float sliderTimeWithoutRepeats, long time, HitSamples hoverSamples,
            std::vector<HitSamples> edgeSamples, int comboNumber, bool isEndOfCombo, int colorCounter, int colorOffset,
-           BeatmapInterface *beatmap);
+           PlayfieldInterface *beatmap);
     ~Slider() override;
 
     void draw() override;
@@ -336,7 +334,7 @@ class Slider final : public HitObject {
 
 class Spinner final : public HitObject {
    public:
-    Spinner(int x, int y, long time, HitSamples samples, bool isEndOfCombo, long endTime, BeatmapInterface *beatmap);
+    Spinner(int x, int y, long time, HitSamples samples, bool isEndOfCombo, long endTime, PlayfieldInterface *beatmap);
     ~Spinner() override;
 
     void draw() override;

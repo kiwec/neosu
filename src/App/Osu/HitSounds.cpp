@@ -1,6 +1,6 @@
 #include "HitSounds.h"
 
-#include "Beatmap.h"
+#include "Playfield.h"
 #include "ConVar.h"
 #include "Osu.h"
 #include "ResourceManager.h"
@@ -12,15 +12,12 @@ i32 HitSamples::getNormalSet() {
 
     if(this->normalSet != 0) return this->normalSet;
 
-    auto beatmap = osu->getSelectedBeatmap();
-    if(!beatmap) return SampleSetType::NORMAL;
-
     // Fallback to timing point sample set
-    i32 tp_sampleset = beatmap->getTimingPoint().sampleSet;
+    i32 tp_sampleset = osu->playfield->getTimingPoint().sampleSet;
     if(tp_sampleset != 0) return tp_sampleset;
 
     // ...Fallback to beatmap sample set
-    return beatmap->getDefaultSampleSet();
+    return osu->playfield->getDefaultSampleSet();
 }
 
 i32 HitSamples::getAdditionSet() {
@@ -59,19 +56,16 @@ f32 HitSamples::getVolume(i32 hitSoundType, bool is_sliderslide) {
 
     if(this->volume > 0) {
         volume *= (f32)this->volume / 100.0;
-    } else if(osu->getSelectedBeatmap() != nullptr) {
-        volume *= (f32)osu->getSelectedBeatmap()->getTimingPoint().volume / 100.0;
+    } else {
+        volume *= (f32)osu->playfield->getTimingPoint().volume / 100.0;
     }
 
     return volume;
 }
 
 void HitSamples::play(f32 pan, i32 delta, bool is_sliderslide) {
-    auto beatmap = osu->getSelectedBeatmap();
-    if(!beatmap) return;
-
     // Don't play hitsounds when seeking
-    if(beatmap->bWasSeekFrame) return;
+    if(osu->playfield->bWasSeekFrame) return;
 
     if(!cv::sound_panning.getBool() || (cv::mod_fposu.getBool() && !cv::mod_fposu_sound_panning.getBool()) ||
        (cv::mod_fps.getBool() && !cv::mod_fps_sound_panning.getBool())) {
@@ -82,7 +76,7 @@ void HitSamples::play(f32 pan, i32 delta, bool is_sliderslide) {
 
     f32 pitch = 0.f;
     if(cv::snd_pitch_hitsounds.getBool()) {
-        f32 range = beatmap->getHitWindow100();
+        f32 range = osu->playfield->getHitWindow100();
         pitch = (f32)delta / range * cv::snd_pitch_hitsounds_factor.getFloat();
     }
 

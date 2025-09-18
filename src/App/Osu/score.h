@@ -4,7 +4,7 @@
 
 class ConVar;
 class DatabaseBeatmap;
-class BeatmapInterface;
+class PlayfieldInterface;
 class HitObject;
 
 namespace LegacyReplay {
@@ -129,8 +129,8 @@ class LiveScore {
 
     void reset();  // only Beatmap may call this function!
 
-    // only Beatmap/SimulatedBeatmap may call this function!
-    void addHitResult(BeatmapInterface *beatmap, HitObject *hitObject, LiveScore::HIT hit, long delta,
+    // only Beatmap/SimulatedPlayfield may call this function!
+    void addHitResult(PlayfieldInterface *beatmap, HitObject *hitObject, LiveScore::HIT hit, long delta,
                       bool ignoreOnHitErrorBar, bool hitErrorBarOnly, bool ignoreCombo, bool ignoreScore);
 
     void addHitResultComboEnd(LiveScore::HIT hit);
@@ -184,7 +184,7 @@ class LiveScore {
     [[nodiscard]] inline bool isUnranked() const { return this->bIsUnranked; }
     void setCheated() { this->bIsUnranked = true; }
 
-    static double getHealthIncrease(BeatmapInterface *beatmap, LiveScore::HIT hit);
+    static double getHealthIncrease(PlayfieldInterface *beatmap, LiveScore::HIT hit);
     static double getHealthIncrease(LiveScore::HIT hit, double HP = 5.0f, double hpMultiplierNormal = 1.0f,
                                     double hpMultiplierComboEnd = 1.0f, double hpBarMaximumForNormalization = 200.0f);
 

@@ -1,7 +1,7 @@
 #pragma once
 // Copyright (c) 2015, PG, All rights reserved.
 
-#include "BeatmapInterface.h"
+#include "PlayfieldInterface.h"
 #include "DatabaseBeatmap.h"
 #include "DifficultyCalculator.h"
 #include "HUD.h"
@@ -15,7 +15,7 @@ class ConVar;
 class Skin;
 class HitObject;
 class DatabaseBeatmap;
-class SimulatedBeatmap;
+class SimulatedPlayfield;
 struct LiveReplayFrame;
 struct ScoreFrame;
 
@@ -24,17 +24,17 @@ struct Click {
     vec2 pos{0.f};
 };
 
-class Beatmap : public BeatmapInterface {
+class Playfield : public PlayfieldInterface {
    public:
-    Beatmap();
-    ~Beatmap() override;
+    Playfield();
+    ~Playfield() override;
 
     void draw();
     void drawDebug();
     void drawBackground();
 
     void update();
-    void update2();  // Used to be Beatmap::update()
+    void update2();  // Used to be Playfield::update()
 
     // Potentially Visible Set gate time size, for optimizing draw() and update() when iterating over all hitobjects
     long getPVS();
@@ -98,11 +98,12 @@ class Beatmap : public BeatmapInterface {
     void keyReleased1(bool mouse);
     void keyReleased2(bool mouse);
 
-    // songbrowser & player logic
-    void select();  // loads the music of the currently selected diff and starts playing from the previewTime (e.g.
-                    // clicking on a beatmap)
-    void selectDifficulty2(DatabaseBeatmap *difficulty2);
-    void deselect();  // stops + unloads the currently loaded music and deletes all hitobjects
+    // loads the music of the currently selected diff and starts playing from the previewTime (e.g. clicking on a beatmap)
+    void selectBeatmap();
+    void selectBeatmap(DatabaseBeatmap *difficulty2);
+
+    // stops + unloads the currently loaded music and deletes all hitobjects
+    void deselectBeatmap();
 
     bool play();
     bool watch(FinishedScore score, u32 start_ms);
@@ -160,7 +161,7 @@ class Beatmap : public BeatmapInterface {
     vec2 interpolatedMousePos{0.f};
     bool is_watching = false;
     long current_frame_idx = 0;
-    SimulatedBeatmap *sim = nullptr;
+    SimulatedPlayfield *sim = nullptr;
 
     // getting spectated (live)
     void broadcast_spectator_frames();

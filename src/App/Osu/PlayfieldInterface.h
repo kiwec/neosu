@@ -56,9 +56,9 @@ class HitObject;
                                        GameRules::getMinHitWindow300(), GameRules::getMidHitWindow300(),             \
                                        GameRules::getMaxHitWindow300()))
 
-class BeatmapInterface {
+class PlayfieldInterface {
    public:
-    virtual ~BeatmapInterface() = default;
+    virtual ~PlayfieldInterface() = default;
 
     virtual LiveScore::HIT addHitResult(HitObject *hitObject, LiveScore::HIT hit, i32 delta, bool isEndOfCombo = false,
                                         bool ignoreOnHitErrorBar = false, bool hitErrorBarOnly = false,

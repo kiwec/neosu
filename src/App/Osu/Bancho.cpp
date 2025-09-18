@@ -26,7 +26,7 @@
 #include "BanchoNetworking.h"
 #include "BanchoProtocol.h"
 #include "BanchoUsers.h"
-#include "Beatmap.h"
+#include "Playfield.h"
 #include "Chat.h"
 #include "ConVar.h"
 #include "Engine.h"
@@ -278,7 +278,6 @@ void BanchoState::handle_packet(Packet *packet) {
 
             if(BanchoState::spectating) {
                 UserInfo *info = BANCHO::User::get_user_info(BanchoState::spectated_player_id, true);
-                auto beatmap = osu->getSelectedBeatmap();
 
                 u16 nb_frames = proto::read<u16>(packet);
                 for(u16 i = 0; i < nb_frames; i++) {
@@ -288,7 +287,7 @@ void BanchoState::handle_packet(Packet *packet) {
                         debugLog("WEIRD FRAME: time {:d}, x {:f}, y {:f}\n", frame.time, frame.mouse_x, frame.mouse_y);
                     }
 
-                    beatmap->spectated_replay.push_back(LegacyReplay::Frame{
+                    osu->playfield->spectated_replay.push_back(LegacyReplay::Frame{
                         .cur_music_pos = frame.time,
                         .milliseconds_since_last_frame = 0,  // fixed below
                         .x = frame.mouse_x,
@@ -298,13 +297,13 @@ void BanchoState::handle_packet(Packet *packet) {
                 }
 
                 // NOTE: Server can send frames in the wrong order. So we're correcting it here.
-                std::ranges::sort(beatmap->spectated_replay, [](LegacyReplay::Frame a, LegacyReplay::Frame b) {
+                std::ranges::sort(osu->playfield->spectated_replay, [](LegacyReplay::Frame a, LegacyReplay::Frame b) {
                     return a.cur_music_pos < b.cur_music_pos;
                 });
-                beatmap->last_frame_ms = 0;
-                for(auto &frame : beatmap->spectated_replay) {
-                    frame.milliseconds_since_last_frame = frame.cur_music_pos - beatmap->last_frame_ms;
-                    beatmap->last_frame_ms = frame.cur_music_pos;
+                osu->playfield->last_frame_ms = 0;
+                for(auto &frame : osu->playfield->spectated_replay) {
+                    frame.milliseconds_since_last_frame = frame.cur_music_pos - osu->playfield->last_frame_ms;
+                    osu->playfield->last_frame_ms = frame.cur_music_pos;
                 }
 
                 auto action = (LiveReplayBundle::Action)proto::read<u8>(packet);
@@ -314,29 +313,29 @@ void BanchoState::handle_packet(Packet *packet) {
                     if(action == LiveReplayBundle::Action::SONG_SELECT) {
                         info->map_id = 0;
                         info->map_md5 = MD5Hash();
-                        beatmap->stop(true);
+                        osu->playfield->stop(true);
                     }
                     if(action == LiveReplayBundle::Action::UNPAUSE) {
-                        beatmap->spectate_pause = false;
+                        osu->playfield->spectate_pause = false;
                     }
                     if(action == LiveReplayBundle::Action::PAUSE) {
-                        beatmap->spectate_pause = true;
+                        osu->playfield->spectate_pause = true;
                     }
                     if(action == LiveReplayBundle::Action::SKIP) {
-                        beatmap->skipEmptySection();
+                        osu->playfield->skipEmptySection();
                     }
                     if(action == LiveReplayBundle::Action::FAIL) {
-                        beatmap->fail(true);
+                        osu->playfield->fail(true);
                     }
                     if(action == LiveReplayBundle::Action::NEW_SONG) {
                         osu->rankingScreen->setVisible(false);
-                        beatmap->restart(true);
-                        beatmap->update();
+                        osu->playfield->restart(true);
+                        osu->playfield->update();
                     }
                 }
 
                 auto score_frame = proto::read<ScoreFrame>(packet);
-                beatmap->score_frames.push_back(score_frame);
+                osu->playfield->score_frames.push_back(score_frame);
 
                 auto sequence = proto::read<u16>(packet);
                 (void)sequence;  // don't know how to use this
@@ -396,7 +395,7 @@ void BanchoState::handle_packet(Packet *packet) {
                 stop_spectating();
             }
             if(osu->isInPlayMode()) {
-                osu->getSelectedBeatmap()->stop(true);
+                osu->playfield->stop(true);
             }
 
             auto room = Room(packet);

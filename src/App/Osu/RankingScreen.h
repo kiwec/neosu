@@ -10,8 +10,6 @@ class CBaseUIContainer;
 class CBaseUIScrollView;
 class CBaseUIImage;
 class CBaseUILabel;
-
-class Beatmap;
 class DatabaseBeatmap;
 class SkinImage;
 class UIButton;
@@ -35,7 +33,7 @@ class RankingScreen : public ScreenBackable {
     void onWatchClicked();
 
     void setScore(FinishedScore score);
-    void setBeatmapInfo(Beatmap *beatmap, DatabaseBeatmap *diff2);
+    void setBeatmapInfo(DatabaseBeatmap *diff2);
 
    private:
     void updateLayout() override;

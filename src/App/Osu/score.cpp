@@ -3,7 +3,7 @@
 
 #include "Bancho.h"
 #include "BanchoProtocol.h"
-#include "Beatmap.h"
+#include "Playfield.h"
 #include "ConVar.h"
 #include "DatabaseBeatmap.h"
 #include "DifficultyCalculator.h"
@@ -103,7 +103,7 @@ float LiveScore::getScoreMultiplier() {
     return multiplier;
 }
 
-void LiveScore::addHitResult(BeatmapInterface *beatmap, HitObject * /*hitObject*/, HIT hit, long delta,
+void LiveScore::addHitResult(PlayfieldInterface *beatmap, HitObject * /*hitObject*/, HIT hit, long delta,
                              bool ignoreOnHitErrorBar, bool hitErrorBarOnly, bool ignoreCombo, bool ignoreScore) {
     // current combo, excluding the current hitobject which caused the addHitResult() call
     const int scoreComboMultiplier = std::max(this->iCombo - 1, 0);
@@ -350,7 +350,7 @@ void LiveScore::addKeyCount(int key) {
     }
 }
 
-double LiveScore::getHealthIncrease(BeatmapInterface *beatmap, HIT hit) {
+double LiveScore::getHealthIncrease(PlayfieldInterface *beatmap, HIT hit) {
     return getHealthIncrease(hit, beatmap->getHP(), beatmap->fHpMultiplierNormal, beatmap->fHpMultiplierComboEnd,
                              200.0);
 }

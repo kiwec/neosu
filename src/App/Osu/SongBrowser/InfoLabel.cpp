@@ -8,7 +8,7 @@
 #include "SongBrowser.h"
 // ---
 
-#include "Beatmap.h"
+#include "Playfield.h"
 #include "ConVar.h"
 #include "DatabaseBeatmap.h"
 #include "Engine.h"
@@ -130,8 +130,8 @@ void InfoLabel::draw() {
 
     // draw song info (length, bpm, objects)
     const Color songInfoColor =
-        (osu->getSelectedBeatmap()->getSpeedMultiplier() != 1.0f
-             ? (osu->getSelectedBeatmap()->getSpeedMultiplier() > 1.0f ? 0xffff7f7f : 0xffadd8e6)
+        (osu->playfield->getSpeedMultiplier() != 1.0f
+             ? (osu->playfield->getSpeedMultiplier() > 1.0f ? 0xffff7f7f : 0xffadd8e6)
              : 0xffffffff);
     g->pushTransform();
     {
@@ -209,68 +209,67 @@ void InfoLabel::mouse_update(bool *propagate_clicks) {
 
     // detail info tooltip when hovering over diff info
     if(this->isMouseInside() && !osu->getOptionsMenu()->isMouseInside()) {
-        Beatmap *beatmap = osu->getSelectedBeatmap();
-        if(beatmap != nullptr) {
-            const float speedMultiplierInv = (1.0f / beatmap->getSpeedMultiplier());
+        Playfield *pf = osu->playfield;
 
-            const float approachTimeRoundedCompensated = ((int)beatmap->getApproachTime()) * speedMultiplierInv;
-            const float hitWindow300RoundedCompensated = ((int)beatmap->getHitWindow300() - 0.5f) * speedMultiplierInv;
-            const float hitWindow100RoundedCompensated = ((int)beatmap->getHitWindow100() - 0.5f) * speedMultiplierInv;
-            const float hitWindow50RoundedCompensated = ((int)beatmap->getHitWindow50() - 0.5f) * speedMultiplierInv;
-            const float hitobjectRadiusRoundedCompensated =
-                (GameRules::getRawHitCircleDiameter(beatmap->getCS()) / 2.0f);
+        const float speedMultiplierInv = (1.0f / pf->getSpeedMultiplier());
 
-            const auto &bmDiff2{beatmap->getSelectedDifficulty2()};
-            const auto &tooltipOverlay{osu->getTooltipOverlay()};
-            tooltipOverlay->begin();
-            {
-                tooltipOverlay->addLine(UString::fmt("Approach time: {:.2f}ms", approachTimeRoundedCompensated));
-                tooltipOverlay->addLine(UString::fmt("300: +-{:.2f}ms", hitWindow300RoundedCompensated));
-                tooltipOverlay->addLine(UString::fmt("100: +-{:.2f}ms", hitWindow100RoundedCompensated));
-                tooltipOverlay->addLine(UString::fmt(" 50: +-{:.2f}ms", hitWindow50RoundedCompensated));
+        const float approachTimeRoundedCompensated = ((int)pf->getApproachTime()) * speedMultiplierInv;
+        const float hitWindow300RoundedCompensated = ((int)pf->getHitWindow300() - 0.5f) * speedMultiplierInv;
+        const float hitWindow100RoundedCompensated = ((int)pf->getHitWindow100() - 0.5f) * speedMultiplierInv;
+        const float hitWindow50RoundedCompensated = ((int)pf->getHitWindow50() - 0.5f) * speedMultiplierInv;
+        const float hitobjectRadiusRoundedCompensated =
+            (GameRules::getRawHitCircleDiameter(pf->getCS()) / 2.0f);
+
+        const auto &bmDiff2{pf->getSelectedDifficulty2()};
+        const auto &tooltipOverlay{osu->getTooltipOverlay()};
+        tooltipOverlay->begin();
+        {
+            tooltipOverlay->addLine(UString::fmt("Approach time: {:.2f}ms", approachTimeRoundedCompensated));
+            tooltipOverlay->addLine(UString::fmt("300: +-{:.2f}ms", hitWindow300RoundedCompensated));
+            tooltipOverlay->addLine(UString::fmt("100: +-{:.2f}ms", hitWindow100RoundedCompensated));
+            tooltipOverlay->addLine(UString::fmt(" 50: +-{:.2f}ms", hitWindow50RoundedCompensated));
+            tooltipOverlay->addLine(
+                UString::fmt("Spinner difficulty: {:.2f}", GameRules::getSpinnerSpinsPerSecond(pf)));
+            tooltipOverlay->addLine(UString::fmt("Hit object radius: {:.2f}", hitobjectRadiusRoundedCompensated));
+
+            if(bmDiff2 != nullptr) {
+                int numObjects{bmDiff2->getNumObjects()};
+                int numCircles{bmDiff2->getNumCircles()};
+                int numSliders{bmDiff2->getNumSliders()};
+                unsigned long lengthMS{bmDiff2->getLengthMS()};
+
+                float opm{0.f}, cpm{0.f}, spm{0.f};
+                if(lengthMS > 0) {
+                    const float durMinutes{(static_cast<float>(lengthMS) / 1000.0f / 60.0f) /
+                                           pf->getSpeedMultiplier()};
+
+                    opm = static_cast<float>(numObjects) / durMinutes;
+                    cpm = static_cast<float>(numCircles) / durMinutes;
+                    spm = static_cast<float>(numSliders) / durMinutes;
+                }
+
+                tooltipOverlay->addLine(UString::fmt("Circles: {:d}, Sliders: {:d}, Spinners: {:d}", numCircles,
+                                                     numSliders,
+                                                     std::max(0, numObjects - numCircles - numSliders)));
                 tooltipOverlay->addLine(
-                    UString::fmt("Spinner difficulty: {:.2f}", GameRules::getSpinnerSpinsPerSecond(beatmap)));
-                tooltipOverlay->addLine(UString::fmt("Hit object radius: {:.2f}", hitobjectRadiusRoundedCompensated));
-
-                if(bmDiff2 != nullptr) {
-                    int numObjects{bmDiff2->getNumObjects()};
-                    int numCircles{bmDiff2->getNumCircles()};
-                    int numSliders{bmDiff2->getNumSliders()};
-                    unsigned long lengthMS{bmDiff2->getLengthMS()};
-
-                    float opm{0.f}, cpm{0.f}, spm{0.f};
-                    if(lengthMS > 0) {
-                        const float durMinutes{(static_cast<float>(lengthMS) / 1000.0f / 60.0f) /
-                                               beatmap->getSpeedMultiplier()};
-
-                        opm = static_cast<float>(numObjects) / durMinutes;
-                        cpm = static_cast<float>(numCircles) / durMinutes;
-                        spm = static_cast<float>(numSliders) / durMinutes;
-                    }
-
-                    tooltipOverlay->addLine(UString::fmt("Circles: {:d}, Sliders: {:d}, Spinners: {:d}", numCircles,
-                                                         numSliders,
-                                                         std::max(0, numObjects - numCircles - numSliders)));
-                    tooltipOverlay->addLine(
-                        UString::fmt("OPM: {:d}, CPM: {:d}, SPM: {:d}", (int)opm, (int)cpm, (int)spm));
-                    tooltipOverlay->addLine(
-                        UString::fmt("ID: {:d}, SetID: {:d}", bmDiff2->getID(), bmDiff2->getSetID()));
-                    tooltipOverlay->addLine(UString::fmt("MD5: {:s}", bmDiff2->getMD5Hash().hash.data()));
-                    // mostly for debugging
-                    if(keyboard->isShiftDown()) {
-                        tooltipOverlay->addLine(UString::fmt("Title: {:s}", bmDiff2->getTitleLatin()));
-                        tooltipOverlay->addLine(UString::fmt("TitleUnicode: {:s}", bmDiff2->getTitleUnicode()));
-                        tooltipOverlay->addLine(UString::fmt("Artist: {:s}", bmDiff2->getArtistLatin()));
-                        tooltipOverlay->addLine(UString::fmt("ArtistUnicode: {:s}", bmDiff2->getArtistUnicode()));
-                    }
+                    UString::fmt("OPM: {:d}, CPM: {:d}, SPM: {:d}", (int)opm, (int)cpm, (int)spm));
+                tooltipOverlay->addLine(
+                    UString::fmt("ID: {:d}, SetID: {:d}", bmDiff2->getID(), bmDiff2->getSetID()));
+                tooltipOverlay->addLine(UString::fmt("MD5: {:s}", bmDiff2->getMD5Hash().hash.data()));
+                // mostly for debugging
+                if(keyboard->isShiftDown()) {
+                    tooltipOverlay->addLine(UString::fmt("Title: {:s}", bmDiff2->getTitleLatin()));
+                    tooltipOverlay->addLine(UString::fmt("TitleUnicode: {:s}", bmDiff2->getTitleUnicode()));
+                    tooltipOverlay->addLine(UString::fmt("Artist: {:s}", bmDiff2->getArtistLatin()));
+                    tooltipOverlay->addLine(UString::fmt("ArtistUnicode: {:s}", bmDiff2->getArtistUnicode()));
                 }
             }
-            tooltipOverlay->end();
         }
+        tooltipOverlay->end();
     }
 }
 
-void InfoLabel::setFromBeatmap(Beatmap * /*beatmap*/, DatabaseBeatmap *diff2) {
+void InfoLabel::setFromBeatmap(DatabaseBeatmap *diff2) {
     this->iBeatmapId = diff2->getID();
 
     this->setArtist(diff2->getArtist());
@@ -294,7 +293,7 @@ void InfoLabel::setFromBeatmap(Beatmap * /*beatmap*/, DatabaseBeatmap *diff2) {
 
 UString InfoLabel::buildSongInfoString() {
     unsigned long lengthMS = this->iLengthMS;
-    auto speed = osu->getSelectedBeatmap()->getSpeedMultiplier();
+    auto speed = osu->playfield->getSpeedMultiplier();
 
     const unsigned long fullSeconds = (lengthMS * (1.0 / speed)) / 1000.0;
     const int minutes = fullSeconds / 60;
@@ -314,9 +313,8 @@ UString InfoLabel::buildSongInfoString() {
 }
 
 UString InfoLabel::buildDiffInfoString() {
-    auto *beatmap = osu->getSelectedBeatmap();
-    if(!beatmap) return "";
-    auto diff2 = beatmap->getSelectedDifficulty2();
+    auto *pf = osu->playfield;
+    auto diff2 = pf->getSelectedDifficulty2();
     if(!diff2) return "";
 
     bool pp_available = false;
@@ -354,10 +352,10 @@ UString InfoLabel::buildDiffInfoString() {
             pp_available = true;
         }
 
-        CS = beatmap->getCS();
-        AR = beatmap->getApproachRateForSpeedMultiplier();
-        OD = beatmap->getOverallDifficultyForSpeedMultiplier();
-        HP = beatmap->getHP();
+        CS = pf->getCS();
+        AR = pf->getApproachRateForSpeedMultiplier();
+        OD = pf->getOverallDifficultyForSpeedMultiplier();
+        HP = pf->getHP();
     }
 
     const float starComparisonEpsilon = 0.01f;

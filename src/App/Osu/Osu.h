@@ -6,8 +6,12 @@
 #include "Replay.h"
 #include "score.h"
 
-class CWindowManager;
 class AvatarManager;
+class CWindowManager;
+class ConVar;
+class Image;
+class McFont;
+class RenderTarget;
 
 class VolumeOverlay;
 class UserCard;
@@ -27,17 +31,12 @@ class UserStatsScreen;
 class UpdateHandler;
 class NotificationOverlay;
 class TooltipOverlay;
-class Beatmap;
 class OsuScreen;
 class Skin;
 class HUD;
 class Changelog;
 class ModFPoSu;
-
-class ConVar;
-class Image;
-class McFont;
-class RenderTarget;
+class Playfield;
 
 class Osu final : public MouseListener, public KeyboardListener {
     NOCOPY_NOMOVE(Osu)
@@ -92,8 +91,6 @@ class Osu final : public MouseListener, public KeyboardListener {
     [[nodiscard]] inline vec2 getScreenSize() const { return g_vInternalResolution; }
     [[nodiscard]] inline int getScreenWidth() const { return (int)g_vInternalResolution.x; }
     [[nodiscard]] inline int getScreenHeight() const { return (int)g_vInternalResolution.y; }
-
-    Beatmap *getSelectedBeatmap();
 
     [[nodiscard]] inline OptionsMenu *getOptionsMenu() const { return this->optionsMenu; }
     [[nodiscard]] inline SongBrowser *getSongBrowser() const { return this->songBrowser2; }
@@ -216,6 +213,7 @@ class Osu final : public MouseListener, public KeyboardListener {
     void setupSoloud();
 
     // interfaces
+    Playfield *playfield = nullptr;
     VolumeOverlay *volumeOverlay = nullptr;
     MainMenu *mainMenu = nullptr;
     OptionsMenu *optionsMenu = nullptr;
