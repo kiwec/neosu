@@ -74,16 +74,13 @@ Osu *osu = nullptr;
 
 vec2 Osu::g_vInternalResolution{0.f};
 
-Shader *actual_flashlight_shader = nullptr;
-Shader *flashlight_shader = nullptr;
-
 Osu::Osu() {
     osu = this;
     srand(crypto::rng::get_rand<u32>());
 
     if(Env::cfg(BUILD::DEBUG)) {
         BanchoState::neosu_version = UString::fmt("dev-{}", cv::build_timestamp.getVal<u64>());
-    } else if(cv::is_bleedingedge.getBool()) {
+    } else if(cv::is_bleedingedge.getBool()) { // FIXME: isn't this always false here...?
         BanchoState::neosu_version = UString::fmt("bleedingedge-{}", cv::build_timestamp.getVal<u64>());
     } else {
         BanchoState::neosu_version = UString::fmt("release-{:.2f}", cv::version.getFloat());
@@ -142,45 +139,6 @@ Osu::Osu() {
     cv::confine_cursor_never.setCallback(SA::MakeDelegate<&Osu::updateConfineCursor>(this));
     cv::osu_folder.setCallback(SA::MakeDelegate<&Osu::updateOsuFolder>(this));
 
-    // vars
-    this->skin = nullptr;
-    this->backgroundImageHandler = nullptr;
-    this->modSelector = nullptr;
-    this->updateHandler = nullptr;
-
-    this->bF1 = false;
-    this->bUIToggleCheck = false;
-    this->bScoreboardToggleCheck = false;
-    this->bEscape = false;
-    this->bKeyboardKey1Down = false;
-    this->bKeyboardKey12Down = false;
-    this->bKeyboardKey2Down = false;
-    this->bKeyboardKey22Down = false;
-    this->bMouseKey1Down = false;
-    this->bMouseKey2Down = false;
-    this->bSkipScheduled = false;
-    this->bQuickRetryDown = false;
-    this->fQuickRetryTime = 0.0f;
-    this->bSeeking = false;
-    this->bSeekKey = false;
-    this->fPrevSeekMousePosX = -1.0f;
-    this->fQuickSaveTime = 0.0f;
-
-    this->bToggleModSelectionScheduled = false;
-    this->bToggleOptionsMenuScheduled = false;
-    this->bOptionsMenuFullscreen = true;
-    this->bToggleChangelogScheduled = false;
-    this->bToggleEditorScheduled = false;
-
-    this->bScheduleEndlessModNextBeatmap = false;
-    this->bWasBossKeyPaused = false;
-    this->bSkinLoadScheduled = false;
-    this->bSkinLoadWasReload = false;
-    this->skinScheduledToLoad = nullptr;
-    this->bFontReloadScheduled = false;
-    this->bFireResolutionChangedScheduled = false;
-    this->bFireDelayedFontReloadAndResolutionChangeToFixDesyncedUIScaleScheduled = false;
-
     // debug
     this->windowManager = new CWindowManager();
 
@@ -215,8 +173,8 @@ Osu::Osu() {
     // (loading the rest of the app can take a bit of time)
     engine->onPaint();
 
-    std::ifstream osuCfgFile(MCENGINE_DATA_DIR "cfg" PREF_PATHSEP "osu.cfg");
-    if(!osuCfgFile.good()) {
+    // if we don't have an osu.cfg, import
+    if(!Environment::fileExists(MCENGINE_DATA_DIR "cfg/osu.cfg")) {
         PeppyImporter::import_settings_from_osu_stable();
     }
 
@@ -371,12 +329,12 @@ Osu::Osu() {
     }
 
     // Not the type of shader you want players to tweak or delete, so loading from string
-    actual_flashlight_shader = resourceManager->createShader(
+    this->actual_flashlight_shader = resourceManager->createShader(
         std::string(reinterpret_cast<const char *>(actual_flashlight_vsh), actual_flashlight_vsh_size()),
         std::string(reinterpret_cast<const char *>(actual_flashlight_fsh), actual_flashlight_fsh_size()),
         "actual_flashlight");
 
-    flashlight_shader = resourceManager->createShader(
+    this->flashlight_shader = resourceManager->createShader(
         std::string(reinterpret_cast<const char *>(flashlight_vsh), flashlight_vsh_size()),
         std::string(reinterpret_cast<const char *>(flashlight_fsh), flashlight_fsh_size()), "flashlight");
 
@@ -406,7 +364,7 @@ Osu::~Osu() {
 }
 
 void Osu::draw() {
-    if(this->skin == nullptr || flashlight_shader == nullptr)  // sanity check
+    if(this->skin == nullptr || this->flashlight_shader == nullptr)  // sanity check
     {
         g->setColor(0xff000000);
         g->fillRect(0, 0, this->getScreenWidth(), this->getScreenHeight());
@@ -463,16 +421,16 @@ void Osu::draw() {
                     opacity = 0.2f;
                 }
 
-                flashlight_shader->enable();
-                flashlight_shader->setUniform1f("max_opacity", opacity);
-                flashlight_shader->setUniform1f("flashlight_radius", fl_radius);
-                flashlight_shader->setUniform2f("flashlight_center", flashlightPos.x,
+                this->flashlight_shader->enable();
+                this->flashlight_shader->setUniform1f("max_opacity", opacity);
+                this->flashlight_shader->setUniform1f("flashlight_radius", fl_radius);
+                this->flashlight_shader->setUniform2f("flashlight_center", flashlightPos.x,
                                                 this->getScreenSize().y - flashlightPos.y);
 
                 g->setColor(argb(255, 0, 0, 0));
                 g->fillRect(0, 0, this->getScreenWidth(), this->getScreenHeight());
 
-                flashlight_shader->disable();
+                this->flashlight_shader->disable();
             }
             if(actual_flashlight_enabled) {
                 // Brighten screen when holding a slider
@@ -481,16 +439,16 @@ void Osu::draw() {
                     opacity = 0.8f;
                 }
 
-                actual_flashlight_shader->enable();
-                actual_flashlight_shader->setUniform1f("max_opacity", opacity);
-                actual_flashlight_shader->setUniform1f("flashlight_radius", anti_fl_radius);
-                actual_flashlight_shader->setUniform2f("flashlight_center", flashlightPos.x,
+                this->actual_flashlight_shader->enable();
+                this->actual_flashlight_shader->setUniform1f("max_opacity", opacity);
+                this->actual_flashlight_shader->setUniform1f("flashlight_radius", anti_fl_radius);
+                this->actual_flashlight_shader->setUniform2f("flashlight_center", flashlightPos.x,
                                                        this->getScreenSize().y - flashlightPos.y);
 
                 g->setColor(argb(255, 0, 0, 0));
                 g->fillRect(0, 0, this->getScreenWidth(), this->getScreenHeight());
 
-                actual_flashlight_shader->disable();
+                this->actual_flashlight_shader->disable();
             }
         }
 
@@ -568,8 +526,8 @@ void Osu::draw() {
     // draw cursor
     if(this->isInPlayMode()) {
         vec2 cursorPos = this->playfield->getCursorPos();
-        bool drawSecondTrail = (cv::mod_autoplay.getBool() || cv::mod_autopilot.getBool() || this->playfield->is_watching ||
-                                BanchoState::spectating);
+        bool drawSecondTrail = (cv::mod_autoplay.getBool() || cv::mod_autopilot.getBool() ||
+                                this->playfield->is_watching || BanchoState::spectating);
         bool updateAndDrawTrail = true;
         if(cv::mod_fposu.getBool()) {
             cursorPos = this->getScreenSize() / 2.0f;
@@ -843,9 +801,7 @@ void Osu::update() {
     }
 }
 
-bool Osu::isInPlayModeAndNotPaused() {
-    return isInPlayMode() && !this->playfield->isPaused();
-}
+bool Osu::isInPlayModeAndNotPaused() { return isInPlayMode() && !this->playfield->isPaused(); }
 
 void Osu::updateMods() {
     osu->getScore()->mods = Replay::Mods::from_cvars();
@@ -1085,8 +1041,7 @@ void Osu::onKeyDown(KeyboardEvent &key) {
 
             // quick save/load
             if(!BanchoState::is_playing_a_multi_map()) {
-                if(key == (KEYCODE)cv::QUICK_SAVE.getInt())
-                    this->fQuickSaveTime = this->playfield->getTime();
+                if(key == (KEYCODE)cv::QUICK_SAVE.getInt()) this->fQuickSaveTime = this->playfield->getTime();
 
                 if(key == (KEYCODE)cv::QUICK_LOAD.getInt()) {
                     // special case: allow cancelling the failing animation here
@@ -1166,19 +1121,15 @@ void Osu::onKeyDown(KeyboardEvent &key) {
             // local offset
             if(key == (KEYCODE)cv::INCREASE_LOCAL_OFFSET.getInt()) {
                 long offsetAdd = keyboard->isAltDown() ? 1 : 5;
-                this->playfield->beatmap->setLocalOffset(
-                    this->playfield->beatmap->getLocalOffset() + offsetAdd);
+                this->playfield->beatmap->setLocalOffset(this->playfield->beatmap->getLocalOffset() + offsetAdd);
                 this->notificationOverlay->addNotification(
-                    UString::format("Local beatmap offset set to %ld ms",
-                                    this->playfield->beatmap->getLocalOffset()));
+                    UString::format("Local beatmap offset set to %ld ms", this->playfield->beatmap->getLocalOffset()));
             }
             if(key == (KEYCODE)cv::DECREASE_LOCAL_OFFSET.getInt()) {
                 long offsetAdd = -(keyboard->isAltDown() ? 1 : 5);
-                this->playfield->beatmap->setLocalOffset(
-                    this->playfield->beatmap->getLocalOffset() + offsetAdd);
+                this->playfield->beatmap->setLocalOffset(this->playfield->beatmap->getLocalOffset() + offsetAdd);
                 this->notificationOverlay->addNotification(
-                    UString::format("Local beatmap offset set to %ld ms",
-                                    this->playfield->beatmap->getLocalOffset()));
+                    UString::format("Local beatmap offset set to %ld ms", this->playfield->beatmap->getLocalOffset()));
             }
         }
     }
@@ -1616,10 +1567,9 @@ void Osu::updateMouseSettings() {
 
 void Osu::updateWindowsKeyDisable() {
     if(cv::debug_osu.getBool()) debugLog("Osu::updateWindowsKeyDisable()\n");
-    const bool isPlayerPlaying =
-        engine->hasFocus() && this->isInPlayMode() &&
-        (!this->playfield->isPaused() || this->playfield->isRestartScheduled()) &&
-        !cv::mod_autoplay.getBool();
+    const bool isPlayerPlaying = engine->hasFocus() && this->isInPlayMode() &&
+                                 (!this->playfield->isPaused() || this->playfield->isRestartScheduled()) &&
+                                 !cv::mod_autoplay.getBool();
     if(cv::win_disable_windows_key_while_playing.getBool()) {
         env->grabKeyboard(isPlayerPlaying);
     } else {
@@ -1714,8 +1664,7 @@ void Osu::onFocusGained() {
 
 void Osu::onFocusLost() {
     if(this->isInPlayMode() && !this->playfield->isPaused() && cv::pause_on_focus_loss.getBool()) {
-        if(!BanchoState::is_playing_a_multi_map() && !this->playfield->is_watching &&
-           !BanchoState::spectating) {
+        if(!BanchoState::is_playing_a_multi_map() && !this->playfield->is_watching && !BanchoState::spectating) {
             this->playfield->pause(false);
             this->pauseMenu->setVisible(true);
             this->modSelector->setVisible(false);
@@ -1903,12 +1852,12 @@ void Osu::updateConfineCursor() {
                                (!effectivelyFS && cv::confine_cursor_windowed.getBool()) ||      //
                                (playing && !(this->pauseMenu && this->pauseMenu->isVisible()));  //
 
-    const bool force_no_confine = !engine->hasFocus() ||                                                      //
-                                  (!playing_fposu_nonabs && cv::confine_cursor_never.getBool()) ||            //
-                                  this->getModAuto() ||                                                       //
-                                  this->getModAutopilot() ||                                                  //
-                                  (this->playfield && this->playfield->is_watching) ||  //
-                                  BanchoState::spectating;                                                    //
+    const bool force_no_confine = !engine->hasFocus() ||                                            //
+                                  (!playing_fposu_nonabs && cv::confine_cursor_never.getBool()) ||  //
+                                  this->getModAuto() ||                                             //
+                                  this->getModAutopilot() ||                                        //
+                                  (this->playfield && this->playfield->is_watching) ||              //
+                                  BanchoState::spectating;                                          //
 
     bool confine_cursor = might_confine && !force_no_confine;
     if(confine_cursor) {
@@ -1961,8 +1910,8 @@ void Osu::onKey1Change(bool pressed, bool isMouse) {
     }
 
     // cursor anim + ripples
-    const bool doAnimate = !(this->isInPlayMode() && !this->playfield->isPaused() && isMouse &&
-                             cv::disable_mousebuttons.getBool());
+    const bool doAnimate =
+        !(this->isInPlayMode() && !this->playfield->isPaused() && isMouse && cv::disable_mousebuttons.getBool());
     if(doAnimate) {
         if(pressed && isKeyPressed1Allowed) {
             this->hud->animateCursorExpand();
@@ -1998,8 +1947,8 @@ void Osu::onKey2Change(bool pressed, bool isMouse) {
     }
 
     // cursor anim + ripples
-    const bool doAnimate = !(this->isInPlayMode() && !this->playfield->isPaused() && isMouse &&
-                             cv::disable_mousebuttons.getBool());
+    const bool doAnimate =
+        !(this->isInPlayMode() && !this->playfield->isPaused() && isMouse && cv::disable_mousebuttons.getBool());
     if(doAnimate) {
         if(pressed && isKeyPressed2Allowed) {
             this->hud->animateCursorExpand();

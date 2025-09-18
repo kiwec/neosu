@@ -477,7 +477,7 @@ bool Playfield::watch(FinishedScore score, u32 start_ms) {
     osu->watched_user_id = score.player_id;
     this->is_watching = true;
 
-    osu->useMods(&score);
+    osu->useMods(score);
 
     if(!this->start()) {
         // Map failed to load
@@ -515,7 +515,7 @@ bool Playfield::spectate() {
     score.client = "peppy-unknown";
     score.server = BanchoState::endpoint;
     score.mods = Replay::Mods::from_legacy(user_info->mods);
-    osu->useMods(&score);
+    osu->useMods(score);
 
     if(!this->start()) {
         // Map failed to load

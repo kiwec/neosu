@@ -88,6 +88,8 @@ class Osu final : public MouseListener, public KeyboardListener {
 
     void reloadSkin() { this->onSkinReload(); }
 
+    static vec2 g_vInternalResolution;
+
     [[nodiscard]] inline vec2 getScreenSize() const { return g_vInternalResolution; }
     [[nodiscard]] inline int getScreenWidth() const { return (int)g_vInternalResolution.x; }
     [[nodiscard]] inline int getScreenHeight() const { return (int)g_vInternalResolution.y; }
@@ -158,7 +160,7 @@ class Osu final : public MouseListener, public KeyboardListener {
     bool shouldFallBackToLegacySliderRenderer();  // certain mods or actions require Sliders to render dynamically
                                                   // (e.g. wobble or the CS override slider)
 
-    inline void useMods(FinishedScore *score) {Replay::Mods::use(score->mods);}
+    inline void useMods(const FinishedScore &score) { Replay::Mods::use(score.mods); }
 
     void updateMods();
     void updateCursorVisibility();
@@ -167,13 +169,8 @@ class Osu final : public MouseListener, public KeyboardListener {
     void updateMouseSettings();
     void updateWindowsKeyDisable();
 
-    static vec2 g_vInternalResolution;
-
-    void updateModsForConVarTemplate(const UString &oldValue, const UString &newValue) {
-        (void)oldValue;
-        (void)newValue;
-        this->updateMods();
-    }
+    // im not sure why this is a change callback but im too scared to change it at this point
+    inline void updateModsForConVarTemplate(float /*oldValue*/, float /*newValue*/) { this->updateMods(); }
 
     void rebuildRenderTargets();
     void reloadFonts();
@@ -213,105 +210,108 @@ class Osu final : public MouseListener, public KeyboardListener {
     void setupSoloud();
 
     // interfaces
-    Playfield *playfield = nullptr;
-    VolumeOverlay *volumeOverlay = nullptr;
-    MainMenu *mainMenu = nullptr;
-    OptionsMenu *optionsMenu = nullptr;
-    Chat *chat = nullptr;
-    Lobby *lobby = nullptr;
-    RoomScreen *room = nullptr;
-    PromptScreen *prompt = nullptr;
-    UIUserContextMenuScreen *user_actions = nullptr;
-    SongBrowser *songBrowser2 = nullptr;
-    BackgroundImageHandler *backgroundImageHandler = nullptr;
-    ModSelector *modSelector = nullptr;
-    RankingScreen *rankingScreen = nullptr;
-    UserStatsScreen *userStats = nullptr;
-    PauseMenu *pauseMenu = nullptr;
-    Skin *skin = nullptr;
-    HUD *hud = nullptr;
-    TooltipOverlay *tooltipOverlay = nullptr;
-    NotificationOverlay *notificationOverlay = nullptr;
-    LiveScore *score = nullptr;
-    Changelog *changelog = nullptr;
-    UpdateHandler *updateHandler = nullptr;
-    ModFPoSu *fposu = nullptr;
-    SpectatorScreen *spectatorScreen = nullptr;
+    Playfield *playfield{nullptr};
+    VolumeOverlay *volumeOverlay{nullptr};
+    MainMenu *mainMenu{nullptr};
+    OptionsMenu *optionsMenu{nullptr};
+    Chat *chat{nullptr};
+    Lobby *lobby{nullptr};
+    RoomScreen *room{nullptr};
+    PromptScreen *prompt{nullptr};
+    UIUserContextMenuScreen *user_actions{nullptr};
+    SongBrowser *songBrowser2{nullptr};
+    BackgroundImageHandler *backgroundImageHandler{nullptr};
+    ModSelector *modSelector{nullptr};
+    RankingScreen *rankingScreen{nullptr};
+    UserStatsScreen *userStats{nullptr};
+    PauseMenu *pauseMenu{nullptr};
+    Skin *skin{nullptr};
+    HUD *hud{nullptr};
+    TooltipOverlay *tooltipOverlay{nullptr};
+    NotificationOverlay *notificationOverlay{nullptr};
+    LiveScore *score{nullptr};
+    Changelog *changelog{nullptr};
+    UpdateHandler *updateHandler{nullptr};
+    ModFPoSu *fposu{nullptr};
+    SpectatorScreen *spectatorScreen{nullptr};
 
     std::unique_ptr<UserCard> userButton{nullptr};
 
     std::vector<OsuScreen *> screens;
 
     // rendering
-    RenderTarget *backBuffer;
-    RenderTarget *playfieldBuffer;
-    RenderTarget *sliderFrameBuffer;
-    RenderTarget *AAFrameBuffer;
-    RenderTarget *frameBuffer;
-    RenderTarget *frameBuffer2;
+    RenderTarget *backBuffer{nullptr};
+    RenderTarget *playfieldBuffer{nullptr};
+    RenderTarget *sliderFrameBuffer{nullptr};
+    RenderTarget *AAFrameBuffer{nullptr};
+    RenderTarget *frameBuffer{nullptr};
+    RenderTarget *frameBuffer2{nullptr};
     vec2 vInternalResolution{0.f};
+
+    Shader *actual_flashlight_shader{nullptr};
+    Shader *flashlight_shader{nullptr};
+
     vec2 flashlight_position{0.f};
 
     // mods
-    Replay::Mods previous_mods;
-    bool bModAutoTemp = false;  // when ctrl+clicking a map, the auto mod should disable itself after the map finishes
-
     std::vector<ConVar *> experimentalMods;
+    Replay::Mods previous_mods{0};
+    bool bModAutoTemp{false};  // when ctrl+clicking a map, the auto mod should disable itself after the map finishes
 
     // keys
-    bool bF1;
-    bool bUIToggleCheck;
-    bool bScoreboardToggleCheck;
-    bool bEscape;
-    bool bKeyboardKey1Down;
-    bool bKeyboardKey12Down;
-    bool bKeyboardKey2Down;
-    bool bKeyboardKey22Down;
-    bool bMouseKey1Down;
-    bool bMouseKey2Down;
-    bool bSkipScheduled;
-    bool bQuickRetryDown;
-    float fQuickRetryTime;
-    bool bSeekKey;
-    bool bSeeking;
-    bool bClickedSkipButton = false;
-    float fPrevSeekMousePosX;
-    float fQuickSaveTime;
+    bool bF1{false};
+    bool bUIToggleCheck{false};
+    bool bScoreboardToggleCheck{false};
+    bool bEscape{false};
+    bool bKeyboardKey1Down{false};
+    bool bKeyboardKey12Down{false};
+    bool bKeyboardKey2Down{false};
+    bool bKeyboardKey22Down{false};
+    bool bMouseKey1Down{false};
+    bool bMouseKey2Down{false};
+    bool bSkipScheduled{false};
+    bool bQuickRetryDown{false};
+    float fQuickRetryTime{0.f};
+    bool bSeekKey{false};
+    bool bSeeking{false};
+    bool bClickedSkipButton{false};
+    float fPrevSeekMousePosX{-1.f};
+    float fQuickSaveTime{0.f};
 
     // async toggles
     // TODO: this way of doing things is bullshit
-    bool bToggleModSelectionScheduled;
-    bool bToggleOptionsMenuScheduled;
-    bool bOptionsMenuFullscreen;
-    bool bToggleChangelogScheduled;
-    bool bToggleEditorScheduled;
+    bool bToggleModSelectionScheduled{false};
+    bool bToggleOptionsMenuScheduled{false};
+    bool bOptionsMenuFullscreen{true};
+    bool bToggleChangelogScheduled{false};
+    bool bToggleEditorScheduled{false};
 
     // global resources
     std::vector<McFont *> fonts;
-    McFont *titleFont;
-    McFont *subTitleFont;
-    McFont *songBrowserFont;
-    McFont *songBrowserFontBold;
-    McFont *fontIcons;
+    McFont *titleFont{nullptr};
+    McFont *subTitleFont{nullptr};
+    McFont *songBrowserFont{nullptr};
+    McFont *songBrowserFontBold{nullptr};
+    McFont *fontIcons{nullptr};
 
     // debugging
-    CWindowManager *windowManager;
+    CWindowManager *windowManager{nullptr};
 
     // replay
     UString watched_user_name;
-    i32 watched_user_id = 0;
+    i32 watched_user_id{0};
 
     // custom
-    bool music_unpause_scheduled = false;
-    bool bScheduleEndlessModNextBeatmap;
-    bool bWasBossKeyPaused;
-    bool bSkinLoadScheduled;
-    bool bSkinLoadWasReload;
-    Skin *skinScheduledToLoad;
-    bool bFontReloadScheduled;
-    bool bFireResolutionChangedScheduled;
-    bool bFireDelayedFontReloadAndResolutionChangeToFixDesyncedUIScaleScheduled;
-    std::atomic<bool> should_pause_background_threads = false;
+    bool music_unpause_scheduled{false};
+    bool bScheduleEndlessModNextBeatmap{false};
+    bool bWasBossKeyPaused{false};
+    bool bSkinLoadScheduled{false};
+    bool bSkinLoadWasReload{false};
+    Skin *skinScheduledToLoad{nullptr};
+    bool bFontReloadScheduled{false};
+    bool bFireResolutionChangedScheduled{false};
+    bool bFireDelayedFontReloadAndResolutionChangeToFixDesyncedUIScaleScheduled{false};
+    std::atomic<bool> should_pause_background_threads{false};
 
    private:
     std::unique_ptr<AvatarManager> avatarManager{nullptr};
