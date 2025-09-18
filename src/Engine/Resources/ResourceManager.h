@@ -134,14 +134,8 @@ class ResourceManager final {
     template <typename T>
     [[nodiscard]] T *tryGet(const std::string &resourceName) const {
         if(resourceName.empty()) return nullptr;
-        auto it = this->mNameToResourceMap.find(resourceName);
-        if(it != this->mNameToResourceMap.end()) {
-            if(!it->second) {
-                auto *p_this = const_cast<ResourceManager *>(this);
-                p_this->mNameToResourceMap.erase(it);
-            } else {
-                return it->second->as<T>();
-            }
+        if(this->mNameToResourceMap.contains(resourceName)) {
+            return this->mNameToResourceMap.at(resourceName)->as<T>();
         }
         if(cv::debug_rm.getBool())
             debugLog(R"(ResourceManager WARNING: Resource "{:s}" does not exist!)"
@@ -152,20 +146,15 @@ class ResourceManager final {
     template <typename T>
     [[nodiscard]] T *checkIfExistsAndHandle(const std::string &resourceName) {
         if(resourceName.empty()) return nullptr;
-        auto it = this->mNameToResourceMap.find(resourceName);
-        if(it == this->mNameToResourceMap.end())
+        if(!this->mNameToResourceMap.contains(resourceName))
             return nullptr;
-        else if(!it->second) {
-            this->mNameToResourceMap.erase(it);
-            return nullptr;
-        }
         if(cv::debug_rm.getBool())
             debugLog(R"(ResourceManager NOTICE: Resource "{:s}" already loaded.)"
                      "\n",
                      resourceName);
         // handle flags (reset them)
         resetFlags();
-        return it->second->as<T>();
+        return this->mNameToResourceMap[resourceName]->as<T>();
     }
 
     void loadResource(Resource *res, bool load);
