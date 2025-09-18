@@ -505,6 +505,85 @@ OptionsMenu::OptionsMenu() : ScreenBackable() {
 
     //**************************************************************************************************************************//
 
+    this->sectionOnline = this->addSection("Online");
+
+    this->addSubSection("Online server");
+
+    // Only renders if server submission policy is unknown
+    {
+        this->addLabel("If the server admins don't explicitly allow neosu,")->setTextColor(0xff666666);
+        this->elemContainers.back()->render_condition = RenderCondition::SCORE_SUBMISSION_POLICY;
+        this->addLabel("you might get banned!")->setTextColor(0xff666666);
+        this->elemContainers.back()->render_condition = RenderCondition::SCORE_SUBMISSION_POLICY;
+        this->addLabel("");
+        this->elemContainers.back()->render_condition = RenderCondition::SCORE_SUBMISSION_POLICY;
+    }
+
+    this->serverTextbox = this->addTextbox(cv::mp_server.getString().c_str(), "Server address:", &cv::mp_server);
+
+    // Only renders if server submission policy is unknown
+    {
+        this->submitScoresCheckbox = this->addCheckbox("Submit scores", &cv::submit_scores);
+        this->elemContainers.back()->render_condition = RenderCondition::SCORE_SUBMISSION_POLICY;
+    }
+
+    // Only renders if server isn't OAuth
+    {
+        this->addSubSection("Login details (username/password)");
+        this->elemContainers.back()->render_condition = RenderCondition::PASSWORD_AUTH;
+        this->nameTextbox = this->addTextbox(cv::name.getString().c_str(), &cv::name);
+        this->elemContainers.back()->render_condition = RenderCondition::PASSWORD_AUTH;
+        const auto &md5pass = cv::mp_password_md5.getString();
+        this->passwordTextbox = this->addTextbox(md5pass.empty() ? "" : md5pass.c_str(), &cv::mp_password);
+        this->passwordTextbox->is_password = true;
+        this->elemContainers.back()->render_condition = RenderCondition::PASSWORD_AUTH;
+    }
+
+    {
+        enum ELEMS : uint8_t { LOGINBTN = 0, KEEPSIGNEDCBX = 1 };
+        OPTIONS_ELEMENT *loginElement = this->addButtonCheckbox("Log in", "Keep me logged in");
+
+        this->logInButton = static_cast<UIButton *>(loginElement->baseElems[LOGINBTN]);
+
+        this->logInButton->setHandleRightMouse(true);  // for canceling logins
+        this->logInButton->setClickCallback(SA::MakeDelegate<&OptionsMenu::onLogInClicked>(this));
+        this->logInButton->setColor(0xff00d900);
+        this->logInButton->setTextColor(0xffffffff);
+
+        auto *keepCbx = static_cast<UICheckbox *>(loginElement->baseElems[KEEPSIGNEDCBX]);
+
+        keepCbx->setChecked(cv::mp_autologin.getBool());
+        keepCbx->setChangeCallback(SA::MakeDelegate<&OptionsMenu::onCheckboxChange>(this));
+        loginElement->cvars[keepCbx] = &cv::mp_autologin;
+    }
+
+    this->addSubSection("Alerts");
+    this->addCheckbox("Notify when friends change status", &cv::notify_friend_status_change);
+    this->addCheckbox("Notify when receiving a direct message", &cv::chat_notify_on_dm);
+    this->addCheckbox("Notify when mentioned", &cv::chat_notify_on_mention);
+    this->addCheckbox("Ping when mentioned", &cv::chat_ping_on_mention);
+    this->addCheckbox("Show notifications during gameplay", &cv::notify_during_gameplay);
+
+    this->addSubSection("In-game chat");
+    this->addCheckbox("Chat ticker", &cv::chat_ticker);
+    this->addCheckbox("Automatically hide chat during gameplay", &cv::chat_auto_hide);
+    this->addTextbox(cv::chat_ignore_list.getString().c_str(), "Chat word ignore list (space-separated):", &cv::chat_ignore_list);
+    // this->addTextbox(cv::chat_highlight_words.getString().c_str(), "Chat word highlight list (space-separated):", &cv::chat_highlight_words);
+
+    this->addSubSection("Privacy");
+    this->addCheckbox("Automatically update neosu to the latest version", &cv::auto_update);
+    // this->addCheckbox("Allow private messages from strangers", &cv::allow_stranger_dms);
+    // this->addCheckbox("Allow game invites from strangers", &cv::allow_mp_invites);
+    this->addCheckbox("Replace main menu logo with server logo", &cv::main_menu_use_server_logo);
+    this->addCheckbox("Show spectator list", &cv::draw_spectator_list);
+    this->addCheckbox("Share currently played map with spectators", &cv::spec_share_map);
+    this->addCheckbox("Enable Discord Rich Presence",
+                      "Shows your current game state in your friends' friendslists.\ne.g.: Playing Gavin G - Reach Out "
+                      "[Cherry Blossom's Insane]",
+                      &cv::rich_presence);
+
+    //**************************************************************************************************************************//
+
     CBaseUIElement *sectionGeneral = this->addSection("General");
 
     this->addSubSection("osu!folder");
@@ -1219,85 +1298,6 @@ OptionsMenu::OptionsMenu() : ScreenBackable() {
 
     //**************************************************************************************************************************//
 
-    this->sectionOnline = this->addSection("Online");
-
-    this->addSubSection("Online server");
-
-    // Only renders if server submission policy is unknown
-    {
-        this->addLabel("If the server admins don't explicitly allow neosu,")->setTextColor(0xff666666);
-        this->elemContainers.back()->render_condition = RenderCondition::SCORE_SUBMISSION_POLICY;
-        this->addLabel("you might get banned!")->setTextColor(0xff666666);
-        this->elemContainers.back()->render_condition = RenderCondition::SCORE_SUBMISSION_POLICY;
-        this->addLabel("");
-        this->elemContainers.back()->render_condition = RenderCondition::SCORE_SUBMISSION_POLICY;
-    }
-
-    this->serverTextbox = this->addTextbox(cv::mp_server.getString().c_str(), "Server address:", &cv::mp_server);
-
-    // Only renders if server submission policy is unknown
-    {
-        this->submitScoresCheckbox = this->addCheckbox("Submit scores", &cv::submit_scores);
-        this->elemContainers.back()->render_condition = RenderCondition::SCORE_SUBMISSION_POLICY;
-    }
-
-    // Only renders if server isn't OAuth
-    {
-        this->addSubSection("Login details (username/password)");
-        this->elemContainers.back()->render_condition = RenderCondition::PASSWORD_AUTH;
-        this->nameTextbox = this->addTextbox(cv::name.getString().c_str(), &cv::name);
-        this->elemContainers.back()->render_condition = RenderCondition::PASSWORD_AUTH;
-        const auto &md5pass = cv::mp_password_md5.getString();
-        this->passwordTextbox = this->addTextbox(md5pass.empty() ? "" : md5pass.c_str(), &cv::mp_password);
-        this->passwordTextbox->is_password = true;
-        this->elemContainers.back()->render_condition = RenderCondition::PASSWORD_AUTH;
-    }
-
-    {
-        enum ELEMS : uint8_t { LOGINBTN = 0, KEEPSIGNEDCBX = 1 };
-        OPTIONS_ELEMENT *loginElement = this->addButtonCheckbox("Log in", "Keep me logged in");
-
-        this->logInButton = static_cast<UIButton *>(loginElement->baseElems[LOGINBTN]);
-
-        this->logInButton->setHandleRightMouse(true);  // for canceling logins
-        this->logInButton->setClickCallback(SA::MakeDelegate<&OptionsMenu::onLogInClicked>(this));
-        this->logInButton->setColor(0xff00d900);
-        this->logInButton->setTextColor(0xffffffff);
-
-        auto *keepCbx = static_cast<UICheckbox *>(loginElement->baseElems[KEEPSIGNEDCBX]);
-
-        keepCbx->setChecked(cv::mp_autologin.getBool());
-        keepCbx->setChangeCallback(SA::MakeDelegate<&OptionsMenu::onCheckboxChange>(this));
-        loginElement->cvars[keepCbx] = &cv::mp_autologin;
-    }
-
-    this->addSubSection("Alerts");
-    this->addCheckbox("Notify when friends change status", &cv::notify_friend_status_change);
-    this->addCheckbox("Notify when receiving a direct message", &cv::chat_notify_on_dm);
-    this->addCheckbox("Notify when mentioned", &cv::chat_notify_on_mention);
-    this->addCheckbox("Ping when mentioned", &cv::chat_ping_on_mention);
-    this->addCheckbox("Show notifications during gameplay", &cv::notify_during_gameplay);
-
-    this->addSubSection("In-game chat");
-    this->addCheckbox("Chat ticker", &cv::chat_ticker);
-    this->addCheckbox("Automatically hide chat during gameplay", &cv::chat_auto_hide);
-    this->addTextbox(cv::chat_ignore_list.getString().c_str(), "Chat word ignore list (space-separated):", &cv::chat_ignore_list);
-    // this->addTextbox(cv::chat_highlight_words.getString().c_str(), "Chat word highlight list (space-separated):", &cv::chat_highlight_words);
-
-    this->addSubSection("Privacy");
-    this->addCheckbox("Automatically update neosu to the latest version", &cv::auto_update);
-    // this->addCheckbox("Allow private messages from strangers", &cv::allow_stranger_dms);
-    // this->addCheckbox("Allow game invites from strangers", &cv::allow_mp_invites);
-    this->addCheckbox("Replace main menu logo with server logo", &cv::main_menu_use_server_logo);
-    this->addCheckbox("Show spectator list", &cv::draw_spectator_list);
-    this->addCheckbox("Share currently played map with spectators", &cv::spec_share_map);
-    this->addCheckbox("Enable Discord Rich Presence",
-                      "Shows your current game state in your friends' friendslists.\ne.g.: Playing Gavin G - Reach Out "
-                      "[Cherry Blossom's Insane]",
-                      &cv::rich_presence);
-
-    //**************************************************************************************************************************//
-
     this->addSection("Bullshit");
 
     this->addSubSection("Why");
@@ -1328,6 +1328,7 @@ OptionsMenu::OptionsMenu() : ScreenBackable() {
     //**************************************************************************************************************************//
 
     // build categories
+    this->addCategory(this->sectionOnline, Icons::GLOBE);
     this->addCategory(sectionGeneral, Icons::GEAR);
     this->addCategory(sectionGraphics, Icons::DESKTOP);
     this->addCategory(sectionAudio, Icons::VOLUME_UP);
@@ -1336,8 +1337,6 @@ OptionsMenu::OptionsMenu() : ScreenBackable() {
     this->addCategory(subSectionKeyboard, Icons::KEYBOARD);
     this->addCategory(sectionGameplay, Icons::CIRCLE);
     this->fposuCategoryButton = this->addCategory(sectionFposu, Icons::CUBE);
-
-    if(this->sectionOnline != nullptr) this->addCategory(this->sectionOnline, Icons::GLOBE);
 
     //**************************************************************************************************************************//
 
