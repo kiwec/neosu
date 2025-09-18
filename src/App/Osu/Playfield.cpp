@@ -991,6 +991,9 @@ void Playfield::setSpeed(f32 speed) {
 void Playfield::seekMS(u32 ms) {
     if(this->beatmap == nullptr || this->music == nullptr || this->bFailed) return;
 
+    // this->resetScore() resets this->is_submittable
+    bool was_submittable = this->is_submittable;
+
     this->bWasSeekFrame = true;
     this->fWaitTime = 0.0f;
 
@@ -1000,6 +1003,7 @@ void Playfield::seekMS(u32 ms) {
 
     this->resetHitObjects(ms);
     this->resetScore();
+    this->is_submittable = false;
 
     this->iPreviousSectionPassFailTime = -1;
 
@@ -1029,11 +1033,8 @@ void Playfield::seekMS(u32 ms) {
     }
 
     if(!this->is_watching && !BanchoState::spectating) {  // score submission already disabled when watching replay
-        if(this->is_submittable) {
-            this->is_submittable = false;
-            if(BanchoState::can_submit_scores()) {
-                osu->notificationOverlay->addToast("Score will not submit due to seeking", ERROR_TOAST);
-            }
+        if(was_submittable && BanchoState::can_submit_scores()) {
+            osu->notificationOverlay->addToast("Score will not submit due to seeking", ERROR_TOAST);
         }
     }
 }
