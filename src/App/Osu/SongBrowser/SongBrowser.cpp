@@ -1173,7 +1173,7 @@ CBaseUIContainer *SongBrowser::setVisible(bool visible) {
         this->bHasSelectedAndIsPlaying = false;  // sanity
 
         // try another refresh, maybe the osu!folder has changed
-        if(this->beatmapsets.size() == 0) {
+        if(this->beatmapsets.size() == 0 && !this->bBeatmapRefreshScheduled) {
             this->refreshBeatmaps();
         }
 
@@ -1363,13 +1363,6 @@ void SongBrowser::onDifficultySelected(DatabaseBeatmap *map, bool play) {
 
 void SongBrowser::refreshBeatmaps() {
     if(this->bHasSelectedAndIsPlaying) return;
-
-    if(!this->bVisible) {
-        // XXX: We're forcing visibility here to show the reload progress
-        //      But ideally, we should be able to load in the background (assuming no data races...)
-        //      That would let us load databases immediately on game start in the background
-        osu->toggleSongBrowser();
-    }
 
     // reset
     this->checkHandleKillBackgroundSearchMatcher();

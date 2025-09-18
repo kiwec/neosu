@@ -39,8 +39,8 @@ class Environment {
         Interop() = delete;
         Interop(Environment *env_ptr) : m_env(env_ptr) {}
         ~Interop() { m_env = nullptr; }
-        void handle_cmdline_args(const std::vector<std::string> &args);
-        void handle_cmdline_args() { handle_cmdline_args(m_env->getCommandLine()); }
+        bool handle_cmdline_args(const std::vector<std::string> &args);
+        bool handle_cmdline_args() { return handle_cmdline_args(m_env->getCommandLine()); }
         void setup_system_integrations();
         static void handle_existing_window([[maybe_unused]] int argc,
                                            [[maybe_unused]] char *argv[]);  // this is likely broken ATM

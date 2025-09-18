@@ -63,12 +63,12 @@ void handle_osz(const char *osz_path) {
 }
 }  // namespace
 
-void Environment::Interop::handle_cmdline_args(const std::vector<std::string> &args) {
+bool Environment::Interop::handle_cmdline_args(const std::vector<std::string> &args) {
     bool need_to_reload_database = false;
 
     for(const auto &arg : args) {
-        if(arg[0] == '-') return;
-        if(arg.length() < 4) return;
+        if(arg[0] == '-') break;
+        if(arg.length() < 4) break;
 
         if(arg.starts_with("neosu://")) {
             handle_neosu_url(arg.c_str());
@@ -89,6 +89,8 @@ void Environment::Interop::handle_cmdline_args(const std::vector<std::string> &a
     if(need_to_reload_database) {
         osu->getSongBrowser()->refreshBeatmaps();
     }
+
+    return need_to_reload_database;
 }
 
 #ifdef _WIN32

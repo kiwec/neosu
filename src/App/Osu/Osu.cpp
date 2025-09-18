@@ -364,7 +364,11 @@ Osu::Osu() {
     }
 #endif
 
-    env->getEnvInterop().handle_cmdline_args();
+    bool reloading_db = env->getEnvInterop().handle_cmdline_args();
+    if(!reloading_db) {
+        // Start loading db early
+        osu->getSongBrowser()->refreshBeatmaps();
+    }
 
     // Not the type of shader you want players to tweak or delete, so loading from string
     actual_flashlight_shader = resourceManager->createShader(
