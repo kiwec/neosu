@@ -8,7 +8,7 @@
 #include "SongBrowser.h"
 // ---
 
-#include "Playfield.h"
+#include "BeatmapInterface.h"
 #include "ConVar.h"
 #include "DatabaseBeatmap.h"
 #include "Engine.h"
@@ -130,8 +130,8 @@ void InfoLabel::draw() {
 
     // draw song info (length, bpm, objects)
     const Color songInfoColor =
-        (osu->playfield->getSpeedMultiplier() != 1.0f
-             ? (osu->playfield->getSpeedMultiplier() > 1.0f ? 0xffff7f7f : 0xffadd8e6)
+        (osu->active_map->getSpeedMultiplier() != 1.0f
+             ? (osu->active_map->getSpeedMultiplier() > 1.0f ? 0xffff7f7f : 0xffadd8e6)
              : 0xffffffff);
     g->pushTransform();
     {
@@ -209,7 +209,7 @@ void InfoLabel::mouse_update(bool *propagate_clicks) {
 
     // detail info tooltip when hovering over diff info
     if(this->isMouseInside() && !osu->getOptionsMenu()->isMouseInside()) {
-        Playfield *pf = osu->playfield;
+        BeatmapInterface *pf = osu->active_map;
 
         const float speedMultiplierInv = (1.0f / pf->getSpeedMultiplier());
 
@@ -293,7 +293,7 @@ void InfoLabel::setFromBeatmap(DatabaseBeatmap *map) {
 
 UString InfoLabel::buildSongInfoString() {
     unsigned long lengthMS = this->iLengthMS;
-    auto speed = osu->playfield->getSpeedMultiplier();
+    auto speed = osu->active_map->getSpeedMultiplier();
 
     const unsigned long fullSeconds = (lengthMS * (1.0 / speed)) / 1000.0;
     const int minutes = fullSeconds / 60;
@@ -313,7 +313,7 @@ UString InfoLabel::buildSongInfoString() {
 }
 
 UString InfoLabel::buildDiffInfoString() {
-    auto *pf = osu->playfield;
+    auto *pf = osu->active_map;
     auto map = pf->beatmap;
     if(!map) return "";
 

@@ -36,7 +36,7 @@ class Skin;
 class HUD;
 class Changelog;
 class ModFPoSu;
-class Playfield;
+class BeatmapInterface;
 
 class Osu final : public MouseListener, public KeyboardListener {
     NOCOPY_NOMOVE(Osu)
@@ -210,7 +210,7 @@ class Osu final : public MouseListener, public KeyboardListener {
     void setupSoloud();
 
     // interfaces
-    Playfield *playfield{nullptr};
+    std::unique_ptr<BeatmapInterface> map_iface{nullptr};
     VolumeOverlay *volumeOverlay{nullptr};
     MainMenu *mainMenu{nullptr};
     OptionsMenu *optionsMenu{nullptr};

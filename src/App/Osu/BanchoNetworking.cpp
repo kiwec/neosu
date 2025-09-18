@@ -14,7 +14,7 @@
 #include "BanchoLeaderboard.h"
 #include "BanchoProtocol.h"
 #include "BanchoUsers.h"
-#include "Playfield.h"
+#include "BeatmapInterface.h"
 #include "Chat.h"
 #include "ConVar.h"
 #include "Database.h"

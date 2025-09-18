@@ -5,7 +5,7 @@
 
 #include "AnimationHandler.h"
 #include "Bancho.h"
-#include "Playfield.h"
+#include "BeatmapInterface.h"
 #include "CBaseUIContainer.h"
 #include "CBaseUIImage.h"
 #include "CBaseUILabel.h"
@@ -401,7 +401,7 @@ CBaseUIContainer *RankingScreen::setVisible(bool visible) {
 
 void RankingScreen::onRetryClicked() {
     this->setVisible(false);
-    if(osu->playfield->play()) {
+    if(osu->active_map->play()) {
         osu->songBrowser2->setVisible(false);
     }
 }

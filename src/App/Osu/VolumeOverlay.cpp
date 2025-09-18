@@ -1,7 +1,7 @@
 #include "VolumeOverlay.h"
 
 #include "AnimationHandler.h"
-#include "Playfield.h"
+#include "BeatmapInterface.h"
 #include "CBaseUIContainer.h"
 #include "Changelog.h"
 #include "Chat.h"
@@ -317,8 +317,8 @@ void VolumeOverlay::updateEffectVolume(Skin *skin) {
 }
 
 void VolumeOverlay::onMusicVolumeChange() {
-    auto music = osu->playfield->getMusic();
+    auto music = osu->active_map->getMusic();
     if(music != nullptr) {
-        music->setBaseVolume(osu->playfield->getIdealVolume());
+        music->setBaseVolume(osu->active_map->getIdealVolume());
     }
 }

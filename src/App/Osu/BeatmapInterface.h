@@ -1,7 +1,7 @@
 #pragma once
 // Copyright (c) 2015, PG, All rights reserved.
 
-#include "PlayfieldInterface.h"
+#include "AbstractBeatmapInterface.h"
 #include "DatabaseBeatmap.h"
 #include "DifficultyCalculator.h"
 #include "HUD.h"
@@ -15,7 +15,7 @@ class ConVar;
 class Skin;
 class HitObject;
 class DatabaseBeatmap;
-class SimulatedPlayfield;
+class SimulatedBeatmapInterface;
 struct LiveReplayFrame;
 struct ScoreFrame;
 
@@ -24,10 +24,11 @@ struct Click {
     vec2 pos{0.f};
 };
 
-class Playfield : public PlayfieldInterface {
+class BeatmapInterface : public AbstractBeatmapInterface {
+    NOCOPY_NOMOVE(BeatmapInterface)
    public:
-    Playfield();
-    ~Playfield() override;
+    BeatmapInterface();
+    ~BeatmapInterface() override;
 
     void draw();
     void drawDebug();
@@ -161,7 +162,7 @@ class Playfield : public PlayfieldInterface {
     vec2 interpolatedMousePos{0.f};
     bool is_watching = false;
     long current_frame_idx = 0;
-    SimulatedPlayfield *sim = nullptr;
+    SimulatedBeatmapInterface *sim = nullptr;
 
     // getting spectated (live)
     void broadcast_spectator_frames();

@@ -6,6 +6,7 @@ neosu_SOURCES = \
 	libraries/glad/glad.cpp \
 	libraries/lodepng.cpp \
 	libraries/sha256.cpp \
+	src/App/Osu/AbstractBeatmapInterface.cpp \
 	src/App/Osu/AvatarManager.cpp \
 	src/App/Osu/BackgroundImageHandler.cpp \
 	src/App/Osu/Bancho.cpp \
@@ -15,6 +16,7 @@ neosu_SOURCES = \
 	src/App/Osu/BanchoProtocol.cpp \
 	src/App/Osu/BanchoSubmitter.cpp \
 	src/App/Osu/BanchoUsers.cpp \
+	src/App/Osu/BeatmapInterface.cpp \
 	src/App/Osu/Changelog.cpp \
 	src/App/Osu/Chat.cpp \
 	src/App/Osu/ChatLink.cpp \
@@ -39,8 +41,6 @@ neosu_SOURCES = \
 	src/App/Osu/Osu.cpp \
 	src/App/Osu/PauseMenu.cpp \
 	src/App/Osu/PeppyImporter.cpp \
-	src/App/Osu/Playfield.cpp \
-	src/App/Osu/PlayfieldInterface.cpp \
 	src/App/Osu/PromptScreen.cpp \
 	src/App/Osu/RankingScreen.cpp \
 	src/App/Osu/Replay.cpp \
@@ -48,7 +48,7 @@ neosu_SOURCES = \
 	src/App/Osu/RoomScreen.cpp \
 	src/App/Osu/ScoreboardSlot.cpp \
 	src/App/Osu/ScreenBackable.cpp \
-	src/App/Osu/SimulatedPlayfield.cpp \
+	src/App/Osu/SimulatedBeatmapInterface.cpp \
 	src/App/Osu/Skin.cpp \
 	src/App/Osu/SkinImage.cpp \
 	src/App/Osu/SliderCurves.cpp \

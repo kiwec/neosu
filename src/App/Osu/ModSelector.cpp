@@ -6,7 +6,7 @@
 #include "AnimationHandler.h"
 #include "Bancho.h"
 #include "BanchoNetworking.h"
-#include "Playfield.h"
+#include "BeatmapInterface.h"
 #include "CBaseUICheckbox.h"
 #include "CBaseUIContainer.h"
 #include "CBaseUIImageButton.h"
@@ -650,7 +650,7 @@ void ModSelector::mouse_update(bool *propagate_clicks) {
             this->bWaitForSpeedChangeFinished = false;
             this->bWaitForHPChangeFinished = false;
 
-            if(osu->isInPlayMode()) osu->playfield->onModUpdate();
+            if(osu->isInPlayMode()) osu->active_map->onModUpdate();
         }
 
         // handle dynamic live pp calculation updates (when CS or Speed/BPM changes)
@@ -661,7 +661,7 @@ void ModSelector::mouse_update(bool *propagate_clicks) {
             this->bWaitForSpeedChangeFinished = false;
             this->bWaitForHPChangeFinished = false;
 
-            if(osu->isInPlayMode()) osu->playfield->onModUpdate();
+            if(osu->isInPlayMode()) osu->active_map->onModUpdate();
         }
 
         // handle dynamic HP drain updates
@@ -671,7 +671,7 @@ void ModSelector::mouse_update(bool *propagate_clicks) {
             this->bWaitForCSChangeFinished = false;
             this->bWaitForSpeedChangeFinished = false;
             this->bWaitForHPChangeFinished = false;
-            if(osu->isInPlayMode()) osu->playfield->onModUpdate();
+            if(osu->isInPlayMode()) osu->active_map->onModUpdate();
         }
     }
 }
@@ -1246,7 +1246,7 @@ void ModSelector::onOverrideSliderChange(CBaseUISlider *slider) {
             overrideSlider.label->setWidthToContent(0);
 
             // HACKHACK: dirty
-            if(osu->playfield->beatmap != nullptr) {
+            if(osu->active_map->beatmap != nullptr) {
                 if(overrideSlider.label->getName().find("BPM") != -1) {
                     // reset AR and OD override sliders if the bpm slider was reset
                     if(!this->ARLock->isChecked()) this->ARSlider->setValue(0.0f, false);
@@ -1278,9 +1278,9 @@ void ModSelector::onOverrideSliderChange(CBaseUISlider *slider) {
                 this->ODLock->setChecked(false);
 
                 // force change all other depending sliders
-                if(osu->playfield->beatmap != nullptr) {
-                    const float newAR = osu->playfield->getConstantApproachRateForSpeedMultiplier();
-                    const float newOD = osu->playfield->getConstantOverallDifficultyForSpeedMultiplier();
+                if(osu->active_map->beatmap != nullptr) {
+                    const float newAR = osu->active_map->getConstantApproachRateForSpeedMultiplier();
+                    const float newOD = osu->active_map->getConstantOverallDifficultyForSpeedMultiplier();
 
                     // '+1' to compensate for turn-off area of the override sliders
                     this->ARSlider->setValue(newAR + 1.0f, false);
@@ -1315,12 +1315,12 @@ void ModSelector::onOverrideSliderLockChange(CBaseUICheckbox *checkbox) {
                 if(checkbox == this->ARLock) {
                     if(this->ARSlider->getFloat() < 1.0f)
                         this->ARSlider->setValue(
-                            osu->playfield->getRawAR() + 1.0f,
+                            osu->active_map->getRawAR() + 1.0f,
                             false);  // '+1' to compensate for turn-off area of the override sliders
                 } else if(checkbox == this->ODLock) {
                     if(this->ODSlider->getFloat() < 1.0f)
                         this->ODSlider->setValue(
-                            osu->playfield->getRawOD() + 1.0f,
+                            osu->active_map->getRawOD() + 1.0f,
                             false);  // '+1' to compensate for turn-off area of the override sliders
                 }
             }
@@ -1375,11 +1375,11 @@ UString ModSelector::getOverrideSliderLabelText(ModSelector::OVERRIDE_SLIDER s, 
     float convarValue = s.cvar->getFloat();
 
     UString newLabelText = s.label->getName();
-    if(osu->playfield->beatmap != nullptr) {
+    if(osu->active_map->beatmap != nullptr) {
         // for relevant values (AR/OD), any non-1.0x speed multiplier should show the fractional parts caused by such a
         // speed multiplier (same for non-1.0x difficulty multiplier)
         const bool forceDisplayTwoDecimalDigits =
-            (osu->playfield->getSpeedMultiplier() != 1.0f || osu->getDifficultyMultiplier() != 1.0f ||
+            (osu->active_map->getSpeedMultiplier() != 1.0f || osu->getDifficultyMultiplier() != 1.0f ||
              osu->getCSDifficultyMultiplier() != 1.0f);
 
         // HACKHACK: dirty
@@ -1387,36 +1387,36 @@ UString ModSelector::getOverrideSliderLabelText(ModSelector::OVERRIDE_SLIDER s, 
         float beatmapValue = 1.0f;
         if(s.label->getName().find("CS") != -1) {
             beatmapValue = std::clamp<float>(
-                osu->playfield->beatmap->getCS() * osu->getCSDifficultyMultiplier(), 0.0f,
+                osu->active_map->beatmap->getCS() * osu->getCSDifficultyMultiplier(), 0.0f,
                 10.0f);
-            convarValue = osu->playfield->getCS();
+            convarValue = osu->active_map->getCS();
         } else if(s.label->getName().find("AR") != -1) {
-            beatmapValue = active ? osu->playfield->getRawARForSpeedMultiplier()
-                                  : osu->playfield->getApproachRateForSpeedMultiplier();
+            beatmapValue = active ? osu->active_map->getRawARForSpeedMultiplier()
+                                  : osu->active_map->getApproachRateForSpeedMultiplier();
 
             // compensate and round
-            convarValue = osu->playfield->getApproachRateForSpeedMultiplier();
+            convarValue = osu->active_map->getApproachRateForSpeedMultiplier();
             if(!keyboard->isAltDown() && !forceDisplayTwoDecimalDigits)
                 convarValue = std::round(convarValue * 10.0f) / 10.0f;
             else
                 convarValue = std::round(convarValue * 100.0f) / 100.0f;
         } else if(s.label->getName().find("OD") != -1) {
-            beatmapValue = active ? osu->playfield->getRawODForSpeedMultiplier()
-                                  : osu->playfield->getOverallDifficultyForSpeedMultiplier();
+            beatmapValue = active ? osu->active_map->getRawODForSpeedMultiplier()
+                                  : osu->active_map->getOverallDifficultyForSpeedMultiplier();
 
             // compensate and round
-            convarValue = osu->playfield->getOverallDifficultyForSpeedMultiplier();
+            convarValue = osu->active_map->getOverallDifficultyForSpeedMultiplier();
             if(!keyboard->isAltDown() && !forceDisplayTwoDecimalDigits)
                 convarValue = std::round(convarValue * 10.0f) / 10.0f;
             else
                 convarValue = std::round(convarValue * 100.0f) / 100.0f;
         } else if(s.label->getName().find("HP") != -1) {
             beatmapValue = std::clamp<float>(
-                osu->playfield->beatmap->getHP() * osu->getDifficultyMultiplier(), 0.0f,
+                osu->active_map->beatmap->getHP() * osu->getDifficultyMultiplier(), 0.0f,
                 10.0f);
-            convarValue = osu->playfield->getHP();
+            convarValue = osu->active_map->getHP();
         } else if(s.desc->getText().find("Speed") != -1) {
-            beatmapValue = active ? 1.f : osu->playfield->getSpeedMultiplier();
+            beatmapValue = active ? 1.f : osu->active_map->getSpeedMultiplier();
 
             wasSpeedSlider = true;
             {
@@ -1429,13 +1429,13 @@ UString ModSelector::getOverrideSliderLabelText(ModSelector::OVERRIDE_SLIDER s, 
 
                 newLabelText.append("  (BPM: ");
 
-                int minBPM = osu->playfield->beatmap->getMinBPM();
-                int maxBPM = osu->playfield->beatmap->getMaxBPM();
-                int mostCommonBPM = osu->playfield->beatmap->getMostCommonBPM();
-                int newMinBPM = minBPM * osu->playfield->getSpeedMultiplier();
-                int newMaxBPM = maxBPM * osu->playfield->getSpeedMultiplier();
-                int newMostCommonBPM = mostCommonBPM * osu->playfield->getSpeedMultiplier();
-                if(!active || osu->playfield->getSpeedMultiplier() == 1.0f) {
+                int minBPM = osu->active_map->beatmap->getMinBPM();
+                int maxBPM = osu->active_map->beatmap->getMaxBPM();
+                int mostCommonBPM = osu->active_map->beatmap->getMostCommonBPM();
+                int newMinBPM = minBPM * osu->active_map->getSpeedMultiplier();
+                int newMaxBPM = maxBPM * osu->active_map->getSpeedMultiplier();
+                int newMostCommonBPM = mostCommonBPM * osu->active_map->getSpeedMultiplier();
+                if(!active || osu->active_map->getSpeedMultiplier() == 1.0f) {
                     if(minBPM == maxBPM)
                         newLabelText.append(UString::format("%i", newMaxBPM));
                     else
@@ -1485,7 +1485,7 @@ void ModSelector::onCheckboxChange(CBaseUICheckbox *checkbox) {
             if(experimentalMod.cvar != nullptr) experimentalMod.cvar->setValue(checkbox->isChecked());
 
             // force mod update
-            if(osu->isInPlayMode()) osu->playfield->onModUpdate();
+            if(osu->isInPlayMode()) osu->active_map->onModUpdate();
 
             break;
         }

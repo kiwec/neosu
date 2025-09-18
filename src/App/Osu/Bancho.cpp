@@ -26,7 +26,7 @@
 #include "BanchoNetworking.h"
 #include "BanchoProtocol.h"
 #include "BanchoUsers.h"
-#include "Playfield.h"
+#include "BeatmapInterface.h"
 #include "Chat.h"
 #include "ConVar.h"
 #include "Engine.h"
@@ -287,7 +287,7 @@ void BanchoState::handle_packet(Packet *packet) {
                         debugLog("WEIRD FRAME: time {:d}, x {:f}, y {:f}\n", frame.time, frame.mouse_x, frame.mouse_y);
                     }
 
-                    osu->playfield->spectated_replay.push_back(LegacyReplay::Frame{
+                    osu->map_iface->spectated_replay.push_back(LegacyReplay::Frame{
                         .cur_music_pos = frame.time,
                         .milliseconds_since_last_frame = 0,  // fixed below
                         .x = frame.mouse_x,
@@ -297,13 +297,13 @@ void BanchoState::handle_packet(Packet *packet) {
                 }
 
                 // NOTE: Server can send frames in the wrong order. So we're correcting it here.
-                std::ranges::sort(osu->playfield->spectated_replay, [](LegacyReplay::Frame a, LegacyReplay::Frame b) {
+                std::ranges::sort(osu->map_iface->spectated_replay, [](LegacyReplay::Frame a, LegacyReplay::Frame b) {
                     return a.cur_music_pos < b.cur_music_pos;
                 });
-                osu->playfield->last_frame_ms = 0;
-                for(auto &frame : osu->playfield->spectated_replay) {
-                    frame.milliseconds_since_last_frame = frame.cur_music_pos - osu->playfield->last_frame_ms;
-                    osu->playfield->last_frame_ms = frame.cur_music_pos;
+                osu->map_iface->last_frame_ms = 0;
+                for(auto &frame : osu->map_iface->spectated_replay) {
+                    frame.milliseconds_since_last_frame = frame.cur_music_pos - osu->map_iface->last_frame_ms;
+                    osu->map_iface->last_frame_ms = frame.cur_music_pos;
                 }
 
                 auto action = (LiveReplayBundle::Action)proto::read<u8>(packet);
@@ -313,29 +313,29 @@ void BanchoState::handle_packet(Packet *packet) {
                     if(action == LiveReplayBundle::Action::SONG_SELECT) {
                         info->map_id = 0;
                         info->map_md5 = MD5Hash();
-                        osu->playfield->stop(true);
+                        osu->map_iface->stop(true);
                     }
                     if(action == LiveReplayBundle::Action::UNPAUSE) {
-                        osu->playfield->spectate_pause = false;
+                        osu->map_iface->spectate_pause = false;
                     }
                     if(action == LiveReplayBundle::Action::PAUSE) {
-                        osu->playfield->spectate_pause = true;
+                        osu->map_iface->spectate_pause = true;
                     }
                     if(action == LiveReplayBundle::Action::SKIP) {
-                        osu->playfield->skipEmptySection();
+                        osu->map_iface->skipEmptySection();
                     }
                     if(action == LiveReplayBundle::Action::FAIL) {
-                        osu->playfield->fail(true);
+                        osu->map_iface->fail(true);
                     }
                     if(action == LiveReplayBundle::Action::NEW_SONG) {
                         osu->rankingScreen->setVisible(false);
-                        osu->playfield->restart(true);
-                        osu->playfield->update();
+                        osu->map_iface->restart(true);
+                        osu->map_iface->update();
                     }
                 }
 
                 auto score_frame = proto::read<ScoreFrame>(packet);
-                osu->playfield->score_frames.push_back(score_frame);
+                osu->map_iface->score_frames.push_back(score_frame);
 
                 auto sequence = proto::read<u16>(packet);
                 (void)sequence;  // don't know how to use this
@@ -395,7 +395,7 @@ void BanchoState::handle_packet(Packet *packet) {
                 stop_spectating();
             }
             if(osu->isInPlayMode()) {
-                osu->playfield->stop(true);
+                osu->map_iface->stop(true);
             }
 
             auto room = Room(packet);

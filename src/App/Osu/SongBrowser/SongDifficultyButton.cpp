@@ -9,7 +9,7 @@
 
 #include "AnimationHandler.h"
 #include "BackgroundImageHandler.h"
-#include "Playfield.h"
+#include "BeatmapInterface.h"
 #include "ConVar.h"
 #include "Database.h"
 #include "DatabaseBeatmap.h"

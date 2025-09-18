@@ -1,7 +1,6 @@
 #pragma once
 // Copyright (c) 2020, PG, All rights reserved.
 #include <atomic>
-#include <future>
 
 #include "DifficultyCalculator.h"
 #include "HitSounds.h"
@@ -10,7 +9,7 @@
 #include "Resource.h"
 #include "templates.h"
 
-class PlayfieldInterface;
+class AbstractBeatmapInterface;
 class HitObject;
 
 class Database;
@@ -162,7 +161,7 @@ class DatabaseBeatmap final {
                                                         float speedMultiplier, bool calculateStarsInaccurately,
                                                         const std::atomic<bool> &dead);
     bool loadMetadata(bool compute_md5 = true);
-    static LOAD_GAMEPLAY_RESULT loadGameplay(DatabaseBeatmap *databaseBeatmap, PlayfieldInterface *beatmap);
+    static LOAD_GAMEPLAY_RESULT loadGameplay(DatabaseBeatmap *databaseBeatmap, AbstractBeatmapInterface *beatmap);
     MapOverrides get_overrides();
     void update_overrides();
 

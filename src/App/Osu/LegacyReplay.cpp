@@ -13,7 +13,7 @@
 #include "Bancho.h"
 #include "BanchoNetworking.h"
 #include "BanchoProtocol.h"
-#include "Playfield.h"
+#include "BeatmapInterface.h"
 #include "Database.h"
 #include "Engine.h"
 #include "NotificationOverlay.h"
@@ -304,7 +304,7 @@ void load_and_watch(FinishedScore score) {
     } else {
         osu->getSongBrowser()->onDifficultySelected(map, false);
         osu->getSongBrowser()->selectSelectedBeatmapSongButton();
-        osu->playfield->watch(score, 0);
+        osu->active_map->watch(score, 0);
     }
 }
 

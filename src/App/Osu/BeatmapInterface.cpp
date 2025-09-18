@@ -1,5 +1,5 @@
 // Copyright (c) 2015, PG, All rights reserved.
-#include "Playfield.h"
+#include "BeatmapInterface.h"
 
 #include <algorithm>
 #include <cstring>
@@ -13,7 +13,7 @@
 #include "BanchoProtocol.h"
 #include "BanchoSubmitter.h"
 #include "BanchoUsers.h"
-#include "Playfield.h"
+#include "BeatmapInterface.h"
 #include "Chat.h"
 #include "ConVar.h"
 #include "Database.h"
@@ -36,7 +36,7 @@
 #include "ResourceManager.h"
 #include "RichPresence.h"
 #include "RoomScreen.h"
-#include "SimulatedPlayfield.h"
+#include "SimulatedBeatmapInterface.h"
 #include "Skin.h"
 #include "SkinImage.h"
 #include "SongBrowser/LeaderboardPPCalcThread.h"
@@ -47,7 +47,7 @@
 
 namespace proto = BANCHO::Proto;
 
-Playfield::Playfield() {
+BeatmapInterface::BeatmapInterface() : AbstractBeatmapInterface() {
     // vars
     this->bIsPlaying = false;
     this->bIsPaused = false;
@@ -140,7 +140,7 @@ Playfield::Playfield() {
     this->bInMafhamRenderChunk = false;
 }
 
-Playfield::~Playfield() {
+BeatmapInterface::~BeatmapInterface() {
     anim->deleteExistingAnimation(&this->fBreakBackgroundFade);
     anim->deleteExistingAnimation(&this->fHealth2);
     anim->deleteExistingAnimation(&this->fFailAnim);
@@ -148,7 +148,7 @@ Playfield::~Playfield() {
     this->unloadObjects();
 }
 
-void Playfield::drawDebug() {
+void BeatmapInterface::drawDebug() {
     if(cv::debug_draw_timingpoints.getBool()) {
         McFont *debugFont = resourceManager->getFont("FONT_DEFAULT");
         g->setColor(0xffffffff);
@@ -165,7 +165,7 @@ void Playfield::drawDebug() {
     }
 }
 
-void Playfield::drawBackground() {
+void BeatmapInterface::drawBackground() {
     if(!this->canDraw()) return;
 
     // draw beatmap background image
@@ -251,7 +251,7 @@ void Playfield::drawBackground() {
     }
 }
 
-void Playfield::skipEmptySection() {
+void BeatmapInterface::skipEmptySection() {
     if(!this->bIsInSkippableSection) return;
     this->bIsInSkippableSection = false;
     osu->chat->updateVisibility();
@@ -298,7 +298,7 @@ void Playfield::skipEmptySection() {
     }
 }
 
-void Playfield::keyPressed1(bool mouse) {
+void BeatmapInterface::keyPressed1(bool mouse) {
     if(this->is_watching || BanchoState::spectating) return;
 
     if(this->bContinueScheduled) this->bClickedContinue = !osu->getModSelector()->isMouseInside();
@@ -336,7 +336,7 @@ void Playfield::keyPressed1(bool mouse) {
     }
 }
 
-void Playfield::keyPressed2(bool mouse) {
+void BeatmapInterface::keyPressed2(bool mouse) {
     if(this->is_watching || BanchoState::spectating) return;
 
     if(this->bContinueScheduled) this->bClickedContinue = !osu->getModSelector()->isMouseInside();
@@ -374,7 +374,7 @@ void Playfield::keyPressed2(bool mouse) {
     }
 }
 
-void Playfield::keyReleased1(bool /*mouse*/) {
+void BeatmapInterface::keyReleased1(bool /*mouse*/) {
     if(this->is_watching || BanchoState::spectating) return;
 
     // key overlay
@@ -386,7 +386,7 @@ void Playfield::keyReleased1(bool /*mouse*/) {
     this->current_keys &= ~(LegacyReplay::M1 | LegacyReplay::K1);
 }
 
-void Playfield::keyReleased2(bool /*mouse*/) {
+void BeatmapInterface::keyReleased2(bool /*mouse*/) {
     if(this->is_watching || BanchoState::spectating) return;
 
     // key overlay
@@ -398,14 +398,14 @@ void Playfield::keyReleased2(bool /*mouse*/) {
     this->current_keys &= ~(LegacyReplay::M2 | LegacyReplay::K2);
 }
 
-void Playfield::selectBeatmap() {
+void BeatmapInterface::selectBeatmap() {
     // if possible, continue playing where we left off
     if(this->music != nullptr && (this->music->isPlaying())) this->iContinueMusicPos = this->music->getPositionMS();
 
     this->selectBeatmap(this->beatmap);
 }
 
-void Playfield::selectBeatmap(DatabaseBeatmap *map) {
+void BeatmapInterface::selectBeatmap(DatabaseBeatmap *map) {
     lct_set_map(map);
 
     if(map != nullptr) {
@@ -421,13 +421,13 @@ void Playfield::selectBeatmap(DatabaseBeatmap *map) {
     if(cv::beatmap_preview_mods_live.getBool()) this->onModUpdate();
 }
 
-void Playfield::deselectBeatmap() {
+void BeatmapInterface::deselectBeatmap() {
     this->iContinueMusicPos = 0;
     this->beatmap = nullptr;
     this->unloadObjects();
 }
 
-bool Playfield::play() {
+bool BeatmapInterface::play() {
     this->is_watching = false;
 
     if(this->start()) {
@@ -459,7 +459,7 @@ bool Playfield::play() {
     return false;
 }
 
-bool Playfield::watch(FinishedScore score, u32 start_ms) {
+bool BeatmapInterface::watch(FinishedScore score, u32 start_ms) {
     SAFE_DELETE(sim);
     if(score.replay.size() < 3) {
         // Replay is invalid
@@ -493,13 +493,13 @@ bool Playfield::watch(FinishedScore score, u32 start_ms) {
         this->seekMS(start_ms);
     }
 
-    this->sim = new SimulatedPlayfield(this->beatmap, score.mods);
+    this->sim = new SimulatedBeatmapInterface(this->beatmap, score.mods);
     this->sim->spectated_replay = score.replay;
 
     return true;
 }
 
-bool Playfield::spectate() {
+bool BeatmapInterface::spectate() {
     this->bIsPlaying = false;
     this->bIsPaused = false;
     this->bContinueScheduled = false;
@@ -529,13 +529,13 @@ bool Playfield::spectate() {
 
     SAFE_DELETE(sim);
     score.mods.flags |= Replay::ModFlags::NoFail;
-    this->sim = new SimulatedPlayfield(this->beatmap, score.mods);
+    this->sim = new SimulatedBeatmapInterface(this->beatmap, score.mods);
     this->sim->spectated_replay.clear();
 
     return true;
 }
 
-bool Playfield::start() {
+bool BeatmapInterface::start() {
     // set it to false to catch early returns first
     osu->songBrowser2->bHasSelectedAndIsPlaying = false;
 
@@ -592,40 +592,35 @@ bool Playfield::start() {
             switch(result.errorCode) {
                 case 1: {
                     UString errorMessage = "Error: Couldn't load beatmap metadata :(";
-                    debugLog("Osu Error: Couldn't load beatmap metadata {:s}\n",
-                             this->beatmap->getFilePath().c_str());
+                    debugLog("Osu Error: Couldn't load beatmap metadata {:s}\n", this->beatmap->getFilePath().c_str());
 
                     osu->notificationOverlay->addToast(errorMessage, ERROR_TOAST);
                 } break;
 
                 case 2: {
                     UString errorMessage = "Error: Couldn't load beatmap file :(";
-                    debugLog("Osu Error: Couldn't load beatmap file {:s}\n",
-                             this->beatmap->getFilePath().c_str());
+                    debugLog("Osu Error: Couldn't load beatmap file {:s}\n", this->beatmap->getFilePath().c_str());
 
                     osu->notificationOverlay->addToast(errorMessage, ERROR_TOAST);
                 } break;
 
                 case 3: {
                     UString errorMessage = "Error: No timingpoints in beatmap :(";
-                    debugLog("Osu Error: No timingpoints in beatmap {:s}\n",
-                             this->beatmap->getFilePath().c_str());
+                    debugLog("Osu Error: No timingpoints in beatmap {:s}\n", this->beatmap->getFilePath().c_str());
 
                     osu->notificationOverlay->addToast(errorMessage, ERROR_TOAST);
                 } break;
 
                 case 4: {
                     UString errorMessage = "Error: No hitobjects in beatmap :(";
-                    debugLog("Osu Error: No hitobjects in beatmap {:s}\n",
-                             this->beatmap->getFilePath().c_str());
+                    debugLog("Osu Error: No hitobjects in beatmap {:s}\n", this->beatmap->getFilePath().c_str());
 
                     osu->notificationOverlay->addToast(errorMessage, ERROR_TOAST);
                 } break;
 
                 case 5: {
                     UString errorMessage = "Error: Too many hitobjects in beatmap :(";
-                    debugLog("Osu Error: Too many hitobjects in beatmap {:s}\n",
-                             this->beatmap->getFilePath().c_str());
+                    debugLog("Osu Error: Too many hitobjects in beatmap {:s}\n", this->beatmap->getFilePath().c_str());
 
                     osu->notificationOverlay->addToast(errorMessage, ERROR_TOAST);
                 } break;
@@ -651,7 +646,7 @@ bool Playfield::start() {
     // for drawing, if multiple hitobjects occupy the exact same time (duration) then they get drawn on top of the
     // active hitobject
     this->hitobjectsSortedByEndTime = this->hitobjects;
-    std::ranges::sort(this->hitobjectsSortedByEndTime, Playfield::sortHitObjectByEndTimeComp);
+    std::ranges::sort(this->hitobjectsSortedByEndTime, BeatmapInterface::sortHitObjectByEndTimeComp);
 
     // after the hitobjects have been loaded we can calculate the stacks
     this->calculateStacks();
@@ -701,8 +696,8 @@ bool Playfield::start() {
 
     if(this->beatmap->getLocalOffset() != 0)
         osu->notificationOverlay->addNotification(
-            UString::format("Using local beatmap offset (%ld ms)", this->beatmap->getLocalOffset()),
-            0xffffffff, false, 0.75f);
+            UString::format("Using local beatmap offset (%ld ms)", this->beatmap->getLocalOffset()), 0xffffffff, false,
+            0.75f);
 
     osu->fQuickSaveTime = 0.0f;  // reset
 
@@ -719,7 +714,7 @@ bool Playfield::start() {
     return true;
 }
 
-void Playfield::restart(bool quick) {
+void BeatmapInterface::restart(bool quick) {
     soundEngine->stop(this->getSkin()->getFailsound());
 
     if(!this->bIsWaiting) {
@@ -730,7 +725,7 @@ void Playfield::restart(bool quick) {
     }
 }
 
-void Playfield::actualRestart() {
+void BeatmapInterface::actualRestart() {
     // reset everything
     this->resetScore();
     this->resetHitObjects(-1000);
@@ -776,7 +771,7 @@ void Playfield::actualRestart() {
     this->is_watching = false;
 }
 
-void Playfield::pause(bool quitIfWaiting) {
+void BeatmapInterface::pause(bool quitIfWaiting) {
     if(this->beatmap == nullptr) return;
     if(BanchoState::spectating) {
         stop_spectating();
@@ -856,7 +851,7 @@ void Playfield::pause(bool quitIfWaiting) {
     if(this->bFailed) anim->deleteExistingAnimation(&this->fFailAnim);
 }
 
-void Playfield::pausePreviewMusic(bool toggle) {
+void BeatmapInterface::pausePreviewMusic(bool toggle) {
     if(this->music != nullptr) {
         if(this->music->isPlaying())
             soundEngine->pause(this->music);
@@ -865,13 +860,13 @@ void Playfield::pausePreviewMusic(bool toggle) {
     }
 }
 
-bool Playfield::isPreviewMusicPlaying() {
+bool BeatmapInterface::isPreviewMusicPlaying() {
     if(this->music != nullptr) return this->music->isPlaying();
 
     return false;
 }
 
-void Playfield::stop(bool quit) {
+void BeatmapInterface::stop(bool quit) {
     osu->songBrowser2->bHasSelectedAndIsPlaying = false;
 
     if(this->beatmap == nullptr) return;
@@ -920,7 +915,7 @@ void Playfield::stop(bool quit) {
     osu->should_pause_background_threads = false;
 }
 
-void Playfield::fail(bool force_death) {
+void BeatmapInterface::fail(bool force_death) {
     if(this->bFailed) return;
     if((this->is_watching || BanchoState::spectating) && !force_death) return;
 
@@ -952,7 +947,7 @@ void Playfield::fail(bool force_death) {
     if(!osu->getScore()->isDead()) osu->getScore()->setDead(true);
 }
 
-void Playfield::cancelFailing() {
+void BeatmapInterface::cancelFailing() {
     if(!this->bFailed || this->fFailAnim <= 0.0f) return;
 
     this->bFailed = false;
@@ -965,7 +960,7 @@ void Playfield::cancelFailing() {
     if(this->getSkin()->getFailsound()->isPlaying()) soundEngine->stop(this->getSkin()->getFailsound());
 }
 
-f32 Playfield::getIdealVolume() {
+f32 BeatmapInterface::getIdealVolume() {
     if(this->music == nullptr) return 1.f;
 
     f32 volume = cv::volume_music.getFloat();
@@ -984,11 +979,11 @@ f32 Playfield::getIdealVolume() {
     return volume * modifier;
 }
 
-void Playfield::setSpeed(f32 speed) {
+void BeatmapInterface::setSpeed(f32 speed) {
     if(this->music != nullptr) this->music->setSpeed(speed);
 }
 
-void Playfield::seekMS(u32 ms) {
+void BeatmapInterface::seekMS(u32 ms) {
     if(this->beatmap == nullptr || this->music == nullptr || this->bFailed) return;
 
     // this->resetScore() resets this->is_submittable
@@ -1026,7 +1021,7 @@ void Playfield::seekMS(u32 ms) {
         // When seeking backwards, restart simulation from beginning
         if(ms < this->iCurMusicPos) {
             SAFE_DELETE(sim);
-            this->sim = new SimulatedPlayfield(this->beatmap, osu->getScore()->mods);
+            this->sim = new SimulatedBeatmapInterface(this->beatmap, osu->getScore()->mods);
             this->sim->spectated_replay = this->spectated_replay;
             osu->getScore()->reset();
         }
@@ -1039,21 +1034,21 @@ void Playfield::seekMS(u32 ms) {
     }
 }
 
-u32 Playfield::getTime() const {
+u32 BeatmapInterface::getTime() const {
     if(this->music != nullptr && this->music->isAsyncReady())
         return this->music->getPositionMS();
     else
         return 0;
 }
 
-u32 Playfield::getStartTimePlayable() const {
+u32 BeatmapInterface::getStartTimePlayable() const {
     if(this->hitobjects.size() > 0)
         return (u32)this->hitobjects[0]->click_time;
     else
         return 0;
 }
 
-u32 Playfield::getLength() const {
+u32 BeatmapInterface::getLength() const {
     if(this->music != nullptr && this->music->isAsyncReady())
         return this->music->getLengthMS();
     else if(this->beatmap != nullptr)
@@ -1062,7 +1057,7 @@ u32 Playfield::getLength() const {
         return 0;
 }
 
-u32 Playfield::getLengthPlayable() const {
+u32 BeatmapInterface::getLengthPlayable() const {
     if(this->hitobjects.size() > 0)
         return (u32)((this->hitobjects[this->hitobjects.size() - 1]->click_time +
                       this->hitobjects[this->hitobjects.size() - 1]->duration) -
@@ -1071,14 +1066,14 @@ u32 Playfield::getLengthPlayable() const {
         return this->getLength();
 }
 
-f32 Playfield::getPercentFinished() const {
+f32 BeatmapInterface::getPercentFinished() const {
     f32 length = this->getLength();
     if(length <= 0.f) return 0.f;
 
     return (f32)this->getTime() / length;
 }
 
-f32 Playfield::getPercentFinishedPlayable() const {
+f32 BeatmapInterface::getPercentFinishedPlayable() const {
     if(this->bIsWaiting) {
         // this->fWaitTime is set to the time when the wait time ENDS
         f32 wait_duration = (cv::early_note_time.getFloat() / 1000.f);
@@ -1096,7 +1091,7 @@ f32 Playfield::getPercentFinishedPlayable() const {
     }
 }
 
-int Playfield::getMostCommonBPM() const {
+int BeatmapInterface::getMostCommonBPM() const {
     if(this->beatmap != nullptr) {
         if(this->music != nullptr)
             return (int)(this->beatmap->getMostCommonBPM() * this->music->getSpeed());
@@ -1106,7 +1101,7 @@ int Playfield::getMostCommonBPM() const {
         return 0;
 }
 
-f32 Playfield::getSpeedMultiplier() const {
+f32 BeatmapInterface::getSpeedMultiplier() const {
     if(cv::speed_override.getFloat() >= 0.0f) {
         return std::max(cv::speed_override.getFloat(), 0.05f);
     } else {
@@ -1114,27 +1109,26 @@ f32 Playfield::getSpeedMultiplier() const {
     }
 }
 
-Skin *Playfield::getSkin() const { return osu->getSkin(); }
+Skin *BeatmapInterface::getSkin() const { return osu->getSkin(); }
 
-u32 Playfield::getScoreV1DifficultyMultiplier_full() const {
+u32 BeatmapInterface::getScoreV1DifficultyMultiplier_full() const {
     // NOTE: We intentionally get CS/HP/OD from beatmap data, not "real" CS/HP/OD
     //       Since this multiplier is only used for ScoreV1
     u32 breakTimeMS = this->getBreakDurationTotal();
     f32 drainLength =
         std::max(this->getLengthPlayable() - std::min(breakTimeMS, this->getLengthPlayable()), (u32)1000) / 1000;
-    return std::round(
-        (this->beatmap->getCS() + this->beatmap->getHP() + this->beatmap->getOD() +
-         std::clamp<f32>((f32)this->beatmap->getNumObjects() / drainLength * 8.0f, 0.0f, 16.0f)) /
-        38.0f * 5.0f);
+    return std::round((this->beatmap->getCS() + this->beatmap->getHP() + this->beatmap->getOD() +
+                       std::clamp<f32>((f32)this->beatmap->getNumObjects() / drainLength * 8.0f, 0.0f, 16.0f)) /
+                      38.0f * 5.0f);
 }
 
-f32 Playfield::getRawAR_full() const {
+f32 BeatmapInterface::getRawAR_full() const {
     if(this->beatmap == nullptr) return 5.0f;
 
     return std::clamp<f32>(this->beatmap->getAR() * osu->getDifficultyMultiplier(), 0.0f, 10.0f);
 }
 
-f32 Playfield::getAR_full() const {
+f32 BeatmapInterface::getAR_full() const {
     if(this->beatmap == nullptr) return 5.0f;
 
     f32 AR = this->getRawAR();
@@ -1161,7 +1155,7 @@ f32 Playfield::getAR_full() const {
     return AR;
 }
 
-f32 Playfield::getCS_full() const {
+f32 BeatmapInterface::getCS_full() const {
     if(this->beatmap == nullptr) return 5.0f;
 
     f32 CS = std::clamp<f32>(this->beatmap->getCS() * osu->getCSDifficultyMultiplier(), 0.0f, 10.0f);
@@ -1186,7 +1180,7 @@ f32 Playfield::getCS_full() const {
     return CS;
 }
 
-f32 Playfield::getHP_full() const {
+f32 BeatmapInterface::getHP_full() const {
     if(this->beatmap == nullptr) return 5.0f;
 
     f32 HP = std::clamp<f32>(this->beatmap->getHP() * osu->getDifficultyMultiplier(), 0.0f, 10.0f);
@@ -1195,13 +1189,13 @@ f32 Playfield::getHP_full() const {
     return HP;
 }
 
-f32 Playfield::getRawOD_full() const {
+f32 BeatmapInterface::getRawOD_full() const {
     if(this->beatmap == nullptr) return 5.0f;
 
     return std::clamp<f32>(this->beatmap->getOD() * osu->getDifficultyMultiplier(), 0.0f, 10.0f);
 }
 
-f32 Playfield::getOD_full() const {
+f32 BeatmapInterface::getOD_full() const {
     f32 OD = this->getRawOD();
 
     if(cv::od_override.getFloat() >= 0.0f) OD = cv::od_override.getFloat();
@@ -1211,7 +1205,7 @@ f32 Playfield::getOD_full() const {
     return OD;
 }
 
-bool Playfield::isKey1Down() const {
+bool BeatmapInterface::isKey1Down() const {
     if(this->is_watching || BanchoState::spectating) {
         return this->current_keys & (LegacyReplay::M1 | LegacyReplay::K1);
     } else {
@@ -1219,7 +1213,7 @@ bool Playfield::isKey1Down() const {
     }
 }
 
-bool Playfield::isKey2Down() const {
+bool BeatmapInterface::isKey2Down() const {
     if(this->is_watching || BanchoState::spectating) {
         return this->current_keys & (LegacyReplay::M2 | LegacyReplay::K2);
     } else {
@@ -1227,23 +1221,23 @@ bool Playfield::isKey2Down() const {
     }
 }
 
-bool Playfield::isClickHeld() const { return this->isKey1Down() || this->isKey2Down(); }
+bool BeatmapInterface::isClickHeld() const { return this->isKey1Down() || this->isKey2Down(); }
 
-std::string Playfield::getTitle() const {
+std::string BeatmapInterface::getTitle() const {
     if(this->beatmap != nullptr)
         return this->beatmap->getTitle();
     else
         return "NULL";
 }
 
-std::string Playfield::getArtist() const {
+std::string BeatmapInterface::getArtist() const {
     if(this->beatmap != nullptr)
         return this->beatmap->getArtist();
     else
         return "NULL";
 }
 
-u32 Playfield::getBreakDurationTotal() const {
+u32 BeatmapInterface::getBreakDurationTotal() const {
     u32 breakDurationTotal = 0;
     for(auto i : this->breaks) {
         breakDurationTotal += (u32)(i.endTime - i.startTime);
@@ -1252,7 +1246,7 @@ u32 Playfield::getBreakDurationTotal() const {
     return breakDurationTotal;
 }
 
-DatabaseBeatmap::BREAK Playfield::getBreakForTimeRange(i64 startMS, i64 positionMS, i64 endMS) const {
+DatabaseBeatmap::BREAK BeatmapInterface::getBreakForTimeRange(i64 startMS, i64 positionMS, i64 endMS) const {
     DatabaseBeatmap::BREAK curBreak;
 
     curBreak.startTime = -1;
@@ -1267,9 +1261,9 @@ DatabaseBeatmap::BREAK Playfield::getBreakForTimeRange(i64 startMS, i64 position
     return curBreak;
 }
 
-LiveScore::HIT Playfield::addHitResult(HitObject *hitObject, LiveScore::HIT hit, i32 delta, bool isEndOfCombo,
-                                     bool ignoreOnHitErrorBar, bool hitErrorBarOnly, bool ignoreCombo, bool ignoreScore,
-                                     bool ignoreHealth) {
+LiveScore::HIT BeatmapInterface::addHitResult(HitObject *hitObject, LiveScore::HIT hit, i32 delta, bool isEndOfCombo,
+                                       bool ignoreOnHitErrorBar, bool hitErrorBarOnly, bool ignoreCombo,
+                                       bool ignoreScore, bool ignoreHealth) {
     // Frames are already written on every keypress/release.
     // For some edge cases, we need to write extra frames to avoid replaybugs.
     {
@@ -1353,7 +1347,7 @@ LiveScore::HIT Playfield::addHitResult(HitObject *hitObject, LiveScore::HIT hit,
     return returnedHit;
 }
 
-void Playfield::addSliderBreak() {
+void BeatmapInterface::addSliderBreak() {
     // handle perfect & sudden death
     if(osu->getModSS()) {
         this->restart();
@@ -1374,9 +1368,9 @@ void Playfield::addSliderBreak() {
     osu->getScore()->addSliderBreak();
 }
 
-void Playfield::addScorePoints(int points, bool isSpinner) { osu->getScore()->addPoints(points, isSpinner); }
+void BeatmapInterface::addScorePoints(int points, bool isSpinner) { osu->getScore()->addPoints(points, isSpinner); }
 
-void Playfield::addHealth(f64 percent, bool isFromHitResult) {
+void BeatmapInterface::addHealth(f64 percent, bool isFromHitResult) {
     // never drain before first hitobject
     if(this->hitobjects.size() > 0 && this->iCurMusicPosWithOffsets < this->hitobjects[0]->click_time) return;
 
@@ -1423,7 +1417,7 @@ void Playfield::addHealth(f64 percent, bool isFromHitResult) {
     }
 }
 
-bool Playfield::sortHitObjectByStartTimeComp(HitObject const *a, HitObject const *b) {
+bool BeatmapInterface::sortHitObjectByStartTimeComp(HitObject const *a, HitObject const *b) {
     if((a->click_time) != (b->click_time)) return (a->click_time) < (b->click_time);
 
     if(a->type != b->type) return static_cast<int>(a->type) < static_cast<int>(b->type);
@@ -1435,7 +1429,7 @@ bool Playfield::sortHitObjectByStartTimeComp(HitObject const *a, HitObject const
     return false;  // equivalent
 }
 
-bool Playfield::sortHitObjectByEndTimeComp(HitObject const *a, HitObject const *b) {
+bool BeatmapInterface::sortHitObjectByEndTimeComp(HitObject const *a, HitObject const *b) {
     if((a->click_time + a->duration) != (b->click_time + b->duration))
         return (a->click_time + a->duration) < (b->click_time + b->duration);
 
@@ -1449,14 +1443,14 @@ bool Playfield::sortHitObjectByEndTimeComp(HitObject const *a, HitObject const *
     return false;  // equivalent
 }
 
-long Playfield::getPVS() {
+long BeatmapInterface::getPVS() {
     // this is an approximation with generous boundaries, it doesn't need to be exact (just good enough to filter 10000
     // hitobjects down to a few hundred or so) it will be used in both positive and negative directions (previous and
     // future hitobjects) to speed up loops which iterate over all hitobjects
     return this->getApproachTime() + GameRules::getFadeInTime() + (long)GameRules::getHitWindowMiss() + 1500;  // sanity
 }
 
-bool Playfield::canDraw() {
+bool BeatmapInterface::canDraw() {
     if(!this->bIsPlaying && !this->bIsPaused && !this->bContinueScheduled && !this->bIsWaiting) return false;
     if(this->beatmap == nullptr || this->music == nullptr)  // sanity check
         return false;
@@ -1464,7 +1458,7 @@ bool Playfield::canDraw() {
     return true;
 }
 
-void Playfield::handlePreviewPlay() {
+void BeatmapInterface::handlePreviewPlay() {
     if(this->music == nullptr) return;
 
     if((!this->music->isPlaying() || this->music->getPosition() > 0.95f) && this->beatmap != nullptr) {
@@ -1508,7 +1502,7 @@ void Playfield::handlePreviewPlay() {
     this->music->setLoop(cv::beatmap_preview_music_loop.getBool());
 }
 
-void Playfield::loadMusic() {
+void BeatmapInterface::loadMusic() {
     if(!this->beatmap || this->beatmap->getFullSoundFilePath().empty()) {
         if(this->beatmap) {
             debugLog("no music file for {}!\n", this->beatmap->getFilePath());
@@ -1549,7 +1543,7 @@ void Playfield::loadMusic() {
     // TODO: load custom skin elements
 }
 
-void Playfield::unloadMusic() {
+void BeatmapInterface::unloadMusic() {
     if(this->music) {
         resourceManager->destroyResource(this->music);
         this->music = nullptr;
@@ -1559,7 +1553,7 @@ void Playfield::unloadMusic() {
     // TODO: unload custom skin elements
 }
 
-void Playfield::unloadObjects() {
+void BeatmapInterface::unloadObjects() {
     this->currentHitObject = nullptr;
     for(auto &hitobject : this->hitobjects) {
         delete hitobject;
@@ -1571,7 +1565,7 @@ void Playfield::unloadObjects() {
     this->clicks.clear();
 }
 
-void Playfield::resetHitObjects(long curPos) {
+void BeatmapInterface::resetHitObjects(long curPos) {
     for(auto &hitobject : this->hitobjects) {
         hitobject->onReset(curPos);
         hitobject->update(curPos, engine->getFrameTime());
@@ -1580,7 +1574,7 @@ void Playfield::resetHitObjects(long curPos) {
     osu->getHUD()->resetHitErrorBar();
 }
 
-void Playfield::resetScore() {
+void BeatmapInterface::resetScore() {
     this->is_submittable = cvars->areAllCvarsSubmittable();
 
     this->live_replay.clear();
@@ -1620,7 +1614,7 @@ void Playfield::resetScore() {
     this->bIsFirstMissSound = true;
 }
 
-void Playfield::playMissSound() {
+void BeatmapInterface::playMissSound() {
     if((this->bIsFirstMissSound && osu->getScore()->getCombo() > 0) ||
        osu->getScore()->getCombo() > cv::combobreak_sound_combo.getInt()) {
         this->bIsFirstMissSound = false;
@@ -1628,7 +1622,7 @@ void Playfield::playMissSound() {
     }
 }
 
-void Playfield::draw() {
+void BeatmapInterface::draw() {
     if(!this->canDraw()) return;
 
     // draw background
@@ -1707,7 +1701,7 @@ void Playfield::draw() {
     }
 }
 
-void Playfield::drawSmoke() {
+void BeatmapInterface::drawSmoke() {
     Image *smoke = osu->getSkin()->getCursorSmoke();
     if(smoke == osu->getSkin()->getMissingTexture()) return;
 
@@ -1775,7 +1769,7 @@ void Playfield::drawSmoke() {
     }
 }
 
-void Playfield::drawFollowPoints() {
+void BeatmapInterface::drawFollowPoints() {
     Skin *skin = osu->getSkin();
 
     const long curPos = this->iCurMusicPosWithOffsets;
@@ -1918,7 +1912,7 @@ void Playfield::drawFollowPoints() {
     }
 }
 
-void Playfield::drawHitObjects() {
+void BeatmapInterface::drawHitObjects() {
     const long curPos = this->iCurMusicPosWithOffsets;
     const long pvs = this->getPVS();
     const bool usePVS = cv::pvs.getBool();
@@ -2075,7 +2069,7 @@ void Playfield::drawHitObjects() {
     }
 }
 
-void Playfield::update() {
+void BeatmapInterface::update() {
     if(!this->bIsPlaying && !this->bIsPaused && !this->bContinueScheduled) return;
 
     // some things need to be updated before loading has finished, so control flow is a bit weird here.
@@ -2245,7 +2239,7 @@ void Playfield::update() {
     }
 }
 
-void Playfield::update2() {
+void BeatmapInterface::update2() {
     if(this->bContinueScheduled) {
         // If we paused while m_bIsWaiting (green progressbar), then we have to let the 'if (this->bIsWaiting)' block
         // handle the sound play() call
@@ -3095,7 +3089,7 @@ void Playfield::update2() {
     }
 }
 
-void Playfield::broadcast_spectator_frames() {
+void BeatmapInterface::broadcast_spectator_frames() {
     if(BanchoState::spectators.empty()) return;
 
     Packet packet;
@@ -3114,7 +3108,7 @@ void Playfield::broadcast_spectator_frames() {
     this->last_spectator_broadcast = engine->getTime();
 }
 
-void Playfield::write_frame() {
+void BeatmapInterface::write_frame() {
     if(!this->bIsPlaying || this->bFailed || this->is_watching || BanchoState::spectating) return;
 
     long delta = this->iCurMusicPosWithOffsets - this->last_event_ms;
@@ -3162,7 +3156,7 @@ void Playfield::write_frame() {
     }
 }
 
-void Playfield::onModUpdate(bool rebuildSliderVertexBuffers, bool recomputeDrainRate) {
+void BeatmapInterface::onModUpdate(bool rebuildSliderVertexBuffers, bool recomputeDrainRate) {
     if(cv::debug_osu.getBool()) debugLog("Playfield::onModUpdate() @ {:f}\n", engine->getTime());
 
     this->updatePlayfieldMetrics();
@@ -3213,7 +3207,7 @@ void Playfield::onModUpdate(bool rebuildSliderVertexBuffers, bool recomputeDrain
     this->resetLiveStarsTasks();
 }
 
-void Playfield::resetLiveStarsTasks() {
+void BeatmapInterface::resetLiveStarsTasks() {
     if(cv::debug_osu.getBool()) debugLog("Playfield::resetLiveStarsTasks() called\n");
 
     osu->getHUD()->live_pp = 0.0;
@@ -3223,7 +3217,7 @@ void Playfield::resetLiveStarsTasks() {
 }
 
 // HACK: Updates buffering state and pauses/unpauses the music!
-bool Playfield::isBuffering() {
+bool BeatmapInterface::isBuffering() {
     if(!BanchoState::spectating) return false;
 
     i32 leeway = this->last_frame_ms - this->iCurMusicPos;
@@ -3262,16 +3256,16 @@ bool Playfield::isBuffering() {
     return this->is_buffering;
 }
 
-bool Playfield::isLoading() {
+bool BeatmapInterface::isLoading() {
     return (this->isActuallyLoading() || this->isBuffering() ||
             (BanchoState::is_playing_a_multi_map() && !BanchoState::room.all_players_loaded));
 }
 
-bool Playfield::isActuallyLoading() {
+bool BeatmapInterface::isActuallyLoading() {
     return (!soundEngine->isReady() || !this->music->isAsyncReady() || this->bIsPreLoading);
 }
 
-vec2 Playfield::pixels2OsuCoords(vec2 pixelCoords) const {
+vec2 BeatmapInterface::pixels2OsuCoords(vec2 pixelCoords) const {
     // un-first-person
     if(cv::mod_fps.getBool()) {
         // HACKHACK: this is the worst hack possible (engine->isDrawing()), but it works
@@ -3288,7 +3282,7 @@ vec2 Playfield::pixels2OsuCoords(vec2 pixelCoords) const {
     return pixelCoords;
 }
 
-vec2 Playfield::osuCoords2Pixels(vec2 coords) const {
+vec2 BeatmapInterface::osuCoords2Pixels(vec2 coords) const {
     if(osu->getModHR()) coords.y = GameRules::OSU_COORD_HEIGHT - coords.y;
     if(cv::playfield_mirror_horizontal.getBool()) coords.y = GameRules::OSU_COORD_HEIGHT - coords.y;
     if(cv::playfield_mirror_vertical.getBool()) coords.x = GameRules::OSU_COORD_WIDTH - coords.x;
@@ -3376,7 +3370,7 @@ vec2 Playfield::osuCoords2Pixels(vec2 coords) const {
     return coords;
 }
 
-vec2 Playfield::osuCoords2RawPixels(vec2 coords) const {
+vec2 BeatmapInterface::osuCoords2RawPixels(vec2 coords) const {
     // scale and offset
     coords *= this->fScaleFactor;
     coords += this->vPlayfieldOffset;  // the offset is already scaled, just add it
@@ -3384,7 +3378,7 @@ vec2 Playfield::osuCoords2RawPixels(vec2 coords) const {
     return coords;
 }
 
-vec2 Playfield::osuCoords2LegacyPixels(vec2 coords) const {
+vec2 BeatmapInterface::osuCoords2LegacyPixels(vec2 coords) const {
     if(osu->getModHR()) coords.y = GameRules::OSU_COORD_HEIGHT - coords.y;
     if(cv::playfield_mirror_horizontal.getBool()) coords.y = GameRules::OSU_COORD_HEIGHT - coords.y;
     if(cv::playfield_mirror_vertical.getBool()) coords.x = GameRules::OSU_COORD_WIDTH - coords.x;
@@ -3413,7 +3407,7 @@ vec2 Playfield::osuCoords2LegacyPixels(vec2 coords) const {
     return coords;
 }
 
-vec2 Playfield::getMousePos() const {
+vec2 BeatmapInterface::getMousePos() const {
     if((this->is_watching && !this->bIsPaused) || BanchoState::spectating) {
         return this->interpolatedMousePos;
     } else {
@@ -3421,7 +3415,7 @@ vec2 Playfield::getMousePos() const {
     }
 }
 
-vec2 Playfield::getCursorPos() const {
+vec2 BeatmapInterface::getCursorPos() const {
     if(cv::mod_fps.getBool() && !this->bIsPaused) {
         if(osu->getModAuto() || osu->getModAutopilot()) {
             return this->vAutoCursorPos;
@@ -3443,12 +3437,12 @@ vec2 Playfield::getCursorPos() const {
     }
 }
 
-vec2 Playfield::getFirstPersonCursorDelta() const {
+vec2 BeatmapInterface::getFirstPersonCursorDelta() const {
     return this->vPlayfieldCenter -
            (osu->getModAuto() || osu->getModAutopilot() ? this->vAutoCursorPos : this->getMousePos());
 }
 
-FinishedScore Playfield::saveAndSubmitScore(bool quit) {
+FinishedScore BeatmapInterface::saveAndSubmitScore(bool quit) {
     // calculate stars
     f64 aim = 0.0;
     f64 aimSliderFactor = 0.0;
@@ -3598,7 +3592,7 @@ FinishedScore Playfield::saveAndSubmitScore(bool quit) {
     return score;
 }
 
-void Playfield::updateAutoCursorPos() {
+void BeatmapInterface::updateAutoCursorPos() {
     this->vAutoCursorPos = this->vPlayfieldCenter;
     this->vAutoCursorPos.y *= 2.5f;  // start moving in offscreen from bottom
 
@@ -3784,14 +3778,14 @@ void Playfield::updateAutoCursorPos() {
     }
 }
 
-void Playfield::updatePlayfieldMetrics() {
+void BeatmapInterface::updatePlayfieldMetrics() {
     this->fScaleFactor = GameRules::getPlayfieldScaleFactor();
     this->vPlayfieldSize = GameRules::getPlayfieldSize();
     this->vPlayfieldOffset = GameRules::getPlayfieldOffset();
     this->vPlayfieldCenter = GameRules::getPlayfieldCenter();
 }
 
-void Playfield::updateHitobjectMetrics() {
+void BeatmapInterface::updateHitobjectMetrics() {
     Skin *skin = osu->getSkin();
 
     this->fRawHitcircleDiameter = GameRules::getRawHitCircleDiameter(this->getCS());
@@ -3813,7 +3807,7 @@ void Playfield::updateHitobjectMetrics() {
     this->fSliderFollowCircleDiameter = this->fHitcircleDiameter * sliderFollowCircleDiameterMultiplier;
 }
 
-void Playfield::updateSliderVertexBuffers() {
+void BeatmapInterface::updateSliderVertexBuffers() {
     this->updatePlayfieldMetrics();
     this->updateHitobjectMetrics();
 
@@ -3829,7 +3823,7 @@ void Playfield::updateSliderVertexBuffers() {
     }
 }
 
-void Playfield::calculateStacks() {
+void BeatmapInterface::calculateStacks() {
     this->updateHitobjectMetrics();
 
     debugLog("Beatmap: Calculating stacks ...\n");
@@ -3963,7 +3957,7 @@ void Playfield::calculateStacks() {
     }
 }
 
-void Playfield::computeDrainRate() {
+void BeatmapInterface::computeDrainRate() {
     this->fDrainRate = 0.0;
     this->fHpMultiplierNormal = 1.0;
     this->fHpMultiplierComboEnd = 1.0;
@@ -4179,20 +4173,20 @@ void Playfield::computeDrainRate() {
     }
 }
 
-f32 Playfield::getApproachTime_full() const {
+f32 BeatmapInterface::getApproachTime_full() const {
     return cv::mod_mafham.getBool()
                ? this->getLength() * 2
                : GameRules::mapDifficultyRange(this->getAR(), GameRules::getMinApproachTime(),
                                                GameRules::getMidApproachTime(), GameRules::getMaxApproachTime());
 }
 
-f32 Playfield::getRawApproachTime_full() const {
+f32 BeatmapInterface::getRawApproachTime_full() const {
     return cv::mod_mafham.getBool()
                ? this->getLength() * 2
                : GameRules::mapDifficultyRange(this->getRawAR(), GameRules::getMinApproachTime(),
                                                GameRules::getMidApproachTime(), GameRules::getMaxApproachTime());
 }
 
-Replay::Mods Playfield::getMods_full() const { return osu->getScore()->mods; }
+Replay::Mods BeatmapInterface::getMods_full() const { return osu->getScore()->mods; }
 
-u32 Playfield::getModsLegacy_full() const { return osu->getScore()->getModsLegacy(); }
+u32 BeatmapInterface::getModsLegacy_full() const { return osu->getScore()->getModsLegacy(); }

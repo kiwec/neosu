@@ -4,7 +4,7 @@
 #include "Bancho.h"
 #include "BanchoNetworking.h"
 #include "BanchoUsers.h"
-#include "Playfield.h"
+#include "BeatmapInterface.h"
 #include "Chat.h"
 #include "ConVar.h"
 #include "Database.h"
@@ -65,7 +65,7 @@ void RichPresence::setBanchoStatus(const char* info_text, Action action) {
     MD5Hash map_md5("");
     i32 map_id = 0;
 
-    auto map = osu->playfield->beatmap;
+    auto map = osu->active_map->beatmap;
     if(map != nullptr) {
         map_md5 = map->getMD5Hash();
         map_id = map->getID();
@@ -92,7 +92,7 @@ void RichPresence::updateBanchoMods() {
     MD5Hash map_md5("");
     i32 map_id = 0;
 
-    auto diff = osu->playfield->beatmap;
+    auto diff = osu->active_map->beatmap;
     if(diff != nullptr) {
         map_md5 = diff->getMD5Hash();
         map_id = diff->getID();
@@ -123,8 +123,8 @@ void RichPresence::onMainMenu() {
 
     activity.type = DiscordActivityType_Listening;
 
-    auto map = osu->playfield->beatmap;
-    auto music = osu->playfield->getMusic();
+    auto map = osu->active_map->beatmap;
+    auto music = osu->active_map->getMusic();
     bool listening = map != nullptr && music != nullptr && music->isPlaying();
     if(listening) {
         mapstr(map, activity.details, false);
@@ -159,7 +159,7 @@ void RichPresence::onSongBrowser() {
 }
 
 void RichPresence::onPlayStart() {
-    auto map = osu->playfield->beatmap;
+    auto map = osu->active_map->beatmap;
 
     static DatabaseBeatmap* last_diff = nullptr;
     static int64_t tms = 0;

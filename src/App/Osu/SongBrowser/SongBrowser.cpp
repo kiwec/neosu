@@ -6,7 +6,7 @@
 #include "Bancho.h"
 #include "BanchoLeaderboard.h"
 #include "BanchoNetworking.h"
-#include "Playfield.h"
+#include "BeatmapInterface.h"
 #include "BeatmapCarousel.h"
 #include "BottomBar.h"
 #include "CBaseUIContainer.h"
@@ -570,11 +570,11 @@ void SongBrowser::draw() {
         float alpha = 1.0f;
         if(cv::songbrowser_background_fade_in_duration.getFloat() > 0.0f) {
             // handle fadein trigger after handler is finished loading
-            const bool ready = osu->playfield->beatmap != nullptr &&
+            const bool ready = osu->active_map->beatmap != nullptr &&
                                osu->getBackgroundImageHandler()->getLoadBackgroundImage(
-                                   osu->playfield->beatmap) != nullptr &&
+                                   osu->active_map->beatmap) != nullptr &&
                                osu->getBackgroundImageHandler()
-                                   ->getLoadBackgroundImage(osu->playfield->beatmap)
+                                   ->getLoadBackgroundImage(osu->active_map->beatmap)
                                    ->isReady();
 
             if(!ready)
@@ -636,9 +636,9 @@ void SongBrowser::draw() {
 
     // draw strain graph of currently selected beatmap
     if(cv::draw_songbrowser_strain_graph.getBool()) {
-        const std::vector<double> &aimStrains = osu->playfield->aimStrains;
-        const std::vector<double> &speedStrains = osu->playfield->speedStrains;
-        const float speedMultiplier = osu->playfield->getSpeedMultiplier();
+        const std::vector<double> &aimStrains = osu->active_map->aimStrains;
+        const std::vector<double> &speedStrains = osu->active_map->speedStrains;
+        const float speedMultiplier = osu->active_map->getSpeedMultiplier();
 
         if(aimStrains.size() > 0 && aimStrains.size() == speedStrains.size()) {
             const float strainStepMS = 400.0f * speedMultiplier;
@@ -828,9 +828,9 @@ void SongBrowser::draw() {
 }
 
 void SongBrowser::drawSelectedBeatmapBackgroundImage(float alpha) {
-    if(osu->playfield->beatmap != nullptr) {
+    if(osu->active_map->beatmap != nullptr) {
         Image *backgroundImage = osu->getBackgroundImageHandler()->getLoadBackgroundImage(
-            osu->playfield->beatmap);
+            osu->active_map->beatmap);
         if(backgroundImage != nullptr && backgroundImage->isReady()) {
             const float scale = Osu::getImageScaleToFillResolution(backgroundImage, osu->getScreenSize());
 
@@ -1168,7 +1168,7 @@ CBaseUIContainer *SongBrowser::setVisible(bool visible) {
         this->updateLayout();
 
         // we have to re-select the current beatmap to start playing music again
-        osu->playfield->selectBeatmap();
+        osu->active_map->selectBeatmap();
 
         this->bHasSelectedAndIsPlaying = false;  // sanity
 
@@ -1188,7 +1188,7 @@ CBaseUIContainer *SongBrowser::setVisible(bool visible) {
 
         // For multiplayer: if the host exits song selection without selecting a song, we want to be able to revert
         // to that previous song.
-        this->lastSelectedBeatmap = osu->playfield->beatmap;
+        this->lastSelectedBeatmap = osu->active_map->beatmap;
 
         // Select button matching current song preview
         this->selectSelectedBeatmapSongButton();
@@ -1201,7 +1201,7 @@ CBaseUIContainer *SongBrowser::setVisible(bool visible) {
 }
 
 void SongBrowser::selectSelectedBeatmapSongButton() {
-    auto map = osu->playfield->beatmap;
+    auto map = osu->active_map->beatmap;
     if(map == nullptr) return;
 
     auto it = this->hashToSongButton.find(map->getMD5Hash());
@@ -1241,8 +1241,8 @@ void SongBrowser::onPlayEnd(bool quit) {
     }
 
     // update song info
-    if(osu->playfield->beatmap != nullptr) {
-        this->songInfo->setFromBeatmap(osu->playfield->beatmap);
+    if(osu->active_map->beatmap != nullptr) {
+        this->songInfo->setFromBeatmap(osu->active_map->beatmap);
     }
 }
 
@@ -1312,10 +1312,10 @@ void SongBrowser::onSelectionChange(CarouselButton *button, bool rebuild) {
 
 void SongBrowser::onDifficultySelected(DatabaseBeatmap *map, bool play) {
     // deselect = unload
-    osu->playfield->deselectBeatmap();
+    osu->active_map->deselectBeatmap();
 
     // select = play preview music
-    osu->playfield->selectBeatmap(map);
+    osu->active_map->selectBeatmap(map);
 
     // update song info
     this->songInfo->setFromBeatmap(map);
@@ -1344,7 +1344,7 @@ void SongBrowser::onDifficultySelected(DatabaseBeatmap *map, bool play) {
                 osu->getModSelector()->enableAuto();
             }
 
-            if(osu->playfield->play()) {
+            if(osu->active_map->play()) {
                 this->setVisible(false);
             }
         }
@@ -1370,21 +1370,21 @@ void SongBrowser::refreshBeatmaps() {
     // don't pause the music the first time we load the song database
     static bool first_refresh = true;
     if(first_refresh) {
-        osu->playfield->music = nullptr;
+        osu->active_map->music = nullptr;
         first_refresh = false;
     }
 
-    auto map = osu->playfield->beatmap;
+    auto map = osu->active_map->beatmap;
     if(map) {
         this->beatmap_to_reselect_after_db_load = map->getMD5Hash();
     }
 
-    osu->playfield->pausePreviewMusic();
-    osu->playfield->deselectBeatmap();
+    osu->active_map->pausePreviewMusic();
+    osu->active_map->deselectBeatmap();
 
     // TODO: don't do this shit
-    SAFE_DELETE(osu->playfield);
-    osu->playfield = new Playfield();
+    SAFE_DELETE(osu->active_map);
+    osu->active_map = new BeatmapInterface();
 
     this->selectionPreviousSongButton = nullptr;
     this->selectionPreviousSongDiffButton = nullptr;
@@ -1792,7 +1792,7 @@ bool SongBrowser::searchMatcher(const DatabaseBeatmap *databaseBeatmap,
                             ? databaseBeatmap->getDifficulties<const DatabaseBeatmap>()
                             : tmpContainer;
 
-    auto speed = osu->playfield->getSpeedMultiplier();
+    auto speed = osu->active_map->getSpeedMultiplier();
 
     // TODO: optimize this dumpster fire. can at least cache the parsed tokens and literal strings array instead of
     // parsing every single damn time
@@ -2262,13 +2262,13 @@ void SongBrowser::rebuildScoreButtons() {
     this->localBestContainer->invalidate();
     this->localBestContainer->setVisible(false);
 
-    const bool validBeatmap = (osu->playfield->beatmap != nullptr);
+    const bool validBeatmap = (osu->active_map->beatmap != nullptr);
     bool is_online = cv::songbrowser_scores_filteringtype.getString() != "Local";
 
     std::vector<FinishedScore> scores;
     if(validBeatmap) {
         std::scoped_lock lock(db->scores_mtx);
-        auto map = osu->playfield->beatmap;
+        auto map = osu->active_map->beatmap;
         auto local_scores = db->scores[map->getMD5Hash()];
         auto local_best = std::ranges::max_element(
             local_scores, [](FinishedScore const &a, FinishedScore const &b) { return a.score < b.score; });
@@ -2358,8 +2358,8 @@ void SongBrowser::rebuildScoreButtons() {
         std::vector<ScoreButton *> scoreButtons;
         for(size_t i = 0; i < numScores; i++) {
             ScoreButton *button = this->scoreButtonCache[i];
-            button->map_hash = osu->playfield->beatmap->getMD5Hash();
-            button->setScore(scores[i], osu->playfield->beatmap, i + 1);
+            button->map_hash = osu->active_map->beatmap->getMD5Hash();
+            button->setScore(scores[i], osu->active_map->beatmap, i + 1);
             scoreButtons.push_back(button);
         }
 
@@ -2382,7 +2382,7 @@ void SongBrowser::rebuildScoreButtons() {
     // (weird place for this to be, i think the intent is to update them after you set a score)
     if(validBeatmap) {
         for(auto &visibleSongButton : this->visibleSongButtons) {
-            if(visibleSongButton->getDatabaseBeatmap() == osu->playfield->beatmap) {
+            if(visibleSongButton->getDatabaseBeatmap() == osu->active_map->beatmap) {
                 auto *songButtonPointer = dynamic_cast<SongButton *>(visibleSongButton);
                 if(songButtonPointer != nullptr) {
                     for(CarouselButton *diffButton : songButtonPointer->getChildren()) {
@@ -2598,7 +2598,7 @@ void SongBrowser::onDatabaseLoadingFinished() {
     }
 
     // ok, if we still haven't selected a song, do so now
-    if(osu->playfield->beatmap == nullptr) {
+    if(osu->active_map->beatmap == nullptr) {
         this->selectRandomBeatmap();
     }
 
@@ -3035,7 +3035,7 @@ void SongBrowser::onScoreClicked(CBaseUIButton *button) {
 
     // NOTE: the order of these two calls matters
     osu->getRankingScreen()->setScore(scoreButton->getScore());
-    osu->getRankingScreen()->setBeatmapInfo(osu->playfield->beatmap);
+    osu->getRankingScreen()->setBeatmapInfo(osu->active_map->beatmap);
 
     osu->getSongBrowser()->setVisible(false);
     osu->getRankingScreen()->setVisible(true);
@@ -3252,8 +3252,8 @@ void SongBrowser::selectRandomBeatmap() {
     if(songButtons.size() < 1) return;
 
     // remember previous
-    if(osu->playfield->beatmap != nullptr) {
-        this->previousRandomBeatmaps.push_back(osu->playfield->beatmap);
+    if(osu->active_map->beatmap != nullptr) {
+        this->previousRandomBeatmaps.push_back(osu->active_map->beatmap);
     }
 
     std::uniform_int_distribution<size_t> rng(0, songButtons.size() - 1);
@@ -3268,7 +3268,7 @@ void SongBrowser::selectPreviousRandomBeatmap() {
         DatabaseBeatmap *currentRandomBeatmap = this->previousRandomBeatmaps.back();
         if(this->previousRandomBeatmaps.size() > 1 &&
            this->previousRandomBeatmaps[this->previousRandomBeatmaps.size() - 1] ==
-               osu->playfield->beatmap)
+               osu->active_map->beatmap)
             this->previousRandomBeatmaps.pop_back();  // deletes the current beatmap which may also be at the top (so
                                                       // we don't switch to ourself)
 

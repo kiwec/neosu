@@ -15,7 +15,7 @@
 #include "Osu.h"
 #include "OpenGLHeaders.h"
 #include "OpenGLLegacyInterface.h"
-#include "Playfield.h"
+#include "BeatmapInterface.h"
 #include "RenderTarget.h"
 #include "ResourceManager.h"
 #include "Shader.h"
@@ -26,7 +26,7 @@
 #include "SoundEngine.h"
 #include "VertexArrayObject.h"
 
-void HitObject::drawHitResult(Playfield *pf, vec2 rawPos, LiveScore::HIT result, float animPercentInv,
+void HitObject::drawHitResult(BeatmapInterface *pf, vec2 rawPos, LiveScore::HIT result, float animPercentInv,
                               float hitDeltaRangePercent) {
     drawHitResult(pf->getSkin(), pf->fHitcircleDiameter, pf->fRawHitcircleDiameter, rawPos, result,
                   animPercentInv, hitDeltaRangePercent);
@@ -233,7 +233,7 @@ void HitObject::drawHitResult(Skin *skin, float hitcircleDiameter, float rawHitc
 }
 
 HitObject::HitObject(long time, HitSamples samples, int comboNumber, bool isEndOfCombo, int colorCounter,
-                     int colorOffset, PlayfieldInterface *pi) {
+                     int colorOffset, AbstractBeatmapInterface *pi) {
     this->click_time = time;
     this->samples = std::move(samples);
     this->combo_number = comboNumber;
@@ -266,7 +266,7 @@ HitObject::HitObject(long time, HitSamples samples, int comboNumber, bool isEndO
     this->hitresultanim2.time = -9999.0f;
 
     this->pi = pi;
-    this->pf = dynamic_cast<Playfield *>(pi);  // should be NULL if SimulatedPlayfield
+    this->pf = dynamic_cast<BeatmapInterface *>(pi);  // should be NULL if SimulatedBeatmapInterface
 }
 
 void HitObject::draw2() {
@@ -508,7 +508,7 @@ float HitObject::lerp3f(float a, float b, float c, float percent) {
 int Circle::rainbowNumber = 0;
 int Circle::rainbowColorCounter = 0;
 
-void Circle::drawApproachCircle(Playfield *pf, vec2 rawPos, int number, int colorCounter, int colorOffset,
+void Circle::drawApproachCircle(BeatmapInterface *pf, vec2 rawPos, int number, int colorCounter, int colorOffset,
                                 float colorRGBMultiplier, float approachScale, float alpha,
                                 bool overrideHDApproachCircle) {
     rainbowNumber = number;
@@ -521,7 +521,7 @@ void Circle::drawApproachCircle(Playfield *pf, vec2 rawPos, int number, int colo
                        approachScale, alpha, osu->getModHD(), overrideHDApproachCircle);
 }
 
-void Circle::drawCircle(Playfield *pf, vec2 rawPos, int number, int colorCounter, int colorOffset,
+void Circle::drawCircle(BeatmapInterface *pf, vec2 rawPos, int number, int colorCounter, int colorOffset,
                         float colorRGBMultiplier, float approachScale, float alpha, float numberAlpha, bool drawNumber,
                         bool overrideHDApproachCircle) {
     drawCircle(pf->getSkin(), pf->osuCoords2Pixels(rawPos), pf->fHitcircleDiameter,
@@ -574,7 +574,7 @@ void Circle::drawCircle(Skin *skin, vec2 pos, float hitcircleDiameter, Color col
     drawHitCircleOverlay(skin->getHitCircleOverlay2(), pos, circleOverlayImageScale, alpha, 1.0f);
 }
 
-void Circle::drawSliderStartCircle(Playfield *pf, vec2 rawPos, int number, int colorCounter, int colorOffset,
+void Circle::drawSliderStartCircle(BeatmapInterface *pf, vec2 rawPos, int number, int colorCounter, int colorOffset,
                                    float colorRGBMultiplier, float approachScale, float alpha, float numberAlpha,
                                    bool drawNumber, bool overrideHDApproachCircle) {
     drawSliderStartCircle(pf->getSkin(), pf->osuCoords2Pixels(rawPos), pf->fHitcircleDiameter,
@@ -627,7 +627,7 @@ void Circle::drawSliderStartCircle(Skin *skin, vec2 pos, float hitcircleDiameter
     }
 }
 
-void Circle::drawSliderEndCircle(Playfield *pf, vec2 rawPos, int number, int colorCounter, int colorOffset,
+void Circle::drawSliderEndCircle(BeatmapInterface *pf, vec2 rawPos, int number, int colorCounter, int colorOffset,
                                  float colorRGBMultiplier, float approachScale, float alpha, float numberAlpha,
                                  bool drawNumber, bool overrideHDApproachCircle) {
     drawSliderEndCircle(pf->getSkin(), pf->osuCoords2Pixels(rawPos), pf->fHitcircleDiameter,
@@ -862,7 +862,7 @@ void Circle::drawHitCircleNumber(Skin *skin, float numberScale, float overlapSca
 }
 
 Circle::Circle(int x, int y, long time, HitSamples samples, int comboNumber, bool isEndOfCombo, int colorCounter,
-               int colorOffset, PlayfieldInterface *pi)
+               int colorOffset, AbstractBeatmapInterface *pi)
     : HitObject(time, samples, comboNumber, isEndOfCombo, colorCounter, colorOffset, pi) {
     this->type = HitObjectType::CIRCLE;
 
@@ -1083,7 +1083,7 @@ vec2 Circle::getAutoCursorPos(long /*curPos*/) const { return this->pi->osuCoord
 Slider::Slider(char stype, int repeat, float pixelLength, std::vector<vec2> points, std::vector<float> ticks,
                float sliderTime, float sliderTimeWithoutRepeats, long time, HitSamples hoverSamples,
                std::vector<HitSamples> edgeSamples, int comboNumber, bool isEndOfCombo, int colorCounter,
-               int colorOffset, PlayfieldInterface *pi)
+               int colorOffset, AbstractBeatmapInterface *pi)
     : HitObject(time, hoverSamples, comboNumber, isEndOfCombo, colorCounter, colorOffset, pi) {
     this->type = HitObjectType::SLIDER;
 
@@ -2466,7 +2466,7 @@ bool Slider::isClickHeldSlider() {
 }
 
 Spinner::Spinner(int x, int y, long time, HitSamples samples, bool isEndOfCombo, long endTime,
-                 PlayfieldInterface *pi)
+                 AbstractBeatmapInterface *pi)
     : HitObject(time, samples, -1, isEndOfCombo, -1, -1, pi) {
     this->type = HitObjectType::SPINNER;
 

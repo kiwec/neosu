@@ -8,7 +8,7 @@
 #include "Bancho.h"
 #include "BanchoNetworking.h"
 #include "BanchoUsers.h"
-#include "Playfield.h"
+#include "BeatmapInterface.h"
 #include "CBaseUIButton.h"
 #include "CBaseUIContainer.h"
 #include "CBaseUILabel.h"
@@ -263,8 +263,8 @@ void Lobby::on_create_room_clicked() {
     BanchoState::room.slots[0].status = 4;  // not ready
     BanchoState::room.slots[0].player_id = BanchoState::get_uid();
 
-    if(osu->playfield && osu->playfield->beatmap) {
-        auto map = osu->playfield->beatmap;
+    if(osu->active_map && osu->active_map->beatmap) {
+        auto map = osu->active_map->beatmap;
         BanchoState::room.map_name = UString::format("%s - %s [%s]", map->getArtist().c_str(),
                                                      map->getTitle().c_str(), map->getDifficultyName().c_str());
         BanchoState::room.map_md5 = map->getMD5Hash();

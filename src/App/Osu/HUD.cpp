@@ -6,7 +6,7 @@
 #include "AnimationHandler.h"
 #include "Bancho.h"
 #include "BanchoUsers.h"
-#include "Playfield.h"
+#include "BeatmapInterface.h"
 #include "CBaseUIContainer.h"
 #include "ConVar.h"
 #include "Database.h"
@@ -74,7 +74,7 @@ HUD::HUD() : OsuScreen() {
 HUD::~HUD() {}
 
 void HUD::draw() {
-    Playfield *pf = osu->playfield;
+    BeatmapInterface *pf = osu->active_map;
 
     if(cv::draw_hud.getBool()) {
         if(cv::draw_inputoverlay.getBool()) {
@@ -1220,7 +1220,7 @@ std::vector<SCORE_ENTRY> HUD::getCurrentScores() {
     static std::vector<SCORE_ENTRY> scores;
     scores.clear();
 
-    auto pf = osu->playfield;
+    auto pf = osu->active_map;
 
     if(BanchoState::is_in_a_multi_room()) {
         for(auto &i : BanchoState::room.slots) {
@@ -1332,7 +1332,7 @@ std::vector<SCORE_ENTRY> HUD::getCurrentScores() {
 }
 
 void HUD::resetScoreboard() {
-    DatabaseBeatmap *map = osu->playfield->beatmap;
+    DatabaseBeatmap *map = osu->active_map->beatmap;
     if(map == nullptr) return;
 
     this->beatmap_md5 = map->getMD5Hash();
@@ -1358,7 +1358,7 @@ void HUD::resetScoreboard() {
 }
 
 void HUD::updateScoreboard(bool animate) {
-    DatabaseBeatmap *map = osu->playfield->beatmap;
+    DatabaseBeatmap *map = osu->active_map->beatmap;
     if(map == nullptr) return;
 
     if(!cv::scoreboard_animations.getBool()) {
@@ -1442,7 +1442,7 @@ void HUD::drawContinue(vec2 cursor, float hitcircleDiameter) {
     g->popTransform();
 }
 
-void HUD::drawHitErrorBar(Playfield *pf) {
+void HUD::drawHitErrorBar(BeatmapInterface *pf) {
     if(cv::draw_hud.getBool() || !cv::hud_shift_tab_toggles_everything.getBool()) {
         if(cv::draw_hiterrorbar.getBool() &&
            (!pf->isSpinnerActive() || !cv::hud_hiterrorbar_hide_during_spinner.getBool()) && !pf->isLoading())
@@ -1959,7 +1959,7 @@ void HUD::drawScrubbingTimeline(u32 beatmapTime, u32 beatmapLengthPlayable, u32 
 
     // Auto-hide scrubbing timeline when watching a replay
     f64 galpha = 1.0f;
-    if(osu->playfield->is_watching) {
+    if(osu->active_map->is_watching) {
         f64 time_since_last_move = new_cursor_movement - (last_cursor_movement + 1.0f);
         galpha = fmax(0.f, fmin(1.0f - time_since_last_move, 1.0f));
     }
@@ -1984,8 +1984,8 @@ void HUD::drawScrubbingTimeline(u32 beatmapTime, u32 beatmapLengthPlayable, u32 
 
     // draw strain graph
     if(cv::draw_scrubbing_timeline_strain_graph.getBool()) {
-        const std::vector<f64> &aimStrains = osu->playfield->aimStrains;
-        const std::vector<f64> &speedStrains = osu->playfield->speedStrains;
+        const std::vector<f64> &aimStrains = osu->active_map->aimStrains;
+        const std::vector<f64> &speedStrains = osu->active_map->speedStrains;
 
         u32 nb_strains = aimStrains.size();
         if(aimStrains.size() > 0 && aimStrains.size() == speedStrains.size()) {
@@ -2337,7 +2337,7 @@ float HUD::getCursorScaleFactor() {
 
     float mapScale = 1.0f;
     if(cv::automatic_cursor_size.getBool() && osu->isInPlayMode())
-        mapScale = 1.0f - 0.7f * (float)(osu->playfield->getCS() - 4.0f) / 5.0f;
+        mapScale = 1.0f - 0.7f * (float)(osu->active_map->getCS() - 4.0f) / 5.0f;
 
     return ((float)osu->getScreenHeight() / spriteRes) * mapScale;
 }

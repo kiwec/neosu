@@ -5,7 +5,7 @@
 #include <utility>
 
 #include "Archival.h"
-#include "Playfield.h"
+#include "BeatmapInterface.h"
 #include "ConVar.h"
 #include "Engine.h"
 #include "Environment.h"
@@ -144,10 +144,10 @@ void Skin::update() {
     }
 
     // shitty check to not animate while paused with hitobjects in background
-    if(osu->isInPlayMode() && !osu->playfield->isPlaying() && !cv::skin_animation_force.getBool()) return;
+    if(osu->isInPlayMode() && !osu->active_map->isPlaying() && !cv::skin_animation_force.getBool()) return;
 
     const bool useEngineTimeForAnimations = !osu->isInPlayMode();
-    const long curMusicPos = osu->playfield->getCurMusicPosWithOffsets();
+    const long curMusicPos = osu->active_map->getCurMusicPosWithOffsets();
     for(auto &image : this->images) {
         image->update(this->animationSpeedMultiplier, useEngineTimeForAnimations, curMusicPos);
     }

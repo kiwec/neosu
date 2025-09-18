@@ -4,7 +4,7 @@
 #include "AnimationHandler.h"
 #include "BackgroundImageHandler.h"
 #include "Bancho.h"
-#include "Playfield.h"
+#include "BeatmapInterface.h"
 #include "Camera.h"
 #include "ConVar.h"
 #include "Engine.h"
@@ -241,9 +241,9 @@ void ModFPoSu::update() {
 
         if(cv::fposu_mod_strafing.getBool()) {
             if(osu->isInPlayMode()) {
-                const long curMusicPos = osu->playfield->getCurMusicPos();
+                const long curMusicPos = osu->active_map->getCurMusicPos();
 
-                const float speedMultiplierCompensation = 1.0f / osu->playfield->getSpeedMultiplier();
+                const float speedMultiplierCompensation = 1.0f / osu->active_map->getSpeedMultiplier();
 
                 const float x = std::sin((curMusicPos / 1000.0f) * 5 * speedMultiplierCompensation *
                                          cv::fposu_mod_strafing_frequency_x.getFloat()) *
@@ -261,7 +261,7 @@ void ModFPoSu::update() {
     }
 
     const bool isAutoCursor =
-        (osu->getModAuto() || osu->getModAutopilot() || osu->playfield->is_watching || BanchoState::spectating);
+        (osu->getModAuto() || osu->getModAutopilot() || osu->active_map->is_watching || BanchoState::spectating);
 
     this->bCrosshairIntersectsScreen = true;
     if(!cv::fposu_absolute_mode.getBool() && !isAutoCursor) {
@@ -307,8 +307,8 @@ void ModFPoSu::update() {
 
         // absolute mouse position mode (or auto)
         vec2 mousePos = mouse->getPos();
-        if(isAutoCursor && !osu->playfield->isPaused()) {
-            mousePos = osu->playfield->getCursorPos();
+        if(isAutoCursor && !osu->active_map->isPaused()) {
+            mousePos = osu->active_map->getCursorPos();
         }
 
         this->bCrosshairIntersectsScreen = true;

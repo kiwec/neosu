@@ -3,7 +3,7 @@
 
 #include "Bancho.h"
 #include "BanchoUsers.h"
-#include "Playfield.h"
+#include "BeatmapInterface.h"
 #include "CBaseUILabel.h"
 #include "Console.h"
 #include "Database.h"
@@ -169,7 +169,7 @@ bool ConVar::onSetValueGameplay(CvarEditor editor) {
 void ConVar::onSetValueProtected(const std::string &oldValue, const std::string &newValue) {
     if(!osu) return;
     if(oldValue == newValue) return;
-    osu->playfield->is_submittable = false;
+    osu->active_map->is_submittable = false;
 }
 
 //********************************//

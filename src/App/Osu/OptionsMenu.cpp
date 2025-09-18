@@ -3182,9 +3182,9 @@ void OptionsMenu::onWASAPIPeriodChange(CBaseUISlider *slider) {
 void OptionsMenu::onLoudnessNormalizationToggle(CBaseUICheckbox *checkbox) {
     this->onCheckboxChange(checkbox);
 
-    auto music = osu->playfield->getMusic();
+    auto music = osu->active_map->getMusic();
     if(music != nullptr) {
-        music->setBaseVolume(osu->playfield->getIdealVolume());
+        music->setBaseVolume(osu->active_map->getIdealVolume());
     }
 
     if(cv::normalize_loudness.getBool()) {

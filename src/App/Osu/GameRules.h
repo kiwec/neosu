@@ -1,6 +1,6 @@
 #pragma once
 // Copyright (c) 2016, PG, All rights reserved.
-#include "Playfield.h"
+#include "BeatmapInterface.h"
 #include "ConVar.h"
 #include "Osu.h"
 
@@ -104,11 +104,11 @@ class GameRules {
     }
 
     // raw spins required per second
-    static inline INLINE_BODY float getSpinnerSpinsPerSecond(PlayfieldInterface *beatmap) {
+    static inline INLINE_BODY float getSpinnerSpinsPerSecond(AbstractBeatmapInterface *beatmap) {
         return mapDifficultyRange(beatmap->getOD(), 3.0f, 5.0f, 7.5f);
     }
 
-    static inline INLINE_BODY float getSpinnerRotationsForSpeedMultiplier(PlayfieldInterface *beatmap,
+    static inline INLINE_BODY float getSpinnerRotationsForSpeedMultiplier(AbstractBeatmapInterface *beatmap,
                                                                           long spinnerDuration, float speedMultiplier) {
         /// return (int)((float)spinnerDuration / 1000.0f * getSpinnerSpinsPerSecond(beatmap)); // actual
         return (int)((((float)spinnerDuration / 1000.0f * getSpinnerSpinsPerSecond(beatmap)) * 0.5f) *
@@ -117,7 +117,7 @@ class GameRules {
 
     // spinner length compensated rotations
     // respect all mods and overrides
-    static inline INLINE_BODY float getSpinnerRotationsForSpeedMultiplier(PlayfieldInterface *beatmap,
+    static inline INLINE_BODY float getSpinnerRotationsForSpeedMultiplier(AbstractBeatmapInterface *beatmap,
                                                                           long spinnerDuration) {
         return getSpinnerRotationsForSpeedMultiplier(beatmap, spinnerDuration, beatmap->getSpeedMultiplier());
     }

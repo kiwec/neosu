@@ -3,7 +3,7 @@
 
 #include <algorithm>
 
-#include "Playfield.h"
+#include "BeatmapInterface.h"
 #include "ConVar.h"
 #include "Engine.h"
 #include "GameRules.h"

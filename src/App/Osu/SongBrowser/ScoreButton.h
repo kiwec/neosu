@@ -38,20 +38,21 @@ class ScoreButton : public CBaseUIButton {
     [[nodiscard]] inline int getIndex() const { return this->iScoreIndexNumber; }
 
     bool is_friend = false;
-    UIAvatar* avatar = nullptr;
+    UIAvatar *avatar = nullptr;
     MD5Hash map_hash;
-
-   private:
-    static UString recentScoreIconString;
-
-    void updateElapsedTimeString();
-
-    void onClicked(bool left = true, bool right = false) override;
 
     void onMouseInside() override;
     void onMouseOutside() override;
 
     void onFocusStolen() override;
+
+   protected:
+    void onClicked(bool left = true, bool right = false) override;
+
+   private:
+    static UString recentScoreIconString;
+
+    void updateElapsedTimeString();
 
     void onRightMouseUpInside();
     void onContextMenu(const UString &text, int id = -1);

@@ -6,7 +6,7 @@
 
 #include "AnimationHandler.h"
 #include "Bancho.h"
-#include "Playfield.h"
+#include "BeatmapInterface.h"
 #include "CBaseUIContainer.h"
 #include "Chat.h"
 #include "ConVar.h"
@@ -137,7 +137,7 @@ void PauseMenu::onContinueClicked() {
     if(anim->isAnimating(&this->fDimAnim)) return;
 
     soundEngine->play(osu->getSkin()->getClickPauseContinueSound());
-    osu->playfield->pause();
+    osu->active_map->pause();
 
     this->scheduleVisibilityChange(false);
 }
@@ -147,7 +147,7 @@ void PauseMenu::onRetryClicked() {
     if(anim->isAnimating(&this->fDimAnim)) return;
 
     soundEngine->play(osu->getSkin()->getClickPauseRetrySound());
-    osu->playfield->restart();
+    osu->active_map->restart();
 
     this->scheduleVisibilityChange(false);
 }
@@ -156,7 +156,7 @@ void PauseMenu::onBackClicked() {
     if(anim->isAnimating(&this->fDimAnim)) return;
 
     soundEngine->play(osu->getSkin()->getClickPauseBackSound());
-    osu->playfield->stop(true);
+    osu->active_map->stop(true);
 
     this->scheduleVisibilityChange(false);
 }
@@ -343,7 +343,7 @@ CBaseUIContainer *PauseMenu::setVisible(bool visible) {
 
     if(!osu->isInPlayMode()) return this;  // sanity
 
-    this->setContinueEnabled(!osu->playfield->hasFailed());
+    this->setContinueEnabled(!osu->active_map->hasFailed());
 
     if(!BanchoState::is_playing_a_multi_map()) {
         if(visible) {
@@ -357,7 +357,7 @@ CBaseUIContainer *PauseMenu::setVisible(bool visible) {
                     BANCHO::Proto::write<u16>(&packet, 0);
                     BANCHO::Proto::write<u8>(&packet, LiveReplayBundle::Action::PAUSE);
                     BANCHO::Proto::write<ScoreFrame>(&packet, ScoreFrame::get());
-                    BANCHO::Proto::write<u16>(&packet, osu->playfield->spectator_sequence++);
+                    BANCHO::Proto::write<u16>(&packet, osu->active_map->spectator_sequence++);
                     BANCHO::Net::send_packet(packet);
                 }
             } else {
@@ -373,7 +373,7 @@ CBaseUIContainer *PauseMenu::setVisible(bool visible) {
                 BANCHO::Proto::write<u16>(&packet, 0);
                 BANCHO::Proto::write<u8>(&packet, LiveReplayBundle::Action::UNPAUSE);
                 BANCHO::Proto::write<ScoreFrame>(&packet, ScoreFrame::get());
-                BANCHO::Proto::write<u16>(&packet, osu->playfield->spectator_sequence++);
+                BANCHO::Proto::write<u16>(&packet, osu->active_map->spectator_sequence++);
                 BANCHO::Net::send_packet(packet);
             }
         }

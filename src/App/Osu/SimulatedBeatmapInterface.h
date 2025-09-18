@@ -1,12 +1,14 @@
 #pragma once
 
-#include "Playfield.h"
+#include "BeatmapInterface.h"
 #include "Replay.h"
 
-class SimulatedPlayfield : public PlayfieldInterface {
+class SimulatedBeatmapInterface : public AbstractBeatmapInterface {
+    NOCOPY_NOMOVE(SimulatedBeatmapInterface)
    public:
-    SimulatedPlayfield(DatabaseBeatmap *map, Replay::Mods mods_);
-    ~SimulatedPlayfield() override;
+    SimulatedBeatmapInterface() = delete;
+    SimulatedBeatmapInterface(DatabaseBeatmap *map, Replay::Mods mods_);
+    ~SimulatedBeatmapInterface() override;
 
     Replay::Mods mods;
     LiveScore live_score;

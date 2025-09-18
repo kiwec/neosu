@@ -5,7 +5,7 @@
 
 #include "BassManager.h"
 #include "BassSoundEngine.h"
-#include "Playfield.h"
+#include "BeatmapInterface.h"
 #include "CBaseUILabel.h"
 #include "ConVar.h"
 #include "Database.h"
@@ -581,9 +581,9 @@ bool BassSoundEngine::hasExclusiveOutput() {
 void BassSoundEngine::setOutputDevice(const SoundEngine::OUTPUT_DEVICE &device) {
     bool was_playing = false;
     unsigned long prevMusicPositionMS = 0;
-    if(osu->playfield->getMusic() != nullptr) {
-        was_playing = osu->playfield->getMusic()->isPlaying();
-        prevMusicPositionMS = osu->playfield->getMusic()->getPositionMS();
+    if(osu->active_map->getMusic() != nullptr) {
+        was_playing = osu->active_map->getMusic()->isPlaying();
+        prevMusicPositionMS = osu->active_map->getMusic()->getPositionMS();
     }
 
     // TODO: This is blocking main thread, can freeze for a long time on some sound cards
@@ -606,16 +606,16 @@ void BassSoundEngine::setOutputDevice(const SoundEngine::OUTPUT_DEVICE &device) 
     osu->optionsMenu->onOutputDeviceResetUpdate();
 
     // start playing music again after audio device changed
-    if(osu->playfield->getMusic() != nullptr) {
+    if(osu->active_map->getMusic() != nullptr) {
         if(osu->isInPlayMode()) {
-            osu->playfield->unloadMusic();
-            osu->playfield->loadMusic();
-            osu->playfield->getMusic()->setLoop(false);
-            osu->playfield->getMusic()->setPositionMS(prevMusicPositionMS);
+            osu->active_map->unloadMusic();
+            osu->active_map->loadMusic();
+            osu->active_map->getMusic()->setLoop(false);
+            osu->active_map->getMusic()->setPositionMS(prevMusicPositionMS);
         } else {
-            osu->playfield->unloadMusic();
-            osu->playfield->selectBeatmap();
-            osu->playfield->getMusic()->setPositionMS(prevMusicPositionMS);
+            osu->active_map->unloadMusic();
+            osu->active_map->selectBeatmap();
+            osu->active_map->getMusic()->setPositionMS(prevMusicPositionMS);
         }
     }
 

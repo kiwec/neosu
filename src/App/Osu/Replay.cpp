@@ -1,7 +1,7 @@
 // Copyright (c) 2016, PG, All rights reserved.
 #include "Replay.h"
 
-#include "Playfield.h"
+#include "BeatmapInterface.h"
 #include "CBaseUICheckbox.h"
 #include "CBaseUISlider.h"
 #include "DatabaseBeatmap.h"
@@ -129,7 +129,7 @@ Mods Mods::from_cvars() {
         mods.flags |= Autoplay;
     }
 
-    mods.speed = osu->playfield->getSpeedMultiplier();
+    mods.speed = osu->active_map->getSpeedMultiplier();
 
     mods.notelock_type = cv::notelock_type.getInt();
     mods.autopilot_lenience = cv::autopilot_lenience.getFloat();

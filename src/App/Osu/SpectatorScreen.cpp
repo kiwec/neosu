@@ -5,7 +5,7 @@
 #include "BanchoNetworking.h"
 #include "BanchoProtocol.h"
 #include "BanchoUsers.h"
-#include "Playfield.h"
+#include "BeatmapInterface.h"
 #include "CBaseUILabel.h"
 #include "CBaseUIScrollView.h"
 #include "Changelog.h"
@@ -85,7 +85,7 @@ void stop_spectating() {
     if(!BanchoState::spectating) return;
 
     if(osu->isInPlayMode()) {
-        osu->playfield->stop(true);
+        osu->active_map->stop(true);
     }
 
     auto user_info = BANCHO::User::get_user_info(BanchoState::spectated_player_id, true);
@@ -150,7 +150,7 @@ void SpectatorScreen::mouse_update(bool *propagate_clicks) {
     auto user_info = BANCHO::User::get_user_info(BanchoState::spectated_player_id, true);
     if(user_info->map_id == -1 || user_info->map_id == 0) {
         if(osu->isInPlayMode()) {
-            osu->playfield->stop(true);
+            osu->active_map->stop(true);
             osu->songBrowser2->bHasSelectedAndIsPlaying = false;
         }
     } else if(user_info->mode == STANDARD && user_info->map_id != current_map_id) {
@@ -159,7 +159,7 @@ void SpectatorScreen::mouse_update(bool *propagate_clicks) {
             current_map_id = user_info->map_id;
             osu->rankingScreen->setVisible(false);
             osu->songBrowser2->onDifficultySelected(beatmap, false);
-            osu->playfield->spectate();
+            osu->active_map->spectate();
         }
     }
 
@@ -211,7 +211,7 @@ void SpectatorScreen::mouse_update(bool *propagate_clicks) {
     this->pauseButton->setSize(30 * dpiScale, 30 * dpiScale);
     this->pauseButton->setPos(resolution.x - this->pauseButton->getSize().x * 2 - 10 * dpiScale,
                               this->pauseButton->getSize().y + 10 * dpiScale);
-    this->pauseButton->setPaused(!osu->playfield->isPreviewMusicPlaying());
+    this->pauseButton->setPaused(!osu->active_map->isPreviewMusicPlaying());
 
     this->background->setSize(resolution.x * 0.6, resolution.y * 0.6 - 110 * dpiScale);
     auto bgsize = this->background->getSize();

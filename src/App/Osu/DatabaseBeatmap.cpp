@@ -13,7 +13,7 @@
 
 #include "SString.h"
 #include "Bancho.h"  // md5
-#include "Playfield.h"
+#include "BeatmapInterface.h"
 #include "ConVar.h"
 #include "Database.h"
 #include "Engine.h"
@@ -1204,7 +1204,7 @@ bool DatabaseBeatmap::loadMetadata(bool compute_md5) {
 }
 
 DatabaseBeatmap::LOAD_GAMEPLAY_RESULT DatabaseBeatmap::loadGameplay(DatabaseBeatmap *databaseBeatmap,
-                                                                    PlayfieldInterface *beatmap) {
+                                                                    AbstractBeatmapInterface *beatmap) {
     LOAD_GAMEPLAY_RESULT result = LOAD_GAMEPLAY_RESULT();
 
     // NOTE: reload metadata (force ensures that all necessary data is ready for creating hitobjects and playing etc.,
@@ -1295,7 +1295,7 @@ DatabaseBeatmap::LOAD_GAMEPLAY_RESULT DatabaseBeatmap::loadGameplay(DatabaseBeat
 
     // sort hitobjects by starttime
     if(result.hitobjects.size() > 1) {
-        std::ranges::sort(result.hitobjects, Playfield::sortHitObjectByStartTimeComp);
+        std::ranges::sort(result.hitobjects, BeatmapInterface::sortHitObjectByStartTimeComp);
     }
 
     // update beatmap length stat

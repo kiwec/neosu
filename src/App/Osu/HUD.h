@@ -8,7 +8,7 @@ struct ScoreboardSlot;
 class McFont;
 class ConVar;
 class Image;
-class Playfield;
+class BeatmapInterface;
 class Shader;
 class VertexArrayObject;
 
@@ -40,7 +40,7 @@ class HUD : public OsuScreen {
         bool secondTrail = false);  // NOTE: only use if drawCursor() with updateAndDrawTrail = false (FPoSu)
     void drawCursorRipples();
     void drawFps();
-    void drawHitErrorBar(Playfield *pf);
+    void drawHitErrorBar(BeatmapInterface *pf);
     void drawPlayfieldBorder(vec2 playfieldCenter, vec2 playfieldSize, float hitcircleDiameter);
     void drawPlayfieldBorder(vec2 playfieldCenter, vec2 playfieldSize, float hitcircleDiameter, float borderSize);
     void drawLoadingSmall(const UString &text);
