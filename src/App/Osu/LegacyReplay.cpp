@@ -172,7 +172,7 @@ Info from_bytes(u8* data, int s_data) {
     }
 
     info.osu_version = proto::read<u32>(&replay);
-    info.diff2_md5 = proto::read_string(&replay);
+    info.map_md5 = proto::read_string(&replay);
     info.username = proto::read_string(&replay);
     info.replay_md5 = proto::read_string(&replay);
     info.num300s = proto::read<u16>(&replay);
@@ -297,12 +297,12 @@ void load_and_watch(FinishedScore score) {
         return;
     }
 
-    auto diff = db->getBeatmapDifficulty(score.beatmap_hash);
-    if(diff == nullptr) {
+    auto map = db->getBeatmapDifficulty(score.beatmap_hash);
+    if(map == nullptr) {
         // XXX: Auto-download beatmap
         osu->notificationOverlay->addToast("Missing beatmap for this replay", ERROR_TOAST);
     } else {
-        osu->getSongBrowser()->onDifficultySelected(diff, false);
+        osu->getSongBrowser()->onDifficultySelected(map, false);
         osu->getSongBrowser()->selectSelectedBeatmapSongButton();
         osu->playfield->watch(score, 0);
     }

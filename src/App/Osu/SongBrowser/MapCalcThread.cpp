@@ -53,7 +53,7 @@ void MapCalcThread::run() {
     std::vector<f64> aimStrains;
     std::vector<f64> speedStrains;
 
-    for(const auto& diff2 : *this->maps_to_process) {
+    for(const auto& map : *this->maps_to_process) {
         // pause handling
         while(osu->should_pause_background_threads.load() && !this->should_stop.load()) {
             Timing::sleepMS(100);
@@ -67,13 +67,13 @@ void MapCalcThread::run() {
         aimStrains.clear();
         speedStrains.clear();
 
-        mct_result result{.diff2 = diff2};
+        mct_result result{.map = map};
 
         if(this->should_stop.load()) {
             return;
         }
 
-        auto c = DatabaseBeatmap::loadPrimitiveObjects(diff2->sFilePath, this->should_stop);
+        auto c = DatabaseBeatmap::loadPrimitiveObjects(map->sFilePath, this->should_stop);
 
         if(this->should_stop.load()) {
             return;
@@ -91,7 +91,7 @@ void MapCalcThread::run() {
 
         pp_info info;
         auto diffres =
-            DatabaseBeatmap::loadDifficultyHitObjects(c, diff2->getAR(), diff2->getCS(), 1.f, false, this->should_stop);
+            DatabaseBeatmap::loadDifficultyHitObjects(c, map->getAR(), map->getCS(), 1.f, false, this->should_stop);
 
         if(this->should_stop.load()) {
             return;
@@ -105,8 +105,8 @@ void MapCalcThread::run() {
 
         DifficultyCalculator::StarCalcParams params;
         params.sortedHitObjects.swap(diffres.diffobjects);
-        params.CS = diff2->getCS();
-        params.OD = diff2->getOD();
+        params.CS = map->getCS();
+        params.OD = map->getOD();
         params.speedMultiplier = 1.f;
         params.relax = false;
         params.touchDevice = false;

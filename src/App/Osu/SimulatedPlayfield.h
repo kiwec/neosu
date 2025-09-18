@@ -5,7 +5,7 @@
 
 class SimulatedPlayfield : public PlayfieldInterface {
    public:
-    SimulatedPlayfield(DatabaseBeatmap *diff2, Replay::Mods mods_);
+    SimulatedPlayfield(DatabaseBeatmap *map, Replay::Mods mods_);
     ~SimulatedPlayfield() override;
 
     Replay::Mods mods;
@@ -86,7 +86,7 @@ class SimulatedPlayfield : public PlayfieldInterface {
 
    protected:
     // database
-    DatabaseBeatmap *selectedDifficulty2;
+    DatabaseBeatmap *beatmap;
 
     // sound
     i32 iCurMusicPos = 0;

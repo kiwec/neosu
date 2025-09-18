@@ -92,11 +92,11 @@ void UIRankingScreenInfoLabel::draw() {
     g->popTransform();
 }
 
-void UIRankingScreenInfoLabel::setFromBeatmap(DatabaseBeatmap *diff2) {
-    this->setArtist(diff2->getArtist());
-    this->setTitle(diff2->getTitle());
-    this->setDiff(diff2->getDifficultyName());
-    this->setMapper(diff2->getCreator());
+void UIRankingScreenInfoLabel::setFromBeatmap(DatabaseBeatmap *map) {
+    this->setArtist(map->getArtist());
+    this->setTitle(map->getTitle());
+    this->setDiff(map->getDifficultyName());
+    this->setMapper(map->getCreator());
 
     std::time_t now_c = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
     this->sDate = std::ctime(&now_c);

@@ -470,7 +470,7 @@ float LiveScore::calculateAccuracy(int num300s, int num100s, int num50s, int num
 }
 
 f64 FinishedScore::get_or_calc_pp() {
-    assert(this->diff2 != nullptr);
+    assert(this->map != nullptr);
 
     f64 pp = this->get_pp();
     if(pp != -1.0) return pp;
@@ -478,9 +478,9 @@ f64 FinishedScore::get_or_calc_pp() {
     pp_calc_request request;
     request.mods_legacy = this->mods.to_legacy();
     request.speed = this->mods.speed;
-    request.AR = this->mods.get_naive_ar(this->diff2);
-    request.CS = this->mods.get_naive_cs(this->diff2);
-    request.OD = this->mods.get_naive_od(this->diff2);
+    request.AR = this->mods.get_naive_ar(this->map);
+    request.CS = this->mods.get_naive_cs(this->map);
+    request.OD = this->mods.get_naive_od(this->map);
     request.rx = ModMasks::eq(this->mods.flags, Replay::ModFlags::Relax);
     request.td = ModMasks::eq(this->mods.flags, Replay::ModFlags::TouchDevice);
     request.comboMax = this->comboMax;

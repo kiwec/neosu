@@ -456,15 +456,15 @@ void Chat::handle_command(const UString &msg) {
     }
 
     if(msg == "/np") {
-        auto diff = osu->playfield->getSelectedDifficulty2();
-        if(diff == nullptr) {
+        auto map = osu->playfield->beatmap;
+        if(map == nullptr) {
             this->addSystemMessage("You are not listening to anything.");
             return;
         }
 
-        UString song_name = UString::format("%s - %s [%s]", diff->getArtist().c_str(), diff->getTitle().c_str(),
-                                            diff->getDifficultyName().c_str());
-        UString song_link = UString::format("[https://osu.%s/beatmaps/%d %s]", BanchoState::endpoint.c_str(), diff->getID(),
+        UString song_name = UString::format("%s - %s [%s]", map->getArtist().c_str(), map->getTitle().c_str(),
+                                            map->getDifficultyName().c_str());
+        UString song_link = UString::format("[https://osu.%s/beatmaps/%d %s]", BanchoState::endpoint.c_str(), map->getID(),
                                             song_name.toUtf8());
 
         UString np_msg;

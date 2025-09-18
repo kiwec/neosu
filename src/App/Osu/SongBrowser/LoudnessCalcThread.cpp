@@ -62,18 +62,18 @@ struct VolNormalization::LoudnessCalcThread {
         BASS_SetDevice(0);
         BASS_SetConfig(BASS_CONFIG_UPDATETHREADS, 0);
 
-        for(auto diff2 : this->maps) {
+        for(auto map : this->maps) {
             while(osu->should_pause_background_threads.load() && !this->dead.load()) {
                 Timing::sleepMS(100);
             }
             Timing::sleep(1);
 
             if(this->dead.load()) return;
-            if(diff2->loudness.load() != 0.f) continue;
+            if(map->loudness.load() != 0.f) continue;
 
-            UString song{diff2->getFullSoundFilePath()};
+            UString song{map->getFullSoundFilePath()};
             if(song == last_song) {
-                diff2->loudness = last_loudness;
+                map->loudness = last_loudness;
                 this->nb_computed++;
                 continue;
             }
@@ -113,8 +113,8 @@ struct VolNormalization::LoudnessCalcThread {
             if(integrated_loudness == -HUGE_VAL) {
                 debugLog("No loudness information available for '{:s}' (silent song?)\n", song.toUtf8());
             } else {
-                diff2->loudness = integrated_loudness;
-                diff2->update_overrides();
+                map->loudness = integrated_loudness;
+                map->update_overrides();
                 last_loudness = integrated_loudness;
                 last_song = song;
             }

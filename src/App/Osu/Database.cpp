@@ -1202,52 +1202,52 @@ void Database::loadMaps() {
                 // fill diff with data
                 if(mode != 0) continue;
 
-                auto *diff2 =
+                auto *map =
                     new DatabaseBeatmap(fullFilePath, beatmapPath, DatabaseBeatmap::BeatmapType::PEPPY_DIFFICULTY);
                 {
-                    diff2->sTitle = songTitle;
-                    diff2->sTitleUnicode = songTitleUnicode;
-                    if(SString::whitespace_only(diff2->sTitleUnicode)) {
-                        diff2->bEmptyTitleUnicode = true;
+                    map->sTitle = songTitle;
+                    map->sTitleUnicode = songTitleUnicode;
+                    if(SString::whitespace_only(map->sTitleUnicode)) {
+                        map->bEmptyTitleUnicode = true;
                     }
-                    diff2->sAudioFileName = audioFileName;
-                    diff2->iLengthMS = duration;
+                    map->sAudioFileName = audioFileName;
+                    map->iLengthMS = duration;
 
-                    diff2->fStackLeniency = stackLeniency;
+                    map->fStackLeniency = stackLeniency;
 
-                    diff2->sArtist = artistName;
-                    diff2->sArtistUnicode = artistNameUnicode;
-                    if(SString::whitespace_only(diff2->sArtistUnicode)) {
-                        diff2->bEmptyArtistUnicode = true;
+                    map->sArtist = artistName;
+                    map->sArtistUnicode = artistNameUnicode;
+                    if(SString::whitespace_only(map->sArtistUnicode)) {
+                        map->bEmptyArtistUnicode = true;
                     }
-                    diff2->sCreator = creatorName;
-                    diff2->sDifficultyName = difficultyName;
-                    diff2->sSource = songSource;
-                    diff2->sTags = songTags;
-                    diff2->sMD5Hash = md5hash;
-                    diff2->iID = beatmapID;
-                    diff2->iSetID = beatmapSetID;
+                    map->sCreator = creatorName;
+                    map->sDifficultyName = difficultyName;
+                    map->sSource = songSource;
+                    map->sTags = songTags;
+                    map->sMD5Hash = md5hash;
+                    map->iID = beatmapID;
+                    map->iSetID = beatmapSetID;
 
-                    diff2->fAR = AR;
-                    diff2->fCS = CS;
-                    diff2->fHP = HP;
-                    diff2->fOD = OD;
-                    diff2->fSliderMultiplier = sliderMultiplier;
+                    map->fAR = AR;
+                    map->fCS = CS;
+                    map->fHP = HP;
+                    map->fOD = OD;
+                    map->fSliderMultiplier = sliderMultiplier;
 
-                    // diff2->sBackgroundImageFileName = "";
+                    // map->sBackgroundImageFileName = "";
 
-                    diff2->iPreviewTime = previewTime;
-                    diff2->last_modification_time = lastModificationTime;
+                    map->iPreviewTime = previewTime;
+                    map->last_modification_time = lastModificationTime;
 
-                    diff2->sFullSoundFilePath = beatmapPath;
-                    diff2->sFullSoundFilePath.append(diff2->sAudioFileName);
-                    diff2->iNumObjects = numCircles + numSliders + numSpinners;
-                    diff2->iNumCircles = numCircles;
-                    diff2->iNumSliders = numSliders;
-                    diff2->iNumSpinners = numSpinners;
-                    diff2->iMinBPM = bpm.min;
-                    diff2->iMaxBPM = bpm.max;
-                    diff2->iMostCommonBPM = bpm.most_common;
+                    map->sFullSoundFilePath = beatmapPath;
+                    map->sFullSoundFilePath.append(map->sAudioFileName);
+                    map->iNumObjects = numCircles + numSliders + numSpinners;
+                    map->iNumCircles = numCircles;
+                    map->iNumSliders = numSliders;
+                    map->iNumSpinners = numSpinners;
+                    map->iMinBPM = bpm.min;
+                    map->iMaxBPM = bpm.max;
+                    map->iMostCommonBPM = bpm.most_common;
                 }
 
                 // special case: legacy fallback behavior for invalid beatmapSetID, try to parse the ID from the path
@@ -1265,7 +1265,7 @@ void Database::loadMaps() {
                 }
 
                 // (the diff is now fully built)
-                this->beatmap_difficulties[md5hash] = diff2;
+                this->beatmap_difficulties[md5hash] = map;
 
                 // now, search if the current set (to which this diff would belong) already exists and add it there, or
                 // if it doesn't exist then create the set
@@ -1274,13 +1274,13 @@ void Database::loadMaps() {
                 bool diff_already_added = false;
                 if(beatmapSetExists) {
                     for(const auto &existing_diff : *beatmapSets[result->second].diffs2) {
-                        if(existing_diff->getMD5Hash() == diff2->getMD5Hash()) {
+                        if(existing_diff->getMD5Hash() == map->getMD5Hash()) {
                             diff_already_added = true;
                             break;
                         }
                     }
                     if(!diff_already_added) {
-                        beatmapSets[result->second].diffs2->push_back(diff2);
+                        beatmapSets[result->second].diffs2->push_back(map);
                     }
                 } else {
                     setIDToIndex[beatmapSetID] = beatmapSets.size();
@@ -1288,7 +1288,7 @@ void Database::loadMaps() {
                     Beatmap_Set s;
                     s.setID = beatmapSetID;
                     s.diffs2 = new std::vector<DatabaseBeatmap *>();
-                    s.diffs2->push_back(diff2);
+                    s.diffs2->push_back(map);
                     beatmapSets.push_back(s);
                 }
 
@@ -1296,11 +1296,11 @@ void Database::loadMaps() {
                     bool loudness_found = false;
                     if(overrides_found) {
                         MapOverrides over = overrides->second;
-                        diff2->iLocalOffset = over.local_offset;
-                        diff2->iOnlineOffset = over.online_offset;
-                        diff2->fStarsNomod = over.star_rating;
-                        diff2->loudness = over.loudness;
-                        diff2->draw_background = over.draw_background;
+                        map->iLocalOffset = over.local_offset;
+                        map->iOnlineOffset = over.online_offset;
+                        map->fStarsNomod = over.star_rating;
+                        map->loudness = over.loudness;
+                        map->draw_background = over.draw_background;
 
                         if(over.loudness != 0.f) {
                             loudness_found = true;
@@ -1308,20 +1308,20 @@ void Database::loadMaps() {
                     } else {
                         if(nomod_star_rating <= 0.f) {
                             nomod_star_rating *= -1.f;
-                            this->maps_to_recalc.push_back(diff2);
+                            this->maps_to_recalc.push_back(map);
                         }
 
-                        diff2->iLocalOffset = localOffset;
-                        diff2->iOnlineOffset = onlineOffset;
-                        diff2->fStarsNomod = nomod_star_rating;
-                        diff2->draw_background = true;
+                        map->iLocalOffset = localOffset;
+                        map->iOnlineOffset = onlineOffset;
+                        map->fStarsNomod = nomod_star_rating;
+                        map->draw_background = true;
                     }
 
                     if(!loudness_found) {
-                        this->loudness_to_calc.push_back(diff2);
+                        this->loudness_to_calc.push_back(map);
                     }
                 } else {
-                    SAFE_DELETE(diff2);  // we never added this diff to any container, so we have to free it here
+                    SAFE_DELETE(map);  // we never added this diff to any container, so we have to free it here
                 }
 
                 nb_peppy_maps++;
@@ -1468,10 +1468,10 @@ void Database::saveMaps() {
     this->peppy_overrides_mtx.lock();
 
     // When calculating loudness we don't call update_overrides() for performance reasons
-    for(const auto &diff2 : this->loudness_to_calc) {
-        if(diff2->type != DatabaseBeatmap::BeatmapType::PEPPY_DIFFICULTY) continue;
-        if(diff2->loudness.load() == 0.f) continue;
-        this->peppy_overrides[diff2->getMD5Hash()] = diff2->get_overrides();
+    for(const auto &map : this->loudness_to_calc) {
+        if(map->type != DatabaseBeatmap::BeatmapType::PEPPY_DIFFICULTY) continue;
+        if(map->loudness.load() == 0.f) continue;
+        this->peppy_overrides[map->getMD5Hash()] = map->get_overrides();
     }
 
     u32 nb_overrides = 0;
@@ -2160,14 +2160,14 @@ BeatmapSet *Database::loadRawBeatmap(const std::string &beatmapPath) {
         std::string fullFilePath = beatmapPath;
         fullFilePath.append(beatmapFile);
 
-        auto *diff2 = new BeatmapDifficulty(fullFilePath, beatmapPath, DatabaseBeatmap::BeatmapType::NEOSU_DIFFICULTY);
-        if(diff2->loadMetadata()) {
-            diffs2->push_back(diff2);
+        auto *map = new BeatmapDifficulty(fullFilePath, beatmapPath, DatabaseBeatmap::BeatmapType::NEOSU_DIFFICULTY);
+        if(map->loadMetadata()) {
+            diffs2->push_back(map);
         } else {
             if(cv::debug_db.getBool()) {
                 debugLog("BeatmapDatabase::loadRawBeatmap() : Couldn't loadMetadata(), deleting object.\n");
             }
-            SAFE_DELETE(diff2);
+            SAFE_DELETE(map);
         }
     }
 

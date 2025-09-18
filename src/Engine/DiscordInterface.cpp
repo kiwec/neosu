@@ -159,13 +159,13 @@ void set_discord_presence([[maybe_unused]] struct DiscordActivity *activity) {
     strcpy(&activity->assets.small_image[0], "None");
     activity->assets.small_text[0] = '\0';
 
-    auto diff2 = osu->playfield->getSelectedDifficulty2();
+    auto map = osu->playfield->beatmap;
     auto music = osu->playfield->getMusic();
-    bool listening = diff2 != nullptr && music != nullptr && music->isPlaying();
-    bool playing = diff2 != nullptr && osu->isInPlayMode();
+    bool listening = map != nullptr && music != nullptr && music->isPlaying();
+    bool playing = map != nullptr && osu->isInPlayMode();
     if(listening || playing) {
-        auto url = UString::format("https://assets.ppy.sh/beatmaps/%d/covers/list@2x.jpg?%d", diff2->getSetID(),
-                                   diff2->getID());
+        auto url = UString::format("https://assets.ppy.sh/beatmaps/%d/covers/list@2x.jpg?%d", map->getSetID(),
+                                   map->getID());
         strncpy(&activity->assets.large_image[0], url.toUtf8(), 127);
 
         if(BanchoState::server_icon_url.length() > 0 && cv::main_menu_use_server_logo.getBool()) {

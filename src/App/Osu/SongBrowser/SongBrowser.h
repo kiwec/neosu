@@ -74,7 +74,7 @@ class SongBrowser final : public ScreenBackable {
     void onPlayEnd(bool quit = true);  // called when a beatmap is finished playing (or the player quit)
 
     void onSelectionChange(CarouselButton *button, bool rebuild);
-    void onDifficultySelected(DatabaseBeatmap *diff2, bool play = false);
+    void onDifficultySelected(DatabaseBeatmap *map, bool play = false);
 
     void onScoreContextMenu(ScoreButton *scoreButton, int id);
     void onSongButtonContextMenu(SongButton *songButton, const UString &text, int id);
@@ -239,7 +239,7 @@ class SongBrowser final : public ScreenBackable {
     CollectionButton *selectionPreviousCollectionButton;
 
     // beatmap database
-    std::vector<DatabaseBeatmap *> beatmaps;
+    std::vector<DatabaseBeatmap *> beatmapsets;
     std::vector<SongButton *> songButtons;
     std::vector<CarouselButton *> visibleSongButtons;
     std::vector<CollectionButton *> collectionButtons;

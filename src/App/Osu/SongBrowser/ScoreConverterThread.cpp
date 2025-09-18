@@ -26,18 +26,17 @@ static std::vector<DifficultyCalculator::DiffObject> diffObjects;
 static void update_ppv2(const FinishedScore& score) {
     if(score.ppv2_version >= DifficultyCalculator::PP_ALGORITHM_VERSION) return;
 
-    auto diff = db->getBeatmapDifficulty(score.beatmap_hash);
-    if(!diff) return;
+    auto map = db->getBeatmapDifficulty(score.beatmap_hash);
+    if(!map) return;
 
-    f32 AR = score.mods.get_naive_ar(diff);
-    f32 CS = score.mods.get_naive_cs(diff);
-    f32 OD = score.mods.get_naive_od(diff);
+    f32 AR = score.mods.get_naive_ar(map);
+    f32 CS = score.mods.get_naive_cs(map);
+    f32 OD = score.mods.get_naive_od(map);
     bool RX = ModMasks::eq(score.mods.flags, Replay::ModFlags::Relax);
     bool TD = ModMasks::eq(score.mods.flags, Replay::ModFlags::TouchDevice);
 
     // Load hitobjects
-    auto diffres =
-        DatabaseBeatmap::loadDifficultyHitObjects(diff->getFilePath(), AR, CS, score.mods.speed, false, dead);
+    auto diffres = DatabaseBeatmap::loadDifficultyHitObjects(map->getFilePath(), AR, CS, score.mods.speed, false, dead);
     if(dead.load()) return;
     if(diffres.errorCode) return;
 
@@ -70,8 +69,8 @@ static void update_ppv2(const FinishedScore& score) {
 
     info.pp = DifficultyCalculator::calculatePPv2(
         score.mods.to_legacy(), score.mods.speed, AR, OD, info.aim_stars, info.aim_slider_factor,
-        info.difficult_aim_strains, info.speed_stars, info.speed_notes, info.difficult_speed_strains, diff->iNumCircles,
-        diff->iNumSliders, diff->iNumSpinners, diffres.maxPossibleCombo, score.comboMax, score.numMisses, score.num300s,
+        info.difficult_aim_strains, info.speed_stars, info.speed_notes, info.difficult_speed_strains, map->iNumCircles,
+        map->iNumSliders, map->iNumSpinners, diffres.maxPossibleCombo, score.comboMax, score.numMisses, score.num300s,
         score.num100s, score.num50s);
 
     // Update score
@@ -159,10 +158,10 @@ static void run_sct(const std::unordered_map<MD5Hash, std::vector<FinishedScore>
             }
         }
 
-        auto diff = db->getBeatmapDifficulty(score.beatmap_hash);
-        SimulatedPlayfield smap(diff, score.mods);
+        auto map = db->getBeatmapDifficulty(score.beatmap_hash);
+        SimulatedPlayfield smap(map, score.mods);
         smap.spectated_replay = score.replay;
-        smap.simulate_to(diff->getLengthMS());
+        smap.simulate_to(map->getLengthMS());
 
         if(score.comboMax != smap.live_score.getComboMax())
             debugLog("Score {:d}: comboMax was {:d}, simulated {:d}\n", idx, score.comboMax,

@@ -40,18 +40,18 @@ void crop_to(const UString& str, char* output, int max_len) {
 }
 
 // output is assumed to be a char[128] string
-void diff2str(DatabaseBeatmap* diff2, char* output, bool /*include_difficulty*/) {
-    if(diff2 == nullptr) {
+void mapstr(DatabaseBeatmap* map, char* output, bool /*include_difficulty*/) {
+    if(map == nullptr) {
         strcpy(output, "No map selected");
         return;
     }
 
     UString playingInfo;
-    playingInfo.append(diff2->getArtist().c_str());
+    playingInfo.append(map->getArtist().c_str());
     playingInfo.append(" - ");
-    playingInfo.append(diff2->getTitle().c_str());
+    playingInfo.append(map->getTitle().c_str());
 
-    auto diffStr = UString::format(" [%s]", diff2->getDifficultyName().c_str());
+    auto diffStr = UString::format(" [%s]", map->getDifficultyName().c_str());
     if(playingInfo.lengthUtf8() + diffStr.lengthUtf8() < 128) {
         playingInfo.append(diffStr);
     }
@@ -65,10 +65,10 @@ void RichPresence::setBanchoStatus(const char* info_text, Action action) {
     MD5Hash map_md5("");
     i32 map_id = 0;
 
-    auto diff = osu->playfield->getSelectedDifficulty2();
-    if(diff != nullptr) {
-        map_md5 = diff->getMD5Hash();
-        map_id = diff->getID();
+    auto map = osu->playfield->beatmap;
+    if(map != nullptr) {
+        map_md5 = map->getMD5Hash();
+        map_id = map->getID();
     }
 
     char fancy_text[1024] = {0};
@@ -92,7 +92,7 @@ void RichPresence::updateBanchoMods() {
     MD5Hash map_md5("");
     i32 map_id = 0;
 
-    auto diff = osu->playfield->getSelectedDifficulty2();
+    auto diff = osu->playfield->beatmap;
     if(diff != nullptr) {
         map_md5 = diff->getMD5Hash();
         map_id = diff->getID();
@@ -123,11 +123,11 @@ void RichPresence::onMainMenu() {
 
     activity.type = DiscordActivityType_Listening;
 
-    auto diff2 = osu->playfield->getSelectedDifficulty2();
+    auto map = osu->playfield->beatmap;
     auto music = osu->playfield->getMusic();
-    bool listening = diff2 != nullptr && music != nullptr && music->isPlaying();
+    bool listening = map != nullptr && music != nullptr && music->isPlaying();
     if(listening) {
-        diff2str(diff2, activity.details, false);
+        mapstr(map, activity.details, false);
     }
 
     strcpy(activity.state, "Main menu");
@@ -159,12 +159,12 @@ void RichPresence::onSongBrowser() {
 }
 
 void RichPresence::onPlayStart() {
-    auto diff2 = osu->playfield->getSelectedDifficulty2();
+    auto map = osu->playfield->beatmap;
 
     static DatabaseBeatmap* last_diff = nullptr;
     static int64_t tms = 0;
-    if(tms == 0 || last_diff != diff2) {
-        last_diff = diff2;
+    if(tms == 0 || last_diff != map) {
+        last_diff = map;
         tms = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch())
                   .count();
     }
@@ -175,7 +175,7 @@ void RichPresence::onPlayStart() {
     activity.timestamps.start = tms;
     activity.timestamps.end = 0;
 
-    diff2str(diff2, activity.details, true);
+    mapstr(map, activity.details, true);
 
     if(BanchoState::is_in_a_multi_room()) {
         setBanchoStatus(activity.details, MULTIPLAYER);

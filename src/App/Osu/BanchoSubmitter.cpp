@@ -96,7 +96,7 @@ void submit_score(FinishedScore score) {
 
     {
         std::string score_data;
-        score_data.append(score.diff2->getMD5Hash().hash.data());
+        score_data.append(score.map->getMD5Hash().hash.data());
 
         if(BanchoState::is_oauth) {
             score_data.append(":$token");
@@ -112,7 +112,7 @@ void submit_score(FinishedScore score) {
             auto idiot_check = fmt::format("chickenmcnuggets{}", score.num300s + score.num100s);
             idiot_check.append(fmt::format("o15{}{}", score.num50s, score.numGekis));
             idiot_check.append(fmt::format("smustard{}{}", score.numKatus, score.numMisses));
-            idiot_check.append(fmt::format("uu{}", score.diff2->getMD5Hash().hash.data()));
+            idiot_check.append(fmt::format("uu{}", score.map->getMD5Hash().hash.data()));
             idiot_check.append(fmt::format("{}{}", score.comboMax, score.perfect ? "True" : "False"));
 
             if(BanchoState::is_oauth) {

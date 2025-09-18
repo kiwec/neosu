@@ -661,7 +661,7 @@ void RoomScreen::on_room_updated(Room room) {
 
 void RoomScreen::on_match_started(Room room) {
     BanchoState::room = std::move(room);
-    if(osu->playfield->getSelectedDifficulty2() == nullptr) {
+    if(osu->playfield->beatmap == nullptr) {
         debugLog("We received MATCH_STARTED without being ready, wtf!\n");
         return;
     }
@@ -725,7 +725,7 @@ FinishedScore RoomScreen::get_approximate_score() {
     score.player_id = BanchoState::get_uid();
     score.playerName = BanchoState::get_username();
 
-    score.diff2 = osu->playfield->getSelectedDifficulty2();
+    score.map = osu->playfield->beatmap;
 
     for(auto &i : BanchoState::room.slots) {
         auto slot = &i;

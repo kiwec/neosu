@@ -345,16 +345,16 @@ void RankingScreen::mouse_update(bool *propagate_clicks) {
             osu->getTooltipOverlay()->addLine(UString::format("Speed: %.3gx", this->score.mods.speed));
             f32 AR = this->score.mods.ar_override;
             if(AR == -1.f) {
-                AR = GameRules::arWithSpeed(this->score.diff2->getAR(), this->score.mods.speed);
+                AR = GameRules::arWithSpeed(this->score.map->getAR(), this->score.mods.speed);
             }
             f32 OD = this->score.mods.od_override;
             if(OD == -1.f) {
-                OD = GameRules::odWithSpeed(this->score.diff2->getOD(), this->score.mods.speed);
+                OD = GameRules::odWithSpeed(this->score.map->getOD(), this->score.mods.speed);
             }
             f32 HP = this->score.mods.hp_override;
-            if(HP == -1.f) HP = this->score.diff2->getHP();
+            if(HP == -1.f) HP = this->score.map->getHP();
             f32 CS = this->score.mods.cs_override;
-            if(CS == -1.f) CS = this->score.diff2->getCS();
+            if(CS == -1.f) CS = this->score.map->getCS();
             osu->getTooltipOverlay()->addLine(UString::format("CS:%.2f AR:%.2f OD:%.2f HP:%.2f", CS, AR, OD, HP));
 
             if(this->sMods.length() > 0) osu->getTooltipOverlay()->addLine(this->sMods);
@@ -495,9 +495,9 @@ void RankingScreen::setScore(FinishedScore score) {
     if(eq(score.mods.flags, ApproachDifferent)) this->enabledExperimentalMods.push_back(&cv::mod_approach_different);
 }
 
-void RankingScreen::setBeatmapInfo(DatabaseBeatmap *diff2) {
-    this->score.diff2 = diff2;
-    this->songInfo->setFromBeatmap(diff2);
+void RankingScreen::setBeatmapInfo(DatabaseBeatmap *map) {
+    this->score.map = map;
+    this->songInfo->setFromBeatmap(map);
 
     const std::string scorePlayer =
         this->score.playerName.empty() ? BanchoState::get_username() : this->score.playerName;

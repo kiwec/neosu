@@ -24,7 +24,7 @@ class MapCalcThread {
     }
 
     struct mct_result {
-        DatabaseBeatmap* diff2{};
+        DatabaseBeatmap* map{};
         u32 nb_circles{};
         u32 nb_sliders{};
         u32 nb_spinners{};

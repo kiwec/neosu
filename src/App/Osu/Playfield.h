@@ -100,7 +100,7 @@ class Playfield : public PlayfieldInterface {
 
     // loads the music of the currently selected diff and starts playing from the previewTime (e.g. clicking on a beatmap)
     void selectBeatmap();
-    void selectBeatmap(DatabaseBeatmap *difficulty2);
+    void selectBeatmap(DatabaseBeatmap *map);
 
     // stops + unloads the currently loaded music and deletes all hitobjects
     void deselectBeatmap();
@@ -185,9 +185,6 @@ class Playfield : public PlayfieldInterface {
     [[nodiscard]] inline f64 getHealth() const { return this->fHealth; }
     [[nodiscard]] inline bool hasFailed() const { return this->bFailed; }
 
-    // database (legacy)
-    [[nodiscard]] inline DatabaseBeatmap *getSelectedDifficulty2() const { return this->selectedDifficulty2; }
-
     // generic state
     [[nodiscard]] inline bool isPlaying() const override { return this->bIsPlaying; }
     [[nodiscard]] inline bool isPaused() const override { return this->bIsPaused; }
@@ -225,6 +222,7 @@ class Playfield : public PlayfieldInterface {
     [[nodiscard]] inline const std::vector<HitObject *> &getHitObjectsPointer() const { return this->hitobjects; }
     [[nodiscard]] inline f32 getBreakBackgroundFadeAnim() const { return this->fBreakBackgroundFade; }
 
+    DatabaseBeatmap *beatmap{nullptr};
     Sound *music;
 
     // live pp/stars
@@ -263,9 +261,6 @@ class Playfield : public PlayfieldInterface {
     bool bContinueScheduled;
     u32 iContinueMusicPos;
     f32 fWaitTime = 0.f;
-
-    // database
-    DatabaseBeatmap *selectedDifficulty2;
 
     // sound
     f32 fMusicFrequencyBackup;

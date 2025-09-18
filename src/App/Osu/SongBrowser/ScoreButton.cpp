@@ -641,11 +641,11 @@ void ScoreButton::onDeleteScoreConfirmed(const UString & /*text*/, int id) {
     osu->userStats->rebuildScoreButtons();
 }
 
-void ScoreButton::setScore(const FinishedScore &score, DatabaseBeatmap *diff2, int index, const UString &titleString,
+void ScoreButton::setScore(const FinishedScore &score, DatabaseBeatmap *map, int index, const UString &titleString,
                            float weight) {
     this->score = score;
-    this->score.beatmap_hash = diff2->getMD5Hash();
-    this->score.diff2 = diff2;
+    this->score.beatmap_hash = map->getMD5Hash();
+    this->score.map = map;
     // debugLog(
     //     "score.beatmap_hash {} this->beatmap_hash {} score.has_possible_replay {} this->has_possible_replay {} "
     //     "score.playername {} this->playername {}\n",
@@ -693,9 +693,9 @@ void ScoreButton::setScore(const FinishedScore &score, DatabaseBeatmap *diff2, i
         UString::format((score.perfect ? "PFC %.2f%%" : (fullCombo ? "FC %.2f%%" : "%.2f%%")), accuracy);
     this->sScoreMods = getModsStringForDisplay(score.mods);
     this->sCustom = (score.mods.speed != 1.0f ? UString::format("Spd: %gx", score.mods.speed) : UString(""));
-    if(diff2 != nullptr) {
+    if(map != nullptr) {
         const LegacyReplay::BEATMAP_VALUES beatmapValuesForModsLegacy = LegacyReplay::getBeatmapValuesForModsLegacy(
-            score.mods.to_legacy(), diff2->getAR(), diff2->getCS(), diff2->getOD(), diff2->getHP());
+            score.mods.to_legacy(), map->getAR(), map->getCS(), map->getOD(), map->getHP());
         if(AR == -1.f) AR = beatmapValuesForModsLegacy.AR;
         if(OD == -1.f) OD = beatmapValuesForModsLegacy.OD;
         if(HP == -1.f) HP = beatmapValuesForModsLegacy.HP;

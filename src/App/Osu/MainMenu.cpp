@@ -542,18 +542,18 @@ std::pair<bool, float> MainMenu::getTimingpointPulseAmount() {
         return {false, pulse};
     }
 
-    const auto &diff2 = selectedMap->getSelectedDifficulty2();
-    if(!diff2) {
+    const auto &map = selectedMap->beatmap;
+    if(!map) {
         return {false, pulse};
     }
 
     // playing music, get dynamic pulse amount
     const long curMusicPos = (long)music->getPositionMS() +
                              (long)(cv::universal_offset.getFloat() * selectedMap->getSpeedMultiplier()) +
-                             music->getBASSStreamLatencyCompensation() - diff2->getLocalOffset() - diff2->getOnlineOffset() -
-                             (diff2->getVersion() < 5 ? cv::old_beatmap_offset.getInt() : 0);
+                             music->getBASSStreamLatencyCompensation() - map->getLocalOffset() - map->getOnlineOffset() -
+                             (map->getVersion() < 5 ? cv::old_beatmap_offset.getInt() : 0);
 
-    DatabaseBeatmap::TIMING_INFO t = diff2->getTimingInfoForTime(curMusicPos);
+    DatabaseBeatmap::TIMING_INFO t = map->getTimingInfoForTime(curMusicPos);
 
     if(t.beatLengthBase == 0.0f)  // bah
         t.beatLengthBase = 1.0f;
@@ -795,11 +795,11 @@ void MainMenu::draw() {
     float alpha = 1.0f;
     if(cv::songbrowser_background_fade_in_duration.getFloat() > 0.0f) {
         // handle fadein trigger after handler is finished loading
-        const bool ready = osu->playfield->getSelectedDifficulty2() != nullptr &&
+        const bool ready = osu->playfield->beatmap != nullptr &&
                            osu->getBackgroundImageHandler()->getLoadBackgroundImage(
-                               osu->playfield->getSelectedDifficulty2()) != nullptr &&
+                               osu->playfield->beatmap) != nullptr &&
                            osu->getBackgroundImageHandler()
-                               ->getLoadBackgroundImage(osu->playfield->getSelectedDifficulty2())
+                               ->getLoadBackgroundImage(osu->playfield->beatmap)
                                ->isReady();
 
         if(!ready)
@@ -1051,9 +1051,9 @@ void MainMenu::mouse_update(bool *propagate_clicks) {
 
                 // load timing points if needed
                 // XXX: file io, don't block main thread
-                auto *diff2 = osu->playfield->getSelectedDifficulty2();
-                if(diff2 && diff2->getTimingpoints().empty()) {
-                    diff2->loadMetadata(false);
+                auto *map = osu->playfield->beatmap;
+                if(map && map->getTimingpoints().empty()) {
+                    map->loadMetadata(false);
                 }
             }
         }
@@ -1086,7 +1086,7 @@ void MainMenu::mouse_update(bool *propagate_clicks) {
 
 void MainMenu::selectRandomBeatmap() {
     auto sb = osu->getSongBrowser();
-    if(db->isFinished() && !sb->beatmaps.empty()) {
+    if(db->isFinished() && !sb->beatmapsets.empty()) {
         sb->selectRandomBeatmap();
         RichPresence::onMainMenu();
     } else {

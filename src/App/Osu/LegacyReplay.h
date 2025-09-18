@@ -37,7 +37,7 @@ struct BEATMAP_VALUES {
 struct Info {
     u8 gamemode;
     u32 osu_version;
-    UString diff2_md5;
+    UString map_md5;
     UString username;
     UString replay_md5;
     int num300s;

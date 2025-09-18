@@ -43,12 +43,12 @@ u32 Mods::to_legacy() const {
     return legacy_flags;
 }
 
-f32 Mods::get_naive_ar(DatabaseBeatmap *diff2) const {
+f32 Mods::get_naive_ar(DatabaseBeatmap *map) const {
     float ARdifficultyMultiplier = 1.0f;
     if((ModMasks::eq(this->flags, ModFlags::HardRock))) ARdifficultyMultiplier = 1.4f;
     if((ModMasks::eq(this->flags, ModFlags::Easy))) ARdifficultyMultiplier = 0.5f;
 
-    f32 AR = std::clamp<f32>(diff2->getAR() * ARdifficultyMultiplier, 0.0f, 10.0f);
+    f32 AR = std::clamp<f32>(map->getAR() * ARdifficultyMultiplier, 0.0f, 10.0f);
     if(this->ar_override >= 0.0f) AR = this->ar_override;
     if(this->ar_overridenegative < 0.0f) AR = this->ar_overridenegative;
 
@@ -59,24 +59,24 @@ f32 Mods::get_naive_ar(DatabaseBeatmap *diff2) const {
     return AR;
 }
 
-f32 Mods::get_naive_cs(DatabaseBeatmap *diff2) const {
+f32 Mods::get_naive_cs(DatabaseBeatmap *map) const {
     float CSdifficultyMultiplier = 1.0f;
     if((ModMasks::eq(this->flags, ModFlags::HardRock))) CSdifficultyMultiplier = 1.3f;  // different!
     if((ModMasks::eq(this->flags, ModFlags::Easy))) CSdifficultyMultiplier = 0.5f;
 
-    f32 CS = std::clamp<f32>(diff2->getCS() * CSdifficultyMultiplier, 0.0f, 10.0f);
+    f32 CS = std::clamp<f32>(map->getCS() * CSdifficultyMultiplier, 0.0f, 10.0f);
     if(this->cs_override >= 0.0f) CS = this->cs_override;
     if(this->cs_overridenegative < 0.0f) CS = this->cs_overridenegative;
 
     return CS;
 }
 
-f32 Mods::get_naive_od(DatabaseBeatmap *diff2) const {
+f32 Mods::get_naive_od(DatabaseBeatmap *map) const {
     float ODdifficultyMultiplier = 1.0f;
     if((ModMasks::eq(this->flags, ModFlags::HardRock))) ODdifficultyMultiplier = 1.4f;
     if((ModMasks::eq(this->flags, ModFlags::Easy))) ODdifficultyMultiplier = 0.5f;
 
-    f32 OD = std::clamp<f32>(diff2->getOD() * ODdifficultyMultiplier, 0.0f, 10.0f);
+    f32 OD = std::clamp<f32>(map->getOD() * ODdifficultyMultiplier, 0.0f, 10.0f);
     if(this->od_override >= 0.0f) OD = this->od_override;
 
     if(ModMasks::eq(this->flags, ModFlags::ODOverrideLock)) {

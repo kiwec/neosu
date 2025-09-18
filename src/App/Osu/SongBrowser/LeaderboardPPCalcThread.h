@@ -21,7 +21,7 @@ struct pp_calc_request {
 };
 
 // Set currently selected map. Clears pp cache. Pass NULL to init/reset.
-void lct_set_map(DatabaseBeatmap* diff2);
+void lct_set_map(DatabaseBeatmap* map);
 
 // Get pp for given parameters. Returns -1 pp values if not computed yet.
 pp_info lct_get_pp(pp_calc_request rqt);

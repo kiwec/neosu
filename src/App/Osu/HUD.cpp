@@ -93,13 +93,13 @@ void HUD::draw() {
                                     (1.0f / (cv::hud_scale.getFloat() * cv::hud_statistics_scale.getFloat())));
             }
 
-            auto diff2 = pf->getSelectedDifficulty2();
+            auto map = pf->beatmap;
             this->drawStatistics(
                 osu->getScore()->getNumMisses(), osu->getScore()->getNumSliderBreaks(), pf->iMaxPossibleCombo,
-                this->live_stars, diff2->pp.total_stars, pf->getMostCommonBPM(),
+                this->live_stars, map->pp.total_stars, pf->getMostCommonBPM(),
                 pf->getApproachRateForSpeedMultiplier(), pf->getCS(),
                 pf->getOverallDifficultyForSpeedMultiplier(), pf->getHP(), pf->getNPS(),
-                pf->getND(), osu->getScore()->getUnstableRate(), this->live_pp, diff2->pp.pp,
+                pf->getND(), osu->getScore()->getUnstableRate(), this->live_pp, map->pp.pp,
                 ((int)pf->getHitWindow300() - 0.5f) *
                     (1.0f / pf->getSpeedMultiplier()),  // see InfoLabel::update()
                 osu->getScore()->getHitErrorAvgCustomMin(), osu->getScore()->getHitErrorAvgCustomMax());
@@ -1332,10 +1332,10 @@ std::vector<SCORE_ENTRY> HUD::getCurrentScores() {
 }
 
 void HUD::resetScoreboard() {
-    DatabaseBeatmap *diff2 = osu->playfield->getSelectedDifficulty2();
-    if(diff2 == nullptr) return;
+    DatabaseBeatmap *map = osu->playfield->beatmap;
+    if(map == nullptr) return;
 
-    this->beatmap_md5 = diff2->getMD5Hash();
+    this->beatmap_md5 = map->getMD5Hash();
     this->player_slot = nullptr;
     for(auto slot : this->slots) {
         delete slot;
@@ -1358,8 +1358,8 @@ void HUD::resetScoreboard() {
 }
 
 void HUD::updateScoreboard(bool animate) {
-    DatabaseBeatmap *diff2 = osu->playfield->getSelectedDifficulty2();
-    if(diff2 == nullptr) return;
+    DatabaseBeatmap *map = osu->playfield->beatmap;
+    if(map == nullptr) return;
 
     if(!cv::scoreboard_animations.getBool()) {
         animate = false;

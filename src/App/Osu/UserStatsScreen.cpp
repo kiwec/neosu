@@ -92,22 +92,22 @@ void UserStatsScreen::rebuildScoreButtons() {
         if(i >= cv::ui_top_ranks_max.getInt()) break;
         const float weight = Database::getWeightForIndex(i);
 
-        DatabaseBeatmap *diff = db->getBeatmapDifficulty(score->beatmap_hash);
-        if(!diff) continue;
+        DatabaseBeatmap *map = db->getBeatmapDifficulty(score->beatmap_hash);
+        if(!map) continue;
 
         UString title = "...";
-        if(diff != nullptr) {
-            title = diff->getArtist().c_str();
+        if(map != nullptr) {
+            title = map->getArtist().c_str();
             title.append(" - ");
-            title.append(diff->getTitle().c_str());
+            title.append(map->getTitle().c_str());
             title.append(" [");
-            title.append(diff->getDifficultyName().c_str());
+            title.append(map->getDifficultyName().c_str());
             title.append("]");
         }
 
         auto *button = new ScoreButton(this->m_contextMenu.get(), 0, 0, 300, 100, ScoreButton::STYLE::TOP_RANKS);
         button->map_hash = score->beatmap_hash;
-        button->setScore(*score, diff, ++i, title, weight);
+        button->setScore(*score, map, ++i, title, weight);
         button->setClickCallback([](CBaseUIButton *button) {
             auto score = ((ScoreButton *)button)->getScore();
             auto song_button = (CarouselButton *)osu->getSongBrowser()->hashToSongButton[score.beatmap_hash];

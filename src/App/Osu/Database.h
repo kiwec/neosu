@@ -92,10 +92,10 @@ class Database {
     inline bool isFinished() const { return (this->getProgress() >= 1.0f); }
     inline bool foundChanges() const { return this->bFoundChanges; }
 
-    inline const std::vector<DatabaseBeatmap *> &getDatabaseBeatmaps() const { return this->beatmapsets; }
     DatabaseBeatmap *getBeatmapDifficulty(const MD5Hash &md5hash);
     DatabaseBeatmap *getBeatmapDifficulty(i32 map_id);
     DatabaseBeatmap *getBeatmapSet(i32 set_id);
+    inline const std::vector<DatabaseBeatmap *> &getBeatmapSets() const { return this->beatmapsets; }
 
     inline std::unordered_map<MD5Hash, std::vector<FinishedScore>> *getScores() { return &this->scores; }
     inline const std::array<SCORE_SORTING_METHOD, 6> &getScoreSortingMethods() const {

@@ -263,12 +263,12 @@ void Lobby::on_create_room_clicked() {
     BanchoState::room.slots[0].status = 4;  // not ready
     BanchoState::room.slots[0].player_id = BanchoState::get_uid();
 
-    if(osu->playfield && osu->playfield->getSelectedDifficulty2()) {
-        auto diff2 = osu->playfield->getSelectedDifficulty2();
-        BanchoState::room.map_name = UString::format("%s - %s [%s]", diff2->getArtist().c_str(),
-                                                     diff2->getTitle().c_str(), diff2->getDifficultyName().c_str());
-        BanchoState::room.map_md5 = diff2->getMD5Hash();
-        BanchoState::room.map_id = diff2->getID();
+    if(osu->playfield && osu->playfield->beatmap) {
+        auto map = osu->playfield->beatmap;
+        BanchoState::room.map_name = UString::format("%s - %s [%s]", map->getArtist().c_str(),
+                                                     map->getTitle().c_str(), map->getDifficultyName().c_str());
+        BanchoState::room.map_md5 = map->getMD5Hash();
+        BanchoState::room.map_id = map->getID();
     }
 
     Packet packet = {0};

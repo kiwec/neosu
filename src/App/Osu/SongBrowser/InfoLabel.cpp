@@ -220,7 +220,7 @@ void InfoLabel::mouse_update(bool *propagate_clicks) {
         const float hitobjectRadiusRoundedCompensated =
             (GameRules::getRawHitCircleDiameter(pf->getCS()) / 2.0f);
 
-        const auto &bmDiff2{pf->getSelectedDifficulty2()};
+        const auto &bmDiff2{pf->beatmap};
         const auto &tooltipOverlay{osu->getTooltipOverlay()};
         tooltipOverlay->begin();
         {
@@ -269,26 +269,26 @@ void InfoLabel::mouse_update(bool *propagate_clicks) {
     }
 }
 
-void InfoLabel::setFromBeatmap(DatabaseBeatmap *diff2) {
-    this->iBeatmapId = diff2->getID();
+void InfoLabel::setFromBeatmap(DatabaseBeatmap *map) {
+    this->iBeatmapId = map->getID();
 
-    this->setArtist(diff2->getArtist());
-    this->setTitle(diff2->getTitle());
-    this->setDiff(diff2->getDifficultyName());
-    this->setMapper(diff2->getCreator());
+    this->setArtist(map->getArtist());
+    this->setTitle(map->getTitle());
+    this->setDiff(map->getDifficultyName());
+    this->setMapper(map->getCreator());
 
-    this->setLengthMS(diff2->getLengthMS());
-    this->setBPM(diff2->getMinBPM(), diff2->getMaxBPM(), diff2->getMostCommonBPM());
-    this->setNumObjects(diff2->getNumObjects());
+    this->setLengthMS(map->getLengthMS());
+    this->setBPM(map->getMinBPM(), map->getMaxBPM(), map->getMostCommonBPM());
+    this->setNumObjects(map->getNumObjects());
 
-    this->setCS(diff2->getCS());
-    this->setAR(diff2->getAR());
-    this->setOD(diff2->getOD());
-    this->setHP(diff2->getHP());
-    this->setStars(diff2->getStarsNomod());
+    this->setCS(map->getCS());
+    this->setAR(map->getAR());
+    this->setOD(map->getOD());
+    this->setHP(map->getHP());
+    this->setStars(map->getStarsNomod());
 
-    this->setLocalOffset(diff2->getLocalOffset());
-    this->setOnlineOffset(diff2->getOnlineOffset());
+    this->setLocalOffset(map->getLocalOffset());
+    this->setOnlineOffset(map->getOnlineOffset());
 }
 
 UString InfoLabel::buildSongInfoString() {
@@ -314,8 +314,8 @@ UString InfoLabel::buildSongInfoString() {
 
 UString InfoLabel::buildDiffInfoString() {
     auto *pf = osu->playfield;
-    auto diff2 = pf->getSelectedDifficulty2();
-    if(!diff2) return "";
+    auto map = pf->beatmap;
+    if(!map) return "";
 
     bool pp_available = false;
     float CS = this->fCS;
@@ -328,20 +328,20 @@ UString InfoLabel::buildDiffInfoString() {
 
     // pp calc for currently selected mods
     {
-        lct_set_map(diff2);
+        lct_set_map(map);
 
         auto mods = osu->getScore()->mods;
         pp_calc_request request;
         request.mods_legacy = mods.to_legacy();
         request.speed = mods.speed;
-        request.AR = mods.get_naive_ar(diff2);
-        request.CS = mods.get_naive_cs(diff2);
-        request.OD = mods.get_naive_od(diff2);
+        request.AR = mods.get_naive_ar(map);
+        request.CS = mods.get_naive_cs(map);
+        request.OD = mods.get_naive_od(map);
         request.rx = ModMasks::eq(mods.flags, Replay::ModFlags::Relax);
         request.td = ModMasks::eq(mods.flags, Replay::ModFlags::TouchDevice);
         request.comboMax = -1;
         request.numMisses = 0;
-        request.num300s = diff2->getNumObjects();
+        request.num300s = map->getNumObjects();
         request.num100s = 0;
         request.num50s = 0;
 

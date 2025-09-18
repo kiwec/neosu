@@ -16,8 +16,8 @@
 #include "Mouse.h"
 #include "ResourceManager.h"
 
-SimulatedPlayfield::SimulatedPlayfield(DatabaseBeatmap *diff2, Replay::Mods mods_) {
-    this->selectedDifficulty2 = diff2;
+SimulatedPlayfield::SimulatedPlayfield(DatabaseBeatmap *map, Replay::Mods mods_) {
+    this->beatmap = map;
     this->mods = mods_;
     this->live_score.mods = mods_;
     this->mod_halfwindow = !!(ModMasks::eq(this->mods.flags, Replay::ModFlags::HalfWindow));
@@ -26,7 +26,7 @@ SimulatedPlayfield::SimulatedPlayfield(DatabaseBeatmap *diff2, Replay::Mods mods
     this->mod_no100s = !!(ModMasks::eq(this->mods.flags, Replay::ModFlags::No100s));
     this->mod_no50s = !!(ModMasks::eq(this->mods.flags, Replay::ModFlags::No50s));
 
-    this->nb_hitobjects = diff2->getNumObjects();
+    this->nb_hitobjects = map->getNumObjects();
 
     this->iNPS = 0;
     this->iND = 0;
@@ -116,7 +116,7 @@ bool SimulatedPlayfield::start() {
     this->updateHitobjectMetrics();
 
     // actually load the difficulty (and the hitobjects)
-    DatabaseBeatmap::LOAD_GAMEPLAY_RESULT result = DatabaseBeatmap::loadGameplay(this->selectedDifficulty2, this);
+    DatabaseBeatmap::LOAD_GAMEPLAY_RESULT result = DatabaseBeatmap::loadGameplay(this->beatmap, this);
     if(result.errorCode != 0) {
         return false;
     }
@@ -153,8 +153,8 @@ u32 SimulatedPlayfield::getScoreV1DifficultyMultiplier_full() const {
     f32 drainLength =
         std::max(this->getLengthPlayable() - std::min(breakTimeMS, this->getLengthPlayable()), (u32)1000) / 1000;
     return std::round(
-        (this->selectedDifficulty2->getCS() + this->selectedDifficulty2->getHP() + this->selectedDifficulty2->getOD() +
-         std::clamp<f32>((f32)this->selectedDifficulty2->getNumObjects() / drainLength * 8.0f, 0.0f, 16.0f)) /
+        (this->beatmap->getCS() + this->beatmap->getHP() + this->beatmap->getOD() +
+         std::clamp<f32>((f32)this->beatmap->getNumObjects() / drainLength * 8.0f, 0.0f, 16.0f)) /
         38.0f * 5.0f);
 }
 
@@ -163,7 +163,7 @@ f32 SimulatedPlayfield::getCS_full() const {
     if((ModMasks::eq(this->mods.flags, Replay::ModFlags::HardRock))) CSdifficultyMultiplier = 1.3f;
     if((ModMasks::eq(this->mods.flags, Replay::ModFlags::Easy))) CSdifficultyMultiplier = 0.5f;
 
-    f32 CS = std::clamp<f32>(this->selectedDifficulty2->getCS() * CSdifficultyMultiplier, 0.0f, 10.0f);
+    f32 CS = std::clamp<f32>(this->beatmap->getCS() * CSdifficultyMultiplier, 0.0f, 10.0f);
 
     if(this->mods.cs_override >= 0.0f) CS = this->mods.cs_override;
     if(this->mods.cs_overridenegative < 0.0f) CS = this->mods.cs_overridenegative;
@@ -187,7 +187,7 @@ f32 SimulatedPlayfield::getHP_full() const {
     if((ModMasks::eq(this->mods.flags, Replay::ModFlags::HardRock))) HPdifficultyMultiplier = 1.4f;
     if((ModMasks::eq(this->mods.flags, Replay::ModFlags::Easy))) HPdifficultyMultiplier = 0.5f;
 
-    f32 HP = std::clamp<f32>(this->selectedDifficulty2->getHP() * HPdifficultyMultiplier, 0.0f, 10.0f);
+    f32 HP = std::clamp<f32>(this->beatmap->getHP() * HPdifficultyMultiplier, 0.0f, 10.0f);
     if(this->mods.hp_override >= 0.0f) HP = this->mods.hp_override;
 
     return HP;
@@ -198,7 +198,7 @@ f32 SimulatedPlayfield::getRawAR_full() const {
     if((ModMasks::eq(this->mods.flags, Replay::ModFlags::HardRock))) ARdifficultyMultiplier = 1.4f;
     if((ModMasks::eq(this->mods.flags, Replay::ModFlags::Easy))) ARdifficultyMultiplier = 0.5f;
 
-    return std::clamp<f32>(this->selectedDifficulty2->getAR() * ARdifficultyMultiplier, 0.0f, 10.0f);
+    return std::clamp<f32>(this->beatmap->getAR() * ARdifficultyMultiplier, 0.0f, 10.0f);
 }
 
 f32 SimulatedPlayfield::getAR_full() const {
@@ -231,7 +231,7 @@ f32 SimulatedPlayfield::getRawOD_full() const {
     if((ModMasks::eq(this->mods.flags, Replay::ModFlags::HardRock))) ODdifficultyMultiplier = 1.4f;
     if((ModMasks::eq(this->mods.flags, Replay::ModFlags::Easy))) ODdifficultyMultiplier = 0.5f;
 
-    return std::clamp<f32>(this->selectedDifficulty2->getOD() * ODdifficultyMultiplier, 0.0f, 10.0f);
+    return std::clamp<f32>(this->beatmap->getOD() * ODdifficultyMultiplier, 0.0f, 10.0f);
 }
 
 f32 SimulatedPlayfield::getOD_full() const {
@@ -249,7 +249,7 @@ bool SimulatedPlayfield::isKey1Down() const { return this->current_keys & (Legac
 bool SimulatedPlayfield::isKey2Down() const { return this->current_keys & (LegacyReplay::M2 | LegacyReplay::K2); }
 bool SimulatedPlayfield::isClickHeld() const { return this->isKey1Down() || this->isKey2Down(); }
 
-u32 SimulatedPlayfield::getLength() const { return this->selectedDifficulty2->getLengthMS(); }
+u32 SimulatedPlayfield::getLength() const { return this->beatmap->getLengthMS(); }
 
 u32 SimulatedPlayfield::getLengthPlayable() const {
     if(this->hitobjects.size() > 0)
@@ -697,7 +697,7 @@ void SimulatedPlayfield::update(f64 frame_time) {
         if(this->fDrainRate > 0.0) {
             if(!this->bInBreak) {
                 // special case: break drain edge cases
-                bool drainAfterLastHitobjectBeforeBreakStart = (this->selectedDifficulty2->getVersion() < 8);
+                bool drainAfterLastHitobjectBeforeBreakStart = (this->beatmap->getVersion() < 8);
 
                 const bool isBetweenHitobjectsAndBreak = (int)this->iPreviousHitObjectTime <= breakEvent.startTime &&
                                                          (int)this->iNextHitObjectTime >= breakEvent.endTime &&
@@ -907,9 +907,9 @@ void SimulatedPlayfield::calculateStacks() {
     const f32 approachTime =
         GameRules::mapDifficultyRange(this->getAR(), GameRules::getMinApproachTime(), GameRules::getMidApproachTime(),
                                       GameRules::getMaxApproachTime());
-    const f32 stackLeniency = this->selectedDifficulty2->getStackLeniency();
+    const f32 stackLeniency = this->beatmap->getStackLeniency();
 
-    if(this->selectedDifficulty2->getVersion() > 5) {
+    if(this->beatmap->getVersion() > 5) {
         // peppy's algorithm
         // https://gist.github.com/peppy/1167470
 
@@ -1091,7 +1091,7 @@ void SimulatedPlayfield::computeDrainRate() {
         TestPlayer testPlayer(200.f);
 
         const f64 HP = this->getHP();
-        const int version = this->selectedDifficulty2->getVersion();
+        const int version = this->beatmap->getVersion();
 
         f64 testDrop = 0.05;
 

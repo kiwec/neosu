@@ -33,7 +33,7 @@ class RankingScreen : public ScreenBackable {
     void onWatchClicked();
 
     void setScore(FinishedScore score);
-    void setBeatmapInfo(DatabaseBeatmap *diff2);
+    void setBeatmapInfo(DatabaseBeatmap *map);
 
    private:
     void updateLayout() override;

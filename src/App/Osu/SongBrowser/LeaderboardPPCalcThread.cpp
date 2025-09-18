@@ -34,7 +34,7 @@ struct info_cache {
     pp_info info{};
 };
 
-static BeatmapDifficulty* diff = nullptr;
+static BeatmapDifficulty* map = nullptr;
 
 static std::condition_variable cond;
 static std::thread thr;
@@ -127,7 +127,7 @@ static void run_thread() {
                     return;
                 }
                 computed_ho->diffres =
-                    DatabaseBeatmap::loadDifficultyHitObjects(diff->getFilePath(), rqt.AR, rqt.CS, rqt.speed, false, dead);
+                    DatabaseBeatmap::loadDifficultyHitObjects(map->getFilePath(), rqt.AR, rqt.CS, rqt.speed, false, dead);
                 if(dead.load()) {
                     work_mtx.lock();
                     return;
@@ -207,8 +207,8 @@ static void run_thread() {
                 rqt.mods_legacy, rqt.speed, rqt.AR, rqt.OD, computed_info->info.aim_stars,
                 computed_info->info.aim_slider_factor, computed_info->info.difficult_aim_strains,
                 computed_info->info.speed_stars, computed_info->info.speed_notes,
-                computed_info->info.difficult_speed_strains, diff->iNumCircles, diff->iNumSliders,
-                diff->iNumSpinners, computed_ho->diffres.maxPossibleCombo, rqt.comboMax, rqt.numMisses, rqt.num300s,
+                computed_info->info.difficult_speed_strains, map->iNumCircles, map->iNumSliders,
+                map->iNumSpinners, computed_ho->diffres.maxPossibleCombo, rqt.comboMax, rqt.numMisses, rqt.num300s,
                 rqt.num100s, rqt.num50s);
 
             cache_mtx.lock();
@@ -220,10 +220,10 @@ static void run_thread() {
     }
 }
 
-void lct_set_map(DatabaseBeatmap* new_diff) {
-    if(diff == new_diff) return;
+void lct_set_map(DatabaseBeatmap* new_map) {
+    if(map == new_map) return;
 
-    if(diff != nullptr) {
+    if(map != nullptr) {
         dead = true;
         cond.notify_one();
         thr.join();
@@ -242,8 +242,8 @@ void lct_set_map(DatabaseBeatmap* new_diff) {
         dead = false;
     }
 
-    diff = new_diff;
-    if(new_diff != nullptr) {
+    map = new_map;
+    if(new_map != nullptr) {
         thr = std::thread(run_thread);
     }
 }

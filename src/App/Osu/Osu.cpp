@@ -903,7 +903,7 @@ void Osu::onKeyDown(KeyboardEvent &key) {
     }
 
     if(key == (KEYCODE)cv::TOGGLE_MAP_BACKGROUND.getInt()) {
-        auto diff = this->playfield->getSelectedDifficulty2();
+        auto diff = this->playfield->beatmap;
         if(!diff) {
             this->notificationOverlay->addNotification("No beatmap is currently selected.");
         } else {
@@ -967,7 +967,7 @@ void Osu::onKeyDown(KeyboardEvent &key) {
                 if(!this->playfield->is_watching && !BanchoState::spectating) {
                     FinishedScore score;
                     score.replay = this->playfield->live_replay;
-                    score.beatmap_hash = this->playfield->getSelectedDifficulty2()->getMD5Hash();
+                    score.beatmap_hash = this->playfield->beatmap->getMD5Hash();
                     score.mods = this->getScore()->mods;
 
                     score.playerName = BanchoState::get_username();
@@ -1158,19 +1158,19 @@ void Osu::onKeyDown(KeyboardEvent &key) {
             // local offset
             if(key == (KEYCODE)cv::INCREASE_LOCAL_OFFSET.getInt()) {
                 long offsetAdd = keyboard->isAltDown() ? 1 : 5;
-                this->playfield->getSelectedDifficulty2()->setLocalOffset(
-                    this->playfield->getSelectedDifficulty2()->getLocalOffset() + offsetAdd);
+                this->playfield->beatmap->setLocalOffset(
+                    this->playfield->beatmap->getLocalOffset() + offsetAdd);
                 this->notificationOverlay->addNotification(
                     UString::format("Local beatmap offset set to %ld ms",
-                                    this->playfield->getSelectedDifficulty2()->getLocalOffset()));
+                                    this->playfield->beatmap->getLocalOffset()));
             }
             if(key == (KEYCODE)cv::DECREASE_LOCAL_OFFSET.getInt()) {
                 long offsetAdd = -(keyboard->isAltDown() ? 1 : 5);
-                this->playfield->getSelectedDifficulty2()->setLocalOffset(
-                    this->playfield->getSelectedDifficulty2()->getLocalOffset() + offsetAdd);
+                this->playfield->beatmap->setLocalOffset(
+                    this->playfield->beatmap->getLocalOffset() + offsetAdd);
                 this->notificationOverlay->addNotification(
                     UString::format("Local beatmap offset set to %ld ms",
-                                    this->playfield->getSelectedDifficulty2()->getLocalOffset()));
+                                    this->playfield->beatmap->getLocalOffset()));
             }
         }
     }
@@ -1297,12 +1297,12 @@ void Osu::toggleSongBrowser() {
 
     if(BanchoState::is_in_a_multi_room()) {
         // We didn't select a map; revert to previously selected one
-        auto diff2 = this->songBrowser2->lastSelectedBeatmap;
-        if(diff2 != nullptr) {
-            BanchoState::room.map_name = UString::format("%s - %s [%s]", diff2->getArtist().c_str(),
-                                                         diff2->getTitle().c_str(), diff2->getDifficultyName().c_str());
-            BanchoState::room.map_md5 = diff2->getMD5Hash();
-            BanchoState::room.map_id = diff2->getID();
+        auto map = this->songBrowser2->lastSelectedBeatmap;
+        if(map != nullptr) {
+            BanchoState::room.map_name = UString::format("%s - %s [%s]", map->getArtist().c_str(),
+                                                         map->getTitle().c_str(), map->getDifficultyName().c_str());
+            BanchoState::room.map_md5 = map->getMD5Hash();
+            BanchoState::room.map_id = map->getID();
 
             Packet packet;
             packet.id = MATCH_CHANGE_SETTINGS;
@@ -1400,7 +1400,7 @@ void Osu::onPlayEnd(FinishedScore score, bool quit, bool /*aborted*/) {
         if(!cv::mod_endless.getBool()) {
             // NOTE: the order of these two calls matters
             this->rankingScreen->setScore(std::move(score));
-            this->rankingScreen->setBeatmapInfo(this->playfield->getSelectedDifficulty2());
+            this->rankingScreen->setBeatmapInfo(this->playfield->beatmap);
 
             soundEngine->play(this->skin->getApplause());
         } else {

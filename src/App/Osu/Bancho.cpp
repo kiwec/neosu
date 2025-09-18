@@ -734,15 +734,15 @@ void BanchoState::handle_packet(Packet *packet) {
             auto md5 = proto::read_hash(packet);
 
             // Load map (XXX: blocking)
-            auto diff = db->getBeatmapDifficulty(md5);
-            if(!diff) {
+            auto map = db->getBeatmapDifficulty(md5);
+            if(!map) {
                 // Incredibly rare, but this can happen if you enter song browser
                 // on a difficulty the server doesn't have, then instantly refresh.
                 debugLog("Server requested difficulty {} but we don't have it!\n", md5.hash.data());
                 break;
             }
 
-            auto osu_file = diff->getMapFile();
+            auto osu_file = map->getMapFile();
             auto md5_check = BanchoState::md5((u8*)osu_file.c_str(), osu_file.length());
             if(md5 != md5_check) {
                 debugLog("After loading map {}, we got different md5 {}!\n", md5.hash.data(), md5_check.hash.data());
