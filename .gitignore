@@ -2,6 +2,7 @@
 *.sln
 *.vcxproj.filters
 *.vcxproj.user
+neosu
 
 .cache/
 build/

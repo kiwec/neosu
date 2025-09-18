@@ -14,6 +14,7 @@ namespace {
 void setcwdexe(const std::string & /*unused*/) {}
 }  // namespace
 #else
+#define SDL_MAIN_HANDLED
 #include <SDL3/SDL_main.h>
 #include <SDL3/SDL_hints.h>
 #include <SDL3/SDL_process.h>

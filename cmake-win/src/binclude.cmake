@@ -20,7 +20,9 @@ ${symbol_name}_end:
     add_library(${target_name} OBJECT ${ASM_FILE})
 
     # Set NASM object format for Windows
-    set_property(TARGET ${target_name} PROPERTY ASM_NASM_OBJECT_FORMAT win64)
+    if(WIN32)
+        set_property(TARGET ${target_name} PROPERTY ASM_NASM_OBJECT_FORMAT win64)
+    endif()
 endfunction()
 
 # Higher-level function to add multiple binary resources to a target
