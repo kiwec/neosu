@@ -271,11 +271,13 @@ void import_settings_from_osu_stable() {
             cv::chat_highlight_words.setValue(str);
         else if(Parsing::parse(curLineChar, "HighResolution", '=', &b))
             cv::skin_hd.setValue(b);
-        else if(Parsing::parse(curLineChar, "IgnoreBeatmapSamples", '=', &b))
+        else if(Parsing::parse(curLineChar, "IgnoreBeatmapSamples", '=', &b)) {
             cv::ignore_beatmap_samples.setValue(b);
-        else if(Parsing::parse(curLineChar, "IgnoreBeatmapSkins", '=', &b))
+            cv::ignore_beatmap_sample_volume.setValue(b);  // Even though this isn't vanilla, it is "expected"
+        } else if(Parsing::parse(curLineChar, "IgnoreBeatmapSkins", '=', &b)) {
             cv::ignore_beatmap_skins.setValue(b);
-        else if(Parsing::parse(curLineChar, "IgnoreList", '=', &str))
+            cv::ignore_beatmap_combo_colors.setValue(b);  // Apparently, this setting also affects combo colors!
+        } else if(Parsing::parse(curLineChar, "IgnoreList", '=', &str))
             cv::chat_ignore_list.setValue(str);
         else if(Parsing::parse(curLineChar, "KeyOverlay", '=', &b))
             cv::draw_inputoverlay.setValue(b);
