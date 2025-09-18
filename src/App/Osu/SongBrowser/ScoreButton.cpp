@@ -664,6 +664,8 @@ void ScoreButton::setScore(const FinishedScore &score, DatabaseBeatmap *map, int
     // NOTE: Allows dropped sliderends. Should fix with @PPV3
     const bool fullCombo = (score.maxPossibleCombo > 0 && score.numMisses == 0 && score.numSliderBreaks == 0);
 
+    this->is_friend = 0;
+
     SAFE_DELETE(this->avatar);
     if(score.player_id != 0) {
         this->avatar = new UIAvatar(score.player_id, this->vPos.x, this->vPos.y, this->vSize.y, this->vSize.y);
