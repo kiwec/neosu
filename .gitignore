@@ -48,7 +48,6 @@ release/
 /src/config.h
 /src/config.h.in
 /src/config.h.in~
-/src/Makefile.sources
 /config.log
 /config.status
 /src/stamp-h1
