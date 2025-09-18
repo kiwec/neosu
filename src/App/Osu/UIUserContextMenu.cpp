@@ -46,9 +46,9 @@ void UIUserContextMenuScreen::open(i32 user_id, bool is_song_browser_button) {
         }
     }
 
-    this->menu->begin(is_song_browser_button ? osu->userButton->getSize().x : 0);
+    this->menu->begin(is_song_browser_button ? osu->getUserButton()->getSize().x : 0);
 
-    if(!osu->userStats->isVisible() && (user_id <= 0 || (user_id == BanchoState::get_uid()))) {
+    if(!osu->getUserStatsScreen()->isVisible() && (user_id <= 0 || (user_id == BanchoState::get_uid()))) {
         this->menu->addButton("View top plays", VIEW_TOP_PLAYS);
     }
 
@@ -89,7 +89,7 @@ void UIUserContextMenuScreen::open(i32 user_id, bool is_song_browser_button) {
     if(is_song_browser_button) {
         // Menu would open halfway off-screen, extra code to remove the jank
         this->menu->end(true, false);
-        auto userPos = osu->userButton->getPos();
+        auto userPos = osu->getUserButton()->getPos();
         this->menu->setPos(userPos.x, userPos.y - this->menu->getSize().y);
     } else {
         this->menu->end(false, false);
@@ -125,14 +125,14 @@ void UIUserContextMenuScreen::on_action(const UString& /*text*/, int user_action
         BANCHO::Net::send_packet(packet);  // kick by locking the slot
         BANCHO::Net::send_packet(packet);  // unlock the slot
     } else if(user_action == START_CHAT) {
-        osu->chat->openChannel(user_info->name);
+        osu->getChat()->openChannel(user_info->name);
     } else if(user_action == VIEW_PROFILE) {
         // Fallback in case we're offline
         auto endpoint = BanchoState::endpoint;
         if(endpoint == "") endpoint = "ppy.sh";
 
         auto url = fmt::format("https://osu.{}/u/{}", endpoint, this->user_id);
-        osu->notificationOverlay->addNotification("Opening browser, please wait ...", 0xffffffff, false, 0.75f);
+        osu->getNotificationOverlay()->addNotification("Opening browser, please wait ...", 0xffffffff, false, 0.75f);
         env->openURLInDefaultBrowser(url);
     } else if(user_action == UA_ADD_FRIEND) {
         Packet packet;
@@ -157,7 +157,7 @@ void UIUserContextMenuScreen::on_action(const UString& /*text*/, int user_action
             start_spectating(this->user_id);
         }
     } else if(user_action == VIEW_TOP_PLAYS) {
-        osu->userStats->setVisible(true);
+        osu->getUserStatsScreen()->setVisible(true);
     }
 
     this->menu->setVisible(false);
@@ -170,4 +170,4 @@ UIUserLabel::UIUserLabel(i32 user_id, const UString& username) : CBaseUILabel() 
     this->setDrawBackground(false);
 }
 
-void UIUserLabel::onMouseUpInside(bool /*left*/, bool /*right*/) { osu->user_actions->open(this->user_id); }
+void UIUserLabel::onMouseUpInside(bool /*left*/, bool /*right*/) { osu->getUserActions()->open(this->user_id); }

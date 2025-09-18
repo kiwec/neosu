@@ -140,14 +140,14 @@ void Skin::update() {
         this->bReady = true;
 
         // force effect volume update
-        osu->volumeOverlay->updateEffectVolume(this);
+        osu->getVolumeOverlay()->updateEffectVolume(this);
     }
 
     // shitty check to not animate while paused with hitobjects in background
-    if(osu->isInPlayMode() && !osu->active_map->isPlaying() && !cv::skin_animation_force.getBool()) return;
+    if(osu->isInPlayMode() && !osu->getMapInterface()->isPlaying() && !cv::skin_animation_force.getBool()) return;
 
     const bool useEngineTimeForAnimations = !osu->isInPlayMode();
-    const long curMusicPos = osu->active_map->getCurMusicPosWithOffsets();
+    const long curMusicPos = osu->getMapInterface()->getCurMusicPosWithOffsets();
     for(auto &image : this->images) {
         image->update(this->animationSpeedMultiplier, useEngineTimeForAnimations, curMusicPos);
     }
@@ -878,9 +878,9 @@ void Skin::load() {
 
     // delayed error notifications due to resource loading potentially blocking engine time
     if(!parseSkinIni1Status && parseSkinIni2Status && cv::skin.getString() != "default")
-        osu->notificationOverlay->addNotification("Error: Couldn't load skin.ini!", 0xffff0000);
+        osu->getNotificationOverlay()->addNotification("Error: Couldn't load skin.ini!", 0xffff0000);
     else if(!parseSkinIni2Status)
-        osu->notificationOverlay->addNotification("Error: Couldn't load DEFAULT skin.ini!!!", 0xffff0000);
+        osu->getNotificationOverlay()->addNotification("Error: Couldn't load DEFAULT skin.ini!!!", 0xffff0000);
 
     resourceManager->resetSyncLoadMaxBatchSize();
 }

@@ -117,7 +117,7 @@ RoomScreen::RoomScreen() : OsuScreen() {
     this->lfont = osu->getSubTitleFont();
 
     this->pauseButton = new PauseButton(0, 0, 0, 0, "pause_btn", "");
-    this->pauseButton->setClickCallback(SA::MakeDelegate<&MainMenu::onPausePressed>(osu->mainMenu));
+    this->pauseButton->setClickCallback(SA::MakeDelegate<&MainMenu::onPausePressed>(osu->getMainMenu().get()));
     this->addBaseUIElement(this->pauseButton);
 
     this->settings = new CBaseUIScrollView(0, 0, 0, 0, "room_settings");
@@ -261,7 +261,7 @@ void RoomScreen::draw() {
 }
 
 void RoomScreen::mouse_update(bool *propagate_clicks) {
-    if(!this->bVisible || osu->songBrowser2->isVisible()) return;
+    if(!this->bVisible || osu->getSongBrowser()->isVisible()) return;
 
     const bool room_name_changed = this->room_name_ipt->getText() != BanchoState::room.name;
     if(BanchoState::room.is_host() && room_name_changed) {
@@ -277,7 +277,7 @@ void RoomScreen::mouse_update(bool *propagate_clicks) {
         RichPresence::onMultiplayerLobby();
     }
 
-    this->pauseButton->setPaused(!osu->active_map->isPreviewMusicPlaying());
+    this->pauseButton->setPaused(!osu->getMapInterface()->isPreviewMusicPlaying());
 
     this->contextMenu->mouse_update(propagate_clicks);
     if(!*propagate_clicks) return;
@@ -286,7 +286,7 @@ void RoomScreen::mouse_update(bool *propagate_clicks) {
 }
 
 void RoomScreen::onKeyDown(KeyboardEvent &key) {
-    if(!this->bVisible || osu->songBrowser2->isVisible()) return;
+    if(!this->bVisible || osu->getSongBrowser()->isVisible()) return;
 
     if(key.getKeyCode() == KEY_ESCAPE) {
         key.consume();
@@ -297,8 +297,8 @@ void RoomScreen::onKeyDown(KeyboardEvent &key) {
     if(key.getKeyCode() == KEY_F1) {
         key.consume();
         if(BanchoState::room.freemods || BanchoState::room.is_host()) {
-            osu->modSelector->setVisible(!osu->modSelector->isVisible());
-            this->bVisible = !osu->modSelector->isVisible();
+            osu->getModSelector()->setVisible(!osu->getModSelector()->isVisible());
+            this->bVisible = !osu->getModSelector()->isVisible();
         }
         return;
     }
@@ -307,12 +307,12 @@ void RoomScreen::onKeyDown(KeyboardEvent &key) {
 }
 
 void RoomScreen::onKeyUp(KeyboardEvent &key) {
-    if(!this->bVisible || osu->songBrowser2->isVisible()) return;
+    if(!this->bVisible || osu->getSongBrowser()->isVisible()) return;
     OsuScreen::onKeyUp(key);
 }
 
 void RoomScreen::onChar(KeyboardEvent &key) {
-    if(!this->bVisible || osu->songBrowser2->isVisible()) return;
+    if(!this->bVisible || osu->getSongBrowser()->isVisible()) return;
     OsuScreen::onChar(key);
 }
 
@@ -500,13 +500,13 @@ void RoomScreen::ragequit(bool play_sound) {
     packet.id = EXIT_ROOM;
     BANCHO::Net::send_packet(packet);
 
-    osu->modSelector->resetMods();
-    osu->modSelector->updateButtons();
+    osu->getModSelector()->resetMods();
+    osu->getModSelector()->updateButtons();
 
     BanchoState::room = Room();
-    osu->mainMenu->setVisible(true);
-    osu->chat->removeChannel("#multiplayer");
-    osu->chat->updateVisibility();
+    osu->getMainMenu()->setVisible(true);
+    osu->getChat()->removeChannel("#multiplayer");
+    osu->getChat()->updateVisibility();
 
     Replay::Mods::use(osu->previous_mods);
 
@@ -517,7 +517,7 @@ void RoomScreen::ragequit(bool play_sound) {
 
 void RoomScreen::on_map_change() {
     // Results screen has map background and such showing, so prevent map from changing while we're on it.
-    if(osu->rankingScreen->isVisible()) return;
+    if(osu->getRankingScreen()->isVisible()) return;
 
     debugLog("Map changed to ID {:d}, MD5 {:s}: {:s}\n", BanchoState::room.map_id, BanchoState::room.map_md5.hash.data(),
              BanchoState::room.map_name.toUtf8());
@@ -525,7 +525,7 @@ void RoomScreen::on_map_change() {
 
     // Deselect current map
     this->pauseButton->setPaused(true);
-    osu->active_map->deselectBeatmap();
+    osu->getMapInterface()->deselectBeatmap();
 
     if(BanchoState::room.map_id == 0) {
         this->map_title->setText("(no map selected)");
@@ -534,7 +534,7 @@ void RoomScreen::on_map_change() {
     } else {
         auto beatmap = db->getBeatmapDifficulty(BanchoState::room.map_md5);
         if(beatmap != nullptr) {
-            osu->songBrowser2->onDifficultySelected(beatmap, false);
+            osu->getSongBrowser()->onDifficultySelected(beatmap, false);
             this->map_title->setText(BanchoState::room.map_name);
             this->map_title->setSizeToContent(0, 0);
             auto attributes = UString::format("AR: %.1f, CS: %.1f, HP: %.1f, OD: %.1f", beatmap->getAR(),
@@ -580,25 +580,25 @@ void RoomScreen::on_room_joined(Room room) {
     // Close all screens and stop any activity the player is in
     stop_spectating();
     if(osu->isInPlayMode()) {
-        osu->active_map->stop(true);
+        osu->getMapInterface()->stop(true);
     }
-    osu->rankingScreen->setVisible(false);
-    osu->songBrowser2->setVisible(false);
-    osu->changelog->setVisible(false);
-    osu->mainMenu->setVisible(false);
-    osu->lobby->setVisible(false);
+    osu->getRankingScreen()->setVisible(false);
+    osu->getSongBrowser()->setVisible(false);
+    osu->getChangelog()->setVisible(false);
+    osu->getMainMenu()->setVisible(false);
+    osu->getLobby()->setVisible(false);
 
     this->updateLayout(osu->getScreenSize());
     this->bVisible = true;
 
     RichPresence::setBanchoStatus(room.name.toUtf8(), MULTIPLAYER);
     RichPresence::onMultiplayerLobby();
-    osu->chat->openChannel("#multiplayer");
+    osu->getChat()->openChannel("#multiplayer");
 
     osu->previous_mods = Replay::Mods::from_cvars();
 
-    osu->modSelector->resetMods();
-    osu->modSelector->enableModsFromFlags(BanchoState::room.mods);
+    osu->getModSelector()->resetMods();
+    osu->getModSelector()->enableModsFromFlags(BanchoState::room.mods);
 }
 
 void RoomScreen::on_room_updated(Room room) {
@@ -648,35 +648,35 @@ void RoomScreen::on_room_updated(Room room) {
         }
     }
 
-    if(osu->modSelector->isVisible() && !BanchoState::room.is_host() && !BanchoState::room.freemods) {
+    if(osu->getModSelector()->isVisible() && !BanchoState::room.is_host() && !BanchoState::room.freemods) {
         // Force close mod menu if host disabled freemods
-        osu->modSelector->setVisible(false);
+        osu->getModSelector()->setVisible(false);
     }
-    osu->modSelector->updateButtons();
-    osu->modSelector->resetMods();
-    osu->modSelector->enableModsFromFlags(BanchoState::room.mods | player_slot->mods);
+    osu->getModSelector()->updateButtons();
+    osu->getModSelector()->resetMods();
+    osu->getModSelector()->enableModsFromFlags(BanchoState::room.mods | player_slot->mods);
 
     this->updateLayout(osu->getScreenSize());
 }
 
 void RoomScreen::on_match_started(Room room) {
     BanchoState::room = std::move(room);
-    if(osu->active_map->beatmap == nullptr) {
+    if(osu->getMapInterface()->beatmap == nullptr) {
         debugLog("We received MATCH_STARTED without being ready, wtf!\n");
         return;
     }
 
     this->last_packet_tms = time(nullptr);
 
-    if(osu->active_map->play()) {
+    if(osu->getMapInterface()->play()) {
         this->bVisible = false;
         BanchoState::match_started = true;
-        osu->songBrowser2->bHasSelectedAndIsPlaying = true;
-        osu->chat->updateVisibility();
+        osu->getSongBrowser()->bHasSelectedAndIsPlaying = true;
+        osu->getChat()->updateVisibility();
 
         soundEngine->play(osu->getSkin()->getMatchStartSound());
     } else {
-        osu->notificationOverlay->addToast("Failed to load map", ERROR_TOAST);
+        osu->getNotificationOverlay()->addToast("Failed to load map", ERROR_TOAST);
         this->ragequit();  // map failed to load
     }
 }
@@ -706,12 +706,12 @@ void RoomScreen::on_match_score_updated(Packet *packet) {
         slot->sv2_bonus = BANCHO::Proto::read<f64>(packet);
     }
 
-    osu->hud->updateScoreboard(true);
+    osu->getHUD()->updateScoreboard(true);
 }
 
 void RoomScreen::on_all_players_loaded() {
     BanchoState::room.all_players_loaded = true;
-    osu->chat->updateVisibility();
+    osu->getChat()->updateVisibility();
 }
 
 void RoomScreen::on_player_failed(i32 slot_id) {
@@ -725,7 +725,7 @@ FinishedScore RoomScreen::get_approximate_score() {
     score.player_id = BanchoState::get_uid();
     score.playerName = BanchoState::get_username();
 
-    score.map = osu->active_map->beatmap;
+    score.map = osu->getMapInterface()->beatmap;
 
     for(auto &i : BanchoState::room.slots) {
         auto slot = &i;
@@ -758,8 +758,8 @@ void RoomScreen::on_match_finished() {
     osu->onPlayEnd(this->get_approximate_score(), false, false);
 
     BanchoState::match_started = false;
-    osu->rankingScreen->setVisible(true);
-    osu->chat->updateVisibility();
+    osu->getRankingScreen()->setVisible(true);
+    osu->getChat()->updateVisibility();
 
     // Display room presence instead of map again
     RichPresence::onMultiplayerLobby();
@@ -828,7 +828,7 @@ void RoomScreen::onReadyButtonClick() {
 
 void RoomScreen::onSelectModsClicked() {
     soundEngine->play(osu->getSkin()->getMenuHit());
-    osu->modSelector->setVisible(true);
+    osu->getModSelector()->setVisible(true);
     this->bVisible = false;
 }
 
@@ -845,11 +845,11 @@ void RoomScreen::onSelectMapClicked() {
     BanchoState::room.pack(&packet);
     BANCHO::Net::send_packet(packet);
 
-    osu->songBrowser2->setVisible(true);
+    osu->getSongBrowser()->setVisible(true);
 }
 
 void RoomScreen::onChangePasswordClicked() {
-    osu->prompt->prompt("New password:", SA::MakeDelegate<&RoomScreen::set_new_password>(this));
+    osu->getPromptScreen()->prompt("New password:", SA::MakeDelegate<&RoomScreen::set_new_password>(this));
 }
 
 void RoomScreen::onChangeWinConditionClicked() {

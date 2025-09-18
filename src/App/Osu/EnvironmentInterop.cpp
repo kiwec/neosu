@@ -19,7 +19,7 @@ void handle_osk(const char *osk_path) {
     folder_name.erase(folder_name.size() - 4);  // remove .osk extension
 
     cv::skin.setValue(env->getFileNameFromFilePath(folder_name).c_str());
-    osu->optionsMenu->updateSkinNameLabel();
+    osu->getOptionsMenu()->updateSkinNameLabel();
 }
 
 void handle_osz(const char *osz_path) {
@@ -36,7 +36,7 @@ void handle_osz(const char *osz_path) {
         }
     }
     if(set_id == -1) {
-        osu->notificationOverlay->addToast("Beatmapset doesn't have a valid ID.", ERROR_TOAST);
+        osu->getNotificationOverlay()->addToast("Beatmapset doesn't have a valid ID.", ERROR_TOAST);
         return;
     }
 
@@ -47,19 +47,19 @@ void handle_osz(const char *osz_path) {
         env->createDirectory(mapset_dir);
     }
     if(!Downloader::extract_beatmapset(osz.readFile(), osz.getFileSize(), mapset_dir)) {
-        osu->notificationOverlay->addToast("Failed to extract beatmapset", ERROR_TOAST);
+        osu->getNotificationOverlay()->addToast("Failed to extract beatmapset", ERROR_TOAST);
         return;
     }
 
     db->addBeatmapSet(mapset_dir);
     if(!osu->getSongBrowser()->selectBeatmapset(set_id)) {
-        osu->notificationOverlay->addToast("Failed to import beatmapset", ERROR_TOAST);
+        osu->getNotificationOverlay()->addToast("Failed to import beatmapset", ERROR_TOAST);
         return;
     }
 
     // prevent song browser from picking main menu song after database loads
     // (we just loaded and selected another song, so previous no longer applies)
-    SAFE_DELETE(osu->mainMenu->preloaded_beatmapset);
+    SAFE_DELETE(osu->getMainMenu()->preloaded_beatmapset);
 }
 }  // namespace
 

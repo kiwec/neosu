@@ -65,7 +65,7 @@ void RichPresence::setBanchoStatus(const char* info_text, Action action) {
     MD5Hash map_md5("");
     i32 map_id = 0;
 
-    auto map = osu->active_map->beatmap;
+    auto map = osu->getMapInterface()->beatmap;
     if(map != nullptr) {
         map_md5 = map->getMD5Hash();
         map_id = map->getID();
@@ -82,7 +82,7 @@ void RichPresence::setBanchoStatus(const char* info_text, Action action) {
     BANCHO::Proto::write<u8>(&packet, action);
     BANCHO::Proto::write_string(&packet, fancy_text);
     BANCHO::Proto::write_string(&packet, map_md5.hash.data());
-    BANCHO::Proto::write<u32>(&packet, osu->modSelector->getModFlags());
+    BANCHO::Proto::write<u32>(&packet, osu->getModSelector()->getModFlags());
     BANCHO::Proto::write<u8>(&packet, 0);  // osu!std
     BANCHO::Proto::write<i32>(&packet, map_id);
     BANCHO::Net::send_packet(packet);
@@ -92,7 +92,7 @@ void RichPresence::updateBanchoMods() {
     MD5Hash map_md5("");
     i32 map_id = 0;
 
-    auto diff = osu->active_map->beatmap;
+    auto diff = osu->getMapInterface()->beatmap;
     if(diff != nullptr) {
         map_md5 = diff->getMD5Hash();
         map_id = diff->getID();
@@ -103,7 +103,7 @@ void RichPresence::updateBanchoMods() {
     BANCHO::Proto::write<u8>(&packet, last_action);
     BANCHO::Proto::write_string(&packet, last_status.toUtf8());
     BANCHO::Proto::write_string(&packet, map_md5.hash.data());
-    BANCHO::Proto::write<u32>(&packet, osu->modSelector->getModFlags());
+    BANCHO::Proto::write<u32>(&packet, osu->getModSelector()->getModFlags());
     BANCHO::Proto::write<u8>(&packet, 0);  // osu!std
     BANCHO::Proto::write<i32>(&packet, map_id);
     BANCHO::Net::send_packet(packet);
@@ -111,11 +111,11 @@ void RichPresence::updateBanchoMods() {
     // Servers like akatsuki send different leaderboards based on what mods
     // you have selected. Reset leaderboard when switching mods.
     db->online_scores.clear();
-    osu->songBrowser2->rebuildScoreButtons();
+    osu->getSongBrowser()->rebuildScoreButtons();
 }
 
 void RichPresence::onMainMenu() {
-    bool force_not_afk = BanchoState::spectating || (osu->chat->isVisible() && osu->chat->user_list->isVisible());
+    bool force_not_afk = BanchoState::spectating || (osu->getChat()->isVisible() && osu->getChat()->user_list->isVisible());
     setBanchoStatus("Main Menu", force_not_afk ? IDLE : AFK);
 
     // NOTE: As much as I would like to show "Listening to", the Discord SDK ignores the activity 'type'
@@ -123,8 +123,8 @@ void RichPresence::onMainMenu() {
 
     activity.type = DiscordActivityType_Listening;
 
-    auto map = osu->active_map->beatmap;
-    auto music = osu->active_map->getMusic();
+    auto map = osu->getMapInterface()->beatmap;
+    auto music = osu->getMapInterface()->getMusic();
     bool listening = map != nullptr && music != nullptr && music->isPlaying();
     if(listening) {
         mapstr(map, activity.details, false);
@@ -140,7 +140,7 @@ void RichPresence::onSongBrowser() {
     activity.type = DiscordActivityType_Playing;
     strcpy(activity.details, "Picking a map");
 
-    if(osu->room->isVisible()) {
+    if(osu->getRoom()->isVisible()) {
         setBanchoStatus("Picking a map", MULTIPLAYER);
 
         strcpy(activity.state, "Multiplayer");
@@ -159,7 +159,7 @@ void RichPresence::onSongBrowser() {
 }
 
 void RichPresence::onPlayStart() {
-    auto map = osu->active_map->beatmap;
+    auto map = osu->getMapInterface()->beatmap;
 
     static DatabaseBeatmap* last_diff = nullptr;
     static int64_t tms = 0;

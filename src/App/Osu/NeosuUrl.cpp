@@ -45,7 +45,7 @@ void handle_neosu_url(const char *url) {
                     BanchoState::reconnect();
                 } else {
                     osu->getOptionsMenu()->setLoginLoadingState(false);
-                    osu->notificationOverlay->addToast("Login failed.", ERROR_TOAST);
+                    osu->getNotificationOverlay()->addToast("Login failed.", ERROR_TOAST);
                 }
             },
             options

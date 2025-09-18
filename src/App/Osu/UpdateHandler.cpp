@@ -240,7 +240,7 @@ void UpdateHandler::installUpdate() {
     }
 
     cv::is_bleedingedge.setValue(cv::bleedingedge.getBool());
-    osu->optionsMenu->save();
+    osu->getOptionsMenu()->save();
 
     // we're done updating; restart the game, since the user already clicked to update
     engine->restart();

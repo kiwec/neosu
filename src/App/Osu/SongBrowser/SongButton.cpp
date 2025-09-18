@@ -241,7 +241,7 @@ void SongButton::onSelected(bool wasSelected, bool autoSelectBottomMostChild, bo
 
     // update button positions so the resort is actually applied
     // XXX: we shouldn't be updating ALL of the buttons
-    osu->songBrowser2->updateSongButtonLayout();
+    osu->getSongBrowser()->updateSongButtonLayout();
 
     // update grade on child
     for(auto &c : this->children) {

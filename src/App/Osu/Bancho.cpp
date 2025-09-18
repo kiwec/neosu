@@ -109,8 +109,8 @@ void BanchoState::handle_packet(Packet *packet) {
         case USER_ID: {
             i32 new_user_id = proto::read<i32>(packet);
             BanchoState::set_uid(new_user_id);
-            osu->optionsMenu->update_login_button();
-            osu->optionsMenu->setLoginLoadingState(false);
+            osu->getOptionsMenu()->update_login_button();
+            osu->getOptionsMenu()->setLoginLoadingState(false);
             BanchoState::is_oauth = !cv::mp_oauth_token.getString().empty();
 
             if(new_user_id > 0) {
@@ -125,10 +125,10 @@ void BanchoState::handle_packet(Packet *packet) {
                 env->createDirectory(replays_dir);
 
                 osu->onUserCardChange(BanchoState::username.c_str());
-                osu->songBrowser2->onFilterScoresChange(UString("Global"), 0);
+                osu->getSongBrowser()->onFilterScoresChange(UString("Global"), 0);
 
                 // If server sent a score submission policy, update options menu to hide the checkbox
-                osu->optionsMenu->scheduleLayoutUpdate();
+                osu->getOptionsMenu()->scheduleLayoutUpdate();
             } else {
                 cv::mp_autologin.setValue(false);
                 cv::mp_oauth_token.setValue("");
@@ -163,7 +163,7 @@ void BanchoState::handle_packet(Packet *packet) {
                         errmsg = "Please contact an administrator of the server.";
                     }
                 }
-                osu->notificationOverlay->addToast(errmsg, ERROR_TOAST);
+                osu->getNotificationOverlay()->addToast(errmsg, ERROR_TOAST);
             }
             break;
         }
@@ -180,7 +180,7 @@ void BanchoState::handle_packet(Packet *packet) {
                 .author_name = sender,
                 .text = text,
             };
-            osu->chat->addMessage(recipient, msg);
+            osu->getChat()->addMessage(recipient, msg);
 
             break;
         }
@@ -206,9 +206,9 @@ void BanchoState::handle_packet(Packet *packet) {
                     auto text = UString::format("%s is now %s", user->name.toUtf8(), actions[action]);
                     auto open_dms = [uid = stats_user_id]() -> void {
                         UserInfo *user = BANCHO::User::get_user_info(uid);
-                        osu->chat->openChannel(user->name);
+                        osu->getChat()->openChannel(user->name);
                     };
-                    osu->notificationOverlay->addToast(text, STATUS_TOAST, open_dms, ToastElement::TYPE::CHAT);
+                    osu->getNotificationOverlay()->addToast(text, STATUS_TOAST, open_dms, ToastElement::TYPE::CHAT);
                 }
             }
 
@@ -228,13 +228,13 @@ void BanchoState::handle_packet(Packet *packet) {
             user->pp = proto::read<u16>(packet);
 
             if(stats_user_id == BanchoState::get_uid()) {
-                osu->userButton->updateUserStats();
+                osu->getUserButton()->updateUserStats();
             }
             if(stats_user_id == BanchoState::spectated_player_id) {
-                osu->spectatorScreen->userCard->updateUserStats();
+                osu->getSpectatorScreen()->userCard->updateUserStats();
             }
 
-            osu->chat->updateUserList();
+            osu->getChat()->updateUserList();
 
             break;
         }
@@ -287,7 +287,7 @@ void BanchoState::handle_packet(Packet *packet) {
                         debugLog("WEIRD FRAME: time {:d}, x {:f}, y {:f}\n", frame.time, frame.mouse_x, frame.mouse_y);
                     }
 
-                    osu->map_iface->spectated_replay.push_back(LegacyReplay::Frame{
+                    osu->getMapInterface()->spectated_replay.push_back(LegacyReplay::Frame{
                         .cur_music_pos = frame.time,
                         .milliseconds_since_last_frame = 0,  // fixed below
                         .x = frame.mouse_x,
@@ -297,13 +297,13 @@ void BanchoState::handle_packet(Packet *packet) {
                 }
 
                 // NOTE: Server can send frames in the wrong order. So we're correcting it here.
-                std::ranges::sort(osu->map_iface->spectated_replay, [](LegacyReplay::Frame a, LegacyReplay::Frame b) {
+                std::ranges::sort(osu->getMapInterface()->spectated_replay, [](LegacyReplay::Frame a, LegacyReplay::Frame b) {
                     return a.cur_music_pos < b.cur_music_pos;
                 });
-                osu->map_iface->last_frame_ms = 0;
-                for(auto &frame : osu->map_iface->spectated_replay) {
-                    frame.milliseconds_since_last_frame = frame.cur_music_pos - osu->map_iface->last_frame_ms;
-                    osu->map_iface->last_frame_ms = frame.cur_music_pos;
+                osu->getMapInterface()->last_frame_ms = 0;
+                for(auto &frame : osu->getMapInterface()->spectated_replay) {
+                    frame.milliseconds_since_last_frame = frame.cur_music_pos - osu->getMapInterface()->last_frame_ms;
+                    osu->getMapInterface()->last_frame_ms = frame.cur_music_pos;
                 }
 
                 auto action = (LiveReplayBundle::Action)proto::read<u8>(packet);
@@ -313,29 +313,29 @@ void BanchoState::handle_packet(Packet *packet) {
                     if(action == LiveReplayBundle::Action::SONG_SELECT) {
                         info->map_id = 0;
                         info->map_md5 = MD5Hash();
-                        osu->map_iface->stop(true);
+                        osu->getMapInterface()->stop(true);
                     }
                     if(action == LiveReplayBundle::Action::UNPAUSE) {
-                        osu->map_iface->spectate_pause = false;
+                        osu->getMapInterface()->spectate_pause = false;
                     }
                     if(action == LiveReplayBundle::Action::PAUSE) {
-                        osu->map_iface->spectate_pause = true;
+                        osu->getMapInterface()->spectate_pause = true;
                     }
                     if(action == LiveReplayBundle::Action::SKIP) {
-                        osu->map_iface->skipEmptySection();
+                        osu->getMapInterface()->skipEmptySection();
                     }
                     if(action == LiveReplayBundle::Action::FAIL) {
-                        osu->map_iface->fail(true);
+                        osu->getMapInterface()->fail(true);
                     }
                     if(action == LiveReplayBundle::Action::NEW_SONG) {
-                        osu->rankingScreen->setVisible(false);
-                        osu->map_iface->restart(true);
-                        osu->map_iface->update();
+                        osu->getRankingScreen()->setVisible(false);
+                        osu->getMapInterface()->restart(true);
+                        osu->getMapInterface()->update();
                     }
                 }
 
                 auto score_frame = proto::read<ScoreFrame>(packet);
-                osu->map_iface->score_frames.push_back(score_frame);
+                osu->getMapInterface()->score_frames.push_back(score_frame);
 
                 auto sequence = proto::read<u16>(packet);
                 (void)sequence;  // don't know how to use this
@@ -362,16 +362,16 @@ void BanchoState::handle_packet(Packet *packet) {
 
         case NOTIFICATION: {
             UString notification = proto::read_string(packet);
-            osu->notificationOverlay->addToast(notification, INFO_TOAST);
+            osu->getNotificationOverlay()->addToast(notification, INFO_TOAST);
             break;
         }
 
         case ROOM_UPDATED: {
             auto room = Room(packet);
-            if(osu->lobby->isVisible()) {
-                osu->lobby->updateRoom(room);
+            if(osu->getLobby()->isVisible()) {
+                osu->getLobby()->updateRoom(room);
             } else if(room.id == BanchoState::room.id) {
-                osu->room->on_room_updated(room);
+                osu->getRoom()->on_room_updated(room);
             }
 
             break;
@@ -379,13 +379,13 @@ void BanchoState::handle_packet(Packet *packet) {
 
         case ROOM_CREATED: {
             auto room = new Room(packet);
-            osu->lobby->addRoom(room);
+            osu->getLobby()->addRoom(room);
             break;
         }
 
         case ROOM_CLOSED: {
             i32 room_id = proto::read<i32>(packet);
-            osu->lobby->removeRoom(room_id);
+            osu->getLobby()->removeRoom(room_id);
             break;
         }
 
@@ -395,18 +395,18 @@ void BanchoState::handle_packet(Packet *packet) {
                 stop_spectating();
             }
             if(osu->isInPlayMode()) {
-                osu->map_iface->stop(true);
+                osu->getMapInterface()->stop(true);
             }
 
             auto room = Room(packet);
-            osu->room->on_room_joined(room);
+            osu->getRoom()->on_room_joined(room);
 
             break;
         }
 
         case ROOM_JOIN_FAIL: {
-            osu->notificationOverlay->addToast("Failed to join room.", ERROR_TOAST);
-            osu->lobby->on_room_join_failed();
+            osu->getNotificationOverlay()->addToast("Failed to join room.", ERROR_TOAST);
+            osu->getLobby()->on_room_join_failed();
             break;
         }
 
@@ -433,12 +433,12 @@ void BanchoState::handle_packet(Packet *packet) {
 
         case MATCH_STARTED: {
             auto room = Room(packet);
-            osu->room->on_match_started(room);
+            osu->getRoom()->on_match_started(room);
             break;
         }
 
         case MATCH_SCORE_UPDATED: {
-            osu->room->on_match_score_updated(packet);
+            osu->getRoom()->on_match_score_updated(packet);
             break;
         }
 
@@ -448,23 +448,23 @@ void BanchoState::handle_packet(Packet *packet) {
         }
 
         case MATCH_ALL_PLAYERS_LOADED: {
-            osu->room->on_all_players_loaded();
+            osu->getRoom()->on_all_players_loaded();
             break;
         }
 
         case MATCH_PLAYER_FAILED: {
             i32 slot_id = proto::read<i32>(packet);
-            osu->room->on_player_failed(slot_id);
+            osu->getRoom()->on_player_failed(slot_id);
             break;
         }
 
         case MATCH_FINISHED: {
-            osu->room->on_match_finished();
+            osu->getRoom()->on_match_finished();
             break;
         }
 
         case MATCH_SKIP: {
-            osu->room->on_all_players_skipped();
+            osu->getRoom()->on_all_players_skipped();
             break;
         }
 
@@ -476,8 +476,8 @@ void BanchoState::handle_packet(Packet *packet) {
                 .author_name = UString(""),
                 .text = UString("Joined channel."),
             };
-            osu->chat->addChannel(name);
-            osu->chat->addMessage(name, msg, false);
+            osu->getChat()->addChannel(name);
+            osu->getChat()->addMessage(name, msg, false);
             break;
         }
 
@@ -491,7 +491,7 @@ void BanchoState::handle_packet(Packet *packet) {
 
         case LEFT_CHANNEL: {
             UString name = proto::read_string(packet);
-            osu->chat->removeChannel(name);
+            osu->getChat()->removeChannel(name);
             break;
         }
 
@@ -522,7 +522,7 @@ void BanchoState::handle_packet(Packet *packet) {
         case PROTOCOL_VERSION: {
             int protocol_version = proto::read<i32>(packet);
             if(protocol_version != 19) {
-                osu->notificationOverlay->addToast("This server may use an unsupported protocol version.", ERROR_TOAST);
+                osu->getNotificationOverlay()->addToast("This server may use an unsupported protocol version.", ERROR_TOAST);
             }
             break;
         }
@@ -538,7 +538,7 @@ void BanchoState::handle_packet(Packet *packet) {
 
         case MATCH_PLAYER_SKIPPED: {
             i32 user_id = proto::read<i32>(packet);
-            osu->room->on_player_skip(user_id);
+            osu->getRoom()->on_player_skip(user_id);
             break;
         }
 
@@ -566,7 +566,7 @@ void BanchoState::handle_packet(Packet *packet) {
                 osu->onUserCardChange(presence_username);
             }
 
-            osu->chat->updateUserList();
+            osu->getChat()->updateUserList();
             break;
         }
 
@@ -647,7 +647,7 @@ void BanchoState::handle_packet(Packet *packet) {
 
         case VERSION_UPDATE_FORCED: {
             BanchoState::disconnect();
-            osu->notificationOverlay->addToast("This server requires a newer client version.", ERROR_TOAST);
+            osu->getNotificationOverlay()->addToast("This server requires a newer client version.", ERROR_TOAST);
             break;
         }
 
@@ -656,13 +656,13 @@ void BanchoState::handle_packet(Packet *packet) {
         }
 
         case ACCOUNT_RESTRICTED: {
-            osu->notificationOverlay->addToast("Account restricted.", ERROR_TOAST);
+            osu->getNotificationOverlay()->addToast("Account restricted.", ERROR_TOAST);
             BanchoState::disconnect();
             break;
         }
 
         case MATCH_ABORT: {
-            osu->room->on_match_aborted();
+            osu->getRoom()->on_match_aborted();
             break;
         }
 
@@ -877,14 +877,14 @@ void BanchoState::update_channel(const UString &name, const UString &topic, i32 
                 .author_name = UString(""),
                 .text = UString::format("%s: %s", name.toUtf8(), topic.toUtf8()),
             };
-            osu->chat->addMessage(BanchoState::is_oauth ? "#neosu" : "#osu", msg, false);
+            osu->getChat()->addMessage(BanchoState::is_oauth ? "#neosu" : "#osu", msg, false);
         }
     } else {
         chan = it->second;
     }
 
     if(join) {
-        osu->chat->join(name);
+        osu->getChat()->join(name);
     }
 
     if(chan) {

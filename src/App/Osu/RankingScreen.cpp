@@ -386,13 +386,13 @@ CBaseUIContainer *RankingScreen::setVisible(bool visible) {
 
         if(BanchoState::is_in_a_multi_room()) {
             // We backed out of the ranking screen, display the room again
-            osu->room->setVisible(true);
-            osu->chat->updateVisibility();
+            osu->getRoom()->setVisible(true);
+            osu->getChat()->updateVisibility();
 
             // Since we prevented on_map_change() from running while the ranking screen was visible, run it now.
-            osu->room->on_map_change();
+            osu->getRoom()->on_map_change();
         } else {
-            osu->songBrowser2->setVisible(true);
+            osu->getSongBrowser()->setVisible(true);
         }
     }
 
@@ -401,8 +401,8 @@ CBaseUIContainer *RankingScreen::setVisible(bool visible) {
 
 void RankingScreen::onRetryClicked() {
     this->setVisible(false);
-    if(osu->active_map->play()) {
-        osu->songBrowser2->setVisible(false);
+    if(osu->getMapInterface()->play()) {
+        osu->getSongBrowser()->setVisible(false);
     }
 }
 

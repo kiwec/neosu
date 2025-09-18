@@ -137,7 +137,7 @@ void PauseMenu::onContinueClicked() {
     if(anim->isAnimating(&this->fDimAnim)) return;
 
     soundEngine->play(osu->getSkin()->getClickPauseContinueSound());
-    osu->active_map->pause();
+    osu->getMapInterface()->pause();
 
     this->scheduleVisibilityChange(false);
 }
@@ -147,7 +147,7 @@ void PauseMenu::onRetryClicked() {
     if(anim->isAnimating(&this->fDimAnim)) return;
 
     soundEngine->play(osu->getSkin()->getClickPauseRetrySound());
-    osu->active_map->restart();
+    osu->getMapInterface()->restart();
 
     this->scheduleVisibilityChange(false);
 }
@@ -156,7 +156,7 @@ void PauseMenu::onBackClicked() {
     if(anim->isAnimating(&this->fDimAnim)) return;
 
     soundEngine->play(osu->getSkin()->getClickPauseBackSound());
-    osu->active_map->stop(true);
+    osu->getMapInterface()->stop(true);
 
     this->scheduleVisibilityChange(false);
 }
@@ -343,7 +343,7 @@ CBaseUIContainer *PauseMenu::setVisible(bool visible) {
 
     if(!osu->isInPlayMode()) return this;  // sanity
 
-    this->setContinueEnabled(!osu->active_map->hasFailed());
+    this->setContinueEnabled(!osu->getMapInterface()->hasFailed());
 
     if(!BanchoState::is_playing_a_multi_map()) {
         if(visible) {
@@ -357,7 +357,7 @@ CBaseUIContainer *PauseMenu::setVisible(bool visible) {
                     BANCHO::Proto::write<u16>(&packet, 0);
                     BANCHO::Proto::write<u8>(&packet, LiveReplayBundle::Action::PAUSE);
                     BANCHO::Proto::write<ScoreFrame>(&packet, ScoreFrame::get());
-                    BANCHO::Proto::write<u16>(&packet, osu->active_map->spectator_sequence++);
+                    BANCHO::Proto::write<u16>(&packet, osu->getMapInterface()->spectator_sequence++);
                     BANCHO::Net::send_packet(packet);
                 }
             } else {
@@ -373,7 +373,7 @@ CBaseUIContainer *PauseMenu::setVisible(bool visible) {
                 BANCHO::Proto::write<u16>(&packet, 0);
                 BANCHO::Proto::write<u8>(&packet, LiveReplayBundle::Action::UNPAUSE);
                 BANCHO::Proto::write<ScoreFrame>(&packet, ScoreFrame::get());
-                BANCHO::Proto::write<u16>(&packet, osu->active_map->spectator_sequence++);
+                BANCHO::Proto::write<u16>(&packet, osu->getMapInterface()->spectator_sequence++);
                 BANCHO::Net::send_packet(packet);
             }
         }
@@ -397,7 +397,7 @@ CBaseUIContainer *PauseMenu::setVisible(bool visible) {
     anim->moveQuadOut(&this->fDimAnim, (this->bVisible ? 1.0f : 0.0f),
                       cv::pause_anim_duration.getFloat() * (this->bVisible ? 1.0f - this->fDimAnim : this->fDimAnim),
                       true);
-    osu->chat->updateVisibility();
+    osu->getChat()->updateVisibility();
     return this;
 }
 

@@ -64,19 +64,19 @@ void start_spectating(i32 user_id) {
 
     auto user_info = BANCHO::User::get_user_info(user_id, true);
     auto notif = UString::format("Started spectating %s", user_info->name.toUtf8());
-    osu->notificationOverlay->addToast(notif, SUCCESS_TOAST);
+    osu->getNotificationOverlay()->addToast(notif, SUCCESS_TOAST);
 
     BanchoState::spectating = true;
     BanchoState::spectated_player_id = user_id;
     current_map_id = 0;
 
-    osu->prompt->setVisible(false);
-    osu->modSelector->setVisible(false);
-    osu->songBrowser2->setVisible(false);
-    osu->lobby->setVisible(false);
-    osu->changelog->setVisible(false);
-    osu->mainMenu->setVisible(false);
-    if(osu->room->isVisible()) osu->room->ragequit(false);
+    osu->getPromptScreen()->setVisible(false);
+    osu->getModSelector()->setVisible(false);
+    osu->getSongBrowser()->setVisible(false);
+    osu->getLobby()->setVisible(false);
+    osu->getChangelog()->setVisible(false);
+    osu->getMainMenu()->setVisible(false);
+    if(osu->getRoom()->isVisible()) osu->getRoom()->ragequit(false);
 
     soundEngine->play(osu->getSkin()->getMenuHit());
 }
@@ -85,12 +85,12 @@ void stop_spectating() {
     if(!BanchoState::spectating) return;
 
     if(osu->isInPlayMode()) {
-        osu->active_map->stop(true);
+        osu->getMapInterface()->stop(true);
     }
 
     auto user_info = BANCHO::User::get_user_info(BanchoState::spectated_player_id, true);
     auto notif = UString::format("Stopped spectating %s", user_info->name.toUtf8());
-    osu->notificationOverlay->addToast(notif, INFO_TOAST);
+    osu->getNotificationOverlay()->addToast(notif, INFO_TOAST);
 
     BanchoState::spectating = false;
     BanchoState::spectated_player_id = 0;
@@ -100,7 +100,7 @@ void stop_spectating() {
     packet.id = STOP_SPECTATING;
     BANCHO::Net::send_packet(packet);
 
-    osu->mainMenu->setVisible(true);
+    osu->getMainMenu()->setVisible(true);
     soundEngine->play(osu->getSkin()->getMenuBackSound());
 }
 
@@ -109,7 +109,7 @@ SpectatorScreen::SpectatorScreen() {
     this->lfont = osu->getSubTitleFont();
 
     this->pauseButton = new PauseButton(0, 0, 0, 0, "pause_btn", "");
-    this->pauseButton->setClickCallback(SA::MakeDelegate<&MainMenu::onPausePressed>(osu->mainMenu));
+    this->pauseButton->setClickCallback(SA::MakeDelegate<&MainMenu::onPausePressed>(osu->getMainMenu().get()));
     this->addBaseUIElement(this->pauseButton);
 
     this->background = new CBaseUIScrollView(0, 0, 0, 0, "spectator_bg");
@@ -150,16 +150,16 @@ void SpectatorScreen::mouse_update(bool *propagate_clicks) {
     auto user_info = BANCHO::User::get_user_info(BanchoState::spectated_player_id, true);
     if(user_info->map_id == -1 || user_info->map_id == 0) {
         if(osu->isInPlayMode()) {
-            osu->active_map->stop(true);
-            osu->songBrowser2->bHasSelectedAndIsPlaying = false;
+            osu->getMapInterface()->stop(true);
+            osu->getSongBrowser()->bHasSelectedAndIsPlaying = false;
         }
     } else if(user_info->mode == STANDARD && user_info->map_id != current_map_id) {
         auto beatmap = Downloader::download_beatmap(user_info->map_id, user_info->map_md5, &download_progress);
         if(beatmap != nullptr) {
             current_map_id = user_info->map_id;
-            osu->rankingScreen->setVisible(false);
-            osu->songBrowser2->onDifficultySelected(beatmap, false);
-            osu->active_map->spectate();
+            osu->getRankingScreen()->setVisible(false);
+            osu->getSongBrowser()->onDifficultySelected(beatmap, false);
+            osu->getMapInterface()->spectate();
         }
     }
 
@@ -211,7 +211,7 @@ void SpectatorScreen::mouse_update(bool *propagate_clicks) {
     this->pauseButton->setSize(30 * dpiScale, 30 * dpiScale);
     this->pauseButton->setPos(resolution.x - this->pauseButton->getSize().x * 2 - 10 * dpiScale,
                               this->pauseButton->getSize().y + 10 * dpiScale);
-    this->pauseButton->setPaused(!osu->active_map->isPreviewMusicPlaying());
+    this->pauseButton->setPaused(!osu->getMapInterface()->isPreviewMusicPlaying());
 
     this->background->setSize(resolution.x * 0.6, resolution.y * 0.6 - 110 * dpiScale);
     auto bgsize = this->background->getSize();

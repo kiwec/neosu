@@ -447,16 +447,16 @@ unsigned long long LiveScore::getScore() {
 }
 
 void LiveScore::onScoreChange() {
-    if(this->simulating || !osu->room) return;
+    if(this->simulating || !osu->getRoom()) return;
 
-    osu->room->onClientScoreChange();
+    osu->getRoom()->onClientScoreChange();
 
     // only used to block local scores for people who think they are very clever by quickly disabling auto just before
     // the end of a beatmap
     this->bIsUnranked |= (osu->getModAuto() || (osu->getModAutopilot() && osu->getModRelax()));
 
     if(osu->isInPlayMode()) {
-        osu->hud->updateScoreboard(true);
+        osu->getHUD()->updateScoreboard(true);
     }
 }
 

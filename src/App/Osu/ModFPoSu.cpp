@@ -241,9 +241,9 @@ void ModFPoSu::update() {
 
         if(cv::fposu_mod_strafing.getBool()) {
             if(osu->isInPlayMode()) {
-                const long curMusicPos = osu->active_map->getCurMusicPos();
+                const long curMusicPos = osu->getMapInterface()->getCurMusicPos();
 
-                const float speedMultiplierCompensation = 1.0f / osu->active_map->getSpeedMultiplier();
+                const float speedMultiplierCompensation = 1.0f / osu->getMapInterface()->getSpeedMultiplier();
 
                 const float x = std::sin((curMusicPos / 1000.0f) * 5 * speedMultiplierCompensation *
                                          cv::fposu_mod_strafing_frequency_x.getFloat()) *
@@ -261,7 +261,7 @@ void ModFPoSu::update() {
     }
 
     const bool isAutoCursor =
-        (osu->getModAuto() || osu->getModAutopilot() || osu->active_map->is_watching || BanchoState::spectating);
+        (osu->getModAuto() || osu->getModAutopilot() || osu->getMapInterface()->is_watching || BanchoState::spectating);
 
     this->bCrosshairIntersectsScreen = true;
     if(!cv::fposu_absolute_mode.getBool() && !isAutoCursor) {
@@ -307,8 +307,8 @@ void ModFPoSu::update() {
 
         // absolute mouse position mode (or auto)
         vec2 mousePos = mouse->getPos();
-        if(isAutoCursor && !osu->active_map->isPaused()) {
-            mousePos = osu->active_map->getCursorPos();
+        if(isAutoCursor && !osu->getMapInterface()->isPaused()) {
+            mousePos = osu->getMapInterface()->getCursorPos();
         }
 
         this->bCrosshairIntersectsScreen = true;
@@ -442,7 +442,7 @@ void ModFPoSu::handleInputOverrides(bool rawDeltasRequired) {
     if(env->isOSMouseInputRaw() != rawDeltasRequired) {
         if(rawDeltasRequired && !this->bAlreadyWarnedAboutRawInputOverride) {
             this->bAlreadyWarnedAboutRawInputOverride = true;
-            osu->notificationOverlay->addToast(
+            osu->getNotificationOverlay()->addToast(
                 R"(Forced raw input. Enable "Tablet/Absolute Mode" if you're using a tablet!)", INFO_TOAST);
         }
         env->setRawInput(rawDeltasRequired);

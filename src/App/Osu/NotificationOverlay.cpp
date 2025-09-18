@@ -89,7 +89,7 @@ void ToastElement::draw() {
 void NotificationOverlay::mouse_update(bool *propagate_clicks) {
     bool chat_toasts_visible = cv::notify_during_gameplay.getBool();
     chat_toasts_visible |= !osu->isInPlayMode();
-    chat_toasts_visible |= osu->pauseMenu->isVisible();
+    chat_toasts_visible |= osu->getPauseMenu()->isVisible();
 
     bool a_toast_is_hovered = false;
     vec2 screen{Osu::g_vInternalResolution};
@@ -129,7 +129,7 @@ void NotificationOverlay::mouse_update(bool *propagate_clicks) {
 void NotificationOverlay::draw() {
     bool chat_toasts_visible = cv::notify_during_gameplay.getBool();
     chat_toasts_visible |= !osu->isInPlayMode();
-    chat_toasts_visible |= osu->pauseMenu->isVisible();
+    chat_toasts_visible |= osu->getPauseMenu()->isVisible();
 
     for(auto t : this->toasts) {
         if(t->type == ToastElement::TYPE::CHAT && !chat_toasts_visible) continue;

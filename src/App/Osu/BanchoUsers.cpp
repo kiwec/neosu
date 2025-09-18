@@ -89,11 +89,11 @@ void logout_user(i32 user_id) {
 
         if(user_info->is_friend() && cv::notify_friend_status_change.getBool()) {
             auto text = UString::fmt("{} is now offline", user_info->name);
-            osu->notificationOverlay->addToast(text, STATUS_TOAST, {}, ToastElement::TYPE::CHAT);
+            osu->getNotificationOverlay()->addToast(text, STATUS_TOAST, {}, ToastElement::TYPE::CHAT);
         }
 
         online_users.erase(user_id);
-        osu->chat->updateUserList();
+        osu->getChat()->updateUserList();
     }
 }
 
@@ -164,7 +164,7 @@ UserInfo* get_user_info(i32 user_id, bool wants_presence) {
         info->user_id = user_id;
         info->name = UString::format("User #%d", user_id);
         all_users[user_id] = info;
-        osu->chat->updateUserList();
+        osu->getChat()->updateUserList();
 
         if(wants_presence) {
             enqueue_presence_request(info);

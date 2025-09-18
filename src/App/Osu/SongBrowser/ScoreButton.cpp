@@ -87,7 +87,7 @@ void ScoreButton::draw() {
 
         // Update avatar visibility status
         // NOTE: Not checking horizontal visibility
-        auto m_scoreBrowser = osu->songBrowser2->scoreBrowser;
+        auto m_scoreBrowser = osu->getSongBrowser()->scoreBrowser;
         bool is_below_top = this->avatar->getPos().y + this->avatar->getSize().y >= m_scoreBrowser->getPos().y;
         bool is_above_bottom = this->avatar->getPos().y <= m_scoreBrowser->getPos().y + m_scoreBrowser->getSize().y;
         this->avatar->on_screen = is_below_top && is_above_bottom;
@@ -571,9 +571,9 @@ void ScoreButton::onRightMouseUpInside() {
 }
 
 void ScoreButton::onContextMenu(const UString &text, int id) {
-    if(osu->userStats->isVisible()) {
+    if(osu->getUserStatsScreen()->isVisible()) {
         auto score = this->getScore();
-        osu->userStats->setVisible(false);
+        osu->getUserStatsScreen()->setVisible(false);
 
         auto song_button = (CarouselButton *)osu->getSongBrowser()->hashToSongButton[score.beatmap_hash];
         osu->getSongBrowser()->selectSongButton(song_button);
@@ -638,7 +638,7 @@ void ScoreButton::onDeleteScoreConfirmed(const UString & /*text*/, int id) {
     // absolutely disgusting
     osu->getSongBrowser()->onScoreContextMenu(this, 2);
 
-    osu->userStats->rebuildScoreButtons();
+    osu->getUserStatsScreen()->rebuildScoreButtons();
 }
 
 void ScoreButton::setScore(const FinishedScore &score, DatabaseBeatmap *map, int index, const UString &titleString,

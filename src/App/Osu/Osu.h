@@ -58,7 +58,6 @@ class Osu final : public MouseListener, public KeyboardListener {
 
     void draw();
     void update();
-    bool isInPlayModeAndNotPaused();
 
     void onKeyDown(KeyboardEvent &e) override;
     void onKeyUp(KeyboardEvent &e) override;
@@ -86,7 +85,16 @@ class Osu final : public MouseListener, public KeyboardListener {
 
     void saveScreenshot();
 
-    void reloadSkin() { this->onSkinReload(); }
+    inline void reloadSkin() { this->onSkinReload(); }
+
+    void reloadMapInterface();
+
+    // threading-related
+    [[nodiscard]] bool isInPlayModeAndNotPaused() const;
+    [[nodiscard]] inline bool shouldPauseBGThreads() const {
+        return this->pause_bg_threads.load(std::memory_order_acquire);
+    }
+    inline void setShouldPauseBGThreads(bool pause) { this->pause_bg_threads.store(pause, std::memory_order_release); }
 
     static vec2 g_vInternalResolution;
 
@@ -94,21 +102,40 @@ class Osu final : public MouseListener, public KeyboardListener {
     [[nodiscard]] inline int getScreenWidth() const { return (int)g_vInternalResolution.x; }
     [[nodiscard]] inline int getScreenHeight() const { return (int)g_vInternalResolution.y; }
 
-    [[nodiscard]] inline OptionsMenu *getOptionsMenu() const { return this->optionsMenu; }
-    [[nodiscard]] inline SongBrowser *getSongBrowser() const { return this->songBrowser2; }
-    [[nodiscard]] inline BackgroundImageHandler *getBackgroundImageHandler() const {
+    [[nodiscard]] inline const std::unique_ptr<OptionsMenu> &getOptionsMenu() const { return this->optionsMenu; }
+    [[nodiscard]] inline const std::unique_ptr<SongBrowser> &getSongBrowser() const { return this->songBrowser; }
+    [[nodiscard]] inline const std::unique_ptr<Changelog> &getChangelog() const { return this->changelog; }
+    [[nodiscard]] inline const std::unique_ptr<UserCard> &getUserButton() const { return this->userButton; }
+    [[nodiscard]] inline const std::unique_ptr<Lobby> &getLobby() const { return this->lobby; }
+    [[nodiscard]] inline const std::unique_ptr<SpectatorScreen> &getSpectatorScreen() const {
+        return this->spectatorScreen;
+    }
+    [[nodiscard]] inline const std::unique_ptr<BackgroundImageHandler> &getBackgroundImageHandler() const {
         return this->backgroundImageHandler;
     }
-    [[nodiscard]] inline Skin *getSkin() const { return this->skin; }
-    [[nodiscard]] inline HUD *getHUD() const { return this->hud; }
-    [[nodiscard]] inline TooltipOverlay *getTooltipOverlay() const { return this->tooltipOverlay; }
-    [[nodiscard]] inline ModSelector *getModSelector() const { return this->modSelector; }
-    [[nodiscard]] inline ModFPoSu *getFPoSu() const { return this->fposu; }
-    [[nodiscard]] inline PauseMenu *getPauseMenu() const { return this->pauseMenu; }
-    [[nodiscard]] inline MainMenu *getMainMenu() const { return this->mainMenu; }
-    [[nodiscard]] inline RankingScreen *getRankingScreen() const { return this->rankingScreen; }
-    [[nodiscard]] inline LiveScore *getScore() const { return this->score; }
-    [[nodiscard]] inline UpdateHandler *getUpdateHandler() const { return this->updateHandler; }
+    [[nodiscard]] inline const std::unique_ptr<HUD> &getHUD() const { return this->hud; }
+    [[nodiscard]] inline const std::unique_ptr<TooltipOverlay> &getTooltipOverlay() const {
+        return this->tooltipOverlay;
+    }
+    [[nodiscard]] inline const std::unique_ptr<ModSelector> &getModSelector() const { return this->modSelector; }
+    [[nodiscard]] inline const std::unique_ptr<ModFPoSu> &getFPoSu() const { return this->fposu; }
+    [[nodiscard]] inline const std::unique_ptr<PauseMenu> &getPauseMenu() const { return this->pauseMenu; }
+    [[nodiscard]] inline const std::unique_ptr<Chat> &getChat() const { return this->chat; }
+    [[nodiscard]] inline const std::unique_ptr<PromptScreen> &getPromptScreen() const { return this->prompt; }
+    [[nodiscard]] inline const std::unique_ptr<UIUserContextMenuScreen> &getUserActions() const {
+        return this->user_actions;
+    }
+    [[nodiscard]] inline const std::unique_ptr<RoomScreen> &getRoom() const { return this->room; }
+    [[nodiscard]] inline const std::unique_ptr<NotificationOverlay> &getNotificationOverlay() const {
+        return this->notificationOverlay;
+    }
+    [[nodiscard]] inline const std::unique_ptr<VolumeOverlay> &getVolumeOverlay() const { return this->volumeOverlay; }
+    [[nodiscard]] inline const std::unique_ptr<MainMenu> &getMainMenu() const { return this->mainMenu; }
+    [[nodiscard]] inline const std::unique_ptr<RankingScreen> &getRankingScreen() const { return this->rankingScreen; }
+    [[nodiscard]] inline const std::unique_ptr<LiveScore> &getScore() const { return this->score; }
+    [[nodiscard]] inline const std::unique_ptr<UserStatsScreen> &getUserStatsScreen() const { return this->userStats; }
+    [[nodiscard]] inline const std::unique_ptr<UpdateHandler> &getUpdateHandler() const { return this->updateHandler; }
+    [[nodiscard]] inline const std::unique_ptr<BeatmapInterface> &getMapInterface() const { return this->map_iface; }
     [[nodiscard]] inline const std::unique_ptr<AvatarManager> &getAvatarManager() const { return this->avatarManager; }
 
     [[nodiscard]] inline RenderTarget *getPlayfieldBuffer() const { return this->playfieldBuffer; }
@@ -121,6 +148,7 @@ class Osu final : public MouseListener, public KeyboardListener {
     [[nodiscard]] inline McFont *getSongBrowserFont() const { return this->songBrowserFont; }
     [[nodiscard]] inline McFont *getSongBrowserFontBold() const { return this->songBrowserFontBold; }
     [[nodiscard]] inline McFont *getFontIcons() const { return this->fontIcons; }
+    [[nodiscard]] inline const std::unique_ptr<Skin> &getSkin() const { return this->skin; }
 
     float getDifficultyMultiplier();
     float getCSDifficultyMultiplier();
@@ -147,10 +175,10 @@ class Osu final : public MouseListener, public KeyboardListener {
 
     [[nodiscard]] inline std::vector<ConVar *> getExperimentalMods() const { return this->experimentalMods; }
 
-    bool isInPlayMode();
+    [[nodiscard]] bool isInPlayMode() const;
     [[nodiscard]] inline bool isSkinLoading() const {
         return this->bSkinLoadScheduled ||
-               (this->skin && this->skinScheduledToLoad && this->skin != this->skinScheduledToLoad);
+               (this->skin && this->skinScheduledToLoad && this->skin.get() != this->skinScheduledToLoad);
     }
 
     [[nodiscard]] inline bool isSkipScheduled() const { return this->bSkipScheduled; }
@@ -209,33 +237,33 @@ class Osu final : public MouseListener, public KeyboardListener {
 
     void setupSoloud();
 
+   private:
     // interfaces
     std::unique_ptr<BeatmapInterface> map_iface{nullptr};
-    VolumeOverlay *volumeOverlay{nullptr};
-    MainMenu *mainMenu{nullptr};
-    OptionsMenu *optionsMenu{nullptr};
-    Chat *chat{nullptr};
-    Lobby *lobby{nullptr};
-    RoomScreen *room{nullptr};
-    PromptScreen *prompt{nullptr};
-    UIUserContextMenuScreen *user_actions{nullptr};
-    SongBrowser *songBrowser2{nullptr};
-    BackgroundImageHandler *backgroundImageHandler{nullptr};
-    ModSelector *modSelector{nullptr};
-    RankingScreen *rankingScreen{nullptr};
-    UserStatsScreen *userStats{nullptr};
-    PauseMenu *pauseMenu{nullptr};
-    Skin *skin{nullptr};
-    HUD *hud{nullptr};
-    TooltipOverlay *tooltipOverlay{nullptr};
-    NotificationOverlay *notificationOverlay{nullptr};
-    LiveScore *score{nullptr};
-    Changelog *changelog{nullptr};
-    UpdateHandler *updateHandler{nullptr};
-    ModFPoSu *fposu{nullptr};
-    SpectatorScreen *spectatorScreen{nullptr};
-
+    std::unique_ptr<AvatarManager> avatarManager{nullptr};
     std::unique_ptr<UserCard> userButton{nullptr};
+    std::unique_ptr<Chat> chat{nullptr};
+    std::unique_ptr<VolumeOverlay> volumeOverlay{nullptr};
+    std::unique_ptr<MainMenu> mainMenu{nullptr};
+    std::unique_ptr<OptionsMenu> optionsMenu{nullptr};
+    std::unique_ptr<Lobby> lobby{nullptr};
+    std::unique_ptr<RoomScreen> room{nullptr};
+    std::unique_ptr<PromptScreen> prompt{nullptr};
+    std::unique_ptr<UIUserContextMenuScreen> user_actions{nullptr};
+    std::unique_ptr<SongBrowser> songBrowser{nullptr};
+    std::unique_ptr<BackgroundImageHandler> backgroundImageHandler{nullptr};
+    std::unique_ptr<ModSelector> modSelector{nullptr};
+    std::unique_ptr<RankingScreen> rankingScreen{nullptr};
+    std::unique_ptr<UserStatsScreen> userStats{nullptr};
+    std::unique_ptr<PauseMenu> pauseMenu{nullptr};
+    std::unique_ptr<HUD> hud{nullptr};
+    std::unique_ptr<TooltipOverlay> tooltipOverlay{nullptr};
+    std::unique_ptr<NotificationOverlay> notificationOverlay{nullptr};
+    std::unique_ptr<LiveScore> score{nullptr};
+    std::unique_ptr<Changelog> changelog{nullptr};
+    std::unique_ptr<UpdateHandler> updateHandler{nullptr};
+    std::unique_ptr<ModFPoSu> fposu{nullptr};
+    std::unique_ptr<SpectatorScreen> spectatorScreen{nullptr};
 
     std::vector<OsuScreen *> screens;
 
@@ -246,38 +274,50 @@ class Osu final : public MouseListener, public KeyboardListener {
     RenderTarget *AAFrameBuffer{nullptr};
     RenderTarget *frameBuffer{nullptr};
     RenderTarget *frameBuffer2{nullptr};
-    vec2 vInternalResolution{0.f};
 
     Shader *actual_flashlight_shader{nullptr};
     Shader *flashlight_shader{nullptr};
 
+    vec2 vInternalResolution{0.f};
+
+    // i don't like how these have to be public, but it's too annoying to change for now.
+    // public members just mean their values can get rugpulled from under your feet at any moment,
+    // and make it more annoying to find everywhere its actually changed
+   public:
     vec2 flashlight_position{0.f};
 
     // mods
+   public:  // public because of many external access
     std::vector<ConVar *> experimentalMods;
     Replay::Mods previous_mods{0};
     bool bModAutoTemp{false};  // when ctrl+clicking a map, the auto mod should disable itself after the map finishes
 
     // keys
-    bool bF1{false};
-    bool bUIToggleCheck{false};
-    bool bScoreboardToggleCheck{false};
-    bool bEscape{false};
+   public:  // public due to "stuck key fix" in BeatmapInterface
     bool bKeyboardKey1Down{false};
     bool bKeyboardKey12Down{false};
     bool bKeyboardKey2Down{false};
     bool bKeyboardKey22Down{false};
     bool bMouseKey1Down{false};
     bool bMouseKey2Down{false};
+
+   private:
+    bool bF1{false};
+    bool bUIToggleCheck{false};
+    bool bScoreboardToggleCheck{false};
+    bool bEscape{false};
     bool bSkipScheduled{false};
     bool bQuickRetryDown{false};
-    float fQuickRetryTime{0.f};
     bool bSeekKey{false};
     bool bSeeking{false};
     bool bClickedSkipButton{false};
     float fPrevSeekMousePosX{-1.f};
+    float fQuickRetryTime{0.f};
+
+   public:  // public due to BeatmapInterface access
     float fQuickSaveTime{0.f};
 
+   private:
     // async toggles
     // TODO: this way of doing things is bullshit
     bool bToggleModSelectionScheduled{false};
@@ -293,28 +333,30 @@ class Osu final : public MouseListener, public KeyboardListener {
     McFont *songBrowserFont{nullptr};
     McFont *songBrowserFontBold{nullptr};
     McFont *fontIcons{nullptr};
+    std::unique_ptr<Skin> skin{nullptr};
+    Skin *skinScheduledToLoad{nullptr};
 
     // debugging
-    CWindowManager *windowManager{nullptr};
+    std::unique_ptr<CWindowManager> windowManager{nullptr};
 
     // replay
+   public:
     UString watched_user_name;
     i32 watched_user_id{0};
 
     // custom
-    bool music_unpause_scheduled{false};
+   private:
+    std::atomic<bool> pause_bg_threads{false};
     bool bScheduleEndlessModNextBeatmap{false};
     bool bWasBossKeyPaused{false};
     bool bSkinLoadScheduled{false};
     bool bSkinLoadWasReload{false};
-    Skin *skinScheduledToLoad{nullptr};
     bool bFontReloadScheduled{false};
     bool bFireResolutionChangedScheduled{false};
     bool bFireDelayedFontReloadAndResolutionChangeToFixDesyncedUIScaleScheduled{false};
-    std::atomic<bool> should_pause_background_threads{false};
 
-   private:
-    std::unique_ptr<AvatarManager> avatarManager{nullptr};
+   public:  // public due to BassSoundEngine access
+    bool music_unpause_scheduled{false};
 };
 
 extern Osu *osu;

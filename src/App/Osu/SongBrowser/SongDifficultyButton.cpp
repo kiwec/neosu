@@ -53,7 +53,7 @@ void SongDifficultyButton::draw() {
 
     const bool isIndependentDiff = this->isIndependentDiffButton();
 
-    Skin* skin = osu->getSkin();
+    const auto &skin = osu->getSkin();
 
     // scaling
     const vec2 pos = this->getActualPos();

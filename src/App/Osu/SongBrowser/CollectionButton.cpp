@@ -36,7 +36,7 @@ void CollectionButton::draw() {
     CarouselButton::draw();
     if(!this->bVisible) return;
 
-    Skin *skin = osu->getSkin();
+    const auto &skin = osu->getSkin();
 
     // scaling
     const vec2 pos = this->getActualPos();

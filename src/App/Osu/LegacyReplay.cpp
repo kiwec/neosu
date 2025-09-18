@@ -268,7 +268,7 @@ void load_and_watch(FinishedScore score) {
 
             if(score.server.c_str() != BanchoState::endpoint) {
                 auto msg = UString::format("Please connect to %s to view this replay!", score.server.c_str());
-                osu->notificationOverlay->addToast(msg, ERROR_TOAST);
+                osu->getNotificationOverlay()->addToast(msg, ERROR_TOAST);
             }
 
             // Need to allocate with calloc since APIRequests free() the .extra
@@ -286,25 +286,25 @@ void load_and_watch(FinishedScore score) {
             request.extra = (u8*)score_cpy;
             BANCHO::Net::send_api_request(request);
 
-            osu->notificationOverlay->addNotification("Downloading replay...");
+            osu->getNotificationOverlay()->addNotification("Downloading replay...");
             return;
         }
     }
 
     // We tried loading from memory, we tried loading from file, we tried loading from server... RIP
     if(score.replay.empty()) {
-        osu->notificationOverlay->addToast("Failed to load replay", ERROR_TOAST);
+        osu->getNotificationOverlay()->addToast("Failed to load replay", ERROR_TOAST);
         return;
     }
 
     auto map = db->getBeatmapDifficulty(score.beatmap_hash);
     if(map == nullptr) {
         // XXX: Auto-download beatmap
-        osu->notificationOverlay->addToast("Missing beatmap for this replay", ERROR_TOAST);
+        osu->getNotificationOverlay()->addToast("Missing beatmap for this replay", ERROR_TOAST);
     } else {
         osu->getSongBrowser()->onDifficultySelected(map, false);
         osu->getSongBrowser()->selectSelectedBeatmapSongButton();
-        osu->active_map->watch(score, 0);
+        osu->getMapInterface()->watch(score, 0);
     }
 }
 

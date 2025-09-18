@@ -123,7 +123,7 @@ void send_bancho_packet_async(Packet outgoing) {
                 std::scoped_lock<std::mutex> lock{auth_mutex};
                 if(auth_header.empty()) {
                     auto errmsg = UString::format("Failed to log in: HTTP %ld", response.responseCode);
-                    osu->notificationOverlay->addToast(errmsg, ERROR_TOAST);
+                    osu->getNotificationOverlay()->addToast(errmsg, ERROR_TOAST);
                 }
                 return;
             }
@@ -215,7 +215,7 @@ void handle_api_response(Packet packet) {
         case GET_REPLAY: {
             if(packet.size == 0) {
                 // Most likely, 404
-                osu->notificationOverlay->addToast("Failed to download replay", ERROR_TOAST);
+                osu->getNotificationOverlay()->addToast("Failed to download replay", ERROR_TOAST);
                 break;
             }
 
@@ -239,7 +239,7 @@ void handle_api_response(Packet packet) {
             // XXX: this is blocking main thread
             FILE *replay_file = fopen(replay_path.toUtf8(), "wb");
             if(replay_file == nullptr) {
-                osu->notificationOverlay->addToast("Failed to save replay", ERROR_TOAST);
+                osu->getNotificationOverlay()->addToast("Failed to save replay", ERROR_TOAST);
                 break;
             }
 
@@ -297,7 +297,7 @@ void update_networking() {
     }
 
     // Set ping timeout
-    if(osu && osu->lobby->isVisible()) seconds_between_pings = 1;
+    if(osu && osu->getLobby()->isVisible()) seconds_between_pings = 1;
     if(BanchoState::spectating) seconds_between_pings = 1;
     if(BanchoState::is_in_a_multi_room() && seconds_between_pings > 3) seconds_between_pings = 3;
     bool should_ping = difftime(time(nullptr), last_packet_tms) > seconds_between_pings;
@@ -485,7 +485,7 @@ void BanchoState::disconnect() {
     BANCHO::Net::outgoing = Packet();
 
     BanchoState::set_uid(0);
-    osu->userButton->setID(0);
+    osu->getUserButton()->setID(0);
 
     BanchoState::is_oauth = false;
     BanchoState::endpoint = "";
@@ -500,13 +500,13 @@ void BanchoState::disconnect() {
     }
 
     BanchoState::score_submission_policy = ServerPolicy::NO_PREFERENCE;
-    osu->optionsMenu->update_login_button();
-    osu->optionsMenu->setLoginLoadingState(false);
-    osu->optionsMenu->scheduleLayoutUpdate();
+    osu->getOptionsMenu()->update_login_button();
+    osu->getOptionsMenu()->setLoginLoadingState(false);
+    osu->getOptionsMenu()->scheduleLayoutUpdate();
 
     BANCHO::User::logout_all_users();
-    osu->chat->onDisconnect();
-    osu->songBrowser2->onFilterScoresChange("Local", 0);
+    osu->getChat()->onDisconnect();
+    osu->getSongBrowser()->onFilterScoresChange("Local", 0);
 
     Downloader::abort_downloads();
 }
@@ -537,7 +537,7 @@ void BanchoState::reconnect() {
     };
     for(const char *forbidden_server : server_blacklist) {
         if(!strcmp(forbidden_server, BanchoState::endpoint.c_str())) {
-            osu->notificationOverlay->addToast("This server does not allow neosu clients.", ERROR_TOAST);
+            osu->getNotificationOverlay()->addToast("This server does not allow neosu clients.", ERROR_TOAST);
             return;
         }
     }

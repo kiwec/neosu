@@ -34,7 +34,7 @@ UserCard::UserCard(i32 user_id) : CBaseUIButton() {
     // We do not pass mouse events to this->avatar
     this->setClickCallback([](CBaseUIButton *btn) {
         auto card = (UserCard *)btn;
-        osu->user_actions->open(card->user_id, card == osu->userButton.get());
+        osu->getUserActions()->open(card->user_id, card == osu->getUserButton().get());
     });
 }
 

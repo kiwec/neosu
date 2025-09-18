@@ -66,8 +66,8 @@ void ChatLink::onMouseUpInside(bool /*left*/, bool /*right*/) {
 
     // Detect multiplayer invite links
     if(this->link.startsWith("osump://")) {
-        if(osu->room->isVisible()) {
-            osu->notificationOverlay->addNotification("You are already in a multiplayer room.");
+        if(osu->getRoom()->isVisible()) {
+            osu->getNotificationOverlay()->addNotification("You are already in a multiplayer room.");
             return;
         }
 
@@ -76,7 +76,7 @@ void ChatLink::onMouseUpInside(bool /*left*/, bool /*right*/) {
         std::regex_search(link_str, match, std::regex("osump://(\\d+)/(\\S*)"));
         u32 invite_id = strtoul(match.str(1).c_str(), nullptr, 10);
         UString password = match.str(2).c_str();
-        osu->lobby->joinRoom(invite_id, password);
+        osu->getLobby()->joinRoom(invite_id, password);
         return;
     }
 
@@ -87,7 +87,7 @@ void ChatLink::onMouseUpInside(bool /*left*/, bool /*right*/) {
     user_pattern.append("/u(sers)?/(\\d+)");
     if(std::regex_search(link_str, match, std::regex(user_pattern.toUtf8()))) {
         i32 user_id = std::stoi(match.str(3));
-        osu->user_actions->open(user_id);
+        osu->getUserActions()->open(user_id);
         return;
     }
 

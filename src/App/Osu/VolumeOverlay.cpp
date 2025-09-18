@@ -242,17 +242,17 @@ bool VolumeOverlay::isVisible() { return engine->getTime() < this->fVolumeChange
 
 bool VolumeOverlay::canChangeVolume() {
     bool can_scroll = true;
-    if(osu->songBrowser2->isVisible() && db->isFinished() == 1.f) {
+    if(osu->getSongBrowser()->isVisible() && db->isFinished() == 1.f) {
         can_scroll = false;
     }
-    if(osu->optionsMenu->isVisible()) can_scroll = false;
-    if(osu->optionsMenu->contextMenu->isVisible()) can_scroll = false;
-    if(osu->changelog->isVisible()) can_scroll = false;
-    if(osu->rankingScreen->isVisible()) can_scroll = false;
-    if(osu->modSelector->isMouseInScrollView()) can_scroll = false;
-    if(osu->chat->isMouseInChat()) can_scroll = false;
-    if(osu->userStats->isVisible()) can_scroll = false;
-    if(osu->isInPlayMode() && cv::disable_mousewheel.getBool() && !osu->pauseMenu->isVisible()) can_scroll = false;
+    if(osu->getOptionsMenu()->isVisible()) can_scroll = false;
+    if(osu->getOptionsMenu()->contextMenu->isVisible()) can_scroll = false;
+    if(osu->getChangelog()->isVisible()) can_scroll = false;
+    if(osu->getRankingScreen()->isVisible()) can_scroll = false;
+    if(osu->getModSelector()->isMouseInScrollView()) can_scroll = false;
+    if(osu->getChat()->isMouseInChat()) can_scroll = false;
+    if(osu->getUserStatsScreen()->isVisible()) can_scroll = false;
+    if(osu->isInPlayMode() && cv::disable_mousewheel.getBool() && !osu->getPauseMenu()->isVisible()) can_scroll = false;
 
     if(this->isBusy()) can_scroll = true;
     if(keyboard->isAltDown()) can_scroll = true;
@@ -304,7 +304,7 @@ void VolumeOverlay::onMasterVolumeChange(float newValue) {
 
 void VolumeOverlay::onEffectVolumeChange() {
     if(!osu || osu->isSkinLoading()) return;
-    updateEffectVolume(osu->getSkin());
+    updateEffectVolume(osu->getSkin().get());
 }
 
 void VolumeOverlay::updateEffectVolume(Skin *skin) {
@@ -317,8 +317,8 @@ void VolumeOverlay::updateEffectVolume(Skin *skin) {
 }
 
 void VolumeOverlay::onMusicVolumeChange() {
-    auto music = osu->active_map->getMusic();
+    auto music = osu->getMapInterface()->getMusic();
     if(music != nullptr) {
-        music->setBaseVolume(osu->active_map->getIdealVolume());
+        music->setBaseVolume(osu->getMapInterface()->getIdealVolume());
     }
 }

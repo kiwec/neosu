@@ -351,10 +351,10 @@ BeatmapSet *Database::addBeatmapSet(const std::string &beatmapFolderPath, i32 se
     }
     this->beatmap_difficulties_mtx.unlock();
 
-    osu->songBrowser2->addBeatmapSet(beatmap);
+    osu->getSongBrowser()->addBeatmapSet(beatmap);
 
     // XXX: Very slow
-    osu->songBrowser2->onSortChangeInt(cv::songbrowser_sortingtype.getString().c_str());
+    osu->getSongBrowser()->onSortChangeInt(cv::songbrowser_sortingtype.getString().c_str());
 
     return beatmap;
 }
@@ -747,12 +747,12 @@ void Database::scheduleLoadRaw() {
 
         this->bFoundChanges = this->iNumBeatmapsToLoad > 0;
         if(this->bFoundChanges)
-            osu->notificationOverlay->addNotification(
+            osu->getNotificationOverlay()->addNotification(
                 UString::format(this->iNumBeatmapsToLoad == 1 ? "Adding %i new beatmap." : "Adding %i new beatmaps.",
                                 this->iNumBeatmapsToLoad),
                 0xff00ff00);
         else
-            osu->notificationOverlay->addNotification(
+            osu->getNotificationOverlay()->addNotification(
                 UString::format("No new beatmaps detected.", this->iNumBeatmapsToLoad), 0xff00ff00);
     }
 
@@ -973,7 +973,7 @@ void Database::loadMaps() {
 
             // hard cap upper db version
             if(this->iVersion > cv::database_version.getInt() && !cv::database_ignore_version.getBool()) {
-                osu->notificationOverlay->addToast(
+                osu->getNotificationOverlay()->addToast(
                     UString::format("osu!.db version unknown (%i), osu!stable maps will not get loaded.",
                                     this->iVersion),
                     ERROR_TOAST);
@@ -1612,7 +1612,7 @@ void Database::loadScores(const UString &dbPath) {
     u32 nb_neosu_scores = 0;
     u8 magic_bytes[6] = {0};
     if(db.read_bytes(magic_bytes, 5) != 5 || memcmp(magic_bytes, "NEOSC", 5) != 0) {
-        osu->notificationOverlay->addToast("Failed to load neosu_scores.db!", ERROR_TOAST);
+        osu->getNotificationOverlay()->addToast("Failed to load neosu_scores.db!", ERROR_TOAST);
         this->bytes_processed += db.total_size;
         return;
     }

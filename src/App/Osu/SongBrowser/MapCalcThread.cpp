@@ -55,7 +55,7 @@ void MapCalcThread::run() {
 
     for(const auto& map : *this->maps_to_process) {
         // pause handling
-        while(osu->should_pause_background_threads.load() && !this->should_stop.load()) {
+        while(osu->shouldPauseBGThreads() && !this->should_stop.load()) {
             Timing::sleepMS(100);
         }
         Timing::sleep(1);

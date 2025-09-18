@@ -66,7 +66,7 @@ RoomUIElement::RoomUIElement(Lobby* multi, Room* room, float x, float y, float w
 void RoomUIElement::onRoomJoinButtonClick(CBaseUIButton* /*btn*/) {
     if(this->has_password) {
         this->multi->room_to_join = this->room_id;
-        osu->prompt->prompt("Room password:", SA::MakeDelegate<&Lobby::on_room_join_with_password>(this->multi));
+        osu->getPromptScreen()->prompt("Room password:", SA::MakeDelegate<&Lobby::on_room_join_with_password>(this->multi));
     } else {
         this->multi->joinRoom(this->room_id, "");
     }
@@ -104,7 +104,7 @@ void Lobby::onKeyDown(KeyboardEvent& key) {
     if(key.getKeyCode() == KEY_ESCAPE) {
         key.consume();
         this->setVisible(false);
-        osu->mainMenu->setVisible(true);
+        osu->getMainMenu()->setVisible(true);
         soundEngine->play(osu->getSkin()->getMenuBackSound());
         return;
     }
@@ -162,7 +162,7 @@ CBaseUIContainer* Lobby::setVisible(bool visible) {
         this->rooms.clear();
     }
 
-    osu->chat->updateVisibility();
+    osu->getChat()->updateVisibility();
     return this;
 }
 
@@ -221,7 +221,7 @@ void Lobby::joinRoom(u32 id, const UString& password) {
     }
 
     debugLog("Joining room #{:d} with password '{:s}'\n", id, password.toUtf8());
-    osu->notificationOverlay->addNotification("Joining room...");
+    osu->getNotificationOverlay()->addNotification("Joining room...");
 }
 
 void Lobby::updateRoom(const Room& room) {
@@ -263,8 +263,8 @@ void Lobby::on_create_room_clicked() {
     BanchoState::room.slots[0].status = 4;  // not ready
     BanchoState::room.slots[0].player_id = BanchoState::get_uid();
 
-    if(osu->active_map && osu->active_map->beatmap) {
-        auto map = osu->active_map->beatmap;
+    if(osu->getMapInterface() && osu->getMapInterface()->beatmap) {
+        auto map = osu->getMapInterface()->beatmap;
         BanchoState::room.map_name = UString::format("%s - %s [%s]", map->getArtist().c_str(),
                                                      map->getTitle().c_str(), map->getDifficultyName().c_str());
         BanchoState::room.map_md5 = map->getMD5Hash();
@@ -276,7 +276,7 @@ void Lobby::on_create_room_clicked() {
     BanchoState::room.pack(&packet);
     BANCHO::Net::send_packet(packet);
 
-    osu->notificationOverlay->addNotification("Creating room...");
+    osu->getNotificationOverlay()->addNotification("Creating room...");
 }
 
 void Lobby::on_room_join_with_password(const UString& password) { this->joinRoom(this->room_to_join, password); }

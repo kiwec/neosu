@@ -74,7 +74,7 @@ HUD::HUD() : OsuScreen() {
 HUD::~HUD() {}
 
 void HUD::draw() {
-    BeatmapInterface *pf = osu->active_map;
+    const auto &pf = osu->getMapInterface();
 
     if(cv::draw_hud.getBool()) {
         if(cv::draw_inputoverlay.getBool()) {
@@ -1220,7 +1220,7 @@ std::vector<SCORE_ENTRY> HUD::getCurrentScores() {
     static std::vector<SCORE_ENTRY> scores;
     scores.clear();
 
-    auto pf = osu->active_map;
+    const auto &pf = osu->getMapInterface();
 
     if(BanchoState::is_in_a_multi_room()) {
         for(auto &i : BanchoState::room.slots) {
@@ -1332,7 +1332,7 @@ std::vector<SCORE_ENTRY> HUD::getCurrentScores() {
 }
 
 void HUD::resetScoreboard() {
-    DatabaseBeatmap *map = osu->active_map->beatmap;
+    DatabaseBeatmap *map = osu->getMapInterface()->beatmap;
     if(map == nullptr) return;
 
     this->beatmap_md5 = map->getMD5Hash();
@@ -1358,7 +1358,7 @@ void HUD::resetScoreboard() {
 }
 
 void HUD::updateScoreboard(bool animate) {
-    DatabaseBeatmap *map = osu->active_map->beatmap;
+    DatabaseBeatmap *map = osu->getMapInterface()->beatmap;
     if(map == nullptr) return;
 
     if(!cv::scoreboard_animations.getBool()) {
@@ -1959,7 +1959,7 @@ void HUD::drawScrubbingTimeline(u32 beatmapTime, u32 beatmapLengthPlayable, u32 
 
     // Auto-hide scrubbing timeline when watching a replay
     f64 galpha = 1.0f;
-    if(osu->active_map->is_watching) {
+    if(osu->getMapInterface()->is_watching) {
         f64 time_since_last_move = new_cursor_movement - (last_cursor_movement + 1.0f);
         galpha = fmax(0.f, fmin(1.0f - time_since_last_move, 1.0f));
     }
@@ -1984,8 +1984,8 @@ void HUD::drawScrubbingTimeline(u32 beatmapTime, u32 beatmapLengthPlayable, u32 
 
     // draw strain graph
     if(cv::draw_scrubbing_timeline_strain_graph.getBool()) {
-        const std::vector<f64> &aimStrains = osu->active_map->aimStrains;
-        const std::vector<f64> &speedStrains = osu->active_map->speedStrains;
+        const std::vector<f64> &aimStrains = osu->getMapInterface()->aimStrains;
+        const std::vector<f64> &speedStrains = osu->getMapInterface()->speedStrains;
 
         u32 nb_strains = aimStrains.size();
         if(aimStrains.size() > 0 && aimStrains.size() == speedStrains.size()) {
@@ -2337,7 +2337,7 @@ float HUD::getCursorScaleFactor() {
 
     float mapScale = 1.0f;
     if(cv::automatic_cursor_size.getBool() && osu->isInPlayMode())
-        mapScale = 1.0f - 0.7f * (float)(osu->active_map->getCS() - 4.0f) / 5.0f;
+        mapScale = 1.0f - 0.7f * (float)(osu->getMapInterface()->getCS() - 4.0f) / 5.0f;
 
     return ((float)osu->getScreenHeight() / spriteRes) * mapScale;
 }

@@ -145,7 +145,7 @@ void UIModSelectorModButton::onClicked(bool  /*left*/, bool  /*right*/) {
         BANCHO::Net::send_packet(packet);
 
         // Don't wait on server response to update UI
-        osu->room->on_room_updated(BanchoState::room);
+        osu->getRoom()->on_room_updated(BanchoState::room);
     }
 
     if(BanchoState::is_online()) {

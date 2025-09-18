@@ -254,7 +254,7 @@ void BeatmapInterface::drawBackground() {
 void BeatmapInterface::skipEmptySection() {
     if(!this->bIsInSkippableSection) return;
     this->bIsInSkippableSection = false;
-    osu->chat->updateVisibility();
+    osu->getChat()->updateVisibility();
 
     const f32 offset = 2500.0f;
     f32 offsetMultiplier = this->getSpeedMultiplier();
@@ -280,7 +280,7 @@ void BeatmapInterface::skipEmptySection() {
         this->bWasSeekFrame = true;
     }
 
-    soundEngine->play(osu->getSkin()->getMenuHit());
+    soundEngine->play(this->getSkin()->getMenuHit());
 
     if(!BanchoState::spectators.empty()) {
         // TODO @kiwec: how does skip work? does client jump to latest time or just skip beginning?
@@ -444,13 +444,13 @@ bool BeatmapInterface::play() {
             BANCHO::Net::send_packet(packet);
 
             if(cv::spec_share_map.getBool()) {
-                osu->chat->addChannel("#spectator", true);
-                osu->chat->handle_command("/np");
+                osu->getChat()->addChannel("#spectator", true);
+                osu->getChat()->handle_command("/np");
             }
         }
 
         if(BanchoState::can_submit_scores() && !cvars->areAllCvarsSubmittable()) {
-            osu->notificationOverlay->addToast("Score will not submit with current mods/settings", ERROR_TOAST);
+            osu->getNotificationOverlay()->addToast("Score will not submit with current mods/settings", ERROR_TOAST);
         }
 
         return true;
@@ -459,8 +459,8 @@ bool BeatmapInterface::play() {
     return false;
 }
 
-bool BeatmapInterface::watch(FinishedScore score, u32 start_ms) {
-    SAFE_DELETE(sim);
+bool BeatmapInterface::watch(const FinishedScore &score, u32 start_ms) {
+    SAFE_DELETE(this->sim);
     if(score.replay.size() < 3) {
         // Replay is invalid
         return false;
@@ -486,7 +486,7 @@ bool BeatmapInterface::watch(FinishedScore score, u32 start_ms) {
 
     this->spectated_replay = score.replay;
 
-    osu->songBrowser2->setVisible(false);
+    osu->getSongBrowser()->setVisible(false);
 
     // Don't seek to beginning, since that would skip waiting time
     if(start_ms > 0) {
@@ -525,9 +525,9 @@ bool BeatmapInterface::spectate() {
     this->spectated_replay.clear();
     this->score_frames.clear();
 
-    osu->songBrowser2->setVisible(false);
+    osu->getSongBrowser()->setVisible(false);
 
-    SAFE_DELETE(sim);
+    SAFE_DELETE(this->sim);
     score.mods.flags |= Replay::ModFlags::NoFail;
     this->sim = new SimulatedBeatmapInterface(this->beatmap, score.mods);
     this->sim->spectated_replay.clear();
@@ -537,22 +537,22 @@ bool BeatmapInterface::spectate() {
 
 bool BeatmapInterface::start() {
     // set it to false to catch early returns first
-    osu->songBrowser2->bHasSelectedAndIsPlaying = false;
+    osu->getSongBrowser()->bHasSelectedAndIsPlaying = false;
 
     if(this->beatmap == nullptr) return false;
 
-    osu->should_pause_background_threads = true;
+    osu->setShouldPauseBGThreads(true);
 
-    soundEngine->play(osu->skin->getMenuHit());
+    soundEngine->play(this->getSkin()->getMenuHit());
 
     osu->updateMods();
 
     // mp hack
     {
-        osu->mainMenu->setVisible(false);
-        osu->modSelector->setVisible(false);
-        osu->optionsMenu->setVisible(false);
-        osu->pauseMenu->setVisible(false);
+        osu->getMainMenu()->setVisible(false);
+        osu->getModSelector()->setVisible(false);
+        osu->getOptionsMenu()->setVisible(false);
+        osu->getPauseMenu()->setVisible(false);
     }
 
     // HACKHACK: stuck key quickfix
@@ -594,52 +594,52 @@ bool BeatmapInterface::start() {
                     UString errorMessage = "Error: Couldn't load beatmap metadata :(";
                     debugLog("Osu Error: Couldn't load beatmap metadata {:s}\n", this->beatmap->getFilePath().c_str());
 
-                    osu->notificationOverlay->addToast(errorMessage, ERROR_TOAST);
+                    osu->getNotificationOverlay()->addToast(errorMessage, ERROR_TOAST);
                 } break;
 
                 case 2: {
                     UString errorMessage = "Error: Couldn't load beatmap file :(";
                     debugLog("Osu Error: Couldn't load beatmap file {:s}\n", this->beatmap->getFilePath().c_str());
 
-                    osu->notificationOverlay->addToast(errorMessage, ERROR_TOAST);
+                    osu->getNotificationOverlay()->addToast(errorMessage, ERROR_TOAST);
                 } break;
 
                 case 3: {
                     UString errorMessage = "Error: No timingpoints in beatmap :(";
                     debugLog("Osu Error: No timingpoints in beatmap {:s}\n", this->beatmap->getFilePath().c_str());
 
-                    osu->notificationOverlay->addToast(errorMessage, ERROR_TOAST);
+                    osu->getNotificationOverlay()->addToast(errorMessage, ERROR_TOAST);
                 } break;
 
                 case 4: {
                     UString errorMessage = "Error: No hitobjects in beatmap :(";
                     debugLog("Osu Error: No hitobjects in beatmap {:s}\n", this->beatmap->getFilePath().c_str());
 
-                    osu->notificationOverlay->addToast(errorMessage, ERROR_TOAST);
+                    osu->getNotificationOverlay()->addToast(errorMessage, ERROR_TOAST);
                 } break;
 
                 case 5: {
                     UString errorMessage = "Error: Too many hitobjects in beatmap :(";
                     debugLog("Osu Error: Too many hitobjects in beatmap {:s}\n", this->beatmap->getFilePath().c_str());
 
-                    osu->notificationOverlay->addToast(errorMessage, ERROR_TOAST);
+                    osu->getNotificationOverlay()->addToast(errorMessage, ERROR_TOAST);
                 } break;
             }
 
-            osu->should_pause_background_threads = false;
+            osu->setShouldPauseBGThreads(false);
             return false;
         }
 
         // move temp result data into beatmap
         this->hitobjects = std::move(result.hitobjects);
         this->breaks = std::move(result.breaks);
-        osu->getSkin()->setBeatmapComboColors(std::move(result.combocolors));  // update combo colors in skin
+        this->getSkin()->setBeatmapComboColors(std::move(result.combocolors));  // update combo colors in skin
 
         this->current_timing_point = DatabaseBeatmap::TIMING_INFO{};
         this->default_sample_set = result.defaultSampleSet;
 
         // load beatmap skin
-        osu->getSkin()->loadBeatmapOverride(this->beatmap->getFolder());
+        this->getSkin()->loadBeatmapOverride(this->beatmap->getFolder());
     }
 
     // the drawing order is different from the playing/input order.
@@ -695,7 +695,7 @@ bool BeatmapInterface::start() {
     cv::snd_change_check_interval.setValue(0.0f);
 
     if(this->beatmap->getLocalOffset() != 0)
-        osu->notificationOverlay->addNotification(
+        osu->getNotificationOverlay()->addNotification(
             UString::format("Using local beatmap offset (%ld ms)", this->beatmap->getLocalOffset()), 0xffffffff, false,
             0.75f);
 
@@ -703,12 +703,12 @@ bool BeatmapInterface::start() {
 
     // this needs to be set here, because updateConfineCursor relies on this
     // awesome spaghetti logic btw
-    osu->songBrowser2->bHasSelectedAndIsPlaying = true;
+    osu->getSongBrowser()->bHasSelectedAndIsPlaying = true;
 
     osu->updateConfineCursor();
     osu->updateWindowsKeyDisable();
 
-    soundEngine->play(osu->getSkin()->getExpandSound());
+    soundEngine->play(this->getSkin()->getExpandSound());
 
     // NOTE: loading failures are handled dynamically in update(), so temporarily assume everything has worked in here
     return true;
@@ -867,7 +867,7 @@ bool BeatmapInterface::isPreviewMusicPlaying() {
 }
 
 void BeatmapInterface::stop(bool quit) {
-    osu->songBrowser2->bHasSelectedAndIsPlaying = false;
+    osu->getSongBrowser()->bHasSelectedAndIsPlaying = false;
 
     if(this->beatmap == nullptr) return;
 
@@ -881,8 +881,8 @@ void BeatmapInterface::stop(bool quit) {
 
     // Auto mod was "temporary" since it was set from Ctrl+Clicking a map, not from the mod selector
     if(osu->bModAutoTemp) {
-        if(osu->modSelector->modButtonAuto->isOn()) {
-            osu->modSelector->modButtonAuto->click();
+        if(osu->getModSelector()->modButtonAuto->isOn()) {
+            osu->getModSelector()->modButtonAuto->click();
         }
         osu->bModAutoTemp = false;
     }
@@ -894,16 +894,16 @@ void BeatmapInterface::stop(bool quit) {
     this->is_watching = false;
     this->spectated_replay.clear();
     this->score_frames.clear();
-    SAFE_DELETE(sim);
+    SAFE_DELETE(this->sim);
 
     this->unloadObjects();
 
     if(BanchoState::is_playing_a_multi_map()) {
         if(quit) {
             osu->onPlayEnd(score, true);
-            osu->room->ragequit();
+            osu->getRoom()->ragequit();
         } else {
-            osu->room->onClientScoreChange(true);
+            osu->getRoom()->onClientScoreChange(true);
             Packet packet;
             packet.id = FINISH_MATCH;
             BANCHO::Net::send_packet(packet);
@@ -912,7 +912,7 @@ void BeatmapInterface::stop(bool quit) {
         osu->onPlayEnd(score, quit);
     }
 
-    osu->should_pause_background_threads = false;
+    osu->setShouldPauseBGThreads(false);
 }
 
 void BeatmapInterface::fail(bool force_death) {
@@ -939,8 +939,8 @@ void BeatmapInterface::fail(bool force_death) {
 
         if(cv::drain_kill_notification_duration.getFloat() > 0.0f) {
             if(!osu->getScore()->hasDied())
-                osu->notificationOverlay->addNotification("You have failed, but you can keep playing!", 0xffffffff,
-                                                          false, cv::drain_kill_notification_duration.getFloat());
+                osu->getNotificationOverlay()->addNotification("You have failed, but you can keep playing!", 0xffffffff,
+                                                               false, cv::drain_kill_notification_duration.getFloat());
         }
     }
 
@@ -1020,7 +1020,7 @@ void BeatmapInterface::seekMS(u32 ms) {
     if(this->is_watching) {
         // When seeking backwards, restart simulation from beginning
         if(ms < this->iCurMusicPos) {
-            SAFE_DELETE(sim);
+            SAFE_DELETE(this->sim);
             this->sim = new SimulatedBeatmapInterface(this->beatmap, osu->getScore()->mods);
             this->sim->spectated_replay = this->spectated_replay;
             osu->getScore()->reset();
@@ -1029,7 +1029,7 @@ void BeatmapInterface::seekMS(u32 ms) {
 
     if(!this->is_watching && !BanchoState::spectating) {  // score submission already disabled when watching replay
         if(was_submittable && BanchoState::can_submit_scores()) {
-            osu->notificationOverlay->addToast("Score will not submit due to seeking", ERROR_TOAST);
+            osu->getNotificationOverlay()->addToast("Score will not submit due to seeking", ERROR_TOAST);
         }
     }
 }
@@ -1109,7 +1109,7 @@ f32 BeatmapInterface::getSpeedMultiplier() const {
     }
 }
 
-Skin *BeatmapInterface::getSkin() const { return osu->getSkin(); }
+const std::unique_ptr<Skin> &BeatmapInterface::getSkin() const { return osu->getSkin(); }
 
 u32 BeatmapInterface::getScoreV1DifficultyMultiplier_full() const {
     // NOTE: We intentionally get CS/HP/OD from beatmap data, not "real" CS/HP/OD
@@ -1262,8 +1262,8 @@ DatabaseBeatmap::BREAK BeatmapInterface::getBreakForTimeRange(i64 startMS, i64 p
 }
 
 LiveScore::HIT BeatmapInterface::addHitResult(HitObject *hitObject, LiveScore::HIT hit, i32 delta, bool isEndOfCombo,
-                                       bool ignoreOnHitErrorBar, bool hitErrorBarOnly, bool ignoreCombo,
-                                       bool ignoreScore, bool ignoreHealth) {
+                                              bool ignoreOnHitErrorBar, bool hitErrorBarOnly, bool ignoreCombo,
+                                              bool ignoreScore, bool ignoreHealth) {
     // Frames are already written on every keypress/release.
     // For some edge cases, we need to write extra frames to avoid replaybugs.
     {
@@ -1608,7 +1608,7 @@ void BeatmapInterface::resetScore() {
     anim->deleteExistingAnimation(&this->fFailAnim);
 
     osu->getScore()->reset();
-    osu->hud->resetScoreboard();
+    osu->getHUD()->resetScoreboard();
 
     this->holding_slider = false;
     this->bIsFirstMissSound = true;
@@ -1702,8 +1702,8 @@ void BeatmapInterface::draw() {
 }
 
 void BeatmapInterface::drawSmoke() {
-    Image *smoke = osu->getSkin()->getCursorSmoke();
-    if(smoke == osu->getSkin()->getMissingTexture()) return;
+    Image *smoke = this->getSkin()->getCursorSmoke();
+    if(smoke == this->getSkin()->getMissingTexture()) return;
 
     // We're not using this->iCurMusicPos, because we want the user to be able
     // to draw while the music is loading / before the map starts.
@@ -1734,7 +1734,7 @@ void BeatmapInterface::drawSmoke() {
         }
     }
 
-    f32 scale = osu->getHUD()->getCursorScaleFactor() * (osu->getSkin()->isCursorSmoke2x() ? 0.5f : 1.0f);
+    f32 scale = osu->getHUD()->getCursorScaleFactor() * (this->getSkin()->isCursorSmoke2x() ? 0.5f : 1.0f);
     scale *= cv::cursor_scale.getFloat();
     scale *= cv::smoke_scale.getFloat();
 
@@ -1770,7 +1770,7 @@ void BeatmapInterface::drawSmoke() {
 }
 
 void BeatmapInterface::drawFollowPoints() {
-    Skin *skin = osu->getSkin();
+    const auto &skin = this->getSkin();
 
     const long curPos = this->iCurMusicPosWithOffsets;
 
@@ -2378,7 +2378,7 @@ void BeatmapInterface::update2() {
 
     // handle music loading fail
     if(!this->music->isReady()) {
-        osu->notificationOverlay->addToast("Couldn't load music file :(", ERROR_TOAST);
+        osu->getNotificationOverlay()->addToast("Couldn't load music file :(", ERROR_TOAST);
         this->stop(true);
         return;
     }
@@ -2897,7 +2897,7 @@ void BeatmapInterface::update2() {
         else
             this->bIsInSkippableSection = false;
 
-        osu->chat->updateVisibility();
+        osu->getChat()->updateVisibility();
 
         // While we want to allow the chat to pop up during breaks, we don't
         // want to be able to skip after the start in multiplayer rooms
@@ -2993,9 +2993,9 @@ void BeatmapInterface::update2() {
 
                 if(!wasSeekFrame) {
                     if(passing)
-                        soundEngine->play(osu->getSkin()->getSectionPassSound());
+                        soundEngine->play(this->getSkin()->getSectionPassSound());
                     else
-                        soundEngine->play(osu->getSkin()->getSectionFailSound());
+                        soundEngine->play(this->getSkin()->getSectionFailSound());
                 }
             }
         }
@@ -3041,7 +3041,7 @@ void BeatmapInterface::update2() {
                 this->bIsPaused = true;
 
                 if(BanchoState::spectating) {
-                    osu->songBrowser2->bHasSelectedAndIsPlaying = false;
+                    osu->getSongBrowser()->bHasSelectedAndIsPlaying = false;
                 } else {
                     osu->getPauseMenu()->setVisible(true);
                     osu->updateConfineCursor();
@@ -3067,17 +3067,18 @@ void BeatmapInterface::update2() {
         }
 
         if(score_frame_idx != -1) {
+            const auto &score = osu->getScore();
             auto fixed_score = this->score_frames[score_frame_idx];
-            osu->score->iNum300s = fixed_score.num300;
-            osu->score->iNum100s = fixed_score.num100;
-            osu->score->iNum50s = fixed_score.num50;
-            osu->score->iNum300gs = fixed_score.num_geki;
-            osu->score->iNum100ks = fixed_score.num_katu;
-            osu->score->iNumMisses = fixed_score.num_miss;
-            osu->score->iScoreV1 = fixed_score.total_score;
-            osu->score->iScoreV2 = fixed_score.total_score;
-            osu->score->iComboMax = fixed_score.max_combo;
-            osu->score->iCombo = fixed_score.current_combo;
+            score->iNum300s = fixed_score.num300;
+            score->iNum100s = fixed_score.num100;
+            score->iNum50s = fixed_score.num50;
+            score->iNum300gs = fixed_score.num_geki;
+            score->iNum100ks = fixed_score.num_katu;
+            score->iNumMisses = fixed_score.num_miss;
+            score->iScoreV1 = fixed_score.total_score;
+            score->iScoreV2 = fixed_score.total_score;
+            score->iComboMax = fixed_score.max_combo;
+            score->iCombo = fixed_score.current_combo;
 
             // XXX: instead naively of setting it, we should simulate time decay
             this->fHealth = ((f32)fixed_score.current_hp) / 255.f;
@@ -3566,7 +3567,7 @@ FinishedScore BeatmapInterface::saveAndSubmitScore(bool quit) {
         if(score.passed || cv::save_failed_scores.getBool()) {
             int scoreIndex = db->addScore(score);
             if(scoreIndex == -1) {
-                osu->notificationOverlay->addToast("Failed saving score!", ERROR_TOAST);
+                osu->getNotificationOverlay()->addToast("Failed saving score!", ERROR_TOAST);
             }
         }
     }
@@ -3786,7 +3787,7 @@ void BeatmapInterface::updatePlayfieldMetrics() {
 }
 
 void BeatmapInterface::updateHitobjectMetrics() {
-    Skin *skin = osu->getSkin();
+    const auto &skin = this->getSkin();
 
     this->fRawHitcircleDiameter = GameRules::getRawHitCircleDiameter(this->getCS());
     this->fXMultiplier = GameRules::getHitCircleXMultiplier();

@@ -28,12 +28,12 @@
 
 void HitObject::drawHitResult(BeatmapInterface *pf, vec2 rawPos, LiveScore::HIT result, float animPercentInv,
                               float hitDeltaRangePercent) {
-    drawHitResult(pf->getSkin(), pf->fHitcircleDiameter, pf->fRawHitcircleDiameter, rawPos, result,
-                  animPercentInv, hitDeltaRangePercent);
+    drawHitResult(pf->getSkin(), pf->fHitcircleDiameter, pf->fRawHitcircleDiameter, rawPos, result, animPercentInv,
+                  hitDeltaRangePercent);
 }
 
-void HitObject::drawHitResult(Skin *skin, float hitcircleDiameter, float rawHitcircleDiameter, vec2 rawPos,
-                              LiveScore::HIT result, float animPercentInv, float hitDeltaRangePercent) {
+void HitObject::drawHitResult(const std::unique_ptr<Skin> &skin, float hitcircleDiameter, float rawHitcircleDiameter,
+                              vec2 rawPos, LiveScore::HIT result, float animPercentInv, float hitDeltaRangePercent) {
     if(animPercentInv <= 0.0f) return;
 
     const float animPercent = 1.0f - animPercentInv;
@@ -280,7 +280,7 @@ void HitObject::drawHitResultAnim(const HITRESULTANIM &hitresultanim) {
                               // scheduled with it, e.g. for slider end)
        && (hitresultanim.time + cv::hitresult_duration_max.getFloat() * (1.0f / osu->getAnimationSpeedMultiplier())) >
               engine->getTime()) {
-        Skin *skin = this->pf->getSkin();
+        const auto &skin = this->pf->getSkin();
         {
             const long skinAnimationTimeStartOffset =
                 this->click_time +
@@ -517,20 +517,20 @@ void Circle::drawApproachCircle(BeatmapInterface *pf, vec2 rawPos, int number, i
     Color comboColor = Colors::scale(pf->getSkin()->getComboColorForCounter(colorCounter, colorOffset),
                                      colorRGBMultiplier * cv::circle_color_saturation.getFloat());
 
-    drawApproachCircle(pf->getSkin(), pf->osuCoords2Pixels(rawPos), comboColor, pf->fHitcircleDiameter,
-                       approachScale, alpha, osu->getModHD(), overrideHDApproachCircle);
+    drawApproachCircle(pf->getSkin(), pf->osuCoords2Pixels(rawPos), comboColor, pf->fHitcircleDiameter, approachScale,
+                       alpha, osu->getModHD(), overrideHDApproachCircle);
 }
 
 void Circle::drawCircle(BeatmapInterface *pf, vec2 rawPos, int number, int colorCounter, int colorOffset,
                         float colorRGBMultiplier, float approachScale, float alpha, float numberAlpha, bool drawNumber,
                         bool overrideHDApproachCircle) {
-    drawCircle(pf->getSkin(), pf->osuCoords2Pixels(rawPos), pf->fHitcircleDiameter,
-               pf->getNumberScale(), pf->getHitcircleOverlapScale(), number, colorCounter, colorOffset,
-               colorRGBMultiplier, approachScale, alpha, numberAlpha, drawNumber, overrideHDApproachCircle);
+    drawCircle(pf->getSkin(), pf->osuCoords2Pixels(rawPos), pf->fHitcircleDiameter, pf->getNumberScale(),
+               pf->getHitcircleOverlapScale(), number, colorCounter, colorOffset, colorRGBMultiplier, approachScale,
+               alpha, numberAlpha, drawNumber, overrideHDApproachCircle);
 }
 
-void Circle::drawCircle(Skin *skin, vec2 pos, float hitcircleDiameter, float numberScale, float overlapScale,
-                        int number, int colorCounter, int colorOffset, float colorRGBMultiplier,
+void Circle::drawCircle(const std::unique_ptr<Skin> &skin, vec2 pos, float hitcircleDiameter, float numberScale,
+                        float overlapScale, int number, int colorCounter, int colorOffset, float colorRGBMultiplier,
                         float /*approachScale*/, float alpha, float numberAlpha, bool drawNumber,
                         bool /*overrideHDApproachCircle*/) {
     if(alpha <= 0.0f || !cv::draw_circles.getBool()) return;
@@ -562,7 +562,8 @@ void Circle::drawCircle(Skin *skin, vec2 pos, float hitcircleDiameter, float num
         drawHitCircleOverlay(skin->getHitCircleOverlay2(), pos, circleOverlayImageScale, alpha, colorRGBMultiplier);
 }
 
-void Circle::drawCircle(Skin *skin, vec2 pos, float hitcircleDiameter, Color color, float alpha) {
+void Circle::drawCircle(const std::unique_ptr<Skin> &skin, vec2 pos, float hitcircleDiameter, Color color,
+                        float alpha) {
     // this function is only used by the target practice heatmap
 
     // circle
@@ -577,16 +578,15 @@ void Circle::drawCircle(Skin *skin, vec2 pos, float hitcircleDiameter, Color col
 void Circle::drawSliderStartCircle(BeatmapInterface *pf, vec2 rawPos, int number, int colorCounter, int colorOffset,
                                    float colorRGBMultiplier, float approachScale, float alpha, float numberAlpha,
                                    bool drawNumber, bool overrideHDApproachCircle) {
-    drawSliderStartCircle(pf->getSkin(), pf->osuCoords2Pixels(rawPos), pf->fHitcircleDiameter,
-                          pf->getNumberScale(), pf->getHitcircleOverlapScale(), number, colorCounter,
-                          colorOffset, colorRGBMultiplier, approachScale, alpha, numberAlpha, drawNumber,
-                          overrideHDApproachCircle);
+    drawSliderStartCircle(pf->getSkin(), pf->osuCoords2Pixels(rawPos), pf->fHitcircleDiameter, pf->getNumberScale(),
+                          pf->getHitcircleOverlapScale(), number, colorCounter, colorOffset, colorRGBMultiplier,
+                          approachScale, alpha, numberAlpha, drawNumber, overrideHDApproachCircle);
 }
 
-void Circle::drawSliderStartCircle(Skin *skin, vec2 pos, float hitcircleDiameter, float numberScale,
-                                   float hitcircleOverlapScale, int number, int colorCounter, int colorOffset,
-                                   float colorRGBMultiplier, float approachScale, float alpha, float numberAlpha,
-                                   bool drawNumber, bool overrideHDApproachCircle) {
+void Circle::drawSliderStartCircle(const std::unique_ptr<Skin> &skin, vec2 pos, float hitcircleDiameter,
+                                   float numberScale, float hitcircleOverlapScale, int number, int colorCounter,
+                                   int colorOffset, float colorRGBMultiplier, float approachScale, float alpha,
+                                   float numberAlpha, bool drawNumber, bool overrideHDApproachCircle) {
     if(alpha <= 0.0f || !cv::draw_circles.getBool()) return;
 
     // if no sliderstartcircle image is preset, fallback to default circle
@@ -630,16 +630,15 @@ void Circle::drawSliderStartCircle(Skin *skin, vec2 pos, float hitcircleDiameter
 void Circle::drawSliderEndCircle(BeatmapInterface *pf, vec2 rawPos, int number, int colorCounter, int colorOffset,
                                  float colorRGBMultiplier, float approachScale, float alpha, float numberAlpha,
                                  bool drawNumber, bool overrideHDApproachCircle) {
-    drawSliderEndCircle(pf->getSkin(), pf->osuCoords2Pixels(rawPos), pf->fHitcircleDiameter,
-                        pf->getNumberScale(), pf->getHitcircleOverlapScale(), number, colorCounter,
-                        colorOffset, colorRGBMultiplier, approachScale, alpha, numberAlpha, drawNumber,
-                        overrideHDApproachCircle);
+    drawSliderEndCircle(pf->getSkin(), pf->osuCoords2Pixels(rawPos), pf->fHitcircleDiameter, pf->getNumberScale(),
+                        pf->getHitcircleOverlapScale(), number, colorCounter, colorOffset, colorRGBMultiplier,
+                        approachScale, alpha, numberAlpha, drawNumber, overrideHDApproachCircle);
 }
 
-void Circle::drawSliderEndCircle(Skin *skin, vec2 pos, float hitcircleDiameter, float numberScale, float overlapScale,
-                                 int number, int colorCounter, int colorOffset, float colorRGBMultiplier,
-                                 float approachScale, float alpha, float numberAlpha, bool drawNumber,
-                                 bool overrideHDApproachCircle) {
+void Circle::drawSliderEndCircle(const std::unique_ptr<Skin> &skin, vec2 pos, float hitcircleDiameter,
+                                 float numberScale, float overlapScale, int number, int colorCounter, int colorOffset,
+                                 float colorRGBMultiplier, float approachScale, float alpha, float numberAlpha,
+                                 bool drawNumber, bool overrideHDApproachCircle) {
     if(alpha <= 0.0f || !cv::slider_draw_endcircle.getBool() || !cv::draw_circles.getBool()) return;
 
     // if no sliderendcircle image is preset, fallback to default circle
@@ -668,8 +667,8 @@ void Circle::drawSliderEndCircle(Skin *skin, vec2 pos, float hitcircleDiameter, 
     }
 }
 
-void Circle::drawApproachCircle(Skin *skin, vec2 pos, Color comboColor, float hitcircleDiameter, float approachScale,
-                                float alpha, bool modHD, bool overrideHDApproachCircle) {
+void Circle::drawApproachCircle(const std::unique_ptr<Skin> &skin, vec2 pos, Color comboColor, float hitcircleDiameter,
+                                float approachScale, float alpha, bool modHD, bool overrideHDApproachCircle) {
     if((!modHD || overrideHDApproachCircle) && cv::draw_approach_circles.getBool() && !cv::mod_mafham.getBool()) {
         if(approachScale > 1.0f) {
             const float approachCircleImageScale =
@@ -732,13 +731,13 @@ void Circle::drawHitCircle(Image *hitCircleImage, vec2 pos, Color comboColor, fl
     g->popTransform();
 }
 
-void Circle::drawHitCircleNumber(Skin *skin, float numberScale, float overlapScale, vec2 pos, int number,
-                                 float numberAlpha, float /*colorRGBMultiplier*/) {
+void Circle::drawHitCircleNumber(const std::unique_ptr<Skin> &skin, float numberScale, float overlapScale, vec2 pos,
+                                 int number, float numberAlpha, float /*colorRGBMultiplier*/) {
     if(!cv::draw_numbers.getBool()) return;
 
     class DigitWidth {
        public:
-        static float getWidth(Skin *skin, int digit) {
+        static float getWidth(const std::unique_ptr<Skin> &skin, int digit) {
             switch(digit) {
                 case 0:
                     return skin->getDefault0()->getWidth();
@@ -877,7 +876,7 @@ Circle::~Circle() { this->onReset(0); }
 
 void Circle::draw() {
     HitObject::draw();
-    Skin *skin = osu->getSkin();
+    const std::unique_ptr<Skin> &skin = osu->getSkin();
 
     // draw hit animation
     bool is_instafade = cv::instafade.getBool();
@@ -1196,7 +1195,7 @@ void Slider::draw() {
     if(this->points.size() <= 0) return;
 
     const float foscale = cv::circle_fade_out_scale.getFloat();
-    Skin *skin = this->pf->getSkin();
+    const std::unique_ptr<Skin> &skin = this->pf->getSkin();
 
     const bool isCompletelyFinished = this->bStartFinished && this->bEndFinished && this->bFinished;
 
@@ -1444,7 +1443,7 @@ void Slider::draw2() { this->draw2(true, false); }
 void Slider::draw2(bool drawApproachCircle, bool drawOnlyApproachCircle) {
     HitObject::draw2();
 
-    Skin *skin = this->pf->getSkin();
+    const std::unique_ptr<Skin> &skin = this->pf->getSkin();
 
     // HACKHACK: so much code duplication aaaaaaah
     if((this->bVisible || (this->bStartFinished && !this->bFinished)) &&
@@ -1541,7 +1540,7 @@ void Slider::draw2(bool drawApproachCircle, bool drawOnlyApproachCircle) {
 }
 
 void Slider::drawStartCircle(float /*alpha*/) {
-    Skin *skin = this->pf->getSkin();
+    const std::unique_ptr<Skin> &skin = this->pf->getSkin();
 
     if(this->bStartFinished) {
         skin->getHitCircleOverlay2()->setAnimationTimeOffset(
@@ -1570,7 +1569,7 @@ void Slider::drawStartCircle(float /*alpha*/) {
 }
 
 void Slider::drawEndCircle(float /*alpha*/, float sliderSnake) {
-    Skin *skin = this->pf->getSkin();
+    const std::unique_ptr<Skin> &skin = this->pf->getSkin();
 
     skin->getHitCircleOverlay2()->setAnimationTimeOffset(
         skin->getAnimationSpeed(), !this->pf->isInMafhamRenderChunk() ? this->click_time - this->iFadeInTime
@@ -2159,8 +2158,7 @@ void Slider::onHit(LiveScore::HIT result, long delta, bool startOrEnd, float tar
         if(this->pf != nullptr && startOrEnd) {
             this->fEndSliderBodyFadeAnimation = 0.001f;  // quickfix for 1 frame missing images
             anim->moveQuadOut(&this->fEndSliderBodyFadeAnimation, 1.0f,
-                              GameRules::getFadeOutTime() * cv::slider_body_fade_out_time_multiplier.getFloat(),
-                              true);
+                              GameRules::getFadeOutTime() * cv::slider_body_fade_out_time_multiplier.getFloat(), true);
 
             this->samples.stop();
         }
@@ -2520,7 +2518,7 @@ void Spinner::draw() {
     const long deltaEnd = this->iDelta + this->duration;
     if((this->bFinished || !this->bVisible) && (deltaEnd > 0 || (deltaEnd < -fadeOutTimeMS))) return;
 
-    Skin *skin = this->pf->getSkin();
+    const std::unique_ptr<Skin> &skin = this->pf->getSkin();
     vec2 center = this->pf->osuCoords2Pixels(this->vRawPos);
 
     const float alphaMultiplier =

@@ -216,7 +216,7 @@ bool BassSoundEngine::init_bass_mixer(const SoundEngine::OUTPUT_DEVICE &device) 
         if(code != BASS_ERROR_ALREADY) {
             this->ready_since = -1.0;
             debugLog("BASS_Init(0) failed.\n");
-            osu->notificationOverlay->addToast(BassManager::getErrorUString(), ERROR_TOAST);
+            osu->getNotificationOverlay()->addToast(BassManager::getErrorUString(), ERROR_TOAST);
             return false;
         }
     }
@@ -225,7 +225,7 @@ bool BassSoundEngine::init_bass_mixer(const SoundEngine::OUTPUT_DEVICE &device) 
         if(!BASS_Init(device.id, freq, bass_flags | BASS_DEVICE_SOFTWARE, nullptr, nullptr)) {
             this->ready_since = -1.0;
             debugLog("BASS_Init({:d}) errored out.\n", device.id);
-            osu->notificationOverlay->addToast(BassManager::getErrorUString(), ERROR_TOAST);
+            osu->getNotificationOverlay()->addToast(BassManager::getErrorUString(), ERROR_TOAST);
             return false;
         }
     }
@@ -236,7 +236,7 @@ bool BassSoundEngine::init_bass_mixer(const SoundEngine::OUTPUT_DEVICE &device) 
     if(this->g_bassOutputMixer == 0) {
         this->ready_since = -1.0;
         debugLog("BASS_Mixer_StreamCreate() failed.\n");
-        osu->notificationOverlay->addToast(BassManager::getErrorUString(), ERROR_TOAST);
+        osu->getNotificationOverlay()->addToast(BassManager::getErrorUString(), ERROR_TOAST);
         return false;
     }
 
@@ -261,8 +261,8 @@ bool BassSoundEngine::initializeOutputDevice(const SoundEngine::OUTPUT_DEVICE &d
         cv::snd_output_device.setValue(this->currentOutputDevice.name);
         debugLog("BassSoundEngine: Output Device = \"{:s}\"\n", this->currentOutputDevice.name.toUtf8());
 
-        if(osu && osu->optionsMenu) {
-            osu->optionsMenu->scheduleLayoutUpdate();
+        if(osu && osu->getOptionsMenu()) {
+            osu->getOptionsMenu()->scheduleLayoutUpdate();
         }
 
         return true;
@@ -305,7 +305,7 @@ bool BassSoundEngine::initializeOutputDevice(const SoundEngine::OUTPUT_DEVICE &d
         if(!BASS_ASIO_Init(device.id, 0)) {
             ready_since = -1.0;
             debugLog("BASS_ASIO_Init() failed.\n");
-            osu->notificationOverlay->addToast(BassManager::getErrorUString(), ERROR_TOAST);
+            osu->getNotificationOverlay()->addToast(BassManager::getErrorUString(), ERROR_TOAST);
             return false;
         }
 
@@ -325,8 +325,8 @@ bool BassSoundEngine::initializeOutputDevice(const SoundEngine::OUTPUT_DEVICE &d
         auto bufsize = cv::asio_buffer_size.getVal<unsigned long>();
         bufsize = ASIO_clamp(info, bufsize);
 
-        if(osu && osu->optionsMenu) {
-            auto slider = osu->optionsMenu->asioBufferSizeSlider;
+        if(osu && osu->getOptionsMenu()) {
+            auto slider = osu->getOptionsMenu()->asioBufferSizeSlider;
             slider->setBounds(info.bufmin, info.bufmax);
             slider->setKeyDelta(info.bufgran == -1 ? info.bufmin : info.bufgran);
         }
@@ -334,14 +334,14 @@ bool BassSoundEngine::initializeOutputDevice(const SoundEngine::OUTPUT_DEVICE &d
         if(!BASS_ASIO_ChannelEnableBASS(false, 0, g_bassOutputMixer, true)) {
             ready_since = -1.0;
             debugLog("BASS_ASIO_ChannelEnableBASS() failed.\n");
-            osu->notificationOverlay->addToast(BassManager::getErrorUString(), ERROR_TOAST);
+            osu->getNotificationOverlay()->addToast(BassManager::getErrorUString(), ERROR_TOAST);
             return false;
         }
 
         if(!BASS_ASIO_Start(bufsize, 0)) {
             ready_since = -1.0;
             debugLog("BASS_ASIO_Start() failed.\n");
-            osu->notificationOverlay->addToast(BassManager::getErrorUString(), ERROR_TOAST);
+            osu->getNotificationOverlay()->addToast(BassManager::getErrorUString(), ERROR_TOAST);
             return false;
         }
 
@@ -387,14 +387,14 @@ bool BassSoundEngine::initializeOutputDevice(const SoundEngine::OUTPUT_DEVICE &d
                              reinterpret_cast<void *>(static_cast<uintptr_t>(g_bassOutputMixer)))) {
             ready_since = -1.0;
             debugLog("BASS_WASAPI_Init() failed.\n");
-            osu->notificationOverlay->addToast(BassManager::getErrorUString(), ERROR_TOAST);
+            osu->getNotificationOverlay()->addToast(BassManager::getErrorUString(), ERROR_TOAST);
             return false;
         }
 
         if(!BASS_WASAPI_Start()) {
             ready_since = -1.0;
             debugLog("BASS_WASAPI_Start() failed.\n");
-            osu->notificationOverlay->addToast(BassManager::getErrorUString(), ERROR_TOAST);
+            osu->getNotificationOverlay()->addToast(BassManager::getErrorUString(), ERROR_TOAST);
             return false;
         }
 
@@ -408,8 +408,8 @@ bool BassSoundEngine::initializeOutputDevice(const SoundEngine::OUTPUT_DEVICE &d
     cv::snd_output_device.setValue(this->currentOutputDevice.name);
     debugLog("BassSoundEngine: Output Device = \"{:s}\"\n", this->currentOutputDevice.name.toUtf8());
 
-    if(osu && osu->optionsMenu) {
-        osu->optionsMenu->scheduleLayoutUpdate();
+    if(osu && osu->getOptionsMenu()) {
+        osu->getOptionsMenu()->scheduleLayoutUpdate();
     }
 
     return true;
@@ -581,9 +581,9 @@ bool BassSoundEngine::hasExclusiveOutput() {
 void BassSoundEngine::setOutputDevice(const SoundEngine::OUTPUT_DEVICE &device) {
     bool was_playing = false;
     unsigned long prevMusicPositionMS = 0;
-    if(osu->active_map->getMusic() != nullptr) {
-        was_playing = osu->active_map->getMusic()->isPlaying();
-        prevMusicPositionMS = osu->active_map->getMusic()->getPositionMS();
+    if(osu->getMapInterface()->getMusic() != nullptr) {
+        was_playing = osu->getMapInterface()->getMusic()->isPlaying();
+        prevMusicPositionMS = osu->getMapInterface()->getMusic()->getPositionMS();
     }
 
     // TODO: This is blocking main thread, can freeze for a long time on some sound cards
@@ -601,21 +601,21 @@ void BassSoundEngine::setOutputDevice(const SoundEngine::OUTPUT_DEVICE &device) 
         }
     }
 
-    osu->optionsMenu->outputDeviceLabel->setText(this->getOutputDeviceName());
+    osu->getOptionsMenu()->outputDeviceLabel->setText(this->getOutputDeviceName());
     osu->getSkin()->reloadSounds();
-    osu->optionsMenu->onOutputDeviceResetUpdate();
+    osu->getOptionsMenu()->onOutputDeviceResetUpdate();
 
     // start playing music again after audio device changed
-    if(osu->active_map->getMusic() != nullptr) {
+    if(osu->getMapInterface()->getMusic() != nullptr) {
         if(osu->isInPlayMode()) {
-            osu->active_map->unloadMusic();
-            osu->active_map->loadMusic();
-            osu->active_map->getMusic()->setLoop(false);
-            osu->active_map->getMusic()->setPositionMS(prevMusicPositionMS);
+            osu->getMapInterface()->unloadMusic();
+            osu->getMapInterface()->loadMusic();
+            osu->getMapInterface()->getMusic()->setLoop(false);
+            osu->getMapInterface()->getMusic()->setPositionMS(prevMusicPositionMS);
         } else {
-            osu->active_map->unloadMusic();
-            osu->active_map->selectBeatmap();
-            osu->active_map->getMusic()->setPositionMS(prevMusicPositionMS);
+            osu->getMapInterface()->unloadMusic();
+            osu->getMapInterface()->selectBeatmap();
+            osu->getMapInterface()->getMusic()->setPositionMS(prevMusicPositionMS);
         }
     }
 

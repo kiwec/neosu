@@ -532,7 +532,7 @@ std::pair<bool, float> MainMenu::getTimingpointPulseAmount() {
 
     float pulse = (div - fmod(engine->getTime(), div)) / div;
 
-    const auto &selectedMap = osu->map_iface;
+    const auto &selectedMap = osu->getMapInterface();
     if(!selectedMap) {
         return {false, pulse};
     }
@@ -795,11 +795,11 @@ void MainMenu::draw() {
     float alpha = 1.0f;
     if(cv::songbrowser_background_fade_in_duration.getFloat() > 0.0f) {
         // handle fadein trigger after handler is finished loading
-        const bool ready = osu->map_iface->beatmap != nullptr &&
+        const bool ready = osu->getMapInterface()->beatmap != nullptr &&
                            osu->getBackgroundImageHandler()->getLoadBackgroundImage(
-                               osu->map_iface->beatmap) != nullptr &&
+                               osu->getMapInterface()->beatmap) != nullptr &&
                            osu->getBackgroundImageHandler()
-                               ->getLoadBackgroundImage(osu->map_iface->beatmap)
+                               ->getLoadBackgroundImage(osu->getMapInterface()->beatmap)
                                ->isReady();
 
         if(!ready)
@@ -1031,9 +1031,9 @@ void MainMenu::mouse_update(bool *propagate_clicks) {
     this->pauseButton->setPaused(true);
 
     if(soundEngine->isReady()) {
-        auto *music = osu->map_iface->getMusic();
+        auto *music = osu->getMapInterface()->getMusic();
 
-        // try getting existing playing music track, even if osu->active_map->getMusic() did not have one
+        // try getting existing playing music track, even if osu->getMapInterface()->getMusic() did not have one
         if(!music) {
             music = resourceManager->getSound("BEATMAP_MUSIC");
         }
@@ -1051,7 +1051,7 @@ void MainMenu::mouse_update(bool *propagate_clicks) {
 
                 // load timing points if needed
                 // XXX: file io, don't block main thread
-                auto *map = osu->map_iface->beatmap;
+                auto *map = osu->getMapInterface()->beatmap;
                 if(map && map->getTimingpoints().empty()) {
                     map->loadMetadata(false);
                 }
@@ -1085,7 +1085,7 @@ void MainMenu::mouse_update(bool *propagate_clicks) {
 }
 
 void MainMenu::selectRandomBeatmap() {
-    auto sb = osu->getSongBrowser();
+    const auto &sb = osu->getSongBrowser();
     if(db->isFinished() && !sb->beatmapsets.empty()) {
         sb->selectRandomBeatmap();
         RichPresence::onMainMenu();
@@ -1102,7 +1102,7 @@ void MainMenu::selectRandomBeatmap() {
             return;
         }
 
-        osu->map_iface->deselectBeatmap();
+        osu->getMapInterface()->deselectBeatmap();
         SAFE_DELETE(this->preloaded_beatmapset);
 
         constexpr int RETRY_SETS{10};
@@ -1206,7 +1206,7 @@ CBaseUIContainer *MainMenu::setVisible(bool visible) {
             BANCHO::Proto::write<u16>(&packet, 0);
             BANCHO::Proto::write<u8>(&packet, LiveReplayBundle::Action::NONE);
             BANCHO::Proto::write<ScoreFrame>(&packet, ScoreFrame::get());
-            BANCHO::Proto::write<u16>(&packet, osu->map_iface->spectator_sequence++);
+            BANCHO::Proto::write<u16>(&packet, osu->getMapInterface()->spectator_sequence++);
             BANCHO::Net::send_packet(packet);
         }
 
@@ -1454,12 +1454,12 @@ void MainMenu::onPlayButtonPressed() {
 
 void MainMenu::onMultiplayerButtonPressed() {
     if(!BanchoState::is_online()) {
-        osu->optionsMenu->askForLoginDetails();
+        osu->getOptionsMenu()->askForLoginDetails();
         return;
     }
 
     this->setVisible(false);
-    osu->lobby->setVisible(true);
+    osu->getLobby()->setVisible(true);
 
     soundEngine->play(osu->getSkin()->getMenuHit());
     soundEngine->play(osu->getSkin()->getClickMultiplayerSound());
@@ -1480,10 +1480,10 @@ void MainMenu::onExitButtonPressed() {
 }
 
 void MainMenu::onPausePressed() {
-    if(osu->map_iface->isPreviewMusicPlaying()) {
-        osu->map_iface->pausePreviewMusic();
+    if(osu->getMapInterface()->isPreviewMusicPlaying()) {
+        osu->getMapInterface()->pausePreviewMusic();
     } else {
-        auto music = osu->map_iface->getMusic();
+        auto music = osu->getMapInterface()->getMusic();
         if(music != nullptr) {
             soundEngine->play(music);
         }
@@ -1492,7 +1492,7 @@ void MainMenu::onPausePressed() {
 
 void MainMenu::onUpdatePressed() {
     using enum UpdateHandler::STATUS;
-    auto *updateHandler = osu->getUpdateHandler();
+    const auto &updateHandler = osu->getUpdateHandler();
     const auto status = updateHandler->getStatus();
 
     if(status == STATUS_DOWNLOAD_COMPLETE)

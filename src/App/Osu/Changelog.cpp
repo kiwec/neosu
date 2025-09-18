@@ -674,7 +674,7 @@ void Changelog::onChangeClicked(CBaseUIButton *button) {
 
         debugLog("url = {:s}\n", url.toUtf8());
 
-        osu->notificationOverlay->addNotification("Opening browser, please wait ...", 0xffffffff, false, 0.75f);
+        osu->getNotificationOverlay()->addNotification("Opening browser, please wait ...", 0xffffffff, false, 0.75f);
         env->openURLInDefaultBrowser(url.toUtf8());
     }
 }

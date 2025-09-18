@@ -169,7 +169,7 @@ bool ConVar::onSetValueGameplay(CvarEditor editor) {
 void ConVar::onSetValueProtected(const std::string &oldValue, const std::string &newValue) {
     if(!osu) return;
     if(oldValue == newValue) return;
-    osu->active_map->is_submittable = false;
+    osu->getMapInterface()->is_submittable = false;
 }
 
 //********************************//
@@ -724,7 +724,7 @@ void loudness_cb(const UString & /*oldValue*/, const UString & /*newValue*/) {
 
 void _save(void) { db->save(); }
 
-void _update(void) { osu->updateHandler->checkForUpdates(true); }
+void _update(void) { osu->getUpdateHandler()->checkForUpdates(true); }
 
 #undef CONVARDEFS_H
 #define DEFINE_CONVARS

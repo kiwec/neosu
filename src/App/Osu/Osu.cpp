@@ -58,6 +58,7 @@
 #include "SoundEngine.h"
 #include "SpectatorScreen.h"
 #include "TooltipOverlay.h"
+#include "UIContextMenu.h"
 #include "UIModSelectorModButton.h"
 #include "UIUserContextMenu.h"
 #include "UpdateHandler.h"
@@ -80,7 +81,7 @@ Osu::Osu() {
 
     if(Env::cfg(BUILD::DEBUG)) {
         BanchoState::neosu_version = UString::fmt("dev-{}", cv::build_timestamp.getVal<u64>());
-    } else if(cv::is_bleedingedge.getBool()) { // FIXME: isn't this always false here...?
+    } else if(cv::is_bleedingedge.getBool()) {  // FIXME: isn't this always false here...?
         BanchoState::neosu_version = UString::fmt("bleedingedge-{}", cv::build_timestamp.getVal<u64>());
     } else {
         BanchoState::neosu_version = UString::fmt("release-{:.2f}", cv::version.getFloat());
@@ -140,7 +141,7 @@ Osu::Osu() {
     cv::osu_folder.setCallback(SA::MakeDelegate<&Osu::updateOsuFolder>(this));
 
     // debug
-    this->windowManager = new CWindowManager();
+    this->windowManager = std::make_unique<CWindowManager>();
 
     // renderer
     g_vInternalResolution = engine->getScreenSize();
@@ -156,9 +157,9 @@ Osu::Osu() {
 
     // load a few select subsystems very early
     this->map_iface = std::make_unique<BeatmapInterface>();
-    this->notificationOverlay = new NotificationOverlay();
-    this->score = new LiveScore(false);
-    this->updateHandler = new UpdateHandler();
+    this->notificationOverlay = std::make_unique<NotificationOverlay>();
+    this->score = std::make_unique<LiveScore>(false);
+    this->updateHandler = std::make_unique<UpdateHandler>();
     this->avatarManager = std::make_unique<AvatarManager>();
 
     // load main menu icon before skin
@@ -211,7 +212,7 @@ Osu::Osu() {
     cv::mod_halftime_dummy.setCallback(
         [] { cv::speed_override.setValue(cv::mod_halftime_dummy.getBool() ? "0.75" : "-1.0"); });
     cv::draw_songbrowser_thumbnails.setCallback(SA::MakeDelegate<&Osu::onThumbnailsToggle>(this));
-    cv::bleedingedge.setCallback(SA::MakeDelegate<&UpdateHandler::onBleedingEdgeChanged>(this->updateHandler));
+    cv::bleedingedge.setCallback(SA::MakeDelegate<&UpdateHandler::onBleedingEdgeChanged>(this->updateHandler.get()));
 
     // load global resources
     const int baseDPI = 96;
@@ -254,7 +255,7 @@ Osu::Osu() {
         skinFolder.append(cv::osu_folder_sub_skins.getString());
         skinFolder.append(cv::skin.getString());
         skinFolder.append("/");
-        if(this->skin == nullptr)  // the skin may already be loaded by Console::execConfigFile() above
+        if(!this->skin.get())  // the skin may already be loaded by Console::execConfigFile() above
             this->onSkinChange(cv::skin.getString().c_str());
 
         // enable async skin loading for user-action skin changes (but not during startup)
@@ -264,45 +265,45 @@ Osu::Osu() {
     // load subsystems, add them to the screens array
     this->userButton = std::make_unique<UserCard>(BanchoState::get_uid());
 
-    this->songBrowser2 = new SongBrowser();
-    this->volumeOverlay = new VolumeOverlay();
-    this->tooltipOverlay = new TooltipOverlay();
-    this->optionsMenu = new OptionsMenu();
-    this->mainMenu = new MainMenu();  // has to be after options menu
-    this->backgroundImageHandler = new BackgroundImageHandler();
-    this->modSelector = new ModSelector();
-    this->rankingScreen = new RankingScreen();
-    this->userStats = new UserStatsScreen();
-    this->pauseMenu = new PauseMenu();
-    this->hud = new HUD();
-    this->changelog = new Changelog();
-    this->fposu = new ModFPoSu();
-    this->chat = new Chat();
-    this->lobby = new Lobby();
-    this->room = new RoomScreen();
-    this->prompt = new PromptScreen();
-    this->user_actions = new UIUserContextMenuScreen();
-    this->spectatorScreen = new SpectatorScreen();
+    this->songBrowser = std::make_unique<SongBrowser>();
+    this->volumeOverlay = std::make_unique<VolumeOverlay>();
+    this->tooltipOverlay = std::make_unique<TooltipOverlay>();
+    this->optionsMenu = std::make_unique<OptionsMenu>();
+    this->mainMenu = std::make_unique<MainMenu>();  // has to be after options menu
+    this->backgroundImageHandler = std::make_unique<BackgroundImageHandler>();
+    this->modSelector = std::make_unique<ModSelector>();
+    this->rankingScreen = std::make_unique<RankingScreen>();
+    this->userStats = std::make_unique<UserStatsScreen>();
+    this->pauseMenu = std::make_unique<PauseMenu>();
+    this->hud = std::make_unique<HUD>();
+    this->changelog = std::make_unique<Changelog>();
+    this->fposu = std::make_unique<ModFPoSu>();
+    this->chat = std::make_unique<Chat>();
+    this->lobby = std::make_unique<Lobby>();
+    this->room = std::make_unique<RoomScreen>();
+    this->prompt = std::make_unique<PromptScreen>();
+    this->user_actions = std::make_unique<UIUserContextMenuScreen>();
+    this->spectatorScreen = std::make_unique<SpectatorScreen>();
 
     // the order in this vector will define in which order events are handled/consumed
-    this->screens.push_back(this->volumeOverlay);
-    this->screens.push_back(this->prompt);
-    this->screens.push_back(this->modSelector);
-    this->screens.push_back(this->user_actions);
-    this->screens.push_back(this->room);
-    this->screens.push_back(this->notificationOverlay);
-    this->screens.push_back(this->chat);
-    this->screens.push_back(this->optionsMenu);
-    this->screens.push_back(this->rankingScreen);
-    this->screens.push_back(this->userStats);
-    this->screens.push_back(this->spectatorScreen);
-    this->screens.push_back(this->pauseMenu);
-    this->screens.push_back(this->hud);
-    this->screens.push_back(this->songBrowser2);
-    this->screens.push_back(this->lobby);
-    this->screens.push_back(this->changelog);
-    this->screens.push_back(this->mainMenu);
-    this->screens.push_back(this->tooltipOverlay);
+    this->screens.push_back(this->volumeOverlay.get());
+    this->screens.push_back(this->prompt.get());
+    this->screens.push_back(this->modSelector.get());
+    this->screens.push_back(this->user_actions.get());
+    this->screens.push_back(this->room.get());
+    this->screens.push_back(this->notificationOverlay.get());
+    this->screens.push_back(this->chat.get());
+    this->screens.push_back(this->optionsMenu.get());
+    this->screens.push_back(this->rankingScreen.get());
+    this->screens.push_back(this->userStats.get());
+    this->screens.push_back(this->spectatorScreen.get());
+    this->screens.push_back(this->pauseMenu.get());
+    this->screens.push_back(this->hud.get());
+    this->screens.push_back(this->songBrowser.get());
+    this->screens.push_back(this->lobby.get());
+    this->screens.push_back(this->changelog.get());
+    this->screens.push_back(this->mainMenu.get());
+    this->screens.push_back(this->tooltipOverlay.get());
     this->mainMenu->setVisible(true);
 
     // update mod settings
@@ -325,7 +326,7 @@ Osu::Osu() {
     bool reloading_db = env->getEnvInterop().handle_cmdline_args();
     if(!reloading_db) {
         // Start loading db early
-        osu->getSongBrowser()->refreshBeatmaps();
+        this->songBrowser->refreshBeatmaps();
     }
 
     // Not the type of shader you want players to tweak or delete, so loading from string
@@ -348,22 +349,11 @@ Osu::~Osu() {
     MapCalcThread::shutdown();
     BANCHO::Net::cleanup_networking();
 
-    SAFE_DELETE(this->windowManager);
-
-    for(auto &screen : this->screens) {
-        SAFE_DELETE(screen);
-    }
-
-    SAFE_DELETE(this->fposu);
-    SAFE_DELETE(this->score);
-    SAFE_DELETE(this->skin);
-    SAFE_DELETE(this->backgroundImageHandler);
-
     osu = nullptr;
 }
 
 void Osu::draw() {
-    if(this->skin == nullptr || this->flashlight_shader == nullptr)  // sanity check
+    if(!this->skin.get() || this->flashlight_shader == nullptr)  // sanity check
     {
         g->setColor(0xff000000);
         g->fillRect(0, 0, this->getScreenWidth(), this->getScreenHeight());
@@ -424,7 +414,7 @@ void Osu::draw() {
                 this->flashlight_shader->setUniform1f("max_opacity", opacity);
                 this->flashlight_shader->setUniform1f("flashlight_radius", fl_radius);
                 this->flashlight_shader->setUniform2f("flashlight_center", flashlightPos.x,
-                                                this->getScreenSize().y - flashlightPos.y);
+                                                      this->getScreenSize().y - flashlightPos.y);
 
                 g->setColor(argb(255, 0, 0, 0));
                 g->fillRect(0, 0, this->getScreenWidth(), this->getScreenHeight());
@@ -442,7 +432,7 @@ void Osu::draw() {
                 this->actual_flashlight_shader->setUniform1f("max_opacity", opacity);
                 this->actual_flashlight_shader->setUniform1f("flashlight_radius", anti_fl_radius);
                 this->actual_flashlight_shader->setUniform2f("flashlight_center", flashlightPos.x,
-                                                       this->getScreenSize().y - flashlightPos.y);
+                                                             this->getScreenSize().y - flashlightPos.y);
 
                 g->setColor(argb(255, 0, 0, 0));
                 g->fillRect(0, 0, this->getScreenWidth(), this->getScreenHeight());
@@ -496,7 +486,7 @@ void Osu::draw() {
         this->lobby->draw();
         this->room->draw();
 
-        if(this->songBrowser2 != nullptr) this->songBrowser2->draw();
+        if(this->songBrowser != nullptr) this->songBrowser->draw();
 
         this->mainMenu->draw();
         this->changelog->draw();
@@ -518,7 +508,7 @@ void Osu::draw() {
     this->volumeOverlay->draw();
 
     // loading spinner for some async tasks
-    if((this->bSkinLoadScheduled && this->skin != this->skinScheduledToLoad)) {
+    if((this->bSkinLoadScheduled && this->skin.get() != this->skinScheduledToLoad)) {
         this->hud->drawLoadingSmall("");
     }
 
@@ -568,7 +558,7 @@ void Osu::draw() {
 }
 
 void Osu::update() {
-    if(this->skin != nullptr) this->skin->update();
+    if(this->skin.get()) this->skin->update();
 
     this->fposu->update();
 
@@ -695,8 +685,8 @@ void Osu::update() {
 
     // background image cache tick
     this->backgroundImageHandler->update(
-        this->songBrowser2->isVisible());  // NOTE: must be before the asynchronous ui toggles due to potential 1-frame
-                                           // unloads after invisible songbrowser
+        this->songBrowser->isVisible());  // NOTE: must be before the asynchronous ui toggles due to potential 1-frame
+                                          // unloads after invisible songbrowser
 
     // asynchronous ui toggles
     // TODO: this is cancer, why did I even write this section
@@ -706,8 +696,8 @@ void Osu::update() {
 
         if(BanchoState::is_in_a_multi_room()) {
             this->room->setVisible(!this->modSelector->isVisible());
-        } else if(!this->isInPlayMode() && this->songBrowser2 != nullptr) {
-            this->songBrowser2->setVisible(!this->modSelector->isVisible());
+        } else if(!this->isInPlayMode() && this->songBrowser != nullptr) {
+            this->songBrowser->setVisible(!this->modSelector->isVisible());
         }
     }
     if(this->bToggleOptionsMenuScheduled) {
@@ -735,7 +725,7 @@ void Osu::update() {
     // endless mod
     if(this->bScheduleEndlessModNextBeatmap) {
         this->bScheduleEndlessModNextBeatmap = false;
-        this->songBrowser2->playNextRandomBeatmap();
+        this->songBrowser->playNextRandomBeatmap();
     }
 
     // multiplayer/networking update
@@ -754,12 +744,13 @@ void Osu::update() {
 
     // skin async loading
     if(this->bSkinLoadScheduled) {
-        if(this->skin->isReady() && this->skinScheduledToLoad != nullptr && this->skinScheduledToLoad->isReady()) {
+        if((!this->skin.get() || this->skin->isReady()) && this->skinScheduledToLoad != nullptr &&
+           this->skinScheduledToLoad->isReady()) {
             this->bSkinLoadScheduled = false;
 
-            if(this->skin != this->skinScheduledToLoad) SAFE_DELETE(this->skin);
-
-            this->skin = this->skinScheduledToLoad;
+            if(this->skin.get() != this->skinScheduledToLoad) {
+                this->skin.reset(this->skinScheduledToLoad);
+            }
 
             this->skinScheduledToLoad = nullptr;
 
@@ -800,7 +791,7 @@ void Osu::update() {
     }
 }
 
-bool Osu::isInPlayModeAndNotPaused() { return isInPlayMode() && !this->map_iface->isPaused(); }
+bool Osu::isInPlayModeAndNotPaused() const { return this->isInPlayMode() && !this->map_iface->isPaused(); }
 
 void Osu::updateMods() {
     osu->getScore()->mods = Replay::Mods::from_cvars();
@@ -1086,7 +1077,7 @@ void Osu::onKeyDown(KeyboardEvent &key) {
     }
 
     // forward to all subsystem, if not already consumed
-    for(auto &screen : this->screens) {
+    for(auto *screen : this->screens) {
         if(key.isConsumed()) break;
 
         screen->onKeyDown(key);
@@ -1173,7 +1164,7 @@ void Osu::onKeyUp(KeyboardEvent &key) {
     }
 
     // forward to all subsystems, if not consumed
-    for(auto &screen : this->screens) {
+    for(auto *screen : this->screens) {
         if(key.isConsumed()) break;
 
         screen->onKeyUp(key);
@@ -1202,7 +1193,7 @@ void Osu::stealFocus() {
 }
 
 void Osu::onChar(KeyboardEvent &e) {
-    for(auto &screen : this->screens) {
+    for(auto *screen : this->screens) {
         if(e.isConsumed()) break;
 
         screen->onChar(e);
@@ -1251,11 +1242,11 @@ void Osu::toggleSongBrowser() {
 
     if(this->mainMenu->isVisible() && this->optionsMenu->isVisible()) this->optionsMenu->setVisible(false);
 
-    this->songBrowser2->setVisible(!this->songBrowser2->isVisible());
+    this->songBrowser->setVisible(!this->songBrowser->isVisible());
 
     if(BanchoState::is_in_a_multi_room()) {
         // We didn't select a map; revert to previously selected one
-        auto map = this->songBrowser2->lastSelectedBeatmap;
+        auto map = this->songBrowser->lastSelectedBeatmap;
         if(map != nullptr) {
             BanchoState::room.map_name = UString::format("%s - %s [%s]", map->getArtist().c_str(),
                                                          map->getTitle().c_str(), map->getDifficultyName().c_str());
@@ -1270,7 +1261,7 @@ void Osu::toggleSongBrowser() {
             this->room->on_map_change();
         }
     } else {
-        this->mainMenu->setVisible(!this->songBrowser2->isVisible());
+        this->mainMenu->setVisible(!this->songBrowser->isVisible());
     }
 
     this->updateConfineCursor();
@@ -1284,6 +1275,8 @@ void Osu::toggleOptionsMenu() {
 void Osu::toggleChangelog() { this->bToggleChangelogScheduled = true; }
 
 void Osu::toggleEditor() { this->bToggleEditorScheduled = true; }
+
+void Osu::reloadMapInterface() { this->map_iface = std::make_unique<BeatmapInterface>(); }
 
 void Osu::saveScreenshot() {
     static i32 screenshotNumber = 0;
@@ -1371,7 +1364,7 @@ void Osu::onPlayEnd(FinishedScore score, bool quit, bool /*aborted*/) {
     this->modSelector->setVisible(false);
     this->pauseMenu->setVisible(false);
 
-    if(this->songBrowser2 != nullptr) this->songBrowser2->onPlayEnd(quit);
+    if(this->songBrowser != nullptr) this->songBrowser->onPlayEnd(quit);
 
     // When playing in multiplayer, screens are toggled in Room
     if(!BanchoState::is_playing_a_multi_map()) {
@@ -1439,7 +1432,7 @@ float Osu::getAnimationSpeedMultiplier() {
     return animationSpeedMultiplier;
 }
 
-bool Osu::isInPlayMode() { return (this->songBrowser2 != nullptr && this->songBrowser2->bHasSelectedAndIsPlaying); }
+bool Osu::isInPlayMode() const { return (this->songBrowser != nullptr && this->songBrowser->bHasSelectedAndIsPlaying); }
 
 bool Osu::shouldFallBackToLegacySliderRenderer() {
     return cv::force_legacy_slider_renderer.getBool() || cv::mod_wobble.getBool() || cv::mod_wobble2.getBool() ||
@@ -1480,7 +1473,7 @@ void Osu::onResolutionChanged(vec2 newResolution) {
     cv::ui_scrollview_scrollbarwidth.setValue(15.0f * Osu::getUIScale());  // not happy with this as a convar
 
     // interfaces
-    for(auto &screen : this->screens) {
+    for(auto *screen : this->screens) {
         screen->onResolutionChange(g_vInternalResolution);
     }
 
@@ -1702,7 +1695,7 @@ void Osu::onSkinReload() {
 }
 
 void Osu::onSkinChange(const UString &newValue) {
-    if(this->skin != nullptr) {
+    if(this->skin.get()) {
         if(this->bSkinLoadScheduled || this->skinScheduledToLoad != nullptr) return;
         if(newValue.length() < 1) return;
     }
@@ -1711,7 +1704,7 @@ void Osu::onSkinChange(const UString &newValue) {
 
     if(newString == "default") {
         this->skinScheduledToLoad = new Skin(newString.c_str(), MCENGINE_DATA_DIR "materials/default/", true);
-        if(this->skin == nullptr) this->skin = this->skinScheduledToLoad;
+        if(!this->skin.get()) this->skin.reset(this->skinScheduledToLoad);
         this->bSkinLoadScheduled = true;
         return;
     }
@@ -1732,7 +1725,7 @@ void Osu::onSkinChange(const UString &newValue) {
     }
 
     // initial load
-    if(this->skin == nullptr) this->skin = this->skinScheduledToLoad;
+    if(!this->skin.get()) this->skin.reset(this->skinScheduledToLoad);
 
     this->bSkinLoadScheduled = true;
 }
@@ -1755,22 +1748,22 @@ void Osu::onSpeedChange(const UString &newValue) {
     {
         // DT/HT buttons
         cv::mod_doubletime_dummy.setValue(speed == 1.5f, false);
-        osu->getModSelector()->modButtonDoubletime->setOn(speed == 1.5f, true);
+        this->modSelector->modButtonDoubletime->setOn(speed == 1.5f, true);
         cv::mod_halftime_dummy.setValue(speed == 0.75f, false);
-        osu->getModSelector()->modButtonHalftime->setOn(speed == 0.75f, true);
-        osu->getModSelector()->updateButtons(true);
+        this->modSelector->modButtonHalftime->setOn(speed == 0.75f, true);
+        this->modSelector->updateButtons(true);
 
         // Speed slider ('+1' to compensate for turn-off area of the override sliders)
-        osu->getModSelector()->speedSlider->setValue(speed + 1.f, true, false);
-        osu->getModSelector()->updateOverrideSliderLabels();
+        this->modSelector->speedSlider->setValue(speed + 1.f, true, false);
+        this->modSelector->updateOverrideSliderLabels();
 
         // Score multiplier
-        osu->getModSelector()->updateScoreMultiplierLabelText();
+        this->modSelector->updateScoreMultiplierLabelText();
     }
 }
 
 void Osu::onThumbnailsToggle() {
-    osu->getSongBrowser()->thumbnailYRatio = cv::draw_songbrowser_thumbnails.getBool() ? 1.333333f : 0.f;
+    this->songBrowser->thumbnailYRatio = cv::draw_songbrowser_thumbnails.getBool() ? 1.333333f : 0.f;
 }
 
 void Osu::onPlayfieldChange() { this->map_iface->onModUpdate(); }
@@ -2053,9 +2046,9 @@ void Osu::setupSoloud() {
     static unsigned long prev_position_ms = 0;
 
     static auto outputChangedBeforeCallback = []() -> void {
-        if(osu && osu->map_iface && osu->map_iface->getMusic()) {
-            was_playing = osu->map_iface->getMusic()->isPlaying();
-            prev_position_ms = osu->map_iface->getMusic()->getPositionMS();
+        if(osu && osu->getMapInterface() && osu->getMapInterface()->getMusic()) {
+            was_playing = osu->getMapInterface()->getMusic()->isPlaying();
+            prev_position_ms = osu->getMapInterface()->getMusic()->getPositionMS();
         } else {
             was_playing = false;
             prev_position_ms = 0;
@@ -2064,29 +2057,29 @@ void Osu::setupSoloud() {
     // the actual reset will be sandwiched between these during restart
     static auto outputChangedAfterCallback = []() -> void {
         // part 2 of callback
-        if(osu && osu->optionsMenu && osu->optionsMenu->outputDeviceLabel && osu->getSkin()) {
-            osu->optionsMenu->outputDeviceLabel->setText(soundEngine->getOutputDeviceName());
+        if(osu && osu->getOptionsMenu() && osu->getOptionsMenu()->outputDeviceLabel && osu->getSkin()) {
+            osu->getOptionsMenu()->outputDeviceLabel->setText(soundEngine->getOutputDeviceName());
             osu->getSkin()->reloadSounds();
-            osu->optionsMenu->onOutputDeviceResetUpdate();
+            osu->getOptionsMenu()->onOutputDeviceResetUpdate();
 
             // start playing music again after audio device changed
-            if(osu->map_iface && osu->map_iface->getMusic()) {
+            if(osu->getMapInterface() && osu->getMapInterface()->getMusic()) {
                 if(osu->isInPlayMode()) {
-                    osu->map_iface->unloadMusic();
-                    osu->map_iface->loadMusic();
-                    osu->map_iface->getMusic()->setLoop(false);
-                    osu->map_iface->getMusic()->setPositionMS(prev_position_ms);
+                    osu->getMapInterface()->unloadMusic();
+                    osu->getMapInterface()->loadMusic();
+                    osu->getMapInterface()->getMusic()->setLoop(false);
+                    osu->getMapInterface()->getMusic()->setPositionMS(prev_position_ms);
                 } else {
-                    osu->map_iface->unloadMusic();
-                    osu->map_iface->selectBeatmap();
-                    osu->map_iface->getMusic()->setPositionMS(prev_position_ms);
+                    osu->getMapInterface()->unloadMusic();
+                    osu->getMapInterface()->selectBeatmap();
+                    osu->getMapInterface()->getMusic()->setPositionMS(prev_position_ms);
                 }
             }
 
             if(was_playing) {
                 osu->music_unpause_scheduled = true;
             }
-            osu->optionsMenu->scheduleLayoutUpdate();
+            osu->getOptionsMenu()->scheduleLayoutUpdate();
         }
     };
     soundEngine->setDeviceChangeBeforeCallback(outputChangedBeforeCallback);

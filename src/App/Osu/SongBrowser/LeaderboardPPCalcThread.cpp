@@ -65,7 +65,7 @@ static void run_thread() {
 
         while(!work.empty()) {
             if(dead.load()) return;
-            if(osu->should_pause_background_threads.load()) {
+            if(osu->shouldPauseBGThreads()) {
                 work_mtx.unlock();
                 Timing::sleepMS(100);
                 work_mtx.lock();

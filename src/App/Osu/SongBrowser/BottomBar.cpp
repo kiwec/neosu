@@ -95,10 +95,10 @@ void update_bottombar(bool* propagate_clicks) {
         global_scale * options_img->getImageSizeForCurrentFrame().y * (options_img->is_2x ? 0.5f : 1.f);
 
     // NOTE: Skin template shows 640:150px size, and 320px from options button origin, I cheated a bit
-    osu->userButton->setSize(global_scale * 640 * 0.5, global_scale * 150 * 0.5);
-    osu->userButton->setPos(btns_x[OPTIONS] + (i32)(global_scale * 320.f * 0.5f),
-                            osu->getScreenHeight() - osu->userButton->getSize().y);
-    osu->userButton->mouse_update(propagate_clicks);
+    osu->getUserButton()->setSize(global_scale * 640 * 0.5, global_scale * 150 * 0.5);
+    osu->getUserButton()->setPos(btns_x[OPTIONS] + (i32)(global_scale * 320.f * 0.5f),
+                            osu->getScreenHeight() - osu->getUserButton()->getSize().y);
+    osu->getUserButton()->mouse_update(propagate_clicks);
 
     // Yes, the order looks whack. That's the correct order.
     i32 new_hover = -1;
@@ -153,7 +153,7 @@ void draw_bottombar() {
 
     // Draw the user card under selection elements, which can cover it for fancy effects
     // (we don't match stable perfectly, but close enough)
-    osu->userButton->draw();
+    osu->getUserButton()->draw();
 
     SkinImage* base_imgs[4] = {osu->getSkin()->selectionMode, osu->getSkin()->selectionMods,
                                osu->getSkin()->selectionRandom, osu->getSkin()->selectionOptions};
@@ -204,8 +204,8 @@ void draw_bottombar() {
 
     // background task busy notification
     McFont* font = resourceManager->getFont("FONT_DEFAULT");
-    i32 calcx = osu->userButton->getPos().x + osu->userButton->getSize().x + 20;
-    i32 calcy = osu->userButton->getPos().y + 30;
+    i32 calcx = osu->getUserButton()->getPos().x + osu->getUserButton()->getSize().x + 20;
+    i32 calcy = osu->getUserButton()->getPos().y + 30;
     if(MapCalcThread::get_total() > 0) {
         UString msg = UString::format("Calculating stars (%i/%i) ...", MapCalcThread::get_computed(), MapCalcThread::get_total());
         g->setColor(0xff333333);

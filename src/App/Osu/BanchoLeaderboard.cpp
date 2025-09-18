@@ -101,7 +101,7 @@ void fetch_online_scores(DatabaseBeatmap *beatmap) {
     url.append(UString::fmt("&i={}", beatmap->getSetID()));
 
     // Some servers use mod flags, even without any leaderboard filter active (e.g. for relax)
-    url.append(UString::fmt("&mods={}", osu->modSelector->getModFlags()));
+    url.append(UString::fmt("&mods={}", osu->getModSelector()->getModFlags()));
 
     // Auth (uses different params than default)
     BANCHO::Net::append_auth_params(url, "us", "ha");

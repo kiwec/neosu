@@ -107,7 +107,7 @@ class BeatmapInterface : public AbstractBeatmapInterface {
     void deselectBeatmap();
 
     bool play();
-    bool watch(FinishedScore score, u32 start_ms);
+    bool watch(const FinishedScore &score, u32 start_ms);
     bool spectate();
 
     bool start();
@@ -177,7 +177,7 @@ class BeatmapInterface : public AbstractBeatmapInterface {
     bool spectate_pause = false;  // the player we're spectating has paused
 
     // used by HitObject children and ModSelector
-    [[nodiscard]] Skin *getSkin() const;  // maybe use this for beatmap skins, maybe
+    [[nodiscard]] const std::unique_ptr<Skin> &getSkin() const;  // maybe use this for beatmap skins, maybe
 
     [[nodiscard]] inline long getCurMusicPos() const { return this->iCurMusicPos; }
     [[nodiscard]] inline long getCurMusicPosWithOffsets() const { return this->iCurMusicPosWithOffsets; }

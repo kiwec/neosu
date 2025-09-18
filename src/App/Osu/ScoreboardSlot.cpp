@@ -254,8 +254,8 @@ void ScoreboardSlot::draw() {
 }
 
 void ScoreboardSlot::updateIndex(int new_index, bool animate) {
-    bool is_player = osu->hud->player_slot == this;
-    int player_idx = osu->hud->player_slot->index;
+    bool is_player = osu->getHUD()->player_slot == this;
+    int player_idx = osu->getHUD()->player_slot->index;
     if(is_player) {
         if(animate && new_index < this->index) {
             this->fFlash = 1.f;

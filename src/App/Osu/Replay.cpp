@@ -129,7 +129,7 @@ Mods Mods::from_cvars() {
         mods.flags |= Autoplay;
     }
 
-    mods.speed = osu->active_map->getSpeedMultiplier();
+    mods.speed = osu->getMapInterface()->getSpeedMultiplier();
 
     mods.notelock_type = cv::notelock_type.getInt();
     mods.autopilot_lenience = cv::autopilot_lenience.getFloat();
@@ -193,7 +193,7 @@ void Mods::use(const Mods &mods) {
     using namespace ModFlags;
     using namespace ModMasks;
     // Reset mod selector buttons and sliders
-    auto mod_selector = osu->getModSelector();
+    const auto &mod_selector = osu->getModSelector();
     mod_selector->resetMods();
 
     // Set cvars

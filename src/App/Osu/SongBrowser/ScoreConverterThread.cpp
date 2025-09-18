@@ -129,7 +129,7 @@ static void run_sct(const std::unordered_map<MD5Hash, std::vector<FinishedScore>
     if(sct_total == 0) return;
 
     for(i32 idx = 0; auto& score : scores_to_calc) {
-        while(osu->should_pause_background_threads.load() && !dead.load()) {
+        while(osu->shouldPauseBGThreads() && !dead.load()) {
             Timing::sleepMS(100);
         }
         Timing::sleep(1);

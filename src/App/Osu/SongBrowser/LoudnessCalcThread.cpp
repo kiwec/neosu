@@ -63,7 +63,7 @@ struct VolNormalization::LoudnessCalcThread {
         BASS_SetConfig(BASS_CONFIG_UPDATETHREADS, 0);
 
         for(auto map : this->maps) {
-            while(osu->should_pause_background_threads.load() && !this->dead.load()) {
+            while(osu->shouldPauseBGThreads() && !this->dead.load()) {
                 Timing::sleepMS(100);
             }
             Timing::sleep(1);

@@ -456,7 +456,7 @@ void Chat::handle_command(const UString &msg) {
     }
 
     if(msg == "/np") {
-        auto map = osu->active_map->beatmap;
+        auto map = osu->getMapInterface()->beatmap;
         if(map == nullptr) {
             this->addSystemMessage("You are not listening to anything.");
             return;
@@ -888,8 +888,8 @@ void Chat::addMessage(UString channel_name, const ChatMessage &msg, bool mark_un
     if(should_highlight) {
         // TODO: highlight message
         auto notif = UString::fmt("{} mentioned you in {}", msg.author_name.toUtf8(), channel_name);
-        osu->notificationOverlay->addToast(
-            notif, CHAT_TOAST, [channel_name] { osu->chat->openChannel(channel_name); }, ToastElement::TYPE::CHAT);
+        osu->getNotificationOverlay()->addToast(
+            notif, CHAT_TOAST, [channel_name] { osu->getChat()->openChannel(channel_name); }, ToastElement::TYPE::CHAT);
     }
 
     bool is_pm = msg.author_id > 0 && channel_name[0] != '#' && msg.author_name.toUtf8() != BanchoState::get_username();
@@ -899,8 +899,8 @@ void Chat::addMessage(UString channel_name, const ChatMessage &msg, bool mark_un
 
         if(cv::chat_notify_on_dm.getBool()) {
             auto notif = UString::format("%s sent you a message", msg.author_name.toUtf8());
-            osu->notificationOverlay->addToast(
-                notif, CHAT_TOAST, [channel_name] { osu->chat->openChannel(channel_name); }, ToastElement::TYPE::CHAT);
+            osu->getNotificationOverlay()->addToast(
+                notif, CHAT_TOAST, [channel_name] { osu->getChat()->openChannel(channel_name); }, ToastElement::TYPE::CHAT);
         }
         if(cv::chat_ping_on_mention.getBool()) {
             // Yes, osu! really does use "match-start.wav" for when you get pinged
@@ -914,8 +914,8 @@ void Chat::addMessage(UString channel_name, const ChatMessage &msg, bool mark_un
 
     if(mentioned && cv::chat_notify_on_mention.getBool()) {
         auto notif = UString::format("You were mentioned in %s", channel_name.toUtf8());
-        osu->notificationOverlay->addToast(
-            notif, CHAT_TOAST, [channel_name] { osu->chat->openChannel(channel_name); }, ToastElement::TYPE::CHAT);
+        osu->getNotificationOverlay()->addToast(
+            notif, CHAT_TOAST, [channel_name] { osu->getChat()->openChannel(channel_name); }, ToastElement::TYPE::CHAT);
     }
     if(mentioned && cv::chat_ping_on_mention.getBool()) {
         // Yes, osu! really does use "match-start.wav" for when you get pinged
@@ -1233,10 +1233,10 @@ void Chat::onDisconnect() {
 void Chat::onResolutionChange(vec2 newResolution) { this->updateLayout(newResolution); }
 
 bool Chat::isSmallChat() {
-    if(osu->room == nullptr || osu->lobby == nullptr || osu->songBrowser2 == nullptr) return false;
+    if(osu->getRoom() == nullptr || osu->getLobby() == nullptr || osu->getSongBrowser() == nullptr) return false;
     bool sitting_in_room =
-        osu->room->isVisible() && !osu->songBrowser2->isVisible() && !BanchoState::is_playing_a_multi_map();
-    bool sitting_in_lobby = osu->lobby->isVisible();
+        osu->getRoom()->isVisible() && !osu->getSongBrowser()->isVisible() && !BanchoState::is_playing_a_multi_map();
+    bool sitting_in_lobby = osu->getLobby()->isVisible();
     return sitting_in_room || sitting_in_lobby;
 }
 
@@ -1251,15 +1251,15 @@ bool Chat::isVisibilityForced() {
 }
 
 void Chat::updateVisibility() {
-    bool can_skip = osu->active_map->isInSkippableSection();
+    bool can_skip = osu->getMapInterface()->isInSkippableSection();
     bool is_spectating = cv::mod_autoplay.getBool() || (cv::mod_autopilot.getBool() && cv::mod_relax.getBool()) ||
-                         osu->active_map->is_watching || BanchoState::spectating;
-    bool is_clicking_circles = osu->isInPlayMode() && !can_skip && !is_spectating && !osu->pauseMenu->isVisible();
+                         osu->getMapInterface()->is_watching || BanchoState::spectating;
+    bool is_clicking_circles = osu->isInPlayMode() && !can_skip && !is_spectating && !osu->getPauseMenu()->isVisible();
     if(BanchoState::is_playing_a_multi_map() && !BanchoState::room.all_players_loaded) {
         is_clicking_circles = false;
     }
     is_clicking_circles &= cv::chat_auto_hide.getBool();
-    bool force_hide = osu->optionsMenu->isVisible() || osu->modSelector->isVisible() || is_clicking_circles;
+    bool force_hide = osu->getOptionsMenu()->isVisible() || osu->getModSelector()->isVisible() || is_clicking_circles;
     if(!BanchoState::is_online()) force_hide = true;
 
     if(force_hide) {
@@ -1277,13 +1277,13 @@ CBaseUIContainer *Chat::setVisible(bool visible) {
     soundEngine->play(osu->getSkin()->getClickButtonSound());
 
     if(visible && BanchoState::get_uid() <= 0) {
-        osu->optionsMenu->askForLoginDetails();
+        osu->getOptionsMenu()->askForLoginDetails();
         return this;
     }
 
     this->bVisible = visible;
     if(visible) {
-        osu->optionsMenu->setVisible(false);
+        osu->getOptionsMenu()->setVisible(false);
         anim->moveQuartOut(&this->fAnimation, 1.0f, 0.25f * (1.0f - this->fAnimation), true);
 
         if(this->selected_channel != nullptr && !this->selected_channel->read) {
@@ -1308,5 +1308,5 @@ bool Chat::isMouseInChat() {
 
 void Chat::askWhatChannelToJoin(CBaseUIButton * /*btn*/) {
     // XXX: Could display nicer UI with full channel list (chat_channels in Bancho.cpp)
-    osu->prompt->prompt("Type in the channel you want to join (e.g. '#osu'):", SA::MakeDelegate<&Chat::join>(this));
+    osu->getPromptScreen()->prompt("Type in the channel you want to join (e.g. '#osu'):", SA::MakeDelegate<&Chat::join>(this));
 }
