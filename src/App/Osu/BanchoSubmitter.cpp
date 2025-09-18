@@ -21,7 +21,7 @@ void submit_score(FinishedScore score) {
     constexpr auto GRADES = std::array{"XH", "SH", "X", "S", "A", "B", "C", "D", "F", "N"};
 
     u8 iv[32];
-    crypto::rng::get_bytes(&iv[0], 32);
+    crypto::rng::get_rand(iv);
 
     NetworkHandler::RequestOptions options;
     options.timeout = 60;

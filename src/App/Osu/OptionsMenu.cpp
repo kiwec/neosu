@@ -2679,7 +2679,7 @@ void OptionsMenu::onLogInClicked(bool left, bool right) {
         if(this->should_use_oauth_login() && cv::mp_oauth_token.getString().empty()) {
             BanchoState::endpoint = cv::mp_server.getString();
 
-            crypto::rng::get_bytes(&BanchoState::oauth_verifier[0], 32);
+            crypto::rng::get_rand(BanchoState::oauth_verifier);
             crypto::hash::sha256(&BanchoState::oauth_verifier[0], 32, &BanchoState::oauth_challenge[0]);
 
             auto challenge_b64 = env->urlEncode(crypto::conv::encode64(&BanchoState::oauth_challenge[0], 32));

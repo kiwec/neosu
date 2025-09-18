@@ -1,7 +1,6 @@
 #pragma once
 // Copyright (c) 2015, PG, All rights reserved.
 #include "UString.h"
-#include "templates.h"
 #include "types.h"
 
 #include <condition_variable>
@@ -11,7 +10,6 @@
 #include <mutex>
 #include <queue>
 #include <thread>
-#include <unordered_map>
 
 // forward declare for async requests
 struct NetworkRequest;
@@ -22,18 +20,20 @@ typedef void CURL;
 
 typedef int64_t curl_off_t;
 
-struct MimePart {
-    std::string filename{};
-    std::string name{};
-    std::vector<u8> data{};
-};
-
 class NetworkHandler {
     NOCOPY_NOMOVE(NetworkHandler)
 
    public:
     // async request options
     struct RequestOptions {
+       private:
+        struct MimePart {
+            std::string filename{};
+            std::string name{};
+            std::vector<u8> data{};
+        };
+
+       public:
         RequestOptions() { ; }  // ?
         std::map<std::string, std::string> headers;
         std::string postData;
@@ -87,7 +87,7 @@ class NetworkHandler {
     std::map<void*, std::condition_variable*> sync_request_cvs;
     std::map<void*, Response> sync_responses;
 
-    void networkThreadFunc(const std::stop_token &stopToken);
+    void networkThreadFunc(const std::stop_token& stopToken);
     void processNewRequests();
     void processCompletedRequests();
     std::unique_ptr<NetworkRequest> createRequest(const UString& url, AsyncCallback callback,
