@@ -2795,10 +2795,10 @@ void SongBrowser::onFilterScoresChange(const UString &text, int id) {
         type_cv->setValue(text);  // NOTE: remember
 
         this->filterScoresDropdown->setText(text);
-        db->online_scores.clear();
-        this->rebuildScoreButtons();
-        this->scoreBrowser->scrollToTop();
     }
+    db->online_scores.clear();
+    this->rebuildScoreButtons();
+    this->scoreBrowser->scrollToTop();
 }
 
 void SongBrowser::onSortScoresChange(const UString &text, int /*id*/) {

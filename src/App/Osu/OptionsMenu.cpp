@@ -1590,10 +1590,11 @@ void OptionsMenu::mouse_update(bool *propagate_clicks) {
 
     // why does all of this need to run in update()...
     cv::name.setValue(this->nameTextbox->getText());
-    if(this->passwordTextbox->getText().utf8View() != cv::mp_password_md5.getString()) {
+    const std::string password_text{this->passwordTextbox->getText().utf8View()};
+    if(!password_text.empty() && password_text != cv::mp_password_md5.getString()) {
         // passwordTextbox gets overwritten with mp_password_md5 on login
         // mp_password should remain empty after that
-        cv::mp_password.setValue(this->passwordTextbox->getText());
+        cv::mp_password.setValue(password_text);
     }
     if(this->nameTextbox->hitEnter()) {
         this->nameTextbox->stealFocus();
