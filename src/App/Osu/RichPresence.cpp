@@ -81,7 +81,7 @@ void RichPresence::setBanchoStatus(const char* info_text, Action action) {
     packet.id = CHANGE_ACTION;
     BANCHO::Proto::write<u8>(packet, action);
     BANCHO::Proto::write_string(packet, fancy_text);
-    BANCHO::Proto::write_string(packet, map_md5.hash.data());
+    BANCHO::Proto::write_string(packet, map_md5.string());
     BANCHO::Proto::write<u32>(packet, osu->getModSelector()->getModFlags());
     BANCHO::Proto::write<u8>(packet, 0);  // osu!std
     BANCHO::Proto::write<i32>(packet, map_id);
@@ -102,7 +102,7 @@ void RichPresence::updateBanchoMods() {
     packet.id = CHANGE_ACTION;
     BANCHO::Proto::write<u8>(packet, last_action);
     BANCHO::Proto::write_string(packet, last_status.toUtf8());
-    BANCHO::Proto::write_string(packet, map_md5.hash.data());
+    BANCHO::Proto::write_string(packet, map_md5.string());
     BANCHO::Proto::write<u32>(packet, osu->getModSelector()->getModFlags());
     BANCHO::Proto::write<u8>(packet, 0);  // osu!std
     BANCHO::Proto::write<i32>(packet, map_id);

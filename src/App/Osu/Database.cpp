@@ -1816,7 +1816,7 @@ void Database::loadOldMcNeosuScores(const UString &dbPath) {
             }
 
             if(cv::debug_db.getBool())
-                debugLog("Beatmap[{}]: md5hash = {:s}, numScores = {}\n", b, md5hash.hash.data(), numScores);
+                debugLog("Beatmap[{}]: md5hash = {:s}, numScores = {}\n", b, md5hash.string(), numScores);
 
             for(int s = 0; s < numScores; s++) {
                 const auto gamemode = db.read<uint8_t>();  // NOTE: abused as isImportedLegacyScore flag (because I
@@ -1838,7 +1838,7 @@ void Database::loadOldMcNeosuScores(const UString &dbPath) {
                     db.skip_bytes(bytesToSkipUntilNextScore);
                     db.skip_string();  // experimentalMods
                     if(cv::debug_db.getBool()) {
-                        debugLog("skipped score {} (already loaded from neosu_scores.db)\n", md5hash.hash.data());
+                        debugLog("skipped score {} (already loaded from neosu_scores.db)\n", md5hash.string());
                     }
                     continue;
                 }
@@ -1997,7 +1997,7 @@ void Database::loadPeppyScores(const UString &dbPath) {
 
         MD5Hash md5hash;
 
-        memcpy(md5hash.hash.data(), md5hash_str.c_str(), 32);
+        memcpy(md5hash.string(), md5hash_str.c_str(), 32);
         md5hash.hash[32] = '\0';
         u32 nb_scores = db.read<u32>();
 

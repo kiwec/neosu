@@ -738,21 +738,21 @@ void BanchoState::handle_packet(Packet &packet) {
             if(!map) {
                 // Incredibly rare, but this can happen if you enter song browser
                 // on a difficulty the server doesn't have, then instantly refresh.
-                debugLog("Server requested difficulty {} but we don't have it!\n", md5.hash.data());
+                debugLog("Server requested difficulty {} but we don't have it!\n", md5.string());
                 break;
             }
 
             auto osu_file = map->getMapFile();
             auto md5_check = BanchoState::md5((u8*)osu_file.c_str(), osu_file.length());
             if(md5 != md5_check) {
-                debugLog("After loading map {}, we got different md5 {}!\n", md5.hash.data(), md5_check.hash.data());
+                debugLog("After loading map {}, we got different md5 {}!\n", md5.string(), md5_check.string());
                 break;
             }
 
             // Submit map
             auto scheme = cv::use_https.getBool() ? "https://" : "http://";
             auto url = UString::fmt("{}osu.{}/web/neosu-submit-map.php", scheme, BanchoState::endpoint);
-            url.append(UString::fmt("?hash={}", md5.hash.data()));
+            url.append(UString::fmt("?hash={}", md5.string()));
             BANCHO::Net::append_auth_params(url);
 
             NetworkHandler::RequestOptions options;
@@ -760,7 +760,7 @@ void BanchoState::handle_packet(Packet &packet) {
             options.connectTimeout = 5;
             options.userAgent = "osu!";
             options.mimeParts.push_back({
-                .filename = fmt::format("{}.osu", md5.hash.data()),
+                .filename = fmt::format("{}.osu", md5.string()),
                 .name = "osu_file",
                 .data = {osu_file.begin(), osu_file.end()},
             });
@@ -784,7 +784,7 @@ Packet BanchoState::build_login_packet() {
     if(cv::mp_oauth_token.getString().empty()) {
         req.append(BanchoState::username);
         req.append("\n");
-        req.append(BanchoState::pw_md5.hash.data(), 32);
+        req.append(BanchoState::pw_md5.string(), 32);
         req.append("\n");
     } else {
         req.append("$oauth");
@@ -827,8 +827,8 @@ Packet BanchoState::build_login_packet() {
     // XXX: Not implemented, I'm lazy so just reusing disk signature
     MD5Hash install_md5 = md5((u8 *)BanchoState::get_install_id().toUtf8(), BanchoState::get_install_id().lengthUtf8());
 
-    BanchoState::client_hashes = UString::fmt("{:s}:{:s}:{:s}:{:s}:{:s}:", osu_path_md5.hash.data(), adapters,
-                                       adapters_md5.hash.data(), install_md5.hash.data(), disk_md5.hash.data());
+    BanchoState::client_hashes = UString::fmt("{:s}:{:s}:{:s}:{:s}:{:s}:", osu_path_md5.string(), adapters,
+                                       adapters_md5.string(), install_md5.string(), disk_md5.string());
 
     req.append(BanchoState::client_hashes.toUtf8());
     req.append("|");

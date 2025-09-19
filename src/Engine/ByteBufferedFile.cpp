@@ -64,7 +64,7 @@ MD5Hash ByteBufferedFile::Reader::read_hash() {
     }
 
     assert(len <= 32);  // shut up gcc PLEASE
-    if(this->read_bytes(reinterpret_cast<u8 *>(hash.hash.data()), len) != len) {
+    if(this->read_bytes(reinterpret_cast<u8 *>(hash.string()), len) != len) {
         // just continue, don't set error flag
         debugLog("WARNING: failed to read {} bytes to obtain hash.\n", len);
         extra = len;
@@ -214,7 +214,7 @@ void ByteBufferedFile::Writer::write_hash(MD5Hash hash) {
 
     this->write<u8>(0x0B);
     this->write<u8>(0x20);
-    this->write_bytes(reinterpret_cast<u8 *>(hash.hash.data()), 32);
+    this->write_bytes(reinterpret_cast<u8 *>(hash.string()), 32);
 }
 
 void ByteBufferedFile::Writer::write_mods(Replay::Mods mods) {

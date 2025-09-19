@@ -68,7 +68,7 @@ void Room::pack(Packet &packet) {
     write_string(packet, this->password.toUtf8());
     write_string(packet, this->map_name.toUtf8());
     write<i32>(packet, this->map_id);
-    write_string(packet, this->map_md5.hash.data());
+    write_string(packet, this->map_md5.string());
     for(auto &slot : this->slots) {
         write<u8>(packet, slot.status);
     }

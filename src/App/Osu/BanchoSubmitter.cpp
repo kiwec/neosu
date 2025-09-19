@@ -53,7 +53,7 @@ void submit_score(FinishedScore score) {
         .data = {visual_settings_b64.begin(), visual_settings_b64.end()},
     });
 
-    std::string beatmap_hash = score.beatmap_hash.hash.data();
+    std::string beatmap_hash = score.beatmap_hash.string();
     options.mimeParts.push_back({
         .name = "bmk",
         .data = {beatmap_hash.begin(), beatmap_hash.end()},
@@ -65,7 +65,7 @@ void submit_score(FinishedScore score) {
         .data = {unique_ids.begin(), unique_ids.end()},
     });
 
-    std::string password = BanchoState::is_oauth ? BanchoState::cho_token.toUtf8() : BanchoState::pw_md5.hash.data();
+    std::string password = BanchoState::is_oauth ? BanchoState::cho_token.toUtf8() : BanchoState::pw_md5.string();
     options.mimeParts.push_back({
         .name = "pass",
         .data = {password.begin(), password.end()},
@@ -96,7 +96,7 @@ void submit_score(FinishedScore score) {
 
     {
         std::string score_data;
-        score_data.append(score.map->getMD5Hash().hash.data());
+        score_data.append(score.map->getMD5Hash().string());
 
         if(BanchoState::is_oauth) {
             score_data.append(":$token");
@@ -112,7 +112,7 @@ void submit_score(FinishedScore score) {
             auto idiot_check = fmt::format("chickenmcnuggets{}", score.num300s + score.num100s);
             idiot_check.append(fmt::format("o15{}{}", score.num50s, score.numGekis));
             idiot_check.append(fmt::format("smustard{}{}", score.numKatus, score.numMisses));
-            idiot_check.append(fmt::format("uu{}", score.map->getMD5Hash().hash.data()));
+            idiot_check.append(fmt::format("uu{}", score.map->getMD5Hash().string()));
             idiot_check.append(fmt::format("{}{}", score.comboMax, score.perfect ? "True" : "False"));
 
             if(BanchoState::is_oauth) {
@@ -128,7 +128,7 @@ void submit_score(FinishedScore score) {
 
             auto idiot_hash = BanchoState::md5((u8 *)idiot_check.data(), idiot_check.size());
             score_data.append(":");
-            score_data.append(idiot_hash.hash.data());
+            score_data.append(idiot_hash.string());
         }
         score_data.append(fmt::format(":{}", score.num300s));
         score_data.append(fmt::format(":{}", score.num100s));

@@ -654,7 +654,7 @@ void ScoreButton::setScore(const FinishedScore &score, DatabaseBeatmap *map, int
     // debugLog(
     //     "score.beatmap_hash {} this->beatmap_hash {} score.has_possible_replay {} this->has_possible_replay {} "
     //     "score.playername {} this->playername {}\n",
-    //     score.beatmap_hash.hash.data(), this->score.beatmap_hash.hash.data(), score.has_possible_replay(),
+    //     score.beatmap_hash.string(), this->score.beatmap_hash.string(), score.has_possible_replay(),
     //     this->score.has_possible_replay(), score.playerName, this->score.playerName);
     this->iScoreIndexNumber = index;
 

@@ -97,7 +97,7 @@ void fetch_online_scores(DatabaseBeatmap *beatmap) {
     // Map info
     std::string map_filename = env->getFileNameFromFilePath(beatmap->getFilePath());
     url.append(UString::fmt("&f={}", env->urlEncode(map_filename)));
-    url.append(UString::fmt("&c={:s}", beatmap->getMD5Hash().hash.data()));
+    url.append(UString::fmt("&c={:s}", beatmap->getMD5Hash().string()));
     url.append(UString::fmt("&i={}", beatmap->getSetID()));
 
     // Some servers use mod flags, even without any leaderboard filter active (e.g. for relax)
@@ -109,7 +109,7 @@ void fetch_online_scores(DatabaseBeatmap *beatmap) {
     APIRequest request;
     request.type = GET_MAP_LEADERBOARD;
     request.path = url;
-    request.extra = (u8 *)strdup(beatmap->getMD5Hash().hash.data());
+    request.extra = (u8 *)strdup(beatmap->getMD5Hash().string());
 
     BANCHO::Net::send_api_request(request);
 }

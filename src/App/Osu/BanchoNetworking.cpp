@@ -428,7 +428,7 @@ void append_auth_params(UString& url, std::string user_param, std::string pw_par
         pw = BanchoState::cho_token.toUtf8();
     } else {
         user = BanchoState::get_username();
-        pw = BanchoState::pw_md5.hash.data();
+        pw = BanchoState::pw_md5.string();
     }
 
     url.append(UString::fmt("&{}={}&{}={}", user_param, user, pw_param, pw));
@@ -522,7 +522,7 @@ void BanchoState::reconnect() {
     if(!cv::mp_password.getString().empty()) {
         const char *password = cv::mp_password.getString().c_str();
         const auto hash{BanchoState::md5((u8 *)password, strlen(password))};
-        cv::mp_password_md5.setValue(hash.hash.data());
+        cv::mp_password_md5.setValue(hash.string());
         cv::mp_password.setValue("");
     }
 

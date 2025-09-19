@@ -251,13 +251,13 @@ bool save_collections() {
         u32 nb_deleted = collection->deleted_maps.size();
         db.write<u32>(nb_deleted);
         for(auto map : collection->deleted_maps) {
-            db.write_string(map.hash.data());
+            db.write_string(map.string());
         }
 
         u32 nb_neosu = collection->neosu_maps.size();
         db.write<u32>(nb_neosu);
         for(auto map : collection->neosu_maps) {
-            db.write_string(map.hash.data());
+            db.write_string(map.string());
         }
     }
 

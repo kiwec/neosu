@@ -255,7 +255,7 @@ void InfoLabel::mouse_update(bool *propagate_clicks) {
                     UString::fmt("OPM: {:d}, CPM: {:d}, SPM: {:d}", (int)opm, (int)cpm, (int)spm));
                 tooltipOverlay->addLine(
                     UString::fmt("ID: {:d}, SetID: {:d}", bmDiff2->getID(), bmDiff2->getSetID()));
-                tooltipOverlay->addLine(UString::fmt("MD5: {:s}", bmDiff2->getMD5Hash().hash.data()));
+                tooltipOverlay->addLine(UString::fmt("MD5: {:s}", bmDiff2->getMD5Hash().string()));
                 // mostly for debugging
                 if(keyboard->isShiftDown()) {
                     tooltipOverlay->addLine(UString::fmt("Title: {:s}", bmDiff2->getTitleLatin()));

@@ -519,7 +519,7 @@ void RoomScreen::on_map_change() {
     // Results screen has map background and such showing, so prevent map from changing while we're on it.
     if(osu->getRankingScreen()->isVisible()) return;
 
-    debugLog("Map changed to ID {:d}, MD5 {:s}: {:s}\n", BanchoState::room.map_id, BanchoState::room.map_md5.hash.data(),
+    debugLog("Map changed to ID {:d}, MD5 {:s}: {:s}\n", BanchoState::room.map_id, BanchoState::room.map_md5.string(),
              BanchoState::room.map_name.toUtf8());
     this->ready_btn->is_loading = true;
 

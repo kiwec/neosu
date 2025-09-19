@@ -72,7 +72,7 @@ MD5Hash read_hash(Packet &packet) {
         len = 32;
     }
 
-    read_bytes(packet, (u8 *)hash.hash.data(), len);
+    read_bytes(packet, (u8 *)hash.string(), len);
     hash.hash[len] = '\0';
     return hash;
 }
@@ -181,7 +181,7 @@ void write_string(Packet &packet, const char *str) {
 void write_hash(Packet &packet, const MD5Hash &hash) {
     write<u8>(packet, 0x0B);
     write<u8>(packet, 0x20);
-    write_bytes(packet, (u8 *)hash.hash.data(), 32);
+    write_bytes(packet, (u8 *)hash.string(), 32);
 }
 
 void write_mods(Packet &packet, const Replay::Mods &mods) {
