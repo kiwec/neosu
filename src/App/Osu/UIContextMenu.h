@@ -15,8 +15,8 @@ class UIContextMenu : public CBaseUIScrollView {
     static void clampToRightScreenEdge(UIContextMenu *menu);
 
    public:
-    UIContextMenu(float xPos = 0, float yPos = 0, float xSize = 0, float ySize = 0, const UString& name = "",
-                  CBaseUIScrollView* parent = nullptr);
+    UIContextMenu(float xPos = 0, float yPos = 0, float xSize = 0, float ySize = 0, const UString &name = "",
+                  CBaseUIScrollView *parent = nullptr);
 
     void draw() override;
     void mouse_update(bool *propagate_clicks) override;
@@ -29,7 +29,10 @@ class UIContextMenu : public CBaseUIScrollView {
     void setClickCallback(const ButtonClickCallback &clickCallback) { this->clickCallback = clickCallback; }
 
     void begin(int minWidth = 0, bool bigStyle = false);
-    UIContextMenuButton *addButton(const UString &text, int id = -1);
+    UIContextMenuButton *addButtonJustified(const UString &text, bool left = true, int id = -1);
+    inline UIContextMenuButton *addButton(const UString &text, int id = -1) {
+        return this->addButtonJustified(text, true, id);
+    };
     UIContextMenuTextbox *addTextbox(const UString &text, int id = -1);
 
     void end(bool invertAnimation, bool clampUnderflowAndOverflowAndEnableScrollingIfNecessary);
@@ -50,8 +53,8 @@ class UIContextMenu : public CBaseUIScrollView {
     void onClick(CBaseUIButton *button);
     void onHitEnter(UIContextMenuTextbox *textbox);
 
-    CBaseUIScrollView* parent = nullptr;
-    UIContextMenuTextbox* containedTextbox = nullptr;
+    CBaseUIScrollView *parent = nullptr;
+    UIContextMenuTextbox *containedTextbox = nullptr;
     ButtonClickCallback clickCallback = {};
 
     i32 iYCounter = 0;

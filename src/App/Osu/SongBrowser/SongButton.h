@@ -9,8 +9,8 @@ class BeatmapCarousel;
 
 class SongButton : public CarouselButton {
    public:
-    SongButton(SongBrowser *songBrowser, UIContextMenu *contextMenu, float xPos, float yPos,
-               float xSize, float ySize, UString name, DatabaseBeatmap *databaseBeatmap);
+    SongButton(SongBrowser *songBrowser, UIContextMenu *contextMenu, float xPos, float yPos, float xSize, float ySize,
+               UString name, DatabaseBeatmap *databaseBeatmap);
     ~SongButton() override;
 
     void draw() override;
@@ -57,4 +57,5 @@ class SongButton : public CarouselButton {
 
    private:
     float fThumbnailFadeInTime;
+    void onOpenBeatmapFolderClicked();
 };

@@ -273,23 +273,26 @@ void SongButton::triggerContextMenu(vec2 pos) {
         this->contextMenu->setRelPos(pos);
         this->contextMenu->begin(0, true);
         {
-            if(this->databaseBeatmap != nullptr && this->databaseBeatmap->getDifficulties().size() < 1)
-                this->contextMenu->addButton("[+]         Add to Collection", 1);
+            if(this->databaseBeatmap)
+                this->contextMenu->addButtonJustified("[...] Open Beatmap Folder", true, 0)
+                    ->setClickCallback(SA::MakeDelegate<&SongButton::onOpenBeatmapFolderClicked>(this));
 
-            this->contextMenu->addButton("[+Set]   Add to Collection", 2);
+            if(this->databaseBeatmap != nullptr && this->databaseBeatmap->getDifficulties().size() < 1)
+                this->contextMenu->addButtonJustified("[+] Add to Collection", true, 1);
+
+            this->contextMenu->addButtonJustified("[+Set] Add to Collection", true, 2);
 
             if(osu->getSongBrowser()->getGroupingMode() == SongBrowser::GROUP::GROUP_COLLECTIONS) {
-                CBaseUIButton *spacer = this->contextMenu->addButton("---");
-                spacer->setTextLeft(false);
+                CBaseUIButton *spacer = this->contextMenu->addButtonJustified("---", false);
                 spacer->setEnabled(false);
                 spacer->setTextColor(0xff888888);
                 spacer->setTextDarkColor(0xff000000);
 
                 if(this->databaseBeatmap == nullptr || this->databaseBeatmap->getDifficulties().size() < 1) {
-                    this->contextMenu->addButton("[-]          Remove from Collection", 3);
+                    this->contextMenu->addButtonJustified("[-] Remove from Collection", true, 3);
                 }
 
-                this->contextMenu->addButton("[-Set]    Remove from Collection", 4);
+                this->contextMenu->addButtonJustified("[-Set] Remove from Collection", true, 4);
             }
         }
         this->contextMenu->end(false, false);
@@ -305,15 +308,15 @@ void SongButton::onContextMenu(const UString &text, int id) {
         // 2 = add set to collection
         this->contextMenu->begin(0, true);
         {
-            this->contextMenu->addButton("[+]   Create new Collection?", -id * 2);
+            this->contextMenu->addButtonJustified("[+] Create new Collection?", true, -id * 2);
 
             for(auto collection : collections) {
                 if(!collection->maps.empty()) {
-                    CBaseUIButton *spacer = this->contextMenu->addButton("---");
-                    spacer->setTextLeft(false);
+                    CBaseUIButton *spacer = this->contextMenu->addButtonJustified("---", false);
                     spacer->setEnabled(false);
                     spacer->setTextColor(0xff888888);
                     spacer->setTextDarkColor(0xff000000);
+
                     break;
                 }
             }
@@ -325,8 +328,7 @@ void SongButton::onContextMenu(const UString &text, int id) {
                 bool can_add_to_collection = true;
 
                 if(id == 1) {
-                    auto it = std::ranges::find(collection->maps, map_hash);
-                    if(it != collection->maps.end()) {
+                    if(std::ranges::contains(collection->maps, map_hash)) {
                         // Map already is present in the collection
                         can_add_to_collection = false;
                     }
@@ -336,7 +338,7 @@ void SongButton::onContextMenu(const UString &text, int id) {
                     // XXX: Don't mark as valid if the set is fully present in the collection
                 }
 
-                auto collectionButton = this->contextMenu->addButton(UString(collection->name.c_str()), id);
+                auto collectionButton = this->contextMenu->addButtonJustified(collection->name.c_str(), false, id);
                 if(!can_add_to_collection) {
                     collectionButton->setEnabled(false);
                     collectionButton->setTextColor(0xff555555);
@@ -359,26 +361,22 @@ void SongButton::onAddToCollectionConfirmed(const UString &text, int id) {
     if(id == -2 || id == -4) {
         this->contextMenu->begin(0, true);
         {
-            CBaseUIButton *label = this->contextMenu->addButton("Enter Collection Name:");
-            label->setTextLeft(false);
+            CBaseUIButton *label = this->contextMenu->addButtonJustified("Enter Collection Name:", false);
             label->setEnabled(false);
 
-            CBaseUIButton *spacer = this->contextMenu->addButton("---");
-            spacer->setTextLeft(false);
+            CBaseUIButton *spacer = this->contextMenu->addButtonJustified("---", false);
             spacer->setEnabled(false);
             spacer->setTextColor(0xff888888);
             spacer->setTextDarkColor(0xff000000);
 
             this->contextMenu->addTextbox("", id);
 
-            spacer = this->contextMenu->addButton("---");
-            spacer->setTextLeft(false);
+            spacer = this->contextMenu->addButtonJustified("---", false);
             spacer->setEnabled(false);
             spacer->setTextColor(0xff888888);
             spacer->setTextDarkColor(0xff000000);
 
-            label = this->contextMenu->addButton("(Press ENTER to confirm.)", id);
-            label->setTextLeft(false);
+            label = this->contextMenu->addButtonJustified("(Press ENTER to confirm.)", false, id);
             label->setTextColor(0xff555555);
             label->setTextDarkColor(0xff000000);
         }
@@ -408,4 +406,10 @@ float SongButton::calculateGradeScale() {
 float SongButton::calculateGradeWidth() {
     SkinImage *grade = ScoreButton::getGradeImage(this->grade);
     return grade->getSizeBaseRaw().x * this->calculateGradeScale();
+}
+
+void SongButton::onOpenBeatmapFolderClicked() {
+    this->contextMenu->setVisible2(false);  // why is this manual setVisible not required in mcosu?
+    if(!this->databaseBeatmap) return;
+    env->openFileBrowser(this->databaseBeatmap->getFolder());
 }
