@@ -2780,6 +2780,7 @@ void SongBrowser::onSortScoresClicked(CBaseUIButton *button) {
 }
 
 void SongBrowser::onFilterScoresChange(const UString &text, int id) {
+    UString text_to_set{text};
     const auto &type_cv = &cv::songbrowser_scores_filteringtype;
     const auto &manual_type_cv = &cv::songbrowser_scores_filteringtype_manual;
 
@@ -2791,11 +2792,12 @@ void SongBrowser::onFilterScoresChange(const UString &text, int id) {
     // always change for manual setting, otherwise allow login state to affect filtering (if it was never manually set)
     const bool should_change =
         id != LOGIN_STATE_FILTER_ID || (manual_type_cv->getString() == manual_type_cv->getDefaultString());
-    if(should_change) {
-        type_cv->setValue(text);  // NOTE: remember
-
-        this->filterScoresDropdown->setText(text);
+    if(!should_change) {
+        text_to_set = UString{manual_type_cv->getString()};
     }
+    type_cv->setValue(text_to_set);  // NOTE: remember
+
+    this->filterScoresDropdown->setText(text_to_set);
     db->online_scores.clear();
     this->rebuildScoreButtons();
     this->scoreBrowser->scrollToTop();
