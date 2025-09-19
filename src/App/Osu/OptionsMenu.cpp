@@ -54,12 +54,6 @@
 #include "BassSoundEngine.h"  // for ASIO-specific stuff
 #endif
 
-// Addresses for which we should use OAuth login instead of username:password login
-static constexpr auto oauth_servers = std::array{
-    "neosu.local",
-    "neosu.net",
-};
-
 class OptionsMenuSkinPreviewElement : public CBaseUIElement {
    public:
     OptionsMenuSkinPreviewElement(float xPos, float yPos, float xSize, float ySize, UString name)
@@ -3792,14 +3786,19 @@ bool OptionsMenu::should_use_oauth_login() {
         return true;
     }
 
-    auto server_endpoint = this->serverTextbox->getText();
-    for(const char *server : oauth_servers) {
-        if(!strcmp(server_endpoint.toUtf8(), server)) {
-            return true;
-        }
+    // Addresses for which we should use OAuth login instead of username:password login
+    static constexpr const auto oauth_servers = std::array{
+        "neosu.local"sv,
+        "neosu.net"sv,
+    };
+
+    const auto server_endpoint = this->serverTextbox->getText().utf8View();
+    if (server_endpoint.empty() || !std::ranges::contains(oauth_servers, server_endpoint)) {
+        return false;
     }
 
-    return false;
+    // in whitelist
+    return true;
 }
 
 void OptionsMenu::setLoginLoadingState(bool state) { this->logInButton->is_loading = state; }

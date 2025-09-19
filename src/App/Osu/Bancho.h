@@ -67,15 +67,15 @@ struct BanchoState final {
     [[nodiscard]] static const UString &get_disk_uuid();
 
     // cached install id (currently unimplemented, just returns disk uuid)
-    [[nodiscard]] static const UString &get_install_id() { return get_disk_uuid(); }
+    [[nodiscard]] static inline const UString &get_install_id() { return get_disk_uuid(); }
 
     // Room ID can be 0 on private servers! So we check if the room has players instead.
-    [[nodiscard]] static bool is_in_a_multi_room() { return room.nb_players > 0; }
-    [[nodiscard]] static bool is_playing_a_multi_map() { return match_started; }
+    [[nodiscard]] static inline bool is_in_a_multi_room() { return room.nb_players > 0; }
+    [[nodiscard]] static inline bool is_playing_a_multi_map() { return match_started; }
     [[nodiscard]] static bool can_submit_scores();
 
-    [[nodiscard]] static bool is_online() { return user_id.load(std::memory_order_acquire) > 0; }
-    [[nodiscard]] static i32 get_uid() { return user_id.load(std::memory_order_acquire); }
+    [[nodiscard]] static inline bool is_online() { return user_id.load(std::memory_order_acquire) > 0; }
+    [[nodiscard]] static inline i32 get_uid() { return user_id.load(std::memory_order_acquire); }
     static inline void set_uid(i32 uid) { user_id.store(uid, std::memory_order_release); }
 
     [[nodiscard]] static std::string get_username();

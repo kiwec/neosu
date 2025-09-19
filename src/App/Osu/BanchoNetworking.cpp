@@ -531,27 +531,24 @@ void BanchoState::reconnect() {
     BanchoState::pw_md5 = {cv::mp_password_md5.getString().c_str()};
 
     // Admins told me they don't want any clients to connect
-    constexpr auto server_blacklist = std::array{
-        "ppy.sh",  // haven't asked, but the answer is obvious
-        "gatari.pw",
+    static constexpr const auto server_blacklist = std::array{
+        "ppy.sh"sv,  // haven't asked, but the answer is obvious
+        "gatari.pw"sv,
     };
-    for(const char *forbidden_server : server_blacklist) {
-        if(!strcmp(forbidden_server, BanchoState::endpoint.c_str())) {
-            osu->getNotificationOverlay()->addToast("This server does not allow neosu clients.", ERROR_TOAST);
-            return;
-        }
+
+    if (std::ranges::contains(server_blacklist, BanchoState::endpoint)) {
+        osu->getNotificationOverlay()->addToast("This server does not allow neosu clients.", ERROR_TOAST);
+        return;
     }
 
     // Admins told me they don't want score submission enabled
-    constexpr auto submit_blacklist = std::array{
-        "akatsuki.gg",
-        "ripple.moe",
+    static constexpr const auto submit_blacklist = std::array{
+        "akatsuki.gg"sv,
+        "ripple.moe"sv,
     };
-    for(const char *lame_server : submit_blacklist) {
-        if(!strcmp(lame_server, BanchoState::endpoint.c_str())) {
-            BanchoState::score_submission_policy = ServerPolicy::NO;
-            break;
-        }
+
+    if (std::ranges::contains(submit_blacklist, BanchoState::endpoint)) {
+        BanchoState::score_submission_policy = ServerPolicy::NO;
     }
 
     osu->getOptionsMenu()->setLoginLoadingState(true);
