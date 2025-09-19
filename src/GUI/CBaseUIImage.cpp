@@ -6,7 +6,7 @@
 #include "Engine.h"
 #include "ResourceManager.h"
 
-CBaseUIImage::CBaseUIImage(std::string imageResourceName, float xPos, float yPos, float xSize, float ySize,
+CBaseUIImage::CBaseUIImage(const std::string& imageResourceName, float xPos, float yPos, float xSize, float ySize,
                            UString name)
     : CBaseUIElement(xPos, yPos, xSize, ySize, std::move(name)) {
     this->bScaleToFit = true;  // must be up here because it's used in setImage()

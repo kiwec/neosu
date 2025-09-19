@@ -217,7 +217,7 @@ class Slider final : public HitObject {
     };
 
    public:
-    Slider(char stype, int repeat, float pixelLength, std::vector<vec2> points, std::vector<float> ticks,
+    Slider(char stype, int repeat, float pixelLength, std::vector<vec2> points, const std::vector<float>& ticks,
            float sliderTime, float sliderTimeWithoutRepeats, long time, HitSamples hoverSamples,
            std::vector<HitSamples> edgeSamples, int comboNumber, bool isEndOfCombo, int colorCounter, int colorOffset,
            AbstractBeatmapInterface *beatmap);

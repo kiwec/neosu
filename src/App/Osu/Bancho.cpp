@@ -764,7 +764,7 @@ void BanchoState::handle_packet(Packet &packet) {
                 .name = "osu_file",
                 .data = {osu_file.begin(), osu_file.end()},
             });
-            networkHandler->httpRequestAsync(url, [](NetworkHandler::Response /*response*/) {}, options);
+            networkHandler->httpRequestAsync(url, [](const NetworkHandler::Response& /*response*/) {}, options);
 
             break;
         }

@@ -862,7 +862,7 @@ void Circle::drawHitCircleNumber(const std::unique_ptr<Skin> &skin, float number
 
 Circle::Circle(int x, int y, long time, HitSamples samples, int comboNumber, bool isEndOfCombo, int colorCounter,
                int colorOffset, AbstractBeatmapInterface *pi)
-    : HitObject(time, samples, comboNumber, isEndOfCombo, colorCounter, colorOffset, pi) {
+    : HitObject(time, std::move(samples), comboNumber, isEndOfCombo, colorCounter, colorOffset, pi) {
     this->type = HitObjectType::CIRCLE;
 
     this->vOriginalRawPos = vec2(x, y);
@@ -1079,11 +1079,11 @@ void Circle::onReset(long curPos) {
 
 vec2 Circle::getAutoCursorPos(long /*curPos*/) const { return this->pi->osuCoords2Pixels(this->vRawPos); }
 
-Slider::Slider(char stype, int repeat, float pixelLength, std::vector<vec2> points, std::vector<float> ticks,
+Slider::Slider(char stype, int repeat, float pixelLength, std::vector<vec2> points, const std::vector<float>& ticks,
                float sliderTime, float sliderTimeWithoutRepeats, long time, HitSamples hoverSamples,
                std::vector<HitSamples> edgeSamples, int comboNumber, bool isEndOfCombo, int colorCounter,
                int colorOffset, AbstractBeatmapInterface *pi)
-    : HitObject(time, hoverSamples, comboNumber, isEndOfCombo, colorCounter, colorOffset, pi) {
+    : HitObject(time, std::move(hoverSamples), comboNumber, isEndOfCombo, colorCounter, colorOffset, pi) {
     this->type = HitObjectType::SLIDER;
 
     this->cType = stype;
@@ -2465,7 +2465,7 @@ bool Slider::isClickHeldSlider() {
 
 Spinner::Spinner(int x, int y, long time, HitSamples samples, bool isEndOfCombo, long endTime,
                  AbstractBeatmapInterface *pi)
-    : HitObject(time, samples, -1, isEndOfCombo, -1, -1, pi) {
+    : HitObject(time, std::move(samples), -1, isEndOfCombo, -1, -1, pi) {
     this->type = HitObjectType::SPINNER;
 
     this->vOriginalRawPos = vec2(x, y);
