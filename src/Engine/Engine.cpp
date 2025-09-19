@@ -136,6 +136,7 @@ Engine::~Engine() {
     // reset() all static unique_ptrs
     debugLog("Engine: Freeing app...\n");
     app.reset();
+    osu = nullptr;
 
     debugLog("Engine: Freeing engine GUI...\n");
     this->consoleBox = nullptr;

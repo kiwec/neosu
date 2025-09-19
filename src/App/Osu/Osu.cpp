@@ -347,8 +347,6 @@ Osu::~Osu() {
     VolNormalization::shutdown();
     MapCalcThread::shutdown();
     BANCHO::Net::cleanup_networking();
-
-    osu = nullptr;
 }
 
 void Osu::draw() {
