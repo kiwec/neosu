@@ -370,6 +370,7 @@ CONVAR(songbrowser_search_hardcoded_filter, "songbrowser_search_hardcoded_filter
 // Song browser (maybe useful to servers)
 CONVAR(songbrowser_scorebrowser_enabled, "songbrowser_scorebrowser_enabled", true, CLIENT | SKINS | SERVER);
 CONVAR(songbrowser_scores_filteringtype, "songbrowser_scores_filteringtype", "Local", CLIENT | SKINS | SERVER);
+CONVAR(songbrowser_scores_filteringtype_manual, "songbrowser_scores_filteringtype_manual", "unset", CLIENT | SKINS | SERVER);
 CONVAR(songbrowser_scores_sortingtype, "songbrowser_scores_sortingtype", "By pp", CLIENT | SKINS | SERVER);
 CONVAR(songbrowser_sortingtype, "songbrowser_sortingtype", "By Date Added", CLIENT | SKINS | SERVER);
 

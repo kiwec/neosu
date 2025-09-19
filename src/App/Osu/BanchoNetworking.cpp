@@ -506,7 +506,7 @@ void BanchoState::disconnect() {
 
     BANCHO::User::logout_all_users();
     osu->getChat()->onDisconnect();
-    osu->getSongBrowser()->onFilterScoresChange("Local", 0);
+    osu->getSongBrowser()->onFilterScoresChange("Local", SongBrowser::LOGIN_STATE_FILTER_ID);
 
     Downloader::abort_downloads();
 }

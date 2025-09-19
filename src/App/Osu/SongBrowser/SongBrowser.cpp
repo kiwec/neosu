@@ -235,7 +235,7 @@ bool sort_by_difficulty(SongButton const *a, SongButton const *b) {
     float diff1 = (aPtr->getAR() + 1) * (aPtr->getCS() + 1) * (aPtr->getHP() + 1) * (aPtr->getOD() + 1) *
                   (std::max(aPtr->getMostCommonBPM(), 1));
     float map = (bPtr->getAR() + 1) * (bPtr->getCS() + 1) * (bPtr->getHP() + 1) * (bPtr->getOD() + 1) *
-                  (std::max(bPtr->getMostCommonBPM(), 1));
+                (std::max(bPtr->getMostCommonBPM(), 1));
 
     if(diff1 == map) return false;
     return diff1 < map;
@@ -555,8 +555,9 @@ void SongBrowser::draw() {
         g->setColor(0xffffffff);
         g->pushTransform();
         {
-            g->translate((int)(osu->getVirtScreenWidth() / 2 - osu->getSubTitleFont()->getStringWidth(loadingMessage) / 2),
-                         osu->getVirtScreenHeight() - 15);
+            g->translate(
+                (int)(osu->getVirtScreenWidth() / 2 - osu->getSubTitleFont()->getStringWidth(loadingMessage) / 2),
+                osu->getVirtScreenHeight() - 15);
             g->drawString(osu->getSubTitleFont(), loadingMessage);
         }
         g->popTransform();
@@ -570,12 +571,10 @@ void SongBrowser::draw() {
         float alpha = 1.0f;
         if(cv::songbrowser_background_fade_in_duration.getFloat() > 0.0f) {
             // handle fadein trigger after handler is finished loading
-            const bool ready = osu->getMapInterface()->beatmap != nullptr &&
-                               osu->getBackgroundImageHandler()->getLoadBackgroundImage(
-                                   osu->getMapInterface()->beatmap) != nullptr &&
-                               osu->getBackgroundImageHandler()
-                                   ->getLoadBackgroundImage(osu->getMapInterface()->beatmap)
-                                   ->isReady();
+            const bool ready =
+                osu->getMapInterface()->beatmap != nullptr &&
+                osu->getBackgroundImageHandler()->getLoadBackgroundImage(osu->getMapInterface()->beatmap) != nullptr &&
+                osu->getBackgroundImageHandler()->getLoadBackgroundImage(osu->getMapInterface()->beatmap)->isReady();
 
             if(!ready)
                 this->fBackgroundFadeInTime = engine->getTime();
@@ -621,8 +620,8 @@ void SongBrowser::draw() {
         }
 
         g->setBlendMode(Graphics::BLEND_MODE::BLEND_MODE_ADDITIVE);
-        osu->getSkin()->mode_osu->drawRaw(vec2(osu->getVirtScreenWidth() / 2, osu->getVirtScreenHeight() / 2), mode_osu_scale,
-                                          AnchorPoint::CENTER);
+        osu->getSkin()->mode_osu->drawRaw(vec2(osu->getVirtScreenWidth() / 2, osu->getVirtScreenHeight() / 2),
+                                          mode_osu_scale, AnchorPoint::CENTER);
         g->setBlendMode(Graphics::BLEND_MODE::BLEND_MODE_ALPHA);
     }
 
@@ -726,9 +725,9 @@ void SongBrowser::draw() {
                     const double speedStrainHeight = speedStrain * strainHeightMultiplier;
                     // const double strainHeight = strain * strainHeightMultiplier;
 
-                    vec2 topLeftCenter =
-                        vec2(highestStrainIndex * strainWidth + strainWidth / 2.0f,
-                             osu->getVirtScreenHeight() - (get_bottombar_height() + aimStrainHeight + speedStrainHeight));
+                    vec2 topLeftCenter = vec2(
+                        highestStrainIndex * strainWidth + strainWidth / 2.0f,
+                        osu->getVirtScreenHeight() - (get_bottombar_height() + aimStrainHeight + speedStrainHeight));
 
                     const float margin = 5.0f * dpiScale;
 
@@ -798,8 +797,9 @@ void SongBrowser::draw() {
         g->setColor(0xffff0000);
         g->pushTransform();
         {
-            g->translate((int)(osu->getVirtScreenWidth() / 2 - osu->getSubTitleFont()->getStringWidth(errorMessage1) / 2),
-                         (int)(osu->getVirtScreenHeight() / 2 + osu->getSubTitleFont()->getHeight()));
+            g->translate(
+                (int)(osu->getVirtScreenWidth() / 2 - osu->getSubTitleFont()->getStringWidth(errorMessage1) / 2),
+                (int)(osu->getVirtScreenHeight() / 2 + osu->getSubTitleFont()->getHeight()));
             g->drawString(osu->getSubTitleFont(), errorMessage1);
         }
         g->popTransform();
@@ -807,8 +807,9 @@ void SongBrowser::draw() {
         g->setColor(0xff00ff00);
         g->pushTransform();
         {
-            g->translate((int)(osu->getVirtScreenWidth() / 2 - osu->getSubTitleFont()->getStringWidth(errorMessage2) / 2),
-                         (int)(osu->getVirtScreenHeight() / 2 + osu->getSubTitleFont()->getHeight() * 2 + 15));
+            g->translate(
+                (int)(osu->getVirtScreenWidth() / 2 - osu->getSubTitleFont()->getStringWidth(errorMessage2) / 2),
+                (int)(osu->getVirtScreenHeight() / 2 + osu->getSubTitleFont()->getHeight() * 2 + 15));
             g->drawString(osu->getSubTitleFont(), errorMessage2);
         }
         g->popTransform();
@@ -829,8 +830,8 @@ void SongBrowser::draw() {
 
 void SongBrowser::drawSelectedBeatmapBackgroundImage(float alpha) {
     if(osu->getMapInterface()->beatmap != nullptr) {
-        Image *backgroundImage = osu->getBackgroundImageHandler()->getLoadBackgroundImage(
-            osu->getMapInterface()->beatmap);
+        Image *backgroundImage =
+            osu->getBackgroundImageHandler()->getLoadBackgroundImage(osu->getMapInterface()->beatmap);
         if(backgroundImage != nullptr && backgroundImage->isReady()) {
             const float scale = Osu::getImageScaleToFillResolution(backgroundImage, osu->getVirtScreenSize());
 
@@ -1463,8 +1464,8 @@ void SongBrowser::addBeatmapSet(BeatmapSet *mapset) {
         songButton =
             new SongButton(this, this->contextMenu, 250, 250 + this->beatmapsets.size() * 50, 200, 50, "", mapset);
     } else {
-        songButton = new SongDifficultyButton(this, this->contextMenu, 250, 250 + this->beatmapsets.size() * 50, 200, 50,
-                                              "", mapset->getDifficulties()[0], nullptr);
+        songButton = new SongDifficultyButton(this, this->contextMenu, 250, 250 + this->beatmapsets.size() * 50, 200,
+                                              50, "", mapset->getDifficulties()[0], nullptr);
     }
 
     this->songButtons.push_back(songButton);
@@ -2778,12 +2779,26 @@ void SongBrowser::onSortScoresClicked(CBaseUIButton *button) {
     this->contextMenu->setClickCallback(SA::MakeDelegate<&SongBrowser::onSortScoresChange>(this));
 }
 
-void SongBrowser::onFilterScoresChange(const UString &text, int /*id*/) {
-    cv::songbrowser_scores_filteringtype.setValue(text);  // NOTE: remember
-    this->filterScoresDropdown->setText(text);
-    db->online_scores.clear();
-    this->rebuildScoreButtons();
-    this->scoreBrowser->scrollToTop();
+void SongBrowser::onFilterScoresChange(const UString &text, int id) {
+    const auto &type_cv = &cv::songbrowser_scores_filteringtype;
+    const auto &manual_type_cv = &cv::songbrowser_scores_filteringtype_manual;
+
+    // abusing "id" to determine whether it was a click callback or due to login
+    if(id != LOGIN_STATE_FILTER_ID) {
+        manual_type_cv->setValue(text);
+    }
+
+    // always change for manual setting, otherwise allow login state to affect filtering (if it was never manually set)
+    const bool should_change =
+        id != LOGIN_STATE_FILTER_ID || (manual_type_cv->getString() == manual_type_cv->getDefaultString());
+    if(should_change) {
+        type_cv->setValue(text);  // NOTE: remember
+
+        this->filterScoresDropdown->setText(text);
+        db->online_scores.clear();
+        this->rebuildScoreButtons();
+        this->scoreBrowser->scrollToTop();
+    }
 }
 
 void SongBrowser::onSortScoresChange(const UString &text, int /*id*/) {
@@ -3266,8 +3281,7 @@ void SongBrowser::selectPreviousRandomBeatmap() {
     if(this->previousRandomBeatmaps.size() > 0) {
         DatabaseBeatmap *currentRandomBeatmap = this->previousRandomBeatmaps.back();
         if(this->previousRandomBeatmaps.size() > 1 &&
-           this->previousRandomBeatmaps[this->previousRandomBeatmaps.size() - 1] ==
-               osu->getMapInterface()->beatmap)
+           this->previousRandomBeatmaps[this->previousRandomBeatmaps.size() - 1] == osu->getMapInterface()->beatmap)
             this->previousRandomBeatmaps.pop_back();  // deletes the current beatmap which may also be at the top (so
                                                       // we don't switch to ourself)
 

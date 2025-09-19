@@ -156,6 +156,7 @@ class SongBrowser final : public ScreenBackable {
                                                                        bool doRebuildSongButtons = true);
 
     void onFilterScoresClicked(CBaseUIButton *button);
+    static constexpr int LOGIN_STATE_FILTER_ID{100};
     void onFilterScoresChange(const UString &text, int id = -1);
     void onSortScoresClicked(CBaseUIButton *button);
     void onSortScoresChange(const UString &text, int id = -1);

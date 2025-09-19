@@ -125,7 +125,7 @@ void BanchoState::handle_packet(Packet &packet) {
                 env->createDirectory(replays_dir);
 
                 osu->onUserCardChange(BanchoState::username.c_str());
-                osu->getSongBrowser()->onFilterScoresChange(UString("Global"), 0);
+                osu->getSongBrowser()->onFilterScoresChange(UString("Global"), SongBrowser::LOGIN_STATE_FILTER_ID);
 
                 // If server sent a score submission policy, update options menu to hide the checkbox
                 osu->getOptionsMenu()->scheduleLayoutUpdate();

@@ -75,7 +75,7 @@ void fetch_online_scores(DatabaseBeatmap *beatmap) {
     url.append("&h=");
 
     char lb_type = '1';  // Global / default
-    const char &filter_first_letter{cv::songbrowser_scores_filteringtype.getString()[0]};
+    const char filter_first_letter{cv::songbrowser_scores_filteringtype.getString()[0]};
     switch(filter_first_letter) {
         case 'S':  // Selected mods
             lb_type = '2';
