@@ -36,6 +36,12 @@ export WINEBUILD=1
 # mkdir -p "$WINEPREFIX/dosdevices/" # shorten paths
 # ln -s "$(realpath "$PWD"/../)" "$WINEPREFIX/dosdevices/d:" 2>/dev/null
 
+exit_cleanup() {
+	$WINESERVER -k9
+	# these just stay alive forever as zombies due to a known wine bug w/ MSVC and parallel jobs :/
+	for pid in $(pgrep -wf 'cl.exe'); do kill -SIGKILL "$pid"; done
+}
+
 doit() {
 	$WINESERVER -k # kill a potential old server
 	$WINESERVER -p # start a new server
@@ -69,11 +75,5 @@ doit() {
 trap exit_cleanup EXIT
 
 doit || true
-
-exit_cleanup() {
-	$WINESERVER -k9
-	# why do these just stay alive forever as zombies
-	for pid in $(pgrep -wf 'cl.exe'); do kill -SIGKILL "$pid"; done
-}
 
 exit_cleanup

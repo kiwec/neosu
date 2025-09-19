@@ -108,10 +108,7 @@ set(EXTERNAL_PROJECT_CMAKE_ARGS
 )
 
 # Build dependencies - order matters due to interdependencies
-ExternalProject_Add(zlib_external
-    URL ${ZLIB_URL}
-    URL_HASH ${ZLIB_HASH}
-    DOWNLOAD_DIR ${DEPS_CACHE}
+add_external_project(zlib
     CMAKE_ARGS
         ${EXTERNAL_PROJECT_CMAKE_ARGS}
         -DZLIB_COMPAT=ON
@@ -119,10 +116,7 @@ ExternalProject_Add(zlib_external
     BUILD_COMMAND cmake --build <BINARY_DIR> --config ${CMAKE_BUILD_TYPE} --parallel ${CPU_COUNT}
 )
 
-ExternalProject_Add(bzip2_external
-    URL ${BZIP2_URL}
-    URL_HASH ${BZIP2_HASH}
-    DOWNLOAD_DIR ${DEPS_CACHE}
+add_external_project(bzip2
     CMAKE_ARGS
         ${EXTERNAL_PROJECT_CMAKE_ARGS}
         -DENABLE_STATIC_RUNTIME=ON
@@ -132,10 +126,7 @@ ExternalProject_Add(bzip2_external
     BUILD_COMMAND cmake --build <BINARY_DIR> --config ${CMAKE_BUILD_TYPE} --parallel ${CPU_COUNT}
 )
 
-ExternalProject_Add(libjpeg_external
-    URL ${LIBJPEG_URL}
-    URL_HASH ${LIBJPEG_HASH}
-    DOWNLOAD_DIR ${DEPS_CACHE}
+add_external_project(libjpeg
     CMAKE_ARGS
         ${EXTERNAL_PROJECT_CMAKE_ARGS}
         -DENABLE_STATIC=ON
@@ -148,10 +139,7 @@ ExternalProject_Add(libjpeg_external
     BUILD_COMMAND cmake --build <BINARY_DIR> --config ${CMAKE_BUILD_TYPE} --parallel ${CPU_COUNT}
 )
 
-ExternalProject_Add(libpng_external
-    URL ${LIBPNG_URL}
-    URL_HASH ${LIBPNG_HASH}
-    DOWNLOAD_DIR ${DEPS_CACHE}
+add_external_project(libpng
     DEPENDS zlib_external
     CMAKE_ARGS
         ${EXTERNAL_PROJECT_CMAKE_ARGS}
@@ -163,10 +151,7 @@ ExternalProject_Add(libpng_external
     BUILD_COMMAND cmake --build <BINARY_DIR> --config ${CMAKE_BUILD_TYPE} --parallel ${CPU_COUNT}
 )
 
-ExternalProject_Add(freetype_external
-    URL ${FREETYPE2_URL}
-    URL_HASH ${FREETYPE2_HASH}
-    DOWNLOAD_DIR ${DEPS_CACHE}
+add_external_project(freetype
     DEPENDS zlib_external libpng_external bzip2_external
     CMAKE_ARGS
         ${EXTERNAL_PROJECT_CMAKE_ARGS}
@@ -178,10 +163,7 @@ ExternalProject_Add(freetype_external
     BUILD_COMMAND cmake --build <BINARY_DIR> --config ${CMAKE_BUILD_TYPE} --parallel ${CPU_COUNT}
 )
 
-ExternalProject_Add(fmt_external
-    URL ${FMT_URL}
-    URL_HASH ${FMT_HASH}
-    DOWNLOAD_DIR ${DEPS_CACHE}
+add_external_project(fmt
     CMAKE_ARGS
         ${EXTERNAL_PROJECT_CMAKE_ARGS}
         -DFMT_CUDA_TEST=OFF
@@ -198,10 +180,7 @@ ExternalProject_Add(fmt_external
     BUILD_COMMAND cmake --build <BINARY_DIR> --config ${CMAKE_BUILD_TYPE} --parallel ${CPU_COUNT}
 )
 
-ExternalProject_Add(glm_external
-    URL ${GLM_URL}
-    URL_HASH ${GLM_HASH}
-    DOWNLOAD_DIR ${DEPS_CACHE}
+add_external_project(glm
     CMAKE_ARGS
         ${EXTERNAL_PROJECT_CMAKE_ARGS}
         -DGLM_BUILD_TESTS=OFF
@@ -211,10 +190,7 @@ ExternalProject_Add(glm_external
     BUILD_COMMAND cmake --build <BINARY_DIR> --config ${CMAKE_BUILD_TYPE} --parallel ${CPU_COUNT}
 )
 
-ExternalProject_Add(sdl3_external
-    URL ${SDL3_URL}
-    URL_HASH ${SDL3_HASH}
-    DOWNLOAD_DIR ${DEPS_CACHE}
+add_external_project(sdl3
     DEPENDS freetype_external
     CMAKE_ARGS
         ${EXTERNAL_PROJECT_CMAKE_ARGS}
@@ -228,10 +204,7 @@ ExternalProject_Add(sdl3_external
     BUILD_COMMAND cmake --build <BINARY_DIR> --config ${CMAKE_BUILD_TYPE} --parallel ${CPU_COUNT}
 )
 
-ExternalProject_Add(lzma_external
-    URL ${LZMA_URL}
-    URL_HASH ${LZMA_HASH}
-    DOWNLOAD_DIR ${DEPS_CACHE}
+add_external_project(lzma
     CMAKE_ARGS
         ${EXTERNAL_PROJECT_CMAKE_ARGS}
         -DBUILD_TESTING=OFF
@@ -247,10 +220,7 @@ ExternalProject_Add(lzma_external
     BUILD_COMMAND cmake --build <BINARY_DIR> --config ${CMAKE_BUILD_TYPE} --parallel ${CPU_COUNT}
 )
 
-ExternalProject_Add(libarchive_external
-    URL ${LIBARCHIVE_URL}
-    URL_HASH ${LIBARCHIVE_HASH}
-    DOWNLOAD_DIR ${DEPS_CACHE}
+add_external_project(libarchive
     DEPENDS lzma_external bzip2_external zlib_external
     CMAKE_ARGS
         ${EXTERNAL_PROJECT_CMAKE_ARGS}
@@ -281,10 +251,7 @@ ExternalProject_Add(libarchive_external
     BUILD_COMMAND cmake --build <BINARY_DIR> --config ${CMAKE_BUILD_TYPE} --parallel ${CPU_COUNT}
 )
 
-ExternalProject_Add(curl_external
-    URL ${CURL_URL}
-    URL_HASH ${CURL_HASH}
-    DOWNLOAD_DIR ${DEPS_CACHE}
+add_external_project(curl
     DEPENDS zlib_external
     CMAKE_ARGS
         ${EXTERNAL_PROJECT_CMAKE_ARGS}
@@ -296,10 +263,7 @@ ExternalProject_Add(curl_external
     BUILD_COMMAND cmake --build <BINARY_DIR> --config ${CMAKE_BUILD_TYPE} --parallel ${CPU_COUNT}
 )
 
-ExternalProject_Add(mpg123_external
-    URL ${MPG123_URL}
-    URL_HASH ${MPG123_HASH}
-    DOWNLOAD_DIR ${DEPS_CACHE}
+add_external_project(mpg123
     SOURCE_SUBDIR ports/cmake
     # weird... unix makefiles just blows up in an incomprehensible way
     CMAKE_ARGS
@@ -308,10 +272,7 @@ ExternalProject_Add(mpg123_external
     BUILD_COMMAND cmake --build <BINARY_DIR> --config ${CMAKE_BUILD_TYPE} --parallel ${CPU_COUNT}
 )
 
-ExternalProject_Add(soundtouch_external
-    URL ${SOUNDTOUCH_URL}
-    URL_HASH ${SOUNDTOUCH_HASH}
-    DOWNLOAD_DIR ${DEPS_CACHE}
+add_external_project(soundtouch
     CMAKE_ARGS
         ${EXTERNAL_PROJECT_CMAKE_ARGS}
         -DST_NO_EXCEPTION_HANDLING=1
@@ -321,10 +282,7 @@ ExternalProject_Add(soundtouch_external
     BUILD_COMMAND cmake --build <BINARY_DIR> --config ${CMAKE_BUILD_TYPE} --parallel ${CPU_COUNT}
 )
 
-ExternalProject_Add(soloud_external
-    URL ${SOLOUD_URL}
-    URL_HASH ${SOLOUD_HASH}
-    DOWNLOAD_DIR ${DEPS_CACHE}
+add_external_project(soloud
     DEPENDS sdl3_external mpg123_external
     CMAKE_ARGS
         ${EXTERNAL_PROJECT_CMAKE_ARGS}
@@ -336,12 +294,9 @@ ExternalProject_Add(soloud_external
 )
 
 # Discord SDK (pre-built binary)
-ExternalProject_Add(discordsdk_external
-    URL ${DISCORDSDK_URL}
-    URL_HASH ${DISCORDSDK_HASH}
-    DOWNLOAD_DIR ${DEPS_CACHE}
-    CONFIGURE_COMMAND ""
-    BUILD_COMMAND ""
+add_external_project(discordsdk
+    CONFIGURE_COMMAND ${CMAKE_COMMAND} -E echo "Skipping configure"
+    BUILD_COMMAND ${CMAKE_COMMAND} -E echo "Skipping build"
     INSTALL_COMMAND
         ${CMAKE_COMMAND} -E make_directory ${DEPS_INSTALL_DIR}/include
         COMMAND ${CMAKE_COMMAND} -E make_directory ${DEPS_INSTALL_DIR}/lib/x86
@@ -354,12 +309,9 @@ ExternalProject_Add(discordsdk_external
 )
 
 # BASS audio libraries (pre-built binaries)
-ExternalProject_Add(bass_external
-    URL ${BASS_URL}
-    URL_HASH ${BASS_HASH}
-    DOWNLOAD_DIR ${DEPS_CACHE}
-    CONFIGURE_COMMAND ""
-    BUILD_COMMAND ""
+add_external_project(bass
+    CONFIGURE_COMMAND ${CMAKE_COMMAND} -E echo "Skipping configure"
+    BUILD_COMMAND ${CMAKE_COMMAND} -E echo "Skipping build"
     INSTALL_COMMAND
         ${CMAKE_COMMAND} -E make_directory ${DEPS_CACHE}/bass-${BASS_VERSION}/bass/include
         COMMAND ${CMAKE_COMMAND} -E make_directory ${DEPS_CACHE}/bass-${BASS_VERSION}/bass/lib/windows/i686
@@ -369,13 +321,10 @@ ExternalProject_Add(bass_external
         COMMAND ${CMAKE_COMMAND} -E copy <SOURCE_DIR>/x64/bass.dll ${DEPS_CACHE}/bass-${BASS_VERSION}/bass/lib/windows/x86_64/
 )
 
-ExternalProject_Add(bassfx_external
-    URL ${BASSFX_URL}
-    URL_HASH ${BASSFX_HASH}
-    DOWNLOAD_DIR ${DEPS_CACHE}
+add_external_project(bassfx
     DEPENDS bass_external
-    CONFIGURE_COMMAND ""
-    BUILD_COMMAND ""
+    CONFIGURE_COMMAND ${CMAKE_COMMAND} -E echo "Skipping configure"
+    BUILD_COMMAND ${CMAKE_COMMAND} -E echo "Skipping build"
     INSTALL_COMMAND
         ${CMAKE_COMMAND} -E make_directory ${DEPS_CACHE}/bass-${BASS_VERSION}/bassfx/include
         COMMAND ${CMAKE_COMMAND} -E make_directory ${DEPS_CACHE}/bass-${BASS_VERSION}/bassfx/lib/windows/i686
@@ -385,13 +334,10 @@ ExternalProject_Add(bassfx_external
         COMMAND ${CMAKE_COMMAND} -E copy <SOURCE_DIR>/x64/bass_fx.dll ${DEPS_CACHE}/bass-${BASS_VERSION}/bassfx/lib/windows/x86_64/
 )
 
-ExternalProject_Add(bassmix_external
-    URL ${BASSMIX_URL}
-    URL_HASH ${BASSMIX_HASH}
-    DOWNLOAD_DIR ${DEPS_CACHE}
+add_external_project(bassmix
     DEPENDS bass_external
-    CONFIGURE_COMMAND ""
-    BUILD_COMMAND ""
+    CONFIGURE_COMMAND ${CMAKE_COMMAND} -E echo "Skipping configure"
+    BUILD_COMMAND ${CMAKE_COMMAND} -E echo "Skipping build"
     INSTALL_COMMAND
         ${CMAKE_COMMAND} -E make_directory ${DEPS_CACHE}/bass-${BASS_VERSION}/bassmix/include
         COMMAND ${CMAKE_COMMAND} -E make_directory ${DEPS_CACHE}/bass-${BASS_VERSION}/bassmix/lib/windows/i686
@@ -401,13 +347,10 @@ ExternalProject_Add(bassmix_external
         COMMAND ${CMAKE_COMMAND} -E copy <SOURCE_DIR>/x64/bassmix.dll ${DEPS_CACHE}/bass-${BASS_VERSION}/bassmix/lib/windows/x86_64/
 )
 
-ExternalProject_Add(bassloud_external
-    URL ${BASSLOUD_URL}
-    URL_HASH ${BASSLOUD_HASH}
-    DOWNLOAD_DIR ${DEPS_CACHE}
+add_external_project(bassloud
     DEPENDS bass_external
-    CONFIGURE_COMMAND ""
-    BUILD_COMMAND ""
+    CONFIGURE_COMMAND ${CMAKE_COMMAND} -E echo "Skipping configure"
+    BUILD_COMMAND ${CMAKE_COMMAND} -E echo "Skipping build"
     INSTALL_COMMAND
         ${CMAKE_COMMAND} -E make_directory ${DEPS_CACHE}/bass-${BASS_VERSION}/bassloud/include
         COMMAND ${CMAKE_COMMAND} -E make_directory ${DEPS_CACHE}/bass-${BASS_VERSION}/bassloud/lib/windows/i686
@@ -417,13 +360,10 @@ ExternalProject_Add(bassloud_external
         COMMAND ${CMAKE_COMMAND} -E copy <SOURCE_DIR>/x64/bassloud.dll ${DEPS_CACHE}/bass-${BASS_VERSION}/bassloud/lib/windows/x86_64/
 )
 
-ExternalProject_Add(bassasio_external
-    URL ${BASSASIO_URL}
-    URL_HASH ${BASSASIO_HASH}
-    DOWNLOAD_DIR ${DEPS_CACHE}
+add_external_project(bassasio
     DEPENDS bass_external
-    CONFIGURE_COMMAND ""
-    BUILD_COMMAND ""
+    CONFIGURE_COMMAND ${CMAKE_COMMAND} -E echo "Skipping configure"
+    BUILD_COMMAND ${CMAKE_COMMAND} -E echo "Skipping build"
     INSTALL_COMMAND
         ${CMAKE_COMMAND} -E make_directory ${DEPS_CACHE}/bass-${BASS_VERSION}/bassasio/include
         COMMAND ${CMAKE_COMMAND} -E make_directory ${DEPS_CACHE}/bass-${BASS_VERSION}/bassasio/lib/windows/i686
@@ -433,25 +373,19 @@ ExternalProject_Add(bassasio_external
         COMMAND ${CMAKE_COMMAND} -E copy <SOURCE_DIR>/x64/bassasio.dll ${DEPS_CACHE}/bass-${BASS_VERSION}/bassasio/lib/windows/x86_64/
 )
 
-ExternalProject_Add(basswasapi_header_external
-    URL ${BASSWASAPI_HEADER_URL}
-    URL_HASH ${BASSWASAPI_HEADER_HASH}
-    DOWNLOAD_DIR ${DEPS_CACHE}
+add_external_project(basswasapi_header
     DEPENDS bass_external
-    CONFIGURE_COMMAND ""
-    BUILD_COMMAND ""
+    CONFIGURE_COMMAND ${CMAKE_COMMAND} -E echo "Skipping configure"
+    BUILD_COMMAND ${CMAKE_COMMAND} -E echo "Skipping build"
     INSTALL_COMMAND
         ${CMAKE_COMMAND} -E make_directory ${DEPS_CACHE}/bass-${BASS_VERSION}/basswasapi/include
         COMMAND ${CMAKE_COMMAND} -E copy <SOURCE_DIR>/c/basswasapi.h ${DEPS_CACHE}/bass-${BASS_VERSION}/basswasapi/include/
 )
 
-ExternalProject_Add(basswasapi_external
-    URL ${BASSWASAPI_URL}
-    URL_HASH ${BASSWASAPI_HASH}
-    DOWNLOAD_DIR ${DEPS_CACHE}
+add_external_project(basswasapi
     DEPENDS basswasapi_header_external
-    CONFIGURE_COMMAND ""
-    BUILD_COMMAND ""
+    CONFIGURE_COMMAND ${CMAKE_COMMAND} -E echo "Skipping configure"
+    BUILD_COMMAND ${CMAKE_COMMAND} -E echo "Skipping build"
     INSTALL_COMMAND
         ${CMAKE_COMMAND} -E make_directory ${DEPS_CACHE}/bass-${BASS_VERSION}/basswasapi/lib/windows/i686
         COMMAND ${CMAKE_COMMAND} -E make_directory ${DEPS_CACHE}/bass-${BASS_VERSION}/basswasapi/lib/windows/x86_64
@@ -459,13 +393,10 @@ ExternalProject_Add(basswasapi_external
         COMMAND ${CMAKE_COMMAND} -E copy <SOURCE_DIR>/x64/basswasapi.dll ${DEPS_CACHE}/bass-${BASS_VERSION}/basswasapi/lib/windows/x86_64/
 )
 
-ExternalProject_Add(bassflac_external
-    URL ${BASSFLAC_URL}
-    URL_HASH ${BASSFLAC_HASH}
-    DOWNLOAD_DIR ${DEPS_CACHE}
+add_external_project(bassflac
     DEPENDS bass_external
-    CONFIGURE_COMMAND ""
-    BUILD_COMMAND ""
+    CONFIGURE_COMMAND ${CMAKE_COMMAND} -E echo "Skipping configure"
+    BUILD_COMMAND ${CMAKE_COMMAND} -E echo "Skipping build"
     INSTALL_COMMAND
         ${CMAKE_COMMAND} -E make_directory ${DEPS_CACHE}/bass-${BASS_VERSION}/bassflac/lib/windows/i686
         COMMAND ${CMAKE_COMMAND} -E make_directory ${DEPS_CACHE}/bass-${BASS_VERSION}/bassflac/lib/windows/x86_64
