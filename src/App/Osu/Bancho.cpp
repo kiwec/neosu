@@ -151,15 +151,15 @@ void BanchoState::handle_packet(Packet &packet) {
                         errmsg = "Open the verification link sent to your email, then log in again.";
                     }
                 } else {
-                    if(BanchoState::cho_token == UString("user-already-logged-in")) {
+                    if(BanchoState::cho_token == "user-already-logged-in") {
                         errmsg = "Already logged in on another client.";
-                    } else if(BanchoState::cho_token == UString("unknown-username")) {
+                    } else if(BanchoState::cho_token == "unknown-username") {
                         errmsg = UString::fmt("No account by the username '{}' exists.", BanchoState::username);
-                    } else if(BanchoState::cho_token == UString("incorrect-credentials")) {
-                        errmsg = "This username is not registered.";
-                    } else if(BanchoState::cho_token == UString("incorrect-password")) {
+                    } else if(BanchoState::cho_token == "incorrect-credentials") {
+                        errmsg = "Incorrect username/password.";
+                    } else if(BanchoState::cho_token == "incorrect-password") {
                         errmsg = "Incorrect password.";
-                    } else if(BanchoState::cho_token == UString("contact-staff")) {
+                    } else if(BanchoState::cho_token == "contact-staff") {
                         errmsg = "Please contact an administrator of the server.";
                     }
                 }

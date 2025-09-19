@@ -567,7 +567,8 @@ OptionsMenu::OptionsMenu() : ScreenBackable() {
     this->addSubSection("In-game chat");
     this->addCheckbox("Chat ticker", &cv::chat_ticker);
     this->addCheckbox("Automatically hide chat during gameplay", &cv::chat_auto_hide);
-    this->addTextbox(cv::chat_ignore_list.getString().c_str(), "Chat word ignore list (space-separated):", &cv::chat_ignore_list);
+    this->addTextbox(cv::chat_ignore_list.getString().c_str(),
+                     "Chat word ignore list (space-separated):", &cv::chat_ignore_list);
     // this->addTextbox(cv::chat_highlight_words.getString().c_str(), "Chat word highlight list (space-separated):", &cv::chat_highlight_words);
 
     this->addSubSection("Privacy");
@@ -658,8 +659,8 @@ OptionsMenu::OptionsMenu() : ScreenBackable() {
     fpsSlider2->setKeyDelta(1);
 
     this->addSubSection("Layout");
-    OPTIONS_ELEMENT resolutionSelect =
-        *this->addButton("Select Resolution", UString::format("%ix%i", osu->getVirtScreenWidth(), osu->getVirtScreenHeight()));
+    OPTIONS_ELEMENT resolutionSelect = *this->addButton(
+        "Select Resolution", UString::format("%ix%i", osu->getVirtScreenWidth(), osu->getVirtScreenHeight()));
     this->resolutionSelectButton = (CBaseUIButton *)resolutionSelect.baseElems[0];
     this->resolutionSelectButton->setClickCallback(SA::MakeDelegate<&OptionsMenu::onResolutionSelect>(this));
     this->resolutionLabel = (CBaseUILabel *)resolutionSelect.baseElems[1];
@@ -1587,8 +1588,13 @@ void OptionsMenu::mouse_update(bool *propagate_clicks) {
         this->scheduleLayoutUpdate();  // toggle user/pass fields based on oauthness
     }
 
+    // why does all of this need to run in update()...
     cv::name.setValue(this->nameTextbox->getText());
-    cv::mp_password.setValue(this->passwordTextbox->getText());
+    if(this->passwordTextbox->getText().utf8View() != cv::mp_password_md5.getString()) {
+        // passwordTextbox gets overwritten with mp_password_md5 on login
+        // mp_password should remain empty after that
+        cv::mp_password.setValue(this->passwordTextbox->getText());
+    }
     if(this->nameTextbox->hitEnter()) {
         this->nameTextbox->stealFocus();
         this->passwordTextbox->focus();
@@ -1867,7 +1873,8 @@ void OptionsMenu::updateLayout() {
     const int categoriesWidth = optionsWidth * categoriesOptionsPercent;
 
     this->options->setRelPosX(
-        (!this->bFullscreen ? -1 : osu->getVirtScreenWidth() / 2 - (optionsWidth + categoriesWidth) / 2) + categoriesWidth);
+        (!this->bFullscreen ? -1 : osu->getVirtScreenWidth() / 2 - (optionsWidth + categoriesWidth) / 2) +
+        categoriesWidth);
     this->options->setSize(optionsWidth, osu->getVirtScreenHeight() + 1);
 
     this->search->setRelPos(this->options->getRelPos());
@@ -2130,7 +2137,7 @@ void OptionsMenu::updateLayout() {
                 e1->setRelPos(sideMargin, yCounter);
                 e1->setSizeX(elementWidth);
                 yCounter += e1->getSize().y;
-                e2->setRelPos(sideMargin , yCounter);
+                e2->setRelPos(sideMargin, yCounter);
                 e2->setSizeX(elementWidth);
                 yCounter += e2->getSize().y;
             } else {
