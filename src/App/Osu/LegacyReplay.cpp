@@ -208,11 +208,11 @@ Info from_bytes(u8* data, int s_data) {
     return info;
 }
 
-bool load_from_disk(FinishedScore* score, bool update_db) {
-    if(score->peppy_replay_tms > 0) {
+bool load_from_disk(FinishedScore& score, bool update_db) {
+    if(score.peppy_replay_tms > 0) {
         auto osu_folder = cv::osu_folder.getString();
-        auto path = UString::format("%s/Data/r/%s-%llu.osr", osu_folder, score->beatmap_hash.hash.data(),
-                                    score->peppy_replay_tms);
+        auto path = UString::format("%s/Data/r/%s-%llu.osr", osu_folder, score.beatmap_hash.hash.data(),
+                                    score.peppy_replay_tms);
 
         FILE* replay_file = fopen(path.toUtf8(), "rb");
         if(replay_file == nullptr) return false;
@@ -225,11 +225,11 @@ bool load_from_disk(FinishedScore* score, bool update_db) {
         fread(full_replay, s_full_replay, 1, replay_file);
         fclose(replay_file);
         auto info = from_bytes(full_replay, s_full_replay);
-        score->replay = info.frames;
+        score.replay = info.frames;
         delete[] full_replay;
     } else {
-        auto path = UString::format(MCENGINE_DATA_DIR "replays/%s/%llu.replay.lzma", score->server.c_str(),
-                                    score->unixTimestamp);
+        auto path =
+            UString::format(MCENGINE_DATA_DIR "replays/%s/%llu.replay.lzma", score.server.c_str(), score.unixTimestamp);
 
         FILE* replay_file = fopen(path.toUtf8(), "rb");
         if(replay_file == nullptr) return false;
@@ -241,17 +241,17 @@ bool load_from_disk(FinishedScore* score, bool update_db) {
         u8* compressed_replay = new u8[s_compressed_replay];
         fread(compressed_replay, s_compressed_replay, 1, replay_file);
         fclose(replay_file);
-        score->replay = get_frames(compressed_replay, s_compressed_replay);
+        score.replay = get_frames(compressed_replay, s_compressed_replay);
         delete[] compressed_replay;
     }
 
     if(update_db) {
         std::scoped_lock lock(db->scores_mtx);
-        auto& map_scores = (*(db->getScores()))[score->beatmap_hash];
+        auto& map_scores = (*(db->getScores()))[score.beatmap_hash];
         for(auto& db_score : map_scores) {
-            if(db_score.unixTimestamp != score->unixTimestamp) continue;
-            if(&db_score != score) {
-                db_score.replay = score->replay;
+            if(db_score.unixTimestamp != score.unixTimestamp) continue;
+            if(&db_score != &score) {  // interesting logic...?
+                db_score.replay = score.replay;
             }
 
             break;
@@ -264,8 +264,7 @@ bool load_from_disk(FinishedScore* score, bool update_db) {
 void load_and_watch(FinishedScore score) {
     // Check if replay is loaded
     if(score.replay.empty()) {
-        if(!load_from_disk(&score, true)) {
-
+        if(!load_from_disk(score, true)) {
             if(score.server.c_str() != BanchoState::endpoint) {
                 auto msg = UString::format("Please connect to %s to view this replay!", score.server.c_str());
                 osu->getNotificationOverlay()->addToast(msg, ERROR_TOAST);

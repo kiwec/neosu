@@ -62,7 +62,7 @@ BEATMAP_VALUES getBeatmapValuesForModsLegacy(u32 modsLegacy, float legacyAR, flo
 Info from_bytes(u8* data, int s_data);
 std::vector<Frame> get_frames(u8* replay_data, i32 replay_size);
 std::vector<u8> compress_frames(const std::vector<Frame>& frames);
-bool load_from_disk(FinishedScore* score, bool update_db);
+bool load_from_disk(FinishedScore& score, bool update_db);
 void load_and_watch(FinishedScore score);
 
 }  // namespace LegacyReplay

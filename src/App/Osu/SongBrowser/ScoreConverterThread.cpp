@@ -149,7 +149,7 @@ static void run_sct(const std::unordered_map<MD5Hash, std::vector<FinishedScore>
         }
 
         if(score.replay.empty()) {
-            if(!LegacyReplay::load_from_disk(&score, false)) {
+            if(!LegacyReplay::load_from_disk(score, false)) {
                 debugLog("Failed to load replay for score {:d}\n", idx);
                 update_ppv2(score);
                 sct_computed++;
