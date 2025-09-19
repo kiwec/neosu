@@ -1331,7 +1331,7 @@ void SongBrowser::onDifficultySelected(DatabaseBeatmap *map, bool play) {
 
             Packet packet;
             packet.id = MATCH_CHANGE_SETTINGS;
-            BanchoState::room.pack(&packet);
+            BanchoState::room.pack(packet);
             BANCHO::Net::send_packet(packet);
 
             osu->getRoom()->on_map_change();

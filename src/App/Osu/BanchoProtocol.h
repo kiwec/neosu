@@ -231,8 +231,8 @@ struct Slot {
 
 class Room {
    public:
-    Room();
-    Room(Packet *packet);
+    Room() = default; // default-initialized room means we're not in multiplayer at the moment
+    Room(Packet &packet);
 
     u16 id = 0;
     u8 in_progress = 0;
@@ -281,7 +281,7 @@ class Room {
     }
 
     bool is_host();
-    void pack(Packet *packet);
+    void pack(Packet &packet);
 };
 
 #pragma pack(push, 1)
@@ -338,35 +338,35 @@ struct LiveReplayBundle {
 
 namespace BANCHO::Proto {
 
-void read_bytes(Packet *packet, u8 *bytes, size_t n);
-u32 read_uleb128(Packet *packet);
-UString read_string(Packet *packet);
-std::string read_stdstring(Packet *packet);
-void skip_string(Packet *packet);
-MD5Hash read_hash(Packet *packet);
-Replay::Mods read_mods(Packet *packet);
+void read_bytes(Packet &packet, u8 *bytes, size_t n);
+u32 read_uleb128(Packet &packet);
+UString read_string(Packet &packet);
+std::string read_stdstring(Packet &packet);
+void skip_string(Packet &packet);
+MD5Hash read_hash(Packet &packet);
+Replay::Mods read_mods(Packet &packet);
 
 template <typename T>
-T read(Packet *packet) {
+T read(Packet &packet) {
     T result{};
-    if(packet->pos + sizeof(T) > packet->size) {
-        packet->pos = packet->size + 1;
+    if(packet.pos + sizeof(T) > packet.size) {
+        packet.pos = packet.size + 1;
         return result;
     } else {
-        memcpy(&result, packet->memory + packet->pos, sizeof(T));
-        packet->pos += sizeof(T);
+        memcpy(&result, packet.memory + packet.pos, sizeof(T));
+        packet.pos += sizeof(T);
         return result;
     }
 }
 
-void write_bytes(Packet *packet, u8 *bytes, size_t n);
-void write_uleb128(Packet *packet, u32 num);
-void write_string(Packet *packet, const char *str);
-void write_hash(Packet *packet, MD5Hash hash);
-void write_mods(Packet *packet, Replay::Mods mods);
+void write_bytes(Packet &packet, u8 *bytes, size_t n);
+void write_uleb128(Packet &packet, u32 num);
+void write_string(Packet &packet, const char *str);
+void write_hash(Packet &packet, const MD5Hash &hash);
+void write_mods(Packet &packet, const Replay::Mods &mods);
 
 template <typename T>
-void write(Packet *packet, T t) {
+void write(Packet &packet, T t) {
     write_bytes(packet, (u8 *)&t, sizeof(T));
 }
 }  // namespace BANCHO::Proto

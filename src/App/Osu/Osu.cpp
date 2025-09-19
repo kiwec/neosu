@@ -1254,7 +1254,7 @@ void Osu::toggleSongBrowser() {
 
             Packet packet;
             packet.id = MATCH_CHANGE_SETTINGS;
-            BanchoState::room.pack(&packet);
+            BanchoState::room.pack(packet);
             BANCHO::Net::send_packet(packet);
 
             this->room->on_map_change();

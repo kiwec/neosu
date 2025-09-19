@@ -1139,7 +1139,7 @@ void ModSelector::resetModsUserInitiated() {
 
         Packet packet;
         packet.id = MATCH_CHANGE_MODS;
-        BANCHO::Proto::write<u32>(&packet, minimum_mods);
+        BANCHO::Proto::write<u32>(packet, minimum_mods);
         BANCHO::Net::send_packet(packet);
 
         // Don't wait on server response to update UI

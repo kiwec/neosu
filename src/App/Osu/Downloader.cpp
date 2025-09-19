@@ -493,7 +493,7 @@ DatabaseBeatmap* download_beatmap(i32 beatmap_id, i32 beatmapset_id, float* prog
     return beatmap;
 }
 
-void process_beatmapset_info_response(Packet packet) {
+void process_beatmapset_info_response(Packet &packet) {
     i32 map_id = packet.extra_int;
     if(packet.size == 0) {
         beatmap_to_beatmapset[map_id] = 0;

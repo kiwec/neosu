@@ -505,7 +505,7 @@ void Chat::handle_command(const UString &msg) {
         } else {
             Packet packet;
             packet.id = FRIEND_ADD;
-            proto::write<i32>(&packet, user->user_id);
+            proto::write<i32>(packet, user->user_id);
             BANCHO::Net::send_packet(packet);
 
             BANCHO::User::friends.push_back(user->user_id);
@@ -544,7 +544,7 @@ void Chat::handle_command(const UString &msg) {
         if(user->is_friend()) {
             Packet packet;
             packet.id = FRIEND_REMOVE;
-            proto::write<i32>(&packet, user->user_id);
+            proto::write<i32>(packet, user->user_id);
             BANCHO::Net::send_packet(packet);
 
             auto it = std::ranges::find(BANCHO::User::friends, user->user_id);
@@ -588,10 +588,10 @@ void Chat::handle_command(const UString &msg) {
 
         packet.id = SEND_PRIVATE_MESSAGE;
 
-        proto::write_string(&packet, (char *)BanchoState::get_username().c_str());
-        proto::write_string(&packet, (char *)invite_msg.toUtf8());
-        proto::write_string(&packet, (char *)username.toUtf8());
-        proto::write<i32>(&packet, BanchoState::get_uid());
+        proto::write_string(packet, (char *)BanchoState::get_username().c_str());
+        proto::write_string(packet, (char *)invite_msg.toUtf8());
+        proto::write_string(packet, (char *)username.toUtf8());
+        proto::write<i32>(packet, BanchoState::get_uid());
         BANCHO::Net::send_packet(packet);
 
         this->addSystemMessage(UString::format("%s has been invited to the game.", username.toUtf8()));
@@ -957,10 +957,10 @@ void Chat::addMessage(UString channel_name, const ChatMessage &msg, bool mark_un
         Packet packet;
         packet.id = SEND_PRIVATE_MESSAGE;
 
-        proto::write_string(&packet, (char *)BanchoState::get_username().c_str());
-        proto::write_string(&packet, (char *)this->away_msg.toUtf8());
-        proto::write_string(&packet, (char *)msg.author_name.toUtf8());
-        proto::write<i32>(&packet, BanchoState::get_uid());
+        proto::write_string(packet, (char *)BanchoState::get_username().c_str());
+        proto::write_string(packet, (char *)this->away_msg.toUtf8());
+        proto::write_string(packet, (char *)msg.author_name.toUtf8());
+        proto::write<i32>(packet, BanchoState::get_uid());
         BANCHO::Net::send_packet(packet);
 
         // Server doesn't echo the message back
@@ -1173,7 +1173,7 @@ void Chat::join(const UString &channel_name) {
     //      Would allow to keep open the tabs of the channels we got kicked out of.
     Packet packet;
     packet.id = CHANNEL_JOIN;
-    proto::write_string(&packet, channel_name.toUtf8());
+    proto::write_string(packet, channel_name.toUtf8());
     BANCHO::Net::send_packet(packet);
 }
 
@@ -1185,7 +1185,7 @@ void Chat::leave(const UString &channel_name) {
     if(send_leave_packet) {
         Packet packet;
         packet.id = CHANNEL_PART;
-        proto::write_string(&packet, channel_name.toUtf8());
+        proto::write_string(packet, channel_name.toUtf8());
         BANCHO::Net::send_packet(packet);
     }
 
@@ -1198,10 +1198,10 @@ void Chat::send_message(const UString &msg) {
     Packet packet;
     packet.id = this->selected_channel->name[0] == '#' ? SEND_PUBLIC_MESSAGE : SEND_PRIVATE_MESSAGE;
 
-    proto::write_string(&packet, (char *)BanchoState::get_username().c_str());
-    proto::write_string(&packet, (char *)msg.toUtf8());
-    proto::write_string(&packet, (char *)this->selected_channel->name.toUtf8());
-    proto::write<i32>(&packet, BanchoState::get_uid());
+    proto::write_string(packet, (char *)BanchoState::get_username().c_str());
+    proto::write_string(packet, (char *)msg.toUtf8());
+    proto::write_string(packet, (char *)this->selected_channel->name.toUtf8());
+    proto::write<i32>(packet, BanchoState::get_uid());
     BANCHO::Net::send_packet(packet);
 
     // Server doesn't echo the message back

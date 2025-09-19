@@ -47,7 +47,7 @@ FinishedScore parse_score(char *score_line) {
             .memory = mod_bytes.data(),
             .size = mod_bytes.size(),
         };
-        score.mods = BANCHO::Proto::read_mods(&mod_packet);
+        score.mods = BANCHO::Proto::read_mods(mod_packet);
     }
 
     // @PPV3: score can only be ppv2, AND we need to recompute ppv2 on it

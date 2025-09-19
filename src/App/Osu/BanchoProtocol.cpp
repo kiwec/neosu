@@ -1,24 +1,24 @@
 // Copyright (c) 2023, kiwec, All rights reserved.
 #include "BanchoProtocol.h"
 
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 
 #include "Bancho.h"
 #include "BeatmapInterface.h"
 #include "Osu.h"
 
 namespace BANCHO::Proto {
-void read_bytes(Packet *packet, u8 *bytes, size_t n) {
-    if(packet->pos + n > packet->size) {
-        packet->pos = packet->size + 1;
+void read_bytes(Packet &packet, u8 *bytes, size_t n) {
+    if(packet.pos + n > packet.size) {
+        packet.pos = packet.size + 1;
     } else {
-        memcpy(bytes, packet->memory + packet->pos, n);
-        packet->pos += n;
+        memcpy(bytes, packet.memory + packet.pos, n);
+        packet.pos += n;
     }
 }
 
-u32 read_uleb128(Packet *packet) {
+u32 read_uleb128(Packet &packet) {
     u32 result = 0;
     u32 shift = 0;
     u8 byte = 0;
@@ -32,9 +32,9 @@ u32 read_uleb128(Packet *packet) {
     return result;
 }
 
-UString read_string(Packet *packet) {
+UString read_string(Packet &packet) {
     u8 empty_check = read<u8>(packet);
-    if(empty_check == 0) return UString("");
+    if(empty_check == 0) return {""};
 
     u32 len = read_uleb128(packet);
     u8 *str = new u8[len + 1];
@@ -47,9 +47,9 @@ UString read_string(Packet *packet) {
     return ustr;
 }
 
-std::string read_stdstring(Packet *packet) {
+std::string read_stdstring(Packet &packet) {
     u8 empty_check = read<u8>(packet);
-    if(empty_check == 0) return std::string();
+    if(empty_check == 0) return {};
 
     u32 len = read_uleb128(packet);
     u8 *str = new u8[len + 1];
@@ -61,7 +61,7 @@ std::string read_stdstring(Packet *packet) {
     return str_out;
 }
 
-MD5Hash read_hash(Packet *packet) {
+MD5Hash read_hash(Packet &packet) {
     MD5Hash hash;
 
     u8 empty_check = read<u8>(packet);
@@ -77,7 +77,7 @@ MD5Hash read_hash(Packet *packet) {
     return hash;
 }
 
-Replay::Mods read_mods(Packet *packet) {
+Replay::Mods read_mods(Packet &packet) {
     Replay::Mods mods;
 
     mods.flags = read<u64>(packet);
@@ -122,30 +122,31 @@ Replay::Mods read_mods(Packet *packet) {
     return mods;
 }
 
-void skip_string(Packet *packet) {
+void skip_string(Packet &packet) {
     u8 empty_check = read<u8>(packet);
     if(empty_check == 0) {
         return;
     }
 
     u32 len = read_uleb128(packet);
-    packet->pos += len;
+    packet.pos += len;
 }
 
-void write_bytes(Packet *packet, u8 *bytes, size_t n) {
+void write_bytes(Packet &packet, u8 *bytes, size_t n) {
     assert(bytes != nullptr);
 
-    if(packet->pos + n > packet->size) {
-        packet->memory = (unsigned char *)realloc(packet->memory, packet->size + n + 4096);
-        packet->size += n + 4096;
-        if(!packet->memory) return;
+    if(packet.pos + n > packet.size) {
+        packet.memory = (unsigned char *)realloc(packet.memory, packet.size + n + 4096);
+        assert(packet.memory && "realloc failed");
+        packet.size += n + 4096;
+        if(!packet.memory) return;
     }
 
-    memcpy(packet->memory + packet->pos, bytes, n);
-    packet->pos += n;
+    memcpy(packet.memory + packet.pos, bytes, n);
+    packet.pos += n;
 }
 
-void write_uleb128(Packet *packet, u32 num) {
+void write_uleb128(Packet &packet, u32 num) {
     if(num == 0) {
         u8 zero = 0;
         write<u8>(packet, zero);
@@ -162,7 +163,7 @@ void write_uleb128(Packet *packet, u32 num) {
     }
 }
 
-void write_string(Packet *packet, const char *str) {
+void write_string(Packet &packet, const char *str) {
     if(!str || str[0] == '\0') {
         u8 zero = 0;
         write<u8>(packet, zero);
@@ -177,13 +178,13 @@ void write_string(Packet *packet, const char *str) {
     write_bytes(packet, (u8 *)str, len);
 }
 
-void write_hash(Packet *packet, MD5Hash hash) {
+void write_hash(Packet &packet, const MD5Hash &hash) {
     write<u8>(packet, 0x0B);
     write<u8>(packet, 0x20);
     write_bytes(packet, (u8 *)hash.hash.data(), 32);
 }
 
-void write_mods(Packet *packet, Replay::Mods mods) {
+void write_mods(Packet &packet, const Replay::Mods &mods) {
     write<u64>(packet, mods.flags);
     write<f32>(packet, mods.speed);
     write<i32>(packet, mods.notelock_type);
@@ -227,11 +228,7 @@ void write_mods(Packet *packet, Replay::Mods mods) {
 
 using namespace BANCHO::Proto;
 
-Room::Room() {
-    // 0-initialized room means we're not in multiplayer at the moment
-}
-
-Room::Room(Packet *packet) {
+Room::Room(Packet &packet) {
     this->id = read<u16>(packet);
     this->in_progress = read<u8>(packet);
     this->match_type = read<u8>(packet);
@@ -241,7 +238,7 @@ Room::Room(Packet *packet) {
     this->has_password = read<u8>(packet) > 0;
     if(this->has_password) {
         // Discard password. It should be an empty string, but just in case, read it properly.
-        packet->pos--;
+        packet.pos--;
         read_string(packet);
     }
 
@@ -283,7 +280,7 @@ Room::Room(Packet *packet) {
     this->seed = read<u32>(packet);
 }
 
-void Room::pack(Packet *packet) {
+void Room::pack(Packet &packet) {
     write<u16>(packet, this->id);
     write<u8>(packet, this->in_progress);
     write<u8>(packet, this->match_type);

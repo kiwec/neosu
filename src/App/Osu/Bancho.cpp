@@ -100,12 +100,12 @@ MD5Hash BanchoState::md5(u8 *msg, size_t msg_len) {
 
 namespace proto = BANCHO::Proto;
 
-void BanchoState::handle_packet(Packet *packet) {
+void BanchoState::handle_packet(Packet &packet) {
     if(cv::debug_network.getBool()) {
-        debugLog("packet id: {}\n", packet->id);
+        debugLog("packet id: {}\n", packet.id);
     }
 
-    switch(packet->id) {
+    switch(packet.id) {
         case USER_ID: {
             i32 new_user_id = proto::read<i32>(packet);
             BanchoState::set_uid(new_user_id);
@@ -770,7 +770,7 @@ void BanchoState::handle_packet(Packet *packet) {
         }
 
         default: {
-            debugLog("Unknown packet ID {:d} ({:d} bytes)!\n", packet->id, packet->size);
+            debugLog("Unknown packet ID {:d} ({:d} bytes)!\n", packet.id, packet.size);
             break;
         }
     }
@@ -837,7 +837,7 @@ Packet BanchoState::build_login_packet() {
     req.append("0\n");
 
     Packet packet;
-    proto::write_bytes(&packet, (u8 *)req.c_str(), req.length());
+    proto::write_bytes(packet, (u8 *)req.c_str(), req.length());
     return packet;
 }
 

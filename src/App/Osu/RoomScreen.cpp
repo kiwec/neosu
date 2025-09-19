@@ -270,7 +270,7 @@ void RoomScreen::mouse_update(bool *propagate_clicks) {
 
         Packet packet;
         packet.id = MATCH_CHANGE_SETTINGS;
-        BanchoState::room.pack(&packet);
+        BanchoState::room.pack(packet);
         BANCHO::Net::send_packet(packet);
 
         // Update room name in rich presence info
@@ -681,7 +681,7 @@ void RoomScreen::on_match_started(Room room) {
     }
 }
 
-void RoomScreen::on_match_score_updated(Packet *packet) {
+void RoomScreen::on_match_score_updated(Packet &packet) {
     auto frame = BANCHO::Proto::read<ScoreFrame>(packet);
     if(frame.slot_id > 15) return;
 
@@ -795,7 +795,7 @@ void RoomScreen::onClientScoreChange(bool force) {
 
     Packet packet;
     packet.id = UPDATE_MATCH_SCORE;
-    BANCHO::Proto::write<ScoreFrame>(&packet, ScoreFrame::get());
+    BANCHO::Proto::write<ScoreFrame>(packet, ScoreFrame::get());
     BANCHO::Net::send_packet(packet);
 
     this->last_packet_tms = time(nullptr);
@@ -842,7 +842,7 @@ void RoomScreen::onSelectMapClicked() {
     BanchoState::room.map_id = -1;
     BanchoState::room.map_name = "";
     BanchoState::room.map_md5 = "";
-    BanchoState::room.pack(&packet);
+    BanchoState::room.pack(packet);
     BANCHO::Net::send_packet(packet);
 
     osu->getSongBrowser()->setVisible(true);
@@ -870,7 +870,7 @@ void RoomScreen::onWinConditionSelected(const UString & /*win_condition_str*/, i
 
     Packet packet;
     packet.id = MATCH_CHANGE_SETTINGS;
-    BanchoState::room.pack(&packet);
+    BanchoState::room.pack(packet);
     BANCHO::Net::send_packet(packet);
 
     this->updateLayout(osu->getVirtScreenSize());
@@ -882,7 +882,7 @@ void RoomScreen::set_new_password(const UString &new_password) {
 
     Packet packet;
     packet.id = CHANGE_ROOM_PASSWORD;
-    BanchoState::room.pack(&packet);
+    BanchoState::room.pack(packet);
     BANCHO::Net::send_packet(packet);
 }
 
@@ -893,7 +893,7 @@ void RoomScreen::onFreemodCheckboxChanged(CBaseUICheckbox *checkbox) {
 
     Packet packet;
     packet.id = MATCH_CHANGE_SETTINGS;
-    BanchoState::room.pack(&packet);
+    BanchoState::room.pack(packet);
     BANCHO::Net::send_packet(packet);
 
     this->on_room_updated(BanchoState::room);

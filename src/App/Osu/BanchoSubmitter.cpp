@@ -172,7 +172,7 @@ void submit_score(FinishedScore score) {
 
     {
         Packet packet;
-        Proto::write_mods(&packet, score.mods);
+        Proto::write_mods(packet, score.mods);
         auto mods_data_b64 = crypto::conv::encode64(packet.memory, packet.pos);
 
         options.mimeParts.push_back({

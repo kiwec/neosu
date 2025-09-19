@@ -1202,11 +1202,11 @@ CBaseUIContainer *MainMenu::setVisible(bool visible) {
         if(!BanchoState::spectators.empty()) {
             Packet packet;
             packet.id = OUT_SPECTATE_FRAMES;
-            BANCHO::Proto::write<i32>(&packet, 0);
-            BANCHO::Proto::write<u16>(&packet, 0);
-            BANCHO::Proto::write<u8>(&packet, LiveReplayBundle::Action::NONE);
-            BANCHO::Proto::write<ScoreFrame>(&packet, ScoreFrame::get());
-            BANCHO::Proto::write<u16>(&packet, osu->getMapInterface()->spectator_sequence++);
+            BANCHO::Proto::write<i32>(packet, 0);
+            BANCHO::Proto::write<u16>(packet, 0);
+            BANCHO::Proto::write<u8>(packet, LiveReplayBundle::Action::NONE);
+            BANCHO::Proto::write<ScoreFrame>(packet, ScoreFrame::get());
+            BANCHO::Proto::write<u16>(packet, osu->getMapInterface()->spectator_sequence++);
             BANCHO::Net::send_packet(packet);
         }
 

@@ -64,13 +64,13 @@ std::vector<Frame> get_frames(u8* replay_data, i32 replay_size) {
     }
 
     i64 cur_music_pos = 0;
-    u8 outbuf[BUFSIZ];
+    std::array<u8, BUFSIZ> outbuf;
     Packet output;
     strm.next_in = replay_data;
     strm.avail_in = replay_size;
     do {
-        strm.next_out = outbuf;
-        strm.avail_out = sizeof(outbuf);
+        strm.next_out = outbuf.data();
+        strm.avail_out = outbuf.size();
 
         ret = lzma_code(&strm, LZMA_FINISH);
         if(ret != LZMA_OK && ret != LZMA_STREAM_END) {
@@ -78,9 +78,9 @@ std::vector<Frame> get_frames(u8* replay_data, i32 replay_size) {
             goto end;
         }
 
-        proto::write_bytes(&output, outbuf, sizeof(outbuf) - strm.avail_out);
+        proto::write_bytes(output, outbuf.data(), outbuf.size() - strm.avail_out);
     } while(strm.avail_out == 0);
-    proto::write<u8>(&output, '\0');
+    proto::write<u8>(output, '\0');
 
     {
         char* line = (char*)output.memory;
@@ -165,41 +165,41 @@ Info from_bytes(u8* data, int s_data) {
     replay.memory = data;
     replay.size = s_data;
 
-    info.gamemode = proto::read<u8>(&replay);
+    info.gamemode = proto::read<u8>(replay);
     if(info.gamemode != 0) {
         debugLog("Replay has unexpected gamemode {:d}!", info.gamemode);
         return info;
     }
 
-    info.osu_version = proto::read<u32>(&replay);
-    info.map_md5 = proto::read_string(&replay);
-    info.username = proto::read_string(&replay);
-    info.replay_md5 = proto::read_string(&replay);
-    info.num300s = proto::read<u16>(&replay);
-    info.num100s = proto::read<u16>(&replay);
-    info.num50s = proto::read<u16>(&replay);
-    info.numGekis = proto::read<u16>(&replay);
-    info.numKatus = proto::read<u16>(&replay);
-    info.numMisses = proto::read<u16>(&replay);
-    info.score = proto::read<u32>(&replay);
-    info.comboMax = proto::read<u16>(&replay);
-    info.perfect = proto::read<u8>(&replay);
-    info.mod_flags = proto::read<u32>(&replay);
-    info.life_bar_graph = proto::read_string(&replay);
-    info.timestamp = proto::read<u64>(&replay) / 10;
+    info.osu_version = proto::read<u32>(replay);
+    info.map_md5 = proto::read_string(replay);
+    info.username = proto::read_string(replay);
+    info.replay_md5 = proto::read_string(replay);
+    info.num300s = proto::read<u16>(replay);
+    info.num100s = proto::read<u16>(replay);
+    info.num50s = proto::read<u16>(replay);
+    info.numGekis = proto::read<u16>(replay);
+    info.numKatus = proto::read<u16>(replay);
+    info.numMisses = proto::read<u16>(replay);
+    info.score = proto::read<i32>(replay);
+    info.comboMax = proto::read<u16>(replay);
+    info.perfect = proto::read<u8>(replay);
+    info.mod_flags = proto::read<u32>(replay);
+    info.life_bar_graph = proto::read_string(replay);
+    info.timestamp = proto::read<i64>(replay) / 10LL;
 
-    i32 replay_size = proto::read<u32>(&replay);
+    i32 replay_size = proto::read<i32>(replay);
     if(replay_size <= 0) return info;
     auto replay_data = new u8[replay_size];
-    proto::read_bytes(&replay, replay_data, replay_size);
+    proto::read_bytes(replay, replay_data, replay_size);
     info.frames = get_frames(replay_data, replay_size);
     delete[] replay_data;
 
     // https://github.com/ppy/osu/blob/a0e300c3/osu.Game/Scoring/Legacy/LegacyScoreDecoder.cs
     if(info.osu_version >= 20140721) {
-        info.bancho_score_id = proto::read<i64>(&replay);
+        info.bancho_score_id = proto::read<i64>(replay);
     } else if(info.osu_version >= 20121008) {
-        info.bancho_score_id = proto::read<i32>(&replay);
+        info.bancho_score_id = proto::read<i32>(replay);
     }
 
     // XXX: handle lazer replay data (versions 30000001 to 30000016)
