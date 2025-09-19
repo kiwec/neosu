@@ -425,13 +425,18 @@ void ScoreButton::mouse_update(bool *propagate_clicks) {
     if(this->isMouseInside()) {
         if(!this->isContextMenuVisible()) {
             if(this->fIndexNumberAnim > 0.0f) {
-                osu->getTooltipOverlay()->begin();
+                const auto &tooltipOverlay{osu->getTooltipOverlay()};
+                tooltipOverlay->begin();
                 {
                     for(const auto &tooltipLine : this->tooltipLines) {
-                        if(tooltipLine.length() > 0) osu->getTooltipOverlay()->addLine(tooltipLine);
+                        if(tooltipLine.length() > 0) tooltipOverlay->addLine(tooltipLine);
+                    }
+                    // debug
+                    if(keyboard->isShiftDown()) {
+                        tooltipOverlay->addLine(UString::fmt("Client: {:s}", this->score.client));
                     }
                 }
-                osu->getTooltipOverlay()->end();
+                tooltipOverlay->end();
             }
         } else {
             anim->deleteExistingAnimation(&this->fIndexNumberAnim);
