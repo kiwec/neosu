@@ -95,7 +95,7 @@ Lobby::Lobby() : OsuScreen() {
     this->list->setHorizontalScrolling(false);
     this->addBaseUIElement(this->list);
 
-    this->updateLayout(osu->getScreenSize());
+    this->updateLayout(osu->getVirtScreenSize());
 }
 
 void Lobby::onKeyDown(KeyboardEvent& key) {

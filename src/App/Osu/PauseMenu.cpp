@@ -40,7 +40,7 @@ PauseMenu::PauseMenu() : OsuScreen() {
 
     this->fDimAnim = 0.0f;
 
-    this->setSize(osu->getScreenWidth(), osu->getScreenHeight());
+    this->setSize(osu->getVirtScreenWidth(), osu->getVirtScreenHeight());
 
     UIPauseMenuButton *continueButton =
         this->addButton([]() -> Image * { return osu->getSkin()->getPauseContinue(); }, "Resume");
@@ -62,7 +62,7 @@ void PauseMenu::draw() {
     // draw dim
     if(cv::pause_dim_background.getBool()) {
         g->setColor(argb(this->fDimAnim * cv::pause_dim_alpha.getFloat(), 0.078f, 0.078f, 0.078f));
-        g->fillRect(0, 0, osu->getScreenWidth(), osu->getScreenHeight());
+        g->fillRect(0, 0, osu->getVirtScreenWidth(), osu->getVirtScreenHeight());
     }
 
     // draw background image
@@ -74,8 +74,8 @@ void PauseMenu::draw() {
             image = osu->getSkin()->getFailBackground();
 
         if(image != osu->getSkin()->getMissingTexture()) {
-            const float scale = Osu::getImageScaleToFillResolution(image, osu->getScreenSize());
-            const vec2 centerTrans = (osu->getScreenSize() / 2.f);
+            const float scale = Osu::getImageScaleToFillResolution(image, osu->getVirtScreenSize());
+            const vec2 centerTrans = (osu->getVirtScreenSize() / 2.f);
 
             g->setColor(argb(this->fDimAnim, 1.0f, 1.0f, 1.0f));
             g->pushTransform();
@@ -109,7 +109,7 @@ void PauseMenu::draw() {
                                             vec2(0, this->selectedButton->getSize().y / 2) - vec2(offset, 0),
                                         false, false);
         osu->getHUD()->drawWarningArrow(
-            vec2(osu->getScreenWidth() - this->fWarningArrowsAnimX, this->fWarningArrowsAnimY) +
+            vec2(osu->getVirtScreenWidth() - this->fWarningArrowsAnimX, this->fWarningArrowsAnimY) +
                 vec2(0, this->selectedButton->getSize().y / 2) + vec2(offset, 0),
             true, false);
     }
@@ -290,7 +290,7 @@ void PauseMenu::scheduleVisibilityChange(bool visible) {
 }
 
 void PauseMenu::updateLayout() {
-    const float height = (osu->getScreenHeight() / (float)this->buttons.size());
+    const float height = (osu->getVirtScreenHeight() / (float)this->buttons.size());
     const float half = (this->buttons.size() - 1) / 2.0f;
 
     float maxWidth = 0.0f;
@@ -310,7 +310,7 @@ void PauseMenu::updateLayout() {
 
     for(int i = 0; i < this->buttons.size(); i++) {
         vec2 newPos =
-            vec2(osu->getScreenWidth() / 2.0f - maxWidth / 2, (i + 1) * height - height / 2.0f - maxHeight / 2.0f);
+            vec2(osu->getVirtScreenWidth() / 2.0f - maxWidth / 2, (i + 1) * height - height / 2.0f - maxHeight / 2.0f);
 
         const float pinch = std::max(0.0f, (height / 2.0f - maxHeight / 2.0f));
         if((float)i < half)

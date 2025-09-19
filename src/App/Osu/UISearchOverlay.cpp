@@ -55,7 +55,7 @@ void UISearchOverlay::draw() {
                                      (searchTextFont->getHeight() * searchTextScale) * 0.5f - this->iOffsetRight) +
                                (int)(searchTextFont->getStringWidth(searchText1) * searchTextScale) +
                                (int)(searchStringWidth * searchTextScale);
-        if(actualXEnd > osu->getScreenWidth()) textOverflowXOffset = actualXEnd - osu->getScreenWidth();
+        if(actualXEnd > osu->getVirtScreenWidth()) textOverflowXOffset = actualXEnd - osu->getVirtScreenWidth();
     }
 
     // draw background

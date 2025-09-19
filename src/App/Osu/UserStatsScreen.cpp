@@ -43,7 +43,7 @@ UserStatsScreen::UserStatsScreen() : ScreenBackable() {
 void UserStatsScreen::draw() {
     if(!this->isVisible()) return;
 
-    auto screen = osu->getScreenSize();
+    auto screen = osu->getVirtScreenSize();
     g->setColor(rgb(0, 0, 0));
     g->fillRect(0, 0, screen.x, screen.y);
 
@@ -128,11 +128,11 @@ void UserStatsScreen::updateLayout() {
 
     const float dpiScale = Osu::getUIScale();
 
-    setSize(osu->getScreenSize());
+    setSize(osu->getVirtScreenSize());
 
-    const int scoreListHeight = osu->getScreenHeight() * 0.8f;
-    m_scores->setSize(osu->getScreenWidth() * 0.6f, scoreListHeight);
-    m_scores->setPos(osu->getScreenWidth() / 2 - m_scores->getSize().x / 2, osu->getScreenHeight() - scoreListHeight);
+    const int scoreListHeight = osu->getVirtScreenHeight() * 0.8f;
+    m_scores->setSize(osu->getVirtScreenWidth() * 0.6f, scoreListHeight);
+    m_scores->setPos(osu->getVirtScreenWidth() / 2 - m_scores->getSize().x / 2, osu->getVirtScreenHeight() - scoreListHeight);
 
     const int margin = 5 * dpiScale;
     const int padding = 5 * dpiScale;
@@ -150,6 +150,6 @@ void UserStatsScreen::updateLayout() {
 
     const int userButtonHeight = m_scores->getPos().y * 0.6f;
     this->m_userCard->setSize(userButtonHeight * 3.5f, userButtonHeight);
-    this->m_userCard->setPos(osu->getScreenWidth() / 2 - this->m_userCard->getSize().x / 2,
+    this->m_userCard->setPos(osu->getVirtScreenWidth() / 2 - this->m_userCard->getSize().x / 2,
                              m_scores->getPos().y / 2 - this->m_userCard->getSize().y / 2);
 }

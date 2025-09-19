@@ -173,8 +173,8 @@ void BeatmapInterface::drawBackground() {
         Image *backgroundImage = osu->getBackgroundImageHandler()->getLoadBackgroundImage(this->beatmap);
         if(cv::draw_beatmap_background_image.getBool() && backgroundImage != nullptr &&
            (cv::background_dim.getFloat() < 1.0f || this->fBreakBackgroundFade > 0.0f)) {
-            const float scale = Osu::getImageScaleToFillResolution(backgroundImage, osu->getScreenSize());
-            const vec2 centerTrans = (osu->getScreenSize() / 2.0f);
+            const float scale = Osu::getImageScaleToFillResolution(backgroundImage, osu->getVirtScreenSize());
+            const vec2 centerTrans = (osu->getVirtScreenSize() / 2.0f);
 
             const float backgroundFadeDimMultiplier = 1.0f - (cv::background_dim.getFloat() - 0.3f);
             const auto dim =
@@ -203,7 +203,7 @@ void BeatmapInterface::drawBackground() {
             (1.0f - this->fBreakBackgroundFade) * (cv::mod_fposu.getBool() ? cv::background_alpha.getFloat() : 1.0f);
 
         g->setColor(argb(alpha, red, green, blue));
-        g->fillRect(0, 0, osu->getScreenWidth(), osu->getScreenHeight());
+        g->fillRect(0, 0, osu->getVirtScreenWidth(), osu->getVirtScreenHeight());
     }
 
     // draw scorebar-bg
@@ -1865,8 +1865,8 @@ void BeatmapInterface::drawFollowPoints() {
 
                 // bullshit performance optimization: only draw followpoints if within screen bounds (plus a bit of a
                 // margin) there is only one beatmap where this matters currently: https://osu.ppy.sh/b/1145513
-                if(followPos.x < -osu->getScreenWidth() || followPos.x > osu->getScreenWidth() * 2 ||
-                   followPos.y < -osu->getScreenHeight() || followPos.y > osu->getScreenHeight() * 2)
+                if(followPos.x < -osu->getVirtScreenWidth() || followPos.x > osu->getVirtScreenWidth() * 2 ||
+                   followPos.y < -osu->getVirtScreenHeight() || followPos.y > osu->getVirtScreenHeight() * 2)
                     continue;
 
                 // calculate trail alpha

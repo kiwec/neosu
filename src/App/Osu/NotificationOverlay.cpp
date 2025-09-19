@@ -92,7 +92,7 @@ void NotificationOverlay::mouse_update(bool *propagate_clicks) {
     chat_toasts_visible |= osu->getPauseMenu()->isVisible();
 
     bool a_toast_is_hovered = false;
-    vec2 screen{Osu::g_vInternalResolution};
+    const vec2 &screen{osu->getVirtScreenSize()};
     f64 bottom_y = screen.y - TOAST_SCREEN_BOTTOM_MARGIN;
     for(auto t : this->toasts) {
         if(t->type == ToastElement::TYPE::CHAT && !chat_toasts_visible) continue;
@@ -142,7 +142,7 @@ void NotificationOverlay::draw() {
     if(this->bWaitForKey) {
         g->setColor(Color(0x22ffffff).setA((this->notification1.backgroundAnim / 0.5f) * 0.13f));
 
-        g->fillRect(0, 0, osu->getScreenWidth(), osu->getScreenHeight());
+        g->fillRect(0, 0, osu->getVirtScreenWidth(), osu->getVirtScreenHeight());
     }
 
     this->drawNotificationBackground(this->notification2);
@@ -160,8 +160,8 @@ void NotificationOverlay::drawNotificationText(NotificationOverlay::NOTIFICATION
     {
         g->setColor(Color(0xff000000).setA(n.alpha));
 
-        g->translate((int)(osu->getScreenWidth() / 2 - stringWidth / 2 + 1),
-                     (int)(osu->getScreenHeight() / 2 + font->getHeight() / 2 + n.fallAnim * height * 0.15f + 1));
+        g->translate((int)(osu->getVirtScreenWidth() / 2 - stringWidth / 2 + 1),
+                     (int)(osu->getVirtScreenHeight() / 2 + font->getHeight() / 2 + n.fallAnim * height * 0.15f + 1));
         g->drawString(font, n.text);
 
         g->setColor(Color(n.textColor).setA(n.alpha));
@@ -178,7 +178,7 @@ void NotificationOverlay::drawNotificationBackground(NotificationOverlay::NOTIFI
 
     g->setColor(Color(0xff000000).setA(n.alpha * 0.75f));
 
-    g->fillRect(0, osu->getScreenHeight() / 2 - height / 2, osu->getScreenWidth(), height);
+    g->fillRect(0, osu->getVirtScreenHeight() / 2 - height / 2, osu->getVirtScreenWidth(), height);
 }
 
 void NotificationOverlay::onKeyDown(KeyboardEvent &e) {

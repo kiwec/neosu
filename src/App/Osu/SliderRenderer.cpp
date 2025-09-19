@@ -85,9 +85,9 @@ VertexArrayObject *generateVAO(const std::vector<vec2> &points, float hitcircleD
         // fuck oob sliders
         if(skipOOBPoints) {
             if(point.x < -hitcircleDiameter - GameRules::OSU_COORD_WIDTH * 2 ||
-               point.x > osu->getScreenWidth() + hitcircleDiameter + GameRules::OSU_COORD_WIDTH * 2 ||
+               point.x > osu->getVirtScreenWidth() + hitcircleDiameter + GameRules::OSU_COORD_WIDTH * 2 ||
                point.y < -hitcircleDiameter - GameRules::OSU_COORD_HEIGHT * 2 ||
-               point.y > osu->getScreenHeight() + hitcircleDiameter + GameRules::OSU_COORD_HEIGHT * 2)
+               point.y > osu->getVirtScreenHeight() + hitcircleDiameter + GameRules::OSU_COORD_HEIGHT * 2)
                 continue;
         }
 
@@ -400,8 +400,8 @@ void drawFillSliderBodyPeppy(const std::vector<vec2> &points, VertexArrayObject 
             const float y = points[i].y;
 
             // fuck oob sliders
-            if(x < -radius * 2 || x > osu->getScreenWidth() + radius * 2 || y < -radius * 2 ||
-               y > osu->getScreenHeight() + radius * 2)
+            if(x < -radius * 2 || x > osu->getVirtScreenWidth() + radius * 2 || y < -radius * 2 ||
+               y > osu->getVirtScreenHeight() + radius * 2)
                 continue;
 
             g->translate(x - startX, y - startY, 0);

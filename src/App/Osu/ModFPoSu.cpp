@@ -72,9 +72,9 @@ void ModFPoSu::draw() {
     Matrix4 projectionMatrix =
         cv::fposu_vertical_fov.getBool()
             ? Camera::buildMatrixPerspectiveFovVertical(
-                  glm::radians(fov), ((float)osu->getScreenWidth() / (float)osu->getScreenHeight()), 0.05f, 1000.0f)
+                  glm::radians(fov), ((float)osu->getVirtScreenWidth() / (float)osu->getVirtScreenHeight()), 0.05f, 1000.0f)
             : Camera::buildMatrixPerspectiveFovHorizontal(
-                  glm::radians(fov), ((float)osu->getScreenHeight() / (float)osu->getScreenWidth()), 0.05f, 1000.0f);
+                  glm::radians(fov), ((float)osu->getVirtScreenHeight() / (float)osu->getVirtScreenWidth()), 0.05f, 1000.0f);
     Matrix4 viewMatrix = Camera::buildMatrixLookAt(
         this->camera->getPos(), this->camera->getPos() + this->camera->getViewDirection(), this->camera->getViewUp());
 
@@ -502,11 +502,11 @@ vec2 ModFPoSu::intersectRayMesh(vec3 pos, vec3 dir) {
                         const float x = u / (rightLength * rightLength);
                         const float y = v / (downLength * downLength);
                         const float distancePerFace =
-                            (float)osu->getScreenWidth() / std::pow(2.0f, (float)SUBDIVISIONS);
+                            (float)osu->getVirtScreenWidth() / std::pow(2.0f, (float)SUBDIVISIONS);
                         const float distanceInFace = distancePerFace * x;
 
                         const vec2 newMousePos =
-                            vec2((distancePerFace * face) + distanceInFace, y * osu->getScreenHeight());
+                            vec2((distancePerFace * face) + distanceInFace, y * osu->getVirtScreenHeight());
 
                         return newMousePos;
                     }
@@ -524,8 +524,8 @@ vec2 ModFPoSu::intersectRayMesh(vec3 pos, vec3 dir) {
 
 vec3 ModFPoSu::calculateUnProjectedVector(vec2 pos) {
     // calculate 3d position of 2d cursor on screen mesh
-    const float cursorXPercent = std::clamp<float>(pos.x / (float)osu->getScreenWidth(), 0.0f, 1.0f);
-    const float cursorYPercent = std::clamp<float>(pos.y / (float)osu->getScreenHeight(), 0.0f, 1.0f);
+    const float cursorXPercent = std::clamp<float>(pos.x / (float)osu->getVirtScreenWidth(), 0.0f, 1.0f);
+    const float cursorYPercent = std::clamp<float>(pos.y / (float)osu->getVirtScreenHeight(), 0.0f, 1.0f);
 
     auto begin = this->meshList.begin();
     auto next = ++this->meshList.begin();

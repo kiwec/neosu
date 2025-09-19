@@ -249,10 +249,10 @@ void HUD::draw() {
 
         g->pushTransform();
         McFont *font = osu->getSongBrowserFont();
-        const float height = roundf(osu->getScreenHeight() * 0.07f);
+        const float height = roundf(osu->getVirtScreenHeight() * 0.07f);
         const float scale = (height / font->getHeight()) * 0.315f;
         g->scale(scale, scale);
-        g->translate(30.f * scale, osu->getScreenHeight() / 2.f - ((height * 2.5f) + font->getHeight() * scale));
+        g->translate(30.f * scale, osu->getVirtScreenHeight() / 2.f - ((height * 2.5f) + font->getHeight() * scale));
 
         if(cv::background_dim.getFloat() < 0.7f) {
             g->translate(1, 1);
@@ -572,15 +572,15 @@ void HUD::drawFps() {
     g->setColor(0xff000000);
     g->pushTransform();
     {
-        g->translate(osu->getScreenWidth() - font->getStringWidth(fpsString) - margin + shadowOffset,
-                     osu->getScreenHeight() - margin - font->getHeight() - margin + shadowOffset);
+        g->translate(osu->getVirtScreenWidth() - font->getStringWidth(fpsString) - margin + shadowOffset,
+                     osu->getVirtScreenHeight() - margin - font->getHeight() - margin + shadowOffset);
         g->drawString(font, fpsString);
     }
     g->popTransform();
     g->pushTransform();
     {
-        g->translate(osu->getScreenWidth() - font->getStringWidth(msString) - margin + shadowOffset,
-                     osu->getScreenHeight() - margin + shadowOffset);
+        g->translate(osu->getVirtScreenWidth() - font->getStringWidth(msString) - margin + shadowOffset,
+                     osu->getVirtScreenHeight() - margin + shadowOffset);
         g->drawString(font, msString);
     }
     g->popTransform();
@@ -598,8 +598,8 @@ void HUD::drawFps() {
             g->setColor(argb(1.0f, 1.0f, 0.26f * pulse, 0.26f * pulse));
         }
 
-        g->translate(osu->getScreenWidth() - font->getStringWidth(fpsString) - margin,
-                     osu->getScreenHeight() - margin - font->getHeight() - margin);
+        g->translate(osu->getVirtScreenWidth() - font->getStringWidth(fpsString) - margin,
+                     osu->getVirtScreenHeight() - margin - font->getHeight() - margin);
         g->drawString(font, fpsString);
     }
     g->popTransform();
@@ -614,7 +614,7 @@ void HUD::drawFps() {
             g->setColor(argb(1.0f, 1.0f, 0.26f * pulse, 0.26f * pulse));
         }
 
-        g->translate(osu->getScreenWidth() - font->getStringWidth(msString) - margin, osu->getScreenHeight() - margin);
+        g->translate(osu->getVirtScreenWidth() - font->getStringWidth(msString) - margin, osu->getVirtScreenHeight() - margin);
         g->drawString(font, msString);
     }
     g->popTransform();
@@ -724,7 +724,7 @@ void HUD::drawLoadingSmall(const UString &text) {
     {
         g->rotate(engine->getTime() * 180, 0, 0, 1);
         g->scale(scale, scale);
-        g->translate(osu->getScreenWidth() / 2, osu->getScreenHeight() / 2);
+        g->translate(osu->getVirtScreenWidth() / 2, osu->getVirtScreenHeight() / 2);
         g->drawImage(osu->getSkin()->getLoadingSpinner());
     }
     g->popTransform();
@@ -733,8 +733,8 @@ void HUD::drawLoadingSmall(const UString &text) {
     g->setColor(0x44ffffff);
     g->pushTransform();
     {
-        g->translate((int)(osu->getScreenWidth() / 2 - osu->getSubTitleFont()->getStringWidth(text) / 2),
-                     osu->getScreenHeight() / 2 + 2.f * spinner_height);
+        g->translate((int)(osu->getVirtScreenWidth() / 2 - osu->getSubTitleFont()->getStringWidth(text) / 2),
+                     osu->getVirtScreenHeight() / 2 + 2.f * spinner_height);
         g->drawString(osu->getSubTitleFont(), text);
     }
     g->popTransform();
@@ -748,7 +748,7 @@ void HUD::drawBeatmapImportSpinner() {
     {
         g->rotate(engine->getTime() * 180, 0, 0, 1);
         g->scale(scale, scale);
-        g->translate(osu->getScreenWidth() / 2, osu->getScreenHeight() / 2);
+        g->translate(osu->getVirtScreenWidth() / 2, osu->getVirtScreenHeight() / 2);
         g->drawImage(osu->getSkin()->getBeatmapImportSpinner());
     }
     g->popTransform();
@@ -936,7 +936,7 @@ void HUD::drawCombo(int combo) {
         g->pushTransform();
         {
             g->scale(scale, scale);
-            g->translate(offset, osu->getScreenHeight() - osu->getSkin()->getCombo0()->getHeight() * scale / 2.0f,
+            g->translate(offset, osu->getVirtScreenHeight() - osu->getSkin()->getCombo0()->getHeight() * scale / 2.0f,
                          0.0f);
             this->drawComboNumber(combo, scale);
 
@@ -958,7 +958,7 @@ void HUD::drawCombo(int combo) {
     g->pushTransform();
     {
         g->scale(scale, scale);
-        g->translate(offset, osu->getScreenHeight() - osu->getSkin()->getCombo0()->getHeight() * scale / 2.0f, 0.0f);
+        g->translate(offset, osu->getVirtScreenHeight() - osu->getSkin()->getCombo0()->getHeight() * scale / 2.0f, 0.0f);
         this->drawComboNumber(combo, scale);
 
         // draw 'x' at the end
@@ -985,7 +985,7 @@ void HUD::drawScore(unsigned long long score) {
     {
         g->scale(scale, scale);
         g->translate(
-            osu->getScreenWidth() - osu->getSkin()->getScore0()->getWidth() * scale * numDigits +
+            osu->getVirtScreenWidth() - osu->getSkin()->getScore0()->getWidth() * scale * numDigits +
                 osu->getSkin()->getScoreOverlap() * (osu->getSkin()->isScore02x() ? 2 : 1) * scale * (numDigits - 1),
             osu->getSkin()->getScore0()->getHeight() * scale / 2);
         this->drawScoreNumber(score, scale, false);
@@ -1010,7 +1010,7 @@ void HUD::drawSectionPass(float alpha) {
     if(!osu->getSkin()->getSectionPassImage()->isMissingTexture()) {
         g->setColor(Color(0xffffffff).setA(alpha));
 
-        osu->getSkin()->getSectionPassImage()->draw(osu->getScreenSize() / 2.f);
+        osu->getSkin()->getSectionPassImage()->draw(osu->getVirtScreenSize() / 2.f);
     }
 }
 
@@ -1018,7 +1018,7 @@ void HUD::drawSectionFail(float alpha) {
     if(!osu->getSkin()->getSectionFailImage()->isMissingTexture()) {
         g->setColor(Color(0xffffffff).setA(alpha));
 
-        osu->getSkin()->getSectionFailImage()->draw(osu->getScreenSize() / 2.f);
+        osu->getSkin()->getSectionFailImage()->draw(osu->getVirtScreenSize() / 2.f);
     }
 }
 
@@ -1142,7 +1142,7 @@ void HUD::drawAccuracy(float accuracy) {
                 scale -
             osu->getSkin()->getScoreOverlap() * (osu->getSkin()->isScore02x() ? 2 : 1) * scale * (numDigits + 1);
 
-        this->fAccuracyXOffset = osu->getScreenWidth() - xOffset - offset;
+        this->fAccuracyXOffset = osu->getVirtScreenWidth() - xOffset - offset;
         this->fAccuracyYOffset = (cv::draw_score.getBool() ? this->fScoreHeight : 0.0f) +
                                  osu->getSkin()->getScore0()->getHeight() * scale / 2 + offset * 2;
 
@@ -1176,7 +1176,7 @@ void HUD::drawSkip() {
     const float scale = cv::hud_scale.getFloat();
 
     g->setColor(0xffffffff);
-    osu->getSkin()->getPlaySkip()->draw(osu->getScreenSize() - (osu->getSkin()->getPlaySkip()->getSize() / 2.f) * scale,
+    osu->getSkin()->getPlaySkip()->draw(osu->getVirtScreenSize() - (osu->getSkin()->getPlaySkip()->getSize() / 2.f) * scale,
                                         cv::hud_scale.getFloat());
 }
 
@@ -1207,11 +1207,11 @@ void HUD::drawWarningArrows(float /*hitcircleDiameter*/) {
                                                          GameRules::getPlayfieldSize().y / 2 + part * 2 + part * 13),
                            false);
 
-    this->drawWarningArrow(vec2(osu->getScreenWidth() - osu->getUIScale(28),
+    this->drawWarningArrow(vec2(osu->getVirtScreenWidth() - osu->getUIScale(28),
                                 GameRules::getPlayfieldCenter().y - GameRules::getPlayfieldSize().y / 2 + part * 2),
                            true);
     this->drawWarningArrow(
-        vec2(osu->getScreenWidth() - osu->getUIScale(28),
+        vec2(osu->getVirtScreenWidth() - osu->getUIScale(28),
              GameRules::getPlayfieldCenter().y - GameRules::getPlayfieldSize().y / 2 + part * 2 + part * 13),
         true);
 }
@@ -1405,9 +1405,9 @@ void HUD::drawContinue(vec2 cursor, float hitcircleDiameter) {
 
     // bleh
     if(cursor.x < cursorImage->getWidth() || cursor.y < cursorImage->getHeight() ||
-       cursor.x > osu->getScreenWidth() - cursorImage->getWidth() ||
-       cursor.y > osu->getScreenHeight() - cursorImage->getHeight())
-        cursor = osu->getScreenSize() / 2.f;
+       cursor.x > osu->getVirtScreenWidth() - cursorImage->getWidth() ||
+       cursor.y > osu->getVirtScreenHeight() - cursorImage->getHeight())
+        cursor = osu->getVirtScreenSize() / 2.f;
 
     // base
     g->setColor(argb(255, 255, 153, 51));
@@ -1452,17 +1452,17 @@ void HUD::drawHitErrorBar(BeatmapInterface *pf) {
 }
 
 void HUD::drawHitErrorBar(float hitWindow300, float hitWindow100, float hitWindow50, float hitWindowMiss, int ur) {
-    const vec2 center = vec2(osu->getScreenWidth() / 2.0f,
-                             osu->getScreenHeight() -
-                                 osu->getScreenHeight() * 2.15f * cv::hud_hiterrorbar_height_percent.getFloat() *
+    const vec2 center = vec2(osu->getVirtScreenWidth() / 2.0f,
+                             osu->getVirtScreenHeight() -
+                                 osu->getVirtScreenHeight() * 2.15f * cv::hud_hiterrorbar_height_percent.getFloat() *
                                      cv::hud_scale.getFloat() * cv::hud_hiterrorbar_scale.getFloat() -
-                                 osu->getScreenHeight() * cv::hud_hiterrorbar_offset_percent.getFloat());
+                                 osu->getVirtScreenHeight() * cv::hud_hiterrorbar_offset_percent.getFloat());
 
     if(cv::draw_hiterrorbar_bottom.getBool()) {
         g->pushTransform();
         {
             const vec2 localCenter = vec2(
-                center.x, center.y - (osu->getScreenHeight() * cv::hud_hiterrorbar_offset_bottom_percent.getFloat()));
+                center.x, center.y - (osu->getVirtScreenHeight() * cv::hud_hiterrorbar_offset_bottom_percent.getFloat()));
 
             this->drawHitErrorBarInt2(localCenter, ur);
             g->translate(localCenter.x, localCenter.y);
@@ -1475,8 +1475,8 @@ void HUD::drawHitErrorBar(float hitWindow300, float hitWindow100, float hitWindo
         g->pushTransform();
         {
             const vec2 localCenter =
-                vec2(center.x, osu->getScreenHeight() - center.y +
-                                   (osu->getScreenHeight() * cv::hud_hiterrorbar_offset_top_percent.getFloat()));
+                vec2(center.x, osu->getVirtScreenHeight() - center.y +
+                                   (osu->getVirtScreenHeight() * cv::hud_hiterrorbar_offset_top_percent.getFloat()));
 
             g->scale(1, -1);
             // drawHitErrorBarInt2(localCenter, ur);
@@ -1490,9 +1490,9 @@ void HUD::drawHitErrorBar(float hitWindow300, float hitWindow100, float hitWindo
         g->pushTransform();
         {
             const vec2 localCenter =
-                vec2(osu->getScreenHeight() - center.y +
-                         (osu->getScreenWidth() * cv::hud_hiterrorbar_offset_left_percent.getFloat()),
-                     osu->getScreenHeight() / 2.0f);
+                vec2(osu->getVirtScreenHeight() - center.y +
+                         (osu->getVirtScreenWidth() * cv::hud_hiterrorbar_offset_left_percent.getFloat()),
+                     osu->getVirtScreenHeight() / 2.0f);
 
             g->rotate(90);
             // drawHitErrorBarInt2(localCenter, ur);
@@ -1506,9 +1506,9 @@ void HUD::drawHitErrorBar(float hitWindow300, float hitWindow100, float hitWindo
         g->pushTransform();
         {
             const vec2 localCenter =
-                vec2(osu->getScreenWidth() - (osu->getScreenHeight() - center.y) -
-                         (osu->getScreenWidth() * cv::hud_hiterrorbar_offset_right_percent.getFloat()),
-                     osu->getScreenHeight() / 2.0f);
+                vec2(osu->getVirtScreenWidth() - (osu->getVirtScreenHeight() - center.y) -
+                         (osu->getVirtScreenWidth() * cv::hud_hiterrorbar_offset_right_percent.getFloat()),
+                     osu->getVirtScreenHeight() / 2.0f);
 
             g->scale(-1, 1);
             g->rotate(-90);
@@ -1542,12 +1542,12 @@ void HUD::drawHitErrorBarInt(float hitWindow300, float hitWindow100, float hitWi
                                  std::clamp<int>(cv::hud_hiterrorbar_entry_miss_g.getInt(), 0, 255),
                                  std::clamp<int>(cv::hud_hiterrorbar_entry_miss_b.getInt(), 0, 255));
 
-    vec2 size = vec2(osu->getScreenWidth() * cv::hud_hiterrorbar_width_percent.getFloat(),
-                     osu->getScreenHeight() * cv::hud_hiterrorbar_height_percent.getFloat()) *
+    vec2 size = vec2(osu->getVirtScreenWidth() * cv::hud_hiterrorbar_width_percent.getFloat(),
+                     osu->getVirtScreenHeight() * cv::hud_hiterrorbar_height_percent.getFloat()) *
                 cv::hud_scale.getFloat() * cv::hud_hiterrorbar_scale.getFloat();
     if(cv::hud_hiterrorbar_showmisswindow.getBool())
-        size = vec2(osu->getScreenWidth() * cv::hud_hiterrorbar_width_percent_with_misswindow.getFloat(),
-                    osu->getScreenHeight() * cv::hud_hiterrorbar_height_percent.getFloat()) *
+        size = vec2(osu->getVirtScreenWidth() * cv::hud_hiterrorbar_width_percent_with_misswindow.getFloat(),
+                    osu->getVirtScreenHeight() * cv::hud_hiterrorbar_height_percent.getFloat()) *
                cv::hud_scale.getFloat() * cv::hud_hiterrorbar_scale.getFloat();
 
     const vec2 center = vec2(0, 0);  // NOTE: moved to drawHitErrorBar()
@@ -1644,7 +1644,7 @@ void HUD::drawHitErrorBarInt2(vec2 center, int ur) {
 
     const float dpiScale = Osu::getUIScale();
 
-    const float hitErrorBarSizeY = osu->getScreenHeight() * cv::hud_hiterrorbar_height_percent.getFloat() *
+    const float hitErrorBarSizeY = osu->getVirtScreenHeight() * cv::hud_hiterrorbar_height_percent.getFloat() *
                                    cv::hud_scale.getFloat() * cv::hud_hiterrorbar_scale.getFloat();
     const float entryHeight = hitErrorBarSizeY * cv::hud_hiterrorbar_bar_height_scale.getFloat();
 
@@ -1685,7 +1685,7 @@ void HUD::drawHitErrorBarInt2(vec2 center, int ur) {
 }
 
 void HUD::drawProgressBar(float percent, bool waiting) {
-    if(!cv::draw_accuracy.getBool()) this->fAccuracyXOffset = osu->getScreenWidth();
+    if(!cv::draw_accuracy.getBool()) this->fAccuracyXOffset = osu->getVirtScreenWidth();
 
     const float num_segments = 15 * 8;
     const int offset = 20;
@@ -1966,7 +1966,7 @@ void HUD::drawScrubbingTimeline(u32 beatmapTime, u32 beatmapLengthPlayable, u32 
 
     f32 dpiScale = Osu::getUIScale();
     vec2 cursorPos = mouse->getPos();
-    cursorPos.y = osu->getScreenHeight() * 0.8;
+    cursorPos.y = osu->getVirtScreenHeight() * 0.8;
 
     Color grey = 0xffbbbbbb;
     Color greyTransparent = 0xbbbbbbbb;
@@ -2009,8 +2009,8 @@ void HUD::drawScrubbingTimeline(u32 beatmapTime, u32 beatmapLengthPlayable, u32 
 
             // draw strain bar graph
             if(highestAimStrain > 0.0 && highestSpeedStrain > 0.0 && highestStrain > 0.0) {
-                f32 offsetX = (f32)beatmapStartTimePlayable / (f32)endTimeMS * (f32)osu->getScreenWidth();
-                f32 drawable_area = (f32)osu->getScreenWidth() - offsetX;
+                f32 offsetX = (f32)beatmapStartTimePlayable / (f32)endTimeMS * (f32)osu->getVirtScreenWidth();
+                f32 drawable_area = (f32)osu->getVirtScreenWidth() - offsetX;
                 f32 strainWidth = drawable_area / (f32)nb_strains;
                 f32 strainHeightMultiplier = cv::hud_scrubbing_timeline_strains_height.getFloat() * dpiScale;
 
@@ -2072,20 +2072,20 @@ void HUD::drawScrubbingTimeline(u32 beatmapTime, u32 beatmapLengthPlayable, u32 
 
     for(auto i : breaks) {
         i32 width =
-            std::max((i32)(osu->getScreenWidth() * std::clamp<f32>(i.endPercent - i.startPercent, 0.0f, 1.0f)), 2);
-        g->fillRect(osu->getScreenWidth() * i.startPercent, cursorPos.y + 1, width, breakHeight);
+            std::max((i32)(osu->getVirtScreenWidth() * std::clamp<f32>(i.endPercent - i.startPercent, 0.0f, 1.0f)), 2);
+        g->fillRect(osu->getVirtScreenWidth() * i.startPercent, cursorPos.y + 1, width, breakHeight);
     }
 
     // line
     g->setColor(Color(0xff000000).setA(galpha));
 
-    g->drawLine(0, cursorPos.y + 1, osu->getScreenWidth(), cursorPos.y + 1);
+    g->drawLine(0, cursorPos.y + 1, osu->getVirtScreenWidth(), cursorPos.y + 1);
     g->setColor(Color(grey).setA(galpha));
 
-    g->drawLine(0, cursorPos.y, osu->getScreenWidth(), cursorPos.y);
+    g->drawLine(0, cursorPos.y, osu->getVirtScreenWidth(), cursorPos.y);
 
     // current time triangle
-    vec2 triangleTip = vec2(osu->getScreenWidth() * beatmapPercentFinishedPlayable, cursorPos.y);
+    vec2 triangleTip = vec2(osu->getVirtScreenWidth() * beatmapPercentFinishedPlayable, cursorPos.y);
     g->pushTransform();
     {
         g->translate(triangleTip.x + 1, triangleTip.y - osu->getSkin()->getSeekTriangle()->getHeight() / 2.0f + 1);
@@ -2106,7 +2106,7 @@ void HUD::drawScrubbingTimeline(u32 beatmapTime, u32 beatmapLengthPlayable, u32 
         g->translate(
             std::clamp<f32>(
                 triangleTip.x - timeFont->getStringWidth(currentTimeText) / 2.0f, currentTimeLeftRightTextOffset,
-                osu->getScreenWidth() - timeFont->getStringWidth(currentTimeText) - currentTimeLeftRightTextOffset) +
+                osu->getVirtScreenWidth() - timeFont->getStringWidth(currentTimeText) - currentTimeLeftRightTextOffset) +
                 1,
             triangleTip.y - osu->getSkin()->getSeekTriangle()->getHeight() - currentTimeTopTextOffset + 1);
         g->setColor(Color(0xff000000).setA(galpha));
@@ -2141,7 +2141,7 @@ void HUD::drawScrubbingTimeline(u32 beatmapTime, u32 beatmapLengthPlayable, u32 
     g->pushTransform();
     {
         g->translate(
-            (i32)(osu->getScreenWidth() - timeFont->getStringWidth(endTimeText) - startAndEndTimeTextOffset + 1),
+            (i32)(osu->getVirtScreenWidth() - timeFont->getStringWidth(endTimeText) - startAndEndTimeTextOffset + 1),
             (i32)(triangleTip.y + startAndEndTimeTextOffset + timeFont->getHeight() + 1));
         g->setColor(Color(0xff000000).setA(galpha));
 
@@ -2156,7 +2156,7 @@ void HUD::drawScrubbingTimeline(u32 beatmapTime, u32 beatmapLengthPlayable, u32 
     // quicksave time triangle & text
     if(osu->getQuickSaveTime() != 0.0f) {
         f32 quickSavePercent = std::clamp<f32>(osu->getQuickSaveTime() / (f32)endTimeMS, 0.f, 1.f);
-        triangleTip = vec2(osu->getScreenWidth() * quickSavePercent, cursorPos.y);
+        triangleTip = vec2(osu->getVirtScreenWidth() * quickSavePercent, cursorPos.y);
         g->pushTransform();
         {
             g->rotate(180);
@@ -2178,7 +2178,7 @@ void HUD::drawScrubbingTimeline(u32 beatmapTime, u32 beatmapLengthPlayable, u32 
         {
             g->translate((i32)(std::clamp<f32>(triangleTip.x - timeFont->getStringWidth(currentTimeText) / 2.0f,
                                                currentTimeLeftRightTextOffset,
-                                               osu->getScreenWidth() - timeFont->getStringWidth(currentTimeText) -
+                                               osu->getVirtScreenWidth() - timeFont->getStringWidth(currentTimeText) -
                                                    currentTimeLeftRightTextOffset) +
                                1),
                          (i32)(triangleTip.y + startAndEndTimeTextOffset + timeFont->getHeight() * 2.2f + 1 +
@@ -2197,7 +2197,7 @@ void HUD::drawScrubbingTimeline(u32 beatmapTime, u32 beatmapLengthPlayable, u32 
     }
 
     // current time hover text
-    u32 hoverTimeMS = std::clamp<f32>((cursorPos.x / (f32)osu->getScreenWidth()), 0.0f, 1.0f) * endTimeMS;
+    u32 hoverTimeMS = std::clamp<f32>((cursorPos.x / (f32)osu->getVirtScreenWidth()), 0.0f, 1.0f) * endTimeMS;
     UString hoverTimeText = UString::format("%i:%02i", (hoverTimeMS / 1000) / 60, (hoverTimeMS / 1000) % 60);
     triangleTip = vec2(cursorPos.x, cursorPos.y);
     g->pushTransform();
@@ -2205,7 +2205,7 @@ void HUD::drawScrubbingTimeline(u32 beatmapTime, u32 beatmapLengthPlayable, u32 
         g->translate(
             (i32)std::clamp<f32>(
                 triangleTip.x - timeFont->getStringWidth(currentTimeText) / 2.0f, currentTimeLeftRightTextOffset,
-                osu->getScreenWidth() - timeFont->getStringWidth(currentTimeText) - currentTimeLeftRightTextOffset) +
+                osu->getVirtScreenWidth() - timeFont->getStringWidth(currentTimeText) - currentTimeLeftRightTextOffset) +
                 1,
             (i32)(triangleTip.y - osu->getSkin()->getSeekTriangle()->getHeight() - timeFont->getHeight() * 1.2f -
                   currentTimeTopTextOffset *
@@ -2236,8 +2236,8 @@ void HUD::drawInputOverlay(int numK1, int numK2, int numM1, int numM2) {
     const float xStartOffset = cv::hud_inputoverlay_offset_x.getFloat() * offsetScale;
     const float yStartOffset = cv::hud_inputoverlay_offset_y.getFloat() * offsetScale;
 
-    const float xStart = osu->getScreenWidth() - xStartOffset;
-    const float yStart = osu->getScreenHeight() / 2 - (40.0f * oScale) * scale + yStartOffset;
+    const float xStart = osu->getVirtScreenWidth() - xStartOffset;
+    const float yStart = osu->getVirtScreenHeight() / 2 - (40.0f * oScale) * scale + yStartOffset;
 
     // background
     {
@@ -2339,7 +2339,7 @@ float HUD::getCursorScaleFactor() {
     if(cv::automatic_cursor_size.getBool() && osu->isInPlayMode())
         mapScale = 1.0f - 0.7f * (float)(osu->getMapInterface()->getCS() - 4.0f) / 5.0f;
 
-    return ((float)osu->getScreenHeight() / spriteRes) * mapScale;
+    return ((float)osu->getVirtScreenHeight() / spriteRes) * mapScale;
 }
 
 float HUD::getCursorTrailScaleFactor() {
@@ -2476,8 +2476,8 @@ void HUD::animateKiExplode() {
 }
 
 void HUD::addCursorTrailPosition(std::vector<CURSORTRAIL> &trail, vec2 pos) {
-    if(pos.x < -osu->getScreenWidth() || pos.x > osu->getScreenWidth() * 2 || pos.y < -osu->getScreenHeight() ||
-       pos.y > osu->getScreenHeight() * 2)
+    if(pos.x < -osu->getVirtScreenWidth() || pos.x > osu->getVirtScreenWidth() * 2 || pos.y < -osu->getVirtScreenHeight() ||
+       pos.y > osu->getVirtScreenHeight() * 2)
         return;  // fuck oob trails
 
     Image *trailImage = osu->getSkin()->getCursorTrail();
@@ -2548,8 +2548,8 @@ void HUD::resetHitErrorBar() { this->hiterrors.clear(); }
 
 McRect HUD::getSkipClickRect() {
     const float skipScale = cv::hud_scale.getFloat();
-    return McRect(osu->getScreenWidth() - osu->getSkin()->getPlaySkip()->getSize().x * skipScale,
-                  osu->getScreenHeight() - osu->getSkin()->getPlaySkip()->getSize().y * skipScale,
+    return McRect(osu->getVirtScreenWidth() - osu->getSkin()->getPlaySkip()->getSize().x * skipScale,
+                  osu->getVirtScreenHeight() - osu->getSkin()->getPlaySkip()->getSize().y * skipScale,
                   osu->getSkin()->getPlaySkip()->getSize().x * skipScale,
                   osu->getSkin()->getPlaySkip()->getSize().y * skipScale);
 }

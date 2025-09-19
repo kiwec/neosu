@@ -226,7 +226,7 @@ void RankingScreen::draw() {
 
         // draw top black bar
         g->setColor(0xff000000);
-        g->fillRect(0, 0, osu->getScreenWidth(),
+        g->fillRect(0, 0, osu->getVirtScreenWidth(),
                     this->rankingTitle->getSize().y * cv::rankingscreen_topbar_height_percent.getFloat());
     }
 
@@ -333,7 +333,7 @@ void RankingScreen::mouse_update(bool *propagate_clicks) {
     ScreenBackable::mouse_update(propagate_clicks);
 
     // tooltip (pp + accuracy + unstable rate)
-    if(!osu->getOptionsMenu()->isMouseInside() && mouse->getPos().x < osu->getScreenWidth() * 0.5f) {
+    if(!osu->getOptionsMenu()->isMouseInside() && mouse->getPos().x < osu->getVirtScreenWidth() * 0.5f) {
         osu->getTooltipOverlay()->begin();
         {
             osu->getTooltipOverlay()->addLine(UString::format("%.2fpp", this->score.get_or_calc_pp()));
@@ -512,7 +512,7 @@ void RankingScreen::updateLayout() {
 
     const float uiScale = cv::ui_scale.getFloat();
 
-    this->setSize(osu->getScreenSize());
+    this->setSize(osu->getVirtScreenSize());
 
     this->rankingTitle->setImage(osu->getSkin()->getRankingTitle());
     this->rankingTitle->setScale(Osu::getImageScale(this->rankingTitle->getImage(), 75.0f) * uiScale,
@@ -521,11 +521,11 @@ void RankingScreen::updateLayout() {
                                 this->rankingTitle->getImage()->getHeight() * this->rankingTitle->getScale().y);
     this->rankingTitle->setRelPos(this->getSize().x - this->rankingTitle->getSize().x - osu->getUIScale(20.0f), 0);
 
-    this->songInfo->setSize(osu->getScreenWidth(), std::max(this->songInfo->getMinimumHeight(),
+    this->songInfo->setSize(osu->getVirtScreenWidth(), std::max(this->songInfo->getMinimumHeight(),
                                                             this->rankingTitle->getSize().y *
                                                                 cv::rankingscreen_topbar_height_percent.getFloat()));
 
-    this->rankings->setSize(osu->getScreenSize().x + 2, osu->getScreenSize().y - this->songInfo->getSize().y + 3);
+    this->rankings->setSize(osu->getVirtScreenSize().x + 2, osu->getVirtScreenSize().y - this->songInfo->getSize().y + 3);
     this->rankings->setRelPosY(this->songInfo->getSize().y - 1);
 
     float btn_width = 150.f * uiScale;
@@ -550,11 +550,11 @@ void RankingScreen::updateLayout() {
         std::max(hardcodedOsuRankingPanelImageSize.y * this->rankingPanel->getScale().y,
                  this->rankingPanel->getImage()->getHeight() * this->rankingPanel->getScale().y));
 
-    this->rankingIndex->setSize(this->rankings->getSize().x + 2, osu->getScreenHeight() * 0.07f * uiScale);
+    this->rankingIndex->setSize(this->rankings->getSize().x + 2, osu->getVirtScreenHeight() * 0.07f * uiScale);
     this->rankingIndex->setBackgroundColor(0xff745e13);
     this->rankingIndex->setRelPosY(this->rankings->getSize().y + 1);
 
-    this->rankingBottom->setSize(this->rankings->getSize().x + 2, osu->getScreenHeight() * 0.2f);
+    this->rankingBottom->setSize(this->rankings->getSize().x + 2, osu->getVirtScreenHeight() * 0.2f);
     this->rankingBottom->setRelPosY(this->rankingIndex->getRelPos().y + this->rankingIndex->getSize().y);
 
     this->setGrade(this->grade);

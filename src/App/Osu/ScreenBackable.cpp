@@ -46,7 +46,7 @@ void ScreenBackable::onKeyDown(KeyboardEvent &e) {
 
 void ScreenBackable::updateLayout() {
     this->backButton->updateLayout();
-    this->backButton->setPosY(osu->getScreenHeight() - this->backButton->getSize().y);
+    this->backButton->setPosY(osu->getVirtScreenHeight() - this->backButton->getSize().y);
 }
 
 void ScreenBackable::onResolutionChange(vec2  /*newResolution*/) { this->updateLayout(); }

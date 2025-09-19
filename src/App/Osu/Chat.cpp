@@ -306,7 +306,7 @@ Chat::Chat() : OsuScreen() {
     this->user_list->setVisible(false);
     this->addBaseUIElement(this->user_list);
 
-    this->updateLayout(osu->getScreenSize());
+    this->updateLayout(osu->getVirtScreenSize());
 }
 
 Chat::~Chat() {
@@ -441,7 +441,7 @@ void Chat::mouse_update(bool *propagate_clicks) {
 void Chat::handle_command(const UString &msg) {
     if(msg == "/clear") {
         this->selected_channel->messages.clear();
-        this->updateLayout(osu->getScreenSize());
+        this->updateLayout(osu->getVirtScreenSize());
         return;
     }
 
@@ -839,7 +839,7 @@ void Chat::addChannel(const UString &channel_name, bool switch_to) {
         this->switchToChannel(chan);
     }
 
-    this->updateLayout(osu->getScreenSize());
+    this->updateLayout(osu->getVirtScreenSize());
 
     if(this->isVisible()) {
         soundEngine->play(osu->getSkin()->getExpandSound());
@@ -935,7 +935,7 @@ void Chat::addMessage(UString channel_name, const ChatMessage &msg, bool mark_un
                 this->mark_as_read(chan);
 
                 // Update ticker
-                auto screen = osu->getScreenSize();
+                auto screen = osu->getVirtScreenSize();
                 this->ticker_tms = engine->getTime();
                 this->ticker->messages.clear();
                 this->ticker->messages.push_back(msg);
@@ -1117,7 +1117,7 @@ void Chat::updateUserList() {
         return;
     }
 
-    auto screen = osu->getScreenSize();
+    auto screen = osu->getVirtScreenSize();
     bool is_widescreen = ((i32)(std::max(0, (i32)((screen.x - (screen.y * 4.f / 3.f)) / 2.f))) > 0);
     auto global_scale = is_widescreen ? (screen.x / 1366.f) : 1.f;
     auto card_size = vec2{global_scale * 640 * 0.5f, global_scale * 150 * 0.5f};
@@ -1225,7 +1225,7 @@ void Chat::onDisconnect() {
     BanchoState::chat_channels.clear();
 
     this->selected_channel = nullptr;
-    this->updateLayout(osu->getScreenSize());
+    this->updateLayout(osu->getVirtScreenSize());
 
     this->updateVisibility();
 }
@@ -1245,7 +1245,7 @@ bool Chat::isVisibilityForced() {
     if(is_forced != this->visibility_was_forced) {
         // Chat width changed: update the layout now
         this->visibility_was_forced = is_forced;
-        this->updateLayout(osu->getScreenSize());
+        this->updateLayout(osu->getVirtScreenSize());
     }
     return is_forced;
 }
@@ -1291,7 +1291,7 @@ CBaseUIContainer *Chat::setVisible(bool visible) {
         }
 
         if(this->layout_update_scheduled) {
-            this->updateLayout(osu->getScreenSize());
+            this->updateLayout(osu->getVirtScreenSize());
         }
     } else {
         anim->moveQuadOut(&this->fAnimation, 0.0f, 0.25f * this->fAnimation, true);

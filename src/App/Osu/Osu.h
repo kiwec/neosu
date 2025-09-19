@@ -96,11 +96,9 @@ class Osu final : public MouseListener, public KeyboardListener {
     }
     inline void setShouldPauseBGThreads(bool pause) { this->pause_bg_threads.store(pause, std::memory_order_release); }
 
-    static vec2 g_vInternalResolution;
-
-    [[nodiscard]] inline vec2 getScreenSize() const { return g_vInternalResolution; }
-    [[nodiscard]] inline int getScreenWidth() const { return (int)g_vInternalResolution.x; }
-    [[nodiscard]] inline int getScreenHeight() const { return (int)g_vInternalResolution.y; }
+    [[nodiscard]] inline vec2 getVirtScreenSize() const { return vInternalResolution; }
+    [[nodiscard]] inline int getVirtScreenWidth() const { return (int)vInternalResolution.x; }
+    [[nodiscard]] inline int getVirtScreenHeight() const { return (int)vInternalResolution.y; }
 
     [[nodiscard]] inline const std::unique_ptr<OptionsMenu> &getOptionsMenu() const { return this->optionsMenu; }
     [[nodiscard]] inline const std::unique_ptr<SongBrowser> &getSongBrowser() const { return this->songBrowser; }
@@ -279,6 +277,8 @@ class Osu final : public MouseListener, public KeyboardListener {
     Shader *flashlight_shader{nullptr};
 
     vec2 vInternalResolution{0.f};
+    // wtf is this? why?
+    vec2 vInternalResolution2{0.f};
 
     // i don't like how these have to be public, but it's too annoying to change for now.
     // public members just mean their values can get rugpulled from under your feet at any moment,

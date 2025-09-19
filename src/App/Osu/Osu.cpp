@@ -73,8 +73,6 @@
 
 Osu *osu = nullptr;
 
-vec2 Osu::g_vInternalResolution{0.f};
-
 Osu::Osu() {
     osu = this;
     srand(crypto::rng::get_rand<u32>());
@@ -144,14 +142,15 @@ Osu::Osu() {
     this->windowManager = std::make_unique<CWindowManager>();
 
     // renderer
-    g_vInternalResolution = engine->getScreenSize();
+    this->vInternalResolution = engine->getScreenSize();
 
-    this->backBuffer = resourceManager->createRenderTarget(0, 0, this->getScreenWidth(), this->getScreenHeight());
+    this->backBuffer =
+        resourceManager->createRenderTarget(0, 0, this->getVirtScreenWidth(), this->getVirtScreenHeight());
     this->playfieldBuffer = resourceManager->createRenderTarget(0, 0, 64, 64);
     this->sliderFrameBuffer =
-        resourceManager->createRenderTarget(0, 0, this->getScreenWidth(), this->getScreenHeight());
-    this->AAFrameBuffer = resourceManager->createRenderTarget(0, 0, this->getScreenWidth(), this->getScreenHeight(),
-                                                              Graphics::MULTISAMPLE_TYPE::MULTISAMPLE_4X);
+        resourceManager->createRenderTarget(0, 0, this->getVirtScreenWidth(), this->getVirtScreenHeight());
+    this->AAFrameBuffer = resourceManager->createRenderTarget(
+        0, 0, this->getVirtScreenWidth(), this->getVirtScreenHeight(), Graphics::MULTISAMPLE_TYPE::MULTISAMPLE_4X);
     this->frameBuffer = resourceManager->createRenderTarget(0, 0, 64, 64);
     this->frameBuffer2 = resourceManager->createRenderTarget(0, 0, 64, 64);
 
@@ -339,7 +338,7 @@ Osu::Osu() {
         std::string(reinterpret_cast<const char *>(flashlight_vsh), flashlight_vsh_size()),
         std::string(reinterpret_cast<const char *>(flashlight_fsh), flashlight_fsh_size()), "flashlight");
 
-    env->setCursorVisible(!McRect{{}, g_vInternalResolution}.contains(mouse->getPos()));
+    env->setCursorVisible(!McRect{{}, this->vInternalResolution}.contains(mouse->getPos()));
 }
 
 Osu::~Osu() {
@@ -356,12 +355,12 @@ void Osu::draw() {
     if(!this->skin.get() || this->flashlight_shader == nullptr)  // sanity check
     {
         g->setColor(0xff000000);
-        g->fillRect(0, 0, this->getScreenWidth(), this->getScreenHeight());
+        g->fillRect(0, 0, this->getVirtScreenWidth(), this->getVirtScreenHeight());
         return;
     }
 
     // if we are not using the native window resolution, draw into the buffer
-    const bool isBufferedDraw = (g->getResolution() != g_vInternalResolution);
+    const bool isBufferedDraw = (g->getResolution() != this->vInternalResolution);
     if(isBufferedDraw) {
         this->backBuffer->enable();
     }
@@ -414,10 +413,10 @@ void Osu::draw() {
                 this->flashlight_shader->setUniform1f("max_opacity", opacity);
                 this->flashlight_shader->setUniform1f("flashlight_radius", fl_radius);
                 this->flashlight_shader->setUniform2f("flashlight_center", flashlightPos.x,
-                                                      this->getScreenSize().y - flashlightPos.y);
+                                                      this->getVirtScreenSize().y - flashlightPos.y);
 
                 g->setColor(argb(255, 0, 0, 0));
-                g->fillRect(0, 0, this->getScreenWidth(), this->getScreenHeight());
+                g->fillRect(0, 0, this->getVirtScreenWidth(), this->getVirtScreenHeight());
 
                 this->flashlight_shader->disable();
             }
@@ -432,10 +431,10 @@ void Osu::draw() {
                 this->actual_flashlight_shader->setUniform1f("max_opacity", opacity);
                 this->actual_flashlight_shader->setUniform1f("flashlight_radius", anti_fl_radius);
                 this->actual_flashlight_shader->setUniform2f("flashlight_center", flashlightPos.x,
-                                                             this->getScreenSize().y - flashlightPos.y);
+                                                             this->getVirtScreenSize().y - flashlightPos.y);
 
                 g->setColor(argb(255, 0, 0, 0));
-                g->fillRect(0, 0, this->getScreenWidth(), this->getScreenHeight());
+                g->fillRect(0, 0, this->getVirtScreenWidth(), this->getVirtScreenHeight());
 
                 this->actual_flashlight_shader->disable();
             }
@@ -449,7 +448,7 @@ void Osu::draw() {
             if(engine->getTime() > this->fQuickRetryTime) alphaPercent = 1.0f;
 
             g->setColor(argb((int)(255 * alphaPercent), 0, 0, 0));
-            g->fillRect(0, 0, this->getScreenWidth(), this->getScreenHeight());
+            g->fillRect(0, 0, this->getVirtScreenWidth(), this->getVirtScreenHeight());
         }
 
         this->pauseMenu->draw();
@@ -519,7 +518,7 @@ void Osu::draw() {
                                 this->map_iface->is_watching || BanchoState::spectating);
         bool updateAndDrawTrail = true;
         if(cv::mod_fposu.getBool()) {
-            cursorPos = this->getScreenSize() / 2.0f;
+            cursorPos = this->getVirtScreenSize() / 2.0f;
             updateAndDrawTrail = false;
         }
         this->hud->drawCursor(cursorPos, fadingCursorAlpha, drawSecondTrail, updateAndDrawTrail);
@@ -532,13 +531,13 @@ void Osu::draw() {
         // draw a scaled version from the buffer to the screen
         this->backBuffer->disable();
 
-        vec2 offset = vec2(g->getResolution().x / 2 - g_vInternalResolution.x / 2,
-                           g->getResolution().y / 2 - g_vInternalResolution.y / 2);
+        vec2 offset = vec2(g->getResolution().x / 2 - this->vInternalResolution.x / 2,
+                           g->getResolution().y / 2 - this->vInternalResolution.y / 2);
         g->setBlending(false);
         if(cv::letterboxing.getBool()) {
             this->backBuffer->draw(offset.x * (1.0f + cv::letterboxing_offset_x.getFloat()),
-                                   offset.y * (1.0f + cv::letterboxing_offset_y.getFloat()), g_vInternalResolution.x,
-                                   g_vInternalResolution.y);
+                                   offset.y * (1.0f + cv::letterboxing_offset_y.getFloat()),
+                                   this->vInternalResolution.x, this->vInternalResolution.y);
         } else {
             if(cv::resolution_keep_aspect_ratio.getBool()) {
                 const float scale = getImageScaleToFitResolution(this->backBuffer->getSize(), g->getResolution());
@@ -645,7 +644,7 @@ void Osu::update() {
         this->bSeeking &= !BanchoState::spectating;
         if(this->bSeeking) {
             f32 mousePosX = std::round(mouse->getPos().x);
-            f32 percent = std::clamp<f32>(mousePosX / (f32)this->getScreenWidth(), 0.0f, 1.0f);
+            f32 percent = std::clamp<f32>(mousePosX / (f32)this->getVirtScreenWidth(), 0.0f, 1.0f);
             f32 seek_to_ms = percent * (map_iface->getStartTimePlayable() + map_iface->getLengthPlayable());
 
             if(mouse->isLeftDown()) {
@@ -794,8 +793,8 @@ void Osu::update() {
 bool Osu::isInPlayModeAndNotPaused() const { return this->isInPlayMode() && !this->map_iface->isPaused(); }
 
 void Osu::updateMods() {
-    osu->getScore()->mods = Replay::Mods::from_cvars();
-    osu->getScore()->setCheated();
+    this->getScore()->mods = Replay::Mods::from_cvars();
+    this->getScore()->setCheated();
 
     if(this->isInPlayMode()) {
         // notify the possibly running playfield of mod changes
@@ -1304,8 +1303,8 @@ void Osu::saveScreenshot() {
 
     const f32 outerWidth = g->getResolution().x;
     const f32 outerHeight = g->getResolution().y;
-    const f32 innerWidth = g_vInternalResolution.x;
-    const f32 innerHeight = g_vInternalResolution.y;
+    const f32 innerWidth = this->vInternalResolution.x;
+    const f32 innerHeight = this->vInternalResolution.y;
 
     soundEngine->play(this->skin->getShutter());
     this->notificationOverlay->addToast(UString::format("Saved screenshot to %s", screenshotFilename.c_str()),
@@ -1321,7 +1320,7 @@ void Osu::saveScreenshot() {
 
     // need cropping
     f32 offsetXpct = 0, offsetYpct = 0;
-    if((g->getResolution() != g_vInternalResolution) && cv::letterboxing.getBool()) {
+    if((g->getResolution() != this->vInternalResolution) && cv::letterboxing.getBool()) {
         offsetXpct = cv::letterboxing_offset_x.getFloat();
         offsetYpct = cv::letterboxing_offset_y.getFloat();
     }
@@ -1459,14 +1458,16 @@ void Osu::onResolutionChanged(vec2 newResolution) {
     // We just force disable letterboxing while windowed.
     if(cv::letterboxing.getBool() && env->isFullscreen()) {
         // clamp upwards to internal resolution (osu_resolution)
-        if(g_vInternalResolution.x < this->vInternalResolution.x) g_vInternalResolution.x = this->vInternalResolution.x;
-        if(g_vInternalResolution.y < this->vInternalResolution.y) g_vInternalResolution.y = this->vInternalResolution.y;
+        if(this->vInternalResolution.x < this->vInternalResolution2.x)
+            this->vInternalResolution.x = this->vInternalResolution2.x;
+        if(this->vInternalResolution.y < this->vInternalResolution2.y)
+            this->vInternalResolution.y = this->vInternalResolution2.y;
 
         // clamp downwards to engine resolution
-        if(newResolution.x < g_vInternalResolution.x) g_vInternalResolution.x = newResolution.x;
-        if(newResolution.y < g_vInternalResolution.y) g_vInternalResolution.y = newResolution.y;
+        if(newResolution.x < this->vInternalResolution.x) this->vInternalResolution.x = newResolution.x;
+        if(newResolution.y < this->vInternalResolution.y) this->vInternalResolution.y = newResolution.y;
     } else {
-        g_vInternalResolution = newResolution;
+        this->vInternalResolution = newResolution;
     }
 
     // update dpi specific engine globals
@@ -1474,7 +1475,7 @@ void Osu::onResolutionChanged(vec2 newResolution) {
 
     // interfaces
     for(auto *screen : this->screens) {
-        screen->onResolutionChange(g_vInternalResolution);
+        screen->onResolutionChange(this->vInternalResolution);
     }
 
     // rendertargets
@@ -1504,23 +1505,23 @@ void Osu::onDPIChanged() {
 }
 
 void Osu::rebuildRenderTargets() {
-    debugLog("Osu::rebuildRenderTargets: {:f}x{:f}\n", g_vInternalResolution.x, g_vInternalResolution.y);
+    debugLog("Osu::rebuildRenderTargets: {:f}x{:f}\n", this->vInternalResolution.x, this->vInternalResolution.y);
 
-    this->backBuffer->rebuild(0, 0, g_vInternalResolution.x, g_vInternalResolution.y);
+    this->backBuffer->rebuild(0, 0, this->vInternalResolution.x, this->vInternalResolution.y);
 
     if(cv::mod_fposu.getBool())
-        this->playfieldBuffer->rebuild(0, 0, g_vInternalResolution.x, g_vInternalResolution.y);
+        this->playfieldBuffer->rebuild(0, 0, this->vInternalResolution.x, this->vInternalResolution.y);
     else
         this->playfieldBuffer->rebuild(0, 0, 64, 64);
 
-    this->sliderFrameBuffer->rebuild(0, 0, g_vInternalResolution.x, g_vInternalResolution.y,
+    this->sliderFrameBuffer->rebuild(0, 0, this->vInternalResolution.x, this->vInternalResolution.y,
                                      Graphics::MULTISAMPLE_TYPE::MULTISAMPLE_0X);
 
-    this->AAFrameBuffer->rebuild(0, 0, g_vInternalResolution.x, g_vInternalResolution.y);
+    this->AAFrameBuffer->rebuild(0, 0, this->vInternalResolution.x, this->vInternalResolution.y);
 
     if(cv::mod_mafham.getBool()) {
-        this->frameBuffer->rebuild(0, 0, g_vInternalResolution.x, g_vInternalResolution.y);
-        this->frameBuffer2->rebuild(0, 0, g_vInternalResolution.x, g_vInternalResolution.y);
+        this->frameBuffer->rebuild(0, 0, this->vInternalResolution.x, this->vInternalResolution.y);
+        this->frameBuffer2->rebuild(0, 0, this->vInternalResolution.x, this->vInternalResolution.y);
     } else {
         this->frameBuffer->rebuild(0, 0, 64, 64);
         this->frameBuffer2->rebuild(0, 0, 64, 64);
@@ -1543,14 +1544,14 @@ void Osu::updateMouseSettings() {
     // mouse scaling & offset
     vec2 offset = vec2(0, 0);
     vec2 scale = vec2(1, 1);
-    if((g->getResolution() != g_vInternalResolution) && cv::letterboxing.getBool()) {
-        offset = -vec2((engine->getScreenWidth() / 2.f - g_vInternalResolution.x / 2.f) *
+    if((g->getResolution() != this->vInternalResolution) && cv::letterboxing.getBool()) {
+        offset = -vec2((engine->getScreenWidth() / 2.f - this->vInternalResolution.x / 2.f) *
                            (1.0f + cv::letterboxing_offset_x.getFloat()),
-                       (engine->getScreenHeight() / 2.f - g_vInternalResolution.y / 2.f) *
+                       (engine->getScreenHeight() / 2.f - this->vInternalResolution.y / 2.f) *
                            (1.0f + cv::letterboxing_offset_y.getFloat()));
 
-        scale = vec2(g_vInternalResolution.x / engine->getScreenWidth(),
-                     g_vInternalResolution.y / engine->getScreenHeight());
+        scale = vec2(this->vInternalResolution.x / engine->getScreenWidth(),
+                     this->vInternalResolution.y / engine->getScreenHeight());
     }
 
     mouse->setOffset(offset);
@@ -1574,7 +1575,7 @@ void Osu::updateWindowsKeyDisable() {
     env->listenToTextInput(!isPlayerPlaying);
 }
 
-void Osu::fireResolutionChanged() { this->onResolutionChanged(g_vInternalResolution); }
+void Osu::fireResolutionChanged() { this->onResolutionChanged(this->vInternalResolution); }
 
 void Osu::onWindowedResolutionChanged(const UString & /*oldValue*/, const UString &args) {
     if(env->isFullscreen()) return;
@@ -1630,8 +1631,8 @@ void Osu::onInternalResolutionChanged(const UString & /*oldValue*/, const UStrin
     }
 
     // store, then force onResolutionChanged()
-    g_vInternalResolution = newInternalResolution;
     this->vInternalResolution = newInternalResolution;
+    this->vInternalResolution2 = newInternalResolution;
     this->fireResolutionChanged();
 
     // a bit hacky, but detect resolution-specific-dpi-scaling changes and force a font and layout reload after a 1
@@ -1815,7 +1816,7 @@ void Osu::updateCursorVisibility() {
 
     // if it's not forced visible, check whether it's inside the internal window
     if(!forced_visible) {
-        const bool internal_contains_mouse = McRect{{}, g_vInternalResolution}.contains(mouse->getPos());
+        const bool internal_contains_mouse = McRect{{}, this->vInternalResolution}.contains(mouse->getPos());
         if(internal_contains_mouse) {
             desired_vis = false;
         } else {
@@ -1853,9 +1854,9 @@ void Osu::updateConfineCursor() {
 
     bool confine_cursor = might_confine && !force_no_confine;
     if(confine_cursor) {
-        if((g->getResolution() != g_vInternalResolution) && cv::letterboxing.getBool()) {
-            clip = McRect{(f32)(-mouse->getOffset().x), (f32)(-mouse->getOffset().y), g_vInternalResolution.x,
-                          g_vInternalResolution.y};
+        if((g->getResolution() != this->vInternalResolution) && cv::letterboxing.getBool()) {
+            clip = McRect{(f32)(-mouse->getOffset().x), (f32)(-mouse->getOffset().y), this->vInternalResolution.x,
+                          this->vInternalResolution.y};
         } else {
             clip = McRect{0, 0, (f32)(engine->getScreenWidth()), (f32)(engine->getScreenHeight())};
         }
@@ -1989,8 +1990,8 @@ float Osu::getImageScaleToFillResolution(Image *img, vec2 resolution) {
 }
 
 float Osu::getImageScale(vec2 size, float osuSize) {
-    int swidth = osu->getScreenWidth();
-    int sheight = osu->getScreenHeight();
+    int swidth = osu->getVirtScreenWidth();
+    int sheight = osu->getVirtScreenHeight();
 
     if(swidth * 3 > sheight * 4)
         swidth = sheight * 4 / 3;
@@ -2011,8 +2012,8 @@ float Osu::getImageScale(Image *img, float osuSize) {
 }
 
 float Osu::getUIScale(float osuResolutionRatio) {
-    int swidth = osu->getScreenWidth();
-    int sheight = osu->getScreenHeight();
+    int swidth = osu->getVirtScreenWidth();
+    int sheight = osu->getVirtScreenHeight();
 
     if(swidth * 3 > sheight * 4)
         swidth = sheight * 4 / 3;
@@ -2030,8 +2031,8 @@ float Osu::getUIScale(float osuResolutionRatio) {
 
 float Osu::getUIScale() {
     if(osu != nullptr) {
-        if(osu->getScreenWidth() < cv::ui_scale_to_dpi_minimum_width.getInt() ||
-           osu->getScreenHeight() < cv::ui_scale_to_dpi_minimum_height.getInt())
+        if(osu->getVirtScreenWidth() < cv::ui_scale_to_dpi_minimum_width.getInt() ||
+           osu->getVirtScreenHeight() < cv::ui_scale_to_dpi_minimum_height.getInt())
             return cv::ui_scale.getFloat();
     } else if(engine->getScreenWidth() < cv::ui_scale_to_dpi_minimum_width.getInt() ||
               engine->getScreenHeight() < cv::ui_scale_to_dpi_minimum_height.getInt())

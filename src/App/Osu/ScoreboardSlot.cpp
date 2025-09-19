@@ -36,13 +36,13 @@ void ScoreboardSlot::draw() {
 
     g->setBlendMode(Graphics::BLEND_MODE::BLEND_MODE_PREMUL_ALPHA);
 
-    const float height = roundf(osu->getScreenHeight() * 0.07f);
+    const float height = roundf(osu->getVirtScreenHeight() * 0.07f);
     const float width = roundf(height * 2.6f);  // does not include avatar_width
     const float avatar_height = height;
     const float avatar_width = avatar_height;
     const float padding = roundf(height * 0.05f);
 
-    float start_y = osu->getScreenHeight() / 2.0f - (height * 2.5f);
+    float start_y = osu->getVirtScreenHeight() / 2.0f - (height * 2.5f);
     start_y += this->y * height;
     start_y = roundf(start_y);
 

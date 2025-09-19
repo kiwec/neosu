@@ -204,7 +204,7 @@ void SpectatorScreen::mouse_update(bool *propagate_clicks) {
     }
 
     const float dpiScale = Osu::getUIScale();
-    auto resolution = osu->getScreenSize();
+    auto resolution = osu->getVirtScreenSize();
     this->setPos(0, 0);
     this->setSize(resolution);
 
@@ -218,7 +218,7 @@ void SpectatorScreen::mouse_update(bool *propagate_clicks) {
     this->background->setPos(resolution.x / 2.0 - bgsize.x / 2.0, resolution.y / 2.0 - bgsize.y / 2.0);
 
     {
-        auto screen = osu->getScreenSize();
+        auto screen = osu->getVirtScreenSize();
         bool is_widescreen = ((i32)(std::max(0, (i32)((screen.x - (screen.y * 4.f / 3.f)) / 2.f))) > 0);
         auto global_scale = is_widescreen ? (screen.x / 1366.f) : 1.f;
 

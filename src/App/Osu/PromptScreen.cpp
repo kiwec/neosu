@@ -99,7 +99,7 @@ void PromptScreen::prompt(const UString &msg, const PromptResponseCallback &call
     this->callback = callback;
     this->bVisible = true;
 
-    this->onResolutionChange(osu->getScreenSize());
+    this->onResolutionChange(osu->getVirtScreenSize());
 }
 
 void PromptScreen::on_ok() {

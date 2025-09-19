@@ -66,7 +66,7 @@ SongButton::~SongButton() {
 void SongButton::draw() {
     if(!this->bVisible) return;
     if(this->vPos.y + this->vSize.y < 0) return;
-    if(this->vPos.y > osu->getScreenHeight()) return;
+    if(this->vPos.y > osu->getVirtScreenHeight()) return;
 
     CarouselButton::draw();
 

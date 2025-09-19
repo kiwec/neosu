@@ -546,7 +546,7 @@ void SongBrowser::draw() {
 
     // draw background
     g->setColor(0xff000000);
-    g->fillRect(0, 0, osu->getScreenWidth(), osu->getScreenHeight());
+    g->fillRect(0, 0, osu->getVirtScreenWidth(), osu->getVirtScreenHeight());
 
     // refreshing (blocks every other call in draw() below it!)
     if(this->bBeatmapRefreshScheduled) {
@@ -555,8 +555,8 @@ void SongBrowser::draw() {
         g->setColor(0xffffffff);
         g->pushTransform();
         {
-            g->translate((int)(osu->getScreenWidth() / 2 - osu->getSubTitleFont()->getStringWidth(loadingMessage) / 2),
-                         osu->getScreenHeight() - 15);
+            g->translate((int)(osu->getVirtScreenWidth() / 2 - osu->getSubTitleFont()->getStringWidth(loadingMessage) / 2),
+                         osu->getVirtScreenHeight() - 15);
             g->drawString(osu->getSubTitleFont(), loadingMessage);
         }
         g->popTransform();
@@ -593,13 +593,13 @@ void SongBrowser::draw() {
         Image *backgroundImage = osu->getSkin()->getMenuBackground();
         if(backgroundImage != nullptr && backgroundImage != osu->getSkin()->getMissingTexture() &&
            backgroundImage->isReady()) {
-            const float scale = Osu::getImageScaleToFillResolution(backgroundImage, osu->getScreenSize());
+            const float scale = Osu::getImageScaleToFillResolution(backgroundImage, osu->getVirtScreenSize());
 
             g->setColor(0xffffffff);
             g->pushTransform();
             {
                 g->scale(scale, scale);
-                g->translate(osu->getScreenWidth() / 2, osu->getScreenHeight() / 2);
+                g->translate(osu->getVirtScreenWidth() / 2, osu->getVirtScreenHeight() / 2);
                 g->drawImage(backgroundImage);
             }
             g->popTransform();
@@ -607,7 +607,7 @@ void SongBrowser::draw() {
     }
 
     {
-        auto screen = osu->getScreenSize();
+        auto screen = osu->getVirtScreenSize();
         bool is_widescreen = ((i32)(std::max(0, (i32)((screen.x - (screen.y * 4.f / 3.f)) / 2.f))) > 0);
         f32 global_scale = screen.x / (is_widescreen ? 1366.f : 1024.f);
         f32 mode_osu_scale = global_scale * (osu->getSkin()->mode_osu->is_2x ? 0.5f : 1.f);
@@ -621,7 +621,7 @@ void SongBrowser::draw() {
         }
 
         g->setBlendMode(Graphics::BLEND_MODE::BLEND_MODE_ADDITIVE);
-        osu->getSkin()->mode_osu->drawRaw(vec2(osu->getScreenWidth() / 2, osu->getScreenHeight() / 2), mode_osu_scale,
+        osu->getSkin()->mode_osu->drawRaw(vec2(osu->getVirtScreenWidth() / 2, osu->getVirtScreenHeight() / 2), mode_osu_scale,
                                           AnchorPoint::CENTER);
         g->setBlendMode(Graphics::BLEND_MODE::BLEND_MODE_ALPHA);
     }
@@ -673,7 +673,7 @@ void SongBrowser::draw() {
                 const float strainWidth = strainStepMS / msPerPixel;
                 const float strainHeightMultiplier = cv::hud_scrubbing_timeline_strains_height.getFloat() * dpiScale;
 
-                McRect graphRect(0, osu->getScreenHeight() - (get_bottombar_height() + strainHeightMultiplier),
+                McRect graphRect(0, osu->getVirtScreenHeight() - (get_bottombar_height() + strainHeightMultiplier),
                                  graphWidth, strainHeightMultiplier);
 
                 const float alpha =
@@ -701,14 +701,14 @@ void SongBrowser::draw() {
                     if(!keyboard->isShiftDown()) {
                         g->setColor(aimStrainColor);
                         g->fillRect(i * strainWidth,
-                                    osu->getScreenHeight() - (get_bottombar_height() + aimStrainHeight),
+                                    osu->getVirtScreenHeight() - (get_bottombar_height() + aimStrainHeight),
                                     std::max(1.0f, std::round(strainWidth + 0.5f)), aimStrainHeight);
                     }
 
                     if(!keyboard->isControlDown()) {
                         g->setColor(speedStrainColor);
                         g->fillRect(i * strainWidth,
-                                    osu->getScreenHeight() -
+                                    osu->getVirtScreenHeight() -
                                         (get_bottombar_height() +
                                          ((keyboard->isShiftDown() ? 0 : aimStrainHeight) - speedStrainHeight)),
                                     std::max(1.0f, std::round(strainWidth + 0.5f)), speedStrainHeight + 1);
@@ -728,7 +728,7 @@ void SongBrowser::draw() {
 
                     vec2 topLeftCenter =
                         vec2(highestStrainIndex * strainWidth + strainWidth / 2.0f,
-                             osu->getScreenHeight() - (get_bottombar_height() + aimStrainHeight + speedStrainHeight));
+                             osu->getVirtScreenHeight() - (get_bottombar_height() + aimStrainHeight + speedStrainHeight));
 
                     const float margin = 5.0f * dpiScale;
 
@@ -757,11 +757,11 @@ void SongBrowser::draw() {
     g->setColor(0xffffffff);
     g->pushTransform();
     {
-        auto screen = osu->getScreenSize();
+        auto screen = osu->getVirtScreenSize();
         bool is_widescreen = ((i32)(std::max(0, (i32)((screen.x - (screen.y * 4.f / 3.f)) / 2.f))) > 0);
 
         Image *topbar = osu->getSkin()->songSelectTop;
-        f32 scale = (f32)osu->getScreenWidth() / (f32)topbar->getWidth();
+        f32 scale = (f32)osu->getVirtScreenWidth() / (f32)topbar->getWidth();
         if(!is_widescreen) scale /= 0.75;
 
         g->scale(scale, scale);
@@ -798,8 +798,8 @@ void SongBrowser::draw() {
         g->setColor(0xffff0000);
         g->pushTransform();
         {
-            g->translate((int)(osu->getScreenWidth() / 2 - osu->getSubTitleFont()->getStringWidth(errorMessage1) / 2),
-                         (int)(osu->getScreenHeight() / 2 + osu->getSubTitleFont()->getHeight()));
+            g->translate((int)(osu->getVirtScreenWidth() / 2 - osu->getSubTitleFont()->getStringWidth(errorMessage1) / 2),
+                         (int)(osu->getVirtScreenHeight() / 2 + osu->getSubTitleFont()->getHeight()));
             g->drawString(osu->getSubTitleFont(), errorMessage1);
         }
         g->popTransform();
@@ -807,8 +807,8 @@ void SongBrowser::draw() {
         g->setColor(0xff00ff00);
         g->pushTransform();
         {
-            g->translate((int)(osu->getScreenWidth() / 2 - osu->getSubTitleFont()->getStringWidth(errorMessage2) / 2),
-                         (int)(osu->getScreenHeight() / 2 + osu->getSubTitleFont()->getHeight() * 2 + 15));
+            g->translate((int)(osu->getVirtScreenWidth() / 2 - osu->getSubTitleFont()->getStringWidth(errorMessage2) / 2),
+                         (int)(osu->getVirtScreenHeight() / 2 + osu->getSubTitleFont()->getHeight() * 2 + 15));
             g->drawString(osu->getSubTitleFont(), errorMessage2);
         }
         g->popTransform();
@@ -822,7 +822,7 @@ void SongBrowser::draw() {
         Color topColor = 0x00ffffff;
         Color bottomColor = argb((int)(25 * this->fPulseAnimation), 255, 255, 255);
 
-        g->fillGradient(0, 0, osu->getScreenWidth(), osu->getScreenHeight(), topColor, topColor, bottomColor,
+        g->fillGradient(0, 0, osu->getVirtScreenWidth(), osu->getVirtScreenHeight(), topColor, topColor, bottomColor,
                         bottomColor);
     }
 }
@@ -832,14 +832,14 @@ void SongBrowser::drawSelectedBeatmapBackgroundImage(float alpha) {
         Image *backgroundImage = osu->getBackgroundImageHandler()->getLoadBackgroundImage(
             osu->getMapInterface()->beatmap);
         if(backgroundImage != nullptr && backgroundImage->isReady()) {
-            const float scale = Osu::getImageScaleToFillResolution(backgroundImage, osu->getScreenSize());
+            const float scale = Osu::getImageScaleToFillResolution(backgroundImage, osu->getVirtScreenSize());
 
             g->setColor(Color(0xff999999).setA(alpha));
 
             g->pushTransform();
             {
                 g->scale(scale, scale);
-                g->translate(osu->getScreenWidth() / 2, osu->getScreenHeight() / 2);
+                g->translate(osu->getVirtScreenWidth() / 2, osu->getVirtScreenHeight() / 2);
                 g->drawImage(backgroundImage);
             }
             g->popTransform();
@@ -1003,7 +1003,7 @@ void SongBrowser::mouse_update(bool *propagate_clicks) {
     // collections etc.)
     // NOTE: it's very slow, so only run it every 10 vsync frames
     if(engine->throttledShouldRun(10) && !osu->getOptionsMenu()->isVisible() &&
-       mouse->getPos().x < osu->getScreenWidth() * 0.1f && !this->contextMenu->isVisible()) {
+       mouse->getPos().x < osu->getVirtScreenWidth() * 0.1f && !this->contextMenu->isVisible()) {
         this->scheduled_scroll_to_selected_button = true;
     }
 
@@ -2079,7 +2079,7 @@ bool SongBrowser::searchMatcher(const DatabaseBeatmap *databaseBeatmap,
 void SongBrowser::updateLayout() {
     ScreenBackable::updateLayout();
 
-    auto screen = osu->getScreenSize();
+    auto screen = osu->getVirtScreenSize();
     bool is_widescreen = ((i32)(std::max(0, (i32)((screen.x - (screen.y * 4.f / 3.f)) / 2.f))) > 0);
     f32 global_scale = screen.x / (is_widescreen ? 1366.f : 1024.f);
 
@@ -2126,8 +2126,8 @@ void SongBrowser::updateLayout() {
     this->topbarLeft->update_pos();
 
     // topbar right
-    this->topbarRight->setPosX(osu->getScreenWidth() / 2);
-    this->topbarRight->setSize(osu->getScreenWidth() - this->topbarRight->getPos().x, 80.f * global_scale);
+    this->topbarRight->setPosX(osu->getVirtScreenWidth() / 2);
+    this->topbarRight->setSize(osu->getVirtScreenWidth() - this->topbarRight->getPos().x, 80.f * global_scale);
 
     float btn_margin = 10.f * dpiScale;
     this->sortButton->setSize(200.f * dpiScale, 30.f * dpiScale);
@@ -2173,13 +2173,13 @@ void SongBrowser::updateLayout() {
     this->carousel->setPos(this->topbarLeft->getPos().x + this->topbarLeft->getSize().x + 1,
                            this->topbarRight->getPos().y + (this->topbarRight->getSize().y * 0.9));
     this->carousel->setSize(
-        osu->getScreenWidth() - (this->topbarLeft->getPos().x + this->topbarLeft->getSize().x),
-        (osu->getScreenHeight() - this->carousel->getPos().y - (bottombar_get_hardcoded_height() * 0.75f)));
+        osu->getVirtScreenWidth() - (this->topbarLeft->getPos().x + this->topbarLeft->getSize().x),
+        (osu->getVirtScreenHeight() - this->carousel->getPos().y - (bottombar_get_hardcoded_height() * 0.75f)));
 
     this->updateSongButtonLayout();
 
-    this->search->setPos(osu->getScreenWidth() / 2, this->topbarRight->getSize().y + 8 * dpiScale);
-    this->search->setSize(osu->getScreenWidth() / 2, 20 * dpiScale);
+    this->search->setPos(osu->getVirtScreenWidth() / 2, this->topbarRight->getSize().y + 8 * dpiScale);
+    this->search->setSize(osu->getVirtScreenWidth() / 2, 20 * dpiScale);
 }
 
 void SongBrowser::onBack() { osu->toggleSongBrowser(); }
@@ -2187,7 +2187,7 @@ void SongBrowser::onBack() { osu->toggleSongBrowser(); }
 void SongBrowser::updateScoreBrowserLayout() {
     const float dpiScale = Osu::getUIScale();
 
-    auto screen = osu->getScreenSize();
+    auto screen = osu->getVirtScreenSize();
     bool is_widescreen = ((i32)(std::max(0, (i32)((screen.x - (screen.y * 4.f / 3.f)) / 2.f))) > 0);
     f32 global_scale = screen.x / (is_widescreen ? 1366.f : 1024.f);
 
@@ -2201,7 +2201,7 @@ void SongBrowser::updateScoreBrowserLayout() {
     /* TODO: use?
      * f32 back_btn_height = osu->getSkin()->getMenuBack2()->getSize().y;
      */
-    f32 browserHeight = osu->getScreenHeight() -
+    f32 browserHeight = osu->getVirtScreenHeight() -
                         (get_bottombar_height() + (this->topbarLeft->getPos().y + this->topbarLeft->getSize().y)) +
                         2 * dpiScale;
     this->scoreBrowser->setPos(this->topbarLeft->getPos().x + 2 * dpiScale,

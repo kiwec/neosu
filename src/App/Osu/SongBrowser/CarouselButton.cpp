@@ -105,7 +105,7 @@ void CarouselButton::drawMenuButtonBackground() {
 void CarouselButton::mouse_update(bool *propagate_clicks) {
     // Not correct, but clears most of the lag
     if(this->vPos.y + this->vSize.y < 0) return;
-    if(this->vPos.y > osu->getScreenHeight()) return;
+    if(this->vPos.y > osu->getVirtScreenHeight()) return;
 
     // HACKHACK: absolutely disgusting
     // temporarily fool CBaseUIElement with modified position and size

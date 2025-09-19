@@ -149,8 +149,8 @@ class GameRules {
     static constexpr const int OSU_COORD_HEIGHT = 384;
 
     static forceinline float getPlayfieldScaleFactor() {
-        const float &osu_screen_width = osu->getScreenSize().x;
-        const float &osu_screen_height = osu->getScreenSize().y;
+        const float &osu_screen_width = osu->getVirtScreenSize().x;
+        const float &osu_screen_height = osu->getVirtScreenSize().y;
         const float top_border_size = cv::playfield_border_top_percent.getFloat() * osu_screen_height;
         const float bottom_border_size = cv::playfield_border_bottom_percent.getFloat() * osu_screen_height;
 
@@ -168,8 +168,8 @@ class GameRules {
     }
 
     static inline vec2 getPlayfieldOffset() {
-        const float &osu_screen_width = osu->getScreenSize().x;
-        const float &osu_screen_height = osu->getScreenSize().y;
+        const float &osu_screen_width = osu->getVirtScreenSize().x;
+        const float &osu_screen_height = osu->getVirtScreenSize().y;
         const vec2 playfield_size = getPlayfieldSize();
         const float bottom_border_size = cv::playfield_border_bottom_percent.getFloat() * osu_screen_height;
 

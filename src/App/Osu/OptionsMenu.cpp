@@ -659,7 +659,7 @@ OptionsMenu::OptionsMenu() : ScreenBackable() {
 
     this->addSubSection("Layout");
     OPTIONS_ELEMENT resolutionSelect =
-        *this->addButton("Select Resolution", UString::format("%ix%i", osu->getScreenWidth(), osu->getScreenHeight()));
+        *this->addButton("Select Resolution", UString::format("%ix%i", osu->getVirtScreenWidth(), osu->getVirtScreenHeight()));
     this->resolutionSelectButton = (CBaseUIButton *)resolutionSelect.baseElems[0];
     this->resolutionSelectButton->setClickCallback(SA::MakeDelegate<&OptionsMenu::onResolutionSelect>(this));
     this->resolutionLabel = (CBaseUILabel *)resolutionSelect.baseElems[1];
@@ -1391,7 +1391,7 @@ void OptionsMenu::draw() {
             const short blue = std::clamp<float>(brightness * cv::background_color_b.getFloat(), 0.0f, 255.0f);
             if(brightness > 0.0f) {
                 g->setColor(argb(255, red, green, blue));
-                g->fillRect(0, 0, osu->getScreenWidth(), osu->getScreenHeight());
+                g->fillRect(0, 0, osu->getVirtScreenWidth(), osu->getVirtScreenHeight());
             }
         }
     }
@@ -1400,7 +1400,7 @@ void OptionsMenu::draw() {
         if(!isPlayingBeatmap) {
             const short dim = std::clamp<float>(this->backgroundDimSlider->getFloat(), 0.0f, 1.0f) * 255.0f;
             g->setColor(argb(dim, 0, 0, 0));
-            g->fillRect(0, 0, osu->getScreenWidth(), osu->getScreenHeight());
+            g->fillRect(0, 0, osu->getVirtScreenWidth(), osu->getVirtScreenHeight());
         }
     }
 
@@ -1854,27 +1854,27 @@ void OptionsMenu::updateLayout() {
 
     const float dpiScale = Osu::getUIScale();
 
-    this->setSize(osu->getScreenSize());
+    this->setSize(osu->getVirtScreenSize());
 
     // options panel
     const float optionsScreenWidthPercent = 0.5f;
     const float categoriesOptionsPercent = 0.135f;
 
-    int optionsWidth = (int)(osu->getScreenWidth() * optionsScreenWidthPercent);
+    int optionsWidth = (int)(osu->getVirtScreenWidth() * optionsScreenWidthPercent);
     if(!this->bFullscreen)
         optionsWidth = std::min((int)(725.0f * (1.0f - categoriesOptionsPercent)), optionsWidth) * dpiScale;
 
     const int categoriesWidth = optionsWidth * categoriesOptionsPercent;
 
     this->options->setRelPosX(
-        (!this->bFullscreen ? -1 : osu->getScreenWidth() / 2 - (optionsWidth + categoriesWidth) / 2) + categoriesWidth);
-    this->options->setSize(optionsWidth, osu->getScreenHeight() + 1);
+        (!this->bFullscreen ? -1 : osu->getVirtScreenWidth() / 2 - (optionsWidth + categoriesWidth) / 2) + categoriesWidth);
+    this->options->setSize(optionsWidth, osu->getVirtScreenHeight() + 1);
 
     this->search->setRelPos(this->options->getRelPos());
     this->search->setSize(this->options->getSize());
 
     this->categories->setRelPosX(this->options->getRelPos().x - categoriesWidth);
-    this->categories->setSize(categoriesWidth, osu->getScreenHeight() + 1);
+    this->categories->setSize(categoriesWidth, osu->getVirtScreenHeight() + 1);
 
     // reset
     this->options->getContainer()->invalidate();
@@ -2481,8 +2481,8 @@ void OptionsMenu::onSkinSelect() {
         if(!this->bVisible) {
             // Center context menu
             this->contextMenu->setPos(vec2{
-                osu->getScreenWidth() / 2.f - this->contextMenu->getSize().x / 2.f,
-                osu->getScreenHeight() / 2.f - this->contextMenu->getSize().y / 2.f,
+                osu->getVirtScreenWidth() / 2.f - this->contextMenu->getSize().x / 2.f,
+                osu->getVirtScreenHeight() / 2.f - this->contextMenu->getSize().y / 2.f,
             });
         }
     } else {

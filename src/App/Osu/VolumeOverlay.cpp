@@ -87,13 +87,13 @@ void VolumeOverlay::draw() {
     if(this->fVolumeChangeFade != 1.0f) {
         g->push3DScene(McRect(this->volumeMaster->getPos().x, this->volumeMaster->getPos().y,
                               this->volumeMaster->getSize().x,
-                              (osu->getScreenHeight() - this->volumeMaster->getPos().y) * 2.05f));
+                              (osu->getVirtScreenHeight() - this->volumeMaster->getPos().y) * 2.05f));
         g->rotate3DScene(-(1.0f - this->fVolumeChangeFade) * 90, 0, 0);
         g->translate3DScene(0, (this->fVolumeChangeFade * 60 - 60) * sizeMultiplier / 1.5f,
                             ((this->fVolumeChangeFade) * 500 - 500) * sizeMultiplier / 1.5f);
     }
 
-    this->volumeMaster->setPos(osu->getScreenSize() - this->volumeMaster->getSize() -
+    this->volumeMaster->setPos(osu->getVirtScreenSize() - this->volumeMaster->getSize() -
                                vec2(this->volumeMaster->getMinimumExtraTextWidth(), this->volumeMaster->getSize().y));
     this->volumeEffects->setPos(this->volumeMaster->getPos() -
                                 vec2(0, this->volumeEffects->getSize().y + 20 * sizeMultiplier));
@@ -109,7 +109,7 @@ void VolumeOverlay::mouse_update(bool *propagate_clicks) {
     this->volumeMaster->setEnabled(this->fVolumeChangeTime > engine->getTime());
     this->volumeEffects->setEnabled(this->volumeMaster->isEnabled());
     this->volumeMusic->setEnabled(this->volumeMaster->isEnabled());
-    this->volumeSliderOverlayContainer->setSize(osu->getScreenSize());
+    this->volumeSliderOverlayContainer->setSize(osu->getVirtScreenSize());
     this->volumeSliderOverlayContainer->mouse_update(propagate_clicks);
 
     if(!this->volumeMaster->isBusy())

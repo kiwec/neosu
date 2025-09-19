@@ -212,7 +212,7 @@ MainMenu::MainMenu() : OsuScreen() {
     this->bDidUserUpdateFromOlderVersion = this->bDrawVersionNotificationArrow;  // (same logic atm)
 
     this->setPos(-1, 0);
-    this->setSize(osu->getScreenWidth(), osu->getScreenHeight());
+    this->setSize(osu->getVirtScreenWidth(), osu->getVirtScreenHeight());
 
     this->cube = new CubeButton(this, 0, 0, 1, 1, "", "");
     this->cube->setClickCallback(SA::MakeDelegate<&MainMenu::onCubePressed>(this));
@@ -777,14 +777,14 @@ void MainMenu::draw() {
         Image *backgroundImage = osu->getSkin()->getMenuBackground();
         if(backgroundImage != nullptr && backgroundImage != osu->getSkin()->getMissingTexture() &&
            backgroundImage->isReady()) {
-            const float scale = Osu::getImageScaleToFillResolution(backgroundImage, osu->getScreenSize());
+            const float scale = Osu::getImageScaleToFillResolution(backgroundImage, osu->getVirtScreenSize());
 
             g->setColor(Color(0xffffffff).setA(this->fStartupAnim));
 
             g->pushTransform();
             {
                 g->scale(scale, scale);
-                g->translate(osu->getScreenWidth() / 2, osu->getScreenHeight() / 2);
+                g->translate(osu->getVirtScreenWidth() / 2, osu->getVirtScreenHeight() / 2);
                 g->drawImage(backgroundImage);
             }
             g->popTransform();
@@ -814,7 +814,7 @@ void MainMenu::draw() {
 
     // background_shader->enable();
     // background_shader->setUniform1f("time", engine->getTime());
-    // background_shader->setUniform2f("resolution", osu->getScreenWidth(), osu->getScreenHeight());
+    // background_shader->setUniform2f("resolution", osu->getVirtScreenWidth(), osu->getVirtScreenHeight());
     SongBrowser::drawSelectedBeatmapBackgroundImage(alpha);
     // background_shader->disable();
 
@@ -830,7 +830,7 @@ void MainMenu::draw() {
 
         const vec2 arrowPos = vec2(
             this->versionButton->getSize().x / 1.75f,
-            osu->getScreenHeight() - this->versionButton->getSize().y * 2 - this->versionButton->getSize().y * scale);
+            osu->getVirtScreenHeight() - this->versionButton->getSize().y * 2 - this->versionButton->getSize().y * scale);
 
         UString notificationText = "Changelog";
         g->setColor(0xffffffff);
@@ -1231,7 +1231,7 @@ CBaseUIContainer *MainMenu::setVisible(bool visible) {
 void MainMenu::updateLayout() {
     const float dpiScale = Osu::getUIScale();
 
-    this->vCenter = osu->getScreenSize() / 2.0f;
+    this->vCenter = osu->getVirtScreenSize() / 2.0f;
     const float size = Osu::getUIScale(324.0f);
     this->vSize = vec2(size, size);
 
@@ -1239,19 +1239,19 @@ void MainMenu::updateLayout() {
     this->cube->setSize(this->vSize);
 
     this->pauseButton->setSize(30 * dpiScale, 30 * dpiScale);
-    this->pauseButton->setRelPos(osu->getScreenWidth() - this->pauseButton->getSize().x * 2 - 10 * dpiScale,
+    this->pauseButton->setRelPos(osu->getVirtScreenWidth() - this->pauseButton->getSize().x * 2 - 10 * dpiScale,
                                  this->pauseButton->getSize().y + 10 * dpiScale);
 
     if(this->updateAvailableButton != nullptr) {
         this->updateAvailableButton->setSize(375 * dpiScale, 50 * dpiScale);
         this->updateAvailableButton->setPos(
-            osu->getScreenWidth() / 2 - this->updateAvailableButton->getSize().x / 2,
-            osu->getScreenHeight() - this->updateAvailableButton->getSize().y - 10 * dpiScale);
+            osu->getVirtScreenWidth() / 2 - this->updateAvailableButton->getSize().x / 2,
+            osu->getVirtScreenHeight() - this->updateAvailableButton->getSize().y - 10 * dpiScale);
     }
 
     this->versionButton->onResized();  // HACKHACK: framework, setSizeToContent() does not update string metrics
     this->versionButton->setSizeToContent(8 * dpiScale, 8 * dpiScale);
-    this->versionButton->setRelPos(-1, osu->getScreenSize().y - this->versionButton->getSize().y);
+    this->versionButton->setRelPos(-1, osu->getVirtScreenSize().y - this->versionButton->getSize().y);
 
     int numButtons = this->menuElements.size();
     int menuElementHeight = this->vSize.y / numButtons;
@@ -1280,7 +1280,7 @@ void MainMenu::updateLayout() {
             argb(offsetPercent * cv::main_menu_alpha.getFloat(), 0.0f, 0.0f, 0.0f));
     }
 
-    this->setSize(osu->getScreenSize() + vec2(1, 1));
+    this->setSize(osu->getVirtScreenSize() + vec2(1, 1));
     this->update_pos();
 }
 

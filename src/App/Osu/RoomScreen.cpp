@@ -191,7 +191,7 @@ RoomScreen::RoomScreen() : OsuScreen() {
     this->contextMenu = new UIContextMenu(50, 50, 150, 0, "", this->settings);
     this->addBaseUIElement(this->contextMenu);
 
-    this->updateLayout(osu->getScreenSize());
+    this->updateLayout(osu->getVirtScreenSize());
 }
 
 RoomScreen::~RoomScreen() {
@@ -562,7 +562,7 @@ void RoomScreen::on_map_change() {
         }
     }
 
-    this->updateLayout(osu->getScreenSize());
+    this->updateLayout(osu->getVirtScreenSize());
 }
 
 void RoomScreen::on_room_joined(Room room) {
@@ -588,7 +588,7 @@ void RoomScreen::on_room_joined(Room room) {
     osu->getMainMenu()->setVisible(false);
     osu->getLobby()->setVisible(false);
 
-    this->updateLayout(osu->getScreenSize());
+    this->updateLayout(osu->getVirtScreenSize());
     this->bVisible = true;
 
     RichPresence::setBanchoStatus(room.name.toUtf8(), MULTIPLAYER);
@@ -656,7 +656,7 @@ void RoomScreen::on_room_updated(Room room) {
     osu->getModSelector()->resetMods();
     osu->getModSelector()->enableModsFromFlags(BanchoState::room.mods | player_slot->mods);
 
-    this->updateLayout(osu->getScreenSize());
+    this->updateLayout(osu->getVirtScreenSize());
 }
 
 void RoomScreen::on_match_started(Room room) {
@@ -873,7 +873,7 @@ void RoomScreen::onWinConditionSelected(const UString & /*win_condition_str*/, i
     BanchoState::room.pack(&packet);
     BANCHO::Net::send_packet(packet);
 
-    this->updateLayout(osu->getScreenSize());
+    this->updateLayout(osu->getVirtScreenSize());
 }
 
 void RoomScreen::set_new_password(const UString &new_password) {
