@@ -365,6 +365,7 @@ bool SDLMain::createWindow() {
         // create gl debug context
         if(m_mArgMap.contains("-debugctx")) {
             SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
+            SDL_SetLogPriority(SDL_LOG_CATEGORY_VIDEO, SDL_LOG_PRIORITY_TRACE);
         }
     }
 
