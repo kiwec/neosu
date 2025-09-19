@@ -253,8 +253,7 @@ void ScoreboardSlot::draw() {
     g->popTransform();
 }
 
-void ScoreboardSlot::updateIndex(int new_index, bool animate) {
-    bool is_player = osu->getHUD()->player_slot == this;
+void ScoreboardSlot::updateIndex(int new_index, bool is_player, bool animate) {
     int player_idx = osu->getHUD()->player_slot->index;
     if(is_player) {
         if(animate && new_index < this->index) {

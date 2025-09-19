@@ -96,12 +96,10 @@ void HUD::draw() {
             auto map = pf->beatmap;
             this->drawStatistics(
                 osu->getScore()->getNumMisses(), osu->getScore()->getNumSliderBreaks(), pf->iMaxPossibleCombo,
-                this->live_stars, map->pp.total_stars, pf->getMostCommonBPM(),
-                pf->getApproachRateForSpeedMultiplier(), pf->getCS(),
-                pf->getOverallDifficultyForSpeedMultiplier(), pf->getHP(), pf->getNPS(),
-                pf->getND(), osu->getScore()->getUnstableRate(), this->live_pp, map->pp.pp,
-                ((int)pf->getHitWindow300() - 0.5f) *
-                    (1.0f / pf->getSpeedMultiplier()),  // see InfoLabel::update()
+                this->live_stars, map->pp.total_stars, pf->getMostCommonBPM(), pf->getApproachRateForSpeedMultiplier(),
+                pf->getCS(), pf->getOverallDifficultyForSpeedMultiplier(), pf->getHP(), pf->getNPS(), pf->getND(),
+                osu->getScore()->getUnstableRate(), this->live_pp, map->pp.pp,
+                ((int)pf->getHitWindow300() - 0.5f) * (1.0f / pf->getSpeedMultiplier()),  // see InfoLabel::update()
                 osu->getScore()->getHitErrorAvgCustomMin(), osu->getScore()->getHitErrorAvgCustomMax());
         }
         g->popTransform();
@@ -146,8 +144,7 @@ void HUD::draw() {
         // NOTE: moved to draw behind hitobjects in Beatmap::draw()
         if(cv::mod_fposu.getBool()) {
             if(cv::draw_hiterrorbar.getBool() &&
-               (pf == nullptr ||
-                (!pf->isSpinnerActive() || !cv::hud_hiterrorbar_hide_during_spinner.getBool())) &&
+               (pf == nullptr || (!pf->isSpinnerActive() || !cv::hud_hiterrorbar_hide_during_spinner.getBool())) &&
                !pf->isLoading()) {
                 this->drawHitErrorBar(pf->getHitWindow300(), pf->getHitWindow100(), pf->getHitWindow50(),
                                       GameRules::getHitWindowMiss(), osu->getScore()->getUnstableRate());
@@ -161,13 +158,11 @@ void HUD::draw() {
         // dynamic hud scaling updates
         this->fScoreHeight = osu->getSkin()->getScore0()->getHeight() * this->getScoreScale();
 
-        if(cv::draw_progressbar.getBool())
-            this->drawProgressBar(pf->getPercentFinishedPlayable(), pf->isWaiting());
+        if(cv::draw_progressbar.getBool()) this->drawProgressBar(pf->getPercentFinishedPlayable(), pf->isWaiting());
 
         if(cv::draw_accuracy.getBool()) this->drawAccuracy(osu->getScore()->getAccuracy() * 100.0f);
 
-        if(osu->getModTarget() && cv::draw_target_heatmap.getBool())
-            this->drawTargetHeatmap(pf->fHitcircleDiameter);
+        if(osu->getModTarget() && cv::draw_target_heatmap.getBool()) this->drawTargetHeatmap(pf->fHitcircleDiameter);
     } else if(!cv::hud_shift_tab_toggles_everything.getBool()) {
         if(cv::draw_inputoverlay.getBool()) {
             const bool isAutoClicking = (osu->getModAuto() || osu->getModRelax());
@@ -179,8 +174,7 @@ void HUD::draw() {
         // NOTE: moved to draw behind hitobjects in Beatmap::draw()
         if(cv::mod_fposu.getBool()) {
             if(cv::draw_hiterrorbar.getBool() &&
-               (pf == nullptr ||
-                (!pf->isSpinnerActive() || !cv::hud_hiterrorbar_hide_during_spinner.getBool())) &&
+               (pf == nullptr || (!pf->isSpinnerActive() || !cv::hud_hiterrorbar_hide_during_spinner.getBool())) &&
                !pf->isLoading()) {
                 this->drawHitErrorBar(pf->getHitWindow300(), pf->getHitWindow100(), pf->getHitWindow50(),
                                       GameRules::getHitWindowMiss(), osu->getScore()->getUnstableRate());
@@ -233,8 +227,8 @@ void HUD::draw() {
             true_percent = std::clamp(pf->getTime() / true_length, 0.f, 1.f);
         }
 
-        this->drawScrubbingTimeline(pf->getTime(), pf->getLengthPlayable(), pf->getStartTimePlayable(),
-                                    true_percent, breaks);
+        this->drawScrubbingTimeline(pf->getTime(), pf->getLengthPlayable(), pf->getStartTimePlayable(), true_percent,
+                                    breaks);
     }
 
     if(!osu->isSkipScheduled() && pf->isInSkippableSection() &&
@@ -242,7 +236,8 @@ void HUD::draw() {
         (cv::skip_breaks_enabled.getBool() && pf->iCurrentHitObjectIndex > 0)))
         this->drawSkip();
 
-    u32 nb_spectators = BanchoState::spectating ? BanchoState::fellow_spectators.size() : BanchoState::spectators.size();
+    u32 nb_spectators =
+        BanchoState::spectating ? BanchoState::fellow_spectators.size() : BanchoState::spectators.size();
     if(nb_spectators > 0 && cv::draw_spectator_list.getBool()) {
         // XXX: maybe draw player names? avatars?
         const UString str = UString::format("%d spectators", nb_spectators);
@@ -614,7 +609,8 @@ void HUD::drawFps() {
             g->setColor(argb(1.0f, 1.0f, 0.26f * pulse, 0.26f * pulse));
         }
 
-        g->translate(osu->getVirtScreenWidth() - font->getStringWidth(msString) - margin, osu->getVirtScreenHeight() - margin);
+        g->translate(osu->getVirtScreenWidth() - font->getStringWidth(msString) - margin,
+                     osu->getVirtScreenHeight() - margin);
         g->drawString(font, msString);
     }
     g->popTransform();
@@ -958,7 +954,8 @@ void HUD::drawCombo(int combo) {
     g->pushTransform();
     {
         g->scale(scale, scale);
-        g->translate(offset, osu->getVirtScreenHeight() - osu->getSkin()->getCombo0()->getHeight() * scale / 2.0f, 0.0f);
+        g->translate(offset, osu->getVirtScreenHeight() - osu->getSkin()->getCombo0()->getHeight() * scale / 2.0f,
+                     0.0f);
         this->drawComboNumber(combo, scale);
 
         // draw 'x' at the end
@@ -1176,8 +1173,8 @@ void HUD::drawSkip() {
     const float scale = cv::hud_scale.getFloat();
 
     g->setColor(0xffffffff);
-    osu->getSkin()->getPlaySkip()->draw(osu->getVirtScreenSize() - (osu->getSkin()->getPlaySkip()->getSize() / 2.f) * scale,
-                                        cv::hud_scale.getFloat());
+    osu->getSkin()->getPlaySkip()->draw(
+        osu->getVirtScreenSize() - (osu->getSkin()->getPlaySkip()->getSize() / 2.f) * scale, cv::hud_scale.getFloat());
 }
 
 void HUD::drawWarningArrow(vec2 pos, bool flipVertically, bool originLeft) {
@@ -1315,7 +1312,8 @@ std::vector<SCORE_ENTRY> HUD::getCurrentScores() {
         nb_slots++;
     }
 
-    WinCondition sorting_type = BanchoState::is_in_a_multi_room() ? (WinCondition)BanchoState::room.win_condition : SCOREV1;
+    WinCondition sorting_type =
+        BanchoState::is_in_a_multi_room() ? (WinCondition)BanchoState::room.win_condition : SCOREV1;
     std::ranges::sort(scores, [sorting_type](const SCORE_ENTRY &a, const SCORE_ENTRY &b) {
         if(sorting_type == ACCURACY) {
             return a.accuracy > b.accuracy;
@@ -1337,16 +1335,13 @@ void HUD::resetScoreboard() {
 
     this->beatmap_md5 = map->getMD5Hash();
     this->player_slot = nullptr;
-    for(auto slot : this->slots) {
-        delete slot;
-    }
     this->slots.clear();
 
     int player_entry_id = BanchoState::is_in_a_multi_room() ? BanchoState::get_uid() : 0;
     auto scores = this->getCurrentScores();
     int i = 0;
     for(const auto &score : scores) {
-        auto slot = new ScoreboardSlot(score, i);
+        auto slot = std::make_shared<ScoreboardSlot>(score, i);
         if(score.entry_id == player_entry_id) {
             this->player_slot = slot;
         }
@@ -1370,7 +1365,7 @@ void HUD::updateScoreboard(bool animate) {
     for(int i = 0; i < new_scores.size(); i++) {
         if(new_scores[i].entry_id != this->player_slot->score.entry_id) continue;
 
-        this->player_slot->updateIndex(i, animate);
+        this->player_slot->updateIndex(i, true, animate);
         this->player_slot->score = new_scores[i];
         break;
     }
@@ -1379,10 +1374,10 @@ void HUD::updateScoreboard(bool animate) {
     for(int i = 0; i < new_scores.size(); i++) {
         if(new_scores[i].entry_id == this->player_slot->score.entry_id) continue;
 
-        for(auto slot : this->slots) {
+        for(const auto &slot : this->slots) {
             if(slot->score.entry_id != new_scores[i].entry_id) continue;
 
-            slot->updateIndex(i, animate);
+            slot->updateIndex(i, false, animate);
             slot->score = new_scores[i];
             break;
         }
@@ -1390,7 +1385,7 @@ void HUD::updateScoreboard(bool animate) {
 }
 
 void HUD::drawFancyScoreboard() {
-    for(auto slot : this->slots) {
+    for(const auto &slot : this->slots) {
         slot->draw();
     }
 }
@@ -1461,8 +1456,8 @@ void HUD::drawHitErrorBar(float hitWindow300, float hitWindow100, float hitWindo
     if(cv::draw_hiterrorbar_bottom.getBool()) {
         g->pushTransform();
         {
-            const vec2 localCenter = vec2(
-                center.x, center.y - (osu->getVirtScreenHeight() * cv::hud_hiterrorbar_offset_bottom_percent.getFloat()));
+            const vec2 localCenter = vec2(center.x, center.y - (osu->getVirtScreenHeight() *
+                                                                cv::hud_hiterrorbar_offset_bottom_percent.getFloat()));
 
             this->drawHitErrorBarInt2(localCenter, ur);
             g->translate(localCenter.x, localCenter.y);
@@ -2103,12 +2098,12 @@ void HUD::drawScrubbingTimeline(u32 beatmapTime, u32 beatmapLengthPlayable, u32 
     UString currentTimeText = UString::format("%i:%02i", (beatmapTime / 1000) / 60, (beatmapTime / 1000) % 60);
     g->pushTransform();
     {
-        g->translate(
-            std::clamp<f32>(
-                triangleTip.x - timeFont->getStringWidth(currentTimeText) / 2.0f, currentTimeLeftRightTextOffset,
-                osu->getVirtScreenWidth() - timeFont->getStringWidth(currentTimeText) - currentTimeLeftRightTextOffset) +
-                1,
-            triangleTip.y - osu->getSkin()->getSeekTriangle()->getHeight() - currentTimeTopTextOffset + 1);
+        g->translate(std::clamp<f32>(triangleTip.x - timeFont->getStringWidth(currentTimeText) / 2.0f,
+                                     currentTimeLeftRightTextOffset,
+                                     osu->getVirtScreenWidth() - timeFont->getStringWidth(currentTimeText) -
+                                         currentTimeLeftRightTextOffset) +
+                         1,
+                     triangleTip.y - osu->getSkin()->getSeekTriangle()->getHeight() - currentTimeTopTextOffset + 1);
         g->setColor(Color(0xff000000).setA(galpha));
 
         g->drawString(timeFont, currentTimeText);
@@ -2203,9 +2198,10 @@ void HUD::drawScrubbingTimeline(u32 beatmapTime, u32 beatmapLengthPlayable, u32 
     g->pushTransform();
     {
         g->translate(
-            (i32)std::clamp<f32>(
-                triangleTip.x - timeFont->getStringWidth(currentTimeText) / 2.0f, currentTimeLeftRightTextOffset,
-                osu->getVirtScreenWidth() - timeFont->getStringWidth(currentTimeText) - currentTimeLeftRightTextOffset) +
+            (i32)std::clamp<f32>(triangleTip.x - timeFont->getStringWidth(currentTimeText) / 2.0f,
+                                 currentTimeLeftRightTextOffset,
+                                 osu->getVirtScreenWidth() - timeFont->getStringWidth(currentTimeText) -
+                                     currentTimeLeftRightTextOffset) +
                 1,
             (i32)(triangleTip.y - osu->getSkin()->getSeekTriangle()->getHeight() - timeFont->getHeight() * 1.2f -
                   currentTimeTopTextOffset *
@@ -2476,8 +2472,8 @@ void HUD::animateKiExplode() {
 }
 
 void HUD::addCursorTrailPosition(std::vector<CURSORTRAIL> &trail, vec2 pos) {
-    if(pos.x < -osu->getVirtScreenWidth() || pos.x > osu->getVirtScreenWidth() * 2 || pos.y < -osu->getVirtScreenHeight() ||
-       pos.y > osu->getVirtScreenHeight() * 2)
+    if(pos.x < -osu->getVirtScreenWidth() || pos.x > osu->getVirtScreenWidth() * 2 ||
+       pos.y < -osu->getVirtScreenHeight() || pos.y > osu->getVirtScreenHeight() * 2)
         return;  // fuck oob trails
 
     Image *trailImage = osu->getSkin()->getCursorTrail();
