@@ -28,9 +28,16 @@ Changelog::Changelog() : ScreenBackable() {
     std::vector<CHANGELOG> changelogs;
 
     CHANGELOG v41_02;
-    v41_02.title = "41.02" __DATE__;
+    v41_02.title = "41.02 (2025-09-20)";
     v41_02.changes = {
-        R"()",
+        R"(- Added "Open Beatmap Folder" button)",
+        R"(- Fixed beatmap combo color setting not getting imported)",
+        R"(- Fixed pressing F8/F9 while offline not opening settings menu)",
+        R"(- Fixed score submission warning showing more than once while seeking)",
+        R"(- Moved "Online" section to the top of the settings menu)",
+        R"(- Score filtering method is now saved across restarts)",
+        R"(- Shift-hovering a score now shows which client created it)",
+        R"(- More rendering performance optimizations)",
     };
     changelogs.push_back(v41_02);
 
