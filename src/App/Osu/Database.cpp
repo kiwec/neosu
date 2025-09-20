@@ -697,7 +697,11 @@ DatabaseBeatmap *Database::getBeatmapDifficulty(i32 map_id) {
 }
 
 DatabaseBeatmap *Database::getBeatmapSet(i32 set_id) {
-    if(this->isLoading()) return nullptr;
+    if(this->isLoading()) {
+        debugLog("we are loading, progress {}, not returning a DatabaseBeatmap*\n",
+                 this->getProgress());
+        return nullptr;
+    }
 
     for(const auto &beatmap : this->beatmapsets) {
         if(beatmap->getSetID() == set_id) {

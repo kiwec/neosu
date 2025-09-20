@@ -240,17 +240,18 @@ void download(const char* url, float* progress, std::vector<u8>& out, int* respo
 
 i32 extract_beatmapset_id(const u8* data, size_t data_s) {
     debugLog("Reading beatmapset ({:d} bytes)\n", data_s);
+    i32 set_id = -1;
 
     Archive archive(data, data_s);
     if(!archive.isValid()) {
         debugLog("Failed to open .osz file\n");
-        return -1;
+        return set_id;
     }
 
     auto entries = archive.getAllEntries();
     if(entries.empty()) {
         debugLog(".osz file is empty!\n");
-        return -1;
+        return set_id;
     }
 
     for(const auto& entry : entries) {
@@ -262,11 +263,11 @@ i32 extract_beatmapset_id(const u8* data, size_t data_s) {
         auto osu_data = entry.extractToMemory();
         if(osu_data.empty()) continue;
 
-        i32 set_id = get_beatmapset_id_from_osu_file(osu_data.data(), osu_data.size());
-        if(set_id != -1) return set_id;
+        set_id = get_beatmapset_id_from_osu_file(osu_data.data(), osu_data.size());
+        if(set_id != -1) break;
     }
 
-    return -1;
+    return set_id;
 }
 
 bool extract_beatmapset(const u8* data, size_t data_s, std::string& map_dir) {

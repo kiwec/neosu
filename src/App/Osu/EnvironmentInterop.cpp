@@ -51,7 +51,7 @@ void handle_osz(const char *osz_path) {
         return;
     }
 
-    db->addBeatmapSet(mapset_dir);
+    db->addBeatmapSet(mapset_dir, set_id);
     if(!osu->getSongBrowser()->selectBeatmapset(set_id)) {
         osu->getNotificationOverlay()->addToast("Failed to import beatmapset", ERROR_TOAST);
         return;

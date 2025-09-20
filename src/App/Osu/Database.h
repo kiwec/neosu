@@ -84,7 +84,7 @@ class Database {
     static unsigned long long getRequiredScoreForLevel(int level);
     static int getLevelForScore(unsigned long long score, int maxLevel = 120);
 
-    inline float getProgress() const { return this->fLoadingProgress.load(); }
+    inline float getProgress() const { return this->fLoadingProgress.load(std::memory_order_acquire); }
     inline bool isLoading() const {
         float progress = this->getProgress();
         return progress > 0.f && progress < 1.f;
