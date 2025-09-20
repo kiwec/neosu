@@ -147,7 +147,6 @@ class MainMenu : public OsuScreen, public MouseListener {
     DatabaseBeatmap *currentMap{nullptr};
     DatabaseBeatmap *lastMap{nullptr};
     Shader *background_shader = nullptr;
-    f64 mapChangedTime{0.0};
     f32 mapFadeAnim{1.f};
     std::vector<BeatmapSet *> preloadedMaps;
 

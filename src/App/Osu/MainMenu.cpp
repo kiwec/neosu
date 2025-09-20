@@ -816,7 +816,6 @@ void MainMenu::draw() {
 
         // Check if we need to update the background
         if(this->mapFadeAnim == 1.f && this->currentMap != osu->getMapInterface()->beatmap) {
-            this->mapChangedTime = engine->getTime();
             this->lastMap = this->currentMap;
             this->currentMap = osu->getMapInterface()->beatmap;
             this->mapFadeAnim = 0.f;
@@ -1204,6 +1203,13 @@ CBaseUIContainer *MainMenu::setVisible(bool visible) {
     this->bVisible = visible;
 
     if(visible) {
+        // Clear background change animation, to avoid "fade" when backing out from song browser
+        {
+            this->currentMap = osu->getMapInterface()->beatmap;
+            anim->deleteExistingAnimation(&this->mapFadeAnim);
+            this->mapFadeAnim = 1.f;
+        }
+
         RichPresence::onMainMenu();
 
         if(!BanchoState::spectators.empty()) {
