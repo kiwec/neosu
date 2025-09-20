@@ -792,7 +792,7 @@ void MainMenu::drawMapBackground(DatabaseBeatmap *beatmap, f32 alpha) {
         bg = osu->getBackgroundImageHandler()->getLoadBackgroundImage(beatmap, true);
     }
 
-    if(bg == nullptr || !bg->isReady()) return;
+    if(bg == nullptr || !bg->isReady() || bg == MISSING_TEXTURE) return;
 
     g->pushTransform();
     {
