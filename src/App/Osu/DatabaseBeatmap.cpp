@@ -1109,6 +1109,7 @@ bool DatabaseBeatmap::loadMetadata(bool compute_md5) {
             case 1: {
                 Parsing::parse(curLineChar, "Title", ':', &this->sTitle);
                 Parsing::parse(curLineChar, "TitleUnicode", ':', &this->sTitleUnicode);
+                Parsing::parse(curLineChar, "Artist", ':', &this->sArtist);
                 Parsing::parse(curLineChar, "ArtistUnicode", ':', &this->sArtistUnicode);
                 Parsing::parse(curLineChar, "Creator", ':', &this->sCreator);
                 Parsing::parse(curLineChar, "Version", ':', &this->sDifficultyName);
