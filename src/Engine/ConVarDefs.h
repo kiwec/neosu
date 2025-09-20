@@ -149,7 +149,7 @@ CONVAR(snd_updateperiod, "snd_updateperiod", 10, CLIENT, "BASS_CONFIG_UPDATEPERI
 CONVAR(snd_file_min_size, "snd_file_min_size", 64, CLIENT,
        "minimum file size in bytes for WAV files to be considered valid (everything below will "
        "fail to load), this is a workaround for BASS crashes");
-CONVAR(snd_force_load_unknown, "snd_force_load_unknown", false, CLIENT, "force loading of assumed invalid audio files");
+CONVAR(snd_force_load_unknown, "snd_force_load_unknown", true, CLIENT, "force loading of assumed invalid audio files");
 CONVAR(snd_freq, "snd_freq", 44100, CLIENT | NOLOAD | NOSAVE, "output sampling rate in Hz");
 CONVAR(snd_soloud_buffer, "snd_soloud_buffer", 0, CLIENT | NOSAVE,
        "SoLoud audio device buffer size (recommended to leave this on 0/auto)");
