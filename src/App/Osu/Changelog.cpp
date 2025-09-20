@@ -30,7 +30,7 @@ Changelog::Changelog() : ScreenBackable() {
     CHANGELOG v41_02;
     v41_02.title = "41.02 (2025-09-20)";
     v41_02.changes = {
-        R"(- Added "Open Beatmap Folder" button)",
+        R"(- Added "Open Beatmap Folder" context menu option)",
         R"(- Added transition animation for main menu background)",
         R"(- Fixed beatmap combo color setting not getting imported)",
         R"(- Fixed pressing F8/F9 while offline not opening settings menu)",
