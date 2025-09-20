@@ -442,24 +442,71 @@ void OpenGLLegacyInterface::drawVAO(VertexArrayObject *vao) {
         return;
     }
 
-    const std::vector<vec3> &vertices = vao->getVertices();
-    const std::vector<vec3> &normals = vao->getNormals();
-    const std::vector<std::vector<vec2>> &texcoords = vao->getTexcoords();
-    const std::vector<Color> &colors = vao->getColors();
+    // fetch data references
+    const auto &vertices = vao->getVertices();
+    const auto &texcoords = vao->getTexcoords();
+    const auto &normals = vao->getNormals();
+    const auto &colors = vao->getColors();
 
-    glBegin(SDLGLInterface::primitiveToOpenGLMap[vao->getPrimitive()]);
-    for(size_t i = 0; i < vertices.size(); i++) {
-        if(i < colors.size()) setColor(colors[i]);
+    size_t drawCount = vertices.size();
 
-        for(size_t t = 0; t < texcoords.size(); t++) {
-            if(i < texcoords[t].size()) glMultiTexCoord2f(GL_TEXTURE0 + t, texcoords[t][i].x, texcoords[t][i].y);
-        }
-
-        if(i < normals.size()) glNormal3f(normals[i].x, normals[i].y, normals[i].z);
-
-        glVertex3f(vertices[i].x, vertices[i].y, vertices[i].z);
+    // only texture unit 0 handled atm (all that's actually used anyways)
+    if(vao->hasTexcoords() && !texcoords.empty() && !texcoords[0].empty()) {
+        drawCount = std::min(drawCount, texcoords[0].size());
     }
-    glEnd();
+    if(!normals.empty()) {
+        drawCount = std::min(drawCount, normals.size());
+    }
+    if(!colors.empty()) {
+        drawCount = std::min(drawCount, colors.size());
+    }
+
+    if(drawCount == 0) {
+        return;
+    }
+
+    // unbind any previous VBO/VAO to ensure client-side arrays are used correctly
+    OpenGLStateCache::bindArrayBuffer(0);
+    if(cv::r_opengl_legacy_vao_use_vertex_array.getBool()) {
+        glBindVertexArray(0);
+    }
+
+    // enable and set vertex array (always present)
+    OpenGLStateCache::enableClientState(GL_VERTEX_ARRAY);
+    glVertexPointer(3, GL_FLOAT, 0, vertices.data());
+
+    // handle texcoords (only unit 0)
+    if(vao->hasTexcoords() && !texcoords.empty() && !texcoords[0].empty()) {
+        OpenGLStateCache::enableClientState(GL_TEXTURE_COORD_ARRAY);
+        glTexCoordPointer(2, GL_FLOAT, 0, texcoords[0].data());
+    } else {
+        OpenGLStateCache::disableClientState(GL_TEXTURE_COORD_ARRAY);
+    }
+
+    // handle colors (create temporary swapped buffer for correct RGBA byte order)
+    // TODO: just store them properly in the first place
+    std::vector<Color> swapped_colors;
+    if(!colors.empty()) {
+        swapped_colors.reserve(drawCount);
+        for(size_t i = 0; i < drawCount; ++i) {
+            swapped_colors.push_back(abgr(colors[i]));
+        }
+        OpenGLStateCache::enableClientState(GL_COLOR_ARRAY);
+        glColorPointer(4, GL_UNSIGNED_BYTE, 0, swapped_colors.data());
+    } else {
+        OpenGLStateCache::disableClientState(GL_COLOR_ARRAY);
+    }
+
+    // handle normals
+    if(!normals.empty()) {
+        OpenGLStateCache::enableClientState(GL_NORMAL_ARRAY);
+        glNormalPointer(GL_FLOAT, 0, normals.data());
+    } else {
+        OpenGLStateCache::disableClientState(GL_NORMAL_ARRAY);
+    }
+
+    // draw using client-side arrays
+    glDrawArrays(SDLGLInterface::primitiveToOpenGLMap[vao->getPrimitive()], 0, static_cast<GLint>(drawCount));
 }
 
 void OpenGLLegacyInterface::setClipRect(McRect clipRect) {

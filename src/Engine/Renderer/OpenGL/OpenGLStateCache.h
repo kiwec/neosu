@@ -32,6 +32,11 @@ class OpenGLStateCache final {
     static void getCurrentViewport(int &x, int &y, int &width, int &height);
     [[nodiscard]] inline static const std::array<int, 4> &getCurrentViewport() { return iViewport; }
 
+    static void bindArrayBuffer(unsigned int GLbuffer);
+
+    static void enableClientState(unsigned int GLarray);
+    static void disableClientState(unsigned int GLarray);
+
     // initialize cache with actual GL states (once at startup)
     static void initialize();
 
@@ -39,11 +44,14 @@ class OpenGLStateCache final {
     static void refresh();
 
    private:
-    static std::array<int, 4> iViewport;
-
     // cache
+    static std::array<int, 4> iViewport;
+    static std::array<unsigned int, 4> iEnabledStateArray;
+
     static int iCurrentProgram;
     static int iCurrentFramebuffer;
+
+    static unsigned int iCurrentArrayBuffer;
 };
 
 #endif
