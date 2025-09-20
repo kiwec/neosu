@@ -3792,7 +3792,7 @@ bool OptionsMenu::should_use_oauth_login() {
         "neosu.net"sv,
     };
 
-    const auto server_endpoint = this->serverTextbox->getText().utf8View();
+    const std::string server_endpoint{this->serverTextbox->getText().toUtf8()};
     if (server_endpoint.empty() || !std::ranges::contains(oauth_servers, server_endpoint)) {
         return false;
     }
