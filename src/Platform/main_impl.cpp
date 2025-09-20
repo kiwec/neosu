@@ -548,7 +548,7 @@ void SDLMain::setupLogging() {
                 default:
                     break;
             }
-            printf("SDL[%s]: %s\n", catStr, message);
+            Engine::logRaw("SDL[{}]: {}\n", catStr, message);
         },
         nullptr);
 }

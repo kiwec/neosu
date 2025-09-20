@@ -133,7 +133,6 @@ const ConVarString &ConVar::getString() const {
     return this->sClientValue;
 }
 
-
 void ConVar::setDefaultDouble(double defaultValue) {
     this->dDefaultValue = defaultValue;
     this->sDefaultValue = fmt::format("{:g}", defaultValue);
@@ -150,6 +149,7 @@ void ConVar::setDefaultString(const std::string_view &defaultValue) {
 }
 
 bool ConVar::onSetValueGameplay(CvarEditor editor) {
+    if(!osu) return true;  // osu may have been destroyed while shutting down
     // Only SERVER can edit GAMEPLAY cvars during multiplayer matches
     if(BanchoState::is_playing_a_multi_map() && editor != CvarEditor::SERVER) {
         debugLog("Can't edit {} while in a multiplayer match.\n", this->sName);
@@ -263,13 +263,13 @@ ConVarString ConVarHandler::flagsToString(uint8_t flags) {
     if((flags & cv::NOSAVE) == cv::NOSAVE) string.append(" nosave");
     if((flags & cv::NOLOAD) == cv::NOLOAD) string.append(" noload");
 
-    string.pop_back(); // remove leading space
+    string.pop_back();  // remove leading space
 
     return string;
 }
 
-std::vector<ConVar*> ConVarHandler::getNonSubmittableCvars() const {
-    std::vector<ConVar*> list;
+std::vector<ConVar *> ConVarHandler::getNonSubmittableCvars() const {
+    std::vector<ConVar *> list;
 
     for(const auto &cv : _getGlobalConVarArray()) {
         if(!cv->isProtected()) continue;
@@ -319,7 +319,6 @@ void ConVarHandler::resetSkinCvars() {
         cv->hasSkinValue.store(false, std::memory_order_release);
     }
 }
-
 
 //*****************************//
 //	ConVarHandler ConCommands  //
@@ -642,20 +641,20 @@ static void _dumpcommands(void) {
     </cv-header>
     <cv-description>{}</cv-description>
     <cv-flags>{}</cv-flags>
-</div>)", var->getName(), var->getFancyDefaultValue(), var->getHelpstring(), flags));
+</div>)",
+                                var->getName(), var->getFancyDefaultValue(), var->getHelpstring(), flags));
     }
     html.append(R"(</section>)");
 
     html.append(fmt::format(R"(<p style="text-align:center">
         This page was generated on {:%Y-%m-%d} for neosu v{:.2f}.<br>
         Use the <code>dumpcommands</code> command to regenerate it yourself.
-    </p>)", fmt::gmtime(std::time(nullptr)), cv::version.getDouble()));
-
+    </p>)",
+                            fmt::gmtime(std::time(nullptr)), cv::version.getDouble()));
 
     std::string marker = "{{CONVARS_HERE}}";
     size_t pos = html_template.find(marker);
     html_template.replace(pos, marker.length(), html);
-
 
     FILE *file = fopen("variables.htm", "w");
     if(file == nullptr) {
@@ -722,9 +721,9 @@ void loudness_cb(const UString & /*oldValue*/, const UString & /*newValue*/) {
     }
 }
 
-void _save(void) { db->save(); }
+void _save(void) { db ? db->save() : (void)0; }
 
-void _update(void) { osu->getUpdateHandler()->checkForUpdates(true); }
+void _update(void) { (osu && osu->getUpdateHandler()) ? osu->getUpdateHandler()->checkForUpdates(true) : (void)0; }
 
 #undef CONVARDEFS_H
 #define DEFINE_CONVARS

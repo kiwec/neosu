@@ -49,19 +49,19 @@ class VisualProfiler : public CBaseUIElement {
 
    private:
     struct NODE {
-        const ProfilerNode *node;
-        int depth;
+        const ProfilerNode *node{nullptr};
+        int depth{-1};
     };
 
     struct SPIKE {
         NODE node;
-        double timeLastFrame;
-        u32 id;
+        double timeLastFrame{0.};
+        u32 id{0};
     };
 
     struct GROUP {
-        const char *name;
-        int id;
+        const char *name{nullptr};
+        int id{-1};
         Color color;
     };
 

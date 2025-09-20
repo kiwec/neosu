@@ -375,13 +375,11 @@ void VisualProfiler::mouse_update(bool *propagate_clicks) {
 
     if(cv::debug_vprof.getBool() || cv::vprof_spike.getBool()) {
         if(!isFrozen) {
-            SPIKE spike;
-            {
-                spike.node.depth = -1;
-                spike.node.node = nullptr;
-                spike.timeLastFrame = 0.0;
-                spike.id = this->spikeIDCounter++;
-            }
+            SPIKE spike{
+                .node = {.node = nullptr, .depth = -1},
+                .timeLastFrame = 0.0,
+                .id = this->spikeIDCounter++,
+            };
 
             // run regular debug node collector
             this->nodes.clear();
@@ -601,10 +599,10 @@ void VisualProfiler::collectProfilerNodesRecursive(const ProfilerNode *node, int
 
     // add node (ignore root 0)
     if(depth > 0) {
-        NODE entry;
-
-        entry.node = node;
-        entry.depth = depth;
+        NODE entry{
+            .node = node,
+            .depth = depth
+        };
 
         nodes.push_back(entry);
 
@@ -629,11 +627,10 @@ void VisualProfiler::collectProfilerNodesSpikeRecursive(const ProfilerNode *node
 
     // add spike node (ignore root 0)
     if(depth > 0) {
-        SPIKE spike;
-
-        spike.node.node = node;
-        spike.node.depth = depth;
-        spike.timeLastFrame = node->getTimeLastFrame();
+        SPIKE spike{
+            .node = {.node = node, .depth = depth},
+            .timeLastFrame = node->getTimeLastFrame(),
+        };
 
         spikeNodes.push_back(spike);
     }
