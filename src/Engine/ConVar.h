@@ -6,6 +6,8 @@
 #include <string>
 #include <variant>
 #include <type_traits>
+#include <memory>
+#include <unordered_map>
 
 #include "Delegate.h"
 #include "UString.h"
@@ -274,7 +276,9 @@ class ConVar {
 
     [[nodiscard]] inline bool isFlagSet(uint8_t flag) const { return (bool)((this->iFlags & flag) == flag); }
 
-    void setServerProtected(ProtectionPolicy policy) { this->serverProtectionPolicy.store(policy, std::memory_order_release); }
+    void setServerProtected(ProtectionPolicy policy) {
+        this->serverProtectionPolicy.store(policy, std::memory_order_release);
+    }
 
     [[nodiscard]] inline bool isProtected() const {
         switch(this->serverProtectionPolicy.load(std::memory_order_acquire)) {
@@ -481,15 +485,25 @@ class ConVar {
 //*******************//
 
 class ConVarHandler {
+    NOCOPY_NOMOVE(ConVarHandler)
    public:
     static ConVarString flagsToString(uint8_t flags);
 
    public:
-    ConVarHandler();
-    ~ConVarHandler();
+    ConVarHandler() = default;
+    ~ConVarHandler() = default;
 
-    [[nodiscard]] const std::vector<ConVar *> &getConVarArray() const;
-    [[nodiscard]] int getNumConVars() const;
+    [[nodiscard]] static forceinline const std::vector<ConVar *> &getConVarArray() {
+        return static_cast<const std::vector<ConVar *> &>(getConVarArray_int());
+    }
+    [[nodiscard]] static forceinline const std::unordered_map<ConVarString, ConVar *> &getConVarMap() {
+        return static_cast<const std::unordered_map<ConVarString, ConVar *> &>(getConVarMap_int());
+    }
+    [[nodiscard]] static forceinline const ConVar *getConVar(const ConVarString &name) {
+        return static_cast<const ConVar *>(getConVar_int(name));
+    }
+
+    [[nodiscard]] static forceinline size_t getNumConVars() { return getConVarArray().size(); }
 
     [[nodiscard]] ConVar *getConVarByName(const ConVarString &name, bool warnIfNotFound = true) const;
     [[nodiscard]] std::vector<ConVar *> getConVarByLetter(const ConVarString &letters) const;
@@ -499,8 +513,15 @@ class ConVarHandler {
 
     void resetServerCvars();
     void resetSkinCvars();
+
+   private:
+    friend class ConVar;
+
+    [[nodiscard]] static std::vector<ConVar *> &getConVarArray_int();
+    [[nodiscard]] static std::unordered_map<ConVarString, ConVar *> &getConVarMap_int();
+    [[nodiscard]] static ConVar *getConVar_int(const ConVarString &name);
 };
 
-extern ConVarHandler *cvars;
+extern std::unique_ptr<ConVarHandler> cvars;
 
 #endif

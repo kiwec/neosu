@@ -21,38 +21,19 @@
 #include <fmt/chrono.h>
 #include <unordered_set>
 
-static std::vector<ConVar *> &_getGlobalConVarArray() {
-    static std::vector<ConVar *> g_vConVars;  // (singleton)
-    return g_vConVars;
-}
-
-static std::unordered_map<std::string, ConVar *> &_getGlobalConVarMap() {
-    static std::unordered_map<std::string, ConVar *> g_vConVarMap;  // (singleton)
-    return g_vConVarMap;
-}
-
 void ConVar::addConVar(ConVar *c) {
-    if(_getGlobalConVarArray().size() < 1) _getGlobalConVarArray().reserve(1024);
-
     const std::string &cname_str = c->getName();
 
     // osu_ prefix is deprecated.
     // If you really need it, you'll also need to edit Console::execConfigFile to whitelist it there.
-    assert(!(cname_str.starts_with("osu_") && !cname_str.starts_with("osu_folder")));
+    assert(!(cname_str.starts_with("osu_") && !cname_str.starts_with("osu_folder")) &&
+           "osu_ ConVar prefix is deprecated.");
 
     // No duplicate ConVar names allowed
-    assert(_getGlobalConVarMap().find(cname_str) == _getGlobalConVarMap().end());
+    assert(!ConVarHandler::getConVarMap().contains(cname_str) && "no duplicate ConVar names allowed.");
 
-    _getGlobalConVarArray().push_back(c);
-    _getGlobalConVarMap()[cname_str] = c;
-}
-
-static ConVar *_getConVar(const ConVarString &name) {
-    const auto result = _getGlobalConVarMap().find(name);
-    if(result != _getGlobalConVarMap().end())
-        return result->second;
-    else
-        return nullptr;
+    ConVarHandler::getConVarArray_int().push_back(c);
+    ConVarHandler::getConVarMap_int()[cname_str] = c;
 }
 
 ConVarString ConVar::getFancyDefaultValue() {
@@ -176,22 +157,41 @@ void ConVar::onSetValueProtected(const std::string &oldValue, const std::string 
 //  ConVarHandler Implementation  //
 //********************************//
 
-ConVar _emptyDummyConVar(
-    "emptyDummyConVar", 42.0f, cv::CLIENT,
-    "this placeholder convar is returned by cvars->getConVarByName() if no matching convar is found");
+// singleton init
+std::unique_ptr<ConVarHandler> cvars{std::make_unique<ConVarHandler>()};
 
-ConVarHandler *cvars = new ConVarHandler();
+// private static
+std::vector<ConVar *> &ConVarHandler::getConVarArray_int() {
+    static std::vector<ConVar *> vConVarArray;
 
-ConVarHandler::ConVarHandler() { cvars = this; }
+    static std::once_flag reserved;
+    std::call_once(reserved, []() { vConVarArray.reserve(1024); });
 
-ConVarHandler::~ConVarHandler() { cvars = nullptr; }
+    return vConVarArray;
+}
 
-const std::vector<ConVar *> &ConVarHandler::getConVarArray() const { return _getGlobalConVarArray(); }
+std::unordered_map<ConVarString, ConVar *> &ConVarHandler::getConVarMap_int() {
+    static std::unordered_map<ConVarString, ConVar *> vConVarMap;
 
-int ConVarHandler::getNumConVars() const { return _getGlobalConVarArray().size(); }
+    static std::once_flag reserved;
+    std::call_once(reserved, []() { vConVarMap.reserve(1024); });
 
+    return vConVarMap;
+}
+
+ConVar *ConVarHandler::getConVar_int(const ConVarString &name) {
+    const auto &cvarMap = getConVarMap();
+    if(cvarMap.contains(name)) return cvarMap.at(name);
+    return nullptr;
+}
+
+// public
 ConVar *ConVarHandler::getConVarByName(const ConVarString &name, bool warnIfNotFound) const {
-    ConVar *found = _getConVar(name);
+    static ConVar _emptyDummyConVar(
+        "emptyDummyConVar", 42.0f, cv::CLIENT,
+        "this placeholder convar is returned by cvars->getConVarByName() if no matching convar is found");
+
+    ConVar *found = ConVarHandler::getConVar_int(name);
     if(found) return found;
 
     if(warnIfNotFound) {
@@ -271,7 +271,7 @@ ConVarString ConVarHandler::flagsToString(uint8_t flags) {
 std::vector<ConVar *> ConVarHandler::getNonSubmittableCvars() const {
     std::vector<ConVar *> list;
 
-    for(const auto &cv : _getGlobalConVarArray()) {
+    for(const auto &cv : ConVarHandler::getConVarArray()) {
         if(!cv->isProtected()) continue;
 
         if(cv->getString() != cv->getDefaultString()) {
@@ -283,7 +283,7 @@ std::vector<ConVar *> ConVarHandler::getNonSubmittableCvars() const {
 }
 
 bool ConVarHandler::areAllCvarsSubmittable() {
-    for(const auto &cv : _getGlobalConVarArray()) {
+    for(const auto &cv : ConVarHandler::getConVarArray()) {
         if(!cv->isProtected()) continue;
 
         if(cv->getString() != cv->getDefaultString()) {
@@ -308,14 +308,14 @@ bool ConVarHandler::areAllCvarsSubmittable() {
 }
 
 void ConVarHandler::resetServerCvars() {
-    for(const auto &cv : _getGlobalConVarArray()) {
+    for(const auto &cv : ConVarHandler::getConVarArray()) {
         cv->hasServerValue.store(false, std::memory_order_release);
         cv->serverProtectionPolicy.store(ConVar::ProtectionPolicy::DEFAULT, std::memory_order_release);
     }
 }
 
 void ConVarHandler::resetSkinCvars() {
-    for(const auto &cv : _getGlobalConVarArray()) {
+    for(const auto &cv : ConVarHandler::getConVarArray()) {
         cv->hasSkinValue.store(false, std::memory_order_release);
     }
 }
