@@ -134,12 +134,14 @@ void BanchoState::handle_packet(Packet &packet) {
                 cv::mp_oauth_token.setValue("");
 
                 debugLog("Failed to log in, server returned code {:d}.\n", BanchoState::get_uid());
-                UString errmsg =
-                    UString::fmt("Failed to log in: {} (code {})\n", BanchoState::cho_token.toUtf8(), BanchoState::get_uid());
+                UString errmsg = UString::fmt("Failed to log in: {} (code {})\n", BanchoState::cho_token.toUtf8(),
+                                              BanchoState::get_uid());
                 if(new_user_id == -2) {
                     errmsg = "Client version is too old to connect to this server.";
                 } else if(new_user_id == -3 || new_user_id == -4) {
                     errmsg = "You are banned from this server.";
+                } else if(new_user_id == -5) {
+                    errmsg = "Server had an error while trying to log you in.";
                 } else if(new_user_id == -6) {
                     errmsg = "You need to buy supporter to connect to this server.";
                 } else if(new_user_id == -7) {
