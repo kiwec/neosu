@@ -323,7 +323,7 @@ Osu::Osu() {
 #endif
 
     bool reloading_db = env->getEnvInterop().handle_cmdline_args();
-    if(!reloading_db) {
+    if(!reloading_db && cv::load_db_immediately.getBool()) {
         // Start loading db early
         this->songBrowser->refreshBeatmaps();
     }

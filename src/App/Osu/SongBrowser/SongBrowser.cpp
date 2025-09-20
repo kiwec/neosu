@@ -1174,7 +1174,7 @@ CBaseUIContainer *SongBrowser::setVisible(bool visible) {
         this->bHasSelectedAndIsPlaying = false;  // sanity
 
         // try another refresh, maybe the osu!folder has changed
-        if(this->beatmapsets.size() == 0 && !this->bBeatmapRefreshScheduled) {
+        if(this->beatmapsets.size() == 0 && (!cv::load_db_immediately.getBool() || !this->bBeatmapRefreshScheduled)) {
             this->refreshBeatmaps();
         }
 
@@ -1364,6 +1364,10 @@ void SongBrowser::onDifficultySelected(DatabaseBeatmap *map, bool play) {
 
 void SongBrowser::refreshBeatmaps() {
     if(this->bHasSelectedAndIsPlaying) return;
+
+    if(!this->bVisible && !cv::load_db_immediately.getBool()) {
+        osu->toggleSongBrowser();
+    }
 
     // reset
     this->checkHandleKillBackgroundSearchMatcher();

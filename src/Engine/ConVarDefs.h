@@ -1250,6 +1250,7 @@ CONVAR(win_processpriority, "win_processpriority", 1, CLIENT, "sets the main pro
        CFUNC(Environment::setThreadPriority));
 
 // Unfinished features
+CONVAR(load_db_immediately, "load_db_immediately", false, CLIENT);
 CONVAR(cbf, "cbf", false, CLIENT, "click between frames");
 CONVAR(enable_spectating, "enable_spectating", false, CLIENT);
 CONVAR(allow_mp_invites, "allow_mp_invites", true, CLIENT, "allow multiplayer game invites from all users");
