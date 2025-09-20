@@ -1,6 +1,6 @@
 #pragma once
 // Copyright (c) 2016, PG, All rights reserved.
-#include "types.h"
+#include "ModFlags.h"
 
 class DatabaseBeatmap;
 
@@ -89,6 +89,8 @@ struct Mods {
     f32 wobble_rotation_speed = 1.f;
     f32 jigsaw_followcircle_radius_factor = 0.f;
     f32 shirone_combo = 20.f;
+
+    [[nodiscard]] inline bool has(u64 flag) const { return !!(ModMasks::eq(this->flags, flag)); }
 
     [[nodiscard]] u32 to_legacy() const;
 

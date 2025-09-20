@@ -1079,7 +1079,7 @@ void Circle::onReset(long curPos) {
 
 vec2 Circle::getAutoCursorPos(long /*curPos*/) const { return this->pi->osuCoords2Pixels(this->vRawPos); }
 
-Slider::Slider(char stype, int repeat, float pixelLength, std::vector<vec2> points, const std::vector<float>& ticks,
+Slider::Slider(char stype, int repeat, float pixelLength, std::vector<vec2> points, const std::vector<float> &ticks,
                float sliderTime, float sliderTimeWithoutRepeats, long time, HitSamples hoverSamples,
                std::vector<HitSamples> edgeSamples, int comboNumber, bool isEndOfCombo, int colorCounter,
                int colorOffset, AbstractBeatmapInterface *pi)
@@ -1928,9 +1928,11 @@ void Slider::update(long curPos, f64 frame_time) {
                     // rewrite m_endResult as the whole slider result, then use it for the final onHit()
                     if(percent >= 0.999f && allow300)
                         this->endResult = LiveScore::HIT::HIT_300;
-                    else if(percent >= 0.5f && allow100 && !this->pi->mod_ming3012 && !this->pi->mod_no100s)
+                    else if(percent >= 0.5f && allow100 && !this->pi->getMods().has(Replay::ModFlags::Ming3012) &&
+                            !this->pi->getMods().has(Replay::ModFlags::No100s))
                         this->endResult = LiveScore::HIT::HIT_100;
-                    else if(percent > 0.0f && !this->pi->mod_no100s && !this->pi->mod_no50s)
+                    else if(percent > 0.0f && !this->pi->getMods().has(Replay::ModFlags::No100s) &&
+                            !this->pi->getMods().has(Replay::ModFlags::No50s))
                         this->endResult = LiveScore::HIT::HIT_50;
                     else
                         this->endResult = LiveScore::HIT::HIT_MISS;
@@ -2702,9 +2704,9 @@ void Spinner::draw() {
 
         g->pushTransform();
         {
-            g->translate(
-                (int)(osu->getVirtScreenWidth() / 2 - stringWidth / 2),
-                (int)(osu->getVirtScreenHeight() - 5 + (5 + rpmFont->getHeight()) * (1.0f - this->fAlphaWithoutHidden)));
+            g->translate((int)(osu->getVirtScreenWidth() / 2 - stringWidth / 2),
+                         (int)(osu->getVirtScreenHeight() - 5 +
+                               (5 + rpmFont->getHeight()) * (1.0f - this->fAlphaWithoutHidden)));
             g->drawString(rpmFont, UString::format("RPM: %i", (int)(this->fRPM + 0.4f)));
         }
         g->popTransform();

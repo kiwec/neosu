@@ -107,11 +107,6 @@ class AbstractBeatmapInterface {
     f32 fSliderFollowCircleDiameter = 0.f;
     bool bPrevKeyWasKey1 = false;
     bool holding_slider = false;
-    bool mod_halfwindow = false;
-    bool mod_halfwindow_allow_300s = false;
-    bool mod_ming3012 = false;
-    bool mod_no100s = false;
-    bool mod_no50s = false;
 
     // Generic behavior below, do not override
     LiveScore::HIT getHitResult(i32 delta);  // can't really be cached

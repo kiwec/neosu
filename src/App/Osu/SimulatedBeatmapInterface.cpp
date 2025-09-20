@@ -16,16 +16,11 @@
 #include "Mouse.h"
 #include "ResourceManager.h"
 
-SimulatedBeatmapInterface::SimulatedBeatmapInterface(DatabaseBeatmap *map, Replay::Mods mods_) : AbstractBeatmapInterface() {
+SimulatedBeatmapInterface::SimulatedBeatmapInterface(DatabaseBeatmap *map, Replay::Mods mods_)
+    : AbstractBeatmapInterface() {
     this->beatmap = map;
     this->mods = mods_;
     this->live_score.mods = mods_;
-    this->mod_halfwindow = !!(ModMasks::eq(this->mods.flags, Replay::ModFlags::HalfWindow));
-    this->mod_halfwindow_allow_300s = !!(ModMasks::eq(this->mods.flags, Replay::ModFlags::HalfWindowAllow300s));
-    this->mod_ming3012 = !!(ModMasks::eq(this->mods.flags, Replay::ModFlags::Ming3012));
-    this->mod_no100s = !!(ModMasks::eq(this->mods.flags, Replay::ModFlags::No100s));
-    this->mod_no50s = !!(ModMasks::eq(this->mods.flags, Replay::ModFlags::No50s));
-
     this->nb_hitobjects = map->getNumObjects();
 
     this->iNPS = 0;
@@ -152,10 +147,9 @@ u32 SimulatedBeatmapInterface::getScoreV1DifficultyMultiplier_full() const {
     u32 breakTimeMS = this->getBreakDurationTotal();
     f32 drainLength =
         std::max(this->getLengthPlayable() - std::min(breakTimeMS, this->getLengthPlayable()), (u32)1000) / 1000;
-    return std::round(
-        (this->beatmap->getCS() + this->beatmap->getHP() + this->beatmap->getOD() +
-         std::clamp<f32>((f32)this->beatmap->getNumObjects() / drainLength * 8.0f, 0.0f, 16.0f)) /
-        38.0f * 5.0f);
+    return std::round((this->beatmap->getCS() + this->beatmap->getHP() + this->beatmap->getOD() +
+                       std::clamp<f32>((f32)this->beatmap->getNumObjects() / drainLength * 8.0f, 0.0f, 16.0f)) /
+                      38.0f * 5.0f);
 }
 
 f32 SimulatedBeatmapInterface::getCS_full() const {
@@ -245,8 +239,12 @@ f32 SimulatedBeatmapInterface::getOD_full() const {
     return OD;
 }
 
-bool SimulatedBeatmapInterface::isKey1Down() const { return this->current_keys & (LegacyReplay::M1 | LegacyReplay::K1); }
-bool SimulatedBeatmapInterface::isKey2Down() const { return this->current_keys & (LegacyReplay::M2 | LegacyReplay::K2); }
+bool SimulatedBeatmapInterface::isKey1Down() const {
+    return this->current_keys & (LegacyReplay::M1 | LegacyReplay::K1);
+}
+bool SimulatedBeatmapInterface::isKey2Down() const {
+    return this->current_keys & (LegacyReplay::M2 | LegacyReplay::K2);
+}
 bool SimulatedBeatmapInterface::isClickHeld() const { return this->isKey1Down() || this->isKey2Down(); }
 
 u32 SimulatedBeatmapInterface::getLength() const { return this->beatmap->getLengthMS(); }
@@ -269,7 +267,8 @@ u32 SimulatedBeatmapInterface::getBreakDurationTotal() const {
     return breakDurationTotal;
 }
 
-DatabaseBeatmap::BREAK SimulatedBeatmapInterface::getBreakForTimeRange(long startMS, long positionMS, long endMS) const {
+DatabaseBeatmap::BREAK SimulatedBeatmapInterface::getBreakForTimeRange(long startMS, long positionMS,
+                                                                       long endMS) const {
     DatabaseBeatmap::BREAK curBreak;
 
     curBreak.startTime = -1;
@@ -284,9 +283,10 @@ DatabaseBeatmap::BREAK SimulatedBeatmapInterface::getBreakForTimeRange(long star
     return curBreak;
 }
 
-LiveScore::HIT SimulatedBeatmapInterface::addHitResult(HitObject *hitObject, LiveScore::HIT hit, i32 delta, bool isEndOfCombo,
-                                              bool ignoreOnHitErrorBar, bool hitErrorBarOnly, bool ignoreCombo,
-                                              bool ignoreScore, bool ignoreHealth) {
+LiveScore::HIT SimulatedBeatmapInterface::addHitResult(HitObject *hitObject, LiveScore::HIT hit, i32 delta,
+                                                       bool isEndOfCombo, bool ignoreOnHitErrorBar,
+                                                       bool hitErrorBarOnly, bool ignoreCombo, bool ignoreScore,
+                                                       bool ignoreHealth) {
     // handle perfect & sudden death
     if(ModMasks::eq(this->mods.flags, Replay::ModFlags::Perfect)) {
         if(!hitErrorBarOnly && hit != LiveScore::HIT::HIT_300 && hit != LiveScore::HIT::HIT_300G &&
@@ -353,7 +353,9 @@ void SimulatedBeatmapInterface::addSliderBreak() {
     this->live_score.addSliderBreak();
 }
 
-void SimulatedBeatmapInterface::addScorePoints(int points, bool isSpinner) { this->live_score.addPoints(points, isSpinner); }
+void SimulatedBeatmapInterface::addScorePoints(int points, bool isSpinner) {
+    this->live_score.addPoints(points, isSpinner);
+}
 
 void SimulatedBeatmapInterface::addHealth(f64 percent, bool isFromHitResult) {
     // never drain before first hitobject
