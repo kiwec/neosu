@@ -92,6 +92,8 @@ bool sortScoreByPP(FinishedScore const &a, FinishedScore const &b) {
 
 // run after at least one engine frame (due to resourceManager->update() in Engine::onUpdate())
 void Database::AsyncDBLoader::init() {
+    if(!db) return;  // don't crash when exiting while loading db
+
     if(cv::debug_db.getBool() || cv::debug_async_db.getBool()) debugLog("(AsyncDBLoader) start\n");
 
     if(db->bNeedRawLoad) {
