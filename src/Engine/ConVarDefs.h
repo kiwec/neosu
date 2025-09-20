@@ -370,7 +370,8 @@ CONVAR(songbrowser_search_hardcoded_filter, "songbrowser_search_hardcoded_filter
 // Song browser (maybe useful to servers)
 CONVAR(songbrowser_scorebrowser_enabled, "songbrowser_scorebrowser_enabled", true, CLIENT | SKINS | SERVER);
 CONVAR(songbrowser_scores_filteringtype, "songbrowser_scores_filteringtype", "Local", CLIENT | SKINS | SERVER);
-CONVAR(songbrowser_scores_filteringtype_manual, "songbrowser_scores_filteringtype_manual", "unset", CLIENT | SKINS | SERVER);
+CONVAR(songbrowser_scores_filteringtype_manual, "songbrowser_scores_filteringtype_manual", "unset",
+       CLIENT | SKINS | SERVER);
 CONVAR(songbrowser_scores_sortingtype, "songbrowser_scores_sortingtype", "By pp", CLIENT | SKINS | SERVER);
 CONVAR(songbrowser_sortingtype, "songbrowser_sortingtype", "By Date Added", CLIENT | SKINS | SERVER);
 
@@ -412,7 +413,6 @@ CONVAR(draw_hiterrorbar_ur, "draw_hiterrorbar_ur", true, CLIENT | SKINS | SERVER
 CONVAR(draw_hitobjects, "draw_hitobjects", true, CLIENT | SKINS | SERVER);
 CONVAR(draw_hud, "draw_hud", true, CLIENT | SKINS | SERVER);
 CONVAR(draw_inputoverlay, "draw_inputoverlay", true, CLIENT | SKINS | SERVER);
-CONVAR(draw_menu_background, "draw_menu_background", false, CLIENT | SKINS | SERVER);
 CONVAR(draw_numbers, "draw_numbers", true, CLIENT | SKINS | SERVER);
 CONVAR(draw_playfield_border, "draw_playfield_border", true, CLIENT | SKINS | SERVER);
 CONVAR(draw_progressbar, "draw_progressbar", true, CLIENT | SKINS | SERVER);
@@ -817,6 +817,14 @@ CONVAR(name, "name", "Guest", CLIENT);
 CONVAR(sv_allow_speed_override, "sv_allow_speed_override", false, SERVER,
        "let clients submit scores with non-vanilla speeds (e.g. not only HT/DT speed)");
 
+// Main menu
+CONVAR(draw_menu_background, "draw_menu_background", true, CLIENT | SKINS | SERVER);
+CONVAR(main_menu_alpha, "main_menu_alpha", 0.8f, CLIENT | SKINS | SERVER);
+CONVAR(main_menu_friend, "main_menu_friend", true, CLIENT | SKINS | SERVER);
+CONVAR(main_menu_background_fade_duration, "main_menu_background_fade_duration", 0.25f, CLIENT | SKINS | SERVER);
+CONVAR(main_menu_startup_anim_duration, "main_menu_startup_anim_duration", 0.25f, CLIENT | SKINS | SERVER);
+CONVAR(main_menu_use_server_logo, "main_menu_use_server_logo", true, CLIENT | SKINS | SERVER);
+
 // Not sorted
 CONVAR(beatmap_preview_mods_live, "beatmap_preview_mods_live", false, CLIENT | SKINS | SERVER,
        "whether to immediately apply all currently selected mods while browsing beatmaps (e.g. speed/pitch)");
@@ -1040,16 +1048,13 @@ CONVAR(letterboxing, "letterboxing", true, CLIENT | SKINS | SERVER);
 CONVAR(letterboxing_offset_x, "letterboxing_offset_x", 0.0f, CLIENT | SKINS | SERVER);
 CONVAR(letterboxing_offset_y, "letterboxing_offset_y", 0.0f, CLIENT | SKINS | SERVER);
 CONVAR(load_beatmap_background_images, "load_beatmap_background_images", true, CLIENT | SKINS | SERVER);
-CONVAR(main_menu_alpha, "main_menu_alpha", 0.8f, CLIENT | SKINS | SERVER);
-CONVAR(main_menu_friend, "main_menu_friend", true, CLIENT | SKINS | SERVER);
-CONVAR(main_menu_startup_anim_duration, "main_menu_startup_anim_duration", 0.25f, CLIENT | SKINS | SERVER);
-CONVAR(main_menu_use_server_logo, "main_menu_use_server_logo", true, CLIENT | SKINS | SERVER);
 CONVAR(minimize_on_focus_lost_if_borderless_windowed_fullscreen,
        "minimize_on_focus_lost_if_borderless_windowed_fullscreen", false, CLIENT | SKINS | SERVER);
 CONVAR(minimize_on_focus_lost_if_fullscreen, "minimize_on_focus_lost_if_fullscreen", true, CLIENT | SKINS | SERVER);
 CONVAR(mouse_raw_input, "mouse_raw_input", false, CLIENT | SKINS | SERVER);
 CONVAR(mouse_sensitivity, "mouse_sensitivity", 1.0f, CLIENT | SKINS | SERVER);
-CONVAR(pen_input, "pen_input", true, CLIENT | SKINS | SERVER, "support OTD Artist Mode and native tablet drivers' pen events");
+CONVAR(pen_input, "pen_input", true, CLIENT | SKINS | SERVER,
+       "support OTD Artist Mode and native tablet drivers' pen events");
 CONVAR(nightcore_enjoyer, "nightcore_enjoyer", false, CLIENT | SKINS | SERVER);
 CONVAR(normalize_loudness, "normalize_loudness", true, CLIENT | SKINS | SERVER, "normalize loudness across songs");
 CONVAR(notelock_stable_tolerance2b, "notelock_stable_tolerance2b", 3, CLIENT | SERVER | PROTECTED | GAMEPLAY,

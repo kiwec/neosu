@@ -56,10 +56,6 @@ void handle_osz(const char *osz_path) {
         osu->getNotificationOverlay()->addToast("Failed to import beatmapset", ERROR_TOAST);
         return;
     }
-
-    // prevent song browser from picking main menu song after database loads
-    // (we just loaded and selected another song, so previous no longer applies)
-    SAFE_DELETE(osu->getMainMenu()->preloaded_beatmapset);
 }
 }  // namespace
 

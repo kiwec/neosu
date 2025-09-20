@@ -18,7 +18,7 @@ class BackgroundImageHandler {
 
     void scheduleFreezeCache() { this->bFrozen = true; }
 
-    Image *getLoadBackgroundImage(const DatabaseBeatmap *beatmap);
+    Image *getLoadBackgroundImage(const DatabaseBeatmap *beatmap, bool loadImmediately = false);
 
    private:
     struct ENTRY {

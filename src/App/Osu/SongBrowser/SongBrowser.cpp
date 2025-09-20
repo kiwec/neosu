@@ -2594,7 +2594,7 @@ void SongBrowser::onDatabaseLoadingFinished() {
             this->selectSelectedBeatmapSongButton();
         }
 
-        SAFE_DELETE(osu->getMainMenu()->preloaded_beatmapset);
+        osu->getMainMenu()->clearPreloadedMaps();
     }
 
     // ok, if we still haven't selected a song, do so now
@@ -3268,7 +3268,7 @@ void SongBrowser::selectRandomBeatmap() {
     if(songButtons.size() < 1) return;
 
     // remember previous
-    if(osu->getMapInterface()->beatmap != nullptr) {
+    if(osu->getMapInterface()->beatmap != nullptr && !osu->getMapInterface()->beatmap->do_not_store) {
         this->previousRandomBeatmaps.push_back(osu->getMapInterface()->beatmap);
     }
 

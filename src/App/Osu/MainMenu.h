@@ -44,8 +44,7 @@ class MainMenu : public OsuScreen, public MouseListener {
     void draw() override;
     void mouse_update(bool *propagate_clicks) override;
 
-    BeatmapDifficulty *preloaded_beatmap = nullptr;
-    BeatmapSet *preloaded_beatmapset = nullptr;
+    void clearPreloadedMaps();
     void selectRandomBeatmap();
 
     void onKeyDown(KeyboardEvent &e) override;
@@ -141,10 +140,16 @@ class MainMenu : public OsuScreen, public MouseListener {
     f32 fStartupAnim{0.f};
     f32 fStartupAnim2{0.f};
     float fPrevShuffleTime{0.f};
-    float fBackgroundFadeInTime;
 
     Image *logo_img;
+
+    void drawMapBackground(DatabaseBeatmap *beatmap, f32 alpha);
+    DatabaseBeatmap *currentMap{nullptr};
+    DatabaseBeatmap *lastMap{nullptr};
     Shader *background_shader = nullptr;
+    f64 mapChangedTime{0.0};
+    f32 mapFadeAnim{1.f};
+    std::vector<BeatmapSet *> preloadedMaps;
 
     struct SongsFolderEnumerator : public Resource {
         NOCOPY_NOMOVE(SongsFolderEnumerator)

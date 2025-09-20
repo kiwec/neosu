@@ -135,8 +135,6 @@ MainMenu::MainMenu() : OsuScreen() {
     this->fUpdateButtonAnimTime = 0.0f;
     this->bHasClickedUpdate = false;
 
-    this->fBackgroundFadeInTime = 0.0f;
-
     this->logo_img = resourceManager->loadImage("neosu.png", "NEOSU_LOGO", true /* mipmapped */);
     // background_shader = resourceManager->loadShader("main_menu_bg.vsh", "main_menu_bg.fsh");
 
@@ -243,7 +241,7 @@ MainMenu::MainMenu() : OsuScreen() {
 }
 
 MainMenu::~MainMenu() {
-    SAFE_DELETE(this->preloaded_beatmapset);
+    this->clearPreloadedMaps();
     SAFE_DELETE(this->updateAvailableButton);
 
     anim->deleteExistingAnimation(&this->fUpdateButtonAnim);
@@ -550,8 +548,8 @@ std::pair<bool, float> MainMenu::getTimingpointPulseAmount() {
     // playing music, get dynamic pulse amount
     const long curMusicPos = (long)music->getPositionMS() +
                              (long)(cv::universal_offset.getFloat() * selectedMap->getSpeedMultiplier()) +
-                             music->getBASSStreamLatencyCompensation() - map->getLocalOffset() - map->getOnlineOffset() -
-                             (map->getVersion() < 5 ? cv::old_beatmap_offset.getInt() : 0);
+                             music->getBASSStreamLatencyCompensation() - map->getLocalOffset() -
+                             map->getOnlineOffset() - (map->getVersion() < 5 ? cv::old_beatmap_offset.getInt() : 0);
 
     DatabaseBeatmap::TIMING_INFO t = map->getTimingInfoForTime(curMusicPos);
 
@@ -769,54 +767,67 @@ void MainMenu::drawMainButton() {
     }
 }
 
+void MainMenu::clearPreloadedMaps() {
+    for(auto preloaded_set : this->preloadedMaps) {
+        for(auto &diff : preloaded_set->getDifficulties()) {
+            if(diff == this->lastMap) this->lastMap = nullptr;
+            if(diff == this->currentMap) this->currentMap = nullptr;
+        }
+
+        SAFE_DELETE(preloaded_set);
+    }
+
+    this->preloadedMaps.clear();
+}
+
+void MainMenu::drawMapBackground(DatabaseBeatmap *beatmap, f32 alpha) {
+    Image *bg = nullptr;
+
+    if(beatmap == nullptr) {
+        bool just_launched = engine->getTime() < 5.0;
+        if(cv::draw_menu_background.getBool() && !just_launched) {
+            bg = osu->getSkin()->getMenuBackground();
+        }
+    } else {
+        bg = osu->getBackgroundImageHandler()->getLoadBackgroundImage(beatmap, true);
+    }
+
+    if(bg == nullptr || !bg->isReady()) return;
+
+    g->pushTransform();
+    {
+        const f32 scale = Osu::getImageScaleToFillResolution(bg, osu->getVirtScreenSize());
+        g->scale(scale, scale);
+        g->translate(osu->getVirtScreenWidth() / 2, osu->getVirtScreenHeight() / 2);
+        g->setColor(Color(0xffffffff).setA(alpha));
+        g->drawImage(bg);
+    }
+    g->popTransform();
+}
+
 void MainMenu::draw() {
     if(!this->bVisible) return;
 
-    // menu-background
-    if(cv::draw_menu_background.getBool()) {
-        Image *backgroundImage = osu->getSkin()->getMenuBackground();
-        if(backgroundImage != nullptr && backgroundImage != osu->getSkin()->getMissingTexture() &&
-           backgroundImage->isReady()) {
-            const float scale = Osu::getImageScaleToFillResolution(backgroundImage, osu->getVirtScreenSize());
+    // draw background
+    {
+        // background_shader->enable();
+        // background_shader->setUniform1f("time", engine->getTime());
+        // background_shader->setUniform2f("resolution", osu->getVirtScreenWidth(), osu->getVirtScreenHeight());
 
-            g->setColor(Color(0xffffffff).setA(this->fStartupAnim));
-
-            g->pushTransform();
-            {
-                g->scale(scale, scale);
-                g->translate(osu->getVirtScreenWidth() / 2, osu->getVirtScreenHeight() / 2);
-                g->drawImage(backgroundImage);
-            }
-            g->popTransform();
+        // Check if we need to update the background
+        if(this->mapFadeAnim == 1.f && this->currentMap != osu->getMapInterface()->beatmap) {
+            this->mapChangedTime = engine->getTime();
+            this->lastMap = this->currentMap;
+            this->currentMap = osu->getMapInterface()->beatmap;
+            this->mapFadeAnim = 0.f;
+            anim->moveLinear(&this->mapFadeAnim, 1.f, cv::main_menu_background_fade_duration.getFloat(), true);
         }
+
+        this->drawMapBackground(this->lastMap, 1.f - this->mapFadeAnim);
+        this->drawMapBackground(this->currentMap, this->mapFadeAnim);
+
+        // background_shader->disable();
     }
-
-    // XXX: Should do fade transition between beatmap backgrounds when switching to next song
-    float alpha = 1.0f;
-    if(cv::songbrowser_background_fade_in_duration.getFloat() > 0.0f) {
-        // handle fadein trigger after handler is finished loading
-        const bool ready = osu->getMapInterface()->beatmap != nullptr &&
-                           osu->getBackgroundImageHandler()->getLoadBackgroundImage(
-                               osu->getMapInterface()->beatmap) != nullptr &&
-                           osu->getBackgroundImageHandler()
-                               ->getLoadBackgroundImage(osu->getMapInterface()->beatmap)
-                               ->isReady();
-
-        if(!ready)
-            this->fBackgroundFadeInTime = engine->getTime();
-        else if(this->fBackgroundFadeInTime > 0.0f && engine->getTime() > this->fBackgroundFadeInTime) {
-            alpha = std::clamp<float>((engine->getTime() - this->fBackgroundFadeInTime) /
-                                          cv::songbrowser_background_fade_in_duration.getFloat(),
-                                      0.0f, 1.0f);
-            alpha = 1.0f - (1.0f - alpha) * (1.0f - alpha);
-        }
-    }
-
-    // background_shader->enable();
-    // background_shader->setUniform1f("time", engine->getTime());
-    // background_shader->setUniform2f("resolution", osu->getVirtScreenWidth(), osu->getVirtScreenHeight());
-    SongBrowser::drawSelectedBeatmapBackgroundImage(alpha);
-    // background_shader->disable();
 
     // draw notification arrow for changelog (version button)
     if(this->bDrawVersionNotificationArrow) {
@@ -828,9 +839,9 @@ void MainMenu::draw() {
         const float scale =
             this->versionButton->getSize().x / osu->getSkin()->getPlayWarningArrow2()->getSizeBaseRaw().x;
 
-        const vec2 arrowPos = vec2(
-            this->versionButton->getSize().x / 1.75f,
-            osu->getVirtScreenHeight() - this->versionButton->getSize().y * 2 - this->versionButton->getSize().y * scale);
+        const vec2 arrowPos = vec2(this->versionButton->getSize().x / 1.75f,
+                                   osu->getVirtScreenHeight() - this->versionButton->getSize().y * 2 -
+                                       this->versionButton->getSize().y * scale);
 
         UString notificationText = "Changelog";
         g->setColor(0xffffffff);
@@ -1103,7 +1114,6 @@ void MainMenu::selectRandomBeatmap() {
         }
 
         osu->getMapInterface()->deselectBeatmap();
-        SAFE_DELETE(this->preloaded_beatmapset);
 
         constexpr int RETRY_SETS{10};
         for(int i = 0; i < RETRY_SETS; i++) {
@@ -1121,8 +1131,9 @@ void MainMenu::selectRandomBeatmap() {
                 continue;
             }
 
+            // We're picking a random diff and not the first one, because diffs of the same set
+            // can have their own separate sound file.
             const auto &candidate_diff{beatmap_diffs[rand() % beatmap_diffs.size()]};
-
             assert(candidate_diff);
 
             const bool skip =
@@ -1133,14 +1144,10 @@ void MainMenu::selectRandomBeatmap() {
                 continue;
             }
 
-            this->preloaded_beatmapset = set;
+            this->preloadedMaps.push_back(set);
+            candidate_diff->do_not_store = true;  // don't store in songbrowser f2 history
 
-            // We're picking a random diff and not the first one, because diffs of the same set
-            // can have their own separate sound file.
-            this->preloaded_beatmap = candidate_diff;
-            this->preloaded_beatmap->do_not_store = true;
-
-            osu->getSongBrowser()->onDifficultySelected(this->preloaded_beatmap, false);
+            osu->getSongBrowser()->onDifficultySelected(candidate_diff, false);
             RichPresence::onMainMenu();
 
             return;
