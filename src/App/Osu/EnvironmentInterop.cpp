@@ -67,8 +67,9 @@ bool Environment::Interop::handle_cmdline_args(const std::vector<std::string> &a
     bool need_to_reload_database = false;
 
     for(const auto &arg : args) {
-        if(arg[0] == '-') break;
-        if(arg.length() < 4) break;
+        // XXX: naive way of ignoring '-sound soloud' type params, might break in the future
+        if(arg[0] == '-') continue;
+        if(arg.length() < 4) continue;
 
         if(arg.starts_with("neosu://")) {
             handle_neosu_url(arg.c_str());
@@ -285,8 +286,6 @@ void Environment::Interop::setup_system_integrations() {
     RegCloseKey(app_key);
 
     HKEY cmd_key;
-    wchar_t command[MAX_PATH + 10];
-    swprintf_s(command, _countof(command), L"\"%s\" \"%%1\"", exePath);
     err = RegCreateKeyExW(neosu_key, L"shell\\open\\command", 0, nullptr, REG_OPTION_NON_VOLATILE, KEY_WRITE, nullptr,
                           &cmd_key, nullptr);
     if(err != ERROR_SUCCESS) {
@@ -294,6 +293,21 @@ void Environment::Interop::setup_system_integrations() {
         RegCloseKey(neosu_key);
         return;
     }
+
+    // Add current launch arguments, so doing "Open with -> neosu"
+    // will always use the last launch options the player used.
+    UString launch_args;
+    auto args = env->getLaunchArgs();
+    for(const auto &[k, v] : args) {
+        if(v.has_value()) {
+            launch_args.append(UString::fmt(" {} {}", k, v.value()));
+        } else {
+            launch_args.append(UString::fmt(" {}", k));
+        }
+    }
+
+    wchar_t command[MAX_PATH + 10];
+    swprintf_s(command, _countof(command), L"\"%s\"%s \"%%1\"", exePath, launch_args.wc_str());
     RegSetValueExW(cmd_key, L"", 0, REG_SZ, (BYTE *)command, (wcslen(command) + 1) * sizeof(wchar_t));
     RegCloseKey(cmd_key);
 
