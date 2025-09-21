@@ -150,9 +150,9 @@ class Engine final : public KeyboardListener {
         // debug build shows full source location
 #ifdef _DEBUG
         template <typename... Args>
-        static void log(const std::source_location &loc, const char *func, fmt::format_string<Args...> fmt,
+        static void log(const std::source_location &loc, const char *func, const fmt::format_string<Args...> &fmt,
                         Args &&...args) {
-            auto contextPrefix = fmt::format("[{}:{}:{}] [{}]: ", Environment::getFileNameFromFilePath(loc.file_name()),
+            auto contextPrefix = fmt::format("[{}:{}:{}] [{}]: "_cf, Environment::getFileNameFromFilePath(loc.file_name()),
                                              loc.line(), loc.column(), func);
 
             auto message = fmt::format(fmt, std::forward<Args>(args)...);
@@ -160,9 +160,9 @@ class Engine final : public KeyboardListener {
         }
 
         template <typename... Args>
-        static void log(const std::source_location &loc, const char *func, Color color, fmt::format_string<Args...> fmt,
+        static void log(const std::source_location &loc, const char *func, Color color, const fmt::format_string<Args...> &fmt,
                         Args &&...args) {
-            auto contextPrefix = fmt::format("[{}:{}:{}] [{}]: ", Environment::getFileNameFromFilePath(loc.file_name()),
+            auto contextPrefix = fmt::format("[{}:{}:{}] [{}]: "_cf, Environment::getFileNameFromFilePath(loc.file_name()),
                                              loc.line(), loc.column(), func);
 
             auto message = fmt::format(fmt, std::forward<Args>(args)...);
@@ -171,16 +171,16 @@ class Engine final : public KeyboardListener {
 #else
         // release build only shows function name
         template <typename... Args>
-        static void log(const char *func, fmt::format_string<Args...> fmt, Args &&...args) {
-            auto contextPrefix = fmt::format("[{}] ", func);
+        static void log(const char *func, const fmt::format_string<Args...> &fmt, Args &&...args) {
+            auto contextPrefix = fmt::format("[{}] "_cf, func);
             trim_to_last_scope(contextPrefix);
             auto message = fmt::format(fmt, std::forward<Args>(args)...);
             Engine::logImpl(contextPrefix + message);
         }
 
         template <typename... Args>
-        static void log(const char *func, Color color, fmt::format_string<Args...> fmt, Args &&...args) {
-            auto contextPrefix = fmt::format("[{}] ", func);
+        static void log(const char *func, Color color, const fmt::format_string<Args...> &fmt, Args &&...args) {
+            auto contextPrefix = fmt::format("[{}] "_cf, func);
             trim_to_last_scope(contextPrefix);
             auto message = fmt::format(fmt, std::forward<Args>(args)...);
             Engine::logImpl(contextPrefix + message, color);
@@ -188,7 +188,7 @@ class Engine final : public KeyboardListener {
 #endif
     };
     template <typename... Args>
-    static void logRaw(fmt::format_string<Args...> fmt, Args &&...args) {
+    static void logRaw(const fmt::format_string<Args...> &fmt, Args &&...args) {
         auto message = fmt::format(fmt, std::forward<Args>(args)...);
         Engine::logImpl(message);
     }
@@ -199,7 +199,7 @@ class Engine final : public KeyboardListener {
 
     static void logImpl(const std::string &message, Color color = rgb(255, 255, 255)) {
         if(color == rgb(255, 255, 255) || !Environment::isaTTY())
-            FMT_PRINT("{}", message);
+            FMT_PRINT("{}"_cf, message);
         else
             FMT_PRINT(fmt::fg(fmt::rgb(color.R(), color.G(), color.B())), "{}", message);
         logToConsole(color, UString(message));

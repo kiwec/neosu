@@ -13,6 +13,9 @@
 
 #include "fmt/format.h"
 #include "fmt/printf.h"
+#include "fmt/compile.h"
+
+using fmt::literals::operator""_cf;
 
 class UString {
    public:
