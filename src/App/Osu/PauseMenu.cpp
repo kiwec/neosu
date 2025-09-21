@@ -335,8 +335,11 @@ CBaseUIContainer *PauseMenu::setVisible(bool visible) {
 
     if(!BanchoState::is_playing_a_multi_map()) {
         if(visible) {
-            soundEngine->play(osu->getSkin()->getPauseLoopSound());
+            if(!osu->getScore()->isDead()) {
+                soundEngine->play(osu->getSkin()->getPauseLoopSound());
+            }
         } else {
+            soundEngine->stop(osu->getSkin()->getFailsound());
             soundEngine->stop(osu->getSkin()->getPauseLoopSound());
         }
     }

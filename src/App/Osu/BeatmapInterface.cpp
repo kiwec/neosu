@@ -868,10 +868,9 @@ bool BeatmapInterface::isPreviewMusicPlaying() {
 
 void BeatmapInterface::stop(bool quit) {
     osu->getSongBrowser()->bHasSelectedAndIsPlaying = false;
+    soundEngine->stop(this->getSkin()->getFailsound());
 
     if(this->beatmap == nullptr) return;
-
-    if(this->getSkin()->getFailsound()->isPlaying()) soundEngine->stop(this->getSkin()->getFailsound());
 
     this->bIsPlaying = false;
     this->bIsPaused = false;
@@ -957,7 +956,7 @@ void BeatmapInterface::cancelFailing() {
 
     if(this->music != nullptr) this->music->setFrequency(0.0f);
 
-    if(this->getSkin()->getFailsound()->isPlaying()) soundEngine->stop(this->getSkin()->getFailsound());
+    soundEngine->stop(this->getSkin()->getFailsound());
 }
 
 f32 BeatmapInterface::getIdealVolume() {

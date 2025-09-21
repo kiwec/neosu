@@ -380,9 +380,7 @@ CBaseUIContainer *RankingScreen::setVisible(bool visible) {
         this->updateLayout();
     } else {
         // Stop applause sound
-        if(osu->getSkin()->getApplause() != nullptr && osu->getSkin()->getApplause()->isPlaying()) {
-            soundEngine->stop(osu->getSkin()->getApplause());
-        }
+        soundEngine->stop(osu->getSkin()->getApplause());
 
         if(BanchoState::is_in_a_multi_room()) {
             // We backed out of the ranking screen, display the room again
