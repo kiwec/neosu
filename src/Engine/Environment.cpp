@@ -161,8 +161,10 @@ Graphics *Environment::createRenderer() {
 void Environment::shutdown() {
     setRawInput(false);
 
-    SDL_Event event;
-    event.type = SDL_EVENT_QUIT;
+    SDL_Event event{
+        .quit = {.type = SDL_EVENT_QUIT, .reserved = {}, .timestamp = Timing::getTicksNS()},
+    };
+
     SDL_PushEvent(&event);
 }
 
@@ -476,12 +478,12 @@ std::string Environment::encodeStringToURI(const std::string &unencodedString) n
 }
 
 std::string Environment::urlEncode(const std::string &unencodedString) noexcept {
-    CURL* curl = curl_easy_init();
+    CURL *curl = curl_easy_init();
     if(!curl) {
         return "";
     }
 
-    char* encoded = curl_easy_escape(curl, unencodedString.c_str(), unencodedString.length());
+    char *encoded = curl_easy_escape(curl, unencodedString.c_str(), unencodedString.length());
     if(!encoded) {
         curl_easy_cleanup(curl);
         return "";

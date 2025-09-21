@@ -246,7 +246,7 @@ void SDLMain::restart(const std::vector<std::string> &args) {
 #ifdef MCENGINE_PLATFORM_WINDOWS
     const char *wincmdline = GetCommandLineA();
     if(wincmdline) {
-        SDL_SetStringProperty(restartprops, SDL_PROP_PROCESS_CREATE_CMDLINE_STRING, GetCommandLineA());
+        SDL_SetStringProperty(restartprops, SDL_PROP_PROCESS_CREATE_CMDLINE_STRING, wincmdline);
     }
     // so that handle_existing_window doesn't find the currently running instance by the class name
     SDL_UnregisterApp();

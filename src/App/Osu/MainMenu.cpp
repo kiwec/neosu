@@ -613,9 +613,9 @@ void MainMenu::drawMainButton() {
 
             customPulse = 1.0f - customPulse;
 
-            const float anim = std::lerp((1.0f - customPulse) * (1.0f - customPulse), (1.0f - customPulse), 0.25f);
-            const float anim2 = anim * (this->iMainMenuAnimBeatCounter % 2 == 1 ? 1.0f : -1.0f);
-            const float anim3 = anim;
+            const float anim1 = std::lerp((1.0f - customPulse) * (1.0f - customPulse), (1.0f - customPulse), 0.25f);
+            const float anim2 = anim1 * (this->iMainMenuAnimBeatCounter % 2 == 1 ? 1.0f : -1.0f);
+            const float anim3 = anim1;
 
             friendRotation = anim2 * 13;
             friendTranslationX = -anim2 * mainButtonRect.getWidth() * 0.175f;

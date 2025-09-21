@@ -55,7 +55,7 @@ class Engine final : public KeyboardListener {
     void onChar(KeyboardEvent &) override { ; }
 
     // convenience functions (passthroughs)
-    void shutdown();
+    inline void shutdown() { this->onShutdown(); }
     void restart();
     void focus();
     void center();

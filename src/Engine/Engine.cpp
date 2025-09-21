@@ -510,8 +510,6 @@ void Engine::onKeyDown(KeyboardEvent &e) {
     }
 }
 
-void Engine::shutdown() { this->onShutdown(); }
-
 void Engine::restart() {
     this->onShutdown();
     env->restart();
