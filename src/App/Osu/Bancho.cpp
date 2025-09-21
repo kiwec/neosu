@@ -210,7 +210,11 @@ void BanchoState::handle_packet(Packet &packet) {
                         UserInfo *user = BANCHO::User::get_user_info(uid);
                         osu->getChat()->openChannel(user->name);
                     };
-                    osu->getNotificationOverlay()->addToast(text, STATUS_TOAST, open_dms, ToastElement::TYPE::CHAT);
+
+                    // TODO: figure out what stable does and do that. for now just throttling to avoid endless spam
+                    if(user->stats_tms + 10000 < Timing::getTicksMS() && action != SUBMITTING) {
+                        osu->getNotificationOverlay()->addToast(text, STATUS_TOAST, open_dms, ToastElement::TYPE::CHAT);
+                    }
                 }
             }
 
