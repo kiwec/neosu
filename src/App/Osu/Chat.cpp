@@ -935,12 +935,14 @@ void Chat::addMessage(UString channel_name, const ChatMessage &msg, bool mark_un
                 this->mark_as_read(chan);
 
                 // Update ticker
-                auto screen = osu->getVirtScreenSize();
-                this->ticker_tms = engine->getTime();
-                this->ticker->messages.clear();
-                this->ticker->messages.push_back(msg);
-                this->ticker->add_message(msg);
-                this->updateTickerLayout(screen);
+                if(msg.author_name.toUtf8() != BanchoState::get_username()) {
+                    auto screen = osu->getVirtScreenSize();
+                    this->ticker_tms = engine->getTime();
+                    this->ticker->messages.clear();
+                    this->ticker->messages.push_back(msg);
+                    this->ticker->add_message(msg);
+                    this->updateTickerLayout(screen);
+                }
             } else {
                 this->updateButtonLayout(this->getSize());
             }
@@ -969,7 +971,7 @@ void Chat::addMessage(UString channel_name, const ChatMessage &msg, bool mark_un
                                            .author_id = BanchoState::get_uid(),
                                            .author_name = BanchoState::get_username().c_str(),
                                            .text = this->away_msg,
-                                       });
+                                       }, false);
     }
 }
 
@@ -1210,7 +1212,7 @@ void Chat::send_message(const UString &msg) {
                                                        .author_id = BanchoState::get_uid(),
                                                        .author_name = BanchoState::get_username().c_str(),
                                                        .text = msg,
-                                                   });
+                                                   }, false);
 }
 
 void Chat::onDisconnect() {

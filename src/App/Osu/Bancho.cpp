@@ -182,7 +182,7 @@ void BanchoState::handle_packet(Packet &packet) {
                 .author_name = sender,
                 .text = text,
             };
-            osu->getChat()->addMessage(recipient, msg);
+            osu->getChat()->addMessage(recipient, msg, true);
 
             break;
         }
