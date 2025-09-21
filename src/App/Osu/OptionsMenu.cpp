@@ -36,6 +36,7 @@
 #include "PeppyImporter.h"
 #include "ResourceManager.h"
 #include "Skin.h"
+#include "SkinImage.h"
 #include "SliderRenderer.h"
 #include "SongBrowser/LoudnessCalcThread.h"
 #include "SongBrowser/SongBrowser.h"
@@ -2235,9 +2236,9 @@ void OptionsMenu::updateLayout() {
 
     this->options->getContainer()->update_pos();
 
-    const int categoryPaddingTopBottom = this->categories->getSize().y * 0.15f;
-    const int categoryHeight =
-        (this->categories->getSize().y - categoryPaddingTopBottom * 2) / this->categoryButtons.size();
+    f32 sidebarHeight = this->categories->getSize().y - osu->getSkin()->getMenuBack2()->getSize().y;
+    i32 categoryPaddingTopBottom = sidebarHeight * 0.15f;
+    i32 categoryHeight = (sidebarHeight - categoryPaddingTopBottom * 2) / this->categoryButtons.size();
     for(int i = 0; i < this->categoryButtons.size(); i++) {
         OptionsMenuCategoryButton *category = this->categoryButtons[i];
         category->onResized();  // HACKHACK: framework, setSize*() does not update string metrics
