@@ -161,9 +161,8 @@ Graphics *Environment::createRenderer() {
 void Environment::shutdown() {
     setRawInput(false);
 
-    SDL_Event event{
-        .quit = {.type = SDL_EVENT_QUIT, .reserved = {}, .timestamp = Timing::getTicksNS()},
-    };
+    SDL_Event event{};
+    event.quit = {.type = SDL_EVENT_QUIT, .reserved = {}, .timestamp = Timing::getTicksNS()};
 
     SDL_PushEvent(&event);
 }
