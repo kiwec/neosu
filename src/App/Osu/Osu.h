@@ -237,7 +237,6 @@ class Osu final : public MouseListener, public KeyboardListener {
 
    private:
     // interfaces
-    std::unique_ptr<BeatmapInterface> map_iface{nullptr};
     std::unique_ptr<AvatarManager> avatarManager{nullptr};
     std::unique_ptr<UserCard> userButton{nullptr};
     std::unique_ptr<Chat> chat{nullptr};
@@ -262,6 +261,7 @@ class Osu final : public MouseListener, public KeyboardListener {
     std::unique_ptr<UpdateHandler> updateHandler{nullptr};
     std::unique_ptr<ModFPoSu> fposu{nullptr};
     std::unique_ptr<SpectatorScreen> spectatorScreen{nullptr};
+    std::unique_ptr<BeatmapInterface> map_iface{nullptr};
 
     std::vector<OsuScreen *> screens;
 
