@@ -87,7 +87,7 @@ class SongBrowser final : public ScreenBackable {
         this->playSelectedDifficulty();
     }
 
-    void refreshBeatmaps();
+    void refreshBeatmaps(bool closeAfterLoading = false);
     void addBeatmapSet(BeatmapSet *beatmap);
     void addSongButtonToAlphanumericGroup(SongButton *btn, std::vector<CollectionButton *> &group,
                                           const std::string &name);
@@ -253,6 +253,7 @@ class SongBrowser final : public ScreenBackable {
     std::vector<CollectionButton *> titleCollectionButtons;
     std::unordered_map<MD5Hash, SongButton *> hashToSongButton;
     bool bBeatmapRefreshScheduled;
+    bool bCloseAfterBeatmapRefreshFinished;
     UString sLastOsuFolder;
     MD5Hash beatmap_to_reselect_after_db_load;
 

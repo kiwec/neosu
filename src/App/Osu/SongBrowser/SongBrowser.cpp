@@ -1362,7 +1362,7 @@ void SongBrowser::onDifficultySelected(DatabaseBeatmap *map, bool play) {
     this->webButton->setVisible(this->songInfo->getBeatmapID() > 0);
 }
 
-void SongBrowser::refreshBeatmaps() {
+void SongBrowser::refreshBeatmaps(bool closeAfterLoading) {
     if(this->bHasSelectedAndIsPlaying) return;
 
     if(!this->bVisible && !cv::load_db_immediately.getBool()) {
@@ -1457,6 +1457,7 @@ void SongBrowser::refreshBeatmaps() {
 
     // start loading
     this->bBeatmapRefreshScheduled = true;
+    this->bCloseAfterBeatmapRefreshFinished = closeAfterLoading;
     db->load();
 }
 
@@ -2604,6 +2605,10 @@ void SongBrowser::onDatabaseLoadingFinished() {
     // ok, if we still haven't selected a song, do so now
     if(osu->getMapInterface()->beatmap == nullptr) {
         this->selectRandomBeatmap();
+    }
+
+    if(this->bCloseAfterBeatmapRefreshFinished) {
+        this->setVisible(false);
     }
 
     t.update();

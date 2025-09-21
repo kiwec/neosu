@@ -42,6 +42,8 @@ class Lobby : public OsuScreen {
     // /!\ Side-effect: sends bancho packets when changing state
     CBaseUIContainer* setVisible(bool visible) override;
 
+    bool isVisible() override;
+
     void addRoom(Room* room);
     void joinRoom(u32 id, const UString& password);
     void updateRoom(const Room& room);

@@ -13,6 +13,7 @@
 #include "CBaseUIContainer.h"
 #include "CBaseUILabel.h"
 #include "Chat.h"
+#include "Database.h"
 #include "Engine.h"
 #include "Keyboard.h"
 #include "MainMenu.h"
@@ -22,6 +23,7 @@
 #include "ResourceManager.h"
 #include "RichPresence.h"
 #include "Skin.h"
+#include "SongBrowser/SongBrowser.h"
 #include "SoundEngine.h"
 #include "UIButton.h"
 
@@ -126,6 +128,11 @@ void Lobby::onChar(KeyboardEvent& /*key*/) {
 
 void Lobby::onResolutionChange(vec2 newResolution) { this->updateLayout(newResolution); }
 
+bool Lobby::isVisible() {
+    // Hide lobby & chat UI while database is loading
+    return this->bVisible && !osu->getSongBrowser()->isVisible();
+}
+
 CBaseUIContainer* Lobby::setVisible(bool visible) {
     if(visible == this->bVisible) return this;
     this->bVisible = visible;
@@ -143,9 +150,10 @@ CBaseUIContainer* Lobby::setVisible(bool visible) {
         // LOBBY presence is broken so we send MULTIPLAYER
         RichPresence::setBanchoStatus("Looking to play", MULTIPLAYER);
 
-        // XXX: Could call refreshBeatmaps() here so we load them if not already done so.
-        //      Would need to edit it a bit to work outside of songBrowser2, + display loading progress.
-        //      Ideally, you'd do this in the background and still be able to browse rooms.
+        if(db->getProgress() == 0.0) {
+            // Not having a loaded database causes a bunch of issues in multi
+            osu->getSongBrowser()->refreshBeatmaps(true);
+        }
     } else {
         Packet packet;
         packet.id = EXIT_ROOM_LIST;
