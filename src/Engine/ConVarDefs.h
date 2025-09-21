@@ -899,8 +899,8 @@ CONVAR(cursor_trail_smooth_length, "cursor_trail_smooth_length", 0.5f, CLIENT | 
        "how long smooth cursortrails should be, in seconds");
 CONVAR(cursor_trail_spacing, "cursor_trail_spacing", 15.f, CLIENT | SKINS | SERVER,
        "how big the gap between consecutive unsmooth cursortrail images should be, in milliseconds");
-CONVAR(disable_mousebuttons, "disable_mousebuttons", false, CLIENT | SKINS | SERVER);
-CONVAR(disable_mousewheel, "disable_mousewheel", false, CLIENT | SKINS | SERVER);
+CONVAR(disable_mousebuttons, "disable_mousebuttons", true, CLIENT | SKINS | SERVER);
+CONVAR(disable_mousewheel, "disable_mousewheel", true, CLIENT | SKINS | SERVER);
 CONVAR(drain_kill, "drain_kill", true, CLIENT | SERVER | PROTECTED | GAMEPLAY,
        "whether to kill the player upon failing");
 CONVAR(drain_kill_notification_duration, "drain_kill_notification_duration", 1.0f, CLIENT | SKINS | SERVER,
