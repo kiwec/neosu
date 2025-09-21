@@ -30,7 +30,7 @@ class DownloadManager;
 std::shared_ptr<DownloadManager> s_download_manager;
 
 class DownloadManager {
-NOCOPY_NOMOVE(DownloadManager)
+    NOCOPY_NOMOVE(DownloadManager)
    private:
     struct DownloadRequest {
         std::string url;
@@ -227,11 +227,12 @@ void download(const char* url, float* progress, std::vector<u8>& out, int* respo
         return;
     }
 
-    *progress = request->progress.load();
-    *response_code = request->response_code.load();
+    *progress = std::min(0.99f, request->progress.load());
 
     if(request->completed.load()) {
         std::scoped_lock lock(request->data_mutex);
+        *progress = 1.f;
+        *response_code = request->response_code.load();
         if(*response_code == 200) {
             out = request->data;
         }
@@ -494,7 +495,7 @@ DatabaseBeatmap* download_beatmap(i32 beatmap_id, i32 beatmapset_id, float* prog
     return beatmap;
 }
 
-void process_beatmapset_info_response(Packet &packet) {
+void process_beatmapset_info_response(Packet& packet) {
     i32 map_id = packet.extra_int;
     if(packet.size == 0) {
         beatmap_to_beatmapset[map_id] = 0;
