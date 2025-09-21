@@ -478,7 +478,7 @@ void BanchoState::handle_packet(Packet &packet) {
                 .author_name = UString(""),
                 .text = UString("Joined channel."),
             };
-            osu->getChat()->addChannel(name);
+            osu->getChat()->addChannel(name, true);
             osu->getChat()->addMessage(name, msg, false);
             break;
         }
