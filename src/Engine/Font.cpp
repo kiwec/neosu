@@ -271,8 +271,10 @@ bool McFont::loadGlyphDynamic(wchar_t ch) {
         return false;
     }
 
-    if(cv::r_debug_font_unicode.getBool() && fontIndex > 0)
-        debugLog("Font Info: Using fallback font #{:d} for character U+{:04X}\n", fontIndex, (wint_t)ch);
+    if(cv::r_debug_font_unicode.getBool() && fontIndex > 0) {
+        debugLog("Font Info (for font resource {}): Using fallback font #{:d} for character U+{:04X}\n", getName(),
+                 fontIndex, (wint_t)ch);
+    }
 
     // load glyph from the selected font face
     if(!loadGlyphFromFace(ch, targetFace, fontIndex)) return false;
@@ -295,7 +297,7 @@ bool McFont::loadGlyphDynamic(wchar_t ch) {
         }
 
         // render glyph to slot (with padding, will clip if necessary)
-        renderGlyphToAtlas(ch, slot.x + TextureAtlas::ATLAS_PADDING, slot.y + TextureAtlas::ATLAS_PADDING, targetFace);
+        renderGlyphToAtlas(ch, slot.x + TextureAtlas::ATLAS_PADDING, slot.y + TextureAtlas::ATLAS_PADDING, targetFace, true /*dynamic*/);
 
         // update metrics with slot position
         GLYPH_METRICS &glyphMetrics = m_vGlyphMetrics[ch];
@@ -460,7 +462,7 @@ std::unique_ptr<Color[]> McFont::createExpandedBitmapData(const FT_Bitmap &bitma
     return expandedData;
 }
 
-void McFont::renderGlyphToAtlas(wchar_t ch, int x, int y, FT_Face face) {
+void McFont::renderGlyphToAtlas(wchar_t ch, int x, int y, FT_Face face, bool isDynamicSlot) {
     if(!face) {
         // fall back to getting the face again if not provided
         int fontIndex = 0;
@@ -483,16 +485,21 @@ void McFont::renderGlyphToAtlas(wchar_t ch, int x, int y, FT_Face face) {
     auto &bitmap = bitmapGlyph->bitmap;
 
     if(bitmap.width > 0 && bitmap.rows > 0) {
-        // clip to available space if needed
-        const int maxSlotContent = DYNAMIC_SLOT_SIZE - 2 * TextureAtlas::ATLAS_PADDING;
         const int atlasWidth = m_textureAtlas->getWidth();
         const int atlasHeight = m_textureAtlas->getHeight();
 
-        const int availableWidth = std::min({static_cast<int>(bitmap.width), maxSlotContent, atlasWidth - x});
-        const int availableHeight = std::min({static_cast<int>(bitmap.rows), maxSlotContent, atlasHeight - y});
+        int availableWidth = std::min(static_cast<int>(bitmap.width), atlasWidth - x);
+        int availableHeight = std::min(static_cast<int>(bitmap.rows), atlasHeight - y);
 
+        // only apply slot size clipping for dynamic glyphs
         // TODO: consolidate the logic for this, it's checked in too many places
         // doing redundant work to create expanded then clipped instead of just all in 1 go
+        if(isDynamicSlot) {
+            const int maxSlotContent = DYNAMIC_SLOT_SIZE - 2 * TextureAtlas::ATLAS_PADDING;
+            availableWidth = std::min(availableWidth, maxSlotContent);
+            availableHeight = std::min(availableHeight, maxSlotContent);
+        }
+
         auto expandedData = createExpandedBitmapData(bitmap);
 
         // if clipping is needed, create clipped data
@@ -577,7 +584,7 @@ bool McFont::createAndPackAtlas(const std::vector<wchar_t> &glyphs) {
         int fontIndex = 0;
         FT_Face face = getFontFaceForGlyph(ch, fontIndex);
 
-        renderGlyphToAtlas(ch, rect.x, rect.y, face);
+        renderGlyphToAtlas(ch, rect.x, rect.y, face, false /*not dynamic*/);
     }
 
     // initialize dynamic region after static glyphs are placed

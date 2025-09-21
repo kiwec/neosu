@@ -131,7 +131,7 @@ class McFont final : public Resource {
     bool initializeFreeType();
     bool loadGlyphMetrics(wchar_t ch);
     std::unique_ptr<Color[]> createExpandedBitmapData(const FT_Bitmap &bitmap);
-    void renderGlyphToAtlas(wchar_t ch, int x, int y, FT_Face face = nullptr);
+    void renderGlyphToAtlas(wchar_t ch, int x, int y, FT_Face face = nullptr, bool isDynamicSlot = false);
     bool createAndPackAtlas(const std::vector<wchar_t> &glyphs);
 
     // fallback font management
