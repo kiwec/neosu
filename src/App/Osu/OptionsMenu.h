@@ -287,7 +287,7 @@ class OptionsMenu : public ScreenBackable, public NotificationOverlayKeyListener
     CBaseUILabel *hpDrainSelectLabel;
     OptionsMenuResetButton *hpDrainSelectResetButton;
 
-    CBaseUIElement *sectionOnline;
+    CBaseUIElement *sectionGeneral;
     CBaseUITextbox *serverTextbox;
     CBaseUICheckbox *submitScoresCheckbox;
     CBaseUITextbox *nameTextbox;

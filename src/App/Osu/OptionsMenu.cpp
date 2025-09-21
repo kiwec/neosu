@@ -499,7 +499,7 @@ OptionsMenu::OptionsMenu() : ScreenBackable() {
 
     //**************************************************************************************************************************//
 
-    this->sectionOnline = this->addSection("Online");
+    this->sectionGeneral = this->addSection("General");
 
     this->addSubSection("Online server");
 
@@ -551,42 +551,14 @@ OptionsMenu::OptionsMenu() : ScreenBackable() {
         loginElement->cvars[keepCbx] = &cv::mp_autologin;
     }
 
-    this->addSubSection("Alerts");
-    this->addCheckbox("Notify when friends change status", &cv::notify_friend_status_change);
-    this->addCheckbox("Notify when receiving a direct message", &cv::chat_notify_on_dm);
-    this->addCheckbox("Notify when mentioned", &cv::chat_notify_on_mention);
-    this->addCheckbox("Ping when mentioned", &cv::chat_ping_on_mention);
-    this->addCheckbox("Show notifications during gameplay", &cv::notify_during_gameplay);
-
-    this->addSubSection("In-game chat");
-    this->addCheckbox("Chat ticker", &cv::chat_ticker);
-    this->addCheckbox("Automatically hide chat during gameplay", &cv::chat_auto_hide);
-    this->addTextbox(cv::chat_ignore_list.getString().c_str(),
-                     "Chat word ignore list (space-separated):", &cv::chat_ignore_list);
-    // this->addTextbox(cv::chat_highlight_words.getString().c_str(), "Chat word highlight list (space-separated):", &cv::chat_highlight_words);
-
-    this->addSubSection("Privacy");
-    this->addCheckbox("Automatically update neosu to the latest version", &cv::auto_update);
-    // this->addCheckbox("Allow private messages from strangers", &cv::allow_stranger_dms);
-    // this->addCheckbox("Allow game invites from strangers", &cv::allow_mp_invites);
-    this->addCheckbox("Replace main menu logo with server logo", &cv::main_menu_use_server_logo);
-    this->addCheckbox("Show spectator list", &cv::draw_spectator_list);
-    this->addCheckbox("Share currently played map with spectators", &cv::spec_share_map);
-    this->addCheckbox("Enable Discord Rich Presence",
-                      "Shows your current game state in your friends' friendslists.\ne.g.: Playing Gavin G - Reach Out "
-                      "[Cherry Blossom's Insane]",
-                      &cv::rich_presence);
-
-    //**************************************************************************************************************************//
-
-    CBaseUIElement *sectionGeneral = this->addSection("General");
-
     this->addSubSection("osu!folder");
-    this->addLabel("1) If you have an existing osu! installation:")->setTextColor(0xff666666);
+    this->addLabel("1) If you have an existing osu!stable installation:")->setTextColor(0xff666666);
     this->addLabel("2) osu! > Options > \"Open osu! folder\"")->setTextColor(0xff666666);
     this->addLabel("3) Copy paste the full path into the textbox:")->setTextColor(0xff666666);
     this->addLabel("");
     this->osuFolderTextbox = this->addTextbox(cv::osu_folder.getString().c_str(), &cv::osu_folder);
+    UIButton *importSettingsButton = this->addButton("Import settings from osu!stable");
+    importSettingsButton->setClickCallback(SA::MakeDelegate<&OptionsMenu::onImportSettingsFromStable>(this));
     this->addSpacer();
     this->addCheckbox(
         "Use osu!.db database (read-only)",
@@ -622,6 +594,32 @@ OptionsMenu::OptionsMenu() : ScreenBackable() {
     this->addSubSection("Window");
     this->addCheckbox("Pause on Focus Loss", "Should the game pause when you switch to another application?",
                       &cv::pause_on_focus_loss);
+
+    this->addSubSection("Alerts");
+    this->addCheckbox("Notify when friends change status", &cv::notify_friend_status_change);
+    this->addCheckbox("Notify when receiving a direct message", &cv::chat_notify_on_dm);
+    this->addCheckbox("Notify when mentioned", &cv::chat_notify_on_mention);
+    this->addCheckbox("Ping when mentioned", &cv::chat_ping_on_mention);
+    this->addCheckbox("Show notifications during gameplay", &cv::notify_during_gameplay);
+
+    this->addSubSection("In-game chat");
+    this->addCheckbox("Chat ticker", &cv::chat_ticker);
+    this->addCheckbox("Automatically hide chat during gameplay", &cv::chat_auto_hide);
+    this->addTextbox(cv::chat_ignore_list.getString().c_str(),
+                     "Chat word ignore list (space-separated):", &cv::chat_ignore_list);
+    // this->addTextbox(cv::chat_highlight_words.getString().c_str(), "Chat word highlight list (space-separated):", &cv::chat_highlight_words);
+
+    this->addSubSection("Privacy");
+    this->addCheckbox("Automatically update neosu to the latest version", &cv::auto_update);
+    // this->addCheckbox("Allow private messages from strangers", &cv::allow_stranger_dms);
+    // this->addCheckbox("Allow game invites from strangers", &cv::allow_mp_invites);
+    this->addCheckbox("Replace main menu logo with server logo", &cv::main_menu_use_server_logo);
+    this->addCheckbox("Show spectator list", &cv::draw_spectator_list);
+    this->addCheckbox("Share currently played map with spectators", &cv::spec_share_map);
+    this->addCheckbox("Enable Discord Rich Presence",
+                      "Shows your current game state in your friends' friendslists.\ne.g.: Playing Gavin G - Reach Out "
+                      "[Cherry Blossom's Insane]",
+                      &cv::rich_presence);
 
     //**************************************************************************************************************************//
 
@@ -1306,9 +1304,6 @@ OptionsMenu::OptionsMenu() : ScreenBackable() {
     UIButton *resetAllSettingsButton = this->addButton("Reset all settings");
     resetAllSettingsButton->setClickCallback(SA::MakeDelegate<&OptionsMenu::onResetEverythingClicked>(this));
     resetAllSettingsButton->setColor(0xffd90000);
-    UIButton *importSettingsButton = this->addButton("Import settings from osu!stable");
-    importSettingsButton->setClickCallback(SA::MakeDelegate<&OptionsMenu::onImportSettingsFromStable>(this));
-    importSettingsButton->setColor(0xffd90000);
     this->addSubSection("Testing");
     this->addCheckbox("Use bleeding edge release stream", &cv::bleedingedge);
     this->addSpacer();
@@ -1323,8 +1318,7 @@ OptionsMenu::OptionsMenu() : ScreenBackable() {
     //**************************************************************************************************************************//
 
     // build categories
-    this->addCategory(this->sectionOnline, Icons::GLOBE);
-    this->addCategory(sectionGeneral, Icons::GEAR);
+    this->addCategory(this->sectionGeneral, Icons::GEAR);
     this->addCategory(sectionGraphics, Icons::DESKTOP);
     this->addCategory(sectionAudio, Icons::VOLUME_UP);
     this->addCategory(this->skinSection, Icons::PAINTBRUSH);
@@ -2279,7 +2273,7 @@ void OptionsMenu::scheduleSearchUpdate() {
 
 void OptionsMenu::askForLoginDetails() {
     this->setVisible(true);
-    this->options->scrollToElement(this->sectionOnline, 0, 100 * osu->getUIScale());
+    this->options->scrollToElement(this->sectionGeneral, 0, 100 * osu->getUIScale());
     this->nameTextbox->focus();
 }
 
@@ -3793,7 +3787,7 @@ bool OptionsMenu::should_use_oauth_login() {
     };
 
     const std::string server_endpoint{this->serverTextbox->getText().toUtf8()};
-    if (server_endpoint.empty() || !std::ranges::contains(oauth_servers, server_endpoint)) {
+    if(server_endpoint.empty() || !std::ranges::contains(oauth_servers, server_endpoint)) {
         return false;
     }
 
