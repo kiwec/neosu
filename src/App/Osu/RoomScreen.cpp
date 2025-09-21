@@ -464,9 +464,15 @@ void RoomScreen::updateLayout(vec2 newResolution) {
     for(auto &slot : BanchoState::room.slots) {
         if(slot.has_player()) {
             auto user_info = BANCHO::User::get_user_info(slot.player_id, true);
+
+            auto color = 0xffffffff;
             auto username = user_info->name;
             if(slot.is_player_playing()) {
-                username = UString::format("[playing] %s", user_info->name.toUtf8());
+                username = UString::fmt("[playing] {}", user_info->name.toUtf8());
+            } else if(slot.no_map()) {
+                username = UString::fmt("[no map] {}", user_info->name.toUtf8());
+            } else if(slot.is_ready()) {
+                color = 0xff00ff00;
             }
 
             const float SLOT_HEIGHT = 40.f;
@@ -476,13 +482,6 @@ void RoomScreen::updateLayout(vec2 newResolution) {
             auto user_box = new UIUserLabel(slot.player_id, username);
             user_box->setFont(this->lfont);
             user_box->setPos(avatar->getRelPos().x + avatar->getSize().x + 10, y_total);
-
-            auto color = 0xffffffff;
-            if(slot.is_ready()) {
-                color = 0xff00ff00;
-            } else if(slot.no_map()) {
-                color = 0xffdd0000;
-            }
             user_box->setTextColor(color);
             user_box->setSizeToContent();
             user_box->setSize(user_box->getSize().x, SLOT_HEIGHT);
