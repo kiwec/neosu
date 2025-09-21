@@ -290,7 +290,15 @@ void RoomScreen::onKeyDown(KeyboardEvent &key) {
 
     if(key.getKeyCode() == KEY_ESCAPE) {
         key.consume();
-        this->ragequit();
+
+        static f64 last_escape_press = 0.0;
+        if(last_escape_press + 1.0 < engine->getTime()) {
+            last_escape_press = engine->getTime();
+            osu->getNotificationOverlay()->addNotification("Hit 'Escape' once more to exit this multiplayer match.", 0xffffffff, false, 0.75f);
+        } else {
+            this->ragequit();
+        }
+
         return;
     }
 
