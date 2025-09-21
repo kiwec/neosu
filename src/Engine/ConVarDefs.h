@@ -1034,7 +1034,7 @@ CONVAR(hitresult_fadeout_duration, "hitresult_fadeout_duration", 0.600f, CLIENT 
 CONVAR(hitresult_fadeout_start_time, "hitresult_fadeout_start_time", 0.500f, CLIENT | SKINS | SERVER);
 CONVAR(hitresult_miss_fadein_scale, "hitresult_miss_fadein_scale", 2.0f, CLIENT | SKINS | SERVER);
 CONVAR(hitresult_scale, "hitresult_scale", 1.0f, CLIENT | SKINS | SERVER);
-CONVAR(ignore_beatmap_combo_colors, "ignore_beatmap_combo_colors", false, CLIENT | SKINS | SERVER);
+CONVAR(ignore_beatmap_combo_colors, "ignore_beatmap_combo_colors", true, CLIENT | SKINS | SERVER);
 CONVAR(ignore_beatmap_combo_numbers, "ignore_beatmap_combo_numbers", false, CLIENT | SKINS | SERVER,
        "may be used in conjunction with number_max");
 CONVAR(ignore_beatmap_sample_volume, "ignore_beatmap_sample_volume", false, CLIENT | SKINS | SERVER);
