@@ -236,34 +236,50 @@ class Osu final : public MouseListener, public KeyboardListener {
     void setupSoloud();
 
    private:
-    // interfaces
+    // NOTE: unique_ptrs are destroyed in reverse order of declaration in header
+
+    // interfaces (other)
+    std::unique_ptr<UpdateHandler> updateHandler{nullptr};
     std::unique_ptr<AvatarManager> avatarManager{nullptr};
     std::unique_ptr<UserCard> userButton{nullptr};
-    std::unique_ptr<Chat> chat{nullptr};
-    std::unique_ptr<VolumeOverlay> volumeOverlay{nullptr};
-    std::unique_ptr<MainMenu> mainMenu{nullptr};
-    std::unique_ptr<OptionsMenu> optionsMenu{nullptr};
-    std::unique_ptr<Lobby> lobby{nullptr};
-    std::unique_ptr<RoomScreen> room{nullptr};
-    std::unique_ptr<PromptScreen> prompt{nullptr};
-    std::unique_ptr<UIUserContextMenuScreen> user_actions{nullptr};
-    std::unique_ptr<SongBrowser> songBrowser{nullptr};
     std::unique_ptr<BackgroundImageHandler> backgroundImageHandler{nullptr};
-    std::unique_ptr<ModSelector> modSelector{nullptr};
-    std::unique_ptr<RankingScreen> rankingScreen{nullptr};
-    std::unique_ptr<UserStatsScreen> userStats{nullptr};
-    std::unique_ptr<PauseMenu> pauseMenu{nullptr};
-    std::unique_ptr<HUD> hud{nullptr};
-    std::unique_ptr<TooltipOverlay> tooltipOverlay{nullptr};
-    std::unique_ptr<NotificationOverlay> notificationOverlay{nullptr};
-    std::unique_ptr<LiveScore> score{nullptr};
-    std::unique_ptr<Changelog> changelog{nullptr};
-    std::unique_ptr<UpdateHandler> updateHandler{nullptr};
-    std::unique_ptr<ModFPoSu> fposu{nullptr};
-    std::unique_ptr<SpectatorScreen> spectatorScreen{nullptr};
+    std::unique_ptr<Skin> skin{nullptr};
     std::unique_ptr<BeatmapInterface> map_iface{nullptr};
+    std::unique_ptr<LiveScore> score{nullptr};
+    std::unique_ptr<ModFPoSu> fposu{nullptr};
 
-    std::vector<OsuScreen *> screens;
+    // interfaces ("OsuScreen"s)
+
+    // for looping through all screens in mouse_update/draw etc.
+    // the order matters to determine priority for event handling/consumption
+#define ALL_OSU_SCREENS                         \
+    X(VolumeOverlay, volumeOverlay)             \
+    X(PromptScreen, prompt)                     \
+    X(ModSelector, modSelector)                 \
+    X(UIUserContextMenuScreen, user_actions)    \
+    X(RoomScreen, room)                         \
+    X(NotificationOverlay, notificationOverlay) \
+    X(Chat, chat)                               \
+    X(OptionsMenu, optionsMenu)                 \
+    X(RankingScreen, rankingScreen)             \
+    X(UserStatsScreen, userStats)               \
+    X(SpectatorScreen, spectatorScreen)         \
+    X(PauseMenu, pauseMenu)                     \
+    X(HUD, hud)                                 \
+    X(SongBrowser, songBrowser)                 \
+    X(Lobby, lobby)                             \
+    X(Changelog, changelog)                     \
+    X(MainMenu, mainMenu)                       \
+    X(TooltipOverlay, tooltipOverlay)
+
+    // declare all screen unique_ptrs
+#define X(ptr_type__, name__) /*                                                          */ \
+    std::unique_ptr<ptr_type__> name__{nullptr};
+    ALL_OSU_SCREENS
+#undef X
+
+    // interfaces (debugging)
+    std::unique_ptr<CWindowManager> windowManager{nullptr};
 
     // rendering
     RenderTarget *backBuffer{nullptr};
@@ -333,11 +349,7 @@ class Osu final : public MouseListener, public KeyboardListener {
     McFont *songBrowserFont{nullptr};
     McFont *songBrowserFontBold{nullptr};
     McFont *fontIcons{nullptr};
-    std::unique_ptr<Skin> skin{nullptr};
     Skin *skinScheduledToLoad{nullptr};
-
-    // debugging
-    std::unique_ptr<CWindowManager> windowManager{nullptr};
 
     // replay
    public:
@@ -354,9 +366,48 @@ class Osu final : public MouseListener, public KeyboardListener {
     bool bFontReloadScheduled{false};
     bool bFireResolutionChangedScheduled{false};
     bool bFireDelayedFontReloadAndResolutionChangeToFixDesyncedUIScaleScheduled{false};
+    bool bScreensReady{false};
 
    public:  // public due to BassSoundEngine access
     bool music_unpause_scheduled{false};
+
+    // helpers to do something for each screen, in order
+   private:
+    template <auto MemberFunc, typename Condition, typename... Args>
+    inline void forEachScreenWhile(const Condition &condition, Args &&...args)
+        requires std::is_invocable_v<Condition>
+    {
+        if(unlikely(!this->bScreensReady || !condition())) return;
+        // for each screen unique_ptr, as long as condition (lambda) is true
+#define X(unused__, name__)                                             \
+    std::invoke(MemberFunc, this->name__, std::forward<Args>(args)...); \
+    if(!condition()) return;
+        ALL_OSU_SCREENS
+#undef X
+    }
+
+    template <auto MemberFunc, typename Condition, typename... Args>
+    inline void forEachScreenWhile(Condition &condition, Args &&...args)
+        requires(!std::is_invocable_v<Condition>)
+    {
+        if(unlikely(!this->bScreensReady || !condition)) return;
+        // for each screen unique_ptr, as long as condition (lvalue) is true
+#define X(unused__, name__)                                             \
+    std::invoke(MemberFunc, this->name__, std::forward<Args>(args)...); \
+    if(!condition) return;
+        ALL_OSU_SCREENS
+#undef X
+    }
+
+    // passthrough for unconditional iteration
+    template <auto MemberFunc, typename... Args>
+    inline void forEachScreen(Args &&...args) {
+        static constexpr const bool always_true{true};  // so it's an lvalue...
+        this->forEachScreenWhile<MemberFunc>(always_true, std::forward<Args>(args)...);
+    }
+
+    // we want to destroy them in the same order as we listed them, to match the old (raw pointer) behavior
+    void destroyAllScreensInOrder();
 };
 
 extern Osu *osu;

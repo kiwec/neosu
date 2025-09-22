@@ -285,25 +285,8 @@ Osu::Osu() {
     this->user_actions = std::make_unique<UIUserContextMenuScreen>();
     this->spectatorScreen = std::make_unique<SpectatorScreen>();
 
-    // the order in this vector will define in which order events are handled/consumed
-    this->screens.push_back(this->volumeOverlay.get());
-    this->screens.push_back(this->prompt.get());
-    this->screens.push_back(this->modSelector.get());
-    this->screens.push_back(this->user_actions.get());
-    this->screens.push_back(this->room.get());
-    this->screens.push_back(this->notificationOverlay.get());
-    this->screens.push_back(this->chat.get());
-    this->screens.push_back(this->optionsMenu.get());
-    this->screens.push_back(this->rankingScreen.get());
-    this->screens.push_back(this->userStats.get());
-    this->screens.push_back(this->spectatorScreen.get());
-    this->screens.push_back(this->pauseMenu.get());
-    this->screens.push_back(this->hud.get());
-    this->screens.push_back(this->songBrowser.get());
-    this->screens.push_back(this->lobby.get());
-    this->screens.push_back(this->changelog.get());
-    this->screens.push_back(this->mainMenu.get());
-    this->screens.push_back(this->tooltipOverlay.get());
+    this->bScreensReady = true;
+
     this->mainMenu->setVisible(true);
 
     // update mod settings
@@ -342,12 +325,26 @@ Osu::Osu() {
     env->setCursorVisible(!McRect{{}, this->vInternalResolution}.contains(mouse->getPos()));
 }
 
+// we want to destroy them in the same order as we listed them, to match the old (raw pointer) behavior
+// maybe unnecessary, but might avoid violating weird assumptions baked into the existing code
+void Osu::destroyAllScreensInOrder() {
+    if(!this->bScreensReady) return;
+#define X(unused__, name__) /*                                                                     */ \
+    this->name__.reset();
+    ALL_OSU_SCREENS
+#undef X
+#undef ALL_OSU_SCREENS
+    this->bScreensReady = false;
+}
+
 Osu::~Osu() {
     sct_abort();
     lct_set_map(nullptr);
     VolNormalization::shutdown();
     MapCalcThread::shutdown();
     BANCHO::Net::cleanup_networking();
+
+    this->destroyAllScreensInOrder();
 }
 
 void Osu::draw() {
@@ -564,9 +561,7 @@ void Osu::update() {
     if(!this->isInPlayModeAndNotPaused()) this->avatarManager->update();
 
     bool propagate_clicks = true;
-    for(int i = 0; i < this->screens.size() && propagate_clicks; i++) {
-        this->screens[i]->mouse_update(&propagate_clicks);
-    }
+    this->forEachScreenWhile<&OsuScreen::mouse_update>(propagate_clicks, &propagate_clicks);
 
     if(this->music_unpause_scheduled && soundEngine->isReady()) {
         if(this->map_iface->getMusic() != nullptr) {
@@ -1075,11 +1070,7 @@ void Osu::onKeyDown(KeyboardEvent &key) {
     }
 
     // forward to all subsystem, if not already consumed
-    for(auto *screen : this->screens) {
-        if(key.isConsumed()) break;
-
-        screen->onKeyDown(key);
-    }
+    this->forEachScreenWhile<&OsuScreen::onKeyDown>([&key]() -> bool { return !key.isConsumed(); }, key);
 
     // special handling, after subsystems, if still not consumed
     if(!key.isConsumed()) {
@@ -1162,11 +1153,7 @@ void Osu::onKeyUp(KeyboardEvent &key) {
     }
 
     // forward to all subsystems, if not consumed
-    for(auto *screen : this->screens) {
-        if(key.isConsumed()) break;
-
-        screen->onKeyUp(key);
-    }
+    this->forEachScreenWhile<&OsuScreen::onKeyUp>([&key]() -> bool { return !key.isConsumed(); }, key);
 
     // misc hotkeys release
     // XXX: handle keypresses in the engine, instead of doing this hacky mess
@@ -1184,18 +1171,10 @@ void Osu::onKeyUp(KeyboardEvent &key) {
     this->fposu->onKeyUp(key);
 }
 
-void Osu::stealFocus() {
-    for(auto screen : this->screens) {
-        screen->stealFocus();
-    }
-}
+void Osu::stealFocus() { this->forEachScreen<&OsuScreen::stealFocus>(); }
 
 void Osu::onChar(KeyboardEvent &e) {
-    for(auto *screen : this->screens) {
-        if(e.isConsumed()) break;
-
-        screen->onChar(e);
-    }
+    this->forEachScreenWhile<&OsuScreen::onChar>([&e]() -> bool { return !e.isConsumed(); }, e);
 }
 
 void Osu::onButtonChange(ButtonIndex button, bool down) {
@@ -1473,9 +1452,7 @@ void Osu::onResolutionChanged(vec2 newResolution) {
     cv::ui_scrollview_scrollbarwidth.setValue(15.0f * Osu::getUIScale());  // not happy with this as a convar
 
     // interfaces
-    for(auto *screen : this->screens) {
-        screen->onResolutionChange(this->vInternalResolution);
-    }
+    this->forEachScreen<&OsuScreen::onResolutionChange>(this->vInternalResolution);
 
     // rendertargets
     this->rebuildRenderTargets();
