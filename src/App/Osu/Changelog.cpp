@@ -31,8 +31,19 @@ Changelog::Changelog() : ScreenBackable() {
     CHANGELOG v41_03;
     v41_03.title = "41.03";
     v41_03.changes = {
+        R"(- Added Escape confirmation for leaving multiplayer room)",
+        R"(- Changed some default settings to be less annoying)",
         R"(- Fixed accuracy-restricting mods not working)",
+        R"(- Fixed beatmap downloads not working)",
+        R"(- Fixed chat not switching to new channels automatically)",
         R"(- Fixed incorrect number of search matches)",
+        R"(- Fixed main menu backrgound showing missing texture)",
+        R"(- Fixed own messages being shown in chat ticker)",
+        R"(- Fixed some HiDPI issues)",
+        R"(- Moved settings to more intuitive locations)",
+        R"(- Multiplayer matches will now show [no map] instead of a red username)",
+        R"(- Reduced status change notification spam)",
+        R"(- Scaled setting icons to not get hidden behind the back button in some skins)",
     };
     changelogs.push_back(v41_03);
 
