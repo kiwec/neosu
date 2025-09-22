@@ -1221,6 +1221,11 @@ void Osu::toggleSongBrowser() {
 
     this->songBrowser->setVisible(!this->songBrowser->isVisible());
 
+    // try refreshing if we have no beatmaps and are not already refreshing
+    if(this->songBrowser->isVisible() && this->songBrowser->beatmapsets.size() == 0 && !this->songBrowser->bBeatmapRefreshScheduled) {
+        this->songBrowser->refreshBeatmaps();
+    }
+
     if(BanchoState::is_in_a_multi_room()) {
         // We didn't select a map; revert to previously selected one
         auto map = this->songBrowser->lastSelectedBeatmap;

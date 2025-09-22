@@ -467,7 +467,7 @@ SongBrowser::SongBrowser()  // NOLINT(cert-msc51-cpp, cert-msc32-c)
 
     // beatmap database
     db = std::make_unique<Database>();
-    this->bBeatmapRefreshScheduled = true;
+    this->bBeatmapRefreshScheduled = false;
 
     // behaviour
     this->bHasSelectedAndIsPlaying = false;
@@ -1177,11 +1177,6 @@ CBaseUIContainer *SongBrowser::setVisible(bool visible) {
 
         this->bHasSelectedAndIsPlaying = false;  // sanity
 
-        // try another refresh, maybe the osu!folder has changed
-        if(this->beatmapsets.size() == 0 && (!cv::load_db_immediately.getBool() || !this->bBeatmapRefreshScheduled)) {
-            this->refreshBeatmaps();
-        }
-
         // update user name/stats
         osu->onUserCardChange(BanchoState::get_username().c_str());
 
@@ -1369,10 +1364,6 @@ void SongBrowser::onDifficultySelected(DatabaseBeatmap *map, bool play) {
 void SongBrowser::refreshBeatmaps(bool closeAfterLoading) {
     if(this->bHasSelectedAndIsPlaying) return;
 
-    if(!this->bVisible && !cv::load_db_immediately.getBool()) {
-        osu->toggleSongBrowser();
-    }
-
     // reset
     this->checkHandleKillBackgroundSearchMatcher();
 
@@ -1463,6 +1454,12 @@ void SongBrowser::refreshBeatmaps(bool closeAfterLoading) {
     this->bBeatmapRefreshScheduled = true;
     this->bCloseAfterBeatmapRefreshFinished = closeAfterLoading;
     db->load();
+
+    // show loading progress
+    // should be *after* this->bBeatmapRefreshScheduled = true
+    if(!this->bVisible && !cv::load_db_immediately.getBool()) {
+        osu->toggleSongBrowser();
+    }
 }
 
 void SongBrowser::addBeatmapSet(BeatmapSet *mapset) {
