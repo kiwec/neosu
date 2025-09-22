@@ -13,8 +13,8 @@ neosu_SOURCES = \
 	src/App/Osu/BanchoAes.cpp \
 	src/App/Osu/BanchoLeaderboard.cpp \
 	src/App/Osu/BanchoNetworking.cpp \
+	src/App/Osu/BanchoPacket.cpp \
 	src/App/Osu/BanchoProtocol.cpp \
-	src/App/Osu/BanchoReader.cpp \
 	src/App/Osu/BanchoSubmitter.cpp \
 	src/App/Osu/BanchoUsers.cpp \
 	src/App/Osu/BeatmapInterface.cpp \

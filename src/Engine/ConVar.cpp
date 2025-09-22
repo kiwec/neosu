@@ -679,11 +679,6 @@ void _echo(const UString &args) {
     }
 }
 
-void _volume(const UString & /*oldValue*/, const UString &newValue) {
-    if(!soundEngine) return;
-    soundEngine->setMasterVolume(newValue.toFloat());
-}
-
 void _vprof(float newValue) {
     const bool enable = !!static_cast<int>(newValue);
 

@@ -1,6 +1,6 @@
 // Copyright (c) 2023, kiwec, All rights reserved.
 
-#include "BanchoReader.h"
+#include "BanchoPacket.h"
 
 #include <cstdlib>
 #include <cstring>

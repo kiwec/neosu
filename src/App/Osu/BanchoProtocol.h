@@ -1,6 +1,6 @@
 #pragma once
 // Copyright (c) 2023, kiwec, All rights reserved.
-#include "BanchoReader.h"
+#include "BanchoPacket.h"
 
 enum Action : uint8_t {
     IDLE = 0,

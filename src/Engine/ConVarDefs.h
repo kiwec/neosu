@@ -16,12 +16,17 @@ struct dummyEngine {
     inline void shutdown() { ; }
     inline void toggleFullscreen() { ; }
 };
-dummyEngine *engine{};
+dummyEngine *engine;
 
 struct dummyGraphics {
     inline void setVSync(bool /**/) { ; }
 };
-dummyGraphics *g{};
+dummyGraphics *g;
+
+struct dummySoundEngine {
+    inline void setMasterVolume(float /*volume*/) { ; }
+};
+dummySoundEngine *soundEngine;
 
 // struct dummyEnv {
 //     inline void setFullscreenWindowedBorderless(bool /**/) { ; }
@@ -50,8 +55,6 @@ extern void _restart();
 extern void _save();
 extern void _update();
 
-#define OSU_VERSION_DATEONLY 0
-
 extern void spectate_by_username(const UString &username);
 extern void loudness_cb(const UString &, const UString &);
 extern void _osuOptionsSliderQualityWrapper(float);
@@ -60,7 +63,6 @@ extern void onRichPresenceChange(const UString &, const UString &);
 }
 extern void _osu_songbrowser_search_hardcoded_filter(const UString &, const UString &);
 extern void _vprof(float);
-extern void _volume(const UString &, const UString &);
 #endif
 
 // ########################################################################################################################
@@ -160,7 +162,8 @@ CONVAR(snd_sanity_simultaneous_limit, "snd_sanity_simultaneous_limit", 128, CLIE
 CONVAR(snd_soloud_prefer_ffmpeg, "snd_soloud_prefer_ffmpeg", 0, CLIENT,
        "(0=no, 1=streams, 2=streams+samples) prioritize using ffmpeg as a decoder (if available) over other decoder "
        "backends");
-CONVAR(volume, "volume", 1.0f, CLIENT, CFUNC(_volume));
+CONVAR(volume, "volume", 1.0f, CLIENT,
+       [](float newVol) -> void { soundEngine ? soundEngine->setMasterVolume(newVol) : (void)0; });
 CONVAR(volume_change_interval, "volume_change_interval", 0.05f, CLIENT | SKINS | SERVER);
 CONVAR(volume_effects, "volume_effects", 1.0f, CLIENT | SKINS | SERVER);
 CONVAR(volume_master, "volume_master", 1.0f, CLIENT | SKINS | SERVER);
