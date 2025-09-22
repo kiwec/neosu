@@ -32,6 +32,7 @@ Changelog::Changelog() : ScreenBackable() {
     v41_03.title = "41.03";
     v41_03.changes = {
         R"(- Fixed accuracy-restricting mods not working)",
+        R"(- Fixed incorrect number of search matches)",
     };
     changelogs.push_back(v41_03);
 

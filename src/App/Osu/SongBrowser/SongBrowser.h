@@ -285,6 +285,8 @@ class SongBrowser final : public ScreenBackable {
     std::string sPrevHardcodedSearchString;
     float fSearchWaitTime;
     bool bInSearch;
+    bool bShouldRecountMatchesAfterSearch{true};
+    i32 currentVisibleSearchMatches{0};
     GROUP searchPrevGroup;
     SongBrowserBackgroundSearchMatcher *backgroundSearchMatcher;
 

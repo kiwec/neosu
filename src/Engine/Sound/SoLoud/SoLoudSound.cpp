@@ -295,14 +295,19 @@ float SoLoudSound::getPosition() {
 
     double streamPositionInSeconds = getStreamPositionInSeconds();
 
+    // update interped state while we're at it
+    this->interpolator.update(streamPositionInSeconds * 1000.0, Timing::getTimeReal(), getSpeed(), isLooped(),
+                              static_cast<u32>(streamLengthInSeconds * 1000.0), isPlaying());
+
     return std::clamp<float>(streamPositionInSeconds / streamLengthInSeconds, 0.0f, 1.0f);
 }
 
 i32 SoLoudSound::getBASSStreamLatencyCompensation() const {
     if(!this->bReady || !this->bStream || !this->audioSource || !this->handle) return 0.0f;
 
+    static constexpr const i32 HARDCODED_OFFSET{20};
     return static_cast<i32>(std::round(static_cast<SoLoud::SLFXStream *>(this->audioSource)->getInternalLatency())) -
-           18;
+           HARDCODED_OFFSET;
 }
 
 // slightly tweaked interp algo from the SDL_mixer version, to smooth out position updates
@@ -383,7 +388,8 @@ double SoLoudSound::getStreamPositionInSeconds() const {
     if(now >= this->soloud_stream_position_cache_time + 0.01) {
         // cache is stale, trigger async update
         this->soloud_stream_position_cache_time.store(now, std::memory_order_relaxed);  // prevent multiple async calls
-        soloud->updateCachedPosition(this->handle, this->soloud_stream_position_cache_time, this->cached_stream_position);
+        soloud->updateCachedPosition(this->handle, this->soloud_stream_position_cache_time,
+                                     this->cached_stream_position);
     }
 
     return this->cached_stream_position.load(std::memory_order_acquire);

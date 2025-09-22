@@ -64,18 +64,19 @@
 const Color highlightColor = argb(255, 0, 255, 0);
 const Color defaultColor = argb(255, 255, 255, 255);
 
-class SongBrowserBackgroundSearchMatcher : public Resource {
+class SongBrowserBackgroundSearchMatcher final : public Resource {
+    NOCOPY_NOMOVE(SongBrowserBackgroundSearchMatcher)
    public:
-    SongBrowserBackgroundSearchMatcher() : Resource() {
-        this->bDead = true;  // NOTE: start dead! need to revive() before use
-    }
+    SongBrowserBackgroundSearchMatcher() : Resource() {}
+    ~SongBrowserBackgroundSearchMatcher() override { this->destroy(); }
 
-    [[nodiscard]] bool isDead() const { return this->bDead.load(); }
-    void kill() { this->bDead = true; }
-    void revive() { this->bDead = false; }
+    [[nodiscard]] constexpr bool isDead() const { return this->bDead.load(); }
+    constexpr void kill() { this->bDead = true; }
+    constexpr void revive() { this->bDead = false; }
 
-    void setSongButtonsAndSearchString(const std::vector<SongButton *> &songButtons, const std::string &searchString,
-                                       const std::string &hardcodedSearchString) {
+    inline void setSongButtonsAndSearchString(const std::vector<SongButton *> &songButtons,
+                                              const std::string &searchString,
+                                              const std::string &hardcodedSearchString) {
         this->songButtons = songButtons;
 
         this->sSearchString.clear();
@@ -89,12 +90,12 @@ class SongBrowserBackgroundSearchMatcher : public Resource {
         this->sHardcodedSearchString = hardcodedSearchString;
     }
 
-    [[nodiscard]] Type getResType() const override { return APPDEFINED; }  // TODO: handle this better?
+    [[nodiscard]] inline Type getResType() const override { return APPDEFINED; }  // TODO: handle this better?
 
    protected:
-    void init() override { this->bReady = true; }
+    inline void init() override { this->bReady = true; }
 
-    void initAsync() override {
+    inline void initAsync() override {
         if(this->bDead.load()) {
             this->bAsyncReady = true;
             return;
@@ -106,11 +107,13 @@ class SongBrowserBackgroundSearchMatcher : public Resource {
             const auto &children = songButton->getChildren();
             if(children.size() > 0) {
                 for(auto c : children) {
-                    c->setIsSearchMatch(SongBrowser::searchMatcher(c->getDatabaseBeatmap(), searchStringTokens));
+                    const bool match = SongBrowser::searchMatcher(c->getDatabaseBeatmap(), searchStringTokens);
+                    c->setIsSearchMatch(match);
                 }
-            } else
-                songButton->setIsSearchMatch(
-                    SongBrowser::searchMatcher(songButton->getDatabaseBeatmap(), searchStringTokens));
+            } else {
+                const bool match = SongBrowser::searchMatcher(songButton->getDatabaseBeatmap(), searchStringTokens);
+                songButton->setIsSearchMatch(match);
+            }
 
             // cancellation point
             if(this->bDead.load()) break;
@@ -119,10 +122,10 @@ class SongBrowserBackgroundSearchMatcher : public Resource {
         this->bAsyncReady = true;
     }
 
-    void destroy() override { ; }
+    inline void destroy() override { ; }
 
    private:
-    std::atomic<bool> bDead;
+    std::atomic<bool> bDead{true};  // NOTE: start dead! need to revive() before use
 
     std::string sSearchString;
     std::string sHardcodedSearchString;
@@ -476,7 +479,7 @@ SongBrowser::SongBrowser()  // NOLINT(cert-msc51-cpp, cert-msc32-c)
     this->search->setOffsetRight(10);
     this->fSearchWaitTime = 0.0f;
     this->bInSearch = (cv::songbrowser_search_hardcoded_filter.getString().length() > 0);
-    this->searchPrevGroup = GROUP::GROUP_NO_GROUPING;
+    this->searchPrevGroup = GROUP::GROUP_MAX;
     this->backgroundSearchMatcher = new SongBrowserBackgroundSearchMatcher();
 
     this->updateLayout();
@@ -781,7 +784,7 @@ void SongBrowser::draw() {
     // draw search
     this->search->setSearchString(this->sSearchString, cv::songbrowser_search_hardcoded_filter.getString().c_str());
     this->search->setDrawNumResults(this->bInSearch);
-    this->search->setNumFoundResults(this->visibleSongButtons.size());
+    this->search->setNumFoundResults(this->currentVisibleSearchMatches);
     this->search->setSearching(!this->backgroundSearchMatcher->isDead());
     this->search->draw();
 
@@ -1447,7 +1450,7 @@ void SongBrowser::refreshBeatmaps(bool closeAfterLoading) {
     this->sSearchString = "";
     this->sPrevSearchString = "";
     this->fSearchWaitTime = 0.0f;
-    this->searchPrevGroup = GROUP::GROUP_NO_GROUPING;
+    this->searchPrevGroup = GROUP::GROUP_MAX;
 
     // force no grouping
     if(this->group != GROUP::GROUP_NO_GROUPING) {
@@ -2627,10 +2630,22 @@ void SongBrowser::onSearchUpdate() {
     const bool hasInSearchChanged = (prevInSearch != this->bInSearch);
 
     if(this->bInSearch) {
+        const bool shouldRefreshMatches =
+            hasSearchStringChanged || hasHardcodedSearchStringChanged || hasInSearchChanged;
+
+        // GROUP_COLLECTIONS is the only group that can filter beatmaps, so skip some work if we're not switching between that and something else
+        // (this->searchPrevGroup == GROUP::GROUP_MAX means first time searching)
+        this->bShouldRecountMatchesAfterSearch =
+            this->bShouldRecountMatchesAfterSearch ||      //
+            shouldRefreshMatches ||                        //
+            (this->searchPrevGroup == GROUP::GROUP_MAX ||  //
+             (this->group != this->searchPrevGroup &&      //
+              (this->group == GROUP::GROUP_COLLECTIONS || this->searchPrevGroup == GROUP::GROUP_COLLECTIONS)));
+
         this->searchPrevGroup = this->group;
 
         // flag all search matches across entire database
-        if(hasSearchStringChanged || hasHardcodedSearchStringChanged || hasInSearchChanged) {
+        if(shouldRefreshMatches) {
             // stop potentially running async search
             this->checkHandleKillBackgroundSearchMatcher();
 
@@ -2642,7 +2657,7 @@ void SongBrowser::onSearchUpdate() {
             resourceManager->requestNextLoadAsync();
             resourceManager->loadResource(this->backgroundSearchMatcher);
         } else
-            this->rebuildSongButtonsAndVisibleSongButtonsWithSearchMatchSupport(true);
+            this->rebuildSongButtonsAndVisibleSongButtonsWithSearchMatchSupport(true, true);
 
         // (results are handled in update() once available)
     } else  // exit search
@@ -2684,6 +2699,16 @@ void SongBrowser::rebuildSongButtonsAndVisibleSongButtonsWithSearchMatchSupport(
     this->carousel->getContainer()->invalidate();
     this->visibleSongButtons.clear();
 
+    // optimization: currently, only grouping by collections can actually filter beatmaps
+    // so don't reset search matches if switching between any other grouping mode
+    const bool recountMatches = this->bShouldRecountMatchesAfterSearch && this->bInSearch;
+    const bool canBreakEarly = !recountMatches;
+    if(recountMatches) {
+        this->currentVisibleSearchMatches = 0;
+        // don't re-count again next time
+        this->bShouldRecountMatchesAfterSearch = false;
+    }
+
     // use flagged search matches to rebuild visible song buttons
     {
         if(this->group == GROUP::GROUP_NO_GROUPING) {
@@ -2694,7 +2719,13 @@ void SongBrowser::rebuildSongButtonsAndVisibleSongButtonsWithSearchMatchSupport(
                     // all diffs)
                     bool allChildrenMatch = true;
                     for(const auto &c : children) {
-                        if(!c->isSearchMatch()) allChildrenMatch = false;
+                        bool match = c->isSearchMatch();
+                        if(!match) {
+                            allChildrenMatch = false;
+                            if(canBreakEarly) break;
+                        } else if(recountMatches) {
+                            this->currentVisibleSearchMatches++;
+                        }
                     }
 
                     if(allChildrenMatch)
@@ -2705,8 +2736,12 @@ void SongBrowser::rebuildSongButtonsAndVisibleSongButtonsWithSearchMatchSupport(
                             if(c->isSearchMatch()) this->visibleSongButtons.push_back(c);
                         }
                     }
-                } else if(songButton->isSearchMatch())
+                } else if(songButton->isSearchMatch()) {
+                    if(recountMatches) {
+                        this->currentVisibleSearchMatches++;
+                    }
                     this->visibleSongButtons.push_back(songButton);
+                }
             }
         } else {
             std::vector<CollectionButton *> *groupButtons = getCollectionButtonsForGroup(this->group);
@@ -2722,14 +2757,22 @@ void SongBrowser::rebuildSongButtonsAndVisibleSongButtonsWithSearchMatchSupport(
                             for(const auto &cc : childrenChildren) {
                                 if(cc->isSearchMatch()) {
                                     isAnyMatchInGroup = true;
-                                    break;
+                                    // also count total matching children while we're here
+                                    // break out early if we're not searching, though
+                                    if(canBreakEarly)
+                                        break;
+                                    else
+                                        this->currentVisibleSearchMatches++;
                                 }
                             }
 
-                            if(isAnyMatchInGroup) break;
+                            if(canBreakEarly && isAnyMatchInGroup) break;
                         } else if(c->isSearchMatch()) {
                             isAnyMatchInGroup = true;
-                            break;
+                            if(canBreakEarly)
+                                break;
+                            else
+                                this->currentVisibleSearchMatches++;
                         }
                     }
 
