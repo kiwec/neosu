@@ -116,7 +116,8 @@ class SleepHandler final {
         }
 
         if(minActualSleep != UINT64_MAX) {
-            m_actualDelayAmount = minActualSleep;
+            // add 200usec artificial overhead to be safe (prefer busy waiting instead of oversleeping)
+            m_actualDelayAmount = minActualSleep + 200000;
             // cap at 2ms
             if(m_actualDelayAmount > 2000000) {
                 m_actualDelayAmount = 2000000;

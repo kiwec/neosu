@@ -34,8 +34,14 @@ inline INLINE_BODY void yield_internal() noexcept {
 }
 
 template <uint64_t Ratio>
-constexpr inline INLINE_BODY uint64_t convert_time(uint64_t ns) noexcept {
+static constexpr forceinline INLINE_BODY uint64_t convert_time(uint64_t ns) noexcept {
     return ns / Ratio;
+}
+
+template <typename T = double>
+    requires(std::floating_point<T>)
+static constexpr forceinline INLINE_BODY T time_ns_to_secs(uint64_t ns) noexcept {
+    return static_cast<T>(ns) / static_cast<T>(NS_PER_SECOND);
 }
 
 void sleep_ns_internal(uint64_t ns) noexcept;
@@ -45,7 +51,7 @@ void sleep_ns_precise_internal(uint64_t ns) noexcept;
 
 inline INLINE_BODY uint64_t getTicksNS() noexcept { return SDL_GetTicksNS(); }
 
-constexpr inline INLINE_BODY uint64_t ticksNSToMS(uint64_t ns) noexcept {
+static constexpr forceinline INLINE_BODY uint64_t ticksNSToMS(uint64_t ns) noexcept {
     return detail::convert_time<NS_PER_MS>(ns);
 }
 
@@ -75,19 +81,12 @@ inline INLINE_BODY void sleepMSPrecise(uint64_t ms) noexcept {
     ms > 0 ? detail::sleep_ns_precise_internal(ms * NS_PER_MS) : detail::yield_internal();
 }
 
-
-template <typename T = double>
-    requires(std::floating_point<T>)
-constexpr inline INLINE_BODY T timeNSToSeconds(uint64_t ns) noexcept {
-    return static_cast<T>(ns) / static_cast<T>(NS_PER_SECOND);
-}
-
 // current time (since init.) in seconds as float
 // decoupled from engine updates!
 template <typename T = double>
     requires(std::floating_point<T>)
-inline INLINE_BODY T getTimeReal() noexcept {
-    return timeNSToSeconds<T>(getTicksNS());
+constexpr forceinline INLINE_BODY T getTimeReal() noexcept {
+    return detail::time_ns_to_secs<T>(getTicksNS());
 }
 
 class Timer {
@@ -100,7 +99,7 @@ class Timer {
 
     inline void update() noexcept {
         const uint64_t now = getTicksNS();
-        this->deltaSeconds = timeNSToSeconds<double>(now - this->lastUpdateNS);
+        this->deltaSeconds = detail::time_ns_to_secs<double>(now - this->lastUpdateNS);
         this->lastUpdateNS = now;
     }
 
@@ -113,7 +112,7 @@ class Timer {
     [[nodiscard]] constexpr double getDelta() const noexcept { return this->deltaSeconds; }
 
     [[nodiscard]] inline double getElapsedTime() const noexcept {
-        return timeNSToSeconds<double>(this->lastUpdateNS - this->startTimeNS);
+        return detail::time_ns_to_secs<double>(this->lastUpdateNS - this->startTimeNS);
     }
 
     [[nodiscard]] inline uint64_t getElapsedTimeMS() const noexcept {
@@ -124,7 +123,7 @@ class Timer {
 
     // get elapsed time without needing update()
     [[nodiscard]] inline double getLiveElapsedTime() const noexcept {
-        return timeNSToSeconds<double>(getTicksNS() - this->startTimeNS);
+        return detail::time_ns_to_secs<double>(getTicksNS() - this->startTimeNS);
     }
 
     [[nodiscard]] inline uint64_t getLiveElapsedTimeNS() const noexcept { return getTicksNS() - this->startTimeNS; }

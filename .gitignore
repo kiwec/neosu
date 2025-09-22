@@ -24,6 +24,7 @@ libraries-old
 /*.deps
 .deps/
 .libs/
+/build-aux/.tmpwinepfx/
 /build-aux/cache/
 /build-aux/deps/
 /build-aux/compile

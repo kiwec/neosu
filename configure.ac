@@ -757,6 +757,7 @@ AC_DEFUN([PKG_CHECK_AUTO], [
 
 AC_SUBST([DEPS_PREFIX], ['${abs_top_builddir}/build/deps'])
 AC_SUBST([DEPS_CACHE], ['${abs_top_srcdir}/build-aux/cache'])
+AC_SUBST([TEMP_WINEPFX], ['${abs_top_srcdir}/build-aux/.tmpwinepfx'])
 AC_SUBST([BUILD_MISCDIR], ['${abs_top_srcdir}/build-aux/misc'])
 AC_SUBST([bindir], [$bindir-$host_cpu])
 
