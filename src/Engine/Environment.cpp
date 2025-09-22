@@ -69,7 +69,10 @@ Environment::Environment(const std::unordered_map<std::string, std::optional<std
 
     m_fDisplayHz = 360.0f;
     m_fDisplayHzSecs = 1.0f / m_fDisplayHz;
-    m_bDPIOverride = false;
+
+    // make env->getDPI() always return 96
+    // the hint set in main.cpp, before SDL_Init, will do the rest of the dirty work
+    m_bDPIOverride = m_mArgMap.contains("-nodpi");
 
     m_bEnvDebug = false;
 

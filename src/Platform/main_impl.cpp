@@ -602,12 +602,6 @@ void SDLMain::doEarlyCmdlineOverrides() {
         }
     }
 
-    // make env->getDPI() always return 96
-    // the hint set in main.cpp, before SDL_Init, will do the rest of the dirty work
-    if(m_mArgMap.contains("-nodpi")) {
-        m_bDPIOverride = true;
-    }
-
 #else
     // nothing yet
     return;

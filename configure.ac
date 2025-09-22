@@ -307,8 +307,8 @@ AS_IF([test "x$enable_asan" = "xyes" || test "x$enable_tsan" = "xyes"], [
 AS_IF([test "x$enable_clang" = "xyes"], [
     CC=clang
     CXX=clang++
-    CXXFLAGS="$CXXFLAGS -Qunused-arguments -Wno-c2x-extensions"
-    CFLAGS="$CFLAGS -Qunused-arguments"
+    CXXFLAGS="$CXXFLAGS -Wno-error=unknown-argument -Wno-error=unused-command-line-argument -Wno-c2x-extensions"
+    CFLAGS="$CFLAGS -Wno-error=unknown-argument -Wno-error=unused-command-line-argument"
     LDFLAGS="$LDFLAGS"
     CLANG=yes
     _cid="Clang"
@@ -316,6 +316,8 @@ AS_IF([test "x$enable_clang" = "xyes"], [
 ],[
     CC=gcc
     CXX=g++
+    CXXFLAGS="$CXXFLAGS -fno-semantic-interposition"
+    CFLAGS="$CFLAGS -fno-semantic-interposition"
     NEOSU_CXXFLAGS="$NEOSU_CXXFLAGS -fimplicit-constexpr"
     _cid="GNU"
 ])
@@ -339,6 +341,7 @@ PKG_CONFIG_PATH_CUSTOM="$PKG_CONFIG_PATH"
 AC_SUBST([PKG_CONFIG_PATH])
 AC_SUBST([PKG_CONFIG_PATH_CUSTOM])
 
+win_subsystem_ver=6.00
 AS_IF([test "$host_os" = "linux-gnu"], [
     AS_IF([test "$host_cpu" = "i686"], [
         install -Dm755 /dev/stdin $PWD/build/$target-$CC <<EOF
@@ -398,6 +401,7 @@ __EOF__
         with_mimalloc="no"
         LDFLAGS="$LDFLAGS -m32 -Wl,--large-address-aware"
         # xp
+        win_subsystem_ver="5.01"
         CPPFLAGS="$CPPFLAGS -DWINVER=0x0501 -D_WIN32_WINNT=0x0501 -D_WIN32_WINDOWS=0x0501 -D_WIN32_IE=0x0501"
         CFLAGS="$CFLAGS -m32 -fno-omit-frame-pointer -momit-leaf-frame-pointer -DWINVER=0x0501 -D_WIN32_WINNT=0x0501 -D_WIN32_WINDOWS=0x0501 -D_WIN32_IE=0x0501 -mfpmath=sse"
         CXXFLAGS="$CXXFLAGS -m32 -fno-omit-frame-pointer -momit-leaf-frame-pointer -DWINVER=0x0501 -D_WIN32_WINNT=0x0501 -D_WIN32_WINDOWS=0x0501 -D_WIN32_IE=0x0501 -mfpmath=sse"
@@ -545,7 +549,7 @@ AC_SUBST([LIBPREFIX])
 AS_IF([test "$host_cpu" = "x86_64"], [COMMON_FLAGS="$COMMON_FLAGS -mcmodel=small"])
 
 CPPFLAGS="$CPPFLAGS -D_TIME_BITS=64 -D_FILE_OFFSET_BITS=64"
-COMMON_FLAGS="$COMMON_FLAGS -D_TIME_BITS=64 -D_FILE_OFFSET_BITS=64 -pipe -ffunction-sections -fdata-sections -fwrapv -fno-strict-aliasing -fno-semantic-interposition -ftls-model=initial-exec -pthread"
+COMMON_FLAGS="$COMMON_FLAGS -D_TIME_BITS=64 -D_FILE_OFFSET_BITS=64 -pipe -ffunction-sections -fdata-sections -fwrapv -fno-strict-aliasing -ftls-model=initial-exec -pthread"
 CXXFLAGS="$CXXFLAGS $COMMON_FLAGS -fno-exceptions -fno-unwind-tables" # -fno-rtti
 CFLAGS="$CFLAGS $COMMON_FLAGS"
 LDFLAGS="$LDFLAGS -static-libstdc++ -static-libgcc -pthread"
@@ -611,10 +615,10 @@ AS_IF([test "x$enable_debug" = "xyes"], [
     ])
     AS_IF([test "$SYSNAME" = "windows"], [
         AS_IF([test "x$enable_clang" = "xyes"], [
-            LDFLAGS="$LDFLAGS -Xlinker /subsystem:console"
+            NEOSU_LDFLAGS="$NEOSU_LDFLAGS -Wl,--subsystem,console:${win_subsystem_ver}"
         ], [
             NEOSU_CXXFLAGS="$NEOSU_CXXFLAGS -mconsole"
-            NEOSU_LDFLAGS="$NEOSU_LDFLAGS -mconsole"
+            NEOSU_LDFLAGS="$NEOSU_LDFLAGS -mconsole -Wl,--subsystem,console:${win_subsystem_ver}"
         ])
     ])
     AC_SUBST([ENABLE_DEBUG])
@@ -641,6 +645,14 @@ AS_IF([test "x$enable_debug" = "xyes"], [
             NEOSU_LDFLAGS="$NEOSU_LDFLAGS -Wl,--no-gc-sections"
         ])
     ])
+    AS_IF([test "$SYSNAME" = "windows"], [
+        AS_IF([test "x$enable_clang" = "xyes"], [
+            NEOSU_LDFLAGS="$NEOSU_LDFLAGS -Wl,--subsystem,windows:${win_subsystem_ver}"
+        ], [
+            NEOSU_CXXFLAGS="$NEOSU_CXXFLAGS -mwindows"
+            NEOSU_LDFLAGS="$NEOSU_LDFLAGS -mwindows -Wl,--subsystem,windows:${win_subsystem_ver}"
+        ])
+    ])
 ])
 
 AS_IF([test "x$enable_omp" = "xyes"], [
@@ -659,8 +671,6 @@ AS_IF([test "x$enable_lto" != "xno"], [
             AS_IF([test -z "$MSYS2_BUILD"], [
                 mkdir -p $PWD/.ltocache-clang
                 AX_CHECK_LINK_FLAG([-Wl,--thinlto-cache-dir=$PWD/.ltocache-clang], [
-                    CXXFLAGS="$CXXFLAGS -Wl,--thinlto-cache-dir=$PWD/.ltocache-clang"
-                    CFLAGS="$CFLAGS -Wl,--thinlto-cache-dir=$PWD/.ltocache-clang"
                     LDFLAGS="$LDFLAGS -Wl,--thinlto-cache-dir=$PWD/.ltocache-clang"
                 ])
             ])
@@ -670,7 +680,6 @@ AS_IF([test "x$enable_lto" != "xno"], [
             CXXFLAGS="$CXXFLAGS -flto=auto -ffat-lto-objects -fuse-linker-plugin -fdevirtualize-at-ltrans"
             CFLAGS="$CFLAGS -flto=auto -ffat-lto-objects -fuse-linker-plugin -fdevirtualize-at-ltrans"
             LDFLAGS="$LDFLAGS -flto=auto -ffat-lto-objects -fuse-linker-plugin -fdevirtualize-at-ltrans"
-            mkdir -p $PWD/.ltocache-gcc
             AS_IF([test -z "$MSYS2_BUILD"], [
                 mkdir -p $PWD/.ltocache-gcc
                 AX_CHECK_LINK_FLAG([-flto-incremental=$PWD/.ltocache-gcc], [
