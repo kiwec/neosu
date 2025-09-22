@@ -749,7 +749,12 @@ OptionsMenu::OptionsMenu() : ScreenBackable() {
             const auto &MAButton = static_cast<UIButton *>(soloudBackendSelect->baseElems[0]);
             const auto &SDLButton = static_cast<UIButton *>(soloudBackendSelect->baseElems[1]);
             const auto &driverLabel = static_cast<CBaseUILabel *>(soloudBackendSelect->baseElems[2]);
-            driverLabel->setVisible(false);  // who cares
+            driverLabel->setVisible(false);
+
+            // i would put the tooltip on the label, but CBaseUILabel doesn't support that
+            const UString outputTooltip = "Pick the one you feel works best,\nthere should be very little difference.";
+            MAButton->setTooltipText(outputTooltip);
+            SDLButton->setTooltipText(outputTooltip);
 
             soloudBackendSelect->cvars[MAButton] = &cv::snd_soloud_backend;
             soloudBackendSelect->cvars[SDLButton] = &cv::snd_soloud_backend;

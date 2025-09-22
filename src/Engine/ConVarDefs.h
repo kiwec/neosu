@@ -159,6 +159,7 @@ CONVAR(snd_soloud_backend, "snd_soloud_backend", "MiniAudio", CLIENT,
        R"(SoLoud backend, "MiniAudio" or "SDL3" (MiniAudio is default))");
 CONVAR(snd_sanity_simultaneous_limit, "snd_sanity_simultaneous_limit", 128, CLIENT | NOSAVE,
        "The maximum number of overlayable sounds that are allowed to be active at once");
+CONVAR(snd_soloud_hardcoded_offset, "snd_soloud_hardcoded_offset", -18, CLIENT);  // should hopefully be "temporary"
 CONVAR(snd_soloud_prefer_ffmpeg, "snd_soloud_prefer_ffmpeg", 0, CLIENT,
        "(0=no, 1=streams, 2=streams+samples) prioritize using ffmpeg as a decoder (if available) over other decoder "
        "backends");

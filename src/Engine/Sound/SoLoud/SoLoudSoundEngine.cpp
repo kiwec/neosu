@@ -379,10 +379,10 @@ void SoLoudSoundEngine::updateOutputDevices(bool printInfo) {
     if(res == SO_NO_ERROR) {
         // in case we can't go through devices to find the real default, use the current one as the default
         fallbackDevice = currentDevice;
-        debugLog("SoundEngine: Current device: {:s} (Default: {:s})\n", currentDevice.name,
+        debugLog("SoundEngine: Current device: {} (Default: {:s})\n", currentDevice.name,
                  currentDevice.isDefault ? "Yes" : "No");
     } else {
-        fallbackDevice = {.name = "Unavailable", .identifier = "", .isDefault = true, .nativeDeviceInfo = nullptr};
+        fallbackDevice = {.name = {"Unavailable"}, .identifier = {""}, .isDefault = true, .nativeDeviceInfo = nullptr};
         this->mSoloudDevices[-1] = fallbackDevice;
     }
 
@@ -395,11 +395,11 @@ void SoLoudSoundEngine::updateOutputDevices(bool printInfo) {
         std::vector<DeviceInfo> devices{devicearray, devicearray + deviceCount};
         std::ranges::stable_sort(
             devices, [](const char *a, const char *b) -> bool { return strcasecmp(a, b) < 0; },
-            [](const DeviceInfo &di) -> const char * { return di.name; });
+            [](const DeviceInfo &di) -> const char * { return &di.name[0]; });
 
         for(int d = 0; d < devices.size(); d++) {
             if(printInfo) {
-                debugLog("SoundEngine: Device {}: {:s} (Default: {:s})\n", d, devices[d].name,
+                debugLog("SoundEngine: Device {}: {} (Default: {:s})\n", d, devices[d].name,
                          devices[d].isDefault ? "Yes" : "No");
             }
 
@@ -460,7 +460,7 @@ bool SoLoudSoundEngine::initializeOutputDevice(const OUTPUT_DEVICE &device) {
     if(this->isReady()) {
         // this isn't technically required, but might it be, if audio device initialization hangs and we have to detach the soloud thread
         // should be fixable in soloud itself, probably
-        if (soloud->isThreaded()) {
+        if(soloud->isThreaded()) {
             for(auto *soundRes : resourceManager->getSounds()) {
                 soundRes->release();
             }
@@ -523,8 +523,8 @@ bool SoLoudSoundEngine::initializeOutputDevice(const OUTPUT_DEVICE &device) {
         this->updateOutputDevices(true);
 
         if(device.id != this->currentOutputDevice.id && this->outputDevices.size() > 1 &&
-           strcmp(this->mSoloudDevices[device.id].identifier,
-                  this->mSoloudDevices[this->currentOutputDevice.id].identifier) != 0) {
+           strcmp(&this->mSoloudDevices[device.id].identifier[0],
+                  &this->mSoloudDevices[this->currentOutputDevice.id].identifier[0]) != 0) {
             if(soloud->setDevice(&this->mSoloudDevices[device.id].identifier[0]) != SoLoud::SO_NO_ERROR) {
                 // reset to default
                 this->currentOutputDevice = this->outputDevices[0];

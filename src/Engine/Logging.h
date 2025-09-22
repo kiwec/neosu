@@ -29,6 +29,21 @@
 
 using fmt::literals::operator""_cf;
 
+namespace fmt {
+template <std::size_t N>
+struct formatter<std::array<char, N>> {
+    template <typename ParseContext>
+    constexpr auto parse(ParseContext &ctx) const {
+        return ctx.begin();
+    }
+
+    template <typename FormatContext>
+    auto format(const std::array<char, N> &array, FormatContext &ctx) const {
+        return format_to(ctx.out(), "{:s}", array.data());
+    }
+};
+}
+
 namespace Logger {
 
 [[nodiscard]] bool isaTTY();  // is stdout a terminal

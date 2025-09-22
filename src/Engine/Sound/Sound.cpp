@@ -28,9 +28,12 @@ void Sound::initAsync() {
             debugLog("Sound: Ignoring malformed/corrupt .{:s} file {:s}\n", fileExtensionLowerCase, this->sFilePath);
             this->bIgnored = true;
         } else {
-            debugLog(
-                "Sound: snd_force_load_unknown=true, loading what seems to be a malformed/corrupt .{:s} file {:s}\n",
-                fileExtensionLowerCase, this->sFilePath);
+            if(cv::debug_snd.getBool()) {
+                debugLog(
+                    "Sound: snd_force_load_unknown=true, loading what seems to be a malformed/corrupt .{:s} file "
+                    "{:s}\n",
+                    fileExtensionLowerCase, this->sFilePath);
+            }
             this->bIgnored = false;
         }
     } else {
@@ -163,7 +166,7 @@ bool Sound::isValidAudioFile(const std::string& filePath, const std::string& fil
     return false;  // don't let unsupported formats be read
 }
 
-const std::unordered_map<SOUNDHANDLE, PlaybackParams> &Sound::getActiveHandles() {
+const std::unordered_map<SOUNDHANDLE, PlaybackParams>& Sound::getActiveHandles() {
     // update cache with actual validity from backend
     std::erase_if(this->activeHandleCache,
                   [this](const auto& handleInstance) { return !this->isHandleValid(handleInstance.first); });
