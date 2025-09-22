@@ -7,8 +7,9 @@
 #include <cstring>
 #include <fstream>
 
-#include "Engine.h"
+#include "Environment.h"
 #include "UString.h"
+#include "Logging.h"
 
 //------------------------------------------------------------------------------
 // Archive::Entry implementation

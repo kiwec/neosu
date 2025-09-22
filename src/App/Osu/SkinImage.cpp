@@ -7,8 +7,7 @@
 #include "Osu.h"
 #include "ResourceManager.h"
 #include "Skin.h"
-
-
+#include "Logging.h"
 
 SkinImage::SkinImage(Skin *skin, const std::string& skinElementName, vec2 baseSizeForScaling2x, float osuSize,
                      const std::string& animationSeparator, bool ignoreDefaultSkin) {

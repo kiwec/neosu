@@ -20,6 +20,8 @@
 #include "Engine.h"
 #include "Environment.h"
 #include "File.h"
+#include "Logging.h"
+#include "ConVar.h"
 
 namespace {
 #if defined(ZLIBNG_VERNUM) && ZLIBNG_VERNUM < 0x020205F0L

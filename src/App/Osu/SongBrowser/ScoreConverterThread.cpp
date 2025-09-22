@@ -7,6 +7,8 @@
 #include "Engine.h"
 #include "SimulatedBeatmapInterface.h"
 #include "score.h"
+#include "Timing.h"
+#include "Logging.h"
 
 // TODO
 static constexpr bool USE_PPV3{false};

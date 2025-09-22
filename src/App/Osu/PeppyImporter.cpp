@@ -8,6 +8,7 @@
 #include "Database.h"
 #include "OptionsMenu.h"
 #include "Parsing.h"
+#include "Logging.h"
 
 #ifdef MCENGINE_PLATFORM_WINDOWS
 #include "WinDebloatDefs.h"

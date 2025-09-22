@@ -1,12 +1,20 @@
 #pragma once
 // Copyright (c) 2012, PG, All rights reserved.
-#include <source_location>
 
+#include "noinclude.h"
+#include "types.h"
+
+#include "Rect.h"
 #include "KeyboardListener.h"
-#include "Timing.h"
-#include "App.h"
-#include "fmt/color.h"
 
+#include <vector>
+#include <memory>
+
+#ifndef APP_H
+class App;
+#endif
+
+class Graphics;
 class Mouse;
 class ConVar;
 class Keyboard;
@@ -20,14 +28,11 @@ class CBaseUIContainer;
 class VisualProfiler;
 class ConsoleBox;
 class Console;
-
-#ifdef _DEBUG
-#define debugLog(...) Engine::ContextLogger::log(std::source_location::current(), __FUNCTION__, __VA_ARGS__)
-#else
-#define debugLog(...) Engine::ContextLogger::log(__FUNCTION__, __VA_ARGS__)
-#endif
+class UString;
+class Image;
 
 class Engine final : public KeyboardListener {
+    NOCOPY_NOMOVE(Engine)
    public:
     Engine();
     ~Engine() override;
@@ -133,77 +138,6 @@ class Engine final : public KeyboardListener {
     // custom
     bool bBlackout;
     bool bDrawing;
-
-   public:
-    class ContextLogger {
-       private:
-        static forceinline void trim_to_last_scope([[maybe_unused]] std::string &str) {
-#ifdef _MSC_VER  // msvc always adds the full scope to __FUNCTION__, which we don't want for non-debug builds
-            auto pos = str.rfind("::");
-            if(pos != std::string::npos) {
-                str.erase(1, pos + 1);
-            }
-#endif
-        }
-
-       public:
-        // debug build shows full source location
-#ifdef _DEBUG
-        template <typename... Args>
-        static void log(const std::source_location &loc, const char *func, const fmt::format_string<Args...> &fmt,
-                        Args &&...args) {
-            auto contextPrefix = fmt::format("[{}:{}:{}] [{}]: "_cf, Environment::getFileNameFromFilePath(loc.file_name()),
-                                             loc.line(), loc.column(), func);
-
-            auto message = fmt::format(fmt, std::forward<Args>(args)...);
-            Engine::logImpl(contextPrefix + message);
-        }
-
-        template <typename... Args>
-        static void log(const std::source_location &loc, const char *func, Color color, const fmt::format_string<Args...> &fmt,
-                        Args &&...args) {
-            auto contextPrefix = fmt::format("[{}:{}:{}] [{}]: "_cf, Environment::getFileNameFromFilePath(loc.file_name()),
-                                             loc.line(), loc.column(), func);
-
-            auto message = fmt::format(fmt, std::forward<Args>(args)...);
-            Engine::logImpl(contextPrefix + message, color);
-        }
-#else
-        // release build only shows function name
-        template <typename... Args>
-        static void log(const char *func, const fmt::format_string<Args...> &fmt, Args &&...args) {
-            auto contextPrefix = fmt::format("[{}] "_cf, func);
-            trim_to_last_scope(contextPrefix);
-            auto message = fmt::format(fmt, std::forward<Args>(args)...);
-            Engine::logImpl(contextPrefix + message);
-        }
-
-        template <typename... Args>
-        static void log(const char *func, Color color, const fmt::format_string<Args...> &fmt, Args &&...args) {
-            auto contextPrefix = fmt::format("[{}] "_cf, func);
-            trim_to_last_scope(contextPrefix);
-            auto message = fmt::format(fmt, std::forward<Args>(args)...);
-            Engine::logImpl(contextPrefix + message, color);
-        }
-#endif
-    };
-    template <typename... Args>
-    static void logRaw(const fmt::format_string<Args...> &fmt, Args &&...args) {
-        auto message = fmt::format(fmt, std::forward<Args>(args)...);
-        Engine::logImpl(message);
-    }
-
-   private:
-    // logging stuff (implementation)
-    static void logToConsole(std::optional<Color> color, const UString &message);
-
-    static void logImpl(const std::string &message, Color color = rgb(255, 255, 255)) {
-        if(color == rgb(255, 255, 255) || !Environment::isaTTY())
-            FMT_PRINT("{}"_cf, message);
-        else
-            FMT_PRINT(fmt::fg(fmt::rgb(color.R(), color.G(), color.B())), "{}", message);
-        logToConsole(color, UString(message));
-    }
 };
 
 extern std::unique_ptr<Mouse> mouse;

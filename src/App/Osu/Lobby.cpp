@@ -26,6 +26,7 @@
 #include "SongBrowser/SongBrowser.h"
 #include "SoundEngine.h"
 #include "UIButton.h"
+#include "Logging.h"
 
 RoomUIElement::RoomUIElement(Lobby* multi, Room* room, float x, float y, float width, float height)
     : CBaseUIScrollView(x, y, width, height, "") {

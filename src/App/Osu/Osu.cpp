@@ -65,6 +65,7 @@
 #include "UserCard.h"
 #include "UserStatsScreen.h"
 #include "VolumeOverlay.h"
+#include "Logging.h"
 
 #include "crypto.h"
 #include "score.h"

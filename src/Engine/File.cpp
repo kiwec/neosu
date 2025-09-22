@@ -9,6 +9,7 @@
 #include "ConVar.h"
 #include "Engine.h"
 #include "UString.h"
+#include "Logging.h"
 
 #include <algorithm>
 #include <chrono>

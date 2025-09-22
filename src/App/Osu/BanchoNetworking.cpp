@@ -30,6 +30,7 @@
 #include "SongBrowser/SongBrowser.h"
 #include "UIButton.h"
 #include "UserCard.h"
+#include "Logging.h"
 
 #include <curl/curl.h>
 
@@ -119,7 +120,7 @@ void send_bancho_packet_async(Packet outgoing) {
         query_url,
         [](NetworkHandler::Response response) {
             if(!response.success) {
-                Engine::logRaw("[httpRequestAsync] Failed to send packet, HTTP error {}\n", response.responseCode);
+                Logger::logRaw("[httpRequestAsync] Failed to send packet, HTTP error {}\n", response.responseCode);
                 std::scoped_lock<std::mutex> lock{auth_mutex};
                 if(auth_header.empty()) {
                     auto errmsg = UString::format("Failed to log in: HTTP %ld", response.responseCode);
@@ -130,9 +131,9 @@ void send_bancho_packet_async(Packet outgoing) {
 
             // // debug
             // if (cv::debug_network.getBool()) {
-            //     Engine::logRaw("DEBUG headers:\n");
+            //     Logger::logRaw("DEBUG headers:\n");
             //     for(const auto &headerstr : response.headers) {
-            //         Engine::logRaw("{:s} {:s}\n", headerstr.first.c_str(), headerstr.second.c_str());
+            //         Logger::logRaw("{:s} {:s}\n", headerstr.first.c_str(), headerstr.second.c_str());
             //     }
             // }
 
@@ -148,10 +149,10 @@ void send_bancho_packet_async(Packet outgoing) {
             if(features_it != response.headers.end()) {
                 if(strstr(features_it->second.c_str(), "submit=0") != nullptr) {
                     BanchoState::score_submission_policy = ServerPolicy::NO;
-                    Engine::logRaw("[httpRequestAsync] Server doesn't want score submission. :(\n");
+                    Logger::logRaw("[httpRequestAsync] Server doesn't want score submission. :(\n");
                 } else if(strstr(features_it->second.c_str(), "submit=1") != nullptr) {
                     BanchoState::score_submission_policy = ServerPolicy::YES;
-                    Engine::logRaw("[httpRequestAsync] Server wants score submission! :D\n");
+                    Logger::logRaw("[httpRequestAsync] Server wants score submission! :D\n");
                 }
             }
 
@@ -171,7 +172,7 @@ void send_bancho_packet_async(Packet outgoing) {
                 u32 packet_len = proto::read<u32>(response_packet);
 
                 if(packet_len > 10485760) {
-                    Engine::logRaw("[httpRequestAsync] Received a packet over 10Mb! Dropping response.\n");
+                    Logger::logRaw("[httpRequestAsync] Received a packet over 10Mb! Dropping response.\n");
                     break;
                 }
 
@@ -393,9 +394,9 @@ void send_packet(Packet &packet) {
 
     // debugLog("Sending packet of type {:}: ", packet.id);
     // for (int i = 0; i < packet.pos; i++) {
-    //     Engine::logRaw("{:02x} ", packet.memory[i]);
+    //     Logger::logRaw("{:02x} ", packet.memory[i]);
     // }
-    // Engine::logRaw("\n");
+    // Logger::logRaw("\n");
 
     // We're not sending it immediately, instead we just add it to the pile of
     // packets to send

@@ -4,9 +4,13 @@
 #include "Thread.h"
 #include "SString.h"
 #include "ConVar.h"
+#include "Timing.h"
+#include "Logging.h"
 
 #include "curl_blob.h"
-#include <curl/curl.h>
+
+#include "curl/curl.h"
+
 #include <utility>
 
 // internal request structure

@@ -10,6 +10,7 @@
 #include "OptionsMenu.h"
 #include "Osu.h"
 #include "SString.h"
+#include "Logging.h"
 
 void handle_neosu_url(const char *url) {
     if(strstr(url, "neosu://login/") == url) {

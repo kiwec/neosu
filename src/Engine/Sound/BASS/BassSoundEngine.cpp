@@ -20,6 +20,8 @@
 #include "SongBrowser/LoudnessCalcThread.h"
 #include "SongBrowser/SongBrowser.h"
 #include "Sound.h"
+#include "Timing.h"
+#include "Logging.h"
 
 #ifdef MCENGINE_PLATFORM_WINDOWS
 #include "CBaseUISlider.h"

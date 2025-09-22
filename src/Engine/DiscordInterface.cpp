@@ -19,6 +19,7 @@ static bool initialized = false;
 #include "Engine.h"
 #include "Osu.h"
 #include "Sound.h"
+#include "Logging.h"
 #include "dynutils.h"
 
 #define DISCORD_CLIENT_ID 1288141291686989846
@@ -44,9 +45,9 @@ struct IDiscordUserEvents users_events{};
 void on_discord_log(void * /*cdata*/, enum EDiscordLogLevel level, const char *message) {
     //(void)cdata;
     if(level == DiscordLogLevel_Error) {
-        Engine::logRaw("[Discord] ERROR: {:s}\n", message);
+        Logger::logRaw("[Discord] ERROR: {:s}\n", message);
     } else {
-        Engine::logRaw("[Discord] {:s}\n", message);
+        Logger::logRaw("[Discord] {:s}\n", message);
     }
 }
 #endif

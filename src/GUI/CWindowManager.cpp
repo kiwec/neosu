@@ -3,7 +3,8 @@
 
 #include "CBaseUIWindow.h"
 #include "Engine.h"
-#include "ResourceManager.h"
+// #include "ResourceManager.h"
+// #include "Logging.h"
 
 CWindowManager::CWindowManager() {
     this->bVisible = true;

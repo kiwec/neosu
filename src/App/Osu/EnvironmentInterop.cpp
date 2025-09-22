@@ -8,6 +8,7 @@
 #include "Osu.h"
 #include "Skin.h"
 #include "SongBrowser/SongBrowser.h"
+#include "Logging.h"
 
 namespace {  // static namespace
 

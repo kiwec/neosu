@@ -18,8 +18,7 @@
 #include "ResourceManager.h"
 #include "Skin.h"
 #include "SoundEngine.h"
-
-
+// #include "Logging.h"
 
 CBaseUITextbox::CBaseUITextbox(float xPos, float yPos, float xSize, float ySize, UString name)
     : CBaseUIElement(xPos, yPos, xSize, ySize, std::move(name)) {

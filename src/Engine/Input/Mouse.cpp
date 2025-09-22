@@ -5,6 +5,7 @@
 #include "Engine.h"
 #include "Environment.h"
 #include "ResourceManager.h"
+#include "Logging.h"
 
 Mouse::Mouse() : InputDevice(), vPos(env->getMousePos()), vPosWithoutOffsets(this->vPos), vActualPos(this->vPos) {
     this->fSensitivity = cv::mouse_sensitivity.getFloat();

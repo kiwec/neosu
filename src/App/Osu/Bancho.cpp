@@ -43,6 +43,8 @@
 #include "SpectatorScreen.h"
 #include "UIAvatar.h"
 #include "UIButton.h"
+#include "Timing.h"
+#include "Logging.h"
 #include "UserCard.h"
 
 // defs

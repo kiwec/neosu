@@ -48,6 +48,7 @@
 #include "UIModSelectorModButton.h"
 #include "UISearchOverlay.h"
 #include "UISlider.h"
+#include "Logging.h"
 
 #include "SoundEngine.h"
 #if defined(MCENGINE_PLATFORM_WINDOWS) && defined(MCENGINE_FEATURE_BASS)

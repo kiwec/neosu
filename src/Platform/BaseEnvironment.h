@@ -199,14 +199,6 @@ static constexpr auto OPTIMAL_UNROLL = 6;
 static constexpr auto OPTIMAL_UNROLL = 4;
 #endif
 
-// fmt::print seems to crash on windows with no console allocated (at least with mingw)
-// just use printf to be safe in that case
-#if defined(_WIN32) && !defined(_DEBUG)
-#define FMT_PRINT(...) printf("%s", fmt::format(__VA_ARGS__).c_str())
-#else
-#define FMT_PRINT(...) fmt::print(__VA_ARGS__)
-#endif
-
 #define MC_STRINGIZE(x) #x
 #define MC_DO_PRAGMA(x) _Pragma(MC_STRINGIZE(x))
 #define MC_MESSAGE(msg) MC_DO_PRAGMA(message(msg))

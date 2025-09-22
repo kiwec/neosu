@@ -10,7 +10,10 @@
 #include "Downloader.h"
 #include "Bancho.h"
 #include "ResourceManager.h"
+#include "Engine.h"
+#include "ConVar.h"
 #include "File.h"
+#include "Logging.h"
 
 Image* AvatarManager::get_avatar(const std::pair<i32, std::string>& id_folder) {
     auto it = this->avatars.find(id_folder);

@@ -54,6 +54,7 @@
 #include "VertexArrayObject.h"
 #include "SString.h"
 #include "crypto.h"
+#include "Logging.h"
 
 #include <algorithm>
 #include <chrono>

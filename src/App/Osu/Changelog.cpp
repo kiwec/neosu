@@ -9,6 +9,7 @@
 #include "Engine.h"
 #include "HUD.h"
 #include "Mouse.h"
+#include "Logging.h"
 #include "OptionsMenu.h"
 #include "Osu.h"
 #include "ResourceManager.h"

@@ -34,6 +34,7 @@
 #include "UIAvatar.h"
 #include "UIContextMenu.h"
 #include "UserStatsScreen.h"
+#include "Logging.h"
 
 UString ScoreButton::recentScoreIconString;
 

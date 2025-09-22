@@ -23,6 +23,8 @@
 #include "FontTypeMap.h"
 #include "ResourceManager.h"
 #include "TextureAtlas.h"
+#include "Logging.h"
+#include "Environment.h"
 
 // TODO: use fontconfig on linux?
 #ifdef _WIN32

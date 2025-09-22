@@ -5,6 +5,7 @@
 #include "ConVar.h"
 #include "Engine.h"
 #include "File.h"
+#include "Logging.h"
 
 std::vector<std::string> Console::g_commandQueue;
 

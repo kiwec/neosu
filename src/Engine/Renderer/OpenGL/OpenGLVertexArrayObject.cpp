@@ -2,12 +2,12 @@
 #include "OpenGLVertexArrayObject.h"
 
 #ifdef MCENGINE_FEATURE_OPENGL
+#include "SDLGLInterface.h"
+#include "OpenGLStateCache.h"
 
 #include "Engine.h"
 #include "ConVar.h"
-
-#include "SDLGLInterface.h"
-#include "OpenGLStateCache.h"
+#include "Logging.h"
 
 OpenGLVertexArrayObject::OpenGLVertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::USAGE_TYPE usage,
                                                  bool keepInSystemMemory)

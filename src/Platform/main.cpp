@@ -1,6 +1,5 @@
 // Copyright (c) 2025, WH, All rights reserved.
-#include "Engine.h"
-#include "ConVar.h"
+#include "BaseEnvironment.h"
 
 #if defined(MCENGINE_PLATFORM_WASM) || defined(MCENGINE_FEATURE_MAINCALLBACKS)
 #define MAIN_FUNC SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
@@ -20,6 +19,9 @@ void setcwdexe(const std::string & /*unused*/) {}
 #define MAIN_FUNC int main(int argc, char *argv[])
 #define nocbinline forceinline
 #include <filesystem>
+
+#include "UString.h"
+
 namespace {
 void setcwdexe(const std::string &exePathStr) noexcept {
     // Fix path in case user is running it from the wrong folder.
@@ -55,6 +57,8 @@ void setcwdexe(const std::string &exePathStr) noexcept {
 #include <processenv.h>   // for GetCommandLine
 #endif
 
+#include "ConVar.h"
+#include "Logging.h"
 #include "SString.h"
 #include "Profiler.h"
 
@@ -233,13 +237,13 @@ void SDLMain::restart(const std::vector<std::string> &args) {
     }
 
     if(cv::debug_env.getBool()) {
-        Engine::logRaw("restart args: ");
+        Logger::logRaw("restart args: ");
         for(int i = -1; const auto entry : restartArgsChar) {
             i++;
             if(!entry) continue;
-            Engine::logRaw("({}) {} ", i, entry);
+            Logger::logRaw("({}) {} ", i, entry);
         }
-        Engine::logRaw("\n");
+        Logger::logRaw("\n");
     }
 
     SDL_SetPointerProperty(restartprops, SDL_PROP_PROCESS_CREATE_ARGS_POINTER, (void *)restartArgsChar.data());

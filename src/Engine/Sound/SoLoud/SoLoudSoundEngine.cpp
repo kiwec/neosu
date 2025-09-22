@@ -3,12 +3,14 @@
 
 #ifdef MCENGINE_FEATURE_SOLOUD
 
+#include "MakeDelegateWrapper.h"
 #include "SString.h"
 #include "SoLoudSound.h"
 #include "SoLoudThread.h"
 
 #include "ConVar.h"
 #include "Engine.h"
+#include "Logging.h"
 
 #include "Environment.h"
 #include "ResourceManager.h"

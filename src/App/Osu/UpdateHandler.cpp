@@ -11,6 +11,7 @@
 #include "SString.h"
 #include "OptionsMenu.h"
 #include "Osu.h"
+#include "Logging.h"
 
 #ifndef _WIN32
 #include <sys/stat.h>

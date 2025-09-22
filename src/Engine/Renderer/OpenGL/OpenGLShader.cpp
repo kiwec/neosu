@@ -3,11 +3,12 @@
 
 #ifdef MCENGINE_FEATURE_OPENGL
 
-#include "ConVar.h"
-#include "Engine.h"
-
 #include "OpenGLHeaders.h"
 #include "OpenGLStateCache.h"
+
+#include "ConVar.h"
+#include "Engine.h"
+#include "Logging.h"
 
 #include "OpenGLLegacyInterface.h"
 

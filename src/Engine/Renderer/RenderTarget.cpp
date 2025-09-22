@@ -4,6 +4,7 @@
 #include "ConVar.h"
 #include "Engine.h"
 #include "VertexArrayObject.h"
+#include "Logging.h"
 
 RenderTarget::RenderTarget(int x, int y, int width, int height, Graphics::MULTISAMPLE_TYPE multiSampleType)
     : Resource(),

@@ -15,6 +15,7 @@
 #include "ModSelector.h"
 #include "Mouse.h"
 #include "ResourceManager.h"
+#include "Logging.h"
 
 SimulatedBeatmapInterface::SimulatedBeatmapInterface(DatabaseBeatmap *map, Replay::Mods mods_)
     : AbstractBeatmapInterface() {

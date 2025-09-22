@@ -10,7 +10,9 @@
 #include "Engine.h"
 #include "NotificationOverlay.h"
 #include "Osu.h"
+#include "Timing.h"
 #include "SpectatorScreen.h"
+#include "Logging.h"
 
 namespace BANCHO::User {
 

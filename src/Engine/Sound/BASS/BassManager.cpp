@@ -6,6 +6,8 @@
 #include "ConVar.h"
 #include "Engine.h"
 #include "File.h"
+#include "Logging.h"
+#include "Environment.h"
 
 #include <SDL3/SDL_loadso.h>
 

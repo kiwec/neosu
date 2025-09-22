@@ -1,17 +1,19 @@
 // Copyright (c) 2014, PG, All rights reserved.
 #include "Sound.h"
 
-#include <memory>
-#include <utility>
-#include "ConVar.h"
-
 #include "BassSound.h"
 #include "SoLoudSound.h"
 
+#include "ConVar.h"
+#include "Environment.h"
 #include "ByteBufferedFile.h"
 #include "ResourceManager.h"
 #include "SoundEngine.h"
 #include "SString.h"
+#include "Logging.h"
+
+#include <memory>
+#include <utility>
 
 void Sound::initAsync() {
     if(cv::debug_rm.getBool()) debugLog("Resource Manager: Loading {:s}\n", this->sFilePath);

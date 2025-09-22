@@ -103,7 +103,6 @@ class Environment {
     [[nodiscard]] static bool directoryExists(std::string &directoryName);
     [[nodiscard]] static bool fileExists(const std::string &filename);
     [[nodiscard]] static bool directoryExists(const std::string &directoryName);
-    [[nodiscard]] static inline bool isaTTY() { return s_bIsATTY; }  // is stdout a terminal
 
     static bool createDirectory(const std::string &directoryName);
     static bool renameFile(const std::string &oldFileName, const std::string &newFileName);
@@ -233,8 +232,6 @@ class Environment {
     }
     void onLogLevelChange(float newval);
     bool m_bEnvDebug;
-
-    static bool s_bIsATTY;  // to determine whether we should log with colours to stdout/stderr
 
     // monitors
     void initMonitors(bool force = false) const;

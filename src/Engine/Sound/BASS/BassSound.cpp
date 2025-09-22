@@ -12,6 +12,8 @@
 #include "File.h"
 #include "Osu.h"
 #include "ResourceManager.h"
+#include "Timing.h"
+#include "Logging.h"
 
 void BassSound::init() {
     if(this->bIgnored || this->sFilePath.length() < 2 || !(this->bAsyncReady.load())) return;

@@ -9,6 +9,7 @@
 #include "Engine.h"
 #include "ConVar.h"
 #include "File.h"
+#include "Logging.h"
 
 #include "OpenGLHeaders.h"
 

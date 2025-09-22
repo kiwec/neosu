@@ -1,9 +1,10 @@
 // Copyright (c) 2012, PG, All rights reserved.
 #include "Resource.h"
 
-#include <utility>
-#include "Engine.h"
 #include "File.h"
+#include "Logging.h"
+
+#include <utility>
 
 Resource::Resource(std::string filepath) {
     this->sFilePath = std::move(filepath);

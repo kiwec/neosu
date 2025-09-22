@@ -21,6 +21,7 @@
 #include "SongBrowser/SongBrowser.h"
 #include "score.h"
 #include "Parsing.h"
+#include "Logging.h"
 
 namespace proto = BANCHO::Proto;
 namespace LegacyReplay {

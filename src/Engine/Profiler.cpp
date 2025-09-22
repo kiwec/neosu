@@ -1,10 +1,9 @@
 // Copyright (c) 2020, PG, All rights reserved.
 #include "Profiler.h"
 
-#include <string.h>
-
-#include "ConVar.h"
 #include "Engine.h"
+#include "Timing.h"
+#include "UString.h"
 
 ProfilerProfile g_profCurrentProfile(true);
 

@@ -5,6 +5,7 @@
 
 #include "ConVar.h"
 #include "Engine.h"
+#include "Logging.h"
 
 #include <algorithm>
 #include <mutex>

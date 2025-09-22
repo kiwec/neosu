@@ -12,6 +12,7 @@
 #include "OpenGLRenderTarget.h"
 #include "OpenGLShader.h"
 #include "OpenGLVertexArrayObject.h"
+#include "Logging.h"
 
 #include "SDLGLInterface.h"
 #include "OpenGLStateCache.h"

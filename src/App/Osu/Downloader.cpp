@@ -20,6 +20,7 @@
 #include "Osu.h"
 #include "Parsing.h"
 #include "SString.h"
+#include "Logging.h"
 #include "SongBrowser/SongBrowser.h"
 
 namespace {  // static

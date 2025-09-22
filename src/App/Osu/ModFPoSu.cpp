@@ -20,6 +20,7 @@
 #include "Osu.h"
 #include "ResourceManager.h"
 #include "Skin.h"
+#include "Logging.h"
 
 #include <cmath>
 #include <sstream>

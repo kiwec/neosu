@@ -4,6 +4,8 @@
 #include "UString.h"
 #include "types.h"
 
+#include <memory>
+
 #define SOUND_ENGINE_TYPE(ClassName, TypeID, ParentClass)               \
     static constexpr TypeId TYPE_ID = TypeID;                           \
     [[nodiscard]] TypeId getTypeId() const override { return TYPE_ID; } \
@@ -116,3 +118,6 @@ class SoundEngine {
 
     std::array<AudioOutputChangedCallback, 2> restartCBs;  // first to exec before restart, second to exec after restart
 };
+
+// define/managed in Engine.cpp, declared here for convenience
+extern std::unique_ptr<SoundEngine> soundEngine;

@@ -2,7 +2,6 @@
 #include "BeatmapInterface.h"
 
 #include <algorithm>
-#include <cstring>
 #include <chrono>
 #include <limits>
 
@@ -16,6 +15,7 @@
 #include "BeatmapInterface.h"
 #include "Chat.h"
 #include "ConVar.h"
+#include "Timing.h"
 #include "Database.h"
 #include "DatabaseBeatmap.h"
 #include "DifficultyCalculator.h"
@@ -25,6 +25,7 @@
 #include "HitObjects.h"
 #include "Keyboard.h"
 #include "LegacyReplay.h"
+#include "Logging.h"
 #include "MainMenu.h"
 #include "ModFPoSu.h"
 #include "ModSelector.h"
@@ -1108,6 +1109,7 @@ f32 BeatmapInterface::getSpeedMultiplier() const {
     }
 }
 
+// currently just a passthrough for the main skin, might return beatmap skins in the future
 const std::unique_ptr<Skin> &BeatmapInterface::getSkin() const { return osu->getSkin(); }
 
 u32 BeatmapInterface::getScoreV1DifficultyMultiplier_full() const {

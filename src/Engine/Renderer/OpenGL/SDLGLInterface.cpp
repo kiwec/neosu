@@ -7,6 +7,8 @@
 
 #include "Engine.h"
 #include "OpenGLSync.h"
+#include "Logging.h"
+#include "ConVar.h"
 
 // resolve GL functions (static, called before construction)
 void SDLGLInterface::load() {
@@ -186,13 +188,13 @@ void SDLGLInterface::setLog(bool on) {
 
 void APIENTRY SDLGLInterface::glDebugCB(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length,
                                         const GLchar *message, const void * /*userParam*/) {
-    Engine::logRaw("[GLDebugCB]\n");
-    Engine::logRaw("    message: {}\n", std::string(message, length));
-    Engine::logRaw("    time: {:.4f}\n", engine->getTime());
-    Engine::logRaw("    id: {}\n", id);
-    Engine::logRaw("    source: {}\n", glDebugSourceString(source));
-    Engine::logRaw("    type: {}\n", glDebugTypeString(type));
-    Engine::logRaw("    severity: {}\n", glDebugSeverityString(severity));
+    Logger::logRaw("[GLDebugCB]\n");
+    Logger::logRaw("    message: {}\n", std::string(message, length));
+    Logger::logRaw("    time: {:.4f}\n", engine->getTime());
+    Logger::logRaw("    id: {}\n", id);
+    Logger::logRaw("    source: {}\n", glDebugSourceString(source));
+    Logger::logRaw("    type: {}\n", glDebugTypeString(type));
+    Logger::logRaw("    severity: {}\n", glDebugSeverityString(severity));
 }
 
 #endif

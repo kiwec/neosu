@@ -1,7 +1,7 @@
 // Copyright (c) 2012, PG, All rights reserved.
-#include "Engine.h"
+#include "App.h"
 
-#include <cstdio>
+#include "Engine.h"
 
 #include "AnimationHandler.h"
 #include "CBaseUIContainer.h"
@@ -12,13 +12,15 @@
 #include "Keyboard.h"
 #include "Mouse.h"
 #include "NetworkHandler.h"
-#include "Osu.h"
 #include "Profiler.h"
 #include "ResourceManager.h"
 #include "SoundEngine.h"
 #include "Timing.h"
+#include "Logging.h"
 #include "VisualProfiler.h"
 #include "SString.h"
+
+#include <cstdio>
 
 Image *MISSING_TEXTURE = nullptr;
 
@@ -560,15 +562,6 @@ void Engine::onEngineThrottleChanged(float newVal) {
     if(!enable) {
         this->fVsyncFrameCounterTime = 0.0f;
         this->iVsyncFrameCount = 0;
-    }
-}
-
-void Engine::logToConsole(std::optional<Color> color, const UString &msg) {
-    if(Engine::consoleBox != nullptr) {
-        if(color.has_value())
-            Engine::consoleBox->log(msg, color.value());
-        else
-            Engine::consoleBox->log(msg);
     }
 }
 

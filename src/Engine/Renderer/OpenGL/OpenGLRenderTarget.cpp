@@ -3,12 +3,13 @@
 
 #if defined(MCENGINE_FEATURE_OPENGL) || defined(MCENGINE_FEATURE_GLES32)
 
+#include "OpenGLHeaders.h"
+
+#include "OpenGLStateCache.h"
 #include "ConVar.h"
 #include "Engine.h"
 #include "VertexArrayObject.h"
-
-#include "OpenGLHeaders.h"
-#include "OpenGLStateCache.h"
+#include "Logging.h"
 
 #if (defined(MCENGINE_FEATURE_OPENGL) || defined(MCENGINE_FEATURE_GLES32)) && !defined(MCENGINE_PLATFORM_WASM)
 #define HAS_MULTISAMPLING

@@ -10,6 +10,8 @@
 
 #include "main_impl.h"
 
+#include "Osu.h" // TODO: remove needing this
+
 #include "MakeDelegateWrapper.h"
 #include "Engine.h"
 #include "ConVar.h"
@@ -17,6 +19,7 @@
 #include "Keyboard.h"
 #include "Mouse.h"
 #include "Profiler.h"
+#include "Logging.h"
 
 SDLMain::SDLMain(int argc, char *argv[]) : Environment(argc, argv) {
     // setup callbacks
@@ -156,12 +159,12 @@ SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
                     }
                     m_vDroppedData.push_back(dropped_data);
                     if(m_bEnvDebug) {
-                        Engine::logRaw("DEBUG: got SDL drag-drop event {}, current dropped_data queue is ",
+                        Logger::logRaw("DEBUG: got SDL drag-drop event {}, current dropped_data queue is ",
                                        static_cast<int>(event->drop.type));
                         for(const auto &d : m_vDroppedData) {
-                            Engine::logRaw("{}", d);
+                            Logger::logRaw("{}", d);
                         }
-                        Engine::logRaw(".\n");
+                        Logger::logRaw(".\n");
                     }
                 } break;
                 case SDL_EVENT_DROP_POSITION:  // we don't really care
@@ -548,7 +551,7 @@ void SDLMain::setupLogging() {
                 default:
                     break;
             }
-            Engine::logRaw("SDL[{}]: {}\n", catStr, message);
+            Logger::logRaw("SDL[{}]: {}\n", catStr, message);
         },
         nullptr);
 }

@@ -16,9 +16,11 @@
 #include "SoundEngine.h"
 #include "SpectatorScreen.h"
 #include "UpdateHandler.h"
+#include "Logging.h"
+
+#include "fmt/chrono.h"
 
 #include <algorithm>
-#include <fmt/chrono.h>
 #include <unordered_set>
 
 void ConVar::addConVar(ConVar *c) {
@@ -198,7 +200,7 @@ ConVar *ConVarHandler::getConVarByName(const ConVarString &name, bool warnIfNotF
         ConVarString errormsg = ConVarString("ENGINE: ConVar \"");
         errormsg.append(name);
         errormsg.append("\" does not exist...\n");
-        Engine::logRaw("{:s}", errormsg.c_str());
+        Logger::logRaw("{:s}", errormsg.c_str());
         engine->showMessageWarning("Engine Error", errormsg.c_str());
     }
 
@@ -326,7 +328,7 @@ void ConVarHandler::resetSkinCvars() {
 
 static void _find(const UString &args) {
     if(args.length() < 1) {
-        Engine::logRaw("Usage:  find <string>\n");
+        Logger::logRaw("Usage:  find <string>\n");
         return;
     }
 
@@ -345,36 +347,36 @@ static void _find(const UString &args) {
     }
 
     if(matchingConVars.size() < 1) {
-        Engine::logRaw("No commands found containing {:s}.\n", args);
+        Logger::logRaw("No commands found containing {:s}.\n", args);
         return;
     }
 
-    Engine::logRaw("----------------------------------------------\n");
+    Logger::logRaw("----------------------------------------------\n");
     {
         UString thelog = "[ find : ";
         thelog.append(args);
         thelog.append(" ]\n");
-        Engine::logRaw("{:s}", thelog.toUtf8());
+        Logger::logRaw("{:s}", thelog.toUtf8());
 
         for(auto &matchingConVar : matchingConVars) {
-            Engine::logRaw("{:s}\n", matchingConVar->getName());
+            Logger::logRaw("{:s}\n", matchingConVar->getName());
         }
     }
-    Engine::logRaw("----------------------------------------------\n");
+    Logger::logRaw("----------------------------------------------\n");
 }
 
 static void _help(const UString &args) {
     std::string trimmedArgs{args.trim().utf8View()};
 
     if(trimmedArgs.length() < 1) {
-        Engine::logRaw("Usage:  help <cvarname>\n To get a list of all available commands, type \"listcommands\".\n");
+        Logger::logRaw("Usage:  help <cvarname>\n To get a list of all available commands, type \"listcommands\".\n");
         return;
     }
 
     const std::vector<ConVar *> matches = cvars->getConVarByLetter(trimmedArgs);
 
     if(matches.size() < 1) {
-        Engine::logRaw("ConVar {:s} does not exist.\n", trimmedArgs);
+        Logger::logRaw("ConVar {:s} does not exist.\n", trimmedArgs);
         return;
     }
 
@@ -389,7 +391,7 @@ static void _help(const UString &args) {
     ConVar *match = matches[index];
 
     if(match->getHelpstring().length() < 1) {
-        Engine::logRaw("ConVar {:s} does not have a helpstring.\n", match->getName());
+        Logger::logRaw("ConVar {:s} does not have a helpstring.\n", match->getName());
         return;
     }
 
@@ -408,11 +410,11 @@ static void _help(const UString &args) {
         thelog.append(" - ");
         thelog.append(match->getHelpstring().c_str());
     }
-    Engine::logRaw("{:s}\n", thelog);
+    Logger::logRaw("{:s}\n", thelog);
 }
 
 static void _listcommands(void) {
-    Engine::logRaw("----------------------------------------------\n");
+    Logger::logRaw("----------------------------------------------\n");
     {
         std::vector<ConVar *> convars = cvars->getConVarArray();
         std::ranges::sort(convars, {}, [](const ConVar *v) { return v->getName(); });
@@ -441,10 +443,10 @@ static void _listcommands(void) {
 
                 tstring.append("\n");
             }
-            Engine::logRaw("{:s}", tstring);
+            Logger::logRaw("{:s}", tstring);
         }
     }
-    Engine::logRaw("----------------------------------------------\n");
+    Logger::logRaw("----------------------------------------------\n");
 }
 
 static void _dumpcommands(void) {
@@ -658,7 +660,7 @@ static void _dumpcommands(void) {
 
     FILE *file = fopen("variables.htm", "w");
     if(file == nullptr) {
-        Engine::logRaw("Failed to open variables.htm for writing\n");
+        Logger::logRaw("Failed to open variables.htm for writing\n");
         return;
     }
 
@@ -666,14 +668,14 @@ static void _dumpcommands(void) {
     fflush(file);
     fclose(file);
 
-    Engine::logRaw("ConVars dumped to variables.htm\n");
+    Logger::logRaw("ConVars dumped to variables.htm\n");
 }
 
 void _exec(const UString &args) { Console::execConfigFile(args.toUtf8()); }
 
 void _echo(const UString &args) {
     if(args.length() > 0) {
-        Engine::logRaw("{:s}\n", args.toUtf8());
+        Logger::logRaw("{:s}\n", args.toUtf8());
     }
 }
 

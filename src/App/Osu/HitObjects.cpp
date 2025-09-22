@@ -25,6 +25,7 @@
 #include "SliderRenderer.h"
 #include "SoundEngine.h"
 #include "VertexArrayObject.h"
+#include "Logging.h"
 
 void HitObject::drawHitResult(BeatmapInterface *pf, vec2 rawPos, LiveScore::HIT result, float animPercentInv,
                               float hitDeltaRangePercent) {
@@ -876,7 +877,7 @@ Circle::~Circle() { this->onReset(0); }
 
 void Circle::draw() {
     HitObject::draw();
-    const std::unique_ptr<Skin> &skin = osu->getSkin();
+    const std::unique_ptr<Skin> &skin = this->pf->getSkin();
 
     // draw hit animation
     bool is_instafade = cv::instafade.getBool();
@@ -2509,7 +2510,9 @@ Spinner::Spinner(int x, int y, long time, HitSamples samples, bool isEndOfCombo,
 Spinner::~Spinner() {
     this->onReset(0);
 
-    delete[] this->storedDeltaAngles;
+    if(this->storedDeltaAngles) {
+        delete[] this->storedDeltaAngles;
+    }
     this->storedDeltaAngles = nullptr;
 }
 

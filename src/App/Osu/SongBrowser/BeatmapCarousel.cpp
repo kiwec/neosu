@@ -1,5 +1,6 @@
 // Copyright (c) 2025, WH, All rights reserved.
 
+#include "Osu.h"
 #include "BeatmapCarousel.h"
 #include "CollectionButton.h"
 #include "SongBrowser.h"

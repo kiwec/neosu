@@ -12,6 +12,7 @@
 #include "Osu.h"
 #include "PauseMenu.h"
 #include "ResourceManager.h"
+#include "Logging.h"
 
 NotificationOverlay::NotificationOverlay() : OsuScreen() {
     this->bWaitForKey = false;

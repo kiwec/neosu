@@ -15,6 +15,7 @@
 #include "Osu.h"
 #include "RoomScreen.h"
 #include "SongBrowser/LeaderboardPPCalcThread.h"
+#include "Logging.h"
 
 LiveScore::LiveScore(bool simulating) {
     this->simulating = simulating;

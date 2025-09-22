@@ -21,6 +21,7 @@
 #include "SongBrowser/ScoreConverterThread.h"
 #include "SongBrowser/SongBrowser.h"
 #include "Timing.h"
+#include "Logging.h"
 #include "score.h"
 
 #include <algorithm>

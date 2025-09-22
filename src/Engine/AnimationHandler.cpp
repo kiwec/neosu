@@ -3,6 +3,7 @@
 
 #include "ConVar.h"
 #include "Engine.h"
+#include "Logging.h"
 
 AnimationHandler* anim = nullptr;
 

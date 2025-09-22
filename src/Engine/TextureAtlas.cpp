@@ -5,6 +5,7 @@
 
 #include "Engine.h"
 #include "ResourceManager.h"
+#include "Logging.h"
 
 TextureAtlas::TextureAtlas(int width, int height) : Resource() {
     this->iWidth = width;

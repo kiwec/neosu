@@ -9,8 +9,6 @@
 #ifndef RESOURCEMANAGER_H
 #define RESOURCEMANAGER_H
 
-#include "ConVar.h"
-#include "Engine.h"
 #include "Font.h"
 #include "Image.h"
 #include "RenderTarget.h"
@@ -77,13 +75,14 @@ class ResourceManager final {
                      int fontSize = 16, bool antialiasing = true, int fontDPI = 96);
 
     // sounds
-    Sound *loadSound(std::string filepath, const std::string &resourceName, bool stream = false, bool overlayable = false,
-                     bool loop = false);
-    Sound *loadSoundAbs(std::string filepath, const std::string &resourceName, bool stream = false, bool overlayable = false,
-                        bool loop = false);
+    Sound *loadSound(std::string filepath, const std::string &resourceName, bool stream = false,
+                     bool overlayable = false, bool loop = false);
+    Sound *loadSoundAbs(std::string filepath, const std::string &resourceName, bool stream = false,
+                        bool overlayable = false, bool loop = false);
 
     // shaders
-    Shader *loadShader(std::string vertexShaderFilePath, std::string fragmentShaderFilePath, const std::string &resourceName);
+    Shader *loadShader(std::string vertexShaderFilePath, std::string fragmentShaderFilePath,
+                       const std::string &resourceName);
     Shader *loadShader(std::string vertexShaderFilePath, std::string fragmentShaderFilePath);
     Shader *createShader(std::string vertexShader, std::string fragmentShader, const std::string &resourceName);
     Shader *createShader(std::string vertexShader, std::string fragmentShader);
@@ -131,27 +130,24 @@ class ResourceManager final {
     [[nodiscard]] size_t getNumLoadingWorkAsyncDestroy() const;
 
    private:
+    // to avoid including logging/convar code here, transitively
+    static void notExistLog(const std::string &resourceName);
+    static void alreadyLoadedLog(const std::string &resourceName);
+
     template <typename T>
     [[nodiscard]] T *tryGet(const std::string &resourceName) const {
         if(resourceName.empty()) return nullptr;
         if(this->mNameToResourceMap.contains(resourceName)) {
             return this->mNameToResourceMap.at(resourceName)->as<T>();
         }
-        if(cv::debug_rm.getBool())
-            debugLog(R"(ResourceManager WARNING: Resource "{:s}" does not exist!)"
-                     "\n",
-                     resourceName);
+        notExistLog(resourceName);
         return nullptr;
     }
     template <typename T>
     [[nodiscard]] T *checkIfExistsAndHandle(const std::string &resourceName) {
         if(resourceName.empty()) return nullptr;
-        if(!this->mNameToResourceMap.contains(resourceName))
-            return nullptr;
-        if(cv::debug_rm.getBool())
-            debugLog(R"(ResourceManager NOTICE: Resource "{:s}" already loaded.)"
-                     "\n",
-                     resourceName);
+        if(!this->mNameToResourceMap.contains(resourceName)) return nullptr;
+        alreadyLoadedLog(resourceName);
         // handle flags (reset them)
         resetFlags();
         return this->mNameToResourceMap[resourceName]->as<T>();
@@ -189,5 +185,8 @@ class ResourceManager final {
     std::vector<TextureAtlas *> vTextureAtlases;
     std::vector<VertexArrayObject *> vVertexArrayObjects;
 };
+
+// define/managed in Engine.cpp, declared here for convenience
+extern std::unique_ptr<ResourceManager> resourceManager;
 
 #endif

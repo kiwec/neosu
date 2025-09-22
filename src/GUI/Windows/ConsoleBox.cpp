@@ -14,6 +14,7 @@
 #include "Environment.h"
 #include "Keyboard.h"
 #include "Mouse.h"
+#include "Timing.h"
 #include "ResourceManager.h"
 
 class ConsoleBoxTextbox : public CBaseUITextbox {

@@ -6,6 +6,11 @@
 #include "Mouse.h"
 #include "File.h"
 #include "SString.h"
+#include "Timing.h"
+#include "Logging.h"
+#include "ConVar.h"
+
+#include "Osu.h"  // TODO: remove these hacks
 
 // #include "DirectX11Interface.h" TODO
 #include "SDLGLInterface.h"
@@ -20,7 +25,6 @@
 
 #if defined(MCENGINE_PLATFORM_WINDOWS)
 #include "WinDebloatDefs.h"
-#include <io.h>
 #include <lmcons.h>
 #include <windows.h>
 #elif defined(__APPLE__) || defined(MCENGINE_PLATFORM_LINUX)
@@ -40,7 +44,6 @@ Environment *env = nullptr;
 bool Environment::s_bIsWine = false;
 
 SDL_Environment *Environment::s_sdlenv = SDL_GetEnvironment();
-bool Environment::s_bIsATTY = (isatty(fileno(stdout)) != 0);
 
 Environment::Environment(int argc, char *argv[]) : m_interop(this) {
     env = this;

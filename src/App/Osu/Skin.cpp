@@ -19,6 +19,7 @@
 #include "SkinImage.h"
 #include "SoundEngine.h"
 #include "VolumeOverlay.h"
+#include "Logging.h"
 
 // Readability
 // XXX: change loadSound() interface to use flags instead

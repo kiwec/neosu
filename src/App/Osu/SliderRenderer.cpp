@@ -12,6 +12,7 @@
 #include "Shader.h"
 #include "Skin.h"
 #include "VertexArrayObject.h"
+#include "Logging.h"
 
 #include "shaders.h"
 

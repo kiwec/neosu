@@ -11,6 +11,8 @@
 #include "AsyncResourceLoader.h"
 #include "ConVar.h"
 #include "Resource.h"
+#include "Engine.h"
+#include "Logging.h"
 
 #include <algorithm>
 #include <utility>
@@ -275,8 +277,8 @@ Image *ResourceManager::createImage(i32 width, i32 height, bool mipmapped, bool 
     return img;
 }
 
-McFont *ResourceManager::loadFont(std::string filepath, const std::string &resourceName, int fontSize, bool antialiasing,
-                                  int fontDPI) {
+McFont *ResourceManager::loadFont(std::string filepath, const std::string &resourceName, int fontSize,
+                                  bool antialiasing, int fontDPI) {
     auto res = checkIfExistsAndHandle<McFont>(resourceName);
     if(res != nullptr) return res;
 
@@ -321,8 +323,8 @@ Sound *ResourceManager::loadSound(std::string filepath, const std::string &resou
     return snd;
 }
 
-Sound *ResourceManager::loadSoundAbs(std::string filepath, const std::string &resourceName, bool stream, bool overlayable,
-                                     bool loop) {
+Sound *ResourceManager::loadSoundAbs(std::string filepath, const std::string &resourceName, bool stream,
+                                     bool overlayable, bool loop) {
     auto res = checkIfExistsAndHandle<Sound>(resourceName);
     if(res != nullptr) return res;
 
@@ -361,7 +363,8 @@ Shader *ResourceManager::loadShader(std::string vertexShaderFilePath, std::strin
     return shader;
 }
 
-Shader *ResourceManager::createShader(std::string vertexShader, std::string fragmentShader, const std::string &resourceName) {
+Shader *ResourceManager::createShader(std::string vertexShader, std::string fragmentShader,
+                                      const std::string &resourceName) {
     auto res = checkIfExistsAndHandle<Shader>(resourceName);
     if(res != nullptr) return res;
 
@@ -501,5 +504,21 @@ void ResourceManager::removeResourceFromTypedVector(Resource *res) {
         case Resource::Type::APPDEFINED:
             // app-defined types aren't added to specific vectors
             break;
+    }
+}
+
+void ResourceManager::notExistLog(const std::string &resourceName) {
+    if(cv::debug_rm.getBool()) {
+        debugLog(R"(ResourceManager WARNING: Resource "{:s}" does not exist!)"
+                 "\n",
+                 resourceName);
+    }
+}
+
+void ResourceManager::alreadyLoadedLog(const std::string &resourceName) {
+    if(cv::debug_rm.getBool()) {
+        debugLog(R"(ResourceManager NOTICE: Resource "{:s}" already loaded.)"
+                 "\n",
+                 resourceName);
     }
 }

@@ -1,12 +1,15 @@
 // Copyright (c) 2025, WH, All rights reserved.
 #include "AsyncResourceLoader.h"
 
-#include <algorithm>
-#include <utility>
-
 #include "ConVar.h"
 #include "Engine.h"
 #include "Thread.h"
+#include "Timing.h"
+#include "Logging.h"
+
+#include <algorithm>
+#include <utility>
+#include <thread>
 
 using namespace std::chrono_literals;
 
@@ -349,7 +352,7 @@ void AsyncResourceLoader::cleanupIdleThreads() {
     for(auto &[idx, thread] : this->threadpool) {
         if(thread->isIdleTooLong()) {
             if(debug) {
-                Engine::logRaw(
+                Logger::logRaw(
                     "AsyncResourceLoader: Removing idle thread #{} (idle timeout exceeded, pool size: {} -> {})\n", idx,
                     this->threadpool.size(), this->threadpool.size() - 1);
             }

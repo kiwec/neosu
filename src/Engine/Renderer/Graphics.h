@@ -1,6 +1,7 @@
 #pragma once
 // Copyright (c) 2012, PG, All rights reserved.
 
+#include <memory>
 #include <stack>
 #include <vector>
 
@@ -258,3 +259,7 @@ class Graphics {
     bool bTransformUpToDate;
     bool bIs3dScene;
 };
+
+// define/managed in Engine.cpp, declared here for convenience
+extern std::unique_ptr<Graphics> g;
+

@@ -1,18 +1,21 @@
 // Copyright (c) 2024, kiwec, All rights reserved.
 #include "LoudnessCalcThread.h"
 
-#include <atomic>
-#include <utility>
-
 #include "DatabaseBeatmap.h"
 #include "Engine.h"
 #include "Sound.h"
 #include "SoundEngine.h"
 #include "Thread.h"
+#include "Timing.h"
+#include "Logging.h"
 
 #ifdef MCENGINE_FEATURE_BASS
 #include "BassManager.h"
 #endif
+
+#include <atomic>
+#include <utility>
+#include <thread>
 
 // static member definitions
 std::unique_ptr<VolNormalization> VolNormalization::instance = nullptr;

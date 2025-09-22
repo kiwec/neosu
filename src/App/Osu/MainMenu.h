@@ -153,19 +153,12 @@ class MainMenu : public OsuScreen, public MouseListener {
     struct SongsFolderEnumerator : public Resource {
         NOCOPY_NOMOVE(SongsFolderEnumerator)
        public:
+        SongsFolderEnumerator();
         ~SongsFolderEnumerator() override = default;
-        SongsFolderEnumerator() : Resource() {
-            resourceManager->requestNextLoadAsync();
-            resourceManager->loadResource(this);
-        }
 
         [[nodiscard]] inline const std::vector<std::string> &getEntries() const { return this->entries; }
         [[nodiscard]] inline std::string getFolderPath() const { return this->folderPath; }
-        inline void rebuild() {
-            this->bAsyncReady.store(false);
-            this->bReady = false;
-            resourceManager->reloadResource(this, true);
-        }
+        void rebuild();
 
         // type inspection
         [[nodiscard]] Type getResType() const final { return APPDEFINED; }

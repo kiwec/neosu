@@ -24,6 +24,7 @@
 #include "Osu.h"
 #include "Parsing.h"
 #include "Skin.h"
+#include "Logging.h"
 #include "SliderCurves.h"
 #include "SongBrowser/SongBrowser.h"
 namespace {  // static namespace

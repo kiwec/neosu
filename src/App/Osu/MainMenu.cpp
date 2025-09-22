@@ -32,6 +32,7 @@
 #include "UIButton.h"
 #include "UpdateHandler.h"
 #include "VertexArrayObject.h"
+#include "Logging.h"
 
 UString MainMenu::NEOSU_MAIN_BUTTON_TEXT = UString("neosu");
 UString MainMenu::NEOSU_MAIN_BUTTON_SUBTEXT = UString("Multiplayer Client");
@@ -1585,6 +1586,17 @@ void PauseButton::draw() {
     }
     if(this->bActive && this->bEnabled) this->drawHoverRect(6);
 };
+
+MainMenu::SongsFolderEnumerator::SongsFolderEnumerator() : Resource() {
+    resourceManager->requestNextLoadAsync();
+    resourceManager->loadResource(this);
+}
+
+void MainMenu::SongsFolderEnumerator::rebuild() {
+    this->bAsyncReady.store(false);
+    this->bReady = false;
+    resourceManager->reloadResource(this, true);
+}
 
 void MainMenu::SongsFolderEnumerator::initAsync() {
     this->folderPath = Database::getOsuSongsFolder();

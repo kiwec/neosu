@@ -42,6 +42,7 @@
 #include "UICheckbox.h"
 #include "UIContextMenu.h"
 #include "UIUserContextMenu.h"
+#include "Logging.h"
 
 void UIModList::draw() {
     std::vector<SkinImage *> mods;

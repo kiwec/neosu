@@ -10,6 +10,7 @@
 #include "NetworkHandler.h"
 #include "SongBrowser/SongBrowser.h"
 #include "crypto.h"
+#include "Logging.h"
 
 #include <cstdlib>
 #include <cstring>

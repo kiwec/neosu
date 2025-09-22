@@ -9,6 +9,8 @@
 #include "ConVar.h"
 #include "Database.h"
 #include "Engine.h"
+#include "Timing.h"
+#include "Logging.h"
 
 namespace {  // static namespace
 bool collections_loaded = false;

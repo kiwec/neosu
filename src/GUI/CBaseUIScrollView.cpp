@@ -9,7 +9,8 @@
 #include "Engine.h"
 #include "Keyboard.h"
 #include "Mouse.h"
-#include "ResourceManager.h"
+// #include "ResourceManager.h"
+// #include "Logging.h"
 
 CBaseUIScrollView::CBaseUIScrollView(float xPos, float yPos, float xSize, float ySize, const UString &name)
     : CBaseUIElement(xPos, yPos, xSize, ySize, name) {
