@@ -43,7 +43,7 @@ class Environment {
         bool handle_cmdline_args() { return handle_cmdline_args(m_env->getCommandLine()); }
         void setup_system_integrations();
         static void handle_existing_window([[maybe_unused]] int argc,
-                                           [[maybe_unused]] char *argv[]);  // this is likely broken ATM
+                                           [[maybe_unused]] char *argv[]);  // only impl. for windows ATM
        private:
         Environment *m_env;
     };
@@ -53,7 +53,8 @@ class Environment {
     Interop m_interop;
 
    public:
-    Environment(int argc, char *argv[]);
+    Environment(const std::unordered_map<std::string, std::optional<std::string>> &argMap,
+                const std::vector<std::string> &cmdlineVec);
     virtual ~Environment();
 
     void update();
@@ -167,9 +168,9 @@ class Environment {
     [[nodiscard]] vec2 getNativeScreenSize() const;
     [[nodiscard]] McRect getDesktopRect() const;
     [[nodiscard]] McRect getWindowRect() const;
-    [[nodiscard]] bool isFullscreenWindowedBorderless() const { return m_bFullscreenWindowedBorderless; }
+    [[nodiscard]] inline bool isFullscreenWindowedBorderless() const { return m_bFullscreenWindowedBorderless; }
     [[nodiscard]] int getDPI() const;
-    [[nodiscard]] float getDPIScale() const { return (float)getDPI() / 96.0f; }
+    [[nodiscard]] inline float getDPIScale() const { return (float)getDPI() / 96.0f; }
     [[nodiscard]] inline const bool &isFullscreen() const { return m_bFullscreen; }
     [[nodiscard]] inline const bool &isWindowResizable() const { return m_bResizable; }
     [[nodiscard]] inline bool hasFocus() const { return m_bHasFocus; }
@@ -243,6 +244,7 @@ class Environment {
     float m_fDisplayHzSecs;
 
     // window
+    bool m_bDPIOverride;
     bool m_bResizable;
     bool m_bFullscreen;
     bool m_bFullscreenWindowedBorderless;
@@ -258,7 +260,6 @@ class Environment {
     mutable vec2 m_vLastKnownWindowPos{0.f};
 
     // mouse
-
     friend class Mouse;
     // <rel, abs>
     std::pair<vec2, vec2> consumeMousePositionCache();

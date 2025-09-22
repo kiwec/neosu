@@ -41,37 +41,16 @@
 #include <SDL3/SDL.h>
 
 Environment *env = nullptr;
+
 bool Environment::s_bIsWine = false;
+SDL_Environment *Environment::s_sdlenv = nullptr;
 
-SDL_Environment *Environment::s_sdlenv = SDL_GetEnvironment();
-
-Environment::Environment(int argc, char *argv[]) : m_interop(this) {
+Environment::Environment(const std::unordered_map<std::string, std::optional<std::string>> &argMap,
+                         const std::vector<std::string> &cmdlineVec)
+    : m_interop(this), m_mArgMap(argMap), m_vCmdLine(cmdlineVec) {
     env = this;
 
-    // parse args
-    m_mArgMap = [&]() -> std::unordered_map<std::string, std::optional<std::string>> {
-        // example usages:
-        // args.contains("-file")
-        // auto filename = args["-file"].value_or("default.txt");
-        // if (args["-output"].has_value())
-        // 	auto outfile = args["-output"].value();
-        std::unordered_map<std::string, std::optional<std::string>> args;
-        for(int i = 1; i < argc; ++i) {
-            std::string_view arg{argv[i]};
-            if(arg.starts_with('-'))
-                if(i + 1 < argc && !(argv[i + 1][0] == '-')) {
-                    args[std::string(arg)] = argv[i + 1];
-                    ++i;
-                } else
-                    args[std::string(arg)] = std::nullopt;
-            else
-                args[std::string(arg)] = std::nullopt;
-        }
-        return args;
-    }();
-
-    // simple vector representation of the whole cmdline including the program name (as the first element)
-    m_vCmdLine = std::vector<std::string>(argv, argv + argc);
+    s_sdlenv = SDL_GetEnvironment();
 
 #ifdef MCENGINE_PLATFORM_WINDOWS
     s_bIsWine = !!GetProcAddress(GetModuleHandle(TEXT("ntdll.dll")), "wine_get_version");
@@ -90,6 +69,7 @@ Environment::Environment(int argc, char *argv[]) : m_interop(this) {
 
     m_fDisplayHz = 360.0f;
     m_fDisplayHzSecs = 1.0f / m_fDisplayHz;
+    m_bDPIOverride = false;
 
     m_bEnvDebug = false;
 
@@ -851,6 +831,10 @@ bool Environment::isPointValid(vec2 point) const {  // whether an x,y coordinate
 }
 
 int Environment::getDPI() const {
+    if(m_bDPIOverride) {
+        return 96;
+    }
+
     float dpi = SDL_GetWindowDisplayScale(m_window) * 96;
 
     return std::clamp<int>((int)dpi, 96, 96 * 2);  // sanity clamp

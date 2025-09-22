@@ -10,7 +10,7 @@
 
 #include "main_impl.h"
 
-#include "Osu.h" // TODO: remove needing this
+#include "Osu.h"  // TODO: remove needing this
 
 #include "MakeDelegateWrapper.h"
 #include "Engine.h"
@@ -21,7 +21,9 @@
 #include "Profiler.h"
 #include "Logging.h"
 
-SDLMain::SDLMain(int argc, char *argv[]) : Environment(argc, argv) {
+SDLMain::SDLMain(const std::unordered_map<std::string, std::optional<std::string>> &argMap,
+                 const std::vector<std::string> &argVec)
+    : Environment(argMap, argVec) {
     // setup callbacks
     cv::fps_max.setCallback(SA::MakeDelegate<&SDLMain::fps_max_callback>(this));
     cv::fps_max_background.setCallback(SA::MakeDelegate<&SDLMain::fps_max_background_callback>(this));
@@ -76,7 +78,7 @@ SDL_AppResult SDLMain::initialize() {
         return SDL_APP_FAILURE;
     }
 
-    this->getEnvInterop().setup_system_integrations();  // only implemented for windows atm
+    this->getEnvInterop().setup_system_integrations();  // only does anything for windows atm
 
     // disable (filter) some SDL events we don't care about
     configureEvents();
@@ -251,14 +253,35 @@ SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
 
                 case SDL_EVENT_WINDOW_DISPLAY_CHANGED:
                     cv::monitor.setValue(event->window.data1, false);
-                case SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED:  // TODO?
                     m_engine->requestResolutionChange(getWindowSize());
                     m_fDisplayHzSecs = 1.0f / (m_fDisplayHz = queryDisplayHz());
+                    break;
+
+                case SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED:
+                    m_engine->onDPIChange();
                     break;
 
                 default:
                     if(m_bEnvDebug)
                         debugLog("DEBUG: unhandled SDL window event {}\n", static_cast<int>(event->window.type));
+                    break;
+            }
+            break;
+
+            // display events
+            // clang-format off
+        case SDL_EVENT_DISPLAY_ORIENTATION:			  case SDL_EVENT_DISPLAY_ADDED:				   case SDL_EVENT_DISPLAY_REMOVED:
+        case SDL_EVENT_DISPLAY_MOVED:				  case SDL_EVENT_DISPLAY_DESKTOP_MODE_CHANGED: case SDL_EVENT_DISPLAY_CURRENT_MODE_CHANGED:
+        case SDL_EVENT_DISPLAY_CONTENT_SCALE_CHANGED:
+            // clang-format on
+            switch(event->display.type) {
+                case SDL_EVENT_DISPLAY_CONTENT_SCALE_CHANGED:
+                    m_engine->onDPIChange();
+                    // fallthrough
+                default:
+                    // reinit monitors, and update hz in any case
+                    initMonitors(true);
+                    m_fDisplayHzSecs = 1.0f / (m_fDisplayHz = queryDisplayHz());
                     break;
             }
             break;
@@ -571,23 +594,20 @@ void SDLMain::doEarlyCmdlineOverrides() {
 #endif
     {
         auto *imm32_handle =
-            reinterpret_cast<lib_obj *>(LoadLibraryEx(TEXT("imm32.dll"), NULL, LOAD_LIBRARY_SEARCH_SYSTEM32));
+            reinterpret_cast<lib_obj *>(LoadLibraryEx(TEXT("imm32.dll"), nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32));
         if(imm32_handle) {
             auto disable_ime_func = load_func<BOOL WINAPI(DWORD)>(imm32_handle, "ImmDisableIME");
             if(disable_ime_func) disable_ime_func(-1);
             unload_lib(imm32_handle);
         }
     }
-    // enable DPI awareness if not -nodpi
-    if(!m_mArgMap.contains("-nodpi")) {
-        auto *user32_handle = reinterpret_cast<lib_obj *>(GetModuleHandle(TEXT("user32.dll")));
-        if(user32_handle) {
-            auto spdpi_aware_func = load_func<BOOL WINAPI(VOID)>(user32_handle, "SetProcessDPIAware");
-            if(spdpi_aware_func) {
-                spdpi_aware_func();
-            }
-        }
+
+    // make env->getDPI() always return 96
+    // the hint set in main.cpp, before SDL_Init, will do the rest of the dirty work
+    if(m_mArgMap.contains("-nodpi")) {
+        m_bDPIOverride = true;
     }
+
 #else
     // nothing yet
     return;

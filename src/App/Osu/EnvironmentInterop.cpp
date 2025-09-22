@@ -111,7 +111,7 @@ bool sdl_windows_message_hook(void *userdata, MSG *msg) {
         return true;
     }
 
-    // check for the custom registered message
+    // check the custom registered message
 
     // reconstruct the mapping/event names from the identifier passed in lParam
     auto sender_pid = static_cast<DWORD>(msg->wParam);

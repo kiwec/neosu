@@ -166,13 +166,49 @@ MAIN_FUNC /* int argc, char *argv[] */
     SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_TYPE_STRING, "game");
 
     SDL_SetHintWithPriority(SDL_HINT_VIDEO_DOUBLE_BUFFER, "1", SDL_HINT_OVERRIDE);
+
+    // parse args here
+
+    // simple vector representation of the whole cmdline including the program name (as the first element)
+    auto arg_cmdline = std::vector<std::string>(argv, argv + argc);
+
+    // more easily queryable representation of the args as a map
+    auto arg_map = [&]() -> std::unordered_map<std::string, std::optional<std::string>> {
+        // example usages:
+        // args.contains("-file")
+        // auto filename = args["-file"].value_or("default.txt");
+        // if (args["-output"].has_value())
+        // 	auto outfile = args["-output"].value();
+        std::unordered_map<std::string, std::optional<std::string>> args;
+        for(int i = 1; i < argc; ++i) {
+            std::string_view arg{argv[i]};
+            if(arg.starts_with('-'))
+                if(i + 1 < argc && !(argv[i + 1][0] == '-')) {
+                    args[std::string(arg)] = argv[i + 1];
+                    ++i;
+                } else
+                    args[std::string(arg)] = std::nullopt;
+            else
+                args[std::string(arg)] = std::nullopt;
+        }
+        return args;
+    }();
+
+#if defined(_WIN32)
+    // this hint needs to be set before SDL_Init
+    if(arg_map.contains("-nodpi")) {
+        // it's not even defined anywhere...
+        SDL_SetHintWithPriority("SDL_WINDOWS_DPI_AWARENESS", "unaware", SDL_HINT_NORMAL);
+    }
+#endif
+
     if(!SDL_Init(SDL_INIT_VIDEO))  // other subsystems can be init later
     {
         fprintf(stderr, "Couldn't SDL_Init(): %s\n", SDL_GetError());
         return SDL_APP_FAILURE;
     }
 
-    auto *fmain = new SDLMain(argc, argv);
+    auto *fmain = new SDLMain(arg_map, arg_cmdline);
 
 #if !(defined(MCENGINE_PLATFORM_WASM) || defined(MCENGINE_FEATURE_MAINCALLBACKS))
     if(!fmain || fmain->initialize() == SDL_APP_FAILURE) {

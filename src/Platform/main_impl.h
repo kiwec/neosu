@@ -20,7 +20,8 @@ extern void SDL_AppQuit(void *appstate, SDL_AppResult result);
 class SDLMain final : public Environment {
     NOCOPY_NOMOVE(SDLMain)
    public:
-    SDLMain(int argc, char *argv[]);
+    SDLMain(const std::unordered_map<std::string, std::optional<std::string>> &argMap,
+            const std::vector<std::string> &argVec);
     ~SDLMain() override;
 
     SDL_AppResult initialize();
