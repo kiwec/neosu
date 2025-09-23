@@ -637,7 +637,7 @@ void ConsoleBox::toggle(KeyboardEvent &e) {
 }
 
 void ConsoleBox::log(const UString &text, Color textColor) {
-    std::scoped_lock logGuard(this->logMutex);
+    // lock is held by Logger::ConsoleBoxSink::flush_buffer_to_console
 
     // newlines must be stripped before being sent here (see Logging.cpp)
     assert(!text.endsWith('\n') && !text.endsWith('\r') && "Console log strings can't end with a newline.");

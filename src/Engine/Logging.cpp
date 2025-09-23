@@ -49,19 +49,22 @@ class Logger::ConsoleBoxSink : public spdlog::sinks::base_sink<std::mutex> {
     inline void flush_buffer_to_console() noexcept {
         if(buffer_count_ == 0) return;
 
-        std::shared_ptr<ConsoleBox> cbox = likely(!!engine) ? engine->getConsoleBox() : nullptr;
+        std::shared_ptr<ConsoleBox> cbox{likely(!!engine) ? engine->getConsoleBox() : nullptr};
         if(unlikely(!cbox)) {
             // should only be possible briefly on startup/shutdown
             return;
         }
 
         // print messages in order (handling wrap-around)
-        size_t read_pos = (buffer_head_ + CONSOLE_BUFFER_SIZE - buffer_count_) % CONSOLE_BUFFER_SIZE;
-        for(size_t i = 0; i < buffer_count_; ++i) {
-            cbox->log(message_buffer_[read_pos]);
-            read_pos = (read_pos + 1) % CONSOLE_BUFFER_SIZE;
+        size_t read_pos{(buffer_head_ + CONSOLE_BUFFER_SIZE - buffer_count_) % CONSOLE_BUFFER_SIZE};
+        {
+            // hold the lock outside the loop, so we don't continuously acquire and release it for each log call
+            std::scoped_lock lock{cbox->logMutex};
+            for(size_t i = 0; i < buffer_count_; ++i) {
+                cbox->log(message_buffer_[read_pos]);
+                read_pos = (read_pos + 1) % CONSOLE_BUFFER_SIZE;
+            }
         }
-
         buffer_count_ = 0;
     }
 
@@ -95,13 +98,13 @@ class Logger::ConsoleBoxSink : public spdlog::sinks::base_sink<std::mutex> {
         }
 
         // the formatter doesn't append newlines, but the engine console doesn't like having them, so doing this just in case
-        std::string_view message_view{formatted.begin(), formatted.end()};
-        while(!message_view.empty() && (message_view.back() == '\r' || message_view.back() == '\n')) {
-            message_view.remove_suffix(1);
+        auto end_pos{static_cast<int>(formatted.size())};
+        while(end_pos > 0 && (formatted[end_pos - 1] == '\r' || formatted[end_pos - 1] == '\n')) {
+            --end_pos;
         }
 
         // store as UString in the circular buffer
-        message_buffer_[buffer_head_] = UString{message_view};
+        message_buffer_[buffer_head_] = UString{formatted.data(), end_pos};
         buffer_head_ = (buffer_head_ + 1) % CONSOLE_BUFFER_SIZE;
 
         if(buffer_count_ < CONSOLE_BUFFER_SIZE) {
@@ -134,19 +137,6 @@ void Logger::init() noexcept {
     auto stdout_sink{std::make_shared<spdlog::sinks::stdout_color_sink_mt>()};
     auto console_sink{std::make_shared<ConsoleBoxSink>()};
 
-    // create main async logger with stdout + shared console sink
-    std::vector<spdlog::sink_ptr> main_sinks{stdout_sink, console_sink};
-    s_logger =
-        std::make_shared<spdlog::async_logger>(DEFAULT_LOGGER_NAME, main_sinks.begin(), main_sinks.end(),
-                                               spdlog::thread_pool(), spdlog::async_overflow_policy::overrun_oldest);
-
-    // create raw async logger with separate stdout + shared console sink
-    auto raw_stdout_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
-    std::vector<spdlog::sink_ptr> raw_sinks{raw_stdout_sink, console_sink};
-    s_raw_logger =
-        std::make_shared<spdlog::async_logger>(RAW_LOGGER_NAME, raw_sinks.begin(), raw_sinks.end(),
-                                               spdlog::thread_pool(), spdlog::async_overflow_policy::overrun_oldest);
-
     // set patterns for stdout sinks only (console sink handles its own formatting)
 #ifdef _DEBUG
     // debug pattern: [filename:line] [function]: message
@@ -156,8 +146,21 @@ void Logger::init() noexcept {
     stdout_sink->set_pattern("[%!] %v");
 #endif
 
+    // create unformatted stdout sink
+    auto raw_stdout_sink{std::make_shared<spdlog::sinks::stdout_color_sink_mt>()};
+
     // raw logger uses plain pattern (just the message)
     raw_stdout_sink->set_pattern("%v");
+
+    // create main async logger with stdout + shared console sink
+    s_logger = std::make_shared<spdlog::async_logger>(
+        DEFAULT_LOGGER_NAME, spdlog::sinks_init_list{std::move(stdout_sink), console_sink}, spdlog::thread_pool(),
+        spdlog::async_overflow_policy::overrun_oldest);
+
+    // create raw async logger with separate stdout + shared console sink
+    s_raw_logger = std::make_shared<spdlog::async_logger>(
+        RAW_LOGGER_NAME, spdlog::sinks_init_list{std::move(raw_stdout_sink), console_sink}, spdlog::thread_pool(),
+        spdlog::async_overflow_policy::overrun_oldest);
 
     // set to trace level so we print out all messages
     // TODO: add custom log level support (ConVar callback + build type?)
@@ -197,9 +200,6 @@ void Logger::shutdown() noexcept {
 
 // extra util function
 bool Logger::isaTTY() noexcept {
-    static int8_t tty_cached = -1;
-    if(unlikely(tty_cached == -1)) {
-        tty_cached = (isatty(fileno(stdout)) ? 1 : 0);
-    }
-    return tty_cached;
+    static const bool tty_status{isatty(fileno(stdout)) != 0};
+    return tty_status;
 }
