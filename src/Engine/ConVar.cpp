@@ -558,7 +558,6 @@ void loudness_cb(std::string_view /*oldValue*/, std::string_view /*newValue*/) {
 void _save(void) { db ? db->save() : (void)0; }
 
 void _update(void) { (osu && osu->getUpdateHandler()) ? osu->getUpdateHandler()->checkForUpdates(true) : (void)0; }
-
 #undef CONVARDEFS_H
 #define DEFINE_CONVARS
 

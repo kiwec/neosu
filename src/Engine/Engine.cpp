@@ -353,15 +353,6 @@ void Engine::onUpdate() {
             // update gui
             bool propagate_clicks = true;
             if(this->guiContainer != nullptr) this->guiContainer->mouse_update(&propagate_clicks);
-
-            // execute queued commands
-            // TODO: this is shit
-            if(Console::g_commandQueue.size() > 0) {
-                for(const auto &i : Console::g_commandQueue) {
-                    Console::processCommand(i);
-                }
-                Console::g_commandQueue.clear();  // reset
-            }
         }
     }
 

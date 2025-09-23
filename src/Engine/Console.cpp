@@ -7,8 +7,6 @@
 #include "File.h"
 #include "Logging.h"
 
-std::vector<std::string> Console::g_commandQueue;
-
 Console::Console() {
     // exec autoexec
     Console::execConfigFile("autoexec.cfg");

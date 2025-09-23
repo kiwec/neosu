@@ -2,7 +2,6 @@
 // Copyright (c) 2014, PG & 2025, WH, All rights reserved.
 
 #include <string>
-#include <vector>
 
 class Console {
    public:
@@ -11,6 +10,4 @@ class Console {
 
    public:
     Console();
-
-    static std::vector<std::string> g_commandQueue;
 };

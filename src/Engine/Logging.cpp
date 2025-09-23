@@ -20,6 +20,9 @@
 #include "spdlog/sinks/basic_file_sink.h"
 #include "spdlog/pattern_formatter.h"
 
+#define DEFAULT_LOGGER_NAME "main"
+#define RAW_LOGGER_NAME "raw"
+
 #ifdef _DEBUG
 // debug pattern: [filename:line] [function]: message
 #define FANCY_LOG_PATTERN "[%s:%#] [%!]: %v"
@@ -34,13 +37,13 @@
 #define RELEASE_IDENTIFIER "rel"
 #endif
 
+// same as release build stdout logging, don't clutter engine logs with source info and stuff
+#define ENGINE_LOG_PATTERN "[%!] %v"
+
 // e.g. ./logs/
 #define LOGFILE_LOCATION MCENGINE_DATA_DIR "logs/"
 // e.g. ./logs/neosu-linux-x64-dev-40.03.log
 #define LOGFILE_NAME LOGFILE_LOCATION PACKAGE_NAME "-" OS_NAME "-" RELEASE_IDENTIFIER "-" PACKAGE_VERSION ".log"
-
-#define DEFAULT_LOGGER_NAME "main"
-#define RAW_LOGGER_NAME "raw"
 
 // static member definitions
 std::shared_ptr<spdlog::async_logger> Logger::s_logger;
@@ -92,7 +95,7 @@ class Logger::ConsoleBoxSink : public spdlog::sinks::base_sink<std::mutex> {
         // create separate formatters for different logger types
         // also, don't auto-append newlines, each console log is already on a new line
         main_formatter_ =
-            std::make_unique<spdlog::pattern_formatter>(FANCY_LOG_PATTERN, spdlog::pattern_time_type::local, "");
+            std::make_unique<spdlog::pattern_formatter>(ENGINE_LOG_PATTERN, spdlog::pattern_time_type::local, "");
 
         // raw formatter always uses plain pattern
         raw_formatter_ = std::make_unique<spdlog::pattern_formatter>("%v", spdlog::pattern_time_type::local, "");
@@ -221,7 +224,7 @@ void Logger::shutdown() noexcept {
     spdlog::shutdown();
 }
 
-// extra util function
+// extra util functions
 bool Logger::isaTTY() noexcept {
     static const bool tty_status{isatty(fileno(stdout)) != 0};
     return tty_status;
