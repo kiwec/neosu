@@ -92,22 +92,22 @@ class Environment {
     [[nodiscard]] inline const std::vector<std::string> &getCommandLine() const { return m_vCmdLine; }
 
     // returns at least 1
-    static int getLogicalCPUCount();
+    static int getLogicalCPUCount() noexcept;
 
     // user
-    [[nodiscard]] const UString &getUsername();
-    [[nodiscard]] const std::string &getUserDataPath();
-    [[nodiscard]] const std::string &getLocalDataPath();
+    [[nodiscard]] const UString &getUsername() const noexcept;
+    [[nodiscard]] const std::string &getUserDataPath() const noexcept;
+    [[nodiscard]] const std::string &getLocalDataPath() const noexcept;
 
     // file IO
-    [[nodiscard]] static bool fileExists(std::string &filename);  // passthroughs to McFile
-    [[nodiscard]] static bool directoryExists(std::string &directoryName);
-    [[nodiscard]] static bool fileExists(const std::string &filename);
-    [[nodiscard]] static bool directoryExists(const std::string &directoryName);
+    [[nodiscard]] static bool fileExists(std::string &filename) noexcept;  // passthroughs to McFile
+    [[nodiscard]] static bool directoryExists(std::string &directoryName) noexcept;
+    [[nodiscard]] static bool fileExists(const std::string &filename) noexcept;
+    [[nodiscard]] static bool directoryExists(const std::string &directoryName) noexcept;
 
-    static bool createDirectory(const std::string &directoryName);
-    static bool renameFile(const std::string &oldFileName, const std::string &newFileName);
-    static bool deleteFile(const std::string &filePath);
+    static bool createDirectory(const std::string &directoryName) noexcept;
+    static bool renameFile(const std::string &oldFileName, const std::string &newFileName) noexcept;
+    static bool deleteFile(const std::string &filePath) noexcept;
     [[nodiscard]] static std::vector<std::string> getFilesInFolder(const std::string &folder) noexcept;
     [[nodiscard]] static std::vector<std::string> getFoldersInFolder(const std::string &folder) noexcept;
     [[nodiscard]] static std::vector<UString> getLogicalDrives();
@@ -139,10 +139,10 @@ class Environment {
     void showMessageErrorFatal(const UString &title, const UString &message) const;
 
     using FileDialogCallback = std::function<void(const std::vector<UString> &paths)>;
-    void openFileWindow(FileDialogCallback callback, const char *filetypefilters, const UString &title,
-                        const UString &initialpath = "") const;
-    void openFolderWindow(FileDialogCallback callback, const UString &initialpath = "") const;
-    void openFileBrowser(const std::string &initialpath) noexcept;
+    void openFileWindow(FileDialogCallback callback, const char *filetypefilters, const std::string &title,
+                        const std::string &initialpath = "") const noexcept;
+    void openFolderWindow(FileDialogCallback callback, const std::string &initialpath = "") const noexcept;
+    void openFileBrowser(const std::string &initialpath) const noexcept;
 
     // window
     void focus();
@@ -221,9 +221,9 @@ class Environment {
     bool m_bHasFocus;   // for fps_max_background
 
     // cache
-    UString m_sUsername;
-    std::string m_sProgDataPath;
-    std::string m_sAppDataPath;
+    mutable UString m_sUsername;
+    mutable std::string m_sProgDataPath;
+    mutable std::string m_sAppDataPath;
     HWND m_hwnd;
 
     // logging
@@ -285,10 +285,7 @@ class Environment {
 
    private:
     // static callbacks/helpers
-    struct FileDialogCallbackData {
-        FileDialogCallback callback;
-    };
-    static void sdlFileDialogCallback(void *userdata, const char *const *filelist, int filter);
+    static void sdlFileDialogCallback(void *userdata, const char *const *filelist, int filter) noexcept;
 
     // for getting files in folder/ folders in folder
     static std::vector<std::string> enumerateDirectory(const std::string &pathToEnum,

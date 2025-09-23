@@ -178,9 +178,9 @@ void Environment::openURLInDefaultBrowser(const std::string &url) noexcept {
 }
 
 // returns at least 1
-int Environment::getLogicalCPUCount() { return SDL_GetNumLogicalCPUCores(); }
+int Environment::getLogicalCPUCount() noexcept { return SDL_GetNumLogicalCPUCores(); }
 
-const UString &Environment::getUsername() {
+const UString &Environment::getUsername() const noexcept {
     if(!m_sUsername.isEmpty()) return m_sUsername;
 #if defined(MCENGINE_PLATFORM_WINDOWS)
     DWORD username_len = UNLEN + 1;
@@ -203,7 +203,7 @@ const UString &Environment::getUsername() {
 }
 
 // i.e. toplevel appdata path
-const std::string &Environment::getUserDataPath() {
+const std::string &Environment::getUserDataPath() const noexcept {
     if(!m_sAppDataPath.empty()) return m_sAppDataPath;
 
     m_sAppDataPath = ".";  // set it to non-empty to avoid endlessly failing if SDL_GetPrefPath fails once
@@ -223,7 +223,7 @@ const std::string &Environment::getUserDataPath() {
 }
 
 // i.e. ~/.local/share/PACKAGE_NAME
-const std::string &Environment::getLocalDataPath() {
+const std::string &Environment::getLocalDataPath() const noexcept {
     if(!m_sProgDataPath.empty()) return m_sProgDataPath;
 
     char *path = SDL_GetPrefPath("McEngine", PACKAGE_NAME);
@@ -238,27 +238,29 @@ const std::string &Environment::getLocalDataPath() {
 }
 
 // modifies the input filename! (checks case insensitively past the last slash)
-bool Environment::fileExists(std::string &filename) {
+bool Environment::fileExists(std::string &filename) noexcept {
     return File::existsCaseInsensitive(filename) == File::FILETYPE::FILE;
 }
 
 // modifies the input directoryName! (checks case insensitively past the last slash)
-bool Environment::directoryExists(std::string &directoryName) {
+bool Environment::directoryExists(std::string &directoryName) noexcept {
     return File::existsCaseInsensitive(directoryName) == File::FILETYPE::FOLDER;
 }
 
 // same as the above, but for string literals (so we can't check insensitively and modify the input)
-bool Environment::fileExists(const std::string &filename) { return File::exists(filename) == File::FILETYPE::FILE; }
+bool Environment::fileExists(const std::string &filename) noexcept {
+    return File::exists(filename) == File::FILETYPE::FILE;
+}
 
-bool Environment::directoryExists(const std::string &directoryName) {
+bool Environment::directoryExists(const std::string &directoryName) noexcept {
     return File::exists(directoryName) == File::FILETYPE::FOLDER;
 }
 
-bool Environment::createDirectory(const std::string &directoryName) {
+bool Environment::createDirectory(const std::string &directoryName) noexcept {
     return SDL_CreateDirectory(directoryName.c_str());  // returns true if it already exists
 }
 
-bool Environment::renameFile(const std::string &oldFileName, const std::string &newFileName) {
+bool Environment::renameFile(const std::string &oldFileName, const std::string &newFileName) noexcept {
     if(oldFileName == newFileName) {
         return true;
     }
@@ -277,7 +279,7 @@ bool Environment::renameFile(const std::string &oldFileName, const std::string &
     return Environment::fileExists(newFileName);
 }
 
-bool Environment::deleteFile(const std::string &filePath) { return SDL_RemovePath(filePath.c_str()); }
+bool Environment::deleteFile(const std::string &filePath) noexcept { return SDL_RemovePath(filePath.c_str()); }
 
 std::vector<std::string> Environment::getFilesInFolder(const std::string &folder) noexcept {
     return enumerateDirectory(folder, SDL_PATHTYPE_FILE);
@@ -545,8 +547,8 @@ void Environment::showMessageErrorFatal(const UString &title, const UString &mes
     showMessageError(title, message);
 }
 
-void Environment::openFileWindow(FileDialogCallback callback, const char *filetypefilters, const UString & /*title*/,
-                                 const UString &initialpath) const {
+void Environment::openFileWindow(FileDialogCallback callback, const char *filetypefilters,
+                                 const std::string & /*title*/, const std::string &initialpath) const noexcept {
     // convert filetypefilters (Windows-style)
     std::vector<std::string> filterNames;
     std::vector<std::string> filterPatterns;
@@ -572,26 +574,37 @@ void Environment::openFileWindow(FileDialogCallback callback, const char *filety
         }
     }
 
-    // callback data to be passed to SDL
-    auto *callbackData = new FileDialogCallbackData{std::move(callback)};
+    const char *initialpath_cstr = nullptr;
+    if(initialpath.length() > 0) {
+        if(directoryExists(initialpath))
+            initialpath_cstr = initialpath.c_str();
+        else
+            initialpath_cstr = getLocalDataPath().c_str();
+    }
+
+    auto *cbdata{new auto(std::move(callback))};
 
     // show it
-    SDL_ShowOpenFileDialog(sdlFileDialogCallback, callbackData, m_window,
-                           sdlFilters.empty() ? nullptr : sdlFilters.data(), static_cast<int>(sdlFilters.size()),
-                           initialpath.length() > 0 ? initialpath.toUtf8() : nullptr, false);
+    SDL_ShowOpenFileDialog(sdlFileDialogCallback, cbdata, m_window, sdlFilters.empty() ? nullptr : sdlFilters.data(),
+                           static_cast<int>(sdlFilters.size()), initialpath_cstr, false);
 }
 
-void Environment::openFolderWindow(FileDialogCallback callback, const UString &initialpath) const {
-    // callback data to be passed to SDL
-    auto *callbackData = new FileDialogCallbackData{std::move(callback)};
+void Environment::openFolderWindow(FileDialogCallback callback, const std::string &initialpath) const noexcept {
+    const char *initialpath_cstr = nullptr;
+    if(initialpath.length() > 0) {
+        if(directoryExists(initialpath))
+            initialpath_cstr = initialpath.c_str();
+        else
+            initialpath_cstr = getLocalDataPath().c_str();
+    }
 
-    // show it
-    SDL_ShowOpenFolderDialog(sdlFileDialogCallback, callbackData, m_window,
-                             initialpath.length() > 0 ? initialpath.toUtf8() : nullptr, false);
+    auto *cbdata{new auto(std::move(callback))};
+
+    SDL_ShowOpenFolderDialog(sdlFileDialogCallback, cbdata, m_window, initialpath_cstr, false);
 }
 
 // just open the file manager in a certain folder, but not do anything with it
-void Environment::openFileBrowser(const std::string &initialpath) noexcept {
+void Environment::openFileBrowser(const std::string &initialpath) const noexcept {
     std::string pathToOpen{initialpath};
     if(pathToOpen.empty())
         pathToOpen = getExeFolder();
@@ -1043,9 +1056,8 @@ void Environment::initMonitors(bool force) const {
 }
 
 // TODO: filter?
-void Environment::sdlFileDialogCallback(void *userdata, const char *const *filelist, int /*filter*/) {
-    auto *callbackData = static_cast<FileDialogCallbackData *>(userdata);
-    if(!callbackData) return;
+void Environment::sdlFileDialogCallback(void *userdata, const char *const *filelist, int /*filter*/) noexcept {
+    if(!userdata) return;
 
     std::vector<UString> results;
 
@@ -1053,13 +1065,20 @@ void Environment::sdlFileDialogCallback(void *userdata, const char *const *filel
         for(const char *const *curr = filelist; *curr; curr++) {
             results.emplace_back(*curr);
         }
+    } else if(strncmp(SDL_GetError(), "dialogg", 7) == 0) {
+        // expect to be called by fallback path next... weird stuff, seems like an SDL bug? (double calling callback)
+        return;
     }
 
-    // call the callback
-    callbackData->callback(results);
+    SDL_SetError("cleared error in file dialog callback");
 
-    // data is no longer needed
-    delete callbackData;
+    auto *callback = static_cast<FileDialogCallback *>(userdata);
+
+    // call the callback
+    (*callback)(results);
+
+    // callback no longer needed
+    delete callback;
 }
 
 // folder = true means return the canonical filesystem path to the folder containing the given path
