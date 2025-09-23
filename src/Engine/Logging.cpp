@@ -16,12 +16,26 @@
 #include "spdlog/async.h"
 #include "spdlog/sinks/base_sink.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
+#include "spdlog/sinks/basic_file_sink.h"
 #include "spdlog/pattern_formatter.h"
 
-namespace {  // static namespace
-static constexpr const auto DEFAULT_LOGGER_NAME{"main"};
-static constexpr const auto RAW_LOGGER_NAME{"raw"};
-}  // namespace
+#ifdef _DEBUG
+// debug pattern: [filename:line] [function]: message
+#define FANCY_LOG_PATTERN "[%s:%#] [%!]: %v"
+#define RELEASE_IDENTIFIER "dev"
+#else
+// release pattern: [function] message
+#define FANCY_LOG_PATTERN "[%!] %v"
+#define RELEASE_IDENTIFIER "rel"
+#endif
+
+// e.g. ./logs/
+#define LOGFILE_LOCATION MCENGINE_DATA_DIR "logs/"
+// e.g. ./logs/neosu-dev-40.03-2509231029.log
+#define LOGFILE_NAME LOGFILE_LOCATION PACKAGE_NAME "-" RELEASE_IDENTIFIER "-" PACKAGE_VERSION ".log"
+
+#define DEFAULT_LOGGER_NAME "main"
+#define RAW_LOGGER_NAME "raw"
 
 // static member definitions
 std::shared_ptr<spdlog::async_logger> Logger::s_logger;
@@ -71,16 +85,10 @@ class Logger::ConsoleBoxSink : public spdlog::sinks::base_sink<std::mutex> {
    public:
     ConsoleBoxSink() noexcept {
         // create separate formatters for different logger types
-        // set patterns based on build type
         // also, don't auto-append newlines, each console log is already on a new line
-#ifdef _DEBUG
-        // debug pattern: [filename:line] [function]: message
         main_formatter_ =
-            std::make_unique<spdlog::pattern_formatter>("[%s:%#] [%!]: %v", spdlog::pattern_time_type::local, "");
-#else
-        // release pattern: [function] message
-        main_formatter_ = std::make_unique<spdlog::pattern_formatter>("[%!] %v", spdlog::pattern_time_type::local, "");
-#endif
+            std::make_unique<spdlog::pattern_formatter>(FANCY_LOG_PATTERN, spdlog::pattern_time_type::local, "");
+
         // raw formatter always uses plain pattern
         raw_formatter_ = std::make_unique<spdlog::pattern_formatter>("%v", spdlog::pattern_time_type::local, "");
     }
@@ -122,45 +130,54 @@ class Logger::ConsoleBoxSink : public spdlog::sinks::base_sink<std::mutex> {
 // to be called in main(), for one-time setup/teardown
 void Logger::init() noexcept {
     if(wasInit) return;
-    wasInit = true;
-
-    // disable output buffering for external dependencies that might use printf/fprintf
-    setvbuf(stdout, nullptr, _IONBF, 0);
-    setvbuf(stderr, nullptr, _IONBF, 0);
 
     // initialize async thread pool before creating any async loggers
     // queue size: 8192 slots (each ~256 bytes), 1 background thread
     // use overrun_oldest policy for non-blocking behavior
     spdlog::init_thread_pool(8192, 1);
 
-    // create sinks using spdlog's standard colored stdout sink + custom console sink
-    auto stdout_sink{std::make_shared<spdlog::sinks::stdout_color_sink_mt>()};
+    // console sink handles its own formatting
     auto console_sink{std::make_shared<ConsoleBoxSink>()};
 
-    // set patterns for stdout sinks only (console sink handles its own formatting)
-#ifdef _DEBUG
-    // debug pattern: [filename:line] [function]: message
-    stdout_sink->set_pattern("[%s:%#] [%!]: %v");
-#else
-    // release pattern: [function] message
-    stdout_sink->set_pattern("[%!] %v");
-#endif
+    // default debugLog sink
+    auto stdout_sink{std::make_shared<spdlog::sinks::stdout_color_sink_mt>()};
+    stdout_sink->set_pattern(FANCY_LOG_PATTERN);
 
-    // create unformatted stdout sink
+    // unformatted stdout sink
     auto raw_stdout_sink{std::make_shared<spdlog::sinks::stdout_color_sink_mt>()};
+    raw_stdout_sink->set_pattern("%v");  // just the message
 
-    // raw logger uses plain pattern (just the message)
-    raw_stdout_sink->set_pattern("%v");
+    // prepare sink lists for loggers
+    std::vector<spdlog::sink_ptr> main_sinks{std::move(stdout_sink), console_sink};
+    std::vector<spdlog::sink_ptr> raw_sinks{std::move(raw_stdout_sink), console_sink};
 
-    // create main async logger with stdout + shared console sink
-    s_logger = std::make_shared<spdlog::async_logger>(
-        DEFAULT_LOGGER_NAME, spdlog::sinks_init_list{std::move(stdout_sink), console_sink}, spdlog::thread_pool(),
-        spdlog::async_overflow_policy::overrun_oldest);
+    // if Environment::createDirectory failed, it means we definitely won't be able to write to anything in there
+    // (returns true if it already exists)
+    const bool log_to_file{Environment::createDirectory(LOGFILE_LOCATION)};
 
-    // create raw async logger with separate stdout + shared console sink
-    s_raw_logger = std::make_shared<spdlog::async_logger>(
-        RAW_LOGGER_NAME, spdlog::sinks_init_list{std::move(raw_stdout_sink), console_sink}, spdlog::thread_pool(),
-        spdlog::async_overflow_policy::overrun_oldest);
+    // add file sinks if directory is writable
+    if(log_to_file) {
+        // these will error (throw) if file cannot be created, but we're built with exceptions disabled
+        // spdlog should handle errors gracefully in this case by not writing to the sink
+        auto file_sink{std::make_shared<spdlog::sinks::basic_file_sink_mt>(LOGFILE_NAME, true /* overwrite */)};
+        file_sink->set_pattern(FANCY_LOG_PATTERN);  // same patterns as stdout sinks
+
+        auto raw_file_sink{std::make_shared<spdlog::sinks::basic_file_sink_mt>(LOGFILE_NAME, true)};
+        raw_file_sink->set_pattern("%v");
+
+        main_sinks.push_back(std::move(file_sink));
+        raw_sinks.push_back(std::move(raw_file_sink));
+    }
+
+    // create main async logger with stdout + console + optional file sink
+    s_logger =
+        std::make_shared<spdlog::async_logger>(DEFAULT_LOGGER_NAME, main_sinks.begin(), main_sinks.end(),
+                                               spdlog::thread_pool(), spdlog::async_overflow_policy::overrun_oldest);
+
+    // create raw async logger with separate stdout + console + optional file sink
+    s_raw_logger =
+        std::make_shared<spdlog::async_logger>(RAW_LOGGER_NAME, raw_sinks.begin(), raw_sinks.end(),
+                                               spdlog::thread_pool(), spdlog::async_overflow_policy::overrun_oldest);
 
     // set to trace level so we print out all messages
     // TODO: add custom log level support (ConVar callback + build type?)
@@ -182,11 +199,14 @@ void Logger::init() noexcept {
 
     // make the s_logger default (doesn't really matter right now since we're handling it manually, i think, but still)
     spdlog::set_default_logger(s_logger);
+
+    wasInit = true;
 };
 
 // spdlog::shutdown() explodes if its called at program exit (by global atexit handler), so we need to manually shut it down
 void Logger::shutdown() noexcept {
     if(!wasInit) return;
+    wasInit = false;
 
     s_raw_logger.reset();
     s_logger.reset();
@@ -194,8 +214,6 @@ void Logger::shutdown() noexcept {
     // spdlog docs recommend calling this on exit
     // for async loggers, this waits for the background thread to finish processing queued messages
     spdlog::shutdown();
-
-    wasInit = false;
 }
 
 // extra util function

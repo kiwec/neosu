@@ -28,6 +28,13 @@ Changelog::Changelog() : ScreenBackable() {
 
     std::vector<CHANGELOG> changelogs;
 
+    CHANGELOG v41_04;
+    v41_04.title = "41.04";
+    v41_04.changes = {
+        R"(- Added file logging (in logs/ subdirectory); improved logging performance)",
+    };
+    changelogs.push_back(v41_04);
+
     CHANGELOG v41_03;
     v41_03.title = "41.03";
     v41_03.changes = {
