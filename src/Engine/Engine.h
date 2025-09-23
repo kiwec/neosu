@@ -102,7 +102,7 @@ class Engine final : public KeyboardListener {
     [[nodiscard]] constexpr bool isMinimized() const { return this->bIsMinimized; }
 
     // debugging/console
-    [[nodiscard]] constexpr std::shared_ptr<ConsoleBox> getConsoleBox() const { return this->consoleBox; }
+    [[nodiscard]] inline std::shared_ptr<ConsoleBox> getConsoleBox() const { return Engine::consoleBox; }
     [[nodiscard]] constexpr CBaseUIContainer *getGUI() const { return this->guiContainer; }
 
    private:

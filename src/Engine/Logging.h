@@ -2,7 +2,13 @@
 // Copyright (c) 2025, WH, All rights reserved.
 
 // main logging macro
+#if defined(_MSC_VER) && !defined(_DEBUG)
+#define debugLog(...)                                                                                         \
+    Logger::log(spdlog::source_loc{__FILE__, __LINE__, Logger::trim_to_last_scope_internal(SPDLOG_FUNCTION)}, \
+                __VA_ARGS__)
+#else
 #define debugLog(...) Logger::log(spdlog::source_loc{__FILE__, __LINE__, SPDLOG_FUNCTION}, __VA_ARGS__)
+#endif
 
 #include "BaseEnvironment.h"
 
@@ -61,6 +67,17 @@ class Logger final {
     static forceinline void logRaw(const std::string &logString) noexcept {
         s_raw_logger->log(spdlog::level::info, logString);
     }
+
+// msvc always adds the full scope to __FUNCTION__, which we don't want for non-debug builds
+#if defined(_MSC_VER) && !defined(_DEBUG)
+    static forceinline const char *trim_to_last_scope_internal(const std::string_view &str) {
+        auto pos = str.rfind("::");
+        if(pos != std::string_view::npos) {
+            return str.data() + pos + 2;  // +2 to skip "::"
+        }
+        return str.data();
+    }
+#endif
 
    private:
     // sink for engine console box output

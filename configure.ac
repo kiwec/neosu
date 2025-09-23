@@ -583,13 +583,13 @@ AX_CHECK_COMPILE_FLAG([-std=gnu++23], [
     AC_MSG_ERROR([Compiler does not support gnu++23])
 ])
 
-AC_CHECK_TOOL([LD], [ld], [AC_MSG_ERROR([ld not found])])
+AC_PATH_TOOL([LD], [ld], [AC_MSG_ERROR([ld not found])])
 AS_IF([test "x$enable_clang" = "xyes" && test "$host_os" = "linux-gnu"], [
-    AC_CHECK_PROG([AR], [llvm-ar], [llvm-ar], [AC_MSG_ERROR([llvm-ar not found])])
-    AC_CHECK_PROG([RANLIB], [llvm-ranlib], [llvm-ranlib], [AC_MSG_ERROR([llvm-ranlib not found])])
+    AC_PATH_PROG([AR], [llvm-ar], [llvm-ar], [AC_MSG_ERROR([llvm-ar not found])])
+    AC_PATH_PROG([RANLIB], [llvm-ranlib], [llvm-ranlib], [AC_MSG_ERROR([llvm-ranlib not found])])
 ], [
-    AC_CHECK_TOOL([AR], [ar], [AC_MSG_ERROR([ar not found])])
-    AC_CHECK_TOOL([RANLIB], [ranlib], [AC_MSG_ERROR([ranlib not found])])
+    AC_PATH_TOOL([AR], [ar], [AC_MSG_ERROR([ar not found])])
+    AC_PATH_TOOL([RANLIB], [ranlib], [AC_MSG_ERROR([ranlib not found])])
 ])
 
 AS_IF([test "$host_os" = "linux-gnu"],[
