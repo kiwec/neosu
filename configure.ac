@@ -729,6 +729,13 @@ BUNDLED_INCLUDES="-I\$(srcdir)/libraries"
 BUNDLED_INCLUDES="$BUNDLED_INCLUDES -I\$(srcdir)/libraries/delegatesv2 -I\$(srcdir)/libraries/glad"
 AC_SUBST([BUNDLED_INCLUDES])
 
+# misc. resources to be included as binary data
+MISC_INCDIR="$srcdir/$ASSETS_DIR/misc/"
+INCBIN_FLAGS="$INCBIN_FLAGS -I$MISC_INCDIR"
+
+AC_SUBST([MISC_INCDIR])
+AC_SUBST([INCBIN_FLAGS])
+
 AC_MSG_CHECKING([for shaders in $srcdir/$ASSETS_DIR/shaders])
 AS_IF([test -f "$srcdir/$ASSETS_DIR/shaders/slider_f.glsl"], [
     AC_MSG_RESULT([yes])
@@ -739,8 +746,6 @@ AS_IF([test -f "$srcdir/$ASSETS_DIR/shaders/slider_f.glsl"], [
     AC_MSG_RESULT([no])
     AC_MSG_ERROR([neosu shader resources are missing!])
 ])
-
-AC_SUBST([INCBIN_FLAGS])
 
 AC_MSG_CHECKING([for fonts in $srcdir/$ASSETS_DIR/fonts])
 AS_IF([test -d "$srcdir/$ASSETS_DIR/fonts"], [

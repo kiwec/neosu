@@ -913,7 +913,7 @@ $(neosu_OBJECTS): src/config.h $(BUILT_SOURCES) $(EXTRA_BINDEPS)
 NEOSU_INCLUDE_FLAGS := $(shell find $(srcdir)/src -not -path '*/.*' -type d -printf "-I%p ")
 
 # clang+lto for windows targets has broken assembler include paths, need to specify them manually...
-neosu_CPPFLAGS := $(NEOSU_CPPFLAGS) -DCACERT_INCDIR=\"$(CACERT_INCDIR)\" -DSHADERS_INCDIR=\"$(SHADERS_INCDIR)\"
+neosu_CPPFLAGS := $(NEOSU_CPPFLAGS) -DCACERT_INCDIR=\"$(CACERT_INCDIR)\" -DSHADERS_INCDIR=\"$(SHADERS_INCDIR)\" -DMISC_INCDIR=\"$(MISC_INCDIR)\"
 
 neosu_CXXFLAGS := \
 	$(INCBIN_FLAGS) \

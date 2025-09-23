@@ -199,6 +199,7 @@ target_binary_resources(neosu PRIVATE
     actual_flashlight_fsh "${CMAKE_SOURCE_DIR}/../../assets/shaders/actual_flashlight_f.glsl"
     smoothclip_vsh "${CMAKE_SOURCE_DIR}/../../assets/shaders/smoothclip_v.glsl"
     smoothclip_fsh "${CMAKE_SOURCE_DIR}/../../assets/shaders/smoothclip_f.glsl"
+    convar_template "${CMAKE_SOURCE_DIR}/../../assets/misc/convar_template.html"
 )
 
 # Link libraries

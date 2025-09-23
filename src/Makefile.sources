@@ -89,6 +89,7 @@ neosu_SOURCES = \
 	src/App/Osu/VolumeOverlay.cpp \
 	src/App/Osu/score.cpp \
 	src/Binary/curl_blob.cpp \
+	src/Binary/misc_bin.cpp \
 	src/Binary/shaders.cpp \
 	src/Engine/AnimationHandler.cpp \
 	src/Engine/Archival.cpp \
