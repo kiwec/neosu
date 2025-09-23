@@ -1945,7 +1945,7 @@ void Osu::onLetterboxingOffsetChange() {
 
 void Osu::onUserCardChange(std::string_view new_username) {
     // NOTE: force update options textbox to avoid shutdown inconsistency
-    this->getOptionsMenu()->setUsername(UString{new_username.begin(), new_username.length()});
+    this->getOptionsMenu()->setUsername(UString{new_username.data(), static_cast<int>(new_username.length())});
     this->userButton->setID(BanchoState::get_uid());
 }
 

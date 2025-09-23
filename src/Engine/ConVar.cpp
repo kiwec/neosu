@@ -676,7 +676,7 @@ static void _dumpcommands(void) {
     Logger::logRaw("ConVars dumped to variables.htm");
 }
 
-void _exec(std::string_view args) { Console::execConfigFile(std::string{args.begin(), args.length()}); }
+void _exec(std::string_view args) { Console::execConfigFile(std::string{args.data(), args.length()}); }
 
 void _echo(std::string_view args) {
     if(args.length() > 0) {
@@ -701,7 +701,7 @@ void _osuOptionsSliderQualityWrapper(float newValue) {
 };
 
 void spectate_by_username(std::string_view username) {
-    auto user = BANCHO::User::find_user(UString{username.begin(), username.length()});
+    auto user = BANCHO::User::find_user(UString{username.data(), static_cast<int>(username.length())});
     if(user == nullptr) {
         debugLog("Couldn't find user \"{:s}\"!", username);
         return;

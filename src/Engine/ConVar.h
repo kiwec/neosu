@@ -116,7 +116,6 @@ class ConVar {
         requires std::is_invocable_v<Callback> || std::is_invocable_v<Callback, std::string_view> ||
                  std::is_invocable_v<Callback, float>
     {
-        flags |= cv::NOSAVE;
         this->initCallback(name, flags, ""sv, callback);
         this->addConVar(this);
     }
@@ -300,10 +299,9 @@ class ConVar {
     // unified init for callback-only convars
     template <typename Callback>
     void initCallback(std::string_view name, uint8_t flags, std::string_view helpString, Callback callback) {
-        this->iFlags = flags;
+        this->iFlags = flags | cv::NOSAVE;
         this->sName = name;
         this->sHelpString = helpString;
-        this->bHasValue = false;
 
         if constexpr(std::is_invocable_v<Callback>) {
             this->callback = NativeConVarCallback(callback);
@@ -321,7 +319,7 @@ class ConVar {
     template <typename T, typename Callback>
     void initValue(std::string_view name, const T &defaultValue, uint8_t flags, std::string_view helpString,
                    Callback callback) {
-        this->bHasValue = true;
+        this->bValueSettable = true;
         this->iFlags = flags;
         this->sName = name;
         this->sHelpString = helpString;
@@ -363,8 +361,6 @@ class ConVar {
     // no flag checking, setValue (user-accessible) already does that
     template <typename T>
     void setValueInt(T &&value, bool doCallback, CvarEditor editor) {
-        this->bHasValue = true;
-
         // determine double and string representations depending on whether setValue("string") or setValue(double) was
         // called
         const auto [newDouble, newString] = [&]() -> std::pair<double, std::string> {
@@ -392,24 +388,27 @@ class ConVar {
             oldString = this->getString();
         }
 
-        // set new values
-        switch(editor) {
-            case CvarEditor::CLIENT: {
-                this->dClientValue.store(newDouble, std::memory_order_release);
-                this->sClientValue = newString;
-                break;
-            }
-            case CvarEditor::SKIN: {
-                this->dSkinValue.store(newDouble, std::memory_order_release);
-                this->sSkinValue = newString;
-                this->hasSkinValue.store(true, std::memory_order_release);
-                break;
-            }
-            case CvarEditor::SERVER: {
-                this->dServerValue.store(newDouble, std::memory_order_release);
-                this->sServerValue = newString;
-                this->hasServerValue.store(true, std::memory_order_release);
-                break;
+        // set new values (if values are settable)
+        if(this->bValueSettable) {
+            this->bHasValue = true;
+            switch(editor) {
+                case CvarEditor::CLIENT: {
+                    this->dClientValue.store(newDouble, std::memory_order_release);
+                    this->sClientValue = newString;
+                    break;
+                }
+                case CvarEditor::SKIN: {
+                    this->dSkinValue.store(newDouble, std::memory_order_release);
+                    this->sSkinValue = newString;
+                    this->hasSkinValue.store(true, std::memory_order_release);
+                    break;
+                }
+                case CvarEditor::SERVER: {
+                    this->dServerValue.store(newDouble, std::memory_order_release);
+                    this->sServerValue = newString;
+                    this->hasServerValue.store(true, std::memory_order_release);
+                    break;
+                }
             }
         }
 
@@ -449,10 +448,10 @@ class ConVar {
         }
     }
 
+   public:
+    std::atomic<bool> hasServerValue{false};
+
    private:
-    bool bHasValue{false};
-    CONVAR_TYPE type{CONVAR_TYPE::CONVAR_TYPE_FLOAT};
-    uint8_t iFlags{0};
     ConVarString sName;
     ConVarString sHelpString;
     double dDefaultValue{0.0};
@@ -473,8 +472,11 @@ class ConVar {
     ExecutionCallback callback{std::monostate()};
     ChangeCallback changeCallback{std::monostate()};
 
-   public:
-    std::atomic<bool> hasServerValue{false};
+    CONVAR_TYPE type{CONVAR_TYPE::CONVAR_TYPE_FLOAT};
+    uint8_t iFlags{0};
+
+    bool bHasValue{false};
+    bool bValueSettable{false};  // command convars can't have values stored in them
 };
 
 //*******************//
