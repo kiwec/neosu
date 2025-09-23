@@ -48,6 +48,7 @@
 #include "ResourceManager.h"
 #include "RichPresence.h"
 #include "RoomScreen.h"
+#include "SString.h"
 #include "Shader.h"
 #include "Skin.h"
 #include "SongBrowser/LeaderboardPPCalcThread.h"
@@ -1559,19 +1560,21 @@ void Osu::updateWindowsKeyDisable() {
 
 void Osu::fireResolutionChanged() { this->onResolutionChanged(this->vInternalResolution); }
 
-void Osu::onWindowedResolutionChanged(const UString & /*oldValue*/, const UString &args) {
+void Osu::onWindowedResolutionChanged(std::string_view args) {
     if(env->isFullscreen()) return;
     if(args.length() < 7) return;
 
-    std::vector<UString> resolution = args.split("x");
+    std::vector<std::string> resolution = SString::split(args, 'x');
     if(resolution.size() != 2) {
         debugLog(
             "Error: Invalid parameter count for command 'osu_resolution'! (Usage: e.g. \"osu_resolution 1280x720\")");
         return;
     }
 
-    int width = resolution[0].toFloat();
-    int height = resolution[1].toFloat();
+    debugLog("{}x{}", resolution[0], resolution[1]);
+
+    auto width{static_cast<int>(std::strtol(resolution[0].c_str(), nullptr, 0))};
+    auto height{static_cast<int>(std::strtol(resolution[1].c_str(), nullptr, 0))};
     if(width < 300 || height < 240) {
         debugLog("Error: Invalid values for resolution for command 'osu_resolution'!");
         return;
@@ -1581,19 +1584,20 @@ void Osu::onWindowedResolutionChanged(const UString & /*oldValue*/, const UStrin
     env->center();
 }
 
-void Osu::onInternalResolutionChanged(const UString & /*oldValue*/, const UString &args) {
+void Osu::onInternalResolutionChanged(std::string_view args) {
     if(!env->isFullscreen()) return;
     if(args.length() < 7) return;
 
-    std::vector<UString> resolution = args.split("x");
+    std::vector<std::string> resolution = SString::split(args, 'x');
     if(resolution.size() != 2) {
         debugLog(
             "Error: Invalid parameter count for command 'osu_resolution'! (Usage: e.g. \"osu_resolution 1280x720\")");
         return;
     }
+    debugLog("{}x{}", resolution[0], resolution[1]);
 
-    int width = resolution[0].toFloat();
-    int height = resolution[1].toFloat();
+    auto width{static_cast<int>(std::strtol(resolution[0].c_str(), nullptr, 0))};
+    auto height{static_cast<int>(std::strtol(resolution[1].c_str(), nullptr, 0))};
     if(width < 300 || height < 240) {
         debugLog("Error: Invalid values for resolution for command 'osu_resolution'!");
         return;
@@ -1677,17 +1681,17 @@ void Osu::onSkinReload() {
     this->onSkinChange(cv::skin.getString().c_str());
 }
 
-void Osu::onSkinChange(const UString &newValue) {
-    if(this->skin.get()) {
+void Osu::onSkinChange(std::string_view newValue) {
+    if(this->skin) {
         if(this->bSkinLoadScheduled || this->skinScheduledToLoad != nullptr) return;
         if(newValue.length() < 1) return;
     }
 
-    std::string newString{newValue.utf8View()};
+    std::string newString{newValue};
 
     if(newString == "default") {
         this->skinScheduledToLoad = new Skin(newString.c_str(), MCENGINE_DATA_DIR "materials/default/", true);
-        if(!this->skin.get()) this->skin.reset(this->skinScheduledToLoad);
+        if(!this->skin) this->skin.reset(this->skinScheduledToLoad);
         this->bSkinLoadScheduled = true;
         return;
     }
@@ -1722,8 +1726,7 @@ void Osu::updateAnimationSpeed() {
 
 void Osu::onAnimationSpeedChange() { this->updateAnimationSpeed(); }
 
-void Osu::onSpeedChange(const UString &newValue) {
-    float speed = newValue.toFloat();
+void Osu::onSpeedChange(float speed) {
     this->map_iface->setSpeed(speed >= 0.0f ? speed : this->map_iface->getSpeedMultiplier());
     this->updateAnimationSpeed();
 
@@ -1751,33 +1754,24 @@ void Osu::onThumbnailsToggle() {
 
 void Osu::onPlayfieldChange() { this->map_iface->onModUpdate(); }
 
-void Osu::onUIScaleChange(const UString &oldValue, const UString &newValue) {
-    const float oldVal = oldValue.toFloat();
-    const float newVal = newValue.toFloat();
-
-    if(oldVal != newVal) {
+void Osu::onUIScaleChange(float oldValue, float newValue) {
+    if(oldValue != newValue) {
         // delay
         this->bFontReloadScheduled = true;
         this->bFireResolutionChangedScheduled = true;
     }
 }
 
-void Osu::onUIScaleToDPIChange(const UString &oldValue, const UString &newValue) {
-    const bool oldVal = oldValue.toFloat() > 0.0f;
-    const bool newVal = newValue.toFloat() > 0.0f;
-
-    if(oldVal != newVal) {
+void Osu::onUIScaleToDPIChange(float oldValue, float newValue) {
+    if((oldValue > 0) != (newValue > 0)) {
         // delay
         this->bFontReloadScheduled = true;
         this->bFireResolutionChangedScheduled = true;
     }
 }
 
-void Osu::onLetterboxingChange(const UString &oldValue, const UString &newValue) {
-    bool oldVal = oldValue.toFloat() > 0.0f;
-    bool newVal = newValue.toFloat() > 0.0f;
-
-    if(oldVal != newVal) this->bFireResolutionChangedScheduled = true;  // delay
+void Osu::onLetterboxingChange(float oldValue, float newValue) {
+    if((oldValue > 0) != (newValue > 0)) this->bFireResolutionChangedScheduled = true;  // delay
 }
 
 // Here, "cursor" is the Windows mouse cursor, not the game cursor
@@ -1949,9 +1943,9 @@ void Osu::onLetterboxingOffsetChange() {
     this->updateConfineCursor();
 }
 
-void Osu::onUserCardChange(const UString &new_username) {
+void Osu::onUserCardChange(std::string_view new_username) {
     // NOTE: force update options textbox to avoid shutdown inconsistency
-    this->getOptionsMenu()->setUsername(new_username);
+    this->getOptionsMenu()->setUsername(UString{new_username.begin(), new_username.length()});
     this->userButton->setID(BanchoState::get_uid());
 }
 

@@ -571,7 +571,7 @@ void BanchoState::handle_packet(Packet &packet) {
             // Server can decide what username we use
             if(presence_user_id == BanchoState::get_uid()) { 
                 BanchoState::username = presence_username.toUtf8();
-                osu->onUserCardChange(presence_username);
+                osu->onUserCardChange(presence_username.utf8View());
             }
 
             osu->getChat()->updateUserList();

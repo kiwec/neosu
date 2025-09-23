@@ -231,15 +231,15 @@ void SoLoudSoundEngine::stop(Sound *snd) {
     soloudSound->handle = 0;
 }
 
-void SoLoudSoundEngine::setOutputDeviceByName(const UString &desiredDeviceName) {
+void SoLoudSoundEngine::setOutputDeviceByName(std::string_view desiredDeviceName) {
     for(const auto &device : this->outputDevices) {
-        if(device.name == desiredDeviceName) {
+        if(device.name.toUtf8() == desiredDeviceName) {
             this->setOutputDeviceInt(device);
             return;
         }
     }
 
-    debugLog("couldn't find output device \"{:s}\"!", desiredDeviceName.toUtf8());
+    debugLog("couldn't find output device \"{:s}\"!", desiredDeviceName);
     this->initializeOutputDevice(this->getDefaultDevice());  // initialize default
 }
 
@@ -292,8 +292,8 @@ void SoLoudSoundEngine::allowInternalCallbacks() {
     cv::snd_freq.setCallback(SA::MakeDelegate<&SoLoudSoundEngine::restart>(this));
     cv::cmd::snd_restart.setCallback(SA::MakeDelegate<&SoLoudSoundEngine::restart>(this));
 
-    static auto backendSwitchCB = [&](const UString &arg) -> void {
-        const bool nowSDL = arg.findIgnoreCase("sdl") != -1;
+    static auto backendSwitchCB = [&](std::string_view arg) -> void {
+        const bool nowSDL = SString::contains_ncase(arg, "sdl"sv);
         const auto curDriver = soundEngine->getOutputDriverType();
         // don't do anything if we're already ready with the same output driver
         if(this->bWasBackendEverReady &&
@@ -327,7 +327,7 @@ void SoLoudSoundEngine::allowInternalCallbacks() {
     // if we restarted already, then we already set the output device to the desired one
     bool doChangeOutput = !doRestart && (cv::snd_output_device.getDefaultString() != cv::snd_output_device.getString());
     if(doChangeOutput) {
-        this->setOutputDeviceByName(UString{cv::snd_output_device.getString()});
+        this->setOutputDeviceByName(cv::snd_output_device.getString());
     }
 }
 

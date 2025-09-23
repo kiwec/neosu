@@ -58,9 +58,9 @@ void Console::processCommand(std::string command, bool fromFile) {
     // except for help, don't set a value for that, just run the callback
     if(commandValue.length() > 0) {
         if(commandName == "help") {
-            var->execArgs(UString{commandValue});
+            var->execArgs(commandValue);
         } else {
-            var->setValue(UString{commandValue});
+            var->setValue(commandValue);
         }
     } else {
         var->exec();

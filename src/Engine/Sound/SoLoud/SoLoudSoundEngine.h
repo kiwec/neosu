@@ -50,7 +50,7 @@ class SoLoudSoundEngine final : public SoundEngine {
 
     bool initializeOutputDevice(const OUTPUT_DEVICE &device) override;
 
-    void setOutputDeviceByName(const UString &desiredDeviceName);
+    void setOutputDeviceByName(std::string_view desiredDeviceName);
     bool setOutputDeviceInt(const OUTPUT_DEVICE &desiredDevice, bool force = false);
 
     int iMaxActiveVoices;

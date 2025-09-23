@@ -14,6 +14,7 @@
 #include "RichPresence.h"
 #include "SongBrowser/LoudnessCalcThread.h"
 #include "SoundEngine.h"
+#include "SString.h"
 #include "SpectatorScreen.h"
 #include "UpdateHandler.h"
 #include "Logging.h"
@@ -24,18 +25,20 @@
 #include <unordered_set>
 
 void ConVar::addConVar(ConVar *c) {
-    const std::string &cname_str = c->getName();
+    const std::string_view cname_str = c->getName();
 
     // osu_ prefix is deprecated.
     // If you really need it, you'll also need to edit Console::execConfigFile to whitelist it there.
     assert(!(cname_str.starts_with("osu_") && !cname_str.starts_with("osu_folder")) &&
            "osu_ ConVar prefix is deprecated.");
 
-    // No duplicate ConVar names allowed
-    assert(!ConVarHandler::getConVarMap().contains(cname_str) && "no duplicate ConVar names allowed.");
+    auto &convar_map = ConVarHandler::getConVarMap_int();
 
+    // No duplicate ConVar names allowed
+    assert(!convar_map.contains(cname_str) && "no duplicate ConVar names allowed.");
+
+    convar_map.emplace(cname_str, c);
     ConVarHandler::getConVarArray_int().push_back(c);
-    ConVarHandler::getConVarMap_int()[cname_str] = c;
 }
 
 ConVarString ConVar::getFancyDefaultValue() {
@@ -76,7 +79,7 @@ void ConVar::exec() {
     if(auto *cb = std::get_if<NativeConVarCallback>(&this->callback)) (*cb)();
 }
 
-void ConVar::execArgs(const UString &args) {
+void ConVar::execArgs(std::string_view args) {
     if(auto *cb = std::get_if<NativeConVarCallbackArgs>(&this->callback)) (*cb)(args);
 }
 
@@ -121,7 +124,7 @@ void ConVar::setDefaultDouble(double defaultValue) {
     this->sDefaultValue = fmt::format("{:g}", defaultValue);
 }
 
-void ConVar::setDefaultString(const std::string_view &defaultValue) {
+void ConVar::setDefaultString(std::string_view defaultValue) {
     this->sDefaultValue = defaultValue;
 
     // also try to parse default float from the default string
@@ -149,7 +152,7 @@ bool ConVar::onSetValueGameplay(CvarEditor editor) {
     return true;
 }
 
-void ConVar::onSetValueProtected(const std::string &oldValue, const std::string &newValue) {
+void ConVar::onSetValueProtected(std::string_view oldValue, std::string_view newValue) {
     if(!osu) return;
     if(oldValue == newValue) return;
     osu->getMapInterface()->is_submittable = false;
@@ -172,8 +175,8 @@ std::vector<ConVar *> &ConVarHandler::getConVarArray_int() {
     return vConVarArray;
 }
 
-std::unordered_map<ConVarString, ConVar *> &ConVarHandler::getConVarMap_int() {
-    static std::unordered_map<ConVarString, ConVar *> vConVarMap;
+sv_unordered_map<ConVar *> &ConVarHandler::getConVarMap_int() {
+    static sv_unordered_map<ConVar *> vConVarMap;
 
     static std::once_flag reserved;
     std::call_once(reserved, []() { vConVarMap.reserve(1024); });
@@ -181,14 +184,15 @@ std::unordered_map<ConVarString, ConVar *> &ConVarHandler::getConVarMap_int() {
     return vConVarMap;
 }
 
-ConVar *ConVarHandler::getConVar_int(const ConVarString &name) {
+ConVar *ConVarHandler::getConVar_int(std::string_view name) {
     const auto &cvarMap = getConVarMap();
-    if(cvarMap.contains(name)) return cvarMap.at(name);
+    auto it = cvarMap.find(name);
+    if(it != cvarMap.end()) return it->second;
     return nullptr;
 }
 
 // public
-ConVar *ConVarHandler::getConVarByName(const ConVarString &name, bool warnIfNotFound) const {
+ConVar *ConVarHandler::getConVarByName(std::string_view name, bool warnIfNotFound) const {
     static ConVar _emptyDummyConVar(
         "emptyDummyConVar", 42.0f, cv::CLIENT,
         "this placeholder convar is returned by cvars->getConVarByName() if no matching convar is found");
@@ -210,7 +214,7 @@ ConVar *ConVarHandler::getConVarByName(const ConVarString &name, bool warnIfNotF
         return &_emptyDummyConVar;
 }
 
-std::vector<ConVar *> ConVarHandler::getConVarByLetter(const ConVarString &letters) const {
+std::vector<ConVar *> ConVarHandler::getConVarByLetter(std::string_view letters) const {
     std::unordered_set<std::string> matchingConVarNames;
     std::vector<ConVar *> matchingConVars;
     {
@@ -222,8 +226,9 @@ std::vector<ConVar *> ConVarHandler::getConVarByLetter(const ConVarString &lette
         for(auto convar : convars) {
             if(convar->isFlagSet(cv::HIDDEN)) continue;
 
-            if(convar->getName().find(letters) != std::string::npos) {
-                if(letters.length() > 1) matchingConVarNames.insert(convar->getName());
+            const ConVarString &name = convar->getName();
+            if(name.find(letters) != std::string::npos) {
+                if(letters.length() > 1) matchingConVarNames.insert(name);
 
                 matchingConVars.push_back(convar);
             }
@@ -236,7 +241,7 @@ std::vector<ConVar *> ConVarHandler::getConVarByLetter(const ConVarString &lette
 
                 if(convar->getName().find(letters) != std::string::npos) {
                     const ConVarString &stdName = convar->getName();
-                    if(matchingConVarNames.find(stdName) == matchingConVarNames.end()) {
+                    if(!matchingConVarNames.contains(stdName)) {
                         matchingConVarNames.insert(stdName);
                         matchingConVars.push_back(convar);
                     }
@@ -326,7 +331,7 @@ void ConVarHandler::resetSkinCvars() {
 //	ConVarHandler ConCommands  //
 //*****************************//
 
-static void _find(const UString &args) {
+static void _find(std::string_view args) {
     if(args.length() < 1) {
         Logger::logRaw("Usage:  find <string>");
         return;
@@ -338,8 +343,8 @@ static void _find(const UString &args) {
     for(auto convar : convars) {
         if(convar->isFlagSet(cv::HIDDEN)) continue;
 
-        const ConVarString &name = convar->getName();
-        if(name.find(args.toUtf8()) != std::string::npos) matchingConVars.push_back(convar);
+        const std::string_view name = convar->getName();
+        if(name.find(args) != std::string::npos) matchingConVars.push_back(convar);
     }
 
     if(matchingConVars.size() > 0) {
@@ -353,10 +358,10 @@ static void _find(const UString &args) {
 
     Logger::logRaw("----------------------------------------------");
     {
-        UString thelog = "[ find : ";
+        std::string thelog = "[ find : ";
         thelog.append(args);
         thelog.append(" ]");
-        Logger::logRaw("{:s}", thelog.toUtf8());
+        Logger::logRaw("{:s}", thelog);
 
         for(auto &matchingConVar : matchingConVars) {
             Logger::logRaw("{:s}", matchingConVar->getName());
@@ -365,8 +370,9 @@ static void _find(const UString &args) {
     Logger::logRaw("----------------------------------------------");
 }
 
-static void _help(const UString &args) {
-    std::string trimmedArgs{args.trim().utf8View()};
+static void _help(std::string_view args) {
+    ConVarString trimmedArgs{args};
+    SString::trim(&trimmedArgs);
 
     if(trimmedArgs.length() < 1) {
         Logger::logRaw("Usage:  help <cvarname>");
@@ -450,7 +456,7 @@ static void _listcommands(void) {
 
 static void _dumpcommands(void) {
     // XXX: move this into assets/
-    std::string html_template = R"(<!DOCTYPE html>
+    ConVarString html_template = R"(<!DOCTYPE html>
 <html>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
@@ -626,9 +632,9 @@ static void _dumpcommands(void) {
     std::vector<ConVar *> convars = cvars->getConVarArray();
     std::ranges::sort(convars, {}, [](const ConVar *v) { return v->getName(); });
 
-    std::string html = R"(<section class="variables">)";
+    ConVarString html = R"(<section class="variables">)";
     for(auto var : convars) {
-        std::string flags;
+        ConVarString flags;
         if(var->isFlagSet(cv::CLIENT)) flags.append("<span class=\"flag client\">CLIENT</span>");
         if(var->isFlagSet(cv::SKINS)) flags.append("<span class=\"flag skins\">SKINS</span>");
         if(var->isFlagSet(cv::SERVER)) flags.append("<span class=\"flag server\">SERVER</span>");
@@ -653,7 +659,7 @@ static void _dumpcommands(void) {
     </p>)",
                             fmt::gmtime(std::time(nullptr)), cv::version.getDouble()));
 
-    std::string marker = "{{CONVARS_HERE}}";
+    ConVarString marker = "{{CONVARS_HERE}}";
     size_t pos = html_template.find(marker);
     html_template.replace(pos, marker.length(), html);
 
@@ -670,11 +676,11 @@ static void _dumpcommands(void) {
     Logger::logRaw("ConVars dumped to variables.htm");
 }
 
-void _exec(const UString &args) { Console::execConfigFile(args.toUtf8()); }
+void _exec(std::string_view args) { Console::execConfigFile(std::string{args.begin(), args.length()}); }
 
-void _echo(const UString &args) {
+void _echo(std::string_view args) {
     if(args.length() > 0) {
-        Logger::logRaw("{:s}", args.toUtf8());
+        Logger::logRaw("{:s}", args);
     }
 }
 
@@ -694,22 +700,23 @@ void _osuOptionsSliderQualityWrapper(float newValue) {
     cv::slider_curve_points_separation.setValue(value);
 };
 
-void spectate_by_username(const UString &username) {
-    auto user = BANCHO::User::find_user(username);
+void spectate_by_username(std::string_view username) {
+    auto user = BANCHO::User::find_user(UString{username.begin(), username.length()});
     if(user == nullptr) {
-        debugLog("Couldn't find user \"{:s}\"!", username.toUtf8());
+        debugLog("Couldn't find user \"{:s}\"!", username);
         return;
     }
 
-    debugLog("Spectating {:s} (user {:d})...", username.toUtf8(), user->user_id);
+    debugLog("Spectating {:s} (user {:d})...", username, user->user_id);
     start_spectating(user->user_id);
 }
 
-void _osu_songbrowser_search_hardcoded_filter(const UString & /*oldValue*/, const UString &newValue) {
-    if(newValue.length() == 1 && newValue.isWhitespaceOnly()) cv::songbrowser_search_hardcoded_filter.setValue("");
+void _osu_songbrowser_search_hardcoded_filter(std::string_view /*oldValue*/, std::string_view newValue) {
+    if(newValue.length() == 1 && SString::whitespace_only(newValue))
+        cv::songbrowser_search_hardcoded_filter.setValue("");
 }
 
-void loudness_cb(const UString & /*oldValue*/, const UString & /*newValue*/) {
+void loudness_cb(std::string_view /*oldValue*/, std::string_view /*newValue*/) {
     // Restart loudness calc.
     VolNormalization::abort();
     if(db && cv::normalize_loudness.getBool()) {

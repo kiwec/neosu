@@ -192,7 +192,7 @@ class OptionsMenu : public ScreenBackable, public NotificationOverlayKeyListener
 
     void onUseSkinsSoundSamplesChange();
     void onHighQualitySlidersCheckboxChange(CBaseUICheckbox *checkbox);
-    void onHighQualitySlidersConVarChange(const UString &newValue);
+    void onHighQualitySlidersConVarChange(float newValue);
 
     // categories
     void onCategoryClicked(CBaseUIButton *button);

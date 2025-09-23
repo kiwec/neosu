@@ -64,7 +64,7 @@ void OpenGLShader::disable() {
     OpenGLStateCache::setCurrentProgram(this->iProgramBackup);
 }
 
-void OpenGLShader::setUniform1f(const std::string_view &name, float value) {
+void OpenGLShader::setUniform1f(std::string_view name, float value) {
     if(!this->bReady) return;
 
     const int id = getAndCacheUniformLocation(name);
@@ -74,7 +74,7 @@ void OpenGLShader::setUniform1f(const std::string_view &name, float value) {
         debugLog("OpenGLShader Warning: Can't find uniform {:s}", name);
 }
 
-void OpenGLShader::setUniform1fv(const std::string_view &name, int count, float *values) {
+void OpenGLShader::setUniform1fv(std::string_view name, int count, float *values) {
     if(!this->bReady) return;
 
     const int id = getAndCacheUniformLocation(name);
@@ -84,7 +84,7 @@ void OpenGLShader::setUniform1fv(const std::string_view &name, int count, float 
         debugLog("OpenGLShader Warning: Can't find uniform {:s}", name);
 }
 
-void OpenGLShader::setUniform1i(const std::string_view &name, int value) {
+void OpenGLShader::setUniform1i(std::string_view name, int value) {
     if(!this->bReady) return;
 
     const int id = getAndCacheUniformLocation(name);
@@ -94,7 +94,7 @@ void OpenGLShader::setUniform1i(const std::string_view &name, int value) {
         debugLog("OpenGLShader Warning: Can't find uniform {:s}", name);
 }
 
-void OpenGLShader::setUniform2f(const std::string_view &name, float value1, float value2) {
+void OpenGLShader::setUniform2f(std::string_view name, float value1, float value2) {
     if(!this->bReady) return;
 
     const int id = getAndCacheUniformLocation(name);
@@ -104,7 +104,7 @@ void OpenGLShader::setUniform2f(const std::string_view &name, float value1, floa
         debugLog("OpenGLShader Warning: Can't find uniform {:s}", name);
 }
 
-void OpenGLShader::setUniform2fv(const std::string_view &name, int count, float *vectors) {
+void OpenGLShader::setUniform2fv(std::string_view name, int count, float *vectors) {
     if(!this->bReady) return;
 
     const int id = getAndCacheUniformLocation(name);
@@ -114,7 +114,7 @@ void OpenGLShader::setUniform2fv(const std::string_view &name, int count, float 
         debugLog("OpenGLShader Warning: Can't find uniform {:s}", name);
 }
 
-void OpenGLShader::setUniform3f(const std::string_view &name, float x, float y, float z) {
+void OpenGLShader::setUniform3f(std::string_view name, float x, float y, float z) {
     if(!this->bReady) return;
 
     const int id = getAndCacheUniformLocation(name);
@@ -124,7 +124,7 @@ void OpenGLShader::setUniform3f(const std::string_view &name, float x, float y, 
         debugLog("OpenGLShader Warning: Can't find uniform {:s}", name);
 }
 
-void OpenGLShader::setUniform3fv(const std::string_view &name, int count, float *vectors) {
+void OpenGLShader::setUniform3fv(std::string_view name, int count, float *vectors) {
     if(!this->bReady) return;
 
     const int id = getAndCacheUniformLocation(name);
@@ -134,7 +134,7 @@ void OpenGLShader::setUniform3fv(const std::string_view &name, int count, float 
         debugLog("OpenGLShader Warning: Can't find uniform {:s}", name);
 }
 
-void OpenGLShader::setUniform4f(const std::string_view &name, float x, float y, float z, float w) {
+void OpenGLShader::setUniform4f(std::string_view name, float x, float y, float z, float w) {
     if(!this->bReady) return;
 
     const int id = getAndCacheUniformLocation(name);
@@ -144,7 +144,7 @@ void OpenGLShader::setUniform4f(const std::string_view &name, float x, float y, 
         debugLog("OpenGLShader Warning: Can't find uniform {:s}", name);
 }
 
-void OpenGLShader::setUniformMatrix4fv(const std::string_view &name, Matrix4 &matrix) {
+void OpenGLShader::setUniformMatrix4fv(std::string_view name, Matrix4 &matrix) {
     if(!this->bReady) return;
 
     const int id = getAndCacheUniformLocation(name);
@@ -154,7 +154,7 @@ void OpenGLShader::setUniformMatrix4fv(const std::string_view &name, Matrix4 &ma
         debugLog("OpenGLShader Warning: Can't find uniform {:s}", name);
 }
 
-void OpenGLShader::setUniformMatrix4fv(const std::string_view &name, float *v) {
+void OpenGLShader::setUniformMatrix4fv(std::string_view name, float *v) {
     if(!this->bReady) return;
 
     const int id = getAndCacheUniformLocation(name);
@@ -164,13 +164,13 @@ void OpenGLShader::setUniformMatrix4fv(const std::string_view &name, float *v) {
         debugLog("OpenGLShader Warning: Can't find uniform {:s}", name);
 }
 
-int OpenGLShader::getAttribLocation(const std::string_view &name) {
+int OpenGLShader::getAttribLocation(std::string_view name) {
     if(!this->bReady || name.empty()) return -1;
 
     return glGetAttribLocation(this->iProgram, name.data());
 }
 
-int OpenGLShader::getAndCacheUniformLocation(const std::string_view &name) {
+int OpenGLShader::getAndCacheUniformLocation(std::string_view name) {
     if(!this->bReady || name.empty()) return -1;
 
     const auto cachedValue = this->uniformLocationCache.find(name);

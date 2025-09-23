@@ -785,7 +785,7 @@ OptionsMenu::OptionsMenu() : ScreenBackable() {
 
             // need to use a change callback here because we already have a single-arg callback for the convar...
             cv::snd_soloud_backend.setCallback(
-                [](const UString & /**/, const UString & /**/) -> void { setActiveColors(); });
+                [](float /**/, float /**/) -> void { setActiveColors(); });
         }
 
         // Dirty...
@@ -1341,7 +1341,7 @@ OptionsMenu::OptionsMenu() : ScreenBackable() {
 
     // HACKHACK: force current value update
     if(this->sliderQualitySlider != nullptr)
-        this->onHighQualitySlidersConVarChange(cv::options_high_quality_sliders.getString().c_str());
+        this->onHighQualitySlidersConVarChange(cv::options_high_quality_sliders.getFloat());
 }
 
 OptionsMenu::~OptionsMenu() {
@@ -3212,8 +3212,8 @@ void OptionsMenu::onHighQualitySlidersCheckboxChange(CBaseUICheckbox *checkbox) 
     if(checkbox->isChecked()) this->sliderQualitySlider->setValue(1.0f, false);
 }
 
-void OptionsMenu::onHighQualitySlidersConVarChange(const UString &newValue) {
-    const bool enabled = newValue.toFloat() > 0;
+void OptionsMenu::onHighQualitySlidersConVarChange(float newValue) {
+    const bool enabled = newValue > 0;
     for(auto &element : this->elemContainers) {
         bool contains = false;
         for(auto &e : element->baseElems) {

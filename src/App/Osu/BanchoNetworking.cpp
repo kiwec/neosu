@@ -265,8 +265,8 @@ void handle_api_response(Packet &packet) {
 }  // namespace
 
 // Used as fallback for Linux or other setups where neosu:// protocol handler doesn't work
-void complete_oauth(const UString &code) {
-    auto url = fmt::format("neosu://login/{}/{}", cv::mp_server.getString(), code.toUtf8());
+void complete_oauth(std::string_view code) {
+    auto url = fmt::format("neosu://login/{}/{}", cv::mp_server.getString(), code);
     debugLog("Manually logging in: {}", url);
     handle_neosu_url(url.c_str());
 }

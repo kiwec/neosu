@@ -671,7 +671,7 @@ void Environment::enableFullscreen() {
     // TODO: fix/remove the need to have these here
     if(osu) {
         auto res = cv::resolution.getString().c_str();
-        osu->onInternalResolutionChanged(res, res);
+        osu->onInternalResolutionChanged(res);
     }
 }
 
@@ -688,7 +688,7 @@ void Environment::disableFullscreen() {
 
     if(osu) {
         auto res = cv::windowed_resolution.getString().c_str();
-        osu->onWindowedResolutionChanged(res, res);
+        osu->onWindowedResolutionChanged(res);
     }
 }
 

@@ -42,7 +42,7 @@ void update_networking();
 void cleanup_networking();
 
 // Callback for complete_oauth command
-void complete_oauth(const UString &code);
+void complete_oauth(std::string_view code);
 
 void append_auth_params(UString& url, std::string user_param = "u", std::string pw_param = "h");
 

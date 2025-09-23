@@ -203,22 +203,22 @@ class Osu final : public MouseListener, public KeyboardListener {
     void fireResolutionChanged();
 
     // callbacks
-    void onWindowedResolutionChanged(const UString &oldValue, const UString &args);
-    void onInternalResolutionChanged(const UString &oldValue, const UString &args);
+    void onWindowedResolutionChanged(std::string_view args);
+    void onInternalResolutionChanged(std::string_view args);
 
     void onSkinReload();
-    void onSkinChange(const UString &newValue);
+    void onSkinChange(std::string_view newValue);
     void onAnimationSpeedChange();
     void updateAnimationSpeed();
 
-    void onSpeedChange(const UString &newValue);
+    void onSpeedChange(float speed);
     void onThumbnailsToggle();
 
     void onPlayfieldChange();
 
-    void onUIScaleChange(const UString &oldValue, const UString &newValue);
-    void onUIScaleToDPIChange(const UString &oldValue, const UString &newValue);
-    void onLetterboxingChange(const UString &oldValue, const UString &newValue);
+    void onUIScaleChange(float oldValue, float newValue);
+    void onUIScaleToDPIChange(float oldValue, float newValue);
+    void onLetterboxingChange(float oldValue, float newValue);
 
     void onKey1Change(bool pressed, bool mouse);
     void onKey2Change(bool pressed, bool mouse);
@@ -231,7 +231,7 @@ class Osu final : public MouseListener, public KeyboardListener {
 
     void onLetterboxingOffsetChange();
 
-    void onUserCardChange(const UString &new_username);
+    void onUserCardChange(std::string_view new_username);
 
     void setupSoloud();
 

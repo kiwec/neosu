@@ -5,6 +5,9 @@
 #include <cstddef>
 #include <cstdlib>
 #include <cassert>
+#include <string>
+#include <string_view>
+#include <unordered_map>
 
 // zero-initialized dynamic array, similar to std::vector but way faster when you don't need constructors
 // obviously don't use it on complex types :)
@@ -79,3 +82,24 @@ struct zarray {
     size_t nb = 0;
     T *memory = NULL;
 };
+
+// transparent hash and equality for heterogeneous lookup
+struct StringHash {
+    using is_transparent = void;
+
+    std::size_t operator()(std::string_view sv) const { return std::hash<std::string_view>{}(sv); }
+    std::size_t operator()(const std::string &s) const { return std::hash<std::string>{}(s); }
+    std::size_t operator()(const char *s) const { return std::hash<std::string_view>{}(std::string_view(s)); }
+};
+
+struct StringEqual {
+    using is_transparent = void;
+
+    bool operator()(std::string_view lhs, std::string_view rhs) const { return lhs == rhs; }
+    bool operator()(const std::string &lhs, std::string_view rhs) const { return lhs == rhs; }
+    bool operator()(std::string_view lhs, const std::string &rhs) const { return lhs == rhs; }
+    bool operator()(const std::string &lhs, const std::string &rhs) const { return lhs == rhs; }
+};
+
+template <typename T>
+using sv_unordered_map = std::unordered_map<std::string, T, StringHash, StringEqual>;

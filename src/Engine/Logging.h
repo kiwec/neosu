@@ -83,7 +83,7 @@ class Logger final {
 
 // msvc always adds the full scope to __FUNCTION__, which we don't want for non-debug builds
 #if defined(_MSC_VER) && !defined(_DEBUG)
-    static forceinline const char *trim_to_last_scope_internal(const std::string_view &str) {
+    static forceinline const char *trim_to_last_scope_internal(std::string_view str) {
         auto pos = str.rfind("::");
         if(pos != std::string_view::npos) {
             return str.data() + pos + 2;  // +2 to skip "::"
