@@ -22,17 +22,21 @@
 #ifdef _DEBUG
 // debug pattern: [filename:line] [function]: message
 #define FANCY_LOG_PATTERN "[%s:%#] [%!]: %v"
+// for file output, add timestamp (and thread, for debug) info
+#define FILE_LOG_PATTERN_PREF "[%T.%e] [th:%t]"
 #define RELEASE_IDENTIFIER "dev"
 #else
 // release pattern: [function] message
 #define FANCY_LOG_PATTERN "[%!] %v"
+// add HH:MM:SS timestamp
+#define FILE_LOG_PATTERN_PREF "[%T]"
 #define RELEASE_IDENTIFIER "rel"
 #endif
 
 // e.g. ./logs/
 #define LOGFILE_LOCATION MCENGINE_DATA_DIR "logs/"
-// e.g. ./logs/neosu-dev-40.03-2509231029.log
-#define LOGFILE_NAME LOGFILE_LOCATION PACKAGE_NAME "-" RELEASE_IDENTIFIER "-" PACKAGE_VERSION ".log"
+// e.g. ./logs/neosu-linux-x64-dev-40.03.log
+#define LOGFILE_NAME LOGFILE_LOCATION PACKAGE_NAME "-" OS_NAME "-" RELEASE_IDENTIFIER "-" PACKAGE_VERSION ".log"
 
 #define DEFAULT_LOGGER_NAME "main"
 #define RAW_LOGGER_NAME "raw"
@@ -160,10 +164,10 @@ void Logger::init() noexcept {
         // these will error (throw) if file cannot be created, but we're built with exceptions disabled
         // spdlog should handle errors gracefully in this case by not writing to the sink
         auto file_sink{std::make_shared<spdlog::sinks::basic_file_sink_mt>(LOGFILE_NAME, true /* overwrite */)};
-        file_sink->set_pattern(FANCY_LOG_PATTERN);  // same patterns as stdout sinks
+        file_sink->set_pattern(FILE_LOG_PATTERN_PREF " " FANCY_LOG_PATTERN);  // extra pattern prefix
 
         auto raw_file_sink{std::make_shared<spdlog::sinks::basic_file_sink_mt>(LOGFILE_NAME, true)};
-        raw_file_sink->set_pattern("%v");
+        raw_file_sink->set_pattern(FILE_LOG_PATTERN_PREF " %v");
 
         main_sinks.push_back(std::move(file_sink));
         raw_sinks.push_back(std::move(raw_file_sink));
