@@ -19,10 +19,12 @@
 
 #include <stack>
 #include <unordered_map>
+#include <string_view>
 
 class Sound;
 class TextureAtlas;
 class AsyncResourceLoader;
+
 class ResourceManager final {
     NOCOPY_NOMOVE(ResourceManager)
 
@@ -103,10 +105,10 @@ class ResourceManager final {
                                                bool keepInSystemMemory = false);
 
     // resource access by name
-    [[nodiscard]] Image *getImage(const std::string &resourceName) const { return tryGet<Image>(resourceName); }
-    [[nodiscard]] McFont *getFont(const std::string &resourceName) const { return tryGet<McFont>(resourceName); }
-    [[nodiscard]] Sound *getSound(const std::string &resourceName) const { return tryGet<Sound>(resourceName); }
-    [[nodiscard]] Shader *getShader(const std::string &resourceName) const { return tryGet<Shader>(resourceName); }
+    [[nodiscard]] Image *getImage(std::string_view resourceName) const { return tryGet<Image>(resourceName); }
+    [[nodiscard]] McFont *getFont(std::string_view resourceName) const { return tryGet<McFont>(resourceName); }
+    [[nodiscard]] Sound *getSound(std::string_view resourceName) const { return tryGet<Sound>(resourceName); }
+    [[nodiscard]] Shader *getShader(std::string_view resourceName) const { return tryGet<Shader>(resourceName); }
 
     // methods for getting all resources of a type
     [[nodiscard]] constexpr const std::vector<Image *> &getImages() const { return this->vImages; }
@@ -131,26 +133,30 @@ class ResourceManager final {
 
    private:
     // to avoid including logging/convar code here, transitively
-    static void notExistLog(const std::string &resourceName);
-    static void alreadyLoadedLog(const std::string &resourceName);
+    static void notExistLog(std::string_view resourceName);
+    static void alreadyLoadedLog(std::string_view resourceName);
 
     template <typename T>
-    [[nodiscard]] T *tryGet(const std::string &resourceName) const {
+    [[nodiscard]] T *tryGet(std::string_view resourceName) const {
         if(resourceName.empty()) return nullptr;
-        if(this->mNameToResourceMap.contains(resourceName)) {
-            return this->mNameToResourceMap.at(resourceName)->as<T>();
+        if(auto it = this->mNameToResourceMap.find(resourceName); it != this->mNameToResourceMap.end()) {
+            return it->second->as<T>();
         }
         notExistLog(resourceName);
         return nullptr;
     }
+
     template <typename T>
-    [[nodiscard]] T *checkIfExistsAndHandle(const std::string &resourceName) {
+    [[nodiscard]] T *checkIfExistsAndHandle(std::string_view resourceName) {
         if(resourceName.empty()) return nullptr;
-        if(!this->mNameToResourceMap.contains(resourceName)) return nullptr;
+        auto it = this->mNameToResourceMap.find(resourceName);
+        if(it == this->mNameToResourceMap.end()) {
+            return nullptr;
+        }
         alreadyLoadedLog(resourceName);
         // handle flags (reset them)
         resetFlags();
-        return this->mNameToResourceMap[resourceName]->as<T>();
+        return it->second->as<T>();
     }
 
     void loadResource(Resource *res, bool load);
@@ -173,9 +179,6 @@ class ResourceManager final {
     // content
     std::vector<Resource *> vResources;
 
-    // fast name lookup
-    std::unordered_map<std::string, Resource *> mNameToResourceMap;
-
     // typed resource vectors for fast type-specific access
     std::vector<Image *> vImages;
     std::vector<McFont *> vFonts;
@@ -184,6 +187,27 @@ class ResourceManager final {
     std::vector<RenderTarget *> vRenderTargets;
     std::vector<TextureAtlas *> vTextureAtlases;
     std::vector<VertexArrayObject *> vVertexArrayObjects;
+
+    // transparent hash and equality for heterogeneous lookup
+    struct StringHash {
+        using is_transparent = void;
+
+        std::size_t operator()(std::string_view sv) const { return std::hash<std::string_view>{}(sv); }
+        std::size_t operator()(const std::string &s) const { return std::hash<std::string>{}(s); }
+        std::size_t operator()(const char *s) const { return std::hash<std::string_view>{}(std::string_view(s)); }
+    };
+
+    struct StringEqual {
+        using is_transparent = void;
+
+        bool operator()(std::string_view lhs, std::string_view rhs) const { return lhs == rhs; }
+        bool operator()(const std::string &lhs, std::string_view rhs) const { return lhs == rhs; }
+        bool operator()(std::string_view lhs, const std::string &rhs) const { return lhs == rhs; }
+        bool operator()(const std::string &lhs, const std::string &rhs) const { return lhs == rhs; }
+    };
+
+    // lookup map
+    std::unordered_map<std::string, Resource *, StringHash, StringEqual> mNameToResourceMap;
 };
 
 // define/managed in Engine.cpp, declared here for convenience

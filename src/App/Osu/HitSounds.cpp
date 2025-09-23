@@ -80,47 +80,78 @@ void HitSamples::play(f32 pan, i32 delta, bool is_sliderslide) {
         pitch = (f32)delta / range * cv::snd_pitch_hitsounds_factor.getFloat();
     }
 
-    auto get_default_sound = [is_sliderslide](i32 set, i32 hitSound) {
-        std::string sound_name = "SKIN_";
+    // O(1) lookup table for sound names
+    // [set][is_sliderslide][hitSound]
+#define A_ std::array
+    static constexpr const auto SOUND_NAMES =
+        A_{   // SampleSetType::NORMAL
+           A_{// HIT sounds
+              A_{
+                  "SKIN_NORMALHITNORMAL_SND",   // HitSoundType::NORMAL
+                  "SKIN_NORMALHITWHISTLE_SND",  // HitSoundType::WHISTLE
+                  "SKIN_NORMALHITFINISH_SND",   // HitSoundType::FINISH
+                  "SKIN_NORMALHITCLAP_SND"      // HitSoundType::CLAP
+              },
+              // SLIDER sounds
+              A_{
+                  "SKIN_NORMALSLIDERSLIDE_SND",    // HitSoundType::NORMAL
+                  "SKIN_NORMALSLIDERWHISTLE_SND",  // HitSoundType::WHISTLE
+                  "SKIN_NORMALSLIDERFINISH_SND",   // HitSoundType::FINISH
+                  "SKIN_NORMALSLIDERCLAP_SND"      // HitSoundType::CLAP
+              }},
+           // SampleSetType::SOFT
+           A_{// HIT sounds
+              A_{"SKIN_SOFTHITNORMAL_SND", "SKIN_SOFTHITWHISTLE_SND", "SKIN_SOFTHITFINISH_SND", "SKIN_SOFTHITCLAP_SND"},
+              // SLIDER sounds
+              A_{"SKIN_SOFTSLIDERSLIDE_SND", "SKIN_SOFTSLIDERWHISTLE_SND", "SKIN_SOFTSLIDERFINISH_SND",
+                 "SKIN_SOFTSLIDERCLAP_SND"}},
+           // SampleSetType::DRUM
+           A_{// HIT sounds
+              A_{"SKIN_DRUMHITNORMAL_SND", "SKIN_DRUMHITWHISTLE_SND", "SKIN_DRUMHITFINISH_SND", "SKIN_DRUMHITCLAP_SND"},
+              // SLIDER sounds
+              A_{"SKIN_DRUMSLIDERSLIDE_SND", "SKIN_DRUMSLIDERWHISTLE_SND", "SKIN_DRUMSLIDERFINISH_SND",
+                 "SKIN_DRUMSLIDERCLAP_SND"}}};
+#undef A_
 
+    auto get_default_sound = [is_sliderslide](i32 set, i32 hitSound) -> Sound* {
+        // map indices
+        u8 set_idx, slider_idx, hit_idx;
         switch(set) {
             default:
             case SampleSetType::NORMAL:
-                sound_name.append("NORMAL");
+                set_idx = 0;
                 break;
             case SampleSetType::SOFT:
-                sound_name.append("SOFT");
+                set_idx = 1;
                 break;
             case SampleSetType::DRUM:
-                sound_name.append("DRUM");
+                set_idx = 2;
                 break;
         }
 
         if(is_sliderslide) {
-            sound_name.append("SLIDER");
+            slider_idx = 1;
         } else {
-            sound_name.append("HIT");
+            slider_idx = 0;
         }
 
         switch(hitSound) {
             default:
             case HitSoundType::NORMAL:
-                sound_name.append(is_sliderslide ? "SLIDE" : "NORMAL");
+                hit_idx = 0;
                 break;
             case HitSoundType::WHISTLE:
-                sound_name.append("WHISTLE");
+                hit_idx = 1;
                 break;
             case HitSoundType::FINISH:
-                sound_name.append("FINISH");
+                hit_idx = 2;
                 break;
             case HitSoundType::CLAP:
-                sound_name.append("CLAP");
+                hit_idx = 3;
                 break;
         }
 
-        sound_name.append("_SND");
-
-        return resourceManager->getSound(sound_name);
+        return resourceManager->getSound(SOUND_NAMES[set_idx][slider_idx][hit_idx]);
     };
 
     auto get_map_sound = [get_default_sound](i32 set, i32 hitSound) {

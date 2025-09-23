@@ -506,13 +506,13 @@ void ResourceManager::removeResourceFromTypedVector(Resource *res) {
     }
 }
 
-void ResourceManager::notExistLog(const std::string &resourceName) {
+void ResourceManager::notExistLog(std::string_view resourceName) {
     if(cv::debug_rm.getBool()) {
         debugLog(R"(ResourceManager WARNING: Resource "{:s}" does not exist!)", resourceName);
     }
 }
 
-void ResourceManager::alreadyLoadedLog(const std::string &resourceName) {
+void ResourceManager::alreadyLoadedLog(std::string_view resourceName) {
     if(cv::debug_rm.getBool()) {
         debugLog(R"(ResourceManager NOTICE: Resource "{:s}" already loaded.)", resourceName);
     }
