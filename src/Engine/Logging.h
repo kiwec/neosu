@@ -52,7 +52,7 @@ class Logger final {
         if(likely(wasInit))
             s_logger->log(loc, spdlog::level::info, fmt, std::forward<Args>(args)...);
         else
-            printf(fmt::format(fmt, std::forward<Args>(args)...).c_str());
+            printf("%s\n", fmt::format(fmt, std::forward<Args>(args)...).c_str());
     }
 
     // raw logging without any context
@@ -61,7 +61,7 @@ class Logger final {
         if(likely(wasInit))
             s_raw_logger->log(spdlog::level::info, fmt, std::forward<Args>(args)...);
         else
-            printf(fmt::format(fmt, std::forward<Args>(args)...).c_str());
+            printf("%s\n", fmt::format(fmt, std::forward<Args>(args)...).c_str());
     }
 
     // same as above but for non-format strings
@@ -70,7 +70,7 @@ class Logger final {
         if(likely(wasInit))
             s_logger->log(loc, spdlog::level::info, logString);
         else
-            printf(logString.c_str());
+            printf("%s\n", logString.c_str());
     }
 
     template <typename... Args>
@@ -78,7 +78,7 @@ class Logger final {
         if(likely(wasInit))
             s_raw_logger->log(spdlog::level::info, logString);
         else
-            printf(logString.c_str());
+            printf("%s\n", logString.c_str());
     }
 
 // msvc always adds the full scope to __FUNCTION__, which we don't want for non-debug builds
