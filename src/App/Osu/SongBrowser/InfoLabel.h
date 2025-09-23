@@ -51,6 +51,7 @@ class InfoLabel : public CBaseUIButton {
     McFont *font;
 
     int iMargin;
+    f32 fGlobalScale;
     f32 fTitleScale;
     f32 fSubTitleScale;
     f32 fSongInfoScale;

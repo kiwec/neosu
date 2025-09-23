@@ -29,11 +29,12 @@ InfoLabel::InfoLabel(float xPos, float yPos, float xSize, float ySize, UString n
 
     this->iMargin = 8;
 
-    this->fTitleScale = SongBrowser::getUIScale2(1.f);
-    this->fSubTitleScale = SongBrowser::getUIScale2(0.65f);
-    this->fSongInfoScale = SongBrowser::getUIScale2(0.8f);
-    this->fDiffInfoScale = SongBrowser::getUIScale2(0.65f);
-    this->fOffsetInfoScale = SongBrowser::getUIScale2(0.65f);
+    this->fGlobalScale = 1.f;
+    this->fTitleScale = 1.f * fGlobalScale;
+    this->fSubTitleScale = 0.65f * fGlobalScale;
+    this->fSongInfoScale = 0.8f * fGlobalScale;
+    this->fDiffInfoScale = 0.65f * fGlobalScale;
+    this->fOffsetInfoScale = 0.65f * fGlobalScale;
 
     this->sArtist = "Artist";
     this->sTitle = "Title";
@@ -128,9 +129,10 @@ void InfoLabel::draw() {
     g->popTransform();
 
     // draw song info (length, bpm, objects)
-    const Color songInfoColor = (osu->getMapInterface()->getSpeedMultiplier() != 1.0f
-                                     ? (osu->getMapInterface()->getSpeedMultiplier() > 1.0f ? 0xffff7f7f : 0xffadd8e6)
-                                     : 0xffffffff);
+    const Color songInfoColor =
+        (osu->getMapInterface()->getSpeedMultiplier() != 1.0f
+             ? (osu->getMapInterface()->getSpeedMultiplier() > 1.0f ? 0xffff7f7f : 0xffadd8e6)
+             : 0xffffffff);
     g->pushTransform();
     {
         const float scale = this->fSongInfoScale * globalScale * 0.9f;
@@ -194,11 +196,14 @@ void InfoLabel::draw() {
 void InfoLabel::mouse_update(bool *propagate_clicks) {
     if(!this->bVisible) return;
 
-    this->fTitleScale = SongBrowser::getUIScale2(1.f);
-    this->fSubTitleScale = SongBrowser::getUIScale2(0.65f);
-    this->fSongInfoScale = SongBrowser::getUIScale2(0.8f);
-    this->fDiffInfoScale = SongBrowser::getUIScale2(0.65f);
-    this->fOffsetInfoScale = SongBrowser::getUIScale2(0.65f);
+    auto screen = osu->getVirtScreenSize();
+    bool is_widescreen = ((i32)(std::max(0, (i32)((screen.x - (screen.y * 4.f / 3.f)) / 2.f))) > 0);
+    this->fGlobalScale = screen.x / (is_widescreen ? 1366.f : 1024.f);
+    this->fTitleScale = 1.f * fGlobalScale;
+    this->fSubTitleScale = 0.65f * fGlobalScale;
+    this->fSongInfoScale = 0.8f * fGlobalScale;
+    this->fDiffInfoScale = 0.65f * fGlobalScale;
+    this->fOffsetInfoScale = 0.65f * fGlobalScale;
 
     CBaseUIButton::mouse_update(propagate_clicks);
 
@@ -212,7 +217,8 @@ void InfoLabel::mouse_update(bool *propagate_clicks) {
         const float hitWindow300RoundedCompensated = ((int)pf->getHitWindow300() - 0.5f) * speedMultiplierInv;
         const float hitWindow100RoundedCompensated = ((int)pf->getHitWindow100() - 0.5f) * speedMultiplierInv;
         const float hitWindow50RoundedCompensated = ((int)pf->getHitWindow50() - 0.5f) * speedMultiplierInv;
-        const float hitobjectRadiusRoundedCompensated = (GameRules::getRawHitCircleDiameter(pf->getCS()) / 2.0f);
+        const float hitobjectRadiusRoundedCompensated =
+            (GameRules::getRawHitCircleDiameter(pf->getCS()) / 2.0f);
 
         const auto &bmDiff2{pf->beatmap};
         const auto &tooltipOverlay{osu->getTooltipOverlay()};
@@ -234,7 +240,8 @@ void InfoLabel::mouse_update(bool *propagate_clicks) {
 
                 float opm{0.f}, cpm{0.f}, spm{0.f};
                 if(lengthMS > 0) {
-                    const float durMinutes{(static_cast<float>(lengthMS) / 1000.0f / 60.0f) / pf->getSpeedMultiplier()};
+                    const float durMinutes{(static_cast<float>(lengthMS) / 1000.0f / 60.0f) /
+                                           pf->getSpeedMultiplier()};
 
                     opm = static_cast<float>(numObjects) / durMinutes;
                     cpm = static_cast<float>(numCircles) / durMinutes;
@@ -242,9 +249,12 @@ void InfoLabel::mouse_update(bool *propagate_clicks) {
                 }
 
                 tooltipOverlay->addLine(UString::fmt("Circles: {:d}, Sliders: {:d}, Spinners: {:d}", numCircles,
-                                                     numSliders, std::max(0, numObjects - numCircles - numSliders)));
-                tooltipOverlay->addLine(UString::fmt("OPM: {:d}, CPM: {:d}, SPM: {:d}", (int)opm, (int)cpm, (int)spm));
-                tooltipOverlay->addLine(UString::fmt("ID: {:d}, SetID: {:d}", bmDiff2->getID(), bmDiff2->getSetID()));
+                                                     numSliders,
+                                                     std::max(0, numObjects - numCircles - numSliders)));
+                tooltipOverlay->addLine(
+                    UString::fmt("OPM: {:d}, CPM: {:d}, SPM: {:d}", (int)opm, (int)cpm, (int)spm));
+                tooltipOverlay->addLine(
+                    UString::fmt("ID: {:d}, SetID: {:d}", bmDiff2->getID(), bmDiff2->getSetID()));
                 tooltipOverlay->addLine(UString::fmt("MD5: {:s}", bmDiff2->getMD5Hash().string()));
                 // mostly for debugging
                 if(keyboard->isShiftDown()) {
