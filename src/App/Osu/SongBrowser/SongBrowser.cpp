@@ -64,6 +64,30 @@
 const Color highlightColor = argb(255, 0, 255, 0);
 const Color defaultColor = argb(255, 255, 255, 255);
 
+// Scale only when widescreen, with 1366x768 being the 'base' resolution
+// (weird logic, used for pixel-accurate songbrowser skinning)
+f32 SongBrowser::getUIScale() {
+    auto screen = osu->getVirtScreenSize();
+    bool is_widescreen = (screen.x / screen.y) > (4.f / 3.f);
+    return is_widescreen ? (screen.x / 1366.f) : 1.f;
+}
+
+// XXX: remove this (or the one above, or both)
+f32 SongBrowser::getUIScale2() {
+    auto screen = osu->getVirtScreenSize();
+    bool is_widescreen = (screen.x / screen.y) > (4.f / 3.f);
+    return screen.x / (is_widescreen ? 1366.f : 1024.f);
+}
+
+// Because we draw skin elements 'manually' to enforce the correct scaling,
+// this helper function automatically adjusts for 2x image resolution.
+f32 SongBrowser::getSkinScale(SkinImage *img) { return SongBrowser::getUIScale() * (img->is_2x ? 0.5f : 1.f); }
+f32 SongBrowser::getSkinScale2(SkinImage *img) { return SongBrowser::getUIScale2() * (img->is_2x ? 0.5f : 1.f); }
+
+vec2 SongBrowser::getSkinDimensions(SkinImage *img) {
+    return img->getImageSizeForCurrentFrame() * SongBrowser::getSkinScale(img);
+}
+
 class SongBrowserBackgroundSearchMatcher final : public Resource {
     NOCOPY_NOMOVE(SongBrowserBackgroundSearchMatcher)
    public:
@@ -610,10 +634,7 @@ void SongBrowser::draw() {
     }
 
     {
-        auto screen = osu->getVirtScreenSize();
-        bool is_widescreen = ((i32)(std::max(0, (i32)((screen.x - (screen.y * 4.f / 3.f)) / 2.f))) > 0);
-        f32 global_scale = screen.x / (is_widescreen ? 1366.f : 1024.f);
-        f32 mode_osu_scale = global_scale * (osu->getSkin()->mode_osu->is_2x ? 0.5f : 1.f);
+        f32 mode_osu_scale = SongBrowser::getSkinScale2(osu->getSkin()->mode_osu);
 
         g->setColor(0xffffffff);
         if(cv::avoid_flashes.getBool()) {
@@ -761,11 +782,11 @@ void SongBrowser::draw() {
     g->pushTransform();
     {
         auto screen = osu->getVirtScreenSize();
-        bool is_widescreen = ((i32)(std::max(0, (i32)((screen.x - (screen.y * 4.f / 3.f)) / 2.f))) > 0);
+        bool is_widescreen = (screen.x / screen.y) > (4.f / 3.f);
 
         Image *topbar = osu->getSkin()->songSelectTop;
         f32 scale = (f32)osu->getVirtScreenWidth() / (f32)topbar->getWidth();
-        if(!is_widescreen) scale /= 0.75;
+        if(!is_widescreen) scale /= 0.75;  // XXX: stupid
 
         g->scale(scale, scale);
         g->drawImage(topbar, AnchorPoint::TOP_LEFT);
@@ -2086,25 +2107,11 @@ bool SongBrowser::searchMatcher(const DatabaseBeatmap *databaseBeatmap,
 void SongBrowser::updateLayout() {
     ScreenBackable::updateLayout();
 
-    auto screen = osu->getVirtScreenSize();
-    bool is_widescreen = ((i32)(std::max(0, (i32)((screen.x - (screen.y * 4.f / 3.f)) / 2.f))) > 0);
-    f32 global_scale = screen.x / (is_widescreen ? 1366.f : 1024.f);
-
-    /* TODO: use?
-     * const float uiScale = cv::ui_scale.getFloat();
-     */
-
     const float dpiScale = Osu::getUIScale();
-
     const int margin = 5 * dpiScale;
 
     // topbar left
-    // TODO @kiwec: move score sorting method to settings menu. instead make the dropdown
-    //              select between Local/Country/Friends/Global
-    // TODO @kiwec: have checkbox in settings to toggle displaying non-vanilla scores
-    // TODO @kiwec: have checkbox in settings to toggle only showing selected mods (?)
-
-    this->topbarLeft->setSize(global_scale * 390.f, global_scale * 145.f);
+    this->topbarLeft->setSize(SongBrowser::getUIScale2(390.f), SongBrowser::getUIScale2(145.f));
     this->songInfo->setRelPos(margin, margin);
     this->songInfo->setSize(
         this->topbarLeft->getSize().x - margin,
@@ -2134,7 +2141,8 @@ void SongBrowser::updateLayout() {
 
     // topbar right
     this->topbarRight->setPosX(osu->getVirtScreenWidth() / 2);
-    this->topbarRight->setSize(osu->getVirtScreenWidth() - this->topbarRight->getPos().x, 80.f * global_scale);
+    this->topbarRight->setSize(osu->getVirtScreenWidth() - this->topbarRight->getPos().x,
+                               SongBrowser::getUIScale2(80.f));
 
     float btn_margin = 10.f * dpiScale;
     this->sortButton->setSize(200.f * dpiScale, 30.f * dpiScale);
@@ -2181,7 +2189,7 @@ void SongBrowser::updateLayout() {
                            this->topbarRight->getPos().y + (this->topbarRight->getSize().y * 0.9));
     this->carousel->setSize(
         osu->getVirtScreenWidth() - (this->topbarLeft->getPos().x + this->topbarLeft->getSize().x),
-        (osu->getVirtScreenHeight() - this->carousel->getPos().y - (bottombar_get_hardcoded_height() * 0.75f)));
+        (osu->getVirtScreenHeight() - this->carousel->getPos().y - (bottombar_get_min_height() * 0.75f)));
 
     this->updateSongButtonLayout();
 
@@ -2194,10 +2202,6 @@ void SongBrowser::onBack() { osu->toggleSongBrowser(); }
 void SongBrowser::updateScoreBrowserLayout() {
     const float dpiScale = Osu::getUIScale();
 
-    auto screen = osu->getVirtScreenSize();
-    bool is_widescreen = ((i32)(std::max(0, (i32)((screen.x - (screen.y * 4.f / 3.f)) / 2.f))) > 0);
-    f32 global_scale = screen.x / (is_widescreen ? 1366.f : 1024.f);
-
     const bool shouldScoreBrowserBeVisible =
         (cv::scores_enabled.getBool() && cv::songbrowser_scorebrowser_enabled.getBool());
     if(shouldScoreBrowserBeVisible != this->scoreBrowser->isVisible())
@@ -2205,19 +2209,16 @@ void SongBrowser::updateScoreBrowserLayout() {
 
     const int scoreButtonWidthMax = this->topbarLeft->getSize().x;
 
-    /* TODO: use?
-     * f32 back_btn_height = osu->getSkin()->getMenuBack2()->getSize().y;
-     */
     f32 browserHeight = osu->getVirtScreenHeight() -
                         (get_bottombar_height() + (this->topbarLeft->getPos().y + this->topbarLeft->getSize().y)) +
                         2 * dpiScale;
     this->scoreBrowser->setPos(this->topbarLeft->getPos().x + 2 * dpiScale,
                                this->topbarLeft->getPos().y + this->topbarLeft->getSize().y + 4 * dpiScale);
     this->scoreBrowser->setSize(scoreButtonWidthMax, browserHeight);
-    const i32 scoreHeight = 53.f * global_scale;
+    const i32 scoreHeight = SongBrowser::getUIScale2(53.f);
 
     // In stable, even when looking at local scores, there is space where the "local best" would be.
-    f32 local_best_size = scoreHeight + 61 * global_scale;
+    f32 local_best_size = scoreHeight + SongBrowser::getUIScale2(61);
     browserHeight -= local_best_size;
     this->scoreBrowser->setSize(this->scoreBrowser->getSize().x, browserHeight);
     this->scoreBrowser->setScrollSizeToContent();

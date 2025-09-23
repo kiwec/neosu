@@ -50,7 +50,7 @@ class Osu final : public MouseListener, public KeyboardListener {
     static float getImageScaleToFillResolution(Image *img, vec2 resolution);
     static float getImageScale(vec2 size, float osuSize);
     static float getImageScale(Image *img, float osuSize);
-    static float getUIScale(float osuResolutionRatio);
+    static float getUIScale(float osuSize);
     static float getUIScale();  // NOTE: includes premultiplied dpi scale!
 
     Osu();

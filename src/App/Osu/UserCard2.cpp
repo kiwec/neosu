@@ -31,10 +31,7 @@ UserCard2::~UserCard2() { SAFE_DELETE(this->avatar); }
 void UserCard2::draw() {
     if(!this->bVisible) return;
 
-    auto screen = osu->getVirtScreenSize();
-    bool is_widescreen = ((i32)(std::max(0, (i32)((screen.x - (screen.y * 4.f / 3.f)) / 2.f))) > 0);
-    f32 global_scale = screen.x / (is_widescreen ? 1366.f : 1024.f);
-    auto card_size = vec2{global_scale * 325, global_scale * 78};
+    auto card_size = vec2{SongBrowser::getUIScale2(325), SongBrowser::getUIScale2(78)};
     this->setSize(card_size);
 
     // position user icon

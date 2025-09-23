@@ -1222,7 +1222,8 @@ void Osu::toggleSongBrowser() {
     this->songBrowser->setVisible(!this->songBrowser->isVisible());
 
     // try refreshing if we have no beatmaps and are not already refreshing
-    if(this->songBrowser->isVisible() && this->songBrowser->beatmapsets.size() == 0 && !this->songBrowser->bBeatmapRefreshScheduled) {
+    if(this->songBrowser->isVisible() && this->songBrowser->beatmapsets.size() == 0 &&
+       !this->songBrowser->bBeatmapRefreshScheduled) {
         this->songBrowser->refreshBeatmaps();
     }
 
@@ -1844,8 +1845,8 @@ void Osu::updateConfineCursor() {
     }
 
     if(cv::debug_mouse.getBool())
-        debugLog("confined: {}, cliprect: {},{},{},{}", confine_cursor, clip.getMinX(), clip.getMinY(),
-                 clip.getMaxX(), clip.getMaxY());
+        debugLog("confined: {}, cliprect: {},{},{},{}", confine_cursor, clip.getMinX(), clip.getMinY(), clip.getMaxX(),
+                 clip.getMaxY());
 
     env->setCursorClip(confine_cursor, clip);
 }
@@ -1955,7 +1956,11 @@ void Osu::onUserCardChange(const UString &new_username) {
 }
 
 float Osu::getImageScaleToFitResolution(vec2 size, vec2 resolution) {
-    return resolution.x / size.x > resolution.y / size.y ? resolution.y / size.y : resolution.x / size.x;
+    if(resolution.x / size.x > resolution.y / size.y) {
+        return resolution.y / size.y;
+    } else {
+        return resolution.x / size.x;
+    }
 }
 
 float Osu::getImageScaleToFitResolution(Image *img, vec2 resolution) {
@@ -1963,7 +1968,11 @@ float Osu::getImageScaleToFitResolution(Image *img, vec2 resolution) {
 }
 
 float Osu::getImageScaleToFillResolution(vec2 size, vec2 resolution) {
-    return resolution.x / size.x < resolution.y / size.y ? resolution.y / size.y : resolution.x / size.x;
+    if(resolution.x / size.x < resolution.y / size.y) {
+        return resolution.y / size.y;
+    } else {
+        return resolution.x / size.x;
+    }
 }
 
 float Osu::getImageScaleToFillResolution(Image *img, vec2 resolution) {
@@ -1971,55 +1980,47 @@ float Osu::getImageScaleToFillResolution(Image *img, vec2 resolution) {
 }
 
 float Osu::getImageScale(vec2 size, float osuSize) {
-    int swidth = osu->getVirtScreenWidth();
-    int sheight = osu->getVirtScreenHeight();
+    auto screen = osu ? osu->getVirtScreenSize() : engine->getScreenSize();
+    if(screen.x * 3 > screen.y * 4) {
+        // Reduce width to fit 4:3
+        screen.x = screen.y * 4 / 3;
+    } else {
+        // Reduce height to fit 4:3
+        screen.y = screen.x * 3 / 4;
+    }
 
-    if(swidth * 3 > sheight * 4)
-        swidth = sheight * 4 / 3;
-    else
-        sheight = swidth * 3 / 4;
-
-    const float xMultiplier = swidth / osuBaseResolution.x;
-    const float yMultiplier = sheight / osuBaseResolution.y;
-
-    const float xDiameter = osuSize * xMultiplier;
-    const float yDiameter = osuSize * yMultiplier;
-
-    return xDiameter / size.x > yDiameter / size.y ? xDiameter / size.x : yDiameter / size.y;
+    f32 x = screen.x / Osu::osuBaseResolution.x / size.x;
+    f32 y = screen.y / Osu::osuBaseResolution.y / size.y;
+    return osuSize * std::max(x, y);
 }
 
 float Osu::getImageScale(Image *img, float osuSize) {
     return getImageScale(vec2(img->getWidth(), img->getHeight()), osuSize);
 }
 
-float Osu::getUIScale(float osuResolutionRatio) {
-    int swidth = osu->getVirtScreenWidth();
-    int sheight = osu->getVirtScreenHeight();
+float Osu::getUIScale(float osuSize) {
+    // return osuSize * Osu::getImageScaleToFitResolution(Osu::osuBaseResolution, osu->getVirtScreenSize());
 
-    if(swidth * 3 > sheight * 4)
-        swidth = sheight * 4 / 3;
-    else
-        sheight = swidth * 3 / 4;
-
-    const float xMultiplier = swidth / osuBaseResolution.x;
-    const float yMultiplier = sheight / osuBaseResolution.y;
-
-    const float xDiameter = osuResolutionRatio * xMultiplier;
-    const float yDiameter = osuResolutionRatio * yMultiplier;
-
-    return xDiameter > yDiameter ? xDiameter : yDiameter;
+    auto screen = osu ? osu->getVirtScreenSize() : engine->getScreenSize();
+    if(screen.x * 3 > screen.y * 4) {
+        return osuSize * screen.y / Osu::osuBaseResolution.y;
+    } else {
+        return osuSize * screen.x / Osu::osuBaseResolution.x;
+    }
 }
 
 float Osu::getUIScale() {
-    if(osu != nullptr) {
-        if(osu->getVirtScreenWidth() < cv::ui_scale_to_dpi_minimum_width.getInt() ||
-           osu->getVirtScreenHeight() < cv::ui_scale_to_dpi_minimum_height.getInt())
-            return cv::ui_scale.getFloat();
-    } else if(engine->getScreenWidth() < cv::ui_scale_to_dpi_minimum_width.getInt() ||
-              engine->getScreenHeight() < cv::ui_scale_to_dpi_minimum_height.getInt())
-        return cv::ui_scale.getFloat();
+    f32 scale = cv::ui_scale.getFloat();
 
-    return ((cv::ui_scale_to_dpi.getBool() ? env->getDPIScale() : 1.0f) * cv::ui_scale.getFloat());
+    if(cv::ui_scale_to_dpi.getBool()) {
+        f32 w = osu ? osu->getVirtScreenWidth() : engine->getScreenWidth();
+        f32 h = osu ? osu->getVirtScreenHeight() : engine->getScreenHeight();
+        if(w >= cv::ui_scale_to_dpi_minimum_width.getInt() && h >= cv::ui_scale_to_dpi_minimum_height.getInt()) {
+            scale *= env->getDPIScale();
+        }
+    }
+
+    return scale;
 }
 
 void Osu::setupSoloud() {

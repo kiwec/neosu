@@ -12,4 +12,4 @@ void update_bottombar(bool* propagate_clicks);
 void draw_bottombar();
 void press_bottombar_button(i32 btn_index);
 f32 get_bottombar_height();
-f32 bottombar_get_hardcoded_height();
+f32 bottombar_get_min_height();

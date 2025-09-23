@@ -218,15 +218,12 @@ void SpectatorScreen::mouse_update(bool *propagate_clicks) {
     this->background->setPos(resolution.x / 2.0 - bgsize.x / 2.0, resolution.y / 2.0 - bgsize.y / 2.0);
 
     {
-        auto screen = osu->getVirtScreenSize();
-        bool is_widescreen = ((i32)(std::max(0, (i32)((screen.x - (screen.y * 4.f / 3.f)) / 2.f))) > 0);
-        auto global_scale = is_widescreen ? (screen.x / 1366.f) : 1.f;
-
         this->spectating->setSizeToContent();
         this->spectating->setRelPos(bgsize.x / 2.f - this->spectating->getSize().x / 2.f,
                                     bgsize.y / 2.f - 100 * dpiScale);
 
-        this->userCard->setSize(global_scale * 640 * 0.5, global_scale * 150 * 0.5);
+        // XXX: don't use SongBrowser::getUIScale
+        this->userCard->setSize(SongBrowser::getUIScale(320), SongBrowser::getUIScale(75));
         auto cardsize = this->userCard->getSize();
         this->userCard->setRelPos(bgsize.x / 2.f - cardsize.x / 2.f, bgsize.y / 2.f - cardsize.y / 2.f);
 

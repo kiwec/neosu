@@ -59,12 +59,8 @@ void ScoreButton::draw() {
         Image *backgroundImage = osu->getSkin()->getMenuButtonBackground();
         g->pushTransform();
         {
-            auto screen = osu->getVirtScreenSize();
-            bool is_widescreen = ((i32)(std::max(0, (i32)((screen.x - (screen.y * 4.f / 3.f)) / 2.f))) > 0);
-            f32 global_scale = screen.x / (is_widescreen ? 1366.f : 1024.f);
-
-            f32 scale = global_scale * (osu->getSkin()->isMenuButtonBackground2x() ? 0.5f : 1.f);
-            scale *= 0.555f;  // idk
+            f32 scale = SongBrowser::getUIScale2(osu->getSkin()->isMenuButtonBackground2x() ? 0.5f : 1.f);
+            scale *= 0.555f;  // idk (lol, idiot kiwec)
 
             g->scale(scale, scale);
             g->translate(this->vPos.x, this->vPos.y + this->vSize.y / 2);

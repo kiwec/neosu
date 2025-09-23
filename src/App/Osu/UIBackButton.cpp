@@ -11,8 +11,6 @@
 #include "SkinImage.h"
 #include "SoundEngine.h"
 
-
-
 UIBackButton::UIBackButton(float xPos, float yPos, float xSize, float ySize, UString name)
     : CBaseUIButton(xPos, yPos, xSize, ySize, std::move(name), "") {
     this->fAnimation = 0.0f;
@@ -69,10 +67,8 @@ void UIBackButton::onMouseOutside() {
 }
 
 void UIBackButton::updateLayout() {
-    const float uiScale = cv::ui_scale.getFloat();
-    vec2 newSize = osu->getSkin()->getMenuBack2()->getSize() * uiScale;
-    this->fImageScale = (newSize.y / osu->getSkin()->getMenuBack2()->getSize().y);
-    this->setSize(newSize);
+    this->fImageScale = Osu::getUIScale();
+    this->setSize(osu->getSkin()->getMenuBack2()->getSize() * this->fImageScale);
 }
 
 void UIBackButton::resetAnimation() {

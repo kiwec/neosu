@@ -1119,10 +1119,8 @@ void Chat::updateUserList() {
         return;
     }
 
-    auto screen = osu->getVirtScreenSize();
-    bool is_widescreen = ((i32)(std::max(0, (i32)((screen.x - (screen.y * 4.f / 3.f)) / 2.f))) > 0);
-    auto global_scale = is_widescreen ? (screen.x / 1366.f) : 1.f;
-    auto card_size = vec2{global_scale * 640 * 0.5f, global_scale * 150 * 0.5f};
+    // XXX: don't use SongBrowser::getUIScale
+    auto card_size = vec2{SongBrowser::getUIScale(320), SongBrowser::getUIScale(75)};
 
     auto size = this->getSize();
     size.y = this->button_container->getPos().y;
