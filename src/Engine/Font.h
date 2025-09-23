@@ -191,6 +191,9 @@ class McFont final : public Resource {
     bool m_batchActive;
     bool m_bFreeTypeInitialized;
     bool m_bAntialiasing;
+
+    // should we look for fallbacks for this specific font face
+    bool m_bTryFindFallbacks;
 };
 
 #endif

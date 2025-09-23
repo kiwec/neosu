@@ -57,6 +57,7 @@ McFont::McFont(std::string filepath, int fontSize, bool antialiasing, int fontDP
     for(int i = 32; i < 128; i++) {
         characters.push_back(static_cast<wchar_t>(i));
     }
+    m_bTryFindFallbacks = true;
     constructor(characters, fontSize, antialiasing, fontDPI);
 }
 
@@ -65,6 +66,7 @@ McFont::McFont(std::string filepath, const std::vector<wchar_t> &characters, int
     : Resource(std::move(filepath)),
       m_vao((Env::cfg(REND::GLES32) ? Graphics::PRIMITIVE::PRIMITIVE_TRIANGLES : Graphics::PRIMITIVE::PRIMITIVE_QUADS),
             Graphics::USAGE_TYPE::USAGE_DYNAMIC) {
+    m_bTryFindFallbacks = false;
     constructor(characters, fontSize, antialiasing, fontDPI);
 }
 
@@ -299,7 +301,8 @@ bool McFont::loadGlyphDynamic(wchar_t ch) {
         }
 
         // render glyph to slot (with padding, will clip if necessary)
-        renderGlyphToAtlas(ch, slot.x + TextureAtlas::ATLAS_PADDING, slot.y + TextureAtlas::ATLAS_PADDING, targetFace, true /*dynamic*/);
+        renderGlyphToAtlas(ch, slot.x + TextureAtlas::ATLAS_PADDING, slot.y + TextureAtlas::ATLAS_PADDING, targetFace,
+                           true /*dynamic*/);
 
         // update metrics with slot position
         GLYPH_METRICS &glyphMetrics = m_vGlyphMetrics[ch];
@@ -323,13 +326,14 @@ FT_Face McFont::getFontFaceForGlyph(wchar_t ch, int &fontIndex) {
     fontIndex = 0;
 
     // first check the quick lookup blacklist set
-    if(s_sharedFallbackFaceBlacklist.contains(ch)) {
+    if(m_bTryFindFallbacks && s_sharedFallbackFaceBlacklist.contains(ch)) {
         return nullptr;
     }
 
     // then check primary font
     FT_UInt glyphIndex = FT_Get_Char_Index(m_ftFace, ch);
     if(glyphIndex != 0) return m_ftFace;
+    if(!m_bTryFindFallbacks) return nullptr;
 
     // search through shared fallback fonts if initialized
     if(s_sharedFallbacksInitialized) {
@@ -861,7 +865,7 @@ const McFont::GLYPH_METRICS &McFont::getGlyphMetrics(wchar_t ch) const {
     if(it != m_vGlyphMetrics.end()) return it->second;
 
     // attempt dynamic loading for unicode characters
-    if(const_cast<McFont *>(this)->loadGlyphDynamic(ch)) {
+    if(m_bTryFindFallbacks && const_cast<McFont *>(this)->loadGlyphDynamic(ch)) {
         it = m_vGlyphMetrics.find(ch);
         if(it != m_vGlyphMetrics.end()) return it->second;
     }
@@ -903,8 +907,7 @@ bool McFont::initializeSharedFallbackFonts() {
 
     for(const auto &fontName : bundledFallbacks) {
         if(loadFallbackFont(UString{fontName}, false)) {
-            if(cv::r_debug_font_unicode.getBool())
-                debugLog("Font Info: Loaded bundled fallback font: {:s}", fontName);
+            if(cv::r_debug_font_unicode.getBool()) debugLog("Font Info: Loaded bundled fallback font: {:s}", fontName);
         }
     }
 
