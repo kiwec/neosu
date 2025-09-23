@@ -180,6 +180,18 @@ add_external_project(fmt
     BUILD_COMMAND cmake --build <BINARY_DIR> --config ${CMAKE_BUILD_TYPE} --parallel ${CPU_COUNT}
 )
 
+add_external_project(spdlog
+    DEPENDS fmt_external
+    CMAKE_ARGS
+        ${EXTERNAL_PROJECT_CMAKE_ARGS}
+        -DSPDLOG_FMT_EXTERNAL=ON
+        -DSPDLOG_INSTALL=ON
+        -DSPDLOG_BUILD_EXAMPLE=OFF
+        -DSPDLOG_NO_EXCEPTIONS=ON
+        -DSPDLOG_BUILD_SHARED=OFF
+    BUILD_COMMAND cmake --build <BINARY_DIR> --config ${CMAKE_BUILD_TYPE} --parallel ${CPU_COUNT}
+)
+
 add_external_project(glm
     CMAKE_ARGS
         ${EXTERNAL_PROJECT_CMAKE_ARGS}
@@ -415,6 +427,7 @@ ExternalProject_Add(neosu_main
         libpng_external
         freetype_external
         fmt_external
+        spdlog_external
         glm_external
         sdl3_external
         lzma_external

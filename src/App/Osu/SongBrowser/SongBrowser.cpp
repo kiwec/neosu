@@ -70,9 +70,9 @@ class SongBrowserBackgroundSearchMatcher final : public Resource {
     SongBrowserBackgroundSearchMatcher() : Resource() {}
     ~SongBrowserBackgroundSearchMatcher() override { this->destroy(); }
 
-    [[nodiscard]] constexpr bool isDead() const { return this->bDead.load(); }
-    constexpr void kill() { this->bDead = true; }
-    constexpr void revive() { this->bDead = false; }
+    [[nodiscard]] inline bool isDead() const { return this->bDead.load(); }
+    inline void kill() { this->bDead = true; }
+    inline void revive() { this->bDead = false; }
 
     inline void setSongButtonsAndSearchString(const std::vector<SongButton *> &songButtons,
                                               const std::string &searchString,

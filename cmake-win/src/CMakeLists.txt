@@ -84,6 +84,7 @@ find_package(SoLoud REQUIRED)
 
 # Find packages that provide config files
 find_package(fmt REQUIRED)
+find_package(spdlog REQUIRED)
 find_package(SDL3 REQUIRED)
 find_package(glm REQUIRED)
 
@@ -210,6 +211,7 @@ target_link_libraries(neosu PRIVATE
     PNG::PNG
     Freetype::Freetype
     fmt::fmt
+    spdlog::spdlog
     LibLZMA::LibLZMA
     CURL::libcurl
     SoundTouch::SoundTouch

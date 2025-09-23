@@ -307,8 +307,8 @@ AS_IF([test "x$enable_asan" = "xyes" || test "x$enable_tsan" = "xyes"], [
 AS_IF([test "x$enable_clang" = "xyes"], [
     CC=clang
     CXX=clang++
-    CXXFLAGS="$CXXFLAGS -Wno-error=unknown-argument -Wno-error=unused-command-line-argument -Wno-c2x-extensions"
-    CFLAGS="$CFLAGS -Wno-error=unknown-argument -Wno-error=unused-command-line-argument"
+    CXXFLAGS="$CXXFLAGS -Qunused-arguments -Wno-c2x-extensions"
+    CFLAGS="$CFLAGS -Qunused-arguments"
     LDFLAGS="$LDFLAGS"
     CLANG=yes
     _cid="Clang"
@@ -829,6 +829,8 @@ CURL_MIN_VERSION=8.5.0
 CURL_BUILD_VERSION=8.15.0
 MPG123_MIN_VERSION=1.30.0
 MPG123_BUILD_VERSION=ec6ead5fc1102d64efbb6a04865f59454198c3fc # git mirror, latest as of June 16th, 2025 (next version after 1.33.0)
+SPDLOG_MIN_VERSION=1.15.0
+SPDLOG_BUILD_VERSION=1.15.3
 
 # always build these from source if we want to use them
 #AC_SUBST([SOLOUD_VERSION], [1.1.9]) # my fork
@@ -872,6 +874,7 @@ AS_IF([test "x$enable_system_deps" != "xno"], [
     AS_IF([test "$with_soloud" = "yes"], [
         PKG_CHECK_AUTO([MPG123], [libmpg123 >= $MPG123_MIN_VERSION], [have_mpg123=yes], [have_mpg123=no])
     ])
+    PKG_CHECK_AUTO([SPDLOG], [spdlog >= $SPDLOG_MIN_VERSION], [have_spdlog=yes], [have_spdlog=no])
     AC_CHECK_HEADERS([glm/vec3.hpp], [have_glm=yes], [have_glm=no])
 ])
 
@@ -953,6 +956,12 @@ MPG123_PREFIX="${DEPS_PREFIX}"
 AC_SUBST([MPG123_VERSION])
 AC_SUBST([MPG123_PREFIX])
 
+AS_IF([test "x$have_spdlog" != "xyes"], [have_spdlog="build from source"])
+SPDLOG_VERSION=$SPDLOG_BUILD_VERSION
+SPDLOG_PREFIX="${DEPS_PREFIX}"
+AC_SUBST([SPDLOG_VERSION])
+AC_SUBST([SPDLOG_PREFIX])
+
 AS_IF([test "x$have_glm" != "xyes"], [have_glm="build from source"])
 AC_SUBST([GLM_VERSION], [1.0.1])
 AC_SUBST([GLM_PREFIX],[$DEPS_PREFIX])
@@ -969,6 +978,7 @@ AM_CONDITIONAL([BUILD_LZMA], [test "x$have_liblzma" != "xyes"])
 AM_CONDITIONAL([BUILD_LIBARCHIVE], [test "x$have_libarchive" != "xyes"])
 AM_CONDITIONAL([BUILD_CURL], [test "x$have_curl" != "xyes"])
 AM_CONDITIONAL([BUILD_MPG123], [test "$with_soloud" = "yes" && test "x$have_mpg123" != "xyes"])
+AM_CONDITIONAL([BUILD_SPDLOG], [test "x$have_spdlog" != "xyes"])
 AM_CONDITIONAL([BUILD_GLM], [test "x$have_glm" != "xyes"])
 AM_CONDITIONAL([BUILD_MIMALLOC], [{ test "x$enable_debug" != "xyes" || test "x$with_mimalloc" = "xyes"; } &&
                                 { { test "$SYSNAME" = "windows" && test "$host_cpu" = "i686" && test "x$with_mimalloc" = "xyes" ; } ||
@@ -1051,5 +1061,6 @@ Dependencies:
     liblzma:            ${have_liblzma-build from source}
     libarchive:         ${have_libarchive-build from source}
     mpg123:             ${have_mpg123-build from source}
+    spdlog:             ${have_spdlog-build from source}
     glm (math)          ${have_glm-build from source}
 ])

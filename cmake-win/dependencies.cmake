@@ -58,6 +58,11 @@ set(FMT_URL "https://github.com/fmtlib/fmt/archive/${FMT_VERSION}.tar.gz")
 set(FMT_HASH "SHA512=c4ab814c20fbad7e3f0ae169125a4988a2795631194703251481dc36b18da65c886c4faa9acd046b0a295005217b3689eb0126108a9ba5aac2ca909aae263c2f")
 set_download_name("fmt" "${FMT_VERSION}" "${FMT_URL}")
 
+set(SPDLOG_VERSION "1.15.3")
+set(SPDLOG_URL "https://github.com/gabime/spdlog/archive/refs/tags/v${SPDLOG_VERSION}.tar.gz")
+set(SPDLOG_HASH "SHA512=21c35f4091850ea3a0cd6a24867e06e943df70d76cd5a7ec0b15a33e0e9e0cc3584ed7930e1ac6f347e7e06f0e002d0e759884eaf05310014e24ea0e0419fcc4")
+set_download_name("spdlog" "${SPDLOG_VERSION}" "${SPDLOG_URL}")
+
 set(GLM_VERSION "1.0.1")
 set(GLM_URL "https://github.com/g-truc/glm/archive/refs/tags/${GLM_VERSION}.tar.gz")
 set(GLM_HASH "SHA512=c6c6fa1ea7a7e97820e36ee042a78be248ae828c99c1b1111080d9bf334a5160c9993a70312351c92a867cd49907c95f9f357c8dfe2bc29946da6e83e27ba20c")
