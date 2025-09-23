@@ -16,7 +16,7 @@ namespace BassFuncs {
 template <typename T>
 T loadFunction(SDL_SharedObject *lib, const char *funcName) {
     T func = reinterpret_cast<T>(SDL_LoadFunction(lib, funcName));
-    if(!func) debugLog("BassManager: Failed to load function {:s}: {:s}\n", funcName, SDL_GetError());
+    if(!func) debugLog("BassManager: Failed to load function {:s}: {:s}", funcName, SDL_GetError());
     return func;
 }
 
@@ -79,12 +79,12 @@ ALL_BASS_FUNCTIONS(DEFINE_BASS_FUNCTION)
                 SDL_SharedObject *currentLib = s_lib##libname;                                                        \
                 funcgroup(LOAD_FUNCTION) return true;                                                                 \
             }                                                                                                         \
-            debugLog("BassManager: version too old for {:s} (expected {:x}, got {:x})\n", path, ver, actualVersion); \
+            debugLog("BassManager: version too old for {:s} (expected {:x}, got {:x})", path, ver, actualVersion); \
             SDL_UnloadObject(s_lib##libname);                                                                         \
             s_lib##libname = nullptr;                                                                                 \
             (vfunc) = nullptr;                                                                                        \
         }                                                                                                             \
-        debugLog("BassManager: Failed to load " #libname " library: {:s}\n", SDL_GetError());                        \
+        debugLog("BassManager: Failed to load " #libname " library: {:s}", SDL_GetError());                        \
         return false;                                                                                                 \
     }
 
@@ -128,7 +128,7 @@ HPLUGIN loadPlugin(const std::string &pluginname) {
 
     if(ret) {
         if(cv::debug_snd.getBool())
-            debugLog("loaded {:s} version {:#x}\n", pluginname.c_str(), BASS_PluginGetInfo(ret)->version);
+            debugLog("loaded {:s} version {:#x}", pluginname.c_str(), BASS_PluginGetInfo(ret)->version);
         BASS_PluginEnable(ret, true);
     } else {
         failedLoad = std::string(pluginname);
@@ -345,7 +345,7 @@ static std::string getBassErrorStringFromCode(int code) {
 std::string printBassError(const std::string &context, int code) {
     std::string errstr{getBassErrorStringFromCode(code)};
 
-    debugLog("{:s} error: {:s}\n", context, errstr);
+    debugLog("{:s} error: {:s}", context, errstr);
     return fmt::format("{:s} error: {:s}", context, errstr);  // also return it
 }
 

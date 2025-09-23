@@ -173,7 +173,7 @@ const std::string &Environment::getExeFolder() {
 
 void Environment::openURLInDefaultBrowser(const std::string &url) noexcept {
     if(!SDL_OpenURL(url.c_str())) {
-        debugLog("Failed to open URL: {:s}\n", SDL_GetError());
+        debugLog("Failed to open URL: {:s}", SDL_GetError());
     }
 }
 
@@ -404,7 +404,7 @@ const std::string &Environment::getPathToSelf(const char *argv0) {
         pathStr = utf8path;
 #else
 #ifndef MCENGINE_PLATFORM_LINUX
-        printf("WARNING: unsupported platform for " __FUNCTION__ "\n");
+        debugLog("WARNING: unsupported platform");
 #endif
         std::string sp;
         std::ifstream("/proc/self/comm") >> sp;
@@ -617,12 +617,12 @@ void Environment::openFileBrowser(const std::string &initialpath) const noexcept
     std::string encodedPath =
         Env::cfg(OS::WINDOWS) ? fmt::format("file:///{}", pathToOpen) : filesystemPathToURI(fs::path{pathToOpen});
 
-    if(!SDL_OpenURL(encodedPath.c_str())) debugLog("Failed to open file URI {:s}: {:s}\n", encodedPath, SDL_GetError());
+    if(!SDL_OpenURL(encodedPath.c_str())) debugLog("Failed to open file URI {:s}: {:s}", encodedPath, SDL_GetError());
 }
 
 void Environment::focus() {
     if(!SDL_RaiseWindow(m_window)) {
-        debugLog("Failed to focus window: {:s}\n", SDL_GetError());
+        debugLog("Failed to focus window: {:s}", SDL_GetError());
         return;
     }
     m_bHasFocus = true;
@@ -632,7 +632,7 @@ void Environment::center() {
     syncWindow();
     const SDL_DisplayID di = SDL_GetDisplayForWindow(m_window);
     if(!di) {
-        debugLog("Failed to obtain SDL_DisplayID for window: {:s}\n", SDL_GetError());
+        debugLog("Failed to obtain SDL_DisplayID for window: {:s}", SDL_GetError());
         return;
     }
     setWindowPos(SDL_WINDOWPOS_CENTERED_DISPLAY(di), SDL_WINDOWPOS_CENTERED_DISPLAY(di));
@@ -640,7 +640,7 @@ void Environment::center() {
 
 void Environment::minimize() {
     if(!SDL_MinimizeWindow(m_window)) {
-        debugLog("Failed to minimize window: {:s}\n", SDL_GetError());
+        debugLog("Failed to minimize window: {:s}", SDL_GetError());
         return;
     }
     m_bHasFocus = false;
@@ -648,7 +648,7 @@ void Environment::minimize() {
 
 void Environment::maximize() {
     if(!SDL_MaximizeWindow(m_window)) {
-        debugLog("Failed to maximize window: {:s}\n", SDL_GetError());
+        debugLog("Failed to maximize window: {:s}", SDL_GetError());
         return;
     }
     m_bHasFocus = true;
@@ -659,7 +659,7 @@ void Environment::enableFullscreen() {
     // NOTE: "fake" fullscreen since we don't want a videomode change
     // XXX: (doesn't this make fullscreen_windowed_borderless irrelevant?)
     if(!SDL_SetWindowFullscreen(m_window, true)) {
-        debugLog("Failed to enable fullscreen: {:s}\n", SDL_GetError());
+        debugLog("Failed to enable fullscreen: {:s}", SDL_GetError());
         return;
     }
 
@@ -677,7 +677,7 @@ void Environment::enableFullscreen() {
 
 void Environment::disableFullscreen() {
     if(!SDL_SetWindowFullscreen(m_window, false)) {
-        debugLog("Failed to disable fullscreen: {:s}\n", SDL_GetError());
+        debugLog("Failed to disable fullscreen: {:s}", SDL_GetError());
         return;
     }
 
@@ -715,7 +715,7 @@ bool Environment::setWindowSize(int width, int height) { return SDL_SetWindowSiz
 // "You can't change the resizable state of a fullscreen window."
 void Environment::setWindowResizable(bool resizable) {
     if(!SDL_SetWindowResizable(m_window, resizable)) {
-        debugLog("Failed to set window {:s} (currently {:s}): {:s}\n", resizable ? "resizable" : "non-resizable",
+        debugLog("Failed to set window {:s} (currently {:s}): {:s}", resizable ? "resizable" : "non-resizable",
                  m_bResizable ? "resizable" : "non-resizable", SDL_GetError());
         return;
     }
@@ -741,12 +741,12 @@ void Environment::setMonitor(int monitor) {
             success = setWindowPos(SDL_WINDOWPOS_CENTERED_DISPLAY(monitor), SDL_WINDOWPOS_CENTERED_DISPLAY(monitor));
 
         if(!success)
-            debugLog("WARNING: failed to setMonitor({:d}), centering instead. SDL error: {:s}\n", monitor,
+            debugLog("WARNING: failed to setMonitor({:d}), centering instead. SDL error: {:s}", monitor,
                      SDL_GetError());
         else if(!(success = (monitor == getMonitor())))
-            debugLog("WARNING: setMonitor({:d}) didn't actually change the monitor, centering instead.\n", monitor);
+            debugLog("WARNING: setMonitor({:d}) didn't actually change the monitor, centering instead.", monitor);
     } else
-        debugLog("WARNING: tried to setMonitor({:d}) to invalid monitor, centering instead\n", monitor);
+        debugLog("WARNING: tried to setMonitor({:d}) to invalid monitor, centering instead", monitor);
 
     if(!success) center();
 
@@ -757,7 +757,7 @@ HWND Environment::getHwnd() const {
     HWND hwnd = nullptr;
 #if defined(MCENGINE_PLATFORM_WINDOWS)
     hwnd = (HWND)SDL_GetPointerProperty(SDL_GetWindowProperties(m_window), SDL_PROP_WINDOW_WIN32_HWND_POINTER, nullptr);
-    if(!hwnd) debugLog("(Windows) hwnd is null! SDL: {:s}\n", SDL_GetError());
+    if(!hwnd) debugLog("(Windows) hwnd is null! SDL: {:s}", SDL_GetError());
 #elif defined(__APPLE__)
     NSWindow *nswindow = (__bridge NSWindow *)SDL_GetPointerProperty(SDL_GetWindowProperties(m_window),
                                                                      SDL_PROP_WINDOW_COCOA_WINDOW_POINTER, nullptr);
@@ -773,7 +773,7 @@ HWND Environment::getHwnd() const {
         if(xdisplay && xwindow)
             hwnd = (HWND)xwindow;
         else
-            debugLog("(X11) no display/no surface! SDL: {:s}\n", SDL_GetError());
+            debugLog("(X11) no display/no surface! SDL: {:s}", SDL_GetError());
     } else if(SDL_strcmp(SDL_GetCurrentVideoDriver(), "wayland") == 0) {
         struct wl_display *display = (struct wl_display *)SDL_GetPointerProperty(
             SDL_GetWindowProperties(m_window), SDL_PROP_WINDOW_WAYLAND_DISPLAY_POINTER, nullptr);
@@ -782,7 +782,7 @@ HWND Environment::getHwnd() const {
         if(display && surface)
             hwnd = (HWND)surface;
         else
-            debugLog("(Wayland) no display/no surface! SDL: {:s}\n", SDL_GetError());
+            debugLog("(Wayland) no display/no surface! SDL: {:s}", SDL_GetError());
     }
 #endif
 
@@ -792,7 +792,7 @@ HWND Environment::getHwnd() const {
 vec2 Environment::getWindowPos() const {
     int x{0}, y{0};
     if(!SDL_GetWindowPosition(m_window, &x, &y)) {
-        debugLog("Failed to get window position (returning cached {},{}): {:s}\n", m_vLastKnownWindowPos.x,
+        debugLog("Failed to get window position (returning cached {},{}): {:s}", m_vLastKnownWindowPos.x,
                  m_vLastKnownWindowPos.y, SDL_GetError());
     } else {
         m_vLastKnownWindowPos = vec2{static_cast<float>(x), static_cast<float>(y)};
@@ -803,7 +803,7 @@ vec2 Environment::getWindowPos() const {
 vec2 Environment::getWindowSize() const {
     int width{320}, height{240};
     if(!SDL_GetWindowSize(m_window, &width, &height)) {
-        debugLog("Failed to get window size (returning cached {},{}): {:s}\n", m_vLastKnownWindowSize.x,
+        debugLog("Failed to get window size (returning cached {},{}): {:s}", m_vLastKnownWindowSize.x,
                  m_vLastKnownWindowSize.y, SDL_GetError());
     } else {
         m_vLastKnownWindowSize = vec2{static_cast<float>(width), static_cast<float>(height)};
@@ -878,7 +878,7 @@ void Environment::setRawInput(bool raw) {
     }
 
     if(!SDL_SetWindowRelativeMouseMode(m_window, raw)) {
-        debugLog("FIXME (handle error): SDL_SetWindowRelativeMouseMode failed: {:s}\n", SDL_GetError());
+        debugLog("FIXME (handle error): SDL_SetWindowRelativeMouseMode failed: {:s}", SDL_GetError());
         m_bActualRawInputState = !raw;
     }
 }
@@ -1042,7 +1042,7 @@ void Environment::initMonitors(bool force) const {
     }
 
     if(count < 1) {
-        debugLog("WARNING: No monitors found! Adding default monitor ...\n");
+        debugLog("WARNING: No monitors found! Adding default monitor ...");
         const vec2 windowSize = getWindowSize();
         m_mMonitors.try_emplace(1, McRect{{}, windowSize});
     }
@@ -1209,7 +1209,7 @@ std::vector<std::string> Environment::enumerateDirectory(const std::string &path
     }
 
     if(ec && contents.empty()) {
-        debugLog("Failed to enumerate directory: {}\n", ec.message());
+        debugLog("Failed to enumerate directory: {}", ec.message());
     }
 
     return contents;

@@ -29,8 +29,6 @@ class ConsoleBox : public CBaseUIElement {
     void processCommand(const std::string &command);
     void execConfigFile(std::string filename);
 
-    void log(UString text, Color textColor = 0xffffffff);
-
     // set
     void setRequireShiftToActivate(bool requireShiftToActivate) {
         this->bRequireShiftToActivate = requireShiftToActivate;
@@ -44,6 +42,9 @@ class ConsoleBox : public CBaseUIElement {
     [[nodiscard]] inline ConsoleBoxTextbox *getTextbox() const { return this->textbox; }
 
    private:
+    friend class Logger;
+    void log(const UString &text, Color textColor = 0xffffffff);
+
     struct LOG_ENTRY {
         UString text;
         Color textColor;

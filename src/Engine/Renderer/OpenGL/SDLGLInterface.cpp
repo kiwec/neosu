@@ -14,15 +14,15 @@
 void SDLGLInterface::load() {
 #ifndef MCENGINE_PLATFORM_WASM
     if(!gladLoadGL()) {
-        debugLog("gladLoadGL() error\n");
+        debugLog("gladLoadGL() error");
         engine->showMessageErrorFatal("OpenGL Error", "Couldn't gladLoadGL()!\nThe engine will exit now.");
         engine->shutdown();
         return;
     }
-    debugLog("gladLoadGL() version: {:d}.{:d}, EGL: {:s}\n", GLVersion.major, GLVersion.minor,
+    debugLog("gladLoadGL() version: {:d}.{:d}, EGL: {:s}", GLVersion.major, GLVersion.minor,
              !!SDL_EGL_GetCurrentDisplay() ? "true" : "false");
 #endif
-    debugLog("GL_VERSION string: {}\n", reinterpret_cast<const char *>(glGetString(GL_VERSION)));
+    debugLog("GL_VERSION string: {}", reinterpret_cast<const char *>(glGetString(GL_VERSION)));
 }
 
 SDLGLInterface::SDLGLInterface(SDL_Window *window)
@@ -188,13 +188,13 @@ void SDLGLInterface::setLog(bool on) {
 
 void APIENTRY SDLGLInterface::glDebugCB(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length,
                                         const GLchar *message, const void * /*userParam*/) {
-    Logger::logRaw("[GLDebugCB]\n");
-    Logger::logRaw("    message: {}\n", std::string(message, length));
-    Logger::logRaw("    time: {:.4f}\n", engine->getTime());
-    Logger::logRaw("    id: {}\n", id);
-    Logger::logRaw("    source: {}\n", glDebugSourceString(source));
-    Logger::logRaw("    type: {}\n", glDebugTypeString(type));
-    Logger::logRaw("    severity: {}\n", glDebugSeverityString(severity));
+    Logger::logRaw("[GLDebugCB]");
+    Logger::logRaw("    message: {}", std::string(message, length));
+    Logger::logRaw("    time: {:.4f}", engine->getTime());
+    Logger::logRaw("    id: {}", id);
+    Logger::logRaw("    source: {}", glDebugSourceString(source));
+    Logger::logRaw("    type: {}", glDebugTypeString(type));
+    Logger::logRaw("    severity: {}", glDebugSeverityString(severity));
 }
 
 #endif

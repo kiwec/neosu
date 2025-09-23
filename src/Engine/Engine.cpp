@@ -20,36 +20,29 @@
 #include "VisualProfiler.h"
 #include "SString.h"
 
-#include <cstdio>
+Image *MISSING_TEXTURE{nullptr};
 
-Image *MISSING_TEXTURE = nullptr;
+std::unique_ptr<Mouse> mouse{nullptr};
+std::unique_ptr<Keyboard> keyboard{nullptr};
+std::unique_ptr<App> app{nullptr};
+std::unique_ptr<Graphics> g{nullptr};
+std::unique_ptr<SoundEngine> soundEngine{nullptr};
+std::unique_ptr<ResourceManager> resourceManager{nullptr};
+std::unique_ptr<NetworkHandler> networkHandler{nullptr};
+std::unique_ptr<AnimationHandler> animationHandler{nullptr};
 
-std::unique_ptr<Mouse> mouse = nullptr;
-std::unique_ptr<Keyboard> keyboard = nullptr;
-std::unique_ptr<App> app = nullptr;
-std::unique_ptr<Graphics> g = nullptr;
-std::unique_ptr<SoundEngine> soundEngine = nullptr;
-std::unique_ptr<ResourceManager> resourceManager = nullptr;
-std::unique_ptr<NetworkHandler> networkHandler = nullptr;
-std::unique_ptr<AnimationHandler> animationHandler = nullptr;
+std::shared_ptr<ConsoleBox> Engine::consoleBox{nullptr};
 
-Engine *engine = nullptr;
-
-ConsoleBox *Engine::consoleBox = nullptr;
-
+Engine *engine{nullptr};
 Engine::Engine() {
     engine = this;
 
     this->guiContainer = nullptr;
     this->visualProfiler = nullptr;
 
-    // disable output buffering (else we get multithreading issues due to blocking)
-    setvbuf(stdout, nullptr, _IONBF, 0);
-    setvbuf(stderr, nullptr, _IONBF, 0);
-
     // print debug information
-    debugLog("-= Engine Startup =-\n");
-    debugLog("cmdline: {:s}\n", SString::join(env->getCommandLine()));
+    debugLog("-= Engine Startup =-");
+    debugLog("cmdline: {:s}", SString::join(env->getCommandLine()));
 
     // timing
     this->iFrameCount = 0;
@@ -70,13 +63,13 @@ Engine::Engine() {
     this->vNewScreenSize = this->vScreenSize;
     this->screenRect = {vec2{}, this->vScreenSize};
 
-    debugLog("Engine: ScreenSize = ({}x{})\n", (int)this->vScreenSize.x, (int)this->vScreenSize.y);
+    debugLog("Engine: ScreenSize = ({}x{})", (int)this->vScreenSize.x, (int)this->vScreenSize.y);
 
     // custom
     this->bDrawing = false;
 
     // initialize all engine subsystems (the order does matter!)
-    debugLog("Engine: Initializing subsystems ...\n");
+    debugLog("Engine: Initializing subsystems ...");
     {
         // input devices
         mouse = std::make_unique<Mouse>();
@@ -129,39 +122,43 @@ Engine::Engine() {
         // engine time starts now
         this->dTime = Timing::getTimeReal();
     }
-    debugLog("Engine: Initializing subsystems done.\n");
+    debugLog("Engine: Initializing subsystems done.");
 }
 
 Engine::~Engine() {
-    debugLog("-= Engine Shutdown =-\n");
+    debugLog("-= Engine Shutdown =-");
 
     // reset() all static unique_ptrs
-    debugLog("Engine: Freeing app...\n");
+    debugLog("Engine: Freeing app...");
     app.reset();
     osu = nullptr;
 
-    debugLog("Engine: Freeing engine GUI...\n");
-    this->consoleBox = nullptr;
+    debugLog("Engine: Freeing engine GUI...");
+    if(this->consoleBox && this->consoleBox.get()) {
+        // don't allow CBaseUI to delete it, it might still be in use (being flushed) by Logger
+        this->guiContainer->removeBaseUIElement(this->consoleBox.get());
+        this->consoleBox.reset();
+    }
     SAFE_DELETE(this->guiContainer);
 
     destroy_discord_sdk();
 
-    debugLog("Engine: Freeing animation handler...\n");
+    debugLog("Engine: Freeing animation handler...");
     animationHandler.reset();
 
-    debugLog("Engine: Freeing resource manager...\n");
+    debugLog("Engine: Freeing resource manager...");
     resourceManager.reset();
 
-    debugLog("Engine: Freeing Sound...\n");
+    debugLog("Engine: Freeing Sound...");
     soundEngine.reset();
 
-    debugLog("Engine: Freeing network handler...\n");
+    debugLog("Engine: Freeing network handler...");
     networkHandler.reset();
 
-    debugLog("Engine: Freeing graphics...\n");
+    debugLog("Engine: Freeing graphics...");
     g.reset();
 
-    debugLog("Engine: Freeing input devices...\n");
+    debugLog("Engine: Freeing input devices...");
     // first remove the mouse and keyboard from the input devices
     std::erase_if(this->inputDevices,
                   [](InputDevice *device) { return device == mouse.get() || device == keyboard.get(); });
@@ -178,10 +175,10 @@ Engine::~Engine() {
     mouse.reset();
     keyboard.reset();
 
-    debugLog("Engine: Freeing fonts...\n");
+    debugLog("Engine: Freeing fonts...");
     McFont::cleanupSharedResources();
 
-    debugLog("Engine: Goodbye.\n");
+    debugLog("Engine: Goodbye.");
 
     engine = nullptr;
 }
@@ -208,10 +205,10 @@ void Engine::loadApp() {
     }
 
     // load core default resources
-    debugLog("Engine: Loading default resources ...\n");
+    debugLog("Engine: Loading default resources ...");
     resourceManager->loadFont("weblysleekuisb.ttf", "FONT_DEFAULT", 15, true, env->getDPI());
     resourceManager->loadFont("tahoma.ttf", "FONT_CONSOLE", 8, false, 96);
-    debugLog("Engine: Loading default resources done.\n");
+    debugLog("Engine: Loading default resources done.");
 
     // load other default resources and things which are not strictly necessary
     {
@@ -229,8 +226,8 @@ void Engine::loadApp() {
 
         // create engine gui
         this->guiContainer = new CBaseUIContainer(0, 0, engine->getScreenWidth(), engine->getScreenHeight(), "");
-        Engine::consoleBox = new ConsoleBox();
-        this->guiContainer->addBaseUIElement(this->consoleBox);
+        Engine::consoleBox = std::make_shared<ConsoleBox>();
+        this->guiContainer->addBaseUIElement(this->consoleBox.get());
         this->visualProfiler = new VisualProfiler();
         this->guiContainer->addBaseUIElement(this->visualProfiler);
 
@@ -239,7 +236,7 @@ void Engine::loadApp() {
         keyboard->addListener(this, true);
     }
 
-    debugLog("Engine: Loading app ...\n");
+    debugLog("Engine: Loading app ...");
     {
         //*****************//
         //	Load App here  //
@@ -251,7 +248,7 @@ void Engine::loadApp() {
         // start listening to the default keyboard input
         keyboard->addListener(app.get());
     }
-    debugLog("Engine: Loading app done.\n");
+    debugLog("Engine: Loading app done.");
 }
 
 void Engine::onPaint() {
@@ -321,8 +318,8 @@ void Engine::onUpdate() {
         this->bResolutionChange = false;
 
         if(cv::debug_engine.getBool())
-            debugLog("Engine: executing pending queued resolution change to ({:d}, {:d})\n",
-                     (int)this->vNewScreenSize.x, (int)this->vNewScreenSize.y);
+            debugLog("Engine: executing pending queued resolution change to ({:d}, {:d})", (int)this->vNewScreenSize.x,
+                     (int)this->vNewScreenSize.y);
 
         this->onResolutionChange(this->vNewScreenSize);
     }
@@ -387,7 +384,7 @@ void Engine::onUpdate() {
 void Engine::onFocusGained() {
     this->bHasFocus = true;
 
-    if(cv::debug_engine.getBool()) debugLog("Engine: got focus\n");
+    if(cv::debug_engine.getBool()) debugLog("Engine: got focus");
 
     if(app != nullptr) app->onFocusGained();
 }
@@ -395,7 +392,7 @@ void Engine::onFocusGained() {
 void Engine::onFocusLost() {
     this->bHasFocus = false;
 
-    if(cv::debug_engine.getBool()) debugLog("Engine: lost focus\n");
+    if(cv::debug_engine.getBool()) debugLog("Engine: lost focus");
 
     for(auto &keyboard : this->keyboards) {
         keyboard->reset();
@@ -417,7 +414,7 @@ void Engine::onMinimized() {
     this->bIsMinimized = true;
     this->bHasFocus = false;
 
-    if(cv::debug_engine.getBool()) debugLog("Engine: window minimized\n");
+    if(cv::debug_engine.getBool()) debugLog("Engine: window minimized");
 
     if(app != nullptr) app->onMinimized();
 }
@@ -425,19 +422,19 @@ void Engine::onMinimized() {
 void Engine::onMaximized() {
     this->bIsMinimized = false;
 
-    if(cv::debug_engine.getBool()) debugLog("Engine: window maximized\n");
+    if(cv::debug_engine.getBool()) debugLog("Engine: window maximized");
 }
 
 void Engine::onRestored() {
     this->bIsMinimized = false;
 
-    if(cv::debug_engine.getBool()) debugLog("Engine: window restored\n");
+    if(cv::debug_engine.getBool()) debugLog("Engine: window restored");
 
     if(app != nullptr) app->onRestored();
 }
 
 void Engine::onResolutionChange(vec2 newResolution) {
-    debugLog(0xff00ff00, "Engine: onResolutionChange() ({:d}, {:d}) -> ({:d}, {:d})\n", (int)this->vScreenSize.x,
+    debugLog("Engine: onResolutionChange() ({:d}, {:d}) -> ({:d}, {:d})", (int)this->vScreenSize.x,
              (int)this->vScreenSize.y, (int)newResolution.x, (int)newResolution.y);
 
     // NOTE: Windows [Show Desktop] button in the superbar causes (0,0)
@@ -462,7 +459,7 @@ void Engine::onResolutionChange(vec2 newResolution) {
 }
 
 void Engine::onDPIChange() {
-    debugLog(0xff00ff00, "Engine: DPI changed to {:d}\n", env->getDPI());
+    debugLog("Engine: DPI changed to {:d}", env->getDPI());
 
     if(app != nullptr) app->onDPIChanged();
 }
@@ -531,22 +528,22 @@ void Engine::toggleFullscreen() {
 void Engine::disableFullscreen() { env->disableFullscreen(); }
 
 void Engine::showMessageInfo(const UString &title, const UString &message) {
-    debugLog("INFO: [{:s}] | {:s}\n", title.toUtf8(), message.toUtf8());
+    debugLog("INFO: [{:s}] | {:s}", title.toUtf8(), message.toUtf8());
     env->showMessageInfo(title, message);
 }
 
 void Engine::showMessageWarning(const UString &title, const UString &message) {
-    debugLog("WARNING: [{:s}] | {:s}\n", title.toUtf8(), message.toUtf8());
+    debugLog("WARNING: [{:s}] | {:s}", title.toUtf8(), message.toUtf8());
     env->showMessageWarning(title, message);
 }
 
 void Engine::showMessageError(const UString &title, const UString &message) {
-    debugLog("ERROR: [{:s}] | {:s}\n", title.toUtf8(), message.toUtf8());
+    debugLog("ERROR: [{:s}] | {:s}", title.toUtf8(), message.toUtf8());
     env->showMessageError(title, message);
 }
 
 void Engine::showMessageErrorFatal(const UString &title, const UString &message) {
-    debugLog("FATAL ERROR: [{:s}] | {:s}\n", title.toUtf8(), message.toUtf8());
+    debugLog("FATAL ERROR: [{:s}] | {:s}", title.toUtf8(), message.toUtf8());
     env->showMessageErrorFatal(title, message);
 }
 
@@ -573,7 +570,7 @@ void _restart(void) { engine->restart(); }
 
 void _printsize(void) {
     vec2 s = engine->getScreenSize();
-    debugLog("Engine: screenSize = ({:f}, {:f})\n", s.x, s.y);
+    debugLog("Engine: screenSize = ({:f}, {:f})", s.x, s.y);
 }
 
 void _borderless(void) {
@@ -602,6 +599,4 @@ void _errortest(void) {
         "This is an error message, fullscreen mode should be disabled and you should be able to read this");
 }
 
-void _dpiinfo(void) {
-    debugLog("env->getDPI() = {:d}, env->getDPIScale() = {:f}\n", env->getDPI(), env->getDPIScale());
-}
+void _dpiinfo(void) { debugLog("env->getDPI() = {:d}, env->getDPIScale() = {:f}", env->getDPI(), env->getDPIScale()); }

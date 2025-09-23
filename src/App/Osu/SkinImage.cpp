@@ -74,7 +74,7 @@ bool SkinImage::load(const std::string& skinElementName, const std::string& anim
 
             // sanity check
             if(frame > 511) {
-                debugLog("SkinImage WARNING: Force stopped loading after 512 frames!\n");
+                debugLog("SkinImage WARNING: Force stopped loading after 512 frames!");
                 break;
             }
         }

@@ -527,7 +527,7 @@ void RoomScreen::on_map_change() {
     // Results screen has map background and such showing, so prevent map from changing while we're on it.
     if(osu->getRankingScreen()->isVisible()) return;
 
-    debugLog("Map changed to ID {:d}, MD5 {:s}: {:s}\n", BanchoState::room.map_id, BanchoState::room.map_md5.string(),
+    debugLog("Map changed to ID {:d}, MD5 {:s}: {:s}", BanchoState::room.map_id, BanchoState::room.map_md5.string(),
              BanchoState::room.map_name.toUtf8());
     this->ready_btn->is_loading = true;
 
@@ -575,11 +575,11 @@ void RoomScreen::on_map_change() {
 
 void RoomScreen::on_room_joined(Room room) {
     BanchoState::room = room;
-    debugLog("Joined room #{:d}\nPlayers:\n", room.id);
+    debugLog("Joined room #{:d}\nPlayers:", room.id);
     for(auto &slot : room.slots) {
         if(slot.has_player()) {
             auto user_info = BANCHO::User::get_user_info(slot.player_id, true);
-            debugLog("- {:s}\n", user_info->name.toUtf8());
+            debugLog("- {:s}", user_info->name.toUtf8());
         }
     }
 
@@ -670,7 +670,7 @@ void RoomScreen::on_room_updated(Room room) {
 void RoomScreen::on_match_started(Room room) {
     BanchoState::room = std::move(room);
     if(osu->getMapInterface()->beatmap == nullptr) {
-        debugLog("We received MATCH_STARTED without being ready, wtf!\n");
+        debugLog("We received MATCH_STARTED without being ready, wtf!");
         return;
     }
 

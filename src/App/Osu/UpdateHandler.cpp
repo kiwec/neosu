@@ -24,7 +24,7 @@ using enum UpdateHandler::STATUS;
 
 void UpdateHandler::onBleedingEdgeChanged(float oldVal, float newVal) {
     if(this->getStatus() != STATUS_IDLE && this->getStatus() != STATUS_ERROR) {
-        debugLog("Can't change release stream while an update is in progress!\n");
+        debugLog("Can't change release stream while an update is in progress!");
         cv::bleedingedge.setValue(oldVal, false);
     }
 
@@ -37,7 +37,7 @@ void UpdateHandler::onBleedingEdgeChanged(float oldVal, float newVal) {
 
 void UpdateHandler::checkForUpdates(bool force_update) {
     if(this->getStatus() != STATUS_IDLE && this->getStatus() != STATUS_ERROR) {
-        debugLog("We're already updating!\n");
+        debugLog("We're already updating!");
         return;
     }
 
@@ -48,7 +48,7 @@ void UpdateHandler::checkForUpdates(bool force_update) {
         versionUrl.append("/update/" OS_NAME "/latest-version.txt");
     }
 
-    debugLog("UpdateHandler: Checking for a newer version from {}\n", versionUrl);
+    debugLog("UpdateHandler: Checking for a newer version from {}", versionUrl);
     NetworkHandler::RequestOptions options;
     options.timeout = 10;
     options.connectTimeout = 5;
@@ -67,7 +67,7 @@ void UpdateHandler::onVersionCheckComplete(const std::string &response, bool suc
         // Avoid setting STATUS_ERROR, since we don't want a big red button to show up for offline players
         // We DO want it to show up if the update check was requested manually.
         this->status = force_update ? STATUS_ERROR : STATUS_IDLE;
-        debugLog("UpdateHandler ERROR: Failed to check for updates :/\n");
+        debugLog("UpdateHandler ERROR: Failed to check for updates :/");
         return;
     }
 
@@ -79,7 +79,7 @@ void UpdateHandler::onVersionCheckComplete(const std::string &response, bool suc
     if(lines.size() > 2) online_update_hash = lines[2];
     if(latest_version == 0.f && latest_build_tms == 0) {
         this->status = force_update ? STATUS_ERROR : STATUS_IDLE;
-        debugLog("UpdateHandler ERROR: Failed to parse version number\n");
+        debugLog("UpdateHandler ERROR: Failed to parse version number");
         return;
     }
 
@@ -89,7 +89,7 @@ void UpdateHandler::onVersionCheckComplete(const std::string &response, bool suc
     if(!should_update) {
         // We're already up to date
         this->status = STATUS_IDLE;
-        debugLog("UpdateHandler: We're already up to date (current v{:.2f} ({:d}), latest v{:.2f} ({:d}))\n",
+        debugLog("UpdateHandler: We're already up to date (current v{:.2f} ({:d}), latest v{:.2f} ({:d}))",
                  cv::version.getFloat(), current_build_tms, latest_version, latest_build_tms);
         return;
     }
@@ -114,9 +114,9 @@ void UpdateHandler::onVersionCheckComplete(const std::string &response, bool suc
     }
     update_url.append(UString::format("?hash=%s", online_update_hash.c_str()));
 
-    debugLog("UpdateHandler: Downloading latest update... (current v{:.2f} ({:d}), latest v{:.2f} ({:d}))\n",
+    debugLog("UpdateHandler: Downloading latest update... (current v{:.2f} ({:d}), latest v{:.2f} ({:d}))",
              cv::version.getFloat(), current_build_tms, latest_version, latest_build_tms);
-    debugLog("UpdateHandler: Downloading {:s}\n", update_url.toUtf8());
+    debugLog("UpdateHandler: Downloading {:s}", update_url.toUtf8());
     NetworkHandler::RequestOptions options;
     options.timeout = 300;  // 5 minutes for large downloads
     options.connectTimeout = 10;
@@ -133,7 +133,7 @@ void UpdateHandler::onVersionCheckComplete(const std::string &response, bool suc
 
 void UpdateHandler::onDownloadComplete(const std::string &data, bool success, std::string hash) {
     if(!success || data.size() < 2) {
-        debugLog("UpdateHandler ERROR: downloaded file is too small or failed ({:d} bytes)!\n", data.size());
+        debugLog("UpdateHandler ERROR: downloaded file is too small or failed ({:d} bytes)!", data.size());
         this->status = STATUS_ERROR;
         return;
     }
@@ -142,16 +142,16 @@ void UpdateHandler::onDownloadComplete(const std::string &data, bool success, st
     crypto::hash::sha256(data.data(), data.size(), file_hash.data());
     auto downloaded_update_hash = crypto::conv::encodehex(file_hash);
     if(!hash.empty() && downloaded_update_hash != hash) {
-        debugLog("UpdateHandler ERROR: downloaded file hash does not match! {} != {}\n", downloaded_update_hash, hash);
+        debugLog("UpdateHandler ERROR: downloaded file hash does not match! {} != {}", downloaded_update_hash, hash);
         this->status = STATUS_ERROR;
         return;
     }
 
     // write to disk
-    debugLog("UpdateHandler: Downloaded file has {:d} bytes, writing ...\n", data.size());
+    debugLog("UpdateHandler: Downloaded file has {:d} bytes, writing ...", data.size());
     std::ofstream file("update.zip", std::ios::out | std::ios::binary);
     if(!file.good()) {
-        debugLog("UpdateHandler ERROR: Can't write file!\n");
+        debugLog("UpdateHandler ERROR: Can't write file!");
         this->status = STATUS_ERROR;
         return;
     }
@@ -159,22 +159,22 @@ void UpdateHandler::onDownloadComplete(const std::string &data, bool success, st
     file.write(data.data(), static_cast<std::streamsize>(data.size()));
     file.close();
 
-    debugLog("UpdateHandler: Update finished successfully.\n");
+    debugLog("UpdateHandler: Update finished successfully.");
     this->status = STATUS_DOWNLOAD_COMPLETE;
 }
 
 void UpdateHandler::installUpdate() {
-    debugLog("UpdateHandler: installing\n");
+    debugLog("UpdateHandler: installing");
     Archive archive("update.zip");
     if(!archive.isValid()) {
-        debugLog("UpdateHandler ERROR: couldn't open archive!\n");
+        debugLog("UpdateHandler ERROR: couldn't open archive!");
         this->status = STATUS_ERROR;
         return;
     }
 
     auto entries = archive.getAllEntries();
     if(entries.empty()) {
-        debugLog("UpdateHandler ERROR: archive is empty!\n");
+        debugLog("UpdateHandler ERROR: archive is empty!");
         this->status = STATUS_ERROR;
         return;
     }
@@ -185,7 +185,7 @@ void UpdateHandler::installUpdate() {
     for(const auto &entry : entries) {
         auto fileName = entry.getFilename();
         if(!fileName.starts_with(mainDirectory)) {
-            debugLog("UpdateHandler WARNING: Ignoring \"{:s}\" because it's not in the main dir!\n", fileName.c_str());
+            debugLog("UpdateHandler WARNING: Ignoring \"{:s}\" because it's not in the main dir!", fileName.c_str());
             continue;
         }
 
@@ -195,7 +195,7 @@ void UpdateHandler::installUpdate() {
             files.push_back(entry);
         }
 
-        debugLog("UpdateHandler: Filename: \"{:s}\", isDir: {}, uncompressed size: {}\n", entry.getFilename().c_str(),
+        debugLog("UpdateHandler: Filename: \"{:s}\", isDir: {}, uncompressed size: {}", entry.getFilename().c_str(),
                  entry.isDirectory(), entry.getUncompressedSize());
     }
 
@@ -205,7 +205,7 @@ void UpdateHandler::installUpdate() {
         if(newDir.length() == 0) continue;
         if(env->directoryExists(newDir)) continue;
 
-        debugLog("UpdateHandler: Creating directory {:s}\n", newDir.c_str());
+        debugLog("UpdateHandler: Creating directory {:s}", newDir.c_str());
         env->createDirectory(newDir);
     }
 
@@ -228,9 +228,9 @@ void UpdateHandler::installUpdate() {
             }
         }
 
-        debugLog("UpdateHandler: Writing {:s}\n", outFilePath.c_str());
+        debugLog("UpdateHandler: Writing {:s}", outFilePath.c_str());
         if(!file.extractToFile(outFilePath)) {
-            debugLog("UpdateHandler: Failed to extract file {:s}\n", outFilePath.c_str());
+            debugLog("UpdateHandler: Failed to extract file {:s}", outFilePath.c_str());
             if(temp_created) {
                 env->deleteFile(outFilePath);
                 env->renameFile(old_path, outFilePath);

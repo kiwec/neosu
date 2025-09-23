@@ -600,10 +600,10 @@ void CBaseUITextbox::insertTextFromClipboard() {
     const UString clipstring = env->getClipBoardText();
 
     /*
-    debugLog("got clip string: {:s}\n", clipstring.toUtf8());
+    debugLog("got clip string: {:s}", clipstring.toUtf8());
     for (int i=0; i<clipstring.length(); i++)
     {
-            debugLog("char #{:d} = {:d}\n", i, clipstring[i]);
+            debugLog("char #{:d} = {:d}", i, clipstring[i]);
     }
     */
 

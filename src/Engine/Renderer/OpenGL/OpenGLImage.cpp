@@ -39,7 +39,7 @@ void OpenGLImage::init() {
         if(cv::debug_image.getBool()) {
             debugLog(
                 "we are already loaded, bReady: {} createdImage: {} GLTexture: {} bKeepInSystemMemory: {} bAsyncReady: "
-                "{}\n",
+                "{}",
                 this->bReady.load(), this->bCreatedImage, this->GLTexture, this->bKeepInSystemMemory,
                 this->bAsyncReady.load());
         }
@@ -79,7 +79,7 @@ void OpenGLImage::init() {
 
     if(this->rawImage.empty()) {
         auto GLerror = glGetError();
-        debugLog("OpenGL Image Error: {} on file {:s}!\n", GLerror, this->sFilePath.c_str());
+        debugLog("OpenGL Image Error: {} on file {:s}!", GLerror, this->sFilePath.c_str());
         engine->showMessageError("Image Error",
                                  UString::format("OpenGL Image error %i on file %s", GLerror, this->sFilePath.c_str()));
         return;
@@ -108,7 +108,7 @@ void OpenGLImage::initAsync() {
     }
 
     if(!this->bCreatedImage) {
-        if(cv::debug_rm.getBool()) debugLog("Resource Manager: Loading {:s}\n", this->sFilePath.c_str());
+        if(cv::debug_rm.getBool()) debugLog("Resource Manager: Loading {:s}", this->sFilePath.c_str());
 
         this->bAsyncReady = loadRawImage();
     } else {
@@ -128,7 +128,7 @@ void OpenGLImage::destroy() {
 void OpenGLImage::deleteGL() {
     if(this->GLTexture != 0 && glDeleteTextures != nullptr && glIsTexture != nullptr) {
         if(!glIsTexture(this->GLTexture)) {
-            debugLog("WARNING: tried to glDeleteTexture on {} ({:p}), which is not a valid GL texture!\n", this->sName,
+            debugLog("WARNING: tried to glDeleteTexture on {} ({:p}), which is not a valid GL texture!", this->sName,
                      static_cast<const void*>(&this->GLTexture));
         } else {
             glDeleteTextures(1, &this->GLTexture);

@@ -84,7 +84,7 @@ void logout_user(i32 user_id) {
     if(online_users.contains(user_id)) {
         const auto* user_info = online_users[user_id];
 
-        debugLog("{:s} has disconnected.\n", user_info->name);
+        debugLog("{:s} has disconnected.", user_info->name);
         if(user_id == BanchoState::spectated_player_id) {
             stop_spectating();
         }

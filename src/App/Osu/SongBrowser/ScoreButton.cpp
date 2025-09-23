@@ -553,7 +553,7 @@ void ScoreButton::onRightMouseUpInside() {
                 replayButton->setEnabled(false);
                 replayButton->setTextColor(0xff888888);
                 replayButton->setTextDarkColor(0xff000000);
-                // debugLog("disallowing replay button, client: {}\n", this->score.client);
+                // debugLog("disallowing replay button, client: {}", this->score.client);
             }
 
             CBaseUIButton *spacer = this->contextMenu->addButton("---");
@@ -639,7 +639,7 @@ void ScoreButton::onDeleteScoreClicked() {
 void ScoreButton::onDeleteScoreConfirmed(const UString & /*text*/, int id) {
     if(id != 1) return;
 
-    debugLog("Deleting score\n");
+    debugLog("Deleting score");
 
     // absolutely disgusting
     osu->getSongBrowser()->onScoreContextMenu(this, 2);
@@ -654,7 +654,7 @@ void ScoreButton::setScore(const FinishedScore &score, DatabaseBeatmap *map, int
     this->score.map = map;
     // debugLog(
     //     "score.beatmap_hash {} this->beatmap_hash {} score.has_possible_replay {} this->has_possible_replay {} "
-    //     "score.playername {} this->playername {}\n",
+    //     "score.playername {} this->playername {}",
     //     score.beatmap_hash.string(), this->score.beatmap_hash.string(), score.has_possible_replay(),
     //     this->score.has_possible_replay(), score.playerName, this->score.playerName);
     this->iScoreIndexNumber = index;
@@ -819,7 +819,7 @@ bool ScoreButton::isContextMenuVisible() { return (this->contextMenu != nullptr 
 SkinImage *ScoreButton::getGradeImage(FinishedScore::Grade grade) {
     const auto &skin{osu->getSkin()};
     if(!skin) {
-        debugLog("no skin to return a grade image for\n");
+        debugLog("no skin to return a grade image for");
         return nullptr;
     }
 

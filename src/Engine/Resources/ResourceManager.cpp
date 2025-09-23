@@ -64,12 +64,12 @@ void ResourceManager::destroyResources() {
 void ResourceManager::destroyResource(Resource *rs, bool forceBlocking) {
     const bool debug = cv::debug_rm.getBool();
     if(rs == nullptr) {
-        if(debug) debugLog("ResourceManager Warning: destroyResource(NULL)!\n");
+        if(debug) debugLog("ResourceManager Warning: destroyResource(NULL)!");
         return;
     }
 
     if(debug) {
-        debugLog("ResourceManager: destroying {:8p} : {:s}\n", static_cast<const void *>(rs), rs->getName());
+        debugLog("ResourceManager: destroying {:8p} : {:s}", static_cast<const void *>(rs), rs->getName());
     }
 
     bool isManagedResource = false;
@@ -85,7 +85,7 @@ void ResourceManager::destroyResource(Resource *rs, bool forceBlocking) {
     // check if it's being loaded and schedule async destroy if so
     if(this->asyncLoader->isLoadingResource(rs)) {
         if(debug)
-            debugLog("Resource Manager: Scheduled async destroy of {:8p} : {:s}\n", static_cast<const void *>(rs),
+            debugLog("Resource Manager: Scheduled async destroy of {:8p} : {:s}", static_cast<const void *>(rs),
                      rs->getName());
 
         // interrupt async load
@@ -112,7 +112,7 @@ void ResourceManager::destroyResource(Resource *rs, bool forceBlocking) {
 
 void ResourceManager::loadResource(Resource *res, bool load) {
     if(res == nullptr) {
-        if(cv::debug_rm.getBool()) debugLog("ResourceManager Warning: loadResource(NULL)!\n");
+        if(cv::debug_rm.getBool()) debugLog("ResourceManager Warning: loadResource(NULL)!");
         resetFlags();
         return;
     }
@@ -170,7 +170,7 @@ void ResourceManager::setSyncLoadMaxBatchSize(size_t resourcesToLoad) {
 
 void ResourceManager::reloadResource(Resource *rs, bool async) {
     if(rs == nullptr) {
-        if(cv::debug_rm.getBool()) debugLog("ResourceManager Warning: reloadResource(NULL)!\n");
+        if(cv::debug_rm.getBool()) debugLog("ResourceManager Warning: reloadResource(NULL)!");
         return;
     }
 
@@ -180,8 +180,7 @@ void ResourceManager::reloadResource(Resource *rs, bool async) {
 
 void ResourceManager::reloadResources(const std::vector<Resource *> &resources, bool async) {
     if(resources.empty()) {
-        if(cv::debug_rm.getBool())
-            debugLog("ResourceManager Warning: reloadResources with an empty resources vector!\n");
+        if(cv::debug_rm.getBool()) debugLog("ResourceManager Warning: reloadResources with an empty resources vector!");
         return;
     }
 
@@ -199,7 +198,7 @@ void ResourceManager::reloadResources(const std::vector<Resource *> &resources, 
 
 void ResourceManager::setResourceName(Resource *res, std::string name) {
     if(!res) {
-        if(cv::debug_rm.getBool()) debugLog("ResourceManager: attempted to set name {:s} on NULL resource!\n", name);
+        if(cv::debug_rm.getBool()) debugLog("ResourceManager: attempted to set name {:s} on NULL resource!", name);
         return;
     }
 
@@ -266,7 +265,7 @@ Image *ResourceManager::createImage(i32 width, i32 height, bool mipmapped, bool 
     if(width > 8192 || height > 8192) {
         engine->showMessageError(
             "Resource Manager Error",
-            UString::format("Invalid parameters in createImage(%i, %i, %i)!\n", width, height, (int)mipmapped));
+            UString::format("Invalid parameters in createImage(%i, %i, %i)!", width, height, (int)mipmapped));
         return nullptr;
     }
 
@@ -420,7 +419,7 @@ VertexArrayObject *ResourceManager::createVertexArrayObject(Graphics::PRIMITIVE 
 // add a managed resource to the main resources vector + the name map and typed vectors
 void ResourceManager::addManagedResource(Resource *res) {
     if(!res) return;
-    if(cv::debug_rm.getBool()) debugLog("ResourceManager: Adding managed {}\n", res->getName());
+    if(cv::debug_rm.getBool()) debugLog("ResourceManager: Adding managed {}", res->getName());
 
     this->vResources.push_back(res);
 
@@ -509,16 +508,12 @@ void ResourceManager::removeResourceFromTypedVector(Resource *res) {
 
 void ResourceManager::notExistLog(const std::string &resourceName) {
     if(cv::debug_rm.getBool()) {
-        debugLog(R"(ResourceManager WARNING: Resource "{:s}" does not exist!)"
-                 "\n",
-                 resourceName);
+        debugLog(R"(ResourceManager WARNING: Resource "{:s}" does not exist!)", resourceName);
     }
 }
 
 void ResourceManager::alreadyLoadedLog(const std::string &resourceName) {
     if(cv::debug_rm.getBool()) {
-        debugLog(R"(ResourceManager NOTICE: Resource "{:s}" already loaded.)"
-                 "\n",
-                 resourceName);
+        debugLog(R"(ResourceManager NOTICE: Resource "{:s}" already loaded.)", resourceName);
     }
 }

@@ -46,7 +46,7 @@ void Console::processCommand(std::string command, bool fromFile) {
     // get convar
     ConVar *var = cvars->getConVarByName(commandName, false);
     if(!var) {
-        debugLog("Unknown command: {:s}\n", commandName);
+        debugLog("Unknown command: {:s}", commandName);
         return;
     }
 
@@ -98,7 +98,7 @@ void Console::processCommand(std::string command, bool fromFile) {
             logMessage.append(var->getString());
         }
 
-        if(logMessage.length() > 0 && doLog) debugLog("{:s}\n", logMessage);
+        if(logMessage.length() > 0 && doLog) debugLog("{:s}", logMessage);
     }
 }
 
@@ -113,7 +113,7 @@ void Console::execConfigFile(std::string filename) {
     {
         File configFile(filename, File::TYPE::READ);
         if(!configFile.canRead()) {
-            debugLog("error, file \"{:s}\" not found!\n", filename);
+            debugLog("error, file \"{:s}\" not found!", filename);
             return;
         }
 

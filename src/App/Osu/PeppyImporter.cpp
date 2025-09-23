@@ -160,7 +160,7 @@ void try_set_key(const std::string& key, ConVar* cvar) {
     } else if(key == "PageDown") {
         cvar->setValue((int)KEY_PAGEDOWN);
     } else {
-        debugLog("No key code found for '{}'!\n", key);
+        debugLog("No key code found for '{}'!", key);
     }
 }
 
@@ -177,7 +177,7 @@ void update_osu_folder_from_registry() {
         err = RegOpenKeyExW(HKEY_CLASSES_ROOT, L"osu\\shell\\open\\command", 0, KEY_READ, &key);
     }
     if(err != ERROR_SUCCESS) {
-        debugLog("osu!stable not found in registry!\n");
+        debugLog("osu!stable not found in registry!");
         return;
     }
 
@@ -187,7 +187,7 @@ void update_osu_folder_from_registry() {
     err = RegQueryValueExW(key, NULL, NULL, &dwType, (LPBYTE)szPath, &dwSize);
     RegCloseKey(key);
     if(err != ERROR_SUCCESS) {
-        debugLog("Failed to get path of osu:// protocol handler.\n");
+        debugLog("Failed to get path of osu:// protocol handler.");
         return;
     }
 
@@ -201,7 +201,7 @@ void update_osu_folder_from_registry() {
     if(lastBackslash) {
         *lastBackslash = L'\0';
         UString new_osu_folder{path};
-        debugLog("Found osu! folder from registry: {:s}\n", new_osu_folder.toUtf8());
+        debugLog("Found osu! folder from registry: {:s}", new_osu_folder.toUtf8());
         cv::osu_folder.setValue(new_osu_folder.toUtf8());
         return;
     }
@@ -216,7 +216,7 @@ void import_settings_from_osu_stable() {
 
     auto username = env->getUsername();
     if(username.length() == 0) {
-        debugLog("Failed to get username; not going to import settings from osu!stable.\n");
+        debugLog("Failed to get username; not going to import settings from osu!stable.");
         return;
     }
 

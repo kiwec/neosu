@@ -160,7 +160,7 @@ void LiveScore::addHitResult(AbstractBeatmapInterface *beatmap, HitObject * /*hi
                 break;
 
             default:
-                debugLog("Unexpected hitresult {:d}\n", static_cast<unsigned int>(hit));
+                debugLog("Unexpected hitresult {:d}", static_cast<unsigned int>(hit));
                 break;
         }
     }

@@ -104,7 +104,7 @@ namespace proto = BANCHO::Proto;
 
 void BanchoState::handle_packet(Packet &packet) {
     if(cv::debug_network.getBool()) {
-        debugLog("packet id: {}\n", packet.id);
+        debugLog("packet id: {}", packet.id);
     }
 
     switch(packet.id) {
@@ -116,7 +116,7 @@ void BanchoState::handle_packet(Packet &packet) {
             BanchoState::is_oauth = !cv::mp_oauth_token.getString().empty();
 
             if(new_user_id > 0) {
-                debugLog("Logged in as user #{:d}.\n", new_user_id);
+                debugLog("Logged in as user #{:d}.", new_user_id);
                 cv::mp_autologin.setValue(true);
                 BanchoState::print_new_channels = true;
 
@@ -135,7 +135,7 @@ void BanchoState::handle_packet(Packet &packet) {
                 cv::mp_autologin.setValue(false);
                 cv::mp_oauth_token.setValue("");
 
-                debugLog("Failed to log in, server returned code {:d}.\n", BanchoState::get_uid());
+                debugLog("Failed to log in, server returned code {:d}.", BanchoState::get_uid());
                 UString errmsg = UString::fmt("Failed to log in: {} (code {})\n", BanchoState::cho_token.toUtf8(),
                                               BanchoState::get_uid());
                 if(new_user_id == -2) {
@@ -251,7 +251,7 @@ void BanchoState::handle_packet(Packet &packet) {
             i32 logged_out_id = proto::read<i32>(packet);
             proto::read<u8>(packet);
             if(logged_out_id == BanchoState::get_uid()) {
-                debugLog("Logged out.\n");
+                debugLog("Logged out.");
                 BanchoState::disconnect();
             } else {
                 BANCHO::User::logout_user(logged_out_id);
@@ -262,7 +262,7 @@ void BanchoState::handle_packet(Packet &packet) {
         case SPECTATOR_JOINED: {
             i32 spectator_id = proto::read<i32>(packet);
             if(std::ranges::find(BanchoState::spectators, spectator_id) == BanchoState::spectators.end()) {
-                debugLog("Spectator joined: user id {:d}\n", spectator_id);
+                debugLog("Spectator joined: user id {:d}", spectator_id);
                 BanchoState::spectators.push_back(spectator_id);
             }
 
@@ -273,7 +273,7 @@ void BanchoState::handle_packet(Packet &packet) {
             i32 spectator_id = proto::read<i32>(packet);
             auto it = std::ranges::find(BanchoState::spectators, spectator_id);
             if(it != BanchoState::spectators.end()) {
-                debugLog("Spectator left: user id {:d}\n", spectator_id);
+                debugLog("Spectator left: user id {:d}", spectator_id);
                 BanchoState::spectators.erase(it);
             }
 
@@ -292,7 +292,7 @@ void BanchoState::handle_packet(Packet &packet) {
                     auto frame = proto::read<LiveReplayFrame>(packet);
 
                     if(frame.mouse_x < 0 || frame.mouse_x > 512 || frame.mouse_y < 0 || frame.mouse_y > 384) {
-                        debugLog("WEIRD FRAME: time {:d}, x {:f}, y {:f}\n", frame.time, frame.mouse_x, frame.mouse_y);
+                        debugLog("WEIRD FRAME: time {:d}, x {:f}, y {:f}", frame.time, frame.mouse_x, frame.mouse_y);
                     }
 
                     osu->getMapInterface()->spectated_replay.push_back(LegacyReplay::Frame{
@@ -359,7 +359,7 @@ void BanchoState::handle_packet(Packet &packet) {
 
         case SPECTATOR_CANT_SPECTATE: {
             i32 spectator_id = proto::read<i32>(packet);
-            debugLog("Spectator can't spectate: user id {:d}\n", spectator_id);
+            debugLog("Spectator can't spectate: user id {:d}", spectator_id);
             break;
         }
 
@@ -421,7 +421,7 @@ void BanchoState::handle_packet(Packet &packet) {
         case FELLOW_SPECTATOR_JOINED: {
             i32 spectator_id = proto::read<i32>(packet);
             if(std::ranges::find(BanchoState::fellow_spectators, spectator_id) == BanchoState::fellow_spectators.end()) {
-                debugLog("Fellow spectator joined: user id {:d}\n", spectator_id);
+                debugLog("Fellow spectator joined: user id {:d}", spectator_id);
                 BanchoState::fellow_spectators.push_back(spectator_id);
             }
 
@@ -432,7 +432,7 @@ void BanchoState::handle_packet(Packet &packet) {
             i32 spectator_id = proto::read<i32>(packet);
             auto it = std::ranges::find(BanchoState::fellow_spectators, spectator_id);
             if(it != BanchoState::fellow_spectators.end()) {
-                debugLog("Fellow spectator left: user id {:d}\n", spectator_id);
+                debugLog("Fellow spectator left: user id {:d}", spectator_id);
                 BanchoState::fellow_spectators.erase(it);
             }
 
@@ -602,21 +602,21 @@ void BanchoState::handle_packet(Packet &packet) {
 
         case ROOM_PASSWORD_CHANGED: {
             UString new_password = proto::read_string(packet);
-            debugLog("Room changed password to {:s}\n", new_password.toUtf8());
+            debugLog("Room changed password to {:s}", new_password.toUtf8());
             BanchoState::room.password = new_password;
             break;
         }
 
         case SILENCE_END: {
             i32 delta = proto::read<i32>(packet);
-            debugLog("Silence ends in {:d} seconds.\n", delta);
+            debugLog("Silence ends in {:d} seconds.", delta);
             // XXX: Prevent user from sending messages while silenced
             break;
         }
 
         case USER_SILENCED: {
             i32 user_id = proto::read<i32>(packet);
-            debugLog("User #{:d} silenced.\n", user_id);
+            debugLog("User #{:d} silenced.", user_id);
             break;
         }
 
@@ -640,7 +640,7 @@ void BanchoState::handle_packet(Packet &packet) {
             proto::read_string(packet);
             UString blocked = proto::read_string(packet);
             proto::read<u32>(packet);
-            debugLog("Blocked {:s}.\n", blocked.toUtf8());
+            debugLog("Blocked {:s}.", blocked.toUtf8());
             break;
         }
 
@@ -649,7 +649,7 @@ void BanchoState::handle_packet(Packet &packet) {
             proto::read_string(packet);
             UString blocked = proto::read_string(packet);
             proto::read<u32>(packet);
-            debugLog("Silenced {:s}.\n", blocked.toUtf8());
+            debugLog("Silenced {:s}.", blocked.toUtf8());
             break;
         }
 
@@ -746,14 +746,14 @@ void BanchoState::handle_packet(Packet &packet) {
             if(!map) {
                 // Incredibly rare, but this can happen if you enter song browser
                 // on a difficulty the server doesn't have, then instantly refresh.
-                debugLog("Server requested difficulty {} but we don't have it!\n", md5.string());
+                debugLog("Server requested difficulty {} but we don't have it!", md5.string());
                 break;
             }
 
             auto osu_file = map->getMapFile();
             auto md5_check = BanchoState::md5((u8*)osu_file.c_str(), osu_file.length());
             if(md5 != md5_check) {
-                debugLog("After loading map {}, we got different md5 {}!\n", md5.string(), md5_check.string());
+                debugLog("After loading map {}, we got different md5 {}!", md5.string(), md5_check.string());
                 break;
             }
 
@@ -778,7 +778,7 @@ void BanchoState::handle_packet(Packet &packet) {
         }
 
         default: {
-            debugLog("Unknown packet ID {:d} ({:d} bytes)!\n", packet.id, packet.size);
+            debugLog("Unknown packet ID {:d} ({:d} bytes)!", packet.id, packet.size);
             break;
         }
     }
@@ -899,7 +899,7 @@ void BanchoState::update_channel(const UString &name, const UString &topic, i32 
         chan->topic = topic;
         chan->nb_members = nb_members;
     } else {
-        debugLog("WARNING: no channel found??\n");
+        debugLog("WARNING: no channel found??");
     }
 }
 
@@ -926,7 +926,7 @@ UString BanchoState::get_disk_uuid_blkid() {
     // we are only called once, only need libblkid temporarily
     lib_obj *blkid_lib = load_lib("libblkid.so.1");
     if(!blkid_lib) {
-        debugLog("error loading blkid for obtaining disk UUID: {}\n", get_error());
+        debugLog("error loading blkid for obtaining disk UUID: {}", get_error());
         return w_uuid;
     }
 
@@ -936,7 +936,7 @@ UString BanchoState::get_disk_uuid_blkid() {
     auto pblkid_get_tag_value = load_func<decltype(blkid_get_tag_value)>(blkid_lib, "blkid_get_tag_value");
 
     if(!(pblkid_devno_to_devname && pblkid_get_cache && pblkid_put_cache && pblkid_get_tag_value)) {
-        debugLog("error loading blkid functions for obtaining disk UUID: {}\n", get_error());
+        debugLog("error loading blkid functions for obtaining disk UUID: {}", get_error());
         unload_lib(blkid_lib);
         return w_uuid;
     }

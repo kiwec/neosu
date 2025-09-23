@@ -217,7 +217,7 @@ void Mouse::onRawInputChanged(float newval) {
 
     // non-rawinput with sensitivity != 1 is unsupported
     if(!this->bIsRawInputDesired && (this->fSensitivity < 0.999f || this->fSensitivity > 1.001f)) {
-        debugLog("forced sensitivity to 1.0 due to raw input being disabled\n");
+        debugLog("forced sensitivity to 1.0 due to raw input being disabled");
         cv::mouse_sensitivity.setValue(1.0f);
     }
 }
@@ -227,7 +227,7 @@ void Mouse::onSensitivityChanged(float newSens) {
 
     // non-rawinput with sensitivity != 1 is unsupported
     if(!this->bIsRawInputDesired && (this->fSensitivity < 0.999f || this->fSensitivity > 1.001f)) {
-        debugLog("forced raw input enabled due to sensitivity != 1.0\n");
+        debugLog("forced raw input enabled due to sensitivity != 1.0");
         cv::mouse_raw_input.setValue(true);
     }
 }

@@ -11,6 +11,7 @@
 #include "ConVar.h"
 #include "Console.h"
 #include "Engine.h"
+#include "Logging.h"
 #include "Environment.h"
 #include "Keyboard.h"
 #include "Mouse.h"
@@ -258,6 +259,7 @@ void ConsoleBox::mouse_update(bool *propagate_clicks) {
 
     if(this->textbox->hitEnter()) {
         this->processCommand(this->textbox->getText().toUtf8());
+        Logger::flush();  // make sure its output immediately
         this->textbox->clear();
         this->textbox->setSuggestion("");
     }
@@ -343,7 +345,7 @@ void ConsoleBox::mouse_update(bool *propagate_clicks) {
         }
     }
 
-    if (this->bClearPending) {
+    if(this->bClearPending) {
         this->bClearPending = false;
         this->log_entries.clear();
     }
@@ -634,17 +636,11 @@ void ConsoleBox::toggle(KeyboardEvent &e) {
     this->onResolutionChange(engine->getScreenSize());
 }
 
-void ConsoleBox::log(UString text, Color textColor) {
+void ConsoleBox::log(const UString &text, Color textColor) {
     std::scoped_lock logGuard(this->logMutex);
 
-    // remove illegal chars
-    {
-        int newline = text.find("\n", 0);
-        while(newline != -1) {
-            text.erase(newline, 1);
-            newline = text.find("\n", 0);
-        }
-    }
+    // newlines must be stripped before being sent here (see Logging.cpp)
+    assert(!text.endsWith('\n') && !text.endsWith('\r') && "Console log strings can't end with a newline.");
 
     // add log entry
     {

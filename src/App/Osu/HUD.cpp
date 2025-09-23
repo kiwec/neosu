@@ -214,7 +214,7 @@ void HUD::draw() {
                 bk2.startPercent = (float)(bk.startTime) / (float)(endTimePlayableMS);
                 bk2.endPercent = (float)(bk.endTime) / (float)(endTimePlayableMS);
 
-                // debugLog("{:d}: s = {:f}, e = {:f}\n", i, bk2.startPercent, bk2.endPercent);
+                // debugLog("{:d}: s = {:f}, e = {:f}", i, bk2.startPercent, bk2.endPercent);
 
                 breaks.push_back(bk2);
             }

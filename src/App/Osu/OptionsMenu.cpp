@@ -217,7 +217,7 @@ class OptionsMenuSliderPreviewElement : public CBaseUIElement {
                         if(this->vao == nullptr || length != this->fPrevLength) {
                             this->fPrevLength = length;
 
-                            debugLog("Regenerating options menu slider preview vao ...\n");
+                            debugLog("Regenerating options menu slider preview vao ...");
 
                             if(this->vao != nullptr) {
                                 resourceManager->destroyResource(this->vao);
@@ -2634,7 +2634,7 @@ void OptionsMenu::onOutputDeviceSelect() {
 void OptionsMenu::onOutputDeviceSelect2(const UString &outputDeviceName, int /*id*/) {
     if(outputDeviceName == soundEngine->getOutputDeviceName()) {
         if(this->outputDeviceLabel != nullptr) this->outputDeviceLabel->setText(soundEngine->getOutputDeviceName());
-        debugLog("SoundEngine::setOutputDevice() \"{:s}\" already is the current device.\n", outputDeviceName.toUtf8());
+        debugLog("SoundEngine::setOutputDevice() \"{:s}\" already is the current device.", outputDeviceName.toUtf8());
         return;
     }
 
@@ -2646,7 +2646,7 @@ void OptionsMenu::onOutputDeviceSelect2(const UString &outputDeviceName, int /*i
         return;
     }
 
-    debugLog("SoundEngine::setOutputDevice() couldn't find output device \"{:s}\"!\n", outputDeviceName.toUtf8());
+    debugLog("SoundEngine::setOutputDevice() couldn't find output device \"{:s}\"!", outputDeviceName.toUtf8());
 }
 
 void OptionsMenu::onOutputDeviceResetClicked() { soundEngine->setOutputDevice(soundEngine->getDefaultDevice()); }
@@ -3712,7 +3712,7 @@ OptionsMenuCategoryButton *OptionsMenu::addCategory(CBaseUIElement *section, wch
 
 void OptionsMenu::save() {
     if(!cv::options_save_on_back.getBool()) {
-        debugLog("DEACTIVATED SAVE!!!! @ {:f}\n", engine->getTime());
+        debugLog("DEACTIVATED SAVE!!!! @ {:f}", engine->getTime());
         return;
     }
 
@@ -3720,7 +3720,7 @@ void OptionsMenu::save() {
     this->updateFposuDPI();
     this->updateFposuCMper360();
 
-    debugLog("Osu: Saving user config file ...\n");
+    debugLog("Osu: Saving user config file ...");
 
     UString userConfigFile = MCENGINE_DATA_DIR "cfg" PREF_PATHSEP "osu.cfg";
 

@@ -128,7 +128,7 @@ VertexArrayObject *generateVAO(const std::vector<vec2> &points, float hitcircleD
     if(vao->getNumVertices() > 0)
         resourceManager->loadResource(vao);
     else
-        debugLog("generateSliderVAO() ERROR: Zero triangles!\n");
+        debugLog("generateSliderVAO() ERROR: Zero triangles!");
 
     return vao;
 }

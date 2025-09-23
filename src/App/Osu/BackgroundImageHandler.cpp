@@ -84,7 +84,7 @@ void BackgroundImageHandler::update(bool allowEviction) {
     this->bFrozen = false;
 
     // DEBUG:
-    // debugLog("m_cache.size() = {:d}\n", (int)this->cache.size());
+    // debugLog("m_cache.size() = {:d}", (int)this->cache.size());
 }
 
 void BackgroundImageHandler::handleLoadPathForEntry(ENTRY &entry) {

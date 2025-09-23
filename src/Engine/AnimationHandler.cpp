@@ -33,7 +33,7 @@ void AnimationHandler::update() {
             *animation.fBase = animation.fTarget;
 
             if(cv::debug_anim.getBool()) {
-                debugLog("removing animation #{:d} (epsilon completion), dtime = {:f}\n", i,
+                debugLog("removing animation #{:d} (epsilon completion), dtime = {:f}", i,
                          curFrameTime - animation.fStartTime);
             }
 
@@ -46,7 +46,7 @@ void AnimationHandler::update() {
         float percent = std::clamp<float>((curFrameTime - animation.fStartTime) / (animation.fDuration), 0.0f, 1.0f);
 
         if(cv::debug_anim.getBool()) {
-            debugLog("animation #{:d}, percent = {:f}\n", i, percent);
+            debugLog("animation #{:d}, percent = {:f}", i, percent);
         }
 
         // check if finished
@@ -54,7 +54,7 @@ void AnimationHandler::update() {
             *animation.fBase = animation.fTarget;
 
             if(cv::debug_anim.getBool()) {
-                debugLog("removing animation #{:d}, dtime = {:f}\n", i, curFrameTime - animation.fStartTime);
+                debugLog("removing animation #{:d}, dtime = {:f}", i, curFrameTime - animation.fStartTime);
             }
 
             this->vAnimations.erase(this->vAnimations.begin() + i);
@@ -115,7 +115,7 @@ void AnimationHandler::update() {
     }
 
     if(this->vAnimations.size() > 512) {
-        debugLog("WARNING: AnimationHandler has {:d} animations!\n", this->vAnimations.size());
+        debugLog("WARNING: AnimationHandler has {:d} animations!", this->vAnimations.size());
     }
 
     // printf("AnimStackSize = %i\n", this->vAnimations.size());

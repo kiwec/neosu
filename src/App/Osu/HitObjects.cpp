@@ -946,7 +946,7 @@ void Circle::draw2() {
     if(cv::bug_flicker_log.getBool()) {
         const float approachCircleImageScale =
             this->pf->fHitcircleDiameter / (128.0f * (this->pf->getSkin()->isApproachCircle2x() ? 2.0f : 1.0f));
-        debugLog("click_time = {:d}, aScale = {:f}, iScale = {:f}\n", click_time, this->fApproachScale,
+        debugLog("click_time = {:d}, aScale = {:f}, iScale = {:f}", click_time, this->fApproachScale,
                  approachCircleImageScale);
     }
 
@@ -1938,7 +1938,7 @@ void Slider::update(long curPos, f64 frame_time) {
                     else
                         this->endResult = LiveScore::HIT::HIT_MISS;
 
-                    // debugLog("percent = {:f}\n", percent);
+                    // debugLog("percent = {:f}", percent);
 
                     if(!this->bHeldTillEnd && cv::slider_end_miss_breaks_combo.getBool()) this->onSliderBreak();
                 } else
@@ -2129,7 +2129,7 @@ void Slider::onHit(LiveScore::HIT result, long delta, bool startOrEnd, float tar
 
     // start + end of a slider add +30 points, if successful
 
-    // debugLog("startOrEnd = {:d},    m_iCurRepeat = {:d}\n", (int)startOrEnd, this->iCurRepeat);
+    // debugLog("startOrEnd = {:d},    m_iCurRepeat = {:d}", (int)startOrEnd, this->iCurRepeat);
 
     // sound and hit animation and also sliderbreak combo drop
     {

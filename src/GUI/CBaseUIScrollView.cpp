@@ -149,7 +149,7 @@ void CBaseUIScrollView::mouse_update(bool *propagate_clicks) {
     const bool wasContainerBusyBeforeUpdate = this->container->isBusy();
     if(this->bBusy) {
         const vec2 deltaToAdd = (mouse->getPos() - this->vMouseBackup2);
-        // debugLog("+ ({:f}, {:f})\n", deltaToAdd.x, deltaToAdd.y);
+        // debugLog("+ ({:f}, {:f})", deltaToAdd.x, deltaToAdd.y);
 
         anim->moveQuadOut(&this->vKineticAverage.x, deltaToAdd.x, cv::ui_scrollview_kinetic_approach_time.getFloat(),
                           true);
@@ -228,7 +228,7 @@ void CBaseUIScrollView::mouse_update(bool *propagate_clicks) {
                                   (engine->getFrameTime() != 0.0 ? 1.0 / engine->getFrameTime() : 60.0) / 60.0f +
                               this->vScrollPos;
 
-        // debugLog("kinetic = ({:f}, {:f}), velocity = ({:f}, {:f}), frametime = {:f}\n", delta.x, delta.y, this->vVelocity.x,
+        // debugLog("kinetic = ({:f}, {:f}), velocity = ({:f}, {:f}), frametime = {:f}", delta.x, delta.y, this->vVelocity.x,
         // m_vVelocity.y, engine->getFrameTime());
 
         this->bScrollbarScrolling = false;

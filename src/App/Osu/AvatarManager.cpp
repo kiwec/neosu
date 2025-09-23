@@ -87,7 +87,7 @@ void AvatarManager::add_avatar(const std::pair<i32, std::string>& id_folder) {
 
     if(resourceManager->getImage(id_folder.second)) {
         // shouldn't happen...
-        debugLog("{} already tracked by ResourceManager, not adding\n", id_folder.second);
+        debugLog("{} already tracked by ResourceManager, not adding", id_folder.second);
         return;
     }
 

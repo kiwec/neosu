@@ -79,7 +79,7 @@ class DownloadManager {
         this->currently_downloading.store(true);
         this->last_download_start = std::chrono::steady_clock::now();
 
-        debugLog("Downloading {:s}\n", request->url.c_str());
+        debugLog("Downloading {:s}", request->url.c_str());
 
         NetworkHandler::RequestOptions options;
         options.timeout = 30;
@@ -112,7 +112,7 @@ class DownloadManager {
                 request->completed.store(true);
             } else {
                 if(!response.success) {
-                    debugLog("Failed to download {:s}: network error\n", request->url.c_str());
+                    debugLog("Failed to download {:s}: network error", request->url.c_str());
                 }
                 if(response.responseCode == 429) {
                     // rate limited, retry after 5 seconds
@@ -241,18 +241,18 @@ void download(const char* url, float* progress, std::vector<u8>& out, int* respo
 }
 
 i32 extract_beatmapset_id(const u8* data, size_t data_s) {
-    debugLog("Reading beatmapset ({:d} bytes)\n", data_s);
+    debugLog("Reading beatmapset ({:d} bytes)", data_s);
     i32 set_id = -1;
 
     Archive archive(data, data_s);
     if(!archive.isValid()) {
-        debugLog("Failed to open .osz file\n");
+        debugLog("Failed to open .osz file");
         return set_id;
     }
 
     auto entries = archive.getAllEntries();
     if(entries.empty()) {
-        debugLog(".osz file is empty!\n");
+        debugLog(".osz file is empty!");
         return set_id;
     }
 
@@ -273,17 +273,17 @@ i32 extract_beatmapset_id(const u8* data, size_t data_s) {
 }
 
 bool extract_beatmapset(const u8* data, size_t data_s, std::string& map_dir) {
-    debugLog("Extracting beatmapset ({:d} bytes)\n", data_s);
+    debugLog("Extracting beatmapset ({:d} bytes)", data_s);
 
     Archive archive(data, data_s);
     if(!archive.isValid()) {
-        debugLog("Failed to open .osz file\n");
+        debugLog("Failed to open .osz file");
         return false;
     }
 
     auto entries = archive.getAllEntries();
     if(entries.empty()) {
-        debugLog(".osz file is empty!\n");
+        debugLog(".osz file is empty!");
         return false;
     }
 
@@ -313,7 +313,7 @@ bool extract_beatmapset(const u8* data, size_t data_s, std::string& map_dir) {
         }
 
         if(!entry.extractToFile(file_path)) {
-            debugLog("Failed to extract file {:s}\n", filename.c_str());
+            debugLog("Failed to extract file {:s}", filename.c_str());
         }
 
     skip_file:;
@@ -405,7 +405,7 @@ DatabaseBeatmap* download_beatmap(i32 beatmap_id, MD5Hash beatmap_md5, float* pr
 
     auto mapset_path = UString::format(MCENGINE_DATA_DIR "maps/%d/", set_id);
     db->addBeatmapSet(mapset_path.toUtf8(), set_id);
-    debugLog("Finished loading beatmapset {:d}.\n", set_id);
+    debugLog("Finished loading beatmapset {:d}.", set_id);
 
     beatmap = db->getBeatmapDifficulty(beatmap_md5);
     if(beatmap == nullptr) {
@@ -483,7 +483,7 @@ DatabaseBeatmap* download_beatmap(i32 beatmap_id, i32 beatmapset_id, float* prog
 
     auto mapset_path = UString::format(MCENGINE_DATA_DIR "maps/%d/", set_id);
     db->addBeatmapSet(mapset_path.toUtf8());
-    debugLog("Finished loading beatmapset {:d}.\n", set_id);
+    debugLog("Finished loading beatmapset {:d}.", set_id);
 
     beatmap = db->getBeatmapDifficulty(beatmap_id);
     if(beatmap == nullptr) {

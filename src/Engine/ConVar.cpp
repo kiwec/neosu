@@ -135,14 +135,14 @@ bool ConVar::onSetValueGameplay(CvarEditor editor) {
     if(!osu) return true;  // osu may have been destroyed while shutting down
     // Only SERVER can edit GAMEPLAY cvars during multiplayer matches
     if(BanchoState::is_playing_a_multi_map() && editor != CvarEditor::SERVER) {
-        debugLog("Can't edit {} while in a multiplayer match.\n", this->sName);
+        debugLog("Can't edit {} while in a multiplayer match.", this->sName);
         return false;
     }
 
     // Regardless of the editor, changing GAMEPLAY cvars in the middle of a map
     // will result in an invalid replay. Set it as cheated so the score isn't saved.
     if(osu->isInPlayMode()) {
-        debugLog("{} affects gameplay: won't submit score.\n", this->sName);
+        debugLog("{} affects gameplay: won't submit score.", this->sName);
     }
     osu->getScore()->setCheated();
 
@@ -199,7 +199,7 @@ ConVar *ConVarHandler::getConVarByName(const ConVarString &name, bool warnIfNotF
     if(warnIfNotFound) {
         ConVarString errormsg = ConVarString("ENGINE: ConVar \"");
         errormsg.append(name);
-        errormsg.append("\" does not exist...\n");
+        errormsg.append("\" does not exist...");
         Logger::logRaw("{:s}", errormsg.c_str());
         engine->showMessageWarning("Engine Error", errormsg.c_str());
     }
@@ -328,7 +328,7 @@ void ConVarHandler::resetSkinCvars() {
 
 static void _find(const UString &args) {
     if(args.length() < 1) {
-        Logger::logRaw("Usage:  find <string>\n");
+        Logger::logRaw("Usage:  find <string>");
         return;
     }
 
@@ -347,36 +347,37 @@ static void _find(const UString &args) {
     }
 
     if(matchingConVars.size() < 1) {
-        Logger::logRaw("No commands found containing {:s}.\n", args);
+        Logger::logRaw("No commands found containing {:s}.", args);
         return;
     }
 
-    Logger::logRaw("----------------------------------------------\n");
+    Logger::logRaw("----------------------------------------------");
     {
         UString thelog = "[ find : ";
         thelog.append(args);
-        thelog.append(" ]\n");
+        thelog.append(" ]");
         Logger::logRaw("{:s}", thelog.toUtf8());
 
         for(auto &matchingConVar : matchingConVars) {
-            Logger::logRaw("{:s}\n", matchingConVar->getName());
+            Logger::logRaw("{:s}", matchingConVar->getName());
         }
     }
-    Logger::logRaw("----------------------------------------------\n");
+    Logger::logRaw("----------------------------------------------");
 }
 
 static void _help(const UString &args) {
     std::string trimmedArgs{args.trim().utf8View()};
 
     if(trimmedArgs.length() < 1) {
-        Logger::logRaw("Usage:  help <cvarname>\n To get a list of all available commands, type \"listcommands\".\n");
+        Logger::logRaw("Usage:  help <cvarname>");
+        Logger::logRaw("To get a list of all available commands, type \"listcommands\".");
         return;
     }
 
     const std::vector<ConVar *> matches = cvars->getConVarByLetter(trimmedArgs);
 
     if(matches.size() < 1) {
-        Logger::logRaw("ConVar {:s} does not exist.\n", trimmedArgs);
+        Logger::logRaw("ConVar {:s} does not exist.", trimmedArgs);
         return;
     }
 
@@ -391,7 +392,7 @@ static void _help(const UString &args) {
     ConVar *match = matches[index];
 
     if(match->getHelpstring().length() < 1) {
-        Logger::logRaw("ConVar {:s} does not have a helpstring.\n", match->getName());
+        Logger::logRaw("ConVar {:s} does not have a helpstring.", match->getName());
         return;
     }
 
@@ -410,11 +411,11 @@ static void _help(const UString &args) {
         thelog.append(" - ");
         thelog.append(match->getHelpstring().c_str());
     }
-    Logger::logRaw("{:s}\n", thelog);
+    Logger::logRaw("{:s}", thelog);
 }
 
 static void _listcommands(void) {
-    Logger::logRaw("----------------------------------------------\n");
+    Logger::logRaw("----------------------------------------------");
     {
         std::vector<ConVar *> convars = cvars->getConVarArray();
         std::ranges::sort(convars, {}, [](const ConVar *v) { return v->getName(); });
@@ -440,13 +441,11 @@ static void _listcommands(void) {
                     tstring.append(" - ");
                     tstring.append(var->getHelpstring().c_str());
                 }
-
-                tstring.append("\n");
             }
             Logger::logRaw("{:s}", tstring);
         }
     }
-    Logger::logRaw("----------------------------------------------\n");
+    Logger::logRaw("----------------------------------------------");
 }
 
 static void _dumpcommands(void) {
@@ -660,7 +659,7 @@ static void _dumpcommands(void) {
 
     FILE *file = fopen("variables.htm", "w");
     if(file == nullptr) {
-        Logger::logRaw("Failed to open variables.htm for writing\n");
+        Logger::logRaw("Failed to open variables.htm for writing");
         return;
     }
 
@@ -668,14 +667,14 @@ static void _dumpcommands(void) {
     fflush(file);
     fclose(file);
 
-    Logger::logRaw("ConVars dumped to variables.htm\n");
+    Logger::logRaw("ConVars dumped to variables.htm");
 }
 
 void _exec(const UString &args) { Console::execConfigFile(args.toUtf8()); }
 
 void _echo(const UString &args) {
     if(args.length() > 0) {
-        Logger::logRaw("{:s}\n", args.toUtf8());
+        Logger::logRaw("{:s}", args.toUtf8());
     }
 }
 
@@ -702,7 +701,7 @@ void spectate_by_username(const UString &username) {
         return;
     }
 
-    debugLog("Spectating {:s} (user {:d})...\n", username.toUtf8(), user->user_id);
+    debugLog("Spectating {:s} (user {:d})...", username.toUtf8(), user->user_id);
     start_spectating(user->user_id);
 }
 

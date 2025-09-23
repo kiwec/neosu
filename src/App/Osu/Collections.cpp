@@ -109,7 +109,7 @@ bool load_peppy_collections(const UString& peppy_collections_path) {
 
     u32 version = peppy_collections.read<u32>();
     if(version > cv::database_version.getVal<u32>() && !cv::database_ignore_version.getBool()) {
-        debugLog("osu!stable collection.db (version {}) is newer than latest supported (version {})!\n", version, cv::database_version.getVal<u32>());
+        debugLog("osu!stable collection.db (version {}) is newer than latest supported (version {})!", version, cv::database_version.getVal<u32>());
         db->bytes_processed += peppy_collections.total_size;
         return false;
     }
@@ -136,7 +136,7 @@ bool load_peppy_collections(const UString& peppy_collections_path) {
         db->fLoadingProgress = std::clamp(progress_float, 0.01, 0.99);
     }
 
-    debugLog("Loaded {:d} peppy collections ({:d} maps)\n", nb_collections, total_maps);
+    debugLog("Loaded {:d} peppy collections ({:d} maps)", nb_collections, total_maps);
     db->bytes_processed += peppy_collections.total_size;
     return true;
 }
@@ -152,7 +152,7 @@ bool load_mcneosu_collections(const UString& neosu_collections_path) {
     u32 nb_collections = neosu_collections.read<u32>();
 
     if(version > COLLECTIONS_DB_VERSION) {
-        debugLog("neosu collections.db version is too recent! Cannot load it without stuff breaking.\n");
+        debugLog("neosu collections.db version is too recent! Cannot load it without stuff breaking.");
         db->bytes_processed += neosu_collections.total_size;
         return false;
     }
@@ -199,7 +199,7 @@ bool load_mcneosu_collections(const UString& neosu_collections_path) {
         db->fLoadingProgress = std::clamp(progress_float, 0.01, 0.99);
     }
 
-    debugLog("Loaded {:d} neosu collections ({:d} maps)\n", nb_collections, total_maps);
+    debugLog("Loaded {:d} neosu collections ({:d} maps)", nb_collections, total_maps);
     db->bytes_processed += neosu_collections.total_size;
     return true;
 }
@@ -218,7 +218,7 @@ bool load_collections() {
     const auto& mcneosu_collections = db->database_files["collections.db"];
     load_mcneosu_collections(mcneosu_collections);
 
-    debugLog("peppy+neosu collections: loading took {:f} seconds\n", (Timing::getTimeReal() - startTime));
+    debugLog("peppy+neosu collections: loading took {:f} seconds", (Timing::getTimeReal() - startTime));
     collections_loaded = true;
     return true;
 }
@@ -233,9 +233,9 @@ void unload_collections() {
 }
 
 bool save_collections() {
-    debugLog("Osu: Saving collections ...\n");
+    debugLog("Osu: Saving collections ...");
     if(!collections_loaded) {
-        debugLog("Cannot save collections since they weren't loaded properly first!\n");
+        debugLog("Cannot save collections since they weren't loaded properly first!");
         return false;
     }
 
@@ -263,6 +263,6 @@ bool save_collections() {
         }
     }
 
-    debugLog("collections.db: saving took {:f} seconds\n", (Timing::getTimeReal() - startTime));
+    debugLog("collections.db: saving took {:f} seconds", (Timing::getTimeReal() - startTime));
     return true;
 }

@@ -95,7 +95,7 @@ bool sortScoreByPP(FinishedScore const &a, FinishedScore const &b) {
 void Database::AsyncDBLoader::init() {
     if(!db) return;  // don't crash when exiting while loading db
 
-    if(cv::debug_db.getBool() || cv::debug_async_db.getBool()) debugLog("(AsyncDBLoader) start\n");
+    if(cv::debug_db.getBool() || cv::debug_async_db.getBool()) debugLog("(AsyncDBLoader) start");
 
     if(db->bNeedRawLoad) {
         db->scheduleLoadRaw();
@@ -109,12 +109,12 @@ void Database::AsyncDBLoader::init() {
     db->fLoadingProgress = 1.0f;
     this->bReady = true;
 
-    if(cv::debug_db.getBool() || cv::debug_async_db.getBool()) debugLog("(AsyncDBLoader) done\n");
+    if(cv::debug_db.getBool() || cv::debug_async_db.getBool()) debugLog("(AsyncDBLoader) done");
 }
 
 // run immediately on a separate thread when resourceManager->loadResource() is called
 void Database::AsyncDBLoader::initAsync() {
-    if(cv::debug_db.getBool() || cv::debug_async_db.getBool()) debugLog("(AsyncDBLoader) start\n");
+    if(cv::debug_db.getBool() || cv::debug_async_db.getBool()) debugLog("(AsyncDBLoader) start");
     assert(db != nullptr);
 
     std::string peppy_scores_path = cv::osu_folder.getString();
@@ -147,11 +147,11 @@ done:
     db->dbPathsToImport.clear();
 
     this->bAsyncReady = true;
-    if(cv::debug_db.getBool() || cv::debug_async_db.getBool()) debugLog("(AsyncDBLoader) done\n");
+    if(cv::debug_db.getBool() || cv::debug_async_db.getBool()) debugLog("(AsyncDBLoader) done");
 }
 
 void Database::startLoader() {
-    if(cv::debug_db.getBool() || cv::debug_async_db.getBool()) debugLog("start\n");
+    if(cv::debug_db.getBool() || cv::debug_async_db.getBool()) debugLog("start");
     this->destroyLoader();
 
     // stop threads that rely on database content
@@ -185,16 +185,16 @@ void Database::startLoader() {
     resourceManager->requestNextLoadAsync();
     resourceManager->loadResource(this->loader);
 
-    if(cv::debug_db.getBool() || cv::debug_async_db.getBool()) debugLog("done\n");
+    if(cv::debug_db.getBool() || cv::debug_async_db.getBool()) debugLog("done");
 }
 
 void Database::destroyLoader() {
-    if(cv::debug_db.getBool() || cv::debug_async_db.getBool()) debugLog("start\n");
+    if(cv::debug_db.getBool() || cv::debug_async_db.getBool()) debugLog("start");
     if(this->loader) {
         resourceManager->destroyResource(this->loader, true);  // force blocking
         this->loader = nullptr;
     }
-    if(cv::debug_db.getBool() || cv::debug_async_db.getBool()) debugLog("done\n");
+    if(cv::debug_db.getBool() || cv::debug_async_db.getBool()) debugLog("done");
 }
 
 Database::Database() {
@@ -281,7 +281,7 @@ void Database::update() {
                 this->bRawBeatmapLoadScheduled = false;
                 this->importTimer->update();
 
-                debugLog("Refresh finished, added {} beatmaps in {:f} seconds.\n", this->beatmapsets.size(),
+                debugLog("Refresh finished, added {} beatmaps in {:f} seconds.", this->beatmapsets.size(),
                          this->importTimer->getElapsedTime());
 
                 load_collections();
@@ -699,7 +699,7 @@ DatabaseBeatmap *Database::getBeatmapDifficulty(i32 map_id) {
 
 DatabaseBeatmap *Database::getBeatmapSet(i32 set_id) {
     if(this->isLoading()) {
-        debugLog("we are loading, progress {}, not returning a DatabaseBeatmap*\n",
+        debugLog("we are loading, progress {}, not returning a DatabaseBeatmap*",
                  this->getProgress());
         return nullptr;
     }
@@ -726,7 +726,7 @@ std::string Database::getOsuSongsFolder() {
 void Database::scheduleLoadRaw() {
     this->sRawBeatmapLoadOsuSongFolder = Database::getOsuSongsFolder();
 
-    debugLog("Database: sRawBeatmapLoadOsuSongFolder = {:s}\n", this->sRawBeatmapLoadOsuSongFolder);
+    debugLog("Database: sRawBeatmapLoadOsuSongFolder = {:s}", this->sRawBeatmapLoadOsuSongFolder);
 
     this->rawLoadBeatmapFolders = env->getFoldersInFolder(this->sRawBeatmapLoadOsuSongFolder);
     this->iNumBeatmapsToLoad = this->rawLoadBeatmapFolders.size();
@@ -750,7 +750,7 @@ void Database::scheduleLoadRaw() {
         this->rawLoadBeatmapFolders = toLoad;
         this->iNumBeatmapsToLoad = this->rawLoadBeatmapFolders.size();
 
-        debugLog("Database: Found {} new/changed beatmaps.\n", this->iNumBeatmapsToLoad);
+        debugLog("Database: Found {} new/changed beatmaps.", this->iNumBeatmapsToLoad);
 
         this->bFoundChanges = this->iNumBeatmapsToLoad > 0;
         if(this->bFoundChanges)
@@ -763,8 +763,8 @@ void Database::scheduleLoadRaw() {
                 UString::format("No new beatmaps detected.", this->iNumBeatmapsToLoad), 0xff00ff00);
     }
 
-    debugLog("Database: Building beatmap database ...\n");
-    debugLog("Database: Found {} folders to load.\n", this->rawLoadBeatmapFolders.size());
+    debugLog("Database: Building beatmap database ...");
+    debugLog("Database: Found {} folders to load.", this->rawLoadBeatmapFolders.size());
 
     // only start loading if we have something to load
     if(this->rawLoadBeatmapFolders.size() > 0) {
@@ -789,7 +789,7 @@ void Database::loadMaps() {
     const auto &neosu_maps_path = this->database_files["neosu_maps.db"];
 
     const std::string &songFolder = Database::getOsuSongsFolder();
-    debugLog("Database: songFolder = {:s}\n", songFolder.c_str());
+    debugLog("Database: songFolder = {:s}", songFolder.c_str());
 
     this->importTimer->start();
 
@@ -975,7 +975,7 @@ void Database::loadMaps() {
             auto playerName = db.read_string();
             this->iNumBeatmapsToLoad = db.read<u32>();
 
-            debugLog("Database: version = {:d}, folderCount = {:d}, playerName = {:s}, numDiffs = {:d}\n",
+            debugLog("Database: version = {:d}, folderCount = {:d}, playerName = {:s}, numDiffs = {:d}",
                      this->iVersion, this->iFolderCount, playerName.c_str(), this->iNumBeatmapsToLoad);
 
             // hard cap upper db version
@@ -996,7 +996,7 @@ void Database::loadMaps() {
                 if(this->bInterruptLoad.load()) break;  // cancellation point
 
                 if(cv::debug_db.getBool())
-                    debugLog("Database: Reading beatmap {:d}/{:d} ...\n", (i + 1), this->iNumBeatmapsToLoad);
+                    debugLog("Database: Reading beatmap {:d}/{:d} ...", (i + 1), this->iNumBeatmapsToLoad);
 
                 // update progress (another thread checks if progress >= 1.f to know when we're done)
                 u32 progress_bytes = this->bytes_processed + db.total_pos;
@@ -1130,7 +1130,7 @@ void Database::loadMaps() {
                     if(db.read_bytes((u8 *)timing_points_buffer.data(),
                                      sizeof(Database::TIMINGPOINT) * nb_timing_points) !=
                        sizeof(Database::TIMINGPOINT) * nb_timing_points) {
-                        debugLog("WARNING: failed to read timing points from beatmap {:d} !\n", (i + 1));
+                        debugLog("WARNING: failed to read timing points from beatmap {:d} !", (i + 1));
                     }
                     bpm = getBPM(timing_points_buffer, bpm_calculation_buffer);
                 }
@@ -1397,18 +1397,18 @@ void Database::loadMaps() {
         this->bytes_processed += db.total_size;
     }
     this->importTimer->update();
-    debugLog("peppy+neosu maps: loading took {:f} seconds ({:d} peppy, {:d} neosu, {:d} maps total)\n",
+    debugLog("peppy+neosu maps: loading took {:f} seconds ({:d} peppy, {:d} neosu, {:d} maps total)",
              this->importTimer->getElapsedTime(), nb_peppy_maps, nb_neosu_maps, nb_peppy_maps + nb_neosu_maps);
-    debugLog("Found {:d} overrides; {:d} maps need star recalc, {:d} maps need loudness recalc\n", nb_overrides,
+    debugLog("Found {:d} overrides; {:d} maps need star recalc, {:d} maps need loudness recalc", nb_overrides,
              this->maps_to_recalc.size(), this->loudness_to_calc.size());
 
     this->peppy_overrides_mtx.unlock();
 }
 
 void Database::saveMaps() {
-    debugLog("Osu: Saving maps ...\n");
+    debugLog("Osu: Saving maps ...");
     if(!this->neosu_maps_loaded) {
-        debugLog("Cannot save maps since they weren't loaded properly first!\n");
+        debugLog("Cannot save maps since they weren't loaded properly first!");
         return;
     }
 
@@ -1499,7 +1499,7 @@ void Database::saveMaps() {
     this->peppy_overrides_mtx.unlock();
 
     t.update();
-    debugLog("Saved {:d} maps (+ {:d} overrides) in {:f} seconds.\n", nb_diffs_saved, nb_overrides, t.getElapsedTime());
+    debugLog("Saved {:d} maps (+ {:d} overrides) in {:f} seconds.", nb_diffs_saved, nb_overrides, t.getElapsedTime());
 }
 
 void Database::findDatabases() {
@@ -1626,7 +1626,7 @@ void Database::loadScores(const UString &dbPath) {
 
     u32 db_version = db.read<u32>();
     if(db_version > NEOSU_SCORE_DB_VERSION) {
-        debugLog("neosu_scores.db version is newer than current neosu version!\n");
+        debugLog("neosu_scores.db version is newer than current neosu version!");
         this->bytes_processed += db.total_size;
         return;
     } else if(db_version < NEOSU_SCORE_DB_VERSION) {
@@ -1693,10 +1693,10 @@ void Database::loadScores(const UString &dbPath) {
     }
 
     if(nb_neosu_scores != nb_scores) {
-        debugLog("Inconsistency in neosu_scores.db! Expected {:d} scores, found {:d}!\n", nb_scores, nb_neosu_scores);
+        debugLog("Inconsistency in neosu_scores.db! Expected {:d} scores, found {:d}!", nb_scores, nb_neosu_scores);
     }
 
-    debugLog("Loaded {:d} neosu scores\n", nb_neosu_scores);
+    debugLog("Loaded {:d} neosu scores", nb_neosu_scores);
     this->bytes_processed += db.total_size;
 }
 
@@ -1801,10 +1801,10 @@ void Database::loadOldMcNeosuScores(const UString &dbPath) {
             }
         }
 
-        debugLog("Loaded {} old-neosu scores\n", nb_imported);
+        debugLog("Loaded {} old-neosu scores", nb_imported);
     } else {  // mcosu (this is copy-pasted from mcosu-ng)
         const int numBeatmaps = db.read<int32_t>();
-        debugLog("McOsu scores: version = {}, numBeatmaps = {}\n", db_version, numBeatmaps);
+        debugLog("McOsu scores: version = {}, numBeatmaps = {}", db_version, numBeatmaps);
 
         for(int b = 0; b < numBeatmaps; b++) {
             u32 progress_bytes = this->bytes_processed + db.total_pos;
@@ -1815,15 +1815,15 @@ void Database::loadOldMcNeosuScores(const UString &dbPath) {
             const int numScores = db.read<int32_t>();
 
             if(md5hash.length() < 32) {
-                debugLog("WARNING: Invalid score on beatmap {} with md5hash.length() = {}!\n", b, md5hash.length());
+                debugLog("WARNING: Invalid score on beatmap {} with md5hash.length() = {}!", b, md5hash.length());
                 continue;
             } else if(md5hash.length() > 32) {
-                debugLog("ERROR: Corrupt score database/entry detected, stopping.\n");
+                debugLog("ERROR: Corrupt score database/entry detected, stopping.");
                 break;
             }
 
             if(cv::debug_db.getBool())
-                debugLog("Beatmap[{}]: md5hash = {:s}, numScores = {}\n", b, md5hash.string(), numScores);
+                debugLog("Beatmap[{}]: md5hash = {:s}, numScores = {}", b, md5hash.string(), numScores);
 
             for(int s = 0; s < numScores; s++) {
                 const auto gamemode = db.read<uint8_t>();  // NOTE: abused as isImportedLegacyScore flag (because I
@@ -1845,7 +1845,7 @@ void Database::loadOldMcNeosuScores(const UString &dbPath) {
                     db.skip_bytes(bytesToSkipUntilNextScore);
                     db.skip_string();  // experimentalMods
                     if(cv::debug_db.getBool()) {
-                        debugLog("skipped score {} (already loaded from neosu_scores.db)\n", md5hash.string());
+                        debugLog("skipped score {} (already loaded from neosu_scores.db)", md5hash.string());
                     }
                     continue;
                 }
@@ -1971,7 +1971,7 @@ void Database::loadOldMcNeosuScores(const UString &dbPath) {
                 }
             }
         }
-        debugLog("Loaded {} McOsu scores\n", nb_imported);
+        debugLog("Loaded {} McOsu scores", nb_imported);
     }
 
     this->bytes_processed += db.total_size;
@@ -1988,17 +1988,17 @@ void Database::loadPeppyScores(const UString &dbPath) {
         return;
     }
 
-    debugLog("osu!stable scores.db: version = {:d}, nb_beatmaps = {:d}\n", db_version, nb_beatmaps);
+    debugLog("osu!stable scores.db: version = {:d}, nb_beatmaps = {:d}", db_version, nb_beatmaps);
 
     char client_str[15] = "peppy-YYYYMMDD";
     for(int b = 0; b < nb_beatmaps; b++) {
         std::string md5hash_str = db.read_string();
         if(md5hash_str.length() < 32) {
-            debugLog("WARNING: Invalid score on beatmap {:d} with md5hash_str.length() = {:d}!\n", b,
+            debugLog("WARNING: Invalid score on beatmap {:d} with md5hash_str.length() = {:d}!", b,
                      md5hash_str.length());
             continue;
         } else if(md5hash_str.length() > 32) {
-            debugLog("ERROR: Corrupt score database/entry detected, stopping.\n");
+            debugLog("ERROR: Corrupt score database/entry detected, stopping.");
             break;
         }
 
@@ -2075,14 +2075,14 @@ void Database::loadPeppyScores(const UString &dbPath) {
         this->fLoadingProgress = std::clamp(progress_float, 0.01, 0.99);
     }
 
-    debugLog("Loaded {:d} osu!stable scores\n", nb_imported);
+    debugLog("Loaded {:d} osu!stable scores", nb_imported);
     this->bytes_processed += db.total_size;
 }
 
 void Database::saveScores() {
-    debugLog("Osu: Saving scores ...\n");
+    debugLog("Osu: Saving scores ...");
     if(!this->bScoresLoaded) {
-        debugLog("Cannot save scores since they weren't loaded properly first!\n");
+        debugLog("Cannot save scores since they weren't loaded properly first!");
         return;
     }
 
@@ -2151,11 +2151,11 @@ void Database::saveScores() {
         }
     }
 
-    debugLog("Saved {:d} scores in {:f} seconds.\n", nb_scores, (Timing::getTimeReal() - startTime));
+    debugLog("Saved {:d} scores in {:f} seconds.", nb_scores, (Timing::getTimeReal() - startTime));
 }
 
 BeatmapSet *Database::loadRawBeatmap(const std::string &beatmapPath) {
-    if(cv::debug_db.getBool()) debugLog("BeatmapDatabase::loadRawBeatmap() : {:s}\n", beatmapPath.c_str());
+    if(cv::debug_db.getBool()) debugLog("BeatmapDatabase::loadRawBeatmap() : {:s}", beatmapPath.c_str());
 
     // try loading all diffs
     auto *diffs2 = new std::vector<BeatmapDifficulty *>();
@@ -2172,7 +2172,7 @@ BeatmapSet *Database::loadRawBeatmap(const std::string &beatmapPath) {
             diffs2->push_back(map);
         } else {
             if(cv::debug_db.getBool()) {
-                debugLog("BeatmapDatabase::loadRawBeatmap() : Couldn't loadMetadata(), deleting object.\n");
+                debugLog("BeatmapDatabase::loadRawBeatmap() : Couldn't loadMetadata(), deleting object.");
             }
             SAFE_DELETE(map);
         }

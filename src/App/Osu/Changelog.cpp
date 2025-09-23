@@ -700,7 +700,7 @@ void Changelog::onChangeClicked(CBaseUIButton *button) {
         UString url = changeTextMaybeContainingClickableURL.substr(maybeURLBeginIndex);
         if(url.length() > 0 && url[url.length() - 1] == L')') url = url.substr(0, url.length() - 1);
 
-        debugLog("url = {:s}\n", url.toUtf8());
+        debugLog("url = {:s}", url.toUtf8());
 
         osu->getNotificationOverlay()->addNotification("Opening browser, please wait ...", 0xffffffff, false, 0.75f);
         env->openURLInDefaultBrowser(url.toUtf8());

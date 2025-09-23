@@ -824,7 +824,7 @@ ModFPoSu3DModel::ModFPoSu3DModel(const UString &objFilePathOrContents, Image *te
                         stdFileContents.resize(numBytes);
                         f.read(&stdFileContents[0], numBytes);
                     } else
-                        debugLog("Failed to load {:s}\n", objFilePathOrContents.toUtf8());
+                        debugLog("Failed to load {:s}", objFilePathOrContents.toUtf8());
                 }
                 fileContents = UString(stdFileContents.c_str(), stdFileContents.size());
             }

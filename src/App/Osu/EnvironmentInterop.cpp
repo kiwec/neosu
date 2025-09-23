@@ -160,7 +160,7 @@ bool sdl_windows_message_hook(void *userdata, MSG *msg) {
 
             // handle the arguments
             if(!args.empty()) {
-                debugLog("handling external arguments: {}\n", SString::join(args));
+                debugLog("handling external arguments: {}", SString::join(args));
                 Environment *env_ptr{static_cast<Environment *>(userdata)};
                 env_ptr->getEnvInterop().handle_cmdline_args(args);
             }
@@ -230,17 +230,17 @@ void Environment::Interop::handle_existing_window(int argc, char *argv[]) {
                                 // success
                                 break;
                             case WAIT_TIMEOUT:
-                                debugLog("timeout waiting for message processing completion\n");
+                                debugLog("timeout waiting for message processing completion");
                                 break;
                             case WAIT_FAILED:
-                                debugLog("failed to wait for completion event, error: {}\n", GetLastError());
+                                debugLog("failed to wait for completion event, error: {}", GetLastError());
                                 break;
                             default:
-                                debugLog("unexpected wait result: {}\n", wait_result);
+                                debugLog("unexpected wait result: {}", wait_result);
                                 break;
                         }
                     } else {
-                        debugLog("failed to post message to existing HWND {}, error: {}\n",
+                        debugLog("failed to post message to existing HWND {}, error: {}",
                                  static_cast<const void *>(existing_window), GetLastError());
                     }
                 }
@@ -265,7 +265,7 @@ void Environment::Interop::setup_system_integrations() {
     i32 err = RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\Classes\\neosu", 0, nullptr, REG_OPTION_NON_VOLATILE,
                               KEY_WRITE, nullptr, &neosu_key, nullptr);
     if(err != ERROR_SUCCESS) {
-        debugLog("Failed to register neosu as an application. Error: {} (root)\n", err);
+        debugLog("Failed to register neosu as an application. Error: {} (root)", err);
         return;
     }
     RegSetValueExW(neosu_key, L"", 0, REG_SZ, (BYTE *)L"neosu", 12);
@@ -275,7 +275,7 @@ void Environment::Interop::setup_system_integrations() {
     err = RegCreateKeyExW(neosu_key, L"Application", 0, nullptr, REG_OPTION_NON_VOLATILE, KEY_WRITE, nullptr, &app_key,
                           nullptr);
     if(err != ERROR_SUCCESS) {
-        debugLog("Failed to register neosu as an application. Error: {} (app)\n", err);
+        debugLog("Failed to register neosu as an application. Error: {} (app)", err);
         RegCloseKey(neosu_key);
         return;
     }
@@ -286,7 +286,7 @@ void Environment::Interop::setup_system_integrations() {
     err = RegCreateKeyExW(neosu_key, L"shell\\open\\command", 0, nullptr, REG_OPTION_NON_VOLATILE, KEY_WRITE, nullptr,
                           &cmd_key, nullptr);
     if(err != ERROR_SUCCESS) {
-        debugLog("Failed to register neosu as an application. Error: {} (command)\n", err);
+        debugLog("Failed to register neosu as an application. Error: {} (command)", err);
         RegCloseKey(neosu_key);
         return;
     }
@@ -315,7 +315,7 @@ void Environment::Interop::setup_system_integrations() {
     err = RegCreateKeyEx(HKEY_CURRENT_USER, TEXT("Software\\Classes\\.osk\\OpenWithProgids"), 0, nullptr,
                          REG_OPTION_NON_VOLATILE, KEY_WRITE, nullptr, &osk_key, nullptr);
     if(err != ERROR_SUCCESS) {
-        debugLog("Failed to register neosu as .osk format handler. Error: {}\n", err);
+        debugLog("Failed to register neosu as .osk format handler. Error: {}", err);
         return;
     }
     RegSetValueEx(osk_key, TEXT("neosu"), 0, REG_SZ, (BYTE *)L"", 2);
@@ -326,7 +326,7 @@ void Environment::Interop::setup_system_integrations() {
     err = RegCreateKeyEx(HKEY_CURRENT_USER, TEXT("Software\\Classes\\.osr\\OpenWithProgids"), 0, nullptr,
                          REG_OPTION_NON_VOLATILE, KEY_WRITE, nullptr, &osr_key, nullptr);
     if(err != ERROR_SUCCESS) {
-        debugLog("Failed to register neosu as .osr format handler. Error: {}\n", err);
+        debugLog("Failed to register neosu as .osr format handler. Error: {}", err);
         return;
     }
     RegSetValueEx(osr_key, TEXT("neosu"), 0, REG_SZ, (BYTE *)L"", 2);
@@ -337,7 +337,7 @@ void Environment::Interop::setup_system_integrations() {
     err = RegCreateKeyEx(HKEY_CURRENT_USER, TEXT("Software\\Classes\\.osz\\OpenWithProgids"), 0, nullptr,
                          REG_OPTION_NON_VOLATILE, KEY_WRITE, nullptr, &osz_key, nullptr);
     if(err != ERROR_SUCCESS) {
-        debugLog("Failed to register neosu as .osz format handler. Error: {}\n", err);
+        debugLog("Failed to register neosu as .osz format handler. Error: {}", err);
         return;
     }
     RegSetValueEx(osz_key, TEXT("neosu"), 0, REG_SZ, (BYTE *)L"", 2);

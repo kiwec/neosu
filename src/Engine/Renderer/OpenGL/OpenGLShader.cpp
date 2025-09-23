@@ -71,7 +71,7 @@ void OpenGLShader::setUniform1f(const std::string_view &name, float value) {
     if(id != -1)
         glUniform1fARB(id, value);
     else if(cv::debug_shaders.getBool())
-        debugLog("OpenGLShader Warning: Can't find uniform {:s}\n", name);
+        debugLog("OpenGLShader Warning: Can't find uniform {:s}", name);
 }
 
 void OpenGLShader::setUniform1fv(const std::string_view &name, int count, float *values) {
@@ -81,7 +81,7 @@ void OpenGLShader::setUniform1fv(const std::string_view &name, int count, float 
     if(id != -1)
         glUniform1fvARB(id, count, values);
     else if(cv::debug_shaders.getBool())
-        debugLog("OpenGLShader Warning: Can't find uniform {:s}\n", name);
+        debugLog("OpenGLShader Warning: Can't find uniform {:s}", name);
 }
 
 void OpenGLShader::setUniform1i(const std::string_view &name, int value) {
@@ -91,7 +91,7 @@ void OpenGLShader::setUniform1i(const std::string_view &name, int value) {
     if(id != -1)
         glUniform1iARB(id, value);
     else if(cv::debug_shaders.getBool())
-        debugLog("OpenGLShader Warning: Can't find uniform {:s}\n", name);
+        debugLog("OpenGLShader Warning: Can't find uniform {:s}", name);
 }
 
 void OpenGLShader::setUniform2f(const std::string_view &name, float value1, float value2) {
@@ -101,7 +101,7 @@ void OpenGLShader::setUniform2f(const std::string_view &name, float value1, floa
     if(id != -1)
         glUniform2fARB(id, value1, value2);
     else if(cv::debug_shaders.getBool())
-        debugLog("OpenGLShader Warning: Can't find uniform {:s}\n", name);
+        debugLog("OpenGLShader Warning: Can't find uniform {:s}", name);
 }
 
 void OpenGLShader::setUniform2fv(const std::string_view &name, int count, float *vectors) {
@@ -111,7 +111,7 @@ void OpenGLShader::setUniform2fv(const std::string_view &name, int count, float 
     if(id != -1)
         glUniform2fv(id, count, (float *)&vectors[0]);
     else if(cv::debug_shaders.getBool())
-        debugLog("OpenGLShader Warning: Can't find uniform {:s}\n", name);
+        debugLog("OpenGLShader Warning: Can't find uniform {:s}", name);
 }
 
 void OpenGLShader::setUniform3f(const std::string_view &name, float x, float y, float z) {
@@ -121,7 +121,7 @@ void OpenGLShader::setUniform3f(const std::string_view &name, float x, float y, 
     if(id != -1)
         glUniform3fARB(id, x, y, z);
     else if(cv::debug_shaders.getBool())
-        debugLog("OpenGLShader Warning: Can't find uniform {:s}\n", name);
+        debugLog("OpenGLShader Warning: Can't find uniform {:s}", name);
 }
 
 void OpenGLShader::setUniform3fv(const std::string_view &name, int count, float *vectors) {
@@ -131,7 +131,7 @@ void OpenGLShader::setUniform3fv(const std::string_view &name, int count, float 
     if(id != -1)
         glUniform3fv(id, count, (float *)&vectors[0]);
     else if(cv::debug_shaders.getBool())
-        debugLog("OpenGLShader Warning: Can't find uniform {:s}\n", name);
+        debugLog("OpenGLShader Warning: Can't find uniform {:s}", name);
 }
 
 void OpenGLShader::setUniform4f(const std::string_view &name, float x, float y, float z, float w) {
@@ -141,7 +141,7 @@ void OpenGLShader::setUniform4f(const std::string_view &name, float x, float y, 
     if(id != -1)
         glUniform4fARB(id, x, y, z, w);
     else if(cv::debug_shaders.getBool())
-        debugLog("OpenGLShader Warning: Can't find uniform {:s}\n", name);
+        debugLog("OpenGLShader Warning: Can't find uniform {:s}", name);
 }
 
 void OpenGLShader::setUniformMatrix4fv(const std::string_view &name, Matrix4 &matrix) {
@@ -151,7 +151,7 @@ void OpenGLShader::setUniformMatrix4fv(const std::string_view &name, Matrix4 &ma
     if(id != -1)
         glUniformMatrix4fv(id, 1, GL_FALSE, matrix.get());
     else if(cv::debug_shaders.getBool())
-        debugLog("OpenGLShader Warning: Can't find uniform {:s}\n", name);
+        debugLog("OpenGLShader Warning: Can't find uniform {:s}", name);
 }
 
 void OpenGLShader::setUniformMatrix4fv(const std::string_view &name, float *v) {
@@ -161,7 +161,7 @@ void OpenGLShader::setUniformMatrix4fv(const std::string_view &name, float *v) {
     if(id != -1)
         glUniformMatrix4fv(id, 1, GL_FALSE, v);
     else if(cv::debug_shaders.getBool())
-        debugLog("OpenGLShader Warning: Can't find uniform {:s}\n", name);
+        debugLog("OpenGLShader Warning: Can't find uniform {:s}", name);
 }
 
 int OpenGLShader::getAttribLocation(const std::string_view &name) {
@@ -184,10 +184,10 @@ int OpenGLShader::getAndCacheUniformLocation(const std::string_view &name) {
 
 bool OpenGLShader::compile(const std::string &vertexShader, const std::string &fragmentShader, bool source) {
     // load & compile shaders
-    debugLog("Compiling {:s} ...\n", (source ? "vertex source" : vertexShader));
+    debugLog("Compiling {:s} ...", (source ? "vertex source" : vertexShader));
     this->iVertexShader = source ? createShaderFromString(vertexShader, GL_VERTEX_SHADER_ARB)
                                  : createShaderFromFile(vertexShader, GL_VERTEX_SHADER_ARB);
-    debugLog("Compiling {:s} ...\n", (source ? "fragment source" : fragmentShader));
+    debugLog("Compiling {:s} ...", (source ? "fragment source" : fragmentShader));
     this->iFragmentShader = source ? createShaderFromString(fragmentShader, GL_FRAGMENT_SHADER_ARB)
                                    : createShaderFromFile(fragmentShader, GL_FRAGMENT_SHADER_ARB);
 
@@ -246,7 +246,7 @@ int OpenGLShader::createShaderFromString(const std::string &shaderSource, int sh
     glGetObjectParameterivARB(shader, GL_OBJECT_COMPILE_STATUS_ARB, &returnValue);
 
     if(returnValue == GL_FALSE) {
-        debugLog("------------------OpenGLShader Compile Error------------------\n");
+        debugLog("------------------OpenGLShader Compile Error------------------");
 
         glGetObjectParameterivARB(shader, GL_OBJECT_INFO_LOG_LENGTH_ARB, &returnValue);
 
@@ -257,7 +257,7 @@ int OpenGLShader::createShaderFromString(const std::string &shaderSource, int sh
             delete[] errorLog;
         }
 
-        debugLog("--------------------------------------------------------------\n");
+        debugLog("--------------------------------------------------------------");
 
         engine->showMessageError("OpenGLShader Error", "Couldn't glShaderSourceARB() or glCompileShaderARB()");
         return 0;

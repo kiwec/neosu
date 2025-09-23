@@ -593,35 +593,35 @@ bool BeatmapInterface::start() {
             switch(result.errorCode) {
                 case 1: {
                     UString errorMessage = "Error: Couldn't load beatmap metadata :(";
-                    debugLog("Osu Error: Couldn't load beatmap metadata {:s}\n", this->beatmap->getFilePath().c_str());
+                    debugLog("Osu Error: Couldn't load beatmap metadata {:s}", this->beatmap->getFilePath().c_str());
 
                     osu->getNotificationOverlay()->addToast(errorMessage, ERROR_TOAST);
                 } break;
 
                 case 2: {
                     UString errorMessage = "Error: Couldn't load beatmap file :(";
-                    debugLog("Osu Error: Couldn't load beatmap file {:s}\n", this->beatmap->getFilePath().c_str());
+                    debugLog("Osu Error: Couldn't load beatmap file {:s}", this->beatmap->getFilePath().c_str());
 
                     osu->getNotificationOverlay()->addToast(errorMessage, ERROR_TOAST);
                 } break;
 
                 case 3: {
                     UString errorMessage = "Error: No timingpoints in beatmap :(";
-                    debugLog("Osu Error: No timingpoints in beatmap {:s}\n", this->beatmap->getFilePath().c_str());
+                    debugLog("Osu Error: No timingpoints in beatmap {:s}", this->beatmap->getFilePath().c_str());
 
                     osu->getNotificationOverlay()->addToast(errorMessage, ERROR_TOAST);
                 } break;
 
                 case 4: {
                     UString errorMessage = "Error: No hitobjects in beatmap :(";
-                    debugLog("Osu Error: No hitobjects in beatmap {:s}\n", this->beatmap->getFilePath().c_str());
+                    debugLog("Osu Error: No hitobjects in beatmap {:s}", this->beatmap->getFilePath().c_str());
 
                     osu->getNotificationOverlay()->addToast(errorMessage, ERROR_TOAST);
                 } break;
 
                 case 5: {
                     UString errorMessage = "Error: Too many hitobjects in beatmap :(";
-                    debugLog("Osu Error: Too many hitobjects in beatmap {:s}\n", this->beatmap->getFilePath().c_str());
+                    debugLog("Osu Error: Too many hitobjects in beatmap {:s}", this->beatmap->getFilePath().c_str());
 
                     osu->getNotificationOverlay()->addToast(errorMessage, ERROR_TOAST);
                 } break;
@@ -838,7 +838,7 @@ void BeatmapInterface::pause(bool quitIfWaiting) {
 
     if(this->bIsPaused && isFirstPause) {
         if(!cv::submit_after_pause.getBool()) {
-            debugLog("Disabling score submission due to pausing\n");
+            debugLog("Disabling score submission due to pausing");
             this->is_submittable = false;
         }
 
@@ -930,7 +930,7 @@ void BeatmapInterface::fail(bool force_death) {
         this->fFailAnim = 1.0f;
         anim->moveLinear(&this->fFailAnim, 0.0f, cv::fail_time.getFloat(), true);
     } else if(!osu->getScore()->isDead()) {
-        debugLog("Disabling score submission due to death\n");
+        debugLog("Disabling score submission due to death");
         this->is_submittable = false;
 
         anim->deleteExistingAnimation(&this->fHealth2);
@@ -1014,7 +1014,7 @@ void BeatmapInterface::seekMS(u32 ms) {
     }
 
     if(BanchoState::spectating) {
-        debugLog("After seeking, we are now {:d}ms behind the player.\n", this->last_frame_ms - (i32)ms);
+        debugLog("After seeking, we are now {:d}ms behind the player.", this->last_frame_ms - (i32)ms);
     }
 
     if(this->is_watching) {
@@ -1506,7 +1506,7 @@ void BeatmapInterface::handlePreviewPlay() {
 void BeatmapInterface::loadMusic() {
     if(!this->beatmap || this->beatmap->getFullSoundFilePath().empty()) {
         if(this->beatmap) {
-            debugLog("no music file for {}!\n", this->beatmap->getFilePath());
+            debugLog("no music file for {}!", this->beatmap->getFilePath());
         }
         unloadMusic();
         return;
@@ -2097,7 +2097,7 @@ void BeatmapInterface::update() {
     bool was_preloading = this->bIsPreLoading;
     if(this->bIsPreLoading) {
         if(cv::debug_osu.getBool() && this->iPreLoadingIndex == 0)
-            debugLog("Beatmap: Preloading slider vertexbuffers ...\n");
+            debugLog("Beatmap: Preloading slider vertexbuffers ...");
 
         f64 startTime = Timing::getTimeReal();
         f64 delta = 0.0;
@@ -2106,7 +2106,7 @@ void BeatmapInterface::update() {
         while(delta < 0.010 && this->bIsPreLoading) {
             if(this->iPreLoadingIndex >= this->hitobjects.size()) {
                 this->bIsPreLoading = false;
-                debugLog("Beatmap: Preloading done.\n");
+                debugLog("Beatmap: Preloading done.");
                 break;
             } else {
                 auto *sliderPointer = dynamic_cast<Slider *>(this->hitobjects[this->iPreLoadingIndex]);
@@ -2436,7 +2436,7 @@ void BeatmapInterface::update2() {
     if(BanchoState::spectating) {
         if(this->iCurMusicPos + (2 * cv::spec_buffer.getInt()) < this->last_frame_ms) {
             i32 target = this->last_frame_ms - cv::spec_buffer.getInt();
-            debugLog("We're {:d}ms behind, seeking to catch up to player...\n",
+            debugLog("We're {:d}ms behind, seeking to catch up to player...",
                      this->last_frame_ms - this->iCurMusicPos);
             this->seekMS(std::max(0, target));
             return;
@@ -3159,7 +3159,7 @@ void BeatmapInterface::write_frame() {
 }
 
 void BeatmapInterface::onModUpdate(bool rebuildSliderVertexBuffers, bool recomputeDrainRate) {
-    if(cv::debug_osu.getBool()) debugLog("Playfield::onModUpdate() @ {:f}\n", engine->getTime());
+    if(cv::debug_osu.getBool()) debugLog("Playfield::onModUpdate() @ {:f}", engine->getTime());
 
     this->updatePlayfieldMetrics();
     this->updateHitobjectMetrics();
@@ -3210,7 +3210,7 @@ void BeatmapInterface::onModUpdate(bool rebuildSliderVertexBuffers, bool recompu
 }
 
 void BeatmapInterface::resetLiveStarsTasks() {
-    if(cv::debug_osu.getBool()) debugLog("Playfield::resetLiveStarsTasks() called\n");
+    if(cv::debug_osu.getBool()) debugLog("Playfield::resetLiveStarsTasks() called");
 
     osu->getHUD()->live_pp = 0.0;
     osu->getHUD()->live_stars = 0.0;
@@ -3232,7 +3232,7 @@ bool BeatmapInterface::isBuffering() {
         }
 
         if(leeway >= cv::spec_buffer.getInt()) {
-            debugLog("UNPAUSING: leeway: {:d}, last_event: {:d}, last_frame: {:d}\n", leeway, this->iCurMusicPos,
+            debugLog("UNPAUSING: leeway: {:d}, last_event: {:d}, last_frame: {:d}", leeway, this->iCurMusicPos,
                      this->last_frame_ms);
             soundEngine->play(this->music);
             this->bIsPlaying = true;
@@ -3246,7 +3246,7 @@ bool BeatmapInterface::isBuffering() {
         bool is_finished = lastHitObject != nullptr && lastHitObject->isFinished();
 
         if(leeway < 0 && !is_finished) {
-            debugLog("PAUSING: leeway: {:d}, last_event: {:d}, last_frame: {:d}\n", leeway, this->iCurMusicPos,
+            debugLog("PAUSING: leeway: {:d}, last_event: {:d}, last_frame: {:d}", leeway, this->iCurMusicPos,
                      this->last_frame_ms);
             soundEngine->pause(this->music);
             this->bIsPlaying = false;
@@ -3817,7 +3817,7 @@ void BeatmapInterface::updateSliderVertexBuffers() {
     this->fPrevHitCircleDiameter = this->fHitcircleDiameter;  // same here
     this->fPrevPlayfieldRotationFromConVar = cv::playfield_rotation.getFloat();  // same here
 
-    debugLog("Playfield::updateSliderVertexBuffers() for {:d} hitobjects ...\n", this->hitobjects.size());
+    debugLog("Playfield::updateSliderVertexBuffers() for {:d} hitobjects ...", this->hitobjects.size());
 
     for(auto &hitobject : this->hitobjects) {
         auto *sliderPointer = dynamic_cast<Slider *>(hitobject);
@@ -3828,7 +3828,7 @@ void BeatmapInterface::updateSliderVertexBuffers() {
 void BeatmapInterface::calculateStacks() {
     this->updateHitobjectMetrics();
 
-    debugLog("Beatmap: Calculating stacks ...\n");
+    debugLog("Beatmap: Calculating stacks ...");
 
     // reset
     for(auto &hitobject : this->hitobjects) {
@@ -3966,7 +3966,7 @@ void BeatmapInterface::computeDrainRate() {
 
     if(this->hitobjects.size() < 1 || this->beatmap == nullptr) return;
 
-    debugLog("Beatmap: Calculating drain ...\n");
+    debugLog("Beatmap: Calculating drain ...");
 
     {
         // see https://github.com/ppy/osu-iPhone/blob/master/Classes/OsuPlayer.m

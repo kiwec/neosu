@@ -120,7 +120,7 @@ void send_bancho_packet_async(Packet outgoing) {
         query_url,
         [](NetworkHandler::Response response) {
             if(!response.success) {
-                Logger::logRaw("[httpRequestAsync] Failed to send packet, HTTP error {}\n", response.responseCode);
+                Logger::logRaw("[httpRequestAsync] Failed to send packet, HTTP error {}", response.responseCode);
                 std::scoped_lock<std::mutex> lock{auth_mutex};
                 if(auth_header.empty()) {
                     auto errmsg = UString::format("Failed to log in: HTTP %ld", response.responseCode);
@@ -131,9 +131,9 @@ void send_bancho_packet_async(Packet outgoing) {
 
             // // debug
             // if (cv::debug_network.getBool()) {
-            //     Logger::logRaw("DEBUG headers:\n");
+            //     Logger::logRaw("DEBUG headers:");
             //     for(const auto &headerstr : response.headers) {
-            //         Logger::logRaw("{:s} {:s}\n", headerstr.first.c_str(), headerstr.second.c_str());
+            //         Logger::logRaw("{:s} {:s}", headerstr.first.c_str(), headerstr.second.c_str());
             //     }
             // }
 
@@ -149,10 +149,10 @@ void send_bancho_packet_async(Packet outgoing) {
             if(features_it != response.headers.end()) {
                 if(strstr(features_it->second.c_str(), "submit=0") != nullptr) {
                     BanchoState::score_submission_policy = ServerPolicy::NO;
-                    Logger::logRaw("[httpRequestAsync] Server doesn't want score submission. :(\n");
+                    Logger::logRaw("[httpRequestAsync] Server doesn't want score submission. :(");
                 } else if(strstr(features_it->second.c_str(), "submit=1") != nullptr) {
                     BanchoState::score_submission_policy = ServerPolicy::YES;
-                    Logger::logRaw("[httpRequestAsync] Server wants score submission! :D\n");
+                    Logger::logRaw("[httpRequestAsync] Server wants score submission! :D");
                 }
             }
 
@@ -172,7 +172,7 @@ void send_bancho_packet_async(Packet outgoing) {
                 u32 packet_len = proto::read<u32>(response_packet);
 
                 if(packet_len > 10485760) {
-                    Logger::logRaw("[httpRequestAsync] Received a packet over 10Mb! Dropping response.\n");
+                    Logger::logRaw("[httpRequestAsync] Received a packet over 10Mb! Dropping response.");
                     break;
                 }
 
@@ -257,7 +257,7 @@ void handle_api_response(Packet &packet) {
 
         default: {
             // NOTE: API Response type is same as API Request type
-            debugLog("No handler for API response type {:d}!\n", packet.id);
+            debugLog("No handler for API response type {:d}!", packet.id);
         }
     }
 }
@@ -267,7 +267,7 @@ void handle_api_response(Packet &packet) {
 // Used as fallback for Linux or other setups where neosu:// protocol handler doesn't work
 void complete_oauth(const UString &code) {
     auto url = fmt::format("neosu://login/{}/{}", cv::mp_server.getString(), code.toUtf8());
-    debugLog("Manually logging in: {}\n", url);
+    debugLog("Manually logging in: {}", url);
     handle_neosu_url(url.c_str());
 }
 
@@ -370,7 +370,7 @@ void receive_bancho_packets() {
 
 void send_api_request(const APIRequest &request) {
     if(BanchoState::get_uid() <= 0) {
-        debugLog("Cannot send API request of type {:d} since we are not logged in.\n",
+        debugLog("Cannot send API request of type {:d} since we are not logged in.",
                  static_cast<unsigned int>(request.type));
         return;
     }
@@ -396,7 +396,7 @@ void send_packet(Packet &packet) {
     // for (int i = 0; i < packet.pos; i++) {
     //     Logger::logRaw("{:02x} ", packet.memory[i]);
     // }
-    // Logger::logRaw("\n");
+    // Logger::logRaw("");
 
     // We're not sending it immediately, instead we just add it to the pile of
     // packets to send

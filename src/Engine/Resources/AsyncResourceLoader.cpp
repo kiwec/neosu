@@ -39,7 +39,7 @@ class AsyncResourceLoader::LoaderThread final {
     void run(const std::stop_token &stoken) noexcept {
         this->loader_ptr->iActiveThreadCount.fetch_add(1);
 
-        if(cv::debug_rm.getBool()) debugLog("AsyncResourceLoader: Thread #{} started\n", this->thread_index);
+        if(cv::debug_rm.getBool()) debugLog("AsyncResourceLoader: Thread #{} started", this->thread_index);
 
         const std::string loaderThreadName =
             fmt::format("res_ldr_thr{}", (this->thread_index % this->loader_ptr->iMaxThreads) + 1);
@@ -73,7 +73,7 @@ class AsyncResourceLoader::LoaderThread final {
             std::string debugName;
             if(debug) {
                 debugName = std::string{resource->getName()};
-                debugLog("AsyncResourceLoader: Thread #{} loading {:8p} : {:s}\n", this->thread_index,
+                debugLog("AsyncResourceLoader: Thread #{} loading {:8p} : {:s}", this->thread_index,
                          static_cast<const void *>(resource), debugName);
             }
 
@@ -86,7 +86,7 @@ class AsyncResourceLoader::LoaderThread final {
             McThread::set_current_thread_name(loaderThreadName.c_str());
 
             if(debug) {
-                debugLog("AsyncResourceLoader: Thread #{} finished async loading {:8p} : {:s}\n", this->thread_index,
+                debugLog("AsyncResourceLoader: Thread #{} finished async loading {:8p} : {:s}", this->thread_index,
                          static_cast<const void *>(resource), debugName);
             }
 
@@ -99,7 +99,7 @@ class AsyncResourceLoader::LoaderThread final {
 
         this->loader_ptr->iActiveThreadCount.fetch_sub(1);
 
-        if(cv::debug_rm.getBool()) debugLog("AsyncResourceLoader: Thread #{} exiting\n", this->thread_index);
+        if(cv::debug_rm.getBool()) debugLog("AsyncResourceLoader: Thread #{} exiting", this->thread_index);
     }
 
     AsyncResourceLoader *loader_ptr;
@@ -123,7 +123,7 @@ AsyncResourceLoader::AsyncResourceLoader()
     if(!loaderThread->isReady()) {
         engine->showMessageError("AsyncResourceLoader Error", "Couldn't create core thread!");
     } else {
-        if(cv::debug_rm.getBool()) debugLog("AsyncResourceLoader: Created initial thread\n");
+        if(cv::debug_rm.getBool()) debugLog("AsyncResourceLoader: Created initial thread");
         this->threadpool[idx] = std::move(loaderThread);
     }
 }
@@ -208,7 +208,7 @@ void AsyncResourceLoader::update(bool lowLatency) {
         Resource *rs = work->resource;
 
         if(debug)
-            debugLog("AsyncResourceLoader: Sync init for {:s} ({:8p})\n", rs->getName(), static_cast<const void *>(rs));
+            debugLog("AsyncResourceLoader: Sync init for {:s} ({:8p})", rs->getName(), static_cast<const void *>(rs));
 
         rs->load();
 
@@ -251,7 +251,7 @@ void AsyncResourceLoader::update(bool lowLatency) {
 
     for(Resource *rs : resourcesReadyForDestroy) {
         if(debug)
-            debugLog("AsyncResourceLoader: Async destroy of resource {:8p} : {:s}\n", static_cast<const void *>(rs),
+            debugLog("AsyncResourceLoader: Async destroy of resource {:8p} : {:s}", static_cast<const void *>(rs),
                      rs->getName());
 
         SAFE_DELETE(rs);
@@ -259,7 +259,7 @@ void AsyncResourceLoader::update(bool lowLatency) {
 }
 
 void AsyncResourceLoader::scheduleAsyncDestroy(Resource *resource) {
-    if(cv::debug_rm.getBool()) debugLog("AsyncResourceLoader: Scheduled async destroy of {:s}\n", resource->getName());
+    if(cv::debug_rm.getBool()) debugLog("AsyncResourceLoader: Scheduled async destroy of {:s}", resource->getName());
 
     std::scoped_lock lock(this->asyncDestroyMutex);
     this->asyncDestroyQueue.push_back(resource);
@@ -268,18 +268,18 @@ void AsyncResourceLoader::scheduleAsyncDestroy(Resource *resource) {
 void AsyncResourceLoader::reloadResources(const std::vector<Resource *> &resources) {
     const bool debug = cv::debug_rm.getBool();
     if(resources.empty()) {
-        if(debug) debugLog("AsyncResourceLoader Warning: reloadResources with empty resources vector!\n");
+        if(debug) debugLog("AsyncResourceLoader Warning: reloadResources with empty resources vector!");
         return;
     }
 
-    if(debug) debugLog("AsyncResourceLoader: Async reloading {} resources\n", resources.size());
+    if(debug) debugLog("AsyncResourceLoader: Async reloading {} resources", resources.size());
 
     std::vector<Resource *> resourcesToReload;
     for(Resource *rs : resources) {
         if(rs == nullptr) continue;
 
         if(debug)
-            debugLog("AsyncResourceLoader: Async reloading {:8p} : {:s}\n", static_cast<const void *>(rs),
+            debugLog("AsyncResourceLoader: Async reloading {:8p} : {:s}", static_cast<const void *>(rs),
                      rs->getName());
 
         bool isBeingLoaded = isLoadingResource(rs);
@@ -288,7 +288,7 @@ void AsyncResourceLoader::reloadResources(const std::vector<Resource *> &resourc
             rs->release();
             resourcesToReload.push_back(rs);
         } else if(debug) {
-            debugLog("AsyncResourceLoader: Resource {:8p} : {:s} is currently being loaded, skipping reload\n",
+            debugLog("AsyncResourceLoader: Resource {:8p} : {:s} is currently being loaded, skipping reload",
                      static_cast<const void *>(rs), rs->getName());
         }
     }
@@ -317,10 +317,10 @@ void AsyncResourceLoader::ensureThreadAvailable() {
             auto loaderThread = std::make_unique<LoaderThread>(this, idx);
 
             if(!loaderThread->isReady()) {
-                if(debug) debugLog("AsyncResourceLoader Warning: Couldn't create dynamic thread!\n");
+                if(debug) debugLog("AsyncResourceLoader Warning: Couldn't create dynamic thread!");
             } else {
                 if(debug)
-                    debugLog("AsyncResourceLoader: Created dynamic thread #{} (total: {})\n", idx,
+                    debugLog("AsyncResourceLoader: Created dynamic thread #{} (total: {})", idx,
                              this->threadpool.size() + 1);
 
                 this->threadpool[idx] = std::move(loaderThread);
@@ -353,7 +353,7 @@ void AsyncResourceLoader::cleanupIdleThreads() {
         if(thread->isIdleTooLong()) {
             if(debug) {
                 Logger::logRaw(
-                    "AsyncResourceLoader: Removing idle thread #{} (idle timeout exceeded, pool size: {} -> {})\n", idx,
+                    "AsyncResourceLoader: Removing idle thread #{} (idle timeout exceeded, pool size: {} -> {})", idx,
                     this->threadpool.size(), this->threadpool.size() - 1);
             }
             this->threadpool.erase(idx);

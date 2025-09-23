@@ -229,7 +229,7 @@ void Lobby::joinRoom(u32 id, const UString& password) {
         break;
     }
 
-    debugLog("Joining room #{:d} with password '{:s}'\n", id, password.toUtf8());
+    debugLog("Joining room #{:d} with password '{:s}'", id, password.toUtf8());
     osu->getNotificationOverlay()->addNotification("Joining room...");
 }
 

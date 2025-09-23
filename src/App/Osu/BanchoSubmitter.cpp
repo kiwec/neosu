@@ -18,7 +18,7 @@
 
 namespace BANCHO::Net {
 void submit_score(FinishedScore score) {
-    debugLog("Submitting score...\n");
+    debugLog("Submitting score...");
     constexpr auto GRADES = std::array{"XH", "SH", "X", "S", "A", "B", "C", "D", "F", "N"};
 
     u8 iv[32];
@@ -160,7 +160,7 @@ void submit_score(FinishedScore score) {
     {
         auto compressed_data = LegacyReplay::compress_frames(score.replay);
         if(compressed_data.size() <= 24) {
-            debugLog("Replay too small to submit! Compressed size: {:d} bytes\n", compressed_data.size());
+            debugLog("Replay too small to submit! Compressed size: {:d} bytes", compressed_data.size());
             return;
         }
 
@@ -189,7 +189,7 @@ void submit_score(FinishedScore score) {
         [](NetworkHandler::Response response) {
             if(response.success) {
                 // TODO: handle success (pp, etc + error codes)
-                debugLog("Score submit result: {}\n", response.body);
+                debugLog("Score submit result: {}", response.body);
 
                 // Reset leaderboards so new score will appear
                 db->online_scores.clear();

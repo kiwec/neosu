@@ -305,7 +305,7 @@ void OpenGLLegacyInterface::drawQuad(vec2 topLeft, vec2 topRight, vec2 bottomRig
 
 void OpenGLLegacyInterface::drawImage(Image *image, AnchorPoint anchor, float edgeSoftness, McRect clipRect) {
     if(image == nullptr) {
-        debugLog("WARNING: Tried to draw image with NULL texture!\n");
+        debugLog("WARNING: Tried to draw image with NULL texture!");
         return;
     }
     if(!image->isReady()) return;
@@ -517,14 +517,14 @@ void OpenGLLegacyInterface::setClipRect(McRect clipRect) {
     // rendertargets change the current viewport
     const auto &viewport{OpenGLStateCache::getCurrentViewport()};
 
-    // debugLog("viewport = {}, {}, {}, {}\n", viewport[0], viewport[1], viewport[2], viewport[3]);
+    // debugLog("viewport = {}, {}, {}, {}", viewport[0], viewport[1], viewport[2], viewport[3]);
 
     glEnable(GL_SCISSOR_TEST);
     glScissor((int)clipRect.getX() + viewport[0],
               viewport[3] - ((int)clipRect.getY() - viewport[1] - 1 + (int)clipRect.getHeight()),
               (int)clipRect.getWidth(), (int)clipRect.getHeight());
 
-    // debugLog("scissor = {}, {}, {}, {}\n", (int)clipRect.getX()+viewport[0],
+    // debugLog("scissor = {}, {}, {}, {}", (int)clipRect.getX()+viewport[0],
 }
 
 void OpenGLLegacyInterface::pushClipRect(McRect clipRect) {

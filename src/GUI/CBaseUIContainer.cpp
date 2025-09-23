@@ -74,7 +74,7 @@ CBaseUIContainer *CBaseUIContainer::insertBaseUIElement(CBaseUIElement *element,
         }
     }
 
-    debugLog("Warning: CBaseUIContainer::insertBaseUIElement() couldn't find index\n");
+    debugLog("Warning: CBaseUIContainer::insertBaseUIElement() couldn't find index");
 
     return this;
 }
@@ -92,7 +92,7 @@ CBaseUIContainer *CBaseUIContainer::insertBaseUIElementBack(CBaseUIElement *elem
         }
     }
 
-    debugLog("Warning: CBaseUIContainer::insertBaseUIElementBack() couldn't find index\n");
+    debugLog("Warning: CBaseUIContainer::insertBaseUIElementBack() couldn't find index");
 
     return this;
 }
@@ -105,7 +105,7 @@ CBaseUIContainer *CBaseUIContainer::removeBaseUIElement(CBaseUIElement *element)
         }
     }
 
-    debugLog("Warning: CBaseUIContainer::removeBaseUIElement() couldn't find element\n");
+    debugLog("Warning: CBaseUIContainer::removeBaseUIElement() couldn't find element");
 
     return this;
 }
@@ -119,7 +119,7 @@ CBaseUIContainer *CBaseUIContainer::deleteBaseUIElement(CBaseUIElement *element)
         }
     }
 
-    debugLog("Warning: CBaseUIContainer::deleteBaseUIElement() couldn't find element\n");
+    debugLog("Warning: CBaseUIContainer::deleteBaseUIElement() couldn't find element");
 
     return this;
 }
@@ -129,7 +129,7 @@ CBaseUIElement *CBaseUIContainer::getBaseUIElement(const UString &name) {
     for(size_t i = 0; i < this->vElements.size(); i++) {
         if(this->vElements[i]->getName() == name) return this->vElements[i];
     }
-    debugLog("CBaseUIContainer ERROR: GetBaseUIElement() \"{:s}\" does not exist!!!\n", name.toUtf8());
+    debugLog("CBaseUIContainer ERROR: GetBaseUIElement() \"{:s}\" does not exist!!!", name.toUtf8());
     return nullptr;
 }
 

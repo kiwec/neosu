@@ -68,7 +68,7 @@ void CWindowManager::mouse_update(bool *propagate_clicks) {
             this->iLastEnabledWindow = this->iCurrentEnabledWindow;
             if(this->iLastEnabledWindow < this->windows.size()) {
                 this->windows[this->iLastEnabledWindow]->setEnabled(true);
-                // debugLog("enabled {:s} @{:f}\n", this->windows[m_iLastEnabledWindow]->getName().toUtf8(),
+                // debugLog("enabled {:s} @{:f}", this->windows[m_iLastEnabledWindow]->getName().toUtf8(),
                 // engine->getTime());
                 for(size_t i = 0; i < this->windows.size(); i++) {
                     if(i != this->iLastEnabledWindow) this->windows[i]->setEnabled(false);
@@ -88,7 +88,7 @@ void CWindowManager::mouse_update(bool *propagate_clicks) {
 
         // switch top window to m_windows[0], all others get pushed down
         if(topSwitch && newTop != 0) {
-            // debugLog("top switch @{:f}\n", engine->getTime());
+            // debugLog("top switch @{:f}", engine->getTime());
             if(this->windows.size() > 1) {
                 CBaseUIWindow *newTopWindow = this->windows[newTop];
                 newTopWindow->setEnabled(true);

@@ -159,7 +159,7 @@ MainMenu::MainMenu() : OsuScreen() {
                         buildstamp = cv::build_timestamp.getVal<u64>();
                     }
                 }
-                // debugLog("versionFile version: {} our version: {}{}\n", version, cv::version.getFloat(),
+                // debugLog("versionFile version: {} our version: {}{}", version, cv::version.getFloat(),
                 //           buildstamp > 0.0f ? fmt::format(" build timestamp: {}", buildstamp) : "");
                 if(version < cv::version.getFloat() || buildstamp < cv::build_timestamp.getVal<u64>()) {
                     this->bDrawVersionNotificationArrow = true;
@@ -1120,13 +1120,13 @@ void MainMenu::selectRandomBeatmap() {
             const auto &mapset_folder = mapset_folders[rand() % mapset_folders.size()];
             BeatmapSet *set = db->loadRawBeatmap(mapset_folder);
             if(set == nullptr) {
-                debugLog("Failed to load beatmap set '{:s}'\n", mapset_folder.c_str());
+                debugLog("Failed to load beatmap set '{:s}'", mapset_folder.c_str());
                 continue;
             }
 
             auto beatmap_diffs = set->getDifficulties();
             if(beatmap_diffs.empty()) {
-                debugLog("Mapset '{:s}' has no difficulties!\n", set->getFolder());
+                debugLog("Mapset '{:s}' has no difficulties!", set->getFolder());
                 delete set;
                 continue;
             }
@@ -1139,7 +1139,7 @@ void MainMenu::selectRandomBeatmap() {
             const bool skip =
                 (i < RETRY_SETS - 1) && !env->fileExists(candidate_diff->getFullBackgroundImageFilePath());
             if(skip) {
-                debugLog("Beatmap '{:s}' has no background image, skipping.\n", candidate_diff->getFilePath());
+                debugLog("Beatmap '{:s}' has no background image, skipping.", candidate_diff->getFilePath());
                 delete set;
                 continue;
             }
@@ -1153,7 +1153,7 @@ void MainMenu::selectRandomBeatmap() {
             return;
         }
 
-        debugLog("Failed to pick random beatmap...\n");
+        debugLog("Failed to pick random beatmap...");
     }
 }
 

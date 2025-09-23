@@ -102,7 +102,7 @@ class Engine final : public KeyboardListener {
     [[nodiscard]] constexpr bool isMinimized() const { return this->bIsMinimized; }
 
     // debugging/console
-    [[nodiscard]] constexpr ConsoleBox *getConsoleBox() const { return this->consoleBox; }
+    [[nodiscard]] constexpr std::shared_ptr<ConsoleBox> getConsoleBox() const { return this->consoleBox; }
     [[nodiscard]] constexpr CBaseUIContainer *getGUI() const { return this->guiContainer; }
 
    private:
@@ -133,7 +133,7 @@ class Engine final : public KeyboardListener {
     // engine gui, mostly for debugging
     CBaseUIContainer *guiContainer;
     VisualProfiler *visualProfiler;
-    static ConsoleBox *consoleBox;
+    static std::shared_ptr<ConsoleBox> consoleBox;
 
     // custom
     bool bBlackout;

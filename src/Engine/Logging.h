@@ -1,128 +1,74 @@
 #pragma once
 // Copyright (c) 2025, WH, All rights reserved.
 
+// main logging macro
+#define debugLog(...) Logger::log(spdlog::source_loc{__FILE__, __LINE__, SPDLOG_FUNCTION}, __VA_ARGS__)
+
 #include "BaseEnvironment.h"
 
-#include "Color.h"
+// TODO: handle log level switching at runtime
+// we currently want all logging to be output, so set it to the most verbose level
+// otherwise, the SPDLOG_ macros below SPD_LOG_LEVEL_INFO will just do (void)0;
+#define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
 
-#include "fmt/format.h"
-#include "fmt/compile.h"
-#include "fmt/color.h"
+#include "spdlog/common.h"
+#include "spdlog/async_logger.h"
 
-#include <source_location>
 #include <string>
-#include <optional>
+#include <cassert>
 
-// fmt::print seems to crash on windows with no console allocated (at least with mingw)
-// just use printf to be safe in that case
-#if defined(_WIN32) && !defined(_DEBUG)
-#define FMT_PRINT(...) printf("%s", fmt::format(__VA_ARGS__).c_str())
-#else
-#define FMT_PRINT(...) fmt::print(__VA_ARGS__)
-#endif
+// main logger class
+class Logger final {
+    NOCOPY_NOMOVE(Logger)
+   public:
+    // entirely static
+    Logger() = delete;
+    ~Logger() = delete;
 
-#ifdef _DEBUG
-#define debugLog(...) Logger::log(std::source_location::current(), __FUNCTION__, __VA_ARGS__)
-#else
-#define debugLog(...) Logger::log(__FUNCTION__, __VA_ARGS__)
-#endif
+    static void init() noexcept;
+    static void shutdown() noexcept;
 
-using fmt::literals::operator""_cf;
-
-namespace fmt {
-template <std::size_t N>
-struct formatter<std::array<char, N>> {
-    template <typename ParseContext>
-    constexpr auto parse(ParseContext &ctx) const {
-        return ctx.begin();
+    // manual trigger for console commands
+    static inline void flush() noexcept {
+        assert(wasInit);
+        s_logger->flush();
+        s_raw_logger->flush();
     }
 
-    template <typename FormatContext>
-    auto format(const std::array<char, N> &array, FormatContext &ctx) const {
-        return format_to(ctx.out(), "{:s}", array.data());
+    // is stdout a terminal (util func.)
+    [[nodiscard]] static bool isaTTY() noexcept;
+
+    // logging with context
+    template <typename... Args>
+    static forceinline void log(const spdlog::source_loc &loc, const fmt::format_string<Args...> &fmt,
+                                Args &&...args) noexcept {
+        s_logger->log(loc, spdlog::level::info, fmt, std::forward<Args>(args)...);
     }
+
+    // raw logging without any context
+    template <typename... Args>
+    static forceinline void logRaw(const fmt::format_string<Args...> &fmt, Args &&...args) noexcept {
+        s_raw_logger->log(spdlog::level::info, fmt, std::forward<Args>(args)...);
+    }
+
+    // same as above but for non-format strings
+    template <typename... Args>
+    static forceinline void log(const spdlog::source_loc &loc, const std::string &logString) noexcept {
+        s_logger->log(loc, spdlog::level::info, logString);
+    }
+
+    template <typename... Args>
+    static forceinline void logRaw(const std::string &logString) noexcept {
+        s_raw_logger->log(spdlog::level::info, logString);
+    }
+
+   private:
+    // sink for engine console box output
+    class ConsoleBoxSink;
+
+    // Logger::init() is called immediately after main(), so these are guaranteed to be available until exiting
+    static std::shared_ptr<spdlog::async_logger> s_logger;
+    static std::shared_ptr<spdlog::async_logger> s_raw_logger;
+
+    static bool wasInit;
 };
-}
-
-namespace Logger {
-
-[[nodiscard]] bool isaTTY();  // is stdout a terminal
-
-namespace detail {
-// logging stuff (implementation)
-void logToConsole(std::optional<Color> color, const std::string &message);
-
-static forceinline void trim_to_last_scope([[maybe_unused]] std::string &str) {
-#ifdef _MSC_VER  // msvc always adds the full scope to __FUNCTION__, which we don't want for non-debug builds
-    auto pos = str.rfind("::");
-    if(pos != std::string::npos) {
-        str.erase(1, pos + 1);
-    }
-#endif
-}
-
-static forceinline void logImpl(const std::string &message, Color color = rgb(255, 255, 255)) {
-    if(color == rgb(255, 255, 255) || !Logger::isaTTY())
-        FMT_PRINT("{}"_cf, message);
-    else
-        FMT_PRINT(fmt::fg(fmt::rgb(color.R(), color.G(), color.B())), "{}", message);
-    logToConsole(color, message);
-}
-
-// reimplementing Environment::getFileNameFromFilePath to avoid transitive include
-static forceinline std::string getFilenameFromPath(const std::string &path) noexcept {
-    auto lastSlash = path.find_last_of("/\\");
-    if(lastSlash == std::string::npos) return path;
-
-    return path.substr(lastSlash + 1);
-}
-
-}  // namespace detail
-
-// debug build shows full source location
-#ifdef _DEBUG
-template <typename... Args>
-inline void log(const std::source_location &loc, const char *func, const fmt::format_string<Args...> &fmt,
-                Args &&...args) {
-    auto contextPrefix = fmt::format("[{}:{}:{}] [{}]: "_cf, detail::getFilenameFromPath(loc.file_name()), loc.line(),
-                                     loc.column(), func);
-
-    auto message = fmt::format(fmt, std::forward<Args>(args)...);
-    detail::logImpl(contextPrefix + message);
-}
-
-template <typename... Args>
-inline void log(const std::source_location &loc, const char *func, Color color, const fmt::format_string<Args...> &fmt,
-                Args &&...args) {
-    auto contextPrefix = fmt::format("[{}:{}:{}] [{}]: "_cf, detail::getFilenameFromPath(loc.file_name()), loc.line(),
-                                     loc.column(), func);
-
-    auto message = fmt::format(fmt, std::forward<Args>(args)...);
-    detail::logImpl(contextPrefix + message, color);
-}
-#else
-// release build only shows function name
-template <typename... Args>
-inline void log(const char *func, const fmt::format_string<Args...> &fmt, Args &&...args) {
-    auto contextPrefix = fmt::format("[{}] "_cf, func);
-    detail::trim_to_last_scope(contextPrefix);
-    auto message = fmt::format(fmt, std::forward<Args>(args)...);
-    detail::logImpl(contextPrefix + message);
-}
-
-template <typename... Args>
-inline void log(const char *func, Color color, const fmt::format_string<Args...> &fmt, Args &&...args) {
-    auto contextPrefix = fmt::format("[{}] "_cf, func);
-    detail::trim_to_last_scope(contextPrefix);
-    auto message = fmt::format(fmt, std::forward<Args>(args)...);
-    detail::logImpl(contextPrefix + message, color);
-}
-#endif
-
-template <typename... Args>
-inline void logRaw(const fmt::format_string<Args...> &fmt, Args &&...args) {
-    auto message = fmt::format(fmt, std::forward<Args>(args)...);
-    detail::logImpl(message);
-}
-
-}  // namespace Logger

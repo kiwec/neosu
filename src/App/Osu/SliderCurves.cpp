@@ -111,7 +111,7 @@ SliderCurveTypeBezier2::SliderCurveTypeBezier2(const std::vector<vec2> &points) 
 SliderCurveTypeCentripetalCatmullRom::SliderCurveTypeCentripetalCatmullRom(const std::vector<vec2> &points)
     : SliderCurveType(), time() {
     if(points.size() != 4) {
-        debugLog("SliderCurveTypeCentripetalCatmullRom() Error: points.size() != 4!!!\n");
+        debugLog("SliderCurveTypeCentripetalCatmullRom() Error: points.size() != 4!!!");
         return;
     }
 
@@ -169,7 +169,7 @@ SliderCurveEqualDistanceMulti::SliderCurveEqualDistanceMulti(std::vector<vec2> c
 
 void SliderCurveEqualDistanceMulti::init(const std::vector<SliderCurveType *> &curvesList) {
     if(curvesList.size() < 1) {
-        debugLog("SliderCurveEqualDistanceMulti::init: Error: curvesList.size() == 0!!!\n");
+        debugLog("SliderCurveEqualDistanceMulti::init: Error: curvesList.size() == 0!!!");
         return;
     }
 
@@ -182,7 +182,7 @@ void SliderCurveEqualDistanceMulti::init(const std::vector<SliderCurveType *> &c
     SliderCurveType *curCurve = curvesList[curCurveIndex];
     {
         if(curCurve->getCurvePoints().size() < 1) {
-            debugLog("SliderCurveEqualDistanceMulti::init: Error: curCurve->getCurvePoints().size() == 0!!!\n");
+            debugLog("SliderCurveEqualDistanceMulti::init: Error: curCurve->getCurvePoints().size() == 0!!!");
 
             // cleanup
             for(auto i : curvesList) {
@@ -274,7 +274,7 @@ void SliderCurveEqualDistanceMulti::init(const std::vector<SliderCurveType *> &c
     // sanity check
     // spec: FIXME: at least one of my maps triggers this (in upstream mcosu too), try to fix
     if(this->curvePoints.size() == 0) {
-        debugLog("SliderCurveEqualDistanceMulti::init: Error: this->curvePoints.size() == 0!!!\n");
+        debugLog("SliderCurveEqualDistanceMulti::init: Error: this->curvePoints.size() == 0!!!");
 
         // cleanup
         for(auto i : curvesList) {
@@ -360,12 +360,12 @@ vec2 SliderCurveEqualDistanceMulti::pointAt(float t) {
         if(this->iNCurve > -1 && this->iNCurve < this->curvePoints.size())
             return this->curvePoints[this->iNCurve];
         else {
-            debugLog("SliderCurveEqualDistanceMulti::pointAt() Error: Illegal index {:d}!!!\n", this->iNCurve);
+            debugLog("SliderCurveEqualDistanceMulti::pointAt() Error: Illegal index {:d}!!!", this->iNCurve);
             return vec2(0, 0);
         }
     } else {
         if(index < 0 || index + 1 >= this->curvePoints.size()) {
-            debugLog("SliderCurveEqualDistanceMulti::pointAt() Error: Illegal index {:d}!!!\n", index);
+            debugLog("SliderCurveEqualDistanceMulti::pointAt() Error: Illegal index {:d}!!!", index);
             return vec2(0, 0);
         }
 
@@ -387,12 +387,12 @@ vec2 SliderCurveEqualDistanceMulti::originalPointAt(float t) {
         if(this->iNCurve > -1 && this->iNCurve < this->originalCurvePoints.size())
             return this->originalCurvePoints[this->iNCurve];
         else {
-            debugLog("SliderCurveEqualDistanceMulti::originalPointAt() Error: Illegal index {:d}!!!\n", this->iNCurve);
+            debugLog("SliderCurveEqualDistanceMulti::originalPointAt() Error: Illegal index {:d}!!!", this->iNCurve);
             return vec2(0, 0);
         }
     } else {
         if(index < 0 || index + 1 >= this->originalCurvePoints.size()) {
-            debugLog("SliderCurveEqualDistanceMulti::originalPointAt() Error: Illegal index {:d}!!!\n", index);
+            debugLog("SliderCurveEqualDistanceMulti::originalPointAt() Error: Illegal index {:d}!!!", index);
             return vec2(0, 0);
         }
 
@@ -499,7 +499,7 @@ SliderCurveCircumscribedCircle::SliderCurveCircumscribedCircle(std::vector<vec2>
                                                                float curvePointsSeparation)
     : SliderCurve(std::move(controlPoints), pixelLength) {
     if(this->controlPoints.size() != 3) {
-        debugLog("SliderCurveCircumscribedCircle() Error: controlPoints.size() != 3\n");
+        debugLog("SliderCurveCircumscribedCircle() Error: controlPoints.size() != 3");
         return;
     }
 
@@ -549,7 +549,7 @@ SliderCurveCircumscribedCircle::SliderCurveCircumscribedCircle(std::vector<vec2>
             this->fCalculationEndAngle -= 2 * PI;
         else {
             debugLog(
-                "SliderCurveCircumscribedCircle() Error: Cannot find angles between midAng ({:.3f} {:.3f} {:.3f})\n",
+                "SliderCurveCircumscribedCircle() Error: Cannot find angles between midAng ({:.3f} {:.3f} {:.3f})",
                 this->fCalculationStartAngle, midAng, this->fCalculationEndAngle);
             return;
         }
@@ -624,7 +624,7 @@ vec2 SliderCurveCircumscribedCircle::originalPointAt(float t) {
 vec2 SliderCurveCircumscribedCircle::intersect(vec2 a, vec2 ta, vec2 b, vec2 tb) {
     const float des = (tb.x * ta.y - tb.y * ta.x);
     if(std::abs(des) < 0.0001f) {
-        debugLog("SliderCurveCircumscribedCircle::intersect() Error: Vectors are parallel!!!\n");
+        debugLog("SliderCurveCircumscribedCircle::intersect() Error: Vectors are parallel!!!");
         return vec2(0, 0);
     }
 

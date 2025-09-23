@@ -20,7 +20,7 @@ void handle_neosu_url(const char *url) {
 
         auto params = SString::split(url, "/");
         if(params.size() != 5) {
-            debugLog("Expected 5 login parameters, got {}!\n", params.size());
+            debugLog("Expected 5 login parameters, got {}!", params.size());
             return;
         }
 

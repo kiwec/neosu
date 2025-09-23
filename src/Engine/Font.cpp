@@ -111,7 +111,7 @@ void McFont::constructor(const std::vector<wchar_t> &characters, int fontSize, b
 McFont::~McFont() { destroy(); }
 
 void McFont::init() {
-    debugLog("Loading font: {:s}\n", this->sFilePath);
+    debugLog("Loading font: {:s}", this->sFilePath);
 
     if(!initializeFreeType()) return;
 
@@ -250,7 +250,7 @@ void McFont::initializeDynamicRegion(int atlasSize) {
     }
 
     if(cv::r_debug_font_unicode.getBool()) {
-        debugLog("Font Info: Initialized dynamic region with {} slots ({}x{} each) starting at y={}\n", totalSlots,
+        debugLog("Font Info: Initialized dynamic region with {} slots ({}x{} each) starting at y={}", totalSlots,
                  DYNAMIC_SLOT_SIZE, DYNAMIC_SLOT_SIZE, m_dynamicRegionY);
     }
 }
@@ -266,15 +266,15 @@ bool McFont::loadGlyphDynamic(wchar_t ch) {
             // character not supported by any available font
             const char *charRange = FontTypeMap::getCharacterRangeName(ch);
             if(charRange)
-                debugLog("Font Warning: Character U+{:04X} ({:s}) not supported by any font\n", (wint_t)ch, charRange);
+                debugLog("Font Warning: Character U+{:04X} ({:s}) not supported by any font", (wint_t)ch, charRange);
             else
-                debugLog("Font Warning: Character U+{:04X} not supported by any font\n", (wint_t)ch);
+                debugLog("Font Warning: Character U+{:04X} not supported by any font", (wint_t)ch);
         }
         return false;
     }
 
     if(cv::r_debug_font_unicode.getBool() && fontIndex > 0) {
-        debugLog("Font Info (for font resource {}): Using fallback font #{:d} for character U+{:04X}\n", getName(),
+        debugLog("Font Info (for font resource {}): Using fallback font #{:d} for character U+{:04X}", getName(),
                  fontIndex, (wint_t)ch);
     }
 
@@ -293,7 +293,7 @@ bool McFont::loadGlyphDynamic(wchar_t ch) {
         const int maxSlotContent = DYNAMIC_SLOT_SIZE - 2 * TextureAtlas::ATLAS_PADDING;
         if(metrics.sizePixelsX > maxSlotContent || metrics.sizePixelsY > maxSlotContent) {
             if(cv::r_debug_font_unicode.getBool()) {
-                debugLog("Font Info: Clipping oversized glyph U+{:04X} ({}x{}) to fit dynamic slot ({}x{})\n", (u32)ch,
+                debugLog("Font Info: Clipping oversized glyph U+{:04X} ({}x{}) to fit dynamic slot ({}x{})", (u32)ch,
                          metrics.sizePixelsX, metrics.sizePixelsY, maxSlotContent, maxSlotContent);
             }
         }
@@ -310,7 +310,7 @@ bool McFont::loadGlyphDynamic(wchar_t ch) {
         m_atlasNeedsReload = true;
 
         if(cv::r_debug_font_unicode.getBool()) {
-            debugLog("Font Info: Placed glyph U+{:04X} in dynamic slot {} at ({}, {})\n", (u32)ch, slotIndex, slot.x,
+            debugLog("Font Info: Placed glyph U+{:04X} in dynamic slot {} at ({}, {})", (u32)ch, slotIndex, slot.x,
                      slot.y);
         }
     }
@@ -352,13 +352,13 @@ FT_Face McFont::getFontFaceForGlyph(wchar_t ch, int &fontIndex) {
 bool McFont::loadGlyphFromFace(wchar_t ch, FT_Face face, int fontIndex) {
     if(FT_Load_Glyph(face, FT_Get_Char_Index(face, ch),
                      m_bAntialiasing ? FT_LOAD_TARGET_NORMAL : FT_LOAD_TARGET_MONO)) {
-        debugLog("Font Error: Failed to load glyph for character {:d} from font index {:d}\n", (int)ch, fontIndex);
+        debugLog("Font Error: Failed to load glyph for character {:d} from font index {:d}", (int)ch, fontIndex);
         return false;
     }
 
     FT_Glyph glyph{};
     if(FT_Get_Glyph(face->glyph, &glyph)) {
-        debugLog("Font Error: Failed to get glyph for character {:d} from font index {:d}\n", (int)ch, fontIndex);
+        debugLog("Font Error: Failed to get glyph for character {:d} from font index {:d}", (int)ch, fontIndex);
         return false;
     }
 
@@ -870,7 +870,7 @@ const McFont::GLYPH_METRICS &McFont::getGlyphMetrics(wchar_t ch) const {
     it = m_vGlyphMetrics.find(UNKNOWN_CHAR);
     if(it != m_vGlyphMetrics.end()) return it->second;
 
-    debugLog("Font Error: Missing default backup glyph (UNKNOWN_CHAR)?\n");
+    debugLog("Font Error: Missing default backup glyph (UNKNOWN_CHAR)?");
     return m_errorGlyph;
 }
 
@@ -904,7 +904,7 @@ bool McFont::initializeSharedFallbackFonts() {
     for(const auto &fontName : bundledFallbacks) {
         if(loadFallbackFont(UString{fontName}, false)) {
             if(cv::r_debug_font_unicode.getBool())
-                debugLog("Font Info: Loaded bundled fallback font: {:s}\n", fontName);
+                debugLog("Font Info: Loaded bundled fallback font: {:s}", fontName);
         }
     }
 
@@ -951,13 +951,13 @@ void McFont::discoverSystemFallbacks() {
 bool McFont::loadFallbackFont(const UString &fontPath, bool isSystemFont) {
     FT_Face face{};
     if(FT_New_Face(s_sharedFtLibrary, fontPath.toUtf8(), 0, &face)) {
-        if(cv::r_debug_font_unicode.getBool()) debugLog("Font Warning: Failed to load fallback font: {:s}\n", fontPath);
+        if(cv::r_debug_font_unicode.getBool()) debugLog("Font Warning: Failed to load fallback font: {:s}", fontPath);
         return false;
     }
 
     if(FT_Select_Charmap(face, ft_encoding_unicode)) {
         if(cv::r_debug_font_unicode.getBool())
-            debugLog("Font Warning: Failed to select unicode charmap for fallback font: {:s}\n", fontPath);
+            debugLog("Font Warning: Failed to select unicode charmap for fallback font: {:s}", fontPath);
         FT_Done_Face(face);
         return false;
     }

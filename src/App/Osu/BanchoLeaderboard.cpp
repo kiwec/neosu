@@ -169,7 +169,7 @@ void process_leaderboard_response(Packet response) {
 
     // XXX: We should also separately display either the "personal best" the server sent us,
     //      or the local best, depending on which score is better.
-    debugLog("Received online leaderboard for Beatmap ID {:d}\n", info.beatmap_id);
+    debugLog("Received online leaderboard for Beatmap ID {:d}", info.beatmap_id);
     auto map = db->getBeatmapDifficulty(beatmap_hash);
     if(map) {
         map->setOnlineOffset(info.online_offset);

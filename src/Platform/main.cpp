@@ -1,5 +1,6 @@
 // Copyright (c) 2025, WH, All rights reserved.
 #include "BaseEnvironment.h"
+#include "Logging.h"
 
 #if defined(MCENGINE_PLATFORM_WASM) || defined(MCENGINE_FEATURE_MAINCALLBACKS)
 #define MAIN_FUNC SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
@@ -45,7 +46,7 @@ void setcwdexe(const std::string &exePathStr) noexcept {
     }
 
     if(failed) {
-        printf("WARNING: failed to set working directory to parent of %s\n", exePathStr.c_str());
+        debugLog("WARNING: failed to set working directory to parent of {}", exePathStr.c_str());
     }
 }
 }  // namespace
@@ -58,7 +59,6 @@ void setcwdexe(const std::string &exePathStr) noexcept {
 #endif
 
 #include "ConVar.h"
-#include "Logging.h"
 #include "SString.h"
 #include "Profiler.h"
 
@@ -83,7 +83,7 @@ void setcwdexe(const std::string &exePathStr) noexcept {
 // Init/Iterate/Event
 void SDL_AppQuit(void *appstate, SDL_AppResult result) {
     if(result == SDL_APP_FAILURE) {
-        fprintf(stderr, "[main]: Force exiting now, a fatal error occurred. (SDL error: %s)\n", SDL_GetError());
+        debugLog("Force exiting now, a fatal error occurred. (SDL error: {})", SDL_GetError());
         std::abort();
     }
 
@@ -102,16 +102,19 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result) {
     delete fmain;
     fmain = nullptr;
 
-    printf("[main]: Shutdown success.\n");
-
     if constexpr(!Env::cfg(OS::WASM)) {
         if(restart) {
             SDLMain::restart(restartArgs);
         }
         if constexpr(!Env::cfg(FEAT::MAINCB)) {
             SDL_Quit();
+            Logger::shutdown();
+            printf("Shutdown success.\n");
             std::exit(0);
         }
+    } else {
+        Logger::shutdown();
+        printf("Shutdown success.\n");
     }
 }
 
@@ -129,6 +132,9 @@ SDL_AppResult SDL_AppIterate(void *appstate) { return static_cast<SDLMain *>(app
 // actual main/init, called once
 MAIN_FUNC /* int argc, char *argv[] */
 {
+    // set up spdlog, do this here so that calling debugLog() anywhere after this won't explode
+    Logger::init();
+
     // if a neosu instance is already running, send it a message then quit
     // only works on windows for now
     Environment::Interop::handle_existing_window(argc, argv);
@@ -204,7 +210,7 @@ MAIN_FUNC /* int argc, char *argv[] */
 
     if(!SDL_Init(SDL_INIT_VIDEO))  // other subsystems can be init later
     {
-        fprintf(stderr, "Couldn't SDL_Init(): %s\n", SDL_GetError());
+        debugLog("Couldn't SDL_Init(): {}", SDL_GetError());
         return SDL_APP_FAILURE;
     }
 
@@ -253,6 +259,8 @@ MAIN_FUNC /* int argc, char *argv[] */
         SDLMain::restart(restartArgs);
     }
 
+    Logger::shutdown();
+
     return 0;
 #else
     *appstate = fmain;
@@ -273,13 +281,15 @@ void SDLMain::restart(const std::vector<std::string> &args) {
     }
 
     if(cv::debug_env.getBool()) {
-        Logger::logRaw("restart args: ");
+        std::string logString = "restart args: ";
+
         for(int i = -1; const auto entry : restartArgsChar) {
             i++;
             if(!entry) continue;
-            Logger::logRaw("({}) {} ", i, entry);
+            logString += fmt::format("({}) {} ", i, entry);
         }
-        Logger::logRaw("\n");
+        logString += ".";
+        debugLog(logString);
     }
 
     SDL_SetPointerProperty(restartprops, SDL_PROP_PROCESS_CREATE_ARGS_POINTER, (void *)restartArgsChar.data());
@@ -294,7 +304,7 @@ void SDLMain::restart(const std::vector<std::string> &args) {
     SDL_SetBooleanProperty(restartprops, SDL_PROP_PROCESS_CREATE_BACKGROUND_BOOLEAN, true);
 
     if(!SDL_CreateProcessWithProperties(restartprops)) {
-        fprintf(stderr, "[restart]: WARNING: couldn't restart!\n");
+        debugLog("[restart]: WARNING: couldn't restart!");
     }
 
     SDL_DestroyProperties(restartprops);

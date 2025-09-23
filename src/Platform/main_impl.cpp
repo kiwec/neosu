@@ -161,18 +161,20 @@ SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
                     }
                     m_vDroppedData.push_back(dropped_data);
                     if(m_bEnvDebug) {
-                        Logger::logRaw("DEBUG: got SDL drag-drop event {}, current dropped_data queue is ",
-                                       static_cast<int>(event->drop.type));
+                        std::string logString =
+                            fmt::format("DEBUG: got SDL drag-drop event {}, current dropped_data queue is ",
+                                        static_cast<int>(event->drop.type));
                         for(const auto &d : m_vDroppedData) {
-                            Logger::logRaw("{}", d);
+                            logString += fmt::format("{}", d);
                         }
-                        Logger::logRaw(".\n");
+                        logString += ".";
+                        debugLog(logString);
                     }
                 } break;
                 case SDL_EVENT_DROP_POSITION:  // we don't really care
                 default:
                     if(m_bEnvDebug)
-                        debugLog("DEBUG: unhandled SDL drag-drop event {}\n", static_cast<int>(event->drop.type));
+                        debugLog("DEBUG: unhandled SDL drag-drop event {}", static_cast<int>(event->drop.type));
                     break;
             }
             break;
@@ -263,7 +265,7 @@ SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
 
                 default:
                     if(m_bEnvDebug)
-                        debugLog("DEBUG: unhandled SDL window event {}\n", static_cast<int>(event->window.type));
+                        debugLog("DEBUG: unhandled SDL window event {}", static_cast<int>(event->window.type));
                     break;
             }
             break;
@@ -322,7 +324,7 @@ SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
             break;
 
         default:
-            if(m_bEnvDebug) debugLog("DEBUG: unhandled SDL event {}\n", static_cast<int>(event->type));
+            if(m_bEnvDebug) debugLog("DEBUG: unhandled SDL event {}", static_cast<int>(event->type));
             break;
     }
 
@@ -443,7 +445,7 @@ bool SDLMain::createWindow() {
     SDL_DestroyProperties(props);
 
     if(m_window == nullptr) {
-        debugLog("Couldn't SDL_CreateWindow(): {:s}\n", SDL_GetError());
+        debugLog("Couldn't SDL_CreateWindow(): {:s}", SDL_GetError());
         return false;
     }
 
@@ -453,11 +455,11 @@ bool SDLMain::createWindow() {
     if constexpr(Env::cfg((REND::GL | REND::GLES32), !REND::DX11)) {
         m_context = SDL_GL_CreateContext(m_window);
         if(!m_context) {
-            debugLog("Couldn't create OpenGL context: {:s}\n", SDL_GetError());
+            debugLog("Couldn't create OpenGL context: {:s}", SDL_GetError());
             return false;
         }
         if(!SDL_GL_MakeCurrent(m_window, m_context)) {
-            debugLog("Couldn't make OpenGL context current: {:s}\n", SDL_GetError());
+            debugLog("Couldn't make OpenGL context current: {:s}", SDL_GetError());
             return false;
         }
     }
@@ -528,14 +530,14 @@ float SDLMain::queryDisplayHz() {
         if(currentDisplayMode && currentDisplayMode->refresh_rate > 0) {
             if((m_fDisplayHz > currentDisplayMode->refresh_rate + 0.01) ||
                (m_fDisplayHz < currentDisplayMode->refresh_rate - 0.01)) {
-                debugLog("Got refresh rate {:.3f} Hz for display {:d}.\n", currentDisplayMode->refresh_rate, display);
+                debugLog("Got refresh rate {:.3f} Hz for display {:d}.", currentDisplayMode->refresh_rate, display);
             }
             const auto refreshRateSanityClamped = std::clamp<float>(currentDisplayMode->refresh_rate, 60.0f, 540.0f);
             return refreshRateSanityClamped;
         } else {
             static int once;
             if(!once++)
-                debugLog("Couldn't SDL_GetCurrentDisplayMode(SDL display: {:d}): {:s}\n", display, SDL_GetError());
+                debugLog("Couldn't SDL_GetCurrentDisplayMode(SDL display: {:d}): {:s}", display, SDL_GetError());
         }
     }
     // in wasm or if we couldn't get the refresh rate just return a sane value to use for "vsync"-related calculations
@@ -574,7 +576,7 @@ void SDLMain::setupLogging() {
                 default:
                     break;
             }
-            Logger::logRaw("SDL[{}]: {}\n", catStr, message);
+            Logger::logRaw("SDL[{}]: {}", catStr, message);
         },
         nullptr);
 }

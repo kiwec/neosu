@@ -46,12 +46,12 @@ SLFXStream::SLFXStream(bool preferFFmpeg)
       mSource(std::make_unique<WavStream>(preferFFmpeg)),
       mActiveInstance(nullptr)
 {
-	ST_DEBUG_LOG("SoundTouchFilter: Constructor called\n");
+	ST_DEBUG_LOG("SoundTouchFilter: Constructor called");
 }
 
 SLFXStream::~SLFXStream()
 {
-	ST_DEBUG_LOG("SoundTouchFilter: Destructor called\n");
+	ST_DEBUG_LOG("SoundTouchFilter: Destructor called");
 	// stop all instances before cleanup
 	stop();
 }
@@ -61,7 +61,7 @@ AudioSourceInstance *SLFXStream::createInstance()
 	if (!mSource)
 		return nullptr;
 
-	ST_DEBUG_LOG("SoundTouchFilter: Creating instance with speed={:f}, pitch={:f}\n", mSpeedFactor, mPitchFactor);
+	ST_DEBUG_LOG("SoundTouchFilter: Creating instance with speed={:f}, pitch={:f}", mSpeedFactor, mPitchFactor);
 
 	auto *instance = new SoundTouchFilterInstance(this);
 	mActiveInstance.store(instance, std::memory_order_release); // track the active instance for position queries
@@ -70,7 +70,7 @@ AudioSourceInstance *SLFXStream::createInstance()
 
 void SLFXStream::setSpeedFactor(float aSpeed)
 {
-	ST_DEBUG_LOG("SoundTouchFilter: Speed changed from {:f} to {:f}\n", mSpeedFactor, aSpeed);
+	ST_DEBUG_LOG("SoundTouchFilter: Speed changed from {:f} to {:f}", mSpeedFactor, aSpeed);
 	mSpeedFactor = aSpeed;
 	if (mActiveInstance.load(std::memory_order_acquire))
 		mActiveInstance.load(std::memory_order_relaxed)->requestSettingUpdate(mSpeedFactor, mPitchFactor);
@@ -78,7 +78,7 @@ void SLFXStream::setSpeedFactor(float aSpeed)
 
 void SLFXStream::setPitchFactor(float aPitch)
 {
-	ST_DEBUG_LOG("SoundTouchFilter: Pitch changed from {:f} to {:f}\n", mPitchFactor, aPitch);
+	ST_DEBUG_LOG("SoundTouchFilter: Pitch changed from {:f} to {:f}", mPitchFactor, aPitch);
 	mPitchFactor = aPitch;
 	if (mActiveInstance.load(std::memory_order_acquire))
 		mActiveInstance.load(std::memory_order_relaxed)->requestSettingUpdate(mSpeedFactor, mPitchFactor);
@@ -127,7 +127,7 @@ result SLFXStream::load(const char *aFilename)
 		mBaseSamplerate = mSource->mBaseSamplerate;
 		mFlags = mSource->mFlags;
 
-		ST_DEBUG_LOG("SLFXStream: Loaded with {:d} channels at {:f} Hz\n", mChannels, mBaseSamplerate);
+		ST_DEBUG_LOG("SLFXStream: Loaded with {:d} channels at {:f} Hz", mChannels, mBaseSamplerate);
 	}
 
 	return result;
@@ -146,7 +146,7 @@ result SLFXStream::loadMem(const unsigned char *aData, unsigned int aDataLen, bo
 		mBaseSamplerate = mSource->mBaseSamplerate;
 		mFlags = mSource->mFlags;
 
-		ST_DEBUG_LOG("SLFXStream: Loaded from memory with {:d} channels at {:f} Hz\n", mChannels, mBaseSamplerate);
+		ST_DEBUG_LOG("SLFXStream: Loaded from memory with {:d} channels at {:f} Hz", mChannels, mBaseSamplerate);
 	}
 
 	return result;
@@ -177,7 +177,7 @@ result SLFXStream::loadToMem(const char *aFilename)
 		mBaseSamplerate = mSource->mBaseSamplerate;
 		mFlags = mSource->mFlags;
 
-		ST_DEBUG_LOG("SLFXStream: Loaded to memory with {:d} channels at {:f} Hz\n", mChannels, mBaseSamplerate);
+		ST_DEBUG_LOG("SLFXStream: Loaded to memory with {:d} channels at {:f} Hz", mChannels, mBaseSamplerate);
 	}
 
 	return result;
@@ -196,7 +196,7 @@ result SLFXStream::loadFile(File *aFile)
 		mBaseSamplerate = mSource->mBaseSamplerate;
 		mFlags = mSource->mFlags;
 
-		ST_DEBUG_LOG("SLFXStream: Loaded from file with {:d} channels at {:f} Hz\n", mChannels, mBaseSamplerate);
+		ST_DEBUG_LOG("SLFXStream: Loaded from file with {:d} channels at {:f} Hz", mChannels, mBaseSamplerate);
 	}
 
 	return result;
@@ -215,7 +215,7 @@ result SLFXStream::loadFileToMem(File *aFile)
 		mBaseSamplerate = mSource->mBaseSamplerate;
 		mFlags = mSource->mFlags;
 
-		ST_DEBUG_LOG("SLFXStream: Loaded file to memory with {:d} channels at {:f} Hz\n", mChannels, mBaseSamplerate);
+		ST_DEBUG_LOG("SLFXStream: Loaded file to memory with {:d} channels at {:f} Hz", mChannels, mBaseSamplerate);
 	}
 
 	return result;
@@ -270,7 +270,7 @@ SoundTouchFilterInstance::SoundTouchFilterInstance(SLFXStream *aParent)
       mInterleavedBufferSize(0),
       mProcessingCounter(0)
 {
-	ST_DEBUG_LOG("SoundTouchFilterInstance: Constructor called\n");
+	ST_DEBUG_LOG("SoundTouchFilterInstance: Constructor called");
 
 	// create source instance
 	if (mParent && mParent->mSource)
@@ -289,7 +289,7 @@ SoundTouchFilterInstance::SoundTouchFilterInstance(SLFXStream *aParent)
 			mSetRelativePlaySpeed = mParent->mSpeedFactor;
 			mOverallRelativePlaySpeed = mParent->mSpeedFactor;
 
-			ST_DEBUG_LOG("SoundTouchFilterInstance: Creating with {:d} channels at {:f} Hz, mFlags={:x}\n", mChannels, mBaseSamplerate, mFlags);
+			ST_DEBUG_LOG("SoundTouchFilterInstance: Creating with {:d} channels at {:f} Hz, mFlags={:x}", mChannels, mBaseSamplerate, mFlags);
 
 			// initialize SoundTouch
 			mSoundTouch = new soundtouch::SoundTouch();
@@ -313,13 +313,13 @@ SoundTouchFilterInstance::SoundTouchFilterInstance(SLFXStream *aParent)
 				mSoundTouchSpeed = mParent->mSpeedFactor;
 				mSoundTouchPitch = mParent->mPitchFactor;
 
-				ST_DEBUG_LOG("SoundTouch: Initialized with speed={:f}, pitch={:f}\n", mSoundTouchSpeed, mSoundTouchPitch);
-				ST_DEBUG_LOG("SoundTouch: Version: {:s}\n", mSoundTouch->getVersionString());
+				ST_DEBUG_LOG("SoundTouch: Initialized with speed={:f}, pitch={:f}", mSoundTouchSpeed, mSoundTouchPitch);
+				ST_DEBUG_LOG("SoundTouch: Version: {:s}", mSoundTouch->getVersionString());
 
 				// sync cache latency info for offset calc
 				updateSTLatency();
 
-				ST_DEBUG_LOG("SoundTouch: Initial latency: {:} samples ({:.1f}ms), Output sequence: {:} samples, Average latency: {:.1f}ms\n",
+				ST_DEBUG_LOG("SoundTouch: Initial latency: {:} samples ({:.1f}ms), Output sequence: {:} samples, Average latency: {:.1f}ms",
 				             mInitialSTLatencySamples, (mInitialSTLatencySamples * 1000.0f) / mBaseSamplerate, mSTOutputSequenceSamples, mSTLatencySeconds * 1000.0);
 			}
 		}
@@ -350,9 +350,9 @@ unsigned int SoundTouchFilterInstance::getAudio(float *aBuffer, unsigned int aSa
 
 	if (logThisCall)
 	{
-		ST_DEBUG_LOG("=== SoundTouchFilterInstance::getAudio [{:}] ===\n", mProcessingCounter);
-		ST_DEBUG_LOG("Request: {:} samples, bufferSize: {:}, channels: {:}\n", aSamplesToRead, aBufferSize, mChannels);
-		ST_DEBUG_LOG("Current position: {:f} seconds\n", mStreamPosition);
+		ST_DEBUG_LOG("=== SoundTouchFilterInstance::getAudio [{:}] ===", mProcessingCounter);
+		ST_DEBUG_LOG("Request: {:} samples, bufferSize: {:}, channels: {:}", aSamplesToRead, aBufferSize, mChannels);
+		ST_DEBUG_LOG("Current position: {:f} seconds", mStreamPosition);
 	}
 
 	if (!mSourceInstance || !mSoundTouch)
@@ -363,12 +363,12 @@ unsigned int SoundTouchFilterInstance::getAudio(float *aBuffer, unsigned int aSa
 	}
 
 	if (logThisCall)
-		ST_DEBUG_LOG("speed: {:f}, pitch: {:f}\n", mSoundTouchSpeed, mSoundTouchPitch);
+		ST_DEBUG_LOG("speed: {:f}, pitch: {:f}", mSoundTouchSpeed, mSoundTouchPitch);
 
 	unsigned int samplesInSoundTouch = mSoundTouch->numSamples();
 
 	if (logThisCall)
-		ST_DEBUG_LOG("SoundTouch has {:} samples in buffer\n", samplesInSoundTouch);
+		ST_DEBUG_LOG("SoundTouch has {:} samples in buffer", samplesInSoundTouch);
 
 	// keep the SoundTouch buffer well-stocked to ensure consistent output, use a target buffer size larger than necessary
 	// EXCEPT: if the source ended, then we just need to get out the last bits of SoundTouch audio,
@@ -383,7 +383,7 @@ unsigned int SoundTouchFilterInstance::getAudio(float *aBuffer, unsigned int aSa
 		if (mSourceInstance->hasEnded() && samplesInSoundTouch < aSamplesToRead)
 		{
 			if (logThisCall)
-				ST_DEBUG_LOG("Source has ended, flushing SoundTouch\n");
+				ST_DEBUG_LOG("Source has ended, flushing SoundTouch");
 			mSoundTouch->flush();
 			samplesInSoundTouch = mSoundTouch->numSamples();
 		}
@@ -395,7 +395,7 @@ unsigned int SoundTouchFilterInstance::getAudio(float *aBuffer, unsigned int aSa
 	unsigned int samplesReceived = samplesToReceive;
 
 	if (logThisCall)
-		ST_DEBUG_LOG("SoundTouch now has {:} samples available, will receive {:}\n", samplesAvailable, samplesToReceive);
+		ST_DEBUG_LOG("SoundTouch now has {:} samples available, will receive {:}", samplesAvailable, samplesToReceive);
 
 	// clear output buffer first
 	memset(aBuffer, 0, sizeof(float) * aSamplesToRead * mChannels);
@@ -407,7 +407,7 @@ unsigned int SoundTouchFilterInstance::getAudio(float *aBuffer, unsigned int aSa
 		samplesReceived = mSoundTouch->receiveSamples(mInterleavedBuffer, samplesToReceive);
 
 		if (logThisCall)
-			ST_DEBUG_LOG("Received {:} samples from SoundTouch, converting to non-interleaved\n", samplesReceived);
+			ST_DEBUG_LOG("Received {:} samples from SoundTouch, converting to non-interleaved", samplesReceived);
 
 		// convert from interleaved (LRLRLR...) to non-interleaved (LLLL...RRRR...)
 		for (unsigned int i = 0; i < samplesReceived; i++)
@@ -421,17 +421,17 @@ unsigned int SoundTouchFilterInstance::getAudio(float *aBuffer, unsigned int aSa
 		if (logThisCall && samplesReceived > 0)
 		{
 			const float samplesInSeconds = (static_cast<float>(samplesReceived) / mBaseSamplerate);
-			ST_DEBUG_LOG("Updated position: received {:} samples ({:.4f} seconds), new position: {:.4f} seconds\n", samplesReceived, samplesInSeconds,
+			ST_DEBUG_LOG("Updated position: received {:} samples ({:.4f} seconds), new position: {:.4f} seconds", samplesReceived, samplesInSeconds,
 			             mStreamPosition);
 		}
 	}
 	else if (logThisCall)
 	{
-		ST_DEBUG_LOG("No samples available from SoundTouch, returning silence\n");
+		ST_DEBUG_LOG("No samples available from SoundTouch, returning silence");
 	}
 
 	if (logThisCall && mProcessingCounter % 100 == 0)
-		ST_DEBUG_LOG("Position: mStreamPosition={:.3f}s, init_latency={:}, input_seq={}, output_seq={:}, avg_latency={:.1f}ms, ratio={:.3f}, real_pos={:.3f}s\n",
+		ST_DEBUG_LOG("Position: mStreamPosition={:.3f}s, init_latency={:}, input_seq={}, output_seq={:}, avg_latency={:.1f}ms, ratio={:.3f}, real_pos={:.3f}s",
 		             mStreamPosition, mInitialSTLatencySamples, mSoundTouch->getSetting(SETTING_NOMINAL_INPUT_SEQUENCE), mSTOutputSequenceSamples,
 		             mSTLatencySeconds * 1000.0, mSoundTouch->getInputOutputSampleRatio(), getInternalLatency());
 
@@ -448,7 +448,7 @@ unsigned int SoundTouchFilterInstance::getAudio(float *aBuffer, unsigned int aSa
 
 	if (updatePitchOrSpeed)
 	{
-		ST_DEBUG_LOG("(Deferred) Updating speed: {:f}->{:f}, pitch: {:f}->{:f}\n", mSoundTouchSpeed, mParent->mSpeedFactor, mSoundTouchPitch, mParent->mPitchFactor);
+		ST_DEBUG_LOG("(Deferred) Updating speed: {:f}->{:f}, pitch: {:f}->{:f}", mSoundTouchSpeed, mParent->mSpeedFactor, mSoundTouchPitch, mParent->mPitchFactor);
 
 		mSoundTouchSpeed = mParent->mSpeedFactor;
 		mSoundTouchPitch = mParent->mPitchFactor;
@@ -464,7 +464,7 @@ unsigned int SoundTouchFilterInstance::getAudio(float *aBuffer, unsigned int aSa
 	}
 
 	if (logThisCall)
-		ST_DEBUG_LOG("=== End of getAudio [{:}] ===\n", mProcessingCounter);
+		ST_DEBUG_LOG("=== End of getAudio [{:}] ===", mProcessingCounter);
 
 	// reference in soloud_wavstream.cpp shows that only the amount of real data actually "read" (taken from SoundTouch in this instance) is actually returned.
 	// it just means that the stream ends properly when the parent source has ended, after the remaining data from the SoundTouch buffer is played out.
@@ -485,7 +485,7 @@ result SoundTouchFilterInstance::seek(time aSeconds, float *mScratch, unsigned i
 	if (!mSourceInstance || !mSoundTouch)
 		return INVALID_PARAMETER;
 
-	ST_DEBUG_LOG("Seeking to {:.3f} seconds\n", aSeconds);
+	ST_DEBUG_LOG("Seeking to {:.3f} seconds", aSeconds);
 
 	// seek the source.
 	result res = mSourceInstance->seek(aSeconds, mScratch, mScratchSize);
@@ -493,7 +493,7 @@ result SoundTouchFilterInstance::seek(time aSeconds, float *mScratch, unsigned i
 	if (res == SO_NO_ERROR)
 	{
 		reSynchronize();
-		ST_DEBUG_LOG("Seek complete to {:.3f} seconds\n", mStreamPosition);
+		ST_DEBUG_LOG("Seek complete to {:.3f} seconds", mStreamPosition);
 	}
 
 	return res;
@@ -501,12 +501,12 @@ result SoundTouchFilterInstance::seek(time aSeconds, float *mScratch, unsigned i
 
 result SoundTouchFilterInstance::rewind()
 {
-	ST_DEBUG_LOG("Rewinding\n");
+	ST_DEBUG_LOG("Rewinding");
 
 	if (mStreamPosition == 0)
 	{
 		reSynchronize();
-		ST_DEBUG_LOG("Position was already at the start, cleared ST buffers\n");
+		ST_DEBUG_LOG("Position was already at the start, cleared ST buffers");
 		return SO_NO_ERROR;
 	}
 
@@ -517,7 +517,7 @@ result SoundTouchFilterInstance::rewind()
 	if (res == SO_NO_ERROR)
 	{
 		reSynchronize();
-		ST_DEBUG_LOG("Rewinded, position now {:.3f}\n", mStreamPosition);
+		ST_DEBUG_LOG("Rewinded, position now {:.3f}", mStreamPosition);
 	}
 
 	return res;
@@ -543,7 +543,7 @@ void SoundTouchFilterInstance::ensureBufferSize(unsigned int samples)
 {
 	if (samples > mBufferSize)
 	{
-		ST_DEBUG_LOG("SoundTouchFilterInstance: Resizing non-interleaved buffer from {:} to {:} samples\n", mBufferSize, samples);
+		ST_DEBUG_LOG("SoundTouchFilterInstance: Resizing non-interleaved buffer from {:} to {:} samples", mBufferSize, samples);
 
 		delete[] mBuffer;
 		mBufferSize = samples;
@@ -557,7 +557,7 @@ void SoundTouchFilterInstance::ensureInterleavedBufferSize(unsigned int samples)
 	unsigned int requiredSize = samples * mChannels;
 	if (requiredSize > mInterleavedBufferSize)
 	{
-		ST_DEBUG_LOG("SoundTouchFilterInstance: Resizing interleaved buffer from {:} to {:} samples\n", mInterleavedBufferSize / mChannels, samples);
+		ST_DEBUG_LOG("SoundTouchFilterInstance: Resizing interleaved buffer from {:} to {:} samples", mInterleavedBufferSize / mChannels, samples);
 
 		delete[] mInterleavedBuffer;
 		mInterleavedBufferSize = requiredSize;
@@ -571,7 +571,7 @@ unsigned int SoundTouchFilterInstance::feedSoundTouch(unsigned int targetBufferL
 	unsigned int currentSamples = mSoundTouch->numSamples();
 
 	if (logThis)
-		ST_DEBUG_LOG("Starting feedSoundTouch: current={:}, target={:}, speed={:.3f}\n", currentSamples, targetBufferLevel, mSoundTouchSpeed);
+		ST_DEBUG_LOG("Starting feedSoundTouch: current={:}, target={:}, speed={:.3f}", currentSamples, targetBufferLevel, mSoundTouchSpeed);
 
 	// read in power-of-two chunks from the source until we have enough samples ready in soundtouch
 	// NOMINAL_INPUT_SEQUENCE will be smaller for lower rates (less source data needed for the same amount of output samples), and
@@ -601,7 +601,7 @@ unsigned int SoundTouchFilterInstance::feedSoundTouch(unsigned int targetBufferL
 			break;
 
 		if (logThis)
-			ST_DEBUG_LOG("Chunk {:}: read {:} samples from source\n", chunksProcessed + 1, samplesRead);
+			ST_DEBUG_LOG("Chunk {:}: read {:} samples from source", chunksProcessed + 1, samplesRead);
 
 		// convert from non-interleaved to interleaved format
 		for (unsigned int i = 0; i < samplesRead; i++)
@@ -619,11 +619,11 @@ unsigned int SoundTouchFilterInstance::feedSoundTouch(unsigned int targetBufferL
 		chunksProcessed++;
 
 		if (logThis)
-			ST_DEBUG_LOG("After chunk {:}: SoundTouch has {:} samples\n", chunksProcessed, currentSamples);
+			ST_DEBUG_LOG("After chunk {:}: SoundTouch has {:} samples", chunksProcessed, currentSamples);
 	}
 
 	if (logThis)
-		ST_DEBUG_LOG("feedSoundTouch complete: processed {:} chunks, final buffer level={:}\n", chunksProcessed, currentSamples);
+		ST_DEBUG_LOG("feedSoundTouch complete: processed {:} chunks, final buffer level={:}", chunksProcessed, currentSamples);
 
 	return currentSamples;
 }

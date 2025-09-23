@@ -60,7 +60,7 @@ std::vector<Frame> get_frames(u8* replay_data, i32 replay_size) {
     lzma_stream strm = LZMA_STREAM_INIT;
     lzma_ret ret = lzma_alone_decoder(&strm, UINT64_MAX);
     if(ret != LZMA_OK) {
-        debugLog("Failed to init lzma library ({:d})\n", static_cast<unsigned int>(ret));
+        debugLog("Failed to init lzma library ({:d})", static_cast<unsigned int>(ret));
         return replay_frames;
     }
 
@@ -75,7 +75,7 @@ std::vector<Frame> get_frames(u8* replay_data, i32 replay_size) {
 
         ret = lzma_code(&strm, LZMA_FINISH);
         if(ret != LZMA_OK && ret != LZMA_STREAM_END) {
-            debugLog("Decompression error ({:d})\n", static_cast<unsigned int>(ret));
+            debugLog("Decompression error ({:d})", static_cast<unsigned int>(ret));
             goto end;
         }
 
@@ -120,7 +120,7 @@ std::vector<u8> compress_frames(const std::vector<Frame>& frames) {
     lzma_lzma_preset(&options, LZMA_PRESET_DEFAULT);
     lzma_ret ret = lzma_alone_encoder(&stream, &options);
     if(ret != LZMA_OK) {
-        debugLog("Failed to initialize lzma encoder: error {:d}\n", static_cast<unsigned int>(ret));
+        debugLog("Failed to initialize lzma encoder: error {:d}", static_cast<unsigned int>(ret));
         return {};
     }
 
@@ -148,7 +148,7 @@ std::vector<u8> compress_frames(const std::vector<Frame>& frames) {
             stream.avail_out = compressed.size() - stream.total_out;
             stream.next_out = compressed.data() + stream.total_out;
         } else if(ret != LZMA_STREAM_END) {
-            debugLog("Error while compressing replay: error {:d}\n", static_cast<unsigned int>(ret));
+            debugLog("Error while compressing replay: error {:d}", static_cast<unsigned int>(ret));
             stream.total_out = 0;
             break;
         }

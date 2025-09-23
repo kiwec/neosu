@@ -25,7 +25,7 @@ void *load_func_impl(lib_obj *lib, const char *func_name) {
         retfunc = reinterpret_cast<void *>(SDL_LoadFunction(reinterpret_cast<SDL_SharedObject *>(lib), func_name));
     }
     if(!retfunc) {
-        debugLog("Failed to load function {:s} from lib ({:p}): {:s}\n", func_name, static_cast<const void *>(lib),
+        debugLog("Failed to load function {:s} from lib ({:p}): {:s}", func_name, static_cast<const void *>(lib),
                  get_error());
     }
     return retfunc;
@@ -58,7 +58,7 @@ lib_obj *load_lib(const char *c_lib_name, const char *c_search_dir) {
         }
         ret = reinterpret_cast<lib_obj *>(SDL_LoadObject(lib_name.c_str()));
     }
-    if(!ret) debugLog("Failed to load library {:s}: {:s}\n", lib_name, get_error());
+    if(!ret) debugLog("Failed to load library {:s}: {:s}", lib_name, get_error());
     return ret;
 }
 

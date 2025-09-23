@@ -86,7 +86,7 @@ struct VolNormalization::LoudnessCalcThread {
             auto decoder = BASS_StreamCreateFile(BASS_FILE_NAME, song.plat_str(), 0, 0, flags);
             if(!decoder) {
                 auto err_str = BassManager::getErrorUString();
-                debugLog("BASS_StreamCreateFile({:s}): {:s}\n", song.toUtf8(), err_str.toUtf8());
+                debugLog("BASS_StreamCreateFile({:s}): {:s}", song.toUtf8(), err_str.toUtf8());
                 this->nb_computed++;
                 continue;
             }
@@ -94,7 +94,7 @@ struct VolNormalization::LoudnessCalcThread {
             auto loudness = BASS_Loudness_Start(decoder, BASS_LOUDNESS_INTEGRATED, 0);
             if(!loudness) {
                 auto err_str = BassManager::getErrorUString();
-                debugLog("BASS_Loudness_Start(): {:s}\n", err_str.toUtf8());
+                debugLog("BASS_Loudness_Start(): {:s}", err_str.toUtf8());
                 BASS_ChannelFree(decoder);
                 this->nb_computed++;
                 continue;
@@ -114,7 +114,7 @@ struct VolNormalization::LoudnessCalcThread {
             BASS_Loudness_GetLevel(loudness, BASS_LOUDNESS_INTEGRATED, &integrated_loudness);
             BASS_Loudness_Stop(loudness);
             if(integrated_loudness == -HUGE_VAL) {
-                debugLog("No loudness information available for '{:s}' (silent song?)\n", song.toUtf8());
+                debugLog("No loudness information available for '{:s}' (silent song?)", song.toUtf8());
             } else {
                 map->loudness = integrated_loudness;
                 map->update_overrides();

@@ -106,7 +106,7 @@ static void run_sct(const std::unordered_map<MD5Hash, std::vector<FinishedScore>
     McThread::set_current_thread_name("score_cvt");
     McThread::set_current_thread_prio(false);  // reset priority
 
-    debugLog("Started score converter thread\n");
+    debugLog("Started score converter thread");
 
     // defer the actual needs-recalc check to run on the thread, to avoid unnecessarily blocking (O(n^2) loop)
     std::vector<FinishedScore> scores_to_calc;
@@ -125,7 +125,7 @@ static void run_sct(const std::unordered_map<MD5Hash, std::vector<FinishedScore>
     scores_to_calc.shrink_to_fit();
     sct_total = scores_to_calc.size();
 
-    debugLog("Found {} scores which need pp recalculation\n", sct_total.load());
+    debugLog("Found {} scores which need pp recalculation", sct_total.load());
 
     // nothing to do...
     if(sct_total == 0) return;
@@ -152,7 +152,7 @@ static void run_sct(const std::unordered_map<MD5Hash, std::vector<FinishedScore>
 
         if(score.replay.empty()) {
             if(!LegacyReplay::load_from_disk(score, false)) {
-                debugLog("Failed to load replay for score {:d}\n", idx);
+                debugLog("Failed to load replay for score {:d}", idx);
                 update_ppv2(score);
                 sct_computed++;
                 idx++;
@@ -166,16 +166,16 @@ static void run_sct(const std::unordered_map<MD5Hash, std::vector<FinishedScore>
         smap.simulate_to(map->getLengthMS());
 
         if(score.comboMax != smap.live_score.getComboMax())
-            debugLog("Score {:d}: comboMax was {:d}, simulated {:d}\n", idx, score.comboMax,
+            debugLog("Score {:d}: comboMax was {:d}, simulated {:d}", idx, score.comboMax,
                      smap.live_score.getComboMax());
         if(score.num300s != smap.live_score.getNum300s())
-            debugLog("Score {:d}: n300 was {:d}, simulated {:d}\n", idx, score.num300s, smap.live_score.getNum300s());
+            debugLog("Score {:d}: n300 was {:d}, simulated {:d}", idx, score.num300s, smap.live_score.getNum300s());
         if(score.num100s != smap.live_score.getNum100s())
-            debugLog("Score {:d}: n100 was {:d}, simulated {:d}\n", idx, score.num100s, smap.live_score.getNum100s());
+            debugLog("Score {:d}: n100 was {:d}, simulated {:d}", idx, score.num100s, smap.live_score.getNum100s());
         if(score.num50s != smap.live_score.getNum50s())
-            debugLog("Score {:d}: n50 was {:d}, simulated {:d}\n", idx, score.num50s, smap.live_score.getNum50s());
+            debugLog("Score {:d}: n50 was {:d}, simulated {:d}", idx, score.num50s, smap.live_score.getNum50s());
         if(score.numMisses != smap.live_score.getNumMisses())
-            debugLog("Score {:d}: nMisses was {:d}, simulated {:d}\n", idx, score.numMisses,
+            debugLog("Score {:d}: nMisses was {:d}, simulated {:d}", idx, score.numMisses,
                      smap.live_score.getNumMisses());
 
         db->scores_mtx.lock();

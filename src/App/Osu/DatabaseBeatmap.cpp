@@ -399,7 +399,7 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(const
                     upd_last_error(
                         !(type & (PpyHitObjectType::CIRCLE | PpyHitObjectType::SLIDER | PpyHitObjectType::SPINNER)));
                     if(err_line) {
-                        debugLog("Invalid hit object (error on line {}): {}\n", err_line, curLine);
+                        debugLog("Invalid hit object (error on line {}): {}", err_line, curLine);
                         break;
                     }
 
@@ -431,7 +431,7 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(const
 
                         if(csvs.size() > 5) {
                             if(!parse_hitsamples(csvs[5], h.samples)) {
-                                debugLog("Invalid circle hitSamples in line: {}\n", curLine);
+                                debugLog("Invalid circle hitSamples in line: {}", curLine);
                                 break;
                             }
                         }
@@ -459,7 +459,7 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(const
                         }
 
                         if(err_line) {
-                            debugLog("Invalid slider (error on line {}): {}\n", err_line, curLine);
+                            debugLog("Invalid slider (error on line {}): {}", err_line, curLine);
                             break;
                         }
 
@@ -502,7 +502,7 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(const
                         }
 
                         if(err_line) {
-                            debugLog("Invalid slider edgeSamples (error on line {}): {}\n", err_line, curLine);
+                            debugLog("Invalid slider edgeSamples (error on line {}): {}", err_line, curLine);
                             break;
                         }
 
@@ -514,7 +514,7 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(const
 
                         if(csvs.size() > 10) {
                             if(!parse_hitsamples(csvs[10], slider.hoverSamples)) {
-                                debugLog("Invalid slider hitSamples in line: {}\n", curLine);
+                                debugLog("Invalid slider hitSamples in line: {}", curLine);
                                 break;
                             }
                         }
@@ -535,13 +535,13 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(const
                         upd_last_error(!Parsing::parse(csvs[5], &s.endTime));
 
                         if(err_line) {
-                            debugLog("Invalid spinner (error on line {}): {}\n", err_line, curLine);
+                            debugLog("Invalid spinner (error on line {}): {}", err_line, curLine);
                             break;
                         }
 
                         if(csvs.size() > 6) {
                             if(!parse_hitsamples(csvs[6], s.samples)) {
-                                debugLog("Invalid spinner hitSamples in line: {}\n", curLine);
+                                debugLog("Invalid spinner hitSamples in line: {}", curLine);
                                 break;
                             }
                         }
@@ -1028,7 +1028,7 @@ bool DatabaseBeatmap::loadMetadata(bool compute_md5) {
     // reset
     this->timingpoints.clear();
 
-    if(cv::debug_osu.getBool()) debugLog("DatabaseBeatmap::loadMetadata() : {:s}\n", this->sFilePath.c_str());
+    if(cv::debug_osu.getBool()) debugLog("DatabaseBeatmap::loadMetadata() : {:s}", this->sFilePath.c_str());
 
     std::vector<u8> fileBuffer;
     u8 *beatmapFile{nullptr};
@@ -1045,7 +1045,7 @@ bool DatabaseBeatmap::loadMetadata(bool compute_md5) {
     }
 
     if(fileBuffer.empty()) {
-        debugLog("Osu Error: Couldn't read file {:s}\n", this->sFilePath.c_str());
+        debugLog("Osu Error: Couldn't read file {:s}", this->sFilePath.c_str());
         return false;
     }
 
@@ -1090,7 +1090,7 @@ bool DatabaseBeatmap::loadMetadata(bool compute_md5) {
             case -1: {
                 if(Parsing::parse(curLineChar, "osu file format v", &this->iVersion)) {
                     if(this->iVersion > cv::beatmap_version.getInt()) {
-                        debugLog("Ignoring unknown/invalid beatmap version {:d}\n", this->iVersion);
+                        debugLog("Ignoring unknown/invalid beatmap version {:d}", this->iVersion);
                         return false;
                     }
                 }
@@ -1171,7 +1171,7 @@ bool DatabaseBeatmap::loadMetadata(bool compute_md5) {
 
     // general sanity checks
     if((this->timingpoints.size() < 1)) {
-        if(cv::debug_osu.getBool()) debugLog("DatabaseBeatmap::loadMetadata() : no timingpoints in beatmap!\n");
+        if(cv::debug_osu.getBool()) debugLog("DatabaseBeatmap::loadMetadata() : no timingpoints in beatmap!");
         return false;  // nothing more to do here
     }
 
@@ -1187,7 +1187,7 @@ bool DatabaseBeatmap::loadMetadata(bool compute_md5) {
         }
 
         if(this->iMostCommonBPM == 0) {
-            if(cv::debug_osu.getBool()) debugLog("DatabaseBeatmap::loadMetadata() : calculating BPM range ...\n");
+            if(cv::debug_osu.getBool()) debugLog("DatabaseBeatmap::loadMetadata() : calculating BPM range ...");
             BPMInfo bpm{};
             if(this->timingpoints.size() > 0) {
                 zarray<BPMTuple> bpm_calculation_buffer(this->timingpoints.size());
@@ -1372,7 +1372,7 @@ DatabaseBeatmap::LOAD_GAMEPLAY_RESULT DatabaseBeatmap::loadGameplay(DatabaseBeat
         }
     }
 
-    debugLog("DatabaseBeatmap::loadGameplay() loaded {:d} hitobjects\n", result.hitobjects.size());
+    debugLog("DatabaseBeatmap::loadGameplay() loaded {:d} hitobjects", result.hitobjects.size());
 
     return result;
 }

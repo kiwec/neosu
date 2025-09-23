@@ -1280,7 +1280,7 @@ void Osu::saveScreenshot() {
         static uint8_t once = 0;
         if(!once++)
             this->notificationOverlay->addNotification("Error: Couldn't grab a screenshot :(", 0xffff0000, false, 3.0f);
-        debugLog("failed to get pixel data for screenshot\n");
+        debugLog("failed to get pixel data for screenshot");
         return;
     }
 
@@ -1423,7 +1423,7 @@ bool Osu::shouldFallBackToLegacySliderRenderer() {
 }
 
 void Osu::onResolutionChanged(vec2 newResolution) {
-    debugLog("Osu::onResolutionChanged({:d}, {:d}), minimized = {:d}\n", (int)newResolution.x, (int)newResolution.y,
+    debugLog("Osu::onResolutionChanged({:d}, {:d}), minimized = {:d}", (int)newResolution.x, (int)newResolution.y,
              (int)engine->isMinimized());
 
     if(engine->isMinimized()) return;  // ignore if minimized
@@ -1486,7 +1486,7 @@ void Osu::onDPIChanged() {
 }
 
 void Osu::rebuildRenderTargets() {
-    debugLog("Osu::rebuildRenderTargets: {:f}x{:f}\n", this->vInternalResolution.x, this->vInternalResolution.y);
+    debugLog("Osu::rebuildRenderTargets: {:f}x{:f}", this->vInternalResolution.x, this->vInternalResolution.y);
 
     this->backBuffer->rebuild(0, 0, this->vInternalResolution.x, this->vInternalResolution.y);
 
@@ -1540,7 +1540,7 @@ void Osu::updateMouseSettings() {
 }
 
 void Osu::updateWindowsKeyDisable() {
-    if(cv::debug_osu.getBool()) debugLog("Osu::updateWindowsKeyDisable()\n");
+    if(cv::debug_osu.getBool()) debugLog("Osu::updateWindowsKeyDisable()");
     const bool isPlayerPlaying = engine->hasFocus() && this->isInPlayMode() &&
                                  (!this->map_iface->isPaused() || this->map_iface->isRestartScheduled()) &&
                                  !cv::mod_autoplay.getBool();
@@ -1655,7 +1655,7 @@ void Osu::onFocusLost() {
 void Osu::onMinimized() { this->volumeOverlay->loseFocus(); }
 
 bool Osu::onShutdown() {
-    debugLog("Osu::onShutdown()\n");
+    debugLog("Osu::onShutdown()");
 
     if(!cv::alt_f4_quits_even_while_playing.getBool() && this->isInPlayMode()) {
         this->map_iface->stop();
@@ -1808,7 +1808,7 @@ void Osu::updateCursorVisibility() {
     // only change if it's different from the current mouse state
     if(desired_vis != currently_visible) {
         if(cv::debug_mouse.getBool()) {
-            debugLog("current: {} desired: {}\n", currently_visible, desired_vis);
+            debugLog("current: {} desired: {}", currently_visible, desired_vis);
         }
         env->setCursorVisible(desired_vis);
     }
@@ -1844,7 +1844,7 @@ void Osu::updateConfineCursor() {
     }
 
     if(cv::debug_mouse.getBool())
-        debugLog("confined: {}, cliprect: {},{},{},{}\n", confine_cursor, clip.getMinX(), clip.getMinY(),
+        debugLog("confined: {}, cliprect: {},{},{},{}", confine_cursor, clip.getMinX(), clip.getMinY(),
                  clip.getMaxX(), clip.getMaxY());
 
     env->setCursorClip(confine_cursor, clip);

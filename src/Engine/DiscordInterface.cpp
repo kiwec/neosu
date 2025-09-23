@@ -45,9 +45,9 @@ struct IDiscordUserEvents users_events{};
 void on_discord_log(void * /*cdata*/, enum EDiscordLogLevel level, const char *message) {
     //(void)cdata;
     if(level == DiscordLogLevel_Error) {
-        Logger::logRaw("[Discord] ERROR: {:s}\n", message);
+        Logger::logRaw("[Discord] ERROR: {:s}", message);
     } else {
-        Logger::logRaw("[Discord] {:s}\n", message);
+        Logger::logRaw("[Discord] {:s}", message);
     }
 }
 #endif
@@ -59,13 +59,13 @@ dynutils::lib_obj *discord_handle{nullptr};
 void init_discord_sdk() {
     discord_handle = dynutils::load_lib("discord_game_sdk");
     if(!discord_handle) {
-        debugLog("Failed to load Discord SDK! (error {:s})\n", dynutils::get_error());
+        debugLog("Failed to load Discord SDK! (error {:s})", dynutils::get_error());
         return;
     }
 
     auto pDiscordCreate = dynutils::load_func<decltype(DiscordCreate)>(discord_handle, "DiscordCreate");
     if(!pDiscordCreate) {
-        debugLog("Failed to load DiscordCreate from discord_game_sdk.dll! (error {:s})\n", dynutils::get_error());
+        debugLog("Failed to load DiscordCreate from discord_game_sdk.dll! (error {:s})", dynutils::get_error());
         return;
     }
 
@@ -87,7 +87,7 @@ void init_discord_sdk() {
 
     int res = pDiscordCreate(DISCORD_VERSION, &params, &dapp.core);
     if(res != DiscordResult_Ok) {
-        debugLog("Failed to initialize Discord SDK! (error {:d})\n", res);
+        debugLog("Failed to initialize Discord SDK! (error {:d})", res);
         return;
     }
 

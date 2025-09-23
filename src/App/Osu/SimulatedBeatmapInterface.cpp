@@ -136,7 +136,7 @@ bool SimulatedBeatmapInterface::start() {
 void SimulatedBeatmapInterface::fail(bool force_death) {
     (void)force_death;
 
-    debugLog("SimulatedBeatmapInterface::fail called!\n");
+    debugLog("SimulatedBeatmapInterface::fail called!");
     this->bFailed = true;
 }
 
@@ -897,7 +897,7 @@ void SimulatedBeatmapInterface::updateHitobjectMetrics() {
 void SimulatedBeatmapInterface::calculateStacks() {
     this->updateHitobjectMetrics();
 
-    debugLog("Beatmap: Calculating stacks ...\n");
+    debugLog("Beatmap: Calculating stacks ...");
 
     // reset
     for(auto &hitobject : this->hitobjects) {
@@ -1034,7 +1034,7 @@ void SimulatedBeatmapInterface::computeDrainRate() {
 
     if(this->hitobjects.size() < 1) return;
 
-    debugLog("Beatmap: Calculating drain ...\n");
+    debugLog("Beatmap: Calculating drain ...");
 
     {
         // see https://github.com/ppy/osu-iPhone/blob/master/Classes/OsuPlayer.m

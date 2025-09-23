@@ -741,7 +741,8 @@ $(DEPS_PREFIX)/spdlog-$(SPDLOG_VERSION).built: $(DEPS_CACHE)/spdlog-$(SPDLOG_VER
 		-DSPDLOG_NO_EXCEPTIONS=ON \
 		-DSPDLOG_BUILD_SHARED="$(if $(STATICBUILD),OFF,ON)" && \
 	$(CMAKE) --build build "$(CMAKEPAROPT)" && \
-	$(CMAKE) --install build
+	$(CMAKE) --install build && \
+	$(if $(ENABLE_DEBUG),$(SED) -i 's|\(.*\)\(-lspdlog[^d]\)|\1-lspdlogd |g' $(DEPS_PREFIX)/lib/pkgconfig/spdlog.pc,true)
 	$(PKG_CONFIG) --exists --print-errors spdlog
 	touch $@
 else

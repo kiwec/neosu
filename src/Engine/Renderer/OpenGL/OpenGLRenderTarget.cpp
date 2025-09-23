@@ -18,7 +18,7 @@
 int OpenGLRenderTarget::iMaxMultiSamples{-1};
 
 void OpenGLRenderTarget::init() {
-    debugLog("Building RenderTarget ({}x{}) ...\n", (int)this->vSize.x, (int)this->vSize.y);
+    debugLog("Building RenderTarget ({}x{}) ...", (int)this->vSize.x, (int)this->vSize.y);
 
     this->iFrameBuffer = 0;
     this->iRenderTexture = 0;
