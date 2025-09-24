@@ -370,7 +370,7 @@ void ScoreButton::mouse_update(bool *propagate_clicks) {
             const bool fullCombo =
                 (this->score.maxPossibleCombo > 0 && this->score.numMisses == 0 && this->score.numSliderBreaks == 0);
 
-            std::scoped_lock lock(db->scores_mtx);
+            Sync::scoped_lock lock(db->scores_mtx);
             auto &scores = this->score.is_online_score ? db->online_scores : db->scores;
             for(auto &other : scores[this->score.beatmap_hash]) {
                 if(other.unixTimestamp == this->score.unixTimestamp) {

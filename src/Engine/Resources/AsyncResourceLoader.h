@@ -1,16 +1,14 @@
 #pragma once
 #include <algorithm>
 #include <atomic>
-#include <chrono>
-#include <condition_variable>
-#include <memory>
-#include <mutex>
 #include <queue>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
 #include "Resource.h"
+
+#include "Sync.h"
 
 class ConVar;
 
@@ -83,7 +81,7 @@ class AsyncResourceLoader final {
 
     // thread pool
     std::unordered_map<size_t, std::unique_ptr<LoaderThread>> threadpool;  // index to thread
-    mutable std::mutex threadsMutex;
+    mutable Sync::mutex threadsMutex;
 
     // thread lifecycle tracking
     std::atomic<size_t> iActiveThreadCount{0};
@@ -94,23 +92,23 @@ class AsyncResourceLoader final {
     std::queue<std::unique_ptr<LoadingWork>> asyncCompleteWork;
 
     // single mutex for both work queues (they're accessed in sequence, not concurrently)
-    mutable std::mutex workQueueMutex;
+    mutable Sync::mutex workQueueMutex;
 
     // fast lookup for checking if a resource is being loaded
     std::unordered_set<Resource *> loadingResourcesSet;
-    mutable std::mutex loadingResourcesMutex;
+    mutable Sync::mutex loadingResourcesMutex;
 
     // atomic counters for efficient status queries
     std::atomic<size_t> iActiveWorkCount{0};
     std::atomic<size_t> iWorkIdCounter{0};
 
     // work notification
-    std::condition_variable_any workAvailable;
-    std::mutex workAvailableMutex;
+    Sync::condition_variable_any workAvailable;
+    Sync::mutex workAvailableMutex;
 
     // async destroy queue
     std::vector<Resource *> asyncDestroyQueue;
-    std::mutex asyncDestroyMutex;
+    Sync::mutex asyncDestroyMutex;
 
     // lifecycle flags
     std::atomic<bool> bShuttingDown{false};

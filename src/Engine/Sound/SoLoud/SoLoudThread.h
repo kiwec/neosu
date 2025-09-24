@@ -6,13 +6,12 @@
 
 #include "Thread.h"
 #include "Timing.h"
+#include "Sync.h"
 
 #include <soloud.h>
 
 #include <thread>
-#include <mutex>
 #include <atomic>
-#include <condition_variable>
 #include <queue>
 #include <future>
 #include <functional>
@@ -92,7 +91,7 @@ class SoLoudThreadWrapper {
             auto future = task->get_future();
 
             {
-                std::scoped_lock<std::mutex> lock(queue_mutex);
+                Sync::scoped_lock<Sync::mutex> lock(queue_mutex);
                 this->task_queue.push(std::move(task));
             }
             this->queue_cv.notify_one();
@@ -103,7 +102,7 @@ class SoLoudThreadWrapper {
             auto future = task->get_future();
 
             {
-                std::scoped_lock<std::mutex> lock(queue_mutex);
+                Sync::scoped_lock<Sync::mutex> lock(queue_mutex);
                 this->task_queue.push(std::move(task));
             }
             this->queue_cv.notify_one();
@@ -147,7 +146,7 @@ class SoLoudThreadWrapper {
         auto future = task->get_future();
 
         {
-            std::scoped_lock<std::mutex> lock(queue_mutex);
+            Sync::scoped_lock<Sync::mutex> lock(queue_mutex);
             this->task_queue.push(std::move(task));
         }
         this->queue_cv.notify_one();
@@ -165,7 +164,7 @@ class SoLoudThreadWrapper {
         auto task = std::make_unique<FireAndForgetTask>(std::forward<F>(func));
 
         {
-            std::scoped_lock<std::mutex> lock(queue_mutex);
+            Sync::scoped_lock<Sync::mutex> lock(queue_mutex);
             this->task_queue.push(std::move(task));
         }
         this->queue_cv.notify_one();
@@ -194,7 +193,7 @@ class SoLoudThreadWrapper {
         auto future = task->get_future();
 
         {
-            std::scoped_lock<std::mutex> lock(queue_mutex);
+            Sync::scoped_lock<Sync::mutex> lock(queue_mutex);
             this->task_queue.push(std::move(task));
         }
         this->queue_cv.notify_one();
@@ -342,10 +341,10 @@ class SoLoudThreadWrapper {
 
    private:
     void start_worker_thread() {
-        this->worker_thread = std::jthread([this](const std::stop_token& stoken) { this->worker_loop(stoken); });
+        this->worker_thread = Sync::jthread([this](const Sync::stop_token& stoken) { this->worker_loop(stoken); });
 
         // wait for initialization to complete
-        std::unique_lock<std::mutex> lock(this->init_mutex);
+        Sync::unique_lock<Sync::mutex> lock(this->init_mutex);
         this->init_cv.wait(lock, [this] { return this->initialized; });
     }
 
@@ -378,7 +377,7 @@ class SoLoudThreadWrapper {
 
         // clear any remaining tasks from the old thread
         {
-            std::scoped_lock<std::mutex> lock(this->queue_mutex);
+            Sync::scoped_lock<Sync::mutex> lock(this->queue_mutex);
             while(!this->task_queue.empty()) {
                 this->task_queue.pop();
             }
@@ -391,7 +390,7 @@ class SoLoudThreadWrapper {
         this->start_worker_thread();
     }
 
-    void worker_loop(const std::stop_token& stoken) noexcept {
+    void worker_loop(const Sync::stop_token& stoken) noexcept {
         McThread::set_current_thread_name("soloud_mixer");
         McThread::set_current_thread_prio(false);
 
@@ -400,14 +399,14 @@ class SoLoudThreadWrapper {
 
         // signal completion
         {
-            std::scoped_lock<std::mutex> lock(this->init_mutex);
+            Sync::scoped_lock<Sync::mutex> lock(this->init_mutex);
             this->initialized = true;
         }
         this->init_cv.notify_one();
 
         // main processing loop
         while(!stoken.stop_requested() && !this->shutting_down.load()) {
-            std::unique_lock<std::mutex> lock(this->queue_mutex);
+            Sync::unique_lock<Sync::mutex> lock(this->queue_mutex);
 
             // wait for tasks or stop signal
             this->queue_cv.wait(lock, stoken, [&] { return !this->task_queue.empty() || this->shutting_down.load(); });
@@ -453,12 +452,12 @@ class SoLoudThreadWrapper {
     }
 
     std::unique_ptr<SoLoud::Soloud> soloud{nullptr};
-    std::jthread worker_thread;
+    Sync::jthread worker_thread;
 
     // task queue
     std::queue<std::unique_ptr<TaskBase>> task_queue;
-    mutable std::mutex queue_mutex;
-    std::condition_variable_any queue_cv;
+    mutable Sync::mutex queue_mutex;
+    Sync::condition_variable_any queue_cv;
 
     // init/shutdown signaling
 
@@ -466,8 +465,8 @@ class SoLoudThreadWrapper {
     // https://sourceware.org/pipermail/glibc-bugs/2020-April/047751.html
     std::atomic<bool> shutting_down{false};
 
-    mutable std::mutex init_mutex;
-    std::condition_variable init_cv;
+    mutable Sync::mutex init_mutex;
+    Sync::condition_variable init_cv;
 
     bool initialized{false};
     bool threaded{false};

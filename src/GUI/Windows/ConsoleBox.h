@@ -2,9 +2,9 @@
 // Copyright (c) 2011, PG, All rights reserved.
 
 #include "CBaseUIElement.h"
+#include "Sync.h"
 
 #include <atomic>
-#include <mutex>
 
 class CBaseUITextbox;
 class CBaseUIButton;
@@ -96,7 +96,7 @@ class ConsoleBox : public CBaseUIElement {
     int iSelectedHistory;
     bool bClearPending{false};
 
-    std::recursive_mutex logMutex;
+    Sync::recursive_mutex logMutex;
 
     // thread-safe log animation state
     std::atomic<bool> bLogAnimationResetPending;

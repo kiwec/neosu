@@ -4,13 +4,12 @@
 #include "ConVar.h"
 
 #include "Resource.h"
-#include "ByteBufferedFile.h"
 #include "LegacyReplay.h"
 #include "Overrides.h"
 #include "UString.h"
 #include "score.h"
+#include "Sync.h"
 
-#include <mutex>
 #include <atomic>
 
 namespace Timing {
@@ -108,12 +107,12 @@ class Database {
 
     UString parseLegacyCfgBeatmapDirectoryParameter();
     void scheduleLoadRaw();
-    std::mutex peppy_overrides_mtx;
+    Sync::mutex peppy_overrides_mtx;
     std::unordered_map<MD5Hash, MapOverrides> peppy_overrides;
     std::vector<BeatmapDifficulty *> maps_to_recalc;
     std::vector<BeatmapDifficulty *> loudness_to_calc;
 
-    std::mutex scores_mtx;
+    Sync::mutex scores_mtx;
     std::atomic<bool> bDidScoresChangeForStats = true;
     std::unordered_map<MD5Hash, std::vector<FinishedScore>> scores;
     std::unordered_map<MD5Hash, std::vector<FinishedScore>> online_scores;
@@ -172,7 +171,7 @@ class Database {
     std::atomic<bool> bInterruptLoad;
     std::vector<BeatmapSet *> beatmapsets;
 
-    std::mutex beatmap_difficulties_mtx;
+    Sync::mutex beatmap_difficulties_mtx;
     std::unordered_map<MD5Hash, BeatmapDifficulty *> beatmap_difficulties;
 
     bool neosu_maps_loaded = false;

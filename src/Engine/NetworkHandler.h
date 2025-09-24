@@ -2,12 +2,11 @@
 // Copyright (c) 2015, PG, All rights reserved.
 #include "UString.h"
 #include "types.h"
+#include "Sync.h"
 
-#include <condition_variable>
 #include <functional>
 #include <map>
 #include <memory>
-#include <mutex>
 #include <queue>
 #include <thread>
 
@@ -71,23 +70,23 @@ class NetworkHandler {
    private:
     // curl_multi implementation
     CURLM* multi_handle;
-    std::unique_ptr<std::jthread> network_thread;
+    std::unique_ptr<Sync::jthread> network_thread;
 
     // request queuing
-    std::mutex request_queue_mutex;
-    std::condition_variable_any request_queue_cv;
+    Sync::mutex request_queue_mutex;
+    Sync::condition_variable_any request_queue_cv;
     std::queue<std::unique_ptr<NetworkRequest>> pending_requests;
 
     // active requests tracking
-    std::mutex active_requests_mutex;
+    Sync::mutex active_requests_mutex;
     std::map<CURL*, std::unique_ptr<NetworkRequest>> active_requests;
 
     // sync request support
-    std::mutex sync_requests_mutex;
-    std::map<void*, std::condition_variable*> sync_request_cvs;
+    Sync::mutex sync_requests_mutex;
+    std::map<void*, Sync::condition_variable*> sync_request_cvs;
     std::map<void*, Response> sync_responses;
 
-    void networkThreadFunc(const std::stop_token& stopToken);
+    void networkThreadFunc(const Sync::stop_token& stopToken);
     void processNewRequests();
     void processCompletedRequests();
     std::unique_ptr<NetworkRequest> createRequest(const UString& url, AsyncCallback callback,

@@ -71,7 +71,7 @@ class Logger::ConsoleBoxSink : public spdlog::sinks::base_sink<std::mutex> {
     inline void flush_buffer_to_console() noexcept {
         if(buffer_count_ == 0) return;
 
-        std::shared_ptr<ConsoleBox> cbox{likely(!!engine) ? engine->getConsoleBox() : nullptr};
+        std::shared_ptr<ConsoleBox> cbox{Engine::consoleBox};
         if(unlikely(!cbox)) {
             // should only be possible briefly on startup/shutdown
             return;
@@ -81,7 +81,7 @@ class Logger::ConsoleBoxSink : public spdlog::sinks::base_sink<std::mutex> {
         size_t read_pos{(buffer_head_ + CONSOLE_BUFFER_SIZE - buffer_count_) % CONSOLE_BUFFER_SIZE};
         {
             // hold the lock outside the loop, so we don't continuously acquire and release it for each log call
-            std::scoped_lock lock{cbox->logMutex};
+            Sync::scoped_lock lock{cbox->logMutex};
             for(size_t i = 0; i < buffer_count_; ++i) {
                 cbox->log(message_buffer_[read_pos]);
                 read_pos = (read_pos + 1) % CONSOLE_BUFFER_SIZE;

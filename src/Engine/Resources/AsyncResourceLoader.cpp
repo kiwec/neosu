@@ -25,7 +25,7 @@ class AsyncResourceLoader::LoaderThread final {
         : thread_index(index),
           last_active(std::chrono::steady_clock::now()),
           loader_ptr(loader),
-          thread(std::jthread([&](const std::stop_token &stoken) { this->run(stoken); })) {}
+          thread(Sync::jthread([&](const Sync::stop_token &stoken) { this->run(stoken); })) {}
 
     [[nodiscard]] bool isReady() const noexcept { return this->thread.joinable(); }
 
@@ -36,7 +36,7 @@ class AsyncResourceLoader::LoaderThread final {
     }
 
    private:
-    void run(const std::stop_token &stoken) noexcept {
+    void run(const Sync::stop_token &stoken) noexcept {
         this->loader_ptr->iActiveThreadCount.fetch_add(1);
 
         if(cv::debug_rm.getBool()) debugLog("AsyncResourceLoader: Thread #{} started", this->thread_index);
@@ -54,7 +54,7 @@ class AsyncResourceLoader::LoaderThread final {
                 // yield in case we're sharing a logical CPU, like on a single-core system
                 Timing::sleepMS(1);
 
-                std::unique_lock<std::mutex> lock(this->loader_ptr->workAvailableMutex);
+                Sync::unique_lock<Sync::mutex> lock(this->loader_ptr->workAvailableMutex);
 
                 // wait indefinitely until work is available or stop is requested
                 this->loader_ptr->workAvailable.wait(lock, stoken, [&]() {
@@ -103,7 +103,7 @@ class AsyncResourceLoader::LoaderThread final {
     }
 
     AsyncResourceLoader *loader_ptr;
-    std::jthread thread;
+    Sync::jthread thread;
 };
 
 //==================================
@@ -115,7 +115,7 @@ AsyncResourceLoader::AsyncResourceLoader()
       iLoadsPerUpdate(this->iMaxThreads),
       lastCleanupTime(std::chrono::steady_clock::now()) {
     // pre-create at least a single thread for better startup responsiveness
-    std::scoped_lock lock(this->threadsMutex);
+    Sync::scoped_lock lock(this->threadsMutex);
 
     const size_t idx = this->iTotalThreadsCreated.fetch_add(1);
     auto loaderThread = std::make_unique<LoaderThread>(this, idx);
@@ -138,14 +138,14 @@ void AsyncResourceLoader::shutdown() {
 
     // request all threads to stop and wake them up
     {
-        std::scoped_lock lock(this->threadsMutex);
+        Sync::scoped_lock lock(this->threadsMutex);
         // clear threadpool vector, jthread destructors will handle join + stop request automatically
         this->threadpool.clear();
     }
 
     // cleanup remaining work items
     {
-        std::scoped_lock lock(this->workQueueMutex);
+        Sync::scoped_lock lock(this->workQueueMutex);
         while(!this->pendingWork.empty()) {
             this->pendingWork.pop();
         }
@@ -156,7 +156,7 @@ void AsyncResourceLoader::shutdown() {
 
     // cleanup loading resources tracking
     {
-        std::scoped_lock lock(this->loadingResourcesMutex);
+        Sync::scoped_lock lock(this->loadingResourcesMutex);
         this->loadingResourcesSet.clear();
     }
 
@@ -172,13 +172,13 @@ void AsyncResourceLoader::requestAsyncLoad(Resource *resource) {
 
     // add to tracking set
     {
-        std::scoped_lock lock(this->loadingResourcesMutex);
+        Sync::scoped_lock lock(this->loadingResourcesMutex);
         this->loadingResourcesSet.insert(resource);
     }
 
     // add to work queue
     {
-        std::scoped_lock lock(this->workQueueMutex);
+        Sync::scoped_lock lock(this->workQueueMutex);
         this->pendingWork.push(std::move(work));
     }
 
@@ -216,7 +216,7 @@ void AsyncResourceLoader::update(bool lowLatency) {
 
         // remove from tracking set
         {
-            std::scoped_lock lock(this->loadingResourcesMutex);
+            Sync::scoped_lock lock(this->loadingResourcesMutex);
             this->loadingResourcesSet.erase(rs);
         }
 
@@ -230,12 +230,12 @@ void AsyncResourceLoader::update(bool lowLatency) {
     std::vector<Resource *> resourcesReadyForDestroy;
 
     {
-        std::scoped_lock lock(this->asyncDestroyMutex);
+        Sync::scoped_lock lock(this->asyncDestroyMutex);
         for(size_t i = 0; i < this->asyncDestroyQueue.size(); i++) {
             bool canBeDestroyed = true;
 
             {
-                std::scoped_lock loadingLock(this->loadingResourcesMutex);
+                Sync::scoped_lock loadingLock(this->loadingResourcesMutex);
                 if(this->loadingResourcesSet.find(this->asyncDestroyQueue[i]) != this->loadingResourcesSet.end()) {
                     canBeDestroyed = false;
                 }
@@ -261,7 +261,7 @@ void AsyncResourceLoader::update(bool lowLatency) {
 void AsyncResourceLoader::scheduleAsyncDestroy(Resource *resource) {
     if(cv::debug_rm.getBool()) debugLog("AsyncResourceLoader: Scheduled async destroy of {:s}", resource->getName());
 
-    std::scoped_lock lock(this->asyncDestroyMutex);
+    Sync::scoped_lock lock(this->asyncDestroyMutex);
     this->asyncDestroyQueue.push_back(resource);
 }
 
@@ -299,7 +299,7 @@ void AsyncResourceLoader::reloadResources(const std::vector<Resource *> &resourc
 }
 
 bool AsyncResourceLoader::isLoadingResource(Resource *resource) const {
-    std::scoped_lock lock(this->loadingResourcesMutex);
+    Sync::scoped_lock lock(this->loadingResourcesMutex);
     return this->loadingResourcesSet.find(resource) != this->loadingResourcesSet.end();
 }
 
@@ -308,7 +308,7 @@ void AsyncResourceLoader::ensureThreadAvailable() {
     size_t activeWorkCount = this->iActiveWorkCount.load();
 
     if(activeWorkCount > activeThreads && activeThreads < this->iMaxThreads) {
-        std::scoped_lock lock(this->threadsMutex);
+        Sync::scoped_lock lock(this->threadsMutex);
 
         if(this->threadpool.size() < this->iMaxThreads) {
             const bool debug = cv::debug_rm.getBool();
@@ -342,7 +342,7 @@ void AsyncResourceLoader::cleanupIdleThreads() {
     // don't cleanup if we still have work
     if(this->iActiveWorkCount.load() > 0) return;
 
-    std::scoped_lock lock(this->threadsMutex);
+    Sync::scoped_lock lock(this->threadsMutex);
 
     if(this->threadpool.size() <= MIN_NUM_THREADS) return;  // check under lock again
 
@@ -363,7 +363,7 @@ void AsyncResourceLoader::cleanupIdleThreads() {
 }
 
 std::unique_ptr<AsyncResourceLoader::LoadingWork> AsyncResourceLoader::getNextPendingWork() {
-    std::scoped_lock lock(this->workQueueMutex);
+    Sync::scoped_lock lock(this->workQueueMutex);
 
     if(this->pendingWork.empty()) return nullptr;
 
@@ -373,12 +373,12 @@ std::unique_ptr<AsyncResourceLoader::LoadingWork> AsyncResourceLoader::getNextPe
 }
 
 void AsyncResourceLoader::markWorkAsyncComplete(std::unique_ptr<LoadingWork> work) {
-    std::scoped_lock lock(this->workQueueMutex);
+    Sync::scoped_lock lock(this->workQueueMutex);
     this->asyncCompleteWork.push(std::move(work));
 }
 
 std::unique_ptr<AsyncResourceLoader::LoadingWork> AsyncResourceLoader::getNextAsyncCompleteWork() {
-    std::scoped_lock lock(this->workQueueMutex);
+    Sync::scoped_lock lock(this->workQueueMutex);
 
     if(this->asyncCompleteWork.empty()) return nullptr;
 

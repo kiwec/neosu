@@ -247,7 +247,7 @@ bool load_from_disk(FinishedScore& score, bool update_db) {
     }
 
     if(update_db) {
-        std::scoped_lock lock(db->scores_mtx);
+        Sync::scoped_lock lock(db->scores_mtx);
         auto& map_scores = (*(db->getScores()))[score.beatmap_hash];
         for(auto& db_score : map_scores) {
             if(db_score.unixTimestamp != score.unixTimestamp) continue;

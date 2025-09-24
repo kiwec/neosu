@@ -14,7 +14,6 @@
 #include <csetjmp>
 #include <cstddef>
 #include <cstring>
-#include <mutex>
 #include <utility>
 
 #include "Engine.h"
@@ -22,19 +21,20 @@
 #include "File.h"
 #include "Logging.h"
 #include "ConVar.h"
+#include "Sync.h"
 
 namespace {
 #if defined(ZLIBNG_VERNUM) && ZLIBNG_VERNUM < 0x020205F0L
 // this is complete bullshit and a bug in zlib-ng (probably, less likely libpng)
 // need to prevent zlib from lazy-initializing the crc tables, otherwise data race galore
 // literally causes insane lags/issues in completely unrelated places for async loading
-std::mutex zlib_init_mutex;
+Sync::mutex zlib_init_mutex;
 std::atomic<bool> zlib_initialized{false};
 
 void garbage_zlib() {
     // otherwise we need to do this song and dance
     if(zlib_initialized.load(std::memory_order_acquire)) return;
-    std::scoped_lock lock(zlib_init_mutex);
+    Sync::scoped_lock lock(zlib_init_mutex);
     if(zlib_initialized.load(std::memory_order_relaxed)) return;
     uLong dummy_crc = crc32(0L, Z_NULL, 0);
     std::array<const u8, 5> test_data{"shit"};

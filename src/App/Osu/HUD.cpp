@@ -1265,7 +1265,7 @@ std::vector<SCORE_ENTRY> HUD::getCurrentScores() {
             scores.push_back(std::move(scoreEntry));
         }
     } else {
-        std::scoped_lock lock(db->scores_mtx);
+        Sync::scoped_lock lock(db->scores_mtx);
         std::vector<FinishedScore> *singleplayer_scores = &((*db->getScores())[this->beatmap_md5]);
         bool is_online = cv::songbrowser_scores_filteringtype.getString() != "Local";
         if(is_online) {

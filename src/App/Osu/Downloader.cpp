@@ -20,6 +20,7 @@
 #include "Osu.h"
 #include "Parsing.h"
 #include "SString.h"
+#include "Sync.h"
 #include "Logging.h"
 #include "SongBrowser/SongBrowser.h"
 
@@ -38,25 +39,25 @@ class DownloadManager {
         std::atomic<float> progress{0.0f};
         std::atomic<int> response_code{0};
         std::vector<u8> data;
-        std::mutex data_mutex;
+        Sync::mutex data_mutex;
         std::atomic<bool> completed{false};
         std::chrono::steady_clock::time_point retry_after{};
     };
 
     std::atomic<bool> shutting_down{false};
     std::unordered_map<std::string, std::shared_ptr<DownloadRequest>> active_downloads;
-    std::mutex active_mutex;
+    Sync::mutex active_mutex;
 
     // rate limiting and queuing
     std::queue<std::shared_ptr<DownloadRequest>> download_queue;
-    std::mutex queue_mutex;
+    Sync::mutex queue_mutex;
     std::atomic<bool> currently_downloading{false};
     std::chrono::steady_clock::time_point last_download_start{};
 
     void checkAndStartNextDownload() {
         if(this->shutting_down.load() || this->currently_downloading.load()) return;
 
-        std::scoped_lock lock(this->queue_mutex);
+        Sync::scoped_lock lock(this->queue_mutex);
         if(this->download_queue.empty()) return;
 
         auto now = std::chrono::steady_clock::now();
@@ -103,7 +104,7 @@ class DownloadManager {
 
         // update request with results
         {
-            std::scoped_lock lock(request->data_mutex);
+            Sync::scoped_lock lock(request->data_mutex);
             request->response_code.store(static_cast<int>(response.responseCode));
 
             if(response.success && response.responseCode == 200) {
@@ -122,7 +123,7 @@ class DownloadManager {
                     request->retry_after = std::chrono::steady_clock::now() + std::chrono::seconds(5);
 
                     // re-queue for retry
-                    std::scoped_lock lock(this->queue_mutex);
+                    Sync::scoped_lock lock(this->queue_mutex);
                     this->download_queue.push(request);
                 } else {
                     request->progress.store(-1.0f);
@@ -143,7 +144,7 @@ class DownloadManager {
     void shutdown() {
         if(!this->shutting_down.exchange(true)) {
             // clear download queue to prevent new work
-            std::scoped_lock lock(this->queue_mutex);
+            Sync::scoped_lock lock(this->queue_mutex);
             while(!this->download_queue.empty()) {
                 this->download_queue.pop();
             }
@@ -153,7 +154,7 @@ class DownloadManager {
     std::shared_ptr<DownloadRequest> start_download(const std::string& url) {
         if(this->shutting_down.load()) return nullptr;
 
-        std::scoped_lock lock(this->active_mutex);
+        Sync::scoped_lock lock(this->active_mutex);
 
         // check if already downloading or cached
         auto it = this->active_downloads.find(url);
@@ -174,7 +175,7 @@ class DownloadManager {
 
         // queue for download
         {
-            std::scoped_lock queue_lock(this->queue_mutex);
+            Sync::scoped_lock queue_lock(this->queue_mutex);
             this->download_queue.push(request);
         }
 
@@ -231,7 +232,7 @@ void download(const char* url, float* progress, std::vector<u8>& out, int* respo
     *progress = std::min(0.99f, request->progress.load());
 
     if(request->completed.load()) {
-        std::scoped_lock lock(request->data_mutex);
+        Sync::scoped_lock lock(request->data_mutex);
         *progress = 1.f;
         *response_code = request->response_code.load();
         if(*response_code == 200) {

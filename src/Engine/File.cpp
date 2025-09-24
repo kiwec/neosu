@@ -10,11 +10,11 @@
 #include "Engine.h"
 #include "UString.h"
 #include "Logging.h"
+#include "Sync.h"
 
 #include <algorithm>
 #include <chrono>
 #include <filesystem>
-#include <mutex>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -58,7 +58,7 @@ class DirectoryCache final {
 
     // look up a file with case-insensitive matching
     std::pair<std::string, File::FILETYPE> lookup(const fs::path &dirPath, const std::string &filename) {
-        std::scoped_lock lock(this->mutex);
+        Sync::scoped_lock lock(this->mutex);
 
         std::string dirKey(dirPath.string());
         auto it = this->cache.find(dirKey);
@@ -153,7 +153,7 @@ class DirectoryCache final {
     std::unordered_map<std::string, DirectoryEntry> cache;
 
     // thread safety
-    std::mutex mutex;
+    Sync::mutex mutex;
 };
 
 // init static directory cache

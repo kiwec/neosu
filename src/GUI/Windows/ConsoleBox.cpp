@@ -193,7 +193,7 @@ void ConsoleBox::draw() {
 }
 
 void ConsoleBox::drawLogOverlay() {
-    std::scoped_lock logGuard(this->logMutex);
+    Sync::scoped_lock logGuard(this->logMutex);
 
     const float dpiScale = this->getDPIScale();
 
@@ -339,7 +339,7 @@ void ConsoleBox::mouse_update(bool *propagate_clicks) {
                                 this->logFont->getHeight() * (cv::console_overlay_lines.getFloat() + 1), 0.5f);
 
         if(this->fLogYPos == this->logFont->getHeight() * (cv::console_overlay_lines.getInt() + 1)) {
-            std::scoped_lock logGuard(this->logMutex);
+            Sync::scoped_lock logGuard(this->logMutex);
             this->bClearPending = false;
             this->log_entries.clear();
         }

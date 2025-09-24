@@ -6,8 +6,9 @@
 #include "BaseEnvironment.h"
 
 #ifdef MCENGINE_FEATURE_SOLOUD
+#include "Sync.h"
+
 #include <soloud_audiosource.h>
-#include <mutex>
 #include <atomic>
 #include <memory>
 
@@ -84,7 +85,7 @@ private:
 
 	// to be used to signal the instance that the soundtouch parameters need to be adjusted at the next best time
 	bool mNeedsSettingUpdate;
-	std::mutex mSettingUpdateMutex;
+	Sync::mutex mSettingUpdateMutex;
 
 	// buffers for format conversion
 	float *mBuffer;           // temporary read buffer from source (non-interleaved)

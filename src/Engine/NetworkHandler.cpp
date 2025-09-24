@@ -42,8 +42,8 @@ NetworkHandler::NetworkHandler() : multi_handle(nullptr) {
     }
 
     // start network thread
-    this->network_thread = std::make_unique<std::jthread>(
-        [this](const std::stop_token& stopToken) { this->networkThreadFunc(stopToken); });
+    this->network_thread = std::make_unique<Sync::jthread>(
+        [this](const Sync::stop_token& stopToken) { this->networkThreadFunc(stopToken); });
 
     if(!this->network_thread->joinable()) {
         debugLog("ERROR: Failed to create network thread!");
@@ -51,12 +51,12 @@ NetworkHandler::NetworkHandler() : multi_handle(nullptr) {
 }
 
 NetworkHandler::~NetworkHandler() {
-    // std::jthread destructor automatically requests stop and joins the thread
+    // Sync::jthread destructor automatically requests stop and joins the thread
     this->network_thread.reset();
 
     // cleanup any remaining requests
     {
-        std::scoped_lock<std::mutex> lock{this->active_requests_mutex};
+        Sync::scoped_lock<Sync::mutex> lock{this->active_requests_mutex};
         for(auto& [handle, request] : this->active_requests) {
             curl_multi_remove_handle(this->multi_handle, handle);
             curl_easy_cleanup(handle);
@@ -74,7 +74,7 @@ NetworkHandler::~NetworkHandler() {
     curl_global_cleanup();
 }
 
-void NetworkHandler::networkThreadFunc(const std::stop_token& stopToken) {
+void NetworkHandler::networkThreadFunc(const Sync::stop_token& stopToken) {
     McThread::set_current_thread_name("net_manager");
     McThread::set_current_thread_prio(false); // reset priority
 
@@ -94,9 +94,9 @@ void NetworkHandler::networkThreadFunc(const std::stop_token& stopToken) {
 
         if(this->active_requests.empty()) {
             // wait for new requests
-            std::unique_lock<std::mutex> lock{this->request_queue_mutex};
+            Sync::unique_lock<Sync::mutex> lock{this->request_queue_mutex};
 
-            std::stop_callback stopCallback(stopToken, [&]() { this->request_queue_cv.notify_all(); });
+            Sync::stop_callback stopCallback(stopToken, [&]() { this->request_queue_cv.notify_all(); });
 
             this->request_queue_cv.wait(lock, stopToken, [this] { return !this->pending_requests.empty(); });
         } else {
@@ -107,7 +107,7 @@ void NetworkHandler::networkThreadFunc(const std::stop_token& stopToken) {
 }
 
 void NetworkHandler::processNewRequests() {
-    std::scoped_lock<std::mutex> lock{this->request_queue_mutex};
+    Sync::scoped_lock<Sync::mutex> lock{this->request_queue_mutex};
 
     while(!this->pending_requests.empty()) {
         auto request = std::move(this->pending_requests.front());
@@ -130,7 +130,7 @@ void NetworkHandler::processNewRequests() {
             continue;
         }
 
-        std::scoped_lock<std::mutex> active_lock{this->active_requests_mutex};
+        Sync::scoped_lock<Sync::mutex> active_lock{this->active_requests_mutex};
         this->active_requests[request->easy_handle] = std::move(request);
     }
 }
@@ -147,7 +147,7 @@ void NetworkHandler::processCompletedRequests() {
             CURL* easy_handle = msg->easy_handle;
 
             {
-                std::scoped_lock<std::mutex> lock{this->active_requests_mutex};
+                Sync::scoped_lock<Sync::mutex> lock{this->active_requests_mutex};
                 auto it = this->active_requests.find(easy_handle);
                 if(it != this->active_requests.end()) {
                     auto request = std::move(it->second);
@@ -171,7 +171,7 @@ void NetworkHandler::processCompletedRequests() {
 
                     if(request->is_sync) {
                         // handle sync request immediately
-                        std::scoped_lock<std::mutex> sync_lock{this->sync_requests_mutex};
+                        Sync::scoped_lock<Sync::mutex> sync_lock{this->sync_requests_mutex};
                         this->sync_responses[request->sync_id] = request->response;
                         auto cv_it = this->sync_request_cvs.find(request->sync_id);
                         if(cv_it != this->sync_request_cvs.end()) {
@@ -298,7 +298,7 @@ size_t NetworkHandler::headerCallback(char* buffer, size_t size, size_t nitems, 
 void NetworkHandler::httpRequestAsync(const UString& url, AsyncCallback callback, const RequestOptions& options) {
     auto request = std::make_unique<NetworkRequest>(url, std::move(callback), options);
 
-    std::scoped_lock<std::mutex> lock{this->request_queue_mutex};
+    Sync::scoped_lock<Sync::mutex> lock{this->request_queue_mutex};
     this->pending_requests.push(std::move(request));
     this->request_queue_cv.notify_one();
 }
@@ -306,14 +306,14 @@ void NetworkHandler::httpRequestAsync(const UString& url, AsyncCallback callback
 // synchronous API (blocking)
 NetworkHandler::Response NetworkHandler::performSyncRequest(const UString& url, const RequestOptions& options) {
     Response result;
-    std::condition_variable cv;
-    std::mutex cv_mutex;
+    Sync::condition_variable cv;
+    Sync::mutex cv_mutex;
 
     void* sync_id = &cv;
 
     // register sync request
     {
-        std::scoped_lock<std::mutex> lock{this->sync_requests_mutex};
+        Sync::scoped_lock<Sync::mutex> lock{this->sync_requests_mutex};
         this->sync_request_cvs[sync_id] = &cv;
     }
 
@@ -324,21 +324,21 @@ NetworkHandler::Response NetworkHandler::performSyncRequest(const UString& url, 
 
     // submit request
     {
-        std::scoped_lock<std::mutex> lock{this->request_queue_mutex};
+        Sync::scoped_lock<Sync::mutex> lock{this->request_queue_mutex};
         this->pending_requests.push(std::move(request));
         this->request_queue_cv.notify_one();
     }
 
     // wait for completion
-    std::unique_lock<std::mutex> lock{cv_mutex};
+    Sync::unique_lock<Sync::mutex> lock{cv_mutex};
     cv.wait(lock, [&] {
-        std::scoped_lock<std::mutex> sync_lock{this->sync_requests_mutex};
+        Sync::scoped_lock<Sync::mutex> sync_lock{this->sync_requests_mutex};
         return this->sync_responses.find(sync_id) != this->sync_responses.end();
     });
 
     // get result and cleanup
     {
-        std::scoped_lock<std::mutex> sync_lock{this->sync_requests_mutex};
+        Sync::scoped_lock<Sync::mutex> sync_lock{this->sync_requests_mutex};
         result = this->sync_responses[sync_id];
         this->sync_responses.erase(sync_id);
         this->sync_request_cvs.erase(sync_id);

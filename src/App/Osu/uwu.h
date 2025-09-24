@@ -1,11 +1,10 @@
 #pragma once
 #include <atomic>
-#include <condition_variable>
-#include <mutex>
 #include <thread>
 #include <vector>
 
 #include "Thread.h"
+#include "Sync.h"
 
 // Unified Wait Utilities (◕‿◕✿)
 namespace uwu {
@@ -21,7 +20,7 @@ struct lazy_promise {
     ~lazy_promise() {
         // signal thread to stop
         {
-            std::scoped_lock lock(this->funcs_mtx);
+            Sync::scoped_lock lock(this->funcs_mtx);
             this->keep_running = false;
         }
         this->cv.notify_one();
@@ -34,7 +33,7 @@ struct lazy_promise {
 
     void enqueue(Func func) {
         {
-            std::scoped_lock lock(this->funcs_mtx);
+            Sync::scoped_lock lock(this->funcs_mtx);
 
             // start thread lazily on first enqueue to avoid construction races
             if(!this->thread_started) {
@@ -48,21 +47,21 @@ struct lazy_promise {
     }
 
     Ret get() {
-        std::scoped_lock lock(this->ret_mtx);
+        Sync::scoped_lock lock(this->ret_mtx);
         return this->ret;
     }
 
     void set(Ret ret) {
-        std::scoped_lock lock(this->ret_mtx);
+        Sync::scoped_lock lock(this->ret_mtx);
         this->ret = ret;
     }
 
    private:
     void run() {
         McThread::set_current_thread_name("lazy_func_thr");
-        McThread::set_current_thread_prio(false); // reset priority
+        McThread::set_current_thread_prio(false);  // reset priority
         for(;;) {
-            std::unique_lock<std::mutex> lock(this->funcs_mtx);
+            Sync::unique_lock<Sync::mutex> lock(this->funcs_mtx);
             this->cv.wait(lock, [this]() { return !this->funcs.empty() || !this->keep_running; });
             if(!this->keep_running) break;
             if(this->funcs.empty()) {
@@ -79,12 +78,12 @@ struct lazy_promise {
 
     std::atomic<bool> keep_running;
     std::atomic<bool> thread_started;
-    std::mutex funcs_mtx;
-    std::condition_variable cv;
+    Sync::mutex funcs_mtx;
+    Sync::condition_variable cv;
     std::vector<Func> funcs;
 
     Ret ret;
-    std::mutex ret_mtx;
+    Sync::mutex ret_mtx;
 
     // only initialized when needed
     std::thread thread;

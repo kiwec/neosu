@@ -191,7 +191,7 @@ void SongDifficultyButton::updateGrade() {
         return;
     }
 
-    std::scoped_lock lock(db->scores_mtx);
+    Sync::scoped_lock lock(db->scores_mtx);
     if(!db->getScores()) {
         return;
     }

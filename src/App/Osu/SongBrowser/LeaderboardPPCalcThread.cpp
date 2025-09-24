@@ -1,14 +1,13 @@
 // Copyright (c) 2024, kiwec, All rights reserved.
 #include "LeaderboardPPCalcThread.h"
 
-#include <mutex>
-#include <thread>
-#include <condition_variable>
-
 #include "ConVar.h"
 #include "DatabaseBeatmap.h"
 #include "Timing.h"
 #include "Thread.h"
+#include "Sync.h"
+
+#include <thread>
 
 struct hitobject_cache {
     // Selectors
@@ -37,14 +36,14 @@ struct info_cache {
 
 static BeatmapDifficulty* map = nullptr;
 
-static std::condition_variable cond;
+static Sync::condition_variable cond;
 static std::thread thr;
 static std::atomic<bool> dead = true;
 
-static std::mutex work_mtx;
+static Sync::mutex work_mtx;
 static std::vector<pp_calc_request> work;
 
-static std::mutex cache_mtx;
+static Sync::mutex cache_mtx;
 static std::vector<std::pair<pp_calc_request, pp_info>> cache;
 
 // We have to use pointers because of C++ MOVE SEMANTICS BULLSHIT
@@ -59,7 +58,7 @@ static void run_thread() {
     std::vector<f64> speedStrains;
 
     for(;;) {
-        std::unique_lock<std::mutex> lock(work_mtx);
+        Sync::unique_lock<Sync::mutex> lock(work_mtx);
         cond.wait(lock, [] { return !work.empty() || dead.load(); });
         if(dead.load()) return;
 

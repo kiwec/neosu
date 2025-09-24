@@ -438,7 +438,7 @@ unsigned int SoundTouchFilterInstance::getAudio(float *aBuffer, unsigned int aSa
 	// update SoundTouch parameters if they've changed, after the last getAudio chunk has played out with the old speed
 	bool updatePitchOrSpeed = false;
 	{
-		std::scoped_lock lock{mSettingUpdateMutex};
+		Sync::scoped_lock lock{mSettingUpdateMutex};
 		if (mNeedsSettingUpdate)
 		{
 			updatePitchOrSpeed = true;
@@ -529,7 +529,7 @@ result SoundTouchFilterInstance::rewind()
 
 void SoundTouchFilterInstance::requestSettingUpdate(float speed, float pitch)
 {
-	std::scoped_lock lock{mSettingUpdateMutex};
+	Sync::scoped_lock lock{mSettingUpdateMutex};
 	if (mSoundTouchSpeed != speed || mSoundTouchPitch != pitch)
 		mNeedsSettingUpdate = true;
 }

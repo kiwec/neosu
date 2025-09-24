@@ -134,7 +134,7 @@ Engine::~Engine() {
     osu = nullptr;
 
     debugLog("Engine: Freeing engine GUI...");
-    if(this->consoleBox && this->consoleBox.get()) {
+    if(this->consoleBox) {
         // don't allow CBaseUI to delete it, it might still be in use (being flushed) by Logger
         this->guiContainer->removeBaseUIElement(this->consoleBox.get());
         this->consoleBox.reset();

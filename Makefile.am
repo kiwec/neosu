@@ -78,6 +78,12 @@ $(DEPS_CACHE)/spdlog-$(SPDLOG_VERSION).source:
 	touch $@
 
 # always needed (if not on host)
+$(DEPS_CACHE)/nsync-$(NSYNC_VERSION).source:
+	$(MKDIR_P) $(DEPS_CACHE)
+	$(WGET) -qO $(DEPS_CACHE)/nsync-$(NSYNC_VERSION).tar.gz "https://github.com/google/nsync/archive/refs/tags/$(NSYNC_VERSION).tar.gz" && \
+	touch $@
+
+# always needed (if not on host)
 $(DEPS_CACHE)/FREETYPE2-$(FREETYPE2_VERSION).source:
 	$(MKDIR_P) $(DEPS_CACHE)
 	$(WGET) -qO $(DEPS_CACHE)/freetype-$(FREETYPE2_VERSION).tar.gz "https://nongnu.askapache.com/freetype/freetype-$(FREETYPE2_VERSION).tar.gz" && \
@@ -741,6 +747,7 @@ $(DEPS_PREFIX)/FMT-$(FMT_VERSION).built:
 	$(MKDIR_P) $(DEPS_PREFIX) && touch $@
 endif # BUILD_FMT
 
+SPDLOG_CFLAGS += -DSPDLOG_NO_EXCEPTIONS -DSPDLOG_FMT_EXTERNAL
 if BUILD_SPDLOG
 SPDLOG_CFLAGS += $(shell $(PKG_CONFIG) --cflags spdlog)
 SPDLOG_LIBS += $(shell $(PKG_CONFIG) --libs spdlog)
@@ -777,6 +784,49 @@ else
 $(DEPS_PREFIX)/spdlog-$(SPDLOG_VERSION).built:
 	$(MKDIR_P) $(DEPS_PREFIX) && touch $@
 endif # BUILD_SPDLOG
+
+NSYNC_CFLAGS = -DNSYNC_ATOMIC_CPP11 -DNSYNC_USE_CPP11_TIMEPOINT
+NSYNC_LIBS =
+if BUILD_NSYNC
+NSYNC_CFLAGS += -I$(DEPS_PREFIX)/include
+NSYNC_LIBS += -L$(DEPS_PREFIX)/lib -lnsync_cpp
+$(DEPS_PREFIX)/nsync-$(NSYNC_VERSION).built: $(DEPS_CACHE)/nsync-$(NSYNC_VERSION).source
+	rm -rf $(DEPS_PREFIX)/nsync
+	$(MKDIR_P) $(DEPS_PREFIX)/nsync/build $(DEPS_PREFIX)/lib/pkgconfig
+	$(TAR) xf $(DEPS_CACHE)/nsync-$(NSYNC_VERSION).tar.gz -C $(DEPS_PREFIX)/nsync --strip-components=1 && \
+	cd $(DEPS_PREFIX)/nsync && \
+	$(SED) -i 's|Windows.h|windows.h|' platform/win32/atomic.h && \
+	$(SED) -i 's|Windows.h|windows.h|' platform/win32/platform.h && \
+	$(SED) -i 's|Windows.h|windows.h|' platform/win32/src/nsync_semaphore_win32.c && \
+	$(SED) -i 's|Windows.h|windows.h|' platform/win32/atomic.h && \
+	$(SED) -i 's|Windows.h|windows.h|' platform/win32/platform_c++11_os.h && \
+	$(SED) -i -e 's|.*"/TP".*||' -e 's|install (TARGETS nsync EXPORT nsync|\0 OPTIONAL|' CMakeLists.txt && \
+	PKG_CONFIG="$(PKG_CONFIG)" LDFLAGS="$(LDFLAGS) -xnone" \
+	$(CMAKE) -S . -B build -G "$(CMAKE_GEN)" \
+		-DCMAKE_BUILD_TYPE="$(if $(ENABLE_DEBUG),Debug,Release)" \
+		-DCMAKE_INSTALL_PREFIX="$(DEPS_PREFIX)" \
+		-DCMAKE_SYSTEM_NAME="$(CMAKE_SYSTEM_NAME)" \
+		-DCMAKE_SYSTEM_PROCESSOR="$(host_cpu)" \
+		-DCMAKE_C_COMPILER="$(CC)" \
+		-DCMAKE_C_FLAGS="$(CFLAGS)" \
+		-DCMAKE_CXX_COMPILER="$(CXX)" \
+		-DCMAKE_CXX_FLAGS="$(CXXFLAGS) -xc++" \
+		$(CMAKERCOPT) $(CMAKEIDOPT) \
+		-D CMAKE_CXX_COMPILER_AR=$(AR) \
+		-D CMAKE_CXX_COMPILER_RANLIB=$(RANLIB) \
+		-D CMAKE_C_COMPILER_AR=$(AR) \
+		-D CMAKE_C_COMPILER_RANLIB=$(RANLIB) \
+		-DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+		-DNSYNC_ENABLE_TESTS=OFF \
+		-DBUILD_SHARED_LIBS="$(if $(STATICBUILD),OFF,ON)" && \
+	$(CMAKE) --build build "$(CMAKEPAROPT)" --target nsync_cpp && \
+	$(CMAKE) --install build && \
+	test -f $(DEPS_PREFIX)/include/nsync.h && test -f $(DEPS_PREFIX)/lib/libnsync_cpp$(if $(STATICBUILD),.*a,.*$(DLLEXT))
+	touch $@
+else
+$(DEPS_PREFIX)/nsync-$(NSYNC_VERSION).built:
+	$(MKDIR_P) $(DEPS_PREFIX) && touch $@
+endif # BUILD_NSYNC
 
 if BUILD_FREETYPE2
 FREETYPE2_CFLAGS += $(shell $(PKG_CONFIG) --cflags freetype2)
@@ -892,6 +942,7 @@ BUILT_SOURCES := \
 	$(DEPS_PREFIX)/libjpeg-$(LIBJPEG_VERSION).built \
 	$(DEPS_PREFIX)/FMT-$(FMT_VERSION).built \
 	$(DEPS_PREFIX)/spdlog-$(SPDLOG_VERSION).built \
+	$(DEPS_PREFIX)/nsync-$(NSYNC_VERSION).built \
 	$(DEPS_PREFIX)/libpng-$(LIBPNG_VERSION).built \
 	$(DEPS_PREFIX)/bzip2-$(BZIP2_VERSION).built \
 	$(DEPS_PREFIX)/zlib-$(ZLIB_VERSION).built \
@@ -934,6 +985,7 @@ neosu_CXXFLAGS := \
 	$(LIBPNG_CFLAGS) \
 	$(BZIP2_CFLAGS) \
 	$(LIBJPEG_CFLAGS) \
+	$(NSYNC_CFLAGS) \
 	$(GLM_CFLAGS) \
 	$(ZLIB_CFLAGS) \
 	$(DXGI_CFLAGS) \
@@ -964,6 +1016,7 @@ neosu_LDFLAGS := \
 	$(LZMA_LIBS) \
 	$(DXGI_LIBS) \
 	$(D3D11_LIBS) \
+	$(NSYNC_LIBS) \
 	$(NEOSU_LDFLAGS) \
 	$(EXTRA_WIN_LIBS) \
 	$(LDFLAGS_EXTRA)
@@ -1080,6 +1133,9 @@ if BUILD_FMT
 endif
 if BUILD_SPDLOG
 	$(if $(STATICBUILD),,@`find $(SPDLOG_PREFIX) '(' -iname '*spd*'$(DLLEXT) -o -iname '*spd*''.so.*' ')' -exec cp -P '{''}' "$(DESTDIR)$(bindir)/$(LIBDEST)" ';'`)
+endif
+if BUILD_NSYNC
+	$(if $(STATICBUILD),,@`find $(NSYNC_PREFIX) '(' -iname '*nsync*'$(DLLEXT) -o -iname '*nsync*''.so.*' ')' -exec cp -P '{''}' "$(DESTDIR)$(bindir)/$(LIBDEST)" ';'`)
 endif
 if BUILD_LZMA
 	$(if $(STATICBUILD),,@`find $(LZMA_PREFIX) '(' -iname '*lzma*'$(DLLEXT) -o -iname '*lzma*''.so.*' ')' -exec cp -P '{''}' "$(DESTDIR)$(bindir)/$(LIBDEST)" ';'`)

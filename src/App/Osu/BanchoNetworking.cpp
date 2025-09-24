@@ -31,6 +31,7 @@
 #include "UIButton.h"
 #include "UserCard.h"
 #include "Logging.h"
+#include "Sync.h"
 
 #include <curl/curl.h>
 
@@ -42,17 +43,17 @@ namespace {  // static namespace
 
 bool try_logging_in = false;
 Packet outgoing;
-std::mutex incoming_mutex;
+Sync::mutex incoming_mutex;
 std::vector<Packet> incoming_queue;
 time_t last_packet_tms = {0};
 std::atomic<double> seconds_between_pings{1.0};
 
-std::mutex auth_mutex;
+Sync::mutex auth_mutex;
 std::string auth_header = "";
 
 // osu! private API
-std::mutex api_requests_mutex;
-std::mutex api_responses_mutex;
+Sync::mutex api_requests_mutex;
+Sync::mutex api_responses_mutex;
 std::vector<APIRequest> api_request_queue;
 std::vector<Packet> api_response_queue;
 
@@ -95,7 +96,7 @@ void send_bancho_packet_async(Packet outgoing) {
     options.headers["x-mcosu-ver"] = BanchoState::neosu_version.toUtf8();
 
     {
-        std::scoped_lock<std::mutex> lock{auth_mutex};
+        Sync::scoped_lock<Sync::mutex> lock{auth_mutex};
         if(!auth_header.empty()) {
             // extract token from "osu-token: TOKEN" format
             size_t colon_pos = auth_header.find(':');
@@ -121,7 +122,7 @@ void send_bancho_packet_async(Packet outgoing) {
         [](NetworkHandler::Response response) {
             if(!response.success) {
                 Logger::logRaw("[httpRequestAsync] Failed to send packet, HTTP error {}", response.responseCode);
-                std::scoped_lock<std::mutex> lock{auth_mutex};
+                Sync::scoped_lock<Sync::mutex> lock{auth_mutex};
                 if(auth_header.empty()) {
                     auto errmsg = UString::format("Failed to log in: HTTP %ld", response.responseCode);
                     osu->getNotificationOverlay()->addToast(errmsg, ERROR_TOAST);
@@ -140,7 +141,7 @@ void send_bancho_packet_async(Packet outgoing) {
             // Update auth token
             auto cho_token_it = response.headers.find("cho-token");
             if(cho_token_it != response.headers.end()) {
-                std::scoped_lock<std::mutex> lock{auth_mutex};
+                Sync::scoped_lock<Sync::mutex> lock{auth_mutex};
                 auth_header = "osu-token: " + cho_token_it->second;
                 BanchoState::cho_token = UString(cho_token_it->second);
             }
@@ -337,7 +338,7 @@ void update_networking() {
 }
 
 void receive_api_responses() {
-    std::scoped_lock lock(api_responses_mutex);
+    Sync::scoped_lock lock(api_responses_mutex);
     while(!api_response_queue.empty()) {
         Packet incoming = api_response_queue.front();
         api_response_queue.erase(api_response_queue.begin());
@@ -348,7 +349,7 @@ void receive_api_responses() {
 }
 
 void receive_bancho_packets() {
-    std::scoped_lock lock(incoming_mutex);
+    Sync::scoped_lock lock(incoming_mutex);
     while(!incoming_queue.empty()) {
         Packet incoming = incoming_queue.front();
         incoming_queue.erase(incoming_queue.begin());
@@ -375,7 +376,7 @@ void send_api_request(const APIRequest &request) {
         return;
     }
 
-    std::scoped_lock lock(api_requests_mutex);
+    Sync::scoped_lock lock(api_requests_mutex);
 
     // Jank way to do things... remove outdated requests now
     std::erase_if(api_request_queue, [request](APIRequest r) { return r.type = request.type; });
@@ -422,7 +423,7 @@ void cleanup_networking() {
     outgoing = Packet();
 }
 
-void append_auth_params(UString& url, std::string user_param, std::string pw_param) {
+void append_auth_params(UString &url, std::string user_param, std::string pw_param) {
     std::string user, pw;
     if(BanchoState::is_oauth) {
         user = "$token";
@@ -457,7 +458,7 @@ void BanchoState::disconnect() {
         options.headers["x-mcosu-ver"] = BanchoState::neosu_version.toUtf8();
 
         {
-            std::scoped_lock<std::mutex> lock{BANCHO::Net::auth_mutex};
+            Sync::scoped_lock<Sync::mutex> lock{BANCHO::Net::auth_mutex};
             if(!BANCHO::Net::auth_header.empty()) {
                 size_t colon_pos = BANCHO::Net::auth_header.find(':');
                 if(colon_pos != std::string::npos) {
@@ -479,7 +480,7 @@ void BanchoState::disconnect() {
 
     BANCHO::Net::try_logging_in = false;
     {
-        std::scoped_lock<std::mutex> lock2{BANCHO::Net::auth_mutex};
+        Sync::scoped_lock<Sync::mutex> lock2{BANCHO::Net::auth_mutex};
         BANCHO::Net::auth_header = "";
     }
     free(BANCHO::Net::outgoing.memory);
@@ -537,7 +538,7 @@ void BanchoState::reconnect() {
         "gatari.pw"sv,
     };
 
-    if (std::ranges::contains(server_blacklist, BanchoState::endpoint)) {
+    if(std::ranges::contains(server_blacklist, BanchoState::endpoint)) {
         osu->getNotificationOverlay()->addToast("This server does not allow neosu clients.", ERROR_TOAST);
         return;
     }
@@ -548,7 +549,7 @@ void BanchoState::reconnect() {
         "ripple.moe"sv,
     };
 
-    if (std::ranges::contains(submit_blacklist, BanchoState::endpoint)) {
+    if(std::ranges::contains(submit_blacklist, BanchoState::endpoint)) {
         BanchoState::score_submission_policy = ServerPolicy::NO;
     }
 

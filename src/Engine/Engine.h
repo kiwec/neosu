@@ -133,6 +133,7 @@ class Engine final : public KeyboardListener {
     // engine gui, mostly for debugging
     CBaseUIContainer *guiContainer;
     VisualProfiler *visualProfiler;
+    friend class Logger;
     static std::shared_ptr<ConsoleBox> consoleBox;
 
     // custom

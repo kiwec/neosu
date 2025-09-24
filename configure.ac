@@ -163,6 +163,9 @@ AC_ARG_WITH([audio],
 AC_ARG_WITH([mimalloc],
     AS_HELP_STRING([--with-mimalloc], [Use mimalloc instead of the default memory allocator (faster) (default: on if not debug and not winx86)]))
 
+AC_ARG_WITH([nsync],
+    AS_HELP_STRING([--with-nsync], [Use nsync instead of std::mutex for synchronization (faster) (default: on if not winx86 (unsupported))]))
+
 # setup defaults
 AS_IF([test "x$enable_static" != "xno"], [
     enable_static=yes
@@ -802,7 +805,6 @@ AS_IF([test "$renderer" != "dx11"], [
         FORCE_SDL_DYNAMIC=1 # dxvk double-loads the wrong library version if we statically link to sdl, so until i (if ever) build dxvk in-tree
                             # it needs to be forced dynamic
     ],[
-
         AC_SUBST([D3D11_CFLAGS], [""])
         AC_SUBST([D3D11_LIBS], [["-ld3d11 $d3dcompiler_lib -ldxgi"]])
         AC_SUBST([DXGI_CFLAGS], [""])
@@ -836,6 +838,8 @@ MPG123_MIN_VERSION=1.30.0
 MPG123_BUILD_VERSION=ec6ead5fc1102d64efbb6a04865f59454198c3fc # git mirror, latest as of June 16th, 2025 (next version after 1.33.0)
 SPDLOG_MIN_VERSION=1.15.0
 SPDLOG_BUILD_VERSION=1.15.3
+NSYNC_MIN_VERSION=1.29.2
+NSYNC_BUILD_VERSION=1.29.2
 
 # always build these from source if we want to use them
 #AC_SUBST([SOLOUD_VERSION], [1.1.9]) # my fork
@@ -881,6 +885,15 @@ AS_IF([test "x$enable_system_deps" != "xno"], [
     ])
     PKG_CHECK_AUTO([SPDLOG], [spdlog >= $SPDLOG_MIN_VERSION], [have_spdlog=yes], [have_spdlog=no])
     AC_CHECK_HEADERS([glm/vec3.hpp], [have_glm=yes], [have_glm=no])
+    AS_IF([test -z "$ubercompat" && test "x$with_nsync" != "xno"], [
+        AC_SEARCH_LIBS([nsync_mu_init], [nsync_cpp], [have_nsync=yes], [have_nsync=no])
+    ])
+])
+
+AS_IF([test -z "$ubercompat" && test "x$with_nsync" != "xno"], [
+    AC_DEFINE([USE_NSYNC], [1], [Defined if nsync sync primitives are available.])
+], [
+    have_nsync=unsupported
 ])
 
 AS_IF([test "x$have_sdl3" != "xyes"], [have_sdl3="build from source"])
@@ -972,6 +985,12 @@ AC_SUBST([GLM_VERSION], [1.0.1])
 AC_SUBST([GLM_PREFIX],[$DEPS_PREFIX])
 AC_SUBST([GLM_CFLAGS], [""])
 
+AS_IF([test "x$have_nsync" != "xyes"], [have_nsync="build from source"])
+NSYNC_VERSION=$NSYNC_BUILD_VERSION
+NSYNC_PREFIX="${DEPS_PREFIX}"
+AC_SUBST([NSYNC_VERSION])
+AC_SUBST([NSYNC_PREFIX])
+
 AM_CONDITIONAL([BUILD_SDL3], [test "x$have_sdl3" != "xyes"])
 AM_CONDITIONAL([BUILD_LIBJPEG], [test "x$have_libjpeg" != "xyes"])
 AM_CONDITIONAL([BUILD_LIBPNG], [test "x$have_libpng" != "xyes"])
@@ -984,6 +1003,7 @@ AM_CONDITIONAL([BUILD_LIBARCHIVE], [test "x$have_libarchive" != "xyes"])
 AM_CONDITIONAL([BUILD_CURL], [test "x$have_curl" != "xyes"])
 AM_CONDITIONAL([BUILD_MPG123], [test "$with_soloud" = "yes" && test "x$have_mpg123" != "xyes"])
 AM_CONDITIONAL([BUILD_SPDLOG], [test "x$have_spdlog" != "xyes"])
+AM_CONDITIONAL([BUILD_NSYNC], [test "x$have_nsync" != "xyes" && test -z "$ubercompat" && test "x$with_nsync" != "xno"])
 AM_CONDITIONAL([BUILD_GLM], [test "x$have_glm" != "xyes"])
 AM_CONDITIONAL([BUILD_MIMALLOC], [{ test "x$enable_debug" != "xyes" || test "x$with_mimalloc" = "xyes"; } &&
                                 { { test "$SYSNAME" = "windows" && test "$host_cpu" = "i686" && test "x$with_mimalloc" = "xyes" ; } ||
@@ -1034,6 +1054,7 @@ neosu build configuration:
     C flags:            ${CFLAGS}
     Linker flags:       ${LDFLAGS}
     mimalloc:           ${with_mimalloc-yes}
+    nsync:              ${with_nsync-yes}
     BASS:               ${with_bass-no}
     SoLoud:             ${with_soloud-no}
     IME enabled:        ${enable_ime-yes}
@@ -1067,5 +1088,6 @@ Dependencies:
     libarchive:         ${have_libarchive-build from source}
     mpg123:             ${have_mpg123-build from source}
     spdlog:             ${have_spdlog-build from source}
+    nsync:              ${have_nsync-build from source}
     glm (math)          ${have_glm-build from source}
 ])

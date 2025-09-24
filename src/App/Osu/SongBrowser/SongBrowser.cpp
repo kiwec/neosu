@@ -2274,7 +2274,7 @@ void SongBrowser::rebuildScoreButtons() {
 
     std::vector<FinishedScore> scores;
     if(validBeatmap) {
-        std::scoped_lock lock(db->scores_mtx);
+        Sync::scoped_lock lock(db->scores_mtx);
         auto map = osu->getMapInterface()->beatmap;
         auto local_scores = db->scores[map->getMD5Hash()];
         auto local_best = std::ranges::max_element(
