@@ -320,13 +320,14 @@ class ConVar {
     void initValue(std::string_view name, const T &defaultValue, uint8_t flags, std::string_view helpString,
                    Callback callback) {
         this->bValueSettable = true;
+        this->bHasValue = true;
         this->iFlags = flags;
         this->sName = name;
         this->sHelpString = helpString;
         this->type = getTypeFor<T>();
 
-        if constexpr(std::is_convertible_v<std::decay_t<T>, double> && !std::is_same_v<std::decay_t<T>, UString> &&
-                     !std::is_same_v<std::decay_t<T>, std::string_view> &&
+        if constexpr((std::is_convertible_v<std::decay_t<T>, double> || std::is_same_v<T, bool>) &&
+                     !std::is_same_v<std::decay_t<T>, UString> && !std::is_same_v<std::decay_t<T>, std::string_view> &&
                      !std::is_same_v<std::decay_t<T>, const char *>) {
             // T is double-like
             this->setDefaultDouble(static_cast<double>(defaultValue));
@@ -369,6 +370,9 @@ class ConVar {
                          !std::is_same_v<std::decay_t<T>, const char *>) {
                 const auto f = static_cast<double>(value);
                 return std::make_pair(f, fmt::format("{:g}", f));
+            } else if constexpr(std::is_same_v<T, bool>) {
+                const auto f = static_cast<double>(value ? 1. : 0.);
+                return std::make_pair(f, value ? "true" : "false");
             } else if constexpr(std::is_same_v<std::decay_t<T>, UString>) {
                 const UString s = std::forward<T>(value);
                 const double f = !s.isEmpty() ? s.toDouble() : 0.;
@@ -390,7 +394,6 @@ class ConVar {
 
         // set new values (if values are settable)
         if(this->bValueSettable) {
-            this->bHasValue = true;
             switch(editor) {
                 case CvarEditor::CLIENT: {
                     this->dClientValue.store(newDouble, std::memory_order_release);

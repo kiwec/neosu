@@ -261,18 +261,21 @@ ConVarString ConVarHandler::flagsToString(uint8_t flags) {
         return "no flags";
     }
 
+    static constexpr const auto flagStringPairArray = std::array{
+        std::pair{cv::CLIENT, "client"},       std::pair{cv::SERVER, "server"},     std::pair{cv::SKINS, "skins"},
+        std::pair{cv::PROTECTED, "protected"}, std::pair{cv::GAMEPLAY, "gameplay"}, std::pair{cv::HIDDEN, "hidden"},
+        std::pair{cv::NOSAVE, "nosave"},       std::pair{cv::NOLOAD, "noload"}};
+
     ConVarString string;
-
-    if((flags & cv::CLIENT) == cv::CLIENT) string.append(" client");
-    if((flags & cv::SERVER) == cv::SERVER) string.append(" server");
-    if((flags & cv::SKINS) == cv::SKINS) string.append(" skins");
-    if((flags & cv::PROTECTED) == cv::PROTECTED) string.append(" protected");
-    if((flags & cv::GAMEPLAY) == cv::GAMEPLAY) string.append(" gameplay");
-    if((flags & cv::HIDDEN) == cv::HIDDEN) string.append(" hidden");
-    if((flags & cv::NOSAVE) == cv::NOSAVE) string.append(" nosave");
-    if((flags & cv::NOLOAD) == cv::NOLOAD) string.append(" noload");
-
-    string.pop_back();  // remove leading space
+    for(bool first = true; const auto &[flag, str] : flagStringPairArray) {
+        if((flags & flag) == flag) {
+            if(!first) {
+                string.append(" ");
+            }
+            first = false;
+            string.append(str);
+        }
+    }
 
     return string;
 }
@@ -458,7 +461,8 @@ static void _listcommands(void) {
 
 static void _dumpcommands(void) {
     // in assets/misc/convar_template.html
-    static ConVarString html_template{reinterpret_cast<const char *>(convar_template), convar_template_size()};
+    static ConVarString html_template{reinterpret_cast<const char *>(convar_template),
+                                      static_cast<size_t>(convar_template_size())};
 
     std::vector<ConVar *> convars = cvars->getConVarArray();
     std::ranges::sort(convars, {}, [](const ConVar *v) { return v->getName(); });
