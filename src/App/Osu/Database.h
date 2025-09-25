@@ -8,7 +8,7 @@
 #include "Overrides.h"
 #include "UString.h"
 #include "score.h"
-#include "Sync.h"
+#include "SyncMutex.h"
 
 #include <atomic>
 

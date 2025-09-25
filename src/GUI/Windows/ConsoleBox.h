@@ -2,7 +2,7 @@
 // Copyright (c) 2011, PG, All rights reserved.
 
 #include "CBaseUIElement.h"
-#include "Sync.h"
+#include "SyncMutex.h"
 
 #include <atomic>
 

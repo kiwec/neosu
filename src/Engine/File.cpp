@@ -10,7 +10,7 @@
 #include "Engine.h"
 #include "UString.h"
 #include "Logging.h"
-#include "Sync.h"
+#include "SyncMutex.h"
 
 #include <algorithm>
 #include <chrono>

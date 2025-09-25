@@ -21,10 +21,11 @@
 #include "File.h"
 #include "Logging.h"
 #include "ConVar.h"
-#include "Sync.h"
+
+#if defined(ZLIBNG_VERNUM) && ZLIBNG_VERNUM < 0x020205F0L
+#include "SyncMutex.h"
 
 namespace {
-#if defined(ZLIBNG_VERNUM) && ZLIBNG_VERNUM < 0x020205F0L
 // this is complete bullshit and a bug in zlib-ng (probably, less likely libpng)
 // need to prevent zlib from lazy-initializing the crc tables, otherwise data race galore
 // literally causes insane lags/issues in completely unrelated places for async loading
@@ -49,10 +50,12 @@ void garbage_zlib() {
     (void)dummy_crc;
     zlib_initialized.store(true, std::memory_order_release);
 }
+}  // namespace
 #else
 #define garbage_zlib()
 #endif
 
+namespace {  // static
 struct pngErrorManager {
     jmp_buf setjmp_buffer{};
 };
@@ -350,8 +353,8 @@ bool Image::loadRawImage() {
             this->iHeight = tj3Get(tjInstance, TJPARAM_JPEGHEIGHT);
 
             if(this->iWidth > 8192 || this->iHeight > 8192) {
-                debugLog("Image Error: JPEG image size is too big ({} x {}) in file {:s}", this->iWidth,
-                         this->iHeight, this->sFilePath);
+                debugLog("Image Error: JPEG image size is too big ({} x {}) in file {:s}", this->iWidth, this->iHeight,
+                         this->sFilePath);
                 tj3Destroy(tjInstance);
                 return false;
             }

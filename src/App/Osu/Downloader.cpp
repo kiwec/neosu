@@ -20,7 +20,7 @@
 #include "Osu.h"
 #include "Parsing.h"
 #include "SString.h"
-#include "Sync.h"
+#include "SyncMutex.h"
 #include "Logging.h"
 #include "SongBrowser/SongBrowser.h"
 

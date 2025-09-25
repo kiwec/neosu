@@ -6,6 +6,7 @@
 #include "Thread.h"
 #include "Timing.h"
 #include "Logging.h"
+#include "SyncJthread.h"
 
 #include <algorithm>
 #include <utility>

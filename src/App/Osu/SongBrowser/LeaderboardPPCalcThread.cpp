@@ -5,7 +5,8 @@
 #include "DatabaseBeatmap.h"
 #include "Timing.h"
 #include "Thread.h"
-#include "Sync.h"
+#include "SyncMutex.h"
+#include "SyncCV.h"
 
 #include <thread>
 

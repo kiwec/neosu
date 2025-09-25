@@ -2,7 +2,6 @@
 #include "BanchoNetworking.h"
 
 #include <ctime>
-#include <mutex>
 
 #ifndef _MSC_VER
 #include <unistd.h>
@@ -31,7 +30,7 @@
 #include "UIButton.h"
 #include "UserCard.h"
 #include "Logging.h"
-#include "Sync.h"
+#include "SyncMutex.h"
 
 #include <curl/curl.h>
 

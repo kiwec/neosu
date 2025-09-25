@@ -6,7 +6,7 @@
 #include "BaseEnvironment.h"
 
 #ifdef MCENGINE_FEATURE_SOLOUD
-#include "Sync.h"
+#include "SyncMutex.h"
 
 #include <soloud_audiosource.h>
 #include <atomic>

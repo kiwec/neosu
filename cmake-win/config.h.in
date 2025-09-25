@@ -28,6 +28,9 @@
 #cmakedefine MCENGINE_FEATURE_BASS
 #cmakedefine MCENGINE_FEATURE_SOLOUD
 
+/* Other flags */
+#cmakedefine USE_NSYNC
+
 /* Windows-specific definitions */
 #ifdef _WIN32
 #ifndef _UNICODE

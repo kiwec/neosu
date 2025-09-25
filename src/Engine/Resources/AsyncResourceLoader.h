@@ -1,14 +1,14 @@
 #pragma once
+
+#include "Resource.h"
+#include "SyncCV.h"
+
 #include <algorithm>
 #include <atomic>
 #include <queue>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
-
-#include "Resource.h"
-
-#include "Sync.h"
 
 class ConVar;
 

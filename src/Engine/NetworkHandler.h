@@ -2,13 +2,13 @@
 // Copyright (c) 2015, PG, All rights reserved.
 #include "UString.h"
 #include "types.h"
-#include "Sync.h"
+#include "SyncJthread.h"
+#include "SyncCV.h"
 
 #include <functional>
 #include <map>
 #include <memory>
 #include <queue>
-#include <thread>
 
 // forward declare for async requests
 struct NetworkRequest;

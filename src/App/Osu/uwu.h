@@ -4,7 +4,8 @@
 #include <vector>
 
 #include "Thread.h"
-#include "Sync.h"
+#include "SyncMutex.h"
+#include "SyncCV.h"
 
 // Unified Wait Utilities (◕‿◕✿)
 namespace uwu {

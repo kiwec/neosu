@@ -6,11 +6,11 @@
 
 #include "Thread.h"
 #include "Timing.h"
-#include "Sync.h"
+#include "SyncCV.h"
+#include "SyncJthread.h"
 
 #include <soloud.h>
 
-#include <thread>
 #include <atomic>
 #include <queue>
 #include <future>
