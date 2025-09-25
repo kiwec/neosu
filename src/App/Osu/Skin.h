@@ -360,7 +360,7 @@ class Skin final {
                         bool ignoreDefaultSkin = false, const std::string &fileExtension = "png",
                         bool forceLoadMipmaps = false);
 
-    void loadSound(Sound *&sndRef, const std::string &skinElementName, std::string resourceName,
+    void loadSound(Sound *&sndRef, const std::string &skinElementName, const std::string &resourceName,
                    bool isOverlayable = false, bool isSample = false, bool loop = false,
                    bool fallback_to_default = true);
 

@@ -1283,7 +1283,7 @@ void Skin::checkLoadImage(Image **addressOfPointer, const std::string &skinEleme
     }
 }
 
-void Skin::loadSound(Sound *&sndRef, const std::string &skinElementName, std::string resourceName, bool isOverlayable,
+void Skin::loadSound(Sound *&sndRef, const std::string &skinElementName, const std::string &resourceName, bool isOverlayable,
                      bool isSample, bool loop, bool fallback_to_default) {
     if(sndRef != nullptr) return;  // we are already loaded
 
@@ -1335,9 +1335,7 @@ void Skin::loadSound(Sound *&sndRef, const std::string &skinElementName, std::st
 
     if(fallback_to_default && !loaded_user_skin) {
         std::string defaultpath = MCENGINE_DATA_DIR "materials/default/";
-        std::string defaultResourceName = std::move(resourceName);
-        defaultResourceName.append("_DEFAULT");
-        sndRef = try_load_sound(defaultpath, skinElementName, loop, defaultResourceName, true);
+        sndRef = try_load_sound(defaultpath, skinElementName, loop, resourceName, true);
     }
 
     // failed both default and user

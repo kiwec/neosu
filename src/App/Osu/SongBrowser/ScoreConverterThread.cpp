@@ -215,7 +215,9 @@ void sct_abort() {
     if(dead.load()) return;
 
     dead = true;
-    thr.join();
+    if (thr.joinable()) {
+        thr.join();
+    }
 
     sct_total = 0;
     sct_computed = 0;

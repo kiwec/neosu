@@ -171,6 +171,7 @@ target_compile_options(neosu PRIVATE
     "/MP"  # multi-processor compilation
     "/D_UNICODE"
     "/DUNICODE=1"
+    "/D_HAS_EXCEPTIONS=0" # idk why it needs to be added here too...?
     $<$<CONFIG:Debug>:/Zi;/Od;/RTC1>
     $<$<CONFIG:Release>:/O2;/Oi;/Oy;/Gw;/GL;/GS-;/Gy>
     ${BZIP2_STATIC_CFLAGS}

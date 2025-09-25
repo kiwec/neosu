@@ -227,7 +227,9 @@ void lct_set_map(DatabaseBeatmap* new_map) {
     if(map != nullptr) {
         dead = true;
         cond.notify_one();
-        thr.join();
+        if (thr.joinable()) {
+            thr.join();
+        }
         cache.clear();
 
         for(auto ho : ho_cache) {
