@@ -51,6 +51,10 @@ set(MCENGINE_FEATURE_OPENGL ON)
 set(MCENGINE_FEATURE_BASS ON)
 set(MCENGINE_FEATURE_SOLOUD ON)
 
+if(NOT DISABLE_NSYNC)
+set(USE_NSYNC ON)
+endif()
+
 # Generate config.h
 configure_file(
     "${CMAKE_SOURCE_DIR}/../config.h.in"
@@ -88,6 +92,18 @@ find_package(spdlog REQUIRED)
 find_package(SDL3 REQUIRED)
 find_package(glm REQUIRED)
 
+# Optionally use nsync
+if(NOT DISABLE_NSYNC)
+    find_package(nsync_cpp)
+    if(nsync_cpp_FOUND)
+        message(STATUS "Building with nsync support")
+    else()
+        message(FATAL_ERROR "nsync desired but not found")
+    endif()
+else()
+    message(STATUS "Building without nsync support (explicitly disabled)")
+endif()
+
 # Handle these manually since their CMake support is broken
 pkg_check_modules(BZIP2 REQUIRED bzip2)
 pkg_check_modules(LIBARCHIVE REQUIRED libarchive)
@@ -105,7 +121,7 @@ file(GLOB_RECURSE SOURCES
     "${CMAKE_SOURCE_DIR}/../../libraries/*.c"
 )
 
-# Create main executable
+# Add main executable target
 add_executable(neosu ${SOURCES})
 
 # Get all source files and extract their directories
@@ -222,6 +238,11 @@ target_link_libraries(neosu PRIVATE
     ${LIBARCHIVE_STATIC_LIBRARIES}
     comctl32
 )
+
+if(NOT DISABLE_NSYNC AND nsync_cpp_FOUND)
+    target_link_libraries(neosu PRIVATE nsync_cpp)
+    target_compile_definitions(neosu PRIVATE NSYNC_ATOMIC_CPP11 NSYNC_USE_CPP11_TIMEPOINT)
+endif()
 
 # Installation
 install(TARGETS neosu RUNTIME DESTINATION bin)

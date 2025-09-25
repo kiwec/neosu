@@ -236,6 +236,7 @@ add_external_project(libarchive
     DEPENDS lzma_external bzip2_external zlib_external
     CMAKE_ARGS
         ${EXTERNAL_PROJECT_CMAKE_ARGS}
+        -DCMAKE_C_FLAGS="${CMAKE_C_FLAGS} /FS"
         -DENABLE_BZ2LIB=ON
         -DENABLE_ZLIB=ON
         -DENABLE_LZMA=ON
@@ -304,6 +305,23 @@ add_external_project(soloud
         -DPKG_CONFIG_ARGN="--msvc-syntax"
     BUILD_COMMAND cmake --build <BINARY_DIR> --config ${CMAKE_BUILD_TYPE} --parallel ${CPU_COUNT}
 )
+
+if(NOT DISABLE_NSYNC)
+add_external_project(nsync
+    CMAKE_ARGS
+        ${EXTERNAL_PROJECT_CMAKE_ARGS}
+        -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+        -DNSYNC_ENABLE_TESTS=OFF
+        -DCMAKE_CXX_STANDARD=17
+    PATCH_COMMAND ${CMAKE_COMMAND} -E echo "Patching nsync platform.h to add chrono include"
+        COMMAND ${CMAKE_COMMAND}
+            -DFILE_TO_PATCH=<SOURCE_DIR>/platform/c++11/platform.h
+            -P ${CMAKE_SOURCE_DIR}/patch_nsync.cmake
+    BUILD_COMMAND cmake --build <BINARY_DIR> --config ${CMAKE_BUILD_TYPE} --parallel ${CPU_COUNT}
+)
+else()
+add_custom_target(nsync_external)
+endif()
 
 # Discord SDK (pre-built binary)
 add_external_project(discordsdk
@@ -436,6 +454,7 @@ ExternalProject_Add(neosu_main
         mpg123_external
         soundtouch_external
         soloud_external
+        nsync_external
         discordsdk_external
         bass_external
         bassfx_external

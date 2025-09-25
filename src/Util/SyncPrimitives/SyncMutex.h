@@ -48,7 +48,7 @@ class nsync_mutex_t {
 
 // exceptions are disabled
 namespace detail {
-constexpr void abort_message(const char* reason) {
+inline void abort_message(const char* reason) {
     std::fprintf(stderr, "%s\n", reason);
     std::abort();
 }

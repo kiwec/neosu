@@ -104,7 +104,7 @@ class nsync_condition_variable_any_t {
     };
 
    public:
-    constexpr nsync_condition_variable_any_t() : m_mutex(std::make_shared<nsync_mutex_t>()) {}
+    nsync_condition_variable_any_t() : m_mutex(std::make_shared<nsync_mutex_t>()) {}
     ~nsync_condition_variable_any_t() = default;
 
     nsync_condition_variable_any_t(const nsync_condition_variable_any_t&) = delete;

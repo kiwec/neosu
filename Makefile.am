@@ -78,12 +78,6 @@ $(DEPS_CACHE)/spdlog-$(SPDLOG_VERSION).source:
 	touch $@
 
 # always needed (if not on host)
-$(DEPS_CACHE)/nsync-$(NSYNC_VERSION).source:
-	$(MKDIR_P) $(DEPS_CACHE)
-	$(WGET) -qO $(DEPS_CACHE)/nsync-$(NSYNC_VERSION).tar.gz "https://github.com/google/nsync/archive/refs/tags/$(NSYNC_VERSION).tar.gz" && \
-	touch $@
-
-# always needed (if not on host)
 $(DEPS_CACHE)/FREETYPE2-$(FREETYPE2_VERSION).source:
 	$(MKDIR_P) $(DEPS_CACHE)
 	$(WGET) -qO $(DEPS_CACHE)/freetype-$(FREETYPE2_VERSION).tar.gz "https://nongnu.askapache.com/freetype/freetype-$(FREETYPE2_VERSION).tar.gz" && \
@@ -99,6 +93,12 @@ $(DEPS_CACHE)/liblzma-$(LZMA_VERSION).source:
 $(DEPS_CACHE)/libarchive-$(LIBARCHIVE_VERSION).source:
 	$(MKDIR_P) $(DEPS_CACHE)
 	$(WGET) -qO $(DEPS_CACHE)/libarchive-$(LIBARCHIVE_VERSION).tar.gz "https://github.com/libarchive/libarchive/releases/download/v$(LIBARCHIVE_VERSION)/libarchive-$(LIBARCHIVE_VERSION).tar.gz" && \
+	touch $@
+
+# --with-nsync
+$(DEPS_CACHE)/nsync-$(NSYNC_VERSION).source:
+	$(MKDIR_P) $(DEPS_CACHE)
+	$(WGET) -qO $(DEPS_CACHE)/nsync-$(NSYNC_VERSION).tar.gz "https://github.com/google/nsync/archive/refs/tags/$(NSYNC_VERSION).tar.gz" && \
 	touch $@
 
 # --with-mimalloc
