@@ -808,8 +808,9 @@ Packet BanchoState::build_login_packet() {
 
     // UTC offset
     time_t now = time(nullptr);
-    auto gmt = gmtime(&now);
-    auto local_time = localtime(&now);
+    struct tm tmbuf;
+    auto gmt = gmtime_x(&now, &tmbuf);
+    auto local_time = localtime_x(&now, &tmbuf);
     i32 utc_offset = difftime(mktime(local_time), mktime(gmt)) / 3600;
     if(utc_offset < 0) {
         req.append("-");

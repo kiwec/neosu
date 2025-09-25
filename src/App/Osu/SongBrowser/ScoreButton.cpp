@@ -26,6 +26,7 @@
 #include "Mouse.h"
 #include "NotificationOverlay.h"
 #include "Osu.h"
+#include "Timing.h"
 #include "ResourceManager.h"
 #include "Skin.h"
 #include "SkinImage.h"
@@ -733,11 +734,14 @@ void ScoreButton::setScore(const FinishedScore &score, DatabaseBeatmap *map, int
         }
     }
 
-    char dateString[64];
-    memset(dateString, '\0', 64);
-    std::tm *tm = std::localtime((std::time_t *)(&score.unixTimestamp));
-    std::strftime(dateString, 63, "%d-%b-%y %H:%M:%S", tm);
-    this->sScoreDateTime = UString(dateString);
+    struct tm tm;
+    std::time_t timestamp = score.unixTimestamp;
+    localtime_x(&timestamp, &tm);
+
+    std::array<char, 64> dateString{};
+    int written = std::strftime(dateString.data(), dateString.size(), "%d-%b-%y %H:%M:%S", &tm);
+
+    this->sScoreDateTime = UString(dateString.data(), written);
     this->iScoreUnixTimestamp = score.unixTimestamp;
 
     UString achievedOn = "Achieved on ";

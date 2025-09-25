@@ -33,6 +33,7 @@
 #include "UIButton.h"
 #include "UIUserContextMenu.h"
 #include "UserCard2.h"
+#include "Timing.h"
 
 #include <algorithm>
 #include <cmath>
@@ -91,8 +92,9 @@ void ChatChannel::add_message(ChatMessage msg) {
         }
     }
 
-    struct tm *tm = localtime(&msg.tms);
-    auto timestamp_str = UString::format("%02d:%02d ", tm->tm_hour, tm->tm_min);
+    struct tm tm;
+    localtime_x(&msg.tms, &tm);
+    auto timestamp_str = UString::format("%02d:%02d ", tm.tm_hour, tm.tm_min);
     if(is_action) timestamp_str.append("*");
     float time_width = chat_font->getStringWidth(timestamp_str);
     auto *timestamp = new CBaseUILabel(x, this->y_total, time_width, line_height, "", timestamp_str);

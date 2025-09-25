@@ -9,6 +9,10 @@
 
 #ifdef USE_NSYNC
 #include "nsync_cv.h"
+
+#ifdef _DEBUG
+#include <cstdio>
+#endif
 #endif  // USE_NSYNC
 
 #include <condition_variable>
@@ -195,6 +199,9 @@ class nsync_condition_variable_any_t {
         if(!stop_note) {
             // no actual stop token, fall back to polling
             // is this an error condition?
+#ifdef _DEBUG
+            fprintf(stderr, "underlying nsync_note for stop_token does not exist!? falling back to polling predicate...\n");
+#endif
             while(!pred()) {
                 wait(lock);
             }

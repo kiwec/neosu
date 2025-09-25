@@ -12,6 +12,7 @@
 #include "ConVar.h"
 
 #include <cassert>
+#include <ctime>
 #endif
 
 namespace Timing::detail {
@@ -154,8 +155,22 @@ static forceinline const SleepHandler &getSleeper() {
 void sleep_ns_internal(uint64_t ns) noexcept { getSleeper().imprecise(ns); }
 void sleep_ns_precise_internal(uint64_t ns) noexcept { getSleeper().precise(ns); }
 
-#else  // SDL (generic)
+#else
 void sleep_ns_internal(uint64_t ns) noexcept { SDL_DelayNS(ns); }
 void sleep_ns_precise_internal(uint64_t ns) noexcept { SDL_DelayPrecise(ns); }
 #endif
 }  // namespace Timing::detail
+
+#ifdef MCENGINE_PLATFORM_WINDOWS
+
+struct tm *gmtime_x(const int64_t *timer, struct tm *timebuf) {
+    _gmtime64_s(timebuf, timer);
+    return timebuf;
+}
+
+struct tm *localtime_x(const int64_t *timer, struct tm *timebuf) {
+    _localtime64_s(timebuf, timer);
+    return timebuf;
+}
+
+#endif

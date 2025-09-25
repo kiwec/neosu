@@ -8,15 +8,12 @@
 #include "nsync_mu.h"
 #include "nsync_mu_wait.h"
 
-#include <system_error>
 #include <thread>
-#include <mutex>  // for std::lock (works with generic-compatible mutexes)
-
-#else
-
-#include <mutex>
+#include <cassert>
 
 #endif  // USE_NSYNC
+
+#include <mutex>  // for std::lock (works with generic-compatible mutexes)
 
 namespace Sync {
 #ifdef USE_NSYNC
@@ -45,14 +42,6 @@ class nsync_mutex_t {
     // native handle for condition variable use
     nsync_mu* native_handle() noexcept { return &m_mutex; }
 };
-
-// exceptions are disabled
-namespace detail {
-inline void abort_message(const char* reason) {
-    std::fprintf(stderr, "%s\n", reason);
-    std::abort();
-}
-}  // namespace detail
 
 // forward declarations for RAII guards
 template <typename Mutex>
@@ -148,23 +137,21 @@ class unique_lock {
     unique_lock& operator=(const unique_lock&) = delete;
 
     void lock() {
-        if(!m_p) detail::abort_message(std::make_error_code(std::errc::operation_not_permitted).message().c_str());
-        if(m_owns)
-            detail::abort_message(std::make_error_code(std::errc::resource_deadlock_would_occur).message().c_str());
+        assert(!!m_p && "unique_lock::lock: mutex is null (may have already been released)");
+        assert(!m_owns && "unique_lock::lock: tried to re-lock owned mutex");
         m_p->lock();
         m_owns = true;
     }
 
     bool try_lock() {
-        if(!m_p) detail::abort_message(std::make_error_code(std::errc::operation_not_permitted).message().c_str());
-        if(m_owns)
-            detail::abort_message(std::make_error_code(std::errc::resource_deadlock_would_occur).message().c_str());
+        assert(!!m_p && "unique_lock::try_lock: mutex is null (may have already been released)");
+        assert(!m_owns && "unique_lock::try_lock: cannot to re-lock owned mutex");
         m_owns = m_p->try_lock();
         return m_owns;
     }
 
     void unlock() {
-        if(!m_owns) detail::abort_message(std::make_error_code(std::errc::operation_not_permitted).message().c_str());
+        assert(m_owns && "unique_lock::unlock: cannot un-lock unowned mutex");
         if(m_p) {
             m_p->unlock();
             m_owns = false;
@@ -335,12 +322,7 @@ class nsync_recursive_mutex_t {
     void unlock() {
         nsync_mu_lock(&m_mutex);
 
-        auto current_id = std::this_thread::get_id();
-        if(m_owner != current_id) {
-            nsync_mu_unlock(&m_mutex);
-            detail::abort_message("recursive_mutex::unlock: not owner");
-            return;
-        }
+        assert((m_owner == std::this_thread::get_id()) && "recursive_mutex::unlock: not owner");
 
         --m_count;
         if(m_count == 0) {

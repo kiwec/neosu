@@ -24,6 +24,7 @@
 #include "OptionsMenu.h"
 #include "Osu.h"
 #include "ResourceManager.h"
+#include "Timing.h"
 #include "RoomScreen.h"
 #include "Skin.h"
 #include "SkinImage.h"
@@ -425,12 +426,14 @@ void RankingScreen::setScore(FinishedScore score) {
 
     this->bIsUnranked = false;
 
-    char dateString[64];
-    memset(dateString, '\0', 64);
-    std::tm *tm = std::localtime((std::time_t *)(&score.unixTimestamp));
-    std::strftime(dateString, 63, "%d-%b-%y %H:%M:%S", tm);
+    struct tm tm;
+    std::time_t timestamp = score.unixTimestamp;
+    localtime_x(&timestamp, &tm);
 
-    this->songInfo->setDate(dateString);
+    std::array<char, 64> dateString{};
+    size_t written = std::strftime(dateString.data(), dateString.size(), "%d-%b-%y %H:%M:%S", &tm);
+
+    this->songInfo->setDate(std::string(dateString.data(), written));
     this->songInfo->setPlayer(score.playerName);
 
     this->rankingPanel->setScore(score);

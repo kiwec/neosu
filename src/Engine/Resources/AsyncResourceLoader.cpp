@@ -45,7 +45,7 @@ class AsyncResourceLoader::LoaderThread final {
         const std::string loaderThreadName =
             fmt::format("res_ldr_thr{}", (this->thread_index % this->loader_ptr->iMaxThreads) + 1);
         McThread::set_current_thread_name(loaderThreadName.c_str());
-        McThread::set_current_thread_prio(false); // reset priority (don't inherit from main thread)
+        McThread::set_current_thread_prio(false);  // reset priority (don't inherit from main thread)
 
         while(!stoken.stop_requested() && !this->loader_ptr->bShuttingDown.load()) {
             const bool debug = cv::debug_rm.getBool();
@@ -280,8 +280,7 @@ void AsyncResourceLoader::reloadResources(const std::vector<Resource *> &resourc
         if(rs == nullptr) continue;
 
         if(debug)
-            debugLog("AsyncResourceLoader: Async reloading {:8p} : {:s}", static_cast<const void *>(rs),
-                     rs->getName());
+            debugLog("AsyncResourceLoader: Async reloading {:8p} : {:s}", static_cast<const void *>(rs), rs->getName());
 
         bool isBeingLoaded = isLoadingResource(rs);
 
@@ -353,9 +352,8 @@ void AsyncResourceLoader::cleanupIdleThreads() {
     for(auto &[idx, thread] : this->threadpool) {
         if(thread->isIdleTooLong()) {
             if(debug) {
-                Logger::logRaw(
-                    "AsyncResourceLoader: Removing idle thread #{} (idle timeout exceeded, pool size: {} -> {})", idx,
-                    this->threadpool.size(), this->threadpool.size() - 1);
+                debugLog("AsyncResourceLoader: Removing idle thread #{} (idle timeout exceeded, pool size: {} -> {})",
+                         idx, this->threadpool.size(), this->threadpool.size() - 1);
             }
             this->threadpool.erase(idx);
             break;  // remove only one thread at a time

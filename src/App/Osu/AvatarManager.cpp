@@ -14,6 +14,7 @@
 #include "ConVar.h"
 #include "File.h"
 #include "Logging.h"
+#include "Timing.h"
 
 Image* AvatarManager::get_avatar(const std::pair<i32, std::string>& id_folder) {
     auto it = this->avatars.find(id_folder);
@@ -61,7 +62,8 @@ void AvatarManager::update() {
             struct stat attr;
             if(stat(id_folder.second.c_str(), &attr) == 0) {
                 time_t now = time(nullptr);
-                struct tm expiration_date = *localtime(&attr.st_mtime);
+                struct tm expiration_date;
+                localtime_x(&attr.st_mtime, &expiration_date);
                 expiration_date.tm_mday += 7;
                 if(now <= mktime(&expiration_date)) {
                     exists_on_disk = true;

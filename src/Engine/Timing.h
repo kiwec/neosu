@@ -136,6 +136,21 @@ class Timer {
 
 };  // namespace Timing
 
+#ifdef MCENGINE_PLATFORM_WINDOWS
+#include <ctime>
+
+// thread-safe versions of gmtime, localtime
+struct tm *gmtime_x(const int64_t *timer, struct tm *timebuf);
+struct tm *localtime_x(const int64_t *timer, struct tm *timebuf);
+
+#else
+
+#define gmtime_x gmtime_r
+#define localtime_x localtime_r
+
+#endif
+
+
 using Timer = Timing::Timer;
 
 #endif

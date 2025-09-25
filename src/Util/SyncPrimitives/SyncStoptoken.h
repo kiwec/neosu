@@ -8,6 +8,7 @@
 #ifdef USE_NSYNC
 #include "nsync_note.h"
 #include <functional>
+#include <vector>
 #else
 #include <stop_token>
 #endif
@@ -20,6 +21,12 @@ using namespace nsync;
 // stop_token: nsync-based cancellation token
 // ===================================================================
 
+// nostopstate constant
+struct nostopstate_t {
+    explicit nostopstate_t() = default;
+};
+inline constexpr nostopstate_t nostopstate{};
+
 namespace detail {
 struct stop_state {
     nsync_note m_note;
@@ -28,10 +35,7 @@ struct stop_state {
     std::atomic<bool> m_stop_requested_flag{false};
 
     stop_state() : m_note(nsync_note_new(nullptr, nsync_time_no_deadline)) {
-        if(!m_note) {
-            std::fprintf(stderr, "%s\n", "Failed to create nsync_note for stop_token");
-            std::abort();
-        }
+        assert(!!m_note && "stop_state::stop_state: nsync_note_new failed");
     }
 
     ~stop_state() {
@@ -94,7 +98,7 @@ class stop_source {
    public:
     stop_source() : m_state(std::make_shared<detail::stop_state>()) {}
 
-    explicit stop_source(std::nostopstate_t /* */) noexcept {}
+    explicit stop_source(nostopstate_t /* */) noexcept {}
     ~stop_source() = default;
 
     stop_source(const stop_source&) = default;
@@ -191,12 +195,6 @@ stop_callback(stop_token, Callback) -> stop_callback<Callback>;
 
 template <typename Callback>
 stop_callback(stop_token&&, Callback) -> stop_callback<Callback>;
-
-// nostopstate constant
-struct nostopstate_t {
-    explicit nostopstate_t() = default;
-};
-inline constexpr nostopstate_t nostopstate{};
 
 #else
 using stop_token = std::stop_token;

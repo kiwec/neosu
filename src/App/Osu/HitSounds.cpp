@@ -81,10 +81,10 @@ static constexpr const auto SOUND_NAMES =  //
           },
           // SLIDER sounds
           A_{
-              "SKIN_NORMALSLIDERSLIDE_SND"sv,    // HitSoundType::NORMAL
-              "SKIN_NORMALSLIDERWHISTLE_SND"sv,  // HitSoundType::WHISTLE
-              "SKIN_NORMALSLIDERFINISH_SND"sv,   // HitSoundType::FINISH
-              "SKIN_NORMALSLIDERCLAP_SND"sv      // HitSoundType::CLAP
+              "SKIN_NORMALSLIDERSLIDE_SND"sv,    //
+              "SKIN_NORMALSLIDERWHISTLE_SND"sv,  //
+              ""sv,                              // SET-sliderfinish and SET-sliderclap aren't actually valid
+              ""sv                               //
           }},
        // SampleSetType::SOFT
        A_{//
@@ -99,8 +99,8 @@ static constexpr const auto SOUND_NAMES =  //
           A_{
               "SKIN_SOFTSLIDERSLIDE_SND"sv,    //
               "SKIN_SOFTSLIDERWHISTLE_SND"sv,  //
-              "SKIN_SOFTSLIDERFINISH_SND"sv,   //
-              "SKIN_SOFTSLIDERCLAP_SND"sv      //
+              ""sv,                            //
+              ""sv                             //
           }},                                  //
        // SampleSetType::DRUM
        A_{//
@@ -115,8 +115,8 @@ static constexpr const auto SOUND_NAMES =  //
           A_{
               "SKIN_DRUMSLIDERSLIDE_SND"sv,    //
               "SKIN_DRUMSLIDERWHISTLE_SND"sv,  //
-              "SKIN_DRUMSLIDERFINISH_SND"sv,   //
-              "SKIN_DRUMSLIDERCLAP_SND"sv      //
+              ""sv,                            //
+              ""sv                             //
           }}};  //
 #undef A_
 
@@ -222,6 +222,7 @@ void HitSamples::stop() {
     for(const auto& sample_set : SOUND_NAMES) {
         const auto& slider_sounds = sample_set[SLIDER_IDX];
         for(const auto& slider_snd_name : slider_sounds) {
+            if(slider_snd_name.empty()) continue;  // ugly
             auto sound = resourceManager->getSound(slider_snd_name);
             if(sound) soundEngine->stop(sound);
         }

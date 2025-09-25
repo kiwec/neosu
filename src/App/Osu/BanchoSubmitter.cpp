@@ -11,6 +11,7 @@
 #include "SongBrowser/SongBrowser.h"
 #include "crypto.h"
 #include "Logging.h"
+#include "Timing.h"
 
 #include <cstdlib>
 #include <cstring>
@@ -105,9 +106,12 @@ void submit_score(FinishedScore score) {
             score_data.append(fmt::format(":{}", BanchoState::get_username()));
         }
 
-        char score_time[80];
-        struct tm *timeinfo = localtime((const time_t *)&score.unixTimestamp);
-        strftime(score_time, sizeof(score_time), "%y%m%d%H%M%S", timeinfo);
+        struct tm timeinfo;
+        std::time_t timestamp = score.unixTimestamp;
+        localtime_x(&timestamp, &timeinfo);
+
+        std::array<char, 80> score_time{};
+        strftime(score_time.data(), score_time.size(), "%y%m%d%H%M%S", &timeinfo);
 
         {
             auto idiot_check = fmt::format("chickenmcnuggets{}", score.num300s + score.num100s);
@@ -124,7 +128,7 @@ void submit_score(FinishedScore score) {
 
             idiot_check.append(fmt::format("{}{}", score.score, GRADES[(int)score.grade]));
             idiot_check.append(fmt::format("{}Q{}", score.mods.to_legacy(), score.passed ? "True" : "False"));
-            idiot_check.append(fmt::format("0{}{}", OSU_VERSION_DATEONLY, score_time));
+            idiot_check.append(fmt::format("0{}{}", OSU_VERSION_DATEONLY, score_time.data()));
             idiot_check.append(BanchoState::client_hashes.toUtf8());
 
             auto idiot_hash = BanchoState::md5((u8 *)idiot_check.data(), idiot_check.size());
@@ -144,7 +148,7 @@ void submit_score(FinishedScore score) {
         score_data.append(fmt::format(":{}", score.mods.to_legacy()));
         score_data.append(fmt::format(":{}", score.passed ? "True" : "False"));
         score_data.append(":0");  // gamemode, always std
-        score_data.append(fmt::format(":{}", score_time));
+        score_data.append(fmt::format(":{}", score_time.data()));
         score_data.append(":mcosu");  // anticheat flags
 
         size_t s_score_data_encrypted = 0;
