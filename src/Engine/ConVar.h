@@ -319,7 +319,6 @@ class ConVar {
     template <typename T, typename Callback>
     void initValue(std::string_view name, const T &defaultValue, uint8_t flags, std::string_view helpString,
                    Callback callback) {
-        this->bValueSettable = true;
         this->bHasValue = true;
         this->iFlags = flags;
         this->sName = name;
@@ -392,26 +391,24 @@ class ConVar {
             oldString = this->getString();
         }
 
-        // set new values (if values are settable)
-        if(this->bValueSettable) {
-            switch(editor) {
-                case CvarEditor::CLIENT: {
-                    this->dClientValue.store(newDouble, std::memory_order_release);
-                    this->sClientValue = newString;
-                    break;
-                }
-                case CvarEditor::SKIN: {
-                    this->dSkinValue.store(newDouble, std::memory_order_release);
-                    this->sSkinValue = newString;
-                    this->hasSkinValue.store(true, std::memory_order_release);
-                    break;
-                }
-                case CvarEditor::SERVER: {
-                    this->dServerValue.store(newDouble, std::memory_order_release);
-                    this->sServerValue = newString;
-                    this->hasServerValue.store(true, std::memory_order_release);
-                    break;
-                }
+        // set new values
+        switch(editor) {
+            case CvarEditor::CLIENT: {
+                this->dClientValue.store(newDouble, std::memory_order_release);
+                this->sClientValue = newString;
+                break;
+            }
+            case CvarEditor::SKIN: {
+                this->dSkinValue.store(newDouble, std::memory_order_release);
+                this->sSkinValue = newString;
+                this->hasSkinValue.store(true, std::memory_order_release);
+                break;
+            }
+            case CvarEditor::SERVER: {
+                this->dServerValue.store(newDouble, std::memory_order_release);
+                this->sServerValue = newString;
+                this->hasServerValue.store(true, std::memory_order_release);
+                break;
             }
         }
 
@@ -479,7 +476,6 @@ class ConVar {
     uint8_t iFlags{0};
 
     bool bHasValue{false};
-    bool bValueSettable{false};  // command convars can't have values stored in them
 };
 
 //*******************//

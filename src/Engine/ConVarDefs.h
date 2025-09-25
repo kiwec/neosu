@@ -149,10 +149,10 @@ CONVAR(snd_ready_delay, "snd_ready_delay"sv, 0.f, CLIENT,
 CONVAR(snd_restrict_play_frame, "snd_restrict_play_fr ame"sv, true, CLIENT,
        "only allow one new channel per frame for overlayable sounds (prevents lag and earrape)"sv);
 CONVAR(snd_updateperiod, "snd_updateperiod"sv, 10, CLIENT, "BASS_CONFIG_UPDATEPERIOD length in milliseconds"sv);
-CONVAR(snd_file_min_size, "snd_file_min_size"sv, 64, CLIENT,
+CONVAR(snd_file_min_size, "snd_file_min_size"sv, 51, CLIENT,
        "minimum file size in bytes for WAV files to be considered valid (everything below will "
        "fail to load), this is a workaround for BASS crashes"sv);
-CONVAR(snd_force_load_unknown, "snd_force_load_unknown"sv, true, CLIENT,
+CONVAR(snd_force_load_unknown, "snd_force_load_unknown"sv, false, CLIENT,
        "force loading of assumed invalid audio files"sv);
 CONVAR(snd_freq, "snd_freq"sv, 44100, CLIENT | NOLOAD | NOSAVE, "output sampling rate in Hz"sv);
 CONVAR(snd_soloud_buffer, "snd_soloud_buffer"sv, 0, CLIENT | NOSAVE,

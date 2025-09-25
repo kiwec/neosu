@@ -461,8 +461,8 @@ static void _listcommands(void) {
 
 static void _dumpcommands(void) {
     // in assets/misc/convar_template.html
-    static ConVarString html_template{reinterpret_cast<const char *>(convar_template),
-                                      static_cast<size_t>(convar_template_size())};
+    ConVarString html_template{reinterpret_cast<const char *>(convar_template),
+                               static_cast<size_t>(convar_template_size())};
 
     std::vector<ConVar *> convars = cvars->getConVarArray();
     std::ranges::sort(convars, {}, [](const ConVar *v) { return v->getName(); });

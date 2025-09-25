@@ -133,5 +133,5 @@ class Sound : public Resource {
     bool bPaused{false};
 
    private:
-    static bool isValidAudioFile(const std::string &filePath, const std::string &fileExt);
+    static bool isValidAudioFile(std::string_view filePath, std::string_view fileExt);
 };
