@@ -1313,7 +1313,7 @@ void Skin::loadSound(Sound *&sndRef, const std::string &skinElementName, const s
                 was_first_load = true;
 
                 // user skin, destroy old sound resource (blocking)
-                if(existing_sound) resourceManager->destroyResource(existing_sound, true);
+                if(existing_sound) resourceManager->destroyResource(existing_sound, ResourceManager::DestroyMode::FORCE_BLOCKING);
 
                 if(cv::skin_async.getBool()) {
                     resourceManager->requestNextLoadAsync();

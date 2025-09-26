@@ -44,7 +44,12 @@ class ResourceManager final {
         requestNextLoadUnmanaged();
         loadResource(rs, true);
     }
-    void destroyResource(Resource *rs, bool forceBlocking = false);  // forceBlocking: don't allow async destroy
+    enum class DestroyMode : uint8_t {
+        DEFAULT = 0,
+        FORCE_BLOCKING = 1,
+        FORCE_ASYNC = 2,
+    };
+    void destroyResource(Resource *rs, DestroyMode destroyMode = DestroyMode::DEFAULT);
     void destroyResources();
 
     // async reload

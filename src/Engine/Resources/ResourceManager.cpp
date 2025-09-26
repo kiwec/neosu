@@ -61,7 +61,7 @@ void ResourceManager::destroyResources() {
     this->mNameToResourceMap.clear();
 }
 
-void ResourceManager::destroyResource(Resource *rs, bool forceBlocking) {
+void ResourceManager::destroyResource(Resource *rs, DestroyMode destroyMode) {
     const bool debug = cv::debug_rm.getBool();
     if(rs == nullptr) {
         if(debug) debugLog("ResourceManager Warning: destroyResource(NULL)!");
@@ -83,7 +83,7 @@ void ResourceManager::destroyResource(Resource *rs, bool forceBlocking) {
     }
 
     // check if it's being loaded and schedule async destroy if so
-    if(this->asyncLoader->isLoadingResource(rs)) {
+    if((destroyMode == DestroyMode::FORCE_ASYNC) || this->asyncLoader->isLoadingResource(rs)) {
         if(debug)
             debugLog("Resource Manager: Scheduled async destroy of {:8p} : {:s}", static_cast<const void *>(rs),
                      rs->getName());
@@ -95,7 +95,7 @@ void ResourceManager::destroyResource(Resource *rs, bool forceBlocking) {
 
         if(isManagedResource) removeManagedResource(rs, managedResourceIndex);
 
-        if(forceBlocking) {
+        if(destroyMode == DestroyMode::FORCE_BLOCKING) {
             do {
                 this->asyncLoader->update(false);
             } while(this->asyncLoader->isLoadingResource(rs));

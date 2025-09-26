@@ -191,7 +191,7 @@ void Database::startLoader() {
 void Database::destroyLoader() {
     if(cv::debug_db.getBool() || cv::debug_async_db.getBool()) debugLog("start");
     if(this->loader) {
-        resourceManager->destroyResource(this->loader, true);  // force blocking
+        resourceManager->destroyResource(this->loader, ResourceManager::DestroyMode::FORCE_BLOCKING);  // force blocking
         this->loader = nullptr;
     }
     if(cv::debug_db.getBool() || cv::debug_async_db.getBool()) debugLog("done");

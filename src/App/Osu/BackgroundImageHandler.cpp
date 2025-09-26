@@ -32,8 +32,9 @@ void BackgroundImageHandler::update(bool allowEviction) {
                     if(entry.backgroundImagePathLoader != nullptr) entry.backgroundImagePathLoader->interruptLoad();
                     if(entry.image != nullptr) entry.image->interruptLoad();
 
-                    resourceManager->destroyResource(entry.backgroundImagePathLoader);
-                    resourceManager->destroyResource(entry.image);
+                    resourceManager->destroyResource(entry.backgroundImagePathLoader,
+                                                     ResourceManager::DestroyMode::FORCE_ASYNC);
+                    resourceManager->destroyResource(entry.image, ResourceManager::DestroyMode::FORCE_ASYNC);
 
                     this->cache.erase(this->cache.begin() + i);
                     i--;
@@ -73,7 +74,8 @@ void BackgroundImageHandler::update(bool allowEviction) {
                         this->handleLoadImageForEntry(entry);
                     }
 
-                    resourceManager->destroyResource(entry.backgroundImagePathLoader);
+                    resourceManager->destroyResource(entry.backgroundImagePathLoader,
+                                                     ResourceManager::DestroyMode::FORCE_ASYNC);
                     entry.backgroundImagePathLoader = nullptr;
                 }
             }

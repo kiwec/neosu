@@ -26,7 +26,7 @@ class AsyncResourceLoader::LoaderThread final {
         : thread_index(index),
           last_active(std::chrono::steady_clock::now()),
           loader_ptr(loader),
-          thread(Sync::jthread([&](const Sync::stop_token &stoken) { this->run(stoken); })) {}
+          thread(Sync::jthread([this](const Sync::stop_token &stoken) { this->run(stoken); })) {}
 
     [[nodiscard]] bool isReady() const noexcept { return this->thread.joinable(); }
 
@@ -37,6 +37,9 @@ class AsyncResourceLoader::LoaderThread final {
     }
 
    private:
+    AsyncResourceLoader *loader_ptr;
+    Sync::jthread thread;
+
     void run(const Sync::stop_token &stoken) noexcept {
         this->loader_ptr->iActiveThreadCount.fetch_add(1);
 
@@ -58,7 +61,7 @@ class AsyncResourceLoader::LoaderThread final {
                 Sync::unique_lock<Sync::mutex> lock(this->loader_ptr->workAvailableMutex);
 
                 // wait indefinitely until work is available or stop is requested
-                this->loader_ptr->workAvailable.wait(lock, stoken, [&]() {
+                this->loader_ptr->workAvailable.wait(lock, stoken, [this]() {
                     return this->loader_ptr->bShuttingDown.load() || this->loader_ptr->iActiveWorkCount.load() > 0;
                 });
 
@@ -102,9 +105,6 @@ class AsyncResourceLoader::LoaderThread final {
 
         if(cv::debug_rm.getBool()) debugLog("AsyncResourceLoader: Thread #{} exiting", this->thread_index);
     }
-
-    AsyncResourceLoader *loader_ptr;
-    Sync::jthread thread;
 };
 
 //==================================
