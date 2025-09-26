@@ -47,7 +47,7 @@ class ResourceManager final {
     enum class DestroyMode : uint8_t {
         DEFAULT = 0,
         FORCE_BLOCKING = 1,
-        FORCE_ASYNC = 2,
+        FORCE_ASYNC = 2, // TODO
     };
     void destroyResource(Resource *rs, DestroyMode destroyMode = DestroyMode::DEFAULT);
     void destroyResources();

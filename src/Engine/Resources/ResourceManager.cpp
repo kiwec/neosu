@@ -83,7 +83,8 @@ void ResourceManager::destroyResource(Resource *rs, DestroyMode destroyMode) {
     }
 
     // check if it's being loaded and schedule async destroy if so
-    if((destroyMode == DestroyMode::FORCE_ASYNC) || this->asyncLoader->isLoadingResource(rs)) {
+    // (destroyMode == DestroyMode::FORCE_ASYNC) || 
+    if(this->asyncLoader->isLoadingResource(rs)) {
         if(debug)
             debugLog("Resource Manager: Scheduled async destroy of {:8p} : {:s}", static_cast<const void *>(rs),
                      rs->getName());
