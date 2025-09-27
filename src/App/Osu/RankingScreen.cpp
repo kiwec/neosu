@@ -410,7 +410,7 @@ void RankingScreen::onWatchClicked() {
     LegacyReplay::load_and_watch(this->score);
 }
 
-void RankingScreen::setScore(FinishedScore score) {
+void RankingScreen::setScore(const FinishedScore &score) {
     this->score = score;
 
     bool is_same_player = !score.playerName.compare(BanchoState::get_username());

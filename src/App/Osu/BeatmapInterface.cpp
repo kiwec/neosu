@@ -46,8 +46,6 @@
 #include "SpectatorScreen.h"
 #include "UIModSelectorModButton.h"
 
-namespace proto = BANCHO::Proto;
-
 BeatmapInterface::BeatmapInterface() : AbstractBeatmapInterface() {
     // vars
     this->bIsPlaying = false;
@@ -290,11 +288,11 @@ void BeatmapInterface::skipEmptySection() {
 
         Packet packet;
         packet.id = OUT_SPECTATE_FRAMES;
-        proto::write<i32>(packet, 0);
-        proto::write<u16>(packet, 0);
-        proto::write<u8>(packet, LiveReplayBundle::Action::SKIP);
-        proto::write<ScoreFrame>(packet, ScoreFrame::get());
-        proto::write<u16>(packet, this->spectator_sequence++);
+        packet.write<i32>(0);
+        packet.write<u16>(0);
+        packet.write<u8>(LiveReplayBundle::Action::SKIP);
+        packet.write<ScoreFrame>(ScoreFrame::get());
+        packet.write<u16>(this->spectator_sequence++);
         BANCHO::Net::send_packet(packet);
     }
 }
@@ -437,11 +435,11 @@ bool BeatmapInterface::play() {
         if(!BanchoState::spectators.empty()) {
             Packet packet;
             packet.id = OUT_SPECTATE_FRAMES;
-            proto::write<i32>(packet, 0);
-            proto::write<u16>(packet, 0);  // 0 frames, we're just signaling map start
-            proto::write<u8>(packet, LiveReplayBundle::Action::NEW_SONG);
-            proto::write<ScoreFrame>(packet, ScoreFrame::get());
-            proto::write<u16>(packet, this->spectator_sequence++);
+            packet.write<i32>(0);
+            packet.write<u16>(0);  // 0 frames, we're just signaling map start
+            packet.write<u8>(LiveReplayBundle::Action::NEW_SONG);
+            packet.write<ScoreFrame>(ScoreFrame::get());
+            packet.write<u16>(this->spectator_sequence++);
             BANCHO::Net::send_packet(packet);
 
             if(cv::spec_share_map.getBool()) {
@@ -3096,14 +3094,14 @@ void BeatmapInterface::broadcast_spectator_frames() {
 
     Packet packet;
     packet.id = OUT_SPECTATE_FRAMES;
-    proto::write<i32>(packet, 0);
-    proto::write<u16>(packet, this->frame_batch.size());
+    packet.write<i32>(0);
+    packet.write<u16>(this->frame_batch.size());
     for(auto batch : this->frame_batch) {
-        proto::write<LiveReplayFrame>(packet, batch);
+        packet.write<LiveReplayFrame>(batch);
     }
-    proto::write<u8>(packet, LiveReplayBundle::Action::NONE);
-    proto::write<ScoreFrame>(packet, ScoreFrame::get());
-    proto::write<u16>(packet, this->spectator_sequence++);
+    packet.write<u8>(LiveReplayBundle::Action::NONE);
+    packet.write<ScoreFrame>(ScoreFrame::get());
+    packet.write<u16>(this->spectator_sequence++);
     BANCHO::Net::send_packet(packet);
 
     this->frame_batch.clear();
@@ -3578,11 +3576,11 @@ FinishedScore BeatmapInterface::saveAndSubmitScore(bool quit) {
 
         Packet packet;
         packet.id = OUT_SPECTATE_FRAMES;
-        proto::write<i32>(packet, 0);
-        proto::write<u16>(packet, 0);
-        proto::write<u8>(packet, isComplete ? LiveReplayBundle::Action::COMPLETION : LiveReplayBundle::Action::FAIL);
-        proto::write<ScoreFrame>(packet, ScoreFrame::get());
-        proto::write<u16>(packet, this->spectator_sequence++);
+        packet.write<i32>(0);
+        packet.write<u16>(0);
+        packet.write<u8>(isComplete ? LiveReplayBundle::Action::COMPLETION : LiveReplayBundle::Action::FAIL);
+        packet.write<ScoreFrame>(ScoreFrame::get());
+        packet.write<u16>(this->spectator_sequence++);
         BANCHO::Net::send_packet(packet);
     }
 

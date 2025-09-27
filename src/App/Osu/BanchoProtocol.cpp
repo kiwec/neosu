@@ -5,34 +5,32 @@
 #include "BeatmapInterface.h"
 #include "Osu.h"
 
-using namespace BANCHO::Proto;
-
 Room::Room(Packet &packet) {
-    this->id = read<u16>(packet);
-    this->in_progress = read<u8>(packet);
-    this->match_type = read<u8>(packet);
-    this->mods = read<u32>(packet);
-    this->name = read_string(packet);
+    this->id = packet.read<u16>();
+    this->in_progress = packet.read<u8>();
+    this->match_type = packet.read<u8>();
+    this->mods = packet.read<u32>();
+    this->name = packet.read_string();
 
-    this->has_password = read<u8>(packet) > 0;
+    this->has_password = packet.read<u8>() > 0;
     if(this->has_password) {
         // Discard password. It should be an empty string, but just in case, read it properly.
         packet.pos--;
-        read_string(packet);
+        packet.read_string();
     }
 
-    this->map_name = read_string(packet);
-    this->map_id = read<i32>(packet);
+    this->map_name = packet.read_string();
+    this->map_id = packet.read<i32>();
 
-    auto hash_str = read_string(packet);
+    auto hash_str = packet.read_string();
     this->map_md5 = hash_str.toUtf8();
 
     this->nb_players = 0;
     for(auto &slot : this->slots) {
-        slot.status = read<u8>(packet);
+        slot.status = packet.read<u8>();
     }
     for(auto &slot : this->slots) {
-        slot.team = read<u8>(packet);
+        slot.team = packet.read<u8>();
     }
     for(auto &slot : this->slots) {
         if(!slot.is_locked()) {
@@ -40,59 +38,59 @@ Room::Room(Packet &packet) {
         }
 
         if(slot.has_player()) {
-            slot.player_id = read<i32>(packet);
+            slot.player_id = packet.read<i32>();
             this->nb_players++;
         }
     }
 
-    this->host_id = read<i32>(packet);
-    this->mode = read<u8>(packet);
-    this->win_condition = read<u8>(packet);
-    this->team_type = read<u8>(packet);
-    this->freemods = read<u8>(packet);
+    this->host_id = packet.read<i32>();
+    this->mode = packet.read<u8>();
+    this->win_condition = packet.read<u8>();
+    this->team_type = packet.read<u8>();
+    this->freemods = packet.read<u8>();
     if(this->freemods) {
         for(auto &slot : this->slots) {
-            slot.mods = read<u32>(packet);
+            slot.mods = packet.read<u32>();
         }
     }
 
-    this->seed = read<u32>(packet);
+    this->seed = packet.read<u32>();
 }
 
 void Room::pack(Packet &packet) {
-    write<u16>(packet, this->id);
-    write<u8>(packet, this->in_progress);
-    write<u8>(packet, this->match_type);
-    write<u32>(packet, this->mods);
-    write_string(packet, this->name.toUtf8());
-    write_string(packet, this->password.toUtf8());
-    write_string(packet, this->map_name.toUtf8());
-    write<i32>(packet, this->map_id);
-    write_string(packet, this->map_md5.string());
+    packet.write<u16>(this->id);
+    packet.write<u8>(this->in_progress);
+    packet.write<u8>(this->match_type);
+    packet.write<u32>(this->mods);
+    packet.write_string(this->name.toUtf8());
+    packet.write_string(this->password.toUtf8());
+    packet.write_string(this->map_name.toUtf8());
+    packet.write<i32>(this->map_id);
+    packet.write_string(this->map_md5.string());
     for(auto &slot : this->slots) {
-        write<u8>(packet, slot.status);
+        packet.write<u8>(slot.status);
     }
     for(auto &slot : this->slots) {
-        write<u8>(packet, slot.team);
+        packet.write<u8>(slot.team);
     }
     for(auto &slot : this->slots) {
         if(slot.has_player()) {
-            write<i32>(packet, slot.player_id);
+            packet.write<i32>(slot.player_id);
         }
     }
 
-    write<i32>(packet, this->host_id);
-    write<u8>(packet, this->mode);
-    write<u8>(packet, this->win_condition);
-    write<u8>(packet, this->team_type);
-    write<u8>(packet, this->freemods);
+    packet.write<i32>(this->host_id);
+    packet.write<u8>(this->mode);
+    packet.write<u8>(this->win_condition);
+    packet.write<u8>(this->team_type);
+    packet.write<u8>(this->freemods);
     if(this->freemods) {
         for(auto &slot : this->slots) {
-            write<u32>(packet, slot.mods);
+            packet.write<u32>(slot.mods);
         }
     }
 
-    write<u32>(packet, this->seed);
+    packet.write<u32>(this->seed);
 }
 
 bool Room::is_host() { return this->host_id == BanchoState::get_uid(); }

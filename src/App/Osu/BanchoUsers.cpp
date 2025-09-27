@@ -47,9 +47,9 @@ void request_presence_batch() {
 
     Packet packet;
     packet.id = USER_PRESENCE_REQUEST;
-    BANCHO::Proto::write<u16>(packet, actual_requests.size());
+    packet.write<u16>(actual_requests.size());
     for(const auto& user_id : actual_requests) {
-        BANCHO::Proto::write<i32>(packet, user_id);
+        packet.write<i32>(user_id);
     }
     BANCHO::Net::send_packet(packet);
 }
@@ -67,9 +67,9 @@ void request_stats_batch() {
 
     Packet packet;
     packet.id = USER_STATS_REQUEST;
-    BANCHO::Proto::write<u16>(packet, actual_requests.size());
+    packet.write<u16>(actual_requests.size());
     for(const auto& user_id : actual_requests) {
-        BANCHO::Proto::write<i32>(packet, user_id);
+        packet.write<i32>(user_id);
     }
     BANCHO::Net::send_packet(packet);
 }

@@ -116,12 +116,12 @@ void UIUserContextMenuScreen::on_action(const UString& /*text*/, int user_action
     if(user_action == UA_TRANSFER_HOST) {
         Packet packet;
         packet.id = TRANSFER_HOST;
-        BANCHO::Proto::write<u32>(packet, slot_number);
+        packet.write<u32>(slot_number);
         BANCHO::Net::send_packet(packet);
     } else if(user_action == KICK) {
         Packet packet;
         packet.id = MATCH_LOCK;
-        BANCHO::Proto::write<u32>(packet, slot_number);
+        packet.write<u32>(slot_number);
         BANCHO::Net::send_packet(packet);  // kick by locking the slot
         BANCHO::Net::send_packet(packet);  // unlock the slot
     } else if(user_action == START_CHAT) {
@@ -137,13 +137,13 @@ void UIUserContextMenuScreen::on_action(const UString& /*text*/, int user_action
     } else if(user_action == UA_ADD_FRIEND) {
         Packet packet;
         packet.id = FRIEND_ADD;
-        BANCHO::Proto::write<i32>(packet, this->user_id);
+        packet.write<i32>(this->user_id);
         BANCHO::Net::send_packet(packet);
         BANCHO::User::friends.push_back(this->user_id);
     } else if(user_action == UA_REMOVE_FRIEND) {
         Packet packet;
         packet.id = FRIEND_REMOVE;
-        BANCHO::Proto::write<i32>(packet, this->user_id);
+        packet.write<i32>(this->user_id);
         BANCHO::Net::send_packet(packet);
 
         auto it = std::ranges::find(BANCHO::User::friends, this->user_id);

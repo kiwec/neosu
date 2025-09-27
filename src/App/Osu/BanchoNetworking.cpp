@@ -35,7 +35,6 @@
 #include <curl/curl.h>
 
 // Bancho protocol
-namespace proto = BANCHO::Proto;
 
 namespace BANCHO::Net {
 namespace {  // static namespace
@@ -167,9 +166,9 @@ void send_bancho_packet_async(Packet outgoing) {
 
             // + 7 for packet header
             while(response_packet.pos + 7 < response_packet.size) {
-                u16 packet_id = proto::read<u16>(response_packet);
+                u16 packet_id = response_packet.read<u16>();
                 response_packet.pos++;  // skip compression flag
-                u32 packet_len = proto::read<u32>(response_packet);
+                u32 packet_len = response_packet.read<u32>();
 
                 if(packet_len > 10485760) {
                     Logger::logRaw("[httpRequestAsync] Received a packet over 10Mb! Dropping response.");
@@ -312,9 +311,9 @@ void update_networking() {
             send_bancho_packet_async(login);
         }
     } else if(should_ping && outgoing.pos == 0) {
-        proto::write<u16>(outgoing, PING);
-        proto::write<u8>(outgoing, 0);
-        proto::write<u32>(outgoing, 0);
+        outgoing.write<u16>(PING);
+        outgoing.write<u8>(0);
+        outgoing.write<u32>(0);
 
         // Polling gets slower over time, but resets when we receive new data
         if(seconds_between_pings < 30.0) {
@@ -328,9 +327,9 @@ void update_networking() {
 
         // DEBUG: If we're not sending the right amount of bytes, bancho.py just
         // chugs along! To try to detect it faster, we'll send two packets per request.
-        proto::write<u16>(out, PING);
-        proto::write<u8>(out, 0);
-        proto::write<u32>(out, 0);
+        out.write<u16>(PING);
+        out.write<u8>(0);
+        out.write<u32>(0);
 
         send_bancho_packet_async(out);
     }
@@ -400,13 +399,13 @@ void send_packet(Packet &packet) {
 
     // We're not sending it immediately, instead we just add it to the pile of
     // packets to send
-    proto::write<u16>(outgoing, packet.id);
-    proto::write<u8>(outgoing, 0);
-    proto::write<u32>(outgoing, packet.pos);
+    outgoing.write<u16>(packet.id);
+    outgoing.write<u8>(0);
+    outgoing.write<u32>(packet.pos);
 
     // Some packets have an empty payload
     if(packet.memory != nullptr) {
-        proto::write_bytes(outgoing, packet.memory, packet.pos);
+        outgoing.write_bytes(packet.memory, packet.pos);
         free(packet.memory);
     }
 
@@ -444,10 +443,10 @@ void BanchoState::disconnect() {
     // This is a blocking call, but we *do* want this to block when quitting the game.
     if(BanchoState::is_online()) {
         Packet packet;
-        proto::write<u16>(packet, LOGOUT);
-        proto::write<u8>(packet, 0);
-        proto::write<u32>(packet, 4);
-        proto::write<u32>(packet, 0);
+        packet.write<u16>(LOGOUT);
+        packet.write<u8>(0);
+        packet.write<u32>(4);
+        packet.write<u32>(0);
 
         NetworkHandler::RequestOptions options;
         options.timeout = 5;

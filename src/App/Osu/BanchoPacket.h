@@ -17,39 +17,40 @@ struct Packet {
         this->memory = (u8 *)realloc(this->memory, newsize);
         this->size = newsize;
     }
-};
 
-namespace BANCHO::Proto {
+    void read_bytes(u8 *bytes, size_t n);
+    u32 read_uleb128();
+    UString read_string();
+    std::string read_stdstring();
+    void skip_string();
+    MD5Hash read_hash();
+    // custom
+    // TODO: move read_mods to Replay.cpp and allow passing a generic reader/writer as an argument
+    Replay::Mods read_mods();
 
-void read_bytes(Packet &packet, u8 *bytes, size_t n);
-u32 read_uleb128(Packet &packet);
-UString read_string(Packet &packet);
-std::string read_stdstring(Packet &packet);
-void skip_string(Packet &packet);
-MD5Hash read_hash(Packet &packet);
-Replay::Mods read_mods(Packet &packet);
-
-template <typename T>
-T read(Packet &packet) {
-    T result{};
-    if(packet.pos + sizeof(T) > packet.size) {
-        packet.pos = packet.size + 1;
-        return result;
-    } else {
-        memcpy(&result, packet.memory + packet.pos, sizeof(T));
-        packet.pos += sizeof(T);
-        return result;
+    template <typename T>
+    T read() {
+        T result{};
+        if(this->pos + sizeof(T) > this->size) {
+            this->pos = this->size + 1;
+            return result;
+        } else {
+            memcpy(&result, this->memory + this->pos, sizeof(T));
+            this->pos += sizeof(T);
+            return result;
+        }
     }
-}
 
-void write_bytes(Packet &packet, u8 *bytes, size_t n);
-void write_uleb128(Packet &packet, u32 num);
-void write_string(Packet &packet, const char *str);
-void write_hash(Packet &packet, const MD5Hash &hash);
-void write_mods(Packet &packet, const Replay::Mods &mods);
+    void write_bytes(u8 *bytes, size_t n);
+    void write_uleb128(u32 num);
+    void write_string(const char *str);
+    void write_hash(const MD5Hash &hash);
+    // custom
+    // TODO: move read_mods to Replay.cpp and allow passing a generic reader/writer as an argument
+    void write_mods(const Replay::Mods &mods);
 
-template <typename T>
-void write(Packet &packet, T t) {
-    write_bytes(packet, (u8 *)&t, sizeof(T));
-}
-}  // namespace BANCHO::Proto
+    template <typename T>
+    void write(T t) {
+        this->write_bytes((u8 *)&t, sizeof(T));
+    }
+};

@@ -134,8 +134,10 @@ ModSelector::ModSelector() : OsuScreen() {
     this->bScheduledHide = false;
     this->bExperimentalVisible = false;
     this->setSize(osu->getVirtScreenWidth(), osu->getVirtScreenHeight());
-    this->overrideSliderContainer = new CBaseUIContainer(0, 0, osu->getVirtScreenWidth(), osu->getVirtScreenHeight(), "");
-    this->experimentalContainer = new CBaseUIScrollView(-1, 0, osu->getVirtScreenWidth(), osu->getVirtScreenHeight(), "");
+    this->overrideSliderContainer =
+        new CBaseUIContainer(0, 0, osu->getVirtScreenWidth(), osu->getVirtScreenHeight(), "");
+    this->experimentalContainer =
+        new CBaseUIScrollView(-1, 0, osu->getVirtScreenWidth(), osu->getVirtScreenHeight(), "");
     this->experimentalContainer->setHorizontalScrolling(false);
     this->experimentalContainer->setVerticalScrolling(true);
     this->experimentalContainer->setDrawFrame(false);
@@ -625,7 +627,8 @@ void ModSelector::mouse_update(bool *propagate_clicks) {
         }
 
         McRect experimentalTrigger = McRect(
-            0, 0, this->bExperimentalVisible ? this->experimentalContainer->getSize().x : osu->getVirtScreenWidth() * 0.05f,
+            0, 0,
+            this->bExperimentalVisible ? this->experimentalContainer->getSize().x : osu->getVirtScreenWidth() * 0.05f,
             osu->getVirtScreenHeight());
         if(experimentalTrigger.contains(mouse->getPos())) {
             if(!this->bExperimentalVisible) {
@@ -1139,7 +1142,7 @@ void ModSelector::resetModsUserInitiated() {
 
         Packet packet;
         packet.id = MATCH_CHANGE_MODS;
-        BANCHO::Proto::write<u32>(packet, minimum_mods);
+        packet.write<u32>(minimum_mods);
         BANCHO::Net::send_packet(packet);
 
         // Don't wait on server response to update UI
@@ -1387,8 +1390,7 @@ UString ModSelector::getOverrideSliderLabelText(ModSelector::OVERRIDE_SLIDER s, 
         float beatmapValue = 1.0f;
         if(s.label->getName().find("CS") != -1) {
             beatmapValue = std::clamp<float>(
-                osu->getMapInterface()->beatmap->getCS() * osu->getCSDifficultyMultiplier(), 0.0f,
-                10.0f);
+                osu->getMapInterface()->beatmap->getCS() * osu->getCSDifficultyMultiplier(), 0.0f, 10.0f);
             convarValue = osu->getMapInterface()->getCS();
         } else if(s.label->getName().find("AR") != -1) {
             beatmapValue = active ? osu->getMapInterface()->getRawARForSpeedMultiplier()
@@ -1411,9 +1413,8 @@ UString ModSelector::getOverrideSliderLabelText(ModSelector::OVERRIDE_SLIDER s, 
             else
                 convarValue = std::round(convarValue * 100.0f) / 100.0f;
         } else if(s.label->getName().find("HP") != -1) {
-            beatmapValue = std::clamp<float>(
-                osu->getMapInterface()->beatmap->getHP() * osu->getDifficultyMultiplier(), 0.0f,
-                10.0f);
+            beatmapValue = std::clamp<float>(osu->getMapInterface()->beatmap->getHP() * osu->getDifficultyMultiplier(),
+                                             0.0f, 10.0f);
             convarValue = osu->getMapInterface()->getHP();
         } else if(s.desc->getText().find("Speed") != -1) {
             beatmapValue = active ? 1.f : osu->getMapInterface()->getSpeedMultiplier();

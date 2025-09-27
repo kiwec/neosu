@@ -59,7 +59,7 @@ void start_spectating(i32 user_id) {
 
     Packet packet;
     packet.id = START_SPECTATING;
-    BANCHO::Proto::write<i32>(packet, user_id);
+    packet.write<i32>(user_id);
     BANCHO::Net::send_packet(packet);
 
     auto user_info = BANCHO::User::get_user_info(user_id, true);

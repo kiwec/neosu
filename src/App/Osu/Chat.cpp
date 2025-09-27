@@ -40,8 +40,6 @@
 #include <regex>
 #include <utility>
 
-namespace proto = BANCHO::Proto;
-
 static McFont *chat_font = nullptr;
 
 ChatChannel::ChatChannel(Chat *chat, UString name_arg) {
@@ -466,8 +464,8 @@ void Chat::handle_command(const UString &msg) {
 
         UString song_name = UString::format("%s - %s [%s]", map->getArtist().c_str(), map->getTitle().c_str(),
                                             map->getDifficultyName().c_str());
-        UString song_link = UString::format("[https://osu.%s/beatmaps/%d %s]", BanchoState::endpoint.c_str(), map->getID(),
-                                            song_name.toUtf8());
+        UString song_link = UString::format("[https://osu.%s/beatmaps/%d %s]", BanchoState::endpoint.c_str(),
+                                            map->getID(), song_name.toUtf8());
 
         UString np_msg;
         if(osu->isInPlayMode()) {
@@ -507,7 +505,7 @@ void Chat::handle_command(const UString &msg) {
         } else {
             Packet packet;
             packet.id = FRIEND_ADD;
-            proto::write<i32>(packet, user->user_id);
+            packet.write<i32>(user->user_id);
             BANCHO::Net::send_packet(packet);
 
             BANCHO::User::friends.push_back(user->user_id);
@@ -546,7 +544,7 @@ void Chat::handle_command(const UString &msg) {
         if(user->is_friend()) {
             Packet packet;
             packet.id = FRIEND_REMOVE;
-            proto::write<i32>(packet, user->user_id);
+            packet.write<i32>(user->user_id);
             BANCHO::Net::send_packet(packet);
 
             auto it = std::ranges::find(BANCHO::User::friends, user->user_id);
@@ -583,17 +581,18 @@ void Chat::handle_command(const UString &msg) {
         }
 
         auto username = msg.substr(8);
-        auto invite_msg = UString::format("\001ACTION has invited you to join [osump://%d/%s %s]\001", BanchoState::room.id,
-                                          BanchoState::room.password.toUtf8(), BanchoState::room.name.toUtf8());
+        auto invite_msg =
+            UString::format("\001ACTION has invited you to join [osump://%d/%s %s]\001", BanchoState::room.id,
+                            BanchoState::room.password.toUtf8(), BanchoState::room.name.toUtf8());
 
         Packet packet;
 
         packet.id = SEND_PRIVATE_MESSAGE;
 
-        proto::write_string(packet, (char *)BanchoState::get_username().c_str());
-        proto::write_string(packet, (char *)invite_msg.toUtf8());
-        proto::write_string(packet, (char *)username.toUtf8());
-        proto::write<i32>(packet, BanchoState::get_uid());
+        packet.write_string((char *)BanchoState::get_username().c_str());
+        packet.write_string((char *)invite_msg.toUtf8());
+        packet.write_string((char *)username.toUtf8());
+        packet.write<i32>(BanchoState::get_uid());
         BANCHO::Net::send_packet(packet);
 
         this->addSystemMessage(UString::format("%s has been invited to the game.", username.toUtf8()));
@@ -754,8 +753,8 @@ void Chat::onKeyDown(KeyboardEvent &key) {
             this->input_box->updateTextPos();
             this->input_box->tickCaret();
 
-            Sound *sounds[] = {osu->getSkin()->getTyping1Sound(), osu->getSkin()->getTyping2Sound(), osu->getSkin()->getTyping3Sound(),
-                               osu->getSkin()->getTyping4Sound()};
+            Sound *sounds[] = {osu->getSkin()->getTyping1Sound(), osu->getSkin()->getTyping2Sound(),
+                               osu->getSkin()->getTyping3Sound(), osu->getSkin()->getTyping4Sound()};
             soundEngine->play(sounds[rand() % 4]);
         }
 
@@ -902,7 +901,8 @@ void Chat::addMessage(UString channel_name, const ChatMessage &msg, bool mark_un
         if(cv::chat_notify_on_dm.getBool()) {
             auto notif = UString::format("%s sent you a message", msg.author_name.toUtf8());
             osu->getNotificationOverlay()->addToast(
-                notif, CHAT_TOAST, [channel_name] { osu->getChat()->openChannel(channel_name); }, ToastElement::TYPE::CHAT);
+                notif, CHAT_TOAST, [channel_name] { osu->getChat()->openChannel(channel_name); },
+                ToastElement::TYPE::CHAT);
         }
         if(cv::chat_ping_on_mention.getBool()) {
             // Yes, osu! really does use "match-start.wav" for when you get pinged
@@ -961,19 +961,21 @@ void Chat::addMessage(UString channel_name, const ChatMessage &msg, bool mark_un
         Packet packet;
         packet.id = SEND_PRIVATE_MESSAGE;
 
-        proto::write_string(packet, (char *)BanchoState::get_username().c_str());
-        proto::write_string(packet, (char *)this->away_msg.toUtf8());
-        proto::write_string(packet, (char *)msg.author_name.toUtf8());
-        proto::write<i32>(packet, BanchoState::get_uid());
+        packet.write_string((char *)BanchoState::get_username().c_str());
+        packet.write_string((char *)this->away_msg.toUtf8());
+        packet.write_string((char *)msg.author_name.toUtf8());
+        packet.write<i32>(BanchoState::get_uid());
         BANCHO::Net::send_packet(packet);
 
         // Server doesn't echo the message back
-        this->addMessage(channel_name, ChatMessage{
-                                           .tms = time(nullptr),
-                                           .author_id = BanchoState::get_uid(),
-                                           .author_name = BanchoState::get_username().c_str(),
-                                           .text = this->away_msg,
-                                       }, false);
+        this->addMessage(channel_name,
+                         ChatMessage{
+                             .tms = time(nullptr),
+                             .author_id = BanchoState::get_uid(),
+                             .author_name = BanchoState::get_username().c_str(),
+                             .text = this->away_msg,
+                         },
+                         false);
     }
 }
 
@@ -1175,7 +1177,7 @@ void Chat::join(const UString &channel_name) {
     //      Would allow to keep open the tabs of the channels we got kicked out of.
     Packet packet;
     packet.id = CHANNEL_JOIN;
-    proto::write_string(packet, channel_name.toUtf8());
+    packet.write_string(channel_name.toUtf8());
     BANCHO::Net::send_packet(packet);
 }
 
@@ -1187,7 +1189,7 @@ void Chat::leave(const UString &channel_name) {
     if(send_leave_packet) {
         Packet packet;
         packet.id = CHANNEL_PART;
-        proto::write_string(packet, channel_name.toUtf8());
+        packet.write_string(channel_name.toUtf8());
         BANCHO::Net::send_packet(packet);
     }
 
@@ -1200,19 +1202,21 @@ void Chat::send_message(const UString &msg) {
     Packet packet;
     packet.id = this->selected_channel->name[0] == '#' ? SEND_PUBLIC_MESSAGE : SEND_PRIVATE_MESSAGE;
 
-    proto::write_string(packet, (char *)BanchoState::get_username().c_str());
-    proto::write_string(packet, (char *)msg.toUtf8());
-    proto::write_string(packet, (char *)this->selected_channel->name.toUtf8());
-    proto::write<i32>(packet, BanchoState::get_uid());
+    packet.write_string((char *)BanchoState::get_username().c_str());
+    packet.write_string((char *)msg.toUtf8());
+    packet.write_string((char *)this->selected_channel->name.toUtf8());
+    packet.write<i32>(BanchoState::get_uid());
     BANCHO::Net::send_packet(packet);
 
     // Server doesn't echo the message back
-    this->addMessage(this->selected_channel->name, ChatMessage{
-                                                       .tms = time(nullptr),
-                                                       .author_id = BanchoState::get_uid(),
-                                                       .author_name = BanchoState::get_username().c_str(),
-                                                       .text = msg,
-                                                   }, false);
+    this->addMessage(this->selected_channel->name,
+                     ChatMessage{
+                         .tms = time(nullptr),
+                         .author_id = BanchoState::get_uid(),
+                         .author_name = BanchoState::get_username().c_str(),
+                         .text = msg,
+                     },
+                     false);
 }
 
 void Chat::onDisconnect() {
@@ -1310,5 +1314,6 @@ bool Chat::isMouseInChat() {
 
 void Chat::askWhatChannelToJoin(CBaseUIButton * /*btn*/) {
     // XXX: Could display nicer UI with full channel list (chat_channels in Bancho.cpp)
-    osu->getPromptScreen()->prompt("Type in the channel you want to join (e.g. '#osu'):", SA::MakeDelegate<&Chat::join>(this));
+    osu->getPromptScreen()->prompt("Type in the channel you want to join (e.g. '#osu'):",
+                                   SA::MakeDelegate<&Chat::join>(this));
 }

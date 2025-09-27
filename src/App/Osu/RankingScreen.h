@@ -32,7 +32,7 @@ class RankingScreen : public ScreenBackable {
     void onRetryClicked();
     void onWatchClicked();
 
-    void setScore(FinishedScore score);
+    void setScore(const FinishedScore &score);
     void setBeatmapInfo(DatabaseBeatmap *map);
 
    private:

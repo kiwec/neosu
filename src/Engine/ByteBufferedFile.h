@@ -1,3 +1,4 @@
+// Copyright (c) 2024, kiwec & 2025, WH, All rights reserved.
 #pragma once
 
 #include <cstddef>
@@ -22,19 +23,19 @@
 
 class ByteBufferedFile {
    private:
-    static constexpr const size_t READ_BUFFER_SIZE{512ULL * 4096};
-    static constexpr const size_t WRITE_BUFFER_SIZE{512ULL * 4096};
+    static constexpr const uSz READ_BUFFER_SIZE{512ULL * 4096};
+    static constexpr const uSz WRITE_BUFFER_SIZE{512ULL * 4096};
 
    public:
     class Reader {
         NOCOPY_NOMOVE(Reader)
        public:
-        Reader() = default;  // MSVC complains if no default constructor
+        Reader() = delete;
         Reader(std::string_view readPath);
         ~Reader() = default;
 
         // always_inline is a 2x speedup here
-        [[nodiscard]] always_inline_attr size_t read_bytes(u8 *out, size_t len) {
+        [[nodiscard]] always_inline_attr uSz read_bytes(u8 *out, uSz len) {
             if(this->error_flag || !this->file.is_open()) {
                 if(out != nullptr) {
                     memset(out, 0, len);
@@ -54,25 +55,28 @@ class ByteBufferedFile {
             // make sure the ring buffer has enough data
             if(this->buffered_bytes < len) {
                 // calculate available space for reading more data
-                size_t available_space = READ_BUFFER_SIZE - this->buffered_bytes;
-                size_t bytes_to_read = available_space;
+                uSz available_space = READ_BUFFER_SIZE - this->buffered_bytes;
+                uSz bytes_to_read = available_space;
 
                 if(this->write_pos + bytes_to_read <= READ_BUFFER_SIZE) {
                     // no wrap needed, read directly
-                    this->file.read(reinterpret_cast<char *>(this->buffer.data() + this->write_pos), bytes_to_read);
-                    size_t bytes_read = this->file.gcount();
+                    this->file.read(reinterpret_cast<char *>(this->buffer.data() + this->write_pos),
+                                    static_cast<std::streamsize>(bytes_to_read));
+                    uSz bytes_read = this->file.gcount();
                     this->write_pos = (this->write_pos + bytes_read) % READ_BUFFER_SIZE;
                     this->buffered_bytes += bytes_read;
                 } else {
                     // wrap needed, read in two parts
-                    size_t first_part = READ_BUFFER_SIZE - this->write_pos;
-                    this->file.read(reinterpret_cast<char *>(this->buffer.data() + this->write_pos), first_part);
-                    size_t bytes_read = this->file.gcount();
+                    uSz first_part = READ_BUFFER_SIZE - this->write_pos;
+                    this->file.read(reinterpret_cast<char *>(this->buffer.data() + this->write_pos),
+                                    static_cast<std::streamsize>(first_part));
+                    uSz bytes_read = this->file.gcount();
 
                     if(bytes_read == first_part && bytes_to_read > first_part) {
-                        size_t second_part = bytes_to_read - first_part;
-                        this->file.read(reinterpret_cast<char *>(this->buffer.data()), second_part);
-                        size_t second_read = this->file.gcount();
+                        uSz second_part = bytes_to_read - first_part;
+                        this->file.read(reinterpret_cast<char *>(this->buffer.data()),
+                                        static_cast<std::streamsize>(second_part));
+                        uSz second_read = this->file.gcount();
                         bytes_read += second_read;
                         this->write_pos = second_read;
                     } else {
@@ -98,8 +102,8 @@ class ByteBufferedFile {
                     memcpy(out, this->buffer.data() + this->read_pos, len);
                 } else {
                     // wrap needed
-                    size_t first_part = std::min(len, READ_BUFFER_SIZE - this->read_pos);
-                    size_t second_part = len - first_part;
+                    uSz first_part = std::min(len, READ_BUFFER_SIZE - this->read_pos);
+                    uSz second_part = len - first_part;
 
                     memcpy(out, this->buffer.data() + this->read_pos, first_part);
                     memcpy(out + first_part, this->buffer.data(), second_part);
@@ -174,8 +178,8 @@ class ByteBufferedFile {
 
         void skip_string();
 
-        size_t total_size{0};
-        size_t total_pos{0};
+        uSz total_size{0};
+        uSz total_pos{0};
 
        private:
         void set_error(const std::string &error_msg);
@@ -183,9 +187,9 @@ class ByteBufferedFile {
         std::ifstream file;
 
         std::vector<u8> buffer;
-        size_t read_pos{0};        // current read position in ring buffer
-        size_t write_pos{0};       // current write position in ring buffer
-        size_t buffered_bytes{0};  // amount of data currently buffered
+        uSz read_pos{0};        // current read position in ring buffer
+        uSz write_pos{0};       // current write position in ring buffer
+        uSz buffered_bytes{0};  // amount of data currently buffered
 
         bool error_flag{false};
         std::string last_error;
@@ -194,6 +198,7 @@ class ByteBufferedFile {
     class Writer {
         NOCOPY_NOMOVE(Writer)
        public:
+        Writer() = delete;
         Writer(std::string_view writePath);
         ~Writer();
 
@@ -201,7 +206,7 @@ class ByteBufferedFile {
         [[nodiscard]] std::string_view error() const { return this->last_error; }
 
         void flush();
-        void write_bytes(u8 *bytes, size_t n);
+        void write_bytes(u8 *bytes, uSz n);
         void write_hash(MD5Hash hash);
         void write_string(std::string str);
         void write_uleb128(u32 num);
@@ -219,7 +224,7 @@ class ByteBufferedFile {
         std::ofstream file;
 
         std::vector<u8> buffer;
-        size_t pos{0};
+        uSz pos{0};
         bool error_flag{false};
         std::string last_error;
     };

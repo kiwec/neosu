@@ -8,23 +8,22 @@
 
 #include "ModFlags.h"
 
-namespace BANCHO::Proto {
-void read_bytes(Packet &packet, u8 *bytes, size_t n) {
-    if(packet.pos + n > packet.size) {
-        packet.pos = packet.size + 1;
+void Packet::read_bytes(u8 *bytes, size_t n) {
+    if(this->pos + n > this->size) {
+        this->pos = this->size + 1;
     } else {
-        memcpy(bytes, packet.memory + packet.pos, n);
-        packet.pos += n;
+        memcpy(bytes, this->memory + this->pos, n);
+        this->pos += n;
     }
 }
 
-u32 read_uleb128(Packet &packet) {
+u32 Packet::read_uleb128() {
     u32 result = 0;
     u32 shift = 0;
     u8 byte = 0;
 
     do {
-        byte = read<u8>(packet);
+        byte = this->read<u8>();
         result |= (byte & 0x7f) << shift;
         shift += 7;
     } while(byte & 0x80);
@@ -32,13 +31,13 @@ u32 read_uleb128(Packet &packet) {
     return result;
 }
 
-UString read_string(Packet &packet) {
-    u8 empty_check = read<u8>(packet);
+UString Packet::read_string() {
+    u8 empty_check = this->read<u8>();
     if(empty_check == 0) return {""};
 
-    u32 len = read_uleb128(packet);
+    u32 len = this->read_uleb128();
     u8 *str = new u8[len + 1];
-    read_bytes(packet, str, len);
+    read_bytes(str, len);
     str[len] = '\0';
 
     auto ustr = UString((const char *)str);
@@ -47,13 +46,13 @@ UString read_string(Packet &packet) {
     return ustr;
 }
 
-std::string read_stdstring(Packet &packet) {
-    u8 empty_check = read<u8>(packet);
+std::string Packet::read_stdstring() {
+    u8 empty_check = this->read<u8>();
     if(empty_check == 0) return {};
 
-    u32 len = read_uleb128(packet);
+    u32 len = this->read_uleb128();
     u8 *str = new u8[len + 1];
-    read_bytes(packet, str, len);
+    read_bytes(str, len);
 
     std::string str_out((const char *)str, len);
     delete[] str;
@@ -61,95 +60,95 @@ std::string read_stdstring(Packet &packet) {
     return str_out;
 }
 
-MD5Hash read_hash(Packet &packet) {
+MD5Hash Packet::read_hash() {
     MD5Hash hash;
 
-    u8 empty_check = read<u8>(packet);
+    u8 empty_check = this->read<u8>();
     if(empty_check == 0) return hash;
 
-    u32 len = read_uleb128(packet);
+    u32 len = this->read_uleb128();
     if(len > 32) {
         len = 32;
     }
 
-    read_bytes(packet, (u8 *)hash.string(), len);
+    read_bytes((u8 *)hash.string(), len);
     hash.hash[len] = '\0';
     return hash;
 }
 
-Replay::Mods read_mods(Packet &packet) {
+Replay::Mods Packet::read_mods() {
     Replay::Mods mods;
 
-    mods.flags = read<u64>(packet);
-    mods.speed = read<f32>(packet);
-    mods.notelock_type = read<i32>(packet);
-    mods.ar_override = read<f32>(packet);
-    mods.ar_overridenegative = read<f32>(packet);
-    mods.cs_override = read<f32>(packet);
-    mods.cs_overridenegative = read<f32>(packet);
-    mods.hp_override = read<f32>(packet);
-    mods.od_override = read<f32>(packet);
+    mods.flags = this->read<u64>();
+    mods.speed = this->read<f32>();
+    mods.notelock_type = this->read<i32>();
+    mods.ar_override = this->read<f32>();
+    mods.ar_overridenegative = this->read<f32>();
+    mods.cs_override = this->read<f32>();
+    mods.cs_overridenegative = this->read<f32>();
+    mods.hp_override = this->read<f32>();
+    mods.od_override = this->read<f32>();
     using namespace ModMasks;
     using namespace Replay::ModFlags;
     if(eq(mods.flags, Autopilot)) {
-        mods.autopilot_lenience = read<f32>(packet);
+        mods.autopilot_lenience = this->read<f32>();
     }
     if(eq(mods.flags, Timewarp)) {
-        mods.timewarp_multiplier = read<f32>(packet);
+        mods.timewarp_multiplier = this->read<f32>();
     }
     if(eq(mods.flags, Minimize)) {
-        mods.minimize_multiplier = read<f32>(packet);
+        mods.minimize_multiplier = this->read<f32>();
     }
     if(eq(mods.flags, ARTimewarp)) {
-        mods.artimewarp_multiplier = read<f32>(packet);
+        mods.artimewarp_multiplier = this->read<f32>();
     }
     if(eq(mods.flags, ARWobble)) {
-        mods.arwobble_strength = read<f32>(packet);
-        mods.arwobble_interval = read<f32>(packet);
+        mods.arwobble_strength = this->read<f32>();
+        mods.arwobble_interval = this->read<f32>();
     }
     if(eq(mods.flags, Wobble1) || eq(mods.flags, Wobble2)) {
-        mods.wobble_strength = read<f32>(packet);
-        mods.wobble_frequency = read<f32>(packet);
-        mods.wobble_rotation_speed = read<f32>(packet);
+        mods.wobble_strength = this->read<f32>();
+        mods.wobble_frequency = this->read<f32>();
+        mods.wobble_rotation_speed = this->read<f32>();
     }
     if(eq(mods.flags, Jigsaw1) || eq(mods.flags, Jigsaw2)) {
-        mods.jigsaw_followcircle_radius_factor = read<f32>(packet);
+        mods.jigsaw_followcircle_radius_factor = this->read<f32>();
     }
     if(eq(mods.flags, Shirone)) {
-        mods.shirone_combo = read<f32>(packet);
+        mods.shirone_combo = this->read<f32>();
     }
 
     return mods;
 }
 
-void skip_string(Packet &packet) {
-    u8 empty_check = read<u8>(packet);
+void Packet::skip_string() {
+    u8 empty_check = this->read<u8>();
     if(empty_check == 0) {
         return;
     }
 
-    u32 len = read_uleb128(packet);
-    packet.pos += len;
+    u32 len = this->read_uleb128();
+    this->pos += len;
 }
 
-void write_bytes(Packet &packet, u8 *bytes, size_t n) {
+void Packet::write_bytes(u8 *bytes, size_t n) {
     assert(bytes != nullptr);
 
-    if(packet.pos + n > packet.size) {
-        packet.memory = (unsigned char *)realloc(packet.memory, packet.size + n + 4096);
-        assert(packet.memory && "realloc failed");
-        packet.size += n + 4096;
-        if(!packet.memory) return;
+    if(this->pos + n > this->size) {
+        this->memory = (unsigned char *)realloc(this->memory, this->size + n + 4096);
+        assert(this->memory && "realloc failed");
+        this->size += n + 4096;
+        if(!this->memory) return;
     }
 
-    memcpy(packet.memory + packet.pos, bytes, n);
-    packet.pos += n;
+    memcpy(this->memory + this->pos, bytes, n);
+    this->pos += n;
 }
 
-void write_uleb128(Packet &packet, u32 num) {
+void Packet::write_uleb128(u32 num) {
     if(num == 0) {
         u8 zero = 0;
-        write<u8>(packet, zero);
+        this->write<u8>(zero);
         return;
     }
 
@@ -159,69 +158,68 @@ void write_uleb128(Packet &packet, u32 num) {
         if(num != 0) {
             next |= 0x80;
         }
-        write<u8>(packet, next);
+        this->write<u8>(next);
     }
 }
 
-void write_string(Packet &packet, const char *str) {
+void Packet::write_string(const char *str) {
     if(!str || str[0] == '\0') {
         u8 zero = 0;
-        write<u8>(packet, zero);
+        this->write<u8>(zero);
         return;
     }
 
     u8 empty_check = 11;
-    write<u8>(packet, empty_check);
+    this->write<u8>(empty_check);
 
     u32 len = strlen(str);
-    write_uleb128(packet, len);
-    write_bytes(packet, (u8 *)str, len);
+    this->write_uleb128(len);
+    this->write_bytes((u8 *)str, len);
 }
 
-void write_hash(Packet &packet, const MD5Hash &hash) {
-    write<u8>(packet, 0x0B);
-    write<u8>(packet, 0x20);
-    write_bytes(packet, (u8 *)hash.string(), 32);
+void Packet::write_hash(const MD5Hash &hash) {
+    this->write<u8>(0x0B);
+    this->write<u8>(0x20);
+    this->write_bytes((u8 *)hash.string(), 32);
 }
 
-void write_mods(Packet &packet, const Replay::Mods &mods) {
-    write<u64>(packet, mods.flags);
-    write<f32>(packet, mods.speed);
-    write<i32>(packet, mods.notelock_type);
-    write<f32>(packet, mods.ar_override);
-    write<f32>(packet, mods.ar_overridenegative);
-    write<f32>(packet, mods.cs_override);
-    write<f32>(packet, mods.cs_overridenegative);
-    write<f32>(packet, mods.hp_override);
-    write<f32>(packet, mods.od_override);
+void Packet::write_mods(const Replay::Mods &mods) {
+    this->write<u64>(mods.flags);
+    this->write<f32>(mods.speed);
+    this->write<i32>(mods.notelock_type);
+    this->write<f32>(mods.ar_override);
+    this->write<f32>(mods.ar_overridenegative);
+    this->write<f32>(mods.cs_override);
+    this->write<f32>(mods.cs_overridenegative);
+    this->write<f32>(mods.hp_override);
+    this->write<f32>(mods.od_override);
     using namespace ModMasks;
     using namespace Replay::ModFlags;
     if(eq(mods.flags, Autopilot)) {
-        write<f32>(packet, mods.autopilot_lenience);
+        this->write<f32>(mods.autopilot_lenience);
     }
     if(eq(mods.flags, Timewarp)) {
-        write<f32>(packet, mods.timewarp_multiplier);
+        this->write<f32>(mods.timewarp_multiplier);
     }
     if(eq(mods.flags, Minimize)) {
-        write<f32>(packet, mods.minimize_multiplier);
+        this->write<f32>(mods.minimize_multiplier);
     }
     if(eq(mods.flags, ARTimewarp)) {
-        write<f32>(packet, mods.artimewarp_multiplier);
+        this->write<f32>(mods.artimewarp_multiplier);
     }
     if(eq(mods.flags, ARWobble)) {
-        write<f32>(packet, mods.arwobble_strength);
-        write<f32>(packet, mods.arwobble_interval);
+        this->write<f32>(mods.arwobble_strength);
+        this->write<f32>(mods.arwobble_interval);
     }
     if(eq(mods.flags, Wobble1) || eq(mods.flags, Wobble2)) {
-        write<f32>(packet, mods.wobble_strength);
-        write<f32>(packet, mods.wobble_frequency);
-        write<f32>(packet, mods.wobble_rotation_speed);
+        this->write<f32>(mods.wobble_strength);
+        this->write<f32>(mods.wobble_frequency);
+        this->write<f32>(mods.wobble_rotation_speed);
     }
     if(eq(mods.flags, Jigsaw1) || eq(mods.flags, Jigsaw2)) {
-        write<f32>(packet, mods.jigsaw_followcircle_radius_factor);
+        this->write<f32>(mods.jigsaw_followcircle_radius_factor);
     }
     if(eq(mods.flags, Shirone)) {
-        write<f32>(packet, mods.shirone_combo);
+        this->write<f32>(mods.shirone_combo);
     }
 }
-}  // namespace BANCHO::Proto

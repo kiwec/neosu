@@ -79,12 +79,12 @@ void RichPresence::setBanchoStatus(const char* info_text, Action action) {
 
     Packet packet;
     packet.id = CHANGE_ACTION;
-    BANCHO::Proto::write<u8>(packet, action);
-    BANCHO::Proto::write_string(packet, fancy_text);
-    BANCHO::Proto::write_string(packet, map_md5.string());
-    BANCHO::Proto::write<u32>(packet, osu->getModSelector()->getModFlags());
-    BANCHO::Proto::write<u8>(packet, 0);  // osu!std
-    BANCHO::Proto::write<i32>(packet, map_id);
+    packet.write<u8>(action);
+    packet.write_string(fancy_text);
+    packet.write_string(map_md5.string());
+    packet.write<u32>(osu->getModSelector()->getModFlags());
+    packet.write<u8>(0);  // osu!std
+    packet.write<i32>(map_id);
     BANCHO::Net::send_packet(packet);
 }
 
@@ -100,12 +100,12 @@ void RichPresence::updateBanchoMods() {
 
     Packet packet;
     packet.id = CHANGE_ACTION;
-    BANCHO::Proto::write<u8>(packet, last_action);
-    BANCHO::Proto::write_string(packet, last_status.toUtf8());
-    BANCHO::Proto::write_string(packet, map_md5.string());
-    BANCHO::Proto::write<u32>(packet, osu->getModSelector()->getModFlags());
-    BANCHO::Proto::write<u8>(packet, 0);  // osu!std
-    BANCHO::Proto::write<i32>(packet, map_id);
+    packet.write<u8>(last_action);
+    packet.write_string(last_status.toUtf8());
+    packet.write_string(map_md5.string());
+    packet.write<u32>(osu->getModSelector()->getModFlags());
+    packet.write<u8>(0);  // osu!std
+    packet.write<i32>(map_id);
     BANCHO::Net::send_packet(packet);
 
     // Servers like akatsuki send different leaderboards based on what mods
@@ -115,11 +115,12 @@ void RichPresence::updateBanchoMods() {
 }
 
 void RichPresence::onMainMenu() {
-    bool force_not_afk = BanchoState::spectating || (osu->getChat()->isVisible() && osu->getChat()->user_list->isVisible());
+    bool force_not_afk =
+        BanchoState::spectating || (osu->getChat()->isVisible() && osu->getChat()->user_list->isVisible());
     setBanchoStatus("Main Menu", force_not_afk ? IDLE : AFK);
 
     // NOTE: As much as I would like to show "Listening to", the Discord SDK ignores the activity 'type'
-    struct DiscordActivity activity {};
+    struct DiscordActivity activity{};
 
     activity.type = DiscordActivityType_Listening;
 
@@ -135,7 +136,7 @@ void RichPresence::onMainMenu() {
 }
 
 void RichPresence::onSongBrowser() {
-    struct DiscordActivity activity {};
+    struct DiscordActivity activity{};
 
     activity.type = DiscordActivityType_Playing;
     strcpy(activity.details, "Picking a map");
@@ -169,7 +170,7 @@ void RichPresence::onPlayStart() {
                   .count();
     }
 
-    struct DiscordActivity activity {};
+    struct DiscordActivity activity{};
 
     activity.type = DiscordActivityType_Playing;
     activity.timestamps.start = tms;
@@ -237,7 +238,7 @@ void RichPresence::onPlayEnd(bool quit) {
 }
 
 void RichPresence::onMultiplayerLobby() {
-    struct DiscordActivity activity {};
+    struct DiscordActivity activity{};
 
     activity.type = DiscordActivityType_Playing;
 

@@ -1,3 +1,4 @@
+// Copyright (c) 2024, kiwec & 2025, WH, All rights reserved.
 #include "ByteBufferedFile.h"
 
 #include "Logging.h"
@@ -202,7 +203,7 @@ void ByteBufferedFile::Writer::flush() {
     this->pos = 0;
 }
 
-void ByteBufferedFile::Writer::write_bytes(u8 *bytes, size_t n) {
+void ByteBufferedFile::Writer::write_bytes(u8 *bytes, uSz n) {
     if(this->error_flag || !this->file.is_open()) {
         return;
     }

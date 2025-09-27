@@ -53,24 +53,33 @@ void UIModList::draw() {
         mods.push_back(osu->getSkin()->getSelectionModSuddenDeath());
 
     if(cv::nightcore_enjoyer.getBool()) {
-        if(ModMasks::legacy_eq(*this->flags, LegacyFlags::DoubleTime)) mods.push_back(osu->getSkin()->getSelectionModNightCore());
-        if(ModMasks::legacy_eq(*this->flags, LegacyFlags::HalfTime)) mods.push_back(osu->getSkin()->getSelectionModDayCore());
+        if(ModMasks::legacy_eq(*this->flags, LegacyFlags::DoubleTime))
+            mods.push_back(osu->getSkin()->getSelectionModNightCore());
+        if(ModMasks::legacy_eq(*this->flags, LegacyFlags::HalfTime))
+            mods.push_back(osu->getSkin()->getSelectionModDayCore());
     } else {
-        if(ModMasks::legacy_eq(*this->flags, LegacyFlags::DoubleTime)) mods.push_back(osu->getSkin()->getSelectionModDoubleTime());
-        if(ModMasks::legacy_eq(*this->flags, LegacyFlags::HalfTime)) mods.push_back(osu->getSkin()->getSelectionModHalfTime());
+        if(ModMasks::legacy_eq(*this->flags, LegacyFlags::DoubleTime))
+            mods.push_back(osu->getSkin()->getSelectionModDoubleTime());
+        if(ModMasks::legacy_eq(*this->flags, LegacyFlags::HalfTime))
+            mods.push_back(osu->getSkin()->getSelectionModHalfTime());
     }
 
     if(ModMasks::legacy_eq(*this->flags, LegacyFlags::NoFail)) mods.push_back(osu->getSkin()->getSelectionModNoFail());
     if(ModMasks::legacy_eq(*this->flags, LegacyFlags::Easy)) mods.push_back(osu->getSkin()->getSelectionModEasy());
     if(ModMasks::legacy_eq(*this->flags, LegacyFlags::TouchDevice)) mods.push_back(osu->getSkin()->getSelectionModTD());
     if(ModMasks::legacy_eq(*this->flags, LegacyFlags::Hidden)) mods.push_back(osu->getSkin()->getSelectionModHidden());
-    if(ModMasks::legacy_eq(*this->flags, LegacyFlags::HardRock)) mods.push_back(osu->getSkin()->getSelectionModHardRock());
+    if(ModMasks::legacy_eq(*this->flags, LegacyFlags::HardRock))
+        mods.push_back(osu->getSkin()->getSelectionModHardRock());
     if(ModMasks::legacy_eq(*this->flags, LegacyFlags::Relax)) mods.push_back(osu->getSkin()->getSelectionModRelax());
-    if(ModMasks::legacy_eq(*this->flags, LegacyFlags::Autoplay)) mods.push_back(osu->getSkin()->getSelectionModAutoplay());
-    if(ModMasks::legacy_eq(*this->flags, LegacyFlags::SpunOut)) mods.push_back(osu->getSkin()->getSelectionModSpunOut());
-    if(ModMasks::legacy_eq(*this->flags, LegacyFlags::Autopilot)) mods.push_back(osu->getSkin()->getSelectionModAutopilot());
+    if(ModMasks::legacy_eq(*this->flags, LegacyFlags::Autoplay))
+        mods.push_back(osu->getSkin()->getSelectionModAutoplay());
+    if(ModMasks::legacy_eq(*this->flags, LegacyFlags::SpunOut))
+        mods.push_back(osu->getSkin()->getSelectionModSpunOut());
+    if(ModMasks::legacy_eq(*this->flags, LegacyFlags::Autopilot))
+        mods.push_back(osu->getSkin()->getSelectionModAutopilot());
     if(ModMasks::legacy_eq(*this->flags, LegacyFlags::Target)) mods.push_back(osu->getSkin()->getSelectionModTarget());
-    if(ModMasks::legacy_eq(*this->flags, LegacyFlags::ScoreV2)) mods.push_back(osu->getSkin()->getSelectionModScorev2());
+    if(ModMasks::legacy_eq(*this->flags, LegacyFlags::ScoreV2))
+        mods.push_back(osu->getSkin()->getSelectionModScorev2());
 
     g->setColor(0xffffffff);
     vec2 modPos = this->vPos;
@@ -144,8 +153,7 @@ RoomScreen::RoomScreen() : OsuScreen() {
     this->change_win_condition_btn = new UIButton(0, 0, 240, 40, "change_win_condition_btn", "Win condition: Score");
     this->change_win_condition_btn->setColor(0xff00d900);
     this->change_win_condition_btn->setUseDefaultSkin();
-    this->change_win_condition_btn->setClickCallback(
-        SA::MakeDelegate<&RoomScreen::onChangeWinConditionClicked>(this));
+    this->change_win_condition_btn->setClickCallback(SA::MakeDelegate<&RoomScreen::onChangeWinConditionClicked>(this));
 
     INIT_LABEL(map_label, "Beatmap", true);
     this->select_map_btn = new UIButton(0, 0, 130, 40, "select_map_btn", "Select map");
@@ -295,7 +303,8 @@ void RoomScreen::onKeyDown(KeyboardEvent &key) {
         static f64 last_escape_press = 0.0;
         if(last_escape_press + 1.0 < engine->getTime()) {
             last_escape_press = engine->getTime();
-            osu->getNotificationOverlay()->addNotification("Hit 'Escape' once more to exit this multiplayer match.", 0xffffffff, false, 0.75f);
+            osu->getNotificationOverlay()->addNotification("Hit 'Escape' once more to exit this multiplayer match.",
+                                                           0xffffffff, false, 0.75f);
         } else {
             this->ragequit();
         }
@@ -630,7 +639,7 @@ void RoomScreen::on_room_updated(Room room) {
     bool map_changed = BanchoState::room.map_id != room.map_id;
     BanchoState::room = room;
 
-    Slot* player_slot = nullptr;
+    Slot *player_slot = nullptr;
     for(auto &slot : BanchoState::room.slots) {
         if(slot.player_id == BanchoState::get_uid()) {
             player_slot = &slot;
@@ -690,7 +699,7 @@ void RoomScreen::on_match_started(Room room) {
 }
 
 void RoomScreen::on_match_score_updated(Packet &packet) {
-    auto frame = BANCHO::Proto::read<ScoreFrame>(packet);
+    auto frame = packet.read<ScoreFrame>();
     if(frame.slot_id > 15) return;
 
     auto slot = &BanchoState::room.slots[frame.slot_id];
@@ -708,10 +717,10 @@ void RoomScreen::on_match_score_updated(Packet &packet) {
     slot->current_hp = frame.current_hp;
     slot->tag = frame.tag;
 
-    bool is_scorev2 = BANCHO::Proto::read<u8>(packet);
+    bool is_scorev2 = packet.read<u8>();
     if(is_scorev2) {
-        slot->sv2_combo = BANCHO::Proto::read<f64>(packet);
-        slot->sv2_bonus = BANCHO::Proto::read<f64>(packet);
+        slot->sv2_combo = packet.read<f64>();
+        slot->sv2_bonus = packet.read<f64>();
     }
 
     osu->getHUD()->updateScoreboard(true);
@@ -803,7 +812,7 @@ void RoomScreen::onClientScoreChange(bool force) {
 
     Packet packet;
     packet.id = UPDATE_MATCH_SCORE;
-    BANCHO::Proto::write<ScoreFrame>(packet, ScoreFrame::get());
+    packet.write<ScoreFrame>(ScoreFrame::get());
     BANCHO::Net::send_packet(packet);
 
     this->last_packet_tms = time(nullptr);

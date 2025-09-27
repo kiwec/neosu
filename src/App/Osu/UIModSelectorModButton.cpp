@@ -101,7 +101,7 @@ void UIModSelectorModButton::resetState() {
     this->setState(0);
 }
 
-void UIModSelectorModButton::onClicked(bool  /*left*/, bool  /*right*/) {
+void UIModSelectorModButton::onClicked(bool /*left*/, bool /*right*/) {
     if(!this->bAvailable) return;
 
     // increase state, wrap around, switch on and off
@@ -141,7 +141,7 @@ void UIModSelectorModButton::onClicked(bool  /*left*/, bool  /*right*/) {
 
         Packet packet;
         packet.id = MATCH_CHANGE_MODS;
-        BANCHO::Proto::write<u32>(packet, mod_flags);
+        packet.write<u32>(mod_flags);
         BANCHO::Net::send_packet(packet);
 
         // Don't wait on server response to update UI
@@ -215,10 +215,10 @@ void UIModSelectorModButton::setOn(bool on, bool silent) {
                              false);
         } else {
             anim->moveLinear(&this->fRot, this->fEnabledRotationDeg, animationDuration, true);
-            anim->moveLinear(&this->vScale.x, this->vBaseScale.x * this->fEnabledScaleMultiplier,
-                             animationDuration, true);
-            anim->moveLinear(&this->vScale.y, this->vBaseScale.y * this->fEnabledScaleMultiplier,
-                             animationDuration, true);
+            anim->moveLinear(&this->vScale.x, this->vBaseScale.x * this->fEnabledScaleMultiplier, animationDuration,
+                             true);
+            anim->moveLinear(&this->vScale.y, this->vBaseScale.y * this->fEnabledScaleMultiplier, animationDuration,
+                             true);
         }
 
         if(!silent) {
@@ -246,7 +246,7 @@ void UIModSelectorModButton::setState(int state) {
 }
 
 void UIModSelectorModButton::setState(unsigned int state, bool initialState, ConVar *cvar, UString modName,
-                                      const UString& tooltipText, std::function<SkinImage *()> getImageFunc) {
+                                      const UString &tooltipText, std::function<SkinImage *()> getImageFunc) {
     // dynamically add new state
     while(this->states.size() < state + 1) {
         STATE t{};
