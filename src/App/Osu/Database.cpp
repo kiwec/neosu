@@ -1614,53 +1614,6 @@ void Database::loadScores(std::string_view dbPath) {
         return;
     }
 
-    // helper
-    // to be removed from here when BanchoPacket is refactored to use ByteBufferedFile
-    static auto read_mods = [](ByteBufferedFile::Reader &dbr) -> Replay::Mods {
-        Replay::Mods mods;
-
-        mods.flags = dbr.read<u64>();
-        mods.speed = dbr.read<f32>();
-        mods.notelock_type = dbr.read<i32>();
-        mods.ar_override = dbr.read<f32>();
-        mods.ar_overridenegative = dbr.read<f32>();
-        mods.cs_override = dbr.read<f32>();
-        mods.cs_overridenegative = dbr.read<f32>();
-        mods.hp_override = dbr.read<f32>();
-        mods.od_override = dbr.read<f32>();
-        using namespace ModMasks;
-        using namespace Replay::ModFlags;
-        if(eq(mods.flags, Autopilot)) {
-            mods.autopilot_lenience = dbr.read<f32>();
-        }
-        if(eq(mods.flags, Timewarp)) {
-            mods.timewarp_multiplier = dbr.read<f32>();
-        }
-        if(eq(mods.flags, Minimize)) {
-            mods.minimize_multiplier = dbr.read<f32>();
-        }
-        if(eq(mods.flags, ARTimewarp)) {
-            mods.artimewarp_multiplier = dbr.read<f32>();
-        }
-        if(eq(mods.flags, ARWobble)) {
-            mods.arwobble_strength = dbr.read<f32>();
-            mods.arwobble_interval = dbr.read<f32>();
-        }
-        if(eq(mods.flags, Wobble1) || eq(mods.flags, Wobble2)) {
-            mods.wobble_strength = dbr.read<f32>();
-            mods.wobble_frequency = dbr.read<f32>();
-            mods.wobble_rotation_speed = dbr.read<f32>();
-        }
-        if(eq(mods.flags, Jigsaw1) || eq(mods.flags, Jigsaw2)) {
-            mods.jigsaw_followcircle_radius_factor = dbr.read<f32>();
-        }
-        if(eq(mods.flags, Shirone)) {
-            mods.shirone_combo = dbr.read<f32>();
-        }
-
-        return mods;
-    };
-
     u32 nb_neosu_scores = 0;
     u8 magic_bytes[6] = {0};
     if(db.read_bytes(magic_bytes, 5) != 5 || memcmp(magic_bytes, "NEOSC", 5) != 0) {
@@ -1691,7 +1644,7 @@ void Database::loadScores(std::string_view dbPath) {
         for(u32 s = 0; s < nb_beatmap_scores; s++) {
             FinishedScore sc;
 
-            sc.mods = read_mods(db);
+            sc.mods = Replay::Mods::unpack(db);
             sc.score = db.read<u64>();
             sc.spinner_bonus = db.read<u64>();
             sc.unixTimestamp = db.read<u64>();
@@ -2131,53 +2084,6 @@ void Database::saveScores() {
         return;
     }
 
-    // helper
-    // to be removed from here when BanchoPacket is refactored to use ByteBufferedFile
-    static auto write_mods = [](ByteBufferedFile::Writer &dbr, const Replay::Mods &mods) -> void {
-        if(!dbr.good()) {
-            return;
-        }
-
-        dbr.write<u64>(mods.flags);
-        dbr.write<f32>(mods.speed);
-        dbr.write<i32>(mods.notelock_type);
-        dbr.write<f32>(mods.ar_override);
-        dbr.write<f32>(mods.ar_overridenegative);
-        dbr.write<f32>(mods.cs_override);
-        dbr.write<f32>(mods.cs_overridenegative);
-        dbr.write<f32>(mods.hp_override);
-        dbr.write<f32>(mods.od_override);
-        using namespace ModMasks;
-        using namespace Replay::ModFlags;
-        if(eq(mods.flags, Autopilot)) {
-            dbr.write<f32>(mods.autopilot_lenience);
-        }
-        if(eq(mods.flags, Timewarp)) {
-            dbr.write<f32>(mods.timewarp_multiplier);
-        }
-        if(eq(mods.flags, Minimize)) {
-            dbr.write<f32>(mods.minimize_multiplier);
-        }
-        if(eq(mods.flags, ARTimewarp)) {
-            dbr.write<f32>(mods.artimewarp_multiplier);
-        }
-        if(eq(mods.flags, ARWobble)) {
-            dbr.write<f32>(mods.arwobble_strength);
-            dbr.write<f32>(mods.arwobble_interval);
-        }
-        if(eq(mods.flags, Wobble1) || eq(mods.flags, Wobble2)) {
-            dbr.write<f32>(mods.wobble_strength);
-            dbr.write<f32>(mods.wobble_frequency);
-            dbr.write<f32>(mods.wobble_rotation_speed);
-        }
-        if(eq(mods.flags, Jigsaw1) || eq(mods.flags, Jigsaw2)) {
-            dbr.write<f32>(mods.jigsaw_followcircle_radius_factor);
-        }
-        if(eq(mods.flags, Shirone)) {
-            dbr.write<f32>(mods.shirone_combo);
-        }
-    };
-
     const double startTime = Timing::getTimeReal();
 
     Sync::scoped_lock lock(this->scores_mtx);
@@ -2199,14 +2105,20 @@ void Database::saveScores() {
 
     for(const auto &[hash, scorevec] : this->scores) {
         if(scorevec.empty()) continue;
+        if(!db.good()) {
+            break;
+        }
 
         db.write_hash(hash);
         db.write<u32>(scorevec.size());
 
         for(const auto &score : scorevec) {
             assert(!score.is_online_score);
+            if(!db.good()) {
+                break;
+            }
 
-            write_mods(db, score.mods);
+            Replay::Mods::pack_and_write(db, score.mods);
             db.write<u64>(score.score);
             db.write<u64>(score.spinner_bonus);
             db.write<u64>(score.unixTimestamp);

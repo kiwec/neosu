@@ -1,7 +1,6 @@
 #pragma once
 // Copyright (c) 2023, kiwec, All rights reserved.
 #include "MD5Hash.h"
-#include "Replay.h"
 #include "types.h"
 
 struct Packet {
@@ -24,9 +23,6 @@ struct Packet {
     std::string read_stdstring();
     void skip_string();
     MD5Hash read_hash();
-    // custom
-    // TODO: move read_mods to Replay.cpp and allow passing a generic reader/writer as an argument
-    Replay::Mods read_mods();
 
     template <typename T>
     T read() {
@@ -45,9 +41,6 @@ struct Packet {
     void write_uleb128(u32 num);
     void write_string(const char *str);
     void write_hash(const MD5Hash &hash);
-    // custom
-    // TODO: move read_mods to Replay.cpp and allow passing a generic reader/writer as an argument
-    void write_mods(const Replay::Mods &mods);
 
     template <typename T>
     void write(T t) {
