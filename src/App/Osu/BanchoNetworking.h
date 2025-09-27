@@ -6,8 +6,10 @@
 #define NEOSU_DOMAIN "neosu.net"
 
 // NOTE: Full version can be something like "b20200201.2cuttingedge"
-#define OSU_VERSION "b20250815"
 #define OSU_VERSION_DATEONLY 20250815
+#define OSU_VERSION_DATESTR MC_STRINGIZE(OSU_VERSION_DATEONLY)
+
+#define OSU_VERSION "b" OSU_VERSION_DATESTR
 
 enum APIRequestType : uint8_t {
     GET_BEATMAPSET_INFO,

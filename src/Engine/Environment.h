@@ -74,17 +74,16 @@ class Environment {
     static const std::string &getPathToSelf(const char *argv0 = nullptr);
 
     // i.e. getenv()
-    static std::string getEnvVariable(const std::string &varToQuery) noexcept;
+    static std::string getEnvVariable(std::string_view varToQuery) noexcept;
     // i.e. setenv()
-    static bool setEnvVariable(const std::string &varToSet, const std::string &varValue,
-                               bool overwrite = true) noexcept;
+    static bool setEnvVariable(std::string_view varToSet, std::string_view varValue, bool overwrite = true) noexcept;
     // i.e. unsetenv()
-    static bool unsetEnvVariable(const std::string &varToUnset) noexcept;
+    static bool unsetEnvVariable(std::string_view varToUnset) noexcept;
 
     static const std::string &getExeFolder();
     static void setThreadPriority(float newVal);  // != 0.0 : high
 
-    static void openURLInDefaultBrowser(const std::string &url) noexcept;
+    static void openURLInDefaultBrowser(std::string_view url) noexcept;
 
     [[nodiscard]] inline const std::unordered_map<std::string, std::optional<std::string>> &getLaunchArgs() const {
         return m_mArgMap;
@@ -102,28 +101,27 @@ class Environment {
     // file IO
     [[nodiscard]] static bool fileExists(std::string &filename) noexcept;  // passthroughs to McFile
     [[nodiscard]] static bool directoryExists(std::string &directoryName) noexcept;
-    [[nodiscard]] static bool fileExists(const std::string &filename) noexcept;
-    [[nodiscard]] static bool directoryExists(const std::string &directoryName) noexcept;
+    [[nodiscard]] static bool fileExists(std::string_view filename) noexcept;
+    [[nodiscard]] static bool directoryExists(std::string_view directoryName) noexcept;
 
-    static bool createDirectory(const std::string &directoryName) noexcept;
+    static bool createDirectory(std::string_view directoryName) noexcept;
     static bool renameFile(const std::string &oldFileName, const std::string &newFileName) noexcept;
-    static bool deleteFile(const std::string &filePath) noexcept;
-    [[nodiscard]] static std::vector<std::string> getFilesInFolder(const std::string &folder) noexcept;
-    [[nodiscard]] static std::vector<std::string> getFoldersInFolder(const std::string &folder) noexcept;
+    static bool deleteFile(std::string_view filePath) noexcept;
+    [[nodiscard]] static std::vector<std::string> getFilesInFolder(std::string_view folder) noexcept;
+    [[nodiscard]] static std::vector<std::string> getFoldersInFolder(std::string_view folder) noexcept;
     [[nodiscard]] static std::vector<UString> getLogicalDrives();
     // returns an absolute (i.e. fully-qualified) filesystem path
-    [[nodiscard]] static std::string getFolderFromFilePath(const std::string &filepath) noexcept;
-    [[nodiscard]] static std::string getFileExtensionFromFilePath(const std::string &filepath,
-                                                                  bool includeDot = false) noexcept;
-    [[nodiscard]] static std::string getFileNameFromFilePath(const std::string &filePath) noexcept;
+    [[nodiscard]] static std::string getFolderFromFilePath(std::string_view filepath) noexcept;
+    [[nodiscard]] static std::string getFileExtensionFromFilePath(std::string_view filepath) noexcept;
+    [[nodiscard]] static std::string getFileNameFromFilePath(std::string_view filePath) noexcept;
     [[nodiscard]] static std::string normalizeDirectory(std::string dirPath) noexcept;
-    [[nodiscard]] static bool isAbsolutePath(const std::string &filePath) noexcept;
+    [[nodiscard]] static bool isAbsolutePath(std::string_view filePath) noexcept;
 
     // URL-encodes a string, but keeps slashes intact
-    [[nodiscard]] static std::string encodeStringToURI(const std::string &unencodedString) noexcept;
+    [[nodiscard]] static std::string encodeStringToURI(std::string_view unencodedString) noexcept;
 
     // Fully URL-encodes a string, including slashes
-    [[nodiscard]] static std::string urlEncode(const std::string &unencodedString) noexcept;
+    [[nodiscard]] static std::string urlEncode(std::string_view unencodedString) noexcept;
 
     // clipboard
     [[nodiscard]] const UString &getClipBoardText();
@@ -139,10 +137,10 @@ class Environment {
     void showMessageErrorFatal(const UString &title, const UString &message) const;
 
     using FileDialogCallback = std::function<void(const std::vector<UString> &paths)>;
-    void openFileWindow(FileDialogCallback callback, const char *filetypefilters, const std::string &title,
-                        const std::string &initialpath = "") const noexcept;
-    void openFolderWindow(FileDialogCallback callback, const std::string &initialpath = "") const noexcept;
-    void openFileBrowser(const std::string &initialpath) const noexcept;
+    void openFileWindow(FileDialogCallback callback, const char *filetypefilters, std::string_view title,
+                        std::string_view initialpath = "") const noexcept;
+    void openFolderWindow(FileDialogCallback callback, std::string_view initialpath = "") const noexcept;
+    void openFileBrowser(std::string_view initialpath) const noexcept;
 
     // window
     void focus();
@@ -288,10 +286,10 @@ class Environment {
     static void sdlFileDialogCallback(void *userdata, const char *const *filelist, int filter) noexcept;
 
     // for getting files in folder/ folders in folder
-    static std::vector<std::string> enumerateDirectory(const std::string &pathToEnum,
+    static std::vector<std::string> enumerateDirectory(std::string_view pathToEnum,
                                                        /* enum SDL_PathType */ unsigned int type) noexcept;
     static std::string getThingFromPathHelper(
-        const std::string &path,
+        std::string_view path,
         bool folder) noexcept;  // code sharing for getFolderFromFilePath/getFileNameFromFilePath
 
     // internal path conversion helper, SDL_URLOpen needs a URL-encoded URI on Unix (because it goes to xdg-open)

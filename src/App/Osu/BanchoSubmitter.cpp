@@ -61,7 +61,8 @@ void submit_score(FinishedScore score) {
         .data = {beatmap_hash.begin(), beatmap_hash.end()},
     });
 
-    auto unique_ids = fmt::format("{}|{}", BanchoState::get_install_id().toUtf8(), BanchoState::get_disk_uuid().toUtf8());
+    auto unique_ids =
+        fmt::format("{}|{}", BanchoState::get_install_id().toUtf8(), BanchoState::get_disk_uuid().toUtf8());
     options.mimeParts.push_back({
         .name = "c1",
         .data = {unique_ids.begin(), unique_ids.end()},
@@ -73,7 +74,7 @@ void submit_score(FinishedScore score) {
         .data = {password.begin(), password.end()},
     });
 
-    auto osu_version = fmt::format("{}", OSU_VERSION_DATEONLY);
+    const std::string osu_version = OSU_VERSION_DATESTR;
     options.mimeParts.push_back({
         .name = "osuver",
         .data = {osu_version.begin(), osu_version.end()},
@@ -87,8 +88,9 @@ void submit_score(FinishedScore score) {
 
     {
         size_t s_client_hashes_encrypted = 0;
-        u8 *client_hashes_encrypted = BANCHO::AES::encrypt(
-            iv, (u8 *)BanchoState::client_hashes.toUtf8(), BanchoState::client_hashes.lengthUtf8(), &s_client_hashes_encrypted);
+        u8 *client_hashes_encrypted =
+            BANCHO::AES::encrypt(iv, (u8 *)BanchoState::client_hashes.toUtf8(), BanchoState::client_hashes.lengthUtf8(),
+                                 &s_client_hashes_encrypted);
         auto client_hashes_b64 = crypto::conv::encode64(client_hashes_encrypted, s_client_hashes_encrypted);
         options.mimeParts.push_back({
             .name = "s",
@@ -128,7 +130,7 @@ void submit_score(FinishedScore score) {
 
             idiot_check.append(fmt::format("{}{}", score.score, GRADES[(int)score.grade]));
             idiot_check.append(fmt::format("{}Q{}", score.mods.to_legacy(), score.passed ? "True" : "False"));
-            idiot_check.append(fmt::format("0{}{}", OSU_VERSION_DATEONLY, score_time.data()));
+            idiot_check.append(fmt::format("0" OSU_VERSION_DATESTR "{}", score_time.data()));
             idiot_check.append(BanchoState::client_hashes.toUtf8());
 
             auto idiot_hash = BanchoState::md5((u8 *)idiot_check.data(), idiot_check.size());
@@ -152,7 +154,8 @@ void submit_score(FinishedScore score) {
         score_data.append(":mcosu");  // anticheat flags
 
         size_t s_score_data_encrypted = 0;
-        u8 *score_data_encrypted = BANCHO::AES::encrypt(iv, (u8 *)score_data.data(), score_data.size(), &s_score_data_encrypted);
+        u8 *score_data_encrypted =
+            BANCHO::AES::encrypt(iv, (u8 *)score_data.data(), score_data.size(), &s_score_data_encrypted);
         auto score_data_b64 = crypto::conv::encode64(score_data_encrypted, s_score_data_encrypted);
         delete[] score_data_encrypted;
         options.mimeParts.push_back({
@@ -202,7 +205,6 @@ void submit_score(FinishedScore score) {
                 // TODO: handle failure
             }
         },
-        options
-    );
+        options);
 }
 }  // namespace BANCHO::Net

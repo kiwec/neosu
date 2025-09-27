@@ -120,11 +120,11 @@ void BanchoState::handle_packet(Packet &packet) {
                 cv::mp_autologin.setValue(true);
                 BanchoState::print_new_channels = true;
 
-                std::string avatar_dir = fmt::format(MCENGINE_DATA_DIR "avatars/{}", BanchoState::endpoint);
-                env->createDirectory(avatar_dir);
+                std::string avatar_dir = fmt::format(NEOSU_AVATARS_PATH "/{}", BanchoState::endpoint);
+                Environment::createDirectory(avatar_dir);
 
-                std::string replays_dir = fmt::format(MCENGINE_DATA_DIR "replays/{}", BanchoState::endpoint);
-                env->createDirectory(replays_dir);
+                std::string replays_dir = fmt::format(NEOSU_REPLAYS_PATH "/{}", BanchoState::endpoint);
+                Environment::createDirectory(replays_dir);
 
                 osu->onUserCardChange(BanchoState::username.c_str());
                 osu->getSongBrowser()->onFilterScoresChange(UString("Global"), SongBrowser::LOGIN_STATE_FILTER_ID);
@@ -204,8 +204,9 @@ void BanchoState::handle_packet(Packet &packet) {
                 // TODO @kiwec: i think client is supposed to regularly poll for friend stats
                 if(user->is_friend() && cv::notify_friend_status_change.getBool() && action < NB_ACTIONS) {
                     static constexpr auto actions = std::array{
-                        "idle",   "afk",     "playing",    "editing", "modding", "in a multiplayer lobby", "spectating",
-                        "vibing", "testing", "submitting", "pausing", "testing", "multiplaying",           "browsing maps",
+                        "idle",         "afk",           "playing", "editing",    "modding", "in a multiplayer lobby",
+                        "spectating",   "vibing",        "testing", "submitting", "pausing", "testing",
+                        "multiplaying", "browsing maps",
                     };
                     auto text = UString::format("%s is now %s", user->name.toUtf8(), actions[action]);
                     auto open_dms = [uid = stats_user_id]() -> void {
@@ -305,9 +306,9 @@ void BanchoState::handle_packet(Packet &packet) {
                 }
 
                 // NOTE: Server can send frames in the wrong order. So we're correcting it here.
-                std::ranges::sort(osu->getMapInterface()->spectated_replay, [](LegacyReplay::Frame a, LegacyReplay::Frame b) {
-                    return a.cur_music_pos < b.cur_music_pos;
-                });
+                std::ranges::sort(
+                    osu->getMapInterface()->spectated_replay,
+                    [](LegacyReplay::Frame a, LegacyReplay::Frame b) { return a.cur_music_pos < b.cur_music_pos; });
                 osu->getMapInterface()->last_frame_ms = 0;
                 for(auto &frame : osu->getMapInterface()->spectated_replay) {
                     frame.milliseconds_since_last_frame = frame.cur_music_pos - osu->getMapInterface()->last_frame_ms;
@@ -420,7 +421,8 @@ void BanchoState::handle_packet(Packet &packet) {
 
         case FELLOW_SPECTATOR_JOINED: {
             i32 spectator_id = proto::read<i32>(packet);
-            if(std::ranges::find(BanchoState::fellow_spectators, spectator_id) == BanchoState::fellow_spectators.end()) {
+            if(std::ranges::find(BanchoState::fellow_spectators, spectator_id) ==
+               BanchoState::fellow_spectators.end()) {
                 debugLog("Fellow spectator joined: user id {:d}", spectator_id);
                 BanchoState::fellow_spectators.push_back(spectator_id);
             }
@@ -530,7 +532,8 @@ void BanchoState::handle_packet(Packet &packet) {
         case PROTOCOL_VERSION: {
             int protocol_version = proto::read<i32>(packet);
             if(protocol_version != 19) {
-                osu->getNotificationOverlay()->addToast("This server may use an unsupported protocol version.", ERROR_TOAST);
+                osu->getNotificationOverlay()->addToast("This server may use an unsupported protocol version.",
+                                                        ERROR_TOAST);
             }
             break;
         }
@@ -569,7 +572,7 @@ void BanchoState::handle_packet(Packet &packet) {
             BANCHO::User::login_user(presence_user_id);
 
             // Server can decide what username we use
-            if(presence_user_id == BanchoState::get_uid()) { 
+            if(presence_user_id == BanchoState::get_uid()) {
                 BanchoState::username = presence_username.toUtf8();
                 osu->onUserCardChange(presence_username.utf8View());
             }
@@ -674,7 +677,7 @@ void BanchoState::handle_packet(Packet &packet) {
             break;
         }
 
-        // neosu-specific below
+            // neosu-specific below
 
         case PROTECT_VARIABLES: {
             u16 nb_variables = proto::read<u16>(packet);
@@ -751,7 +754,7 @@ void BanchoState::handle_packet(Packet &packet) {
             }
 
             auto osu_file = map->getMapFile();
-            auto md5_check = BanchoState::md5((u8*)osu_file.c_str(), osu_file.length());
+            auto md5_check = BanchoState::md5((u8 *)osu_file.c_str(), osu_file.length());
             if(md5 != md5_check) {
                 debugLog("After loading map {}, we got different md5 {}!", md5.string(), md5_check.string());
                 break;
@@ -772,7 +775,7 @@ void BanchoState::handle_packet(Packet &packet) {
                 .name = "osu_file",
                 .data = {osu_file.begin(), osu_file.end()},
             });
-            networkHandler->httpRequestAsync(url, [](const NetworkHandler::Response& /*response*/) {}, options);
+            networkHandler->httpRequestAsync(url, [](const NetworkHandler::Response & /*response*/) {}, options);
 
             break;
         }
@@ -802,8 +805,6 @@ Packet BanchoState::build_login_packet() {
     }
 
     // OSU_VERSION is something like "b20200201.2"
-    // This check is so you avoid forgetting the 'b' when changing versions.
-    static_assert(OSU_VERSION[0] == 'b', "OSU_VERSION should start with \"b\"");
     req.append(OSU_VERSION "|");
 
     // UTC offset
@@ -837,7 +838,7 @@ Packet BanchoState::build_login_packet() {
     MD5Hash install_md5 = md5((u8 *)BanchoState::get_install_id().toUtf8(), BanchoState::get_install_id().lengthUtf8());
 
     BanchoState::client_hashes = UString::fmt("{:s}:{:s}:{:s}:{:s}:{:s}:", osu_path_md5.string(), adapters,
-                                       adapters_md5.string(), install_md5.string(), disk_md5.string());
+                                              adapters_md5.string(), install_md5.string(), disk_md5.string());
 
     req.append(BanchoState::client_hashes.toUtf8());
     req.append("|");

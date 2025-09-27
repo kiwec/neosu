@@ -23,3 +23,6 @@ inline bool isInt(float f) { return (f == static_cast<float>(static_cast<int>(f)
     classname__& operator=(const classname__&) = delete; \
     classname__(classname__&&) = delete;                 \
     classname__& operator=(classname__&&) = delete;
+
+// create string view literal
+#define MC_SV(string__) std::string_view_literals::operator""sv(string__, (sizeof(string__) / sizeof((string__)[0]) - 1))

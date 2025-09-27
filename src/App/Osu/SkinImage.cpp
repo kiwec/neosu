@@ -9,7 +9,7 @@
 #include "Skin.h"
 #include "Logging.h"
 
-SkinImage::SkinImage(Skin *skin, const std::string& skinElementName, vec2 baseSizeForScaling2x, float osuSize,
+SkinImage::SkinImage(Skin* skin, const std::string& skinElementName, vec2 baseSizeForScaling2x, float osuSize,
                      const std::string& animationSeparator, bool ignoreDefaultSkin) {
     this->skin = skin;
     this->vBaseSizeForScaling2x = baseSizeForScaling2x;
@@ -53,7 +53,8 @@ SkinImage::SkinImage(Skin *skin, const std::string& skinElementName, vec2 baseSi
         this->fFrameDuration = 1.0f / (float)this->images.size();
 }
 
-bool SkinImage::load(const std::string& skinElementName, const std::string& animationSeparator, bool ignoreDefaultSkin) {
+bool SkinImage::load(const std::string& skinElementName, const std::string& animationSeparator,
+                     bool ignoreDefaultSkin) {
     std::string animatedSkinElementStartName = skinElementName;
     animatedSkinElementStartName.append(animationSeparator);
     animatedSkinElementStartName.append("0");
@@ -93,11 +94,11 @@ bool SkinImage::loadImage(const std::string& skinElementName, bool ignoreDefault
     filepath2.append(skinElementName);
     filepath2.append(".png");
 
-    std::string defaultFilePath1 = MCENGINE_DATA_DIR "materials/default/";
+    std::string defaultFilePath1 = MCENGINE_IMAGES_PATH "/default/";
     defaultFilePath1.append(skinElementName);
     defaultFilePath1.append("@2x.png");
 
-    std::string defaultFilePath2 = MCENGINE_DATA_DIR "materials/default/";
+    std::string defaultFilePath2 = MCENGINE_IMAGES_PATH "/default/";
     defaultFilePath2.append(skinElementName);
     defaultFilePath2.append(".png");
 
@@ -232,7 +233,7 @@ void SkinImage::draw(vec2 pos, float scale) {
         g->scale(scale, scale);
         g->translate(pos.x, pos.y);
 
-        Image *img = this->getImageForCurrentFrame().img;
+        Image* img = this->getImageForCurrentFrame().img;
 
         if(this->fDrawClipWidthPercent == 1.0f)
             g->drawImage(img);
@@ -261,7 +262,9 @@ void SkinImage::draw(vec2 pos, float scale) {
             vao.addTexcoord(this->fDrawClipWidthPercent, 0);
 
             img->bind();
-            { g->drawVAO(&vao); }
+            {
+                g->drawVAO(&vao);
+            }
             img->unbind();
         }
     }
@@ -276,7 +279,7 @@ void SkinImage::drawRaw(vec2 pos, float scale, AnchorPoint anchor) {
         g->scale(scale, scale);
         g->translate(pos.x, pos.y);
 
-        Image *img = this->getImageForCurrentFrame().img;
+        Image* img = this->getImageForCurrentFrame().img;
 
         if(this->fDrawClipWidthPercent == 1.0f) {
             g->drawImage(img, anchor);
@@ -306,7 +309,9 @@ void SkinImage::drawRaw(vec2 pos, float scale, AnchorPoint anchor) {
             vao.addTexcoord(this->fDrawClipWidthPercent, 0);
 
             img->bind();
-            { g->drawVAO(&vao); }
+            {
+                g->drawVAO(&vao);
+            }
             img->unbind();
         }
     }
@@ -320,7 +325,7 @@ void SkinImage::update(float speedMultiplier, bool useEngineTimeForAnimations, l
 
     const f64 frameDurationInSeconds =
         (cv::skin_animation_fps_override.getFloat() > 0.0f ? (1.0f / cv::skin_animation_fps_override.getFloat())
-                                                          : this->fFrameDuration) /
+                                                           : this->fFrameDuration) /
         speedMultiplier;
     if(frameDurationInSeconds == 0.f) {
         this->iFrameCounter = 0;
@@ -340,7 +345,8 @@ void SkinImage::update(float speedMultiplier, bool useEngineTimeForAnimations, l
         long frame_duration_ms = frameDurationInSeconds * 1000.0f;
 
         // freeze animation on frame 0 on negative offsets
-        this->iFrameCounter = std::max((i32)((curMusicPos - this->iBeatmapAnimationTimeStartOffset) / frame_duration_ms), 0);
+        this->iFrameCounter =
+            std::max((i32)((curMusicPos - this->iBeatmapAnimationTimeStartOffset) / frame_duration_ms), 0);
         this->iFrameCounterUnclamped = this->iFrameCounter;
         this->iFrameCounter = this->iFrameCounter % this->images.size();
     }

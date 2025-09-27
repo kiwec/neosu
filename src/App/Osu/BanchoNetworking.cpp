@@ -234,11 +234,11 @@ void handle_api_response(Packet &packet) {
 #pragma GCC diagnostic pop
 #endif
 
-            auto replay_path = UString::format(MCENGINE_DATA_DIR "replays/%s/%d.replay.lzma", score->server.c_str(),
-                                               score->unixTimestamp);
+            auto replay_path =
+                fmt::format(NEOSU_REPLAYS_PATH "/{:s}/{:d}.replay.lzma", score->server.c_str(), score->unixTimestamp);
 
             // XXX: this is blocking main thread
-            FILE *replay_file = fopen(replay_path.toUtf8(), "wb");
+            FILE *replay_file = fopen(replay_path.c_str(), "wb");
             if(replay_file == nullptr) {
                 osu->getNotificationOverlay()->addToast("Failed to save replay", ERROR_TOAST);
                 break;

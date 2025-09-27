@@ -877,8 +877,8 @@ bool SongBrowser::selectBeatmapset(i32 set_id) {
     auto beatmapset = db->getBeatmapSet(set_id);
     if(beatmapset == nullptr) {
         // Pasted from Downloader::download_beatmap
-        auto mapset_path = UString::format(MCENGINE_DATA_DIR "maps/%d/", set_id);
-        db->addBeatmapSet(mapset_path.toUtf8());
+        auto mapset_path = fmt::format(NEOSU_MAPS_PATH "/{}/", set_id);
+        db->addBeatmapSet(mapset_path);
         debugLog("Finished loading beatmapset {:d}.", set_id);
 
         beatmapset = db->getBeatmapSet(set_id);

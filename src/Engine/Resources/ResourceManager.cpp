@@ -18,6 +18,12 @@
 #include <utility>
 
 ResourceManager::ResourceManager() {
+    // create directories we will assume already exist later on
+    Environment::createDirectory(MCENGINE_FONTS_PATH);
+    Environment::createDirectory(MCENGINE_IMAGES_PATH);
+    Environment::createDirectory(MCENGINE_SHADERS_PATH);
+    Environment::createDirectory(MCENGINE_SOUNDS_PATH);
+
     this->bNextLoadAsync = false;
 
     // reserve space for typed vectors
@@ -83,7 +89,7 @@ void ResourceManager::destroyResource(Resource *rs, DestroyMode destroyMode) {
     }
 
     // check if it's being loaded and schedule async destroy if so
-    // (destroyMode == DestroyMode::FORCE_ASYNC) || 
+    // (destroyMode == DestroyMode::FORCE_ASYNC) ||
     if(this->asyncLoader->isLoadingResource(rs)) {
         if(debug)
             debugLog("Resource Manager: Scheduled async destroy of {:8p} : {:s}", static_cast<const void *>(rs),
@@ -222,7 +228,7 @@ Image *ResourceManager::loadImage(std::string filepath, const std::string &resou
     if(res != nullptr) return res;
 
     // create instance and load it
-    filepath.insert(0, ResourceManager::PATH_DEFAULT_IMAGES);
+    filepath.insert(0, MCENGINE_IMAGES_PATH "/");
     Image *img = g->createImage(filepath, mipmapped, keepInSystemMemory);
     setResourceName(img, resourceName);
 
@@ -232,7 +238,7 @@ Image *ResourceManager::loadImage(std::string filepath, const std::string &resou
 }
 
 Image *ResourceManager::loadImageUnnamed(std::string filepath, bool mipmapped, bool keepInSystemMemory) {
-    filepath.insert(0, ResourceManager::PATH_DEFAULT_IMAGES);
+    filepath.insert(0, MCENGINE_IMAGES_PATH "/");
     Image *img = g->createImage(filepath, mipmapped, keepInSystemMemory);
 
     loadResource(img, true);
@@ -283,8 +289,8 @@ McFont *ResourceManager::loadFont(std::string filepath, const std::string &resou
     if(res != nullptr) return res;
 
     // create instance and load it
-    filepath.insert(0, ResourceManager::PATH_DEFAULT_FONTS);
-    auto *fnt = new McFont(filepath.c_str(), fontSize, antialiasing, fontDPI);
+    filepath.insert(0, MCENGINE_FONTS_PATH "/");
+    auto *fnt = new McFont(std::move(filepath), fontSize, antialiasing, fontDPI);
     setResourceName(fnt, resourceName);
 
     loadResource(fnt, true);
@@ -299,8 +305,8 @@ McFont *ResourceManager::loadFont(std::string filepath, const std::string &resou
     if(res != nullptr) return res;
 
     // create instance and load it
-    filepath.insert(0, ResourceManager::PATH_DEFAULT_FONTS);
-    auto *fnt = new McFont(filepath.c_str(), characters, fontSize, antialiasing, fontDPI);
+    filepath.insert(0, MCENGINE_FONTS_PATH "/");
+    auto *fnt = new McFont(std::move(filepath), characters, fontSize, antialiasing, fontDPI);
     setResourceName(fnt, resourceName);
 
     loadResource(fnt, true);
@@ -314,7 +320,7 @@ Sound *ResourceManager::loadSound(std::string filepath, const std::string &resou
     if(res != nullptr) return res;
 
     // create instance and load it
-    filepath.insert(0, ResourceManager::PATH_DEFAULT_SOUNDS);
+    filepath.insert(0, MCENGINE_SOUNDS_PATH "/");
     auto *snd{Sound::createSound(filepath, stream, overlayable, loop)};
     setResourceName(snd, resourceName);
 
@@ -343,8 +349,8 @@ Shader *ResourceManager::loadShader(std::string vertexShaderFilePath, std::strin
     if(res != nullptr) return res;
 
     // create instance and load it
-    vertexShaderFilePath.insert(0, ResourceManager::PATH_DEFAULT_SHADERS);
-    fragmentShaderFilePath.insert(0, ResourceManager::PATH_DEFAULT_SHADERS);
+    vertexShaderFilePath.insert(0, MCENGINE_SHADERS_PATH "/");
+    fragmentShaderFilePath.insert(0, MCENGINE_SHADERS_PATH "/");
     Shader *shader = g->createShaderFromFile(vertexShaderFilePath, fragmentShaderFilePath);
     setResourceName(shader, resourceName);
 
@@ -354,8 +360,8 @@ Shader *ResourceManager::loadShader(std::string vertexShaderFilePath, std::strin
 }
 
 Shader *ResourceManager::loadShader(std::string vertexShaderFilePath, std::string fragmentShaderFilePath) {
-    vertexShaderFilePath.insert(0, ResourceManager::PATH_DEFAULT_SHADERS);
-    fragmentShaderFilePath.insert(0, ResourceManager::PATH_DEFAULT_SHADERS);
+    vertexShaderFilePath.insert(0, MCENGINE_SHADERS_PATH "/");
+    fragmentShaderFilePath.insert(0, MCENGINE_SHADERS_PATH "/");
     Shader *shader = g->createShaderFromFile(vertexShaderFilePath, fragmentShaderFilePath);
 
     loadResource(shader, true);

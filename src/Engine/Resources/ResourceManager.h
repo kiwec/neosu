@@ -27,13 +27,6 @@ class AsyncResourceLoader;
 
 class ResourceManager final {
     NOCOPY_NOMOVE(ResourceManager)
-
-   public:
-    static constexpr auto PATH_DEFAULT_IMAGES = "materials/";
-    static constexpr auto PATH_DEFAULT_FONTS = "fonts/";
-    static constexpr auto PATH_DEFAULT_SOUNDS = "sounds/";
-    static constexpr auto PATH_DEFAULT_SHADERS = "shaders/";
-
    public:
     ResourceManager();
     ~ResourceManager();
@@ -47,7 +40,7 @@ class ResourceManager final {
     enum class DestroyMode : uint8_t {
         DEFAULT = 0,
         FORCE_BLOCKING = 1,
-        FORCE_ASYNC = 2, // TODO
+        FORCE_ASYNC = 2,  // TODO
     };
     void destroyResource(Resource *rs, DestroyMode destroyMode = DestroyMode::DEFAULT);
     void destroyResources();

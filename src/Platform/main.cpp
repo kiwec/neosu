@@ -1,5 +1,6 @@
 // Copyright (c) 2025, WH, All rights reserved.
 #include "BaseEnvironment.h"
+#include "EngineConfig.h"
 #include "Logging.h"
 
 #if defined(MCENGINE_PLATFORM_WASM) || defined(MCENGINE_FEATURE_MAINCALLBACKS)

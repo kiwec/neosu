@@ -1,6 +1,8 @@
 #pragma once
 // Copyright (c) 2012, PG, All rights reserved.
 
+#include "EngineConfig.h"
+
 #include "noinclude.h"
 #include "types.h"
 

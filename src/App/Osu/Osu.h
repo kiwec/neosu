@@ -5,6 +5,7 @@
 #include "MouseListener.h"
 #include "Replay.h"
 #include "score.h"
+#include "OsuConfig.h"
 
 class AvatarManager;
 class CWindowManager;

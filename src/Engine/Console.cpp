@@ -97,7 +97,7 @@ void Console::processCommand(std::string command, bool fromFile) {
 
 void Console::execConfigFile(std::string filename) {
     // handle extension
-    filename.insert(0, MCENGINE_DATA_DIR "cfg" PREF_PATHSEP "");
+    filename.insert(0, MCENGINE_CFG_PATH "/");
     if(filename.find(".cfg", (filename.length() - 4), filename.length()) == std::string::npos) filename.append(".cfg");
 
     bool needs_write = false;

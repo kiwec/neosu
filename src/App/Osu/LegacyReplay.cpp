@@ -212,10 +212,10 @@ Info from_bytes(u8* data, int s_data) {
 bool load_from_disk(FinishedScore& score, bool update_db) {
     if(score.peppy_replay_tms > 0) {
         auto osu_folder = cv::osu_folder.getString();
-        auto path = UString::format("%s/Data/r/%s-%llu.osr", osu_folder, score.beatmap_hash.string(),
-                                    score.peppy_replay_tms);
+        auto path =
+            fmt::format("{:s}/Data/r/{:s}-{:d}.osr", osu_folder, score.beatmap_hash.string(), score.peppy_replay_tms);
 
-        FILE* replay_file = fopen(path.toUtf8(), "rb");
+        FILE* replay_file = fopen(path.c_str(), "rb");
         if(replay_file == nullptr) return false;
 
         fseek(replay_file, 0, SEEK_END);
@@ -229,10 +229,9 @@ bool load_from_disk(FinishedScore& score, bool update_db) {
         score.replay = info.frames;
         delete[] full_replay;
     } else {
-        auto path =
-            UString::format(MCENGINE_DATA_DIR "replays/%s/%llu.replay.lzma", score.server.c_str(), score.unixTimestamp);
+        auto path = fmt::format(NEOSU_REPLAYS_PATH "/{:s}/{:d}.replay.lzma", score.server, score.unixTimestamp);
 
-        FILE* replay_file = fopen(path.toUtf8(), "rb");
+        FILE* replay_file = fopen(path.c_str(), "rb");
         if(replay_file == nullptr) return false;
 
         fseek(replay_file, 0, SEEK_END);

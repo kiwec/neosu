@@ -199,7 +199,9 @@ static constexpr auto OPTIMAL_UNROLL = 6;
 static constexpr auto OPTIMAL_UNROLL = 4;
 #endif
 
-#define MC_STRINGIZE(x) #x
+#define MC_QUOTE(s) #s
+#define MC_STRINGIZE(s) MC_QUOTE(s)
+
 #define MC_DO_PRAGMA(x) _Pragma(MC_STRINGIZE(x))
 #define MC_MESSAGE(msg) MC_DO_PRAGMA(message(msg))
 
@@ -307,11 +309,6 @@ typedef SSIZE_T ssize_t;
 #ifndef OS_NAME
 #error "OS not currently supported"
 #endif
-
-// always use / for path separators
-// windows does not care whether you use / or \, every other sane OS does
-#define PREF_PATHSEP "/"
-#define MCENGINE_DATA_DIR "./"
 
 #if defined(_X86_) || defined(__i386__) || (defined(_WIN32) && !defined(_WIN64))
 #define MC_ARCH32

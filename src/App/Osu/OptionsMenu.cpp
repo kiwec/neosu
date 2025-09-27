@@ -784,8 +784,7 @@ OptionsMenu::OptionsMenu() : ScreenBackable() {
                 [](CBaseUIButton *btn) -> void { cv::snd_soloud_backend.setValue(btn->getName()); });
 
             // need to use a change callback here because we already have a single-arg callback for the convar...
-            cv::snd_soloud_backend.setCallback(
-                [](float /**/, float /**/) -> void { setActiveColors(); });
+            cv::snd_soloud_backend.setCallback([](float /**/, float /**/) -> void { setActiveColors(); });
         }
 
         // Dirty...
@@ -2410,10 +2409,9 @@ void OptionsMenu::onRawInputToAbsoluteWindowChange(CBaseUICheckbox *checkbox) {
 void OptionsMenu::openCurrentSkinFolder() {
     auto current_skin = cv::skin.getString();
     if(strcasecmp(current_skin.c_str(), "default") == 0) {
-        env->openFileBrowser(MCENGINE_DATA_DIR "materials" PREF_PATHSEP "default");
+        env->openFileBrowser(MCENGINE_IMAGES_PATH "/default");
     } else {
-        std::string neosuSkinFolder = MCENGINE_DATA_DIR "skins/";
-        neosuSkinFolder.append(current_skin);
+        std::string neosuSkinFolder = fmt::format(NEOSU_SKINS_PATH "/{}", current_skin);
         if(env->directoryExists(neosuSkinFolder)) {
             env->openFileBrowser(neosuSkinFolder);
         } else {
@@ -2441,7 +2439,7 @@ void OptionsMenu::onSkinSelect() {
     skinFolder.append(cv::osu_folder_sub_skins.getString());
 
     std::vector<std::string> skinFolders;
-    for(const auto &dir : {env->getFoldersInFolder(MCENGINE_DATA_DIR "skins/"), env->getFoldersInFolder(skinFolder)}) {
+    for(const auto &dir : {env->getFoldersInFolder(NEOSU_SKINS_PATH), env->getFoldersInFolder(skinFolder)}) {
         for(const auto &skin : dir) {
             skinFolders.push_back(skin);
         }
@@ -2549,7 +2547,7 @@ void OptionsMenu::onResolutionSelect() {
 
     // get custom resolutions
     std::vector<vec2> customResolutions;
-    std::ifstream customres(MCENGINE_DATA_DIR "cfg" PREF_PATHSEP "customres.cfg");
+    std::ifstream customres(MCENGINE_CFG_PATH "/customres.cfg");
     std::string curLine;
     while(std::getline(customres, curLine)) {
         const char *curLineChar = curLine.c_str();
@@ -3722,7 +3720,7 @@ void OptionsMenu::save() {
 
     debugLog("Osu: Saving user config file ...");
 
-    UString userConfigFile = MCENGINE_DATA_DIR "cfg" PREF_PATHSEP "osu.cfg";
+    UString userConfigFile = MCENGINE_CFG_PATH "/osu.cfg";
 
     std::vector<UString> user_lines;
     {

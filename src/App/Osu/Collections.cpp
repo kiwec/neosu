@@ -5,7 +5,6 @@
 #include <utility>
 
 #include "ByteBufferedFile.h"
-#include "File.h"  // PREF_PATHSEP
 #include "ConVar.h"
 #include "Database.h"
 #include "Engine.h"
@@ -211,7 +210,7 @@ bool load_collections() {
     unload_collections();
 
     std::string peppy_collections_path = cv::osu_folder.getString();
-    peppy_collections_path.append(PREF_PATHSEP "collection.db");
+    peppy_collections_path.append("/collection.db");
     const auto& peppy_collections = db->database_files[peppy_collections_path];
     load_peppy_collections(peppy_collections);
 

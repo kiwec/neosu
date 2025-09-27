@@ -52,7 +52,7 @@ lib_obj *load_lib(const char *c_lib_name, const char *c_search_dir) {
         }
         if(!search_dir.empty()) {
             if(!search_dir.ends_with('/') && search_dir.ends_with('\\')) {
-                search_dir.append(PREF_PATHSEP);
+                search_dir.push_back('/');
             }
             lib_name = search_dir + lib_name;
         }

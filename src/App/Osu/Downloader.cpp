@@ -327,7 +327,7 @@ bool extract_beatmapset(const u8* data, size_t data_s, std::string& map_dir) {
 
 void download_beatmapset(u32 set_id, float* progress) {
     // Check if we already have downloaded it
-    std::string map_dir = fmt::format(MCENGINE_DATA_DIR "maps/{}/", set_id);
+    std::string map_dir = fmt::format(NEOSU_MAPS_PATH "/{}/", set_id);
     if(env->directoryExists(map_dir)) {
         *progress = 1.f;
         return;
@@ -404,8 +404,8 @@ DatabaseBeatmap* download_beatmap(i32 beatmap_id, MD5Hash beatmap_md5, float* pr
     // Download not finished
     if(*progress != 1.f) return nullptr;
 
-    auto mapset_path = UString::format(MCENGINE_DATA_DIR "maps/%d/", set_id);
-    db->addBeatmapSet(mapset_path.toUtf8(), set_id);
+    std::string mapset_path = fmt::format(NEOSU_MAPS_PATH "/{}/", set_id);
+    db->addBeatmapSet(mapset_path, set_id);
     debugLog("Finished loading beatmapset {:d}.", set_id);
 
     beatmap = db->getBeatmapDifficulty(beatmap_md5);
@@ -482,8 +482,8 @@ DatabaseBeatmap* download_beatmap(i32 beatmap_id, i32 beatmapset_id, float* prog
     // Download not finished
     if(*progress != 1.f) return nullptr;
 
-    auto mapset_path = UString::format(MCENGINE_DATA_DIR "maps/%d/", set_id);
-    db->addBeatmapSet(mapset_path.toUtf8());
+    std::string mapset_path = fmt::format(NEOSU_MAPS_PATH "/{}/", set_id);
+    db->addBeatmapSet(mapset_path);
     debugLog("Finished loading beatmapset {:d}.", set_id);
 
     beatmap = db->getBeatmapDifficulty(beatmap_id);

@@ -112,7 +112,7 @@ HPLUGIN loadPlugin(const std::string &pluginname) {
     // handle bassflac plugin separately
     std::string tryPath{LNAMESTR(pluginname)};
 
-    if(!env->fileExists(tryPath)) tryPath = fmt::format("lib" PREF_PATHSEP "{}", LNAMESTR(pluginname));
+    if(!env->fileExists(tryPath)) tryPath = fmt::format("lib/{}", LNAMESTR(pluginname));
 
     // make it a fully qualified path
     if(env->fileExists(tryPath))

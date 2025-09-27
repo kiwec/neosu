@@ -91,6 +91,14 @@ Osu::Osu() {
     BanchoState::user_agent.append(BanchoState::neosu_version);
     BanchoState::user_agent.append("; " OS_NAME "; +https://" NEOSU_DOMAIN "/)");
 
+    // create directories we will assume already exist later on
+    Environment::createDirectory(NEOSU_AVATARS_PATH);
+    Environment::createDirectory(NEOSU_CFG_PATH);
+    Environment::createDirectory(NEOSU_MAPS_PATH);
+    Environment::createDirectory(NEOSU_REPLAYS_PATH);
+    Environment::createDirectory(NEOSU_SCREENSHOTS_PATH);
+    Environment::createDirectory(NEOSU_SKINS_PATH);
+
     // experimental mods list
     this->experimentalMods.push_back(&cv::fposu_mod_strafing);
     this->experimentalMods.push_back(&cv::mod_wobble);
@@ -176,7 +184,7 @@ Osu::Osu() {
     engine->onPaint();
 
     // if we don't have an osu.cfg, import
-    if(!Environment::fileExists(MCENGINE_DATA_DIR "cfg/osu.cfg")) {
+    if(!Environment::fileExists(MCENGINE_CFG_PATH "/osu.cfg")) {
         PeppyImporter::import_settings_from_osu_stable();
     }
 
@@ -1265,15 +1273,16 @@ void Osu::reloadMapInterface() { this->map_iface = std::make_unique<BeatmapInter
 void Osu::saveScreenshot() {
     static i32 screenshotNumber = 0;
 
-    if(!env->directoryExists("screenshots") && !env->createDirectory("screenshots")) {
+    if(!env->directoryExists(NEOSU_SCREENSHOTS_PATH) && !env->createDirectory(NEOSU_SCREENSHOTS_PATH)) {
         this->notificationOverlay->addNotification("Error: Couldn't create screenshots folder.", 0xffff0000, false,
                                                    3.0f);
         return;
     }
 
-    while(env->fileExists(fmt::format("screenshots/screenshot{}.png", screenshotNumber))) screenshotNumber++;
+    while(env->fileExists(fmt::format(NEOSU_SCREENSHOTS_PATH "/screenshot{}.png", screenshotNumber)))
+        screenshotNumber++;
 
-    const auto screenshotFilename{fmt::format("screenshots/screenshot{}.png", screenshotNumber)};
+    const auto screenshotFilename{fmt::format(NEOSU_SCREENSHOTS_PATH "/screenshot{}.png", screenshotNumber)};
 
     constexpr u8 screenshotChannels{3};
     std::vector<u8> pixels = g->getScreenshot(false);
@@ -1690,15 +1699,13 @@ void Osu::onSkinChange(std::string_view newValue) {
     std::string newString{newValue};
 
     if(newString == "default") {
-        this->skinScheduledToLoad = new Skin(newString.c_str(), MCENGINE_DATA_DIR "materials/default/", true);
+        this->skinScheduledToLoad = new Skin(newString.c_str(), MCENGINE_IMAGES_PATH "/default/", true);
         if(!this->skin) this->skin.reset(this->skinScheduledToLoad);
         this->bSkinLoadScheduled = true;
         return;
     }
 
-    std::string neosuSkinFolder = MCENGINE_DATA_DIR "skins/";
-    neosuSkinFolder.append(newString);
-    neosuSkinFolder.append("/");
+    std::string neosuSkinFolder = fmt::format(NEOSU_SKINS_PATH "/{}/", newString);
     if(env->directoryExists(neosuSkinFolder)) {
         this->skinScheduledToLoad = new Skin(newString.c_str(), neosuSkinFolder, false);
     } else {

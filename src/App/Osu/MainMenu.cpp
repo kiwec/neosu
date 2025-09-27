@@ -1073,9 +1073,8 @@ void MainMenu::mouse_update(bool *propagate_clicks) {
     // load server icon
     if(!shutting_down && BanchoState::is_online() && BanchoState::server_icon_url.length() > 0 &&
        BanchoState::server_icon == nullptr) {
-        std::string icon_path = fmt::format(MCENGINE_DATA_DIR "avatars/{}", BanchoState::endpoint);
-        // If we are online, the avatars/<server> directory is already created
-        icon_path.append("/server_icon");
+        const std::string icon_path =
+            fmt::format(NEOSU_AVATARS_PATH "/{}/server_icon", BanchoState::endpoint, "/server_icon");
 
         float progress = -1.f;
         std::vector<u8> data;
@@ -1603,13 +1602,13 @@ void MainMenu::SongsFolderEnumerator::initAsync() {
     if(env->directoryExists(this->folderPath)) {
         auto peppy_mapsets = env->getFoldersInFolder(this->folderPath);
         for(const auto &mapset : peppy_mapsets) {
-            this->entries.push_back(this->folderPath + mapset + "/");
+            this->entries.push_back(fmt::format("{}/{}/", this->folderPath, mapset));
         }
     }
 
-    auto neosu_mapsets = env->getFoldersInFolder(MCENGINE_DATA_DIR "maps/");
+    auto neosu_mapsets = env->getFoldersInFolder(NEOSU_MAPS_PATH);
     for(const auto &mapset : neosu_mapsets) {
-        this->entries.push_back(MCENGINE_DATA_DIR "maps/" + mapset + "/");
+        this->entries.push_back(fmt::format(NEOSU_MAPS_PATH "/{}/", mapset));
     }
 
     this->bAsyncReady = true;

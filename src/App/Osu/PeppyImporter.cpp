@@ -214,16 +214,13 @@ void import_settings_from_osu_stable() {
         update_osu_folder_from_registry();
     }
 
-    auto username = env->getUsername();
+    const auto& username = env->getUsername();
     if(username.length() == 0) {
         debugLog("Failed to get username; not going to import settings from osu!stable.");
         return;
     }
 
-    std::string cfg_path = cv::osu_folder.getString();
-    cfg_path.append(PREF_PATHSEP "osu!.");
-    cfg_path.append(username.toUtf8());
-    cfg_path.append(".cfg");
+    std::string cfg_path = fmt::format("{}/osu!.{}.cfg", cv::osu_folder.getString(), username.toUtf8());
     File file(cfg_path);
 
     while(file.canRead()) {

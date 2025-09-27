@@ -171,8 +171,8 @@ const std::string &Environment::getExeFolder() {
     return pathStr;
 }
 
-void Environment::openURLInDefaultBrowser(const std::string &url) noexcept {
-    if(!SDL_OpenURL(url.c_str())) {
+void Environment::openURLInDefaultBrowser(std::string_view url) noexcept {
+    if(!SDL_OpenURL(std::string{url}.c_str())) {
         debugLog("Failed to open URL: {:s}", SDL_GetError());
     }
 }
@@ -215,7 +215,7 @@ const std::string &Environment::getUserDataPath() const noexcept {
         while(!m_sAppDataPath.empty() && (m_sAppDataPath.ends_with('\\') || m_sAppDataPath.ends_with('/'))) {
             m_sAppDataPath.pop_back();
         }
-        m_sAppDataPath.append(PREF_PATHSEP);
+        m_sAppDataPath.push_back('/');
         SDL_free(path);
     }
 
@@ -248,16 +248,16 @@ bool Environment::directoryExists(std::string &directoryName) noexcept {
 }
 
 // same as the above, but for string literals (so we can't check insensitively and modify the input)
-bool Environment::fileExists(const std::string &filename) noexcept {
+bool Environment::fileExists(std::string_view filename) noexcept {
     return File::exists(filename) == File::FILETYPE::FILE;
 }
 
-bool Environment::directoryExists(const std::string &directoryName) noexcept {
+bool Environment::directoryExists(std::string_view directoryName) noexcept {
     return File::exists(directoryName) == File::FILETYPE::FOLDER;
 }
 
-bool Environment::createDirectory(const std::string &directoryName) noexcept {
-    return SDL_CreateDirectory(directoryName.c_str());  // returns true if it already exists
+bool Environment::createDirectory(std::string_view directoryName) noexcept {
+    return SDL_CreateDirectory(std::string{directoryName}.c_str());  // returns true if it already exists
 }
 
 bool Environment::renameFile(const std::string &oldFileName, const std::string &newFileName) noexcept {
@@ -279,17 +279,19 @@ bool Environment::renameFile(const std::string &oldFileName, const std::string &
     return Environment::fileExists(newFileName);
 }
 
-bool Environment::deleteFile(const std::string &filePath) noexcept { return SDL_RemovePath(filePath.c_str()); }
+bool Environment::deleteFile(std::string_view filePath) noexcept {
+    return SDL_RemovePath(std::string{filePath}.c_str());
+}
 
-std::vector<std::string> Environment::getFilesInFolder(const std::string &folder) noexcept {
+std::vector<std::string> Environment::getFilesInFolder(std::string_view folder) noexcept {
     return enumerateDirectory(folder, SDL_PATHTYPE_FILE);
 }
 
-std::vector<std::string> Environment::getFoldersInFolder(const std::string &folder) noexcept {
+std::vector<std::string> Environment::getFoldersInFolder(std::string_view folder) noexcept {
     return enumerateDirectory(folder, SDL_PATHTYPE_DIRECTORY);
 }
 
-std::string Environment::getFileNameFromFilePath(const std::string &filepath) noexcept {
+std::string Environment::getFileNameFromFilePath(std::string_view filepath) noexcept {
     return getThingFromPathHelper(filepath, false);
 }
 
@@ -304,23 +306,23 @@ std::string Environment::normalizeDirectory(std::string dirPath) noexcept {
         }
     }
 
-    while(dirPath.ends_with("\\") || dirPath.ends_with("/")) {
+    while(dirPath.ends_with('\\') || dirPath.ends_with('/')) {
         dirPath.pop_back();
     }
-    dirPath.append(PREF_PATHSEP);
+    dirPath.push_back('/');
 
     // use std::filesystem lexically_normal to clean up the path (it doesn't make sure it exists, purely transforms it)
     std::filesystem::path fspath{dirPath};
     dirPath = fspath.lexically_normal().generic_string();
 
-    if(dirPath == "." PREF_PATHSEP) {
+    if(dirPath == "./") {
         return "";
     } else {
         return dirPath;
     }
 }
 
-bool Environment::isAbsolutePath(const std::string &filePath) noexcept {
+bool Environment::isAbsolutePath(std::string_view filePath) noexcept {
     bool is_absolute_path = filePath.starts_with('/');
 
     if constexpr(Env::cfg(OS::WINDOWS)) {
@@ -331,14 +333,14 @@ bool Environment::isAbsolutePath(const std::string &filePath) noexcept {
     return is_absolute_path;
 }
 
-std::string Environment::getFolderFromFilePath(const std::string &filepath) noexcept {
+std::string Environment::getFolderFromFilePath(std::string_view filepath) noexcept {
     return getThingFromPathHelper(filepath, true);
 }
 
-std::string Environment::getFileExtensionFromFilePath(const std::string &filepath, bool /*includeDot*/) noexcept {
+std::string Environment::getFileExtensionFromFilePath(std::string_view filepath) noexcept {
     const auto extIdx = filepath.find_last_of('.');
     if(extIdx != std::string::npos) {
-        return filepath.substr(extIdx + 1);
+        return std::string{filepath.substr(extIdx + 1)};
     } else
         return {""};
 }
@@ -411,17 +413,17 @@ const std::string &Environment::getPathToSelf(const char *argv0) {
         if(!sp.empty()) {  // fallback to data dir + self
             pathStr = MCENGINE_DATA_DIR + sp;
         } else {  // fallback to data dir + package name
-            pathStr = std::string{MCENGINE_DATA_DIR} + PACKAGE_NAME;
+            pathStr = std::string{MCENGINE_DATA_DIR PACKAGE_NAME};
         }
 #endif
     }
     return pathStr;
 }
 
-std::string Environment::getEnvVariable(const std::string &varToQuery) noexcept {
+std::string Environment::getEnvVariable(std::string_view varToQuery) noexcept {
     const char *varVal = nullptr;
     if(s_sdlenv && !varToQuery.empty()) {
-        varVal = SDL_GetEnvironmentVariable(s_sdlenv, varToQuery.c_str());
+        varVal = SDL_GetEnvironmentVariable(s_sdlenv, std::string{varToQuery}.c_str());
         if(varVal) {
             return std::string{varVal};
         }
@@ -429,22 +431,22 @@ std::string Environment::getEnvVariable(const std::string &varToQuery) noexcept 
     return {""};
 }
 
-bool Environment::setEnvVariable(const std::string &varToSet, const std::string &varValue, bool overwrite) noexcept {
+bool Environment::setEnvVariable(std::string_view varToSet, std::string_view varValue, bool overwrite) noexcept {
     if(s_sdlenv && !varToSet.empty()) {
-        return SDL_SetEnvironmentVariable(s_sdlenv, varToSet.c_str(), varValue.empty() ? "" : varValue.c_str(),
-                                          overwrite);
+        return SDL_SetEnvironmentVariable(s_sdlenv, std::string{varToSet}.c_str(),
+                                          varValue.empty() ? "" : std::string{varValue}.c_str(), overwrite);
     }
     return false;
 }
 
-bool Environment::unsetEnvVariable(const std::string &varToUnset) noexcept {
+bool Environment::unsetEnvVariable(std::string_view varToUnset) noexcept {
     if(s_sdlenv && !varToUnset.empty()) {
-        return SDL_UnsetEnvironmentVariable(s_sdlenv, varToUnset.c_str());
+        return SDL_UnsetEnvironmentVariable(s_sdlenv, std::string{varToUnset}.c_str());
     }
     return false;
 }
 
-std::string Environment::encodeStringToURI(const std::string &unencodedString) noexcept {
+std::string Environment::encodeStringToURI(std::string_view unencodedString) noexcept {
     std::ostringstream escaped;
     escaped.fill('0');
     escaped << std::hex;
@@ -464,13 +466,13 @@ std::string Environment::encodeStringToURI(const std::string &unencodedString) n
     return escaped.str();
 }
 
-std::string Environment::urlEncode(const std::string &unencodedString) noexcept {
+std::string Environment::urlEncode(std::string_view unencodedString) noexcept {
     CURL *curl = curl_easy_init();
     if(!curl) {
         return "";
     }
 
-    char *encoded = curl_easy_escape(curl, unencodedString.c_str(), unencodedString.length());
+    char *encoded = curl_easy_escape(curl, unencodedString.data(), static_cast<int>(unencodedString.length()));
     if(!encoded) {
         curl_easy_cleanup(curl);
         return "";
@@ -547,8 +549,8 @@ void Environment::showMessageErrorFatal(const UString &title, const UString &mes
     showMessageError(title, message);
 }
 
-void Environment::openFileWindow(FileDialogCallback callback, const char *filetypefilters,
-                                 const std::string & /*title*/, const std::string &initialpath) const noexcept {
+void Environment::openFileWindow(FileDialogCallback callback, const char *filetypefilters, std::string_view /*title*/,
+                                 std::string_view initialpath) const noexcept {
     // convert filetypefilters (Windows-style)
     std::vector<std::string> filterNames;
     std::vector<std::string> filterPatterns;
@@ -574,37 +576,29 @@ void Environment::openFileWindow(FileDialogCallback callback, const char *filety
         }
     }
 
-    const char *initialpath_cstr = nullptr;
-    if(initialpath.length() > 0) {
-        if(directoryExists(initialpath))
-            initialpath_cstr = initialpath.c_str();
-        else
-            initialpath_cstr = getLocalDataPath().c_str();
+    if(initialpath.length() > 0 && !directoryExists(initialpath)) {
+        initialpath = getLocalDataPath();
     }
 
     auto *cbdata{new auto(std::move(callback))};
 
     // show it
     SDL_ShowOpenFileDialog(sdlFileDialogCallback, cbdata, m_window, sdlFilters.empty() ? nullptr : sdlFilters.data(),
-                           static_cast<int>(sdlFilters.size()), initialpath_cstr, false);
+                           static_cast<int>(sdlFilters.size()), std::string{initialpath}.c_str(), false);
 }
 
-void Environment::openFolderWindow(FileDialogCallback callback, const std::string &initialpath) const noexcept {
-    const char *initialpath_cstr = nullptr;
-    if(initialpath.length() > 0) {
-        if(directoryExists(initialpath))
-            initialpath_cstr = initialpath.c_str();
-        else
-            initialpath_cstr = getLocalDataPath().c_str();
+void Environment::openFolderWindow(FileDialogCallback callback, std::string_view initialpath) const noexcept {
+    if(initialpath.length() > 0 && !directoryExists(initialpath)) {
+        initialpath = getLocalDataPath();
     }
 
     auto *cbdata{new auto(std::move(callback))};
 
-    SDL_ShowOpenFolderDialog(sdlFileDialogCallback, cbdata, m_window, initialpath_cstr, false);
+    SDL_ShowOpenFolderDialog(sdlFileDialogCallback, cbdata, m_window, std::string{initialpath}.c_str(), false);
 }
 
 // just open the file manager in a certain folder, but not do anything with it
-void Environment::openFileBrowser(const std::string &initialpath) const noexcept {
+void Environment::openFileBrowser(std::string_view initialpath) const noexcept {
     std::string pathToOpen{initialpath};
     if(pathToOpen.empty())
         pathToOpen = getExeFolder();
@@ -1084,8 +1078,8 @@ void Environment::sdlFileDialogCallback(void *userdata, const char *const *filel
 // folder = true means return the canonical filesystem path to the folder containing the given path
 //			if the path is already a folder, just return it directly
 // folder = false means to strip away the file path separators from the given path and return just the filename itself
-std::string Environment::getThingFromPathHelper(const std::string &path, bool folder) noexcept {
-    if(path.empty()) return path;
+std::string Environment::getThingFromPathHelper(std::string_view path, bool folder) noexcept {
+    if(path.empty()) return std::string{path};
     namespace fs = std::filesystem;
 
     std::string retPath{path};
@@ -1116,11 +1110,11 @@ std::string Environment::getThingFromPathHelper(const std::string &path, bool fo
             if(lastSlash != std::string::npos)  // return parent
                 ustrPath = ustrPath.substr(0, lastSlash);
             else  // no separators found, just use ./
-                ustrPath = UString::fmt("." PREF_PATHSEP "{}", ustrPath);
+                ustrPath = UString::fmt("./{}", ustrPath);
         }
         retPath = ustrPath.utf8View();
         // make sure whatever we got now ends with a slash
-        if(retPath.back() != '/' && retPath.back() != '\\') retPath = retPath + PREF_PATHSEP;
+        if(retPath.back() != '/' && retPath.back() != '\\') retPath = retPath + '/';
     } else if(lastSlash != std::string::npos)  // just return the file
     {
         retPath = retPath.substr(lastSlash + 1);
@@ -1132,7 +1126,7 @@ std::string Environment::getThingFromPathHelper(const std::string &path, bool fo
 
 #ifdef MCENGINE_PLATFORM_WINDOWS  // the win32 api is just WAY faster for this
 
-std::vector<std::string> Environment::enumerateDirectory(const std::string &pathToEnum,
+std::vector<std::string> Environment::enumerateDirectory(std::string_view pathToEnum,
                                                          /* enum SDL_PathType */ unsigned int type) noexcept {
     // Since we want to avoid wide strings in the codebase as much as possible,
     // we convert wide paths to UTF-8 (as they fucking should be).
@@ -1183,7 +1177,7 @@ std::vector<std::string> Environment::enumerateDirectory(const std::string &path
 #else
 
 // for getting files in folder/ folders in folder
-std::vector<std::string> Environment::enumerateDirectory(const std::string &pathToEnum,
+std::vector<std::string> Environment::enumerateDirectory(std::string_view pathToEnum,
                                                          /* enum SDL_PathType */ unsigned int type) noexcept {
     namespace fs = std::filesystem;
 

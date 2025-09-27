@@ -39,7 +39,7 @@ class File {
     }
 
     void write(const u8 *buffer, size_t size);
-    bool writeLine(const std::string &line, bool insertNewline = true);
+    bool writeLine(std::string_view line, bool insertNewline = true);
 
     std::string readLine();
     std::string readString();
@@ -55,7 +55,7 @@ class File {
     // public path resolution methods
     // modifies the input path with the actual found path
     [[nodiscard]] static File::FILETYPE existsCaseInsensitive(std::string &filePath);
-    [[nodiscard]] static File::FILETYPE exists(const std::string &filePath);
+    [[nodiscard]] static File::FILETYPE exists(std::string_view filePath);
 
    private:
     std::string sFilePath;
@@ -76,7 +76,7 @@ class File {
 
     // internal path resolution helpers
     [[nodiscard]] static File::FILETYPE existsCaseInsensitive(std::string &filePath, std::filesystem::path &path);
-    [[nodiscard]] static File::FILETYPE exists(const std::string &filePath, const std::filesystem::path &path);
+    [[nodiscard]] static File::FILETYPE exists(std::string_view filePath, const std::filesystem::path &path);
 
     // directory cache
     static std::unique_ptr<DirectoryCache> s_directoryCache;

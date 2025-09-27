@@ -41,12 +41,8 @@ void handle_osz(const char *osz_path) {
         return;
     }
 
-    std::string mapset_dir = MCENGINE_DATA_DIR "maps" PREF_PATHSEP;
-    mapset_dir.append(std::to_string(set_id));
-    mapset_dir.append(PREF_PATHSEP);
-    if(!Environment::directoryExists(mapset_dir)) {
-        env->createDirectory(mapset_dir);
-    }
+    std::string mapset_dir = fmt::format(NEOSU_MAPS_PATH "/{}/", set_id);
+    Environment::createDirectory(mapset_dir);
     if(!Downloader::extract_beatmapset(osz.readFile(), osz.getFileSize(), mapset_dir)) {
         osu->getNotificationOverlay()->addToast("Failed to extract beatmapset", ERROR_TOAST);
         return;

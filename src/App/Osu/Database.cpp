@@ -118,7 +118,7 @@ void Database::AsyncDBLoader::initAsync() {
     assert(db != nullptr);
 
     std::string peppy_scores_path = cv::osu_folder.getString();
-    peppy_scores_path.append(PREF_PATHSEP "scores.db");
+    peppy_scores_path.append("/scores.db");
 
     db->findDatabases();
     if(db->bInterruptLoad.load()) goto done;
@@ -163,7 +163,7 @@ void Database::startLoader() {
     // only clear diffs/sets for full reloads (only handled for raw re-loading atm)
     const bool lastLoadWasRaw{this->bNeedRawLoad};
 
-    this->bNeedRawLoad = (!env->fileExists(fmt::format("{}" PREF_PATHSEP "osu!.db", cv::osu_folder.getString())) ||
+    this->bNeedRawLoad = (!env->fileExists(fmt::format("{}/osu!.db", cv::osu_folder.getString())) ||
                           !cv::database_enabled.getBool());
 
     const bool nextLoadIsRaw{this->bNeedRawLoad};
@@ -375,8 +375,9 @@ int Database::addScore(const FinishedScore &score) {
     // XXX: this is blocking main thread
     auto compressed_replay = LegacyReplay::compress_frames(score.replay);
     if(!compressed_replay.empty()) {
-        auto replay_path = UString::format(MCENGINE_DATA_DIR "replays/%d.replay.lzma", score.unixTimestamp);
-        FILE *replay_file = fopen(replay_path.toUtf8(), "wb");
+        auto replay_path = fmt::format(NEOSU_REPLAYS_PATH "/{:d}.replay.lzma", score.unixTimestamp);
+
+        FILE *replay_file = fopen(replay_path.c_str(), "wb");
         if(replay_file != nullptr) {
             fwrite(compressed_replay.data(), compressed_replay.size(), 1, replay_file);
             fclose(replay_file);
@@ -699,8 +700,7 @@ DatabaseBeatmap *Database::getBeatmapDifficulty(i32 map_id) {
 
 DatabaseBeatmap *Database::getBeatmapSet(i32 set_id) {
     if(this->isLoading()) {
-        debugLog("we are loading, progress {}, not returning a DatabaseBeatmap*",
-                 this->getProgress());
+        debugLog("we are loading, progress {}, not returning a DatabaseBeatmap*", this->getProgress());
         return nullptr;
     }
 
@@ -784,7 +784,7 @@ void Database::loadMaps() {
     this->peppy_overrides_mtx.lock();
 
     std::string peppy_maps_path = cv::osu_folder.getString();
-    peppy_maps_path.append(PREF_PATHSEP "osu!.db");
+    peppy_maps_path.append("/osu!.db");
     const auto &peppy_db_path = this->database_files[peppy_maps_path];
     const auto &neosu_maps_path = this->database_files["neosu_maps.db"];
 
@@ -831,9 +831,7 @@ void Database::loadMaps() {
                 i32 set_id = neosu_maps.read<i32>();
                 u16 nb_diffs = neosu_maps.read<u16>();
 
-                std::string mapset_path = MCENGINE_DATA_DIR "maps/";
-                mapset_path.append(std::to_string(set_id));
-                mapset_path.append("/");
+                std::string mapset_path = fmt::format(NEOSU_MAPS_PATH "/{}/", set_id);
 
                 auto *diffs = new std::vector<DatabaseBeatmap *>();
                 for(u16 j = 0; j < nb_diffs; j++) {
@@ -975,8 +973,8 @@ void Database::loadMaps() {
             auto playerName = db.read_string();
             this->iNumBeatmapsToLoad = db.read<u32>();
 
-            debugLog("Database: version = {:d}, folderCount = {:d}, playerName = {:s}, numDiffs = {:d}",
-                     this->iVersion, this->iFolderCount, playerName.c_str(), this->iNumBeatmapsToLoad);
+            debugLog("Database: version = {:d}, folderCount = {:d}, playerName = {:s}, numDiffs = {:d}", this->iVersion,
+                     this->iFolderCount, playerName.c_str(), this->iNumBeatmapsToLoad);
 
             // hard cap upper db version
             if(this->iVersion > cv::database_version.getInt() && !cv::database_ignore_version.getBool()) {
@@ -1508,7 +1506,7 @@ void Database::findDatabases() {
     this->database_files.clear();
 
     std::string peppy_scores_path = cv::osu_folder.getString();
-    peppy_scores_path.append(PREF_PATHSEP "scores.db");
+    peppy_scores_path.append("/scores.db");
     this->database_files.emplace(peppy_scores_path, UString(peppy_scores_path));
     this->database_files.emplace("neosu_scores.db", UString("neosu_scores.db"));
     this->database_files.emplace("scores.db", UString("scores.db"));  // mcneosu database
@@ -1516,14 +1514,14 @@ void Database::findDatabases() {
     // ignore if explicitly disabled
     if(cv::database_enabled.getBool()) {
         std::string peppy_maps_path = cv::osu_folder.getString();
-        peppy_maps_path.append(PREF_PATHSEP "osu!.db");
+        peppy_maps_path.append("/osu!.db");
         this->database_files.emplace(peppy_maps_path, UString(peppy_maps_path));
     }
 
     this->database_files.emplace("neosu_maps.db", UString("neosu_maps.db"));
 
     std::string peppy_collections_path = cv::osu_folder.getString();
-    peppy_collections_path.append(PREF_PATHSEP "collection.db");
+    peppy_collections_path.append("/collection.db");
     this->database_files.emplace(peppy_collections_path, UString(peppy_collections_path));
     this->database_files.emplace("collections.db", UString("collections.db"));
 

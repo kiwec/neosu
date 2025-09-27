@@ -25,39 +25,54 @@ namespace fs = std::filesystem;
 // encapsulation of directory caching logic
 //------------------------------------------------------------------------------
 class DirectoryCache final {
-   public:
-    DirectoryCache() = default;
-
-    // case-insensitive string utilities
-    struct CaseInsensitiveHash {
-        size_t operator()(const std::string &str) const {
+   private:
+    struct StringHashNcase {
+       private:
+        [[nodiscard]] inline size_t hashFunc(std::string_view str) const {
             size_t hash = 0;
             for(auto &c : str) {
-                hash = hash * 31 + std::tolower(c);
+                hash = hash * 31 + std::tolower(static_cast<unsigned char>(c));
             }
             return hash;
         }
+
+       public:
+        using is_transparent = void;
+
+        size_t operator()(const std::string &s) const { return hashFunc(s); }
+        size_t operator()(std::string_view sv) const { return hashFunc(sv); }
     };
 
-    struct CaseInsensitiveEqual {
-        bool operator()(const std::string &lhs, const std::string &rhs) const {
-            return std::ranges::equal(lhs, rhs, [](char a, char b) -> bool {
-                return std::tolower(static_cast<unsigned char>(a)) == std::tolower(static_cast<unsigned char>(b));
-            });
+    struct StringEqualNcase {
+       private:
+        [[nodiscard]] inline bool equality(std::string_view lhs, std::string_view rhs) const {
+            return std::ranges::equal(
+                lhs, rhs, [](unsigned char a, unsigned char b) -> bool { return std::tolower(a) == std::tolower(b); });
         }
+
+       public:
+        using is_transparent = void;
+
+        bool operator()(const std::string &lhs, const std::string &rhs) const { return equality(lhs, rhs); }
+        bool operator()(const std::string &lhs, std::string_view rhs) const { return equality(lhs, rhs); }
+        bool operator()(std::string_view lhs, const std::string &rhs) const { return equality(lhs, rhs); }
     };
+
+    template <typename T>
+    using sv_ncase_unordered_map = std::unordered_map<std::string, T, StringHashNcase, StringEqualNcase>;
+
+   public:
+    DirectoryCache() = default;
 
     // directory entry type
     struct DirectoryEntry {
-        std::unordered_map<std::string, std::pair<std::string, File::FILETYPE>, CaseInsensitiveHash,
-                           CaseInsensitiveEqual>
-            files;
+        sv_ncase_unordered_map<std::pair<std::string, File::FILETYPE>> files;
         std::chrono::steady_clock::time_point lastAccess;
         fs::file_time_type lastModified;
     };
 
     // look up a file with case-insensitive matching
-    std::pair<std::string, File::FILETYPE> lookup(const fs::path &dirPath, const std::string &filename) {
+    std::pair<std::string, File::FILETYPE> lookup(const fs::path &dirPath, std::string_view filename) {
         Sync::scoped_lock lock(this->mutex);
 
         std::string dirKey(dirPath.string());
@@ -176,10 +191,10 @@ File::FILETYPE File::existsCaseInsensitive(std::string &filePath) {
     return existsCaseInsensitive(filePath, fsPath);
 }
 
-File::FILETYPE File::exists(const std::string &filePath) {
+File::FILETYPE File::exists(std::string_view filePath) {
     if(filePath.empty()) return FILETYPE::NONE;
 
-    UString filePathUStr{filePath};
+    UString filePathUStr{filePath.data(), static_cast<int>(filePath.length())};
     const auto fsPath = fs::path(filePathUStr.plat_str());
     return exists(filePath, fsPath);
 }
@@ -223,7 +238,7 @@ File::FILETYPE File::existsCaseInsensitive(std::string &filePath, fs::path &path
     return fileType;
 }
 
-File::FILETYPE File::exists(const std::string &filePath, const fs::path &path) {
+File::FILETYPE File::exists(std::string_view filePath, const fs::path &path) {
     if(filePath.empty()) return File::FILETYPE::NONE;
 
     std::error_code ec;
@@ -243,14 +258,15 @@ File::FILETYPE File::exists(const std::string &filePath, const fs::path &path) {
 //------------------------------------------------------------------------------
 // File implementation
 //------------------------------------------------------------------------------
-File::File(std::string filePath, TYPE type) : sFilePath(filePath), fileType(type), bReady(false), iFileSize(0) {
+File::File(std::string filePath, TYPE type)
+    : sFilePath(std::move(filePath)), fileType(type), bReady(false), iFileSize(0) {
     if(type == TYPE::READ) {
         if(!openForReading()) return;
     } else if(type == TYPE::WRITE) {
         if(!openForWriting()) return;
     }
 
-    if(cv::debug_file.getBool()) debugLog("File: Opening {:s}\n", filePath);
+    if(cv::debug_file.getBool()) debugLog("File: Opening {:s}\n", this->sFilePath);
 
     this->bReady = true;
 }
@@ -335,7 +351,7 @@ void File::write(const u8 *buffer, size_t size) {
     this->ofstream->write(reinterpret_cast<const char *>(buffer), static_cast<std::streamsize>(size));
 }
 
-bool File::writeLine(const std::string &line, bool insertNewline) {
+bool File::writeLine(std::string_view line, bool insertNewline) {
     if(!canWrite()) return false;
 
     std::string writeLine{line};

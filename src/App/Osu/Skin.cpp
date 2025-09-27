@@ -35,9 +35,7 @@ void Skin::unpack(const char *filepath) {
     debugLog("Extracting {:s}...", skin_name.c_str());
     skin_name.erase(skin_name.size() - 4);  // remove .osk extension
 
-    auto skin_root = std::string(MCENGINE_DATA_DIR "skins/");
-    skin_root.append(skin_name);
-    skin_root.append("/");
+    auto skin_root = fmt::format(NEOSU_SKINS_PATH "/{}/", skin_name);
 
     std::vector<u8> fileBuffer;
     size_t fileSize{0};
@@ -241,7 +239,7 @@ void Skin::load() {
     cvars->resetSkinCvars();
     if(!this->parseSkinINI(this->sSkinIniFilePath)) {
         parseSkinIni1Status = false;
-        this->sSkinIniFilePath = MCENGINE_DATA_DIR "materials/default/skin.ini";
+        this->sSkinIniFilePath = MCENGINE_IMAGES_PATH "/default/skin.ini";
         cvars->resetSkinCvars();
         parseSkinIni2Status = this->parseSkinINI(this->sSkinIniFilePath);
     }
@@ -1177,12 +1175,12 @@ void Skin::checkLoadImage(Image **addressOfPointer, const std::string &skinEleme
     // NOTE: only the default skin is loaded with a resource name (it must never be unloaded by other instances), and it
     // is NOT added to the resources vector
 
-    std::string defaultFilePath1 = MCENGINE_DATA_DIR "materials/default/";
+    std::string defaultFilePath1 = MCENGINE_IMAGES_PATH "/default/";
     defaultFilePath1.append(skinElementName);
     defaultFilePath1.append("@2x.");
     defaultFilePath1.append(fileExtension);
 
-    std::string defaultFilePath2 = MCENGINE_DATA_DIR "materials/default/";
+    std::string defaultFilePath2 = MCENGINE_IMAGES_PATH "/default/";
     defaultFilePath2.append(skinElementName);
     defaultFilePath2.append(".");
     defaultFilePath2.append(fileExtension);
@@ -1283,8 +1281,8 @@ void Skin::checkLoadImage(Image **addressOfPointer, const std::string &skinEleme
     }
 }
 
-void Skin::loadSound(Sound *&sndRef, const std::string &skinElementName, const std::string &resourceName, bool isOverlayable,
-                     bool isSample, bool loop, bool fallback_to_default) {
+void Skin::loadSound(Sound *&sndRef, const std::string &skinElementName, const std::string &resourceName,
+                     bool isOverlayable, bool isSample, bool loop, bool fallback_to_default) {
     if(sndRef != nullptr) return;  // we are already loaded
 
     // random skin support
@@ -1313,7 +1311,8 @@ void Skin::loadSound(Sound *&sndRef, const std::string &skinElementName, const s
                 was_first_load = true;
 
                 // user skin, destroy old sound resource (blocking)
-                if(existing_sound) resourceManager->destroyResource(existing_sound, ResourceManager::DestroyMode::FORCE_BLOCKING);
+                if(existing_sound)
+                    resourceManager->destroyResource(existing_sound, ResourceManager::DestroyMode::FORCE_BLOCKING);
 
                 if(cv::skin_async.getBool()) {
                     resourceManager->requestNextLoadAsync();
@@ -1334,7 +1333,7 @@ void Skin::loadSound(Sound *&sndRef, const std::string &skinElementName, const s
     }
 
     if(fallback_to_default && !loaded_user_skin) {
-        std::string defaultpath = MCENGINE_DATA_DIR "materials/default/";
+        std::string defaultpath = MCENGINE_IMAGES_PATH "/default/";
         sndRef = try_load_sound(defaultpath, skinElementName, loop, resourceName, true);
     }
 

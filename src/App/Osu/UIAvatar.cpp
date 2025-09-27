@@ -5,20 +5,17 @@
 #include "Bancho.h"
 #include "Engine.h"
 #include "Osu.h"
-#include "ResourceManager.h"
 #include "UIUserContextMenu.h"
 
 UIAvatar::UIAvatar(i32 player_id, float xPos, float yPos, float xSize, float ySize)
     : CBaseUIButton(xPos, yPos, xSize, ySize, "avatar", "") {
     this->player_id_for_endpoint = {player_id,
-                                    fmt::format(MCENGINE_DATA_DIR "avatars/{}/{}", BanchoState::endpoint, player_id)};
+                                    fmt::format(NEOSU_AVATARS_PATH "/{}/{}", BanchoState::endpoint, player_id)};
 
     this->setClickCallback(SA::MakeDelegate<&UIAvatar::onAvatarClicked>(this));
 
     // add to load queue
-    if(osu) {
-        osu->getAvatarManager()->add_avatar(this->player_id_for_endpoint);
-    }
+    osu->getAvatarManager()->add_avatar(this->player_id_for_endpoint);
 }
 
 UIAvatar::~UIAvatar() {
