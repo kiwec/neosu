@@ -421,9 +421,13 @@ void RankingScreen::setScore(const FinishedScore &score) {
         this->watch_btn->setTextColor(0xff888888);
         this->watch_btn->setTextDarkColor(0xff000000);
     } else {
-        this->watch_btn->bVisible2 = !BanchoState::is_in_a_multi_room();
+        this->watch_btn->setEnabled(true);
+        // why isnt there just a way to have enabled/disabled buttons present differently
+        // instead of manually resetting colors...?
+        this->watch_btn->setTextColor(argb(255, 255, 255, 255));
     }
 
+    this->watch_btn->bVisible2 = !BanchoState::is_in_a_multi_room();
     this->bIsUnranked = false;
 
     struct tm tm;
@@ -522,11 +526,13 @@ void RankingScreen::updateLayout() {
                                 this->rankingTitle->getImage()->getHeight() * this->rankingTitle->getScale().y);
     this->rankingTitle->setRelPos(this->getSize().x - this->rankingTitle->getSize().x - osu->getUIScale(20.0f), 0);
 
-    this->songInfo->setSize(osu->getVirtScreenWidth(), std::max(this->songInfo->getMinimumHeight(),
-                                                            this->rankingTitle->getSize().y *
-                                                                cv::rankingscreen_topbar_height_percent.getFloat()));
+    this->songInfo->setSize(
+        osu->getVirtScreenWidth(),
+        std::max(this->songInfo->getMinimumHeight(),
+                 this->rankingTitle->getSize().y * cv::rankingscreen_topbar_height_percent.getFloat()));
 
-    this->rankings->setSize(osu->getVirtScreenSize().x + 2, osu->getVirtScreenSize().y - this->songInfo->getSize().y + 3);
+    this->rankings->setSize(osu->getVirtScreenSize().x + 2,
+                            osu->getVirtScreenSize().y - this->songInfo->getSize().y + 3);
     this->rankings->setRelPosY(this->songInfo->getSize().y - 1);
 
     float btn_width = 150.f * uiScale;
