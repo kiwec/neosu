@@ -288,7 +288,15 @@ std::vector<std::string> Environment::getFilesInFolder(std::string_view folder) 
 }
 
 std::vector<std::string> Environment::getFoldersInFolder(std::string_view folder) noexcept {
-    return enumerateDirectory(folder, SDL_PATHTYPE_DIRECTORY);
+    if (folder.back() == '/') {
+        return enumerateDirectory(folder, SDL_PATHTYPE_DIRECTORY);
+    }
+    std::string folderToEnumerate{folder};
+    while(folderToEnumerate.ends_with('\\') || folderToEnumerate.ends_with('/')) {
+        folderToEnumerate.pop_back();
+    }
+    folderToEnumerate.push_back('/');
+    return enumerateDirectory(folderToEnumerate, SDL_PATHTYPE_DIRECTORY);
 }
 
 std::string Environment::getFileNameFromFilePath(std::string_view filepath) noexcept {

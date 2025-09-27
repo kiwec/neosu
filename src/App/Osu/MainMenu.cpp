@@ -1606,7 +1606,7 @@ void MainMenu::SongsFolderEnumerator::initAsync() {
         }
     }
 
-    auto neosu_mapsets = env->getFoldersInFolder(NEOSU_MAPS_PATH);
+    auto neosu_mapsets = env->getFoldersInFolder(NEOSU_MAPS_PATH "/");
     for(const auto &mapset : neosu_mapsets) {
         this->entries.push_back(fmt::format(NEOSU_MAPS_PATH "/{}/", mapset));
     }
