@@ -181,35 +181,33 @@ std::unique_ptr<DirectoryCache> File::s_directoryCache;
 //------------------------------------------------------------------------------
 // path resolution methods
 //------------------------------------------------------------------------------
-// public
+// public static
 File::FILETYPE File::existsCaseInsensitive(std::string &filePath) {
     if(filePath.empty()) return FILETYPE::NONE;
 
-    UString filePathUStr{filePath};
-    auto fsPath = fs::path(filePathUStr.plat_str());
-
-    return existsCaseInsensitive(filePath, fsPath);
+    auto fsPath = getFsPath(filePath);
+    return File::existsCaseInsensitive(filePath, fsPath);
 }
 
 File::FILETYPE File::exists(std::string_view filePath) {
     if(filePath.empty()) return FILETYPE::NONE;
 
-    UString filePathUStr{filePath.data(), static_cast<int>(filePath.length())};
-    const auto fsPath = fs::path(filePathUStr.plat_str());
-    return exists(filePath, fsPath);
+    return File::exists(filePath, File::getFsPath(filePath));
 }
 
 // private (cache the fs::path)
 File::FILETYPE File::existsCaseInsensitive(std::string &filePath, fs::path &path) {
+    // windows is already case insensitive
+    if constexpr(Env::cfg(OS::WINDOWS)) {
+        return File::exists(filePath);
+    }
+
     auto retType = File::exists(filePath, path);
 
     if(retType == File::FILETYPE::NONE)
         return File::FILETYPE::NONE;
     else if(!(retType == File::FILETYPE::MAYBE_INSENSITIVE))
         return retType;  // direct match
-
-    // no point in continuing, windows is already case insensitive
-    if constexpr(Env::cfg(OS::WINDOWS)) return File::FILETYPE::NONE;
 
     auto parentPath = path.parent_path();
 
@@ -225,16 +223,15 @@ File::FILETYPE File::existsCaseInsensitive(std::string &filePath, fs::path &path
     if(fileType == File::FILETYPE::NONE) return File::FILETYPE::NONE;  // no match, even case-insensitively
 
     std::string resolvedPath(parentPath.string());
-    if(!(resolvedPath.back() == '/') && !(resolvedPath.back() == '\\')) resolvedPath.append("/");
+    if(!(resolvedPath.back() == '/') && !(resolvedPath.back() == '\\')) resolvedPath.push_back('/');
     resolvedPath.append(resolvedName);
 
     if(cv::debug_file.getBool())
         debugLog("File: Case-insensitive match found for {:s} -> {:s}\n", path.string(), resolvedPath);
 
-    // now update the given paths with the actual found path
+    // now update the input path reference with the actual found path
     filePath = resolvedPath;
-    UString filePathUStr{filePath};
-    path = fs::path(filePathUStr.plat_str());
+    path = fs::path(resolvedPath);
     return fileType;
 }
 
@@ -255,11 +252,23 @@ File::FILETYPE File::exists(std::string_view filePath, const fs::path &path) {
         return File::FILETYPE::OTHER;
 }
 
+// public helper
+// fs::path works differently depending on the type of string it was constructed with (annoying)
+fs::path File::getFsPath(std::string_view utf8path) {
+    if(utf8path.empty()) return fs::path{};
+#ifdef MCENGINE_PLATFORM_WINDOWS
+    const UString filePathUStr{utf8path.data(), static_cast<int>(utf8path.length())};
+    return fs::path{filePathUStr.wc_str()};
+#else
+    return fs::path{utf8path};
+#endif
+}
+
 //------------------------------------------------------------------------------
 // File implementation
 //------------------------------------------------------------------------------
 File::File(std::string filePath, TYPE type)
-    : sFilePath(std::move(filePath)), fileType(type), bReady(false), iFileSize(0) {
+    : sFilePath(std::move(filePath)), fsPath(getFsPath(this->sFilePath)), fileMode(type), bReady(false), iFileSize(0) {
     if(type == TYPE::READ) {
         if(!openForReading()) return;
     } else if(type == TYPE::WRITE) {
@@ -273,9 +282,7 @@ File::File(std::string filePath, TYPE type)
 
 bool File::openForReading() {
     // resolve the file path (handles case-insensitive matching)
-    UString filePathUStr{this->sFilePath};
-    fs::path path(filePathUStr.plat_str());
-    auto fileType = existsCaseInsensitive(this->sFilePath, path);
+    auto fileType = File::existsCaseInsensitive(this->sFilePath, this->fsPath);
 
     if(fileType != File::FILETYPE::FILE) {
         if(cv::debug_file.getBool())
@@ -286,7 +293,7 @@ bool File::openForReading() {
 
     // create and open input file stream
     this->ifstream = std::make_unique<std::ifstream>();
-    this->ifstream->open(path, std::ios::in | std::ios::binary);
+    this->ifstream->open(this->fsPath, std::ios::in | std::ios::binary);
 
     // check if file opened successfully
     if(!this->ifstream || !this->ifstream->good()) {
@@ -296,7 +303,7 @@ bool File::openForReading() {
 
     // get file size
     std::error_code ec;
-    this->iFileSize = fs::file_size(path, ec);
+    this->iFileSize = fs::file_size(this->fsPath, ec);
 
     if(ec) {
         debugLog("File Error: Couldn't get file size for {:s}\n", this->sFilePath);
@@ -315,14 +322,10 @@ bool File::openForReading() {
 }
 
 bool File::openForWriting() {
-    // get filesystem path
-    UString filePathUStr{this->sFilePath};
-    fs::path path(filePathUStr.plat_str());
-
     // create parent directories if needed
-    if(!path.parent_path().empty()) {
+    if(!this->fsPath.parent_path().empty()) {
         std::error_code ec;
-        fs::create_directories(path.parent_path(), ec);
+        fs::create_directories(this->fsPath.parent_path(), ec);
         if(ec) {
             debugLog("File Error: Couldn't create parent directories for {:s} (error: {:s})\n", this->sFilePath,
                      ec.message());
@@ -332,7 +335,7 @@ bool File::openForWriting() {
 
     // create and open output file stream
     this->ofstream = std::make_unique<std::ofstream>();
-    this->ofstream->open(path, std::ios::out | std::ios::trunc | std::ios::binary);
+    this->ofstream->open(this->fsPath, std::ios::out | std::ios::trunc | std::ios::binary);
 
     // check if file opened successfully
     if(!this->ofstream->good()) {
@@ -354,9 +357,13 @@ void File::write(const u8 *buffer, size_t size) {
 bool File::writeLine(std::string_view line, bool insertNewline) {
     if(!canWrite()) return false;
 
-    std::string writeLine{line};
-    if(insertNewline) writeLine = writeLine + "\n";
-    this->ofstream->write(writeLine.c_str(), static_cast<std::streamsize>(writeLine.length()));
+    // useless...
+    if(insertNewline) {
+        std::string lineNewline{std::string{line} + '\n'};
+        this->ofstream->write(lineNewline.data(), static_cast<std::streamsize>(lineNewline.length()));
+    } else {
+        this->ofstream->write(line.data(), static_cast<std::streamsize>(line.length()));
+    }
     return !this->ofstream->bad();
 }
 

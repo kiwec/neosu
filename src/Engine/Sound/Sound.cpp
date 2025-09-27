@@ -56,7 +56,7 @@ Sound* Sound::createSound(std::string filepath, bool stream, bool overlayable, b
 
 // quick heuristic to check if it's going to be worth loading the audio
 bool Sound::isValidAudioFile(std::string_view filePath, std::string_view fileExt) {
-    ByteBufferedFile::Reader reader(UString{filePath});
+    ByteBufferedFile::Reader reader(filePath);
 
     if(!reader.good()) return false;
 

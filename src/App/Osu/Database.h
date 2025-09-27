@@ -118,7 +118,7 @@ class Database {
     std::unordered_map<MD5Hash, std::vector<FinishedScore>> online_scores;
 
     // should only be accessed from database loader thread!
-    std::unordered_map<std::string, UString> database_files;
+    sv_unordered_map<std::string> database_files;
     u64 bytes_processed{0};
     u64 total_bytes{0};
     std::atomic<float> fLoadingProgress;
@@ -151,11 +151,11 @@ class Database {
     void saveMaps();
 
     void findDatabases();
-    bool importDatabase(const std::string &db_path);
+    bool importDatabase(std::string_view db_path);
     void loadMaps();
-    void loadScores(const UString &dbPath);
-    void loadOldMcNeosuScores(const UString &dbPath);
-    void loadPeppyScores(const UString &dbPath);
+    void loadScores(std::string_view dbPath);
+    void loadOldMcNeosuScores(std::string_view dbPath);
+    void loadPeppyScores(std::string_view dbPath);
     void saveScores();
     bool addScoreRaw(const FinishedScore &score);
     // returns position of existing score in the scores[hash] array if found, -1 otherwise

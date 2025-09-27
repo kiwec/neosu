@@ -32,10 +32,10 @@ class File {
     ~File() = default;
 
     [[nodiscard]] constexpr bool canRead() const {
-        return this->bReady && this->ifstream && this->ifstream->good() && this->fileType == TYPE::READ;
+        return this->bReady && this->ifstream && this->ifstream->good() && this->fileMode == TYPE::READ;
     }
     [[nodiscard]] constexpr bool canWrite() const {
-        return this->bReady && this->ofstream && this->ofstream->good() && this->fileType == TYPE::WRITE;
+        return this->bReady && this->ofstream && this->ofstream->good() && this->fileMode == TYPE::WRITE;
     }
 
     void write(const u8 *buffer, size_t size);
@@ -57,9 +57,14 @@ class File {
     [[nodiscard]] static File::FILETYPE existsCaseInsensitive(std::string &filePath);
     [[nodiscard]] static File::FILETYPE exists(std::string_view filePath);
 
+    // fs::path works differently depending on the type of string it was constructed with
+    // so use this to get a unicode-constructed path on windows (convert), utf8 otherwise (passthrough)
+    [[nodiscard]] static std::filesystem::path getFsPath(std::string_view utf8path);
+
    private:
     std::string sFilePath;
-    TYPE fileType;
+    std::filesystem::path fsPath;
+    TYPE fileMode;
     bool bReady;
     size_t iFileSize;
 

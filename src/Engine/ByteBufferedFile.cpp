@@ -1,17 +1,17 @@
 #include "ByteBufferedFile.h"
 
 #include "Logging.h"
-#include "ModFlags.h"
+#include "File.h"
+
 #include <system_error>
 #include <cassert>
 
-ByteBufferedFile::Reader::Reader(const UString &uPath) : buffer(READ_BUFFER_SIZE) {
-    auto path = std::filesystem::path(uPath.plat_str());
+ByteBufferedFile::Reader::Reader(std::string_view readPath) : buffer(READ_BUFFER_SIZE) {
+    auto path = File::getFsPath(readPath);
     this->file.open(path, std::ios::binary);
     if(!this->file.is_open()) {
         this->set_error("Failed to open file for reading: " + std::generic_category().message(errno));
-        debugLog("Failed to open '{:s}': {:s}", path.string().c_str(),
-                 std::generic_category().message(errno).c_str());
+        debugLog("Failed to open '{:s}': {:s}", readPath, std::generic_category().message(errno).c_str());
         return;
     }
 
@@ -31,8 +31,7 @@ ByteBufferedFile::Reader::Reader(const UString &uPath) : buffer(READ_BUFFER_SIZE
 
 seek_error:
     this->set_error("Failed to initialize file reader: " + std::generic_category().message(errno));
-    debugLog("Failed to initialize file reader '{:s}': {:s}", path.string().c_str(),
-             std::generic_category().message(errno).c_str());
+    debugLog("Failed to initialize file reader '{:s}': {:s}", readPath, std::generic_category().message(errno).c_str());
     this->file.close();
     return;
 }
@@ -72,51 +71,6 @@ MD5Hash ByteBufferedFile::Reader::read_hash() {
     this->skip_bytes(extra);
     hash.hash[len] = '\0';
     return hash;
-}
-
-Replay::Mods ByteBufferedFile::Reader::read_mods() {
-    Replay::Mods mods;
-
-    mods.flags = this->read<u64>();
-    mods.speed = this->read<f32>();
-    mods.notelock_type = this->read<i32>();
-    mods.ar_override = this->read<f32>();
-    mods.ar_overridenegative = this->read<f32>();
-    mods.cs_override = this->read<f32>();
-    mods.cs_overridenegative = this->read<f32>();
-    mods.hp_override = this->read<f32>();
-    mods.od_override = this->read<f32>();
-    using namespace ModMasks;
-    using namespace Replay::ModFlags;
-    if(eq(mods.flags, Autopilot)) {
-        mods.autopilot_lenience = this->read<f32>();
-    }
-    if(eq(mods.flags, Timewarp)) {
-        mods.timewarp_multiplier = this->read<f32>();
-    }
-    if(eq(mods.flags, Minimize)) {
-        mods.minimize_multiplier = this->read<f32>();
-    }
-    if(eq(mods.flags, ARTimewarp)) {
-        mods.artimewarp_multiplier = this->read<f32>();
-    }
-    if(eq(mods.flags, ARWobble)) {
-        mods.arwobble_strength = this->read<f32>();
-        mods.arwobble_interval = this->read<f32>();
-    }
-    if(eq(mods.flags, Wobble1) || eq(mods.flags, Wobble2)) {
-        mods.wobble_strength = this->read<f32>();
-        mods.wobble_frequency = this->read<f32>();
-        mods.wobble_rotation_speed = this->read<f32>();
-    }
-    if(eq(mods.flags, Jigsaw1) || eq(mods.flags, Jigsaw2)) {
-        mods.jigsaw_followcircle_radius_factor = this->read<f32>();
-    }
-    if(eq(mods.flags, Shirone)) {
-        mods.shirone_combo = this->read<f32>();
-    }
-
-    return mods;
 }
 
 std::string ByteBufferedFile::Reader::read_string() {
@@ -168,8 +122,8 @@ void ByteBufferedFile::Reader::skip_string() {
     this->skip_bytes(len);
 }
 
-ByteBufferedFile::Writer::Writer(const UString &uPath) : buffer(WRITE_BUFFER_SIZE) {
-    auto path = std::filesystem::path(uPath.plat_str());
+ByteBufferedFile::Writer::Writer(std::string_view writePath) : buffer(WRITE_BUFFER_SIZE) {
+    auto path = File::getFsPath(writePath);
     this->file_path = path;
     this->tmp_file_path = this->file_path;
     this->tmp_file_path += ".tmp";
@@ -177,8 +131,7 @@ ByteBufferedFile::Writer::Writer(const UString &uPath) : buffer(WRITE_BUFFER_SIZ
     this->file.open(this->tmp_file_path, std::ios::binary);
     if(!this->file.is_open()) {
         this->set_error("Failed to open file for writing: " + std::generic_category().message(errno));
-        debugLog("Failed to open '{:s}': {:s}", path.string().c_str(),
-                 std::generic_category().message(errno).c_str());
+        debugLog("Failed to open '{:s}': {:s}", writePath, std::generic_category().message(errno).c_str());
         return;
     }
 }
@@ -215,51 +168,6 @@ void ByteBufferedFile::Writer::write_hash(MD5Hash hash) {
     this->write<u8>(0x0B);
     this->write<u8>(0x20);
     this->write_bytes(reinterpret_cast<u8 *>(hash.string()), 32);
-}
-
-void ByteBufferedFile::Writer::write_mods(Replay::Mods mods) {
-    if(this->error_flag) {
-        return;
-    }
-
-    this->write<u64>(mods.flags);
-    this->write<f32>(mods.speed);
-    this->write<i32>(mods.notelock_type);
-    this->write<f32>(mods.ar_override);
-    this->write<f32>(mods.ar_overridenegative);
-    this->write<f32>(mods.cs_override);
-    this->write<f32>(mods.cs_overridenegative);
-    this->write<f32>(mods.hp_override);
-    this->write<f32>(mods.od_override);
-    using namespace ModMasks;
-    using namespace Replay::ModFlags;
-    if(eq(mods.flags, Autopilot)) {
-        this->write<f32>(mods.autopilot_lenience);
-    }
-    if(eq(mods.flags, Timewarp)) {
-        this->write<f32>(mods.timewarp_multiplier);
-    }
-    if(eq(mods.flags, Minimize)) {
-        this->write<f32>(mods.minimize_multiplier);
-    }
-    if(eq(mods.flags, ARTimewarp)) {
-        this->write<f32>(mods.artimewarp_multiplier);
-    }
-    if(eq(mods.flags, ARWobble)) {
-        this->write<f32>(mods.arwobble_strength);
-        this->write<f32>(mods.arwobble_interval);
-    }
-    if(eq(mods.flags, Wobble1) || eq(mods.flags, Wobble2)) {
-        this->write<f32>(mods.wobble_strength);
-        this->write<f32>(mods.wobble_frequency);
-        this->write<f32>(mods.wobble_rotation_speed);
-    }
-    if(eq(mods.flags, Jigsaw1) || eq(mods.flags, Jigsaw2)) {
-        this->write<f32>(mods.jigsaw_followcircle_radius_factor);
-    }
-    if(eq(mods.flags, Shirone)) {
-        this->write<f32>(mods.shirone_combo);
-    }
 }
 
 void ByteBufferedFile::Writer::write_string(std::string str) {
@@ -337,15 +245,14 @@ void ByteBufferedFile::Writer::write_uleb128(u32 num) {
     }
 }
 
-void ByteBufferedFile::copy(const UString &from_uPath, const UString &to_uPath) {
-    Reader from(from_uPath);
-    Writer to(to_uPath);
-
+void ByteBufferedFile::copy(std::string_view from_path, std::string_view to_path) {
+    Reader from(from_path);
     if(!from.good()) {
         debugLog("Failed to open source file for copying: {:s}", from.error().data());
         return;
     }
 
+    Writer to(to_path);
     if(!to.good()) {
         debugLog("Failed to open destination file for copying: {:s}", to.error().data());
         return;

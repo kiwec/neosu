@@ -25,7 +25,7 @@ extern std::vector<Collection*> collections;
 Collection* get_or_create_collection(std::string name);
 
 bool load_collections();
-bool load_peppy_collections(const UString &peppy_collections_path);
-bool load_mcneosu_collections(const UString &neosu_collections_path);
+bool load_peppy_collections(std::string_view peppy_collections_path);
+bool load_mcneosu_collections(std::string_view neosu_collections_path);
 void unload_collections();
 bool save_collections();

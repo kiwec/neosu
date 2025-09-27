@@ -72,7 +72,7 @@ void md5(const void* data, size_t size, u8* hash) {
     std::memcpy(hash, hasher.getDigest(), 16);
 }
 
-void sha256_f(const UString& file_path, u8* hash) {
+void sha256_f(std::string_view file_path, u8* hash) {
     constexpr size_t CHUNK_SIZE{32768};
     std::array<u8, CHUNK_SIZE> buffer{};
     size_t bytes_read{0};
@@ -118,7 +118,7 @@ void sha256_f(const UString& file_path, u8* hash) {
     sha256_read(&buff, hash);
 }
 
-void md5_f(const UString& file_path, u8* hash) {
+void md5_f(std::string_view file_path, u8* hash) {
     constexpr size_t CHUNK_SIZE{32768};
     std::array<u8, CHUNK_SIZE> buffer{};
     size_t bytes_read{0};

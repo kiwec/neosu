@@ -163,8 +163,8 @@ void Database::startLoader() {
     // only clear diffs/sets for full reloads (only handled for raw re-loading atm)
     const bool lastLoadWasRaw{this->bNeedRawLoad};
 
-    this->bNeedRawLoad = (!env->fileExists(fmt::format("{}/osu!.db", cv::osu_folder.getString())) ||
-                          !cv::database_enabled.getBool());
+    this->bNeedRawLoad =
+        (!env->fileExists(fmt::format("{}/osu!.db", cv::osu_folder.getString())) || !cv::database_enabled.getBool());
 
     const bool nextLoadIsRaw{this->bNeedRawLoad};
 
@@ -817,7 +817,7 @@ void Database::loadMaps() {
             if(version < NEOSU_MAPS_DB_VERSION) {
                 // Reading from older database version: backup just in case
                 auto backup_path = fmt::format("neosu_maps.db.{}", version);
-                ByteBufferedFile::copy("neosu_maps.db", UString{backup_path});
+                ByteBufferedFile::copy("neosu_maps.db", backup_path);
             }
 
             u32 nb_sets = neosu_maps.read<u32>();
@@ -1507,31 +1507,31 @@ void Database::findDatabases() {
 
     std::string peppy_scores_path = cv::osu_folder.getString();
     peppy_scores_path.append("/scores.db");
-    this->database_files.emplace(peppy_scores_path, UString(peppy_scores_path));
-    this->database_files.emplace("neosu_scores.db", UString("neosu_scores.db"));
-    this->database_files.emplace("scores.db", UString("scores.db"));  // mcneosu database
+    this->database_files.emplace(peppy_scores_path, peppy_scores_path);
+    this->database_files.emplace("neosu_scores.db", "neosu_scores.db");
+    this->database_files.emplace("scores.db", "scores.db");  // mcneosu database
 
     // ignore if explicitly disabled
     if(cv::database_enabled.getBool()) {
         std::string peppy_maps_path = cv::osu_folder.getString();
         peppy_maps_path.append("/osu!.db");
-        this->database_files.emplace(peppy_maps_path, UString(peppy_maps_path));
+        this->database_files.emplace(peppy_maps_path, peppy_maps_path);
     }
 
-    this->database_files.emplace("neosu_maps.db", UString("neosu_maps.db"));
+    this->database_files.emplace("neosu_maps.db", "neosu_maps.db");
 
     std::string peppy_collections_path = cv::osu_folder.getString();
     peppy_collections_path.append("/collection.db");
-    this->database_files.emplace(peppy_collections_path, UString(peppy_collections_path));
-    this->database_files.emplace("collections.db", UString("collections.db"));
+    this->database_files.emplace(peppy_collections_path, peppy_collections_path);
+    this->database_files.emplace("collections.db", "collections.db");
 
     for(const auto &db_path : this->dbPathsToImport) {
-        this->database_files.emplace(db_path, UString(db_path));
+        this->database_files.emplace(db_path, db_path);
     }
 
-    for(const auto &[_, upath] : this->database_files) {
+    for(const auto &[_, pathstr] : this->database_files) {
         std::error_code ec;
-        auto db_filesize = std::filesystem::file_size(upath.plat_str(), ec);
+        auto db_filesize = std::filesystem::file_size(File::getFsPath(pathstr), ec);
         if(!ec && db_filesize > 0) {
             this->total_bytes += db_filesize;
         }
@@ -1539,9 +1539,9 @@ void Database::findDatabases() {
 }
 
 // Detects what type of database it is, then imports it
-bool Database::importDatabase(const std::string &db_path) {
+bool Database::importDatabase(std::string_view db_path) {
     std::string db_name = env->getFileNameFromFilePath(db_path);
-    auto &db = this->database_files[db_path];
+    auto &db = this->database_files[std::string{db_path}];
 
     if(db_name == "collection.db") {
         // osu! collections
@@ -1560,7 +1560,7 @@ bool Database::importDatabase(const std::string &db_path) {
     }
 
     if(db_name == "scores.db") {
-        ByteBufferedFile::Reader score_db{UString(db_path)};
+        ByteBufferedFile::Reader score_db{db_path};
         u32 db_version = score_db.read<u32>();
         if(!score_db.good() || db_version == 0) {
             return false;
@@ -1607,12 +1607,59 @@ bool Database::importDatabase(const std::string &db_path) {
     return false;
 }
 
-void Database::loadScores(const UString &dbPath) {
+void Database::loadScores(std::string_view dbPath) {
     ByteBufferedFile::Reader db(dbPath);
     if(db.total_size == 0) {
         this->bytes_processed += db.total_size;
         return;
     }
+
+    // helper
+    // to be removed from here when BanchoPacket is refactored to use ByteBufferedFile
+    static auto read_mods = [](ByteBufferedFile::Reader &dbr) -> Replay::Mods {
+        Replay::Mods mods;
+
+        mods.flags = dbr.read<u64>();
+        mods.speed = dbr.read<f32>();
+        mods.notelock_type = dbr.read<i32>();
+        mods.ar_override = dbr.read<f32>();
+        mods.ar_overridenegative = dbr.read<f32>();
+        mods.cs_override = dbr.read<f32>();
+        mods.cs_overridenegative = dbr.read<f32>();
+        mods.hp_override = dbr.read<f32>();
+        mods.od_override = dbr.read<f32>();
+        using namespace ModMasks;
+        using namespace Replay::ModFlags;
+        if(eq(mods.flags, Autopilot)) {
+            mods.autopilot_lenience = dbr.read<f32>();
+        }
+        if(eq(mods.flags, Timewarp)) {
+            mods.timewarp_multiplier = dbr.read<f32>();
+        }
+        if(eq(mods.flags, Minimize)) {
+            mods.minimize_multiplier = dbr.read<f32>();
+        }
+        if(eq(mods.flags, ARTimewarp)) {
+            mods.artimewarp_multiplier = dbr.read<f32>();
+        }
+        if(eq(mods.flags, ARWobble)) {
+            mods.arwobble_strength = dbr.read<f32>();
+            mods.arwobble_interval = dbr.read<f32>();
+        }
+        if(eq(mods.flags, Wobble1) || eq(mods.flags, Wobble2)) {
+            mods.wobble_strength = dbr.read<f32>();
+            mods.wobble_frequency = dbr.read<f32>();
+            mods.wobble_rotation_speed = dbr.read<f32>();
+        }
+        if(eq(mods.flags, Jigsaw1) || eq(mods.flags, Jigsaw2)) {
+            mods.jigsaw_followcircle_radius_factor = dbr.read<f32>();
+        }
+        if(eq(mods.flags, Shirone)) {
+            mods.shirone_combo = dbr.read<f32>();
+        }
+
+        return mods;
+    };
 
     u32 nb_neosu_scores = 0;
     u8 magic_bytes[6] = {0};
@@ -1630,7 +1677,7 @@ void Database::loadScores(const UString &dbPath) {
     } else if(db_version < NEOSU_SCORE_DB_VERSION) {
         // Reading from older database version: backup just in case
         auto backup_path = fmt::format("neosu_scores.db.{}", db_version);
-        ByteBufferedFile::copy("neosu_scores.db", UString{backup_path});
+        ByteBufferedFile::copy("neosu_scores.db", backup_path);
     }
 
     u32 nb_beatmaps = db.read<u32>();
@@ -1644,7 +1691,7 @@ void Database::loadScores(const UString &dbPath) {
         for(u32 s = 0; s < nb_beatmap_scores; s++) {
             FinishedScore sc;
 
-            sc.mods = db.read_mods();
+            sc.mods = read_mods(db);
             sc.score = db.read<u64>();
             sc.spinner_bonus = db.read<u64>();
             sc.unixTimestamp = db.read<u64>();
@@ -1699,7 +1746,7 @@ void Database::loadScores(const UString &dbPath) {
 }
 
 // import scores from mcosu, or old neosu (before we started saving replays)
-void Database::loadOldMcNeosuScores(const UString &dbPath) {
+void Database::loadOldMcNeosuScores(std::string_view dbPath) {
     ByteBufferedFile::Reader db(dbPath);
 
     u32 db_version = db.read<u32>();
@@ -1975,7 +2022,7 @@ void Database::loadOldMcNeosuScores(const UString &dbPath) {
     this->bytes_processed += db.total_size;
 }
 
-void Database::loadPeppyScores(const UString &dbPath) {
+void Database::loadPeppyScores(std::string_view dbPath) {
     ByteBufferedFile::Reader db(dbPath);
     int nb_imported = 0;
 
@@ -2084,6 +2131,53 @@ void Database::saveScores() {
         return;
     }
 
+    // helper
+    // to be removed from here when BanchoPacket is refactored to use ByteBufferedFile
+    static auto write_mods = [](ByteBufferedFile::Writer &dbr, const Replay::Mods &mods) -> void {
+        if(!dbr.good()) {
+            return;
+        }
+
+        dbr.write<u64>(mods.flags);
+        dbr.write<f32>(mods.speed);
+        dbr.write<i32>(mods.notelock_type);
+        dbr.write<f32>(mods.ar_override);
+        dbr.write<f32>(mods.ar_overridenegative);
+        dbr.write<f32>(mods.cs_override);
+        dbr.write<f32>(mods.cs_overridenegative);
+        dbr.write<f32>(mods.hp_override);
+        dbr.write<f32>(mods.od_override);
+        using namespace ModMasks;
+        using namespace Replay::ModFlags;
+        if(eq(mods.flags, Autopilot)) {
+            dbr.write<f32>(mods.autopilot_lenience);
+        }
+        if(eq(mods.flags, Timewarp)) {
+            dbr.write<f32>(mods.timewarp_multiplier);
+        }
+        if(eq(mods.flags, Minimize)) {
+            dbr.write<f32>(mods.minimize_multiplier);
+        }
+        if(eq(mods.flags, ARTimewarp)) {
+            dbr.write<f32>(mods.artimewarp_multiplier);
+        }
+        if(eq(mods.flags, ARWobble)) {
+            dbr.write<f32>(mods.arwobble_strength);
+            dbr.write<f32>(mods.arwobble_interval);
+        }
+        if(eq(mods.flags, Wobble1) || eq(mods.flags, Wobble2)) {
+            dbr.write<f32>(mods.wobble_strength);
+            dbr.write<f32>(mods.wobble_frequency);
+            dbr.write<f32>(mods.wobble_rotation_speed);
+        }
+        if(eq(mods.flags, Jigsaw1) || eq(mods.flags, Jigsaw2)) {
+            dbr.write<f32>(mods.jigsaw_followcircle_radius_factor);
+        }
+        if(eq(mods.flags, Shirone)) {
+            dbr.write<f32>(mods.shirone_combo);
+        }
+    };
+
     const double startTime = Timing::getTimeReal();
 
     Sync::scoped_lock lock(this->scores_mtx);
@@ -2112,7 +2206,7 @@ void Database::saveScores() {
         for(const auto &score : scorevec) {
             assert(!score.is_online_score);
 
-            db.write_mods(score.mods);
+            write_mods(db, score.mods);
             db.write<u64>(score.score);
             db.write<u64>(score.spinner_bonus);
             db.write<u64>(score.unixTimestamp);

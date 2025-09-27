@@ -44,8 +44,8 @@ void sha256(const void* data, size_t size, u8* hash);
 void md5(const void* data, size_t size, u8* hash);
 
 // takes a file directly
-void sha256_f(const UString& file_path, u8* hash);
-void md5_f(const UString& file_path, u8* hash);
+void sha256_f(std::string_view file_path, u8* hash);
+void md5_f(std::string_view file_path, u8* hash);
 }  // namespace hash
 
 namespace conv {
