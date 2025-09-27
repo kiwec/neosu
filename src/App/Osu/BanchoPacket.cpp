@@ -6,8 +6,6 @@
 #include <cstring>
 #include <cassert>
 
-#include "ModFlags.h"
-
 void Packet::read_bytes(u8 *bytes, size_t n) {
     if(this->pos + n > this->size) {
         this->pos = this->size + 1;

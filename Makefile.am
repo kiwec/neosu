@@ -591,6 +591,9 @@ $(DEPS_PREFIX)/libjpeg-$(LIBJPEG_VERSION).built: $(DEPS_CACHE)/libjpeg-$(LIBJPEG
 		-DCMAKE_SYSTEM_NAME="$(CMAKE_SYSTEM_NAME)" \
 		-DCMAKE_ASM_NASM_FLAGS="-DPIC" \
 		-DWITH_JPEG8=ON \
+		-DWITH_TOOLS=OFF \
+		-DWITH_TESTS=OFF \
+		-DWITH_TURBOJPEG=ON \
 		-DCMAKE_ASM_NASM_OBJECT_FORMAT=$(NASMOBJ) \
 		$(if $(filter x86_64,$(host_cpu)),-DWITH_SIMD=ON,$(if $(findstring gcc,$(CC)),-DWITH_SIMD=ON,-DWITH_SIMD=OFF)) \
 		$(if $(STATICBUILD),-DENABLE_STATIC=ON -DENABLE_SHARED=OFF,-DENABLE_STATIC=OFF -DENABLE_SHARED=ON) && \
@@ -1145,6 +1148,7 @@ if BUILD_LIBARCHIVE
 endif
 if STRIPBINS
 	find "$(DESTDIR)$(bindir)" -name '*'$(DLLEXT)'*' -execdir $(STRIP) -s '{''}' '+'
+	$(STRIP) -s "$(DESTDIR)$(bindir)/$(bin_PROGRAMS)"
 endif
 if !WIN_PLATFORM
 	find "$(DESTDIR)$(bindir)/lib" -maxdepth 1 -name '*'.so'*' -execdir $(PATCHELF) --set-rpath '$$ORIGIN:$$ORIGIN/../' '{''}' ';'
@@ -1153,6 +1157,7 @@ endif
 
 # install hooks
 # windows: create a shortcut to launch with a given audio backend (specified in the shortcut target), only if more than 1 is enabled
+# also copy pdb if it exists
 # linux: make links to McEngine and McOsu so existing launch scripts won't need to be changed to the new executable name
 install-exec-hook: install-libs
 if AUDIO_SHORTCUTS
@@ -1174,6 +1179,8 @@ if !WIN_PLATFORM
 	@cd "$(DESTDIR)$(bindir)" && \
 	$(LN_S) -rf $(PROGRAMS) McEngine && \
 	$(LN_S) -rf $(PROGRAMS) McOsu
+else
+	@cp -P neosu.pdb "$(DESTDIR)$(bindir)" &>/dev/null || true # don't fail install if we had no pdb
 endif
 
 uninstall-local:

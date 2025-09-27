@@ -2439,7 +2439,7 @@ void OptionsMenu::onSkinSelect() {
     skinFolder.append(cv::osu_folder_sub_skins.getString());
 
     std::vector<std::string> skinFolders;
-    for(const auto &dir : {env->getFoldersInFolder(NEOSU_SKINS_PATH), env->getFoldersInFolder(skinFolder)}) {
+    for(const auto &dir : {env->getFoldersInFolder(NEOSU_SKINS_PATH "/"), env->getFoldersInFolder(skinFolder)}) {
         for(const auto &skin : dir) {
             skinFolders.push_back(skin);
         }

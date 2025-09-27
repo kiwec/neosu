@@ -377,7 +377,7 @@ std::string File::readLine() {
             line.pop_back();
         }
 
-        return {line.c_str()};
+        return line;
     }
 
     return "";

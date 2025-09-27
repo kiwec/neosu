@@ -204,6 +204,12 @@ AS_IF([test "x$enable_system_deps" != "xyes"], [
     disable_system_deps=no
 ])
 
+# disable lto for debug by default (build time opt)
+AS_IF([test "x$enable_debug" = "xyes" && test "x$enable_lto" != "xyes"], [
+    enable_lto=no
+    disable_lto=yes
+])
+
 AS_IF([test "x$enable_ime" != "xno"], [
     enable_ime=yes
     disable_ime=no
@@ -600,14 +606,51 @@ AS_IF([test "$host_os" = "linux-gnu"],[
         [AC_MSG_ERROR([Missing required X11/OpenGL development headers])])
 ])
 
+# this is currently extremely broken with mingw-gcc
+AS_IF([test "$host_os" = "mingw32" && test "x$enable_clang" = "xyes"], [
+    cxxflags_save="$CXXFLAGS"
+    cflags_save="$CFLAGS"
+    have_pdb=
+    AX_CHECK_COMPILE_FLAG([-gcodeview], [
+        CXXFLAGS="$CXXFLAGS -g -gcodeview" # add some debug info too since its detached
+        CFLAGS="$CFLAGS -g -gcodeview"
+        AX_CHECK_LINK_FLAG([-Wl,--pdb=], [
+            have_pdb=yes
+            NEOSU_LDFLAGS="$NEOSU_LDFLAGS -Wl,--pdb="
+        ])
+        # speeds up link time on llvm-mingw, not crucial though
+        AX_CHECK_COMPILE_FLAG([-gcodeview-ghash], [
+            AX_CHECK_LINK_FLAG([-Wl,/debug:ghash], [
+                CXXFLAGS="$CXXFLAGS -gcodeview-ghash"
+                CFLAGS="$CFLAGS -gcodeview-ghash"
+                NEOSU_LDFLAGS="$NEOSU_LDFLAGS -Wl,/debug:ghash"
+            ])
+        ])
+        AX_CHECK_LINK_FLAG([-Wl,/pdbaltpath:%_PDB%], [
+            NEOSU_LDFLAGS="$NEOSU_LDFLAGS -Wl,/pdbaltpath:%_PDB%"
+        ])
+    ])
+])
+
 AS_IF([test "x$enable_debug" = "xyes"], [
     AS_IF([test "x$with_mimalloc" != "xyes"], [with_mimalloc=no])
     AS_IF([test "$host_os" = "mingw32"],[
-        CXXFLAGS="$CXXFLAGS -g -Og"
-        CFLAGS="$CFLAGS -g -Og"
+        # make the exe open with a console window
+        AS_IF([test "x$enable_clang" = "xyes"], [
+            NEOSU_LDFLAGS="$NEOSU_LDFLAGS -Wl,--subsystem,console:${win_subsystem_ver}"
+        ], [
+            NEOSU_CXXFLAGS="$NEOSU_CXXFLAGS -mconsole"
+            NEOSU_LDFLAGS="$NEOSU_LDFLAGS -mconsole -Wl,--subsystem,console:${win_subsystem_ver}"
+        ])
+
+        # assuming this will be debugged on windows, remap the debug path to the relative path to the source from the install directory
+        CXXFLAGS="$CXXFLAGS -g3 -Og -ffile-prefix-map=\${abs_top_srcdir}=\${top_srcdir}"
+        CFLAGS="$CFLAGS -g3 -Og -ffile-prefix-map=\${abs_top_srcdir}=\${top_srcdir}"
+        NEOSU_LDFLAGS="$NEOSU_LDFLAGS -ffile-prefix-map=\${abs_top_srcdir}=\${top_srcdir}"
     ], [
-        CXXFLAGS="$CXXFLAGS -ggdb3 -gdwarf-5 -Og"
-        CFLAGS="$CFLAGS -ggdb3 -gdwarf-5 -Og"
+        # non-mingw
+        CXXFLAGS="$CXXFLAGS -g3 -ggdb3 -gdwarf-5 -Og"
+        CFLAGS="$CFLAGS -g3 -ggdb3 -gdwarf-5 -Og"
     ])
     ENABLE_DEBUG=$enable_debug
     NEOSU_CPPFLAGS="$NEOSU_CPPFLAGS -D_DEBUG"
@@ -616,21 +659,13 @@ AS_IF([test "x$enable_debug" = "xyes"], [
         # CPPFLAGS="$CPPFLAGS -D_GLIBCXX_DEBUG"
         # CXXFLAGS="$CXXFLAGS -D_GLIBCXX_DEBUG"
     ])
-    AS_IF([test "$SYSNAME" = "windows"], [
-        AS_IF([test "x$enable_clang" = "xyes"], [
-            NEOSU_LDFLAGS="$NEOSU_LDFLAGS -Wl,--subsystem,console:${win_subsystem_ver}"
-        ], [
-            NEOSU_CXXFLAGS="$NEOSU_CXXFLAGS -mconsole"
-            NEOSU_LDFLAGS="$NEOSU_LDFLAGS -mconsole -Wl,--subsystem,console:${win_subsystem_ver}"
-        ])
-    ])
     AC_SUBST([ENABLE_DEBUG])
     AS_IF([test "x$enable_strip" != "xyes"], [enable_strip=no]) # disable stripping unless its explicitly requested for debug (why tho?)
 ], [
     AS_IF([test "x$enable_optimization" != "xno"], [
         CPPFLAGS="$CPPFLAGS -DNDEBUG -D_NDEBUG"
-        CXXFLAGS="${CXXFLAGS//-g -O2/} -O3 -g0" # where do those -g -O2 flags even come from...
-        CFLAGS="${CFLAGS//-g -O2/} -O3 -g0"
+        CXXFLAGS="${CXXFLAGS//-g -O2/} -O3" # where do those -g -O2 flags even come from...
+        CFLAGS="${CFLAGS//-g -O2/} -O3"
         NEOSU_LDFLAGS="$NEOSU_LDFLAGS -Wl,-O1"
 
         AS_IF([test "x$enable_clang" != "xyes"], [
@@ -639,16 +674,12 @@ AS_IF([test "x$enable_debug" = "xyes"], [
         ])
     ])
     AS_IF([test "x$enable_strip" != "xno"], [
-        NEOSU_LDFLAGS="$NEOSU_LDFLAGS -Wl,-s,--gc-sections" # strip and GC
-    ], [
-        # if "don't strip" was explicitly requested, add some debug info to the binary
-        AS_IF([test "x$enable_strip" = "xno"], [
-            CXXFLAGS="$CXXFLAGS -g"
-            CFLAGS="$CFLAGS -g"
-            NEOSU_LDFLAGS="$NEOSU_LDFLAGS -Wl,--no-gc-sections"
-        ])
+        # for optimized/release builds (which are stripped), remap any paths to just ./
+        CXXFLAGS="$CXXFLAGS -ffile-prefix-map=$PWD=."
+        CFLAGS="$CFLAGS -ffile-prefix-map=$PWD=."
+        NEOSU_LDFLAGS="$NEOSU_LDFLAGS -Wl,-s" # strip flag
     ])
-    AS_IF([test "$SYSNAME" = "windows"], [
+    AS_IF([test "$host_os" = "mingw32"], [
         AS_IF([test "x$enable_clang" = "xyes"], [
             NEOSU_LDFLAGS="$NEOSU_LDFLAGS -Wl,--subsystem,windows:${win_subsystem_ver}"
         ], [
@@ -704,7 +735,7 @@ AS_IF([test "x$enable_lto" != "xno"], [
 
 NEOSU_CPPFLAGS="$NEOSU_CPPFLAGS -DCJSON_HIDE_SYMBOLS"
 NEOSU_CXXFLAGS="$NEOSU_CXXFLAGS -Wall -Wextra -Wno-sign-compare -Wunused-parameter -Wdeprecated-declarations -Wno-error=deprecated-declarations"
-NEOSU_LDFLAGS="$NEOSU_LDFLAGS"
+NEOSU_LDFLAGS="$NEOSU_LDFLAGS -Wl,--gc-sections" # remove unused sections
 AC_SUBST([NEOSU_CPPFLAGS])
 AC_SUBST([NEOSU_CXXFLAGS])
 AC_SUBST([NEOSU_LDFLAGS])
