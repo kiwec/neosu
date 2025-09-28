@@ -629,6 +629,9 @@ AS_IF([test "$host_os" = "mingw32" && test "x$enable_clang" = "xyes"], [
         AX_CHECK_LINK_FLAG([-Wl,/pdbaltpath:%_PDB%], [
             NEOSU_LDFLAGS="$NEOSU_LDFLAGS -Wl,/pdbaltpath:%_PDB%"
         ])
+        AX_CHECK_LINK_FLAG([-Wl,/pdbsourcepath:], [
+            NEOSU_LDFLAGS="$NEOSU_LDFLAGS -Wl,/pdbsourcepath:${CUSTOMPDBPATH:-Z:\\}"
+        ])
     ])
 ])
 
