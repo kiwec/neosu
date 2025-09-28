@@ -9,13 +9,12 @@
 #include "File.h"
 
 #include <algorithm>
-#include <mutex>
 
 #include <SoundTouch.h>
 
-#include <soloud_error.h>
-#include <soloud_wavstream.h>
-#include <soloud_file.h>
+#include "soloud_error.h"
+#include "soloud_wavstream.h"
+#include "soloud_file.h"
 
 namespace cv
 {
@@ -260,9 +259,7 @@ SoundTouchFilterInstance::SoundTouchFilterInstance(SLFXStream *aParent)
       mSoundTouchSpeed(1.0f),
       mSoundTouchPitch(1.0f),
       mNeedsSettingUpdate(false),
-      mBuffer(nullptr),
       mBufferSize(0),
-      mInterleavedBuffer(nullptr),
       mInterleavedBufferSize(0),
       mProcessingCounter(0)
 {
@@ -297,7 +294,7 @@ SoundTouchFilterInstance::SoundTouchFilterInstance(SLFXStream *aParent)
 				// quality settings pulled out of my ass, there is NO documentation for this library...
 				mSoundTouch->setSetting(SETTING_USE_AA_FILTER, 1);
 				mSoundTouch->setSetting(SETTING_AA_FILTER_LENGTH, 64);
-				mSoundTouch->setSetting(SETTING_USE_QUICKSEEK, 0);
+				mSoundTouch->setSetting(SETTING_USE_QUICKSEEK, 1);
 				mSoundTouch->setSetting(SETTING_SEQUENCE_MS, 15); // wtf should these numbers be?
 				mSoundTouch->setSetting(SETTING_SEEKWINDOW_MS, 30);
 				mSoundTouch->setSetting(SETTING_OVERLAP_MS, 6);
@@ -328,8 +325,6 @@ SoundTouchFilterInstance::~SoundTouchFilterInstance()
 	if (mParent && mParent->mActiveInstance.load(std::memory_order_acquire) == this)
 		mParent->mActiveInstance.store(nullptr, std::memory_order_release);
 
-	delete[] mInterleavedBuffer;
-	delete[] mBuffer;
 	SAFE_DELETE(mSoundTouch);
 	SAFE_DELETE(mSourceInstance);
 }
@@ -400,7 +395,7 @@ unsigned int SoundTouchFilterInstance::getAudio(float *aBuffer, unsigned int aSa
 	{
 		// get interleaved samples from SoundTouch and convert to non-interleaved
 		ensureInterleavedBufferSize(samplesToReceive);
-		samplesReceived = mSoundTouch->receiveSamples(mInterleavedBuffer, samplesToReceive);
+		samplesReceived = mSoundTouch->receiveSamples(mInterleavedBuffer.mData, samplesToReceive);
 
 		if (logThisCall)
 			ST_DEBUG_LOG("Received {:} samples from SoundTouch, converting to non-interleaved", samplesReceived);
@@ -410,7 +405,7 @@ unsigned int SoundTouchFilterInstance::getAudio(float *aBuffer, unsigned int aSa
 		{
 			for (unsigned int ch = 0; ch < mChannels; ch++)
 			{
-				aBuffer[ch * aSamplesToRead + i] = mInterleavedBuffer[i * mChannels + ch];
+				aBuffer[ch * aSamplesToRead + i] = mInterleavedBuffer.mData[i * mChannels + ch];
 			}
 		}
 
@@ -541,10 +536,9 @@ void SoundTouchFilterInstance::ensureBufferSize(unsigned int samples)
 	{
 		ST_DEBUG_LOG("SoundTouchFilterInstance: Resizing non-interleaved buffer from {:} to {:} samples", mBufferSize, samples);
 
-		delete[] mBuffer;
 		mBufferSize = samples;
-		mBuffer = new float[static_cast<unsigned long>(mBufferSize * mChannels)];
-		memset(mBuffer, 0, sizeof(float) * mBufferSize * mChannels);
+		mBuffer.init(static_cast<unsigned long>(mBufferSize * mChannels));
+		memset(mBuffer.mData, 0, sizeof(float) * mBufferSize * mChannels);
 	}
 }
 
@@ -555,10 +549,9 @@ void SoundTouchFilterInstance::ensureInterleavedBufferSize(unsigned int samples)
 	{
 		ST_DEBUG_LOG("SoundTouchFilterInstance: Resizing interleaved buffer from {:} to {:} samples", mInterleavedBufferSize / mChannels, samples);
 
-		delete[] mInterleavedBuffer;
 		mInterleavedBufferSize = requiredSize;
-		mInterleavedBuffer = new float[mInterleavedBufferSize];
-		memset(mInterleavedBuffer, 0, sizeof(float) * mInterleavedBufferSize);
+		mInterleavedBuffer.init(mInterleavedBufferSize);
+		memset(mInterleavedBuffer.mData, 0, sizeof(float) * mInterleavedBufferSize);
 	}
 }
 
@@ -583,6 +576,9 @@ unsigned int SoundTouchFilterInstance::feedSoundTouch(unsigned int targetBufferL
 		chunkSize = i / 2; // one power-of-two smaller, so we don't overshoot targetBufferLevel by too much
 	}
 
+	// then set it to a SIMD-aligned multiple
+	chunkSize = (chunkSize + SIMD_ALIGNMENT_MASK) & ~SIMD_ALIGNMENT_MASK;
+
 	ensureBufferSize(chunkSize);
 	ensureInterleavedBufferSize(chunkSize);
 
@@ -591,25 +587,21 @@ unsigned int SoundTouchFilterInstance::feedSoundTouch(unsigned int targetBufferL
 
 	while (currentSamples < targetBufferLevel && !mSourceInstance->hasEnded() && chunksProcessed < MAX_CHUNKS)
 	{
-		unsigned int samplesRead = mSourceInstance->getAudio(mBuffer, chunkSize, mBufferSize);
+		unsigned int samplesRead = mSourceInstance->getAudio(mBuffer.mData, chunkSize, mBufferSize);
 
 		if (samplesRead == 0) // no more data available
 			break;
 
 		if (logThis)
-			ST_DEBUG_LOG("Chunk {:}: read {:} samples from source", chunksProcessed + 1, samplesRead);
+			ST_DEBUG_LOG("Chunk {:}: read {:} samples from source (chunkSize {})", chunksProcessed + 1, samplesRead, chunkSize);
 
 		// convert from non-interleaved to interleaved format
-		for (unsigned int i = 0; i < samplesRead; i++)
-		{
-			for (unsigned int ch = 0; ch < mChannels; ch++)
-			{
-				mInterleavedBuffer[i * mChannels + ch] = mBuffer[ch * samplesRead + i];
-			}
-		}
+		// see SoLoud::Soloud::mix
+		unsigned int stride = (samplesRead + SIMD_ALIGNMENT_MASK) & ~SIMD_ALIGNMENT_MASK;
+		SoLoud::interlace_samples(mInterleavedBuffer.mData, mBuffer.mData, samplesRead, stride, mChannels, SoLoud::detail::SAMPLE_FLOAT32);
 
 		// feed the chunk to SoundTouch
-		mSoundTouch->putSamples(mInterleavedBuffer, samplesRead);
+		mSoundTouch->putSamples(mInterleavedBuffer.mData, samplesRead);
 
 		currentSamples = mSoundTouch->numSamples();
 		chunksProcessed++;

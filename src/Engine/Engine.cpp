@@ -6,7 +6,6 @@
 #include "AnimationHandler.h"
 #include "CBaseUIContainer.h"
 #include "ConVar.h"
-#include "Console.h"
 #include "ConsoleBox.h"
 #include "DiscordInterface.h"
 #include "Keyboard.h"
@@ -31,7 +30,7 @@ std::unique_ptr<ResourceManager> resourceManager{nullptr};
 std::unique_ptr<NetworkHandler> networkHandler{nullptr};
 std::unique_ptr<AnimationHandler> animationHandler{nullptr};
 
-std::shared_ptr<ConsoleBox> Engine::consoleBox{nullptr};
+mcatomic_shptr<ConsoleBox> Engine::consoleBox{nullptr};
 
 Engine *engine{nullptr};
 Engine::Engine() {
@@ -134,11 +133,12 @@ Engine::~Engine() {
     osu = nullptr;
 
     debugLog("Engine: Freeing engine GUI...");
-    if(this->consoleBox) {
+    for(const auto &cbox = Engine::consoleBox.load(std::memory_order_acquire); cbox != nullptr;) {
         // don't allow CBaseUI to delete it, it might still be in use (being flushed) by Logger
-        this->guiContainer->removeBaseUIElement(this->consoleBox.get());
-        this->consoleBox.reset();
+        this->guiContainer->removeBaseUIElement(cbox.get());
+        break;
     }
+    Engine::consoleBox.store(nullptr, std::memory_order_release);
     SAFE_DELETE(this->guiContainer);
 
     destroy_discord_sdk();
@@ -206,8 +206,8 @@ void Engine::loadApp() {
 
         // create engine gui
         this->guiContainer = new CBaseUIContainer(0, 0, engine->getScreenWidth(), engine->getScreenHeight(), "");
-        Engine::consoleBox = std::make_shared<ConsoleBox>();
-        this->guiContainer->addBaseUIElement(this->consoleBox.get());
+        Engine::consoleBox.store(std::make_shared<ConsoleBox>(), std::memory_order_release);
+        this->guiContainer->addBaseUIElement(Engine::consoleBox.load(std::memory_order_acquire).get());
         this->visualProfiler = new VisualProfiler();
         this->guiContainer->addBaseUIElement(this->visualProfiler);
 
@@ -421,7 +421,10 @@ void Engine::onResolutionChange(vec2 newResolution) {
     this->vNewScreenSize = newResolution;
 
     if(this->guiContainer != nullptr) this->guiContainer->setSize(newResolution.x, newResolution.y);
-    if(this->consoleBox != nullptr) Engine::consoleBox->onResolutionChange(newResolution);
+    for(const auto &cbox = Engine::consoleBox.load(std::memory_order_relaxed); cbox != nullptr;) {
+        cbox->onResolutionChange(newResolution);
+        break;
+    }
 
     // update everything
     this->vScreenSize = newResolution;

@@ -71,7 +71,7 @@ class Logger::ConsoleBoxSink : public spdlog::sinks::base_sink<std::mutex> {
     inline void flush_buffer_to_console() noexcept {
         if(buffer_count_ == 0) return;
 
-        std::shared_ptr<ConsoleBox> cbox{Engine::consoleBox};
+        std::shared_ptr<ConsoleBox> cbox{Engine::consoleBox.load(std::memory_order_acquire)};
         if(unlikely(!cbox)) {
             // should only be possible briefly on startup/shutdown
             return;

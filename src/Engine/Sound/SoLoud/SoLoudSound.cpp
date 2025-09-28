@@ -14,9 +14,9 @@
 #include "ResourceManager.h"
 #include "Logging.h"
 
-#include <soloud_file.h>
-#include <soloud_wav.h>
-#include <soloud_wavstream.h>
+#include "soloud_file.h"
+#include "soloud_wav.h"
+#include "soloud_wavstream.h"
 
 void SoLoudSound::init() {
     if(this->bIgnored || this->sFilePath.length() < 2 || !(this->bAsyncReady.load())) return;

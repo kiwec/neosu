@@ -8,6 +8,7 @@
 
 #include "Rect.h"
 #include "KeyboardListener.h"
+#include "CompatShims.h"
 
 #include <vector>
 #include <memory>
@@ -104,7 +105,9 @@ class Engine final : public KeyboardListener {
     [[nodiscard]] constexpr bool isMinimized() const { return this->bIsMinimized; }
 
     // debugging/console
-    [[nodiscard]] inline std::shared_ptr<ConsoleBox> getConsoleBox() const { return Engine::consoleBox; }
+    [[nodiscard]] inline std::shared_ptr<ConsoleBox> getConsoleBox() const {
+        return Engine::consoleBox.load(std::memory_order_relaxed);
+    }
     [[nodiscard]] constexpr CBaseUIContainer *getGUI() const { return this->guiContainer; }
 
    private:
@@ -136,7 +139,7 @@ class Engine final : public KeyboardListener {
     CBaseUIContainer *guiContainer;
     VisualProfiler *visualProfiler;
     friend class Logger;
-    static std::shared_ptr<ConsoleBox> consoleBox;
+    static mcatomic_shptr<ConsoleBox> consoleBox;
 
     // custom
     bool bBlackout;

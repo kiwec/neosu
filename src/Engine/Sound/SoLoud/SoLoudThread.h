@@ -9,7 +9,7 @@
 #include "SyncCV.h"
 #include "SyncJthread.h"
 
-#include <soloud.h>
+#include "soloud.h"
 
 #include <atomic>
 #include <queue>

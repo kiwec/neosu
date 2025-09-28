@@ -8,7 +8,8 @@
 #ifdef MCENGINE_FEATURE_SOLOUD
 #include "SyncMutex.h"
 
-#include <soloud_audiosource.h>
+#include "soloud_audiosource.h"
+#include "soloud_intrin.h"
 #include <atomic>
 #include <memory>
 
@@ -88,11 +89,11 @@ private:
 	Sync::mutex mSettingUpdateMutex;
 
 	// buffers for format conversion
-	float *mBuffer;           // temporary read buffer from source (non-interleaved)
-	unsigned int mBufferSize; // size in samples
+	SoLoud::AlignedFloatBuffer mBuffer;            // temporary read buffer from source (non-interleaved)
+	unsigned int mBufferSize;                      // size in samples
 
-	float *mInterleavedBuffer;           // interleaved audio buffer for SoundTouch
-	unsigned int mInterleavedBufferSize; // size in samples
+	SoLoud::AlignedFloatBuffer mInterleavedBuffer; // interleaved audio buffer for SoundTouch
+	unsigned int mInterleavedBufferSize;           // size in samples
 
 	// debugging and tracking
 	unsigned int mProcessingCounter; // counter for logspam avoidance
