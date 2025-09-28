@@ -8,6 +8,7 @@
 #include "Console.h"
 #include "Database.h"
 #include "Engine.h"
+#include "File.h"
 #include "ModSelector.h"
 #include "Osu.h"
 #include "Profiler.h"
@@ -498,15 +499,13 @@ static void _dumpcommands(void) {
     size_t pos = html_template.find(marker);
     html_template.replace(pos, marker.length(), html);
 
-    FILE *file = fopen("variables.htm", "w");
-    if(file == nullptr) {
+    File outFile("variables.htm", File::MODE::WRITE);
+    if(!outFile.canWrite()) {
         Logger::logRaw("Failed to open variables.htm for writing");
         return;
     }
 
-    fwrite(html_template.c_str(), html_template.size(), 1, file);
-    fflush(file);
-    fclose(file);
+    outFile.write(reinterpret_cast<const u8 *>(html_template.data()), html_template.size());
 
     Logger::logRaw("ConVars dumped to variables.htm");
 }

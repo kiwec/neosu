@@ -154,7 +154,7 @@ bool AvatarManager::download_avatar(const std::pair<i32, std::string>& id_folder
     if(progress == -1.f) this->id_blacklist.insert(id_folder);
     if(img_data.empty()) return false;
 
-    File output_file(id_folder.second, File::TYPE::WRITE);
+    File output_file(id_folder.second, File::MODE::WRITE);
     if(output_file.canWrite()) {
         output_file.write(img_data.data(), img_data.size());
         this->newly_downloaded.insert(id_folder);

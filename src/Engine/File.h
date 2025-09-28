@@ -23,19 +23,19 @@ class DirectoryCache;
 class File {
     NOCOPY_NOMOVE(File)
    public:
-    enum class TYPE : uint8_t { READ, WRITE };
+    enum class MODE : uint8_t { READ, WRITE };
 
     enum class FILETYPE : uint8_t { NONE, FILE, FOLDER, MAYBE_INSENSITIVE, OTHER };
 
    public:
-    File(std::string filePath, TYPE type = TYPE::READ);
+    File(std::string filePath, MODE mode = MODE::READ);
     ~File() = default;
 
     [[nodiscard]] constexpr bool canRead() const {
-        return this->bReady && this->ifstream && this->ifstream->good() && this->fileMode == TYPE::READ;
+        return this->bReady && this->ifstream && this->ifstream->good() && this->fileMode == MODE::READ;
     }
     [[nodiscard]] constexpr bool canWrite() const {
-        return this->bReady && this->ofstream && this->ofstream->good() && this->fileMode == TYPE::WRITE;
+        return this->bReady && this->ofstream && this->ofstream->good() && this->fileMode == MODE::WRITE;
     }
 
     void write(const u8 *buffer, size_t size);
@@ -64,7 +64,7 @@ class File {
    private:
     std::string sFilePath;
     std::filesystem::path fsPath;
-    TYPE fileMode;
+    MODE fileMode;
     bool bReady;
     size_t iFileSize;
 

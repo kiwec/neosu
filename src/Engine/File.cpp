@@ -267,11 +267,11 @@ fs::path File::getFsPath(std::string_view utf8path) {
 //------------------------------------------------------------------------------
 // File implementation
 //------------------------------------------------------------------------------
-File::File(std::string filePath, TYPE type)
-    : sFilePath(std::move(filePath)), fsPath(getFsPath(this->sFilePath)), fileMode(type), bReady(false), iFileSize(0) {
-    if(type == TYPE::READ) {
+File::File(std::string filePath, MODE mode)
+    : sFilePath(std::move(filePath)), fsPath(getFsPath(this->sFilePath)), fileMode(mode), bReady(false), iFileSize(0) {
+    if(mode == MODE::READ) {
         if(!openForReading()) return;
-    } else if(type == TYPE::WRITE) {
+    } else if(mode == MODE::WRITE) {
         if(!openForWriting()) return;
     }
 

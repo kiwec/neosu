@@ -105,7 +105,7 @@ void Console::execConfigFile(std::string filename) {
     std::string rewritten_file;
 
     {
-        File configFile(filename, File::TYPE::READ);
+        File configFile(filename, File::MODE::READ);
         if(!configFile.canRead()) {
             debugLog("error, file \"{:s}\" not found!", filename);
             return;
@@ -121,20 +121,9 @@ void Console::execConfigFile(std::string filename) {
 
             // only process non-empty lines
             if(!line.empty()) {
-                // erase comment lines ("//" or "#") and remove everything after
-                auto commentIndex = line.find("//");
-                if(commentIndex == std::string::npos) {
-                    commentIndex = line.find('#');
-                }
-
-                if(commentIndex != std::string::npos) {
-                    line.erase(commentIndex);
-
-                    // if line now contains only whitespace, clear it entirely
-                    if(line.find_first_not_of(" \t") == std::string::npos) {
-                        line.clear();
-                    }
-                }
+                // handle comments - find "//" and remove everything after
+                const auto commentIndex = line.find("//");
+                if(commentIndex != std::string::npos) line.erase(commentIndex, line.length() - commentIndex);
 
                 // McOsu used to prefix all convars with "osu_". Maybe it made sense when McEngine was
                 // a separate thing, but in neosu everything is related to osu anyway, so it's redundant.
@@ -159,7 +148,7 @@ void Console::execConfigFile(std::string filename) {
     // if we don't remove prefixed lines, this could prevent users from
     // setting some convars back to their default value
     if(needs_write) {
-        File configFile(filename, File::TYPE::WRITE);
+        File configFile(filename, File::MODE::WRITE);
         configFile.write((u8 *)rewritten_file.data(), rewritten_file.length());
     }
 }

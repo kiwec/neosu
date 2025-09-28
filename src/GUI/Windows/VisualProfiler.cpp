@@ -84,7 +84,7 @@ void VisualProfiler::draw() {
                                 textFont, this->textLines);
                     addTextLine(UString::format("Env DPI Scale: %f", env->getDPIScale()), textFont, this->textLines);
                     addTextLine(UString::format("Env DPI: %i", (int)env->getDPI()), textFont, this->textLines);
-                    // addTextLine(UString::format("Renderer: %s", typeid().name()), textFont, this->textLines); //
+                    addTextLine(UString::format("Renderer: %s", typeid(g).name()), textFont, this->textLines); //
                     // TODO: add g->getName() or something
                     addTextLine(UString::format("VRAM: %i MB / %i MB", vramRemainingMB, vramTotalMB), textFont,
                                 this->textLines);

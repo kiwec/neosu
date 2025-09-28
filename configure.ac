@@ -479,7 +479,7 @@ AS_IF([test -n "$MOLD" && test "$host_os" = "linux-gnu" &&
     ])
 ])
 
-AS_IF([test -n "$LLD" && test "x$using_mold" = "xno" && test "x$enable_clang" = "xyes"], [
+AS_IF([test -n "$LLD" && test "x$using_mold" != "xyes" && test "x$enable_clang" = "xyes"], [
     AX_CHECK_COMPILE_FLAG([-fuse-ld=lld], [
         AX_CHECK_LINK_FLAG([-fuse-ld=lld], [
             CXXFLAGS="$CXXFLAGS -fuse-ld=lld"

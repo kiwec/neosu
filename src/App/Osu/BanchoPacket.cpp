@@ -29,21 +29,6 @@ u32 Packet::read_uleb128() {
     return result;
 }
 
-UString Packet::read_string() {
-    u8 empty_check = this->read<u8>();
-    if(empty_check == 0) return {""};
-
-    u32 len = this->read_uleb128();
-    u8 *str = new u8[len + 1];
-    this->read_bytes(str, len);
-    str[len] = '\0';
-
-    auto ustr = UString((const char *)str);
-    delete[] str;
-
-    return ustr;
-}
-
 std::string Packet::read_stdstring() {
     u8 empty_check = this->read<u8>();
     if(empty_check == 0) return {};
