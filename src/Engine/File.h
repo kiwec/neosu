@@ -61,6 +61,8 @@ class File {
     // so use this to get a unicode-constructed path on windows (convert), utf8 otherwise (passthrough)
     [[nodiscard]] static std::filesystem::path getFsPath(std::string_view utf8path);
 
+    // passthrough to "_wfopen" on Windows, "fopen" otherwise
+    [[nodiscard]] static FILE *fopen_c(const char *__restrict utf8filename, const char *__restrict modes);
    private:
     std::string sFilePath;
     std::filesystem::path fsPath;

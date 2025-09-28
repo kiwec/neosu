@@ -70,13 +70,8 @@ void SoLoudSound::initAsync() {
             return;
         }
     } else {
-#ifdef MCENGINE_PLATFORM_WINDOWS
-        // soloud's load(const char*) wrapper doesn't handle unicode paths, so help it out here
-        UString uPath{this->sFilePath};
-        SoLoud::DiskFile df(_wfopen(uPath.wc_str(), L"rb"));
-#else
-        SoLoud::DiskFile df(fopen(this->sFilePath.c_str(), "rb"));
-#endif
+        SoLoud::DiskFile df(File::fopen_c(this->sFilePath.c_str(), "rb"));
+
         if(!df.mFileHandle) {  // fopen failed
             debugLog("Sound Error: SoLoud::Wav::load() error {} on file {:s}", result, this->sFilePath);
             return;

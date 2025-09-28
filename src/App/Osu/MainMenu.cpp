@@ -1082,7 +1082,7 @@ void MainMenu::mouse_update(bool *propagate_clicks) {
         Downloader::download(BanchoState::server_icon_url.toUtf8(), &progress, data, &response_code);
         if(progress == -1.f) BanchoState::server_icon_url = "";
         if(!data.empty()) {
-            FILE *file = fopen(icon_path.c_str(), "wb");
+            FILE *file = File::fopen_c(icon_path.c_str(), "wb");
             if(file != nullptr) {
                 fwrite(data.data(), data.size(), 1, file);
                 fflush(file);

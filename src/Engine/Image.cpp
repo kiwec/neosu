@@ -177,7 +177,7 @@ void Image::saveToImage(const u8 *data, i32 width, i32 height, u8 channels, std:
     garbage_zlib();
     debugLog("Saving image to {:s} ...", filepath);
 
-    FILE *fp = fopen(filepath.c_str(), "wb");
+    FILE *fp = File::fopen_c(filepath.c_str(), "wb");
     if(!fp) {
         debugLog("PNG error: Could not open file {:s} for writing", filepath);
         engine->showMessageError("PNG Error", "Could not open file for writing");

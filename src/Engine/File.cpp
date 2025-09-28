@@ -18,6 +18,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <cstdio>
 
 namespace fs = std::filesystem;
 
@@ -252,7 +253,7 @@ File::FILETYPE File::exists(std::string_view filePath, const fs::path &path) {
         return File::FILETYPE::OTHER;
 }
 
-// public helper
+// public static helpers
 // fs::path works differently depending on the type of string it was constructed with (annoying)
 fs::path File::getFsPath(std::string_view utf8path) {
     if(utf8path.empty()) return fs::path{};
@@ -261,6 +262,17 @@ fs::path File::getFsPath(std::string_view utf8path) {
     return fs::path{filePathUStr.wc_str()};
 #else
     return fs::path{utf8path};
+#endif
+}
+
+FILE *File::fopen_c(const char *__restrict utf8filename, const char *__restrict modes) {
+    if(utf8filename == nullptr || utf8filename[0] == '\0') return nullptr;
+#ifdef MCENGINE_PLATFORM_WINDOWS
+    const UString wideFilename{utf8filename};
+    const UString wideModes{modes};
+    return _wfopen(wideFilename.wc_str(), wideModes.wc_str());
+#else
+    return fopen(utf8filename, modes);
 #endif
 }
 

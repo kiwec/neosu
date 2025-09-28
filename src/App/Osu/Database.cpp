@@ -377,7 +377,7 @@ int Database::addScore(const FinishedScore &score) {
     if(!compressed_replay.empty()) {
         auto replay_path = fmt::format(NEOSU_REPLAYS_PATH "/{:d}.replay.lzma", score.unixTimestamp);
 
-        FILE *replay_file = fopen(replay_path.c_str(), "wb");
+        FILE *replay_file = File::fopen_c(replay_path.c_str(), "wb");
         if(replay_file != nullptr) {
             fwrite(compressed_replay.data(), compressed_replay.size(), 1, replay_file);
             fclose(replay_file);
