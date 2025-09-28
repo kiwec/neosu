@@ -1,11 +1,12 @@
 #pragma once
 // Copyright (c) 2015, PG, All rights reserved.
-#include "ConVar.h"
 #include "ModSelector.h"
 #include "MouseListener.h"
 #include "Replay.h"
 #include "score.h"
 #include "OsuConfig.h"
+
+#include <atomic>
 
 class AvatarManager;
 class CWindowManager;
@@ -90,6 +91,8 @@ class Osu final : public MouseListener, public KeyboardListener {
 
     void reloadMapInterface();
 
+    [[nodiscard]] inline bool useCJKNames() const { return this->bPreferCJK; }
+
     // threading-related
     [[nodiscard]] bool isInPlayModeAndNotPaused() const;
     [[nodiscard]] inline bool shouldPauseBGThreads() const {
@@ -154,23 +157,21 @@ class Osu final : public MouseListener, public KeyboardListener {
     float getScoreMultiplier();
     float getAnimationSpeedMultiplier();
 
-    [[nodiscard]] inline bool getModAuto() const { return cv::mod_autoplay.getBool(); }
-    [[nodiscard]] inline bool getModAutopilot() const { return cv::mod_autopilot.getBool(); }
-    [[nodiscard]] inline bool getModRelax() const { return cv::mod_relax.getBool(); }
-    [[nodiscard]] inline bool getModSpunout() const { return cv::mod_spunout.getBool(); }
-    [[nodiscard]] inline bool getModTarget() const { return cv::mod_target.getBool(); }
-    [[nodiscard]] inline bool getModScorev2() const { return cv::mod_scorev2.getBool(); }
-    [[nodiscard]] inline bool getModFlashlight() const { return cv::mod_flashlight.getBool(); }
-    [[nodiscard]] inline bool getModNF() const { return cv::mod_nofail.getBool(); }
-    [[nodiscard]] inline bool getModHD() const { return cv::mod_hidden.getBool(); }
-    [[nodiscard]] inline bool getModHR() const { return cv::mod_hardrock.getBool(); }
-    [[nodiscard]] inline bool getModEZ() const { return cv::mod_easy.getBool(); }
-    [[nodiscard]] inline bool getModSD() const { return cv::mod_suddendeath.getBool(); }
-    [[nodiscard]] inline bool getModSS() const { return cv::mod_perfect.getBool(); }
-    [[nodiscard]] inline bool getModNightmare() const { return cv::mod_nightmare.getBool(); }
-    [[nodiscard]] inline bool getModTD() const {
-        return cv::mod_touchdevice.getBool() || cv::mod_touchdevice_always.getBool();
-    }
+    [[nodiscard]] bool getModAuto() const;
+    [[nodiscard]] bool getModAutopilot() const;
+    [[nodiscard]] bool getModRelax() const;
+    [[nodiscard]] bool getModSpunout() const;
+    [[nodiscard]] bool getModTarget() const;
+    [[nodiscard]] bool getModScorev2() const;
+    [[nodiscard]] bool getModFlashlight() const;
+    [[nodiscard]] bool getModNF() const;
+    [[nodiscard]] bool getModHD() const;
+    [[nodiscard]] bool getModHR() const;
+    [[nodiscard]] bool getModEZ() const;
+    [[nodiscard]] bool getModSD() const;
+    [[nodiscard]] bool getModSS() const;
+    [[nodiscard]] bool getModNightmare() const;
+    [[nodiscard]] bool getModTD() const;
 
     [[nodiscard]] inline std::vector<ConVar *> getExperimentalMods() const { return this->experimentalMods; }
 
@@ -234,9 +235,12 @@ class Osu final : public MouseListener, public KeyboardListener {
 
     void onUserCardChange(std::string_view new_username);
 
-    void setupSoloud();
-
    private:
+    // internal audio setup
+    void setupSoloud();
+    // callback
+    inline void preferCJKCallback(float newValue) { this->bPreferCJK = !!static_cast<int>(newValue); }
+
     // NOTE: unique_ptrs are destroyed in reverse order of declaration in header
 
     // interfaces (other)
@@ -368,6 +372,7 @@ class Osu final : public MouseListener, public KeyboardListener {
     bool bFireResolutionChangedScheduled{false};
     bool bFireDelayedFontReloadAndResolutionChangeToFixDesyncedUIScaleScheduled{false};
     bool bScreensReady{false};
+    bool bPreferCJK{false};
 
    public:  // public due to BassSoundEngine access
     bool music_unpause_scheduled{false};

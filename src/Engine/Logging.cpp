@@ -214,6 +214,7 @@ void Logger::init() noexcept {
 // spdlog::shutdown() explodes if its called at program exit (by global atexit handler), so we need to manually shut it down
 void Logger::shutdown() noexcept {
     if(!wasInit) return;
+    Logger::flush();
     wasInit = false;
 
     s_raw_logger.reset();

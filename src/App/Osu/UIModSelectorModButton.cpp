@@ -3,21 +3,23 @@
 
 #include <utility>
 
+#include "ConVar.h"
 #include "AnimationHandler.h"
 #include "Bancho.h"
 #include "BanchoNetworking.h"
 #include "Engine.h"
-#include "LegacyReplay.h"
 #include "ModSelector.h"
-#include "OpenGLHeaders.h"
 #include "Osu.h"
-#include "ResourceManager.h"
 #include "RichPresence.h"
 #include "RoomScreen.h"
 #include "Skin.h"
 #include "SkinImage.h"
 #include "SoundEngine.h"
 #include "TooltipOverlay.h"
+
+#if defined(MCENGINE_FEATURE_OPENGL) || defined(MCENGINE_FEATURE_GLES32)
+#include "OpenGLHeaders.h"
+#endif
 
 UIModSelectorModButton::UIModSelectorModButton(ModSelector *osuModSelector, float xPos, float yPos, float xSize,
                                                float ySize, UString name)
@@ -49,6 +51,7 @@ void UIModSelectorModButton::draw() {
 
             g->setColor(0xffffffff);
 
+#if defined(MCENGINE_FEATURE_OPENGL) || defined(MCENGINE_FEATURE_GLES32)
             // HACK: For "Actual Flashlight" mod, I'm too lazy to add a new skin element
             bool draw_inverted_colors = this->getActiveModName() == UString("afl");
 
@@ -56,12 +59,17 @@ void UIModSelectorModButton::draw() {
                 glEnable(GL_COLOR_LOGIC_OP);
                 glLogicOp(GL_COPY_INVERTED);
             }
+#endif
 
             this->getActiveImageFunc()->draw(this->vPos + this->vSize / 2.f);
 
+#if defined(MCENGINE_FEATURE_OPENGL) || defined(MCENGINE_FEATURE_GLES32)
             if(draw_inverted_colors) {
                 glDisable(GL_COLOR_LOGIC_OP);
             }
+#else
+            MC_MESSAGE("inverted colors are not implemented for this renderer!");
+#endif
         }
         g->popTransform();
     }

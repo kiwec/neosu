@@ -7,6 +7,7 @@
 #include "BanchoNetworking.h"
 #include "BanchoUsers.h"
 #include "Chat.h"
+#include "ConVar.h"
 #include "Engine.h"
 #include "Mouse.h"
 #include "NotificationOverlay.h"

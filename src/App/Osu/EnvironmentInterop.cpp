@@ -1,3 +1,4 @@
+#include "ConVar.h"
 #include "Database.h"
 #include "DatabaseBeatmap.h"
 #include "Downloader.h"  // for extract_beatmapset

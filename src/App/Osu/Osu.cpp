@@ -147,6 +147,8 @@ Osu::Osu() {
     cv::confine_cursor_fullscreen.setCallback(SA::MakeDelegate<&Osu::updateConfineCursor>(this));
     cv::confine_cursor_never.setCallback(SA::MakeDelegate<&Osu::updateConfineCursor>(this));
     cv::osu_folder.setCallback(SA::MakeDelegate<&Osu::updateOsuFolder>(this));
+    cv::prefer_cjk.setCallback(SA::MakeDelegate<&Osu::preferCJKCallback>(this));
+    this->bPreferCJK = cv::prefer_cjk.getBool();
 
     // debug
     this->windowManager = std::make_unique<CWindowManager>();
@@ -2023,6 +2025,22 @@ float Osu::getUIScale() {
 
     return scale;
 }
+
+bool Osu::getModAuto() const { return cv::mod_autoplay.getBool(); }
+bool Osu::getModAutopilot() const { return cv::mod_autopilot.getBool(); }
+bool Osu::getModRelax() const { return cv::mod_relax.getBool(); }
+bool Osu::getModSpunout() const { return cv::mod_spunout.getBool(); }
+bool Osu::getModTarget() const { return cv::mod_target.getBool(); }
+bool Osu::getModScorev2() const { return cv::mod_scorev2.getBool(); }
+bool Osu::getModFlashlight() const { return cv::mod_flashlight.getBool(); }
+bool Osu::getModNF() const { return cv::mod_nofail.getBool(); }
+bool Osu::getModHD() const { return cv::mod_hidden.getBool(); }
+bool Osu::getModHR() const { return cv::mod_hardrock.getBool(); }
+bool Osu::getModEZ() const { return cv::mod_easy.getBool(); }
+bool Osu::getModSD() const { return cv::mod_suddendeath.getBool(); }
+bool Osu::getModSS() const { return cv::mod_perfect.getBool(); }
+bool Osu::getModNightmare() const { return cv::mod_nightmare.getBool(); }
+bool Osu::getModTD() const { return cv::mod_touchdevice.getBool() || cv::mod_touchdevice_always.getBool(); }
 
 void Osu::setupSoloud() {
     // need to save this state somewhere to share data between callback stages

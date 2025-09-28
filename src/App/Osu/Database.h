@@ -1,8 +1,7 @@
 #pragma once
 // Copyright (c) 2016, PG, All rights reserved.
 
-#include "ConVar.h"
-
+#include "templates.h"
 #include "Resource.h"
 #include "LegacyReplay.h"
 #include "Overrides.h"

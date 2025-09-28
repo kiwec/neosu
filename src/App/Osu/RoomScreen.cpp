@@ -15,6 +15,7 @@
 #include "CBaseUITextbox.h"
 #include "Changelog.h"
 #include "Chat.h"
+#include "ConVar.h"
 #include "Database.h"
 #include "Downloader.h"
 #include "Engine.h"

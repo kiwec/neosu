@@ -7,6 +7,7 @@
 #include "BanchoNetworking.h"
 #include "BanchoProtocol.h"
 #include "Chat.h"
+#include "ConVar.h"
 #include "Engine.h"
 #include "NotificationOverlay.h"
 #include "Osu.h"
@@ -16,11 +17,13 @@
 
 namespace BANCHO::User {
 
-std::unordered_map<i32, UserInfo*> all_users;
 std::unordered_map<i32, UserInfo*> online_users;
 std::vector<i32> friends;
+namespace {  // static
+std::unordered_map<i32, UserInfo*> all_users;
 std::vector<UserInfo*> presence_requests;
 std::vector<UserInfo*> stats_requests;
+}  // namespace
 
 void enqueue_presence_request(UserInfo* info) {
     if(info->has_presence) return;

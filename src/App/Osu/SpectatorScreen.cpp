@@ -9,6 +9,7 @@
 #include "CBaseUILabel.h"
 #include "CBaseUIScrollView.h"
 #include "Changelog.h"
+#include "ConVar.h"
 #include "Database.h"
 #include "Downloader.h"
 #include "Engine.h"

@@ -22,15 +22,14 @@ void setcwdexe(const std::string & /*unused*/) {}
 #define nocbinline forceinline
 #include <filesystem>
 
-#include "UString.h"
+#include "File.h"
 
 namespace {
 void setcwdexe(const std::string &exePathStr) noexcept {
     // Fix path in case user is running it from the wrong folder.
     // We only do this if MCENGINE_DATA_DIR is set to its default value, since if it's changed,
     // the packager clearly wants the executable in a different location.
-    std::string dataDir{MCENGINE_DATA_DIR};
-    if(dataDir != "./" && dataDir != ".\\") {
+    if(!(MCENGINE_DATA_DIR[0] == '.' && MCENGINE_DATA_DIR[1] == '/')) {
         return;
     }
     namespace fs = std::filesystem;
@@ -38,8 +37,7 @@ void setcwdexe(const std::string &exePathStr) noexcept {
     bool failed = true;
     std::error_code ec;
 
-    UString uPath{exePathStr.c_str()};
-    fs::path exe_path{uPath.plat_str()};
+    fs::path exe_path{File::getFsPath(exePathStr)};
 
     if(!exe_path.empty() && exe_path.has_parent_path()) {
         fs::current_path(exe_path.parent_path(), ec);
@@ -85,6 +83,7 @@ void setcwdexe(const std::string &exePathStr) noexcept {
 void SDL_AppQuit(void *appstate, SDL_AppResult result) {
     if(result == SDL_APP_FAILURE) {
         debugLog("Force exiting now, a fatal error occurred. (SDL error: {})", SDL_GetError());
+        Logger::shutdown();
         std::abort();
     }
 
@@ -212,6 +211,7 @@ MAIN_FUNC /* int argc, char *argv[] */
     if(!SDL_Init(SDL_INIT_VIDEO))  // other subsystems can be init later
     {
         debugLog("Couldn't SDL_Init(): {}", SDL_GetError());
+        Logger::shutdown();
         return SDL_APP_FAILURE;
     }
 

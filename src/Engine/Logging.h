@@ -78,7 +78,6 @@ class Logger final {
     }
 
     // same as above but for non-format strings
-    template <typename... Args>
     static forceinline void log(const spdlog::source_loc &loc, const std::string &logString) noexcept {
         if(likely(wasInit))
             s_logger->log(loc, spdlog::level::info, logString);
@@ -86,7 +85,6 @@ class Logger final {
             printf("%s\n", logString.c_str());
     }
 
-    template <typename... Args>
     static forceinline void logRaw(const std::string &logString) noexcept {
         if(likely(wasInit))
             s_raw_logger->log(spdlog::level::info, logString);

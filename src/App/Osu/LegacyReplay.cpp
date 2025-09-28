@@ -10,6 +10,7 @@
 
 #include <string>
 
+#include "ConVar.h"
 #include "Bancho.h"
 #include "BanchoNetworking.h"
 #include "BanchoProtocol.h"

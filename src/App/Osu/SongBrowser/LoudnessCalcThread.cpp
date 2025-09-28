@@ -1,6 +1,7 @@
 // Copyright (c) 2024, kiwec, All rights reserved.
 #include "LoudnessCalcThread.h"
 
+#include "ConVar.h"
 #include "DatabaseBeatmap.h"
 #include "Engine.h"
 #include "Sound.h"

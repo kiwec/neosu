@@ -1,6 +1,5 @@
 #pragma once
 // Copyright (c) 2020, PG, All rights reserved.
-#include <atomic>
 
 #include "DifficultyCalculator.h"
 #include "HitSounds.h"
@@ -8,6 +7,8 @@
 #include "Overrides.h"
 #include "Resource.h"
 #include "templates.h"
+
+#include <atomic>
 
 class AbstractBeatmapInterface;
 class HitObject;
@@ -200,7 +201,7 @@ class DatabaseBeatmap final {
     [[nodiscard]] inline int getSetID() const { return this->iSetID; }
 
     [[nodiscard]] inline const std::string &getTitle() const {
-        if(!this->bEmptyTitleUnicode && cv::prefer_cjk.getBool()) {
+        if(!this->bEmptyTitleUnicode && osu->useCJKNames()) {
             return this->sTitleUnicode;
         } else {
             return this->sTitle;
@@ -210,7 +211,7 @@ class DatabaseBeatmap final {
     [[nodiscard]] inline const std::string &getTitleUnicode() const { return this->sTitleUnicode; }
 
     [[nodiscard]] inline const std::string &getArtist() const {
-        if(!this->bEmptyArtistUnicode && cv::prefer_cjk.getBool()) {
+        if(!this->bEmptyArtistUnicode && osu->useCJKNames()) {
             return this->sArtistUnicode;
         } else {
             return this->sArtist;

@@ -2,8 +2,8 @@
 #include "BottomBar.h"
 
 #include "AnimationHandler.h"
+#include "ConVar.h"
 #include "Engine.h"
-#include "LeaderboardPPCalcThread.h"
 #include "LoudnessCalcThread.h"
 #include "MapCalcThread.h"
 #include "Mouse.h"

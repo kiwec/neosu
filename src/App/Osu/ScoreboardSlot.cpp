@@ -4,6 +4,7 @@
 #include "AnimationHandler.h"
 #include "Bancho.h"
 #include "BanchoUsers.h"
+#include "ConVar.h"
 #include "Engine.h"
 #include "Font.h"
 #include "Osu.h"

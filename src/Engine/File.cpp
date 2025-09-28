@@ -228,7 +228,7 @@ File::FILETYPE File::existsCaseInsensitive(std::string &filePath, fs::path &path
     resolvedPath.append(resolvedName);
 
     if(cv::debug_file.getBool())
-        debugLog("File: Case-insensitive match found for {:s} -> {:s}\n", path.string(), resolvedPath);
+        debugLog("File: Case-insensitive match found for {:s} -> {:s}", path.string(), resolvedPath);
 
     // now update the input path reference with the actual found path
     filePath = resolvedPath;
@@ -287,7 +287,7 @@ File::File(std::string filePath, MODE mode)
         if(!openForWriting()) return;
     }
 
-    if(cv::debug_file.getBool()) debugLog("File: Opening {:s}\n", this->sFilePath);
+    if(cv::debug_file.getBool()) debugLog("File: Opening {:s}", this->sFilePath);
 
     this->bReady = true;
 }
@@ -298,7 +298,7 @@ bool File::openForReading() {
 
     if(fileType != File::FILETYPE::FILE) {
         if(cv::debug_file.getBool())
-            debugLog("File Error: Path {:s} {:s}\n", this->sFilePath,
+            debugLog("File Error: Path {:s} {:s}", this->sFilePath,
                      fileType == File::FILETYPE::NONE ? "doesn't exist" : "is not a file");
         return false;
     }
@@ -309,7 +309,7 @@ bool File::openForReading() {
 
     // check if file opened successfully
     if(!this->ifstream || !this->ifstream->good()) {
-        debugLog("File Error: Couldn't open file {:s}\n", this->sFilePath);
+        debugLog("File Error: Couldn't open file {:s}", this->sFilePath);
         return false;
     }
 
@@ -318,7 +318,7 @@ bool File::openForReading() {
     this->iFileSize = fs::file_size(this->fsPath, ec);
 
     if(ec) {
-        debugLog("File Error: Couldn't get file size for {:s}\n", this->sFilePath);
+        debugLog("File Error: Couldn't get file size for {:s}", this->sFilePath);
         return false;
     }
 
@@ -326,7 +326,7 @@ bool File::openForReading() {
     if(this->iFileSize == 0) {  // empty file is valid
         return true;
     } else if(std::cmp_greater(this->iFileSize, 1024 * 1024 * cv::file_size_max.getInt())) {  // size sanity check
-        debugLog("File Error: FileSize of {:s} is > {} MB!!!\n", this->sFilePath, cv::file_size_max.getInt());
+        debugLog("File Error: FileSize of {:s} is > {} MB!!!", this->sFilePath, cv::file_size_max.getInt());
         return false;
     }
 
@@ -339,7 +339,7 @@ bool File::openForWriting() {
         std::error_code ec;
         fs::create_directories(this->fsPath.parent_path(), ec);
         if(ec) {
-            debugLog("File Error: Couldn't create parent directories for {:s} (error: {:s})\n", this->sFilePath,
+            debugLog("File Error: Couldn't create parent directories for {:s} (error: {:s})", this->sFilePath,
                      ec.message());
             // continue anyway, the file open might still succeed if the directory exists
         }
@@ -351,7 +351,7 @@ bool File::openForWriting() {
 
     // check if file opened successfully
     if(!this->ofstream->good()) {
-        debugLog("File Error: Couldn't open file {:s} for writing\n", this->sFilePath);
+        debugLog("File Error: Couldn't open file {:s} for writing", this->sFilePath);
         return false;
     }
 
@@ -359,7 +359,7 @@ bool File::openForWriting() {
 }
 
 void File::write(const u8 *buffer, size_t size) {
-    if(cv::debug_file.getBool()) debugLog("{:s} (canWrite: {})\n", this->sFilePath, canWrite());
+    if(cv::debug_file.getBool()) debugLog("{:s} (canWrite: {})", this->sFilePath, canWrite());
 
     if(!canWrite()) return;
 
@@ -403,7 +403,7 @@ std::string File::readString() {
 }
 
 const u8 *File::readFile() {
-    if(cv::debug_file.getBool()) debugLog("{:s} (canRead: {})\n", this->sFilePath, this->bReady && canRead());
+    if(cv::debug_file.getBool()) debugLog("{:s} (canRead: {})", this->sFilePath, this->bReady && canRead());
 
     // return cached buffer if already read
     if(!this->vFullBuffer.empty()) return this->vFullBuffer.data();
@@ -423,7 +423,7 @@ const u8 *File::readFile() {
 }
 
 std::vector<u8> File::takeFileBuffer() {
-    if(cv::debug_file.getBool()) debugLog("{:s} (canRead: {})\n", this->sFilePath, this->bReady && canRead());
+    if(cv::debug_file.getBool()) debugLog("{:s} (canRead: {})", this->sFilePath, this->bReady && canRead());
 
     // if buffer is already populated, move it out
     if(!this->vFullBuffer.empty()) return std::move(this->vFullBuffer);
