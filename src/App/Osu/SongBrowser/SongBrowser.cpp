@@ -599,10 +599,11 @@ void SongBrowser::draw() {
         float alpha = 1.0f;
         if(cv::songbrowser_background_fade_in_duration.getFloat() > 0.0f) {
             // handle fadein trigger after handler is finished loading
-            const bool ready =
-                osu->getMapInterface()->beatmap != nullptr &&
-                osu->getBackgroundImageHandler()->getLoadBackgroundImage(osu->getMapInterface()->beatmap) != nullptr &&
-                osu->getBackgroundImageHandler()->getLoadBackgroundImage(osu->getMapInterface()->beatmap)->isReady();
+            const Image *loadedImage = nullptr;
+            const bool ready = osu->getMapInterface()->beatmap != nullptr &&
+                               ((loadedImage = osu->getBackgroundImageHandler()->getLoadBackgroundImage(
+                                     osu->getMapInterface()->beatmap)) != nullptr) &&
+                               loadedImage->isReady();
 
             if(!ready)
                 this->fBackgroundFadeInTime = engine->getTime();
@@ -855,7 +856,7 @@ void SongBrowser::draw() {
 
 void SongBrowser::drawSelectedBeatmapBackgroundImage(float alpha) {
     if(osu->getMapInterface()->beatmap != nullptr) {
-        Image *backgroundImage =
+        const Image *backgroundImage =
             osu->getBackgroundImageHandler()->getLoadBackgroundImage(osu->getMapInterface()->beatmap);
         if(backgroundImage != nullptr && backgroundImage->isReady()) {
             const float scale = Osu::getImageScaleToFillResolution(backgroundImage, osu->getVirtScreenSize());

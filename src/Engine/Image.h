@@ -23,8 +23,8 @@ class Image : public Resource {
     Image(std::string filepath, bool mipmapped = false, bool keepInSystemMemory = false);
     Image(i32 width, i32 height, bool mipmapped = false, bool keepInSystemMemory = false);
 
-    virtual void bind(unsigned int textureUnit = 0) = 0;
-    virtual void unbind() = 0;
+    virtual void bind(unsigned int textureUnit = 0) const = 0;
+    virtual void unbind() const = 0;
 
     virtual inline void setFilterMode(Graphics::FILTER_MODE filterMode) { this->filterMode = filterMode; };
     virtual inline void setWrapMode(Graphics::WRAP_MODE wrapMode) { this->wrapMode = wrapMode; };
@@ -33,6 +33,7 @@ class Image : public Resource {
     void setPixels(const u8 *data, u64 size, TYPE type);
     void setPixels(const std::vector<u8> &pixels);
 
+    [[nodiscard]] inline bool failedLoad() const { return this->bLoadError; }
     [[nodiscard]] Color getPixel(i32 x, i32 y) const;
 
     [[nodiscard]] inline Image::TYPE getType() const { return this->type; }
@@ -72,6 +73,7 @@ class Image : public Resource {
     bool bMipmapped;
     bool bCreatedImage;
     bool bKeepInSystemMemory;
+    bool bLoadError{false};
 
    private:
     [[nodiscard]] bool isCompletelyTransparent() const;

@@ -1966,7 +1966,7 @@ float Osu::getImageScaleToFitResolution(vec2 size, vec2 resolution) {
     }
 }
 
-float Osu::getImageScaleToFitResolution(Image *img, vec2 resolution) {
+float Osu::getImageScaleToFitResolution(const Image *img, vec2 resolution) {
     return getImageScaleToFitResolution(vec2(img->getWidth(), img->getHeight()), resolution);
 }
 
@@ -1978,7 +1978,7 @@ float Osu::getImageScaleToFillResolution(vec2 size, vec2 resolution) {
     }
 }
 
-float Osu::getImageScaleToFillResolution(Image *img, vec2 resolution) {
+float Osu::getImageScaleToFillResolution(const Image *img, vec2 resolution) {
     return getImageScaleToFillResolution(vec2(img->getWidth(), img->getHeight()), resolution);
 }
 
@@ -1997,7 +1997,7 @@ float Osu::getImageScale(vec2 size, float osuSize) {
     return osuSize * std::max(x, y);
 }
 
-float Osu::getImageScale(Image *img, float osuSize) {
+float Osu::getImageScale(const Image *img, float osuSize) {
     return getImageScale(vec2(img->getWidth(), img->getHeight()), osuSize);
 }
 

@@ -18,7 +18,7 @@ class BackgroundImageHandler {
 
     void scheduleFreezeCache() { this->bFrozen = true; }
 
-    Image *getLoadBackgroundImage(const DatabaseBeatmap *beatmap, bool loadImmediately = false);
+    const Image *getLoadBackgroundImage(const DatabaseBeatmap *beatmap, bool loadImmediately = false);
 
    private:
     struct ENTRY {
@@ -37,6 +37,8 @@ class BackgroundImageHandler {
         bool isLoadScheduled;
         bool wasUsedLastFrame;
     };
+
+    [[nodiscard]] const Image *getImageOrSkinFallback(const Image *candidateLoaded) const;
 
     void handleLoadPathForEntry(ENTRY &entry);
     void handleLoadImageForEntry(ENTRY &entry);

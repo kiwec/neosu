@@ -96,7 +96,7 @@ void SongButton::draw() {
     this->drawSubTitle();
 }
 
-void SongButton::drawBeatmapBackgroundThumbnail(Image *image) {
+void SongButton::drawBeatmapBackgroundThumbnail(const Image *image) {
     if(!cv::draw_songbrowser_thumbnails.getBool() || osu->getSkin()->getVersion() < 2.2f) return;
 
     float alpha = 1.0f;

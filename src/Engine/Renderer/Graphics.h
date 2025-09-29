@@ -134,7 +134,7 @@ class Graphics {
                           Color topRightColor, Color bottomRightColor, Color bottomLeftColor) = 0;
 
     // 2d resource drawing
-    virtual void drawImage(Image *image, AnchorPoint anchor = AnchorPoint::CENTER, float edgeSoftness = 0.0f,
+    virtual void drawImage(const Image *image, AnchorPoint anchor = AnchorPoint::CENTER, float edgeSoftness = 0.0f,
                            McRect clipRect = {}) = 0;
     virtual void drawString(McFont *font, const UString &text) = 0;
 

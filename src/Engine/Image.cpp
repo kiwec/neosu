@@ -273,6 +273,11 @@ Image::Image(i32 width, i32 height, bool mipmapped, bool keepInSystemMemory) : R
 bool Image::loadRawImage() {
     bool alreadyLoaded = this->rawImage.size() > 0;
 
+    auto error = [this]() -> bool {
+        this->bLoadError = true;
+        return false;
+    };
+
     // if it isn't a created image (created within the engine), load it from the corresponding file
     if(!this->bCreatedImage) {
         if(alreadyLoaded)  // has already been loaded (or loading it again after setPixel(s))
@@ -280,11 +285,11 @@ bool Image::loadRawImage() {
 
         if(!env->fileExists(this->sFilePath)) {
             debugLog("Image Error: Couldn't find file {:s}", this->sFilePath);
-            return false;
+            return error();
         }
 
         if(this->bInterrupted)  // cancellation point
-            return false;
+            return error();
 
         // load entire file
         std::vector<u8> fileBuffer;
@@ -293,26 +298,26 @@ bool Image::loadRawImage() {
             File file(this->sFilePath);
             if(!file.canRead()) {
                 debugLog("Image Error: Couldn't canRead() file {:s}", this->sFilePath);
-                return false;
+                return error();
             }
             if((fileSize = file.getFileSize()) < 4) {
                 debugLog("Image Error: FileSize is < 4 in file {:s}", this->sFilePath);
-                return false;
+                return error();
             }
 
             if(this->bInterrupted)  // cancellation point
-                return false;
+                return error();
 
             fileBuffer = file.takeFileBuffer();
             if(fileBuffer.empty()) {
                 debugLog("Image Error: Couldn't readFile() file {:s}", this->sFilePath);
-                return false;
+                return error();
             }
             // don't keep the file open
         }
 
         if(this->bInterrupted)  // cancellation point
-            return false;
+            return error();
 
         // determine file type by magic number (png/jpg)
         bool isJPEG = false;
@@ -333,20 +338,20 @@ bool Image::loadRawImage() {
             tjhandle tjInstance = tj3Init(TJINIT_DECOMPRESS);
             if(!tjInstance) {
                 debugLog("Image Error: tj3Init failed in file {:s}", this->sFilePath);
-                return false;
+                return error();
             }
 
             if(tj3DecompressHeader(tjInstance, fileBuffer.data(), fileSize) < 0) {
                 debugLog("Image Error: tj3DecompressHeader failed: {:s} in file {:s}", tj3GetErrorStr(tjInstance),
                          this->sFilePath);
                 tj3Destroy(tjInstance);
-                return false;
+                return error();
             }
 
             if(this->bInterrupted)  // cancellation point
             {
                 tj3Destroy(tjInstance);
-                return false;
+                return error();
             }
 
             this->iWidth = tj3Get(tjInstance, TJPARAM_JPEGWIDTH);
@@ -356,13 +361,13 @@ bool Image::loadRawImage() {
                 debugLog("Image Error: JPEG image size is too big ({} x {}) in file {:s}", this->iWidth, this->iHeight,
                          this->sFilePath);
                 tj3Destroy(tjInstance);
-                return false;
+                return error();
             }
 
             if(this->bInterrupted)  // cancellation point
             {
                 tj3Destroy(tjInstance);
-                return false;
+                return error();
             }
 
             // preallocate
@@ -374,7 +379,7 @@ bool Image::loadRawImage() {
                 debugLog("Image Error: tj3Decompress8 failed: {:s} in file {:s}", tj3GetErrorStr(tjInstance),
                          this->sFilePath);
                 tj3Destroy(tjInstance);
-                return false;
+                return error();
             }
 
             tj3Destroy(tjInstance);
@@ -384,16 +389,16 @@ bool Image::loadRawImage() {
             // decode png using libpng
             if(!decodePNGFromMemory(fileBuffer.data(), fileSize, this->rawImage, this->iWidth, this->iHeight)) {
                 debugLog("Image Error: PNG decoding failed in file {:s}", this->sFilePath);
-                return false;
+                return error();
             }
         } else {
             debugLog("Image Error: Neither PNG nor JPEG in file {:s}", this->sFilePath);
-            return false;
+            return error();
         }
     }
 
     if(this->bInterrupted)  // cancellation point
-        return false;
+        return error();
 
     // error checking
 
@@ -403,14 +408,14 @@ bool Image::loadRawImage() {
                  this->iWidth * this->iHeight * Image::NUM_CHANNELS, this->sFilePath);
         // engine->showMessageError("Image Error", UString::format("Loaded image has only %i/%i bytes in file %s",
         // rawImage.size(), iWidth*iHeight*iNumChannels, this->sFilePath));
-        return false;
+        return error();
     }
 
     // optimization: ignore completely transparent images (don't render) (only PNGs can have them, obviously)
     if(!alreadyLoaded && (type == Image::TYPE::TYPE_PNG) &&
        canHaveTransparency(this->rawImage.data(), this->rawImage.size()) && isCompletelyTransparent()) {
         if(!this->bInterrupted) debugLog("Image: Ignoring empty transparent image {:s}", this->sFilePath);
-        return false;
+        return false;  // didn't fail to load, just transparent
     }
 
     return true;

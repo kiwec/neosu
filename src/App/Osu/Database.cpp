@@ -1187,7 +1187,6 @@ void Database::loadMaps() {
                    difficultyName.length() < 1 && md5hash.hash[0] == 0)
                     continue;
 
-                // fill diff with data
                 if(mode != 0) continue;
 
                 // it can happen that nested beatmaps are stored in the
@@ -1214,6 +1213,7 @@ void Database::loadMaps() {
                     }
                 }
 
+                // fill diff with data
                 auto *map =
                     new DatabaseBeatmap(fullFilePath, beatmapPath, DatabaseBeatmap::BeatmapType::PEPPY_DIFFICULTY);
                 {

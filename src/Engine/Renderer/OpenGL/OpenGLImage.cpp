@@ -137,7 +137,7 @@ void OpenGLImage::deleteGL() {
     this->GLTexture = 0;
 }
 
-void OpenGLImage::bind(unsigned int textureUnit) {
+void OpenGLImage::bind(unsigned int textureUnit) const {
     if(!this->bReady) return;
 
     this->iTextureUnitBackup = textureUnit;
@@ -154,7 +154,7 @@ void OpenGLImage::bind(unsigned int textureUnit) {
     }
 }
 
-void OpenGLImage::unbind() {
+void OpenGLImage::unbind() const {
     if(!this->bReady) return;
 
     // restore texture unit (just in case) and set to no texture

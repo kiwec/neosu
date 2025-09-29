@@ -782,7 +782,7 @@ void MainMenu::clearPreloadedMaps() {
 }
 
 void MainMenu::drawMapBackground(DatabaseBeatmap *beatmap, f32 alpha) {
-    Image *bg = nullptr;
+    const Image *bg = nullptr;
 
     if(beatmap == nullptr) {
         bool just_launched = engine->getTime() < 5.0;

@@ -169,7 +169,7 @@ void BeatmapInterface::drawBackground() {
 
     // draw beatmap background image
     {
-        Image *backgroundImage = osu->getBackgroundImageHandler()->getLoadBackgroundImage(this->beatmap);
+        const Image *backgroundImage = osu->getBackgroundImageHandler()->getLoadBackgroundImage(this->beatmap);
         if(cv::draw_beatmap_background_image.getBool() && backgroundImage != nullptr &&
            (cv::background_dim.getFloat() < 1.0f || this->fBreakBackgroundFade > 0.0f)) {
             const float scale = Osu::getImageScaleToFillResolution(backgroundImage, osu->getVirtScreenSize());
@@ -399,8 +399,7 @@ void BeatmapInterface::keyReleased2(bool /*mouse*/) {
 
 void BeatmapInterface::selectBeatmap() {
     // if possible, continue playing where we left off
-    if((this->music || (this->music = resourceManager->getSound("BEATMAP_MUSIC"))) && this->music->isPlaying())
-        this->iContinueMusicPos = this->music->getPositionMS();
+    if(this->music != nullptr && (this->music->isPlaying())) this->iContinueMusicPos = this->music->getPositionMS();
 
     this->selectBeatmap(this->beatmap);
 }

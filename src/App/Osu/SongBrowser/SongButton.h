@@ -33,7 +33,7 @@ class SongButton : public CarouselButton {
     void onAddToCollectionConfirmed(const UString &text, int id = -1);
     void onCreateNewCollectionConfirmed(const UString &text, int id = -1);
 
-    void drawBeatmapBackgroundThumbnail(Image *image);
+    void drawBeatmapBackgroundThumbnail(const Image *image);
     void drawGrade();
     void drawTitle(float deselectedAlpha = 1.0f, bool forceSelectedStyle = false);
     void drawSubTitle(float deselectedAlpha = 1.0f, bool forceSelectedStyle = false);

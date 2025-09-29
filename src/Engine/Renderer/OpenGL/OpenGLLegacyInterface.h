@@ -10,7 +10,7 @@
 class Image;
 
 class OpenGLLegacyInterface : public Graphics {
-NOCOPY_NOMOVE(OpenGLLegacyInterface)
+    NOCOPY_NOMOVE(OpenGLLegacyInterface)
    public:
     OpenGLLegacyInterface();
     ~OpenGLLegacyInterface() override = default;
@@ -47,7 +47,7 @@ NOCOPY_NOMOVE(OpenGLLegacyInterface)
                   Color topRightColor, Color bottomRightColor, Color bottomLeftColor) final;
 
     // 2d resource drawing
-    void drawImage(Image *image, AnchorPoint anchor = AnchorPoint::CENTER, float edgeSoftness = 0.0f,
+    void drawImage(const Image *image, AnchorPoint anchor = AnchorPoint::CENTER, float edgeSoftness = 0.0f,
                    McRect clipRect = {}) final;
     void drawString(McFont *font, const UString &text) final;
 

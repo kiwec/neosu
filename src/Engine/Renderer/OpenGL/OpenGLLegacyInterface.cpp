@@ -303,7 +303,7 @@ void OpenGLLegacyInterface::drawQuad(vec2 topLeft, vec2 topRight, vec2 bottomRig
     glEnd();
 }
 
-void OpenGLLegacyInterface::drawImage(Image *image, AnchorPoint anchor, float edgeSoftness, McRect clipRect) {
+void OpenGLLegacyInterface::drawImage(const Image *image, AnchorPoint anchor, float edgeSoftness, McRect clipRect) {
     if(image == nullptr) {
         debugLog("WARNING: Tried to draw image with NULL texture!");
         return;

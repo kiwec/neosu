@@ -46,12 +46,12 @@ class Osu final : public MouseListener, public KeyboardListener {
    public:
     static constexpr const vec2 osuBaseResolution{640.0f, 480.0f};
 
-    static float getImageScaleToFitResolution(Image *img, vec2 resolution);
+    static float getImageScaleToFitResolution(const Image *img, vec2 resolution);
     static float getImageScaleToFitResolution(vec2 size, vec2 resolution);
     static float getImageScaleToFillResolution(vec2 size, vec2 resolution);
-    static float getImageScaleToFillResolution(Image *img, vec2 resolution);
+    static float getImageScaleToFillResolution(const Image *img, vec2 resolution);
     static float getImageScale(vec2 size, float osuSize);
-    static float getImageScale(Image *img, float osuSize);
+    static float getImageScale(const Image *img, float osuSize);
     static float getUIScale(float osuSize);
     static float getUIScale();  // NOTE: includes premultiplied dpi scale!
 

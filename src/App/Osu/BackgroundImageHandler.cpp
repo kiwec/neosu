@@ -6,6 +6,8 @@
 #include "Engine.h"
 #include "ResourceManager.h"
 
+#include "Skin.h"
+
 BackgroundImageHandler::BackgroundImageHandler() { this->bFrozen = false; }
 
 BackgroundImageHandler::~BackgroundImageHandler() {
@@ -107,7 +109,7 @@ void BackgroundImageHandler::handleLoadImageForEntry(ENTRY &entry) {
     entry.image = resourceManager->loadImageAbsUnnamed(fullBackgroundImageFilePath, true);
 }
 
-Image *BackgroundImageHandler::getLoadBackgroundImage(const DatabaseBeatmap *beatmap, bool loadImmediately) {
+const Image *BackgroundImageHandler::getLoadBackgroundImage(const DatabaseBeatmap *beatmap, bool loadImmediately) {
     if(beatmap == nullptr || !cv::load_beatmap_background_images.getBool() || !beatmap->draw_background) return nullptr;
 
     // NOTE: no references to beatmap are kept anywhere (database can safely be deleted/reloaded without having to
@@ -139,7 +141,7 @@ Image *BackgroundImageHandler::getLoadBackgroundImage(const DatabaseBeatmap *bea
                 const_cast<DatabaseBeatmap *>(beatmap)->sFullBackgroundImageFilePath.append(i.backgroundImageFileName);
             }
 
-            return entry.image;
+            return this->getImageOrSkinFallback(entry.image);
         }
     }
 
@@ -179,4 +181,17 @@ Image *BackgroundImageHandler::getLoadBackgroundImage(const DatabaseBeatmap *bea
     }
 
     return nullptr;
+}
+
+const Image *BackgroundImageHandler::getImageOrSkinFallback(const Image *candidateLoaded) const {
+    const Image *ret = candidateLoaded;
+    // if we got an image but it failed for whatever reason, return the user skin as a fallback instead
+    if(candidateLoaded && candidateLoaded->failedLoad()) {
+        const Image *skinBG = nullptr;
+        if(osu->getSkin() && (skinBG = osu->getSkin()->getMenuBackground()) && skinBG != MISSING_TEXTURE &&
+           !skinBG->failedLoad()) {
+            ret = skinBG;
+        }
+    }
+    return ret;
 }
