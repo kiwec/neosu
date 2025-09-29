@@ -4,7 +4,7 @@
 
 class Image;
 
-class UIPauseMenuButton : public CBaseUIButton {
+class UIPauseMenuButton final : public CBaseUIButton {
    public:
     UIPauseMenuButton(std::function<Image *()> getImageFunc, float xPos, float yPos, float xSize, float ySize,
                       UString name);

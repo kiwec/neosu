@@ -36,6 +36,7 @@ typedef bool (*SORTING_COMPARATOR)(const SongButton *a, const SongButton *b);
 bool sort_by_difficulty(const SongButton *a, const SongButton *b);
 
 class SongBrowser final : public ScreenBackable {
+    NOCOPY_NOMOVE(SongBrowser)
    public:
     static void drawSelectedBeatmapBackgroundImage(float alpha = 1.0f);
 

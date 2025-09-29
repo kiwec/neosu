@@ -12,9 +12,10 @@ class SongButton;
 class UIContextMenu;
 
 class CarouselButton : public CBaseUIButton {
+    NOCOPY_NOMOVE(CarouselButton)
    public:
-    CarouselButton(SongBrowser *songBrowser, UIContextMenu *contextMenu, float xPos, float yPos,
-                   float xSize, float ySize, UString name);
+    CarouselButton(SongBrowser *songBrowser, UIContextMenu *contextMenu, float xPos, float yPos, float xSize,
+                   float ySize, UString name);
     ~CarouselButton() override;
     void deleteAnimations();
 

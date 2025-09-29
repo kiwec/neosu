@@ -365,7 +365,7 @@ class DatabaseBeatmap final {
     bool do_not_store = false;
 };
 
-class DatabaseBeatmapBackgroundImagePathLoader : public Resource {
+class DatabaseBeatmapBackgroundImagePathLoader final : public Resource {
    public:
     DatabaseBeatmapBackgroundImagePathLoader(const std::string &filePath) : Resource(filePath) {}
 

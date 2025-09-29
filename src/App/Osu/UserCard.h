@@ -6,13 +6,14 @@ class ConVar;
 
 class UIAvatar;
 
-class UserCard : public CBaseUIButton {
+class UserCard final : public CBaseUIButton {
+    NOCOPY_NOMOVE(UserCard)
    public:
     UserCard(i32 user_id);
     ~UserCard() override;
 
     void draw() override;
-    void mouse_update(bool *propagate_clicks) override;
+    void mouse_update(bool* propagate_clicks) override;
 
     void updateUserStats();
     void setID(u32 new_id);

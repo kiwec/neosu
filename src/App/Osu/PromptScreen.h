@@ -8,7 +8,7 @@ class CBaseUITextbox;
 class Graphics;
 class UIButton;
 
-class PromptScreen : public OsuScreen {
+class PromptScreen final : public OsuScreen {
    public:
     PromptScreen();
     void onResolutionChange(vec2 newResolution) override;

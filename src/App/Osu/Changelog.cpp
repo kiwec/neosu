@@ -587,6 +587,40 @@ Changelog::Changelog() : ScreenBackable() {
     v34_00.changes.emplace_back("");
     changelogs.push_back(v34_00);
 
+    this->addAllChangelogs(std::move(changelogs));
+}
+
+Changelog::~Changelog() { this->changelogs.clear(); }
+
+class ChangelogLabel final : public CBaseUIButton {
+   public:
+    ChangelogLabel(const UString &text) : CBaseUIButton(0, 0, 0, 0, "", text) { ; }
+
+    void draw() override {
+        if(this->bVisible && this->isMouseInside()) {
+            g->setColor(0x3fffffff);
+
+            const int margin = 0;
+            const int marginX = margin + 10;
+            g->fillRect(this->vPos.x - marginX, this->vPos.y - margin, this->vSize.x + marginX * 2,
+                        this->vSize.y + margin * 2);
+        }
+
+        if(!this->bVisible) return;
+
+        g->setColor(this->textColor);
+        g->pushTransform();
+        {
+            g->translate((int)(this->vPos.x + this->vSize.x / 2.0f - this->fStringWidth / 2.0f),
+                         (int)(this->vPos.y + this->vSize.y / 2.0f + this->fStringHeight / 2.0f));
+            g->drawString(this->font, this->sText);
+        }
+        g->popTransform();
+    }
+};
+
+void Changelog::addAllChangelogs(std::vector<CHANGELOG> &&logtexts) {
+    auto changelogs = std::move(logtexts);
     for(int i = 0; i < changelogs.size(); i++) {
         CHANGELOG_UI changelog;
 
@@ -605,34 +639,7 @@ Changelog::Changelog() : ScreenBackable() {
 
         // changes
         for(int c = 0; c < changelogs[i].changes.size(); c++) {
-            class CustomCBaseUILabel : public CBaseUIButton {
-               public:
-                CustomCBaseUILabel(const UString &text) : CBaseUIButton(0, 0, 0, 0, "", text) { ; }
-
-                void draw() override {
-                    if(this->bVisible && this->isMouseInside()) {
-                        g->setColor(0x3fffffff);
-
-                        const int margin = 0;
-                        const int marginX = margin + 10;
-                        g->fillRect(this->vPos.x - marginX, this->vPos.y - margin, this->vSize.x + marginX * 2,
-                                    this->vSize.y + margin * 2);
-                    }
-
-                    if(!this->bVisible) return;
-
-                    g->setColor(this->textColor);
-                    g->pushTransform();
-                    {
-                        g->translate((int)(this->vPos.x + this->vSize.x / 2.0f - this->fStringWidth / 2.0f),
-                                     (int)(this->vPos.y + this->vSize.y / 2.0f + this->fStringHeight / 2.0f));
-                        g->drawString(this->font, this->sText);
-                    }
-                    g->popTransform();
-                }
-            };
-
-            CBaseUIButton *change = new CustomCBaseUILabel(changelogs[i].changes[c]);
+            CBaseUIButton *change = new ChangelogLabel(changelogs[i].changes[c]);
             change->setClickCallback(SA::MakeDelegate<&Changelog::onChangeClicked>(this));
 
             if(i > 0) change->setTextColor(0xff888888);
@@ -649,8 +656,6 @@ Changelog::Changelog() : ScreenBackable() {
         this->changelogs.push_back(changelog);
     }
 }
-
-Changelog::~Changelog() { this->changelogs.clear(); }
 
 void Changelog::mouse_update(bool *propagate_clicks) {
     if(!this->bVisible) return;

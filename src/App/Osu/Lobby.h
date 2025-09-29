@@ -30,7 +30,7 @@ struct RoomUIElement : CBaseUIScrollView {
     void onRoomJoinButtonClick(CBaseUIButton* btn);
 };
 
-class Lobby : public OsuScreen {
+class Lobby final : public OsuScreen {
    public:
     Lobby();
 

@@ -9,7 +9,8 @@ class UIContextMenu;
 class UserCard;
 class ScoreButton;
 
-class UserStatsScreen : public ScreenBackable {
+class UserStatsScreen final : public ScreenBackable {
+    NOCOPY_NOMOVE(UserStatsScreen)
    public:
     UserStatsScreen();
     ~UserStatsScreen() override = default;

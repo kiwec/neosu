@@ -126,7 +126,7 @@ class Database {
     std::vector<std::string> dbPathsToImport;
 
    private:
-    class AsyncDBLoader : public Resource {
+    class AsyncDBLoader final : public Resource {
         NOCOPY_NOMOVE(AsyncDBLoader)
        public:
         ~AsyncDBLoader() override = default;

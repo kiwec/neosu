@@ -8,7 +8,8 @@ class ConVar;
 class UIAvatar;
 struct UserInfo;
 
-class UserCard2 : public CBaseUIButton {
+class UserCard2 final : public CBaseUIButton {
+    NOCOPY_NOMOVE(UserCard2)
    public:
     UserCard2(i32 user_id);
     ~UserCard2() override;

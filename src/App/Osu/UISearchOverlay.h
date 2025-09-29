@@ -4,7 +4,7 @@
 
 #include "CBaseUIElement.h"
 
-class UISearchOverlay : public CBaseUIElement {
+class UISearchOverlay final : public CBaseUIElement {
    public:
     UISearchOverlay(float xPos, float yPos, float xSize, float ySize, UString name);
 

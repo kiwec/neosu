@@ -18,7 +18,7 @@ class UIButton;
 class CBaseUIContainer;
 class ConVar;
 
-class PauseButton : public CBaseUIButton {
+class PauseButton final : public CBaseUIButton {
    public:
     PauseButton(float xPos, float yPos, float xSize, float ySize, UString name, UString text)
         : CBaseUIButton(xPos, yPos, xSize, ySize, std::move(name), std::move(text)) {}
@@ -30,7 +30,8 @@ class PauseButton : public CBaseUIButton {
     bool bIsPaused{true};
 };
 
-class MainMenu : public OsuScreen, public MouseListener {
+class MainMenu final : public OsuScreen, public MouseListener {
+    NOCOPY_NOMOVE(MainMenu)
    public:
     static UString NEOSU_MAIN_BUTTON_TEXT;
     static UString NEOSU_MAIN_BUTTON_SUBTEXT;
@@ -150,7 +151,7 @@ class MainMenu : public OsuScreen, public MouseListener {
     f32 mapFadeAnim{1.f};
     std::vector<BeatmapSet *> preloadedMaps;
 
-    struct SongsFolderEnumerator : public Resource {
+    struct SongsFolderEnumerator final : public Resource {
         NOCOPY_NOMOVE(SongsFolderEnumerator)
        public:
         SongsFolderEnumerator();

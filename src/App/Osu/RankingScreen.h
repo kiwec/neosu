@@ -20,7 +20,7 @@ class RankingScreenBottomElement;
 
 class ConVar;
 
-class RankingScreen : public ScreenBackable {
+class RankingScreen final : public ScreenBackable {
    public:
     RankingScreen();
 

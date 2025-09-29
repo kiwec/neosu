@@ -39,7 +39,7 @@
 #include "UIRankingScreenRankingPanel.h"
 #include "score.h"
 
-class RankingScreenIndexLabel : public CBaseUILabel {
+class RankingScreenIndexLabel final : public CBaseUILabel {
    public:
     RankingScreenIndexLabel() : CBaseUILabel(-1, 0, 0, 0, "", "You achieved the #1 score on local rankings!") {
         this->bVisible2 = false;
@@ -81,7 +81,7 @@ class RankingScreenIndexLabel : public CBaseUILabel {
     bool bVisible2;
 };
 
-class RankingScreenBottomElement : public CBaseUILabel {
+class RankingScreenBottomElement final : public CBaseUILabel {
    public:
     RankingScreenBottomElement() : CBaseUILabel(-1, 0, 0, 0, "", "") { this->bVisible2 = false; }
 
@@ -103,7 +103,7 @@ class RankingScreenBottomElement : public CBaseUILabel {
     bool bVisible2;
 };
 
-class RankingScreenScrollDownInfoButton : public CBaseUIButton {
+class RankingScreenScrollDownInfoButton final : public CBaseUIButton {
    public:
     RankingScreenScrollDownInfoButton() : CBaseUIButton(0, 0, 0, 0, "") {
         this->bVisible2 = false;

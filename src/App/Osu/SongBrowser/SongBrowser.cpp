@@ -156,7 +156,7 @@ class SongBrowserBackgroundSearchMatcher final : public Resource {
     std::vector<SongButton *> songButtons;
 };
 
-class ScoresStillLoadingElement : public CBaseUILabel {
+class ScoresStillLoadingElement final : public CBaseUILabel {
    public:
     ScoresStillLoadingElement(const UString &text) : CBaseUILabel(0, 0, 0, 0, "", text) {
         this->sIconString.insert(0, Icons::GLOBE);
@@ -204,7 +204,7 @@ class ScoresStillLoadingElement : public CBaseUILabel {
     UString sIconString;
 };
 
-class NoRecordsSetElement : public CBaseUILabel {
+class NoRecordsSetElement final : public CBaseUILabel {
    public:
     NoRecordsSetElement(const UString &text) : CBaseUILabel(0, 0, 0, 0, "", text) {
         this->sIconString.insert(0, Icons::TROPHY);

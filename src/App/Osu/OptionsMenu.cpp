@@ -56,7 +56,7 @@
 #include "BassSoundEngine.h"  // for ASIO-specific stuff
 #endif
 
-class OptionsMenuSkinPreviewElement : public CBaseUIElement {
+class OptionsMenuSkinPreviewElement final : public CBaseUIElement {
    public:
     OptionsMenuSkinPreviewElement(float xPos, float yPos, float xSize, float ySize, UString name)
         : CBaseUIElement(xPos, yPos, xSize, ySize, std::move(name)) {
@@ -136,7 +136,7 @@ class OptionsMenuSkinPreviewElement : public CBaseUIElement {
     int iMode;
 };
 
-class OptionsMenuSliderPreviewElement : public CBaseUIElement {
+class OptionsMenuSliderPreviewElement final : public CBaseUIElement {
    public:
     OptionsMenuSliderPreviewElement(float xPos, float yPos, float xSize, float ySize, UString name)
         : CBaseUIElement(xPos, yPos, xSize, ySize, std::move(name)) {
@@ -260,7 +260,7 @@ class OptionsMenuSliderPreviewElement : public CBaseUIElement {
     float fPrevLength;
 };
 
-class OptionsMenuKeyBindLabel : public CBaseUILabel {
+class OptionsMenuKeyBindLabel final : public CBaseUILabel {
    public:
     OptionsMenuKeyBindLabel(float xPos, float yPos, float xSize, float ySize, UString name, const UString &text,
                             ConVar *cvar, CBaseUIButton *bindButton)
@@ -314,7 +314,7 @@ class OptionsMenuKeyBindLabel : public CBaseUILabel {
     KEYCODE keyCode;
 };
 
-class OptionsMenuKeyBindButton : public UIButton {
+class OptionsMenuKeyBindButton final : public UIButton {
    public:
     OptionsMenuKeyBindButton(float xPos, float yPos, float xSize, float ySize, UString name, UString text)
         : UIButton(xPos, yPos, xSize, ySize, std::move(name), std::move(text)) {
@@ -331,7 +331,7 @@ class OptionsMenuKeyBindButton : public UIButton {
     bool bDisallowLeftMouseClickBinding;
 };
 
-class OptionsMenuCategoryButton : public CBaseUIButton {
+class OptionsMenuCategoryButton final : public CBaseUIButton {
    public:
     OptionsMenuCategoryButton(CBaseUIElement *section, float xPos, float yPos, float xSize, float ySize, UString name,
                               UString text)
@@ -367,7 +367,8 @@ class OptionsMenuCategoryButton : public CBaseUIButton {
     bool bActiveCategory;
 };
 
-class OptionsMenuResetButton : public CBaseUIButton {
+class OptionsMenuResetButton final : public CBaseUIButton {
+    NOCOPY_NOMOVE(OptionsMenuResetButton)
    public:
     OptionsMenuResetButton(float xPos, float yPos, float xSize, float ySize, UString name, UString text)
         : CBaseUIButton(xPos, yPos, xSize, ySize, std::move(name), std::move(text)) {

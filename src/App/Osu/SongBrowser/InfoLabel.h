@@ -7,7 +7,7 @@
 class McFont;
 class DatabaseBeatmap;
 
-class InfoLabel : public CBaseUIButton {
+class InfoLabel final : public CBaseUIButton {
    public:
     InfoLabel(float xPos, float yPos, float xSize, float ySize, UString name);
 

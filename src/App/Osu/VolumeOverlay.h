@@ -5,15 +5,15 @@ class CBaseUIContainer;
 class UIVolumeSlider;
 class Skin;
 
-class VolumeOverlay : public OsuScreen {
+class VolumeOverlay final : public OsuScreen {
    public:
     VolumeOverlay();
 
     void animate();
     void draw() override;
-    void mouse_update(bool *propagate_clicks) override;
+    void mouse_update(bool* propagate_clicks) override;
     void onResolutionChange(vec2 newResolution) override;
-    void onKeyDown(KeyboardEvent &key) override;
+    void onKeyDown(KeyboardEvent& key) override;
     void updateLayout();
     bool isBusy() override;
     bool isVisible() override;
@@ -26,7 +26,7 @@ class VolumeOverlay : public OsuScreen {
     void onVolumeChange(int multiplier);
     void onMasterVolumeChange(float newValue);
     void onEffectVolumeChange();
-    void updateEffectVolume(Skin *skin);
+    void updateEffectVolume(Skin* skin);
     void onMusicVolumeChange();
 
     float fLastVolume;

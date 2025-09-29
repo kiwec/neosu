@@ -19,28 +19,29 @@ class UIButton;
 class UICheckbox;
 class UIContextMenu;
 
-class UIModList : public CBaseUIContainer {
+class UIModList final : public CBaseUIContainer {
    public:
-    UIModList(u32 *flags) : CBaseUIContainer(0, 0, 0, 0, "mod_list") { this->flags = flags; }
+    UIModList(u32* flags) : CBaseUIContainer(0, 0, 0, 0, "mod_list") { this->flags = flags; }
 
-    u32 *flags;
+    u32* flags;
 
     void draw() override;
     bool isVisible() override;
 };
 
-class RoomScreen : public OsuScreen {
+class RoomScreen final : public OsuScreen {
+    NOCOPY_NOMOVE(RoomScreen)
    public:
     RoomScreen();
     ~RoomScreen() override;
 
     void draw() override;
-    void mouse_update(bool *propagate_clicks) override;
-    void onKeyDown(KeyboardEvent &e) override;
-    void onKeyUp(KeyboardEvent &e) override;
-    void onChar(KeyboardEvent &e) override;
+    void mouse_update(bool* propagate_clicks) override;
+    void onKeyDown(KeyboardEvent& e) override;
+    void onKeyUp(KeyboardEvent& e) override;
+    void onChar(KeyboardEvent& e) override;
     void onResolutionChange(vec2 newResolution) override;
-    CBaseUIContainer *setVisible(bool visible) override;  // does nothing
+    CBaseUIContainer* setVisible(bool visible) override;  // does nothing
 
     void updateLayout(vec2 newResolution);
     void updateSettingsLayout(vec2 newResolution);
@@ -50,7 +51,7 @@ class RoomScreen : public OsuScreen {
     void on_room_joined(Room room);
     void on_room_updated(Room room);
     void on_match_started(Room room);
-    void on_match_score_updated(Packet &packet);
+    void on_match_score_updated(Packet& packet);
     void on_all_players_loaded();
     void on_player_failed(i32 slot_id);
     void on_match_finished();
@@ -68,9 +69,9 @@ class RoomScreen : public OsuScreen {
     void onSelectMapClicked();
     void onChangePasswordClicked();
     void onChangeWinConditionClicked();
-    void onWinConditionSelected(const UString &win_condition_str, int win_condition);
-    void set_new_password(const UString &new_password);
-    void onFreemodCheckboxChanged(CBaseUICheckbox *checkbox);
+    void onWinConditionSelected(const UString& win_condition_str, int win_condition);
+    void set_new_password(const UString& new_password);
+    void onFreemodCheckboxChanged(CBaseUICheckbox* checkbox);
 
     CBaseUILabel* map_label = nullptr;
     CBaseUILabel* mods_label = nullptr;

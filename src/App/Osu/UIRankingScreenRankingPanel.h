@@ -8,7 +8,7 @@ class LiveScore;
 class SkinImage;
 struct FinishedScore;
 
-class UIRankingScreenRankingPanel : public CBaseUIImage {
+class UIRankingScreenRankingPanel final : public CBaseUIImage {
    public:
     UIRankingScreenRankingPanel();
 

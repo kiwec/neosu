@@ -5,7 +5,7 @@
 class SkinImage;
 class ModSelector;
 
-class UIModSelectorModButton : public CBaseUIButton {
+class UIModSelectorModButton final : public CBaseUIButton {
    public:
     UIModSelectorModButton(ModSelector *osuModSelector, float xPos, float yPos, float xSize, float ySize, UString name);
 

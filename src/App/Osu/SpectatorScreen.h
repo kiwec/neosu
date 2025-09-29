@@ -10,7 +10,7 @@ class UserCard;
 class CBaseUIScrollView;
 class UIButton;
 
-class SpectatorScreen : public OsuScreen {
+class SpectatorScreen final : public OsuScreen {
    public:
     SpectatorScreen();
 

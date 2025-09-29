@@ -180,7 +180,7 @@ class CBaseUIElement : public KeyboardListener {
         return this;
     }
     // actions
-    void stealFocus();
+    virtual void stealFocus();
 
     // events
     virtual void onResized() { ; }

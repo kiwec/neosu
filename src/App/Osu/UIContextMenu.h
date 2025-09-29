@@ -9,7 +9,7 @@ class CBaseUIContainer;
 class UIContextMenuButton;
 class UIContextMenuTextbox;
 
-class UIContextMenu : public CBaseUIScrollView {
+class UIContextMenu final : public CBaseUIScrollView {
    public:
     static void clampToBottomScreenEdge(UIContextMenu *menu);
     static void clampToRightScreenEdge(UIContextMenu *menu);
@@ -70,7 +70,8 @@ class UIContextMenu : public CBaseUIScrollView {
     std::vector<CBaseUIElement *> selfDeletionCrashWorkaroundScheduledElementDeleteHack;
 };
 
-class UIContextMenuButton : public CBaseUIButton {
+class UIContextMenuButton final : public CBaseUIButton {
+    NOCOPY_NOMOVE(UIContextMenuButton)
    public:
     UIContextMenuButton(float xPos, float yPos, float xSize, float ySize, UString name, UString text, int id);
     ~UIContextMenuButton() override { ; }
@@ -90,7 +91,8 @@ class UIContextMenuButton : public CBaseUIButton {
     std::vector<UString> tooltipTextLines;
 };
 
-class UIContextMenuTextbox : public CBaseUITextbox {
+class UIContextMenuTextbox final : public CBaseUITextbox {
+    NOCOPY_NOMOVE(UIContextMenuTextbox)
    public:
     UIContextMenuTextbox(float xPos, float yPos, float xSize, float ySize, UString name, int id);
     ~UIContextMenuTextbox() override { ; }

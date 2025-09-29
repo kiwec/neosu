@@ -24,7 +24,7 @@ struct Click {
     vec2 pos{0.f};
 };
 
-class BeatmapInterface : public AbstractBeatmapInterface {
+class BeatmapInterface final : public AbstractBeatmapInterface {
     NOCOPY_NOMOVE(BeatmapInterface)
    public:
     BeatmapInterface();

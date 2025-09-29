@@ -3,7 +3,7 @@
 #include "BeatmapInterface.h"
 #include "Replay.h"
 
-class SimulatedBeatmapInterface : public AbstractBeatmapInterface {
+class SimulatedBeatmapInterface final : public AbstractBeatmapInterface {
     NOCOPY_NOMOVE(SimulatedBeatmapInterface)
    public:
     SimulatedBeatmapInterface() = delete;

@@ -40,7 +40,7 @@
 #include "UISlider.h"
 #include "VertexArrayObject.h"
 
-class ModSelectorOverrideSliderDescButton : public CBaseUIButton {
+class ModSelectorOverrideSliderDescButton final : public CBaseUIButton {
    public:
     ModSelectorOverrideSliderDescButton(float xPos, float yPos, float xSize, float ySize, UString name, UString text)
         : CBaseUIButton(xPos, yPos, xSize, ySize, std::move(name), std::move(text)) {}
@@ -83,7 +83,7 @@ class ModSelectorOverrideSliderDescButton : public CBaseUIButton {
     UString sTooltipText;
 };
 
-class ModSelectorOverrideSliderLockButton : public CBaseUICheckbox {
+class ModSelectorOverrideSliderLockButton final : public CBaseUICheckbox {
    public:
     ModSelectorOverrideSliderLockButton(float xPos, float yPos, float xSize, float ySize, UString name, UString text)
         : CBaseUICheckbox(xPos, yPos, xSize, ySize, std::move(name), std::move(text)) {

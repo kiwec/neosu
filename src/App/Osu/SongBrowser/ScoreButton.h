@@ -9,7 +9,8 @@ class SkinImage;
 class UIAvatar;
 class UIContextMenu;
 
-class ScoreButton : public CBaseUIButton {
+class ScoreButton final : public CBaseUIButton {
+    NOCOPY_NOMOVE(ScoreButton)
    public:
     static SkinImage *getGradeImage(FinishedScore::Grade grade);
     static UString getModsStringForDisplay(Replay::Mods mods);

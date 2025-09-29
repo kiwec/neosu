@@ -4,7 +4,7 @@
 
 class McFont;
 
-class UIVolumeSlider : public CBaseUISlider {
+class UIVolumeSlider final : public CBaseUISlider {
    public:
     enum class TYPE : uint8_t { MASTER, MUSIC, EFFECTS };
 

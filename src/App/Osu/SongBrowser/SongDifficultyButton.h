@@ -4,11 +4,11 @@
 
 class ConVar;
 
-class SongDifficultyButton : public SongButton {
+class SongDifficultyButton final : public SongButton {
+    NOCOPY_NOMOVE(SongDifficultyButton)
    public:
-    SongDifficultyButton(SongBrowser *songBrowser, UIContextMenu *contextMenu, float xPos,
-                         float yPos, float xSize, float ySize, UString name, DatabaseBeatmap *map,
-                         SongButton *parentSongButton);
+    SongDifficultyButton(SongBrowser *songBrowser, UIContextMenu *contextMenu, float xPos, float yPos, float xSize,
+                         float ySize, UString name, DatabaseBeatmap *map, SongButton *parentSongButton);
     ~SongDifficultyButton() override;
 
     void draw() override;

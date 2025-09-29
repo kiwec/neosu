@@ -27,9 +27,9 @@ class CBaseUITextbox;
 
 class ConVar;
 
-class OptionsMenu : public ScreenBackable, public NotificationOverlayKeyListener {
+class OptionsMenu final : public ScreenBackable, public NotificationOverlayKeyListener {
     friend bool VolumeOverlay::canChangeVolume();  // for contextMenu
-
+    NOCOPY_NOMOVE(OptionsMenu)
    public:
     OptionsMenu();
     ~OptionsMenu() override;

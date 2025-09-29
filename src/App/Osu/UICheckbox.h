@@ -2,7 +2,7 @@
 // Copyright (c) 2016, PG, All rights reserved.
 #include "CBaseUICheckbox.h"
 
-class UICheckbox : public CBaseUICheckbox {
+class UICheckbox final : public CBaseUICheckbox {
    public:
     UICheckbox(float xPos, float yPos, float xSize, float ySize, UString name, UString text);
 

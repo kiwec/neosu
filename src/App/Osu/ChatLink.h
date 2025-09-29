@@ -4,7 +4,7 @@
 #include "CBaseUILabel.h"
 #include "UString.h"
 
-class ChatLink : public CBaseUILabel {
+class ChatLink final : public CBaseUILabel {
    public:
     ChatLink(float xPos = 0, float yPos = 0, float xSize = 0, float ySize = 0, const UString& link = "",
              const UString& label = "");

@@ -37,7 +37,7 @@
 UString MainMenu::NEOSU_MAIN_BUTTON_TEXT = UString("neosu");
 UString MainMenu::NEOSU_MAIN_BUTTON_SUBTEXT = UString("Multiplayer Client");
 
-class MainMenu::CubeButton : public CBaseUIButton {
+class MainMenu::CubeButton final : public CBaseUIButton {
    public:
     CubeButton(MainMenu *parent, float xPos, float yPos, float xSize, float ySize, UString name, UString text)
         : CBaseUIButton(xPos, yPos, xSize, ySize, std::move(name), std::move(text)), mm_ptr(parent) {}
@@ -67,7 +67,7 @@ class MainMenu::CubeButton : public CBaseUIButton {
     MainMenu *mm_ptr;
 };
 
-class MainMenu::MainButton : public CBaseUIButton {
+class MainMenu::MainButton final : public CBaseUIButton {
    public:
     MainButton(MainMenu *parent, float xPos, float yPos, float xSize, float ySize, UString name, UString text)
         : CBaseUIButton(xPos, yPos, xSize, ySize, std::move(name), std::move(text)), mm_ptr(parent) {}

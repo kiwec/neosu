@@ -5,7 +5,7 @@
 
 class SongBrowser;
 
-class BeatmapCarousel : public CBaseUIScrollView {
+class BeatmapCarousel final : public CBaseUIScrollView {
     NOCOPY_NOMOVE(BeatmapCarousel)
    public:
     BeatmapCarousel(SongBrowser *browser, float xPos = 0, float yPos = 0, float xSize = 0, float ySize = 0,

@@ -26,7 +26,8 @@ struct SCORE_ENTRY {
     bool highlight;
 };
 
-class HUD : public OsuScreen {
+class HUD final : public OsuScreen {
+    NOCOPY_NOMOVE(HUD)
    public:
     HUD();
     ~HUD() override;

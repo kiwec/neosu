@@ -3,11 +3,10 @@
 
 #include "CarouselButton.h"
 
-class CollectionButton : public CarouselButton {
+class CollectionButton final : public CarouselButton {
    public:
-    CollectionButton(SongBrowser *songBrowser, UIContextMenu *contextMenu, float xPos,
-                     float yPos, float xSize, float ySize, UString name, const UString &collectionName,
-                     std::vector<SongButton *> children);
+    CollectionButton(SongBrowser *songBrowser, UIContextMenu *contextMenu, float xPos, float yPos, float xSize,
+                     float ySize, UString name, const UString &collectionName, std::vector<SongButton *> children);
 
     void draw() override;
 

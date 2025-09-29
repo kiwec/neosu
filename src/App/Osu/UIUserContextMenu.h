@@ -18,22 +18,22 @@ enum UserActions : uint8_t {
     VIEW_TOP_PLAYS,
 };
 
-class UIUserContextMenuScreen : public OsuScreen {
+class UIUserContextMenuScreen final : public OsuScreen {
    public:
     UIUserContextMenuScreen();
 
     void onResolutionChange(vec2 newResolution) override;
-    virtual void stealFocus();
+    void stealFocus() override;
 
     void open(i32 user_id, bool is_song_browser_button = false);
     void close();
     void on_action(const UString& text, int user_action);
 
-    i32 user_id;
-    UIContextMenu* menu = nullptr;
+    i32 user_id{0};
+    UIContextMenu* menu{nullptr};
 };
 
-class UIUserLabel : public CBaseUILabel {
+class UIUserLabel final : public CBaseUILabel {
    public:
     UIUserLabel(i32 user_id, const UString& username);
 

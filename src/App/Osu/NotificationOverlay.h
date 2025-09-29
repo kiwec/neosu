@@ -10,12 +10,13 @@
 #define SUCCESS_TOAST 0xff00ff00
 #define STATUS_TOAST 0xff003bff
 
-class ToastElement : public CBaseUIButton {
+class ToastElement final : public CBaseUIButton {
+    NOCOPY_NOMOVE(ToastElement)
    public:
     enum class TYPE : uint8_t { PERMANENT, SYSTEM, CHAT };
 
     ToastElement(const UString &text, Color borderColor_arg, TYPE type);
-    ~ToastElement() override { ; }
+    ~ToastElement() override = default;
 
     void draw() override;
     void onClicked(bool left = true, bool right = false) override;
@@ -28,12 +29,15 @@ class ToastElement : public CBaseUIButton {
 };
 
 class NotificationOverlayKeyListener {
+    NOCOPY_NOMOVE(NotificationOverlayKeyListener)
    public:
-    virtual ~NotificationOverlayKeyListener() { ; }
+    NotificationOverlayKeyListener() = default;
+    virtual ~NotificationOverlayKeyListener() = default;
     virtual void onKey(KeyboardEvent &e) = 0;
 };
 
-class NotificationOverlay : public OsuScreen {
+class NotificationOverlay final : public OsuScreen {
+    NOCOPY_NOMOVE(NotificationOverlay)
    public:
     NotificationOverlay();
     ~NotificationOverlay() override;

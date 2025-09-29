@@ -7,7 +7,7 @@
 class McFont;
 class DatabaseBeatmap;
 
-class UIRankingScreenInfoLabel : public CBaseUIElement {
+class UIRankingScreenInfoLabel final : public CBaseUIElement {
    public:
     UIRankingScreenInfoLabel(float xPos, float yPos, float xSize, float ySize, UString name);
 

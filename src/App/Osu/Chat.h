@@ -10,14 +10,16 @@ class McFont;
 class Chat;
 class UIButton;
 
-struct ChatMessage {
+struct ChatMessage final {
     time_t tms;
     i32 author_id;
     UString author_name;
     UString text;
 };
 
-struct ChatChannel {
+struct ChatChannel final {
+    NOCOPY_NOMOVE(ChatChannel)
+   public:
     ChatChannel(Chat *chat, UString name_arg);
     ~ChatChannel();
 
@@ -34,7 +36,8 @@ struct ChatChannel {
     void onChannelButtonClick(CBaseUIButton *btn);
 };
 
-class Chat : public OsuScreen {
+class Chat final : public OsuScreen {
+    NOCOPY_NOMOVE(Chat)
    public:
     Chat();
     ~Chat() override;
@@ -74,7 +77,7 @@ class Chat : public OsuScreen {
     void askWhatChannelToJoin(CBaseUIButton *btn);
     UIButton *join_channel_btn;
 
-    ChatChannel* selected_channel = nullptr;
+    ChatChannel *selected_channel = nullptr;
     std::vector<ChatChannel *> channels;
     CBaseUIContainer *button_container;
     CBaseUITextbox *input_box;
@@ -92,6 +95,6 @@ class Chat : public OsuScreen {
     UString tab_completion_prefix;
     UString tab_completion_match;
 
-    ChatChannel* ticker = nullptr;
+    ChatChannel *ticker = nullptr;
     f64 ticker_tms = 0.0;
 };

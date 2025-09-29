@@ -7,7 +7,8 @@ class CBaseUIScrollView;
 class CBaseUIImage;
 class CBaseUILabel;
 
-class Changelog : public ScreenBackable {
+class Changelog final : public ScreenBackable {
+    NOCOPY_NOMOVE(Changelog)
    public:
     Changelog();
     ~Changelog() override;
@@ -22,8 +23,6 @@ class Changelog : public ScreenBackable {
 
     void onChangeClicked(CBaseUIButton *button);
 
-    CBaseUIScrollView *scrollView;
-
     struct CHANGELOG {
         UString title;
         std::vector<UString> changes;
@@ -33,6 +32,10 @@ class Changelog : public ScreenBackable {
         CBaseUILabel *title;
         std::vector<CBaseUIButton *> changes;
     };
+
+    void addAllChangelogs(std::vector<CHANGELOG> &&logtexts);
+
+    CBaseUIScrollView *scrollView;
 
     std::vector<CHANGELOG_UI> changelogs;
 };

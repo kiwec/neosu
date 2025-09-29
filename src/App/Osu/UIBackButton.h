@@ -2,7 +2,7 @@
 // Copyright (c) 2016, PG, All rights reserved.
 #include "CBaseUIButton.h"
 
-class UIBackButton : public CBaseUIButton {
+class UIBackButton final : public CBaseUIButton {
    public:
     UIBackButton(float xPos, float yPos, float xSize, float ySize, UString name);
 
@@ -13,7 +13,7 @@ class UIBackButton : public CBaseUIButton {
     void onMouseInside() override;
     void onMouseOutside() override;
 
-    virtual void updateLayout();
+    void updateLayout();
 
     void resetAnimation();
 
