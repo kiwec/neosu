@@ -263,7 +263,12 @@ class SongBrowser final : public ScreenBackable {
     bool bBeatmapRefreshScheduled;
     bool bCloseAfterBeatmapRefreshFinished;
     UString sLastOsuFolder;
-    MD5Hash beatmap_to_reselect_after_db_load;
+    // i hate this
+    struct {
+        MD5Hash hash{};
+        u64 time_when_stopped{0.};
+        u32 musicpos_when_stopped{0};
+    } loading_reselect_map;
 
     // keys
     bool bF1Pressed;

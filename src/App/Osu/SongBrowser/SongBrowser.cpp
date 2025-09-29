@@ -911,6 +911,18 @@ bool SongBrowser::selectBeatmapset(i32 set_id) {
 void SongBrowser::mouse_update(bool *propagate_clicks) {
     if(!this->bVisible) return;
 
+    // refresh logic (blocks every other call in the update() function below it!)
+    if(this->bBeatmapRefreshScheduled) {
+        db->update();  // raw load logic
+        // check if we are finished loading
+        if(db->isFinished()) {
+            this->bBeatmapRefreshScheduled = false;
+            this->onDatabaseLoadingFinished();
+        } else {
+            return;
+        }
+    }
+
     this->localBestContainer->mouse_update(propagate_clicks);
     ScreenBackable::mouse_update(propagate_clicks);
 
@@ -919,17 +931,6 @@ void SongBrowser::mouse_update(bool *propagate_clicks) {
     this->contextMenu->mouse_update(propagate_clicks);
 
     update_bottombar(propagate_clicks);
-
-    // refresh logic (blocks every other call in the update() function below it!)
-    if(this->bBeatmapRefreshScheduled) {
-        db->update();  // raw load logic
-        // check if we are finished loading
-        if(db->isFinished()) {
-            this->bBeatmapRefreshScheduled = false;
-            this->onDatabaseLoadingFinished();
-        }
-        return;
-    }
 
     // map star/bpm/other calc
     if(MapCalcThread::is_finished()) {
@@ -1388,16 +1389,21 @@ void SongBrowser::refreshBeatmaps(bool closeAfterLoading) {
     // reset
     this->checkHandleKillBackgroundSearchMatcher();
 
+    auto map = osu->getMapInterface()->beatmap;
+    if(map) {
+        this->loading_reselect_map.hash = map->getMD5Hash();
+        Sound *music = osu->getMapInterface()->music;
+        if(music && music->isPlaying()) {
+            this->loading_reselect_map.time_when_stopped = Timing::getTicksMS();
+            this->loading_reselect_map.musicpos_when_stopped = music->getPositionMS();
+        }
+    }
+
     // don't pause the music the first time we load the song database
     static bool first_refresh = true;
     if(first_refresh) {
         osu->getMapInterface()->music = nullptr;
         first_refresh = false;
-    }
-
-    auto map = osu->getMapInterface()->beatmap;
-    if(map) {
-        this->beatmap_to_reselect_after_db_load = map->getMD5Hash();
     }
 
     osu->getMapInterface()->pausePreviewMusic();
@@ -2594,8 +2600,8 @@ void SongBrowser::onDatabaseLoadingFinished() {
 
     if(cv::songbrowser_search_hardcoded_filter.getString().length() > 0) this->onSearchUpdate();
 
-    if(this->beatmap_to_reselect_after_db_load.hash[0] != 0) {
-        auto beatmap = db->getBeatmapDifficulty(this->beatmap_to_reselect_after_db_load);
+    if(this->loading_reselect_map.hash.hash != std::array<char, 33>{}) {
+        auto beatmap = db->getBeatmapDifficulty(this->loading_reselect_map.hash);
         if(beatmap) {
             this->onDifficultySelected(beatmap, false);
             this->selectSelectedBeatmapSongButton();
@@ -2603,6 +2609,9 @@ void SongBrowser::onDatabaseLoadingFinished() {
 
         osu->getMainMenu()->clearPreloadedMaps();
     }
+
+    // ugly hacks continue
+    this->loading_reselect_map = {};
 
     // ok, if we still haven't selected a song, do so now
     if(osu->getMapInterface()->beatmap == nullptr) {

@@ -11,8 +11,6 @@
 #include "spdlog/common.h"
 #include "spdlog/async_logger.h"
 
-#include "fmt/compile.h"
-
 #include <string_view>
 #include <cassert>
 
@@ -38,8 +36,6 @@
 #include <stacktrace>
 #include "fmt/ostream.h"
 */
-
-using fmt::literals::operator""_cf;
 
 // main logger class
 class Logger final {

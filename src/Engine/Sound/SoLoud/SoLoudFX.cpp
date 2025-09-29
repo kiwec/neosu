@@ -294,7 +294,7 @@ SoundTouchFilterInstance::SoundTouchFilterInstance(SLFXStream *aParent)
 				// quality settings pulled out of my ass, there is NO documentation for this library...
 				mSoundTouch->setSetting(SETTING_USE_AA_FILTER, 1);
 				mSoundTouch->setSetting(SETTING_AA_FILTER_LENGTH, 64);
-				mSoundTouch->setSetting(SETTING_USE_QUICKSEEK, 1);
+				mSoundTouch->setSetting(SETTING_USE_QUICKSEEK, 0);
 				mSoundTouch->setSetting(SETTING_SEQUENCE_MS, 15); // wtf should these numbers be?
 				mSoundTouch->setSetting(SETTING_SEEKWINDOW_MS, 30);
 				mSoundTouch->setSetting(SETTING_OVERLAP_MS, 6);

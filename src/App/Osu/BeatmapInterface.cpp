@@ -399,7 +399,8 @@ void BeatmapInterface::keyReleased2(bool /*mouse*/) {
 
 void BeatmapInterface::selectBeatmap() {
     // if possible, continue playing where we left off
-    if(this->music != nullptr && (this->music->isPlaying())) this->iContinueMusicPos = this->music->getPositionMS();
+    if((this->music || (this->music = resourceManager->getSound("BEATMAP_MUSIC"))) && this->music->isPlaying())
+        this->iContinueMusicPos = this->music->getPositionMS();
 
     this->selectBeatmap(this->beatmap);
 }
@@ -1479,18 +1480,25 @@ void BeatmapInterface::handlePreviewPlay() {
             bool start_at_song_beginning = osu->getMainMenu()->isVisible() && !should_start_song_at_preview_point;
             should_start_song_at_preview_point = false;
 
+            // HACKHACK: continue playing where we left off (workaround for 5000 unload/load cycles during loading)
+            const auto &reselect_map = osu->getSongBrowser()->loading_reselect_map;
+            u32 continue_hack_pos = reselect_map.musicpos_when_stopped;
+            if(continue_hack_pos > 0) {
+                this->iContinueMusicPos =
+                    std::clamp<u32>(continue_hack_pos + (Timing::getTicksMS() - reselect_map.time_when_stopped), 0,
+                                    this->music->getLengthMS());
+            }
+
             if(start_at_song_beginning) {
                 this->music->setPositionMS(0);
-                this->bWasSeekFrame = true;
             } else if(this->iContinueMusicPos != 0) {
                 this->music->setPositionMS(this->iContinueMusicPos);
-                this->bWasSeekFrame = true;
             } else {
                 this->music->setPositionMS(this->beatmap->getPreviewTime() < 0
                                                ? (u32)(this->music->getLengthMS() * 0.40f)
                                                : this->beatmap->getPreviewTime());
-                this->bWasSeekFrame = true;
             }
+            this->bWasSeekFrame = true;
 
             this->music->setBaseVolume(this->getIdealVolume());
             this->music->setSpeed(this->getSpeedMultiplier());
@@ -2434,8 +2442,7 @@ void BeatmapInterface::update2() {
     if(BanchoState::spectating) {
         if(this->iCurMusicPos + (2 * cv::spec_buffer.getInt()) < this->last_frame_ms) {
             i32 target = this->last_frame_ms - cv::spec_buffer.getInt();
-            debugLog("We're {:d}ms behind, seeking to catch up to player...",
-                     this->last_frame_ms - this->iCurMusicPos);
+            debugLog("We're {:d}ms behind, seeking to catch up to player...", this->last_frame_ms - this->iCurMusicPos);
             this->seekMS(std::max(0, target));
             return;
         }

@@ -128,6 +128,8 @@ class BeatmapInterface : public AbstractBeatmapInterface {
     void seekMS(u32 ms);
     [[nodiscard]] inline DatabaseBeatmap::TIMING_INFO getTimingPoint() const { return this->current_timing_point; }
     [[nodiscard]] inline i32 getDefaultSampleSet() const { return this->default_sample_set; }
+    // HACK for main menu->song browser transition (or songbrowser reload) garbage logic
+    void setContinuePos(u32 ms) { this->iContinueMusicPos = ms; }
 
     [[nodiscard]] inline Sound *getMusic() const { return this->music; }
     [[nodiscard]] u32 getTime() const;
