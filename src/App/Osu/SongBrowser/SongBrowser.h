@@ -266,7 +266,7 @@ class SongBrowser final : public ScreenBackable {
     // i hate this
     struct {
         MD5Hash hash{};
-        u64 time_when_stopped{0.};
+        u64 time_when_stopped{0};
         u32 musicpos_when_stopped{0};
     } loading_reselect_map;
 
