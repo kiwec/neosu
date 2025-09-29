@@ -3,6 +3,7 @@
 
 #include "Engine.h"
 
+#include "AsyncIOHandler.h"
 #include "AnimationHandler.h"
 #include "CBaseUIContainer.h"
 #include "ConVar.h"
@@ -29,6 +30,7 @@ std::unique_ptr<SoundEngine> soundEngine{nullptr};
 std::unique_ptr<ResourceManager> resourceManager{nullptr};
 std::unique_ptr<NetworkHandler> networkHandler{nullptr};
 std::unique_ptr<AnimationHandler> animationHandler{nullptr};
+std::unique_ptr<AsyncIOHandler> io{nullptr};
 
 mcatomic_shptr<ConsoleBox> Engine::consoleBox{nullptr};
 
@@ -71,27 +73,31 @@ Engine::Engine() {
     debugLog("Engine: Initializing subsystems ...");
     {
         // input devices
+        io = std::make_unique<AsyncIOHandler>();
+        this->runtime_assert(!!io && io->succeeded(), "I/O subsystem failed to initialize!");
+
+        // input devices
         mouse = std::make_unique<Mouse>();
-        runtime_assert(mouse.get(), "Mouse failed to initialize!");
+        this->runtime_assert(!!mouse, "Mouse failed to initialize!");
         this->inputDevices.push_back(mouse.get());
         this->mice.push_back(mouse.get());
 
         keyboard = std::make_unique<Keyboard>();
-        runtime_assert(keyboard.get(), "Keyboard failed to initialize!");
+        this->runtime_assert(!!keyboard, "Keyboard failed to initialize!");
         this->inputDevices.push_back(keyboard.get());
         this->keyboards.push_back(keyboard.get());
 
         // create graphics through environment
         g.reset(env->createRenderer());
-        runtime_assert(g.get(), "Graphics failed to initialize!");
+        this->runtime_assert(!!g, "Graphics failed to initialize!");
         g->init();  // needs init() separation due to potential graphics access
 
         // make unique_ptrs for the rest
         networkHandler = std::make_unique<NetworkHandler>();
-        runtime_assert(networkHandler.get(), "Network handler failed to initialize!");
+        this->runtime_assert(!!networkHandler, "Network handler failed to initialize!");
 
         resourceManager = std::make_unique<ResourceManager>();
-        runtime_assert(resourceManager.get(), "Resource manager menu failed to initialize!");
+        this->runtime_assert(!!resourceManager, "Resource manager menu failed to initialize!");
         resourceManager->setSyncLoadMaxBatchSize(512);
 
         SoundEngine::SndEngineType type = Env::cfg(AUD::BASS)     ? SoundEngine::BASS
@@ -108,10 +114,10 @@ Engine::Engine() {
                 type = SoundEngine::SOLOUD;
         }
         soundEngine.reset(SoundEngine::createSoundEngine(type));
-        runtime_assert(soundEngine.get(), "Sound engine failed to initialize!");
+        this->runtime_assert(!!soundEngine, "Sound engine failed to initialize!");
 
         animationHandler = std::make_unique<AnimationHandler>();
-        runtime_assert(animationHandler.get(), "Animation handler failed to initialize!");
+        this->runtime_assert(!!animationHandler, "Animation handler failed to initialize!");
 
         init_discord_sdk();
 
@@ -178,6 +184,9 @@ Engine::~Engine() {
     debugLog("Engine: Freeing fonts...");
     McFont::cleanupSharedResources();
 
+    debugLog("Engine: Stopping I/O subsystem...");
+    io.reset();
+
     debugLog("Engine: Goodbye.");
 
     engine = nullptr;
@@ -223,7 +232,7 @@ void Engine::loadApp() {
         //*****************//
 
         app = std::make_unique<App>();
-        runtime_assert(app.get(), "App failed to initialize!");
+        this->runtime_assert(!!app, "App failed to initialize!");
         resourceManager->resetSyncLoadMaxBatchSize();
         // start listening to the default keyboard input
         keyboard->addListener(app.get());
@@ -306,6 +315,11 @@ void Engine::onUpdate() {
 
     // update miscellaneous engine subsystems
     {
+        {
+            VPROF_BUDGET("AsyncIO::update", VPROF_BUDGETGROUP_UPDATE);
+            io->update();
+        }
+
         {
             VPROF_BUDGET("InputDevices::update", VPROF_BUDGETGROUP_UPDATE);
             for(auto &inputDevice : this->inputDevices) {
@@ -513,12 +527,20 @@ void Engine::showMessageWarning(const UString &title, const UString &message) {
 
 void Engine::showMessageError(const UString &title, const UString &message) {
     debugLog("ERROR: [{:s}] | {:s}", title.toUtf8(), message.toUtf8());
+    Logger::flush();
     env->showMessageError(title, message);
 }
 
 void Engine::showMessageErrorFatal(const UString &title, const UString &message) {
     debugLog("FATAL ERROR: [{:s}] | {:s}", title.toUtf8(), message.toUtf8());
+    Logger::flush();
     env->showMessageErrorFatal(title, message);
+}
+
+void Engine::runtime_assert(bool cond, const char *reason) {
+    if(cond) return;
+    this->showMessageErrorFatal("Engine Error", reason);
+    std::abort();
 }
 
 void Engine::requestResolutionChange(vec2 newResolution) {

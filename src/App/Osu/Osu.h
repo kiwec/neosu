@@ -77,7 +77,7 @@ class Osu final : public MouseListener, public KeyboardListener {
     void onMinimized();
     bool onShutdown();
 
-    void onPlayEnd(FinishedScore score, bool quit = true, bool aborted = false);
+    void onPlayEnd(const FinishedScore &score, bool quit = true, bool aborted = false);
 
     void toggleModSelection(bool waitForF1KeyUp = false);
     void toggleSongBrowser();

@@ -2,6 +2,8 @@
 
 #include "SString.h"
 
+#include <cstring>
+
 namespace SString {
 // alphanumeric string comparator that ignores special characters at the start of strings
 bool alnum_comp(std::string_view a, std::string_view b) {

@@ -6,6 +6,7 @@
 #endif
 
 #include "AvatarManager.h"
+#include "AsyncIOHandler.h"
 
 #include "Downloader.h"
 #include "Bancho.h"
@@ -54,29 +55,37 @@ void AvatarManager::update() {
     // process download queue (we might not drain it fully due to only checking download progress once,
     // but we'll check again next update)
     for(int i = 0; i < this->load_queue.size(); i++) {
-        const auto& id_folder = this->load_queue.front();
+        auto id_folder = this->load_queue.front();
 
-        // we don't have to do an "expired" check if we just downloaded it
-        bool exists_on_disk = this->newly_downloaded.contains(id_folder);
-        if(!exists_on_disk) {
-            struct stat attr;
-            if(stat(id_folder.second.c_str(), &attr) == 0) {
-                time_t now = time(nullptr);
-                struct tm expiration_date;
-                localtime_x(&attr.st_mtime, &expiration_date);
-                expiration_date.tm_mday += 7;
-                if(now <= mktime(&expiration_date)) {
-                    exists_on_disk = true;
-                }
+        bool exists_on_disk = false;
+        struct stat attr;
+        if(stat(id_folder.second.c_str(), &attr) == 0) {
+            time_t now = time(nullptr);
+            struct tm expiration_date;
+            localtime_x(&attr.st_mtime, &expiration_date);
+            expiration_date.tm_mday += 7;
+            if(now <= mktime(&expiration_date)) {
+                exists_on_disk = true;
             }
         }
 
         // if we have the file or the download just finished, create the entry
         // but only actually load it when it's needed (in get_avatar)
-        if(exists_on_disk || this->download_avatar(id_folder)) {
-            this->avatars[id_folder] = {
-                .file_path = id_folder.second, .image = nullptr, .last_access_time = 0.0, .is_downloading = false};
+        bool newly_downloaded = false;
+        if(exists_on_disk) {
+            this->avatars[id_folder] = {.file_path = id_folder.second, .image = nullptr, .last_access_time = 0.0};
+        } else if((newly_downloaded = this->download_avatar(id_folder))) {
+            // write async
+            io->write(id_folder.second, std::move(this->temp_img_download_data),
+                      [this, pair = id_folder](bool success) -> void {
+                          if(success) {
+                              this->avatars[pair] = {
+                                  .file_path = pair.second, .image = nullptr, .last_access_time = 0.0};
+                          }
+                      });
+        }
 
+        if(exists_on_disk || newly_downloaded) {
             this->load_queue.pop_front();  // remove it from the queue
         }
     }
@@ -145,20 +154,13 @@ void AvatarManager::prune_oldest_avatars() {
 
 bool AvatarManager::download_avatar(const std::pair<i32, std::string>& id_folder) {
     float progress = -1.f;
-    std::vector<u8> img_data;
     auto scheme = cv::use_https.getBool() ? "https://" : "http://";
     auto img_url = fmt::format("{:s}a.{}/{:d}", scheme, BanchoState::endpoint, id_folder.first);
     int response_code;
     // TODO: constantly requesting the full download is a bad API, should be a way to just check if it's already downloading
-    Downloader::download(img_url.c_str(), &progress, img_data, &response_code);
+    Downloader::download(img_url.c_str(), &progress, this->temp_img_download_data, &response_code);
     if(progress == -1.f) this->id_blacklist.insert(id_folder);
-    if(img_data.empty()) return false;
-
-    File output_file(id_folder.second, File::MODE::WRITE);
-    if(output_file.canWrite()) {
-        output_file.write(img_data.data(), img_data.size());
-        this->newly_downloaded.insert(id_folder);
-    }
+    if(this->temp_img_download_data.empty()) return false;
 
     // NOTE: We return true even if progress is -1. Because we still get avatars from a 404!
     // TODO: only download a single 404 (blacklisted) avatar and share it
@@ -175,5 +177,4 @@ void AvatarManager::clear() {
     this->avatars.clear();
     this->load_queue.clear();
     this->id_blacklist.clear();
-    this->newly_downloaded.clear();
 }

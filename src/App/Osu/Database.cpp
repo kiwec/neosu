@@ -1,6 +1,7 @@
 // Copyright (c) 2016, PG, All rights reserved.
 #include "Database.h"
 
+#include "AsyncIOHandler.h"
 #include "Bancho.h"
 #include "Parsing.h"
 #include "SString.h"
@@ -378,11 +379,14 @@ int Database::addScore(const FinishedScore &score) {
     if(!compressed_replay.empty()) {
         auto replay_path = fmt::format(NEOSU_REPLAYS_PATH "/{:d}.replay.lzma", score.unixTimestamp);
 
-        FILE *replay_file = File::fopen_c(replay_path.c_str(), "wb");
-        if(replay_file != nullptr) {
-            fwrite(compressed_replay.data(), compressed_replay.size(), 1, replay_file);
-            fclose(replay_file);
-        }
+        debugLog("Saving replay to {}...", replay_path);
+        io->write(replay_path, compressed_replay, [replay_path, func = __FUNCTION__](bool success) {
+            if(success) {
+                Logger::log(spdlog::source_loc{__FILE__, __LINE__, func}, "Replay saved to {}.", replay_path);
+            } else {
+                Logger::log(spdlog::source_loc{__FILE__, __LINE__, func}, "Failed to save replay to {}", replay_path);
+            }
+        });
     }
 
     // return sorted index

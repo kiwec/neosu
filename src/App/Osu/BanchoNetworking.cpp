@@ -8,6 +8,7 @@
 #endif
 
 #include "SString.h"
+#include "AsyncIOHandler.h"
 
 #include "Bancho.h"
 #include "BanchoLeaderboard.h"
@@ -25,9 +26,7 @@
 #include "NetworkHandler.h"
 #include "OptionsMenu.h"
 #include "ResourceManager.h"
-#include "RoomScreen.h"
 #include "SongBrowser/SongBrowser.h"
-#include "UIButton.h"
 #include "UserCard.h"
 #include "Logging.h"
 #include "SyncMutex.h"
@@ -236,16 +235,17 @@ void handle_api_response(Packet &packet) {
             auto replay_path =
                 fmt::format(NEOSU_REPLAYS_PATH "/{:s}/{:d}.replay.lzma", score->server.c_str(), score->unixTimestamp);
 
-            // XXX: this is blocking main thread
-            FILE *replay_file = File::fopen_c(replay_path.c_str(), "wb");
-            if(replay_file == nullptr) {
-                osu->getNotificationOverlay()->addToast("Failed to save replay", ERROR_TOAST);
-                break;
-            }
+            // TODO: progress bars? how do we make sure the user doesnt do anything weird while its saving to disk and break the flow
+            debugLog("Saving replay to {}...", replay_path);
 
-            fwrite(packet.memory, packet.size, 1, replay_file);
-            fclose(replay_file);
-            LegacyReplay::load_and_watch(*score);
+            io->write(replay_path, packet.memory, packet.size, [to_watch = *score](bool success) {
+                if(success) {
+                    LegacyReplay::load_and_watch(to_watch);
+                } else {
+                    osu->getNotificationOverlay()->addToast("Failed to save replay", ERROR_TOAST);
+                }
+            });
+
             break;
         }
 
@@ -377,7 +377,13 @@ void send_api_request(const APIRequest &request) {
     Sync::scoped_lock lock(api_requests_mutex);
 
     // Jank way to do things... remove outdated requests now
-    std::erase_if(api_request_queue, [request](APIRequest r) { return r.type = request.type; });
+    std::erase_if(api_request_queue, [&request](const APIRequest &old) {
+        if(old.type == request.type) {
+            free(old.extra);  // otherwise its leaked (double jank)
+            return true;
+        }
+        return false;
+    });
 
     api_request_queue.push_back(request);
 }

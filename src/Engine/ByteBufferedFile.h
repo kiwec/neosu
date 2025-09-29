@@ -8,7 +8,7 @@
 #include <algorithm>
 #include <filesystem>
 #include <fstream>
-#include <vector>
+#include <array>
 
 #include "MD5Hash.h"
 #include "types.h"
@@ -184,9 +184,10 @@ class ByteBufferedFile {
        private:
         void set_error(const std::string &error_msg);
 
+        std::array<u8, READ_BUFFER_SIZE> buffer{};
+
         std::ifstream file;
 
-        std::vector<u8> buffer;
         uSz read_pos{0};        // current read position in ring buffer
         uSz write_pos{0};       // current write position in ring buffer
         uSz buffered_bytes{0};  // amount of data currently buffered
@@ -219,11 +220,12 @@ class ByteBufferedFile {
        private:
         void set_error(const std::string &error_msg);
 
+        std::array<u8, WRITE_BUFFER_SIZE> buffer{};
+
         std::filesystem::path file_path;
         std::filesystem::path tmp_file_path;
         std::ofstream file;
 
-        std::vector<u8> buffer;
         uSz pos{0};
         bool error_flag{false};
         std::string last_error;

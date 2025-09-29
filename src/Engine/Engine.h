@@ -26,6 +26,7 @@ class SoundEngine;
 class NetworkHandler;
 class ResourceManager;
 class AnimationHandler;
+class AsyncIOHandler;
 
 class CBaseUIContainer;
 class VisualProfiler;
@@ -111,6 +112,8 @@ class Engine final : public KeyboardListener {
     [[nodiscard]] constexpr CBaseUIContainer *getGUI() const { return this->guiContainer; }
 
    private:
+    void runtime_assert(bool cond, const char* reason);
+
     // input devices
     std::vector<Mouse *> mice;
     std::vector<Keyboard *> keyboards;
@@ -154,6 +157,7 @@ extern std::unique_ptr<SoundEngine> soundEngine;
 extern std::unique_ptr<ResourceManager> resourceManager;
 extern std::unique_ptr<NetworkHandler> networkHandler;
 extern std::unique_ptr<AnimationHandler> animationHandler;
+extern std::unique_ptr<AsyncIOHandler> io;
 
 extern Engine *engine;
 

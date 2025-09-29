@@ -12,6 +12,7 @@
 #define OSU_VERSION "b" OSU_VERSION_DATESTR
 
 enum APIRequestType : uint8_t {
+    NONE,
     GET_BEATMAPSET_INFO,
     GET_MAP_LEADERBOARD,
     GET_REPLAY,
@@ -19,7 +20,7 @@ enum APIRequestType : uint8_t {
 };
 
 struct APIRequest {
-    APIRequestType type;
+    APIRequestType type{NONE};
     UString path{""};
     u8* extra{nullptr};
     i32 extra_int{0};  // lazy

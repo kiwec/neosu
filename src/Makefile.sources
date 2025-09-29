@@ -93,6 +93,7 @@ neosu_SOURCES = \
 	src/Binary/shaders.cpp \
 	src/Engine/AnimationHandler.cpp \
 	src/Engine/Archival.cpp \
+	src/Engine/AsyncIOHandler.cpp \
 	src/Engine/ByteBufferedFile.cpp \
 	src/Engine/Camera.cpp \
 	src/Engine/ConVar.cpp \

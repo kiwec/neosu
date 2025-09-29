@@ -5,6 +5,7 @@
 #include <utility>
 
 #include "AnimationHandler.h"
+#include "AsyncIOHandler.h"
 #include "BackgroundImageHandler.h"
 #include "Bancho.h"
 #include "BanchoNetworking.h"
@@ -1082,14 +1083,12 @@ void MainMenu::mouse_update(bool *propagate_clicks) {
         Downloader::download(BanchoState::server_icon_url.c_str(), &progress, data, &response_code);
         if(progress == -1.f) BanchoState::server_icon_url = "";
         if(!data.empty()) {
-            FILE *file = File::fopen_c(icon_path.c_str(), "wb");
-            if(file != nullptr) {
-                fwrite(data.data(), data.size(), 1, file);
-                fflush(file);
-                fclose(file);
-            }
-
-            BanchoState::server_icon = resourceManager->loadImageAbs(icon_path, icon_path);
+            io->write(icon_path, data, [icon_path](bool success) {
+                if(success) {
+                    resourceManager->requestNextLoadAsync();
+                    BanchoState::server_icon = resourceManager->loadImageAbs(icon_path, icon_path);
+                }
+            });
         }
     }
 }

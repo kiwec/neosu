@@ -1339,13 +1339,13 @@ void Osu::saveScreenshot() {
                        screenshotChannels, screenshotFilename);
 }
 
-void Osu::onPlayEnd(FinishedScore score, bool quit, bool /*aborted*/) {
+void Osu::onPlayEnd(const FinishedScore &score, bool quit, bool /*aborted*/) {
     cv::snd_change_check_interval.setValue(cv::snd_change_check_interval.getDefaultFloat());
 
     if(!quit) {
         if(!cv::mod_endless.getBool()) {
             // NOTE: the order of these two calls matters
-            this->rankingScreen->setScore(std::move(score));
+            this->rankingScreen->setScore(score);
             this->rankingScreen->setBeatmapInfo(this->map_iface->beatmap);
 
             soundEngine->play(this->skin->getApplause());

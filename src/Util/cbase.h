@@ -25,9 +25,3 @@
 #ifndef PATH_MAX
 #define PATH_MAX MAX_PATH
 #endif
-
-constexpr void runtime_assert(bool cond, const char* reason) {
-    if(cond) return;
-    std::fprintf(stderr, "%s\n", reason);
-    std::abort();
-}

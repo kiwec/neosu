@@ -34,7 +34,6 @@ class AvatarManager final {
         std::string file_path;
         Image* image{nullptr};  // null if not loaded in memory
         double last_access_time{0.0};
-        bool is_downloading{false};
     };
 
     void prune_oldest_avatars();
@@ -47,5 +46,5 @@ class AvatarManager final {
     std::map<std::pair<i32, std::string>, AvatarEntry> avatars;
     std::deque<std::pair<i32, std::string>> load_queue;
     std::set<std::pair<i32, std::string>> id_blacklist;
-    std::set<std::pair<i32, std::string>> newly_downloaded;
+    std::vector<u8> temp_img_download_data;  // if it has something in it, we just downloaded something
 };

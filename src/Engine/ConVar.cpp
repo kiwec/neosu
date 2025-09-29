@@ -1,6 +1,7 @@
 // Copyright (c) 2011, PG, All rights reserved.
 #include "ConVar.h"
 
+#include "AsyncIOHandler.h"
 #include "Bancho.h"
 #include "BanchoUsers.h"
 #include "BeatmapInterface.h"
@@ -499,15 +500,13 @@ static void _dumpcommands(void) {
     size_t pos = html_template.find(marker);
     html_template.replace(pos, marker.length(), html);
 
-    File outFile("variables.htm", File::MODE::WRITE);
-    if(!outFile.canWrite()) {
-        Logger::logRaw("Failed to open variables.htm for writing");
-        return;
-    }
-
-    outFile.write(reinterpret_cast<const u8 *>(html_template.data()), html_template.size());
-
-    Logger::logRaw("ConVars dumped to variables.htm");
+    io->write(MCENGINE_DATA_DIR "variables.htm", html_template, [](bool success) -> void {
+        if(success) {
+            Logger::logRaw("ConVars dumped to variables.htm");
+        } else {
+            Logger::logRaw("Failed to dump ConVars to variables.htm");
+        }
+    });
 }
 
 void _exec(std::string_view args) { Console::execConfigFile(std::string{args.data(), args.length()}); }
