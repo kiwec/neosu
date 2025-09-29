@@ -253,7 +253,7 @@ int OpenGLShader::createShaderFromString(const std::string &shaderSource, int sh
         if(returnValue > 0) {
             char *errorLog = new char[returnValue];
             glGetInfoLogARB(shader, returnValue, &returnValue, errorLog);
-            debugLog(fmt::runtime(errorLog));
+            debugLog("{}", errorLog);
             delete[] errorLog;
         }
 

@@ -36,7 +36,7 @@ struct BanchoState final {
     static std::vector<u32> spectators;
     static std::vector<u32> fellow_spectators;
 
-    static UString server_icon_url;
+    static std::string server_icon_url;
     static Image *server_icon;
 
     static ServerPolicy score_submission_policy;

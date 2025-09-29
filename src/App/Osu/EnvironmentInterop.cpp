@@ -7,6 +7,7 @@
 #include "NeosuUrl.h"
 #include "OptionsMenu.h"
 #include "Osu.h"
+#include "Parsing.h"
 #include "Skin.h"
 #include "SongBrowser/SongBrowser.h"
 #include "Logging.h"
@@ -17,10 +18,10 @@ namespace {  // static namespace
 void handle_osk(const char *osk_path) {
     Skin::unpack(osk_path);
 
-    auto folder_name = env->getFileNameFromFilePath(osk_path);
+    auto folder_name = Environment::getFileNameFromFilePath(osk_path);
     folder_name.erase(folder_name.size() - 4);  // remove .osk extension
 
-    cv::skin.setValue(env->getFileNameFromFilePath(folder_name).c_str());
+    cv::skin.setValue(Environment::getFileNameFromFilePath(folder_name).c_str());
     osu->getOptionsMenu()->updateSkinNameLabel();
 }
 
@@ -30,11 +31,11 @@ void handle_osz(const char *osz_path) {
     if(set_id < 0) {
         // special case: legacy fallback behavior for invalid beatmapSetID, try to parse the ID from the
         // path
-        auto mapset_name = UString(env->getFileNameFromFilePath(osz_path).c_str());
-        const std::vector<UString> tokens = mapset_name.split(" ");
-        for(const auto &token : tokens) {
-            i32 id = token.toInt();
-            if(id > 0) set_id = id;
+        auto mapset_name = Environment::getFileNameFromFilePath(osz_path);
+        if(!mapset_name.empty() && std::isdigit(static_cast<unsigned char>(mapset_name[0]))) {
+            if(!Parsing::parse(mapset_name.c_str(), &set_id)) {
+                set_id = -1;
+            }
         }
     }
     if(set_id == -1) {
@@ -68,7 +69,7 @@ bool Environment::Interop::handle_cmdline_args(const std::vector<std::string> &a
         if(arg.starts_with("neosu://")) {
             handle_neosu_url(arg.c_str());
         } else {
-            auto extension = env->getFileExtensionFromFilePath(arg);
+            auto extension = Environment::getFileExtensionFromFilePath(arg);
             if(!extension.compare("osz")) {
                 // NOTE: we're assuming db is loaded here?
                 handle_osz(arg.c_str());

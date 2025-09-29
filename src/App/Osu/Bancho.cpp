@@ -41,8 +41,7 @@
 #include "SongBrowser/SongBrowser.h"
 #include "SoundEngine.h"
 #include "SpectatorScreen.h"
-#include "UIAvatar.h"
-#include "UIButton.h"
+#include "SString.h"
 #include "Timing.h"
 #include "Logging.h"
 #include "UserCard.h"
@@ -62,7 +61,7 @@ i32 BanchoState::spectated_player_id{0};
 std::vector<u32> BanchoState::spectators;
 std::vector<u32> BanchoState::fellow_spectators;
 
-UString BanchoState::server_icon_url;
+std::string BanchoState::server_icon_url;
 Image *BanchoState::server_icon{nullptr};
 
 ServerPolicy BanchoState::score_submission_policy{ServerPolicy::NO_PREFERENCE};
@@ -535,9 +534,9 @@ void BanchoState::handle_packet(Packet &packet) {
         }
 
         case MAIN_MENU_ICON: {
-            UString icon = packet.read_string();
-            auto urls = icon.split("|");
-            if(urls.size() == 2 && ((urls[0].startsWith("http://")) || urls[0].startsWith("https://"))) {
+            std::string icon = packet.read_stdstring();
+            auto urls = SString::split(icon, '|');
+            if(urls.size() == 2 && ((urls[0].starts_with("http://")) || urls[0].starts_with("https://"))) {
                 BanchoState::server_icon_url = urls[0];
             }
             break;

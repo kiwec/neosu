@@ -1079,7 +1079,7 @@ void MainMenu::mouse_update(bool *propagate_clicks) {
         float progress = -1.f;
         std::vector<u8> data;
         int response_code;
-        Downloader::download(BanchoState::server_icon_url.toUtf8(), &progress, data, &response_code);
+        Downloader::download(BanchoState::server_icon_url.c_str(), &progress, data, &response_code);
         if(progress == -1.f) BanchoState::server_icon_url = "";
         if(!data.empty()) {
             FILE *file = File::fopen_c(icon_path.c_str(), "wb");

@@ -461,7 +461,7 @@ std::string Environment::encodeStringToURI(std::string_view unencodedString) noe
 
     for(const char c : unencodedString) {
         // keep alphanumerics and other accepted characters intact
-        if(std::isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~' || c == '/') {
+        if(std::isalnum(static_cast<unsigned char>(c)) || c == '-' || c == '_' || c == '.' || c == '~' || c == '/') {
             escaped << c;
         } else {
             // any other characters are percent-encoded

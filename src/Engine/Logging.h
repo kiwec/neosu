@@ -1,15 +1,6 @@
 #pragma once
 // Copyright (c) 2025, WH, All rights reserved.
 
-// main logging macro
-#if defined(_MSC_VER) && !defined(_DEBUG)
-#define debugLog(...)                                                                                         \
-    Logger::log(spdlog::source_loc{__FILE__, __LINE__, Logger::trim_to_last_scope_internal(SPDLOG_FUNCTION)}, \
-                __VA_ARGS__)
-#else
-#define debugLog(...) Logger::log(spdlog::source_loc{__FILE__, __LINE__, SPDLOG_FUNCTION}, __VA_ARGS__)
-#endif
-
 #include "BaseEnvironment.h"
 
 // TODO: handle log level switching at runtime
@@ -20,8 +11,20 @@
 #include "spdlog/common.h"
 #include "spdlog/async_logger.h"
 
-#include <string>
+#include "fmt/compile.h"
+
+#include <string_view>
 #include <cassert>
+
+#if defined(_MSC_VER) && !defined(_DEBUG)
+#define FUNC_TRIMMED Logger::trim_to_last_scope_internal(SPDLOG_FUNCTION)
+#else
+#define FUNC_TRIMMED SPDLOG_FUNCTION
+#endif
+
+// main logging macro
+#define debugLog(str__, ...) \
+    Logger::log(spdlog::source_loc{__FILE__, __LINE__, FUNC_TRIMMED}, str__ __VA_OPT__(, ) __VA_ARGS__)
 
 /*
 // print the call stack immediately
@@ -35,6 +38,8 @@
 #include <stacktrace>
 #include "fmt/ostream.h"
 */
+
+using fmt::literals::operator""_cf;
 
 // main logger class
 class Logger final {
@@ -57,10 +62,12 @@ class Logger final {
     // is stdout a terminal (util func.)
     [[nodiscard]] static bool isaTTY() noexcept;
 
-    // logging with context
+    // logging with format strings
     template <typename... Args>
-    static forceinline void log(const spdlog::source_loc &loc, const fmt::format_string<Args...> &fmt,
-                                Args &&...args) noexcept {
+    static inline void log(const spdlog::source_loc &loc, const fmt::format_string<Args...> &fmt,
+                           Args &&...args) noexcept
+        requires(sizeof...(Args) > 0)
+    {
         // checking for wasInit for the unlikely case that we try to log something through here WHILE initializing/uninitializing
         if(likely(wasInit))
             s_logger->log(loc, spdlog::level::info, fmt, std::forward<Args>(args)...);
@@ -68,28 +75,31 @@ class Logger final {
             printf("%s\n", fmt::format(fmt, std::forward<Args>(args)...).c_str());
     }
 
+    // same but for logging strings/literals
+    static inline void log(const spdlog::source_loc &loc, std::string_view str) noexcept {
+        // checking for wasInit for the unlikely case that we try to log something through here WHILE initializing/uninitializing
+        if(likely(wasInit))
+            s_logger->log(loc, spdlog::level::info, str);
+        else
+            printf("%.*s\n", static_cast<int>(str.length()), str.data());
+    }
+
     // raw logging without any context
     template <typename... Args>
-    static forceinline void logRaw(const fmt::format_string<Args...> &fmt, Args &&...args) noexcept {
+    static inline void logRaw(const fmt::format_string<Args...> &fmt, Args &&...args) noexcept
+        requires(sizeof...(Args) > 0)
+    {
         if(likely(wasInit))
             s_raw_logger->log(spdlog::level::info, fmt, std::forward<Args>(args)...);
         else
             printf("%s\n", fmt::format(fmt, std::forward<Args>(args)...).c_str());
     }
 
-    // same as above but for non-format strings
-    static forceinline void log(const spdlog::source_loc &loc, const std::string &logString) noexcept {
+    static inline void logRaw(std::string_view str) noexcept {
         if(likely(wasInit))
-            s_logger->log(loc, spdlog::level::info, logString);
+            s_raw_logger->log(spdlog::level::info, str);
         else
-            printf("%s\n", logString.c_str());
-    }
-
-    static forceinline void logRaw(const std::string &logString) noexcept {
-        if(likely(wasInit))
-            s_raw_logger->log(spdlog::level::info, logString);
-        else
-            printf("%s\n", logString.c_str());
+            printf("%.*s\n", static_cast<int>(str.length()), str.data());
     }
 
 // msvc always adds the full scope to __FUNCTION__, which we don't want for non-debug builds

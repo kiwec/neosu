@@ -123,7 +123,7 @@ const char* parse(const char* str, T arg, Extra... extra) {
         return parse(str + arg_len, extra...);
     } else if constexpr(std::is_pointer_v<T>) {
         // Storing result in tmp var, so we only modify *arg once parsing fully succeeded
-        using T_val = typename std::remove_pointer<T>::type;
+        using T_val = std::remove_pointer_t<T>;
         T_val arg_tmp;
         str = parse(str, &arg_tmp);
         if(str == nullptr) return nullptr;

@@ -33,7 +33,7 @@ inline bool alnum_comp(std::string_view a, std::string_view b) {
 
 // std string splitting, for if we don't want to create UStrings everywhere (slow and heavy)
 template <typename S = char>
-inline std::vector<std::string> split(std::string_view s, S d = ' ')
+inline std::vector<std::string> split(std::string_view s, S d)
     requires(std::is_same_v<std::decay_t<S>, const char *>) || std::is_same_v<std::decay_t<S>, std::string_view> ||
             (std::is_same_v<std::decay_t<S>, char>)
 {

@@ -2,6 +2,7 @@
 #include "Database.h"
 
 #include "Bancho.h"
+#include "Parsing.h"
 #include "SString.h"
 #include "MD5Hash.h"
 #include "ByteBufferedFile.h"
@@ -995,7 +996,6 @@ void Database::loadMaps() {
 
                 if(cv::debug_db.getBool())
                     debugLog("Database: Reading beatmap {:d}/{:d} ...", (i + 1), this->iNumBeatmapsToLoad);
-
                 // update progress (another thread checks if progress >= 1.f to know when we're done)
                 u32 progress_bytes = this->bytes_processed + db.total_pos;
                 f64 progress_float = (f64)progress_bytes / (f64)this->total_bytes;
@@ -1179,23 +1179,6 @@ void Database::loadMaps() {
                 /*int lastEditTime = */ db.skip<u32>();
                 /*unsigned char maniaScrollSpeed = */ db.skip<u8>();
 
-                // HACKHACK: workaround for linux and macos: it can happen that nested beatmaps are stored in the
-                // database, and that osu! stores that filepath with a backslash (because windows)
-                if constexpr(!Env::cfg(OS::WINDOWS)) {
-                    for(int c = 0; c < path.length(); c++) {
-                        if(path[c] == '\\') {
-                            path[c] = '/';
-                        }
-                    }
-                }
-
-                // build beatmap & diffs from all the data
-                std::string beatmapPath = songFolder;
-                beatmapPath.append(path.c_str());
-                beatmapPath.append("/");
-                std::string fullFilePath = beatmapPath;
-                fullFilePath.append(osuFileName);
-
                 // skip invalid/corrupt entries
                 // the good way would be to check if the .osu file actually exists on disk, but that is slow af, ain't
                 // nobody got time for that so, since I've seen some concrete examples of what happens in such cases, we
@@ -1206,6 +1189,30 @@ void Database::loadMaps() {
 
                 // fill diff with data
                 if(mode != 0) continue;
+
+                // it can happen that nested beatmaps are stored in the
+                // database, and that osu! stores that filepath with a backslash (because windows)
+                // so replace them with / to normalize
+                std::ranges::replace(path, '\\', '/');
+
+                // build beatmap & diffs from all the data
+                std::string beatmapPath = songFolder;
+                beatmapPath.append(path.c_str());
+                beatmapPath.push_back('/');
+                std::string fullFilePath = beatmapPath;
+                fullFilePath.append(osuFileName);
+
+                // special case: legacy fallback behavior for invalid beatmapSetID, try to parse the ID from the path
+                if(beatmapSetID < 1 && path.length() > 0) {
+                    size_t slash = path.find('/');
+                    std::string candidate = (slash != std::string::npos) ? path.substr(0, slash) : path;
+
+                    if(!candidate.empty() && std::isdigit(static_cast<unsigned char>(candidate[0]))) {
+                        if(!Parsing::parse(candidate.c_str(), &beatmapSetID)) {
+                            beatmapSetID = -1;
+                        }
+                    }
+                }
 
                 auto *map =
                     new DatabaseBeatmap(fullFilePath, beatmapPath, DatabaseBeatmap::BeatmapType::PEPPY_DIFFICULTY);
@@ -1253,20 +1260,6 @@ void Database::loadMaps() {
                     map->iMinBPM = bpm.min;
                     map->iMaxBPM = bpm.max;
                     map->iMostCommonBPM = bpm.most_common;
-                }
-
-                // special case: legacy fallback behavior for invalid beatmapSetID, try to parse the ID from the path
-                if(beatmapSetID < 1 && path.length() > 0) {
-                    auto upath = UString(path.c_str());
-                    const std::vector<UString> pathTokens =
-                        upath.split("\\");  // NOTE: this is hardcoded to backslash since osu is windows only
-                    if(pathTokens.size() > 0 && pathTokens[0].length() > 0) {
-                        const std::vector<UString> spaceTokens = pathTokens[0].split(" ");
-                        if(spaceTokens.size() > 0 && spaceTokens[0].length() > 0) {
-                            beatmapSetID = spaceTokens[0].toInt();
-                            if(beatmapSetID == 0) beatmapSetID = -1;
-                        }
-                    }
                 }
 
                 // (the diff is now fully built)
