@@ -101,7 +101,7 @@ void send_bancho_packet_async(Packet outgoing) {
             if(colon_pos != std::string::npos) {
                 std::string token = auth_header.substr(colon_pos + 1);
                 // trim whitespace
-                SString::trim(&token);
+                SString::trim_inplace(token);
                 options.headers["osu-token"] = token;
             }
         }
@@ -461,7 +461,7 @@ void BanchoState::disconnect() {
                 size_t colon_pos = BANCHO::Net::auth_header.find(':');
                 if(colon_pos != std::string::npos) {
                     std::string token = BANCHO::Net::auth_header.substr(colon_pos + 1);
-                    SString::trim(&token);
+                    SString::trim_inplace(token);
                     options.headers["osu-token"] = token;
                 }
             }

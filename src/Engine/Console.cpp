@@ -16,7 +16,7 @@ void Console::processCommand(std::string command, bool fromFile) {
     if(command.length() < 1) return;
 
     // remove whitespace from beginning/end of string
-    SString::trim(&command);
+    SString::trim_inplace(command);
 
     // handle multiple commands separated by semicolons
     if(command.find(';') != std::string::npos && command.find("echo") == std::string::npos) {

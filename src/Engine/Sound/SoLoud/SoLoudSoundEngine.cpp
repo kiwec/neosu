@@ -41,8 +41,8 @@ SoLoudSoundEngine::SoLoudSoundEngine() : SoundEngine() {
         bool threaded = false;
         auto args = env->getLaunchArgs();
         auto threadedString = args["-sound"].value_or("soloud");
-        SString::trim(&threadedString);
-        SString::to_lower(threadedString);
+        SString::trim_inplace(threadedString);
+        SString::lower_inplace(threadedString);
         if(threadedString == "soloud-threaded") {
             threaded = true;
         }

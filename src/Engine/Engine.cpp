@@ -100,8 +100,8 @@ Engine::Engine() {
         {
             auto args = env->getLaunchArgs();
             auto soundString = args["-sound"].value_or("soloud");
-            SString::trim(&soundString);
-            SString::to_lower(soundString);
+            SString::trim_inplace(soundString);
+            SString::lower_inplace(soundString);
             if(Env::cfg(AUD::BASS) && soundString.contains("bass"))
                 type = SoundEngine::BASS;
             else if(Env::cfg(AUD::SOLOUD) && soundString.contains("soloud"))

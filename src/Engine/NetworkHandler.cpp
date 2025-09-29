@@ -283,11 +283,11 @@ size_t NetworkHandler::headerCallback(char* buffer, size_t size, size_t nitems, 
         std::string value = header.substr(colon_pos + 1);
 
         // lowercase the key for consistency between platforms/curl builds
-        SString::to_lower(key);
+        SString::lower_inplace(key);
 
         // trim whitespace
-        SString::trim(&key);
-        SString::trim(&value);
+        SString::trim_inplace(key);
+        SString::trim_inplace(value);
 
         request->response.headers[key] = value;
     }

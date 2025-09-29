@@ -304,7 +304,7 @@ std::string Environment::getFileNameFromFilePath(std::string_view filepath) noex
 }
 
 std::string Environment::normalizeDirectory(std::string dirPath) noexcept {
-    SString::trim(&dirPath);
+    SString::trim_inplace(dirPath);
     if(dirPath.empty()) return dirPath;
 
     // remove drive letter prefix if switching to linux

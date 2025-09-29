@@ -91,7 +91,7 @@ const char* parse(const char* str, T* arg) {
             end_ptr = const_cast<char*>(str);
         } else {
             *arg = str;
-            SString::trim(arg);
+            SString::trim_inplace(*arg);
             end_ptr = const_cast<char*>(str + strlen(str));  // one-past-the-end
         }
     } else {

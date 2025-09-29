@@ -264,7 +264,7 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(const
                 case 1: {
                     std::string sampleSet;
                     if(Parsing::parse(curLineChar, "SampleSet", ':', &sampleSet)) {
-                        SString::to_lower(sampleSet);
+                        SString::lower_inplace(sampleSet);
                         if(sampleSet == "normal") {
                             c.defaultSampleSet = SampleSetType::NORMAL;
                         } else if(sampleSet == "soft") {
@@ -1159,10 +1159,10 @@ bool DatabaseBeatmap::loadMetadata(bool compute_md5) {
     }
 
     // im not actually sure if we need to do this again here
-    if(SString::whitespace_only(this->sTitleUnicode)) {
+    if(SString::is_wspace_only(this->sTitleUnicode)) {
         this->bEmptyTitleUnicode = true;
     }
-    if(SString::whitespace_only(this->sArtistUnicode)) {
+    if(SString::is_wspace_only(this->sArtistUnicode)) {
         this->bEmptyArtistUnicode = true;
     }
 

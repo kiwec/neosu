@@ -159,7 +159,7 @@ MAIN_FUNC /* int argc, char *argv[] */
     }
 
     std::string lowerPackageName = PACKAGE_NAME;
-    SString::lower(lowerPackageName);
+    SString::to_lower(lowerPackageName);
 
     // set up some common app metadata (SDL says these should be called as early as possible)
     SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_NAME_STRING, PACKAGE_NAME);

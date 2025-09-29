@@ -155,6 +155,7 @@ neosu_SOURCES = \
 	src/Platform/main_impl.cpp \
 	src/Util/Quaternion.cpp \
 	src/Util/Rect.cpp \
+	src/Util/SString.cpp \
 	src/Util/UString.cpp \
 	src/Util/crypto.cpp \
 	src/Util/dynutils.cpp \

@@ -861,7 +861,7 @@ void Chat::addMessage(UString channel_name, const ChatMessage &msg, bool mark_un
                 if(ignored == "") continue;
 
                 word.lowerCase();
-                if(word.toUtf8() == SString::lower(ignored)) {
+                if(word.toUtf8() == SString::to_lower(ignored)) {
                     // Found a word we don't want - don't print the message
                     return;
                 }
@@ -881,7 +881,7 @@ void Chat::addMessage(UString channel_name, const ChatMessage &msg, bool mark_un
             if(highlight == "") continue;
 
             word.lowerCase();
-            if(word.toUtf8() == SString::lower(highlight)) {
+            if(word.toUtf8() == SString::to_lower(highlight)) {
                 should_highlight = true;
                 break;
             }

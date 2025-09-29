@@ -5,15 +5,11 @@
 #include "CBaseUIContainer.h"
 #include "CBaseUILabel.h"
 #include "CBaseUIScrollView.h"
-#include "ConVar.h"
 #include "Engine.h"
 #include "HUD.h"
-#include "Mouse.h"
 #include "Logging.h"
 #include "OptionsMenu.h"
 #include "Osu.h"
-#include "ResourceManager.h"
-#include "Skin.h"
 #include "SoundEngine.h"
 
 Changelog::Changelog() : ScreenBackable() {

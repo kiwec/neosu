@@ -913,10 +913,10 @@ void Database::loadMaps() {
                         diff->sArtistUnicode = diff->sArtist;
                     }
 
-                    if(SString::whitespace_only(diff->sTitleUnicode)) {
+                    if(SString::is_wspace_only(diff->sTitleUnicode)) {
                         diff->bEmptyTitleUnicode = true;
                     }
-                    if(SString::whitespace_only(diff->sArtistUnicode)) {
+                    if(SString::is_wspace_only(diff->sArtistUnicode)) {
                         diff->bEmptyArtistUnicode = true;
                     }
 
@@ -1011,15 +1011,15 @@ void Database::loadMaps() {
                 }
 
                 std::string artistName = db.read_string();
-                SString::trim(&artistName);
+                SString::trim_inplace(artistName);
                 std::string artistNameUnicode = db.read_string();
                 std::string songTitle = db.read_string();
-                SString::trim(&songTitle);
+                SString::trim_inplace(songTitle);
                 std::string songTitleUnicode = db.read_string();
                 std::string creatorName = db.read_string();
-                SString::trim(&creatorName);
+                SString::trim_inplace(creatorName);
                 std::string difficultyName = db.read_string();
-                SString::trim(&difficultyName);
+                SString::trim_inplace(difficultyName);
                 std::string audioFileName = db.read_string();
 
                 auto md5hash = db.read_hash();
@@ -1149,8 +1149,8 @@ void Database::loadMaps() {
 
                 auto songSource = db.read_string();
                 auto songTags = db.read_string();
-                SString::trim(&songSource);
-                SString::trim(&songTags);
+                SString::trim_inplace(songSource);
+                SString::trim_inplace(songTags);
 
                 short onlineOffset = db.read<u16>();
                 db.skip_string();  // song title font
@@ -1161,7 +1161,7 @@ void Database::loadMaps() {
                 // somehow, some beatmaps may have spaces at the start/end of their
                 // path, breaking the Windows API (e.g. https://osu.ppy.sh/s/215347)
                 auto path = db.read_string();
-                SString::trim(&path);
+                SString::trim_inplace(path);
 
                 /*long long lastOnlineCheck = */ db.skip<u64>();
 
@@ -1219,7 +1219,7 @@ void Database::loadMaps() {
                 {
                     map->sTitle = songTitle;
                     map->sTitleUnicode = songTitleUnicode;
-                    if(SString::whitespace_only(map->sTitleUnicode)) {
+                    if(SString::is_wspace_only(map->sTitleUnicode)) {
                         map->bEmptyTitleUnicode = true;
                     }
                     map->sAudioFileName = audioFileName;
@@ -1229,7 +1229,7 @@ void Database::loadMaps() {
 
                     map->sArtist = artistName;
                     map->sArtistUnicode = artistNameUnicode;
-                    if(SString::whitespace_only(map->sArtistUnicode)) {
+                    if(SString::is_wspace_only(map->sArtistUnicode)) {
                         map->bEmptyArtistUnicode = true;
                     }
                     map->sCreator = creatorName;

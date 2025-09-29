@@ -1642,9 +1642,9 @@ void OptionsMenu::onKeyDown(KeyboardEvent &e) {
                         while(this->sSearchString.length() > 0) {
                             std::string curChar{this->sSearchString.substr(this->sSearchString.length() - 1, 1)};
 
-                            if(foundNonSpaceChar && SString::whitespace_only(curChar)) break;
+                            if(foundNonSpaceChar && SString::is_wspace_only(curChar)) break;
 
-                            if(!SString::whitespace_only(curChar)) foundNonSpaceChar = true;
+                            if(!SString::is_wspace_only(curChar)) foundNonSpaceChar = true;
 
                             this->sSearchString.erase(this->sSearchString.length() - 1, 1);
                             e.consume();

@@ -110,7 +110,7 @@ class SongBrowserBackgroundSearchMatcher final : public Resource {
         }
         this->sSearchString.append(searchString);
         // do case-insensitive searches
-        SString::to_lower(this->sSearchString);
+        SString::lower_inplace(this->sSearchString);
         this->sHardcodedSearchString = hardcodedSearchString;
     }
 
@@ -1088,9 +1088,9 @@ void SongBrowser::onKeyDown(KeyboardEvent &key) {
                         while(this->sSearchString.length() > 0) {
                             std::string curChar = this->sSearchString.substr(this->sSearchString.length() - 1, 1);
 
-                            if(foundNonSpaceChar && SString::whitespace_only(curChar)) break;
+                            if(foundNonSpaceChar && SString::is_wspace_only(curChar)) break;
 
-                            if(!SString::whitespace_only(curChar)) foundNonSpaceChar = true;
+                            if(!SString::is_wspace_only(curChar)) foundNonSpaceChar = true;
 
                             this->sSearchString.erase(this->sSearchString.length() - 1, 1);
                         }
@@ -1990,7 +1990,7 @@ bool SongBrowser::searchMatcher(const DatabaseBeatmap *databaseBeatmap,
                                                        100.0f;  // round to 2 decimal places
                                         break;
                                     case CREATOR:
-                                        compareString = SString::lower(diff->getCreator());
+                                        compareString = SString::to_lower(diff->getCreator());
                                         break;
                                 }
 
@@ -2048,8 +2048,8 @@ bool SongBrowser::searchMatcher(const DatabaseBeatmap *databaseBeatmap,
 
                 if(!exists) {
                     std::string litAdd{searchStringToken};
-                    SString::trim(&litAdd);
-                    if(!SString::whitespace_only(litAdd)) literalSearchStrings.push_back(litAdd);
+                    SString::trim_inplace(litAdd);
+                    if(!SString::is_wspace_only(litAdd)) literalSearchStrings.push_back(litAdd);
                 }
             }
         }

@@ -378,7 +378,7 @@ static void _find(std::string_view args) {
 
 static void _help(std::string_view args) {
     ConVarString trimmedArgs{args};
-    SString::trim(&trimmedArgs);
+    SString::trim_inplace(trimmedArgs);
 
     if(trimmedArgs.length() < 1) {
         Logger::logRaw("Usage:  help <cvarname>");
@@ -546,7 +546,7 @@ void spectate_by_username(std::string_view username) {
 }
 
 void _osu_songbrowser_search_hardcoded_filter(std::string_view /*oldValue*/, std::string_view newValue) {
-    if(newValue.length() == 1 && SString::whitespace_only(newValue))
+    if(newValue.length() == 1 && SString::is_wspace_only(newValue))
         cv::songbrowser_search_hardcoded_filter.setValue("");
 }
 
