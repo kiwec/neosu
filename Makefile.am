@@ -308,14 +308,19 @@ $(DEPS_CACHE)/curl-$(CURL_VERSION)-linux-binary.source: $(DEPS_CACHE)/curl-$(CUR
 CACERT_INCDIR := $(DEPS_CACHE)/curl-$(CURL_VERSION)/certbundle/
 INCBIN_FLAGS += -I$(CACERT_INCDIR)
 if BUILD_CURL
+
 lb := (
 lbq := '('
 rb := )
 rbq := ')'
+
+CURL_INCLUDEDIR := $(DEPS_CACHE)/curl-$(CURL_VERSION)/$(SYSNAME)$(host_cpu)/include
+CURL_LIBDIR := $(DEPS_CACHE)/curl-$(CURL_VERSION)/$(SYSNAME)$(host_cpu)/lib
+CURL_CFLAGS += -I$(CURL_INCLUDEDIR) -DWITH_GZFILEOP -DCURL_STATICLIB
+CURL_LIBS += -L$(CURL_LIBDIR) $(shell find $(CURL_LIBDIR) -type f -not $(lbq) -name '*dll*' $(rbq) -execdir printf '%s ' '{''}' ';' | $(SED) -e 's|./lib|-l|g' -e 's|\.a||g' -e 's|-lcurl|-l:libcurl.a|g')
+
 if WIN_PLATFORM
-CURL_CFLAGS += -I$(DEPS_CACHE)/curl-$(CURL_VERSION)/$(SYSNAME)$(host_cpu)/include -DWITH_GZFILEOP -DCURL_STATICLIB
-CURL_LIBS += -L$(DEPS_CACHE)/curl-$(CURL_VERSION)/$(SYSNAME)$(host_cpu)/lib $(shell find $(DEPS_CACHE)/curl-$(CURL_VERSION)/$(SYSNAME)$(host_cpu)/lib -type f -not $(lbq) -name '*dll*' $(rbq) -execdir printf '%s ' '{''}' ';' | $(SED) -e 's|./lib|-l|g' -e 's|\.a||g' -e 's|-lcurl|-l:libcurl.a|g') $\
-			-lws2_32 -lwldap32 -lcrypt32 -lsecur32 -liphlpapi
+CURL_LIBS += -lws2_32 -lwldap32 -lcrypt32 -lsecur32 -liphlpapi
 if !WIN32_PLATFORM
 CURL_LIBS += -lbcrypt
 endif
@@ -323,19 +328,18 @@ $(DEPS_PREFIX)/curl-$(CURL_VERSION).built: $(DEPS_CACHE)/curl-$(CURL_VERSION)-wi
 	$(MKDIR_P) $(DEPS_PREFIX)
 	touch $@
 else
-CURL_CFLAGS += -I$(DEPS_CACHE)/curl-$(CURL_VERSION)/$(SYSNAME)$(host_cpu)/include -DWITH_GZFILEOP -DCURL_STATICLIB
-CURL_LIBS += -L$(DEPS_CACHE)/curl-$(CURL_VERSION)/$(SYSNAME)$(host_cpu)/lib $(shell find $(DEPS_CACHE)/curl-$(CURL_VERSION)/$(SYSNAME)$(host_cpu)/lib -type f -not $(lbq) -name '*dll*' $(rbq) -execdir printf '%s ' '{''}' ';' | $(SED) -e 's|./lib|-l|g' -e 's|\.a||g' -e 's|-lcurl|-l:libcurl.a|g') $\
-			-ldl -pthread
 
+CURL_LIBS += -ldl -pthread
 $(DEPS_PREFIX)/curl-$(CURL_VERSION).built: $(DEPS_CACHE)/curl-$(CURL_VERSION)-linux-binary.source
 	$(MKDIR_P) $(DEPS_PREFIX)
 	touch $@
 endif
 else
+# from host
 $(DEPS_PREFIX)/curl-$(CURL_VERSION).built:
 	$(MKDIR_P) $(DEPS_PREFIX)
 	touch $@
-endif
+endif # BUILD_CURL
 
 if BUILD_MIMALLOC
 if WIN_PLATFORM
@@ -943,18 +947,20 @@ $(DEPS_PREFIX)/libarchive-$(LIBARCHIVE_VERSION).built: $(DEPS_CACHE)/libarchive-
 	../configure lt_cv_prog_gnu_ld=yes --host=$(host) --build=$(build) --prefix="$(DEPS_PREFIX)" \
 		$(if $(STATICBUILD),--enable-static --disable-shared,--enable-shared --disable-static) \
 		--disable-tools --disable-tests --with-gnu-ld --disable-bsdtar --disable-bsdcat --disable-bsdcpio \
-		--disable-bsdunzip --without-xml2 --without-expat --without-openssl \
+		--disable-bsdunzip --without-xml2 --without-expat $(if $(CURL_INCLUDEDIR),--with-openssl,--without-openssl) \
 		--without-nettle --without-mbedtls --without-lzo2 --without-lz4 --without-libiconv-prefix \
 		--without-iconv --without-libb2 --without-zstd --with-lzma --with-zlib --with-bz2lib \
 		CC="$(CC)" RANLIB="$(RANLIB)" AR="$(AR)" CXX="$(CXX)" LD="$(LD)" \
-		CFLAGS="$(CFLAGS) -I$(DEPS_PREFIX)/include $(LIBACL_CFLAGS) $(LZMA_CFLAGS) $(BZIP2_CFLAGS) $(ZLIB_CFLAGS) -D_POSIX_C_SOURCE" \
-		LDFLAGS="$(LDFLAGS) -L$(DEPS_PREFIX)/lib $(LIBACL_LIBS) $(LZMA_LIBS) $(BZIP2_LIBS) $(ZLIB_LIBS)" && \
+		CFLAGS="$(CFLAGS) -I$(DEPS_PREFIX)/include $(if $(CURL_INCLUDEDIR),-I$(CURL_INCLUDEDIR),) $(LIBACL_CFLAGS) $(LZMA_CFLAGS) $(BZIP2_CFLAGS) $(ZLIB_CFLAGS) -D_POSIX_C_SOURCE" \
+		LDFLAGS="$(LDFLAGS) -L$(DEPS_PREFIX)/lib $(if $(CURL_LIBDIR),-L$(CURL_LIBDIR)) $(LIBACL_LIBS) $(LZMA_LIBS) $(BZIP2_LIBS) $(ZLIB_LIBS)" && \
 	$(MAKE) $(MAKEFLAGS) && \
 	$(MAKE) $(MAKEFLAGS) install
 	$(PKG_CONFIG) --exists --print-errors libarchive
 	touch $@
 else
 $(DEPS_PREFIX)/libarchive-$(LIBARCHIVE_VERSION).built:
+	$(MKDIR_P) $(DEPS_PREFIX) && touch $@
+$(DEPS_PREFIX)/libacl-$(LIBACL_VERSION).built:
 	$(MKDIR_P) $(DEPS_PREFIX) && touch $@
 endif # BUILD_LIBARCHIVE
 
