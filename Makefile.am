@@ -936,7 +936,9 @@ endif # BUILD_LIBACL
 
 LIBARCHIVE_CFLAGS += $(shell $(PKG_CONFIG) --cflags libarchive)
 LIBARCHIVE_LIBS += $(shell $(PKG_CONFIG) --libs libarchive)
-$(DEPS_PREFIX)/libarchive-$(LIBARCHIVE_VERSION).built: $(DEPS_CACHE)/libarchive-$(LIBARCHIVE_VERSION).source $(DEPS_PREFIX)/libacl-$(LIBACL_VERSION).built  $(DEPS_PREFIX)/liblzma-$(LZMA_VERSION).built $(DEPS_PREFIX)/bzip2-$(BZIP2_VERSION).built $(DEPS_PREFIX)/zlib-$(ZLIB_VERSION).built
+$(DEPS_PREFIX)/libarchive-$(LIBARCHIVE_VERSION).built: $(DEPS_CACHE)/libarchive-$(LIBARCHIVE_VERSION).source $(DEPS_PREFIX)/curl-$(CURL_VERSION).built $\
+											$(DEPS_PREFIX)/libacl-$(LIBACL_VERSION).built $(DEPS_PREFIX)/liblzma-$(LZMA_VERSION).built $\
+											$(DEPS_PREFIX)/bzip2-$(BZIP2_VERSION).built $(DEPS_PREFIX)/zlib-$(ZLIB_VERSION).built
 	rm -rf $(DEPS_PREFIX)/libarchive
 	$(MKDIR_P) $(DEPS_PREFIX)/libarchive/build $(DEPS_PREFIX)/lib/pkgconfig
 	$(TAR) xf $(DEPS_CACHE)/libarchive-$(LIBARCHIVE_VERSION).tar.gz -C $(DEPS_PREFIX)/libarchive --strip-components=1 && \
