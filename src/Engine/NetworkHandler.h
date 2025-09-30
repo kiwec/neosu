@@ -23,14 +23,52 @@ class NetworkHandler {
     NOCOPY_NOMOVE(NetworkHandler)
 
    public:
+    enum WebsocketStatus {
+        WEBSOCKET_CONNECTING,
+        WEBSOCKET_CONNECTED,
+        WEBSOCKET_DISCONNECTED,
+        WEBSOCKET_UNSUPPORTED,
+    };
+
+    struct WebsocketOptions {
+        std::string url;
+        std::map<std::string, std::string> headers;
+        std::string userAgent;
+        long timeout{5};
+        long connectTimeout{5};
+        u64 maxRecvBytes{10485760};  // limit "in" buffer to 10Mb
+    };
+
+    struct Websocket {
+        friend class NetworkHandler;
+
+        Websocket() {}
+        ~Websocket();
+
+        std::atomic<u8> status{WEBSOCKET_CONNECTING};
+        std::vector<u8> in;
+        std::vector<u8> out;
+
+    private:
+        CURL* handle{nullptr};
+
+        // Servers can send fragmented packets, we want to only append them
+        // to "in" once the packets are complete.
+        std::vector<u8> in_partial;
+        u64 maxRecvBytes{0};
+    };
+
     // async request options
     struct RequestOptions {
+        friend class NetworkHandler;
+
        private:
         struct MimePart {
             std::string filename{};
             std::string name{};
             std::vector<u8> data{};
         };
+        bool isWebsocket{false};
 
        public:
         RequestOptions() { ; }  // ?
@@ -46,10 +84,16 @@ class NetworkHandler {
 
     // async response data
     struct Response {
+        friend class NetworkHandler;
+
         std::string body;
         long responseCode{0};
         std::map<std::string, std::string> headers;
         bool success{false};
+
+    private:
+        // HACK for passing websocket handle
+        CURL *easy_handle{nullptr};
     };
 
     using AsyncCallback = std::function<void(Response response)>;
@@ -64,6 +108,7 @@ class NetworkHandler {
     // asynchronous API
     void update();
     void httpRequestAsync(const UString& url, AsyncCallback callback, const RequestOptions& options = {});
+    std::shared_ptr<Websocket> initWebsocket(const WebsocketOptions& options);
 
     // sync request for special cases like logout
     Response performSyncRequest(const UString& url, const RequestOptions& options);
@@ -85,6 +130,9 @@ class NetworkHandler {
     // completed requests
     Sync::mutex completed_requests_mutex;
     std::vector<std::unique_ptr<NetworkRequest>> completed_requests;
+
+    // websockets
+    std::vector<std::shared_ptr<Websocket>> active_websockets;
 
     // sync request support
     Sync::mutex sync_requests_mutex;

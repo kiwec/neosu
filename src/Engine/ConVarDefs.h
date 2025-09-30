@@ -1273,6 +1273,7 @@ CONVAR(win_processpriority, "win_processpriority"sv, 1, CLIENT,
        "sets the main process priority (0 = normal, 1 = high)"sv, CFUNC(Environment::setThreadPriority));
 
 // Unfinished features
+CONVAR(prefer_websockets, "prefer_websockets"sv, false, CLIENT, "prefer websocket connections over http polling");
 CONVAR(load_db_immediately, "load_db_immediately"sv, false, CLIENT);
 CONVAR(cbf, "cbf"sv, false, CLIENT, "click between frames"sv);
 CONVAR(enable_spectating, "enable_spectating"sv, false, CLIENT);

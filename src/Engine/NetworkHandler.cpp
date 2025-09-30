@@ -164,10 +164,23 @@ void NetworkHandler::processCompletedRequests() {
                     curl_easy_getinfo(easy_handle, CURLINFO_RESPONSE_CODE, &request->response.responseCode);
                     request->response.success = (msg->data.result == CURLE_OK);
 
+                    if(request->options.isWebsocket) {
+                        // websocket connection only succeeds if server returns 101
+                        request->response.success &= (request->response.responseCode == 101);
+                    }
+
                     if(request->headers_list) {
                         curl_slist_free_all(request->headers_list);
                     }
-                    curl_easy_cleanup(easy_handle);
+
+                    // keep handle alive for successful websocket connections
+                    if(!request->response.success || !request->options.isWebsocket) {
+                        curl_easy_cleanup(easy_handle);
+                        request->easy_handle = nullptr;
+                    }
+
+                    // pass websocket handle (or nullptr)
+                    request->response.easy_handle = request->easy_handle;
 
                     if(request->mime) {
                         curl_mime_free(request->mime);
@@ -223,6 +236,12 @@ void NetworkHandler::setupCurlHandle(CURL* handle, NetworkRequest* request) {
 
     if(request->options.followRedirects) {
         curl_easy_setopt(handle, CURLOPT_FOLLOWLOCATION, 1L);
+    }
+
+    if(request->options.isWebsocket) {
+        // Special behavior: on CURLOPT_CONNECT_ONLY == 2,
+        // curl actually waits for server response on perform
+        curl_easy_setopt(handle, CURLOPT_CONNECT_ONLY, 2L);
     }
 
     curl_easy_setopt_CAINFO_BLOB_embedded(handle);
@@ -307,6 +326,55 @@ void NetworkHandler::update() {
     for(auto& request : responses_to_handle) {
         request->callback(request->response);
     }
+
+    // websocket recv
+    for(auto& ws : this->active_websockets) {
+        u64 bytes_available = ws->maxRecvBytes - (ws->in.size() + ws->in_partial.size());
+
+        CURLcode res = CURLE_OK;
+        while(res == CURLE_OK && bytes_available > 0) {
+            u8 buf[65000];
+            size_t nb_read = 0;
+            const struct curl_ws_frame *meta;
+            res = curl_ws_recv(ws->handle, buf, sizeof(buf), &nb_read, &meta);
+
+            if(res == CURLE_OK) {
+                if(nb_read > 0) {
+                    ws->in_partial.insert(ws->in_partial.end(), buf, buf + nb_read);
+                    bytes_available -= nb_read;
+                }
+                if(meta->bytesleft == 0 && !ws->in_partial.empty()) {
+                    ws->in.insert(ws->in.end(), ws->in_partial.begin(), ws->in_partial.end());
+                    ws->in_partial.clear();
+                }
+            } else if(res == CURLE_AGAIN) {
+                // nothing to do
+            } else if(res == CURLE_GOT_NOTHING) {
+                debugLog("Websocket connection closed.");
+                ws->status = WEBSOCKET_DISCONNECTED;
+            } else {
+                debugLog("Failed to receive data on websocket: {}", curl_easy_strerror(res));
+                ws->status = WEBSOCKET_DISCONNECTED;
+            }
+        }
+    }
+    std::erase_if(this->active_websockets, [](const auto &ws) { return ws->status != WEBSOCKET_CONNECTED; });
+
+    // websocket send
+    for(auto& ws : this->active_websockets) {
+        CURLcode res = CURLE_OK;
+        while(res == CURLE_OK && !ws->out.empty()) {
+            size_t nb_sent = 0;
+            res = curl_ws_send(ws->handle, ws->out.data(), ws->out.size(), &nb_sent, 0, CURLWS_BINARY);
+            ws->out.erase(ws->out.begin(), ws->out.begin() + nb_sent);
+        }
+
+        if(res != CURLE_AGAIN && !ws->out.empty()) {
+            debugLog("Failed to send data on websocket: {}", curl_easy_strerror(res));
+            ws->status = WEBSOCKET_DISCONNECTED;
+        }
+    }
+    std::erase_if(this->active_websockets, [](const auto &ws) { return ws->status != WEBSOCKET_CONNECTED; });
 }
 
 void NetworkHandler::httpRequestAsync(const UString& url, AsyncCallback callback, const RequestOptions& options) {
@@ -315,6 +383,43 @@ void NetworkHandler::httpRequestAsync(const UString& url, AsyncCallback callback
     Sync::scoped_lock lock{this->request_queue_mutex};
     this->pending_requests.push(std::move(request));
     this->request_queue_cv.notify_one();
+}
+
+NetworkHandler::Websocket::~Websocket() {
+    // This might be a bit mean to the server, not sending CLOSE message
+    // But we send LOGOUT packet on http anyway, so doesn't matter
+    curl_easy_cleanup(this->handle);
+    this->handle = nullptr;
+}
+
+std::shared_ptr<NetworkHandler::Websocket> NetworkHandler::initWebsocket(const WebsocketOptions& options) {
+    assert(options.url.starts_with("ws://") || options.url.starts_with("wss://"));
+
+    auto websocket = std::make_shared<Websocket>();
+    websocket->maxRecvBytes = options.maxRecvBytes;
+
+    RequestOptions httpOptions;
+    httpOptions.headers = options.headers;
+    httpOptions.userAgent = options.userAgent;
+    httpOptions.timeout = options.timeout;
+    httpOptions.connectTimeout = options.connectTimeout;
+    httpOptions.isWebsocket = true;
+
+    this->httpRequestAsync(
+        UString(options.url.c_str()),
+        [this, websocket](const NetworkHandler::Response& response) {
+            if(response.success) {
+                websocket->handle = response.easy_handle;
+                websocket->status = WEBSOCKET_CONNECTED;
+                this->active_websockets.push_back(websocket);
+            } else {
+                websocket->status = WEBSOCKET_UNSUPPORTED;
+            }
+        },
+        httpOptions
+    );
+
+    return websocket;
 }
 
 // synchronous API (blocking)

@@ -40,8 +40,10 @@ namespace {  // static namespace
 
 Packet outgoing;
 time_t last_packet_tms = {0};
-std::atomic<double> seconds_between_pings{1.0};
+double seconds_between_pings{1.0};
 std::string auth_token = "";
+bool use_websockets = false;
+std::shared_ptr<NetworkHandler::Websocket> websocket{nullptr};
 
 void parse_packets(u8 *data, size_t s_data) {
     Packet batch = {
@@ -95,6 +97,7 @@ void attempt_logging_in() {
         query_url,
         [func = __FUNCTION__](NetworkHandler::Response response) {
             if(!response.success) {
+                // TODO: shows "HTTP 0" on curl/network errors!
                 auto errmsg = UString::format("Failed to log in: HTTP %ld", response.responseCode);
                 osu->getNotificationOverlay()->addToast(errmsg, ERROR_TOAST);
                 return;
@@ -105,6 +108,7 @@ void attempt_logging_in() {
             if(cho_token_it != response.headers.end()) {
                 auth_token = cho_token_it->second;
                 BanchoState::cho_token = UString(cho_token_it->second);
+                use_websockets = cv::prefer_websockets.getBool();
             }
 
             auto features_it = response.headers.find("x-mcosu-features");
@@ -123,7 +127,7 @@ void attempt_logging_in() {
         options);
 }
 
-void send_bancho_packet_async(Packet outgoing) {
+void send_bancho_packet_http(Packet outgoing) {
     if(auth_token.empty()) return;
 
     NetworkHandler::RequestOptions options;
@@ -152,8 +156,35 @@ void send_bancho_packet_async(Packet outgoing) {
             parse_packets((u8*)response.body.data(), response.body.length());
         },
         options);
+}
 
-    free(outgoing.memory);
+void send_bancho_packet_ws(Packet outgoing) {
+    if(auth_token.empty()) return;
+
+    if(websocket == nullptr || websocket->status == NetworkHandler::WEBSOCKET_DISCONNECTED) {
+        NetworkHandler::WebsocketOptions options;
+        options.userAgent = "osu!";
+        options.headers["x-mcosu-ver"] = BanchoState::neosu_version.toUtf8();
+        options.headers["osu-token"] = auth_token;
+
+        auto scheme = cv::use_https.getBool() ? "wss://" : "ws://";
+        options.url = fmt::format("{}c.{}/ws/", scheme, BanchoState::endpoint.c_str());
+
+        // TODO: give up if reconnecting too often!
+
+        auto new_websocket = networkHandler->initWebsocket(options);
+        if(websocket != nullptr) new_websocket->out = websocket->out;  // don't lose outgoing packet queue
+        websocket = new_websocket;
+    }
+
+    if(websocket->status == NetworkHandler::WEBSOCKET_UNSUPPORTED) {
+        // fallback to http!
+        use_websockets = false;
+        send_bancho_packet_http(outgoing);
+    } else {
+        // enqueue packets to be sent
+        websocket->out.insert(websocket->out.end(), outgoing.memory, outgoing.memory + outgoing.pos);
+    }
 }
 
 }  // namespace
@@ -183,7 +214,7 @@ void update_networking() {
     if(osu && osu->getLobby()->isVisible()) seconds_between_pings = 1;
     if(BanchoState::spectating) seconds_between_pings = 1;
     if(BanchoState::is_in_a_multi_room() && seconds_between_pings > 3) seconds_between_pings = 3;
-    // XXX: set seconds_between_pings to 30 when using websockets
+    if(use_websockets) seconds_between_pings = 30;
 
     bool should_ping = difftime(time(nullptr), last_packet_tms) > seconds_between_pings;
     if(BanchoState::get_uid() <= 0) return;
@@ -221,7 +252,12 @@ void update_networking() {
         out.write<u8>(0);
         out.write<u32>(0);
 
-        send_bancho_packet_async(out);
+        if(use_websockets) {
+            send_bancho_packet_ws(out);
+        } else {
+            send_bancho_packet_http(out);
+        }
+        free(out.memory);
     }
 }
 

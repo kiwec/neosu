@@ -134,7 +134,9 @@ void BanchoState::handle_packet(Packet &packet) {
                 debugLog("Failed to log in, server returned code {:d}.", BanchoState::get_uid());
                 UString errmsg = UString::fmt("Failed to log in: {} (code {})\n", BanchoState::cho_token.toUtf8(),
                                               BanchoState::get_uid());
-                if(new_user_id == -2) {
+                if(new_user_id == -1) {
+                    errmsg = "Incorrect username/password.";
+                } else if(new_user_id == -2) {
                     errmsg = "Client version is too old to connect to this server.";
                 } else if(new_user_id == -3 || new_user_id == -4) {
                     errmsg = "You are banned from this server.";
