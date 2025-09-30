@@ -62,7 +62,7 @@ class NetworkHandler {
     std::string httpDownload(const UString& url, long timeout = 60, long connectTimeout = 5);
 
     // asynchronous API
-    void handleResponses();
+    void update();
     void httpRequestAsync(const UString& url, AsyncCallback callback, const RequestOptions& options = {});
 
     // sync request for special cases like logout

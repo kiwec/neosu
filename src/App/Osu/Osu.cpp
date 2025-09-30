@@ -736,10 +736,6 @@ void Osu::update() {
 
     // multiplayer/networking update
     {
-        VPROF_BUDGET_DBG("NetworkHandler::handleResponses", VPROF_BUDGETGROUP_UPDATE);
-        networkHandler->handleResponses();
-    }
-    {
         VPROF_BUDGET_DBG("Bancho::update", VPROF_BUDGETGROUP_UPDATE);
         BANCHO::Net::update_networking();
     }

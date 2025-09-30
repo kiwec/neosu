@@ -95,6 +95,12 @@ $(DEPS_CACHE)/libarchive-$(LIBARCHIVE_VERSION).source:
 	$(WGET) -qO $(DEPS_CACHE)/libarchive-$(LIBARCHIVE_VERSION).tar.gz "https://github.com/libarchive/libarchive/releases/download/v$(LIBARCHIVE_VERSION)/libarchive-$(LIBARCHIVE_VERSION).tar.gz" && \
 	touch $@
 
+# needed for libarchive on linux (if not on host)
+$(DEPS_CACHE)/libacl-$(LIBACL_VERSION).source:
+	$(MKDIR_P) $(DEPS_CACHE)
+	$(WGET) -qO $(DEPS_CACHE)/libacl-$(LIBACL_VERSION).tar.xz "https://download.savannah.nongnu.org/releases/acl/acl-$(LIBACL_VERSION).tar.xz" && \
+	touch $@
+
 # --with-nsync
 $(DEPS_CACHE)/nsync-$(NSYNC_VERSION).source:
 	$(MKDIR_P) $(DEPS_CACHE)
@@ -900,9 +906,33 @@ $(DEPS_PREFIX)/liblzma-$(LZMA_VERSION).built:
 endif # BUILD_LZMA
 
 if BUILD_LIBARCHIVE
+
+# required for proper permissions support on linux
+if BUILD_LIBACL
+LIBACL_CFLAGS += $(shell $(PKG_CONFIG) --cflags libacl)
+LIBACL_LIBS += $(shell $(PKG_CONFIG) --libs libacl)
+$(DEPS_PREFIX)/libacl-$(LIBACL_VERSION).built: $(DEPS_CACHE)/libacl-$(LIBACL_VERSION).source
+	rm -rf $(DEPS_PREFIX)/libacl
+	$(MKDIR_P) $(DEPS_PREFIX)/libacl/build $(DEPS_PREFIX)/lib/pkgconfig
+	$(TAR) xf $(DEPS_CACHE)/libacl-$(LIBACL_VERSION).tar.xz -C $(DEPS_PREFIX)/libacl --strip-components=1 && \
+	cd $(DEPS_PREFIX)/libacl && \
+	cd build && \
+	PKG_CONFIG="$(PKG_CONFIG)" \
+	../configure lt_cv_prog_gnu_ld=yes --host=$(host) --build=$(build) --prefix="$(DEPS_PREFIX)" \
+		$(if $(STATICBUILD),--enable-static --disable-shared,--enable-shared --disable-static) \
+		CC="$(CC)" RANLIB="$(RANLIB)" AR="$(AR)" CXX="$(CXX)" LD="$(LD)" CFLAGS="$(CFLAGS)" LDFLAGS="$(LDFLAGS)" && \
+	$(MAKE) $(MAKEFLAGS) && \
+	$(MAKE) $(MAKEFLAGS) install
+	$(PKG_CONFIG) --exists --print-errors libacl
+	touch $@
+else
+$(DEPS_PREFIX)/libacl-$(LIBACL_VERSION).built:
+	$(MKDIR_P) $(DEPS_PREFIX) && touch $@
+endif # BUILD_LIBACL
+
 LIBARCHIVE_CFLAGS += $(shell $(PKG_CONFIG) --cflags libarchive)
 LIBARCHIVE_LIBS += $(shell $(PKG_CONFIG) --libs libarchive)
-$(DEPS_PREFIX)/libarchive-$(LIBARCHIVE_VERSION).built: $(DEPS_CACHE)/libarchive-$(LIBARCHIVE_VERSION).source $(DEPS_PREFIX)/liblzma-$(LZMA_VERSION).built $(DEPS_PREFIX)/bzip2-$(BZIP2_VERSION).built $(DEPS_PREFIX)/zlib-$(ZLIB_VERSION).built
+$(DEPS_PREFIX)/libarchive-$(LIBARCHIVE_VERSION).built: $(DEPS_CACHE)/libarchive-$(LIBARCHIVE_VERSION).source $(DEPS_PREFIX)/libacl-$(LIBACL_VERSION).built  $(DEPS_PREFIX)/liblzma-$(LZMA_VERSION).built $(DEPS_PREFIX)/bzip2-$(BZIP2_VERSION).built $(DEPS_PREFIX)/zlib-$(ZLIB_VERSION).built
 	rm -rf $(DEPS_PREFIX)/libarchive
 	$(MKDIR_P) $(DEPS_PREFIX)/libarchive/build $(DEPS_PREFIX)/lib/pkgconfig
 	$(TAR) xf $(DEPS_CACHE)/libarchive-$(LIBARCHIVE_VERSION).tar.gz -C $(DEPS_PREFIX)/libarchive --strip-components=1 && \
@@ -917,8 +947,8 @@ $(DEPS_PREFIX)/libarchive-$(LIBARCHIVE_VERSION).built: $(DEPS_CACHE)/libarchive-
 		--without-nettle --without-mbedtls --without-lzo2 --without-lz4 --without-libiconv-prefix \
 		--without-iconv --without-libb2 --without-zstd --with-lzma --with-zlib --with-bz2lib \
 		CC="$(CC)" RANLIB="$(RANLIB)" AR="$(AR)" CXX="$(CXX)" LD="$(LD)" \
-		CFLAGS="$(CFLAGS) -I$(DEPS_PREFIX)/include $(LZMA_CFLAGS) $(BZIP2_CFLAGS) $(ZLIB_CFLAGS) -D_POSIX_C_SOURCE" \
-		LDFLAGS="$(LDFLAGS) -L$(DEPS_PREFIX)/lib $(LZMA_LIBS) $(BZIP2_LIBS) $(ZLIB_LIBS)" && \
+		CFLAGS="$(CFLAGS) -I$(DEPS_PREFIX)/include $(LIBACL_CFLAGS) $(LZMA_CFLAGS) $(BZIP2_CFLAGS) $(ZLIB_CFLAGS) -D_POSIX_C_SOURCE" \
+		LDFLAGS="$(LDFLAGS) -L$(DEPS_PREFIX)/lib $(LIBACL_LIBS) $(LZMA_LIBS) $(BZIP2_LIBS) $(ZLIB_LIBS)" && \
 	$(MAKE) $(MAKEFLAGS) && \
 	$(MAKE) $(MAKEFLAGS) install
 	$(PKG_CONFIG) --exists --print-errors libarchive
@@ -957,6 +987,7 @@ BUILT_SOURCES := \
 	$(DEPS_PREFIX)/discordsdk-$(DISCORDSDK_VERSION).built \
 	$(DEPS_PREFIX)/liblzma-$(LZMA_VERSION).built \
 	$(DEPS_PREFIX)/libarchive-$(LIBARCHIVE_VERSION).built \
+	$(DEPS_PREFIX)/libacl-$(LIBACL_VERSION).built \
 	$(DEPS_PREFIX)/curl-$(CURL_VERSION).built \
 	$(DEPS_CACHE)/curl-$(CURL_VERSION)/certbundle/cacert.pem
 
@@ -1145,6 +1176,9 @@ if BUILD_LZMA
 endif
 if BUILD_LIBARCHIVE
 	$(if $(STATICBUILD),,@`find $(LIBARCHIVE_PREFIX) '(' -iname '*archive*'$(DLLEXT) -o -iname '*archive*''.so.*' ')' -exec cp -P '{''}' "$(DESTDIR)$(bindir)/$(LIBDEST)" ';'`)
+endif
+if BUILD_LIBACL
+	$(if $(STATICBUILD),,@`find $(LIBACL_PREFIX) -iname '*acl*''.so.*' -exec cp -P '{''}' "$(DESTDIR)$(bindir)/$(LIBDEST)" ';'`)
 endif
 if STRIPBINS
 	find "$(DESTDIR)$(bindir)" -name '*'$(DLLEXT)'*' -execdir $(STRIP) -s '{''}' '+'

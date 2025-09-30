@@ -296,8 +296,8 @@ size_t NetworkHandler::headerCallback(char* buffer, size_t size, size_t nitems, 
     return real_size;
 }
 
-// Call this from somewhere in the main thread to avoid having to deal with race conditions
-void NetworkHandler::handleResponses() {
+// Callbacks will all be run on the main thread, in engine->update()
+void NetworkHandler::update() {
     std::vector<std::unique_ptr<NetworkRequest>> responses_to_handle;
     {
         Sync::scoped_lock lock{this->completed_requests_mutex};

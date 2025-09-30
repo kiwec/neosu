@@ -870,6 +870,8 @@ LZMA_MIN_VERSION=5.4.7
 LZMA_BUILD_VERSION=5.8.1
 LIBARCHIVE_MIN_VERSION=3.6.2
 LIBARCHIVE_BUILD_VERSION=3.8.1
+LIBACL_MIN_VERSION=2.3.1
+LIBACL_BUILD_VERSION=2.3.2
 CURL_MIN_VERSION=8.5.0
 CURL_BUILD_VERSION=8.15.0
 MPG123_MIN_VERSION=1.30.0
@@ -900,11 +902,13 @@ AS_IF([test "$SYSNAME" = "linux"], [
     PKG_CHECK_AUTO([BLKID], [blkid], [have_blkid=yes], [AC_MSG_ERROR([Missing blkid, required for linux builds.])])
     AS_IF([test "x$enable_system_deps" != "xno"], [
         PKG_CHECK_AUTO([CURL], [libcurl >= $CURL_MIN_VERSION], [have_curl=yes], [have_curl=no])
+        PKG_CHECK_AUTO([LIBACL], [libacl >= $LIBACL_MIN_VERSION], [have_libacl=yes], [have_libacl=no])
     ])
 ], [
     AC_SUBST([EXTRA_WIN_LIBS], [["-lcomctl32"]])
     have_blkid="not required"
     have_curl="no"
+    have_libacl="not required"
 ])
 
 # TODO: add all deps and transitive deps (fun!)
@@ -996,6 +1000,13 @@ LIBARCHIVE_PREFIX="${DEPS_PREFIX}"
 AC_SUBST([LIBARCHIVE_VERSION])
 AC_SUBST([LIBARCHIVE_PREFIX])
 
+AS_IF([test "x$have_libarchive" = "xbuild from source" &&
+    { test "x$have_libacl" != "xyes" && test "x$have_libacl" != "xnot required"; }], [have_libacl="build from source"])
+LIBACL_VERSION=$LIBACL_BUILD_VERSION
+LIBACL_PREFIX="${DEPS_PREFIX}"
+AC_SUBST([LIBACL_VERSION])
+AC_SUBST([LIBACL_PREFIX])
+
 AS_IF([test "x$have_curl" != "xyes"], [have_curl="download"])
 CURL_VERSION=$CURL_BUILD_VERSION
 CURL_PREFIX="${DEPS_PREFIX}"
@@ -1038,6 +1049,7 @@ AM_CONDITIONAL([BUILD_FREETYPE2], [test "x$have_freetype2" != "xyes"])
 AM_CONDITIONAL([BUILD_FMT], [test "x$have_fmt" != "xyes"])
 AM_CONDITIONAL([BUILD_LZMA], [test "x$have_liblzma" != "xyes"])
 AM_CONDITIONAL([BUILD_LIBARCHIVE], [test "x$have_libarchive" != "xyes"])
+AM_CONDITIONAL([BUILD_LIBACL], [test "x$have_libacl" = "xbuild from source"])
 AM_CONDITIONAL([BUILD_CURL], [test "x$have_curl" != "xyes"])
 AM_CONDITIONAL([BUILD_MPG123], [test "$with_soloud" = "yes" && test "x$have_mpg123" != "xyes"])
 AM_CONDITIONAL([BUILD_SPDLOG], [test "x$have_spdlog" != "xyes"])
@@ -1124,6 +1136,7 @@ Dependencies:
     curl:               ${have_curl-download}
     liblzma:            ${have_liblzma-build from source}
     libarchive:         ${have_libarchive-build from source}
+    libacl:             ${have_libacl-build from source}
     mpg123:             ${have_mpg123-build from source}
     spdlog:             ${have_spdlog-build from source}
     nsync:              ${have_nsync-build from source}

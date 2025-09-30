@@ -336,6 +336,12 @@ void Engine::onUpdate() {
             bool propagate_clicks = true;
             if(this->guiContainer != nullptr) this->guiContainer->mouse_update(&propagate_clicks);
         }
+
+        {
+            VPROF_BUDGET("NetworkHandler::update", VPROF_BUDGETGROUP_UPDATE);
+            // run networking response callbacks, if any
+            networkHandler->update();
+        }
     }
 
     // update app
