@@ -69,7 +69,7 @@ void Skin::unpack(const char *filepath) {
         if(entry.isDirectory()) continue;
 
         std::string filename = entry.getFilename();
-        const auto folders = SString::split(filename, "/");
+        const auto folders = SString::split(filename, '/');
         std::string file_path = skin_root;
 
         for(const auto &folder : folders) {
@@ -81,7 +81,7 @@ void Skin::unpack(const char *filepath) {
                 // security check: skip files with path traversal attempts
                 goto skip_file;
             } else {
-                file_path.append("/");
+                file_path.push_back('/');
                 file_path.append(folder.c_str());
             }
         }

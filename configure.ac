@@ -681,6 +681,10 @@ AS_IF([test "x$enable_debug" = "xyes"], [
         CXXFLAGS="$CXXFLAGS -ffile-prefix-map=$PWD=."
         CFLAGS="$CFLAGS -ffile-prefix-map=$PWD=."
         NEOSU_LDFLAGS="$NEOSU_LDFLAGS -Wl,-s" # strip flag
+    ], [
+        # add minimal debug info
+        CXXFLAGS="$CXXFLAGS -g"
+        CFLAGS="$CFLAGS -g"
     ])
     AS_IF([test "$host_os" = "mingw32"], [
         AS_IF([test "x$enable_clang" = "xyes"], [

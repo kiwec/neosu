@@ -1393,10 +1393,13 @@ void MainMenu::setMenuElementsVisible(bool visible, bool animate) {
 
 void MainMenu::writeVersionFile() {
     // remember, don't show the notification arrow until the version changes again
-    std::ofstream versionFile("version.txt", std::ios::out | std::ios::trunc);
-    if(versionFile.good()) {
-        versionFile << cv::version.getString() << '\n' << cv::build_timestamp.getString();
-    }
+    io->write(MCENGINE_DATA_DIR "version.txt",
+              fmt::format("{}\n{}", cv::version.getString(), cv::build_timestamp.getString()),
+              [func = __FUNCTION__](bool success) -> void {
+                  if(!success) {
+                      debugLogLambda("Warning: failed to write new version to {}", MCENGINE_DATA_DIR "version.txt");
+                  }
+              });
 }
 
 MainMenu::MainButton *MainMenu::addMainMenuButton(UString text) {

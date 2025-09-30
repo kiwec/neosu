@@ -1,15 +1,15 @@
 #include "Archival.h"
 
+#include "Environment.h"
+#include "SString.h"
+#include "Logging.h"
+
 #include <archive.h>
 #include <archive_entry.h>
 
 #include <algorithm>
 #include <cstring>
 #include <fstream>
-
-#include "Environment.h"
-#include "UString.h"
-#include "Logging.h"
 
 //------------------------------------------------------------------------------
 // Archive::Entry implementation
@@ -320,10 +320,10 @@ bool Archive::extractAll(const std::string& outputDir, const std::vector<std::st
         }
 
         // ensure parent directory exists
-        auto folders = UString(file.getFilename()).split("/");
+        auto folders = SString::split(file.getFilename(), '/');
         std::string currentPath = outputDir;
         for(size_t i = 0; i < folders.size() - 1; i++) {
-            currentPath = UString::fmt("{}/{}", currentPath, folders[i]).toUtf8();
+            currentPath = fmt::format("{}/{}", currentPath, folders[i]);
             createDirectoryRecursive(currentPath);
         }
 

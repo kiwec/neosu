@@ -7,7 +7,7 @@
 #include <system_error>
 #include <cassert>
 
-ByteBufferedFile::Reader::Reader(std::string_view readPath) {
+ByteBufferedFile::Reader::Reader(std::string_view readPath) : buffer(READ_BUFFER_SIZE) {
     auto path = File::getFsPath(readPath);
     this->file.open(path, std::ios::binary);
     if(!this->file.is_open()) {
@@ -123,7 +123,7 @@ void ByteBufferedFile::Reader::skip_string() {
     this->skip_bytes(len);
 }
 
-ByteBufferedFile::Writer::Writer(std::string_view writePath) {
+ByteBufferedFile::Writer::Writer(std::string_view writePath) : buffer(WRITE_BUFFER_SIZE) {
     auto path = File::getFsPath(writePath);
     this->file_path = path;
     this->tmp_file_path = this->file_path;

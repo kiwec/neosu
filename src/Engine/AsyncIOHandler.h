@@ -24,14 +24,16 @@ class AsyncIOHandler final {
     // read entire file asynchronously
     // callback receives data vector (empty on failure)
     // returns false if file already has a pending operation
-    bool read(std::string_view path, std::function<void(std::vector<u8>)> callback);
+    using ReadCallback = std::function<void(std::vector<u8>)>;
+    bool read(std::string_view path, ReadCallback callback);
 
     // write data to file asynchronously
     // optional callback receives success status after write completes
     // returns false if file already has a pending operation
-    bool write(std::string_view path, std::vector<u8> data, std::function<void(bool)> callback = nullptr);
-    bool write(std::string_view path, std::string data, std::function<void(bool)> callback = nullptr);
-    bool write(std::string_view path, const u8 *data, size_t amount, std::function<void(bool)> callback = nullptr);
+    using WriteCallback = std::function<void(bool)>;
+    bool write(std::string_view path, std::vector<u8> data, WriteCallback callback = nullptr);
+    bool write(std::string_view path, std::string data, WriteCallback callback = nullptr);
+    bool write(std::string_view path, const u8 *data, size_t amount, WriteCallback callback = nullptr);
 
    private:
     class InternalIOContext;

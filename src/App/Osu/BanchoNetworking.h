@@ -20,10 +20,10 @@ enum APIRequestType : uint8_t {
 };
 
 struct APIRequest {
-    APIRequestType type{NONE};
     UString path{""};
     u8* extra{nullptr};
     i32 extra_int{0};  // lazy
+    APIRequestType type{NONE};
 };
 
 namespace BANCHO::Net {

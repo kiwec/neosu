@@ -853,7 +853,7 @@ void Chat::addMessage(UString channel_name, const ChatMessage &msg, bool mark_un
     bool chatter_is_moderator = (user->privileges & Privileges::MODERATOR);
     chatter_is_moderator |= (msg.author_id == 0);  // system message
 
-    auto ignore_list = SString::split(cv::chat_ignore_list.getString(), " ");
+    auto ignore_list = SString::split(cv::chat_ignore_list.getString(), ' ');
     auto msg_words = msg.text.split(" ");
     if(!chatter_is_moderator) {
         for(auto &word : msg_words) {
@@ -870,7 +870,7 @@ void Chat::addMessage(UString channel_name, const ChatMessage &msg, bool mark_un
     }
 
     bool should_highlight = false;
-    auto highlight_list = SString::split(cv::chat_highlight_words.getString(), " ");
+    auto highlight_list = SString::split(cv::chat_highlight_words.getString(), ' ');
     for(auto &word : msg_words) {
         if(chatter_is_moderator && word == "@everyone") {
             should_highlight = true;

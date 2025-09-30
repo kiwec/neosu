@@ -8,7 +8,7 @@
 #include <algorithm>
 #include <filesystem>
 #include <fstream>
-#include <array>
+#include <vector>
 
 #include "MD5Hash.h"
 #include "types.h"
@@ -23,8 +23,8 @@
 
 class ByteBufferedFile {
    private:
-    static constexpr const uSz READ_BUFFER_SIZE{512ULL * 4096};
-    static constexpr const uSz WRITE_BUFFER_SIZE{512ULL * 4096};
+    static constexpr const uSz READ_BUFFER_SIZE{32ULL * 1024 * 1024};
+    static constexpr const uSz WRITE_BUFFER_SIZE{32ULL * 1024 * 1024};
 
    public:
     class Reader {
@@ -184,7 +184,7 @@ class ByteBufferedFile {
        private:
         void set_error(const std::string &error_msg);
 
-        std::array<u8, READ_BUFFER_SIZE> buffer{};
+        std::vector<u8> buffer;
 
         std::ifstream file;
 
@@ -220,7 +220,7 @@ class ByteBufferedFile {
        private:
         void set_error(const std::string &error_msg);
 
-        std::array<u8, WRITE_BUFFER_SIZE> buffer{};
+        std::vector<u8> buffer;
 
         std::filesystem::path file_path;
         std::filesystem::path tmp_file_path;

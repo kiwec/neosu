@@ -382,9 +382,9 @@ int Database::addScore(const FinishedScore &score) {
         debugLog("Saving replay to {}...", replay_path);
         io->write(replay_path, compressed_replay, [replay_path, func = __FUNCTION__](bool success) {
             if(success) {
-                Logger::log(spdlog::source_loc{__FILE__, __LINE__, func}, "Replay saved to {}.", replay_path);
+                debugLogLambda("Replay saved to {}.", replay_path);
             } else {
-                Logger::log(spdlog::source_loc{__FILE__, __LINE__, func}, "Failed to save replay to {}", replay_path);
+                debugLogLambda("Failed to save replay to {}", replay_path);
             }
         });
     }
@@ -1757,7 +1757,7 @@ void Database::loadOldMcNeosuScores(std::string_view dbPath) {
                 sc.server = db.read_string();
 
                 std::string experimentalModsConVars = db.read_string();
-                auto experimentalMods = SString::split(experimentalModsConVars, ";");
+                auto experimentalMods = SString::split(experimentalModsConVars, ';');
                 for(const auto &mod : experimentalMods) {
                     if(mod == "") continue;
                     if(mod == "fposu_mod_strafing") sc.mods.flags |= Replay::ModFlags::FPoSu_Strafing;
@@ -1884,7 +1884,7 @@ void Database::loadOldMcNeosuScores(std::string_view dbPath) {
                 }
 
                 std::string experimentalModsConVars = db.read_string();
-                auto experimentalMods = SString::split(experimentalModsConVars, ";");
+                auto experimentalMods = SString::split(experimentalModsConVars, ';');
 
                 if(gamemode == 0x0 || (db_version > 20210103 &&
                                        scoreVersion > 20190103))  // gamemode filter (osu!standard) // HACKHACK: for

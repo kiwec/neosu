@@ -116,9 +116,9 @@ void send_bancho_packet_async(Packet outgoing) {
 
     networkHandler->httpRequestAsync(
         query_url,
-        [](NetworkHandler::Response response) {
+        [func = __FUNCTION__](NetworkHandler::Response response) {
             if(!response.success) {
-                Logger::logRaw("[httpRequestAsync] Failed to send packet, HTTP error {}", response.responseCode);
+                debugLogLambda("Failed to send packet, HTTP error {}", response.responseCode);
                 Sync::scoped_lock<Sync::mutex> lock{auth_mutex};
                 if(auth_header.empty()) {
                     auto errmsg = UString::format("Failed to log in: HTTP %ld", response.responseCode);
@@ -147,10 +147,10 @@ void send_bancho_packet_async(Packet outgoing) {
             if(features_it != response.headers.end()) {
                 if(strstr(features_it->second.c_str(), "submit=0") != nullptr) {
                     BanchoState::score_submission_policy = ServerPolicy::NO;
-                    Logger::logRaw("[httpRequestAsync] Server doesn't want score submission. :(");
+                    debugLogLambda("Server doesn't want score submission. :(");
                 } else if(strstr(features_it->second.c_str(), "submit=1") != nullptr) {
                     BanchoState::score_submission_policy = ServerPolicy::YES;
-                    Logger::logRaw("[httpRequestAsync] Server wants score submission! :D");
+                    debugLogLambda("Server wants score submission! :D");
                 }
             }
 
@@ -170,7 +170,7 @@ void send_bancho_packet_async(Packet outgoing) {
                 u32 packet_len = response_packet.read<u32>();
 
                 if(packet_len > 10485760) {
-                    Logger::logRaw("[httpRequestAsync] Received a packet over 10Mb! Dropping response.");
+                    debugLogLambda("Received a packet over 10Mb! Dropping response.");
                     break;
                 }
 

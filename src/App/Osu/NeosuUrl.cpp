@@ -18,7 +18,7 @@ void handle_neosu_url(const char *url) {
         // Will be reenabled after the login succeeds
         cv::mp_autologin.setValue(false);
 
-        auto params = SString::split(url, "/");
+        auto params = SString::split(url, '/');
         if(params.size() != 5) {
             debugLog("Expected 5 login parameters, got {}!", params.size());
             return;

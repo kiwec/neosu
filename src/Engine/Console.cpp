@@ -149,11 +149,9 @@ void Console::execConfigFile(std::string filename) {
     // if we don't remove prefixed lines, this could prevent users from
     // setting some convars back to their default value
     if(needs_write) {
-        // TODO: some macro or something to capture function in lambdas
         io->write(filename, rewritten_file, [filename, func = __FUNCTION__](bool success) {
             if(!success) {
-                Logger::log(spdlog::source_loc{__FILE__, __LINE__, func}, "WARNING: failed to write out config to {}!",
-                            filename);
+                debugLogLambda("WARNING: failed to write out config to {}!", filename);
             }
         });
     }

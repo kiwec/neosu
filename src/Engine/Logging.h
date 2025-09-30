@@ -16,13 +16,19 @@
 
 #if defined(_MSC_VER) && !defined(_DEBUG)
 #define FUNC_TRIMMED Logger::trim_to_last_scope_internal(SPDLOG_FUNCTION)
+#define CAPTURED_FUNC Logger::trim_to_last_scope_internal(func)
 #else
 #define FUNC_TRIMMED SPDLOG_FUNCTION
+#define CAPTURED_FUNC func
 #endif
 
 // main logging macro
 #define debugLog(str__, ...) \
     Logger::log(spdlog::source_loc{__FILE__, __LINE__, FUNC_TRIMMED}, str__ __VA_OPT__(, ) __VA_ARGS__)
+
+// explicitly capture func = __FUNCTION__ in lambda, then use this
+#define debugLogLambda(str__, ...) \
+    Logger::log(spdlog::source_loc{__FILE__, __LINE__, CAPTURED_FUNC}, str__ __VA_OPT__(, ) __VA_ARGS__)
 
 /*
 // print the call stack immediately

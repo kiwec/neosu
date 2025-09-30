@@ -72,7 +72,7 @@ Engine::Engine() {
     // initialize all engine subsystems (the order does matter!)
     debugLog("Engine: Initializing subsystems ...");
     {
-        // input devices
+        // async io
         io = std::make_unique<AsyncIOHandler>();
         this->runtime_assert(!!io && io->succeeded(), "I/O subsystem failed to initialize!");
 

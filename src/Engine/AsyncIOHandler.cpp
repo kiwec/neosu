@@ -46,7 +46,7 @@ class AsyncIOHandler::InternalIOContext final {
         std::string path;
 
         // READ-specific
-        std::function<void(std::vector<u8>)> readCallback;
+        ReadCallback readCallback;
 
         // WRITE-specific
         std::shared_ptr<std::vector<u8>> writeData;
@@ -54,7 +54,7 @@ class AsyncIOHandler::InternalIOContext final {
 
         // CLOSE_AFTER_WRITE-specific
         bool writeSucceeded{false};
-        std::function<void(bool)> writeCallback;
+        WriteCallback writeCallback;
     };
 
     void update() {
@@ -78,7 +78,7 @@ class AsyncIOHandler::InternalIOContext final {
         }
     }
 
-    bool read(std::string_view path, std::function<void(std::vector<u8>)> callback) {
+    bool read(std::string_view path, ReadCallback callback) {
         assert(!!m_queue);
 
         std::string pathStr(path);
@@ -100,7 +100,7 @@ class AsyncIOHandler::InternalIOContext final {
         return !!context.release();
     }
 
-    bool write(std::string_view path, std::vector<u8> data, std::function<void(bool)> callback) {
+    bool write(std::string_view path, std::vector<u8> data, WriteCallback callback) {
         assert(!!m_queue);
 
         std::string pathStr(path);
@@ -214,18 +214,18 @@ bool AsyncIOHandler::succeeded() const { return !!m_io && m_io->m_queue != nullp
 // passthroughs
 void AsyncIOHandler::update() { m_io->update(); }
 
-bool AsyncIOHandler::read(std::string_view path, std::function<void(std::vector<u8>)> callback) {
+bool AsyncIOHandler::read(std::string_view path, ReadCallback callback) {
     return m_io->read(path, std::move(callback));
 }
 
-bool AsyncIOHandler::write(std::string_view path, std::vector<u8> data, std::function<void(bool)> callback) {
+bool AsyncIOHandler::write(std::string_view path, std::vector<u8> data, WriteCallback callback) {
     return m_io->write(path, std::move(data), std::move(callback));
 }
 
-bool AsyncIOHandler::write(std::string_view path, std::string data, std::function<void(bool)> callback) {
+bool AsyncIOHandler::write(std::string_view path, std::string data, WriteCallback callback) {
     return m_io->write(path, std::vector<u8>(data.begin(), data.end()), std::move(callback));
 }
 
-bool AsyncIOHandler::write(std::string_view path, const u8* data, size_t amount, std::function<void(bool)> callback) {
+bool AsyncIOHandler::write(std::string_view path, const u8* data, size_t amount, WriteCallback callback) {
     return m_io->write(path, std::vector<u8>(data, data + amount), std::move(callback));
 }
