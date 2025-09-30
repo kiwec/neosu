@@ -273,13 +273,12 @@ $(DEPS_CACHE)/curl-$(CURL_VERSION)-windows-binary.source: $(DEPS_CACHE)/curl-$(C
 	cd $(DEPS_CACHE)/curl-$(CURL_VERSION) && \
 	rm -rf windowsi686 && \
 	$(MKDIR_P) windowsi686 && $(TAR) xf curl-windowsi686.tar.xz -C windowsi686 --strip-components=1 --wildcards --no-anchored \
-		include lib/'*'.a lib/pkgconfig/'*'ssl'*' lib/pkgconfig/'*'crypto'*'  && \
+		include lib/'*'.a lib/pkgconfig/'*'ssl'*' lib/pkgconfig/'*'crypto'*' && \
 	rm -rf windowsx86_64 && \
 	$(MKDIR_P) windowsx86_64 && $(TAR) xf curl-windowsx86_64.tar.xz -C windowsx86_64 --strip-components=1 --wildcards --no-anchored \
 		include lib/'*'.a lib64/'*'.a lib64/pkgconfig/'*' && \
 	mv windowsx86_64/lib64/* windowsx86_64/lib/ && \
 	rm -rf windows*/lib/*zlib*.a && \
-	$(SED) -i 's|^prefix=/data.*|prefix=$(DEPS_PREFIX)|g' windows*/lib/pkgconfig/* && \
 	touch $@
 
 $(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-linuxi686.tar.xz:
@@ -293,13 +292,14 @@ $(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-linuxx86_64.tar.xz:
 $(DEPS_CACHE)/curl-$(CURL_VERSION)-linux-binary.source: $(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-linuxi686.tar.xz $\
 														$(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-linuxx86_64.tar.xz
 	cd $(DEPS_CACHE)/curl-$(CURL_VERSION) && \
+	rm -rf linuxx86_64 && \
 	$(MKDIR_P) linuxx86_64 && $(TAR) xf curl-linuxx86_64.tar.xz -C linuxx86_64 --strip-components=1 --wildcards --no-anchored \
 		include lib/'*'.a lib64/'*'.a lib64/pkgconfig/'*' && \
 	mv linuxx86_64/lib64/* linuxx86_64/lib/ && \
+	rm -rf linuxi686 && \
 	$(MKDIR_P) linuxi686 && $(TAR) xf curl-linuxi686.tar.xz -C linuxi686 --strip-components=1 --wildcards --no-anchored \
 		include lib/'*'.a lib/pkgconfig/'*'ssl'*' lib/pkgconfig/'*'crypto'*' && \
 	rm -rf linux*/lib/libz.a && \
-	$(SED) -i 's|^prefix=/data.*|prefix=$(DEPS_PREFIX)|g' linux*/lib/pkgconfig/* && \
 	touch $@
 
 #####################################################################################################################################################
