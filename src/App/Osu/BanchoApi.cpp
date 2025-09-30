@@ -11,19 +11,21 @@
 #include "NetworkHandler.h"
 #include "NotificationOverlay.h"
 
+namespace BANCHO::Api {
+
 static void handle_api_response(Packet &packet) {
     switch(packet.id) {
-        case BANCHO::Api::GET_BEATMAPSET_INFO: {
+        case GET_BEATMAPSET_INFO: {
             Downloader::process_beatmapset_info_response(packet);
             break;
         }
 
-        case BANCHO::Api::GET_MAP_LEADERBOARD: {
+        case GET_MAP_LEADERBOARD: {
             BANCHO::Leaderboard::process_leaderboard_response(packet);
             break;
         }
 
-        case BANCHO::Api::GET_REPLAY: {
+        case GET_REPLAY: {
             if(packet.size == 0) {
                 // Most likely, 404
                 osu->getNotificationOverlay()->addToast("Failed to download replay", ERROR_TOAST);
@@ -61,7 +63,7 @@ static void handle_api_response(Packet &packet) {
             break;
         }
 
-        case BANCHO::Api::MARK_AS_READ: {
+        case MARK_AS_READ: {
             // (nothing to do)
             break;
         }
@@ -74,7 +76,7 @@ static void handle_api_response(Packet &packet) {
 }
 
 
-void BANCHO::Api::send_request(const BANCHO::Api::Request &request) {
+void send_request(const Request &request) {
     if(BanchoState::get_uid() <= 0) {
         debugLog("Cannot send API request of type {:d} since we are not logged in.",
                  static_cast<unsigned int>(request.type));
@@ -107,7 +109,7 @@ void BANCHO::Api::send_request(const BANCHO::Api::Request &request) {
         options);
 }
 
-void BANCHO::Api::append_auth_params(UString &url, std::string user_param, std::string pw_param) {
+void append_auth_params(UString &url, std::string user_param, std::string pw_param) {
     std::string user, pw;
     if(BanchoState::is_oauth) {
         user = "$token";
@@ -118,4 +120,6 @@ void BANCHO::Api::append_auth_params(UString &url, std::string user_param, std::
     }
 
     url.append(UString::fmt("&{}={}&{}={}", user_param, user, pw_param, pw));
+}
+
 }

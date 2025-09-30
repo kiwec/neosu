@@ -56,7 +56,7 @@ NetworkHandler::~NetworkHandler() {
 
     // cleanup any remaining requests
     {
-        Sync::scoped_lock<Sync::mutex> lock{this->active_requests_mutex};
+        Sync::scoped_lock active_lock{this->active_requests_mutex};
         for(auto& [handle, request] : this->active_requests) {
             curl_multi_remove_handle(this->multi_handle, handle);
             curl_easy_cleanup(handle);
@@ -66,7 +66,7 @@ NetworkHandler::~NetworkHandler() {
         }
         this->active_requests.clear();
 
-        Sync::scoped_lock<Sync::mutex> lock2{this->completed_requests_mutex};
+        Sync::scoped_lock completed_lock{this->completed_requests_mutex};
         this->completed_requests.clear();
     }
 
@@ -79,7 +79,7 @@ NetworkHandler::~NetworkHandler() {
 
 void NetworkHandler::networkThreadFunc(const Sync::stop_token& stopToken) {
     McThread::set_current_thread_name("net_manager");
-    McThread::set_current_thread_prio(false); // reset priority
+    McThread::set_current_thread_prio(false);  // reset priority
 
     while(!stopToken.stop_requested()) {
         processNewRequests();
@@ -110,7 +110,7 @@ void NetworkHandler::networkThreadFunc(const Sync::stop_token& stopToken) {
 }
 
 void NetworkHandler::processNewRequests() {
-    Sync::scoped_lock<Sync::mutex> lock{this->request_queue_mutex};
+    Sync::scoped_lock requests_lock{this->request_queue_mutex};
 
     while(!this->pending_requests.empty()) {
         auto request = std::move(this->pending_requests.front());
@@ -120,7 +120,7 @@ void NetworkHandler::processNewRequests() {
         if(!request->easy_handle) {
             request->response.success = false;
 
-            Sync::scoped_lock<Sync::mutex> lock{this->completed_requests_mutex};
+            Sync::scoped_lock completed_lock{this->completed_requests_mutex};
             this->completed_requests.push_back(std::move(request));
             continue;
         }
@@ -132,12 +132,12 @@ void NetworkHandler::processNewRequests() {
             curl_easy_cleanup(request->easy_handle);
             request->response.success = false;
 
-            Sync::scoped_lock<Sync::mutex> lock{this->completed_requests_mutex};
+            Sync::scoped_lock completed_lock{this->completed_requests_mutex};
             this->completed_requests.push_back(std::move(request));
             continue;
         }
 
-        Sync::scoped_lock<Sync::mutex> active_lock{this->active_requests_mutex};
+        Sync::scoped_lock active_lock{this->active_requests_mutex};
         this->active_requests[request->easy_handle] = std::move(request);
     }
 }
@@ -152,7 +152,7 @@ void NetworkHandler::processCompletedRequests() {
             CURL* easy_handle = msg->easy_handle;
 
             {
-                Sync::scoped_lock<Sync::mutex> lock{this->active_requests_mutex};
+                Sync::scoped_lock active_lock{this->active_requests_mutex};
                 auto it = this->active_requests.find(easy_handle);
                 if(it != this->active_requests.end()) {
                     auto request = std::move(it->second);
@@ -176,7 +176,7 @@ void NetworkHandler::processCompletedRequests() {
 
                     if(request->is_sync) {
                         // handle sync request immediately
-                        Sync::scoped_lock<Sync::mutex> sync_lock{this->sync_requests_mutex};
+                        Sync::scoped_lock sync_lock{this->sync_requests_mutex};
                         this->sync_responses[request->sync_id] = request->response;
                         auto cv_it = this->sync_request_cvs.find(request->sync_id);
                         if(cv_it != this->sync_request_cvs.end()) {
@@ -184,7 +184,7 @@ void NetworkHandler::processCompletedRequests() {
                         }
                     } else {
                         // defer async callback execution
-                        Sync::scoped_lock<Sync::mutex> lock{this->completed_requests_mutex};
+                        Sync::scoped_lock completed_lock{this->completed_requests_mutex};
                         this->completed_requests.push_back(std::move(request));
                     }
                 }
@@ -298,17 +298,21 @@ size_t NetworkHandler::headerCallback(char* buffer, size_t size, size_t nitems, 
 
 // Call this from somewhere in the main thread to avoid having to deal with race conditions
 void NetworkHandler::handleResponses() {
-    Sync::scoped_lock<Sync::mutex> lock{this->completed_requests_mutex};
-    for(auto& request : this->completed_requests) {
+    std::vector<std::unique_ptr<NetworkRequest>> responses_to_handle;
+    {
+        Sync::scoped_lock lock{this->completed_requests_mutex};
+        responses_to_handle = std::move(this->completed_requests);
+        this->completed_requests.clear();
+    }
+    for(auto& request : responses_to_handle) {
         request->callback(request->response);
     }
-    this->completed_requests.clear();
 }
 
 void NetworkHandler::httpRequestAsync(const UString& url, AsyncCallback callback, const RequestOptions& options) {
     auto request = std::make_unique<NetworkRequest>(url, std::move(callback), options);
 
-    Sync::scoped_lock<Sync::mutex> lock{this->request_queue_mutex};
+    Sync::scoped_lock lock{this->request_queue_mutex};
     this->pending_requests.push(std::move(request));
     this->request_queue_cv.notify_one();
 }
@@ -323,7 +327,7 @@ NetworkHandler::Response NetworkHandler::performSyncRequest(const UString& url, 
 
     // register sync request
     {
-        Sync::scoped_lock<Sync::mutex> lock{this->sync_requests_mutex};
+        Sync::scoped_lock lock{this->sync_requests_mutex};
         this->sync_request_cvs[sync_id] = &cv;
     }
 
@@ -334,7 +338,7 @@ NetworkHandler::Response NetworkHandler::performSyncRequest(const UString& url, 
 
     // submit request
     {
-        Sync::scoped_lock<Sync::mutex> lock{this->request_queue_mutex};
+        Sync::scoped_lock lock{this->request_queue_mutex};
         this->pending_requests.push(std::move(request));
         this->request_queue_cv.notify_one();
     }
@@ -342,13 +346,13 @@ NetworkHandler::Response NetworkHandler::performSyncRequest(const UString& url, 
     // wait for completion
     Sync::unique_lock<Sync::mutex> lock{cv_mutex};
     cv.wait(lock, [&] {
-        Sync::scoped_lock<Sync::mutex> sync_lock{this->sync_requests_mutex};
+        Sync::scoped_lock sync_lock{this->sync_requests_mutex};
         return this->sync_responses.find(sync_id) != this->sync_responses.end();
     });
 
     // get result and cleanup
     {
-        Sync::scoped_lock<Sync::mutex> sync_lock{this->sync_requests_mutex};
+        Sync::scoped_lock sync_lock{this->sync_requests_mutex};
         result = this->sync_responses[sync_id];
         this->sync_responses.erase(sync_id);
         this->sync_request_cvs.erase(sync_id);
