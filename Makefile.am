@@ -272,10 +272,14 @@ $(DEPS_CACHE)/curl-$(CURL_VERSION)-windows-binary.source: $(DEPS_CACHE)/curl-$(C
 											$(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-windowsx86_64.tar.xz
 	cd $(DEPS_CACHE)/curl-$(CURL_VERSION) && \
 	rm -rf windowsi686 && \
-	$(MKDIR_P) windowsi686 && $(TAR) xf curl-windowsi686.tar.xz -C windowsi686 --strip-components=1 --wildcards --no-anchored include lib/'*'.a && \
+	$(MKDIR_P) windowsi686 && $(TAR) xf curl-windowsi686.tar.xz -C windowsi686 --strip-components=1 --wildcards --no-anchored \
+		include lib/'*'.a lib/pkgconfig/'*'ssl'*' lib/pkgconfig/'*'crypto'*'  && \
 	rm -rf windowsx86_64 && \
-	$(MKDIR_P) windowsx86_64 && $(TAR) xf curl-windowsx86_64.tar.xz -C windowsx86_64 --strip-components=1 --wildcards --no-anchored include lib/'*'.a && \
+	$(MKDIR_P) windowsx86_64 && $(TAR) xf curl-windowsx86_64.tar.xz -C windowsx86_64 --strip-components=1 --wildcards --no-anchored \
+		include lib/'*'.a lib64/'*'.a lib64/pkgconfig/'*' && \
+	mv windowsx86_64/lib64/* windowsx86_64/lib/ && \
 	rm -rf windows*/lib/*zlib*.a && \
+	$(SED) -i 's|^prefix=/data.*|prefix=$(DEPS_PREFIX)|g' windows*/lib/pkgconfig/* && \
 	touch $@
 
 $(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-linuxi686.tar.xz:
@@ -289,10 +293,13 @@ $(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-linuxx86_64.tar.xz:
 $(DEPS_CACHE)/curl-$(CURL_VERSION)-linux-binary.source: $(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-linuxi686.tar.xz $\
 														$(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-linuxx86_64.tar.xz
 	cd $(DEPS_CACHE)/curl-$(CURL_VERSION) && \
-	$(MKDIR_P) linuxx86_64 && $(TAR) xf curl-linuxx86_64.tar.xz -C linuxx86_64 --strip-components=1 --wildcards --no-anchored include lib/'*'.a lib64/'*'.a && \
+	$(MKDIR_P) linuxx86_64 && $(TAR) xf curl-linuxx86_64.tar.xz -C linuxx86_64 --strip-components=1 --wildcards --no-anchored \
+		include lib/'*'.a lib64/'*'.a lib64/pkgconfig/'*' && \
 	mv linuxx86_64/lib64/* linuxx86_64/lib/ && \
-	$(MKDIR_P) linuxi686 && $(TAR) xf curl-linuxi686.tar.xz -C linuxi686 --strip-components=1 --wildcards --no-anchored include lib/'*'.a && \
+	$(MKDIR_P) linuxi686 && $(TAR) xf curl-linuxi686.tar.xz -C linuxi686 --strip-components=1 --wildcards --no-anchored \
+		include lib/'*'.a lib/pkgconfig/'*'ssl'*' lib/pkgconfig/'*'crypto'*' && \
 	rm -rf linux*/lib/libz.a && \
+	$(SED) -i 's|^prefix=/data.*|prefix=$(DEPS_PREFIX)|g' linux*/lib/pkgconfig/* && \
 	touch $@
 
 #####################################################################################################################################################
@@ -315,7 +322,9 @@ rbq := ')'
 CURL_INCLUDEDIR := $(DEPS_CACHE)/curl-$(CURL_VERSION)/$(SYSNAME)$(host_cpu)/include
 CURL_LIBDIR := $(DEPS_CACHE)/curl-$(CURL_VERSION)/$(SYSNAME)$(host_cpu)/lib
 CURL_CFLAGS += -I$(CURL_INCLUDEDIR) -DWITH_GZFILEOP -DCURL_STATICLIB
-CURL_LIBS += -L$(CURL_LIBDIR) $(shell find $(CURL_LIBDIR) -type f -not $(lbq) -name '*dll*' $(rbq) -execdir printf '%s ' '{''}' ';' | $(SED) -e 's|./lib|-l|g' -e 's|\.a||g' -e 's|-lcurl|-l:libcurl.a|g')
+CURL_LIBS += -L$(CURL_LIBDIR) $(shell find $(CURL_LIBDIR) -mindepth 1 -maxdepth 1 -type f -not $(lbq) -name '*dll*' $(rbq) -execdir printf '%s ' '{''}' ';' | $(SED) -e 's|./lib|-l|g' -e 's|\.a||g' -e 's|-lcurl|-l:libcurl.a|g')
+
+BUNDLED_OPENSSL := 1
 
 if WIN_PLATFORM
 CURL_LIBS += -lws2_32 -lwldap32 -lcrypt32 -lsecur32 -liphlpapi
@@ -326,7 +335,6 @@ $(DEPS_PREFIX)/curl-$(CURL_VERSION).built: $(DEPS_CACHE)/curl-$(CURL_VERSION)-wi
 	$(MKDIR_P) $(DEPS_PREFIX)
 	touch $@
 else
-BUNDLED_OPENSSL := 1
 
 CURL_LIBS += -ldl -pthread
 $(DEPS_PREFIX)/curl-$(CURL_VERSION).built: $(DEPS_CACHE)/curl-$(CURL_VERSION)-linux-binary.source
@@ -339,6 +347,8 @@ $(DEPS_PREFIX)/curl-$(CURL_VERSION).built:
 	$(MKDIR_P) $(DEPS_PREFIX)
 	touch $@
 endif # BUILD_CURL
+
+BUNDLED_OPENSSL_PKGCONF_FLAGS := $(if $(BUNDLED_OPENSSL),--with-path=$(CURL_LIBDIR)/pkgconfig,)
 
 if BUILD_MIMALLOC
 if WIN_PLATFORM
@@ -933,8 +943,9 @@ $(DEPS_PREFIX)/libacl-$(LIBACL_VERSION).built:
 	$(MKDIR_P) $(DEPS_PREFIX) && touch $@
 endif # BUILD_LIBACL
 
-LIBARCHIVE_CFLAGS += $(shell $(PKG_CONFIG) --cflags libarchive)
-LIBARCHIVE_LIBS += $(shell $(PKG_CONFIG) --libs libarchive)
+# ugly hack to make pkg-config/libarchive find the bundled openssl libs
+LIBARCHIVE_CFLAGS += $(shell $(PKG_CONFIG) $(BUNDLED_OPENSSL_PKGCONF_FLAGS) --cflags libarchive)
+LIBARCHIVE_LIBS += $(shell $(PKG_CONFIG) $(BUNDLED_OPENSSL_PKGCONF_FLAGS) --libs libarchive)
 $(DEPS_PREFIX)/libarchive-$(LIBARCHIVE_VERSION).built: $(DEPS_CACHE)/libarchive-$(LIBARCHIVE_VERSION).source $(DEPS_PREFIX)/curl-$(CURL_VERSION).built $\
 											$(DEPS_PREFIX)/libacl-$(LIBACL_VERSION).built $(DEPS_PREFIX)/liblzma-$(LZMA_VERSION).built $\
 											$(DEPS_PREFIX)/bzip2-$(BZIP2_VERSION).built $(DEPS_PREFIX)/zlib-$(ZLIB_VERSION).built
@@ -952,11 +963,11 @@ $(DEPS_PREFIX)/libarchive-$(LIBARCHIVE_VERSION).built: $(DEPS_CACHE)/libarchive-
 		--without-nettle --without-mbedtls --without-lzo2 --without-lz4 --without-libiconv-prefix \
 		--without-iconv --without-libb2 --without-zstd --with-lzma --with-zlib --with-bz2lib \
 		CC="$(CC)" RANLIB="$(RANLIB)" AR="$(AR)" CXX="$(CXX)" LD="$(LD)" \
-		CFLAGS="$(CFLAGS) -I$(DEPS_PREFIX)/include $(if $(BUNDLED_OPENSSL),-I$(CURL_INCLUDEDIR),) $(LIBACL_CFLAGS) $(LZMA_CFLAGS) $(BZIP2_CFLAGS) $(ZLIB_CFLAGS) -D_POSIX_C_SOURCE" \
-		LDFLAGS="$(LDFLAGS) -L$(DEPS_PREFIX)/lib $(if $(BUNDLED_OPENSSL),-L$(CURL_LIBDIR),) $(LIBACL_LIBS) $(LZMA_LIBS) $(BZIP2_LIBS) $(ZLIB_LIBS)" && \
+		CFLAGS="$(CFLAGS) -I$(DEPS_PREFIX)/include $(LIBACL_CFLAGS) $(LZMA_CFLAGS) $(BZIP2_CFLAGS) $(ZLIB_CFLAGS) -D_POSIX_C_SOURCE" \
+		LDFLAGS="$(LDFLAGS) -L$(DEPS_PREFIX)/lib $(LIBACL_LIBS) $(LZMA_LIBS) $(BZIP2_LIBS) $(ZLIB_LIBS)" && \
 	$(MAKE) $(MAKEFLAGS) && \
 	$(MAKE) $(MAKEFLAGS) install
-	$(PKG_CONFIG) --exists --print-errors libarchive
+	$(PKG_CONFIG) $(BUNDLED_OPENSSL_PKGCONF_FLAGS) --exists --print-errors libarchive
 	touch $@
 else
 $(DEPS_PREFIX)/libarchive-$(LIBARCHIVE_VERSION).built:
