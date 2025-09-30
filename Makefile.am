@@ -264,20 +264,18 @@ $(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-windowsi686.tar.xz:
 	$(MKDIR_P) $(DEPS_CACHE)/curl-$(CURL_VERSION) && \
 	$(WGET) -qO $(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-windowsi686.tar.xz "https://github.com/whrvt/static-curl/releases/download/$(CURL_VERSION)/curl-windows-i686-dev-$(CURL_VERSION).tar.xz"
 
-$(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-windowsx86_64.zip:
+$(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-windowsx86_64.tar.xz:
 	$(MKDIR_P) $(DEPS_CACHE)/curl-$(CURL_VERSION) && \
-	$(WGET) -qO $(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-windowsx86_64.zip "https://curl.se/windows/dl-$(CURL_VERSION)_2/curl-$(CURL_VERSION)_2-win64-mingw.zip"
+	$(WGET) -qO $(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-windowsx86_64.tar.xz "https://github.com/whrvt/static-curl/releases/download/$(CURL_VERSION)/curl-windows-x86_64-dev-$(CURL_VERSION).tar.xz"
 
 $(DEPS_CACHE)/curl-$(CURL_VERSION)-windows-binary.source: $(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-windowsi686.tar.xz $\
-											$(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-windowsx86_64.zip
+											$(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-windowsx86_64.tar.xz
 	cd $(DEPS_CACHE)/curl-$(CURL_VERSION) && \
 	rm -rf windowsi686 && \
 	$(MKDIR_P) windowsi686 && $(TAR) xf curl-windowsi686.tar.xz -C windowsi686 --strip-components=1 --wildcards --no-anchored include lib/'*'.a && \
 	rm -rf windowsx86_64 && \
-	$(MKDIR_P) windowsx86_64/bin && $(UNZIP) -qjo curl-windowsx86_64.zip "*/bin/*.dll" -d windowsx86_64/bin && \
-	$(MKDIR_P) windowsx86_64/lib && $(UNZIP) -qjo curl-windowsx86_64.zip "*/lib/*.a" -d windowsx86_64/lib && \
-	$(MKDIR_P) windowsx86_64/include && $(UNZIP) -qo curl-windowsx86_64.zip "*/include/**" -d windowsx86_64/include && mv windowsx86_64/include/*/*/* windowsx86_64/include/ && \
-	rm -rf windows*/lib/libz.a windows*/lib/zlib*.a && \
+	$(MKDIR_P) windowsx86_64 && $(TAR) xf curl-windowsx86_64.tar.xz -C windowsx86_64 --strip-components=1 --wildcards --no-anchored include lib/'*'.a && \
+	rm -rf windows*/lib/*zlib*.a && \
 	touch $@
 
 $(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-linuxi686.tar.xz:
@@ -328,6 +326,7 @@ $(DEPS_PREFIX)/curl-$(CURL_VERSION).built: $(DEPS_CACHE)/curl-$(CURL_VERSION)-wi
 	$(MKDIR_P) $(DEPS_PREFIX)
 	touch $@
 else
+BUNDLED_OPENSSL := 1
 
 CURL_LIBS += -ldl -pthread
 $(DEPS_PREFIX)/curl-$(CURL_VERSION).built: $(DEPS_CACHE)/curl-$(CURL_VERSION)-linux-binary.source
@@ -949,12 +948,12 @@ $(DEPS_PREFIX)/libarchive-$(LIBARCHIVE_VERSION).built: $(DEPS_CACHE)/libarchive-
 	../configure lt_cv_prog_gnu_ld=yes --host=$(host) --build=$(build) --prefix="$(DEPS_PREFIX)" \
 		$(if $(STATICBUILD),--enable-static --disable-shared,--enable-shared --disable-static) \
 		--disable-tools --disable-tests --with-gnu-ld --disable-bsdtar --disable-bsdcat --disable-bsdcpio \
-		--disable-bsdunzip --without-xml2 --without-expat $(if $(CURL_INCLUDEDIR),--with-openssl,--without-openssl) \
+		--disable-bsdunzip --without-xml2 --without-expat $(if $(BUNDLED_OPENSSL),--with-openssl,--without-openssl) \
 		--without-nettle --without-mbedtls --without-lzo2 --without-lz4 --without-libiconv-prefix \
 		--without-iconv --without-libb2 --without-zstd --with-lzma --with-zlib --with-bz2lib \
 		CC="$(CC)" RANLIB="$(RANLIB)" AR="$(AR)" CXX="$(CXX)" LD="$(LD)" \
-		CFLAGS="$(CFLAGS) -I$(DEPS_PREFIX)/include $(if $(CURL_INCLUDEDIR),-I$(CURL_INCLUDEDIR),) $(LIBACL_CFLAGS) $(LZMA_CFLAGS) $(BZIP2_CFLAGS) $(ZLIB_CFLAGS) -D_POSIX_C_SOURCE" \
-		LDFLAGS="$(LDFLAGS) -L$(DEPS_PREFIX)/lib $(if $(CURL_LIBDIR),-L$(CURL_LIBDIR)) $(LIBACL_LIBS) $(LZMA_LIBS) $(BZIP2_LIBS) $(ZLIB_LIBS)" && \
+		CFLAGS="$(CFLAGS) -I$(DEPS_PREFIX)/include $(if $(BUNDLED_OPENSSL),-I$(CURL_INCLUDEDIR),) $(LIBACL_CFLAGS) $(LZMA_CFLAGS) $(BZIP2_CFLAGS) $(ZLIB_CFLAGS) -D_POSIX_C_SOURCE" \
+		LDFLAGS="$(LDFLAGS) -L$(DEPS_PREFIX)/lib $(if $(BUNDLED_OPENSSL),-L$(CURL_LIBDIR),) $(LIBACL_LIBS) $(LZMA_LIBS) $(BZIP2_LIBS) $(ZLIB_LIBS)" && \
 	$(MAKE) $(MAKEFLAGS) && \
 	$(MAKE) $(MAKEFLAGS) install
 	$(PKG_CONFIG) --exists --print-errors libarchive
