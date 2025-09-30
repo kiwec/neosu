@@ -1,6 +1,8 @@
 #pragma once
 // Copyright (c) 2025, kiwec, All rights reserved.
-#include "BanchoProtocol.h"
+
+#include "types.h"
+#include "UString.h"
 
 namespace BANCHO::Api {
 

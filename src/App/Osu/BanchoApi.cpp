@@ -1,11 +1,15 @@
 // Copyright (c) 2025, kiwec, All rights reserved.
-#include "AsyncIOHandler.h"
 #include "BanchoApi.h"
+
+#include "AsyncIOHandler.h"
+#include "ConVar.h"
+#include "Logging.h"
+#include "LegacyReplay.h"
+#include "Bancho.h"
 #include "BanchoLeaderboard.h"
-#include "Downloader.cpp"
+#include "Downloader.h"
 #include "NetworkHandler.h"
 #include "NotificationOverlay.h"
-#include "SyncMutex.h"
 
 static void handle_api_response(Packet &packet) {
     switch(packet.id) {

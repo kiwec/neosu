@@ -40,3 +40,5 @@ class AsyncIOHandler final {
     class InternalIOContext;
     std::unique_ptr<InternalIOContext> m_io;
 };
+
+extern std::unique_ptr<AsyncIOHandler> io;

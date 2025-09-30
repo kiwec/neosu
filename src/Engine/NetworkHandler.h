@@ -101,3 +101,5 @@ class NetworkHandler {
     static size_t writeCallback(void* contents, size_t size, size_t nmemb, void* userp);
     static int progressCallback(void* clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t, curl_off_t);
 };
+
+extern std::unique_ptr<NetworkHandler> networkHandler;
