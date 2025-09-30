@@ -62,6 +62,7 @@ class NetworkHandler {
     std::string httpDownload(const UString& url, long timeout = 60, long connectTimeout = 5);
 
     // asynchronous API
+    void handleResponses();
     void httpRequestAsync(const UString& url, AsyncCallback callback, const RequestOptions& options = {});
 
     // sync request for special cases like logout
@@ -80,6 +81,10 @@ class NetworkHandler {
     // active requests tracking
     Sync::mutex active_requests_mutex;
     std::map<CURL*, std::unique_ptr<NetworkRequest>> active_requests;
+
+    // completed requests
+    Sync::mutex completed_requests_mutex;
+    std::vector<std::unique_ptr<NetworkRequest>> completed_requests;
 
     // sync request support
     Sync::mutex sync_requests_mutex;

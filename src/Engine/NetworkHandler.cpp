@@ -65,6 +65,9 @@ NetworkHandler::~NetworkHandler() {
             }
         }
         this->active_requests.clear();
+
+        Sync::scoped_lock<Sync::mutex> lock2{this->completed_requests_mutex};
+        this->completed_requests.clear();
     }
 
     if(this->multi_handle) {
@@ -116,7 +119,9 @@ void NetworkHandler::processNewRequests() {
         request->easy_handle = curl_easy_init();
         if(!request->easy_handle) {
             request->response.success = false;
-            request->callback(request->response);
+
+            Sync::scoped_lock<Sync::mutex> lock{this->completed_requests_mutex};
+            this->completed_requests.push_back(std::move(request));
             continue;
         }
 
@@ -126,7 +131,9 @@ void NetworkHandler::processNewRequests() {
         if(mres != CURLM_OK) {
             curl_easy_cleanup(request->easy_handle);
             request->response.success = false;
-            request->callback(request->response);
+
+            Sync::scoped_lock<Sync::mutex> lock{this->completed_requests_mutex};
+            this->completed_requests.push_back(std::move(request));
             continue;
         }
 
@@ -140,8 +147,6 @@ void NetworkHandler::processCompletedRequests() {
     int msgs_left;
 
     // collect completed requests without holding locks during callback execution
-    std::vector<std::unique_ptr<NetworkRequest>> completed_requests;
-
     while((msg = curl_multi_info_read(this->multi_handle, &msgs_left))) {
         if(msg->msg == CURLMSG_DONE) {
             CURL* easy_handle = msg->easy_handle;
@@ -179,16 +184,12 @@ void NetworkHandler::processCompletedRequests() {
                         }
                     } else {
                         // defer async callback execution
-                        completed_requests.push_back(std::move(request));
+                        Sync::scoped_lock<Sync::mutex> lock{this->completed_requests_mutex};
+                        this->completed_requests.push_back(std::move(request));
                     }
                 }
             }  // release active_requests_mutex here
         }
-    }
-
-    // execute callbacks without holding any locks
-    for(auto& request : completed_requests) {
-        request->callback(request->response);
     }
 }
 
@@ -293,6 +294,15 @@ size_t NetworkHandler::headerCallback(char* buffer, size_t size, size_t nitems, 
     }
 
     return real_size;
+}
+
+// Call this from somewhere in the main thread to avoid having to deal with race conditions
+void NetworkHandler::handleResponses() {
+    Sync::scoped_lock<Sync::mutex> lock{this->completed_requests_mutex};
+    for(auto& request : this->completed_requests) {
+        request->callback(request->response);
+    }
+    this->completed_requests.clear();
 }
 
 void NetworkHandler::httpRequestAsync(const UString& url, AsyncCallback callback, const RequestOptions& options) {
