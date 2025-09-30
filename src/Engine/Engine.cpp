@@ -54,7 +54,6 @@ Engine::Engine() {
     cv::engine_throttle.setCallback(SA::MakeDelegate<&Engine::onEngineThrottleChanged>(this));
 
     // window
-    this->bBlackout = false;
     this->bHasFocus = false;
     this->bIsMinimized = false;
 
@@ -68,6 +67,7 @@ Engine::Engine() {
 
     // custom
     this->bDrawing = false;
+    this->bShuttingDown = false;
 
     // initialize all engine subsystems (the order does matter!)
     debugLog("Engine: Initializing subsystems ...");
@@ -100,21 +100,8 @@ Engine::Engine() {
         this->runtime_assert(!!resourceManager, "Resource manager menu failed to initialize!");
         resourceManager->setSyncLoadMaxBatchSize(512);
 
-        SoundEngine::SndEngineType type = Env::cfg(AUD::BASS)     ? SoundEngine::BASS
-                                          : Env::cfg(AUD::SOLOUD) ? SoundEngine::SOLOUD
-                                                                  : SoundEngine::BASS;
-        {
-            auto args = env->getLaunchArgs();
-            auto soundString = args["-sound"].value_or("soloud");
-            SString::trim_inplace(soundString);
-            SString::lower_inplace(soundString);
-            if(Env::cfg(AUD::BASS) && soundString.contains("bass"))
-                type = SoundEngine::BASS;
-            else if(Env::cfg(AUD::SOLOUD) && soundString.contains("soloud"))
-                type = SoundEngine::SOLOUD;
-        }
-        soundEngine.reset(SoundEngine::createSoundEngine(type));
-        this->runtime_assert(!!soundEngine, "Sound engine failed to initialize!");
+        soundEngine.reset(SoundEngine::initialize());
+        this->runtime_assert(!!soundEngine && soundEngine->succeeded(), "Sound engine failed to initialize!");
 
         animationHandler = std::make_unique<AnimationHandler>();
         this->runtime_assert(!!animationHandler, "Animation handler failed to initialize!");
@@ -193,6 +180,7 @@ Engine::~Engine() {
 }
 
 void Engine::loadApp() {
+    if(this->bShuttingDown) return;
     // load core default resources
     debugLog("Engine: Loading default resources ...");
     resourceManager->loadFont("weblysleekuisb.ttf", "FONT_DEFAULT", 15, true, env->getDPI());
@@ -242,7 +230,7 @@ void Engine::loadApp() {
 
 void Engine::onPaint() {
     VPROF_BUDGET("Engine::onPaint", VPROF_BUDGETGROUP_DRAW);
-    if(this->bBlackout || this->bIsMinimized) return;
+    if(this->bShuttingDown || this->bIsMinimized) return;
 
     this->bDrawing = true;
     {
@@ -281,7 +269,7 @@ void Engine::onPaint() {
 void Engine::onUpdate() {
     VPROF_BUDGET("Engine::onUpdate", VPROF_BUDGETGROUP_UPDATE);
 
-    if(this->bBlackout) return;
+    if(this->bShuttingDown) return;
 
     {
         VPROF_BUDGET("Timer::update", VPROF_BUDGETGROUP_UPDATE);
@@ -453,10 +441,10 @@ void Engine::onDPIChange() {
 }
 
 void Engine::onShutdown() {
-    if(this->bBlackout || (app != nullptr && !app->onShutdown())) return;
+    if(this->bShuttingDown || (app != nullptr && !app->onShutdown())) return;
 
-    this->bBlackout = true;
-    soundEngine->shutdown();
+    this->bShuttingDown = true;
+    if(!!soundEngine) soundEngine->shutdown();
     env->shutdown();
 }
 

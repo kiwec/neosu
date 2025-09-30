@@ -56,9 +56,10 @@ class Logger final {
 
     // manual trigger for console commands
     static inline void flush() noexcept {
-        assert(wasInit);
-        s_logger->flush();
-        s_raw_logger->flush();
+        if(likely(wasInit)) {
+            s_logger->flush();
+            s_raw_logger->flush();
+        }
     }
 
     // is stdout a terminal (util func.)

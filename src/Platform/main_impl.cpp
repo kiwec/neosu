@@ -86,6 +86,9 @@ SDL_AppResult SDLMain::initialize() {
     // initialize engine, now that all the setup is done
     m_engine = std::make_unique<Engine>();
 
+    if (!m_engine || m_engine->isShuttingDown()) {
+        return SDL_APP_FAILURE;
+    }
     // if we got to this point, all relevant subsystems (input handling, graphics interface, etc.) have been initialized
 
     // load app

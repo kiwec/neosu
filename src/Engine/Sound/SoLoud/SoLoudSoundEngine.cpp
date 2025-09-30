@@ -63,6 +63,7 @@ SoLoudSoundEngine::SoLoudSoundEngine() : SoundEngine() {
     this->currentOutputDevice = defaultOutputDevice;
 
     this->mSoloudDevices = {};
+    this->bInitSuccess = true;
 }
 
 void SoLoudSoundEngine::restart() {

@@ -77,7 +77,7 @@ class Engine final : public KeyboardListener {
     void showMessageErrorFatal(const UString &title, const UString &message);
 
     // engine specifics
-    void blackout() { this->bBlackout = true; }
+    [[nodiscard]] inline bool isShuttingDown() const { return this->bShuttingDown; }
 
     // interfaces
    public:
@@ -145,7 +145,7 @@ class Engine final : public KeyboardListener {
     static mcatomic_shptr<ConsoleBox> consoleBox;
 
     // custom
-    bool bBlackout;
+    bool bShuttingDown;
     bool bDrawing;
 };
 

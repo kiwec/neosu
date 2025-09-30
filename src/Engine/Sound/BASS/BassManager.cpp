@@ -9,14 +9,14 @@
 #include "Logging.h"
 #include "Environment.h"
 
-#include <SDL3/SDL_loadso.h>
+#include "dynutils.h"
 
 namespace BassManager {
 namespace BassFuncs {
 template <typename T>
-T loadFunction(SDL_SharedObject *lib, const char *funcName) {
-    T func = reinterpret_cast<T>(SDL_LoadFunction(lib, funcName));
-    if(!func) debugLog("BassManager: Failed to load function {:s}: {:s}", funcName, SDL_GetError());
+static T loadFunction(dynutils::lib_obj *lib, const char *funcName) {
+    T func = dynutils::load_func<std::remove_pointer_t<T>>(lib, funcName);
+    if(!func) debugLog("BassManager: Failed to load function {:s}: {:s}", funcName, dynutils::get_error());
     return func;
 }
 
@@ -49,7 +49,7 @@ T loadFunction(SDL_SharedObject *lib, const char *funcName) {
 
 // setup the library handles and paths to check for them
 #define DECLARE_LIB(name, ...)                              \
-    static SDL_SharedObject *s_lib##name = nullptr;         \
+    static dynutils::lib_obj *s_lib##name = nullptr;        \
     static constexpr std::initializer_list name##_paths = { \
         LNAME(name), "lib/" LNAME(name)};  // check under lib/ if it's not found in the default search path
 
@@ -62,30 +62,30 @@ ALL_BASS_FUNCTIONS(DEFINE_BASS_FUNCTION)
 
 #define LOAD_FUNCTION(name) name = loadFunction<name##_t>(currentLib, #name);
 
-#define GENERATE_LIBRARY_LOADER(libname, vfunc, ver, funcgroup)                                                       \
-    static bool load_##libname() {                                                                                    \
-        failedLoad = #libname;                                                                                        \
-        for(auto &path : libname##_paths) {                                                                           \
-            s_lib##libname = SDL_LoadObject(path);                                                                    \
-            if(!s_lib##libname) continue;                                                                             \
-            (vfunc) = loadFunction<vfunc##_t>(s_lib##libname, #vfunc);                                                \
-            if(!(vfunc)) {                                                                                            \
-                SDL_UnloadObject(s_lib##libname);                                                                     \
-                s_lib##libname = nullptr;                                                                             \
-                continue;                                                                                             \
-            }                                                                                                         \
-            uint64_t actualVersion = static_cast<uint64_t>(vfunc());                                                  \
-            if(actualVersion >= (ver)) {                                                                              \
-                SDL_SharedObject *currentLib = s_lib##libname;                                                        \
-                funcgroup(LOAD_FUNCTION) return true;                                                                 \
-            }                                                                                                         \
+#define GENERATE_LIBRARY_LOADER(libname, vfunc, ver, funcgroup)                                                    \
+    static bool load_##libname() {                                                                                 \
+        failedLoad = #libname;                                                                                     \
+        for(auto &path : libname##_paths) {                                                                        \
+            s_lib##libname = dynutils::load_lib(path);                                                             \
+            if(!s_lib##libname) continue;                                                                          \
+            (vfunc) = loadFunction<vfunc##_t>(s_lib##libname, #vfunc);                                             \
+            if(!(vfunc)) {                                                                                         \
+                dynutils::unload_lib(s_lib##libname);                                                              \
+                s_lib##libname = nullptr;                                                                          \
+                continue;                                                                                          \
+            }                                                                                                      \
+            uint64_t actualVersion = static_cast<uint64_t>(vfunc());                                               \
+            if(actualVersion >= (ver)) {                                                                           \
+                dynutils::lib_obj *currentLib = s_lib##libname;                                                    \
+                funcgroup(LOAD_FUNCTION) return true;                                                              \
+            }                                                                                                      \
             debugLog("BassManager: version too old for {:s} (expected {:x}, got {:x})", path, ver, actualVersion); \
-            SDL_UnloadObject(s_lib##libname);                                                                         \
-            s_lib##libname = nullptr;                                                                                 \
-            (vfunc) = nullptr;                                                                                        \
-        }                                                                                                             \
-        debugLog("BassManager: Failed to load " #libname " library: {:s}", SDL_GetError());                        \
-        return false;                                                                                                 \
+            dynutils::unload_lib(s_lib##libname);                                                                  \
+            s_lib##libname = nullptr;                                                                              \
+            (vfunc) = nullptr;                                                                                     \
+        }                                                                                                          \
+        debugLog("BassManager: {:s}", dynutils::get_error());                                                      \
+        return false;                                                                                              \
     }
 
 static std::string failedLoad = "none";
@@ -170,10 +170,10 @@ void cleanup() {
     unloadPlugins();
 
     // unload in reverse order
-#define UNLOAD_LIB(name, ...)          \
-    if(s_lib##name) {                  \
-        SDL_UnloadObject(s_lib##name); \
-        s_lib##name = nullptr;         \
+#define UNLOAD_LIB(name, ...)              \
+    if(s_lib##name) {                      \
+        dynutils::unload_lib(s_lib##name); \
+        s_lib##name = nullptr;             \
     }
 
 #ifdef MCENGINE_PLATFORM_WINDOWS
@@ -349,7 +349,9 @@ std::string printBassError(const std::string &context, int code) {
     return fmt::format("{:s} error: {:s}", context, errstr);  // also return it
 }
 
-UString getErrorUString(int code) { return UString::fmt("BASS error: {:s}", getBassErrorStringFromCode(code == INT_MIN ? BASS_ErrorGetCode() : code)); }
+UString getErrorUString(int code) {
+    return UString::fmt("BASS error: {:s}", getBassErrorStringFromCode(code == INT_MIN ? BASS_ErrorGetCode() : code));
+}
 
 }  // namespace BassManager
 

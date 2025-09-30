@@ -50,7 +50,9 @@ class SoundEngine {
     virtual ~SoundEngine() { this->restartCBs = {}; }
 
     // Factory method to create the appropriate sound engine
-    static SoundEngine *createSoundEngine(SndEngineType type = BASS);
+    static SoundEngine *initialize();
+    // checked on startup by engine
+    [[nodiscard]] inline bool succeeded() const { return this->bInitSuccess; }
 
     virtual void restart() = 0;
     virtual void shutdown() { ; }
@@ -117,6 +119,7 @@ class SoundEngine {
     float fMasterVolume{1.0f};
 
     std::array<AudioOutputChangedCallback, 2> restartCBs;  // first to exec before restart, second to exec after restart
+    bool bInitSuccess{false};
 };
 
 // define/managed in Engine.cpp, declared here for convenience

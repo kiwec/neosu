@@ -84,7 +84,7 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result) {
     if(result == SDL_APP_FAILURE) {
         debugLog("Force exiting now, a fatal error occurred. (SDL error: {})", SDL_GetError());
         Logger::shutdown();
-        std::abort();
+        std::exit(-1);
     }
 
     auto *fmain = static_cast<SDLMain *>(appstate);

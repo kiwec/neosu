@@ -5,20 +5,54 @@
 #include "SoundEngine.h"
 
 #include "Engine.h"
+#include "Environment.h"
 #include "ConVar.h"
 #include "Logging.h"
 
-SoundEngine *SoundEngine::createSoundEngine(SndEngineType type) {
+SoundEngine *SoundEngine::initialize() {
 #if !defined(MCENGINE_FEATURE_BASS) && !defined(MCENGINE_FEATURE_SOLOUD)
 #error No sound backend available!
 #endif
+    SoundEngine *retBackend = nullptr;
+    using Backend = enum SoundEngine::SndEngineType;
+
+    auto args = env->getLaunchArgs();
+    auto soundString = args["-sound"].value_or("soloud");  // default soloud
+    SString::trim_inplace(soundString);
+    SString::lower_inplace(soundString);
+
+    std::vector<Backend> initOrderList;
+    if(Env::cfg(AUD::SOLOUD) && Env::cfg(AUD::BASS)) {
+        // built with both backends supported, only prefer bass if explicitly passed as a launch arg
+        if(soundString.contains("bass")) {
+            initOrderList = {Backend::BASS, Backend::SOLOUD};
+        } else {
+            initOrderList = {Backend::SOLOUD, Backend::BASS};
+        }
+    } else {
+        // just try the one we actually support
+        if(Env::cfg(AUD::SOLOUD)) {
+            initOrderList = {Backend::SOLOUD};
+        } else {  // must be bass
+            initOrderList = {Backend::BASS};
+        }
+    }
+
+    for(const auto type : initOrderList) {
 #ifdef MCENGINE_FEATURE_BASS
-    if(type == BASS) return new BassSoundEngine();
+        if(type == Backend::BASS) retBackend = new BassSoundEngine();
 #endif
 #ifdef MCENGINE_FEATURE_SOLOUD
-    if(type == SOLOUD) return new SoLoudSoundEngine();
+        if(type == Backend::SOLOUD) retBackend = new SoLoudSoundEngine();
 #endif
-    return nullptr;
+        if(!retBackend || !retBackend->succeeded()) {
+            SAFE_DELETE(retBackend);
+        } else {  // succeeded
+            break;
+        }
+    }
+
+    return retBackend;
 }
 
 std::vector<SoundEngine::OUTPUT_DEVICE> SoundEngine::getOutputDevices() {

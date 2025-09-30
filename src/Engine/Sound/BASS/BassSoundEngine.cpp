@@ -60,7 +60,6 @@ BassSoundEngine::BassSoundEngine() : SoundEngine() {
     {
         engine->showMessageErrorFatal(
             "Fatal Sound Error", UString::fmt("Failed to load BASS feature: {:s} !", BassManager::getFailedLoad()));
-        engine->shutdown();
         return;
     }
 
@@ -81,6 +80,8 @@ BassSoundEngine::BassSoundEngine() : SoundEngine() {
         .name = "No sound",
         .driver = OutputDriver::NONE,
     };
+
+    this->bInitSuccess = true;
 }
 
 BassSoundEngine::~BassSoundEngine() { BassManager::cleanup(); }
