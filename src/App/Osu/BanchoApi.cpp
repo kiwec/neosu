@@ -7,10 +7,6 @@
 #include "NotificationOverlay.h"
 #include "SyncMutex.h"
 
-// osu! private API
-static Sync::mutex api_responses_mutex;
-static std::vector<Packet> api_response_queue;
-
 static void handle_api_response(Packet &packet) {
     switch(packet.id) {
         case BANCHO::Api::GET_BEATMAPSET_INFO: {
@@ -92,34 +88,19 @@ void BANCHO::Api::send_request(const BANCHO::Api::Request &request) {
     networkHandler->httpRequestAsync(
         query_url,
         [request](NetworkHandler::Response response) {
-            Packet api_response;
-            api_response.id = request.type;
-            api_response.extra = request.extra;
-            api_response.extra_int = request.extra_int;
-
             if(response.success) {
-                api_response.size = response.body.length() + 1;  // +1 for null terminator
-                api_response.memory = (u8 *)malloc(api_response.size);
-                memcpy(api_response.memory, response.body.data(), response.body.length());
-                api_response.memory[response.body.length()] = '\0';  // null terminate
-
-                api_responses_mutex.lock();
-                api_response_queue.push_back(api_response);
-                api_responses_mutex.unlock();
+                Packet api_response;
+                api_response.id = request.type;
+                api_response.extra = request.extra;
+                api_response.extra_int = request.extra_int;
+                api_response.size = response.body.length();
+                api_response.memory = (u8*)response.body.data();
+                handle_api_response(api_response);
             }
+
+            free(request.extra);
         },
         options);
-}
-
-void BANCHO::Api::update() {
-    Sync::scoped_lock lock(api_responses_mutex);
-    while(!api_response_queue.empty()) {
-        Packet incoming = api_response_queue.front();
-        api_response_queue.erase(api_response_queue.begin());
-        handle_api_response(incoming);
-        free(incoming.memory);
-        free(incoming.extra);
-    }
 }
 
 void BANCHO::Api::append_auth_params(UString &url, std::string user_param, std::string pw_param) {

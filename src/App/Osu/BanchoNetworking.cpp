@@ -39,12 +39,8 @@ namespace BANCHO::Net {
 namespace {  // static namespace
 
 Packet outgoing;
-Sync::mutex incoming_mutex;
-std::vector<Packet> incoming_queue;
 time_t last_packet_tms = {0};
 std::atomic<double> seconds_between_pings{1.0};
-
-Sync::mutex auth_mutex;
 std::string auth_token = "";
 
 void parse_packets(u8 *data, size_t s_data) {
@@ -69,15 +65,11 @@ void parse_packets(u8 *data, size_t s_data) {
 
         Packet incoming = {
             .id = packet_id,
-            .memory = (u8 *)calloc(packet_len, sizeof(*Packet::memory)),
+            .memory = batch.memory + batch.pos,
             .size = packet_len,
             .pos = 0,
         };
-        memcpy(incoming.memory, batch.memory + batch.pos, packet_len);
-
-        incoming_mutex.lock();
-        incoming_queue.push_back(incoming);
-        incoming_mutex.unlock();
+        BanchoState::handle_packet(incoming);
 
         seconds_between_pings = 1.0;
         batch.pos += packet_len;
@@ -111,7 +103,6 @@ void attempt_logging_in() {
             // Update auth token
             auto cho_token_it = response.headers.find("cho-token");
             if(cho_token_it != response.headers.end()) {
-                Sync::scoped_lock<Sync::mutex> lock{auth_mutex};
                 auth_token = cho_token_it->second;
                 BanchoState::cho_token = UString(cho_token_it->second);
             }
@@ -133,7 +124,6 @@ void attempt_logging_in() {
 }
 
 void send_bancho_packet_async(Packet outgoing) {
-    Sync::scoped_lock<Sync::mutex> lock{auth_mutex};
     if(auth_token.empty()) return;
 
     NetworkHandler::RequestOptions options;
@@ -198,6 +188,10 @@ void update_networking() {
     bool should_ping = difftime(time(nullptr), last_packet_tms) > seconds_between_pings;
     if(BanchoState::get_uid() <= 0) return;
 
+    // Append missing presence/stats request packets
+    BANCHO::User::request_presence_batch();
+    BANCHO::User::request_stats_batch();
+
     // Handle login and outgoing packet processing
     if(should_ping && outgoing.pos == 0) {
         outgoing.write<u16>(PING);
@@ -221,27 +215,6 @@ void update_networking() {
         out.write<u32>(0);
 
         send_bancho_packet_async(out);
-    }
-}
-
-void receive_bancho_packets() {
-    Sync::scoped_lock lock(incoming_mutex);
-    while(!incoming_queue.empty()) {
-        Packet incoming = incoming_queue.front();
-        incoming_queue.erase(incoming_queue.begin());
-        BanchoState::handle_packet(incoming);
-        free(incoming.memory);
-    }
-
-    // Request presence/stats every second
-    // XXX: Rather than every second, this should be done every time we're calling send_bancho_packet
-    //      But that function is on the networking thread, so requires extra brain power to do correctly
-    static f64 last_presence_request = engine->getTime();
-    if(engine->getTime() > last_presence_request + 1.f) {
-        last_presence_request = engine->getTime();
-
-        BANCHO::User::request_presence_batch();
-        BANCHO::User::request_stats_batch();
     }
 }
 
@@ -278,7 +251,6 @@ void send_packet(Packet &packet) {
 
 void cleanup_networking() {
     // no thread to kill, just cleanup any remaining state
-    Sync::scoped_lock<Sync::mutex> lock{auth_mutex};
     auth_token = "";
     free(outgoing.memory);
     outgoing = Packet();
@@ -304,12 +276,8 @@ void BanchoState::disconnect() {
         options.userAgent = "osu!";
         options.postData = std::string(reinterpret_cast<char *>(packet.memory), packet.pos);
         options.headers["x-mcosu-ver"] = BanchoState::neosu_version.toUtf8();
-
-        {
-            Sync::scoped_lock<Sync::mutex> lock{BANCHO::Net::auth_mutex};
-            options.headers["osu-token"] = BANCHO::Net::auth_token;
-            BANCHO::Net::auth_token = "";
-        }
+        options.headers["osu-token"] = BANCHO::Net::auth_token;
+        BANCHO::Net::auth_token = "";
 
         auto scheme = cv::use_https.getBool() ? "https://" : "http://";
         auto query_url = UString::format("%sc.%s/", scheme, BanchoState::endpoint.c_str());

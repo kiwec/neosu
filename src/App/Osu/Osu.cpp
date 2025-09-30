@@ -743,14 +743,6 @@ void Osu::update() {
         VPROF_BUDGET_DBG("Bancho::update", VPROF_BUDGETGROUP_UPDATE);
         BANCHO::Net::update_networking();
     }
-    {
-        VPROF_BUDGET_DBG("Bancho::recvapi", VPROF_BUDGETGROUP_UPDATE);
-        BANCHO::Api::update();
-    }
-    {
-        VPROF_BUDGET_DBG("Bancho::recvpkt", VPROF_BUDGETGROUP_UPDATE);
-        BANCHO::Net::receive_bancho_packets();
-    }
 
     // skin async loading
     if(this->bSkinLoadScheduled) {

@@ -27,7 +27,4 @@ struct Request {
 
 void send_request(const Request& request);
 
-// Must be called regularly from main thread.
-void update();
-
 }  // namespace BANCHO::Api
