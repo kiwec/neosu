@@ -12,6 +12,7 @@
 
 #include "ConVar.h"
 #include "Bancho.h"
+#include "BanchoApi.h"
 #include "BanchoNetworking.h"
 #include "BanchoProtocol.h"
 #include "BeatmapInterface.h"
@@ -270,20 +271,20 @@ void load_and_watch(FinishedScore score) {
                 osu->getNotificationOverlay()->addToast(msg, ERROR_TOAST);
             }
 
-            // Need to allocate with calloc since APIRequests free() the .extra
+            // Need to allocate with calloc since BANCHO::Api::Requests free() the .extra
             void* mem = calloc(1, sizeof(FinishedScore));
             auto* score_cpy = new(mem) FinishedScore;
             *score_cpy = score;
 
             UString url{"/web/osu-getreplay.php?m=0"};
             url.append(UString::fmt("&c={}", score.bancho_score_id));
-            BANCHO::Net::append_auth_params(url);
+            BANCHO::Api::append_auth_params(url);
 
-            APIRequest request;
-            request.type = GET_REPLAY;
+            BANCHO::Api::Request request;
+            request.type = BANCHO::Api::GET_REPLAY;
             request.path = url;
             request.extra = (u8*)score_cpy;
-            BANCHO::Net::send_api_request(request);
+            BANCHO::Api::send_request(request);
 
             osu->getNotificationOverlay()->addNotification("Downloading replay...");
             return;

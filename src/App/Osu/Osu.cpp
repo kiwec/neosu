@@ -8,6 +8,7 @@
 #include "AvatarManager.h"
 #include "BackgroundImageHandler.h"
 #include "Bancho.h"
+#include "BanchoApi.h"
 #include "BanchoNetworking.h"
 #include "BeatmapInterface.h"
 #include "CBaseUIScrollView.h"
@@ -739,7 +740,7 @@ void Osu::update() {
     }
     {
         VPROF_BUDGET_DBG("Bancho::recvapi", VPROF_BUDGETGROUP_UPDATE);
-        BANCHO::Net::receive_api_responses();
+        BANCHO::Api::update();
     }
     {
         VPROF_BUDGET_DBG("Bancho::recvpkt", VPROF_BUDGETGROUP_UPDATE);

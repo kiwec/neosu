@@ -23,6 +23,7 @@
 #include <cstring>
 
 #include "Bancho.h"
+#include "BanchoApi.h"
 #include "BanchoNetworking.h"
 #include "BanchoProtocol.h"
 #include "BanchoUsers.h"
@@ -759,7 +760,7 @@ void BanchoState::handle_packet(Packet &packet) {
             auto scheme = cv::use_https.getBool() ? "https://" : "http://";
             auto url = UString::fmt("{}osu.{}/web/neosu-submit-map.php", scheme, BanchoState::endpoint);
             url.append(UString::fmt("?hash={}", md5.string()));
-            BANCHO::Net::append_auth_params(url);
+            BANCHO::Api::append_auth_params(url);
 
             NetworkHandler::RequestOptions options;
             options.timeout = 60;

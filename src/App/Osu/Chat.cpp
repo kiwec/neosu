@@ -3,6 +3,7 @@
 
 #include "AnimationHandler.h"
 #include "Bancho.h"
+#include "BanchoApi.h"
 #include "BanchoNetworking.h"
 #include "BanchoUsers.h"
 #include "BeatmapInterface.h"
@@ -794,14 +795,14 @@ void Chat::mark_as_read(ChatChannel *chan) {
 
     UString url{"web/osu-markasread.php?"};
     url.append(UString::fmt("channel={}", env->urlEncode(chan->name.toUtf8())));
-    BANCHO::Net::append_auth_params(url);
+    BANCHO::Api::append_auth_params(url);
 
-    APIRequest request;
+    BANCHO::Api::Request request;
 
-    request.type = MARK_AS_READ;
+    request.type = BANCHO::Api::MARK_AS_READ;
     request.path = url;
 
-    BANCHO::Net::send_api_request(request);
+    BANCHO::Api::send_request(request);
 }
 
 void Chat::switchToChannel(ChatChannel *chan) {

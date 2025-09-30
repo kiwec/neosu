@@ -10,7 +10,7 @@
 
 #include "Archival.h"
 #include "Bancho.h"
-#include "BanchoNetworking.h"
+#include "BanchoApi.h"
 #include "BanchoProtocol.h"
 #include "ConVar.h"
 #include "Database.h"
@@ -373,13 +373,13 @@ DatabaseBeatmap* download_beatmap(i32 beatmap_id, MD5Hash beatmap_md5, float* pr
 
         UString url{"/web/osu-search-set.php?"};
         url.append(UString::fmt("b={}", beatmap_id));
-        BANCHO::Net::append_auth_params(url);
+        BANCHO::Api::append_auth_params(url);
 
-        APIRequest request;
-        request.type = GET_BEATMAPSET_INFO;
+        BANCHO::Api::Request request;
+        request.type = BANCHO::Api::GET_BEATMAPSET_INFO;
         request.path = url;
         request.extra_int = beatmap_id;
-        BANCHO::Net::send_api_request(request);
+        BANCHO::Api::send_request(request);
 
         queried_map_id = beatmap_id;
 
@@ -451,13 +451,13 @@ DatabaseBeatmap* download_beatmap(i32 beatmap_id, i32 beatmapset_id, float* prog
 
         UString url{"/web/osu-search-set.php?"};
         url.append(UString::fmt("b={}", beatmap_id));
-        BANCHO::Net::append_auth_params(url);
+        BANCHO::Api::append_auth_params(url);
 
-        APIRequest request;
-        request.type = GET_BEATMAPSET_INFO;
+        BANCHO::Api::Request request;
+        request.type = BANCHO::Api::GET_BEATMAPSET_INFO;
         request.path = url;
         request.extra_int = beatmap_id;
-        BANCHO::Net::send_api_request(request);
+        BANCHO::Api::send_request(request);
 
         queried_map_id = beatmap_id;
 

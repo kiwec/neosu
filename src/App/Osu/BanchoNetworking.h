@@ -11,31 +11,12 @@
 
 #define OSU_VERSION "b" OSU_VERSION_DATESTR
 
-enum APIRequestType : uint8_t {
-    NONE,
-    GET_BEATMAPSET_INFO,
-    GET_MAP_LEADERBOARD,
-    GET_REPLAY,
-    MARK_AS_READ,
-};
-
-struct APIRequest {
-    UString path{""};
-    u8* extra{nullptr};
-    i32 extra_int{0};  // lazy
-    APIRequestType type{NONE};
-};
-
 namespace BANCHO::Net {
-
-// Send an API request.
-void send_api_request(const APIRequest& request);
 
 // Send a packet to Bancho. Do not free it after calling this.
 void send_packet(Packet& packet);
 
 // Poll for new packets. Should be called regularly from main thread.
-void receive_api_responses();
 void receive_bancho_packets();
 
 // Process networking logic. Should be called regularly from main thread.
@@ -46,7 +27,5 @@ void cleanup_networking();
 
 // Callback for complete_oauth command
 void complete_oauth(std::string_view code);
-
-void append_auth_params(UString& url, std::string user_param = "u", std::string pw_param = "h");
 
 }  // namespace BANCHO::Net

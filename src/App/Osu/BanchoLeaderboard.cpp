@@ -2,6 +2,7 @@
 #include "BanchoLeaderboard.h"
 
 #include "Bancho.h"
+#include "BanchoApi.h"
 #include "BanchoNetworking.h"
 #include "BanchoUsers.h"
 #include "ConVar.h"
@@ -106,14 +107,14 @@ void fetch_online_scores(DatabaseBeatmap *beatmap) {
     url.append(UString::fmt("&mods={}", osu->getModSelector()->getModFlags()));
 
     // Auth (uses different params than default)
-    BANCHO::Net::append_auth_params(url, "us", "ha");
+    BANCHO::Api::append_auth_params(url, "us", "ha");
 
-    APIRequest request;
-    request.type = GET_MAP_LEADERBOARD;
+    BANCHO::Api::Request request;
+    request.type = BANCHO::Api::GET_MAP_LEADERBOARD;
     request.path = url;
     request.extra = (u8 *)strdup(beatmap->getMD5Hash().string());
 
-    BANCHO::Net::send_api_request(request);
+    BANCHO::Api::send_request(request);
 }
 
 void process_leaderboard_response(Packet response) {
