@@ -189,8 +189,15 @@ void update_networking() {
     if(BanchoState::get_uid() <= 0) return;
 
     // Append missing presence/stats request packets
-    BANCHO::User::request_presence_batch();
-    BANCHO::User::request_stats_batch();
+    // XXX: Rather than every second, this should be done once, and only once
+    //      (if we remove the check, right now it could spam 1000x/second)
+    static f64 last_presence_request = engine->getTime();
+    if(engine->getTime() > last_presence_request + 1.f) {
+        last_presence_request = engine->getTime();
+
+        BANCHO::User::request_presence_batch();
+        BANCHO::User::request_stats_batch();
+    }
 
     // Handle login and outgoing packet processing
     if(should_ping && outgoing.pos == 0) {
