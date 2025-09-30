@@ -38,7 +38,6 @@
 namespace BANCHO::Net {
 namespace {  // static namespace
 
-bool try_logging_in = false;
 Packet outgoing;
 Sync::mutex incoming_mutex;
 std::vector<Packet> incoming_queue;
@@ -46,31 +45,54 @@ time_t last_packet_tms = {0};
 std::atomic<double> seconds_between_pings{1.0};
 
 Sync::mutex auth_mutex;
-std::string auth_header = "";
+std::string auth_token = "";
 
-void send_bancho_packet_async(Packet outgoing) {
+void parse_packets(u8 *data, size_t s_data) {
+    Packet batch = {
+        .memory = data,
+        .size = s_data,
+        .pos = 0,
+    };
+
+    // + 7 for packet header
+    while(batch.pos + 7 < batch.size) {
+        u16 packet_id = batch.read<u16>();
+        batch.pos++;  // skip compression flag
+        u32 packet_len = batch.read<u32>();
+
+        if(packet_len > 10485760) {
+            debugLog("Received a packet over 10Mb! Dropping response.");
+            break;
+        }
+
+        if(batch.pos + packet_len > batch.size) break;
+
+        Packet incoming = {
+            .id = packet_id,
+            .memory = (u8 *)calloc(packet_len, sizeof(*Packet::memory)),
+            .size = packet_len,
+            .pos = 0,
+        };
+        memcpy(incoming.memory, batch.memory + batch.pos, packet_len);
+
+        incoming_mutex.lock();
+        incoming_queue.push_back(incoming);
+        incoming_mutex.unlock();
+
+        seconds_between_pings = 1.0;
+        batch.pos += packet_len;
+    }
+}
+
+void attempt_logging_in() {
+    assert(BanchoState::get_uid() <= 0);
+
     NetworkHandler::RequestOptions options;
     options.timeout = 30;
     options.connectTimeout = 5;
     options.userAgent = "osu!";
     options.headers["x-mcosu-ver"] = BanchoState::neosu_version.toUtf8();
-
-    {
-        Sync::scoped_lock<Sync::mutex> lock{auth_mutex};
-        if(!auth_header.empty()) {
-            // extract token from "osu-token: TOKEN" format
-            size_t colon_pos = auth_header.find(':');
-            if(colon_pos != std::string::npos) {
-                std::string token = auth_header.substr(colon_pos + 1);
-                // trim whitespace
-                SString::trim_inplace(token);
-                options.headers["osu-token"] = token;
-            }
-        }
-    }
-
-    // copy outgoing packet data for POST
-    options.postData = std::string(reinterpret_cast<char *>(outgoing.memory), outgoing.pos);
+    options.postData = BanchoState::build_login_packet();
 
     auto scheme = cv::use_https.getBool() ? "https://" : "http://";
     auto query_url = UString::format("%sc.%s/", scheme, BanchoState::endpoint.c_str());
@@ -81,28 +103,16 @@ void send_bancho_packet_async(Packet outgoing) {
         query_url,
         [func = __FUNCTION__](NetworkHandler::Response response) {
             if(!response.success) {
-                debugLogLambda("Failed to send packet, HTTP error {}", response.responseCode);
-                Sync::scoped_lock<Sync::mutex> lock{auth_mutex};
-                if(auth_header.empty()) {
-                    auto errmsg = UString::format("Failed to log in: HTTP %ld", response.responseCode);
-                    osu->getNotificationOverlay()->addToast(errmsg, ERROR_TOAST);
-                }
+                auto errmsg = UString::format("Failed to log in: HTTP %ld", response.responseCode);
+                osu->getNotificationOverlay()->addToast(errmsg, ERROR_TOAST);
                 return;
             }
-
-            // // debug
-            // if (cv::debug_network.getBool()) {
-            //     Logger::logRaw("DEBUG headers:");
-            //     for(const auto &headerstr : response.headers) {
-            //         Logger::logRaw("{:s} {:s}", headerstr.first.c_str(), headerstr.second.c_str());
-            //     }
-            // }
 
             // Update auth token
             auto cho_token_it = response.headers.find("cho-token");
             if(cho_token_it != response.headers.end()) {
                 Sync::scoped_lock<Sync::mutex> lock{auth_mutex};
-                auth_header = "osu-token: " + cho_token_it->second;
+                auth_token = cho_token_it->second;
                 BanchoState::cho_token = UString(cho_token_it->second);
             }
 
@@ -117,45 +127,39 @@ void send_bancho_packet_async(Packet outgoing) {
                 }
             }
 
-            // parse response packets
-            Packet response_packet = {
-                .memory = (u8 *)malloc(response.body.length() + 1),  // +1 for null terminator
-                .size = response.body.length() + 1,
-                .pos = 0,
-            };
-            memcpy(response_packet.memory, response.body.data(), response.body.length());
-            response_packet.memory[response.body.length()] = '\0';  // null terminate
+            parse_packets((u8*)response.body.data(), response.body.length());
+        },
+        options);
+}
 
-            // + 7 for packet header
-            while(response_packet.pos + 7 < response_packet.size) {
-                u16 packet_id = response_packet.read<u16>();
-                response_packet.pos++;  // skip compression flag
-                u32 packet_len = response_packet.read<u32>();
+void send_bancho_packet_async(Packet outgoing) {
+    Sync::scoped_lock<Sync::mutex> lock{auth_mutex};
+    if(auth_token.empty()) return;
 
-                if(packet_len > 10485760) {
-                    debugLogLambda("Received a packet over 10Mb! Dropping response.");
-                    break;
-                }
+    NetworkHandler::RequestOptions options;
+    options.timeout = 30;
+    options.connectTimeout = 5;
+    options.userAgent = "osu!";
+    options.headers["x-mcosu-ver"] = BanchoState::neosu_version.toUtf8();
+    options.headers["osu-token"] = auth_token;
 
-                if(response_packet.pos + packet_len > response_packet.size) break;
+    // copy outgoing packet data for POST
+    options.postData = std::string(reinterpret_cast<char *>(outgoing.memory), outgoing.pos);
 
-                Packet incoming = {
-                    .id = packet_id,
-                    .memory = (u8 *)calloc(packet_len, sizeof(*Packet::memory)),
-                    .size = packet_len,
-                    .pos = 0,
-                };
-                memcpy(incoming.memory, response_packet.memory + response_packet.pos, packet_len);
+    auto scheme = cv::use_https.getBool() ? "https://" : "http://";
+    auto query_url = UString::format("%sc.%s/", scheme, BanchoState::endpoint.c_str());
 
-                incoming_mutex.lock();
-                incoming_queue.push_back(incoming);
-                incoming_mutex.unlock();
+    last_packet_tms = time(nullptr);
 
-                seconds_between_pings = 1.0;
-                response_packet.pos += packet_len;
+    networkHandler->httpRequestAsync(
+        query_url,
+        [func = __FUNCTION__](NetworkHandler::Response response) {
+            if(!response.success) {
+                debugLogLambda("Failed to send packet, HTTP error {}", response.responseCode);
+                return;
             }
 
-            free(response_packet.memory);
+            parse_packets((u8*)response.body.data(), response.body.length());
         },
         options);
 
@@ -189,17 +193,13 @@ void update_networking() {
     if(osu && osu->getLobby()->isVisible()) seconds_between_pings = 1;
     if(BanchoState::spectating) seconds_between_pings = 1;
     if(BanchoState::is_in_a_multi_room() && seconds_between_pings > 3) seconds_between_pings = 3;
+    // XXX: set seconds_between_pings to 30 when using websockets
+
     bool should_ping = difftime(time(nullptr), last_packet_tms) > seconds_between_pings;
-    if(BanchoState::get_uid() <= 0) should_ping = false;
+    if(BanchoState::get_uid() <= 0) return;
 
     // Handle login and outgoing packet processing
-    if(try_logging_in) {
-        try_logging_in = false;
-        if(BanchoState::get_uid() <= 0) {
-            Packet login = BanchoState::build_login_packet();
-            send_bancho_packet_async(login);
-        }
-    } else if(should_ping && outgoing.pos == 0) {
+    if(should_ping && outgoing.pos == 0) {
         outgoing.write<u16>(PING);
         outgoing.write<u8>(0);
         outgoing.write<u32>(0);
@@ -278,8 +278,8 @@ void send_packet(Packet &packet) {
 
 void cleanup_networking() {
     // no thread to kill, just cleanup any remaining state
-    try_logging_in = false;
-    auth_header = "";
+    Sync::scoped_lock<Sync::mutex> lock{auth_mutex};
+    auth_token = "";
     free(outgoing.memory);
     outgoing = Packet();
 }
@@ -307,14 +307,8 @@ void BanchoState::disconnect() {
 
         {
             Sync::scoped_lock<Sync::mutex> lock{BANCHO::Net::auth_mutex};
-            if(!BANCHO::Net::auth_header.empty()) {
-                size_t colon_pos = BANCHO::Net::auth_header.find(':');
-                if(colon_pos != std::string::npos) {
-                    std::string token = BANCHO::Net::auth_header.substr(colon_pos + 1);
-                    SString::trim_inplace(token);
-                    options.headers["osu-token"] = token;
-                }
-            }
+            options.headers["osu-token"] = BANCHO::Net::auth_token;
+            BANCHO::Net::auth_token = "";
         }
 
         auto scheme = cv::use_https.getBool() ? "https://" : "http://";
@@ -326,11 +320,6 @@ void BanchoState::disconnect() {
         free(packet.memory);
     }
 
-    BANCHO::Net::try_logging_in = false;
-    {
-        Sync::scoped_lock<Sync::mutex> lock2{BANCHO::Net::auth_mutex};
-        BANCHO::Net::auth_header = "";
-    }
     free(BANCHO::Net::outgoing.memory);
     BANCHO::Net::outgoing = Packet();
 
@@ -402,5 +391,6 @@ void BanchoState::reconnect() {
     }
 
     osu->getOptionsMenu()->setLoginLoadingState(true);
-    BANCHO::Net::try_logging_in = true;
+
+    BANCHO::Net::attempt_logging_in();
 }

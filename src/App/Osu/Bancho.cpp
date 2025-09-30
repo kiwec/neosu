@@ -783,7 +783,7 @@ void BanchoState::handle_packet(Packet &packet) {
     }
 }
 
-Packet BanchoState::build_login_packet() {
+std::string BanchoState::build_login_packet() {
     // Request format:
     // username\npasswd_md5\nosu_version|utc_offset|display_city|client_hashes|pm_private\n
     std::string req;
@@ -842,9 +842,7 @@ Packet BanchoState::build_login_packet() {
     // Allow PMs from strangers
     req.append("0\n");
 
-    Packet packet;
-    packet.write_bytes((u8 *)req.c_str(), req.length());
-    return packet;
+    return req;
 }
 
 std::string BanchoState::get_username() {

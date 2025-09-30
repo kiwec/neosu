@@ -60,7 +60,7 @@ struct BanchoState final {
 
     // utils
     static void handle_packet(Packet &packet);
-    static Packet build_login_packet();
+    static std::string build_login_packet();
     static MD5Hash md5(u8 *msg, size_t msg_len);
 
     // cached uuid
