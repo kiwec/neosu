@@ -396,6 +396,7 @@ std::shared_ptr<NetworkHandler::Websocket> NetworkHandler::initWebsocket(const W
 
     auto websocket = std::make_shared<Websocket>();
     websocket->max_recv = options.max_recv;
+    websocket->time_created = engine->getTime();
 
     RequestOptions httpOptions;
     httpOptions.headers = options.headers;

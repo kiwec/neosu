@@ -153,6 +153,16 @@ void send_bancho_packet_ws(Packet outgoing) {
     if(auth_token.empty()) return;
 
     if(websocket == nullptr || websocket->status == NetworkHandler::WEBSOCKET_DISCONNECTED) {
+        // We have been disconnected in less than 5 seconds.
+        // Don't try to reconnect, server clearly doesn't want us to.
+        // (without this, we would be spamming retries every frame)
+        if(websocket && websocket->time_created + 5.0 > engine->getTime()) {
+            // XXX: dropping websocket->out here
+            use_websockets = false;
+            send_bancho_packet_http(outgoing);
+            return;
+        }
+
         NetworkHandler::WebsocketOptions options;
         options.user_agent = "osu!";
         options.headers["x-mcosu-ver"] = BanchoState::neosu_version.toUtf8();
@@ -160,8 +170,6 @@ void send_bancho_packet_ws(Packet outgoing) {
 
         auto scheme = cv::use_https.getBool() ? "wss://" : "ws://";
         options.url = fmt::format("{}c.{}/ws/", scheme, BanchoState::endpoint);
-
-        // TODO: give up if reconnecting too often!
 
         auto new_websocket = networkHandler->initWebsocket(options);
         if(websocket != nullptr) new_websocket->out = websocket->out;  // don't lose outgoing packet queue

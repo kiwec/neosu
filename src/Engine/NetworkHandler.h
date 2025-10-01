@@ -49,6 +49,7 @@ class NetworkHandler {
         std::atomic<u8> status{WEBSOCKET_CONNECTING};
         std::vector<u8> in;
         std::vector<u8> out;
+        f64 time_created;
 
        private:
         CURL* handle{nullptr};
