@@ -134,8 +134,6 @@ void send_bancho_packet_http(Packet outgoing) {
     auto scheme = cv::use_https.getBool() ? "https://" : "http://";
     auto query_url = fmt::format("{:s}c.{:s}/", scheme, BanchoState::endpoint);
 
-    last_packet_tms = time(nullptr);
-
     networkHandler->httpRequestAsync(
         query_url,
         [func = __FUNCTION__](NetworkHandler::Response response) {
@@ -242,6 +240,8 @@ void update_networking() {
     }
 
     if(outgoing.pos > 0) {
+        last_packet_tms = time(nullptr);
+
         Packet out = outgoing;
         outgoing = Packet();
 
@@ -257,6 +257,11 @@ void update_networking() {
             send_bancho_packet_http(out);
         }
         free(out.memory);
+    }
+
+    if(websocket && !websocket->in.empty()) {
+        parse_packets((u8 *)websocket->in.data(), websocket->in.size());
+        websocket->in.clear();
     }
 }
 

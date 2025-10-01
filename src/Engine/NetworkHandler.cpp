@@ -127,6 +127,35 @@ void NetworkHandler::processNewRequests() {
 
         setupCurlHandle(request->easy_handle, request.get());
 
+        // curl_multi broken on websockets
+        // HACK: we're blocking whole network thread here, while websocket is connecting
+        if(request->options.is_websocket) {
+            auto res = curl_easy_perform(request->easy_handle);
+            curl_easy_getinfo(request->easy_handle, CURLINFO_RESPONSE_CODE, &request->response.response_code);
+            request->response.success = (res == CURLE_OK) && (request->response.response_code == 101);
+
+            if(request->headers_list) {
+                curl_slist_free_all(request->headers_list);
+            }
+            if(request->mime) {
+                curl_mime_free(request->mime);
+                request->mime = nullptr;
+            }
+
+            if(!request->response.success) {
+                curl_easy_cleanup(request->easy_handle);
+                continue;
+            }
+
+            // pass websocket handle
+            request->response.easy_handle = request->easy_handle;
+
+            // defer async callback execution
+            Sync::scoped_lock completed_lock{this->completed_requests_mutex};
+            this->completed_requests.push_back(std::move(request));
+            continue;
+        }
+
         CURLMcode mres = curl_multi_add_handle(this->multi_handle, request->easy_handle);
         if(mres != CURLM_OK) {
             curl_easy_cleanup(request->easy_handle);
@@ -164,28 +193,16 @@ void NetworkHandler::processCompletedRequests() {
                     curl_easy_getinfo(easy_handle, CURLINFO_RESPONSE_CODE, &request->response.response_code);
                     request->response.success = (msg->data.result == CURLE_OK);
 
-                    if(request->options.is_websocket) {
-                        // websocket connection only succeeds if server returns 101
-                        request->response.success &= (request->response.response_code == 101);
-                    }
-
                     if(request->headers_list) {
                         curl_slist_free_all(request->headers_list);
                     }
-
-                    // keep handle alive for successful websocket connections
-                    if(!request->response.success || !request->options.is_websocket) {
-                        curl_easy_cleanup(easy_handle);
-                        request->easy_handle = nullptr;
-                    }
-
-                    // pass websocket handle (or nullptr)
-                    request->response.easy_handle = request->easy_handle;
-
                     if(request->mime) {
                         curl_mime_free(request->mime);
                         request->mime = nullptr;
                     }
+
+                    curl_easy_cleanup(request->easy_handle);
+                    request->easy_handle = nullptr;
 
                     if(request->is_sync) {
                         // handle sync request immediately
@@ -334,15 +351,15 @@ void NetworkHandler::update() {
         while(res == CURLE_OK && bytes_available > 0) {
             u8 buf[65000];
             size_t nb_read = 0;
-            const struct curl_ws_frame* meta;
+            const struct curl_ws_frame* meta = nullptr;
             res = curl_ws_recv(ws->handle, buf, sizeof(buf), &nb_read, &meta);
 
             if(res == CURLE_OK) {
-                if(nb_read > 0) {
+                if(nb_read > 0 && (meta->flags & CURLWS_BINARY)) {
                     ws->in_partial.insert(ws->in_partial.end(), buf, buf + nb_read);
                     bytes_available -= nb_read;
                 }
-                if(meta->bytesleft == 0 && !ws->in_partial.empty()) {
+                if(!ws->in_partial.empty() && meta->bytesleft == 0) {
                     ws->in.insert(ws->in.end(), ws->in_partial.begin(), ws->in_partial.end());
                     ws->in_partial.clear();
                 }
