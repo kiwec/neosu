@@ -27,5 +27,3 @@ using f64 = double;
 
 static_assert(sizeof(f32) == 4);
 static_assert(sizeof(f64) == 8);
-
-static_assert(sizeof(time_t) == sizeof(u64), "32-bit time is not supported.");
