@@ -5,7 +5,7 @@
 #include <string>
 
 class DatabaseBeatmap;
-class MD5Hash;
+struct MD5Hash;
 struct Packet;
 
 namespace Downloader {
