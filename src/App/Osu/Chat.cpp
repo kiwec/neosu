@@ -793,8 +793,8 @@ void Chat::mark_as_read(ChatChannel *chan) {
     // XXX: Only mark as read after 500ms
     chan->read = true;
 
-    UString url{"web/osu-markasread.php?"};
-    url.append(UString::fmt("channel={}", env->urlEncode(chan->name.toUtf8())));
+    std::string url{"web/osu-markasread.php?"};
+    url.append(fmt::format("channel={}", env->urlEncode(chan->name.toUtf8())));
     BANCHO::Api::append_auth_params(url);
 
     BANCHO::Api::Request request;

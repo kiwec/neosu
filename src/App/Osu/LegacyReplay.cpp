@@ -276,8 +276,8 @@ void load_and_watch(FinishedScore score) {
             auto* score_cpy = new(mem) FinishedScore;
             *score_cpy = score;
 
-            UString url{"/web/osu-getreplay.php?m=0"};
-            url.append(UString::fmt("&c={}", score.bancho_score_id));
+            std::string url{"/web/osu-getreplay.php?m=0"};
+            url.append(fmt::format("&c={}", score.bancho_score_id));
             BANCHO::Api::append_auth_params(url);
 
             BANCHO::Api::Request request;

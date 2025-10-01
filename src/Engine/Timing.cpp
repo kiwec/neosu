@@ -12,7 +12,6 @@
 #include "ConVar.h"
 
 #include <cassert>
-#include <ctime>
 #endif
 
 namespace Timing::detail {
@@ -47,7 +46,7 @@ class SleepHandler final {
     }
     ~SleepHandler() = default;
 
-    forceinline void imprecise(uint64_t ns) const noexcept {
+    forceinline void imprecise(u64 ns) const noexcept {
         if(m_bForceDisable || !m_bUseNTDelayExec) {
             SDL_DelayNS(ns);
             return;
@@ -57,19 +56,19 @@ class SleepHandler final {
         m_pNtDelayExec(0, static_cast<PLARGE_INTEGER>(&sleepTicks));
     }
 
-    forceinline void precise(uint64_t ns) const noexcept {
+    forceinline void precise(u64 ns) const noexcept {
         if(m_bForceDisable || !m_bUseNTDelayExec) {
             SDL_DelayPrecise(ns);
             return;
         }
 
         // use NtDelayExecution for bulk delay, busy-wait for remainder
-        const uint64_t targetTime = getTicksNS() + ns;
+        const u64 targetTime = getTicksNS() + ns;
         if(ns > m_actualDelayAmount) {
             // get "remainder", time which the sleep resolution might not handle
             // e.g. 0.51ms with 0.5ms minimum: NtDelayExecution for exactly 1 x 0.5ms = 0.5ms, busy wait for 0.01ms remainder
             //      1.25ms with 0.5ms minimum: NtDelayExecution for exactly 2 x 0.5ms = 1ms, busy wait for 0.25ms remainder
-            const uint64_t bulkDelay = (ns / m_actualDelayAmount) * m_actualDelayAmount;
+            const u64 bulkDelay = (ns / m_actualDelayAmount) * m_actualDelayAmount;
 
             LARGE_INTEGER sleepTicks{.QuadPart = -static_cast<LONGLONG>(bulkDelay / 100LL)};
             m_pNtDelayExec(0, static_cast<PLARGE_INTEGER>(&sleepTicks));
@@ -84,24 +83,24 @@ class SleepHandler final {
    private:
     void measureActualDelay() noexcept {
         // measure the minimum time NtDelayExecution actually sleeps for
-        constexpr int numSamples = 3;  // 3 samples per delay amount
+        constexpr i32 numSamples = 3;  // 3 samples per delay amount
         constexpr const auto testDelays = std::array{50000ULL, 100000ULL, 250000ULL, 500000ULL};  // 0.05ms to 0.25ms
 
-        uint64_t minActualSleep = UINT64_MAX;
+        u64 minActualSleep = UINT64_MAX;
 
         for(const auto testDelayNs : testDelays) {
-            uint64_t totalActual = 0;
-            int validSamples = 0;
+            u64 totalActual = 0;
+            i32 validSamples = 0;
 
-            for(int i = 0; i < numSamples; ++i) {
-                uint64_t startTime = getTicksNS();
+            for(i32 i = 0; i < numSamples; ++i) {
+                u64 startTime = getTicksNS();
 
                 LARGE_INTEGER sleepTicks{.QuadPart = -static_cast<LONGLONG>(testDelayNs / 100LL)};
                 m_pNtDelayExec(0, static_cast<PLARGE_INTEGER>(&sleepTicks));
 
-                uint64_t endTime = getTicksNS();
+                u64 endTime = getTicksNS();
 
-                uint64_t actualDelay = endTime - startTime;
+                u64 actualDelay = endTime - startTime;
                 if(actualDelay >= testDelayNs / 2 && actualDelay < testDelayNs * 4) {  // sanity check
                     totalActual += actualDelay;
                     validSamples++;
@@ -109,7 +108,7 @@ class SleepHandler final {
             }
 
             if(validSamples > 0) {
-                uint64_t avgActual = totalActual / validSamples;
+                u64 avgActual = totalActual / validSamples;
                 if(avgActual < minActualSleep) {
                     minActualSleep = avgActual;
                 }
@@ -128,7 +127,7 @@ class SleepHandler final {
     }
 
     // callback
-    void forceDisable(float newVal) { m_bForceDisable = !static_cast<int>(newVal); }
+    void forceDisable(float newVal) { m_bForceDisable = !static_cast<i32>(newVal); }
 
     using NtDelayExecution_t = LONG NTAPI(BOOLEAN Alertable, PLARGE_INTEGER DelayInterval);
     using NtQueryTimerResolution_t = LONG NTAPI(PULONG MaximumTime, PULONG MinimumTime, PULONG CurrentTime);
@@ -138,7 +137,7 @@ class SleepHandler final {
     NtQueryTimerResolution_t *m_pNtQueryTimerRes{nullptr};
     NtSetTimerResolution_t *m_pNtSetTimerRes{nullptr};
 
-    uint64_t m_actualDelayAmount{0};  // minimum time NtDelayExecution actually sleeps for in nanoseconds
+    u64 m_actualDelayAmount{0};  // minimum time NtDelayExecution actually sleeps for in nanoseconds
     bool m_bUseNTDelayExec{false};
     bool m_bForceDisable{false};
 };
@@ -152,23 +151,23 @@ static forceinline const SleepHandler &getSleeper() {
 
 }  // namespace
 
-void sleep_ns_internal(uint64_t ns) noexcept { getSleeper().imprecise(ns); }
-void sleep_ns_precise_internal(uint64_t ns) noexcept { getSleeper().precise(ns); }
+void sleep_ns_internal(u64 ns) noexcept { getSleeper().imprecise(ns); }
+void sleep_ns_precise_internal(u64 ns) noexcept { getSleeper().precise(ns); }
 
 #else
-void sleep_ns_internal(uint64_t ns) noexcept { SDL_DelayNS(ns); }
-void sleep_ns_precise_internal(uint64_t ns) noexcept { SDL_DelayPrecise(ns); }
+void sleep_ns_internal(u64 ns) noexcept { SDL_DelayNS(ns); }
+void sleep_ns_precise_internal(u64 ns) noexcept { SDL_DelayPrecise(ns); }
 #endif
 }  // namespace Timing::detail
 
 #ifdef MCENGINE_PLATFORM_WINDOWS
 
-struct tm *gmtime_x(const int64_t *timer, struct tm *timebuf) {
+struct tm *gmtime_x(const time_t *timer, struct tm *timebuf) {
     _gmtime64_s(timebuf, timer);
     return timebuf;
 }
 
-struct tm *localtime_x(const int64_t *timer, struct tm *timebuf) {
+struct tm *localtime_x(const time_t *timer, struct tm *timebuf) {
     _localtime64_s(timebuf, timer);
     return timebuf;
 }

@@ -14,11 +14,11 @@
 #include <utility>
 
 // internal request structure
-struct NetworkRequest {
-    UString url;
-    NetworkHandler::AsyncCallback callback;
-    NetworkHandler::RequestOptions options;
-    NetworkHandler::Response response;
+struct NetworkHandler::NetworkRequest {
+    std::string url;
+    AsyncCallback callback;
+    RequestOptions options;
+    Response response;
     CURL* easy_handle{nullptr};
     struct curl_slist* headers_list{nullptr};
     curl_mime* mime{nullptr};
@@ -27,11 +27,11 @@ struct NetworkRequest {
     bool is_sync{false};
     void* sync_id{nullptr};
 
-    NetworkRequest(UString u, NetworkHandler::AsyncCallback cb, NetworkHandler::RequestOptions opts)
+    NetworkRequest(std::string u, AsyncCallback cb, RequestOptions opts)
         : url(std::move(u)), callback(std::move(cb)), options(std::move(opts)) {}
 };
 
-NetworkHandler::NetworkHandler() : multi_handle(nullptr) {
+NetworkHandler::NetworkHandler() {
     // this needs to be called once to initialize curl on startup
     curl_global_init(CURL_GLOBAL_DEFAULT);
 
@@ -85,7 +85,7 @@ void NetworkHandler::networkThreadFunc(const Sync::stop_token& stopToken) {
         processNewRequests();
 
         if(!this->active_requests.empty()) {
-            int running_handles;
+            i32 running_handles;
             CURLMcode mres = curl_multi_perform(this->multi_handle, &running_handles);
 
             if(mres != CURLM_OK) {
@@ -97,7 +97,7 @@ void NetworkHandler::networkThreadFunc(const Sync::stop_token& stopToken) {
 
         if(this->active_requests.empty()) {
             // wait for new requests
-            Sync::unique_lock<Sync::mutex> lock{this->request_queue_mutex};
+            Sync::unique_lock lock{this->request_queue_mutex};
 
             Sync::stop_callback stopCallback(stopToken, [&]() { this->request_queue_cv.notify_all(); });
 
@@ -144,7 +144,7 @@ void NetworkHandler::processNewRequests() {
 
 void NetworkHandler::processCompletedRequests() {
     CURLMsg* msg;
-    int msgs_left;
+    i32 msgs_left;
 
     // collect completed requests without holding locks during callback execution
     while((msg = curl_multi_info_read(this->multi_handle, &msgs_left))) {
@@ -161,12 +161,12 @@ void NetworkHandler::processCompletedRequests() {
                     curl_multi_remove_handle(this->multi_handle, easy_handle);
 
                     // get response code
-                    curl_easy_getinfo(easy_handle, CURLINFO_RESPONSE_CODE, &request->response.responseCode);
+                    curl_easy_getinfo(easy_handle, CURLINFO_RESPONSE_CODE, &request->response.response_code);
                     request->response.success = (msg->data.result == CURLE_OK);
 
-                    if(request->options.isWebsocket) {
+                    if(request->options.is_websocket) {
                         // websocket connection only succeeds if server returns 101
-                        request->response.success &= (request->response.responseCode == 101);
+                        request->response.success &= (request->response.response_code == 101);
                     }
 
                     if(request->headers_list) {
@@ -174,7 +174,7 @@ void NetworkHandler::processCompletedRequests() {
                     }
 
                     // keep handle alive for successful websocket connections
-                    if(!request->response.success || !request->options.isWebsocket) {
+                    if(!request->response.success || !request->options.is_websocket) {
                         curl_easy_cleanup(easy_handle);
                         request->easy_handle = nullptr;
                     }
@@ -206,20 +206,19 @@ void NetworkHandler::processCompletedRequests() {
     }
 }
 
-int NetworkHandler::progressCallback(void* clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t /*unused*/,
-                                     curl_off_t /*unused*/) {
+i32 NetworkHandler::progressCallback(void* clientp, i64 dltotal, i64 dlnow, i64 /*unused*/, i64 /*unused*/) {
     auto* request = static_cast<NetworkRequest*>(clientp);
-    if(request->options.progressCallback && dltotal > 0) {
+    if(request->options.progress_callback && dltotal > 0) {
         float progress = static_cast<float>(dlnow) / static_cast<float>(dltotal);
-        request->options.progressCallback(progress);
+        request->options.progress_callback(progress);
     }
     return 0;
 }
 
 void NetworkHandler::setupCurlHandle(CURL* handle, NetworkRequest* request) {
     curl_easy_setopt(handle, CURLOPT_VERBOSE, cv::debug_network.getVal<long>());
-    curl_easy_setopt(handle, CURLOPT_URL, request->url.toUtf8());
-    curl_easy_setopt(handle, CURLOPT_CONNECTTIMEOUT, request->options.connectTimeout);
+    curl_easy_setopt(handle, CURLOPT_URL, request->url.c_str());
+    curl_easy_setopt(handle, CURLOPT_CONNECTTIMEOUT, request->options.connect_timeout);
     curl_easy_setopt(handle, CURLOPT_TIMEOUT, request->options.timeout);
     curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, writeCallback);
     curl_easy_setopt(handle, CURLOPT_WRITEDATA, request);
@@ -230,15 +229,15 @@ void NetworkHandler::setupCurlHandle(CURL* handle, NetworkRequest* request) {
     curl_easy_setopt(handle, CURLOPT_NOSIGNAL, 1L);
     curl_easy_setopt(handle, CURLOPT_FAILONERROR, 1L);  // fail on HTTP responses >= 400
 
-    if(!request->options.userAgent.empty()) {
-        curl_easy_setopt(handle, CURLOPT_USERAGENT, request->options.userAgent.c_str());
+    if(!request->options.user_agent.empty()) {
+        curl_easy_setopt(handle, CURLOPT_USERAGENT, request->options.user_agent.c_str());
     }
 
-    if(request->options.followRedirects) {
+    if(request->options.follow_redirects) {
         curl_easy_setopt(handle, CURLOPT_FOLLOWLOCATION, 1L);
     }
 
-    if(request->options.isWebsocket) {
+    if(request->options.is_websocket) {
         // Special behavior: on CURLOPT_CONNECT_ONLY == 2,
         // curl actually waits for server response on perform
         curl_easy_setopt(handle, CURLOPT_CONNECT_ONLY, 2L);
@@ -256,16 +255,16 @@ void NetworkHandler::setupCurlHandle(CURL* handle, NetworkRequest* request) {
     }
 
     // setup POST data
-    if(!request->options.postData.empty()) {
-        curl_easy_setopt(handle, CURLOPT_POSTFIELDS, request->options.postData.c_str());
-        curl_easy_setopt(handle, CURLOPT_POSTFIELDSIZE, request->options.postData.length());
+    if(!request->options.post_data.empty()) {
+        curl_easy_setopt(handle, CURLOPT_POSTFIELDS, request->options.post_data.c_str());
+        curl_easy_setopt(handle, CURLOPT_POSTFIELDSIZE, request->options.post_data.length());
     }
 
     // setup MIME data
-    if(!request->options.mimeParts.empty()) {
+    if(!request->options.mime_parts.empty()) {
         request->mime = curl_mime_init(handle);
 
-        for(const auto& it : request->options.mimeParts) {
+        for(const auto& it : request->options.mime_parts) {
             auto part = curl_mime_addpart(request->mime);
             if(!it.filename.empty()) {
                 curl_mime_filename(part, it.filename.c_str());
@@ -278,7 +277,7 @@ void NetworkHandler::setupCurlHandle(CURL* handle, NetworkRequest* request) {
     }
 
     // setup progress callback if provided
-    if(request->options.progressCallback) {
+    if(request->options.progress_callback) {
         curl_easy_setopt(handle, CURLOPT_NOPROGRESS, 0L);
         curl_easy_setopt(handle, CURLOPT_XFERINFOFUNCTION, progressCallback);
         curl_easy_setopt(handle, CURLOPT_XFERINFODATA, request);
@@ -329,13 +328,13 @@ void NetworkHandler::update() {
 
     // websocket recv
     for(auto& ws : this->active_websockets) {
-        u64 bytes_available = ws->maxRecvBytes - (ws->in.size() + ws->in_partial.size());
+        u64 bytes_available = ws->max_recv - (ws->in.size() + ws->in_partial.size());
 
         CURLcode res = CURLE_OK;
         while(res == CURLE_OK && bytes_available > 0) {
             u8 buf[65000];
             size_t nb_read = 0;
-            const struct curl_ws_frame *meta;
+            const struct curl_ws_frame* meta;
             res = curl_ws_recv(ws->handle, buf, sizeof(buf), &nb_read, &meta);
 
             if(res == CURLE_OK) {
@@ -358,7 +357,7 @@ void NetworkHandler::update() {
             }
         }
     }
-    std::erase_if(this->active_websockets, [](const auto &ws) { return ws->status != WEBSOCKET_CONNECTED; });
+    std::erase_if(this->active_websockets, [](const auto& ws) { return ws->status != WEBSOCKET_CONNECTED; });
 
     // websocket send
     for(auto& ws : this->active_websockets) {
@@ -374,10 +373,10 @@ void NetworkHandler::update() {
             ws->status = WEBSOCKET_DISCONNECTED;
         }
     }
-    std::erase_if(this->active_websockets, [](const auto &ws) { return ws->status != WEBSOCKET_CONNECTED; });
+    std::erase_if(this->active_websockets, [](const auto& ws) { return ws->status != WEBSOCKET_CONNECTED; });
 }
 
-void NetworkHandler::httpRequestAsync(const UString& url, AsyncCallback callback, const RequestOptions& options) {
+void NetworkHandler::httpRequestAsync(const std::string& url, AsyncCallback callback, const RequestOptions& options) {
     auto request = std::make_unique<NetworkRequest>(url, std::move(callback), options);
 
     Sync::scoped_lock lock{this->request_queue_mutex};
@@ -396,17 +395,17 @@ std::shared_ptr<NetworkHandler::Websocket> NetworkHandler::initWebsocket(const W
     assert(options.url.starts_with("ws://") || options.url.starts_with("wss://"));
 
     auto websocket = std::make_shared<Websocket>();
-    websocket->maxRecvBytes = options.maxRecvBytes;
+    websocket->max_recv = options.max_recv;
 
     RequestOptions httpOptions;
     httpOptions.headers = options.headers;
-    httpOptions.userAgent = options.userAgent;
+    httpOptions.user_agent = options.user_agent;
     httpOptions.timeout = options.timeout;
-    httpOptions.connectTimeout = options.connectTimeout;
-    httpOptions.isWebsocket = true;
+    httpOptions.connect_timeout = options.connect_timeout;
+    httpOptions.is_websocket = true;
 
     this->httpRequestAsync(
-        UString(options.url.c_str()),
+        options.url,
         [this, websocket](const NetworkHandler::Response& response) {
             if(response.success) {
                 websocket->handle = response.easy_handle;
@@ -416,14 +415,13 @@ std::shared_ptr<NetworkHandler::Websocket> NetworkHandler::initWebsocket(const W
                 websocket->status = WEBSOCKET_UNSUPPORTED;
             }
         },
-        httpOptions
-    );
+        httpOptions);
 
     return websocket;
 }
 
 // synchronous API (blocking)
-NetworkHandler::Response NetworkHandler::performSyncRequest(const UString& url, const RequestOptions& options) {
+NetworkHandler::Response NetworkHandler::httpRequestSynchronous(const std::string& url, const RequestOptions& options) {
     Response result;
     Sync::condition_variable cv;
     Sync::mutex cv_mutex;
@@ -449,7 +447,7 @@ NetworkHandler::Response NetworkHandler::performSyncRequest(const UString& url, 
     }
 
     // wait for completion
-    Sync::unique_lock<Sync::mutex> lock{cv_mutex};
+    Sync::unique_lock lock{cv_mutex};
     cv.wait(lock, [&] {
         Sync::scoped_lock sync_lock{this->sync_requests_mutex};
         return this->sync_responses.find(sync_id) != this->sync_responses.end();
@@ -464,35 +462,4 @@ NetworkHandler::Response NetworkHandler::performSyncRequest(const UString& url, 
     }
 
     return result;
-}
-
-UString NetworkHandler::httpGet(const UString& url, long timeout, long connectTimeout) {
-    RequestOptions options;
-    options.timeout = timeout;
-    options.connectTimeout = connectTimeout;
-
-    Response response = performSyncRequest(url, options);
-
-    if(!response.success) {
-        debugLog("Error while fetching {}: HTTP {}", url.toUtf8(), response.responseCode);
-        return {""};
-    }
-
-    return UString{response.body};
-}
-
-std::string NetworkHandler::httpDownload(const UString& url, long timeout, long connectTimeout) {
-    RequestOptions options;
-    options.timeout = timeout;
-    options.connectTimeout = connectTimeout;
-    options.followRedirects = true;
-
-    Response response = performSyncRequest(url, options);
-
-    if(!response.success) {
-        debugLog("ERROR ({}): HTTP request failed", response.responseCode);
-        return {""};
-    }
-
-    return response.body;
 }

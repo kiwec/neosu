@@ -275,6 +275,12 @@ void NotificationOverlay::addNotification(UString text, Color textColor, bool wa
 void NotificationOverlay::addToast(const UString &text, Color borderColor, const ToastClickCallback &callback,
                                    ToastElement::TYPE type) {
     auto toast = new ToastElement(text, borderColor, type);
+    if constexpr(Env::cfg(BUILD::DEBUG)) {
+        // also log it
+        // TODO: debug channels/separate files
+        debugLog(text.toUtf8());
+    }
+
     if(!!callback) {
         toast->setClickCallback(callback);
     }

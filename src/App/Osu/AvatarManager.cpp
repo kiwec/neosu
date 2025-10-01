@@ -1,9 +1,4 @@
 // Copyright (c) 2025, WH, All rights reserved.
-#include <sys/stat.h>
-
-#ifndef _MSC_VER
-#include <unistd.h>
-#endif
 
 #include "AvatarManager.h"
 #include "AsyncIOHandler.h"
@@ -16,6 +11,8 @@
 #include "File.h"
 #include "Logging.h"
 #include "Timing.h"
+
+#include <sys/stat.h>
 
 Image* AvatarManager::get_avatar(const std::pair<i32, std::string>& id_folder) {
     auto it = this->avatars.find(id_folder);

@@ -1,17 +1,7 @@
 // Copyright (c) 2023, kiwec, All rights reserved.
 #include "BanchoNetworking.h"
 
-#include <ctime>
-
-#ifndef _MSC_VER
-#include <unistd.h>
-#endif
-
-#include "SString.h"
-#include "AsyncIOHandler.h"
-
 #include "Bancho.h"
-#include "BanchoLeaderboard.h"
 #include "BanchoProtocol.h"
 #include "BanchoUsers.h"
 #include "BeatmapInterface.h"
@@ -26,10 +16,11 @@
 #include "NetworkHandler.h"
 #include "OptionsMenu.h"
 #include "ResourceManager.h"
-#include "SongBrowser/SongBrowser.h"
+#include "SongBrowser.h"
 #include "UserCard.h"
 #include "Logging.h"
-#include "SyncMutex.h"
+
+#include <ctime>
 
 #include <curl/curl.h>
 
@@ -83,13 +74,13 @@ void attempt_logging_in() {
 
     NetworkHandler::RequestOptions options;
     options.timeout = 30;
-    options.connectTimeout = 5;
-    options.userAgent = "osu!";
+    options.connect_timeout = 5;
+    options.user_agent = "osu!";
     options.headers["x-mcosu-ver"] = BanchoState::neosu_version.toUtf8();
-    options.postData = BanchoState::build_login_packet();
+    options.post_data = BanchoState::build_login_packet();
 
     auto scheme = cv::use_https.getBool() ? "https://" : "http://";
-    auto query_url = UString::format("%sc.%s/", scheme, BanchoState::endpoint.c_str());
+    auto query_url = fmt::format("{:s}c.{:s}/", scheme, BanchoState::endpoint);
 
     last_packet_tms = time(nullptr);
 
@@ -98,7 +89,7 @@ void attempt_logging_in() {
         [func = __FUNCTION__](NetworkHandler::Response response) {
             if(!response.success) {
                 // TODO: shows "HTTP 0" on curl/network errors!
-                auto errmsg = UString::format("Failed to log in: HTTP %ld", response.responseCode);
+                auto errmsg = UString::format("Failed to log in: HTTP %ld", response.response_code);
                 osu->getNotificationOverlay()->addToast(errmsg, ERROR_TOAST);
                 return;
             }
@@ -122,7 +113,7 @@ void attempt_logging_in() {
                 }
             }
 
-            parse_packets((u8*)response.body.data(), response.body.length());
+            parse_packets((u8 *)response.body.data(), response.body.length());
         },
         options);
 }
@@ -132,16 +123,16 @@ void send_bancho_packet_http(Packet outgoing) {
 
     NetworkHandler::RequestOptions options;
     options.timeout = 30;
-    options.connectTimeout = 5;
-    options.userAgent = "osu!";
+    options.connect_timeout = 5;
+    options.user_agent = "osu!";
     options.headers["x-mcosu-ver"] = BanchoState::neosu_version.toUtf8();
     options.headers["osu-token"] = auth_token;
 
     // copy outgoing packet data for POST
-    options.postData = std::string(reinterpret_cast<char *>(outgoing.memory), outgoing.pos);
+    options.post_data = std::string(reinterpret_cast<char *>(outgoing.memory), outgoing.pos);
 
     auto scheme = cv::use_https.getBool() ? "https://" : "http://";
-    auto query_url = UString::format("%sc.%s/", scheme, BanchoState::endpoint.c_str());
+    auto query_url = fmt::format("{:s}c.{:s}/", scheme, BanchoState::endpoint);
 
     last_packet_tms = time(nullptr);
 
@@ -149,11 +140,11 @@ void send_bancho_packet_http(Packet outgoing) {
         query_url,
         [func = __FUNCTION__](NetworkHandler::Response response) {
             if(!response.success) {
-                debugLogLambda("Failed to send packet, HTTP error {}", response.responseCode);
+                debugLogLambda("Failed to send packet, HTTP error {}", response.response_code);
                 return;
             }
 
-            parse_packets((u8*)response.body.data(), response.body.length());
+            parse_packets((u8 *)response.body.data(), response.body.length());
         },
         options);
 }
@@ -163,12 +154,12 @@ void send_bancho_packet_ws(Packet outgoing) {
 
     if(websocket == nullptr || websocket->status == NetworkHandler::WEBSOCKET_DISCONNECTED) {
         NetworkHandler::WebsocketOptions options;
-        options.userAgent = "osu!";
+        options.user_agent = "osu!";
         options.headers["x-mcosu-ver"] = BanchoState::neosu_version.toUtf8();
         options.headers["osu-token"] = auth_token;
 
         auto scheme = cv::use_https.getBool() ? "wss://" : "ws://";
-        options.url = fmt::format("{}c.{}/ws/", scheme, BanchoState::endpoint.c_str());
+        options.url = fmt::format("{}c.{}/ws/", scheme, BanchoState::endpoint);
 
         // TODO: give up if reconnecting too often!
 
@@ -315,18 +306,18 @@ void BanchoState::disconnect() {
 
         NetworkHandler::RequestOptions options;
         options.timeout = 5;
-        options.connectTimeout = 5;
-        options.userAgent = "osu!";
-        options.postData = std::string(reinterpret_cast<char *>(packet.memory), packet.pos);
+        options.connect_timeout = 5;
+        options.user_agent = "osu!";
+        options.post_data = std::string(reinterpret_cast<char *>(packet.memory), packet.pos);
         options.headers["x-mcosu-ver"] = BanchoState::neosu_version.toUtf8();
         options.headers["osu-token"] = BANCHO::Net::auth_token;
         BANCHO::Net::auth_token = "";
 
         auto scheme = cv::use_https.getBool() ? "https://" : "http://";
-        auto query_url = UString::format("%sc.%s/", scheme, BanchoState::endpoint.c_str());
+        auto query_url = fmt::format("{:s}c.{:s}/", scheme, BanchoState::endpoint);
 
         // use sync request for logout to ensure it completes
-        NetworkHandler::Response response = networkHandler->performSyncRequest(query_url, options);
+        NetworkHandler::Response response = networkHandler->httpRequestSynchronous(query_url, options);
 
         free(packet.memory);
     }

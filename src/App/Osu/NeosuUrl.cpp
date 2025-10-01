@@ -30,13 +30,13 @@ void handle_neosu_url(const char *url) {
 
         auto code = env->urlEncode(params[4]);
         auto proof = env->urlEncode(crypto::conv::encode64(BanchoState::oauth_verifier, 32));
-        auto url = UString::fmt("https://{}/connect/finish?code={}&proof={}", endpoint, code, proof);
+        auto url = fmt::format("https://{}/connect/finish?code={}&proof={}", endpoint, code, proof);
 
         NetworkHandler::RequestOptions options;
         options.timeout = 30;
-        options.connectTimeout = 5;
-        options.userAgent = BanchoState::user_agent.toUtf8();
-        options.followRedirects = true;
+        options.connect_timeout = 5;
+        options.user_agent = BanchoState::user_agent.toUtf8();
+        options.follow_redirects = true;
 
         networkHandler->httpRequestAsync(
             url,
@@ -49,8 +49,7 @@ void handle_neosu_url(const char *url) {
                     osu->getNotificationOverlay()->addToast("Login failed.", ERROR_TOAST);
                 }
             },
-            options
-        );
+            options);
 
         return;
     }

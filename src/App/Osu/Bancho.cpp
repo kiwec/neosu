@@ -3,11 +3,6 @@
 #ifdef _WIN32
 #include "WinDebloatDefs.h"
 #include <windows.h>
-
-#ifndef _MSC_VER
-#include <unistd.h>
-#endif
-
 #include <cinttypes>
 
 #else
@@ -760,15 +755,15 @@ void BanchoState::handle_packet(Packet &packet) {
 
             // Submit map
             auto scheme = cv::use_https.getBool() ? "https://" : "http://";
-            auto url = UString::fmt("{}osu.{}/web/neosu-submit-map.php", scheme, BanchoState::endpoint);
-            url.append(UString::fmt("?hash={}", md5.string()));
+            auto url = fmt::format("{}osu.{}/web/neosu-submit-map.php", scheme, BanchoState::endpoint);
+            url.append(fmt::format("?hash={}", md5.string()));
             BANCHO::Api::append_auth_params(url);
 
             NetworkHandler::RequestOptions options;
             options.timeout = 60;
-            options.connectTimeout = 5;
-            options.userAgent = "osu!";
-            options.mimeParts.push_back({
+            options.connect_timeout = 5;
+            options.user_agent = "osu!";
+            options.mime_parts.push_back({
                 .filename = fmt::format("{}.osu", md5.string()),
                 .name = "osu_file",
                 .data = {osu_file.begin(), osu_file.end()},

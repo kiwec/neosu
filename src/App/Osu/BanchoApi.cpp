@@ -75,7 +75,6 @@ static void handle_api_response(Packet &packet) {
     }
 }
 
-
 void send_request(const Request &request) {
     if(BanchoState::get_uid() <= 0) {
         debugLog("Cannot send API request of type {:d} since we are not logged in.",
@@ -85,11 +84,11 @@ void send_request(const Request &request) {
 
     NetworkHandler::RequestOptions options;
     options.timeout = 60;
-    options.connectTimeout = 5;
-    options.userAgent = "osu!";
+    options.connect_timeout = 5;
+    options.user_agent = "osu!";
 
     auto scheme = cv::use_https.getBool() ? "https://" : "http://";
-    auto query_url = UString::format("%sosu.%s%s", scheme, BanchoState::endpoint.c_str(), request.path.toUtf8());
+    auto query_url = fmt::format("{:s}osu.{:s}{:s}", scheme, BanchoState::endpoint, request.path);
 
     networkHandler->httpRequestAsync(
         query_url,
@@ -100,7 +99,7 @@ void send_request(const Request &request) {
                 api_response.extra = request.extra;
                 api_response.extra_int = request.extra_int;
                 api_response.size = response.body.length();
-                api_response.memory = (u8*)response.body.data();
+                api_response.memory = (u8 *)response.body.data();
                 handle_api_response(api_response);
             }
 
@@ -109,7 +108,7 @@ void send_request(const Request &request) {
         options);
 }
 
-void append_auth_params(UString &url, std::string user_param, std::string pw_param) {
+void append_auth_params(std::string &url, std::string user_param, std::string pw_param) {
     std::string user, pw;
     if(BanchoState::is_oauth) {
         user = "$token";
@@ -119,7 +118,7 @@ void append_auth_params(UString &url, std::string user_param, std::string pw_par
         pw = BanchoState::pw_md5.string();
     }
 
-    url.append(UString::fmt("&{}={}&{}={}", user_param, user, pw_param, pw));
+    url.append(fmt::format("&{:s}={:s}&{:s}={:s}", user_param, user, pw_param, pw));
 }
 
-}
+}  // namespace BANCHO::Api

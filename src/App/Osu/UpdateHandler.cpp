@@ -41,7 +41,7 @@ void UpdateHandler::checkForUpdates(bool force_update) {
         return;
     }
 
-    UString versionUrl = "https://" NEOSU_DOMAIN;
+    std::string versionUrl = "https://" NEOSU_DOMAIN;
     if(cv::bleedingedge.getBool()) {
         versionUrl.append("/bleedingedge/" OS_NAME ".txt");
     } else {
@@ -51,7 +51,7 @@ void UpdateHandler::checkForUpdates(bool force_update) {
     debugLog("UpdateHandler: Checking for a newer version from {}", versionUrl);
     NetworkHandler::RequestOptions options;
     options.timeout = 10;
-    options.connectTimeout = 5;
+    options.connect_timeout = 5;
 
     this->status = STATUS_CHECKING_FOR_UPDATE;
     networkHandler->httpRequestAsync(
@@ -106,21 +106,21 @@ void UpdateHandler::onVersionCheckComplete(const std::string &response, bool suc
         }
     }
 
-    UString update_url;
+    std::string update_url;
     if(cv::bleedingedge.getBool()) {
         update_url = "https://" NEOSU_DOMAIN "/bleedingedge/" OS_NAME ".zip";
     } else {
-        update_url = UString::format("https://" NEOSU_DOMAIN "/update/" OS_NAME "/v%.2f.zip", latest_version);
+        update_url = fmt::format("https://" NEOSU_DOMAIN "/update/" OS_NAME "/v{:.2f}.zip", latest_version);
     }
-    update_url.append(UString::format("?hash=%s", online_update_hash.c_str()));
+    update_url.append(fmt::format("?hash={:s}", online_update_hash));
 
     debugLog("UpdateHandler: Downloading latest update... (current v{:.2f} ({:d}), latest v{:.2f} ({:d}))",
              cv::version.getFloat(), current_build_tms, latest_version, latest_build_tms);
-    debugLog("UpdateHandler: Downloading {:s}", update_url.toUtf8());
+    debugLog("UpdateHandler: Downloading {:s}", update_url);
     NetworkHandler::RequestOptions options;
     options.timeout = 300;  // 5 minutes for large downloads
-    options.connectTimeout = 10;
-    options.followRedirects = true;
+    options.connect_timeout = 10;
+    options.follow_redirects = true;
 
     this->status = STATUS_DOWNLOADING_UPDATE;
     networkHandler->httpRequestAsync(

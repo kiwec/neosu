@@ -27,61 +27,61 @@ void submit_score(FinishedScore score) {
 
     NetworkHandler::RequestOptions options;
     options.timeout = 60;
-    options.connectTimeout = 5;
-    options.userAgent = "osu!";
+    options.connect_timeout = 5;
+    options.user_agent = "osu!";
     options.headers["token"] = BanchoState::cho_token.toUtf8();
 
     auto quit = fmt::format("{}", score.ragequit ? 1 : 0);
-    options.mimeParts.push_back({
+    options.mime_parts.push_back({
         .name = "x",
         .data = {quit.begin(), quit.end()},
     });
 
     auto fail_time = fmt::format("{}", score.passed ? 0 : score.play_time_ms);
-    options.mimeParts.push_back({
+    options.mime_parts.push_back({
         .name = "ft",
         .data = {fail_time.begin(), fail_time.end()},
     });
 
     auto score_time = fmt::format("{}", score.passed ? score.play_time_ms : 0);
-    options.mimeParts.push_back({
+    options.mime_parts.push_back({
         .name = "st",
         .data = {score_time.begin(), score_time.end()},
     });
 
     std::string visual_settings_b64 = "0";  // TODO: not used by bancho.py
-    options.mimeParts.push_back({
+    options.mime_parts.push_back({
         .name = "fs",
         .data = {visual_settings_b64.begin(), visual_settings_b64.end()},
     });
 
     std::string beatmap_hash = score.beatmap_hash.string();
-    options.mimeParts.push_back({
+    options.mime_parts.push_back({
         .name = "bmk",
         .data = {beatmap_hash.begin(), beatmap_hash.end()},
     });
 
     auto unique_ids =
         fmt::format("{}|{}", BanchoState::get_install_id().toUtf8(), BanchoState::get_disk_uuid().toUtf8());
-    options.mimeParts.push_back({
+    options.mime_parts.push_back({
         .name = "c1",
         .data = {unique_ids.begin(), unique_ids.end()},
     });
 
     std::string password = BanchoState::is_oauth ? BanchoState::cho_token.toUtf8() : BanchoState::pw_md5.string();
-    options.mimeParts.push_back({
+    options.mime_parts.push_back({
         .name = "pass",
         .data = {password.begin(), password.end()},
     });
 
     const std::string osu_version = OSU_VERSION_DATESTR;
-    options.mimeParts.push_back({
+    options.mime_parts.push_back({
         .name = "osuver",
         .data = {osu_version.begin(), osu_version.end()},
     });
 
     auto iv_b64 = crypto::conv::encode64(iv, sizeof(iv));
-    options.mimeParts.push_back({
+    options.mime_parts.push_back({
         .name = "iv",
         .data = {iv_b64.begin(), iv_b64.end()},
     });
@@ -92,7 +92,7 @@ void submit_score(FinishedScore score) {
             BANCHO::AES::encrypt(iv, (u8 *)BanchoState::client_hashes.toUtf8(), BanchoState::client_hashes.lengthUtf8(),
                                  &s_client_hashes_encrypted);
         auto client_hashes_b64 = crypto::conv::encode64(client_hashes_encrypted, s_client_hashes_encrypted);
-        options.mimeParts.push_back({
+        options.mime_parts.push_back({
             .name = "s",
             .data = {client_hashes_b64.begin(), client_hashes_b64.end()},
         });
@@ -158,7 +158,7 @@ void submit_score(FinishedScore score) {
             BANCHO::AES::encrypt(iv, (u8 *)score_data.data(), score_data.size(), &s_score_data_encrypted);
         auto score_data_b64 = crypto::conv::encode64(score_data_encrypted, s_score_data_encrypted);
         delete[] score_data_encrypted;
-        options.mimeParts.push_back({
+        options.mime_parts.push_back({
             .name = "score",
             .data = {score_data_b64.begin(), score_data_b64.end()},
         });
@@ -171,7 +171,7 @@ void submit_score(FinishedScore score) {
             return;
         }
 
-        options.mimeParts.push_back({
+        options.mime_parts.push_back({
             .filename = "replay",
             .name = "score",
             .data = compressed_data,
@@ -183,20 +183,20 @@ void submit_score(FinishedScore score) {
         Replay::Mods::pack_and_write(packet, score.mods);
         auto mods_data_b64 = crypto::conv::encode64(packet.memory, packet.pos);
 
-        options.mimeParts.push_back({
+        options.mime_parts.push_back({
             .name = "neosu-mods",
             .data = {mods_data_b64.begin(), mods_data_b64.end()},
         });
     }
 
     auto scheme = cv::use_https.getBool() ? "https://" : "http://";
-    auto url = UString::fmt("{}osu.{}/web/osu-submit-modular-selector.php", scheme, BanchoState::endpoint);
+    auto url = fmt::format("{}osu.{}/web/osu-submit-modular-selector.php", scheme, BanchoState::endpoint);
     networkHandler->httpRequestAsync(
         url,
-        [](NetworkHandler::Response response) {
+        [func = __FUNCTION__](NetworkHandler::Response response) {
             if(response.success) {
                 // TODO: handle success (pp, etc + error codes)
-                debugLog("Score submit result: {}", response.body);
+                debugLogLambda("Score submit result: {}", response.body);
 
                 // Reset leaderboards so new score will appear
                 db->online_scores.clear();

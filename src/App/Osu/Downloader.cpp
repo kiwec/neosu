@@ -1,17 +1,8 @@
 #include "Downloader.h"
 
-#include <atomic>
-#include <memory>
-#include <mutex>
-#include <queue>
-#include <unordered_map>
-#include <chrono>
-#include <utility>
-
 #include "Archival.h"
 #include "Bancho.h"
 #include "BanchoApi.h"
-#include "BanchoProtocol.h"
 #include "ConVar.h"
 #include "Database.h"
 #include "DatabaseBeatmap.h"
@@ -22,7 +13,14 @@
 #include "SString.h"
 #include "SyncMutex.h"
 #include "Logging.h"
-#include "SongBrowser/SongBrowser.h"
+#include "SongBrowser.h"
+
+#include <atomic>
+#include <memory>
+#include <queue>
+#include <unordered_map>
+#include <chrono>
+#include <utility>
 
 namespace {  // static
 
@@ -84,14 +82,14 @@ class DownloadManager {
 
         NetworkHandler::RequestOptions options;
         options.timeout = 30;
-        options.connectTimeout = 5;
-        options.userAgent = BanchoState::user_agent.toUtf8();
-        options.followRedirects = true;
-        options.progressCallback = [request](float progress) { request->progress.store(progress); };
+        options.connect_timeout = 5;
+        options.user_agent = BanchoState::user_agent.toUtf8();
+        options.follow_redirects = true;
+        options.progress_callback = [request](float progress) { request->progress.store(progress); };
 
         // capture s_download_manager as a copy to keep DownloadManager alive during callback
         networkHandler->httpRequestAsync(
-            UString(request->url),
+            request->url,
             [self = s_download_manager, request](NetworkHandler::Response response) {
                 self->onDownloadComplete(request, std::move(response));
             },
@@ -105,9 +103,9 @@ class DownloadManager {
         // update request with results
         {
             Sync::scoped_lock lock(request->data_mutex);
-            request->response_code.store(static_cast<int>(response.responseCode));
+            request->response_code.store(static_cast<int>(response.response_code));
 
-            if(response.success && response.responseCode == 200) {
+            if(response.success && response.response_code == 200) {
                 request->data = std::vector<u8>(response.body.begin(), response.body.end());
                 request->progress.store(1.0f);
                 request->completed.store(true);
@@ -115,7 +113,7 @@ class DownloadManager {
                 if(!response.success) {
                     debugLog("Failed to download {:s}: network error", request->url.c_str());
                 }
-                if(response.responseCode == 429) {
+                if(response.response_code == 429) {
                     // rate limited, retry after 5 seconds
                     // TODO: read headers and if the usual retry-after are set, follow those
                     // TODO: per-domain rate limits
@@ -371,8 +369,8 @@ DatabaseBeatmap* download_beatmap(i32 beatmap_id, MD5Hash beatmap_md5, float* pr
             return nullptr;
         }
 
-        UString url{"/web/osu-search-set.php?"};
-        url.append(UString::fmt("b={}", beatmap_id));
+        std::string url{"/web/osu-search-set.php?"};
+        url.append(fmt::format("b={}", beatmap_id));
         BANCHO::Api::append_auth_params(url);
 
         BANCHO::Api::Request request;
@@ -449,8 +447,8 @@ DatabaseBeatmap* download_beatmap(i32 beatmap_id, i32 beatmapset_id, float* prog
             return nullptr;
         }
 
-        UString url{"/web/osu-search-set.php?"};
-        url.append(UString::fmt("b={}", beatmap_id));
+        std::string url{"/web/osu-search-set.php?"};
+        url.append(fmt::format("b={}", beatmap_id));
         BANCHO::Api::append_auth_params(url);
 
         BANCHO::Api::Request request;

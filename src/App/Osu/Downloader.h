@@ -1,8 +1,12 @@
 #pragma once
-#include "BanchoProtocol.h"
-#include "cbase.h"
+#include "types.h"
+
+#include <vector>
+#include <string>
 
 class DatabaseBeatmap;
+class MD5Hash;
+struct Packet;
 
 namespace Downloader {
 

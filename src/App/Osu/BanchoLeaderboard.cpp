@@ -71,7 +71,7 @@ FinishedScore parse_score(char *score_line) {
 
 namespace BANCHO::Leaderboard {
 void fetch_online_scores(DatabaseBeatmap *beatmap) {
-    UString url = "/web/osu-osz2-getscores.php?m=0&s=0&vv=4&a=0";
+    std::string url = "/web/osu-osz2-getscores.php?m=0&s=0&vv=4&a=0";
 
     // TODO: b.py calls this "map_package_hash", could be useful for storyboard-specific LBs
     //       (assuming it's some hash that includes all relevant map files)
@@ -95,16 +95,16 @@ void fetch_online_scores(DatabaseBeatmap *beatmap) {
 
     // leaderboard type filter
     url.append("&v=");
-    url.append(lb_type);
+    url.push_back(lb_type);
 
     // Map info
     std::string map_filename = env->getFileNameFromFilePath(beatmap->getFilePath());
-    url.append(UString::fmt("&f={}", env->urlEncode(map_filename)));
-    url.append(UString::fmt("&c={:s}", beatmap->getMD5Hash().string()));
-    url.append(UString::fmt("&i={}", beatmap->getSetID()));
+    url.append(fmt::format("&f={}", env->urlEncode(map_filename)));
+    url.append(fmt::format("&c={:s}", beatmap->getMD5Hash().string()));
+    url.append(fmt::format("&i={}", beatmap->getSetID()));
 
     // Some servers use mod flags, even without any leaderboard filter active (e.g. for relax)
-    url.append(UString::fmt("&mods={}", osu->getModSelector()->getModFlags()));
+    url.append(fmt::format("&mods={}", osu->getModSelector()->getModFlags()));
 
     // Auth (uses different params than default)
     BANCHO::Api::append_auth_params(url, "us", "ha");

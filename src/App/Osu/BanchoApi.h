@@ -6,7 +6,7 @@
 
 namespace BANCHO::Api {
 
-void append_auth_params(UString& url, std::string user_param = "u", std::string pw_param = "h");
+void append_auth_params(std::string& url, std::string user_param = "u", std::string pw_param = "h");
 
 // XXX: You should avoid using the stuff below.
 //      Just use NetworkHandler->httpRequestAsync directly with a lambda,
@@ -21,7 +21,7 @@ enum RequestType : uint8_t {
 };
 
 struct Request {
-    UString path{""};
+    std::string path{""};
     u8* extra{nullptr};
     i32 extra_int{0};  // lazy
     RequestType type{NONE};
