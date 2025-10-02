@@ -532,7 +532,7 @@ void SoundTouchFilterInstance::ensureBufferSize(unsigned int samples)
 		ST_DEBUG_LOG("SoundTouchFilterInstance: Resizing non-interleaved buffer from {:} to {:} samples", mBufferSize, samples);
 
 		mBufferSize = samples;
-		mBuffer.init(static_cast<unsigned long>(mBufferSize * mChannels));
+		mBuffer.init(static_cast<u32>(mBufferSize * mChannels));
 		memset(mBuffer.mData, 0, sizeof(float) * mBufferSize * mChannels);
 	}
 }

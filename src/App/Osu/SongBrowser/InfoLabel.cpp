@@ -236,7 +236,7 @@ void InfoLabel::mouse_update(bool *propagate_clicks) {
                 int numObjects{bmDiff2->getNumObjects()};
                 int numCircles{bmDiff2->getNumCircles()};
                 int numSliders{bmDiff2->getNumSliders()};
-                unsigned long lengthMS{bmDiff2->getLengthMS()};
+                u32 lengthMS{bmDiff2->getLengthMS()};
 
                 float opm{0.f}, cpm{0.f}, spm{0.f};
                 if(lengthMS > 0) {
@@ -292,10 +292,10 @@ void InfoLabel::setFromBeatmap(DatabaseBeatmap *map) {
 }
 
 UString InfoLabel::buildSongInfoString() {
-    unsigned long lengthMS = this->iLengthMS;
+    u32 lengthMS = this->iLengthMS;
     auto speed = osu->getMapInterface()->getSpeedMultiplier();
 
-    const unsigned long fullSeconds = (lengthMS * (1.0 / speed)) / 1000.0;
+    const u32 fullSeconds = (lengthMS * (1.0 / speed)) / 1000.0;
     const int minutes = fullSeconds / 60;
     const int seconds = fullSeconds % 60;
 
@@ -383,7 +383,7 @@ UString InfoLabel::buildDiffInfoString() {
 }
 
 UString InfoLabel::buildOffsetInfoString() {
-    return UString::format("Your Offset: %ld ms / Online Offset: %ld ms", this->iLocalOffset, this->iOnlineOffset);
+    return UString::fmt("Your Offset: {:d} ms / Online Offset: {:d} ms", this->iLocalOffset, this->iOnlineOffset);
 }
 
 float InfoLabel::getMinimumWidth() {

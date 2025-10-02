@@ -407,8 +407,8 @@ bool SDLMain::createWindow() {
                                              : (Env::cfg(OS::LINUX, REND::DX11) ? SDL_WINDOW_VULKAN : 0UL));
 
     // limit default window size so it fits the screen
-    long windowCreateWidth = WINDOW_WIDTH;
-    long windowCreateHeight = WINDOW_HEIGHT;
+    i32 windowCreateWidth = WINDOW_WIDTH;
+    i32 windowCreateHeight = WINDOW_HEIGHT;
     {
         SDL_DisplayID di = SDL_GetPrimaryDisplay();
         const SDL_DisplayMode *dm = SDL_GetDesktopDisplayMode(di);

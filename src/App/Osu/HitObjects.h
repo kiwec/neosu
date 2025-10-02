@@ -32,49 +32,49 @@ class HitObject {
                               vec2 rawPos, LiveScore::HIT result, float animPercentInv, float hitDeltaRangePercent);
 
    public:
-    HitObject(long time, HitSamples samples, int comboNumber, bool isEndOfCombo, int colorCounter, int colorOffset,
+    HitObject(i32 time, HitSamples samples, int comboNumber, bool isEndOfCombo, int colorCounter, int colorOffset,
               AbstractBeatmapInterface *beatmap);
     virtual ~HitObject() { ; }
 
     virtual void draw() { ; }
     virtual void draw2();
-    virtual void update(long curPos, f64 frame_time);
+    virtual void update(i32 curPos, f64 frame_time);
 
     virtual void updateStackPosition(float stackOffset) = 0;
-    virtual void miss(long curPos) = 0;  // only used by notelock
+    virtual void miss(i32 curPos) = 0;  // only used by notelock
 
     virtual int getCombo() { return 1; }  // how much combo this hitobject is "worth"
 
     // Gameplay logic
     HitObjectType type{HitObjectType::CIRCLE};
-    i64 click_time;
-    i64 duration;
+    i32 click_time;
+    i32 duration;
 
     // Visual
     i32 combo_number;
     bool is_end_of_combo = false;
 
-    void addHitResult(LiveScore::HIT result, long delta, bool isEndOfCombo, vec2 posRaw, float targetDelta = 0.0f,
+    void addHitResult(LiveScore::HIT result, i32 delta, bool isEndOfCombo, vec2 posRaw, float targetDelta = 0.0f,
                       float targetAngle = 0.0f, bool ignoreOnHitErrorBar = false, bool ignoreCombo = false,
                       bool ignoreHealth = false, bool addObjectDurationToSkinAnimationTimeStartOffset = true);
     void misAimed() { this->bMisAim = true; }
 
     void setStack(int stack) { this->iStack = stack; }
     void setForceDrawApproachCircle(bool firstNote) { this->bOverrideHDApproachCircle = firstNote; }
-    void setAutopilotDelta(long delta) { this->iAutopilotDelta = delta; }
+    void setAutopilotDelta(i32 delta) { this->iAutopilotDelta = delta; }
     void setBlocked(bool blocked) { this->bBlocked = blocked; }
 
-    [[nodiscard]] virtual vec2 getRawPosAt(long pos) const = 0;          // with stack calculation modifications
-    [[nodiscard]] virtual vec2 getOriginalRawPosAt(long pos) const = 0;  // without stack calculations
-    [[nodiscard]] virtual vec2 getAutoCursorPos(long curPos) const = 0;
+    [[nodiscard]] virtual vec2 getRawPosAt(i32 pos) const = 0;          // with stack calculation modifications
+    [[nodiscard]] virtual vec2 getOriginalRawPosAt(i32 pos) const = 0;  // without stack calculations
+    [[nodiscard]] virtual vec2 getAutoCursorPos(i32 curPos) const = 0;
 
     [[nodiscard]] inline int getStack() const { return this->iStack; }
     [[nodiscard]] inline int getColorCounter() const { return this->iColorCounter; }
     [[nodiscard]] inline int getColorOffset() const { return this->iColorOffset; }
     [[nodiscard]] inline float getApproachScale() const { return this->fApproachScale; }
-    [[nodiscard]] inline long getDelta() const { return this->iDelta; }
-    [[nodiscard]] inline long getApproachTime() const { return this->iApproachTime; }
-    [[nodiscard]] inline long getAutopilotDelta() const { return this->iAutopilotDelta; }
+    [[nodiscard]] inline i32 getDelta() const { return this->iDelta; }
+    [[nodiscard]] inline i32 getApproachTime() const { return this->iApproachTime; }
+    [[nodiscard]] inline i32 getAutopilotDelta() const { return this->iAutopilotDelta; }
 
     [[nodiscard]] inline bool isVisible() const { return this->bVisible; }
     [[nodiscard]] inline bool isFinished() const { return this->bFinished; }
@@ -82,7 +82,7 @@ class HitObject {
     [[nodiscard]] inline bool hasMisAimed() const { return this->bMisAim; }
 
     virtual void onClickEvent(std::vector<Click> & /*clicks*/) { ; }
-    virtual void onReset(long curPos);
+    virtual void onReset(i32 curPos);
 
    private:
    private:
@@ -90,7 +90,7 @@ class HitObject {
 
     struct HITRESULTANIM {
         vec2 rawPos{0.f};
-        long delta;
+        i32 delta;
         float time;
         LiveScore::HIT result;
         bool addObjectDurationToSkinAnimationTimeStartOffset;
@@ -105,10 +105,10 @@ class HitObject {
     AbstractBeatmapInterface *pi = nullptr;
     BeatmapInterface *pf = nullptr;  // NULL when simulating
 
-    long iDelta;  // this must be signed
-    long iApproachTime;
-    long iFadeInTime;  // extra time added before the approachTime to let the object smoothly become visible
-    long iAutopilotDelta;
+    i32 iDelta;  // this must be signed
+    i32 iApproachTime;
+    i32 iFadeInTime;  // extra time added before the approachTime to let the object smoothly become visible
+    i32 iAutopilotDelta;
 
     HitSamples samples;
     int iColorCounter;
@@ -171,30 +171,30 @@ class Circle final : public HitObject {
                                     float numberAlpha, float colorRGBMultiplier);
 
    public:
-    Circle(int x, int y, long time, HitSamples samples, int comboNumber, bool isEndOfCombo, int colorCounter,
+    Circle(int x, int y, i32 time, HitSamples samples, int comboNumber, bool isEndOfCombo, int colorCounter,
            int colorOffset, AbstractBeatmapInterface *beatmap);
     ~Circle() override;
 
     void draw() override;
     void draw2() override;
-    void update(long curPos, f64 frame_time) override;
+    void update(i32 curPos, f64 frame_time) override;
 
     void updateStackPosition(float stackOffset) override;
-    void miss(long curPos) override;
+    void miss(i32 curPos) override;
 
-    [[nodiscard]] vec2 getRawPosAt(long /*pos*/) const override { return this->vRawPos; }
-    [[nodiscard]] vec2 getOriginalRawPosAt(long /*pos*/) const override { return this->vOriginalRawPos; }
-    [[nodiscard]] vec2 getAutoCursorPos(long curPos) const override;
+    [[nodiscard]] vec2 getRawPosAt(i32 /*pos*/) const override { return this->vRawPos; }
+    [[nodiscard]] vec2 getOriginalRawPosAt(i32 /*pos*/) const override { return this->vOriginalRawPos; }
+    [[nodiscard]] vec2 getAutoCursorPos(i32 curPos) const override;
 
     void onClickEvent(std::vector<Click> &clicks) override;
-    void onReset(long curPos) override;
+    void onReset(i32 curPos) override;
 
    private:
     // necessary due to the static draw functions
     static int rainbowNumber;
     static int rainbowColorCounter;
 
-    void onHit(LiveScore::HIT result, long delta, float targetDelta = 0.0f, float targetAngle = 0.0f);
+    void onHit(LiveScore::HIT result, i32 delta, float targetDelta = 0.0f, float targetAngle = 0.0f);
 
     bool bWaiting;
 
@@ -208,7 +208,7 @@ class Circle final : public HitObject {
 class Slider final : public HitObject {
    public:
     struct SLIDERCLICK {
-        long time;
+        i32 time;
         int type;
         int tickIndex;
         bool finished;
@@ -218,7 +218,7 @@ class Slider final : public HitObject {
 
    public:
     Slider(char stype, int repeat, float pixelLength, std::vector<vec2> points, const std::vector<float>& ticks,
-           float sliderTime, float sliderTimeWithoutRepeats, long time, HitSamples hoverSamples,
+           float sliderTime, float sliderTimeWithoutRepeats, i32 time, HitSamples hoverSamples,
            std::vector<HitSamples> edgeSamples, int comboNumber, bool isEndOfCombo, int colorCounter, int colorOffset,
            AbstractBeatmapInterface *beatmap);
     ~Slider() override;
@@ -226,20 +226,20 @@ class Slider final : public HitObject {
     void draw() override;
     void draw2() override;
     void draw2(bool drawApproachCircle, bool drawOnlyApproachCircle);
-    void update(long curPos, f64 frame_time) override;
+    void update(i32 curPos, f64 frame_time) override;
 
     void updateStackPosition(float stackOffset) override;
-    void miss(long curPos) override;
+    void miss(i32 curPos) override;
     int getCombo() override {
         return 2 + std::max((this->iRepeat - 1), 0) + (std::max((this->iRepeat - 1), 0) + 1) * this->ticks.size();
     }
 
-    [[nodiscard]] vec2 getRawPosAt(long pos) const override;
-    [[nodiscard]] vec2 getOriginalRawPosAt(long pos) const override;
-    [[nodiscard]] inline vec2 getAutoCursorPos(long /*curPos*/) const override { return this->vCurPoint; }
+    [[nodiscard]] vec2 getRawPosAt(i32 pos) const override;
+    [[nodiscard]] vec2 getOriginalRawPosAt(i32 pos) const override;
+    [[nodiscard]] inline vec2 getAutoCursorPos(i32 /*curPos*/) const override { return this->vCurPoint; }
 
     void onClickEvent(std::vector<Click> &clicks) override;
-    void onReset(long curPos) override;
+    void onReset(i32 curPos) override;
 
     void rebuildVertexBuffer(bool useRawCoords = false);
 
@@ -258,15 +258,15 @@ class Slider final : public HitObject {
     void drawEndCircle(float alpha, float sliderSnake);
     void drawBody(float alpha, float from, float to);
 
-    void updateAnimations(long curPos);
+    void updateAnimations(i32 curPos);
 
-    void onHit(LiveScore::HIT result, long delta, bool startOrEnd, float targetDelta = 0.0f, float targetAngle = 0.0f,
+    void onHit(LiveScore::HIT result, i32 delta, bool startOrEnd, float targetDelta = 0.0f, float targetAngle = 0.0f,
                bool isEndResultFromStrictTrackingMod = false);
     void onRepeatHit(bool successful, bool sliderend);
     void onTickHit(bool successful, int tickIndex);
     void onSliderBreak();
 
-    [[nodiscard]] float getT(long pos, bool raw) const;
+    [[nodiscard]] float getT(i32 pos, bool raw) const;
 
     bool isClickHeldSlider();  // special logic to disallow hold tapping
 
@@ -289,7 +289,7 @@ class Slider final : public HitObject {
     vec2 vCurPoint{0.f};
     vec2 vCurPointRaw{0.f};
 
-    long iStrictTrackingModLastClickHeldTime;
+    i32 iStrictTrackingModLastClickHeldTime;
 
     float fPixelLength;
 
@@ -334,21 +334,21 @@ class Slider final : public HitObject {
 
 class Spinner final : public HitObject {
    public:
-    Spinner(int x, int y, long time, HitSamples samples, bool isEndOfCombo, long endTime,
+    Spinner(int x, int y, i32 time, HitSamples samples, bool isEndOfCombo, i32 endTime,
             AbstractBeatmapInterface *beatmap);
     ~Spinner() override;
 
     void draw() override;
-    void update(long curPos, f64 frame_time) override;
+    void update(i32 curPos, f64 frame_time) override;
 
     void updateStackPosition(float /*stackOffset*/) override { ; }
-    void miss(long /*curPos*/) override { ; }
+    void miss(i32 /*curPos*/) override { ; }
 
-    [[nodiscard]] vec2 getRawPosAt(long /*pos*/) const override { return this->vRawPos; }
-    [[nodiscard]] vec2 getOriginalRawPosAt(long /*pos*/) const override { return this->vOriginalRawPos; }
-    [[nodiscard]] vec2 getAutoCursorPos(long curPos) const override;
+    [[nodiscard]] vec2 getRawPosAt(i32 /*pos*/) const override { return this->vRawPos; }
+    [[nodiscard]] vec2 getOriginalRawPosAt(i32 /*pos*/) const override { return this->vOriginalRawPos; }
+    [[nodiscard]] vec2 getAutoCursorPos(i32 curPos) const override;
 
-    void onReset(long curPos) override;
+    void onReset(i32 curPos) override;
 
    private:
     void onHit();

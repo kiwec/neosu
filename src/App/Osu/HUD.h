@@ -20,7 +20,7 @@ struct SCORE_ENTRY {
     i32 player_id = 0;
 
     int combo;
-    unsigned long long score;
+    u64 score;
     float accuracy;
     bool dead;
     bool highlight;
@@ -46,8 +46,8 @@ class HUD final : public OsuScreen {
     void drawPlayfieldBorder(vec2 playfieldCenter, vec2 playfieldSize, float hitcircleDiameter, float borderSize);
     void drawLoadingSmall(const UString &text);
     void drawBeatmapImportSpinner();
-    void drawScoreNumber(unsigned long long number, float scale = 1.0f, bool drawLeadingZeroes = false);
-    void drawComboNumber(unsigned long long number, float scale = 1.0f, bool drawLeadingZeroes = false);
+    void drawScoreNumber(u64 number, float scale = 1.0f, bool drawLeadingZeroes = false);
+    void drawComboNumber(u64 number, float scale = 1.0f, bool drawLeadingZeroes = false);
     void drawComboSimple(int combo, float scale = 1.0f);          // used by RankingScreen
     void drawAccuracySimple(float accuracy, float scale = 1.0f);  // used by RankingScreen
     void drawWarningArrow(vec2 pos, bool flipVertically, bool originLeft = true);
@@ -62,7 +62,7 @@ class HUD final : public OsuScreen {
     void drawSectionFail(float alpha);
 
     void animateCombo();
-    void addHitError(long delta, bool miss = false, bool misaim = false);
+    void addHitError(i32 delta, bool miss = false, bool misaim = false);
     void addTarget(float delta, float angle);
     void animateInputoverlay(int key, bool down);
 
@@ -106,7 +106,7 @@ class HUD final : public OsuScreen {
    private:
     struct HITERROR {
         float time;
-        long delta;
+        i32 delta;
         bool miss;
         bool misaim;
     };
@@ -128,7 +128,7 @@ class HUD final : public OsuScreen {
     void drawFps(McFont *font, float fps);
     void drawAccuracy(float accuracy);
     void drawCombo(int combo);
-    void drawScore(unsigned long long score);
+    void drawScore(u64 score);
     void drawHPBar(double health, float alpha, float breakAnim);
 
     void drawWarningArrows(float hitcircleDiameter = 0.0f);

@@ -134,7 +134,7 @@ VertexArrayObject *generateVAO(const std::vector<vec2> &points, float hitcircleD
 }
 
 void draw(const std::vector<vec2> &points, const std::vector<vec2> &alwaysPoints, float hitcircleDiameter, float from,
-          float to, Color undimmedColor, float colorRGBMultiplier, float alpha, long sliderTimeForRainbow) {
+          float to, Color undimmedColor, float colorRGBMultiplier, float alpha, i32 sliderTimeForRainbow) {
     if(cv::slider_alpha_multiplier.getFloat() <= 0.0f || alpha <= 0.0f) return;
 
     checkUpdateVars(hitcircleDiameter);
@@ -274,7 +274,7 @@ void draw(const std::vector<vec2> &points, const std::vector<vec2> &alwaysPoints
 
 void draw(VertexArrayObject *vao, const std::vector<vec2> &alwaysPoints, vec2 translation, float scale,
           float hitcircleDiameter, float from, float to, Color undimmedColor, float colorRGBMultiplier, float alpha,
-          long sliderTimeForRainbow, bool doEnableRenderTarget, bool doDisableRenderTarget,
+          i32 sliderTimeForRainbow, bool doEnableRenderTarget, bool doDisableRenderTarget,
           bool doDrawSliderFrameBufferToScreen) {
     if((cv::slider_alpha_multiplier.getFloat() <= 0.0f && doDrawSliderFrameBufferToScreen) ||
        (alpha <= 0.0f && doDrawSliderFrameBufferToScreen) || vao == nullptr)

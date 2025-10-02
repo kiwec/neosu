@@ -666,7 +666,7 @@ Database::PlayerPPScores Database::getPlayerPPScores(const std::string &playerNa
         keys.push_back(kv.first);
     }
 
-    unsigned long long totalScore = 0;
+    u64 totalScore = 0;
     for(const auto &key : keys) {
         if(this->scores[key].size() == 0) continue;
 
@@ -745,8 +745,8 @@ Database::PlayerStats Database::calculatePlayerStats(const std::string &playerNa
     if(ps.totalScore != this->prevPlayerStats.totalScore) {
         this->prevPlayerStats.level = getLevelForScore(ps.totalScore);
 
-        const unsigned long long requiredScoreForCurrentLevel = getRequiredScoreForLevel(this->prevPlayerStats.level);
-        const unsigned long long requiredScoreForNextLevel = getRequiredScoreForLevel(this->prevPlayerStats.level + 1);
+        const u64 requiredScoreForCurrentLevel = getRequiredScoreForLevel(this->prevPlayerStats.level);
+        const u64 requiredScoreForNextLevel = getRequiredScoreForLevel(this->prevPlayerStats.level + 1);
 
         if(requiredScoreForNextLevel > requiredScoreForCurrentLevel)
             this->prevPlayerStats.percentToNextLevel =
@@ -765,7 +765,7 @@ float Database::getBonusPPForNumScores(size_t numScores) {
     return (417.0 - 1.0 / 3.0) * (1.0 - pow(0.995, std::min(1000.0, (f64)numScores)));
 }
 
-unsigned long long Database::getRequiredScoreForLevel(int level) {
+u64 Database::getRequiredScoreForLevel(int level) {
     // https://zxq.co/ripple/ocl/src/branch/master/level.go
     if(level <= 100) {
         if(level > 1)
@@ -778,13 +778,13 @@ unsigned long long Database::getRequiredScoreForLevel(int level) {
     return (u64)26931190829 + (u64)100000000000 * (u64)(level - 100);
 }
 
-int Database::getLevelForScore(unsigned long long score, int maxLevel) {
+int Database::getLevelForScore(u64 score, int maxLevel) {
     // https://zxq.co/ripple/ocl/src/branch/master/level.go
     int i = 0;
     while(true) {
         if(maxLevel > 0 && i >= maxLevel) return i;
 
-        const unsigned long long lScore = getRequiredScoreForLevel(i);
+        const u64 lScore = getRequiredScoreForLevel(i);
 
         if(score < lScore) return (i - 1);
 
@@ -1147,7 +1147,7 @@ void Database::loadMaps() {
                 auto numCircles = db.read<u16>();
                 auto numSliders = db.read<u16>();
                 auto numSpinners = db.read<u16>();
-                long long lastModificationTime = db.read<u64>();
+                i64 lastModificationTime = db.read<u64>();
 
                 f32 AR, CS, HP, OD;
                 if(this->iVersion < 20140609) {
@@ -1167,7 +1167,7 @@ void Database::loadMaps() {
                 f32 nomod_star_rating = 0.0f;
                 if(this->iVersion >= 20140609) {
                     auto numOsuStandardStarRatings = db.read<u32>();
-                    for(int s = 0; s < numOsuStandardStarRatings; s++) {
+                    for(u64 s = 0; s < numOsuStandardStarRatings; s++) {
                         db.skip<u8>();  // 0x08
                         auto mods = db.read<u32>();
                         db.skip<u8>();  // 0x0c
@@ -1185,7 +1185,7 @@ void Database::loadMaps() {
                     }
 
                     auto numTaikoStarRatings = db.read<u32>();
-                    for(int s = 0; s < numTaikoStarRatings; s++) {
+                    for(u32 s = 0; s < numTaikoStarRatings; s++) {
                         db.skip<u8>();  // 0x08
                         db.skip<u32>();
                         db.skip<u8>();  // 0x0c
@@ -1199,7 +1199,7 @@ void Database::loadMaps() {
                     }
 
                     auto numCtbStarRatings = db.read<u32>();
-                    for(int s = 0; s < numCtbStarRatings; s++) {
+                    for(u32 s = 0; s < numCtbStarRatings; s++) {
                         db.skip<u8>();  // 0x08
                         db.skip<u32>();
                         db.skip<u8>();  // 0x0c
@@ -1213,7 +1213,7 @@ void Database::loadMaps() {
                     }
 
                     auto numManiaStarRatings = db.read<u32>();
-                    for(int s = 0; s < numManiaStarRatings; s++) {
+                    for(u32 s = 0; s < numManiaStarRatings; s++) {
                         db.skip<u8>();  // 0x08
                         db.skip<u32>();
                         db.skip<u8>();  // 0x0c
@@ -1271,7 +1271,7 @@ void Database::loadMaps() {
                 short onlineOffset = db.read<u16>();
                 db.skip_string();  // song title font
                 /*bool unplayed = */ db.skip<u8>();
-                /*long long lastTimePlayed = */ db.skip<u64>();
+                /*i64 lastTimePlayed = */ db.skip<u64>();
                 /*bool isOsz2 = */ db.skip<u8>();
 
                 // somehow, some beatmaps may have spaces at the start/end of their
@@ -1279,7 +1279,7 @@ void Database::loadMaps() {
                 auto path = db.read_string();
                 SString::trim_inplace(path);
 
-                /*long long lastOnlineCheck = */ db.skip<u64>();
+                /*i64 lastOnlineCheck = */ db.skip<u64>();
 
                 /*bool ignoreBeatmapSounds = */ db.skip<u8>();
                 /*bool ignoreBeatmapSkin = */ db.skip<u8>();
@@ -1913,7 +1913,7 @@ void Database::loadOldMcNeosuScores(std::string_view dbPath) {
             if(cv::debug_db.getBool())
                 debugLog("Beatmap[{}]: md5hash = {:s}, numScores = {}", b, md5hash.string(), numScores);
 
-            for(int s = 0; s < numScores; s++) {
+            for(u32 s = 0; s < numScores; s++) {
                 const auto gamemode = db.read<uint8_t>();  // NOTE: abused as isImportedLegacyScore flag (because I
                                                            // forgot to add a version cap to old builds)
                 const int scoreVersion = db.read<int32_t>();
@@ -2096,7 +2096,7 @@ void Database::loadPeppyScores(std::string_view dbPath) {
         md5hash.hash[32] = '\0';
         u32 nb_scores = db.read<u32>();
 
-        for(int s = 0; s < nb_scores; s++) {
+        for(u32 s = 0; s < nb_scores; s++) {
             FinishedScore sc;
 
             u8 gamemode = db.read<u8>();

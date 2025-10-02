@@ -104,7 +104,7 @@ float LiveScore::getScoreMultiplier() {
     return multiplier;
 }
 
-void LiveScore::addHitResult(AbstractBeatmapInterface *beatmap, HitObject * /*hitObject*/, HIT hit, long delta,
+void LiveScore::addHitResult(AbstractBeatmapInterface *beatmap, HitObject * /*hitObject*/, HIT hit, i32 delta,
                              bool ignoreOnHitErrorBar, bool hitErrorBarOnly, bool ignoreCombo, bool ignoreScore) {
     // current combo, excluding the current hitobject which caused the addHitResult() call
     const int scoreComboMultiplier = std::max(this->iCombo - 1, 0);
@@ -113,7 +113,7 @@ void LiveScore::addHitResult(AbstractBeatmapInterface *beatmap, HitObject * /*hi
         this->iCombo = 0;
 
         if(!this->simulating && !ignoreOnHitErrorBar && cv::hiterrorbar_misses.getBool() &&
-           delta <= (long)beatmap->getHitWindow50()) {
+           delta <= (i32)beatmap->getHitWindow50()) {
             osu->getHUD()->addHitError(delta, true);
         }
     } else {
@@ -132,7 +132,7 @@ void LiveScore::addHitResult(AbstractBeatmapInterface *beatmap, HitObject * /*hi
     if(!ignoreCombo) this->iComboFull++;
 
     // store the result, get hit value
-    unsigned long long hitValue = 0;
+    u64 hitValue = 0;
     if(!hitErrorBarOnly) {
         this->hitresults.push_back(hit);
 
@@ -187,7 +187,7 @@ void LiveScore::addHitResult(AbstractBeatmapInterface *beatmap, HitObject * /*hi
         this->fAccuracy = totalHitPoints / totalNumHits;
 
     // recalculate score v2
-    this->iScoreV2ComboPortion += (unsigned long long)((double)hitValue * (1.0 + (double)scoreComboMultiplier / 10.0));
+    this->iScoreV2ComboPortion += (u64)((double)hitValue * (1.0 + (double)scoreComboMultiplier / 10.0));
     if(ModMasks::eq(this->mods.flags, Replay::ModFlags::ScoreV2)) {
         const double maximumAccurateHits = beatmap->nb_hitobjects;
 
@@ -317,7 +317,7 @@ void LiveScore::addSliderBreak() {
 }
 
 void LiveScore::addPoints(int points, bool isSpinner) {
-    this->iScoreV1 += (unsigned long long)points;
+    this->iScoreV1 += (u64)points;
 
     if(isSpinner) this->iBonusPoints += points;  // only used for scorev2 calculation currently
 
@@ -443,7 +443,7 @@ UString LiveScore::getModsStringForRichPresence() {
     return modsString;
 }
 
-unsigned long long LiveScore::getScore() {
+u64 LiveScore::getScore() {
     return ModMasks::eq(this->mods.flags, Replay::ModFlags::ScoreV2) ? this->iScoreV2 : this->iScoreV1;
 }
 

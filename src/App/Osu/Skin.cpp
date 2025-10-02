@@ -146,7 +146,7 @@ void Skin::update() {
     if(osu->isInPlayMode() && !osu->getMapInterface()->isPlaying() && !cv::skin_animation_force.getBool()) return;
 
     const bool useEngineTimeForAnimations = !osu->isInPlayMode();
-    const long curMusicPos = osu->getMapInterface()->getCurMusicPosWithOffsets();
+    const i32 curMusicPos = osu->getMapInterface()->getCurMusicPosWithOffsets();
     for(auto &image : this->images) {
         image->update(this->animationSpeedMultiplier, useEngineTimeForAnimations, curMusicPos);
     }

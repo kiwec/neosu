@@ -23,7 +23,7 @@ class GameRules {
         return fade_out_time * (1.0f / std::max(osu->getAnimationSpeedMultiplier(), multiplier_min));
     }
 
-    static inline long getFadeInTime() { return (long)cv::hitobject_fade_in_time.getInt(); }
+    static inline i32 getFadeInTime() { return (i32)cv::hitobject_fade_in_time.getInt(); }
 
     //********************//
     //	Hitobject Timing  //
@@ -109,7 +109,7 @@ class GameRules {
     }
 
     static inline INLINE_BODY float getSpinnerRotationsForSpeedMultiplier(AbstractBeatmapInterface *beatmap,
-                                                                          long spinnerDuration, float speedMultiplier) {
+                                                                          i32 spinnerDuration, float speedMultiplier) {
         /// return (int)((float)spinnerDuration / 1000.0f * getSpinnerSpinsPerSecond(beatmap)); // actual
         return (int)((((float)spinnerDuration / 1000.0f * getSpinnerSpinsPerSecond(beatmap)) * 0.5f) *
                      (std::min(1.0f / speedMultiplier, 1.0f)));  // Mc
@@ -118,7 +118,7 @@ class GameRules {
     // spinner length compensated rotations
     // respect all mods and overrides
     static inline INLINE_BODY float getSpinnerRotationsForSpeedMultiplier(AbstractBeatmapInterface *beatmap,
-                                                                          long spinnerDuration) {
+                                                                          i32 spinnerDuration) {
         return getSpinnerRotationsForSpeedMultiplier(beatmap, spinnerDuration, beatmap->getSpeedMultiplier());
     }
 

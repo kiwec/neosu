@@ -195,9 +195,9 @@ void HUD::draw() {
         breaks.clear();
 
         if(cv::draw_scrubbing_timeline_breaks.getBool()) {
-            const unsigned long lengthPlayableMS = pf->getLengthPlayable();
-            const unsigned long startTimePlayableMS = pf->getStartTimePlayable();
-            const unsigned long endTimePlayableMS = startTimePlayableMS + lengthPlayableMS;
+            const u32 lengthPlayableMS = pf->getLengthPlayable();
+            const u32 startTimePlayableMS = pf->getStartTimePlayable();
+            const u32 endTimePlayableMS = startTimePlayableMS + lengthPlayableMS;
 
             const std::vector<DatabaseBeatmap::BREAK> &beatmapBreaks = pf->getBreaks();
 
@@ -750,7 +750,7 @@ void HUD::drawBeatmapImportSpinner() {
     g->popTransform();
 }
 
-void HUD::drawScoreNumber(unsigned long long number, float scale, bool drawLeadingZeroes) {
+void HUD::drawScoreNumber(u64 number, float scale, bool drawLeadingZeroes) {
     // get digits
     static std::vector<int> digits;
     digits.clear();
@@ -827,7 +827,7 @@ void HUD::drawScoreNumber(unsigned long long number, float scale, bool drawLeadi
     }
 }
 
-void HUD::drawComboNumber(unsigned long long number, float scale, bool drawLeadingZeroes) {
+void HUD::drawComboNumber(u64 number, float scale, bool drawLeadingZeroes) {
     // get digits
     static std::vector<int> digits;
     digits.clear();
@@ -967,11 +967,11 @@ void HUD::drawCombo(int combo) {
     g->popTransform();
 }
 
-void HUD::drawScore(unsigned long long score) {
+void HUD::drawScore(u64 score) {
     g->setColor(0xffffffff);
 
     int numDigits = 1;
-    unsigned long long scoreCopy = score;
+    u64 scoreCopy = score;
     while(scoreCopy >= 10) {
         scoreCopy /= 10;
         numDigits++;
@@ -2355,7 +2355,7 @@ void HUD::animateCombo() {
     anim->moveQuadOut(&this->fComboAnim2, 0.0f, cv::combo_anim2_duration.getFloat(), 0.0f, true);
 }
 
-void HUD::addHitError(long delta, bool miss, bool misaim) {
+void HUD::addHitError(i32 delta, bool miss, bool misaim) {
     // add entry
     {
         HITERROR h;

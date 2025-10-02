@@ -268,8 +268,8 @@ u32 SimulatedBeatmapInterface::getBreakDurationTotal() const {
     return breakDurationTotal;
 }
 
-DatabaseBeatmap::BREAK SimulatedBeatmapInterface::getBreakForTimeRange(long startMS, long positionMS,
-                                                                       long endMS) const {
+DatabaseBeatmap::BREAK SimulatedBeatmapInterface::getBreakForTimeRange(i32 startMS, i32 positionMS,
+                                                                       i32 endMS) const {
     DatabaseBeatmap::BREAK curBreak;
 
     curBreak.startTime = -1;
@@ -391,11 +391,11 @@ void SimulatedBeatmapInterface::addHealth(f64 percent, bool isFromHitResult) {
     }
 }
 
-long SimulatedBeatmapInterface::getPVS() {
+i32 SimulatedBeatmapInterface::getPVS() {
     // this is an approximation with generous boundaries, it doesn't need to be exact (just good enough to filter 10000
     // hitobjects down to a few hundred or so) it will be used in both positive and negative directions (previous and
     // future hitobjects) to speed up loops which iterate over all hitobjects
-    return this->getApproachTime() + GameRules::getFadeInTime() + (long)GameRules::getHitWindowMiss() + 1500;  // sanity
+    return this->getApproachTime() + GameRules::getFadeInTime() + (i32)GameRules::getHitWindowMiss() + 1500;  // sanity
 }
 
 void SimulatedBeatmapInterface::resetScore() {
@@ -452,9 +452,9 @@ void SimulatedBeatmapInterface::update(f64 frame_time) {
         bool blockNextNotes = false;
         bool spinner_active = false;
 
-        const long pvs = this->getPVS();
+        const i32 pvs = this->getPVS();
         const int notelockType = this->mods.notelock_type;
-        const long tolerance2B = 3;
+        const i32 tolerance2B = 3;
 
         this->iCurrentHitObjectIndex = 0;  // reset below here, since it's needed for mafham pvs
 
@@ -482,7 +482,7 @@ void SimulatedBeatmapInterface::update(f64 frame_time) {
                     this->iNextHitObjectTime = this->hitobjects[i]->click_time;
                 } else {
                     this->currentHitObject = this->hitobjects[i];
-                    const long actualPrevHitObjectTime =
+                    const i32 actualPrevHitObjectTime =
                         this->hitobjects[i]->click_time + this->hitobjects[i]->duration;
                     this->iPreviousHitObjectTime = actualPrevHitObjectTime;
                 }
@@ -659,7 +659,7 @@ void SimulatedBeatmapInterface::update(f64 frame_time) {
             // ************ live pp block end ************** //
 
             // notes per second
-            const long npsHalfGateSizeMS = (long)(500.0f * this->mods.speed);
+            const i32 npsHalfGateSizeMS = (i32)(500.0f * this->mods.speed);
             if(this->hitobjects[i]->click_time > this->iCurMusicPos - npsHalfGateSizeMS &&
                this->hitobjects[i]->click_time < this->iCurMusicPos + npsHalfGateSizeMS)
                 this->iNPS++;
@@ -812,8 +812,8 @@ void SimulatedBeatmapInterface::updateAutoCursorPos() {
     }
 
     // general
-    long prevTime = 0;
-    long nextTime = this->hitobjects[0]->click_time;
+    i32 prevTime = 0;
+    i32 nextTime = this->hitobjects[0]->click_time;
     vec2 prevPos = this->vAutoCursorPos;
     vec2 curPos = this->vAutoCursorPos;
     vec2 nextPos = this->vAutoCursorPos;
@@ -824,7 +824,7 @@ void SimulatedBeatmapInterface::updateAutoCursorPos() {
             // get previous object
             if(o->isFinished() ||
                (this->iCurMusicPos >
-                o->click_time + o->duration + (long)(this->getHitWindow50() * this->mods.autopilot_lenience))) {
+                o->click_time + o->duration + (i32)(this->getHitWindow50() * this->mods.autopilot_lenience))) {
                 prevTime = o->click_time + o->duration + o->getAutopilotDelta();
                 prevPos = o->getAutoCursorPos(this->iCurMusicPos);
             } else if(!o->isFinished())  // get next object
@@ -837,7 +837,7 @@ void SimulatedBeatmapInterface::updateAutoCursorPos() {
                     haveCurPos = true;
                     curPos = nextPos;
 
-                    // long delta = m_iCurMusicPos - (nextTime + o->duration);
+                    // i32 delta = m_iCurMusicPos - (nextTime + o->duration);
                     o->setAutopilotDelta(this->iCurMusicPos - (nextTime + o->duration));
                 } else if(o->duration > 0 && this->iCurMusicPos >= nextTime)  // handle objects with duration
                 {
@@ -859,7 +859,7 @@ void SimulatedBeatmapInterface::updateAutoCursorPos() {
         if((nextTime == 0 && prevTime == 0) || (nextTime - prevTime) == 0)
             percent = 1.0f;
         else
-            percent = (f32)((long)this->iCurMusicPos - prevTime) / (f32)(nextTime - prevTime);
+            percent = (f32)((i32)this->iCurMusicPos - prevTime) / (f32)(nextTime - prevTime);
 
         percent = std::clamp<f32>(percent, 0.0f, 1.0f);
 
@@ -992,7 +992,7 @@ void SimulatedBeatmapInterface::calculateStacks() {
 
             if(currHitObject->getStack() != 0 && !isSlider) continue;
 
-            long startTime = currHitObject->click_time + currHitObject->duration;
+            i32 startTime = currHitObject->click_time + currHitObject->duration;
             int sliderStack = 0;
 
             for(int j = i + 1; j < this->hitobjects.size(); j++) {
@@ -1109,7 +1109,7 @@ void SimulatedBeatmapInterface::computeDrainRate() {
             testPlayer.resetHealth();
 
             f64 lowestHp = testPlayer.health;
-            int lastTime = (int)(this->hitobjects[0]->click_time - (long)this->getApproachTime());
+            int lastTime = (int)(this->hitobjects[0]->click_time - (i32)this->getApproachTime());
             fail = false;
 
             const int breakCount = this->breaks.size();

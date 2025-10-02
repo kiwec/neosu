@@ -19,7 +19,7 @@ class SimulatedBeatmapInterface final : public AbstractBeatmapInterface {
     void update(f64 frame_time);
 
     // Potentially Visible Set gate time size, for optimizing draw() and update() when iterating over all hitobjects
-    long getPVS();
+    i32 getPVS();
 
     [[nodiscard]] vec2 pixels2OsuCoords(vec2 pixelCoords) const override;  // only used for positional audio atm
     [[nodiscard]] vec2 osuCoords2Pixels(
@@ -61,7 +61,7 @@ class SimulatedBeatmapInterface final : public AbstractBeatmapInterface {
     // current_keys, last_keys also reused
     std::vector<LegacyReplay::Frame> spectated_replay;
     vec2 interpolatedMousePos{0.f};
-    long current_frame_idx = 0;
+    i32 current_frame_idx = 0;
 
     // generic state
     [[nodiscard]] bool isKey1Down() const override;
@@ -74,7 +74,7 @@ class SimulatedBeatmapInterface final : public AbstractBeatmapInterface {
     [[nodiscard]] u32 getLength() const override;
     [[nodiscard]] u32 getLengthPlayable() const override;
     [[nodiscard]] u32 getBreakDurationTotal() const override;
-    [[nodiscard]] DatabaseBeatmap::BREAK getBreakForTimeRange(long startMS, long positionMS, long endMS) const;
+    [[nodiscard]] DatabaseBeatmap::BREAK getBreakForTimeRange(i32 startMS, i32 positionMS, i32 endMS) const;
 
     // HitObject and other helper functions
     LiveScore::HIT addHitResult(HitObject *hitObject, LiveScore::HIT hit, i32 delta, bool isEndOfCombo = false,

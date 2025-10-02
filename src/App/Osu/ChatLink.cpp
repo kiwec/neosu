@@ -74,7 +74,7 @@ void ChatLink::onMouseUpInside(bool /*left*/, bool /*right*/) {
         // If the password has a space in it, parsing will break, but there's no way around it...
         // osu!stable also considers anything after a space to be part of the lobby title :(
         std::regex_search(link_str, match, std::regex("osump://(\\d+)/(\\S*)"));
-        u32 invite_id = strtoul(match.str(1).c_str(), nullptr, 10);
+        u32 invite_id = static_cast<u32>(strtoul(match.str(1).c_str(), nullptr, 10));
         UString password = match.str(2).c_str();
         osu->getLobby()->joinRoom(invite_id, password);
         return;

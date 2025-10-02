@@ -130,7 +130,7 @@ class LiveScore {
     void reset();  // only Beatmap may call this function!
 
     // only Beatmap/SimulatedBeatmapInterface may call this function!
-    void addHitResult(AbstractBeatmapInterface *beatmap, HitObject *hitObject, LiveScore::HIT hit, long delta,
+    void addHitResult(AbstractBeatmapInterface *beatmap, HitObject *hitObject, LiveScore::HIT hit, i32 delta,
                       bool ignoreOnHitErrorBar, bool hitErrorBarOnly, bool ignoreCombo, bool ignoreScore);
 
     void addHitResultComboEnd(LiveScore::HIT hit);
@@ -156,7 +156,7 @@ class LiveScore {
     [[nodiscard]] inline float getPPv2() const { return this->fPPv2; }
     [[nodiscard]] inline int getIndex() const { return this->iIndex; }
 
-    unsigned long long getScore();
+    u64 getScore();
     [[nodiscard]] inline FinishedScore::Grade getGrade() const { return this->grade; }
     [[nodiscard]] inline int getCombo() const { return this->iCombo; }
     [[nodiscard]] inline int getComboMax() const { return this->iComboMax; }
@@ -208,10 +208,10 @@ class LiveScore {
     float fPPv2;
     int iIndex;
 
-    unsigned long long iScoreV1;
-    unsigned long long iScoreV2;
-    unsigned long long iScoreV2ComboPortion;
-    unsigned long long iBonusPoints;
+    u64 iScoreV1;
+    u64 iScoreV2;
+    u64 iScoreV2ComboPortion;
+    u64 iBonusPoints;
     int iCombo;
     int iComboMax;
     int iComboFull;

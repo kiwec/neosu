@@ -189,8 +189,8 @@ class DatabaseBeatmap final {
 
     [[nodiscard]] inline const MD5Hash &getMD5Hash() const { return this->sMD5Hash; }
 
-    TIMING_INFO getTimingInfoForTime(unsigned long positionMS);
-    static TIMING_INFO getTimingInfoForTimeAndTimingPoints(unsigned long positionMS,
+    TIMING_INFO getTimingInfoForTime(u32 positionMS);
+    static TIMING_INFO getTimingInfoForTimeAndTimingPoints(u32 positionMS,
                                                            const zarray<DatabaseBeatmap::TIMINGPOINT> &timingpoints);
 
     // raw metadata
@@ -229,7 +229,7 @@ class DatabaseBeatmap final {
     }
     [[nodiscard]] inline const std::string &getAudioFileName() const { return this->sAudioFileName; }
 
-    [[nodiscard]] inline unsigned long getLengthMS() const { return this->iLengthMS; }
+    [[nodiscard]] inline u32 getLengthMS() const { return this->iLengthMS; }
     [[nodiscard]] inline int getPreviewTime() const { return this->iPreviewTime; }
 
     [[nodiscard]] inline float getAR() const { return this->fAR; }
@@ -272,8 +272,8 @@ class DatabaseBeatmap final {
 
     i64 last_modification_time = 0;
 
-    [[nodiscard]] inline long getLocalOffset() const { return this->iLocalOffset; }
-    [[nodiscard]] inline long getOnlineOffset() const { return this->iOnlineOffset; }
+    [[nodiscard]] inline i32 getLocalOffset() const { return this->iLocalOffset; }
+    [[nodiscard]] inline i32 getOnlineOffset() const { return this->iOnlineOffset; }
 
     // song select mod-adjusted pp/stars
     pp_info pp;
@@ -304,7 +304,7 @@ class DatabaseBeatmap final {
     std::string sAudioFileName;
 
     int iID;  // online ID, if uploaded
-    unsigned long iLengthMS;
+    u32 iLengthMS;
 
     u8 iVersion;   // e.g. "osu file format v12" -> 12
     u8 iGameMode;  // 0 = osu!standard, 1 = Taiko, 2 = Catch the Beat, 3 = osu!mania

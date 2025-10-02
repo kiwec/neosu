@@ -25,11 +25,11 @@ class SkinImage final {
     // (e.g. hitobjects, depending on the diameter defined by the CS)
     void drawRaw(vec2 pos, float scale, AnchorPoint anchor = AnchorPoint::CENTER);
 
-    void update(float speedMultiplier, bool useEngineTimeForAnimations = true, long curMusicPos = 0);
+    void update(float speedMultiplier, bool useEngineTimeForAnimations = true, i32 curMusicPos = 0);
 
     void setAnimationFramerate(float fps) { this->fFrameDuration = 1.0f / std::clamp<float>(fps, 1.0f, 9999.0f); }
     void setAnimationTimeOffset(float speedMultiplier,
-                                long offset);  // set this every frame (before drawing) to a fixed point in time
+                                i32 offset);  // set this every frame (before drawing) to a fixed point in time
                                                // relative to curMusicPos where we become visible
     void setAnimationFrameForce(
         int frame);  // force set a frame, before drawing (e.g. for hitresults in UIRankingScreenRankingPanel)
@@ -78,11 +78,11 @@ class SkinImage final {
     float fOsuSize;
 
     // animation
-    long iCurMusicPos;
+    i32 iCurMusicPos;
     unsigned int iFrameCounter;
-    unsigned long iFrameCounterUnclamped;
+    u32 iFrameCounterUnclamped;
     float fFrameDuration;
-    long iBeatmapAnimationTimeStartOffset;
+    i32 iBeatmapAnimationTimeStartOffset;
 
     // raw files
     std::vector<IMAGE> images;

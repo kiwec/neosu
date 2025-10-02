@@ -5,26 +5,20 @@
 
 #include "AnimationHandler.h"
 #include "Bancho.h"
-#include "Camera.h"
 #include "ConVar.h"
 #include "Engine.h"
 #include "GameRules.h"
 #include "HUD.h"
 #include "ModFPoSu.h"
-#include "Mouse.h"
 #include "Osu.h"
-#include "OpenGLHeaders.h"
-#include "OpenGLLegacyInterface.h"
 #include "BeatmapInterface.h"
 #include "RenderTarget.h"
 #include "ResourceManager.h"
-#include "Shader.h"
 #include "Skin.h"
 #include "SkinImage.h"
 #include "SliderCurves.h"
 #include "SliderRenderer.h"
 #include "SoundEngine.h"
-#include "VertexArrayObject.h"
 #include "Logging.h"
 
 void HitObject::drawHitResult(BeatmapInterface *pf, vec2 rawPos, LiveScore::HIT result, float animPercentInv,
@@ -233,7 +227,7 @@ void HitObject::drawHitResult(const std::unique_ptr<Skin> &skin, float hitcircle
     g->popTransform();
 }
 
-HitObject::HitObject(long time, HitSamples samples, int comboNumber, bool isEndOfCombo, int colorCounter,
+HitObject::HitObject(i32 time, HitSamples samples, int comboNumber, bool isEndOfCombo, int colorCounter,
                      int colorOffset, AbstractBeatmapInterface *pi) {
     this->click_time = time;
     this->samples = std::move(samples);
@@ -283,7 +277,7 @@ void HitObject::drawHitResultAnim(const HITRESULTANIM &hitresultanim) {
               engine->getTime()) {
         const auto &skin = this->pf->getSkin();
         {
-            const long skinAnimationTimeStartOffset =
+            const i32 skinAnimationTimeStartOffset =
                 this->click_time +
                 (hitresultanim.addObjectDurationToSkinAnimationTimeStartOffset ? this->duration : 0) +
                 hitresultanim.delta;
@@ -314,7 +308,7 @@ void HitObject::drawHitResultAnim(const HITRESULTANIM &hitresultanim) {
     }
 }
 
-void HitObject::update(long curPos, f64 /*frame_time*/) {
+void HitObject::update(i32 curPos, f64 /*frame_time*/) {
     this->fAlphaForApproachCircle = 0.0f;
     this->fHittableDimRGBColorMultiplierPercent = 1.0f;
 
@@ -322,7 +316,7 @@ void HitObject::update(long curPos, f64 /*frame_time*/) {
 
     double animationSpeedMultipler = mods.speed / osu->getAnimationSpeedMultiplier();
     this->iApproachTime = (this->bUseFadeInTimeAsApproachTime ? (GameRules::getFadeInTime() * animationSpeedMultipler)
-                                                              : (long)this->pi->getApproachTime());
+                                                              : (i32)this->pi->getApproachTime());
     this->iFadeInTime = GameRules::getFadeInTime() * animationSpeedMultipler;
 
     this->iDelta = this->click_time - curPos;
@@ -387,8 +381,8 @@ void HitObject::update(long curPos, f64 /*frame_time*/) {
         }
 
         // hitobject body fadein
-        const long fadeInStart = this->click_time - this->iApproachTime;
-        const long fadeInEnd =
+        const i32 fadeInStart = this->click_time - this->iApproachTime;
+        const i32 fadeInEnd =
             std::min(this->click_time,
                      this->click_time - this->iApproachTime +
                          this->iFadeInTime);  // std::min() ensures that the fade always finishes at click_time
@@ -403,22 +397,22 @@ void HitObject::update(long curPos, f64 /*frame_time*/) {
             const float fin_end_percent = cv::mod_hd_circle_fadein_end_percent.getFloat();
             const float fout_start_percent = cv::mod_hd_circle_fadeout_start_percent.getFloat();
             const float fout_end_percent = cv::mod_hd_circle_fadeout_end_percent.getFloat();
-            const long hiddenFadeInStart = this->click_time - (long)(this->iApproachTime * fin_start_percent);
-            const long hiddenFadeInEnd = this->click_time - (long)(this->iApproachTime * fin_end_percent);
+            const i32 hiddenFadeInStart = this->click_time - (i32)(this->iApproachTime * fin_start_percent);
+            const i32 hiddenFadeInEnd = this->click_time - (i32)(this->iApproachTime * fin_end_percent);
             this->fAlpha = std::clamp<float>(
                 1.0f - ((float)(hiddenFadeInEnd - curPos) / (float)(hiddenFadeInEnd - hiddenFadeInStart)), 0.0f, 1.0f);
 
             // hidden hitobject body fadeout
-            const long hiddenFadeOutStart = this->click_time - (long)(this->iApproachTime * fout_start_percent);
-            const long hiddenFadeOutEnd = this->click_time - (long)(this->iApproachTime * fout_end_percent);
+            const i32 hiddenFadeOutStart = this->click_time - (i32)(this->iApproachTime * fout_start_percent);
+            const i32 hiddenFadeOutEnd = this->click_time - (i32)(this->iApproachTime * fout_end_percent);
             if(curPos >= hiddenFadeOutStart)
                 this->fAlpha = std::clamp<float>(
                     ((float)(hiddenFadeOutEnd - curPos) / (float)(hiddenFadeOutEnd - hiddenFadeOutStart)), 0.0f, 1.0f);
         }
 
         // approach circle fadein (doubled fadeintime)
-        const long approachCircleFadeStart = this->click_time - this->iApproachTime;
-        const long approachCircleFadeEnd =
+        const i32 approachCircleFadeStart = this->click_time - this->iApproachTime;
+        const i32 approachCircleFadeEnd =
             std::min(this->click_time,
                      this->click_time - this->iApproachTime +
                          2 * this->iFadeInTime);  // std::min() ensures that the fade always finishes at click_time
@@ -431,10 +425,10 @@ void HitObject::update(long curPos, f64 /*frame_time*/) {
         if(cv::hitobject_hittable_dim.getBool() &&
            (!(ModMasks::eq(this->pi->getMods().flags, Replay::ModFlags::Mafham)) ||
             !cv::mod_mafham_ignore_hittable_dim.getBool())) {
-            const long hittableDimFadeStart = this->click_time - (long)GameRules::getHitWindowMiss();
+            const i32 hittableDimFadeStart = this->click_time - (i32)GameRules::getHitWindowMiss();
 
             // yes, this means the un-dim animation cuts into the already clickable range
-            const long hittableDimFadeEnd = hittableDimFadeStart + (long)cv::hitobject_hittable_dim_duration.getInt();
+            const i32 hittableDimFadeEnd = hittableDimFadeStart + (i32)cv::hitobject_hittable_dim_duration.getInt();
 
             this->fHittableDimRGBColorMultiplierPercent =
                 std::lerp(cv::hitobject_hittable_dim_start_percent.getFloat(), 1.0f,
@@ -450,7 +444,7 @@ void HitObject::update(long curPos, f64 /*frame_time*/) {
     }
 }
 
-void HitObject::addHitResult(LiveScore::HIT result, long delta, bool isEndOfCombo, vec2 posRaw, float targetDelta,
+void HitObject::addHitResult(LiveScore::HIT result, i32 delta, bool isEndOfCombo, vec2 posRaw, float targetDelta,
                              float targetAngle, bool ignoreOnHitErrorBar, bool ignoreCombo, bool ignoreHealth,
                              bool addObjectDurationToSkinAnimationTimeStartOffset) {
     if(this->pf != nullptr && osu->getModTarget() && result != LiveScore::HIT::HIT_MISS && targetDelta >= 0.0f) {
@@ -491,7 +485,7 @@ void HitObject::addHitResult(LiveScore::HIT result, long delta, bool isEndOfComb
         this->hitresultanim2 = hitresultanim;
 }
 
-void HitObject::onReset(long /*curPos*/) {
+void HitObject::onReset(i32 /*curPos*/) {
     this->bMisAim = false;
     this->iAutopilotDelta = 0;
 
@@ -861,7 +855,7 @@ void Circle::drawHitCircleNumber(const std::unique_ptr<Skin> &skin, float number
     g->popTransform();
 }
 
-Circle::Circle(int x, int y, long time, HitSamples samples, int comboNumber, bool isEndOfCombo, int colorCounter,
+Circle::Circle(int x, int y, i32 time, HitSamples samples, int comboNumber, bool isEndOfCombo, int colorCounter,
                int colorOffset, AbstractBeatmapInterface *pi)
     : HitObject(time, std::move(samples), comboNumber, isEndOfCombo, colorCounter, colorOffset, pi) {
     this->type = HitObjectType::CIRCLE;
@@ -955,12 +949,12 @@ void Circle::draw2() {
                        this->bWaiting && !hd ? 1.0f : this->fAlphaForApproachCircle, this->bOverrideHDApproachCircle);
 }
 
-void Circle::update(long curPos, f64 frame_time) {
+void Circle::update(i32 curPos, f64 frame_time) {
     HitObject::update(curPos, frame_time);
     if(this->bFinished) return;
 
     const auto mods = this->pi->getMods();
-    const long delta = curPos - this->click_time;
+    const i32 delta = curPos - this->click_time;
 
     if(ModMasks::eq(mods.flags, Replay::ModFlags::Autoplay)) {
         if(curPos >= this->click_time) {
@@ -970,7 +964,7 @@ void Circle::update(long curPos, f64 frame_time) {
     }
 
     if(ModMasks::eq(mods.flags, Replay::ModFlags::Relax)) {
-        if(curPos >= this->click_time + (long)cv::relax_offset.getInt() && !this->pi->isPaused() &&
+        if(curPos >= this->click_time + (i32)cv::relax_offset.getInt() && !this->pi->isPaused() &&
            !this->pi->isContinueScheduled()) {
             const vec2 pos = this->pi->osuCoords2Pixels(this->vRawPos);
             const float cursorDelta = vec::length(this->pi->getCursorPos() - pos);
@@ -993,7 +987,7 @@ void Circle::update(long curPos, f64 frame_time) {
         this->bWaiting = true;
 
         // if this is a miss after waiting
-        if(delta > (long)this->pi->getHitWindow50()) {
+        if(delta > (i32)this->pi->getHitWindow50()) {
             this->onHit(LiveScore::HIT::HIT_MISS, delta);
         }
     } else {
@@ -1008,10 +1002,10 @@ void Circle::updateStackPosition(float stackOffset) {
              this->iStack * stackOffset * ((this->pi->getModsLegacy() & LegacyFlags::HardRock) ? -1.0f : 1.0f));
 }
 
-void Circle::miss(long curPos) {
+void Circle::miss(i32 curPos) {
     if(this->bFinished) return;
 
-    const long delta = curPos - this->click_time;
+    const i32 delta = curPos - this->click_time;
 
     this->onHit(LiveScore::HIT::HIT_MISS, delta);
 }
@@ -1030,7 +1024,7 @@ void Circle::onClickEvent(std::vector<Click> &clicks) {
             return;  // ignore click event completely
         }
 
-        const long delta = clicks[0].click_time - (long)this->click_time;
+        const i32 delta = clicks[0].click_time - (i32)this->click_time;
 
         LiveScore::HIT result = this->pi->getHitResult(delta);
         if(result != LiveScore::HIT::HIT_NULL) {
@@ -1043,7 +1037,7 @@ void Circle::onClickEvent(std::vector<Click> &clicks) {
     }
 }
 
-void Circle::onHit(LiveScore::HIT result, long delta, float targetDelta, float targetAngle) {
+void Circle::onHit(LiveScore::HIT result, i32 delta, float targetDelta, float targetAngle) {
     // sound and hit animation
     if(this->pf != nullptr && result != LiveScore::HIT::HIT_MISS) {
         const vec2 osuCoords = this->pf->pixels2OsuCoords(this->pf->osuCoords2Pixels(this->vRawPos));
@@ -1059,7 +1053,7 @@ void Circle::onHit(LiveScore::HIT result, long delta, float targetDelta, float t
     this->bFinished = true;
 }
 
-void Circle::onReset(long curPos) {
+void Circle::onReset(i32 curPos) {
     HitObject::onReset(curPos);
 
     this->bWaiting = false;
@@ -1078,10 +1072,10 @@ void Circle::onReset(long curPos) {
     }
 }
 
-vec2 Circle::getAutoCursorPos(long /*curPos*/) const { return this->pi->osuCoords2Pixels(this->vRawPos); }
+vec2 Circle::getAutoCursorPos(i32 /*curPos*/) const { return this->pi->osuCoords2Pixels(this->vRawPos); }
 
 Slider::Slider(char stype, int repeat, float pixelLength, std::vector<vec2> points, const std::vector<float> &ticks,
-               float sliderTime, float sliderTimeWithoutRepeats, long time, HitSamples hoverSamples,
+               float sliderTime, float sliderTimeWithoutRepeats, i32 time, HitSamples hoverSamples,
                std::vector<HitSamples> edgeSamples, int comboNumber, bool isEndOfCombo, int colorCounter,
                int colorOffset, AbstractBeatmapInterface *pi)
     : HitObject(time, std::move(hoverSamples), comboNumber, isEndOfCombo, colorCounter, colorOffset, pi) {
@@ -1114,7 +1108,7 @@ Slider::Slider(char stype, int repeat, float pixelLength, std::vector<vec2> poin
         sc.successful = false;
         sc.type = 0;
         sc.sliderend = ((i % 2) == 0);  // for hit animation on repeat hit
-        sc.time = this->click_time + (long)(this->fSliderTimeWithoutRepeats * (i + 1));
+        sc.time = this->click_time + (i32)(this->fSliderTimeWithoutRepeats * (i + 1));
 
         this->clicks.push_back(sc);
     }
@@ -1138,8 +1132,8 @@ Slider::Slider(char stype, int repeat, float pixelLength, std::vector<vec2> poin
 
             SLIDERCLICK sc;
 
-            sc.time = this->click_time + (long)(this->fSliderTimeWithoutRepeats * i) +
-                      (long)(tickPercentRelativeToRepeatFromStartAbs * this->fSliderTimeWithoutRepeats);
+            sc.time = this->click_time + (i32)(this->fSliderTimeWithoutRepeats * i) +
+                      (i32)(tickPercentRelativeToRepeatFromStartAbs * this->fSliderTimeWithoutRepeats);
             sc.finished = false;
             sc.successful = false;
             sc.type = 1;
@@ -1149,7 +1143,7 @@ Slider::Slider(char stype, int repeat, float pixelLength, std::vector<vec2> poin
         }
     }
 
-    this->duration = (long)this->fSliderTime;
+    this->duration = (i32)this->fSliderTime;
     this->duration = this->duration >= 0 ? this->duration : 1;  // force clamp to positive range
 
     this->fSlidePercent = 0.0f;
@@ -1629,7 +1623,7 @@ void Slider::drawBody(float alpha, float from, float to) {
     }
 }
 
-void Slider::update(long curPos, f64 frame_time) {
+void Slider::update(i32 curPos, f64 frame_time) {
     HitObject::update(curPos, frame_time);
 
     if(this->pf != nullptr) {
@@ -1649,7 +1643,7 @@ void Slider::update(long curPos, f64 frame_time) {
     this->fSlidePercent = 0.0f;
     if(curPos > this->click_time)
         this->fSlidePercent = std::clamp<float>(
-            std::clamp<long>((curPos - (this->click_time)), 0, (long)this->fSliderTime) / this->fSliderTime, 0.0f,
+            std::clamp<i32>((curPos - (this->click_time)), 0, (i32)this->fSliderTime) / this->fSliderTime, 0.0f,
             1.0f);
 
     this->fActualSlidePercent = this->fSlidePercent;
@@ -1659,10 +1653,10 @@ void Slider::update(long curPos, f64 frame_time) {
     this->fSliderSnakePercent =
         std::min(1.0f, (curPos - (this->click_time - this->iApproachTime)) / (sliderSnakeDuration));
 
-    const long reverseArrowFadeInStart =
+    const i32 reverseArrowFadeInStart =
         this->click_time -
         (cv::snaking_sliders.getBool() ? (this->iApproachTime - sliderSnakeDuration) : this->iApproachTime);
-    const long reverseArrowFadeInEnd = reverseArrowFadeInStart + cv::slider_reverse_arrow_fadein_duration.getInt();
+    const i32 reverseArrowFadeInEnd = reverseArrowFadeInStart + cv::slider_reverse_arrow_fadein_duration.getInt();
     this->fReverseArrowAlpha = 1.0f - std::clamp<float>(((float)(reverseArrowFadeInEnd - curPos) /
                                                          (float)(reverseArrowFadeInEnd - reverseArrowFadeInStart)),
                                                         0.0f, 1.0f);
@@ -1674,13 +1668,13 @@ void Slider::update(long curPos, f64 frame_time) {
         this->fBodyAlpha = this->fAlphaWithoutHidden;  // fade in as usual
 
         // fade out over the duration of the slider, starting exactly when the default fadein finishes
-        const long hiddenSliderBodyFadeOutStart =
+        const i32 hiddenSliderBodyFadeOutStart =
             std::min(this->click_time,
                      this->click_time - this->iApproachTime +
                          this->iFadeInTime);  // std::min() ensures that the fade always starts at click_time
                                               // (even if the fadeintime is longer than the approachtime)
         const float fade_percent = cv::mod_hd_slider_fade_percent.getFloat();
-        const long hiddenSliderBodyFadeOutEnd = this->click_time + (long)(fade_percent * this->fSliderTime);
+        const i32 hiddenSliderBodyFadeOutEnd = this->click_time + (i32)(fade_percent * this->fSliderTime);
         if(curPos >= hiddenSliderBodyFadeOutStart) {
             this->fBodyAlpha = std::clamp<float>(((float)(hiddenSliderBodyFadeOutEnd - curPos) /
                                                   (float)(hiddenSliderBodyFadeOutEnd - hiddenSliderBodyFadeOutStart)),
@@ -1747,10 +1741,10 @@ void Slider::update(long curPos, f64 frame_time) {
                 this->pi->holding_slider = true;
             }
         } else {
-            long delta = curPos - this->click_time;
+            i32 delta = curPos - this->click_time;
 
             if((this->pi->getModsLegacy() & LegacyFlags::Relax)) {
-                if(curPos >= this->click_time + (long)cv::relax_offset.getInt() && !this->pi->isPaused() &&
+                if(curPos >= this->click_time + (i32)cv::relax_offset.getInt() && !this->pi->isPaused() &&
                    !this->pi->isContinueScheduled()) {
                     const vec2 pos = this->pi->osuCoords2Pixels(this->curve->pointAt(0.0f));
                     const float cursorDelta = vec::length(this->pi->getCursorPos() - pos);
@@ -1774,7 +1768,7 @@ void Slider::update(long curPos, f64 frame_time) {
             // wait for a miss
             if(delta >= 0) {
                 // if this is a miss after waiting
-                if(delta > (long)this->pi->getHitWindow50()) {
+                if(delta > (i32)this->pi->getHitWindow50()) {
                     this->startResult = LiveScore::HIT::HIT_MISS;
                     this->onHit(this->startResult, delta, false);
                     this->pi->holding_slider = false;
@@ -1797,8 +1791,8 @@ void Slider::update(long curPos, f64 frame_time) {
         // https://github.com/ppy/osu/blob/master/osu.Game.Rulesets.Osu/Objects/Slider.cs#L123 being "inside the slider"
         // (for the end of the slider) is NOT checked at the exact end of the slider, but somewhere random before,
         // because fuck you
-        const long offset = (long)cv::slider_end_inside_check_offset.getInt();
-        const long lenienceHackEndTime =
+        const i32 offset = (i32)cv::slider_end_inside_check_offset.getInt();
+        const i32 lenienceHackEndTime =
             std::max(this->click_time + this->duration / 2, (this->click_time + this->duration) - offset);
         const bool isTrackingCorrectly =
             (this->isClickHeldSlider() || (this->pi->getModsLegacy() & LegacyFlags::Relax)) && this->bCursorInside;
@@ -1969,7 +1963,7 @@ void Slider::update(long curPos, f64 frame_time) {
     }
 }
 
-void Slider::updateAnimations(long curPos) {
+void Slider::updateAnimations(i32 curPos) {
     float animation_multiplier = this->pi->getSpeedMultiplier() / osu->getAnimationSpeedMultiplier();
 
     float fadein_fade_time = cv::slider_followcircle_fadein_fade_time.getFloat() * animation_multiplier;
@@ -2016,10 +2010,10 @@ void Slider::updateStackPosition(float stackOffset) {
                                          (this->pi->getModsLegacy() & LegacyFlags::HardRock));
 }
 
-void Slider::miss(long curPos) {
+void Slider::miss(i32 curPos) {
     if(this->bFinished) return;
 
-    const long delta = curPos - this->click_time;
+    const i32 delta = curPos - this->click_time;
 
     // startcircle
     if(!this->bStartFinished) {
@@ -2058,7 +2052,7 @@ void Slider::miss(long curPos) {
     }
 }
 
-vec2 Slider::getRawPosAt(long pos) const {
+vec2 Slider::getRawPosAt(i32 pos) const {
     if(this->curve == nullptr) return vec2(0, 0);
 
     if(pos <= this->click_time)
@@ -2072,7 +2066,7 @@ vec2 Slider::getRawPosAt(long pos) const {
         return this->curve->pointAt(this->getT(pos, false));
 }
 
-vec2 Slider::getOriginalRawPosAt(long pos) const {
+vec2 Slider::getOriginalRawPosAt(i32 pos) const {
     if(this->curve == nullptr) return vec2(0, 0);
 
     if(pos <= this->click_time)
@@ -2086,8 +2080,8 @@ vec2 Slider::getOriginalRawPosAt(long pos) const {
         return this->curve->originalPointAt(this->getT(pos, false));
 }
 
-float Slider::getT(long pos, bool raw) const {
-    float t = (float)((long)pos - (long)this->click_time) / this->fSliderTimeWithoutRepeats;
+float Slider::getT(i32 pos, bool raw) const {
+    float t = (float)((i32)pos - (i32)this->click_time) / this->fSliderTimeWithoutRepeats;
     if(raw)
         return t;
     else {
@@ -2107,7 +2101,7 @@ void Slider::onClickEvent(std::vector<Click> &clicks) {
         const float cursorDelta = vec::length(cursorPos - pos);
 
         if(cursorDelta < this->pi->fHitcircleDiameter / 2.0f) {
-            const long delta = clicks[0].click_time - (long)this->click_time;
+            const i32 delta = clicks[0].click_time - (i32)this->click_time;
 
             LiveScore::HIT result = this->pi->getHitResult(delta);
             if(result != LiveScore::HIT::HIT_NULL) {
@@ -2123,7 +2117,7 @@ void Slider::onClickEvent(std::vector<Click> &clicks) {
     }
 }
 
-void Slider::onHit(LiveScore::HIT result, long delta, bool startOrEnd, float targetDelta, float targetAngle,
+void Slider::onHit(LiveScore::HIT result, i32 delta, bool startOrEnd, float targetDelta, float targetAngle,
                    bool isEndResultFromStrictTrackingMod) {
     if(this->points.size() == 0) return;
 
@@ -2372,7 +2366,7 @@ void Slider::onTickHit(bool successful, int tickIndex) {
 
 void Slider::onSliderBreak() { this->pi->addSliderBreak(); }
 
-void Slider::onReset(long curPos) {
+void Slider::onReset(i32 curPos) {
     HitObject::onReset(curPos);
 
     if(this->pf != nullptr) {
@@ -2466,7 +2460,7 @@ bool Slider::isClickHeldSlider() {
     return false;  // unreachable
 }
 
-Spinner::Spinner(int x, int y, long time, HitSamples samples, bool isEndOfCombo, long endTime,
+Spinner::Spinner(int x, int y, i32 time, HitSamples samples, bool isEndOfCombo, i32 endTime,
                  AbstractBeatmapInterface *pi)
     : HitObject(time, std::move(samples), -1, isEndOfCombo, -1, -1, pi) {
     this->type = HitObjectType::SPINNER;
@@ -2519,8 +2513,8 @@ Spinner::~Spinner() {
 void Spinner::draw() {
     HitObject::draw();
     const float fadeOutMultiplier = cv::spinner_fade_out_time_multiplier.getFloat();
-    const long fadeOutTimeMS = (long)(GameRules::getFadeOutTime() * 1000.0f * fadeOutMultiplier);
-    const long deltaEnd = this->iDelta + this->duration;
+    const i32 fadeOutTimeMS = (i32)(GameRules::getFadeOutTime() * 1000.0f * fadeOutMultiplier);
+    const i32 deltaEnd = this->iDelta + this->duration;
     if((this->bFinished || !this->bVisible) && (deltaEnd > 0 || (deltaEnd < -fadeOutTimeMS))) return;
 
     const std::unique_ptr<Skin> &skin = this->pf->getSkin();
@@ -2716,7 +2710,7 @@ void Spinner::draw() {
     }
 }
 
-void Spinner::update(long curPos, f64 frame_time) {
+void Spinner::update(i32 curPos, f64 frame_time) {
     HitObject::update(curPos, frame_time);
 
     // stop spinner sound and don't update() while paused
@@ -2746,7 +2740,7 @@ void Spinner::update(long curPos, f64 frame_time) {
         const float AUTO_MULTIPLIER = (1.0f / 20.0f);
 
         // scale percent calculation
-        long delta = (long)this->click_time - (long)curPos;
+        i32 delta = (i32)this->click_time - (i32)curPos;
         this->fPercent = 1.0f - std::clamp<float>((float)delta / -(float)(this->duration), 0.0f, 1.0f);
 
         // handle auto, mouse spinning movement
@@ -2812,7 +2806,7 @@ void Spinner::update(long curPos, f64 frame_time) {
     }
 }
 
-void Spinner::onReset(long curPos) {
+void Spinner::onReset(i32 curPos) {
     HitObject::onReset(curPos);
 
     if(this->pf != nullptr) {
@@ -2908,9 +2902,9 @@ void Spinner::rotate(float rad) {
     this->fRotations = newRotations;
 }
 
-vec2 Spinner::getAutoCursorPos(long curPos) const {
+vec2 Spinner::getAutoCursorPos(i32 curPos) const {
     // calculate point
-    long delta = 0;
+    i32 delta = 0;
     if(curPos <= this->click_time)
         delta = 0;
     else if(curPos >= this->click_time + this->duration)

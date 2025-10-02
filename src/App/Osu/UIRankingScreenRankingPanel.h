@@ -21,7 +21,7 @@ class UIRankingScreenRankingPanel final : public CBaseUIImage {
     void drawHitImage(SkinImage *img, float scale, vec2 pos);
     void drawNumHits(int numHits, float scale, vec2 pos);
 
-    unsigned long long iScore;
+    u64 iScore;
     int iNum300s;
     int iNum300gs;
     int iNum100s;

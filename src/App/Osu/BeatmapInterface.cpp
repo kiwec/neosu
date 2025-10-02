@@ -240,7 +240,7 @@ void BeatmapInterface::drawBackground() {
         if(this->hitobjectsSortedByEndTime.size() > 0) {
             HitObject *lastHitObject = this->hitobjectsSortedByEndTime[this->hitobjectsSortedByEndTime.size() - 1];
             if(lastHitObject->isFinished() && this->iCurMusicPos > lastHitObject->click_time + lastHitObject->duration +
-                                                                       (long)cv::end_skip_time.getInt()) {
+                                                                       (i32)cv::end_skip_time.getInt()) {
                 g->setColor(0xff00ffff);
                 g->fillRect(50, y, 50, 50);
             }
@@ -269,13 +269,13 @@ void BeatmapInterface::skipEmptySection() {
         if(offsetMultiplier <= 0.2f) offsetMultiplier = 0.2f;
     }
 
-    const long nextHitObjectDelta = this->iNextHitObjectTime - (long)this->iCurMusicPosWithOffsets;
+    const i32 nextHitObjectDelta = this->iNextHitObjectTime - (i32)this->iCurMusicPosWithOffsets;
 
     if(!cv::end_skip.getBool() && nextHitObjectDelta < 0) {
         this->music->setPositionMS(std::max(this->music->getLengthMS(), (u32)1) - 1);
         this->bWasSeekFrame = true;
     } else {
-        this->music->setPositionMS(std::max(this->iNextHitObjectTime - (long)(offset * offsetMultiplier), (long)0));
+        this->music->setPositionMS(std::max(this->iNextHitObjectTime - (i32)(offset * offsetMultiplier), (i32)0));
         this->bWasSeekFrame = true;
     }
 
@@ -695,7 +695,7 @@ bool BeatmapInterface::start() {
 
     if(this->beatmap->getLocalOffset() != 0)
         osu->getNotificationOverlay()->addNotification(
-            UString::format("Using local beatmap offset (%ld ms)", this->beatmap->getLocalOffset()), 0xffffffff, false,
+            UString::fmt("Using local beatmap offset ({} ms)", this->beatmap->getLocalOffset()), 0xffffffff, false,
             0.75f);
 
     osu->fQuickSaveTime = 0.0f;  // reset
@@ -736,7 +736,7 @@ void BeatmapInterface::actualRestart() {
 
     // if the first hitobject starts immediately, add artificial wait time before starting the music
     if(this->hitobjects.size() > 0) {
-        if(this->hitobjects[0]->click_time < (long)cv::early_note_time.getInt()) {
+        if(this->hitobjects[0]->click_time < (i32)cv::early_note_time.getInt()) {
             this->bIsWaiting = true;
             this->fWaitTime = Timing::getTimeReal<f32>() + cv::early_note_time.getFloat() / 1000.0f;
         }
@@ -803,7 +803,7 @@ void BeatmapInterface::pause(bool quitIfWaiting) {
                                            : nullptr;
             if(lastHitObject != nullptr && lastHitObject->isFinished() &&
                (this->iCurMusicPos >
-                lastHitObject->click_time + lastHitObject->duration + (long)cv::end_skip_time.getInt()) &&
+                lastHitObject->click_time + lastHitObject->duration + (i32)cv::end_skip_time.getInt()) &&
                cv::end_skip.getBool()) {
                 this->stop(false);
             } else {
@@ -1442,11 +1442,11 @@ bool BeatmapInterface::sortHitObjectByEndTimeComp(HitObject const *a, HitObject 
     return false;  // equivalent
 }
 
-long BeatmapInterface::getPVS() {
+i32 BeatmapInterface::getPVS() {
     // this is an approximation with generous boundaries, it doesn't need to be exact (just good enough to filter 10000
     // hitobjects down to a few hundred or so) it will be used in both positive and negative directions (previous and
     // future hitobjects) to speed up loops which iterate over all hitobjects
-    return this->getApproachTime() + GameRules::getFadeInTime() + (long)GameRules::getHitWindowMiss() + 1500;  // sanity
+    return this->getApproachTime() + GameRules::getFadeInTime() + (i32)GameRules::getHitWindowMiss() + 1500;  // sanity
 }
 
 bool BeatmapInterface::canDraw() {
@@ -1571,7 +1571,7 @@ void BeatmapInterface::unloadObjects() {
     this->clicks.clear();
 }
 
-void BeatmapInterface::resetHitObjects(long curPos) {
+void BeatmapInterface::resetHitObjects(i32 curPos) {
     for(auto &hitobject : this->hitobjects) {
         hitobject->onReset(curPos);
         hitobject->update(curPos, engine->getFrameTime());
@@ -1778,7 +1778,7 @@ void BeatmapInterface::drawSmoke() {
 void BeatmapInterface::drawFollowPoints() {
     const auto &skin = this->getSkin();
 
-    const long curPos = this->iCurMusicPosWithOffsets;
+    const i32 curPos = this->iCurMusicPosWithOffsets;
 
     // I absolutely hate this, followpoints can be abused for cheesing high AR reading since they always fade in with a
     // fixed 800 ms custom approach time. Capping it at the current approach rate seems sensible, but unfortunately
@@ -1787,11 +1787,11 @@ void BeatmapInterface::drawFollowPoints() {
 
     // 0.7x means animation lasts only 0.7 of it's time
     const f64 animationMutiplier = this->getSpeedMultiplier() / osu->getAnimationSpeedMultiplier();
-    const long followPointApproachTime =
+    const i32 followPointApproachTime =
         animationMutiplier *
         (cv::followpoints_clamp.getBool()
-             ? std::min((long)this->getApproachTime(), (long)cv::followpoints_approachtime.getFloat())
-             : (long)cv::followpoints_approachtime.getFloat());
+             ? std::min((i32)this->getApproachTime(), (i32)cv::followpoints_approachtime.getFloat())
+             : (i32)cv::followpoints_approachtime.getFloat());
     const bool followPointsConnectCombos = cv::followpoints_connect_combos.getBool();
     const bool followPointsConnectSpinners = cv::followpoints_connect_spinners.getBool();
     const f32 followPointSeparationMultiplier = std::max(cv::followpoints_separation_multiplier.getFloat(), 0.1f);
@@ -1829,10 +1829,10 @@ void BeatmapInterface::drawFollowPoints() {
             }
 
             // get time & pos of the last and current object
-            const long lastObjectEndTime =
+            const i32 lastObjectEndTime =
                 this->hitobjects[lastObjectIndex]->click_time + this->hitobjects[lastObjectIndex]->duration + 1;
-            const long objectStartTime = this->hitobjects[index]->click_time;
-            const long timeDiff = objectStartTime - lastObjectEndTime;
+            const i32 objectStartTime = this->hitobjects[index]->click_time;
+            const i32 timeDiff = objectStartTime - lastObjectEndTime;
 
             const vec2 startPoint =
                 this->osuCoords2Pixels(this->hitobjects[lastObjectIndex]->getRawPosAt(lastObjectEndTime));
@@ -1853,8 +1853,8 @@ void BeatmapInterface::drawFollowPoints() {
                 const vec2 animPosStart = startPoint + (animRatio - 0.1f) * diff;
                 const vec2 finalPos = startPoint + animRatio * diff;
 
-                const long fadeInTime = (long)(lastObjectEndTime + animRatio * timeDiff) - followPointApproachTime;
-                const long fadeOutTime = (long)(lastObjectEndTime + animRatio * timeDiff);
+                const i32 fadeInTime = (i32)(lastObjectEndTime + animRatio * timeDiff) - followPointApproachTime;
+                const i32 fadeOutTime = (i32)(lastObjectEndTime + animRatio * timeDiff);
 
                 // draw
                 f32 alpha = 1.0f;
@@ -1880,9 +1880,9 @@ void BeatmapInterface::drawFollowPoints() {
                     // future trail
                     const f32 delta = curPos - fadeInTime;
                     alpha = (f32)delta / (f32)followPointApproachTime;
-                } else if(curPos >= fadeOutTime && curPos < (fadeOutTime + (long)followPointPrevFadeTime)) {
+                } else if(curPos >= fadeOutTime && curPos < (fadeOutTime + (i32)followPointPrevFadeTime)) {
                     // previous trail
-                    const long delta = curPos - fadeOutTime;
+                    const i32 delta = curPos - fadeOutTime;
                     alpha = 1.0f - (f32)delta / (f32)(followPointPrevFadeTime);
                 } else
                     alpha = 0.0f;
@@ -1919,8 +1919,8 @@ void BeatmapInterface::drawFollowPoints() {
 }
 
 void BeatmapInterface::drawHitObjects() {
-    const long curPos = this->iCurMusicPosWithOffsets;
-    const long pvs = this->getPVS();
+    const i32 curPos = this->iCurMusicPosWithOffsets;
+    const i32 pvs = this->getPVS();
     const bool usePVS = cv::pvs.getBool();
 
     if(!cv::mod_mafham.getBool()) {
@@ -2312,7 +2312,7 @@ void BeatmapInterface::update2() {
 
             // if the first hitobject starts immediately, add artificial wait time before starting the music
             if(!this->bIsRestartScheduledQuick && this->hitobjects.size() > 0) {
-                if(this->hitobjects[0]->click_time < (long)cv::early_note_time.getInt()) {
+                if(this->hitobjects[0]->click_time < (i32)cv::early_note_time.getInt()) {
                     this->fWaitTime = Timing::getTimeReal<f32>() + cv::early_note_time.getFloat() / 1000.0f;
                 }
             }
@@ -2324,7 +2324,7 @@ void BeatmapInterface::update2() {
 
                     i64 start_ms = 0;
 
-                    // if we are quick restarting, jump just before the first hitobject (even if there is a long waiting
+                    // if we are quick restarting, jump just before the first hitobject (even if there is a i32 waiting
                     // period at the beginning with nothing etc.)
                     if(this->bIsRestartScheduledQuick) {
                         if(this->hitobjects.size() > 0) {
@@ -2353,7 +2353,7 @@ void BeatmapInterface::update2() {
         }
 
         // ugh. force update all hitobjects while waiting (necessary because of pvs optimization)
-        long curPos = this->iCurMusicPos + (long)(cv::universal_offset.getFloat() * this->getSpeedMultiplier()) +
+        i32 curPos = this->iCurMusicPos + (i32)(cv::universal_offset.getFloat() * this->getSpeedMultiplier()) +
                       this->music->getBASSStreamLatencyCompensation() - this->beatmap->getLocalOffset() -
                       this->beatmap->getOnlineOffset() -
                       (this->beatmap->getVersion() < 5 ? cv::old_beatmap_offset.getInt() : 0);
@@ -2404,8 +2404,8 @@ void BeatmapInterface::update2() {
             // osu_end_delay_time) because some beatmaps have hitobjects going until >= the exact end of the music ffs
             // NOTE: this overwrites m_iCurMusicPos for the rest of the update loop
             this->iCurMusicPos =
-                (long)this->music->getLengthMS() +
-                (long)((Timing::getTimeReal<f32>() - this->fAfterMusicIsFinishedVirtualAudioTimeStart) * 1000.0f);
+                (i32)this->music->getLengthMS() +
+                (i32)((Timing::getTimeReal<f32>() - this->fAfterMusicIsFinishedVirtualAudioTimeStart) * 1000.0f);
         }
 
         const bool hasAnyHitObjects = (this->hitobjects.size() > 0);
@@ -2413,7 +2413,7 @@ void BeatmapInterface::update2() {
             (this->iCurMusicPos >
              (this->hitobjectsSortedByEndTime[this->hitobjectsSortedByEndTime.size() - 1]->click_time +
               this->hitobjectsSortedByEndTime[this->hitobjectsSortedByEndTime.size() - 1]->duration +
-              (long)cv::end_delay_time.getInt()));
+              (i32)cv::end_delay_time.getInt()));
         if(!hasAnyHitObjects || (cv::end_skip.getBool() && isTimePastLastHitObjectPlusLenience) ||
            (!cv::end_skip.getBool() && isMusicFinished)) {
             if(!this->bFailed) {
@@ -2531,7 +2531,7 @@ void BeatmapInterface::update2() {
 
         f32 percent = 0.f;
         if(next_frame.milliseconds_since_last_frame > 0) {
-            long ms_since_last_frame = this->iCurMusicPosWithOffsets - current_frame.cur_music_pos;
+            i32 ms_since_last_frame = this->iCurMusicPosWithOffsets - current_frame.cur_music_pos;
             percent = (f32)ms_since_last_frame / (f32)next_frame.milliseconds_since_last_frame;
         }
 
@@ -2581,7 +2581,7 @@ void BeatmapInterface::update2() {
         bool blockNextNotes = false;
         bool spinner_active = false;
 
-        const long pvs = !cv::mod_mafham.getBool()
+        const i32 pvs = !cv::mod_mafham.getBool()
                              ? this->getPVS()
                              : (this->hitobjects.size() > 0
                                     ? (this->hitobjects[std::clamp<int>(this->iCurrentHitObjectIndex +
@@ -2593,7 +2593,7 @@ void BeatmapInterface::update2() {
         const bool usePVS = cv::pvs.getBool();
 
         const int notelockType = cv::notelock_type.getInt();
-        const long tolerance2B = (long)cv::notelock_stable_tolerance2b.getInt();
+        const i32 tolerance2B = (i32)cv::notelock_stable_tolerance2b.getInt();
 
         this->iCurrentHitObjectIndex = 0;  // reset below here, since it's needed for mafham pvs
 
@@ -2621,12 +2621,12 @@ void BeatmapInterface::update2() {
                     this->iNextHitObjectTime = this->hitobjects[i]->click_time;
                 else {
                     this->currentHitObject = this->hitobjects[i];
-                    const long actualPrevHitObjectTime =
+                    const i32 actualPrevHitObjectTime =
                         this->hitobjects[i]->click_time + this->hitobjects[i]->duration;
                     this->iPreviousHitObjectTime = actualPrevHitObjectTime;
 
                     if(this->iCurMusicPosWithOffsets >
-                       actualPrevHitObjectTime + (long)cv::followpoints_prevfadetime.getFloat())
+                       actualPrevHitObjectTime + (i32)cv::followpoints_prevfadetime.getFloat())
                         this->iPreviousFollowPointObjectIndex = i;
                 }
             }
@@ -2824,7 +2824,7 @@ void BeatmapInterface::update2() {
             // ************ live pp block end ************** //
 
             // notes per second
-            const long npsHalfGateSizeMS = (long)(500.0f * this->getSpeedMultiplier());
+            const i32 npsHalfGateSizeMS = (i32)(500.0f * this->getSpeedMultiplier());
             if(this->hitobjects[i]->click_time > this->iCurMusicPosWithOffsets - npsHalfGateSizeMS &&
                this->hitobjects[i]->click_time < this->iCurMusicPosWithOffsets + npsHalfGateSizeMS)
                 this->iNPS++;
@@ -2839,7 +2839,7 @@ void BeatmapInterface::update2() {
         if(cv::hiterrorbar_misaims.getBool()) {
             this->misaimObjects.clear();
             HitObject *lastUnfinishedHitObject = nullptr;
-            const long hitWindow50 = (long)this->getHitWindow50();
+            const i32 hitWindow50 = (i32)this->getHitWindow50();
             for(auto &hitobject : this->hitobjects)  // this shouldn't hurt performance too much, since no
                                                      // expensive operations are happening within the loop
             {
@@ -2866,7 +2866,7 @@ void BeatmapInterface::update2() {
                         continue;
 
                     misaimObject->misAimed();
-                    const long delta = click.click_time - (long)misaimObject->click_time;
+                    const i32 delta = click.click_time - (i32)misaimObject->click_time;
                     osu->getHUD()->addHitError(delta, false, true);
 
                     break;  // the current click has been dealt with (and the hitobject has been misaimed)
@@ -2892,9 +2892,9 @@ void BeatmapInterface::update2() {
 
     // empty section detection & skipping
     if(this->hitobjects.size() > 0) {
-        const long legacyOffset = (this->iPreviousHitObjectTime < this->hitobjects[0]->click_time ? 0 : 1000);  // Mc
-        const long nextHitObjectDelta = this->iNextHitObjectTime - (long)this->iCurMusicPosWithOffsets;
-        if(nextHitObjectDelta > 0 && nextHitObjectDelta > (long)cv::skip_time.getInt() &&
+        const i32 legacyOffset = (this->iPreviousHitObjectTime < this->hitobjects[0]->click_time ? 0 : 1000);  // Mc
+        const i32 nextHitObjectDelta = this->iNextHitObjectTime - (i32)this->iCurMusicPosWithOffsets;
+        if(nextHitObjectDelta > 0 && nextHitObjectDelta > (i32)cv::skip_time.getInt() &&
            this->iCurMusicPosWithOffsets > (this->iPreviousHitObjectTime + legacyOffset))
             this->bIsInSkippableSection = true;
         else if(!cv::end_skip.getBool() && nextHitObjectDelta < 0)
@@ -2913,13 +2913,13 @@ void BeatmapInterface::update2() {
 
     // warning arrow logic
     if(this->hitobjects.size() > 0) {
-        const long legacyOffset = (this->iPreviousHitObjectTime < this->hitobjects[0]->click_time ? 0 : 1000);  // Mc
-        const long minGapSize = 1000;
-        const long lastVisibleMin = 400;
-        const long blinkDelta = 100;
+        const i32 legacyOffset = (this->iPreviousHitObjectTime < this->hitobjects[0]->click_time ? 0 : 1000);  // Mc
+        const i32 minGapSize = 1000;
+        const i32 lastVisibleMin = 400;
+        const i32 blinkDelta = 100;
 
-        const long gapSize = this->iNextHitObjectTime - (this->iPreviousHitObjectTime + legacyOffset);
-        const long nextDelta = (this->iNextHitObjectTime - this->iCurMusicPosWithOffsets);
+        const i32 gapSize = this->iNextHitObjectTime - (this->iPreviousHitObjectTime + legacyOffset);
+        const i32 nextDelta = (this->iNextHitObjectTime - this->iCurMusicPosWithOffsets);
         const bool drawWarningArrows = gapSize > minGapSize && nextDelta > 0;
         if(drawWarningArrows &&
            ((nextDelta <= lastVisibleMin + blinkDelta * 13 && nextDelta > lastVisibleMin + blinkDelta * 12) ||
@@ -2955,14 +2955,14 @@ void BeatmapInterface::update2() {
 
     // section pass/fail logic
     if(this->hitobjects.size() > 0) {
-        const long minGapSize = 2880;
-        const long fadeStart = 1280;
-        const long fadeEnd = 1480;
+        const i32 minGapSize = 2880;
+        const i32 fadeStart = 1280;
+        const i32 fadeEnd = 1480;
 
-        const long gapSize = this->iNextHitObjectTime - this->iPreviousHitObjectTime;
-        const long start = (gapSize / 2 > minGapSize ? this->iPreviousHitObjectTime + (gapSize / 2)
+        const i32 gapSize = this->iNextHitObjectTime - this->iPreviousHitObjectTime;
+        const i32 start = (gapSize / 2 > minGapSize ? this->iPreviousHitObjectTime + (gapSize / 2)
                                                      : this->iNextHitObjectTime - minGapSize);
-        const long nextDelta = this->iCurMusicPosWithOffsets - start;
+        const i32 nextDelta = this->iCurMusicPosWithOffsets - start;
         const bool inSectionPassFail =
             (gapSize > minGapSize && nextDelta > 0) &&
             this->iCurMusicPosWithOffsets > this->hitobjects[0]->click_time &&
@@ -3117,7 +3117,7 @@ void BeatmapInterface::broadcast_spectator_frames() {
 void BeatmapInterface::write_frame() {
     if(!this->bIsPlaying || this->bFailed || this->is_watching || BanchoState::spectating) return;
 
-    long delta = this->iCurMusicPosWithOffsets - this->last_event_ms;
+    i32 delta = this->iCurMusicPosWithOffsets - this->last_event_ms;
     if(delta < 0) return;
     if(delta == 0 && this->last_keys == this->current_keys) return;
 
@@ -3611,11 +3611,11 @@ void BeatmapInterface::updateAutoCursorPos() {
         return;
     }
 
-    const long curMusicPos = this->iCurMusicPosWithOffsets;
+    const i32 curMusicPos = this->iCurMusicPosWithOffsets;
 
     // general
-    long prevTime = 0;
-    long nextTime = this->hitobjects[0]->click_time;
+    i32 prevTime = 0;
+    i32 nextTime = this->hitobjects[0]->click_time;
     vec2 prevPos = this->vAutoCursorPos;
     vec2 curPos = this->vAutoCursorPos;
     vec2 nextPos = this->vAutoCursorPos;
@@ -3624,8 +3624,8 @@ void BeatmapInterface::updateAutoCursorPos() {
     // dance
     int nextPosIndex = 0;
 
-    if(this->hitobjects[0]->click_time < (long)cv::early_note_time.getInt())
-        prevTime = -(long)cv::early_note_time.getInt() * this->getSpeedMultiplier();
+    if(this->hitobjects[0]->click_time < (i32)cv::early_note_time.getInt())
+        prevTime = -(i32)cv::early_note_time.getInt() * this->getSpeedMultiplier();
 
     if(osu->getModAuto()) {
         bool autoDanceOverride = false;
@@ -3646,10 +3646,10 @@ void BeatmapInterface::updateAutoCursorPos() {
                             prevTime = o->click_time;
                             prevPos = this->osuCoords2Pixels(o->getRawPosAt(prevTime));
 
-                            long biggestPrevious = 0;
-                            long smallestNext = (std::numeric_limits<long>::max)();
+                            i32 biggestPrevious = 0;
+                            i32 smallestNext = (std::numeric_limits<i32>::max)();
                             bool allFinished = true;
-                            long endTime = 0;
+                            i32 endTime = 0;
 
                             // middle clicks
                             for(const auto &click : clicks) {
@@ -3714,7 +3714,7 @@ void BeatmapInterface::updateAutoCursorPos() {
             // get previous object
             if(o->isFinished() ||
                (curMusicPos >
-                o->click_time + o->duration + (long)(this->getHitWindow50() * cv::autopilot_lenience.getFloat()))) {
+                o->click_time + o->duration + (i32)(this->getHitWindow50() * cv::autopilot_lenience.getFloat()))) {
                 prevTime = o->click_time + o->duration + o->getAutopilotDelta();
                 prevPos = o->getAutoCursorPos(curMusicPos);
             } else if(!o->isFinished())  // get next object
@@ -3728,7 +3728,7 @@ void BeatmapInterface::updateAutoCursorPos() {
                     haveCurPos = true;
                     curPos = nextPos;
 
-                    // long delta = curMusicPos - (nextTime + o->duration);
+                    // i32 delta = curMusicPos - (nextTime + o->duration);
                     o->setAutopilotDelta(curMusicPos - (nextTime + o->duration));
                 } else if(o->duration > 0 && curMusicPos >= nextTime)  // handle objects with duration
                 {
@@ -3750,7 +3750,7 @@ void BeatmapInterface::updateAutoCursorPos() {
         if((nextTime == 0 && prevTime == 0) || (nextTime - prevTime) == 0)
             percent = 1.0f;
         else
-            percent = (f32)((long)curMusicPos - prevTime) / (f32)(nextTime - prevTime);
+            percent = (f32)((i32)curMusicPos - prevTime) / (f32)(nextTime - prevTime);
 
         percent = std::clamp<f32>(percent, 0.0f, 1.0f);
 
@@ -3928,7 +3928,7 @@ void BeatmapInterface::calculateStacks() {
 
             if(currHitObject->getStack() != 0 && !isSlider) continue;
 
-            long startTime = currHitObject->click_time + currHitObject->duration;
+            i32 startTime = currHitObject->click_time + currHitObject->duration;
             int sliderStack = 0;
 
             for(int j = i + 1; j < this->hitobjects.size(); j++) {
@@ -4045,7 +4045,7 @@ void BeatmapInterface::computeDrainRate() {
             testPlayer.resetHealth();
 
             f64 lowestHp = testPlayer.health;
-            int lastTime = (int)(this->hitobjects[0]->click_time - (long)this->getApproachTime());
+            int lastTime = (int)(this->hitobjects[0]->click_time - (i32)this->getApproachTime());
             fail = false;
 
             const int breakCount = this->breaks.size();
@@ -4078,10 +4078,10 @@ void BeatmapInterface::computeDrainRate() {
                 if(testPlayer.health < lowestHp) lowestHp = testPlayer.health;
 
                 if(testPlayer.health > lowestHpEver) {
-                    const f64 longObjectDrop = testDrop * (f64)h->duration;
-                    const f64 maxLongObjectDrop = std::max(0.0, longObjectDrop - testPlayer.health);
+                    const f64 LongObjectDrop = testDrop * (f64)h->duration;
+                    const f64 maxLongObjectDrop = std::max(0.0, LongObjectDrop - testPlayer.health);
 
-                    testPlayer.decreaseHealth(longObjectDrop);
+                    testPlayer.decreaseHealth(LongObjectDrop);
 
                     // nested hitobjects
                     if(sliderPointer != nullptr) {

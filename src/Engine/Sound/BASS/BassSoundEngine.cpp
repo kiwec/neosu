@@ -325,7 +325,7 @@ bool BassSoundEngine::initializeOutputDevice(const SoundEngine::OUTPUT_DEVICE &d
 
         BASS_ASIO_INFO info{};
         BASS_ASIO_GetInfo(&info);
-        auto bufsize = cv::asio_buffer_size.getVal<unsigned long>();
+        auto bufsize = cv::asio_buffer_size.getVal<u32>();
         bufsize = ASIO_clamp(info, bufsize);
 
         if(osu && osu->getOptionsMenu()) {
@@ -583,7 +583,7 @@ bool BassSoundEngine::hasExclusiveOutput() {
 
 void BassSoundEngine::setOutputDevice(const SoundEngine::OUTPUT_DEVICE &device) {
     bool was_playing = false;
-    unsigned long prevMusicPositionMS = 0;
+    u32 prevMusicPositionMS = 0;
     if(osu->getMapInterface()->getMusic() != nullptr) {
         was_playing = osu->getMapInterface()->getMusic()->isPlaying();
         prevMusicPositionMS = osu->getMapInterface()->getMusic()->getPositionMS();

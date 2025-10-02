@@ -43,12 +43,12 @@ class Database {
         int numScoresWithPP;
         int level;
         float percentToNextLevel;
-        unsigned long long totalScore;
+        u64 totalScore;
     };
 
     struct PlayerPPScores {
         std::vector<FinishedScore *> ppScores;
-        unsigned long long totalScore;
+        u64 totalScore;
     };
 
     struct SCORE_SORTING_METHOD {
@@ -79,8 +79,8 @@ class Database {
     PlayerStats calculatePlayerStats(const std::string &playerName);
     static float getWeightForIndex(int i);
     static float getBonusPPForNumScores(size_t numScores);
-    static unsigned long long getRequiredScoreForLevel(int level);
-    static int getLevelForScore(unsigned long long score, int maxLevel = 120);
+    static u64 getRequiredScoreForLevel(int level);
+    static int getLevelForScore(u64 score, int maxLevel = 120);
 
     inline float getProgress() const { return this->fLoadingProgress.load(std::memory_order_acquire); }
     inline bool isLoading() const {

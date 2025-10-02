@@ -1,17 +1,18 @@
 #pragma once
 // Copyright (c) 2023, kiwec, All rights reserved.
 
-#include "BanchoProtocol.h"
 #include "DatabaseBeatmap.h"
+
+struct Packet;
 
 namespace BANCHO::Leaderboard {
 struct OnlineMapInfo {
-    long ranked_status;
-    bool server_has_osz2;
+    i32 ranked_status;
     u32 beatmap_id;
     u32 beatmap_set_id;
     i32 online_offset;
-    int nb_scores;
+    i32 nb_scores;
+    bool server_has_osz2;
 };
 
 void process_leaderboard_response(Packet response);

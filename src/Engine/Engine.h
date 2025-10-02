@@ -94,7 +94,7 @@ class Engine final : public KeyboardListener {
     // vars
     [[nodiscard]] constexpr double getTime() const { return this->dTime; }
     [[nodiscard]] constexpr double getFrameTime() const { return this->dFrameTime; }
-    [[nodiscard]] constexpr unsigned long getFrameCount() const { return this->iFrameCount; }
+    [[nodiscard]] constexpr u64 getFrameCount() const { return this->iFrameCount; }
 
     // clang-format off
     // NOTE: if engine_throttle cvar is off, this will always return true
@@ -121,7 +121,7 @@ class Engine final : public KeyboardListener {
 
     // timing
     f64 dTime;
-    unsigned long iFrameCount;
+    u64 iFrameCount;
     double dFrameTime;
     // this will wrap quickly, and that's fine, it should be used as a dividend in a modular expression anyways
     uint8_t iVsyncFrameCount;

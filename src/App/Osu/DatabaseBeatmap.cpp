@@ -672,7 +672,7 @@ DatabaseBeatmap::CALCULATE_SLIDER_TIMES_CLICKS_TICKS_RESULT DatabaseBeatmap::cal
         // calculate s.scoringTimesForStarCalc, which should include every point in time where the cursor must be within
         // the followcircle radius and at least one key must be pressed: see
         // https://github.com/ppy/osu/blob/master/osu.Game.Rulesets.Osu/Difficulty/Preprocessing/OsuDifficultyHitObject.cs
-        const long osuSliderEndInsideCheckOffset = (long)cv::slider_end_inside_check_offset.getInt();
+        const i32 osuSliderEndInsideCheckOffset = (i32)cv::slider_end_inside_check_offset.getInt();
 
         // 1) "skip the head circle"
 
@@ -787,7 +787,7 @@ DatabaseBeatmap::LOAD_DIFFOBJ_RESULT DatabaseBeatmap::loadDifficultyHitObjects(P
 
     for(auto &hitcircle : c.hitcircles) {
         result.diffobjects.emplace_back(OsuDifficultyHitObject::TYPE::CIRCLE, vec2(hitcircle.x, hitcircle.y),
-                                        (long)hitcircle.time);
+                                        (i32)hitcircle.time);
     }
 
     const bool calculateSliderCurveInConstructor =
@@ -801,12 +801,12 @@ DatabaseBeatmap::LOAD_DIFFOBJ_RESULT DatabaseBeatmap::loadDifficultyHitObjects(P
         if(!calculateStarsInaccurately) {
             result.diffobjects.emplace_back(
                 OsuDifficultyHitObject::TYPE::SLIDER, vec2(slider.x, slider.y), slider.time,
-                slider.time + (long)slider.sliderTime, slider.sliderTimeWithoutRepeats, slider.type, slider.points,
+                slider.time + (i32)slider.sliderTime, slider.sliderTimeWithoutRepeats, slider.type, slider.points,
                 slider.pixelLength, slider.scoringTimesForStarCalc, slider.repeat, calculateSliderCurveInConstructor);
         } else {
             result.diffobjects.emplace_back(
                 OsuDifficultyHitObject::TYPE::SLIDER, vec2(slider.x, slider.y), slider.time,
-                slider.time + (long)slider.sliderTime, slider.sliderTimeWithoutRepeats, slider.type,
+                slider.time + (i32)slider.sliderTime, slider.sliderTimeWithoutRepeats, slider.type,
                 std::vector<vec2>(),  // NOTE: ignore curve when calculating inaccurately
                 slider.pixelLength,
                 std::vector<OsuDifficultyHitObject::SLIDER_SCORING_TIME>(),  // NOTE: ignore curve when calculating
@@ -818,7 +818,7 @@ DatabaseBeatmap::LOAD_DIFFOBJ_RESULT DatabaseBeatmap::loadDifficultyHitObjects(P
 
     for(auto &spinner : c.spinners) {
         result.diffobjects.emplace_back(OsuDifficultyHitObject::TYPE::SPINNER, vec2(spinner.x, spinner.y),
-                                        (long)spinner.time, (long)spinner.endTime);
+                                        (i32)spinner.time, (i32)spinner.endTime);
     }
 
     if(dead.load()) {
@@ -938,7 +938,7 @@ DatabaseBeatmap::LOAD_DIFFOBJ_RESULT DatabaseBeatmap::loadDifficultyHitObjects(P
 
                 if(currHitObject->stack != 0 && !isSlider) continue;
 
-                long startTime = currHitObject->time + currHitObject->getDuration();
+                i32 startTime = currHitObject->time + currHitObject->getDuration();
                 int sliderStack = 0;
 
                 for(int j = i + 1; j < result.diffobjects.size(); j++) {
@@ -989,8 +989,8 @@ DatabaseBeatmap::LOAD_DIFFOBJ_RESULT DatabaseBeatmap::loadDifficultyHitObjects(P
                 return result;
             }
 
-            result.diffobjects[i].time = (long)((double)result.diffobjects[i].time * invSpeedMultiplier);
-            result.diffobjects[i].endTime = (long)((double)result.diffobjects[i].endTime * invSpeedMultiplier);
+            result.diffobjects[i].time = (i32)((double)result.diffobjects[i].time * invSpeedMultiplier);
+            result.diffobjects[i].endTime = (i32)((double)result.diffobjects[i].endTime * invSpeedMultiplier);
 
             if(!calculateStarsInaccurately)  // NOTE: ignore slider curves when calculating inaccurately
             {
@@ -1309,7 +1309,7 @@ DatabaseBeatmap::LOAD_GAMEPLAY_RESULT DatabaseBeatmap::loadGameplay(DatabaseBeat
 
     // set isEndOfCombo + precalculate Score v2 combo portion maximum
     if(beatmap != nullptr) {
-        unsigned long long scoreV2ComboPortionMaximum = 1;
+        u64 scoreV2ComboPortionMaximum = 1;
 
         if(result.hitobjects.size() > 0) scoreV2ComboPortionMaximum = 0;
 
@@ -1325,12 +1325,12 @@ DatabaseBeatmap::LOAD_GAMEPLAY_RESULT DatabaseBeatmap::loadGameplay(DatabaseBeat
             int scoreComboMultiplier = std::max(combo - 1, 0);
 
             if(circlePointer != nullptr || spinnerPointer != nullptr) {
-                scoreV2ComboPortionMaximum += (unsigned long long)(300.0 * (1.0 + (double)scoreComboMultiplier / 10.0));
+                scoreV2ComboPortionMaximum += (u64)(300.0 * (1.0 + (double)scoreComboMultiplier / 10.0));
                 combo++;
             } else if(sliderPointer != nullptr) {
                 combo += 1 + sliderPointer->getClicks().size();
                 scoreComboMultiplier = std::max(combo - 1, 0);
-                scoreV2ComboPortionMaximum += (unsigned long long)(300.0 * (1.0 + (double)scoreComboMultiplier / 10.0));
+                scoreV2ComboPortionMaximum += (u64)(300.0 * (1.0 + (double)scoreComboMultiplier / 10.0));
                 combo++;
             }
 
@@ -1405,12 +1405,12 @@ void DatabaseBeatmap::update_overrides() {
     db->peppy_overrides_mtx.unlock();
 }
 
-DatabaseBeatmap::TIMING_INFO DatabaseBeatmap::getTimingInfoForTime(unsigned long positionMS) {
+DatabaseBeatmap::TIMING_INFO DatabaseBeatmap::getTimingInfoForTime(u32 positionMS) {
     return getTimingInfoForTimeAndTimingPoints(positionMS, this->timingpoints);
 }
 
 DatabaseBeatmap::TIMING_INFO DatabaseBeatmap::getTimingInfoForTimeAndTimingPoints(
-    unsigned long positionMS, const zarray<DatabaseBeatmap::TIMINGPOINT> &timingpoints) {
+    u32 positionMS, const zarray<DatabaseBeatmap::TIMINGPOINT> &timingpoints) {
     TIMING_INFO ti{};
     ti.offset = 0;
     ti.beatLengthBase = 1;

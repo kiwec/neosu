@@ -33,7 +33,7 @@ class ScoreButton final : public CBaseUIButton {
 
     [[nodiscard]] inline FinishedScore getScore() const { return this->score; }
     [[nodiscard]] inline u64 getScoreUnixTimestamp() const { return this->score.unixTimestamp; }
-    [[nodiscard]] inline unsigned long long getScoreScore() const { return this->score.score; }
+    [[nodiscard]] inline u64 getScoreScore() const { return this->score.score; }
 
     [[nodiscard]] inline UString getDateTime() const { return this->sScoreDateTime; }
     [[nodiscard]] inline int getIndex() const { return this->iScoreIndexNumber; }

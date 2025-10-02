@@ -21,7 +21,7 @@ class InfoLabel final : public CBaseUIButton {
     void setDiff(std::string diff) { this->sDiff = std::move(diff); }
     void setMapper(std::string mapper) { this->sMapper = std::move(mapper); }
 
-    void setLengthMS(unsigned long lengthMS) { this->iLengthMS = lengthMS; }
+    void setLengthMS(u32 lengthMS) { this->iLengthMS = lengthMS; }
     void setBPM(int minBPM, int maxBPM, int mostCommonBPM) {
         this->iMinBPM = minBPM;
         this->iMaxBPM = maxBPM;
@@ -35,13 +35,13 @@ class InfoLabel final : public CBaseUIButton {
     void setHP(float HP) { this->fHP = HP; }
     void setStars(float stars) { this->fStars = stars; }
 
-    void setLocalOffset(long localOffset) { this->iLocalOffset = localOffset; }
-    void setOnlineOffset(long onlineOffset) { this->iOnlineOffset = onlineOffset; }
+    void setLocalOffset(i32 localOffset) { this->iLocalOffset = localOffset; }
+    void setOnlineOffset(i32 onlineOffset) { this->iOnlineOffset = onlineOffset; }
 
     float getMinimumWidth();
     float getMinimumHeight();
 
-    [[nodiscard]] long getBeatmapID() const { return this->iBeatmapId; }
+    [[nodiscard]] i32 getBeatmapID() const { return this->iBeatmapId; }
 
    private:
     UString buildSongInfoString();
@@ -63,7 +63,7 @@ class InfoLabel final : public CBaseUIButton {
     std::string sDiff;
     std::string sMapper;
 
-    unsigned long iLengthMS;
+    u32 iLengthMS;
     int iMinBPM;
     int iMaxBPM;
     int iMostCommonBPM;
@@ -75,9 +75,9 @@ class InfoLabel final : public CBaseUIButton {
     float fHP;
     float fStars;
 
-    long iLocalOffset;
-    long iOnlineOffset;
+    i32 iLocalOffset;
+    i32 iOnlineOffset;
 
     // custom
-    long iBeatmapId;
+    i32 iBeatmapId;
 };

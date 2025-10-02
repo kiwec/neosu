@@ -20,7 +20,7 @@ struct LiveReplayFrame;
 struct ScoreFrame;
 
 struct Click {
-    long click_time;
+    i32 click_time;
     vec2 pos{0.f};
 };
 
@@ -38,7 +38,7 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
     void update2();  // Used to be Playfield::update()
 
     // Potentially Visible Set gate time size, for optimizing draw() and update() when iterating over all hitobjects
-    long getPVS();
+    i32 getPVS();
 
     // this should make all the necessary internal updates to hitobjects when legacy osu mods or static mods change
     // live (but also on start)
@@ -163,7 +163,7 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
     std::vector<LegacyReplay::Frame> spectated_replay;
     vec2 interpolatedMousePos{0.f};
     bool is_watching = false;
-    long current_frame_idx = 0;
+    i32 current_frame_idx = 0;
     SimulatedBeatmapInterface *sim = nullptr;
 
     // getting spectated (live)
@@ -181,8 +181,8 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
     // used by HitObject children and ModSelector
     [[nodiscard]] const std::unique_ptr<Skin> &getSkin() const;  // maybe use this for beatmap skins, maybe
 
-    [[nodiscard]] inline long getCurMusicPos() const { return this->iCurMusicPos; }
-    [[nodiscard]] inline long getCurMusicPosWithOffsets() const { return this->iCurMusicPosWithOffsets; }
+    [[nodiscard]] inline i32 getCurMusicPos() const { return this->iCurMusicPos; }
+    [[nodiscard]] inline i32 getCurMusicPosWithOffsets() const { return this->iCurMusicPosWithOffsets; }
 
     // health
     [[nodiscard]] inline f64 getHealth() const { return this->fHealth; }
@@ -253,7 +253,7 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
     void handlePreviewPlay();
     void unloadObjects();
 
-    void resetHitObjects(long curPos = 0);
+    void resetHitObjects(i32 curPos = 0);
 
     void playMissSound();
 
@@ -267,8 +267,8 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
 
     // sound
     f32 fMusicFrequencyBackup;
-    long iCurMusicPos;
-    long iCurMusicPosWithOffsets;
+    i32 iCurMusicPos;
+    i32 iCurMusicPosWithOffsets;
     McOsuInterpolator musicInterp;
     f32 fAfterMusicIsFinishedVirtualAudioTimeStart;
     bool bIsFirstMissSound;
@@ -289,9 +289,9 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
     f32 fBreakBackgroundFade;
     bool bInBreak;
     HitObject *currentHitObject;
-    long iNextHitObjectTime;
-    long iPreviousHitObjectTime;
-    long iPreviousSectionPassFailTime;
+    i32 iNextHitObjectTime;
+    i32 iPreviousHitObjectTime;
+    i32 iPreviousSectionPassFailTime;
 
     // player input
     bool bClick1Held;

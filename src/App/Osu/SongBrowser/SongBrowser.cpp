@@ -311,8 +311,8 @@ bool sort_by_date_added(SongButton const *a, SongButton const *b) {
     const auto *aPtr = a->getDatabaseBeatmap(), *bPtr = b->getDatabaseBeatmap();
     if((aPtr == nullptr) || (bPtr == nullptr)) return (aPtr == nullptr) < (bPtr == nullptr);
 
-    long long time1 = aPtr->last_modification_time;
-    long long time2 = bPtr->last_modification_time;
+    i64 time1 = aPtr->last_modification_time;
+    i64 time2 = bPtr->last_modification_time;
     if(time1 == time2) return sort_by_difficulty(a, b);
     return time1 > time2;
 }
@@ -326,8 +326,8 @@ bool sort_by_length(SongButton const *a, SongButton const *b) {
     const auto *aPtr = a->getDatabaseBeatmap(), *bPtr = b->getDatabaseBeatmap();
     if((aPtr == nullptr) || (bPtr == nullptr)) return (aPtr == nullptr) < (bPtr == nullptr);
 
-    unsigned long length1 = aPtr->getLengthMS();
-    unsigned long length2 = bPtr->getLengthMS();
+    u32 length1 = aPtr->getLengthMS();
+    u32 length2 = bPtr->getLengthMS();
     if(length1 == length2) return sort_by_difficulty(a, b);
     return length1 < length2;
 }
@@ -668,7 +668,7 @@ void SongBrowser::draw() {
         if(aimStrains.size() > 0 && aimStrains.size() == speedStrains.size()) {
             const float strainStepMS = 400.0f * speedMultiplier;
 
-            const unsigned long lengthMS = strainStepMS * aimStrains.size();
+            const u32 lengthMS = strainStepMS * aimStrains.size();
 
             // get highest strain values for normalization
             double highestAimStrain = 0.0;

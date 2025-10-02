@@ -242,7 +242,7 @@ void ModFPoSu::update() {
 
         if(cv::fposu_mod_strafing.getBool()) {
             if(osu->isInPlayMode()) {
-                const long curMusicPos = osu->getMapInterface()->getCurMusicPos();
+                const i32 curMusicPos = osu->getMapInterface()->getCurMusicPos();
 
                 const float speedMultiplierCompensation = 1.0f / osu->getMapInterface()->getSpeedMultiplier();
 

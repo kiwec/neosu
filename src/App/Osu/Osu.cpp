@@ -1104,16 +1104,16 @@ void Osu::onKeyDown(KeyboardEvent &key) {
 
             // local offset
             if(key == (KEYCODE)cv::INCREASE_LOCAL_OFFSET.getInt()) {
-                long offsetAdd = keyboard->isAltDown() ? 1 : 5;
+                i32 offsetAdd = keyboard->isAltDown() ? 1 : 5;
                 this->map_iface->beatmap->setLocalOffset(this->map_iface->beatmap->getLocalOffset() + offsetAdd);
                 this->notificationOverlay->addNotification(
-                    UString::format("Local beatmap offset set to %ld ms", this->map_iface->beatmap->getLocalOffset()));
+                    UString::fmt("Local beatmap offset set to {} ms", this->map_iface->beatmap->getLocalOffset()));
             }
             if(key == (KEYCODE)cv::DECREASE_LOCAL_OFFSET.getInt()) {
-                long offsetAdd = -(keyboard->isAltDown() ? 1 : 5);
+                i32 offsetAdd = -(keyboard->isAltDown() ? 1 : 5);
                 this->map_iface->beatmap->setLocalOffset(this->map_iface->beatmap->getLocalOffset() + offsetAdd);
                 this->notificationOverlay->addNotification(
-                    UString::format("Local beatmap offset set to %ld ms", this->map_iface->beatmap->getLocalOffset()));
+                    UString::fmt("Local beatmap offset set to {} ms", this->map_iface->beatmap->getLocalOffset()));
             }
         }
     }
@@ -2039,7 +2039,7 @@ bool Osu::getModTD() const { return cv::mod_touchdevice.getBool() || cv::mod_tou
 void Osu::setupSoloud() {
     // need to save this state somewhere to share data between callback stages
     static bool was_playing = false;
-    static unsigned long prev_position_ms = 0;
+    static u32 prev_position_ms = 0;
 
     static auto outputChangedBeforeCallback = []() -> void {
         if(osu && osu->getMapInterface() && osu->getMapInterface()->getMusic()) {

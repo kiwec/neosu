@@ -318,7 +318,7 @@ void SkinImage::drawRaw(vec2 pos, float scale, AnchorPoint anchor) {
     g->popTransform();
 }
 
-void SkinImage::update(float speedMultiplier, bool useEngineTimeForAnimations, long curMusicPos) {
+void SkinImage::update(float speedMultiplier, bool useEngineTimeForAnimations, i32 curMusicPos) {
     if(this->images.size() < 1 || speedMultiplier == 0.f) return;
 
     this->iCurMusicPos = curMusicPos;
@@ -342,7 +342,7 @@ void SkinImage::update(float speedMultiplier, bool useEngineTimeForAnimations, l
         // relative base m_iBeatmapAnimationTimeStartOffset must be set by all hitobjects live while drawing (e.g. to
         // their click_time-m_iObjectTime), since we don't have any animation state saved in the hitobjects!
 
-        long frame_duration_ms = frameDurationInSeconds * 1000.0f;
+        i32 frame_duration_ms = frameDurationInSeconds * 1000.0f;
 
         // freeze animation on frame 0 on negative offsets
         this->iFrameCounter =
@@ -352,7 +352,7 @@ void SkinImage::update(float speedMultiplier, bool useEngineTimeForAnimations, l
     }
 }
 
-void SkinImage::setAnimationTimeOffset(float speedMultiplier, long offset) {
+void SkinImage::setAnimationTimeOffset(float speedMultiplier, i32 offset) {
     this->iBeatmapAnimationTimeStartOffset = offset;
     this->update(speedMultiplier, false, this->iCurMusicPos);  // force update
 }

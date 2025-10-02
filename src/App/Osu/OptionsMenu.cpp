@@ -3111,7 +3111,7 @@ void OptionsMenu::onASIOBufferChange([[maybe_unused]] CBaseUISlider *slider) {
     slider->setBounds(info.bufmin, info.bufmax);
     slider->setKeyDelta(info.bufgran == -1 ? info.bufmin : info.bufgran);
 
-    unsigned long bufsize = slider->getInt();
+    u32 bufsize = slider->getInt();
     bufsize = BassSoundEngine::ASIO_clamp(info, bufsize);
     double latency = 1000.0 * (double)bufsize / std::max(BASS_ASIO_GetRate(), 44100.0);
 

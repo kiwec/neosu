@@ -130,16 +130,16 @@ void process_leaderboard_response(Packet response) {
     char *body = (char *)response.memory;
 
     char *ranked_status = Parsing::strtok_x('|', &body);
-    info.ranked_status = strtol(ranked_status, nullptr, 10);
+    info.ranked_status = static_cast<i32>(strtol(ranked_status, nullptr, 10));
 
     char *server_has_osz2 = Parsing::strtok_x('|', &body);
     info.server_has_osz2 = !strcmp(server_has_osz2, "true");
 
     char *beatmap_id = Parsing::strtok_x('|', &body);
-    info.beatmap_id = strtoul(beatmap_id, nullptr, 10);
+    info.beatmap_id = static_cast<u32>(strtoul(beatmap_id, nullptr, 10));
 
     char *beatmap_set_id = Parsing::strtok_x('|', &body);
-    info.beatmap_set_id = strtoul(beatmap_set_id, nullptr, 10);
+    info.beatmap_set_id = static_cast<u32>(strtoul(beatmap_set_id, nullptr, 10));
 
     char *nb_scores = Parsing::strtok_x('|', &body);
     info.nb_scores = static_cast<i32>(strtol(nb_scores, nullptr, 10));

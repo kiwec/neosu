@@ -29,7 +29,7 @@ class BackgroundImageHandler {
         DatabaseBeatmapBackgroundImagePathLoader *backgroundImagePathLoader;
         Image *image;
 
-        unsigned long evictionTimeFrameCount;
+        u32 evictionTimeFrameCount;
 
         float loadingTime;
         float evictionTime;

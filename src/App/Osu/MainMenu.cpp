@@ -548,8 +548,8 @@ std::pair<bool, float> MainMenu::getTimingpointPulseAmount() {
     }
 
     // playing music, get dynamic pulse amount
-    const long curMusicPos = (long)music->getPositionMS() +
-                             (long)(cv::universal_offset.getFloat() * selectedMap->getSpeedMultiplier()) +
+    const i32 curMusicPos = (i32)music->getPositionMS() +
+                             (i32)(cv::universal_offset.getFloat() * selectedMap->getSpeedMultiplier()) +
                              music->getBASSStreamLatencyCompensation() - map->getLocalOffset() -
                              map->getOnlineOffset() - (map->getVersion() < 5 ? cv::old_beatmap_offset.getInt() : 0);
 
@@ -559,10 +559,10 @@ std::pair<bool, float> MainMenu::getTimingpointPulseAmount() {
         t.beatLengthBase = 1.0f;
 
     this->iMainMenuAnimBeatCounter =
-        (curMusicPos - t.offset - (long)(std::max((long)t.beatLengthBase, (long)1) * 0.5f)) /
-        std::max((long)t.beatLengthBase, (long)1);
+        (curMusicPos - t.offset - (i32)(std::max((i32)t.beatLengthBase, (i32)1) * 0.5f)) /
+        std::max((i32)t.beatLengthBase, (i32)1);
 
-    pulse = (float)((curMusicPos - t.offset) % std::max((long)t.beatLengthBase, (long)1)) /
+    pulse = (float)((curMusicPos - t.offset) % std::max((i32)t.beatLengthBase, (i32)1)) /
             t.beatLengthBase;  // modulo must be >= 1
     pulse = std::clamp<float>(pulse, -1.0f, 1.0f);
     if(pulse < 0.0f) pulse = 1.0f - std::abs(pulse);

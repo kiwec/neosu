@@ -720,11 +720,11 @@ void DifficultyCalculator::DiffObject::calculate_strain(const DiffObject &prev, 
                                                         double hitWindow300, const Skills::Skill dtype) {
     double currentStrainOfDiffObject = 0;
 
-    const long time_elapsed = this->ho->time - prev.ho->time;
+    const i32 time_elapsed = this->ho->time - prev.ho->time;
 
     // update our delta time
     this->delta_time = (double)time_elapsed;
-    this->strain_time = (double)std::max(time_elapsed, 25l);
+    this->strain_time = (double)std::max(time_elapsed, 25);
 
     switch(this->ho->type) {
         case OsuDifficultyHitObject::TYPE::SLIDER:
