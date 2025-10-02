@@ -312,6 +312,9 @@ $(DEPS_CACHE)/curl-$(CURL_VERSION)-linux-binary.source: $(DEPS_CACHE)/curl-$(CUR
 
 CACERT_INCDIR := $(DEPS_CACHE)/curl-$(CURL_VERSION)/certbundle/
 INCBIN_FLAGS += -I$(CACERT_INCDIR)
+
+PKG_CONFIG_PLUS_BUNDLED_OSSL = $(PKG_CONFIG)
+
 if BUILD_CURL
 
 lb := (
@@ -324,7 +327,9 @@ CURL_LIBDIR := $(DEPS_CACHE)/curl-$(CURL_VERSION)/$(SYSNAME)$(host_cpu)/lib
 CURL_CFLAGS += -I$(CURL_INCLUDEDIR) -DWITH_GZFILEOP -DCURL_STATICLIB
 CURL_LIBS += -L$(CURL_LIBDIR) $(shell find $(CURL_LIBDIR) -mindepth 1 -maxdepth 1 -type f -not $(lbq) -name '*dll*' $(rbq) -execdir printf '%s ' '{''}' ';' | $(SED) -e 's|./lib|-l|g' -e 's|\.a||g' -e 's|-lcurl|-l:libcurl.a|g')
 
-BUNDLED_OPENSSL := 1
+PKG_CONFIG_PLUS_BUNDLED_OSSL += --with-path=$(CURL_LIBDIR)/pkgconfig
+OPENSSL_CFLAGS += -I$(CURL_INCLUDEDIR) $(shell $(PKG_CONFIG_PLUS_BUNDLED_OSSL) --cflags openssl)
+OPENSSL_LIBS += -L$(CURL_LIBDIR) $(shell $(PKG_CONFIG_PLUS_BUNDLED_OSSL) --libs openssl)
 
 if WIN_PLATFORM
 CURL_LIBS += -lws2_32 -lwldap32 -lcrypt32 -lsecur32 -liphlpapi
@@ -341,14 +346,13 @@ $(DEPS_PREFIX)/curl-$(CURL_VERSION).built: $(DEPS_CACHE)/curl-$(CURL_VERSION)-li
 	$(MKDIR_P) $(DEPS_PREFIX)
 	touch $@
 endif
-else
-# from host
+else # from host
+CURL_CFLAGS += $(OPENSSL_CFLAGS)
+CURL_LIBS += $(OPENSSL_LIBS)
 $(DEPS_PREFIX)/curl-$(CURL_VERSION).built:
 	$(MKDIR_P) $(DEPS_PREFIX)
 	touch $@
 endif # BUILD_CURL
-
-BUNDLED_OPENSSL_PKGCONF_FLAGS := $(if $(BUNDLED_OPENSSL),--with-path=$(CURL_LIBDIR)/pkgconfig,)
 
 if BUILD_MIMALLOC
 if WIN_PLATFORM
@@ -538,7 +542,7 @@ $(DEPS_PREFIX)/SoundTouch-$(SOUNDTOUCH_VERSION).built: $(DEPS_CACHE)/SoundTouch-
 		-D CMAKE_CXX_COMPILER_RANLIB=$(RANLIB) \
 		-D SOUNDSTRETCH=OFF \
 		-D SOUNDTOUCH_DLL=OFF \
-		-D OPENMP="$(if $(STATICBUILD),OFF,ON)" \
+		-D OPENMP="$(if $(OPENMP),ON,OFF)" \
 		-D BUILD_SHARED_LIBS="$(if $(STATICBUILD),OFF,ON)" && \
 	$(CMAKE) --build build "$(CMAKEPAROPT)" && \
 	$(CMAKE) --install build
@@ -625,8 +629,9 @@ $(DEPS_PREFIX)/libjpeg-$(LIBJPEG_VERSION).built:
 	$(MKDIR_P) $(DEPS_PREFIX) && touch $@
 endif # BUILD_LIBJPEG
 
+GLM_CFLAGS += -DGLM_ENABLE_EXPERIMENTAL -DGLM_FORCE_INLINE -DGLM_ENABLE_LANG_EXTENSIONS -DGLM_ENABLE_CXX_20
 if BUILD_GLM
-GLM_CFLAGS += -I$(DEPS_PREFIX)/include -fms-extensions -DGLM_ENABLE_EXPERIMENTAL -DGLM_FORCE_INLINE -DGLM_ENABLE_LANG_EXTENSIONS -DGLM_ENABLE_CXX_20
+GLM_CFLAGS += -I$(DEPS_PREFIX)/include
 $(DEPS_PREFIX)/glm-$(GLM_VERSION).built: $(DEPS_CACHE)/glm-$(GLM_VERSION).source
 	rm -rf $(DEPS_PREFIX)/glm
 	$(MKDIR_P) $(DEPS_PREFIX)/glm/build $(DEPS_PREFIX)/include
@@ -843,7 +848,7 @@ $(DEPS_PREFIX)/nsync-$(NSYNC_VERSION).built: $(DEPS_CACHE)/nsync-$(NSYNC_VERSION
 		-DBUILD_SHARED_LIBS="$(if $(STATICBUILD),OFF,ON)" && \
 	$(CMAKE) --build build "$(CMAKEPAROPT)" --target nsync_cpp && \
 	$(CMAKE) --install build && \
-	test -f $(DEPS_PREFIX)/include/nsync.h && test -f $(DEPS_PREFIX)/lib/libnsync_cpp$(if $(STATICBUILD),.*a,.*$(DLLEXT))
+	test -f $(DEPS_PREFIX)/include/nsync.h && test -f $(DEPS_PREFIX)/lib/libnsync_cpp$(if $(STATICBUILD),.*a,*$(DLLEXT))
 	touch $@
 else
 $(DEPS_PREFIX)/nsync-$(NSYNC_VERSION).built:
@@ -944,8 +949,8 @@ $(DEPS_PREFIX)/libacl-$(LIBACL_VERSION).built:
 endif # BUILD_LIBACL
 
 # ugly hack to make pkg-config/libarchive find the bundled openssl libs
-LIBARCHIVE_CFLAGS += $(shell $(PKG_CONFIG) $(BUNDLED_OPENSSL_PKGCONF_FLAGS) --cflags libarchive)
-LIBARCHIVE_LIBS += $(shell $(PKG_CONFIG) $(BUNDLED_OPENSSL_PKGCONF_FLAGS) --libs libarchive)
+LIBARCHIVE_CFLAGS += $(shell $(PKG_CONFIG_PLUS_BUNDLED_OSSL) --cflags libarchive)
+LIBARCHIVE_LIBS += $(shell $(PKG_CONFIG_PLUS_BUNDLED_OSSL) --libs libarchive)
 $(DEPS_PREFIX)/libarchive-$(LIBARCHIVE_VERSION).built: $(DEPS_CACHE)/libarchive-$(LIBARCHIVE_VERSION).source $(DEPS_PREFIX)/curl-$(CURL_VERSION).built $\
 											$(DEPS_PREFIX)/libacl-$(LIBACL_VERSION).built $(DEPS_PREFIX)/liblzma-$(LZMA_VERSION).built $\
 											$(DEPS_PREFIX)/bzip2-$(BZIP2_VERSION).built $(DEPS_PREFIX)/zlib-$(ZLIB_VERSION).built
@@ -955,19 +960,19 @@ $(DEPS_PREFIX)/libarchive-$(LIBARCHIVE_VERSION).built: $(DEPS_CACHE)/libarchive-
 	cd $(DEPS_PREFIX)/libarchive && \
 	$(SED) -i -e 's|time_t ctime_sec, mtime_sec;|int64_t ctime_sec, mtime_sec;|' libarchive/archive_match.c && \
 	cd build && \
-	PKG_CONFIG="$(PKG_CONFIG)" \
+	PKG_CONFIG="$(PKG_CONFIG_PLUS_BUNDLED_OSSL)" \
 	../configure lt_cv_prog_gnu_ld=yes --host=$(host) --build=$(build) --prefix="$(DEPS_PREFIX)" \
 		$(if $(STATICBUILD),--enable-static --disable-shared,--enable-shared --disable-static) \
 		--disable-tools --disable-tests --with-gnu-ld --disable-bsdtar --disable-bsdcat --disable-bsdcpio \
-		--disable-bsdunzip --without-xml2 --without-expat $(if $(BUNDLED_OPENSSL),--with-openssl,--without-openssl) \
+		--disable-bsdunzip --without-xml2 --without-expat $(if $(OPENSSL_CFLAGS),--with-openssl,--without-openssl) \
 		--without-nettle --without-mbedtls --without-lzo2 --without-lz4 --without-libiconv-prefix \
 		--without-iconv --without-libb2 --without-zstd --with-lzma --with-zlib --with-bz2lib \
 		CC="$(CC)" RANLIB="$(RANLIB)" AR="$(AR)" CXX="$(CXX)" LD="$(LD)" \
-		CFLAGS="$(CFLAGS) -I$(DEPS_PREFIX)/include $(LIBACL_CFLAGS) $(LZMA_CFLAGS) $(BZIP2_CFLAGS) $(ZLIB_CFLAGS) -D_POSIX_C_SOURCE" \
-		LDFLAGS="$(LDFLAGS) -L$(DEPS_PREFIX)/lib $(LIBACL_LIBS) $(LZMA_LIBS) $(BZIP2_LIBS) $(ZLIB_LIBS)" && \
+		CFLAGS="$(CFLAGS) -I$(DEPS_PREFIX)/include $(OPENSSL_CFLAGS) $(LIBACL_CFLAGS) $(LZMA_CFLAGS) $(BZIP2_CFLAGS) $(ZLIB_CFLAGS) -D_POSIX_C_SOURCE" \
+		LDFLAGS="$(LDFLAGS) -L$(DEPS_PREFIX)/lib $(OPENSSL_LIBS) $(LIBACL_LIBS) $(LZMA_LIBS) $(BZIP2_LIBS) $(ZLIB_LIBS)" && \
 	$(MAKE) $(MAKEFLAGS) && \
 	$(MAKE) $(MAKEFLAGS) install
-	$(PKG_CONFIG) $(BUNDLED_OPENSSL_PKGCONF_FLAGS) --exists --print-errors libarchive
+	$(PKG_CONFIG_PLUS_BUNDLED_OSSL) --exists --print-errors libarchive
 	touch $@
 else
 $(DEPS_PREFIX)/libarchive-$(LIBARCHIVE_VERSION).built:

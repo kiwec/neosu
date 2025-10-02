@@ -7,10 +7,9 @@
 #include <vector>
 #include <cstring>
 
-#if !defined(_MSC_VER) && __has_include(<openssl/crypto.h>)
+#ifdef USE_OPENSSL
 #include <openssl/rand.h>
 #include <openssl/evp.h>
-#define USE_OPENSSL
 #endif
 
 #ifdef _WIN32

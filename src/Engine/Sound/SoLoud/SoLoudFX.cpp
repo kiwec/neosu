@@ -152,12 +152,7 @@ result SLFXStream::loadToMem(const char *aFilename)
 	if (!mSource)
 		return INVALID_PARAMETER;
 
-#ifdef MCENGINE_PLATFORM_WINDOWS
-	UString uPath{aFilename};
-	mpDiskFile = std::make_unique<DiskFile>(_wfopen(uPath.wc_str(), L"rb"));
-#else
-	mpDiskFile = std::make_unique<DiskFile>(fopen(aFilename, "rb"));
-#endif
+	mpDiskFile = std::make_unique<DiskFile>(::File::fopen_c(aFilename, "rb"));
 
 	if (!mpDiskFile.get() || !mpDiskFile->mFileHandle) {
 		mpDiskFile.reset();

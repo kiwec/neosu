@@ -1,10 +1,11 @@
 // Copyright (c) 2025, WH, All rights reserved.
 #include "dynutils.h"
-
 #include "Environment.h"
 #include "Logging.h"
 
 #include <SDL3/SDL_loadso.h>
+
+#include <string_view>
 
 #ifdef MCENGINE_PLATFORM_WINDOWS
 #define LPREFIX ""
@@ -17,6 +18,8 @@
 #define LNAMESTR(lib) fmt::format(LPREFIX "{:s}" LSUFFIX, (lib))
 
 namespace dynutils {
+using std::string_view_literals::operator""sv;
+
 namespace detail {
 
 void *load_func_impl(lib_obj *lib, const char *func_name) {
@@ -58,7 +61,19 @@ lib_obj *load_lib(const char *c_lib_name, const char *c_search_dir) {
         }
         ret = reinterpret_cast<lib_obj *>(SDL_LoadObject(lib_name.c_str()));
     }
-    if(!ret) debugLog("Failed to load library {:s}: {:s}", lib_name, get_error());
+    if(!ret) {
+        if(!lib_name.empty() && !lib_name.contains('/')) {
+            // try to fall back to relative local paths first before giving up entirely
+            for(const auto &path : std::array{"./lib/"sv, "./"sv}) {
+                std::string temp_relative = path + lib_name;
+                if((ret = reinterpret_cast<lib_obj *>(SDL_LoadObject(temp_relative.c_str())))) {
+                    // found
+                    break;
+                }
+            }
+        }
+        if(!ret) debugLog("Failed to load library {:s}: {:s}", lib_name, get_error());
+    }
     return ret;
 }
 

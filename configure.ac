@@ -210,6 +210,12 @@ AS_IF([test "x$enable_debug" = "xyes" && test "x$enable_lto" != "xyes"], [
     disable_lto=yes
 ])
 
+# enable lto by default otherwise
+AS_IF([test "x$enable_lto" != "xno"], [
+    enable_lto=yes
+    disable_lto=no
+])
+
 AS_IF([test "x$enable_ime" != "xno"], [
     enable_ime=yes
     disable_ime=no
@@ -701,6 +707,7 @@ AS_IF([test "x$enable_omp" = "xyes"], [
         NEOSU_CXXFLAGS="$NEOSU_CXXFLAGS -fopenmp-optimistic-collapse"
     ])
     NEOSU_CXXFLAGS="$NEOSU_CXXFLAGS -fopenmp"
+    AC_SUBST([OPENMP], [1])
 ])
 
 AS_IF([test "x$enable_lto" != "xno"], [
@@ -864,7 +871,7 @@ ZLIB_MIN_VERSION=1.3
 ZLIB_BUILD_VERSION=2.2.5 # zlib-ng
 BZIP2_MIN_VERSION=1.0.8
 BZIP2_BUILD_VERSION=1.0.8
-FMT_MIN_VERSION=12.0.0
+FMT_MIN_VERSION=11.0.0
 FMT_BUILD_VERSION=12.0.0
 LZMA_MIN_VERSION=5.4.7
 LZMA_BUILD_VERSION=5.8.1
@@ -872,8 +879,9 @@ LIBARCHIVE_MIN_VERSION=3.6.2
 LIBARCHIVE_BUILD_VERSION=3.8.1
 LIBACL_MIN_VERSION=2.3.1
 LIBACL_BUILD_VERSION=2.3.2
-CURL_MIN_VERSION=8.5.0
+CURL_MIN_VERSION=8.16.0 # due to websocket things, only very recent curl works
 CURL_BUILD_VERSION=8.16.0
+OPENSSL_MIN_VERSION=3.0.0 # only for --enable-system-deps
 MPG123_MIN_VERSION=1.30.0
 MPG123_BUILD_VERSION=ec6ead5fc1102d64efbb6a04865f59454198c3fc # git mirror, latest as of June 16th, 2025 (next version after 1.33.0)
 SPDLOG_MIN_VERSION=1.15.0
@@ -922,6 +930,10 @@ AS_IF([test "x$enable_system_deps" != "xno"], [
     PKG_CHECK_AUTO([FMT], [fmt >= $FMT_MIN_VERSION], [have_fmt=yes], [have_fmt=no])
     PKG_CHECK_AUTO([LZMA], [liblzma >= $LZMA_MIN_VERSION], [have_liblzma=yes], [have_liblzma=no])
     PKG_CHECK_AUTO([LIBARCHIVE], [libarchive >= $LIBARCHIVE_MIN_VERSION], [have_libarchive=yes], [have_libarchive=no])
+    # check for standalone openssl if we have system curl
+    AS_IF([test "x$have_curl" = "xyes"], [
+        PKG_CHECK_AUTO([OPENSSL], [openssl >= $OPENSSL_MIN_VERSION], [have_openssl=yes], [have_openssl=no])
+    ])
     AS_IF([test "$with_soloud" = "yes"], [
         PKG_CHECK_AUTO([MPG123], [libmpg123 >= $MPG123_MIN_VERSION], [have_mpg123=yes], [have_mpg123=no])
     ])
@@ -1012,6 +1024,11 @@ CURL_VERSION=$CURL_BUILD_VERSION
 CURL_PREFIX="${DEPS_PREFIX}"
 AC_SUBST([CURL_VERSION])
 AC_SUBST([CURL_PREFIX])
+
+# if we are using the prebuilt curl, we dont need libcrypto from the system
+AS_IF([test "x$have_curl" = "xdownload" || test "x$have_openssl" = "xyes"], [
+    AC_DEFINE([USE_OPENSSL], [1], [Defined if OpenSSL cryptographic primitives are available.])
+])
 
 AS_IF([test "$with_soloud" = "yes"], [
     AS_IF([test "x$have_mpg123" != "xyes"], [have_mpg123="build from source"])
@@ -1134,6 +1151,7 @@ Dependencies:
     freetype2:          ${have_freetype2-build from source}
     fmt:                ${have_fmt-build from source}
     curl:               ${have_curl-download}
+    openssl:            ${have_openssl-download}
     liblzma:            ${have_liblzma-build from source}
     libarchive:         ${have_libarchive-build from source}
     libacl:             ${have_libacl-build from source}
