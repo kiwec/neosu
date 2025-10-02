@@ -64,7 +64,7 @@ lib_obj *load_lib(const char *c_lib_name, const char *c_search_dir) {
     if(!ret) {
         if(!lib_name.empty() && !lib_name.contains('/')) {
             // try to fall back to relative local paths first before giving up entirely
-            for(const auto &path : std::array{"./lib/"sv, "./"sv}) {
+            for(auto path : std::array{"./lib/"sv, "./"sv}) {
                 std::string temp_relative = path + lib_name;
                 if((ret = reinterpret_cast<lib_obj *>(SDL_LoadObject(temp_relative.c_str())))) {
                     // found
