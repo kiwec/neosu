@@ -51,7 +51,7 @@ static T loadFunction(dynutils::lib_obj *lib, const char *funcName) {
 #define DECLARE_LIB(name, ...)                              \
     static dynutils::lib_obj *s_lib##name = nullptr;        \
     static constexpr std::initializer_list name##_paths = { \
-        LNAME(name), "lib/" LNAME(name)};  // check under lib/ if it's not found in the default search path
+        "lib/" LNAME(name), LNAME(name)};  // check under lib/ if it's not found in the default search path
 
 BASS_LIBRARIES(DECLARE_LIB)
 
@@ -343,10 +343,10 @@ static std::string getBassErrorStringFromCode(int code) {
 }
 
 std::string printBassError(const std::string &context, int code) {
-    std::string errstr{getBassErrorStringFromCode(code)};
+    std::string errstr{fmt::format("{:s} error: {:s}", context, getBassErrorStringFromCode(code))};
 
-    debugLog("{:s} error: {:s}", context, errstr);
-    return fmt::format("{:s} error: {:s}", context, errstr);  // also return it
+    debugLog(errstr);
+    return errstr;  // also return it
 }
 
 UString getErrorUString(int code) {

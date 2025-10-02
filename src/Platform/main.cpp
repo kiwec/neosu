@@ -83,7 +83,6 @@ void setcwdexe(const std::string &exePathStr) noexcept {
 void SDL_AppQuit(void *appstate, SDL_AppResult result) {
     if(result == SDL_APP_FAILURE) {
         debugLog("Force exiting now, a fatal error occurred. (SDL error: {})", SDL_GetError());
-        Logger::shutdown();
         std::exit(-1);
     }
 
@@ -108,12 +107,10 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result) {
         }
         if constexpr(!Env::cfg(FEAT::MAINCB)) {
             SDL_Quit();
-            Logger::shutdown();
             printf("Shutdown success.\n");
             std::exit(0);
         }
     } else {
-        Logger::shutdown();
         printf("Shutdown success.\n");
     }
 }
@@ -134,6 +131,7 @@ MAIN_FUNC /* int argc, char *argv[] */
 {
     // set up spdlog, do this here so that calling debugLog() anywhere after this won't explode
     Logger::init();
+    atexit(Logger::shutdown);
 
     // if a neosu instance is already running, send it a message then quit
     // only works on windows for now
@@ -211,7 +209,6 @@ MAIN_FUNC /* int argc, char *argv[] */
     if(!SDL_Init(SDL_INIT_VIDEO))  // other subsystems can be init later
     {
         debugLog("Couldn't SDL_Init(): {}", SDL_GetError());
-        Logger::shutdown();
         return SDL_APP_FAILURE;
     }
 
@@ -259,8 +256,6 @@ MAIN_FUNC /* int argc, char *argv[] */
     if(fmain->isRestartScheduled()) {
         SDLMain::restart(restartArgs);
     }
-
-    Logger::shutdown();
 
     return 0;
 #else
