@@ -1096,6 +1096,9 @@ compile_commands.json: mostlyclean-compile
 	  echo '"compilers_to_recognize": ['; \
 	  echo '{'; \
 	  echo '"executable": "emc++"'; \
+	  echo '},'; \
+	  echo '{'; \
+	  echo '"executable": "$(CXX_REAL)"'; \
 	  echo '}'; \
 	  echo '],'; \
 	  echo '"compilers_to_exclude": ["$(CXX)"]'; \

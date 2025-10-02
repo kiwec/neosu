@@ -326,6 +326,7 @@ AS_IF([test "x$enable_clang" = "xyes"], [
     CFLAGS="$CFLAGS -Qunused-arguments"
     LDFLAGS="$LDFLAGS"
     CLANG=yes
+    _ccache_ctype="clang"
     _cid="Clang"
     AC_SUBST([CLANG])
 ],[
@@ -334,6 +335,7 @@ AS_IF([test "x$enable_clang" = "xyes"], [
     CXXFLAGS="$CXXFLAGS -fno-semantic-interposition"
     CFLAGS="$CFLAGS -fno-semantic-interposition"
     NEOSU_CXXFLAGS="$NEOSU_CXXFLAGS -fimplicit-constexpr"
+    _ccache_ctype="gcc"
     _cid="GNU"
 ])
 
@@ -442,7 +444,7 @@ AC_PROG_CXX([$CXX])
 
 AC_CHECK_TOOL([STRIP], [strip], [strip])
 
-AC_CHECK_PROG([CCACHE], [ccache], [ccache])
+AC_CHECK_PROG([CCACHE], [ccache], [[ccache compiler_type=$_ccache_ctype]])
 
 # we already set $CC and $CXX to absolute paths in the build/$arch-pc-linux-gnu-{$CC,$CXX} wrappers
 # for linux, so AC_PATH_PROG doesn't work for that (and isn't needed anyways)
