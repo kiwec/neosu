@@ -49,7 +49,7 @@
 std::shared_ptr<spdlog::async_logger> Logger::s_logger;
 std::shared_ptr<spdlog::async_logger> Logger::s_raw_logger;
 
-bool Logger::wasInit{false};
+bool Logger::s_initialized{false};
 
 // implementation of ConsoleBoxSink
 class Logger::ConsoleBoxSink : public spdlog::sinks::base_sink<std::mutex> {
@@ -137,7 +137,7 @@ class Logger::ConsoleBoxSink : public spdlog::sinks::base_sink<std::mutex> {
 
 // to be called in main(), for one-time setup/teardown
 void Logger::init() noexcept {
-    if(wasInit) return;
+    if(s_initialized) return;
 
     // initialize async thread pool before creating any async loggers
     // queue size: 8192 slots (each ~256 bytes), 1 background thread
@@ -208,14 +208,14 @@ void Logger::init() noexcept {
     // make the s_logger default (doesn't really matter right now since we're handling it manually, i think, but still)
     spdlog::set_default_logger(s_logger);
 
-    wasInit = true;
+    s_initialized = true;
 };
 
 // spdlog::shutdown() explodes if its called at program exit (by global atexit handler), so we need to manually shut it down
 void Logger::shutdown() noexcept {
-    if(!wasInit) return;
+    if(!s_initialized) return;
     Logger::flush();
-    wasInit = false;
+    s_initialized = false;
 
     s_raw_logger.reset();
     s_logger.reset();
@@ -223,6 +223,17 @@ void Logger::shutdown() noexcept {
     // spdlog docs recommend calling this on exit
     // for async loggers, this waits for the background thread to finish processing queued messages
     spdlog::shutdown();
+}
+
+// manual trigger for console commands
+void Logger::flush() noexcept {
+    if(likely(s_initialized)) {
+        s_logger->flush();
+        s_raw_logger->flush();
+    } else {
+        fflush(stdout);
+        fflush(stderr);
+    }
 }
 
 // extra util functions

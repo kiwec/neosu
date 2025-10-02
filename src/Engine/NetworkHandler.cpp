@@ -27,8 +27,8 @@ struct NetworkHandler::NetworkRequest {
     bool is_sync{false};
     void* sync_id{nullptr};
 
-    NetworkRequest(std::string u, AsyncCallback cb, RequestOptions opts)
-        : url(std::move(u)), callback(std::move(cb)), options(std::move(opts)) {}
+    NetworkRequest(std::string_view url, AsyncCallback cb, RequestOptions opts)
+        : url(url), callback(std::move(cb)), options(std::move(opts)) {}
 };
 
 NetworkHandler::NetworkHandler() {
@@ -393,8 +393,8 @@ void NetworkHandler::update() {
     std::erase_if(this->active_websockets, [](const auto& ws) { return ws->status != WEBSOCKET_CONNECTED; });
 }
 
-void NetworkHandler::httpRequestAsync(const std::string& url, AsyncCallback callback, const RequestOptions& options) {
-    auto request = std::make_unique<NetworkRequest>(url, std::move(callback), options);
+void NetworkHandler::httpRequestAsync(std::string_view url, AsyncCallback callback, RequestOptions options) {
+    auto request = std::make_unique<NetworkRequest>(url, std::move(callback), std::move(options));
 
     Sync::scoped_lock lock{this->request_queue_mutex};
     this->pending_requests.push(std::move(request));
@@ -439,7 +439,7 @@ std::shared_ptr<NetworkHandler::Websocket> NetworkHandler::initWebsocket(const W
 }
 
 // synchronous API (blocking)
-NetworkHandler::Response NetworkHandler::httpRequestSynchronous(const std::string& url, const RequestOptions& options) {
+NetworkHandler::Response NetworkHandler::httpRequestSynchronous(std::string_view url, RequestOptions options) {
     Response result;
     Sync::condition_variable cv;
     Sync::mutex cv_mutex;
@@ -453,7 +453,7 @@ NetworkHandler::Response NetworkHandler::httpRequestSynchronous(const std::strin
     }
 
     // create sync request
-    auto request = std::make_unique<NetworkRequest>(url, [](const Response&) {}, options);
+    auto request = std::make_unique<NetworkRequest>(url, [](const Response&) {}, std::move(options));
     request->is_sync = true;
     request->sync_id = sync_id;
 

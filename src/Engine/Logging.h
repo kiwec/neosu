@@ -55,12 +55,7 @@ class Logger final {
     static void shutdown() noexcept;
 
     // manual trigger for console commands
-    static inline void flush() noexcept {
-        if(likely(wasInit)) {
-            s_logger->flush();
-            s_raw_logger->flush();
-        }
-    }
+    static void flush() noexcept;
 
     // is stdout a terminal (util func.)
     [[nodiscard]] static bool isaTTY() noexcept;
@@ -72,7 +67,7 @@ class Logger final {
         requires(sizeof...(Args) > 0)
     {
         // checking for wasInit for the unlikely case that we try to log something through here WHILE initializing/uninitializing
-        if(likely(wasInit))
+        if(likely(s_initialized))
             s_logger->log(loc, spdlog::level::info, fmt, std::forward<Args>(args)...);
         else
             printf("%s\n", fmt::format(fmt, std::forward<Args>(args)...).c_str());
@@ -80,8 +75,7 @@ class Logger final {
 
     // same but for logging strings/literals
     static inline void log(const spdlog::source_loc &loc, std::string_view str) noexcept {
-        // checking for wasInit for the unlikely case that we try to log something through here WHILE initializing/uninitializing
-        if(likely(wasInit))
+        if(likely(s_initialized))
             s_logger->log(loc, spdlog::level::info, str);
         else
             printf("%.*s\n", static_cast<int>(str.length()), str.data());
@@ -92,14 +86,14 @@ class Logger final {
     static inline void logRaw(const fmt::format_string<Args...> &fmt, Args &&...args) noexcept
         requires(sizeof...(Args) > 0)
     {
-        if(likely(wasInit))
+        if(likely(s_initialized))
             s_raw_logger->log(spdlog::level::info, fmt, std::forward<Args>(args)...);
         else
             printf("%s\n", fmt::format(fmt, std::forward<Args>(args)...).c_str());
     }
 
     static inline void logRaw(std::string_view str) noexcept {
-        if(likely(wasInit))
+        if(likely(s_initialized))
             s_raw_logger->log(spdlog::level::info, str);
         else
             printf("%.*s\n", static_cast<int>(str.length()), str.data());
@@ -124,5 +118,5 @@ class Logger final {
     static std::shared_ptr<spdlog::async_logger> s_logger;
     static std::shared_ptr<spdlog::async_logger> s_raw_logger;
 
-    static bool wasInit;
+    static bool s_initialized;
 };

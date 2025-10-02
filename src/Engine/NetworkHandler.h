@@ -6,6 +6,7 @@
 #include "SyncCV.h"
 
 #include <string>
+#include <string_view>
 #include <functional>
 #include <map>
 #include <memory>
@@ -105,11 +106,11 @@ class NetworkHandler {
     void update();
 
     // synchronous requests
-    Response httpRequestSynchronous(const std::string& url, const RequestOptions& options);
+    Response httpRequestSynchronous(std::string_view url, RequestOptions options);
 
     // asynchronous API
     using AsyncCallback = std::function<void(Response response)>;
-    void httpRequestAsync(const std::string& url, AsyncCallback callback, const RequestOptions& options = {});
+    void httpRequestAsync(std::string_view url, AsyncCallback callback, RequestOptions options = {});
 
     // websockets
     std::shared_ptr<Websocket> initWebsocket(const WebsocketOptions& options);
@@ -145,8 +146,7 @@ class NetworkHandler {
 
     void processNewRequests();
     void processCompletedRequests();
-    std::unique_ptr<NetworkRequest> createRequest(const std::string& url, AsyncCallback callback,
-                                                   const RequestOptions& options);
+
     void setupCurlHandle(CURL* handle, NetworkRequest* request);
     static uSz headerCallback(char* buffer, uSz size, uSz nitems, void* userdata);
     static uSz writeCallback(void* contents, uSz size, uSz nmemb, void* userp);

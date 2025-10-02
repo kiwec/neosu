@@ -23,7 +23,7 @@ class UString {
     [[nodiscard]] static UString format(std::string_view fmt, Args &&...args) noexcept;
 
     template <typename... Args>
-    [[nodiscard]] static UString fmt(fmt::format_string<Args...> fmt, Args &&...args) noexcept;
+    [[nodiscard]] static UString fmt(const fmt::format_string<Args...> &fmt, Args &&...args) noexcept;
 
     template <typename Range>
         requires std::ranges::range<Range> && std::convertible_to<std::ranges::range_value_t<Range>, UString>
@@ -304,7 +304,7 @@ struct formatter<UString> : formatter<string_view> {
 }  // namespace fmt
 
 template <typename... Args>
-UString UString::fmt(fmt::format_string<Args...> fmt, Args &&...args) noexcept {
+UString UString::fmt(const fmt::format_string<Args...> &fmt, Args &&...args) noexcept {
     return UString(fmt::format(fmt, std::forward<Args>(args)...));
 }
 

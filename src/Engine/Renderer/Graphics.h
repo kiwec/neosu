@@ -172,6 +172,7 @@ class Graphics {
     virtual std::vector<u8> getScreenshot(bool withAlpha = false) = 0;
 
     // renderer info
+    virtual const char* getName() const = 0;
     [[nodiscard]] virtual vec2 getResolution() const = 0;
     virtual UString getVendor() = 0;
     virtual UString getModel() = 0;

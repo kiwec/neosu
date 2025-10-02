@@ -84,6 +84,7 @@ class OpenGLLegacyInterface : public Graphics {
 
     // renderer info
     vec2 getResolution() const final { return this->vResolution; }
+    inline const char *getName() const override { return "OpenGL Legacy"; }
 
     // callbacks
     void onResolutionChange(vec2 newResolution) final;
