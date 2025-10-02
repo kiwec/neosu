@@ -238,6 +238,7 @@ class Environment {
     mutable std::map<unsigned int, McRect> m_mMonitors;
     mutable McRect m_fullDesktopBoundingBox;
 
+    void updateDisplayHz();
     float m_fDisplayHz;
     float m_fDisplayHzSecs;
 

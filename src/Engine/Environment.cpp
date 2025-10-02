@@ -288,7 +288,7 @@ std::vector<std::string> Environment::getFilesInFolder(std::string_view folder) 
 }
 
 std::vector<std::string> Environment::getFoldersInFolder(std::string_view folder) noexcept {
-    if (folder.back() == '/') {
+    if(folder.back() == '/') {
         return enumerateDirectory(folder, SDL_PATHTYPE_DIRECTORY);
     }
     std::string folderToEnumerate{folder};
@@ -826,7 +826,11 @@ int Environment::getMonitor() const {
 
 vec2 Environment::getNativeScreenSize() const {
     SDL_DisplayID di = SDL_GetDisplayForWindow(m_window);
-    return {static_cast<float>(SDL_GetDesktopDisplayMode(di)->w), static_cast<float>(SDL_GetDesktopDisplayMode(di)->h)};
+    const SDL_DisplayMode *dm = SDL_GetDesktopDisplayMode(di);
+
+    if(!dm) return getWindowSize();
+
+    return {static_cast<float>(dm->w), static_cast<float>(dm->h)};
 }
 
 McRect Environment::getDesktopRect() const { return {{}, getNativeScreenSize()}; }
@@ -1019,6 +1023,11 @@ void Environment::initMonitors(bool force) const {
     for(int i = 0; i < count; i++) {
         const SDL_DisplayID di = displays[i];
 
+        if(di == 0) {  // should be impossible, but safeguard it anyways
+            count--;
+            continue;
+        }
+
         McRect displayRect{};
         vec2 size{0.f};
         SDL_Rect sdlDisplayRect{};
@@ -1055,6 +1064,42 @@ void Environment::initMonitors(bool force) const {
     }
 
     SDL_free(displays);
+}
+
+void Environment::updateDisplayHz() {
+    // default to convar fps_max value as fallback
+    float refreshRateSanityClamped = std::clamp<float>(cv::fps_max.getFloat(), 60.0f, 360.0f);
+
+    // get the screen refresh rate, and update related convars/member variables
+    if constexpr(!Env::cfg(OS::WASM))  // not in WASM (use default)
+    {
+        const SDL_DisplayID display = SDL_GetDisplayForWindow(m_window);
+        const SDL_DisplayMode *currentDisplayMode = display ? SDL_GetCurrentDisplayMode(display) : nullptr;
+
+        if(currentDisplayMode && currentDisplayMode->refresh_rate > 0) {
+            if((m_fDisplayHz > currentDisplayMode->refresh_rate + 0.01) ||
+               (m_fDisplayHz < currentDisplayMode->refresh_rate - 0.01)) {
+                debugLog("Got refresh rate {:.3f} Hz for display {:d}.", currentDisplayMode->refresh_rate, display);
+            }
+            refreshRateSanityClamped = std::clamp<float>(currentDisplayMode->refresh_rate, 60.0f, 540.0f);
+        } else {
+            static int once;
+            if(!once++)
+                debugLog("Couldn't SDL_GetCurrentDisplayMode(SDL display: {:d}): {:s}", display, SDL_GetError());
+        }
+    }
+
+    m_fDisplayHzSecs = 1.0f / (m_fDisplayHz = refreshRateSanityClamped);
+    {
+        const auto hz = std::round(m_fDisplayHz);
+        const auto fourxhz = std::round(std::clamp<float>(hz * 4.0f, hz, 1000.0f));
+
+        // also set fps_max to 4x the refresh rate
+        cv::fps_max.setDefaultDouble(fourxhz);
+        cv::fps_max.setValue(fourxhz);
+        cv::fps_max_menu.setDefaultDouble(hz);
+        cv::fps_max_menu.setValue(hz);
+    }
 }
 
 // TODO: filter?
