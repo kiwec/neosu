@@ -448,7 +448,7 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(const
                         slider.type = curves[0].c_str()[0];
                         curves.erase(curves.begin());
                         for(auto &curvePoints : curves) {
-                            f32 cpX, cpY;
+                            f32 cpX{}, cpY{};
                             upd_last_error(!Parsing::parse(curvePoints, &cpX, ':', &cpY));
                             upd_last_error(!std::isfinite(cpX) || std::isnan(cpX));
                             upd_last_error(!std::isfinite(cpY) || std::isnan(cpY));
