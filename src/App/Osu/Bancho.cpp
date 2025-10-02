@@ -745,9 +745,15 @@ void BanchoState::handle_packet(Packet &packet) {
                 break;
             }
 
+            // craft submission url now, file read may complete after auth params changed
+            auto scheme = cv::use_https.getBool() ? "https://" : "http://";
+            auto url = fmt::format("{}osu.{}/web/neosu-submit-map.php", scheme, BanchoState::endpoint);
+            url.append(fmt::format("?hash={}", md5.string()));
+            BANCHO::Api::append_auth_params(url);
+
             auto file_path = map->getFilePath();
 
-            DatabaseBeatmap::MapFileReadDoneCallback callback = [current_endpoint = BanchoState::endpoint, md5, file_path, func = __FUNCTION__](std::vector<u8> osu_file) -> void {
+            DatabaseBeatmap::MapFileReadDoneCallback callback = [url, md5, file_path, func = __FUNCTION__](std::vector<u8> osu_file) -> void {
                 if (osu_file.empty()) {
                     debugLogLambda("Failed to get map file data for md5: {} path: {}", md5.string(), file_path);
                     return;
@@ -759,12 +765,6 @@ void BanchoState::handle_packet(Packet &packet) {
                 }
 
                 // Submit map
-                auto scheme = cv::use_https.getBool() ? "https://" : "http://";
-                auto url = fmt::format("{}osu.{}/web/neosu-submit-map.php", scheme, current_endpoint);
-                url.append(fmt::format("?hash={}", md5.string()));
-                // FIXME: what if auth params changed since starting/finishing the file read?
-                BANCHO::Api::append_auth_params(url);
-
                 NetworkHandler::RequestOptions options;
                 options.timeout = 60;
                 options.connect_timeout = 5;
