@@ -116,8 +116,25 @@ class Database {
     std::unordered_map<MD5Hash, std::vector<FinishedScore>> scores;
     std::unordered_map<MD5Hash, std::vector<FinishedScore>> online_scores;
 
+    enum class DatabaseType : u8 {
+        INVALID_DB = 0,
+        NEOSU_SCORES = 1,
+        MCNEOSU_SCORES = 2,
+        MCNEOSU_COLLECTIONS = 3,  // mcosu/neosu both use same collection format
+        NEOSU_MAPS = 4,
+        STABLE_SCORES = 5,
+        STABLE_COLLECTIONS = 6,
+        STABLE_MAPS = 7,
+        LAST = STABLE_MAPS
+    };
+
+    static std::string getDBPath(DatabaseType db_type);
+    static DatabaseType getDBType(std::string_view db_path);
+
     // should only be accessed from database loader thread!
-    sv_unordered_map<std::string> database_files;
+    std::unordered_map<DatabaseType, std::string> database_files;
+    std::unordered_map<DatabaseType, std::string> external_databases;
+
     u64 bytes_processed{0};
     u64 total_bytes{0};
     std::atomic<float> fLoadingProgress;
@@ -150,7 +167,7 @@ class Database {
     void saveMaps();
 
     void findDatabases();
-    bool importDatabase(std::string_view db_path);
+    bool importDatabase(const std::pair<DatabaseType, std::string> &db_pair);
     void loadMaps();
     void loadScores(std::string_view dbPath);
     void loadOldMcNeosuScores(std::string_view dbPath);

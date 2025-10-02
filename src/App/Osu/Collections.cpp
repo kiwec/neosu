@@ -209,12 +209,10 @@ bool load_collections() {
 
     unload_collections();
 
-    std::string peppy_collections_path = cv::osu_folder.getString();
-    peppy_collections_path.append("/collection.db");
-    const auto& peppy_collections = db->database_files[peppy_collections_path];
+    const auto& peppy_collections = db->database_files[Database::DatabaseType::STABLE_COLLECTIONS];
     load_peppy_collections(peppy_collections);
 
-    const auto& mcneosu_collections = db->database_files["collections.db"];
+    const auto& mcneosu_collections = db->database_files[Database::DatabaseType::MCNEOSU_COLLECTIONS];
     load_mcneosu_collections(mcneosu_collections);
 
     debugLog("peppy+neosu collections: loading took {:f} seconds", (Timing::getTimeReal() - startTime));
@@ -240,7 +238,14 @@ bool save_collections() {
 
     const double startTime = Timing::getTimeReal();
 
-    ByteBufferedFile::Writer db("collections.db");
+    const auto neosu_collections_db = Database::getDBPath(Database::DatabaseType::MCNEOSU_COLLECTIONS);
+
+    ByteBufferedFile::Writer db(neosu_collections_db);
+    if(!db.good()) {
+        debugLog("Cannot save collections to {}: {}", neosu_collections_db, db.error());
+        return false;
+    }
+
     db.write<u32>(COLLECTIONS_DB_VERSION);
 
     u32 nb_collections = collections.size();

@@ -16,5 +16,9 @@
 #define NEOSU_REPLAYS_PATH		NEOSU_DATA_DIR "replays"
 #define NEOSU_SCREENSHOTS_PATH	NEOSU_DATA_DIR "screenshots"
 #define NEOSU_SKINS_PATH		NEOSU_DATA_DIR "skins"
+#define NEOSU_DB_DIR			NEOSU_DATA_DIR // default is top-level, next to exe
+
+CASSERT_STR_ENDSWITH(NEOSU_DATA_DIR, '/');
+CASSERT_STR_ENDSWITH(NEOSU_DB_DIR, '/');
 
 /* *INDENT-ON* */  // clang-format on

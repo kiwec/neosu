@@ -93,6 +93,120 @@ bool sortScoreByPP(FinishedScore const &a, FinishedScore const &b) {
 
 }  // namespace
 
+#if defined(__cpp_lib_unreachable) && (__cpp_lib_unreachable >= 202202L)
+#include <utility>
+using std::unreachable;
+#elif defined(__GNUC__)
+[[noreturn]] forceinline void unreachable() { __builtin_unreachable(); }
+#elif defined(_MSC_VER)
+[[noreturn]] forceinline void unreachable() { __assume(false); }
+#else  // ???
+inline void unreachable() {}
+#endif
+
+// static helper
+std::string Database::getDBPath(DatabaseType db_type) {
+    static_assert(DatabaseType::LAST == DatabaseType::STABLE_MAPS, "add missing case to getDBPath");
+    using enum DatabaseType;
+
+    switch(db_type) {
+        case INVALID_DB: {
+            engine->showMessageError("Database Error",
+                                     UString::fmt("Invalid database type {}", static_cast<u8>(db_type)));
+            return {""};
+        }
+        case NEOSU_SCORES:
+            return NEOSU_DB_DIR "neosu_scores.db";
+        case MCNEOSU_SCORES:
+            return NEOSU_DB_DIR "scores.db";
+        case MCNEOSU_COLLECTIONS:
+            return NEOSU_DB_DIR "collections.db";
+        case NEOSU_MAPS:
+            return NEOSU_DB_DIR "neosu_maps.db";
+        case STABLE_SCORES:
+        case STABLE_COLLECTIONS:
+        case STABLE_MAPS: {
+            std::string osu_folder = cv::osu_folder.getString();
+            if(osu_folder.back() != '/' && osu_folder.back() != '\\') osu_folder.push_back('/');
+            switch(db_type) {
+                case STABLE_SCORES:
+                    return fmt::format("{}scores.db", osu_folder);
+                case STABLE_COLLECTIONS:
+                    // note the missing plural...
+                    return fmt::format("{}collection.db", osu_folder);
+                case STABLE_MAPS:
+                    return fmt::format("{}osu!.db", osu_folder);
+                default:
+                    unreachable();
+            }
+        }
+    }
+    unreachable();
+}
+
+// static helper (for figuring out the type of external databases to be imported)
+Database::DatabaseType Database::getDBType(std::string_view db_path) {
+    std::string db_name = Environment::getFileNameFromFilePath(db_path);
+
+    using enum DatabaseType;
+    if(db_name == "collection.db") {
+        // osu! collections
+        return STABLE_COLLECTIONS;
+    }
+    if(db_name == "collections.db") {
+        // mcosu/neosu collections
+        return MCNEOSU_COLLECTIONS;
+    }
+    if(db_name == "neosu_scores.db") {
+        // neosu!
+        return NEOSU_SCORES;
+    }
+
+    if(db_name == "scores.db") {
+        ByteBufferedFile::Reader score_db{db_path};
+        u32 db_version = score_db.read<u32>();
+        if(!score_db.good() || db_version == 0) {
+            return INVALID_DB;
+        }
+
+        if(db_version == 20210106 || db_version == 20210108 || db_version == 20210110) {
+            // McOsu 100%!
+            return MCNEOSU_SCORES;
+        } else {
+            // We need to do some heuristics to detect whether this is an old neosu or a peppy database.
+            u32 nb_beatmaps = score_db.read<u32>();
+            for(u32 i = 0; i < nb_beatmaps; i++) {
+                auto map_md5 = score_db.read_hash();
+                (void)map_md5;
+                u32 nb_scores = score_db.read<u32>();
+                for(u32 j = 0; j < nb_scores; j++) {
+                    /* u8 gamemode = */ score_db.skip<u8>();         // could check for 0xA9, but better method below
+                    /* u32 score_version = */ score_db.skip<u32>();  // useless
+
+                    // Here, neosu stores an int64 timestamp. First 32 bits should be 0 (until 2106).
+                    // Meanwhile, peppy stores the beatmap hash, which will NEVER be 0, since
+                    // it is stored as a string, which starts with an uleb128 (its length).
+                    u32 timestamp_check = score_db.read<u32>();
+                    if(timestamp_check == 0) {
+                        // neosu 100%!
+                        return MCNEOSU_SCORES;
+                    } else {
+                        // peppy 100%!
+                        return STABLE_SCORES;
+                    }
+
+                    // unreachable
+                }
+            }
+
+            // 0 maps or 0 scores
+            return INVALID_DB;
+        }
+    }
+
+    return INVALID_DB;
+}
+
 // run after at least one engine frame (due to resourceManager->update() in Engine::onUpdate())
 void Database::AsyncDBLoader::init() {
     if(!db) return;  // don't crash when exiting while loading db
@@ -119,34 +233,34 @@ void Database::AsyncDBLoader::initAsync() {
     if(cv::debug_db.getBool() || cv::debug_async_db.getBool()) debugLog("(AsyncDBLoader) start");
     assert(db != nullptr);
 
-    std::string peppy_scores_path = cv::osu_folder.getString();
-    peppy_scores_path.append("/scores.db");
-
     db->findDatabases();
     if(db->bInterruptLoad.load()) goto done;
-    db->loadScores(db->database_files["neosu_scores.db"]);
+
+    using enum Database::DatabaseType;
+    db->loadScores(db->database_files[NEOSU_SCORES]);
     if(db->bInterruptLoad.load()) goto done;
-    db->loadOldMcNeosuScores(db->database_files["scores.db"]);
+    db->loadOldMcNeosuScores(db->database_files[MCNEOSU_SCORES]);
     if(db->bInterruptLoad.load()) goto done;
-    db->loadPeppyScores(db->database_files[peppy_scores_path]);
+    db->loadPeppyScores(db->database_files[STABLE_SCORES]);
     db->bScoresLoaded = true;
     if(db->bInterruptLoad.load()) goto done;
 
     db->loadMaps();
     if(db->bInterruptLoad.load()) goto done;
 
-    // .db files that were dropped on the main window
-    for(const auto &db_path : db->dbPathsToImport) {
-        db->importDatabase(db_path);
+    if(!db->bNeedRawLoad) {
+        load_collections();
         if(db->bInterruptLoad.load()) goto done;
     }
 
-    if(!db->bNeedRawLoad) {
-        load_collections();
+    // .db files that were dropped on the main window
+    for(const auto &db_pair : db->external_databases) {
+        db->importDatabase(db_pair);
+        if(db->bInterruptLoad.load()) goto done;
     }
+    db->external_databases.clear();
 
 done:
-    db->dbPathsToImport.clear();
 
     this->bAsyncReady = true;
     if(cv::debug_db.getBool() || cv::debug_async_db.getBool()) debugLog("(AsyncDBLoader) done");
@@ -166,7 +280,7 @@ void Database::startLoader() {
     const bool lastLoadWasRaw{this->bNeedRawLoad};
 
     this->bNeedRawLoad =
-        (!env->fileExists(fmt::format("{}/osu!.db", cv::osu_folder.getString())) || !cv::database_enabled.getBool());
+        (!Environment::fileExists(getDBPath(DatabaseType::STABLE_MAPS)) || !cv::database_enabled.getBool());
 
     const bool nextLoadIsRaw{this->bNeedRawLoad};
 
@@ -788,10 +902,8 @@ void Database::loadMaps() {
     Sync::scoped_lock lock(this->beatmap_difficulties_mtx);
     this->peppy_overrides_mtx.lock();
 
-    std::string peppy_maps_path = cv::osu_folder.getString();
-    peppy_maps_path.append("/osu!.db");
-    const auto &peppy_db_path = this->database_files[peppy_maps_path];
-    const auto &neosu_maps_path = this->database_files["neosu_maps.db"];
+    const auto &peppy_db_path = this->database_files[DatabaseType::STABLE_MAPS];
+    const auto &neosu_maps_path = this->database_files[DatabaseType::NEOSU_MAPS];
 
     const std::string &songFolder = Database::getOsuSongsFolder();
     debugLog("Database: songFolder = {:s}", songFolder.c_str());
@@ -1410,6 +1522,14 @@ void Database::saveMaps() {
     Timer t;
     t.start();
 
+    const auto neosu_maps_db = getDBPath(DatabaseType::NEOSU_MAPS);
+
+    ByteBufferedFile::Writer maps(neosu_maps_db);
+    if(!maps.good()) {
+        debugLog("Cannot save maps to {}: {}", neosu_maps_db, maps.error());
+        return;
+    }
+
     // collect neosu-only sets here
     std::vector<BeatmapSet *> temp_neosu_sets;
     for(const auto &beatmap : this->beatmapsets) {
@@ -1418,7 +1538,6 @@ void Database::saveMaps() {
         }
     }
 
-    ByteBufferedFile::Writer maps("neosu_maps.db");
     maps.write<u32>(NEOSU_MAPS_DB_VERSION);
 
     // Save neosu-downloaded maps
@@ -1501,107 +1620,81 @@ void Database::findDatabases() {
     this->bytes_processed = 0;
     this->total_bytes = 0;
     this->database_files.clear();
+    this->external_databases.clear();
 
-    std::string peppy_scores_path = cv::osu_folder.getString();
-    peppy_scores_path.append("/scores.db");
-    this->database_files.emplace(peppy_scores_path, peppy_scores_path);
-    this->database_files.emplace("neosu_scores.db", "neosu_scores.db");
-    this->database_files.emplace("scores.db", "scores.db");  // mcneosu database
+    using enum DatabaseType;
+    this->database_files.emplace(STABLE_SCORES, getDBPath(STABLE_SCORES));
+    this->database_files.emplace(NEOSU_SCORES, getDBPath(NEOSU_SCORES));
+    this->database_files.emplace(MCNEOSU_SCORES, getDBPath(MCNEOSU_SCORES));  // mcneosu database
 
     // ignore if explicitly disabled
     if(cv::database_enabled.getBool()) {
-        std::string peppy_maps_path = cv::osu_folder.getString();
-        peppy_maps_path.append("/osu!.db");
-        this->database_files.emplace(peppy_maps_path, peppy_maps_path);
+        this->database_files.emplace(STABLE_MAPS, getDBPath(STABLE_MAPS));
     }
 
-    this->database_files.emplace("neosu_maps.db", "neosu_maps.db");
+    this->database_files.emplace(NEOSU_MAPS, getDBPath(NEOSU_MAPS));
 
-    std::string peppy_collections_path = cv::osu_folder.getString();
-    peppy_collections_path.append("/collection.db");
-    this->database_files.emplace(peppy_collections_path, peppy_collections_path);
-    this->database_files.emplace("collections.db", "collections.db");
+    this->database_files.emplace(STABLE_COLLECTIONS, getDBPath(STABLE_COLLECTIONS));
+    this->database_files.emplace(MCNEOSU_COLLECTIONS, getDBPath(MCNEOSU_COLLECTIONS));
 
     for(const auto &db_path : this->dbPathsToImport) {
-        this->database_files.emplace(db_path, db_path);
+        auto db_type = getDBType(db_path);
+        if(db_type != INVALID_DB) {
+            debugLog("adding external DB {} (type {}) for import", db_path, static_cast<u8>(db_type));
+            this->external_databases.emplace(db_type, db_path);
+        } else {
+            debugLog("invalid external database: {}", db_path);
+        }
     }
 
-    for(const auto &[_, pathstr] : this->database_files) {
-        std::error_code ec;
-        auto db_filesize = std::filesystem::file_size(File::getFsPath(pathstr), ec);
-        if(!ec && db_filesize > 0) {
-            this->total_bytes += db_filesize;
+    this->dbPathsToImport.clear();
+
+    for(const auto &db_files : {this->database_files, this->external_databases}) {
+        for(const auto &[type, pathstr] : db_files) {
+            std::error_code ec;
+            auto db_filesize = std::filesystem::file_size(File::getFsPath(pathstr), ec);
+            if(!ec && db_filesize > 0) {
+                this->total_bytes += db_filesize;
+            }
         }
     }
 }
 
 // Detects what type of database it is, then imports it
-bool Database::importDatabase(std::string_view db_path) {
-    std::string db_name = env->getFileNameFromFilePath(db_path);
-    auto &db = this->database_files[std::string{db_path}];
-
-    if(db_name == "collection.db") {
-        // osu! collections
-        return load_peppy_collections(db);
-    }
-
-    if(db_name == "collections.db") {
-        // mcosu/neosu collections
-        return load_mcneosu_collections(db);
-    }
-
-    if(db_name == "neosu_scores.db") {
-        // neosu!
-        this->loadScores(db);
-        return true;
-    }
-
-    if(db_name == "scores.db") {
-        ByteBufferedFile::Reader score_db{db_path};
-        u32 db_version = score_db.read<u32>();
-        if(!score_db.good() || db_version == 0) {
+bool Database::importDatabase(const std::pair<DatabaseType, std::string> &db_pair) {
+    using enum DatabaseType;
+    auto db_type = db_pair.first;
+    auto db_path = db_pair.second;
+    switch(db_type) {
+        case INVALID_DB:
             return false;
-        }
-
-        if(db_version == 20210106 || db_version == 20210108 || db_version == 20210110) {
-            // McOsu 100%!
-            this->loadOldMcNeosuScores(db);
+        case NEOSU_SCORES: {
+            this->loadScores(db_path);
             return true;
-        } else {
-            // We need to do some heuristics to detect whether this is an old neosu or a peppy database.
-            u32 nb_beatmaps = score_db.read<u32>();
-            for(u32 i = 0; i < nb_beatmaps; i++) {
-                auto map_md5 = score_db.read_hash();
-                (void)map_md5;
-                u32 nb_scores = score_db.read<u32>();
-                for(u32 j = 0; j < nb_scores; j++) {
-                    /* u8 gamemode = */ score_db.skip<u8>();         // could check for 0xA9, but better method below
-                    /* u32 score_version = */ score_db.skip<u32>();  // useless
-
-                    // Here, neosu stores an int64 timestamp. First 32 bits should be 0 (until 2106).
-                    // Meanwhile, peppy stores the beatmap hash, which will NEVER be 0, since
-                    // it is stored as a string, which starts with an uleb128 (its length).
-                    u32 timestamp_check = score_db.read<u32>();
-                    if(timestamp_check == 0) {
-                        // neosu 100%!
-                        this->loadOldMcNeosuScores(db);
-                        return true;
-                    } else {
-                        // peppy 100%!
-                        this->loadPeppyScores(db);
-                        return true;
-                    }
-
-                    // unreachable
-                }
-            }
-
-            // 0 maps or 0 scores
+        }
+        case MCNEOSU_SCORES: {
+            this->loadOldMcNeosuScores(db_path);
+            return true;
+        }
+        case MCNEOSU_COLLECTIONS:
+            return load_mcneosu_collections(db_path);
+        case NEOSU_MAPS: {
+            debugLog("tried to import external neosu_maps db {}, not supported", db_path);
+            return false;
+        }
+        case STABLE_SCORES: {
+            this->loadPeppyScores(db_path);
+            return true;
+        }
+        case STABLE_COLLECTIONS:
+            return load_peppy_collections(db_path);
+        case STABLE_MAPS: {
+            debugLog("tried to import external stable maps db {}, not supported", db_path);
             return false;
         }
     }
 
-    return false;
+    unreachable();
 }
 
 void Database::loadScores(std::string_view dbPath) {
@@ -1626,8 +1719,8 @@ void Database::loadScores(std::string_view dbPath) {
         return;
     } else if(db_version < NEOSU_SCORE_DB_VERSION) {
         // Reading from older database version: backup just in case
-        auto backup_path = fmt::format("neosu_scores.db.{}", db_version);
-        ByteBufferedFile::copy("neosu_scores.db", backup_path);
+        auto backup_path = fmt::format("{}.{}", dbPath, db_version);
+        ByteBufferedFile::copy(dbPath, backup_path);
     }
 
     u32 nb_beatmaps = db.read<u32>();
@@ -2083,8 +2176,16 @@ void Database::saveScores() {
 
     const double startTime = Timing::getTimeReal();
 
+    const auto neosu_scores_db = getDBPath(DatabaseType::NEOSU_SCORES);
+
     Sync::scoped_lock lock(this->scores_mtx);
-    ByteBufferedFile::Writer db("neosu_scores.db");
+    ByteBufferedFile::Writer db(neosu_scores_db);
+
+    if(!db.good()) {
+        debugLog("Cannot save scores to {}: {}", neosu_scores_db, db.error());
+        return;
+    }
+
     db.write_bytes((u8 *)"NEOSC", 5);
     db.write<u32>(NEOSU_SCORE_DB_VERSION);
 

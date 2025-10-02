@@ -4,6 +4,9 @@
 
 #include "config.h"
 
+#define CASSERT_STR_ENDSWITH(str__, termchar__) \
+    static_assert(str__[(sizeof(str__) / sizeof((str__)[0]) - 2)] == termchar__, # str__ " (" str__ ") must end with " # termchar__ )
+
 #ifndef MCENGINE_DATA_DIR
 
 #ifndef MCENGINE_DATA_ROOT
@@ -13,6 +16,8 @@
 #define MCENGINE_DATA_DIR MCENGINE_DATA_ROOT "/"
 
 #endif
+
+CASSERT_STR_ENDSWITH(MCENGINE_DATA_DIR, '/');
 
 /* *INDENT-OFF* */  // clang-format off
 
