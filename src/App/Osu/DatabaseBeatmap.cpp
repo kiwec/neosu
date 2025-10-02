@@ -1,16 +1,6 @@
 // Copyright (c) 2020, PG, All rights reserved.
 #include "DatabaseBeatmap.h"
 
-#include <assert.h>
-
-#include <algorithm>
-#include <cinttypes>
-#include <iostream>
-#include <limits>
-#include <sstream>
-#include <utility>
-#include <source_location>
-
 #include "SString.h"
 #include "Bancho.h"  // md5
 #include "BeatmapInterface.h"
@@ -20,13 +10,18 @@
 #include "File.h"
 #include "GameRules.h"
 #include "HitObjects.h"
-#include "NotificationOverlay.h"
 #include "Osu.h"
 #include "Parsing.h"
 #include "Skin.h"
 #include "Logging.h"
-#include "SliderCurves.h"
-#include "SongBrowser/SongBrowser.h"
+#include "SongBrowser.h"
+#include "AsyncIOHandler.h"
+
+#include <cassert>
+#include <algorithm>
+#include <utility>
+#include <source_location>
+
 namespace {  // static namespace
 
 bool timingPointSortComparator(DatabaseBeatmap::TIMINGPOINT const &a, DatabaseBeatmap::TIMINGPOINT const &b) {
@@ -1010,7 +1005,7 @@ DatabaseBeatmap::LOAD_DIFFOBJ_RESULT DatabaseBeatmap::loadDifficultyHitObjects(P
     return result;
 }
 
-// XXX: make it nonblocking, with callback
+// deprecated
 std::string DatabaseBeatmap::getMapFile() {
     File file(this->sFilePath);
     if(file.canRead()) {
@@ -1019,6 +1014,13 @@ std::string DatabaseBeatmap::getMapFile() {
     } else {
         return "";
     }
+}
+
+bool DatabaseBeatmap::getMapFileAsync(MapFileReadDoneCallback data_callback) {
+    // don't want to include AsyncIOHandler.h in DatabaseBeatmap.h
+    static_assert(std::is_same_v<MapFileReadDoneCallback, AsyncIOHandler::ReadCallback>);
+    if(!Environment::fileExists(this->sFilePath)) return false;
+    return io->read(this->sFilePath, std::move(data_callback));
 }
 
 // XXX: code duplication (see loadPrimitiveObjects)

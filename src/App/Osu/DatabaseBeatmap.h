@@ -245,7 +245,9 @@ class DatabaseBeatmap final {
         return this->timingpoints;
     }
 
-    std::string getMapFile();
+    [[deprecated("blocking file read, use getMapFileAsync")]] std::string getMapFile();
+    using MapFileReadDoneCallback = std::function<void(std::vector<u8>)>; // == AsyncIOHandler::ReadCallback
+    bool getMapFileAsync(MapFileReadDoneCallback data_callback);
     std::string getFullSoundFilePath();
 
     // redundant data

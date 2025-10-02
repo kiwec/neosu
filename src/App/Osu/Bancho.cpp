@@ -737,7 +737,6 @@ void BanchoState::handle_packet(Packet &packet) {
         case REQUEST_MAP: {
             auto md5 = packet.read_hash();
 
-            // Load map (XXX: blocking)
             auto map = db->getBeatmapDifficulty(md5);
             if(!map) {
                 // Incredibly rare, but this can happen if you enter song browser
@@ -746,29 +745,42 @@ void BanchoState::handle_packet(Packet &packet) {
                 break;
             }
 
-            auto osu_file = map->getMapFile();
-            auto md5_check = BanchoState::md5((u8 *)osu_file.c_str(), osu_file.length());
-            if(md5 != md5_check) {
-                debugLog("After loading map {}, we got different md5 {}!", md5.string(), md5_check.string());
-                break;
+            auto file_path = map->getFilePath();
+
+            DatabaseBeatmap::MapFileReadDoneCallback callback = [current_endpoint = BanchoState::endpoint, md5, file_path, func = __FUNCTION__](std::vector<u8> osu_file) -> void {
+                if (osu_file.empty()) {
+                    debugLogLambda("Failed to get map file data for md5: {} path: {}", md5.string(), file_path);
+                    return;
+                }
+                auto md5_check = BanchoState::md5((u8 *)osu_file.data(), osu_file.size());
+                if(md5 != md5_check) {
+                    debugLogLambda("After loading map {}, we got different md5 {}!", md5.string(), md5_check.string());
+                    return;
+                }
+
+                // Submit map
+                auto scheme = cv::use_https.getBool() ? "https://" : "http://";
+                auto url = fmt::format("{}osu.{}/web/neosu-submit-map.php", scheme, current_endpoint);
+                url.append(fmt::format("?hash={}", md5.string()));
+                // FIXME: what if auth params changed since starting/finishing the file read?
+                BANCHO::Api::append_auth_params(url);
+
+                NetworkHandler::RequestOptions options;
+                options.timeout = 60;
+                options.connect_timeout = 5;
+                options.user_agent = "osu!";
+                options.mime_parts.push_back({
+                    .filename = fmt::format("{}.osu", md5.string()),
+                    .name = "osu_file",
+                    .data = std::move(osu_file),
+                });
+                networkHandler->httpRequestAsync(url, {}, options);
+            };
+
+            // run async callback
+            if (!map->getMapFileAsync(std::move(callback))) {
+                debugLog("Immediately failed to get map file data for md5: {} path: {}", md5.string(), file_path);
             }
-
-            // Submit map
-            auto scheme = cv::use_https.getBool() ? "https://" : "http://";
-            auto url = fmt::format("{}osu.{}/web/neosu-submit-map.php", scheme, BanchoState::endpoint);
-            url.append(fmt::format("?hash={}", md5.string()));
-            BANCHO::Api::append_auth_params(url);
-
-            NetworkHandler::RequestOptions options;
-            options.timeout = 60;
-            options.connect_timeout = 5;
-            options.user_agent = "osu!";
-            options.mime_parts.push_back({
-                .filename = fmt::format("{}.osu", md5.string()),
-                .name = "osu_file",
-                .data = {osu_file.begin(), osu_file.end()},
-            });
-            networkHandler->httpRequestAsync(url, [](const NetworkHandler::Response & /*response*/) {}, options);
 
             break;
         }

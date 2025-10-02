@@ -120,7 +120,7 @@ class AsyncIOHandler::InternalIOContext final {
 
         auto* context = new OperationContext(pathStr);
         context->handle = handle;
-        context->operationBuffer.reserve(readSize);
+        context->operationBuffer = std::vector<u8>(readSize);
         context->readCallback = std::move(callback);
 
         if(!SDL_ReadAsyncIO(handle, context->operationBuffer.data(), 0, readSize, m_queue, context)) {
@@ -189,10 +189,21 @@ class AsyncIOHandler::InternalIOContext final {
 
         OperationContext::OpStatus status = OperationContext::OP_COMPLETE;
 
+        // always resize to how much we actually got
+        context->operationBuffer.resize(outcome.bytes_transferred);
+
         if(outcome.result == SDL_ASYNCIO_COMPLETE) {
-            assert(outcome.bytes_requested == outcome.bytes_transferred);
+            assert(outcome.bytes_requested == outcome.bytes_transferred &&
+                   "AsyncIOHandler::handleReadComplete(SDL_ASYNCIO_COMPLETE): bytes_requested != bytes_transferred");
+            if(cv::debug_file.getBool()) {
+                debugLog(
+                    "DEBUG: completed transfer, bytes_requested: {}, bytes_transferred: {}, operationBuffer.size(): "
+                    "{}, operationBuffer pointer: {:p}, outcome buffer pointer: {:p}, file: {}",
+                    outcome.bytes_requested, outcome.bytes_transferred, context->operationBuffer.size(),
+                    static_cast<void*>(context->operationBuffer.data()), static_cast<void*>(outcome.buffer),
+                    context->path);
+            }
         } else if(outcome.result == SDL_ASYNCIO_CANCELED) {
-            context->operationBuffer.resize(outcome.bytes_transferred);
             if(cv::debug_file.getBool())
                 debugLog("WARNING: only read {}/{} bytes from {}!", outcome.bytes_transferred, outcome.bytes_requested,
                          context->path);
