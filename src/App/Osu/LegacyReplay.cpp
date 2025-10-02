@@ -6,24 +6,22 @@
 #endif
 #include <lzma.h>
 
-#include <cstdlib>
-
-#include <string>
-
 #include "ConVar.h"
 #include "Bancho.h"
 #include "BanchoApi.h"
-#include "BanchoNetworking.h"
-#include "BanchoProtocol.h"
+#include "File.h"
 #include "BeatmapInterface.h"
 #include "Database.h"
 #include "Engine.h"
 #include "NotificationOverlay.h"
 #include "Osu.h"
-#include "SongBrowser/SongBrowser.h"
+#include "SongBrowser.h"
 #include "score.h"
 #include "Parsing.h"
 #include "Logging.h"
+
+#include <cstdlib>
+#include <string>
 
 namespace LegacyReplay {
 
@@ -216,7 +214,7 @@ bool load_from_disk(FinishedScore& score, bool update_db) {
         auto path =
             fmt::format("{:s}/Data/r/{:s}-{:d}.osr", osu_folder, score.beatmap_hash.string(), score.peppy_replay_tms);
 
-        FILE* replay_file = fopen(path.c_str(), "rb");
+        FILE* replay_file = File::fopen_c(path.c_str(), "rb");
         if(replay_file == nullptr) return false;
 
         fseek(replay_file, 0, SEEK_END);
@@ -232,7 +230,7 @@ bool load_from_disk(FinishedScore& score, bool update_db) {
     } else {
         auto path = fmt::format(NEOSU_REPLAYS_PATH "/{:s}/{:d}.replay.lzma", score.server, score.unixTimestamp);
 
-        FILE* replay_file = fopen(path.c_str(), "rb");
+        FILE* replay_file = File::fopen_c(path.c_str(), "rb");
         if(replay_file == nullptr) return false;
 
         fseek(replay_file, 0, SEEK_END);

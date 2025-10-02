@@ -83,7 +83,7 @@ class AsyncIOHandler::InternalIOContext final {
 
         std::string pathStr(path);
         if(m_activeFiles.contains(pathStr)) {
-            // TODO: multiple files
+            // TODO: multiple actions on the same file at the same time
             if(cv::debug_file.getBool()) debugLog("WARNING: cannot read from {}, file is in use", path);
             if(callback) {
                 callback({});
@@ -101,23 +101,40 @@ class AsyncIOHandler::InternalIOContext final {
         }
 
         i64 readSize = SDL_GetAsyncIOSize(handle);
-
-        auto* context = new OperationContext(pathStr);
-        context->handle = handle;
-        context->operationBuffer = std::vector<u8>(readSize);
-        context->readCallback = std::move(callback);
-
-        m_activeFiles.insert(pathStr);
-
-        if(!SDL_ReadAsyncIO(handle, context->operationBuffer.data(), 0, readSize, m_queue, context)) {
-            debugLog("ERROR: SDL_ReadAsyncIO failed for {}: {}", pathStr, SDL_GetError());
+        if(readSize < 0 || readSize > (2ULL * 1024 * 1024 * 1024)) {
+            if(readSize < 0) {
+                debugLog("ERROR: failed to open {} for reading: {}", pathStr, SDL_GetError());
+            } else {
+                // arbitrary size limit sanity check
+                debugLog("ERROR: failed to open {} for reading, over 2GB in size!", pathStr);
+            }
             if(callback) {
                 callback({});
             }
-            m_activeFiles.erase(pathStr);
+
+            // close it but don't add a context/check for errors
+            SDL_CloseAsyncIO(handle, false, m_queue, nullptr);
+
+            return false;
+        }
+
+        auto* context = new OperationContext(pathStr);
+        context->handle = handle;
+        context->operationBuffer.reserve(readSize);
+        context->readCallback = std::move(callback);
+
+        if(!SDL_ReadAsyncIO(handle, context->operationBuffer.data(), 0, readSize, m_queue, context)) {
+            debugLog("ERROR: SDL_ReadAsyncIO failed for {}: {}", pathStr, SDL_GetError());
+            if(context->readCallback) {
+                context->readCallback({});
+            }
+            SDL_CloseAsyncIO(handle, false, m_queue, nullptr);
+
             delete context;
             return false;
         }
+
+        m_activeFiles.insert(pathStr);
 
         return true;
     }
@@ -127,7 +144,7 @@ class AsyncIOHandler::InternalIOContext final {
 
         std::string pathStr(path);
         if(m_activeFiles.contains(pathStr)) {
-            // TODO: multiple files
+            // TODO: multiple actions on the same file at the same time
             if(cv::debug_file.getBool()) debugLog("WARNING: cannot write to {}, file is in use", path);
             if(callback) {
                 callback(false);
@@ -149,24 +166,26 @@ class AsyncIOHandler::InternalIOContext final {
         context->operationBuffer = std::move(data);
         context->writeCallback = std::move(callback);
 
-        m_activeFiles.insert(pathStr);
-
         if(!SDL_WriteAsyncIO(handle, context->operationBuffer.data(), 0, context->operationBuffer.size(), m_queue,
                              context)) {
             debugLog("ERROR: SDL_WriteAsyncIO failed for {}: {}", pathStr, SDL_GetError());
-            if(callback) {
-                callback(false);
+            if(context->writeCallback) {
+                context->writeCallback(false);
             }
-            m_activeFiles.erase(pathStr);
+            SDL_CloseAsyncIO(handle, false, m_queue, nullptr);
+
             delete context;
             return false;
         }
+
+        m_activeFiles.insert(pathStr);
 
         return true;
     }
 
     void handleReadComplete(const SDL_AsyncIOOutcome& outcome, OperationContext* context) {
         assert(!!m_queue);
+        if(!context) return;  // nothing to do
 
         OperationContext::OpStatus status = OperationContext::OP_COMPLETE;
 
@@ -208,6 +227,7 @@ class AsyncIOHandler::InternalIOContext final {
 
     void handleWriteComplete(const SDL_AsyncIOOutcome& outcome, OperationContext* context) {
         assert(!!m_queue);
+        if(!context) return;  // nothing to do
 
         OperationContext::OpStatus status = OperationContext::OP_COMPLETE;
 
@@ -243,6 +263,7 @@ class AsyncIOHandler::InternalIOContext final {
 
     void handleCloseComplete(const SDL_AsyncIOOutcome& outcome, OperationContext* context) {
         assert(!!m_queue);
+        if(!context) return;  // nothing to do
 
         if(outcome.result != SDL_ASYNCIO_COMPLETE) {
             if(cv::debug_file.getBool()) debugLog("WARNING: close failed for {}: {}", context->path, SDL_GetError());

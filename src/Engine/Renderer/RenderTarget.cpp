@@ -49,7 +49,7 @@ void RenderTarget::draw(int x, int y) {
         if(!this->vao1->isReady() || vertices != newVertices) {
             this->vao1->release();
 
-            vertices = newVertices;
+            vertices = std::move(newVertices);
 
             this->vao1->setVertices(vertices);
 
@@ -93,7 +93,7 @@ void RenderTarget::draw(int x, int y, int width, int height) {
         if(!this->vao2->isReady() || vertices != newVertices) {
             this->vao2->release();
 
-            vertices = newVertices;
+            vertices = std::move(newVertices);
 
             this->vao2->setVertices(vertices);
 
@@ -147,8 +147,8 @@ void RenderTarget::drawRect(int x, int y, int width, int height) {
         if(!this->vao3->isReady() || vertices != newVertices || texcoords != newTexcoords) {
             this->vao3->release();
 
-            texcoords = newTexcoords;
-            vertices = newVertices;
+            texcoords = std::move(newTexcoords);
+            vertices = std::move(newVertices);
 
             this->vao3->setVertices(vertices);
             this->vao3->setTexcoords(texcoords);
