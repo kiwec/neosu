@@ -640,8 +640,13 @@ void MainMenu::drawMainButton() {
                                        std::lerp(1.0f, 0.768f, this->fMainMenuAnimFriendPercent),
                                        std::lerp(1.0f, 0.965f, this->fMainMenuAnimFriendPercent));
 
+    const auto thickRect = Graphics::RectOptions{.x = mainButtonRect.getX() + inset,
+                                                 .y = mainButtonRect.getY() + inset,
+                                                 .width = mainButtonRect.getWidth() - 2 * inset,
+                                                 .height = mainButtonRect.getHeight() - 2 * inset,
+                                                 .lineThickness = 2.0f};
+
     // front side
-    g->setLineWidth(2.0f);
     g->pushTransform();
     g->translate(0, 0, inset);
     g->setColor(cubeColor);
@@ -650,10 +655,8 @@ void MainMenu::drawMainButton() {
                  mainButtonRect.getHeight() - 2 * inset);
     g->translate(0, 0, -0.2f);  // move the border slightly towards the camera to prevent Z fighting
     g->setColor(cubeBorderColor);
-    g->drawRectf(mainButtonRect.getX() + inset, mainButtonRect.getY() + inset, mainButtonRect.getWidth() - 2 * inset,
-                 mainButtonRect.getHeight() - 2 * inset);
+    g->drawRectf(thickRect);
     g->popTransform();
-    g->setLineWidth(1.0f);
 
     // friend
     if(this->fMainMenuAnimFriendPercent > 0.0f) {
@@ -670,7 +673,6 @@ void MainMenu::drawMainButton() {
     this->drawLogoImage(mainButtonRect);
 
     if(drawing_full_cube) {
-        g->setLineWidth(2.0f);
         // back side
         g->rotate3DScene(0, -180, 0);
         g->pushTransform();
@@ -681,8 +683,7 @@ void MainMenu::drawMainButton() {
                      mainButtonRect.getWidth() - 2 * inset, mainButtonRect.getHeight() - 2 * inset);
         g->translate(0, 0, -0.2f);
         g->setColor(cubeBorderColor);
-        g->drawRectf(mainButtonRect.getX() + inset, mainButtonRect.getY() + inset,
-                     mainButtonRect.getWidth() - 2 * inset, mainButtonRect.getHeight() - 2 * inset);
+        g->drawRectf(thickRect);
         g->popTransform();
 
         // right side
@@ -696,8 +697,7 @@ void MainMenu::drawMainButton() {
                      mainButtonRect.getWidth() - 2 * inset, mainButtonRect.getHeight() - 2 * inset);
         g->translate(0, 0, -0.2f);
         g->setColor(cubeBorderColor);
-        g->drawRectf(mainButtonRect.getX() + inset, mainButtonRect.getY() + inset,
-                     mainButtonRect.getWidth() - 2 * inset, mainButtonRect.getHeight() - 2 * inset);
+        g->drawRectf(thickRect);
         g->popTransform();
         g->rotate3DScene(0, -90, 0);
         g->offset3DScene(0, 0, 0);
@@ -713,8 +713,7 @@ void MainMenu::drawMainButton() {
                      mainButtonRect.getWidth() - 2 * inset, mainButtonRect.getHeight() - 2 * inset);
         g->translate(0, 0, -0.2f);
         g->setColor(cubeBorderColor);
-        g->drawRectf(mainButtonRect.getX() + inset, mainButtonRect.getY() + inset,
-                     mainButtonRect.getWidth() - 2 * inset, mainButtonRect.getHeight() - 2 * inset);
+        g->drawRectf(thickRect);
         g->popTransform();
         g->rotate3DScene(0, 90, 0);
         g->offset3DScene(0, 0, 0);
@@ -730,8 +729,7 @@ void MainMenu::drawMainButton() {
                      mainButtonRect.getWidth() - 2 * inset, mainButtonRect.getHeight() - 2 * inset);
         g->translate(0, 0, -0.2f);
         g->setColor(cubeBorderColor);
-        g->drawRectf(mainButtonRect.getX() + inset, mainButtonRect.getY() + inset,
-                     mainButtonRect.getWidth() - 2 * inset, mainButtonRect.getHeight() - 2 * inset);
+        g->drawRectf(thickRect);
         g->popTransform();
         g->rotate3DScene(-90, 0, 0);
         g->offset3DScene(0, 0, 0);
@@ -747,8 +745,7 @@ void MainMenu::drawMainButton() {
                      mainButtonRect.getWidth() - 2 * inset, mainButtonRect.getHeight() - 2 * inset);
         g->translate(0, 0, -0.2f);
         g->setColor(cubeBorderColor);
-        g->drawRectf(mainButtonRect.getX() + inset, mainButtonRect.getY() + inset,
-                     mainButtonRect.getWidth() - 2 * inset, mainButtonRect.getHeight() - 2 * inset);
+        g->drawRectf(thickRect);
         g->popTransform();
         g->rotate3DScene(90, 0, 0);
         g->offset3DScene(0, 0, 0);
@@ -758,8 +755,6 @@ void MainMenu::drawMainButton() {
         g->setCulling(false);
         g->setDepthBuffer(false);
         g->setAntialiasing(false);
-
-        g->setLineWidth(1.0f);
 
         g->setBlendMode(Graphics::BLEND_MODE::BLEND_MODE_ALPHA);
 

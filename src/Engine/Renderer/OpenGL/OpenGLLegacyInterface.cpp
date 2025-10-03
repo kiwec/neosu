@@ -143,36 +143,45 @@ void OpenGLLegacyInterface::drawLinef(float x1, float y1, float x2, float y2) {
     glEnd();
 }
 
-void OpenGLLegacyInterface::drawRectf(float x, float y, float width, float height, bool withColor, Color top,
-                                      Color right, Color bottom, Color left) {
+void OpenGLLegacyInterface::drawRectf(const RectOptions &opts) {
     updateTransform();
 
     glDisable(GL_TEXTURE_2D);
 
-    glBegin(withColor ? GL_LINES : GL_LINE_LOOP);
-    if(withColor) {
-        setColor(top);
-        glVertex2f(x, y);
-        glVertex2f(x + width, y);
+    // set line width if specified
+    if(opts.lineThickness != 1.0f) {
+        glLineWidth(opts.lineThickness);
+    }
 
-        setColor(left);
-        glVertex2f(x, y + height);
-        glVertex2f(x, y);
+    glBegin(opts.withColor ? GL_LINES : GL_LINE_LOOP);
+    if(opts.withColor) {
+        setColor(opts.top);
+        glVertex2f(opts.x, opts.y);
+        glVertex2f(opts.x + opts.width, opts.y);
 
-        setColor(bottom);
-        glVertex2f(x + width, y + height);
-        glVertex2f(x, y + height);
+        setColor(opts.left);
+        glVertex2f(opts.x, opts.y + opts.height);
+        glVertex2f(opts.x, opts.y);
 
-        setColor(right);
-        glVertex2f(x + width, y);
-        glVertex2f(x + width, y + height);
+        setColor(opts.bottom);
+        glVertex2f(opts.x + opts.width, opts.y + opts.height);
+        glVertex2f(opts.x, opts.y + opts.height);
+
+        setColor(opts.right);
+        glVertex2f(opts.x + opts.width, opts.y);
+        glVertex2f(opts.x + opts.width, opts.y + opts.height);
     } else {
-        glVertex2f(x, y);                   // top-left
-        glVertex2f(x + width, y);           // top-right
-        glVertex2f(x + width, y + height);  // bottom-right
-        glVertex2f(x, y + height);          // bottom-left
+        glVertex2f(opts.x, opts.y);
+        glVertex2f(opts.x + opts.width, opts.y);
+        glVertex2f(opts.x + opts.width, opts.y + opts.height);
+        glVertex2f(opts.x, opts.y + opts.height);
     }
     glEnd();
+
+    // restore line width
+    if(opts.lineThickness != 1.0f) {
+        glLineWidth(1.0f);
+    }
 }
 
 void OpenGLLegacyInterface::fillRectf(float x, float y, float width, float height) {

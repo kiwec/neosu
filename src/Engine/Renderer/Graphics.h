@@ -81,6 +81,12 @@ class Graphics {
         COMPARE_FUNC_ALWAYS
     };
 
+    struct RectOptions {
+        float x{0.f}, y{0.f}, width{0.f}, height{0.f}, lineThickness{1.f};
+        Color top{(Color)-1}, right{(Color)-1}, bottom{(Color)-1}, left{(Color)-1};
+        bool withColor{false};
+    };
+
    public:
     friend class Engine;
 
@@ -103,9 +109,20 @@ class Graphics {
                             const void *pixels) = 0;
     virtual void drawPixel(int x, int y) = 0;
     virtual void drawLinef(float x1, float y1, float x2, float y2) = 0;
-    virtual void drawRectf(float x, float y, float width, float height, bool withColor = false, Color top = -1,
-                           Color right = -1, Color bottom = -1, Color left = -1) = 0;
-    virtual void fillRectf(float x, float y, float width, float height) = 0;
+    virtual void drawRectf(const RectOptions &opt) = 0;  // this is the main drawrect function
+
+    inline void drawRectf(float x, float y, float width, float height, bool withColor = false, Color top = -1,
+                          Color right = -1, Color bottom = -1, Color left = -1) {
+        this->drawRectf(RectOptions{.x = x,
+                                    .y = y,
+                                    .width = width,
+                                    .height = height,
+                                    .top = top,
+                                    .right = right,
+                                    .bottom = bottom,
+                                    .left = left,
+                                    .withColor = withColor});
+    }
 
     inline void drawLine(int x1, int y1, int x2, int y2) {
         this->drawLinef((float)x1 + 0.5f, (float)y1 + 0.5f, (float)x2 + 0.5f, (float)y2 + 0.5f);
@@ -121,6 +138,9 @@ class Graphics {
     inline void drawRect(int x, int y, int width, int height, Color top, Color right, Color bottom, Color left) {
         this->drawRectf((float)x + 0.5f, (float)y + 0.5f, (float)width, (float)height, top, right, bottom, left);
     }
+
+    virtual void fillRectf(float x, float y, float width, float height) = 0;
+
     inline void fillRect(int x, int y, int width, int height) {
         this->fillRectf((float)x, (float)y, (float)width, (float)height);
     }
@@ -173,7 +193,7 @@ class Graphics {
     virtual std::vector<u8> getScreenshot(bool withAlpha = false) = 0;
 
     // renderer info
-    virtual const char* getName() const = 0;
+    virtual const char *getName() const = 0;
     [[nodiscard]] virtual vec2 getResolution() const = 0;
     virtual UString getVendor() = 0;
     virtual UString getModel() = 0;
@@ -264,4 +284,3 @@ class Graphics {
 
 // define/managed in Engine.cpp, declared here for convenience
 extern std::unique_ptr<Graphics> g;
-

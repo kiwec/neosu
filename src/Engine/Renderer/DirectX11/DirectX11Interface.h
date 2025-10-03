@@ -45,8 +45,7 @@ class DirectX11Interface : public Graphics {
     void drawPixel(int x, int y) override;
     void drawPixels(int x, int y, int width, int height, Graphics::DRAWPIXELS_TYPE type, const void *pixels) override;
     void drawLinef(float x1, float y1, float x2, float y2) final;
-    void drawRectf(float x, float y, float width, float height, bool withColor = false, Color top = -1,
-                   Color right = -1, Color bottom = -1, Color left = -1) final;
+    void drawRectf(const RectOptions &opt) final;
     void fillRectf(float x, float y, float width, float height) final;
 
     void fillGradient(int x, int y, int width, int height, Color topLeftColor, Color topRightColor,

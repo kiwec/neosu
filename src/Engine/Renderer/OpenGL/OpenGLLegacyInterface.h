@@ -34,8 +34,7 @@ class OpenGLLegacyInterface : public Graphics {
     void drawPixels(int x, int y, int width, int height, Graphics::DRAWPIXELS_TYPE type, const void *pixels) final;
     void drawPixel(int x, int y) final;
     void drawLinef(float x1, float y1, float x2, float y2) final;
-    void drawRectf(float x, float y, float width, float height, bool withColor = false, Color top = -1,
-                   Color right = -1, Color bottom = -1, Color left = -1) final;
+    void drawRectf(const RectOptions &opt) final;
     void fillRectf(float x, float y, float width, float height) final;
 
     void fillRoundedRect(int x, int y, int width, int height, int radius) final;

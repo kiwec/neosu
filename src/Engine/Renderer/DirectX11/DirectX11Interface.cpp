@@ -530,24 +530,70 @@ void DirectX11Interface::drawLinef(float x1, float y1, float x2, float y2) {
     drawVAO(&vao);
 }
 
-void DirectX11Interface::drawRectf(float x, float y, float width, float height, bool withColor, Color top, Color right,
-                                   Color bottom, Color left) {
+void DirectX11Interface::drawRectf(const RectOptions &opts) {
     updateTransform();
 
-    if(withColor) {
-        setColor(top);
-        drawLinef(x, y, x + width, y);
-        setColor(left);
-        drawLinef(x, y, x, y + height);
-        setColor(bottom);
-        drawLinef(x, y + height, x + width, y + height);
-        setColor(right);
-        drawLinef(x + width, y, x + width, y + height);
+    // for line thickness > 1, draw as filled rectangles since D3D11 doesn't support variable line widths
+    if(opts.lineThickness > 1.0f) {
+        this->setTexturing(false);
+
+        const float halfThickness = opts.lineThickness * 0.5f;
+
+        if(opts.withColor) {
+            // top edge
+            setColor(opts.top);
+            fillRectf(opts.x - halfThickness, opts.y - halfThickness, opts.width + opts.lineThickness,
+                      opts.lineThickness);
+
+            // bottom edge
+            setColor(opts.bottom);
+            fillRectf(opts.x - halfThickness, opts.y + opts.height - halfThickness, opts.width + opts.lineThickness,
+                      opts.lineThickness);
+
+            // left edge
+            setColor(opts.left);
+            fillRectf(opts.x - halfThickness, opts.y + halfThickness, opts.lineThickness,
+                      opts.height - opts.lineThickness);
+
+            // right edge
+            setColor(opts.right);
+            fillRectf(opts.x + opts.width - halfThickness, opts.y + halfThickness, opts.lineThickness,
+                      opts.height - opts.lineThickness);
+        } else {
+            // all edges same color
+            // top edge
+            fillRectf(opts.x - halfThickness, opts.y - halfThickness, opts.width + opts.lineThickness,
+                      opts.lineThickness);
+
+            // bottom edge
+            fillRectf(opts.x - halfThickness, opts.y + opts.height - halfThickness, opts.width + opts.lineThickness,
+                      opts.lineThickness);
+
+            // left edge
+            fillRectf(opts.x - halfThickness, opts.y + halfThickness, opts.lineThickness,
+                      opts.height - opts.lineThickness);
+
+            // right edge
+            fillRectf(opts.x + opts.width - halfThickness, opts.y + halfThickness, opts.lineThickness,
+                      opts.height - opts.lineThickness);
+        }
     } else {
-        drawLinef(x, y, x + width, y);
-        drawLinef(x, y, x, y + height);
-        drawLinef(x, y + height, x + width, y + height);
-        drawLinef(x + width, y, x + width, y + height);
+        // fallback to line drawing for thickness == 1
+        if(opts.withColor) {
+            setColor(opts.top);
+            drawLinef(opts.x, opts.y, opts.x + opts.width, opts.y);
+            setColor(opts.left);
+            drawLinef(opts.x, opts.y, opts.x, opts.y + opts.height);
+            setColor(opts.bottom);
+            drawLinef(opts.x, opts.y + opts.height, opts.x + opts.width, opts.y + opts.height + 0.5f);
+            setColor(opts.right);
+            drawLinef(opts.x + opts.width, opts.y, opts.x + opts.width, opts.y + opts.height + 0.5f);
+        } else {
+            drawLinef(opts.x, opts.y, opts.x + opts.width, opts.y);
+            drawLinef(opts.x, opts.y, opts.x, opts.y + opts.height);
+            drawLinef(opts.x, opts.y + opts.height, opts.x + opts.width, opts.y + opts.height + 0.5f);
+            drawLinef(opts.x + opts.width, opts.y, opts.x + opts.width, opts.y + opts.height + 0.5f);
+        }
     }
 }
 
