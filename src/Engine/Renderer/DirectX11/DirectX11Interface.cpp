@@ -637,8 +637,7 @@ void DirectX11Interface::drawQuad(vec2 topLeft, vec2 topRight, vec2 bottomRight,
     drawVAO(&vao);
 }
 
-void DirectX11Interface::drawImage(const Image *image, AnchorPoint anchor, [[maybe_unused]] float edgeSoftness,
-                                   McRect clipRect) {
+void DirectX11Interface::drawImage(const Image *image, AnchorPoint anchor, float edgeSoftness, McRect clipRect) {
     if(image == nullptr) {
         debugLog("WARNING: Tried to draw image with NULL texture!");
         return;

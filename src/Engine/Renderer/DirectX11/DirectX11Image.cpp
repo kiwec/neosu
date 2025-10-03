@@ -12,7 +12,6 @@
 #include "Engine.h"
 #include "ConVar.h"
 #include "Logging.h"
-#include "ResourceManager.h"
 
 #include "DirectX11Interface.h"
 #include "DirectX11Shader.h"
@@ -116,7 +115,7 @@ void DirectX11Image::init() {
     }
 
     // free memory (not mipmapped) (1/2)
-    if(!this->bKeepInSystemMemory && !this->bMipmapped) this->rawImage = std::vector<unsigned char>();
+    if(!this->bKeepInSystemMemory && !this->bMipmapped) this->rawImage.clear();
 
     // create shader resource view
     if(m_shaderResourceView == nullptr) {
@@ -153,7 +152,7 @@ void DirectX11Image::init() {
     }
 
     // free memory (mipmapped) (2/2)
-    if(!this->bKeepInSystemMemory && this->bMipmapped) this->rawImage = std::vector<unsigned char>();
+    if(!this->bKeepInSystemMemory && this->bMipmapped) this->rawImage.clear();
 
     // create mipmaps
     if(this->bMipmapped) graphics->getDeviceContext()->GenerateMips(m_shaderResourceView);
@@ -260,8 +259,10 @@ void DirectX11Image::initAsync() {
 }
 
 void DirectX11Image::destroy() {
+    // FIXME: avoid needing to reupload everything from scratch for dynamic font atlas image reloads
+    // like opengl does it
+    this->deleteDX();
     if(!this->bKeepInSystemMemory) {
-        this->deleteDX();
         this->rawImage.clear();
     }
 }
