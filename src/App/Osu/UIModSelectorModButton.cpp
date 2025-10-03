@@ -50,26 +50,16 @@ void UIModSelectorModButton::draw() {
             if(this->fRot != 0.0f) g->rotate(this->fRot);
 
             g->setColor(0xffffffff);
-
-#if defined(MCENGINE_FEATURE_OPENGL) || defined(MCENGINE_FEATURE_GLES32)
             // HACK: For "Actual Flashlight" mod, I'm too lazy to add a new skin element
             bool draw_inverted_colors = this->getActiveModName() == UString("afl");
-
             if(draw_inverted_colors) {
-                glEnable(GL_COLOR_LOGIC_OP);
-                glLogicOp(GL_COPY_INVERTED);
+                g->setColorInversion(true);
             }
-#endif
-
             this->getActiveImageFunc()->draw(this->vPos + this->vSize / 2.f);
-
-#if defined(MCENGINE_FEATURE_OPENGL) || defined(MCENGINE_FEATURE_GLES32)
             if(draw_inverted_colors) {
-                glDisable(GL_COLOR_LOGIC_OP);
+                g->setColorInversion(false);
             }
-#else
-            MC_MESSAGE("inverted colors are not implemented for this renderer!");
-#endif
+
         }
         g->popTransform();
     }

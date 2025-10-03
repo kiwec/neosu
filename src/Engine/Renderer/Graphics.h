@@ -161,6 +161,7 @@ class Graphics {
     virtual void setDepthWriting(bool enabled) = 0;
     virtual void setColorWriting(bool r, bool g, bool b, bool a) = 0;
     inline void setColorWriting(bool enabled) { this->setColorWriting(enabled, enabled, enabled, enabled); }
+    virtual void setColorInversion(bool enabled) = 0;
     virtual void setCulling(bool enabled) = 0;
     virtual void setVSync(bool enabled) = 0;
     virtual void setAntialiasing(bool enabled) = 0;

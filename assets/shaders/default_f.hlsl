@@ -32,5 +32,12 @@ PS_OUTPUT psmain(in PS_INPUT In)
 	{
 		Out.col = tex2D.Sample(samplerState, In.tex) * In.col;
 	}
+
+	// color inversion
+	if (In.misc.y > 0.5f)
+	{
+		Out.col.rgb = 1.0f - Out.col.rgb;
+	}
+
 	return Out;
 }

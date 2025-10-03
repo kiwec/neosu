@@ -18,7 +18,7 @@ cbuffer ModelViewProjectionConstantBuffer : register(b0)
 //	matrix view;		// view matrix
 //	matrix projection;	// projection matrix
 	float4 col;			// global color
-	float4 misc;		// misc params. [0] = textured or flat, [1] = vertex colors
+	float4 misc;		// misc params. [0] = textured or flat, [1] = color inversion
 };
 
 struct VS_INPUT

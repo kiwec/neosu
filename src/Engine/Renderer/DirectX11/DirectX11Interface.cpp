@@ -435,7 +435,7 @@ void DirectX11Interface::setAlpha(float alpha) {
 void DirectX11Interface::drawPixel(int x, int y) {
     updateTransform();
 
-    m_shaderTexturedGeneric->setUniform1f("misc", 0.0f);  // disable texturing
+    this->setTexturing(false);  // disable texturing
 
     // build directx vertices
     m_vertices.clear();
@@ -518,7 +518,7 @@ void DirectX11Interface::drawPixels([[maybe_unused]] int x, [[maybe_unused]] int
 void DirectX11Interface::drawLinef(float x1, float y1, float x2, float y2) {
     updateTransform();
 
-    m_shaderTexturedGeneric->setUniform1f("misc", 0.0f);  // disable texturing
+    this->setTexturing(false);  // disable texturing
 
     static VertexArrayObject vao(Graphics::PRIMITIVE::PRIMITIVE_LINES);
     {
@@ -554,7 +554,7 @@ void DirectX11Interface::drawRectf(float x, float y, float width, float height, 
 void DirectX11Interface::fillRectf(float x, float y, float width, float height) {
     updateTransform();
 
-    m_shaderTexturedGeneric->setUniform1f("misc", 0.0f);  // disable texturing
+    this->setTexturing(false);  // disable texturing
 
     static VertexArrayObject vao(Graphics::PRIMITIVE::PRIMITIVE_QUADS);
     {
@@ -572,7 +572,7 @@ void DirectX11Interface::fillGradient(int x, int y, int width, int height, Color
                                       Color bottomLeftColor, Color bottomRightColor) {
     updateTransform();
 
-    m_shaderTexturedGeneric->setUniform1f("misc", 0.0f);  // disable texturing
+    this->setTexturing(false);  // disable texturing
 
     static VertexArrayObject vao(Graphics::PRIMITIVE::PRIMITIVE_QUADS);
     {
@@ -593,7 +593,7 @@ void DirectX11Interface::fillGradient(int x, int y, int width, int height, Color
 void DirectX11Interface::drawQuad(int x, int y, int width, int height) {
     updateTransform();
 
-    m_shaderTexturedGeneric->setUniform1f("misc", 1.0f);  // enable texturing
+    this->setTexturing(true);  // enable texturing
 
     static VertexArrayObject vao(Graphics::PRIMITIVE::PRIMITIVE_QUADS);
     {
@@ -615,7 +615,7 @@ void DirectX11Interface::drawQuad(vec2 topLeft, vec2 topRight, vec2 bottomRight,
                                   Color topRightColor, Color bottomRightColor, Color bottomLeftColor) {
     updateTransform();
 
-    m_shaderTexturedGeneric->setUniform1f("misc", 0.0f);  // disable texturing
+    this->setTexturing(false);  // disable texturing
 
     static VertexArrayObject vao(Graphics::PRIMITIVE::PRIMITIVE_QUADS);
     {
@@ -663,7 +663,7 @@ void DirectX11Interface::drawImage(const Image *image, AnchorPoint anchor, float
 
     this->updateTransform();
 
-    m_shaderTexturedGeneric->setUniform1f("misc", 1.0f);  // enable texturing
+    this->setTexturing(true);  // enable texturing
 
     const float width = image->getWidth();
     const float height = image->getHeight();
@@ -758,7 +758,7 @@ void DirectX11Interface::drawString(McFont *font, const UString &text) {
 
     updateTransform();
 
-    m_shaderTexturedGeneric->setUniform1f("misc", 1.0f);  // enable texturing
+    this->setTexturing(true);  // enable texturing
 
     font->drawString(text);
 }
@@ -945,7 +945,7 @@ void DirectX11Interface::drawVAO(VertexArrayObject *vao) {
 
         // shader update
         if(uploadedSuccessfully) {
-            m_shaderTexturedGeneric->setUniform1f("misc", (hasTexcoords0 ? 1.0f : 0.0f));
+            this->setTexturing(hasTexcoords0);
 
             if(m_activeShader != nullptr) m_activeShader->onJustBeforeDraw();
         }
@@ -1089,6 +1089,13 @@ void DirectX11Interface::setCulling(bool culling) {
 }
 
 void DirectX11Interface::setColorWriting(bool r, bool g, bool b, bool a) { MC_MESSAGE("TODO") }
+
+void DirectX11Interface::setColorInversion(bool enabled) {
+    if(m_bColorInversion == enabled) return;
+
+    m_bColorInversion = enabled;
+    setTexturing(m_bTexturingEnabled);  // re-apply with new inversion state
+}
 
 void DirectX11Interface::setDepthWriting(bool enabled) { MC_MESSAGE("TODO") }
 
@@ -1417,6 +1424,11 @@ void DirectX11Interface::disableFullscreen() {
 
     m_bIsFullscreen = false;
     m_bIsFullscreenBorderlessWindowed = false;
+}
+
+void DirectX11Interface::setTexturing(bool enabled) {
+    m_bTexturingEnabled = enabled;
+    m_shaderTexturedGeneric->setUniform4f("misc", enabled ? 1.f : 0.f, m_bColorInversion ? 1.f : 0.f, 0.f, 0.f);
 }
 
 Image *DirectX11Interface::createImage(std::string filePath, bool mipmapped, bool keepInSystemMemory) {

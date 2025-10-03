@@ -296,7 +296,7 @@ void DirectX11Image::bind(unsigned int textureUnit) const {
     static_cast<DirectX11Interface*>(g.get())->getDeviceContext()->PSSetSamplers(textureUnit, 1, &m_samplerState);
 
     // HACKHACK: TEMP:
-    static_cast<DirectX11Interface*>(g.get())->getShaderGeneric()->setUniform1f("misc", 1.0f);  // enable texturing
+    static_cast<DirectX11Interface*>(g.get())->setTexturing(true);  // enable texturing
 }
 
 void DirectX11Image::unbind() const {

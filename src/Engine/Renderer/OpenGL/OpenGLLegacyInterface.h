@@ -73,6 +73,7 @@ class OpenGLLegacyInterface : public Graphics {
     void setDepthBuffer(bool enabled) final;
     void setDepthWriting(bool enabled) final;
     void setColorWriting(bool r, bool g, bool b, bool a) final;
+    void setColorInversion(bool enabled) final;
     void setCulling(bool culling) final;
     void setAntialiasing(bool aa) final;
     void setWireframe(bool enabled) final;

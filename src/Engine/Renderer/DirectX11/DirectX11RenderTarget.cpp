@@ -297,7 +297,7 @@ void DirectX11RenderTarget::bind(unsigned int textureUnit) {
 
     dx11->getDeviceContext()->PSSetShaderResources(textureUnit, 1, &m_shaderResourceView);
 
-    dx11->getShaderGeneric()->setUniform1f("misc", 1.0f);  // enable texturing
+    dx11->setTexturing(true);  // enable texturing
 }
 
 void DirectX11RenderTarget::unbind() {

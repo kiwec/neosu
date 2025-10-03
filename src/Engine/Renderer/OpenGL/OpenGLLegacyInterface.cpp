@@ -623,6 +623,15 @@ void OpenGLLegacyInterface::setDepthWriting(bool enabled) {
 
 void OpenGLLegacyInterface::setColorWriting(bool r, bool g, bool b, bool a) { glColorMask(r, g, b, a); }
 
+void OpenGLLegacyInterface::setColorInversion(bool enabled) {
+    if(enabled) {
+        glEnable(GL_COLOR_LOGIC_OP);
+        glLogicOp(GL_COPY_INVERTED);
+    } else {
+        glDisable(GL_COLOR_LOGIC_OP);
+    }
+}
+
 void OpenGLLegacyInterface::setCulling(bool culling) {
     if(culling)
         glEnable(GL_CULL_FACE);

@@ -87,6 +87,7 @@ class DirectX11Interface : public Graphics {
     void setCulling(bool culling) override;
     void setDepthWriting(bool enabled) final;
     void setColorWriting(bool r, bool g, bool b, bool a) final;
+    void setColorInversion(bool enabled) final;
     void setAntialiasing(bool aa) override;
     void setWireframe(bool enabled) override;
     void setLineWidth(float width) override;
@@ -131,6 +132,7 @@ class DirectX11Interface : public Graphics {
     inline IDXGISwapChain *getSwapChain() const { return m_swapChain; }
     inline DirectX11Shader *getShaderGeneric() const { return m_shaderTexturedGeneric; }
     inline DirectX11Shader *getActiveShader() const { return m_activeShader; }
+    void setTexturing(bool enabled);
 
    protected:
     void init() override;
@@ -180,6 +182,8 @@ class DirectX11Interface : public Graphics {
 
     // persistent vars
     bool m_bVSync;
+    bool m_bColorInversion{false};
+    bool m_bTexturingEnabled{false};
     Color m_color;
     DirectX11Shader *m_activeShader;
 
