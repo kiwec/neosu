@@ -114,8 +114,8 @@ class DirectX11Shader final : public Shader {
 
    private:
     struct CACHE_ENTRY {
-        int bindIndex;  // into m_bindDescs[bindIndex] and m_constantBuffers[bindIndex]
-        int offsetBytes;
+        int bindIndex{-1};  // into m_bindDescs[bindIndex] and m_constantBuffers[bindIndex]
+        int offsetBytes{-1};
     };
 
    protected:

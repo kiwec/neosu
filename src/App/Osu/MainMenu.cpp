@@ -806,6 +806,38 @@ void MainMenu::drawMapBackground(DatabaseBeatmap *beatmap, f32 alpha) {
     g->popTransform();
 }
 
+void MainMenu::drawBanner() {
+    UString bannerText = "---- DirectX11 Test ----";
+
+    McFont *bannerFont = osu->getSubTitleFont();
+    float bannerStringWidth = bannerFont->getStringWidth(bannerText);
+    int bannerDiff = 400;
+    int bannerMargin = 5;
+    int numBanners = (int)std::round(osu->getVirtScreenWidth() / (bannerStringWidth + bannerDiff)) + 2;
+
+    g->setColor(0xffee7777);
+    g->pushTransform();
+    g->translate(1, 1);
+    for(int i = -1; i < numBanners; i++) {
+        g->pushTransform();
+        g->translate(
+            i * bannerStringWidth + i * bannerDiff + fmod(-engine->getTime() * 50, bannerStringWidth + bannerDiff),
+            bannerFont->getHeight() + bannerMargin);
+        g->drawString(bannerFont, bannerText);
+        g->popTransform();
+    }
+    g->popTransform();
+    g->setColor(0xff555555);
+    for(int i = -1; i < numBanners; i++) {
+        g->pushTransform();
+        g->translate(
+            i * bannerStringWidth + i * bannerDiff + fmod(-engine->getTime() * 50, bannerStringWidth + bannerDiff),
+            bannerFont->getHeight() + bannerMargin);
+        g->drawString(bannerFont, bannerText);
+        g->popTransform();
+    }
+}
+
 void MainMenu::draw() {
     if(!this->bVisible) return;
 
@@ -831,37 +863,7 @@ void MainMenu::draw() {
 
     // draw dx11 test banner
     if constexpr(Env::cfg(REND::DX11)) {
-        UString bannerText = "---- DirectX11 Test ----";
-
-        if(bannerText.length() > 0) {
-            McFont *bannerFont = osu->getSubTitleFont();
-            float bannerStringWidth = bannerFont->getStringWidth(bannerText);
-            int bannerDiff = 400;
-            int bannerMargin = 5;
-            int numBanners = (int)std::round(osu->getVirtScreenWidth() / (bannerStringWidth + bannerDiff)) + 2;
-
-            g->setColor(0xffee7777);
-            g->pushTransform();
-            g->translate(1, 1);
-            for(int i = -1; i < numBanners; i++) {
-                g->pushTransform();
-                g->translate(i * bannerStringWidth + i * bannerDiff +
-                                 fmod(-engine->getTime() * 50, bannerStringWidth + bannerDiff),
-                             bannerFont->getHeight() + bannerMargin);
-                g->drawString(bannerFont, bannerText);
-                g->popTransform();
-            }
-            g->popTransform();
-            g->setColor(0xff555555);
-            for(int i = -1; i < numBanners; i++) {
-                g->pushTransform();
-                g->translate(i * bannerStringWidth + i * bannerDiff +
-                                 fmod(-engine->getTime() * 50, bannerStringWidth + bannerDiff),
-                             bannerFont->getHeight() + bannerMargin);
-                g->drawString(bannerFont, bannerText);
-                g->popTransform();
-            }
-        }
+        this->drawBanner();
     }
 
     // draw notification arrow for changelog (version button)

@@ -27,7 +27,7 @@
 
 #define MCENGINE_D3D11_SHADER_MAX_NUM_CONSTANT_BUFFERS 9
 
-DirectX11Shader::CACHE_ENTRY DirectX11Shader::invalidCacheEntry{-1, -1};
+DirectX11Shader::CACHE_ENTRY DirectX11Shader::invalidCacheEntry{};
 
 DirectX11Shader::DirectX11Shader(const std::string &vertexShader, const std::string &fragmentShader,
                                  [[maybe_unused]] bool source) {
@@ -50,6 +50,54 @@ DirectX11Shader::DirectX11Shader(const std::string &vertexShader, const std::str
     // stats
     m_iStatsNumConstantBufferUploadsPerFrameCounter = 0;
     m_iStatsNumConstantBufferUploadsPerFrameCounterEngineFrameCount = 0;
+}
+
+DirectX11Shader::SHADER_PARSE_RESULT DirectX11Shader::parseShaderFromString(
+    const std::string &graphicsInterfaceAndShaderTypePrefix, const std::string &shaderSource) {
+    DirectX11Shader::SHADER_PARSE_RESULT result;
+
+    const std::string shaderPrefix =
+        "###";  // e.g. ###OpenGLLegacyInterface::VertexShader##########################################################################################
+    const std::string descPrefix =
+        "##";  // e.g. ##D3D11_BUFFER_DESC::D3D11_BIND_CONSTANT_BUFFER::ModelViewProjectionConstantBuffer::mvp::float4x4
+
+    {
+        std::istringstream ss(shaderSource);
+
+        bool foundGraphicsInterfaceAndShaderTypePrefixAtLeastOnce = false;
+        bool foundGraphicsInterfaceAndShaderTypePrefix = false;
+        std::string curLine;
+
+        while(static_cast<bool>(std::getline(ss, curLine))) {
+            const bool isShaderPrefixLine = (curLine.contains(shaderPrefix));
+
+            if(isShaderPrefixLine) {
+                if(!foundGraphicsInterfaceAndShaderTypePrefix) {
+                    if(curLine.find(graphicsInterfaceAndShaderTypePrefix) == shaderPrefix.length()) {
+                        foundGraphicsInterfaceAndShaderTypePrefix = true;
+                        foundGraphicsInterfaceAndShaderTypePrefixAtLeastOnce = true;
+                    }
+                } else
+                    foundGraphicsInterfaceAndShaderTypePrefix = false;
+            } else if(foundGraphicsInterfaceAndShaderTypePrefix) {
+                const bool isDescPrefixLine = (curLine.starts_with(descPrefix));
+
+                if(!isDescPrefixLine) {
+                    if(!result.source.empty()) result.source.push_back('\n');
+                    result.source.append(curLine);
+                } else {
+                    result.descs.push_back(curLine.substr(descPrefix.length()));
+                }
+            }
+        }
+
+        if(!foundGraphicsInterfaceAndShaderTypePrefixAtLeastOnce)
+            engine->showMessageError(
+                "Shader Error", UString::format("Missing \"%s\" in shader %s",
+                                                graphicsInterfaceAndShaderTypePrefix.c_str(), shaderSource.c_str()));
+    }
+
+    return result;
 }
 
 void DirectX11Shader::init() {
@@ -789,54 +837,6 @@ bool DirectX11Shader::compile(const std::string &vertexShader, const std::string
     }
 
     return true;
-}
-
-DirectX11Shader::SHADER_PARSE_RESULT DirectX11Shader::parseShaderFromString(
-    const std::string &graphicsInterfaceAndShaderTypePrefix, const std::string &shaderSource) {
-    DirectX11Shader::SHADER_PARSE_RESULT result;
-
-    const std::string shaderPrefix =
-        "###";  // e.g. ###OpenGLLegacyInterface::VertexShader##########################################################################################
-    const std::string descPrefix =
-        "##";  // e.g. ##D3D11_BUFFER_DESC::D3D11_BIND_CONSTANT_BUFFER::ModelViewProjectionConstantBuffer::mvp::float4x4
-
-    {
-        std::istringstream ss(shaderSource);
-
-        bool foundGraphicsInterfaceAndShaderTypePrefixAtLeastOnce = false;
-        bool foundGraphicsInterfaceAndShaderTypePrefix = false;
-        std::string curLine;
-
-        while(static_cast<bool>(std::getline(ss, curLine))) {
-            const bool isShaderPrefixLine = (curLine.contains(shaderPrefix));
-
-            if(isShaderPrefixLine) {
-                if(!foundGraphicsInterfaceAndShaderTypePrefix) {
-                    if(curLine.find(graphicsInterfaceAndShaderTypePrefix) == shaderPrefix.length()) {
-                        foundGraphicsInterfaceAndShaderTypePrefix = true;
-                        foundGraphicsInterfaceAndShaderTypePrefixAtLeastOnce = true;
-                    }
-                } else
-                    foundGraphicsInterfaceAndShaderTypePrefix = false;
-            } else if(foundGraphicsInterfaceAndShaderTypePrefix) {
-                const bool isDescPrefixLine = (curLine.find(descPrefix) == 0);
-
-                if(!isDescPrefixLine) {
-                    if(!result.source.empty()) result.source.push_back('\n');
-                    result.source.append(curLine);
-                } else {
-                    result.descs.push_back(curLine.substr(descPrefix.length()));
-                }
-            }
-        }
-
-        if(!foundGraphicsInterfaceAndShaderTypePrefixAtLeastOnce)
-            engine->showMessageError(
-                "Shader Error", UString::format("Missing \"%s\" in shader %s",
-                                                graphicsInterfaceAndShaderTypePrefix.c_str(), shaderSource.c_str()));
-    }
-
-    return result;
 }
 
 #endif

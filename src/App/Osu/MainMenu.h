@@ -64,6 +64,7 @@ class MainMenu final : public OsuScreen, public MouseListener {
     friend class MainButton;
     float button_sound_cooldown{0.f};
 
+    void drawBanner();
     void drawVersionInfo();
     void drawMainButton();
     void drawLogoImage(const McRect &mainButtonRect);

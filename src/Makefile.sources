@@ -170,13 +170,25 @@ neosu_SOURCES = \
 $(NULL)
 EXTRA_BINDEPS = \
 	assets/shaders/actual_flashlight_f.glsl \
+	assets/shaders/actual_flashlight_f.hlsl \
 	assets/shaders/actual_flashlight_v.glsl \
+	assets/shaders/actual_flashlight_v.hlsl \
 	assets/shaders/cursortrail_f.glsl \
+	assets/shaders/cursortrail_f.hlsl \
 	assets/shaders/cursortrail_v.glsl \
+	assets/shaders/cursortrail_v.hlsl \
+	assets/shaders/default_f.hlsl \
+	assets/shaders/default_v.hlsl \
 	assets/shaders/flashlight_f.glsl \
+	assets/shaders/flashlight_f.hlsl \
 	assets/shaders/flashlight_v.glsl \
+	assets/shaders/flashlight_v.hlsl \
 	assets/shaders/slider_f.glsl \
+	assets/shaders/slider_f.hlsl \
 	assets/shaders/slider_v.glsl \
+	assets/shaders/slider_v.hlsl \
 	assets/shaders/smoothclip_f.glsl \
+	assets/shaders/smoothclip_f.hlsl \
 	assets/shaders/smoothclip_v.glsl \
+	assets/shaders/smoothclip_v.hlsl \
 $(NULL)

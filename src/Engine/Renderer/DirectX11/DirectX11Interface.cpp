@@ -377,29 +377,36 @@ void DirectX11Interface::endScene() {
     // aka checkErrors()
 #ifdef MCENGINE_D3D11_CREATE_DEVICE_DEBUG
     {
-        ID3D11InfoQueue *debugInfoQueue;
-        auto hr = m_device->QueryInterface(__uuidof(ID3D11InfoQueue), (void **)&debugInfoQueue);
+        ID3D11Debug *d3dDebug = nullptr;
+        auto hr = m_device->QueryInterface(__uuidof(ID3D11Debug), (void **)&d3dDebug);
         if(SUCCEEDED(hr)) {
-            UINT64 message_count = debugInfoQueue->GetNumStoredMessages();
+            ID3D11InfoQueue *debugInfoQueue = nullptr;
+            hr = d3dDebug->QueryInterface(__uuidof(ID3D11InfoQueue), (void **)&debugInfoQueue);
+            if(SUCCEEDED(hr)) {
+                UINT64 message_count = debugInfoQueue->GetNumStoredMessages();
 
-            for(UINT64 i = 0; i < message_count; i++) {
-                SIZE_T message_size = 0;
-                debugInfoQueue->GetMessage(i, nullptr, &message_size);
+                for(UINT64 i = 0; i < message_count; i++) {
+                    SIZE_T message_size = 0;
+                    debugInfoQueue->GetMessage(i, nullptr, &message_size);
 
-                D3D11_MESSAGE *message = (D3D11_MESSAGE *)malloc(message_size + 1);
-                memset((void *)message, '\0', message_size + 1);
-                hr = debugInfoQueue->GetMessage(i, message, &message_size);
-                if(SUCCEEDED(hr))
-                    debugLog("DirectX11Debug: {:s}", message->pDescription);
-                else
-                    debugLog("DirectX Error: Couldn't debugInfoQueue->GetMessage() {:#x}", static_cast<uint32_t>(hr));
+                    D3D11_MESSAGE *message = (D3D11_MESSAGE *)malloc(message_size + 1);
+                    memset((void *)message, '\0', message_size + 1);
+                    hr = debugInfoQueue->GetMessage(i, message, &message_size);
+                    if(SUCCEEDED(hr))
+                        debugLog("DirectX11Debug: {:s}", message->pDescription);
+                    else
+                        debugLog("DirectX Error: Couldn't debugInfoQueue->GetMessage() {:#x}",
+                                 static_cast<uint32_t>(hr));
 
-                free(message);
-            }
+                    free(message);
+                }
 
-            debugInfoQueue->ClearStoredMessages();
+                debugInfoQueue->ClearStoredMessages();
+            } else
+                debugLog("DirectX Error: Couldn't m_device->QueryInterface( ID3D11InfoQueue ) {:#x}",
+                         static_cast<uint32_t>(hr));
         } else
-            debugLog("DirectX Error: Couldn't m_device->QueryInterface( ID3D11InfoQueue ) {:#x}",
+            debugLog("DirectX Error: Couldn't m_device->QueryInterface( ID3D11Debug ) {:#x}",
                      static_cast<uint32_t>(hr));
     }
 #endif

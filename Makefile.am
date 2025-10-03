@@ -1078,6 +1078,10 @@ neosu_LDFLAGS := \
 	$(EXTRA_WIN_LIBS) \
 	$(LDFLAGS_EXTRA)
 
+# make won't be able to track these if they change, because we use .incbin on them
+# so add them manually to tracking
+EXTRA_neosu_DEPENDENCIES := $(shell find $(CACERT_INCDIR) $(SHADERS_INCDIR) $(MISC_INCDIR) -maxdepth 1 -mindepth 1 -type f -exec printf '%s ' '{''}' ';')
+
 if WIN_PLATFORM
 # mimalloc new/delete override for windows
 neosu_SOURCES += $(MIMALLOC_OVERRIDE_DEP)
