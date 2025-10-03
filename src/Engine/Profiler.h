@@ -179,6 +179,8 @@ class ProfilerProfile {
     double sumTimes(ProfilerNode *node, int groupID);
 
    private:
+    void vprofToggleCB(float newValue);
+
     struct BUDGETGROUP {
         const char *name;
     };

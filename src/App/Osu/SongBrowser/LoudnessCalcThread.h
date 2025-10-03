@@ -48,6 +48,8 @@ class VolNormalization {
         });
     }
 
+    // convar callback
+    static void loudness_cb();
    private:
     static VolNormalization& get_instance();
     static VolNormalization* get_instance_ptr();

@@ -3,13 +3,12 @@
 #define CONVAR_H
 
 #include <atomic>
+#include <cassert>
 #include <string>
 #include <variant>
 #include <type_traits>
-#include <memory>
 
 #include "Delegate.h"
-#include "templates.h"
 #include "UString.h"
 
 #ifndef DEFINE_CONVARS
@@ -53,10 +52,11 @@ enum CvarFlags : uint8_t {
 };
 }
 
-class ConVarHandler;
-
 class ConVar {
+    // convenience for "tricking" clangd/intellisense into allowing us use a namespace in ConVarDefs.h
+#ifndef DEFINE_CONVARS
     friend class ConVarHandler;
+#endif
 
    public:
     enum class CONVAR_TYPE : uint8_t { CONVAR_TYPE_BOOL, CONVAR_TYPE_INT, CONVAR_TYPE_FLOAT, CONVAR_TYPE_STRING };
@@ -96,7 +96,7 @@ class ConVar {
             return CONVAR_TYPE::CONVAR_TYPE_STRING;
     }
 
-    static void addConVar(ConVar *);
+    void addConVar();
 
    public:
     static ConVarString typeToString(CONVAR_TYPE type);
@@ -107,7 +107,15 @@ class ConVar {
         this->sName = this->sDefaultValue = name;
         this->type = CONVAR_TYPE::CONVAR_TYPE_STRING;
         this->iFlags = cv::NOSAVE;
-        this->addConVar(this);
+        this->addConVar();
+    };
+
+    // command-only constructor
+    explicit ConVar(std::string_view name, uint8_t flags) {
+        this->sName = this->sDefaultValue = name;
+        this->type = CONVAR_TYPE::CONVAR_TYPE_STRING;
+        this->iFlags = cv::NOSAVE | flags;
+        this->addConVar();
     };
 
     // callback-only constructors (no value)
@@ -117,7 +125,7 @@ class ConVar {
                  std::is_invocable_v<Callback, float>
     {
         this->initCallback(name, flags, ""sv, callback);
-        this->addConVar(this);
+        this->addConVar();
     }
 
     template <typename Callback>
@@ -126,7 +134,7 @@ class ConVar {
                  std::is_invocable_v<Callback, float>
     {
         this->initCallback(name, flags, helpString, callback);
-        this->addConVar(this);
+        this->addConVar();
     }
 
     // value constructors handle all types uniformly
@@ -135,7 +143,7 @@ class ConVar {
         requires(!std::is_same_v<std::decay_t<T>, const char *>)
     {
         this->initValue(name, defaultValue, flags, helpString, nullptr);
-        this->addConVar(this);
+        this->addConVar();
     }
 
     template <typename T, typename Callback>
@@ -148,7 +156,7 @@ class ConVar {
                  std::is_invocable_v<Callback, float, float>)
     {
         this->initValue(name, defaultValue, flags, helpString, callback);
-        this->addConVar(this);
+        this->addConVar();
     }
 
     template <typename T, typename Callback>
@@ -160,14 +168,14 @@ class ConVar {
                  std::is_invocable_v<Callback, float, float>)
     {
         this->initValue(name, defaultValue, flags, ""sv, callback);
-        this->addConVar(this);
+        this->addConVar();
     }
 
     // const char* specializations for string convars
     explicit ConVar(std::string_view name, std::string_view defaultValue, uint8_t flags,
                     std::string_view helpString = ""sv) {
         this->initValue(name, defaultValue, flags, helpString, nullptr);
-        this->addConVar(this);
+        this->addConVar();
     }
 
     template <typename Callback>
@@ -179,7 +187,7 @@ class ConVar {
                  std::is_invocable_v<Callback, float, float>)
     {
         this->initValue(name, defaultValue, flags, helpString, callback);
-        this->addConVar(this);
+        this->addConVar();
     }
 
     template <typename Callback>
@@ -190,7 +198,7 @@ class ConVar {
                  std::is_invocable_v<Callback, float, float>)
     {
         this->initValue(name, defaultValue, flags, ""sv, callback);
-        this->addConVar(this);
+        this->addConVar();
     }
 
     // callbacks
@@ -289,12 +297,12 @@ class ConVar {
         }
     }
 
+    // shared callback, app-defined
+    static void setOnSetValueProtectedCallback(const NativeConVarCallback &callback);
+
    private:
     // invalidates replay, returns true if value change should be allowed
     [[nodiscard]] bool onSetValueGameplay(CvarEditor editor);
-
-    // prevents score submission
-    void onSetValueProtected(std::string_view oldValue, std::string_view newValue);
 
     // unified init for callback-only convars
     template <typename Callback>
@@ -384,10 +392,9 @@ class ConVar {
         }();
 
         // backup old values, for passing into callbacks
-        double oldDouble{0.0};
+        double oldDouble{this->getDouble()};
         ConVarString oldString;
         if(doCallback) {
-            oldDouble = this->getDouble();
             oldString = this->getString();
         }
 
@@ -412,9 +419,9 @@ class ConVar {
             }
         }
 
-        // prevent score submission if the cvar was protected
-        if(this->isProtected()) {
-            this->onSetValueProtected(oldString, newString);
+        // run protected value change cb
+        if(this->isProtected() && oldDouble != newDouble && likely(!ConVar::onSetValueProtectedCallback.isNull())) {
+            ConVar::onSetValueProtectedCallback();
         }
 
         if(doCallback) {
@@ -452,6 +459,9 @@ class ConVar {
     std::atomic<bool> hasServerValue{false};
 
    private:
+    // shared across all convars
+    static NativeConVarCallback onSetValueProtectedCallback;
+
     ConVarString sName;
     ConVarString sHelpString;
     double dDefaultValue{0.0};
@@ -477,49 +487,5 @@ class ConVar {
 
     bool bHasValue{false};
 };
-
-//*******************//
-//  Searching/Lists  //
-//*******************//
-
-class ConVarHandler {
-    NOCOPY_NOMOVE(ConVarHandler)
-   public:
-    static ConVarString flagsToString(uint8_t flags);
-
-   public:
-    ConVarHandler() = default;
-    ~ConVarHandler() = default;
-
-    [[nodiscard]] static forceinline const std::vector<ConVar *> &getConVarArray() {
-        return static_cast<const std::vector<ConVar *> &>(getConVarArray_int());
-    }
-    [[nodiscard]] static forceinline const sv_unordered_map<ConVar *> &getConVarMap() {
-        return static_cast<const sv_unordered_map<ConVar *> &>(getConVarMap_int());
-    }
-    [[nodiscard]] static forceinline const ConVar *getConVar(std::string_view name) {
-        return static_cast<const ConVar *>(getConVar_int(name));
-    }
-
-    [[nodiscard]] static forceinline size_t getNumConVars() { return getConVarArray().size(); }
-
-    [[nodiscard]] ConVar *getConVarByName(std::string_view name, bool warnIfNotFound = true) const;
-    [[nodiscard]] std::vector<ConVar *> getConVarByLetter(std::string_view letters) const;
-
-    [[nodiscard]] std::vector<ConVar *> getNonSubmittableCvars() const;
-    bool areAllCvarsSubmittable();
-
-    void resetServerCvars();
-    void resetSkinCvars();
-
-   private:
-    friend class ConVar;
-
-    [[nodiscard]] static std::vector<ConVar *> &getConVarArray_int();
-    [[nodiscard]] static sv_unordered_map<ConVar *> &getConVarMap_int();
-    [[nodiscard]] static ConVar *getConVar_int(std::string_view name);
-};
-
-extern std::unique_ptr<ConVarHandler> cvars;
 
 #endif

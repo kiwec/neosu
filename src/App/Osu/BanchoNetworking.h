@@ -1,7 +1,11 @@
 #pragma once
 // Copyright (c) 2023, kiwec, All rights reserved.
 
-#include "BanchoProtocol.h"
+#include "config.h"
+
+#include <string_view>
+
+struct Packet;
 
 #define NEOSU_DOMAIN "neosu.net"
 

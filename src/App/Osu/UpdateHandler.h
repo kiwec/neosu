@@ -17,7 +17,7 @@ class UpdateHandler {
         STATUS_ERROR,
     };
 
-    UpdateHandler() = default;
+    UpdateHandler();
     ~UpdateHandler() = default;
 
     void checkForUpdates(bool force_update);
@@ -27,6 +27,9 @@ class UpdateHandler {
 
     // release stream management
     void onBleedingEdgeChanged(float oldVal, float newVal);
+
+    // convar command callback
+    void updateCallback();
 
    private:
     // async operation chain

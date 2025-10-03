@@ -13,8 +13,9 @@
 #include "Database.h"
 #include "Downloader.h"
 #include "Engine.h"
-#include "Keyboard.h"
+#include "KeyBindings.h"
 #include "Lobby.h"
+#include "Logging.h"
 #include "MainMenu.h"
 #include "ModSelector.h"
 #include "NotificationOverlay.h"
@@ -275,3 +276,14 @@ void SpectatorScreen::onKeyDown(KeyboardEvent &key) {
 }
 
 void SpectatorScreen::onStopSpectatingClicked() { stop_spectating(); }
+
+void spectate_by_username(std::string_view username) {
+    auto user = BANCHO::User::find_user(UString{username.data(), static_cast<int>(username.length())});
+    if(user == nullptr) {
+        debugLog("Couldn't find user \"{:s}\"!", username);
+        return;
+    }
+
+    debugLog("Spectating {:s} (user {:d})...", username, user->user_id);
+    start_spectating(user->user_id);
+}

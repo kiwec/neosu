@@ -3,14 +3,14 @@
 
 #include <algorithm>
 #include <fstream>
-#include <iostream>
 #include <utility>
 
 #include "SString.h"
 #include "crypto.h"
 #include "AnimationHandler.h"
 #include "Bancho.h"
-#include "BanchoNetworking.h"
+#include "ConVar.h"
+#include "ConVarHandler.h"
 #include "CBaseUICheckbox.h"
 #include "CBaseUIContainer.h"
 #include "CBaseUILabel.h"
@@ -45,7 +45,6 @@
 #include "UIButton.h"
 #include "UICheckbox.h"
 #include "UIContextMenu.h"
-#include "UIModSelectorModButton.h"
 #include "UISearchOverlay.h"
 #include "UISlider.h"
 #include "Logging.h"
@@ -423,6 +422,13 @@ OptionsMenu::OptionsMenu() : ScreenBackable() {
 
     // convar callbacks
     cv::skin_use_skin_hitsounds.setCallback(SA::MakeDelegate<&OptionsMenu::onUseSkinsSoundSamplesChange>(this));
+
+    cv::options_slider_quality.setCallback([](float newValue) -> void {
+        // wrapper callback
+        float value = std::lerp(1.0f, 2.5f, 1.0f - newValue);
+        cv::slider_curve_points_separation.setValue(value);
+    });
+
     cv::options_high_quality_sliders.setCallback(
         SA::MakeDelegate<&OptionsMenu::onHighQualitySlidersConVarChange>(this));
 
@@ -727,6 +733,7 @@ OptionsMenu::OptionsMenu() : ScreenBackable() {
     this->addCheckbox("Higher Quality Sliders (!)", "Disable this if your fps drop too low while sliders are visible.",
                       &cv::options_high_quality_sliders)
         ->setChangeCallback(SA::MakeDelegate<&OptionsMenu::onHighQualitySlidersCheckboxChange>(this));
+
     this->sliderQualitySlider = this->addSlider("Slider Quality", 0.0f, 1.0f, &cv::options_slider_quality);
     this->sliderQualitySlider->setChangeCallback(SA::MakeDelegate<&OptionsMenu::onSliderChangeSliderQuality>(this));
 

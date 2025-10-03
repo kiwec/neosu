@@ -97,7 +97,8 @@ neosu_SOURCES = \
 	src/Engine/AsyncIOHandler.cpp \
 	src/Engine/ByteBufferedFile.cpp \
 	src/Engine/Camera.cpp \
-	src/Engine/ConVar.cpp \
+	src/Engine/ConVars/ConVar.cpp \
+	src/Engine/ConVars/ConVarHandler.cpp \
 	src/Engine/Console.cpp \
 	src/Engine/DiscordInterface.cpp \
 	src/Engine/Engine.cpp \

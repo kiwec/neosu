@@ -77,9 +77,20 @@
 
 Osu *osu = nullptr;
 
+void Osu::globalOnSetValueProtectedCallback() {
+    const auto &map_iface = this->getMapInterface();
+    if(likely(map_iface)) {
+        map_iface->is_submittable = false;
+    }
+}
+
 Osu::Osu() {
     osu = this;
     srand(crypto::rng::get_rand<u32>());
+
+    // prevents score submission when/if a protected convar is changed during gameplay
+    // will be removed in destructor
+    ConVar::setOnSetValueProtectedCallback(SA::MakeDelegate<&Osu::globalOnSetValueProtectedCallback>(this));
 
     if(Env::cfg(BUILD::DEBUG)) {
         BanchoState::neosu_version = UString::fmt("dev-{}", cv::build_timestamp.getVal<u64>());
@@ -225,7 +236,6 @@ Osu::Osu() {
     cv::mod_halftime_dummy.setCallback(
         [] { cv::speed_override.setValue(cv::mod_halftime_dummy.getBool() ? "0.75" : "-1.0"); });
     cv::draw_songbrowser_thumbnails.setCallback(SA::MakeDelegate<&Osu::onThumbnailsToggle>(this));
-    cv::bleedingedge.setCallback(SA::MakeDelegate<&UpdateHandler::onBleedingEdgeChanged>(this->updateHandler.get()));
 
     // load global resources
     const int baseDPI = 96;
@@ -358,6 +368,9 @@ Osu::~Osu() {
     BANCHO::Net::cleanup_networking();
 
     this->destroyAllScreensInOrder();
+
+    // remove the static callback
+    ConVar::setOnSetValueProtectedCallback({});
 }
 
 void Osu::draw() {

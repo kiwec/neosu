@@ -23,46 +23,41 @@ struct dummyGraphics {
 };
 dummyGraphics *g;
 
-struct dummySoundEngine {
-    inline void setMasterVolume(float /*volume*/) { ; }
+struct dummyDatabase {
+    inline void save() { ; }
 };
-dummySoundEngine *soundEngine;
+dummyDatabase *db;
 
 // struct dummyEnv {
 //     inline void setFullscreenWindowedBorderless(bool /**/) { ; }
 // };
 // dummyEnv *env{};
 namespace Environment {
-inline void setThreadPriority(float /**/) { ; }
+extern void setThreadPriority(float /**/);
 }  // namespace Environment
+
+namespace ConVarHandler::ConVarBuiltins {
+extern void find(std::string_view args);
+extern void help(std::string_view args);
+extern void listcommands(void);
+extern void dumpcommands(void);
+extern void echo(std::string_view args);
+}  // namespace ConVarHandler::ConVarBuiltins
 
 extern void _borderless();
 extern void _center();
 extern void _dpiinfo();
-extern void _dumpcommands();
-extern void _echo();
 extern void _errortest();
-extern void _exec();
-extern void _find();
 extern void _focus();
-extern void _help();
-extern void _listcommands();
 extern void _maximize();
 extern void _minimize();
 extern void _printsize();
 extern void _toggleresizable();
 extern void _restart();
-extern void _save();
 extern void _update();
 
-extern void spectate_by_username(std::string_view username);
-extern void loudness_cb(std::string_view, std::string_view);
 extern void _osuOptionsSliderQualityWrapper(float);
-namespace RichPresence {
-extern void onRichPresenceChange(std::string_view, std::string_view);
-}
-extern void _osu_songbrowser_search_hardcoded_filter(std::string_view, std::string_view);
-extern void _vprof(float);
+
 #endif
 
 // ########################################################################################################################
@@ -70,21 +65,28 @@ extern void _vprof(float);
 // ########################################################################################################################
 
 #define _CV(name) name
+// helper to create an SA delegate from a freestanding/static function
+#define CFUNC(func) SA::delegate<decltype(func)>::template create<func>()
 
 // defined and included at the end of ConVar.cpp
 #if defined(DEFINE_CONVARS)
 #undef CONVAR
-#undef CFUNC
 #define CONVAR(name, ...) ConVar _CV(name)(__VA_ARGS__)
-#define CFUNC(func) SA::delegate<decltype(func)>::template create<func>()
+
 #include "KeyBindings.h"
 #include "BanchoNetworking.h"  // defines some things we need like OSU_VERSION_DATEONLY
 namespace SliderRenderer {
 extern void onUniformConfigChanged();
 }
+namespace VolNormalization {
+extern void loudness_cb();
+}
+namespace RichPresence {
+extern void onRichPresenceChange(float, float);
+}
+extern void spectate_by_username(std::string_view username);
 #else
 #define CONVAR(name, ...) extern ConVar _CV(name)
-#define CFUNC(func)
 #endif
 
 class ConVar;
@@ -96,22 +98,22 @@ CONVAR(borderless, "borderless"sv, CLIENT, CFUNC(_borderless));
 CONVAR(center, "center"sv, CLIENT, CFUNC(_center));
 CONVAR(clear, "clear"sv);
 CONVAR(dpiinfo, "dpiinfo"sv, CLIENT, CFUNC(_dpiinfo));
-CONVAR(dumpcommands, "dumpcommands"sv, CLIENT, CFUNC(_dumpcommands));
+CONVAR(dumpcommands, "dumpcommands"sv, CLIENT, CFUNC(ConVarHandler::ConVarBuiltins::dumpcommands));
 CONVAR(errortest, "errortest"sv, CLIENT, CFUNC(_errortest));
-CONVAR(exec, "exec"sv, CLIENT, CFUNC(_exec));
-CONVAR(find, "find"sv, CLIENT, CFUNC(_find));
+CONVAR(exec, "exec"sv, CLIENT); // set in ConsoleBox
+CONVAR(find, "find"sv, CLIENT, CFUNC(ConVarHandler::ConVarBuiltins::find));
 CONVAR(focus, "focus"sv, CLIENT, CFUNC(_focus));
-CONVAR(help, "help"sv, CLIENT, CFUNC(_help));
-CONVAR(listcommands, "listcommands"sv, CLIENT, CFUNC(_listcommands));
+CONVAR(help, "help"sv, CLIENT, CFUNC(ConVarHandler::ConVarBuiltins::help));
+CONVAR(listcommands, "listcommands"sv, CLIENT, CFUNC(ConVarHandler::ConVarBuiltins::listcommands));
 CONVAR(maximize, "maximize"sv, CLIENT, CFUNC(_maximize));
 CONVAR(minimize, "minimize"sv, CLIENT, CFUNC(_minimize));
 CONVAR(printsize, "printsize"sv, CLIENT, CFUNC(_printsize));
 CONVAR(resizable_toggle, "resizable_toggle"sv, CLIENT, CFUNC(_toggleresizable));
 CONVAR(restart, "restart"sv, CLIENT, CFUNC(_restart));
-CONVAR(save, "save"sv, CLIENT, CFUNC(_save));
+CONVAR(save, "save"sv, CLIENT);  // database save, set in Database
 CONVAR(showconsolebox, "showconsolebox"sv);
 CONVAR(snd_restart, "snd_restart"sv);
-CONVAR(update, "update"sv, CLIENT, CFUNC(_update));
+CONVAR(update, "update"sv, CLIENT);
 CONVAR(complete_oauth, "complete_oauth"sv, CLIENT, CFUNC(BANCHO::Net::complete_oauth));
 
 // Server-callable commands
@@ -120,7 +122,7 @@ CONVAR(shutdown, "shutdown"sv, CLIENT | SERVER, []() -> void { engine ? engine->
 CONVAR(spectate, "spectate"sv, CLIENT | SERVER, CFUNC(spectate_by_username));
 
 // Server and skin-callable commands
-CONVAR(echo, "echo"sv, CLIENT | SKINS | SERVER, CFUNC(_echo));
+CONVAR(echo, "echo"sv, CLIENT | SKINS | SERVER, CFUNC(ConVarHandler::ConVarBuiltins::echo));
 
 }  // namespace cmd
 
@@ -128,7 +130,7 @@ CONVAR(echo, "echo"sv, CLIENT | SKINS | SERVER, CFUNC(_echo));
 CONVAR(asio_buffer_size, "asio_buffer_size"sv, -1, CLIENT,
        "buffer size in samples (usually 44100 samples per second)"sv);
 CONVAR(loudness_calc_threads, "loudness_calc_threads"sv, 0.f, CLIENT,
-       "0 = autodetect. do not use too many threads or your PC will explode"sv, CFUNC(loudness_cb));
+       "0 = autodetect. do not use too many threads or your PC will explode"sv, CFUNC(VolNormalization::loudness_cb));
 CONVAR(loudness_fallback, "loudness_fallback"sv, -12.f, CLIENT);
 CONVAR(loudness_target, "loudness_target"sv, -14.f, CLIENT);
 CONVAR(sound_panning, "sound_panning"sv, true, CLIENT | SKINS | SERVER,
@@ -165,8 +167,6 @@ CONVAR(snd_soloud_hardcoded_offset, "snd_soloud_hardcoded_offset"sv, -18, CLIENT
 CONVAR(snd_soloud_prefer_ffmpeg, "snd_soloud_prefer_ffmpeg"sv, 0, CLIENT,
        "(0=no, 1=streams, 2=streams+samples) prioritize using ffmpeg as a decoder (if available) over other decoder "
        "backends"sv);
-CONVAR(volume, "volume"sv, 1.0f, CLIENT,
-       [](float newVol) -> void { soundEngine ? soundEngine->setMasterVolume(newVol) : (void)0; });
 CONVAR(volume_change_interval, "volume_change_interval"sv, 0.05f, CLIENT | SKINS | SERVER);
 CONVAR(volume_effects, "volume_effects"sv, 1.0f, CLIENT | SKINS | SERVER);
 CONVAR(volume_master, "volume_master"sv, 1.0f, CLIENT | SKINS | SERVER);
@@ -234,7 +234,7 @@ CONVAR(slider_debug_draw, "slider_debug_draw"sv, false, CLIENT | SERVER | PROTEC
 CONVAR(slider_debug_draw_square_vao, "slider_debug_draw_square_vao"sv, false, CLIENT | SERVER | PROTECTED | GAMEPLAY,
        "generate square vaos and nothing else (no rt, no shader) (requires disabling legacy slider renderer)"sv);
 CONVAR(slider_debug_wireframe, "slider_debug_wireframe"sv, false, CLIENT | SERVER | PROTECTED | GAMEPLAY, "unused"sv);
-CONVAR(vprof, "vprof"sv, false, CLIENT | SERVER, "enables/disables the visual profiler"sv, CFUNC(_vprof));
+CONVAR(vprof, "vprof"sv, false, CLIENT | SERVER, "enables/disables the visual profiler"sv);
 CONVAR(vprof_display_mode, "vprof_display_mode"sv, 0, CLIENT | SERVER,
        "which info blade to show on the top right (gpu/engine/app/etc. info), use CTRL + TAB to "
        "cycle through, 0 = disabled"sv);
@@ -373,8 +373,7 @@ CONVAR(prefer_cjk, "prefer_cjk"sv, false, CLIENT, "prefer metadata in original l
 CONVAR(songbrowser_search_delay, "songbrowser_search_delay"sv, 0.2f, CLIENT,
        "delay until search update when entering text"sv);
 CONVAR(songbrowser_search_hardcoded_filter, "songbrowser_search_hardcoded_filter"sv, ""sv, CLIENT,
-       "allows forcing the specified search filter to be active all the time"sv,
-       CFUNC(_osu_songbrowser_search_hardcoded_filter));
+       "allows forcing the specified search filter to be active all the time"sv);
 
 // Song browser (maybe useful to servers)
 CONVAR(songbrowser_scorebrowser_enabled, "songbrowser_scorebrowser_enabled"sv, true, CLIENT | SKINS | SERVER);
@@ -1096,8 +1095,7 @@ CONVAR(options_save_on_back, "options_save_on_back"sv, true, CLIENT | SKINS | SE
 CONVAR(options_slider_preview_use_legacy_renderer, "options_slider_preview_use_legacy_renderer"sv, false, CLIENT,
        "apparently newer AMD drivers with old gpus are crashing here with the legacy renderer? was just me being lazy "
        "anyway, so now there is a vao render path as it should be"sv);
-CONVAR(options_slider_quality, "options_slider_quality"sv, 0.0f, CLIENT | SKINS | SERVER,
-       CFUNC(_osuOptionsSliderQualityWrapper));
+CONVAR(options_slider_quality, "options_slider_quality"sv, 0.0f, CLIENT | SKINS | SERVER);
 CONVAR(pause_anim_duration, "pause_anim_duration"sv, 0.15f, CLIENT | SKINS | SERVER);
 CONVAR(pause_dim_alpha, "pause_dim_alpha"sv, 0.58f, CLIENT | SKINS | SERVER);
 CONVAR(pause_dim_background, "pause_dim_background"sv, true, CLIENT | SKINS | SERVER);

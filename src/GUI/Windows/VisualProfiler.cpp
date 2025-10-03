@@ -5,6 +5,7 @@
 
 #include "AnimationHandler.h"
 #include "ConVar.h"
+#include "ConVarHandler.h"
 #include "Engine.h"
 #include "Environment.h"
 #include "Keyboard.h"
@@ -96,7 +97,7 @@ void VisualProfiler::draw() {
                     const double time = engine->getTime();
                     const vec2 envMousePos = env->getMousePos();
 
-                    addTextLine(UString::fmt("ConVars: {:d}", cvars->getConVarArray().size()), textFont,
+                    addTextLine(UString::fmt("ConVars: {:d}", cvars->getNumConVars()), textFont,
                                 this->textLines);
                     addTextLine(UString::fmt("Monitor: [{:d}] of {:d}", env->getMonitor(), env->getMonitors().size()),
                                 textFont, this->textLines);

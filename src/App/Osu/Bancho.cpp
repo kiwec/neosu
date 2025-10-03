@@ -25,6 +25,7 @@
 #include "BeatmapInterface.h"
 #include "Chat.h"
 #include "ConVar.h"
+#include "ConVarHandler.h"
 #include "Engine.h"
 #include "Lobby.h"
 #include "crypto.h"
@@ -753,8 +754,9 @@ void BanchoState::handle_packet(Packet &packet) {
 
             auto file_path = map->getFilePath();
 
-            DatabaseBeatmap::MapFileReadDoneCallback callback = [url, md5, file_path, func = __FUNCTION__](std::vector<u8> osu_file) -> void {
-                if (osu_file.empty()) {
+            DatabaseBeatmap::MapFileReadDoneCallback callback =
+                [url, md5, file_path, func = __FUNCTION__](std::vector<u8> osu_file) -> void {
+                if(osu_file.empty()) {
                     debugLogLambda("Failed to get map file data for md5: {} path: {}", md5.string(), file_path);
                     return;
                 }
@@ -778,7 +780,7 @@ void BanchoState::handle_packet(Packet &packet) {
             };
 
             // run async callback
-            if (!map->getMapFileAsync(std::move(callback))) {
+            if(!map->getMapFileAsync(std::move(callback))) {
                 debugLog("Immediately failed to get map file data for md5: {} path: {}", md5.string(), file_path);
             }
 

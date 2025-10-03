@@ -376,6 +376,13 @@ SongBrowser::SongBrowser()  // NOLINT(cert-msc51-cpp, cert-msc32-c)
          {.type = SORT::SORT_TITLE, .name = "By Title", .comparator = sort_by_title},
          {.type = SORT::SORT_RANKACHIEVED, .name = "By Rank Achieved", .comparator = sort_by_grade}}};
 
+    // convar callback
+    cv::songbrowser_search_hardcoded_filter.setCallback(
+        [](std::string_view /* oldValue */, std::string_view newValue) -> void {
+            if(newValue.length() == 1 && SString::is_wspace_only(newValue))
+                cv::songbrowser_search_hardcoded_filter.setValue("");
+        });
+
     // vars
     this->bSongBrowserRightClickScrollCheck = false;
     this->bSongBrowserRightClickScrolling = false;

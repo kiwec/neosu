@@ -4,14 +4,10 @@
 #include "AsyncIOHandler.h"
 #include "SString.h"
 #include "ConVar.h"
+#include "ConVarHandler.h"
 #include "Engine.h"
 #include "File.h"
 #include "Logging.h"
-
-Console::Console() {
-    // exec autoexec
-    Console::execConfigFile("autoexec.cfg");
-}
 
 void Console::processCommand(std::string command, bool fromFile) {
     if(command.length() < 1) return;
@@ -96,9 +92,9 @@ void Console::processCommand(std::string command, bool fromFile) {
     }
 }
 
-void Console::execConfigFile(std::string filename) {
+void Console::execConfigFile(std::string_view filename_view) {
+    std::string filename = fmt::format(MCENGINE_CFG_PATH "/{}", filename_view);
     // handle extension
-    filename.insert(0, MCENGINE_CFG_PATH "/");
     if(filename.find(".cfg", (filename.length() - 4), filename.length()) == std::string::npos) filename.append(".cfg");
 
     bool needs_write = false;

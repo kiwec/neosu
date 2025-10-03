@@ -6,8 +6,5 @@
 class Console {
    public:
     static void processCommand(std::string command, bool fromFile = false);
-    static void execConfigFile(std::string filename);
-
-   public:
-    Console();
+    static void execConfigFile(std::string_view filename_view);
 };

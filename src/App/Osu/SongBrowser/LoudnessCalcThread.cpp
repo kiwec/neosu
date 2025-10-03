@@ -3,6 +3,7 @@
 
 #include "ConVar.h"
 #include "DatabaseBeatmap.h"
+#include "Database.h"
 #include "Engine.h"
 #include "Sound.h"
 #include "SoundEngine.h"
@@ -132,6 +133,15 @@ struct VolNormalization::LoudnessCalcThread {
     LoudnessCalcThread(std::vector<DatabaseBeatmap *> maps_to_calc) { (void)maps_to_calc; }
 #endif
 };
+
+void VolNormalization::loudness_cb() {
+    // Restart loudness calc.
+    VolNormalization::abort();
+    if(!Env::cfg(AUD::BASS) || soundEngine->getTypeId() != SoundEngine::BASS) return;  // TODO
+    if(db && cv::normalize_loudness.getBool()) {
+        VolNormalization::start_calc(db->loudness_to_calc);
+    }
+}
 
 u32 VolNormalization::get_computed_instance() {
     if(!Env::cfg(AUD::BASS) || soundEngine->getTypeId() != SoundEngine::BASS) return 0;  // TODO

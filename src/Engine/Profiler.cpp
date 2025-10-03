@@ -1,6 +1,8 @@
 // Copyright (c) 2020, PG, All rights reserved.
 #include "Profiler.h"
 
+#include "ConVar.h"
+#include "MakeDelegateWrapper.h"
 #include "Engine.h"
 #include "Timing.h"
 #include "UString.h"
@@ -30,6 +32,8 @@ ProfilerProfile::ProfilerProfile(bool manualStartViaMain) : root("Root", VPROF_B
     this->groupNameToID(VPROF_BUDGETGROUP_UPDATE);
     this->groupNameToID(VPROF_BUDGETGROUP_DRAW);
     this->groupNameToID(VPROF_BUDGETGROUP_DRAW_SWAPBUFFERS);
+
+    cv::vprof.setCallback(SA::MakeDelegate<&ProfilerProfile::vprofToggleCB>(this));
 }
 
 double ProfilerProfile::sumTimes(int groupID) { return this->sumTimes(&this->root, groupID); }
@@ -57,6 +61,17 @@ double ProfilerProfile::sumTimes(ProfilerNode *node, int groupID) {
     }
 
     return sum;
+}
+
+void ProfilerProfile::vprofToggleCB(float newValue) {
+    const bool enable = !!static_cast<int>(newValue);
+
+    if(enable != this->isEnabled()) {
+        if(enable)
+            this->start();
+        else
+            this->stop();
+    }
 }
 
 int ProfilerProfile::groupNameToID(const char *group) {

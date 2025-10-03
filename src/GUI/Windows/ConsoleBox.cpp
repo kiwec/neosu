@@ -9,6 +9,7 @@
 #include "CBaseUIScrollView.h"
 #include "CBaseUITextbox.h"
 #include "ConVar.h"
+#include "ConVarHandler.h"
 #include "Console.h"
 #include "Engine.h"
 #include "Logging.h"
@@ -99,6 +100,9 @@ class ConsoleBoxSuggestionButton : public CBaseUIButton {
 };
 
 ConsoleBox::ConsoleBox() : CBaseUIElement(0, 0, 0, 0, "") {
+    // setup convar callback
+    cv::cmd::exec.setCallback(CFUNC(Console::execConfigFile));
+
     const float dpiScale = env->getDPIScale();
 
     McFont *font = resourceManager->getFont("FONT_DEFAULT");
@@ -545,8 +549,6 @@ void ConsoleBox::processCommand(const std::string &command) {
 
     Console::processCommand(command);
 }
-
-void ConsoleBox::execConfigFile(std::string filename) { Console::execConfigFile(std::move(filename)); }
 
 bool ConsoleBox::isBusy() {
     return (this->textbox->isBusy() || this->suggestion->isBusy()) && this->textbox->isVisible();

@@ -27,7 +27,6 @@ class ConsoleBox : public CBaseUIElement {
     void onResolutionChange(vec2 newResolution);
 
     void processCommand(const std::string &command);
-    void execConfigFile(std::string filename);
 
     // set
     void setRequireShiftToActivate(bool requireShiftToActivate) {

@@ -314,6 +314,9 @@ void Database::destroyLoader() {
 }
 
 Database::Database() {
+    // convar callback
+    cv::cmd::save.setCallback(SA::MakeDelegate<&Database::save>(this));
+
     // vars
     this->importTimer = new Timer();
     this->bIsFirstLoad = true;

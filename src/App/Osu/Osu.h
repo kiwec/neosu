@@ -240,6 +240,7 @@ class Osu final : public MouseListener, public KeyboardListener {
     void setupSoloud();
     // callback
     inline void preferCJKCallback(float newValue) { this->bPreferCJK = !!static_cast<int>(newValue); }
+    void globalOnSetValueProtectedCallback();
 
     // NOTE: unique_ptrs are destroyed in reverse order of declaration in header
 

@@ -35,3 +35,6 @@ class SpectatorScreen final : public OsuScreen {
 
 void start_spectating(i32 user_id);
 void stop_spectating();
+
+// convar callback
+void spectate_by_username(std::string_view username);

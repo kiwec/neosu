@@ -1,170 +1,23 @@
-// Copyright (c) 2011, PG, All rights reserved.
+// Copyright (c) 2011, PG & 2025, WH & 2025, kiwec, All rights reserved.
+#include "ConVarHandler.h"
 #include "ConVar.h"
 
 #include "AsyncIOHandler.h"
-#include "Bancho.h"
-#include "BanchoUsers.h"
-#include "BeatmapInterface.h"
-#include "CBaseUILabel.h"
-#include "Console.h"
-#include "Database.h"
-#include "Engine.h"
-#include "File.h"
-#include "ModSelector.h"
-#include "Osu.h"
-#include "Profiler.h"
-#include "RichPresence.h"
-#include "SongBrowser/LoudnessCalcThread.h"
-#include "SoundEngine.h"
-#include "SString.h"
-#include "SpectatorScreen.h"
-#include "UpdateHandler.h"
 #include "Logging.h"
+#include "Engine.h"
+#include "SString.h"
+
+// TODO: remove the need for this here
+#include "Osu.h"
 
 #include "misc_bin.h"
 
 #include "fmt/chrono.h"
 
 #include <algorithm>
+#include <mutex>
 #include <unordered_set>
-
-void ConVar::addConVar(ConVar *c) {
-    const std::string_view cname_str = c->getName();
-
-    // osu_ prefix is deprecated.
-    // If you really need it, you'll also need to edit Console::execConfigFile to whitelist it there.
-    assert(!(cname_str.starts_with("osu_") && !cname_str.starts_with("osu_folder")) &&
-           "osu_ ConVar prefix is deprecated.");
-
-    auto &convar_map = ConVarHandler::getConVarMap_int();
-
-    // No duplicate ConVar names allowed
-    assert(!convar_map.contains(cname_str) && "no duplicate ConVar names allowed.");
-
-    convar_map.emplace(cname_str, c);
-    ConVarHandler::getConVarArray_int().push_back(c);
-}
-
-ConVarString ConVar::getFancyDefaultValue() {
-    switch(this->getType()) {
-        case ConVar::CONVAR_TYPE::CONVAR_TYPE_BOOL:
-            return this->dDefaultValue == 0 ? "false" : "true";
-        case ConVar::CONVAR_TYPE::CONVAR_TYPE_INT:
-            return std::to_string((int)this->dDefaultValue);
-        case ConVar::CONVAR_TYPE::CONVAR_TYPE_FLOAT:
-            return std::to_string(this->dDefaultValue);
-        case ConVar::CONVAR_TYPE::CONVAR_TYPE_STRING: {
-            ConVarString out = "\"";
-            out.append(this->sDefaultValue);
-            out.append("\"");
-            return out;
-        }
-    }
-
-    return "unreachable";
-}
-
-ConVarString ConVar::typeToString(CONVAR_TYPE type) {
-    switch(type) {
-        case ConVar::CONVAR_TYPE::CONVAR_TYPE_BOOL:
-            return "bool";
-        case ConVar::CONVAR_TYPE::CONVAR_TYPE_INT:
-            return "int";
-        case ConVar::CONVAR_TYPE::CONVAR_TYPE_FLOAT:
-            return "float";
-        case ConVar::CONVAR_TYPE::CONVAR_TYPE_STRING:
-            return "string";
-    }
-
-    return "";
-}
-
-void ConVar::exec() {
-    if(auto *cb = std::get_if<NativeConVarCallback>(&this->callback)) (*cb)();
-}
-
-void ConVar::execArgs(std::string_view args) {
-    if(auto *cb = std::get_if<NativeConVarCallbackArgs>(&this->callback)) (*cb)(args);
-}
-
-void ConVar::execFloat(float args) {
-    if(auto *cb = std::get_if<NativeConVarCallbackFloat>(&this->callback)) (*cb)(args);
-}
-
-double ConVar::getDouble() const {
-    if(this->isFlagSet(cv::SERVER) && this->hasServerValue.load(std::memory_order_acquire)) {
-        return this->dServerValue.load(std::memory_order_acquire);
-    }
-
-    if(this->isFlagSet(cv::SKINS) && this->hasSkinValue.load(std::memory_order_acquire)) {
-        return this->dSkinValue.load(std::memory_order_acquire);
-    }
-
-    if(this->isProtected() && BanchoState::is_in_a_multi_room()) {
-        return this->dDefaultValue;
-    }
-
-    return this->dClientValue.load(std::memory_order_acquire);
-}
-
-const ConVarString &ConVar::getString() const {
-    if(this->isFlagSet(cv::SERVER) && this->hasServerValue.load(std::memory_order_acquire)) {
-        return this->sServerValue;
-    }
-
-    if(this->isFlagSet(cv::SKINS) && this->hasSkinValue.load(std::memory_order_acquire)) {
-        return this->sSkinValue;
-    }
-
-    if(this->isProtected() && BanchoState::is_in_a_multi_room()) {
-        return this->sDefaultValue;
-    }
-
-    return this->sClientValue;
-}
-
-void ConVar::setDefaultDouble(double defaultValue) {
-    this->dDefaultValue = defaultValue;
-    this->sDefaultValue = fmt::format("{:g}", defaultValue);
-}
-
-void ConVar::setDefaultString(std::string_view defaultValue) {
-    this->sDefaultValue = defaultValue;
-
-    // also try to parse default float from the default string
-    const double f = std::strtod(this->sDefaultValue.c_str(), nullptr);
-    if(f != 0.0) {
-        this->dDefaultValue = f;
-    }
-}
-
-bool ConVar::onSetValueGameplay(CvarEditor editor) {
-    if(!osu) return true;  // osu may have been destroyed while shutting down
-    // Only SERVER can edit GAMEPLAY cvars during multiplayer matches
-    if(BanchoState::is_playing_a_multi_map() && editor != CvarEditor::SERVER) {
-        debugLog("Can't edit {} while in a multiplayer match.", this->sName);
-        return false;
-    }
-
-    // Regardless of the editor, changing GAMEPLAY cvars in the middle of a map
-    // will result in an invalid replay. Set it as cheated so the score isn't saved.
-    if(osu->isInPlayMode()) {
-        debugLog("{} affects gameplay: won't submit score.", this->sName);
-    }
-    osu->getScore()->setCheated();
-
-    return true;
-}
-
-void ConVar::onSetValueProtected(std::string_view oldValue, std::string_view newValue) {
-    if(!osu) return;
-    if(oldValue == newValue) return;
-    osu->getMapInterface()->is_submittable = false;
-}
-
-//********************************//
-//  ConVarHandler Implementation  //
-//********************************//
+#include <atomic>
 
 // singleton init
 std::unique_ptr<ConVarHandler> cvars{std::make_unique<ConVarHandler>()};
@@ -224,7 +77,7 @@ std::vector<ConVar *> ConVarHandler::getConVarByLetter(std::string_view letters)
     {
         if(letters.length() < 1) return matchingConVars;
 
-        const std::vector<ConVar *> &convars = this->getConVarArray();
+        const std::vector<ConVar *> &convars = ConVarHandler::getConVarArray();
 
         // first try matching exactly
         for(auto convar : convars) {
@@ -338,7 +191,15 @@ void ConVarHandler::resetSkinCvars() {
 //	ConVarHandler ConCommands  //
 //*****************************//
 
-static void _find(std::string_view args) {
+struct ConVarHandler::ConVarBuiltins {
+    static void find(std::string_view args);
+    static void help(std::string_view args);
+    static void listcommands(void);
+    static void dumpcommands(void);
+    static void echo(std::string_view args);
+};
+
+void ConVarHandler::ConVarBuiltins::find(std::string_view args) {
     if(args.length() < 1) {
         Logger::logRaw("Usage:  find <string>");
         return;
@@ -377,7 +238,7 @@ static void _find(std::string_view args) {
     Logger::logRaw("----------------------------------------------");
 }
 
-static void _help(std::string_view args) {
+void ConVarHandler::ConVarBuiltins::help(std::string_view args) {
     ConVarString trimmedArgs{args};
     SString::trim_inplace(trimmedArgs);
 
@@ -427,7 +288,7 @@ static void _help(std::string_view args) {
     Logger::logRaw("{:s}", thelog);
 }
 
-static void _listcommands(void) {
+void ConVarHandler::ConVarBuiltins::listcommands(void) {
     Logger::logRaw("----------------------------------------------");
     {
         std::vector<ConVar *> convars = cvars->getConVarArray();
@@ -461,7 +322,7 @@ static void _listcommands(void) {
     Logger::logRaw("----------------------------------------------");
 }
 
-static void _dumpcommands(void) {
+void ConVarHandler::ConVarBuiltins::dumpcommands(void) {
     // in assets/misc/convar_template.html
     ConVarString html_template{reinterpret_cast<const char *>(convar_template),
                                static_cast<size_t>(convar_template_size())};
@@ -509,57 +370,12 @@ static void _dumpcommands(void) {
     });
 }
 
-void _exec(std::string_view args) { Console::execConfigFile(std::string{args.data(), args.length()}); }
-
-void _echo(std::string_view args) {
+void ConVarHandler::ConVarBuiltins::echo(std::string_view args) {
     if(args.length() > 0) {
         Logger::logRaw("{:s}", args);
     }
 }
 
-void _vprof(float newValue) {
-    const bool enable = !!static_cast<int>(newValue);
-
-    if(enable != g_profCurrentProfile.isEnabled()) {
-        if(enable)
-            g_profCurrentProfile.start();
-        else
-            g_profCurrentProfile.stop();
-    }
-}
-
-void _osuOptionsSliderQualityWrapper(float newValue) {
-    float value = std::lerp(1.0f, 2.5f, 1.0f - newValue);
-    cv::slider_curve_points_separation.setValue(value);
-};
-
-void spectate_by_username(std::string_view username) {
-    auto user = BANCHO::User::find_user(UString{username.data(), static_cast<int>(username.length())});
-    if(user == nullptr) {
-        debugLog("Couldn't find user \"{:s}\"!", username);
-        return;
-    }
-
-    debugLog("Spectating {:s} (user {:d})...", username, user->user_id);
-    start_spectating(user->user_id);
-}
-
-void _osu_songbrowser_search_hardcoded_filter(std::string_view /*oldValue*/, std::string_view newValue) {
-    if(newValue.length() == 1 && SString::is_wspace_only(newValue))
-        cv::songbrowser_search_hardcoded_filter.setValue("");
-}
-
-void loudness_cb(std::string_view /*oldValue*/, std::string_view /*newValue*/) {
-    // Restart loudness calc.
-    VolNormalization::abort();
-    if(db && cv::normalize_loudness.getBool()) {
-        VolNormalization::start_calc(db->loudness_to_calc);
-    }
-}
-
-void _save(void) { db ? db->save() : (void)0; }
-
-void _update(void) { (osu && osu->getUpdateHandler()) ? osu->getUpdateHandler()->checkForUpdates(true) : (void)0; }
 #undef CONVARDEFS_H
 #define DEFINE_CONVARS
 
