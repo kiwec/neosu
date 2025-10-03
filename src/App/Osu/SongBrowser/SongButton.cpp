@@ -130,7 +130,7 @@ void SongButton::drawBeatmapBackgroundThumbnail(const Image *image) {
         g->scale(beatmapBackgroundScale, beatmapBackgroundScale);
         g->translate(pos.x + centerOffset.x, pos.y + centerOffset.y);
         // draw with smooth edge clipping
-        g->drawImage(image, {}, 0.5f, clipRect);
+        g->drawImage(image, {}, 1.f, clipRect);
     }
     g->popTransform();
 

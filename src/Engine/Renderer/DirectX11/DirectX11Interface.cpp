@@ -646,18 +646,30 @@ void DirectX11Interface::drawImage(const Image *image, AnchorPoint anchor, [[may
     if(!image->isReady()) return;
 
     const bool clipRectSpecified = vec::length(clipRect.getSize()) != 0;
-    if(clipRectSpecified) {
+    bool smoothedEdges = edgeSoftness > 0.0f;
+
+    // initialize shader on first use
+    if(smoothedEdges) {
+        if(!this->smoothClipShader) {
+            this->initSmoothClipShader();
+        }
+        smoothedEdges = this->smoothClipShader->isReady();
+    }
+
+    const bool fallbackClip = clipRectSpecified && !smoothedEdges;
+
+    if(fallbackClip) {
         pushClipRect(clipRect);
     }
 
-    updateTransform();
+    this->updateTransform();
 
     m_shaderTexturedGeneric->setUniform1f("misc", 1.0f);  // enable texturing
 
-    float width = image->getWidth();
-    float height = image->getHeight();
+    const float width = image->getWidth();
+    const float height = image->getHeight();
 
-    float x{}, y{};
+    f32 x{}, y{};
     switch(anchor) {
         case AnchorPoint::CENTER:
             x = -width / 2;
@@ -683,6 +695,33 @@ void DirectX11Interface::drawImage(const Image *image, AnchorPoint anchor, [[may
             abort();
     }
 
+    if(smoothedEdges && !clipRectSpecified) {
+        // set a default clip rect as the exact image size if one wasn't explicitly passed, but we still want smoothing
+        clipRect = McRect{x, y, width, height};
+    }
+
+    if(smoothedEdges) {
+        // DirectX uses top-left origin, so no Y-flipping needed
+        D3D11_VIEWPORT viewport;
+        UINT numViewports = 1;
+        // maybe inefficient? could be cached like opengl
+        m_deviceContext->RSGetViewports(&numViewports, &viewport);
+
+        float clipMinX = (clipRect.getX() + viewport.TopLeftX) - .5f;  // i don't know... weird rounding
+        float clipMinY = (clipRect.getY() + viewport.TopLeftY) - .5f;
+        float clipMaxX = (clipMinX + clipRect.getWidth()) + .5f;
+        float clipMaxY = (clipMinY + clipRect.getHeight()) + .5f;
+
+        this->smoothClipShader->enable();
+        this->smoothClipShader->setUniform2f("rect_min", clipMinX, clipMinY);
+        this->smoothClipShader->setUniform2f("rect_max", clipMaxX, clipMaxY);
+        this->smoothClipShader->setUniform1f("edge_softness", edgeSoftness);
+
+        // set mvp for the shader
+        Matrix4 mvp = g->getMVP();
+        this->smoothClipShader->setUniformMatrix4fv("mvp", mvp);
+    }
+
     static VertexArrayObject vao(Graphics::PRIMITIVE::PRIMITIVE_QUADS);
     {
         vao.empty();
@@ -703,7 +742,9 @@ void DirectX11Interface::drawImage(const Image *image, AnchorPoint anchor, [[may
     }
     image->unbind();
 
-    if(clipRectSpecified) {
+    if(smoothedEdges) {
+        this->smoothClipShader->disable();
+    } else if(fallbackClip) {
         popClipRect();
     }
 
@@ -1437,6 +1478,19 @@ int DirectX11Interface::compareFuncToDirectX([[maybe_unused]] Graphics::COMPARE_
     // TODO: implement
 
     return 0;
+}
+
+void DirectX11Interface::initSmoothClipShader() {
+    if(this->smoothClipShader != nullptr) return;
+
+    this->smoothClipShader.reset(this->createShaderFromSource(
+        std::string(reinterpret_cast<const char *>(smoothclip_vsh), smoothclip_vsh_size()),
+        std::string(reinterpret_cast<const char *>(smoothclip_fsh), smoothclip_fsh_size())));
+
+    if(this->smoothClipShader != nullptr) {
+        this->smoothClipShader->loadAsync();
+        this->smoothClipShader->load();
+    }
 }
 
 #endif

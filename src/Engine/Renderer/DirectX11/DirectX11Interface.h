@@ -188,6 +188,10 @@ class DirectX11Interface : public Graphics {
 
     // stats
     int m_iStatsNumDrawCalls;
+
+    // clipping for drawImage
+    std::unique_ptr<Shader> smoothClipShader{nullptr};
+    void initSmoothClipShader();
 };
 
 #else
