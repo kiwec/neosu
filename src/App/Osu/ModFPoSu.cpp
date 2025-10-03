@@ -73,9 +73,11 @@ void ModFPoSu::draw() {
     Matrix4 projectionMatrix =
         cv::fposu_vertical_fov.getBool()
             ? Camera::buildMatrixPerspectiveFovVertical(
-                  glm::radians(fov), ((float)osu->getVirtScreenWidth() / (float)osu->getVirtScreenHeight()), 0.05f, 1000.0f)
+                  glm::radians(fov), ((float)osu->getVirtScreenWidth() / (float)osu->getVirtScreenHeight()), 0.05f,
+                  1000.0f)
             : Camera::buildMatrixPerspectiveFovHorizontal(
-                  glm::radians(fov), ((float)osu->getVirtScreenHeight() / (float)osu->getVirtScreenWidth()), 0.05f, 1000.0f);
+                  glm::radians(fov), ((float)osu->getVirtScreenHeight() / (float)osu->getVirtScreenWidth()), 0.05f,
+                  1000.0f);
     Matrix4 viewMatrix = Camera::buildMatrixLookAt(
         this->camera->getPos(), this->camera->getPos() + this->camera->getViewDirection(), this->camera->getViewUp());
 
@@ -569,8 +571,14 @@ void ModFPoSu::makePlayfield() {
     this->vao->clear();
     this->meshList.clear();
 
-    const float topTC = 1.0f;
-    const float bottomTC = 0.0f;
+    float topTC = 1.0f;
+    float bottomTC = 0.0f;
+
+    if constexpr(Env::cfg(REND::DX11)) {
+        topTC = 0.0f;
+        bottomTC = 1.0f;
+    }
+
     const float dist = -cv::fposu_distance.getFloat();
 
     VertexPair vp1 = VertexPair(vec3(-0.5, 0.5, dist), vec3(-0.5, -0.5, dist), 0);

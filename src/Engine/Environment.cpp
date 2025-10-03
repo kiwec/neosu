@@ -12,7 +12,7 @@
 
 #include "Osu.h"  // TODO: remove these hacks
 
-// #include "DirectX11Interface.h" TODO
+#include "DirectX11Interface.h"
 #include "SDLGLInterface.h"
 
 #include <algorithm>

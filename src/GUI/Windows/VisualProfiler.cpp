@@ -81,11 +81,11 @@ void VisualProfiler::draw() {
                         UString::fmt("Resolution: {:d} x {:d}", (int)g->getResolution().x, (int)g->getResolution().y),
                         textFont, this->textLines);
                     addTextLine(UString::fmt("NativeRes: {:d} x {:d}", (int)env->getNativeScreenSize().x,
-                                                (int)env->getNativeScreenSize().y),
+                                             (int)env->getNativeScreenSize().y),
                                 textFont, this->textLines);
                     addTextLine(UString::fmt("Env DPI Scale: {:f}", env->getDPIScale()), textFont, this->textLines);
                     addTextLine(UString::fmt("Env DPI: {:d}", (int)env->getDPI()), textFont, this->textLines);
-                    addTextLine(UString::fmt("Renderer: {:s}", g->getName()), textFont, this->textLines); //
+                    addTextLine(UString::fmt("Renderer: {:s}", g->getName()), textFont, this->textLines);  //
                     addTextLine(UString::fmt("VRAM: {:d} MB / {:d} MB", vramRemainingMB, vramTotalMB), textFont,
                                 this->textLines);
                 } break;
@@ -97,14 +97,13 @@ void VisualProfiler::draw() {
                     const double time = engine->getTime();
                     const vec2 envMousePos = env->getMousePos();
 
-                    addTextLine(UString::fmt("ConVars: {:d}", cvars->getNumConVars()), textFont,
-                                this->textLines);
+                    addTextLine(UString::fmt("ConVars: {:d}", cvars->getNumConVars()), textFont, this->textLines);
                     addTextLine(UString::fmt("Monitor: [{:d}] of {:d}", env->getMonitor(), env->getMonitors().size()),
                                 textFont, this->textLines);
                     addTextLine(UString::fmt("Env Mouse Pos: {:d} x {:d}", (int)envMousePos.x, (int)envMousePos.y),
                                 textFont, this->textLines);
-                    addTextLine(UString::fmt("Sound Device: {:s}", soundEngine->getOutputDeviceName()),
-                                textFont, this->textLines);
+                    addTextLine(UString::fmt("Sound Device: {:s}", soundEngine->getOutputDeviceName()), textFont,
+                                this->textLines);
                     addTextLine(UString::fmt("Sound Volume: {:f}", soundEngine->getVolume()), textFont,
                                 this->textLines);
                     addTextLine(UString::fmt("RM Threads: {:d}", resourceManager->getNumActiveThreads()), textFont,
@@ -120,6 +119,10 @@ void VisualProfiler::draw() {
                                 this->textLines);
                     addTextLine(UString::fmt("Frame: {:d}", engine->getFrameCount()), textFont, this->textLines);
                     addTextLine(UString::fmt("Time: {:f}", time), textFont, this->textLines);
+
+                    for(size_t i = 0; i < this->engineTextLines.size(); i++) {
+                        addTextLine(this->engineTextLines[i], textFont, this->textLines);
+                    }
                 } break;
 
                 case INFO_BLADE_DISPLAY_MODE::INFO_BLADE_DISPLAY_MODE_APP_INFO: {
@@ -179,6 +182,7 @@ void VisualProfiler::draw() {
         }
 
         this->textLines.clear();
+        this->engineTextLines.clear();
         this->appTextLines.clear();
     }
 
@@ -206,8 +210,8 @@ void VisualProfiler::draw() {
                     g->translate(this->font->getHeight() * 3 * (this->nodes[i].depth - 1), 0);
                     g->drawString(this->font,
                                   UString::fmt("[{:s}] - {:s} = {:f} ms", this->nodes[i].node->getName(),
-                                                  this->profile->getGroupName(this->nodes[i].node->getGroupID()),
-                                                  this->nodes[i].node->getTimeLastFrame() * 1000.0));
+                                               this->profile->getGroupName(this->nodes[i].node->getGroupID()),
+                                               this->nodes[i].node->getTimeLastFrame() * 1000.0));
                 }
                 g->popTransform();
 
@@ -243,11 +247,11 @@ void VisualProfiler::draw() {
                         g->pushTransform();
                         {
                             g->translate(this->font->getHeight() * 3 * (this->spikeNodes[i].node.depth - 1), 0);
-                            g->drawString(this->font,
-                                          UString::fmt(
-                                              "[{:s}] - {:s} = {:f} ms", this->spikeNodes[i].node.node->getName(),
-                                              this->profile->getGroupName(this->spikeNodes[i].node.node->getGroupID()),
-                                              this->spikeNodes[i].timeLastFrame * 1000.0));
+                            g->drawString(
+                                this->font,
+                                UString::fmt("[{:s}] - {:s} = {:f} ms", this->spikeNodes[i].node.node->getName(),
+                                             this->profile->getGroupName(this->spikeNodes[i].node.node->getGroupID()),
+                                             this->spikeNodes[i].timeLastFrame * 1000.0));
                         }
                         g->popTransform();
 
@@ -565,6 +569,14 @@ void VisualProfiler::decrementInfoBladeDisplayMode() {
         cv::vprof_display_mode.setValue(cv::vprof_display_mode.getInt() - 1);
 }
 
+void VisualProfiler::addInfoBladeEngineTextLine(const UString &text) {
+    if(!cv::vprof.getBool() || !this->bVisible ||
+       cv::vprof_display_mode.getInt() != INFO_BLADE_DISPLAY_MODE::INFO_BLADE_DISPLAY_MODE_ENGINE_INFO)
+        return;
+
+    this->engineTextLines.push_back(text);
+}
+
 void VisualProfiler::addInfoBladeAppTextLine(const UString &text) {
     if(!cv::vprof.getBool() || !this->bVisible ||
        cv::vprof_display_mode.getInt() != INFO_BLADE_DISPLAY_MODE::INFO_BLADE_DISPLAY_MODE_APP_INFO)
@@ -599,10 +611,7 @@ void VisualProfiler::collectProfilerNodesRecursive(const ProfilerNode *node, int
 
     // add node (ignore root 0)
     if(depth > 0) {
-        NODE entry{
-            .node = node,
-            .depth = depth
-        };
+        NODE entry{.node = node, .depth = depth};
 
         nodes.push_back(entry);
 

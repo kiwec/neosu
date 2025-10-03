@@ -549,18 +549,17 @@ std::pair<bool, float> MainMenu::getTimingpointPulseAmount() {
 
     // playing music, get dynamic pulse amount
     const i32 curMusicPos = (i32)music->getPositionMS() +
-                             (i32)(cv::universal_offset.getFloat() * selectedMap->getSpeedMultiplier()) +
-                             music->getBASSStreamLatencyCompensation() - map->getLocalOffset() -
-                             map->getOnlineOffset() - (map->getVersion() < 5 ? cv::old_beatmap_offset.getInt() : 0);
+                            (i32)(cv::universal_offset.getFloat() * selectedMap->getSpeedMultiplier()) +
+                            music->getBASSStreamLatencyCompensation() - map->getLocalOffset() - map->getOnlineOffset() -
+                            (map->getVersion() < 5 ? cv::old_beatmap_offset.getInt() : 0);
 
     DatabaseBeatmap::TIMING_INFO t = map->getTimingInfoForTime(curMusicPos);
 
     if(t.beatLengthBase == 0.0f)  // bah
         t.beatLengthBase = 1.0f;
 
-    this->iMainMenuAnimBeatCounter =
-        (curMusicPos - t.offset - (i32)(std::max((i32)t.beatLengthBase, (i32)1) * 0.5f)) /
-        std::max((i32)t.beatLengthBase, (i32)1);
+    this->iMainMenuAnimBeatCounter = (curMusicPos - t.offset - (i32)(std::max((i32)t.beatLengthBase, (i32)1) * 0.5f)) /
+                                     std::max((i32)t.beatLengthBase, (i32)1);
 
     pulse = (float)((curMusicPos - t.offset) % std::max((i32)t.beatLengthBase, (i32)1)) /
             t.beatLengthBase;  // modulo must be >= 1
@@ -828,6 +827,41 @@ void MainMenu::draw() {
         this->drawMapBackground(this->currentMap, this->mapFadeAnim);
 
         // background_shader->disable();
+    }
+
+    // draw dx11 test banner
+    if constexpr(Env::cfg(REND::DX11)) {
+        UString bannerText = "---- DirectX11 Test ----";
+
+        if(bannerText.length() > 0) {
+            McFont *bannerFont = osu->getSubTitleFont();
+            float bannerStringWidth = bannerFont->getStringWidth(bannerText);
+            int bannerDiff = 400;
+            int bannerMargin = 5;
+            int numBanners = (int)std::round(osu->getVirtScreenWidth() / (bannerStringWidth + bannerDiff)) + 2;
+
+            g->setColor(0xffee7777);
+            g->pushTransform();
+            g->translate(1, 1);
+            for(int i = -1; i < numBanners; i++) {
+                g->pushTransform();
+                g->translate(i * bannerStringWidth + i * bannerDiff +
+                                 fmod(-engine->getTime() * 50, bannerStringWidth + bannerDiff),
+                             bannerFont->getHeight() + bannerMargin);
+                g->drawString(bannerFont, bannerText);
+                g->popTransform();
+            }
+            g->popTransform();
+            g->setColor(0xff555555);
+            for(int i = -1; i < numBanners; i++) {
+                g->pushTransform();
+                g->translate(i * bannerStringWidth + i * bannerDiff +
+                                 fmod(-engine->getTime() * 50, bannerStringWidth + bannerDiff),
+                             bannerFont->getHeight() + bannerMargin);
+                g->drawString(bannerFont, bannerText);
+                g->popTransform();
+            }
+        }
     }
 
     // draw notification arrow for changelog (version button)

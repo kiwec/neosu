@@ -22,6 +22,7 @@ class VisualProfiler : public CBaseUIElement {
     void incrementInfoBladeDisplayMode();
     void decrementInfoBladeDisplayMode();
 
+    void addInfoBladeEngineTextLine(const UString &text);
     void addInfoBladeAppTextLine(const UString &text);
 
     void setProfile(ProfilerProfile *profile);
@@ -105,6 +106,7 @@ class VisualProfiler : public CBaseUIElement {
     bool bRequiresAltShiftKeysToFreeze;
 
     std::vector<TEXT_LINE> textLines;
+	std::vector<UString> engineTextLines;
     std::vector<UString> appTextLines;
 };
 

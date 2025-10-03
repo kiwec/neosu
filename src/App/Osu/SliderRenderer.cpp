@@ -360,6 +360,14 @@ void draw(VertexArrayObject *vao, const std::vector<vec2> &alwaysPoints, vec2 tr
                         /// g->scale(scaleToApplyAfterTranslationX, scaleToApplyAfterTranslationY); // aspire slider
                         /// distortions
 
+                        if constexpr(Env::cfg(REND::DX11)) {
+                            if(!cv::slider_use_gradient_image.getBool()) {
+                                g->forceUpdateTransform();
+                                Matrix4 mvp = g->getMVP();
+                                s_BLEND_SHADER->setUniformMatrix4fv("mvp", mvp);
+                            }
+                        }
+
                         g->drawVAO(vao);
                     }
                     g->popTransform();
@@ -430,6 +438,11 @@ void drawFillSliderBodyPeppy(const std::vector<vec2> &points, VertexArrayObject 
 
 void checkUpdateVars(float hitcircleDiameter) {
     // static globals
+
+    if constexpr(Env::cfg(REND::DX11)) {
+        // NOTE: compensate for zn/zf Camera::buildMatrixOrtho2DDXLH() differences compared to OpenGL
+        if(s_MESH_CENTER_HEIGHT > 0.0f) s_MESH_CENTER_HEIGHT = -s_MESH_CENTER_HEIGHT;
+    }
 
     // build shaders and circle mesh
     if(s_BLEND_SHADER == nullptr)  // only do this once

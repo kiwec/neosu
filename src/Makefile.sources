@@ -113,6 +113,11 @@ neosu_SOURCES = \
 	src/Engine/Logging.cpp \
 	src/Engine/NetworkHandler.cpp \
 	src/Engine/Profiler.cpp \
+	src/Engine/Renderer/DirectX11/DirectX11Image.cpp \
+	src/Engine/Renderer/DirectX11/DirectX11Interface.cpp \
+	src/Engine/Renderer/DirectX11/DirectX11RenderTarget.cpp \
+	src/Engine/Renderer/DirectX11/DirectX11Shader.cpp \
+	src/Engine/Renderer/DirectX11/DirectX11VertexArrayObject.cpp \
 	src/Engine/Renderer/Graphics.cpp \
 	src/Engine/Renderer/OpenGL/OpenGLImage.cpp \
 	src/Engine/Renderer/OpenGL/OpenGLLegacyInterface.cpp \

@@ -443,6 +443,12 @@ void HUD::drawCursorTrailInt(Shader *trailShader, std::vector<CURSORTRAIL> &trai
             {
                 trailShader->setUniform1f("time", engine->getTime());
 
+                if constexpr(Env::cfg(REND::DX11)) {
+                    g->forceUpdateTransform();
+                    Matrix4 mvp = g->getMVP();
+                    trailShader->setUniformMatrix4fv("mvp", mvp);
+                }
+
                 trailImage->bind();
                 {
                     g->setBlendMode(Graphics::BLEND_MODE::BLEND_MODE_ADDITIVE);
