@@ -177,48 +177,45 @@ void NetworkHandler::processCompletedRequests() {
 
     // collect completed requests without holding locks during callback execution
     while((msg = curl_multi_info_read(this->multi_handle, &msgs_left))) {
-        if(msg->msg == CURLMSG_DONE) {
-            CURL* easy_handle = msg->easy_handle;
+        if(msg->msg != CURLMSG_DONE) continue;
+        CURL* easy_handle = msg->easy_handle;
 
-            {
-                Sync::scoped_lock active_lock{this->active_requests_mutex};
-                auto it = this->active_requests.find(easy_handle);
-                if(it != this->active_requests.end()) {
-                    auto request = std::move(it->second);
-                    this->active_requests.erase(it);
+        Sync::scoped_lock active_lock{this->active_requests_mutex};
+        auto it = this->active_requests.find(easy_handle);
+        if(it == this->active_requests.end()) continue;
 
-                    curl_multi_remove_handle(this->multi_handle, easy_handle);
+        auto request = std::move(it->second);
+        this->active_requests.erase(it);
 
-                    // get response code
-                    curl_easy_getinfo(easy_handle, CURLINFO_RESPONSE_CODE, &request->response.response_code);
-                    request->response.success = (msg->data.result == CURLE_OK);
+        curl_multi_remove_handle(this->multi_handle, easy_handle);
 
-                    if(request->headers_list) {
-                        curl_slist_free_all(request->headers_list);
-                    }
-                    if(request->mime) {
-                        curl_mime_free(request->mime);
-                        request->mime = nullptr;
-                    }
+        // get response code
+        curl_easy_getinfo(easy_handle, CURLINFO_RESPONSE_CODE, &request->response.response_code);
+        request->response.success = (msg->data.result == CURLE_OK);
 
-                    curl_easy_cleanup(request->easy_handle);
-                    request->easy_handle = nullptr;
+        if(request->headers_list) {
+            curl_slist_free_all(request->headers_list);
+        }
+        if(request->mime) {
+            curl_mime_free(request->mime);
+            request->mime = nullptr;
+        }
 
-                    if(request->is_sync) {
-                        // handle sync request immediately
-                        Sync::scoped_lock sync_lock{this->sync_requests_mutex};
-                        this->sync_responses[request->sync_id] = request->response;
-                        auto cv_it = this->sync_request_cvs.find(request->sync_id);
-                        if(cv_it != this->sync_request_cvs.end()) {
-                            cv_it->second->notify_one();
-                        }
-                    } else {
-                        // defer async callback execution
-                        Sync::scoped_lock completed_lock{this->completed_requests_mutex};
-                        this->completed_requests.push_back(std::move(request));
-                    }
-                }
-            }  // release active_requests_mutex here
+        curl_easy_cleanup(request->easy_handle);
+        request->easy_handle = nullptr;
+
+        if(request->is_sync) {
+            // handle sync request immediately
+            Sync::scoped_lock sync_lock{this->sync_requests_mutex};
+            this->sync_responses[request->sync_id] = request->response;
+            auto cv_it = this->sync_request_cvs.find(request->sync_id);
+            if(cv_it != this->sync_request_cvs.end()) {
+                cv_it->second->notify_one();
+            }
+        } else {
+            // defer async callback execution
+            Sync::scoped_lock completed_lock{this->completed_requests_mutex};
+            this->completed_requests.push_back(std::move(request));
         }
     }
 }
