@@ -434,6 +434,7 @@ void Osu::draw() {
                 this->flashlight_shader->enable();
                 this->flashlight_shader->setUniform1f("max_opacity", opacity);
                 this->flashlight_shader->setUniform1f("flashlight_radius", fl_radius);
+
                 if constexpr(Env::cfg(REND::DX11)) {  // don't flip Y position for DX11
                     this->flashlight_shader->setUniform2f("flashlight_center", flashlightPos.x, flashlightPos.y);
 
@@ -460,8 +461,17 @@ void Osu::draw() {
                 this->actual_flashlight_shader->enable();
                 this->actual_flashlight_shader->setUniform1f("max_opacity", opacity);
                 this->actual_flashlight_shader->setUniform1f("flashlight_radius", anti_fl_radius);
-                this->actual_flashlight_shader->setUniform2f("flashlight_center", flashlightPos.x,
-                                                             this->getVirtScreenSize().y - flashlightPos.y);
+
+                if constexpr(Env::cfg(REND::DX11)) {  // don't flip Y position for DX11
+                    this->actual_flashlight_shader->setUniform2f("flashlight_center", flashlightPos.x, flashlightPos.y);
+
+                    g->forceUpdateTransform();
+                    Matrix4 mvp = g->getMVP();
+                    this->actual_flashlight_shader->setUniformMatrix4fv("mvp", mvp);
+                } else {
+                    this->actual_flashlight_shader->setUniform2f("flashlight_center", flashlightPos.x,
+                                                                this->getVirtScreenSize().y - flashlightPos.y);
+                }
 
                 g->setColor(argb(255, 0, 0, 0));
                 g->fillRect(0, 0, this->getVirtScreenWidth(), this->getVirtScreenHeight());
