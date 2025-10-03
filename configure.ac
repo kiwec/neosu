@@ -444,7 +444,7 @@ AC_PROG_CXX([$CXX])
 
 AC_CHECK_TOOL([STRIP], [strip], [strip])
 
-AC_CHECK_PROG([CCACHE], [ccache], [[ccache compiler_type=$_ccache_ctype]])
+AC_CHECK_PROG([CCACHE], [ccache], [ccache])
 
 # we already set $CC and $CXX to absolute paths in the build/$arch-pc-linux-gnu-{$CC,$CXX} wrappers
 # for linux, so AC_PATH_PROG doesn't work for that (and isn't needed anyways)
@@ -460,11 +460,11 @@ AS_IF([test "$host_os" = "linux-gnu"],[
 
 install -Dm755 /dev/stdin $PWD/build/cc <<EOF
 #!/bin/bash
-$CCACHE $CC_REAL "\$@"
+CCACHE_COMPILERTYPE=$_ccache_ctype $CCACHE $CC_REAL "\$@"
 EOF
 install -Dm755 /dev/stdin $PWD/build/cxx <<EOF
 #!/bin/bash
-$CCACHE $CXX_REAL "\$@"
+CCACHE_COMPILERTYPE=$_ccache_ctype $CCACHE $CXX_REAL "\$@"
 EOF
 
 export CC="$PWD/build/cc"

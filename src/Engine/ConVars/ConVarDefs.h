@@ -84,6 +84,9 @@ extern void loudness_cb();
 namespace RichPresence {
 extern void onRichPresenceChange(float, float);
 }
+namespace ProfilerProfile {
+extern void vprofToggleCB(float);
+}
 extern void spectate_by_username(std::string_view username);
 #else
 #define CONVAR(name, ...) extern ConVar _CV(name)
@@ -234,7 +237,7 @@ CONVAR(slider_debug_draw, "slider_debug_draw"sv, false, CLIENT | SERVER | PROTEC
 CONVAR(slider_debug_draw_square_vao, "slider_debug_draw_square_vao"sv, false, CLIENT | SERVER | PROTECTED | GAMEPLAY,
        "generate square vaos and nothing else (no rt, no shader) (requires disabling legacy slider renderer)"sv);
 CONVAR(slider_debug_wireframe, "slider_debug_wireframe"sv, false, CLIENT | SERVER | PROTECTED | GAMEPLAY, "unused"sv);
-CONVAR(vprof, "vprof"sv, false, CLIENT | SERVER, "enables/disables the visual profiler"sv);
+CONVAR(vprof, "vprof"sv, false, CLIENT | SERVER, "enables/disables the visual profiler"sv, CFUNC(ProfilerProfile::vprofToggleCB));
 CONVAR(vprof_display_mode, "vprof_display_mode"sv, 0, CLIENT | SERVER,
        "which info blade to show on the top right (gpu/engine/app/etc. info), use CTRL + TAB to "
        "cycle through, 0 = disabled"sv);
