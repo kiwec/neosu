@@ -242,8 +242,6 @@ void DirectX11Interface::init() {
     const auto vertexShader = std::string{reinterpret_cast<const char *>(DX11_default_vsh), DX11_default_vsh_size()};
     const auto pixelShader = std::string{reinterpret_cast<const char *>(DX11_default_fsh), DX11_default_fsh_size()};
 
-    debugLog("vs: {}", vertexShader);
-    debugLog("ps: {}", pixelShader);
     m_shaderTexturedGeneric = static_cast<DirectX11Shader *>(createShaderFromSource(vertexShader, pixelShader));
     m_shaderTexturedGeneric->load();
 

@@ -642,11 +642,13 @@ OptionsMenu::OptionsMenu() : ScreenBackable() {
     this->addCheckbox("Show FPS Counter", &cv::draw_fps);
 
     if constexpr(Env::cfg(REND::GL | REND::GLES32)) {
-        CBaseUISlider *prerenderedFramesSlider =
-            addSlider("Max Queued Frames", 1.0f, 3.0f, &cv::r_sync_max_frames, -1.0f, true);
-        prerenderedFramesSlider->setChangeCallback(SA::MakeDelegate<&OptionsMenu::onSliderChangeInt>(this));
-        prerenderedFramesSlider->setKeyDelta(1);
-        addLabel("Raise for higher fps, decrease for lower latency")->setTextColor(0xff666666);
+        if(!env->usingDX11()) {
+            CBaseUISlider *prerenderedFramesSlider =
+                addSlider("Max Queued Frames", 1.0f, 3.0f, &cv::r_sync_max_frames, -1.0f, true);
+            prerenderedFramesSlider->setChangeCallback(SA::MakeDelegate<&OptionsMenu::onSliderChangeInt>(this));
+            prerenderedFramesSlider->setKeyDelta(1);
+            addLabel("Raise for higher fps, decrease for lower latency")->setTextColor(0xff666666);
+        }
     }
 
     this->addSpacer();
