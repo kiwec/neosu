@@ -252,14 +252,13 @@ SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
                     m_bHasFocus = true;
                     m_engine->requestResolutionChange(
                         vec2(static_cast<float>(event->window.data1), static_cast<float>(event->window.data2)));
-                    updateDisplayHz();
                     setFgFPS();
                     break;
 
                 case SDL_EVENT_WINDOW_DISPLAY_CHANGED:
                     cv::monitor.setValue(event->window.data1, false);
                     m_engine->requestResolutionChange(getWindowSize());
-                    updateDisplayHz();
+                    m_fDisplayHzSecs = 1.0f / (m_fDisplayHz = queryDisplayHz());
                     break;
 
                 case SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED:
@@ -286,7 +285,7 @@ SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
                 default:
                     // reinit monitors, and update hz in any case
                     initMonitors(true);
-                    updateDisplayHz();
+                    m_fDisplayHzSecs = 1.0f / (m_fDisplayHz = queryDisplayHz());
                     break;
             }
             break;
@@ -470,10 +469,45 @@ bool SDLMain::createWindow() {
     SDL_SetWindowMinimumSize(m_window, WINDOW_WIDTH_MIN, WINDOW_HEIGHT_MIN);
 
     // initialize with the display refresh rate of the current monitor
-    updateDisplayHz();
+    m_fDisplayHzSecs = 1.0f / (m_fDisplayHz = queryDisplayHz());
+    {
+        const auto hz = std::round(m_fDisplayHz);
+        const auto fourxhz = std::round(std::clamp<float>(hz * 4.0f, hz, 1000.0f));
+
+        // also set fps_max to 4x the refresh rate
+        cv::fps_max.setDefaultDouble(fourxhz);
+        cv::fps_max.setValue(fourxhz);
+        cv::fps_max_menu.setDefaultDouble(hz);
+        cv::fps_max_menu.setValue(hz);
+    }
 
     return true;
 }
+
+float SDLMain::queryDisplayHz() {
+    // get the screen refresh rate, and set fps_max to that as default
+    if constexpr(!Env::cfg(OS::WASM))  // not in WASM
+    {
+        const SDL_DisplayID display = SDL_GetDisplayForWindow(m_window);
+        const SDL_DisplayMode *currentDisplayMode = display ? SDL_GetCurrentDisplayMode(display) : nullptr;
+
+        if(currentDisplayMode && currentDisplayMode->refresh_rate > 0) {
+            if((m_fDisplayHz > currentDisplayMode->refresh_rate + 0.01) ||
+               (m_fDisplayHz < currentDisplayMode->refresh_rate - 0.01)) {
+                debugLog("Got refresh rate {:.3f} Hz for display {:d}.", currentDisplayMode->refresh_rate, display);
+            }
+            const auto refreshRateSanityClamped = std::clamp<float>(currentDisplayMode->refresh_rate, 60.0f, 540.0f);
+            return refreshRateSanityClamped;
+        } else {
+            static int once;
+            if(!once++)
+                debugLog("Couldn't SDL_GetCurrentDisplayMode(SDL display: {:d}): {:s}", display, SDL_GetError());
+        }
+    }
+    // in wasm or if we couldn't get the refresh rate just return a sane value to use for "vsync"-related calculations
+    return std::clamp<float>(cv::fps_max.getFloat(), 60.0f, 360.0f);
+}
+
 
 void SDLMain::configureEvents() {
     // disable unused events

@@ -36,6 +36,7 @@ class SDLMain final : public Environment {
     bool createWindow();
     void setupLogging();
     void configureEvents();
+    float queryDisplayHz();
     void doEarlyCmdlineOverrides();
 
     // callback handlers
