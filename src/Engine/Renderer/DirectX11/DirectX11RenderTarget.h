@@ -17,44 +17,43 @@
 
 class DirectX11Interface;
 
-class DirectX11RenderTarget final : public RenderTarget
-{
-public:
-	DirectX11RenderTarget(int x, int y, int width, int height, Graphics::MULTISAMPLE_TYPE multiSampleType = Graphics::MULTISAMPLE_TYPE::MULTISAMPLE_0X);
-	~DirectX11RenderTarget() override {destroy();}
+class DirectX11RenderTarget final : public RenderTarget {
+    NOCOPY_NOMOVE(DirectX11RenderTarget)
+   public:
+    DirectX11RenderTarget(int x, int y, int width, int height,
+                          Graphics::MULTISAMPLE_TYPE multiSampleType = Graphics::MULTISAMPLE_TYPE::MULTISAMPLE_0X);
+    ~DirectX11RenderTarget() override { destroy(); }
 
-	void draw(int x, int y) override;
-	void draw(int x, int y, int width, int height) override;
-	void drawRect(int x, int y, int width, int height) override;
+    void draw(int x, int y) override;
+    void draw(int x, int y, int width, int height) override;
+    void drawRect(int x, int y, int width, int height) override;
 
-	void enable() override;
-	void disable() override;
+    void enable() override;
+    void disable() override;
 
-	void bind(unsigned int textureUnit = 0) override;
-	void unbind() override;
+    void bind(unsigned int textureUnit = 0) override;
+    void unbind() override;
 
-	// ILLEGAL:
-	void setDirectX11InterfaceHack(DirectX11Interface *dxi) {m_interfaceOverrideHack = dxi;}
-	inline ID3D11Texture2D *getRenderTexture() const {return m_renderTexture;}
+    // ILLEGAL:
+    [[nodiscard]] inline ID3D11Texture2D *getRenderTexture() const { return this->renderTexture; }
 
-private:
-	void init() override;
-	void initAsync() override;
-	void destroy() override;
+   protected:
+    void init() override;
+    void initAsync() override;
+    void destroy() override;
 
-	ID3D11Texture2D *m_renderTexture;
-	ID3D11Texture2D *m_depthStencilTexture;
-	ID3D11RenderTargetView *m_renderTargetView;
-	ID3D11DepthStencilView *m_depthStencilView;
-	ID3D11ShaderResourceView *m_shaderResourceView;
+   private:
+    ID3D11Texture2D *renderTexture;
+    ID3D11Texture2D *depthStencilTexture;
+    ID3D11RenderTargetView *renderTargetView;
+    ID3D11DepthStencilView *depthStencilView;
+    ID3D11ShaderResourceView *shaderResourceView;
 
-	ID3D11RenderTargetView *m_prevRenderTargetView;
-	ID3D11DepthStencilView *m_prevDepthStencilView;
+    ID3D11RenderTargetView *prevRenderTargetView;
+    ID3D11DepthStencilView *prevDepthStencilView;
 
-	unsigned int m_iTextureUnitBackup;
-	ID3D11ShaderResourceView *m_prevShaderResourceView;
-
-	DirectX11Interface *m_interfaceOverrideHack;
+    unsigned int iTextureUnitBackup;
+    ID3D11ShaderResourceView *prevShaderResourceView;
 };
 
 #endif

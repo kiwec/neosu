@@ -168,7 +168,7 @@ void draw(const std::vector<vec2> &points, const std::vector<vec2> &alwaysPoints
                     const vec2 point = points[i] * circleImageScaleInv;
 
                     static VertexArrayObject vao(Graphics::PRIMITIVE::PRIMITIVE_QUADS);
-                    vao.empty();
+                    vao.clear();
                     {
                         vao.addTexcoord(0, 0);
                         vao.addVertex(point.x + x, point.y + y, z);

@@ -15,10 +15,13 @@
 class DirectX11Shader;
 
 #ifdef MCENGINE_FEATURE_DIRECTX11
+struct IDXGIFactory2;
+struct IDXGISwapChain1;
 
 #include "d3d11.h"
 
-class DirectX11Interface : public Graphics {
+class DirectX11Interface final : public Graphics {
+    NOCOPY_NOMOVE(DirectX11Interface)
    public:
     struct SimpleVertex {
         vec3 pos;
@@ -27,7 +30,7 @@ class DirectX11Interface : public Graphics {
     };
 
    public:
-    DirectX11Interface(HWND hwnd, bool minimalistContext = false);
+    DirectX11Interface(HWND hwnd);
     ~DirectX11Interface() override;
 
     // scene
@@ -97,7 +100,7 @@ class DirectX11Interface : public Graphics {
 
     // renderer info
     inline const char *getName() const override { return "DirectX11"; }
-    vec2 getResolution() const override { return m_vResolution; }
+    vec2 getResolution() const override { return this->vResolution; }
     UString getVendor() override;
     UString getModel() override;
     UString getVersion() override;
@@ -121,80 +124,157 @@ class DirectX11Interface : public Graphics {
                                                bool keepInSystemMemory) override;
 
     // ILLEGAL:
-    void resizeTarget(vec2 newResolution);
     bool enableFullscreen(bool borderlessWindowedFullscreen = false);
     void disableFullscreen();
-    void setActiveShader(DirectX11Shader *shader) { m_activeShader = shader; }
-    inline bool isReady() const { return m_bReady; }
-    inline ID3D11Device *getDevice() const { return m_device; }
-    inline ID3D11DeviceContext *getDeviceContext() const { return m_deviceContext; }
-    inline IDXGISwapChain *getSwapChain() const { return m_swapChain; }
-    inline DirectX11Shader *getShaderGeneric() const { return m_shaderTexturedGeneric; }
-    inline DirectX11Shader *getActiveShader() const { return m_activeShader; }
+    void setActiveShader(DirectX11Shader *shader) { this->activeShader = shader; }
+    inline ID3D11Device *getDevice() const { return this->device; }
+    inline ID3D11DeviceContext *getDeviceContext() const { return this->deviceContext; }
+    inline DirectX11Shader *getShaderGeneric() const { return this->shaderTexturedGeneric; }
+    inline DirectX11Shader *getActiveShader() const { return this->activeShader; }
     void setTexturing(bool enabled);
 
    protected:
     void init() override;
+
     void onTransformUpdate(Matrix4 &projectionMatrix, Matrix4 &worldMatrix) override;
+
+    // frame latency
+    void onSyncBehaviorChanged(const float newValue);
+    void onFramecountNumChanged(const float newValue);
 
    private:
     static int primitiveToDirectX(Graphics::PRIMITIVE primitive);
     static int compareFuncToDirectX(Graphics::COMPARE_FUNC compareFunc);
 
+    // clipping for drawImage
+    void initSmoothClipShader();
+
+    bool createSwapchain();
+    DXGI_MODE_DESC queryCurrentSwapchainDesc() const;
+
    private:
-    bool m_bReady;
+    // state and initialization settings
+    static constexpr size_t MAX_VERTEX_BUFFER_VERTS{16384};
+
+    D3D11_BUFFER_DESC vertexBufferDesc{
+        .ByteWidth = static_cast<UINT>(sizeof(SimpleVertex) * MAX_VERTEX_BUFFER_VERTS),
+        .Usage = D3D11_USAGE_DYNAMIC,
+        .BindFlags = D3D11_BIND_VERTEX_BUFFER,
+        .CPUAccessFlags = D3D11_CPU_ACCESS_WRITE,  // due to USAGE_DYNAMIC
+        .MiscFlags = 0,
+        .StructureByteStride = 0,
+    };
+
+    static constexpr const D3D11_RENDER_TARGET_BLEND_DESC INIT_RTBLEND{
+        .BlendEnable = true,
+        .SrcBlend = D3D11_BLEND_SRC_ALPHA,
+        .DestBlend = D3D11_BLEND_INV_SRC_ALPHA,
+        .BlendOp = D3D11_BLEND_OP_ADD,
+        .SrcBlendAlpha = D3D11_BLEND_SRC_ALPHA,
+        .DestBlendAlpha = D3D11_BLEND_INV_SRC_ALPHA,
+        .BlendOpAlpha = D3D11_BLEND_OP_ADD,
+        .RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL,
+    };
+
+    D3D11_BLEND_DESC blendDesc{.AlphaToCoverageEnable = FALSE,
+                               .IndependentBlendEnable = FALSE,
+                               .RenderTarget{INIT_RTBLEND, INIT_RTBLEND, INIT_RTBLEND, INIT_RTBLEND, INIT_RTBLEND,
+                                             INIT_RTBLEND, INIT_RTBLEND, INIT_RTBLEND}};
+
+    D3D11_DEPTH_STENCIL_DESC depthStencilDesc{.DepthEnable = FALSE,
+                                              .DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO,
+                                              .DepthFunc = D3D11_COMPARISON_LESS,
+                                              .StencilEnable = FALSE,
+                                              .StencilReadMask = 0,   // see OMSetDepthStencilState()
+                                              .StencilWriteMask = 0,  // see OMSetDepthStencilState()
+                                              .FrontFace{
+                                                  .StencilFailOp = D3D11_STENCIL_OP_ZERO,
+                                                  .StencilDepthFailOp = D3D11_STENCIL_OP_ZERO,
+                                                  .StencilPassOp = D3D11_STENCIL_OP_ZERO,
+                                                  .StencilFunc = D3D11_COMPARISON_ALWAYS,
+                                              },
+                                              .BackFace{
+                                                  .StencilFailOp = D3D11_STENCIL_OP_ZERO,
+                                                  .StencilDepthFailOp = D3D11_STENCIL_OP_ZERO,
+                                                  .StencilPassOp = D3D11_STENCIL_OP_ZERO,
+                                                  .StencilFunc = D3D11_COMPARISON_ALWAYS,
+                                              }};
+
+    D3D11_RASTERIZER_DESC rasterizerDesc{
+        .FillMode = D3D11_FILL_SOLID,
+        .CullMode = D3D11_CULL_NONE,
+        .FrontCounterClockwise = TRUE,
+        .DepthBias = D3D11_DEFAULT_DEPTH_BIAS,
+        .DepthBiasClamp = D3D11_DEFAULT_DEPTH_BIAS_CLAMP,
+        .SlopeScaledDepthBias = D3D11_DEFAULT_SLOPE_SCALED_DEPTH_BIAS,
+        .DepthClipEnable = TRUE,  // (clipping, not depth buffer!)
+        .ScissorEnable = FALSE,
+        .MultisampleEnable = FALSE,
+        .AntialiasedLineEnable = FALSE,
+    };
+
+    // backbuffer descriptor
+    DXGI_MODE_DESC swapChainModeDesc{
+        .Width = 0,  // to be initialized after swapchain creation
+        .Height = 0,
+        .RefreshRate = {.Numerator = 0, .Denominator = 1},
+        // NOTE: DXGI_FORMAT_R8G8B8A8_UNORM has the broadest compatibility range
+        .Format = DXGI_FORMAT_R8G8B8A8_UNORM,
+        .ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED,
+        .Scaling = DXGI_MODE_SCALING_CENTERED,
+    };
+
+   private:
+    // renderer
+    vec2 vResolution{};  // to be initialized after swapchain creation
+    bool bIsFullscreen{false};
+    bool bIsFullscreenBorderlessWindowed{false};
 
     // device context
-    HWND m_hwnd;
-    bool m_bMinimalistContext;
+    HWND hwnd{};
+
+    // swapchain
+    IDXGISwapChain1 *swapChain{nullptr};
+    IDXGIFactory2 *dxgiFactory{nullptr};
+    IDXGIAdapter *dxgiAdapter{nullptr};
+    IDXGIDevice *dxgiDevice{nullptr};
+    IDXGIDevice1 *dxgiDevice1{nullptr};  // may remain NULL
 
     // d3d
-    ID3D11Device *m_device;
-    ID3D11DeviceContext *m_deviceContext;
-    DXGI_MODE_DESC m_swapChainModeDesc;
-    IDXGISwapChain *m_swapChain;
-    ID3D11RenderTargetView *m_frameBuffer;
-    ID3D11Texture2D *m_frameBufferDepthStencilTexture;
-    ID3D11DepthStencilView *m_frameBufferDepthStencilView;
+    ID3D11Device *device{nullptr};
+    ID3D11DeviceContext *deviceContext{nullptr};
+    ID3D11RenderTargetView *frameBuffer{nullptr};
+    ID3D11Texture2D *frameBufferDepthStencilTexture{nullptr};
+    ID3D11DepthStencilView *frameBufferDepthStencilView{nullptr};
 
-    // renderer
-    bool m_bIsFullscreen;
-    bool m_bIsFullscreenBorderlessWindowed;
-    vec2 m_vResolution;
+    ID3D11RasterizerState *rasterizerState{nullptr};
+    ID3D11DepthStencilState *depthStencilState{nullptr};
+    ID3D11BlendState *blendState{nullptr};
+    DirectX11Shader *shaderTexturedGeneric{nullptr};
 
-    ID3D11RasterizerState *m_rasterizerState;
-    D3D11_RASTERIZER_DESC m_rasterizerDesc;
-
-    ID3D11DepthStencilState *m_depthStencilState;
-    D3D11_DEPTH_STENCIL_DESC m_depthStencilDesc;
-
-    ID3D11BlendState *m_blendState;
-    D3D11_BLEND_DESC m_blendDesc;
-
-    DirectX11Shader *m_shaderTexturedGeneric;
-
-    std::vector<SimpleVertex> m_vertices;
-    size_t m_iVertexBufferMaxNumVertices;
-    size_t m_iVertexBufferNumVertexOffsetCounter;
-    D3D11_BUFFER_DESC m_vertexBufferDesc;
-    ID3D11Buffer *m_vertexBuffer;
-
-    // persistent vars
-    bool m_bVSync;
-    bool m_bColorInversion{false};
-    bool m_bTexturingEnabled{false};
-    Color m_color;
-    DirectX11Shader *m_activeShader;
+    std::vector<SimpleVertex> vertices;
+    ID3D11Buffer *vertexBuffer{nullptr};
+    size_t iVertexBufferNumVertexOffsetCounter{0};
 
     // clipping
-    std::stack<McRect> m_clipRectStack;
-
-    // stats
-    int m_iStatsNumDrawCalls;
+    std::stack<McRect> clipRectStack;
 
     // clipping for drawImage
     std::unique_ptr<Shader> smoothClipShader{nullptr};
-    void initSmoothClipShader();
+
+    // persistent vars
+    DirectX11Shader *activeShader{nullptr};
+    Color color{(Color)-1};
+    bool bVSync{false};
+    bool bColorInversion{false};
+    bool bTexturingEnabled{false};
+
+    // frame latency
+    bool bFrameLatencyDisabled{false};
+    unsigned int iMaxFrameLatency{1};
+
+    // stats
+    int iStatsNumDrawCalls{0};
 };
 
 #else

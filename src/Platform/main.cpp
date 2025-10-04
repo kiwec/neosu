@@ -81,7 +81,7 @@ void setcwdexe(const std::string &exePathStr) noexcept {
 // called when the SDL_APP_SUCCESS (normal exit) or SDL_APP_FAILURE (something bad happened) event is returned from
 // Init/Iterate/Event
 void SDL_AppQuit(void *appstate, SDL_AppResult result) {
-    if(result == SDL_APP_FAILURE) {
+    if(!appstate || result == SDL_APP_FAILURE) {
         debugLog("Force exiting now, a fatal error occurred. (SDL error: {})", SDL_GetError());
         std::exit(-1);
     }

@@ -387,7 +387,7 @@ struct Matrix4 : public glm::mat4 {
     [[nodiscard]] const glm::mat4& getGLM() const { return *this; }
     [[nodiscard]] glm::mat4& getGLM() { return *this; }
 
-    const float* getTranspose() {
+    const float* getTranspose() const {
         m_transpose = glm::transpose(*this);
         return &m_transpose[0][0];
     }

@@ -14,14 +14,16 @@
 
 #ifdef MCENGINE_FEATURE_DIRECTX11
 
-#include <unordered_map>
+#include "templates.h"
+
 #include <vector>
 
 #include "d3d11.h"
 
 #ifdef MCENGINE_PLATFORM_LINUX
-
-#include <dlfcn.h>
+namespace dynutils {
+using lib_obj = struct lib_obj;
+}
 
 // calling convention handling for vkd3d compatibility
 #ifdef __x86_64__
@@ -52,31 +54,33 @@ typedef HRESULT(VKD3D_CALL *PFN_D3DCOMPILE_VKD3D)(LPCVOID pSrcData, SIZE_T SrcDa
 #endif
 
 class DirectX11Shader final : public Shader {
+    NOCOPY_NOMOVE(DirectX11Shader);
+
    public:
-    DirectX11Shader(const std::string &vertexShader, const std::string &fragmentShader, bool source = true);
+    DirectX11Shader(std::string vertexShader, std::string fragmentShader, bool source = true);
     ~DirectX11Shader() override { destroy(); }
 
     void enable() override;
     void disable() override;
 
     void setUniform1f(std::string_view name, float value) override;
-    void setUniform1fv(std::string_view name, int count, float *values) override;
+    void setUniform1fv(std::string_view name, int count, const float *const values) override;
     void setUniform1i(std::string_view name, int value) override;
     void setUniform2f(std::string_view name, float x, float y) override;
-    void setUniform2fv(std::string_view name, int count, float *vectors) override;
+    void setUniform2fv(std::string_view name, int count, const float *const vectors) override;
     void setUniform3f(std::string_view name, float x, float y, float z) override;
-    void setUniform3fv(std::string_view name, int count, float *vectors) override;
+    void setUniform3fv(std::string_view name, int count, const float *const vectors) override;
     void setUniform4f(std::string_view name, float x, float y, float z, float w) override;
-    void setUniformMatrix4fv(std::string_view name, Matrix4 &matrix) override;
-    void setUniformMatrix4fv(std::string_view name, float *v) override;
+    void setUniformMatrix4fv(std::string_view name, const Matrix4 &matrix) override;
+    void setUniformMatrix4fv(std::string_view name, const float *const v) override;
 
     // ILLEGAL:
     void onJustBeforeDraw();
     inline unsigned long getStatsNumConstantBufferUploadsPerFrame() const {
-        return m_iStatsNumConstantBufferUploadsPerFrameCounter;
+        return this->iStatsNumConstantBufferUploadsPerFrameCounter;
     }
     inline unsigned long getStatsNumConstantBufferUploadsPerFrameEngineFrameCount() const {
-        return m_iStatsNumConstantBufferUploadsPerFrameCounterEngineFrameCount;
+        return this->iStatsNumConstantBufferUploadsPerFrameCounterEngineFrameCount;
     }
 
     static bool loadLibs();
@@ -86,15 +90,15 @@ class DirectX11Shader final : public Shader {
     struct INPUT_DESC_LINE {
         std::string type;        // e.g. "VS_INPUT"
         std::string dataType;    // e.g. "POSITION", "COLOR0", "TEXCOORD0", etc.
-        DXGI_FORMAT dxgiFormat;  // e.g. DXGI_FORMAT::DXGI_FORMAT_R32G32B32_FLOAT, etc.
-        int dxgiFormatBytes;     // e.g. "DXGI_FORMAT::DXGI_FORMAT_R32G32B32_FLOAT" -> 12, etc.
+        DXGI_FORMAT dxgiFormat;  // e.g. DXGI_FORMAT_R32G32B32_FLOAT, etc.
+        int dxgiFormatBytes;     // e.g. "DXGI_FORMAT_R32G32B32_FLOAT" -> 12, etc.
         D3D11_INPUT_CLASSIFICATION
-        classification;  // e.g. D3D11_INPUT_CLASSIFICATION::D3D11_INPUT_PER_VERTEX_DATA, D3D11_INPUT_CLASSIFICATION::D3D11_INPUT_PER_INSTANCE_DATA
+        classification;  // e.g. D3D11_INPUT_PER_INSTANCE_DATA
     };
 
     struct BIND_DESC_LINE {
         std::string type;          // e.g. "D3D11_BUFFER_DESC"
-        D3D11_BIND_FLAG bindFlag;  // e.g. D3D11_BIND_FLAG::D3D11_BIND_CONSTANT_BUFFER
+        D3D11_BIND_FLAG bindFlag;  // e.g. D3D11_BIND_CONSTANT_BUFFER
         std::string name;          // e.g. "ModelViewProjectionConstantBuffer"
         std::string variableName;  // e.g. "mvp", "col", "misc", etc.
         std::string variableType;  // e.g. "float4x4", "float4", "float3", "float2", "float", etc.
@@ -125,40 +129,39 @@ class DirectX11Shader final : public Shader {
 
     bool compile(const std::string &vertexShader, const std::string &fragmentShader);
 
-    void setUniform(std::string_view name, void *src, size_t numBytes);
+    void setUniform(std::string_view name, const void *const src, size_t numBytes);
 
     const CACHE_ENTRY getAndCacheUniformLocation(std::string_view name);
 
    private:
-    static CACHE_ENTRY invalidCacheEntry;
+    static constexpr const CACHE_ENTRY invalidCacheEntry{-1, -1};
 
-    std::string m_sShader;
-    std::string m_sVsh, m_sFsh;
+    std::string sVsh, sFsh;
 
-    ID3D11VertexShader *m_vs;
-    ID3D11PixelShader *m_ps;
-    ID3D11InputLayout *m_inputLayout;
-    std::vector<ID3D11Buffer *> m_constantBuffers;
-    bool m_bConstantBuffersUpToDate;
+    ID3D11VertexShader *vs{nullptr};
+    ID3D11PixelShader *ps{nullptr};
+    ID3D11InputLayout *inputLayout{nullptr};
+    std::vector<ID3D11Buffer *> constantBuffers;
+    bool bConstantBuffersUpToDate{false};
 
-    DirectX11Shader *m_prevShader;
-    ID3D11VertexShader *m_prevVS;
-    ID3D11PixelShader *m_prevPS;
-    ID3D11InputLayout *m_prevInputLayout;
-    std::vector<ID3D11Buffer *> m_prevConstantBuffers;
+    DirectX11Shader *prevShader{nullptr};
+    ID3D11VertexShader *prevVS{nullptr};
+    ID3D11PixelShader *prevPS{nullptr};
+    ID3D11InputLayout *prevInputLayout{nullptr};
+    std::vector<ID3D11Buffer *> prevConstantBuffers;
 
-    std::vector<INPUT_DESC> m_inputDescs;
-    std::vector<BIND_DESC> m_bindDescs;
+    std::vector<INPUT_DESC> inputDescs;
+    std::vector<BIND_DESC> bindDescs;
 
-    std::unordered_map<std::string_view, CACHE_ENTRY> m_uniformLocationCache;
+    sv_unordered_map<CACHE_ENTRY> uniformLocationCache;
 
     // stats
-    unsigned long m_iStatsNumConstantBufferUploadsPerFrameCounter;
-    unsigned long m_iStatsNumConstantBufferUploadsPerFrameCounterEngineFrameCount;
+    unsigned long iStatsNumConstantBufferUploadsPerFrameCounter{0};
+    unsigned long iStatsNumConstantBufferUploadsPerFrameCounterEngineFrameCount{0};
 
 #ifdef MCENGINE_PLATFORM_LINUX
     // loading (dxvk-native)
-    static void *s_vkd3dHandle;
+    static dynutils::lib_obj *s_vkd3dHandle;
     static PFN_D3DCOMPILE_VKD3D s_d3dCompileFunc;
 #endif
     // wrapper functions for dx blob ops
@@ -166,13 +169,13 @@ class DirectX11Shader final : public Shader {
     static SIZE_T getBlobBufferSize(ID3DBlob *blob);
     static void releaseBlob(ID3DBlob *blob);
 
-	struct SHADER_PARSE_RESULT
-	{
-		std::string source;
-		std::vector<std::string> descs;
-	};
+    struct SHADER_PARSE_RESULT {
+        std::string source;
+        std::vector<std::string> descs;
+    };
 
-	SHADER_PARSE_RESULT parseShaderFromString(const std::string &graphicsInterfaceAndShaderTypePrefix, const std::string &shaderSource);
+    SHADER_PARSE_RESULT parseShaderFromString(const std::string &graphicsInterfaceAndShaderTypePrefix,
+                                              const std::string &shaderSource);
 };
 
 #else

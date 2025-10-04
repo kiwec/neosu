@@ -193,17 +193,17 @@ CONVAR(debug_db, "debug_db"sv, false, CLIENT);
 CONVAR(debug_async_db, "debug_async_db"sv, false, CLIENT);
 CONVAR(debug_anim, "debug_anim"sv, false, CLIENT);
 CONVAR(debug_box_shadows, "debug_box_shadows"sv, false, CLIENT);
-CONVAR(debug_draw_timingpoints, "debug_draw_timingpoints"sv, false, SERVER | PROTECTED | GAMEPLAY);
+CONVAR(debug_draw_timingpoints, "debug_draw_timingpoints"sv, false, CLIENT | SERVER | PROTECTED | GAMEPLAY);
 CONVAR(debug_engine, "debug_engine"sv, false, CLIENT);
 CONVAR(debug_env, "debug_env"sv, false, CLIENT);
 CONVAR(debug_font, "debug_font"sv, false, CLIENT);
 CONVAR(debug_file, "debug_file"sv, false, CLIENT);
 CONVAR(debug_hiterrorbar_misaims, "debug_hiterrorbar_misaims"sv, false, CLIENT);
 CONVAR(debug_image, "debug_image"sv, false, CLIENT | NOLOAD | NOSAVE);
-CONVAR(debug_mouse, "debug_mouse"sv, false, SERVER | PROTECTED | GAMEPLAY);
+CONVAR(debug_mouse, "debug_mouse"sv, false, CLIENT | SERVER | PROTECTED | GAMEPLAY);
 CONVAR(debug_pp, "debug_pp"sv, false, CLIENT);
 CONVAR(debug_rm, "debug_rm"sv, false, CLIENT);
-CONVAR(debug_rt, "debug_rt"sv, false, SERVER | PROTECTED | GAMEPLAY,
+CONVAR(debug_rt, "debug_rt"sv, false, CLIENT | SERVER | PROTECTED | GAMEPLAY,
        "draws all rendertargets with a translucent green background"sv);
 CONVAR(debug_shaders, "debug_shaders"sv, false, CLIENT | PROTECTED | GAMEPLAY);
 CONVAR(debug_vprof, "debug_vprof"sv, false, CLIENT | SERVER);
@@ -724,12 +724,12 @@ CONVAR(mod_wobble_rotation_speed, "mod_wobble_rotation_speed"sv, 1.0f, CLIENT | 
 CONVAR(mod_wobble_strength, "mod_wobble_strength"sv, 25.0f, CLIENT | SERVER | GAMEPLAY);
 
 // Important gameplay values
-CONVAR(animation_speed_override, "animation_speed_override"sv, -1.0f, SERVER | PROTECTED | GAMEPLAY);
-CONVAR(approachtime_max, "approachtime_max"sv, 450, SERVER | PROTECTED | GAMEPLAY);
-CONVAR(approachtime_mid, "approachtime_mid"sv, 1200, SERVER | PROTECTED | GAMEPLAY);
-CONVAR(approachtime_min, "approachtime_min"sv, 1800, SERVER | PROTECTED | GAMEPLAY);
-CONVAR(cs_cap_sanity, "cs_cap_sanity"sv, true, SERVER | PROTECTED | GAMEPLAY);
-CONVAR(skip_time, "skip_time"sv, 5000.0f, SERVER | PROTECTED | GAMEPLAY,
+CONVAR(animation_speed_override, "animation_speed_override"sv, -1.0f, CLIENT | SERVER | PROTECTED | GAMEPLAY);
+CONVAR(approachtime_max, "approachtime_max"sv, 450, CLIENT | SERVER | PROTECTED | GAMEPLAY);
+CONVAR(approachtime_mid, "approachtime_mid"sv, 1200, CLIENT | SERVER | PROTECTED | GAMEPLAY);
+CONVAR(approachtime_min, "approachtime_min"sv, 1800, CLIENT | SERVER | PROTECTED | GAMEPLAY);
+CONVAR(cs_cap_sanity, "cs_cap_sanity"sv, true, CLIENT | SERVER | PROTECTED | GAMEPLAY);
+CONVAR(skip_time, "skip_time"sv, 5000.0f, CLIENT | SERVER | PROTECTED | GAMEPLAY,
        "Timeframe in ms within a beatmap which allows skipping if it doesn't contain any hitobjects"sv);
 
 // Accessibility

@@ -7,7 +7,7 @@
 
 #ifdef MCENGINE_FEATURE_OPENGL
 
-#include <unordered_map>
+#include "templates.h"
 
 class OpenGLShader final : public Shader {
     NOCOPY_NOMOVE(OpenGLShader)
@@ -19,15 +19,15 @@ class OpenGLShader final : public Shader {
     void disable() override;
 
     void setUniform1f(std::string_view name, float value) override;
-    void setUniform1fv(std::string_view name, int count, float *values) override;
+    void setUniform1fv(std::string_view name, int count, const float *const values) override;
     void setUniform1i(std::string_view name, int value) override;
     void setUniform2f(std::string_view name, float x, float y) override;
-    void setUniform2fv(std::string_view name, int count, float *vectors) override;
+    void setUniform2fv(std::string_view name, int count, const float *const vectors) override;
     void setUniform3f(std::string_view name, float x, float y, float z) override;
-    void setUniform3fv(std::string_view name, int count, float *vectors) override;
+    void setUniform3fv(std::string_view name, int count, const float *const vectors) override;
     void setUniform4f(std::string_view name, float x, float y, float z, float w) override;
-    void setUniformMatrix4fv(std::string_view name, Matrix4 &matrix) override;
-    void setUniformMatrix4fv(std::string_view name, float *v) override;
+    void setUniformMatrix4fv(std::string_view name, const Matrix4 &matrix) override;
+    void setUniformMatrix4fv(std::string_view name, const float *const v) override;
 
    protected:
     void init() override;
@@ -52,7 +52,7 @@ class OpenGLShader final : public Shader {
 
     int iProgramBackup;
 
-    std::unordered_map<std::string_view, int> uniformLocationCache;
+    sv_unordered_map<int> uniformLocationCache;
 };
 
 #endif

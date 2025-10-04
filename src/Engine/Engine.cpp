@@ -510,23 +510,23 @@ void Engine::toggleFullscreen() {
 void Engine::disableFullscreen() { env->disableFullscreen(); }
 
 void Engine::showMessageInfo(const UString &title, const UString &message) {
-    debugLog("INFO: [{:s}] | {:s}", title.toUtf8(), message.toUtf8());
+    debugLog("INFO: [{:s}] | {:s}", title, message);
     env->showMessageInfo(title, message);
 }
 
 void Engine::showMessageWarning(const UString &title, const UString &message) {
-    debugLog("WARNING: [{:s}] | {:s}", title.toUtf8(), message.toUtf8());
+    debugLog("WARNING: [{:s}] | {:s}", title, message);
     env->showMessageWarning(title, message);
 }
 
 void Engine::showMessageError(const UString &title, const UString &message) {
-    debugLog("ERROR: [{:s}] | {:s}", title.toUtf8(), message.toUtf8());
+    debugLog("ERROR: [{:s}] | {:s}", title, message);
     Logger::flush();
     env->showMessageError(title, message);
 }
 
 void Engine::showMessageErrorFatal(const UString &title, const UString &message) {
-    debugLog("FATAL ERROR: [{:s}] | {:s}", title.toUtf8(), message.toUtf8());
+    debugLog("FATAL ERROR: [{:s}] | {:s}", title, message);
     Logger::flush();
     env->showMessageErrorFatal(title, message);
 }

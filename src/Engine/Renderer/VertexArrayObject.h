@@ -6,13 +6,13 @@
 #include "Graphics.h"
 
 class VertexArrayObject : public Resource {
+    NOCOPY_NOMOVE(VertexArrayObject)
    public:
     VertexArrayObject(Graphics::PRIMITIVE primitive = Graphics::PRIMITIVE::PRIMITIVE_TRIANGLES,
                       Graphics::USAGE_TYPE usage = Graphics::USAGE_TYPE::USAGE_STATIC, bool keepInSystemMemory = false);
-    ~VertexArrayObject() override { ; }
+    ~VertexArrayObject() override = default;
 
     void clear();
-    void empty() { this->clear(); }
 
     void addVertex(vec2 v);
     void addVertex(vec3 v);

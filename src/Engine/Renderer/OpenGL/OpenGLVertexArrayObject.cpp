@@ -172,7 +172,7 @@ void OpenGLVertexArrayObject::init() {
     }
 
     // free memory
-    if(!this->bKeepInSystemMemory) clear();
+    if(!this->bKeepInSystemMemory) this->clear();
 
     this->bReady = true;
 }

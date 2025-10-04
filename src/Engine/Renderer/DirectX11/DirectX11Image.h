@@ -18,6 +18,7 @@
 class DirectX11Interface;
 
 class DirectX11Image final : public Image {
+    NOCOPY_NOMOVE(DirectX11Image)
    public:
     DirectX11Image(std::string filepath, bool mipmapped = false, bool keepInSystemMemory = false);
     DirectX11Image(int width, int height, bool mipmapped = false, bool keepInSystemMemory = false);
@@ -30,10 +31,9 @@ class DirectX11Image final : public Image {
     void setWrapMode(Graphics::WRAP_MODE wrapMode) override;
 
     // ILLEGAL:
-    void setDirectX11InterfaceHack(DirectX11Interface *dxi) { m_interfaceOverrideHack = dxi; }
-    void setShared(bool shared) { m_bShared = shared; }
-    ID3D11Texture2D *getTexture() const { return m_texture; }
-    ID3D11ShaderResourceView *getShaderResourceView() const { return m_shaderResourceView; }
+    inline void setShared(bool shared) { this->bShared = shared; }
+    inline ID3D11Texture2D *getTexture() const { return this->texture; }
+    inline ID3D11ShaderResourceView *getShaderResourceView() const { return this->shaderResourceView; }
 
    protected:
     void init() override;
@@ -46,16 +46,15 @@ class DirectX11Image final : public Image {
    private:
     void deleteDX();
 
-    ID3D11Texture2D *m_texture;
-    ID3D11ShaderResourceView *m_shaderResourceView;
-    ID3D11SamplerState *m_samplerState;
-    D3D11_SAMPLER_DESC m_samplerDesc;
+    ID3D11Texture2D *texture;
+    ID3D11ShaderResourceView *shaderResourceView;
+    ID3D11SamplerState *samplerState;
+    D3D11_SAMPLER_DESC samplerDesc;
 
-    mutable unsigned int m_iTextureUnitBackup;
-    mutable ID3D11ShaderResourceView *m_prevShaderResourceView;
+    mutable unsigned int iTextureUnitBackup;
+    mutable ID3D11ShaderResourceView *prevShaderResourceView;
 
-    DirectX11Interface *m_interfaceOverrideHack;
-    bool m_bShared;
+    bool bShared;
 };
 
 #endif

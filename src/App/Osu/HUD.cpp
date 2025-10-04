@@ -402,7 +402,7 @@ void HUD::drawCursorTrailInt(Shader *trailShader, std::vector<CURSORTRAIL> &trai
         const float trailHeight =
             trailImage->getHeight() * this->getCursorTrailScaleFactor() * cv::cursor_scale.getFloat();
 
-        if(smoothCursorTrail) this->cursorTrailVAO->empty();
+        if(smoothCursorTrail) this->cursorTrailVAO->clear();
 
         // add the sample for the current frame
         if(!emptyTrailFrame) this->addCursorTrailPosition(trail, pos);
@@ -657,7 +657,7 @@ void HUD::drawPlayfieldBorder(vec2 playfieldCenter, vec2 playfieldSize, float hi
         // top
         {
             static VertexArrayObject vao(Graphics::PRIMITIVE::PRIMITIVE_QUADS);
-            vao.empty();
+            vao.clear();
 
             vao.addVertex(playfieldBorderTopLeft);
             vao.addColor(outerColor);
@@ -674,7 +674,7 @@ void HUD::drawPlayfieldBorder(vec2 playfieldCenter, vec2 playfieldSize, float hi
         // left
         {
             static VertexArrayObject vao(Graphics::PRIMITIVE::PRIMITIVE_QUADS);
-            vao.empty();
+            vao.clear();
 
             vao.addVertex(playfieldBorderTopLeft);
             vao.addColor(outerColor);
@@ -691,7 +691,7 @@ void HUD::drawPlayfieldBorder(vec2 playfieldCenter, vec2 playfieldSize, float hi
         // right
         {
             static VertexArrayObject vao(Graphics::PRIMITIVE::PRIMITIVE_QUADS);
-            vao.empty();
+            vao.clear();
 
             vao.addVertex(playfieldBorderTopLeft + vec2(playfieldBorderSize.x + 2 * borderSize, 0));
             vao.addColor(outerColor);
@@ -710,7 +710,7 @@ void HUD::drawPlayfieldBorder(vec2 playfieldCenter, vec2 playfieldSize, float hi
         // bottom
         {
             static VertexArrayObject vao(Graphics::PRIMITIVE::PRIMITIVE_QUADS);
-            vao.empty();
+            vao.clear();
 
             vao.addVertex(playfieldBorderTopLeft + vec2(borderSize, playfieldBorderSize.y + borderSize));
             vao.addColor(innerColor);
@@ -1729,7 +1729,7 @@ void HUD::drawProgressBar(float percent, bool waiting) {
 
     {
         static VertexArrayObject vao;
-        vao.empty();
+        vao.clear();
 
         vec2 prevVertex{0.f};
         for(int i = 0; i < num_segments + 1; i++) {

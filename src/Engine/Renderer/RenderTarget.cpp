@@ -169,10 +169,10 @@ void RenderTarget::rebuild(int x, int y, int width, int height, Graphics::MULTIS
     this->vSize.y = height;
     this->multiSampleType = multiSampleType;
 
-    this->reload();
     this->vao1->release();
     this->vao2->release();
     this->vao3->release();
+    this->reload();
 }
 
 void RenderTarget::rebuild(int x, int y, int width, int height) {

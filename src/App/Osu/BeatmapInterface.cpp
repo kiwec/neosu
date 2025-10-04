@@ -1513,7 +1513,8 @@ void BeatmapInterface::loadMusic() {
         if(this->beatmap) {
             debugLog("no music file for {}!", this->beatmap->getFilePath());
         }
-        unloadMusic();
+        // pause previously playing music, if any
+        soundEngine->pause(this->music);
         return;
     }
 
@@ -1788,10 +1789,9 @@ void BeatmapInterface::drawFollowPoints() {
     // 0.7x means animation lasts only 0.7 of it's time
     const f64 animationMutiplier = this->getSpeedMultiplier() / osu->getAnimationSpeedMultiplier();
     const i32 followPointApproachTime =
-        animationMutiplier *
-        (cv::followpoints_clamp.getBool()
-             ? std::min((i32)this->getApproachTime(), (i32)cv::followpoints_approachtime.getFloat())
-             : (i32)cv::followpoints_approachtime.getFloat());
+        animationMutiplier * (cv::followpoints_clamp.getBool() ? std::min((i32)this->getApproachTime(),
+                                                                          (i32)cv::followpoints_approachtime.getFloat())
+                                                               : (i32)cv::followpoints_approachtime.getFloat());
     const bool followPointsConnectCombos = cv::followpoints_connect_combos.getBool();
     const bool followPointsConnectSpinners = cv::followpoints_connect_spinners.getBool();
     const f32 followPointSeparationMultiplier = std::max(cv::followpoints_separation_multiplier.getFloat(), 0.1f);
@@ -2354,9 +2354,9 @@ void BeatmapInterface::update2() {
 
         // ugh. force update all hitobjects while waiting (necessary because of pvs optimization)
         i32 curPos = this->iCurMusicPos + (i32)(cv::universal_offset.getFloat() * this->getSpeedMultiplier()) +
-                      this->music->getBASSStreamLatencyCompensation() - this->beatmap->getLocalOffset() -
-                      this->beatmap->getOnlineOffset() -
-                      (this->beatmap->getVersion() < 5 ? cv::old_beatmap_offset.getInt() : 0);
+                     this->music->getBASSStreamLatencyCompensation() - this->beatmap->getLocalOffset() -
+                     this->beatmap->getOnlineOffset() -
+                     (this->beatmap->getVersion() < 5 ? cv::old_beatmap_offset.getInt() : 0);
         if(curPos > -1)  // otherwise auto would already click elements that start at exactly 0 (while the map has not
                          // even started)
             curPos = -1;
@@ -2582,14 +2582,14 @@ void BeatmapInterface::update2() {
         bool spinner_active = false;
 
         const i32 pvs = !cv::mod_mafham.getBool()
-                             ? this->getPVS()
-                             : (this->hitobjects.size() > 0
-                                    ? (this->hitobjects[std::clamp<int>(this->iCurrentHitObjectIndex +
-                                                                            cv::mod_mafham_render_livesize.getInt() + 1,
-                                                                        0, this->hitobjects.size() - 1)]
-                                           ->click_time -
-                                       this->iCurMusicPosWithOffsets + 1500)
-                                    : this->getPVS());
+                            ? this->getPVS()
+                            : (this->hitobjects.size() > 0
+                                   ? (this->hitobjects[std::clamp<int>(this->iCurrentHitObjectIndex +
+                                                                           cv::mod_mafham_render_livesize.getInt() + 1,
+                                                                       0, this->hitobjects.size() - 1)]
+                                          ->click_time -
+                                      this->iCurMusicPosWithOffsets + 1500)
+                                   : this->getPVS());
         const bool usePVS = cv::pvs.getBool();
 
         const int notelockType = cv::notelock_type.getInt();
@@ -2621,8 +2621,7 @@ void BeatmapInterface::update2() {
                     this->iNextHitObjectTime = this->hitobjects[i]->click_time;
                 else {
                     this->currentHitObject = this->hitobjects[i];
-                    const i32 actualPrevHitObjectTime =
-                        this->hitobjects[i]->click_time + this->hitobjects[i]->duration;
+                    const i32 actualPrevHitObjectTime = this->hitobjects[i]->click_time + this->hitobjects[i]->duration;
                     this->iPreviousHitObjectTime = actualPrevHitObjectTime;
 
                     if(this->iCurMusicPosWithOffsets >
@@ -2961,7 +2960,7 @@ void BeatmapInterface::update2() {
 
         const i32 gapSize = this->iNextHitObjectTime - this->iPreviousHitObjectTime;
         const i32 start = (gapSize / 2 > minGapSize ? this->iPreviousHitObjectTime + (gapSize / 2)
-                                                     : this->iNextHitObjectTime - minGapSize);
+                                                    : this->iNextHitObjectTime - minGapSize);
         const i32 nextDelta = this->iCurMusicPosWithOffsets - start;
         const bool inSectionPassFail =
             (gapSize > minGapSize && nextDelta > 0) &&

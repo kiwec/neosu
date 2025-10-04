@@ -75,8 +75,6 @@
 
 #include "shaders.h"
 
-Osu *osu = nullptr;
-
 void Osu::globalOnSetValueProtectedCallback() {
     const auto &map_iface = this->getMapInterface();
     if(likely(map_iface)) {
@@ -84,6 +82,7 @@ void Osu::globalOnSetValueProtectedCallback() {
     }
 }
 
+Osu *osu = nullptr;
 Osu::Osu() {
     osu = this;
     srand(crypto::rng::get_rand<u32>());

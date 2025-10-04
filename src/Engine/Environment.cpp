@@ -40,11 +40,9 @@
 #include <curl/curl.h>
 #include <SDL3/SDL.h>
 
-Environment *env = nullptr;
+SDL_Environment *Environment::s_sdlenv{nullptr};
 
-bool Environment::s_bIsWine = false;
-SDL_Environment *Environment::s_sdlenv = nullptr;
-
+Environment *env{nullptr};
 Environment::Environment(const std::unordered_map<std::string, std::optional<std::string>> &argMap,
                          const std::vector<std::string> &cmdlineVec)
     : m_interop(this), m_mArgMap(argMap), m_vCmdLine(cmdlineVec) {
@@ -53,7 +51,7 @@ Environment::Environment(const std::unordered_map<std::string, std::optional<std
     s_sdlenv = SDL_GetEnvironment();
 
 #ifdef MCENGINE_PLATFORM_WINDOWS
-    s_bIsWine = !!GetProcAddress(GetModuleHandle(TEXT("ntdll.dll")), "wine_get_version");
+    m_bIsWine = !!GetProcAddress(GetModuleHandle(TEXT("ntdll.dll")), "wine_get_version");
 #endif
 
     m_engine = nullptr;  // will be initialized by the mainloop once setup is complete
@@ -106,6 +104,7 @@ Environment::Environment(const std::unordered_map<std::string, std::optional<std
 
     m_sdldriver = SDL_GetCurrentVideoDriver();
     m_bIsX11 = (m_sdldriver == "x11");
+    m_bIsWayland = (m_sdldriver == "wayland");
 
     // use directx if:
     // we we built with support for it, and

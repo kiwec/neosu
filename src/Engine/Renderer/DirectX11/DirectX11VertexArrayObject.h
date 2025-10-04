@@ -15,27 +15,30 @@
 
 #include "DirectX11Interface.h"
 
-class DirectX11VertexArrayObject final : public VertexArrayObject
-{
-public:
-	DirectX11VertexArrayObject(Graphics::PRIMITIVE primitive = Graphics::PRIMITIVE::PRIMITIVE_TRIANGLES, Graphics::USAGE_TYPE usage = Graphics::USAGE_TYPE::USAGE_STATIC, bool keepInSystemMemory = false);
-	~DirectX11VertexArrayObject() override {destroy();}
+class DirectX11VertexArrayObject final : public VertexArrayObject {
+    NOCOPY_NOMOVE(DirectX11VertexArrayObject)
+   public:
+    DirectX11VertexArrayObject(Graphics::PRIMITIVE primitive = Graphics::PRIMITIVE::PRIMITIVE_TRIANGLES,
+                               Graphics::USAGE_TYPE usage = Graphics::USAGE_TYPE::USAGE_STATIC,
+                               bool keepInSystemMemory = false);
+    ~DirectX11VertexArrayObject() override { destroy(); }
 
-	void draw() override;
+    void draw() override;
 
-protected:
-	void init() override;
-	void initAsync() override;
-	void destroy() override;
+   protected:
+    void init() override;
+    void initAsync() override;
+    void destroy() override;
 
-private:
-	static int primitiveToDirectX(Graphics::PRIMITIVE primitive);
-	static int usageToDirectX(Graphics::USAGE_TYPE usage);
+   private:
+    static int primitiveToDirectX(Graphics::PRIMITIVE primitive);
+    static int usageToDirectX(Graphics::USAGE_TYPE usage);
 
-	ID3D11Buffer *m_vertexBuffer;
+    std::vector<DirectX11Interface::SimpleVertex> convertedVertices;
 
-	Graphics::PRIMITIVE m_convertedPrimitive;
-	std::vector<DirectX11Interface::SimpleVertex> m_convertedVertices;
+    ID3D11Buffer *vertexBuffer{};
+
+    Graphics::PRIMITIVE convertedPrimitive;
 };
 
 #endif

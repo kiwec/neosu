@@ -695,7 +695,7 @@ void McFont::drawString(const UString &text) {
     const int maxNumGlyphs = cv::r_drawstring_max_string_length.getInt();
     if(text.length() == 0 || text.length() > maxNumGlyphs) return;
 
-    m_vao.empty();
+    m_vao.clear();
 
     const size_t totalVerts = text.length() * VERTS_PER_VAO;
     m_vao.reserve(totalVerts);
@@ -748,7 +748,7 @@ void McFont::flushBatch() {
 
     m_vertices.resize(m_batchQueue.totalVerts);
     m_texcoords.resize(m_batchQueue.totalVerts);
-    m_vao.empty();
+    m_vao.clear();
     m_vao.reserve(m_batchQueue.totalVerts);
 
     size_t currentVertex = 0;

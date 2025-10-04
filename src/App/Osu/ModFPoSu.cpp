@@ -107,7 +107,7 @@ void ModFPoSu::draw() {
                         // axis lines at (0, 0, 0)
                         if(cv::fposu_noclip.getBool()) {
                             static VertexArrayObject vao(Graphics::PRIMITIVE::PRIMITIVE_LINES);
-                            vao.empty();
+                            vao.clear();
                             {
                                 vec3 pos = vec3(0, 0, 0);
                                 float length = 1.0f;

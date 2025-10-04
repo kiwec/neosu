@@ -204,7 +204,11 @@ class Environment {
 
     // debug
     [[nodiscard]] inline bool envDebug() const { return m_bEnvDebug; }
-    [[nodiscard]] inline bool isWine() const { return s_bIsWine; }
+
+    // platform
+    [[nodiscard]] constexpr bool isWine() const { return m_bIsWine; }
+    [[nodiscard]] constexpr bool isX11() const { return m_bIsX11; }
+    [[nodiscard]] constexpr bool isWayland() const { return m_bIsWayland; }
 
    protected:
     std::unordered_map<std::string, std::optional<std::string>> m_mArgMap;
@@ -213,7 +217,6 @@ class Environment {
 
     SDL_Window *m_window;
     std::string m_sdldriver;
-    bool m_bIsX11;
     static SDL_Environment *s_sdlenv;
     bool m_bUsingDX11;
 
@@ -283,11 +286,15 @@ class Environment {
     // clipboard
     UString m_sCurrClipboardText;
 
-    // misc
-    void initCursors();
-    static bool s_bIsWine;
+    // misc platform
+    bool m_bIsWine;
+    bool m_bIsX11;
+    bool m_bIsWayland;
 
    private:
+    // lazy inits
+    void initCursors();
+
     // static callbacks/helpers
     static void sdlFileDialogCallback(void *userdata, const char *const *filelist, int filter) noexcept;
 
