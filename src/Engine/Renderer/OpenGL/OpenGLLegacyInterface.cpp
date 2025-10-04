@@ -761,8 +761,8 @@ void OpenGLLegacyInterface::initSmoothClipShader() {
     if(this->smoothClipShader != nullptr) return;
 
     this->smoothClipShader.reset(this->createShaderFromSource(
-        std::string(reinterpret_cast<const char *>(smoothclip_vsh), smoothclip_vsh_size()),
-        std::string(reinterpret_cast<const char *>(smoothclip_fsh), smoothclip_fsh_size())));
+        std::string(reinterpret_cast<const char *>(GL_smoothclip_vsh), GL_smoothclip_vsh_size()),
+        std::string(reinterpret_cast<const char *>(GL_smoothclip_fsh), GL_smoothclip_fsh_size())));
 
     if(this->smoothClipShader != nullptr) {
         this->smoothClipShader->loadAsync();

@@ -58,7 +58,7 @@ SDLMain::~SDLMain() {
     m_engine.reset();
 
     // clean up GL context
-    if(m_context && (Env::cfg((REND::GL | REND::GLES32), !REND::DX11))) {
+    if(m_context && (!m_bUsingDX11)) {
         SDL_GL_DestroyContext(m_context);
         m_context = nullptr;
     }
@@ -86,7 +86,7 @@ SDL_AppResult SDLMain::initialize() {
     // initialize engine, now that all the setup is done
     m_engine = std::make_unique<Engine>();
 
-    if (!m_engine || m_engine->isShuttingDown()) {
+    if(!m_engine || m_engine->isShuttingDown()) {
         return SDL_APP_FAILURE;
     }
     // if we got to this point, all relevant subsystems (input handling, graphics interface, etc.) have been initialized
@@ -375,11 +375,11 @@ static constexpr auto WINDOW_HEIGHT_MIN = 240;
 
 bool SDLMain::createWindow() {
     // pre window-creation settings
-    if constexpr(Env::cfg((REND::GL | REND::GLES32), !REND::DX11)) {
+    if(!m_bUsingDX11) {  // these are only for opengl
         SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,
                             Env::cfg(REND::GL) ? SDL_GL_CONTEXT_PROFILE_COMPATIBILITY : SDL_GL_CONTEXT_PROFILE_ES);
-        if constexpr(!Env::cfg(REND::GL)) {
+        if constexpr(!Env::cfg(REND::GL)) {  // OpenGL ES
             SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
             SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
         }
@@ -400,10 +400,9 @@ bool SDLMain::createWindow() {
     }
 
     // set vulkan for linux dxvk-native, opengl otherwise (or none for windows dx11)
-    constexpr auto windowFlags =
+    const auto windowFlags =
         SDL_WINDOW_HIDDEN | SDL_WINDOW_INPUT_FOCUS | SDL_WINDOW_MOUSE_FOCUS |
-        (Env::cfg((REND::GL | REND::GLES32)) ? SDL_WINDOW_OPENGL
-                                             : (Env::cfg(OS::LINUX, REND::DX11) ? SDL_WINDOW_VULKAN : 0UL));
+        (!m_bUsingDX11 ? SDL_WINDOW_OPENGL : (Env::cfg(OS::LINUX, REND::DX11) ? SDL_WINDOW_VULKAN : 0UL));
 
     // limit default window size so it fits the screen
     i32 windowCreateWidth = WINDOW_WIDTH;
@@ -421,8 +420,7 @@ bool SDLMain::createWindow() {
     m_vLastKnownWindowSize = vec2{static_cast<float>(windowCreateWidth), static_cast<float>(windowCreateHeight)};
 
     SDL_PropertiesID props = SDL_CreateProperties();
-    if constexpr (Env::cfg(REND::DX11))
-    	SDL_SetBooleanProperty(props, SDL_PROP_WINDOW_CREATE_EXTERNAL_GRAPHICS_CONTEXT_BOOLEAN, true);
+    if(m_bUsingDX11) SDL_SetBooleanProperty(props, SDL_PROP_WINDOW_CREATE_EXTERNAL_GRAPHICS_CONTEXT_BOOLEAN, true);
     SDL_SetStringProperty(props, SDL_PROP_WINDOW_CREATE_TITLE_STRING, WINDOW_TITLE);
     SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_X_NUMBER, SDL_WINDOWPOS_CENTERED);
     SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_Y_NUMBER, SDL_WINDOWPOS_CENTERED);
@@ -454,7 +452,7 @@ bool SDLMain::createWindow() {
     cv::monitor.setValue(SDL_GetDisplayForWindow(m_window), false);
 
     // create gl context
-    if constexpr(Env::cfg((REND::GL | REND::GLES32), !REND::DX11)) {
+    if(!m_bUsingDX11) {
         m_context = SDL_GL_CreateContext(m_window);
         if(!m_context) {
             debugLog("Couldn't create OpenGL context: {:s}", SDL_GetError());

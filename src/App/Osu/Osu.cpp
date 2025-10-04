@@ -336,14 +336,27 @@ Osu::Osu() {
     }
 
     // Not the type of shader you want players to tweak or delete, so loading from string
-    this->actual_flashlight_shader = resourceManager->createShader(
-        std::string(reinterpret_cast<const char *>(actual_flashlight_vsh), actual_flashlight_vsh_size()),
-        std::string(reinterpret_cast<const char *>(actual_flashlight_fsh), actual_flashlight_fsh_size()),
-        "actual_flashlight");
-
-    this->flashlight_shader = resourceManager->createShader(
-        std::string(reinterpret_cast<const char *>(flashlight_vsh), flashlight_vsh_size()),
-        std::string(reinterpret_cast<const char *>(flashlight_fsh), flashlight_fsh_size()), "flashlight");
+    if(env->usingDX11()) {
+#ifdef MCENGINE_FEATURE_DIRECTX11
+        this->actual_flashlight_shader = resourceManager->createShader(
+            std::string(reinterpret_cast<const char *>(DX11_actual_flashlight_vsh), DX11_actual_flashlight_vsh_size()),
+            std::string(reinterpret_cast<const char *>(DX11_actual_flashlight_fsh), DX11_actual_flashlight_fsh_size()),
+            "actual_flashlight");
+        this->flashlight_shader = resourceManager->createShader(
+            std::string(reinterpret_cast<const char *>(DX11_flashlight_vsh), DX11_flashlight_vsh_size()),
+            std::string(reinterpret_cast<const char *>(DX11_flashlight_fsh), DX11_flashlight_fsh_size()), "flashlight");
+#endif
+    } else {
+#if defined(MCENGINE_FEATURE_OPENGL) || defined(MCENGINE_FEATURE_GLES32)
+        this->actual_flashlight_shader = resourceManager->createShader(
+            std::string(reinterpret_cast<const char *>(GL_actual_flashlight_vsh), GL_actual_flashlight_vsh_size()),
+            std::string(reinterpret_cast<const char *>(GL_actual_flashlight_fsh), GL_actual_flashlight_fsh_size()),
+            "actual_flashlight");
+        this->flashlight_shader = resourceManager->createShader(
+            std::string(reinterpret_cast<const char *>(GL_flashlight_vsh), GL_flashlight_vsh_size()),
+            std::string(reinterpret_cast<const char *>(GL_flashlight_fsh), GL_flashlight_fsh_size()), "flashlight");
+#endif
+    }
 
     env->setCursorVisible(!McRect{{}, this->vInternalResolution}.contains(mouse->getPos()));
 }
@@ -435,7 +448,7 @@ void Osu::draw() {
                 this->flashlight_shader->setUniform1f("max_opacity", opacity);
                 this->flashlight_shader->setUniform1f("flashlight_radius", fl_radius);
 
-                if constexpr(Env::cfg(REND::DX11)) {  // don't flip Y position for DX11
+                if(env->usingDX11()) {  // don't flip Y position for DX11
                     this->flashlight_shader->setUniform2f("flashlight_center", flashlightPos.x, flashlightPos.y);
 
                     g->forceUpdateTransform();
@@ -462,7 +475,7 @@ void Osu::draw() {
                 this->actual_flashlight_shader->setUniform1f("max_opacity", opacity);
                 this->actual_flashlight_shader->setUniform1f("flashlight_radius", anti_fl_radius);
 
-                if constexpr(Env::cfg(REND::DX11)) {  // don't flip Y position for DX11
+                if(env->usingDX11()) {  // don't flip Y position for DX11
                     this->actual_flashlight_shader->setUniform2f("flashlight_center", flashlightPos.x, flashlightPos.y);
 
                     g->forceUpdateTransform();
@@ -470,7 +483,7 @@ void Osu::draw() {
                     this->actual_flashlight_shader->setUniformMatrix4fv("mvp", mvp);
                 } else {
                     this->actual_flashlight_shader->setUniform2f("flashlight_center", flashlightPos.x,
-                                                                this->getVirtScreenSize().y - flashlightPos.y);
+                                                                 this->getVirtScreenSize().y - flashlightPos.y);
                 }
 
                 g->setColor(argb(255, 0, 0, 0));

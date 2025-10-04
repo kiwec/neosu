@@ -4,33 +4,46 @@
 #include "config.h"
 #include "incbin.h"
 
-#if defined(MCENGINE_FEATURE_OPENGL) || defined(MCENGINE_FEATURE_GLES32)
-
 #ifndef SHADERS_INCDIR
 #define SHADERS_INCDIR
 #endif
 
+#if defined(MCENGINE_FEATURE_OPENGL) || defined(MCENGINE_FEATURE_GLES32)
+
 /* shader files located in assets/shaders */
-#define SHADER_FILE_EXT ".glsl"
-#define DEFAULT_SHADER(...)
+#define GLSL_SHADER_NAMES(VorF, X)                                                           \
+    X(GL_cursortrail_##VorF##sh, SHADERS_INCDIR "GL_cursortrail_" #VorF ".glsl")             \
+    X(GL_slider_##VorF##sh, SHADERS_INCDIR "GL_slider_" #VorF ".glsl")                       \
+    X(GL_flashlight_##VorF##sh, SHADERS_INCDIR "GL_flashlight_" #VorF ".glsl")               \
+    X(GL_actual_flashlight_##VorF##sh, SHADERS_INCDIR "GL_actual_flashlight_" #VorF ".glsl") \
+    X(GL_smoothclip_##VorF##sh, SHADERS_INCDIR "GL_smoothclip_" #VorF ".glsl")
 
-#elif defined(MCENGINE_FEATURE_DIRECTX11)
+#else
 
-#define SHADER_FILE_EXT ".hlsl"
-#define DEFAULT_SHADER(VorF, X) X(default_##VorF##sh, SHADERS_INCDIR "default_" #VorF SHADER_FILE_EXT)
+#define GLSL_SHADER_NAMES(...)
 
 #endif
 
-#define BASE_SHADER_NAMES(VorF, X)                                                             \
-    X(cursortrail_##VorF##sh, SHADERS_INCDIR "cursortrail_" #VorF SHADER_FILE_EXT)             \
-    X(slider_##VorF##sh, SHADERS_INCDIR "slider_" #VorF SHADER_FILE_EXT)                       \
-    X(flashlight_##VorF##sh, SHADERS_INCDIR "flashlight_" #VorF SHADER_FILE_EXT)               \
-    X(actual_flashlight_##VorF##sh, SHADERS_INCDIR "actual_flashlight_" #VorF SHADER_FILE_EXT) \
-    X(smoothclip_##VorF##sh, SHADERS_INCDIR "smoothclip_" #VorF SHADER_FILE_EXT)               \
-    DEFAULT_SHADER(VorF, X)
+#if defined(MCENGINE_FEATURE_DIRECTX11)
+
+#define HLSL_SHADER_NAMES(VorF, X)                                                               \
+    X(DX11_cursortrail_##VorF##sh, SHADERS_INCDIR "DX11_cursortrail_" #VorF ".hlsl")             \
+    X(DX11_slider_##VorF##sh, SHADERS_INCDIR "DX11_slider_" #VorF ".hlsl")                       \
+    X(DX11_flashlight_##VorF##sh, SHADERS_INCDIR "DX11_flashlight_" #VorF ".hlsl")               \
+    X(DX11_actual_flashlight_##VorF##sh, SHADERS_INCDIR "DX11_actual_flashlight_" #VorF ".hlsl") \
+    X(DX11_smoothclip_##VorF##sh, SHADERS_INCDIR "DX11_smoothclip_" #VorF ".hlsl")               \
+    X(DX11_default_##VorF##sh, SHADERS_INCDIR "DX11_default_" #VorF ".hlsl")
+
+#else
+
+#define HLSL_SHADER_NAMES(...)
+
+#endif
 
 #define ALL_SHADER_BINARIES(X) \
-    BASE_SHADER_NAMES(v, X)    \
-    BASE_SHADER_NAMES(f, X)
+    GLSL_SHADER_NAMES(v, X)    \
+    GLSL_SHADER_NAMES(f, X)    \
+    HLSL_SHADER_NAMES(v, X)    \
+    HLSL_SHADER_NAMES(f, X)
 
 ALL_SHADER_BINARIES(INCBIN_H)

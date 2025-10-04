@@ -155,7 +155,7 @@ AC_ARG_ENABLE([static],
     AS_HELP_STRING([--enable-static], [Enable static linking where possible (default: yes, --disable-static implies shared)]))
 
 AC_ARG_WITH([renderer],
-    AS_HELP_STRING([--with-renderer={opengl,opengles,dx11}], [The (single) renderer backend to build with (default: opengl)]))
+    AS_HELP_STRING([--with-renderer={opengl,dx11,opengles}], [The (comma separated list of) renderer backend(s) to build with (default: opengl)]))
 
 AC_ARG_WITH([audio],
     AS_HELP_STRING([--with-audio={bass,soloud}], [The (comma separated list of) audio backend(s) to build with (default: soloud)]))
@@ -243,7 +243,11 @@ AS_IF([test "$host_os" = "mingw32"], [
     AC_PROG_PATCHELF # only need this for linux
 ])
 
-renderer=opengl
+use_opengl_default=yes # ugly
+use_opengl=unset
+use_opengles32=unset
+use_dx11=unset
+
 AS_VAR_SET_IF([with_renderer],
     [ac_save_IFS=$IFS
         IFS=' ,'
@@ -253,13 +257,41 @@ AS_VAR_SET_IF([with_renderer],
         for rend
         do
             case $rend in
-            opengles*) AC_DEFINE([MCENGINE_FEATURE_GLES32], [1], [Defined if the OpenGL ES 3.2 backend is to be used (WASM).]) renderer=opengles32 ;;
-            dx11) AC_DEFINE([MCENGINE_FEATURE_DIRECTX11], [1], [Defined if the DX11 backend is to be used.]) renderer=dx11 ;;
+            opengl) use_opengl=yes ;;
+            opengles*) use_opengles32=yes ;;
+            dx11) use_dx11=yes ;;
             esac
         done])
 
-AS_IF([test "$renderer" = "opengl"], [
+AS_IF([test "x$use_dx11" = "xyes" || test "x$use_opengles32" = "xyes"], [
+    use_opengl_default=no
+])
+
+rendbackendlist=
+
+AS_IF([test "x$use_opengl" = "xyes" || test "x$use_opengl_default" = "xyes"], [
+    use_opengl=yes
     AC_DEFINE([MCENGINE_FEATURE_OPENGL], [1], [Defined if the OpenGLLegacy backend is to be used.])
+    rendbackendlist="opengl"
+], [
+    use_opengl=no
+])
+
+# can't combine
+AS_IF([test "x$use_opengles32" = "xyes" && test "x$use_opengl" != "yes"], [
+    use_opengles32=yes
+    AC_DEFINE([MCENGINE_FEATURE_OPENGL], [1], [Defined if the OpenGLLegacy backend is to be used.])
+    rendbackendlist="opengles32"
+], [
+    use_opengles32=no
+])
+
+AS_IF([test "x$use_dx11" = "xyes" ], [
+    use_dx11=yes
+    AC_DEFINE([MCENGINE_FEATURE_DIRECTX11], [1], [Defined if the DX11 backend is to be used.])
+    rendbackendlist="$rendbackendlist dx11"
+], [
+    use_dx11=no
 ])
 
 AUDBACKENDLIST=""
@@ -787,7 +819,7 @@ AC_SUBST([MISC_INCDIR])
 AC_SUBST([INCBIN_FLAGS])
 
 AC_MSG_CHECKING([for shaders in $srcdir/$ASSETS_DIR/shaders])
-AS_IF([test -f "$srcdir/$ASSETS_DIR/shaders/slider_f.glsl"], [
+AS_IF([test -f "$srcdir/$ASSETS_DIR/shaders/GL_slider_f.glsl"], [
     AC_MSG_RESULT([yes])
     SHADERS_INCDIR="$srcdir/$ASSETS_DIR/shaders/"
     INCBIN_FLAGS="$INCBIN_FLAGS -I$SHADERS_INCDIR"
@@ -825,7 +857,7 @@ AC_SUBST([TEMP_WINEPFX], ['${abs_top_srcdir}/build-aux/.tmpwinepfx'])
 AC_SUBST([BUILD_MISCDIR], ['${abs_top_srcdir}/build-aux/misc'])
 AC_SUBST([bindir], [$bindir-$host_cpu])
 
-AS_IF([test "$renderer" != "dx11"], [
+AS_IF([test "x$use_opengl" = "xyes" || test "x$use_opengles32" = "xyes"], [
     AS_IF([test "$SYSNAME" = "linux"], [
         PKG_CHECK_AUTO([GLU], [glu], [have_glu=yes], [AC_MSG_ERROR([Missing glu libs, required for OpenGL])])
         PKG_CHECK_AUTO([GL], [gl], [have_gl=yes], [AC_MSG_ERROR([Missing gl libs, required for OpenGL])])
@@ -841,7 +873,9 @@ AS_IF([test "$renderer" != "dx11"], [
         have_xrandr="not required"
         have_egl="not required"
     ])
-],[
+])
+
+AS_IF([test "x$use_dx11" = "xyes"], [
     AS_IF([test "$SYSNAME" = "linux"], [
         PKG_CHECK_AUTO([DXGI], [dxvk-dxgi], [have_dxgi=yes], [have_dxgi=no])
         PKG_CHECK_AUTO([D3D11], [dxvk-d3d11], [have_d3d11=yes], [have_d3d11=no])
@@ -1112,7 +1146,7 @@ AC_MSG_NOTICE([
 neosu build configuration:
     Build target:       ${target}
     Install prefix:     ${prefix}
-    Renderer:           ${renderer}
+    Renderers:          ${rendbackendlist}
     Preprocessor flags: ${CPPFLAGS}
     ccache:             ${CCACHE-no}
     clang:              ${CLANG-no}

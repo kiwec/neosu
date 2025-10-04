@@ -175,7 +175,7 @@ void ModFPoSu::draw() {
 
                     Matrix4 worldMatrix = this->modelMatrix;
 
-                    if constexpr(Env::cfg(REND::DX11)) {
+                    if (env->usingDX11()) {
                         // NOTE: convert from OpenGL coordinate system
                         static Matrix4 zflip = Matrix4().scale(1, 1, -1);
                         worldMatrix = worldMatrix * zflip;
@@ -574,7 +574,7 @@ void ModFPoSu::makePlayfield() {
     float topTC = 1.0f;
     float bottomTC = 0.0f;
 
-    if constexpr(Env::cfg(REND::DX11)) {
+    if (env->usingDX11()) {
         topTC = 0.0f;
         bottomTC = 1.0f;
     }

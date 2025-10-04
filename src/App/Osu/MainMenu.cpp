@@ -857,7 +857,7 @@ void MainMenu::draw() {
     }
 
     // draw dx11 test banner
-    if constexpr(Env::cfg(REND::DX11)) {
+    if(env->usingDX11()) {
         this->drawBanner();
     }
 
@@ -1634,8 +1634,10 @@ void MainMenu::SongsFolderEnumerator::initAsync() {
     this->folderPath = Database::getOsuSongsFolder();
     if(env->directoryExists(this->folderPath)) {
         auto peppy_mapsets = env->getFoldersInFolder(this->folderPath);
+        auto trimmed_folder = this->folderPath;
+        if(trimmed_folder.back() == '/' || trimmed_folder.back() == '\\') trimmed_folder.pop_back();
         for(const auto &mapset : peppy_mapsets) {
-            this->entries.push_back(fmt::format("{}/{}/", this->folderPath, mapset));
+            this->entries.push_back(fmt::format("{}/{}/", trimmed_folder, mapset));
         }
     }
 

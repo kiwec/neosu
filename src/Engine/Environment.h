@@ -61,6 +61,11 @@ class Environment {
 
     // engine/factory
     Graphics *createRenderer();
+#ifdef MCENGINE_FEATURE_DIRECTX11
+    [[nodiscard]] inline bool usingDX11() const { return m_bUsingDX11; }
+#else
+    [[nodiscard]] constexpr forceinline bool usingDX11() const { return false; }
+#endif
 
     // system
     void shutdown();
@@ -169,20 +174,20 @@ class Environment {
     [[nodiscard]] inline bool isFullscreenWindowedBorderless() const { return m_bFullscreenWindowedBorderless; }
     [[nodiscard]] int getDPI() const;
     [[nodiscard]] inline float getDPIScale() const { return (float)getDPI() / 96.0f; }
-    [[nodiscard]] inline const bool &isFullscreen() const { return m_bFullscreen; }
-    [[nodiscard]] inline const bool &isWindowResizable() const { return m_bResizable; }
+    [[nodiscard]] inline bool isFullscreen() const { return m_bFullscreen; }
+    [[nodiscard]] inline bool isWindowResizable() const { return m_bResizable; }
     [[nodiscard]] inline bool hasFocus() const { return m_bHasFocus; }
 
     [[nodiscard]] bool isPointValid(vec2 point) const;  // whether an x,y coordinate lands on an actual display
 
     // mouse
-    [[nodiscard]] inline const bool &isCursorInWindow() const { return m_bIsCursorInsideWindow; }
-    [[nodiscard]] inline const bool &isCursorVisible() const { return m_bCursorVisible; }
-    [[nodiscard]] inline const bool &isCursorClipped() const { return m_bCursorClipped; }
-    [[nodiscard]] inline const vec2 &getMousePos() const { return m_vLastAbsMousePos; }
+    [[nodiscard]] inline bool isCursorInWindow() const { return m_bIsCursorInsideWindow; }
+    [[nodiscard]] inline bool isCursorVisible() const { return m_bCursorVisible; }
+    [[nodiscard]] inline bool isCursorClipped() const { return m_bCursorClipped; }
+    [[nodiscard]] inline vec2 getMousePos() const { return m_vLastAbsMousePos; }
     [[nodiscard]] inline const McRect &getCursorClip() const { return m_cursorClipRect; }
-    [[nodiscard]] inline const CURSORTYPE &getCursor() const { return m_cursorType; }
-    [[nodiscard]] inline const bool &isOSMouseInputRaw() const { return m_bActualRawInputState; }
+    [[nodiscard]] inline CURSORTYPE getCursor() const { return m_cursorType; }
+    [[nodiscard]] inline bool isOSMouseInputRaw() const { return m_bActualRawInputState; }
 
     void setCursor(CURSORTYPE cur);
     void setCursorVisible(bool visible);
@@ -210,6 +215,7 @@ class Environment {
     std::string m_sdldriver;
     bool m_bIsX11;
     static SDL_Environment *s_sdlenv;
+    bool m_bUsingDX11;
 
     bool m_bRunning;
     bool m_bDrawing;

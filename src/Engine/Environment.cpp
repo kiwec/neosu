@@ -107,6 +107,13 @@ Environment::Environment(const std::unordered_map<std::string, std::optional<std
     m_sdldriver = SDL_GetCurrentVideoDriver();
     m_bIsX11 = (m_sdldriver == "x11");
 
+    // use directx if:
+    // we we built with support for it, and
+    // (either OpenGL(ES) is missing, or
+    // (-directx or -dx11 are specified on the command line))
+    m_bUsingDX11 = Env::cfg(REND::DX11) && (!Env::cfg(REND::GL | REND::GLES32) ||
+                                            (m_mArgMap.contains("-directx") || m_mArgMap.contains("-dx11")));
+
     if(m_bIsX11) {
         // workaround alt tab bug (cursor getting stuck confined for 5 seconds)
         SDL_SetX11EventHook(Environment::sdl_x11eventhook, this);
@@ -135,12 +142,14 @@ void Environment::update() {
 }
 
 Graphics *Environment::createRenderer() {
-#ifndef MCENGINE_FEATURE_DIRECTX11
+#ifdef MCENGINE_FEATURE_DIRECTX11
+    if(m_bUsingDX11)  // only if specified on the command line, for now
+        return new DirectX11Interface(Env::cfg(OS::WINDOWS) ? getHwnd() : reinterpret_cast<HWND>(m_window));
+#endif
+#if defined(MCENGINE_FEATURE_OPENGL) || defined(MCENGINE_FEATURE_GLES32)
     // need to load stuff dynamically before the base class constructors
     SDLGLInterface::load();
     return new SDLGLInterface(m_window);
-#else
-    return new DirectX11Interface(Env::cfg(OS::WINDOWS) ? getHwnd() : reinterpret_cast<HWND>(m_window));
 #endif
 }
 
