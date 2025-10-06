@@ -60,7 +60,7 @@ class ByteBufferedFile {
 
                 if(this->write_pos + bytes_to_read <= READ_BUFFER_SIZE) {
                     // no wrap needed, read directly
-                    this->file.read(reinterpret_cast<char *>(this->buffer.data() + this->write_pos),
+                    this->file.read(reinterpret_cast<char *>(&this->buffer[this->write_pos]),
                                     static_cast<std::streamsize>(bytes_to_read));
                     uSz bytes_read = this->file.gcount();
                     this->write_pos = (this->write_pos + bytes_read) % READ_BUFFER_SIZE;
@@ -68,13 +68,13 @@ class ByteBufferedFile {
                 } else {
                     // wrap needed, read in two parts
                     uSz first_part = READ_BUFFER_SIZE - this->write_pos;
-                    this->file.read(reinterpret_cast<char *>(this->buffer.data() + this->write_pos),
+                    this->file.read(reinterpret_cast<char *>(&this->buffer[this->write_pos]),
                                     static_cast<std::streamsize>(first_part));
                     uSz bytes_read = this->file.gcount();
 
                     if(bytes_read == first_part && bytes_to_read > first_part) {
                         uSz second_part = bytes_to_read - first_part;
-                        this->file.read(reinterpret_cast<char *>(this->buffer.data()),
+                        this->file.read(reinterpret_cast<char *>(&this->buffer[0]),
                                         static_cast<std::streamsize>(second_part));
                         uSz second_read = this->file.gcount();
                         bytes_read += second_read;
@@ -99,14 +99,14 @@ class ByteBufferedFile {
             if(out != nullptr) {
                 if(this->read_pos + len <= READ_BUFFER_SIZE) {
                     // no wrap needed
-                    memcpy(out, this->buffer.data() + this->read_pos, len);
+                    memcpy(out, &this->buffer[this->read_pos], len);
                 } else {
                     // wrap needed
                     uSz first_part = std::min(len, READ_BUFFER_SIZE - this->read_pos);
                     uSz second_part = len - first_part;
 
-                    memcpy(out, this->buffer.data() + this->read_pos, first_part);
-                    memcpy(out + first_part, this->buffer.data(), second_part);
+                    memcpy(out, &this->buffer[this->read_pos], first_part);
+                    memcpy(out + first_part, &this->buffer[0], second_part);
                 }
             }
 
@@ -184,7 +184,7 @@ class ByteBufferedFile {
        private:
         void set_error(const std::string &error_msg);
 
-        std::vector<u8> buffer;
+        std::unique_ptr<u8[]> buffer;
 
         std::ifstream file;
 
@@ -220,7 +220,7 @@ class ByteBufferedFile {
        private:
         void set_error(const std::string &error_msg);
 
-        std::vector<u8> buffer;
+        std::unique_ptr<u8[]> buffer;
 
         std::filesystem::path file_path;
         std::filesystem::path tmp_file_path;

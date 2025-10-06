@@ -7,7 +7,7 @@
 #include <system_error>
 #include <cassert>
 
-ByteBufferedFile::Reader::Reader(std::string_view readPath) : buffer(READ_BUFFER_SIZE) {
+ByteBufferedFile::Reader::Reader(std::string_view readPath) : buffer(std::make_unique_for_overwrite<u8[]>(READ_BUFFER_SIZE)) {
     auto path = File::getFsPath(readPath);
     this->file.open(path, std::ios::binary);
     if(!this->file.is_open()) {
@@ -123,7 +123,7 @@ void ByteBufferedFile::Reader::skip_string() {
     this->skip_bytes(len);
 }
 
-ByteBufferedFile::Writer::Writer(std::string_view writePath) : buffer(WRITE_BUFFER_SIZE) {
+ByteBufferedFile::Writer::Writer(std::string_view writePath) : buffer(std::make_unique_for_overwrite<u8[]>(WRITE_BUFFER_SIZE)) {
     auto path = File::getFsPath(writePath);
     this->file_path = path;
     this->tmp_file_path = this->file_path;
@@ -195,7 +195,7 @@ void ByteBufferedFile::Writer::flush() {
         return;
     }
 
-    this->file.write(reinterpret_cast<const char *>(this->buffer.data()), this->pos);
+    this->file.write(reinterpret_cast<const char *>(&this->buffer[0]), this->pos);
     if(this->file.fail()) {
         this->set_error("Failed to write to file: " + std::generic_category().message(errno));
         return;
@@ -221,7 +221,7 @@ void ByteBufferedFile::Writer::write_bytes(u8 *bytes, uSz n) {
         return;
     }
 
-    memcpy(this->buffer.data() + this->pos, bytes, n);
+    memcpy(&this->buffer[this->pos], bytes, n);
     this->pos += n;
 }
 
