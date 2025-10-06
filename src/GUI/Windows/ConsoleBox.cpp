@@ -12,6 +12,7 @@
 #include "ConVarHandler.h"
 #include "Console.h"
 #include "Engine.h"
+#include "SString.h"
 #include "Logging.h"
 #include "Environment.h"
 #include "Keyboard.h"
@@ -644,17 +645,20 @@ void ConsoleBox::log(const UString &text, Color textColor) {
     // newlines must be stripped before being sent here (see Logging.cpp)
     assert(!text.endsWith('\n') && !text.endsWith('\r') && "Console log strings can't end with a newline.");
 
-    // add log entry
-    {
-        LOG_ENTRY logEntry;
-        {
-            logEntry.text = text;
-            logEntry.textColor = textColor;
+    // add log entry(ies, split on any newlines inside the string)
+    if(text.findChar('\n') != -1) {
+        auto stringVec = text.split("\n");
+        this->log_entries.reserve(this->log_entries.size() + stringVec.size());
+        for(const auto &entry : stringVec) {
+            if(entry.isEmpty() || entry.isWhitespaceOnly()) continue;
+            this->log_entries.push_back({entry, textColor});
         }
-        this->log_entries.push_back(logEntry);
+    } else {
+        this->log_entries.push_back({text, textColor});
     }
 
-    while(this->log_entries.size() > cv::console_overlay_lines.getInt()) {
+    const auto maxLines = cv::console_overlay_lines.getVal<size_t>();
+    while(this->log_entries.size() > maxLines) {
         this->log_entries.erase(this->log_entries.begin());
     }
 

@@ -2,6 +2,7 @@
 // Copyright (c) 2023, kiwec & 2025, WH, All rights reserved.
 
 // miscellaneous templates
+#include <cstdlib>
 #include <string>
 #include <string_view>
 #include <unordered_map>

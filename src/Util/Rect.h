@@ -8,9 +8,9 @@ class McRect {
         this->set(x, y, width, height, isCentered);
     }
 
-    constexpr McRect(const vec2 &pos, const vec2 &size, bool isCentered = false) { this->set(pos, size, isCentered); }
+    constexpr McRect(vec2 pos, vec2 size, bool isCentered = false) { this->set(pos, size, isCentered); }
 
-    [[nodiscard]] inline bool contains(const vec2 &point, float lenience = 0.f) const {
+    [[nodiscard]] inline bool contains(vec2 point, float lenience = 0.f) const {
         vec2 max = this->vMin + this->vSize;
         return vec::all(vec::greaterThanEqual(point + lenience, this->vMin)) &&
                vec::all(vec::lessThanEqual(point - lenience, max));
@@ -40,16 +40,16 @@ class McRect {
     [[nodiscard]] constexpr const float &getHeight() const { return this->vSize.y; }
 
     // set
-    inline void setMin(const vec2 &min) { this->vMin = min; }
-    inline void setMax(const vec2 &max) { this->vSize = max - this->vMin; }
+    inline void setMin(vec2 min) { this->vMin = min; }
+    inline void setMax(vec2 max) { this->vSize = max - this->vMin; }
     inline void setMinX(float minx) { this->vMin.x = minx; }
     inline void setMinY(float miny) { this->vMin.y = miny; }
     inline void setMaxX(float maxx) { this->vSize.x = maxx - this->vMin.x; }
     inline void setMaxY(float maxy) { this->vSize.y = maxy - this->vMin.y; }
-    inline void setPos(const vec2 &pos) { this->vMin = pos; }
+    inline void setPos(vec2 pos) { this->vMin = pos; }
     inline void setPosX(float posx) { this->vMin.x = posx; }
     inline void setPosY(float posy) { this->vMin.y = posy; }
-    inline void setSize(const vec2 &size) { this->vSize = size; }
+    inline void setSize(vec2 size) { this->vSize = size; }
     inline void setWidth(float width) { this->vSize.x = width; }
     inline void setHeight(float height) { this->vSize.y = height; }
 
@@ -60,7 +60,7 @@ class McRect {
         this->set(vec2(x, y), vec2(width, height), isCentered);
     }
 
-    constexpr void set(const vec2 &pos, const vec2 &size, bool isCentered = false) {
+    constexpr void set(vec2 pos, vec2 size, bool isCentered = false) {
         if(isCentered) {
             vec2 halfSize = size * 0.5f;
             this->vMin = pos - halfSize;
@@ -72,4 +72,21 @@ class McRect {
 
     vec2 vMin{0.f};
     vec2 vSize{0.f};
+
+    friend struct fmt::formatter<McRect>;
 };
+
+namespace fmt {
+template <>
+struct formatter<McRect> {
+    template <typename ParseContext>
+    constexpr auto parse(ParseContext &ctx) const {
+        return ctx.begin();
+    }
+
+    template <typename FormatContext>
+    auto format(const McRect &r, FormatContext &ctx) const {
+        return format_to(ctx.out(), "{}: {}", r.vMin, r.vSize);
+    }
+};
+}  // namespace fmt

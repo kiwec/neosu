@@ -2,7 +2,7 @@
 // Copyright (c) 2025, WH, All rights reserved.
 
 namespace FontTypeMap {
-inline const char *getCharacterRangeName(wchar_t ch) {
+inline const char *getCharacterRangeName(unsigned int ch) {
     if(/*ch >= 0x0000 && */ ch <= 0x007F) return "Basic Latin";
     if(ch >= 0x0080 && ch <= 0x00FF) return "Latin-1 Supplement";
     if(ch >= 0x0100 && ch <= 0x017F) return "Latin Extended-A";
@@ -96,7 +96,6 @@ inline const char *getCharacterRangeName(wchar_t ch) {
     if(ch >= 0xFE70 && ch <= 0xFEFF) return "Arabic Presentation Forms-B";
     if(ch >= 0xFF00 && ch <= 0xFFEF) return "Halfwidth and Fullwidth Forms";
     if(ch >= 0xFFF0 && ch < 0xFFFF) return "Specials";
-#if WCHAR_MAX > 0xFFFF
     // emoji ranges (TODO: requires surrogate pair support)
     if(ch >= 0x1F600 && ch <= 0x1F64F) return "Emoticons";
     if(ch >= 0x1F300 && ch <= 0x1F5FF) return "Miscellaneous Symbols and Pictographs";
@@ -105,7 +104,6 @@ inline const char *getCharacterRangeName(wchar_t ch) {
     if(ch >= 0x1F780 && ch <= 0x1F7FF) return "Geometric Shapes Extended";
     if(ch >= 0x1F800 && ch <= 0x1F8FF) return "Supplemental Arrows-C";
     if(ch >= 0x1F900 && ch <= 0x1F9FF) return "Supplemental Symbols and Pictographs";
-#endif
 
     return nullptr;
 }

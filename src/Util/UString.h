@@ -54,6 +54,7 @@ class UString {
     // getters
     [[nodiscard]] constexpr int length() const noexcept { return this->iLengthUnicode & LENGTH_MASK; }
     [[nodiscard]] constexpr int lengthUtf8() const noexcept { return this->iLengthUtf8; }
+    [[nodiscard]] size_t numCodepoints() const noexcept;
     [[nodiscard]] constexpr std::string_view utf8View() const noexcept { return this->sUtf8; }
     [[nodiscard]] constexpr const char *toUtf8() const noexcept { return this->sUtf8.c_str(); }
     [[nodiscard]] constexpr std::wstring_view unicodeView() const noexcept { return this->sUnicode; }

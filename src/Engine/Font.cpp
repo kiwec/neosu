@@ -39,7 +39,7 @@ static constexpr const size_t MIN_ATLAS_SIZE{256};
 static constexpr const size_t MAX_ATLAS_SIZE{4096};
 static constexpr const wchar_t UNKNOWN_CHAR{L'?'};  // ASCII '?'
 
-static constexpr const size_t VERTS_PER_VAO{Env::cfg(REND::GLES32) ? 6 : 4};
+static constexpr const size_t VERTS_PER_VAO{Env::cfg(REND::GLES32 | REND::DX11) ? 6 : 4};
 
 // static member definitions
 FT_Library McFont::s_sharedFtLibrary = nullptr;
@@ -50,7 +50,8 @@ std::unordered_set<wchar_t> McFont::s_sharedFallbackFaceBlacklist;
 
 McFont::McFont(std::string filepath, int fontSize, bool antialiasing, int fontDPI)
     : Resource(std::move(filepath)),
-      m_vao((Env::cfg(REND::GLES32) ? Graphics::PRIMITIVE::PRIMITIVE_TRIANGLES : Graphics::PRIMITIVE::PRIMITIVE_QUADS),
+      m_vao((Env::cfg(REND::GLES32 | REND::DX11) ? Graphics::PRIMITIVE::PRIMITIVE_TRIANGLES
+                                                 : Graphics::PRIMITIVE::PRIMITIVE_QUADS),
             Graphics::USAGE_TYPE::USAGE_DYNAMIC) {
     std::vector<wchar_t> characters;
     characters.reserve(96);  // reserve space for basic ASCII, load the rest as needed
@@ -64,7 +65,8 @@ McFont::McFont(std::string filepath, int fontSize, bool antialiasing, int fontDP
 McFont::McFont(std::string filepath, const std::vector<wchar_t> &characters, int fontSize, bool antialiasing,
                int fontDPI)
     : Resource(std::move(filepath)),
-      m_vao((Env::cfg(REND::GLES32) ? Graphics::PRIMITIVE::PRIMITIVE_TRIANGLES : Graphics::PRIMITIVE::PRIMITIVE_QUADS),
+      m_vao((Env::cfg(REND::GLES32 | REND::DX11) ? Graphics::PRIMITIVE::PRIMITIVE_TRIANGLES
+                                                 : Graphics::PRIMITIVE::PRIMITIVE_QUADS),
             Graphics::USAGE_TYPE::USAGE_DYNAMIC) {
     m_bTryFindFallbacks = false;
     constructor(characters, fontSize, antialiasing, fontDPI);
@@ -268,16 +270,17 @@ bool McFont::loadGlyphDynamic(wchar_t ch) {
             // character not supported by any available font
             const char *charRange = FontTypeMap::getCharacterRangeName(ch);
             if(charRange)
-                debugLog("Font Warning: Character U+{:04X} ({:s}) not supported by any font", (wint_t)ch, charRange);
+                debugLog("Font Warning: Character U+{:04X} ({:s}) not supported by any font", (unsigned int)ch,
+                         charRange);
             else
-                debugLog("Font Warning: Character U+{:04X} not supported by any font", (wint_t)ch);
+                debugLog("Font Warning: Character U+{:04X} not supported by any font", (unsigned int)ch);
         }
         return false;
     }
 
     if(cv::r_debug_font_unicode.getBool() && fontIndex > 0) {
         debugLog("Font Info (for font resource {}): Using fallback font #{:d} for character U+{:04X}", getName(),
-                 fontIndex, (wint_t)ch);
+                 fontIndex, (unsigned int)ch);
     }
 
     // load glyph from the selected font face
@@ -632,7 +635,7 @@ void McFont::buildGlyphGeometry(const GLYPH_METRICS &gm, const vec3 &basePos, fl
 
     const size_t idx{vertexCount};
 
-    if constexpr(Env::cfg(REND::GLES32)) {
+    if constexpr(VERTS_PER_VAO > 4) {
         // triangles (quads are slower for GL ES because they need to be converted to triangles at submit time)
         // first triangle (bottom-left, top-left, top-right)
         m_vertices[idx] = bottomLeft;

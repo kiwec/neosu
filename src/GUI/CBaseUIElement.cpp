@@ -2,6 +2,8 @@
 #include "CBaseUIElement.h"
 
 #include "Engine.h"
+#include "Logging.h"
+#include "ConVar.h"
 #include "Mouse.h"
 
 bool CBaseUIElement::isVisibleOnScreen(const McRect &rect) { return engine->getScreenRect().intersects(rect); }
@@ -14,6 +16,7 @@ void CBaseUIElement::stealFocus() {
 }
 
 void CBaseUIElement::mouse_update(bool *propagate_clicks) {
+    if(unlikely(cv::debug_engine.getBool())) this->dumpElem();
     if(!this->bVisible || !this->bEnabled) return;
 
     // check if mouse is inside element
@@ -70,4 +73,34 @@ void CBaseUIElement::mouse_update(bool *propagate_clicks) {
     if(buttonMask.none()) {
         this->mouseInsideCheck = 0b00;
     }
+}
+
+void CBaseUIElement::dumpElem() const {
+    static size_t lastUpdateFrame = 0;
+    static int updateCount = 0;
+    size_t currentFrame = engine->getFrameCount();
+
+    if(currentFrame != lastUpdateFrame) {
+        if(lastUpdateFrame > 0) {
+            Logger::logRaw(R"(frame: {}
+updated {} times last frame
+sName: {}
+bVisible: {}
+bActive: {}
+bBusy: {}
+bEnabled: {}
+bKeepActive: {}
+bMouseInside: {}
+bHandleLeftMouse: {}
+bHandleRightMouse: {}
+vPos: {}
+vmPos: {})",
+                           currentFrame, updateCount, this->sName, this->bVisible, this->bActive, this->bBusy,
+                           this->bEnabled, this->bKeepActive, this->bMouseInside, this->bHandleLeftMouse,
+                           this->bHandleRightMouse, this->rect, this->relRect);
+        }
+        lastUpdateFrame = currentFrame;
+        updateCount = 0;
+    }
+    updateCount++;
 }

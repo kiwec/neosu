@@ -64,47 +64,31 @@ class CBaseUIElement : public KeyboardListener {
     virtual bool isBusy() { return this->bBusy && this->isVisible(); }
     virtual bool isMouseInside() { return this->bMouseInside && this->isVisible(); }
 
-    virtual CBaseUIElement *setPos(float xPos, float yPos) {
-        vec2 newPos{xPos, yPos};
+    inline CBaseUIElement *setPos(vec2 newPos) {
         if(newPos != this->vPos) {
             this->vPos = newPos;
             this->onMoved();
         }
         return this;
     }
-    virtual CBaseUIElement *setPosX(float xPos) {
-        if(this->vPos.x != xPos) {
-            this->vPos.x = xPos;
-            this->onMoved();
-        }
+    inline CBaseUIElement *setPos(float xPos, float yPos) { return this->setPos({xPos, yPos}); }
+    inline CBaseUIElement *setPosX(float xPos) { return this->setPos({xPos, this->vPos.y}); }
+    inline CBaseUIElement *setPosY(float yPos) { return this->setPos({this->vPos.x, yPos}); }
+    inline CBaseUIElement *setRelPos(vec2 newRelPos) {
+        this->vmPos = newRelPos;
         return this;
     }
-    virtual CBaseUIElement *setPosY(float yPos) {
-        if(this->vPos.y != yPos) {
-            this->vPos.y = yPos;
-            this->onMoved();
-        }
-        return this;
-    }
-    virtual CBaseUIElement *setPos(vec2 position) { return this->setPos(position.x, position.y); }
-
-    virtual CBaseUIElement *setRelPos(float xPos, float yPos) {
-        this->vmPos.x = xPos;
-        this->vmPos.y = yPos;
-        return this;
-    }
-    virtual CBaseUIElement *setRelPosX(float xPos) {
+    inline CBaseUIElement *setRelPos(float xPos, float yPos) { return this->setRelPos({xPos, yPos}); }
+    inline CBaseUIElement *setRelPosX(float xPos) {
         this->vmPos.x = xPos;
         return this;
     }
-    virtual CBaseUIElement *setRelPosY(float yPos) {
+    inline CBaseUIElement *setRelPosY(float yPos) {
         this->vmPos.y = yPos;
         return this;
     }
-    virtual CBaseUIElement *setRelPos(vec2 position) { return this->setRelPos(position.x, position.y); }
 
-    virtual CBaseUIElement *setSize(float xSize, float ySize) {
-        vec2 newSize{xSize, ySize};
+    inline CBaseUIElement *setSize(vec2 newSize) {
         if(newSize != this->vSize) {
             this->vSize = newSize;
             this->onResized();
@@ -112,30 +96,16 @@ class CBaseUIElement : public KeyboardListener {
         }
         return this;
     }
-    virtual CBaseUIElement *setSizeX(float xSize) {
-        if(this->vSize.x != xSize) {
-            this->vSize.x = xSize;
-            this->onResized();
-            this->onMoved();
-        }
-        return this;
-    }
-    virtual CBaseUIElement *setSizeY(float ySize) {
-        if(this->vSize.y != ySize) {
-            this->vSize.y = ySize;
-            this->onResized();
-            this->onMoved();
-        }
-        return this;
-    }
-    virtual CBaseUIElement *setSize(vec2 size) { return this->setSize(size.x, size.y); }
+    inline CBaseUIElement *setSize(float xSize, float ySize) { return this->setSize({xSize, ySize}); }
+    inline CBaseUIElement *setSizeX(float xSize) { return this->setSize({xSize, this->vSize.y}); }
+    inline CBaseUIElement *setSizeY(float ySize) { return this->setSize({this->vSize.x, ySize}); }
 
-    virtual CBaseUIElement *setRect(McRect rect) {
+    inline CBaseUIElement *setRect(McRect rect) {
         this->rect = rect;
         return this;
     }
 
-    virtual CBaseUIElement *setRelRect(McRect rect) {
+    inline CBaseUIElement *setRelRect(McRect rect) {
         this->relRect = rect;
         return this;
     }
@@ -152,7 +122,7 @@ class CBaseUIElement : public KeyboardListener {
         this->bKeepActive = keepActive;
         return this;
     }
-    virtual CBaseUIElement* setEnabled(bool enabled) {
+    virtual CBaseUIElement *setEnabled(bool enabled) {
         if(enabled != this->bEnabled) {
             this->bEnabled = enabled;
             if(this->bEnabled) {
@@ -222,6 +192,7 @@ class CBaseUIElement : public KeyboardListener {
     vec2 &vmSize;  // reference to relRect.vSize
 
    private:
+    void dumpElem() const; // debug
     std::bitset<2> mouseInsideCheck{0};
     std::bitset<2> mouseUpCheck{0};
 };
