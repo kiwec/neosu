@@ -204,7 +204,7 @@ class OptionsMenu final : public ScreenBackable, public NotificationOverlayKeyLi
     void onImportSettingsFromStable(CBaseUIButton *button);
 
     // categories
-    OptionsMenuCategoryButton *addCategory(CBaseUIElement *section, wchar_t icon);
+    OptionsMenuCategoryButton *addCategory(CBaseUIElement *section, char16_t icon);
 
     // elements
     void addSpacer();

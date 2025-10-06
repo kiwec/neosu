@@ -27,7 +27,7 @@ class VertexArrayObject;
 class McFont final : public Resource {
    public:
     McFont(std::string filepath, int fontSize = 16, bool antialiasing = true, int fontDPI = 96);
-    McFont(std::string filepath, const std::vector<wchar_t> &characters, int fontSize = 16, bool antialiasing = true,
+    McFont(std::string filepath, const std::vector<char16_t> &characters, int fontSize = 16, bool antialiasing = true,
            int fontDPI = 96);
     ~McFont() override;
 
@@ -59,7 +59,7 @@ class McFont final : public Resource {
 
    public:
     struct GLYPH_METRICS {
-        wchar_t character;
+        char16_t character;
         unsigned int uvPixelsX, uvPixelsY;
         unsigned int sizePixelsX, sizePixelsY;
         int left, top, width, rows;
@@ -67,7 +67,7 @@ class McFont final : public Resource {
         int fontIndex;  // which font this glyph came from (0 = primary, >0 = fallback)
     };
     // McKay would say: ILLEGAL
-    const GLYPH_METRICS &getGlyphMetrics(wchar_t ch) const;
+    const GLYPH_METRICS &getGlyphMetrics(char16_t ch) const;
 
     // type inspection
     [[nodiscard]] Type getResType() const override { return FONT; }
@@ -76,7 +76,7 @@ class McFont final : public Resource {
     [[nodiscard]] const McFont *asFont() const override { return this; }
 
    protected:
-    void constructor(const std::vector<wchar_t> &characters, int fontSize, bool antialiasing, int fontDPI);
+    void constructor(const std::vector<char16_t> &characters, int fontSize, bool antialiasing, int fontDPI);
     void init() override;
     void initAsync() override;
     void destroy() override;
@@ -103,7 +103,7 @@ class McFont final : public Resource {
     // texture atlas dynamic slot management
     struct DynamicSlot {
         int x, y;           // position in atlas
-        wchar_t character;  // character in this slot (0 if empty)
+        char16_t character;  // character in this slot (0 if empty)
         uint64_t lastUsed;  // for LRU eviction
         bool occupied;
     };
@@ -118,25 +118,25 @@ class McFont final : public Resource {
     // size of each dynamic slot
     static constexpr int DYNAMIC_SLOT_SIZE{64};
 
-    forceinline bool hasGlyph(wchar_t ch) const { return m_vGlyphMetrics.find(ch) != m_vGlyphMetrics.end(); };
-    bool addGlyph(wchar_t ch);
-    bool loadGlyphDynamic(wchar_t ch);
+    forceinline bool hasGlyph(char16_t ch) const { return m_vGlyphMetrics.find(ch) != m_vGlyphMetrics.end(); };
+    bool addGlyph(char16_t ch);
+    bool loadGlyphDynamic(char16_t ch);
 
     // atlas management methods
-    int allocateDynamicSlot(wchar_t ch);
-    void markSlotUsed(wchar_t ch);
+    int allocateDynamicSlot(char16_t ch);
+    void markSlotUsed(char16_t ch);
     void initializeDynamicRegion(int atlasSize);
 
     // consolidated glyph processing methods
     bool initializeFreeType();
-    bool loadGlyphMetrics(wchar_t ch);
+    bool loadGlyphMetrics(char16_t ch);
     std::unique_ptr<Color[]> createExpandedBitmapData(const FT_Bitmap &bitmap);
-    void renderGlyphToAtlas(wchar_t ch, int x, int y, FT_Face face = nullptr, bool isDynamicSlot = false);
-    bool createAndPackAtlas(const std::vector<wchar_t> &glyphs);
+    void renderGlyphToAtlas(char16_t ch, int x, int y, FT_Face face = nullptr, bool isDynamicSlot = false);
+    bool createAndPackAtlas(const std::vector<char16_t> &glyphs);
 
     // fallback font management
-    FT_Face getFontFaceForGlyph(wchar_t ch, int &fontIndex);
-    bool loadGlyphFromFace(wchar_t ch, FT_Face face, int fontIndex);
+    FT_Face getFontFaceForGlyph(char16_t ch, int &fontIndex);
+    bool loadGlyphFromFace(char16_t ch, FT_Face face, int fontIndex);
 
     void buildGlyphGeometry(const GLYPH_METRICS &gm, const vec3 &basePos, float advanceX, size_t &vertexCount);
     void buildStringGeometry(const UString &text, size_t &vertexCount);
@@ -149,7 +149,7 @@ class McFont final : public Resource {
     static std::vector<FallbackFont> s_sharedFallbackFonts;
     static bool s_sharedFallbacksInitialized;
     // give up quickly if we know a certain font face isn't found in any fallback font
-    static std::unordered_set<wchar_t> s_sharedFallbackFaceBlacklist;
+    static std::unordered_set<char16_t> s_sharedFallbackFaceBlacklist;
 
     // shared resource initialization
     static bool initializeSharedFreeType();
@@ -160,9 +160,9 @@ class McFont final : public Resource {
     // helper to set font size on any face for this font instance
     void setFaceSize(FT_Face face) const;
 
-    std::vector<wchar_t> m_vGlyphs;
-    std::unordered_map<wchar_t, bool> m_vGlyphExistence;
-    std::unordered_map<wchar_t, GLYPH_METRICS> m_vGlyphMetrics;
+    std::vector<char16_t> m_vGlyphs;
+    std::unordered_map<char16_t, bool> m_vGlyphExistence;
+    std::unordered_map<char16_t, GLYPH_METRICS> m_vGlyphMetrics;
 
     VertexArrayObject m_vao;
     TextBatch m_batchQueue;
@@ -184,7 +184,7 @@ class McFont final : public Resource {
     int m_dynamicRegionY;      // Y coordinate where dynamic region starts
     int m_slotsPerRow;         // number of slots per row in dynamic region
     std::vector<DynamicSlot> m_dynamicSlots;
-    std::unordered_map<wchar_t, int> m_dynamicSlotMap;  // character -> slot index for O(1) lookup
+    std::unordered_map<char16_t, int> m_dynamicSlotMap;  // character -> slot index for O(1) lookup
     uint64_t m_currentTime;                             // for LRU tracking
     bool m_atlasNeedsReload;                            // flag to batch atlas reloads
 

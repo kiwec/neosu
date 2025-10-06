@@ -204,18 +204,6 @@ AS_IF([test "x$enable_system_deps" != "xyes"], [
     disable_system_deps=no
 ])
 
-# disable lto for debug by default (build time opt)
-AS_IF([test "x$enable_debug" = "xyes" && test "x$enable_lto" != "xyes"], [
-    enable_lto=no
-    disable_lto=yes
-])
-
-# enable lto by default otherwise
-AS_IF([test "x$enable_lto" != "xno"], [
-    enable_lto=yes
-    disable_lto=no
-])
-
 AS_IF([test "x$enable_ime" != "xno"], [
     enable_ime=yes
     disable_ime=no
@@ -349,6 +337,18 @@ AS_IF([test "x$enable_asan" = "xyes" || test "x$enable_tsan" = "xyes"], [
     enable_debug="yes"
     ENABLE_ASAN=$enable_asan
     AC_SUBST([ENABLE_ASAN])
+])
+
+# disable lto for debug by default (build time opt)
+AS_IF([test "x$enable_debug" = "xyes" && test "x$enable_lto" != "xyes"], [
+    enable_lto=no
+    disable_lto=yes
+])
+
+# enable lto by default otherwise
+AS_IF([test "x$enable_lto" != "xno"], [
+    enable_lto=yes
+    disable_lto=no
 ])
 
 AS_IF([test "x$enable_clang" = "xyes"], [
@@ -924,6 +924,8 @@ SPDLOG_MIN_VERSION=1.15.0
 SPDLOG_BUILD_VERSION=1.15.3
 NSYNC_MIN_VERSION=1.29.2
 NSYNC_BUILD_VERSION=1.29.2
+SIMDUTF_MIN_VERSION=7.0.0
+SIMDUTF_BUILD_VERSION=7.4.0 # fast and correct utf conversion utilities
 
 # always build these from source if we want to use them
 #AC_SUBST([SOLOUD_VERSION], [1.1.9]) # my fork
@@ -964,6 +966,7 @@ AS_IF([test "x$enable_system_deps" != "xno"], [
     PKG_CHECK_AUTO([FMT], [fmt >= $FMT_MIN_VERSION], [have_fmt=yes], [have_fmt=no])
     PKG_CHECK_AUTO([LZMA], [liblzma >= $LZMA_MIN_VERSION], [have_liblzma=yes], [have_liblzma=no])
     PKG_CHECK_AUTO([LIBARCHIVE], [libarchive >= $LIBARCHIVE_MIN_VERSION], [have_libarchive=yes], [have_libarchive=no])
+    PKG_CHECK_AUTO([SIMDUTF], [simdutf >= $SIMDUTF_MIN_VERSION], [have_simdutf=yes], [have_simdutf=no])
     # check for standalone openssl if we have system curl
     AS_IF([test "x$have_curl" = "xyes"], [
         PKG_CHECK_AUTO([OPENSSL], [openssl >= $OPENSSL_MIN_VERSION], [have_openssl=yes], [have_openssl=no])
@@ -1046,6 +1049,12 @@ LIBARCHIVE_PREFIX="${DEPS_PREFIX}"
 AC_SUBST([LIBARCHIVE_VERSION])
 AC_SUBST([LIBARCHIVE_PREFIX])
 
+AS_IF([test "x$have_simdutf" != "xyes"], [have_simdutf="build from source"])
+SIMDUTF_VERSION=$SIMDUTF_BUILD_VERSION
+SIMDUTF_PREFIX="${DEPS_PREFIX}"
+AC_SUBST([SIMDUTF_VERSION])
+AC_SUBST([SIMDUTF_PREFIX])
+
 AS_IF([test "x$have_libarchive" = "xbuild from source" &&
     { test "x$have_libacl" != "xyes" && test "x$have_libacl" != "xnot required"; }], [have_libacl="build from source"])
 LIBACL_VERSION=$LIBACL_BUILD_VERSION
@@ -1100,6 +1109,7 @@ AM_CONDITIONAL([BUILD_FREETYPE2], [test "x$have_freetype2" != "xyes"])
 AM_CONDITIONAL([BUILD_FMT], [test "x$have_fmt" != "xyes"])
 AM_CONDITIONAL([BUILD_LZMA], [test "x$have_liblzma" != "xyes"])
 AM_CONDITIONAL([BUILD_LIBARCHIVE], [test "x$have_libarchive" != "xyes"])
+AM_CONDITIONAL([BUILD_SIMDUTF], [test "x$have_simdutf" != "xyes"])
 AM_CONDITIONAL([BUILD_LIBACL], [test "x$have_libacl" = "xbuild from source"])
 AM_CONDITIONAL([BUILD_CURL], [test "x$have_curl" != "xyes"])
 AM_CONDITIONAL([BUILD_MPG123], [test "$with_soloud" = "yes" && test "x$have_mpg123" != "xyes"])
@@ -1188,6 +1198,7 @@ Dependencies:
     openssl:            ${have_openssl-download}
     liblzma:            ${have_liblzma-build from source}
     libarchive:         ${have_libarchive-build from source}
+    simdutf:         ${have_simdutf-build from source}
     libacl:             ${have_libacl-build from source}
     mpg123:             ${have_mpg123-build from source}
     spdlog:             ${have_spdlog-build from source}

@@ -451,7 +451,7 @@ void CBaseUITextbox::onChar(KeyboardEvent &e) {
     {
         const KEYCODE charCode = e.getCharCode();
 
-        this->sText.insert(this->iCaretPosition, (wchar_t)charCode);
+        this->sText.insert(this->iCaretPosition, (char16_t)charCode);
         this->iCaretPosition++;
 
         this->setText(this->sText);

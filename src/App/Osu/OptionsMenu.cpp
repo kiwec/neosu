@@ -3700,7 +3700,7 @@ CBaseUIElement *OptionsMenu::addSliderPreview() {
     return sliderPreview;
 }
 
-OptionsMenuCategoryButton *OptionsMenu::addCategory(CBaseUIElement *section, wchar_t icon) {
+OptionsMenuCategoryButton *OptionsMenu::addCategory(CBaseUIElement *section, char16_t icon) {
     UString iconString;
     iconString.insert(0, icon);
     auto *button = new OptionsMenuCategoryButton(section, 0, 0, 50, 50, "", iconString);

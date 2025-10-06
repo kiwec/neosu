@@ -323,6 +323,21 @@ else()
 add_custom_target(nsync_external)
 endif()
 
+add_external_project(simdutf
+    CMAKE_ARGS
+        ${EXTERNAL_PROJECT_CMAKE_ARGS}
+        -DSIMDUTF_TESTS=OFF
+        -DSIMDUTF_ATOMIC_BASE64_TESTS=OFF
+        -DSIMDUTF_BENCHMARKS=OFF
+        -DSIMDUTF_TOOLS=OFF
+        -DSIMDUTF_ICONV=OFF
+        -DSIMDUTF_FUZZERS=OFF
+        -DSIMDUTF_COVERAGE=OFF
+        -DSIMDUTF_INTERNAL_TESTS=OFF
+        -DSIMDUTF_LOGGING=OFF
+    BUILD_COMMAND cmake --build <BINARY_DIR> --config ${CMAKE_BUILD_TYPE} --parallel ${CPU_COUNT}
+)
+
 # Discord SDK (pre-built binary)
 add_external_project(discordsdk
     CONFIGURE_COMMAND ${CMAKE_COMMAND} -E echo "Skipping configure"
@@ -455,6 +470,7 @@ ExternalProject_Add(neosu_main
         soundtouch_external
         soloud_external
         nsync_external
+        simdutf_external
         discordsdk_external
         bass_external
         bassfx_external

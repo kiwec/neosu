@@ -90,6 +90,12 @@ $(DEPS_CACHE)/liblzma-$(LZMA_VERSION).source:
 	touch $@
 
 # always needed (if not on host)
+$(DEPS_CACHE)/simdutf-$(SIMDUTF_VERSION).source:
+	$(MKDIR_P) $(DEPS_CACHE)
+	$(WGET) -qO $(DEPS_CACHE)/simdutf-$(SIMDUTF_VERSION).tar.gz "https://github.com/simdutf/simdutf/archive/refs/tags/v$(SIMDUTF_VERSION).tar.gz" && \
+	touch $@
+
+# always needed (if not on host)
 $(DEPS_CACHE)/libarchive-$(LIBARCHIVE_VERSION).source:
 	$(MKDIR_P) $(DEPS_CACHE)
 	$(WGET) -qO $(DEPS_CACHE)/libarchive-$(LIBARCHIVE_VERSION).tar.gz "https://github.com/libarchive/libarchive/releases/download/v$(LIBARCHIVE_VERSION)/libarchive-$(LIBARCHIVE_VERSION).tar.gz" && \
@@ -879,6 +885,49 @@ $(DEPS_PREFIX)/FREETYPE2-$(FREETYPE2_VERSION).built:
 	$(MKDIR_P) $(DEPS_PREFIX) && touch $@
 endif # BUILD_FREETYPE2
 
+SIMDUTF_CFLAGS += $(if $(ENABLE_DEBUG),,-DNDEBUG)
+if BUILD_SIMDUTF
+SIMDUTF_CFLAGS += $(shell $(PKG_CONFIG) --cflags simdutf)
+SIMDUTF_LIBS += $(shell $(PKG_CONFIG) --libs simdutf)
+$(DEPS_PREFIX)/simdutf-$(SIMDUTF_VERSION).built: $(DEPS_CACHE)/simdutf-$(SIMDUTF_VERSION).source
+	rm -rf $(DEPS_PREFIX)/simdutf
+	$(MKDIR_P) $(DEPS_PREFIX)/simdutf/build $(DEPS_PREFIX)/lib/pkgconfig
+	$(TAR) xf $(DEPS_CACHE)/simdutf-$(SIMDUTF_VERSION).tar.gz -C $(DEPS_PREFIX)/simdutf --strip-components=1 && \
+	cd $(DEPS_PREFIX)/simdutf && \
+	PKG_CONFIG="$(PKG_CONFIG)" LDFLAGS="$(LDFLAGS)" \
+	$(CMAKE) -S . -B build -G "$(CMAKE_GEN)" \
+		-D CMAKE_BUILD_TYPE="$(if $(ENABLE_DEBUG),Debug,Release)" \
+		-D CMAKE_INSTALL_PREFIX="$(DEPS_PREFIX)" \
+		-D CMAKE_SYSTEM_NAME="$(CMAKE_SYSTEM_NAME)" \
+		-D CMAKE_SYSTEM_PROCESSOR="$(host_cpu)" \
+		-D CMAKE_C_COMPILER="$(CC)" \
+		-D CMAKE_C_FLAGS="$(CFLAGS)" \
+		-D CMAKE_CXX_COMPILER="$(CXX)" \
+		-D CMAKE_CXX_FLAGS="$(CXXFLAGS)" \
+		$(CMAKERCOPT) $(CMAKEIDOPT) \
+		-D CMAKE_C_COMPILER_AR=$(AR) \
+		-D CMAKE_C_COMPILER_RANLIB=$(RANLIB) \
+		-D CMAKE_CXX_COMPILER_AR=$(AR) \
+		-D CMAKE_CXX_COMPILER_RANLIB=$(RANLIB) \
+		-D BUILD_SHARED_LIBS="$(if $(STATICBUILD),OFF,ON)" \
+		-D SIMDUTF_TESTS=OFF \
+		-D SIMDUTF_ATOMIC_BASE64_TESTS=OFF \
+		-D SIMDUTF_BENCHMARKS=OFF \
+		-D SIMDUTF_TOOLS=OFF \
+		-D SIMDUTF_ICONV=OFF \
+		-D SIMDUTF_FUZZERS=OFF \
+		-D SIMDUTF_COVERAGE=OFF \
+		-D SIMDUTF_INTERNAL_TESTS=OFF \
+		-D SIMDUTF_LOGGING=OFF && \
+	$(CMAKE) --build build "$(CMAKEPAROPT)" && \
+	$(CMAKE) --install build
+	$(PKG_CONFIG) --exists --print-errors simdutf
+	touch $@
+else
+$(DEPS_PREFIX)/simdutf-$(SIMDUTF_VERSION).built:
+	$(MKDIR_P) $(DEPS_PREFIX) && touch $@
+endif # BUILD_SIMDUTF
+
 if BUILD_LZMA
 LZMA_CFLAGS += $(shell $(PKG_CONFIG) --cflags liblzma)
 LZMA_LIBS += $(shell $(PKG_CONFIG) --libs liblzma)
@@ -1010,6 +1059,7 @@ BUILT_SOURCES := \
 	$(DEPS_PREFIX)/discordsdk-$(DISCORDSDK_VERSION).built \
 	$(DEPS_PREFIX)/liblzma-$(LZMA_VERSION).built \
 	$(DEPS_PREFIX)/libarchive-$(LIBARCHIVE_VERSION).built \
+	$(DEPS_PREFIX)/simdutf-$(SIMDUTF_VERSION).built \
 	$(DEPS_PREFIX)/libacl-$(LIBACL_VERSION).built \
 	$(DEPS_PREFIX)/curl-$(CURL_VERSION).built \
 	$(DEPS_CACHE)/curl-$(CURL_VERSION)/certbundle/cacert.pem
@@ -1049,6 +1099,7 @@ neosu_CXXFLAGS := \
 	$(D3D11_CFLAGS) \
 	$(VKD3D_CFLAGS) \
 	$(LZMA_CFLAGS) \
+	$(SIMDUTF_CFLAGS) \
 	$(DISCORDSDK_CFLAGS) \
 	$(NEOSU_CXXFLAGS) \
 	$(CXXFLAGS_EXTRA)
@@ -1074,6 +1125,7 @@ neosu_LDFLAGS := \
 	$(DXGI_LIBS) \
 	$(D3D11_LIBS) \
 	$(NSYNC_LIBS) \
+	$(SIMDUTF_LIBS) \
 	$(NEOSU_LDFLAGS) \
 	$(EXTRA_WIN_LIBS) \
 	$(LDFLAGS_EXTRA)
@@ -1203,6 +1255,9 @@ if BUILD_NSYNC
 endif
 if BUILD_LZMA
 	$(if $(STATICBUILD),,@`find $(LZMA_PREFIX) '(' -iname '*lzma*'$(DLLEXT) -o -iname '*lzma*''.so.*' ')' -exec cp -P '{''}' "$(DESTDIR)$(bindir)/$(LIBDEST)" ';'`)
+endif
+if BUILD_SIMDUTF
+	$(if $(STATICBUILD),,@`find $(SIMDUTF_PREFIX) '(' -iname '*simdutf*'$(DLLEXT) -o -iname '*simdutf*''.so.*' ')' -exec cp -P '{''}' "$(DESTDIR)$(bindir)/$(LIBDEST)" ';'`)
 endif
 if BUILD_LIBARCHIVE
 	$(if $(STATICBUILD),,@`find $(LIBARCHIVE_PREFIX) '(' -iname '*archive*'$(DLLEXT) -o -iname '*archive*''.so.*' ')' -exec cp -P '{''}' "$(DESTDIR)$(bindir)/$(LIBDEST)" ';'`)

@@ -2,41 +2,41 @@
 #ifndef OSUICONS_H
 #define OSUICONS_H
 
-#include "cbase.h"
+#include <vector>
 
 class Icons {
    public:
-    static std::vector<wchar_t> icons;
+    static std::vector<char16_t> icons;
 
-    static wchar_t addIcon(wchar_t character) {
+    static char16_t addIcon(char16_t character) {
         icons.push_back(character);
         return character;
     }
 
-    static wchar_t Z_UNKNOWN_CHAR;
-    static wchar_t Z_SPACE;
+    static char16_t Z_UNKNOWN_CHAR;
+    static char16_t Z_SPACE;
 
-    static wchar_t GEAR;
-    static wchar_t DESKTOP;
-    static wchar_t CIRCLE;
-    static wchar_t CUBE;
-    static wchar_t VOLUME_UP;
-    static wchar_t VOLUME_DOWN;
-    static wchar_t VOLUME_OFF;
-    static wchar_t PAINTBRUSH;
-    static wchar_t GAMEPAD;
-    static wchar_t WRENCH;
-    static wchar_t EYE;
-    static wchar_t ARROW_CIRCLE_UP;
-    static wchar_t TROPHY;
-    static wchar_t CARET_DOWN;
-    static wchar_t ARROW_DOWN;
-    static wchar_t GLOBE;
-    static wchar_t USER;
-    static wchar_t UNDO;
-    static wchar_t KEYBOARD;
-    static wchar_t LOCK;
-    static wchar_t UNLOCK;
+    static char16_t GEAR;
+    static char16_t DESKTOP;
+    static char16_t CIRCLE;
+    static char16_t CUBE;
+    static char16_t VOLUME_UP;
+    static char16_t VOLUME_DOWN;
+    static char16_t VOLUME_OFF;
+    static char16_t PAINTBRUSH;
+    static char16_t GAMEPAD;
+    static char16_t WRENCH;
+    static char16_t EYE;
+    static char16_t ARROW_CIRCLE_UP;
+    static char16_t TROPHY;
+    static char16_t CARET_DOWN;
+    static char16_t ARROW_DOWN;
+    static char16_t GLOBE;
+    static char16_t USER;
+    static char16_t UNDO;
+    static char16_t KEYBOARD;
+    static char16_t LOCK;
+    static char16_t UNLOCK;
 };
 
 #endif

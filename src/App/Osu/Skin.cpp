@@ -914,37 +914,7 @@ bool Skin::parseSkinINI(std::string filepath) {
         // close the file here
     }
 
-    UString fileContent;
-
-    // check for UTF-16 LE BOM and convert if needed
-    if(fileSize >= 2 && rawData[0] == 0xFF && rawData[1] == 0xFE) {
-        // convert UTF-16 LE to UTF-8
-        std::string utf8Result;
-        utf8Result.reserve(fileSize);
-
-        size_t utf16Size = fileSize - 2;  // skip BOM
-        const u8 *utf16Data = rawData.data() + 2;
-
-        for(size_t i = 0; i < utf16Size - 1; i += 2) {
-            uint16_t utf16Char = utf16Data[i] | (utf16Data[i + 1] << 8);
-
-            if(utf16Char < 0x80)
-                utf8Result += static_cast<char>(utf16Char);
-            else if(utf16Char < 0x800) {
-                utf8Result += static_cast<char>(0xC0 | (utf16Char >> 6));
-                utf8Result += static_cast<char>(0x80 | (utf16Char & 0x3F));
-            } else {
-                utf8Result += static_cast<char>(0xE0 | (utf16Char >> 12));
-                utf8Result += static_cast<char>(0x80 | ((utf16Char >> 6) & 0x3F));
-                utf8Result += static_cast<char>(0x80 | (utf16Char & 0x3F));
-            }
-        }
-
-        fileContent = UString(utf8Result.c_str());
-    } else {
-        // assume UTF-8/ASCII
-        fileContent = UString(reinterpret_cast<char *>(rawData.data()), static_cast<int>(fileSize));
-    }
+    UString fileContent{reinterpret_cast<char *>(rawData.data()), static_cast<int>(fileSize)};
 
     // process content line by line, handling different line endings
     int nonEmptyLineCounter = 0;
@@ -960,38 +930,44 @@ bool Skin::parseSkinINI(std::string filepath) {
     SkinSection curBlock = SkinSection::GENERAL;
 
     UString currentLine;
+    bool nextLine = false;
     for(int i = 0; i < fileContent.length(); i++) {
-        wchar_t ch = fileContent[i];
+        if(nextLine) {
+            nextLine = false;
+            currentLine.clear();
+        }
+
+        char16_t ch = fileContent[i];
 
         // accumulate characters until we hit a line ending
-        if(ch != L'\r' && ch != L'\n') {
+        if(ch != u'\r' && ch != u'\n') {
             currentLine += ch;
             continue;
         }
 
         // handle CRLF, CR, or LF
-        if(ch == L'\r' && i + 1 < fileContent.length() && fileContent[i + 1] == L'\n') i++;  // skip LF in CRLF
+        if(ch == u'\r' && i + 1 < fileContent.length() && fileContent[i + 1] == u'\n') i++;  // skip LF in CRLF
 
-        std::string curLine{currentLine.toUtf8()};
-        currentLine.clear();  // reset for next line
+        std::string_view curLineView = currentLine.utf8View();
+        nextLine = true;
 
-        if(!curLine.empty()) nonEmptyLineCounter++;
+        if(!curLineView.empty()) nonEmptyLineCounter++;
 
         // skip comments
-        size_t firstNonSpace = curLine.find_first_not_of(" \t");
-        if(firstNonSpace != std::string::npos && curLine.substr(firstNonSpace).starts_with("//")) continue;
+        size_t firstNonSpace = curLineView.find_first_not_of(" \t");
+        if(firstNonSpace != std::string::npos && curLineView.substr(firstNonSpace).starts_with("//")) continue;
 
         // section detection
-        if(curLine.find("[General]") != std::string::npos)
+        if(curLineView.find("[General]") != std::string::npos)
             curBlock = SkinSection::GENERAL;
-        else if(curLine.find("[Colours]") != std::string::npos || curLine.find("[Colors]") != std::string::npos)
+        else if(curLineView.find("[Colours]") != std::string::npos || curLineView.find("[Colors]") != std::string::npos)
             curBlock = SkinSection::COLOURS;
-        else if(curLine.find("[Fonts]") != std::string::npos)
+        else if(curLineView.find("[Fonts]") != std::string::npos)
             curBlock = SkinSection::FONTS;
-        else if(curLine.find("[neosu]") != std::string::npos)
+        else if(curLineView.find("[neosu]") != std::string::npos)
             curBlock = SkinSection::NEOSU;
 
-        auto curLineChar = curLine.c_str();
+        auto curLineChar = currentLine.toUtf8();
 
         switch(curBlock) {
             case SkinSection::GENERAL: {
@@ -1093,12 +1069,12 @@ bool Skin::parseSkinINI(std::string filepath) {
             }
 
             case SkinSection::NEOSU: {
-                size_t pos = curLine.find(':');
+                size_t pos = curLineView.find(':');
                 if(pos == std::string::npos) break;
 
                 std::string name, value;
-                Parsing::parse(curLine.substr(0, pos), &name);
-                Parsing::parse(curLine.substr(pos + 1), &value);
+                Parsing::parse(std::string{curLineView.substr(0, pos)}.c_str(), &name);
+                Parsing::parse(std::string{curLineView.substr(pos + 1)}.c_str(), &value);
 
                 // XXX: shouldn't be setting cvars directly in parsing method
                 auto cvar = cvars->getConVarByName(name, false);

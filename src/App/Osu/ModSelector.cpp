@@ -90,7 +90,7 @@ class ModSelectorOverrideSliderLockButton final : public CBaseUICheckbox {
     void draw() override {
         if(!this->bVisible) return;
 
-        const wchar_t icon = (this->bChecked ? Icons::LOCK : Icons::UNLOCK);
+        const auto icon = (this->bChecked ? Icons::LOCK : Icons::UNLOCK);
         UString iconString;
         iconString.insert(0, icon);
 

@@ -56,7 +56,7 @@ bool set_current_thread_name(const char *cname) {
     try_load_funcs();
     if(pset_thread_desc) {
         HANDLE handle = GetCurrentThread();
-        HRESULT hr = pset_thread_desc(handle, name.wc_str());
+        HRESULT hr = pset_thread_desc(handle, name.wchar_str());
         return SUCCEEDED(hr);
     }
 #elif defined(__linux__)

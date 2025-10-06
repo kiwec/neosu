@@ -85,6 +85,7 @@ find_package(CURL REQUIRED)
 find_package(MPG123 REQUIRED)
 find_package(SoundTouch REQUIRED)
 find_package(SoLoud REQUIRED)
+find_package(simdutf REQUIRED)
 
 # Find packages that provide config files
 find_package(fmt REQUIRED)
@@ -235,6 +236,7 @@ target_link_libraries(neosu PRIVATE
     SoundTouch::SoundTouch
     SoLoud::soloud
     MPG123::libmpg123
+    simdutf::simdutf
     ${DEPS_INSTALL_DIR}/lib/bz2_static.lib # cool awesome
     ${LIBARCHIVE_STATIC_LIBRARIES}
     comctl32

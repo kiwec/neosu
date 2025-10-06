@@ -37,7 +37,7 @@
 static constexpr const float ATLAS_OCCUPANCY_TARGET{0.75f};  // target atlas occupancy before resize
 static constexpr const size_t MIN_ATLAS_SIZE{256};
 static constexpr const size_t MAX_ATLAS_SIZE{4096};
-static constexpr const wchar_t UNKNOWN_CHAR{L'?'};  // ASCII '?'
+static constexpr const char16_t UNKNOWN_CHAR{u'?'};  // ASCII '?'
 
 static constexpr const size_t VERTS_PER_VAO{Env::cfg(REND::GLES32 | REND::DX11) ? 6 : 4};
 
@@ -46,23 +46,23 @@ FT_Library McFont::s_sharedFtLibrary = nullptr;
 bool McFont::s_sharedFtLibraryInitialized = false;
 std::vector<McFont::FallbackFont> McFont::s_sharedFallbackFonts;
 bool McFont::s_sharedFallbacksInitialized = false;
-std::unordered_set<wchar_t> McFont::s_sharedFallbackFaceBlacklist;
+std::unordered_set<char16_t> McFont::s_sharedFallbackFaceBlacklist;
 
 McFont::McFont(std::string filepath, int fontSize, bool antialiasing, int fontDPI)
     : Resource(std::move(filepath)),
       m_vao((Env::cfg(REND::GLES32 | REND::DX11) ? Graphics::PRIMITIVE::PRIMITIVE_TRIANGLES
                                                  : Graphics::PRIMITIVE::PRIMITIVE_QUADS),
             Graphics::USAGE_TYPE::USAGE_DYNAMIC) {
-    std::vector<wchar_t> characters;
+    std::vector<char16_t> characters;
     characters.reserve(96);  // reserve space for basic ASCII, load the rest as needed
     for(int i = 32; i < 128; i++) {
-        characters.push_back(static_cast<wchar_t>(i));
+        characters.push_back(static_cast<char16_t>(i));
     }
     m_bTryFindFallbacks = true;
     constructor(characters, fontSize, antialiasing, fontDPI);
 }
 
-McFont::McFont(std::string filepath, const std::vector<wchar_t> &characters, int fontSize, bool antialiasing,
+McFont::McFont(std::string filepath, const std::vector<char16_t> &characters, int fontSize, bool antialiasing,
                int fontDPI)
     : Resource(std::move(filepath)),
       m_vao((Env::cfg(REND::GLES32 | REND::DX11) ? Graphics::PRIMITIVE::PRIMITIVE_TRIANGLES
@@ -72,7 +72,7 @@ McFont::McFont(std::string filepath, const std::vector<wchar_t> &characters, int
     constructor(characters, fontSize, antialiasing, fontDPI);
 }
 
-void McFont::constructor(const std::vector<wchar_t> &characters, int fontSize, bool antialiasing, int fontDPI) {
+void McFont::constructor(const std::vector<char16_t> &characters, int fontSize, bool antialiasing, int fontDPI) {
     m_iFontSize = fontSize;
     m_bAntialiasing = antialiasing;
     m_iFontDPI = fontDPI;
@@ -107,7 +107,7 @@ void McFont::constructor(const std::vector<wchar_t> &characters, int fontSize, b
 
     // pre-allocate space for initial glyphs
     m_vGlyphs.reserve(characters.size());
-    for(wchar_t ch : characters) {
+    for(char16_t ch : characters) {
         addGlyph(ch);
     }
 }
@@ -123,7 +123,7 @@ void McFont::init() {
     initializeSharedFallbackFonts();
 
     // load metrics for all initial glyphs
-    for(wchar_t ch : m_vGlyphs) {
+    for(char16_t ch : m_vGlyphs) {
         loadGlyphMetrics(ch);
     }
 
@@ -133,7 +133,7 @@ void McFont::init() {
     // precalculate average/max ASCII glyph height
     m_fHeight = 0.0f;
     for(int i = 32; i < 128; i++) {
-        const int curHeight = getGlyphMetrics(static_cast<wchar_t>(i)).top;
+        const int curHeight = getGlyphMetrics(static_cast<char16_t>(i)).top;
         m_fHeight = std::max(m_fHeight, static_cast<float>(curHeight));
     }
 
@@ -161,7 +161,7 @@ void McFont::destroy() {
     m_atlasNeedsReload = false;
 }
 
-bool McFont::addGlyph(wchar_t ch) {
+bool McFont::addGlyph(char16_t ch) {
     if(m_vGlyphExistence.find(ch) != m_vGlyphExistence.end() || ch < 32) return false;
 
     m_vGlyphs.push_back(ch);
@@ -169,7 +169,7 @@ bool McFont::addGlyph(wchar_t ch) {
     return true;
 }
 
-int McFont::allocateDynamicSlot(wchar_t ch) {
+int McFont::allocateDynamicSlot(char16_t ch) {
     m_currentTime++;
 
     // look for free slot
@@ -220,7 +220,7 @@ int McFont::allocateDynamicSlot(wchar_t ch) {
     return lruIndex;
 }
 
-void McFont::markSlotUsed(wchar_t ch) {
+void McFont::markSlotUsed(char16_t ch) {
     auto it = m_dynamicSlotMap.find(ch);
     if(it != m_dynamicSlotMap.end()) {
         m_currentTime++;
@@ -259,7 +259,7 @@ void McFont::initializeDynamicRegion(int atlasSize) {
     }
 }
 
-bool McFont::loadGlyphDynamic(wchar_t ch) {
+bool McFont::loadGlyphDynamic(char16_t ch) {
     if(!m_bFreeTypeInitialized || hasGlyph(ch)) return hasGlyph(ch);
 
     int fontIndex = 0;
@@ -325,7 +325,7 @@ bool McFont::loadGlyphDynamic(wchar_t ch) {
     return true;
 }
 
-FT_Face McFont::getFontFaceForGlyph(wchar_t ch, int &fontIndex) {
+FT_Face McFont::getFontFaceForGlyph(char16_t ch, int &fontIndex) {
     fontIndex = 0;
 
     // first check the quick lookup blacklist set
@@ -356,16 +356,16 @@ FT_Face McFont::getFontFaceForGlyph(wchar_t ch, int &fontIndex) {
     return nullptr;  // character not found in any font
 }
 
-bool McFont::loadGlyphFromFace(wchar_t ch, FT_Face face, int fontIndex) {
+bool McFont::loadGlyphFromFace(char16_t ch, FT_Face face, int fontIndex) {
     if(FT_Load_Glyph(face, FT_Get_Char_Index(face, ch),
                      m_bAntialiasing ? FT_LOAD_TARGET_NORMAL : FT_LOAD_TARGET_MONO)) {
-        debugLog("Font Error: Failed to load glyph for character {:d} from font index {:d}", (int)ch, fontIndex);
+        debugLog("Font Error: Failed to load glyph for character {:d} from font index {:d}", (wint_t)ch, fontIndex);
         return false;
     }
 
     FT_Glyph glyph{};
     if(FT_Get_Glyph(face->glyph, &glyph)) {
-        debugLog("Font Error: Failed to get glyph for character {:d} from font index {:d}", (int)ch, fontIndex);
+        debugLog("Font Error: Failed to get glyph for character {:d} from font index {:d}", (wint_t)ch, fontIndex);
         return false;
     }
 
@@ -420,7 +420,7 @@ bool McFont::initializeFreeType() {
     return true;
 }
 
-bool McFont::loadGlyphMetrics(wchar_t ch) {
+bool McFont::loadGlyphMetrics(char16_t ch) {
     if(!m_bFreeTypeInitialized) return false;
 
     int fontIndex = 0;
@@ -471,7 +471,7 @@ std::unique_ptr<Color[]> McFont::createExpandedBitmapData(const FT_Bitmap &bitma
     return expandedData;
 }
 
-void McFont::renderGlyphToAtlas(wchar_t ch, int x, int y, FT_Face face, bool isDynamicSlot) {
+void McFont::renderGlyphToAtlas(char16_t ch, int x, int y, FT_Face face, bool isDynamicSlot) {
     if(!face) {
         // fall back to getting the face again if not provided
         int fontIndex = 0;
@@ -535,17 +535,17 @@ void McFont::renderGlyphToAtlas(wchar_t ch, int x, int y, FT_Face face, bool isD
     FT_Done_Glyph(glyph);
 }
 
-bool McFont::createAndPackAtlas(const std::vector<wchar_t> &glyphs) {
+bool McFont::createAndPackAtlas(const std::vector<char16_t> &glyphs) {
     if(glyphs.empty()) return true;
 
     // prepare packing rectangles
     std::vector<TextureAtlas::PackRect> packRects;
-    std::vector<wchar_t> rectsToChars;
+    std::vector<char16_t> rectsToChars;
     packRects.reserve(glyphs.size());
     rectsToChars.reserve(glyphs.size());
 
     size_t rectIndex = 0;
-    for(wchar_t ch : glyphs) {
+    for(char16_t ch : glyphs) {
         const auto &metrics = m_vGlyphMetrics[ch];
         if(metrics.sizePixelsX > 0 && metrics.sizePixelsY > 0) {
             // add packrect
@@ -587,7 +587,7 @@ bool McFont::createAndPackAtlas(const std::vector<wchar_t> &glyphs) {
 
     // render all packed glyphs to static region
     for(const auto &rect : packRects) {
-        const wchar_t ch = rectsToChars[rect.id];
+        const char16_t ch = rectsToChars[rect.id];
 
         // get the correct font face for this glyph
         int fontIndex = 0;
@@ -863,7 +863,7 @@ std::vector<UString> McFont::wrap(const UString &text, f64 max_width) const {
     return lines;
 }
 
-const McFont::GLYPH_METRICS &McFont::getGlyphMetrics(wchar_t ch) const {
+const McFont::GLYPH_METRICS &McFont::getGlyphMetrics(char16_t ch) const {
     auto it = m_vGlyphMetrics.find(ch);
     if(it != m_vGlyphMetrics.end()) return it->second;
 
@@ -923,16 +923,19 @@ bool McFont::initializeSharedFallbackFonts() {
 
 void McFont::discoverSystemFallbacks() {
 #ifdef MCENGINE_PLATFORM_WINDOWS
-    std::array<char, MAX_PATH> windir{};
-    if(GetWindowsDirectoryA(windir.data(), MAX_PATH) <= 0) return;
+    std::string windir;
+    windir.resize(MAX_PATH);
+    int ret = GetWindowsDirectoryA(windir.data(), MAX_PATH);
+    if(ret <= 0) return;
+    windir.resize(ret);
 
     std::vector<std::string> systemFonts = {
-        std::string{windir.data()} + "\\Fonts\\arial.ttf",
-        std::string{windir.data()} + "\\Fonts\\msyh.ttc",      // Microsoft YaHei (Chinese)
-        std::string{windir.data()} + "\\Fonts\\malgun.ttf",    // Malgun Gothic (Korean)
-        std::string{windir.data()} + "\\Fonts\\meiryo.ttc",    // Meiryo (Japanese)
-        std::string{windir.data()} + "\\Fonts\\seguiemj.ttf",  // Segoe UI Emoji
-        std::string{windir.data()} + "\\Fonts\\seguisym.ttf"   // Segoe UI Symbol
+        windir + "\\Fonts\\arial.ttf",
+        windir + "\\Fonts\\msyh.ttc",      // Microsoft YaHei (Chinese)
+        windir + "\\Fonts\\malgun.ttf",    // Malgun Gothic (Korean)
+        windir + "\\Fonts\\meiryo.ttc",    // Meiryo (Japanese)
+        windir + "\\Fonts\\seguiemj.ttf",  // Segoe UI Emoji
+        windir + "\\Fonts\\seguisym.ttf"   // Segoe UI Symbol
     };
 #elif defined(MCENGINE_PLATFORM_LINUX)
     // linux system fonts (common locations)

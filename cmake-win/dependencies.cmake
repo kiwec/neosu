@@ -98,6 +98,11 @@ set(NSYNC_URL "https://github.com/google/nsync/archive/refs/tags/${NSYNC_VERSION
 set(NSYNC_HASH "SHA512=af463d768c9e4bacc5796410c6d368b8ad0cc0fcbae28ec35fbe7937e7939de1ccad97f51b4940e384b677bb8fbc9963a438f7687e002613f1669ab93e459f60")
 set_download_name("nsync" "${NSYNC_VERSION}" "${NSYNC_URL}")
 
+set(SIMDUTF_VERSION "7.4.0")
+set(SIMDUTF_URL "https://github.com/simdutf/simdutf/archive/refs/tags/v${SIMDUTF_VERSION}.tar.gz")
+set(SIMDUTF_HASH "SHA512=b1f7da45533682ff3ce3fa114c7a59674e3a73880296e2f7e24a9279bb0e2ebe179f66be83d014339860063bf53484959f01a4ba3dd8c25ef8ba56cd92021fc4")
+set_download_name("simdutf" "${SIMDUTF_VERSION}" "${SIMDUTF_URL}")
+
 set(CURL_VERSION "8.16.0")
 string(REPLACE "." "_" _curl_ver_temp "${CURL_VERSION}")
 set(CURL_URL "https://github.com/curl/curl/releases/download/curl-${_curl_ver_temp}/curl-${CURL_VERSION}.tar.gz")

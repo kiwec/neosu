@@ -302,7 +302,7 @@ void Environment::Interop::setup_system_integrations() {
     }
 
     wchar_t command[MAX_PATH + 10];
-    swprintf_s(command, _countof(command), L"\"%s\"%s \"%%1\"", exePath, launch_args.wc_str());
+    swprintf_s(command, _countof(command), L"\"%s\"%s \"%%1\"", exePath, launch_args.wchar_str());
     RegSetValueExW(cmd_key, L"", 0, REG_SZ, (BYTE *)command, (wcslen(command) + 1) * sizeof(wchar_t));
     RegCloseKey(cmd_key);
 

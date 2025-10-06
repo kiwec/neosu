@@ -259,7 +259,7 @@ fs::path File::getFsPath(std::string_view utf8path) {
     if(utf8path.empty()) return fs::path{};
 #ifdef MCENGINE_PLATFORM_WINDOWS
     const UString filePathUStr{utf8path.data(), static_cast<int>(utf8path.length())};
-    return fs::path{filePathUStr.wc_str()};
+    return fs::path{filePathUStr.wchar_str()};
 #else
     return fs::path{utf8path};
 #endif
@@ -270,7 +270,7 @@ FILE *File::fopen_c(const char *__restrict utf8filename, const char *__restrict 
 #ifdef MCENGINE_PLATFORM_WINDOWS
     const UString wideFilename{utf8filename};
     const UString wideModes{modes};
-    return _wfopen(wideFilename.wc_str(), wideModes.wc_str());
+    return _wfopen(wideFilename.wchar_str(), wideModes.wchar_str());
 #else
     return fopen(utf8filename, modes);
 #endif

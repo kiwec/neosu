@@ -257,10 +257,10 @@ Osu::Osu() {
     this->fonts.push_back(this->fontIcons);
 
     float averageIconHeight = 0.0f;
-    for(wchar_t icon : Icons::icons) {
+    for(char16_t icon : Icons::icons) {
         UString iconString;
         iconString.insert(0, icon);
-        const float height = this->fontIcons->getStringHeight(iconString.toUtf8());
+        const float height = this->fontIcons->getStringHeight(iconString);
         if(height > averageIconHeight) averageIconHeight = height;
     }
     this->fontIcons->setHeight(averageIconHeight);

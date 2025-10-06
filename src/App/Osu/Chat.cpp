@@ -138,7 +138,7 @@ void ChatChannel::add_message(ChatMessage msg) {
     // Group 7 only exists for raw links
     std::wregex url_regex(L"(\\[\\[(.+?)\\]\\])|(\\[((\\S+)://\\S+) (.+?)\\])|(https?://\\S+)");
 
-    std::wstring msg_text = msg.text.wc_str();
+    std::wstring msg_text = msg.text.to_wstring();
     std::wsmatch match;
     std::vector<CBaseUILabel *> temp_text_fragments;
     std::wstring::const_iterator search_start = msg_text.cbegin();
