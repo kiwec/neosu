@@ -65,6 +65,10 @@
 #define VPROF_BUDGET_DBG(...)
 #endif
 
+namespace Profiling {
+void vprofToggleCB(float newValue);
+}
+
 class ProfilerNode {
     friend class ProfilerProfile;
 
@@ -178,9 +182,7 @@ class ProfilerProfile {
     double sumTimes(int groupID);
     double sumTimes(ProfilerNode *node, int groupID);
 
-    static void vprofToggleCB(float newValue);
    private:
-
     struct BUDGETGROUP {
         const char *name;
     };

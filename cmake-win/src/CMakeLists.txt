@@ -206,16 +206,16 @@ target_link_directories(neosu PRIVATE
 
 # binary resources
 target_binary_resources(neosu PRIVATE
-    cursortrail_vsh "${CMAKE_SOURCE_DIR}/../../assets/shaders/cursortrail_v.glsl"
-    cursortrail_fsh "${CMAKE_SOURCE_DIR}/../../assets/shaders/cursortrail_f.glsl"
-    slider_vsh "${CMAKE_SOURCE_DIR}/../../assets/shaders/slider_v.glsl"
-    slider_fsh "${CMAKE_SOURCE_DIR}/../../assets/shaders/slider_f.glsl"
-    flashlight_vsh "${CMAKE_SOURCE_DIR}/../../assets/shaders/flashlight_v.glsl"
-    flashlight_fsh "${CMAKE_SOURCE_DIR}/../../assets/shaders/flashlight_f.glsl"
-    actual_flashlight_vsh "${CMAKE_SOURCE_DIR}/../../assets/shaders/actual_flashlight_v.glsl"
-    actual_flashlight_fsh "${CMAKE_SOURCE_DIR}/../../assets/shaders/actual_flashlight_f.glsl"
-    smoothclip_vsh "${CMAKE_SOURCE_DIR}/../../assets/shaders/smoothclip_v.glsl"
-    smoothclip_fsh "${CMAKE_SOURCE_DIR}/../../assets/shaders/smoothclip_f.glsl"
+    GL_cursortrail_vsh "${CMAKE_SOURCE_DIR}/../../assets/shaders/GL_cursortrail_v.glsl"
+    GL_cursortrail_fsh "${CMAKE_SOURCE_DIR}/../../assets/shaders/GL_cursortrail_f.glsl"
+    GL_slider_vsh "${CMAKE_SOURCE_DIR}/../../assets/shaders/GL_slider_v.glsl"
+    GL_slider_fsh "${CMAKE_SOURCE_DIR}/../../assets/shaders/GL_slider_f.glsl"
+    GL_flashlight_vsh "${CMAKE_SOURCE_DIR}/../../assets/shaders/GL_flashlight_v.glsl"
+    GL_flashlight_fsh "${CMAKE_SOURCE_DIR}/../../assets/shaders/GL_flashlight_f.glsl"
+    GL_actual_flashlight_vsh "${CMAKE_SOURCE_DIR}/../../assets/shaders/GL_actual_flashlight_v.glsl"
+    GL_actual_flashlight_fsh "${CMAKE_SOURCE_DIR}/../../assets/shaders/GL_actual_flashlight_f.glsl"
+    GL_smoothclip_vsh "${CMAKE_SOURCE_DIR}/../../assets/shaders/GL_smoothclip_v.glsl"
+    GL_smoothclip_fsh "${CMAKE_SOURCE_DIR}/../../assets/shaders/GL_smoothclip_f.glsl"
     convar_template "${CMAKE_SOURCE_DIR}/../../assets/misc/convar_template.html"
 )
 

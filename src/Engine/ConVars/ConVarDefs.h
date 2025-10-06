@@ -78,13 +78,10 @@ extern void _osuOptionsSliderQualityWrapper(float);
 namespace SliderRenderer {
 extern void onUniformConfigChanged();
 }
-namespace VolNormalization {
-extern void loudness_cb();
-}
 namespace RichPresence {
 extern void onRichPresenceChange(float, float);
 }
-namespace ProfilerProfile {
+namespace Profiling {
 extern void vprofToggleCB(float);
 }
 extern void spectate_by_username(std::string_view username);
@@ -133,7 +130,7 @@ CONVAR(echo, "echo"sv, CLIENT | SKINS | SERVER, CFUNC(ConVarHandler::ConVarBuilt
 CONVAR(asio_buffer_size, "asio_buffer_size"sv, -1, CLIENT,
        "buffer size in samples (usually 44100 samples per second)"sv);
 CONVAR(loudness_calc_threads, "loudness_calc_threads"sv, 0.f, CLIENT,
-       "0 = autodetect. do not use too many threads or your PC will explode"sv, CFUNC(VolNormalization::loudness_cb));
+       "0 = autodetect. do not use too many threads or your PC will explode"sv);
 CONVAR(loudness_fallback, "loudness_fallback"sv, -12.f, CLIENT);
 CONVAR(loudness_target, "loudness_target"sv, -14.f, CLIENT);
 CONVAR(sound_panning, "sound_panning"sv, true, CLIENT | SKINS | SERVER,
@@ -237,7 +234,7 @@ CONVAR(slider_debug_draw, "slider_debug_draw"sv, false, CLIENT | SERVER | PROTEC
 CONVAR(slider_debug_draw_square_vao, "slider_debug_draw_square_vao"sv, false, CLIENT | SERVER | PROTECTED | GAMEPLAY,
        "generate square vaos and nothing else (no rt, no shader) (requires disabling legacy slider renderer)"sv);
 CONVAR(slider_debug_wireframe, "slider_debug_wireframe"sv, false, CLIENT | SERVER | PROTECTED | GAMEPLAY, "unused"sv);
-CONVAR(vprof, "vprof"sv, false, CLIENT | SERVER, "enables/disables the visual profiler"sv, CFUNC(ProfilerProfile::vprofToggleCB));
+CONVAR(vprof, "vprof"sv, false, CLIENT | SERVER, "enables/disables the visual profiler"sv, CFUNC(Profiling::vprofToggleCB));
 CONVAR(vprof_display_mode, "vprof_display_mode"sv, 0, CLIENT | SERVER,
        "which info blade to show on the top right (gpu/engine/app/etc. info), use CTRL + TAB to "
        "cycle through, 0 = disabled"sv);

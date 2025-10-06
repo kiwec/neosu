@@ -7,6 +7,20 @@
 
 ProfilerProfile g_profCurrentProfile(true);
 
+// weird extra namespace here due to msvc linkage issues for callback in ConVarDefs.h
+namespace Profiling {
+void vprofToggleCB(float newValue) {
+    const bool enable = !!static_cast<int>(newValue);
+
+    if(enable != g_profCurrentProfile.isEnabled()) {
+        if(enable)
+            g_profCurrentProfile.start();
+        else
+            g_profCurrentProfile.stop();
+    }
+}
+}  // namespace Profiling
+
 ProfilerProfile::ProfilerProfile(bool manualStartViaMain) : root("Root", VPROF_BUDGETGROUP_ROOT, nullptr) {
     this->bManualStartViaMain = manualStartViaMain;
 
@@ -57,17 +71,6 @@ double ProfilerProfile::sumTimes(ProfilerNode *node, int groupID) {
     }
 
     return sum;
-}
-
-void ProfilerProfile::vprofToggleCB(float newValue) {
-    const bool enable = !!static_cast<int>(newValue);
-
-    if(enable != g_profCurrentProfile.isEnabled()) {
-        if(enable)
-            g_profCurrentProfile.start();
-        else
-            g_profCurrentProfile.stop();
-    }
 }
 
 int ProfilerProfile::groupNameToID(const char *group) {

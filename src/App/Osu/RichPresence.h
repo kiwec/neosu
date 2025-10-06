@@ -1,23 +1,15 @@
 #pragma once
 // Copyright (c) 2018, PG, All rights reserved.
 #include "BanchoProtocol.h"
-#include "cbase.h"
 
-class ConVar;
+namespace RichPresence {
+    void onMainMenu();
+    void onSongBrowser();
+    void onPlayStart();
+    void onPlayEnd(bool quit);
+    void onMultiplayerLobby();
 
-class RichPresence {
-   public:
-    static void onMainMenu();
-    static void onSongBrowser();
-    static void onPlayStart();
-    static void onPlayEnd(bool quit);
-    static void onMultiplayerLobby();
-
-    static void onRichPresenceChange(float oldValue, float newValue);
-    static void setBanchoStatus(const char *info_text, Action action);
-    static void updateBanchoMods();
-
-   private:
-    static const UString KEY_DISCORD_STATUS;
-    static const UString KEY_DISCORD_DETAILS;
+    void onRichPresenceChange(float oldValue, float newValue);
+    void setBanchoStatus(const char *info_text, Action action);
+    void updateBanchoMods();
 };

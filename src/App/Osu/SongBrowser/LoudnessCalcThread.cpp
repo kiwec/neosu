@@ -54,7 +54,7 @@ struct VolNormalization::LoudnessCalcThread {
    private:
     void run() {
         McThread::set_current_thread_name("loudness_calc");
-        McThread::set_current_thread_prio(false); // reset priority
+        McThread::set_current_thread_prio(false);  // reset priority
 
         UString last_song = "";
         f32 last_loudness = 0.f;
@@ -196,8 +196,17 @@ void VolNormalization::abort_instance() {
     this->threads.clear();
 }
 
+VolNormalization::~VolNormalization() {
+    cv::loudness_calc_threads.removeCallbacks();
+    // only clean up this instance's resources
+    abort_instance();
+}
+
 VolNormalization &VolNormalization::get_instance() {
-    std::call_once(instance_flag, []() { instance = std::make_unique<VolNormalization>(); });
+    std::call_once(instance_flag, []() {
+        instance = std::make_unique<VolNormalization>();
+        cv::loudness_calc_threads.setCallback(CFUNC(VolNormalization::loudness_cb));
+    });
     return *instance;
 }
 

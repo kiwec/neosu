@@ -6,7 +6,6 @@
 #include "BanchoUsers.h"
 #include "BeatmapInterface.h"
 #include "Chat.h"
-#include "ConVar.h"
 #include "Database.h"
 #include "DatabaseBeatmap.h"
 #include "DiscordInterface.h"
@@ -21,8 +20,11 @@
 
 #include <chrono>
 
-const UString RichPresence::KEY_DISCORD_STATUS = "state";
-const UString RichPresence::KEY_DISCORD_DETAILS = "details";
+namespace RichPresence {
+namespace {  // static
+
+const UString KEY_DISCORD_STATUS = "state";
+const UString KEY_DISCORD_DETAILS = "details";
 
 UString last_status = "[neosu]\nWaking up";
 Action last_action = IDLE;
@@ -58,8 +60,9 @@ void mapstr(DatabaseBeatmap* map, char* output, bool /*include_difficulty*/) {
 
     crop_to(playingInfo, output, 128);
 }
+}  // namespace
 
-void RichPresence::setBanchoStatus(const char* info_text, Action action) {
+void setBanchoStatus(const char* info_text, Action action) {
     if(osu == nullptr) return;
 
     MD5Hash map_md5("");
@@ -88,7 +91,7 @@ void RichPresence::setBanchoStatus(const char* info_text, Action action) {
     BANCHO::Net::send_packet(packet);
 }
 
-void RichPresence::updateBanchoMods() {
+void updateBanchoMods() {
     MD5Hash map_md5("");
     i32 map_id = 0;
 
@@ -114,7 +117,7 @@ void RichPresence::updateBanchoMods() {
     osu->getSongBrowser()->rebuildScoreButtons();
 }
 
-void RichPresence::onMainMenu() {
+void onMainMenu() {
     bool force_not_afk =
         BanchoState::spectating || (osu->getChat()->isVisible() && osu->getChat()->user_list->isVisible());
     setBanchoStatus("Main Menu", force_not_afk ? IDLE : AFK);
@@ -135,7 +138,7 @@ void RichPresence::onMainMenu() {
     set_discord_presence(&activity);
 }
 
-void RichPresence::onSongBrowser() {
+void onSongBrowser() {
     struct DiscordActivity activity{};
 
     activity.type = DiscordActivityType_Playing;
@@ -159,7 +162,7 @@ void RichPresence::onSongBrowser() {
     env->setWindowTitle("neosu");
 }
 
-void RichPresence::onPlayStart() {
+void onPlayStart() {
     auto map = osu->getMapInterface()->beatmap;
 
     static DatabaseBeatmap* last_diff = nullptr;
@@ -210,7 +213,7 @@ void RichPresence::onPlayStart() {
     set_discord_presence(&activity);
 }
 
-void RichPresence::onPlayEnd(bool quit) {
+void onPlayEnd(bool quit) {
     if(quit) return;
 
     // e.g.: 230pp 900x 95.50% HDHRDT 6*
@@ -237,7 +240,7 @@ void RichPresence::onPlayEnd(bool quit) {
     setBanchoStatus(scoreInfo.toUtf8(), SUBMITTING);
 }
 
-void RichPresence::onMultiplayerLobby() {
+void onMultiplayerLobby() {
     struct DiscordActivity activity{};
 
     activity.type = DiscordActivityType_Playing;
@@ -250,8 +253,10 @@ void RichPresence::onMultiplayerLobby() {
     set_discord_presence(&activity);
 }
 
-void RichPresence::onRichPresenceChange(float oldValue, float newValue) {
+void onRichPresenceChange(float oldValue, float newValue) {
     if(oldValue != newValue && !static_cast<int>(newValue)) {
         clear_discord_presence();
     }
 }
+
+}  // namespace RichPresence

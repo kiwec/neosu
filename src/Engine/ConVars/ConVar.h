@@ -244,6 +244,13 @@ class ConVar {
             static_assert(Env::always_false_v<Callback>, "Unsupported callback signature");
     }
 
+    inline void removeCallback() { this->callback = std::monostate(); }
+    inline void removeChangeCallback() { this->changeCallback = std::monostate(); }
+    inline void removeCallbacks() {
+        this->removeCallback();
+        this->removeChangeCallback();
+    }
+
     // get
     [[nodiscard]] inline float getDefaultFloat() const { return static_cast<float>(this->dDefaultValue); }
     [[nodiscard]] inline double getDefaultDouble() const { return this->dDefaultValue; }

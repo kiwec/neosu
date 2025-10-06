@@ -12,10 +12,7 @@ class VolNormalization {
     NOCOPY_NOMOVE(VolNormalization)
    public:
     VolNormalization() = default;
-    ~VolNormalization() {
-        // only clean up this instance's resources
-        abort_instance();
-    }
+    ~VolNormalization();
 
     static inline void start_calc(const std::vector<DatabaseBeatmap*>& maps_to_calc) {
         get_instance().start_calc_instance(maps_to_calc);
