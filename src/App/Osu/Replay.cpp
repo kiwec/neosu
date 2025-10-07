@@ -125,6 +125,8 @@ Mods Mods::from_cvars() {
     if(cv::mod_ming3012.getBool()) mods.flags |= Ming3012;
     if(cv::mod_no100s.getBool()) mods.flags |= No100s;
     if(cv::mod_no50s.getBool()) mods.flags |= No50s;
+    if(cv::mod_singletap.getBool()) mods.flags |= Singletap;
+    if(cv::mod_no_keylock.getBool()) mods.flags |= NoKeylock;
     if(cv::mod_autoplay.getBool()) {
         mods.flags &= ~(Relax | Autopilot);
         mods.flags |= Autoplay;
@@ -232,6 +234,8 @@ void Mods::use(const Mods &mods) {
     cv::mod_ming3012.setValue(eq(mods.flags, Ming3012));
     cv::mod_no100s.setValue(eq(mods.flags, No100s));
     cv::mod_no50s.setValue(eq(mods.flags, No50s));
+    cv::mod_singletap.setValue(eq(mods.flags, Singletap));
+    cv::mod_no_keylock.setValue(eq(mods.flags, NoKeylock));
     cv::notelock_type.setValue(mods.notelock_type);
     cv::autopilot_lenience.setValue(mods.autopilot_lenience);
     cv::mod_timewarp_multiplier.setValue(mods.timewarp_multiplier);

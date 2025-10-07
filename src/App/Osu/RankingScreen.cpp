@@ -275,8 +275,7 @@ void RankingScreen::draw() {
                                              std::max(modPosStart.y, modPosMax.y) + osu->getUIScale(10) +
                                                  experimentalModFont->getHeight() * heightMultiplier);
         const int backgroundWidth = maxStringWidth + 2 * backgroundMargin;
-        const int backgroundHeight =
-            experimentalModHeight * this->extraMods.size() + 2 * backgroundMargin;
+        const int backgroundHeight = experimentalModHeight * this->extraMods.size() + 2 * backgroundMargin;
 
         g->setColor(0x77000000);
         g->fillRect((int)experimentalModPos.x - backgroundMargin,
@@ -493,11 +492,12 @@ void RankingScreen::setScore(const FinishedScore &score) {
     if(eq(score.mods.flags, Millhioref)) this->extraMods.push_back(&cv::mod_millhioref);
     if(eq(score.mods.flags, Mafham)) this->extraMods.push_back(&cv::mod_mafham);
     if(eq(score.mods.flags, StrictTracking)) this->extraMods.push_back(&cv::mod_strict_tracking);
-    if(eq(score.mods.flags, MirrorHorizontal))
-        this->extraMods.push_back(&cv::playfield_mirror_horizontal);
+    if(eq(score.mods.flags, MirrorHorizontal)) this->extraMods.push_back(&cv::playfield_mirror_horizontal);
     if(eq(score.mods.flags, MirrorVertical)) this->extraMods.push_back(&cv::playfield_mirror_vertical);
     if(eq(score.mods.flags, Shirone)) this->extraMods.push_back(&cv::mod_shirone);
     if(eq(score.mods.flags, ApproachDifferent)) this->extraMods.push_back(&cv::mod_approach_different);
+    if(eq(score.mods.flags, Singletap)) this->extraMods.push_back(&cv::mod_singletap);
+    if(eq(score.mods.flags, NoKeylock)) this->extraMods.push_back(&cv::mod_no_keylock);
     if(eq(score.mods.flags, NoHP)) this->extraMods.push_back(&cv::drain_disabled);
 }
 

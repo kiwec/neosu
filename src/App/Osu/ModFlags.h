@@ -59,6 +59,8 @@ enum : u64 {
     Millhioref = 1ULL << 40,
     StrictTracking = 1ULL << 41,
     ApproachDifferent = 1ULL << 42,
+    Singletap = 1ULL << 43,
+    NoKeylock = 1ULL << 44,
 
     // Only here so that replays for plays without HP drain don't fail.
     NoHP = 1ULL << 45,

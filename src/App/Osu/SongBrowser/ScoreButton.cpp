@@ -867,6 +867,8 @@ UString ScoreButton::getModsStringForDisplay(const Replay::Mods &mods) {
     if(eq(mods.flags, Nightmare)) modsString.append("Nightmare,");
     if(eq(mods.flags, MirrorHorizontal) || eq(mods.flags, MirrorVertical)) modsString.append("Mirror,");
     if(eq(mods.flags, FPoSu)) modsString.append("FPoSu,");
+    if(eq(mods.flags, Singletap)) modsString.append("1K,");
+    if(eq(mods.flags, NoKeylock)) modsString.append("4K,");
 
     if(modsString.length() > 0) modsString.pop_back();
 
