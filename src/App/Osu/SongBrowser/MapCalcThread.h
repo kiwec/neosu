@@ -95,6 +95,7 @@ class MapCalcThread {
     zarray<BPMTuple> bpm_calc_buf;
 
     const std::vector<DatabaseBeatmap*>* maps_to_process{nullptr};
+    
 
     static std::unique_ptr<MapCalcThread> instance;
     static std::once_flag instance_flag;

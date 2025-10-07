@@ -104,7 +104,7 @@ void OpenGLShader::setUniform2fv(std::string_view name, int count, const float *
 
     const int id = getAndCacheUniformLocation(name);
     if(id != -1)
-        glUniform2fv(id, count, (const float *const)&vectors[0]);
+        glUniform2fv(id, count, &vectors[0]);
     else if(cv::debug_shaders.getBool())
         debugLog("OpenGLShader Warning: Can't find uniform {:s}", name);
 }
@@ -124,7 +124,7 @@ void OpenGLShader::setUniform3fv(std::string_view name, int count, const float *
 
     const int id = getAndCacheUniformLocation(name);
     if(id != -1)
-        glUniform3fv(id, count, (const float *const)&vectors[0]);
+        glUniform3fv(id, count, &vectors[0]);
     else if(cv::debug_shaders.getBool())
         debugLog("OpenGLShader Warning: Can't find uniform {:s}", name);
 }

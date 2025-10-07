@@ -57,9 +57,6 @@ static void run_thread() {
     McThread::set_current_thread_name("lb_pp_calc");
     McThread::set_current_thread_prio(false);  // reset priority
 
-    std::vector<f64> aimStrains;
-    std::vector<f64> speedStrains;
-
     for(;;) {
         Sync::unique_lock<Sync::mutex> lock(work_mtx);
         cond.wait(lock, [] { return !work.empty() || dead.load(); });
@@ -146,8 +143,6 @@ static void run_thread() {
                 break;
             }
             if(!found_info) {
-                aimStrains.clear();
-                speedStrains.clear();
                 computed_info = new info_cache();
                 computed_info->speed = rqt.speed;
                 computed_info->AR = rqt.AR;
@@ -160,33 +155,35 @@ static void run_thread() {
                     return;
                 }
 
-                DifficultyCalculator::StarCalcParams params;
-                params.sortedHitObjects.swap(computed_ho->diffres.diffobjects);
-                params.CS = rqt.CS;
-                params.OD = rqt.OD;
-                params.speedMultiplier = rqt.speed;
-                params.relax = rqt.rx;
-                params.touchDevice = rqt.td;
-                params.aim = &computed_info->info.aim_stars;
-                params.aimSliderFactor = &computed_info->info.aim_slider_factor;
-                params.difficultAimStrains = &computed_info->info.difficult_aim_strains;
-                params.speed = &computed_info->info.speed_stars;
-                params.speedNotes = &computed_info->info.speed_notes;
-                params.difficultSpeedStrains = &computed_info->info.difficult_speed_strains;
-                params.upToObjectIndex = -1;
-                params.outAimStrains = &aimStrains;
-                params.outSpeedStrains = &speedStrains;
-                computed_info->info.total_stars = DifficultyCalculator::calculateStarDiffForHitObjectsInt(
-                    computed_info->cachedDiffObjects, params, nullptr, dead);
+                DifficultyCalculator::StarCalcParams params{
+                    .cachedDiffObjects = std::move(computed_info->cachedDiffObjects),
+                    .sortedHitObjects = computed_ho->diffres.diffobjects,
+                    .CS = rqt.CS,
+                    .OD = rqt.OD,
+                    .speedMultiplier = rqt.speed,
+                    .relax = rqt.rx,
+                    .touchDevice = rqt.td,
+                    .aim = &computed_info->info.aim_stars,
+                    .aimSliderFactor = &computed_info->info.aim_slider_factor,
+                    .aimDifficultSliders = &computed_info->info.difficult_aim_sliders,
+                    .difficultAimStrains = &computed_info->info.difficult_aim_strains,
+                    .speed = &computed_info->info.speed_stars,
+                    .speedNotes = &computed_info->info.speed_notes,
+                    .difficultSpeedStrains = &computed_info->info.difficult_speed_strains,
+                    .upToObjectIndex = -1,
+                    .incremental = {},
+                    .outAimStrains = {},
+                    .outSpeedStrains = {},
+                    .dead = dead,
+                };
+                computed_info->info.total_stars = DifficultyCalculator::calculateStarDiffForHitObjects(params);
+                computed_info->cachedDiffObjects = std::move(params.cachedDiffObjects);
                 if(dead.load()) {
                     work_mtx.lock();
                     return;
                 }
 
                 inf_cache.push_back(computed_info);
-
-                // swap back
-                computed_ho->diffres.diffobjects.swap(params.sortedHitObjects);
             }
 
             if(dead.load()) {
@@ -195,11 +192,11 @@ static void run_thread() {
             }
             computed_info->info.pp = DifficultyCalculator::calculatePPv2(
                 rqt.mods_legacy, rqt.speed, rqt.AR, rqt.OD, computed_info->info.aim_stars,
-                computed_info->info.aim_slider_factor, computed_info->info.difficult_aim_strains,
-                computed_info->info.speed_stars, computed_info->info.speed_notes,
-                computed_info->info.difficult_speed_strains, map->iNumCircles, map->iNumSliders, map->iNumSpinners,
-                computed_ho->diffres.maxPossibleCombo, rqt.comboMax, rqt.numMisses, rqt.num300s, rqt.num100s,
-                rqt.num50s);
+                computed_info->info.aim_slider_factor, computed_info->info.difficult_aim_sliders,
+                computed_info->info.difficult_aim_strains, computed_info->info.speed_stars,
+                computed_info->info.speed_notes, computed_info->info.difficult_speed_strains, map->iNumObjects,
+                map->iNumCircles, map->iNumSliders, map->iNumSpinners, computed_ho->diffres.maxPossibleCombo,
+                rqt.comboMax, rqt.numMisses, rqt.num300s, rqt.num100s, rqt.num50s);
 
             cache_mtx.lock();
             cache.emplace_back(rqt, computed_info->info);

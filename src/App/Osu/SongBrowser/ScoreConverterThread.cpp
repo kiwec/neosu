@@ -4,7 +4,6 @@
 #include "Database.h"
 #include "DatabaseBeatmap.h"
 #include "DifficultyCalculator.h"
-#include "Engine.h"
 #include "SimulatedBeatmapInterface.h"
 #include "score.h"
 #include "Timing.h"
@@ -18,10 +17,6 @@ std::atomic<u32> sct_total = 0;
 
 static std::thread thr;
 static std::atomic<bool> dead = true;
-
-static std::vector<f64> aimStrains;
-static std::vector<f64> speedStrains;
-static std::vector<DifficultyCalculator::DiffObject> diffObjects;
 
 // XXX: This is barebones, no caching, *hopefully* fast enough (worst part is loading the .osu files)
 // XXX: Probably code duplicated a lot, I'm pretty sure there's 4 places where I calc ppv2...
@@ -42,38 +37,42 @@ static void update_ppv2(const FinishedScore& score) {
     if(dead.load()) return;
     if(diffres.errorCode) return;
 
-    aimStrains.clear();
-    speedStrains.clear();
-    diffObjects.clear();
-
     pp_info info;
-    DifficultyCalculator::StarCalcParams params;
-    params.sortedHitObjects.swap(diffres.diffobjects);
-    params.CS = CS;
-    params.OD = OD;
-    params.speedMultiplier = score.mods.speed;
-    params.relax = RX;
-    params.touchDevice = TD;
-    params.aim = &info.aim_stars;
-    params.aimSliderFactor = &info.aim_slider_factor;
-    params.difficultAimStrains = &info.difficult_aim_strains;
-    params.speed = &info.speed_stars;
-    params.speedNotes = &info.speed_notes;
-    params.difficultSpeedStrains = &info.difficult_speed_strains;
-    params.upToObjectIndex = -1;
-    params.outAimStrains = &aimStrains;
-    params.outSpeedStrains = &speedStrains;
-    info.total_stars = DifficultyCalculator::calculateStarDiffForHitObjectsInt(diffObjects, params, nullptr, dead);
-    if(dead.load()) return;
+    DifficultyCalculator::StarCalcParams params{
+        .cachedDiffObjects = {},
+        .sortedHitObjects = diffres.diffobjects,
 
-    // swap back
-    diffres.diffobjects.swap(params.sortedHitObjects);
+        .CS = CS,
+        .OD = OD,
+        .speedMultiplier = score.mods.speed,
+        .relax = RX,
+        .touchDevice = TD,
+        .aim = &info.aim_stars,
+        .aimSliderFactor = &info.aim_slider_factor,
+
+        .aimDifficultSliders = &info.difficult_aim_sliders,
+        .difficultAimStrains = &info.difficult_aim_strains,
+        .speed = &info.speed_stars,
+        .speedNotes = &info.speed_notes,
+        .difficultSpeedStrains = &info.difficult_speed_strains,
+
+        .upToObjectIndex = -1,
+        .incremental = {},
+
+        .outAimStrains = {},
+        .outSpeedStrains = {},
+
+        .dead = dead,
+    };
+
+    info.total_stars = DifficultyCalculator::calculateStarDiffForHitObjects(params);
+    if(dead.load()) return;
 
     info.pp = DifficultyCalculator::calculatePPv2(
         score.mods.to_legacy(), score.mods.speed, AR, OD, info.aim_stars, info.aim_slider_factor,
-        info.difficult_aim_strains, info.speed_stars, info.speed_notes, info.difficult_speed_strains, map->iNumCircles,
-        map->iNumSliders, map->iNumSpinners, diffres.maxPossibleCombo, score.comboMax, score.numMisses, score.num300s,
-        score.num100s, score.num50s);
+        info.difficult_aim_sliders, info.difficult_aim_strains, info.speed_stars, info.speed_notes,
+        info.difficult_speed_strains, map->iNumObjects, map->iNumCircles, map->iNumSliders, map->iNumSpinners,
+        diffres.maxPossibleCombo, score.comboMax, score.numMisses, score.num300s, score.num100s, score.num50s);
 
     // Update score
     db->scores_mtx.lock();
@@ -215,7 +214,7 @@ void sct_abort() {
     if(dead.load()) return;
 
     dead = true;
-    if (thr.joinable()) {
+    if(thr.joinable()) {
         thr.join();
     }
 

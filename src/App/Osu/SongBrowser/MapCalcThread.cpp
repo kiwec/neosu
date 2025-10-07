@@ -48,10 +48,7 @@ void MapCalcThread::abort_instance() {
 
 void MapCalcThread::run() {
     McThread::set_current_thread_name("map_calc");
-    McThread::set_current_thread_prio(false); // reset priority
-
-    std::vector<f64> aimStrains;
-    std::vector<f64> speedStrains;
+    McThread::set_current_thread_prio(false);  // reset priority
 
     for(const auto& map : *this->maps_to_process) {
         // pause handling
@@ -63,9 +60,6 @@ void MapCalcThread::run() {
         if(this->should_stop.load()) {
             return;
         }
-
-        aimStrains.clear();
-        speedStrains.clear();
 
         mct_result result{.map = map};
 
@@ -103,24 +97,28 @@ void MapCalcThread::run() {
             continue;
         }
 
-        DifficultyCalculator::StarCalcParams params;
-        params.sortedHitObjects.swap(diffres.diffobjects);
-        params.CS = map->getCS();
-        params.OD = map->getOD();
-        params.speedMultiplier = 1.f;
-        params.relax = false;
-        params.touchDevice = false;
-        params.aim = &info.aim_stars;
-        params.aimSliderFactor = &info.aim_slider_factor;
-        params.difficultAimStrains = &info.difficult_aim_strains;
-        params.speed = &info.speed_stars;
-        params.speedNotes = &info.speed_notes;
-        params.difficultSpeedStrains = &info.difficult_speed_strains;
-        params.upToObjectIndex = -1;
-        params.outAimStrains = &aimStrains;
-        params.outSpeedStrains = &speedStrains;
+        DifficultyCalculator::StarCalcParams params{.cachedDiffObjects = {},
+                                                    .sortedHitObjects = diffres.diffobjects,
+                                                    .CS = map->getCS(),
+                                                    .OD = map->getOD(),
+                                                    .speedMultiplier = 1.f,
+                                                    .relax = false,
+                                                    .touchDevice = false,
+                                                    .aim = &info.aim_stars,
+                                                    .aimSliderFactor = &info.aim_slider_factor,
+                                                    .aimDifficultSliders = &info.difficult_aim_sliders,
+                                                    .difficultAimStrains = &info.difficult_aim_strains,
+                                                    .speed = &info.speed_stars,
+                                                    .speedNotes = &info.speed_notes,
+                                                    .difficultSpeedStrains = &info.difficult_speed_strains,
+                                                    .upToObjectIndex = -1,
+                                                    .incremental = {},
+                                                    .outAimStrains = {},
+                                                    .outSpeedStrains = {},
+                                                    .dead = this->should_stop};
+
         result.star_rating =
-            static_cast<f32>(DifficultyCalculator::calculateStarDiffForHitObjects(params, this->should_stop));
+            static_cast<f32>(DifficultyCalculator::calculateStarDiffForHitObjects(params));
 
         if(this->should_stop.load()) {
             return;

@@ -132,7 +132,9 @@ static_assert(SDL_EVENT_WINDOW_LAST == SDL_EVENT_WINDOW_HDR_STATE_CHANGED);
 SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
     switch(event->type) {
         case SDL_EVENT_QUIT:
-        case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
+        case SDL_EVENT_WINDOW_CLOSE_REQUESTED: {
+            SDL_Window *source = SDL_GetWindowFromEvent(event);
+            if(source && source != m_window) break;
             if(m_bRunning) {
                 m_bRunning = false;
                 m_engine->shutdown();
@@ -142,7 +144,7 @@ SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
                     SDL_AppQuit(this, SDL_APP_SUCCESS);
             }
             break;
-
+        }
             // drag-drop events
             // clang-format off
         case SDL_EVENT_DROP_FILE: case SDL_EVENT_DROP_TEXT: case SDL_EVENT_DROP_BEGIN:
@@ -505,7 +507,6 @@ float SDLMain::queryDisplayHz() {
     // in wasm or if we couldn't get the refresh rate just return a sane value to use for "vsync"-related calculations
     return std::clamp<float>(cv::fps_max.getFloat(), 60.0f, 360.0f);
 }
-
 
 void SDLMain::configureEvents() {
     // disable unused events

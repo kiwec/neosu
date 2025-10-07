@@ -1,7 +1,11 @@
 #pragma once
 // Copyright (c) 2015, PG & Jeffrey Han (opsu!), All rights reserved.
 
-#include "cbase.h"
+#include "BaseEnvironment.h"
+#include "types.h"
+#include "Vectors.h"
+
+#include <vector>
 
 //**********************//
 //	 Curve Base Class	//
@@ -9,7 +13,7 @@
 
 class SliderCurve {
    public:
-    enum OSUSLIDERCURVETYPE : uint8_t {
+    enum OSUSLIDERCURVETYPE : i8 {
         OSUSLIDERCURVETYPE_CATMULL = 'C',
         OSUSLIDERCURVETYPE_BEZIER = 'B',
         OSUSLIDERCURVETYPE_LINEAR = 'L',

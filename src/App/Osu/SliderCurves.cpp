@@ -5,6 +5,8 @@
 #include "Engine.h"
 #include "Logging.h"
 
+#include <stack>
+
 //**********************//
 //	 Curve Base Class	//
 //**********************//

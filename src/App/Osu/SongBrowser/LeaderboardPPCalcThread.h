@@ -15,7 +15,7 @@ struct pp_calc_request {
     bool td{};
     i32 comboMax{-1};
     i32 numMisses{};
-    i32 num300s{};
+    i32 num300s{-1};
     i32 num100s{};
     i32 num50s{};
 

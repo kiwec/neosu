@@ -2153,6 +2153,7 @@ void BeatmapInterface::update() {
         osu->getHUD()->live_pp = info.pp;
         osu->getHUD()->live_stars = info.total_stars;
 
+        // FIXME: this doesn't work when seeking backwards, obviously...
         if(this->last_calculated_hitobject < this->iCurrentHitObjectIndex) {
             this->last_calculated_hitobject = this->iCurrentHitObjectIndex;
 
@@ -2178,35 +2179,39 @@ void BeatmapInterface::update() {
                 pp_info info;
 
                 // XXX: slow
+                // NOTE: this should be using incremental calc, not recalc from the start every time...
                 auto diffres = DatabaseBeatmap::loadDifficultyHitObjects(osufile_path.c_str(), AR, CS, speedMultiplier);
+                std::atomic<bool> dead{false};
 
-                DifficultyCalculator::StarCalcParams params;
-                params.CS = CS;
-                params.OD = OD;
-                params.speedMultiplier = speedMultiplier;
-                params.relax = relax;
-                params.touchDevice = td;
-                params.upToObjectIndex = current_hitobject;
-                params.sortedHitObjects.swap(diffres.diffobjects);
-
-                std::vector<f64> aimStrains;
-                std::vector<f64> speedStrains;
-                params.aim = &info.aim_stars;
-                params.aimSliderFactor = &info.aim_slider_factor;
-                params.difficultAimStrains = &info.difficult_aim_strains;
-                params.speed = &info.speed_stars;
-                params.speedNotes = &info.speed_notes;
-                params.difficultSpeedStrains = &info.difficult_speed_strains;
-                params.outAimStrains = &aimStrains;
-                params.outSpeedStrains = &speedStrains;
+                DifficultyCalculator::StarCalcParams params{
+                    .cachedDiffObjects = {},
+                    .sortedHitObjects = diffres.diffobjects,
+                    .CS = CS,
+                    .OD = OD,
+                    .speedMultiplier = speedMultiplier,
+                    .relax = relax,
+                    .touchDevice = td,
+                    .aim = &info.aim_stars,
+                    .aimSliderFactor = &info.aim_slider_factor,
+                    .aimDifficultSliders = &info.difficult_aim_sliders,
+                    .difficultAimStrains = &info.difficult_aim_strains,
+                    .speed = &info.speed_stars,
+                    .speedNotes = &info.speed_notes,
+                    .difficultSpeedStrains = &info.difficult_speed_strains,
+                    .upToObjectIndex = current_hitobject,
+                    .incremental = {},
+                    .outAimStrains = {},
+                    .outSpeedStrains = {},
+                    .dead = dead,
+                };
 
                 info.total_stars = DifficultyCalculator::calculateStarDiffForHitObjects(params);
 
                 info.pp = DifficultyCalculator::calculatePPv2(
                     modsLegacy, params.speedMultiplier, AR, params.OD, info.aim_stars, info.aim_slider_factor,
-                    info.difficult_aim_strains, info.speed_stars, info.speed_notes, info.difficult_speed_strains,
-                    nb_circles, nb_sliders, nb_spinners, diffres.maxPossibleCombo, highestCombo, numMisses, num300s,
-                    num100s, num50s);
+                    info.difficult_aim_sliders, info.difficult_aim_strains, info.speed_stars, info.speed_notes,
+                    info.difficult_speed_strains, current_hitobject, nb_circles, nb_sliders, nb_spinners, diffres.maxPossibleCombo,
+                    highestCombo, numMisses, num300s, num100s, num50s);
 
                 return info;
             });
@@ -3500,6 +3505,7 @@ FinishedScore BeatmapInterface::saveAndSubmitScore(bool quit) {
     f64 aimSliderFactor = 0.0;
     f64 speed = 0.0;
     f64 speedNotes = 0.0;
+    f64 aimDifficultSliders = 0.0;
     f64 difficultAimStrains = 0.0;
     f64 difficultSpeedStrains = 0.0;
     const std::string &osuFilePath = this->beatmap->getFilePath();
@@ -3512,22 +3518,28 @@ FinishedScore BeatmapInterface::saveAndSubmitScore(bool quit) {
 
     auto diffres = DatabaseBeatmap::loadDifficultyHitObjects(osuFilePath, AR, CS, speedMultiplier);
 
-    DifficultyCalculator::StarCalcParams params;
-    params.sortedHitObjects.swap(diffres.diffobjects);
-    params.CS = CS;
-    params.OD = OD;
-    params.speedMultiplier = speedMultiplier;
-    params.relax = relax;
-    params.touchDevice = touchDevice;
-    params.aim = &aim;
-    params.aimSliderFactor = &aimSliderFactor;
-    params.difficultAimStrains = &difficultAimStrains;
-    params.speed = &speed;
-    params.speedNotes = &speedNotes;
-    params.difficultSpeedStrains = &difficultSpeedStrains;
-    params.upToObjectIndex = -1;
-    params.outAimStrains = &this->aimStrains;
-    params.outSpeedStrains = &this->speedStrains;
+    std::atomic<bool> dead{false};
+    
+    DifficultyCalculator::StarCalcParams params{.cachedDiffObjects = {},
+                                                .sortedHitObjects = diffres.diffobjects,
+                                                .CS = CS,
+                                                .OD = OD,
+                                                .speedMultiplier = speedMultiplier,
+                                                .relax = relax,
+                                                .touchDevice = touchDevice,
+                                                .aim = &aim,
+                                                .aimSliderFactor = &aimSliderFactor,
+                                                .aimDifficultSliders = &aimDifficultSliders,
+                                                .difficultAimStrains = &difficultAimStrains,
+                                                .speed = &speed,
+                                                .speedNotes = &speedNotes,
+                                                .difficultSpeedStrains = &difficultSpeedStrains,
+                                                .upToObjectIndex = -1,
+                                                .incremental = {},
+                                                .outAimStrains = &this->aimStrains,
+                                                .outSpeedStrains = &this->speedStrains,
+                                                .dead = dead};
+
     const f64 totalStars = DifficultyCalculator::calculateStarDiffForHitObjects(params);
 
     this->fAimStars = (f32)aim;
@@ -3544,9 +3556,9 @@ FinishedScore BeatmapInterface::saveAndSubmitScore(bool quit) {
     const int num100s = osu->getScore()->getNum100s();
     const int num50s = osu->getScore()->getNum50s();
     const f32 pp = DifficultyCalculator::calculatePPv2(
-        osu->getScore()->getModsLegacy(), speedMultiplier, AR, OD, aim, aimSliderFactor, difficultAimStrains, speed,
-        speedNotes, difficultSpeedStrains, numCircles, numSliders, numSpinners, this->iMaxPossibleCombo, highestCombo,
-        numMisses, num300s, num100s, num50s);
+        osu->getScore()->getModsLegacy(), speedMultiplier, AR, OD, aim, aimSliderFactor, aimDifficultSliders,
+        difficultAimStrains, speed, speedNotes, difficultSpeedStrains, numHitObjects, numCircles, numSliders,
+        numSpinners, this->iMaxPossibleCombo, highestCombo, numMisses, num300s, num100s, num50s);
     osu->getScore()->setStarsTomTotal(totalStars);
     osu->getScore()->setStarsTomAim(this->fAimStars);
     osu->getScore()->setStarsTomSpeed(this->fSpeedStars);

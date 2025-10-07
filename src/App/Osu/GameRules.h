@@ -71,7 +71,13 @@ class GameRules {
         return mapDifficultyRange(AR, cv::approachtime_min.getFloat(), cv::approachtime_mid.getFloat(),
                                   cv::approachtime_max.getFloat());
     }
-    static inline INLINE_BODY float odToMilliseconds(float OD) {
+    static inline INLINE_BODY float odTo50HitWindowMS(float OD) {
+        return mapDifficultyRange(OD, getMinHitWindow50(), getMidHitWindow50(), getMaxHitWindow50());
+    }
+    static inline INLINE_BODY float odTo100HitWindowMS(float OD) {
+        return mapDifficultyRange(OD, getMinHitWindow100(), getMidHitWindow100(), getMaxHitWindow100());
+    }
+    static inline INLINE_BODY float odTo300HitWindowMS(float OD) {
         return mapDifficultyRange(OD, getMinHitWindow300(), getMidHitWindow300(), getMaxHitWindow300());
     }
 
@@ -94,7 +100,7 @@ class GameRules {
 
     // OD 9, speed 1.5 -> OD 10.4
     static inline INLINE_BODY float odWithSpeed(float OD, float speed) {
-        float hittableTime = odToMilliseconds(OD);
+        float hittableTime = odTo300HitWindowMS(OD);
         return mapDifficultyRangeInv(hittableTime / speed, getMinHitWindow300(), getMidHitWindow300(),
                                      getMaxHitWindow300());
     }
