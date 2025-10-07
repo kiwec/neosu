@@ -943,14 +943,12 @@ AC_SUBST([DISCORDSDK_VERSION], [2.5.6]) # pre-built
 AC_SUBST([BASS_VERSION], [20250813]) # just mark the date so we can invalidate the cache if necessary
 
 AS_IF([test "$SYSNAME" = "linux"], [
-    PKG_CHECK_AUTO([BLKID], [blkid], [have_blkid=yes], [AC_MSG_ERROR([Missing blkid, required for linux builds.])])
     AS_IF([test "x$enable_system_deps" != "xno"], [
         PKG_CHECK_AUTO([CURL], [libcurl >= $CURL_MIN_VERSION], [have_curl=yes], [have_curl=no])
         PKG_CHECK_AUTO([LIBACL], [libacl >= $LIBACL_MIN_VERSION], [have_libacl=yes], [have_libacl=no])
     ])
 ], [
     AC_SUBST([EXTRA_WIN_LIBS], [["-lcomctl32"]])
-    have_blkid="not required"
     have_curl="no"
     have_libacl="not required"
 ])
@@ -1186,7 +1184,6 @@ Dependencies:
     libGL               ${have_gl-no}
     libGLU              ${have_glu-no}
     libEGL              ${have_egl-no}
-    blkid               ${have_blkid-no}
     sdl3:               ${have_sdl3-build from source}
     libjpeg:            ${have_libjpeg-build from source}
     libpng:             ${have_libpng-build from source}
@@ -1198,7 +1195,7 @@ Dependencies:
     openssl:            ${have_openssl-download}
     liblzma:            ${have_liblzma-build from source}
     libarchive:         ${have_libarchive-build from source}
-    simdutf:         ${have_simdutf-build from source}
+    simdutf:            ${have_simdutf-build from source}
     libacl:             ${have_libacl-build from source}
     mpg123:             ${have_mpg123-build from source}
     spdlog:             ${have_spdlog-build from source}

@@ -161,11 +161,11 @@ vec2 OsuDifficultyHitObject::getOriginalRawPosAt(i32 pos) const {
 }
 
 f32 OsuDifficultyHitObject::getT(i32 pos, bool raw) const {
-    f32 t = (float)((i32)pos - (i32)time) / spanDuration;
+    f32 t = (f32)((i32)pos - (i32)time) / spanDuration;
     if(raw)
         return t;
     else {
-        f32 floorVal = (float)std::floor(t);
+        f32 floorVal = (f32)std::floor(t);
         return ((i32)floorVal % 2 == 0) ? t - floorVal : floorVal + 1 - t;
     }
 }
@@ -182,8 +182,8 @@ f64 DifficultyCalculator::calculateStarDiffForHitObjects(StarCalcParams &params)
     }
 
     // global independent variables/constants
-    // NOTE: clamped CS because McOsu allows CS > ~12.1429 (at which poi32 the diameter becomes negative)
-    f32 circleRadiusInOsuPixels = 64.0f * GameRules::getRawHitCircleScale(std::clamp<float>(params.CS, 0.0f, 12.142f));
+    // NOTE: clamped CS because McOsu allows CS > ~12.1429 (at which point the diameter becomes negative)
+    f32 circleRadiusInOsuPixels = 64.0f * GameRules::getRawHitCircleScale(std::clamp<f32>(params.CS, 0.0f, 12.142f));
     const f32 hitWindow300 = 2.0f * GameRules::odTo300HitWindowMS(params.OD) / params.speedMultiplier;
 
     // ****************************************************************************************************************************************** //
@@ -249,8 +249,8 @@ f64 DifficultyCalculator::calculateStarDiffForHitObjects(StarCalcParams &params)
                     // NOTE: In lazer, the position of the slider end is at the visual end, but the time is at the scoring end
                     diff = slider.ho->curve->pointAt(slider.ho->repeats % 2 ? 1.0 : 0.0) - cursor_pos;
                 } else {
-                    f64 progress = (std::clamp<float>(slider.ho->scoringTimes[i].time - (float)slider.ho->time, 0.0f,
-                                                      slider.ho->getDuration())) /
+                    f64 progress = (std::clamp<f32>(slider.ho->scoringTimes[i].time - (f32)slider.ho->time, 0.0f,
+                                                    slider.ho->getDuration())) /
                                    slider.ho->spanDuration;
                     if(std::fmod(progress, 2.0) >= 1.0)
                         progress = 1.0 - std::fmod(progress, 1.0);
@@ -276,7 +276,7 @@ f64 DifficultyCalculator::calculateStarDiffForHitObjects(StarCalcParams &params)
                 }
 
                 if(diff_len > req_diff) {
-                    cursor_pos += (diff * (float)((diff_len - req_diff) / diff_len));
+                    cursor_pos += (diff * (f32)((diff_len - req_diff) / diff_len));
                     diff_len *= (diff_len - req_diff) / diff_len;
                     slider.lazyTravelDist += diff_len;
                 }
@@ -374,7 +374,7 @@ f64 DifficultyCalculator::calculateStarDiffForHitObjects(StarCalcParams &params)
                                       cur.ho->pos) *
                         radius_scaling_factor;
                     cur.minJumpDistance = std::max(
-                        0.0f, std::min((float)cur.minJumpDistance - (maximum_slider_radius - assumed_slider_radius),
+                        0.0f, std::min((f32)cur.minJumpDistance - (maximum_slider_radius - assumed_slider_radius),
                                        tail_jump_dist - maximum_slider_radius));
                 }
 
@@ -1145,7 +1145,7 @@ DifficultyCalculator::DiffObject::DiffObject(OsuDifficultyHitObject *base_object
 
     norm_start = ho->pos * radius_scaling_factor;
 
-    angle = std::numeric_limits<float>::quiet_NaN();
+    angle = std::numeric_limits<f32>::quiet_NaN();
 
     jumpDistance = 0.0;
     minJumpDistance = 0.0;
@@ -1341,14 +1341,14 @@ f64 DifficultyCalculator::DiffObject::calculate_difficulty(const Skills::Skill t
                         tempSum = incremental->difficult_sliders;
                     } else {
                         if(incremental) {
-                            for(double slider_strain : incremental->slider_strains) {
+                            for(f64 slider_strain : incremental->slider_strains) {
                                 tempSum += 1.0 / (1.0 + std::exp(-((slider_strain / maxSliderStrain * 12.0) - 6.0)));
                             }
                             incremental->max_slider_strain = maxSliderStrain;
                             incremental->difficult_sliders = tempSum;
                         } else {
                             for(size_t i = 0; i < dobjectCount; i++) {
-                                double sliderStrain = dobjects[i].get_slider_aim_strain();
+                                f64 sliderStrain = dobjects[i].get_slider_aim_strain();
                                 if(sliderStrain >= 0.0)
                                     tempSum += 1.0 / (1.0 + std::exp(-((sliderStrain / maxSliderStrain * 12.0) - 6.0)));
                             }
@@ -1594,7 +1594,7 @@ f64 DifficultyCalculator::DiffObject::spacing_weight2(const Skills::Skill diff_t
                             if(previousIsland.equals(island, deltaDifferenceEpsilon)) islandCount->second++;
 
                             // repeated island (ex: triplet -> triplet)
-                            static const f64 E = 2.7182818284590451;
+                            static constexpr f64 E = 2.7182818284590451;
                             f64 power = 2.75 / (1.0 + std::pow(E, 14.0 - (0.24 * island.delta)));
                             effectiveRatio *=
                                 std::min(3.0 / islandCount->second, std::pow(1.0 / islandCount->second, power));
@@ -1672,7 +1672,6 @@ f64 DifficultyCalculator::DiffObject::spacing_weight2(const Skills::Skill diff_t
                 x = reverseLerp(x, start, end);
                 return x * x * x * (x * (x * 6.0 - 15.0) + 10.0);
             };
-
             auto calcWideAngleBonus = [=](f64 angle) {
                 return smoothStep(angle, 40.0 * (PI / 180.0), 140.0 * (PI / 180.0));
             };

@@ -6,7 +6,6 @@
 #include <cinttypes>
 
 #else
-#include <blkid/blkid.h>
 #include <linux/limits.h>
 #include <sys/stat.h>
 #include "dynutils.h"
@@ -928,6 +927,13 @@ const UString &BanchoState::get_disk_uuid() {
 UString BanchoState::get_disk_uuid_blkid() {
     UString w_uuid{"error getting disk UUID"};
 #ifdef MCENGINE_PLATFORM_LINUX
+    using blkid_cache = struct blkid_struct_cache *;
+
+    using blkid_devno_to_devname_t = char *(unsigned long);
+    using blkid_get_cache_t = int(blkid_struct_cache **, const char *);
+    using blkid_put_cache_t = void(blkid_struct_cache *);
+    using blkid_get_tag_value_t = char *(blkid_struct_cache *, const char *, const char *);
+
     using namespace dynutils;
 
     // we are only called once, only need libblkid temporarily
@@ -937,10 +943,10 @@ UString BanchoState::get_disk_uuid_blkid() {
         return w_uuid;
     }
 
-    auto pblkid_devno_to_devname = load_func<decltype(blkid_devno_to_devname)>(blkid_lib, "blkid_devno_to_devname");
-    auto pblkid_get_cache = load_func<decltype(blkid_get_cache)>(blkid_lib, "blkid_get_cache");
-    auto pblkid_put_cache = load_func<decltype(blkid_put_cache)>(blkid_lib, "blkid_put_cache");
-    auto pblkid_get_tag_value = load_func<decltype(blkid_get_tag_value)>(blkid_lib, "blkid_get_tag_value");
+    auto pblkid_devno_to_devname = load_func<blkid_devno_to_devname_t>(blkid_lib, "blkid_devno_to_devname");
+    auto pblkid_get_cache = load_func<blkid_get_cache_t>(blkid_lib, "blkid_get_cache");
+    auto pblkid_put_cache = load_func<blkid_put_cache_t>(blkid_lib, "blkid_put_cache");
+    auto pblkid_get_tag_value = load_func<blkid_get_tag_value_t>(blkid_lib, "blkid_get_tag_value");
 
     if(!(pblkid_devno_to_devname && pblkid_get_cache && pblkid_put_cache && pblkid_get_tag_value)) {
         debugLog("error loading blkid functions for obtaining disk UUID: {}", get_error());

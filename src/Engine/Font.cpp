@@ -924,7 +924,7 @@ bool McFont::initializeSharedFallbackFonts() {
 void McFont::discoverSystemFallbacks() {
 #ifdef MCENGINE_PLATFORM_WINDOWS
     std::string windir;
-    windir.resize(MAX_PATH);
+    windir.resize(MAX_PATH + 1);
     int ret = GetWindowsDirectoryA(windir.data(), MAX_PATH);
     if(ret <= 0) return;
     windir.resize(ret);

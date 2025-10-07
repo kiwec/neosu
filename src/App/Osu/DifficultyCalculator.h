@@ -69,7 +69,7 @@ class OsuDifficultyHitObject {
     void updateStackPosition(f32 stackOffset);
     void updateCurveStackPosition(f32 stackOffset);
 
-    // for stacking calculations, always returns the unstacked original position at that poi32 in time
+    // for stacking calculations, always returns the unstacked original position at that point in time
     [[nodiscard]] vec2 getOriginalRawPosAt(i32 pos) const;
     [[nodiscard]] f32 getT(i32 pos, bool raw) const;
 
