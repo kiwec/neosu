@@ -160,7 +160,7 @@ void set_discord_presence([[maybe_unused]] struct DiscordActivity *activity) {
     strcpy(&activity->assets.small_image[0], "None");
     activity->assets.small_text[0] = '\0';
 
-    auto map = osu->getMapInterface()->beatmap;
+    auto map = osu->getMapInterface()->getBeatmap();
     auto music = osu->getMapInterface()->getMusic();
     bool listening = map != nullptr && music != nullptr && music->isPlaying();
     bool playing = map != nullptr && osu->isInPlayMode();

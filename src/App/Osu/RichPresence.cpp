@@ -68,7 +68,7 @@ void setBanchoStatus(const char* info_text, Action action) {
     MD5Hash map_md5("");
     i32 map_id = 0;
 
-    auto map = osu->getMapInterface()->beatmap;
+    auto map = osu->getMapInterface()->getBeatmap();
     if(map != nullptr) {
         map_md5 = map->getMD5Hash();
         map_id = map->getID();
@@ -95,7 +95,7 @@ void updateBanchoMods() {
     MD5Hash map_md5("");
     i32 map_id = 0;
 
-    auto diff = osu->getMapInterface()->beatmap;
+    auto diff = osu->getMapInterface()->getBeatmap();
     if(diff != nullptr) {
         map_md5 = diff->getMD5Hash();
         map_id = diff->getID();
@@ -127,7 +127,7 @@ void onMainMenu() {
 
     activity.type = DiscordActivityType_Listening;
 
-    auto map = osu->getMapInterface()->beatmap;
+    auto map = osu->getMapInterface()->getBeatmap();
     auto music = osu->getMapInterface()->getMusic();
     bool listening = map != nullptr && music != nullptr && music->isPlaying();
     if(listening) {
@@ -163,7 +163,7 @@ void onSongBrowser() {
 }
 
 void onPlayStart() {
-    auto map = osu->getMapInterface()->beatmap;
+    auto map = osu->getMapInterface()->getBeatmap();
 
     static DatabaseBeatmap* last_diff = nullptr;
     static int64_t tms = 0;

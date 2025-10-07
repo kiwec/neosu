@@ -22,8 +22,7 @@ void SoLoudSound::init() {
     if(this->bIgnored || this->sFilePath.length() < 2 || !(this->bAsyncReady.load())) return;
 
     if(!this->audioSource)
-        debugLog("Couldn't load sound \"{}\", stream = {}, file = {}", this->sFilePath, this->bStream,
-                 this->sFilePath);
+        debugLog("Couldn't load sound \"{}\", stream = {}, file = {}", this->sFilePath, this->bStream, this->sFilePath);
     else
         this->bReady = true;
 }
@@ -282,7 +281,7 @@ void SoLoudSound::setLoop(bool loop) {
     }
 }
 
-float SoLoudSound::getPosition() {
+float SoLoudSound::getPosition() const {
     if(!this->bReady || !this->audioSource || !this->handle) return 0.0f;
 
     double streamLengthInSeconds = getSourceLengthInSeconds();
@@ -305,14 +304,14 @@ i32 SoLoudSound::getBASSStreamLatencyCompensation() const {
 }
 
 // slightly tweaked interp algo from the SDL_mixer version, to smooth out position updates
-u32 SoLoudSound::getPositionMS() {
+u32 SoLoudSound::getPositionMS() const {
     if(!this->bReady || !this->audioSource || !this->handle) return 0;
 
     return this->interpolator.update(getStreamPositionInSeconds() * 1000.0, Timing::getTimeReal(), getSpeed(),
                                      isLooped(), getLengthMS(), isPlaying());
 }
 
-u32 SoLoudSound::getLengthMS() {
+u32 SoLoudSound::getLengthMS() const {
     if(!this->bReady || !this->audioSource) return 0;
 
     const double lengthInMilliSeconds = getSourceLengthInSeconds() * 1000.0;
@@ -321,26 +320,26 @@ u32 SoLoudSound::getLengthMS() {
     return static_cast<u32>(lengthInMilliSeconds);
 }
 
-float SoLoudSound::getSpeed() {
+float SoLoudSound::getSpeed() const {
     if(!this->bReady) return 1.0f;
 
     return this->fSpeed;
 }
 
-float SoLoudSound::getPitch() {
+float SoLoudSound::getPitch() const {
     if(!this->bReady) return 1.0f;
 
     return this->fPitch;
 }
 
-bool SoLoudSound::isPlaying() {
+bool SoLoudSound::isPlaying() const {
     if(!this->bReady) return false;
 
     // a sound is playing if our handle is valid and the sound isn't paused
     return this->is_playing_cached();
 }
 
-bool SoLoudSound::isFinished() {
+bool SoLoudSound::isFinished() const {
     if(!this->bReady) return false;
 
     // a sound is finished if our handle is no longer valid
@@ -397,21 +396,21 @@ double SoLoudSound::getSourceLengthInSeconds() const {
         return static_cast<SoLoud::Wav *>(this->audioSource)->getLength();
 }
 
-bool SoLoudSound::valid_handle_cached() {
+bool SoLoudSound::valid_handle_cached() const {
     if(this->handle == 0) return false;
 
     const auto now = engine->getTime();
     if(now >= this->soloud_valid_handle_cache_time + 0.01) {  // 10ms intervals should be fast enough
         this->soloud_valid_handle_cache_time = now;
         if(!soloud->isValidVoiceHandle(this->handle)) {
-            this->handle = 0;
+            const_cast<SoLoudSound*>(this)->handle = 0;
         }
     }
 
     return this->handle != 0;
 }
 
-bool SoLoudSound::is_playing_cached() {
+bool SoLoudSound::is_playing_cached() const {
     if(!this->valid_handle_cached()) return false;
 
     const auto now = engine->getTime();

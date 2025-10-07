@@ -679,7 +679,7 @@ void RoomScreen::on_room_updated(Room room) {
 
 void RoomScreen::on_match_started(Room room) {
     BanchoState::room = std::move(room);
-    if(osu->getMapInterface()->beatmap == nullptr) {
+    if(osu->getMapInterface()->getBeatmap() == nullptr) {
         debugLog("We received MATCH_STARTED without being ready, wtf!");
         return;
     }
@@ -743,7 +743,7 @@ FinishedScore RoomScreen::get_approximate_score() {
     score.player_id = BanchoState::get_uid();
     score.playerName = BanchoState::get_username();
 
-    score.map = osu->getMapInterface()->beatmap;
+    score.map = osu->getMapInterface()->getBeatmap();
 
     for(auto &i : BanchoState::room.slots) {
         auto slot = &i;

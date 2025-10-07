@@ -48,18 +48,18 @@ class Sound : public Resource {
     // NOTE: this will also update currently playing handle(s) for this sound
     void setBaseVolume(float volume);
 
-    inline float getBaseVolume() { return this->fBaseVolume; }
-    virtual float getPosition() = 0;
-    virtual u32 getPositionMS() = 0;
-    virtual u32 getLengthMS() = 0;
-    virtual float getFrequency() = 0;
-    virtual float getPan() { return this->fPan; }
-    virtual float getSpeed() { return this->fSpeed; }
-    virtual float getPitch() { return this->fPitch; }
+    inline float getBaseVolume() const { return this->fBaseVolume; }
+    virtual float getPosition() const = 0;
+    virtual u32 getPositionMS() const = 0;
+    virtual u32 getLengthMS() const = 0;
+    virtual float getFrequency() const = 0;
+    virtual float getPan() const { return this->fPan; }
+    virtual float getSpeed() const { return this->fSpeed; }
+    virtual float getPitch() const { return this->fPitch; }
     virtual i32 getBASSStreamLatencyCompensation() const { return 0; } // constant stream offset, backend dependent
 
-    virtual bool isPlaying() = 0;
-    virtual bool isFinished() = 0;
+    virtual bool isPlaying() const = 0;
+    virtual bool isFinished() const = 0;
 
     virtual void rebuild(std::string newFilePath) = 0;
 
@@ -108,7 +108,7 @@ class Sound : public Resource {
         this->activeHandleCache[handle] = instance;
     }
 
-    PlaybackInterpolator interpolator;
+    mutable PlaybackInterpolator interpolator;
 
     std::unordered_map<SOUNDHANDLE, PlaybackParams> activeHandleCache;
 

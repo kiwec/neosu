@@ -197,14 +197,14 @@ void BassSound::setLoop(bool loop) {
     BASS_ChannelFlags(this->stream, this->bIsLooped ? BASS_SAMPLE_LOOP : 0, BASS_SAMPLE_LOOP);
 }
 
-float BassSound::getPosition() {
+float BassSound::getPosition() const {
     f32 length = this->getLengthMS();
     if(length <= 0.f) return 0.f;
 
     return (f32)this->getPositionMS() / length;
 }
 
-u32 BassSound::getPositionMS() {
+u32 BassSound::getPositionMS() const {
     if(!this->bReady) return 0;
     assert(this->bStream);  // can't call getPositionMS() on a sample
 
@@ -229,14 +229,14 @@ u32 BassSound::getPositionMS() {
                                      static_cast<u64>(this->length), this->isPlaying());
 }
 
-u32 BassSound::getLengthMS() {
+u32 BassSound::getLengthMS() const {
     if(!this->bReady) return 0;
     return this->length;
 }
 
-float BassSound::getSpeed() { return this->fSpeed; }
+float BassSound::getSpeed() const { return this->fSpeed; }
 
-float BassSound::getFrequency() {
+float BassSound::getFrequency() const {
     auto default_freq = cv::snd_freq.getFloat();
     if(!this->bReady) return default_freq;
     assert(this->bStream);  // can't call getFrequency() on a sample
@@ -246,11 +246,12 @@ float BassSound::getFrequency() {
     return frequency;
 }
 
-bool BassSound::isPlaying() {
-    return this->bReady && this->bStarted && !this->bPaused && !this->getActiveHandles().empty();
+bool BassSound::isPlaying() const {
+    return this->bReady && this->bStarted && !this->bPaused &&
+           !const_cast<BassSound*>(this)->getActiveHandles().empty();
 }
 
-bool BassSound::isFinished() { return this->getPositionMS() >= this->getLengthMS(); }
+bool BassSound::isFinished() const { return this->getPositionMS() >= this->getLengthMS(); }
 
 void BassSound::rebuild(std::string newFilePath) {
     this->sFilePath = std::move(newFilePath);

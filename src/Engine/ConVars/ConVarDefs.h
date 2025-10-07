@@ -192,6 +192,7 @@ CONVAR(debug_anim, "debug_anim"sv, false, CLIENT);
 CONVAR(debug_box_shadows, "debug_box_shadows"sv, false, CLIENT);
 CONVAR(debug_draw_timingpoints, "debug_draw_timingpoints"sv, false, CLIENT | SERVER | PROTECTED | GAMEPLAY);
 CONVAR(debug_engine, "debug_engine"sv, false, CLIENT);
+CONVAR(debug_ui, "debug_ui"sv, false, CLIENT);
 CONVAR(debug_env, "debug_env"sv, false, CLIENT);
 CONVAR(debug_font, "debug_font"sv, false, CLIENT);
 CONVAR(debug_file, "debug_file"sv, false, CLIENT);

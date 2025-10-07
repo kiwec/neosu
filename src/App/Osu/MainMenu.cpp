@@ -542,7 +542,7 @@ std::pair<bool, float> MainMenu::getTimingpointPulseAmount() {
         return {false, pulse};
     }
 
-    const auto &map = selectedMap->beatmap;
+    const auto &map = selectedMap->getBeatmap();
     if(!map) {
         return {false, pulse};
     }
@@ -843,9 +843,9 @@ void MainMenu::draw() {
         // background_shader->setUniform2f("resolution", osu->getVirtScreenWidth(), osu->getVirtScreenHeight());
 
         // Check if we need to update the background
-        if(this->mapFadeAnim == 1.f && this->currentMap != osu->getMapInterface()->beatmap) {
+        if(this->mapFadeAnim == 1.f && this->currentMap != osu->getMapInterface()->getBeatmap()) {
             this->lastMap = this->currentMap;
-            this->currentMap = osu->getMapInterface()->beatmap;
+            this->currentMap = osu->getMapInterface()->getBeatmap();
             this->mapFadeAnim = 0.f;
             anim->moveLinear(&this->mapFadeAnim, 1.f, cv::main_menu_background_fade_duration.getFloat(), true);
         }
@@ -1094,7 +1094,7 @@ void MainMenu::mouse_update(bool *propagate_clicks) {
 
                 // load timing points if needed
                 // XXX: file io, don't block main thread
-                auto *map = osu->getMapInterface()->beatmap;
+                auto *map = osu->getMapInterface()->getBeatmap();
                 if(map && map->getTimingpoints().empty()) {
                     map->loadMetadata(false);
                 }
@@ -1235,7 +1235,7 @@ CBaseUIContainer *MainMenu::setVisible(bool visible) {
     if(visible) {
         // Clear background change animation, to avoid "fade" when backing out from song browser
         {
-            this->currentMap = osu->getMapInterface()->beatmap;
+            this->currentMap = osu->getMapInterface()->getBeatmap();
             anim->deleteExistingAnimation(&this->mapFadeAnim);
             this->mapFadeAnim = 1.f;
         }

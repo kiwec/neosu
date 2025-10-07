@@ -245,8 +245,7 @@ class DatabaseBeatmap final {
         return this->timingpoints;
     }
 
-    [[deprecated("blocking file read, use getMapFileAsync")]] std::string getMapFile();
-    using MapFileReadDoneCallback = std::function<void(std::vector<u8>)>; // == AsyncIOHandler::ReadCallback
+    using MapFileReadDoneCallback = std::function<void(std::vector<u8>)>;  // == AsyncIOHandler::ReadCallback
     bool getMapFileAsync(MapFileReadDoneCallback data_callback);
     std::string getFullSoundFilePath();
 
@@ -274,9 +273,6 @@ class DatabaseBeatmap final {
 
     [[nodiscard]] inline i32 getLocalOffset() const { return this->iLocalOffset; }
     [[nodiscard]] inline i32 getOnlineOffset() const { return this->iOnlineOffset; }
-
-    // song select mod-adjusted pp/stars
-    pp_info pp;
 
     zarray<DatabaseBeatmap::TIMINGPOINT> timingpoints;  // necessary for main menu anim
 
@@ -365,6 +361,9 @@ class DatabaseBeatmap final {
 
     bool draw_background = true;
     bool do_not_store = false;
+
+   private:
+    static bool parse_timing_point(const std::string &curLine, DatabaseBeatmap::TIMINGPOINT *out);
 };
 
 class DatabaseBeatmapBackgroundImagePathLoader final : public Resource {

@@ -42,7 +42,9 @@ static std::thread thr;
 static std::atomic<bool> dead = true;
 
 static Sync::mutex work_mtx;
-static std::vector<pp_calc_request> work;
+// bool to keep track of "high priority" state
+// might need mod updates to be recalc'd mid-gameplay
+static std::vector<std::pair<pp_calc_request, bool>> work;
 
 static Sync::mutex cache_mtx;
 static std::vector<std::pair<pp_calc_request, pp_info>> cache;
@@ -53,7 +55,7 @@ static std::vector<info_cache*> inf_cache;
 
 static void run_thread() {
     McThread::set_current_thread_name("lb_pp_calc");
-    McThread::set_current_thread_prio(false); // reset priority
+    McThread::set_current_thread_prio(false);  // reset priority
 
     std::vector<f64> aimStrains;
     std::vector<f64> speedStrains;
@@ -63,36 +65,23 @@ static void run_thread() {
         cond.wait(lock, [] { return !work.empty() || dead.load(); });
         if(dead.load()) return;
 
-        while(!work.empty()) {
+        for(auto [rqt, highprio] : work) {
             if(dead.load()) return;
-            if(osu->shouldPauseBGThreads()) {
+            if(!highprio && osu->shouldPauseBGThreads()) {
                 work_mtx.unlock();
                 Timing::sleepMS(100);
                 work_mtx.lock();
                 continue;
             }
 
-            pp_calc_request rqt = work[0];
             work.erase(work.begin());
             work_mtx.unlock();
 
             // Make sure we haven't already computed it
             bool already_computed = false;
             cache_mtx.lock();
-            for(auto pair : cache) {
-                if(pair.first.mods_legacy != rqt.mods_legacy) continue;
-                if(pair.first.speed != rqt.speed) continue;
-                if(pair.first.AR != rqt.AR) continue;
-                if(pair.first.CS != rqt.CS) continue;
-                if(pair.first.OD != rqt.OD) continue;
-                if(pair.first.rx != rqt.rx) continue;
-                if(pair.first.td != rqt.td) continue;
-                if(pair.first.comboMax != rqt.comboMax) continue;
-                if(pair.first.numMisses != rqt.numMisses) continue;
-                if(pair.first.num300s != rqt.num300s) continue;
-                if(pair.first.num100s != rqt.num100s) continue;
-                if(pair.first.num50s != rqt.num50s) continue;
-
+            for(const auto& [request, info] : cache) {
+                if(request != rqt) continue;
                 already_computed = true;
                 break;
             }
@@ -127,8 +116,8 @@ static void run_thread() {
                     work_mtx.lock();
                     return;
                 }
-                computed_ho->diffres =
-                    DatabaseBeatmap::loadDifficultyHitObjects(map->getFilePath(), rqt.AR, rqt.CS, rqt.speed, false, dead);
+                computed_ho->diffres = DatabaseBeatmap::loadDifficultyHitObjects(map->getFilePath(), rqt.AR, rqt.CS,
+                                                                                 rqt.speed, false, dead);
                 if(dead.load()) {
                     work_mtx.lock();
                     return;
@@ -208,9 +197,9 @@ static void run_thread() {
                 rqt.mods_legacy, rqt.speed, rqt.AR, rqt.OD, computed_info->info.aim_stars,
                 computed_info->info.aim_slider_factor, computed_info->info.difficult_aim_strains,
                 computed_info->info.speed_stars, computed_info->info.speed_notes,
-                computed_info->info.difficult_speed_strains, map->iNumCircles, map->iNumSliders,
-                map->iNumSpinners, computed_ho->diffres.maxPossibleCombo, rqt.comboMax, rqt.numMisses, rqt.num300s,
-                rqt.num100s, rqt.num50s);
+                computed_info->info.difficult_speed_strains, map->iNumCircles, map->iNumSliders, map->iNumSpinners,
+                computed_ho->diffres.maxPossibleCombo, rqt.comboMax, rqt.numMisses, rqt.num300s, rqt.num100s,
+                rqt.num50s);
 
             cache_mtx.lock();
             cache.emplace_back(rqt, computed_info->info);
@@ -227,7 +216,7 @@ void lct_set_map(DatabaseBeatmap* new_map) {
     if(map != nullptr) {
         dead = true;
         cond.notify_one();
-        if (thr.joinable()) {
+        if(thr.joinable()) {
             thr.join();
         }
         cache.clear();
@@ -249,25 +238,15 @@ void lct_set_map(DatabaseBeatmap* new_map) {
     if(new_map != nullptr) {
         thr = std::thread(run_thread);
     }
+    return;
 }
 
-pp_info lct_get_pp(pp_calc_request rqt) {
+pp_info lct_get_pp(pp_calc_request rqt, bool ignoreBGThreadPause) {
     cache_mtx.lock();
-    for(auto pair : cache) {
-        if(pair.first.mods_legacy != rqt.mods_legacy) continue;
-        if(pair.first.speed != rqt.speed) continue;
-        if(pair.first.AR != rqt.AR) continue;
-        if(pair.first.CS != rqt.CS) continue;
-        if(pair.first.OD != rqt.OD) continue;
-        if(pair.first.rx != rqt.rx) continue;
-        if(pair.first.td != rqt.td) continue;
-        if(pair.first.comboMax != rqt.comboMax) continue;
-        if(pair.first.numMisses != rqt.numMisses) continue;
-        if(pair.first.num300s != rqt.num300s) continue;
-        if(pair.first.num100s != rqt.num100s) continue;
-        if(pair.first.num50s != rqt.num50s) continue;
+    for(const auto& [request, info] : cache) {
+        if(request != rqt) continue;
 
-        pp_info out = pair.second;
+        pp_info out = info;
         cache_mtx.unlock();
         return out;
     }
@@ -275,25 +254,14 @@ pp_info lct_get_pp(pp_calc_request rqt) {
 
     work_mtx.lock();
     bool work_exists = false;
-    for(auto w : work) {
-        if(w.mods_legacy != rqt.mods_legacy) continue;
-        if(w.speed != rqt.speed) continue;
-        if(w.AR != rqt.AR) continue;
-        if(w.CS != rqt.CS) continue;
-        if(w.OD != rqt.OD) continue;
-        if(w.rx != rqt.rx) continue;
-        if(w.td != rqt.td) continue;
-        if(w.comboMax != rqt.comboMax) continue;
-        if(w.numMisses != rqt.numMisses) continue;
-        if(w.num300s != rqt.num300s) continue;
-        if(w.num100s != rqt.num100s) continue;
-        if(w.num50s != rqt.num50s) continue;
+    for(const auto& [w, prio] : work) {
+        if(w != rqt) continue;
 
         work_exists = true;
         break;
     }
     if(!work_exists) {
-        work.push_back(rqt);
+        work.emplace_back(rqt, ignoreBGThreadPause);
     }
     work_mtx.unlock();
     cond.notify_one();

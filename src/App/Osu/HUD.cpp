@@ -104,12 +104,12 @@ void HUD::draw() {
                                     (1.0f / (cv::hud_scale.getFloat() * cv::hud_statistics_scale.getFloat())));
             }
 
-            auto map = pf->beatmap;
+            const auto &whole_pp = pf->getWholeMapPPInfo();
             this->drawStatistics(
                 osu->getScore()->getNumMisses(), osu->getScore()->getNumSliderBreaks(), pf->iMaxPossibleCombo,
-                this->live_stars, map->pp.total_stars, pf->getMostCommonBPM(), pf->getApproachRateForSpeedMultiplier(),
+                this->live_stars, whole_pp.total_stars, pf->getMostCommonBPM(), pf->getApproachRateForSpeedMultiplier(),
                 pf->getCS(), pf->getOverallDifficultyForSpeedMultiplier(), pf->getHP(), pf->getNPS(), pf->getND(),
-                osu->getScore()->getUnstableRate(), this->live_pp, map->pp.pp,
+                osu->getScore()->getUnstableRate(), this->live_pp, whole_pp.pp,
                 ((int)pf->getHitWindow300() - 0.5f) * (1.0f / pf->getSpeedMultiplier()),  // see InfoLabel::update()
                 osu->getScore()->getHitErrorAvgCustomMin(), osu->getScore()->getHitErrorAvgCustomMax());
         }
@@ -1347,7 +1347,7 @@ std::vector<SCORE_ENTRY> HUD::getCurrentScores() {
 }
 
 void HUD::resetScoreboard() {
-    DatabaseBeatmap *map = osu->getMapInterface()->beatmap;
+    DatabaseBeatmap *map = osu->getMapInterface()->getBeatmap();
     if(map == nullptr) return;
 
     this->beatmap_md5 = map->getMD5Hash();
@@ -1370,7 +1370,7 @@ void HUD::resetScoreboard() {
 }
 
 void HUD::updateScoreboard(bool animate) {
-    DatabaseBeatmap *map = osu->getMapInterface()->beatmap;
+    DatabaseBeatmap *map = osu->getMapInterface()->getBeatmap();
     if(map == nullptr) return;
 
     if(!cv::scoreboard_animations.getBool()) {

@@ -19,6 +19,8 @@ struct pp_info {
     f64 difficult_aim_strains = 0.0;
     f64 difficult_speed_strains = 0.0;
     f64 pp = -1.0;
+
+    bool operator==(const pp_info&) const = default;
 };
 
 class OsuDifficultyHitObject {

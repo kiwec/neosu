@@ -16,7 +16,7 @@ void CBaseUIElement::stealFocus() {
 }
 
 void CBaseUIElement::mouse_update(bool *propagate_clicks) {
-    if(unlikely(cv::debug_engine.getBool())) this->dumpElem();
+    if(unlikely(cv::debug_ui.getBool())) this->dumpElem();
     if(!this->bVisible || !this->bEnabled) return;
 
     // check if mouse is inside element

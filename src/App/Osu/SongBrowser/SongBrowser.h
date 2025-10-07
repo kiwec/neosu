@@ -282,7 +282,7 @@ class SongBrowser final : public ScreenBackable {
     bool bPreviousRandomBeatmapScheduled;
 
     // behaviour
-    DatabaseBeatmap *lastSelectedBeatmap = nullptr;
+    const DatabaseBeatmap *lastSelectedBeatmap;
     bool bHasSelectedAndIsPlaying;
     float fPulseAnimation;
     float fBackgroundFadeInTime;

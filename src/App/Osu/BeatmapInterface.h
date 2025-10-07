@@ -5,6 +5,7 @@
 #include "DatabaseBeatmap.h"
 #include "DifficultyCalculator.h"
 #include "HUD.h"
+#include "LeaderboardPPCalcThread.h"
 #include "LegacyReplay.h"
 #include "PlaybackInterpolator.h"
 #include "score.h"
@@ -89,6 +90,8 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
     [[nodiscard]] inline f32 getSpeedNotes() const { return this->fSpeedNotes; }
     [[nodiscard]] f32 getSpeedMultiplier() const override;
 
+    const pp_info &getWholeMapPPInfo();
+
     // hud
     [[nodiscard]] inline bool isSpinnerActive() const { return this->bIsSpinnerActive; }
 
@@ -102,6 +105,7 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
     // loads the music of the currently selected diff and starts playing from the previewTime (e.g. clicking on a beatmap)
     void selectBeatmap();
     void selectBeatmap(DatabaseBeatmap *map);
+    [[nodiscard]] inline DatabaseBeatmap *getBeatmap() const { return this->beatmap; }
 
     // stops + unloads the currently loaded music and deletes all hitobjects
     void deselectBeatmap();
@@ -128,8 +132,6 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
     void seekMS(u32 ms);
     [[nodiscard]] inline DatabaseBeatmap::TIMING_INFO getTimingPoint() const { return this->current_timing_point; }
     [[nodiscard]] inline i32 getDefaultSampleSet() const { return this->default_sample_set; }
-    // HACK for main menu->song browser transition (or songbrowser reload) garbage logic
-    void setContinuePos(u32 ms) { this->iContinueMusicPos = ms; }
 
     [[nodiscard]] inline Sound *getMusic() const { return this->music; }
     [[nodiscard]] u32 getTime() const;
@@ -224,9 +226,6 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
     // ILLEGAL:
     [[nodiscard]] inline const std::vector<HitObject *> &getHitObjectsPointer() const { return this->hitobjects; }
     [[nodiscard]] inline f32 getBreakBackgroundFadeAnim() const { return this->fBreakBackgroundFade; }
-
-    DatabaseBeatmap *beatmap{nullptr};
-    Sound *music;
 
     // live pp/stars
     uwu::lazy_promise<std::function<pp_info()>, pp_info> ppv2_calc{pp_info{}};
@@ -358,6 +357,8 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
     // beatmap
     bool bIsSpinnerActive;
     vec2 vContinueCursorPoint{0.f};
+    DatabaseBeatmap *beatmap{nullptr};
+    Sound *music;
 
     // playfield
     f32 fPlayfieldRotation;
@@ -375,8 +376,12 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
     vec2 vAutoCursorPos{0.f};
     int iAutoCursorDanceIndex;
 
-    // live pp/stars
+    // live and precomputed pp/stars
     void resetLiveStarsTasks();
+    void invalidateWholeMapPPInfo();
+
+    pp_info full_ppinfo;
+    pp_calc_request full_calc_req_params;
 
     // pp calculation buffer (only needs to be recalculated in onModUpdate(), instead of on every hit)
     f32 fAimStars;

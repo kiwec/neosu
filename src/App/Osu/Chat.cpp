@@ -458,7 +458,7 @@ void Chat::handle_command(const UString &msg) {
     }
 
     if(msg == "/np") {
-        auto map = osu->getMapInterface()->beatmap;
+        auto map = osu->getMapInterface()->getBeatmap();
         if(map == nullptr) {
             this->addSystemMessage("You are not listening to anything.");
             return;

@@ -30,7 +30,9 @@ Changelog::Changelog() : ScreenBackable() {
         R"(- Added an experimental DirectX11 renderer backend (for Windows, and Linux through dxvk-native))",
         R"(  - If the build has both OpenGL and DirectX11, OpenGL will be used by default, the -dx11 launch argument can choose DX11)",
         R"(  - Not currently enabled for release builds, due to extra dependencies (to be ironed out in the future!))",
+        R"(- Fixed ingame total stars/total pp statistics not updating)",
         R"(- Added file logging (in logs/ subdirectory); improved logging performance)",
+        R"(- Improved text rendering performance (e.g. statistics, song browser info))",
     };
     changelogs.push_back(v41_04);
 

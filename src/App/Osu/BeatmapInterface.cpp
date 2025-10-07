@@ -417,7 +417,11 @@ void BeatmapInterface::selectBeatmap(DatabaseBeatmap *map) {
         this->handlePreviewPlay();
     }
 
-    if(cv::beatmap_preview_mods_live.getBool()) this->onModUpdate();
+    if(cv::beatmap_preview_mods_live.getBool()) {
+        this->onModUpdate();
+    } else {
+        this->invalidateWholeMapPPInfo();  // onModUpdate already calls this
+    }
 }
 
 void BeatmapInterface::deselectBeatmap() {
@@ -3210,6 +3214,7 @@ void BeatmapInterface::onModUpdate(bool rebuildSliderVertexBuffers, bool recompu
     }
 
     this->resetLiveStarsTasks();
+    this->invalidateWholeMapPPInfo();
 }
 
 void BeatmapInterface::resetLiveStarsTasks() {
@@ -3219,6 +3224,48 @@ void BeatmapInterface::resetLiveStarsTasks() {
     osu->getHUD()->live_stars = 0.0;
 
     this->last_calculated_hitobject = -1;
+}
+
+void BeatmapInterface::invalidateWholeMapPPInfo() {
+    this->full_calc_req_params.numMisses = -1;  // invalidate (sentinel)
+    this->full_ppinfo.pp = -1.0;                // invalidate (sentinel)
+    this->getWholeMapPPInfo();                  // make new request immediately
+}
+
+const pp_info &BeatmapInterface::getWholeMapPPInfo() {
+    auto map = this->beatmap;
+    if(!map) return this->full_ppinfo;
+
+    const bool new_request = this->full_calc_req_params.numMisses == -1;
+    if(!new_request && this->full_ppinfo.pp != -1.0) {
+        return this->full_ppinfo;  // fast path exit
+    } else if(new_request) {
+        lct_set_map(map);  // just in case...
+
+        // full-length pp calc for currently selected mods
+        // (the fact that this is duplicated 50000 times means this interface is terrible)
+        const auto &mods = osu->getScore()->mods;
+        this->full_calc_req_params = {
+            .mods_legacy = mods.to_legacy(),
+            .speed = mods.speed,
+            .AR = mods.get_naive_ar(map),
+            .CS = mods.get_naive_cs(map),
+            .OD = mods.get_naive_od(map),
+            .rx = ModMasks::eq(mods.flags, Replay::ModFlags::Relax),
+            .td = ModMasks::eq(mods.flags, Replay::ModFlags::TouchDevice),
+            .comboMax = -1,
+            .numMisses = 0,  // unset sentinel for request (bad api)
+            .num300s = map->getNumObjects(),
+            .num100s = 0,
+            .num50s = 0,
+        };
+    }
+
+    this->full_ppinfo =
+        lct_get_pp(this->full_calc_req_params, true /* ignore gameplay background thread freeze, we need this asap */);
+    // we'll take the fast path once it's done anyways
+
+    return this->full_ppinfo;
 }
 
 // HACK: Updates buffering state and pauses/unpauses the music!

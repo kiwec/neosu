@@ -93,17 +93,6 @@ bool sortScoreByPP(FinishedScore const &a, FinishedScore const &b) {
 
 }  // namespace
 
-#if defined(__cpp_lib_unreachable) && (__cpp_lib_unreachable >= 202202L)
-#include <utility>
-using std::unreachable;
-#elif defined(__GNUC__)
-[[noreturn]] forceinline void unreachable() { __builtin_unreachable(); }
-#elif defined(_MSC_VER)
-[[noreturn]] forceinline void unreachable() { __assume(false); }
-#else  // ???
-inline void unreachable() {}
-#endif
-
 // static helper
 std::string Database::getDBPath(DatabaseType db_type) {
     static_assert(DatabaseType::LAST == DatabaseType::STABLE_MAPS, "add missing case to getDBPath");
@@ -137,11 +126,11 @@ std::string Database::getDBPath(DatabaseType db_type) {
                 case STABLE_MAPS:
                     return fmt::format("{}osu!.db", osu_folder);
                 default:
-                    unreachable();
+                    std::unreachable();
             }
         }
     }
-    unreachable();
+    std::unreachable();
 }
 
 // static helper (for figuring out the type of external databases to be imported)
@@ -1697,7 +1686,7 @@ bool Database::importDatabase(const std::pair<DatabaseType, std::string> &db_pai
         }
     }
 
-    unreachable();
+    std::unreachable();
 }
 
 void Database::loadScores(std::string_view dbPath) {

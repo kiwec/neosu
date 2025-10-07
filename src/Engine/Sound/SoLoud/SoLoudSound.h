@@ -38,17 +38,17 @@ class SoLoudSound final : public Sound {
     void setPan(float pan) override;
     void setLoop(bool loop) override;
 
-    float getPosition() override;
-    u32 getPositionMS() override;
-    u32 getLengthMS() override;
-    float getSpeed() override;
-    float getPitch() override;
+    float getPosition() const override;
+    u32 getPositionMS() const override;
+    u32 getLengthMS() const override;
+    float getSpeed() const override;
+    float getPitch() const override;
     // i.e. we would be hearing audio 15ms sooner than if we were using BASS
     i32 getBASSStreamLatencyCompensation() const override;
-    inline float getFrequency() override { return this->fFrequency; }
+    inline float getFrequency() const override { return this->fFrequency; }
 
-    bool isPlaying() override;
-    bool isFinished() override;
+    bool isPlaying() const override;
+    bool isFinished() const override;
 
     void rebuild(std::string newFilePath) override;
 
@@ -83,13 +83,13 @@ class SoLoudSound final : public Sound {
     // query, which can add up and be unnecessarily slow
 
     // avoid calling soloud->isValidVoiceHandle too often, because it locks the entire internal audio mutex
-    bool valid_handle_cached();
-    double soloud_valid_handle_cache_time{-1.};
+    bool valid_handle_cached() const;
+    mutable double soloud_valid_handle_cache_time{-1.};
 
     // same with soloud->getPause(), for getPosition queries
-    bool is_playing_cached();
-    bool cached_pause_state{false};
-    double soloud_paused_handle_cache_time{-1.};
+    bool is_playing_cached() const;
+    mutable bool cached_pause_state{false};
+    mutable double soloud_paused_handle_cache_time{-1.};
 
     // async position caching to avoid blocking on getStreamPosition calls
     mutable std::atomic<double> cached_stream_position{0.0};

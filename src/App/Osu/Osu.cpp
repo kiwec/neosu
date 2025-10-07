@@ -894,7 +894,7 @@ void Osu::onKeyDown(KeyboardEvent &key) {
     }
 
     if(key == (KEYCODE)cv::TOGGLE_MAP_BACKGROUND.getInt()) {
-        auto diff = this->map_iface->beatmap;
+        auto diff = this->map_iface->getBeatmap();
         if(!diff) {
             this->notificationOverlay->addNotification("No beatmap is currently selected.");
         } else {
@@ -962,7 +962,7 @@ void Osu::onKeyDown(KeyboardEvent &key) {
                 if(!this->map_iface->is_watching && !BanchoState::spectating) {
                     FinishedScore score;
                     score.replay = this->map_iface->live_replay;
-                    score.beatmap_hash = this->map_iface->beatmap->getMD5Hash();
+                    score.beatmap_hash = this->map_iface->getBeatmap()->getMD5Hash();
                     score.mods = this->getScore()->mods;
 
                     score.playerName = BanchoState::get_username();
@@ -1148,15 +1148,15 @@ void Osu::onKeyDown(KeyboardEvent &key) {
             // local offset
             if(key == (KEYCODE)cv::INCREASE_LOCAL_OFFSET.getInt()) {
                 i32 offsetAdd = keyboard->isAltDown() ? 1 : 5;
-                this->map_iface->beatmap->setLocalOffset(this->map_iface->beatmap->getLocalOffset() + offsetAdd);
+                this->map_iface->getBeatmap()->setLocalOffset(this->map_iface->getBeatmap()->getLocalOffset() + offsetAdd);
                 this->notificationOverlay->addNotification(
-                    UString::fmt("Local beatmap offset set to {} ms", this->map_iface->beatmap->getLocalOffset()));
+                    UString::fmt("Local beatmap offset set to {} ms", this->map_iface->getBeatmap()->getLocalOffset()));
             }
             if(key == (KEYCODE)cv::DECREASE_LOCAL_OFFSET.getInt()) {
                 i32 offsetAdd = -(keyboard->isAltDown() ? 1 : 5);
-                this->map_iface->beatmap->setLocalOffset(this->map_iface->beatmap->getLocalOffset() + offsetAdd);
+                this->map_iface->getBeatmap()->setLocalOffset(this->map_iface->getBeatmap()->getLocalOffset() + offsetAdd);
                 this->notificationOverlay->addNotification(
-                    UString::fmt("Local beatmap offset set to {} ms", this->map_iface->beatmap->getLocalOffset()));
+                    UString::fmt("Local beatmap offset set to {} ms", this->map_iface->getBeatmap()->getLocalOffset()));
             }
         }
     }
@@ -1383,7 +1383,7 @@ void Osu::onPlayEnd(const FinishedScore &score, bool quit, bool /*aborted*/) {
         if(!cv::mod_endless.getBool()) {
             // NOTE: the order of these two calls matters
             this->rankingScreen->setScore(score);
-            this->rankingScreen->setBeatmapInfo(this->map_iface->beatmap);
+            this->rankingScreen->setBeatmapInfo(this->map_iface->getBeatmap());
 
             soundEngine->play(this->skin->getApplause());
         } else {

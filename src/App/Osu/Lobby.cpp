@@ -272,8 +272,8 @@ void Lobby::on_create_room_clicked() {
     BanchoState::room.slots[0].status = 4;  // not ready
     BanchoState::room.slots[0].player_id = BanchoState::get_uid();
 
-    if(osu->getMapInterface() && osu->getMapInterface()->beatmap) {
-        auto map = osu->getMapInterface()->beatmap;
+    if(osu->getMapInterface() && osu->getMapInterface()->getBeatmap()) {
+        auto map = osu->getMapInterface()->getBeatmap();
         BanchoState::room.map_name = UString::format("%s - %s [%s]", map->getArtist().c_str(),
                                                      map->getTitle().c_str(), map->getDifficultyName().c_str());
         BanchoState::room.map_md5 = map->getMD5Hash();

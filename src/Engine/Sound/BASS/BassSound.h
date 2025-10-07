@@ -21,14 +21,14 @@ class BassSound final : public Sound {
     void setPan(float pan) override;
     void setLoop(bool loop) override;
 
-    float getPosition() override;
-    u32 getPositionMS() override;
-    u32 getLengthMS() override;
-    float getSpeed() override;
-    float getFrequency() override;
+    float getPosition() const override;
+    u32 getPositionMS() const override;
+    u32 getLengthMS() const override;
+    float getSpeed() const override;
+    float getFrequency() const override;
 
-    bool isPlaying() override;
-    bool isFinished() override;
+    bool isPlaying() const override;
+    bool isFinished() const override;
 
     void rebuild(std::string newFilePath) override;
 

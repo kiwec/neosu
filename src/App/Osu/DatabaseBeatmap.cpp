@@ -134,7 +134,7 @@ DatabaseBeatmap::~DatabaseBeatmap() {
     }
 }
 
-static bool parse_timing_point(const std::string &curLine, DatabaseBeatmap::TIMINGPOINT *out) {
+bool DatabaseBeatmap::parse_timing_point(const std::string &curLine, DatabaseBeatmap::TIMINGPOINT *out) {
     // old beatmaps: Offset, Milliseconds per Beat
     // old new beatmaps: Offset, Milliseconds per Beat, Meter, sampleSet, sampleIndex, Volume,
     // !Inherited new new beatmaps: Offset, Milliseconds per Beat, Meter, sampleSet, sampleIndex,
@@ -319,11 +319,10 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(const
 
                 // HitObjects
                 case 6: {
-                    thread_local size_t err_line;
-                    err_line = 0;
+                    size_t err_line = 0;
 
-                    static auto upd_last_error = [&](bool parse_result_bad,
-                                                     size_t line = std::source_location::current().line()) -> void {
+                    auto upd_last_error = [&err_line](bool parse_result_bad,
+                                                      size_t line = std::source_location::current().line()) -> void {
                         if(err_line) {  // already got error
                             return;
                         } else {
@@ -341,7 +340,7 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(const
                     // x,y,time,type,hitSounds,endTime,hitSamples
 
                     // hitSamples are colon-separated optional components (up to 5), and not all 5 have to be specified
-                    static auto parse_hitsamples = [&](const std::string &hitSampleStr, HitSamples &samples) -> bool {
+                    static auto parse_hitsamples = [](const std::string &hitSampleStr, HitSamples &samples) -> bool {
                         samples.normalSet = 0;
                         samples.additionSet = 0;
                         samples.index = 0;
@@ -752,7 +751,7 @@ DatabaseBeatmap::LOAD_DIFFOBJ_RESULT DatabaseBeatmap::loadDifficultyHitObjects(P
                                                                                float CS, float speedMultiplier,
                                                                                bool calculateStarsInaccurately,
                                                                                const std::atomic<bool> &dead) {
-    LOAD_DIFFOBJ_RESULT result = LOAD_DIFFOBJ_RESULT();
+    LOAD_DIFFOBJ_RESULT result{};
 
     // build generalized OsuDifficultyHitObjects from the vectors (hitcircles, sliders, spinners)
     // the OsuDifficultyHitObject class is the one getting used in all pp/star calculations, it encompasses every object
@@ -1003,17 +1002,6 @@ DatabaseBeatmap::LOAD_DIFFOBJ_RESULT DatabaseBeatmap::loadDifficultyHitObjects(P
     }
 
     return result;
-}
-
-// deprecated
-std::string DatabaseBeatmap::getMapFile() {
-    File file(this->sFilePath);
-    if(file.canRead()) {
-        // Intentionally returning std::string because .osu files are always text
-        return file.readString();
-    } else {
-        return "";
-    }
 }
 
 bool DatabaseBeatmap::getMapFileAsync(MapFileReadDoneCallback data_callback) {

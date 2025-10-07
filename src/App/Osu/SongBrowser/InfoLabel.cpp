@@ -129,10 +129,9 @@ void InfoLabel::draw() {
     g->popTransform();
 
     // draw song info (length, bpm, objects)
-    const Color songInfoColor =
-        (osu->getMapInterface()->getSpeedMultiplier() != 1.0f
-             ? (osu->getMapInterface()->getSpeedMultiplier() > 1.0f ? 0xffff7f7f : 0xffadd8e6)
-             : 0xffffffff);
+    const Color songInfoColor = (osu->getMapInterface()->getSpeedMultiplier() != 1.0f
+                                     ? (osu->getMapInterface()->getSpeedMultiplier() > 1.0f ? 0xffff7f7f : 0xffadd8e6)
+                                     : 0xffffffff);
     g->pushTransform();
     {
         const float scale = this->fSongInfoScale * globalScale * 0.9f;
@@ -217,10 +216,9 @@ void InfoLabel::mouse_update(bool *propagate_clicks) {
         const float hitWindow300RoundedCompensated = ((int)pf->getHitWindow300() - 0.5f) * speedMultiplierInv;
         const float hitWindow100RoundedCompensated = ((int)pf->getHitWindow100() - 0.5f) * speedMultiplierInv;
         const float hitWindow50RoundedCompensated = ((int)pf->getHitWindow50() - 0.5f) * speedMultiplierInv;
-        const float hitobjectRadiusRoundedCompensated =
-            (GameRules::getRawHitCircleDiameter(pf->getCS()) / 2.0f);
+        const float hitobjectRadiusRoundedCompensated = (GameRules::getRawHitCircleDiameter(pf->getCS()) / 2.0f);
 
-        const auto &bmDiff2{pf->beatmap};
+        const auto *bmDiff2{pf->getBeatmap()};
         const auto &tooltipOverlay{osu->getTooltipOverlay()};
         tooltipOverlay->begin();
         {
@@ -240,8 +238,7 @@ void InfoLabel::mouse_update(bool *propagate_clicks) {
 
                 float opm{0.f}, cpm{0.f}, spm{0.f};
                 if(lengthMS > 0) {
-                    const float durMinutes{(static_cast<float>(lengthMS) / 1000.0f / 60.0f) /
-                                           pf->getSpeedMultiplier()};
+                    const float durMinutes{(static_cast<float>(lengthMS) / 1000.0f / 60.0f) / pf->getSpeedMultiplier()};
 
                     opm = static_cast<float>(numObjects) / durMinutes;
                     cpm = static_cast<float>(numCircles) / durMinutes;
@@ -249,12 +246,9 @@ void InfoLabel::mouse_update(bool *propagate_clicks) {
                 }
 
                 tooltipOverlay->addLine(UString::fmt("Circles: {:d}, Sliders: {:d}, Spinners: {:d}", numCircles,
-                                                     numSliders,
-                                                     std::max(0, numObjects - numCircles - numSliders)));
-                tooltipOverlay->addLine(
-                    UString::fmt("OPM: {:d}, CPM: {:d}, SPM: {:d}", (int)opm, (int)cpm, (int)spm));
-                tooltipOverlay->addLine(
-                    UString::fmt("ID: {:d}, SetID: {:d}", bmDiff2->getID(), bmDiff2->getSetID()));
+                                                     numSliders, std::max(0, numObjects - numCircles - numSliders)));
+                tooltipOverlay->addLine(UString::fmt("OPM: {:d}, CPM: {:d}, SPM: {:d}", (int)opm, (int)cpm, (int)spm));
+                tooltipOverlay->addLine(UString::fmt("ID: {:d}, SetID: {:d}", bmDiff2->getID(), bmDiff2->getSetID()));
                 tooltipOverlay->addLine(UString::fmt("MD5: {:s}", bmDiff2->getMD5Hash().string()));
                 // mostly for debugging
                 if(keyboard->isShiftDown()) {
@@ -269,7 +263,7 @@ void InfoLabel::mouse_update(bool *propagate_clicks) {
     }
 }
 
-void InfoLabel::setFromBeatmap(DatabaseBeatmap *map) {
+void InfoLabel::setFromBeatmap(const DatabaseBeatmap *map) {
     this->iBeatmapId = map->getID();
 
     this->setArtist(map->getArtist());
@@ -314,48 +308,28 @@ UString InfoLabel::buildSongInfoString() {
 
 UString InfoLabel::buildDiffInfoString() {
     const auto &pf = osu->getMapInterface();
-    auto map = pf->beatmap;
+    const auto *map = pf->getBeatmap();
     if(!map) return "";
 
-    bool pp_available = false;
-    float CS = this->fCS;
-    float AR = this->fAR;
-    float OD = this->fOD;
-    float HP = this->fHP;
+    float CS = pf->getCS();
+    float AR = pf->getApproachRateForSpeedMultiplier();
+    float OD = pf->getOverallDifficultyForSpeedMultiplier();
+    float HP = pf->getHP();
+
     float stars = this->fStars;
     float modStars = 0.f;
     float modPp = 0.f;
 
+    bool pp_available = false;
+
     // pp calc for currently selected mods
     {
-        lct_set_map(map);
-
-        auto mods = osu->getScore()->mods;
-        pp_calc_request request;
-        request.mods_legacy = mods.to_legacy();
-        request.speed = mods.speed;
-        request.AR = mods.get_naive_ar(map);
-        request.CS = mods.get_naive_cs(map);
-        request.OD = mods.get_naive_od(map);
-        request.rx = ModMasks::eq(mods.flags, Replay::ModFlags::Relax);
-        request.td = ModMasks::eq(mods.flags, Replay::ModFlags::TouchDevice);
-        request.comboMax = -1;
-        request.numMisses = 0;
-        request.num300s = map->getNumObjects();
-        request.num100s = 0;
-        request.num50s = 0;
-
-        auto pp = lct_get_pp(request);
+        const auto &pp = pf->getWholeMapPPInfo();
         if(pp.pp != -1.0) {
             modStars = pp.total_stars;
             modPp = pp.pp;
             pp_available = true;
         }
-
-        CS = pf->getCS();
-        AR = pf->getApproachRateForSpeedMultiplier();
-        OD = pf->getOverallDifficultyForSpeedMultiplier();
-        HP = pf->getHP();
     }
 
     const float starComparisonEpsilon = 0.01f;
