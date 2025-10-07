@@ -313,9 +313,7 @@ class Osu final : public MouseListener, public KeyboardListener {
     // keys
    public:  // public due to "stuck key fix" in BeatmapInterface
     bool bKeyboardKey1Down{false};
-    bool bKeyboardKey12Down{false};
     bool bKeyboardKey2Down{false};
-    bool bKeyboardKey22Down{false};
     bool bMouseKey1Down{false};
     bool bMouseKey2Down{false};
 
