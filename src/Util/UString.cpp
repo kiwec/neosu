@@ -386,7 +386,7 @@ bool UString::lessThanIgnoreCase(const UString &ustr) const {
 // only to be used in very specific scenarios
 [[nodiscard]] std::wstring UString::to_wstring() const noexcept {
 #ifdef MCENGINE_PLATFORM_WINDOWS
-    return std::wstring{reinterpret_cast<std::wstring>(this->sUnicode)};
+    return std::wstring{reinterpret_cast<const wchar_t *>(this->sUnicode.data())};
 #else
     std::wstring ret;
     size_t utf32Length = simdutf::utf32_length_from_utf16(this->sUnicode.data(), this->sUnicode.length());
