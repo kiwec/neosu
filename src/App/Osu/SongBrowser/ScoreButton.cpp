@@ -763,7 +763,7 @@ void ScoreButton::setScore(const FinishedScore &score, const DatabaseBeatmap *ma
         tooltipMods.append("None");
 
     using namespace ModMasks;
-    using namespace Replay::ModFlags;
+    using namespace ModFlags;
 
     this->tooltipLines.push_back(tooltipMods);
     if(eq(score.mods.flags, NoHP)) this->tooltipLines.emplace_back("+ no HP drain");
@@ -847,7 +847,7 @@ SkinImage *ScoreButton::getGradeImage(FinishedScore::Grade grade) {
 
 UString ScoreButton::getModsStringForDisplay(const Replay::Mods &mods) {
     using namespace ModMasks;
-    using namespace Replay::ModFlags;
+    using namespace ModFlags;
 
     UString modsString;
 

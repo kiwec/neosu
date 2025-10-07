@@ -29,8 +29,8 @@ static void update_ppv2(const FinishedScore& score) {
     f32 AR = score.mods.get_naive_ar(map);
     f32 CS = score.mods.get_naive_cs(map);
     f32 OD = score.mods.get_naive_od(map);
-    bool RX = ModMasks::eq(score.mods.flags, Replay::ModFlags::Relax);
-    bool TD = ModMasks::eq(score.mods.flags, Replay::ModFlags::TouchDevice);
+    bool RX = ModMasks::eq(score.mods.flags, ModFlags::Relax);
+    bool TD = ModMasks::eq(score.mods.flags, ModFlags::TouchDevice);
 
     // Load hitobjects
     auto diffres = DatabaseBeatmap::loadDifficultyHitObjects(map->getFilePath(), AR, CS, score.mods.speed, false, dead);

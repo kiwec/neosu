@@ -658,8 +658,8 @@ Database::PlayerPPScores Database::getPlayerPPScores(const std::string &playerNa
         bool foundValidScore = false;
         float prevPP = -1.0f;
         for(auto &score : this->scores[key]) {
-            auto uses_rx_or_ap = (ModMasks::eq(score.mods.flags, Replay::ModFlags::Relax) ||
-                                  (ModMasks::eq(score.mods.flags, Replay::ModFlags::Autopilot)));
+            auto uses_rx_or_ap = (ModMasks::eq(score.mods.flags, ModFlags::Relax) ||
+                                  (ModMasks::eq(score.mods.flags, ModFlags::Autopilot)));
             if(uses_rx_or_ap && !cv::user_include_relax_and_autopilot_for_stats.getBool()) continue;
 
             if(score.playerName != playerName) continue;
@@ -1845,30 +1845,30 @@ void Database::loadOldMcNeosuScores(std::string_view dbPath) {
                 auto experimentalMods = SString::split(experimentalModsConVars, ';');
                 for(const auto mod : experimentalMods) {
                     if(mod == "") continue;
-                    if(mod == "fposu_mod_strafing") sc.mods.flags |= Replay::ModFlags::FPoSu_Strafing;
-                    if(mod == "osu_mod_wobble") sc.mods.flags |= Replay::ModFlags::Wobble1;
-                    if(mod == "osu_mod_wobble2") sc.mods.flags |= Replay::ModFlags::Wobble2;
-                    if(mod == "osu_mod_arwobble") sc.mods.flags |= Replay::ModFlags::ARWobble;
-                    if(mod == "osu_mod_timewarp") sc.mods.flags |= Replay::ModFlags::Timewarp;
-                    if(mod == "osu_mod_artimewarp") sc.mods.flags |= Replay::ModFlags::ARTimewarp;
-                    if(mod == "osu_mod_minimize") sc.mods.flags |= Replay::ModFlags::Minimize;
-                    if(mod == "osu_mod_fadingcursor") sc.mods.flags |= Replay::ModFlags::FadingCursor;
-                    if(mod == "osu_mod_fps") sc.mods.flags |= Replay::ModFlags::FPS;
-                    if(mod == "osu_mod_jigsaw1") sc.mods.flags |= Replay::ModFlags::Jigsaw1;
-                    if(mod == "osu_mod_jigsaw2") sc.mods.flags |= Replay::ModFlags::Jigsaw2;
-                    if(mod == "osu_mod_fullalternate") sc.mods.flags |= Replay::ModFlags::FullAlternate;
-                    if(mod == "osu_mod_reverse_sliders") sc.mods.flags |= Replay::ModFlags::ReverseSliders;
-                    if(mod == "osu_mod_no50s") sc.mods.flags |= Replay::ModFlags::No50s;
-                    if(mod == "osu_mod_no100s") sc.mods.flags |= Replay::ModFlags::No100s;
-                    if(mod == "osu_mod_ming3012") sc.mods.flags |= Replay::ModFlags::Ming3012;
-                    if(mod == "osu_mod_halfwindow") sc.mods.flags |= Replay::ModFlags::HalfWindow;
-                    if(mod == "osu_mod_millhioref") sc.mods.flags |= Replay::ModFlags::Millhioref;
-                    if(mod == "osu_mod_mafham") sc.mods.flags |= Replay::ModFlags::Mafham;
-                    if(mod == "osu_mod_strict_tracking") sc.mods.flags |= Replay::ModFlags::StrictTracking;
-                    if(mod == "osu_playfield_mirror_horizontal") sc.mods.flags |= Replay::ModFlags::MirrorHorizontal;
-                    if(mod == "osu_playfield_mirror_vertical") sc.mods.flags |= Replay::ModFlags::MirrorVertical;
-                    if(mod == "osu_mod_shirone") sc.mods.flags |= Replay::ModFlags::Shirone;
-                    if(mod == "osu_mod_approach_different") sc.mods.flags |= Replay::ModFlags::ApproachDifferent;
+                    if(mod == "fposu_mod_strafing") sc.mods.flags |= ModFlags::FPoSu_Strafing;
+                    if(mod == "osu_mod_wobble") sc.mods.flags |= ModFlags::Wobble1;
+                    if(mod == "osu_mod_wobble2") sc.mods.flags |= ModFlags::Wobble2;
+                    if(mod == "osu_mod_arwobble") sc.mods.flags |= ModFlags::ARWobble;
+                    if(mod == "osu_mod_timewarp") sc.mods.flags |= ModFlags::Timewarp;
+                    if(mod == "osu_mod_artimewarp") sc.mods.flags |= ModFlags::ARTimewarp;
+                    if(mod == "osu_mod_minimize") sc.mods.flags |= ModFlags::Minimize;
+                    if(mod == "osu_mod_fadingcursor") sc.mods.flags |= ModFlags::FadingCursor;
+                    if(mod == "osu_mod_fps") sc.mods.flags |= ModFlags::FPS;
+                    if(mod == "osu_mod_jigsaw1") sc.mods.flags |= ModFlags::Jigsaw1;
+                    if(mod == "osu_mod_jigsaw2") sc.mods.flags |= ModFlags::Jigsaw2;
+                    if(mod == "osu_mod_fullalternate") sc.mods.flags |= ModFlags::FullAlternate;
+                    if(mod == "osu_mod_reverse_sliders") sc.mods.flags |= ModFlags::ReverseSliders;
+                    if(mod == "osu_mod_no50s") sc.mods.flags |= ModFlags::No50s;
+                    if(mod == "osu_mod_no100s") sc.mods.flags |= ModFlags::No100s;
+                    if(mod == "osu_mod_ming3012") sc.mods.flags |= ModFlags::Ming3012;
+                    if(mod == "osu_mod_halfwindow") sc.mods.flags |= ModFlags::HalfWindow;
+                    if(mod == "osu_mod_millhioref") sc.mods.flags |= ModFlags::Millhioref;
+                    if(mod == "osu_mod_mafham") sc.mods.flags |= ModFlags::Mafham;
+                    if(mod == "osu_mod_strict_tracking") sc.mods.flags |= ModFlags::StrictTracking;
+                    if(mod == "osu_playfield_mirror_horizontal") sc.mods.flags |= ModFlags::MirrorHorizontal;
+                    if(mod == "osu_playfield_mirror_vertical") sc.mods.flags |= ModFlags::MirrorVertical;
+                    if(mod == "osu_mod_shirone") sc.mods.flags |= ModFlags::Shirone;
+                    if(mod == "osu_mod_approach_different") sc.mods.flags |= ModFlags::ApproachDifferent;
                 }
 
                 sc.beatmap_hash = md5hash;
@@ -2013,31 +2013,30 @@ void Database::loadOldMcNeosuScores(std::string_view dbPath) {
                     sc.numCircles = numCircles;
                     for(const auto mod : experimentalMods) {
                         if(mod == "") continue;
-                        if(mod == "fposu_mod_strafing") sc.mods.flags |= Replay::ModFlags::FPoSu_Strafing;
-                        if(mod == "osu_mod_wobble") sc.mods.flags |= Replay::ModFlags::Wobble1;
-                        if(mod == "osu_mod_wobble2") sc.mods.flags |= Replay::ModFlags::Wobble2;
-                        if(mod == "osu_mod_arwobble") sc.mods.flags |= Replay::ModFlags::ARWobble;
-                        if(mod == "osu_mod_timewarp") sc.mods.flags |= Replay::ModFlags::Timewarp;
-                        if(mod == "osu_mod_artimewarp") sc.mods.flags |= Replay::ModFlags::ARTimewarp;
-                        if(mod == "osu_mod_minimize") sc.mods.flags |= Replay::ModFlags::Minimize;
-                        if(mod == "osu_mod_fadingcursor") sc.mods.flags |= Replay::ModFlags::FadingCursor;
-                        if(mod == "osu_mod_fps") sc.mods.flags |= Replay::ModFlags::FPS;
-                        if(mod == "osu_mod_jigsaw1") sc.mods.flags |= Replay::ModFlags::Jigsaw1;
-                        if(mod == "osu_mod_jigsaw2") sc.mods.flags |= Replay::ModFlags::Jigsaw2;
-                        if(mod == "osu_mod_fullalternate") sc.mods.flags |= Replay::ModFlags::FullAlternate;
-                        if(mod == "osu_mod_reverse_sliders") sc.mods.flags |= Replay::ModFlags::ReverseSliders;
-                        if(mod == "osu_mod_no50s") sc.mods.flags |= Replay::ModFlags::No50s;
-                        if(mod == "osu_mod_no100s") sc.mods.flags |= Replay::ModFlags::No100s;
-                        if(mod == "osu_mod_ming3012") sc.mods.flags |= Replay::ModFlags::Ming3012;
-                        if(mod == "osu_mod_halfwindow") sc.mods.flags |= Replay::ModFlags::HalfWindow;
-                        if(mod == "osu_mod_millhioref") sc.mods.flags |= Replay::ModFlags::Millhioref;
-                        if(mod == "osu_mod_mafham") sc.mods.flags |= Replay::ModFlags::Mafham;
-                        if(mod == "osu_mod_strict_tracking") sc.mods.flags |= Replay::ModFlags::StrictTracking;
-                        if(mod == "osu_playfield_mirror_horizontal")
-                            sc.mods.flags |= Replay::ModFlags::MirrorHorizontal;
-                        if(mod == "osu_playfield_mirror_vertical") sc.mods.flags |= Replay::ModFlags::MirrorVertical;
-                        if(mod == "osu_mod_shirone") sc.mods.flags |= Replay::ModFlags::Shirone;
-                        if(mod == "osu_mod_approach_different") sc.mods.flags |= Replay::ModFlags::ApproachDifferent;
+                        if(mod == "fposu_mod_strafing") sc.mods.flags |= ModFlags::FPoSu_Strafing;
+                        if(mod == "osu_mod_wobble") sc.mods.flags |= ModFlags::Wobble1;
+                        if(mod == "osu_mod_wobble2") sc.mods.flags |= ModFlags::Wobble2;
+                        if(mod == "osu_mod_arwobble") sc.mods.flags |= ModFlags::ARWobble;
+                        if(mod == "osu_mod_timewarp") sc.mods.flags |= ModFlags::Timewarp;
+                        if(mod == "osu_mod_artimewarp") sc.mods.flags |= ModFlags::ARTimewarp;
+                        if(mod == "osu_mod_minimize") sc.mods.flags |= ModFlags::Minimize;
+                        if(mod == "osu_mod_fadingcursor") sc.mods.flags |= ModFlags::FadingCursor;
+                        if(mod == "osu_mod_fps") sc.mods.flags |= ModFlags::FPS;
+                        if(mod == "osu_mod_jigsaw1") sc.mods.flags |= ModFlags::Jigsaw1;
+                        if(mod == "osu_mod_jigsaw2") sc.mods.flags |= ModFlags::Jigsaw2;
+                        if(mod == "osu_mod_fullalternate") sc.mods.flags |= ModFlags::FullAlternate;
+                        if(mod == "osu_mod_reverse_sliders") sc.mods.flags |= ModFlags::ReverseSliders;
+                        if(mod == "osu_mod_no50s") sc.mods.flags |= ModFlags::No50s;
+                        if(mod == "osu_mod_no100s") sc.mods.flags |= ModFlags::No100s;
+                        if(mod == "osu_mod_ming3012") sc.mods.flags |= ModFlags::Ming3012;
+                        if(mod == "osu_mod_halfwindow") sc.mods.flags |= ModFlags::HalfWindow;
+                        if(mod == "osu_mod_millhioref") sc.mods.flags |= ModFlags::Millhioref;
+                        if(mod == "osu_mod_mafham") sc.mods.flags |= ModFlags::Mafham;
+                        if(mod == "osu_mod_strict_tracking") sc.mods.flags |= ModFlags::StrictTracking;
+                        if(mod == "osu_playfield_mirror_horizontal") sc.mods.flags |= ModFlags::MirrorHorizontal;
+                        if(mod == "osu_playfield_mirror_vertical") sc.mods.flags |= ModFlags::MirrorVertical;
+                        if(mod == "osu_mod_shirone") sc.mods.flags |= ModFlags::Shirone;
+                        if(mod == "osu_mod_approach_different") sc.mods.flags |= ModFlags::ApproachDifferent;
                     }
 
                     sc.beatmap_hash = md5hash;
@@ -2136,7 +2135,7 @@ void Database::loadPeppyScores(std::string_view dbPath) {
                 sc.bancho_score_id = 0;
             }
 
-            if(ModMasks::eq(sc.mods.flags, Replay::ModFlags::Target)) {
+            if(ModMasks::eq(sc.mods.flags, ModFlags::Target)) {
                 db.skip<f64>();  // total accuracy
             }
 

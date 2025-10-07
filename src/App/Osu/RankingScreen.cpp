@@ -456,7 +456,7 @@ void RankingScreen::setScore(const FinishedScore &score) {
         this->sMods = "";
 
     using namespace ModMasks;
-    using namespace Replay::ModFlags;
+    using namespace ModFlags;
     this->bModSS = eq(score.mods.flags, Perfect);
     this->bModSD = eq(score.mods.flags, SuddenDeath);
     this->bModEZ = eq(score.mods.flags, Easy);

@@ -6,70 +6,6 @@ class DatabaseBeatmap;
 
 namespace Replay {
 
-namespace ModFlags {
-enum ModFlags_ : u64 {
-
-    // Green mods
-    NoFail = 1ULL << 0,
-    Easy = 1ULL << 1,
-    Autopilot = 1ULL << 2,
-    Relax = 1ULL << 3,
-
-    // Red mods
-    Hidden = 1ULL << 4,
-    HardRock = 1ULL << 5,
-    Flashlight = 1ULL << 6,
-    SuddenDeath = 1ULL << 7,
-    Perfect = SuddenDeath | (1ULL << 8),
-    Nightmare = 1ULL << 9,
-
-    // Special mods
-    NoPitchCorrection = 1ULL << 10,
-    TouchDevice = 1ULL << 11,
-    SpunOut = 1ULL << 12,
-    ScoreV2 = 1ULL << 13,
-    FPoSu = 1ULL << 14,
-    Target = 1ULL << 15,
-
-    // Experimental mods
-    AROverrideLock = 1ULL << 16,
-    ODOverrideLock = 1ULL << 17,
-    Timewarp = 1ULL << 18,
-    ARTimewarp = 1ULL << 19,
-    Minimize = 1ULL << 20,
-    Jigsaw1 = 1ULL << 21,
-    Jigsaw2 = 1ULL << 22,
-    Wobble1 = 1ULL << 23,
-    Wobble2 = 1ULL << 24,
-    ARWobble = 1ULL << 25,
-    FullAlternate = 1ULL << 26,
-    Shirone = 1ULL << 27,
-    Mafham = 1ULL << 28,
-    HalfWindow = 1ULL << 29,
-    HalfWindowAllow300s = 1ULL << 30,
-    Ming3012 = 1ULL << 31,
-    No100s = 1ULL << 32,
-    No50s = 1ULL << 33,
-    MirrorHorizontal = 1ULL << 34,
-    MirrorVertical = 1ULL << 35,
-    FPoSu_Strafing = 1ULL << 36,
-    FadingCursor = 1ULL << 37,
-    FPS = 1ULL << 38,
-    ReverseSliders = 1ULL << 39,
-    Millhioref = 1ULL << 40,
-    StrictTracking = 1ULL << 41,
-    ApproachDifferent = 1ULL << 42,
-
-    // Only here so that replays for plays without HP drain don't fail.
-    NoHP = 1ULL << 43,
-
-    // Non-submittable
-    Autoplay = 1ULL << 63
-
-};
-
-}  // namespace ModFlags
-
 template <typename T>
 concept GenericReader = requires(T &t) {
     t.template read<u64>();
@@ -179,7 +115,7 @@ struct Mods {
         writer.template write<f32>(mods.hp_override);
         writer.template write<f32>(mods.od_override);
         using namespace ModMasks;
-        using namespace Replay::ModFlags;
+        using namespace ModFlags;
         if(eq(mods.flags, Autopilot)) {
             writer.template write<f32>(mods.autopilot_lenience);
         }

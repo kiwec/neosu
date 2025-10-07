@@ -151,15 +151,15 @@ u32 SimulatedBeatmapInterface::getScoreV1DifficultyMultiplier_full() const {
 
 f32 SimulatedBeatmapInterface::getCS_full() const {
     float CSdifficultyMultiplier = 1.0f;
-    if((ModMasks::eq(this->mods.flags, Replay::ModFlags::HardRock))) CSdifficultyMultiplier = 1.3f;
-    if((ModMasks::eq(this->mods.flags, Replay::ModFlags::Easy))) CSdifficultyMultiplier = 0.5f;
+    if((ModMasks::eq(this->mods.flags, ModFlags::HardRock))) CSdifficultyMultiplier = 1.3f;
+    if((ModMasks::eq(this->mods.flags, ModFlags::Easy))) CSdifficultyMultiplier = 0.5f;
 
     f32 CS = std::clamp<f32>(this->beatmap->getCS() * CSdifficultyMultiplier, 0.0f, 10.0f);
 
     if(this->mods.cs_override >= 0.0f) CS = this->mods.cs_override;
     if(this->mods.cs_overridenegative < 0.0f) CS = this->mods.cs_overridenegative;
 
-    if(ModMasks::eq(this->mods.flags, Replay::ModFlags::Minimize)) {
+    if(ModMasks::eq(this->mods.flags, ModFlags::Minimize)) {
         const f32 percent =
             1.0f + ((f64)(this->iCurMusicPos - this->hitobjects[0]->click_time) /
                     (f64)(this->hitobjects[this->hitobjects.size() - 1]->click_time +
@@ -175,8 +175,8 @@ f32 SimulatedBeatmapInterface::getCS_full() const {
 
 f32 SimulatedBeatmapInterface::getHP_full() const {
     float HPdifficultyMultiplier = 1.0f;
-    if((ModMasks::eq(this->mods.flags, Replay::ModFlags::HardRock))) HPdifficultyMultiplier = 1.4f;
-    if((ModMasks::eq(this->mods.flags, Replay::ModFlags::Easy))) HPdifficultyMultiplier = 0.5f;
+    if((ModMasks::eq(this->mods.flags, ModFlags::HardRock))) HPdifficultyMultiplier = 1.4f;
+    if((ModMasks::eq(this->mods.flags, ModFlags::Easy))) HPdifficultyMultiplier = 0.5f;
 
     f32 HP = std::clamp<f32>(this->beatmap->getHP() * HPdifficultyMultiplier, 0.0f, 10.0f);
     if(this->mods.hp_override >= 0.0f) HP = this->mods.hp_override;
@@ -186,8 +186,8 @@ f32 SimulatedBeatmapInterface::getHP_full() const {
 
 f32 SimulatedBeatmapInterface::getRawAR_full() const {
     float ARdifficultyMultiplier = 1.0f;
-    if((ModMasks::eq(this->mods.flags, Replay::ModFlags::HardRock))) ARdifficultyMultiplier = 1.4f;
-    if((ModMasks::eq(this->mods.flags, Replay::ModFlags::Easy))) ARdifficultyMultiplier = 0.5f;
+    if((ModMasks::eq(this->mods.flags, ModFlags::HardRock))) ARdifficultyMultiplier = 1.4f;
+    if((ModMasks::eq(this->mods.flags, ModFlags::Easy))) ARdifficultyMultiplier = 0.5f;
 
     return std::clamp<f32>(this->beatmap->getAR() * ARdifficultyMultiplier, 0.0f, 10.0f);
 }
@@ -197,11 +197,11 @@ f32 SimulatedBeatmapInterface::getAR_full() const {
     if(this->mods.ar_override >= 0.0f) AR = this->mods.ar_override;
     if(this->mods.ar_overridenegative < 0.0f) AR = this->mods.ar_overridenegative;
 
-    if(ModMasks::eq(this->mods.flags, Replay::ModFlags::AROverrideLock)) {
+    if(ModMasks::eq(this->mods.flags, ModFlags::AROverrideLock)) {
         AR = GameRules::arWithSpeed(AR, 1.f / this->mods.speed);
     }
 
-    if((ModMasks::eq(this->mods.flags, Replay::ModFlags::ARTimewarp)) && this->hitobjects.size() > 0) {
+    if((ModMasks::eq(this->mods.flags, ModFlags::ARTimewarp)) && this->hitobjects.size() > 0) {
         const f32 percent =
             1.0f - ((f64)(this->iCurMusicPos - this->hitobjects[0]->click_time) /
                     (f64)(this->hitobjects[this->hitobjects.size() - 1]->click_time +
@@ -210,7 +210,7 @@ f32 SimulatedBeatmapInterface::getAR_full() const {
         AR *= percent;
     }
 
-    if(ModMasks::eq(this->mods.flags, Replay::ModFlags::ARWobble)) {
+    if(ModMasks::eq(this->mods.flags, ModFlags::ARWobble)) {
         AR += std::sin((this->iCurMusicPos / 1000.0f) * this->mods.arwobble_interval) * this->mods.arwobble_strength;
     }
 
@@ -219,8 +219,8 @@ f32 SimulatedBeatmapInterface::getAR_full() const {
 
 f32 SimulatedBeatmapInterface::getRawOD_full() const {
     float ODdifficultyMultiplier = 1.0f;
-    if((ModMasks::eq(this->mods.flags, Replay::ModFlags::HardRock))) ODdifficultyMultiplier = 1.4f;
-    if((ModMasks::eq(this->mods.flags, Replay::ModFlags::Easy))) ODdifficultyMultiplier = 0.5f;
+    if((ModMasks::eq(this->mods.flags, ModFlags::HardRock))) ODdifficultyMultiplier = 1.4f;
+    if((ModMasks::eq(this->mods.flags, ModFlags::Easy))) ODdifficultyMultiplier = 0.5f;
 
     return std::clamp<f32>(this->beatmap->getOD() * ODdifficultyMultiplier, 0.0f, 10.0f);
 }
@@ -230,7 +230,7 @@ f32 SimulatedBeatmapInterface::getOD_full() const {
 
     if(this->mods.od_override >= 0.0f) OD = this->mods.od_override;
 
-    if(ModMasks::eq(this->mods.flags, Replay::ModFlags::ODOverrideLock))
+    if(ModMasks::eq(this->mods.flags, ModFlags::ODOverrideLock))
         OD = GameRules::odWithSpeed(OD, 1.f / this->mods.speed);
 
     return OD;
@@ -284,14 +284,14 @@ LiveScore::HIT SimulatedBeatmapInterface::addHitResult(HitObject *hitObject, Liv
                                                        bool hitErrorBarOnly, bool ignoreCombo, bool ignoreScore,
                                                        bool ignoreHealth) {
     // handle perfect & sudden death
-    if(ModMasks::eq(this->mods.flags, Replay::ModFlags::Perfect)) {
+    if(ModMasks::eq(this->mods.flags, ModFlags::Perfect)) {
         if(!hitErrorBarOnly && hit != LiveScore::HIT::HIT_300 && hit != LiveScore::HIT::HIT_300G &&
            hit != LiveScore::HIT::HIT_SLIDER10 && hit != LiveScore::HIT::HIT_SLIDER30 &&
            hit != LiveScore::HIT::HIT_SPINNERSPIN && hit != LiveScore::HIT::HIT_SPINNERBONUS) {
             this->fail();
             return LiveScore::HIT::HIT_MISS;
         }
-    } else if(ModMasks::eq(this->mods.flags, Replay::ModFlags::SuddenDeath)) {
+    } else if(ModMasks::eq(this->mods.flags, ModFlags::SuddenDeath)) {
         if(hit == LiveScore::HIT::HIT_MISS) {
             this->fail();
             return LiveScore::HIT::HIT_MISS;
@@ -338,10 +338,10 @@ LiveScore::HIT SimulatedBeatmapInterface::addHitResult(HitObject *hitObject, Liv
 
 void SimulatedBeatmapInterface::addSliderBreak() {
     // handle perfect & sudden death
-    if(ModMasks::eq(this->mods.flags, Replay::ModFlags::Perfect)) {
+    if(ModMasks::eq(this->mods.flags, ModFlags::Perfect)) {
         this->fail();
         return;
-    } else if(ModMasks::eq(this->mods.flags, Replay::ModFlags::SuddenDeath)) {
+    } else if(ModMasks::eq(this->mods.flags, ModFlags::SuddenDeath)) {
         this->fail();
         return;
     }
@@ -374,8 +374,8 @@ void SimulatedBeatmapInterface::addHealth(f64 percent, bool isFromHitResult) {
 
     // handle generic fail state (2)
     const bool isDead = this->fHealth < 0.001;
-    if(isDead && !(ModMasks::eq(this->mods.flags, Replay::ModFlags::NoFail))) {
-        if((ModMasks::eq(this->mods.flags, Replay::ModFlags::Easy)) &&
+    if(isDead && !(ModMasks::eq(this->mods.flags, ModFlags::NoFail))) {
+        if((ModMasks::eq(this->mods.flags, ModFlags::Easy)) &&
            this->live_score.getNumEZRetries() > 0)  // retries with ez
         {
             this->live_score.setNumEZRetries(this->live_score.getNumEZRetries() - 1);
@@ -421,7 +421,7 @@ void SimulatedBeatmapInterface::update(f64 frame_time) {
     this->updatePlayfieldMetrics();
 
     // wobble mod
-    if(ModMasks::eq(this->mods.flags, Replay::ModFlags::Wobble1)) {
+    if(ModMasks::eq(this->mods.flags, ModFlags::Wobble1)) {
         const f32 speedMultiplierCompensation = 1.0f / this->mods.speed;
         this->fPlayfieldRotation =
             (this->iCurMusicPos / 1000.0f) * 30.0f * speedMultiplierCompensation * this->mods.wobble_rotation_speed;
@@ -668,8 +668,8 @@ void SimulatedBeatmapInterface::update(f64 frame_time) {
         // all remaining clicks which have not been consumed by any hitobjects can safely be deleted
         if(this->clicks.size() > 0) {
             // nightmare mod: extra clicks = sliderbreak
-            bool break_on_extra_click = (ModMasks::eq(this->mods.flags, Replay::ModFlags::Nightmare) ||
-                                         (ModMasks::eq(this->mods.flags, Replay::ModFlags::Jigsaw1)));
+            bool break_on_extra_click = (ModMasks::eq(this->mods.flags, ModFlags::Nightmare) ||
+                                         (ModMasks::eq(this->mods.flags, ModFlags::Jigsaw1)));
             break_on_extra_click &= !this->bInBreak && !spinner_active;
             break_on_extra_click &= this->iCurrentHitObjectIndex > 0;
             if(break_on_extra_click) {
@@ -719,7 +719,7 @@ void SimulatedBeatmapInterface::update(f64 frame_time) {
     if(this->fHealth > 0.999 && this->live_score.isDead()) this->live_score.setDead(false);
 
     // update auto (after having updated the hitobjects)
-    if((ModMasks::eq(this->mods.flags, Replay::ModFlags::Autopilot))) this->updateAutoCursorPos();
+    if((ModMasks::eq(this->mods.flags, ModFlags::Autopilot))) this->updateAutoCursorPos();
 
     // spinner detection (used by osu!stable drain, and by HUD for not drawing the hiterrorbar)
     if(this->currentHitObject != nullptr) {
@@ -732,7 +732,7 @@ void SimulatedBeatmapInterface::update(f64 frame_time) {
     }
 
     // full alternate mod lenience
-    if(ModMasks::eq(this->mods.flags, Replay::ModFlags::FullAlternate)) {
+    if(ModMasks::eq(this->mods.flags, ModFlags::FullAlternate)) {
         if(this->bInBreak || this->bIsSpinnerActive || this->iCurrentHitObjectIndex < 1)
             this->iAllowAnyNextKeyForFullAlternateUntilHitObjectIndex = this->iCurrentHitObjectIndex + 1;
     }
@@ -741,10 +741,10 @@ void SimulatedBeatmapInterface::update(f64 frame_time) {
 vec2 SimulatedBeatmapInterface::pixels2OsuCoords(vec2 pixelCoords) const { return pixelCoords; }
 
 vec2 SimulatedBeatmapInterface::osuCoords2Pixels(vec2 coords) const {
-    if((ModMasks::eq(this->mods.flags, Replay::ModFlags::HardRock))) coords.y = GameRules::OSU_COORD_HEIGHT - coords.y;
+    if((ModMasks::eq(this->mods.flags, ModFlags::HardRock))) coords.y = GameRules::OSU_COORD_HEIGHT - coords.y;
 
     // wobble
-    if(ModMasks::eq(this->mods.flags, Replay::ModFlags::Wobble1)) {
+    if(ModMasks::eq(this->mods.flags, ModFlags::Wobble1)) {
         const f32 speedMultiplierCompensation = 1.0f / this->mods.speed;
         coords.x +=
             std::sin((this->iCurMusicPos / 1000.0f) * 5 * speedMultiplierCompensation * this->mods.wobble_frequency) *
@@ -755,7 +755,7 @@ vec2 SimulatedBeatmapInterface::osuCoords2Pixels(vec2 coords) const {
     }
 
     // wobble2
-    if(ModMasks::eq(this->mods.flags, Replay::ModFlags::Wobble2)) {
+    if(ModMasks::eq(this->mods.flags, ModFlags::Wobble2)) {
         const f32 speedMultiplierCompensation = 1.0f / this->mods.speed;
         vec2 centerDelta = coords - vec2(GameRules::OSU_COORD_WIDTH, GameRules::OSU_COORD_HEIGHT) / 2.f;
         coords.x +=
@@ -770,8 +770,7 @@ vec2 SimulatedBeatmapInterface::osuCoords2Pixels(vec2 coords) const {
 
     // if wobble, clamp coordinates
 
-    if(ModMasks::eq(this->mods.flags, Replay::ModFlags::Wobble1) ||
-       ModMasks::eq(this->mods.flags, Replay::ModFlags::Wobble2)) {
+    if(ModMasks::eq(this->mods.flags, ModFlags::Wobble1) || ModMasks::eq(this->mods.flags, ModFlags::Wobble2)) {
         coords.x = std::clamp<f32>(coords.x, 0.0f, GameRules::OSU_COORD_WIDTH);
         coords.y = std::clamp<f32>(coords.y, 0.0f, GameRules::OSU_COORD_HEIGHT);
     }
@@ -782,7 +781,7 @@ vec2 SimulatedBeatmapInterface::osuCoords2Pixels(vec2 coords) const {
 vec2 SimulatedBeatmapInterface::osuCoords2RawPixels(vec2 coords) const { return coords; }
 
 vec2 SimulatedBeatmapInterface::osuCoords2LegacyPixels(vec2 coords) const {
-    if((ModMasks::eq(this->mods.flags, Replay::ModFlags::HardRock))) coords.y = GameRules::OSU_COORD_HEIGHT - coords.y;
+    if((ModMasks::eq(this->mods.flags, ModFlags::HardRock))) coords.y = GameRules::OSU_COORD_HEIGHT - coords.y;
 
     // VR center
     coords.x -= GameRules::OSU_COORD_WIDTH / 2;
@@ -794,9 +793,8 @@ vec2 SimulatedBeatmapInterface::osuCoords2LegacyPixels(vec2 coords) const {
 vec2 SimulatedBeatmapInterface::getCursorPos() const { return this->interpolatedMousePos; }
 
 vec2 SimulatedBeatmapInterface::getFirstPersonCursorDelta() const {
-    return this->vPlayfieldCenter - ((ModMasks::eq(this->mods.flags, Replay::ModFlags::Autopilot))
-                                         ? this->vAutoCursorPos
-                                         : this->getCursorPos());
+    return this->vPlayfieldCenter -
+           ((ModMasks::eq(this->mods.flags, ModFlags::Autopilot)) ? this->vAutoCursorPos : this->getCursorPos());
 }
 
 void SimulatedBeatmapInterface::updateAutoCursorPos() {
@@ -816,7 +814,7 @@ void SimulatedBeatmapInterface::updateAutoCursorPos() {
     vec2 nextPos = this->vAutoCursorPos;
     bool haveCurPos = false;
 
-    if((ModMasks::eq(this->mods.flags, Replay::ModFlags::Autopilot))) {
+    if((ModMasks::eq(this->mods.flags, ModFlags::Autopilot))) {
         for(auto o : this->hitobjects) {
             // get previous object
             if(o->isFinished() ||
@@ -883,8 +881,7 @@ void SimulatedBeatmapInterface::updateHitobjectMetrics() {
 
     const f32 followcircle_size_multiplier = 2.4f;
     const f32 sliderFollowCircleDiameterMultiplier =
-        ((ModMasks::eq(this->mods.flags, Replay::ModFlags::Nightmare) ||
-          (ModMasks::eq(this->mods.flags, Replay::ModFlags::Jigsaw2)))
+        ((ModMasks::eq(this->mods.flags, ModFlags::Nightmare) || (ModMasks::eq(this->mods.flags, ModFlags::Jigsaw2)))
              ? (1.0f * (1.0f - this->mods.jigsaw_followcircle_radius_factor) +
                 this->mods.jigsaw_followcircle_radius_factor * followcircle_size_multiplier)
              : followcircle_size_multiplier);
@@ -1241,14 +1238,14 @@ void SimulatedBeatmapInterface::computeDrainRate() {
 }
 
 f32 SimulatedBeatmapInterface::getApproachTime_full() const {
-    return (ModMasks::eq(this->mods.flags, Replay::ModFlags::Mafham))
+    return (ModMasks::eq(this->mods.flags, ModFlags::Mafham))
                ? this->getLength() * 2
                : GameRules::mapDifficultyRange(this->getAR(), GameRules::getMinApproachTime(),
                                                GameRules::getMidApproachTime(), GameRules::getMaxApproachTime());
 }
 
 f32 SimulatedBeatmapInterface::getRawApproachTime_full() const {
-    return (ModMasks::eq(this->mods.flags, Replay::ModFlags::Mafham))
+    return (ModMasks::eq(this->mods.flags, ModFlags::Mafham))
                ? this->getLength() * 2
                : GameRules::mapDifficultyRange(this->getRawAR(), GameRules::getMinApproachTime(),
                                                GameRules::getMidApproachTime(), GameRules::getMaxApproachTime());

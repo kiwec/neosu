@@ -391,7 +391,7 @@ void HitObject::update(i32 curPos, f64 /*frame_time*/) {
             std::clamp<float>(1.0f - ((float)(fadeInEnd - curPos) / (float)(fadeInEnd - fadeInStart)), 0.0f, 1.0f);
         this->fAlphaWithoutHidden = this->fAlpha;
 
-        if(ModMasks::eq(mods.flags, Replay::ModFlags::Hidden)) {
+        if(ModMasks::eq(mods.flags, ModFlags::Hidden)) {
             // hidden hitobject body fadein
             const float fin_start_percent = cv::mod_hd_circle_fadein_start_percent.getFloat();
             const float fin_end_percent = cv::mod_hd_circle_fadein_end_percent.getFloat();
@@ -422,9 +422,8 @@ void HitObject::update(i32 curPos, f64 /*frame_time*/) {
             0.0f, 1.0f);
 
         // hittable dim, see https://github.com/ppy/osu/pull/20572
-        if(cv::hitobject_hittable_dim.getBool() &&
-           (!(ModMasks::eq(this->pi->getMods().flags, Replay::ModFlags::Mafham)) ||
-            !cv::mod_mafham_ignore_hittable_dim.getBool())) {
+        if(cv::hitobject_hittable_dim.getBool() && (!(ModMasks::eq(this->pi->getMods().flags, ModFlags::Mafham)) ||
+                                                    !cv::mod_mafham_ignore_hittable_dim.getBool())) {
             const i32 hittableDimFadeStart = this->click_time - (i32)GameRules::getHitWindowMiss();
 
             // yes, this means the un-dim animation cuts into the already clickable range
@@ -956,14 +955,14 @@ void Circle::update(i32 curPos, f64 frame_time) {
     const auto mods = this->pi->getMods();
     const i32 delta = curPos - this->click_time;
 
-    if(ModMasks::eq(mods.flags, Replay::ModFlags::Autoplay)) {
+    if(ModMasks::eq(mods.flags, ModFlags::Autoplay)) {
         if(curPos >= this->click_time) {
             this->onHit(LiveScore::HIT::HIT_300, 0);
         }
         return;
     }
 
-    if(ModMasks::eq(mods.flags, Replay::ModFlags::Relax)) {
+    if(ModMasks::eq(mods.flags, ModFlags::Relax)) {
         if(curPos >= this->click_time + (i32)cv::relax_offset.getInt() && !this->pi->isPaused() &&
            !this->pi->isContinueScheduled()) {
             const vec2 pos = this->pi->osuCoords2Pixels(this->vRawPos);
@@ -1643,8 +1642,7 @@ void Slider::update(i32 curPos, f64 frame_time) {
     this->fSlidePercent = 0.0f;
     if(curPos > this->click_time)
         this->fSlidePercent = std::clamp<float>(
-            std::clamp<i32>((curPos - (this->click_time)), 0, (i32)this->fSliderTime) / this->fSliderTime, 0.0f,
-            1.0f);
+            std::clamp<i32>((curPos - (this->click_time)), 0, (i32)this->fSliderTime) / this->fSliderTime, 0.0f, 1.0f);
 
     this->fActualSlidePercent = this->fSlidePercent;
 
@@ -1923,11 +1921,11 @@ void Slider::update(i32 curPos, f64 frame_time) {
                     // rewrite m_endResult as the whole slider result, then use it for the final onHit()
                     if(percent >= 0.999f && allow300)
                         this->endResult = LiveScore::HIT::HIT_300;
-                    else if(percent >= 0.5f && allow100 && !this->pi->getMods().has(Replay::ModFlags::Ming3012) &&
-                            !this->pi->getMods().has(Replay::ModFlags::No100s))
+                    else if(percent >= 0.5f && allow100 && !this->pi->getMods().has(ModFlags::Ming3012) &&
+                            !this->pi->getMods().has(ModFlags::No100s))
                         this->endResult = LiveScore::HIT::HIT_100;
-                    else if(percent > 0.0f && !this->pi->getMods().has(Replay::ModFlags::No100s) &&
-                            !this->pi->getMods().has(Replay::ModFlags::No50s))
+                    else if(percent > 0.0f && !this->pi->getMods().has(ModFlags::No100s) &&
+                            !this->pi->getMods().has(ModFlags::No50s))
                         this->endResult = LiveScore::HIT::HIT_50;
                     else
                         this->endResult = LiveScore::HIT::HIT_MISS;

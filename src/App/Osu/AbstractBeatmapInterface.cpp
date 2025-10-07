@@ -25,18 +25,16 @@ LiveScore::HIT AbstractBeatmapInterface::getHitResult(i32 delta) {
 
     // mod_halfwindow only allows early hits
     // mod_halfwindow_allow_300s also allows "late" perfect hits
-    if(this->getMods().has(Replay::ModFlags::HalfWindow) && delta > 0) {
-        if(fDelta > window300 || !this->getMods().has(Replay::ModFlags::HalfWindowAllow300s)) {
+    if(this->getMods().has(ModFlags::HalfWindow) && delta > 0) {
+        if(fDelta > window300 || !this->getMods().has(ModFlags::HalfWindowAllow300s)) {
             return LiveScore::HIT::HIT_MISS;
         }
     }
 
     if(fDelta < window300) return LiveScore::HIT::HIT_300;
-    if(fDelta < window100 &&
-       !(this->getMods().has(Replay::ModFlags::No100s) || this->getMods().has(Replay::ModFlags::Ming3012)))
+    if(fDelta < window100 && !(this->getMods().has(ModFlags::No100s) || this->getMods().has(ModFlags::Ming3012)))
         return LiveScore::HIT::HIT_100;
-    if(fDelta < window50 &&
-       !(this->getMods().has(Replay::ModFlags::No100s) || this->getMods().has(Replay::ModFlags::No50s)))
+    if(fDelta < window50 && !(this->getMods().has(ModFlags::No100s) || this->getMods().has(ModFlags::No50s)))
         return LiveScore::HIT::HIT_50;
     return LiveScore::HIT::HIT_MISS;
 }

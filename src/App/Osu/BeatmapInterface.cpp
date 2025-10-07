@@ -531,7 +531,7 @@ bool BeatmapInterface::spectate() {
     osu->getSongBrowser()->setVisible(false);
 
     SAFE_DELETE(this->sim);
-    score.mods.flags |= Replay::ModFlags::NoFail;
+    score.mods.flags |= ModFlags::NoFail;
     this->sim = new SimulatedBeatmapInterface(this->beatmap, score.mods);
     this->sim->spectated_replay.clear();
 
@@ -3263,8 +3263,8 @@ const pp_info &BeatmapInterface::getWholeMapPPInfo() {
             .num300s = map->getNumObjects(),
             .num100s = 0,
             .num50s = 0,
-            .rx = ModMasks::eq(mods.flags, Replay::ModFlags::Relax),
-            .td = ModMasks::eq(mods.flags, Replay::ModFlags::TouchDevice),
+            .rx = ModMasks::eq(mods.flags, ModFlags::Relax),
+            .td = ModMasks::eq(mods.flags, ModFlags::TouchDevice),
         };
     }
 
