@@ -407,7 +407,7 @@ void BanchoState::handle_packet(Packet &packet) {
         }
 
         case ROOM_JOIN_FAIL: {
-            osu->getNotificationOverlay()->addToast("Failed to join room.", ERROR_TOAST);
+            osu->getNotificationOverlay()->addToast(u"Failed to join room.", ERROR_TOAST);
             osu->getLobby()->on_room_join_failed();
             break;
         }
@@ -525,7 +525,7 @@ void BanchoState::handle_packet(Packet &packet) {
         case PROTOCOL_VERSION: {
             int protocol_version = packet.read<i32>();
             if(protocol_version != 19) {
-                osu->getNotificationOverlay()->addToast("This server may use an unsupported protocol version.",
+                osu->getNotificationOverlay()->addToast(u"This server may use an unsupported protocol version.",
                                                         ERROR_TOAST);
             }
             break;
@@ -651,7 +651,7 @@ void BanchoState::handle_packet(Packet &packet) {
 
         case VERSION_UPDATE_FORCED: {
             BanchoState::disconnect();
-            osu->getNotificationOverlay()->addToast("This server requires a newer client version.", ERROR_TOAST);
+            osu->getNotificationOverlay()->addToast(u"This server requires a newer client version.", ERROR_TOAST);
             break;
         }
 
@@ -660,7 +660,7 @@ void BanchoState::handle_packet(Packet &packet) {
         }
 
         case ACCOUNT_RESTRICTED: {
-            osu->getNotificationOverlay()->addToast("Account restricted.", ERROR_TOAST);
+            osu->getNotificationOverlay()->addToast(u"Account restricted.", ERROR_TOAST);
             BanchoState::disconnect();
             break;
         }

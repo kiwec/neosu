@@ -453,7 +453,7 @@ bool BeatmapInterface::play() {
         }
 
         if(BanchoState::can_submit_scores() && !cvars->areAllCvarsSubmittable()) {
-            osu->getNotificationOverlay()->addToast("Score will not submit with current mods/settings", ERROR_TOAST);
+            osu->getNotificationOverlay()->addToast(u"Score will not submit with current mods/settings", ERROR_TOAST);
         }
 
         return true;
@@ -1031,7 +1031,7 @@ void BeatmapInterface::seekMS(u32 ms) {
 
     if(!this->is_watching && !BanchoState::spectating) {  // score submission already disabled when watching replay
         if(was_submittable && BanchoState::can_submit_scores()) {
-            osu->getNotificationOverlay()->addToast("Score will not submit due to seeking", ERROR_TOAST);
+            osu->getNotificationOverlay()->addToast(u"Score will not submit due to seeking", ERROR_TOAST);
         }
     }
 }
@@ -2393,7 +2393,7 @@ void BeatmapInterface::update2() {
 
     // handle music loading fail
     if(!this->music->isReady()) {
-        osu->getNotificationOverlay()->addToast("Couldn't load music file :(", ERROR_TOAST);
+        osu->getNotificationOverlay()->addToast(u"Couldn't load music file :(", ERROR_TOAST);
         this->stop(true);
         return;
     }
@@ -3630,7 +3630,7 @@ FinishedScore BeatmapInterface::saveAndSubmitScore(bool quit) {
         if(score.passed || cv::save_failed_scores.getBool()) {
             int scoreIndex = db->addScore(score);
             if(scoreIndex == -1) {
-                osu->getNotificationOverlay()->addToast("Failed saving score!", ERROR_TOAST);
+                osu->getNotificationOverlay()->addToast(u"Failed saving score!", ERROR_TOAST);
             }
         }
     }

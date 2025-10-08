@@ -392,7 +392,7 @@ void BanchoState::reconnect() {
     };
 
     if(std::ranges::contains(server_blacklist, BanchoState::endpoint)) {
-        osu->getNotificationOverlay()->addToast("This server does not allow neosu clients.", ERROR_TOAST);
+        osu->getNotificationOverlay()->addToast(u"This server does not allow neosu clients.", ERROR_TOAST);
         return;
     }
 

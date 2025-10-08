@@ -694,7 +694,7 @@ void RoomScreen::on_match_started(Room room) {
 
         soundEngine->play(osu->getSkin()->getMatchStartSound());
     } else {
-        osu->getNotificationOverlay()->addToast("Failed to load map", ERROR_TOAST);
+        osu->getNotificationOverlay()->addToast(u"Failed to load map", ERROR_TOAST);
         this->ragequit();  // map failed to load
     }
 }

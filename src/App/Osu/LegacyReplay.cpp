@@ -291,14 +291,14 @@ void load_and_watch(FinishedScore score) {
 
     // We tried loading from memory, we tried loading from file, we tried loading from server... RIP
     if(score.replay.empty()) {
-        osu->getNotificationOverlay()->addToast("Failed to load replay", ERROR_TOAST);
+        osu->getNotificationOverlay()->addToast(u"Failed to load replay", ERROR_TOAST);
         return;
     }
 
     auto map = db->getBeatmapDifficulty(score.beatmap_hash);
     if(map == nullptr) {
         // XXX: Auto-download beatmap
-        osu->getNotificationOverlay()->addToast("Missing beatmap for this replay", ERROR_TOAST);
+        osu->getNotificationOverlay()->addToast(u"Missing beatmap for this replay", ERROR_TOAST);
     } else {
         osu->getSongBrowser()->onDifficultySelected(map, false);
         osu->getSongBrowser()->selectSelectedBeatmapSongButton();

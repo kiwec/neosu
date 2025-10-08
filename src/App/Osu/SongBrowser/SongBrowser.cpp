@@ -906,7 +906,7 @@ bool SongBrowser::selectBeatmapset(i32 set_id) {
     }
 
     if(best_diff == nullptr) {
-        osu->getNotificationOverlay()->addToast("Beatmapset has no difficulties", ERROR_TOAST);
+        osu->getNotificationOverlay()->addToast(u"Beatmapset has no difficulties", ERROR_TOAST);
         return false;
     } else {
         this->onSelectionChange(this->hashToSongButton[best_diff->getMD5Hash()], false);
@@ -3074,10 +3074,10 @@ void SongBrowser::rebuildAfterGroupOrSortChange(GROUP group, SORTING_COMPARATOR 
 void SongBrowser::onSelectionMode() {
     if(cv::mod_fposu.getBool()) {
         cv::mod_fposu.setValue(false);
-        osu->getNotificationOverlay()->addToast("Disabled FPoSu mode.", INFO_TOAST);
+        osu->getNotificationOverlay()->addToast(u"Disabled FPoSu mode.", INFO_TOAST);
     } else {
         cv::mod_fposu.setValue(true);
-        osu->getNotificationOverlay()->addToast("Enabled FPoSu mode.", SUCCESS_TOAST);
+        osu->getNotificationOverlay()->addToast(u"Enabled FPoSu mode.", SUCCESS_TOAST);
     }
 }
 

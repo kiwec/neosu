@@ -2,12 +2,15 @@
 #include "AsyncIOHandler.h"
 #include "ConVar.h"
 #include "Logging.h"
+#include "Timing.h"
+#include "File.h"
 
 #include <SDL3/SDL_asyncio.h>
 #include <SDL3/SDL_error.h>
 
 #include <cstring>
 #include <string>
+#include <atomic>
 #include <unordered_set>
 
 class AsyncIOHandler::InternalIOContext final {
@@ -19,15 +22,31 @@ class AsyncIOHandler::InternalIOContext final {
         }
     }
 
-    ~InternalIOContext() {
+    ~InternalIOContext() { cleanup(); }
+
+    // convoluted mechanism needed for handling nested callbacks which might refer to the global "io"
+    void cleanup() {
         if(m_queue) {
-            SDL_AsyncIOOutcome outcome;
-            while(m_activeFiles.size() > 0 && SDL_WaitAsyncIOResult(m_queue, &outcome, 5000)) {
-                // drain the queue and free our contexts
-                drainIoResults(outcome);
+            const auto startTime = Timing::getTicksMS();
+            bool sdlIOResult = false;
+
+            while(((Timing::getTicksMS() - startTime) < 10000) &&
+                  (sdlIOResult == true || m_activeCallbacks.load(std::memory_order_acquire) > 0 ||
+                   m_activeFiles.size() > 0)) {
+                SDL_AsyncIOOutcome outcome{};
+                if((sdlIOResult = SDL_WaitAsyncIOResult(m_queue, &outcome, 50))) {
+                    // take care of any pending async operations (callbacks etc.)
+                    drainIoResults(outcome);
+                }
             }
+
+            if(cv::debug_file.getBool())
+                debugLog("destroying async I/O queue, sdlIOResult: {} activeFiles.size(): {} activeCallbacks: {}",
+                         sdlIOResult, m_activeFiles.size(), m_activeCallbacks.load());
+
             SDL_DestroyAsyncIOQueue(m_queue);
         }
+        m_queue = nullptr;
     }
 
     struct OperationContext {
@@ -78,6 +97,11 @@ class AsyncIOHandler::InternalIOContext final {
         }
     }
 
+#define PERFORM_CALLBACK(cb__)      \
+    m_activeCallbacks.fetch_add(1); \
+    cb__;                           \
+    m_activeCallbacks.fetch_sub(1);
+
     bool read(std::string_view path, ReadCallback callback) {
         assert(!!m_queue);
 
@@ -86,16 +110,22 @@ class AsyncIOHandler::InternalIOContext final {
             // TODO: multiple actions on the same file at the same time
             if(cv::debug_file.getBool()) debugLog("WARNING: cannot read from {}, file is in use", path);
             if(callback) {
-                callback({});
+                PERFORM_CALLBACK(callback({}));
             }
             return false;
         }
 
         SDL_AsyncIO* handle = SDL_AsyncIOFromFile(pathStr.c_str(), "r");
         if(!handle) {
-            debugLog("ERROR: failed to open {} for reading: {}", pathStr, SDL_GetError());
+            // if it doesn't exist, it's not that big of a deal, an error is expected
+            if(File::exists(pathStr) == File::FILETYPE::FILE) {
+                debugLog("ERROR: failed to open {} for reading: {}", pathStr, SDL_GetError());
+            } else if(cv::debug_file.getBool()) {
+                debugLog("WARNING: failed to open {} for reading: {}", pathStr, SDL_GetError());
+            }
+
             if(callback) {
-                callback({});
+                PERFORM_CALLBACK(callback({}));
             }
             return false;
         }
@@ -109,7 +139,7 @@ class AsyncIOHandler::InternalIOContext final {
                 debugLog("ERROR: failed to open {} for reading, over 2GB in size!", pathStr);
             }
             if(callback) {
-                callback({});
+                PERFORM_CALLBACK(callback({}));
             }
 
             // close it but don't add a context/check for errors
@@ -126,7 +156,7 @@ class AsyncIOHandler::InternalIOContext final {
         if(!SDL_ReadAsyncIO(handle, context->operationBuffer.data(), 0, readSize, m_queue, context)) {
             debugLog("ERROR: SDL_ReadAsyncIO failed for {}: {}", pathStr, SDL_GetError());
             if(context->readCallback) {
-                context->readCallback({});
+                PERFORM_CALLBACK(context->readCallback({}));
             }
             SDL_CloseAsyncIO(handle, false, m_queue, nullptr);
 
@@ -147,7 +177,7 @@ class AsyncIOHandler::InternalIOContext final {
             // TODO: multiple actions on the same file at the same time
             if(cv::debug_file.getBool()) debugLog("WARNING: cannot write to {}, file is in use", path);
             if(callback) {
-                callback(false);
+                PERFORM_CALLBACK(callback(false));
             }
             return false;
         }
@@ -156,7 +186,7 @@ class AsyncIOHandler::InternalIOContext final {
         if(!handle) {
             debugLog("ERROR: failed to open {} for writing: {}", pathStr, SDL_GetError());
             if(callback) {
-                callback(false);
+                PERFORM_CALLBACK(callback(false));
             }
             return false;
         }
@@ -170,7 +200,7 @@ class AsyncIOHandler::InternalIOContext final {
                              context)) {
             debugLog("ERROR: SDL_WriteAsyncIO failed for {}: {}", pathStr, SDL_GetError());
             if(context->writeCallback) {
-                context->writeCallback(false);
+                PERFORM_CALLBACK(context->writeCallback(false));
             }
             SDL_CloseAsyncIO(handle, false, m_queue, nullptr);
 
@@ -225,10 +255,10 @@ class AsyncIOHandler::InternalIOContext final {
             // we will never be able to free the context in the close complete callback if this somehow happens
             // so run the callback now
             debugLog("ERROR: failed to close {}: {}", closeContext->path, SDL_GetError());
-            if(closeContext->readCallback) {
-                closeContext->readCallback(closeContext->operationBuffer);
-            }
             m_activeFiles.erase(closeContext->path);
+            if(closeContext->readCallback) {
+                PERFORM_CALLBACK(closeContext->readCallback(closeContext->operationBuffer));
+            }
             delete closeContext;
         }
 
@@ -261,10 +291,11 @@ class AsyncIOHandler::InternalIOContext final {
         // flush to make sure data reaches disk
         if(!SDL_CloseAsyncIO(context->handle, true, m_queue, closeContext)) {
             debugLog("ERROR: failed to close {}: {}", closeContext->path, SDL_GetError());
-            if(closeContext->writeCallback) {
-                closeContext->writeCallback(status == OperationContext::OP_COMPLETE);  // probably not fatal?
-            }
             m_activeFiles.erase(closeContext->path);
+            if(closeContext->writeCallback) {
+                PERFORM_CALLBACK(
+                    closeContext->writeCallback(status == OperationContext::OP_COMPLETE));  // probably not fatal?
+            }
             delete closeContext;
         }
 
@@ -276,28 +307,38 @@ class AsyncIOHandler::InternalIOContext final {
         assert(!!m_queue);
         if(!context) return;  // nothing to do
 
+        m_activeFiles.erase(context->path);
+
         if(outcome.result != SDL_ASYNCIO_COMPLETE) {
             if(cv::debug_file.getBool()) debugLog("WARNING: close failed for {}: {}", context->path, SDL_GetError());
         }
 
         if(context->writeCallback) {
-            context->writeCallback(context->status == OperationContext::OP_COMPLETE);
+            PERFORM_CALLBACK(context->writeCallback(context->status == OperationContext::OP_COMPLETE));
         } else if(context->readCallback) {
             // we don't really propagate errors here besides the log in
             // handleReadComplete and an empty/partially filled buffer here...
-            context->readCallback(context->operationBuffer);
+            PERFORM_CALLBACK(context->readCallback(context->operationBuffer));
         }
 
-        m_activeFiles.erase(context->path);
         delete context;
     }
 
+#undef PERFORM_CALLBACK
+
     SDL_AsyncIOQueue* m_queue{nullptr};
     std::unordered_set<std::string> m_activeFiles;
+
+    std::atomic<size_t> m_activeCallbacks{0};
 };
 
 AsyncIOHandler::AsyncIOHandler() : m_io(std::make_unique<InternalIOContext>()) {}
-AsyncIOHandler::~AsyncIOHandler() = default;
+AsyncIOHandler::~AsyncIOHandler() { cleanup(); }
+
+void AsyncIOHandler::cleanup() {
+    if(m_io) m_io->cleanup();
+    m_io.reset();
+}
 
 // if this doesn't succeed (checked once on startup), the engine immediately exits
 bool AsyncIOHandler::succeeded() const { return !!m_io && m_io->m_queue != nullptr; }

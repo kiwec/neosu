@@ -46,9 +46,8 @@ ToastElement::ToastElement(const UString &text, Color borderColor_arg, ToastElem
     this->borderColor = borderColor_arg;
     this->creationTime = engine->getTime();
 
-    const auto font = resourceManager->getFont("FONT_DEFAULT");
-    this->lines = font->wrap(text, TOAST_WIDTH - TOAST_INNER_X_MARGIN * 2.0);
-    this->setSize(TOAST_WIDTH, (font->getHeight() * 1.5 * this->lines.size()) + (TOAST_INNER_Y_MARGIN * 2.0));
+    this->lines = this->font->wrap(text, TOAST_WIDTH - TOAST_INNER_X_MARGIN * 2.0);
+    this->setSize(TOAST_WIDTH, (this->font->getHeight() * 1.5 * this->lines.size()) + (TOAST_INNER_Y_MARGIN * 2.0));
 }
 
 void ToastElement::onClicked(bool left, bool right) {
@@ -59,8 +58,6 @@ void ToastElement::onClicked(bool left, bool right) {
 }
 
 void ToastElement::draw() {
-    const auto font = resourceManager->getFont("FONT_DEFAULT");
-
     f32 alpha = 0.9;
     alpha *= std::max(0.0, (this->creationTime + 9.5) - engine->getTime());
 
@@ -77,12 +74,12 @@ void ToastElement::draw() {
     // text
     f64 y = this->vPos.y;
     for(const auto &line : this->lines) {
-        y += (font->getHeight() * 1.5);
+        y += (this->font->getHeight() * 1.5);
         g->setColor(Color(0xffffffff).setA(alpha));
 
         g->pushTransform();
         g->translate(this->vPos.x + TOAST_INNER_X_MARGIN, y);
-        g->drawString(font, line);
+        g->drawString(this->font, line);
         g->popTransform();
     }
 }

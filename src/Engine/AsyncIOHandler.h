@@ -16,12 +16,6 @@ class AsyncIOHandler final {
     AsyncIOHandler();
     ~AsyncIOHandler();
 
-    // returns true if initialization succeeded
-    [[nodiscard]] bool succeeded() const;
-
-    // must be called regularly (e.g., once per frame) to process completed I/O tasks
-    void update();
-
     // read entire file asynchronously
     // callback receives data vector (empty on failure)
     // returns false if file already has a pending operation
@@ -35,6 +29,18 @@ class AsyncIOHandler final {
     bool write(std::string_view path, std::vector<u8> data, WriteCallback callback = nullptr);
     bool write(std::string_view path, std::string data, WriteCallback callback = nullptr);
     bool write(std::string_view path, const u8 *data, size_t amount, WriteCallback callback = nullptr);
+
+   private:
+    friend class Engine;  // only to be used by engine
+
+    // returns true if initialization succeeded
+    [[nodiscard]] bool succeeded() const;
+
+    // clean up all i/o before shutdown
+    void cleanup();
+
+    // must be called regularly (e.g., once per frame) to process completed I/O tasks
+    void update();
 
    private:
     class InternalIOContext;

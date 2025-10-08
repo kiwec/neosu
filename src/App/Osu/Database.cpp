@@ -1699,7 +1699,7 @@ void Database::loadScores(std::string_view dbPath) {
     u32 nb_neosu_scores = 0;
     u8 magic_bytes[6] = {0};
     if(db.read_bytes(magic_bytes, 5) != 5 || memcmp(magic_bytes, "NEOSC", 5) != 0) {
-        osu->getNotificationOverlay()->addToast("Failed to load neosu_scores.db!", ERROR_TOAST);
+        osu->getNotificationOverlay()->addToast(u"Failed to load neosu_scores.db!", ERROR_TOAST);
         this->bytes_processed += db.total_size;
         return;
     }

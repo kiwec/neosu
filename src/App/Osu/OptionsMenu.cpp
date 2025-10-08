@@ -5,6 +5,8 @@
 #include <fstream>
 #include <utility>
 
+#include "AsyncIOHandler.h"
+#include "ByteBufferedFile.h"
 #include "SString.h"
 #include "crypto.h"
 #include "AnimationHandler.h"
@@ -54,6 +56,8 @@
 #include "BassManager.h"
 #include "BassSoundEngine.h"  // for ASIO-specific stuff
 #endif
+
+#include "fmt/chrono.h"
 
 class OptionsMenuSkinPreviewElement final : public CBaseUIElement {
    public:
@@ -2493,7 +2497,7 @@ void OptionsMenu::onSkinSelect() {
             });
         }
     } else {
-        osu->getNotificationOverlay()->addToast("Error: Couldn't find any skins", ERROR_TOAST);
+        osu->getNotificationOverlay()->addToast(u"Error: Couldn't find any skins", ERROR_TOAST);
         this->options->scrollToTop();
         this->fOsuFolderTextboxInvalidAnim = engine->getTime() + 3.0f;
     }
@@ -3726,56 +3730,75 @@ void OptionsMenu::save() {
 
     debugLog("Osu: Saving user config file ...");
 
-    UString userConfigFile = MCENGINE_CFG_PATH "/osu.cfg";
+    static constexpr const std::string_view cfg_name = NEOSU_CFG_PATH "/osu.cfg"sv;
+    static AsyncIOHandler::WriteCallback wr_callback = [func = __FUNCTION__](bool success) -> void {
+        if(!success) {
+            if(osu) {
+                osu->getNotificationOverlay()->addToast(u"Failed to save osu.cfg", ERROR_TOAST);
+            } else {
+                debugLogLambda("Failed to save osu.cfg");
+            }
+        } else {
+            debugLogLambda("Successfully wrote osu.cfg");
+        }
+    };
 
-    std::vector<UString> user_lines;
-    {
-        File in(userConfigFile.toUtf8());
-        while(in.canRead()) {
-            UString line = in.readLine().c_str();
-            if(line == UString("")) continue;
-            if(line.startsWith("#")) {
-                user_lines.push_back(line);
+    static AsyncIOHandler::ReadCallback rd_callback = [func = __FUNCTION__](std::vector<u8> read_data) -> void {
+        std::vector<std::string> read_lines;
+        if(read_data.empty()) {
+            if(Environment::fileExists(cfg_name)) {
+                debugLogLambda("WARNING: read no data from previous osu.cfg!\n");
+                // back it up just in case
+                ByteBufferedFile::copy(cfg_name,
+                                       fmt::format("{}.{:%F}.bak", cfg_name, fmt::gmtime(std::time(nullptr))));
+            }
+        } else {
+            read_lines =
+                SString::split(std::string{reinterpret_cast<const char *>(read_data.data()), read_data.size()}, '\n');
+        }
+
+        std::string write_lines;
+        write_lines.reserve(read_lines.size());
+
+        for(auto &line : read_lines) {
+            if(line.empty()) continue;
+            if(line.ends_with('\r')) line.pop_back();
+            if(line.starts_with('#') || line.starts_with("//")) {
+                write_lines.append(line);
                 continue;
             }
 
             bool cvar_found = false;
-            auto parts = line.split(" ");
+            const auto parts = SString::split(line, ' ');
             for(auto convar : cvars->getConVarArray()) {
                 if(convar->isFlagSet(cv::NOSAVE)) continue;
-                if(UString{convar->getName()} == parts[0]) {
+                if(convar->getName() == parts[0]) {
                     cvar_found = true;
                     break;
                 }
             }
 
             if(!cvar_found) {
-                user_lines.push_back(line);
+                write_lines.append(line);
                 continue;
             }
         }
-    }
 
-    {
-        std::ofstream out(userConfigFile.toUtf8());
-        if(!out.good()) {
-            engine->showMessageError("Osu Error", "Couldn't write user config file!");
-            return;
+        if(!write_lines.empty()) {
+            write_lines.append("\n\n");
         }
-
-        for(const auto &line : user_lines) {
-            out << line.toUtf8() << "\n";
-        }
-        out << "\n";
 
         for(auto convar : cvars->getConVarArray()) {
             if(!convar->hasValue() || convar->isFlagSet(cv::NOSAVE)) continue;
             if(convar->getString() == convar->getDefaultString()) continue;
-            out << convar->getName() << " " << convar->getString() << "\n";
+            write_lines.append(fmt::format("{} {}\n", convar->getName(), convar->getString()));
         }
 
-        out.close();
-    }
+        io->write(cfg_name, std::move(write_lines), wr_callback);
+    };
+
+    // let the nested write callback handle any error message
+    io->read(cfg_name, rd_callback);
 }
 
 void OptionsMenu::openAndScrollToSkinSection() {
