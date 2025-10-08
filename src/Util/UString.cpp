@@ -386,7 +386,7 @@ bool UString::lessThanIgnoreCase(const UString &ustr) const {
 }
 
 // only to be used in very specific scenarios
-[[nodiscard]] std::wstring UString::to_wstring() const noexcept {
+std::wstring UString::to_wstring() const noexcept {
 #ifdef MCENGINE_PLATFORM_WINDOWS
     return std::wstring{reinterpret_cast<const wchar_t *>(this->sUnicode.data())};
 #else
@@ -447,6 +447,7 @@ void UString::updateUtf8(size_t startUtf16) {
     }
 }
 
+// this is only called from specific constructors, so assume that the parameters utf8 == this->sUtf8, char8Length == this->sUtf8.length()
 void UString::fromSupposedUtf8(const char *utf8, size_t char8Length) {
     if(!utf8 || !char8Length) {
         this->sUnicode.clear();

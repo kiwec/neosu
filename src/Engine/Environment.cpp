@@ -307,10 +307,6 @@ std::vector<std::string> Environment::getFoldersInFolder(std::string_view folder
     return enumerateDirectory(folderToEnumerate, SDL_PATHTYPE_DIRECTORY);
 }
 
-std::string Environment::getFileNameFromFilePath(std::string_view filepath) noexcept {
-    return getThingFromPathHelper(filepath, false);
-}
-
 std::string Environment::normalizeDirectory(std::string dirPath) noexcept {
     SString::trim_inplace(dirPath);
     if(dirPath.empty()) return dirPath;
@@ -347,6 +343,10 @@ bool Environment::isAbsolutePath(std::string_view filePath) noexcept {
     }
 
     return is_absolute_path;
+}
+
+std::string Environment::getFileNameFromFilePath(std::string_view filepath) noexcept {
+    return getThingFromPathHelper(filepath, false);
 }
 
 std::string Environment::getFolderFromFilePath(std::string_view filepath) noexcept {
@@ -1151,6 +1151,12 @@ std::string Environment::getThingFromPathHelper(std::string_view path, bool fold
 
 #ifdef MCENGINE_PLATFORM_WINDOWS  // the win32 api is just WAY faster for this
 
+namespace {  // static
+forceinline bool is_dot_or_dotdot(const wchar_t *filename, size_t len) {
+    return len && len <= 2 && (filename[0] == L'.' && (len > 1 ? filename[1] == L'.' : true));
+}
+}  // namespace
+
 std::vector<std::string> Environment::enumerateDirectory(std::string_view pathToEnum,
                                                          /* enum SDL_PathType */ unsigned int type) noexcept {
     // Since we want to avoid wide strings in the codebase as much as possible,
@@ -1160,43 +1166,34 @@ std::vector<std::string> Environment::enumerateDirectory(std::string_view pathTo
     // Keep in mind that windows can't handle the way too modern 1993 UTF-8, so
     // you have to use std::filesystem::u8path() or convert it back to a wstring
     // before using the windows API.
+    std::vector<std::string> utf8_entries;
 
-    const bool wantDirs = (type == SDL_PATHTYPE_DIRECTORY);
+    const bool want_dirs = (type == SDL_PATHTYPE_DIRECTORY);
 
-    std::string folder{pathToEnum};
+    UString folder{pathToEnum};
     folder.append("*.*");
-    WIN32_FIND_DATAW data;
-    std::wstring buffer;
-    std::vector<std::string> entries;
 
-    int size = MultiByteToWideChar(CP_UTF8, 0, folder.c_str(), folder.length(), NULL, 0);
-    std::wstring wentry(size, 0);
-    MultiByteToWideChar(CP_UTF8, 0, folder.c_str(), folder.length(), (LPWSTR)wentry.c_str(), wentry.length());
+    WIN32_FIND_DATAW data{};
+    HANDLE handle = FindFirstFileW(folder.wchar_str(), &data);
+    while(handle) {
+        const wchar_t *wide_filename = &data.cFileName[0];
+        const size_t length = std::wcslen(wide_filename);
+        if(length <= 0) break;
 
-    HANDLE handle = FindFirstFileW(wentry.c_str(), &data);
+        const bool add_entry = (!want_dirs || !is_dot_or_dotdot(wide_filename, length)) &&
+                               (want_dirs == !!(data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY));
 
-    while(true) {
-        std::wstring filename(data.cFileName);
-        if(filename == buffer) break;
-
-        buffer = filename;
-
-        if(filename.length() > 0 &&
-           (!wantDirs || (wantDirs && (filename.compare(L".") != 0 && filename.compare(L"..") != 0)))) {
-            if(!!(data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == wantDirs) {
-                int size = WideCharToMultiByte(CP_UTF8, 0, filename.c_str(), filename.length(), NULL, 0, NULL, NULL);
-                std::string utf8filename(size, 0);
-                WideCharToMultiByte(CP_UTF8, 0, filename.c_str(), size, (LPSTR)utf8filename.c_str(), size, NULL, NULL);
-                entries.push_back(utf8filename);
-            }
+        if(add_entry) {
+            UString uFilename{wide_filename, static_cast<int>(length)};
+            utf8_entries.emplace_back(uFilename.toUtf8(), static_cast<size_t>(uFilename.lengthUtf8()));
         }
 
-        FindNextFileW(handle, &data);
+        if(!FindNextFileW(handle, &data)) break;
     }
 
     FindClose(handle);
 
-    return entries;
+    return utf8_entries;
 }
 
 #else
