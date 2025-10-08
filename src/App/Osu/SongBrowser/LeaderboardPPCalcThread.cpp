@@ -62,8 +62,9 @@ static void run_thread() {
         cond.wait(lock, [] { return !work.empty() || dead.load(); });
         if(dead.load()) return;
 
-        for(auto [rqt, highprio] : work) {
+        while(!work.empty()) {
             if(dead.load()) return;
+            auto [rqt, highprio] = work[0];
             if(!highprio && osu->shouldPauseBGThreads()) {
                 work_mtx.unlock();
                 Timing::sleepMS(100);
