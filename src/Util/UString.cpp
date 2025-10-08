@@ -1,8 +1,10 @@
 // Copyright (c) 2009, 2D Boy & PG & 2025, WH, All rights reserved.
 #include "UString.h"
+
 #include "simdutf.h"
 
 #include <algorithm>
+#include <cassert>
 #include <cstdio>
 #include <cstring>
 #include <cwctype>
@@ -45,7 +47,7 @@ UString::UString(const wchar_t *str, int length) {
 
 UString::UString(const char *utf8) {
     if(!utf8) return;
-    this->sUtf8 = utf8;
+    this->sUtf8.assign(utf8, std::strlen(utf8));
     fromSupposedUtf8(this->sUtf8.data(), this->sUtf8.size());
 }
 
@@ -452,43 +454,59 @@ void UString::fromSupposedUtf8(const char *utf8, size_t char8Length) {
     }
 
     // detect encoding with BOM support
-    simdutf::encoding_type detected = simdutf::autodetect_encoding(utf8, char8Length);
+    size_t bomPrefixBytes = 0;
 
-    size_t utf16Length = 0;
+    // check up to 4 bytes, since a UTF-32 BOM is 4 bytes
+    simdutf::encoding_type detected = simdutf::BOM::check_bom(utf8, std::min<size_t>(4, char8Length));
+
+    if(detected != simdutf::encoding_type::unspecified) {
+        // remove BOM from conversion
+        bomPrefixBytes = simdutf::BOM::bom_byte_size(detected);
+        // sanity
+        assert(bomPrefixBytes <= char8Length);
+    } else {
+        // if there was no BOM, autodetect encoding
+        // only check the beginning of the string, don't waste time checking the entire thing
+        // 16 bytes to give a better chance to properly detect with 4 characters of possible UTF-32
+        detected = simdutf::autodetect_encoding(utf8, std::min<size_t>(16, char8Length));
+    }
 
     switch(detected) {
         case simdutf::encoding_type::unspecified:
-            // no BOM detected, fallthrough to UTF8
-        case simdutf::encoding_type::UTF8:
-            // UTF-8 BOM
-            utf16Length = simdutf::utf16_length_from_utf8(utf8, char8Length);
+            // fallthrough, assume UTF-8
+        case simdutf::encoding_type::UTF8: {
+            const char *src = &(utf8[bomPrefixBytes]);
+            const size_t srcLength = char8Length - bomPrefixBytes;
+            const size_t utf16Length = simdutf::utf16_length_from_utf8(src, srcLength);
             this->sUnicode.resize_and_overwrite(utf16Length, [&](char16_t *data, size_t /*size*/) -> size_t {
-                return simdutf::convert_utf8_to_utf16le(utf8, char8Length, data);
+                return simdutf::convert_utf8_to_utf16le(src, srcLength, data);
             });
             break;
+        }
 
         case simdutf::encoding_type::UTF16_LE: {
-            // UTF-16LE BOM
-            const auto *src = reinterpret_cast<const char16_t *>(utf8);
-            const size_t srcLength = char8Length / 2;
+            // UTF-16LE
+            const auto *src = reinterpret_cast<const char16_t *>(&(utf8[bomPrefixBytes]));
+            const size_t srcLength = (char8Length - bomPrefixBytes) / 2;
             this->sUnicode.assign(src, srcLength);
             break;
         }
 
         case simdutf::encoding_type::UTF16_BE: {
-            // UTF-16BE BOM
-            const auto *src = reinterpret_cast<const char16_t *>(utf8);
-            const size_t srcLength = char8Length / 2;
+            // UTF-16BE
+            const auto *src = reinterpret_cast<const char16_t *>(&(utf8[bomPrefixBytes]));
+            const size_t srcLength = (char8Length - bomPrefixBytes) / 2;
             this->sUnicode.resize(srcLength);
+            // swap to UTF16_LE internal representation
             simdutf::change_endianness_utf16(src, srcLength, this->sUnicode.data());
             break;
         }
 
         case simdutf::encoding_type::UTF32_LE: {
-            // UTF-32LE BOM
-            const auto *src = reinterpret_cast<const char32_t *>(utf8);
-            const size_t srcLength = char8Length / 4;
-            utf16Length = simdutf::utf16_length_from_utf32(src, srcLength);
+            // UTF-32LE
+            const auto *src = reinterpret_cast<const char32_t *>(&(utf8[bomPrefixBytes]));
+            const size_t srcLength = (char8Length - bomPrefixBytes) / 4;
+            const size_t utf16Length = simdutf::utf16_length_from_utf32(src, srcLength);
             this->sUnicode.resize_and_overwrite(utf16Length, [&](char16_t *data, size_t /*size*/) -> size_t {
                 return simdutf::convert_utf32_to_utf16le(src, srcLength, data);
             });
@@ -496,10 +514,10 @@ void UString::fromSupposedUtf8(const char *utf8, size_t char8Length) {
         }
 
         case simdutf::encoding_type::UTF32_BE: {
-            // UTF-32BE BOM
-            const auto *src = reinterpret_cast<const char32_t *>(utf8);
-            const size_t srcLength = char8Length / 4;
-            utf16Length = simdutf::utf16_length_from_utf32(src, srcLength);
+            // UTF-32BE
+            const auto *src = reinterpret_cast<const char32_t *>(&(utf8[bomPrefixBytes]));
+            const size_t srcLength = (char8Length - bomPrefixBytes) / 4;
+            const size_t utf16Length = simdutf::utf16_length_from_utf32(src, srcLength);
             this->sUnicode.resize_and_overwrite(utf16Length, [&](char16_t *data, size_t /*size*/) -> size_t {
                 return simdutf::convert_utf32_to_utf16be(src, srcLength, data);
             });
@@ -515,5 +533,19 @@ void UString::fromSupposedUtf8(const char *utf8, size_t char8Length) {
             */
             std::unreachable();
             break;
+    }
+
+    const bool wasAlreadyUTF8 =
+        detected == simdutf::encoding_type::UTF8 || detected == simdutf::encoding_type::unspecified;
+
+    // re-convert our malformed (not UTF-8) representation to proper UTF-8
+    if(!wasAlreadyUTF8 || bomPrefixBytes > 0) {
+        // fast-path, just strip the BOM prefix if it was already UTF-8
+        if(wasAlreadyUTF8) {
+            this->sUtf8.erase(0, bomPrefixBytes);
+        } else {
+            // otherwise fully re-convert from our new unicode representation
+            updateUtf8();
+        }
     }
 }

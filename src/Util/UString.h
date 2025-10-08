@@ -271,8 +271,11 @@ class UString {
     friend struct std::hash<UString>;
 
    private:
+    // constructor helpers
     void fromUtf32(const char32_t *utf32, size_t length);
     void fromSupposedUtf8(const char *utf8, size_t length);
+
+    // for updating utf8 representation when unicode representation changes
     void updateUtf8(size_t startUtf16 = 0);
 
     std::u16string sUnicode;
