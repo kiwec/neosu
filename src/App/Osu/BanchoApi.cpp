@@ -76,9 +76,11 @@ static void handle_api_response(Packet &packet) {
 }
 
 void send_request(const Request &request) {
-    if(BanchoState::get_uid() <= 0) {
+    if(!BanchoState::is_online()) {
         debugLog("Cannot send API request of type {:d} since we are not logged in.",
                  static_cast<unsigned int>(request.type));
+        // need to free this here, since we never send the http request
+        free(request.extra);
         return;
     }
 
