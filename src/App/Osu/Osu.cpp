@@ -292,7 +292,7 @@ Osu::Osu() {
     this->tooltipOverlay = std::make_unique<TooltipOverlay>();
     this->optionsMenu = std::make_unique<OptionsMenu>();
     this->mainMenu = std::make_unique<MainMenu>();  // has to be after options menu
-    this->backgroundImageHandler = std::make_unique<BackgroundImageHandler>();
+    this->backgroundImageHandler = std::make_unique<BGImageHandler>();
     this->modSelector = std::make_unique<ModSelector>();
     this->rankingScreen = std::make_unique<RankingScreen>();
     this->userStats = std::make_unique<UserStatsScreen>();

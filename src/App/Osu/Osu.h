@@ -27,7 +27,7 @@ class PauseMenu;
 class OptionsMenu;
 class SongBrowser;
 class SpectatorScreen;
-class BackgroundImageHandler;
+class BGImageHandler;
 class RankingScreen;
 class UserStatsScreen;
 class UpdateHandler;
@@ -112,7 +112,7 @@ class Osu final : public MouseListener, public KeyboardListener {
     [[nodiscard]] inline const std::unique_ptr<SpectatorScreen> &getSpectatorScreen() const {
         return this->spectatorScreen;
     }
-    [[nodiscard]] inline const std::unique_ptr<BackgroundImageHandler> &getBackgroundImageHandler() const {
+    [[nodiscard]] inline const std::unique_ptr<BGImageHandler> &getBackgroundImageHandler() const {
         return this->backgroundImageHandler;
     }
     [[nodiscard]] inline const std::unique_ptr<HUD> &getHUD() const { return this->hud; }
@@ -248,7 +248,7 @@ class Osu final : public MouseListener, public KeyboardListener {
     std::unique_ptr<UpdateHandler> updateHandler{nullptr};
     std::unique_ptr<AvatarManager> avatarManager{nullptr};
     std::unique_ptr<UserCard> userButton{nullptr};
-    std::unique_ptr<BackgroundImageHandler> backgroundImageHandler{nullptr};
+    std::unique_ptr<BGImageHandler> backgroundImageHandler{nullptr};
     std::unique_ptr<Skin> skin{nullptr};
     std::unique_ptr<BeatmapInterface> map_iface{nullptr};
     std::unique_ptr<LiveScore> score{nullptr};

@@ -38,18 +38,22 @@ class File {
         return this->bReady && this->ofstream && this->ofstream->good() && this->fileMode == MODE::WRITE;
     }
 
-    void write(const u8 *buffer, size_t size);
+    void write(const u8 *buffer, uSz size);
     bool writeLine(std::string_view line, bool insertNewline = true);
 
     std::string readLine();
-    std::string readString();
+    std::string readToString();
 
-    const std::unique_ptr<u8[]> &readFile();  // WARNING: this is NOT a null-terminated string! DO NOT USE THIS with UString/std::string!
+    // returns actual amount read
+    uSz readBytes(uSz start, uSz amount, std::unique_ptr<u8[]> &out);
+
+    // WARNING: this is NOT a null-terminated string! DO NOT USE THIS with UString/std::string!
+    const std::unique_ptr<u8[]> &readFile();
 
     // moves the file buffer out, allowing immediate destruction of the file object
     [[nodiscard]] std::unique_ptr<u8[]> &&takeFileBuffer();
 
-    [[nodiscard]] constexpr size_t getFileSize() const { return this->iFileSize; }
+    [[nodiscard]] constexpr uSz getFileSize() const { return this->iFileSize; }
     [[nodiscard]] inline std::string_view getPath() const { return this->sFilePath; }
 
     // public path resolution methods
@@ -63,12 +67,18 @@ class File {
 
     // passthrough to "_wfopen" on Windows, "fopen" otherwise
     [[nodiscard]] static FILE *fopen_c(const char *__restrict utf8filename, const char *__restrict modes);
+
    private:
+    // private implementation helpers
+    bool openForReading();
+    bool openForWriting();
+
+    // internal path resolution helpers
+    [[nodiscard]] static File::FILETYPE existsCaseInsensitive(std::string &filePath, std::filesystem::path &path);
+    [[nodiscard]] static File::FILETYPE exists(std::string_view filePath, const std::filesystem::path &path);
+
     std::string sFilePath;
     std::filesystem::path fsPath;
-    MODE fileMode;
-    bool bReady;
-    size_t iFileSize;
 
     // file streams
     std::unique_ptr<std::ifstream> ifstream;
@@ -77,13 +87,10 @@ class File {
     // buffer for full file reading
     std::unique_ptr<u8[]> vFullBuffer;
 
-    // private implementation helpers
-    bool openForReading();
-    bool openForWriting();
+    uSz iFileSize;
 
-    // internal path resolution helpers
-    [[nodiscard]] static File::FILETYPE existsCaseInsensitive(std::string &filePath, std::filesystem::path &path);
-    [[nodiscard]] static File::FILETYPE exists(std::string_view filePath, const std::filesystem::path &path);
+    MODE fileMode;
+    bool bReady;
 
     // directory cache
     static std::unique_ptr<DirectoryCache> s_directoryCache;

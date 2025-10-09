@@ -10,255 +10,280 @@
 
 #include "Skin.h"
 
-class DatabaseBeatmapBackgroundImagePathLoader final : public Resource {
+class BGImageHandler::MapBGImagePathLoader final : public Resource {
+    NOCOPY_NOMOVE(MapBGImagePathLoader)
    public:
-    DatabaseBeatmapBackgroundImagePathLoader(const std::string &filePath) : Resource(filePath) {}
+    MapBGImagePathLoader(const std::string &filePath) : Resource(filePath) {}
+    ~MapBGImagePathLoader() override { destroy(); }
 
-    [[nodiscard]] inline const std::string &getLoadedBackgroundImageFileName() const {
-        return this->sLoadedBackgroundImageFileName;
-    }
+    [[nodiscard]] inline const std::string &getParsedBGFileName() const { return this->parsed_bg_filename; }
+
     [[nodiscard]] Type getResType() const override { return APPDEFINED; }  // TODO: handle this better?
-   private:
-    void init() override;
-    void initAsync() override;
-    void destroy() override { ; }
 
-    std::string sLoadedBackgroundImageFileName;
+   protected:
+    void init() override {
+        // (nothing)
+        this->bReady.store(true, std::memory_order_release);
+    }
+
+    void initAsync() override {
+        if(this->isInterrupted()) return;
+
+        File file(this->sFilePath);
+
+        if(this->isInterrupted() || !file.canRead()) return;
+        const uSz file_size = file.getFileSize();
+
+        static constexpr const uSz CHUNK_SIZE = 64ULL;
+
+        std::array<std::string, CHUNK_SIZE> lines;
+        bool found = false, quit = false, is_events_block = false;
+
+        uSz lines_in_chunk = std::min<uSz>(file_size, CHUNK_SIZE);
+
+        std::string temp_parsed_filename;
+        temp_parsed_filename.reserve(64);
+
+        while(!found && !quit && lines_in_chunk > 0) {
+            // read 64 lines at a time
+            for(uSz i = 0; i < lines_in_chunk; i++) {
+                if(this->isInterrupted()) {
+                    return;
+                }
+                if(!file.canRead()) {
+                    // cut short
+                    lines_in_chunk = i;
+                    break;
+                }
+                lines[i] = file.readLine();
+            }
+
+            for(uSz i = 0; i < lines_in_chunk; i++) {
+                if(this->isInterrupted()) {
+                    return;
+                }
+
+                std::string_view cur_line = lines[i];
+
+                // ignore comments, but only if at the beginning of a line (e.g. allow Artist:DJ'TEKINA//SOMETHING)
+                if(cur_line.starts_with("//")) continue;
+
+                if(!is_events_block && cur_line.contains("[Events]")) {
+                    is_events_block = true;
+                    continue;
+                } else if(cur_line.contains("[TimingPoints]") || cur_line.contains("[Colours]") ||
+                          cur_line.contains("[HitObjects]")) {
+                    quit = true;
+                    break;  // NOTE: stop early
+                }
+
+                if(!is_events_block) continue;
+
+                // parse events block for filename
+                i32 type, start;
+                if(Parsing::parse(cur_line, &type, ',', &start, ',', &temp_parsed_filename) && type == 0) {
+                    this->parsed_bg_filename = temp_parsed_filename;
+                    found = true;
+                    break;
+                }
+            }
+        }
+
+        this->bAsyncReady.store(true, std::memory_order_release);
+        // NOTE: on purpose. there is nothing to do in init(), so finish 1 frame early
+        this->bReady.store(true, std::memory_order_release);
+    };
+
+    void destroy() override { /* nothing */ }
+
+   private:
+    std::string parsed_bg_filename;
 };
 
-void DatabaseBeatmapBackgroundImagePathLoader::init() {
-    // (nothing)
-    this->bReady = true;
+BGImageHandler::BGImageHandler() {
+    this->max_cache_size =
+        std::clamp<u32>(static_cast<u32>(std::round(cv::background_image_cache_size.getFloat())), 0, 128);
+    cv::background_image_cache_size.setCallback(SA::MakeDelegate<&BGImageHandler::cacheSizeCB>(this));
+
+    this->eviction_delay_frames = std::clamp<u32>(cv::background_image_eviction_delay_frames.getVal<u32>(), 0, 1024);
+    cv::background_image_eviction_delay_frames.setCallback(SA::MakeDelegate<&BGImageHandler::evictionDelayCB>(this));
+
+    this->image_loading_delay = std::clamp<f32>(cv::background_image_loading_delay.getFloat(), 0.f, 2.f);
+    cv::background_image_loading_delay.setCallback(SA::MakeDelegate<&BGImageHandler::loadingDelayCB>(this));
 }
 
-void DatabaseBeatmapBackgroundImagePathLoader::initAsync() {
-    if(this->bInterrupted) return;
-
-    File file(this->sFilePath);
-    if(this->bInterrupted || !file.canRead()) return;
-
-    bool is_events_block = false;
-    while(file.canRead()) {
-        if(this->bInterrupted) {
-            return;
-        }
-        std::string curLine = file.readLine();
-
-        // ignore comments, but only if at the beginning of a line (e.g. allow Artist:DJ'TEKINA//SOMETHING)
-        if(curLine.starts_with("//")) continue;
-
-        if(curLine.find("[Events]") != std::string::npos) {
-            is_events_block = true;
-            continue;
-        } else if(curLine.find("[TimingPoints]") != std::string::npos)
-            break;  // NOTE: stop early
-        else if(curLine.find("[Colours]") != std::string::npos)
-            break;  // NOTE: stop early
-        else if(curLine.find("[HitObjects]") != std::string::npos)
-            break;  // NOTE: stop early
-
-        if(!is_events_block) continue;
-
-        std::string str;
-        i32 type, startTime;
-        if(Parsing::parse(curLine.c_str(), &type, ',', &startTime, ',', &str) && type == 0) {
-            this->sLoadedBackgroundImageFileName = str;
-            break;
-        }
-    }
-
-    if(this->bInterrupted) {
-        return;
-    }
-
-    this->bAsyncReady = true;
-    this->bReady = true;  // NOTE: on purpose. there is nothing to do in init(), so finish 1 frame early
-}
-
-
-BackgroundImageHandler::BackgroundImageHandler() { this->bFrozen = false; }
-
-BackgroundImageHandler::~BackgroundImageHandler() {
-    for(auto &i : this->cache) {
-        resourceManager->destroyResource(i.backgroundImagePathLoader);
-        resourceManager->destroyResource(i.image);
+BGImageHandler::~BGImageHandler() {
+    for(const auto &[_, entry] : this->cache) {
+        resourceManager->destroyResource(entry.bg_image_path_ldr);
+        resourceManager->destroyResource(entry.image);
     }
     this->cache.clear();
+
+    cv::background_image_cache_size.removeCallback();
+    cv::background_image_eviction_delay_frames.removeCallback();
+    cv::background_image_loading_delay.removeCallback();
 }
 
-void BackgroundImageHandler::update(bool allowEviction) {
-    for(size_t i = 0; i < this->cache.size(); i++) {
-        ENTRY &entry = this->cache[i];
+void BGImageHandler::update(bool allow_eviction) {
+    const auto engine_time = engine->getTime();
+    const auto engine_framecount = engine->getFrameCount();
+
+    for(auto it = this->cache.begin(); it != this->cache.end();) {
+        auto &[osu_path, entry] = *it;
 
         // NOTE: avoid load/unload jitter if framerate is below eviction delay
-        const bool wasUsedLastFrame = entry.wasUsedLastFrame;
-        entry.wasUsedLastFrame = false;
+        const bool was_used_last_frame = entry.used_last_frame;
+        entry.used_last_frame = false;
 
         // check and handle evictions
-        if(!wasUsedLastFrame &&
-           (engine->getTime() >= entry.evictionTime && engine->getFrameCount() >= entry.evictionTimeFrameCount)) {
-            if(allowEviction) {
-                if(!this->bFrozen && !engine->isMinimized()) {
-                    if(entry.backgroundImagePathLoader != nullptr) entry.backgroundImagePathLoader->interruptLoad();
+        if(!was_used_last_frame && (engine_framecount >= entry.evict_framecnt)) {
+            if(allow_eviction) {
+                if(!this->frozen && !engine->isMinimized()) {
+                    if(entry.bg_image_path_ldr != nullptr) entry.bg_image_path_ldr->interruptLoad();
                     if(entry.image != nullptr) entry.image->interruptLoad();
 
-                    resourceManager->destroyResource(entry.backgroundImagePathLoader,
+                    resourceManager->destroyResource(entry.bg_image_path_ldr,
                                                      ResourceManager::DestroyMode::FORCE_ASYNC);
                     resourceManager->destroyResource(entry.image, ResourceManager::DestroyMode::FORCE_ASYNC);
 
-                    this->cache.erase(this->cache.begin() + i);
-                    i--;
+                    it = this->cache.erase(it);
                     continue;
                 }
             } else {
-                entry.evictionTime = engine->getTime() + cv::background_image_eviction_delay_seconds.getFloat();
-                entry.evictionTimeFrameCount =
-                    engine->getFrameCount() +
-                    (u32)std::max(0, cv::background_image_eviction_delay_frames.getInt());
+                entry.evict_framecnt = engine_framecount + this->eviction_delay_frames;
             }
-        } else if(wasUsedLastFrame) {
+        } else if(was_used_last_frame) {
             // check and handle scheduled loads
-            if(entry.isLoadScheduled) {
-                if(engine->getTime() >= entry.loadingTime) {
-                    entry.isLoadScheduled = false;
+            if(entry.load_scheduled) {
+                if(engine_time >= entry.loading_time) {
+                    entry.load_scheduled = false;
 
-                    if(entry.backgroundImageFileName.length() < 2) {
+                    if(entry.bg_image_filename.length() < 2) {
                         // if the backgroundImageFileName is not loaded, then we have to create a full
                         // DatabaseBeatmapBackgroundImagePathLoader
                         entry.image = nullptr;
-                        this->handleLoadPathForEntry(entry);
+                        this->handleLoadPathForEntry(osu_path, entry);
                     } else {
                         // if backgroundImageFileName is already loaded/valid, then we can directly load the image
-                        entry.backgroundImagePathLoader = nullptr;
+                        entry.bg_image_path_ldr = nullptr;
                         this->handleLoadImageForEntry(entry);
                     }
                 }
             } else {
                 // no load scheduled (potential load-in-progress if it was necessary), handle backgroundImagePathLoader
                 // loading finish
-                if(entry.image == nullptr && entry.backgroundImagePathLoader != nullptr &&
-                   entry.backgroundImagePathLoader->isReady()) {
-                    if(entry.backgroundImagePathLoader->getLoadedBackgroundImageFileName().length() > 1) {
-                        entry.backgroundImageFileName =
-                            entry.backgroundImagePathLoader->getLoadedBackgroundImageFileName();
+                if(entry.image == nullptr && entry.bg_image_path_ldr != nullptr && entry.bg_image_path_ldr->isReady()) {
+                    std::string bg_loaded_name = entry.bg_image_path_ldr->getParsedBGFileName();
+                    if(bg_loaded_name.length() > 1) {
+                        entry.bg_image_filename = bg_loaded_name;
                         this->handleLoadImageForEntry(entry);
                     }
 
-                    resourceManager->destroyResource(entry.backgroundImagePathLoader,
+                    resourceManager->destroyResource(entry.bg_image_path_ldr,
                                                      ResourceManager::DestroyMode::FORCE_ASYNC);
-                    entry.backgroundImagePathLoader = nullptr;
+                    entry.bg_image_path_ldr = nullptr;
                 }
             }
         }
+
+        ++it;
     }
 
     // reset flags
-    this->bFrozen = false;
+    this->frozen = false;
 
     // DEBUG:
     // debugLog("m_cache.size() = {:d}", (int)this->cache.size());
 }
 
-void BackgroundImageHandler::handleLoadPathForEntry(ENTRY &entry) {
-    entry.backgroundImagePathLoader = new DatabaseBeatmapBackgroundImagePathLoader(entry.osuFilePath);
+void BGImageHandler::handleLoadPathForEntry(const std::string &path, ENTRY &entry) {
+    entry.bg_image_path_ldr = new MapBGImagePathLoader(path);
 
     // start path load
     resourceManager->requestNextLoadAsync();
-    resourceManager->loadResource(entry.backgroundImagePathLoader);
+    resourceManager->loadResource(entry.bg_image_path_ldr);
 }
 
-void BackgroundImageHandler::handleLoadImageForEntry(ENTRY &entry) {
-    std::string fullBackgroundImageFilePath = entry.folder;
-    fullBackgroundImageFilePath.append(entry.backgroundImageFileName);
+void BGImageHandler::handleLoadImageForEntry(ENTRY &entry) {
+    std::string full_bg_image_path = fmt::format("{}{}", entry.folder, entry.bg_image_filename);
 
     // start image load
     resourceManager->requestNextLoadAsync();
     resourceManager->requestNextLoadUnmanaged();
-    entry.image = resourceManager->loadImageAbsUnnamed(fullBackgroundImageFilePath, true);
+    entry.image = resourceManager->loadImageAbsUnnamed(full_bg_image_path, true);
 }
 
-const Image *BackgroundImageHandler::getLoadBackgroundImage(const DatabaseBeatmap *beatmap, bool loadImmediately) {
+const Image *BGImageHandler::getLoadBackgroundImage(const DatabaseBeatmap *beatmap, bool load_immediately) {
     if(beatmap == nullptr || !cv::load_beatmap_background_images.getBool() || !beatmap->draw_background) return nullptr;
 
     // NOTE: no references to beatmap are kept anywhere (database can safely be deleted/reloaded without having to
     // notify the BackgroundImageHandler)
 
-    const float newLoadingTime =
-        engine->getTime() + (loadImmediately ? 0.f : cv::background_image_loading_delay.getFloat());
-    const float newEvictionTime = engine->getTime() + cv::background_image_eviction_delay_seconds.getFloat();
-    const u32 newEvictionTimeFrameCount =
-        engine->getFrameCount() + (u32)std::max(0, cv::background_image_eviction_delay_frames.getInt());
+    const f32 new_loading_time = engine->getTime() + (load_immediately ? 0.f : this->image_loading_delay);
+    const u32 new_eviction_framecnt = engine->getFrameCount() + this->eviction_delay_frames;
 
-    // 1) if the path or image is already loaded, return image ref immediately (which may still be NULL) and keep track
-    // of when it was last requested
-    for(auto &i : this->cache) {
-        ENTRY &entry = i;
+    std::string_view beatmap_filepath = beatmap->getFilePath();
 
-        if(entry.osuFilePath == beatmap->getFilePath()) {
-            entry.wasUsedLastFrame = true;
-            entry.evictionTime = newEvictionTime;
-            entry.evictionTimeFrameCount = newEvictionTimeFrameCount;
+    if(const auto &it = this->cache.find(beatmap_filepath); it != this->cache.end()) {
+        // 1) if the path or image is already loaded, return image ref immediately (which may still be NULL) and keep track
+        // of when it was last requested
+        auto &entry = it->second;
 
-            // HACKHACK: to improve future loading speed, if we have already loaded the backgroundImageFileName, force
-            // update the database backgroundImageFileName and fullBackgroundImageFilePath this is similar to how it
-            // worked before the rework, but 100% safe(r) since we are not async
-            if(i.image != nullptr && i.backgroundImageFileName.length() > 1 &&
-               beatmap->getBackgroundImageFileName().length() < 2) {
-                const_cast<DatabaseBeatmap *>(beatmap)->sBackgroundImageFileName = i.backgroundImageFileName;
-                const_cast<DatabaseBeatmap *>(beatmap)->sFullBackgroundImageFilePath = beatmap->getFolder();
-                const_cast<DatabaseBeatmap *>(beatmap)->sFullBackgroundImageFilePath.append(i.backgroundImageFileName);
-            }
+        entry.used_last_frame = true;
+        entry.evict_framecnt = new_eviction_framecnt;
 
-            return this->getImageOrSkinFallback(entry.image);
+        // HACKHACK: to improve future loading speed, if we have already loaded the backgroundImageFileName, force
+        // update the database backgroundImageFileName and fullBackgroundImageFilePath this is similar to how it
+        // worked before the rework, but 100% safe(r) since we are not async
+        if(entry.image != nullptr && entry.bg_image_filename.length() > 1 &&
+           beatmap->getBackgroundImageFileName().length() < 2) {
+            const_cast<DatabaseBeatmap *>(beatmap)->sBackgroundImageFileName = entry.bg_image_filename;
+            const_cast<DatabaseBeatmap *>(beatmap)->sFullBackgroundImageFilePath =
+                fmt::format("{}{}", entry.folder, entry.bg_image_filename);
         }
-    }
 
-    // 2) not found in cache, so create a new entry which will get handled in the next update
-    {
+        return this->getImageOrSkinFallback(entry.image);
+    } else {
+        // 2) not found in cache, so create a new entry which will get handled in the next update
+
         // try evicting stale not-yet-loaded-nor-started-loading entries on overflow
-        const int maxCacheEntries = cv::background_image_cache_size.getInt();
-        {
-            if(this->cache.size() >= maxCacheEntries) {
-                for(size_t i = 0; i < this->cache.size(); i++) {
-                    if(this->cache[i].isLoadScheduled && !this->cache[i].wasUsedLastFrame) {
-                        this->cache.erase(this->cache.begin() + i);
-                        i--;
-                        continue;
-                    }
+        if(this->cache.size() >= this->max_cache_size) {
+            for(auto it = this->cache.begin(); it != this->cache.end();) {
+                const auto &[osu_path, entry] = *it;
+                if(entry.load_scheduled && !entry.used_last_frame) {
+                    it = this->cache.erase(it);
+                } else {
+                    ++it;
                 }
             }
         }
 
         // create entry
-        ENTRY entry;
-        {
-            entry.isLoadScheduled = true;
-            entry.wasUsedLastFrame = true;
-            entry.loadingTime = newLoadingTime;
-            entry.evictionTime = newEvictionTime;
-            entry.evictionTimeFrameCount = newEvictionTimeFrameCount;
+        ENTRY entry{
+            .folder = beatmap->getFolder(),
+            .bg_image_filename = beatmap->getBackgroundImageFileName(),
+            .bg_image_path_ldr = nullptr,
+            .image = nullptr,
+            .evict_framecnt = new_eviction_framecnt,
+            .loading_time = new_loading_time,
+            .load_scheduled = true,
+            .used_last_frame = true,
+        };
 
-            entry.osuFilePath = beatmap->getFilePath();
-            entry.folder = beatmap->getFolder();
-            entry.backgroundImageFileName = beatmap->getBackgroundImageFileName();
-
-            entry.backgroundImagePathLoader = nullptr;
-            entry.image = nullptr;
-        }
-        if(this->cache.size() < maxCacheEntries) this->cache.push_back(entry);
+        if(this->cache.size() < this->max_cache_size) this->cache.try_emplace(beatmap->getFilePath(), entry);
     }
 
     return nullptr;
 }
 
-const Image *BackgroundImageHandler::getImageOrSkinFallback(const Image *candidateLoaded) const {
-    const Image *ret = candidateLoaded;
+const Image *BGImageHandler::getImageOrSkinFallback(const Image *candidate_loaded) const {
+    const Image *ret = candidate_loaded;
     // if we got an image but it failed for whatever reason, return the user skin as a fallback instead
-    if(candidateLoaded && candidateLoaded->failedLoad()) {
-        const Image *skinBG = nullptr;
-        if(osu->getSkin() && (skinBG = osu->getSkin()->getMenuBackground()) && skinBG != MISSING_TEXTURE &&
-           !skinBG->failedLoad()) {
-            ret = skinBG;
+    if(candidate_loaded && candidate_loaded->failedLoad()) {
+        const Image *skin_bg = nullptr;
+        if(osu->getSkin() && (skin_bg = osu->getSkin()->getMenuBackground()) && skin_bg != MISSING_TEXTURE &&
+           !skin_bg->failedLoad()) {
+            ret = skin_bg;
         }
     }
     return ret;

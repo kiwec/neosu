@@ -1121,14 +1121,22 @@ bool DatabaseBeatmap::loadMetadata(bool compute_md5) {
 
             // Events
             case 3: {
-                std::string str;
-                i32 type, startTime;
-                if(Parsing::parse(curLine, &type, ',', &startTime, ',', &str)) {
-                    if(type == 0) {
-                        this->sBackgroundImageFileName = str;
-                        this->sFullBackgroundImageFilePath = this->sFolder;
-                        this->sFullBackgroundImageFilePath.append(this->sBackgroundImageFileName);
+                // short-circuit if we already have a stored filename
+                bool haveFilename = this->sBackgroundImageFileName.length() > 2;
+
+                if(!haveFilename) {
+                    std::string str;
+                    i32 type, startTime;
+                    if(Parsing::parse(curLine, &type, ',', &startTime, ',', &str)) {
+                        if(type == 0) {
+                            this->sBackgroundImageFileName = str;
+                            haveFilename = true;
+                        }
                     }
+                }
+                if(haveFilename) {
+                    this->sFullBackgroundImageFilePath =
+                        fmt::format("{}{}", this->sFolder, this->sBackgroundImageFileName);
                 }
 
                 break;
@@ -1377,6 +1385,7 @@ MapOverrides DatabaseBeatmap::get_overrides() {
     overrides.max_bpm = this->iMaxBPM;
     overrides.avg_bpm = this->iMostCommonBPM;
     overrides.draw_background = this->draw_background;
+    overrides.background_image_filename = this->sBackgroundImageFileName;
     return overrides;
 }
 

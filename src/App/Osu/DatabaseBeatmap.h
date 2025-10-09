@@ -15,7 +15,7 @@ class HitObject;
 
 class Database;
 
-class BackgroundImageHandler;
+class BGImageHandler;
 
 // purpose:
 // 1) contain all infos which are ALWAYS kept in memory for beatmaps
@@ -176,8 +176,8 @@ class DatabaseBeatmap final {
         this->update_overrides();
     }
 
-    [[nodiscard]] inline std::string getFolder() const { return this->sFolder; }
-    [[nodiscard]] inline std::string getFilePath() const { return this->sFilePath; }
+    [[nodiscard]] inline const std::string &getFolder() const { return this->sFolder; }
+    [[nodiscard]] inline const std::string &getFilePath() const { return this->sFilePath; }
 
     template <typename T = DatabaseBeatmap>
     [[nodiscard]] inline const std::vector<T *> &getDifficulties() const
@@ -343,7 +343,7 @@ class DatabaseBeatmap final {
     // class internal data (custom)
 
     friend class Database;
-    friend class BackgroundImageHandler;
+    friend class BGImageHandler;
 
     static PRIMITIVE_CONTAINER loadPrimitiveObjects(std::string_view osuFilePath);
     static PRIMITIVE_CONTAINER loadPrimitiveObjects(std::string_view osuFilePath, const std::atomic<bool> &dead);

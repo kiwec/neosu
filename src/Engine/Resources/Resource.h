@@ -46,11 +46,12 @@ public:
 
 	void interruptLoad();
 
-	[[nodiscard]] inline std::string getName() const { return this->sName; }
-	[[nodiscard]] inline std::string getFilePath() const { return this->sFilePath; }
+	[[nodiscard]] inline const std::string &getName() const { return this->sName; }
+	[[nodiscard]] inline const std::string &getFilePath() const { return this->sFilePath; }
 
-	[[nodiscard]] inline bool isReady() const { return this->bReady.load(); }
-	[[nodiscard]] inline bool isAsyncReady() const { return this->bAsyncReady.load(); }
+	[[nodiscard]] inline bool isReady() const { return this->bReady.load(std::memory_order_acquire); }
+	[[nodiscard]] inline bool isAsyncReady() const { return this->bAsyncReady.load(std::memory_order_acquire); }
+	[[nodiscard]] inline bool isInterrupted() const { return this->bInterrupted.load(std::memory_order_acquire); }
 
 protected:
 	virtual void init() = 0;

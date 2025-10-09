@@ -13,6 +13,7 @@
 #include "SyncMutex.h"
 
 #include <algorithm>
+#include <cassert>
 #include <chrono>
 #include <filesystem>
 #include <unordered_map>
@@ -29,8 +30,8 @@ class DirectoryCache final {
    private:
     struct StringHashNcase {
        private:
-        [[nodiscard]] inline size_t hashFunc(std::string_view str) const {
-            size_t hash = 0;
+        [[nodiscard]] inline uSz hashFunc(std::string_view str) const {
+            uSz hash = 0;
             for(auto &c : str) {
                 hash = hash * 31 + std::tolower(static_cast<unsigned char>(c));
             }
@@ -40,8 +41,8 @@ class DirectoryCache final {
        public:
         using is_transparent = void;
 
-        size_t operator()(const std::string &s) const { return hashFunc(s); }
-        size_t operator()(std::string_view sv) const { return hashFunc(sv); }
+        uSz operator()(const std::string &s) const { return hashFunc(s); }
+        uSz operator()(std::string_view sv) const { return hashFunc(sv); }
     };
 
     struct StringEqualNcase {
@@ -139,12 +140,12 @@ class DirectoryCache final {
     }
 
    private:
-    static constexpr size_t DIR_CACHE_MAX_ENTRIES = 1000;
-    static constexpr size_t DIR_CACHE_EVICT_COUNT = DIR_CACHE_MAX_ENTRIES / 4;
+    static constexpr uSz DIR_CACHE_MAX_ENTRIES = 1000;
+    static constexpr uSz DIR_CACHE_EVICT_COUNT = DIR_CACHE_MAX_ENTRIES / 4;
 
     // evict least recently used entries when cache is full
     void evictOldEntries() {
-        const size_t entriesToRemove = std::min(DIR_CACHE_EVICT_COUNT, this->cache.size());
+        const uSz entriesToRemove = std::min(DIR_CACHE_EVICT_COUNT, this->cache.size());
 
         if(entriesToRemove == this->cache.size()) {
             this->cache.clear();
@@ -162,7 +163,7 @@ class DirectoryCache final {
         std::ranges::sort(entries, [](const auto &a, const auto &b) { return a.first < b.first; });
 
         // remove the oldest entries
-        for(size_t i = 0; i < entriesToRemove; ++i) this->cache.erase(entries[i].second);
+        for(uSz i = 0; i < entriesToRemove; ++i) this->cache.erase(entries[i].second);
     }
 
     // cache storage
@@ -280,7 +281,7 @@ FILE *File::fopen_c(const char *__restrict utf8filename, const char *__restrict 
 // File implementation
 //------------------------------------------------------------------------------
 File::File(std::string_view filePath, MODE mode)
-    : sFilePath(filePath), fsPath(getFsPath(this->sFilePath)), fileMode(mode), bReady(false), iFileSize(0) {
+    : sFilePath(filePath), fsPath(getFsPath(this->sFilePath)), iFileSize(0), fileMode(mode), bReady(false) {
     if(mode == MODE::READ) {
         if(!openForReading()) return;
     } else if(mode == MODE::WRITE) {
@@ -358,7 +359,7 @@ bool File::openForWriting() {
     return true;
 }
 
-void File::write(const u8 *buffer, size_t size) {
+void File::write(const u8 *buffer, uSz size) {
     if(cv::debug_file.getBool()) debugLog("{:s} (canWrite: {})", this->sFilePath, canWrite());
 
     if(!canWrite()) return;
@@ -395,11 +396,41 @@ std::string File::readLine() {
     return "";
 }
 
-std::string File::readString() {
+std::string File::readToString() {
     const auto size = getFileSize();
     if(size < 1) return "";
 
     return {reinterpret_cast<const char *>(readFile().get()), size};
+}
+
+uSz File::readBytes(uSz start, uSz amount, std::unique_ptr<u8[]> &out) {
+    if(!canRead()) return 0;
+    assert(out.get() == this->vFullBuffer.get() && "can't overwrite own buffer");
+
+    if(start > this->iFileSize) {
+        if(cv::debug_file.getBool())
+            debugLog("tried to read {} starting from {}, but total size is only {}", this->sFilePath, start,
+                     this->iFileSize);
+        return 0;
+    }
+
+    uSz end = (start + amount);
+    if(end > this->iFileSize) {
+        end = this->iFileSize;
+    }
+
+    const uSz toRead = end - start;
+
+    // return cached data if we have it
+    if(!!this->vFullBuffer) {
+        std::memcpy(out.get(), this->vFullBuffer.get() + start, toRead);
+        return toRead;
+    }
+
+    this->ifstream->seekg(static_cast<std::streamsize>(start), std::ios::beg);
+    this->ifstream->read(reinterpret_cast<char *>(out.get()), static_cast<std::streamsize>(toRead));
+
+    return this->ifstream->gcount();
 }
 
 const std::unique_ptr<u8[]> &File::readFile() {
@@ -418,8 +449,9 @@ const std::unique_ptr<u8[]> &File::readFile() {
 
     // read entire file
     this->ifstream->seekg(0, std::ios::beg);
-    if(this->ifstream->read(reinterpret_cast<char *>(this->vFullBuffer.get()),
-                            static_cast<std::streamsize>(this->iFileSize))) {
+    if(this->ifstream
+           ->read(reinterpret_cast<char *>(this->vFullBuffer.get()), static_cast<std::streamsize>(this->iFileSize))
+           .good()) {
         return this->vFullBuffer;
     }
 
@@ -443,8 +475,9 @@ std::unique_ptr<u8[]> &&File::takeFileBuffer() {
 
     // read entire file
     this->ifstream->seekg(0, std::ios::beg);
-    if(this->ifstream->read(reinterpret_cast<char *>(this->vFullBuffer.get()),
-                            static_cast<std::streamsize>(this->iFileSize))) {
+    if(this->ifstream
+           ->read(reinterpret_cast<char *>(this->vFullBuffer.get()), static_cast<std::streamsize>(this->iFileSize))
+           .good()) {
         return std::move(this->vFullBuffer);
     }
 

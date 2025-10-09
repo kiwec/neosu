@@ -760,8 +760,6 @@ CONVAR(background_image_cache_size, "background_image_cache_size"sv, 32, CLIENT,
        "how many images can stay loaded in parallel"sv);
 CONVAR(background_image_eviction_delay_frames, "background_image_eviction_delay_frames"sv, 0, CLIENT,
        "how many frames to keep stale background images in the cache before deleting them (if seconds && frames)"sv);
-CONVAR(background_image_eviction_delay_seconds, "background_image_eviction_delay_seconds"sv, 0.05f, CLIENT,
-       "how many seconds to keep stale background images in the cache before deleting them (if seconds && frames)"sv);
 CONVAR(background_image_loading_delay, "background_image_loading_delay"sv, 0.1f, CLIENT,
        "how many seconds to wait until loading background images for visible beatmaps starts"sv);
 

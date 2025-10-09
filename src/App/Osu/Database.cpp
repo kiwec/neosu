@@ -1028,6 +1028,11 @@ void Database::loadMaps() {
                         diff->bEmptyArtistUnicode = true;
                     }
 
+                    // we cache the background image filename in the database past this version
+                    if(version >= 20251009) {
+                        diff->sBackgroundImageFileName = neosu_maps.read_string();
+                    }
+
                     this->beatmap_difficulties[diff->sMD5Hash] = diff;
                     diffs->push_back(diff);
                     nb_neosu_maps++;
@@ -1062,6 +1067,9 @@ void Database::loadMaps() {
                     over.max_bpm = neosu_maps.read<i32>();
                     over.avg_bpm = neosu_maps.read<i32>();
                     over.draw_background = neosu_maps.read<u8>();
+                    if(version >= 20251009) {
+                        over.background_image_filename = neosu_maps.read_string();
+                    }
                     this->peppy_overrides[map_md5] = over;
                 }
             }
@@ -1133,6 +1141,7 @@ void Database::loadMaps() {
                 auto md5hash = db.read_hash();
                 auto overrides = this->peppy_overrides.find(md5hash);
                 bool overrides_found = overrides != this->peppy_overrides.end();
+                const auto &override = overrides_found ? overrides->second : MapOverrides{};
 
                 std::string osuFileName = db.read_string();
                 /*unsigned char rankedStatus = */ db.skip<u8>();
@@ -1228,9 +1237,9 @@ void Database::loadMaps() {
                 auto nb_timing_points = db.read<u32>();
                 if(overrides_found) {
                     db.skip_bytes(sizeof(Database::TIMINGPOINT) * nb_timing_points);
-                    bpm.min = overrides->second.min_bpm;
-                    bpm.max = overrides->second.max_bpm;
-                    bpm.most_common = overrides->second.avg_bpm;
+                    bpm.min = override.min_bpm;
+                    bpm.max = override.max_bpm;
+                    bpm.most_common = override.avg_bpm;
                 } else if(nb_timing_points > 0) {
                     timing_points_buffer.resize(nb_timing_points);
                     if(db.read_bytes((u8 *)timing_points_buffer.data(),
@@ -1401,14 +1410,13 @@ void Database::loadMaps() {
                 if(!diff_already_added) {
                     bool loudness_found = false;
                     if(overrides_found) {
-                        MapOverrides over = overrides->second;
-                        map->iLocalOffset = over.local_offset;
-                        map->iOnlineOffset = over.online_offset;
-                        map->fStarsNomod = over.star_rating;
-                        map->loudness = over.loudness;
-                        map->draw_background = over.draw_background;
-
-                        if(over.loudness != 0.f) {
+                        map->iLocalOffset = override.local_offset;
+                        map->iOnlineOffset = override.online_offset;
+                        map->fStarsNomod = override.star_rating;
+                        map->loudness = override.loudness;
+                        map->draw_background = override.draw_background;
+                        map->sBackgroundImageFileName = override.background_image_filename;
+                        if(override.loudness != 0.f) {
                             loudness_found = true;
                         }
                     } else {
@@ -1572,6 +1580,7 @@ void Database::saveMaps() {
             maps.write<f32>(diff->loudness.load());
             maps.write_string(diff->sTitleUnicode.c_str());
             maps.write_string(diff->sArtistUnicode.c_str());
+            maps.write_string(diff->sBackgroundImageFileName.c_str());
 
             nb_diffs_saved++;
         }
@@ -1599,6 +1608,7 @@ void Database::saveMaps() {
         maps.write<i32>(override.max_bpm);
         maps.write<i32>(override.avg_bpm);
         maps.write<u8>(override.draw_background);
+        maps.write_string(override.background_image_filename.c_str());
 
         nb_overrides++;
     }
