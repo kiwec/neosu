@@ -925,8 +925,8 @@ void Database::loadMaps() {
             u32 version = neosu_maps.read<u32>();
             if(version < NEOSU_MAPS_DB_VERSION) {
                 // Reading from older database version: backup just in case
-                auto backup_path = fmt::format("neosu_maps.db.{}", version);
-                ByteBufferedFile::copy("neosu_maps.db", backup_path);
+                auto backup_path = fmt::format("{}.{}", neosu_maps_path, version);
+                ByteBufferedFile::copy(neosu_maps_path, backup_path);
             }
 
             u32 nb_sets = neosu_maps.read<u32>();
@@ -1843,7 +1843,7 @@ void Database::loadOldMcNeosuScores(std::string_view dbPath) {
 
                 std::string experimentalModsConVars = db.read_string();
                 auto experimentalMods = SString::split(experimentalModsConVars, ';');
-                for(const auto &mod : experimentalMods) {
+                for(const auto mod : experimentalMods) {
                     if(mod == "") continue;
                     if(mod == "fposu_mod_strafing") sc.mods.flags |= Replay::ModFlags::FPoSu_Strafing;
                     if(mod == "osu_mod_wobble") sc.mods.flags |= Replay::ModFlags::Wobble1;
@@ -2011,7 +2011,7 @@ void Database::loadOldMcNeosuScores(std::string_view dbPath) {
                     sc.maxPossibleCombo = maxPossibleCombo;
                     sc.numHitObjects = numHitObjects;
                     sc.numCircles = numCircles;
-                    for(const auto &mod : experimentalMods) {
+                    for(const auto mod : experimentalMods) {
                         if(mod == "") continue;
                         if(mod == "fposu_mod_strafing") sc.mods.flags |= Replay::ModFlags::FPoSu_Strafing;
                         if(mod == "osu_mod_wobble") sc.mods.flags |= Replay::ModFlags::Wobble1;
@@ -2071,7 +2071,7 @@ void Database::loadPeppyScores(std::string_view dbPath) {
     debugLog("osu!stable scores.db: version = {:d}, nb_beatmaps = {:d}", db_version, nb_beatmaps);
 
     char client_str[15] = "peppy-YYYYMMDD";
-    for(int b = 0; b < nb_beatmaps; b++) {
+    for(u32 b = 0; b < nb_beatmaps; b++) {
         std::string md5hash_str = db.read_string();
         if(md5hash_str.length() < 32) {
             debugLog("WARNING: Invalid score on beatmap {:d} with md5hash_str.length() = {:d}!", b,

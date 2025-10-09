@@ -38,7 +38,7 @@ void Skin::unpack(const char *filepath) {
 
     auto skin_root = fmt::format(NEOSU_SKINS_PATH "/{}/", skin_name);
 
-    std::vector<u8> fileBuffer;
+    std::unique_ptr<u8[]> fileBuffer;
     size_t fileSize{0};
     {
         File file(filepath);
@@ -50,7 +50,7 @@ void Skin::unpack(const char *filepath) {
         // close the file here
     }
 
-    Archive archive(fileBuffer.data(), fileSize);
+    Archive archive(fileBuffer.get(), fileSize);
     if(!archive.isValid()) {
         debugLog("Failed to open .osk file");
         return;
@@ -83,7 +83,7 @@ void Skin::unpack(const char *filepath) {
                 goto skip_file;
             } else {
                 file_path.push_back('/');
-                file_path.append(folder.c_str());
+                file_path.append(folder);
             }
         }
 
@@ -902,7 +902,7 @@ void Skin::reloadSounds() {
 }
 
 bool Skin::parseSkinINI(std::string filepath) {
-    std::vector<u8> rawData;
+    std::unique_ptr<u8[]> rawData;
     size_t fileSize{0};
     {
         File file(filepath);
@@ -914,7 +914,7 @@ bool Skin::parseSkinINI(std::string filepath) {
         // close the file here
     }
 
-    UString fileContent{reinterpret_cast<char *>(rawData.data()), static_cast<int>(fileSize)};
+    UString fileContent{reinterpret_cast<char *>(rawData.get()), static_cast<int>(fileSize)};
 
     // process content line by line, handling different line endings
     int nonEmptyLineCounter = 0;

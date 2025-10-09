@@ -26,8 +26,19 @@ void handle_osk(const char *osk_path) {
 }
 
 void handle_osz(const char *osz_path) {
-    File osz(osz_path);
-    i32 set_id = Downloader::extract_beatmapset_id(osz.readFile(), osz.getFileSize());
+    uSz osz_filesize = 0;
+    std::unique_ptr<u8[]> osz_data = nullptr;
+    {
+        File osz(osz_path);
+        osz_filesize = osz.getFileSize();
+        osz_data = osz.takeFileBuffer();
+        if(!osz.canRead() || !osz_filesize || !osz_data) {
+            osu->getNotificationOverlay()->addToast(UString::fmt("Failed to import {}", osz_path), ERROR_TOAST);
+            return;
+        }
+    }
+
+    i32 set_id = Downloader::extract_beatmapset_id(osz_data.get(), osz_filesize);
     if(set_id < 0) {
         // special case: legacy fallback behavior for invalid beatmapSetID, try to parse the ID from the
         // path
@@ -45,7 +56,7 @@ void handle_osz(const char *osz_path) {
 
     std::string mapset_dir = fmt::format(NEOSU_MAPS_PATH "/{}/", set_id);
     Environment::createDirectory(mapset_dir);
-    if(!Downloader::extract_beatmapset(osz.readFile(), osz.getFileSize(), mapset_dir)) {
+    if(!Downloader::extract_beatmapset(osz_data.get(), osz_filesize, mapset_dir)) {
         osu->getNotificationOverlay()->addToast(u"Failed to extract beatmapset", ERROR_TOAST);
         return;
     }

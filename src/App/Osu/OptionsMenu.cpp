@@ -3738,7 +3738,7 @@ void OptionsMenu::save() {
             } else {
                 debugLogLambda("Failed to save osu.cfg");
             }
-        } else {
+        } else if(cv::debug_file.getBool()) {
             debugLogLambda("Successfully wrote osu.cfg");
         }
     };
@@ -3753,8 +3753,8 @@ void OptionsMenu::save() {
                                        fmt::format("{}.{:%F}.bak", cfg_name, fmt::gmtime(std::time(nullptr))));
             }
         } else {
-            read_lines =
-                SString::split(std::string{reinterpret_cast<const char *>(read_data.data()), read_data.size()}, '\n');
+            read_lines = SString::split<std::string>(
+                std::string{reinterpret_cast<const char *>(read_data.data()), read_data.size()}, '\n');
         }
 
         std::string write_lines;

@@ -99,8 +99,7 @@ class SongBrowserBackgroundSearchMatcher final : public Resource {
     inline void revive() { this->bDead = false; }
 
     inline void setSongButtonsAndSearchString(const std::vector<SongButton *> &songButtons,
-                                              const std::string &searchString,
-                                              const std::string &hardcodedSearchString) {
+                                              std::string_view searchString, std::string_view hardcodedSearchString) {
         this->songButtons = songButtons;
 
         this->sSearchString.clear();
@@ -126,7 +125,7 @@ class SongBrowserBackgroundSearchMatcher final : public Resource {
         }
 
         // flag matches across entire database
-        const std::vector<std::string> searchStringTokens = SString::split(this->sSearchString, " ");
+        const std::vector<std::string_view> searchStringTokens = SString::split(this->sSearchString, " ");
         for(auto &songButton : this->songButtons) {
             const auto &children = songButton->getChildren();
             if(children.size() > 0) {
@@ -252,7 +251,8 @@ class NoRecordsSetElement final : public CBaseUILabel {
     UString sIconString;
 };
 
-bool sort_by_difficulty(SongButton const *a, SongButton const *b) {
+// used also by SongButton
+bool SongBrowser::sort_by_difficulty(SongButton const *a, SongButton const *b) {
     const auto *aPtr = a->getDatabaseBeatmap(), *bPtr = b->getDatabaseBeatmap();
     if((aPtr == nullptr) || (bPtr == nullptr)) return (aPtr == nullptr) < (bPtr == nullptr);
 
@@ -269,11 +269,8 @@ bool sort_by_difficulty(SongButton const *a, SongButton const *b) {
     return diff1 < map;
 }
 
-namespace {  // static namespace
-
 // not used anywhere else
-
-bool sort_by_artist(SongButton const *a, SongButton const *b) {
+bool SongBrowser::sort_by_artist(SongButton const *a, SongButton const *b) {
     const auto *aPtr = a->getDatabaseBeatmap(), *bPtr = b->getDatabaseBeatmap();
     if((aPtr == nullptr) || (bPtr == nullptr)) return (aPtr == nullptr) < (bPtr == nullptr);
 
@@ -285,7 +282,7 @@ bool sort_by_artist(SongButton const *a, SongButton const *b) {
     return cmp < 0;
 }
 
-bool sort_by_bpm(SongButton const *a, SongButton const *b) {
+bool SongBrowser::sort_by_bpm(SongButton const *a, SongButton const *b) {
     const auto *aPtr = a->getDatabaseBeatmap(), *bPtr = b->getDatabaseBeatmap();
     if((aPtr == nullptr) || (bPtr == nullptr)) return (aPtr == nullptr) < (bPtr == nullptr);
 
@@ -295,7 +292,7 @@ bool sort_by_bpm(SongButton const *a, SongButton const *b) {
     return bpm1 < bpm2;
 }
 
-bool sort_by_creator(SongButton const *a, SongButton const *b) {
+bool SongBrowser::sort_by_creator(SongButton const *a, SongButton const *b) {
     const auto *aPtr = a->getDatabaseBeatmap(), *bPtr = b->getDatabaseBeatmap();
     if((aPtr == nullptr) || (bPtr == nullptr)) return (aPtr == nullptr) < (bPtr == nullptr);
 
@@ -307,7 +304,7 @@ bool sort_by_creator(SongButton const *a, SongButton const *b) {
     return cmp < 0;
 }
 
-bool sort_by_date_added(SongButton const *a, SongButton const *b) {
+bool SongBrowser::sort_by_date_added(SongButton const *a, SongButton const *b) {
     const auto *aPtr = a->getDatabaseBeatmap(), *bPtr = b->getDatabaseBeatmap();
     if((aPtr == nullptr) || (bPtr == nullptr)) return (aPtr == nullptr) < (bPtr == nullptr);
 
@@ -317,12 +314,12 @@ bool sort_by_date_added(SongButton const *a, SongButton const *b) {
     return time1 > time2;
 }
 
-bool sort_by_grade(SongButton const *a, SongButton const *b) {
+bool SongBrowser::sort_by_grade(SongButton const *a, SongButton const *b) {
     if(a->grade == b->grade) return sort_by_difficulty(a, b);
     return a->grade < b->grade;
 }
 
-bool sort_by_length(SongButton const *a, SongButton const *b) {
+bool SongBrowser::sort_by_length(SongButton const *a, SongButton const *b) {
     const auto *aPtr = a->getDatabaseBeatmap(), *bPtr = b->getDatabaseBeatmap();
     if((aPtr == nullptr) || (bPtr == nullptr)) return (aPtr == nullptr) < (bPtr == nullptr);
 
@@ -332,7 +329,7 @@ bool sort_by_length(SongButton const *a, SongButton const *b) {
     return length1 < length2;
 }
 
-bool sort_by_title(SongButton const *a, SongButton const *b) {
+bool SongBrowser::sort_by_title(SongButton const *a, SongButton const *b) {
     const auto *aPtr = a->getDatabaseBeatmap(), *bPtr = b->getDatabaseBeatmap();
     if((aPtr == nullptr) || (bPtr == nullptr)) return (aPtr == nullptr) < (bPtr == nullptr);
 
@@ -343,8 +340,6 @@ bool sort_by_title(SongButton const *a, SongButton const *b) {
     if(cmp == 0) return sort_by_difficulty(a, b);
     return cmp < 0;
 }
-
-}  // namespace
 
 SongBrowser::SongBrowser()  // NOLINT(cert-msc51-cpp, cert-msc32-c)
     : ScreenBackable() {
@@ -1603,7 +1598,7 @@ void SongBrowser::addBeatmapSet(BeatmapSet *mapset) {
 }
 
 void SongBrowser::addSongButtonToAlphanumericGroup(SongButton *btn, std::vector<CollectionButton *> &group,
-                                                   const std::string &name) {
+                                                   std::string_view name) {
     if(group.size() != 28) {
         debugLog("Alphanumeric group wasn't initialized!");
         return;
@@ -1625,7 +1620,7 @@ void SongBrowser::addSongButtonToAlphanumericGroup(SongButton *btn, std::vector<
     }
 
     if(cv::debug_osu.getBool()) {
-        debugLog("Inserting {:s}", name.c_str());
+        debugLog("Inserting {:s}", name);
     }
 
     children->push_back(btn);
@@ -1824,7 +1819,7 @@ void SongBrowser::updateSongButtonLayout() {
 }
 
 bool SongBrowser::searchMatcher(const DatabaseBeatmap *databaseBeatmap,
-                                const std::vector<std::string> &searchStringTokens) {
+                                const std::vector<std::string_view> &searchStringTokens) {
     if(databaseBeatmap == nullptr) return false;
 
     const std::vector<const DatabaseBeatmap *> tmpContainer{databaseBeatmap};
@@ -1842,11 +1837,15 @@ bool SongBrowser::searchMatcher(const DatabaseBeatmap *databaseBeatmap,
     // findSubstringInDiff() the rest is interpreted NOTE: this code is quite shitty. the order of the operators
     // array does matter, because find() is used to detect their presence (and '=' would then break '<=' etc.)
     enum operatorId : uint8_t { EQ, LT, GT, LE, GE, NE };
-    static constexpr auto operators = std::array{
-        std::pair<std::string_view, operatorId>("<=", LE), std::pair<std::string_view, operatorId>(">=", GE),
-        std::pair<std::string_view, operatorId>("<", LT),  std::pair<std::string_view, operatorId>(">", GT),
-        std::pair<std::string_view, operatorId>("!=", NE), std::pair<std::string_view, operatorId>("==", EQ),
-        std::pair<std::string_view, operatorId>("=", EQ),
+
+    struct Operator {
+        std::string_view str;
+        operatorId id;
+    };
+
+    static constexpr std::initializer_list<Operator> operators = {
+        {.str = "<=", .id = LE}, {.str = ">=", .id = GE}, {.str = "<", .id = LT}, {.str = ">", .id = GT},
+        {.str = "!=", .id = NE}, {.str = "==", .id = EQ}, {.str = "=", .id = EQ},
     };
 
     enum keywordId : uint8_t {
@@ -1866,27 +1865,33 @@ bool SongBrowser::searchMatcher(const DatabaseBeatmap *databaseBeatmap,
         STARS,
         CREATOR
     };
-    static constexpr auto keywords = std::array{std::pair<std::string_view, keywordId>("ar", AR),
-                                                std::pair<std::string_view, keywordId>("cs", CS),
-                                                std::pair<std::string_view, keywordId>("od", OD),
-                                                std::pair<std::string_view, keywordId>("hp", HP),
-                                                std::pair<std::string_view, keywordId>("bpm", BPM),
-                                                std::pair<std::string_view, keywordId>("opm", OPM),
-                                                std::pair<std::string_view, keywordId>("cpm", CPM),
-                                                std::pair<std::string_view, keywordId>("spm", SPM),
-                                                std::pair<std::string_view, keywordId>("object", OBJECTS),
-                                                std::pair<std::string_view, keywordId>("objects", OBJECTS),
-                                                std::pair<std::string_view, keywordId>("circle", CIRCLES),
-                                                std::pair<std::string_view, keywordId>("circles", CIRCLES),
-                                                std::pair<std::string_view, keywordId>("slider", SLIDERS),
-                                                std::pair<std::string_view, keywordId>("sliders", SLIDERS),
-                                                std::pair<std::string_view, keywordId>("spinner", SPINNERS),
-                                                std::pair<std::string_view, keywordId>("spinners", SPINNERS),
-                                                std::pair<std::string_view, keywordId>("length", LENGTH),
-                                                std::pair<std::string_view, keywordId>("len", LENGTH),
-                                                std::pair<std::string_view, keywordId>("stars", STARS),
-                                                std::pair<std::string_view, keywordId>("star", STARS),
-                                                std::pair<std::string_view, keywordId>("creator", CREATOR)};
+
+    struct Keyword {
+        std::string_view str;
+        keywordId id;
+    };
+
+    static constexpr std::initializer_list<Keyword> keywords = {{.str = "ar", .id = AR},
+                                                                {.str = "cs", .id = CS},
+                                                                {.str = "od", .id = OD},
+                                                                {.str = "hp", .id = HP},
+                                                                {.str = "bpm", .id = BPM},
+                                                                {.str = "opm", .id = OPM},
+                                                                {.str = "cpm", .id = CPM},
+                                                                {.str = "spm", .id = SPM},
+                                                                {.str = "object", .id = OBJECTS},
+                                                                {.str = "objects", .id = OBJECTS},
+                                                                {.str = "circle", .id = CIRCLES},
+                                                                {.str = "circles", .id = CIRCLES},
+                                                                {.str = "slider", .id = SLIDERS},
+                                                                {.str = "sliders", .id = SLIDERS},
+                                                                {.str = "spinner", .id = SPINNERS},
+                                                                {.str = "spinners", .id = SPINNERS},
+                                                                {.str = "length", .id = LENGTH},
+                                                                {.str = "len", .id = LENGTH},
+                                                                {.str = "stars", .id = STARS},
+                                                                {.str = "star", .id = STARS},
+                                                                {.str = "creator", .id = CREATOR}};
 
     // split search string into tokens
     // parse over all difficulties
@@ -1900,26 +1905,27 @@ bool SongBrowser::searchMatcher(const DatabaseBeatmap *databaseBeatmap,
             // debugLog("token[{:d}] = {:s}", i, tokens[i].toUtf8());
             //  determine token type, interpret expression
             bool expression = false;
-            for(const auto &o : operators) {
-                if(searchStringToken.find(o.first) != std::string::npos) {
+            for(const auto &[op_str, op_id] : operators) {
+                if(searchStringToken.find(op_str) != std::string::npos) {
                     // split expression into left and right parts (only accept singular expressions, things like
                     // "0<bpm<1" will not work with this)
                     // debugLog("splitting by string {:s}", operators[o].first.toUtf8());
-                    std::vector<std::string> values{SString::split(searchStringToken, o.first)};
+                    std::vector<std::string_view> values{SString::split(searchStringToken, op_str)};
                     if(values.size() == 2 && values[0].length() > 0 && values[1].length() > 0) {
-                        const std::string &lvalue = values[0];
-                        const std::string &rstring = values[1];
+                        std::string_view lvalue = values[0];
+                        std::string_view rstring = values[1];
+
                         const auto rvaluePercentIndex = rstring.find('%');
                         const bool rvalueIsPercent = (rvaluePercentIndex != std::string::npos);
                         const float rvalue =
                             (rvaluePercentIndex == std::string::npos
-                                 ? std::strtof(rstring.c_str(), nullptr)
-                                 : std::strtof(rstring.substr(0, rvaluePercentIndex).c_str(),
+                                 ? std::strtof(std::string{rstring}.c_str(), nullptr)
+                                 : std::strtof(std::string{rstring.substr(0, rvaluePercentIndex)}.c_str(),
                                                nullptr));  // this must always be a number (at least, assume it is)
 
                         // find lvalue keyword in array (only continue if keyword exists)
-                        for(const auto &keyword : keywords) {
-                            if(keyword.first == lvalue) {
+                        for(const auto &[kw_str, kw_id] : keywords) {
+                            if(kw_str == lvalue) {
                                 expression = true;
 
                                 // we now have a valid expression: the keyword, the operator and the value
@@ -1927,7 +1933,7 @@ bool SongBrowser::searchMatcher(const DatabaseBeatmap *databaseBeatmap,
                                 // solve keyword
                                 float compareValue = 5.0f;
                                 std::string compareString{};
-                                switch(keyword.second) {
+                                switch(kw_id) {
                                     case AR:
                                         compareValue = diff->getAR();
                                         break;
@@ -2002,7 +2008,7 @@ bool SongBrowser::searchMatcher(const DatabaseBeatmap *databaseBeatmap,
 
                                 // solve operator
                                 bool matches = false;
-                                switch(o.second) {
+                                switch(op_id) {
                                     case LE:
                                         if(compareValue <= rvalue) matches = true;
                                         break;
@@ -2081,7 +2087,7 @@ bool SongBrowser::searchMatcher(const DatabaseBeatmap *databaseBeatmap,
     // early return here for literal match/contains
     if(hasAnyValidLiteralSearchString) {
         static constexpr auto findSubstringInDiff = [](const DatabaseBeatmap *diff,
-                                                       const std::string &searchString) -> bool {
+                                                       std::string_view searchString) -> bool {
             if(!diff->getTitleLatin().empty() && SString::contains_ncase(diff->getTitleLatin(), searchString))
                 return true;
             if(!diff->getArtistLatin().empty() && SString::contains_ncase(diff->getArtistLatin(), searchString))
@@ -3350,7 +3356,8 @@ void SongBrowser::selectPreviousRandomBeatmap() {
     if(this->previousRandomBeatmaps.size() > 0) {
         DatabaseBeatmap *currentRandomBeatmap = this->previousRandomBeatmaps.back();
         if(this->previousRandomBeatmaps.size() > 1 &&
-           this->previousRandomBeatmaps[this->previousRandomBeatmaps.size() - 1] == osu->getMapInterface()->getBeatmap())
+           this->previousRandomBeatmaps[this->previousRandomBeatmaps.size() - 1] ==
+               osu->getMapInterface()->getBeatmap())
             this->previousRandomBeatmaps.pop_back();  // deletes the current beatmap which may also be at the top (so
                                                       // we don't switch to ourself)
 

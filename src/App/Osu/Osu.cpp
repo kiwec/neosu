@@ -1612,7 +1612,7 @@ void Osu::onWindowedResolutionChanged(std::string_view args) {
     if(env->isFullscreen()) return;
     if(args.length() < 7) return;
 
-    std::vector<std::string> resolution = SString::split(args, 'x');
+    auto resolution = SString::split<std::string>(args, 'x');
     if(resolution.size() != 2) {
         debugLog(
             "Error: Invalid parameter count for command 'osu_resolution'! (Usage: e.g. \"osu_resolution 1280x720\")");
@@ -1636,7 +1636,7 @@ void Osu::onInternalResolutionChanged(std::string_view args) {
     if(!env->isFullscreen()) return;
     if(args.length() < 7) return;
 
-    std::vector<std::string> resolution = SString::split(args, 'x');
+    auto resolution = SString::split<std::string>(args, 'x');
     if(resolution.size() != 2) {
         debugLog(
             "Error: Invalid parameter count for command 'osu_resolution'! (Usage: e.g. \"osu_resolution 1280x720\")");

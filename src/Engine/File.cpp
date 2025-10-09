@@ -279,8 +279,8 @@ FILE *File::fopen_c(const char *__restrict utf8filename, const char *__restrict 
 //------------------------------------------------------------------------------
 // File implementation
 //------------------------------------------------------------------------------
-File::File(std::string filePath, MODE mode)
-    : sFilePath(std::move(filePath)), fsPath(getFsPath(this->sFilePath)), fileMode(mode), bReady(false), iFileSize(0) {
+File::File(std::string_view filePath, MODE mode)
+    : sFilePath(filePath), fsPath(getFsPath(this->sFilePath)), fileMode(mode), bReady(false), iFileSize(0) {
     if(mode == MODE::READ) {
         if(!openForReading()) return;
     } else if(mode == MODE::WRITE) {
@@ -399,47 +399,56 @@ std::string File::readString() {
     const auto size = getFileSize();
     if(size < 1) return "";
 
-    return {reinterpret_cast<const char *>(readFile()), size};
+    return {reinterpret_cast<const char *>(readFile().get()), size};
 }
 
-const u8 *File::readFile() {
+const std::unique_ptr<u8[]> &File::readFile() {
     if(cv::debug_file.getBool()) debugLog("{:s} (canRead: {})", this->sFilePath, this->bReady && canRead());
 
     // return cached buffer if already read
-    if(!this->vFullBuffer.empty()) return this->vFullBuffer.data();
+    if(!!this->vFullBuffer) return this->vFullBuffer;
 
-    if(!this->bReady || !canRead()) return nullptr;
+    if(!this->bReady || !canRead()) {
+        this->vFullBuffer.reset();
+        return this->vFullBuffer;
+    }
 
     // allocate buffer for file contents
-    this->vFullBuffer.resize(this->iFileSize);
+    this->vFullBuffer = std::make_unique_for_overwrite<u8[]>(this->iFileSize);
 
     // read entire file
     this->ifstream->seekg(0, std::ios::beg);
-    if(this->ifstream->read(reinterpret_cast<char *>(this->vFullBuffer.data()),
-                            static_cast<std::streamsize>(this->iFileSize)))
-        return this->vFullBuffer.data();
+    if(this->ifstream->read(reinterpret_cast<char *>(this->vFullBuffer.get()),
+                            static_cast<std::streamsize>(this->iFileSize))) {
+        return this->vFullBuffer;
+    }
 
-    return nullptr;
+    this->vFullBuffer.reset();
+    return this->vFullBuffer;
 }
 
-std::vector<u8> File::takeFileBuffer() {
+std::unique_ptr<u8[]> &&File::takeFileBuffer() {
     if(cv::debug_file.getBool()) debugLog("{:s} (canRead: {})", this->sFilePath, this->bReady && canRead());
 
     // if buffer is already populated, move it out
-    if(!this->vFullBuffer.empty()) return std::move(this->vFullBuffer);
+    if(!!this->vFullBuffer) return std::move(this->vFullBuffer);
 
-    if(!this->bReady || !this->canRead()) return {};
+    if(!this->bReady || !this->canRead()) {
+        this->vFullBuffer.reset();
+        return std::move(this->vFullBuffer);
+    }
 
     // allocate buffer for file contents
-    this->vFullBuffer.resize(this->iFileSize);
+    this->vFullBuffer = std::make_unique_for_overwrite<u8[]>(this->iFileSize);
 
     // read entire file
     this->ifstream->seekg(0, std::ios::beg);
-    if(this->ifstream->read(reinterpret_cast<char *>(this->vFullBuffer.data()),
-                            static_cast<std::streamsize>(this->iFileSize)))
+    if(this->ifstream->read(reinterpret_cast<char *>(this->vFullBuffer.get()),
+                            static_cast<std::streamsize>(this->iFileSize))) {
         return std::move(this->vFullBuffer);
+    }
 
     // read failed, clear buffer and return empty vector
-    this->vFullBuffer.clear();
-    return {};
+    this->vFullBuffer.reset();
+    return std::move(this->vFullBuffer);
 }

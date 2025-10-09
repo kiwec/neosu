@@ -2,14 +2,19 @@
 #ifndef OSUBACKGROUNDIMAGEHANDLER_H
 #define OSUBACKGROUNDIMAGEHANDLER_H
 
-#include "cbase.h"
+#include "noinclude.h"
+#include "types.h"
+
+#include <vector>
+#include <string>
 
 class Image;
 
 class DatabaseBeatmap;
 class DatabaseBeatmapBackgroundImagePathLoader;
 
-class BackgroundImageHandler {
+class BackgroundImageHandler final {
+    NOCOPY_NOMOVE(BackgroundImageHandler)
    public:
     BackgroundImageHandler();
     ~BackgroundImageHandler();

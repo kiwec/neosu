@@ -211,7 +211,7 @@ void SongButton::drawSubTitle(float deselectedAlpha, bool forceSelectedStyle) {
     g->popTransform();
 }
 
-void SongButton::sortChildren() { std::ranges::sort(this->children, sort_by_difficulty); }
+void SongButton::sortChildren() { std::ranges::sort(this->children, SongBrowser::sort_by_difficulty); }
 
 void SongButton::updateLayoutEx() {
     CarouselButton::updateLayoutEx();

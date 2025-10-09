@@ -78,7 +78,7 @@ void UpdateHandler::onVersionCheckComplete(const std::string &response, bool suc
         return;
     }
 
-    auto lines = SString::split(response, "\n");
+    auto lines = SString::split<std::string>(response, "\n");
     f32 latest_version = strtof(lines[0].c_str(), nullptr);
     u64 latest_build_tms = 0;
     std::string online_update_hash;

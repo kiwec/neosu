@@ -153,9 +153,9 @@ class DatabaseBeatmap final {
     DatabaseBeatmap(std::vector<DatabaseBeatmap *> *difficulties, BeatmapType type);
     ~DatabaseBeatmap();
 
-    static LOAD_DIFFOBJ_RESULT loadDifficultyHitObjects(const std::string &osuFilePath, float AR, float CS,
+    static LOAD_DIFFOBJ_RESULT loadDifficultyHitObjects(std::string_view osuFilePath, float AR, float CS,
                                                         float speedMultiplier, bool calculateStarsInaccurately = false);
-    static LOAD_DIFFOBJ_RESULT loadDifficultyHitObjects(const std::string &osuFilePath, float AR, float CS,
+    static LOAD_DIFFOBJ_RESULT loadDifficultyHitObjects(std::string_view osuFilePath, float AR, float CS,
                                                         float speedMultiplier, bool calculateStarsInaccurately,
                                                         const std::atomic<bool> &dead);
     static LOAD_DIFFOBJ_RESULT loadDifficultyHitObjects(PRIMITIVE_CONTAINER &c, float AR, float CS,
@@ -345,8 +345,8 @@ class DatabaseBeatmap final {
     friend class Database;
     friend class BackgroundImageHandler;
 
-    static PRIMITIVE_CONTAINER loadPrimitiveObjects(const std::string &osuFilePath);
-    static PRIMITIVE_CONTAINER loadPrimitiveObjects(const std::string &osuFilePath, const std::atomic<bool> &dead);
+    static PRIMITIVE_CONTAINER loadPrimitiveObjects(std::string_view osuFilePath);
+    static PRIMITIVE_CONTAINER loadPrimitiveObjects(std::string_view osuFilePath, const std::atomic<bool> &dead);
     static CALCULATE_SLIDER_TIMES_CLICKS_TICKS_RESULT calculateSliderTimesClicksTicks(
         int beatmapVersion, std::vector<SLIDER> &sliders, zarray<DatabaseBeatmap::TIMINGPOINT> &timingpoints,
         float sliderMultiplier, float sliderTickRate);
@@ -363,23 +363,7 @@ class DatabaseBeatmap final {
     bool do_not_store = false;
 
    private:
-    static bool parse_timing_point(const std::string &curLine, DatabaseBeatmap::TIMINGPOINT *out);
-};
-
-class DatabaseBeatmapBackgroundImagePathLoader final : public Resource {
-   public:
-    DatabaseBeatmapBackgroundImagePathLoader(const std::string &filePath) : Resource(filePath) {}
-
-    [[nodiscard]] inline const std::string &getLoadedBackgroundImageFileName() const {
-        return this->sLoadedBackgroundImageFileName;
-    }
-    [[nodiscard]] Type getResType() const override { return APPDEFINED; }  // TODO: handle this better?
-   private:
-    void init() override;
-    void initAsync() override;
-    void destroy() override { ; }
-
-    std::string sLoadedBackgroundImageFileName;
+    static bool parse_timing_point(std::string_view curLine, DatabaseBeatmap::TIMINGPOINT *out);
 };
 
 struct BPMInfo {

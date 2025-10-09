@@ -66,6 +66,7 @@ class AsyncIOHandler::InternalIOContext final {
 
         // for writes: only pending/complete are valid states, partial counts as a fail
         // only useful for knowing whether read/write was a success after closing and calling callbacks
+        // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
         enum OpStatus : u8 { OP_FAIL, OP_PARTIAL, OP_COMPLETE };
 
         OpStatus status{OP_FAIL};

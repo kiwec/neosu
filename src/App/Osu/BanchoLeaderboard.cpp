@@ -25,7 +25,7 @@ FinishedScore parse_score(char *score_line) {
     score.server = BanchoState::endpoint;
     score.is_online_score = true;
 
-    auto tokens = SString::split(score_line, "|");
+    auto tokens = SString::split<std::string>(score_line, "|");
     if(tokens.size() < 16) return score;
 
     score.bancho_score_id = strtoll(tokens[0].c_str(), nullptr, 10);

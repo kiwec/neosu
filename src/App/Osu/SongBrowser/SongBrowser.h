@@ -32,11 +32,11 @@ class ConVar;
 
 class SongBrowserBackgroundSearchMatcher;
 
-typedef bool (*SORTING_COMPARATOR)(const SongButton *a, const SongButton *b);
-bool sort_by_difficulty(const SongButton *a, const SongButton *b);
-
 class SongBrowser final : public ScreenBackable {
     NOCOPY_NOMOVE(SongBrowser)
+   private:
+    using SORTING_COMPARATOR = bool (*)(const SongButton *a, const SongButton *b);
+
    public:
     static void drawSelectedBeatmapBackgroundImage(float alpha = 1.0f);
 
@@ -99,7 +99,7 @@ class SongBrowser final : public ScreenBackable {
     void refreshBeatmaps(bool closeAfterLoading = false);
     void addBeatmapSet(BeatmapSet *beatmap);
     void addSongButtonToAlphanumericGroup(SongButton *btn, std::vector<CollectionButton *> &group,
-                                          const std::string &name);
+                                          std::string_view name);
 
     void requestNextScrollToSongButtonJumpFix(SongDifficultyButton *diffButton);
     bool isButtonVisible(CarouselButton *songButton);
@@ -148,7 +148,7 @@ class SongBrowser final : public ScreenBackable {
     };
 
     static bool searchMatcher(const DatabaseBeatmap *databaseBeatmap,
-                              const std::vector<std::string> &searchStringTokens);
+                              const std::vector<std::string_view> &searchStringTokens);
 
     void updateLayout() override;
     void onBack() override;
@@ -304,6 +304,17 @@ class SongBrowser final : public ScreenBackable {
     GROUP searchPrevGroup;
     SongBrowserBackgroundSearchMatcher *backgroundSearchMatcher;
 
+    // used also by SongButton
+    static bool sort_by_difficulty(SongButton const *a, SongButton const *b);
+
    private:
+    static bool sort_by_artist(SongButton const *a, SongButton const *b);
+    static bool sort_by_bpm(SongButton const *a, SongButton const *b);
+    static bool sort_by_creator(SongButton const *a, SongButton const *b);
+    static bool sort_by_date_added(SongButton const *a, SongButton const *b);
+    static bool sort_by_grade(SongButton const *a, SongButton const *b);
+    static bool sort_by_length(SongButton const *a, SongButton const *b);
+    static bool sort_by_title(SongButton const *a, SongButton const *b);
+
     std::vector<CollectionButton *> *getCollectionButtonsForGroup(GROUP group);
 };

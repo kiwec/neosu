@@ -97,12 +97,12 @@ void DirectX11Shader::init() {
         std::vector<BIND_DESC_LINE> bindDescLines;
         for(size_t i = 0; i < parsedVertexShader.descs.size(); i++) {
             const std::string &desc = parsedVertexShader.descs[i];
-            const std::vector<std::string> tokens = SString::split(desc, "::");
+            const auto tokens = SString::split(desc, "::");
 
             if(cv::debug_shaders.getBool()) debugLog("descs[{}] = {:s}", (int)i, desc);
 
             if(tokens.size() > 4) {
-                const std::string &descType = tokens[0];
+                const auto descType = tokens[0];
 
                 if(cv::debug_shaders.getBool()) {
                     for(size_t t = 0; t < tokens.size(); t++) {
@@ -111,11 +111,11 @@ void DirectX11Shader::init() {
                 }
 
                 if(descType == "D3D11_INPUT_ELEMENT_DESC") {
-                    const std::string &inputType = tokens[1];      // e.g. VS_INPUT
-                    const std::string &inputDataType = tokens[2];  // e.g. POSITION or COLOR0 or TEXCOORD0 etc.
-                    const std::string &inputFormat = tokens
+                    const auto inputType = tokens[1];      // e.g. VS_INPUT
+                    const auto inputDataType = tokens[2];  // e.g. POSITION or COLOR0 or TEXCOORD0 etc.
+                    const auto inputFormat = tokens
                         [3];  // e.g. DXGI_FORMAT_R32G32B32_FLOAT or DXGI_FORMAT_R32G32B32A32_FLOAT or DXGI_FORMAT_R32G32_FLOAT etc.
-                    const std::string &inputClassification = tokens[4];  // e.g. D3D11_INPUT_PER_VERTEX_DATA
+                    const auto inputClassification = tokens[4];  // e.g. D3D11_INPUT_PER_VERTEX_DATA
 
                     INPUT_DESC_LINE inputDescLine;
                     {
@@ -169,10 +169,10 @@ void DirectX11Shader::init() {
                     }
                     inputDescLines.push_back(inputDescLine);
                 } else if(descType == "D3D11_BUFFER_DESC") {
-                    const std::string &bufferBindType = tokens[1];      // e.g. D3D11_BIND_CONSTANT_BUFFER
-                    const std::string &bufferName = tokens[2];          // e.g. ModelViewProjectionConstantBuffer
-                    const std::string &bufferVariableName = tokens[3];  // e.g. mvp or col or misc etc.
-                    const std::string &bufferVariableType = tokens[4];  // e.g. float4x4 or float4 etc.
+                    const auto bufferBindType = tokens[1];      // e.g. D3D11_BIND_CONSTANT_BUFFER
+                    const auto bufferName = tokens[2];          // e.g. ModelViewProjectionConstantBuffer
+                    const auto bufferVariableName = tokens[3];  // e.g. mvp or col or misc etc.
+                    const auto bufferVariableType = tokens[4];  // e.g. float4x4 or float4 etc.
 
                     BIND_DESC_LINE bindDescLine;
                     {
@@ -188,7 +188,7 @@ void DirectX11Shader::init() {
                             }
                         }
                         bindDescLine.name = bufferName;
-                        bindDescLine.variableName = bufferVariableName.c_str();
+                        bindDescLine.variableName = bufferVariableName;
                         {
                             bindDescLine.variableType = bufferVariableType;
                             if(bufferVariableType == "float")

@@ -9,7 +9,7 @@
 #include "File.h"
 #include "Logging.h"
 
-void Console::processCommand(std::string command, bool fromFile) {
+void Console::processCommand(std::string_view command, bool fromFile) {
     if(command.length() < 1) return;
 
     // remove whitespace from beginning/end of string
@@ -17,7 +17,7 @@ void Console::processCommand(std::string command, bool fromFile) {
 
     // handle multiple commands separated by semicolons
     if(command.find(';') != std::string::npos && command.find("echo") == std::string::npos) {
-        const std::vector<std::string> commands = SString::split(command, ';');
+        const auto commands = SString::split(command, ';');
         for(const auto &command : commands) {
             processCommand(command);
         }
@@ -26,7 +26,7 @@ void Console::processCommand(std::string command, bool fromFile) {
     }
 
     // separate convar name and value
-    const std::vector<std::string> tokens = SString::split(command, ' ');
+    const auto tokens = SString::split(command, ' ');
     std::string commandName;
     std::string commandValue;
     for(size_t i = 0; i < tokens.size(); i++) {

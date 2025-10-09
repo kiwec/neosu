@@ -18,9 +18,15 @@ using split_join_enabled_t =
                          std::is_same_v<std::decay_t<S>, std::string_view>,
                      bool>;
 
+template <typename R = std::string_view>
+using split_ret_enabled_t =
+    std::enable_if_t<std::is_same_v<std::decay_t<R>, std::string> || std::is_same_v<std::decay_t<R>, std::string_view>,
+                     bool>;
+
 // std string splitting, for if we don't want to create UStrings everywhere (slow and heavy)
-template <typename S = char, split_join_enabled_t<S> = true>
-std::vector<std::string> split(std::string_view s, S d);
+template <typename R = std::string_view, typename S = char, split_ret_enabled_t<R> = true,
+          split_join_enabled_t<S> = true>
+std::vector<R> split(std::string_view s, S d);
 
 // join a vector of std::strings
 template <typename S = char, split_join_enabled_t<S> = true>
@@ -34,6 +40,19 @@ static forceinline void trim_inplace(std::string& str) {
     if(str.empty()) return;
     str.erase(0, str.find_first_not_of(" \t\r\n"));
     str.erase(str.find_last_not_of(" \t\r\n") + 1);
+}
+
+// in-place whitespace/newline trimming (both sides)
+// adjusts the view to exclude leading/trailing whitespace
+static forceinline void trim_inplace(std::string_view& str) {
+    if(str.empty()) return;
+    size_t start = str.find_first_not_of(" \t\r\n");
+    if(start == std::string_view::npos) {
+        str = std::string_view();
+        return;
+    }
+    size_t end = str.find_last_not_of(" \t\r\n");
+    str = str.substr(start, end - start + 1);
 }
 
 // case-insensitive strstr

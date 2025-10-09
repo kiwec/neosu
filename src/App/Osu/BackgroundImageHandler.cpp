@@ -4,9 +4,77 @@
 #include "ConVar.h"
 #include "DatabaseBeatmap.h"
 #include "Engine.h"
+#include "File.h"
+#include "Parsing.h"
 #include "ResourceManager.h"
 
 #include "Skin.h"
+
+class DatabaseBeatmapBackgroundImagePathLoader final : public Resource {
+   public:
+    DatabaseBeatmapBackgroundImagePathLoader(const std::string &filePath) : Resource(filePath) {}
+
+    [[nodiscard]] inline const std::string &getLoadedBackgroundImageFileName() const {
+        return this->sLoadedBackgroundImageFileName;
+    }
+    [[nodiscard]] Type getResType() const override { return APPDEFINED; }  // TODO: handle this better?
+   private:
+    void init() override;
+    void initAsync() override;
+    void destroy() override { ; }
+
+    std::string sLoadedBackgroundImageFileName;
+};
+
+void DatabaseBeatmapBackgroundImagePathLoader::init() {
+    // (nothing)
+    this->bReady = true;
+}
+
+void DatabaseBeatmapBackgroundImagePathLoader::initAsync() {
+    if(this->bInterrupted) return;
+
+    File file(this->sFilePath);
+    if(this->bInterrupted || !file.canRead()) return;
+
+    bool is_events_block = false;
+    while(file.canRead()) {
+        if(this->bInterrupted) {
+            return;
+        }
+        std::string curLine = file.readLine();
+
+        // ignore comments, but only if at the beginning of a line (e.g. allow Artist:DJ'TEKINA//SOMETHING)
+        if(curLine.starts_with("//")) continue;
+
+        if(curLine.find("[Events]") != std::string::npos) {
+            is_events_block = true;
+            continue;
+        } else if(curLine.find("[TimingPoints]") != std::string::npos)
+            break;  // NOTE: stop early
+        else if(curLine.find("[Colours]") != std::string::npos)
+            break;  // NOTE: stop early
+        else if(curLine.find("[HitObjects]") != std::string::npos)
+            break;  // NOTE: stop early
+
+        if(!is_events_block) continue;
+
+        std::string str;
+        i32 type, startTime;
+        if(Parsing::parse(curLine.c_str(), &type, ',', &startTime, ',', &str) && type == 0) {
+            this->sLoadedBackgroundImageFileName = str;
+            break;
+        }
+    }
+
+    if(this->bInterrupted) {
+        return;
+    }
+
+    this->bAsyncReady = true;
+    this->bReady = true;  // NOTE: on purpose. there is nothing to do in init(), so finish 1 frame early
+}
+
 
 BackgroundImageHandler::BackgroundImageHandler() { this->bFrozen = false; }
 

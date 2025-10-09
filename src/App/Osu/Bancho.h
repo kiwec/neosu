@@ -61,7 +61,7 @@ struct BanchoState final {
     // utils
     static void handle_packet(Packet &packet);
     static std::string build_login_packet();
-    static MD5Hash md5(u8 *msg, size_t msg_len);
+    static MD5Hash md5(const u8 *msg, size_t msg_len);
 
     // cached uuid
     [[nodiscard]] static const UString &get_disk_uuid();

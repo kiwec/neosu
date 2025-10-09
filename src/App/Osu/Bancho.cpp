@@ -80,7 +80,7 @@ std::atomic<i32> BanchoState::user_id{0};
 
 /*###################################################################################################*/
 
-MD5Hash BanchoState::md5(u8 *msg, size_t msg_len) {
+MD5Hash BanchoState::md5(const u8 *msg, size_t msg_len) {
     u8 digest[16];
     crypto::hash::md5(msg, msg_len, &digest[0]);
 

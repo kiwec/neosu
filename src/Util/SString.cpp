@@ -27,8 +27,9 @@ bool alnum_comp(std::string_view a, std::string_view b) {
     return false;
 }
 
-template <typename S, split_join_enabled_t<S>>
-std::vector<std::string> split(std::string_view s, S delim) {
+// alphanumeric string comparator that ignores special characters at the start of strings
+template <typename R, typename S, split_ret_enabled_t<R>, split_join_enabled_t<S>>
+std::vector<R> split(std::string_view s, S delim) {
     size_t len = 0;
     if constexpr(std::is_same_v<std::decay_t<S>, const char*>) {
         len = strlen(delim);
@@ -38,17 +39,27 @@ std::vector<std::string> split(std::string_view s, S delim) {
         len = 1;
     }
 
-    std::vector<std::string> r;
+    std::vector<R> r;
     size_t i = 0, j = 0;
-    while((j = s.find(delim, i)) != s.npos) r.emplace_back(s, i, j - i), i = j + len;
-    r.emplace_back(s, i, s.size() - i);
+    if constexpr(std::is_same_v<std::decay_t<R>, std::string>) {
+        while((j = s.find(delim, i)) != s.npos) r.emplace_back(s, i, j - i), i = j + len;
+        r.emplace_back(s, i, s.size() - i);
+    } else {  // string_view
+        while((j = s.find(delim, i)) != s.npos) r.emplace_back(s.substr(i, j - i)), i = j + len;
+        r.emplace_back(s.substr(i));
+    }
+
     return r;
 }
 
 // explicit instantiations
-template std::vector<std::string> split<char>(std::string_view, char);
-template std::vector<std::string> split<const char*>(std::string_view, const char*);
-template std::vector<std::string> split<std::string_view>(std::string_view, std::string_view);
+template std::vector<std::string> split<std::string, char>(std::string_view, char);
+template std::vector<std::string> split<std::string, const char*>(std::string_view, const char*);
+template std::vector<std::string> split<std::string, std::string_view>(std::string_view, std::string_view);
+
+template std::vector<std::string_view> split<std::string_view, char>(std::string_view, char);
+template std::vector<std::string_view> split<std::string_view, const char*>(std::string_view, const char*);
+template std::vector<std::string_view> split<std::string_view, std::string_view>(std::string_view, std::string_view);
 
 template <typename S, split_join_enabled_t<S>>
 std::string join(const std::vector<std::string>& strings, S delim) {

@@ -191,7 +191,7 @@ i32 get_beatmapset_id_from_osu_file(const u8* osu_data, size_t s_osu_data) {
     i32 set_id = -1;
 
     std::string file((const char*)osu_data, s_osu_data);
-    auto lines = SString::split(file, "\n");
+    auto lines = SString::split<std::string>(file, "\n");
     for(auto& line : lines) {
         if(line.empty()) continue;
         if(line.starts_with("//")) continue;
@@ -307,7 +307,7 @@ bool extract_beatmapset(const u8* data, size_t data_s, std::string& map_dir) {
                 goto skip_file;
             } else {
                 file_path.append("/");
-                file_path.append(folder.c_str());
+                file_path.append(folder);
             }
         }
 
@@ -503,7 +503,7 @@ void process_beatmapset_info_response(Packet& packet) {
     }
 
     // {set_id}.osz|{artist}|{title}|{creator}|{status}|10.0|{last_update}|{set_id}|0|0|0|0|0
-    auto tokens = SString::split(std::string{(char*)packet.memory}, "|");
+    auto tokens = SString::split<std::string>(std::string{(char*)packet.memory}, "|");
     if(tokens.size() < 13) return;
 
     beatmap_to_beatmapset[map_id] = static_cast<i32>(strtol(tokens[7].c_str(), nullptr, 10));

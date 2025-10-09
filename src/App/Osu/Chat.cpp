@@ -858,7 +858,7 @@ void Chat::addMessage(UString channel_name, const ChatMessage &msg, bool mark_un
     auto msg_words = msg.text.split(" ");
     if(!chatter_is_moderator) {
         for(auto &word : msg_words) {
-            for(auto &ignored : ignore_list) {
+            for(const auto ignored : ignore_list) {
                 if(ignored == "") continue;
 
                 word.lowerCase();
@@ -878,7 +878,7 @@ void Chat::addMessage(UString channel_name, const ChatMessage &msg, bool mark_un
             break;
         }
 
-        for(auto &highlight : highlight_list) {
+        for(const auto highlight : highlight_list) {
             if(highlight == "") continue;
 
             word.lowerCase();
