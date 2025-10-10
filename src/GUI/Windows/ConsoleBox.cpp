@@ -491,22 +491,22 @@ void ConsoleBox::onChar(KeyboardEvent &e) {
 
             if(suggestion->hasValue()) {
                 switch(suggestion->getType()) {
-                    case ConVar::CONVAR_TYPE::CONVAR_TYPE_BOOL:
+                    case ConVar::CONVAR_TYPE::BOOL:
                         suggestionText.append(UString::format(" %i", (int)suggestion->getBool()));
                         // suggestionText.append(UString::format(" ( def. \"%i\" )",
                         // (int)(suggestions[i]->getDefaultFloat() > 0)));
                         break;
-                    case ConVar::CONVAR_TYPE::CONVAR_TYPE_INT:
+                    case ConVar::CONVAR_TYPE::INT:
                         suggestionText.append(UString::format(" %i", suggestion->getInt()));
                         // suggestionText.append(UString::format(" ( def. \"%i\" )",
                         // (int)suggestions[i]->getDefaultFloat()));
                         break;
-                    case ConVar::CONVAR_TYPE::CONVAR_TYPE_FLOAT:
+                    case ConVar::CONVAR_TYPE::FLOAT:
                         suggestionText.append(UString::format(" %g", suggestion->getFloat()));
                         // suggestionText.append(UString::format(" ( def. \"%g\" )",
                         // suggestions[i]->getDefaultFloat()));
                         break;
-                    case ConVar::CONVAR_TYPE::CONVAR_TYPE_STRING:
+                    case ConVar::CONVAR_TYPE::STRING:
                         suggestionText.append(" ");
                         suggestionText.append(suggestion->getString().c_str());
                         // suggestionText.append(" ( def. \"");

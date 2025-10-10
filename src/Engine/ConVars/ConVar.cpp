@@ -10,9 +10,9 @@
 #include "Bancho.h"
 
 // set by app, shared across all convars, called when a protected convar changes
-ConVar::NativeConVarCallback ConVar::onSetValueProtectedCallback{};
+ConVar::CVVoidCB ConVar::onSetValueProtectedCallback{};
 
-void ConVar::setOnSetValueProtectedCallback(const NativeConVarCallback &callback) {
+void ConVar::setOnSetValueProtectedCallback(const CVVoidCB &callback) {
     ConVar::onSetValueProtectedCallback = callback;
 }
 
@@ -21,8 +21,7 @@ void ConVar::addConVar() {
 
     // osu_ prefix is deprecated.
     // If you really need it, you'll also need to edit Console::execConfigFile to whitelist it there.
-    assert(!(name.starts_with("osu_") && !name.starts_with("osu_folder")) &&
-           "osu_ ConVar prefix is deprecated.");
+    assert(!(name.starts_with("osu_") && !name.starts_with("osu_folder")) && "osu_ ConVar prefix is deprecated.");
 
     auto &convar_map = ConVarHandler::getConVarMap_int();
 
@@ -33,16 +32,16 @@ void ConVar::addConVar() {
     ConVarHandler::getConVarArray_int().push_back(this);
 }
 
-ConVarString ConVar::getFancyDefaultValue() {
+std::string ConVar::getFancyDefaultValue() {
     switch(this->getType()) {
-        case ConVar::CONVAR_TYPE::CONVAR_TYPE_BOOL:
+        case CONVAR_TYPE::BOOL:
             return this->dDefaultValue == 0 ? "false" : "true";
-        case ConVar::CONVAR_TYPE::CONVAR_TYPE_INT:
+        case CONVAR_TYPE::INT:
             return std::to_string((int)this->dDefaultValue);
-        case ConVar::CONVAR_TYPE::CONVAR_TYPE_FLOAT:
+        case CONVAR_TYPE::FLOAT:
             return std::to_string(this->dDefaultValue);
-        case ConVar::CONVAR_TYPE::CONVAR_TYPE_STRING: {
-            ConVarString out = "\"";
+        case CONVAR_TYPE::STRING: {
+            std::string out = "\"";
             out.append(this->sDefaultValue);
             out.append("\"");
             return out;
@@ -52,15 +51,15 @@ ConVarString ConVar::getFancyDefaultValue() {
     return "unreachable";
 }
 
-ConVarString ConVar::typeToString(CONVAR_TYPE type) {
+std::string ConVar::typeToString(CONVAR_TYPE type) {
     switch(type) {
-        case ConVar::CONVAR_TYPE::CONVAR_TYPE_BOOL:
+        case CONVAR_TYPE::BOOL:
             return "bool";
-        case ConVar::CONVAR_TYPE::CONVAR_TYPE_INT:
+        case CONVAR_TYPE::INT:
             return "int";
-        case ConVar::CONVAR_TYPE::CONVAR_TYPE_FLOAT:
+        case CONVAR_TYPE::FLOAT:
             return "float";
-        case ConVar::CONVAR_TYPE::CONVAR_TYPE_STRING:
+        case CONVAR_TYPE::STRING:
             return "string";
     }
 
@@ -68,15 +67,15 @@ ConVarString ConVar::typeToString(CONVAR_TYPE type) {
 }
 
 void ConVar::exec() {
-    if(auto *cb = std::get_if<NativeConVarCallback>(&this->callback)) (*cb)();
+    if(auto *cb = std::get_if<CVVoidCB>(&this->callback)) (*cb)();
 }
 
 void ConVar::execArgs(std::string_view args) {
-    if(auto *cb = std::get_if<NativeConVarCallbackArgs>(&this->callback)) (*cb)(args);
+    if(auto *cb = std::get_if<CVStringCB>(&this->callback)) (*cb)(args);
 }
 
 void ConVar::execFloat(float args) {
-    if(auto *cb = std::get_if<NativeConVarCallbackFloat>(&this->callback)) (*cb)(args);
+    if(auto *cb = std::get_if<CVFloatCB>(&this->callback)) (*cb)(args);
 }
 
 double ConVar::getDouble() const {
@@ -95,7 +94,7 @@ double ConVar::getDouble() const {
     return this->dClientValue.load(std::memory_order_acquire);
 }
 
-const ConVarString &ConVar::getString() const {
+const std::string &ConVar::getString() const {
     if(this->isFlagSet(cv::SERVER) && this->hasServerValue.load(std::memory_order_acquire)) {
         return this->sServerValue;
     }

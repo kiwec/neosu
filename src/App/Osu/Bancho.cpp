@@ -394,7 +394,7 @@ void BanchoState::handle_packet(Packet &packet) {
         case ROOM_JOIN_SUCCESS: {
             // Sanity, in case some trolley admins do funny business
             if(BanchoState::spectating) {
-                stop_spectating();
+                Spectating::stop();
             }
             if(osu->isInPlayMode()) {
                 osu->getMapInterface()->stop(true);

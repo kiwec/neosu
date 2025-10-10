@@ -777,7 +777,7 @@ void BeatmapInterface::actualRestart() {
 void BeatmapInterface::pause(bool quitIfWaiting) {
     if(this->beatmap == nullptr) return;
     if(BanchoState::spectating) {
-        stop_spectating();
+        Spectating::stop();
         return;
     }
 

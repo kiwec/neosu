@@ -89,7 +89,7 @@ void logout_user(i32 user_id) {
 
         debugLog("{:s} has disconnected.", user_info->name);
         if(user_id == BanchoState::spectated_player_id) {
-            stop_spectating();
+            Spectating::stop();
         }
 
         if(user_info->is_friend() && cv::notify_friend_status_change.getBool()) {

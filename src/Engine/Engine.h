@@ -98,7 +98,10 @@ class Engine final : public KeyboardListener {
 
     // clang-format off
     // NOTE: if engine_throttle cvar is off, this will always return true
-    [[nodiscard]] inline bool throttledShouldRun(unsigned int howManyVsyncFramesToWaitBetweenExecutions) { return (this->fVsyncFrameCounterTime == 0.0f) && !(this->iVsyncFrameCount % howManyVsyncFramesToWaitBetweenExecutions);}
+    [[nodiscard]] inline bool throttledShouldRun(unsigned int howManyVsyncFramesToWaitBetweenExecutions) {
+        return howManyVsyncFramesToWaitBetweenExecutions == 0 ||
+               ((this->fVsyncFrameCounterTime == 0.0f) && !(this->iVsyncFrameCount % howManyVsyncFramesToWaitBetweenExecutions));
+    }
     // clang-format on
 
     [[nodiscard]] constexpr bool hasFocus() const { return this->bHasFocus; }
@@ -112,7 +115,7 @@ class Engine final : public KeyboardListener {
     [[nodiscard]] constexpr CBaseUIContainer *getGUI() const { return this->guiContainer; }
 
    private:
-    void runtime_assert(bool cond, const char* reason);
+    void runtime_assert(bool cond, const char *reason);
 
     // input devices
     std::vector<Mouse *> mice;

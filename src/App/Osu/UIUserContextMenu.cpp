@@ -153,9 +153,9 @@ void UIUserContextMenuScreen::on_action(const UString& /*text*/, int user_action
         }
     } else if(user_action == TOGGLE_SPECTATE) {
         if(BanchoState::spectated_player_id == this->user_id) {
-            stop_spectating();
+            Spectating::stop();
         } else {
-            start_spectating(this->user_id);
+            Spectating::start(this->user_id);
         }
     } else if(user_action == VIEW_TOP_PLAYS) {
         osu->getUserStatsScreen()->setVisible(true);

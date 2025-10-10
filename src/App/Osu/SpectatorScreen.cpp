@@ -1,36 +1,34 @@
 // Copyright (c) 2024, kiwec, All rights reserved.
 #include "SpectatorScreen.h"
 
+#include "Osu.h"
 #include "Bancho.h"
 #include "BanchoNetworking.h"
-#include "BanchoProtocol.h"
 #include "BanchoUsers.h"
 #include "BeatmapInterface.h"
 #include "CBaseUILabel.h"
-#include "CBaseUIScrollView.h"
 #include "Changelog.h"
 #include "ConVar.h"
-#include "Database.h"
 #include "Downloader.h"
-#include "Engine.h"
 #include "KeyBindings.h"
 #include "Lobby.h"
 #include "Logging.h"
 #include "MainMenu.h"
-#include "ModSelector.h"
 #include "NotificationOverlay.h"
-#include "Osu.h"
 #include "PromptScreen.h"
 #include "RankingScreen.h"
-#include "ResourceManager.h"
 #include "RoomScreen.h"
 #include "Skin.h"
-#include "SongBrowser/SongBrowser.h"
+#include "SongBrowser.h"
 #include "SoundEngine.h"
 #include "UIButton.h"
 #include "UserCard.h"
 
 static i32 current_map_id = 0;
+
+using namespace Spectating;
+
+namespace Spectating {
 
 // TODO @kiwec: test that those bugs have been fixed
 
@@ -56,8 +54,8 @@ static i32 current_map_id = 0;
         label_name->setDrawBackground(false);                             \
     } while(0)
 
-void start_spectating(i32 user_id) {
-    stop_spectating();
+void start(i32 user_id) {
+    Spectating::stop();
 
     Packet packet;
     packet.id = START_SPECTATING;
@@ -83,7 +81,18 @@ void start_spectating(i32 user_id) {
     soundEngine->play(osu->getSkin()->getMenuHit());
 }
 
-void stop_spectating() {
+void start_by_username(std::string_view username) {
+    auto user = BANCHO::User::find_user(UString{username.data(), static_cast<int>(username.length())});
+    if(user == nullptr) {
+        debugLog("Couldn't find user \"{:s}\"!", username);
+        return;
+    }
+
+    debugLog("Spectating {:s} (user {:d})...", username, user->user_id);
+    Spectating::start(user->user_id);
+}
+
+void stop() {
     if(!BanchoState::spectating) return;
 
     if(osu->isInPlayMode()) {
@@ -105,6 +114,8 @@ void stop_spectating() {
     osu->getMainMenu()->setVisible(true);
     soundEngine->play(osu->getSkin()->getMenuBackSound());
 }
+
+}  // namespace Spectating
 
 SpectatorScreen::SpectatorScreen() {
     this->font = resourceManager->getFont("FONT_DEFAULT");
@@ -275,15 +286,4 @@ void SpectatorScreen::onKeyDown(KeyboardEvent &key) {
     OsuScreen::onKeyDown(key);
 }
 
-void SpectatorScreen::onStopSpectatingClicked() { stop_spectating(); }
-
-void spectate_by_username(std::string_view username) {
-    auto user = BANCHO::User::find_user(UString{username.data(), static_cast<int>(username.length())});
-    if(user == nullptr) {
-        debugLog("Couldn't find user \"{:s}\"!", username);
-        return;
-    }
-
-    debugLog("Spectating {:s} (user {:d})...", username, user->user_id);
-    start_spectating(user->user_id);
-}
+void SpectatorScreen::onStopSpectatingClicked() { Spectating::stop(); }

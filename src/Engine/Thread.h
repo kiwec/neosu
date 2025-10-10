@@ -7,4 +7,6 @@ bool set_current_thread_name(const char *name);
 void set_current_thread_prio(bool high);
 
 const char* get_current_thread_name();
+
+bool is_main_thread();
 }

@@ -596,7 +596,7 @@ void RoomScreen::on_room_joined(Room room) {
     this->on_map_change();
 
     // Close all screens and stop any activity the player is in
-    stop_spectating();
+    Spectating::stop();
     if(osu->isInPlayMode()) {
         osu->getMapInterface()->stop(true);
     }

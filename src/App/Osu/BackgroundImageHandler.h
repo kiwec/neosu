@@ -21,10 +21,9 @@ class BGImageHandler final {
     ~BGImageHandler();
 
     void update(bool allowEviction);
-
-    void scheduleFreezeCache() { this->frozen = true; }
-
     const Image *getLoadBackgroundImage(const DatabaseBeatmap *beatmap, bool load_immediately = false);
+
+    inline void scheduleFreezeCache() { this->frozen = true; }
 
    private:
     class MapBGImagePathLoader;
@@ -36,14 +35,13 @@ class BGImageHandler final {
         MapBGImagePathLoader *bg_image_path_ldr;
         Image *image;
 
-        u32 evict_framecnt;
-
         f32 loading_time;
 
         bool load_scheduled;
         bool used_last_frame;
     };
 
+    [[nodiscard]] u32 getMaxEvictions() const;
     [[nodiscard]] const Image *getImageOrSkinFallback(const Image *candidate_loaded) const;
 
     void handleLoadPathForEntry(const std::string &path, ENTRY &entry);
@@ -62,14 +60,20 @@ class BGImageHandler final {
         f32 new_delay = std::clamp<f32>(new_value, 0.f, 2.f);
         this->image_loading_delay = new_delay;
     }
+    inline void enableToggleCB(f32 new_value) {
+        bool enabled = !!static_cast<int>(new_value);
+        this->disabled = !enabled;
+    }
 
     sv_unordered_map<ENTRY> cache;
+    std::string last_requested_entry;
 
     u32 max_cache_size;
     u32 eviction_delay_frames;
     f32 image_loading_delay;
 
     bool frozen{false};
+    bool disabled{false};
 };
 
 #endif

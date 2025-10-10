@@ -2,7 +2,6 @@
 // Copyright (c) 2015, PG, All rights reserved.
 #include "ModSelector.h"
 #include "MouseListener.h"
-#include "Replay.h"
 #include "score.h"
 #include "OsuConfig.h"
 

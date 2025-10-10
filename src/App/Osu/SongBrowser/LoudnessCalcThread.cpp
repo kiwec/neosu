@@ -197,7 +197,7 @@ void VolNormalization::abort_instance() {
 }
 
 VolNormalization::~VolNormalization() {
-    cv::loudness_calc_threads.removeCallbacks();
+    cv::loudness_calc_threads.removeAllCallbacks();
     // only clean up this instance's resources
     abort_instance();
 }

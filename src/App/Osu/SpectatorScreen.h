@@ -33,8 +33,11 @@ class SpectatorScreen final : public OsuScreen {
     CBaseUILabel* status = nullptr;
 };
 
-void start_spectating(i32 user_id);
-void stop_spectating();
-
+namespace Spectating {
 // convar callback
-void spectate_by_username(std::string_view username);
+void start_by_username(std::string_view username);
+
+void start(i32 user_id);
+void stop();
+
+}  // namespace Spectating

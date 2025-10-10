@@ -1126,12 +1126,10 @@ bool DatabaseBeatmap::loadMetadata(bool compute_md5) {
 
                 if(!haveFilename) {
                     std::string str;
-                    i32 type, startTime;
-                    if(Parsing::parse(curLine, &type, ',', &startTime, ',', &str)) {
-                        if(type == 0) {
-                            this->sBackgroundImageFileName = str;
-                            haveFilename = true;
-                        }
+                    i32 type{-1}, startTime;
+                    if(Parsing::parse(curLine, &type, ',', &startTime, ',', &str) && (type == 0)) {
+                        this->sBackgroundImageFileName = str;
+                        haveFilename = true;
                     }
                 }
                 if(haveFilename) {

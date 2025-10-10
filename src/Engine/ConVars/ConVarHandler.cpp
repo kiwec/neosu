@@ -58,10 +58,10 @@ ConVar *ConVarHandler::getConVarByName(std::string_view name, bool warnIfNotFoun
     if(found) return found;
 
     if(warnIfNotFound) {
-        ConVarString errormsg = ConVarString("ENGINE: ConVar \"");
+        std::string errormsg = "ENGINE: ConVar \"";
         errormsg.append(name);
         errormsg.append("\" does not exist...");
-        Logger::logRaw("{:s}", errormsg.c_str());
+        Logger::logRaw("{:s}", errormsg);
         engine->showMessageWarning("Engine Error", errormsg.c_str());
     }
 
@@ -83,7 +83,7 @@ std::vector<ConVar *> ConVarHandler::getConVarByLetter(std::string_view letters)
         for(auto convar : convars) {
             if(convar->isFlagSet(cv::HIDDEN)) continue;
 
-            const ConVarString &name = convar->getName();
+            const std::string &name = convar->getName();
             if(name.find(letters) != std::string::npos) {
                 if(letters.length() > 1) matchingConVarNames.insert(name);
 
@@ -97,7 +97,7 @@ std::vector<ConVar *> ConVarHandler::getConVarByLetter(std::string_view letters)
                 if(convar->isFlagSet(cv::HIDDEN)) continue;
 
                 if(convar->getName().find(letters) != std::string::npos) {
-                    const ConVarString &stdName = convar->getName();
+                    const std::string &stdName = convar->getName();
                     if(!matchingConVarNames.contains(stdName)) {
                         matchingConVarNames.insert(stdName);
                         matchingConVars.push_back(convar);
@@ -111,7 +111,7 @@ std::vector<ConVar *> ConVarHandler::getConVarByLetter(std::string_view letters)
     return matchingConVars;
 }
 
-ConVarString ConVarHandler::flagsToString(uint8_t flags) {
+std::string ConVarHandler::flagsToString(uint8_t flags) {
     if(flags == 0) {
         return "no flags";
     }
@@ -121,7 +121,7 @@ ConVarString ConVarHandler::flagsToString(uint8_t flags) {
         std::pair{cv::PROTECTED, "protected"}, std::pair{cv::GAMEPLAY, "gameplay"}, std::pair{cv::HIDDEN, "hidden"},
         std::pair{cv::NOSAVE, "nosave"},       std::pair{cv::NOLOAD, "noload"}};
 
-    ConVarString string;
+    std::string string;
     for(bool first = true; const auto &[flag, str] : flagStringPairArray) {
         if((flags & flag) == flag) {
             if(!first) {
@@ -239,26 +239,25 @@ void ConVarHandler::ConVarBuiltins::find(std::string_view args) {
 }
 
 void ConVarHandler::ConVarBuiltins::help(std::string_view args) {
-    ConVarString trimmedArgs{args};
-    SString::trim_inplace(trimmedArgs);
+    SString::trim_inplace(args);
 
-    if(trimmedArgs.length() < 1) {
+    if(args.length() < 1) {
         Logger::logRaw("Usage:  help <cvarname>");
         Logger::logRaw("To get a list of all available commands, type \"listcommands\".");
         return;
     }
 
-    const std::vector<ConVar *> matches = cvars->getConVarByLetter(trimmedArgs);
+    const std::vector<ConVar *> matches = cvars->getConVarByLetter(args);
 
     if(matches.size() < 1) {
-        Logger::logRaw("ConVar {:s} does not exist.", trimmedArgs);
+        Logger::logRaw("ConVar {:s} does not exist.", args);
         return;
     }
 
     // use closest match
     size_t index = 0;
     for(size_t i = 0; i < matches.size(); i++) {
-        if(matches[i]->getName() == trimmedArgs) {
+        if(matches[i]->getName() == args) {
             index = i;
             break;
         }
@@ -270,20 +269,20 @@ void ConVarHandler::ConVarBuiltins::help(std::string_view args) {
         return;
     }
 
-    ConVarString thelog{match->getName()};
+    std::string thelog{match->getName()};
     {
         if(match->hasValue()) {
             const auto &cv_str = match->getString();
             const auto &default_str = match->getDefaultString();
-            thelog.append(fmt::format(" = {:s} ( def. \"{:s}\" , ", cv_str.c_str(), default_str.c_str()));
+            thelog.append(fmt::format(" = {:s} ( def. \"{:s}\" , ", cv_str, default_str));
             thelog.append(ConVar::typeToString(match->getType()));
             thelog.append(", ");
-            thelog.append(ConVarHandler::flagsToString(match->getFlags()).c_str());
+            thelog.append(ConVarHandler::flagsToString(match->getFlags()));
             thelog.append(" )");
         }
 
         thelog.append(" - ");
-        thelog.append(match->getHelpstring().c_str());
+        thelog.append(match->getHelpstring());
     }
     Logger::logRaw("{:s}", thelog);
 }
@@ -299,21 +298,21 @@ void ConVarHandler::ConVarBuiltins::listcommands(void) {
 
             ConVar *var = convar;
 
-            ConVarString tstring{var->getName()};
+            std::string tstring{var->getName()};
             {
                 if(var->hasValue()) {
                     const auto &var_str = var->getString();
                     const auto &default_str = var->getDefaultString();
-                    tstring.append(fmt::format(" = {:s} ( def. \"{:s}\" , ", var_str.c_str(), default_str.c_str()));
+                    tstring.append(fmt::format(" = {:s} ( def. \"{:s}\" , ", var_str, default_str));
                     tstring.append(ConVar::typeToString(var->getType()));
                     tstring.append(", ");
-                    tstring.append(ConVarHandler::flagsToString(var->getFlags()).c_str());
+                    tstring.append(ConVarHandler::flagsToString(var->getFlags()));
                     tstring.append(" )");
                 }
 
                 if(var->getHelpstring().length() > 0) {
                     tstring.append(" - ");
-                    tstring.append(var->getHelpstring().c_str());
+                    tstring.append(var->getHelpstring());
                 }
             }
             Logger::logRaw("{:s}", tstring);
@@ -324,15 +323,15 @@ void ConVarHandler::ConVarBuiltins::listcommands(void) {
 
 void ConVarHandler::ConVarBuiltins::dumpcommands(void) {
     // in assets/misc/convar_template.html
-    ConVarString html_template{reinterpret_cast<const char *>(convar_template),
-                               static_cast<size_t>(convar_template_size())};
+    std::string html_template{reinterpret_cast<const char *>(convar_template),
+                              static_cast<size_t>(convar_template_size())};
 
     std::vector<ConVar *> convars = cvars->getConVarArray();
     std::ranges::sort(convars, {}, [](const ConVar *v) { return v->getName(); });
 
-    ConVarString html = R"(<section class="variables">)";
+    std::string html = R"(<section class="variables">)";
     for(auto var : convars) {
-        ConVarString flags;
+        std::string flags;
         if(var->isFlagSet(cv::CLIENT)) flags.append("<span class=\"flag client\">CLIENT</span>");
         if(var->isFlagSet(cv::SKINS)) flags.append("<span class=\"flag skins\">SKINS</span>");
         if(var->isFlagSet(cv::SERVER)) flags.append("<span class=\"flag server\">SERVER</span>");
@@ -357,7 +356,7 @@ void ConVarHandler::ConVarBuiltins::dumpcommands(void) {
     </p>)",
                             fmt::gmtime(std::time(nullptr)), cv::version.getDouble()));
 
-    ConVarString marker = "{{CONVARS_HERE}}";
+    std::string marker = "{{CONVARS_HERE}}";
     size_t pos = html_template.find(marker);
     html_template.replace(pos, marker.length(), html);
 

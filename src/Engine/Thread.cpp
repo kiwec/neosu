@@ -4,6 +4,8 @@
 #include "UString.h"
 #include "Environment.h"
 
+#include <SDL3/SDL_init.h>
+
 #if defined(_WIN32)
 #include "WinDebloatDefs.h"
 #include <winbase.h>
@@ -45,7 +47,7 @@ thread_local char thread_name_buffer[256];
 #else
 thread_local char thread_name_buffer[256];
 #endif
-}
+}  // namespace
 #endif
 
 namespace McThread {
@@ -98,5 +100,7 @@ const char *get_current_thread_name() {
 }
 
 void set_current_thread_prio(bool high) { Environment::setThreadPriority(high ? 1.f : 0.f); }
+
+bool is_main_thread() { return SDL_IsMainThread(); }
 
 };  // namespace McThread

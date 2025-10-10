@@ -8,7 +8,6 @@
 #include <string_view>
 #include <memory>
 
-using ConVarString = std::string;
 using std::string_view_literals::operator""sv;
 
 class ConVar;
@@ -16,7 +15,7 @@ class ConVar;
 class ConVarHandler {
     NOCOPY_NOMOVE(ConVarHandler)
    public:
-    static ConVarString flagsToString(uint8_t flags);
+    static std::string flagsToString(uint8_t flags);
 
    public:
     struct ConVarBuiltins;
