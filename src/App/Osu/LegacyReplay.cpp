@@ -265,7 +265,7 @@ void load_and_watch(FinishedScore score) {
     if(score.replay.empty()) {
         if(!load_from_disk(score, true)) {
             if(score.server.c_str() != BanchoState::endpoint) {
-                auto msg = UString::format("Please connect to %s to view this replay!", score.server.c_str());
+                auto msg = fmt::format("Please connect to {} to view this replay!", score.server);
                 osu->getNotificationOverlay()->addToast(msg, ERROR_TOAST);
             }
 
@@ -274,8 +274,7 @@ void load_and_watch(FinishedScore score) {
             auto* score_cpy = new(mem) FinishedScore;
             *score_cpy = score;
 
-            std::string url{"/web/osu-getreplay.php?m=0"};
-            url.append(fmt::format("&c={}", score.bancho_score_id));
+            std::string url = fmt::format("/web/osu-getreplay.php?m=0&c={}", score.bancho_score_id);
             BANCHO::Api::append_auth_params(url);
 
             BANCHO::Api::Request request;
@@ -284,7 +283,7 @@ void load_and_watch(FinishedScore score) {
             request.extra = (u8*)score_cpy;
             BANCHO::Api::send_request(request);
 
-            osu->getNotificationOverlay()->addNotification("Downloading replay...");
+            osu->getNotificationOverlay()->addNotification(u"Downloading replay...");
             return;
         }
     }

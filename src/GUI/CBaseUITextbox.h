@@ -17,7 +17,7 @@ class CBaseUITextbox : public CBaseUIElement {
     void onKeyDown(KeyboardEvent &e) override;
 
     UString getVisibleText();
-    [[nodiscard]] inline const UString getText() const { return this->sText; }
+    [[nodiscard]] inline const UString &getText() const { return this->sText; }
     inline UString &getTextRef() { return this->sText; }  // DEPRECATED
     [[nodiscard]] inline McFont *getFont() const { return this->font; }
 

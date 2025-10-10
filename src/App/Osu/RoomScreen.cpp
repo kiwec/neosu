@@ -479,9 +479,9 @@ void RoomScreen::updateLayout(vec2 newResolution) {
             auto color = 0xffffffff;
             auto username = user_info->name;
             if(slot.is_player_playing()) {
-                username = UString::fmt("[playing] {}", user_info->name.toUtf8());
+                username = fmt::format("[playing] {}", user_info->name.toUtf8());
             } else if(slot.no_map()) {
-                username = UString::fmt("[no map] {}", user_info->name.toUtf8());
+                username = fmt::format("[no map] {}", user_info->name.toUtf8());
             } else if(slot.is_ready()) {
                 color = 0xff00ff00;
             }

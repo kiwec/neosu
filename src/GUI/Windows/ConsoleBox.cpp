@@ -12,7 +12,6 @@
 #include "ConVarHandler.h"
 #include "Console.h"
 #include "Engine.h"
-#include "SString.h"
 #include "Logging.h"
 #include "Environment.h"
 #include "Keyboard.h"
@@ -486,7 +485,7 @@ void ConsoleBox::onChar(KeyboardEvent &e) {
         this->clearSuggestions();
 
         std::vector<ConVar *> suggestions = cvars->getConVarByLetter(this->textbox->getText().toUtf8());
-        for(auto &suggestion : suggestions) {
+        for(const auto *suggestion : suggestions) {
             UString suggestionText{suggestion->getName()};
 
             if(suggestion->hasValue()) {
@@ -508,23 +507,22 @@ void ConsoleBox::onChar(KeyboardEvent &e) {
                         break;
                     case ConVar::CONVAR_TYPE::STRING:
                         suggestionText.append(" ");
-                        suggestionText.append(suggestion->getString().c_str());
+                        suggestionText.append(suggestion->getString());
                         // suggestionText.append(" ( def. \"");
                         // suggestionText.append(suggestions[i]->getDefaultString());
                         // suggestionText.append("\" )");
                         break;
                 }
             }
-
-            this->addSuggestion(suggestionText, suggestion->getHelpstring().c_str(), suggestion->getName().c_str());
+            this->addSuggestion(suggestionText, suggestion->getHelpstring(), suggestion->getName());
         }
         this->suggestion->setVisible(suggestions.size() > 0);
 
         if(suggestions.size() > 0) {
             this->suggestion->scrollToElement(this->suggestion->getContainer()->getElements()[0]);
-            this->textbox->setSuggestion(suggestions[0]->getName().c_str());
+            this->textbox->setSuggestion(suggestions[0]->getName());
         } else
-            this->textbox->setSuggestion("");
+            this->textbox->setSuggestion(u"");
 
         this->iSelectedSuggestion = -1;
     }
@@ -643,10 +641,10 @@ void ConsoleBox::log(const UString &text, Color textColor) {
     // lock is held by Logger::ConsoleBoxSink::flush_buffer_to_console
 
     // newlines must be stripped before being sent here (see Logging.cpp)
-    assert(!text.endsWith('\n') && !text.endsWith('\r') && "Console log strings can't end with a newline.");
+    assert(!text.endsWith(u'\n') && !text.endsWith(u'\r') && "Console log strings can't end with a newline.");
 
     // add log entry(ies, split on any newlines inside the string)
-    if(text.findChar('\n') != -1) {
+    if(text.find(u'\n') != -1) {
         auto stringVec = text.split("\n");
         this->log_entries.reserve(this->log_entries.size() + stringVec.size());
         for(const auto &entry : stringVec) {

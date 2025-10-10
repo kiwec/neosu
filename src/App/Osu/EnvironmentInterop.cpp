@@ -33,7 +33,7 @@ void handle_osz(const char *osz_path) {
         osz_filesize = osz.getFileSize();
         osz_data = osz.takeFileBuffer();
         if(!osz.canRead() || !osz_filesize || !osz_data) {
-            osu->getNotificationOverlay()->addToast(UString::fmt("Failed to import {}", osz_path), ERROR_TOAST);
+            osu->getNotificationOverlay()->addToast(fmt::format("Failed to import {}", osz_path), ERROR_TOAST);
             return;
         }
     }
@@ -306,9 +306,9 @@ void Environment::Interop::setup_system_integrations() {
     auto args = env->getLaunchArgs();
     for(const auto &[k, v] : args) {
         if(v.has_value()) {
-            launch_args.append(UString::fmt(" {} {}", k, v.value()));
+            launch_args.append(fmt::format(" {} {}", k, v.value()));
         } else {
-            launch_args.append(UString::fmt(" {}", k));
+            launch_args.append(fmt::format(" {}", k));
         }
     }
 

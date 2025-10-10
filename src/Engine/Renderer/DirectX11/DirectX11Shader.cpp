@@ -83,7 +83,7 @@ DirectX11Shader::SHADER_PARSE_RESULT DirectX11Shader::parseShaderFromString(
 void DirectX11Shader::init() {
     static const auto parseError = []<typename... Args>(const fmt::format_string<Args...> &fmt,
                                                         Args &&...args) -> void {
-        engine->showMessageError("DirectX11Shader Error", UString::fmt(fmt, std::forward<Args>(args)...));
+        engine->showMessageError("DirectX11Shader Error", fmt::format(fmt, std::forward<Args>(args)...));
     };
 
     const SHADER_PARSE_RESULT parsedVertexShader =

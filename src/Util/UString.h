@@ -27,9 +27,6 @@ class UString {
     template <typename... Args>
     [[nodiscard]] static UString format(std::string_view fmt, Args &&...args) noexcept;
 
-    template <typename... Args>
-    [[nodiscard]] static UString fmt(const fmt::format_string<Args...> &fmt, Args &&...args) noexcept;
-
     template <typename Range>
         requires std::ranges::range<Range> && std::convertible_to<std::ranges::range_value_t<Range>, UString>
     [[nodiscard]] static UString join(const Range &range, std::string_view delim = " ") noexcept;
@@ -42,12 +39,13 @@ class UString {
     UString(std::nullptr_t) = delete;
     UString(const char16_t *str);
     UString(const char16_t *str, int length);
+    UString(std::u16string_view str);
     UString(const wchar_t *str);
     UString(const wchar_t *str, int length);
     UString(const char *utf8);
     UString(const char *utf8, int length);
-    explicit UString(const std::string &utf8);
-    explicit UString(std::string_view utf8);
+    UString(std::string_view utf8);
+    UString(std::string utf8);
 
     // member functions
     UString(const UString &ustr) = default;
@@ -93,24 +91,16 @@ class UString {
     [[nodiscard]] bool isWhitespaceOnly() const noexcept;
 
     // string tests
-    [[nodiscard]] constexpr bool endsWith(char ch) const noexcept {
-        return !this->sUtf8.empty() && this->sUtf8.back() == ch;
-    }
-    [[nodiscard]] constexpr bool endsWith(char16_t ch) const noexcept {
-        return !this->sUnicode.empty() && this->sUnicode.back() == ch;
-    }
+    [[nodiscard]] constexpr bool endsWith(char ch) const noexcept { return this->sUtf8.back() == ch; }
+    [[nodiscard]] constexpr bool endsWith(char16_t ch) const noexcept { return this->sUnicode.back() == ch; }
     [[nodiscard]] constexpr bool endsWith(const UString &suffix) const noexcept {
         int suffixLen = suffix.length();
         int thisLen = length();
         return suffixLen <= thisLen &&
                std::equal(suffix.sUnicode.begin(), suffix.sUnicode.end(), this->sUnicode.end() - suffixLen);
     }
-    [[nodiscard]] constexpr bool startsWith(char ch) const noexcept {
-        return !this->sUtf8.empty() && this->sUtf8.front() == ch;
-    }
-    [[nodiscard]] constexpr bool startsWith(char16_t ch) const noexcept {
-        return !this->sUnicode.empty() && this->sUnicode.front() == ch;
-    }
+    [[nodiscard]] constexpr bool startsWith(char ch) const noexcept { return this->sUtf8.front() == ch; }
+    [[nodiscard]] constexpr bool startsWith(char16_t ch) const noexcept { return this->sUnicode.front() == ch; }
     [[nodiscard]] constexpr bool startsWith(const UString &prefix) const noexcept {
         int prefixLen = prefix.length();
         int thisLen = length();
@@ -119,14 +109,15 @@ class UString {
     }
 
     // search functions
-    [[nodiscard]] int findChar(char16_t ch, int start = 0, bool respectEscapeChars = false) const;
-    [[nodiscard]] int findChar(const UString &str, int start = 0, bool respectEscapeChars = false) const;
-    [[nodiscard]] int find(const UString &str, int start = 0) const;
-    [[nodiscard]] int find(const UString &str, int start, int end) const;
-    [[nodiscard]] int findLast(const UString &str, int start = 0) const;
-    [[nodiscard]] int findLast(const UString &str, int start, int end) const;
-    [[nodiscard]] int findIgnoreCase(const UString &str, int start = 0) const;
-    [[nodiscard]] int findIgnoreCase(const UString &str, int start, int end) const;
+    [[nodiscard]] int find(char16_t ch, std::optional<int> startOpt = std::nullopt,
+                           std::optional<int> endOpt = std::nullopt, bool respectEscapeChars = false) const;
+    [[nodiscard]] int findFirstOf(const UString &str, int start = 0, bool respectEscapeChars = false) const;
+    [[nodiscard]] int find(const UString &str, std::optional<int> startOpt = std::nullopt,
+                           std::optional<int> endOpt = std::nullopt) const;
+    [[nodiscard]] int findLast(const UString &str, std::optional<int> startOpt = std::nullopt,
+                               std::optional<int> endOpt = std::nullopt) const;
+    [[nodiscard]] int findIgnoreCase(const UString &str, std::optional<int> startOpt = std::nullopt,
+                                     std::optional<int> endOpt = std::nullopt) const;
 
     // iterators for range-based for loops
     [[nodiscard]] constexpr auto begin() noexcept { return this->sUnicode.begin(); }
@@ -271,6 +262,9 @@ class UString {
     friend struct std::hash<UString>;
 
    private:
+    // deduplication helper
+    [[nodiscard]] int findCharSimd(char16_t ch, int start, int end) const;
+
     // constructor helpers
     void fromUtf32(const char32_t *utf32, size_t length);
     void fromSupposedUtf8(const char *utf8, size_t length);
@@ -289,13 +283,19 @@ struct hash<UString> {
 };
 }  // namespace std
 
-// for printf-style formatting (legacy McEngine style, should convert over to UString::fmt because it's nicer)
+// for printf-style formatting (legacy McEngine style, should convert over to fmt::format because it's nicer)
 template <typename... Args>
 UString UString::format(std::string_view fmt, Args &&...args) noexcept {
     return UString(fmt::sprintf(fmt, std::forward<Args>(args)...));
 }
 
-// need a specialization for fmt, so that UStrings can be passed directly without needing .toUtf8() (for UString::fmt)
+// forward decls to avoid including simdutf here
+namespace simdutf {
+extern size_t utf8_length_from_utf16le(const char16_t *input, size_t length) noexcept;
+extern size_t convert_utf16le_to_utf8(const char16_t *input, size_t length, char *utf8_output) noexcept;
+}  // namespace simdutf
+
+// need a specialization for fmt, so that UStrings can be passed directly without needing .toUtf8() (for fmt::format)
 namespace fmt {
 template <>
 struct formatter<UString> : formatter<string_view> {
@@ -304,12 +304,21 @@ struct formatter<UString> : formatter<string_view> {
         return formatter<string_view>::format(str.utf8View(), ctx);
     }
 };
-}  // namespace fmt
 
-template <typename... Args>
-UString UString::fmt(const fmt::format_string<Args...> &fmt, Args &&...args) noexcept {
-    return UString(fmt::format(fmt, std::forward<Args>(args)...));
-}
+// u16string_view support
+template <>
+struct formatter<std::u16string_view> : formatter<string_view> {
+    template <typename FormatContext>
+    auto format(std::u16string_view str, FormatContext &ctx) const {
+        size_t utf8_length = simdutf::utf8_length_from_utf16le(str.data(), str.size());
+        std::string result;
+        result.resize_and_overwrite(utf8_length, [&](char *data, size_t /* size */) -> size_t {
+            return simdutf::convert_utf16le_to_utf8(str.data(), str.size(), data);
+        });
+        return formatter<string_view>::format(result, ctx);
+    }
+};
+}  // namespace fmt
 
 template <typename Range>
     requires std::ranges::range<Range> && std::convertible_to<std::ranges::range_value_t<Range>, UString>

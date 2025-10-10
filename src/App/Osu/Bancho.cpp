@@ -117,8 +117,8 @@ void BanchoState::handle_packet(Packet &packet) {
                 std::string replays_dir = fmt::format(NEOSU_REPLAYS_PATH "/{}", BanchoState::endpoint);
                 Environment::createDirectory(replays_dir);
 
-                osu->onUserCardChange(BanchoState::username.c_str());
-                osu->getSongBrowser()->onFilterScoresChange(UString("Global"), SongBrowser::LOGIN_STATE_FILTER_ID);
+                osu->onUserCardChange(BanchoState::username);
+                osu->getSongBrowser()->onFilterScoresChange(u"Global", SongBrowser::LOGIN_STATE_FILTER_ID);
 
                 // If server sent a score submission policy, update options menu to hide the checkbox
                 osu->getOptionsMenu()->scheduleLayoutUpdate();
@@ -127,37 +127,37 @@ void BanchoState::handle_packet(Packet &packet) {
                 cv::mp_oauth_token.setValue("");
 
                 debugLog("Failed to log in, server returned code {:d}.", BanchoState::get_uid());
-                UString errmsg = UString::fmt("Failed to log in: {} (code {})\n", BanchoState::cho_token.toUtf8(),
-                                              BanchoState::get_uid());
+                UString errmsg = fmt::format("Failed to log in: {} (code {})\n", BanchoState::cho_token.toUtf8(),
+                                             BanchoState::get_uid());
                 if(new_user_id == -1) {
-                    errmsg = "Incorrect username/password.";
+                    errmsg = u"Incorrect username/password.";
                 } else if(new_user_id == -2) {
-                    errmsg = "Client version is too old to connect to this server.";
+                    errmsg = u"Client version is too old to connect to this server.";
                 } else if(new_user_id == -3 || new_user_id == -4) {
-                    errmsg = "You are banned from this server.";
+                    errmsg = u"You are banned from this server.";
                 } else if(new_user_id == -5) {
-                    errmsg = "Server had an error while trying to log you in.";
+                    errmsg = u"Server had an error while trying to log you in.";
                 } else if(new_user_id == -6) {
-                    errmsg = "You need to buy supporter to connect to this server.";
+                    errmsg = u"You need to buy supporter to connect to this server.";
                 } else if(new_user_id == -7) {
-                    errmsg = "You need to reset your password to connect to this server.";
+                    errmsg = u"You need to reset your password to connect to this server.";
                 } else if(new_user_id == -8) {
                     if(BanchoState::is_oauth) {
-                        errmsg = "osu! session expired, please log in again.";
+                        errmsg = u"osu! session expired, please log in again.";
                     } else {
-                        errmsg = "Open the verification link sent to your email, then log in again.";
+                        errmsg = u"Open the verification link sent to your email, then log in again.";
                     }
                 } else {
                     if(BanchoState::cho_token == "user-already-logged-in") {
-                        errmsg = "Already logged in on another client.";
+                        errmsg = u"Already logged in on another client.";
                     } else if(BanchoState::cho_token == "unknown-username") {
-                        errmsg = UString::fmt("No account by the username '{}' exists.", BanchoState::username);
+                        errmsg = fmt::format("No account by the username '{}' exists.", BanchoState::username);
                     } else if(BanchoState::cho_token == "incorrect-credentials") {
-                        errmsg = "Incorrect username/password.";
+                        errmsg = u"Incorrect username/password.";
                     } else if(BanchoState::cho_token == "incorrect-password") {
-                        errmsg = "Incorrect password.";
+                        errmsg = u"Incorrect password.";
                     } else if(BanchoState::cho_token == "contact-staff") {
-                        errmsg = "Please contact an administrator of the server.";
+                        errmsg = u"Please contact an administrator of the server.";
                     }
                 }
                 osu->getNotificationOverlay()->addToast(errmsg, ERROR_TOAST);
@@ -197,11 +197,13 @@ void BanchoState::handle_packet(Packet &packet) {
                 // TODO @kiwec: i think client is supposed to regularly poll for friend stats
                 if(user->is_friend() && cv::notify_friend_status_change.getBool() && action < NB_ACTIONS) {
                     static constexpr auto actions = std::array{
-                        "idle",         "afk",           "playing", "editing",    "modding", "in a multiplayer lobby",
-                        "spectating",   "vibing",        "testing", "submitting", "pausing", "testing",
-                        "multiplaying", "browsing maps",
+                        "idle"sv,         "afk"sv,           "playing"sv,
+                        "editing"sv,      "modding"sv,       "in a multiplayer lobby"sv,
+                        "spectating"sv,   "vibing"sv,        "testing"sv,
+                        "submitting"sv,   "pausing"sv,       "testing"sv,
+                        "multiplaying"sv, "browsing maps"sv,
                     };
-                    auto text = UString::format("%s is now %s", user->name.toUtf8(), actions[action]);
+                    auto text = fmt::format("{} is now {}", user->name, actions[action]);
                     auto open_dms = [uid = stats_user_id]() -> void {
                         UserInfo *user = BANCHO::User::get_user_info(uid);
                         osu->getChat()->openChannel(user->name);
@@ -476,8 +478,8 @@ void BanchoState::handle_packet(Packet &packet) {
             auto msg = ChatMessage{
                 .tms = time(nullptr),
                 .author_id = 0,
-                .author_name = UString(""),
-                .text = UString("Joined channel."),
+                .author_name = u"",
+                .text = u"Joined channel.",
             };
             osu->getChat()->addChannel(name, true);
             osu->getChat()->addMessage(name, msg, false);
@@ -843,8 +845,8 @@ std::string BanchoState::build_login_packet() {
     // XXX: Not implemented, I'm lazy so just reusing disk signature
     MD5Hash install_md5 = md5((u8 *)BanchoState::get_install_id().toUtf8(), BanchoState::get_install_id().lengthUtf8());
 
-    BanchoState::client_hashes = UString::fmt("{:s}:{:s}:{:s}:{:s}:{:s}:", osu_path_md5.string(), adapters,
-                                              adapters_md5.string(), install_md5.string(), disk_md5.string());
+    BanchoState::client_hashes = fmt::format("{:s}:{:s}:{:s}:{:s}:{:s}:", osu_path_md5.string(), adapters,
+                                             adapters_md5.string(), install_md5.string(), disk_md5.string());
 
     req.append(BanchoState::client_hashes.toUtf8());
     req.append("|");
@@ -888,7 +890,7 @@ void BanchoState::update_channel(const UString &name, const UString &topic, i32 
             auto msg = ChatMessage{
                 .tms = time(nullptr),
                 .author_id = 0,
-                .author_name = UString(""),
+                .author_name = u"",
                 .text = UString::format("%s: %s", name.toUtf8(), topic.toUtf8()),
             };
             osu->getChat()->addMessage(BanchoState::is_oauth ? "#neosu" : "#osu", msg, false);

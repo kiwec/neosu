@@ -1135,7 +1135,7 @@ std::string Environment::getThingFromPathHelper(std::string_view path, bool fold
             if(lastSlash != std::string::npos)  // return parent
                 ustrPath = ustrPath.substr(0, lastSlash);
             else  // no separators found, just use ./
-                ustrPath = UString::fmt("./{}", ustrPath);
+                ustrPath = fmt::format("./{}", ustrPath);
         }
         retPath = ustrPath.utf8View();
         // make sure whatever we got now ends with a slash

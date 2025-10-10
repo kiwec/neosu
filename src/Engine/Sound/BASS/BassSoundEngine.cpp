@@ -59,7 +59,7 @@ BassSoundEngine::BassSoundEngine() : SoundEngine() {
     if(!BassManager::init())  // this checks the library versions as well
     {
         engine->showMessageErrorFatal(
-            "Fatal Sound Error", UString::fmt("Failed to load BASS feature: {:s} !", BassManager::getFailedLoad()));
+            "Fatal Sound Error", fmt::format("Failed to load BASS feature: {:s} !", BassManager::getFailedLoad()));
         return;
     }
 

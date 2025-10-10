@@ -39,14 +39,14 @@ HUD::HUD() : OsuScreen() {
 #ifdef MCENGINE_FEATURE_DIRECTX11
         this->cursorTrailShader = resourceManager->createShader(
             std::string(reinterpret_cast<const char *>(DX11_cursortrail_vsh), DX11_cursortrail_vsh_size()),
-            std::string(reinterpret_cast<const char *>(DX11_cursortrail_fsh), DX11_cursortrail_fsh_size()), "cursortrail");
+            std::string(reinterpret_cast<const char *>(DX11_cursortrail_fsh), DX11_cursortrail_fsh_size()),
+            "cursortrail");
 #endif
     } else {
 #if defined(MCENGINE_FEATURE_OPENGL) || defined(MCENGINE_FEATURE_GLES32)
         this->cursorTrailShader = resourceManager->createShader(
             std::string(reinterpret_cast<const char *>(GL_cursortrail_vsh), GL_cursortrail_vsh_size()),
-            std::string(reinterpret_cast<const char *>(GL_cursortrail_fsh), GL_cursortrail_fsh_size()),
-            "cursortrail");
+            std::string(reinterpret_cast<const char *>(GL_cursortrail_fsh), GL_cursortrail_fsh_size()), "cursortrail");
 #endif
     }
 
@@ -1775,7 +1775,7 @@ void HUD::drawProgressBar(float percent, bool waiting) {
 void HUD::drawStatistics(int misses, int sliderbreaks, int maxPossibleCombo, float liveStars, float totalStars, int bpm,
                          float ar, float cs, float od, float hp, int nps, int nd, int ur, float pp, float ppfc,
                          float hitWindow300, int hitdeltaMin, int hitdeltaMax) {
-    McFont *font = osu->getTitleFont();
+    static McFont *font = osu->getTitleFont();
     const float offsetScale = Osu::getImageScale(vec2(1.0f, 1.0f), 1.0f);
     const float scale = cv::hud_statistics_scale.getFloat() * cv::hud_scale.getFloat();
     const float yDelta = (font->getHeight() + 10) * cv::hud_statistics_spacing_scale.getFloat();
@@ -1793,7 +1793,8 @@ void HUD::drawStatistics(int misses, int sliderbreaks, int maxPossibleCombo, flo
 
         float currentY = 0;
 
-        auto addStatistic = [&](const UString &text, float xOffset, float yOffset) {
+        static constexpr auto addStatistic = [](const float &yDelta, float &currentY, const UString &text,
+                                                float xOffset, float yOffset) {
             if(text.length() < 1) return;
 
             const vec3 shadowPos(xOffset, currentY + yOffset, 0.25f);
@@ -1806,88 +1807,93 @@ void HUD::drawStatistics(int misses, int sliderbreaks, int maxPossibleCombo, flo
         };
 
         if(cv::draw_statistics_pp.getBool())
-            addStatistic((cv::hud_statistics_pp_decimal_places.getInt() < 1
-                              ? UString::fmt("{:d}pp", (int)std::round(pp))
-                              : (cv::hud_statistics_pp_decimal_places.getInt() > 1 ? UString::fmt("{:.2f}pp", pp)
-                                                                                   : UString::fmt("{:.1f}pp", pp))),
+            addStatistic(yDelta, currentY,
+                         (cv::hud_statistics_pp_decimal_places.getInt() < 1
+                              ? fmt::format("{:d}pp"_cf, (int)std::round(pp))
+                              : (cv::hud_statistics_pp_decimal_places.getInt() > 1 ? fmt::format("{:.2f}pp"_cf, pp)
+                                                                                   : fmt::format("{:.1f}pp"_cf, pp))),
                          cv::hud_statistics_pp_offset_x.getInt(), cv::hud_statistics_pp_offset_y.getInt());
 
         if(cv::draw_statistics_perfectpp.getBool())
             addStatistic(
+                yDelta, currentY,
                 (cv::hud_statistics_pp_decimal_places.getInt() < 1
-                     ? UString::fmt("SS: {:d}pp", (int)std::round(ppfc))
-                     : (cv::hud_statistics_pp_decimal_places.getInt() > 1 ? UString::fmt("SS: {:.2f}pp", ppfc)
-                                                                          : UString::fmt("SS: {:.1f}pp", ppfc))),
+                     ? fmt::format("SS: {:d}pp"_cf, (int)std::round(ppfc))
+                     : (cv::hud_statistics_pp_decimal_places.getInt() > 1 ? fmt::format("SS: {:.2f}pp"_cf, ppfc)
+                                                                          : fmt::format("SS: {:.1f}pp"_cf, ppfc))),
                 cv::hud_statistics_perfectpp_offset_x.getInt(), cv::hud_statistics_perfectpp_offset_y.getInt());
 
         if(cv::draw_statistics_misses.getBool())
-            addStatistic(UString::fmt("Miss: {:d}", misses), cv::hud_statistics_misses_offset_x.getInt(),
-                         cv::hud_statistics_misses_offset_y.getInt());
+            addStatistic(yDelta, currentY, fmt::format("Miss: {:d}"_cf, misses),
+                         cv::hud_statistics_misses_offset_x.getInt(), cv::hud_statistics_misses_offset_y.getInt());
 
         if(cv::draw_statistics_sliderbreaks.getBool())
-            addStatistic(UString::fmt("SBrk: {:d}", sliderbreaks), cv::hud_statistics_sliderbreaks_offset_x.getInt(),
+            addStatistic(yDelta, currentY, fmt::format("SBrk: {:d}"_cf, sliderbreaks),
+                         cv::hud_statistics_sliderbreaks_offset_x.getInt(),
                          cv::hud_statistics_sliderbreaks_offset_y.getInt());
 
         if(cv::draw_statistics_maxpossiblecombo.getBool())
-            addStatistic(UString::fmt("FC: {:d}x", maxPossibleCombo),
+            addStatistic(yDelta, currentY, fmt::format("FC: {:d}x"_cf, maxPossibleCombo),
                          cv::hud_statistics_maxpossiblecombo_offset_x.getInt(),
                          cv::hud_statistics_maxpossiblecombo_offset_y.getInt());
 
         if(cv::draw_statistics_livestars.getBool())
-            addStatistic(UString::fmt("{:.3g}***", liveStars), cv::hud_statistics_livestars_offset_x.getInt(),
+            addStatistic(yDelta, currentY, fmt::format("{:.3g}***"_cf, liveStars),
+                         cv::hud_statistics_livestars_offset_x.getInt(),
                          cv::hud_statistics_livestars_offset_y.getInt());
 
         if(cv::draw_statistics_totalstars.getBool())
-            addStatistic(UString::fmt("{:.3g}*", totalStars), cv::hud_statistics_totalstars_offset_x.getInt(),
+            addStatistic(yDelta, currentY, fmt::format("{:.3g}*"_cf, totalStars),
+                         cv::hud_statistics_totalstars_offset_x.getInt(),
                          cv::hud_statistics_totalstars_offset_y.getInt());
 
         if(cv::draw_statistics_bpm.getBool())
-            addStatistic(UString::fmt("BPM: {:d}", bpm), cv::hud_statistics_bpm_offset_x.getInt(),
+            addStatistic(yDelta, currentY, fmt::format("BPM: {:d}"_cf, bpm), cv::hud_statistics_bpm_offset_x.getInt(),
                          cv::hud_statistics_bpm_offset_y.getInt());
 
         if(cv::draw_statistics_ar.getBool()) {
             ar = std::round(ar * 100.0f) / 100.0f;
-            addStatistic(UString::fmt("AR: {:g}", ar), cv::hud_statistics_ar_offset_x.getInt(),
+            addStatistic(yDelta, currentY, fmt::format("AR: {:g}"_cf, ar), cv::hud_statistics_ar_offset_x.getInt(),
                          cv::hud_statistics_ar_offset_y.getInt());
         }
 
         if(cv::draw_statistics_cs.getBool()) {
             cs = std::round(cs * 100.0f) / 100.0f;
-            addStatistic(UString::fmt("CS: {:g}", cs), cv::hud_statistics_cs_offset_x.getInt(),
+            addStatistic(yDelta, currentY, fmt::format("CS: {:g}"_cf, cs), cv::hud_statistics_cs_offset_x.getInt(),
                          cv::hud_statistics_cs_offset_y.getInt());
         }
 
         if(cv::draw_statistics_od.getBool()) {
             od = std::round(od * 100.0f) / 100.0f;
-            addStatistic(UString::fmt("OD: {:g}", od), cv::hud_statistics_od_offset_x.getInt(),
+            addStatistic(yDelta, currentY, fmt::format("OD: {:g}"_cf, od), cv::hud_statistics_od_offset_x.getInt(),
                          cv::hud_statistics_od_offset_y.getInt());
         }
 
         if(cv::draw_statistics_hp.getBool()) {
             hp = std::round(hp * 100.0f) / 100.0f;
-            addStatistic(UString::fmt("HP: {:g}", hp), cv::hud_statistics_hp_offset_x.getInt(),
+            addStatistic(yDelta, currentY, fmt::format("HP: {:g}"_cf, hp), cv::hud_statistics_hp_offset_x.getInt(),
                          cv::hud_statistics_hp_offset_y.getInt());
         }
 
         if(cv::draw_statistics_hitwindow300.getBool())
-            addStatistic(UString::fmt("300: +-{:d}ms", (int)hitWindow300),
+            addStatistic(yDelta, currentY, fmt::format("300: +-{:d}ms"_cf, (int)hitWindow300),
                          cv::hud_statistics_hitwindow300_offset_x.getInt(),
                          cv::hud_statistics_hitwindow300_offset_y.getInt());
 
         if(cv::draw_statistics_nps.getBool())
-            addStatistic(UString::fmt("NPS: {:d}", nps), cv::hud_statistics_nps_offset_x.getInt(),
+            addStatistic(yDelta, currentY, fmt::format("NPS: {:d}"_cf, nps), cv::hud_statistics_nps_offset_x.getInt(),
                          cv::hud_statistics_nps_offset_y.getInt());
 
         if(cv::draw_statistics_nd.getBool())
-            addStatistic(UString::fmt("ND: {:d}", nd), cv::hud_statistics_nd_offset_x.getInt(),
+            addStatistic(yDelta, currentY, fmt::format("ND: {:d}"_cf, nd), cv::hud_statistics_nd_offset_x.getInt(),
                          cv::hud_statistics_nd_offset_y.getInt());
 
         if(cv::draw_statistics_ur.getBool())
-            addStatistic(UString::fmt("UR: {:d}", ur), cv::hud_statistics_ur_offset_x.getInt(),
+            addStatistic(yDelta, currentY, fmt::format("UR: {:d}"_cf, ur), cv::hud_statistics_ur_offset_x.getInt(),
                          cv::hud_statistics_ur_offset_y.getInt());
 
         if(cv::draw_statistics_hitdelta.getBool())
-            addStatistic(UString::fmt("-{:d}ms +{:d}ms", std::abs(hitdeltaMin), hitdeltaMax),
+            addStatistic(yDelta, currentY, fmt::format("-{:d}ms +{:d}ms"_cf, std::abs(hitdeltaMin), hitdeltaMax),
                          cv::hud_statistics_hitdelta_offset_x.getInt(), cv::hud_statistics_hitdelta_offset_y.getInt());
     }
     font->flushBatch();

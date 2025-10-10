@@ -431,7 +431,7 @@ void ScoreButton::mouse_update(bool *propagate_clicks) {
                     }
                     // debug
                     if(keyboard->isShiftDown()) {
-                        tooltipOverlay->addLine(UString::fmt("Client: {:s}", this->score.client));
+                        tooltipOverlay->addLine(fmt::format("Client: {:s}", this->score.client));
                     }
                 }
                 tooltipOverlay->end();

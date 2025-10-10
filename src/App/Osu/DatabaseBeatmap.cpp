@@ -362,7 +362,7 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(std::
 
                         if(hitSampleStr.empty()) return true;
 
-                        auto parts = SString::split(hitSampleStr, ":");
+                        auto parts = SString::split(hitSampleStr, ':');
 
                         // Parse available components, using defaults for missing ones
                         if(parts.size() >= 1 && !parts[0].empty()) {
@@ -394,7 +394,7 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(std::
                     u8 type;
                     i32 hitSounds;
 
-                    auto csvs = SString::split(curLine, ",");
+                    auto csvs = SString::split(curLine, ',');
                     if(csvs.size() < 5) break;
                     upd_last_error(!Parsing::parse(csvs[0], &x) || !std::isfinite(x) || std::isnan(x));
                     upd_last_error(!Parsing::parse(csvs[1], &y) || !std::isfinite(y) || std::isnan(y));
@@ -451,7 +451,7 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(std::
                         slider.time = time;
                         slider.hoverSamples.hitSounds = (hitSounds & HitSoundType::VALID_SLIDER_HITSOUNDS);
 
-                        auto curves = SString::split(csvs[5], "|");
+                        auto curves = SString::split(csvs[5], '|');
                         slider.type = curves[0][0];
                         curves.erase(curves.begin());
                         for(const auto &curvePoints : curves) {
@@ -489,10 +489,10 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(std::
                         if(slider.points.size() == 1) slider.points.push_back(xy);
 
                         std::vector<std::string_view> edgeSounds;
-                        if(csvs.size() > 8) edgeSounds = SString::split(csvs[8], "|");
+                        if(csvs.size() > 8) edgeSounds = SString::split(csvs[8], '|');
 
                         std::vector<std::string_view> edgeSets;
-                        if(csvs.size() > 9) edgeSets = SString::split(csvs[9], "|");
+                        if(csvs.size() > 9) edgeSets = SString::split(csvs[9], '|');
                         upd_last_error((!edgeSets.empty() && (edgeSounds.size() != edgeSets.size())));
 
                         for(i32 i = 0; !err_line && i < edgeSounds.size(); i++) {

@@ -890,18 +890,18 @@ void Chat::addMessage(UString channel_name, const ChatMessage &msg, bool mark_un
     }
     if(should_highlight) {
         // TODO: highlight message
-        auto notif = UString::fmt("{} mentioned you in {}", msg.author_name.toUtf8(), channel_name);
+        auto notif = fmt::format("{} mentioned you in {}", msg.author_name, channel_name);
         osu->getNotificationOverlay()->addToast(
             notif, CHAT_TOAST, [channel_name] { osu->getChat()->openChannel(channel_name); }, ToastElement::TYPE::CHAT);
     }
 
-    bool is_pm = msg.author_id > 0 && channel_name[0] != '#' && msg.author_name.toUtf8() != BanchoState::get_username();
+    bool is_pm = msg.author_id > 0 && channel_name[0] != '#' && msg.author_name.utf8View() != BanchoState::get_username();
     if(is_pm) {
         // If it's a PM, the channel title should be the one who sent the message
         channel_name = msg.author_name;
 
         if(cv::chat_notify_on_dm.getBool()) {
-            auto notif = UString::format("%s sent you a message", msg.author_name.toUtf8());
+            auto notif = fmt::format("{} sent you a message", msg.author_name);
             osu->getNotificationOverlay()->addToast(
                 notif, CHAT_TOAST, [channel_name] { osu->getChat()->openChannel(channel_name); },
                 ToastElement::TYPE::CHAT);

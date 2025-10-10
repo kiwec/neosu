@@ -350,7 +350,7 @@ std::string printBassError(const std::string &context, int code) {
 }
 
 UString getErrorUString(int code) {
-    return UString::fmt("BASS error: {:s}", getBassErrorStringFromCode(code == INT_MIN ? BASS_ErrorGetCode() : code));
+    return fmt::format("BASS error: {:s}", getBassErrorStringFromCode(code == INT_MIN ? BASS_ErrorGetCode() : code));
 }
 
 }  // namespace BassManager

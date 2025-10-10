@@ -4,6 +4,7 @@
 #include "simdutf.h"
 
 #include <algorithm>
+#include <bitset>
 #include <cassert>
 #include <cstdio>
 #include <cstring>
@@ -11,7 +12,7 @@
 #include <ranges>
 #include <utility>
 
-static constexpr char ESCAPE_CHAR = '\\';
+static constexpr char16_t ESCAPE_CHAR = u'\\';
 
 UString::UString(const char16_t *str) {
     if(!str) return;
@@ -22,6 +23,12 @@ UString::UString(const char16_t *str) {
 UString::UString(const char16_t *str, int length) {
     if(!str || length <= 0) return;
     this->sUnicode.assign(str, length);
+    updateUtf8();
+}
+
+UString::UString(std::u16string_view str) {
+    if(str.empty()) return;
+    this->sUnicode = str;
     updateUtf8();
 }
 
@@ -57,9 +64,9 @@ UString::UString(const char *utf8, int length) {
     fromSupposedUtf8(this->sUtf8.data(), this->sUtf8.size());
 }
 
-UString::UString(const std::string &utf8) {
+UString::UString(std::string utf8) {
     if(utf8.empty()) return;
-    this->sUtf8 = utf8;
+    this->sUtf8 = std::move(utf8);
     fromSupposedUtf8(this->sUtf8.data(), this->sUtf8.size());
 }
 
@@ -101,13 +108,28 @@ size_t UString::numCodepoints() const noexcept {
     return simdutf::count_utf16le(this->sUnicode.data(), this->sUnicode.size());
 }
 
-int UString::findChar(char16_t ch, int start, bool respectEscapeChars) const {
+// private helper
+int UString::findCharSimd(char16_t ch, int start, int end) const {
+    const char16_t *searchStart = this->sUnicode.data() + start;
+    const char16_t *searchEnd = this->sUnicode.data() + end;
+    const char16_t *result = simdutf::find(searchStart, searchEnd, ch);
+    return (result != searchEnd) ? static_cast<int>(result - this->sUnicode.data()) : -1;
+}
+
+int UString::find(char16_t ch, std::optional<int> startOpt, std::optional<int> endOpt, bool respectEscapeChars) const {
     int len = length();
-    if(start < 0 || start >= len) return -1;
+    int start = startOpt.value_or(0);
+    int end = endOpt.value_or(len);
+
+    if(start < 0 || end > len || start >= end) return -1;
+
+    if(!respectEscapeChars) {
+        return findCharSimd(ch, start, end);
+    }
 
     bool escaped = false;
-    for(int i = start; i < len; i++) {
-        if(respectEscapeChars && !escaped && this->sUnicode[i] == ESCAPE_CHAR) {
+    for(int i = start; i < end; i++) {
+        if(!escaped && this->sUnicode[i] == ESCAPE_CHAR) {
             escaped = true;
         } else {
             if(!escaped && this->sUnicode[i] == ch) return i;
@@ -118,17 +140,20 @@ int UString::findChar(char16_t ch, int start, bool respectEscapeChars) const {
     return -1;
 }
 
-int UString::findChar(const UString &str, int start, bool respectEscapeChars) const {
+int UString::findFirstOf(const UString &str, int start, bool respectEscapeChars) const {
     int len = length();
     int strLen = str.length();
     if(start < 0 || start >= len || strLen == 0) return -1;
 
-    std::vector<bool> charMap(0x10000, false);
-    std::vector<char16_t> extendedChars;
+    // delegate to find(char16_t)
+    if(strLen == 1) {
+        return find(str.sUnicode[0], start, std::nullopt, respectEscapeChars);
+    }
 
+    // multi-character case, build character set
+    std::bitset<0x10000> charMap{};
     for(int i = 0; i < strLen; i++) {
-        char16_t ch = str.sUnicode[i];
-        charMap[ch] = true;
+        charMap[str.sUnicode[i]] = true;
     }
 
     bool escaped = false;
@@ -136,10 +161,7 @@ int UString::findChar(const UString &str, int start, bool respectEscapeChars) co
         if(respectEscapeChars && !escaped && this->sUnicode[i] == ESCAPE_CHAR) {
             escaped = true;
         } else {
-            char16_t ch = this->sUnicode[i];
-            const bool found = charMap[ch];
-
-            if(!escaped && found) return i;
+            if(!escaped && charMap[this->sUnicode[i]]) return i;
             escaped = false;
         }
     }
@@ -147,74 +169,62 @@ int UString::findChar(const UString &str, int start, bool respectEscapeChars) co
     return -1;
 }
 
-int UString::find(const UString &str, int start) const {
+int UString::find(const UString &str, std::optional<int> startOpt, std::optional<int> endOpt) const {
     int strLen = str.length();
     int len = length();
-    if(start < 0 || strLen == 0 || start > len - strLen) return -1;
 
-    size_t pos = this->sUnicode.find(str.sUnicode, start);
-    return (pos != std::u16string::npos) ? static_cast<int>(pos) : -1;
-}
+    int start = startOpt.value_or(0);
+    int end = endOpt.value_or(len);
 
-int UString::find(const UString &str, int start, int end) const {
-    int strLen = str.length();
-    int len = length();
-    if(start < 0 || end > len || start >= end || strLen == 0) return -1;
+    if(start < 0 || end > len || start >= end || strLen == 0 || strLen > end - start) return -1;
 
-    if(end < len) {
-        auto tempSubstr = this->sUnicode.substr(start, end - start);
-        size_t pos = tempSubstr.find(str.sUnicode);
-        return (pos != std::u16string::npos) ? static_cast<int>(pos + start) : -1;
+    // single character, use simd
+    if(strLen == 1) {
+        return findCharSimd(str.sUnicode[0], start, end);
     }
 
-    return find(str, start);
+    // full-string search
+    if(end == len) {
+        size_t pos = this->sUnicode.find(str.sUnicode, start);
+        return (pos != std::u16string::npos) ? static_cast<int>(pos) : -1;
+    }
+
+    // bounded search, extract substring
+    auto tempSubstr = this->sUnicode.substr(start, end - start);
+    size_t pos = tempSubstr.find(str.sUnicode);
+    return (pos != std::u16string::npos) ? static_cast<int>(pos + start) : -1;
 }
 
-int UString::findLast(const UString &str, int start) const {
+int UString::findLast(const UString &str, std::optional<int> startOpt, std::optional<int> endOpt) const {
     int strLen = str.length();
     int len = length();
-    if(start < 0 || strLen == 0 || start > len - strLen) return -1;
+    int start = startOpt.value_or(0);
+    int end = endOpt.value_or(len);
 
-    size_t pos = this->sUnicode.rfind(str.sUnicode);
-    if(pos != std::u16string::npos && std::cmp_greater_equal(pos, start)) return static_cast<int>(pos);
+    if(start < 0 || end > len || start >= end || strLen == 0 || strLen > end - start) return -1;
 
-    return -1;
-}
+    // full-string search
+    if(end == len) {
+        size_t pos = this->sUnicode.rfind(str.sUnicode, end - 1);
+        if(pos != std::u16string::npos && pos >= static_cast<size_t>(start)) return static_cast<int>(pos);
+        return -1;
+    }
 
-int UString::findLast(const UString &str, int start, int end) const {
-    int strLen = str.length();
-    int len = length();
-    if(start < 0 || end > len || start >= end || strLen == 0) return -1;
-
-    int lastPossibleMatch = std::min(end - strLen, len - strLen);
-    for(int i = lastPossibleMatch; i >= start; i--) {
+    // bounded search, manual backward search
+    for(int i = end - strLen; i >= start; i--) {
         if(std::equal(str.sUnicode.begin(), str.sUnicode.end(), this->sUnicode.begin() + i)) return i;
     }
 
     return -1;
 }
 
-int UString::findIgnoreCase(const UString &str, int start) const {
+int UString::findIgnoreCase(const UString &str, std::optional<int> startOpt, std::optional<int> endOpt) const {
     int strLen = str.length();
     int len = length();
-    if(start < 0 || strLen == 0 || start > len - strLen) return -1;
+    int start = startOpt.value_or(0);
+    int end = endOpt.value_or(len);
 
-    auto toLower = [](auto c) { return std::towlower(static_cast<wint_t>(c)); };
-
-    auto sourceView = this->sUnicode | std::views::drop(start) | std::views::transform(toLower);
-    auto targetView = str.sUnicode | std::views::transform(toLower);
-
-    auto result = std::ranges::search(sourceView, targetView);
-
-    if(!result.empty()) return static_cast<int>(std::distance(sourceView.begin(), result.begin())) + start;
-
-    return -1;
-}
-
-int UString::findIgnoreCase(const UString &str, int start, int end) const {
-    int strLen = str.length();
-    int len = length();
-    if(start < 0 || end > len || start >= end || strLen == 0) return -1;
+    if(start < 0 || end > len || start >= end || strLen == 0 || strLen > end - start) return -1;
 
     auto toLower = [](auto c) { return std::towlower(static_cast<wint_t>(c)); };
 

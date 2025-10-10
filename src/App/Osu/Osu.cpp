@@ -92,11 +92,11 @@ Osu::Osu() {
     ConVar::setOnSetValueProtectedCallback(SA::MakeDelegate<&Osu::globalOnSetValueProtectedCallback>(this));
 
     if(Env::cfg(BUILD::DEBUG)) {
-        BanchoState::neosu_version = UString::fmt("dev-{}", cv::build_timestamp.getVal<u64>());
+        BanchoState::neosu_version = fmt::format("dev-{}", cv::build_timestamp.getVal<u64>());
     } else if(cv::is_bleedingedge.getBool()) {  // FIXME: isn't this always false here...?
-        BanchoState::neosu_version = UString::fmt("bleedingedge-{}", cv::build_timestamp.getVal<u64>());
+        BanchoState::neosu_version = fmt::format("bleedingedge-{}", cv::build_timestamp.getVal<u64>());
     } else {
-        BanchoState::neosu_version = UString::fmt("release-{:.2f}", cv::version.getFloat());
+        BanchoState::neosu_version = fmt::format("release-{:.2f}", cv::version.getFloat());
     }
 
     BanchoState::user_agent = "Mozilla/5.0 (compatible; neosu/";
@@ -1148,15 +1148,17 @@ void Osu::onKeyDown(KeyboardEvent &key) {
             // local offset
             if(key == (KEYCODE)cv::INCREASE_LOCAL_OFFSET.getInt()) {
                 i32 offsetAdd = keyboard->isAltDown() ? 1 : 5;
-                this->map_iface->getBeatmap()->setLocalOffset(this->map_iface->getBeatmap()->getLocalOffset() + offsetAdd);
+                this->map_iface->getBeatmap()->setLocalOffset(this->map_iface->getBeatmap()->getLocalOffset() +
+                                                              offsetAdd);
                 this->notificationOverlay->addNotification(
-                    UString::fmt("Local beatmap offset set to {} ms", this->map_iface->getBeatmap()->getLocalOffset()));
+                    fmt::format("Local beatmap offset set to {} ms", this->map_iface->getBeatmap()->getLocalOffset()));
             }
             if(key == (KEYCODE)cv::DECREASE_LOCAL_OFFSET.getInt()) {
                 i32 offsetAdd = -(keyboard->isAltDown() ? 1 : 5);
-                this->map_iface->getBeatmap()->setLocalOffset(this->map_iface->getBeatmap()->getLocalOffset() + offsetAdd);
+                this->map_iface->getBeatmap()->setLocalOffset(this->map_iface->getBeatmap()->getLocalOffset() +
+                                                              offsetAdd);
                 this->notificationOverlay->addNotification(
-                    UString::fmt("Local beatmap offset set to {} ms", this->map_iface->getBeatmap()->getLocalOffset()));
+                    fmt::format("Local beatmap offset set to {} ms", this->map_iface->getBeatmap()->getLocalOffset()));
             }
         }
     }
@@ -1536,7 +1538,7 @@ void Osu::onDPIChanged() {
 }
 
 void Osu::rebuildRenderTargets() {
-    debugLog("Osu::rebuildRenderTargets: {:f}x{:f}", this->vInternalResolution.x, this->vInternalResolution.y);
+    debugLog("{:.2f}x{:.2f}", this->vInternalResolution.x, this->vInternalResolution.y);
 
     this->backBuffer->rebuild(0, 0, this->vInternalResolution.x, this->vInternalResolution.y);
 

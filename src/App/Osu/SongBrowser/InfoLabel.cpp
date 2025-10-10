@@ -222,13 +222,13 @@ void InfoLabel::mouse_update(bool *propagate_clicks) {
         const auto &tooltipOverlay{osu->getTooltipOverlay()};
         tooltipOverlay->begin();
         {
-            tooltipOverlay->addLine(UString::fmt("Approach time: {:.2f}ms", approachTimeRoundedCompensated));
-            tooltipOverlay->addLine(UString::fmt("300: +-{:.2f}ms", hitWindow300RoundedCompensated));
-            tooltipOverlay->addLine(UString::fmt("100: +-{:.2f}ms", hitWindow100RoundedCompensated));
-            tooltipOverlay->addLine(UString::fmt(" 50: +-{:.2f}ms", hitWindow50RoundedCompensated));
+            tooltipOverlay->addLine(fmt::format("Approach time: {:.2f}ms"_cf, approachTimeRoundedCompensated));
+            tooltipOverlay->addLine(fmt::format("300: +-{:.2f}ms"_cf, hitWindow300RoundedCompensated));
+            tooltipOverlay->addLine(fmt::format("100: +-{:.2f}ms"_cf, hitWindow100RoundedCompensated));
+            tooltipOverlay->addLine(fmt::format(" 50: +-{:.2f}ms"_cf, hitWindow50RoundedCompensated));
             tooltipOverlay->addLine(
-                UString::fmt("Spinner difficulty: {:.2f}", GameRules::getSpinnerSpinsPerSecond(pf.get())));
-            tooltipOverlay->addLine(UString::fmt("Hit object radius: {:.2f}", hitobjectRadiusRoundedCompensated));
+                fmt::format("Spinner difficulty: {:.2f}"_cf, GameRules::getSpinnerSpinsPerSecond(pf.get())));
+            tooltipOverlay->addLine(fmt::format("Hit object radius: {:.2f}"_cf, hitobjectRadiusRoundedCompensated));
 
             if(bmDiff2 != nullptr) {
                 int numObjects{bmDiff2->getNumObjects()};
@@ -245,17 +245,18 @@ void InfoLabel::mouse_update(bool *propagate_clicks) {
                     spm = static_cast<float>(numSliders) / durMinutes;
                 }
 
-                tooltipOverlay->addLine(UString::fmt("Circles: {:d}, Sliders: {:d}, Spinners: {:d}", numCircles,
-                                                     numSliders, std::max(0, numObjects - numCircles - numSliders)));
-                tooltipOverlay->addLine(UString::fmt("OPM: {:d}, CPM: {:d}, SPM: {:d}", (int)opm, (int)cpm, (int)spm));
-                tooltipOverlay->addLine(UString::fmt("ID: {:d}, SetID: {:d}", bmDiff2->getID(), bmDiff2->getSetID()));
-                tooltipOverlay->addLine(UString::fmt("MD5: {:s}", bmDiff2->getMD5Hash().string()));
+                tooltipOverlay->addLine(fmt::format("Circles: {:d}, Sliders: {:d}, Spinners: {:d}"_cf, numCircles,
+                                                    numSliders, std::max(0, numObjects - numCircles - numSliders)));
+                tooltipOverlay->addLine(
+                    fmt::format("OPM: {:d}, CPM: {:d}, SPM: {:d}"_cf, (int)opm, (int)cpm, (int)spm));
+                tooltipOverlay->addLine(fmt::format("ID: {:d}, SetID: {:d}"_cf, bmDiff2->getID(), bmDiff2->getSetID()));
+                tooltipOverlay->addLine(fmt::format("MD5: {:s}"_cf, bmDiff2->getMD5Hash().string()));
                 // mostly for debugging
                 if(keyboard->isShiftDown()) {
-                    tooltipOverlay->addLine(UString::fmt("Title: {:s}", bmDiff2->getTitleLatin()));
-                    tooltipOverlay->addLine(UString::fmt("TitleUnicode: {:s}", bmDiff2->getTitleUnicode()));
-                    tooltipOverlay->addLine(UString::fmt("Artist: {:s}", bmDiff2->getArtistLatin()));
-                    tooltipOverlay->addLine(UString::fmt("ArtistUnicode: {:s}", bmDiff2->getArtistUnicode()));
+                    tooltipOverlay->addLine(fmt::format("Title: {:s}"_cf, bmDiff2->getTitleLatin()));
+                    tooltipOverlay->addLine(fmt::format("TitleUnicode: {:s}"_cf, bmDiff2->getTitleUnicode()));
+                    tooltipOverlay->addLine(fmt::format("Artist: {:s}"_cf, bmDiff2->getArtistLatin()));
+                    tooltipOverlay->addLine(fmt::format("ArtistUnicode: {:s}"_cf, bmDiff2->getArtistUnicode()));
                 }
             }
         }
@@ -357,7 +358,7 @@ UString InfoLabel::buildDiffInfoString() {
 }
 
 UString InfoLabel::buildOffsetInfoString() {
-    return UString::fmt("Your Offset: {:d} ms / Online Offset: {:d} ms", this->iLocalOffset, this->iOnlineOffset);
+    return fmt::format("Your Offset: {:d} ms / Online Offset: {:d} ms", this->iLocalOffset, this->iOnlineOffset);
 }
 
 float InfoLabel::getMinimumWidth() {

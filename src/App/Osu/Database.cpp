@@ -101,7 +101,7 @@ std::string Database::getDBPath(DatabaseType db_type) {
     switch(db_type) {
         case INVALID_DB: {
             engine->showMessageError("Database Error",
-                                     UString::fmt("Invalid database type {}", static_cast<u8>(db_type)));
+                                     fmt::format("Invalid database type {}", static_cast<u8>(db_type)));
             return {""};
         }
         case NEOSU_SCORES:

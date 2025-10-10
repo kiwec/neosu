@@ -93,7 +93,7 @@ void logout_user(i32 user_id) {
         }
 
         if(user_info->is_friend() && cv::notify_friend_status_change.getBool()) {
-            auto text = UString::fmt("{} is now offline", user_info->name);
+            auto text = fmt::format("{} is now offline", user_info->name);
             osu->getNotificationOverlay()->addToast(text, STATUS_TOAST, {}, ToastElement::TYPE::CHAT);
         }
 

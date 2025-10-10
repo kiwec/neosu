@@ -699,7 +699,7 @@ bool BeatmapInterface::start() {
 
     if(this->beatmap->getLocalOffset() != 0)
         osu->getNotificationOverlay()->addNotification(
-            UString::fmt("Using local beatmap offset ({} ms)", this->beatmap->getLocalOffset()), 0xffffffff, false,
+            fmt::format("Using local beatmap offset ({} ms)", this->beatmap->getLocalOffset()), 0xffffffff, false,
             0.75f);
 
     osu->fQuickSaveTime = 0.0f;  // reset

@@ -87,7 +87,7 @@ void DirectX11Interface::init() {
     if(FAILED(hr)) {
         UString errorTitle = "DirectX Error";
         UString errorMessage =
-            UString::fmt("{} failed! HR: {:#x} DXGI_HR: {:#x})", error, (u32)hr, (u32)MAKE_DXGI_HRESULT(hr));
+            fmt::format("{} failed! HR: {:#x} DXGI_HR: {:#x})", error, (u32)hr, (u32)MAKE_DXGI_HRESULT(hr));
 
         errorMessage.append("\nThe engine will quit now.");
         engine->showMessageErrorFatal("DirectX Error", errorMessage);
@@ -184,7 +184,7 @@ bool DirectX11Interface::createSwapchain() {
     if(FAILED(hr)) {
         engine->showMessageErrorFatal(
             "DirectX Error",
-            UString::fmt("Failed to create a swapchain: HR: {:#x} DXGI_HR: {:#x})\nThe engine will shut down now.",
+            fmt::format("Failed to create a swapchain: HR: {:#x} DXGI_HR: {:#x})\nThe engine will shut down now.",
                          (u32)hr, (u32)MAKE_DXGI_HRESULT(hr)));
         engine->shutdown();
         return false;

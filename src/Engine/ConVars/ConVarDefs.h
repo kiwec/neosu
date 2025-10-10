@@ -875,7 +875,7 @@ CONVAR(confine_cursor_never, "confine_cursor_never"sv, false, CLIENT | SKINS | S
 CONVAR(console_logging, "console_logging"sv, true, CLIENT | SKINS | SERVER);
 CONVAR(console_overlay, "console_overlay"sv, false, CLIENT | SKINS | SERVER,
        "should the log overlay always be visible (or only if the console is out)"sv);
-CONVAR(console_overlay_lines, "console_overlay_lines"sv, 6, CLIENT | SKINS | SERVER, "max number of lines of text"sv);
+CONVAR(console_overlay_lines, "console_overlay_lines"sv, 12, CLIENT | SKINS | SERVER, "max number of lines of text"sv);
 CONVAR(console_overlay_scale, "console_overlay_scale"sv, 1.0f, CLIENT | SKINS | SERVER, "log text size multiplier"sv);
 CONVAR(consolebox_animspeed, "consolebox_animspeed"sv, 12.0f, CLIENT | SKINS | SERVER);
 CONVAR(consolebox_draw_helptext, "consolebox_draw_helptext"sv, true, CLIENT | SKINS | SERVER,
