@@ -190,13 +190,13 @@ using Env::OS;
 using Env::REND;
 
 #ifdef __AVX512F__
-static constexpr auto OPTIMAL_UNROLL = 10;
+#define OPTIMAL_UNROLL 10
 #elif defined(__AVX2__)
-static constexpr auto OPTIMAL_UNROLL = 8;
+#define OPTIMAL_UNROLL 8
 #elif defined(__SSE2__)
-static constexpr auto OPTIMAL_UNROLL = 6;
+#define OPTIMAL_UNROLL 6
 #else
-static constexpr auto OPTIMAL_UNROLL = 4;
+#define OPTIMAL_UNROLL 4
 #endif
 
 #define MC_QUOTE(s) #s

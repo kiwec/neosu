@@ -36,7 +36,7 @@ class ByteBufferedFile {
 
         // always_inline is a 2x speedup here
         [[nodiscard]] always_inline_attr uSz read_bytes(u8 *out, uSz len) {
-            if(this->error_flag || !this->file.is_open()) {
+            if(this->error_flag) {
                 if(out != nullptr) {
                     memset(out, 0, len);
                 }
@@ -129,7 +129,7 @@ class ByteBufferedFile {
         }
 
         always_inline_attr void skip_bytes(u32 n) {
-            if(this->error_flag || !this->file.is_open()) {
+            if(this->error_flag) {
                 return;
             }
 
