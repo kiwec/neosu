@@ -2210,8 +2210,8 @@ void BeatmapInterface::update() {
                 info.pp = DifficultyCalculator::calculatePPv2(
                     modsLegacy, params.speedMultiplier, AR, params.OD, info.aim_stars, info.aim_slider_factor,
                     info.difficult_aim_sliders, info.difficult_aim_strains, info.speed_stars, info.speed_notes,
-                    info.difficult_speed_strains, current_hitobject, nb_circles, nb_sliders, nb_spinners, diffres.maxPossibleCombo,
-                    highestCombo, numMisses, num300s, num100s, num50s);
+                    info.difficult_speed_strains, current_hitobject, nb_circles, nb_sliders, nb_spinners,
+                    diffres.maxPossibleCombo, highestCombo, numMisses, num300s, num100s, num50s);
 
                 return info;
             });
@@ -3256,13 +3256,13 @@ const pp_info &BeatmapInterface::getWholeMapPPInfo() {
             .AR = mods.get_naive_ar(map),
             .CS = mods.get_naive_cs(map),
             .OD = mods.get_naive_od(map),
-            .rx = ModMasks::eq(mods.flags, Replay::ModFlags::Relax),
-            .td = ModMasks::eq(mods.flags, Replay::ModFlags::TouchDevice),
             .comboMax = -1,
             .numMisses = 0,  // unset sentinel for request (bad api)
             .num300s = map->getNumObjects(),
             .num100s = 0,
             .num50s = 0,
+            .rx = ModMasks::eq(mods.flags, Replay::ModFlags::Relax),
+            .td = ModMasks::eq(mods.flags, Replay::ModFlags::TouchDevice),
         };
     }
 
@@ -3519,7 +3519,7 @@ FinishedScore BeatmapInterface::saveAndSubmitScore(bool quit) {
     auto diffres = DatabaseBeatmap::loadDifficultyHitObjects(osuFilePath, AR, CS, speedMultiplier);
 
     std::atomic<bool> dead{false};
-    
+
     DifficultyCalculator::StarCalcParams params{.cachedDiffObjects = {},
                                                 .sortedHitObjects = diffres.diffobjects,
                                                 .CS = CS,

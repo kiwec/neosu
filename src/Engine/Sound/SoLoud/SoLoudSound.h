@@ -71,7 +71,6 @@ class SoLoudSound final : public Sound {
 
     // current playback parameters
     float fFrequency{44100.0f};         // sample rate in Hz
-    bool bIsLoopingActuallySet{false};  // looping has been set on the soloud audio handle
 
     // SoLoud-specific members
     SoLoud::AudioSource *audioSource{nullptr};  // base class pointer, could be either SLFXStream or Wav

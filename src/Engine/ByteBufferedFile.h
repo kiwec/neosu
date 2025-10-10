@@ -207,14 +207,14 @@ class ByteBufferedFile {
         [[nodiscard]] std::string_view error() const { return this->last_error; }
 
         void flush();
-        void write_bytes(u8 *bytes, uSz n);
-        void write_hash(MD5Hash hash);
-        void write_string(std::string str);
+        void write_bytes(const u8 *bytes, uSz n);
+        void write_hash(const MD5Hash &hash);
+        void write_string(const std::string &str);
         void write_uleb128(u32 num);
 
         template <typename T>
         void write(T t) {
-            this->write_bytes(reinterpret_cast<u8 *>(&t), sizeof(T));
+            this->write_bytes(reinterpret_cast<const u8 *>(&t), sizeof(T));
         }
 
        private:

@@ -494,9 +494,11 @@ void OpenGLLegacyInterface::drawVAO(VertexArrayObject *vao) {
     }
 
     // handle colors
+    std::vector<Color> swapped_colors;
     if(!colors.empty()) {
         // check if any color needs conversion (only R and B are swapped)
         bool needsConversion = false;
+        MC_UNROLL
         for(size_t i = 0; i < drawCount; ++i) {
             if(colors[i].R() != colors[i].B()) {
                 needsConversion = true;
@@ -506,7 +508,6 @@ void OpenGLLegacyInterface::drawVAO(VertexArrayObject *vao) {
         // (create temporary swapped buffer for correct RGBA byte order)
         // TODO: just store them properly in the first place
         if(needsConversion) {
-            std::vector<Color> swapped_colors;
             swapped_colors.reserve(drawCount);
             for(size_t i = 0; i < drawCount; ++i) {
                 swapped_colors.push_back(abgr(colors[i]));

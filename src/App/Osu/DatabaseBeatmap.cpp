@@ -405,8 +405,9 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(std::
 
                     f32 x, y;
                     u32 time;
-                    u8 type;
                     i32 hitSounds;
+                    // this actually should be initialized since we use it unconditionally after trying to parse it
+                    u8 type = 0;
 
                     auto csvs = SString::split(curLine, ',');
                     if(csvs.size() < 5) break;

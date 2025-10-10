@@ -126,7 +126,6 @@ void SoLoudSound::destroy() {
     }
 
     // need to reset this because the soloud handle has been destroyed
-    this->bIsLoopingActuallySet = false;
     this->fFrequency = 44100.0f;
     this->fPitch = 1.0f;
     this->fSpeed = 1.0f;
@@ -265,7 +264,7 @@ void SoLoudSound::setPan(float pan) {
 }
 
 void SoLoudSound::setLoop(bool loop) {
-    if(!this->bReady || !this->audioSource || this->bIsLoopingActuallySet == loop) return;
+    if(!this->bReady || !this->audioSource) return;
 
     this->bIsLooped = loop;
 
@@ -277,7 +276,6 @@ void SoLoudSound::setLoop(bool loop) {
     // apply to the active voice
     if(this->handle != 0) {
         soloud->setLooping(this->handle, loop);
-        this->bIsLoopingActuallySet = loop;
     }
 }
 
@@ -403,7 +401,7 @@ bool SoLoudSound::valid_handle_cached() const {
     if(now >= this->soloud_valid_handle_cache_time + 0.01) {  // 10ms intervals should be fast enough
         this->soloud_valid_handle_cache_time = now;
         if(!soloud->isValidVoiceHandle(this->handle)) {
-            const_cast<SoLoudSound*>(this)->handle = 0;
+            const_cast<SoLoudSound *>(this)->handle = 0;
         }
     }
 

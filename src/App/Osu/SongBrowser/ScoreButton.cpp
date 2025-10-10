@@ -844,7 +844,7 @@ SkinImage *ScoreButton::getGradeImage(FinishedScore::Grade grade) {
     }
 }
 
-UString ScoreButton::getModsStringForDisplay(Replay::Mods mods) {
+UString ScoreButton::getModsStringForDisplay(const Replay::Mods &mods) {
     using namespace ModMasks;
     using namespace Replay::ModFlags;
 

@@ -791,7 +791,7 @@ AS_IF([test "x$enable_lto" != "xno"], [
 ])
 
 # check for --enable-hardened capability (-fhardened)
-AS_IF([test "$host_os" = "linux-gnu" && test "x$enable_harden" = "xyes"], [
+AS_IF([test "x$enable_harden" = "xyes"], [
     AX_CHECK_COMPILE_FLAG([-fhardened], [
         CXXFLAGS="$CXXFLAGS -fhardened"
         CFLAGS="$CFLAGS -fhardened"

@@ -7,7 +7,8 @@
 #include <system_error>
 #include <cassert>
 
-ByteBufferedFile::Reader::Reader(std::string_view readPath) : buffer(std::make_unique_for_overwrite<u8[]>(READ_BUFFER_SIZE)) {
+ByteBufferedFile::Reader::Reader(std::string_view readPath)
+    : buffer(std::make_unique_for_overwrite<u8[]>(READ_BUFFER_SIZE)) {
     auto path = File::getFsPath(readPath);
     this->file.open(path, std::ios::binary);
     if(!this->file.is_open()) {
@@ -123,7 +124,8 @@ void ByteBufferedFile::Reader::skip_string() {
     this->skip_bytes(len);
 }
 
-ByteBufferedFile::Writer::Writer(std::string_view writePath) : buffer(std::make_unique_for_overwrite<u8[]>(WRITE_BUFFER_SIZE)) {
+ByteBufferedFile::Writer::Writer(std::string_view writePath)
+    : buffer(std::make_unique_for_overwrite<u8[]>(WRITE_BUFFER_SIZE)) {
     auto path = File::getFsPath(writePath);
     this->file_path = path;
     this->tmp_file_path = this->file_path;
@@ -161,17 +163,17 @@ void ByteBufferedFile::Writer::set_error(const std::string &error_msg) {
     }
 }
 
-void ByteBufferedFile::Writer::write_hash(MD5Hash hash) {
+void ByteBufferedFile::Writer::write_hash(const MD5Hash &hash) {
     if(this->error_flag) {
         return;
     }
 
     this->write<u8>(0x0B);
     this->write<u8>(0x20);
-    this->write_bytes(reinterpret_cast<u8 *>(hash.string()), 32);
+    this->write_bytes(reinterpret_cast<const u8 *>(hash.string()), 32);
 }
 
-void ByteBufferedFile::Writer::write_string(std::string str) {
+void ByteBufferedFile::Writer::write_string(const std::string &str) {
     if(this->error_flag) {
         return;
     }
@@ -187,7 +189,7 @@ void ByteBufferedFile::Writer::write_string(std::string str) {
 
     u32 len = str.length();
     this->write_uleb128(len);
-    this->write_bytes(reinterpret_cast<u8 *>(const_cast<char *>(str.c_str())), len);
+    this->write_bytes(reinterpret_cast<const u8 *>(str.c_str()), len);
 }
 
 void ByteBufferedFile::Writer::flush() {
@@ -203,7 +205,7 @@ void ByteBufferedFile::Writer::flush() {
     this->pos = 0;
 }
 
-void ByteBufferedFile::Writer::write_bytes(u8 *bytes, uSz n) {
+void ByteBufferedFile::Writer::write_bytes(const u8 *bytes, uSz n) {
     if(this->error_flag || !this->file.is_open()) {
         return;
     }

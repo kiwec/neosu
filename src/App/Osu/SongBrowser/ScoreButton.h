@@ -13,7 +13,7 @@ class ScoreButton final : public CBaseUIButton {
     NOCOPY_NOMOVE(ScoreButton)
    public:
     static SkinImage *getGradeImage(FinishedScore::Grade grade);
-    static UString getModsStringForDisplay(Replay::Mods mods);
+    static UString getModsStringForDisplay(const Replay::Mods &mods);
 
     enum class STYLE : uint8_t { SONG_BROWSER, TOP_RANKS };
 

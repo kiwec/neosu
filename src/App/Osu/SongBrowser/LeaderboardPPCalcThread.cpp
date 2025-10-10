@@ -239,7 +239,7 @@ void lct_set_map(DatabaseBeatmap* new_map) {
     return;
 }
 
-pp_info lct_get_pp(pp_calc_request rqt, bool ignoreBGThreadPause) {
+pp_info lct_get_pp(const pp_calc_request& rqt, bool ignoreBGThreadPause) {
     cache_mtx.lock();
     for(const auto& [request, info] : cache) {
         if(request != rqt) continue;
@@ -264,12 +264,14 @@ pp_info lct_get_pp(pp_calc_request rqt, bool ignoreBGThreadPause) {
     work_mtx.unlock();
     cond.notify_one();
 
-    pp_info placeholder;
-    placeholder.total_stars = -1.0;
-    placeholder.aim_stars = -1.0;
-    placeholder.aim_slider_factor = -1.0;
-    placeholder.speed_stars = -1.0;
-    placeholder.speed_notes = -1.0;
-    placeholder.pp = -1.0;
+    pp_info placeholder{
+        .total_stars = -1.0,
+        .aim_stars = -1.0,
+        .aim_slider_factor = -1.0,
+        .speed_stars = -1.0,
+        .speed_notes = -1.0,
+        .pp = -1.0,
+    };
+
     return placeholder;
 }
