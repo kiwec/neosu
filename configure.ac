@@ -133,6 +133,8 @@ AC_ARG_ENABLE([native],
     AS_HELP_STRING([--enable-native], [Compile for -march=native (default: no)])) # currently broken for windows
 AC_ARG_ENABLE([debug],
     AS_HELP_STRING([--enable-debug], [Enable debug build (default: no)]))
+AC_ARG_ENABLE([harden],
+    AS_HELP_STRING([--enable-harden], [Make a hardened build (GCC+Linux only) (default: no)]))
 AC_ARG_ENABLE([strip],
     AS_HELP_STRING([--enable-strip], [Strip the final binary (default: no for debug, yes otherwise)]))
 AC_ARG_ENABLE([asan],
@@ -217,9 +219,18 @@ AS_IF([test "x$enable_ime" != "xno"], [
 
 AC_SUBST([NOIME])
 
+# set some default flags here
+CFLAGS="$CFLAGS -fvisibility=hidden"
+CXXFLAGS="$CXXFLAGS -fvisibility=hidden"
+LDFLAGS="$LDFLAGS -fvisibility=hidden"
+
+AS_IF([test "$host_os" = "linux-gnu"], [
+    AC_PROG_PATCHELF # only need this for linux
+])
+
 AS_IF([test "$host_os" = "mingw32"], [
     NEOSU_CPPFLAGS="$NEOSU_CPPFLAGS -D_UNICODE -DUNICODE=1"
-    NEOSU_CXXFLAGS="$NEOSU_CXXFLAGS -D_UNICODE -DUNICODE=1 -municode -fvisibility=hidden"
+    NEOSU_CXXFLAGS="$NEOSU_CXXFLAGS -D_UNICODE -DUNICODE=1 -municode"
     NEOSU_LDFLAGS="$NEOSU_LDFLAGS -municode"
     AS_IF([test "x$enable_clang" = "xyes"], [
         LLVMMINGW=1
@@ -227,8 +238,6 @@ AS_IF([test "$host_os" = "mingw32"], [
         CXXFLAGS="$CXXFLAGS --target=$host_cpu-w64-windows-gnu"
         CFLAGS="$CFLAGS --target=$host_cpu-w64-windows-gnu"
     ])
-],[
-    AC_PROG_PATCHELF # only need this for linux
 ])
 
 use_opengl_default=yes # ugly
@@ -321,16 +330,18 @@ AS_IF([test "$with_bass" = "yes"], [
 AC_SUBST([AUDBACKENDLIST])
 
 AS_IF([test "x$enable_asan" = "xyes" || test "x$enable_tsan" = "xyes"], [
+    sanitizer_string=
     AS_IF([test "x$enable_asan" = "xyes"], [
-        CXXFLAGS="$CXXFLAGS -fsanitize=address,undefined"
-        CFLAGS="$CFLAGS -fsanitize=address,undefined"
+        sanitizer_string=" -fsanitize=address,undefined"
     ], [
-        CXXFLAGS="$CXXFLAGS -fsanitize=undefined,thread"
-        CFLAGS="$CFLAGS -fsanitize=undefined,thread"
+        sanitizer_string=" -fsanitize=undefined,thread"
     ])
 
+    CXXFLAGS="${CXXFLAGS}${sanitizer_string}"
+    CFLAGS="${CFLAGS}${sanitizer_string}"
+    LDFLAGS="${LDFLAGS}${sanitizer_string}" # apparently it also needs to be specified as a linker flag...?
+    
     AS_IF([test -z "$LLVMMINGW" && test "x$enable_clang" = "xyes"],[
-        LDFLAGS="$LDFLAGS"
         CFLAGS="$CFLAGS -fsanitize-address-use-after-scope -fsanitize-address-use-after-return=always"
         CXXFLAGS="$CXXFLAGS -fsanitize-address-use-after-scope -fsanitize-address-use-after-return=always"
     ])
@@ -650,12 +661,10 @@ AS_IF([test "$host_os" = "linux-gnu"],[
 AS_IF([test "$host_os" = "mingw32" && test "x$enable_clang" = "xyes"], [
     cxxflags_save="$CXXFLAGS"
     cflags_save="$CFLAGS"
-    have_pdb=
     AX_CHECK_COMPILE_FLAG([-gcodeview], [
         CXXFLAGS="$CXXFLAGS -g -gcodeview" # add some debug info too since its detached
         CFLAGS="$CFLAGS -g -gcodeview"
         AX_CHECK_LINK_FLAG([-Wl,--pdb=], [
-            have_pdb=yes
             NEOSU_LDFLAGS="$NEOSU_LDFLAGS -Wl,--pdb="
         ])
         # speeds up link time on llvm-mingw, not crucial though
@@ -778,6 +787,15 @@ AS_IF([test "x$enable_lto" != "xno"], [
             NEOSU_CXXFLAGS="$NEOSU_CXXFLAGS -flto-partition=one"
             NEOSU_LDFLAGS="$NEOSU_LDFLAGS -flto-partition=one"
         ])
+    ])
+])
+
+# check for --enable-hardened capability (-fhardened)
+AS_IF([test "$host_os" = "linux-gnu" && test "x$enable_harden" = "xyes"], [
+    AX_CHECK_COMPILE_FLAG([-fhardened], [
+        CXXFLAGS="$CXXFLAGS -fhardened"
+        CFLAGS="$CFLAGS -fhardened"
+        hardened_build=yes
     ])
 ])
 
@@ -1167,6 +1185,7 @@ neosu build configuration:
     BASS:               ${with_bass-no}
     SoLoud:             ${with_soloud-no}
     IME enabled:        ${enable_ime-yes}
+    Hardened build:     ${hardened_build-no}
     LTO:                ${enable_lto-auto}
     OpenMP:             ${enable_omp-no}
     Debug build:        ${enable_debug-no}

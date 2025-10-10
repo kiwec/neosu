@@ -238,41 +238,57 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(std::
         int colorCounter = 1;
         int colorOffset = 0;
         int comboNumber = 1;
-        int curBlock = -1;
-        for(auto curLineUnstripped : SString::split(beatmapFile, '\n')) {
-            SString::trim_inplace(curLineUnstripped);
-            const auto curLine = curLineUnstripped;  // don't want to accidentally modify it somewhere later
+        BlockId curBlock{BlockId::Sentinel};
 
+        using enum BlockId;
+
+        for(auto curLineUnstripped : SString::split(beatmapFile, '\n')) {
             if(dead.load()) {
                 c.errorCode = 6;
                 return c;
             }
 
             // ignore comments, but only if at the beginning of a line (e.g. allow Artist:DJ'TEKINA//SOMETHING)
-            if(curLine.starts_with("//")) continue;
+            if(curLineUnstripped.empty() || curLineUnstripped.starts_with("//")) continue;
 
-            if(curLine.find("[General]") != std::string::npos)
-                curBlock = 1;
-            else if(curLine.find("[Difficulty]") != std::string::npos)
-                curBlock = 2;
-            else if(curLine.find("[Events]") != std::string::npos)
-                curBlock = 3;
-            else if(curLine.find("[TimingPoints]") != std::string::npos)
-                curBlock = 4;
-            else if(curLine.find("[Colours]") != std::string::npos)
-                curBlock = 5;
-            else if(curLine.find("[HitObjects]") != std::string::npos)
-                curBlock = 6;
+            // CR at the end breaks parsing, remove it
+            if(curLineUnstripped.back() == '\r') curLineUnstripped.remove_suffix(1);
+            const auto curLine = curLineUnstripped;  // don't want to accidentally modify it somewhere later
+
+            // skip the for loop on the first go-around, the header has to be at the start
+            if(curBlock == Sentinel) {
+                curBlock = Header;
+            } else {
+                for(const auto [blockStr, id] : metadataBlocks) {
+                    if(curLine.contains(blockStr)) {
+                        curBlock = id;
+                        break;
+                    }
+                }
+            }
+
+            // we don't care here
+            if(curBlock == Metadata) continue;
+
+            if(dead.load()) {
+                c.errorCode = 6;
+                return c;
+            }
 
             switch(curBlock) {
-                // header (e.g. "osu file format v12")
-                case -1: {
+                case Sentinel:
+                case Metadata: {  // already handled above, shut up clang-tidy
+                    std::unreachable();
+                    break;
+                }
+
+                // (e.g. "osu file format v12")
+                case Header: {
                     Parsing::parse(curLine, "osu file format v", &c.version);
                     break;
                 }
 
-                // General
-                case 1: {
+                case General: {
                     std::string sampleSet;
                     if(Parsing::parse(curLine, "SampleSet", ':', &sampleSet)) {
                         SString::lower_inplace(sampleSet);
@@ -289,15 +305,13 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(std::
                     break;
                 }
 
-                // Difficulty
-                case 2: {
+                case Difficulty: {
                     Parsing::parse(curLine, "SliderMultiplier", ':', &c.sliderMultiplier);
                     Parsing::parse(curLine, "SliderTickRate", ':', &c.sliderTickRate);
                     break;
                 }
 
-                // Events
-                case 3: {
+                case Events: {
                     i64 type, startTime, endTime;
                     if(Parsing::parse(curLine, &type, ',', &startTime, ',', &endTime)) {
                         if(type == 2) {
@@ -308,8 +322,7 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(std::
                     break;
                 }
 
-                // TimingPoints
-                case 4: {
+                case TimingPoints: {
                     DatabaseBeatmap::TIMINGPOINT t{};
                     if(parse_timing_point(curLine, &t)) {
                         c.timingpoints.push_back(t);
@@ -317,8 +330,7 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(std::
                     break;
                 }
 
-                // Colours
-                case 5: {
+                case Colours: {
                     u8 comboNum;
                     u8 r, g, b;
 
@@ -333,8 +345,7 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(std::
                     break;
                 }
 
-                // HitObjects
-                case 6: {
+                case HitObjects: {
                     size_t err_line = 0;
 
                     auto upd_last_error = [&err_line](bool parse_result_bad,
@@ -1056,31 +1067,44 @@ bool DatabaseBeatmap::loadMetadata(bool compute_md5) {
 
     // load metadata
     bool foundAR = false;
-    int curBlock = -1;
+
+    BlockId curBlock{BlockId::Sentinel};
+
+    using enum BlockId;
 
     for(auto curLineUnstripped : SString::split(beatmapFile, '\n')) {
-        SString::trim_inplace(curLineUnstripped);
+        // ignore comments, but only if at the beginning of a line (e.g. allow Artist:DJ'TEKINA//SOMETHING)
+        if(curLineUnstripped.empty() || curLineUnstripped.starts_with("//")) continue;
+
+        // CR at the end breaks parsing, remove it
+        if(curLineUnstripped.back() == '\r') curLineUnstripped.remove_suffix(1);
         const auto curLine = curLineUnstripped;  // don't want to accidentally modify it somewhere later
 
-        // ignore comments, but only if at the beginning of a line (e.g. allow Artist:DJ'TEKINA//SOMETHING)
-        if(curLine.starts_with("//")) continue;
+        // skip the for loop on the first go-around, the header has to be at the start
+        if(curBlock == Sentinel) {
+            curBlock = Header;
+        } else {
+            for(const auto [blockStr, id] : metadataBlocks) {
+                if(curLine.contains(blockStr)) {
+                    curBlock = id;
+                    break;
+                }
+            }
+        }
 
-        if(curLine.find("[General]") != std::string::npos)
-            curBlock = 0;
-        else if(curLine.find("[Metadata]") != std::string::npos)
-            curBlock = 1;
-        else if(curLine.find("[Difficulty]") != std::string::npos)
-            curBlock = 2;
-        else if(curLine.find("[Events]") != std::string::npos)
-            curBlock = 3;
-        else if(curLine.find("[TimingPoints]") != std::string::npos)
-            curBlock = 4;
-        else if(curLine.find("[HitObjects]") != std::string::npos)
-            break;  // NOTE: stop early
+        // NOTE: stop early (don't parse "HitObjects" or "Colours" sections here)
+        if(curBlock == HitObjects || curBlock == Colours) break;
 
         switch(curBlock) {
-            // header (e.g. "osu file format v12")
-            case -1: {
+            case Colours:
+            case Sentinel:  // already handled above, shut up clang-tidy
+            case HitObjects: {
+                std::unreachable();
+                break;
+            }
+
+            // (e.g. "osu file format v12")
+            case Header: {
                 if(Parsing::parse(curLine, "osu file format v", &this->iVersion)) {
                     if(this->iVersion > cv::beatmap_version.getInt()) {
                         debugLog("Ignoring unknown/invalid beatmap version {:d}", this->iVersion);
@@ -1090,8 +1114,7 @@ bool DatabaseBeatmap::loadMetadata(bool compute_md5) {
                 break;
             }
 
-            // General
-            case 0: {
+            case General: {
                 Parsing::parse(curLine, "AudioFilename", ':', &this->sAudioFileName);
                 Parsing::parse(curLine, "StackLeniency", ':', &this->fStackLeniency);
                 Parsing::parse(curLine, "PreviewTime", ':', &this->iPreviewTime);
@@ -1099,8 +1122,7 @@ bool DatabaseBeatmap::loadMetadata(bool compute_md5) {
                 break;
             }
 
-            // Metadata
-            case 1: {
+            case Metadata: {
                 Parsing::parse(curLine, "Title", ':', &this->sTitle);
                 Parsing::parse(curLine, "TitleUnicode", ':', &this->sTitleUnicode);
                 Parsing::parse(curLine, "Artist", ':', &this->sArtist);
@@ -1114,8 +1136,7 @@ bool DatabaseBeatmap::loadMetadata(bool compute_md5) {
                 break;
             }
 
-            // Difficulty
-            case 2: {
+            case Difficulty: {
                 Parsing::parse(curLine, "CircleSize", ':', &this->fCS);
                 if(Parsing::parse(curLine, "ApproachRate", ':', &this->fAR)) foundAR = true;
                 Parsing::parse(curLine, "HPDrainRate", ':', &this->fHP);
@@ -1125,8 +1146,7 @@ bool DatabaseBeatmap::loadMetadata(bool compute_md5) {
                 break;
             }
 
-            // Events
-            case 3: {
+            case Events: {
                 // short-circuit if we already have a stored filename
                 bool haveFilename = this->sBackgroundImageFileName.length() > 2;
 
@@ -1146,8 +1166,7 @@ bool DatabaseBeatmap::loadMetadata(bool compute_md5) {
                 break;
             }
 
-            // TimingPoints
-            case 4: {
+            case TimingPoints: {
                 DatabaseBeatmap::TIMINGPOINT t{};
                 if(parse_timing_point(curLine, &t)) {
                     this->timingpoints.push_back(t);

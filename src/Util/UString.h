@@ -91,17 +91,19 @@ class UString {
     [[nodiscard]] bool isWhitespaceOnly() const noexcept;
 
     // string tests
-    [[nodiscard]] constexpr bool endsWith(char ch) const noexcept { return this->sUtf8.back() == ch; }
-    [[nodiscard]] constexpr bool endsWith(char16_t ch) const noexcept { return this->sUnicode.back() == ch; }
+    [[nodiscard]] constexpr bool endsWith(char ch) const noexcept { return !this->sUnicode.empty() && this->sUtf8.back() == ch; }
+    [[nodiscard]] constexpr bool endsWith(char16_t ch) const noexcept { return !this->sUnicode.empty() && this->sUnicode.back() == ch; }
     [[nodiscard]] constexpr bool endsWith(const UString &suffix) const noexcept {
+        if (this->sUnicode.empty()) return false;
         int suffixLen = suffix.length();
         int thisLen = length();
         return suffixLen <= thisLen &&
                std::equal(suffix.sUnicode.begin(), suffix.sUnicode.end(), this->sUnicode.end() - suffixLen);
     }
-    [[nodiscard]] constexpr bool startsWith(char ch) const noexcept { return this->sUtf8.front() == ch; }
-    [[nodiscard]] constexpr bool startsWith(char16_t ch) const noexcept { return this->sUnicode.front() == ch; }
+    [[nodiscard]] constexpr bool startsWith(char ch) const noexcept { return !this->sUnicode.empty() && this->sUtf8.front() == ch; }
+    [[nodiscard]] constexpr bool startsWith(char16_t ch) const noexcept { return !this->sUnicode.empty() && this->sUnicode.front() == ch; }
     [[nodiscard]] constexpr bool startsWith(const UString &prefix) const noexcept {
+        if (this->sUnicode.empty()) return false;
         int prefixLen = prefix.length();
         int thisLen = length();
         return prefixLen <= thisLen &&

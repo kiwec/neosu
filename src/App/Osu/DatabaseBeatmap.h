@@ -5,10 +5,10 @@
 #include "HitSounds.h"
 #include "Osu.h"
 #include "Overrides.h"
-#include "Resource.h"
 #include "templates.h"
 
 #include <atomic>
+#include <string_view>
 
 class AbstractBeatmapInterface;
 class HitObject;
@@ -364,6 +364,29 @@ class DatabaseBeatmap final {
 
    private:
     static bool parse_timing_point(std::string_view curLine, DatabaseBeatmap::TIMINGPOINT *out);
+
+    enum class BlockId : i8 {
+        Sentinel = -2,  // for skipping the first string scan, header must come first
+        Header = -1,
+        General = 0,
+        Metadata = 1,
+        Difficulty = 2,
+        Events = 3,
+        TimingPoints = 4,
+        Colours = 5,
+        HitObjects = 6,
+    };
+
+    struct MetadataBlock {
+        std::string_view str;
+        BlockId id;
+    };
+
+    static constexpr const std::initializer_list<MetadataBlock> metadataBlocks{
+        {.str = "[General]", .id = BlockId::General},           {.str = "[Metadata]", .id = BlockId::Metadata},
+        {.str = "[Difficulty]", .id = BlockId::Difficulty},     {.str = "[Events]", .id = BlockId::Events},
+        {.str = "[TimingPoints]", .id = BlockId::TimingPoints}, {.str = "[Colours]", .id = BlockId::Colours},
+        {.str = "[HitObjects]", .id = BlockId::HitObjects}};
 };
 
 struct BPMInfo {

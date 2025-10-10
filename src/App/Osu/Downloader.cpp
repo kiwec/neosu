@@ -190,14 +190,14 @@ std::unordered_map<i32, i32> beatmap_to_beatmapset;
 i32 get_beatmapset_id_from_osu_file(const u8* osu_data, size_t s_osu_data) {
     i32 set_id = -1;
 
-    std::string file((const char*)osu_data, s_osu_data);
-    auto lines = SString::split<std::string>(file, "\n");
-    for(auto& line : lines) {
+    std::string_view file((const char*)osu_data, (const char*)osu_data + s_osu_data);
+    auto lines = SString::split<std::string_view>(file, '\n');
+    for(auto line : lines) {
         if(line.empty()) continue;
         if(line.starts_with("//")) continue;
-        if(line.back() == '\r') line.pop_back();
+        if(line.back() == '\r') line.remove_suffix(1);
 
-        if(Parsing::parse(line.c_str(), "BeatmapSetID", ':', &set_id)) {
+        if(Parsing::parse(line, "BeatmapSetID", ':', &set_id)) {
             return set_id;
         }
     }
