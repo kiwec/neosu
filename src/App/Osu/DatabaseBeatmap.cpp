@@ -239,7 +239,10 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(std::
         int colorOffset = 0;
         int comboNumber = 1;
         int curBlock = -1;
-        for(const auto curLine : SString::split(beatmapFile, '\n')) {
+        for(auto curLineUnstripped : SString::split(beatmapFile, '\n')) {
+            SString::trim_inplace(curLineUnstripped);
+            const auto curLine = curLineUnstripped;  // don't want to accidentally modify it somewhere later
+
             if(dead.load()) {
                 c.errorCode = 6;
                 return c;
@@ -1055,7 +1058,10 @@ bool DatabaseBeatmap::loadMetadata(bool compute_md5) {
     bool foundAR = false;
     int curBlock = -1;
 
-    for(const auto curLine : SString::split(beatmapFile, '\n')) {
+    for(auto curLineUnstripped : SString::split(beatmapFile, '\n')) {
+        SString::trim_inplace(curLineUnstripped);
+        const auto curLine = curLineUnstripped;  // don't want to accidentally modify it somewhere later
+
         // ignore comments, but only if at the beginning of a line (e.g. allow Artist:DJ'TEKINA//SOMETHING)
         if(curLine.starts_with("//")) continue;
 
