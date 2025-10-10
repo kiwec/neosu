@@ -467,9 +467,9 @@ void UString::fromSupposedUtf8(const char *utf8, size_t char8Length) {
         assert(bomPrefixBytes <= char8Length);
     } else {
         // if there was no BOM, autodetect encoding
-        // only check the beginning of the string, don't waste time checking the entire thing
-        // 16 bytes to give a better chance to properly detect with 4 characters of possible UTF-32
-        detected = simdutf::autodetect_encoding(utf8, std::min<size_t>(16, char8Length));
+        // only check the beginning (arbitrary 512 bytes) of the string, don't waste time checking the entire thing
+        // we could be reading in an entire file, which might be KILOBYTES
+        detected = simdutf::autodetect_encoding(utf8, std::min<size_t>(512, char8Length));
     }
 
     switch(detected) {
