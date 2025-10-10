@@ -22,6 +22,32 @@ using fmt::literals::operator""_cf;
 #define delete_if_not_windows
 #endif
 
+template <typename T>
+class AlignedAllocator {
+   public:
+    using value_type = T;
+    static constexpr std::align_val_t alignment{alignof(char32_t)};
+
+    AlignedAllocator() noexcept = default;
+    template <typename U>
+    constexpr AlignedAllocator(const AlignedAllocator<U> & /**/) noexcept {}
+
+    [[nodiscard]] T *allocate(std::size_t n) {
+        if(n > std::numeric_limits<std::size_t>::max() / sizeof(T)) {
+            std::abort();
+        }
+        const std::size_t bytes = n * sizeof(T);
+        return static_cast<T *>(::operator new(bytes, alignment));
+    }
+
+    void deallocate(T *p, std::size_t /**/) noexcept { ::operator delete(p, alignment); }
+
+    template <typename U>
+    constexpr bool operator==(const AlignedAllocator<U> & /**/) const noexcept {
+        return true;
+    }
+};
+
 class UString {
    public:
     template <typename... Args>
@@ -45,7 +71,7 @@ class UString {
     UString(const char *utf8);
     UString(const char *utf8, int length);
     UString(std::string_view utf8);
-    UString(std::string utf8);
+    UString(const std::string &utf8);
 
     // member functions
     UString(const UString &ustr) = default;
@@ -91,19 +117,27 @@ class UString {
     [[nodiscard]] bool isWhitespaceOnly() const noexcept;
 
     // string tests
-    [[nodiscard]] constexpr bool endsWith(char ch) const noexcept { return !this->sUnicode.empty() && this->sUtf8.back() == ch; }
-    [[nodiscard]] constexpr bool endsWith(char16_t ch) const noexcept { return !this->sUnicode.empty() && this->sUnicode.back() == ch; }
+    [[nodiscard]] constexpr bool endsWith(char ch) const noexcept {
+        return !this->sUnicode.empty() && this->sUtf8.back() == ch;
+    }
+    [[nodiscard]] constexpr bool endsWith(char16_t ch) const noexcept {
+        return !this->sUnicode.empty() && this->sUnicode.back() == ch;
+    }
     [[nodiscard]] constexpr bool endsWith(const UString &suffix) const noexcept {
-        if (this->sUnicode.empty()) return false;
+        if(this->sUnicode.empty()) return false;
         int suffixLen = suffix.length();
         int thisLen = length();
         return suffixLen <= thisLen &&
                std::equal(suffix.sUnicode.begin(), suffix.sUnicode.end(), this->sUnicode.end() - suffixLen);
     }
-    [[nodiscard]] constexpr bool startsWith(char ch) const noexcept { return !this->sUnicode.empty() && this->sUtf8.front() == ch; }
-    [[nodiscard]] constexpr bool startsWith(char16_t ch) const noexcept { return !this->sUnicode.empty() && this->sUnicode.front() == ch; }
+    [[nodiscard]] constexpr bool startsWith(char ch) const noexcept {
+        return !this->sUnicode.empty() && this->sUtf8.front() == ch;
+    }
+    [[nodiscard]] constexpr bool startsWith(char16_t ch) const noexcept {
+        return !this->sUnicode.empty() && this->sUnicode.front() == ch;
+    }
     [[nodiscard]] constexpr bool startsWith(const UString &prefix) const noexcept {
-        if (this->sUnicode.empty()) return false;
+        if(this->sUnicode.empty()) return false;
         int prefixLen = prefix.length();
         int thisLen = length();
         return prefixLen <= thisLen &&
@@ -264,6 +298,8 @@ class UString {
     friend struct std::hash<UString>;
 
    private:
+    using alignedUTF8String = std::basic_string<char, std::char_traits<char>, AlignedAllocator<char>>;
+
     // deduplication helper
     [[nodiscard]] int findCharSimd(char16_t ch, int start, int end) const;
 
@@ -275,7 +311,7 @@ class UString {
     void updateUtf8(size_t startUtf16 = 0);
 
     std::u16string sUnicode;
-    std::string sUtf8;
+    alignedUTF8String sUtf8;
 };
 
 namespace std {

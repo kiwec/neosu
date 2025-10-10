@@ -4,8 +4,10 @@
 #include "base64.h"            // vendored library
 #include "MD5.h"               // vendored library
 #include "ByteBufferedFile.h"  // for file hashing functions
+
 #include <vector>
 #include <cstring>
+#include <cerrno>
 
 #ifdef USE_OPENSSL
 #include <openssl/rand.h>
@@ -32,12 +34,31 @@ void get_bytes(u8* out, std::size_t s_out) {
 
 #ifdef _WIN32
     HCRYPTPROV hCryptProv;
-    if(CryptAcquireContext(&hCryptProv, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT)) {
-        CryptGenRandom(hCryptProv, s_out, out);
-        CryptReleaseContext(hCryptProv, 0);
+    if(!CryptAcquireContext(&hCryptProv, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT)) {
+        // failed to acquire crypto context, nope out
+        std::abort();
     }
+
+    if(!CryptGenRandom(hCryptProv, s_out, out)) {
+        CryptReleaseContext(hCryptProv, 0);
+        // failed to generate random bytes, nope out
+        std::abort();
+    }
+
+    CryptReleaseContext(hCryptProv, 0);
 #else
-    getrandom(out, s_out, 0);
+    size_t offset = 0;
+    while(offset < s_out) {
+        ssize_t ret = getrandom(out + offset, s_out - offset, 0);
+        if(ret < 0) {
+            if(errno == EINTR) {
+                continue;  // interrupted by signal, retry
+            }
+            // failed, nope out
+            std::abort();
+        }
+        offset += static_cast<size_t>(ret);
+    }
 #endif
 }
 
@@ -171,7 +192,7 @@ std::string encode64(const u8* src, size_t len) {
 
     size_t actual_len = EVP_EncodeBlock(temp.data(), src, static_cast<int>(len));
     if(actual_len > 0) {
-        return std::string{reinterpret_cast<const char *>(temp.data()), actual_len};
+        return std::string{reinterpret_cast<const char*>(temp.data()), actual_len};
     }
 #endif
 
@@ -179,7 +200,7 @@ std::string encode64(const u8* src, size_t len) {
     size_t out_len;
     u8* result = base64_encode(src, len, &out_len);
     if(result) {
-        std::string res{reinterpret_cast<const char *>(result), out_len};
+        std::string res{reinterpret_cast<const char*>(result), out_len};
         delete[] result;
         return res;
     }

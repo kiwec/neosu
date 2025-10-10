@@ -493,16 +493,30 @@ void OpenGLLegacyInterface::drawVAO(VertexArrayObject *vao) {
         OpenGLStateCache::disableClientState(GL_TEXTURE_COORD_ARRAY);
     }
 
-    // handle colors (create temporary swapped buffer for correct RGBA byte order)
-    // TODO: just store them properly in the first place
-    std::vector<Color> swapped_colors;
+    // handle colors
     if(!colors.empty()) {
-        swapped_colors.reserve(drawCount);
+        // check if any color needs conversion (only R and B are swapped)
+        bool needsConversion = false;
         for(size_t i = 0; i < drawCount; ++i) {
-            swapped_colors.push_back(abgr(colors[i]));
+            if(colors[i].R() != colors[i].B()) {
+                needsConversion = true;
+                break;
+            }
         }
-        OpenGLStateCache::enableClientState(GL_COLOR_ARRAY);
-        glColorPointer(4, GL_UNSIGNED_BYTE, 0, swapped_colors.data());
+        // (create temporary swapped buffer for correct RGBA byte order)
+        // TODO: just store them properly in the first place
+        if(needsConversion) {
+            std::vector<Color> swapped_colors;
+            swapped_colors.reserve(drawCount);
+            for(size_t i = 0; i < drawCount; ++i) {
+                swapped_colors.push_back(abgr(colors[i]));
+            }
+            OpenGLStateCache::enableClientState(GL_COLOR_ARRAY);
+            glColorPointer(4, GL_UNSIGNED_BYTE, 0, swapped_colors.data());
+        } else {
+            OpenGLStateCache::enableClientState(GL_COLOR_ARRAY);
+            glColorPointer(4, GL_UNSIGNED_BYTE, 0, colors.data());
+        }
     } else {
         OpenGLStateCache::disableClientState(GL_COLOR_ARRAY);
     }

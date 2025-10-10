@@ -59,8 +59,8 @@ struct Info {
 BEATMAP_VALUES getBeatmapValuesForModsLegacy(u32 modsLegacy, float legacyAR, float legacyCS, float legacyOD,
                                              float legacyHP);
 
-Info from_bytes(u8* data, int s_data);
-std::vector<Frame> get_frames(u8* replay_data, i32 replay_size);
+Info from_bytes(u8* data, uSz s_data);
+std::vector<Frame> get_frames(u8* replay_data, uSz replay_size);
 std::vector<u8> compress_frames(const std::vector<Frame>& frames);
 bool load_from_disk(FinishedScore& score, bool update_db);
 void load_and_watch(FinishedScore score);

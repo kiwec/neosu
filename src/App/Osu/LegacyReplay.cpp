@@ -52,7 +52,7 @@ BEATMAP_VALUES getBeatmapValuesForModsLegacy(u32 modsLegacy, float legacyAR, flo
     return v;
 }
 
-std::vector<Frame> get_frames(u8* replay_data, i32 replay_size) {
+std::vector<Frame> get_frames(u8* replay_data, uSz replay_size) {
     std::vector<Frame> replay_frames;
     if(replay_size <= 0) return replay_frames;
 
@@ -158,7 +158,7 @@ std::vector<u8> compress_frames(const std::vector<Frame>& frames) {
     return compressed;
 }
 
-Info from_bytes(u8* data, int s_data) {
+Info from_bytes(u8* data, uSz s_data) {
     Info info;
 
     Packet replay;
@@ -209,39 +209,50 @@ Info from_bytes(u8* data, int s_data) {
 }
 
 bool load_from_disk(FinishedScore& score, bool update_db) {
+    FILE* replay_file = nullptr;
+    u8* buffer = nullptr;
+    uSz buffer_size = 0;
+    bool success = false;
+
     if(score.peppy_replay_tms > 0) {
         auto osu_folder = cv::osu_folder.getString();
         auto path =
             fmt::format("{:s}/Data/r/{:s}-{:d}.osr", osu_folder, score.beatmap_hash.string(), score.peppy_replay_tms);
 
-        FILE* replay_file = File::fopen_c(path.c_str(), "rb");
-        if(replay_file == nullptr) return false;
+        replay_file = File::fopen_c(path.c_str(), "rb");
+        if(replay_file == nullptr) goto cleanup;
 
-        fseek(replay_file, 0, SEEK_END);
-        size_t s_full_replay = ftell(replay_file);
-        rewind(replay_file);
+        if(fseek(replay_file, 0, SEEK_END) != 0) goto cleanup;
 
-        u8* full_replay = new u8[s_full_replay];
-        fread(full_replay, s_full_replay, 1, replay_file);
-        fclose(replay_file);
-        auto info = from_bytes(full_replay, s_full_replay);
+        long file_size = ftell(replay_file);
+        if(file_size < 0) goto cleanup;
+
+        buffer_size = static_cast<uSz>(file_size);
+        if(fseek(replay_file, 0, SEEK_SET) != 0) goto cleanup;
+
+        buffer = new u8[buffer_size];
+        if(fread(buffer, buffer_size, 1, replay_file) != 1) goto cleanup;
+
+        auto info = from_bytes(buffer, buffer_size);
         score.replay = info.frames;
-        delete[] full_replay;
     } else {
         auto path = fmt::format(NEOSU_REPLAYS_PATH "/{:s}/{:d}.replay.lzma", score.server, score.unixTimestamp);
 
-        FILE* replay_file = File::fopen_c(path.c_str(), "rb");
-        if(replay_file == nullptr) return false;
+        replay_file = File::fopen_c(path.c_str(), "rb");
+        if(replay_file == nullptr) goto cleanup;
 
-        fseek(replay_file, 0, SEEK_END);
-        size_t s_compressed_replay = ftell(replay_file);
-        rewind(replay_file);
+        if(fseek(replay_file, 0, SEEK_END) != 0) goto cleanup;
 
-        u8* compressed_replay = new u8[s_compressed_replay];
-        fread(compressed_replay, s_compressed_replay, 1, replay_file);
-        fclose(replay_file);
-        score.replay = get_frames(compressed_replay, s_compressed_replay);
-        delete[] compressed_replay;
+        long file_size = ftell(replay_file);
+        if(file_size < 0) goto cleanup;
+
+        buffer_size = static_cast<uSz>(file_size);
+        if(fseek(replay_file, 0, SEEK_SET) != 0) goto cleanup;
+
+        buffer = new u8[buffer_size];
+        if(fread(buffer, buffer_size, 1, replay_file) != 1) goto cleanup;
+
+        score.replay = get_frames(buffer, buffer_size);
     }
 
     if(update_db) {
@@ -257,7 +268,12 @@ bool load_from_disk(FinishedScore& score, bool update_db) {
         }
     }
 
-    return true;
+    success = true;
+
+cleanup:
+    if(buffer) delete[] buffer;
+    if(replay_file) fclose(replay_file);
+    return success;
 }
 
 void load_and_watch(FinishedScore score) {

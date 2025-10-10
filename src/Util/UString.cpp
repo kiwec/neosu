@@ -9,6 +9,7 @@
 #include <cstdio>
 #include <cstring>
 #include <cwctype>
+#include <memory>
 #include <ranges>
 #include <utility>
 
@@ -64,9 +65,9 @@ UString::UString(const char *utf8, int length) {
     fromSupposedUtf8(this->sUtf8.data(), this->sUtf8.size());
 }
 
-UString::UString(std::string utf8) {
+UString::UString(const std::string &utf8) {
     if(utf8.empty()) return;
-    this->sUtf8 = std::move(utf8);
+    this->sUtf8 = utf8;
     fromSupposedUtf8(this->sUtf8.data(), this->sUtf8.size());
 }
 
@@ -482,56 +483,140 @@ void UString::fromSupposedUtf8(const char *utf8, size_t char8Length) {
         detected = simdutf::autodetect_encoding(utf8, std::min<size_t>(512, char8Length));
     }
 
+    const char *dataStart = &(utf8[bomPrefixBytes]);
+    const size_t byteLength = char8Length - bomPrefixBytes;
+
+    // NOLINTBEGIN(cppcoreguidelines-init-variables)
     switch(detected) {
         case simdutf::encoding_type::unspecified:
             // fallthrough, assume UTF-8
         case simdutf::encoding_type::UTF8: {
-            const char *src = &(utf8[bomPrefixBytes]);
-            const size_t srcLength = char8Length - bomPrefixBytes;
-            const size_t utf16Length = simdutf::utf16_length_from_utf8(src, srcLength);
+            const size_t utf16Length = simdutf::utf16_length_from_utf8(dataStart, byteLength);
             this->sUnicode.resize_and_overwrite(utf16Length, [&](char16_t *data, size_t /*size*/) -> size_t {
-                return simdutf::convert_utf8_to_utf16le(src, srcLength, data);
+                return simdutf::convert_utf8_to_utf16le(dataStart, byteLength, data);
             });
             break;
         }
 
         case simdutf::encoding_type::UTF16_LE: {
-            // UTF-16LE
-            const auto *src = reinterpret_cast<const char16_t *>(&(utf8[bomPrefixBytes]));
-            const size_t srcLength = (char8Length - bomPrefixBytes) / 2;
-            this->sUnicode.assign(src, srcLength);
+            const size_t srcLength = byteLength / 2;
+            this->sUnicode.resize_and_overwrite(srcLength, [&](char16_t *data, size_t /*size*/) -> size_t {
+                const char *src = dataStart;
+                size_t written = 0;
+                size_t remaining = srcLength;
+
+                // handle misaligned prefix
+                while(reinterpret_cast<std::uintptr_t>(src) % alignof(char16_t) != 0 && remaining > 0) {
+                    std::memcpy(&data[written], src, sizeof(char16_t));
+                    src += sizeof(char16_t);
+                    ++written;
+                    --remaining;
+                }
+
+                // handle aligned remainder
+                if(remaining > 0) {
+                    // GCC BS -Wcast-align tomfoolery
+                    const void *alignedVoid = std::assume_aligned<alignof(char16_t)>(src);
+                    const auto *alignedSrc = reinterpret_cast<const char16_t *>(alignedVoid);
+                    std::copy(alignedSrc, alignedSrc + remaining, data + written);
+                    written += remaining;
+                }
+
+                return written;
+            });
             break;
         }
 
         case simdutf::encoding_type::UTF16_BE: {
-            // UTF-16BE
-            const auto *src = reinterpret_cast<const char16_t *>(&(utf8[bomPrefixBytes]));
-            const size_t srcLength = (char8Length - bomPrefixBytes) / 2;
-            this->sUnicode.resize(srcLength);
-            // swap to UTF16_LE internal representation
-            simdutf::change_endianness_utf16(src, srcLength, this->sUnicode.data());
+            const size_t srcLength = byteLength / 2;
+            this->sUnicode.resize_and_overwrite(srcLength, [&](char16_t *data, size_t /*size*/) -> size_t {
+                const char *src = dataStart;
+                size_t written = 0;
+                size_t remaining = srcLength;
+
+                // handle misaligned prefix
+                while(reinterpret_cast<std::uintptr_t>(src) % alignof(char16_t) != 0 && remaining > 0) {
+                    char16_t ch;
+                    std::memcpy(&ch, src, sizeof(char16_t));
+                    data[written] = static_cast<char16_t>((ch >> 8) | (ch << 8));
+                    src += sizeof(char16_t);
+                    ++written;
+                    --remaining;
+                }
+
+                // handle aligned remainder
+                if(remaining > 0) {
+                    const void *alignedVoid = std::assume_aligned<alignof(char16_t)>(src);
+                    const auto *alignedSrc = reinterpret_cast<const char16_t *>(alignedVoid);
+                    simdutf::change_endianness_utf16(alignedSrc, remaining, data + written);
+                    written += remaining;
+                }
+
+                return written;
+            });
             break;
         }
 
         case simdutf::encoding_type::UTF32_LE: {
-            // UTF-32LE
-            const auto *src = reinterpret_cast<const char32_t *>(&(utf8[bomPrefixBytes]));
-            const size_t srcLength = (char8Length - bomPrefixBytes) / 4;
-            const size_t utf16Length = simdutf::utf16_length_from_utf32(src, srcLength);
-            this->sUnicode.resize_and_overwrite(utf16Length, [&](char16_t *data, size_t /*size*/) -> size_t {
-                return simdutf::convert_utf32_to_utf16le(src, srcLength, data);
+            const size_t srcLength = byteLength / 4;
+            // maximum utf16 length is 2 code units per utf32 codepoint
+            const size_t maxUtf16Length = srcLength * 2;
+
+            this->sUnicode.resize_and_overwrite(maxUtf16Length, [&](char16_t *data, size_t /*size*/) -> size_t {
+                const char *src = dataStart;
+                size_t written = 0;
+                size_t remaining = srcLength;
+
+                // handle misaligned prefix
+                while(reinterpret_cast<std::uintptr_t>(src) % alignof(char32_t) != 0 && remaining > 0) {
+                    char32_t ch;
+                    std::memcpy(&ch, src, sizeof(char32_t));
+                    written += simdutf::convert_utf32_to_utf16le(&ch, 1, data + written);
+                    src += sizeof(char32_t);
+                    --remaining;
+                }
+
+                // handle aligned remainder
+                if(remaining > 0) {
+                    const void *alignedVoid = std::assume_aligned<alignof(char32_t)>(src);
+                    const auto *alignedSrc = reinterpret_cast<const char32_t *>(alignedVoid);
+                    written += simdutf::convert_utf32_to_utf16le(alignedSrc, remaining, data + written);
+                }
+
+                return written;
             });
             break;
         }
 
         case simdutf::encoding_type::UTF32_BE: {
-            // UTF-32BE
-            const auto *src = reinterpret_cast<const char32_t *>(&(utf8[bomPrefixBytes]));
-            const size_t srcLength = (char8Length - bomPrefixBytes) / 4;
-            const size_t utf16Length = simdutf::utf16_length_from_utf32(src, srcLength);
-            this->sUnicode.resize_and_overwrite(utf16Length, [&](char16_t *data, size_t /*size*/) -> size_t {
-                return simdutf::convert_utf32_to_utf16be(src, srcLength, data);
+            const size_t srcLength = byteLength / 4;
+            // maximum utf16 length is 2 code units per utf32 codepoint
+            const size_t maxUtf16Length = srcLength * 2;
+
+            this->sUnicode.resize_and_overwrite(maxUtf16Length, [&](char16_t *data, size_t /*size*/) -> size_t {
+                const char *src = dataStart;
+                size_t written = 0;
+                size_t remaining = srcLength;
+
+                // handle misaligned prefix
+                while(reinterpret_cast<std::uintptr_t>(src) % alignof(char32_t) != 0 && remaining > 0) {
+                    char32_t ch;
+                    std::memcpy(&ch, src, sizeof(char32_t));
+                    written += simdutf::convert_utf32_to_utf16be(&ch, 1, data + written);
+                    src += sizeof(char32_t);
+                    --remaining;
+                }
+
+                // handle aligned remainder
+                if(remaining > 0) {
+                    const void *alignedVoid = std::assume_aligned<alignof(char32_t)>(src);
+                    const auto *alignedSrc = reinterpret_cast<const char32_t *>(alignedVoid);
+                    written += simdutf::convert_utf32_to_utf16be(alignedSrc, remaining, data + written);
+                }
+
+                return written;
             });
+
             // convert from UTF-16BE to UTF-16LE
             simdutf::change_endianness_utf16(this->sUnicode.data(), this->sUnicode.size(), this->sUnicode.data());
             break;
@@ -545,6 +630,7 @@ void UString::fromSupposedUtf8(const char *utf8, size_t char8Length) {
             std::unreachable();
             break;
     }
+    // NOLINTEND(cppcoreguidelines-init-variables)
 
     const bool wasAlreadyUTF8 =
         detected == simdutf::encoding_type::UTF8 || detected == simdutf::encoding_type::unspecified;
