@@ -359,7 +359,7 @@ void ConsoleBox::onSuggestionClicked(CBaseUIButton *suggestion) {
     UString text = suggestion->getName();
 
     ConVar *temp = cvars->getConVarByName(text.toUtf8(), false);
-    if(temp != nullptr && (temp->hasValue() || temp->hasCallbackArgs())) text.append(" ");
+    if(temp != nullptr && (temp->hasValue() || temp->hasAnyNonVoidCallback())) text.append(" ");
 
     this->textbox->setSuggestion("");
     this->textbox->setText(text);
@@ -394,7 +394,7 @@ void ConsoleBox::onKeyDown(KeyboardEvent &e) {
                 UString command = this->vSuggestionButtons[this->iSelectedSuggestion]->getName();
 
                 ConVar *temp = cvars->getConVarByName(command.toUtf8(), false);
-                if(temp != nullptr && (temp->hasValue() || temp->hasCallbackArgs())) command.append(" ");
+                if(temp != nullptr && (temp->hasValue() || temp->hasAnyNonVoidCallback())) command.append(" ");
 
                 this->textbox->setSuggestion("");
                 this->textbox->setText(command);
@@ -421,7 +421,7 @@ void ConsoleBox::onKeyDown(KeyboardEvent &e) {
                 UString command = this->vSuggestionButtons[this->iSelectedSuggestion]->getName();
 
                 ConVar *temp = cvars->getConVarByName(command.toUtf8(), false);
-                if(temp != nullptr && (temp->hasValue() || temp->hasCallbackArgs())) command.append(" ");
+                if(temp != nullptr && (temp->hasValue() || temp->hasAnyNonVoidCallback())) command.append(" ");
 
                 this->textbox->setSuggestion("");
                 this->textbox->setText(command);

@@ -32,7 +32,7 @@ class AlignedAllocator {
     template <typename U>
     constexpr AlignedAllocator(const AlignedAllocator<U> & /**/) noexcept {}
 
-    [[nodiscard]] T *allocate(std::size_t n) {
+    [[nodiscard]] T *allocate(std::size_t n) noexcept {
         if(n > std::numeric_limits<std::size_t>::max() / sizeof(T)) {
             std::abort();
         }

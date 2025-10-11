@@ -400,7 +400,10 @@ std::string File::readToString() {
     const auto size = getFileSize();
     if(size < 1) return "";
 
-    return {reinterpret_cast<const char *>(readFile().get()), size};
+    const auto &bytes = readFile();
+    if(bytes) return std::string{reinterpret_cast<const char *>(bytes.get()), size};
+
+    return "";
 }
 
 uSz File::readBytes(uSz start, uSz amount, std::unique_ptr<u8[]> &out) {

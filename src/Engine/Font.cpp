@@ -708,10 +708,8 @@ void McFont::drawString(const UString &text) {
     size_t vertexCount = 0;
     buildStringGeometry(text, vertexCount);
 
-    for(size_t i = 0; i < vertexCount; i++) {
-        m_vao.addVertex(m_vertices[i]);
-        m_vao.addTexcoord(m_texcoords[i]);
-    }
+    m_vao.setVertices(m_vertices);
+    m_vao.setTexcoords(m_texcoords);
 
     m_textureAtlas->getAtlasImage()->bind();
     g->drawVAO(&m_vao);

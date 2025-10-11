@@ -413,13 +413,10 @@ const std::string &Environment::getPathToSelf(const char *argv0) {
         pathStr = uPath.toUtf8();
     } else {
 #if defined(MCENGINE_PLATFORM_WINDOWS)  // fallback to GetModuleFileNameW
-        std::array<wchar_t, MAX_PATH> buf;
-        GetModuleFileNameW(nullptr, buf.data(), MAX_PATH);
-
-        auto size = WideCharToMultiByte(CP_UTF8, 0, buf.data(), buf.size(), NULL, 0, NULL, NULL);
-        std::string utf8path(size, 0);
-        WideCharToMultiByte(CP_UTF8, 0, buf.data(), size, (LPSTR)utf8path.c_str(), size, NULL, NULL);
-        pathStr = utf8path;
+        std::array<wchar_t, MAX_PATH + 1> buf{};
+        int length = static_cast<int>(GetModuleFileNameW(nullptr, buf.data(), MAX_PATH));
+        UString uPath{buf.data(), length};
+        pathStr = uPath.toUtf8();
 #else
 #ifndef MCENGINE_PLATFORM_LINUX
         debugLog("WARNING: unsupported platform");

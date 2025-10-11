@@ -902,7 +902,8 @@ void Skin::reloadSounds() {
 }
 
 bool Skin::parseSkinINI(std::string filepath) {
-    std::unique_ptr<u8[]> rawData;
+    std::string fileContent;
+
     size_t fileSize{0};
     {
         File file(filepath);
@@ -910,178 +911,148 @@ bool Skin::parseSkinINI(std::string filepath) {
             debugLog("OsuSkin Error: Couldn't load {:s}", filepath);
             return false;
         }
-        rawData = file.takeFileBuffer();
+        // convert possible non-UTF8 file to UTF8
+        UString uFileContent{file.readToString().c_str(), static_cast<int>(fileSize)};
+        // then store the resulting std::string
+        fileContent = uFileContent.toUtf8();
         // close the file here
     }
 
-    UString fileContent{reinterpret_cast<char *>(rawData.get()), static_cast<int>(fileSize)};
-
-    // process content line by line, handling different line endings
-    int nonEmptyLineCounter = 0;
-
-    enum class SkinSection {
+    enum class SkinSection : u8 {
         GENERAL,
         COLOURS,
         FONTS,
         NEOSU,
     };
 
+    bool hasNonEmptyLines = false;
+
     // osu! defaults to [General] and loads properties even before the actual section start
     SkinSection curBlock = SkinSection::GENERAL;
+    using enum SkinSection;
 
-    UString currentLine;
-    bool nextLine = false;
-    for(int i = 0; i < fileContent.length(); i++) {
-        if(nextLine) {
-            nextLine = false;
-            currentLine.clear();
-        }
+    for(auto curLineUnstripped : SString::split(fileContent, '\n')) {
+        // ignore comments, but only if at the beginning of a line
+        if(curLineUnstripped.empty() || curLineUnstripped.starts_with("//")) continue;
 
-        char16_t ch = fileContent[i];
+        // remove CR from the end of the line
+        if(curLineUnstripped.back() == '\r') curLineUnstripped.remove_suffix(1);
+        if(curLineUnstripped.empty()) continue;
+        hasNonEmptyLines = true;
 
-        // accumulate characters until we hit a line ending
-        if(ch != u'\r' && ch != u'\n') {
-            currentLine += ch;
-            continue;
-        }
-
-        // handle CRLF, CR, or LF
-        if(ch == u'\r' && i + 1 < fileContent.length() && fileContent[i + 1] == u'\n') i++;  // skip LF in CRLF
-
-        std::string_view curLineView = currentLine.utf8View();
-        nextLine = true;
-
-        if(!curLineView.empty()) nonEmptyLineCounter++;
-
-        // skip comments
-        size_t firstNonSpace = curLineView.find_first_not_of(" \t");
-        if(firstNonSpace != std::string::npos && curLineView.substr(firstNonSpace).starts_with("//")) continue;
+        const auto curLine = curLineUnstripped;  // don't want to accidentally modify it somewhere later
 
         // section detection
-        if(curLineView.find("[General]") != std::string::npos)
-            curBlock = SkinSection::GENERAL;
-        else if(curLineView.find("[Colours]") != std::string::npos || curLineView.find("[Colors]") != std::string::npos)
-            curBlock = SkinSection::COLOURS;
-        else if(curLineView.find("[Fonts]") != std::string::npos)
-            curBlock = SkinSection::FONTS;
-        else if(curLineView.find("[neosu]") != std::string::npos)
-            curBlock = SkinSection::NEOSU;
-
-        auto curLineChar = currentLine.toUtf8();
+        if(curLine.find("[General]") != std::string::npos)
+            curBlock = GENERAL;
+        else if(curLine.find("[Colours]") != std::string::npos || curLine.find("[Colors]") != std::string::npos)
+            curBlock = COLOURS;
+        else if(curLine.find("[Fonts]") != std::string::npos)
+            curBlock = FONTS;
+        else if(curLine.find("[neosu]") != std::string::npos)
+            curBlock = NEOSU;
 
         switch(curBlock) {
-            case SkinSection::GENERAL: {
+            case GENERAL: {
                 std::string version;
-                if(Parsing::parse(curLineChar, "Version", ':', &version)) {
+                if(Parsing::parse(curLine, "Version", ':', &version)) {
                     if((version.find("latest") != std::string::npos) || (version.find("User") != std::string::npos)) {
                         this->fVersion = 2.5f;
                     } else {
-                        Parsing::parse(curLineChar, "Version", ':', &this->fVersion);
+                        Parsing::parse(curLine, "Version", ':', &this->fVersion);
                     }
                 }
 
-                Parsing::parse(curLineChar, "CursorRotate", ':', &this->bCursorRotate);
-                Parsing::parse(curLineChar, "CursorCentre", ':', &this->bCursorCenter);
-                Parsing::parse(curLineChar, "CursorExpand", ':', &this->bCursorExpand);
-                Parsing::parse(curLineChar, "LayeredHitSounds", ':', &this->bLayeredHitSounds);
-                Parsing::parse(curLineChar, "SliderBallFlip", ':', &this->bSliderBallFlip);
-                Parsing::parse(curLineChar, "AllowSliderBallTint", ':', &this->bAllowSliderBallTint);
-                Parsing::parse(curLineChar, "HitCircleOverlayAboveNumber", ':', &this->bHitCircleOverlayAboveNumber);
+                Parsing::parse(curLine, "CursorRotate", ':', &this->bCursorRotate);
+                Parsing::parse(curLine, "CursorCentre", ':', &this->bCursorCenter);
+                Parsing::parse(curLine, "CursorExpand", ':', &this->bCursorExpand);
+                Parsing::parse(curLine, "LayeredHitSounds", ':', &this->bLayeredHitSounds);
+                Parsing::parse(curLine, "SliderBallFlip", ':', &this->bSliderBallFlip);
+                Parsing::parse(curLine, "AllowSliderBallTint", ':', &this->bAllowSliderBallTint);
+                Parsing::parse(curLine, "HitCircleOverlayAboveNumber", ':', &this->bHitCircleOverlayAboveNumber);
 
                 // https://osu.ppy.sh/community/forums/topics/314209
-                Parsing::parse(curLineChar, "HitCircleOverlayAboveNumer", ':', &this->bHitCircleOverlayAboveNumber);
+                Parsing::parse(curLine, "HitCircleOverlayAboveNumer", ':', &this->bHitCircleOverlayAboveNumber);
 
-                if(Parsing::parse(curLineChar, "SliderStyle", ':', &this->iSliderStyle)) {
+                if(Parsing::parse(curLine, "SliderStyle", ':', &this->iSliderStyle)) {
                     if(this->iSliderStyle != 1 && this->iSliderStyle != 2) this->iSliderStyle = 2;
                 }
 
-                if(Parsing::parse(curLineChar, "AnimationFramerate", ':', &this->fAnimationFramerate)) {
+                if(Parsing::parse(curLine, "AnimationFramerate", ':', &this->fAnimationFramerate)) {
                     if(this->fAnimationFramerate < 0.f) this->fAnimationFramerate = 0.f;
                 }
 
                 break;
             }
 
-            case SkinSection::COLOURS: {
+            case COLOURS: {
                 u8 comboNum;
                 u8 r, g, b;
 
                 // FIXME: actually use comboNum for ordering
-                if(Parsing::parse(curLineChar, "Combo", &comboNum, ':', &r, ',', &g, ',', &b)) {
+                if(Parsing::parse(curLine, "Combo", &comboNum, ':', &r, ',', &g, ',', &b)) {
                     if(comboNum >= 1 && comboNum <= 8) {
                         this->comboColors.push_back(rgb(r, g, b));
                     }
-                } else if(Parsing::parse(curLineChar, "SpinnerApproachCircle", ':', &r, ',', &g, ',', &b))
+                } else if(Parsing::parse(curLine, "SpinnerApproachCircle", ':', &r, ',', &g, ',', &b))
                     this->spinnerApproachCircleColor = rgb(r, g, b);
-                else if(Parsing::parse(curLineChar, "SliderBall", ':', &r, ',', &g, ',', &b))
+                else if(Parsing::parse(curLine, "SliderBall", ':', &r, ',', &g, ',', &b))
                     this->sliderBallColor = rgb(r, g, b);
-                else if(Parsing::parse(curLineChar, "SliderBorder", ':', &r, ',', &g, ',', &b))
+                else if(Parsing::parse(curLine, "SliderBorder", ':', &r, ',', &g, ',', &b))
                     this->sliderBorderColor = rgb(r, g, b);
-                else if(Parsing::parse(curLineChar, "SliderTrackOverride", ':', &r, ',', &g, ',', &b)) {
+                else if(Parsing::parse(curLine, "SliderTrackOverride", ':', &r, ',', &g, ',', &b)) {
                     this->sliderTrackOverride = rgb(r, g, b);
                     this->bSliderTrackOverride = true;
-                } else if(Parsing::parse(curLineChar, "SongSelectActiveText", ':', &r, ',', &g, ',', &b))
+                } else if(Parsing::parse(curLine, "SongSelectActiveText", ':', &r, ',', &g, ',', &b))
                     this->songSelectActiveText = rgb(r, g, b);
-                else if(Parsing::parse(curLineChar, "SongSelectInactiveText", ':', &r, ',', &g, ',', &b))
+                else if(Parsing::parse(curLine, "SongSelectInactiveText", ':', &r, ',', &g, ',', &b))
                     this->songSelectInactiveText = rgb(r, g, b);
-                else if(Parsing::parse(curLineChar, "InputOverlayText", ':', &r, ',', &g, ',', &b))
+                else if(Parsing::parse(curLine, "InputOverlayText", ':', &r, ',', &g, ',', &b))
                     this->inputOverlayText = rgb(r, g, b);
 
                 break;
             }
 
-            case SkinSection::FONTS: {
-                Parsing::parse(curLineChar, "ComboOverlap", ':', &this->iComboOverlap);
-                Parsing::parse(curLineChar, "ScoreOverlap", ':', &this->iScoreOverlap);
-                Parsing::parse(curLineChar, "HitCircleOverlap", ':', &this->iHitCircleOverlap);
+            case FONTS: {
+                Parsing::parse(curLine, "ComboOverlap", ':', &this->iComboOverlap);
+                Parsing::parse(curLine, "ScoreOverlap", ':', &this->iScoreOverlap);
+                Parsing::parse(curLine, "HitCircleOverlap", ':', &this->iHitCircleOverlap);
 
-                if(Parsing::parse(curLineChar, "ComboPrefix", ':', &this->sComboPrefix)) {
+                if(Parsing::parse(curLine, "ComboPrefix", ':', &this->sComboPrefix)) {
                     // XXX: jank path normalization
-                    for(int i = 0; i < this->sComboPrefix.length(); i++) {
-                        if(this->sComboPrefix[i] == '\\') {
-                            this->sComboPrefix.erase(i, 1);
-                            this->sComboPrefix.insert(i, "/");
-                        }
-                    }
+                    std::ranges::replace(this->sComboPrefix, '\\', '/');
                 }
 
-                if(Parsing::parse(curLineChar, "ScorePrefix", ':', &this->sScorePrefix)) {
+                if(Parsing::parse(curLine, "ScorePrefix", ':', &this->sScorePrefix)) {
                     // XXX: jank path normalization
-                    for(int i = 0; i < this->sScorePrefix.length(); i++) {
-                        if(this->sScorePrefix[i] == '\\') {
-                            this->sScorePrefix.erase(i, 1);
-                            this->sScorePrefix.insert(i, "/");
-                        }
-                    }
+                    std::ranges::replace(this->sScorePrefix, '\\', '/');
                 }
 
-                if(Parsing::parse(curLineChar, "HitCirclePrefix", ':', &this->sHitCirclePrefix)) {
+                if(Parsing::parse(curLine, "HitCirclePrefix", ':', &this->sHitCirclePrefix)) {
                     // XXX: jank path normalization
-                    for(int i = 0; i < this->sHitCirclePrefix.length(); i++) {
-                        if(this->sHitCirclePrefix[i] == '\\') {
-                            this->sHitCirclePrefix.erase(i, 1);
-                            this->sHitCirclePrefix.insert(i, "/");
-                        }
-                    }
+                    std::ranges::replace(this->sHitCirclePrefix, '\\', '/');
                 }
 
                 break;
             }
 
-            case SkinSection::NEOSU: {
-                size_t pos = curLineView.find(':');
+            case NEOSU: {
+                size_t pos = curLine.find(':');
                 if(pos == std::string::npos) break;
 
+                bool shouldParse = true;
                 std::string name, value;
-                Parsing::parse(std::string{curLineView.substr(0, pos)}.c_str(), &name);
-                Parsing::parse(std::string{curLineView.substr(pos + 1)}.c_str(), &value);
+                shouldParse &= !!Parsing::parse(curLine.substr(0, pos), &name);
+                shouldParse &= !!Parsing::parse(curLine.substr(pos + 1), &value);
 
                 // XXX: shouldn't be setting cvars directly in parsing method
-                auto cvar = cvars->getConVarByName(name, false);
-                if(cvar) {
-                    cvar->setValue(value, true, ConVar::CvarEditor::SKIN);
-                } else {
-                    debugLog("Skin wanted to set cvar '{}' to '{}', but it doesn't exist!", name, value);
+                if(shouldParse) {
+                    auto cvar = cvars->getConVarByName(name, false);
+                    if(cvar) {
+                        cvar->setValue(value, true, ConVar::CvarEditor::SKIN);
+                    } else {
+                        debugLog("Skin wanted to set cvar '{}' to '{}', but it doesn't exist!", name, value);
+                    }
                 }
 
                 break;
@@ -1089,10 +1060,7 @@ bool Skin::parseSkinINI(std::string filepath) {
         }
     }
 
-    // process the last line if it doesn't end with a line terminator
-    if(!currentLine.isEmpty()) nonEmptyLineCounter++;
-
-    if(nonEmptyLineCounter < 1) return false;
+    if(!hasNonEmptyLines) return false;
 
     return true;
 }

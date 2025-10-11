@@ -263,10 +263,26 @@ class ConVar {
 
     [[nodiscard]] inline bool hasValue() const { return this->bHasValue; }
 
-    [[nodiscard]] inline bool hasCallbackArgs() const {
+    [[nodiscard]] inline bool hasAnyCallbacks() const {
+        return !std::holds_alternative<std::monostate>(this->callback) ||
+               !std::holds_alternative<std::monostate>(this->changeCallback);
+    }
+
+    [[nodiscard]] inline bool hasAnyNonVoidCallback() const {
         return std::holds_alternative<CVStringCB>(this->callback) ||
                std::holds_alternative<CVFloatCB>(this->callback) ||
                !std::holds_alternative<std::monostate>(this->changeCallback);
+    }
+
+    [[nodiscard]] inline bool hasVoidCallback() const { return std::holds_alternative<CVVoidCB>(this->callback); }
+
+    [[nodiscard]] inline bool hasSingleArgCallback() const {
+        return std::holds_alternative<CVStringCB>(this->callback) ||
+               std::holds_alternative<CVFloatCB>(this->callback);
+    }
+
+    [[nodiscard]] inline bool hasChangeCallback() const {
+        return !std::holds_alternative<std::monostate>(this->changeCallback);
     }
 
     [[nodiscard]] inline bool isFlagSet(uint8_t flag) const { return ((this->iFlags & flag) == flag); }

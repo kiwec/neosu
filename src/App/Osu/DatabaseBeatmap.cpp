@@ -253,6 +253,7 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(std::
 
             // CR at the end breaks parsing, remove it
             if(curLineUnstripped.back() == '\r') curLineUnstripped.remove_suffix(1);
+            if(curLineUnstripped.empty()) continue;
             const auto curLine = curLineUnstripped;  // don't want to accidentally modify it somewhere later
 
             // skip the for loop on the first go-around, the header has to be at the start
@@ -1079,6 +1080,7 @@ bool DatabaseBeatmap::loadMetadata(bool compute_md5) {
 
         // CR at the end breaks parsing, remove it
         if(curLineUnstripped.back() == '\r') curLineUnstripped.remove_suffix(1);
+        if(curLineUnstripped.empty()) continue;
         const auto curLine = curLineUnstripped;  // don't want to accidentally modify it somewhere later
 
         // skip the for loop on the first go-around, the header has to be at the start

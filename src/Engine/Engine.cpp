@@ -126,10 +126,9 @@ Engine::~Engine() {
     osu = nullptr;
 
     debugLog("Engine: Freeing engine GUI...");
-    for(const auto &cbox = Engine::consoleBox.load(std::memory_order_acquire); cbox != nullptr;) {
+    if(const auto &cbox = Engine::consoleBox.load(std::memory_order_acquire); cbox != nullptr) {
         // don't allow CBaseUI to delete it, it might still be in use (being flushed) by Logger
         this->guiContainer->removeBaseUIElement(cbox.get());
-        break;
     }
     Engine::consoleBox.store(nullptr, std::memory_order_release);
     SAFE_DELETE(this->guiContainer);
@@ -243,12 +242,12 @@ void Engine::onPaint() {
 
         // middle
         {
-            if(app != nullptr) {
+            if(app) {
                 VPROF_BUDGET("App::draw", VPROF_BUDGETGROUP_DRAW);
                 app->draw();
             }
 
-            if(this->guiContainer != nullptr) this->guiContainer->draw();
+            if(this->guiContainer) this->guiContainer->draw();
 
             // debug input devices
             for(const auto &inputDevice : this->inputDevices) {
@@ -335,7 +334,7 @@ void Engine::onUpdate() {
             VPROF_BUDGET("GUI::update", VPROF_BUDGETGROUP_UPDATE);
             // update gui
             bool propagate_clicks = true;
-            if(this->guiContainer != nullptr) this->guiContainer->mouse_update(&propagate_clicks);
+            if(this->guiContainer) this->guiContainer->mouse_update(&propagate_clicks);
         }
 
         {
@@ -346,7 +345,7 @@ void Engine::onUpdate() {
     }
 
     // update app
-    if(app != nullptr) {
+    if(app) {
         VPROF_BUDGET("App::update", VPROF_BUDGETGROUP_UPDATE);
         app->update();
     }
@@ -366,7 +365,7 @@ void Engine::onFocusGained() {
 
     if(cv::debug_engine.getBool()) debugLog("Engine: got focus");
 
-    if(app != nullptr) app->onFocusGained();
+    if(app) app->onFocusGained();
 }
 
 void Engine::onFocusLost() {
@@ -378,7 +377,7 @@ void Engine::onFocusLost() {
         keyboard->reset();
     }
 
-    if(app != nullptr) app->onFocusLost();
+    if(app) app->onFocusLost();
 
     // auto minimize on certain conditions
     if(env->isFullscreen() || env->isFullscreenWindowedBorderless()) {
@@ -396,7 +395,7 @@ void Engine::onMinimized() {
 
     if(cv::debug_engine.getBool()) debugLog("Engine: window minimized");
 
-    if(app != nullptr) app->onMinimized();
+    if(app) app->onMinimized();
 }
 
 void Engine::onMaximized() {
@@ -410,7 +409,7 @@ void Engine::onRestored() {
 
     if(cv::debug_engine.getBool()) debugLog("Engine: window restored");
 
-    if(app != nullptr) app->onRestored();
+    if(app) app->onRestored();
 }
 
 void Engine::onResolutionChange(vec2 newResolution) {
@@ -429,26 +428,25 @@ void Engine::onResolutionChange(vec2 newResolution) {
     this->bResolutionChange = false;
     this->vNewScreenSize = newResolution;
 
-    if(this->guiContainer != nullptr) this->guiContainer->setSize(newResolution.x, newResolution.y);
-    for(const auto &cbox = Engine::consoleBox.load(std::memory_order_relaxed); cbox != nullptr;) {
+    if(this->guiContainer) this->guiContainer->setSize(newResolution.x, newResolution.y);
+    if(const auto &cbox = Engine::consoleBox.load(std::memory_order_relaxed); cbox != nullptr) {
         cbox->onResolutionChange(newResolution);
-        break;
     }
 
     // update everything
     this->vScreenSize = newResolution;
-    if(g != nullptr) g->onResolutionChange(newResolution);
-    if(app != nullptr) app->onResolutionChanged(newResolution);
+    if(g) g->onResolutionChange(newResolution);
+    if(app) app->onResolutionChanged(newResolution);
 }
 
 void Engine::onDPIChange() {
     debugLog("Engine: DPI changed to {:d}", env->getDPI());
 
-    if(app != nullptr) app->onDPIChanged();
+    if(app) app->onDPIChanged();
 }
 
 void Engine::onShutdown() {
-    if(this->bShuttingDown || (app != nullptr && !app->onShutdown())) return;
+    if(this->bShuttingDown || (app && !app->onShutdown())) return;
 
     this->bShuttingDown = true;
     if(!!soundEngine) soundEngine->shutdown();

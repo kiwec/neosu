@@ -133,7 +133,7 @@ bool sdl_windows_message_hook(void *userdata, MSG *msg) {
     if(hMapFile) {
         bool signaled = false;
 
-        static auto signal_completion = [&signaled, event_name]() -> void {
+        auto signal_completion = [&signaled, event_name]() -> void {
             if(signaled) return;
             signaled = true;
             HANDLE hEvent = OpenEventA(EVENT_MODIFY_STATE, FALSE, event_name.c_str());
