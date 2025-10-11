@@ -1,15 +1,21 @@
 #pragma once
 // Copyright (c) 2015, PG, All rights reserved.
-#include "cbase.h"
+#include "noinclude.h"
+#include "Color.h"
+#include "Vectors.h"
 
-extern Image *MISSING_TEXTURE;
+#include <vector>
+
 
 class Image;
 class Sound;
 class Resource;
 class ConVar;
+class UString;
 
 class SkinImage;
+
+extern Image *MISSING_TEXTURE;
 
 class Skin final {
     NOCOPY_NOMOVE(Skin)

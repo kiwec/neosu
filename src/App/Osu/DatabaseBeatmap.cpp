@@ -232,6 +232,8 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(std::
 
             // close the file here
         }
+        int colorsParsed = 0;
+        std::vector<Color> tempColors(8, 0);
 
         // load the actual beatmap
         int hitobjectsWithoutSpinnerCounter = 0;
@@ -586,6 +588,10 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(std::
     if(c.numHitobjects > (size_t)cv::beatmap_max_num_hitobjects.getInt()) {
         c.errorCode = 5;
         return c;
+    }
+
+    if (colorsParsed > 0) {
+        this->comboColors = {tempColors.begin(), tempColors.begin() + colorsParsed};
     }
 
     // sort timingpoints by time

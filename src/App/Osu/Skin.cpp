@@ -1,9 +1,6 @@
 // Copyright (c) 2015, PG, All rights reserved.
 #include "Skin.h"
 
-#include <cstring>
-#include <utility>
-
 #include "Archival.h"
 #include "BeatmapInterface.h"
 #include "ConVar.h"
@@ -21,6 +18,9 @@
 #include "SoundEngine.h"
 #include "VolumeOverlay.h"
 #include "Logging.h"
+
+#include <cstring>
+#include <utility>
 
 // Readability
 // XXX: change loadSound() interface to use flags instead
@@ -927,6 +927,9 @@ bool Skin::parseSkinINI(std::string filepath) {
 
     bool hasNonEmptyLines = false;
 
+    int colorsParsed = 0;
+    std::vector<Color> tempColors(8, 0);
+
     // osu! defaults to [General] and loads properties even before the actual section start
     SkinSection curBlock = SkinSection::GENERAL;
     using enum SkinSection;
@@ -992,7 +995,8 @@ bool Skin::parseSkinINI(std::string filepath) {
                 // FIXME: actually use comboNum for ordering
                 if(Parsing::parse(curLine, "Combo", &comboNum, ':', &r, ',', &g, ',', &b)) {
                     if(comboNum >= 1 && comboNum <= 8) {
-                        this->comboColors.push_back(rgb(r, g, b));
+                        colorsParsed++;
+                        tempColors[comboNum - 1] = rgb(r, g, b);
                     }
                 } else if(Parsing::parse(curLine, "SpinnerApproachCircle", ':', &r, ',', &g, ',', &b))
                     this->spinnerApproachCircleColor = rgb(r, g, b);
@@ -1061,6 +1065,10 @@ bool Skin::parseSkinINI(std::string filepath) {
     }
 
     if(!hasNonEmptyLines) return false;
+
+    if (colorsParsed > 0) {
+        this->comboColors = {tempColors.begin(), tempColors.begin() + colorsParsed};
+    }
 
     return true;
 }
