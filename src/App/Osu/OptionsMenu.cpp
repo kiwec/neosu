@@ -888,7 +888,7 @@ OptionsMenu::OptionsMenu() : ScreenBackable() {
     this->addSubSection("Gameplay");
     this->addCheckbox("Change hitsound pitch based on accuracy", &cv::snd_pitch_hitsounds);
     this->addCheckbox("Prefer Nightcore over Double Time", &cv::nightcore_enjoyer)
-        ->setChangeCallback(SA::MakeDelegate<&OptionsMenu::onNightcoreToggle>(this));
+        ->setChangeCallback(SA::MakeDelegate<&OptionsMenu::onModChangingToggle>(this));
 
     //**************************************************************************************************************************//
 
@@ -1096,6 +1096,11 @@ OptionsMenu::OptionsMenu() : ScreenBackable() {
         "Enabled: Singleplayer default. You die upon failing and the beatmap stops.\nDisabled: Multiplayer "
         "default. Allows you to keep playing even after failing.",
         &cv::drain_kill);
+    this->addCheckbox("Disable HP drain",
+                      "Like NF, but entirely disables HP mechanics. Will block online score submission.",
+                      &cv::drain_disabled)
+        ->setChangeCallback(SA::MakeDelegate<&OptionsMenu::onModChangingToggle>(this));
+
     this->addSpacer();
     this->addLabel("");
 
@@ -1115,7 +1120,7 @@ OptionsMenu::OptionsMenu() : ScreenBackable() {
     this->addLabel("- osu!lazer 2020: Auto miss previous circle if > time.")->setTextColor(0xff666666);
     this->addLabel("");
     this->addSpacer();
-    this->addSubSection("Backgrounds");
+    this->addSubSection("Backgrounds", "image thumbnail");
     this->addCheckbox("Load Background Images (!)", "NOTE: Disabling this will disable ALL beatmap images everywhere!",
                       &cv::load_beatmap_background_images);
     this->addCheckbox("Draw Background in Beatmap", &cv::draw_beatmap_background_image);
@@ -3205,7 +3210,7 @@ void OptionsMenu::onLoudnessNormalizationToggle(CBaseUICheckbox *checkbox) {
     }
 }
 
-void OptionsMenu::onNightcoreToggle(CBaseUICheckbox *checkbox) {
+void OptionsMenu::onModChangingToggle(CBaseUICheckbox *checkbox) {
     this->onCheckboxChange(checkbox);
     osu->getModSelector()->updateButtons();
     osu->updateMods();

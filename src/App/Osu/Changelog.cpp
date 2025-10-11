@@ -28,6 +28,7 @@ Changelog::Changelog() : ScreenBackable() {
     v41_04.title = "41.04";
     v41_04.changes = {
         R"(- Merged updated PPv2 ver. 20250306 from McOsu (current))",
+        R"(- Added an option/ConVar to disable HP drain entirely (disables online score submission))",
         R"(- Added an experimental DirectX11 renderer backend (for Windows, and Linux through dxvk-native))",
         R"(  - If the build has both OpenGL and DirectX11, OpenGL will be used by default, the -dx11 launch argument can choose DX11)",
         R"(  - Not currently enabled for release builds, due to extra dependencies (to be ironed out in the future!))",

@@ -449,7 +449,7 @@ void DirectX11Shader::setUniform4f(std::string_view name, float x, float y, floa
 }
 
 void DirectX11Shader::setUniformMatrix4fv(std::string_view name, const Matrix4 &matrix) {
-    setUniformMatrix4fv(name, (const float *const)matrix.getTranspose());
+    setUniformMatrix4fv(name, matrix.getTranspose());
 }
 
 void DirectX11Shader::setUniformMatrix4fv(std::string_view name, const float *const v) {

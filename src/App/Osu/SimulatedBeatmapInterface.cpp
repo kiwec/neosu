@@ -43,6 +43,7 @@ SimulatedBeatmapInterface::~SimulatedBeatmapInterface() {
     for(auto &hitobject : this->hitobjects) {
         delete hitobject;
     }
+    this->hitobjects.clear();
 }
 
 void SimulatedBeatmapInterface::simulate_to(i32 music_pos) {
@@ -116,6 +117,10 @@ bool SimulatedBeatmapInterface::start() {
     if(result.errorCode != 0) {
         return false;
     }
+    for(auto &hitobject : this->hitobjects) {
+        delete hitobject;
+    }
+    this->hitobjects.clear();
     this->hitobjects = std::move(result.hitobjects);
     this->breaks = std::move(result.breaks);
 
@@ -268,8 +273,7 @@ u32 SimulatedBeatmapInterface::getBreakDurationTotal() const {
     return breakDurationTotal;
 }
 
-DatabaseBeatmap::BREAK SimulatedBeatmapInterface::getBreakForTimeRange(i32 startMS, i32 positionMS,
-                                                                       i32 endMS) const {
+DatabaseBeatmap::BREAK SimulatedBeatmapInterface::getBreakForTimeRange(i32 startMS, i32 positionMS, i32 endMS) const {
     DatabaseBeatmap::BREAK curBreak;
 
     curBreak.startTime = -1;
@@ -310,7 +314,7 @@ LiveScore::HIT SimulatedBeatmapInterface::addHitResult(HitObject *hitObject, Liv
     // health
     LiveScore::HIT returnedHit = LiveScore::HIT::HIT_MISS;
     if(!ignoreHealth) {
-        this->addHealth(this->live_score.getHealthIncrease((AbstractBeatmapInterface *)this, hit), true);
+        this->addHealth(this->live_score.getHealthIncrease(this, hit), true);
 
         // geki/katu handling
         if(isEndOfCombo) {
@@ -359,6 +363,8 @@ void SimulatedBeatmapInterface::addScorePoints(int points, bool isSpinner) {
 }
 
 void SimulatedBeatmapInterface::addHealth(f64 percent, bool isFromHitResult) {
+    if(ModMasks::eq(this->mods.flags, Replay::ModFlags::NoHP)) return;  // do nothing
+
     // never drain before first hitobject
     if(this->iCurMusicPos < this->hitobjects[0]->click_time) return;
 
@@ -482,8 +488,7 @@ void SimulatedBeatmapInterface::update(f64 frame_time) {
                     this->iNextHitObjectTime = this->hitobjects[i]->click_time;
                 } else {
                     this->currentHitObject = this->hitobjects[i];
-                    const i32 actualPrevHitObjectTime =
-                        this->hitobjects[i]->click_time + this->hitobjects[i]->duration;
+                    const i32 actualPrevHitObjectTime = this->hitobjects[i]->click_time + this->hitobjects[i]->duration;
                     this->iPreviousHitObjectTime = actualPrevHitObjectTime;
                 }
             }

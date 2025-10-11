@@ -256,12 +256,12 @@ void RankingScreen::draw() {
     if(this->bModAuto) this->drawModImage(osu->getSkin()->getSelectionModAutoplay(), modPos, modPosMax);
 
     // draw experimental mods
-    if(this->enabledExperimentalMods.size() > 0) {
+    if(this->extraMods.size() > 0) {
         McFont *experimentalModFont = osu->getSubTitleFont();
         const UString prefix = "+ ";
 
         float maxStringWidth = 0.0f;
-        for(auto &enabledExperimentalMod : this->enabledExperimentalMods) {
+        for(auto &enabledExperimentalMod : this->extraMods) {
             UString experimentalModName{enabledExperimentalMod->getName()};
             experimentalModName.insert(0, prefix);
             const float width = experimentalModFont->getStringWidth(experimentalModName);
@@ -276,7 +276,7 @@ void RankingScreen::draw() {
                                                  experimentalModFont->getHeight() * heightMultiplier);
         const int backgroundWidth = maxStringWidth + 2 * backgroundMargin;
         const int backgroundHeight =
-            experimentalModHeight * this->enabledExperimentalMods.size() + 2 * backgroundMargin;
+            experimentalModHeight * this->extraMods.size() + 2 * backgroundMargin;
 
         g->setColor(0x77000000);
         g->fillRect((int)experimentalModPos.x - backgroundMargin,
@@ -286,7 +286,7 @@ void RankingScreen::draw() {
         g->pushTransform();
         {
             g->translate((int)experimentalModPos.x, (int)experimentalModPos.y);
-            for(auto &enabledExperimentalMod : this->enabledExperimentalMods) {
+            for(auto &enabledExperimentalMod : this->extraMods) {
                 UString experimentalModName{enabledExperimentalMod->getName()};
                 experimentalModName.insert(0, prefix);
 
@@ -472,32 +472,33 @@ void RankingScreen::setScore(const FinishedScore &score) {
     this->bModAuto = eq(score.mods.flags, Autoplay);
     this->bModTD = eq(score.mods.flags, TouchDevice);
 
-    this->enabledExperimentalMods.clear();
-    if(eq(score.mods.flags, FPoSu_Strafing)) this->enabledExperimentalMods.push_back(&cv::fposu_mod_strafing);
-    if(eq(score.mods.flags, Wobble1)) this->enabledExperimentalMods.push_back(&cv::mod_wobble);
-    if(eq(score.mods.flags, Wobble2)) this->enabledExperimentalMods.push_back(&cv::mod_wobble2);
-    if(eq(score.mods.flags, ARWobble)) this->enabledExperimentalMods.push_back(&cv::mod_arwobble);
-    if(eq(score.mods.flags, Timewarp)) this->enabledExperimentalMods.push_back(&cv::mod_timewarp);
-    if(eq(score.mods.flags, ARTimewarp)) this->enabledExperimentalMods.push_back(&cv::mod_artimewarp);
-    if(eq(score.mods.flags, Minimize)) this->enabledExperimentalMods.push_back(&cv::mod_minimize);
-    if(eq(score.mods.flags, FadingCursor)) this->enabledExperimentalMods.push_back(&cv::mod_fadingcursor);
-    if(eq(score.mods.flags, FPS)) this->enabledExperimentalMods.push_back(&cv::mod_fps);
-    if(eq(score.mods.flags, Jigsaw1)) this->enabledExperimentalMods.push_back(&cv::mod_jigsaw1);
-    if(eq(score.mods.flags, Jigsaw2)) this->enabledExperimentalMods.push_back(&cv::mod_jigsaw2);
-    if(eq(score.mods.flags, FullAlternate)) this->enabledExperimentalMods.push_back(&cv::mod_fullalternate);
-    if(eq(score.mods.flags, ReverseSliders)) this->enabledExperimentalMods.push_back(&cv::mod_reverse_sliders);
-    if(eq(score.mods.flags, No50s)) this->enabledExperimentalMods.push_back(&cv::mod_no50s);
-    if(eq(score.mods.flags, No100s)) this->enabledExperimentalMods.push_back(&cv::mod_no100s);
-    if(eq(score.mods.flags, Ming3012)) this->enabledExperimentalMods.push_back(&cv::mod_ming3012);
-    if(eq(score.mods.flags, HalfWindow)) this->enabledExperimentalMods.push_back(&cv::mod_halfwindow);
-    if(eq(score.mods.flags, Millhioref)) this->enabledExperimentalMods.push_back(&cv::mod_millhioref);
-    if(eq(score.mods.flags, Mafham)) this->enabledExperimentalMods.push_back(&cv::mod_mafham);
-    if(eq(score.mods.flags, StrictTracking)) this->enabledExperimentalMods.push_back(&cv::mod_strict_tracking);
+    this->extraMods.clear();
+    if(eq(score.mods.flags, FPoSu_Strafing)) this->extraMods.push_back(&cv::fposu_mod_strafing);
+    if(eq(score.mods.flags, Wobble1)) this->extraMods.push_back(&cv::mod_wobble);
+    if(eq(score.mods.flags, Wobble2)) this->extraMods.push_back(&cv::mod_wobble2);
+    if(eq(score.mods.flags, ARWobble)) this->extraMods.push_back(&cv::mod_arwobble);
+    if(eq(score.mods.flags, Timewarp)) this->extraMods.push_back(&cv::mod_timewarp);
+    if(eq(score.mods.flags, ARTimewarp)) this->extraMods.push_back(&cv::mod_artimewarp);
+    if(eq(score.mods.flags, Minimize)) this->extraMods.push_back(&cv::mod_minimize);
+    if(eq(score.mods.flags, FadingCursor)) this->extraMods.push_back(&cv::mod_fadingcursor);
+    if(eq(score.mods.flags, FPS)) this->extraMods.push_back(&cv::mod_fps);
+    if(eq(score.mods.flags, Jigsaw1)) this->extraMods.push_back(&cv::mod_jigsaw1);
+    if(eq(score.mods.flags, Jigsaw2)) this->extraMods.push_back(&cv::mod_jigsaw2);
+    if(eq(score.mods.flags, FullAlternate)) this->extraMods.push_back(&cv::mod_fullalternate);
+    if(eq(score.mods.flags, ReverseSliders)) this->extraMods.push_back(&cv::mod_reverse_sliders);
+    if(eq(score.mods.flags, No50s)) this->extraMods.push_back(&cv::mod_no50s);
+    if(eq(score.mods.flags, No100s)) this->extraMods.push_back(&cv::mod_no100s);
+    if(eq(score.mods.flags, Ming3012)) this->extraMods.push_back(&cv::mod_ming3012);
+    if(eq(score.mods.flags, HalfWindow)) this->extraMods.push_back(&cv::mod_halfwindow);
+    if(eq(score.mods.flags, Millhioref)) this->extraMods.push_back(&cv::mod_millhioref);
+    if(eq(score.mods.flags, Mafham)) this->extraMods.push_back(&cv::mod_mafham);
+    if(eq(score.mods.flags, StrictTracking)) this->extraMods.push_back(&cv::mod_strict_tracking);
     if(eq(score.mods.flags, MirrorHorizontal))
-        this->enabledExperimentalMods.push_back(&cv::playfield_mirror_horizontal);
-    if(eq(score.mods.flags, MirrorVertical)) this->enabledExperimentalMods.push_back(&cv::playfield_mirror_vertical);
-    if(eq(score.mods.flags, Shirone)) this->enabledExperimentalMods.push_back(&cv::mod_shirone);
-    if(eq(score.mods.flags, ApproachDifferent)) this->enabledExperimentalMods.push_back(&cv::mod_approach_different);
+        this->extraMods.push_back(&cv::playfield_mirror_horizontal);
+    if(eq(score.mods.flags, MirrorVertical)) this->extraMods.push_back(&cv::playfield_mirror_vertical);
+    if(eq(score.mods.flags, Shirone)) this->extraMods.push_back(&cv::mod_shirone);
+    if(eq(score.mods.flags, ApproachDifferent)) this->extraMods.push_back(&cv::mod_approach_different);
+    if(eq(score.mods.flags, NoHP)) this->extraMods.push_back(&cv::drain_disabled);
 }
 
 void RankingScreen::setBeatmapInfo(DatabaseBeatmap *map) {

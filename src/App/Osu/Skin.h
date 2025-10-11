@@ -6,7 +6,6 @@
 
 #include <vector>
 
-
 class Image;
 class Sound;
 class Resource;
@@ -225,58 +224,58 @@ class Skin final {
     [[nodiscard]] inline Image *getMenuBackground() const { return this->menuBackground; }
     [[nodiscard]] inline Image *getSkybox() const { return this->skybox; }
 
-    [[nodiscard]] Sound *getSpinnerBonus() const;
-    [[nodiscard]] Sound *getSpinnerSpinSound() const;
-    [[nodiscard]] Sound *getCombobreak() const;
-    [[nodiscard]] Sound *getFailsound() const;
-    [[nodiscard]] Sound *getApplause() const;
-    [[nodiscard]] Sound *getMenuHit() const;
-    [[nodiscard]] Sound *getMenuHover() const;
-    [[nodiscard]] Sound *getCheckOn() const;
-    [[nodiscard]] Sound *getCheckOff() const;
-    [[nodiscard]] Sound *getShutter() const;
-    [[nodiscard]] Sound *getSectionPassSound() const;
-    [[nodiscard]] Sound *getSectionFailSound() const;
-    [[nodiscard]] Sound *getExpandSound() const;
-    [[nodiscard]] Sound *getMessageSentSound() const;
-    [[nodiscard]] Sound *getDeletingTextSound() const;
-    [[nodiscard]] Sound *getMovingTextCursorSound() const;
-    [[nodiscard]] Sound *getTyping1Sound() const;
-    [[nodiscard]] Sound *getTyping2Sound() const;
-    [[nodiscard]] Sound *getTyping3Sound() const;
-    [[nodiscard]] Sound *getTyping4Sound() const;
-    [[nodiscard]] Sound *getMenuBackSound() const;
-    [[nodiscard]] Sound *getCloseChatTabSound() const;
-    [[nodiscard]] Sound *getHoverButtonSound() const;
-    [[nodiscard]] Sound *getClickButtonSound() const;
-    [[nodiscard]] Sound *getClickMainMenuCubeSound() const;
-    [[nodiscard]] Sound *getHoverMainMenuCubeSound() const;
-    [[nodiscard]] Sound *getClickSingleplayerSound() const;
-    [[nodiscard]] Sound *getHoverSingleplayerSound() const;
-    [[nodiscard]] Sound *getClickMultiplayerSound() const;
-    [[nodiscard]] Sound *getHoverMultiplayerSound() const;
-    [[nodiscard]] Sound *getClickOptionsSound() const;
-    [[nodiscard]] Sound *getHoverOptionsSound() const;
-    [[nodiscard]] Sound *getClickExitSound() const;
-    [[nodiscard]] Sound *getHoverExitSound() const;
-    [[nodiscard]] Sound *getPauseLoopSound() const;
-    [[nodiscard]] Sound *getPauseHoverSound() const;
-    [[nodiscard]] Sound *getClickPauseBackSound() const;
-    [[nodiscard]] Sound *getHoverPauseBackSound() const;
-    [[nodiscard]] Sound *getClickPauseContinueSound() const;
-    [[nodiscard]] Sound *getHoverPauseContinueSound() const;
-    [[nodiscard]] Sound *getClickPauseRetrySound() const;
-    [[nodiscard]] Sound *getHoverPauseRetrySound() const;
-    [[nodiscard]] Sound *getBackButtonClickSound() const;
-    [[nodiscard]] Sound *getBackButtonHoverSound() const;
-    [[nodiscard]] Sound *getSelectDifficultySound() const;
-    [[nodiscard]] Sound *getSliderbarSound() const;
-    [[nodiscard]] Sound *getMatchConfirmSound() const;
-    [[nodiscard]] Sound *getRoomJoinedSound() const;
-    [[nodiscard]] Sound *getRoomQuitSound() const;
-    [[nodiscard]] Sound *getRoomNotReadySound() const;
-    [[nodiscard]] Sound *getRoomReadySound() const;
-    [[nodiscard]] Sound *getMatchStartSound() const;
+    [[nodiscard]] inline Sound *getSpinnerBonus() const { return this->spinnerBonus; }
+    [[nodiscard]] inline Sound *getSpinnerSpinSound() const { return this->spinnerSpinSound; }
+    [[nodiscard]] inline Sound *getCombobreak() const { return this->combobreak; }
+    [[nodiscard]] inline Sound *getFailsound() const { return this->failsound; }
+    [[nodiscard]] inline Sound *getApplause() const { return this->applause; }
+    [[nodiscard]] inline Sound *getMenuHit() const { return this->menuHit; }
+    [[nodiscard]] inline Sound *getMenuHover() const { return this->menuHover; }
+    [[nodiscard]] inline Sound *getCheckOn() const { return this->checkOn; }
+    [[nodiscard]] inline Sound *getCheckOff() const { return this->checkOff; }
+    [[nodiscard]] inline Sound *getShutter() const { return this->shutter; }
+    [[nodiscard]] inline Sound *getSectionPassSound() const { return this->sectionPassSound; }
+    [[nodiscard]] inline Sound *getSectionFailSound() const { return this->sectionFailSound; }
+    [[nodiscard]] inline Sound *getExpandSound() const { return this->expand; }
+    [[nodiscard]] inline Sound *getMessageSentSound() const { return this->messageSent; }
+    [[nodiscard]] inline Sound *getDeletingTextSound() const { return this->deletingText; }
+    [[nodiscard]] inline Sound *getMovingTextCursorSound() const { return this->movingTextCursor; }
+    [[nodiscard]] inline Sound *getTyping1Sound() const { return this->typing1; }
+    [[nodiscard]] inline Sound *getTyping2Sound() const { return this->typing2; }
+    [[nodiscard]] inline Sound *getTyping3Sound() const { return this->typing3; }
+    [[nodiscard]] inline Sound *getTyping4Sound() const { return this->typing4; }
+    [[nodiscard]] inline Sound *getMenuBackSound() const { return this->menuBack; }
+    [[nodiscard]] inline Sound *getCloseChatTabSound() const { return this->closeChatTab; }
+    [[nodiscard]] inline Sound *getHoverButtonSound() const { return this->hoverButton; }
+    [[nodiscard]] inline Sound *getClickButtonSound() const { return this->clickButton; }
+    [[nodiscard]] inline Sound *getClickMainMenuCubeSound() const { return this->clickMainMenuCube; }
+    [[nodiscard]] inline Sound *getHoverMainMenuCubeSound() const { return this->hoverMainMenuCube; }
+    [[nodiscard]] inline Sound *getClickSingleplayerSound() const { return this->clickSingleplayer; }
+    [[nodiscard]] inline Sound *getHoverSingleplayerSound() const { return this->hoverSingleplayer; }
+    [[nodiscard]] inline Sound *getClickMultiplayerSound() const { return this->clickMultiplayer; }
+    [[nodiscard]] inline Sound *getHoverMultiplayerSound() const { return this->hoverMultiplayer; }
+    [[nodiscard]] inline Sound *getClickOptionsSound() const { return this->clickOptions; }
+    [[nodiscard]] inline Sound *getHoverOptionsSound() const { return this->hoverOptions; }
+    [[nodiscard]] inline Sound *getClickExitSound() const { return this->clickExit; }
+    [[nodiscard]] inline Sound *getHoverExitSound() const { return this->hoverExit; }
+    [[nodiscard]] inline Sound *getPauseLoopSound() const { return this->pauseLoop; }
+    [[nodiscard]] inline Sound *getPauseHoverSound() const { return this->pauseHover; }
+    [[nodiscard]] inline Sound *getClickPauseBackSound() const { return this->clickPauseBack; }
+    [[nodiscard]] inline Sound *getHoverPauseBackSound() const { return this->hoverPauseBack; }
+    [[nodiscard]] inline Sound *getClickPauseContinueSound() const { return this->clickPauseContinue; }
+    [[nodiscard]] inline Sound *getHoverPauseContinueSound() const { return this->hoverPauseContinue; }
+    [[nodiscard]] inline Sound *getClickPauseRetrySound() const { return this->clickPauseRetry; }
+    [[nodiscard]] inline Sound *getHoverPauseRetrySound() const { return this->hoverPauseRetry; }
+    [[nodiscard]] inline Sound *getBackButtonClickSound() const { return this->backButtonClick; }
+    [[nodiscard]] inline Sound *getBackButtonHoverSound() const { return this->backButtonHover; }
+    [[nodiscard]] inline Sound *getSelectDifficultySound() const { return this->selectDifficulty; }
+    [[nodiscard]] inline Sound *getSliderbarSound() const { return this->sliderbar; }
+    [[nodiscard]] inline Sound *getMatchConfirmSound() const { return this->matchConfirm; }
+    [[nodiscard]] inline Sound *getRoomJoinedSound() const { return this->roomJoined; }
+    [[nodiscard]] inline Sound *getRoomQuitSound() const { return this->roomQuit; }
+    [[nodiscard]] inline Sound *getRoomNotReadySound() const { return this->roomNotReady; }
+    [[nodiscard]] inline Sound *getRoomReadySound() const { return this->roomReady; }
+    [[nodiscard]] inline Sound *getMatchStartSound() const { return this->matchStart; }
 
     [[nodiscard]] inline bool isCursor2x() const { return this->bCursor2x; }
     [[nodiscard]] inline bool isCursorTrail2x() const { return this->bCursorTrail2x; }

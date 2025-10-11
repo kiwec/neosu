@@ -723,7 +723,7 @@ void ModFPoSu::makeBackgroundCube() {
 }
 
 void ModFPoSu::handleLazyLoad3DModels() {
-    if(this->skyboxModel == nullptr) this->skyboxModel = new ModFPoSu3DModel(skyboxObj, nullptr, true);
+    if(this->skyboxModel == nullptr) this->skyboxModel = std::make_unique<ModFPoSu3DModel>(skyboxObj, nullptr, true);
 }
 
 void ModFPoSu::onCurvedChange() { this->makePlayfield(); }

@@ -91,6 +91,7 @@ Mods Mods::from_cvars() {
     Mods mods;
 
     if(cv::mod_nofail.getBool()) mods.flags |= NoFail;
+    if(cv::drain_disabled.getBool()) mods.flags |= NoHP;  // Not an actual "mod", it's in the options menu
     if(cv::mod_easy.getBool()) mods.flags |= Easy;
     if(cv::mod_autopilot.getBool()) mods.flags |= Autopilot;
     if(cv::mod_relax.getBool()) mods.flags |= Relax;
@@ -197,6 +198,8 @@ void Mods::use(const Mods &mods) {
     mod_selector->resetMods();
 
     // Set cvars
+    // FIXME: NoHP should not be changed here, it's a global option
+    cv::drain_disabled.setValue(eq(mods.flags, NoHP));
     cv::mod_nofail.setValue(eq(mods.flags, NoFail));
     cv::mod_easy.setValue(eq(mods.flags, Easy));
     cv::mod_hidden.setValue(eq(mods.flags, Hidden));
@@ -272,6 +275,7 @@ void Mods::use(const Mods &mods) {
     mod_selector->updateOverrideSliderLabels();
     mod_selector->updateExperimentalButtons();
 
+    // FIXME: this is already called like 5 times from the previous calls
     osu->updateMods();
 }
 }  // namespace Replay

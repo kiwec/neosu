@@ -1,8 +1,9 @@
 #pragma once
 // Copyright (c) 2019, Colin Brook & PG, All rights reserved.
-#include <list>
-
 #include "cbase.h"
+
+#include <list>
+#include <memory>
 
 class Camera;
 class ConVar;
@@ -94,7 +95,7 @@ class ModFPoSu {
     bool bCrosshairIntersectsScreen;
     bool bAlreadyWarnedAboutRawInputOverride;
 
-    ModFPoSu3DModel *skyboxModel;
+    std::unique_ptr<ModFPoSu3DModel> skyboxModel;
 
     Shader *hitcircleShader;
 };

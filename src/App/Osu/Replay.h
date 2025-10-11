@@ -60,6 +60,9 @@ enum ModFlags_ : u64 {
     StrictTracking = 1ULL << 41,
     ApproachDifferent = 1ULL << 42,
 
+    // Only here so that replays for plays without HP drain don't fail.
+    NoHP = 1ULL << 43,
+
     // Non-submittable
     Autoplay = 1ULL << 63
 

@@ -1374,8 +1374,10 @@ void BeatmapInterface::addSliderBreak() {
 void BeatmapInterface::addScorePoints(int points, bool isSpinner) { osu->getScore()->addPoints(points, isSpinner); }
 
 void BeatmapInterface::addHealth(f64 percent, bool isFromHitResult) {
-    // never drain before first hitobject
-    if(this->hitobjects.size() > 0 && this->iCurMusicPosWithOffsets < this->hitobjects[0]->click_time) return;
+    // never drain before first hitobject (or if drain is disabled)
+    if(cv::drain_disabled.getBool() || osu->getScore()->mods.has(Replay::ModFlags::NoHP) ||
+       (this->hitobjects.size() > 0 && this->iCurMusicPosWithOffsets < this->hitobjects[0]->click_time))
+        return;
 
     // never drain after last hitobject
     if(this->hitobjectsSortedByEndTime.size() > 0 &&

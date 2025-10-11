@@ -766,6 +766,7 @@ void ScoreButton::setScore(const FinishedScore &score, DatabaseBeatmap *map, int
     using namespace Replay::ModFlags;
 
     this->tooltipLines.push_back(tooltipMods);
+    if(eq(score.mods.flags, NoHP)) this->tooltipLines.emplace_back("+ no HP drain");
     if(eq(score.mods.flags, ApproachDifferent)) this->tooltipLines.emplace_back("+ approach different");
     if(eq(score.mods.flags, ARTimewarp)) this->tooltipLines.emplace_back("+ AR timewarp");
     if(eq(score.mods.flags, ARWobble)) this->tooltipLines.emplace_back("+ AR wobble");
@@ -867,7 +868,7 @@ UString ScoreButton::getModsStringForDisplay(const Replay::Mods &mods) {
     if(eq(mods.flags, MirrorHorizontal) || eq(mods.flags, MirrorVertical)) modsString.append("Mirror,");
     if(eq(mods.flags, FPoSu)) modsString.append("FPoSu,");
 
-    if(modsString.length() > 0) modsString = modsString.substr(0, modsString.length() - 1);
+    if(modsString.length() > 0) modsString.pop_back();
 
     return modsString;
 }

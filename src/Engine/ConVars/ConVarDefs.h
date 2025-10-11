@@ -919,6 +919,8 @@ CONVAR(disable_mousebuttons, "disable_mousebuttons"sv, true, CLIENT | SKINS | SE
 CONVAR(disable_mousewheel, "disable_mousewheel"sv, true, CLIENT | SKINS | SERVER);
 CONVAR(drain_kill, "drain_kill"sv, true, CLIENT | SERVER | PROTECTED | GAMEPLAY,
        "whether to kill the player upon failing"sv);
+CONVAR(drain_disabled, "drain_disabled"sv, false, CLIENT | SERVER | PROTECTED | GAMEPLAY,
+       "determines if HP drain should be disabled entirely"sv);
 CONVAR(drain_kill_notification_duration, "drain_kill_notification_duration"sv, 1.0f, CLIENT | SKINS | SERVER,
        "how long to display the \"You have failed, but you can keep playing!\" notification (0 = disabled)"sv);
 CONVAR(early_note_time, "early_note_time"sv, 1500.0f, CLIENT | SKINS | SERVER | GAMEPLAY,

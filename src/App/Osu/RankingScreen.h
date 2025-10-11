@@ -76,11 +76,12 @@ class RankingScreen final : public ScreenBackable {
     bool bModSpunout;
     bool bModRelax;
     bool bModNF;
+    bool bModNoHP;
     bool bModAutopilot;
     bool bModAuto;
     bool bModTD;
 
-    std::vector<ConVar *> enabledExperimentalMods;
+    std::vector<ConVar *> extraMods;
 
     // custom
     //uwu::lazy_promise<std::function<pp_info()>, pp_info> ppv2_calc{pp_info{}};
