@@ -992,7 +992,6 @@ bool Skin::parseSkinINI(std::string filepath) {
                 u8 comboNum;
                 u8 r, g, b;
 
-                // FIXME: actually use comboNum for ordering
                 if(Parsing::parse(curLine, "Combo", &comboNum, ':', &r, ',', &g, ',', &b)) {
                     if(comboNum >= 1 && comboNum <= 8) {
                         colorsParsed++;
