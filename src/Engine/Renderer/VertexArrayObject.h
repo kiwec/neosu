@@ -18,8 +18,8 @@ class VertexArrayObject : public Resource {
     void addVertex(vec3 v);
     void addVertex(float x, float y, float z = 0);
 
-    void addTexcoord(vec2 uv, unsigned int textureUnit = 0);
-    void addTexcoord(float u, float v, unsigned int textureUnit = 0);
+    void addTexcoord(vec2 uv);
+    void addTexcoord(float u, float v);
 
     void addNormal(vec3 normal);
     void addNormal(float x, float y, float z);
@@ -33,7 +33,7 @@ class VertexArrayObject : public Resource {
         this->vertices = vertices;
         this->iNumVertices = this->vertices.size();
     }
-    void setTexcoords(const std::vector<vec2> &texcoords, unsigned int textureUnit = 0);
+    void setTexcoords(const std::vector<vec2> &texcoords);
     inline void setNormals(const std::vector<vec3> &normals) { this->normals = normals; }
     inline void setColors(const std::vector<Color> &colors) { this->colors = colors; }
     void setColor(int index, Color color);
@@ -43,13 +43,13 @@ class VertexArrayObject : public Resource {
     void setDrawPercent(float fromPercent = 0.0f, float toPercent = 1.0f, int nearestMultiple = 0);  // DEPRECATED
 
     // optimization: pre-allocate space to avoid reallocations during batch operations
-    void reserve(size_t vertexCount, unsigned int textureUnit = 0);
+    void reserve(size_t vertexCount);
 
     [[nodiscard]] inline Graphics::PRIMITIVE getPrimitive() const { return this->primitive; }
     [[nodiscard]] inline Graphics::USAGE_TYPE getUsage() const { return this->usage; }
 
     [[nodiscard]] const std::vector<vec3> &getVertices() const { return this->vertices; }
-    [[nodiscard]] const std::vector<std::vector<vec2>> &getTexcoords() const { return this->texcoords; }
+    [[nodiscard]] const std::vector<vec2> &getTexcoords() const { return this->texcoords; }
     [[nodiscard]] const std::vector<vec3> &getNormals() const { return this->normals; }
     [[nodiscard]] const std::vector<Color> &getColors() const { return this->colors; }
 
@@ -72,10 +72,8 @@ class VertexArrayObject : public Resource {
     void initAsync() override;
     void destroy() override;
 
-    void updateTexcoordArraySize(unsigned int textureUnit);
-
     std::vector<vec3> vertices;
-    std::vector<std::vector<vec2>> texcoords;
+    std::vector<vec2> texcoords;
     std::vector<vec3> normals;
     std::vector<Color> colors;
 

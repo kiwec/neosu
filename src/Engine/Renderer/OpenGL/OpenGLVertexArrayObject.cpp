@@ -110,12 +110,12 @@ void OpenGLVertexArrayObject::init() {
     }
 
     // build and fill texcoord buffer
-    if(this->texcoords.size() > 0 && this->texcoords[0].size() > 0) {
-        this->iNumTexcoords = this->texcoords[0].size();
+    if(this->texcoords.size() > 0) {
+        this->iNumTexcoords = this->texcoords.size();
 
         glGenBuffers(1, &this->iTexcoordBuffer);
         OpenGLStateCache::bindArrayBuffer(this->iTexcoordBuffer);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(vec2) * this->texcoords[0].size(), &(this->texcoords[0][0]),
+        glBufferData(GL_ARRAY_BUFFER, sizeof(vec2) * this->texcoords.size(), &(this->texcoords[0]),
                      SDLGLInterface::usageToOpenGLMap[this->usage]);
 
         if(cv::r_opengl_legacy_vao_use_vertex_array.getBool()) {

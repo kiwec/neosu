@@ -87,7 +87,7 @@ void DirectX11VertexArrayObject::init() {
     this->convertedVertices.clear();
     {
         std::vector<vec3> finalVertices = this->vertices;
-        std::vector<std::vector<vec2>> finalTexcoords = this->texcoords;
+        std::vector<vec2> finalTexcoords = this->texcoords;
         std::vector<vec4> colors;
         std::vector<vec4> finalColors;
 
@@ -99,9 +99,7 @@ void DirectX11VertexArrayObject::init() {
         const size_t maxColorIndex = (finalColors.size() > 0 ? finalColors.size() - 1 : 0);
 
         if(this->primitive == Graphics::PRIMITIVE::PRIMITIVE_QUADS) {
-            for(auto& finalTexcoord : finalTexcoords) {
-                finalTexcoord.clear();
-            }
+            finalTexcoords.clear();
             finalColors.clear();
             this->convertedPrimitive = Graphics::PRIMITIVE::PRIMITIVE_TRIANGLES;
 
@@ -111,11 +109,9 @@ void DirectX11VertexArrayObject::init() {
                     finalVertices.push_back(this->vertices[i + 1]);
                     finalVertices.push_back(this->vertices[i + 2]);
 
-                    for(size_t t = 0; t < this->texcoords.size(); t++) {
-                        finalTexcoords[t].push_back(this->texcoords[t][i + 0]);
-                        finalTexcoords[t].push_back(this->texcoords[t][i + 1]);
-                        finalTexcoords[t].push_back(this->texcoords[t][i + 2]);
-                    }
+                    finalTexcoords.push_back(this->texcoords[i + 0]);
+                    finalTexcoords.push_back(this->texcoords[i + 1]);
+                    finalTexcoords.push_back(this->texcoords[i + 2]);
 
                     if(colors.size() > 0) {
                         finalColors.push_back(colors[std::clamp<int>(i + 0, 0, maxColorIndex)]);
@@ -127,11 +123,9 @@ void DirectX11VertexArrayObject::init() {
                     finalVertices.push_back(this->vertices[i + 2]);
                     finalVertices.push_back(this->vertices[i + 3]);
 
-                    for(size_t t = 0; t < this->texcoords.size(); t++) {
-                        finalTexcoords[t].push_back(this->texcoords[t][i + 0]);
-                        finalTexcoords[t].push_back(this->texcoords[t][i + 2]);
-                        finalTexcoords[t].push_back(this->texcoords[t][i + 3]);
-                    }
+                    finalTexcoords.push_back(this->texcoords[i + 0]);
+                    finalTexcoords.push_back(this->texcoords[i + 2]);
+                    finalTexcoords.push_back(this->texcoords[i + 3]);
 
                     if(colors.size() > 0) {
                         finalColors.push_back(colors[std::clamp<int>(i + 0, 0, maxColorIndex)]);
@@ -142,9 +136,7 @@ void DirectX11VertexArrayObject::init() {
             }
         } else if(this->primitive == Graphics::PRIMITIVE::PRIMITIVE_TRIANGLE_FAN) {
             finalVertices.clear();
-            for(auto& finalTexcoord : finalTexcoords) {
-                finalTexcoord.clear();
-            }
+            finalTexcoords.clear();
             finalColors.clear();
             this->convertedPrimitive = Graphics::PRIMITIVE::PRIMITIVE_TRIANGLES;
 
@@ -155,11 +147,9 @@ void DirectX11VertexArrayObject::init() {
                     finalVertices.push_back(this->vertices[i]);
                     finalVertices.push_back(this->vertices[i - 1]);
 
-                    for(size_t t = 0; t < this->texcoords.size(); t++) {
-                        finalTexcoords[t].push_back(this->texcoords[t][0]);
-                        finalTexcoords[t].push_back(this->texcoords[t][i]);
-                        finalTexcoords[t].push_back(this->texcoords[t][i - 1]);
-                    }
+                    finalTexcoords.push_back(this->texcoords[0]);
+                    finalTexcoords.push_back(this->texcoords[i]);
+                    finalTexcoords.push_back(this->texcoords[i - 1]);
 
                     if(colors.size() > 0) {
                         finalColors.push_back(colors[std::clamp<int>(0, 0, maxColorIndex)]);
@@ -178,8 +168,7 @@ void DirectX11VertexArrayObject::init() {
                 this->convertedVertices.size();  // NOTE: overwrite this->iNumVertices for potential conversions
 
             const bool hasColors = (finalColors.size() > 0);
-            const bool hasTexCoords0 =
-                (finalTexcoords.size() > 0 && finalTexcoords[0].size() == this->convertedVertices.size());
+            const bool hasTexCoords0 = (finalTexcoords.size() == this->convertedVertices.size());
 
             for(size_t i = 0; i < finalVertices.size(); i++) {
                 this->convertedVertices[i].pos.x = finalVertices[i].x;
@@ -196,7 +185,7 @@ void DirectX11VertexArrayObject::init() {
                 }
 
                 // TODO: multitexturing
-                if(hasTexCoords0) this->convertedVertices[i].tex = finalTexcoords[0][i];
+                if(hasTexCoords0) this->convertedVertices[i].tex = finalTexcoords[i];
             }
         }
     }

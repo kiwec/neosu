@@ -34,9 +34,6 @@ void VertexArrayObject::destroy() {
 
 void VertexArrayObject::clear() {
     this->vertices.clear();
-    for(auto& texcoord : this->texcoords) {
-        texcoord.clear();
-    }
     this->texcoords.clear();
     this->normals.clear();
     this->colors.clear();
@@ -62,15 +59,13 @@ void VertexArrayObject::addVertex(vec3 v) {
     this->iNumVertices = this->vertices.size();
 }
 
-void VertexArrayObject::addTexcoord(float u, float v, unsigned int textureUnit) {
-    this->updateTexcoordArraySize(textureUnit);
-    this->texcoords[textureUnit].emplace_back(u, v);
+void VertexArrayObject::addTexcoord(float u, float v) {
+    this->texcoords.emplace_back(u, v);
     this->bHasTexcoords = true;
 }
 
-void VertexArrayObject::addTexcoord(vec2 uv, unsigned int textureUnit) {
-    this->updateTexcoordArraySize(textureUnit);
-    this->texcoords[textureUnit].push_back(uv);
+void VertexArrayObject::addTexcoord(vec2 uv) {
+    this->texcoords.push_back(uv);
     this->bHasTexcoords = true;
 }
 
@@ -109,9 +104,8 @@ void VertexArrayObject::setVertex(int index, float x, float y, float z) {
     this->partialUpdateVertexIndices.push_back(index);
 }
 
-void VertexArrayObject::setTexcoords(const std::vector<vec2>& texcoords, unsigned int textureUnit) {
-    this->updateTexcoordArraySize(textureUnit);
-    this->texcoords[textureUnit] = texcoords;
+void VertexArrayObject::setTexcoords(const std::vector<vec2>& texcoords) {
+    this->texcoords = texcoords;
     this->bHasTexcoords = !texcoords.empty();
 }
 
@@ -136,16 +130,9 @@ void VertexArrayObject::setDrawPercent(float fromPercent, float toPercent, int n
     this->iDrawPercentNearestMultiple = nearestMultiple;
 }
 
-void VertexArrayObject::reserve(size_t vertexCount, unsigned int textureUnit) {
+void VertexArrayObject::reserve(size_t vertexCount) {
     this->vertices.reserve(vertexCount);
-    this->updateTexcoordArraySize(textureUnit);
-    this->texcoords[textureUnit].reserve(vertexCount);
-}
-
-void VertexArrayObject::updateTexcoordArraySize(unsigned int textureUnit) {
-    if(this->texcoords.size() <= textureUnit) {
-        this->texcoords.resize(textureUnit + 1);
-    }
+    this->texcoords.reserve(vertexCount);
 }
 
 int VertexArrayObject::nearestMultipleUp(int number, int multiple) {

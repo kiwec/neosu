@@ -35,7 +35,7 @@
 #define NO_FLIP false
 #endif
 
-#define D3D11_DEBUG
+// #define D3D11_DEBUG
 
 DirectX11Interface::DirectX11Interface(HWND hwnd) : Graphics(), hwnd(hwnd) {}
 
@@ -185,7 +185,7 @@ bool DirectX11Interface::createSwapchain() {
         engine->showMessageErrorFatal(
             "DirectX Error",
             fmt::format("Failed to create a swapchain: HR: {:#x} DXGI_HR: {:#x})\nThe engine will shut down now.",
-                         (u32)hr, (u32)MAKE_DXGI_HRESULT(hr)));
+                        (u32)hr, (u32)MAKE_DXGI_HRESULT(hr)));
         engine->shutdown();
         return false;
     }
@@ -746,7 +746,7 @@ void DirectX11Interface::drawVAO(VertexArrayObject *vao) {
 
     const std::vector<vec3> &vertices = vao->getVertices();
     /// const std::vector<vec3> &normals = vao->getNormals();
-    const std::vector<std::vector<vec2>> &texcoords = vao->getTexcoords();
+    const std::vector<vec2> &texcoords = vao->getTexcoords();
     const std::vector<Color> &vcolors = vao->getColors();
 
     if(vertices.size() < 2) return;
@@ -759,7 +759,7 @@ void DirectX11Interface::drawVAO(VertexArrayObject *vao) {
     // rewrite all triangle fans into triangles
     static std::vector<vec3> finalVertices;
     finalVertices = vertices;
-    static std::vector<std::vector<vec2>> finalTexcoords;
+    static std::vector<vec2> finalTexcoords;
     finalTexcoords = texcoords;
     static std::vector<vec4> colors;
     colors.clear();
@@ -776,9 +776,7 @@ void DirectX11Interface::drawVAO(VertexArrayObject *vao) {
     Graphics::PRIMITIVE primitive = vao->getPrimitive();
     if(primitive == Graphics::PRIMITIVE::PRIMITIVE_QUADS) {
         finalVertices.clear();
-        for(auto &finalTexcoord : finalTexcoords) {
-            finalTexcoord.clear();
-        }
+        finalTexcoords.clear();
         finalColors.clear();
         primitive = Graphics::PRIMITIVE::PRIMITIVE_TRIANGLES;
 
@@ -788,11 +786,9 @@ void DirectX11Interface::drawVAO(VertexArrayObject *vao) {
                 finalVertices.push_back(vertices[i + 1]);
                 finalVertices.push_back(vertices[i + 2]);
 
-                for(size_t t = 0; t < texcoords.size(); t++) {
-                    finalTexcoords[t].push_back(texcoords[t][i + 0]);
-                    finalTexcoords[t].push_back(texcoords[t][i + 1]);
-                    finalTexcoords[t].push_back(texcoords[t][i + 2]);
-                }
+                finalTexcoords.push_back(texcoords[i + 0]);
+                finalTexcoords.push_back(texcoords[i + 1]);
+                finalTexcoords.push_back(texcoords[i + 2]);
 
                 if(colors.size() > 0) {
                     finalColors.push_back(colors[std::clamp<size_t>(i + 0, 0, maxColorIndex)]);
@@ -804,11 +800,9 @@ void DirectX11Interface::drawVAO(VertexArrayObject *vao) {
                 finalVertices.push_back(vertices[i + 2]);
                 finalVertices.push_back(vertices[i + 3]);
 
-                for(size_t t = 0; t < texcoords.size(); t++) {
-                    finalTexcoords[t].push_back(texcoords[t][i + 0]);
-                    finalTexcoords[t].push_back(texcoords[t][i + 2]);
-                    finalTexcoords[t].push_back(texcoords[t][i + 3]);
-                }
+                finalTexcoords.push_back(texcoords[i + 0]);
+                finalTexcoords.push_back(texcoords[i + 2]);
+                finalTexcoords.push_back(texcoords[i + 3]);
 
                 if(colors.size() > 0) {
                     finalColors.push_back(colors[std::clamp<size_t>(i + 0, 0, maxColorIndex)]);
@@ -819,9 +813,7 @@ void DirectX11Interface::drawVAO(VertexArrayObject *vao) {
         }
     } else if(primitive == Graphics::PRIMITIVE::PRIMITIVE_TRIANGLE_FAN) {
         finalVertices.clear();
-        for(auto &finalTexcoord : finalTexcoords) {
-            finalTexcoord.clear();
-        }
+        finalTexcoords.clear();
         finalColors.clear();
         primitive = Graphics::PRIMITIVE::PRIMITIVE_TRIANGLES;
 
@@ -832,11 +824,9 @@ void DirectX11Interface::drawVAO(VertexArrayObject *vao) {
                 finalVertices.push_back(vertices[i]);
                 finalVertices.push_back(vertices[i - 1]);
 
-                for(size_t t = 0; t < texcoords.size(); t++) {
-                    finalTexcoords[t].push_back(texcoords[t][0]);
-                    finalTexcoords[t].push_back(texcoords[t][i]);
-                    finalTexcoords[t].push_back(texcoords[t][i - 1]);
-                }
+                finalTexcoords.push_back(texcoords[0]);
+                finalTexcoords.push_back(texcoords[i]);
+                finalTexcoords.push_back(texcoords[i - 1]);
 
                 if(colors.size() > 0) {
                     finalColors.push_back(colors[std::clamp<size_t>(0, 0, maxColorIndex)]);
@@ -848,13 +838,13 @@ void DirectX11Interface::drawVAO(VertexArrayObject *vao) {
     }
 
     // build directx vertices
-    const bool hasTexcoords0 = (finalTexcoords.size() > 0 && finalTexcoords[0].size() > 0);
+    const bool hasTexcoords0 = (finalTexcoords.size() > 0);
     this->vertices.resize(finalVertices.size());
     {
         const bool hasColors = (finalColors.size() > 0);
 
         const size_t maxColorIndex = (hasColors ? finalColors.size() - 1 : 0);
-        const size_t maxTexcoords0Index = (hasTexcoords0 ? finalTexcoords[0].size() - 1 : 0);
+        const size_t maxTexcoords0Index = (hasTexcoords0 ? finalTexcoords.size() - 1 : 0);
 
         const vec4 color = vec4(this->color.Rf(), this->color.Gf(), this->color.Bf(), this->color.Af());
 
@@ -867,7 +857,7 @@ void DirectX11Interface::drawVAO(VertexArrayObject *vao) {
                 this->vertices[i].col = color;
 
             // TODO: multitexturing
-            if(hasTexcoords0) this->vertices[i].tex = finalTexcoords[0][std::clamp<size_t>(i, 0, maxTexcoords0Index)];
+            if(hasTexcoords0) this->vertices[i].tex = finalTexcoords[std::clamp<size_t>(i, 0, maxTexcoords0Index)];
         }
     }
 

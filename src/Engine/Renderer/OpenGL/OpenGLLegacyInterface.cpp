@@ -458,16 +458,20 @@ void OpenGLLegacyInterface::drawVAO(VertexArrayObject *vao) {
     const auto &normals = vao->getNormals();
     const auto &colors = vao->getColors();
 
+    const bool hasTexcoords0 = vao->hasTexcoords() && !texcoords.empty();
+    const bool hasNormals = !normals.empty();
+    const bool hasColors = !colors.empty();
+
     size_t drawCount = vertices.size();
 
     // only texture unit 0 handled atm (all that's actually used anyways)
-    if(vao->hasTexcoords() && !texcoords.empty() && !texcoords[0].empty()) {
-        drawCount = std::min(drawCount, texcoords[0].size());
+    if(hasTexcoords0) {
+        drawCount = std::min(drawCount, texcoords.size());
     }
-    if(!normals.empty()) {
+    if(hasNormals) {
         drawCount = std::min(drawCount, normals.size());
     }
-    if(!colors.empty()) {
+    if(hasColors) {
         drawCount = std::min(drawCount, colors.size());
     }
 
@@ -486,16 +490,16 @@ void OpenGLLegacyInterface::drawVAO(VertexArrayObject *vao) {
     glVertexPointer(3, GL_FLOAT, 0, vertices.data());
 
     // handle texcoords (only unit 0)
-    if(vao->hasTexcoords() && !texcoords.empty() && !texcoords[0].empty()) {
+    if(hasTexcoords0) {
         OpenGLStateCache::enableClientState(GL_TEXTURE_COORD_ARRAY);
-        glTexCoordPointer(2, GL_FLOAT, 0, texcoords[0].data());
+        glTexCoordPointer(2, GL_FLOAT, 0, texcoords.data());
     } else {
         OpenGLStateCache::disableClientState(GL_TEXTURE_COORD_ARRAY);
     }
 
     // handle colors
     std::vector<Color> swapped_colors;
-    if(!colors.empty()) {
+    if(hasColors) {
         // check if any color needs conversion (only R and B are swapped)
         bool needsConversion = false;
         MC_UNROLL
@@ -523,7 +527,7 @@ void OpenGLLegacyInterface::drawVAO(VertexArrayObject *vao) {
     }
 
     // handle normals
-    if(!normals.empty()) {
+    if(hasNormals) {
         OpenGLStateCache::enableClientState(GL_NORMAL_ARRAY);
         glNormalPointer(GL_FLOAT, 0, normals.data());
     } else {

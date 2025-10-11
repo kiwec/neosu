@@ -94,10 +94,10 @@ VertexArrayObject *generateVAO(const std::vector<vec2> &points, float hitcircleD
 
         if(!debugSquareVao) {
             const std::vector<vec3> &meshVertices = s_UNIT_CIRCLE_VAO_TRIANGLES->getVertices();
-            const std::vector<std::vector<vec2>> &meshTexCoords = s_UNIT_CIRCLE_VAO_TRIANGLES->getTexcoords();
+            const std::vector<vec2> &meshTexCoords = s_UNIT_CIRCLE_VAO_TRIANGLES->getTexcoords();
             for(int v = 0; v < meshVertices.size(); v++) {
                 vao->addVertex(meshVertices[v] + vec3(point.x, point.y, 0) + translation);
-                vao->addTexcoord(meshTexCoords[0][v]);
+                vao->addTexcoord(meshTexCoords[v]);
             }
         } else {
             const vec3 topLeft = vec3(point.x, point.y, 0) - xOffset / 2.0f - yOffset / 2.0f + translation;
