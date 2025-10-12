@@ -33,7 +33,7 @@ void AnimationHandler::update() {
         const float diff = std::abs(*animation.fBase - animation.fTarget);
         const float absMax = std::max(std::abs(*animation.fBase), std::abs(animation.fTarget));
         const float threshold = std::max(ANIM_EPSILON, absMax * ANIM_EPSILON);
-        
+
         if(diff <= threshold) {
             *animation.fBase = animation.fTarget;
 

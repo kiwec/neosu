@@ -177,4 +177,5 @@ class CBaseUIScrollView : public CBaseUIElement {
     unsigned bHorizontalClipping : 1 = true;
     unsigned bVerticalClipping : 1 = true;
     unsigned bScrollbarOnLeft : 1 = false;
+    unsigned bClippingDirty : 1 = true;  // start true for initial update
 };

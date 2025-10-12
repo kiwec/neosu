@@ -304,15 +304,17 @@ void CBaseUIScrollView::mouse_update(bool *propagate_clicks) {
     }
 
     // position update during scrolling
-    bool clippingDirty = (anim->isAnimating(&this->vScrollPos.y) || anim->isAnimating(&this->vScrollPos.x));
-    if(clippingDirty) {
+    const bool animating = anim->isAnimating(&this->vScrollPos.y) || anim->isAnimating(&this->vScrollPos.x);
+    if(animating) {
+        this->bClippingDirty = true;
         // debugLog("hit first condition, frame: {}", engine->getFrameCount());
         this->container->setPos(this->vPos.x + std::round(this->vScrollPos.x),
                                 this->vPos.y + std::round(this->vScrollPos.y));
     }
 
     // update scrollbars
-    if((clippingDirty |= (this->bScrolling || this->bScrollbarScrolling))) {
+    if(animating || (this->bScrolling || this->bScrollbarScrolling)) {
+        this->bClippingDirty = true;
         // debugLog("hit second condition, frame: {}", engine->getFrameCount());
         this->updateScrollbars();
     }
@@ -322,13 +324,13 @@ void CBaseUIScrollView::mouse_update(bool *propagate_clicks) {
        (this->vPos + vec2(std::round(this->vScrollPos.x), std::round(this->vScrollPos.y)))) {
         this->container->setPos(this->vPos.x + std::round(this->vScrollPos.x),
                                 this->vPos.y + std::round(this->vScrollPos.y));
-        clippingDirty = true;
+        this->bClippingDirty = true;
         // debugLog("hit third condition, frame: {}", engine->getFrameCount());
         this->updateScrollbars();
     }
 
     // only draw visible elements
-    if(clippingDirty) this->updateClipping();
+    if(this->bClippingDirty) this->updateClipping();
 }
 
 void CBaseUIScrollView::onKeyUp(KeyboardEvent &e) { this->container->onKeyUp(e); }
@@ -480,6 +482,8 @@ void CBaseUIScrollView::scrollToElement(CBaseUIElement *element, int /*xOffset*/
 }
 
 void CBaseUIScrollView::updateClipping() {
+    this->bClippingDirty = false;
+
     const std::vector<CBaseUIElement *> &elements = this->container->getElements();
     const McRect &me{this->getRect()};
 
