@@ -351,7 +351,7 @@ FT_Face McFont::getFontFaceForGlyph(char16_t ch, int &fontIndex) {
     fontIndex = 0;
 
     // quick blacklist check
-    if(m_bTryFindFallbacks) {
+    if(m_bTryFindFallbacks && this->isAsyncReady()) {  // skip blacklisting during initial load
         Sync::shared_lock<Sync::shared_mutex> lock(s_sharedResourcesMutex);
         if(s_sharedFallbackFaceBlacklist.contains(ch)) {
             return nullptr;
@@ -385,7 +385,10 @@ FT_Face McFont::getFontFaceForGlyph(char16_t ch, int &fontIndex) {
     }
 
     // character not found in any font, add to blacklist
-    {
+    // NOTE: skip blacklisting during initial load
+    // this is to allow us to more lazily synchronize with other fonts that may be loading simultaneously
+    // i.e. only add to blacklist when we actually try to draw a string with this glyph
+    if(this->isAsyncReady()) {
         Sync::unique_lock<Sync::shared_mutex> lock(s_sharedResourcesMutex);
         s_sharedFallbackFaceBlacklist.insert(ch);
     }

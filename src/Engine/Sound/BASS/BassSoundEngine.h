@@ -39,7 +39,7 @@ class BassSoundEngine final : public SoundEngine {
     void onParamChanged(float oldValue, float newValue) override;
 
 #ifdef MCENGINE_PLATFORM_WINDOWS
-    static DWORD ASIO_clamp(BASS_ASIO_INFO info, DWORD buflen);
+    static DWORD ASIO_clamp(const BASS_ASIO_INFO &info, DWORD buflen);
 #endif
 
     SOUND_ENGINE_TYPE(BassSoundEngine, BASS, SoundEngine)

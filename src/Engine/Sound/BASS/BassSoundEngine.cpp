@@ -26,7 +26,7 @@
 #ifdef MCENGINE_PLATFORM_WINDOWS
 #include "CBaseUISlider.h"
 
-DWORD BassSoundEngine::ASIO_clamp(BASS_ASIO_INFO info, DWORD buflen) {
+DWORD BassSoundEngine::ASIO_clamp(const BASS_ASIO_INFO &info, DWORD buflen) {
     if(std::cmp_equal(buflen, -1)) return info.bufpref;
     if(buflen < info.bufmin) return info.bufmin;
     if(buflen > info.bufmax) return info.bufmax;

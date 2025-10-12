@@ -149,8 +149,10 @@ bool DirectX11Interface::createSwapchain() {
     UINT startingWidth = 0;  // 0x0 to create with window size
     UINT startingHeight = 0;
 
+    // dxvk-native throws an exception on wayland that we can't catch...
     // i shouldn't be wasting time working around external bugs, but this is one of them
-    if(env->isWayland()) {
+    BOOL startWindowed = env->isWayland() || !(env->isFullscreen() && !env->isFullscreenWindowedBorderless());
+    if(!startWindowed) {
         vec2 desktopRect = env->getNativeScreenSize();
         startingWidth = (UINT)desktopRect.x;
         startingHeight = (UINT)desktopRect.y;
@@ -167,15 +169,15 @@ bool DirectX11Interface::createSwapchain() {
         .Scaling = DXGI_SCALING_NONE,
         .SwapEffect = NO_FLIP ? DXGI_SWAP_EFFECT_DISCARD : DXGI_SWAP_EFFECT_FLIP_DISCARD,
         .AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED,
-        .Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING | (Env::cfg(OS::WINDOWS) ? DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH : 0),
+        .Flags =
+            DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING | (Env::cfg(OS::WINDOWS) ? DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH : 0),
     };
 
     DXGI_SWAP_CHAIN_FULLSCREEN_DESC fsDesc{
         .RefreshRate = {.Numerator = 0, .Denominator = 1},
         .ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_PROGRESSIVE,
         .Scaling = DXGI_MODE_SCALING_CENTERED,
-        // dxvk-native throws an exception on wayland that we can't catch...
-        .Windowed = !env->isWayland() && (env->isFullscreen() && !env->isFullscreenWindowedBorderless()),
+        .Windowed = startWindowed,
     };
 
     auto hr = this->dxgiFactory->CreateSwapChainForHwnd(this->device, this->hwnd, &swapchainCreateDesc, &fsDesc,
