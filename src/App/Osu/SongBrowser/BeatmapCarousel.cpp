@@ -17,7 +17,7 @@
 BeatmapCarousel::~BeatmapCarousel() {
     // elements are free'd manually/externally by SongBrowser, so invalidate the container to avoid double-free
     // TODO: factor this out from SongBrowser
-    this->getContainer()->invalidate();
+    this->invalidate();
 }
 
 void BeatmapCarousel::draw() { CBaseUIScrollView::draw(); }

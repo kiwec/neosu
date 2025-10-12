@@ -9,6 +9,7 @@ class CBaseUIScrollView : public CBaseUIElement {
     CBaseUIScrollView(float xPos = 0, float yPos = 0, float xSize = 0, float ySize = 0, const UString &name = "");
     ~CBaseUIScrollView() override;
 
+    void invalidate();
     void freeElements();
 
     void draw() override;

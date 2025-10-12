@@ -26,6 +26,11 @@ CBaseUIScrollView::~CBaseUIScrollView() {
     SAFE_DELETE(this->container);
 }
 
+void CBaseUIScrollView::invalidate() {
+    this->container->invalidate();
+    this->bClippingDirty = true;
+}
+
 void CBaseUIScrollView::freeElements() {
     this->container->freeElements();
 
@@ -329,7 +334,6 @@ void CBaseUIScrollView::mouse_update(bool *propagate_clicks) {
         this->updateScrollbars();
     }
 
-    // only draw visible elements
     if(this->bClippingDirty) this->updateClipping();
 }
 
@@ -432,6 +436,7 @@ void CBaseUIScrollView::scrollToY(int scrollPosY, bool animated) { this->scrollT
 
 void CBaseUIScrollView::scrollToYInt(int scrollPosY, bool animated, bool slow) {
     if(!this->bVerticalScrolling || this->bScrolling) return;
+    this->bClippingDirty = true;
 
     float upperBounds = 1;
     float lowerBounds = -this->vScrollSize.y + this->vSize.y;
@@ -453,6 +458,7 @@ void CBaseUIScrollView::scrollToYInt(int scrollPosY, bool animated, bool slow) {
 
 void CBaseUIScrollView::scrollToXInt(int scrollPosX, bool animated, bool slow) {
     if(!this->bHorizontalScrolling || this->bScrolling) return;
+    this->bClippingDirty = true;
 
     float upperBounds = 1;
     float lowerBounds = -this->vScrollSize.x + this->vSize.x;
@@ -482,7 +488,7 @@ void CBaseUIScrollView::scrollToElement(CBaseUIElement *element, int /*xOffset*/
 }
 
 void CBaseUIScrollView::updateClipping() {
-    this->bClippingDirty = false;
+    bool didSomethingActuallyChangeVisibility = false;
 
     const std::vector<CBaseUIElement *> &elements = this->container->getElements();
     const McRect &me{this->getRect()};
@@ -493,10 +499,16 @@ void CBaseUIScrollView::updateClipping() {
         if(me.intersects(eRect)) {
             if(!eVisible) {
                 e->setVisible(true);
+                didSomethingActuallyChangeVisibility = true;
             }
         } else if(eVisible) {
             e->setVisible(false);
+            didSomethingActuallyChangeVisibility = true;
         }
+    }
+
+    if(!didSomethingActuallyChangeVisibility) {
+        this->bClippingDirty = false;
     }
 }
 
@@ -584,6 +596,7 @@ CBaseUIScrollView *CBaseUIScrollView::setScrollSizeToContent(int border) {
     }
 
     this->bFirstScrollSizeToContent = false;
+    this->bClippingDirty = true;
     return this;
 }
 
@@ -616,7 +629,10 @@ void CBaseUIScrollView::onFocusStolen() {
     this->container->stealFocus();
 }
 
-void CBaseUIScrollView::onEnabled() { this->container->setEnabled(true); }
+void CBaseUIScrollView::onEnabled() {
+    this->bClippingDirty = true;
+    this->container->setEnabled(true);
+}
 
 void CBaseUIScrollView::onDisabled() {
     this->bActive = false;
@@ -628,6 +644,8 @@ void CBaseUIScrollView::onDisabled() {
 }
 
 void CBaseUIScrollView::onResized() {
+    this->bClippingDirty = true;
+
     this->container->setSize(this->vScrollSize);
 
     // TODO: duplicate code
@@ -639,6 +657,8 @@ void CBaseUIScrollView::onResized() {
 }
 
 void CBaseUIScrollView::onMoved() {
+    this->bClippingDirty = true;
+
     this->container->setPos(this->vPos + this->vScrollPos);
 
     this->vMouseBackup2 = mouse->getPos();  // to avoid spastic movement after we are moved

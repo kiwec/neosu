@@ -205,7 +205,7 @@ RoomScreen::RoomScreen() : OsuScreen() {
 }
 
 RoomScreen::~RoomScreen() {
-    this->settings->getContainer()->invalidate();
+    this->settings->invalidate();
     SAFE_DELETE(this->room_name);
     SAFE_DELETE(this->change_password_btn);
     SAFE_DELETE(this->host);
@@ -354,7 +354,7 @@ void RoomScreen::updateSettingsLayout(vec2 newResolution) {
     const bool is_host = BanchoState::room.is_host();
     int settings_y = 10;
 
-    this->settings->getContainer()->invalidate();
+    this->settings->invalidate();
     this->settings->setPos(round(newResolution.x * 0.6), 0);
     this->settings->setSize(round(newResolution.x * 0.4), newResolution.y);
 

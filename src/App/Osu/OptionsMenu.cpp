@@ -1359,7 +1359,7 @@ OptionsMenu::OptionsMenu() : ScreenBackable() {
 }
 
 OptionsMenu::~OptionsMenu() {
-    this->options->getContainer()->invalidate();
+    this->options->invalidate();
 
     SAFE_DELETE(this->spacer);
     SAFE_DELETE(this->contextMenu);
@@ -1894,7 +1894,7 @@ void OptionsMenu::updateLayout() {
     this->categories->setSize(categoriesWidth, osu->getVirtScreenHeight() + 1);
 
     // reset
-    this->options->getContainer()->invalidate();
+    this->options->invalidate();
 
     // build layout
     bool enableHorizontalScrolling = false;
