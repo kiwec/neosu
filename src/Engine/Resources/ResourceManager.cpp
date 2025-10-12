@@ -24,7 +24,7 @@ ResourceManager::ResourceManager() {
     Environment::createDirectory(MCENGINE_SHADERS_PATH);
     Environment::createDirectory(MCENGINE_SOUNDS_PATH);
 
-    this->bNextLoadAsync = false;
+    this->bNextLoadAsync.store(false, std::memory_order_release);
 
     // reserve space for typed vectors
     this->vImages.reserve(256);
@@ -125,10 +125,16 @@ void ResourceManager::loadResource(Resource *res, bool load) {
     }
 
     // handle flags
-    const bool isManaged = (this->nextLoadUnmanagedStack.size() < 1 || !this->nextLoadUnmanagedStack.top());
+    // NOLINTNEXTLINE(cppcoreguidelines-init-variables)
+    bool isManaged;
+    {
+        Sync::shared_lock<Sync::shared_mutex> lock(this->managedLoadMutex);
+        isManaged = (this->nextLoadUnmanagedStack.size() < 1 || !this->nextLoadUnmanagedStack.top());
+    }
+
     if(isManaged) addManagedResource(res);
 
-    const bool isNextLoadAsync = this->bNextLoadAsync;
+    const bool isNextLoadAsync = this->bNextLoadAsync.load(std::memory_order_acquire);
 
     // flags must be reset on every load, to not carry over
     resetFlags();
@@ -158,14 +164,20 @@ size_t ResourceManager::getNumLoadingWorkAsyncDestroy() const {
 }
 
 void ResourceManager::resetFlags() {
-    if(this->nextLoadUnmanagedStack.size() > 0) this->nextLoadUnmanagedStack.pop();
+    {
+        Sync::unique_lock<Sync::shared_mutex> lock(this->managedLoadMutex);
+        if(this->nextLoadUnmanagedStack.size() > 0) this->nextLoadUnmanagedStack.pop();
+    }
 
-    this->bNextLoadAsync = false;
+    this->bNextLoadAsync.store(false, std::memory_order_release);
 }
 
-void ResourceManager::requestNextLoadAsync() { this->bNextLoadAsync = true; }
+void ResourceManager::requestNextLoadAsync() { this->bNextLoadAsync.store(true, std::memory_order_release); }
 
-void ResourceManager::requestNextLoadUnmanaged() { this->nextLoadUnmanagedStack.push(true); }
+void ResourceManager::requestNextLoadUnmanaged() {
+    Sync::unique_lock<Sync::shared_mutex> lock(this->managedLoadMutex);
+    this->nextLoadUnmanagedStack.push(true);
+}
 
 size_t ResourceManager::getSyncLoadMaxBatchSize() const { return this->asyncLoader->getMaxPerUpdate(); }
 

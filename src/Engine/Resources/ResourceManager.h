@@ -18,6 +18,8 @@
 #include "VertexArrayObject.h"
 #include "templates.h"
 
+#include "SyncMutex.h"
+
 #include <stack>
 #include <string_view>
 
@@ -170,10 +172,6 @@ class ResourceManager final {
     // async loading system
     std::unique_ptr<AsyncResourceLoader> asyncLoader;
 
-    // flags
-    bool bNextLoadAsync;
-    std::stack<bool> nextLoadUnmanagedStack;
-
     // content
     std::vector<Resource *> vResources;
 
@@ -188,6 +186,11 @@ class ResourceManager final {
 
     // lookup map
     sv_unordered_map<Resource *> mNameToResourceMap;
+
+    // flags
+    Sync::shared_mutex managedLoadMutex;
+    std::stack<bool> nextLoadUnmanagedStack;
+    std::atomic<bool> bNextLoadAsync;
 };
 
 // define/managed in Engine.cpp, declared here for convenience

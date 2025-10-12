@@ -7,15 +7,10 @@
 
 #include "Font.h"
 
-#include <freetype/freetype.h>
-#include <freetype/ftbitmap.h>
-#include <freetype/ftglyph.h>
-#include <freetype/ftoutln.h>
-#include <freetype/fttrigon.h>
-#include <ft2build.h>
-
 #include <algorithm>
 #include <utility>
+#include <cassert>
+#include <unordered_set>
 
 #include "ConVar.h"
 #include "Engine.h"
@@ -26,6 +21,13 @@
 #include "Logging.h"
 #include "Environment.h"
 
+#include <freetype/freetype.h>
+#include <freetype/ftbitmap.h>
+#include <freetype/ftglyph.h>
+#include <freetype/ftoutln.h>
+#include <freetype/fttrigon.h>
+#include <ft2build.h>
+
 // TODO: use fontconfig on linux?
 #ifdef _WIN32
 #include "WinDebloatDefs.h"
@@ -33,20 +35,32 @@
 #include <windows.h>
 #endif
 
+namespace {  // static namespace
+struct FallbackFont {
+    UString fontPath;
+    FT_Face face;
+    bool isSystemFont;
+};
+
+// global shared freetype resources
+FT_Library s_sharedFtLibrary = nullptr;
+std::vector<FallbackFont> s_sharedFallbackFonts;
+std::unordered_set<char16_t> s_sharedFallbackFaceBlacklist;
+
+bool s_sharedFtLibraryInitialized = false;
+bool s_sharedFallbacksInitialized = false;
+
+Sync::shared_mutex s_sharedResourcesMutex;
+
 // constants for atlas generation and rendering
-static constexpr const float ATLAS_OCCUPANCY_TARGET{0.75f};  // target atlas occupancy before resize
-static constexpr const size_t MIN_ATLAS_SIZE{256};
-static constexpr const size_t MAX_ATLAS_SIZE{4096};
-static constexpr const char16_t UNKNOWN_CHAR{u'?'};  // ASCII '?'
+constexpr const float ATLAS_OCCUPANCY_TARGET{0.75f};  // target atlas occupancy before resize
+constexpr const size_t MIN_ATLAS_SIZE{256};
+constexpr const size_t MAX_ATLAS_SIZE{4096};
+constexpr const char16_t UNKNOWN_CHAR{u'?'};  // ASCII '?'
 
-static constexpr const size_t VERTS_PER_VAO{Env::cfg(REND::GLES32 | REND::DX11) ? 6 : 4};
+constexpr const size_t VERTS_PER_VAO{Env::cfg(REND::GLES32 | REND::DX11) ? 6 : 4};
 
-// static member definitions
-FT_Library McFont::s_sharedFtLibrary = nullptr;
-bool McFont::s_sharedFtLibraryInitialized = false;
-std::vector<McFont::FallbackFont> McFont::s_sharedFallbackFonts;
-bool McFont::s_sharedFallbacksInitialized = false;
-std::unordered_set<char16_t> McFont::s_sharedFallbackFaceBlacklist;
+}  // namespace
 
 McFont::McFont(std::string filepath, int fontSize, bool antialiasing, int fontDPI)
     : Resource(std::move(filepath)),
@@ -115,12 +129,22 @@ void McFont::constructor(const std::vector<char16_t> &characters, int fontSize, 
 McFont::~McFont() { destroy(); }
 
 void McFont::init() {
+    if(!this->bAsyncReady) return;  // failed
+
+    // finalize atlas texture
+    resourceManager->loadResource(m_textureAtlas.get());
+    m_textureAtlas->getAtlasImage()->setFilterMode(m_bAntialiasing ? Graphics::FILTER_MODE::FILTER_MODE_LINEAR
+                                                                   : Graphics::FILTER_MODE::FILTER_MODE_NONE);
+
+    this->bReady = true;
+}
+
+void McFont::initAsync() {
     debugLog("Loading font: {:s}", this->sFilePath);
+    assert(s_sharedFtLibraryInitialized);
+    assert(s_sharedFallbacksInitialized);
 
     if(!initializeFreeType()) return;
-
-    // setup the static fallbacks once
-    initializeSharedFallbackFonts();
 
     // load metrics for all initial glyphs
     for(char16_t ch : m_vGlyphs) {
@@ -137,10 +161,8 @@ void McFont::init() {
         m_fHeight = std::max(m_fHeight, static_cast<float>(curHeight));
     }
 
-    this->bReady = true;
+    this->bAsyncReady = true;
 }
-
-void McFont::initAsync() { this->bAsyncReady = true; }
 
 void McFont::destroy() {
     // only clean up per-instance resources (primary font face and atlas)
@@ -328,9 +350,12 @@ bool McFont::loadGlyphDynamic(char16_t ch) {
 FT_Face McFont::getFontFaceForGlyph(char16_t ch, int &fontIndex) {
     fontIndex = 0;
 
-    // first check the quick lookup blacklist set
-    if(m_bTryFindFallbacks && s_sharedFallbackFaceBlacklist.contains(ch)) {
-        return nullptr;
+    // quick blacklist check
+    if(m_bTryFindFallbacks) {
+        Sync::shared_lock<Sync::shared_mutex> lock(s_sharedResourcesMutex);
+        if(s_sharedFallbackFaceBlacklist.contains(ch)) {
+            return nullptr;
+        }
     }
 
     // then check primary font
@@ -338,22 +363,34 @@ FT_Face McFont::getFontFaceForGlyph(char16_t ch, int &fontIndex) {
     if(glyphIndex != 0) return m_ftFace;
     if(!m_bTryFindFallbacks) return nullptr;
 
-    // search through shared fallback fonts if initialized
-    if(s_sharedFallbacksInitialized) {
+    // search through shared fallback fonts
+    FT_Face foundFace = nullptr;
+    {
+        Sync::shared_lock<Sync::shared_mutex> lock(s_sharedResourcesMutex);
         for(size_t i = 0; i < s_sharedFallbackFonts.size(); ++i) {
             glyphIndex = FT_Get_Char_Index(s_sharedFallbackFonts[i].face, ch);
             if(glyphIndex != 0) {
-                fontIndex = static_cast<int>(i + 1);  // offset by 1 since 0 is primary font
-                // set the appropriate size for this font instance
-                setFaceSize(s_sharedFallbackFonts[i].face);
-                return s_sharedFallbackFonts[i].face;
+                fontIndex = static_cast<int>(i + 1);
+                foundFace = s_sharedFallbackFonts[i].face;
+                break;
             }
         }
     }
 
-    // add it to the blacklist
-    s_sharedFallbackFaceBlacklist.insert(ch);
-    return nullptr;  // character not found in any font
+    if(foundFace) {
+        // note: setFaceSize() and subsequent FT operations on shared faces
+        // may need additional synchronization depending on usage patterns
+        setFaceSize(foundFace);
+        return foundFace;
+    }
+
+    // character not found in any font, add to blacklist
+    {
+        Sync::unique_lock<Sync::shared_mutex> lock(s_sharedResourcesMutex);
+        s_sharedFallbackFaceBlacklist.insert(ch);
+    }
+
+    return nullptr;
 }
 
 bool McFont::loadGlyphFromFace(char16_t ch, FT_Face face, int fontIndex) {
@@ -398,13 +435,15 @@ void McFont::setFaceSize(FT_Face face) const {
 }
 
 bool McFont::initializeFreeType() {
-    // initialize shared freetype library
-    if(!initializeSharedFreeType()) return false;
+    assert(s_sharedFtLibraryInitialized);
 
     // load this font's primary face
-    if(FT_New_Face(s_sharedFtLibrary, this->sFilePath.c_str(), 0, &m_ftFace)) {
-        engine->showMessageError("Font Error", "Couldn't load font file!");
-        return false;
+    {
+        Sync::unique_lock<Sync::shared_mutex> lock(s_sharedResourcesMutex);
+        if(FT_New_Face(s_sharedFtLibrary, this->sFilePath.c_str(), 0, &m_ftFace)) {
+            engine->showMessageError("Font Error", "Couldn't load font file!");
+            return false;
+        }
     }
 
     if(FT_Select_Charmap(m_ftFace, ft_encoding_unicode)) {
@@ -599,10 +638,6 @@ bool McFont::createAndPackAtlas(const std::vector<char16_t> &glyphs) {
     // initialize dynamic region after static glyphs are placed
     initializeDynamicRegion(static_cast<int>(finalAtlasSize));
 
-    // finalize atlas texture
-    resourceManager->loadResource(m_textureAtlas.get());
-    m_textureAtlas->getAtlasImage()->setFilterMode(m_bAntialiasing ? Graphics::FILTER_MODE::FILTER_MODE_LINEAR
-                                                                   : Graphics::FILTER_MODE::FILTER_MODE_NONE);
     return true;
 }
 
@@ -885,40 +920,6 @@ const McFont::GLYPH_METRICS &McFont::getGlyphMetrics(char16_t ch) const {
 ##########################################################################
 */
 
-bool McFont::initializeSharedFreeType() {
-    if(s_sharedFtLibraryInitialized) return true;
-
-    if(FT_Init_FreeType(&s_sharedFtLibrary)) {
-        engine->showMessageError("Font Error", "FT_Init_FreeType() failed!");
-        return false;
-    }
-
-    s_sharedFtLibraryInitialized = true;
-    return true;
-}
-
-bool McFont::initializeSharedFallbackFonts() {
-    if(s_sharedFallbacksInitialized) return true;
-
-    // make sure shared freetype library is initialized first
-    if(!initializeSharedFreeType()) return false;
-
-    // check all bundled fonts first
-    std::vector<std::string> bundledFallbacks = env->getFilesInFolder(MCENGINE_FONTS_PATH);
-
-    for(const auto &fontName : bundledFallbacks) {
-        if(loadFallbackFont(UString{fontName}, false)) {
-            if(cv::r_debug_font_unicode.getBool()) debugLog("Font Info: Loaded bundled fallback font: {:s}", fontName);
-        }
-    }
-
-    // then find likely system fonts
-    if(!Env::cfg(OS::WASM) && cv::font_load_system.getBool()) discoverSystemFallbacks();
-
-    s_sharedFallbacksInitialized = true;
-    return true;
-}
-
 void McFont::discoverSystemFallbacks() {
 #ifdef MCENGINE_PLATFORM_WINDOWS
     std::string windir;
@@ -972,6 +973,32 @@ bool McFont::loadFallbackFont(const UString &fontPath, bool isSystemFont) {
     // don't set font size here, will be set when the face is used by individual font instances
     s_sharedFallbackFonts.push_back(FallbackFont{fontPath, face, isSystemFont});
     return true;
+}
+
+bool McFont::initSharedResources() {
+    if(!s_sharedFtLibraryInitialized) {
+        if(FT_Init_FreeType(&s_sharedFtLibrary)) {
+            engine->showMessageError("Font Error", "FT_Init_FreeType() failed!");
+            return false;
+        }
+    }
+
+    s_sharedFtLibraryInitialized = true;
+
+    // check all bundled fonts first
+    std::vector<std::string> bundledFallbacks = env->getFilesInFolder(MCENGINE_FONTS_PATH);
+    for(const auto &fontName : bundledFallbacks) {
+        if(loadFallbackFont(UString{fontName}, false)) {
+            if(cv::r_debug_font_unicode.getBool()) debugLog("Font Info: Loaded bundled fallback font: {:s}", fontName);
+        }
+    }
+
+    // then find likely system fonts
+    if(!Env::cfg(OS::WASM) && cv::font_load_system.getBool()) discoverSystemFallbacks();
+
+    s_sharedFallbacksInitialized = true;
+
+    return s_sharedFtLibraryInitialized && s_sharedFallbacksInitialized;
 }
 
 void McFont::cleanupSharedResources() {

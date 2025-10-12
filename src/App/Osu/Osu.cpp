@@ -60,6 +60,7 @@
 #include "SongBrowser/SongBrowser.h"
 #include "SoundEngine.h"
 #include "SpectatorScreen.h"
+#include "Timing.h"
 #include "TooltipOverlay.h"
 #include "UIContextMenu.h"
 #include "UIModSelectorModButton.h"
@@ -195,7 +196,9 @@ Osu::Osu() {
     // Initialize skin after sound engine has started, or else sounds won't load properly
     cv::skin.setCallback(SA::MakeDelegate<&Osu::onSkinChange>(this));
     cv::skin_reload.setCallback(SA::MakeDelegate<&Osu::onSkinReload>(this));
-    this->onSkinChange(cv::skin.getString().c_str());
+    // load skin
+    if(!this->skin)  // sanity (the skin may already be loaded by Console::execConfigFile() above, should be impossible?)
+        this->onSkinChange(cv::skin.getString());
 
     // Convar callbacks that should be set after loading the config
     cv::mod_mafham.setCallback(SA::MakeDelegate<&Osu::onModMafhamChange>(this));
@@ -214,13 +217,19 @@ Osu::Osu() {
     const int baseDPI = 96;
     const int newDPI = Osu::getUIScale() * baseDPI;
 
+    resourceManager->requestNextLoadAsync();
     McFont *defaultFont = resourceManager->loadFont("weblysleekuisb.ttf", "FONT_DEFAULT", 15, true, newDPI);
+    resourceManager->requestNextLoadAsync();
     this->titleFont = resourceManager->loadFont("SourceSansPro-Semibold.otf", "FONT_OSU_TITLE", 60, true, newDPI);
+    resourceManager->requestNextLoadAsync();
     this->subTitleFont = resourceManager->loadFont("SourceSansPro-Semibold.otf", "FONT_OSU_SUBTITLE", 21, true, newDPI);
+    resourceManager->requestNextLoadAsync();
     this->songBrowserFont =
         resourceManager->loadFont("SourceSansPro-Regular.otf", "FONT_OSU_SONGBROWSER", 35, true, newDPI);
+    resourceManager->requestNextLoadAsync();
     this->songBrowserFontBold =
         resourceManager->loadFont("SourceSansPro-Bold.otf", "FONT_OSU_SONGBROWSER_BOLD", 30, true, newDPI);
+    resourceManager->requestNextLoadAsync();
     this->fontIcons =
         resourceManager->loadFont("fontawesome-webfont.ttf", "FONT_OSU_ICONS", Icons::icons, 26, true, newDPI);
     this->fonts.push_back(defaultFont);
@@ -229,6 +238,22 @@ Osu::Osu() {
     this->fonts.push_back(this->songBrowserFont);
     this->fonts.push_back(this->songBrowserFontBold);
     this->fonts.push_back(this->fontIcons);
+
+    // wait for fonts to load first
+    {
+        bool haveNotReadyFont = false;
+        do {
+            haveNotReadyFont = false;
+            resourceManager->update();
+            for(const auto *font : this->fonts) {
+                if(!font->isReady()) {
+                    haveNotReadyFont = true;
+                    Timing::sleepMS(10);
+                    break;
+                }
+            }
+        } while(haveNotReadyFont);
+    }
 
     float averageIconHeight = 0.0f;
     for(char16_t icon : Icons::icons) {
@@ -242,20 +267,6 @@ Osu::Osu() {
     if(defaultFont->getDPI() != newDPI) {
         this->bFontReloadScheduled = true;
         this->bFireResolutionChangedScheduled = true;
-    }
-
-    // load skin
-    {
-        std::string skinFolder{cv::osu_folder.getString()};
-        skinFolder.append("/");
-        skinFolder.append(cv::osu_folder_sub_skins.getString());
-        skinFolder.append(cv::skin.getString());
-        skinFolder.append("/");
-        if(!this->skin.get())  // the skin may already be loaded by Console::execConfigFile() above
-            this->onSkinChange(cv::skin.getString().c_str());
-
-        // enable async skin loading for user-action skin changes (but not during startup)
-        cv::skin_async.setValue(1.0f);
     }
 
     // load subsystems, add them to the screens array
@@ -364,6 +375,10 @@ void Osu::draw() {
     {
         g->setColor(0xff000000);
         g->fillRect(0, 0, this->getVirtScreenWidth(), this->getVirtScreenHeight());
+        if(this->mainMenu && this->backgroundImageHandler && this->map_iface->getBeatmap()) {
+            // try at least drawing background image during early loading
+            this->mainMenu->draw();
+        }
         return;
     }
 
@@ -1243,11 +1258,20 @@ void Osu::toggleSongBrowser() {
 
     if(this->mainMenu->isVisible() && this->optionsMenu->isVisible()) this->optionsMenu->setVisible(false);
 
-    this->songBrowser->setVisible(!this->songBrowser->isVisible());
+    const bool nextVisible = !this->songBrowser->isVisible();
+
+    // disable mainmenu visibility BEFORE songbrowser and potentially loading beatmaps
+    // otherwise during the next update/draw tick we might try to draw images in MainMenu::draw() from stale/deleted beatmaps
+    // since clearPreloadedMaps only runs after it's finished (1 frame later)
+    // TODO: don't store potentially rugpull-able pointers to beatmaps in MainMenu
+    if(!BanchoState::is_in_a_multi_room()) {
+        this->mainMenu->setVisible(!nextVisible);
+    }
+
+    this->songBrowser->setVisible(nextVisible);
 
     // try refreshing if we have no beatmaps and are not already refreshing
-    if(this->songBrowser->isVisible() && this->songBrowser->beatmapsets.size() == 0 &&
-       !this->songBrowser->bBeatmapRefreshScheduled) {
+    if(nextVisible && this->songBrowser->beatmapsets.size() == 0 && !this->songBrowser->bBeatmapRefreshScheduled) {
         this->songBrowser->refreshBeatmaps();
     }
 
@@ -1267,8 +1291,6 @@ void Osu::toggleSongBrowser() {
 
             this->room->on_map_change();
         }
-    } else {
-        this->mainMenu->setVisible(!this->songBrowser->isVisible());
     }
 
     this->updateConfineCursor();
@@ -1702,35 +1724,33 @@ bool Osu::onShutdown() {
 
 void Osu::onSkinReload() {
     this->bSkinLoadWasReload = true;
-    this->onSkinChange(cv::skin.getString().c_str());
+    this->onSkinChange(cv::skin.getString());
 }
 
-void Osu::onSkinChange(std::string_view newValue) {
+void Osu::onSkinChange(std::string_view newSkinName) {
     if(this->skin) {
         if(this->bSkinLoadScheduled || this->skinScheduledToLoad != nullptr) return;
-        if(newValue.length() < 1) return;
+        if(newSkinName.length() < 1) return;
     }
 
-    std::string newString{newValue};
-
-    if(newString == "default") {
-        this->skinScheduledToLoad = new Skin(newString.c_str(), MCENGINE_IMAGES_PATH "/default/", true);
+    if(newSkinName == "default") {
+        this->skinScheduledToLoad = new Skin(newSkinName, MCENGINE_IMAGES_PATH "/default/", true);
         if(!this->skin) this->skin.reset(this->skinScheduledToLoad);
         this->bSkinLoadScheduled = true;
         return;
     }
 
-    std::string neosuSkinFolder = fmt::format(NEOSU_SKINS_PATH "/{}/", newString);
+    std::string neosuSkinFolder = fmt::format(NEOSU_SKINS_PATH "/{}/", newSkinName);
     if(env->directoryExists(neosuSkinFolder)) {
-        this->skinScheduledToLoad = new Skin(newString.c_str(), neosuSkinFolder, false);
+        this->skinScheduledToLoad = new Skin(newSkinName, neosuSkinFolder, false);
     } else {
         std::string ppySkinFolder{cv::osu_folder.getString()};
         ppySkinFolder.append("/");
         ppySkinFolder.append(cv::osu_folder_sub_skins.getString());
-        ppySkinFolder.append(newString);
+        ppySkinFolder.append(newSkinName);
         ppySkinFolder.append("/");
         std::string sf = ppySkinFolder;
-        this->skinScheduledToLoad = new Skin(newString.c_str(), sf, false);
+        this->skinScheduledToLoad = new Skin(newSkinName, sf, false);
     }
 
     // initial load

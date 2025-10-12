@@ -109,9 +109,11 @@ void DirectX11VertexArrayObject::init() {
                     finalVertices.push_back(this->vertices[i + 1]);
                     finalVertices.push_back(this->vertices[i + 2]);
 
-                    finalTexcoords.push_back(this->texcoords[i + 0]);
-                    finalTexcoords.push_back(this->texcoords[i + 1]);
-                    finalTexcoords.push_back(this->texcoords[i + 2]);
+                    if(!this->texcoords.empty()) {
+                        finalTexcoords.push_back(this->texcoords[i + 0]);
+                        finalTexcoords.push_back(this->texcoords[i + 1]);
+                        finalTexcoords.push_back(this->texcoords[i + 2]);
+                    }
 
                     if(colors.size() > 0) {
                         finalColors.push_back(colors[std::clamp<int>(i + 0, 0, maxColorIndex)]);
@@ -119,9 +121,11 @@ void DirectX11VertexArrayObject::init() {
                         finalColors.push_back(colors[std::clamp<int>(i + 2, 0, maxColorIndex)]);
                     }
 
-                    finalVertices.push_back(this->vertices[i + 0]);
-                    finalVertices.push_back(this->vertices[i + 2]);
-                    finalVertices.push_back(this->vertices[i + 3]);
+                    if(!this->texcoords.empty()) {
+                        finalVertices.push_back(this->vertices[i + 0]);
+                        finalVertices.push_back(this->vertices[i + 2]);
+                        finalVertices.push_back(this->vertices[i + 3]);
+                    }
 
                     finalTexcoords.push_back(this->texcoords[i + 0]);
                     finalTexcoords.push_back(this->texcoords[i + 2]);
@@ -147,9 +151,11 @@ void DirectX11VertexArrayObject::init() {
                     finalVertices.push_back(this->vertices[i]);
                     finalVertices.push_back(this->vertices[i - 1]);
 
-                    finalTexcoords.push_back(this->texcoords[0]);
-                    finalTexcoords.push_back(this->texcoords[i]);
-                    finalTexcoords.push_back(this->texcoords[i - 1]);
+                    if(!this->texcoords.empty()) {
+                        finalTexcoords.push_back(this->texcoords[0]);
+                        finalTexcoords.push_back(this->texcoords[i]);
+                        finalTexcoords.push_back(this->texcoords[i - 1]);
+                    }
 
                     if(colors.size() > 0) {
                         finalColors.push_back(colors[std::clamp<int>(0, 0, maxColorIndex)]);

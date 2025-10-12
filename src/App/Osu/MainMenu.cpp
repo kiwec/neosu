@@ -843,14 +843,18 @@ void MainMenu::draw() {
         // background_shader->setUniform2f("resolution", osu->getVirtScreenWidth(), osu->getVirtScreenHeight());
 
         // Check if we need to update the background
-        if(this->mapFadeAnim == 1.f && this->currentMap != osu->getMapInterface()->getBeatmap()) {
-            this->lastMap = this->currentMap;
-            this->currentMap = osu->getMapInterface()->getBeatmap();
+        auto *currentOsuMap = osu->getMapInterface() ? osu->getMapInterface()->getBeatmap() : nullptr;
+        if(this->mapFadeAnim == 1.f && this->currentMap != currentOsuMap) {
+            this->lastMap = this->currentMap ? this->currentMap : currentOsuMap;  // don't fade from NULL?
+            this->currentMap = currentOsuMap;
             this->mapFadeAnim = 0.f;
             anim->moveLinear(&this->mapFadeAnim, 1.f, cv::main_menu_background_fade_duration.getFloat(), true);
         }
 
-        this->drawMapBackground(this->lastMap, 1.f - this->mapFadeAnim);
+        // TODO: don't store references to these in MainMenu
+        if(this->lastMap != this->currentMap) {
+            this->drawMapBackground(this->lastMap, 1.f - this->mapFadeAnim);
+        }
         this->drawMapBackground(this->currentMap, this->mapFadeAnim);
 
         // background_shader->disable();

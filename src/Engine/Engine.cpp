@@ -76,6 +76,10 @@ Engine::Engine() {
         io = std::make_unique<AsyncIOHandler>();
         this->runtime_assert(!!io && io->succeeded(), "I/O subsystem failed to initialize!");
 
+        // shared freetype init
+        McFont::initSharedResources();
+        this->runtime_assert(McFont::initSharedResources(), "FreeType failed to initialize!");
+
         // input devices
         mouse = std::make_unique<Mouse>();
         this->runtime_assert(!!mouse, "Mouse failed to initialize!");
@@ -183,9 +187,10 @@ void Engine::loadApp() {
     if(this->bShuttingDown) return;
     // load core default resources
     debugLog("Engine: Loading default resources ...");
-    resourceManager->loadFont("weblysleekuisb.ttf", "FONT_DEFAULT", 15, true, env->getDPI());
-    resourceManager->loadFont("tahoma.ttf", "FONT_CONSOLE", 8, false, 96);
-    debugLog("Engine: Loading default resources done.");
+    resourceManager->requestNextLoadAsync();
+    const auto *defaultFont = resourceManager->loadFont("weblysleekuisb.ttf", "FONT_DEFAULT", 15, true, env->getDPI());
+    resourceManager->requestNextLoadAsync();
+    const auto *consoleFont = resourceManager->loadFont("tahoma.ttf", "FONT_CONSOLE", 8, false, 96);
 
     // load other default resources and things which are not strictly necessary
     {
@@ -200,6 +205,14 @@ void Engine::loadApp() {
             }
         }
         MISSING_TEXTURE->load();
+
+        // wait for these to finish first...
+        do {
+            resourceManager->update();
+            if(!defaultFont->isReady() && !consoleFont->isReady()) {
+                Timing::sleepMS(1);
+            }
+        } while(!defaultFont->isReady() && !consoleFont->isReady());
 
         // create engine gui
         this->guiContainer = new CBaseUIContainer(0, 0, engine->getScreenWidth(), engine->getScreenHeight(), "");
@@ -221,7 +234,9 @@ void Engine::loadApp() {
 
         app = std::make_unique<App>();
         this->runtime_assert(!!app, "App failed to initialize!");
+
         resourceManager->resetSyncLoadMaxBatchSize();
+
         // start listening to the default keyboard input
         keyboard->addListener(app.get());
     }

@@ -15,7 +15,6 @@
 
 #include <memory>
 #include <unordered_map>
-#include <unordered_set>
 
 typedef struct FT_Bitmap_ FT_Bitmap;
 typedef struct FT_FaceRec_ *FT_Face;
@@ -36,6 +35,9 @@ class McFont final : public Resource {
 
     McFont(const McFont &) = delete;
     McFont(McFont &&) = delete;
+
+    // called once on engine startup
+    static bool initSharedResources();
 
     // called on engine shutdown to clean up freetype/shared fallback fonts
     static void cleanupSharedResources();
@@ -82,12 +84,6 @@ class McFont final : public Resource {
     void destroy() override;
 
    private:
-    struct FallbackFont {
-        UString fontPath;
-        FT_Face face;
-        bool isSystemFont;
-    };
-
     struct BatchEntry {
         UString text;
         vec3 pos{0.f};
@@ -143,17 +139,7 @@ class McFont final : public Resource {
 
     static std::unique_ptr<Channel[]> unpackMonoBitmap(const FT_Bitmap &bitmap);
 
-    // shared freetype resources
-    static FT_Library s_sharedFtLibrary;
-    static bool s_sharedFtLibraryInitialized;
-    static std::vector<FallbackFont> s_sharedFallbackFonts;
-    static bool s_sharedFallbacksInitialized;
-    // give up quickly if we know a certain font face isn't found in any fallback font
-    static std::unordered_set<char16_t> s_sharedFallbackFaceBlacklist;
-
     // shared resource initialization
-    static bool initializeSharedFreeType();
-    static bool initializeSharedFallbackFonts();
     static void discoverSystemFallbacks();
     static bool loadFallbackFont(const UString &fontPath, bool isSystemFont = false);
 

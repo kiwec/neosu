@@ -167,7 +167,7 @@ bool DirectX11Interface::createSwapchain() {
         .Scaling = DXGI_SCALING_NONE,
         .SwapEffect = NO_FLIP ? DXGI_SWAP_EFFECT_DISCARD : DXGI_SWAP_EFFECT_FLIP_DISCARD,
         .AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED,
-        .Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING | DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH,
+        .Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING | (Env::cfg(OS::WINDOWS) ? DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH : 0),
     };
 
     DXGI_SWAP_CHAIN_FULLSCREEN_DESC fsDesc{
@@ -175,7 +175,7 @@ bool DirectX11Interface::createSwapchain() {
         .ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_PROGRESSIVE,
         .Scaling = DXGI_MODE_SCALING_CENTERED,
         // dxvk-native throws an exception on wayland that we can't catch...
-        .Windowed = env->isWayland() || !(env->isFullscreenWindowedBorderless() || env->isFullscreen()),
+        .Windowed = !env->isWayland() && (env->isFullscreen() && !env->isFullscreenWindowedBorderless()),
     };
 
     auto hr = this->dxgiFactory->CreateSwapChainForHwnd(this->device, this->hwnd, &swapchainCreateDesc, &fsDesc,
@@ -786,9 +786,11 @@ void DirectX11Interface::drawVAO(VertexArrayObject *vao) {
                 finalVertices.push_back(vertices[i + 1]);
                 finalVertices.push_back(vertices[i + 2]);
 
-                finalTexcoords.push_back(texcoords[i + 0]);
-                finalTexcoords.push_back(texcoords[i + 1]);
-                finalTexcoords.push_back(texcoords[i + 2]);
+                if(!texcoords.empty()) {
+                    finalTexcoords.push_back(texcoords[i + 0]);
+                    finalTexcoords.push_back(texcoords[i + 1]);
+                    finalTexcoords.push_back(texcoords[i + 2]);
+                }
 
                 if(colors.size() > 0) {
                     finalColors.push_back(colors[std::clamp<size_t>(i + 0, 0, maxColorIndex)]);
@@ -800,9 +802,11 @@ void DirectX11Interface::drawVAO(VertexArrayObject *vao) {
                 finalVertices.push_back(vertices[i + 2]);
                 finalVertices.push_back(vertices[i + 3]);
 
-                finalTexcoords.push_back(texcoords[i + 0]);
-                finalTexcoords.push_back(texcoords[i + 2]);
-                finalTexcoords.push_back(texcoords[i + 3]);
+                if(!texcoords.empty()) {
+                    finalTexcoords.push_back(texcoords[i + 0]);
+                    finalTexcoords.push_back(texcoords[i + 2]);
+                    finalTexcoords.push_back(texcoords[i + 3]);
+                }
 
                 if(colors.size() > 0) {
                     finalColors.push_back(colors[std::clamp<size_t>(i + 0, 0, maxColorIndex)]);
@@ -824,9 +828,11 @@ void DirectX11Interface::drawVAO(VertexArrayObject *vao) {
                 finalVertices.push_back(vertices[i]);
                 finalVertices.push_back(vertices[i - 1]);
 
-                finalTexcoords.push_back(texcoords[0]);
-                finalTexcoords.push_back(texcoords[i]);
-                finalTexcoords.push_back(texcoords[i - 1]);
+                if(!texcoords.empty()) {
+                    finalTexcoords.push_back(texcoords[0]);
+                    finalTexcoords.push_back(texcoords[i]);
+                    finalTexcoords.push_back(texcoords[i - 1]);
+                }
 
                 if(colors.size() > 0) {
                     finalColors.push_back(colors[std::clamp<size_t>(0, 0, maxColorIndex)]);

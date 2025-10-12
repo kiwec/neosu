@@ -11,7 +11,9 @@
 #include <thread>
 #include <cassert>
 
-#endif  // USE_NSYNC
+#else  // USE_NSYNC
+#include <shared_mutex>
+#endif
 
 #include <mutex>  // for std::lock (works with generic-compatible mutexes)
 
@@ -70,6 +72,129 @@ struct adopt_lock_t {
 inline constexpr defer_lock_t defer_lock{};
 inline constexpr try_to_lock_t try_to_lock{};
 inline constexpr adopt_lock_t adopt_lock{};
+
+// ===================================================================
+// nsync_shared_mutex_t: reader/writer lock using nsync_mu
+// ===================================================================
+class nsync_shared_mutex_t {
+   private:
+    nsync_mu m_mutex{};
+
+   public:
+    constexpr nsync_shared_mutex_t() noexcept = default;
+    ~nsync_shared_mutex_t() = default;
+
+    nsync_shared_mutex_t(const nsync_shared_mutex_t&) = delete;
+    nsync_shared_mutex_t& operator=(const nsync_shared_mutex_t&) = delete;
+    nsync_shared_mutex_t(nsync_shared_mutex_t&&) = delete;
+    nsync_shared_mutex_t& operator=(nsync_shared_mutex_t&&) = delete;
+
+    // exclusive/write lock operations
+    void lock() { nsync_mu_lock(&m_mutex); }
+    bool try_lock() noexcept { return nsync_mu_trylock(&m_mutex) != 0; }
+    void unlock() { nsync_mu_unlock(&m_mutex); }
+
+    // shared/read lock operations
+    void lock_shared() { nsync_mu_rlock(&m_mutex); }
+    bool try_lock_shared() noexcept { return nsync_mu_rtrylock(&m_mutex) != 0; }
+    void unlock_shared() { nsync_mu_runlock(&m_mutex); }
+
+    // native handle for condition variable compatibility
+    nsync_mu* native_handle() noexcept { return &m_mutex; }
+};
+
+// type alias
+using shared_mutex = nsync_shared_mutex_t;
+
+// ===================================================================
+// shared_lock: RAII wrapper for shared/read lock ownership
+// ===================================================================
+template <typename Mutex>
+class shared_lock {
+   public:
+    using mutex_type = Mutex;
+
+    shared_lock() noexcept : m_p(nullptr), m_owns(false) {}
+
+    explicit shared_lock(mutex_type& m) : m_p(std::addressof(m)), m_owns(false) {
+        lock();
+        m_owns = true;
+    }
+
+    shared_lock(mutex_type& m, defer_lock_t /* */) noexcept : m_p(std::addressof(m)), m_owns(false) {}
+    shared_lock(mutex_type& m, try_to_lock_t /* */) : m_p(std::addressof(m)), m_owns(m_p->try_lock_shared()) {}
+    shared_lock(mutex_type& m, adopt_lock_t /* */) noexcept : m_p(std::addressof(m)), m_owns(true) {}
+
+    ~shared_lock() {
+        if(m_owns) unlock();
+    }
+
+    shared_lock(shared_lock&& other) noexcept : m_p(other.m_p), m_owns(other.m_owns) {
+        other.m_p = nullptr;
+        other.m_owns = false;
+    }
+
+    shared_lock& operator=(shared_lock&& other) noexcept {
+        if(this != std::addressof(other)) {
+            if(m_owns) unlock();
+            m_p = other.m_p;
+            m_owns = other.m_owns;
+            other.m_p = nullptr;
+            other.m_owns = false;
+        }
+        return *this;
+    }
+
+    shared_lock(const shared_lock&) = delete;
+    shared_lock& operator=(const shared_lock&) = delete;
+
+    void lock() {
+        assert(!!m_p && "shared_lock::lock: mutex is null (may have already been released)");
+        assert(!m_owns && "shared_lock::lock: tried to re-lock owned mutex");
+        m_p->lock_shared();
+        m_owns = true;
+    }
+
+    bool try_lock() {
+        assert(!!m_p && "shared_lock::try_lock: mutex is null (may have already been released)");
+        assert(!m_owns && "shared_lock::try_lock: cannot re-lock owned mutex");
+        m_owns = m_p->try_lock_shared();
+        return m_owns;
+    }
+
+    void unlock() {
+        assert(m_owns && "shared_lock::unlock: cannot unlock unowned mutex");
+        if(m_p) {
+            m_p->unlock_shared();
+            m_owns = false;
+        }
+    }
+
+    void swap(shared_lock& other) noexcept {
+        std::swap(m_p, other.m_p);
+        std::swap(m_owns, other.m_owns);
+    }
+
+    mutex_type* release() noexcept {
+        mutex_type* ret = m_p;
+        m_p = nullptr;
+        m_owns = false;
+        return ret;
+    }
+
+    [[nodiscard]] bool owns_lock() const noexcept { return m_owns; }
+    explicit operator bool() const noexcept { return m_owns; }
+    [[nodiscard]] mutex_type* mutex() const noexcept { return m_p; }
+
+   private:
+    mutex_type* m_p;
+    bool m_owns;
+};
+
+template <typename Mutex>
+void swap(shared_lock<Mutex>& lhs, shared_lock<Mutex>& rhs) noexcept {
+    lhs.swap(rhs);
+}
 
 // ===================================================================
 // lock_guard: simple RAII mutex wrapper
@@ -344,7 +469,10 @@ using recursive_mutex = nsync_recursive_mutex_t;
 // stdlib fallback aliases
 using mutex = std::mutex;
 using recursive_mutex = std::recursive_mutex;
+using shared_mutex = std::shared_mutex;
 
+template <typename Mutex>
+using shared_lock = std::shared_lock<Mutex>;
 template <typename Mutex>
 using lock_guard = std::lock_guard<Mutex>;
 template <typename Mutex>
