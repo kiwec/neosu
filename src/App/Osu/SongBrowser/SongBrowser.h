@@ -328,7 +328,7 @@ class SongBrowser final : public ScreenBackable {
     bool bShouldRecountMatchesAfterSearch{true};
     i32 currentVisibleSearchMatches{0};
     std::optional<GROUPING> searchPrevGroup{std::nullopt};
-    std::unique_ptr<SongBrowserBackgroundSearchMatcher> backgroundSearchMatcher;
+    SongBrowserBackgroundSearchMatcher *backgroundSearchMatcher;
 
    private:
     std::vector<CollectionButton *> *getCollectionButtonsForGroup(GroupTypes::type group);

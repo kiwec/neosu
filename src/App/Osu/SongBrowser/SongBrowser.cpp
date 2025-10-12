@@ -480,7 +480,7 @@ SongBrowser::SongBrowser()  // NOLINT(cert-msc51-cpp, cert-msc32-c)
     this->search->setOffsetRight(10);
     this->fSearchWaitTime = 0.0f;
     this->bInSearch = (cv::songbrowser_search_hardcoded_filter.getString().length() > 0);
-    this->backgroundSearchMatcher = std::make_unique<SongBrowserBackgroundSearchMatcher>();
+    this->backgroundSearchMatcher = new SongBrowserBackgroundSearchMatcher();
 
     this->updateLayout();
 }
@@ -492,10 +492,8 @@ SongBrowser::~SongBrowser() {
     MapCalcThread::abort();
     this->checkHandleKillBackgroundSearchMatcher();
 
-    auto *bgsmptr = this->backgroundSearchMatcher.release();
+    resourceManager->destroyResource(this->backgroundSearchMatcher);
     this->backgroundSearchMatcher = nullptr;
-
-    resourceManager->destroyResource(bgsmptr);
 
     for(auto &songButton : this->songButtons) {
         delete songButton;
@@ -2653,7 +2651,7 @@ void SongBrowser::onSearchUpdate() {
                 this->songButtons, this->sSearchString, cv::songbrowser_search_hardcoded_filter.getString().c_str());
 
             resourceManager->requestNextLoadAsync();
-            resourceManager->loadResource(this->backgroundSearchMatcher.get());
+            resourceManager->loadResource(this->backgroundSearchMatcher);
         } else
             this->rebuildSongButtonsAndVisibleSongButtonsWithSearchMatchSupport(true, true);
 
