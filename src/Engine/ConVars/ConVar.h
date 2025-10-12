@@ -208,7 +208,7 @@ class ConVar {
 
     // generic callback setter that auto-detects callback type
     template <typename Callback>
-    void setCallback(Callback callback)
+    void setCallback(Callback &&callback)
         requires(cb_invocable<Callback> || cb_invocable<Callback, std::string_view> || cb_invocable<Callback, float> ||
                  cb_invocable<Callback, std::string_view, std::string_view> || cb_invocable<Callback, float, float>)
     {

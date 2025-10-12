@@ -27,6 +27,7 @@ class Database;
 extern std::unique_ptr<Database> db;
 
 class Database {
+    NOCOPY_NOMOVE(Database)
 // Field ordering matters here
 #pragma pack(push, 1)
     struct alignas(1) TIMINGPOINT {
@@ -52,9 +53,27 @@ class Database {
     };
 
     struct SCORE_SORTING_METHOD {
-        std::string name;
-        std::function<bool(FinishedScore const &, FinishedScore const &)> comparator;
+        using SCORE_SORTING_COMPARATOR = bool (*)(FinishedScore const &, FinishedScore const &);
+
+        std::string_view name;
+        SCORE_SORTING_COMPARATOR comparator;
     };
+
+    // sorting methods
+    static bool sortScoreByScore(FinishedScore const &a, FinishedScore const &b);
+    static bool sortScoreByCombo(FinishedScore const &a, FinishedScore const &b);
+    static bool sortScoreByDate(FinishedScore const &a, FinishedScore const &b);
+    static bool sortScoreByMisses(FinishedScore const &a, FinishedScore const &b);
+    static bool sortScoreByAccuracy(FinishedScore const &a, FinishedScore const &b);
+    static bool sortScoreByPP(FinishedScore const &a, FinishedScore const &b);
+
+   public:
+    static constexpr std::array<SCORE_SORTING_METHOD, 6> SCORE_SORTING_METHODS{{{"By accuracy", sortScoreByAccuracy},
+                                                                                {"By combo", sortScoreByCombo},
+                                                                                {"By date", sortScoreByDate},
+                                                                                {"By misses", sortScoreByMisses},
+                                                                                {"By score", sortScoreByScore},
+                                                                                {"By pp", sortScoreByPP}}};
 
    public:
     Database();
@@ -96,10 +115,6 @@ class Database {
     inline const std::vector<DatabaseBeatmap *> &getBeatmapSets() const { return this->beatmapsets; }
 
     inline std::unordered_map<MD5Hash, std::vector<FinishedScore>> *getScores() { return &this->scores; }
-    inline const std::array<SCORE_SORTING_METHOD, 6> &getScoreSortingMethods() const {
-        return this->scoreSortingMethods;
-    }
-
     static std::string getOsuSongsFolder();
 
     BeatmapSet *loadRawBeatmap(const std::string &beatmapPath);  // only used for raw loading without db
@@ -202,7 +217,6 @@ class Database {
     bool bNeedRawLoad{false};
 
     PlayerStats prevPlayerStats;
-    std::array<SCORE_SORTING_METHOD, 6> scoreSortingMethods;
 
     // raw load
     bool bRawBeatmapLoadScheduled{false};

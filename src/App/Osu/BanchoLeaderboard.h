@@ -17,5 +17,5 @@ struct OnlineMapInfo {
 
 void process_leaderboard_response(Packet response);
 
-void fetch_online_scores(DatabaseBeatmap *beatmap);
+void fetch_online_scores(const DatabaseBeatmap *beatmap);
 }  // namespace BANCHO::Leaderboard

@@ -92,7 +92,7 @@ void UIRankingScreenInfoLabel::draw() {
     g->popTransform();
 }
 
-void UIRankingScreenInfoLabel::setFromBeatmap(DatabaseBeatmap *map) {
+void UIRankingScreenInfoLabel::setFromBeatmap(const DatabaseBeatmap *map) {
     this->setArtist(map->getArtist());
     this->setTitle(map->getTitle());
     this->setDiff(map->getDifficultyName());

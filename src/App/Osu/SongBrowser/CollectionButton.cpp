@@ -80,7 +80,7 @@ void CollectionButton::onSelected(bool wasSelected, bool autoSelectBottomMostChi
 void CollectionButton::onRightMouseUpInside() { this->triggerContextMenu(mouse->getPos()); }
 
 void CollectionButton::triggerContextMenu(vec2 pos) {
-    if(osu->getSongBrowser()->getGroupingMode() != SongBrowser::GROUP::GROUP_COLLECTIONS) return;
+    if(osu->getSongBrowser()->getGroupingMode() != SongBrowser::GROUP_ENUM::COLLECTIONS) return;
 
     if(this->contextMenu != nullptr) {
         this->contextMenu->setPos(pos);

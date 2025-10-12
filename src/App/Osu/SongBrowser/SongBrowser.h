@@ -32,12 +32,44 @@ class ConVar;
 
 class SongBrowserBackgroundSearchMatcher;
 
+namespace SortTypes {
+enum type : i8 { ARTIST, BPM, CREATOR, DATEADDED, DIFFICULTY, LENGTH, TITLE, RANKACHIEVED, MAX };
+};
+
+namespace GroupTypes {
+enum type : i8 {
+    ARTIST,
+    BPM,
+    CREATOR,
+    DATEADDED,  // unimpl
+    DIFFICULTY,
+    LENGTH,
+    TITLE,
+    COLLECTIONS,
+    NO_GROUPING,
+    MAX
+};
+};
+
 class SongBrowser final : public ScreenBackable {
     NOCOPY_NOMOVE(SongBrowser)
    private:
-    using SORTING_COMPARATOR = bool (*)(const SongButton *a, const SongButton *b);
+    // not used anywhere else
+    static bool sort_by_artist(SongButton const *a, SongButton const *b);
+    static bool sort_by_bpm(SongButton const *a, SongButton const *b);
+    static bool sort_by_creator(SongButton const *a, SongButton const *b);
+    static bool sort_by_date_added(SongButton const *a, SongButton const *b);
+    static bool sort_by_grade(SongButton const *a, SongButton const *b);
+    static bool sort_by_length(SongButton const *a, SongButton const *b);
+    static bool sort_by_title(SongButton const *a, SongButton const *b);
 
    public:
+    using SORT_ENUM = SortTypes::type;
+    using GROUP_ENUM = GroupTypes::type;
+
+    // used also by SongButton
+    static bool sort_by_difficulty(SongButton const *a, SongButton const *b);
+
     static void drawSelectedBeatmapBackgroundImage(float alpha = 1.0f);
 
     static f32 getUIScale();
@@ -47,19 +79,6 @@ class SongBrowser final : public ScreenBackable {
     static f32 getSkinScale(SkinImage *img);
     static f32 getSkinScale2(SkinImage *img);
     static vec2 getSkinDimensions(SkinImage *img);
-
-    enum class GROUP : uint8_t {
-        GROUP_NO_GROUPING,
-        GROUP_ARTIST,
-        GROUP_BPM,
-        GROUP_CREATOR,
-        // GROUP_DATEADDED, // unimpl
-        GROUP_DIFFICULTY,
-        GROUP_LENGTH,
-        GROUP_TITLE,
-        GROUP_COLLECTIONS,
-        GROUP_MAX
-    };
 
     friend class SongBrowserBackgroundSearchMatcher;
     friend class BeatmapCarousel;
@@ -121,31 +140,40 @@ class SongBrowser final : public ScreenBackable {
 
     inline InfoLabel *getInfoLabel() { return this->songInfo; }
 
-    [[nodiscard]] inline GROUP getGroupingMode() const { return this->group; }
-
-    enum class SORT : uint8_t {
-        SORT_ARTIST,
-        SORT_BPM,
-        SORT_CREATOR,
-        SORT_DATEADDED,
-        SORT_DIFFICULTY,
-        SORT_LENGTH,
-        SORT_TITLE,
-        SORT_RANKACHIEVED,
-        SORT_MAX
-    };
-
+    using SORTING_COMPARATOR = bool (*)(const SongButton *a, const SongButton *b);
     struct SORTING_METHOD {
-        SORT type;
-        UString name;
+        std::string_view name;
         SORTING_COMPARATOR comparator;
+        SORT_ENUM type;
     };
 
     struct GROUPING {
-        GROUP type;
-        UString name;
-        int id;
+        std::string_view name;
+        GROUP_ENUM type;
     };
+
+    static constexpr std::array<SORTING_METHOD, SORT_ENUM::MAX> SORTING_METHODS{
+        {{"By Artist", sort_by_artist, SORT_ENUM::ARTIST},
+         {"By BPM", sort_by_bpm, SORT_ENUM::BPM},
+         {"By Creator", sort_by_creator, SORT_ENUM::CREATOR},
+         {"By Date Added", sort_by_date_added, SORT_ENUM::DATEADDED},
+         {"By Difficulty", sort_by_difficulty, SORT_ENUM::DIFFICULTY},
+         {"By Length", sort_by_length, SORT_ENUM::LENGTH},
+         {"By Title", sort_by_title, SORT_ENUM::TITLE},
+         {"By Rank Achieved", sort_by_grade, SORT_ENUM::RANKACHIEVED}}};
+
+    static constexpr std::array<GROUPING, GROUP_ENUM::MAX> GROUPINGS{
+        {{"By Artist", GROUP_ENUM::ARTIST},
+         {"By BPM", GROUP_ENUM::BPM},
+         {"By Creator", GROUP_ENUM::CREATOR},
+         {"By Date", GROUP_ENUM::DATEADDED},  // not yet possible
+         {"By Difficulty", GROUP_ENUM::DIFFICULTY},
+         {"By Length", GROUP_ENUM::LENGTH},
+         {"By Title", GROUP_ENUM::TITLE},
+         {"Collections", GROUP_ENUM::COLLECTIONS},
+         {"No Grouping", GROUP_ENUM::NO_GROUPING}}};
+
+    [[nodiscard]] inline GROUP_ENUM getGroupingMode() const { return this->curGroup.type; }
 
     static bool searchMatcher(const DatabaseBeatmap *databaseBeatmap,
                               const std::vector<std::string_view> &searchStringTokens);
@@ -179,7 +207,8 @@ class SongBrowser final : public ScreenBackable {
     void onSortChange(const UString &text, int id = -1);
     void onSortChangeInt(const UString &text);
 
-    void rebuildAfterGroupOrSortChange(GROUP group, SORTING_COMPARATOR sortComp = nullptr);
+    void rebuildAfterGroupOrSortChange(const GROUPING &group,
+                                       const std::optional<SORTING_METHOD> &sortMethod = std::nullopt);
 
     void onSelectionMode();
     void onSelectionMods();
@@ -194,12 +223,8 @@ class SongBrowser final : public ScreenBackable {
 
     std::mt19937_64 rngalg;
 
-    GROUP group;
-    std::array<GROUPING, static_cast<size_t>(GROUP::GROUP_MAX)> groupings;
-
-    SORTING_COMPARATOR sortingComparator;
-    SORT sortingMethod;
-    std::array<SORTING_METHOD, static_cast<size_t>(SORT::SORT_MAX)> sortingMethods;
+    GROUPING curGroup{GROUPINGS[GROUP_ENUM::NO_GROUPING]};
+    SORTING_METHOD curSortMethod{SORTING_METHODS[SORT_ENUM::ARTIST]};
 
     // top bar left
     CBaseUIContainer *topbarLeft;
@@ -239,6 +264,7 @@ class SongBrowser final : public ScreenBackable {
     bool bNextScrollToSongButtonJumpFixScheduled;
     bool bNextScrollToSongButtonJumpFixUseScrollSizeDelta;
     bool scheduled_scroll_to_selected_button = false;
+    bool bSongButtonsNeedSorting{false};
     float fNextScrollToSongButtonJumpFixOldRelPosY;
     float fNextScrollToSongButtonJumpFixOldScrollSizeY;
     f32 thumbnailYRatio = 0.f;
@@ -262,7 +288,7 @@ class SongBrowser final : public ScreenBackable {
     std::vector<CollectionButton *> titleCollectionButtons;
     std::unordered_map<MD5Hash, SongButton *> hashToSongButton;
     bool bBeatmapRefreshScheduled;
-    bool bCloseAfterBeatmapRefreshFinished;
+    bool bCloseAfterBeatmapRefreshFinished{false};
     UString sLastOsuFolder;
     // i hate this
     struct {
@@ -282,11 +308,11 @@ class SongBrowser final : public ScreenBackable {
     bool bPreviousRandomBeatmapScheduled;
 
     // behaviour
-    const DatabaseBeatmap *lastSelectedBeatmap;
+    const DatabaseBeatmap *lastSelectedBeatmap{nullptr};
     bool bHasSelectedAndIsPlaying;
     float fPulseAnimation;
     float fBackgroundFadeInTime;
-    std::vector<DatabaseBeatmap *> previousRandomBeatmaps;
+    std::vector<const DatabaseBeatmap *> previousRandomBeatmaps;
 
     // map auto-download
     i32 map_autodl = 0;
@@ -301,20 +327,9 @@ class SongBrowser final : public ScreenBackable {
     bool bInSearch;
     bool bShouldRecountMatchesAfterSearch{true};
     i32 currentVisibleSearchMatches{0};
-    GROUP searchPrevGroup;
-    SongBrowserBackgroundSearchMatcher *backgroundSearchMatcher;
-
-    // used also by SongButton
-    static bool sort_by_difficulty(SongButton const *a, SongButton const *b);
+    std::optional<GROUPING> searchPrevGroup{std::nullopt};
+    std::unique_ptr<SongBrowserBackgroundSearchMatcher> backgroundSearchMatcher;
 
    private:
-    static bool sort_by_artist(SongButton const *a, SongButton const *b);
-    static bool sort_by_bpm(SongButton const *a, SongButton const *b);
-    static bool sort_by_creator(SongButton const *a, SongButton const *b);
-    static bool sort_by_date_added(SongButton const *a, SongButton const *b);
-    static bool sort_by_grade(SongButton const *a, SongButton const *b);
-    static bool sort_by_length(SongButton const *a, SongButton const *b);
-    static bool sort_by_title(SongButton const *a, SongButton const *b);
-
-    std::vector<CollectionButton *> *getCollectionButtonsForGroup(GROUP group);
+    std::vector<CollectionButton *> *getCollectionButtonsForGroup(GroupTypes::type group);
 };

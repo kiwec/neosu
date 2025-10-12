@@ -111,32 +111,6 @@ Osu::Osu() {
     Environment::createDirectory(NEOSU_SCREENSHOTS_PATH);
     Environment::createDirectory(NEOSU_SKINS_PATH);
 
-    // experimental mods list
-    this->experimentalMods.push_back(&cv::fposu_mod_strafing);
-    this->experimentalMods.push_back(&cv::mod_wobble);
-    this->experimentalMods.push_back(&cv::mod_arwobble);
-    this->experimentalMods.push_back(&cv::mod_timewarp);
-    this->experimentalMods.push_back(&cv::mod_artimewarp);
-    this->experimentalMods.push_back(&cv::mod_minimize);
-    this->experimentalMods.push_back(&cv::mod_fadingcursor);
-    this->experimentalMods.push_back(&cv::mod_fps);
-    this->experimentalMods.push_back(&cv::mod_jigsaw1);
-    this->experimentalMods.push_back(&cv::mod_jigsaw2);
-    this->experimentalMods.push_back(&cv::mod_fullalternate);
-    this->experimentalMods.push_back(&cv::mod_reverse_sliders);
-    this->experimentalMods.push_back(&cv::mod_no50s);
-    this->experimentalMods.push_back(&cv::mod_no100s);
-    this->experimentalMods.push_back(&cv::mod_ming3012);
-    this->experimentalMods.push_back(&cv::mod_halfwindow);
-    this->experimentalMods.push_back(&cv::mod_millhioref);
-    this->experimentalMods.push_back(&cv::mod_mafham);
-    this->experimentalMods.push_back(&cv::mod_strict_tracking);
-    this->experimentalMods.push_back(&cv::playfield_mirror_horizontal);
-    this->experimentalMods.push_back(&cv::playfield_mirror_vertical);
-    this->experimentalMods.push_back(&cv::mod_wobble2);
-    this->experimentalMods.push_back(&cv::mod_shirone);
-    this->experimentalMods.push_back(&cv::mod_approach_different);
-
     env->setWindowTitle("neosu");
 
     engine->getConsoleBox()->setRequireShiftToActivate(true);

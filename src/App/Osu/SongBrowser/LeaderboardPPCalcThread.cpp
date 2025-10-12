@@ -35,7 +35,7 @@ struct info_cache {
     pp_info info{};
 };
 
-static BeatmapDifficulty* map = nullptr;
+static const BeatmapDifficulty* map = nullptr;
 
 static Sync::condition_variable cond;
 static std::thread thr;
@@ -208,7 +208,7 @@ static void run_thread() {
     }
 }
 
-void lct_set_map(DatabaseBeatmap* new_map) {
+void lct_set_map(const DatabaseBeatmap* new_map) {
     if(map == new_map) return;
 
     if(map != nullptr) {

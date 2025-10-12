@@ -35,8 +35,7 @@
 
 std::unique_ptr<Database> db = nullptr;
 
-namespace {  // static namespace
-bool sortScoreByScore(FinishedScore const &a, FinishedScore const &b) {
+bool Database::sortScoreByScore(FinishedScore const &a, FinishedScore const &b) {
     if(a.score != b.score) return a.score > b.score;
     if(a.unixTimestamp != b.unixTimestamp) return a.unixTimestamp > b.unixTimestamp;
     if(a.player_id != b.player_id) return a.player_id > b.player_id;
@@ -44,7 +43,7 @@ bool sortScoreByScore(FinishedScore const &a, FinishedScore const &b) {
     return false;  // equivalent
 }
 
-bool sortScoreByCombo(FinishedScore const &a, FinishedScore const &b) {
+bool Database::sortScoreByCombo(FinishedScore const &a, FinishedScore const &b) {
     if(a.comboMax != b.comboMax) return a.comboMax > b.comboMax;
     if(a.score != b.score) return a.score > b.score;
     if(a.unixTimestamp != b.unixTimestamp) return a.unixTimestamp > b.unixTimestamp;
@@ -53,14 +52,14 @@ bool sortScoreByCombo(FinishedScore const &a, FinishedScore const &b) {
     return false;  // equivalent
 }
 
-bool sortScoreByDate(FinishedScore const &a, FinishedScore const &b) {
+bool Database::sortScoreByDate(FinishedScore const &a, FinishedScore const &b) {
     if(a.unixTimestamp != b.unixTimestamp) return a.unixTimestamp > b.unixTimestamp;
     if(a.player_id != b.player_id) return a.player_id > b.player_id;
     if(a.play_time_ms != b.play_time_ms) return a.play_time_ms > b.play_time_ms;
     return false;  // equivalent
 }
 
-bool sortScoreByMisses(FinishedScore const &a, FinishedScore const &b) {
+bool Database::sortScoreByMisses(FinishedScore const &a, FinishedScore const &b) {
     if(a.numMisses != b.numMisses) return a.numMisses < b.numMisses;
     if(a.score != b.score) return a.score > b.score;
     if(a.unixTimestamp != b.unixTimestamp) return a.unixTimestamp > b.unixTimestamp;
@@ -69,7 +68,7 @@ bool sortScoreByMisses(FinishedScore const &a, FinishedScore const &b) {
     return false;  // equivalent
 }
 
-bool sortScoreByAccuracy(FinishedScore const &a, FinishedScore const &b) {
+bool Database::sortScoreByAccuracy(FinishedScore const &a, FinishedScore const &b) {
     auto a_acc = LiveScore::calculateAccuracy(a.num300s, a.num100s, a.num50s, a.numMisses);
     auto b_acc = LiveScore::calculateAccuracy(b.num300s, b.num100s, b.num50s, b.numMisses);
     if(a_acc != b_acc) return a_acc > b_acc;
@@ -80,7 +79,7 @@ bool sortScoreByAccuracy(FinishedScore const &a, FinishedScore const &b) {
     return false;  // equivalent
 }
 
-bool sortScoreByPP(FinishedScore const &a, FinishedScore const &b) {
+bool Database::sortScoreByPP(FinishedScore const &a, FinishedScore const &b) {
     auto a_pp = std::max(a.get_pp() * 1000.0, 0.0);
     auto b_pp = std::max(b.get_pp() * 1000.0, 0.0);
     if(a_pp != b_pp) return a_pp > b_pp;
@@ -90,8 +89,6 @@ bool sortScoreByPP(FinishedScore const &a, FinishedScore const &b) {
     if(a.play_time_ms != b.play_time_ms) return a.play_time_ms > b.play_time_ms;
     return false;  // equivalent
 }
-
-}  // namespace
 
 // static helper
 std::string Database::getDBPath(DatabaseType db_type) {
@@ -324,13 +321,6 @@ Database::Database() {
     this->prevPlayerStats.level = 0;
     this->prevPlayerStats.percentToNextLevel = 0.0f;
     this->prevPlayerStats.totalScore = 0;
-
-    this->scoreSortingMethods = {{{.name = "By accuracy", .comparator = sortScoreByAccuracy},
-                                  {.name = "By combo", .comparator = sortScoreByCombo},
-                                  {.name = "By date", .comparator = sortScoreByDate},
-                                  {.name = "By misses", .comparator = sortScoreByMisses},
-                                  {.name = "By score", .comparator = sortScoreByScore},
-                                  {.name = "By pp", .comparator = sortScoreByPP}}};
 }
 
 Database::~Database() {
@@ -574,7 +564,7 @@ void Database::sortScoresInPlace(std::vector<FinishedScore> &scores) {
     if(scores.size() < 2) return;
 
     const auto &sortTypeString{cv::songbrowser_scores_sortingtype.getString()};
-    for(const auto &sortMethod : this->scoreSortingMethods) {
+    for(const auto &sortMethod : Database::SCORE_SORTING_METHODS) {
         if(sortTypeString == sortMethod.name) {
             std::ranges::sort(scores, sortMethod.comparator);
             return;

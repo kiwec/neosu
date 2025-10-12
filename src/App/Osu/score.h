@@ -19,7 +19,7 @@ struct FinishedScore {
     u64 unixTimestamp = 0;
     i32 player_id = 0;
     std::string playerName;
-    DatabaseBeatmap *map = nullptr;  // NOTE: do NOT assume this is set
+    const DatabaseBeatmap *map = nullptr;  // NOTE: do NOT assume this is set
     u64 play_time_ms = 0;
 
     enum class Grade : uint8_t {

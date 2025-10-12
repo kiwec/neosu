@@ -70,7 +70,7 @@ FinishedScore parse_score(char *score_line) {
 }  // namespace
 
 namespace BANCHO::Leaderboard {
-void fetch_online_scores(DatabaseBeatmap *beatmap) {
+void fetch_online_scores(const DatabaseBeatmap *beatmap) {
     std::string url = "/web/osu-osz2-getscores.php?m=0&s=0&vv=4&a=0";
 
     // TODO: b.py calls this "map_package_hash", could be useful for storyboard-specific LBs

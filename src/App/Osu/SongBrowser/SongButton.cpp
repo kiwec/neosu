@@ -282,7 +282,7 @@ void SongButton::triggerContextMenu(vec2 pos) {
 
             this->contextMenu->addButtonJustified("[+Set] Add to Collection", true, 2);
 
-            if(osu->getSongBrowser()->getGroupingMode() == SongBrowser::GROUP::GROUP_COLLECTIONS) {
+            if(osu->getSongBrowser()->getGroupingMode() == SongBrowser::GROUP_ENUM::COLLECTIONS) {
                 CBaseUIButton *spacer = this->contextMenu->addButtonJustified("---", false);
                 spacer->setEnabled(false);
                 spacer->setTextColor(0xff888888);

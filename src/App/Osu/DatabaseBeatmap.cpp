@@ -1431,7 +1431,7 @@ void DatabaseBeatmap::update_overrides() {
     db->peppy_overrides_mtx.unlock();
 }
 
-DatabaseBeatmap::TIMING_INFO DatabaseBeatmap::getTimingInfoForTime(u32 positionMS) {
+DatabaseBeatmap::TIMING_INFO DatabaseBeatmap::getTimingInfoForTime(u32 positionMS) const {
     return getTimingInfoForTimeAndTimingPoints(positionMS, this->timingpoints);
 }
 

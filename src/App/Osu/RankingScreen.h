@@ -33,7 +33,7 @@ class RankingScreen final : public ScreenBackable {
     void onWatchClicked();
 
     void setScore(const FinishedScore &score);
-    void setBeatmapInfo(DatabaseBeatmap *map);
+    void setBeatmapInfo(const DatabaseBeatmap *map);
 
    private:
     void updateLayout() override;
@@ -76,7 +76,6 @@ class RankingScreen final : public ScreenBackable {
     bool bModSpunout;
     bool bModRelax;
     bool bModNF;
-    bool bModNoHP;
     bool bModAutopilot;
     bool bModAuto;
     bool bModTD;

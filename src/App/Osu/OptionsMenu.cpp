@@ -662,11 +662,11 @@ OptionsMenu::OptionsMenu() : ScreenBackable() {
     fpsSlider2->setKeyDelta(1);
 
     this->addSubSection("Layout");
-    OPTIONS_ELEMENT resolutionSelect = *this->addButton(
+    OPTIONS_ELEMENT *resolutionSelect = this->addButton(
         "Select Resolution", UString::format("%ix%i", osu->getVirtScreenWidth(), osu->getVirtScreenHeight()));
-    this->resolutionSelectButton = (CBaseUIButton *)resolutionSelect.baseElems[0];
+    this->resolutionSelectButton = (CBaseUIButton *)resolutionSelect->baseElems[0];
     this->resolutionSelectButton->setClickCallback(SA::MakeDelegate<&OptionsMenu::onResolutionSelect>(this));
-    this->resolutionLabel = (CBaseUILabel *)resolutionSelect.baseElems[1];
+    this->resolutionLabel = (CBaseUILabel *)resolutionSelect->baseElems[1];
     this->fullscreenCheckbox = this->addCheckbox("Fullscreen");
     this->fullscreenCheckbox->setChangeCallback(SA::MakeDelegate<&OptionsMenu::onFullscreenChange>(this));
     this->addCheckbox("Borderless",
@@ -745,14 +745,14 @@ OptionsMenu::OptionsMenu() : ScreenBackable() {
 
     this->addSubSection("Devices");
     {
-        OPTIONS_ELEMENT outputDeviceSelect = *this->addButton("Select Output Device", "Default", true);
-        this->outputDeviceResetButton = outputDeviceSelect.resetButton;
+        OPTIONS_ELEMENT *outputDeviceSelect = this->addButton("Select Output Device", "Default", true);
+        this->outputDeviceResetButton = outputDeviceSelect->resetButton;
         this->outputDeviceResetButton->setClickCallback(
             SA::MakeDelegate<&OptionsMenu::onOutputDeviceResetClicked>(this));
-        this->outputDeviceSelectButton = (CBaseUIButton *)outputDeviceSelect.baseElems[0];
+        this->outputDeviceSelectButton = (CBaseUIButton *)outputDeviceSelect->baseElems[0];
         this->outputDeviceSelectButton->setClickCallback(SA::MakeDelegate<&OptionsMenu::onOutputDeviceSelect>(this));
 
-        this->outputDeviceLabel = (CBaseUILabel *)outputDeviceSelect.baseElems[1];
+        this->outputDeviceLabel = (CBaseUILabel *)outputDeviceSelect->baseElems[1];
 
         {
             OPTIONS_ELEMENT *soloudBackendSelect = this->addButtonButtonLabel("MiniAudio", "SDL", "");
@@ -987,7 +987,7 @@ OptionsMenu::OptionsMenu() : ScreenBackable() {
 
     CBaseUIElement *sectionInput = this->addSection("Input");
 
-    this->addSubSection("Mouse", "scroll");
+    this->addSubSection("Mouse", "scroll sensitivity");
     this->addSlider("Sensitivity:", 0.1f, 6.0f, &cv::mouse_sensitivity)->setKeyDelta(0.01f);
 
     this->addLabel("");
@@ -1104,12 +1104,12 @@ OptionsMenu::OptionsMenu() : ScreenBackable() {
     this->addSpacer();
     this->addLabel("");
 
-    OPTIONS_ELEMENT notelockSelect = *this->addButton("Select [Notelock]", "None", true);
-    ((CBaseUIButton *)notelockSelect.baseElems[0])
+    OPTIONS_ELEMENT *notelockSelect = this->addButton("Select [Notelock]", "None", true);
+    ((CBaseUIButton *)notelockSelect->baseElems[0])
         ->setClickCallback(SA::MakeDelegate<&OptionsMenu::onNotelockSelect>(this));
-    this->notelockSelectButton = notelockSelect.baseElems[0];
-    this->notelockSelectLabel = (CBaseUILabel *)notelockSelect.baseElems[1];
-    this->notelockSelectResetButton = notelockSelect.resetButton;
+    this->notelockSelectButton = notelockSelect->baseElems[0];
+    this->notelockSelectLabel = (CBaseUILabel *)notelockSelect->baseElems[1];
+    this->notelockSelectResetButton = notelockSelect->resetButton;
     this->notelockSelectResetButton->setClickCallback(
         SA::MakeDelegate<&OptionsMenu::onNotelockSelectResetClicked>(this));
     this->addLabel("");

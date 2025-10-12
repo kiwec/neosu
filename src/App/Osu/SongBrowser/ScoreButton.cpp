@@ -644,7 +644,7 @@ void ScoreButton::onDeleteScoreConfirmed(const UString & /*text*/, int id) {
     osu->getUserStatsScreen()->rebuildScoreButtons();
 }
 
-void ScoreButton::setScore(const FinishedScore &score, DatabaseBeatmap *map, int index, const UString &titleString,
+void ScoreButton::setScore(const FinishedScore &score, const DatabaseBeatmap *map, int index, const UString &titleString,
                            float weight) {
     this->score = score;
     this->score.beatmap_hash = map->getMD5Hash();

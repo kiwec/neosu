@@ -43,7 +43,6 @@ float s_fBoundingBoxMaxY = 0.0f;
 void drawFillSliderBodyPeppy(const std::vector<vec2> &points, VertexArrayObject *circleMesh, float radius,
                              int drawFromIndex, int drawUpToIndex, Shader *shader = nullptr);
 void checkUpdateVars(float hitcircleDiameter);
-void resetRenderTargetBoundingBox();
 
 struct UniformCache {
     // convar-dependent settings (updated by convar callbacks)
@@ -193,7 +192,10 @@ void draw(const std::vector<vec2> &points, const std::vector<vec2> &alwaysPoints
     }
 
     // reset
-    resetRenderTargetBoundingBox();
+    s_fBoundingBoxMinX = (std::numeric_limits<float>::max)();
+    s_fBoundingBoxMaxX = 0.0f;
+    s_fBoundingBoxMinY = (std::numeric_limits<float>::max)();
+    s_fBoundingBoxMaxY = 0.0f;
 
     // draw entire slider into framebuffer
     g->setDepthBuffer(true);
@@ -228,7 +230,9 @@ void draw(const std::vector<vec2> &points, const std::vector<vec2> &alwaysPoints
                 dimmedBodyColor = Colors::scale(undimmedBodyColor, colorRGBMultiplier);
             }
 
-            if(!cv::slider_use_gradient_image.getBool()) {
+            const bool useGradientImage = cv::slider_use_gradient_image.getBool();
+
+            if(!useGradientImage) {
                 s_BLEND_SHADER->enable();
                 updateConfigUniforms();
                 updateColorUniforms(dimmedBorderColor, dimmedBodyColor);
@@ -252,7 +256,7 @@ void draw(const std::vector<vec2> &points, const std::vector<vec2> &alwaysPoints
                 }
             }
 
-            if(!cv::slider_use_gradient_image.getBool()) s_BLEND_SHADER->disable();
+            if(!useGradientImage) s_BLEND_SHADER->disable();
         }
         osu->getSliderFrameBuffer()->disable();
     }
@@ -338,8 +342,9 @@ void draw(VertexArrayObject *vao, const std::vector<vec2> &alwaysPoints, vec2 tr
                 dimmedBorderColor = Colors::scale(undimmedBorderColor, colorRGBMultiplier);
                 dimmedBodyColor = Colors::scale(undimmedBodyColor, colorRGBMultiplier);
             }
+            const bool useGradientImage = cv::slider_use_gradient_image.getBool();
 
-            if(!cv::slider_use_gradient_image.getBool()) {
+            if(!useGradientImage) {
                 s_BLEND_SHADER->enable();
                 updateConfigUniforms();
                 updateColorUniforms(dimmedBorderColor, dimmedBodyColor);
@@ -361,7 +366,7 @@ void draw(VertexArrayObject *vao, const std::vector<vec2> &alwaysPoints, vec2 tr
                         /// distortions
 
                         if(env->usingDX11()) {
-                            if(!cv::slider_use_gradient_image.getBool()) {
+                            if(!useGradientImage) {
                                 g->forceUpdateTransform();
                                 Matrix4 mvp = g->getMVP();
                                 s_BLEND_SHADER->setUniformMatrix4fv("mvp", mvp);
@@ -378,7 +383,7 @@ void draw(VertexArrayObject *vao, const std::vector<vec2> &alwaysPoints, vec2 tr
                 }
             }
 
-            if(!cv::slider_use_gradient_image.getBool()) s_BLEND_SHADER->disable();
+            if(!useGradientImage) s_BLEND_SHADER->disable();
         }
 
         if(doDisableRenderTarget) osu->getSliderFrameBuffer()->disable();
@@ -562,13 +567,6 @@ void checkUpdateVars(float hitcircleDiameter) {
                 vec2(s_UNIT_CIRCLE[(i + 1) * 5 + 0], s_UNIT_CIRCLE[(i + 1) * 5 + 1]));
         }
     }
-}
-
-void resetRenderTargetBoundingBox() {
-    s_fBoundingBoxMinX = (std::numeric_limits<float>::max)();
-    s_fBoundingBoxMaxX = 0.0f;
-    s_fBoundingBoxMinY = (std::numeric_limits<float>::max)();
-    s_fBoundingBoxMaxY = 0.0f;
 }
 
 // helper function to update color uniforms

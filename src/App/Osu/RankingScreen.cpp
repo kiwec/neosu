@@ -501,7 +501,7 @@ void RankingScreen::setScore(const FinishedScore &score) {
     if(eq(score.mods.flags, NoHP)) this->extraMods.push_back(&cv::drain_disabled);
 }
 
-void RankingScreen::setBeatmapInfo(DatabaseBeatmap *map) {
+void RankingScreen::setBeatmapInfo(const DatabaseBeatmap *map) {
     this->score.map = map;
     this->songInfo->setFromBeatmap(map);
 

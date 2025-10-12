@@ -1174,7 +1174,8 @@ void MainMenu::selectRandomBeatmap() {
             }
 
             this->preloadedMaps.push_back(set);
-            candidate_diff->do_not_store = true;  // don't store in songbrowser f2 history
+            set->do_not_store = true;  // don't store in songbrowser f2 history
+            candidate_diff->do_not_store = true;
 
             osu->getSongBrowser()->onDifficultySelected(candidate_diff, false);
             RichPresence::onMainMenu();

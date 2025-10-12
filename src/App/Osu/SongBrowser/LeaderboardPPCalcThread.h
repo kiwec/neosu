@@ -23,7 +23,7 @@ struct pp_calc_request {
 };
 
 // Set currently selected map. Clears pp cache. Pass NULL to init/reset.
-void lct_set_map(DatabaseBeatmap* map);
+void lct_set_map(const DatabaseBeatmap* map);
 
 // Get pp for given parameters. Returns -1 pp values if not computed yet.
 // Second parameter == true forces calculation during gameplay (hack)

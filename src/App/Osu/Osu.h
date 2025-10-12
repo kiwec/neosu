@@ -172,8 +172,6 @@ class Osu final : public MouseListener, public KeyboardListener {
     [[nodiscard]] bool getModNightmare() const;
     [[nodiscard]] bool getModTD() const;
 
-    [[nodiscard]] inline std::vector<ConVar *> getExperimentalMods() const { return this->experimentalMods; }
-
     [[nodiscard]] bool isInPlayMode() const;
     [[nodiscard]] inline bool isSkinLoading() const {
         return this->bSkinLoadScheduled ||
@@ -309,7 +307,6 @@ class Osu final : public MouseListener, public KeyboardListener {
 
     // mods
    public:  // public because of many external access
-    std::vector<ConVar *> experimentalMods;
     Replay::Mods previous_mods{0};
     bool bModAutoTemp{false};  // when ctrl+clicking a map, the auto mod should disable itself after the map finishes
 

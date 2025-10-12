@@ -28,6 +28,7 @@ typedef DatabaseBeatmap BeatmapDifficulty;
 typedef DatabaseBeatmap BeatmapSet;
 
 class DatabaseBeatmap final {
+    NOCOPY_NOMOVE(DatabaseBeatmap)
    public:
     // raw structs (not editable, we're following db format directly)
     struct TIMINGPOINT {
@@ -162,7 +163,10 @@ class DatabaseBeatmap final {
                                                         float speedMultiplier, bool calculateStarsInaccurately,
                                                         const std::atomic<bool> &dead);
     bool loadMetadata(bool compute_md5 = true);
+
     static LOAD_GAMEPLAY_RESULT loadGameplay(DatabaseBeatmap *databaseBeatmap, AbstractBeatmapInterface *beatmap);
+    inline LOAD_GAMEPLAY_RESULT loadGameplay(AbstractBeatmapInterface *beatmap) { return loadGameplay(this, beatmap); }
+
     MapOverrides get_overrides();
     void update_overrides();
 
@@ -189,7 +193,7 @@ class DatabaseBeatmap final {
 
     [[nodiscard]] inline const MD5Hash &getMD5Hash() const { return this->sMD5Hash; }
 
-    TIMING_INFO getTimingInfoForTime(u32 positionMS);
+    TIMING_INFO getTimingInfoForTime(u32 positionMS) const;
     static TIMING_INFO getTimingInfoForTimeAndTimingPoints(u32 positionMS,
                                                            const zarray<DatabaseBeatmap::TIMINGPOINT> &timingpoints);
 
@@ -354,7 +358,6 @@ class DatabaseBeatmap final {
         int beatmapVersion, std::vector<SLIDER> &sliders, zarray<DatabaseBeatmap::TIMINGPOINT> &timingpoints,
         float sliderMultiplier, float sliderTickRate, const std::atomic<bool> &dead);
 
-    std::vector<DatabaseBeatmap *> *difficulties = nullptr;
     BeatmapType type;
 
     MD5Hash sMD5Hash;
@@ -363,6 +366,8 @@ class DatabaseBeatmap final {
     bool do_not_store = false;
 
    private:
+    std::vector<DatabaseBeatmap *> *difficulties = nullptr;
+
     static bool parse_timing_point(std::string_view curLine, DatabaseBeatmap::TIMINGPOINT *out);
 
     enum class BlockId : i8 {

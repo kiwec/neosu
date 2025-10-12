@@ -43,7 +43,7 @@ u32 Mods::to_legacy() const {
     return legacy_flags;
 }
 
-f32 Mods::get_naive_ar(DatabaseBeatmap *map) const {
+f32 Mods::get_naive_ar(const DatabaseBeatmap *map) const {
     float ARdifficultyMultiplier = 1.0f;
     if((ModMasks::eq(this->flags, ModFlags::HardRock))) ARdifficultyMultiplier = 1.4f;
     if((ModMasks::eq(this->flags, ModFlags::Easy))) ARdifficultyMultiplier = 0.5f;
@@ -59,7 +59,7 @@ f32 Mods::get_naive_ar(DatabaseBeatmap *map) const {
     return AR;
 }
 
-f32 Mods::get_naive_cs(DatabaseBeatmap *map) const {
+f32 Mods::get_naive_cs(const DatabaseBeatmap *map) const {
     float CSdifficultyMultiplier = 1.0f;
     if((ModMasks::eq(this->flags, ModFlags::HardRock))) CSdifficultyMultiplier = 1.3f;  // different!
     if((ModMasks::eq(this->flags, ModFlags::Easy))) CSdifficultyMultiplier = 0.5f;
@@ -71,7 +71,7 @@ f32 Mods::get_naive_cs(DatabaseBeatmap *map) const {
     return CS;
 }
 
-f32 Mods::get_naive_od(DatabaseBeatmap *map) const {
+f32 Mods::get_naive_od(const DatabaseBeatmap *map) const {
     float ODdifficultyMultiplier = 1.0f;
     if((ModMasks::eq(this->flags, ModFlags::HardRock))) ODdifficultyMultiplier = 1.4f;
     if((ModMasks::eq(this->flags, ModFlags::Easy))) ODdifficultyMultiplier = 0.5f;

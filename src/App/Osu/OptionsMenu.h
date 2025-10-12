@@ -97,6 +97,7 @@ class OptionsMenu final : public ScreenBackable, public NotificationOverlayKeyLi
         auto operator()() { return this->shouldrender ? this->shouldrender() : true; }
 
         bool operator==(const RenderCondition &other) const { return this->rc != NONE && this->rc == other.rc; };
+        bool operator==(r cond) const { return this->rc != NONE && this->rc == cond; };
     };
 
     enum class OPTIONS_MENU_ELEMENT_TYPE : int8_t {
