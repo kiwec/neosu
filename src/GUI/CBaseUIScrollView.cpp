@@ -16,34 +16,6 @@ CBaseUIScrollView::CBaseUIScrollView(float xPos, float yPos, float xSize, float 
     : CBaseUIElement(xPos, yPos, xSize, ySize, name) {
     this->grabs_clicks = true;
 
-    this->bDrawFrame = true;
-    this->bDrawBackground = true;
-    this->bDrawScrollbars = true;
-
-    this->backgroundColor = 0xff000000;
-    this->frameColor = 0xffffffff;
-    this->frameBrightColor = 0;
-    this->frameDarkColor = 0;
-    this->scrollbarColor = 0xaaffffff;
-
-    this->fScrollMouseWheelMultiplier = 1.0f;
-    this->fScrollbarSizeMultiplier = 1.0f;
-
-    this->bScrolling = false;
-    this->bScrollbarScrolling = false;
-    this->vScrollPos = vec2(1, 1);
-    this->vVelocity = vec2(0, 0);
-    this->vScrollSize = vec2(1, 1);
-
-    this->bVerticalScrolling = true;
-    this->bHorizontalScrolling = true;
-    this->bScrollbarIsVerticalScrolling = false;
-
-    this->bAutoScrollingX = this->bAutoScrollingY = false;
-    this->iPrevScrollDeltaX = 0;
-    this->bBlockScrolling = false;
-
-    this->bScrollResistanceCheck = false;
     this->iScrollResistance = cv::ui_scrollview_resistance.getInt();  // TODO: dpi handling
 
     this->container = new CBaseUIContainer(xPos, yPos, xSize, ySize, name);
@@ -149,7 +121,7 @@ void CBaseUIScrollView::mouse_update(bool *propagate_clicks) {
     const bool wasContainerBusyBeforeUpdate = this->container->isBusy();
     if(this->bBusy) {
         const vec2 deltaToAdd = (mouse->getPos() - this->vMouseBackup2);
-        // debugLog("+ ({:f}, {:f})", deltaToAdd.x, deltaToAdd.y);
+        // debugLog("+ ({})", deltaToAdd);
 
         anim->moveQuadOut(&this->vKineticAverage.x, deltaToAdd.x, cv::ui_scrollview_kinetic_approach_time.getFloat(),
                           true);
@@ -228,8 +200,7 @@ void CBaseUIScrollView::mouse_update(bool *propagate_clicks) {
                                   (engine->getFrameTime() != 0.0 ? 1.0 / engine->getFrameTime() : 60.0) / 60.0f +
                               this->vScrollPos;
 
-        // debugLog("kinetic = ({:f}, {:f}), velocity = ({:f}, {:f}), frametime = {:f}", delta.x, delta.y, this->vVelocity.x,
-        // m_vVelocity.y, engine->getFrameTime());
+        // debugLog("kinetic = ({}), velocity = ({:}), frametime = {:f}", delta, this->vVelocity, engine->getFrameTime());
 
         this->bScrollbarScrolling = false;
     } else
@@ -265,38 +236,47 @@ void CBaseUIScrollView::mouse_update(bool *propagate_clicks) {
         if(!this->bAutoScrollingY && this->bVerticalScrolling) {
             if(std::round(this->vScrollPos.y) > 1)  // rubber banding, top
             {
+                // debugLog("y rubber banding, top");
                 anim->moveQuadOut(&this->vVelocity.y, 1, 0.05f, 0.0f, true);
                 anim->moveQuadOut(&this->vScrollPos.y, this->vVelocity.y, 0.2f, 0.0f, true);
             } else if(std::round(std::abs(this->vScrollPos.y) + this->vSize.y) > this->vScrollSize.y &&
                       std::round(this->vScrollPos.y) < 1)  // rubber banding, bottom
             {
+                // debugLog("y rubber banding, bottom");
                 anim->moveQuadOut(&this->vVelocity.y,
                                   (this->vScrollSize.y > this->vSize.y ? -this->vScrollSize.y : 1) +
                                       (this->vScrollSize.y > this->vSize.y ? this->vSize.y : 0),
                                   0.05f, 0.0f, true);
+
                 anim->moveQuadOut(&this->vScrollPos.y, this->vVelocity.y, 0.2f, 0.0f, true);
             } else if(std::round(this->vVelocity.y) != 0 &&
-                      std::round(this->vScrollPos.y) != std::round(this->vVelocity.y))  // kinetic scrolling
+                      std::round(this->vScrollPos.y) != std::round(this->vVelocity.y)) {  // kinetic scrolling
+                // debugLog("y kinetic scrolling, velocity: {} scrollpos: {} thispos: {}", this->vVelocity.y, this->vScrollPos.y, this->vPos.y);
                 anim->moveQuadOut(&this->vScrollPos.y, this->vVelocity.y, 0.35f, 0.0f, true);
+            }
         }
 
         // x axis
         if(!this->bAutoScrollingX && this->bHorizontalScrolling) {
             if(std::round(this->vScrollPos.x) > 1)  // rubber banding, left
             {
+                // debugLog("x rubber banding, left");
                 anim->moveQuadOut(&this->vVelocity.x, 1, 0.05f, 0.0f, true);
                 anim->moveQuadOut(&this->vScrollPos.x, this->vVelocity.x, 0.2f, 0.0f, true);
             } else if(std::round(std::abs(this->vScrollPos.x) + this->vSize.x) > this->vScrollSize.x &&
                       std::round(this->vScrollPos.x) < 1)  // rubber banding, right
             {
+                // debugLog("x rubber banding, right");
                 anim->moveQuadOut(&this->vVelocity.x,
                                   (this->vScrollSize.x > this->vSize.x ? -this->vScrollSize.x : 1) +
                                       (this->vScrollSize.x > this->vSize.x ? this->vSize.x : 0),
                                   0.05f, 0.0f, true);
                 anim->moveQuadOut(&this->vScrollPos.x, this->vVelocity.x, 0.2f, 0.0f, true);
             } else if(std::round(this->vVelocity.x) != 0 &&
-                      std::round(this->vScrollPos.x) != std::round(this->vVelocity.x))  // kinetic scrolling
+                      std::round(this->vScrollPos.x) != std::round(this->vVelocity.x)) {  // kinetic scrolling
                 anim->moveQuadOut(&this->vScrollPos.x, this->vVelocity.x, 0.35f, 0.0f, true);
+                // debugLog("x rubber banding, kinetic scrolling");
+            }
         }
     }
 
@@ -304,6 +284,7 @@ void CBaseUIScrollView::mouse_update(bool *propagate_clicks) {
     if(this->bScrollbarScrolling) {
         this->vVelocity.x = this->vVelocity.y = 0;
         if(this->bScrollbarIsVerticalScrolling) {
+            // debugLog("scrollbar scrolling movement vertical");
             const float percent =
                 std::clamp<float>((mouse->getPos().y - this->vPos.y - this->verticalScrollbar.getWidth() -
                                    this->verticalScrollbar.getHeight() - this->vMouseBackup.y - 1) /
@@ -311,6 +292,8 @@ void CBaseUIScrollView::mouse_update(bool *propagate_clicks) {
                                   0.0f, 1.0f);
             this->scrollToYInt(-this->vScrollSize.y * percent, true, false);
         } else {
+            // debugLog("scrollbar scrolling movement not vertical scrolling");
+
             const float percent =
                 std::clamp<float>((mouse->getPos().x - this->vPos.x - this->horizontalScrollbar.getHeight() -
                                    this->horizontalScrollbar.getWidth() - this->vMouseBackup.x - 1) /
@@ -321,25 +304,31 @@ void CBaseUIScrollView::mouse_update(bool *propagate_clicks) {
     }
 
     // position update during scrolling
-    if(anim->isAnimating(&this->vScrollPos.y) || anim->isAnimating(&this->vScrollPos.x))
+    bool clippingDirty = (anim->isAnimating(&this->vScrollPos.y) || anim->isAnimating(&this->vScrollPos.x));
+    if(clippingDirty) {
+        // debugLog("hit first condition, frame: {}", engine->getFrameCount());
         this->container->setPos(this->vPos.x + std::round(this->vScrollPos.x),
                                 this->vPos.y + std::round(this->vScrollPos.y));
+    }
 
     // update scrollbars
-    if(anim->isAnimating(&this->vScrollPos.y) || anim->isAnimating(&this->vScrollPos.x) || this->bScrolling ||
-       this->bScrollbarScrolling)
+    if((clippingDirty |= (this->bScrolling || this->bScrollbarScrolling))) {
+        // debugLog("hit second condition, frame: {}", engine->getFrameCount());
         this->updateScrollbars();
+    }
 
     // HACKHACK: if an animation was started and ended before any setpos could get fired, manually update the position
     if(this->container->getPos() !=
        (this->vPos + vec2(std::round(this->vScrollPos.x), std::round(this->vScrollPos.y)))) {
         this->container->setPos(this->vPos.x + std::round(this->vScrollPos.x),
                                 this->vPos.y + std::round(this->vScrollPos.y));
+        clippingDirty = true;
+        // debugLog("hit third condition, frame: {}", engine->getFrameCount());
         this->updateScrollbars();
     }
 
     // only draw visible elements
-    this->updateClipping();
+    if(clippingDirty) this->updateClipping();
 }
 
 void CBaseUIScrollView::onKeyUp(KeyboardEvent &e) { this->container->onKeyUp(e); }

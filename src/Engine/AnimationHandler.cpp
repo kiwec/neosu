@@ -28,8 +28,13 @@ void AnimationHandler::update() {
             animation.bStarted = true;
         }
 
-        // check if animation is close enough to target (floating point precision tolerance)
-        if(std::abs(*animation.fBase - animation.fTarget) <= ANIM_EPSILON) {
+        // check if animation is close enough to target
+        // use relative epsilon for large values, absolute epsilon for small values
+        const float diff = std::abs(*animation.fBase - animation.fTarget);
+        const float absMax = std::max(std::abs(*animation.fBase), std::abs(animation.fTarget));
+        const float threshold = std::max(ANIM_EPSILON, absMax * ANIM_EPSILON);
+        
+        if(diff <= threshold) {
             *animation.fBase = animation.fTarget;
 
             if(cv::debug_anim.getBool()) {
@@ -111,7 +116,7 @@ void AnimationHandler::update() {
         }
 
         // set new value
-        *animation.fBase = animation.fStartValue + percent * (animation.fTarget - animation.fStartValue);
+        *animation.fBase = animation.fStartValue * (1.0f - percent) + animation.fTarget * percent;
     }
 
     if(this->vAnimations.size() > 512) {

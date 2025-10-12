@@ -6,7 +6,7 @@ class CBaseUIContainer;
 
 class CBaseUIScrollView : public CBaseUIElement {
    public:
-    CBaseUIScrollView(float xPos = 0, float yPos = 0, float xSize = 0, float ySize = 0, const UString& name = "");
+    CBaseUIScrollView(float xPos = 0, float yPos = 0, float xSize = 0, float ySize = 0, const UString &name = "");
     ~CBaseUIScrollView() override;
 
     void freeElements();
@@ -111,6 +111,7 @@ class CBaseUIScrollView : public CBaseUIElement {
     void onFocusStolen() override;
     void onEnabled() override;
     void onDisabled() override;
+
    protected:
     void onMoved() override;
 
@@ -125,49 +126,49 @@ class CBaseUIScrollView : public CBaseUIElement {
     CBaseUIContainer *container;
 
     // vars
-    Color backgroundColor;
-    Color frameColor;
-    Color frameBrightColor;
-    Color frameDarkColor;
-    Color scrollbarColor;
+    Color backgroundColor{0xff000000};
+    Color frameColor{0xffffffff};
+    Color frameBrightColor{0};
+    Color frameDarkColor{0};
+    Color scrollbarColor{0xaaffffff};
 
-    vec2 vScrollPos{0.f};
+    vec2 vScrollPos{1.f, 1.f};
     vec2 vScrollPosBackup{0.f};
     vec2 vMouseBackup{0.f};
 
-    float fScrollMouseWheelMultiplier;
-    float fScrollbarSizeMultiplier;
+    float fScrollMouseWheelMultiplier{1.f};
+    float fScrollbarSizeMultiplier{1.f};
     McRect verticalScrollbar;
     McRect horizontalScrollbar;
 
     // scroll logic
-    vec2 vScrollSize{0.f};
+    vec2 vScrollSize{1.f, 1.f};
     vec2 vMouseBackup2{0.f};
     vec2 vMouseBackup3{0.f};
-    vec2 vVelocity{0.f};
+    vec2 vVelocity{0.f, 0.f};
     vec2 vKineticAverage{0.f};
 
-    int iPrevScrollDeltaX;
+    int iPrevScrollDeltaX = 0;
     int iScrollResistance;
 
-    unsigned bAutoScrollingX : 1;
-    unsigned bAutoScrollingY : 1;
+    unsigned bAutoScrollingX : 1 = false;
+    unsigned bAutoScrollingY : 1 = false;
 
-    unsigned bScrollResistanceCheck : 1;
-    unsigned bScrolling : 1;
-    unsigned bScrollbarScrolling : 1;
-    unsigned bScrollbarIsVerticalScrolling : 1;
-    unsigned bBlockScrolling : 1;
-    unsigned bHorizontalScrolling : 1;
-    unsigned bVerticalScrolling : 1;
+    unsigned bScrollResistanceCheck : 1 = false;
+    unsigned bScrolling : 1 = false;
+    unsigned bScrollbarScrolling : 1 = false;
+    unsigned bScrollbarIsVerticalScrolling : 1 = false;
+    unsigned bBlockScrolling : 1 = false;
+    unsigned bHorizontalScrolling : 1 = false;
+    unsigned bVerticalScrolling : 1 = true;
     unsigned bFirstScrollSizeToContent : 1 = true;
 
     // vars
-    unsigned bDrawFrame : 1;
-    unsigned bDrawBackground : 1;
-    unsigned bDrawScrollbars : 1;
+    unsigned bDrawFrame : 1 = true;
+    unsigned bDrawBackground : 1 = true;
+    unsigned bDrawScrollbars : 1 = true;
 
-public:
+   public:
     // When you scrolled to the bottom, and new content is added, setting this
     // to true makes it so you'll stay at the bottom.
     // Useful in places where you're waiting on new content, like chat logs.

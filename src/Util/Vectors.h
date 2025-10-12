@@ -26,6 +26,7 @@ using glm::any;
 using glm::cross;
 using glm::distance;
 using glm::dot;
+using glm::round;
 using glm::equal;
 using glm::greaterThan;
 using glm::greaterThanEqual;
@@ -52,6 +53,12 @@ void setLength(T &vec, const V &len) {
     if(length(vec) > DOUBLE_NORMALIZE_EPSILON) {
         vec = normalize(vec) * static_cast<double>(len);
     }
+}
+
+template <typename V>
+    requires(std::is_same_v<V, vec2> || std::is_same_v<V, vec3> || std::is_same_v<V, vec4> || std::is_same_v<V, vec2d> || std::is_same_v<V, vec3d> || std::is_same_v<V, vec4d>)
+inline constexpr bool allEqual(const V &vec1, const V vec2) {
+    return vec::all(vec::equal(vec1, vec2));
 }
 
 }  // namespace vec

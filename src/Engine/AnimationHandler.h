@@ -91,7 +91,7 @@ class AnimationHandler {
 
     std::vector<Animation> vAnimations;
 
-    static constexpr const float ANIM_EPSILON{1e-6f};
+    static constexpr const float ANIM_EPSILON{1e-7f};
 };
 
 extern AnimationHandler *anim;
