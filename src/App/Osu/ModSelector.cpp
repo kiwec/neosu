@@ -1371,7 +1371,7 @@ void ModSelector::updateOverrideSliderLabels() {
     }
 }
 
-UString ModSelector::getOverrideSliderLabelText(ModSelector::OVERRIDE_SLIDER s, bool active) {
+UString ModSelector::getOverrideSliderLabelText(const ModSelector::OVERRIDE_SLIDER &s, bool active) {
     float convarValue = s.cvar->getFloat();
 
     UString newLabelText = s.label->getName();

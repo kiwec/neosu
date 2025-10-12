@@ -7,7 +7,7 @@ class SimulatedBeatmapInterface final : public AbstractBeatmapInterface {
     NOCOPY_NOMOVE(SimulatedBeatmapInterface)
    public:
     SimulatedBeatmapInterface() = delete;
-    SimulatedBeatmapInterface(DatabaseBeatmap *map, Replay::Mods mods_);
+    SimulatedBeatmapInterface(DatabaseBeatmap *map, const Replay::Mods &mods_);
     ~SimulatedBeatmapInterface() override;
 
     Replay::Mods mods;

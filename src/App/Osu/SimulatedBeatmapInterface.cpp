@@ -4,24 +4,15 @@
 
 #include "DatabaseBeatmap.h"
 #include "DifficultyCalculator.h"
-#include "Engine.h"
-#include "Environment.h"
 #include "GameRules.h"
 #include "HitObjects.h"
-#include "KeyBindings.h"
-#include "Keyboard.h"
 #include "LegacyReplay.h"
-#include "ModFPoSu.h"
-#include "ModSelector.h"
-#include "Mouse.h"
-#include "ResourceManager.h"
 #include "Logging.h"
 
-SimulatedBeatmapInterface::SimulatedBeatmapInterface(DatabaseBeatmap *map, Replay::Mods mods_)
+SimulatedBeatmapInterface::SimulatedBeatmapInterface(DatabaseBeatmap *map, const Replay::Mods &mods_)
     : AbstractBeatmapInterface() {
     this->beatmap = map;
-    this->mods = mods_;
-    this->live_score.mods = mods_;
+    this->mods = this->live_score.mods = mods_;
     this->nb_hitobjects = map->getNumObjects();
 
     this->iNPS = 0;
@@ -314,7 +305,8 @@ LiveScore::HIT SimulatedBeatmapInterface::addHitResult(HitObject *hitObject, Liv
     // health
     LiveScore::HIT returnedHit = LiveScore::HIT::HIT_MISS;
     if(!ignoreHealth) {
-        this->addHealth(this->live_score.getHealthIncrease(this, hit), true);
+        // why is this upcast exactly idk but im not changing it
+        this->addHealth(this->live_score.getHealthIncrease((AbstractBeatmapInterface *)this, hit), true);
 
         // geki/katu handling
         if(isEndOfCombo) {

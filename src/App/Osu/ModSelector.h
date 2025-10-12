@@ -105,7 +105,7 @@ class ModSelector final : public OsuScreen {
     void onOverrideSliderLockChange(CBaseUICheckbox *checkbox);
     void onOverrideARSliderDescClicked(CBaseUIButton *button);
     void onOverrideODSliderDescClicked(CBaseUIButton *button);
-    UString getOverrideSliderLabelText(OVERRIDE_SLIDER s, bool active);
+    UString getOverrideSliderLabelText(const OVERRIDE_SLIDER &s, bool active);
 
     CBaseUILabel *addExperimentalLabel(const UString &text);
     UICheckbox *addExperimentalCheckbox(const UString &text, const UString &tooltipText, ConVar *cvar = nullptr);
