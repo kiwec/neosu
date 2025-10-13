@@ -1369,7 +1369,7 @@ void BeatmapInterface::addScorePoints(int points, bool isSpinner) { osu->getScor
 
 void BeatmapInterface::addHealth(f64 percent, bool isFromHitResult) {
     // never drain before first hitobject (or if drain is disabled)
-    if((cv::mod_nofail.getBool() && cv::drain_disabled.getBool()) ||
+    if(cv::drain_disabled.getBool() || osu->getScore()->mods.has(ModFlags::NoHP) ||
        (this->hitobjects.size() > 0 && this->iCurMusicPosWithOffsets < this->hitobjects[0]->click_time))
         return;
 
