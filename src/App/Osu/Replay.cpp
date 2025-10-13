@@ -45,14 +45,14 @@ u32 Mods::to_legacy() const {
 
 f32 Mods::get_naive_ar(const DatabaseBeatmap *map) const {
     float ARdifficultyMultiplier = 1.0f;
-    if((ModMasks::eq(this->flags, ModFlags::HardRock))) ARdifficultyMultiplier = 1.4f;
-    if((ModMasks::eq(this->flags, ModFlags::Easy))) ARdifficultyMultiplier = 0.5f;
+    if((this->has(ModFlags::HardRock))) ARdifficultyMultiplier = 1.4f;
+    if((this->has(ModFlags::Easy))) ARdifficultyMultiplier = 0.5f;
 
     f32 AR = std::clamp<f32>(map->getAR() * ARdifficultyMultiplier, 0.0f, 10.0f);
     if(this->ar_override >= 0.0f) AR = this->ar_override;
     if(this->ar_overridenegative < 0.0f) AR = this->ar_overridenegative;
 
-    if(ModMasks::eq(this->flags, ModFlags::AROverrideLock)) {
+    if(this->has(ModFlags::AROverrideLock)) {
         AR = GameRules::arWithSpeed(AR, 1.f / this->speed);
     }
 
@@ -61,8 +61,8 @@ f32 Mods::get_naive_ar(const DatabaseBeatmap *map) const {
 
 f32 Mods::get_naive_cs(const DatabaseBeatmap *map) const {
     float CSdifficultyMultiplier = 1.0f;
-    if((ModMasks::eq(this->flags, ModFlags::HardRock))) CSdifficultyMultiplier = 1.3f;  // different!
-    if((ModMasks::eq(this->flags, ModFlags::Easy))) CSdifficultyMultiplier = 0.5f;
+    if((this->has(ModFlags::HardRock))) CSdifficultyMultiplier = 1.3f;  // different!
+    if((this->has(ModFlags::Easy))) CSdifficultyMultiplier = 0.5f;
 
     f32 CS = std::clamp<f32>(map->getCS() * CSdifficultyMultiplier, 0.0f, 10.0f);
     if(this->cs_override >= 0.0f) CS = this->cs_override;
@@ -73,13 +73,13 @@ f32 Mods::get_naive_cs(const DatabaseBeatmap *map) const {
 
 f32 Mods::get_naive_od(const DatabaseBeatmap *map) const {
     float ODdifficultyMultiplier = 1.0f;
-    if((ModMasks::eq(this->flags, ModFlags::HardRock))) ODdifficultyMultiplier = 1.4f;
-    if((ModMasks::eq(this->flags, ModFlags::Easy))) ODdifficultyMultiplier = 0.5f;
+    if((this->has(ModFlags::HardRock))) ODdifficultyMultiplier = 1.4f;
+    if((this->has(ModFlags::Easy))) ODdifficultyMultiplier = 0.5f;
 
     f32 OD = std::clamp<f32>(map->getOD() * ODdifficultyMultiplier, 0.0f, 10.0f);
     if(this->od_override >= 0.0f) OD = this->od_override;
 
-    if(ModMasks::eq(this->flags, ModFlags::ODOverrideLock)) {
+    if(this->has(ModFlags::ODOverrideLock)) {
         OD = GameRules::odWithSpeed(OD, 1.f / this->speed);
     }
 

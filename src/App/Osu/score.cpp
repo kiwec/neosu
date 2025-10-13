@@ -75,15 +75,15 @@ void LiveScore::reset() {
 }
 
 float LiveScore::getScoreMultiplier() {
-    bool ez = ModMasks::eq(this->mods.flags, ModFlags::Easy);
-    bool nf = ModMasks::eq(this->mods.flags, ModFlags::NoFail);
-    bool sv2 = ModMasks::eq(this->mods.flags, ModFlags::ScoreV2);
-    bool hr = ModMasks::eq(this->mods.flags, ModFlags::HardRock);
-    bool fl = ModMasks::eq(this->mods.flags, ModFlags::Flashlight);
-    bool hd = ModMasks::eq(this->mods.flags, ModFlags::Hidden);
-    bool so = ModMasks::eq(this->mods.flags, ModFlags::SpunOut);
-    bool rx = ModMasks::eq(this->mods.flags, ModFlags::Relax);
-    bool ap = ModMasks::eq(this->mods.flags, ModFlags::Autopilot);
+    bool ez = this->mods.has(ModFlags::Easy);
+    bool nf = this->mods.has(ModFlags::NoFail);
+    bool sv2 = this->mods.has(ModFlags::ScoreV2);
+    bool hr = this->mods.has(ModFlags::HardRock);
+    bool fl = this->mods.has(ModFlags::Flashlight);
+    bool hd = this->mods.has(ModFlags::Hidden);
+    bool so = this->mods.has(ModFlags::SpunOut);
+    bool rx = this->mods.has(ModFlags::Relax);
+    bool ap = this->mods.has(ModFlags::Autopilot);
 
     float multiplier = 1.0f;
 
@@ -188,7 +188,7 @@ void LiveScore::addHitResult(AbstractBeatmapInterface *beatmap, HitObject * /*hi
 
     // recalculate score v2
     this->iScoreV2ComboPortion += (u64)((double)hitValue * (1.0 + (double)scoreComboMultiplier / 10.0));
-    if(ModMasks::eq(this->mods.flags, ModFlags::ScoreV2)) {
+    if(this->mods.has(ModFlags::ScoreV2)) {
         const double maximumAccurateHits = beatmap->nb_hitobjects;
 
         if(totalNumHits > 0) {
@@ -203,8 +203,8 @@ void LiveScore::addHitResult(AbstractBeatmapInterface *beatmap, HitObject * /*hi
     // recalculate grade
     this->grade = FinishedScore::Grade::D;
 
-    bool hd = ModMasks::eq(this->mods.flags, ModFlags::Hidden);
-    bool fl = ModMasks::eq(this->mods.flags, ModFlags::Flashlight);
+    bool hd = this->mods.has(ModFlags::Hidden);
+    bool fl = this->mods.has(ModFlags::Flashlight);
 
     if(percent300s > 0.6f) this->grade = FinishedScore::Grade::C;
     if((percent300s > 0.7f && this->iNumMisses == 0) || (percent300s > 0.8f)) this->grade = FinishedScore::Grade::B;
@@ -443,9 +443,7 @@ UString LiveScore::getModsStringForRichPresence() {
     return modsString;
 }
 
-u64 LiveScore::getScore() {
-    return ModMasks::eq(this->mods.flags, ModFlags::ScoreV2) ? this->iScoreV2 : this->iScoreV1;
-}
+u64 LiveScore::getScore() { return this->mods.has(ModFlags::ScoreV2) ? this->iScoreV2 : this->iScoreV1; }
 
 void LiveScore::onScoreChange() {
     if(this->simulating || !osu->getRoom()) return;
@@ -477,13 +475,12 @@ f64 FinishedScore::get_or_calc_pp() {
     if(pp != -1.0) return pp;
 
     pp_calc_request request;
-    request.mods_legacy = this->mods.to_legacy();
-    request.speed = this->mods.speed;
+    request.mods = this->mods;
     request.AR = this->mods.get_naive_ar(this->map);
     request.CS = this->mods.get_naive_cs(this->map);
     request.OD = this->mods.get_naive_od(this->map);
-    request.rx = ModMasks::eq(this->mods.flags, ModFlags::Relax);
-    request.td = ModMasks::eq(this->mods.flags, ModFlags::TouchDevice);
+    request.rx = this->mods.has(ModFlags::Relax);
+    request.td = this->mods.has(ModFlags::TouchDevice);
     request.comboMax = this->comboMax;
     request.numMisses = this->numMisses;
     request.num300s = this->num300s;
@@ -517,8 +514,8 @@ f64 FinishedScore::get_pp() const {
 
 FinishedScore::Grade FinishedScore::calculate_grade() const {
     float totalNumHits = this->numMisses + this->num50s + this->num100s + this->num300s;
-    bool modHidden = (ModMasks::eq(this->mods.flags, ModFlags::Hidden));
-    bool modFlashlight = (ModMasks::eq(this->mods.flags, ModFlags::Flashlight));
+    bool modHidden = (this->mods.has(ModFlags::Hidden));
+    bool modFlashlight = (this->mods.has(ModFlags::Flashlight));
 
     float percent300s = 0.0f;
     float percent50s = 0.0f;

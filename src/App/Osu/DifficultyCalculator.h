@@ -3,6 +3,7 @@
 
 #include "BaseEnvironment.h"
 #include "types.h"
+#include "Replay.h"
 #include "Vectors.h"
 
 #include <atomic>
@@ -250,14 +251,8 @@ class DifficultyCalculator {
     // stars, fully static
     static f64 calculateStarDiffForHitObjects(StarCalcParams &params);
 
-    // pp, use runtime mods (convenience)
-    static f64 calculatePPv2(AbstractBeatmapInterface *beatmap, f64 aim, f64 aimSliderFactor, f64 aimDifficultSliders,
-                             f64 difficultAimStrains, f64 speed, f64 speedNotes, f64 difficultSpeedStrains,
-                             i32 numHitObjects, i32 numCircles, i32 numSliders, i32 numSpinners, i32 maxPossibleCombo,
-                             i32 combo = -1, i32 misses = 0, i32 c300 = -1, i32 c100 = 0, i32 c50 = 0);
-
     // pp, fully static
-    static f64 calculatePPv2(u32 modsLegacy, f64 timescale, f64 ar, f64 od, f64 aim, f64 aimSliderFactor,
+    static f64 calculatePPv2(const Replay::Mods &mods, f64 ar, f64 od, f64 aim, f64 aimSliderFactor,
                              f64 aimDifficultSliders, f64 difficultAimStrains, f64 speed, f64 speedNotes,
                              f64 difficultSpeedStrains, i32 numHitObjects, i32 numCircles, i32 numSliders,
                              i32 numSpinners, i32 maxPossibleCombo, i32 combo, i32 misses, i32 c300, i32 c100, i32 c50);
@@ -281,8 +276,8 @@ class DifficultyCalculator {
     };
 
     struct ScoreData {
+        Replay::Mods mods;
         f64 accuracy;
-        u32 modsLegacy;
         i32 countGreat;
         i32 countGood;
         i32 countMeh;
@@ -310,7 +305,7 @@ class DifficultyCalculator {
                                  f64 speedDeviation);
     static f64 computeAccuracyValue(const ScoreData &score, const Attributes &attributes);
 
-    static f64 calculateSpeedDeviation(const ScoreData &score, const Attributes &attributes, f64 timescale);
+    static f64 calculateSpeedDeviation(const ScoreData &score, const Attributes &attributes);
     static f64 calculateDeviation(const Attributes &attributes, f64 timescale, f64 relevantCountGreat,
                                   f64 relevantCountOk, f64 relevantCountMeh, f64 relevantCountMiss);
     static f64 calculateSpeedHighDeviationNerf(const Attributes &attributes, f64 speedDeviation);

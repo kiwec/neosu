@@ -43,6 +43,8 @@ struct Mods {
     f32 jigsaw_followcircle_radius_factor = 0.f;
     f32 shirone_combo = 20.f;
 
+    bool operator==(const Mods &) const = default;
+
     [[nodiscard]] inline bool has(u64 flag) const { return !!(ModMasks::eq(this->flags, flag)); }
 
     [[nodiscard]] u32 to_legacy() const;

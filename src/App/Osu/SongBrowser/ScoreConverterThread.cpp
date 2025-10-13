@@ -29,8 +29,8 @@ static void update_ppv2(const FinishedScore& score) {
     f32 AR = score.mods.get_naive_ar(map);
     f32 CS = score.mods.get_naive_cs(map);
     f32 OD = score.mods.get_naive_od(map);
-    bool RX = ModMasks::eq(score.mods.flags, ModFlags::Relax);
-    bool TD = ModMasks::eq(score.mods.flags, ModFlags::TouchDevice);
+    bool RX = score.mods.has(ModFlags::Relax);
+    bool TD = score.mods.has(ModFlags::TouchDevice);
 
     // Load hitobjects
     auto diffres = DatabaseBeatmap::loadDifficultyHitObjects(map->getFilePath(), AR, CS, score.mods.speed, false, dead);
@@ -69,10 +69,10 @@ static void update_ppv2(const FinishedScore& score) {
     if(dead.load()) return;
 
     info.pp = DifficultyCalculator::calculatePPv2(
-        score.mods.to_legacy(), score.mods.speed, AR, OD, info.aim_stars, info.aim_slider_factor,
-        info.difficult_aim_sliders, info.difficult_aim_strains, info.speed_stars, info.speed_notes,
-        info.difficult_speed_strains, map->iNumObjects, map->iNumCircles, map->iNumSliders, map->iNumSpinners,
-        diffres.maxPossibleCombo, score.comboMax, score.numMisses, score.num300s, score.num100s, score.num50s);
+        score.mods, AR, OD, info.aim_stars, info.aim_slider_factor, info.difficult_aim_sliders,
+        info.difficult_aim_strains, info.speed_stars, info.speed_notes, info.difficult_speed_strains, map->iNumObjects,
+        map->iNumCircles, map->iNumSliders, map->iNumSpinners, diffres.maxPossibleCombo, score.comboMax,
+        score.numMisses, score.num300s, score.num100s, score.num50s);
 
     // Update score
     db->scores_mtx.lock();

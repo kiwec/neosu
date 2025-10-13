@@ -97,7 +97,7 @@ static void run_thread() {
             bool found_hitobjects = false;
             hitobject_cache* computed_ho = nullptr;
             for(auto ho : ho_cache) {
-                if(ho->speed != rqt.speed) continue;
+                if(ho->speed != rqt.mods.speed) continue;
                 if(ho->AR != rqt.AR) continue;
                 if(ho->CS != rqt.CS) continue;
 
@@ -107,7 +107,7 @@ static void run_thread() {
             }
             if(!found_hitobjects) {
                 computed_ho = new hitobject_cache();
-                computed_ho->speed = rqt.speed;
+                computed_ho->speed = rqt.mods.speed;
                 computed_ho->AR = rqt.AR;
                 computed_ho->CS = rqt.CS;
                 if(dead.load()) {
@@ -115,7 +115,7 @@ static void run_thread() {
                     return;
                 }
                 computed_ho->diffres = DatabaseBeatmap::loadDifficultyHitObjects(map->getFilePath(), rqt.AR, rqt.CS,
-                                                                                 rqt.speed, false, dead);
+                                                                                 rqt.mods.speed, false, dead);
                 if(dead.load()) {
                     work_mtx.lock();
                     return;
@@ -132,7 +132,7 @@ static void run_thread() {
             bool found_info = false;
             info_cache* computed_info = nullptr;
             for(auto info : inf_cache) {
-                if(info->speed != rqt.speed) continue;
+                if(info->speed != rqt.mods.speed) continue;
                 if(info->AR != rqt.AR) continue;
                 if(info->CS != rqt.CS) continue;
                 if(info->OD != rqt.OD) continue;
@@ -145,7 +145,7 @@ static void run_thread() {
             }
             if(!found_info) {
                 computed_info = new info_cache();
-                computed_info->speed = rqt.speed;
+                computed_info->speed = rqt.mods.speed;
                 computed_info->AR = rqt.AR;
                 computed_info->CS = rqt.CS;
                 computed_info->OD = rqt.OD;
@@ -161,7 +161,7 @@ static void run_thread() {
                     .sortedHitObjects = computed_ho->diffres.diffobjects,
                     .CS = rqt.CS,
                     .OD = rqt.OD,
-                    .speedMultiplier = rqt.speed,
+                    .speedMultiplier = rqt.mods.speed,
                     .relax = rqt.rx,
                     .touchDevice = rqt.td,
                     .aim = &computed_info->info.aim_stars,
@@ -192,12 +192,12 @@ static void run_thread() {
                 return;
             }
             computed_info->info.pp = DifficultyCalculator::calculatePPv2(
-                rqt.mods_legacy, rqt.speed, rqt.AR, rqt.OD, computed_info->info.aim_stars,
-                computed_info->info.aim_slider_factor, computed_info->info.difficult_aim_sliders,
-                computed_info->info.difficult_aim_strains, computed_info->info.speed_stars,
-                computed_info->info.speed_notes, computed_info->info.difficult_speed_strains, map->iNumObjects,
-                map->iNumCircles, map->iNumSliders, map->iNumSpinners, computed_ho->diffres.maxPossibleCombo,
-                rqt.comboMax, rqt.numMisses, rqt.num300s, rqt.num100s, rqt.num50s);
+                rqt.mods, rqt.AR, rqt.OD, computed_info->info.aim_stars, computed_info->info.aim_slider_factor,
+                computed_info->info.difficult_aim_sliders, computed_info->info.difficult_aim_strains,
+                computed_info->info.speed_stars, computed_info->info.speed_notes,
+                computed_info->info.difficult_speed_strains, map->iNumObjects, map->iNumCircles, map->iNumSliders,
+                map->iNumSpinners, computed_ho->diffres.maxPossibleCombo, rqt.comboMax, rqt.numMisses, rqt.num300s,
+                rqt.num100s, rqt.num50s);
 
             cache_mtx.lock();
             cache.emplace_back(rqt, computed_info->info);

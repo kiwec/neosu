@@ -658,8 +658,7 @@ Database::PlayerPPScores Database::getPlayerPPScores(const std::string &playerNa
         bool foundValidScore = false;
         float prevPP = -1.0f;
         for(auto &score : this->scores[key]) {
-            auto uses_rx_or_ap = (ModMasks::eq(score.mods.flags, ModFlags::Relax) ||
-                                  (ModMasks::eq(score.mods.flags, ModFlags::Autopilot)));
+            auto uses_rx_or_ap = (score.mods.has(ModFlags::Relax) || (score.mods.has(ModFlags::Autopilot)));
             if(uses_rx_or_ap && !cv::user_include_relax_and_autopilot_for_stats.getBool()) continue;
 
             if(score.playerName != playerName) continue;
@@ -2135,7 +2134,7 @@ void Database::loadPeppyScores(std::string_view dbPath) {
                 sc.bancho_score_id = 0;
             }
 
-            if(ModMasks::eq(sc.mods.flags, ModFlags::Target)) {
+            if(sc.mods.has(ModFlags::Target)) {
                 db.skip<f64>();  // total accuracy
             }
 

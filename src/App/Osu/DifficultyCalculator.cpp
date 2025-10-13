@@ -450,21 +450,7 @@ f64 DifficultyCalculator::calculateStarDiffForHitObjects(StarCalcParams &params)
     return calculateTotalStarsFromSkills(*params.aim, *params.speed);
 }
 
-f64 DifficultyCalculator::calculatePPv2(AbstractBeatmapInterface *beatmap, f64 aim, f64 aimSliderFactor,
-                                        f64 aimDifficultSliders, f64 aimDifficultStrains, f64 speed, f64 speedNotes,
-                                        f64 speedDifficultStrains, i32 numHitObjects, i32 numCircles, i32 numSliders,
-                                        i32 numSpinners, i32 maxPossibleCombo, i32 combo, i32 misses, i32 c300,
-                                        i32 c100, i32 c50) {
-    // NOTE: depends on active mods + OD + AR
-
-    // get runtime mods
-    return calculatePPv2(osu->getScore()->getModsLegacy(), beatmap->getSpeedMultiplier(), beatmap->getAR(),
-                         beatmap->getOD(), aim, aimSliderFactor, aimDifficultSliders, aimDifficultStrains, speed,
-                         speedNotes, speedDifficultStrains, numHitObjects, numCircles, numSliders, numSpinners,
-                         maxPossibleCombo, combo, misses, c300, c100, c50);
-}
-
-f64 DifficultyCalculator::calculatePPv2(u32 modsLegacy, f64 timescale, f64 ar, f64 od, f64 aim, f64 aimSliderFactor,
+f64 DifficultyCalculator::calculatePPv2(const Replay::Mods &mods, f64 ar, f64 od, f64 aim, f64 aimSliderFactor,
                                         f64 aimDifficultSliders, f64 aimDifficultStrains, f64 speed, f64 speedNotes,
                                         f64 speedDifficultStrains, i32 numHitObjects, i32 numCircles, i32 numSliders,
                                         i32 numSpinners, i32 maxPossibleCombo, i32 combo, i32 misses, i32 c300,
@@ -475,8 +461,8 @@ f64 DifficultyCalculator::calculatePPv2(u32 modsLegacy, f64 timescale, f64 ar, f
     // (the original incoming ar/od values are guaranteed to not yet have any speed multiplier applied to them, but they do have non-time-related mods already applied, like HR or any custom overrides)
     // (yes, this does work correctly when the override slider "locking" feature is used. in this case, the stored ar/od is already compensated such that it will have the locked value AFTER applying the speed multiplier here)
     // (all UI elements which display ar/od from stored scores, like the ranking screen or score buttons, also do this calculation before displaying the values to the user. of course the mod selection screen does too.)
-    ar = GameRules::arWithSpeed(ar, timescale);
-    od = GameRules::odWithSpeed(od, timescale);
+    ar = GameRules::arWithSpeed(ar, mods.speed);
+    od = GameRules::odWithSpeed(od, mods.speed);
 
     if(c300 < 0) c300 = numHitObjects - c100 - c50 - misses;
 
@@ -486,7 +472,7 @@ f64 DifficultyCalculator::calculatePPv2(u32 modsLegacy, f64 timescale, f64 ar, f
 
     ScoreData score;
     {
-        score.modsLegacy = modsLegacy;
+        score.mods = mods;
         score.countGreat = c300;
         score.countGood = c100;
         score.countMeh = c50;
@@ -498,8 +484,7 @@ f64 DifficultyCalculator::calculatePPv2(u32 modsLegacy, f64 timescale, f64 ar, f
         {
             score.accuracy =
                 (score.totalHits > 0 ? (f64)(c300 * 300 + c100 * 100 + c50 * 50) / (f64)(score.totalHits * 300) : 0.0);
-            score.amountHitObjectsWithAccuracy =
-                (ModMasks::legacy_eq(modsLegacy, LegacyFlags::ScoreV2) ? numCircles + numSliders : numCircles);
+            score.amountHitObjectsWithAccuracy = (mods.has(ModFlags::ScoreV2) ? numCircles + numSliders : numCircles);
         }
     }
 
@@ -529,15 +514,15 @@ f64 DifficultyCalculator::calculatePPv2(u32 modsLegacy, f64 timescale, f64 ar, f
     // custom multipliers for nofail and spunout
     f64 multiplier = 1.15;  // keep final pp normalized across changes
     {
-        if(ModMasks::legacy_eq(modsLegacy, LegacyFlags::NoFail))
+        if(mods.has(ModFlags::NoFail))
             multiplier *= std::max(
                 0.9, 1.0 - 0.02 * effectiveMissCount);  // see https://github.com/ppy/osu-performance/pull/127/files
 
-        if((ModMasks::legacy_eq(modsLegacy, LegacyFlags::SpunOut)) && score.totalHits > 0)
+        if((mods.has(ModFlags::SpunOut)) && score.totalHits > 0)
             multiplier *= 1.0 - std::pow((f64)numSpinners / (f64)score.totalHits,
                                          0.85);  // see https://github.com/ppy/osu-performance/pull/110/
 
-        if(ModMasks::legacy_eq(modsLegacy, LegacyFlags::Relax)) {
+        if(mods.has(ModFlags::Relax)) {
             f64 okMultiplier = std::max(0.0, od > 0.0 ? 1.0 - std::pow(od / 13.33, 1.8) : 1.0);   // 100
             f64 mehMultiplier = std::max(0.0, od > 0.0 ? 1.0 - std::pow(od / 13.33, 5.0) : 1.0);  // 50
             effectiveMissCount =
@@ -545,7 +530,7 @@ f64 DifficultyCalculator::calculatePPv2(u32 modsLegacy, f64 timescale, f64 ar, f
         }
     }
 
-    const f64 speedDeviation = calculateSpeedDeviation(score, attributes, timescale);
+    const f64 speedDeviation = calculateSpeedDeviation(score, attributes);
     const f64 aimValue = computeAimValue(score, attributes, effectiveMissCount);
     const f64 speedValue = computeSpeedValue(score, attributes, effectiveMissCount, speedDeviation);
     const f64 accuracyValue = computeAccuracyValue(score, attributes);
@@ -572,7 +557,7 @@ f64 DifficultyCalculator::calculateTotalStarsFromSkills(f64 aim, f64 speed) {
 
 f64 DifficultyCalculator::computeAimValue(const ScoreData &score, const DifficultyCalculator::Attributes &attributes,
                                           f64 effectiveMissCount) {
-    if(ModMasks::legacy_eq(score.modsLegacy, LegacyFlags::Autopilot)) return 0.0;
+    if(score.mods.has(ModFlags::Autopilot)) return 0.0;
 
     f64 aimDifficulty = attributes.AimStrain;
 
@@ -604,7 +589,7 @@ f64 DifficultyCalculator::computeAimValue(const ScoreData &score, const Difficul
 
     // ar bonus
     f64 approachRateFactor = 0.0;  // see https://github.com/ppy/osu-performance/pull/125/
-    if(!ModMasks::legacy_eq(score.modsLegacy, LegacyFlags::Relax)) {
+    if(!score.mods.has(ModFlags::Relax)) {
         if(attributes.ApproachRate > 10.33)
             approachRateFactor =
                 0.3 *
@@ -621,7 +606,7 @@ f64 DifficultyCalculator::computeAimValue(const ScoreData &score, const Difficul
     aimValue *= 1.0 + approachRateFactor * lengthBonus;
 
     // hidden
-    if(ModMasks::legacy_eq(score.modsLegacy, LegacyFlags::Hidden))
+    if(score.mods.has(ModFlags::Hidden))
         aimValue *= 1.0 + 0.04 * (std::max(12.0 - attributes.ApproachRate,
                                            0.0));  // NOTE: clamped to 0 because McOsu allows AR > 12
 
@@ -635,7 +620,7 @@ f64 DifficultyCalculator::computeAimValue(const ScoreData &score, const Difficul
 
 f64 DifficultyCalculator::computeSpeedValue(const ScoreData &score, const Attributes &attributes,
                                             f64 effectiveMissCount, f64 speedDeviation) {
-    if((ModMasks::legacy_eq(score.modsLegacy, LegacyFlags::Relax)) || std::isnan(speedDeviation)) return 0.0;
+    if((score.mods.has(ModFlags::Relax)) || std::isnan(speedDeviation)) return 0.0;
 
     f64 speedValue = std::pow(5.0 * std::max(1.0, attributes.SpeedStrain / 0.0675) - 4.0, 3.0) / 100000.0;
 
@@ -662,7 +647,7 @@ f64 DifficultyCalculator::computeSpeedValue(const ScoreData &score, const Attrib
     speedValue *= 1.0 + approachRateFactor * lengthBonus;
 
     // hidden
-    if(ModMasks::legacy_eq(score.modsLegacy, LegacyFlags::Hidden))
+    if(score.mods.has(ModFlags::Hidden))
         speedValue *= 1.0 + 0.04 * (std::max(12.0 - attributes.ApproachRate,
                                              0.0));  // NOTE: clamped to 0 because McOsu allows AR > 12
 
@@ -689,7 +674,7 @@ f64 DifficultyCalculator::computeSpeedValue(const ScoreData &score, const Attrib
 }
 
 f64 DifficultyCalculator::computeAccuracyValue(const ScoreData &score, const Attributes &attributes) {
-    if(ModMasks::legacy_eq(score.modsLegacy, LegacyFlags::Relax)) return 0.0;
+    if(score.mods.has(ModFlags::Relax)) return 0.0;
 
     f64 betterAccuracyPercentage;
     if(score.amountHitObjectsWithAccuracy > 0)
@@ -711,14 +696,14 @@ f64 DifficultyCalculator::computeAccuracyValue(const ScoreData &score, const Att
     accuracyValue *= std::min(1.15, std::pow(score.amountHitObjectsWithAccuracy / 1000.0, 0.3));
 
     // hidden bonus
-    if(ModMasks::legacy_eq(score.modsLegacy, LegacyFlags::Hidden)) accuracyValue *= 1.08;
+    if(score.mods.has(ModFlags::Hidden)) accuracyValue *= 1.08;
     // flashlight bonus
-    if(ModMasks::legacy_eq(score.modsLegacy, LegacyFlags::Flashlight)) accuracyValue *= 1.02;
+    if(score.mods.has(ModFlags::Flashlight)) accuracyValue *= 1.02;
 
     return accuracyValue;
 }
 
-f64 DifficultyCalculator::calculateSpeedDeviation(const ScoreData &score, const Attributes &attributes, f64 timescale) {
+f64 DifficultyCalculator::calculateSpeedDeviation(const ScoreData &score, const Attributes &attributes) {
     if(score.countGreat + score.countGood + score.countMeh == 0) return std::numeric_limits<f64>::quiet_NaN();
 
     f64 speedNoteCount = attributes.SpeedNoteCount;
@@ -729,7 +714,7 @@ f64 DifficultyCalculator::calculateSpeedDeviation(const ScoreData &score, const 
     f64 relevantCountOk = std::min((f64)score.countGood, speedNoteCount - relevantCountMiss - relevantCountMeh);
     f64 relevantCountGreat = std::max(0.0, speedNoteCount - relevantCountMiss - relevantCountMeh - relevantCountOk);
 
-    return calculateDeviation(attributes, timescale, relevantCountGreat, relevantCountOk, relevantCountMeh,
+    return calculateDeviation(attributes, score.mods.speed, relevantCountGreat, relevantCountOk, relevantCountMeh,
                               relevantCountMiss);
 }
 

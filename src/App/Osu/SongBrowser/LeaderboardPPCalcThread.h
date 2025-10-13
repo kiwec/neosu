@@ -6,8 +6,7 @@
 class DatabaseBeatmap;
 
 struct pp_calc_request {
-    u32 mods_legacy{};
-    f32 speed{};
+    Replay::Mods mods;
     f32 AR{};
     f32 CS{};
     f32 OD{};

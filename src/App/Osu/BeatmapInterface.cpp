@@ -2162,7 +2162,7 @@ void BeatmapInterface::update() {
             auto nb_circles = this->iCurrentNumCircles;
             auto nb_sliders = this->iCurrentNumSliders;
             auto nb_spinners = this->iCurrentNumSpinners;
-            auto modsLegacy = osu->getScore()->getModsLegacy();
+            auto mods = osu->getScore()->mods;
             auto relax = osu->getModRelax();
             auto td = osu->getModTD();
             auto highestCombo = osu->getScore()->getComboMax();
@@ -2204,10 +2204,10 @@ void BeatmapInterface::update() {
                 info.total_stars = DifficultyCalculator::calculateStarDiffForHitObjects(params);
 
                 info.pp = DifficultyCalculator::calculatePPv2(
-                    modsLegacy, params.speedMultiplier, AR, params.OD, info.aim_stars, info.aim_slider_factor,
-                    info.difficult_aim_sliders, info.difficult_aim_strains, info.speed_stars, info.speed_notes,
-                    info.difficult_speed_strains, current_hitobject, nb_circles, nb_sliders, nb_spinners,
-                    diffres.maxPossibleCombo, highestCombo, numMisses, num300s, num100s, num50s);
+                    mods, AR, params.OD, info.aim_stars, info.aim_slider_factor, info.difficult_aim_sliders,
+                    info.difficult_aim_strains, info.speed_stars, info.speed_notes, info.difficult_speed_strains,
+                    current_hitobject, nb_circles, nb_sliders, nb_spinners, diffres.maxPossibleCombo, highestCombo,
+                    numMisses, num300s, num100s, num50s);
 
                 return info;
             });
@@ -2482,7 +2482,7 @@ void BeatmapInterface::update2() {
 
             // Flag fix to simplify logic (stable sets both K1 and M1 when K1 is pressed)
             const auto &mods = osu->getScore()->mods;
-            if(!ModMasks::eq(mods.flags, ModFlags::NoKeylock)) {
+            if(!mods.has(ModFlags::NoKeylock)) {
                 if(this->current_keys & LegacyReplay::K1) this->current_keys &= ~LegacyReplay::M1;
                 if(this->current_keys & LegacyReplay::K2) this->current_keys &= ~LegacyReplay::M2;
             }
@@ -3249,8 +3249,7 @@ const pp_info &BeatmapInterface::getWholeMapPPInfo() {
         // (the fact that this is duplicated 50000 times means this interface is terrible)
         const auto &mods = osu->getScore()->mods;
         this->full_calc_req_params = {
-            .mods_legacy = mods.to_legacy(),
-            .speed = mods.speed,
+            .mods = mods,
             .AR = mods.get_naive_ar(map),
             .CS = mods.get_naive_cs(map),
             .OD = mods.get_naive_od(map),
@@ -3259,8 +3258,8 @@ const pp_info &BeatmapInterface::getWholeMapPPInfo() {
             .num300s = map->getNumObjects(),
             .num100s = 0,
             .num50s = 0,
-            .rx = ModMasks::eq(mods.flags, ModFlags::Relax),
-            .td = ModMasks::eq(mods.flags, ModFlags::TouchDevice),
+            .rx = mods.has(ModFlags::Relax),
+            .td = mods.has(ModFlags::TouchDevice),
         };
     }
 
@@ -3554,9 +3553,9 @@ FinishedScore BeatmapInterface::saveAndSubmitScore(bool quit) {
     const int num100s = osu->getScore()->getNum100s();
     const int num50s = osu->getScore()->getNum50s();
     const f32 pp = DifficultyCalculator::calculatePPv2(
-        osu->getScore()->getModsLegacy(), speedMultiplier, AR, OD, aim, aimSliderFactor, aimDifficultSliders,
-        difficultAimStrains, speed, speedNotes, difficultSpeedStrains, numHitObjects, numCircles, numSliders,
-        numSpinners, this->iMaxPossibleCombo, highestCombo, numMisses, num300s, num100s, num50s);
+        osu->getScore()->mods, AR, OD, aim, aimSliderFactor, aimDifficultSliders, difficultAimStrains, speed,
+        speedNotes, difficultSpeedStrains, numHitObjects, numCircles, numSliders, numSpinners, this->iMaxPossibleCombo,
+        highestCombo, numMisses, num300s, num100s, num50s);
     osu->getScore()->setStarsTomTotal(totalStars);
     osu->getScore()->setStarsTomAim(this->fAimStars);
     osu->getScore()->setStarsTomSpeed(this->fSpeedStars);
