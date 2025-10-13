@@ -1096,9 +1096,7 @@ OptionsMenu::OptionsMenu() : ScreenBackable() {
         "Enabled: Singleplayer default. You die upon failing and the beatmap stops.\nDisabled: Multiplayer "
         "default. Allows you to keep playing even after failing.",
         &cv::drain_kill);
-    this->addCheckbox("Disable HP drain",
-                      "Like NF, but entirely disables HP mechanics. Will block online score submission.",
-                      &cv::drain_disabled)
+    this->addCheckbox("Disable HP drain", "Like NF, but entirely disables HP mechanics.", &cv::drain_disabled)
         ->setChangeCallback(SA::MakeDelegate<&OptionsMenu::onModChangingToggle>(this));
 
     this->addSpacer();
