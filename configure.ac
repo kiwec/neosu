@@ -543,7 +543,7 @@ AS_IF([test -n "$LLD" && test "x$using_mold" != "xyes" && test "x$enable_clang" 
 # putting this part here so that $CC is defined to the final value
 AS_IF([test "$host_os" = "mingw32"], [
     # building on linux
-    AS_IF([test "$build_os" = "linux-gnu"], [
+    AS_IF([test "$build_os" = "linux-gnu" || test "$build_os" = "linux-musl"], [
         AC_SUBST([PKG_CONFIG_SYSTEM_LIBRARY_PATH])
         AC_SUBST([PKG_CONFIG_SYSTEM_INCLUDE_PATH])
         AC_SUBST([PKG_CONFIG_LIBDIR])
