@@ -20,7 +20,6 @@ u32 Mods::to_legacy() const {
         legacy_flags |= LegacyFlags::HalfTime;
     }
 
-    if(eq(this->flags, ModFlags::NoHP)) legacy_flags |= LegacyFlags::NoFail;
     if(eq(this->flags, ModFlags::NoFail)) legacy_flags |= LegacyFlags::NoFail;
     if(eq(this->flags, ModFlags::Easy)) legacy_flags |= LegacyFlags::Easy;
     if(eq(this->flags, ModFlags::TouchDevice)) legacy_flags |= LegacyFlags::TouchDevice;
@@ -92,7 +91,6 @@ Mods Mods::from_cvars() {
     Mods mods;
 
     if(cv::mod_nofail.getBool()) mods.flags |= NoFail;
-    if(cv::drain_disabled.getBool()) mods.flags |= NoHP;
     if(cv::mod_easy.getBool()) mods.flags |= Easy;
     if(cv::mod_autopilot.getBool()) mods.flags |= Autopilot;
     if(cv::mod_relax.getBool()) mods.flags |= Relax;
@@ -201,7 +199,6 @@ void Mods::use(const Mods &mods) {
     mod_selector->resetMods();
 
     // Set cvars
-    cv::drain_disabled.setValue(eq(mods.flags, NoHP));
     cv::mod_nofail.setValue(eq(mods.flags, NoFail));
     cv::mod_easy.setValue(eq(mods.flags, Easy));
     cv::mod_hidden.setValue(eq(mods.flags, Hidden));

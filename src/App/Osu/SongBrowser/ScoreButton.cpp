@@ -644,8 +644,8 @@ void ScoreButton::onDeleteScoreConfirmed(const UString & /*text*/, int id) {
     osu->getUserStatsScreen()->rebuildScoreButtons();
 }
 
-void ScoreButton::setScore(const FinishedScore &score, const DatabaseBeatmap *map, int index, const UString &titleString,
-                           float weight) {
+void ScoreButton::setScore(const FinishedScore &score, const DatabaseBeatmap *map, int index,
+                           const UString &titleString, float weight) {
     this->score = score;
     this->score.beatmap_hash = map->getMD5Hash();
     this->score.map = map;
@@ -766,7 +766,6 @@ void ScoreButton::setScore(const FinishedScore &score, const DatabaseBeatmap *ma
     using namespace ModFlags;
 
     this->tooltipLines.push_back(tooltipMods);
-    if(eq(score.mods.flags, NoHP)) this->tooltipLines.emplace_back("+ no HP drain");
     if(eq(score.mods.flags, ApproachDifferent)) this->tooltipLines.emplace_back("+ approach different");
     if(eq(score.mods.flags, ARTimewarp)) this->tooltipLines.emplace_back("+ AR timewarp");
     if(eq(score.mods.flags, ARWobble)) this->tooltipLines.emplace_back("+ AR wobble");

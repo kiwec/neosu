@@ -348,7 +348,7 @@ void SimulatedBeatmapInterface::addScorePoints(int points, bool isSpinner) {
 }
 
 void SimulatedBeatmapInterface::addHealth(f64 percent, bool isFromHitResult) {
-    if(this->mods.has(ModFlags::NoHP)) return;  // do nothing
+    if(this->mods.has(ModFlags::NoFail) && cv::drain_disabled.getBool()) return;
 
     // never drain before first hitobject
     if(this->iCurMusicPos < this->hitobjects[0]->click_time) return;

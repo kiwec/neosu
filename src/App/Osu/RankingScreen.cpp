@@ -498,7 +498,6 @@ void RankingScreen::setScore(const FinishedScore &score) {
     if(eq(score.mods.flags, ApproachDifferent)) this->extraMods.push_back(&cv::mod_approach_different);
     if(eq(score.mods.flags, Singletap)) this->extraMods.push_back(&cv::mod_singletap);
     if(eq(score.mods.flags, NoKeylock)) this->extraMods.push_back(&cv::mod_no_keylock);
-    if(eq(score.mods.flags, NoHP)) this->extraMods.push_back(&cv::drain_disabled);
 }
 
 void RankingScreen::setBeatmapInfo(const DatabaseBeatmap *map) {

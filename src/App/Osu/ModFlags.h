@@ -61,7 +61,6 @@ enum : u64 {
     ApproachDifferent = 1ULL << 42,
     Singletap = 1ULL << 43,
     NoKeylock = 1ULL << 44,
-    NoHP = 1ULL << 45,
 
     // Non-submittable
     Autoplay = 1ULL << 63
