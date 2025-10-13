@@ -2870,8 +2870,8 @@ void SongBrowser::onWebClicked(CBaseUIButton * /*button*/) {
 
 void SongBrowser::onQuickGroupClicked(CBaseUIButton *button) {
     if(button->getText().isEmpty()) return;
-    if(const auto *it = std::ranges::find(GROUPINGS, button->getText().utf8View(),
-                                          [](const auto &grouping) { return grouping.name; });
+    if(const auto it = std::ranges::find(GROUPINGS, button->getText().utf8View(),
+                                         [](const auto &grouping) { return grouping.name; });
        it != GROUPINGS.end()) {
         const auto &group = *it;
         this->onGroupChange(group.name, group.type);
@@ -2923,7 +2923,7 @@ void SongBrowser::onGroupChange(const UString &text, int id) {
     if(id >= 0 && id < GROUP_ENUM::MAX) {
         grouping = GROUPINGS[id];
     } else if(!text.isEmpty()) {
-        if(const auto *it = std::ranges::find(GROUPINGS, text.utf8View(), [](const auto &g) { return g.name; });
+        if(const auto it = std::ranges::find(GROUPINGS, text.utf8View(), [](const auto &g) { return g.name; });
            it != GROUPINGS.end()) {
             grouping = *it;
         }
@@ -2977,7 +2977,7 @@ void SongBrowser::onSortChange(const UString &text, int /*id*/) { this->onSortCh
 void SongBrowser::onSortChangeInt(const UString &text) {
     SORTING_METHOD newMethod = this->curSortMethod;
     if(!text.isEmpty()) {
-        const auto *it = std::ranges::find(SORTING_METHODS, text.utf8View(), [](const auto &g) { return g.name; });
+        const auto it = std::ranges::find(SORTING_METHODS, text.utf8View(), [](const auto &g) { return g.name; });
         if(it != SORTING_METHODS.end()) {
             newMethod = *it;
         }
