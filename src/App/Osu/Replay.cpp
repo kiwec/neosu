@@ -20,6 +20,7 @@ u32 Mods::to_legacy() const {
         legacy_flags |= LegacyFlags::HalfTime;
     }
 
+    if(eq(this->flags, ModFlags::NoHP)) legacy_flags |= LegacyFlags::NoFail;
     if(eq(this->flags, ModFlags::NoFail)) legacy_flags |= LegacyFlags::NoFail;
     if(eq(this->flags, ModFlags::Easy)) legacy_flags |= LegacyFlags::Easy;
     if(eq(this->flags, ModFlags::TouchDevice)) legacy_flags |= LegacyFlags::TouchDevice;
