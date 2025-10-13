@@ -206,8 +206,7 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(std::
         cv::slider_max_repeats.getInt();  // NOTE: osu! will refuse to play any beatmap which has sliders with more than
                                           // 9000 repeats, here we just clamp it instead
 
-    int colorsParsed = 0;
-    std::vector<Color> tempColors(8, 0);
+    std::array<std::optional<Color>, 8> tempColors;
 
     {
         // open osu file for parsing
@@ -340,7 +339,6 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(std::
 
                     if(Parsing::parse(curLine, "Combo", &comboNum, ':', &r, ',', &g, ',', &b)) {
                         if(comboNum >= 1 && comboNum <= 8) {  // bare minimum validation effort
-                            colorsParsed++;
                             tempColors[comboNum - 1] = rgb(r, g, b);
                         }
                     }
@@ -590,8 +588,10 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(std::
         return c;
     }
 
-    if (colorsParsed > 0) {
-        c.combocolors = {tempColors.begin(), tempColors.begin() + colorsParsed};
+    for(const auto &tempCol : tempColors) {
+        if(tempCol.has_value()) {
+            c.combocolors.push_back(tempCol.value());
+        }
     }
 
     // sort timingpoints by time

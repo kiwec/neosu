@@ -914,8 +914,7 @@ bool Skin::parseSkinINI(std::string filepath) {
 
     bool hasNonEmptyLines = false;
 
-    int colorsParsed = 0;
-    std::vector<Color> tempColors(8, 0);
+    std::array<std::optional<Color>, 8> tempColors;
 
     // osu! defaults to [General] and loads properties even before the actual section start
     SkinSection curBlock = SkinSection::GENERAL;
@@ -981,7 +980,6 @@ bool Skin::parseSkinINI(std::string filepath) {
 
                 if(Parsing::parse(curLine, "Combo", &comboNum, ':', &r, ',', &g, ',', &b)) {
                     if(comboNum >= 1 && comboNum <= 8) {
-                        colorsParsed++;
                         tempColors[comboNum - 1] = rgb(r, g, b);
                     }
                 } else if(Parsing::parse(curLine, "SpinnerApproachCircle", ':', &r, ',', &g, ',', &b))
@@ -1052,8 +1050,10 @@ bool Skin::parseSkinINI(std::string filepath) {
 
     if(!hasNonEmptyLines) return false;
 
-    if(colorsParsed > 0) {
-        this->comboColors = {tempColors.begin(), tempColors.begin() + colorsParsed};
+    for(const auto &tempCol : tempColors) {
+        if(tempCol.has_value()) {
+            this->comboColors.push_back(tempCol.value());
+        }
     }
 
     return true;
