@@ -947,7 +947,7 @@ SIMDUTF_BUILD_VERSION=7.4.0 # fast and correct utf conversion utilities
 
 # always build these from source if we want to use them
 #AC_SUBST([SOLOUD_VERSION], [1.1.9]) # my fork
-AC_SUBST([SOLOUD_VERSION], [081c5ba91efb6575da9b681d11ce6b0e644d869f])
+AC_SUBST([SOLOUD_VERSION], [ceaa3501dc237f669ff59434e953b4bcb32ce0ca])
 AC_SUBST([SOLOUD_PREFIX],[$DEPS_PREFIX])
 AC_SUBST([SOUNDTOUCH_VERSION], [2.4.0])
 AC_SUBST([SOUNDTOUCH_PREFIX],[$DEPS_PREFIX])
