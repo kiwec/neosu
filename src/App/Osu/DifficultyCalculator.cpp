@@ -670,6 +670,16 @@ f64 DifficultyCalculator::computeSpeedValue(const ScoreData &score, const Attrib
     speedValue *= (0.95 + std::pow(std::max(0.0, attributes.OverallDifficulty), 2.0) / 750.0) *
                   std::pow((score.accuracy + relevantAccuracy) / 2.0, (14.5 - attributes.OverallDifficulty) / 2.0);
 
+    // singletap buff (XXX: might be too weak)
+    if(score.mods.has(ModFlags::Singletap)) {
+        speedValue *= 1.25;
+    }
+
+    // no keylock nerf (XXX: might be too harsh)
+    if(score.mods.has(ModFlags::NoKeylock)) {
+        speedValue *= 0.5;
+    }
+
     return speedValue;
 }
 
