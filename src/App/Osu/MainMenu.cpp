@@ -1094,7 +1094,9 @@ void MainMenu::mouse_update(bool *propagate_clicks) {
                 this->pauseButton->setPaused(false);
 
                 // NOTE: We set this every frame, because music loading isn't instant
-                music->setLoop(false);
+                if (music->isLooped()) {
+                    music->setLoop(false);
+                }
 
                 // load timing points if needed
                 // XXX: file io, don't block main thread

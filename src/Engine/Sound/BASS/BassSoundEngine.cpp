@@ -550,15 +550,17 @@ bool BassSoundEngine::actuallyPlay(BassSound *bassSound, u32 positionMS) {
         }
     }
 
-    // unpause the channel
-    if(bassSound->bPaused && bassSound->isStream()) {
-        bassSound->bPaused = false;
-        bassSound->setPositionMS(positionMS);
-        BASS_Mixer_ChannelFlags(bassSound->stream, 0, BASS_MIXER_CHAN_PAUSE);
-    }
-
+    const bool wasPaused = bassSound->bPaused;
     bassSound->bPaused = false;
     bassSound->bStarted = true;
+
+    if(bassSound->isStream()) {
+        // set position, and unpause the channel if paused
+        bassSound->setPositionMS(positionMS);
+        if (wasPaused) {
+            BASS_Mixer_ChannelFlags(bassSound->stream, 0, BASS_MIXER_CHAN_PAUSE);
+        }
+    }
 
     bassSound->setLastPlayTime(engine->getTime());
 

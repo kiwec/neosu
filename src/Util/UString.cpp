@@ -486,7 +486,6 @@ void UString::fromSupposedUtf8(const char *utf8, size_t char8Length) {
     const char *utf8src = &(utf8[bomPrefixBytes]);
     const size_t utf8Length = char8Length - bomPrefixBytes;
 
-    // NOLINTBEGIN(cppcoreguidelines-init-variables)
     switch(detected) {
         case simdutf::encoding_type::unspecified:
             // fallthrough, assume UTF-8
@@ -540,7 +539,6 @@ void UString::fromSupposedUtf8(const char *utf8, size_t char8Length) {
             std::unreachable();
             break;
     }
-    // NOLINTEND(cppcoreguidelines-init-variables)
 
     const bool wasAlreadyUTF8 =
         detected == simdutf::encoding_type::UTF8 || detected == simdutf::encoding_type::unspecified;
