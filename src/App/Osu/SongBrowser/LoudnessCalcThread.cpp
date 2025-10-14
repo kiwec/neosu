@@ -87,16 +87,17 @@ struct VolNormalization::LoudnessCalcThread {
                 BASS_STREAM_DECODE | BASS_SAMPLE_MONO | (Env::cfg(OS::WINDOWS) ? BASS_UNICODE : 0U);
             auto decoder = BASS_StreamCreateFile(BASS_FILE_NAME, song.plat_str(), 0, 0, flags);
             if(!decoder) {
-                auto err_str = BassManager::getErrorUString();
-                debugLog("BASS_StreamCreateFile({:s}): {:s}", song.toUtf8(), err_str.toUtf8());
+                if(cv::debug_snd.getBool()) {
+                    BassManager::printBassError(fmt::format("BASS_StreamCreateFile({:s})", song.toUtf8()),
+                                                BASS_ErrorGetCode());
+                }
                 this->nb_computed++;
                 continue;
             }
 
             auto loudness = BASS_Loudness_Start(decoder, BASS_LOUDNESS_INTEGRATED, 0);
             if(!loudness) {
-                auto err_str = BassManager::getErrorUString();
-                debugLog("BASS_Loudness_Start(): {:s}", err_str.toUtf8());
+                BassManager::printBassError("BASS_Loudness_Start()", BASS_ErrorGetCode());
                 BASS_ChannelFree(decoder);
                 this->nb_computed++;
                 continue;
@@ -189,7 +190,6 @@ void VolNormalization::start_calc_instance(const std::vector<DatabaseBeatmap *> 
 }
 
 void VolNormalization::abort_instance() {
-    if(!Env::cfg(AUD::BASS) || soundEngine->getTypeId() != SoundEngine::BASS) return;  // TODO
     for(auto thr : this->threads) {
         delete thr;
     }

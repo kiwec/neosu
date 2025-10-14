@@ -27,6 +27,8 @@ void BassSound::initAsync() {
 
     UString file_path{this->sFilePath};
 
+    SOUNDHANDLE handle = 0;
+
     if(this->bStream) {
         u32 flags = BASS_STREAM_DECODE | BASS_SAMPLE_FLOAT | BASS_STREAM_PRESCAN;
         if(cv::snd_async_buffer.getInt() > 0) flags |= BASS_ASYNCFILE;
@@ -55,10 +57,7 @@ void BassSound::initAsync() {
 
         // Only compute the length once
         if(this->bInterrupted.load()) return;
-        i64 length = BASS_ChannelGetLength(this->stream, BASS_POS_BYTE);
-        f64 lengthInSeconds = BASS_ChannelBytes2Seconds(this->stream, length);
-        f64 lengthInMilliSeconds = lengthInSeconds * 1000.0;
-        this->length = (u32)lengthInMilliSeconds;
+        handle = this->stream;
     } else {
         u32 flags = BASS_SAMPLE_FLOAT;
         if constexpr(Env::cfg(OS::WINDOWS)) flags |= BASS_UNICODE;
@@ -77,13 +76,15 @@ void BassSound::initAsync() {
             }
         }
 
-        // Only compute the length once
         if(this->bInterrupted.load()) return;
-        i64 length = BASS_ChannelGetLength(this->sample, BASS_POS_BYTE);
-        f64 lengthInSeconds = BASS_ChannelBytes2Seconds(this->sample, length);
-        f64 lengthInMilliSeconds = lengthInSeconds * 1000.0;
-        this->length = (u32)lengthInMilliSeconds;
+        handle = this->sample;
     }
+
+    // Only compute the length once
+    i64 length = BASS_ChannelGetLength(handle, BASS_POS_BYTE);
+    f64 lengthInSeconds = BASS_ChannelBytes2Seconds(handle, length);
+    f64 lengthInMilliSeconds = lengthInSeconds * 1000.0;
+    this->length = (u32)lengthInMilliSeconds;
 
     this->fSpeed = 1.0f;
     this->bAsyncReady = true;

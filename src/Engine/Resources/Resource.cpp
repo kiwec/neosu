@@ -43,6 +43,7 @@ void Resource::release() {
     // NOTE: these are set afterwards on purpose
     this->bReady = false;
     this->bAsyncReady = false;
+    this->bInterrupted = false;
 }
 
 void Resource::interruptLoad() { this->bInterrupted = true; }
