@@ -192,7 +192,6 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
     [[nodiscard]] inline bool hasFailed() const { return this->bFailed; }
 
     // generic state
-    [[nodiscard]] u8 getKeys() const override { return this->current_keys; }
     [[nodiscard]] inline bool isPlaying() const override { return this->bIsPlaying; }
     [[nodiscard]] inline bool isPaused() const override { return this->bIsPaused; }
     [[nodiscard]] inline bool isRestartScheduled() const { return this->bIsRestartScheduled; }
@@ -203,6 +202,9 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
     [[nodiscard]] inline f32 shouldFlashSectionPass() const { return this->fShouldFlashSectionPass; }
     [[nodiscard]] inline f32 shouldFlashSectionFail() const { return this->fShouldFlashSectionFail; }
     [[nodiscard]] bool isWaiting() const override { return this->bIsWaiting; }
+    [[nodiscard]] bool isKey1Down() const override;
+    [[nodiscard]] bool isKey2Down() const override;
+    [[nodiscard]] bool isClickHeld() const override;
 
     [[nodiscard]] std::string getTitle() const;
     [[nodiscard]] std::string getArtist() const;
@@ -292,8 +294,10 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
     i32 iPreviousSectionPassFailTime;
 
     // player input
+    bool bClick1Held;
+    bool bClick2Held;
     bool bClickedContinue;
-    int iAllowAnyNextKeyUntilHitObjectIndex;
+    int iAllowAnyNextKeyForFullAlternateUntilHitObjectIndex;
     std::vector<Click> clicks;
 
     // hitobjects

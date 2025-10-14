@@ -60,10 +60,8 @@ void SimulatedBeatmapInterface::simulate_to(i32 music_pos) {
         click.pos.y = current_frame.y;
 
         // Flag fix to simplify logic (stable sets both K1 and M1 when K1 is pressed)
-        if(!this->mods.has(ModFlags::NoKeylock)) {
-            if(this->current_keys & LegacyReplay::K1) this->current_keys &= ~LegacyReplay::M1;
-            if(this->current_keys & LegacyReplay::K2) this->current_keys &= ~LegacyReplay::M2;
-        }
+        if(this->current_keys & LegacyReplay::K1) this->current_keys &= ~LegacyReplay::M1;
+        if(this->current_keys & LegacyReplay::K2) this->current_keys &= ~LegacyReplay::M2;
 
         // Pressed key 1
         if(!(this->last_keys & LegacyReplay::K1) && this->current_keys & LegacyReplay::K1) {
@@ -236,6 +234,14 @@ f32 SimulatedBeatmapInterface::getOD_full() const {
 
     return OD;
 }
+
+bool SimulatedBeatmapInterface::isKey1Down() const {
+    return this->current_keys & (LegacyReplay::M1 | LegacyReplay::K1);
+}
+bool SimulatedBeatmapInterface::isKey2Down() const {
+    return this->current_keys & (LegacyReplay::M2 | LegacyReplay::K2);
+}
+bool SimulatedBeatmapInterface::isClickHeld() const { return this->isKey1Down() || this->isKey2Down(); }
 
 u32 SimulatedBeatmapInterface::getLength() const { return this->beatmap->getLengthMS(); }
 
@@ -722,9 +728,10 @@ void SimulatedBeatmapInterface::update(f64 frame_time) {
             this->bIsSpinnerActive = false;
     }
 
-    // singletap/fullalternate mod lenience
-    if(this->bInBreak || this->bIsSpinnerActive || this->iCurrentHitObjectIndex < 1) {
-        this->iAllowAnyNextKeyUntilHitObjectIndex = this->iCurrentHitObjectIndex + 1;
+    // full alternate mod lenience
+    if(ModMasks::eq(this->mods.flags, ModFlags::FullAlternate)) {
+        if(this->bInBreak || this->bIsSpinnerActive || this->iCurrentHitObjectIndex < 1)
+            this->iAllowAnyNextKeyForFullAlternateUntilHitObjectIndex = this->iCurrentHitObjectIndex + 1;
     }
 }
 

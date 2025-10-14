@@ -27,7 +27,6 @@ Changelog::Changelog() : ScreenBackable() {
     CHANGELOG v41_04;
     v41_04.title = "41.04";
     v41_04.changes = {
-        R"(- Added "Singletap" and "No keylock" mods (for 1 key and 3/4 key players))",
         R"(- Merged updated PPv2 ver. 20250306 from McOsu (current))",
         R"(- Added an option/ConVar to disable HP drain entirely (disables online score submission))",
         R"(- Added an experimental DirectX11 renderer backend (for Windows, and Linux through dxvk-native))",

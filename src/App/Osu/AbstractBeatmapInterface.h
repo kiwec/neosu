@@ -69,13 +69,15 @@ class AbstractBeatmapInterface {
                                         bool ignoreHealth = false) = 0;
 
     [[nodiscard]] virtual u32 getBreakDurationTotal() const = 0;
-    [[nodiscard]] virtual u8 getKeys() const = 0;
     [[nodiscard]] virtual u32 getLength() const = 0;
     [[nodiscard]] virtual u32 getLengthPlayable() const = 0;
     [[nodiscard]] virtual bool isContinueScheduled() const = 0;
     [[nodiscard]] virtual bool isPaused() const = 0;
     [[nodiscard]] virtual bool isPlaying() const = 0;
     [[nodiscard]] virtual bool isWaiting() const = 0;
+    [[nodiscard]] virtual bool isClickHeld() const = 0;
+    [[nodiscard]] virtual bool isKey1Down() const = 0;
+    [[nodiscard]] virtual bool isKey2Down() const = 0;
     [[nodiscard]] virtual f32 getSpeedMultiplier() const = 0;
 
     virtual void addScorePoints(int points, bool isSpinner = false) = 0;
@@ -107,7 +109,6 @@ class AbstractBeatmapInterface {
     bool holding_slider = false;
 
     // Generic behavior below, do not override
-    [[nodiscard]] bool isClickHeld();
     LiveScore::HIT getHitResult(i32 delta);  // can't really be cached
 
 #define X(rettype, methodname, refresh_time, impl) /* clang-format please stop messing up my formatting thanks */ \

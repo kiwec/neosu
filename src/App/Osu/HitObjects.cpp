@@ -1159,7 +1159,7 @@ Slider::Slider(char stype, int repeat, float pixelLength, std::vector<vec2> poin
     this->fEndHitAnimation = 0.0f;
     this->fEndSliderBodyFadeAnimation = 0.0f;
     this->iStrictTrackingModLastClickHeldTime = 0;
-    this->iKeyFlags = 0;
+    this->iFatFingerKey = 0;
     this->bCursorLeft = true;
     this->bCursorInside = false;
     this->bHeldTillEnd = false;
@@ -1717,8 +1717,9 @@ void Slider::update(i32 curPos, f64 frame_time) {
         this->vCurPoint = this->pi->osuCoords2Pixels(this->vCurPointRaw);
     }
 
-    // When all keys are released, forget isClickHeldSlider() restrictions
-    if(!this->pi->isClickHeld()) this->iKeyFlags = 0;
+    // When fat finger key is released, remove isClickHeldSlider() restrictions
+    if(this->iFatFingerKey == 1 && !this->pi->isKey1Down()) this->iFatFingerKey = 0;
+    if(this->iFatFingerKey == 2 && !this->pi->isKey2Down()) this->iFatFingerKey = 0;
 
     // handle dynamic followradius
     float followRadius =
@@ -2164,12 +2165,15 @@ void Slider::onHit(LiveScore::HIT result, i32 delta, bool startOrEnd, float targ
 
         this->bStartFinished = true;
 
-        this->iKeyFlags = this->pi->getKeys();
-
-        // Don't get the "No keylock" mod confused with slider locking.
-        // We only keep K1/K2 when keylocking is disabled (aka, 4K is enabled).
-        if(!this->pi->getMods().has(ModFlags::NoKeylock)) {
-            this->iKeyFlags &= ~(LegacyReplay::K1 | LegacyReplay::K2);
+        // The player entered the slider by fat fingering, so...
+        if(this->pi->isKey1Down() && this->pi->isKey2Down()) {
+            if(this->pi->bPrevKeyWasKey1) {
+                // Player pressed K1 last: "fat finger" key is K2
+                this->iFatFingerKey = 2;
+            } else {
+                // Player pressed K2 last: "fat finger" key is K1
+                this->iFatFingerKey = 1;
+            }
         }
 
         if(this->pi->getModsLegacy() & LegacyFlags::Target) {
@@ -2373,7 +2377,7 @@ void Slider::onReset(i32 curPos) {
     }
 
     this->iStrictTrackingModLastClickHeldTime = 0;
-    this->iKeyFlags = 0;
+    this->iFatFingerKey = 0;
     this->bCursorLeft = true;
     this->bHeldTillEnd = false;
     this->bHeldTillEndForLenienceHack = false;
@@ -2447,8 +2451,11 @@ bool Slider::isClickHeldSlider() {
     // The reason this exists is to prevent people from holding K1 the whole map and tapping with K2.
     // Holding is part of the rhythm flow, and this is a rhythm game right?
 
-    // So: Check all keys pressed when entering the slider are still being held.
-    return (this->iKeyFlags & this->pi->getKeys()) == this->iKeyFlags;
+    if(this->iFatFingerKey == 0) return this->pi->isClickHeld();
+    if(this->iFatFingerKey == 1) return this->pi->isKey2Down();
+    if(this->iFatFingerKey == 2) return this->pi->isKey1Down();
+
+    return false;  // unreachable
 }
 
 Spinner::Spinner(int x, int y, i32 time, HitSamples samples, bool isEndOfCombo, i32 endTime,

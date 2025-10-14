@@ -205,14 +205,6 @@ ModSelector::ModSelector() : OsuScreen() {
 
     // build experimental buttons
     this->addExperimentalLabel(" Experimental Mods (!)");
-    this->addExperimentalCheckbox("Flip Up/Down", "Playfield is flipped upside down (mirrored at horizontal axis).",
-                                  &cv::playfield_mirror_horizontal);
-    this->addExperimentalCheckbox("Flip Left/Right", "Playfield is flipped left/right (mirrored at vertical axis).",
-                                  &cv::playfield_mirror_vertical);
-    this->addExperimentalCheckbox("Singletap", "You can only press one key.", &cv::mod_singletap);
-    this->addExperimentalCheckbox("Full Alternate", "You can never use the same key twice in a row.",
-                                  &cv::mod_fullalternate);
-    this->addExperimentalCheckbox("No keylock", "You can use 4 keys instead of only 2.", &cv::mod_no_keylock);
     this->addExperimentalCheckbox(
         "FPoSu: Strafing", "Playfield moves in 3D space (see fposu_mod_strafing_...).\nOnly works in FPoSu mode!",
         &cv::fposu_mod_strafing);
@@ -232,6 +224,8 @@ ModSelector::ModSelector() : OsuScreen() {
     this->addExperimentalCheckbox("Fading Cursor", "The cursor fades the higher the combo, becoming invisible at 50.",
                                   &cv::mod_fadingcursor);
     this->addExperimentalCheckbox("First Person", "Centered cursor.", &cv::mod_fps);
+    this->addExperimentalCheckbox("Full Alternate", "You can never use the same key twice in a row.",
+                                  &cv::mod_fullalternate);
     this->addExperimentalCheckbox("Jigsaw 1", "Unnecessary clicks count as misses.", &cv::mod_jigsaw1);
     this->addExperimentalCheckbox("Jigsaw 2", "Massively reduced slider follow circle radius.", &cv::mod_jigsaw2);
     this->addExperimentalCheckbox("Reverse Sliders",
@@ -251,6 +245,10 @@ ModSelector::ModSelector() : OsuScreen() {
     this->addExperimentalCheckbox(
         "Strict Tracking", "Leaving sliders in any way counts as a miss and combo break. (Reload beatmap to apply!)",
         &cv::mod_strict_tracking);
+    this->addExperimentalCheckbox("Flip Up/Down", "Playfield is flipped upside down (mirrored at horizontal axis).",
+                                  &cv::playfield_mirror_horizontal);
+    this->addExperimentalCheckbox("Flip Left/Right", "Playfield is flipped left/right (mirrored at vertical axis).",
+                                  &cv::playfield_mirror_vertical);
 
     this->nonSubmittableWarning = new CBaseUILabel();
     this->nonSubmittableWarning->setDrawFrame(false);
@@ -1412,8 +1410,8 @@ UString ModSelector::getOverrideSliderLabelText(const ModSelector::OVERRIDE_SLID
             else
                 convarValue = std::round(convarValue * 100.0f) / 100.0f;
         } else if(s.label->getName().find("HP") != -1) {
-            beatmapValue = std::clamp<float>(
-                osu->getMapInterface()->getBeatmap()->getHP() * osu->getDifficultyMultiplier(), 0.0f, 10.0f);
+            beatmapValue = std::clamp<float>(osu->getMapInterface()->getBeatmap()->getHP() * osu->getDifficultyMultiplier(),
+                                             0.0f, 10.0f);
             convarValue = osu->getMapInterface()->getHP();
         } else if(s.desc->getText().find("Speed") != -1) {
             beatmapValue = active ? 1.f : osu->getMapInterface()->getSpeedMultiplier();

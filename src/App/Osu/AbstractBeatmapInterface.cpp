@@ -1,7 +1,6 @@
 #include "AbstractBeatmapInterface.h"
 
 #include "GameRules.h"
-#include "LegacyReplay.h"
 
 #define X(rettype, methodname, refresh_time, impl) \
     rettype AbstractBeatmapInterface::methodname() const { CACHED_METHOD_IMPL(rettype, refresh_time, impl) }
@@ -38,8 +37,4 @@ LiveScore::HIT AbstractBeatmapInterface::getHitResult(i32 delta) {
     if(fDelta < window50 && !(this->getMods().has(ModFlags::No100s) || this->getMods().has(ModFlags::No50s)))
         return LiveScore::HIT::HIT_50;
     return LiveScore::HIT::HIT_MISS;
-}
-
-bool AbstractBeatmapInterface::isClickHeld() {
-    return this->getKeys() & (LegacyReplay::K1 | LegacyReplay::K2 | LegacyReplay::M1 | LegacyReplay::M2);
 }

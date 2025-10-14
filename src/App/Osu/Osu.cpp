@@ -212,27 +212,6 @@ Osu::Osu() {
         [] { cv::speed_override.setValue(cv::mod_halftime_dummy.getBool() ? "0.75" : "-1.0"); });
     cv::draw_songbrowser_thumbnails.setCallback(SA::MakeDelegate<&Osu::onThumbnailsToggle>(this));
 
-    // These mods conflict with each other, prevent them from being enabled at the same time
-    // TODO: allow fullalternate, needs extra logic to detect whether player is using 2K/3K/4K
-    cv::mod_fullalternate.setCallback([] {
-        if(!cv::mod_fullalternate.getBool()) return;
-        cv::mod_no_keylock.setValue(false);
-        cv::mod_singletap.setValue(false);
-        osu->modSelector->updateExperimentalButtons();
-    });
-    cv::mod_singletap.setCallback([] {
-        if(!cv::mod_singletap.getBool()) return;
-        cv::mod_fullalternate.setValue(false);
-        cv::mod_no_keylock.setValue(false);
-        osu->modSelector->updateExperimentalButtons();
-    });
-    cv::mod_no_keylock.setCallback([] {
-        if(!cv::mod_no_keylock.getBool()) return;
-        cv::mod_fullalternate.setValue(false);
-        cv::mod_singletap.setValue(false);
-        osu->modSelector->updateExperimentalButtons();
-    });
-
     // load global resources
     const int baseDPI = 96;
     const int newDPI = Osu::getUIScale() * baseDPI;
@@ -648,7 +627,8 @@ void Osu::update() {
         can_skip &= !map_iface->isPaused() && !this->volumeOverlay->isBusy();
         if(can_skip) {
             const bool isAnyOsuKeyDown =
-                (this->bKeyboardKey1Down || this->bKeyboardKey2Down || this->bMouseKey1Down || this->bMouseKey2Down);
+                (this->bKeyboardKey1Down || this->bKeyboardKey12Down || this->bKeyboardKey2Down ||
+                 this->bKeyboardKey22Down || this->bMouseKey1Down || this->bMouseKey2Down);
             const bool isAnyKeyDown = (isAnyOsuKeyDown || mouse->isLeftDown());
 
             if(isAnyKeyDown) {
@@ -988,39 +968,39 @@ void Osu::onKeyDown(KeyboardEvent &key) {
         // while playing and not paused
         if(!this->map_iface->isPaused()) {
             // K1
-            if(key == (KEYCODE)cv::LEFT_CLICK.getInt()) {
-                if(!this->bKeyboardKey1Down) {
-                    this->bKeyboardKey1Down = true;
-                    this->onKey1Change(true, false);
-                }
-                if(!this->map_iface->hasFailed()) key.consume();
-            }
+            {
+                const bool isKeyLeftClick = (key == (KEYCODE)cv::LEFT_CLICK.getInt());
+                const bool isKeyLeftClick2 = (key == (KEYCODE)cv::LEFT_CLICK_2.getInt());
+                if((!this->bKeyboardKey1Down && isKeyLeftClick) || (!this->bKeyboardKey12Down && isKeyLeftClick2)) {
+                    if(isKeyLeftClick2)
+                        this->bKeyboardKey12Down = true;
+                    else
+                        this->bKeyboardKey1Down = true;
 
-            // 'M1'
-            if(key == (KEYCODE)cv::LEFT_CLICK_2.getInt()) {
-                if(!this->bMouseKey1Down) {
-                    this->bMouseKey1Down = true;
-                    this->onKey1Change(true, true);
+                    this->onKey1Change(true, false);
+
+                    if(!this->map_iface->hasFailed()) key.consume();
+                } else if(isKeyLeftClick || isKeyLeftClick2) {
+                    if(!this->map_iface->hasFailed()) key.consume();
                 }
-                if(!this->map_iface->hasFailed()) key.consume();
             }
 
             // K2
-            if(key == (KEYCODE)cv::RIGHT_CLICK.getInt()) {
-                if(!this->bKeyboardKey2Down) {
-                    this->bKeyboardKey2Down = true;
-                    this->onKey2Change(true, false);
-                }
-                if(!this->map_iface->hasFailed()) key.consume();
-            }
+            {
+                const bool isKeyRightClick = (key == (KEYCODE)cv::RIGHT_CLICK.getInt());
+                const bool isKeyRightClick2 = (key == (KEYCODE)cv::RIGHT_CLICK_2.getInt());
+                if((!this->bKeyboardKey2Down && isKeyRightClick) || (!this->bKeyboardKey22Down && isKeyRightClick2)) {
+                    if(isKeyRightClick2)
+                        this->bKeyboardKey22Down = true;
+                    else
+                        this->bKeyboardKey2Down = true;
 
-            // 'M2'
-            if(key == (KEYCODE)cv::RIGHT_CLICK_2.getInt()) {
-                if(!this->bMouseKey2Down) {
-                    this->bMouseKey2Down = true;
-                    this->onKey2Change(true, true);
+                    this->onKey2Change(true, false);
+
+                    if(!this->map_iface->hasFailed()) key.consume();
+                } else if(isKeyRightClick || isKeyRightClick2) {
+                    if(!this->map_iface->hasFailed()) key.consume();
                 }
-                if(!this->map_iface->hasFailed()) key.consume();
             }
 
             // Smoke
@@ -1068,9 +1048,9 @@ void Osu::onKeyDown(KeyboardEvent &key) {
             // allow live mod changing while playing
             if(!key.isConsumed() && (key == KEY_F1 || key == (KEYCODE)cv::TOGGLE_MODSELECT.getInt()) &&
                ((KEY_F1 != (KEYCODE)cv::LEFT_CLICK.getInt() && KEY_F1 != (KEYCODE)cv::LEFT_CLICK_2.getInt()) ||
-                (!this->bKeyboardKey1Down && !this->bMouseKey1Down)) &&
+                (!this->bKeyboardKey1Down && !this->bKeyboardKey12Down)) &&
                ((KEY_F1 != (KEYCODE)cv::RIGHT_CLICK.getInt() && KEY_F1 != (KEYCODE)cv::RIGHT_CLICK_2.getInt()) ||
-                (!this->bKeyboardKey2Down && !this->bMouseKey2Down)) &&
+                (!this->bKeyboardKey2Down && !this->bKeyboardKey22Down)) &&
                !this->bF1 && !this->map_iface->hasFailed() &&
                !BanchoState::is_playing_a_multi_map())  // only if not failed though
             {
@@ -1176,34 +1156,30 @@ void Osu::onKeyUp(KeyboardEvent &key) {
     // clicks
     {
         // K1
-        if(key == (KEYCODE)cv::LEFT_CLICK.getInt()) {
-            if(this->bKeyboardKey1Down) {
-                this->bKeyboardKey1Down = false;
+        {
+            const bool isKeyLeftClick = (key == (KEYCODE)cv::LEFT_CLICK.getInt());
+            const bool isKeyLeftClick2 = (key == (KEYCODE)cv::LEFT_CLICK_2.getInt());
+            if((isKeyLeftClick && this->bKeyboardKey1Down) || (isKeyLeftClick2 && this->bKeyboardKey12Down)) {
+                if(isKeyLeftClick2)
+                    this->bKeyboardKey12Down = false;
+                else
+                    this->bKeyboardKey1Down = false;
+
                 if(this->isInPlayMode()) this->onKey1Change(false, false);
             }
         }
 
-        // 'M1'
-        if(key == (KEYCODE)cv::LEFT_CLICK_2.getInt()) {
-            if(this->bMouseKey1Down) {
-                this->bMouseKey1Down = false;
-                if(this->isInPlayMode()) this->onKey1Change(false, true);
-            }
-        }
-
         // K2
-        if(key == (KEYCODE)cv::RIGHT_CLICK.getInt()) {
-            if(this->bKeyboardKey2Down) {
-                this->bKeyboardKey2Down = false;
-                if(this->isInPlayMode()) this->onKey2Change(false, false);
-            }
-        }
+        {
+            const bool isKeyRightClick = (key == (KEYCODE)cv::RIGHT_CLICK.getInt());
+            const bool isKeyRightClick2 = (key == (KEYCODE)cv::RIGHT_CLICK_2.getInt());
+            if((isKeyRightClick && this->bKeyboardKey2Down) || (isKeyRightClick2 && this->bKeyboardKey22Down)) {
+                if(isKeyRightClick2)
+                    this->bKeyboardKey22Down = false;
+                else
+                    this->bKeyboardKey2Down = false;
 
-        // 'M2'
-        if(key == (KEYCODE)cv::RIGHT_CLICK_2.getInt()) {
-            if(this->bMouseKey2Down) {
-                this->bMouseKey2Down = false;
-                if(this->isInPlayMode()) this->onKey2Change(false, true);
+                if(this->isInPlayMode()) this->onKey2Change(false, false);
             }
         }
 
@@ -1240,21 +1216,29 @@ void Osu::onChar(KeyboardEvent &e) {
 }
 
 void Osu::onButtonChange(ButtonIndex button, bool down) {
-    if(cv::disable_mousebuttons.getBool()) return;
-
     using enum ButtonIndex;
+    if((button != BUTTON_LEFT && button != BUTTON_RIGHT) ||
+       (this->isInPlayMode() && !this->map_iface->isPaused() && cv::disable_mousebuttons.getBool()))
+        return;
+
     switch(button) {
         case BUTTON_LEFT: {
-            if(down != this->bMouseKey1Down) {
-                this->bMouseKey1Down = down;
-                this->onKey1Change(down, true);
+            if(!this->bMouseKey1Down && down) {
+                this->bMouseKey1Down = true;
+                this->onKey1Change(true, true);
+            } else if(this->bMouseKey1Down) {
+                this->bMouseKey1Down = false;
+                this->onKey1Change(false, true);
             }
             break;
         }
         case BUTTON_RIGHT: {
-            if(down != this->bMouseKey2Down) {
-                this->bMouseKey2Down = down;
-                this->onKey2Change(down, true);
+            if(!this->bMouseKey2Down && down) {
+                this->bMouseKey2Down = true;
+                this->onKey2Change(true, true);
+            } else if(this->bMouseKey2Down) {
+                this->bMouseKey2Down = false;
+                this->onKey2Change(false, true);
             }
             break;
         }
@@ -1912,49 +1896,75 @@ void Osu::updateOsuFolder() {
 }
 
 void Osu::onKey1Change(bool pressed, bool isMouse) {
-    const bool canPress = cv::mod_no_keylock.getBool() || (this->bKeyboardKey1Down != this->bMouseKey1Down);
+    int numKeys1Down = 0;
+    if(this->bKeyboardKey1Down) numKeys1Down++;
+    if(this->bKeyboardKey12Down) numKeys1Down++;
+    if(this->bMouseKey1Down) numKeys1Down++;
 
+    // all key1 keys (incl. multiple bindings) act as one single key with state handover
+    const bool isKeyPressed1Allowed = (numKeys1Down == 1);
+
+    // WARNING: if paused, keyReleased*() will be called out of sequence every time due to the fix.
+    //          do not put actions in it
     // NOTE: allow keyup even while beatmap is paused, to correctly not-continue immediately due to pressed keys
     if(this->isInPlayMode()) {
-        if(pressed && canPress && !this->map_iface->isPaused())
-            this->map_iface->keyPressed1(isMouse);
-        else if(!pressed)
-            this->map_iface->keyReleased1(isMouse);
+        if(!(isMouse && cv::disable_mousebuttons.getBool())) {
+            // quickfix
+            if(cv::disable_mousebuttons.getBool()) this->bMouseKey1Down = false;
+
+            if(pressed && isKeyPressed1Allowed && !this->map_iface->isPaused())  // see above note
+                this->map_iface->keyPressed1(isMouse);
+            else if(!this->bKeyboardKey1Down && !this->bKeyboardKey12Down && !this->bMouseKey1Down)
+                this->map_iface->keyReleased1(isMouse);
+        }
     }
 
     // cursor anim + ripples
-    // TODO: wtf is this correct???
-    const bool doAnimate = !this->isInPlayMode() || this->map_iface->isPaused();
+    const bool doAnimate =
+        !(this->isInPlayMode() && !this->map_iface->isPaused() && isMouse && cv::disable_mousebuttons.getBool());
     if(doAnimate) {
-        if(pressed && canPress) {
+        if(pressed && isKeyPressed1Allowed) {
             this->hud->animateCursorExpand();
             this->hud->addCursorRipple(mouse->getPos());
-        } else if(!this->bKeyboardKey1Down && !this->bMouseKey1Down && !this->bKeyboardKey2Down &&
-                  !this->bMouseKey2Down)
+        } else if(!this->bKeyboardKey1Down && !this->bKeyboardKey12Down && !this->bMouseKey1Down &&
+                  !this->bKeyboardKey2Down && !this->bKeyboardKey22Down && !this->bMouseKey2Down)
             this->hud->animateCursorShrink();
     }
 }
 
 void Osu::onKey2Change(bool pressed, bool isMouse) {
-    const bool canPress = cv::mod_no_keylock.getBool() || (this->bKeyboardKey2Down != this->bMouseKey2Down);
+    int numKeys2Down = 0;
+    if(this->bKeyboardKey2Down) numKeys2Down++;
+    if(this->bKeyboardKey22Down) numKeys2Down++;
+    if(this->bMouseKey2Down) numKeys2Down++;
 
+    // all key2 keys (incl. multiple bindings) act as one single key with state handover
+    const bool isKeyPressed2Allowed = (numKeys2Down == 1);
+
+    // WARNING: if paused, keyReleased*() will be called out of sequence every time due to the fix.
+    //          do not put actions in it
     // NOTE: allow keyup even while beatmap is paused, to correctly not-continue immediately due to pressed keys
     if(this->isInPlayMode()) {
-        if(pressed && canPress && !this->map_iface->isPaused())
-            this->map_iface->keyPressed2(isMouse);
-        else if(!pressed)
-            this->map_iface->keyReleased2(isMouse);
+        if(!(isMouse && cv::disable_mousebuttons.getBool())) {
+            // quickfix
+            if(cv::disable_mousebuttons.getBool()) this->bMouseKey2Down = false;
+
+            if(pressed && isKeyPressed2Allowed && !this->map_iface->isPaused())  // see above note
+                this->map_iface->keyPressed2(isMouse);
+            else if(!this->bKeyboardKey2Down && !this->bKeyboardKey22Down && !this->bMouseKey2Down)
+                this->map_iface->keyReleased2(isMouse);
+        }
     }
 
     // cursor anim + ripples
-    // TODO: wtf is this correct???
-    const bool doAnimate = !this->isInPlayMode() || this->map_iface->isPaused();
+    const bool doAnimate =
+        !(this->isInPlayMode() && !this->map_iface->isPaused() && isMouse && cv::disable_mousebuttons.getBool());
     if(doAnimate) {
-        if(pressed && canPress) {
+        if(pressed && isKeyPressed2Allowed) {
             this->hud->animateCursorExpand();
             this->hud->addCursorRipple(mouse->getPos());
-        } else if(!this->bKeyboardKey2Down && !this->bMouseKey2Down && !this->bKeyboardKey1Down &&
-                  !this->bMouseKey1Down)
+        } else if(!this->bKeyboardKey2Down && !this->bKeyboardKey22Down && !this->bMouseKey2Down &&
+                  !this->bKeyboardKey1Down && !this->bKeyboardKey12Down && !this->bMouseKey1Down)
             this->hud->animateCursorShrink();
     }
 }
