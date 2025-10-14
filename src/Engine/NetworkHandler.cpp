@@ -337,6 +337,7 @@ void NetworkHandler::update() {
         this->completed_requests.clear();
     }
     for(auto& request : responses_to_handle) {
+        if(request == nullptr) continue;  // TODO: how??
         request->callback(request->response);
     }
 
