@@ -60,7 +60,12 @@ class SoundEngine {
 
     // Here, 'volume' means the volume for this play() call, NOT for the sound itself
     // e.g. when calling setVolume(), you're applying a modifier to all currently playing samples of that sound
-    virtual bool play(Sound *snd, f32 pan = 0.f, f32 pitch = 0.f, f32 playVolume = 1.f) = 0;
+    virtual bool play(Sound *snd, f32 pan = 0.f, f32 pitch = 0.f, f32 playVolume = 1.f, bool startPaused = false) = 0;
+
+    // Get a sound ready for playback, but don't start it yet.
+    inline bool enqueue(Sound *snd, f32 pan = 0.f, f32 pitch = 0.f, f32 playVolume = 1.f) {
+        return this->play(snd, pan, pitch, playVolume, true);
+    }
 
     virtual void pause(Sound *snd) = 0;
     virtual void stop(Sound *snd) = 0;

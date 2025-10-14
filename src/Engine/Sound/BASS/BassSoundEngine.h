@@ -22,7 +22,7 @@ class BassSoundEngine final : public SoundEngine {
     void restart() override;
     void shutdown() override;
 
-    bool play(Sound *snd, f32 pan = 0.0f, f32 pitch = 0.f, f32 volume = 1.f) override;
+    bool play(Sound *snd, f32 pan = 0.0f, f32 pitch = 0.f, f32 volume = 1.f, bool startPaused = false) override;
     void pause(Sound *snd) override;
     void stop(Sound *snd) override;
 
@@ -47,6 +47,8 @@ class BassSoundEngine final : public SoundEngine {
     bool isASIO() { return this->currentOutputDevice.driver == OutputDriver::BASS_ASIO; }
     bool isWASAPI() { return this->currentOutputDevice.driver == OutputDriver::BASS_WASAPI; }
     bool init_bass_mixer(const OUTPUT_DEVICE &device);
+
+    bool actuallyPlay(BassSound *bassSound, u32 positionMS);
 
     double ready_since{-1.0};
     SOUNDHANDLE g_bassOutputMixer = 0;

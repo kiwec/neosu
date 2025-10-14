@@ -58,8 +58,8 @@ DWORD BassSoundEngine::ASIO_clamp(const BASS_ASIO_INFO &info, DWORD buflen) {
 BassSoundEngine::BassSoundEngine() : SoundEngine() {
     if(!BassManager::init())  // this checks the library versions as well
     {
-        engine->showMessageErrorFatal(
-            "Fatal Sound Error", fmt::format("Failed to load BASS feature: {:s} !", BassManager::getFailedLoad()));
+        engine->showMessageErrorFatal("Fatal Sound Error",
+                                      fmt::format("Failed to load BASS feature: {:s} !", BassManager::getFailedLoad()));
         return;
     }
 
@@ -442,10 +442,15 @@ void BassSoundEngine::shutdown() {
     BASS_Free();  // free "No sound" device
 }
 
-bool BassSoundEngine::play(Sound *snd, f32 pan, f32 pitch, f32 playVolume) {
+bool BassSoundEngine::play(Sound *snd, f32 pan, f32 pitch, f32 playVolume, bool startPaused) {
     if(!this->isReady() || !snd || !snd->isReady()) return false;
 
     auto bassSound = snd->as<BassSound>();
+    if(!bassSound->isStream()) {
+        // starting paused is only implemented for streams right now.
+        startPaused = false;
+    }
+
     if(!bassSound->isStream() && !bassSound->isOverlayable() && !bassSound->getActiveHandles().empty()) {
         if(cv::debug_snd.getBool()) {
             debugLog("Attempted to play non-overlayable {} while it's still playing!", snd->getName());
@@ -459,7 +464,7 @@ bool BassSoundEngine::play(Sound *snd, f32 pan, f32 pitch, f32 playVolume) {
         return false;
     }
 
-    if(bassSound->getLastPlayTime() == engine->getTime()) {
+    if(!startPaused && bassSound->getLastPlayTime() == engine->getTime()) {
         if(cv::debug_snd.getBool()) {
             debugLog("Played {} twice in the same update loop!", snd->getName());
         }
@@ -467,7 +472,6 @@ bool BassSoundEngine::play(Sound *snd, f32 pan, f32 pitch, f32 playVolume) {
             return false;
         }
     }
-    bassSound->setLastPlayTime(engine->getTime());
 
     // NOTE: BASS documentation says setting FREQ/PAN/VOL won't work on DECODE streams, but it works just fine...
     pan = std::clamp<float>(pan, -1.0f, 1.0f);
@@ -484,15 +488,17 @@ bool BassSoundEngine::play(Sound *snd, f32 pan, f32 pitch, f32 playVolume) {
 
     if(bassSound->bPaused) {
         assert(bassSound->bStream);
-        bassSound->bPaused = false;
-        BASS_Mixer_ChannelFlags(bassSound->stream, 0, BASS_MIXER_CHAN_PAUSE);
-        bassSound->interpolator.reset((f64)bassSound->paused_position_ms, Timing::getTimeReal(), bassSound->getSpeed());
 
         // update handle params for existing handle
         PlaybackParams newParams{.pan = pan, .pitch = pitch, .volume = playVolume};
         bassSound->activeHandleCache[handle] = newParams;
 
-        return true;
+        bool success = true;
+        if(!startPaused) {
+            success = this->actuallyPlay(bassSound, bassSound->paused_position_ms);
+        }
+
+        return success;
     }
 
     if(BASS_Mixer_ChannelGetMixer(handle) != 0) {
@@ -502,7 +508,7 @@ bool BassSoundEngine::play(Sound *snd, f32 pan, f32 pitch, f32 playVolume) {
         return false;
     }
 
-    auto flags = BASS_MIXER_DOWNMIX | BASS_MIXER_NORAMPIN;
+    auto flags = BASS_MIXER_DOWNMIX | BASS_MIXER_NORAMPIN | (startPaused ? BASS_MIXER_CHAN_PAUSE : 0);
     if(!snd->isStream()) flags |= BASS_STREAM_AUTOFREE;
 
     if(!BASS_Mixer_StreamAddChannel(this->g_bassOutputMixer, handle, flags)) {
@@ -517,8 +523,25 @@ bool BassSoundEngine::play(Sound *snd, f32 pan, f32 pitch, f32 playVolume) {
         return false;
     }
 
+    bool succeeded = true;
+    if(!startPaused) {
+        succeeded = this->actuallyPlay(bassSound, 0);
+    } else {
+        bassSound->bPaused = true;
+    }
+
+    if(succeeded) {
+        PlaybackParams newParams{.pan = pan, .pitch = pitch, .volume = playVolume};
+        bassSound->addActiveInstance(handle, newParams);
+    }
+
+    return succeeded;
+}
+
+bool BassSoundEngine::actuallyPlay(BassSound *bassSound, u32 positionMS) {
+    assert(bassSound);
     // Make sure the mixer is playing! Duh.
-    if(this->currentOutputDevice.driver == OutputDriver::BASS) {
+    if(bassSound->bPaused && this->currentOutputDevice.driver == OutputDriver::BASS) {
         if(BASS_ChannelIsActive(this->g_bassOutputMixer) != BASS_ACTIVE_PLAYING) {
             if(!BASS_ChannelPlay(this->g_bassOutputMixer, true)) {
                 debugLog("BassSoundEngine::play() couldn't BASS_ChannelPlay(), errorcode {:d}", BASS_ErrorGetCode());
@@ -527,15 +550,21 @@ bool BassSoundEngine::play(Sound *snd, f32 pan, f32 pitch, f32 playVolume) {
         }
     }
 
+    // unpause the channel
+    if(bassSound->bPaused && bassSound->isStream()) {
+        bassSound->bPaused = false;
+        bassSound->setPositionMS(positionMS);
+        BASS_Mixer_ChannelFlags(bassSound->stream, 0, BASS_MIXER_CHAN_PAUSE);
+    }
+
+    bassSound->bPaused = false;
     bassSound->bStarted = true;
-    bassSound->interpolator.reset(0.0, Timing::getTimeReal(), bassSound->getSpeed());
+
+    bassSound->setLastPlayTime(engine->getTime());
 
     if(cv::debug_snd.getBool()) {
         debugLog("Playing {:s}", bassSound->getFilePath().c_str());
     }
-
-    PlaybackParams newParams{.pan = pan, .pitch = pitch, .volume = playVolume};
-    bassSound->addActiveInstance(handle, newParams);
 
     return true;
 }

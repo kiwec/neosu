@@ -1495,7 +1495,7 @@ DatabaseBeatmap::TIMING_INFO DatabaseBeatmap::getTimingInfoForTimeAndTimingPoint
     return ti;
 }
 
-std::string DatabaseBeatmap::getFullSoundFilePath() {
+const std::string &DatabaseBeatmap::getFullSoundFilePath() {
     // this modifies this->sFullSoundFilePath inplace
     if(File::existsCaseInsensitive(this->sFullSoundFilePath) == File::FILETYPE::FILE) {
         return this->sFullSoundFilePath;

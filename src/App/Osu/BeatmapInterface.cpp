@@ -683,8 +683,7 @@ bool BeatmapInterface::start() {
 
         // Restarting sound engine already reloads the music
     } else {
-        this->unloadMusic();  // need to reload in case of speed/pitch changes (just to be sure)
-        this->loadMusic();
+        this->reloadMusicNow();  // need to reload in case of speed/pitch changes (just to be sure)
     }
 
     this->music->setLoop(false);
@@ -1508,8 +1507,10 @@ void BeatmapInterface::handlePreviewPlay() {
     this->music->setLoop(cv::beatmap_preview_music_loop.getBool());
 }
 
-void BeatmapInterface::loadMusic(bool async) {
-    if(!this->beatmap || this->beatmap->getFullSoundFilePath().empty()) {
+// TODO: async load for preview music
+void BeatmapInterface::loadMusic(bool reload, bool async) {
+    const std::string &beatmapSoundPath = this->beatmap ? this->beatmap->getFullSoundFilePath() : "";
+    if(beatmapSoundPath.empty()) {
         if(this->beatmap) {
             debugLog("no music file for {}!", this->beatmap->getFilePath());
         }
@@ -1523,24 +1524,50 @@ void BeatmapInterface::loadMusic(bool async) {
         this->music = resourceManager->getSound("BEATMAP_MUSIC");
     }
 
-    std::string oldPath{};
-    if(this->music) {
-        oldPath = this->music->getFilePath();
+    const std::string &oldPath = this->music ? this->music->getFilePath() : "";
+    const std::string &newPath = beatmapSoundPath;
+
+    const bool pathChanged = newPath != oldPath;
+    const bool haveExistingMusic = !!this->music;
+    const bool musicAlreadyLoadedSuccessfully = haveExistingMusic && this->music->isReady();
+
+    bool skipLoading = !reload;
+    if(!reload) {
+        if(async) {
+            // if we are already async loading the same path, nothing to do here
+            skipLoading = (haveExistingMusic && !pathChanged && resourceManager->isLoadingResource(this->music));
+        } else {
+            // we can skip if the path didn't change and we already loaded
+            skipLoading = !pathChanged && musicAlreadyLoadedSuccessfully;
+        }
     }
 
-    std::string newPath{this->beatmap->getFullSoundFilePath()};
+    if(cv::debug_osu.getBool() || cv::debug_snd.getBool()) {
+        debugLog(
+            "reload: {} async: {} path changed: {} existing music: {} existing music loaded successfully: {} skipping: "
+            "{}",
+            reload, async, pathChanged, haveExistingMusic, musicAlreadyLoadedSuccessfully, skipLoading);
+    }
+
+    if(skipLoading) return;
 
     // load the song (again)
-    if(!this->music || (newPath != oldPath || async) || !this->music->isReady()) {
-        if(this->music) {
-            // rebuild with new path
-            this->music->rebuild(newPath, async);
-        } else {
-            // fresh load
-            this->music = resourceManager->loadSoundAbs(newPath, "BEATMAP_MUSIC", true /* stream */, false, false);
-        }
-        assert(this->music);
+    if(haveExistingMusic) {
+        // rebuild with new path
+        this->music->rebuild(newPath, async);
+    } else {
+        // fresh load
+        if(async) resourceManager->requestNextLoadAsync();
+        this->music = resourceManager->loadSoundAbs(newPath, "BEATMAP_MUSIC", true /* stream */, false, false);
+    }
+    assert(this->music);
 
+    if(!this->music->isReady() || !soundEngine->enqueue(this->music)) {
+        if(cv::debug_osu.getBool() || cv::debug_snd.getBool()) {
+            debugLog("failed to enqueue music at {}", newPath);
+        }
+    } else {
+        // ready and enqueued
         this->music->setBaseVolume(this->getIdealVolume());
         this->fMusicFrequencyBackup = this->music->getFrequency();
         this->music->setSpeed(this->getSpeedMultiplier());

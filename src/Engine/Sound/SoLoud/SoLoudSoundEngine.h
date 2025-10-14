@@ -28,7 +28,7 @@ class SoLoudSoundEngine final : public SoundEngine {
 
     void restart() override;
 
-    bool play(Sound *snd, f32 pan = 0.f, f32 pitch = 0.f, f32 playVolume = 1.f) override;
+    bool play(Sound *snd, f32 pan = 0.f, f32 pitch = 0.f, f32 playVolume = 1.f, bool startPaused = false) override;
     void pause(Sound *snd) override;
     void stop(Sound *snd) override;
 
@@ -42,8 +42,8 @@ class SoLoudSoundEngine final : public SoundEngine {
     SOUND_ENGINE_TYPE(SoLoudSoundEngine, SOLOUD, SoundEngine)
    private:
     // internal helpers for play()
-    bool playSound(SoLoudSound *soloudSound, f32 pan, f32 pitch, f32 playVolume);
-    bool updateExistingSound(SoLoudSound *soloudSound, SOUNDHANDLE handle, f32 pan, f32 pitch, f32 playVolume);
+    bool playSound(SoLoudSound *soloudSound, f32 pan, f32 pitch, f32 playVolume, bool startPaused);
+    bool updateExistingSound(SoLoudSound *soloudSound, SOUNDHANDLE handle, f32 pan, f32 pitch, f32 playVolume, bool startPaused);
 
     void setVolumeGradual(SOUNDHANDLE handle, float targetVol, float fadeTimeMs = 10.0f);
     void updateOutputDevices(bool printInfo) override;

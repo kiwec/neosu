@@ -138,6 +138,8 @@ void SoLoudSound::destroy() {
     // reset position cache state
     this->cached_stream_position = 0.0;
     this->soloud_stream_position_cache_time = -1.0;
+    this->soloud_paused_handle_cache_time = 0.0;
+    this->soloud_valid_handle_cache_time = 0.0;
     this->force_sync_position_next = true;
 }
 

@@ -120,6 +120,7 @@ void BassSound::destroy() {
     this->bPaused = false;
     this->paused_position_ms = 0;
     this->bIgnored = false;
+    this->fLastPlayTime = 0.f;
 }
 
 void BassSound::setPositionMS(u32 ms) {

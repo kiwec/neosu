@@ -251,7 +251,7 @@ class DatabaseBeatmap final {
 
     using MapFileReadDoneCallback = std::function<void(std::vector<u8>)>;  // == AsyncIOHandler::ReadCallback
     bool getMapFileAsync(MapFileReadDoneCallback data_callback);
-    std::string getFullSoundFilePath();
+    const std::string &getFullSoundFilePath();
 
     // redundant data
     [[nodiscard]] inline const std::string &getFullBackgroundImageFilePath() const {
@@ -284,7 +284,9 @@ class DatabaseBeatmap final {
 
     std::string sFolder;    // path to folder containing .osu file (e.g. "/path/to/beatmapfolder/")
     std::string sFilePath;  // path to .osu file (e.g. "/path/to/beatmapfolder/beatmap.osu")
+private:
     std::string sFullSoundFilePath;
+public:
     std::string sFullBackgroundImageFilePath;
 
     bool bEmptyArtistUnicode{false};
