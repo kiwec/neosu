@@ -132,6 +132,8 @@ AsyncResourceLoader::AsyncResourceLoader()
 AsyncResourceLoader::~AsyncResourceLoader() { shutdown(); }
 
 void AsyncResourceLoader::shutdown() {
+    if (this->bShuttingDown) return;
+
     this->bShuttingDown = true;
 
     // wake up all waiting threads before requesting stop

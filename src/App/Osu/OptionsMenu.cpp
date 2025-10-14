@@ -142,11 +142,7 @@ class OptionsMenuSkinPreviewElement final : public CBaseUIElement {
 class OptionsMenuSliderPreviewElement final : public CBaseUIElement {
    public:
     OptionsMenuSliderPreviewElement(float xPos, float yPos, float xSize, float ySize, UString name)
-        : CBaseUIElement(xPos, yPos, xSize, ySize, std::move(name)) {
-        this->bDrawSliderHack = true;
-        this->fPrevLength = 0.0f;
-        this->vao = nullptr;
-    }
+        : CBaseUIElement(xPos, yPos, xSize, ySize, std::move(name)) {}
 
     void draw() override {
         if(!this->bVisible) return;
@@ -217,21 +213,15 @@ class OptionsMenuSliderPreviewElement final : public CBaseUIElement {
                                              osu->getSkin()->getComboColorForCounter(420, 0));
                     else {
                         // (lazy generate vao)
-                        if(this->vao == nullptr || length != this->fPrevLength) {
+                        if(!this->vao || length != this->fPrevLength) {
                             this->fPrevLength = length;
 
                             debugLog("Regenerating options menu slider preview vao ...");
 
-                            if(this->vao != nullptr) {
-                                resourceManager->destroyResource(this->vao);
-                                this->vao = nullptr;
-                            }
-
-                            if(this->vao == nullptr)
-                                this->vao =
-                                    SliderRenderer::generateVAO(points, hitcircleDiameter, vec3(0, 0, 0), false);
+                            this->vao.reset(
+                                SliderRenderer::generateVAO(points, hitcircleDiameter, vec3(0, 0, 0), false));
                         }
-                        SliderRenderer::draw(this->vao, emptyVector, this->vPos, 1, hitcircleDiameter, 0, 1,
+                        SliderRenderer::draw(this->vao.get(), emptyVector, this->vPos, 1, hitcircleDiameter, 0, 1,
                                              osu->getSkin()->getComboColorForCounter(420, 0));
                     }
                 }
@@ -258,9 +248,9 @@ class OptionsMenuSliderPreviewElement final : public CBaseUIElement {
     void setDrawSliderHack(bool drawSliderHack) { this->bDrawSliderHack = drawSliderHack; }
 
    private:
-    bool bDrawSliderHack;
-    VertexArrayObject *vao;
-    float fPrevLength;
+    bool bDrawSliderHack{true};
+    std::unique_ptr<VertexArrayObject> vao{nullptr};
+    float fPrevLength{0.f};
 };
 
 class OptionsMenuKeyBindLabel final : public CBaseUILabel {

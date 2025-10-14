@@ -57,6 +57,7 @@ protected:
 	virtual void init() = 0;
 	virtual void initAsync() = 0;
 	virtual void destroy() = 0;
+	bool doPathFixup();
 
 	std::string sFilePath{};
 	std::string sName{};

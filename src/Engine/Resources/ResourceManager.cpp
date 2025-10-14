@@ -44,6 +44,7 @@ ResourceManager::~ResourceManager() {
     destroyResources();
 
     // async loader shutdown handles thread cleanup
+    this->asyncLoader->shutdown();
 }
 
 void ResourceManager::update() {
@@ -54,7 +55,7 @@ void ResourceManager::update() {
 
 void ResourceManager::destroyResources() {
     while(this->vResources.size() > 0) {
-        destroyResource(this->vResources[0]);
+        destroyResource(this->vResources[0], DestroyMode::FORCE_BLOCKING);
     }
     this->vResources.clear();
     this->vImages.clear();
@@ -104,7 +105,7 @@ void ResourceManager::destroyResource(Resource *rs, DestroyMode destroyMode) {
 
         if(destroyMode == DestroyMode::FORCE_BLOCKING) {
             do {
-                this->asyncLoader->update(false);
+                this->update();
             } while(this->asyncLoader->isLoadingResource(rs));
         }
 
@@ -205,9 +206,31 @@ void ResourceManager::reloadResources(const std::vector<Resource *> &resources, 
 
     if(!async)  // synchronous
     {
+        // the resource could be in the middle of async loading
+        // so if we explicitly want to load synchronously we have to wait until that's finished
+        std::vector<Resource *> asyncLoadingList;
         for(auto &res : resources) {
-            res->reload();
+            if(unlikely(this->asyncLoader->isLoadingResource(res))) {
+                res->interruptLoad();
+                asyncLoadingList.push_back(res);
+            } else {
+                res->reload();
+            }
         }
+
+        while(!asyncLoadingList.empty()) {
+            this->update();
+            for(auto resit = asyncLoadingList.begin(); resit != asyncLoadingList.end();) {
+                if(this->asyncLoader->isLoadingResource(*resit)) {
+                    ++resit;
+                } else {
+                    (*resit)->reload();
+                    resit = asyncLoadingList.erase(resit);
+                    continue;
+                }
+            }
+        }
+
         return;
     }
 

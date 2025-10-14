@@ -344,11 +344,6 @@ bool SoLoudSound::isFinished() const {
     return !this->valid_handle_cached();
 }
 
-void SoLoudSound::rebuild(std::string newFilePath) {
-    this->sFilePath = std::move(newFilePath);
-    resourceManager->reloadResource(this);
-}
-
 bool SoLoudSound::isHandleValid(SOUNDHANDLE queryHandle) const {
     return queryHandle != 0 && this->isReady() && soloud && soloud->isValidVoiceHandle(queryHandle);
 }

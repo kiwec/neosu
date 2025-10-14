@@ -1508,7 +1508,7 @@ void BeatmapInterface::handlePreviewPlay() {
     this->music->setLoop(cv::beatmap_preview_music_loop.getBool());
 }
 
-void BeatmapInterface::loadMusic() {
+void BeatmapInterface::loadMusic(bool async) {
     if(!this->beatmap || this->beatmap->getFullSoundFilePath().empty()) {
         if(this->beatmap) {
             debugLog("no music file for {}!", this->beatmap->getFilePath());
@@ -1531,10 +1531,10 @@ void BeatmapInterface::loadMusic() {
     std::string newPath{this->beatmap->getFullSoundFilePath()};
 
     // load the song (again)
-    if(!this->music || newPath != oldPath || !this->music->isReady()) {
+    if(!this->music || (newPath != oldPath || async) || !this->music->isReady()) {
         if(this->music) {
             // rebuild with new path
-            this->music->rebuild(newPath);
+            this->music->rebuild(newPath, async);
         } else {
             // fresh load
             this->music = resourceManager->loadSoundAbs(newPath, "BEATMAP_MUSIC", true /* stream */, false, false);

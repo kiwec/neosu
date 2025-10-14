@@ -5,6 +5,7 @@
 #include "PlaybackInterpolator.h"
 
 #include <unordered_map>
+#include <optional>
 
 #define SOUND_TYPE(ClassName, TypeID, ParentClass)                      \
     static constexpr TypeId TYPE_ID = TypeID;                           \
@@ -36,6 +37,9 @@ class Sound : public Resource {
         this->activeHandleCache.reserve(5);
     }
 
+    // rebuild with a new path (or reload with the same path)
+    void rebuild(std::string_view newFilePath = "", bool async = false);
+
     // Factory method to create the appropriate sound object
     static Sound *createSound(std::string filepath, bool stream, bool overlayable, bool loop);
 
@@ -60,8 +64,6 @@ class Sound : public Resource {
 
     virtual bool isPlaying() const = 0;
     virtual bool isFinished() const = 0;
-
-    virtual void rebuild(std::string newFilePath) = 0;
 
     [[nodiscard]] constexpr bool isStream() const { return this->bStream; }
     [[nodiscard]] constexpr bool isLooped() const { return this->bIsLooped; }
@@ -111,6 +113,9 @@ class Sound : public Resource {
     mutable PlaybackInterpolator interpolator;
 
     std::unordered_map<SOUNDHANDLE, PlaybackParams> activeHandleCache;
+
+    // so that we don't change the filepath for a possibly currently-async-loading file when rebuilding, and only set it on the next load
+    std::string sRebuildFilePath;
 
     f64 fLastPlayTime{0.0};
 

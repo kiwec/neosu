@@ -16,6 +16,12 @@
 #include <utility>
 
 void Sound::initAsync() {
+    if(!this->sRebuildFilePath.empty()) {
+        this->sFilePath = std::move(this->sRebuildFilePath);
+        this->sRebuildFilePath.clear();
+        this->doPathFixup();
+    }
+
     if(cv::debug_rm.getBool()) debugLog("Resource Manager: Loading {:s}", this->sFilePath);
 
     // sanity check for malformed audio files
@@ -39,6 +45,14 @@ void Sound::initAsync() {
     } else {
         this->bIgnored = false;
     }
+}
+
+void Sound::rebuild(std::string_view newFilePath, bool async) {
+    if (!newFilePath.empty()) {
+        this->sRebuildFilePath = newFilePath;
+    }
+
+    resourceManager->reloadResource(this, async);
 }
 
 Sound* Sound::createSound(std::string filepath, bool stream, bool overlayable, bool loop) {

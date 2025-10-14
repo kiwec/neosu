@@ -30,8 +30,6 @@ class BassSound final : public Sound {
     bool isPlaying() const override;
     bool isFinished() const override;
 
-    void rebuild(std::string newFilePath) override;
-
     // inspection
     SOUND_TYPE(BassSound, BASS, Sound)
 

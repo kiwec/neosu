@@ -9,6 +9,14 @@
 Resource::Resource(std::string filepath) {
     this->sFilePath = std::move(filepath);
 
+    const bool exists = this->doPathFixup();
+
+    // give it a dummy name for unnamed resources, mainly for debugging purposes
+    this->sName = fmt::format("{:p}:postinit=n:found={}:{:s}", static_cast<const void*>(this), exists, this->sFilePath);
+}
+
+// separate helper for possible reload with new path
+bool Resource::doPathFixup() {
     bool file_found = true;
     if(File::existsCaseInsensitive(this->sFilePath) != File::FILETYPE::FILE)  // modifies the input string if found
     {
@@ -16,9 +24,7 @@ Resource::Resource(std::string filepath) {
         file_found = false;
     }
 
-    // give it a dummy name for unnamed resources, mainly for debugging purposes
-    this->sName =
-        fmt::format("{:p}:postinit=n:found={}:{:s}", static_cast<const void*>(this), file_found, this->sFilePath);
+    return file_found;
 }
 
 void Resource::load() { init(); }

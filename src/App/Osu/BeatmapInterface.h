@@ -125,7 +125,8 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
     void resetScore();
 
     // music/sound
-    void loadMusic();
+    inline void reloadMusicNow() {this->loadMusic(false);}
+    void loadMusic(bool async = false);
     void unloadMusic();
     f32 getIdealVolume();
     void setSpeed(f32 speed);

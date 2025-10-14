@@ -77,9 +77,8 @@
 #include "shaders.h"
 
 void Osu::globalOnSetValueProtectedCallback() {
-    const auto &map_iface = this->getMapInterface();
-    if(likely(map_iface)) {
-        map_iface->is_submittable = false;
+    if(likely(this->map_iface)) {
+        this->map_iface->is_submittable = false;
     }
 }
 
@@ -2070,17 +2069,18 @@ void Osu::setupSoloud() {
     static bool was_playing = false;
     static u32 prev_position_ms = 0;
 
-    static auto outputChangedBeforeCallback = []() -> void {
-        if(osu && osu->getMapInterface() && osu->getMapInterface()->getMusic()) {
-            was_playing = osu->getMapInterface()->getMusic()->isPlaying();
-            prev_position_ms = osu->getMapInterface()->getMusic()->getPositionMS();
+    static auto output_changed_before_cb = []() -> void {
+        Sound *map_music = nullptr;
+        if(osu && osu->getMapInterface() && (map_music = osu->getMapInterface()->getMusic())) {
+            was_playing = map_music->isPlaying();
+            prev_position_ms = map_music->getPositionMS();
         } else {
             was_playing = false;
             prev_position_ms = 0;
         }
     };
     // the actual reset will be sandwiched between these during restart
-    static auto outputChangedAfterCallback = []() -> void {
+    static auto output_changed_after_cb = []() -> void {
         // part 2 of callback
         if(osu && osu->getOptionsMenu() && osu->getOptionsMenu()->outputDeviceLabel && osu->getSkin()) {
             osu->getOptionsMenu()->outputDeviceLabel->setText(soundEngine->getOutputDeviceName());
@@ -2088,16 +2088,18 @@ void Osu::setupSoloud() {
             osu->getOptionsMenu()->onOutputDeviceResetUpdate();
 
             // start playing music again after audio device changed
-            if(osu->getMapInterface() && osu->getMapInterface()->getMusic()) {
+            Sound *map_music = nullptr;
+            const auto &map_iface = osu->getMapInterface();
+            if(map_iface && (map_music = map_iface->getMusic())) {
                 if(osu->isInPlayMode()) {
-                    osu->getMapInterface()->unloadMusic();
-                    osu->getMapInterface()->loadMusic();
-                    osu->getMapInterface()->getMusic()->setLoop(false);
-                    osu->getMapInterface()->getMusic()->setPositionMS(prev_position_ms);
+                    map_iface->unloadMusic();
+                    map_iface->loadMusic();
+                    map_music->setLoop(false);
+                    map_music->setPositionMS(prev_position_ms);
                 } else {
-                    osu->getMapInterface()->unloadMusic();
-                    osu->getMapInterface()->selectBeatmap();
-                    osu->getMapInterface()->getMusic()->setPositionMS(prev_position_ms);
+                    map_iface->unloadMusic();
+                    map_iface->selectBeatmap();
+                    map_music->setPositionMS(prev_position_ms);
                 }
             }
 
@@ -2107,8 +2109,8 @@ void Osu::setupSoloud() {
             osu->getOptionsMenu()->scheduleLayoutUpdate();
         }
     };
-    soundEngine->setDeviceChangeBeforeCallback(outputChangedBeforeCallback);
-    soundEngine->setDeviceChangeAfterCallback(outputChangedAfterCallback);
+    soundEngine->setDeviceChangeBeforeCallback(output_changed_before_cb);
+    soundEngine->setDeviceChangeAfterCallback(output_changed_after_cb);
 
     // this sets convar callbacks for things that require a soundengine reinit, do it
     // only after init so config files don't restart it over and over again

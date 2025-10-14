@@ -193,7 +193,7 @@ class DatabaseBeatmap final {
 
     [[nodiscard]] inline const MD5Hash &getMD5Hash() const { return this->sMD5Hash; }
 
-    TIMING_INFO getTimingInfoForTime(u32 positionMS) const;
+    [[nodiscard]] TIMING_INFO getTimingInfoForTime(u32 positionMS) const;
     static TIMING_INFO getTimingInfoForTimeAndTimingPoints(u32 positionMS,
                                                            const zarray<DatabaseBeatmap::TIMINGPOINT> &timingpoints);
 

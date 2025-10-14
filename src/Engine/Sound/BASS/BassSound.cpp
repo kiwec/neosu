@@ -253,11 +253,6 @@ bool BassSound::isPlaying() const {
 
 bool BassSound::isFinished() const { return this->getPositionMS() >= this->getLengthMS(); }
 
-void BassSound::rebuild(std::string newFilePath) {
-    this->sFilePath = std::move(newFilePath);
-    resourceManager->reloadResource(this);
-}
-
 bool BassSound::isHandleValid(SOUNDHANDLE queryHandle) const { return BASS_Mixer_ChannelGetMixer(queryHandle); }
 
 void BassSound::setHandleVolume(SOUNDHANDLE handle, float volume) {
