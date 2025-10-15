@@ -37,7 +37,13 @@ class BGImageHandler::MapBGImagePathLoader final : public Resource {
 
     std::string parsed_bg_filename;
     bool found_mojibake_filename{false};
+
+    static std::once_flag init_fail_check;
+    static bool dont_attempt_mojibake_checks;  // set to true if demoji_bwd returned -1 (failed to initialize)
 };
+
+std::once_flag BGImageHandler::MapBGImagePathLoader::init_fail_check;
+bool BGImageHandler::MapBGImagePathLoader::dont_attempt_mojibake_checks = false;
 
 struct BGImageHandler::ENTRY final {
     std::string folder;
@@ -352,7 +358,7 @@ void BGImageHandler::MapBGImagePathLoader::initAsync() {
 
     if(this->isInterrupted()) return;
 
-    if(found) {
+    if(found && !dont_attempt_mojibake_checks) {
         this->found_mojibake_filename = checkMojibake();
     }
 
@@ -384,6 +390,9 @@ bool BGImageHandler::MapBGImagePathLoader::checkMojibake() {
     auto converted_output = std::make_unique_for_overwrite<char[]>(this->parsed_bg_filename.size() * 4);
     const auto conv_result_len =
         demoji_bwd(this->parsed_bg_filename.data(), this->parsed_bg_filename.size(), converted_output.get(), out_size);
+
+    // if demoji_bwd is broken/unavailable for some reason then don't try to use it again
+    std::call_once(init_fail_check, [conv_result_len]() { dont_attempt_mojibake_checks = conv_result_len == -1; });
 
     if(conv_result_len > 0) {
         std::string_view result = {converted_output.get(), converted_output.get() + conv_result_len};

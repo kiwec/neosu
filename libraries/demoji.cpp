@@ -24,10 +24,40 @@
 
 #include "demoji.h"
 
+/* platform detection */
+#if defined(_WIN32) || defined(_MSC_VER) || defined(__CYGWIN__)
+
+#define WINDOWS_VERSION_
+
+#if (defined(WINVER) && WINVER < 0x0600) || (defined(_WIN32_WINNT) && _WIN32_WINNT < 0x0600) || (defined(_WIN32_WINDOWS) && _WIN32_WINDOWS < 0x0600)
+#define XP_COMPAT_
+#endif
+
+#elif defined(__unix__) || defined(__linux__) || defined(__APPLE__)
+
+#define UNIX_VERSION_
+
+#endif
+
+#if !(defined(WINDOWS_VERSION_) || defined(UNIX_VERSION_))
+
+/* no implementation for this platform */
+ptrdiff_t demoji_fwd(const char * /* input */, size_t /* input_len */, char * /* output */, size_t /* output_len */)
+{
+	return -1;
+}
+
+ptrdiff_t demoji_bwd(const char * /* input */, size_t /* input_len */, char * /* output */, size_t /* output_len */)
+{
+	return -1;
+}
+
+#else
+
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef _WIN32
+#ifdef WINDOWS_VERSION_
 #ifndef NOMINMAX
 #define NOMINMAX
 #endif
@@ -69,7 +99,7 @@ typedef HMODULE lib_handle_t;
 #define LIB_PREFIX ""
 #define LIB_SUFFIX ".dll"
 
-#elif defined(__unix__) || defined(__APPLE__)
+#elif defined(UNIX_VERSION_)
 #include <dlfcn.h>
 
 typedef void *lib_handle_t;
@@ -88,15 +118,55 @@ typedef void *lib_handle_t;
 #define ONCE_FLAG once_flag
 #define ONCE_INIT ONCE_FLAG_INIT
 #define CALL_ONCE(flag, func) call_once(flag, func)
-#elif defined(_WIN32)
+#elif defined(XP_COMPAT_)
+/* XP fallback */
+typedef struct
+{
+	CRITICAL_SECTION cs;
+	volatile long state; /* 0=uninitialized, 1=initializing, 2=initialized, 3=complete */
+} ONCE_FLAG;
+#define ONCE_INIT {0}
+static inline void call_once_xp(ONCE_FLAG *flag, void (*func)(void))
+{
+	if (flag->state == 3)
+		return;
+
+	if (flag->state < 2)
+	{
+		if (InterlockedCompareExchange(&flag->state, 1, 0) == 0)
+		{
+			InitializeCriticalSection(&flag->cs);
+			InterlockedExchange(&flag->state, 2);
+		}
+		else
+		{
+			while (flag->state < 2)
+				YieldProcessor();
+		}
+	}
+
+	/* check again quickly to avoid unnecessarily entering the critsect */
+	if (flag->state == 3)
+		return;
+
+	EnterCriticalSection(&flag->cs);
+	if (flag->state == 2)
+	{
+		func();
+		InterlockedExchange(&flag->state, 3);
+	}
+	LeaveCriticalSection(&flag->cs);
+}
+#define CALL_ONCE(flag, func) call_once_xp(flag, func)
+#elif defined(WINDOWS_VERSION_)
 #define ONCE_FLAG INIT_ONCE
 #define ONCE_INIT INIT_ONCE_STATIC_INIT
-static void call_once_wrapper(ONCE_FLAG *flag, void (*func)(void))
+static inline void call_once_wrapper(ONCE_FLAG *flag, void (*func)(void))
 {
 	InitOnceExecuteOnce(flag, (PINIT_ONCE_FN)func, NULL, NULL);
 }
 #define CALL_ONCE(flag, func) call_once_wrapper(flag, func)
-#elif defined(__unix__) || defined(__APPLE__)
+#elif defined(UNIX_VERSION_)
 #include <pthread.h>
 #define ONCE_FLAG pthread_once_t
 #define ONCE_INIT PTHREAD_ONCE_INIT
@@ -117,7 +187,7 @@ static ONCE_FLAG init_once = ONCE_INIT;
 
 static inline lib_handle_t lib_load(const char *libname)
 {
-#ifdef _WIN32
+#ifdef WINDOWS_VERSION_
 	if (!libname)
 		return GetModuleHandle(NULL);
 #endif
@@ -129,7 +199,7 @@ static void cleanup(void)
 {
 	if (iconv_lib)
 	{
-#ifdef _WIN32
+#ifdef WINDOWS_VERSION_
 		if (iconv_lib != GetModuleHandle(NULL))
 #endif
 			lib_close(iconv_lib);
@@ -163,7 +233,7 @@ static void init_library(void)
 		cleanup();
 	}
 
-#ifdef _WIN32
+#ifdef WINDOWS_VERSION_
 	/* Windows API fallback doesn't need iconv */
 	return;
 #else
@@ -202,7 +272,7 @@ static ptrdiff_t convert_via_iconv(const char *to, const char *from, const char 
 	return (ptrdiff_t)(output_len - outbytesleft);
 }
 
-#ifdef _WIN32
+#ifdef WINDOWS_VERSION_
 static ptrdiff_t convert_via_winapi(UINT to_cp, UINT from_cp, const char *input, size_t input_len, char *output, size_t output_len)
 {
 	wchar_t *wide;
@@ -250,14 +320,14 @@ typedef enum _EncType
 
 static ptrdiff_t convert_encoding(EncType to, EncType from, const char *input, size_t input_len, char *output, size_t output_len)
 {
-#ifdef _WIN32
+#ifdef WINDOWS_VERSION_
 	static const UINT enc_cps[ENC_MAX] = {850, 932, 65001 /* CP_UTF8 */};
 #endif
 	static const char *enc_strs[ENC_MAX] = {"CP850", "SHIFT-JIS", "UTF-8"};
 
 	if (use_iconv)
 		return convert_via_iconv(enc_strs[to], enc_strs[from], input, input_len, output, output_len);
-#ifdef _WIN32
+#ifdef WINDOWS_VERSION_
 	return convert_via_winapi(enc_cps[to], enc_cps[from], input, input_len, output, output_len);
 #else
 	return -2;
@@ -319,3 +389,5 @@ ptrdiff_t demoji_bwd(const char *input, size_t input_len, char *output, size_t o
 	free(intermediate);
 	return final_len;
 }
+
+#endif
