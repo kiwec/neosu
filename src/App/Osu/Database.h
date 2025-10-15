@@ -88,9 +88,9 @@ class Database {
     BeatmapSet *addBeatmapSet(const std::string &beatmapFolderPath, i32 set_id_override = -1);
 
     int addScore(const FinishedScore &score);
-    void deleteScore(MD5Hash beatmapMD5Hash, u64 scoreUnixTimestamp);
+    void deleteScore(const MD5Hash &beatmapMD5Hash, u64 scoreUnixTimestamp);
     void sortScoresInPlace(std::vector<FinishedScore> &scores);
-    void sortScores(MD5Hash beatmapMD5Hash);
+    void sortScores(const MD5Hash &beatmapMD5Hash);
 
     std::vector<UString> getPlayerNamesWithPPScores();
     std::vector<UString> getPlayerNamesWithScoresForUserSwitcher();

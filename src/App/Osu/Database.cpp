@@ -549,7 +549,7 @@ bool Database::addScoreRaw(const FinishedScore &score) {
     return true;
 }
 
-void Database::deleteScore(MD5Hash beatmapMD5Hash, u64 scoreUnixTimestamp) {
+void Database::deleteScore(const MD5Hash &beatmapMD5Hash, u64 scoreUnixTimestamp) {
     Sync::scoped_lock lock(this->scores_mtx);
     for(int i = 0; i < this->scores[beatmapMD5Hash].size(); i++) {
         if(this->scores[beatmapMD5Hash][i].unixTimestamp == scoreUnixTimestamp) {
@@ -576,7 +576,7 @@ void Database::sortScoresInPlace(std::vector<FinishedScore> &scores) {
     std::ranges::sort(scores, sortScoreByPP);
 }
 
-void Database::sortScores(MD5Hash beatmapMD5Hash) {
+void Database::sortScores(const MD5Hash &beatmapMD5Hash) {
     Sync::scoped_lock lock(this->scores_mtx);
     this->sortScoresInPlace(this->scores[beatmapMD5Hash]);
 }

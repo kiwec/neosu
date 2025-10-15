@@ -2072,12 +2072,16 @@ void Osu::setupSoloud() {
                 if(osu->isInPlayMode()) {
                     map_iface->unloadMusic();
                     map_iface->loadMusic();
-                    map_music->setLoop(false);
-                    map_music->setPositionMS(prev_position_ms);
+                    if((map_music = map_iface->getMusic())) {  // need to get new music after loading
+                        map_music->setLoop(false);
+                        map_music->setPositionMS(prev_position_ms);
+                    }
                 } else {
                     map_iface->unloadMusic();
                     map_iface->selectBeatmap();
-                    map_music->setPositionMS(prev_position_ms);
+                    if((map_music = map_iface->getMusic())) {
+                        map_music->setPositionMS(prev_position_ms);
+                    }
                 }
             }
 
