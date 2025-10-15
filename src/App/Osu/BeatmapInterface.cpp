@@ -86,11 +86,9 @@ BeatmapInterface::BeatmapInterface() : AbstractBeatmapInterface() {
     this->iPreviousHitObjectTime = 0;
     this->iPreviousSectionPassFailTime = -1;
 
-    this->bClick1Held = false;
-    this->bClick2Held = false;
     this->bClickedContinue = false;
     this->bPrevKeyWasKey1 = false;
-    this->iAllowAnyNextKeyForFullAlternateUntilHitObjectIndex = 0;
+    this->iAllowAnyNextKeyUntilHitObjectIndex = 0;
 
     this->iNPS = 0;
     this->iND = 0;
@@ -302,8 +300,15 @@ void BeatmapInterface::keyPressed1(bool mouse) {
 
     if(this->bContinueScheduled) this->bClickedContinue = !osu->getModSelector()->isMouseInside();
 
+    if(cv::mod_singletap.getBool() && !this->bPrevKeyWasKey1) {
+        if(this->iCurrentHitObjectIndex > this->iAllowAnyNextKeyUntilHitObjectIndex) {
+            soundEngine->play(this->getSkin()->getCombobreak());
+            return;
+        }
+    }
+
     if(cv::mod_fullalternate.getBool() && this->bPrevKeyWasKey1) {
-        if(this->iCurrentHitObjectIndex > this->iAllowAnyNextKeyForFullAlternateUntilHitObjectIndex) {
+        if(this->iCurrentHitObjectIndex > this->iAllowAnyNextKeyUntilHitObjectIndex) {
             soundEngine->play(this->getSkin()->getCombobreak());
             return;
         }
@@ -320,7 +325,6 @@ void BeatmapInterface::keyPressed1(bool mouse) {
     if(should_count_keypress) osu->getScore()->addKeyCount(mouse ? 3 : 1);
 
     this->bPrevKeyWasKey1 = true;
-    this->bClick1Held = true;
 
     if((!osu->getModAuto() && !osu->getModRelax()) || !cv::auto_and_relax_block_user_input.getBool())
         this->clicks.push_back(Click{
@@ -328,10 +332,11 @@ void BeatmapInterface::keyPressed1(bool mouse) {
             .pos = this->getCursorPos(),
         });
 
-    if(mouse) {
+    if(mouse || !cv::mod_no_keylock.getBool()) {
         this->current_keys |= LegacyReplay::M1;
-    } else {
-        this->current_keys |= LegacyReplay::M1 | LegacyReplay::K1;
+    }
+    if(!mouse) {
+        this->current_keys |= LegacyReplay::K1;
     }
 }
 
@@ -340,8 +345,15 @@ void BeatmapInterface::keyPressed2(bool mouse) {
 
     if(this->bContinueScheduled) this->bClickedContinue = !osu->getModSelector()->isMouseInside();
 
+    if(cv::mod_singletap.getBool() && this->bPrevKeyWasKey1) {
+        if(this->iCurrentHitObjectIndex > this->iAllowAnyNextKeyUntilHitObjectIndex) {
+            soundEngine->play(this->getSkin()->getCombobreak());
+            return;
+        }
+    }
+
     if(cv::mod_fullalternate.getBool() && !this->bPrevKeyWasKey1) {
-        if(this->iCurrentHitObjectIndex > this->iAllowAnyNextKeyForFullAlternateUntilHitObjectIndex) {
+        if(this->iCurrentHitObjectIndex > this->iAllowAnyNextKeyUntilHitObjectIndex) {
             soundEngine->play(this->getSkin()->getCombobreak());
             return;
         }
@@ -358,7 +370,6 @@ void BeatmapInterface::keyPressed2(bool mouse) {
     if(should_count_keypress) osu->getScore()->addKeyCount(mouse ? 4 : 2);
 
     this->bPrevKeyWasKey1 = false;
-    this->bClick2Held = true;
 
     if((!osu->getModAuto() && !osu->getModRelax()) || !cv::auto_and_relax_block_user_input.getBool())
         this->clicks.push_back(Click{
@@ -366,35 +377,38 @@ void BeatmapInterface::keyPressed2(bool mouse) {
             .pos = this->getCursorPos(),
         });
 
-    if(mouse) {
+    if(mouse || !cv::mod_no_keylock.getBool()) {
         this->current_keys |= LegacyReplay::M2;
-    } else {
-        this->current_keys |= LegacyReplay::M2 | LegacyReplay::K2;
+    }
+    if(!mouse) {
+        this->current_keys |= LegacyReplay::K2;
     }
 }
 
-void BeatmapInterface::keyReleased1(bool /*mouse*/) {
+void BeatmapInterface::keyReleased1(bool mouse) {
     if(this->is_watching || BanchoState::spectating) return;
 
-    // key overlay
-    osu->getHUD()->animateInputoverlay(1, false);
-    osu->getHUD()->animateInputoverlay(3, false);
-
-    this->bClick1Held = false;
-
-    this->current_keys &= ~(LegacyReplay::M1 | LegacyReplay::K1);
+    if(mouse || !cv::mod_no_keylock.getBool()) {
+        osu->getHUD()->animateInputoverlay(3, false);
+        this->current_keys &= ~LegacyReplay::M1;
+    }
+    if(!mouse || !cv::mod_no_keylock.getBool()) {
+        osu->getHUD()->animateInputoverlay(1, false);
+        this->current_keys &= ~LegacyReplay::K1;
+    }
 }
 
-void BeatmapInterface::keyReleased2(bool /*mouse*/) {
+void BeatmapInterface::keyReleased2(bool mouse) {
     if(this->is_watching || BanchoState::spectating) return;
 
-    // key overlay
-    osu->getHUD()->animateInputoverlay(2, false);
-    osu->getHUD()->animateInputoverlay(4, false);
-
-    this->bClick2Held = false;
-
-    this->current_keys &= ~(LegacyReplay::M2 | LegacyReplay::K2);
+    if(mouse || !cv::mod_no_keylock.getBool()) {
+        osu->getHUD()->animateInputoverlay(4, false);
+        this->current_keys &= ~LegacyReplay::M2;
+    }
+    if(!mouse || !cv::mod_no_keylock.getBool()) {
+        osu->getHUD()->animateInputoverlay(2, false);
+        this->current_keys &= ~LegacyReplay::K2;
+    }
 }
 
 void BeatmapInterface::selectBeatmap() {
@@ -561,9 +575,7 @@ bool BeatmapInterface::start() {
     // HACKHACK: stuck key quickfix
     {
         osu->bKeyboardKey1Down = false;
-        osu->bKeyboardKey12Down = false;
         osu->bKeyboardKey2Down = false;
-        osu->bKeyboardKey22Down = false;
         osu->bMouseKey1Down = false;
         osu->bMouseKey2Down = false;
 
@@ -1206,24 +1218,6 @@ f32 BeatmapInterface::getOD_full() const {
 
     return OD;
 }
-
-bool BeatmapInterface::isKey1Down() const {
-    if(this->is_watching || BanchoState::spectating) {
-        return this->current_keys & (LegacyReplay::M1 | LegacyReplay::K1);
-    } else {
-        return this->bClick1Held;
-    }
-}
-
-bool BeatmapInterface::isKey2Down() const {
-    if(this->is_watching || BanchoState::spectating) {
-        return this->current_keys & (LegacyReplay::M2 | LegacyReplay::K2);
-    } else {
-        return this->bClick2Held;
-    }
-}
-
-bool BeatmapInterface::isClickHeld() const { return this->isKey1Down() || this->isKey2Down(); }
 
 std::string BeatmapInterface::getTitle() const {
     if(this->beatmap != nullptr)
@@ -2270,10 +2264,9 @@ void BeatmapInterface::update() {
         }
     }
 
-    // full alternate mod lenience
-    if(cv::mod_fullalternate.getBool()) {
-        if(this->bInBreak || this->bIsInSkippableSection || this->bIsSpinnerActive || this->iCurrentHitObjectIndex < 1)
-            this->iAllowAnyNextKeyForFullAlternateUntilHitObjectIndex = this->iCurrentHitObjectIndex + 1;
+    // singletap/fullalternate mod lenience
+    if(this->bInBreak || this->bIsInSkippableSection || this->bIsSpinnerActive || this->iCurrentHitObjectIndex < 1) {
+        this->iAllowAnyNextKeyUntilHitObjectIndex = this->iCurrentHitObjectIndex + 1;
     }
 
     if(this->last_keys != this->current_keys) {
@@ -2515,8 +2508,11 @@ void BeatmapInterface::update2() {
             click.pos += GameRules::getPlayfieldOffset();
 
             // Flag fix to simplify logic (stable sets both K1 and M1 when K1 is pressed)
-            if(this->current_keys & LegacyReplay::K1) this->current_keys &= ~LegacyReplay::M1;
-            if(this->current_keys & LegacyReplay::K2) this->current_keys &= ~LegacyReplay::M2;
+            const auto &mods = osu->getScore()->mods;
+            if(!mods.has(ModFlags::NoKeylock)) {
+                if(this->current_keys & LegacyReplay::K1) this->current_keys &= ~LegacyReplay::M1;
+                if(this->current_keys & LegacyReplay::K2) this->current_keys &= ~LegacyReplay::M2;
+            }
 
             // Released key 1
             if(this->last_keys & LegacyReplay::K1 && !(this->current_keys & LegacyReplay::K1)) {

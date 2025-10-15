@@ -64,10 +64,7 @@ class SimulatedBeatmapInterface final : public AbstractBeatmapInterface {
     i32 current_frame_idx = 0;
 
     // generic state
-    [[nodiscard]] bool isKey1Down() const override;
-    [[nodiscard]] bool isKey2Down() const override;
-    [[nodiscard]] bool isClickHeld() const override;
-
+    [[nodiscard]] u8 getKeys() const override { return this->current_keys; }
     [[nodiscard]] bool isContinueScheduled() const override { return false; }
     [[nodiscard]] bool isPaused() const override { return false; }
     [[nodiscard]] bool isPlaying() const override { return true; }
@@ -106,7 +103,7 @@ class SimulatedBeatmapInterface final : public AbstractBeatmapInterface {
     i32 iPreviousHitObjectTime = 0;
 
     // player input
-    i32 iAllowAnyNextKeyForFullAlternateUntilHitObjectIndex = 0;
+    i32 iAllowAnyNextKeyUntilHitObjectIndex = 0;
     std::vector<Click> clicks;
 
     // hitobjects
