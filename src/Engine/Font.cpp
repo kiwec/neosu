@@ -196,10 +196,11 @@ int McFont::allocateDynamicSlot(char16_t ch) {
 
     // look for free slot
     for(size_t i = 0; i < m_dynamicSlots.size(); i++) {
-        if(!m_dynamicSlots[i].occupied) {
-            m_dynamicSlots[i].character = ch;
-            m_dynamicSlots[i].lastUsed = m_currentTime;
-            m_dynamicSlots[i].occupied = true;
+        auto &dynamicSlot = m_dynamicSlots[i];
+        if(!dynamicSlot.occupied) {
+            dynamicSlot.character = ch;
+            dynamicSlot.lastUsed = m_currentTime;
+            dynamicSlot.occupied = true;
             m_dynamicSlotMap[ch] = static_cast<int>(i);
             return static_cast<int>(i);
         }
@@ -209,34 +210,36 @@ int McFont::allocateDynamicSlot(char16_t ch) {
     int lruIndex = 0;
     uint64_t oldestTime = m_dynamicSlots[0].lastUsed;
     for(size_t i = 1; i < m_dynamicSlots.size(); i++) {
-        if(m_dynamicSlots[i].lastUsed < oldestTime) {
-            oldestTime = m_dynamicSlots[i].lastUsed;
+        auto &dynamicSlot = m_dynamicSlots[i];
+        if(dynamicSlot.lastUsed < oldestTime) {
+            oldestTime = dynamicSlot.lastUsed;
             lruIndex = static_cast<int>(i);
         }
     }
 
     // evict the LRU slot
-    if(m_dynamicSlots[lruIndex].character != 0) {
+    auto &dynamicLRUSlot = m_dynamicSlots[lruIndex];
+    if(dynamicLRUSlot.character != 0) {
         // remove evicted character from slot map
-        m_dynamicSlotMap.erase(m_dynamicSlots[lruIndex].character);
+        m_dynamicSlotMap.erase(dynamicLRUSlot.character);
 
         // HACK: clear the slot content area to remove leftover pixels from previous glyph
         // this should not be necessary (perf), but otherwise, a single-pixel border can appear on the right and bottom sides of the glyph rect
         const int maxSlotContent = DYNAMIC_SLOT_SIZE - 2 * TextureAtlas::ATLAS_PADDING;
         auto clearData = std::make_unique<Color[]>(static_cast<size_t>(maxSlotContent) * maxSlotContent);
         std::fill_n(clearData.get(), static_cast<size_t>(maxSlotContent) * maxSlotContent, argb(0, 0, 0, 0));
-        m_textureAtlas->putAt(m_dynamicSlots[lruIndex].x + TextureAtlas::ATLAS_PADDING,
-                              m_dynamicSlots[lruIndex].y + TextureAtlas::ATLAS_PADDING, maxSlotContent, maxSlotContent,
+        m_textureAtlas->putAt(dynamicLRUSlot.x + TextureAtlas::ATLAS_PADDING,
+                              dynamicLRUSlot.y + TextureAtlas::ATLAS_PADDING, maxSlotContent, maxSlotContent,
                               false, true, clearData.get());
 
         // remove evicted character from metrics and existence map
-        m_vGlyphMetrics.erase(m_dynamicSlots[lruIndex].character);
-        m_vGlyphExistence.erase(m_dynamicSlots[lruIndex].character);
+        m_vGlyphMetrics.erase(dynamicLRUSlot.character);
+        m_vGlyphExistence.erase(dynamicLRUSlot.character);
     }
 
-    m_dynamicSlots[lruIndex].character = ch;
-    m_dynamicSlots[lruIndex].lastUsed = m_currentTime;
-    m_dynamicSlots[lruIndex].occupied = true;
+    dynamicLRUSlot.character = ch;
+    dynamicLRUSlot.lastUsed = m_currentTime;
+    dynamicLRUSlot.occupied = true;
     m_dynamicSlotMap[ch] = lruIndex;
 
     return lruIndex;
