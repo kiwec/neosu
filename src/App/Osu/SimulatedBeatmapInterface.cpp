@@ -67,24 +67,24 @@ void SimulatedBeatmapInterface::simulate_to(i32 music_pos) {
 
         // Pressed key 1
         if(!(this->last_keys & LegacyReplay::K1) && this->current_keys & LegacyReplay::K1) {
-            this->bPrevKeyWasKey1 = true;
+            this->lastPressedKey = LegacyReplay::K1;
             this->clicks.push_back(click);
             if(!this->bInBreak) this->live_score.addKeyCount(1);
         }
         if(!(this->last_keys & LegacyReplay::M1) && this->current_keys & LegacyReplay::M1) {
-            this->bPrevKeyWasKey1 = true;
+            this->lastPressedKey = LegacyReplay::M1;
             this->clicks.push_back(click);
             if(!this->bInBreak) this->live_score.addKeyCount(3);
         }
 
         // Pressed key 2
         if(!(this->last_keys & LegacyReplay::K2) && this->current_keys & LegacyReplay::K2) {
-            this->bPrevKeyWasKey1 = false;
+            this->lastPressedKey = LegacyReplay::K2;
             this->clicks.push_back(click);
             if(!this->bInBreak) this->live_score.addKeyCount(2);
         }
         if(!(this->last_keys & LegacyReplay::M2) && this->current_keys & LegacyReplay::M2) {
-            this->bPrevKeyWasKey1 = false;
+            this->lastPressedKey = LegacyReplay::M2;
             this->clicks.push_back(click);
             if(!this->bInBreak) this->live_score.addKeyCount(4);
         }

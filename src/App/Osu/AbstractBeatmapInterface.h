@@ -103,7 +103,7 @@ class AbstractBeatmapInterface {
     f32 fHitcircleDiameter = 0.f;
     f32 fRawHitcircleDiameter = 0.f;
     f32 fSliderFollowCircleDiameter = 0.f;
-    bool bPrevKeyWasKey1 = false;
+    u8 lastPressedKey = 0;
     bool holding_slider = false;
 
     // Generic behavior below, do not override

@@ -87,7 +87,7 @@ BeatmapInterface::BeatmapInterface() : AbstractBeatmapInterface() {
     this->iPreviousSectionPassFailTime = -1;
 
     this->bClickedContinue = false;
-    this->bPrevKeyWasKey1 = false;
+    this->lastPressedKey = 0;
     this->iAllowAnyNextKeyUntilHitObjectIndex = 0;
 
     this->iNPS = 0;
@@ -300,14 +300,16 @@ void BeatmapInterface::keyPressed1(bool mouse) {
 
     if(this->bContinueScheduled) this->bClickedContinue = !osu->getModSelector()->isMouseInside();
 
-    if(cv::mod_singletap.getBool() && !this->bPrevKeyWasKey1) {
+    u8 key_flag = mouse ? LegacyReplay::M1 : LegacyReplay::K1;
+
+    if(cv::mod_singletap.getBool() && this->lastPressedKey != key_flag) {
         if(this->iCurrentHitObjectIndex > this->iAllowAnyNextKeyUntilHitObjectIndex) {
             soundEngine->play(this->getSkin()->getCombobreak());
             return;
         }
     }
 
-    if(cv::mod_fullalternate.getBool() && this->bPrevKeyWasKey1) {
+    if(cv::mod_fullalternate.getBool() && this->lastPressedKey == key_flag) {
         if(this->iCurrentHitObjectIndex > this->iAllowAnyNextKeyUntilHitObjectIndex) {
             soundEngine->play(this->getSkin()->getCombobreak());
             return;
@@ -324,20 +326,21 @@ void BeatmapInterface::keyPressed1(bool mouse) {
     bool should_count_keypress = !is_too_early && !this->bInBreak && !this->bIsInSkippableSection && this->bIsPlaying;
     if(should_count_keypress) osu->getScore()->addKeyCount(mouse ? 3 : 1);
 
-    this->bPrevKeyWasKey1 = true;
+    this->lastPressedKey = key_flag;
 
-    if((!osu->getModAuto() && !osu->getModRelax()) || !cv::auto_and_relax_block_user_input.getBool())
+    if((!osu->getModAuto() && !osu->getModRelax()) || !cv::auto_and_relax_block_user_input.getBool()) {
         this->clicks.push_back(Click{
             .click_time = this->iCurMusicPosWithOffsets,
             .pos = this->getCursorPos(),
         });
+    }
 
-    if(mouse || !cv::mod_no_keylock.getBool()) {
-        this->current_keys |= LegacyReplay::M1;
+    u8 replay_key_flags = key_flag;
+    if(!cv::mod_no_keylock.getBool()) {
+        // In replays, "K1" is always stored as "K1+M1"
+        replay_key_flags |= LegacyReplay::M1;
     }
-    if(!mouse) {
-        this->current_keys |= LegacyReplay::K1;
-    }
+    this->current_keys |= replay_key_flags;
 }
 
 void BeatmapInterface::keyPressed2(bool mouse) {
@@ -345,14 +348,16 @@ void BeatmapInterface::keyPressed2(bool mouse) {
 
     if(this->bContinueScheduled) this->bClickedContinue = !osu->getModSelector()->isMouseInside();
 
-    if(cv::mod_singletap.getBool() && this->bPrevKeyWasKey1) {
+    u8 key_flag = mouse ? LegacyReplay::M2 : LegacyReplay::K2;
+
+    if(cv::mod_singletap.getBool() && this->lastPressedKey != key_flag) {
         if(this->iCurrentHitObjectIndex > this->iAllowAnyNextKeyUntilHitObjectIndex) {
             soundEngine->play(this->getSkin()->getCombobreak());
             return;
         }
     }
 
-    if(cv::mod_fullalternate.getBool() && !this->bPrevKeyWasKey1) {
+    if(cv::mod_fullalternate.getBool() && this->lastPressedKey == key_flag) {
         if(this->iCurrentHitObjectIndex > this->iAllowAnyNextKeyUntilHitObjectIndex) {
             soundEngine->play(this->getSkin()->getCombobreak());
             return;
@@ -369,20 +374,21 @@ void BeatmapInterface::keyPressed2(bool mouse) {
     bool should_count_keypress = !is_too_early && !this->bInBreak && !this->bIsInSkippableSection && this->bIsPlaying;
     if(should_count_keypress) osu->getScore()->addKeyCount(mouse ? 4 : 2);
 
-    this->bPrevKeyWasKey1 = false;
+    this->lastPressedKey = key_flag;
 
-    if((!osu->getModAuto() && !osu->getModRelax()) || !cv::auto_and_relax_block_user_input.getBool())
+    if((!osu->getModAuto() && !osu->getModRelax()) || !cv::auto_and_relax_block_user_input.getBool()) {
         this->clicks.push_back(Click{
             .click_time = this->iCurMusicPosWithOffsets,
             .pos = this->getCursorPos(),
         });
+    }
 
-    if(mouse || !cv::mod_no_keylock.getBool()) {
-        this->current_keys |= LegacyReplay::M2;
+    u8 replay_key_flags = key_flag;
+    if(!cv::mod_no_keylock.getBool()) {
+        // In replays, "K2" is always stored as "K2+M2"
+        replay_key_flags |= LegacyReplay::M2;
     }
-    if(!mouse) {
-        this->current_keys |= LegacyReplay::K2;
-    }
+    this->current_keys |= replay_key_flags;
 }
 
 void BeatmapInterface::keyReleased1(bool mouse) {
@@ -2536,13 +2542,13 @@ void BeatmapInterface::update2() {
 
             // Pressed key 1
             if(!(this->last_keys & LegacyReplay::K1) && this->current_keys & LegacyReplay::K1) {
-                this->bPrevKeyWasKey1 = true;
+                this->lastPressedKey = LegacyReplay::K1;
                 osu->getHUD()->animateInputoverlay(1, true);
                 this->clicks.push_back(click);
                 if(should_count_keypress) osu->getScore()->addKeyCount(1);
             }
             if(!(this->last_keys & LegacyReplay::M1) && this->current_keys & LegacyReplay::M1) {
-                this->bPrevKeyWasKey1 = true;
+                this->lastPressedKey = LegacyReplay::M1;
                 osu->getHUD()->animateInputoverlay(3, true);
                 this->clicks.push_back(click);
                 if(should_count_keypress) osu->getScore()->addKeyCount(3);
@@ -2550,13 +2556,13 @@ void BeatmapInterface::update2() {
 
             // Pressed key 2
             if(!(this->last_keys & LegacyReplay::K2) && this->current_keys & LegacyReplay::K2) {
-                this->bPrevKeyWasKey1 = false;
+                this->lastPressedKey = LegacyReplay::K2;
                 osu->getHUD()->animateInputoverlay(2, true);
                 this->clicks.push_back(click);
                 if(should_count_keypress) osu->getScore()->addKeyCount(2);
             }
             if(!(this->last_keys & LegacyReplay::M2) && this->current_keys & LegacyReplay::M2) {
-                this->bPrevKeyWasKey1 = false;
+                this->lastPressedKey = LegacyReplay::M2;
                 osu->getHUD()->animateInputoverlay(4, true);
                 this->clicks.push_back(click);
                 if(should_count_keypress) osu->getScore()->addKeyCount(4);

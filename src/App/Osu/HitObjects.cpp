@@ -2163,14 +2163,7 @@ void Slider::onHit(LiveScore::HIT result, i32 delta, bool startOrEnd, float targ
         // startcircle
 
         this->bStartFinished = true;
-
-        this->iKeyFlags = this->pi->getKeys();
-
-        // Don't get the "No keylock" mod confused with slider locking.
-        // We only keep K1/K2 when keylocking is disabled (aka, 4K is enabled).
-        if(!this->pi->getMods().has(ModFlags::NoKeylock)) {
-            this->iKeyFlags &= ~(LegacyReplay::K1 | LegacyReplay::K2);
-        }
+        this->iKeyFlags = this->pi->lastPressedKey;
 
         if(this->pi->getModsLegacy() & LegacyFlags::Target) {
             // not end of combo, show in hiterrorbar, use for accuracy, increase combo, increase
@@ -2447,7 +2440,7 @@ bool Slider::isClickHeldSlider() {
     // The reason this exists is to prevent people from holding K1 the whole map and tapping with K2.
     // Holding is part of the rhythm flow, and this is a rhythm game right?
 
-    // So: Check all keys pressed when entering the slider are still being held.
+    // So: Check the key pressed to enter the slider is still being held.
     return (this->iKeyFlags & this->pi->getKeys()) == this->iKeyFlags;
 }
 
