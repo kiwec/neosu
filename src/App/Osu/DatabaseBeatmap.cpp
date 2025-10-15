@@ -1046,7 +1046,7 @@ bool DatabaseBeatmap::loadMetadata(bool compute_md5) {
     // reset
     this->timingpoints.clear();
 
-    if(cv::debug_osu.getBool()) debugLog("DatabaseBeatmap::loadMetadata() : {:s}", this->sFilePath.c_str());
+    if(cv::debug_osu.getBool() || cv::debug_db.getBool()) debugLog("loading {:s}", this->sFilePath.c_str());
 
     std::unique_ptr<u8[]> fileBuffer;
     std::string_view beatmapFile;

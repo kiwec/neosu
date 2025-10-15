@@ -187,10 +187,8 @@ void Engine::loadApp() {
     if(this->bShuttingDown) return;
     // load core default resources
     debugLog("Engine: Loading default resources ...");
-    resourceManager->requestNextLoadAsync();
-    const auto *defaultFont = resourceManager->loadFont("weblysleekuisb.ttf", "FONT_DEFAULT", 15, true, env->getDPI());
-    resourceManager->requestNextLoadAsync();
-    const auto *consoleFont = resourceManager->loadFont("tahoma.ttf", "FONT_CONSOLE", 8, false, 96);
+    resourceManager->loadFont("weblysleekuisb.ttf", "FONT_DEFAULT", 15, true, env->getDPI());
+    resourceManager->loadFont("tahoma.ttf", "FONT_CONSOLE", 8, false, 96);
 
     // load other default resources and things which are not strictly necessary
     {
@@ -205,14 +203,6 @@ void Engine::loadApp() {
             }
         }
         MISSING_TEXTURE->load();
-
-        // wait for these to finish first...
-        do {
-            resourceManager->update();
-            if(!defaultFont->isReady() && !consoleFont->isReady()) {
-                Timing::sleepMS(1);
-            }
-        } while(!defaultFont->isReady() && !consoleFont->isReady());
 
         // create engine gui
         this->guiContainer = new CBaseUIContainer(0, 0, engine->getScreenWidth(), engine->getScreenHeight(), "");

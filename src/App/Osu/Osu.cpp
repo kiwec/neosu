@@ -216,43 +216,21 @@ Osu::Osu() {
     const int baseDPI = 96;
     const int newDPI = Osu::getUIScale() * baseDPI;
 
-    resourceManager->requestNextLoadAsync();
-    this->fontIcons =
-        resourceManager->loadFont("fontawesome-webfont.ttf", "FONT_OSU_ICONS", Icons::icons, 26, true, newDPI);
-    resourceManager->requestNextLoadAsync();
     McFont *defaultFont = resourceManager->loadFont("weblysleekuisb.ttf", "FONT_DEFAULT", 15, true, newDPI);
-    resourceManager->requestNextLoadAsync();
     this->titleFont = resourceManager->loadFont("SourceSansPro-Semibold.otf", "FONT_OSU_TITLE", 60, true, newDPI);
-    resourceManager->requestNextLoadAsync();
     this->subTitleFont = resourceManager->loadFont("SourceSansPro-Semibold.otf", "FONT_OSU_SUBTITLE", 21, true, newDPI);
-    resourceManager->requestNextLoadAsync();
     this->songBrowserFont =
         resourceManager->loadFont("SourceSansPro-Regular.otf", "FONT_OSU_SONGBROWSER", 35, true, newDPI);
-    resourceManager->requestNextLoadAsync();
     this->songBrowserFontBold =
         resourceManager->loadFont("SourceSansPro-Bold.otf", "FONT_OSU_SONGBROWSER_BOLD", 30, true, newDPI);
+    this->fontIcons =
+        resourceManager->loadFont("fontawesome-webfont.ttf", "FONT_OSU_ICONS", Icons::icons, 26, true, newDPI);
     this->fonts.push_back(defaultFont);
     this->fonts.push_back(this->titleFont);
     this->fonts.push_back(this->subTitleFont);
     this->fonts.push_back(this->songBrowserFont);
     this->fonts.push_back(this->songBrowserFontBold);
     this->fonts.push_back(this->fontIcons);
-
-    // wait for fonts to load first
-    {
-        bool haveNotReadyFont = false;
-        do {
-            haveNotReadyFont = false;
-            resourceManager->update();
-            for(const auto *font : this->fonts) {
-                if(!font->isReady()) {
-                    haveNotReadyFont = true;
-                    Timing::sleepMS(10);
-                    break;
-                }
-            }
-        } while(haveNotReadyFont);
-    }
 
     float averageIconHeight = 0.0f;
     for(char16_t icon : Icons::icons) {
