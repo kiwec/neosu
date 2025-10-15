@@ -5,10 +5,13 @@
 #include "DatabaseBeatmap.h"
 #include "Engine.h"
 #include "File.h"
+#include "Logging.h"
 #include "Parsing.h"
 #include "ResourceManager.h"
 
 #include "Skin.h"
+
+#include "demoji.h"
 
 // background image path parser (from .osu files)
 class BGImageHandler::MapBGImagePathLoader final : public Resource {
@@ -16,7 +19,10 @@ class BGImageHandler::MapBGImagePathLoader final : public Resource {
    public:
     MapBGImagePathLoader(const std::string &filePath) : Resource(filePath) {}
     ~MapBGImagePathLoader() override { destroy(); }
+
     [[nodiscard]] inline const std::string &getParsedBGFileName() const { return this->parsed_bg_filename; }
+    [[nodiscard]] inline bool foundBrokenFilenameReplacement() const { return this->found_mojibake_filename; }
+
     [[nodiscard]] Type getResType() const override { return APPDEFINED; }  // TODO: handle this better?
    protected:
     void init() override {
@@ -27,7 +33,24 @@ class BGImageHandler::MapBGImagePathLoader final : public Resource {
     void destroy() override { /* nothing */ }
 
    private:
+    bool checkMojibake();
+
     std::string parsed_bg_filename;
+    bool found_mojibake_filename{false};
+};
+
+struct BGImageHandler::ENTRY final {
+    std::string folder;
+    std::string bg_image_filename;
+
+    MapBGImagePathLoader *bg_image_path_ldr;
+    Image *image;
+
+    f32 loading_time;
+
+    bool load_scheduled;
+    bool used_last_frame;
+    bool overwrite_db_entry;
 };
 
 // public
@@ -114,6 +137,7 @@ void BGImageHandler::update(bool allow_eviction) {
                 // loading finish
                 if(entry.image == nullptr && entry.bg_image_path_ldr != nullptr && entry.bg_image_path_ldr->isReady()) {
                     std::string bg_loaded_name = entry.bg_image_path_ldr->getParsedBGFileName();
+                    entry.overwrite_db_entry = entry.bg_image_path_ldr->foundBrokenFilenameReplacement();
                     if(bg_loaded_name.length() > 1) {
                         entry.bg_image_filename = bg_loaded_name;
                         this->handleLoadImageForEntry(entry);
@@ -159,10 +183,15 @@ const Image *BGImageHandler::getLoadBackgroundImage(const DatabaseBeatmap *beatm
         // update the database backgroundImageFileName and fullBackgroundImageFilePath this is similar to how it
         // worked before the rework, but 100% safe(r) since we are not async
         if(entry.image != nullptr && entry.bg_image_filename.length() > 1 &&
-           beatmap->getBackgroundImageFileName().length() < 2) {
+           (beatmap->getBackgroundImageFileName().length() < 2 || entry.overwrite_db_entry)) {
             const_cast<DatabaseBeatmap *>(beatmap)->sBackgroundImageFileName = entry.bg_image_filename;
             const_cast<DatabaseBeatmap *>(beatmap)->sFullBackgroundImageFilePath =
                 fmt::format("{}{}", entry.folder, entry.bg_image_filename);
+
+            entry.overwrite_db_entry = false;
+
+            // update persistent overrides for this map too (so we keep them on db save)
+            const_cast<DatabaseBeatmap *>(beatmap)->update_overrides();
         }
 
         return this->getImageOrSkinFallback(entry.image);
@@ -197,7 +226,7 @@ const Image *BGImageHandler::getLoadBackgroundImage(const DatabaseBeatmap *beatm
             .loading_time = static_cast<f32>(engine->getTime() + (load_immediately ? 0.f : this->image_loading_delay)),
             .load_scheduled = true,
             .used_last_frame = true,
-        };
+            .overwrite_db_entry = false};
 
         this->cache.try_emplace(beatmap_filepath, entry);
     }
@@ -258,67 +287,128 @@ void BGImageHandler::MapBGImagePathLoader::initAsync() {
     // sanity
     assert(!McThread::is_main_thread());
 
-    File file(this->sFilePath);
+    bool found = false;
+    {
+        File file(this->sFilePath);
 
-    if(this->isInterrupted() || !file.canRead()) return;
-    const uSz file_size = file.getFileSize();
+        if(this->isInterrupted() || !file.canRead()) return;
+        const uSz file_size = file.getFileSize();
 
-    static constexpr const uSz CHUNK_SIZE = 64ULL;
+        static constexpr const uSz CHUNK_SIZE = 64ULL;
 
-    std::array<std::string, CHUNK_SIZE> lines;
-    bool found = false, quit = false, is_events_block = false;
+        std::array<std::string, CHUNK_SIZE> lines;
+        bool quit = false, is_events_block = false;
 
-    uSz lines_in_chunk = std::min<uSz>(file_size, CHUNK_SIZE);
+        uSz lines_in_chunk = std::min<uSz>(file_size, CHUNK_SIZE);
 
-    std::string temp_parsed_filename;
-    temp_parsed_filename.reserve(64);
+        std::string temp_parsed_filename;
+        temp_parsed_filename.reserve(64);
 
-    while(!found && !quit && lines_in_chunk > 0) {
-        // read 64 lines at a time
-        for(uSz i = 0; i < lines_in_chunk; i++) {
-            if(this->isInterrupted()) {
-                return;
+        while(!found && !quit && lines_in_chunk > 0) {
+            // read 64 lines at a time
+            for(uSz i = 0; i < lines_in_chunk; i++) {
+                if(this->isInterrupted()) {
+                    return;
+                }
+                if(!file.canRead()) {
+                    // cut short
+                    lines_in_chunk = i;
+                    break;
+                }
+                lines[i] = file.readLine();
             }
-            if(!file.canRead()) {
-                // cut short
-                lines_in_chunk = i;
-                break;
+
+            for(uSz i = 0; i < lines_in_chunk; i++) {
+                if(this->isInterrupted()) {
+                    return;
+                }
+
+                std::string_view cur_line = lines[i];
+
+                // ignore comments, but only if at the beginning of a line (e.g. allow Artist:DJ'TEKINA//SOMETHING)
+                if(cur_line.starts_with("//")) continue;
+
+                if(!is_events_block && cur_line.contains("[Events]")) {
+                    is_events_block = true;
+                    continue;
+                } else if(cur_line.contains("[TimingPoints]") || cur_line.contains("[Colours]") ||
+                          cur_line.contains("[HitObjects]")) {
+                    quit = true;
+                    break;  // NOTE: stop early
+                }
+
+                if(!is_events_block) continue;
+
+                // parse events block for filename
+                i32 type{-1}, start;
+                if(Parsing::parse(cur_line, &type, ',', &start, ',', &temp_parsed_filename) && (type == 0)) {
+                    this->parsed_bg_filename = temp_parsed_filename;
+                    found = true;
+                    break;
+                }
             }
-            lines[i] = file.readLine();
         }
+    }
 
-        for(uSz i = 0; i < lines_in_chunk; i++) {
-            if(this->isInterrupted()) {
-                return;
-            }
+    if(this->isInterrupted()) return;
 
-            std::string_view cur_line = lines[i];
-
-            // ignore comments, but only if at the beginning of a line (e.g. allow Artist:DJ'TEKINA//SOMETHING)
-            if(cur_line.starts_with("//")) continue;
-
-            if(!is_events_block && cur_line.contains("[Events]")) {
-                is_events_block = true;
-                continue;
-            } else if(cur_line.contains("[TimingPoints]") || cur_line.contains("[Colours]") ||
-                      cur_line.contains("[HitObjects]")) {
-                quit = true;
-                break;  // NOTE: stop early
-            }
-
-            if(!is_events_block) continue;
-
-            // parse events block for filename
-            i32 type{-1}, start;
-            if(Parsing::parse(cur_line, &type, ',', &start, ',', &temp_parsed_filename) && (type == 0)) {
-                this->parsed_bg_filename = temp_parsed_filename;
-                found = true;
-                break;
-            }
-        }
+    if(found) {
+        this->found_mojibake_filename = checkMojibake();
     }
 
     this->bAsyncReady.store(true, std::memory_order_release);
     // NOTE: on purpose. there is nothing to do in init(), so finish 1 frame early
     this->bReady.store(true, std::memory_order_release);
 };
+
+bool BGImageHandler::MapBGImagePathLoader::checkMojibake() {
+    bool ret = false;
+    const bool debug = cv::debug_bg_loader.getBool();
+
+    size_t last_slash = this->sFilePath.find_last_of("/\\");
+    if(last_slash == std::string::npos) {
+        // sanity check... we're not a in a folder
+        return ret;
+    }
+
+    std::string containing_folder = this->sFilePath.substr(0, last_slash + 1);
+    std::string full_image_path = fmt::format("{}{}", containing_folder, this->parsed_bg_filename);
+    if(File::exists(full_image_path) == File::FILETYPE::FILE) {
+        // we found it, return early
+        return ret;
+    }
+
+    if(debug) debugLog("{} doesn't exist, trying to re-mojibake...", full_image_path);
+    const size_t out_size = this->parsed_bg_filename.size() * 4;
+
+    auto converted_output = std::make_unique_for_overwrite<char[]>(this->parsed_bg_filename.size() * 4);
+    const auto conv_result_len =
+        demoji_bwd(this->parsed_bg_filename.data(), this->parsed_bg_filename.size(), converted_output.get(), out_size);
+
+    if(conv_result_len > 0) {
+        std::string_view result = {converted_output.get(), converted_output.get() + conv_result_len};
+
+        if(result == this->parsed_bg_filename) {
+            if(debug) debugLog("input matched converted output, nothing to do");
+            return ret;
+        }
+
+        std::string converted_path = fmt::format("{}{}", containing_folder, result);
+        const bool converted_exists = File::exists(converted_path) == File::FILETYPE::FILE;
+
+        if(converted_exists) {
+            this->parsed_bg_filename = result;
+            ret = true;
+        }
+
+        if(debug)
+            debugLog("got result {}, converted path {}, {} on disk", result, converted_path,
+                     converted_exists ? "exists" : "does not exist");
+    } else if(conv_result_len == 0 && debug) {
+        debugLog("got no conversion result for {}", this->parsed_bg_filename);
+    } else if(debug) {
+        debugLog("got error {}", conv_result_len);
+    }
+
+    return ret;
+}

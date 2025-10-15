@@ -204,6 +204,7 @@ CONVAR(debug_image, "debug_image"sv, false, CLIENT | NOLOAD | NOSAVE);
 CONVAR(debug_mouse, "debug_mouse"sv, false, CLIENT | SERVER | PROTECTED | GAMEPLAY);
 CONVAR(debug_pp, "debug_pp"sv, false, CLIENT);
 CONVAR(debug_rm, "debug_rm"sv, false, CLIENT);
+CONVAR(debug_bg_loader, "debug_bg_loader"sv, false, CLIENT);
 CONVAR(debug_rt, "debug_rt"sv, false, CLIENT | SERVER | PROTECTED | GAMEPLAY,
        "draws all rendertargets with a translucent green background"sv);
 CONVAR(debug_shaders, "debug_shaders"sv, false, CLIENT | PROTECTED | GAMEPLAY);

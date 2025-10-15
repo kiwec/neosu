@@ -33,11 +33,10 @@
 /*
 // print the call stack immediately
 // TODO: some portable way to do this
-#define doBacktrace(...)                                                                         \
-    do {                                                                                         \
-        std::vector<std::string> lines{                                                          \
-            SString::split(fmt::format("{}", fmt::streamed(std::stacktrace::current())), "\n")}; \
-        for(const auto &line : lines) Logger::logRaw(line);                                      \
+#define doBacktrace(...)                                                                                           \
+    do {                                                                                                           \
+        for(const auto &line : SString::split(fmt::format("{}", fmt::streamed(std::stacktrace::current())), "\n")) \
+            Logger::logRaw(line);                                                                                  \
     } while(false);
 #include <stacktrace>
 #include "fmt/ostream.h"

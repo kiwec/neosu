@@ -3,6 +3,7 @@ neosu_SOURCES = \
 	libraries/MD5.cpp \
 	libraries/base64.cpp \
 	libraries/cJSON.cpp \
+	libraries/demoji.cpp \
 	libraries/glad/glad.cpp \
 	libraries/lodepng.cpp \
 	libraries/sha256.cpp \

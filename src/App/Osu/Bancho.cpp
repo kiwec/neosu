@@ -303,7 +303,7 @@ void BanchoState::handle_packet(Packet &packet) {
                 // NOTE: Server can send frames in the wrong order. So we're correcting it here.
                 std::ranges::sort(
                     osu->getMapInterface()->spectated_replay,
-                    [](LegacyReplay::Frame a, LegacyReplay::Frame b) { return a.cur_music_pos < b.cur_music_pos; });
+                    [](const LegacyReplay::Frame &a, const LegacyReplay::Frame &b) { return a.cur_music_pos < b.cur_music_pos; });
                 osu->getMapInterface()->last_frame_ms = 0;
                 for(auto &frame : osu->getMapInterface()->spectated_replay) {
                     frame.milliseconds_since_last_frame = frame.cur_music_pos - osu->getMapInterface()->last_frame_ms;

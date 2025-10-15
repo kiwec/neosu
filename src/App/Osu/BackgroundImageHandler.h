@@ -28,18 +28,7 @@ class BGImageHandler final {
    private:
     class MapBGImagePathLoader;
 
-    struct ENTRY {
-        std::string folder;
-        std::string bg_image_filename;
-
-        MapBGImagePathLoader *bg_image_path_ldr;
-        Image *image;
-
-        f32 loading_time;
-
-        bool load_scheduled;
-        bool used_last_frame;
-    };
+    struct ENTRY;
 
     [[nodiscard]] u32 getMaxEvictions() const;
     [[nodiscard]] const Image *getImageOrSkinFallback(const Image *candidate_loaded) const;
