@@ -633,10 +633,10 @@ std::vector<UString> Database::getPlayerNamesWithScoresForUserSwitcher() {
 }
 
 Database::PlayerPPScores Database::getPlayerPPScores(const std::string &playerName) {
-    Sync::scoped_lock lock(this->scores_mtx);
     PlayerPPScores ppScores;
     ppScores.totalScore = 0;
     if(this->getProgress() < 1.0f) return ppScores;
+    Sync::scoped_lock lock(this->scores_mtx);
 
     std::vector<FinishedScore *> scores;
 
@@ -644,8 +644,8 @@ Database::PlayerPPScores Database::getPlayerPPScores(const std::string &playerNa
     std::vector<MD5Hash> keys;
     keys.reserve(this->scores.size());
 
-    for(const auto &kv : this->scores) {
-        keys.push_back(kv.first);
+    for(const auto &[hash, scorevec] : this->scores) {
+        keys.push_back(hash);
     }
 
     u64 totalScore = 0;
@@ -677,7 +677,10 @@ Database::PlayerPPScores Database::getPlayerPPScores(const std::string &playerNa
 
     // sort by pp
     // for some reason this was originally backwards from sortScoreByPP, so negating it here
-    std::ranges::sort(scores, [](FinishedScore *a, FinishedScore *b) -> bool { return !sortScoreByPP(*a, *b); });
+    std::ranges::sort(scores, [](FinishedScore *a, FinishedScore *b) -> bool {
+        if(a == b) return false;
+        return !sortScoreByPP(*a, *b);
+    });
 
     ppScores.ppScores = std::move(scores);
     ppScores.totalScore = totalScore;
