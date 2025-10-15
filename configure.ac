@@ -937,7 +937,7 @@ CURL_MIN_VERSION=8.16.0 # due to websocket things, only very recent curl works
 CURL_BUILD_VERSION=8.16.0
 OPENSSL_MIN_VERSION=3.0.0 # only for --enable-system-deps
 MPG123_MIN_VERSION=1.30.0
-MPG123_BUILD_VERSION=337a7feafb08652b4f290e8caf06e31a8f87a91c # git mirror, latest as of Oct 12th, 2025 (next version after 1.33.2)
+MPG123_BUILD_VERSION=fe143d4e9c885ec34596c561481dff96357fd797 # git mirror, latest as of Oct 12th, 2025 (next version after 1.33.2)
 SPDLOG_MIN_VERSION=1.15.0
 SPDLOG_BUILD_VERSION=1.15.3
 NSYNC_MIN_VERSION=1.29.2
@@ -947,7 +947,7 @@ SIMDUTF_BUILD_VERSION=7.4.0 # fast and correct utf conversion utilities
 
 # always build these from source if we want to use them
 #AC_SUBST([SOLOUD_VERSION], [1.1.9]) # my fork
-AC_SUBST([SOLOUD_VERSION], [ceaa3501dc237f669ff59434e953b4bcb32ce0ca])
+AC_SUBST([SOLOUD_VERSION], [abeda955021066d761050b443364c4c4d5cbe2e7])
 AC_SUBST([SOLOUD_PREFIX],[$DEPS_PREFIX])
 AC_SUBST([SOUNDTOUCH_VERSION], [2.4.0])
 AC_SUBST([SOUNDTOUCH_PREFIX],[$DEPS_PREFIX])

@@ -125,7 +125,13 @@ typedef struct
 	CRITICAL_SECTION cs;
 	volatile long state; /* 0=uninitialized, 1=initializing, 2=initialized, 3=complete */
 } ONCE_FLAG;
+#if defined(__cplusplus) && __cplusplus >= 201103L
+#define ONCE_INIT {}
+#elif defined(__cplusplus)
+#define ONCE_INIT {{0}, 0}
+#else
 #define ONCE_INIT {0}
+#endif
 static inline void call_once_xp(ONCE_FLAG *flag, void (*func)(void))
 {
 	if (flag->state == 3)

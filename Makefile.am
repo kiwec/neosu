@@ -477,6 +477,7 @@ $(DEPS_PREFIX)/mpg123-$(MPG123_VERSION).built: $(DEPS_CACHE)/mpg123-$(MPG123_VER
 	$(MKDIR_P) $(DEPS_PREFIX) $(DEPS_PREFIX)/include $(DEPS_PREFIX)/lib/pkgconfig $(DEPS_PREFIX)/mpg123/build
 	$(TAR) xf $(DEPS_CACHE)/mpg123-$(MPG123_VERSION).tar.gz -C $(DEPS_PREFIX)/mpg123 --strip-components=1 && \
 	cd $(DEPS_PREFIX)/mpg123 && \
+	patch -Np1<$(BUILD_MISCDIR)/0001-libmpg123-initial-support-for-VBRI-tag-parsing.patch && \
 	$(if $(ubercompat),$(SED) -i -e 's|.*ThreadErrorMode.*||g' -e 's|mode_ok|0|' src/compat/compat_dl.c,true) && \
 	autoreconf -fiv && cd $(DEPS_PREFIX)/mpg123/build && \
 	PKG_CONFIG="$(PKG_CONFIG)" \

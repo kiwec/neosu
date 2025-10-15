@@ -46,6 +46,7 @@ include(${CMAKE_SOURCE_DIR}/dependencies.cmake)
 
 # for libjpeg-turbo
 find_program(NASM nasm HINTS "C:/Program Files/NASM" OPTIONAL)
+find_program(GIT_EXECUTABLE git REQUIRED)
 
 include(ExternalProject)
 find_package(PkgConfig REQUIRED)
@@ -278,7 +279,10 @@ add_external_project(curl
 
 add_external_project(mpg123
     SOURCE_SUBDIR ports/cmake
-    # weird... unix makefiles just blows up in an incomprehensible way
+    PATCH_COMMAND ${CMAKE_COMMAND} -E echo "Patching mpg123 to add VBRI tag support"
+        COMMAND ${CMAKE_COMMAND}
+            -DFILE_TO_PATCH=<SOURCE_DIR>/src/libmpg123/parse.c
+            -P ${CMAKE_SOURCE_DIR}/patch_mpg123.cmake
     CMAKE_ARGS
         ${EXTERNAL_PROJECT_CMAKE_ARGS}
         -DBUILD_LIBOUT123=OFF
