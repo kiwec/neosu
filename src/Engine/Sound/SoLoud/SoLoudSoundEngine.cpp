@@ -109,7 +109,7 @@ bool SoLoudSoundEngine::updateExistingSound(SoLoudSound *soloudSound, SOUNDHANDL
         soloudSound->setPitch(pitch);
     }
 
-    if(soloudSound->getSpeed() != pan) {
+    if(soloudSound->getPan() != pan) {
         soloudSound->setPan(pan);
     }
 
