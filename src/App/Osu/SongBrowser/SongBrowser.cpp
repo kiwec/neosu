@@ -494,39 +494,17 @@ SongBrowser::~SongBrowser() {
 
     resourceManager->destroyResource(this->backgroundSearchMatcher);
     this->backgroundSearchMatcher = nullptr;
-
-    for(auto &songButton : this->songButtons) {
-        delete songButton;
-    }
-    for(auto &collectionButton : this->collectionButtons) {
-        delete collectionButton;
-    }
-    for(auto &artistCollectionButton : this->artistCollectionButtons) {
-        delete artistCollectionButton;
-    }
-    for(auto &bpmCollectionButton : this->bpmCollectionButtons) {
-        delete bpmCollectionButton;
-    }
-    for(auto &difficultyCollectionButton : this->difficultyCollectionButtons) {
-        delete difficultyCollectionButton;
-    }
-    for(auto &creatorCollectionButton : this->creatorCollectionButtons) {
-        delete creatorCollectionButton;
-    }
-    // for(auto &dateaddedCollectionButton : this->dateaddedCollectionButtons) {
-    //     delete dateaddedCollectionButton;
-    // }
-    for(auto &lengthCollectionButton : this->lengthCollectionButtons) {
-        delete lengthCollectionButton;
-    }
-    for(auto &titleCollectionButton : this->titleCollectionButtons) {
-        delete titleCollectionButton;
-    }
-
+	
+	this->songButtons.clear(); /* or songButtons.empty(), idk*/
+	this->collectionButtons.clear();
+	this->artistCollectionButtons.clear();
+	this->bpmCollectionButtons.clear();
+	this->difficultyCollectionButtons.clear();
+	this->creatorCollectionButtons.clear();
+	// this->dateaddedCollectionButtons.clear();
+	this->lengthCollectionButtons.clear();
+	this->titleCollectionButtons.clear();
     this->scoreBrowser->invalidate();
-    for(ScoreButton *button : this->scoreButtonCache) {
-        SAFE_DELETE(button);
-    }
     this->scoreButtonCache.clear();
 
     this->localBestContainer->invalidate();  // contained elements freed manually below
@@ -1398,42 +1376,15 @@ void SongBrowser::refreshBeatmaps(bool closeAfterLoading) {
     // delete local database and UI
     this->carousel->invalidate();
 
-    for(auto &songButton : this->songButtons) {
-        delete songButton;
-    }
     this->songButtons.clear();
     this->hashToSongButton.clear();
-    for(auto &collectionButton : this->collectionButtons) {
-        delete collectionButton;
-    }
     this->collectionButtons.clear();
-    for(auto &artistCollectionButton : this->artistCollectionButtons) {
-        delete artistCollectionButton;
-    }
     this->artistCollectionButtons.clear();
-    for(auto &bpmCollectionButton : this->bpmCollectionButtons) {
-        delete bpmCollectionButton;
-    }
     this->bpmCollectionButtons.clear();
-    for(auto &difficultyCollectionButton : this->difficultyCollectionButtons) {
-        delete difficultyCollectionButton;
-    }
     this->difficultyCollectionButtons.clear();
-    for(auto &creatorCollectionButton : this->creatorCollectionButtons) {
-        delete creatorCollectionButton;
-    }
     this->creatorCollectionButtons.clear();
-    // for(auto &dateaddedCollectionButton : this->dateaddedCollectionButtons) {
-    //     delete dateaddedCollectionButton;
-    // }
     this->dateaddedCollectionButtons.clear();
-    for(auto &lengthCollectionButton : this->lengthCollectionButtons) {
-        delete lengthCollectionButton;
-    }
     this->lengthCollectionButtons.clear();
-    for(auto &titleCollectionButton : this->titleCollectionButtons) {
-        delete titleCollectionButton;
-    }
     this->titleCollectionButtons.clear();
 
     this->visibleSongButtons.clear();
@@ -1552,24 +1503,20 @@ void SongBrowser::addBeatmapSet(BeatmapSet *mapset) {
             for(auto diff_btn : tempChildrenForGroups) {
                 const u32 lengthMS = diff_btn->getDatabaseBeatmap()->getLengthMS();
 
-                std::vector<SongButton *> *children = nullptr;
-                if(lengthMS <= 1000 * 60) {
-                    children = &this->lengthCollectionButtons[0]->getChildren();
-                } else if(lengthMS <= 1000 * 60 * 2) {
-                    children = &this->lengthCollectionButtons[1]->getChildren();
-                } else if(lengthMS <= 1000 * 60 * 3) {
-                    children = &this->lengthCollectionButtons[2]->getChildren();
-                } else if(lengthMS <= 1000 * 60 * 4) {
-                    children = &this->lengthCollectionButtons[3]->getChildren();
-                } else if(lengthMS <= 1000 * 60 * 5) {
-                    children = &this->lengthCollectionButtons[4]->getChildren();
-                } else if(lengthMS <= 1000 * 60 * 10) {
-                    children = &this->lengthCollectionButtons[5]->getChildren();
-                } else {
-                    children = &this->lengthCollectionButtons[6]->getChildren();
-                }
-
-                children->push_back(diff_btn);
+                if(lengthMS <= 1000 * 60)
+                    &this->lengthCollectionButtons[0]->getChildren()->push_back(diff_btn);
+                else if(lengthMS <= 1000 * 60 * 2)
+                    &this->lengthCollectionButtons[1]->getChildren()->push_back(diff_btn);
+                else if(lengthMS <= 1000 * 60 * 3)
+                    &this->lengthCollectionButtons[2]->getChildren()->push_back(diff_btn);
+                else if(lengthMS <= 1000 * 60 * 4)
+                    &this->lengthCollectionButtons[3]->getChildren()->push_back(diff_btn);
+                else if(lengthMS <= 1000 * 60 * 5)
+                    &this->lengthCollectionButtons[4]->getChildren()->push_back(diff_btn);
+                else if(lengthMS <= 1000 * 60 * 10)
+                    &this->lengthCollectionButtons[5]->getChildren()->push_back(diff_btn);
+                else
+                    &this->lengthCollectionButtons[6]->getChildren()->push_back(diff_btn);
             }
         }
     }
