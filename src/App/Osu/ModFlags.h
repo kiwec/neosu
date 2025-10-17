@@ -62,12 +62,9 @@ enum : u64 {
     Singletap = 1ULL << 43,
     NoKeylock = 1ULL << 44,
 
-    // Only here so that replays for plays without HP drain don't fail.
-    NoHP = 1ULL << 45,
-
     // Non-submittable
+    NoHP = 1ULL << 62,
     Autoplay = 1ULL << 63
-
 };
 }
 
