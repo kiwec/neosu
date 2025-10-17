@@ -16,6 +16,24 @@
 #include <cstring>
 #include <utility>
 
+/* ====== stb_image config ====== */
+#define STBI_NO_STDIO
+#define STBI_NO_HDR
+#define STBI_NO_PNM
+#define STBI_NO_PIC
+#define STBI_MINGW_ENABLE_SSE2                     // bring on the pain
+#define STB_IMAGE_STATIC                           // we only use stb_image in this translation unit
+#define STBI_MAX_DIMENSIONS (16384ULL * 16384ULL)  // there's no way we need anything more than this
+
+#ifndef _DEBUG
+#define STBI_ASSERT
+#endif
+
+#define STB_IMAGE_IMPLEMENTATION
+
+#include <stb_image.h>
+/* ==== end stb_image config ==== */
+
 #include "Engine.h"
 #include "Environment.h"
 #include "File.h"
@@ -91,19 +109,21 @@ void pngReadFromMemory(png_structp png_ptr, png_bytep outBytes, png_size_t byteC
 }
 }  // namespace
 
-bool Image::decodePNGFromMemory(const u8 *data, u64 size, std::vector<u8> &outData, i32 &outWidth, i32 &outHeight) {
+Image::DECODE_RESULT Image::decodePNGFromMemory(const std::unique_ptr<u8[]> &inData, u64 size) {
     garbage_zlib();
+    using enum DECODE_RESULT;
+
     png_structp png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
     if(!png_ptr) {
         debugLog("Image Error: png_create_read_struct failed");
-        return false;
+        return FAIL;
     }
 
     png_infop info_ptr = png_create_info_struct(png_ptr);
     if(!info_ptr) {
         png_destroy_read_struct(&png_ptr, nullptr, nullptr);
         debugLog("Image Error: png_create_info_struct failed");
-        return false;
+        return FAIL;
     }
 
     pngErrorManager err;
@@ -111,11 +131,11 @@ bool Image::decodePNGFromMemory(const u8 *data, u64 size, std::vector<u8> &outDa
 
     if(setjmp(&err.setjmp_buffer[0])) {
         png_destroy_read_struct(&png_ptr, &info_ptr, nullptr);
-        return false;
+        return FAIL;
     }
 
     // Set up memory reading
-    pngMemoryReader reader{.pdata = data, .size = size, .offset = 0};
+    pngMemoryReader reader{.pdata = inData.get(), .size = size, .offset = 0};
 
     png_set_read_fn(png_ptr, &reader, pngReadFromMemory);
 
@@ -127,11 +147,16 @@ bool Image::decodePNGFromMemory(const u8 *data, u64 size, std::vector<u8> &outDa
     if(tempOutWidth > 8192 || tempOutHeight > 8192) {
         png_destroy_read_struct(&png_ptr, &info_ptr, nullptr);
         debugLog("Image Error: PNG image size is too big ({} x {})", tempOutWidth, tempOutHeight);
-        return false;
+        return FAIL;
     }
 
-    outWidth = static_cast<i32>(tempOutWidth);
-    outHeight = static_cast<i32>(tempOutHeight);
+    if(this->isInterrupted()) {  // cancellation point
+        png_destroy_read_struct(&png_ptr, &info_ptr, nullptr);
+        return INTERRUPTED;
+    }
+
+    i32 outWidth = static_cast<i32>(tempOutWidth);
+    i32 outHeight = static_cast<i32>(tempOutHeight);
 
     png_byte color_type = png_get_color_type(png_ptr, info_ptr);
     png_byte bit_depth = png_get_bit_depth(png_ptr, info_ptr);
@@ -157,15 +182,114 @@ bool Image::decodePNGFromMemory(const u8 *data, u64 size, std::vector<u8> &outDa
 
     png_read_update_info(png_ptr, info_ptr);
 
+    if(this->isInterrupted()) {  // cancellation point
+        png_destroy_read_struct(&png_ptr, &info_ptr, nullptr);
+        return INTERRUPTED;
+    }
+
     // allocate memory for the image
-    outData.resize(static_cast<u64>(outWidth) * outHeight * Image::NUM_CHANNELS);
+    this->rawImage = std::make_unique<SizedRGBABytes>(outWidth, outHeight);
 
     for(sSz y = 0; y < outHeight; y++) {
-        png_read_row(png_ptr, &outData[y * outWidth * Image::NUM_CHANNELS], nullptr);
+        if((outHeight / 4 > 0) && (y % (outHeight / 4)) == 0) {
+            if(this->isInterrupted()) {  // cancellation point
+                png_destroy_read_struct(&png_ptr, &info_ptr, nullptr);
+                return INTERRUPTED;
+            }
+        }
+        png_read_row(png_ptr, &this->rawImage->data()[y * outWidth * Image::NUM_CHANNELS], nullptr);
     }
 
     png_destroy_read_struct(&png_ptr, &info_ptr, nullptr);
-    return true;
+    return SUCCESS;
+}
+
+Image::DECODE_RESULT Image::decodeJPEGFromMemory(const std::unique_ptr<u8[]> &inData, u64 size) {
+    using enum DECODE_RESULT;
+    // decode jpeg
+    tjhandle tjInstance = tj3Init(TJINIT_DECOMPRESS);
+    if(!tjInstance) {
+        debugLog("Image Error: tj3Init failed");
+        return FAIL;
+    }
+
+    if(tj3DecompressHeader(tjInstance, inData.get(), size) < 0) {
+        debugLog("Image Error: tj3DecompressHeader failed: {:s}", tj3GetErrorStr(tjInstance));
+        tj3Destroy(tjInstance);
+        return FAIL;
+    }
+
+    if(this->isInterrupted())  // cancellation point
+    {
+        tj3Destroy(tjInstance);
+        return INTERRUPTED;
+    }
+
+    i32 outWidth = tj3Get(tjInstance, TJPARAM_JPEGWIDTH);
+    i32 outHeight = tj3Get(tjInstance, TJPARAM_JPEGHEIGHT);
+
+    if(outWidth > 8192 || outHeight > 8192) {
+        debugLog("Image Error: JPEG image size is too big ({} x {})", outWidth, outHeight);
+        tj3Destroy(tjInstance);
+        return FAIL;
+    }
+
+    if(this->isInterrupted())  // cancellation point
+    {
+        tj3Destroy(tjInstance);
+        return INTERRUPTED;
+    }
+
+    // preallocate
+    this->rawImage = std::make_unique<SizedRGBABytes>(outWidth, outHeight);
+
+    // always convert to RGBA for consistency with PNG
+    // decompress directly to RGBA
+    if(tj3Decompress8(tjInstance, inData.get(), size, this->rawImage->data(), 0, TJPF_RGBA) < 0) {
+        debugLog("Image Error: tj3Decompress8 failed: {:s}", tj3GetErrorStr(tjInstance));
+        tj3Destroy(tjInstance);
+        return FAIL;
+    }
+
+    tj3Destroy(tjInstance);
+    return SUCCESS;
+}
+
+Image::DECODE_RESULT Image::decodeSTBFromMemory(const std::unique_ptr<u8[]> &inData, u64 size) {
+    using enum DECODE_RESULT;
+
+    // use stbi_info to validate dimensions before decoding
+    i32 outWidth, outHeight, channels;
+    if(!stbi_info_from_memory(inData.get(), static_cast<i32>(size), &outWidth, &outHeight, &channels)) {
+        debugLog("Image Error: stb_image info query failed: {:s}", stbi_failure_reason());
+        return FAIL;
+    }
+
+    if(outWidth > 8192 || outHeight > 8192) {
+        debugLog("Image Error: Image size is too big ({} x {})", outWidth, outHeight);
+        return FAIL;
+    }
+
+    if(this->isInterrupted())  // cancellation point
+        return INTERRUPTED;
+
+    u8 *decoded = stbi_load_from_memory(inData.get(), static_cast<i32>(size), &outWidth, &outHeight, &channels,
+                                        Image::NUM_CHANNELS);
+
+    if(!decoded) {
+        debugLog("Image Error: stb_image failed: {:s}", stbi_failure_reason());
+        return FAIL;
+    }
+
+    if(this->isInterrupted()) {  // cancellation point
+        stbi_image_free(decoded);
+        return INTERRUPTED;
+    }
+
+    // don't stbi_image_free, we own the data now
+    this->rawImage = std::make_unique<SizedRGBABytes>(decoded, outWidth, outHeight);
+
+    return SUCCESS;
 }
 
 void Image::saveToImage(const u8 *data, i32 width, i32 height, u8 channels, std::string filepath) {
@@ -249,21 +373,25 @@ Image::Image(i32 width, i32 height, bool mipmapped, bool keepInSystemMemory) : R
     this->type = Image::TYPE::TYPE_RGBA;
     this->filterMode = Graphics::FILTER_MODE::FILTER_MODE_LINEAR;
     this->wrapMode = Graphics::WRAP_MODE::WRAP_MODE_CLAMP;
-    this->iWidth = width;
-    this->iHeight = height;
+    this->iWidth = std::min(16384, width);  // sanity
+    this->iHeight = std::min(16384, height);
 
     this->bCreatedImage = true;
 
-    // reserve
-    this->rawImage.resize(static_cast<u64>(this->iWidth) * this->iHeight * Image::NUM_CHANNELS);
+    // reserve rawImage
     if(cv::debug_image.getBool()) {
+        // don't calloc() if we're filling with pink anyways
+        this->rawImage = std::make_unique<SizedRGBABytes>(this->iWidth, this->iHeight);
         // fill with pink pixels
         for(u64 i = 0; i < static_cast<u64>(this->iWidth) * this->iHeight; i++) {
-            this->rawImage.push_back(255);
-            this->rawImage.push_back(0);
-            this->rawImage.push_back(255);
-            this->rawImage.push_back(255);
+            (*this->rawImage)[i * Image::NUM_CHANNELS + 0] = 255;  // R
+            (*this->rawImage)[i * Image::NUM_CHANNELS + 1] = 0;    // G
+            (*this->rawImage)[i * Image::NUM_CHANNELS + 2] = 255;  // B
+            (*this->rawImage)[i * Image::NUM_CHANNELS + 3] = 255;  // A
         }
+    } else {
+        // otherwise fill with zeroes (transparent black)
+        this->rawImage = std::make_unique<SizedRGBABytes>(this->iWidth, this->iHeight, true);
     }
 
     // special case: filled rawimage is always already async ready
@@ -271,25 +399,32 @@ Image::Image(i32 width, i32 height, bool mipmapped, bool keepInSystemMemory) : R
 }
 
 bool Image::loadRawImage() {
-    bool alreadyLoaded = this->rawImage.size() > 0;
+    bool alreadyLoaded = !!this->rawImage && this->totalBytes() >= 4;
 
-    auto error = [this]() -> bool {
-        this->bLoadError = true;
+    auto exit = [this]() -> bool {
+        // if we were interrupted, it's not a load error
+        this->bLoadError = !this->isInterrupted();
+        this->rawImage.reset();
+        this->iWidth = 1;
+        this->iHeight = 1;
+        this->bLoadedImageEntirelyTransparent = false;
         return false;
     };
 
     // if it isn't a created image (created within the engine), load it from the corresponding file
     if(!this->bCreatedImage) {
-        if(alreadyLoaded)  // has already been loaded (or loading it again after setPixel(s))
-            return true;
+        if(alreadyLoaded) {  // has already been loaded (or loading it again after setPixel(s))
+            // don't render if we're still transparent
+            return !this->bLoadedImageEntirelyTransparent;
+        }
 
         if(!env->fileExists(this->sFilePath)) {
             debugLog("Image Error: Couldn't find file {:s}", this->sFilePath);
-            return error();
+            return exit();
         }
 
-        if(this->bInterrupted)  // cancellation point
-            return error();
+        if(this->isInterrupted())  // cancellation point
+            return exit();
 
         // load entire file
         std::unique_ptr<u8[]> fileBuffer;
@@ -298,210 +433,176 @@ bool Image::loadRawImage() {
             File file(this->sFilePath);
             if(!file.canRead()) {
                 debugLog("Image Error: Couldn't canRead() file {:s}", this->sFilePath);
-                return error();
+                return exit();
             }
-            if((fileSize = file.getFileSize()) < 4) {
-                debugLog("Image Error: FileSize is < 4 in file {:s}", this->sFilePath);
-                return error();
+            if(((fileSize = file.getFileSize()) < 32) || fileSize > INT_MAX) {
+                debugLog("Image Error: FileSize is {} in file {:s}", this->sFilePath,
+                         fileSize < 32 ? "< 32" : "> INT_MAX");
+                return exit();
             }
 
-            if(this->bInterrupted)  // cancellation point
-                return error();
+            if(this->isInterrupted())  // cancellation point
+                return exit();
 
             fileBuffer = file.takeFileBuffer();
             if(!fileBuffer) {
                 debugLog("Image Error: Couldn't readFile() file {:s}", this->sFilePath);
-                return error();
+                return exit();
             }
             // don't keep the file open
         }
 
-        if(this->bInterrupted)  // cancellation point
-            return error();
+        if(this->isInterrupted())  // cancellation point
+            return exit();
 
-        // determine file type by magic number (png/jpg)
+        // determine file type by magic number
+        this->type = Image::TYPE::TYPE_RGBA;  // default for unknown formats
         bool isJPEG = false;
         bool isPNG = false;
         {
-            if(fileBuffer[0] == 0xff && fileBuffer[1] == 0xD8 && fileBuffer[2] == 0xff)  // 0xFFD8FF
+            if(fileBuffer[0] == 0xff && fileBuffer[1] == 0xD8 && fileBuffer[2] == 0xff) {  // 0xFFD8FF
                 isJPEG = true;
-            else if(fileBuffer[0] == 0x89 && fileBuffer[1] == 0x50 && fileBuffer[2] == 0x4E &&
-                    fileBuffer[3] == 0x47)  // 0x89504E47 (%PNG)
+                this->type = Image::TYPE::TYPE_JPG;
+            } else if(fileBuffer[0] == 0x89 && fileBuffer[1] == 0x50 && fileBuffer[2] == 0x4E &&
+                      fileBuffer[3] == 0x47) {  // 0x89504E47 (%PNG)
                 isPNG = true;
+                this->type = Image::TYPE::TYPE_PNG;
+            }
         }
 
-        // depending on the type, load either jpeg or png
-        if(isJPEG) {
-            this->type = Image::TYPE::TYPE_JPG;
+        DECODE_RESULT res = DECODE_RESULT::FAIL;
 
-            // decode jpeg
-            tjhandle tjInstance = tj3Init(TJINIT_DECOMPRESS);
-            if(!tjInstance) {
-                debugLog("Image Error: tj3Init failed in file {:s}", this->sFilePath);
-                return error();
-            }
-
-            if(tj3DecompressHeader(tjInstance, fileBuffer.get(), fileSize) < 0) {
-                debugLog("Image Error: tj3DecompressHeader failed: {:s} in file {:s}", tj3GetErrorStr(tjInstance),
-                         this->sFilePath);
-                tj3Destroy(tjInstance);
-                return error();
-            }
-
-            if(this->bInterrupted)  // cancellation point
-            {
-                tj3Destroy(tjInstance);
-                return error();
-            }
-
-            this->iWidth = tj3Get(tjInstance, TJPARAM_JPEGWIDTH);
-            this->iHeight = tj3Get(tjInstance, TJPARAM_JPEGHEIGHT);
-
-            if(this->iWidth > 8192 || this->iHeight > 8192) {
-                debugLog("Image Error: JPEG image size is too big ({} x {}) in file {:s}", this->iWidth, this->iHeight,
-                         this->sFilePath);
-                tj3Destroy(tjInstance);
-                return error();
-            }
-
-            if(this->bInterrupted)  // cancellation point
-            {
-                tj3Destroy(tjInstance);
-                return error();
-            }
-
-            // preallocate
-            this->rawImage.resize(static_cast<u64>(this->iWidth) * this->iHeight * Image::NUM_CHANNELS);
-
-            // always convert to RGBA for consistency with PNG
-            // decompress directly to RGBA
-            if(tj3Decompress8(tjInstance, fileBuffer.get(), fileSize, &this->rawImage[0], 0, TJPF_RGBA) < 0) {
-                debugLog("Image Error: tj3Decompress8 failed: {:s} in file {:s}", tj3GetErrorStr(tjInstance),
-                         this->sFilePath);
-                tj3Destroy(tjInstance);
-                return error();
-            }
-
-            tj3Destroy(tjInstance);
-        } else if(isPNG) {
-            this->type = Image::TYPE::TYPE_PNG;
-
-            // decode png using libpng
-            if(!decodePNGFromMemory(fileBuffer.get(), fileSize, this->rawImage, this->iWidth, this->iHeight)) {
-                debugLog("Image Error: PNG decoding failed in file {:s}", this->sFilePath);
-                return error();
-            }
-        } else {
-            debugLog("Image Error: Neither PNG nor JPEG in file {:s}", this->sFilePath);
-            return error();
+        // try format-specific decoder first if format is recognized
+        if(isPNG) {
+            res = decodePNGFromMemory(fileBuffer, fileSize);
+        } else if(isJPEG) {
+            res = decodeJPEGFromMemory(fileBuffer, fileSize);
         }
+
+        // early exit on interruption
+        if(res == DECODE_RESULT::INTERRUPTED) {
+            return exit();
+        }
+
+        // fallback to stb_image if primary decoder failed or format was unrecognized
+        if(res == DECODE_RESULT::FAIL) {
+            if(isPNG || isJPEG) {
+                debugLog("Image Warning: Primary decoder failed for {:s}, trying fallback...", this->sFilePath);
+            }
+            res = decodeSTBFromMemory(fileBuffer, fileSize);
+        }
+
+        // final result check
+        if(res != DECODE_RESULT::SUCCESS) {
+            if(res == DECODE_RESULT::FAIL) {
+                debugLog("Image Error: Could not decode image file {:s}", this->sFilePath);
+            }
+            return exit();
+        }
+
+        if((this->type == Image::TYPE::TYPE_PNG) && canHaveTransparency(fileBuffer, fileSize) &&
+           isRawImageCompletelyTransparent()) {
+            if(!this->isInterrupted()) {
+                debugLog("Image: Ignoring empty transparent image {:s}", this->sFilePath);
+            }
+            // optimization: ignore completely transparent images (don't render)
+            this->bLoadedImageEntirelyTransparent = true;
+        }
+    } else {
+        // don't avoid rendering createdImages with the completelyTransparent check
     }
 
-    if(this->bInterrupted)  // cancellation point
-        return error();
-
-    // error checking
-
-    // size sanity check
-    if(this->rawImage.size() < static_cast<u64>(this->iWidth) * this->iHeight * Image::NUM_CHANNELS) {
-        debugLog("Image Error: Loaded image has only {}/{} bytes in file {:s}", this->rawImage.size(),
-                 this->iWidth * this->iHeight * Image::NUM_CHANNELS, this->sFilePath);
-        // engine->showMessageError("Image Error", UString::format("Loaded image has only %i/%i bytes in file %s",
-        // rawImage.size(), iWidth*iHeight*iNumChannels, this->sFilePath));
-        return error();
+    // sanity check and one more cancellation point
+    if(this->isInterrupted() || !this->rawImage || this->rawImage->getNumBytes() < 4) {
+        return exit();
     }
 
-    // optimization: ignore completely transparent images (don't render) (only PNGs can have them, obviously)
-    if(!alreadyLoaded && (type == Image::TYPE::TYPE_PNG) &&
-       canHaveTransparency(this->rawImage.data(), this->rawImage.size()) && isCompletelyTransparent()) {
-        if(!this->bInterrupted) debugLog("Image: Ignoring empty transparent image {:s}", this->sFilePath);
-        return false;  // didn't fail to load, just transparent
-    }
+    // update standard width/height to raw image's size (just in case)
+    this->iWidth = this->rawImage->getX();
+    this->iHeight = this->rawImage->getY();
 
-    return true;
+    return !this->bLoadedImageEntirelyTransparent;
 }
 
 Color Image::getPixel(i32 x, i32 y) const {
-    if(unlikely(x < 0 || y < 0 || this->rawImage.size() < 1)) return 0xffffff00;
+    if(unlikely(x < 0 || y < 0 || this->totalBytes() < 1)) return 0xffffff00;
 
-    const u64 indexEnd = Image::NUM_CHANNELS * y * this->iWidth + Image::NUM_CHANNELS * x + Image::NUM_CHANNELS;
-    if(unlikely(indexEnd > this->rawImage.size())) return 0xffffff00;
-    const u64 indexBegin = Image::NUM_CHANNELS * y * this->iWidth + Image::NUM_CHANNELS * x;
+    const u64 indexEnd = static_cast<u64>(Image::NUM_CHANNELS) * y * this->rawImage->getX() +
+                         static_cast<u64>(Image::NUM_CHANNELS) * x + Image::NUM_CHANNELS;
+    if(unlikely(indexEnd > this->totalBytes())) return 0xffffff00;
+    const u64 indexBegin =
+        static_cast<u64>(Image::NUM_CHANNELS) * y * this->rawImage->getX() + static_cast<u64>(Image::NUM_CHANNELS) * x;
 
-    const Channel &r{this->rawImage[indexBegin + 0]};
-    const Channel &g{this->rawImage[indexBegin + 1]};
-    const Channel &b{this->rawImage[indexBegin + 2]};
-    const Channel &a{this->rawImage[indexBegin + 3]};
+    const Channel &r{(*this->rawImage)[indexBegin + 0]};
+    const Channel &g{(*this->rawImage)[indexBegin + 1]};
+    const Channel &b{(*this->rawImage)[indexBegin + 2]};
+    const Channel &a{(*this->rawImage)[indexBegin + 3]};
 
     return argb(a, r, g, b);
 }
 
 void Image::setPixel(i32 x, i32 y, Color color) {
-    if(unlikely(x < 0 || y < 0 || this->rawImage.size() < 1)) return;
+    if(unlikely(x < 0 || y < 0 || this->totalBytes() < 1)) return;
 
-    const u64 indexEnd = Image::NUM_CHANNELS * y * this->iWidth + Image::NUM_CHANNELS * x + Image::NUM_CHANNELS;
-    if(unlikely(indexEnd > this->rawImage.size())) return;
-    const u64 indexBegin = Image::NUM_CHANNELS * y * this->iWidth + Image::NUM_CHANNELS * x;
+    const u64 indexEnd = static_cast<u64>(Image::NUM_CHANNELS) * y * this->rawImage->getX() +
+                         static_cast<u64>(Image::NUM_CHANNELS) * x + Image::NUM_CHANNELS;
+    if(unlikely(indexEnd > this->totalBytes())) return;
+    const u64 indexBegin =
+        static_cast<u64>(Image::NUM_CHANNELS) * y * this->rawImage->getX() + static_cast<u64>(Image::NUM_CHANNELS) * x;
 
-    this->rawImage[indexBegin + 0] = color.R();
-    this->rawImage[indexBegin + 1] = color.G();
-    this->rawImage[indexBegin + 2] = color.B();
-    this->rawImage[indexBegin + 3] = color.A();
-}
-
-void Image::setPixels(const u8 *data, u64 size, TYPE type) {
-    if(data == nullptr) return;
-
-    // TODO: implement remaining types
-    switch(type) {
-        case TYPE::TYPE_PNG: {
-            if(!decodePNGFromMemory(data, size, this->rawImage, this->iWidth, this->iHeight)) {
-                debugLog("Image Error: PNG decoding failed in setPixels");
-            }
-        } break;
-
-        default:
-            debugLog("Image Error: Format not yet implemented");
-            break;
+    (*this->rawImage)[indexBegin + 0] = color.R();
+    (*this->rawImage)[indexBegin + 1] = color.G();
+    (*this->rawImage)[indexBegin + 2] = color.B();
+    (*this->rawImage)[indexBegin + 3] = color.A();
+    if(!this->bCreatedImage && color.A() != 0) {
+        // play it safe, don't recompute the entire alpha channel visibility here
+        this->bLoadedImageEntirelyTransparent = false;
     }
 }
 
 void Image::setPixels(const std::vector<u8> &pixels) {
-    if(pixels.size() < static_cast<u64>(this->iWidth) * this->iHeight * Image::NUM_CHANNELS) {
+    if(pixels.size() < this->totalBytes()) {
         debugLog("Image Error: setPixels() supplied array is too small!");
         return;
     }
 
-    this->rawImage = pixels;
+    assert(this->totalBytes() == static_cast<u64>(this->iWidth) * this->iHeight * NUM_CHANNELS &&
+           "width and height are somehow out of sync with raw image");
+
+    std::memcpy(this->rawImage->data(), pixels.data(), this->totalBytes());
+    if(!this->bCreatedImage) {
+        // recompute alpha channel visibility here (TODO: remove if slow)
+        this->bLoadedImageEntirelyTransparent = isRawImageCompletelyTransparent();
+    }
 }
 
 // internal
-bool Image::canHaveTransparency(const u8 *data, u64 size) {
+bool Image::canHaveTransparency(const std::unique_ptr<u8[]> &data, u64 size) {
     if(size < 33)  // not enough data for IHDR, so just assume true
         return true;
 
     // PNG IHDR chunk starts at offset 16 (8 bytes signature + 8 bytes chunk header)
     // color type is at offset 25 (16 + 4 width + 4 height + 1 bit depth)
     if(size > 25) {
-        u8 colorType = data[25];
+        u8 colorType = data.get()[25];
         return colorType != 2;  // RGB without alpha
     }
 
     return true;  // unknown format? just assume true
 }
 
-bool Image::isCompletelyTransparent() const {
-    if(this->rawImage.empty()) return false;
+bool Image::isRawImageCompletelyTransparent() const {
+    if(!this->rawImage || this->totalBytes() == 0) return false;
 
     const i64 alphaOffset = 3;
-    const i64 totalPixels = static_cast<i64>(this->iWidth) * this->iHeight;
+    const i64 totalPixels = static_cast<i64>(this->rawImage->getArea());
 
     for(i64 i = 0; i < totalPixels; ++i) {
-        if(this->bInterrupted)  // cancellation point
+        if(this->isInterrupted())  // cancellation point
             return false;
 
         // check alpha channel directly
-        if(this->rawImage[i * Image::NUM_CHANNELS + alphaOffset] > 0) return false;  // non-transparent pixel
+        if((*this->rawImage)[i * Image::NUM_CHANNELS + alphaOffset] > 0) return false;  // non-transparent pixel
     }
 
     return true;  // all pixels are transparent

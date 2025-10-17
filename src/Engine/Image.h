@@ -30,7 +30,6 @@ class Image : public Resource {
     virtual inline void setWrapMode(Graphics::WRAP_MODE wrapMode) { this->wrapMode = wrapMode; };
 
     void setPixel(i32 x, i32 y, Color color);
-    void setPixels(const u8 *data, u64 size, TYPE type);
     void setPixels(const std::vector<u8> &pixels);
 
     [[nodiscard]] inline bool failedLoad() const { return this->bLoadError; }
@@ -61,7 +60,51 @@ class Image : public Resource {
 
     bool loadRawImage();
 
-    std::vector<u8> rawImage;
+    // holding actual pointer width/height separately, just in case
+    struct SizedRGBABytes final {
+        struct CFree {
+            // stb_image_free is just a macro to free, anyways
+            forceinline void operator()(void *p) const noexcept { free(p); }
+        };
+
+        explicit SizedRGBABytes(i32 width, i32 height)
+            : size(width, height),
+              bytes(static_cast<u8 *>(malloc(static_cast<u64>(width) * height * Image::NUM_CHANNELS))) {}
+        explicit SizedRGBABytes(i32 width, i32 height, bool /*zero*/)
+            : size(width, height),
+              bytes(static_cast<u8 *>(calloc(static_cast<u64>(width) * height * Image::NUM_CHANNELS, sizeof(u8)))) {}
+
+        // for taking ownership of some raw pointer (stb)
+        explicit SizedRGBABytes(u8 *to_own, i32 width, i32 height) : size(width, height), bytes(to_own) {}
+
+        [[nodiscard]] constexpr forceinline u64 getNumBytes() const {
+            return static_cast<u64>(this->size.x) * this->size.y * Image::NUM_CHANNELS;
+        }
+        [[nodiscard]] constexpr forceinline u64 getArea() const {
+            return static_cast<u64>(this->size.x) * this->size.y;
+        }
+        [[nodiscard]] constexpr forceinline i32 getX() const { return this->size.x; }
+        [[nodiscard]] constexpr forceinline i32 getY() const { return this->size.y; }
+        [[nodiscard]] constexpr forceinline u8 *data() { return this->bytes.get(); }
+        [[nodiscard]] constexpr forceinline const u8 *data() const { return this->bytes.get(); }
+        [[nodiscard]] constexpr forceinline u8 &operator[](uSz i) {
+            assert(this->bytes && i < this->getNumBytes());
+            return *(this->bytes.get() + i);
+        }
+        [[nodiscard]] constexpr forceinline const u8 &operator[](uSz i) const {
+            assert(this->bytes && i < this->getNumBytes());
+            return this->bytes.get()[i];
+        }
+
+       private:
+        ivec2 size{0, 0};
+        std::unique_ptr<u8, CFree> bytes{nullptr};
+    };
+    std::unique_ptr<SizedRGBABytes> rawImage{nullptr};
+
+    [[nodiscard]] constexpr forceinline u64 totalBytes() const {
+        return this->rawImage ? this->rawImage->getNumBytes() : 0;
+    }
 
     i32 iWidth;
     i32 iHeight;
@@ -74,12 +117,21 @@ class Image : public Resource {
     bool bCreatedImage;
     bool bKeepInSystemMemory;
     bool bLoadError{false};
+    bool bLoadedImageEntirelyTransparent{false};
 
    private:
-    [[nodiscard]] bool isCompletelyTransparent() const;
-    static bool canHaveTransparency(const u8 *data, u64 size);
+    [[nodiscard]] bool isRawImageCompletelyTransparent() const;
+    static bool canHaveTransparency(const std::unique_ptr<u8[]> &data, u64 size);
 
-    static bool decodePNGFromMemory(const u8 *data, u64 size, std::vector<u8> &outData, i32 &outWidth, i32 &outHeight);
+    enum class DECODE_RESULT : u8 {
+        SUCCESS,
+        FAIL,
+        INTERRUPTED,
+    };
+
+    DECODE_RESULT decodeJPEGFromMemory(const std::unique_ptr<u8[]> &inData, u64 size);
+    DECODE_RESULT decodePNGFromMemory(const std::unique_ptr<u8[]> &inData, u64 size);
+    DECODE_RESULT decodeSTBFromMemory(const std::unique_ptr<u8[]> &inData, u64 size);
 };
 
 #endif

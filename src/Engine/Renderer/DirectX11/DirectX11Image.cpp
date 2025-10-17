@@ -42,7 +42,7 @@ DirectX11Image::DirectX11Image(int width, int height, bool mipmapped, bool keepI
 DirectX11Image::~DirectX11Image() {
     this->destroy();
     this->deleteDX();
-    this->rawImage.clear();
+    this->rawImage.reset();
 }
 
 void DirectX11Image::init() {
@@ -83,13 +83,13 @@ void DirectX11Image::init() {
         if(this->texture == nullptr) {
             // initData
             {
-                initData.pSysMem = (void*)&this->rawImage[0];
+                initData.pSysMem = (void*)this->rawImage->data();
                 initData.SysMemPitch = static_cast<UINT>(this->iWidth * Image::NUM_CHANNELS * sizeof(unsigned char));
                 initData.SysMemSlicePitch = 0;
             }
             hr = device->CreateTexture2D(
                 &textureDesc,
-                (!this->bMipmapped && this->rawImage.size() >= this->iWidth * this->iHeight * Image::NUM_CHANNELS
+                (!this->bMipmapped && this->totalBytes() >= this->iWidth * this->iHeight * Image::NUM_CHANNELS
                      ? &initData
                      : nullptr),
                 &this->texture);
@@ -108,7 +108,7 @@ void DirectX11Image::init() {
     }
 
     // free memory (not mipmapped) (1/2)
-    if(!this->bKeepInSystemMemory && !this->bMipmapped) this->rawImage.clear();
+    if(!this->bKeepInSystemMemory && !this->bMipmapped) this->rawImage.reset();
 
     // create shader resource view
     if(this->shaderResourceView == nullptr) {
@@ -142,7 +142,7 @@ void DirectX11Image::init() {
     }
 
     // free memory (mipmapped) (2/2)
-    if(!this->bKeepInSystemMemory && this->bMipmapped) this->rawImage.clear();
+    if(!this->bKeepInSystemMemory && this->bMipmapped) this->rawImage.reset();
 
     // create mipmaps
     if(this->bMipmapped) context->GenerateMips(this->shaderResourceView);
@@ -200,48 +200,6 @@ void DirectX11Image::initAsync() {
         logIfCV(debug_rm, "Resource Manager: Loading {:s}", this->sFilePath);
 
         this->bAsyncReady = loadRawImage();
-
-        // rewrite all non-4-channels-per-pixel formats, because directx11 doesn't have any fucking 24bpp formats ffs
-        if(this->bAsyncReady) {
-            const int numTargetChannels = 4;
-            const int numMissingChannels = numTargetChannels - Image::NUM_CHANNELS;
-
-            if(numMissingChannels > 0) {
-                std::vector<unsigned char> newRawImage;
-                newRawImage.reserve(this->iWidth * this->iHeight * numTargetChannels);
-                {
-                    if(Image::NUM_CHANNELS == 1) {
-                        for(size_t c = 0; c < this->rawImage.size(); c += (size_t)Image::NUM_CHANNELS) {
-                            newRawImage.push_back(this->rawImage[c + 0]);  // R
-                            newRawImage.push_back(this->rawImage[c + 0]);  // G
-                            newRawImage.push_back(this->rawImage[c + 0]);  // B
-                            newRawImage.push_back(0xff);                   // A
-                        }
-                    } else if(Image::NUM_CHANNELS == 3) {
-                        for(size_t c = 0; c < this->rawImage.size(); c += (size_t)Image::NUM_CHANNELS) {
-                            newRawImage.push_back(this->rawImage[c + 0]);  // R
-                            newRawImage.push_back(this->rawImage[c + 1]);  // G
-                            newRawImage.push_back(this->rawImage[c + 2]);  // B
-                            newRawImage.push_back(0xff);                   // A
-                        }
-                    } else {
-                        for(size_t c = 0; c < this->rawImage.size(); c += (size_t)Image::NUM_CHANNELS) {
-                            // add original data
-                            for(int p = 0; p < Image::NUM_CHANNELS; p++) {
-                                newRawImage.push_back(this->rawImage[c + p]);
-                            }
-
-                            // add padded data
-                            for(int m = 0; m < numMissingChannels; m++) {
-                                newRawImage.push_back(0xff);
-                            }
-                        }
-                    }
-                }
-                this->rawImage = std::move(newRawImage);
-                // Image::NUM_CHANNELS = numTargetChannels;
-            }
-        }
     } else {
         // created image is always async ready
         this->bAsyncReady = true;
@@ -253,7 +211,7 @@ void DirectX11Image::destroy() {
     // like opengl does it
     this->deleteDX();
     if(!this->bKeepInSystemMemory) {
-        this->rawImage.clear();
+        this->rawImage.reset();
     }
 }
 
