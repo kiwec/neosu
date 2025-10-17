@@ -21,7 +21,7 @@ class Keyboard final : public InputDevice {
 
     void onKeyDown(KEYCODE keyCode);
     void onKeyUp(KEYCODE keyCode);
-    void onChar(KEYCODE charCode);
+    void onChar(char16_t charCode);
 
     [[nodiscard]] inline bool isControlDown() const { return this->bControlDown; }
     [[nodiscard]] inline bool isAltDown() const { return this->bAltDown; }

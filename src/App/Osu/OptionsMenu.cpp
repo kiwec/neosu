@@ -1,10 +1,6 @@
 // Copyright (c) 2016, PG, All rights reserved.
 #include "OptionsMenu.h"
 
-#include <algorithm>
-#include <fstream>
-#include <utility>
-
 #include "AsyncIOHandler.h"
 #include "ByteBufferedFile.h"
 #include "SString.h"
@@ -58,6 +54,11 @@
 #endif
 
 #include "fmt/chrono.h"
+
+#include <cwctype>
+#include <algorithm>
+#include <fstream>
+#include <utility>
 
 class OptionsMenuSkinPreviewElement final : public CBaseUIElement {
    public:
@@ -1479,8 +1480,9 @@ void OptionsMenu::mouse_update(bool *propagate_clicks) {
 
     // flash osu!folder textbox red if incorrect
     if(this->fOsuFolderTextboxInvalidAnim > engine->getTime()) {
-        char redness = std::abs(std::sin((this->fOsuFolderTextboxInvalidAnim - engine->getTime()) * 3)) * 128;
-        this->osuFolderTextbox->setBackgroundColor(argb(255, redness, 0, 0));
+        float redness =
+            std::fabsf(std::sinf((this->fOsuFolderTextboxInvalidAnim - (float)engine->getTime()) * 3.f)) * 0.5f;
+        this->osuFolderTextbox->setBackgroundColor(argb(1.f, redness, 0.f, 0.f));
     } else
         this->osuFolderTextbox->setBackgroundColor(0xff000000);
 
@@ -1634,38 +1636,34 @@ void OptionsMenu::onKeyDown(KeyboardEvent &e) {
     }
 
     // searching text delete
-    if(!this->sSearchString.empty()) {
+    if(!this->sSearchString.isEmpty()) {
         switch(e.getKeyCode()) {
             case KEY_DELETE:
             case KEY_BACKSPACE:
-                if(!this->sSearchString.empty()) {
-                    if(keyboard->isControlDown()) {
-                        // delete everything from the current caret position to the left, until after the first
-                        // non-space character (but including it)
-                        bool foundNonSpaceChar = false;
-                        while(this->sSearchString.length() > 0) {
-                            std::string curChar{this->sSearchString.substr(this->sSearchString.length() - 1, 1)};
+                if(keyboard->isControlDown()) {
+                    // delete everything from the current caret position to the left, until after the first
+                    // non-space character (but including it)
+                    bool foundNonSpaceChar = false;
+                    while(!this->sSearchString.isEmpty()) {
+                        const auto &curChar = this->sSearchString.back();
 
-                            if(foundNonSpaceChar && SString::is_wspace_only(curChar)) break;
+                        const bool whitespace = std::iswspace(static_cast<wint_t>(curChar)) != 0;
+                        if(foundNonSpaceChar && whitespace) break;
 
-                            if(!SString::is_wspace_only(curChar)) foundNonSpaceChar = true;
+                        if(!whitespace) foundNonSpaceChar = true;
 
-                            this->sSearchString.erase(this->sSearchString.length() - 1, 1);
-                            e.consume();
-                            this->scheduleSearchUpdate();
-                            return;
-                        }
-                    } else {
-                        this->sSearchString = this->sSearchString.substr(0, this->sSearchString.length() - 1);
-                        e.consume();
-                        this->scheduleSearchUpdate();
-                        return;
+                        this->sSearchString.pop_back();
                     }
+                } else {
+                    this->sSearchString.pop_back();
                 }
-                break;
+
+                e.consume();
+                this->scheduleSearchUpdate();
+                return;
 
             case KEY_ESCAPE:
-                this->sSearchString = "";
+                this->sSearchString.clear();
                 this->scheduleSearchUpdate();
                 e.consume();
                 return;
@@ -1678,8 +1676,8 @@ void OptionsMenu::onKeyDown(KeyboardEvent &e) {
 
     // paste clipboard support
     if(!e.isConsumed() && keyboard->isControlDown() && e == KEY_V) {
-        const std::string clipstring{env->getClipBoardText().toUtf8()};
-        if(clipstring.length() > 0) {
+        const auto &clipstring = env->getClipBoardText();
+        if(!clipstring.isEmpty()) {
             this->sSearchString.append(clipstring);
             this->scheduleSearchUpdate();
             e.consume();
@@ -1702,7 +1700,7 @@ void OptionsMenu::onChar(KeyboardEvent &e) {
        this->fSearchOnCharKeybindHackTime > engine->getTime())
         return;
 
-    this->sSearchString.append(std::string{static_cast<char>(e.getCharCode())});
+    this->sSearchString.append(e.getCharCode());
 
     this->scheduleSearchUpdate();
 
@@ -1901,7 +1899,7 @@ void OptionsMenu::updateLayout() {
     bool inSkipSubSection = false;
     bool sectionTitleMatch = false;
     bool subSectionTitleMatch = false;
-    const std::string search = this->sSearchString.length() > 0 ? this->sSearchString.c_str() : "";
+    const auto &search = this->sSearchString;
     for(int i = 0; i < this->elemContainers.size(); i++) {
         if(!this->elemContainers[i] || !this->elemContainers[i]->render_condition()) continue;
         if(this->elemContainers[i]->render_condition == RenderCondition::ASIO_ENABLED &&
@@ -1930,15 +1928,15 @@ void OptionsMenu::updateLayout() {
         // if match in section or subsection -> display entire section (disregard content match)
         // matcher is run through all remaining elements at every section + subsection
 
-        if(this->sSearchString.length() > 0) {
-            const std::string searchTags = this->elemContainers[i]->searchTags.toUtf8();
+        if(!search.isEmpty()) {
+            const auto &searchTags = this->elemContainers[i]->searchTags;
 
             // if this is a section
             if(this->elemContainers[i]->type == SECT) {
                 bool sectionMatch = false;
 
-                const std::string sectionTitle = this->elemContainers[i]->baseElems[0]->getName().toUtf8();
-                sectionTitleMatch = SString::contains_ncase(sectionTitle, search);
+                const auto &sectionTitle = this->elemContainers[i]->baseElems[0]->getName();
+                sectionTitleMatch = sectionTitle.findIgnoreCase(search) != -1;
 
                 subSectionTitleMatch = false;
                 if(inSkipSection) inSkipSection = false;
@@ -1949,10 +1947,10 @@ void OptionsMenu::updateLayout() {
                         break;
 
                     for(auto &element : this->elemContainers[s]->baseElems) {
-                        if(element->getName().length() > 0) {
-                            std::string tags = element->getName().toUtf8();
+                        if(!element->getName().isEmpty()) {
+                            const auto &tags = element->getName();
 
-                            if(SString::contains_ncase(tags, search)) {
+                            if(tags.findIgnoreCase(search) != -1) {
                                 sectionMatch = true;
                                 break;
                             }
@@ -1968,9 +1966,9 @@ void OptionsMenu::updateLayout() {
             if(this->elemContainers[i]->type == SUBSECT) {
                 bool subSectionMatch = false;
 
-                const std::string subSectionTitle = this->elemContainers[i]->baseElems[0]->getName().toUtf8();
+                const auto &subSectionTitle = this->elemContainers[i]->baseElems[0]->getName();
                 subSectionTitleMatch =
-                    SString::contains_ncase(subSectionTitle, search) || SString::contains_ncase(searchTags, search);
+                    subSectionTitle.findIgnoreCase(search) != -1 || searchTags.findIgnoreCase(search) != -1;
 
                 if(inSkipSubSection) inSkipSubSection = false;
 
@@ -1980,10 +1978,10 @@ void OptionsMenu::updateLayout() {
                         break;
 
                     for(auto &element : this->elemContainers[s]->baseElems) {
-                        if(element->getName().length() > 0) {
-                            std::string tags = element->getName().toUtf8();
+                        if(!element->getName().isEmpty()) {
+                            const auto &tags = element->getName();
 
-                            if(SString::contains_ncase(tags, search)) {
+                            if(tags.findIgnoreCase(search) != -1) {
                                 subSectionMatch = true;
                                 break;
                             }
@@ -2001,10 +1999,10 @@ void OptionsMenu::updateLayout() {
                 if(this->elemContainers[i]->type > SUBSECT) {
                     for(auto &element : this->elemContainers[i]->baseElems) {
                         if(!element) continue;
-                        if(element->getName().length() > 0) {
-                            std::string tags = element->getName().toUtf8();
+                        if(!element->getName().isEmpty()) {
+                            const auto &tags = element->getName();
 
-                            if(SString::contains_ncase(tags, search)) {
+                            if(tags.findIgnoreCase(search) != -1) {
                                 contentMatch = true;
                                 break;
                             }
@@ -3260,7 +3258,7 @@ void OptionsMenu::onHighQualitySlidersConVarChange(float newValue) {
 
 void OptionsMenu::onCategoryClicked(CBaseUIButton *button) {
     // reset search
-    this->sSearchString = "";
+    this->sSearchString.clear();
     this->scheduleSearchUpdate();
 
     // scroll to category

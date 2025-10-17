@@ -312,7 +312,7 @@ class OptionsMenu final : public ScreenBackable, public NotificationOverlayKeyLi
     int iNumResetEverythingPressed;
 
     // search
-    std::string sSearchString;
+    UString sSearchString{u""};
     float fSearchOnCharKeybindHackTime;
 
     // notelock

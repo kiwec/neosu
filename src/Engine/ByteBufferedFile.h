@@ -1,25 +1,15 @@
 // Copyright (c) 2024, kiwec & 2025, WH, All rights reserved.
 #pragma once
 
-#include <cstddef>
 #include <cstring>
 #include <string>
 #include <string_view>
 #include <algorithm>
 #include <filesystem>
 #include <fstream>
-#include <vector>
 
 #include "MD5Hash.h"
 #include "types.h"
-
-#ifdef _MSC_VER
-#define always_inline_attr __forceinline
-#elif defined(__GNUC__)
-#define always_inline_attr [[gnu::always_inline]] inline
-#else
-#define always_inline_attr
-#endif
 
 class ByteBufferedFile {
    private:
@@ -35,7 +25,7 @@ class ByteBufferedFile {
         ~Reader() = default;
 
         // always_inline is a 2x speedup here
-        [[nodiscard]] always_inline_attr uSz read_bytes(u8 *out, uSz len) {
+        [[nodiscard]] forceinline uSz read_bytes(u8 *out, uSz len) {
             if(this->error_flag) {
                 if(out != nullptr) {
                     memset(out, 0, len);
@@ -128,7 +118,7 @@ class ByteBufferedFile {
             return result;
         }
 
-        always_inline_attr void skip_bytes(u32 n) {
+        forceinline void skip_bytes(u32 n) {
             if(this->error_flag) {
                 return;
             }
@@ -169,8 +159,8 @@ class ByteBufferedFile {
             this->skip_bytes(sizeof(T));
         }
 
-        [[nodiscard]] bool good() const { return !this->error_flag; }
-        [[nodiscard]] std::string_view error() const { return this->last_error; }
+        [[nodiscard]] constexpr bool good() const { return !this->error_flag; }
+        [[nodiscard]] constexpr std::string_view error() const { return this->last_error; }
 
         [[nodiscard]] MD5Hash read_hash();
         [[nodiscard]] std::string read_string();
@@ -203,8 +193,8 @@ class ByteBufferedFile {
         Writer(std::string_view writePath);
         ~Writer();
 
-        [[nodiscard]] bool good() const { return !this->error_flag; }
-        [[nodiscard]] std::string_view error() const { return this->last_error; }
+        [[nodiscard]] constexpr bool good() const { return !this->error_flag; }
+        [[nodiscard]] constexpr std::string_view error() const { return this->last_error; }
 
         void flush();
         void write_bytes(const u8 *bytes, uSz n);

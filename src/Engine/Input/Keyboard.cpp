@@ -100,7 +100,7 @@ void Keyboard::onKeyUp(KEYCODE keyCode) {
     }
 }
 
-void Keyboard::onChar(KEYCODE charCode) {
+void Keyboard::onChar(char16_t charCode) {
     KeyboardEvent e(charCode);
 
     for(auto &listener : this->listeners) {

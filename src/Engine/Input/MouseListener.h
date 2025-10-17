@@ -2,25 +2,28 @@
 #ifndef MOUSELISTENER_H
 #define MOUSELISTENER_H
 
-enum class ButtonIndex : unsigned char
-{
-	BUTTON_NONE = 0,
-	BUTTON_LEFT = 1,
-	BUTTON_MIDDLE = 2,
-	BUTTON_RIGHT = 3,
-	BUTTON_X1 = 4,
-	BUTTON_X2 = 5,
-	BUTTON_COUNT = 6
+namespace ButtonIndices {
+enum idx : unsigned char {
+ BUTTON_NONE = 0,
+ BUTTON_LEFT = 1,
+ BUTTON_MIDDLE = 2,
+ BUTTON_RIGHT = 3,
+ BUTTON_X1 = 4,
+ BUTTON_X2 = 5,
+ BUTTON_COUNT = 6,
 };
+}  // namespace ButtonIndices
+
+using ButtonIndex = ButtonIndices::idx;
 
 class MouseListener {
    public:
-    virtual ~MouseListener() { ; }
+    virtual ~MouseListener() = default;
 
-	virtual void onButtonChange(ButtonIndex /*button*/, bool /*down*/) { ; }
+    virtual void onButtonChange(ButtonIndex /*button*/, bool /*down*/) {}
 
-	virtual void onWheelVertical(int /*delta*/) { ; }
-	virtual void onWheelHorizontal(int /*delta*/) { ; }
+    virtual void onWheelVertical(int /*delta*/) {}
+    virtual void onWheelHorizontal(int /*delta*/) {}
 };
 
 #endif

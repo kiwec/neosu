@@ -302,15 +302,16 @@ Osu::Osu() {
         BanchoState::reconnect();
     }
 
-#ifndef _DEBUG
     // don't auto update if this env var is set to anything other than 0 or empty (if it is set)
-    const std::string extUpdater = Environment::getEnvVariable("NEOSU_EXTERNAL_UPDATE_PROVIDER");
-    if(cv::auto_update.getBool() && (extUpdater.empty() || strtol(extUpdater.c_str(), nullptr, 10) == 0)) {
-        bool force_update = cv::bleedingedge.getBool() != cv::is_bleedingedge.getBool();
-        this->updateHandler->checkForUpdates(force_update);
+    if constexpr(!Env::cfg(BUILD::DEBUG)) {  // don't auto-update debug builds
+        const std::string extUpdater = Environment::getEnvVariable("NEOSU_EXTERNAL_UPDATE_PROVIDER");
+        if(cv::auto_update.getBool() && (extUpdater.empty() || strtol(extUpdater.c_str(), nullptr, 10) == 0)) {
+            bool force_update = cv::bleedingedge.getBool() != cv::is_bleedingedge.getBool();
+            this->updateHandler->checkForUpdates(force_update);
+        }
     }
-#endif
 
+    // now handle commandline arguments after we have loaded everything
     bool reloading_db = env->getEnvInterop().handle_cmdline_args();
     if(!reloading_db && cv::load_db_immediately.getBool()) {
         // Start loading db early
@@ -862,14 +863,14 @@ void Osu::onKeyDown(KeyboardEvent &key) {
         key.consume();
     }
 
-    if(key == (KEYCODE)cv::OPEN_SKIN_SELECT_MENU.getInt()) {
+    if(key == cv::OPEN_SKIN_SELECT_MENU.getVal<KEYCODE>()) {
         this->optionsMenu->onSkinSelect();
         key.consume();
         return;
     }
 
     // disable mouse buttons hotkey
-    if(key == (KEYCODE)cv::DISABLE_MOUSE_BUTTONS.getInt()) {
+    if(key == cv::DISABLE_MOUSE_BUTTONS.getVal<KEYCODE>()) {
         if(cv::disable_mousebuttons.getBool()) {
             cv::disable_mousebuttons.setValue(0.0f);
             this->notificationOverlay->addNotification("Mouse buttons are enabled.");
@@ -879,7 +880,7 @@ void Osu::onKeyDown(KeyboardEvent &key) {
         }
     }
 
-    if(key == (KEYCODE)cv::TOGGLE_MAP_BACKGROUND.getInt()) {
+    if(key == cv::TOGGLE_MAP_BACKGROUND.getVal<KEYCODE>()) {
         auto diff = this->map_iface->getBeatmap();
         if(!diff) {
             this->notificationOverlay->addNotification("No beatmap is currently selected.");
@@ -892,7 +893,7 @@ void Osu::onKeyDown(KeyboardEvent &key) {
     }
 
     // F8 toggle chat
-    if(key == (KEYCODE)cv::TOGGLE_CHAT.getInt()) {
+    if(key == cv::TOGGLE_CHAT.getVal<KEYCODE>()) {
         if(!BanchoState::is_online()) {
             this->optionsMenu->askForLoginDetails();
         } else if(this->optionsMenu->isVisible()) {
@@ -907,7 +908,7 @@ void Osu::onKeyDown(KeyboardEvent &key) {
     }
 
     // F9 toggle extended chat
-    if(key == (KEYCODE)cv::TOGGLE_EXTENDED_CHAT.getInt()) {
+    if(key == cv::TOGGLE_EXTENDED_CHAT.getVal<KEYCODE>()) {
         if(!BanchoState::is_online()) {
             this->optionsMenu->askForLoginDetails();
         } else if(this->optionsMenu->isVisible()) {
@@ -929,10 +930,10 @@ void Osu::onKeyDown(KeyboardEvent &key) {
     }
 
     // screenshots
-    if(key == (KEYCODE)cv::SAVE_SCREENSHOT.getInt()) this->saveScreenshot();
+    if(key == cv::SAVE_SCREENSHOT.getVal<KEYCODE>()) this->saveScreenshot();
 
     // boss key (minimize + mute)
-    if(key == (KEYCODE)cv::BOSS_KEY.getInt()) {
+    if(key == cv::BOSS_KEY.getVal<KEYCODE>()) {
         env->minimize();
         this->bWasBossKeyPaused = this->map_iface->isPreviewMusicPlaying();
         this->map_iface->pausePreviewMusic(false);
@@ -944,7 +945,7 @@ void Osu::onKeyDown(KeyboardEvent &key) {
     if(this->isInPlayMode() && !this->optionsMenu->isVisible() && !this->chat->isVisible()) {
         // instant replay
         if((this->map_iface->isPaused() || this->map_iface->hasFailed())) {
-            if(!key.isConsumed() && key == (KEYCODE)cv::INSTANT_REPLAY.getInt()) {
+            if(!key.isConsumed() && key == cv::INSTANT_REPLAY.getVal<KEYCODE>()) {
                 if(!this->map_iface->is_watching && !BanchoState::spectating) {
                     FinishedScore score;
                     score.replay = this->map_iface->live_replay;
@@ -966,7 +967,7 @@ void Osu::onKeyDown(KeyboardEvent &key) {
         // while playing and not paused
         if(!this->map_iface->isPaused()) {
             // K1
-            if(key == (KEYCODE)cv::LEFT_CLICK.getInt()) {
+            if(key == cv::LEFT_CLICK.getVal<KEYCODE>()) {
                 if(!this->bKeyboardKey1Down) {
                     this->bKeyboardKey1Down = true;
                     this->onKey1Change(true, false);
@@ -975,7 +976,7 @@ void Osu::onKeyDown(KeyboardEvent &key) {
             }
 
             // 'M1'
-            if(key == (KEYCODE)cv::LEFT_CLICK_2.getInt()) {
+            if(key == cv::LEFT_CLICK_2.getVal<KEYCODE>()) {
                 if(!this->bMouseKey1Down) {
                     this->bMouseKey1Down = true;
                     this->onKey1Change(true, true);
@@ -984,7 +985,7 @@ void Osu::onKeyDown(KeyboardEvent &key) {
             }
 
             // K2
-            if(key == (KEYCODE)cv::RIGHT_CLICK.getInt()) {
+            if(key == cv::RIGHT_CLICK.getVal<KEYCODE>()) {
                 if(!this->bKeyboardKey2Down) {
                     this->bKeyboardKey2Down = true;
                     this->onKey2Change(true, false);
@@ -993,7 +994,7 @@ void Osu::onKeyDown(KeyboardEvent &key) {
             }
 
             // 'M2'
-            if(key == (KEYCODE)cv::RIGHT_CLICK_2.getInt()) {
+            if(key == cv::RIGHT_CLICK_2.getVal<KEYCODE>()) {
                 if(!this->bMouseKey2Down) {
                     this->bMouseKey2Down = true;
                     this->onKey2Change(true, true);
@@ -1002,17 +1003,17 @@ void Osu::onKeyDown(KeyboardEvent &key) {
             }
 
             // Smoke
-            if(key == (KEYCODE)cv::SMOKE.getInt()) {
+            if(key == cv::SMOKE.getVal<KEYCODE>()) {
                 this->map_iface->current_keys |= LegacyReplay::Smoke;
                 key.consume();
             }
 
             // handle skipping
-            if(key == KEY_ENTER || key == KEY_NUMPAD_ENTER || key == (KEYCODE)cv::SKIP_CUTSCENE.getInt())
+            if(key == KEY_ENTER || key == KEY_NUMPAD_ENTER || key == cv::SKIP_CUTSCENE.getVal<KEYCODE>())
                 this->bSkipScheduled = true;
 
             // toggle ui
-            if(!key.isConsumed() && key == (KEYCODE)cv::TOGGLE_SCOREBOARD.getInt() && !this->bScoreboardToggleCheck) {
+            if(!key.isConsumed() && key == cv::TOGGLE_SCOREBOARD.getVal<KEYCODE>() && !this->bScoreboardToggleCheck) {
                 this->bScoreboardToggleCheck = true;
 
                 if(keyboard->isShiftDown()) {
@@ -1044,10 +1045,10 @@ void Osu::onKeyDown(KeyboardEvent &key) {
             }
 
             // allow live mod changing while playing
-            if(!key.isConsumed() && (key == KEY_F1 || key == (KEYCODE)cv::TOGGLE_MODSELECT.getInt()) &&
-               ((KEY_F1 != (KEYCODE)cv::LEFT_CLICK.getInt() && KEY_F1 != (KEYCODE)cv::LEFT_CLICK_2.getInt()) ||
+            if(!key.isConsumed() && (key == KEY_F1 || key == cv::TOGGLE_MODSELECT.getVal<KEYCODE>()) &&
+               ((KEY_F1 != cv::LEFT_CLICK.getVal<KEYCODE>() && KEY_F1 != cv::LEFT_CLICK_2.getVal<KEYCODE>()) ||
                 (!this->bKeyboardKey1Down && !this->bMouseKey1Down)) &&
-               ((KEY_F1 != (KEYCODE)cv::RIGHT_CLICK.getInt() && KEY_F1 != (KEYCODE)cv::RIGHT_CLICK_2.getInt()) ||
+               ((KEY_F1 != cv::RIGHT_CLICK.getVal<KEYCODE>() && KEY_F1 != cv::RIGHT_CLICK_2.getVal<KEYCODE>()) ||
                 (!this->bKeyboardKey2Down && !this->bMouseKey2Down)) &&
                !this->bF1 && !this->map_iface->hasFailed() &&
                !BanchoState::is_playing_a_multi_map())  // only if not failed though
@@ -1058,9 +1059,9 @@ void Osu::onKeyDown(KeyboardEvent &key) {
 
             // quick save/load
             if(!BanchoState::is_playing_a_multi_map()) {
-                if(key == (KEYCODE)cv::QUICK_SAVE.getInt()) this->fQuickSaveTime = this->map_iface->getTime();
+                if(key == cv::QUICK_SAVE.getVal<KEYCODE>()) this->fQuickSaveTime = this->map_iface->getTime();
 
-                if(key == (KEYCODE)cv::QUICK_LOAD.getInt()) {
+                if(key == cv::QUICK_LOAD.getVal<KEYCODE>()) {
                     // special case: allow cancelling the failing animation here
                     if(this->map_iface->hasFailed()) this->map_iface->cancelFailing();
 
@@ -1070,8 +1071,8 @@ void Osu::onKeyDown(KeyboardEvent &key) {
 
             // quick seek
             if(!BanchoState::is_playing_a_multi_map()) {
-                const bool backward = (key == (KEYCODE)cv::SEEK_TIME_BACKWARD.getInt());
-                const bool forward = (key == (KEYCODE)cv::SEEK_TIME_FORWARD.getInt());
+                const bool backward = (key == cv::SEEK_TIME_BACKWARD.getVal<KEYCODE>());
+                const bool forward = (key == cv::SEEK_TIME_FORWARD.getVal<KEYCODE>());
                 if(backward || forward) {
                     i32 diff = 0;
                     if(backward) diff -= cv::seek_delta.getInt();
@@ -1089,7 +1090,7 @@ void Osu::onKeyDown(KeyboardEvent &key) {
         // while paused or maybe not paused
 
         // handle quick restart
-        if(((key == (KEYCODE)cv::QUICK_RETRY.getInt() ||
+        if(((key == cv::QUICK_RETRY.getVal<KEYCODE>() ||
              (keyboard->isControlDown() && !keyboard->isAltDown() && key == KEY_R)) &&
             !this->bQuickRetryDown)) {
             this->bQuickRetryDown = true;
@@ -1097,7 +1098,7 @@ void Osu::onKeyDown(KeyboardEvent &key) {
         }
 
         // handle seeking
-        if(key == (KEYCODE)cv::SEEK_TIME.getInt()) this->bSeekKey = true;
+        if(key == cv::SEEK_TIME.getVal<KEYCODE>()) this->bSeekKey = true;
 
         // handle fposu key handling
         this->fposu->onKeyDown(key);
@@ -1111,7 +1112,7 @@ void Osu::onKeyDown(KeyboardEvent &key) {
         // if playing
         if(this->isInPlayMode()) {
             // toggle pause menu
-            bool pressed_pause = (key == (KEYCODE)cv::GAME_PAUSE.getInt()) || (key == KEY_ESCAPE);
+            bool pressed_pause = (key == cv::GAME_PAUSE.getVal<KEYCODE>()) || (key == KEY_ESCAPE);
             pressed_pause &= !this->bEscape;  // ignore repeat events when key is held down
             if(pressed_pause) {
                 this->bEscape = true;
@@ -1132,14 +1133,14 @@ void Osu::onKeyDown(KeyboardEvent &key) {
             }
 
             // local offset
-            if(key == (KEYCODE)cv::INCREASE_LOCAL_OFFSET.getInt()) {
+            if(key == cv::INCREASE_LOCAL_OFFSET.getVal<KEYCODE>()) {
                 i32 offsetAdd = keyboard->isAltDown() ? 1 : 5;
                 this->map_iface->getBeatmap()->setLocalOffset(this->map_iface->getBeatmap()->getLocalOffset() +
                                                               offsetAdd);
                 this->notificationOverlay->addNotification(
                     fmt::format("Local beatmap offset set to {} ms", this->map_iface->getBeatmap()->getLocalOffset()));
             }
-            if(key == (KEYCODE)cv::DECREASE_LOCAL_OFFSET.getInt()) {
+            if(key == cv::DECREASE_LOCAL_OFFSET.getVal<KEYCODE>()) {
                 i32 offsetAdd = -(keyboard->isAltDown() ? 1 : 5);
                 this->map_iface->getBeatmap()->setLocalOffset(this->map_iface->getBeatmap()->getLocalOffset() +
                                                               offsetAdd);
@@ -1154,7 +1155,7 @@ void Osu::onKeyUp(KeyboardEvent &key) {
     // clicks
     {
         // K1
-        if(key == (KEYCODE)cv::LEFT_CLICK.getInt()) {
+        if(key == cv::LEFT_CLICK.getVal<KEYCODE>()) {
             if(this->bKeyboardKey1Down) {
                 this->bKeyboardKey1Down = false;
                 if(this->isInPlayMode()) this->onKey1Change(false, false);
@@ -1162,7 +1163,7 @@ void Osu::onKeyUp(KeyboardEvent &key) {
         }
 
         // 'M1'
-        if(key == (KEYCODE)cv::LEFT_CLICK_2.getInt()) {
+        if(key == cv::LEFT_CLICK_2.getVal<KEYCODE>()) {
             if(this->bMouseKey1Down) {
                 this->bMouseKey1Down = false;
                 if(this->isInPlayMode()) this->onKey1Change(false, true);
@@ -1170,7 +1171,7 @@ void Osu::onKeyUp(KeyboardEvent &key) {
         }
 
         // K2
-        if(key == (KEYCODE)cv::RIGHT_CLICK.getInt()) {
+        if(key == cv::RIGHT_CLICK.getVal<KEYCODE>()) {
             if(this->bKeyboardKey2Down) {
                 this->bKeyboardKey2Down = false;
                 if(this->isInPlayMode()) this->onKey2Change(false, false);
@@ -1178,7 +1179,7 @@ void Osu::onKeyUp(KeyboardEvent &key) {
         }
 
         // 'M2'
-        if(key == (KEYCODE)cv::RIGHT_CLICK_2.getInt()) {
+        if(key == cv::RIGHT_CLICK_2.getVal<KEYCODE>()) {
             if(this->bMouseKey2Down) {
                 this->bMouseKey2Down = false;
                 if(this->isInPlayMode()) this->onKey2Change(false, true);
@@ -1186,7 +1187,7 @@ void Osu::onKeyUp(KeyboardEvent &key) {
         }
 
         // Smoke
-        if(this->map_iface && (key == (KEYCODE)cv::SMOKE.getInt())) {
+        if(this->map_iface && (key == cv::SMOKE.getVal<KEYCODE>())) {
             this->map_iface->current_keys &= ~LegacyReplay::Smoke;
             key.consume();
         }
@@ -1197,15 +1198,15 @@ void Osu::onKeyUp(KeyboardEvent &key) {
 
     // misc hotkeys release
     // XXX: handle keypresses in the engine, instead of doing this hacky mess
-    if(key == KEY_F1 || key == (KEYCODE)cv::TOGGLE_MODSELECT.getInt()) this->bF1 = false;
-    if(key == (KEYCODE)cv::GAME_PAUSE.getInt() || key == KEY_ESCAPE) this->bEscape = false;
+    if(key == KEY_F1 || key == cv::TOGGLE_MODSELECT.getVal<KEYCODE>()) this->bF1 = false;
+    if(key == cv::GAME_PAUSE.getVal<KEYCODE>() || key == KEY_ESCAPE) this->bEscape = false;
     if(key == KEY_LSHIFT || key == KEY_RSHIFT) this->bUIToggleCheck = false;
-    if(key == (KEYCODE)cv::TOGGLE_SCOREBOARD.getInt()) {
+    if(key == cv::TOGGLE_SCOREBOARD.getVal<KEYCODE>()) {
         this->bScoreboardToggleCheck = false;
         this->bUIToggleCheck = false;
     }
-    if(key == (KEYCODE)cv::QUICK_RETRY.getInt() || key == KEY_R) this->bQuickRetryDown = false;
-    if(key == (KEYCODE)cv::SEEK_TIME.getInt()) this->bSeekKey = false;
+    if(key == cv::QUICK_RETRY.getVal<KEYCODE>() || key == KEY_R) this->bQuickRetryDown = false;
+    if(key == cv::SEEK_TIME.getVal<KEYCODE>()) this->bSeekKey = false;
 
     // handle fposu key handling
     this->fposu->onKeyUp(key);

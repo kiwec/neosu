@@ -42,7 +42,7 @@ void UISearchOverlay::draw() {
 
     bool hasSearchSubTextVisible = this->sSearchString.length() > 0 && this->bDrawNumResults;
 
-    const float searchStringWidth = searchTextFont->getStringWidth(this->sSearchString.c_str());
+    const float searchStringWidth = searchTextFont->getStringWidth(this->sSearchString);
     const float offsetTextStringWidth = searchTextFont->getStringWidth(offsetText);
 
     const int offsetTextWidthWithoutOverflow =
@@ -108,10 +108,10 @@ void UISearchOverlay::draw() {
 
                     g->translate(1, 1);
                     g->setColor(0xff000000);
-                    g->drawString(searchTextFont, this->sHardcodedSearchString.c_str());
+                    g->drawString(searchTextFont, this->sHardcodedSearchString);
                     g->translate(-1, -1);
                     g->setColor(0xff34ab94);
-                    g->drawString(searchTextFont, this->sHardcodedSearchString.c_str());
+                    g->drawString(searchTextFont, this->sHardcodedSearchString);
                 }
                 g->popTransform();
 
@@ -124,14 +124,14 @@ void UISearchOverlay::draw() {
             if(this->sSearchString.length() < 1)
                 g->drawString(searchTextFont, searchText2);
             else
-                g->drawString(searchTextFont, this->sSearchString.c_str());
+                g->drawString(searchTextFont, this->sSearchString);
 
             g->translate(-1, -1);
             g->setColor(0xffffffff);
             if(this->sSearchString.length() < 1)
                 g->drawString(searchTextFont, searchText2);
             else
-                g->drawString(searchTextFont, this->sSearchString.c_str());
+                g->drawString(searchTextFont, this->sSearchString);
         }
         g->popTransform();
 

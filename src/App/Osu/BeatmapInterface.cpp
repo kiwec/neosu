@@ -757,7 +757,7 @@ void BeatmapInterface::actualRestart() {
 
     // if the first hitobject starts immediately, add artificial wait time before starting the music
     if(this->hitobjects.size() > 0) {
-        if(this->hitobjects[0]->click_time < (i32)cv::early_note_time.getInt()) {
+        if(this->hitobjects[0]->click_time < cv::early_note_time.getInt()) {
             this->bIsWaiting = true;
             this->fWaitTime = Timing::getTimeReal<f32>() + cv::early_note_time.getFloat() / 1000.0f;
         }
@@ -2349,7 +2349,7 @@ void BeatmapInterface::update2() {
 
             // if the first hitobject starts immediately, add artificial wait time before starting the music
             if(!this->bIsRestartScheduledQuick && this->hitobjects.size() > 0) {
-                if(this->hitobjects[0]->click_time < (i32)cv::early_note_time.getInt()) {
+                if(this->hitobjects[0]->click_time < cv::early_note_time.getInt()) {
                     this->fWaitTime = Timing::getTimeReal<f32>() + cv::early_note_time.getFloat() / 1000.0f;
                 }
             }
@@ -3712,8 +3712,8 @@ void BeatmapInterface::updateAutoCursorPos() {
     // dance
     int nextPosIndex = 0;
 
-    if(this->hitobjects[0]->click_time < (i32)cv::early_note_time.getInt())
-        prevTime = -(i32)cv::early_note_time.getInt() * this->getSpeedMultiplier();
+    if(this->hitobjects[0]->click_time < cv::early_note_time.getInt())
+        prevTime = (int)std::roundf((float)-cv::early_note_time.getInt() * this->getSpeedMultiplier());
 
     if(osu->getModAuto()) {
         bool autoDanceOverride = false;

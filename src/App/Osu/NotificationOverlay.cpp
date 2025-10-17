@@ -7,11 +7,10 @@
 #include "ConVar.h"
 #include "Engine.h"
 #include "Environment.h"
-#include "Keyboard.h"
-#include "Mouse.h"
+#include "Font.h"
+#include "KeyBindings.h"
 #include "Osu.h"
 #include "PauseMenu.h"
-#include "ResourceManager.h"
 #include "Logging.h"
 
 NotificationOverlay::NotificationOverlay() : OsuScreen() {
@@ -21,12 +20,7 @@ NotificationOverlay::NotificationOverlay() : OsuScreen() {
     this->keyListener = nullptr;
 }
 
-NotificationOverlay::~NotificationOverlay() {
-    for(auto toast : this->toasts) {
-        delete toast;
-    }
-    this->toasts.clear();
-}
+NotificationOverlay::~NotificationOverlay() = default;
 
 static const f64 TOAST_WIDTH = 350.0;
 static const f64 TOAST_INNER_X_MARGIN = 5.0;
@@ -92,7 +86,7 @@ void NotificationOverlay::mouse_update(bool *propagate_clicks) {
     bool a_toast_is_hovered = false;
     const vec2 &screen{osu->getVirtScreenSize()};
     f64 bottom_y = screen.y - TOAST_SCREEN_BOTTOM_MARGIN;
-    for(auto t : this->toasts) {
+    for(const auto &t : this->toasts) {
         if(t->type == ToastElement::TYPE::CHAT && !chat_toasts_visible) continue;
 
         bottom_y -= TOAST_OUTER_Y_MARGIN + t->getSize().y;
@@ -102,7 +96,7 @@ void NotificationOverlay::mouse_update(bool *propagate_clicks) {
     }
 
     // Delay toast disappearance
-    for(auto t : this->toasts) {
+    for(const auto &t : this->toasts) {
         bool delay_toast = t->type == ToastElement::TYPE::PERMANENT;
         delay_toast |= t->type == ToastElement::TYPE::CHAT && !chat_toasts_visible;
         delay_toast |= a_toast_is_hovered;
@@ -115,10 +109,9 @@ void NotificationOverlay::mouse_update(bool *propagate_clicks) {
 
     f64 current_time = engine->getTime();
     for(auto it = this->toasts.begin(); it != this->toasts.end(); it++) {
-        auto toast = *it;
+        const auto &toast = *it;
         if(toast->creationTime + 10.0 < current_time) {
             this->toasts.erase(it);
-            delete toast;
             return;
         }
     }
@@ -129,7 +122,7 @@ void NotificationOverlay::draw() {
     chat_toasts_visible |= !osu->isInPlayMode();
     chat_toasts_visible |= osu->getPauseMenu()->isVisible();
 
-    for(auto t : this->toasts) {
+    for(const auto &t : this->toasts) {
         if(t->type == ToastElement::TYPE::CHAT && !chat_toasts_visible) continue;
 
         t->draw();
@@ -149,14 +142,14 @@ void NotificationOverlay::draw() {
     this->drawNotificationText(this->notification1);
 }
 
-void NotificationOverlay::drawNotificationText(NotificationOverlay::NOTIFICATION &n) {
+void NotificationOverlay::drawNotificationText(const NotificationOverlay::NOTIFICATION &n) {
     McFont *font = osu->getSubTitleFont();
     int height = font->getHeight() * 2;
     int stringWidth = font->getStringWidth(n.text);
 
     g->pushTransform();
     {
-        g->setColor(Color(0xff000000).setA(n.alpha));
+        g->setColor(argb(n.alpha, 0.f, 0.f, 0.f));
 
         g->translate((int)(osu->getVirtScreenWidth() / 2 - stringWidth / 2 + 1),
                      (int)(osu->getVirtScreenHeight() / 2 + font->getHeight() / 2 + n.fallAnim * height * 0.15f + 1));
@@ -170,11 +163,11 @@ void NotificationOverlay::drawNotificationText(NotificationOverlay::NOTIFICATION
     g->popTransform();
 }
 
-void NotificationOverlay::drawNotificationBackground(NotificationOverlay::NOTIFICATION &n) {
+void NotificationOverlay::drawNotificationBackground(const NotificationOverlay::NOTIFICATION &n) {
     McFont *font = osu->getSubTitleFont();
     int height = font->getHeight() * 2 * n.backgroundAnim;
 
-    g->setColor(Color(0xff000000).setA(n.alpha * 0.75f));
+    g->setColor(argb(n.alpha * 0.75f, 0.f, 0.f, 0.f));
 
     g->fillRect(0, osu->getVirtScreenHeight() / 2 - height / 2, osu->getVirtScreenWidth(), height);
 }
@@ -271,7 +264,7 @@ void NotificationOverlay::addNotification(UString text, Color textColor, bool wa
 
 void NotificationOverlay::addToast(const UString &text, Color borderColor, const ToastClickCallback &callback,
                                    ToastElement::TYPE type) {
-    auto toast = new ToastElement(text, borderColor, type);
+    auto toast = std::make_unique<ToastElement>(text, borderColor, type);
     if constexpr(Env::cfg(BUILD::DEBUG)) {
         // also log it
         // TODO: debug channels/separate files
@@ -281,7 +274,7 @@ void NotificationOverlay::addToast(const UString &text, Color borderColor, const
     if(!!callback) {
         toast->setClickCallback(callback);
     }
-    this->toasts.push_back(toast);
+    this->toasts.push_back(std::move(toast));
 }
 
 void NotificationOverlay::stopWaitingForKey(bool stillConsumeNextChar) {

@@ -166,7 +166,7 @@ void Mouse::onButtonChange(ButtonIndex button, bool down) {
     using enum ButtonIndex;
     if(button == BUTTON_NONE || button >= BUTTON_COUNT) return;
 
-    this->bMouseButtonDownArray[static_cast<size_t>(button)] = down;
+    this->bMouseButtonDownArray[button] = down;
 
     // notify listeners
     for(auto &listener : this->listeners) {

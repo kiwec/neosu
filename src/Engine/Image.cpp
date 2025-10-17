@@ -66,10 +66,10 @@ void pngErrorExit(png_structp png_ptr, png_const_charp error_msg) {
     longjmp(&err->setjmp_buffer[0], 1);
 }
 
-void pngWarning(png_structp /*unused*/, [[maybe_unused]] png_const_charp warning_msg) {
-#ifdef _DEBUG
-    debugLog("PNG Warning: {:s}", warning_msg);
-#endif
+void pngWarning(png_structp /*unused*/, png_const_charp warning_msg) {
+    if constexpr(Env::cfg(BUILD::DEBUG)) {
+        debugLog("PNG Warning: {:s}", warning_msg);
+    }
 }
 
 struct pngMemoryReader {

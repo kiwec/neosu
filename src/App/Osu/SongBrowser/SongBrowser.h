@@ -320,9 +320,9 @@ class SongBrowser final : public ScreenBackable {
 
     // search
     UISearchOverlay *search;
-    std::string sSearchString;
-    std::string sPrevSearchString;
-    std::string sPrevHardcodedSearchString;
+    UString sSearchString{u""};
+    UString sPrevSearchString{u""};
+    UString sPrevHardcodedSearchString{u""};
     float fSearchWaitTime;
     bool bInSearch;
     bool bShouldRecountMatchesAfterSearch{true};

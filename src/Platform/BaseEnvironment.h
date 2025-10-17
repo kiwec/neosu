@@ -206,10 +206,6 @@ using Env::REND;
 #define MC_MESSAGE(msg) MC_DO_PRAGMA(message(msg))
 
 #if defined(__GNUC__) || defined(__clang__)
-#define likely(x) __builtin_expect(bool(x), 1)
-#define unlikely(x) __builtin_expect(bool(x), 0)
-#define forceinline __attribute__((always_inline)) inline
-
 #ifdef __clang__
 #define MC_VECTORIZE_LOOP MC_DO_PRAGMA(clang loop vectorize(enable))
 #define MC_UNR_cnt(num) MC_DO_PRAGMA(clang loop unroll_count(num))
@@ -232,15 +228,8 @@ using Env::REND;
 #define ACCUMULATE(op, var) MC_UNR_cnt(OPTIMAL_UNROLL)
 #endif
 
-// force all functions in the function body to be inlined into it
-// different from "forceinline", because the function itself won't necessarily be inlined at all call sites
-#define INLINE_BODY __attribute__((flatten))
-
 #else
 
-#define likely(x) (x)
-#define unlikely(x) (x)
-#define forceinline __forceinline
 #define MC_VECTORIZE_LOOP
 #define MC_UNR_cnt(num)
 #define MC_VEC_UNR_cnt(num)
@@ -249,7 +238,6 @@ using Env::REND;
 #define NULL_PUSH
 #define NULL_POP
 #define ACCUMULATE(op, var)
-#define INLINE_BODY
 #endif  // defined(__GNUC__) || defined(__clang__)
 
 #if !(defined(MCENGINE_PLATFORM_WINDOWS) || defined(_WIN32) || defined(_WIN64) || defined(__WIN32__) || \

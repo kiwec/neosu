@@ -88,15 +88,14 @@ void OpenGLLegacyInterface::beginScene() {
 void OpenGLLegacyInterface::endScene() {
     popTransform();
 
-#ifdef _DEBUG
-    checkStackLeaks();
+    if constexpr(Env::cfg(BUILD::DEBUG)) {
+        checkStackLeaks();
 
-    if(this->clipRectStack.size() > 0) {
-        engine->showMessageErrorFatal("ClipRect Stack Leak", "Make sure all push*() have a pop*()!");
-        engine->shutdown();
+        if(this->clipRectStack.size() > 0) {
+            engine->showMessageErrorFatal("ClipRect Stack Leak", "Make sure all push*() have a pop*()!");
+            engine->shutdown();
+        }
     }
-
-#endif
 
     this->bInScene = false;
 }

@@ -22,10 +22,12 @@ class ToastElement final : public CBaseUIButton {
     void onClicked(bool left = true, bool right = false) override;
 
     std::vector<UString> lines;
+
+    f64 creationTime;
+    f32 height = 0.f;
+
     Color borderColor;
     TYPE type;
-    f32 height = 0.f;
-    f64 creationTime;
 };
 
 class NotificationOverlayKeyListener {
@@ -76,16 +78,16 @@ class NotificationOverlay final : public OsuScreen {
         float fallAnim = 0.f;
     };
 
-    void drawNotificationText(NOTIFICATION &n);
-    void drawNotificationBackground(NOTIFICATION &n);
+    void drawNotificationText(const NOTIFICATION &n);
+    void drawNotificationBackground(const NOTIFICATION &n);
 
-    std::vector<ToastElement *> toasts;
+    std::vector<std::unique_ptr<ToastElement>> toasts;
 
     NOTIFICATION notification1;
     NOTIFICATION notification2;
+    NotificationOverlayKeyListener *keyListener;
 
     bool bWaitForKey;
     bool bWaitForKeyDisallowsLeftClick;
     bool bConsumeNextChar;
-    NotificationOverlayKeyListener *keyListener;
 };

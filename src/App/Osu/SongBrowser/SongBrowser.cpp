@@ -57,9 +57,8 @@
 #include "Logging.h"
 
 #include <algorithm>
-#include <chrono>
 #include <memory>
-#include <utility>
+#include <cwctype>
 
 const Color highlightColor = argb(255, 0, 255, 0);
 const Color defaultColor = argb(255, 255, 255, 255);
@@ -98,18 +97,18 @@ class SongBrowserBackgroundSearchMatcher final : public Resource {
     inline void kill() { this->bDead = true; }
     inline void revive() { this->bDead = false; }
 
-    inline void setSongButtonsAndSearchString(const std::vector<SongButton *> &songButtons,
-                                              std::string_view searchString, std::string_view hardcodedSearchString) {
+    inline void setSongButtonsAndSearchString(const std::vector<SongButton *> &songButtons, const UString &searchString,
+                                              const UString &hardcodedSearchString) {
         this->songButtons = songButtons;
 
         this->sSearchString.clear();
-        if(hardcodedSearchString.length() > 0) {
+        if(!hardcodedSearchString.isEmpty()) {
             this->sSearchString.append(hardcodedSearchString);
-            this->sSearchString.append(" ");
+            this->sSearchString.append(u' ');
         }
         this->sSearchString.append(searchString);
         // do case-insensitive searches
-        SString::lower_inplace(this->sSearchString);
+        this->sSearchString.lowerCase();
         this->sHardcodedSearchString = hardcodedSearchString;
     }
 
@@ -125,7 +124,8 @@ class SongBrowserBackgroundSearchMatcher final : public Resource {
         }
 
         // flag matches across entire database
-        const std::vector<std::string_view> searchStringTokens = SString::split(this->sSearchString, " ");
+        const std::vector<std::string_view> searchStringTokens =
+            SString::split<std::string_view>(this->sSearchString.utf8View(), ' ');
         for(auto &songButton : this->songButtons) {
             const auto &children = songButton->getChildren();
             if(children.size() > 0) {
@@ -150,8 +150,8 @@ class SongBrowserBackgroundSearchMatcher final : public Resource {
    private:
     std::atomic<bool> bDead{true};  // NOTE: start dead! need to revive() before use
 
-    std::string sSearchString;
-    std::string sHardcodedSearchString;
+    UString sSearchString{u""};
+    UString sHardcodedSearchString{u""};
     std::vector<SongButton *> songButtons;
 };
 
@@ -479,7 +479,7 @@ SongBrowser::SongBrowser()  // NOLINT(cert-msc51-cpp, cert-msc32-c)
     this->search = new UISearchOverlay(0, 0, 0, 0, "");
     this->search->setOffsetRight(10);
     this->fSearchWaitTime = 0.0f;
-    this->bInSearch = (cv::songbrowser_search_hardcoded_filter.getString().length() > 0);
+    this->bInSearch = (!cv::songbrowser_search_hardcoded_filter.getString().empty());
     this->backgroundSearchMatcher = new SongBrowserBackgroundSearchMatcher();
 
     this->updateLayout();
@@ -1039,7 +1039,7 @@ void SongBrowser::onKeyDown(KeyboardEvent &key) {
     if(!this->bVisible || key.isConsumed()) return;
 
     if(this->bVisible && this->bBeatmapRefreshScheduled &&
-       (key == KEY_ESCAPE || key == (KEYCODE)cv::GAME_PAUSE.getInt())) {
+       (key == KEY_ESCAPE || key == cv::GAME_PAUSE.getVal<KEYCODE>())) {
         db->cancel();
         key.consume();
         return;
@@ -1052,27 +1052,29 @@ void SongBrowser::onKeyDown(KeyboardEvent &key) {
     if(key.isConsumed()) return;
 
     // searching text delete & escape key handling
-    if(this->sSearchString.length() > 0) {
+    if(!this->sSearchString.isEmpty()) {
         switch(key.getKeyCode()) {
             case KEY_DELETE:
             case KEY_BACKSPACE:
                 key.consume();
-                if(this->sSearchString.length() > 0) {
+                if(!this->sSearchString.isEmpty()) {
                     if(keyboard->isControlDown()) {
                         // delete everything from the current caret position to the left, until after the first
                         // non-space character (but including it)
                         bool foundNonSpaceChar = false;
-                        while(this->sSearchString.length() > 0) {
-                            std::string curChar = this->sSearchString.substr(this->sSearchString.length() - 1, 1);
+                        while(!this->sSearchString.isEmpty()) {
+                            const auto &curChar = this->sSearchString.back();
 
-                            if(foundNonSpaceChar && SString::is_wspace_only(curChar)) break;
+                            const bool whitespace = std::iswspace(static_cast<wint_t>(curChar)) != 0;
+                            if(foundNonSpaceChar && whitespace) break;
 
-                            if(!SString::is_wspace_only(curChar)) foundNonSpaceChar = true;
+                            if(!whitespace) foundNonSpaceChar = true;
 
-                            this->sSearchString.erase(this->sSearchString.length() - 1, 1);
+                            this->sSearchString.pop_back();
                         }
-                    } else
-                        this->sSearchString = this->sSearchString.substr(0, this->sSearchString.length() - 1);
+                    } else {
+                        this->sSearchString.pop_back();
+                    }
 
                     this->scheduleSearchUpdate(this->sSearchString.length() == 0);
                 }
@@ -1080,7 +1082,7 @@ void SongBrowser::onKeyDown(KeyboardEvent &key) {
 
             case KEY_ESCAPE:
                 key.consume();
-                this->sSearchString = "";
+                this->sSearchString.clear();
                 this->scheduleSearchUpdate(true);
                 break;
         }
@@ -1092,8 +1094,8 @@ void SongBrowser::onKeyDown(KeyboardEvent &key) {
     // paste clipboard support
     if(key == KEY_V) {
         if(keyboard->isControlDown()) {
-            const std::string clipstring{env->getClipBoardText().toUtf8()};
-            if(clipstring.length() > 0) {
+            const auto &clipstring = env->getClipBoardText();
+            if(!clipstring.isEmpty()) {
                 this->sSearchString.append(clipstring);
                 this->scheduleSearchUpdate(false);
             }
@@ -1103,11 +1105,11 @@ void SongBrowser::onKeyDown(KeyboardEvent &key) {
     if(key == KEY_LSHIFT || key == KEY_RSHIFT) this->bShiftPressed = true;
 
     // function hotkeys
-    if((key == KEY_F1 || key == (KEYCODE)cv::TOGGLE_MODSELECT.getInt()) && !this->bF1Pressed) {
+    if((key == KEY_F1 || key == cv::TOGGLE_MODSELECT.getVal<KEYCODE>()) && !this->bF1Pressed) {
         this->bF1Pressed = true;
         press_bottombar_button(1);
     }
-    if((key == KEY_F2 || key == (KEYCODE)cv::RANDOM_BEATMAP.getInt()) && !this->bF2Pressed) {
+    if((key == KEY_F2 || key == cv::RANDOM_BEATMAP.getVal<KEYCODE>()) && !this->bF2Pressed) {
         this->bF2Pressed = true;
         press_bottombar_button(2);
     }
@@ -1136,8 +1138,8 @@ void SongBrowser::onKeyUp(KeyboardEvent &key) {
     if(key == KEY_LEFT) this->bLeft = false;
     if(key == KEY_RIGHT) this->bRight = false;
 
-    if(key == KEY_F1 || key == (KEYCODE)cv::TOGGLE_MODSELECT.getInt()) this->bF1Pressed = false;
-    if(key == KEY_F2 || key == (KEYCODE)cv::RANDOM_BEATMAP.getInt()) this->bF2Pressed = false;
+    if(key == KEY_F1 || key == cv::TOGGLE_MODSELECT.getVal<KEYCODE>()) this->bF1Pressed = false;
+    if(key == KEY_F2 || key == cv::RANDOM_BEATMAP.getVal<KEYCODE>()) this->bF2Pressed = false;
     if(key == KEY_F3) this->bF3Pressed = false;
 }
 
@@ -1152,7 +1154,7 @@ void SongBrowser::onChar(KeyboardEvent &e) {
     if(this->bF1Pressed || this->bF2Pressed || this->bF3Pressed) return;
 
     // handle searching
-    this->sSearchString.append(std::string{static_cast<char>(e.getCharCode())});
+    this->sSearchString.append(e.getCharCode());
 
     this->scheduleSearchUpdate();
 }
@@ -1441,8 +1443,8 @@ void SongBrowser::refreshBeatmaps(bool closeAfterLoading) {
 
     // clear potentially active search
     this->bInSearch = false;
-    this->sSearchString = "";
-    this->sPrevSearchString = "";
+    this->sSearchString.clear();
+    this->sPrevSearchString.clear();
     this->fSearchWaitTime = 0.0f;
     this->searchPrevGroup = std::nullopt;
 
@@ -2615,13 +2617,12 @@ void SongBrowser::onDatabaseLoadingFinished() {
 }
 
 void SongBrowser::onSearchUpdate() {
-    const bool hasHardcodedSearchStringChanged =
-        (this->sPrevHardcodedSearchString != cv::songbrowser_search_hardcoded_filter.getString().c_str());
+    const UString hardcodedFilterString = cv::songbrowser_search_hardcoded_filter.getString().c_str();
+    const bool hasHardcodedSearchStringChanged = (this->sPrevHardcodedSearchString != hardcodedFilterString);
     const bool hasSearchStringChanged = (this->sPrevSearchString != this->sSearchString);
 
     const bool prevInSearch = this->bInSearch;
-    this->bInSearch =
-        (this->sSearchString.length() > 0 || cv::songbrowser_search_hardcoded_filter.getString().length() > 0);
+    this->bInSearch = (!this->sSearchString.isEmpty() || !hardcodedFilterString.isEmpty());
     const bool hasInSearchChanged = (prevInSearch != this->bInSearch);
 
     if(this->bInSearch) {
@@ -2645,8 +2646,8 @@ void SongBrowser::onSearchUpdate() {
 
             this->backgroundSearchMatcher->revive();
             this->backgroundSearchMatcher->release();
-            this->backgroundSearchMatcher->setSongButtonsAndSearchString(
-                this->songButtons, this->sSearchString, cv::songbrowser_search_hardcoded_filter.getString().c_str());
+            this->backgroundSearchMatcher->setSongButtonsAndSearchString(this->songButtons, this->sSearchString,
+                                                                         hardcodedFilterString);
 
             resourceManager->requestNextLoadAsync();
             resourceManager->loadResource(this->backgroundSearchMatcher);
@@ -2704,86 +2705,84 @@ void SongBrowser::rebuildSongButtonsAndVisibleSongButtonsWithSearchMatchSupport(
     }
 
     // use flagged search matches to rebuild visible song buttons
-    {
-        if(this->curGroup.type == GROUP_ENUM::NO_GROUPING) {
-            for(auto &songButton : this->songButtons) {
-                const auto &children = songButton->getChildren();
-                if(children.size() > 0) {
-                    // if all children match, then we still want to display the parent wrapper button (without expanding
-                    // all diffs)
-                    bool allChildrenMatch = true;
-                    for(const auto &c : children) {
-                        bool match = c->isSearchMatch();
-                        if(!match) {
-                            allChildrenMatch = false;
-                            if(canBreakEarly) break;
-                        } else if(recountMatches) {
-                            this->currentVisibleSearchMatches++;
-                        }
-                    }
-
-                    if(allChildrenMatch)
-                        this->visibleSongButtons.push_back(songButton);
-                    else {
-                        // rip matching children from parent
-                        for(const auto &c : children) {
-                            if(c->isSearchMatch()) this->visibleSongButtons.push_back(c);
-                        }
-                    }
-                } else if(songButton->isSearchMatch()) {
-                    if(recountMatches) {
+    if(this->curGroup.type == GROUP_ENUM::NO_GROUPING) {
+        for(auto &songButton : this->songButtons) {
+            const auto &children = songButton->getChildren();
+            if(children.size() > 0) {
+                // if all children match, then we still want to display the parent wrapper button (without expanding
+                // all diffs)
+                bool allChildrenMatch = true;
+                for(const auto &c : children) {
+                    bool match = c->isSearchMatch();
+                    if(!match) {
+                        allChildrenMatch = false;
+                        if(canBreakEarly) break;
+                    } else if(recountMatches) {
                         this->currentVisibleSearchMatches++;
                     }
+                }
+
+                if(allChildrenMatch)
                     this->visibleSongButtons.push_back(songButton);
-                }
-            }
-        } else {
-            std::vector<CollectionButton *> *groupButtons = getCollectionButtonsForGroup(this->curGroup.type);
-
-            if(groupButtons != nullptr) {
-                for(const auto &groupButton : *groupButtons) {
-                    bool isAnyMatchInGroup = false;
-
-                    const auto &children = groupButton->getChildren();
+                else {
+                    // rip matching children from parent
                     for(const auto &c : children) {
-                        const auto &childrenChildren = c->getChildren();
-                        if(childrenChildren.size() > 0) {
-                            for(const auto &cc : childrenChildren) {
-                                if(cc->isSearchMatch()) {
-                                    isAnyMatchInGroup = true;
-                                    // also count total matching children while we're here
-                                    // break out early if we're not searching, though
-                                    if(canBreakEarly)
-                                        break;
-                                    else
-                                        this->currentVisibleSearchMatches++;
-                                }
-                            }
-
-                            if(canBreakEarly && isAnyMatchInGroup) break;
-                        } else if(c->isSearchMatch()) {
-                            isAnyMatchInGroup = true;
-                            if(canBreakEarly)
-                                break;
-                            else
-                                this->currentVisibleSearchMatches++;
-                        }
+                        if(c->isSearchMatch()) this->visibleSongButtons.push_back(c);
                     }
-
-                    if(isAnyMatchInGroup || !this->bInSearch) this->visibleSongButtons.push_back(groupButton);
                 }
+            } else if(songButton->isSearchMatch()) {
+                if(recountMatches) {
+                    this->currentVisibleSearchMatches++;
+                }
+                this->visibleSongButtons.push_back(songButton);
             }
         }
+    } else {
+        std::vector<CollectionButton *> *groupButtons = getCollectionButtonsForGroup(this->curGroup.type);
 
-        if(doRebuildSongButtons) this->rebuildSongButtons();
+        if(groupButtons != nullptr) {
+            for(const auto &groupButton : *groupButtons) {
+                bool isAnyMatchInGroup = false;
 
-        // scroll to top search result, or auto select the only result
-        if(scrollToTop) {
-            if(this->visibleSongButtons.size() > 1) {
-                this->scrollToSongButton(this->visibleSongButtons[0]);
-            } else if(this->visibleSongButtons.size() > 0) {
-                this->selectSongButton(this->visibleSongButtons[0]);
+                const auto &children = groupButton->getChildren();
+                for(const auto &c : children) {
+                    const auto &childrenChildren = c->getChildren();
+                    if(childrenChildren.size() > 0) {
+                        for(const auto &cc : childrenChildren) {
+                            if(cc->isSearchMatch()) {
+                                isAnyMatchInGroup = true;
+                                // also count total matching children while we're here
+                                // break out early if we're not searching, though
+                                if(canBreakEarly)
+                                    break;
+                                else
+                                    this->currentVisibleSearchMatches++;
+                            }
+                        }
+
+                        if(canBreakEarly && isAnyMatchInGroup) break;
+                    } else if(c->isSearchMatch()) {
+                        isAnyMatchInGroup = true;
+                        if(canBreakEarly)
+                            break;
+                        else
+                            this->currentVisibleSearchMatches++;
+                    }
+                }
+
+                if(isAnyMatchInGroup || !this->bInSearch) this->visibleSongButtons.push_back(groupButton);
             }
+        }
+    }
+
+    if(doRebuildSongButtons) this->rebuildSongButtons();
+
+    // scroll to top search result, or auto select the only result
+    if(scrollToTop) {
+        if(this->visibleSongButtons.size() > 1) {
+            this->scrollToSongButton(this->visibleSongButtons[0]);
+        } else if(this->visibleSongButtons.size() > 0) {
+            this->selectSongButton(this->visibleSongButtons[0]);
         }
     }
 }

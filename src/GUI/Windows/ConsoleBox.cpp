@@ -645,10 +645,12 @@ void ConsoleBox::log(const UString &text, Color textColor) {
 
     // add log entry(ies, split on any newlines inside the string)
     if(text.find(u'\n') != -1) {
-        auto stringVec = text.split("\n");
+        auto stringVec = text.split(u"\n");
         this->log_entries.reserve(this->log_entries.size() + stringVec.size());
-        for(const auto &entry : stringVec) {
+        for(auto &entry : stringVec) {
             if(entry.isEmpty() || entry.isWhitespaceOnly()) continue;
+            if(entry.endsWith(u'\r')) entry.pop_back();
+            if(entry.isEmpty()) continue;
             this->log_entries.push_back({entry, textColor});
         }
     } else {

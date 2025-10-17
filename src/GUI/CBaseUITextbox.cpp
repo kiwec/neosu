@@ -449,9 +449,7 @@ void CBaseUITextbox::onChar(KeyboardEvent &e) {
 
     // add the pressed letter to the text
     {
-        const KEYCODE charCode = e.getCharCode();
-
-        this->sText.insert(this->iCaretPosition, (char16_t)charCode);
+        this->sText.insert(this->iCaretPosition, e.getCharCode());
         this->iCaretPosition++;
 
         this->setText(this->sText);

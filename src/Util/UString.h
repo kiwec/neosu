@@ -1,6 +1,7 @@
 // Copyright (c) 2009, 2D Boy & PG & 2025, WH, All rights reserved.
 #pragma once
 #include <algorithm>
+#include <cassert>
 #include <cstring>
 #include <ranges>
 #include <span>
@@ -172,8 +173,16 @@ class UString {
 
     void erase(int offset, int count);
 
-    void pop_back() noexcept {
-        if(!this->isEmpty()) this->erase(length() - 1, 1);
+    inline constexpr const char16_t &front() noexcept {
+        assert(!this->isEmpty());
+        return operator[](0);
+    }
+    inline constexpr const char16_t &back() noexcept {
+        assert(!this->isEmpty());
+        return operator[](this->length() - 1);
+    }
+    inline void pop_back() noexcept {
+        if(!this->isEmpty()) this->erase(this->length() - 1, 1);
     }
 
     // actions (non-modifying)
@@ -273,11 +282,6 @@ class UString {
 
     // operators
     [[nodiscard]] constexpr const char16_t &operator[](int index) const {
-        int len = length();
-        return this->sUnicode[std::clamp(index, 0, len - 1)];
-    }
-
-    [[nodiscard]] constexpr char16_t &operator[](int index) {
         int len = length();
         return this->sUnicode[std::clamp(index, 0, len - 1)];
     }

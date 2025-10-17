@@ -686,24 +686,24 @@ void ModSelector::onKeyDown(KeyboardEvent &key) {
 
     if(key == KEY_1) this->resetModsUserInitiated();
 
-    if(((key == KEY_F1 || key == (KEYCODE)cv::TOGGLE_MODSELECT.getInt()) && !this->bWaitForF1KeyUp) || key == KEY_2 ||
-       key == (KEYCODE)cv::GAME_PAUSE.getInt() || key == KEY_ESCAPE || key == KEY_ENTER || key == KEY_NUMPAD_ENTER)
+    if(((key == KEY_F1 || key == cv::TOGGLE_MODSELECT.getVal<KEYCODE>()) && !this->bWaitForF1KeyUp) || key == KEY_2 ||
+       key == cv::GAME_PAUSE.getVal<KEYCODE>() || key == KEY_ESCAPE || key == KEY_ENTER || key == KEY_NUMPAD_ENTER)
         this->close();
 
     // mod hotkeys
-    if(key == (KEYCODE)cv::MOD_EASY.getInt()) this->modButtonEasy->click();
-    if(key == (KEYCODE)cv::MOD_NOFAIL.getInt()) this->modButtonNofail->click();
-    if(key == (KEYCODE)cv::MOD_HARDROCK.getInt()) this->modButtonHardrock->click();
-    if(key == (KEYCODE)cv::MOD_SUDDENDEATH.getInt()) this->modButtonSuddendeath->click();
-    if(key == (KEYCODE)cv::MOD_HIDDEN.getInt()) this->modButtonHidden->click();
-    if(key == (KEYCODE)cv::MOD_FLASHLIGHT.getInt()) this->modButtonFlashlight->click();
-    if(key == (KEYCODE)cv::MOD_RELAX.getInt()) this->modButtonRelax->click();
-    if(key == (KEYCODE)cv::MOD_AUTOPILOT.getInt()) this->modButtonAutopilot->click();
-    if(key == (KEYCODE)cv::MOD_SPUNOUT.getInt()) this->modButtonSpunout->click();
-    if(key == (KEYCODE)cv::MOD_AUTO.getInt()) this->modButtonAuto->click();
-    if(key == (KEYCODE)cv::MOD_SCOREV2.getInt()) this->modButtonScoreV2->click();
-    if(key == (KEYCODE)cv::MOD_HALFTIME.getInt()) this->modButtonHalftime->click();
-    if(key == (KEYCODE)cv::MOD_DOUBLETIME.getInt()) this->modButtonDoubletime->click();
+    if(key == cv::MOD_EASY.getVal<KEYCODE>()) this->modButtonEasy->click();
+    if(key == cv::MOD_NOFAIL.getVal<KEYCODE>()) this->modButtonNofail->click();
+    if(key == cv::MOD_HARDROCK.getVal<KEYCODE>()) this->modButtonHardrock->click();
+    if(key == cv::MOD_SUDDENDEATH.getVal<KEYCODE>()) this->modButtonSuddendeath->click();
+    if(key == cv::MOD_HIDDEN.getVal<KEYCODE>()) this->modButtonHidden->click();
+    if(key == cv::MOD_FLASHLIGHT.getVal<KEYCODE>()) this->modButtonFlashlight->click();
+    if(key == cv::MOD_RELAX.getVal<KEYCODE>()) this->modButtonRelax->click();
+    if(key == cv::MOD_AUTOPILOT.getVal<KEYCODE>()) this->modButtonAutopilot->click();
+    if(key == cv::MOD_SPUNOUT.getVal<KEYCODE>()) this->modButtonSpunout->click();
+    if(key == cv::MOD_AUTO.getVal<KEYCODE>()) this->modButtonAuto->click();
+    if(key == cv::MOD_SCOREV2.getVal<KEYCODE>()) this->modButtonScoreV2->click();
+    if(key == cv::MOD_HALFTIME.getVal<KEYCODE>()) this->modButtonHalftime->click();
+    if(key == cv::MOD_DOUBLETIME.getVal<KEYCODE>()) this->modButtonDoubletime->click();
 
     key.consume();
 }
@@ -711,7 +711,7 @@ void ModSelector::onKeyDown(KeyboardEvent &key) {
 void ModSelector::onKeyUp(KeyboardEvent &key) {
     if(!this->bVisible) return;
 
-    if(key == KEY_F1 || key == (KEYCODE)cv::TOGGLE_MODSELECT.getInt()) this->bWaitForF1KeyUp = false;
+    if(key == KEY_F1 || key == cv::TOGGLE_MODSELECT.getVal<KEYCODE>()) this->bWaitForF1KeyUp = false;
 }
 
 CBaseUIContainer *ModSelector::setVisible(bool visible) {

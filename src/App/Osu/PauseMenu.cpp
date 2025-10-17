@@ -182,14 +182,14 @@ void PauseMenu::onKeyDown(KeyboardEvent &e) {
     OsuScreen::onKeyDown(e);  // only used for options menu
     if(!this->bVisible || e.isConsumed()) return;
 
-    if(e == (KEYCODE)cv::LEFT_CLICK.getInt() || e == (KEYCODE)cv::RIGHT_CLICK.getInt() ||
-       e == (KEYCODE)cv::LEFT_CLICK_2.getInt() || e == (KEYCODE)cv::RIGHT_CLICK_2.getInt()) {
+    if(e == cv::LEFT_CLICK.getVal<KEYCODE>() || e == cv::RIGHT_CLICK.getVal<KEYCODE>() ||
+       e == cv::LEFT_CLICK_2.getVal<KEYCODE>() || e == cv::RIGHT_CLICK_2.getVal<KEYCODE>()) {
         bool fireButtonClick = false;
-        if((e == (KEYCODE)cv::LEFT_CLICK.getInt() || e == (KEYCODE)cv::LEFT_CLICK_2.getInt()) && !this->bClick1Down) {
+        if((e == cv::LEFT_CLICK.getVal<KEYCODE>() || e == cv::LEFT_CLICK_2.getVal<KEYCODE>()) && !this->bClick1Down) {
             this->bClick1Down = true;
             fireButtonClick = true;
         }
-        if((e == (KEYCODE)cv::RIGHT_CLICK.getInt() || e == (KEYCODE)cv::RIGHT_CLICK_2.getInt()) && !this->bClick2Down) {
+        if((e == cv::RIGHT_CLICK.getVal<KEYCODE>() || e == cv::RIGHT_CLICK_2.getVal<KEYCODE>()) && !this->bClick2Down) {
             this->bClick2Down = true;
             fireButtonClick = true;
         }
@@ -262,15 +262,15 @@ void PauseMenu::onKeyDown(KeyboardEvent &e) {
 
     // consume ALL events, except for a few special binds which are allowed through (e.g. for unpause or changing the
     // local offset in Osu.cpp)
-    if(e != KEY_ESCAPE && e != (KEYCODE)cv::GAME_PAUSE.getInt() && e != (KEYCODE)cv::INCREASE_LOCAL_OFFSET.getInt() &&
-       e != (KEYCODE)cv::DECREASE_LOCAL_OFFSET.getInt())
+    if(e != KEY_ESCAPE && e != cv::GAME_PAUSE.getVal<KEYCODE>() && e != cv::INCREASE_LOCAL_OFFSET.getVal<KEYCODE>() &&
+       e != cv::DECREASE_LOCAL_OFFSET.getVal<KEYCODE>())
         e.consume();
 }
 
 void PauseMenu::onKeyUp(KeyboardEvent &e) {
-    if(e == (KEYCODE)cv::LEFT_CLICK.getInt() || e == (KEYCODE)cv::LEFT_CLICK_2.getInt()) this->bClick1Down = false;
+    if(e == cv::LEFT_CLICK.getVal<KEYCODE>() || e == cv::LEFT_CLICK_2.getVal<KEYCODE>()) this->bClick1Down = false;
 
-    if(e == (KEYCODE)cv::RIGHT_CLICK.getInt() || e == (KEYCODE)cv::RIGHT_CLICK_2.getInt()) this->bClick2Down = false;
+    if(e == cv::RIGHT_CLICK.getVal<KEYCODE>() || e == cv::RIGHT_CLICK_2.getVal<KEYCODE>()) this->bClick2Down = false;
 }
 
 void PauseMenu::onChar(KeyboardEvent &e) {

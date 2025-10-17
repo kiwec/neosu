@@ -3,11 +3,8 @@
 #ifndef MOUSE_H
 #define MOUSE_H
 
-#include "Cursors.h"
 #include "InputDevice.h"
 #include "MouseListener.h"
-
-#include <array>
 
 class Mouse final : public InputDevice {
     NOCOPY_NOMOVE(Mouse)
@@ -48,21 +45,13 @@ class Mouse final : public InputDevice {
     [[nodiscard]] inline const float &getSensitivity() const { return this->fSensitivity; }
 
     // button state accessors
-    [[nodiscard]] constexpr bool isLeftDown() const {
-        return this->bMouseButtonDownArray[static_cast<size_t>(ButtonIndex::BUTTON_LEFT)];
-    }
+    [[nodiscard]] constexpr bool isLeftDown() const { return this->bMouseButtonDownArray[ButtonIndex::BUTTON_LEFT]; }
     [[nodiscard]] constexpr bool isMiddleDown() const {
-        return this->bMouseButtonDownArray[static_cast<size_t>(ButtonIndex::BUTTON_MIDDLE)];
+        return this->bMouseButtonDownArray[ButtonIndex::BUTTON_MIDDLE];
     }
-    [[nodiscard]] constexpr bool isRightDown() const {
-        return this->bMouseButtonDownArray[static_cast<size_t>(ButtonIndex::BUTTON_RIGHT)];
-    }
-    [[nodiscard]] constexpr bool isButton4Down() const {
-        return this->bMouseButtonDownArray[static_cast<size_t>(ButtonIndex::BUTTON_X1)];
-    }
-    [[nodiscard]] constexpr bool isButton5Down() const {
-        return this->bMouseButtonDownArray[static_cast<size_t>(ButtonIndex::BUTTON_X2)];
-    }
+    [[nodiscard]] constexpr bool isRightDown() const { return this->bMouseButtonDownArray[ButtonIndex::BUTTON_RIGHT]; }
+    [[nodiscard]] constexpr bool isButton4Down() const { return this->bMouseButtonDownArray[ButtonIndex::BUTTON_X1]; }
+    [[nodiscard]] constexpr bool isButton5Down() const { return this->bMouseButtonDownArray[ButtonIndex::BUTTON_X2]; }
 
     [[nodiscard]] inline const int &getWheelDeltaVertical() const { return this->iWheelDeltaVertical; }
     [[nodiscard]] inline const int &getWheelDeltaHorizontal() const { return this->iWheelDeltaHorizontal; }
@@ -81,16 +70,16 @@ class Mouse final : public InputDevice {
     // position state
     vec2 vPos{0.f};                // position with offset applied
     vec2 vPosWithoutOffsets{0.f};  // position without offset
-    vec2 vDelta{0.f};            // movement delta in the current frame
-    vec2 vRawDelta{0.f};  // movement delta in the current frame, without consideration for clipping or sensitivity
-    vec2 vActualPos{0.f};   // final cursor position after all transformations
+    vec2 vDelta{0.f};              // movement delta in the current frame
+    vec2 vRawDelta{0.f};   // movement delta in the current frame, without consideration for clipping or sensitivity
+    vec2 vActualPos{0.f};  // final cursor position after all transformations
 
     // mode tracking
     bool bIsRawInputDesired{false};  // whether the user wants raw (relative) input
     float fSensitivity{1.0f};
 
     // button state (using our internal button index)
-    std::array<bool, static_cast<size_t>(ButtonIndex::BUTTON_COUNT)> bMouseButtonDownArray{};
+    std::array<bool, ButtonIndex::BUTTON_COUNT> bMouseButtonDownArray{};
 
     // wheel state
     int iWheelDeltaVertical{0};

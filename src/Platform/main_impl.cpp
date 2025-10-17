@@ -307,8 +307,7 @@ SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
 
         // mouse events
         case SDL_EVENT_MOUSE_BUTTON_DOWN:
-            mouse->onButtonChange(static_cast<ButtonIndex>(event->button.button),
-                                  true);  // C++ needs me to cast an unsigned char to an unsigned char
+            mouse->onButtonChange(static_cast<ButtonIndex>(event->button.button), true);
             break;
 
         case SDL_EVENT_MOUSE_BUTTON_UP:
@@ -328,7 +327,7 @@ SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
             break;
 
         default:
-            if(m_bEnvDebug) debugLog("DEBUG: unhandled SDL event {}", static_cast<int>(event->type));
+            if(m_bEnvDebug) debugLog("DEBUG: unhandled SDL event {}", event->type);
             break;
     }
 

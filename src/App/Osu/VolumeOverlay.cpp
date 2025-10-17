@@ -196,10 +196,10 @@ void VolumeOverlay::onResolutionChange(vec2 /*newResolution*/) { this->updateLay
 void VolumeOverlay::onKeyDown(KeyboardEvent &key) {
     if(!this->canChangeVolume()) return;
 
-    if(key == (KEYCODE)cv::INCREASE_VOLUME.getInt()) {
+    if(key == cv::INCREASE_VOLUME.getVal<KEYCODE>()) {
         this->volumeUp();
         key.consume();
-    } else if(key == (KEYCODE)cv::DECREASE_VOLUME.getInt()) {
+    } else if(key == cv::DECREASE_VOLUME.getVal<KEYCODE>()) {
         this->volumeDown();
         key.consume();
     } else if(this->isVisible()) {
