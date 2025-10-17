@@ -1791,8 +1791,6 @@ void SongBrowser::updateSongButtonLayout() {
         }
     }
     this->carousel->setScrollSizeToContent(this->carousel->getSize().y / 2);
-    // // HACKHACK: this is the jank that results from "// temporarily fool CBaseUIElement with modified position and size"
-    // this->carousel->updateClipping();
 }
 
 bool SongBrowser::searchMatcher(const DatabaseBeatmap *databaseBeatmap,

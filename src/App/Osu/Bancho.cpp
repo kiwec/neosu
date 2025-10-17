@@ -203,6 +203,7 @@ void BanchoState::handle_packet(Packet &packet) {
                         "submitting"sv,   "pausing"sv,       "testing"sv,
                         "multiplaying"sv, "browsing maps"sv,
                     };
+                    static_assert(NB_ACTIONS == actions.size(), "missing action name");
                     auto text = fmt::format("{} is now {}", user->name, actions[action]);
                     auto open_dms = [uid = stats_user_id]() -> void {
                         UserInfo *user = BANCHO::User::get_user_info(uid);
@@ -725,10 +726,7 @@ void BanchoState::handle_packet(Packet &packet) {
             u16 nb_variables = packet.read<u16>();
             for(u16 i = 0; i < nb_variables; i++) {
                 auto name = packet.read_stdstring();
-                auto cvar = cvars->getConVarByName(name, false);
-                if(cvar) {
-                    cvar->hasServerValue.store(false, std::memory_order_release);
-                } else {
+                if(!cvars->removeServerValue(name)) {
                     debugLog("Server wanted to reset cvar '{}', but it doesn't exist!", name);
                 }
             }

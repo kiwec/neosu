@@ -1035,7 +1035,7 @@ DatabaseBeatmap::LOAD_DIFFOBJ_RESULT DatabaseBeatmap::loadDifficultyHitObjects(P
 bool DatabaseBeatmap::getMapFileAsync(MapFileReadDoneCallback data_callback) {
     // don't want to include AsyncIOHandler.h in DatabaseBeatmap.h
     static_assert(std::is_same_v<MapFileReadDoneCallback, AsyncIOHandler::ReadCallback>);
-    if(!Environment::fileExists(this->sFilePath)) return false;
+    if(!Environment::fileExists(std::string_view{this->sFilePath})) return false;
     return io->read(this->sFilePath, std::move(data_callback));
 }
 
@@ -1404,25 +1404,23 @@ DatabaseBeatmap::LOAD_GAMEPLAY_RESULT DatabaseBeatmap::loadGameplay(DatabaseBeat
     return result;
 }
 
-MapOverrides DatabaseBeatmap::get_overrides() {
-    MapOverrides overrides;
-    overrides.local_offset = this->iLocalOffset;
-    overrides.online_offset = this->iOnlineOffset;
-    overrides.nb_circles = this->iNumCircles;
-    overrides.nb_sliders = this->iNumSliders;
-    overrides.nb_spinners = this->iNumSpinners;
-    overrides.star_rating = this->fStarsNomod;
-    overrides.loudness = this->loudness.load();
-    overrides.min_bpm = this->iMinBPM;
-    overrides.max_bpm = this->iMaxBPM;
-    overrides.avg_bpm = this->iMostCommonBPM;
-    overrides.draw_background = this->draw_background;
-    overrides.background_image_filename = this->sBackgroundImageFileName;
-    return overrides;
+MapOverrides DatabaseBeatmap::get_overrides() const {
+    return {.background_image_filename = this->sBackgroundImageFileName,
+            .star_rating = this->fStarsNomod,
+            .loudness = this->loudness.load(std::memory_order_relaxed),
+            .min_bpm = this->iMinBPM,
+            .max_bpm = this->iMaxBPM,
+            .avg_bpm = this->iMostCommonBPM,
+            .local_offset = this->iLocalOffset,
+            .online_offset = this->iOnlineOffset,
+            .nb_circles = static_cast<u16>(this->iNumCircles),
+            .nb_sliders = static_cast<u16>(this->iNumSliders),
+            .nb_spinners = static_cast<u16>(this->iNumSpinners),
+            .draw_background = this->draw_background};
 }
 
 void DatabaseBeatmap::update_overrides() {
-    if(this->type != BeatmapType::PEPPY_DIFFICULTY) return;
+    if(this->do_not_store || this->type != BeatmapType::PEPPY_DIFFICULTY) return;
 
     // XXX: not actually thread safe, if m_sMD5Hash gets updated by loadGameplay()
     //      or other values in get_overrides()

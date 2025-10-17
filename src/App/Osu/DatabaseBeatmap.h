@@ -167,7 +167,7 @@ class DatabaseBeatmap final {
     static LOAD_GAMEPLAY_RESULT loadGameplay(DatabaseBeatmap *databaseBeatmap, AbstractBeatmapInterface *beatmap);
     inline LOAD_GAMEPLAY_RESULT loadGameplay(AbstractBeatmapInterface *beatmap) { return loadGameplay(this, beatmap); }
 
-    MapOverrides get_overrides();
+    [[nodiscard]] MapOverrides get_overrides() const;
     void update_overrides();
 
     void setLocalOffset(i16 localOffset) {

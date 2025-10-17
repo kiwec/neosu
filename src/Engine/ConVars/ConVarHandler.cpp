@@ -17,7 +17,6 @@
 #include <algorithm>
 #include <mutex>
 #include <unordered_set>
-#include <atomic>
 
 // singleton init
 std::unique_ptr<ConVarHandler> cvars{std::make_unique<ConVarHandler>()};
@@ -185,6 +184,13 @@ void ConVarHandler::resetSkinCvars() {
     for(const auto &cv : ConVarHandler::getConVarArray()) {
         cv->hasSkinValue.store(false, std::memory_order_release);
     }
+}
+
+bool ConVarHandler::removeServerValue(std::string_view cvarName) {
+    ConVar *cvarToChange = ConVarHandler::getConVar_int(cvarName);
+    if(!cvarToChange) return false;
+    cvarToChange->hasServerValue.store(false, std::memory_order_release);
+    return true;
 }
 
 //*****************************//

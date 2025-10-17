@@ -44,6 +44,8 @@ class ConVarHandler {
     void resetServerCvars();
     void resetSkinCvars();
 
+    bool removeServerValue(std::string_view cvarName);
+
    private:
     friend class ConVar;
 

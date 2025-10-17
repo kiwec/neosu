@@ -461,17 +461,14 @@ class ConVar {
         }
     }
 
-   public:
-    std::atomic<bool> hasServerValue{false};
-
    private:
     // shared across all convars
     static CVVoidCB onSetValueProtectedCallback;
 
     std::string sName;
     std::string sHelpString;
-    double dDefaultValue{0.0};
     std::string sDefaultValue{};
+    double dDefaultValue{0.0};
 
     std::atomic<double> dClientValue{0.0};
     std::string sClientValue{};
@@ -482,16 +479,20 @@ class ConVar {
 
     std::atomic<double> dServerValue{0.0};
     std::string sServerValue{};
-    std::atomic<ProtectionPolicy> serverProtectionPolicy{ProtectionPolicy::DEFAULT};
 
     // callback storage (allow having 1 "change" callback and 1 single value (or void) callback)
     ExecCallback callback{std::monostate()};
     ChangeCB changeCallback{std::monostate()};
 
+    std::atomic<ProtectionPolicy> serverProtectionPolicy{ProtectionPolicy::DEFAULT};
+
     CONVAR_TYPE type{CONVAR_TYPE::FLOAT};
     uint8_t iFlags{0};
 
     bool bHasValue{false};
+
+   public:
+    std::atomic<bool> hasServerValue{false};
 };
 
 #endif
