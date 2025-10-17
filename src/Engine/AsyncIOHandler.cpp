@@ -40,9 +40,9 @@ class AsyncIOHandler::InternalIOContext final {
                 }
             }
 
-            if(cv::debug_file.getBool())
-                debugLog("destroying async I/O queue, sdlIOResult: {} activeFiles.size(): {} activeCallbacks: {}",
-                         sdlIOResult, m_activeFiles.size(), m_activeCallbacks.load());
+            logIfCV(debug_file,
+                    "destroying async I/O queue, sdlIOResult: {} activeFiles.size(): {} activeCallbacks: {}",
+                    sdlIOResult, m_activeFiles.size(), m_activeCallbacks.load());
 
             SDL_DestroyAsyncIOQueue(m_queue);
         }
@@ -109,7 +109,7 @@ class AsyncIOHandler::InternalIOContext final {
         std::string pathStr(path);
         if(m_activeFiles.contains(pathStr)) {
             // TODO: multiple actions on the same file at the same time
-            if(cv::debug_file.getBool()) debugLog("WARNING: cannot read from {}, file is in use", path);
+            logIfCV(debug_file, "WARNING: cannot read from {}, file is in use", path);
             if(callback) {
                 PERFORM_CALLBACK(callback({}));
             }
@@ -176,7 +176,7 @@ class AsyncIOHandler::InternalIOContext final {
         std::string pathStr(path);
         if(m_activeFiles.contains(pathStr)) {
             // TODO: multiple actions on the same file at the same time
-            if(cv::debug_file.getBool()) debugLog("WARNING: cannot write to {}, file is in use", path);
+            logIfCV(debug_file, "WARNING: cannot write to {}, file is in use", path);
             if(callback) {
                 PERFORM_CALLBACK(callback(false));
             }
@@ -226,18 +226,16 @@ class AsyncIOHandler::InternalIOContext final {
         if(outcome.result == SDL_ASYNCIO_COMPLETE) {
             assert(outcome.bytes_requested == outcome.bytes_transferred &&
                    "AsyncIOHandler::handleReadComplete(SDL_ASYNCIO_COMPLETE): bytes_requested != bytes_transferred");
-            if(cv::debug_file.getBool()) {
-                debugLog(
+            logIfCV(debug_file,
                     "DEBUG: completed transfer, bytes_requested: {}, bytes_transferred: {}, operationBuffer.size(): "
                     "{}, operationBuffer pointer: {:p}, outcome buffer pointer: {:p}, file: {}",
                     outcome.bytes_requested, outcome.bytes_transferred, context->operationBuffer.size(),
                     static_cast<void*>(context->operationBuffer.data()), static_cast<void*>(outcome.buffer),
                     context->path);
-            }
+
         } else if(outcome.result == SDL_ASYNCIO_CANCELED) {
-            if(cv::debug_file.getBool())
-                debugLog("WARNING: only read {}/{} bytes from {}!", outcome.bytes_transferred, outcome.bytes_requested,
-                         context->path);
+            logIfCV(debug_file, "WARNING: only read {}/{} bytes from {}!", outcome.bytes_transferred,
+                    outcome.bytes_requested, context->path);
             status = OperationContext::OP_PARTIAL;
         } else if(outcome.result == SDL_ASYNCIO_FAILURE) {
             debugLog("ERROR: read failed for {}: {}", context->path, SDL_GetError());
@@ -274,9 +272,8 @@ class AsyncIOHandler::InternalIOContext final {
         OperationContext::OpStatus status = OperationContext::OP_COMPLETE;
 
         if(outcome.result == SDL_ASYNCIO_CANCELED) {
-            if(cv::debug_file.getBool())
-                debugLog("WARNING: partially wrote {}/{} bytes for {}!", outcome.bytes_requested,
-                         outcome.bytes_transferred, context->path);
+            logIfCV(debug_file, "WARNING: partially wrote {}/{} bytes for {}!", outcome.bytes_requested,
+                    outcome.bytes_transferred, context->path);
             status = OperationContext::OP_FAIL;
         } else if(outcome.result == SDL_ASYNCIO_FAILURE) {
             debugLog("ERROR: write failed for {}: {}", context->path, SDL_GetError());
@@ -311,7 +308,7 @@ class AsyncIOHandler::InternalIOContext final {
         m_activeFiles.erase(context->path);
 
         if(outcome.result != SDL_ASYNCIO_COMPLETE) {
-            if(cv::debug_file.getBool()) debugLog("WARNING: close failed for {}: {}", context->path, SDL_GetError());
+            logIfCV(debug_file, "WARNING: close failed for {}: {}", context->path, SDL_GetError());
         }
 
         if(context->writeCallback) {

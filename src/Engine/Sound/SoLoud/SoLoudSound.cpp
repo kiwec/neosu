@@ -57,8 +57,7 @@ void SoLoudSound::initAsync() {
             this->audioSource->setInaudibleBehavior(
                 true, false);  // keep ticking the sound if it goes to 0 volume, and don't kill it
 
-            if(cv::debug_snd.getBool())
-                debugLog(
+            logIfCV(debug_snd,
                     "SoLoudSound: Created SLFXStream for {:s} with speed={:f}, pitch={:f}, looping={:s}, "
                     "decoder={:s}",
                     this->sFilePath, this->fSpeed, this->fPitch, this->bIsLooped ? "true" : "false",
@@ -154,7 +153,7 @@ void SoLoudSound::setPositionMS(u32 ms) {
 
     double positionInSeconds = msD / 1000.0;
 
-    if(cv::debug_snd.getBool()) debugLog("seeking to {:g}ms (length: {:g}ms)", msD, streamLengthMS);
+    logIfCV(debug_snd, "seeking to {:g}ms (length: {:g}ms)", msD, streamLengthMS);
 
     // seek
     soloud->seek(this->handle, positionInSeconds);
@@ -195,9 +194,8 @@ void SoLoudSound::setSpeed(float speed) {
             filteredStream->setSpeedFactor(this->fSpeed);
         }
 
-        if(cv::debug_snd.getBool())
-            debugLog("SoLoudSound: Speed change {:s}: {:f}->{:f} (nightcore_enjoyer={})", this->sFilePath,
-                     previousSpeed, this->fSpeed, cv::nightcore_enjoyer.getBool());
+        logIfCV(debug_snd, "SoLoudSound: Speed change {:s}: {:f}->{:f} (nightcore_enjoyer={})", this->sFilePath,
+                previousSpeed, this->fSpeed, cv::nightcore_enjoyer.getBool());
     }
 }
 
@@ -221,9 +219,8 @@ void SoLoudSound::setPitch(float pitch) {
         auto *stream = static_cast<SoLoud::SLFXStream *>(this->audioSource);
         stream->setPitchFactor(this->fPitch);
 
-        if(cv::debug_snd.getBool())
-            debugLog("SoLoudSound: Pitch change {:s}: {:f}->{:f} (stream, updated live)", this->sFilePath,
-                     previousPitch, this->fPitch);
+        logIfCV(debug_snd, "SoLoudSound: Pitch change {:s}: {:f}->{:f} (stream, updated live)", this->sFilePath,
+                previousPitch, this->fPitch);
     }
 }
 
@@ -271,7 +268,7 @@ void SoLoudSound::setLoop(bool loop) {
 
     this->bIsLooped = loop;
 
-    if(cv::debug_snd.getBool()) debugLog("setLoop {}", loop);
+    logIfCV(debug_snd, "setLoop {}", loop);
 
     // apply to the source
     this->audioSource->setLooping(loop);
@@ -343,8 +340,13 @@ bool SoLoudSound::isPlaying() const {
 bool SoLoudSound::isFinished() const {
     if(!this->bReady) return false;
 
-    // a sound is finished if our handle is no longer valid
-    return !this->valid_handle_cached();
+    // a sound is finished if our handle is no longer valid or we're somehow playing past the end?
+    const bool finished = !this->valid_handle_cached();
+
+    // fixup invalid state: obviously we can't be looped if we're finished
+    if(finished) const_cast<SoLoudSound *>(this)->bIsLooped = false;
+
+    return finished;
 }
 
 bool SoLoudSound::isHandleValid(SOUNDHANDLE queryHandle) const {

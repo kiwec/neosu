@@ -228,8 +228,7 @@ File::FILETYPE File::existsCaseInsensitive(std::string &filePath, fs::path &path
     if(!(resolvedPath.back() == '/') && !(resolvedPath.back() == '\\')) resolvedPath.push_back('/');
     resolvedPath.append(resolvedName);
 
-    if(cv::debug_file.getBool())
-        debugLog("File: Case-insensitive match found for {:s} -> {:s}", path.string(), resolvedPath);
+    logIfCV(debug_file, "File: Case-insensitive match found for {:s} -> {:s}", path.string(), resolvedPath);
 
     // now update the input path reference with the actual found path
     filePath = resolvedPath;
@@ -288,7 +287,7 @@ File::File(std::string_view filePath, MODE mode)
         if(!openForWriting()) return;
     }
 
-    if(cv::debug_file.getBool()) debugLog("File: Opening {:s}", this->sFilePath);
+    logIfCV(debug_file, "Opening {:s}", this->sFilePath);
 
     this->bReady = true;
 }
@@ -298,9 +297,9 @@ bool File::openForReading() {
     auto fileType = File::existsCaseInsensitive(this->sFilePath, this->fsPath);
 
     if(fileType != File::FILETYPE::FILE) {
-        if(cv::debug_file.getBool())
-            debugLog("File Error: Path {:s} {:s}", this->sFilePath,
-                     fileType == File::FILETYPE::NONE ? "doesn't exist" : "is not a file");
+        // usually the caller handles logging this sort of basic error
+        logIfCV(debug_file, "File Error: Path {:s} {:s}", this->sFilePath,
+                fileType == File::FILETYPE::NONE ? "doesn't exist" : "is not a file");
         return false;
     }
 
@@ -360,7 +359,7 @@ bool File::openForWriting() {
 }
 
 void File::write(const u8 *buffer, uSz size) {
-    if(cv::debug_file.getBool()) debugLog("{:s} (canWrite: {})", this->sFilePath, canWrite());
+    logIfCV(debug_file, "{:s} (canWrite: {})", this->sFilePath, canWrite());
 
     if(!canWrite()) return;
 
@@ -411,9 +410,8 @@ uSz File::readBytes(uSz start, uSz amount, std::unique_ptr<u8[]> &out) {
     assert(out.get() == this->vFullBuffer.get() && "can't overwrite own buffer");
 
     if(start > this->iFileSize) {
-        if(cv::debug_file.getBool())
-            debugLog("tried to read {} starting from {}, but total size is only {}", this->sFilePath, start,
-                     this->iFileSize);
+        logIfCV(debug_file, "tried to read {} starting from {}, but total size is only {}", this->sFilePath, start,
+                this->iFileSize);
         return 0;
     }
 
@@ -437,7 +435,7 @@ uSz File::readBytes(uSz start, uSz amount, std::unique_ptr<u8[]> &out) {
 }
 
 const std::unique_ptr<u8[]> &File::readFile() {
-    if(cv::debug_file.getBool()) debugLog("{:s} (canRead: {})", this->sFilePath, this->bReady && canRead());
+    logIfCV(debug_file, "{:s} (canRead: {})", this->sFilePath, this->bReady && canRead());
 
     // return cached buffer if already read
     if(!!this->vFullBuffer) return this->vFullBuffer;
@@ -463,7 +461,7 @@ const std::unique_ptr<u8[]> &File::readFile() {
 }
 
 std::unique_ptr<u8[]> &&File::takeFileBuffer() {
-    if(cv::debug_file.getBool()) debugLog("{:s} (canRead: {})", this->sFilePath, this->bReady && canRead());
+    logIfCV(debug_file, "{:s} (canRead: {})", this->sFilePath, this->bReady && canRead());
 
     // if buffer is already populated, move it out
     if(!!this->vFullBuffer) return std::move(this->vFullBuffer);

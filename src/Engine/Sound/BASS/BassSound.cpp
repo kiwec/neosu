@@ -138,10 +138,8 @@ void BassSound::setPositionMS(u32 ms) {
     }
 
     if(!BASS_Mixer_ChannelSetPosition(this->stream, target_pos, BASS_POS_BYTE | BASS_POS_MIXER_RESET)) {
-        if(cv::debug_snd.getBool()) {
-            debugLog("BASS_Mixer_ChannelSetPosition( stream , {} ) error on file {}: {}", ms, this->sFilePath.c_str(),
-                     BassManager::getErrorUString());
-        }
+        logIfCV(debug_snd, "BASS_Mixer_ChannelSetPosition( stream , {} ) error on file {}: {}", ms,
+                this->sFilePath.c_str(), BassManager::getErrorUString());
     }
 
     if(this->bPaused) {

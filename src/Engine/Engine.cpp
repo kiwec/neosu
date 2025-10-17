@@ -299,9 +299,7 @@ void Engine::onUpdate() {
     if(this->bResolutionChange) {
         this->bResolutionChange = false;
 
-        if(cv::debug_engine.getBool())
-            debugLog("Engine: executing pending queued resolution change to ({:d}, {:d})", (int)this->vNewScreenSize.x,
-                     (int)this->vNewScreenSize.y);
+        logIfCV(debug_engine, "executing pending queued resolution change to ({})", this->vNewScreenSize);
 
         this->onResolutionChange(this->vNewScreenSize);
     }
@@ -368,7 +366,7 @@ void Engine::onUpdate() {
 void Engine::onFocusGained() {
     this->bHasFocus = true;
 
-    if(cv::debug_engine.getBool()) debugLog("Engine: got focus");
+    logIfCV(debug_engine, "got focus");
 
     if(app) app->onFocusGained();
 }
@@ -376,7 +374,7 @@ void Engine::onFocusGained() {
 void Engine::onFocusLost() {
     this->bHasFocus = false;
 
-    if(cv::debug_engine.getBool()) debugLog("Engine: lost focus");
+    logIfCV(debug_engine, "lost focus");
 
     for(auto &keyboard : this->keyboards) {
         keyboard->reset();
@@ -398,7 +396,7 @@ void Engine::onMinimized() {
     this->bIsMinimized = true;
     this->bHasFocus = false;
 
-    if(cv::debug_engine.getBool()) debugLog("Engine: window minimized");
+    logIfCV(debug_engine, "window minimized");
 
     if(app) app->onMinimized();
 }
@@ -406,13 +404,13 @@ void Engine::onMinimized() {
 void Engine::onMaximized() {
     this->bIsMinimized = false;
 
-    if(cv::debug_engine.getBool()) debugLog("Engine: window maximized");
+    logIfCV(debug_engine, "window maximized");
 }
 
 void Engine::onRestored() {
     this->bIsMinimized = false;
 
-    if(cv::debug_engine.getBool()) debugLog("Engine: window restored");
+    logIfCV(debug_engine, "window restored");
 
     if(app) app->onRestored();
 }

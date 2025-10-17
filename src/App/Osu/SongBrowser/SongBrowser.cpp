@@ -1596,9 +1596,7 @@ void SongBrowser::addSongButtonToAlphanumericGroup(SongButton *btn, std::vector<
         children = &group[27]->getChildren();
     }
 
-    if(cv::debug_osu.getBool()) {
-        debugLog("Inserting {:s}", name);
-    }
+    logIfCV(debug_osu, "Inserting {:s}", name);
 
     children->push_back(btn);
 }

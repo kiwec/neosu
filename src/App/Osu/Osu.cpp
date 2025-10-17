@@ -1583,15 +1583,18 @@ void Osu::updateMouseSettings() {
 }
 
 void Osu::updateWindowsKeyDisable() {
-    if(cv::debug_osu.getBool()) debugLog("Osu::updateWindowsKeyDisable()");
     const bool isPlayerPlaying = engine->hasFocus() && this->isInPlayMode() &&
-                                 (!this->map_iface->isPaused() || this->map_iface->isRestartScheduled()) &&
+                                 (!(this->map_iface->isPaused() || this->map_iface->isContinueScheduled()) ||
+                                  this->map_iface->isRestartScheduled()) &&
                                  !cv::mod_autoplay.getBool();
+    bool grab = false;
     if(cv::win_disable_windows_key_while_playing.getBool()) {
-        env->grabKeyboard(isPlayerPlaying);
-    } else {
-        env->grabKeyboard(false);
+        grab = isPlayerPlaying;
     }
+    logIfCV(debug_osu, "{} keyboard, {} to text input", grab ? "grabbed" : "ungrabbed",
+            isPlayerPlaying ? "not listening" : "listening");
+
+    env->grabKeyboard(grab);
 
     // this is kind of a weird place to put this, but we don't care about text input when in gameplay
     // on some platforms, text input being enabled might result in an on-screen keyboard showing up
@@ -1824,9 +1827,7 @@ void Osu::updateCursorVisibility() {
 
     // only change if it's different from the current mouse state
     if(desired_vis != currently_visible) {
-        if(cv::debug_mouse.getBool()) {
-            debugLog("current: {} desired: {}", currently_visible, desired_vis);
-        }
+        logIfCV(debug_mouse, "current: {} desired: {}", currently_visible, desired_vis);
         env->setCursorVisible(desired_vis);
     }
 }
@@ -1860,9 +1861,7 @@ void Osu::updateConfineCursor() {
         }
     }
 
-    if(cv::debug_mouse.getBool())
-        debugLog("confined: {}, cliprect: {},{},{},{}", confine_cursor, clip.getMinX(), clip.getMinY(), clip.getMaxX(),
-                 clip.getMaxY());
+    logIfCV(debug_mouse, "confined: {}, cliprect: {}", confine_cursor, clip);
 
     env->setCursorClip(confine_cursor, clip);
 }

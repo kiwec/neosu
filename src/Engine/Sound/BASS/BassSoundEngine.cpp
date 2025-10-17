@@ -452,9 +452,7 @@ bool BassSoundEngine::play(Sound *snd, f32 pan, f32 pitch, f32 playVolume, bool 
     }
 
     if(!bassSound->isStream() && !bassSound->isOverlayable() && !bassSound->getActiveHandles().empty()) {
-        if(cv::debug_snd.getBool()) {
-            debugLog("Attempted to play non-overlayable {} while it's still playing!", snd->getName());
-        }
+        logIfCV(debug_snd, "Attempted to play non-overlayable {} while it's still playing!", snd->getName());
         return false;
     }
 
@@ -465,9 +463,7 @@ bool BassSoundEngine::play(Sound *snd, f32 pan, f32 pitch, f32 playVolume, bool 
     }
 
     if(!startPaused && bassSound->getLastPlayTime() == engine->getTime()) {
-        if(cv::debug_snd.getBool()) {
-            debugLog("Played {} twice in the same update loop!", snd->getName());
-        }
+        logIfCV(debug_snd, "Played {} twice in the same update loop!", snd->getName());
         if(cv::snd_restrict_play_frame.getBool()) {
             return false;
         }
@@ -502,9 +498,7 @@ bool BassSoundEngine::play(Sound *snd, f32 pan, f32 pitch, f32 playVolume, bool 
     }
 
     if(BASS_Mixer_ChannelGetMixer(handle) != 0) {
-        if(cv::debug_snd.getBool()) {
-            debugLog("Attempted to play {}, but channel is already playing!", snd->getName());
-        }
+        logIfCV(debug_snd, "Attempted to play {}, but channel is already playing!", snd->getName());
         return false;
     }
 
@@ -557,16 +551,14 @@ bool BassSoundEngine::actuallyPlay(BassSound *bassSound, u32 positionMS) {
     if(bassSound->isStream()) {
         // set position, and unpause the channel if paused
         bassSound->setPositionMS(positionMS);
-        if (wasPaused) {
+        if(wasPaused) {
             BASS_Mixer_ChannelFlags(bassSound->stream, 0, BASS_MIXER_CHAN_PAUSE);
         }
     }
 
     bassSound->setLastPlayTime(engine->getTime());
 
-    if(cv::debug_snd.getBool()) {
-        debugLog("Playing {:s}", bassSound->getFilePath().c_str());
-    }
+    logIfCV(debug_snd, "Playing {:s}", bassSound->getFilePath().c_str());
 
     return true;
 }

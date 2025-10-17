@@ -127,8 +127,7 @@ HPLUGIN loadPlugin(const std::string &pluginname) {
         Env::cfg(OS::WINDOWS) ? BASS_UNICODE : 0);  // ??? this wchar_t->char* cast is required for some reason?
 
     if(ret) {
-        if(cv::debug_snd.getBool())
-            debugLog("loaded {:s} version {:#x}", pluginname.c_str(), BASS_PluginGetInfo(ret)->version);
+        logIfCV(debug_snd, "loaded {:s} version {:#x}", pluginname.c_str(), BASS_PluginGetInfo(ret)->version);
         BASS_PluginEnable(ret, true);
     } else {
         failedLoad = std::string(pluginname);

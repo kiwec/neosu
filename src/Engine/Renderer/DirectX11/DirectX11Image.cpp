@@ -197,7 +197,7 @@ void DirectX11Image::initAsync() {
     }
 
     if(!this->bCreatedImage) {
-        if(cv::debug_rm.getBool()) debugLog("Resource Manager: Loading {:s}", this->sFilePath);
+        logIfCV(debug_rm, "Resource Manager: Loading {:s}", this->sFilePath);
 
         this->bAsyncReady = loadRawImage();
 

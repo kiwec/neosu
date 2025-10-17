@@ -1198,7 +1198,7 @@ bool DatabaseBeatmap::loadMetadata(bool compute_md5) {
 
     // general sanity checks
     if((this->timingpoints.size() < 1)) {
-        if(cv::debug_osu.getBool()) debugLog("DatabaseBeatmap::loadMetadata() : no timingpoints in beatmap!");
+        logIfCV(debug_osu, "no timingpoints in beatmap!");
         return false;  // nothing more to do here
     }
 
@@ -1214,7 +1214,7 @@ bool DatabaseBeatmap::loadMetadata(bool compute_md5) {
         }
 
         if(this->iMostCommonBPM == 0) {
-            if(cv::debug_osu.getBool()) debugLog("DatabaseBeatmap::loadMetadata() : calculating BPM range ...");
+            logIfCV(debug_osu, "calculating BPM range ...");
             BPMInfo bpm{};
             if(this->timingpoints.size() > 0) {
                 zarray<BPMTuple> bpm_calculation_buffer(this->timingpoints.size());

@@ -90,7 +90,7 @@ void OpenGLSync::manageFrameSyncQueue(bool forceWait) {
 
     // if oldest frame is done, we can remove it (and any other completed frames)
     if(signaled == GL_SIGNALED) {
-        if(debug) debugLog("Frame {:d} already completed (no wait needed)", oldestSync.frameNumber);
+        logIf(debug, "Frame {:d} already completed (no wait needed)", oldestSync.frameNumber);
 
         this->deleteSyncObject(oldestSync.syncObject);
         this->frameSyncQueue.pop_front();
@@ -104,7 +104,7 @@ void OpenGLSync::manageFrameSyncQueue(bool forceWait) {
             glGetSynciv(sync, GL_SYNC_STATUS, sizeof(GLint), nullptr, &signaled);
 
             if(signaled == GL_SIGNALED) {
-                if(debug) debugLog("Frame {:d} also completed", nextSync.frameNumber);
+                logIf(debug, "Frame {:d} also completed", nextSync.frameNumber);
 
                 deleteSyncObject(nextSync.syncObject);
                 this->frameSyncQueue.pop_front();
@@ -115,9 +115,8 @@ void OpenGLSync::manageFrameSyncQueue(bool forceWait) {
     }
     // if we need to wait and the frame isn't done yet, do a blocking wait with timeout
     else if(needToWait) {
-        if(debug)
-            debugLog("Waiting for frame {:d} to complete (frames in flight: {:d}/{:d})", oldestSync.frameNumber,
-                     this->frameSyncQueue.size(), this->iMaxFramesInFlight);
+        logIf(debug, "Waiting for frame {:d} to complete (frames in flight: {:d}/{:d})", oldestSync.frameNumber,
+              this->frameSyncQueue.size(), this->iMaxFramesInFlight);
 
         SYNC_RESULT result = this->waitForSyncObject(oldestSync.syncObject, cv::r_sync_timeout.getInt());
 
@@ -157,9 +156,7 @@ void OpenGLSync::manageFrameSyncQueue(bool forceWait) {
                 glGetSynciv(sync, GL_SYNC_STATUS, sizeof(GLint), nullptr, &signaled);
 
                 if(signaled == GL_SIGNALED) {
-                    if(debug) {
-                        debugLog("Frame {:d} also completed", nextSync.frameNumber);
-                    }
+                    logIf(debug, "Frame {:d} also completed", nextSync.frameNumber);
 
                     this->deleteSyncObject(nextSync.syncObject);
                     this->frameSyncQueue.pop_front();
@@ -211,8 +208,7 @@ void OpenGLSync::setMaxFramesInFlight(int maxFrames) {
 
     // may need to wait on some frames if the limit is being reduced
     if(this->bEnabled && this->frameSyncQueue.size() > this->iMaxFramesInFlight) {
-        if(cv::r_sync_debug.getBool())
-            debugLog("Max frames reduced to {:d}, waiting for excess frames", this->iMaxFramesInFlight);
+        logIfCV(r_sync_debug, "Max frames reduced to {:d}, waiting for excess frames", this->iMaxFramesInFlight);
         // wait
         this->manageFrameSyncQueue(true);
     }

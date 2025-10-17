@@ -1548,12 +1548,10 @@ void BeatmapInterface::loadMusic(bool reload, bool async) {
         }
     }
 
-    if(cv::debug_osu.getBool() || cv::debug_snd.getBool()) {
-        debugLog(
-            "reload: {} async: {} path changed: {} existing music: {} existing music loaded successfully: {} skipping: "
-            "{}",
-            reload, async, pathChanged, haveExistingMusic, musicAlreadyLoadedSuccessfully, skipLoading);
-    }
+    logIf(cv::debug_osu.getBool() || cv::debug_snd.getBool(),
+          "reload: {} async: {} path changed: {} existing music: {} existing music loaded successfully: {} skipping: "
+          "{}",
+          reload, async, pathChanged, haveExistingMusic, musicAlreadyLoadedSuccessfully, skipLoading);
 
     if(skipLoading) return;
 
@@ -1569,9 +1567,7 @@ void BeatmapInterface::loadMusic(bool reload, bool async) {
     assert(this->music);
 
     if(!this->music->isReady() || !soundEngine->enqueue(this->music)) {
-        if(cv::debug_osu.getBool() || cv::debug_snd.getBool()) {
-            debugLog("failed to enqueue music at {}", newPath);
-        }
+        logIf(cv::debug_osu.getBool() || cv::debug_snd.getBool(), "failed to enqueue music at {}", newPath);
     } else {
         // ready and enqueued
         this->music->setBaseVolume(this->getIdealVolume());
@@ -2291,6 +2287,10 @@ void BeatmapInterface::update2() {
             this->bClickedContinue = false;
             this->bContinueScheduled = false;
             this->bIsPaused = false;
+
+            // annoying place to put this, but update text input state after pressing continue
+            // (for allowing consolebox optionsmenu chat etc. text input in the continue screen)
+            osu->updateWindowsKeyDisable();
 
             if(!isEarlyNoteContinue) {
                 soundEngine->play(this->music);

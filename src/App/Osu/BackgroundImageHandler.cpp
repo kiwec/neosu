@@ -384,7 +384,7 @@ bool BGImageHandler::MapBGImagePathLoader::checkMojibake() {
         return ret;
     }
 
-    if(debug) debugLog("{} doesn't exist, trying to re-mojibake...", full_image_path);
+    logIf(debug, "{} doesn't exist, trying to re-mojibake...", full_image_path);
     const size_t out_size = this->parsed_bg_filename.size() * 4;
 
     auto converted_output = std::make_unique_for_overwrite<char[]>(this->parsed_bg_filename.size() * 4);
@@ -398,7 +398,7 @@ bool BGImageHandler::MapBGImagePathLoader::checkMojibake() {
         std::string_view result = {converted_output.get(), converted_output.get() + conv_result_len};
 
         if(result == this->parsed_bg_filename) {
-            if(debug) debugLog("input matched converted output, nothing to do");
+            logIf(debug, "input matched converted output, nothing to do");
             return ret;
         }
 
@@ -410,9 +410,8 @@ bool BGImageHandler::MapBGImagePathLoader::checkMojibake() {
             ret = true;
         }
 
-        if(debug)
-            debugLog("got result {}, converted path {}, {} on disk", result, converted_path,
-                     converted_exists ? "exists" : "does not exist");
+        logIf(debug, "got result {}, converted path {}, {} on disk", result, converted_path,
+              converted_exists ? "exists" : "does not exist");
     } else if(conv_result_len == 0 && debug) {
         debugLog("got no conversion result for {}", this->parsed_bg_filename);
     } else if(debug) {

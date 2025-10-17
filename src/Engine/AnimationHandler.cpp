@@ -5,7 +5,7 @@
 #include "Engine.h"
 #include "Logging.h"
 
-AnimationHandler* anim = nullptr;
+AnimationHandler *anim = nullptr;
 
 AnimationHandler::AnimationHandler() { anim = this; }
 
@@ -17,6 +17,8 @@ AnimationHandler::~AnimationHandler() {
 
 void AnimationHandler::update() {
     const auto curFrameTime = static_cast<float>(engine->getTime());
+    const bool doLogging = cv::debug_anim.getBool();
+
     for(sSz i = 0; i < this->vAnimations.size(); i++) {
         // start animation
         Animation &animation = this->vAnimations[i];
@@ -37,10 +39,8 @@ void AnimationHandler::update() {
         if(diff <= threshold) {
             *animation.fBase = animation.fTarget;
 
-            if(cv::debug_anim.getBool()) {
-                debugLog("removing animation #{:d} (epsilon completion), dtime = {:f}", i,
-                         curFrameTime - animation.fStartTime);
-            }
+            logIf(doLogging, "removing animation #{:d} (epsilon completion), dtime = {:f}", i,
+                  curFrameTime - animation.fStartTime);
 
             this->vAnimations.erase(this->vAnimations.begin() + i);
             i--;
@@ -50,17 +50,13 @@ void AnimationHandler::update() {
         // calculate percentage
         float percent = std::clamp<float>((curFrameTime - animation.fStartTime) / (animation.fDuration), 0.0f, 1.0f);
 
-        if(cv::debug_anim.getBool()) {
-            debugLog("animation #{:d}, percent = {:f}", i, percent);
-        }
+        logIf(doLogging, "animation #{:d}, percent = {:f}", i, percent);
 
         // check if finished
         if(percent >= 1.0f) {
             *animation.fBase = animation.fTarget;
 
-            if(cv::debug_anim.getBool()) {
-                debugLog("removing animation #{:d}, dtime = {:f}", i, curFrameTime - animation.fStartTime);
-            }
+            logIf(doLogging, "removing animation #{:d}, dtime = {:f}", i, curFrameTime - animation.fStartTime);
 
             this->vAnimations.erase(this->vAnimations.begin() + i);
             i--;

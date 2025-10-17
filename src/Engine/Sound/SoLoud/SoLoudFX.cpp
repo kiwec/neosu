@@ -425,7 +425,7 @@ unsigned int SoundTouchFilterInstance::getAudio(float *aBuffer, unsigned int aSa
 	bool updatePitchOrSpeed = false;
 	{
 		Sync::scoped_lock lock{mSettingUpdateMutex};
-		if (mNeedsSettingUpdate)
+		if (mNeedsSettingUpdate || (mSetRelativePlaySpeed != mOverallRelativePlaySpeed) || (mSetRelativePlaySpeed != mSoundTouchSpeed))
 		{
 			updatePitchOrSpeed = true;
 			mNeedsSettingUpdate = false;

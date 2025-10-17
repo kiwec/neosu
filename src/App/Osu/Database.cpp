@@ -1102,8 +1102,7 @@ void Database::loadMaps() {
             for(int i = 0; i < this->iNumBeatmapsToLoad; i++) {
                 if(this->bInterruptLoad.load()) break;  // cancellation point
 
-                if(cv::debug_db.getBool())
-                    debugLog("Database: Reading beatmap {:d}/{:d} ...", (i + 1), this->iNumBeatmapsToLoad);
+                logIfCV(debug_db, "Database: Reading beatmap {:d}/{:d} ...", (i + 1), this->iNumBeatmapsToLoad);
                 // update progress (another thread checks if progress >= 1.f to know when we're done)
                 u32 progress_bytes = this->bytes_processed + db.total_pos;
                 f64 progress_float = (f64)progress_bytes / (f64)this->total_bytes;
@@ -1904,8 +1903,7 @@ void Database::loadOldMcNeosuScores(std::string_view dbPath) {
                 break;
             }
 
-            if(cv::debug_db.getBool())
-                debugLog("Beatmap[{}]: md5hash = {:s}, numScores = {}", b, md5hash.string(), numScores);
+            logIfCV(debug_db, "Beatmap[{}]: md5hash = {:s}, numScores = {}", b, md5hash.string(), numScores);
 
             for(u32 s = 0; s < numScores; s++) {
                 const auto gamemode = db.read<uint8_t>();  // NOTE: abused as isImportedLegacyScore flag (because I
@@ -1926,9 +1924,7 @@ void Database::loadOldMcNeosuScores(std::string_view dbPath) {
                     }
                     db.skip_bytes(bytesToSkipUntilNextScore);
                     db.skip_string();  // experimentalMods
-                    if(cv::debug_db.getBool()) {
-                        debugLog("skipped score {} (already loaded from neosu_scores.db)", md5hash.string());
-                    }
+                    logIfCV(debug_db, "skipped score {} (already loaded from neosu_scores.db)", md5hash.string());
                     continue;
                 }
 
@@ -2250,7 +2246,7 @@ void Database::saveScores() {
 }
 
 BeatmapSet *Database::loadRawBeatmap(const std::string &beatmapPath) {
-    if(cv::debug_db.getBool()) debugLog("BeatmapDatabase::loadRawBeatmap() : {:s}", beatmapPath.c_str());
+    logIfCV(debug_db, "beatmap path: {:s}", beatmapPath);
 
     // try loading all diffs
     auto *diffs2 = new std::vector<BeatmapDifficulty *>();
@@ -2266,9 +2262,7 @@ BeatmapSet *Database::loadRawBeatmap(const std::string &beatmapPath) {
         if(map->loadMetadata()) {
             diffs2->push_back(map);
         } else {
-            if(cv::debug_db.getBool()) {
-                debugLog("BeatmapDatabase::loadRawBeatmap() : Couldn't loadMetadata(), deleting object.");
-            }
+            logIfCV(debug_db, "Couldn't loadMetadata(), deleting object.");
             SAFE_DELETE(map);
         }
     }

@@ -71,13 +71,11 @@ void ResourceManager::destroyResources() {
 void ResourceManager::destroyResource(Resource *rs, DestroyMode destroyMode) {
     const bool debug = cv::debug_rm.getBool();
     if(rs == nullptr) {
-        if(debug) debugLog("ResourceManager Warning: destroyResource(NULL)!");
+        logIf(debug, "ResourceManager Warning: destroyResource(NULL)!");
         return;
     }
 
-    if(debug) {
-        debugLog("ResourceManager: destroying {:8p} : {:s}", static_cast<const void *>(rs), rs->getName());
-    }
+    logIf(debug, "ResourceManager: destroying {:8p} : {:s}", static_cast<const void *>(rs), rs->getName());
 
     bool isManagedResource = false;
     int managedResourceIndex = -1;
@@ -92,9 +90,8 @@ void ResourceManager::destroyResource(Resource *rs, DestroyMode destroyMode) {
     // check if it's being loaded and schedule async destroy if so
     // (destroyMode == DestroyMode::FORCE_ASYNC) ||
     if(this->asyncLoader->isLoadingResource(rs)) {
-        if(debug)
-            debugLog("Resource Manager: Scheduled async destroy of {:8p} : {:s}", static_cast<const void *>(rs),
-                     rs->getName());
+        logIf(debug, "Resource Manager: Scheduled async destroy of {:8p} : {:s}", static_cast<const void *>(rs),
+              rs->getName());
 
         // interrupt async load
         rs->interruptLoad();
@@ -120,7 +117,7 @@ void ResourceManager::destroyResource(Resource *rs, DestroyMode destroyMode) {
 
 void ResourceManager::loadResource(Resource *res, bool load) {
     if(res == nullptr) {
-        if(cv::debug_rm.getBool()) debugLog("ResourceManager Warning: loadResource(NULL)!");
+        logIfCV(debug_rm, "ResourceManager Warning: loadResource(NULL)!");
         resetFlags();
         return;
     }
@@ -190,7 +187,7 @@ void ResourceManager::setSyncLoadMaxBatchSize(size_t resourcesToLoad) {
 
 void ResourceManager::reloadResource(Resource *rs, bool async) {
     if(rs == nullptr) {
-        if(cv::debug_rm.getBool()) debugLog("ResourceManager Warning: reloadResource(NULL)!");
+        logIfCV(debug_rm, "ResourceManager Warning: reloadResource(NULL)!");
         return;
     }
 
@@ -200,7 +197,7 @@ void ResourceManager::reloadResource(Resource *rs, bool async) {
 
 void ResourceManager::reloadResources(const std::vector<Resource *> &resources, bool async) {
     if(resources.empty()) {
-        if(cv::debug_rm.getBool()) debugLog("ResourceManager Warning: reloadResources with an empty resources vector!");
+        logIfCV(debug_rm, "ResourceManager Warning: reloadResources with an empty resources vector!");
         return;
     }
 
@@ -240,7 +237,7 @@ void ResourceManager::reloadResources(const std::vector<Resource *> &resources, 
 
 void ResourceManager::setResourceName(Resource *res, std::string name) {
     if(!res) {
-        if(cv::debug_rm.getBool()) debugLog("ResourceManager: attempted to set name {:s} on NULL resource!", name);
+        logIfCV(debug_rm, "ResourceManager: attempted to set name {:s} on NULL resource!", name);
         return;
     }
 
@@ -461,7 +458,7 @@ VertexArrayObject *ResourceManager::createVertexArrayObject(Graphics::PRIMITIVE 
 // add a managed resource to the main resources vector + the name map and typed vectors
 void ResourceManager::addManagedResource(Resource *res) {
     if(!res) return;
-    if(cv::debug_rm.getBool()) debugLog("ResourceManager: Adding managed {}", res->getName());
+    logIfCV(debug_rm, "ResourceManager: Adding managed {}", res->getName());
 
     this->vResources.push_back(res);
 
@@ -549,13 +546,9 @@ void ResourceManager::removeResourceFromTypedVector(Resource *res) {
 }
 
 void ResourceManager::notExistLog(std::string_view resourceName) {
-    if(cv::debug_rm.getBool()) {
-        debugLog(R"(ResourceManager WARNING: Resource "{:s}" does not exist!)", resourceName);
-    }
+    logIfCV(debug_rm, R"(ResourceManager WARNING: Resource "{:s}" does not exist!)", resourceName);
 }
 
 void ResourceManager::alreadyLoadedLog(std::string_view resourceName) {
-    if(cv::debug_rm.getBool()) {
-        debugLog(R"(ResourceManager NOTICE: Resource "{:s}" already loaded.)", resourceName);
-    }
+    logIfCV(debug_rm, R"(ResourceManager NOTICE: Resource "{:s}" already loaded.)", resourceName);
 }
