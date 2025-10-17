@@ -200,8 +200,8 @@ Osu::Osu() {
         this->onSkinChange(cv::skin.getString());
 
     // Convar callbacks that should be set after loading the config
-    cv::mod_mafham.setCallback(SA::MakeDelegate<&Osu::onModMafhamChange>(this));
-    cv::mod_fposu.setCallback(SA::MakeDelegate<&Osu::onModFPoSuChange>(this));
+    cv::mod_mafham.setCallback(SA::MakeDelegate<&Osu::rebuildRenderTargets>(this));
+    cv::mod_fposu.setCallback(SA::MakeDelegate<&Osu::rebuildRenderTargets>(this));
     cv::playfield_mirror_horizontal.setCallback(SA::MakeDelegate<&Osu::updateModsForConVarTemplate>(this));
     cv::playfield_mirror_vertical.setCallback(SA::MakeDelegate<&Osu::updateModsForConVarTemplate>(this));
     cv::playfield_rotation.setCallback(SA::MakeDelegate<&Osu::onPlayfieldChange>(this));
@@ -1936,16 +1936,6 @@ void Osu::onKey2Change(bool pressed, bool isMouse) {
             this->hud->animateCursorShrink();
     }
 }
-
-void Osu::onModMafhamChange() { this->rebuildRenderTargets(); }
-
-void Osu::onModFPoSuChange() { this->rebuildRenderTargets(); }
-
-void Osu::onModFPoSu3DChange() { this->rebuildRenderTargets(); }
-
-void Osu::onModFPoSu3DSpheresChange() { this->rebuildRenderTargets(); }
-
-void Osu::onModFPoSu3DSpheresAAChange() { this->rebuildRenderTargets(); }
 
 void Osu::onLetterboxingOffsetChange() {
     this->updateMouseSettings();

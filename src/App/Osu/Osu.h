@@ -222,12 +222,6 @@ class Osu final : public MouseListener, public KeyboardListener {
     void onKey1Change(bool pressed, bool mouse);
     void onKey2Change(bool pressed, bool mouse);
 
-    void onModMafhamChange();
-    void onModFPoSuChange();
-    void onModFPoSu3DChange();
-    void onModFPoSu3DSpheresChange();
-    void onModFPoSu3DSpheresAAChange();
-
     void onLetterboxingOffsetChange();
 
     void onUserCardChange(std::string_view new_username);
