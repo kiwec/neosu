@@ -86,7 +86,7 @@ struct formatter<McRect> {
 
     template <typename FormatContext>
     auto format(const McRect &r, FormatContext &ctx) const {
-        return format_to(ctx.out(), "{}: {}", r.vMin, r.vSize);
+        return format_to(ctx.out(), "{}: {}"_cf, r.vMin, r.vSize);
     }
 };
 }  // namespace fmt

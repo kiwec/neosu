@@ -117,6 +117,7 @@ void BassSound::destroy() {
 
     this->bStarted = false;
     this->bReady = false;
+    this->bIsLooped = false;
     this->bAsyncReady = false;
     this->bPaused = false;
     this->paused_position_ms = 0;

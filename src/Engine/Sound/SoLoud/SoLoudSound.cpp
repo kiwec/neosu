@@ -132,6 +132,7 @@ void SoLoudSound::destroy() {
     this->fPan = 0.0f;
     this->activeHandleCache.clear();
     this->fLastPlayTime = 0.0f;
+    this->bIsLooped = false;
     this->bIgnored = false;
     this->bAsyncReady = false;
 

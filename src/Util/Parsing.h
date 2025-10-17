@@ -4,8 +4,10 @@
 #include <charconv>  // from_chars
 #include <cstring>   // strlen, strncmp
 #include <string_view>
+#include <optional>
 
 #include "types.h"
+#include "Vectors.h"
 #include "SString.h"
 
 namespace Parsing {
@@ -169,6 +171,40 @@ inline char* strtok_x(char d, char** str) {
         (*str)++;
     }
     return old;
+}
+
+// this is commonly used in a few places to parse some arbitrary width x height string, might as well make it a function
+inline std::optional<ivec2> parse_resolution(std::string_view width_x_height) {
+    // don't allow e.g. < 100x100 or > 10000x10000
+    if(width_x_height.length() < 7 || width_x_height.length() > 9) {
+        return std::nullopt;
+    }
+
+    auto resolution = SString::split(width_x_height, 'x');
+    if(resolution.size() != 2) {
+        return std::nullopt;
+    }
+
+    bool good = false;
+    i32 width{0}, height{0};
+    do {
+        {
+            auto [ptr, ec] = std::from_chars(resolution[0].begin(), resolution[0].end(), width);
+            if(ec != std::errc() || width < 320) break;  // 320x240 sanity check
+        }
+        {
+            auto [ptr, ec] = std::from_chars(resolution[1].begin(), resolution[1].end(), height);
+            if(ec != std::errc() || height < 240) break;
+        }
+        good = true;
+    } while(false);
+
+    if(!good) {
+        return std::nullopt;
+    }
+
+    // success
+    return ivec2{width, height};
 }
 
 }  // namespace Parsing

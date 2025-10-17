@@ -41,6 +41,7 @@
 #include "NetworkHandler.h"
 #include "NotificationOverlay.h"
 #include "OptionsMenu.h"
+#include "Parsing.h"
 #include "PauseMenu.h"
 #include "PeppyImporter.h"
 #include "Profiler.h"
@@ -1602,23 +1603,16 @@ void Osu::fireResolutionChanged() { this->onResolutionChanged(this->vInternalRes
 
 void Osu::onWindowedResolutionChanged(std::string_view args) {
     if(env->isFullscreen()) return;
-    if(args.length() < 7) return;
 
-    auto resolution = SString::split<std::string>(args, 'x');
-    if(resolution.size() != 2) {
-        debugLog(
-            "Error: Invalid parameter count for command 'osu_resolution'! (Usage: e.g. \"osu_resolution 1280x720\")");
+    auto parsed = Parsing::parse_resolution(args);
+    if(!parsed.has_value()) {
+        debugLog("Error: Invalid arguments {} for command 'osu_resolution'! (Usage: e.g. \"osu_resolution 1280x720\")",
+                 args);
         return;
     }
 
-    debugLog("{}x{}", resolution[0], resolution[1]);
-
-    auto width{static_cast<int>(std::strtol(resolution[0].c_str(), nullptr, 0))};
-    auto height{static_cast<int>(std::strtol(resolution[1].c_str(), nullptr, 0))};
-    if(width < 300 || height < 240) {
-        debugLog("Error: Invalid values for resolution for command 'osu_resolution'!");
-        return;
-    }
+    i32 width{parsed->x}, height{parsed->y};
+    debugLog("{}x{}", width, height);
 
     env->setWindowSize(width, height);
     env->center();
@@ -1626,25 +1620,17 @@ void Osu::onWindowedResolutionChanged(std::string_view args) {
 
 void Osu::onInternalResolutionChanged(std::string_view args) {
     if(!env->isFullscreen()) return;
-    if(args.length() < 7) return;
 
-    auto resolution = SString::split<std::string>(args, 'x');
-    if(resolution.size() != 2) {
-        debugLog(
-            "Error: Invalid parameter count for command 'osu_resolution'! (Usage: e.g. \"osu_resolution 1280x720\")");
+    auto parsed = Parsing::parse_resolution(args);
+    if(!parsed.has_value()) {
+        debugLog("Error: Invalid arguments {} for command 'osu_resolution'! (Usage: e.g. \"osu_resolution 1280x720\")",
+                 args);
         return;
     }
-    debugLog("{}x{}", resolution[0], resolution[1]);
-
-    auto width{static_cast<int>(std::strtol(resolution[0].c_str(), nullptr, 0))};
-    auto height{static_cast<int>(std::strtol(resolution[1].c_str(), nullptr, 0))};
-    if(width < 300 || height < 240) {
-        debugLog("Error: Invalid values for resolution for command 'osu_resolution'!");
-        return;
-    }
+    debugLog("{}x{}", parsed->x, parsed->y);
 
     const float prevUIScale = getUIScale();
-    vec2 newInternalResolution = vec2(width, height);
+    vec2 newInternalResolution = parsed.value();
 
     // clamp requested internal resolution to current renderer resolution
     // however, this could happen while we are transitioning into fullscreen. therefore only clamp when not in

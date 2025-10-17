@@ -3,6 +3,7 @@
 
 #include "AsyncIOHandler.h"
 #include "ByteBufferedFile.h"
+#include "Parsing.h"
 #include "SString.h"
 #include "crypto.h"
 #include "AnimationHandler.h"
@@ -2514,59 +2515,28 @@ void OptionsMenu::onSkinRandom() {
 }
 
 void OptionsMenu::onResolutionSelect() {
-    std::vector<vec2> resolutions;
-
-    // 4:3
-    resolutions.emplace_back(800, 600);
-    resolutions.emplace_back(1024, 768);
-    resolutions.emplace_back(1152, 864);
-    resolutions.emplace_back(1280, 960);
-    resolutions.emplace_back(1280, 1024);
-    resolutions.emplace_back(1600, 1200);
-    resolutions.emplace_back(1920, 1440);
-    resolutions.emplace_back(2560, 1920);
-
-    // 16:9 and 16:10
-    resolutions.emplace_back(1024, 600);
-    resolutions.emplace_back(1280, 720);
-    resolutions.emplace_back(1280, 768);
-    resolutions.emplace_back(1280, 800);
-    resolutions.emplace_back(1360, 768);
-    resolutions.emplace_back(1366, 768);
-    resolutions.emplace_back(1440, 900);
-    resolutions.emplace_back(1600, 900);
-    resolutions.emplace_back(1600, 1024);
-    resolutions.emplace_back(1680, 1050);
-    resolutions.emplace_back(1920, 1080);
-    resolutions.emplace_back(1920, 1200);
-    resolutions.emplace_back(2560, 1440);
-    resolutions.emplace_back(2560, 1600);
-    resolutions.emplace_back(3840, 2160);
-    resolutions.emplace_back(5120, 2880);
-    resolutions.emplace_back(7680, 4320);
-
-    // wtf
-    resolutions.emplace_back(4096, 2160);
+    std::vector<ivec2> resolutions{{800, 600},  // 4:3
+                                   {1024, 768},  {1152, 864},  {1280, 960},  {1280, 1024}, {1600, 1200}, {1920, 1440},
+                                   {2560, 1920}, {1024, 600},  // 16:9 and 16:10
+                                   {1280, 720},  {1280, 768},  {1280, 800},  {1360, 768},  {1366, 768},  {1440, 900},
+                                   {1600, 900},  {1600, 1024}, {1680, 1050}, {1920, 1080}, {1920, 1200}, {2560, 1440},
+                                   {2560, 1600}, {3840, 2160}, {5120, 2880}, {7680, 4320}, {4096, 2160}};  // wtf
 
     // get custom resolutions
-    std::vector<vec2> customResolutions;
-    std::ifstream customres(MCENGINE_CFG_PATH "/customres.cfg");
-    std::string curLine;
-    while(std::getline(customres, curLine)) {
-        const char *curLineChar = curLine.c_str();
-        if(!curLine.starts_with("//"))  // ignore comments
-        {
-            int width = 0;
-            int height = 0;
-            if(sscanf(curLineChar, "%ix%i\n", &width, &height) == 2) {
-                if(width > 319 && height > 239)  // 320x240 sanity check
-                    customResolutions.emplace_back(width, height);
+    std::vector<ivec2> customResolutions;
+    {
+        File customres(MCENGINE_CFG_PATH "/customres.cfg");
+        for(auto line = customres.readLine(); customres.canRead(); line = customres.readLine()) {
+            if(line.starts_with("//") || line.starts_with('#')) continue;  // ignore comments
+            auto parsed = Parsing::parse_resolution(line);
+            if(parsed.has_value()) {
+                customResolutions.emplace_back(parsed->x, parsed->y);
             }
         }
     }
 
     // native resolution at the end
-    vec2 nativeResolution = env->getNativeScreenSize();
+    ivec2 nativeResolution = env->getNativeScreenSize();
     bool containsNativeResolution = false;
     for(auto resolution : resolutions) {
         if(resolution == nativeResolution) {
@@ -2578,17 +2548,16 @@ void OptionsMenu::onResolutionSelect() {
 
     // build context menu
     this->contextMenu->begin();
-    for(auto &i : resolutions) {
+    for(const auto &i : resolutions) {
         if(i.x > nativeResolution.x || i.y > nativeResolution.y) continue;
 
-        const UString resolution = UString::format("%ix%i", (int)std::round(i.x), (int)std::round(i.y));
+        const auto resolution = fmt::format("{}x{}", i.x, i.y);
         CBaseUIButton *button = this->contextMenu->addButton(resolution);
         if(this->resolutionLabel != nullptr && resolution == this->resolutionLabel->getText())
             button->setTextBrightColor(0xff00ff00);
     }
     for(auto &customResolution : customResolutions) {
-        this->contextMenu->addButton(
-            UString::format("%ix%i", (int)std::round(customResolution.x), (int)std::round(customResolution.y)));
+        this->contextMenu->addButton(fmt::format("{}x{}", customResolution.x, customResolution.y));
     }
     this->contextMenu->end(false, false);
     this->contextMenu->setClickCallback(SA::MakeDelegate<&OptionsMenu::onResolutionSelect2>(this));
