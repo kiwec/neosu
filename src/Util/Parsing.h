@@ -189,11 +189,11 @@ inline std::optional<ivec2> parse_resolution(std::string_view width_x_height) {
     i32 width{0}, height{0};
     do {
         {
-            auto [ptr, ec] = std::from_chars(resolution[0].begin(), resolution[0].end(), width);
+            auto [ptr, ec] = std::from_chars(resolution[0].data(), resolution[0].data() + resolution[0].size(), width);
             if(ec != std::errc() || width < 320) break;  // 320x240 sanity check
         }
         {
-            auto [ptr, ec] = std::from_chars(resolution[1].begin(), resolution[1].end(), height);
+            auto [ptr, ec] = std::from_chars(resolution[1].data(), resolution[1].data() + resolution[1].size(), height);
             if(ec != std::errc() || height < 240) break;
         }
         good = true;

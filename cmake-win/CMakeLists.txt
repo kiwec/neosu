@@ -50,9 +50,8 @@ file(MAKE_DIRECTORY "${DEPS_INSTALL_DIR}")
 # Load dependency information
 include(${CMAKE_SOURCE_DIR}/dependencies.cmake)
 
-# for libjpeg-turbo
-find_program(NASM nasm HINTS "C:/Program Files/NASM" OPTIONAL)
-find_program(GIT_EXECUTABLE git REQUIRED)
+# for libjpeg-turbo, and bundling binary dependencies
+find_program(NASM nasm HINTS "C:/Program Files/NASM" REQUIRED)
 
 include(ExternalProject)
 find_package(PkgConfig REQUIRED)
