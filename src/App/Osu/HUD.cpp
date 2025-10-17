@@ -1282,31 +1282,33 @@ std::vector<SCORE_ENTRY> HUD::getCurrentScores() {
             scores.push_back(std::move(scoreEntry));
         }
     } else {
-        Sync::scoped_lock lock(db->scores_mtx);
-        std::vector<FinishedScore> *singleplayer_scores = &((*db->getScores())[this->beatmap_md5]);
-        bool is_online = cv::songbrowser_scores_filteringtype.getString() != "Local";
-        if(is_online) {
-            auto search = db->online_scores.find(this->beatmap_md5);
-            if(search != db->online_scores.end()) {
-                singleplayer_scores = &search->second;
-            }
-        }
-
         int nb_slots = 0;
-        const auto &scores_ref = *singleplayer_scores;
-        for(const auto &score : scores_ref) {
-            SCORE_ENTRY scoreEntry;
-            scoreEntry.entry_id = -(nb_slots + 1);
-            scoreEntry.player_id = score.player_id;
-            scoreEntry.name = score.playerName.c_str();
-            scoreEntry.combo = score.comboMax;
-            scoreEntry.score = score.score;
-            scoreEntry.accuracy =
-                LiveScore::calculateAccuracy(score.num300s, score.num100s, score.num50s, score.numMisses);
-            scoreEntry.dead = false;
-            scoreEntry.highlight = false;
-            scores.push_back(std::move(scoreEntry));
-            nb_slots++;
+        {
+            Sync::shared_lock lock(db->scores_mtx);
+            std::vector<FinishedScore> *singleplayer_scores = &((*db->getScores())[this->beatmap_md5]);
+            bool is_online = cv::songbrowser_scores_filteringtype.getString() != "Local";
+            if(is_online) {
+                auto search = db->online_scores.find(this->beatmap_md5);
+                if(search != db->online_scores.end()) {
+                    singleplayer_scores = &search->second;
+                }
+            }
+
+            const auto &scores_ref = *singleplayer_scores;
+            for(const auto &score : scores_ref) {
+                SCORE_ENTRY scoreEntry;
+                scoreEntry.entry_id = -(nb_slots + 1);
+                scoreEntry.player_id = score.player_id;
+                scoreEntry.name = score.playerName.c_str();
+                scoreEntry.combo = score.comboMax;
+                scoreEntry.score = score.score;
+                scoreEntry.accuracy =
+                    LiveScore::calculateAccuracy(score.num300s, score.num100s, score.num50s, score.numMisses);
+                scoreEntry.dead = false;
+                scoreEntry.highlight = false;
+                scores.push_back(std::move(scoreEntry));
+                nb_slots++;
+            }
         }
 
         SCORE_ENTRY playerScoreEntry;
@@ -1350,7 +1352,7 @@ void HUD::resetScoreboard() {
     DatabaseBeatmap *map = osu->getMapInterface()->getBeatmap();
     if(map == nullptr) return;
 
-    this->beatmap_md5 = map->getMD5Hash();
+    this->beatmap_md5 = map->getMD5();
     this->player_slot = nullptr;
     this->slots.clear();
 

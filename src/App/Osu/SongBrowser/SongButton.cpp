@@ -321,7 +321,7 @@ void SongButton::onContextMenu(const UString &text, int id) {
                 }
             }
 
-            auto map_hash = this->databaseBeatmap->getMD5Hash();
+            auto map_hash = this->databaseBeatmap->getMD5();
             for(auto collection : collections) {
                 if(collection->maps.empty()) continue;
 

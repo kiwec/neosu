@@ -26,7 +26,7 @@ SongDifficultyButton::SongDifficultyButton(SongBrowser* songBrowser, UIContextMe
                                            SongButton* parentSongButton)
     : SongButton(songBrowser, contextMenu, xPos, yPos, xSize, ySize, std::move(name), nullptr) {
     this->databaseBeatmap = map;  // NOTE: can't use parent constructor for passing this argument, as it would
-                                    // otherwise try to build a full button (and not just a diff button)
+                                  // otherwise try to build a full button (and not just a diff button)
     this->parentSongButton = parentSongButton;
 
     this->sMapper = this->databaseBeatmap->getCreator();
@@ -53,7 +53,7 @@ void SongDifficultyButton::draw() {
 
     const bool isIndependentDiff = this->isIndependentDiffButton();
 
-    const auto &skin = osu->getSkin();
+    const auto& skin = osu->getSkin();
 
     // scaling
     const vec2 pos = this->getActualPos();
@@ -191,12 +191,12 @@ void SongDifficultyButton::updateGrade() {
         return;
     }
 
-    Sync::scoped_lock lock(db->scores_mtx);
-    if(!db->getScores()) {
+    Sync::shared_lock lock(db->scores_mtx);
+    const auto& db_scores = db->getScores();
+    if(!db_scores) {
         return;
     }
-    const auto& db_scores = db->getScores();
-    for(const auto& score : (*db_scores)[this->databaseBeatmap->getMD5Hash()]) {
+    for(const auto& score : (*db_scores)[this->databaseBeatmap->getMD5()]) {
         if(score.grade < this->grade) {
             this->grade = score.grade;
 

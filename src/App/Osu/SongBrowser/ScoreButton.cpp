@@ -371,13 +371,15 @@ void ScoreButton::mouse_update(bool *propagate_clicks) {
             const bool fullCombo =
                 (this->score.maxPossibleCombo > 0 && this->score.numMisses == 0 && this->score.numSliderBreaks == 0);
 
-            Sync::scoped_lock lock(db->scores_mtx);
-            auto &scores = this->score.is_online_score ? db->online_scores : db->scores;
-            for(auto &other : scores[this->score.beatmap_hash]) {
-                if(other.unixTimestamp == this->score.unixTimestamp) {
-                    osu->getSongBrowser()->score_resort_scheduled = true;
-                    other = this->score;
-                    break;
+            {
+                Sync::unique_lock lock(db->scores_mtx);
+                auto &scores = this->score.is_online_score ? db->online_scores : db->scores;
+                for(auto &other : scores[this->score.beatmap_hash]) {
+                    if(other.unixTimestamp == this->score.unixTimestamp) {
+                        osu->getSongBrowser()->score_resort_scheduled = true;
+                        other = this->score;
+                        break;
+                    }
                 }
             }
 
@@ -644,10 +646,10 @@ void ScoreButton::onDeleteScoreConfirmed(const UString & /*text*/, int id) {
     osu->getUserStatsScreen()->rebuildScoreButtons();
 }
 
-void ScoreButton::setScore(const FinishedScore &score, const DatabaseBeatmap *map, int index, const UString &titleString,
-                           float weight) {
+void ScoreButton::setScore(const FinishedScore &score, const DatabaseBeatmap *map, int index,
+                           const UString &titleString, float weight) {
     this->score = score;
-    this->score.beatmap_hash = map->getMD5Hash();
+    this->score.beatmap_hash = map->getMD5();
     this->score.map = map;
     // debugLog(
     //     "score.beatmap_hash {} this->beatmap_hash {} score.has_possible_replay {} this->has_possible_replay {} "

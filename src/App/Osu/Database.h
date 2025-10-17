@@ -121,12 +121,12 @@ class Database {
 
     UString parseLegacyCfgBeatmapDirectoryParameter();
     void scheduleLoadRaw();
-    Sync::mutex peppy_overrides_mtx;
+    Sync::shared_mutex peppy_overrides_mtx;
     std::unordered_map<MD5Hash, MapOverrides> peppy_overrides;
     std::vector<BeatmapDifficulty *> maps_to_recalc;
     std::vector<BeatmapDifficulty *> loudness_to_calc;
 
-    Sync::mutex scores_mtx;
+    Sync::shared_mutex scores_mtx;
     std::atomic<bool> bDidScoresChangeForStats = true;
     std::unordered_map<MD5Hash, std::vector<FinishedScore>> scores;
     std::unordered_map<MD5Hash, std::vector<FinishedScore>> online_scores;
@@ -202,7 +202,7 @@ class Database {
     std::atomic<bool> bInterruptLoad;
     std::vector<BeatmapSet *> beatmapsets;
 
-    Sync::mutex beatmap_difficulties_mtx;
+    Sync::shared_mutex beatmap_difficulties_mtx;
     std::unordered_map<MD5Hash, BeatmapDifficulty *> beatmap_difficulties;
 
     bool neosu_maps_loaded = false;

@@ -879,7 +879,7 @@ bool SongBrowser::selectBeatmapset(i32 set_id) {
         osu->getNotificationOverlay()->addToast(u"Beatmapset has no difficulties", ERROR_TOAST);
         return false;
     } else {
-        this->onSelectionChange(this->hashToSongButton[best_diff->getMD5Hash()], false);
+        this->onSelectionChange(this->hashToSongButton[best_diff->getMD5()], false);
         this->onDifficultySelected(best_diff, false);
         this->selectSelectedBeatmapSongButton();
         return true;
@@ -918,20 +918,21 @@ void SongBrowser::mouse_update(bool *propagate_clicks) {
 
         const auto &results = MapCalcThread::get_results();
 
-        db->peppy_overrides_mtx.lock();
-        for(int i = 0; i < results.size(); i++) {
-            auto map = maps[i];
-            auto res = results[i];
-            map->iNumCircles = res.nb_circles;
-            map->iNumSliders = res.nb_sliders;
-            map->iNumSpinners = res.nb_spinners;
-            map->fStarsNomod = res.star_rating;
-            map->iMinBPM = res.min_bpm;
-            map->iMaxBPM = res.max_bpm;
-            map->iMostCommonBPM = res.avg_bpm;
-            db->peppy_overrides[map->sMD5Hash] = map->get_overrides();
+        {
+            Sync::unique_lock lock(db->peppy_overrides_mtx);
+            for(int i = 0; i < results.size(); i++) {
+                auto map = maps[i];
+                auto res = results[i];
+                map->iNumCircles = res.nb_circles;
+                map->iNumSliders = res.nb_sliders;
+                map->iNumSpinners = res.nb_spinners;
+                map->fStarsNomod = res.star_rating;
+                map->iMinBPM = res.min_bpm;
+                map->iMaxBPM = res.max_bpm;
+                map->iMostCommonBPM = res.avg_bpm;
+                db->peppy_overrides[map->getMD5()] = map->get_overrides();
+            }
         }
-        db->peppy_overrides_mtx.unlock();
 
         maps.clear();
     }
@@ -1206,7 +1207,7 @@ void SongBrowser::selectSelectedBeatmapSongButton() {
     DatabaseBeatmap *map = nullptr;
     if(this->hashToSongButton.empty() || !(map = osu->getMapInterface()->getBeatmap())) return;
 
-    auto it = this->hashToSongButton.find(map->getMD5Hash());
+    auto it = this->hashToSongButton.find(map->getMD5());
     if(it == this->hashToSongButton.end()) {
         debugLog("No song button found for currently selected beatmap...");
         return;
@@ -1328,7 +1329,7 @@ void SongBrowser::onDifficultySelected(DatabaseBeatmap *map, bool play) {
             BanchoState::room.map_name =
                 UString::format("%s - %s [%s]", map->getArtistLatin().c_str(), map->getTitleLatin().c_str(),
                                 map->getDifficultyName().c_str());
-            BanchoState::room.map_md5 = map->getMD5Hash();
+            BanchoState::room.map_md5 = map->getMD5();
             BanchoState::room.map_id = map->getID();
 
             Packet packet;
@@ -1371,7 +1372,7 @@ void SongBrowser::refreshBeatmaps(bool closeAfterLoading) {
 
     auto map = osu->getMapInterface()->getBeatmap();
     if(map) {
-        this->loading_reselect_map.hash = map->getMD5Hash();
+        this->loading_reselect_map.hash = map->getMD5();
         const auto *music = osu->getMapInterface()->getMusic();
         if(music && music->isPlaying()) {
             this->loading_reselect_map.time_when_stopped = Timing::getTicksMS();
@@ -1482,7 +1483,7 @@ void SongBrowser::addBeatmapSet(BeatmapSet *mapset) {
 
     this->songButtons.push_back(songButton);
     for(auto map : mapset->getDifficulties()) {
-        this->hashToSongButton[map->getMD5Hash()] = songButton;
+        this->hashToSongButton[map->getMD5()] = songButton;
     }
 
     // prebuild temporary list of all relevant buttons, used by some groups
@@ -2268,14 +2269,14 @@ void SongBrowser::rebuildScoreButtons() {
 
     std::vector<FinishedScore> scores;
     if(validBeatmap) {
-        Sync::scoped_lock lock(db->scores_mtx);
+        Sync::shared_lock lock(db->scores_mtx);
         auto map = osu->getMapInterface()->getBeatmap();
-        auto local_scores = db->scores[map->getMD5Hash()];
+        auto local_scores = db->scores[map->getMD5()];
         auto local_best = std::ranges::max_element(
             local_scores, [](FinishedScore const &a, FinishedScore const &b) { return a.score < b.score; });
 
         if(is_online) {
-            auto search = db->online_scores.find(map->getMD5Hash());
+            auto search = db->online_scores.find(map->getMD5());
             if(search != db->online_scores.end()) {
                 scores = search->second;
 
@@ -2292,7 +2293,7 @@ void SongBrowser::rebuildScoreButtons() {
                     SAFE_DELETE(this->localBestButton);
                     this->localBestButton = new ScoreButton(this->contextMenu, 0, 0, 0, 0);
                     this->localBestButton->setClickCallback(SA::MakeDelegate<&SongBrowser::onScoreClicked>(this));
-                    this->localBestButton->map_hash = map->getMD5Hash();
+                    this->localBestButton->map_hash = map->getMD5();
                     this->localBestButton->setScore(*local_best, map);
                     this->localBestButton->resetHighlight();
                     this->localBestButton->grabs_clicks = true;
@@ -2314,7 +2315,7 @@ void SongBrowser::rebuildScoreButtons() {
                     SAFE_DELETE(this->localBestButton);
                     this->localBestButton = new ScoreButton(this->contextMenu, 0, 0, 0, 0);
                     this->localBestButton->setClickCallback(SA::MakeDelegate<&SongBrowser::onScoreClicked>(this));
-                    this->localBestButton->map_hash = map->getMD5Hash();
+                    this->localBestButton->map_hash = map->getMD5();
                     this->localBestButton->setScore(*local_best, map);
                     this->localBestButton->resetHighlight();
                     this->localBestButton->grabs_clicks = true;
@@ -2359,7 +2360,7 @@ void SongBrowser::rebuildScoreButtons() {
         std::vector<ScoreButton *> scoreButtons;
         for(size_t i = 0; i < numScores; i++) {
             ScoreButton *button = this->scoreButtonCache[i];
-            button->map_hash = osu->getMapInterface()->getBeatmap()->getMD5Hash();
+            button->map_hash = osu->getMapInterface()->getBeatmap()->getMD5();
             button->setScore(scores[i], osu->getMapInterface()->getBeatmap(), i + 1);
             scoreButtons.push_back(button);
         }
@@ -3126,15 +3127,15 @@ void SongBrowser::onSongButtonContextMenu(SongButton *songButton, const UString 
                 const auto &songButtonChildren = songButton->getChildren();
                 if(songButtonChildren.size() > 0) {
                     for(auto i : songButtonChildren) {
-                        beatmapSetHashes.push_back(i->getDatabaseBeatmap()->getMD5Hash());
+                        beatmapSetHashes.push_back(i->getDatabaseBeatmap()->getMD5());
                     }
                 } else {
                     const DatabaseBeatmap *beatmap =
-                        db->getBeatmapDifficulty(songButton->getDatabaseBeatmap()->getMD5Hash());
+                        db->getBeatmapDifficulty(songButton->getDatabaseBeatmap()->getMD5());
                     if(beatmap != nullptr) {
                         const std::vector<DatabaseBeatmap *> &diffs = beatmap->getDifficulties();
                         for(auto diff : diffs) {
-                            beatmapSetHashes.push_back(diff->getMD5Hash());
+                            beatmapSetHashes.push_back(diff->getMD5());
                         }
                     }
                 }
@@ -3149,7 +3150,7 @@ void SongBrowser::onSongButtonContextMenu(SongButton *songButton, const UString 
             // add diff to collection
             std::string name = text.toUtf8();
             auto collection = get_or_create_collection(name);
-            collection->add_map(songButton->getDatabaseBeatmap()->getMD5Hash());
+            collection->add_map(songButton->getDatabaseBeatmap()->getMD5());
             save_collections();
             updateUIScheduled = true;
         } else if(id == 2) {
@@ -3178,7 +3179,7 @@ void SongBrowser::onSongButtonContextMenu(SongButton *songButton, const UString 
             }
 
             auto collection = get_or_create_collection(collectionName);
-            collection->remove_map(songButton->getDatabaseBeatmap()->getMD5Hash());
+            collection->remove_map(songButton->getDatabaseBeatmap()->getMD5());
             save_collections();
             updateUIScheduled = true;
         } else if(id == 4) {
@@ -3210,7 +3211,7 @@ void SongBrowser::onSongButtonContextMenu(SongButton *songButton, const UString 
 
             if(id == -2) {
                 // id == -2 means beatmap
-                collection->add_map(songButton->getDatabaseBeatmap()->getMD5Hash());
+                collection->add_map(songButton->getDatabaseBeatmap()->getMD5());
                 updateUIScheduled = true;
             } else if(id == -4) {
                 // id == -4 means beatmapset
@@ -3426,7 +3427,7 @@ void SongBrowser::recreateCollectionsButtons() {
             } else {
                 for(SongButton *sbc : songButtonChildren) {
                     for(auto &map2 : collection->maps) {
-                        if(sbc->getDatabaseBeatmap()->getMD5Hash() == map2) {
+                        if(sbc->getDatabaseBeatmap()->getMD5() == map2) {
                             matching_diffs.push_back(sbc);
                         }
                     }

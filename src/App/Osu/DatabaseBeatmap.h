@@ -5,6 +5,7 @@
 #include "HitSounds.h"
 #include "Osu.h"
 #include "Overrides.h"
+#include "SyncMutex.h"
 #include "templates.h"
 
 #include <atomic>
@@ -191,8 +192,6 @@ class DatabaseBeatmap final {
         return this->difficulties == nullptr ? empty : reinterpret_cast<const std::vector<T *> &>(*this->difficulties);
     }
 
-    [[nodiscard]] inline const MD5Hash &getMD5Hash() const { return this->sMD5Hash; }
-
     [[nodiscard]] TIMING_INFO getTimingInfoForTime(u32 positionMS) const;
     static TIMING_INFO getTimingInfoForTimeAndTimingPoints(u32 positionMS,
                                                            const zarray<DatabaseBeatmap::TIMINGPOINT> &timingpoints);
@@ -284,9 +283,10 @@ class DatabaseBeatmap final {
 
     std::string sFolder;    // path to folder containing .osu file (e.g. "/path/to/beatmapfolder/")
     std::string sFilePath;  // path to .osu file (e.g. "/path/to/beatmapfolder/beatmap.osu")
-private:
+   private:
     std::string sFullSoundFilePath;
-public:
+
+   public:
     std::string sFullBackgroundImageFilePath;
 
     bool bEmptyArtistUnicode{false};
@@ -362,12 +362,24 @@ public:
 
     BeatmapType type;
 
-    MD5Hash sMD5Hash;
-
     bool draw_background = true;
     bool do_not_store = false;
 
+    inline void writeMD5(const MD5Hash &hash) {
+        Sync::unique_lock lock(this->md5_mtx);
+        this->sMD5Hash = hash;
+    }
+
+    inline MD5Hash getMD5() const {
+        Sync::shared_lock lock(this->md5_mtx);
+        return this->sMD5Hash;
+    }
+
    private:
+    // must be protected from multithreaded access
+    mutable Sync::shared_mutex md5_mtx;
+    MD5Hash sMD5Hash;
+
     std::vector<DatabaseBeatmap *> *difficulties = nullptr;
 
     static bool parse_timing_point(std::string_view curLine, DatabaseBeatmap::TIMINGPOINT *out);

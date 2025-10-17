@@ -950,7 +950,7 @@ void Osu::onKeyDown(KeyboardEvent &key) {
                 if(!this->map_iface->is_watching && !BanchoState::spectating) {
                     FinishedScore score;
                     score.replay = this->map_iface->live_replay;
-                    score.beatmap_hash = this->map_iface->getBeatmap()->getMD5Hash();
+                    score.beatmap_hash = this->map_iface->getBeatmap()->getMD5();
                     score.mods = this->getScore()->mods;
 
                     score.playerName = BanchoState::get_username();
@@ -1276,7 +1276,7 @@ void Osu::toggleSongBrowser() {
         if(map != nullptr) {
             BanchoState::room.map_name = UString::format("%s - %s [%s]", map->getArtist().c_str(),
                                                          map->getTitle().c_str(), map->getDifficultyName().c_str());
-            BanchoState::room.map_md5 = map->getMD5Hash();
+            BanchoState::room.map_md5 = map->getMD5();
             BanchoState::room.map_id = map->getID();
 
             Packet packet;

@@ -75,9 +75,13 @@ static void update_ppv2(const FinishedScore& score) {
         score.numMisses, score.num300s, score.num100s, score.num50s);
 
     // Update score
-    db->scores_mtx.lock();
+    Sync::shared_lock readlock(db->scores_mtx);
     for(auto& other : (*db->getScores())[score.beatmap_hash]) {
         if(other.unixTimestamp == score.unixTimestamp) {
+            readlock.unlock();
+            readlock.release();
+            Sync::unique_lock writelock(db->scores_mtx);
+
             other.ppv2_version = DifficultyCalculator::PP_ALGORITHM_VERSION;
             other.ppv2_score = info.pp;
             other.ppv2_total_stars = info.total_stars;
@@ -87,7 +91,6 @@ static void update_ppv2(const FinishedScore& score) {
             break;
         }
     }
-    db->scores_mtx.unlock();
 }
 
 static forceinline bool score_needs_recalc(const FinishedScore& score) {
@@ -177,15 +180,19 @@ static void run_sct(const std::unordered_map<MD5Hash, std::vector<FinishedScore>
             debugLog("Score {:d}: nMisses was {:d}, simulated {:d}", idx, score.numMisses,
                      smap.live_score.getNumMisses());
 
-        db->scores_mtx.lock();
-        for(auto& dbScore : (*db->getScores())[score.beatmap_hash]) {
-            if(dbScore.unixTimestamp == score.unixTimestamp) {
-                // @PPV3: currently hitdeltas is always empty
-                dbScore.hitdeltas = score.hitdeltas;
-                break;
+        {
+            Sync::shared_lock readlock(db->scores_mtx);
+            for(auto& dbScore : (*db->getScores())[score.beatmap_hash]) {
+                if(dbScore.unixTimestamp == score.unixTimestamp) {
+                    readlock.unlock();
+                    readlock.release();
+                    Sync::unique_lock writelock(db->scores_mtx);
+                    // @PPV3: currently hitdeltas is always empty
+                    dbScore.hitdeltas = score.hitdeltas;
+                    break;
+                }
             }
         }
-        db->scores_mtx.unlock();
 
         // TODO @kiwec: update & save scores/pp
 

@@ -1070,7 +1070,7 @@ bool DatabaseBeatmap::loadMetadata(bool compute_md5) {
 
     // compute MD5 hash (very slow)
     if(compute_md5) {
-        this->sMD5Hash = {BanchoState::md5(reinterpret_cast<const u8 *>(beatmapFile.data()), beatmapFileSize)};
+        this->writeMD5({BanchoState::md5(reinterpret_cast<const u8 *>(beatmapFile.data()), beatmapFileSize)});
     }
 
     // load metadata
@@ -1422,11 +1422,8 @@ MapOverrides DatabaseBeatmap::get_overrides() const {
 void DatabaseBeatmap::update_overrides() {
     if(this->do_not_store || this->type != BeatmapType::PEPPY_DIFFICULTY) return;
 
-    // XXX: not actually thread safe, if m_sMD5Hash gets updated by loadGameplay()
-    //      or other values in get_overrides()
-    db->peppy_overrides_mtx.lock();
-    db->peppy_overrides[this->sMD5Hash] = this->get_overrides();
-    db->peppy_overrides_mtx.unlock();
+    Sync::unique_lock lock(db->peppy_overrides_mtx);
+    db->peppy_overrides[this->getMD5()] = this->get_overrides();
 }
 
 DatabaseBeatmap::TIMING_INFO DatabaseBeatmap::getTimingInfoForTime(u32 positionMS) const {

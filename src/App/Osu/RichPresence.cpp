@@ -70,7 +70,7 @@ void setBanchoStatus(const char* info_text, Action action) {
 
     auto map = osu->getMapInterface()->getBeatmap();
     if(map != nullptr) {
-        map_md5 = map->getMD5Hash();
+        map_md5 = map->getMD5();
         map_id = map->getID();
     }
 
@@ -97,7 +97,7 @@ void updateBanchoMods() {
 
     auto diff = osu->getMapInterface()->getBeatmap();
     if(diff != nullptr) {
-        map_md5 = diff->getMD5Hash();
+        map_md5 = diff->getMD5();
         map_id = diff->getID();
     }
 

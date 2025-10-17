@@ -276,7 +276,7 @@ void Lobby::on_create_room_clicked() {
         auto map = osu->getMapInterface()->getBeatmap();
         BanchoState::room.map_name = UString::format("%s - %s [%s]", map->getArtist().c_str(),
                                                      map->getTitle().c_str(), map->getDifficultyName().c_str());
-        BanchoState::room.map_md5 = map->getMD5Hash();
+        BanchoState::room.map_md5 = map->getMD5();
         BanchoState::room.map_id = map->getID();
     }
 

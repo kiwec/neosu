@@ -274,7 +274,7 @@ void Database::startLoader() {
         db->loudness_to_calc.clear();
         db->maps_to_recalc.clear();
         {
-            Sync::scoped_lock lock(this->beatmap_difficulties_mtx);
+            Sync::unique_lock lock(this->beatmap_difficulties_mtx);
             this->beatmap_difficulties.clear();
         }
         for(auto &beatmapset : db->beatmapsets) {
@@ -337,7 +337,7 @@ Database::~Database() {
     this->maps_to_recalc.clear();
 
     {
-        Sync::scoped_lock lock(this->beatmap_difficulties_mtx);
+        Sync::unique_lock lock(this->beatmap_difficulties_mtx);
         this->beatmap_difficulties.clear();
     }
     for(auto &beatmapset : this->beatmapsets) {
@@ -446,11 +446,12 @@ BeatmapSet *Database::addBeatmapSet(const std::string &beatmapFolderPath, i32 se
 
     this->beatmapsets.push_back(beatmap);
 
-    this->beatmap_difficulties_mtx.lock();
-    for(const auto &diff : beatmap->getDifficulties()) {
-        this->beatmap_difficulties[diff->getMD5Hash()] = diff;
+    {
+        Sync::unique_lock lock(this->beatmap_difficulties_mtx);
+        for(const auto &diff : beatmap->getDifficulties()) {
+            this->beatmap_difficulties[diff->getMD5()] = diff;
+        }
     }
-    this->beatmap_difficulties_mtx.unlock();
 
     osu->getSongBrowser()->addBeatmapSet(beatmap);
 
@@ -486,7 +487,7 @@ int Database::addScore(const FinishedScore &score) {
     }
 
     // return sorted index
-    Sync::scoped_lock lock(this->scores_mtx);
+    Sync::shared_lock lock(this->scores_mtx);
     for(int i = 0; i < this->scores[score.beatmap_hash].size(); i++) {
         if(this->scores[score.beatmap_hash][i].unixTimestamp == score.unixTimestamp) return i;
     }
@@ -495,7 +496,7 @@ int Database::addScore(const FinishedScore &score) {
 }
 
 int Database::isScoreAlreadyInDB(u64 unix_timestamp, const MD5Hash &map_hash) {
-    Sync::scoped_lock lock(this->scores_mtx);
+    Sync::shared_lock lock(this->scores_mtx);
 
     for(int existing_pos = -1; const auto &existing : this->scores[map_hash]) {
         existing_pos++;
@@ -525,7 +526,7 @@ bool Database::addScoreRaw(const FinishedScore &score) {
         }
 
         {
-            Sync::scoped_lock lock(this->scores_mtx);
+            Sync::shared_lock lock(this->scores_mtx);
             // otherwise check if the old one doesn't have a replay
             // if it has one, don't overwrite it
             overwrite = !this->scores[score.beatmap_hash][existing_pos].has_possible_replay();
@@ -537,7 +538,7 @@ bool Database::addScoreRaw(const FinishedScore &score) {
         // otherwise overwrite it
     }
 
-    Sync::scoped_lock lock(this->scores_mtx);
+    Sync::unique_lock lock(this->scores_mtx);
 
     if(overwrite) {
         this->scores[score.beatmap_hash][existing_pos] = score;
@@ -550,7 +551,7 @@ bool Database::addScoreRaw(const FinishedScore &score) {
 }
 
 void Database::deleteScore(const MD5Hash &beatmapMD5Hash, u64 scoreUnixTimestamp) {
-    Sync::scoped_lock lock(this->scores_mtx);
+    Sync::unique_lock lock(this->scores_mtx);
     for(int i = 0; i < this->scores[beatmapMD5Hash].size(); i++) {
         if(this->scores[beatmapMD5Hash][i].unixTimestamp == scoreUnixTimestamp) {
             this->scores[beatmapMD5Hash].erase(this->scores[beatmapMD5Hash].begin() + i);
@@ -577,24 +578,27 @@ void Database::sortScoresInPlace(std::vector<FinishedScore> &scores) {
 }
 
 void Database::sortScores(const MD5Hash &beatmapMD5Hash) {
-    Sync::scoped_lock lock(this->scores_mtx);
+    Sync::unique_lock lock(this->scores_mtx);
     this->sortScoresInPlace(this->scores[beatmapMD5Hash]);
 }
 
 std::vector<UString> Database::getPlayerNamesWithPPScores() {
-    Sync::scoped_lock lock(this->scores_mtx);
     std::vector<MD5Hash> keys;
-    keys.reserve(this->scores.size());
-
-    for(const auto &[hash, _] : this->scores) {
-        keys.push_back(hash);
-    }
-
     std::unordered_set<std::string> tempNames;
-    for(const auto &key : keys) {
-        for(const auto &name :
-            this->scores[key] | std::views::transform([](const auto &score) -> auto & { return score.playerName; })) {
-            tempNames.insert(name);
+
+    {
+        Sync::shared_lock lock(this->scores_mtx);
+        keys.reserve(this->scores.size());
+
+        for(const auto &[hash, _] : this->scores) {
+            keys.push_back(hash);
+        }
+
+        for(const auto &key : keys) {
+            for(auto name :
+                this->scores[key] | std::views::transform([](const auto &score) -> auto { return score.playerName; })) {
+                tempNames.insert(name);
+            }
         }
     }
 
@@ -611,12 +615,15 @@ std::vector<UString> Database::getPlayerNamesWithPPScores() {
 }
 
 std::vector<UString> Database::getPlayerNamesWithScoresForUserSwitcher() {
-    Sync::scoped_lock lock(this->scores_mtx);
     std::unordered_set<std::string> tempNames;
-    for(const auto &[hash, _] : this->scores) {
-        for(const auto &name :
-            this->scores[hash] | std::views::transform([](const auto &score) -> auto & { return score.playerName; })) {
-            tempNames.insert(name);
+
+    {
+        Sync::shared_lock lock(this->scores_mtx);
+        for(const auto &[hash, _] : this->scores) {
+            for(auto name : this->scores[hash] |
+                                std::views::transform([](const auto &score) -> auto { return score.playerName; })) {
+                tempNames.insert(name);
+            }
         }
     }
 
@@ -636,52 +643,53 @@ Database::PlayerPPScores Database::getPlayerPPScores(const std::string &playerNa
     PlayerPPScores ppScores;
     ppScores.totalScore = 0;
     if(this->getProgress() < 1.0f) return ppScores;
-    Sync::scoped_lock lock(this->scores_mtx);
 
     std::vector<FinishedScore *> scores;
-
-    // collect all scores with pp data
     std::vector<MD5Hash> keys;
-    keys.reserve(this->scores.size());
-
-    for(const auto &[hash, scorevec] : this->scores) {
-        keys.push_back(hash);
-    }
-
     u64 totalScore = 0;
-    for(const auto &key : keys) {
-        if(this->scores[key].size() == 0) continue;
+    {
+        Sync::shared_lock lock(this->scores_mtx);
 
-        FinishedScore *tempScore = &this->scores[key][0];
+        // collect all scores with pp data
+        keys.reserve(this->scores.size());
 
-        // only add highest pp score per diff
-        bool foundValidScore = false;
-        float prevPP = -1.0f;
-        for(auto &score : this->scores[key]) {
-            auto uses_rx_or_ap = (score.mods.has(ModFlags::Relax) || (score.mods.has(ModFlags::Autopilot)));
-            if(uses_rx_or_ap && !cv::user_include_relax_and_autopilot_for_stats.getBool()) continue;
-
-            if(score.playerName != playerName) continue;
-
-            foundValidScore = true;
-            totalScore += score.score;
-
-            if(score.get_pp() > prevPP || prevPP < 0.0f) {
-                prevPP = score.get_pp();
-                tempScore = &score;
-            }
+        for(const auto &[hash, scorevec] : this->scores) {
+            keys.push_back(hash);
         }
 
-        if(foundValidScore) scores.push_back(tempScore);
+        for(const auto &key : keys) {
+            if(this->scores[key].size() == 0) continue;
+
+            FinishedScore *tempScore = &this->scores[key][0];
+
+            // only add highest pp score per diff
+            bool foundValidScore = false;
+            float prevPP = -1.0f;
+            for(auto &score : this->scores[key]) {
+                auto uses_rx_or_ap = (score.mods.has(ModFlags::Relax) || (score.mods.has(ModFlags::Autopilot)));
+                if(uses_rx_or_ap && !cv::user_include_relax_and_autopilot_for_stats.getBool()) continue;
+
+                if(score.playerName != playerName) continue;
+
+                foundValidScore = true;
+                totalScore += score.score;
+
+                if(score.get_pp() > prevPP || prevPP < 0.0f) {
+                    prevPP = score.get_pp();
+                    tempScore = &score;
+                }
+            }
+
+            if(foundValidScore) scores.push_back(tempScore);
+        }
+
+        // sort by pp
+        // for some reason this was originally backwards from sortScoreByPP, so negating it here
+        std::ranges::sort(scores, [](FinishedScore *a, FinishedScore *b) -> bool {
+            if(a == b) return false;
+            return !sortScoreByPP(*a, *b);
+        });
     }
-
-    // sort by pp
-    // for some reason this was originally backwards from sortScoreByPP, so negating it here
-    std::ranges::sort(scores, [](FinishedScore *a, FinishedScore *b) -> bool {
-        if(a == b) return false;
-        return !sortScoreByPP(*a, *b);
-    });
-
     ppScores.ppScores = std::move(scores);
     ppScores.totalScore = totalScore;
 
@@ -695,7 +703,6 @@ Database::PlayerStats Database::calculatePlayerStats(const std::string &playerNa
     const PlayerPPScores ps = this->getPlayerPPScores(playerName);
 
     // delay caching until we actually have scores loaded
-    Sync::scoped_lock lock(this->scores_mtx);
     if(ps.ppScores.size() > 0 || db->isFinished()) this->bDidScoresChangeForStats = false;
 
     // "If n is the amount of scores giving more pp than a given score, then the score's weight is 0.95^n"
@@ -779,7 +786,7 @@ int Database::getLevelForScore(u64 score, int maxLevel) {
 DatabaseBeatmap *Database::getBeatmapDifficulty(const MD5Hash &md5hash) {
     if(this->isLoading()) return nullptr;
 
-    Sync::scoped_lock lock(this->beatmap_difficulties_mtx);
+    Sync::shared_lock lock(this->beatmap_difficulties_mtx);
     auto it = this->beatmap_difficulties.find(md5hash);
     if(it == this->beatmap_difficulties.end()) {
         return nullptr;
@@ -791,7 +798,7 @@ DatabaseBeatmap *Database::getBeatmapDifficulty(const MD5Hash &md5hash) {
 DatabaseBeatmap *Database::getBeatmapDifficulty(i32 map_id) {
     if(this->isLoading()) return nullptr;
 
-    Sync::scoped_lock lock(this->beatmap_difficulties_mtx);
+    Sync::shared_lock lock(this->beatmap_difficulties_mtx);
     for(const auto &[_, diff] : this->beatmap_difficulties) {
         if(diff->getID() == map_id) {
             return diff;
@@ -883,9 +890,6 @@ void Database::scheduleLoadRaw() {
 }
 
 void Database::loadMaps() {
-    Sync::scoped_lock lock(this->beatmap_difficulties_mtx);
-    this->peppy_overrides_mtx.lock();
-
     const auto &peppy_db_path = this->database_files[DatabaseType::STABLE_MAPS];
     const auto &neosu_maps_path = this->database_files[DatabaseType::NEOSU_MAPS];
 
@@ -938,8 +942,9 @@ void Database::loadMaps() {
                 for(u16 j = 0; j < nb_diffs; j++) {
                     if(this->bInterruptLoad.load()) {  // cancellation point
                         // clean up partially loaded diffs in current set
+                        Sync::unique_lock lock(this->beatmap_difficulties_mtx);
                         for(DatabaseBeatmap *diff : *diffs) {
-                            this->beatmap_difficulties.erase(diff->getMD5Hash());
+                            this->beatmap_difficulties.erase(diff->getMD5());
                             delete diff;
                         }
                         delete diffs;
@@ -967,7 +972,7 @@ void Database::loadMaps() {
                     diff->sDifficultyName = neosu_maps.read_string();
                     diff->sSource = neosu_maps.read_string();
                     diff->sTags = neosu_maps.read_string();
-                    diff->sMD5Hash = neosu_maps.read_hash();
+                    diff->writeMD5(neosu_maps.read_hash());
                     diff->fAR = neosu_maps.read<f32>();
                     diff->fCS = neosu_maps.read<f32>();
                     diff->fHP = neosu_maps.read<f32>();
@@ -1025,7 +1030,10 @@ void Database::loadMaps() {
                         diff->sBackgroundImageFileName = neosu_maps.read_string();
                     }
 
-                    this->beatmap_difficulties[diff->sMD5Hash] = diff;
+                    {
+                        Sync::unique_lock lock(this->beatmap_difficulties_mtx);
+                        this->beatmap_difficulties[diff->getMD5()] = diff;
+                    }
                     diffs->push_back(diff);
                     nb_neosu_maps++;
                 }
@@ -1048,6 +1056,7 @@ void Database::loadMaps() {
 
             if(version >= 20240812) {
                 nb_overrides = neosu_maps.read<u32>();
+                Sync::unique_lock lock(this->peppy_overrides_mtx);
                 for(u32 i = 0; i < nb_overrides; i++) {
                     MapOverrides over;
                     auto map_md5 = neosu_maps.read_hash();
@@ -1130,10 +1139,16 @@ void Database::loadMaps() {
                 std::string audioFileName = db.read_string();
 
                 auto md5hash = db.read_hash();
-                auto overrides = this->peppy_overrides.find(md5hash);
-                bool overrides_found = overrides != this->peppy_overrides.end();
-                const auto &override = overrides_found ? overrides->second : MapOverrides{};
-
+                bool overrides_found = false;
+                MapOverrides override;
+                {
+                    Sync::shared_lock lock(this->peppy_overrides_mtx);
+                    auto overrides = this->peppy_overrides.find(md5hash);
+                    overrides_found = overrides != this->peppy_overrides.end();
+                    if(overrides_found) {
+                        override = overrides->second;
+                    }
+                }
                 std::string osuFileName = db.read_string();
                 /*unsigned char rankedStatus = */ db.skip<u8>();
                 auto numCircles = db.read<u16>();
@@ -1344,7 +1359,7 @@ void Database::loadMaps() {
                     map->sDifficultyName = difficultyName;
                     map->sSource = songSource;
                     map->sTags = songTags;
-                    map->sMD5Hash = md5hash;
+                    map->writeMD5(md5hash);
                     map->iID = beatmapID;
                     map->iSetID = beatmapSetID;
 
@@ -1371,6 +1386,7 @@ void Database::loadMaps() {
                 }
 
                 // (the diff is now fully built)
+                Sync::unique_lock lock(this->beatmap_difficulties_mtx);
                 this->beatmap_difficulties[md5hash] = map;
 
                 // now, search if the current set (to which this diff would belong) already exists and add it there, or
@@ -1380,7 +1396,7 @@ void Database::loadMaps() {
                 bool diff_already_added = false;
                 if(beatmapSetExists) {
                     for(const auto &existing_diff : *beatmapSets[result->second].diffs2) {
-                        if(existing_diff->getMD5Hash() == map->getMD5Hash()) {
+                        if(existing_diff->getMD5() == map->getMD5()) {
                             diff_already_added = true;
                             break;
                         }
@@ -1432,6 +1448,8 @@ void Database::loadMaps() {
                 nb_peppy_maps++;
             }
 
+            Sync::unique_lock lock(this->beatmap_difficulties_mtx);
+
             // build beatmap sets
             for(const auto &beatmapSet : beatmapSets) {
                 if(this->bInterruptLoad.load()) {  // cancellation point
@@ -1439,7 +1457,7 @@ void Database::loadMaps() {
                     for(size_t i = &beatmapSet - &beatmapSets[0]; i < beatmapSets.size(); i++) {
                         if(beatmapSets[i].diffs2) {
                             for(DatabaseBeatmap *diff : *beatmapSets[i].diffs2) {
-                                this->beatmap_difficulties.erase(diff->getMD5Hash());
+                                this->beatmap_difficulties.erase(diff->getMD5());
 
                                 // remove from loudness_to_calc
                                 std::erase_if(this->loudness_to_calc,
@@ -1499,8 +1517,6 @@ void Database::loadMaps() {
              this->importTimer->getElapsedTime(), nb_peppy_maps, nb_neosu_maps, nb_peppy_maps + nb_neosu_maps);
     debugLog("Found {:d} overrides; {:d} maps need star recalc, {:d} maps need loudness recalc", nb_overrides,
              this->maps_to_recalc.size(), this->loudness_to_calc.size());
-
-    this->peppy_overrides_mtx.unlock();
 }
 
 void Database::saveMaps() {
@@ -1550,7 +1566,7 @@ void Database::saveMaps() {
             maps.write_string(diff->sDifficultyName.c_str());
             maps.write_string(diff->sSource.c_str());
             maps.write_string(diff->sTags.c_str());
-            maps.write_hash(diff->sMD5Hash);
+            maps.write_hash(diff->getMD5());
             maps.write<f32>(diff->fAR);
             maps.write<f32>(diff->fCS);
             maps.write<f32>(diff->fHP);
@@ -1578,32 +1594,37 @@ void Database::saveMaps() {
     }
 
     // We want to save settings we applied on peppy-imported maps
-    this->peppy_overrides_mtx.lock();
 
     // When calculating loudness we don't call update_overrides() for performance reasons
-    for(const auto &map : this->loudness_to_calc) {
-        if(map->type != DatabaseBeatmap::BeatmapType::PEPPY_DIFFICULTY) continue;
-        if(map->loudness.load() == 0.f) continue;
-        this->peppy_overrides[map->getMD5Hash()] = map->get_overrides();
+    {
+        Sync::unique_lock lock(this->peppy_overrides_mtx);
+        for(const auto &map : this->loudness_to_calc) {
+            if(map->type != DatabaseBeatmap::BeatmapType::PEPPY_DIFFICULTY) continue;
+            if(map->loudness.load() == 0.f) continue;
+            this->peppy_overrides[map->getMD5()] = map->get_overrides();
+        }
     }
 
     u32 nb_overrides = 0;
-    maps.write<u32>(this->peppy_overrides.size());
-    for(const auto &[hash, override] : this->peppy_overrides) {
-        maps.write_hash(hash);
-        maps.write<i16>(override.local_offset);
-        maps.write<i16>(override.online_offset);
-        maps.write<f32>(override.star_rating);
-        maps.write<f32>(override.loudness);
-        maps.write<i32>(override.min_bpm);
-        maps.write<i32>(override.max_bpm);
-        maps.write<i32>(override.avg_bpm);
-        maps.write<u8>(override.draw_background);
-        maps.write_string(override.background_image_filename.c_str());
+    {
+        // only need read lock here
+        Sync::shared_lock lock(this->peppy_overrides_mtx);
+        maps.write<u32>(this->peppy_overrides.size());
+        for(const auto &[hash, override] : this->peppy_overrides) {
+            maps.write_hash(hash);
+            maps.write<i16>(override.local_offset);
+            maps.write<i16>(override.online_offset);
+            maps.write<f32>(override.star_rating);
+            maps.write<f32>(override.loudness);
+            maps.write<i32>(override.min_bpm);
+            maps.write<i32>(override.max_bpm);
+            maps.write<i32>(override.avg_bpm);
+            maps.write<u8>(override.draw_background);
+            maps.write_string(override.background_image_filename.c_str());
 
-        nb_overrides++;
+            nb_overrides++;
+        }
     }
-    this->peppy_overrides_mtx.unlock();
 
     t.update();
     debugLog("Saved {:d} maps (+ {:d} overrides) in {:f} seconds.", nb_diffs_saved, nb_overrides, t.getElapsedTime());
@@ -2167,7 +2188,6 @@ void Database::saveScores() {
 
     const auto neosu_scores_db = getDBPath(DatabaseType::NEOSU_SCORES);
 
-    Sync::scoped_lock lock(this->scores_mtx);
     ByteBufferedFile::Writer db(neosu_scores_db);
 
     if(!db.good()) {
@@ -2180,6 +2200,8 @@ void Database::saveScores() {
 
     u32 nb_beatmaps = 0;
     u32 nb_scores = 0;
+
+    Sync::shared_lock lock(this->scores_mtx);  // only need read lock here
     for(const auto &[_, scorevec] : this->scores) {
         u32 beatmap_scores = scorevec.size();
         if(beatmap_scores > 0) {

@@ -3638,7 +3638,7 @@ FinishedScore BeatmapInterface::saveAndSubmitScore(bool quit) {
     score.numHitObjects = numHitObjects;
     score.numCircles = numCircles;
     score.mods = osu->getScore()->mods;
-    score.beatmap_hash = this->beatmap->getMD5Hash();  // NOTE: necessary for "Use Mods"
+    score.beatmap_hash = this->beatmap->getMD5();  // NOTE: necessary for "Use Mods"
     score.replay = this->live_replay;
 
     // @PPV3: store ppv3 data if not already done. also double check replay is marked correctly
