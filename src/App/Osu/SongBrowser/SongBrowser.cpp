@@ -2608,6 +2608,12 @@ void SongBrowser::onDatabaseLoadingFinished() {
         this->selectRandomBeatmap();
     }
 
+    Sound *music = nullptr;
+    if((music = osu->getMapInterface()->getMusic())) {
+        // make sure we loop the music, since if we're carrying over from main menu it was set to not-loop
+        music->setLoop(cv::beatmap_preview_music_loop.getBool());
+    }
+
     if(this->bCloseAfterBeatmapRefreshFinished) {
         this->setVisible(false);
     }
