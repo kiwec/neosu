@@ -1491,11 +1491,13 @@ DatabaseBeatmap::TIMING_INFO DatabaseBeatmap::getTimingInfoForTimeAndTimingPoint
 }
 
 const std::string &DatabaseBeatmap::getFullSoundFilePath() {
-    // this modifies this->sFullSoundFilePath inplace
-    if(File::existsCaseInsensitive(this->sFullSoundFilePath) == File::FILETYPE::FILE) {
-        return this->sFullSoundFilePath;
-    }
+    if(this->sFullSoundFilePath.empty() || this->bSoundFilePathAlreadyFixed) return this->sFullSoundFilePath;
 
-    // wasn't found but return what we have anyways
+    this->bSoundFilePathAlreadyFixed = true;
+    // this modifies this->sFullSoundFilePath inplace
+    // only do it once, though
+    void(File::existsCaseInsensitive(this->sFullSoundFilePath) == File::FILETYPE::FILE);
+
+    // return what we have regardless
     return this->sFullSoundFilePath;
 }

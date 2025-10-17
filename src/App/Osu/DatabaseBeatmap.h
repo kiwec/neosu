@@ -285,6 +285,7 @@ class DatabaseBeatmap final {
     std::string sFilePath;  // path to .osu file (e.g. "/path/to/beatmapfolder/beatmap.osu")
    private:
     std::string sFullSoundFilePath;
+    bool bSoundFilePathAlreadyFixed{false};
 
    public:
     std::string sFullBackgroundImageFilePath;
