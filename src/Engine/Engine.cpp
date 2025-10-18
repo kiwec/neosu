@@ -281,9 +281,10 @@ void Engine::onUpdate() {
         // update time
         {
             // frame time
-            this->dFrameTime = std::max<double>(Timing::getTimeReal() - this->dTime, 0.00005);
+            double now = Timing::getTimeReal();
+            this->dFrameTime = std::max<double>(now - this->dTime, 0.00005);
             // total engine runtime
-            this->dTime = Timing::getTimeReal();
+            this->dTime = now;
             if(cv::engine_throttle.getBool()) {
                 // it's more like a crude estimate but it gets the job done for use as a throttle
                 if((this->fVsyncFrameCounterTime += static_cast<float>(this->dFrameTime)) >

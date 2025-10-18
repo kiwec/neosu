@@ -46,6 +46,9 @@ void OpenGLImage::init() {
         return;
     }
 
+    // rawImage cannot be empty here, if it is, we're screwed
+    assert(this->totalBytes() != 0);
+
     // create texture object
     if(this->GLTexture == 0) {
         // FFP compatibility (part 1)
@@ -75,14 +78,6 @@ void OpenGLImage::init() {
         if(this->bMipmapped) {
             glGenerateMipmap(GL_TEXTURE_2D);
         }
-    }
-
-    if(this->totalBytes() == 0) {
-        auto GLerror = glGetError();
-        debugLog("OpenGL Image Error: {} on file {:s}!", GLerror, this->sFilePath.c_str());
-        engine->showMessageError("Image Error",
-                                 UString::format("OpenGL Image error %i on file %s", GLerror, this->sFilePath.c_str()));
-        return;
     }
 
     // free from RAM (it's now in VRAM)

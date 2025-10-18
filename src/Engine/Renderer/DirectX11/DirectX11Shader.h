@@ -18,7 +18,11 @@
 
 #include <vector>
 
+MC_DO_PRAGMA(GCC diagnostic ignored "-Wpragmas")
+MC_DO_PRAGMA(GCC diagnostic ignored "-Wextern-c-compat")
+MC_DO_PRAGMA(GCC diagnostic push)
 #include "d3d11.h"
+MC_DO_PRAGMA(GCC diagnostic pop)
 
 #ifdef MCENGINE_PLATFORM_LINUX
 namespace dynutils {

@@ -66,16 +66,42 @@ class Image : public Resource {
             // stb_image_free is just a macro to free, anyways
             forceinline void operator()(void *p) const noexcept { free(p); }
         };
+        ~SizedRGBABytes() noexcept = default;
 
-        explicit SizedRGBABytes(i32 width, i32 height)
+        // for taking ownership of some raw pointer (stb)
+        explicit SizedRGBABytes(u8 *to_own, i32 width, i32 height) noexcept : size(width, height), bytes(to_own) {}
+
+        explicit SizedRGBABytes(i32 width, i32 height) noexcept
             : size(width, height),
               bytes(static_cast<u8 *>(malloc(static_cast<u64>(width) * height * Image::NUM_CHANNELS))) {}
-        explicit SizedRGBABytes(i32 width, i32 height, bool /*zero*/)
+        explicit SizedRGBABytes(i32 width, i32 height, bool /*zero*/) noexcept
             : size(width, height),
               bytes(static_cast<u8 *>(calloc(static_cast<u64>(width) * height * Image::NUM_CHANNELS, sizeof(u8)))) {}
 
-        // for taking ownership of some raw pointer (stb)
-        explicit SizedRGBABytes(u8 *to_own, i32 width, i32 height) : size(width, height), bytes(to_own) {}
+        SizedRGBABytes(const SizedRGBABytes &other) noexcept
+            : size(other.size), bytes(other.bytes ? static_cast<u8 *>(malloc(other.getNumBytes())) : nullptr) {
+            if(this->bytes) {
+                memcpy(this->bytes.get(), other.bytes.get(), other.getNumBytes());
+            }
+        }
+        SizedRGBABytes &operator=(const SizedRGBABytes &other) noexcept {
+            if(this != &other) {
+                this->size = other.size;
+                this->bytes.reset(other.bytes ? static_cast<u8 *>(malloc(other.getNumBytes())) : nullptr);
+                if(this->bytes) {
+                    memcpy(this->bytes.get(), other.bytes.get(), other.getNumBytes());
+                }
+            }
+            return *this;
+        }
+        SizedRGBABytes(SizedRGBABytes &&other) noexcept : size(other.size), bytes(std::move(other.bytes)) {}
+        SizedRGBABytes &operator=(SizedRGBABytes &&other) noexcept {
+            if(this != &other) {
+                this->size = other.size;
+                this->bytes = std::move(other.bytes);
+            }
+            return *this;
+        }
 
         [[nodiscard]] constexpr forceinline u64 getNumBytes() const {
             return static_cast<u64>(this->size.x) * this->size.y * Image::NUM_CHANNELS;

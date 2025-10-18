@@ -16,19 +16,26 @@ AnimationHandler::~AnimationHandler() {
 }
 
 void AnimationHandler::update() {
-    const auto curFrameTime = static_cast<float>(engine->getTime());
+    const auto frameTime = static_cast<float>(engine->getFrameTime());
     const bool doLogging = cv::debug_anim.getBool();
 
     for(sSz i = 0; i < this->vAnimations.size(); i++) {
-        // start animation
         Animation &animation = this->vAnimations[i];
-        if(curFrameTime < animation.fStartTime)
-            continue;
-        else if(!animation.bStarted) {
-            // after our delay, take the current value as startValue, then start animating to the target
+
+        // handle delay before animation starts
+        if(!animation.bStarted) {
+            animation.fElapsedTime += frameTime;
+            if(animation.fElapsedTime < animation.fDelay) {
+                continue;
+            }
+            // delay has elapsed, capture the current value and start animating
             animation.fStartValue = *animation.fBase;
             animation.bStarted = true;
+            animation.fElapsedTime = 0.0f;
         }
+
+        // update elapsed time for running animation
+        animation.fElapsedTime += frameTime;
 
         // check if animation is close enough to target
         // use relative epsilon for large values, absolute epsilon for small values
@@ -39,8 +46,8 @@ void AnimationHandler::update() {
         if(diff <= threshold) {
             *animation.fBase = animation.fTarget;
 
-            logIf(doLogging, "removing animation #{:d} (epsilon completion), dtime = {:f}", i,
-                  curFrameTime - animation.fStartTime);
+            logIf(doLogging, "removing animation #{:d} (epsilon completion), elapsed = {:f}", i,
+                  animation.fElapsedTime);
 
             this->vAnimations.erase(this->vAnimations.begin() + i);
             i--;
@@ -48,7 +55,7 @@ void AnimationHandler::update() {
         }
 
         // calculate percentage
-        float percent = std::clamp<float>((curFrameTime - animation.fStartTime) / (animation.fDuration), 0.0f, 1.0f);
+        float percent = std::clamp<float>(animation.fElapsedTime / animation.fDuration, 0.0f, 1.0f);
 
         logIf(doLogging, "animation #{:d}, percent = {:f}", i, percent);
 
@@ -56,7 +63,7 @@ void AnimationHandler::update() {
         if(percent >= 1.0f) {
             *animation.fBase = animation.fTarget;
 
-            logIf(doLogging, "removing animation #{:d}, dtime = {:f}", i, curFrameTime - animation.fStartTime);
+            logIf(doLogging, "removing animation #{:d}, elapsed = {:f}", i, animation.fElapsedTime);
 
             this->vAnimations.erase(this->vAnimations.begin() + i);
             i--;
@@ -169,7 +176,8 @@ void AnimationHandler::addAnimation(float *base, float target, float duration, f
         .fTarget = target,
         .fDuration = duration,
         .fStartValue = *base,
-        .fStartTime = static_cast<float>(engine->getTime()) + delay,
+        .fDelay = delay,
+        .fElapsedTime = 0.0f,
         .fFactor = smoothFactor,
         .animType = type,
         .bStarted = (delay == 0.0f),
@@ -188,10 +196,15 @@ void AnimationHandler::deleteExistingAnimation(float *base) {
 }
 
 float AnimationHandler::getRemainingDuration(float *base) const {
-    const auto curFrameTime = static_cast<float>(engine->getTime());
     for(const auto &vAnimation : this->vAnimations) {
-        if(vAnimation.fBase == base)
-            return std::max(0.0f, (vAnimation.fStartTime + vAnimation.fDuration) - curFrameTime);
+        if(vAnimation.fBase == base) {
+            if(!vAnimation.bStarted) {
+                // still in delay phase
+                return (vAnimation.fDelay - vAnimation.fElapsedTime) + vAnimation.fDuration;
+            }
+            // in animation phase
+            return std::max(0.0f, vAnimation.fDuration - vAnimation.fElapsedTime);
+        }
     }
 
     return 0.0f;

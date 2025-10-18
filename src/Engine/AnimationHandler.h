@@ -78,7 +78,8 @@ class AnimationHandler {
         float fDuration;
 
         float fStartValue;
-        float fStartTime;
+        float fDelay;
+        float fElapsedTime;
         float fFactor;
 
         ANIMATION_TYPE animType;

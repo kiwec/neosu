@@ -18,7 +18,11 @@ class DirectX11Shader;
 struct IDXGIFactory2;
 struct IDXGISwapChain1;
 
+MC_DO_PRAGMA(GCC diagnostic ignored "-Wpragmas")
+MC_DO_PRAGMA(GCC diagnostic ignored "-Wextern-c-compat")
+MC_DO_PRAGMA(GCC diagnostic push)
 #include "d3d11.h"
+MC_DO_PRAGMA(GCC diagnostic pop)
 
 class DirectX11Interface final : public Graphics {
     NOCOPY_NOMOVE(DirectX11Interface)
