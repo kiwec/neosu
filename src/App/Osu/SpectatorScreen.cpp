@@ -2,6 +2,7 @@
 #include "SpectatorScreen.h"
 
 #include "Osu.h"
+#include "BackgroundImageHandler.h"
 #include "Bancho.h"
 #include "BanchoNetworking.h"
 #include "BanchoUsers.h"
@@ -260,7 +261,7 @@ void SpectatorScreen::draw() {
     if(!this->isVisible()) return;
 
     if(cv::draw_spectator_background_image.getBool()) {
-        SongBrowser::drawSelectedBeatmapBackgroundImage(1.0);
+        osu->getBackgroundImageHandler()->draw(osu->getMapInterface()->getBeatmap());
     }
 
     OsuScreen::draw();

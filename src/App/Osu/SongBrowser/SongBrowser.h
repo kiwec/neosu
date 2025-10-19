@@ -70,8 +70,6 @@ class SongBrowser final : public ScreenBackable {
     // used also by SongButton
     static bool sort_by_difficulty(SongButton const *a, SongButton const *b);
 
-    static void drawSelectedBeatmapBackgroundImage(float alpha = 1.0f);
-
     static f32 getUIScale();
     static i32 getUIScale(f32 m) { return (i32)(m * getUIScale()); }
     static f32 getUIScale2();

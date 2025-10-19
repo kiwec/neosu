@@ -592,7 +592,7 @@ void SongBrowser::draw() {
             }
         }
 
-        drawSelectedBeatmapBackgroundImage(alpha);
+        osu->getBackgroundImageHandler()->draw(osu->getMapInterface()->getBeatmap(), alpha);
     } else if(cv::draw_songbrowser_menu_background_image.getBool()) {
         // menu-background
         Image *backgroundImage = osu->getSkin()->getMenuBackground();
@@ -828,26 +828,6 @@ void SongBrowser::draw() {
 
         g->fillGradient(0, 0, osu->getVirtScreenWidth(), osu->getVirtScreenHeight(), topColor, topColor, bottomColor,
                         bottomColor);
-    }
-}
-
-void SongBrowser::drawSelectedBeatmapBackgroundImage(float alpha) {
-    if(osu->getMapInterface()->getBeatmap() != nullptr) {
-        const Image *backgroundImage =
-            osu->getBackgroundImageHandler()->getLoadBackgroundImage(osu->getMapInterface()->getBeatmap());
-        if(backgroundImage != nullptr && backgroundImage->isReady()) {
-            const float scale = Osu::getImageScaleToFillResolution(backgroundImage, osu->getVirtScreenSize());
-
-            g->setColor(Color(0xff999999).setA(alpha));
-
-            g->pushTransform();
-            {
-                g->scale(scale, scale);
-                g->translate(osu->getVirtScreenWidth() / 2, osu->getVirtScreenHeight() / 2);
-                g->drawImage(backgroundImage);
-            }
-            g->popTransform();
-        }
     }
 }
 

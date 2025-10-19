@@ -20,6 +20,7 @@ class BGImageHandler final {
     BGImageHandler();
     ~BGImageHandler();
 
+    void draw(DatabaseBeatmap *beatmap, f32 alpha = 1.f);
     void update(bool allowEviction);
     const Image *getLoadBackgroundImage(const DatabaseBeatmap *beatmap, bool load_immediately = false);
 

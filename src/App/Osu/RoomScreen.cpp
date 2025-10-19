@@ -255,7 +255,7 @@ void RoomScreen::draw() {
     }
 
     // XXX: Add convar for toggling room backgrounds
-    SongBrowser::drawSelectedBeatmapBackgroundImage(1.0);
+    osu->getBackgroundImageHandler()->draw(osu->getMapInterface()->getBeatmap());
     OsuScreen::draw();
 
     // Update avatar visibility status

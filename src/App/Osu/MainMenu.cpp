@@ -776,9 +776,11 @@ void MainMenu::clearPreloadedMaps() {
     this->preloadedMaps.clear();
 }
 
+// Differences from BackgroundImageHandler::draw:
+// - We use the menu-background skin element as fallback
+// - We load background images immediately
 void MainMenu::drawMapBackground(DatabaseBeatmap *beatmap, f32 alpha) {
     const Image *bg = nullptr;
-
     if(beatmap == nullptr) {
         bool just_launched = engine->getTime() < 5.0;
         if(cv::draw_menu_background.getBool() && !just_launched) {
@@ -787,7 +789,6 @@ void MainMenu::drawMapBackground(DatabaseBeatmap *beatmap, f32 alpha) {
     } else {
         bg = osu->getBackgroundImageHandler()->getLoadBackgroundImage(beatmap, true);
     }
-
     if(bg == nullptr || !bg->isReady() || bg == MISSING_TEXTURE) return;
 
     g->pushTransform();

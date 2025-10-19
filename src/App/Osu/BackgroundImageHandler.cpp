@@ -88,6 +88,23 @@ BGImageHandler::~BGImageHandler() {
     cv::load_beatmap_background_images.removeCallback();
 }
 
+void BGImageHandler::draw(DatabaseBeatmap *beatmap, f32 alpha) {
+    if(beatmap == nullptr) return;
+
+    const Image *backgroundImage = osu->getBackgroundImageHandler()->getLoadBackgroundImage(beatmap);
+    if(backgroundImage == nullptr || !backgroundImage->isReady()) return;
+
+    f32 scale = Osu::getImageScaleToFillResolution(backgroundImage, osu->getVirtScreenSize());
+    g->pushTransform();
+    {
+        g->setColor(Color(0xff999999).setA(alpha));
+        g->scale(scale, scale);
+        g->translate(osu->getVirtScreenWidth() / 2, osu->getVirtScreenHeight() / 2);
+        g->drawImage(backgroundImage);
+    }
+    g->popTransform();
+}
+
 void BGImageHandler::update(bool allow_eviction) {
     if(this->disabled) return;
 

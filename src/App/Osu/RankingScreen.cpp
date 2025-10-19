@@ -4,6 +4,7 @@
 #include <cmath>
 
 #include "AnimationHandler.h"
+#include "BackgroundImageHandler.h"
 #include "Bancho.h"
 #include "BeatmapInterface.h"
 #include "CBaseUIContainer.h"
@@ -223,7 +224,7 @@ void RankingScreen::draw() {
 
     // draw background image
     if(cv::draw_rankingscreen_background_image.getBool()) {
-        SongBrowser::drawSelectedBeatmapBackgroundImage();
+        osu->getBackgroundImageHandler()->draw(osu->getMapInterface()->getBeatmap());
 
         // draw top black bar
         g->setColor(0xff000000);
