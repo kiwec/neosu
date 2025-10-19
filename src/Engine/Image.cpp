@@ -358,7 +358,7 @@ Image::Image(std::string filepath, bool mipmapped, bool keepInSystemMemory) : Re
     this->bKeepInSystemMemory = keepInSystemMemory;
 
     this->type = Image::TYPE::TYPE_PNG;
-    this->filterMode = Graphics::FILTER_MODE::FILTER_MODE_LINEAR;
+    this->filterMode = mipmapped ? Graphics::FILTER_MODE::FILTER_MODE_MIPMAP : Graphics::FILTER_MODE::FILTER_MODE_LINEAR;
     this->wrapMode = Graphics::WRAP_MODE::WRAP_MODE_CLAMP;
     this->iWidth = 1;
     this->iHeight = 1;
@@ -371,7 +371,7 @@ Image::Image(i32 width, i32 height, bool mipmapped, bool keepInSystemMemory) : R
     this->bKeepInSystemMemory = keepInSystemMemory;
 
     this->type = Image::TYPE::TYPE_RGBA;
-    this->filterMode = Graphics::FILTER_MODE::FILTER_MODE_LINEAR;
+    this->filterMode = mipmapped ? Graphics::FILTER_MODE::FILTER_MODE_MIPMAP : Graphics::FILTER_MODE::FILTER_MODE_LINEAR;
     this->wrapMode = Graphics::WRAP_MODE::WRAP_MODE_CLAMP;
     this->iWidth = std::min(16384, width);  // sanity
     this->iHeight = std::min(16384, height);
