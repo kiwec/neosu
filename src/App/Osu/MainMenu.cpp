@@ -795,7 +795,7 @@ void MainMenu::drawMapBackground(DatabaseBeatmap *beatmap, f32 alpha) {
         const f32 scale = Osu::getImageScaleToFillResolution(bg, osu->getVirtScreenSize());
         g->scale(scale, scale);
         g->translate(osu->getVirtScreenWidth() / 2, osu->getVirtScreenHeight() / 2);
-        g->setColor(Color(0xffffffff).setA(alpha));
+        g->setColor(Color(0xff999999).setA(alpha));
         g->drawImage(bg);
     }
     g->popTransform();
@@ -1094,7 +1094,7 @@ void MainMenu::mouse_update(bool *propagate_clicks) {
                 this->pauseButton->setPaused(false);
 
                 // NOTE: We set this every frame, because music loading isn't instant
-                if (music->isLooped()) {
+                if(music->isLooped()) {
                     music->setLoop(false);
                 }
 
