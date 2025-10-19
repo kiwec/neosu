@@ -2,14 +2,18 @@
 #ifndef ANIMATIONHANDLER_H
 #define ANIMATIONHANDLER_H
 
-#include "cbase.h"
+#include "noinclude.h"
+#include "types.h"
+
+#include <vector>
+#include <memory>
 
 class AnimationHandler {
     NOCOPY_NOMOVE(AnimationHandler)
 
    public:
-    AnimationHandler();
-    ~AnimationHandler();
+    AnimationHandler() = default;
+    ~AnimationHandler() = default;
 
     void update();
 
@@ -95,6 +99,6 @@ class AnimationHandler {
     static constexpr const float ANIM_EPSILON{1e-6f};
 };
 
-extern AnimationHandler *anim;
+extern std::unique_ptr<AnimationHandler> anim;
 
 #endif

@@ -159,7 +159,7 @@ extern std::unique_ptr<Graphics> g;
 extern std::unique_ptr<SoundEngine> soundEngine;
 extern std::unique_ptr<ResourceManager> resourceManager;
 extern std::unique_ptr<NetworkHandler> networkHandler;
-extern std::unique_ptr<AnimationHandler> animationHandler;
+extern std::unique_ptr<AnimationHandler> anim;
 extern std::unique_ptr<AsyncIOHandler> io;
 
 extern Engine *engine;

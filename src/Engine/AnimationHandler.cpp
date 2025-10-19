@@ -5,16 +5,6 @@
 #include "Engine.h"
 #include "Logging.h"
 
-AnimationHandler *anim = nullptr;
-
-AnimationHandler::AnimationHandler() { anim = this; }
-
-AnimationHandler::~AnimationHandler() {
-    this->vAnimations.clear();
-
-    anim = nullptr;
-}
-
 void AnimationHandler::update() {
     const auto frameTime = static_cast<float>(engine->getFrameTime());
     const bool doLogging = cv::debug_anim.getBool();

@@ -4,6 +4,7 @@
 #include "Color.h"
 #include "Vectors.h"
 
+#include <utility>
 #include <vector>
 
 class Image;
@@ -66,6 +67,25 @@ class Skin final {
     [[nodiscard]] inline Image *getDefault7() const { return this->default7; }
     [[nodiscard]] inline Image *getDefault8() const { return this->default8; }
     [[nodiscard]] inline Image *getDefault9() const { return this->default9; }
+    [[nodiscard]] inline Image *getDefaultN(uSz n) const {
+        assert(n < 10);  // don't be stupid
+        switch(n) {
+                // clang-format off
+            case 0: return this->default0;
+            case 1: return this->default1;
+            case 2: return this->default2;
+            case 3: return this->default3;
+            case 4: return this->default4;
+            case 5: return this->default5;
+            case 6: return this->default6;
+            case 7: return this->default7;
+            case 8: return this->default8;
+            case 9: return this->default9;
+            default: std::unreachable();
+                // clang-format on
+        }
+        std::unreachable();
+    }
 
     [[nodiscard]] inline Image *getScore0() const { return this->score0; }
     [[nodiscard]] inline Image *getScore1() const { return this->score1; }
@@ -80,6 +100,25 @@ class Skin final {
     [[nodiscard]] inline Image *getScoreX() const { return this->scoreX; }
     [[nodiscard]] inline Image *getScorePercent() const { return this->scorePercent; }
     [[nodiscard]] inline Image *getScoreDot() const { return this->scoreDot; }
+    [[nodiscard]] inline Image *getScoreN(uSz n) const {
+        assert(n < 10);
+        switch(n) {
+                // clang-format off
+            case 0: return this->score0;
+            case 1: return this->score1;
+            case 2: return this->score2;
+            case 3: return this->score3;
+            case 4: return this->score4;
+            case 5: return this->score5;
+            case 6: return this->score6;
+            case 7: return this->score7;
+            case 8: return this->score8;
+            case 9: return this->score9;
+            default: std::unreachable();
+                // clang-format on
+        }
+        std::unreachable();
+    }
 
     [[nodiscard]] inline Image *getCombo0() const { return this->combo0; }
     [[nodiscard]] inline Image *getCombo1() const { return this->combo1; }
@@ -92,6 +131,25 @@ class Skin final {
     [[nodiscard]] inline Image *getCombo8() const { return this->combo8; }
     [[nodiscard]] inline Image *getCombo9() const { return this->combo9; }
     [[nodiscard]] inline Image *getComboX() const { return this->comboX; }
+    [[nodiscard]] inline Image *getComboN(uSz n) const {
+        assert(n < 10);
+        switch(n) {
+                // clang-format off
+            case 0: return this->combo0;
+            case 1: return this->combo1;
+            case 2: return this->combo2;
+            case 3: return this->combo3;
+            case 4: return this->combo4;
+            case 5: return this->combo5;
+            case 6: return this->combo6;
+            case 7: return this->combo7;
+            case 8: return this->combo8;
+            case 9: return this->combo9;
+            default: std::unreachable();
+                // clang-format on
+        }
+        std::unreachable();
+    }
 
     [[nodiscard]] inline SkinImage *getPlaySkip() const { return this->playSkip; }
     [[nodiscard]] inline Image *getPlayWarningArrow() const { return this->playWarningArrow; }

@@ -767,157 +767,37 @@ void HUD::drawBeatmapImportSpinner() {
     g->popTransform();
 }
 
-void HUD::drawScoreNumber(u64 number, float scale, bool drawLeadingZeroes) {
-    // get digits
-    static std::vector<int> digits;
-    digits.clear();
-    while(number >= 10) {
-        int curDigit = number % 10;
-        number /= 10;
-
-        digits.insert(digits.begin(), curDigit);
-    }
-    digits.insert(digits.begin(), number);
-    if(digits.size() == 1) {
-        if(drawLeadingZeroes) digits.insert(digits.begin(), 0);
+void HUD::drawComboOrScoreDigits(u64 number, float scale, bool drawLeadingZeroes, bool combo /* false for score */) {
+    u64 divisor = 1;
+    u64 temp = number;
+    while(temp >= 10) {
+        temp /= 10;
+        divisor *= 10;
     }
 
-    // draw them
-    // NOTE: just using the width here is incorrect, but it is the quickest solution instead of painstakingly
-    // reverse-engineering how osu does it
-    float lastWidth = osu->getSkin()->getScore0()->getWidth();
-    for(int digit : digits) {
-        switch(digit) {
-            case 0:
-                g->translate(lastWidth * 0.5f * scale, 0);
-                g->drawImage(osu->getSkin()->getScore0());
-                g->translate(lastWidth * 0.5f * scale, 0);
-                break;
-            case 1:
-                g->translate(lastWidth * 0.5f * scale, 0);
-                g->drawImage(osu->getSkin()->getScore1());
-                g->translate(lastWidth * 0.5f * scale, 0);
-                break;
-            case 2:
-                g->translate(lastWidth * 0.5f * scale, 0);
-                g->drawImage(osu->getSkin()->getScore2());
-                g->translate(lastWidth * 0.5f * scale, 0);
-                break;
-            case 3:
-                g->translate(lastWidth * 0.5f * scale, 0);
-                g->drawImage(osu->getSkin()->getScore3());
-                g->translate(lastWidth * 0.5f * scale, 0);
-                break;
-            case 4:
-                g->translate(lastWidth * 0.5f * scale, 0);
-                g->drawImage(osu->getSkin()->getScore4());
-                g->translate(lastWidth * 0.5f * scale, 0);
-                break;
-            case 5:
-                g->translate(lastWidth * 0.5f * scale, 0);
-                g->drawImage(osu->getSkin()->getScore5());
-                g->translate(lastWidth * 0.5f * scale, 0);
-                break;
-            case 6:
-                g->translate(lastWidth * 0.5f * scale, 0);
-                g->drawImage(osu->getSkin()->getScore6());
-                g->translate(lastWidth * 0.5f * scale, 0);
-                break;
-            case 7:
-                g->translate(lastWidth * 0.5f * scale, 0);
-                g->drawImage(osu->getSkin()->getScore7());
-                g->translate(lastWidth * 0.5f * scale, 0);
-                break;
-            case 8:
-                g->translate(lastWidth * 0.5f * scale, 0);
-                g->drawImage(osu->getSkin()->getScore8());
-                g->translate(lastWidth * 0.5f * scale, 0);
-                break;
-            case 9:
-                g->translate(lastWidth * 0.5f * scale, 0);
-                g->drawImage(osu->getSkin()->getScore9());
-                g->translate(lastWidth * 0.5f * scale, 0);
-                break;
-        }
-
-        g->translate(-osu->getSkin()->getScoreOverlap() * (osu->getSkin()->isScore02x() ? 2 : 1) * scale, 0);
-    }
-}
-
-void HUD::drawComboNumber(u64 number, float scale, bool drawLeadingZeroes) {
-    // get digits
-    static std::vector<int> digits;
-    digits.clear();
-    while(number >= 10) {
-        int curDigit = number % 10;
-        number /= 10;
-
-        digits.insert(digits.begin(), curDigit);
-    }
-    digits.insert(digits.begin(), number);
-    if(digits.size() == 1) {
-        if(drawLeadingZeroes) digits.insert(digits.begin(), 0);
+    if(divisor == 1 && drawLeadingZeroes) {
+        divisor = 10;
     }
 
-    // draw them
-    // NOTE: just using the width here is incorrect, but it is the quickest solution instead of painstakingly
-    // reverse-engineering how osu does it
-    float lastWidth = osu->getSkin()->getCombo0()->getWidth();
-    for(int digit : digits) {
-        switch(digit) {
-            case 0:
-                g->translate(lastWidth * 0.5f * scale, 0);
-                g->drawImage(osu->getSkin()->getCombo0());
-                g->translate(lastWidth * 0.5f * scale, 0);
-                break;
-            case 1:
-                g->translate(lastWidth * 0.5f * scale, 0);
-                g->drawImage(osu->getSkin()->getCombo1());
-                g->translate(lastWidth * 0.5f * scale, 0);
-                break;
-            case 2:
-                g->translate(lastWidth * 0.5f * scale, 0);
-                g->drawImage(osu->getSkin()->getCombo2());
-                g->translate(lastWidth * 0.5f * scale, 0);
-                break;
-            case 3:
-                g->translate(lastWidth * 0.5f * scale, 0);
-                g->drawImage(osu->getSkin()->getCombo3());
-                g->translate(lastWidth * 0.5f * scale, 0);
-                break;
-            case 4:
-                g->translate(lastWidth * 0.5f * scale, 0);
-                g->drawImage(osu->getSkin()->getCombo4());
-                g->translate(lastWidth * 0.5f * scale, 0);
-                break;
-            case 5:
-                g->translate(lastWidth * 0.5f * scale, 0);
-                g->drawImage(osu->getSkin()->getCombo5());
-                g->translate(lastWidth * 0.5f * scale, 0);
-                break;
-            case 6:
-                g->translate(lastWidth * 0.5f * scale, 0);
-                g->drawImage(osu->getSkin()->getCombo6());
-                g->translate(lastWidth * 0.5f * scale, 0);
-                break;
-            case 7:
-                g->translate(lastWidth * 0.5f * scale, 0);
-                g->drawImage(osu->getSkin()->getCombo7());
-                g->translate(lastWidth * 0.5f * scale, 0);
-                break;
-            case 8:
-                g->translate(lastWidth * 0.5f * scale, 0);
-                g->drawImage(osu->getSkin()->getCombo8());
-                g->translate(lastWidth * 0.5f * scale, 0);
-                break;
-            case 9:
-                g->translate(lastWidth * 0.5f * scale, 0);
-                g->drawImage(osu->getSkin()->getCombo9());
-                g->translate(lastWidth * 0.5f * scale, 0);
-                break;
-        }
+    const auto &skin = osu->getSkin();
+    Image *(Skin::*getNfunc)(uSz) const = combo ? &Skin::getComboN : &Skin::getScoreN;
 
-        g->translate(-osu->getSkin()->getComboOverlap() * (osu->getSkin()->isCombo02x() ? 2 : 1) * scale, 0);
+    // TODO: some dumb skins might have mixed 2x and non-2x images, the spacing would break in that case
+    // (since only 0 is checked)
+    const float multiplier = (combo ? skin->isCombo02x() : skin->isScore02x()) ? 2.f : 1.f;
+    const auto overlap = static_cast<float>(combo ? skin->getComboOverlap() : skin->getScoreOverlap());
+
+    while(divisor >= 1) {
+        int digit = static_cast<int>(number / divisor);
+        number %= divisor;
+        divisor /= 10;
+
+        const auto *img = std::invoke(getNfunc, skin, digit);
+        auto width = static_cast<float>(img->getWidth());
+        g->translate(width * 0.5f * scale, 0);
+        g->drawImage(img);
+        g->translate(width * 0.5f * scale, 0);
+        g->translate(-overlap * multiplier * scale, 0);
     }
 }
 

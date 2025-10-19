@@ -29,7 +29,7 @@ std::unique_ptr<Graphics> g{nullptr};
 std::unique_ptr<SoundEngine> soundEngine{nullptr};
 std::unique_ptr<ResourceManager> resourceManager{nullptr};
 std::unique_ptr<NetworkHandler> networkHandler{nullptr};
-std::unique_ptr<AnimationHandler> animationHandler{nullptr};
+std::unique_ptr<AnimationHandler> anim{nullptr};
 std::unique_ptr<AsyncIOHandler> io{nullptr};
 
 mcatomic_shptr<ConsoleBox> Engine::consoleBox{nullptr};
@@ -107,8 +107,8 @@ Engine::Engine() {
         soundEngine.reset(SoundEngine::initialize());
         this->runtime_assert(!!soundEngine && soundEngine->succeeded(), "Sound engine failed to initialize!");
 
-        animationHandler = std::make_unique<AnimationHandler>();
-        this->runtime_assert(!!animationHandler, "Animation handler failed to initialize!");
+        anim = std::make_unique<AnimationHandler>();
+        this->runtime_assert(!!anim, "Animation handler failed to initialize!");
 
         init_discord_sdk();
 
@@ -124,9 +124,11 @@ Engine::Engine() {
 Engine::~Engine() {
     debugLog("-= Engine Shutdown =-");
 
-    // reset() all static unique_ptrs
+    // reset() all global unique_ptrs
     debugLog("Engine: Freeing app...");
     app.reset();
+    // this can't be in the "Osu" dtor, because the (implicitly run) dtors for its unique_ptr members would happen after we set it to null
+    // so they could crash when dereferencing the now-null "osu", if they do that at any point during destruction
     osu = nullptr;
 
     debugLog("Engine: Freeing engine GUI...");
@@ -140,7 +142,7 @@ Engine::~Engine() {
     destroy_discord_sdk();
 
     debugLog("Engine: Freeing animation handler...");
-    animationHandler.reset();
+    anim.reset();
 
     debugLog("Engine: Freeing resource manager...");
     resourceManager.reset();
@@ -321,7 +323,7 @@ void Engine::onUpdate() {
 
         {
             VPROF_BUDGET("AnimationHandler::update", VPROF_BUDGETGROUP_UPDATE);
-            animationHandler->update();
+            anim->update();
         }
 
         {

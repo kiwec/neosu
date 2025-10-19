@@ -46,8 +46,12 @@ class HUD final : public OsuScreen {
     void drawPlayfieldBorder(vec2 playfieldCenter, vec2 playfieldSize, float hitcircleDiameter, float borderSize);
     void drawLoadingSmall(const UString &text);
     void drawBeatmapImportSpinner();
-    void drawScoreNumber(u64 number, float scale = 1.0f, bool drawLeadingZeroes = false);
-    void drawComboNumber(u64 number, float scale = 1.0f, bool drawLeadingZeroes = false);
+    inline void drawScoreNumber(u64 number, float scale = 1.0f, bool drawLeadingZeroes = false) {
+        return this->drawComboOrScoreDigits(number, scale, drawLeadingZeroes, false);
+    }
+    inline void drawComboNumber(u64 number, float scale = 1.0f, bool drawLeadingZeroes = false) {
+        return this->drawComboOrScoreDigits(number, scale, drawLeadingZeroes, true);
+    }
     void drawComboSimple(int combo, float scale = 1.0f);          // used by RankingScreen
     void drawAccuracySimple(float accuracy, float scale = 1.0f);  // used by RankingScreen
     void drawWarningArrow(vec2 pos, bool flipVertically, bool originLeft = true);
@@ -131,6 +135,7 @@ class HUD final : public OsuScreen {
     void drawScore(u64 score);
     void drawHPBar(double health, float alpha, float breakAnim);
 
+    void drawComboOrScoreDigits(u64 number, float scale, bool drawLeadingZeroes, bool combo /* false for score */);
     void drawWarningArrows(float hitcircleDiameter = 0.0f);
     void drawContinue(vec2 cursor, float hitcircleDiameter = 0.0f);
     void drawHitErrorBar(float hitWindow300, float hitWindow100, float hitWindow50, float hitWindowMiss, int ur);

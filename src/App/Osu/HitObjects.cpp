@@ -672,13 +672,14 @@ void Circle::drawApproachCircle(const std::unique_ptr<Skin> &skin, vec2 pos, Col
 
             if(cv::circle_rainbow.getBool()) {
                 float frequency = 0.3f;
-                float time = engine->getTime() * 20;
+                double time = engine->getTime() * 20.0;
+                const float offset = std::fmod(frequency * time + rainbowNumber * rainbowColorCounter, 2.0 * PI);
 
-                char red1 = std::sin(frequency * time + 0 + rainbowNumber * rainbowColorCounter) * 127 + 128;
-                char green1 = std::sin(frequency * time + 2 + rainbowNumber * rainbowColorCounter) * 127 + 128;
-                char blue1 = std::sin(frequency * time + 4 + rainbowNumber * rainbowColorCounter) * 127 + 128;
+                float red1 = 0.5f + (std::sin(offset + 0) * 0.5f);
+                float green1 = 0.5f + (std::sin(offset + 2) * 0.5f);
+                float blue1 = 0.5f + (std::sin(offset + 4) * 0.5f);
 
-                g->setColor(argb(255, red1, green1, blue1));
+                g->setColor(rgb(red1, green1, blue1));
             }
 
             g->setAlpha(alpha * cv::approach_circle_alpha_multiplier.getFloat());
@@ -705,13 +706,15 @@ void Circle::drawHitCircle(Image *hitCircleImage, vec2 pos, Color comboColor, fl
 
     if(cv::circle_rainbow.getBool()) {
         float frequency = 0.3f;
-        float time = engine->getTime() * 20;
+        double time = engine->getTime() * 20.0;
+        const float offset =
+            std::fmod(frequency * time + rainbowNumber * rainbowNumber * rainbowColorCounter, 2.0 * PI);
 
-        char red1 = std::sin(frequency * time + 0 + rainbowNumber * rainbowNumber * rainbowColorCounter) * 127 + 128;
-        char green1 = std::sin(frequency * time + 2 + rainbowNumber * rainbowNumber * rainbowColorCounter) * 127 + 128;
-        char blue1 = std::sin(frequency * time + 4 + rainbowNumber * rainbowNumber * rainbowColorCounter) * 127 + 128;
+        float red1 = 0.5f + (std::sin(offset + 0) * 0.5f);
+        float green1 = 0.5f + (std::sin(offset + 2) * 0.5f);
+        float blue1 = 0.5f + (std::sin(offset + 4) * 0.5f);
 
-        g->setColor(argb(255, red1, green1, blue1));
+        g->setColor(rgb(red1, green1, blue1));
     }
 
     g->setAlpha(alpha);
@@ -729,43 +732,14 @@ void Circle::drawHitCircleNumber(const std::unique_ptr<Skin> &skin, float number
                                  int number, float numberAlpha, float /*colorRGBMultiplier*/) {
     if(!cv::draw_numbers.getBool()) return;
 
-    class DigitWidth {
-       public:
-        static float getWidth(const std::unique_ptr<Skin> &skin, int digit) {
-            switch(digit) {
-                case 0:
-                    return skin->getDefault0()->getWidth();
-                case 1:
-                    return skin->getDefault1()->getWidth();
-                case 2:
-                    return skin->getDefault2()->getWidth();
-                case 3:
-                    return skin->getDefault3()->getWidth();
-                case 4:
-                    return skin->getDefault4()->getWidth();
-                case 5:
-                    return skin->getDefault5()->getWidth();
-                case 6:
-                    return skin->getDefault6()->getWidth();
-                case 7:
-                    return skin->getDefault7()->getWidth();
-                case 8:
-                    return skin->getDefault8()->getWidth();
-                case 9:
-                    return skin->getDefault9()->getWidth();
-            }
+    // extract digits
+    int digits[10];
+    int digitCount = 0;
 
-            return skin->getDefault0()->getWidth();
-        }
-    };
-
-    // generate digits
-    std::vector<int> digits;
-    while(number >= 10) {
-        digits.push_back(number % 10);
-        number = number / 10;
-    }
-    digits.push_back(number);
+    do {
+        digits[digitCount++] = number % 10;
+        number /= 10;
+    } while(number > 0);
 
     // set color
     // g->setColor(argb(1.0f, colorRGBMultiplier, colorRGBMultiplier, colorRGBMultiplier)); // see
@@ -773,79 +747,45 @@ void Circle::drawHitCircleNumber(const std::unique_ptr<Skin> &skin, float number
     g->setColor(0xffffffff);
     if(cv::circle_number_rainbow.getBool()) {
         float frequency = 0.3f;
-        float time = engine->getTime() * 20;
+        double time = engine->getTime() * 20.0;
+        const float offset =
+            std::fmod(frequency * time + rainbowNumber * rainbowNumber * rainbowNumber * rainbowColorCounter, 2.0 * PI);
 
-        char red1 =
-            std::sin(frequency * time + 0 + rainbowNumber * rainbowNumber * rainbowNumber * rainbowColorCounter) * 127 +
-            128;
-        char green1 =
-            std::sin(frequency * time + 2 + rainbowNumber * rainbowNumber * rainbowNumber * rainbowColorCounter) * 127 +
-            128;
-        char blue1 =
-            std::sin(frequency * time + 4 + rainbowNumber * rainbowNumber * rainbowNumber * rainbowColorCounter) * 127 +
-            128;
+        float red1 = 0.5f + (std::sin(offset + 0) * 0.5f);
+        float green1 = 0.5f + (std::sin(offset + 2) * 0.5f);
+        float blue1 = 0.5f + (std::sin(offset + 4) * 0.5f);
 
-        g->setColor(argb(255, red1, green1, blue1));
+        g->setColor(rgb(red1, green1, blue1));
     }
     g->setAlpha(numberAlpha);
+
+    // get total width for centering
+    float digitWidthCombined = 0.0f;
+    for(int i = 0; i < digitCount; i++) {
+        digitWidthCombined += skin->getDefaultN(digits[i])->getWidth();
+    }
 
     // draw digits, start at correct offset
     g->pushTransform();
     {
         g->scale(numberScale, numberScale);
         g->translate(pos.x, pos.y);
-        {
-            float digitWidthCombined = 0.0f;
-            for(int digit : digits) {
-                digitWidthCombined += DigitWidth::getWidth(skin, digit);
-            }
 
-            const int digitOverlapCount = digits.size() - 1;
-            g->translate(
-                -(digitWidthCombined * numberScale - skin->getHitCircleOverlap() * digitOverlapCount * overlapScale) *
-                        0.5f +
-                    DigitWidth::getWidth(skin, (digits.size() > 0 ? digits[digits.size() - 1] : 0)) * numberScale *
-                        0.5f,
-                0);
-        }
+        const int digitOverlapCount = digitCount - 1;
+        const float firstDigitWidth = skin->getDefaultN(digits[digitCount - 1])->getWidth();
+        g->translate(
+            -(digitWidthCombined * numberScale - skin->getHitCircleOverlap() * digitOverlapCount * overlapScale) *
+                    0.5f +
+                firstDigitWidth * numberScale * 0.5f,
+            0);
 
-        for(int i = digits.size() - 1; i >= 0; i--) {
-            switch(digits[i]) {
-                case 0:
-                    g->drawImage(skin->getDefault0());
-                    break;
-                case 1:
-                    g->drawImage(skin->getDefault1());
-                    break;
-                case 2:
-                    g->drawImage(skin->getDefault2());
-                    break;
-                case 3:
-                    g->drawImage(skin->getDefault3());
-                    break;
-                case 4:
-                    g->drawImage(skin->getDefault4());
-                    break;
-                case 5:
-                    g->drawImage(skin->getDefault5());
-                    break;
-                case 6:
-                    g->drawImage(skin->getDefault6());
-                    break;
-                case 7:
-                    g->drawImage(skin->getDefault7());
-                    break;
-                case 8:
-                    g->drawImage(skin->getDefault8());
-                    break;
-                case 9:
-                    g->drawImage(skin->getDefault9());
-                    break;
-            }
+        // draw from most significant to least significant
+        for(int i = digitCount - 1; i >= 0; i--) {
+            g->drawImage(skin->getDefaultN(digits[i]));
 
-            float offset = DigitWidth::getWidth(skin, digits[i]) * numberScale;
+            float offset = skin->getDefaultN(digits[i])->getWidth() * numberScale;
             if(i > 0) {
-                offset += DigitWidth::getWidth(skin, digits[i - 1]) * numberScale;
+                offset += skin->getDefaultN(digits[i - 1])->getWidth() * numberScale;
             }
 
             g->translate(offset * 0.5f - skin->getHitCircleOverlap() * overlapScale, 0);

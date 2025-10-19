@@ -50,7 +50,8 @@ void OpenGLImage::init() {
     assert(this->totalBytes() != 0);
 
     // create texture object
-    if(this->GLTexture == 0) {
+    const bool glTextureWasEmpty = this->GLTexture == 0;
+    if(glTextureWasEmpty) {
         // FFP compatibility (part 1)
         if constexpr(Env::cfg(REND::GL)) {
             glEnable(GL_TEXTURE_2D);
@@ -71,7 +72,9 @@ void OpenGLImage::init() {
 
     // upload to gpu
     {
-        glBindTexture(GL_TEXTURE_2D, this->GLTexture);
+        if (!glTextureWasEmpty) { // just to avoid redundantly binding
+            glBindTexture(GL_TEXTURE_2D, this->GLTexture);
+        }
 
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, this->rawImage->getX(), this->rawImage->getY(), 0, GL_RGBA,
                      GL_UNSIGNED_BYTE, this->rawImage->data());
