@@ -546,6 +546,8 @@ void HUD::drawCursorRipples() {
 }
 
 void HUD::drawFps() {
+    if(!cv::draw_fps.getBool()) return;
+
     if(cv::hud_fps_smoothing.getBool()) {
         const float smooth = pow(0.05, engine->getFrameTime());
         this->fCurFpsSmooth = smooth * this->fCurFpsSmooth + (1.0f - smooth) * (1.0f / engine->getFrameTime());

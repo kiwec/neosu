@@ -10,17 +10,6 @@ CBaseUILabel::CBaseUILabel(float xPos, float yPos, float xSize, float ySize, USt
     : CBaseUIElement(xPos, yPos, xSize, ySize, std::move(name)) {
     this->font = resourceManager->getFont("FONT_DEFAULT");
     this->setText(text);
-
-    // colors
-    this->frameColor = 0xffffffff;
-    this->backgroundColor = 0xff000000;
-    this->textColor = 0xffffffff;
-
-    // settings
-    this->bDrawFrame = true;
-    this->bDrawBackground = true;
-    this->bCenterText = false;
-    this->textJustification = TEXT_JUSTIFICATION::TEXT_JUSTIFICATION_LEFT;
 }
 
 void CBaseUILabel::draw() {
@@ -61,7 +50,7 @@ void CBaseUILabel::drawText() {
         g->setColor(this->textColor);
         g->pushTransform();
         {
-            g->scale(this->fScale, this->fScale); // XXX: not sure if scaling respects text justification
+            g->scale(this->fScale, this->fScale);  // XXX: not sure if scaling respects text justification
             g->translate(
                 (int)(this->vPos.x + (this->bCenterText ? +this->vSize.x / 2.0f - this->fStringWidth / 2.0f : xPosAdd)),
                 (int)(this->vPos.y + this->vSize.y / 2.0f + this->fStringHeight / 2.0f));
@@ -73,7 +62,7 @@ void CBaseUILabel::drawText() {
     }
 }
 
-void CBaseUILabel::mouse_update(bool *propagate_clicks) { CBaseUIElement::mouse_update(propagate_clicks); }
+void CBaseUILabel::mouse_update(bool* propagate_clicks) { CBaseUIElement::mouse_update(propagate_clicks); }
 
 void CBaseUILabel::updateStringMetrics() {
     if(this->font != nullptr) {

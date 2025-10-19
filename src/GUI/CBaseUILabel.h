@@ -95,14 +95,14 @@ class CBaseUILabel : public CBaseUIElement {
     float fStringWidth;
     float fStringHeight;
 
-    Color frameColor;
-    Color backgroundColor;
-    Color textColor;
+    Color frameColor{0xffffffff};
+    Color backgroundColor{0xff000000};
+    Color textColor{0xffffffff};
 
-    TEXT_JUSTIFICATION textJustification : 2;
+    TEXT_JUSTIFICATION textJustification{TEXT_JUSTIFICATION::TEXT_JUSTIFICATION_LEFT};
     float fScale{1.f};
 
-    unsigned bDrawFrame : 1;
-    unsigned bDrawBackground : 1;
-    unsigned bCenterText : 1;
+    bool bDrawFrame{true};
+    bool bDrawBackground{true};
+    bool bCenterText{false};
 };

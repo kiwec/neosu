@@ -129,7 +129,6 @@ class HUD final : public OsuScreen {
     void drawCursorTrailInt(Shader *trailShader, std::vector<CURSORTRAIL> &trail, vec2 pos,
                             float alphaMultiplier = 1.0f, bool emptyTrailFrame = false);
     void drawCursorTrailRaw(float alpha, vec2 pos);
-    void drawFps(McFont *font, float fps);
     void drawAccuracy(float accuracy);
     void drawCombo(int combo);
     void drawScore(u64 score);

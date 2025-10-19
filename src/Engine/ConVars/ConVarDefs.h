@@ -704,12 +704,14 @@ CONVAR(mod_millhioref_multiplier, "mod_millhioref_multiplier"sv, 2.0f, CLIENT | 
 CONVAR(mod_ming3012, "mod_ming3012"sv, false, CLIENT | SERVER | GAMEPLAY);
 CONVAR(mod_minimize, "mod_minimize"sv, false, CLIENT | SERVER | PROTECTED | GAMEPLAY);
 CONVAR(mod_minimize_multiplier, "mod_minimize_multiplier"sv, 0.5f, CLIENT | SERVER | PROTECTED | GAMEPLAY);
+CONVAR(mod_no_keylock, "mod_no_keylock"sv, false, CLIENT | SERVER | PROTECTED | GAMEPLAY);
 CONVAR(mod_no100s, "mod_no100s"sv, false, CLIENT | SERVER | GAMEPLAY);
 CONVAR(mod_no50s, "mod_no50s"sv, false, CLIENT | SERVER | GAMEPLAY);
 CONVAR(mod_nightmare, "mod_nightmare"sv, false, CLIENT | SERVER | PROTECTED | GAMEPLAY);
 CONVAR(mod_reverse_sliders, "mod_reverse_sliders"sv, false, CLIENT | SERVER | PROTECTED | GAMEPLAY);
 CONVAR(mod_shirone, "mod_shirone"sv, false, CLIENT | SERVER | PROTECTED | GAMEPLAY);
 CONVAR(mod_shirone_combo, "mod_shirone_combo"sv, 20.0f, CLIENT | SERVER | PROTECTED | GAMEPLAY);
+CONVAR(mod_singletap, "mod_singletap"sv, false, CLIENT | SERVER | GAMEPLAY);
 CONVAR(mod_strict_tracking, "mod_strict_tracking"sv, false, CLIENT | SERVER | PROTECTED | GAMEPLAY);
 CONVAR(mod_strict_tracking_remove_slider_ticks, "mod_strict_tracking_remove_slider_ticks"sv, false,
        CLIENT | SERVER | PROTECTED | GAMEPLAY,
@@ -1277,8 +1279,6 @@ CONVAR(win_processpriority, "win_processpriority"sv, 1, CLIENT,
        "sets the main process priority (0 = normal, 1 = high)"sv, CFUNC(Environment::setThreadPriority));
 
 // Unfinished features
-CONVAR(mod_no_keylock, "mod_no_keylock"sv, false, CLIENT | SERVER | PROTECTED | GAMEPLAY);
-CONVAR(mod_singletap, "mod_singletap"sv, false, CLIENT | SERVER | GAMEPLAY);
 CONVAR(prefer_websockets, "prefer_websockets"sv, false, CLIENT, "prefer websocket connections over http polling");
 CONVAR(load_db_immediately, "load_db_immediately"sv, false, CLIENT);
 CONVAR(cbf, "cbf"sv, false, CLIENT, "click between frames"sv);

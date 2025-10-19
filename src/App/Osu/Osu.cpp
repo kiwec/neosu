@@ -498,7 +498,7 @@ void Osu::draw() {
         this->user_actions->draw();
         this->optionsMenu->draw();
 
-        if(cv::draw_fps.getBool() && (!isFPoSu)) this->hud->drawFps();
+        if(!isFPoSu) this->hud->drawFps();
 
         this->windowManager->draw();
 
@@ -517,8 +517,7 @@ void Osu::draw() {
             this->playfieldBuffer->disable();
             this->fposu->draw();
             this->hud->draw();
-
-            if(cv::draw_fps.getBool()) this->hud->drawFps();
+            this->hud->drawFps();
         }
     } else {  // if we are not playing
         this->spectatorScreen->draw();
@@ -538,7 +537,7 @@ void Osu::draw() {
         this->modSelector->draw();
         this->prompt->draw();
 
-        if(cv::draw_fps.getBool()) this->hud->drawFps();
+        this->hud->drawFps();
 
         this->windowManager->draw();
     }
