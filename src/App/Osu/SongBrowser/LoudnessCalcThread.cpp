@@ -21,8 +21,8 @@
 
 // static member definitions
 std::unique_ptr<VolNormalization> VolNormalization::instance = nullptr;
-std::once_flag VolNormalization::instance_flag;
-std::once_flag VolNormalization::shutdown_flag;
+Sync::once_flag VolNormalization::instance_flag;
+Sync::once_flag VolNormalization::shutdown_flag;
 
 struct VolNormalization::LoudnessCalcThread {
     NOCOPY_NOMOVE(LoudnessCalcThread)
@@ -203,7 +203,7 @@ VolNormalization::~VolNormalization() {
 }
 
 VolNormalization &VolNormalization::get_instance() {
-    std::call_once(instance_flag, []() {
+    Sync::call_once(instance_flag, []() {
         instance = std::make_unique<VolNormalization>();
         cv::loudness_calc_threads.setCallback(CFUNC(VolNormalization::loudness_cb));
     });

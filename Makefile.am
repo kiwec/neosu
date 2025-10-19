@@ -549,7 +549,7 @@ $(DEPS_PREFIX)/SoundTouch-$(SOUNDTOUCH_VERSION).built: $(DEPS_CACHE)/SoundTouch-
 		-D CMAKE_CXX_COMPILER_RANLIB=$(RANLIB) \
 		-D SOUNDSTRETCH=OFF \
 		-D SOUNDTOUCH_DLL=OFF \
-		-D OPENMP="$(if $(OPENMP),ON,OFF)" \
+		-D OPENMP=OFF \
 		-D BUILD_SHARED_LIBS="$(if $(STATICBUILD),OFF,ON)" && \
 	$(CMAKE) --build build "$(CMAKEPAROPT)" && \
 	$(CMAKE) --install build

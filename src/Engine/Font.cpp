@@ -8,6 +8,7 @@
 #include "Font.h"
 
 #include <algorithm>
+#include <cstddef>
 #include <utility>
 #include <cassert>
 #include <unordered_set>
@@ -133,8 +134,6 @@ void McFont::init() {
 
     // finalize atlas texture
     resourceManager->loadResource(m_textureAtlas.get());
-    m_textureAtlas->getAtlasImage()->setFilterMode(m_bAntialiasing ? Graphics::FILTER_MODE::FILTER_MODE_LINEAR
-                                                                   : Graphics::FILTER_MODE::FILTER_MODE_NONE);
 
     this->bReady = true;
 }
@@ -226,11 +225,9 @@ int McFont::allocateDynamicSlot(char16_t ch) {
         // HACK: clear the slot content area to remove leftover pixels from previous glyph
         // this should not be necessary (perf), but otherwise, a single-pixel border can appear on the right and bottom sides of the glyph rect
         const int maxSlotContent = DYNAMIC_SLOT_SIZE - 2 * TextureAtlas::ATLAS_PADDING;
-        auto clearData = std::make_unique<Color[]>(static_cast<size_t>(maxSlotContent) * maxSlotContent);
-        std::fill_n(clearData.get(), static_cast<size_t>(maxSlotContent) * maxSlotContent, argb(0, 0, 0, 0));
-        m_textureAtlas->putAt(dynamicLRUSlot.x + TextureAtlas::ATLAS_PADDING,
-                              dynamicLRUSlot.y + TextureAtlas::ATLAS_PADDING, maxSlotContent, maxSlotContent,
-                              false, true, clearData.get());
+        m_textureAtlas->clearRegion(dynamicLRUSlot.x + TextureAtlas::ATLAS_PADDING,
+                                    dynamicLRUSlot.y + TextureAtlas::ATLAS_PADDING, maxSlotContent, maxSlotContent,
+                                    false, true);
 
         // remove evicted character from metrics and existence map
         m_vGlyphMetrics.erase(dynamicLRUSlot.character);
@@ -477,10 +474,10 @@ bool McFont::loadGlyphMetrics(char16_t ch) {
 }
 
 std::unique_ptr<Channel[]> McFont::unpackMonoBitmap(const FT_Bitmap &bitmap) {
-    auto result = std::make_unique<Channel[]>(static_cast<size_t>(bitmap.rows) * bitmap.width);
+    auto result = std::make_unique_for_overwrite<Channel[]>(static_cast<size_t>(bitmap.rows) * bitmap.width);
 
     for(u32 y = 0; y < bitmap.rows; y++) {
-        for(u32 byteIdx = 0; byteIdx < bitmap.pitch; byteIdx++) {
+        for(i32 byteIdx = 0; byteIdx < bitmap.pitch; byteIdx++) {
             const u8 byteValue = bitmap.buffer[y * bitmap.pitch + byteIdx];
             const u32 numBitsDone = byteIdx * 8;
             const u32 rowstart = y * bitmap.width + byteIdx * 8;
@@ -497,7 +494,7 @@ std::unique_ptr<Channel[]> McFont::unpackMonoBitmap(const FT_Bitmap &bitmap) {
 }
 
 std::unique_ptr<Color[]> McFont::createExpandedBitmapData(const FT_Bitmap &bitmap) {
-    auto expandedData = std::make_unique<Color[]>(static_cast<ssize_t>(bitmap.width) * bitmap.rows);
+    auto expandedData = std::make_unique_for_overwrite<Color[]>(static_cast<size_t>(bitmap.width) * bitmap.rows);
 
     std::unique_ptr<Channel[]> monoBitmapUnpacked{nullptr};
     if(!m_bAntialiasing) monoBitmapUnpacked = unpackMonoBitmap(bitmap);
@@ -557,10 +554,11 @@ void McFont::renderGlyphToAtlas(char16_t ch, int x, int y, FT_Face face, bool is
         auto expandedData = createExpandedBitmapData(bitmap);
 
         // if clipping is needed, create clipped data
-        if(availableWidth < bitmap.width || availableHeight < bitmap.rows) {
-            auto clippedData = std::make_unique<Color[]>(static_cast<size_t>(availableWidth) * availableHeight);
-            for(u32 row = 0; row < availableHeight; row++) {
-                for(u32 col = 0; col < availableWidth; col++) {
+        if(std::cmp_less(availableWidth, bitmap.width) || std::cmp_less(availableHeight, bitmap.rows)) {
+            auto clippedData =
+                std::make_unique_for_overwrite<Color[]>(static_cast<size_t>(availableWidth) * availableHeight);
+            for(i32 row = 0; row < availableHeight; row++) {
+                for(i32 col = 0; col < availableWidth; col++) {
                     const u32 srcIdx = row * bitmap.width + col;
                     const u32 dstIdx = row * availableWidth + col;
                     clippedData[dstIdx] = expandedData[srcIdx];
@@ -615,8 +613,8 @@ bool McFont::createAndPackAtlas(const std::vector<char16_t> &glyphs) {
     const size_t finalAtlasSize = std::min(totalAtlasSize, static_cast<size_t>(MAX_ATLAS_SIZE));
 
     resourceManager->requestNextLoadUnmanaged();
-    m_textureAtlas.reset(
-        resourceManager->createTextureAtlas(static_cast<int>(finalAtlasSize), static_cast<int>(finalAtlasSize)));
+    m_textureAtlas.reset(resourceManager->createTextureAtlas(static_cast<int>(finalAtlasSize),
+                                                             static_cast<int>(finalAtlasSize), m_bAntialiasing));
 
     // pack glyphs into static region only
     if(!m_textureAtlas->packRects(packRects)) {

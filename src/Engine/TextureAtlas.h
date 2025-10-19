@@ -22,11 +22,15 @@ class TextureAtlas final : public Resource {
         int id;  // user-defined identifier for tracking
     };
 
-    TextureAtlas(int width = 512, int height = 512);
+    TextureAtlas(int width = 512, int height = 512, bool filtering = false);
     ~TextureAtlas() override;
 
     // place pixels at specific coordinates (for use after packing)
     void putAt(int x, int y, int width, int height, bool flipHorizontal, bool flipVertical, Color *pixels);
+    // set image region to black
+    inline void clearRegion(int x, int y, int width, int height, bool flipHorizontal, bool flipVertical) {
+        return putAt(x, y, width, height, flipHorizontal, flipVertical, nullptr);
+    }
 
     // advanced skyline packing for efficient atlas utilization
     bool packRects(std::vector<PackRect> &rects);

@@ -84,7 +84,7 @@ std::string ByteBufferedFile::Reader::read_string() {
     if(empty_check == 0) return {};
 
     u32 len = this->read_uleb128();
-    std::string str_out;
+    static std::string str_out;
     str_out.resize(len);
     if(this->read_bytes(reinterpret_cast<u8 *>(str_out.data()), len) != len) {
         this->set_error("Failed to read " + std::to_string(len) + " bytes for string");

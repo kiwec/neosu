@@ -2,10 +2,10 @@
 // Copyright (c) 2024, kiwec, All rights reserved.
 #include "noinclude.h"
 #include "types.h"
+#include "SyncOnce.h"
 
 #include <memory>
 #include <vector>
-#include <mutex>
 
 class DatabaseBeatmap;
 class VolNormalization {
@@ -37,7 +37,7 @@ class VolNormalization {
 
     // shutdown the singleton
     static inline void shutdown() {
-        std::call_once(shutdown_flag, []() {
+        Sync::call_once(shutdown_flag, []() {
             if(instance) {
                 instance->abort_instance();
                 instance.reset();
@@ -62,6 +62,6 @@ class VolNormalization {
     std::vector<LoudnessCalcThread*> threads;
 
     static std::unique_ptr<VolNormalization> instance;
-    static std::once_flag instance_flag;
-    static std::once_flag shutdown_flag;
+    static Sync::once_flag instance_flag;
+    static Sync::once_flag shutdown_flag;
 };

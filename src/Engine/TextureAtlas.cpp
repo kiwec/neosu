@@ -7,13 +7,16 @@
 #include "ResourceManager.h"
 #include "Logging.h"
 
-TextureAtlas::TextureAtlas(int width, int height) : Resource() {
+TextureAtlas::TextureAtlas(int width, int height, bool filtering) : Resource() {
     this->iWidth = width;
     this->iHeight = height;
 
     resourceManager->requestNextLoadUnmanaged();
     this->atlasImage.reset(resourceManager->createImage(this->iWidth, this->iHeight, false,
                                                         true /* keep in system memory, for faster reloads */));
+    if(!filtering) {
+        this->atlasImage->setFilterMode(Graphics::FILTER_MODE::FILTER_MODE_NONE);
+    }  // else linear filtering is default
 }
 
 TextureAtlas::~TextureAtlas() { this->destroy(); }
@@ -29,32 +32,33 @@ void TextureAtlas::initAsync() { this->bAsyncReady = true; }
 void TextureAtlas::destroy() { this->atlasImage.reset(); }
 
 void TextureAtlas::putAt(int x, int y, int width, int height, bool flipHorizontal, bool flipVertical, Color *pixels) {
-    if(width < 1 || height < 1 || pixels == nullptr || this->atlasImage == nullptr) return;
+    if(width < 1 || height < 1 || this->atlasImage == nullptr) return;
 
     if(x + width > this->iWidth || y + height > this->iHeight || x < 0 || y < 0) {
-        debugLog("TextureAtlas::putAt( {}, {}, {}, {} ) WARNING: Out of bounds! Atlas size: {}x{}", x, y, width,
-                 height, this->iWidth, this->iHeight);
+        debugLog("TextureAtlas::putAt( {}, {}, {}, {} ) WARNING: Out of bounds! Atlas size: {}x{}", x, y, width, height,
+                 this->iWidth, this->iHeight);
         return;
     }
+
+// if input pixels was null, we're making that region black
+#define PIXEL_COLOR_(x__, y__, width__) (pixels ? pixels[/*sourceIdx*/ (y__) * (width__) + (x__)] : (Color)0)
 
     // insert pixels at specified coordinates
     for(int j = 0; j < height; j++) {
         for(int i = 0; i < width; i++) {
-            int actualX = (flipHorizontal ? width - i - 1 : i);
-            int actualY = (flipVertical ? height - j - 1 : j);
-
             const int atlasX = x + i;
             const int atlasY = y + j;
-            const int sourceIdx = actualY * width + actualX;
 
             // bounds checking with debug info
             if(atlasX >= this->iWidth || atlasY >= this->iHeight) {
-                debugLog("WARNING: Pixel placement out of bounds: atlas=({},{}) in {}x{}", atlasX, atlasY,
-                         this->iWidth, this->iHeight);
+                debugLog("WARNING: Pixel placement out of bounds: atlas=({},{}) in {}x{}", atlasX, atlasY, this->iWidth,
+                         this->iHeight);
                 continue;
             }
+            int actualX = (flipHorizontal ? width - i - 1 : i);
+            int actualY = (flipVertical ? height - j - 1 : j);
 
-            this->atlasImage->setPixel(atlasX, atlasY, pixels[sourceIdx]);
+            this->atlasImage->setPixel(atlasX, atlasY, PIXEL_COLOR_(actualX, actualY, width));
         }
     }
 
@@ -67,7 +71,7 @@ void TextureAtlas::putAt(int x, int y, int width, int height, bool flipHorizonta
             int actualY = std::clamp<int>((flipVertical ? height - j - 1 : j), 0, height - 1);
 
             if(x + i - 1 >= 0 && y + j >= 0 && y + j < this->iHeight)
-                this->atlasImage->setPixel(x + i - 1, y + j, pixels[actualY * width + actualX]);
+                this->atlasImage->setPixel(x + i - 1, y + j, PIXEL_COLOR_(actualX, actualY, width));
         }
         // right border
         for(int j = -1; j < height + 1; j++) {
@@ -76,7 +80,7 @@ void TextureAtlas::putAt(int x, int y, int width, int height, bool flipHorizonta
             int actualY = std::clamp<int>((flipVertical ? height - j - 1 : j), 0, height - 1);
 
             if(x + i + 1 < this->iWidth && y + j >= 0 && y + j < this->iHeight)
-                this->atlasImage->setPixel(x + i + 1, y + j, pixels[actualY * width + actualX]);
+                this->atlasImage->setPixel(x + i + 1, y + j, PIXEL_COLOR_(actualX, actualY, width));
         }
         // top border
         for(int i = -1; i < width + 1; i++) {
@@ -85,7 +89,7 @@ void TextureAtlas::putAt(int x, int y, int width, int height, bool flipHorizonta
             int actualY = (flipVertical ? height - j - 1 : j);
 
             if(x + i >= 0 && x + i < this->iWidth && y + j - 1 >= 0)
-                this->atlasImage->setPixel(x + i, y + j - 1, pixels[actualY * width + actualX]);
+                this->atlasImage->setPixel(x + i, y + j - 1, PIXEL_COLOR_(actualX, actualY, width));
         }
         // bottom border
         for(int i = -1; i < width + 1; i++) {
@@ -94,9 +98,10 @@ void TextureAtlas::putAt(int x, int y, int width, int height, bool flipHorizonta
             int actualY = (flipVertical ? height - j - 1 : j);
 
             if(x + i >= 0 && x + i < this->iWidth && y + j + 1 < this->iHeight)
-                this->atlasImage->setPixel(x + i, y + j + 1, pixels[actualY * width + actualX]);
+                this->atlasImage->setPixel(x + i, y + j + 1, PIXEL_COLOR_(actualX, actualY, width));
         }
     }
+#undef PIXEL_COLOR_
 }
 
 bool TextureAtlas::packRects(std::vector<PackRect> &rects) {

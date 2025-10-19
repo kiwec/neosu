@@ -367,13 +367,16 @@ class DatabaseBeatmap final {
     bool do_not_store = false;
 
     inline void writeMD5(const MD5Hash &hash) {
-        Sync::unique_lock lock(this->md5_mtx);
+        this->md5_mtx.lock();
         this->sMD5Hash = hash;
+        this->md5_mtx.unlock();
     }
 
     inline MD5Hash getMD5() const {
-        Sync::shared_lock lock(this->md5_mtx);
-        return this->sMD5Hash;
+        this->md5_mtx.lock_shared();
+        auto hash = this->sMD5Hash;
+        this->md5_mtx.unlock_shared();
+        return hash;
     }
 
    private:

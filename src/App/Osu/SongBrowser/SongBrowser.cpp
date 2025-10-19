@@ -3405,17 +3405,18 @@ void SongBrowser::recreateCollectionsButtons() {
                 // button is a difficulty, not a set
                 matching_diffs.push_back(song_button);
             } else {
-                for(SongButton *sbc : songButtonChildren) {
-                    for(auto &map2 : collection->maps) {
-                        if(sbc->getDatabaseBeatmap()->getMD5() == map2) {
-                            matching_diffs.push_back(sbc);
-                        }
-                    }
+                // FIXME: searching through all collections->maps here is slow
+                for(SongButton *sbc : songButtonChildren                                                              //
+                                          | std::views::filter([&](const auto &child) {                               //
+                                                return std::ranges::contains(collection->maps,                        //
+                                                                             child->getDatabaseBeatmap()->getMD5());  //
+                                            }))                                                                       //
+                {
+                    matching_diffs.push_back(sbc);
                 }
             }
 
-            auto set = std::ranges::find(matched_sets, set_id);
-            if(set == matched_sets.end()) {
+            if(!std::ranges::contains(matched_sets, set_id)) {
                 // Mark set as processed so we don't add the diffs from the same set twice
                 matched_sets.push_back(set_id);
             } else {

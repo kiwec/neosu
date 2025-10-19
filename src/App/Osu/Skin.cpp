@@ -1177,8 +1177,3 @@ void Skin::loadSound(Sound *&sndRef, const std::string &skinElementName, const s
     // export
     this->filepathsForExport.push_back(sndRef->getFilePath());
 }
-
-bool Skin::compareFilenameWithSkinElementName(const std::string &filename, const std::string &skinElementName) {
-    if(filename.length() == 0 || skinElementName.length() == 0) return false;
-    return filename.substr(0, filename.find_last_of('.')) == skinElementName;
-}

@@ -4,6 +4,7 @@
 #include "noinclude.h"
 #include "types.h"
 #include "templates.h"
+#include "SyncOnce.h"
 
 #include <atomic>
 #include <memory>
@@ -47,7 +48,7 @@ class MapCalcThread {
 
     // shutdown the singleton
     static inline void shutdown() {
-        std::call_once(shutdown_flag, []() {
+        Sync::call_once(shutdown_flag, []() {
             if(instance) {
                 instance->abort_instance();
                 instance.reset();
@@ -95,9 +96,8 @@ class MapCalcThread {
     zarray<BPMTuple> bpm_calc_buf;
 
     const std::vector<DatabaseBeatmap*>* maps_to_process{nullptr};
-    
 
     static std::unique_ptr<MapCalcThread> instance;
-    static std::once_flag instance_flag;
-    static std::once_flag shutdown_flag;
+    static Sync::once_flag instance_flag;
+    static Sync::once_flag shutdown_flag;
 };

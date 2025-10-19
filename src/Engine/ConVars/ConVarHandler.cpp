@@ -6,6 +6,7 @@
 #include "Logging.h"
 #include "Engine.h"
 #include "SString.h"
+#include "SyncOnce.h"
 
 // TODO: remove the need for this here
 #include "Osu.h"
@@ -15,7 +16,6 @@
 #include "fmt/chrono.h"
 
 #include <algorithm>
-#include <mutex>
 #include <unordered_set>
 
 // singleton init
@@ -25,8 +25,8 @@ std::unique_ptr<ConVarHandler> cvars{std::make_unique<ConVarHandler>()};
 std::vector<ConVar *> &ConVarHandler::getConVarArray_int() {
     static std::vector<ConVar *> vConVarArray;
 
-    static std::once_flag reserved;
-    std::call_once(reserved, []() { vConVarArray.reserve(1024); });
+    static Sync::once_flag reserved;
+    Sync::call_once(reserved, []() { vConVarArray.reserve(1024); });
 
     return vConVarArray;
 }
@@ -34,8 +34,8 @@ std::vector<ConVar *> &ConVarHandler::getConVarArray_int() {
 sv_unordered_map<ConVar *> &ConVarHandler::getConVarMap_int() {
     static sv_unordered_map<ConVar *> vConVarMap;
 
-    static std::once_flag reserved;
-    std::call_once(reserved, []() { vConVarMap.reserve(1024); });
+    static Sync::once_flag reserved;
+    Sync::call_once(reserved, []() { vConVarMap.reserve(1024); });
 
     return vConVarMap;
 }
@@ -337,12 +337,15 @@ void ConVarHandler::ConVarBuiltins::dumpcommands(void) {
 
     std::string html = R"(<section class="variables">)";
     for(auto var : convars) {
-        std::string flags;
-        if(var->isFlagSet(cv::CLIENT)) flags.append("<span class=\"flag client\">CLIENT</span>");
-        if(var->isFlagSet(cv::SKINS)) flags.append("<span class=\"flag skins\">SKINS</span>");
-        if(var->isFlagSet(cv::SERVER)) flags.append("<span class=\"flag server\">SERVER</span>");
-        if(var->isFlagSet(cv::PROTECTED)) flags.append("<span class=\"flag protected\">PROTECTED</span>");
-        if(var->isFlagSet(cv::GAMEPLAY)) flags.append("<span class=\"flag gameplay\">GAMEPLAY</span>");
+        // only doing this because of some stupid spurious warning with LTO
+#define STRIF_(FLAG__, flag__) var->isFlagSet(cv::FLAG__) ? "<span class=\"flag" #flag__ "\">" #FLAG__ "</span>" : ""
+        const std::string flags = fmt::format("\n{}{}{}{}{}\n",              //
+                                              STRIF_(CLIENT, client),        //
+                                              STRIF_(SKINS, skins),          //
+                                              STRIF_(SERVER, server),        //
+                                              STRIF_(PROTECTED, protected),  //
+                                              STRIF_(GAMEPLAY, gameplay));   //
+#undef STRIF_
 
         html.append(fmt::format(R"(<div>
     <cv-header>

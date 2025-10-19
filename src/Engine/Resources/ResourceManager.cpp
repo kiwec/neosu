@@ -437,8 +437,8 @@ RenderTarget *ResourceManager::createRenderTarget(int width, int height, Graphic
     return createRenderTarget(0, 0, width, height, multiSampleType);
 }
 
-TextureAtlas *ResourceManager::createTextureAtlas(int width, int height) {
-    auto *ta = new TextureAtlas(width, height);
+TextureAtlas *ResourceManager::createTextureAtlas(int width, int height, bool filtering) {
+    auto *ta = new TextureAtlas(width, height, filtering);
     setResourceName(ta, UString::format("_TA_%ix%i", width, height).toUtf8());
 
     loadResource(ta, false);

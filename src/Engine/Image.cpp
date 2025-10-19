@@ -40,35 +40,24 @@
 #include "Logging.h"
 #include "ConVar.h"
 
+// (workaround unnecessary in latest zlib-ng versions, so i guess it was a zlib-ng issue)
 #if defined(ZLIBNG_VERNUM) && ZLIBNG_VERNUM < 0x020205F0L
-#include "SyncMutex.h"
-
-namespace {
 // this is complete bullshit and a bug in zlib-ng (probably, less likely libpng)
 // need to prevent zlib from lazy-initializing the crc tables, otherwise data race galore
 // literally causes insane lags/issues in completely unrelated places for async loading
-Sync::mutex zlib_init_mutex;
-std::atomic<bool> zlib_initialized{false};
+#include "SyncOnce.h"
 
-void garbage_zlib() {
-    // otherwise we need to do this song and dance
-    if(zlib_initialized.load(std::memory_order_acquire)) return;
-    Sync::scoped_lock lock(zlib_init_mutex);
-    if(zlib_initialized.load(std::memory_order_relaxed)) return;
+namespace {
+static Sync::once_flag zlib_init_once;
+void zlibinit() {
     uLong dummy_crc = crc32(0L, Z_NULL, 0);
-    std::array<const u8, 5> test_data{"shit"};
-    dummy_crc = crc32(dummy_crc, reinterpret_cast<const Bytef *>(test_data.data()), 4);
-    z_stream strm;
-    strm.zalloc = Z_NULL;
-    strm.zfree = Z_NULL;
-    strm.opaque = Z_NULL;
-    strm.avail_in = 0;
-    strm.next_in = Z_NULL;
+    dummy_crc = crc32(dummy_crc, reinterpret_cast<const Bytef *>("shit"), 4);
+    z_stream strm{};
     if(inflateInit(&strm) == Z_OK) inflateEnd(&strm);
     (void)dummy_crc;
-    zlib_initialized.store(true, std::memory_order_release);
 }
 }  // namespace
+#define garbage_zlib() Sync::call_once(zlib_init_once, zlibinit)
 #else
 #define garbage_zlib()
 #endif
@@ -113,9 +102,15 @@ Image::DECODE_RESULT Image::decodePNGFromMemory(const std::unique_ptr<u8[]> &inD
     garbage_zlib();
     using enum DECODE_RESULT;
 
-    png_structp png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
+    pngErrorManager err;
+    png_structp png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, &err, pngErrorExit, pngWarning);
     if(!png_ptr) {
         debugLog("Image Error: png_create_read_struct failed");
+        return FAIL;
+    }
+
+    if(setjmp(&err.setjmp_buffer[0])) {
+        png_destroy_read_struct(&png_ptr, nullptr, nullptr);
         return FAIL;
     }
 
@@ -123,14 +118,6 @@ Image::DECODE_RESULT Image::decodePNGFromMemory(const std::unique_ptr<u8[]> &inD
     if(!info_ptr) {
         png_destroy_read_struct(&png_ptr, nullptr, nullptr);
         debugLog("Image Error: png_create_info_struct failed");
-        return FAIL;
-    }
-
-    pngErrorManager err;
-    png_set_error_fn(png_ptr, &err, pngErrorExit, pngWarning);
-
-    if(setjmp(&err.setjmp_buffer[0])) {
-        png_destroy_read_struct(&png_ptr, &info_ptr, nullptr);
         return FAIL;
     }
 
@@ -190,15 +177,12 @@ Image::DECODE_RESULT Image::decodePNGFromMemory(const std::unique_ptr<u8[]> &inD
     // allocate memory for the image
     this->rawImage = std::make_unique<SizedRGBABytes>(outWidth, outHeight);
 
+    auto row_pointers = std::make_unique_for_overwrite<png_bytep[]>(outHeight);
     for(sSz y = 0; y < outHeight; y++) {
-        if((outHeight / 4 > 0) && (y % (outHeight / 4)) == 0) {
-            if(this->isInterrupted()) {  // cancellation point
-                png_destroy_read_struct(&png_ptr, &info_ptr, nullptr);
-                return INTERRUPTED;
-            }
-        }
-        png_read_row(png_ptr, &this->rawImage->data()[y * outWidth * Image::NUM_CHANNELS], nullptr);
+        row_pointers[y] = &this->rawImage->data()[y * outWidth * Image::NUM_CHANNELS];
     }
+
+    png_read_image(png_ptr, row_pointers.get());
 
     png_destroy_read_struct(&png_ptr, &info_ptr, nullptr);
     return SUCCESS;
@@ -358,7 +342,8 @@ Image::Image(std::string filepath, bool mipmapped, bool keepInSystemMemory) : Re
     this->bKeepInSystemMemory = keepInSystemMemory;
 
     this->type = Image::TYPE::TYPE_PNG;
-    this->filterMode = mipmapped ? Graphics::FILTER_MODE::FILTER_MODE_MIPMAP : Graphics::FILTER_MODE::FILTER_MODE_LINEAR;
+    this->filterMode =
+        mipmapped ? Graphics::FILTER_MODE::FILTER_MODE_MIPMAP : Graphics::FILTER_MODE::FILTER_MODE_LINEAR;
     this->wrapMode = Graphics::WRAP_MODE::WRAP_MODE_CLAMP;
     this->iWidth = 1;
     this->iHeight = 1;
@@ -371,7 +356,8 @@ Image::Image(i32 width, i32 height, bool mipmapped, bool keepInSystemMemory) : R
     this->bKeepInSystemMemory = keepInSystemMemory;
 
     this->type = Image::TYPE::TYPE_RGBA;
-    this->filterMode = mipmapped ? Graphics::FILTER_MODE::FILTER_MODE_MIPMAP : Graphics::FILTER_MODE::FILTER_MODE_LINEAR;
+    this->filterMode =
+        mipmapped ? Graphics::FILTER_MODE::FILTER_MODE_MIPMAP : Graphics::FILTER_MODE::FILTER_MODE_LINEAR;
     this->wrapMode = Graphics::WRAP_MODE::WRAP_MODE_CLAMP;
     this->iWidth = std::min(16384, width);  // sanity
     this->iHeight = std::min(16384, height);
