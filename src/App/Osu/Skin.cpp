@@ -1122,7 +1122,15 @@ void Skin::loadSound(Sound *&sndRef, const std::string &skinElementName, const s
                 Sound *existing_sound = resourceManager->getSound(resource_name);
 
                 // default already loaded, just return it
-                if(default_skin && existing_sound) return existing_sound;
+                if(default_skin && existing_sound) {
+                    // check if it's actually a default skin, though, since we no longer add a "_DEFAULT"
+                    // to the resource name to differentiate it
+                    // this avoids thinking that we have a loaded default skin element when it was actually from a previous (non-default) skin
+                    const std::string &existing_path = existing_sound->getFilePath();
+                    if(!existing_path.empty() && existing_path.contains(MCENGINE_IMAGES_PATH "/default/")) {
+                        return existing_sound;
+                    }
+                }
 
                 was_first_load = true;
 
