@@ -4,7 +4,7 @@
 #include "Color.h"
 #include "Vectors.h"
 
-#include <utility>
+#include <array>
 #include <vector>
 
 class Image;
@@ -57,99 +57,45 @@ class Skin final {
     [[nodiscard]] inline Image *getReverseArrow() const { return this->reverseArrow; }
     [[nodiscard]] inline SkinImage *getFollowPoint2() const { return this->followPoint2; }
 
-    [[nodiscard]] inline Image *getDefault0() const { return this->default0; }
-    [[nodiscard]] inline Image *getDefault1() const { return this->default1; }
-    [[nodiscard]] inline Image *getDefault2() const { return this->default2; }
-    [[nodiscard]] inline Image *getDefault3() const { return this->default3; }
-    [[nodiscard]] inline Image *getDefault4() const { return this->default4; }
-    [[nodiscard]] inline Image *getDefault5() const { return this->default5; }
-    [[nodiscard]] inline Image *getDefault6() const { return this->default6; }
-    [[nodiscard]] inline Image *getDefault7() const { return this->default7; }
-    [[nodiscard]] inline Image *getDefault8() const { return this->default8; }
-    [[nodiscard]] inline Image *getDefault9() const { return this->default9; }
-    [[nodiscard]] inline Image *getDefaultN(uSz n) const {
-        assert(n < 10);  // don't be stupid
-        switch(n) {
-                // clang-format off
-            case 0: return this->default0;
-            case 1: return this->default1;
-            case 2: return this->default2;
-            case 3: return this->default3;
-            case 4: return this->default4;
-            case 5: return this->default5;
-            case 6: return this->default6;
-            case 7: return this->default7;
-            case 8: return this->default8;
-            case 9: return this->default9;
-            default: std::unreachable();
-                // clang-format on
-        }
-        std::unreachable();
-    }
+    [[nodiscard]] inline Image *getDefault0() const { return this->defaultNumImgs[0]; }
+    [[nodiscard]] inline Image *getDefault1() const { return this->defaultNumImgs[1]; }
+    [[nodiscard]] inline Image *getDefault2() const { return this->defaultNumImgs[2]; }
+    [[nodiscard]] inline Image *getDefault3() const { return this->defaultNumImgs[3]; }
+    [[nodiscard]] inline Image *getDefault4() const { return this->defaultNumImgs[4]; }
+    [[nodiscard]] inline Image *getDefault5() const { return this->defaultNumImgs[5]; }
+    [[nodiscard]] inline Image *getDefault6() const { return this->defaultNumImgs[6]; }
+    [[nodiscard]] inline Image *getDefault7() const { return this->defaultNumImgs[7]; }
+    [[nodiscard]] inline Image *getDefault8() const { return this->defaultNumImgs[8]; }
+    [[nodiscard]] inline Image *getDefault9() const { return this->defaultNumImgs[9]; }
+    [[nodiscard]] inline const std::array<Image *, 10> &getDefaultNumImgs() const { return this->defaultNumImgs; }
 
-    [[nodiscard]] inline Image *getScore0() const { return this->score0; }
-    [[nodiscard]] inline Image *getScore1() const { return this->score1; }
-    [[nodiscard]] inline Image *getScore2() const { return this->score2; }
-    [[nodiscard]] inline Image *getScore3() const { return this->score3; }
-    [[nodiscard]] inline Image *getScore4() const { return this->score4; }
-    [[nodiscard]] inline Image *getScore5() const { return this->score5; }
-    [[nodiscard]] inline Image *getScore6() const { return this->score6; }
-    [[nodiscard]] inline Image *getScore7() const { return this->score7; }
-    [[nodiscard]] inline Image *getScore8() const { return this->score8; }
-    [[nodiscard]] inline Image *getScore9() const { return this->score9; }
+    [[nodiscard]] inline Image *getScore0() const { return this->scoreNumImgs[0]; }
+    [[nodiscard]] inline Image *getScore1() const { return this->scoreNumImgs[1]; }
+    [[nodiscard]] inline Image *getScore2() const { return this->scoreNumImgs[2]; }
+    [[nodiscard]] inline Image *getScore3() const { return this->scoreNumImgs[3]; }
+    [[nodiscard]] inline Image *getScore4() const { return this->scoreNumImgs[4]; }
+    [[nodiscard]] inline Image *getScore5() const { return this->scoreNumImgs[5]; }
+    [[nodiscard]] inline Image *getScore6() const { return this->scoreNumImgs[6]; }
+    [[nodiscard]] inline Image *getScore7() const { return this->scoreNumImgs[7]; }
+    [[nodiscard]] inline Image *getScore8() const { return this->scoreNumImgs[8]; }
+    [[nodiscard]] inline Image *getScore9() const { return this->scoreNumImgs[9]; }
     [[nodiscard]] inline Image *getScoreX() const { return this->scoreX; }
     [[nodiscard]] inline Image *getScorePercent() const { return this->scorePercent; }
     [[nodiscard]] inline Image *getScoreDot() const { return this->scoreDot; }
-    [[nodiscard]] inline Image *getScoreN(uSz n) const {
-        assert(n < 10);
-        switch(n) {
-                // clang-format off
-            case 0: return this->score0;
-            case 1: return this->score1;
-            case 2: return this->score2;
-            case 3: return this->score3;
-            case 4: return this->score4;
-            case 5: return this->score5;
-            case 6: return this->score6;
-            case 7: return this->score7;
-            case 8: return this->score8;
-            case 9: return this->score9;
-            default: std::unreachable();
-                // clang-format on
-        }
-        std::unreachable();
-    }
+    [[nodiscard]] inline const std::array<Image *, 10> &getScoreNumImgs() const { return this->scoreNumImgs; }
 
-    [[nodiscard]] inline Image *getCombo0() const { return this->combo0; }
-    [[nodiscard]] inline Image *getCombo1() const { return this->combo1; }
-    [[nodiscard]] inline Image *getCombo2() const { return this->combo2; }
-    [[nodiscard]] inline Image *getCombo3() const { return this->combo3; }
-    [[nodiscard]] inline Image *getCombo4() const { return this->combo4; }
-    [[nodiscard]] inline Image *getCombo5() const { return this->combo5; }
-    [[nodiscard]] inline Image *getCombo6() const { return this->combo6; }
-    [[nodiscard]] inline Image *getCombo7() const { return this->combo7; }
-    [[nodiscard]] inline Image *getCombo8() const { return this->combo8; }
-    [[nodiscard]] inline Image *getCombo9() const { return this->combo9; }
+    [[nodiscard]] inline Image *getCombo0() const { return this->comboNumImgs[0]; }
+    [[nodiscard]] inline Image *getCombo1() const { return this->comboNumImgs[1]; }
+    [[nodiscard]] inline Image *getCombo2() const { return this->comboNumImgs[2]; }
+    [[nodiscard]] inline Image *getCombo3() const { return this->comboNumImgs[3]; }
+    [[nodiscard]] inline Image *getCombo4() const { return this->comboNumImgs[4]; }
+    [[nodiscard]] inline Image *getCombo5() const { return this->comboNumImgs[5]; }
+    [[nodiscard]] inline Image *getCombo6() const { return this->comboNumImgs[6]; }
+    [[nodiscard]] inline Image *getCombo7() const { return this->comboNumImgs[7]; }
+    [[nodiscard]] inline Image *getCombo8() const { return this->comboNumImgs[8]; }
+    [[nodiscard]] inline Image *getCombo9() const { return this->comboNumImgs[9]; }
     [[nodiscard]] inline Image *getComboX() const { return this->comboX; }
-    [[nodiscard]] inline Image *getComboN(uSz n) const {
-        assert(n < 10);
-        switch(n) {
-                // clang-format off
-            case 0: return this->combo0;
-            case 1: return this->combo1;
-            case 2: return this->combo2;
-            case 3: return this->combo3;
-            case 4: return this->combo4;
-            case 5: return this->combo5;
-            case 6: return this->combo6;
-            case 7: return this->combo7;
-            case 8: return this->combo8;
-            case 9: return this->combo9;
-            default: std::unreachable();
-                // clang-format on
-        }
-        std::unreachable();
-    }
+    [[nodiscard]] inline const std::array<Image *, 10> &getComboNumImgs() const { return this->comboNumImgs; }
 
     [[nodiscard]] inline SkinImage *getPlaySkip() const { return this->playSkip; }
     [[nodiscard]] inline Image *getPlayWarningArrow() const { return this->playWarningArrow; }
@@ -444,41 +390,20 @@ class Skin final {
     Image *reverseArrow{MISSING_TEXTURE};
     SkinImage *followPoint2{nullptr};
 
-    Image *default0{MISSING_TEXTURE};
-    Image *default1{MISSING_TEXTURE};
-    Image *default2{MISSING_TEXTURE};
-    Image *default3{MISSING_TEXTURE};
-    Image *default4{MISSING_TEXTURE};
-    Image *default5{MISSING_TEXTURE};
-    Image *default6{MISSING_TEXTURE};
-    Image *default7{MISSING_TEXTURE};
-    Image *default8{MISSING_TEXTURE};
-    Image *default9{MISSING_TEXTURE};
+    // i hate how there's no way to initialize the entire thing with 1 value, it's either 0 or garbage
+    std::array<Image *, 10> defaultNumImgs{MISSING_TEXTURE, MISSING_TEXTURE, MISSING_TEXTURE, MISSING_TEXTURE,
+                                           MISSING_TEXTURE, MISSING_TEXTURE, MISSING_TEXTURE, MISSING_TEXTURE,
+                                           MISSING_TEXTURE, MISSING_TEXTURE};
 
-    Image *score0{MISSING_TEXTURE};
-    Image *score1{MISSING_TEXTURE};
-    Image *score2{MISSING_TEXTURE};
-    Image *score3{MISSING_TEXTURE};
-    Image *score4{MISSING_TEXTURE};
-    Image *score5{MISSING_TEXTURE};
-    Image *score6{MISSING_TEXTURE};
-    Image *score7{MISSING_TEXTURE};
-    Image *score8{MISSING_TEXTURE};
-    Image *score9{MISSING_TEXTURE};
+    // just to shortcut having to write out MISSING_TEXTURE 10x again
+    std::array<Image *, 10> scoreNumImgs{defaultNumImgs};
+
     Image *scoreX{MISSING_TEXTURE};
     Image *scorePercent{MISSING_TEXTURE};
     Image *scoreDot{MISSING_TEXTURE};
 
-    Image *combo0{MISSING_TEXTURE};
-    Image *combo1{MISSING_TEXTURE};
-    Image *combo2{MISSING_TEXTURE};
-    Image *combo3{MISSING_TEXTURE};
-    Image *combo4{MISSING_TEXTURE};
-    Image *combo5{MISSING_TEXTURE};
-    Image *combo6{MISSING_TEXTURE};
-    Image *combo7{MISSING_TEXTURE};
-    Image *combo8{MISSING_TEXTURE};
-    Image *combo9{MISSING_TEXTURE};
+    std::array<Image *, 10> comboNumImgs{defaultNumImgs};
+
     Image *comboX{MISSING_TEXTURE};
 
     SkinImage *playSkip{nullptr};

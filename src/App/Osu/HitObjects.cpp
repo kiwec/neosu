@@ -759,10 +759,12 @@ void Circle::drawHitCircleNumber(const std::unique_ptr<Skin> &skin, float number
     }
     g->setAlpha(numberAlpha);
 
+    const std::array<Image *, 10> &defaultImgs = skin->getDefaultNumImgs();
+
     // get total width for centering
     float digitWidthCombined = 0.0f;
     for(int i = 0; i < digitCount; i++) {
-        digitWidthCombined += skin->getDefaultN(digits[i])->getWidth();
+        digitWidthCombined += defaultImgs[digits[i]]->getWidth();
     }
 
     // draw digits, start at correct offset
@@ -772,7 +774,7 @@ void Circle::drawHitCircleNumber(const std::unique_ptr<Skin> &skin, float number
         g->translate(pos.x, pos.y);
 
         const int digitOverlapCount = digitCount - 1;
-        const float firstDigitWidth = skin->getDefaultN(digits[digitCount - 1])->getWidth();
+        const float firstDigitWidth = defaultImgs[digits[digitCount - 1]]->getWidth();
         g->translate(
             -(digitWidthCombined * numberScale - skin->getHitCircleOverlap() * digitOverlapCount * overlapScale) *
                     0.5f +
@@ -781,11 +783,11 @@ void Circle::drawHitCircleNumber(const std::unique_ptr<Skin> &skin, float number
 
         // draw from most significant to least significant
         for(int i = digitCount - 1; i >= 0; i--) {
-            g->drawImage(skin->getDefaultN(digits[i]));
+            g->drawImage(defaultImgs[digits[i]]);
 
-            float offset = skin->getDefaultN(digits[i])->getWidth() * numberScale;
+            float offset = defaultImgs[digits[i]]->getWidth() * numberScale;
             if(i > 0) {
-                offset += skin->getDefaultN(digits[i - 1])->getWidth() * numberScale;
+                offset += defaultImgs[digits[i - 1]]->getWidth() * numberScale;
             }
 
             g->translate(offset * 0.5f - skin->getHitCircleOverlap() * overlapScale, 0);

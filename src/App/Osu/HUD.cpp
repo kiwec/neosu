@@ -780,7 +780,7 @@ void HUD::drawComboOrScoreDigits(u64 number, float scale, bool drawLeadingZeroes
     }
 
     const auto &skin = osu->getSkin();
-    Image *(Skin::*getNfunc)(uSz) const = combo ? &Skin::getComboN : &Skin::getScoreN;
+    const std::array<Image *, 10> &images = combo ? skin->getComboNumImgs() : skin->getScoreNumImgs();
 
     // TODO: some dumb skins might have mixed 2x and non-2x images, the spacing would break in that case
     // (since only 0 is checked)
@@ -792,7 +792,7 @@ void HUD::drawComboOrScoreDigits(u64 number, float scale, bool drawLeadingZeroes
         number %= divisor;
         divisor /= 10;
 
-        const auto *img = std::invoke(getNfunc, skin, digit);
+        const auto *img = images[digit];
         auto width = static_cast<float>(img->getWidth());
         g->translate(width * 0.5f * scale, 0);
         g->drawImage(img);

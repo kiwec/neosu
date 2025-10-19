@@ -269,173 +269,50 @@ void Skin::load() {
 
     this->randomizeFilePath();
     {
-        std::string hitCirclePrefix = this->sHitCirclePrefix.length() > 0 ? this->sHitCirclePrefix : "default";
-        std::string hitCircleStringFinal = hitCirclePrefix;
-        hitCircleStringFinal.append("-0");
-        this->checkLoadImage(&this->default0, hitCircleStringFinal, "SKIN_DEFAULT0");
-        if(this->default0 == MISSING_TEXTURE)
-            this->checkLoadImage(&this->default0, "default-0",
-                                 "SKIN_DEFAULT0");  // special cases: fallback to default skin hitcircle numbers if
-                                                    // the defined prefix doesn't point to any valid files
-        hitCircleStringFinal = hitCirclePrefix;
-        hitCircleStringFinal.append("-1");
-        this->checkLoadImage(&this->default1, hitCircleStringFinal, "SKIN_DEFAULT1");
-        if(this->default1 == MISSING_TEXTURE) this->checkLoadImage(&this->default1, "default-1", "SKIN_DEFAULT1");
-        hitCircleStringFinal = hitCirclePrefix;
-        hitCircleStringFinal.append("-2");
-        this->checkLoadImage(&this->default2, hitCircleStringFinal, "SKIN_DEFAULT2");
-        if(this->default2 == MISSING_TEXTURE) this->checkLoadImage(&this->default2, "default-2", "SKIN_DEFAULT2");
-        hitCircleStringFinal = hitCirclePrefix;
-        hitCircleStringFinal.append("-3");
-        this->checkLoadImage(&this->default3, hitCircleStringFinal, "SKIN_DEFAULT3");
-        if(this->default3 == MISSING_TEXTURE) this->checkLoadImage(&this->default3, "default-3", "SKIN_DEFAULT3");
-        hitCircleStringFinal = hitCirclePrefix;
-        hitCircleStringFinal.append("-4");
-        this->checkLoadImage(&this->default4, hitCircleStringFinal, "SKIN_DEFAULT4");
-        if(this->default4 == MISSING_TEXTURE) this->checkLoadImage(&this->default4, "default-4", "SKIN_DEFAULT4");
-        hitCircleStringFinal = hitCirclePrefix;
-        hitCircleStringFinal.append("-5");
-        this->checkLoadImage(&this->default5, hitCircleStringFinal, "SKIN_DEFAULT5");
-        if(this->default5 == MISSING_TEXTURE) this->checkLoadImage(&this->default5, "default-5", "SKIN_DEFAULT5");
-        hitCircleStringFinal = hitCirclePrefix;
-        hitCircleStringFinal.append("-6");
-        this->checkLoadImage(&this->default6, hitCircleStringFinal, "SKIN_DEFAULT6");
-        if(this->default6 == MISSING_TEXTURE) this->checkLoadImage(&this->default6, "default-6", "SKIN_DEFAULT6");
-        hitCircleStringFinal = hitCirclePrefix;
-        hitCircleStringFinal.append("-7");
-        this->checkLoadImage(&this->default7, hitCircleStringFinal, "SKIN_DEFAULT7");
-        if(this->default7 == MISSING_TEXTURE) this->checkLoadImage(&this->default7, "default-7", "SKIN_DEFAULT7");
-        hitCircleStringFinal = hitCirclePrefix;
-        hitCircleStringFinal.append("-8");
-        this->checkLoadImage(&this->default8, hitCircleStringFinal, "SKIN_DEFAULT8");
-        if(this->default8 == MISSING_TEXTURE) this->checkLoadImage(&this->default8, "default-8", "SKIN_DEFAULT8");
-        hitCircleStringFinal = hitCirclePrefix;
-        hitCircleStringFinal.append("-9");
-        this->checkLoadImage(&this->default9, hitCircleStringFinal, "SKIN_DEFAULT9");
-        if(this->default9 == MISSING_TEXTURE) this->checkLoadImage(&this->default9, "default-9", "SKIN_DEFAULT9");
+        const std::string hitCirclePrefix = this->sHitCirclePrefix.empty() ? "default" : this->sHitCirclePrefix;
+        for(int i = 0; i < 10; i++) {
+            const std::string resName = fmt::format("SKIN_DEFAULT{}", i);
+            this->checkLoadImage(&this->defaultNumImgs[i], fmt::format("{}-{}", hitCirclePrefix, i), resName);
+            // special cases: fallback to default skin hitcircle numbers if the
+            // defined prefix doesn't point to any valid files
+            if(this->defaultNumImgs[i] == MISSING_TEXTURE)
+                this->checkLoadImage(&this->defaultNumImgs[i], fmt::format("default-{}", i), resName);
+        }
     }
 
     this->randomizeFilePath();
     {
-        std::string scorePrefix = this->sScorePrefix.length() > 0 ? this->sScorePrefix : "score";
-        std::string scoreStringFinal = scorePrefix;
-        scoreStringFinal.append("-0");
-        this->checkLoadImage(&this->score0, scoreStringFinal, "SKIN_SCORE0");
-        if(this->score0 == MISSING_TEXTURE)
-            this->checkLoadImage(&this->score0, "score-0",
-                                 "SKIN_SCORE0");  // special cases: fallback to default skin score numbers if the
-                                                  // defined prefix doesn't point to any valid files
-        scoreStringFinal = scorePrefix;
-        scoreStringFinal.append("-1");
-        this->checkLoadImage(&this->score1, scoreStringFinal, "SKIN_SCORE1");
-        if(this->score1 == MISSING_TEXTURE) this->checkLoadImage(&this->score1, "score-1", "SKIN_SCORE1");
-        scoreStringFinal = scorePrefix;
-        scoreStringFinal.append("-2");
-        this->checkLoadImage(&this->score2, scoreStringFinal, "SKIN_SCORE2");
-        if(this->score2 == MISSING_TEXTURE) this->checkLoadImage(&this->score2, "score-2", "SKIN_SCORE2");
-        scoreStringFinal = scorePrefix;
-        scoreStringFinal.append("-3");
-        this->checkLoadImage(&this->score3, scoreStringFinal, "SKIN_SCORE3");
-        if(this->score3 == MISSING_TEXTURE) this->checkLoadImage(&this->score3, "score-3", "SKIN_SCORE3");
-        scoreStringFinal = scorePrefix;
-        scoreStringFinal.append("-4");
-        this->checkLoadImage(&this->score4, scoreStringFinal, "SKIN_SCORE4");
-        if(this->score4 == MISSING_TEXTURE) this->checkLoadImage(&this->score4, "score-4", "SKIN_SCORE4");
-        scoreStringFinal = scorePrefix;
-        scoreStringFinal.append("-5");
-        this->checkLoadImage(&this->score5, scoreStringFinal, "SKIN_SCORE5");
-        if(this->score5 == MISSING_TEXTURE) this->checkLoadImage(&this->score5, "score-5", "SKIN_SCORE5");
-        scoreStringFinal = scorePrefix;
-        scoreStringFinal.append("-6");
-        this->checkLoadImage(&this->score6, scoreStringFinal, "SKIN_SCORE6");
-        if(this->score6 == MISSING_TEXTURE) this->checkLoadImage(&this->score6, "score-6", "SKIN_SCORE6");
-        scoreStringFinal = scorePrefix;
-        scoreStringFinal.append("-7");
-        this->checkLoadImage(&this->score7, scoreStringFinal, "SKIN_SCORE7");
-        if(this->score7 == MISSING_TEXTURE) this->checkLoadImage(&this->score7, "score-7", "SKIN_SCORE7");
-        scoreStringFinal = scorePrefix;
-        scoreStringFinal.append("-8");
-        this->checkLoadImage(&this->score8, scoreStringFinal, "SKIN_SCORE8");
-        if(this->score8 == MISSING_TEXTURE) this->checkLoadImage(&this->score8, "score-8", "SKIN_SCORE8");
-        scoreStringFinal = scorePrefix;
-        scoreStringFinal.append("-9");
-        this->checkLoadImage(&this->score9, scoreStringFinal, "SKIN_SCORE9");
-        if(this->score9 == MISSING_TEXTURE) this->checkLoadImage(&this->score9, "score-9", "SKIN_SCORE9");
+        const std::string scorePrefix = this->sScorePrefix.empty() ? "score" : this->sScorePrefix;
+        for(int i = 0; i < 10; i++) {
+            const std::string resName = fmt::format("SKIN_SCORE{}", i);
+            this->checkLoadImage(&this->scoreNumImgs[i], fmt::format("{}-{}", scorePrefix, i), resName);
+            // fallback logic
+            if(this->scoreNumImgs[i] == MISSING_TEXTURE)
+                this->checkLoadImage(&this->scoreNumImgs[i], fmt::format("score-{}", i), resName);
+        }
 
-        scoreStringFinal = scorePrefix;
-        scoreStringFinal.append("-x");
-        this->checkLoadImage(&this->scoreX, scoreStringFinal, "SKIN_SCOREX");
+        this->checkLoadImage(&this->scoreX, fmt::format("{}-x", scorePrefix), "SKIN_SCOREX");
         // if (this->scoreX == MISSING_TEXTURE) checkLoadImage(&m_scoreX, "score-x", "SKIN_SCOREX"); // special
         // case: ScorePrefix'd skins don't get default fallbacks, instead missing extraneous things like the X are
         // simply not drawn
-        scoreStringFinal = scorePrefix;
-        scoreStringFinal.append("-percent");
-        this->checkLoadImage(&this->scorePercent, scoreStringFinal, "SKIN_SCOREPERCENT");
-        // if (this->scorePercent == MISSING_TEXTURE) checkLoadImage(&m_scorePercent, "score-percent",
-        // "SKIN_SCOREPERCENT"); // special case: ScorePrefix'd skins don't get default fallbacks, instead missing
-        // extraneous things like the X are simply not drawn
-        scoreStringFinal = scorePrefix;
-        scoreStringFinal.append("-dot");
-        this->checkLoadImage(&this->scoreDot, scoreStringFinal, "SKIN_SCOREDOT");
-        // if (this->scoreDot == MISSING_TEXTURE) checkLoadImage(&m_scoreDot, "score-dot", "SKIN_SCOREDOT"); //
-        // special case: ScorePrefix'd skins don't get default fallbacks, instead missing extraneous things like the X
-        // are simply not drawn
+        this->checkLoadImage(&this->scorePercent, fmt::format("{}-percent", scorePrefix), "SKIN_SCOREPERCENT");
+        this->checkLoadImage(&this->scoreDot, fmt::format("{}-dot", scorePrefix), "SKIN_SCOREDOT");
     }
 
     this->randomizeFilePath();
     {
-        std::string comboPrefix = this->sComboPrefix.length() > 0
-                                      ? this->sComboPrefix
-                                      : "score";  // yes, "score" is the default value for the combo prefix
-        std::string comboStringFinal = comboPrefix;
-        comboStringFinal.append("-0");
-        this->checkLoadImage(&this->combo0, comboStringFinal, "SKIN_COMBO0");
-        if(this->combo0 == MISSING_TEXTURE)
-            this->checkLoadImage(&this->combo0, "score-0",
-                                 "SKIN_COMBO0");  // special cases: fallback to default skin combo numbers if the
-                                                  // defined prefix doesn't point to any valid files
-        comboStringFinal = comboPrefix;
-        comboStringFinal.append("-1");
-        this->checkLoadImage(&this->combo1, comboStringFinal, "SKIN_COMBO1");
-        if(this->combo1 == MISSING_TEXTURE) this->checkLoadImage(&this->combo1, "score-1", "SKIN_COMBO1");
-        comboStringFinal = comboPrefix;
-        comboStringFinal.append("-2");
-        this->checkLoadImage(&this->combo2, comboStringFinal, "SKIN_COMBO2");
-        if(this->combo2 == MISSING_TEXTURE) this->checkLoadImage(&this->combo2, "score-2", "SKIN_COMBO2");
-        comboStringFinal = comboPrefix;
-        comboStringFinal.append("-3");
-        this->checkLoadImage(&this->combo3, comboStringFinal, "SKIN_COMBO3");
-        if(this->combo3 == MISSING_TEXTURE) this->checkLoadImage(&this->combo3, "score-3", "SKIN_COMBO3");
-        comboStringFinal = comboPrefix;
-        comboStringFinal.append("-4");
-        this->checkLoadImage(&this->combo4, comboStringFinal, "SKIN_COMBO4");
-        if(this->combo4 == MISSING_TEXTURE) this->checkLoadImage(&this->combo4, "score-4", "SKIN_COMBO4");
-        comboStringFinal = comboPrefix;
-        comboStringFinal.append("-5");
-        this->checkLoadImage(&this->combo5, comboStringFinal, "SKIN_COMBO5");
-        if(this->combo5 == MISSING_TEXTURE) this->checkLoadImage(&this->combo5, "score-5", "SKIN_COMBO5");
-        comboStringFinal = comboPrefix;
-        comboStringFinal.append("-6");
-        this->checkLoadImage(&this->combo6, comboStringFinal, "SKIN_COMBO6");
-        if(this->combo6 == MISSING_TEXTURE) this->checkLoadImage(&this->combo6, "score-6", "SKIN_COMBO6");
-        comboStringFinal = comboPrefix;
-        comboStringFinal.append("-7");
-        this->checkLoadImage(&this->combo7, comboStringFinal, "SKIN_COMBO7");
-        if(this->combo7 == MISSING_TEXTURE) this->checkLoadImage(&this->combo7, "score-7", "SKIN_COMBO7");
-        comboStringFinal = comboPrefix;
-        comboStringFinal.append("-8");
-        this->checkLoadImage(&this->combo8, comboStringFinal, "SKIN_COMBO8");
-        if(this->combo8 == MISSING_TEXTURE) this->checkLoadImage(&this->combo8, "score-8", "SKIN_COMBO8");
-        comboStringFinal = comboPrefix;
-        comboStringFinal.append("-9");
-        this->checkLoadImage(&this->combo9, comboStringFinal, "SKIN_COMBO9");
-        if(this->combo9 == MISSING_TEXTURE) this->checkLoadImage(&this->combo9, "score-9", "SKIN_COMBO9");
+        // yes, "score" is the default value for the combo prefix
+        const std::string comboPrefix = this->sComboPrefix.empty() ? "score" : this->sComboPrefix;
+        for(int i = 0; i < 10; i++) {
+            const std::string resName = fmt::format("SKIN_COMBO{}", i);
+            this->checkLoadImage(&this->comboNumImgs[i], fmt::format("{}-{}", comboPrefix, i), resName);
+            // fallback logic
+            if(this->comboNumImgs[i] == MISSING_TEXTURE)
+                this->checkLoadImage(&this->comboNumImgs[i], fmt::format("score-{}", i), resName);
+        }
 
-        comboStringFinal = comboPrefix;
-        comboStringFinal.append("-x");
-        this->checkLoadImage(&this->comboX, comboStringFinal, "SKIN_COMBOX");
-        // if (this->comboX == MISSING_TEXTURE) m_comboX = m_scoreX; // special case: ComboPrefix'd skins don't get
-        // default fallbacks, instead missing extraneous things like the X are simply not drawn
+        // special case as above for extras
+        this->checkLoadImage(&this->comboX, fmt::format("{}-x", comboPrefix), "SKIN_COMBOX");
     }
 
     this->randomizeFilePath();
@@ -792,10 +669,10 @@ void Skin::load() {
     if(this->approachCircle && this->approachCircle->getFilePath().contains("@2x")) this->bApproachCircle2x = true;
     if(this->reverseArrow && this->reverseArrow->getFilePath().contains("@2x")) this->bReverseArrow2x = true;
     if(this->hitCircle && this->hitCircle->getFilePath().contains("@2x")) this->bHitCircle2x = true;
-    if(this->default0 && this->default0->getFilePath().contains("@2x")) this->bIsDefault02x = true;
-    if(this->default1 && this->default1->getFilePath().contains("@2x")) this->bIsDefault12x = true;
-    if(this->score0 && this->score0->getFilePath().contains("@2x")) this->bIsScore02x = true;
-    if(this->combo0 && this->combo0->getFilePath().contains("@2x")) this->bIsCombo02x = true;
+    if(this->defaultNumImgs[0] && this->defaultNumImgs[0]->getFilePath().contains("@2x")) this->bIsDefault02x = true;
+    if(this->defaultNumImgs[1] && this->defaultNumImgs[1]->getFilePath().contains("@2x")) this->bIsDefault12x = true;
+    if(this->scoreNumImgs[0] && this->scoreNumImgs[0]->getFilePath().contains("@2x")) this->bIsScore02x = true;
+    if(this->comboNumImgs[0] && this->comboNumImgs[0]->getFilePath().contains("@2x")) this->bIsCombo02x = true;
     if(this->spinnerApproachCircle && this->spinnerApproachCircle->getFilePath().contains("@2x"))
         this->bSpinnerApproachCircle2x = true;
     if(this->spinnerBottom && this->spinnerBottom->getFilePath().contains("@2x")) this->bSpinnerBottom2x = true;
