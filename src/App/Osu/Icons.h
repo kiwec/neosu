@@ -37,6 +37,8 @@ class Icons {
     static char16_t KEYBOARD;
     static char16_t LOCK;
     static char16_t UNLOCK;
+    static char16_t DISCORD;
+    static char16_t TWITTER;
 };
 
 #endif

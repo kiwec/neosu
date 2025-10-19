@@ -15,6 +15,7 @@ typedef DatabaseBeatmap BeatmapSet;
 
 class HitObject;
 class UIButton;
+class UIButtonWithIcon;
 class CBaseUIContainer;
 class ConVar;
 
@@ -108,8 +109,11 @@ class MainMenu final : public OsuScreen, public MouseListener {
     std::vector<MainButton *> menuElements;
 
     PauseButton *pauseButton;
-    UIButton *updateAvailableButton = nullptr;
+    UIButton *updateAvailableButton{nullptr};
     CBaseUIButton *versionButton;
+
+    UIButtonWithIcon *discordButton{nullptr};
+    UIButtonWithIcon *twitterButton{nullptr};
 
     bool bDrawVersionNotificationArrow;
     bool bDidUserUpdateFromOlderVersion;

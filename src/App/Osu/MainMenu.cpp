@@ -19,6 +19,7 @@
 #include "Engine.h"
 #include "File.h"
 #include "HUD.h"
+#include "Icons.h"
 #include "Keyboard.h"
 #include "Lobby.h"
 #include "Mouse.h"
@@ -31,6 +32,7 @@
 #include "SongBrowser/SongBrowser.h"
 #include "SoundEngine.h"
 #include "UIButton.h"
+#include "UIButtonWithIcon.h"
 #include "UpdateHandler.h"
 #include "VertexArrayObject.h"
 #include "Logging.h"
@@ -240,6 +242,14 @@ MainMenu::MainMenu() : OsuScreen() {
     this->versionButton->setDrawFrame(false);
     this->versionButton->setClickCallback(SA::MakeDelegate<&MainMenu::onVersionPressed>(this));
     this->addBaseUIElement(this->versionButton);
+
+    this->discordButton = new UIButtonWithIcon("discord.gg/YWPBFSpH8v", Icons::DISCORD);
+    this->discordButton->setClickCallback([]() { env->openURLInDefaultBrowser("https://discord.gg/YWPBFSpH8v"); });
+    this->addBaseUIElement(this->discordButton);
+
+    this->twitterButton = new UIButtonWithIcon("x.com/neosugame", Icons::TWITTER);
+    this->twitterButton->setClickCallback([]() { env->openURLInDefaultBrowser("https://x.com/neosugame"); });
+    this->addBaseUIElement(this->twitterButton);
 }
 
 MainMenu::~MainMenu() {
@@ -939,6 +949,9 @@ void MainMenu::mouse_update(bool *propagate_clicks) {
     }
     this->versionButton->setText(versionString);
 
+    this->discordButton->setVisible(!cv::adblock.getBool());
+    this->twitterButton->setVisible(!cv::adblock.getBool());
+
     this->updateLayout();
 
     // update and focus handling
@@ -1303,6 +1316,19 @@ void MainMenu::updateLayout() {
     this->versionButton->onResized();  // HACKHACK: framework, setSizeToContent() does not update string metrics
     this->versionButton->setSizeToContent(8 * dpiScale, 8 * dpiScale);
     this->versionButton->setRelPos(-1, osu->getVirtScreenSize().y - this->versionButton->getSize().y);
+
+    {
+        McFont *font = resourceManager->getFont("FONT_DEFAULT");
+        f32 margin = std::round(3.f * dpiScale);
+        f32 ads_y = osu->getVirtScreenSize().y;
+        if(cv::draw_fps.getBool()) ads_y -= (font->getHeight() + margin) * 2.f;
+
+        ads_y -= this->discordButton->getSize().y + margin;
+        this->discordButton->setRelPos(osu->getVirtScreenSize().x - this->discordButton->getSize().x, ads_y);
+
+        ads_y -= this->twitterButton->getSize().y + margin;
+        this->twitterButton->setRelPos(osu->getVirtScreenSize().x - this->twitterButton->getSize().x, ads_y);
+    }
 
     int numButtons = this->menuElements.size();
     int menuElementHeight = this->vSize.y / numButtons;

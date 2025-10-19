@@ -27,3 +27,5 @@ char16_t Icons::UNDO = Icons::addIcon(0xf0e2);
 char16_t Icons::KEYBOARD = Icons::addIcon(0xf11c);
 char16_t Icons::LOCK = Icons::addIcon(0xf023);
 char16_t Icons::UNLOCK = Icons::addIcon(0xf09c);
+char16_t Icons::DISCORD = Icons::addIcon(0xf075);  // FontAwesome 4.7 doesn't have discord
+char16_t Icons::TWITTER = Icons::addIcon(0xf099);
