@@ -209,7 +209,7 @@ void Database::AsyncDBLoader::init() {
 
     // signal that we are done
     db->fLoadingProgress = 1.0f;
-    this->bReady = true;
+    this->setReady(true);
 
     if(cv::debug_db.getBool() || cv::debug_async_db.getBool()) debugLog("(AsyncDBLoader) done");
 }
@@ -220,35 +220,35 @@ void Database::AsyncDBLoader::initAsync() {
     assert(db != nullptr);
 
     db->findDatabases();
-    if(db->bInterruptLoad.load()) goto done;
+    if(db->bInterruptLoad.load(std::memory_order_acquire)) goto done;
 
     using enum Database::DatabaseType;
     db->loadScores(db->database_files[NEOSU_SCORES]);
-    if(db->bInterruptLoad.load()) goto done;
+    if(db->bInterruptLoad.load(std::memory_order_acquire)) goto done;
     db->loadOldMcNeosuScores(db->database_files[MCNEOSU_SCORES]);
-    if(db->bInterruptLoad.load()) goto done;
+    if(db->bInterruptLoad.load(std::memory_order_acquire)) goto done;
     db->loadPeppyScores(db->database_files[STABLE_SCORES]);
     db->bScoresLoaded = true;
-    if(db->bInterruptLoad.load()) goto done;
+    if(db->bInterruptLoad.load(std::memory_order_acquire)) goto done;
 
     db->loadMaps();
-    if(db->bInterruptLoad.load()) goto done;
+    if(db->bInterruptLoad.load(std::memory_order_acquire)) goto done;
 
     if(!db->bNeedRawLoad) {
         load_collections();
-        if(db->bInterruptLoad.load()) goto done;
+        if(db->bInterruptLoad.load(std::memory_order_acquire)) goto done;
     }
 
     // .db files that were dropped on the main window
     for(const auto &db_pair : db->external_databases) {
         db->importDatabase(db_pair);
-        if(db->bInterruptLoad.load()) goto done;
+        if(db->bInterruptLoad.load(std::memory_order_acquire)) goto done;
     }
     db->external_databases.clear();
 
 done:
 
-    this->bAsyncReady = true;
+    this->setAsyncReady(true);
     if(cv::debug_db.getBool() || cv::debug_async_db.getBool()) debugLog("(AsyncDBLoader) done");
 }
 
@@ -354,7 +354,7 @@ void Database::update() {
         Timer t;
 
         while(t.getElapsedTime() < 0.033f) {
-            if(this->bInterruptLoad.load()) break;  // cancellation point
+            if(this->bInterruptLoad.load(std::memory_order_acquire)) break;  // cancellation point
 
             if(this->rawLoadBeatmapFolders.size() > 0 &&
                this->iCurRawBeatmapLoadIndex < this->rawLoadBeatmapFolders.size()) {
@@ -697,7 +697,8 @@ Database::PlayerPPScores Database::getPlayerPPScores(const std::string &playerNa
 }
 
 Database::PlayerStats Database::calculatePlayerStats(const std::string &playerName) {
-    if(!this->bDidScoresChangeForStats.load() && playerName == this->prevPlayerStats.name.utf8View())
+    if(!this->bDidScoresChangeForStats.load(std::memory_order_acquire) &&
+       playerName == this->prevPlayerStats.name.utf8View())
         return this->prevPlayerStats;
 
     const PlayerPPScores ps = this->getPlayerPPScores(playerName);
@@ -927,7 +928,7 @@ void Database::loadMaps() {
 
             u32 nb_sets = neosu_maps.read<u32>();
             for(u32 i = 0; i < nb_sets; i++) {
-                if(this->bInterruptLoad.load()) break;  // cancellation point
+                if(this->bInterruptLoad.load(std::memory_order_acquire)) break;  // cancellation point
 
                 u32 progress_bytes = this->bytes_processed + neosu_maps.total_pos;
                 f64 progress_float = (f64)progress_bytes / (f64)this->total_bytes;
@@ -940,7 +941,7 @@ void Database::loadMaps() {
 
                 auto *diffs = new std::vector<DatabaseBeatmap *>();
                 for(u16 j = 0; j < nb_diffs; j++) {
-                    if(this->bInterruptLoad.load()) {  // cancellation point
+                    if(this->bInterruptLoad.load(std::memory_order_acquire)) {  // cancellation point
                         // clean up partially loaded diffs in current set
                         Sync::unique_lock lock(this->beatmap_difficulties_mtx);
                         for(DatabaseBeatmap *diff : *diffs) {
@@ -1109,7 +1110,7 @@ void Database::loadMaps() {
             zarray<Database::TIMINGPOINT> timing_points_buffer;
 
             for(int i = 0; i < this->iNumBeatmapsToLoad; i++) {
-                if(this->bInterruptLoad.load()) break;  // cancellation point
+                if(this->bInterruptLoad.load(std::memory_order_acquire)) break;  // cancellation point
 
                 logIfCV(debug_db, "Database: Reading beatmap {:d}/{:d} ...", (i + 1), this->iNumBeatmapsToLoad);
                 // update progress (another thread checks if progress >= 1.f to know when we're done)
@@ -1452,7 +1453,7 @@ void Database::loadMaps() {
 
             // build beatmap sets
             for(const auto &beatmapSet : beatmapSets) {
-                if(this->bInterruptLoad.load()) {  // cancellation point
+                if(this->bInterruptLoad.load(std::memory_order_acquire)) {  // cancellation point
                     // clean up remaining unprocessed diffs2 vectors and their contents
                     for(size_t i = &beatmapSet - &beatmapSets[0]; i < beatmapSets.size(); i++) {
                         if(beatmapSets[i].diffs2) {
@@ -1584,7 +1585,7 @@ void Database::saveMaps() {
             maps.write<i32>(diff->iMaxBPM);
             maps.write<i32>(diff->iMostCommonBPM);
             maps.write<u8>(diff->draw_background);
-            maps.write<f32>(diff->loudness.load());
+            maps.write<f32>(diff->loudness.load(std::memory_order_acquire));
             maps.write_string(diff->sTitleUnicode.c_str());
             maps.write_string(diff->sArtistUnicode.c_str());
             maps.write_string(diff->sBackgroundImageFileName.c_str());
@@ -1600,7 +1601,7 @@ void Database::saveMaps() {
         Sync::unique_lock lock(this->peppy_overrides_mtx);
         for(const auto &map : this->loudness_to_calc) {
             if(map->type != DatabaseBeatmap::BeatmapType::PEPPY_DIFFICULTY) continue;
-            if(map->loudness.load() == 0.f) continue;
+            if(map->loudness.load(std::memory_order_acquire) == 0.f) continue;
             this->peppy_overrides[map->getMD5()] = map->get_overrides();
         }
     }

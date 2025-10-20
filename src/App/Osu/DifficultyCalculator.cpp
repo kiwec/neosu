@@ -309,7 +309,7 @@ f64 DifficultyCalculator::calculateStarDiffForHitObjects(StarCalcParams &params)
         // not cached (full rebuild computation)
         params.cachedDiffObjects.reserve(numDiffObjects);
         for(size_t i = 0; i < numDiffObjects; i++) {
-            if(params.dead.load()) return 0.0;
+            if(params.dead.load(std::memory_order_acquire)) return 0.0;
 
             params.cachedDiffObjects.emplace_back(&params.sortedHitObjects[i], radius_scaling_factor,
                                                   params.cachedDiffObjects,
@@ -322,7 +322,7 @@ f64 DifficultyCalculator::calculateStarDiffForHitObjects(StarCalcParams &params)
     if(!isUsingCachedDiffObjects) {
         const f32 starsSliderCurvePointsSeparation = cv::stars_slider_curve_points_separation.getFloat();
         for(size_t i = 0; i < numDiffObjects; i++) {
-            if(params.dead.load()) return 0.0;
+            if(params.dead.load(std::memory_order_acquire)) return 0.0;
 
             // see setDistances() @ https://github.com/ppy/osu/blob/master/osu.Game.Rulesets.Osu/Difficulty/Preprocessing/OsuDifficultyHitObject.cs
 

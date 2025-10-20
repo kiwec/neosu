@@ -59,11 +59,11 @@ static void run_thread() {
 
     for(;;) {
         Sync::unique_lock<Sync::mutex> lock(work_mtx);
-        cond.wait(lock, [] { return !work.empty() || dead.load(); });
-        if(dead.load()) return;
+        cond.wait(lock, [] { return !work.empty() || dead.load(std::memory_order_acquire); });
+        if(dead.load(std::memory_order_acquire)) return;
 
         while(!work.empty()) {
-            if(dead.load()) return;
+            if(dead.load(std::memory_order_acquire)) return;
             auto [rqt, highprio] = work[0];
             if(!highprio && osu->shouldPauseBGThreads()) {
                 work_mtx.unlock();
@@ -88,7 +88,7 @@ static void run_thread() {
                 work_mtx.lock();
                 continue;
             }
-            if(dead.load()) {
+            if(dead.load(std::memory_order_acquire)) {
                 work_mtx.lock();
                 return;
             }
@@ -110,13 +110,13 @@ static void run_thread() {
                 computed_ho->speed = rqt.mods.speed;
                 computed_ho->AR = rqt.AR;
                 computed_ho->CS = rqt.CS;
-                if(dead.load()) {
+                if(dead.load(std::memory_order_acquire)) {
                     work_mtx.lock();
                     return;
                 }
                 computed_ho->diffres = DatabaseBeatmap::loadDifficultyHitObjects(map->getFilePath(), rqt.AR, rqt.CS,
                                                                                  rqt.mods.speed, false, dead);
-                if(dead.load()) {
+                if(dead.load(std::memory_order_acquire)) {
                     work_mtx.lock();
                     return;
                 }
@@ -151,7 +151,7 @@ static void run_thread() {
                 computed_info->OD = rqt.OD;
                 computed_info->rx = rqt.rx;
                 computed_info->td = rqt.td;
-                if(dead.load()) {
+                if(dead.load(std::memory_order_acquire)) {
                     work_mtx.lock();
                     return;
                 }
@@ -179,7 +179,7 @@ static void run_thread() {
                 };
                 computed_info->info.total_stars = DifficultyCalculator::calculateStarDiffForHitObjects(params);
                 computed_info->cachedDiffObjects = std::move(params.cachedDiffObjects);
-                if(dead.load()) {
+                if(dead.load(std::memory_order_acquire)) {
                     work_mtx.lock();
                     return;
                 }
@@ -187,7 +187,7 @@ static void run_thread() {
                 inf_cache.push_back(computed_info);
             }
 
-            if(dead.load()) {
+            if(dead.load(std::memory_order_acquire)) {
                 work_mtx.lock();
                 return;
             }
@@ -212,7 +212,7 @@ void lct_set_map(const DatabaseBeatmap* new_map) {
     if(map == new_map) return;
 
     if(map != nullptr) {
-        dead = true;
+        dead.store(true, std::memory_order_release);
         cond.notify_one();
         if(thr.joinable()) {
             thr.join();
@@ -229,7 +229,7 @@ void lct_set_map(const DatabaseBeatmap* new_map) {
         }
         inf_cache.clear();
 
-        dead = false;
+        dead.store(false, std::memory_order_release);
     }
 
     map = new_map;

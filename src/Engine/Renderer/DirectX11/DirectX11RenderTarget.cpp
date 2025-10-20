@@ -132,10 +132,10 @@ void DirectX11RenderTarget::init() {
         return;
     }
 
-    this->bReady = true;
+    this->setReady(true);
 }
 
-void DirectX11RenderTarget::initAsync() { this->bAsyncReady = true; }
+void DirectX11RenderTarget::initAsync() { this->setAsyncReady(true); }
 
 void DirectX11RenderTarget::destroy() {
     if(this->shaderResourceView != nullptr) this->shaderResourceView->Release();
@@ -156,7 +156,7 @@ void DirectX11RenderTarget::destroy() {
 }
 
 void DirectX11RenderTarget::draw(int x, int y) {
-    if(!this->bReady) {
+    if(!this->isReady()) {
         debugLog("WARNING: RenderTarget is not ready!");
         return;
     }
@@ -170,7 +170,7 @@ void DirectX11RenderTarget::draw(int x, int y) {
 }
 
 void DirectX11RenderTarget::draw(int x, int y, int width, int height) {
-    if(!this->bReady) {
+    if(!this->isReady()) {
         debugLog("WARNING: RenderTarget is not ready!");
         return;
     }
@@ -184,7 +184,7 @@ void DirectX11RenderTarget::draw(int x, int y, int width, int height) {
 }
 
 void DirectX11RenderTarget::drawRect(int x, int y, int width, int height) {
-    if(!this->bReady) {
+    if(!this->isReady()) {
         debugLog("WARNING: RenderTarget is not ready!");
         return;
     }
@@ -226,7 +226,7 @@ void DirectX11RenderTarget::drawRect(int x, int y, int width, int height) {
 }
 
 void DirectX11RenderTarget::enable() {
-    if(!this->bReady) return;
+    if(!this->isReady()) return;
 
     auto* context = static_cast<DirectX11Interface*>(g.get())->getDeviceContext();
 
@@ -252,7 +252,7 @@ void DirectX11RenderTarget::enable() {
 }
 
 void DirectX11RenderTarget::disable() {
-    if(!this->bReady) return;
+    if(!this->isReady()) return;
 
     // restore
     // HACKHACK: slow af
@@ -276,7 +276,7 @@ void DirectX11RenderTarget::disable() {
 }
 
 void DirectX11RenderTarget::bind(unsigned int textureUnit) {
-    if(!this->bReady) return;
+    if(!this->isReady()) return;
 
     auto* dx11 = static_cast<DirectX11Interface*>(g.get());
     auto* context = dx11->getDeviceContext();
@@ -295,7 +295,7 @@ void DirectX11RenderTarget::bind(unsigned int textureUnit) {
 }
 
 void DirectX11RenderTarget::unbind() {
-    if(!this->bReady) return;
+    if(!this->isReady()) return;
 
     // restore
     // HACKHACK: slow af

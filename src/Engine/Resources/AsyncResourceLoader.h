@@ -34,10 +34,12 @@ class AsyncResourceLoader final {
     void reloadResources(const std::vector<Resource *> &resources);
 
     // status queries
-    [[nodiscard]] inline bool isLoading() const { return this->iActiveWorkCount.load() > 0; }
+    [[nodiscard]] inline bool isLoading() const { return this->iActiveWorkCount.load(std::memory_order_acquire) > 0; }
     [[nodiscard]] bool isLoadingResource(Resource *resource) const;
-    [[nodiscard]] size_t getNumLoadingWork() const { return this->iActiveWorkCount.load(); }
-    [[nodiscard]] size_t getNumActiveThreads() const { return this->iActiveThreadCount.load(); }
+    [[nodiscard]] size_t getNumLoadingWork() const { return this->iActiveWorkCount.load(std::memory_order_acquire); }
+    [[nodiscard]] size_t getNumActiveThreads() const {
+        return this->iActiveThreadCount.load(std::memory_order_acquire);
+    }
     [[nodiscard]] inline size_t getNumLoadingWorkAsyncDestroy() const { return this->asyncDestroyQueue.size(); }
     [[nodiscard]] inline size_t getMaxPerUpdate() const { return this->iLoadsPerUpdate; }
 

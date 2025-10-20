@@ -200,10 +200,10 @@ void OpenGLRenderTarget::init() {
         OpenGLStateCache::setCurrentViewport(viewport[0], viewport[1], viewport[2], viewport[3]);
     }
 
-    this->bReady = true;
+    this->setReady(true);
 }
 
-void OpenGLRenderTarget::initAsync() { this->bAsyncReady = true; }
+void OpenGLRenderTarget::initAsync() { this->setAsyncReady(true); }
 
 void OpenGLRenderTarget::destroy() {
     if(this->iResolveTexture != 0) glDeleteTextures(1, &this->iResolveTexture);
@@ -220,7 +220,7 @@ void OpenGLRenderTarget::destroy() {
 }
 
 void OpenGLRenderTarget::enable() {
-    if(!this->bReady) return;
+    if(!this->isReady()) return;
 
     // use the state cache instead of querying OpenGL directly
     this->iFrameBufferBackup = OpenGLStateCache::getCurrentFramebuffer();
@@ -253,7 +253,7 @@ void OpenGLRenderTarget::enable() {
 }
 
 void OpenGLRenderTarget::disable() {
-    if(!this->bReady) return;
+    if(!this->isReady()) return;
 
     // if multisampled, blit content for multisampling into resolve texture
 #ifdef HAS_MULTISAMPLING
@@ -291,7 +291,7 @@ void OpenGLRenderTarget::disable() {
 }
 
 void OpenGLRenderTarget::bind(unsigned int textureUnit) {
-    if(!this->bReady) return;
+    if(!this->isReady()) return;
 
     this->iTextureUnitBackup = textureUnit;
 
@@ -313,7 +313,7 @@ void OpenGLRenderTarget::bind(unsigned int textureUnit) {
 }
 
 void OpenGLRenderTarget::unbind() {
-    if(!this->bReady) return;
+    if(!this->isReady()) return;
 
     // restore texture unit (just in case) and set to no texture
     glActiveTexture(GL_TEXTURE0 + this->iTextureUnitBackup);

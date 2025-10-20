@@ -31,7 +31,7 @@ class AsyncResourceLoader::LoaderThread final {
     [[nodiscard]] bool isReady() const noexcept { return this->thread.joinable(); }
 
     [[nodiscard]] bool isIdleTooLong() const noexcept {
-        auto lastActive = this->last_active.load();
+        auto lastActive = this->last_active.load(std::memory_order_acquire);
         auto now = std::chrono::steady_clock::now();
         return std::chrono::duration_cast<std::chrono::milliseconds>(now - lastActive) > IDLE_TIMEOUT;
     }
@@ -50,7 +50,7 @@ class AsyncResourceLoader::LoaderThread final {
         McThread::set_current_thread_name(loaderThreadName.c_str());
         McThread::set_current_thread_prio(false);  // reset priority (don't inherit from main thread)
 
-        while(!stoken.stop_requested() && !this->loader_ptr->bShuttingDown.load()) {
+        while(!stoken.stop_requested() && !this->loader_ptr->bShuttingDown.load(std::memory_order_acquire)) {
             const bool debug = cv::debug_rm.getBool();
 
             auto work = this->loader_ptr->getNextPendingWork();
@@ -62,17 +62,18 @@ class AsyncResourceLoader::LoaderThread final {
 
                 // wait indefinitely until work is available or stop is requested
                 this->loader_ptr->workAvailable.wait(lock, stoken, [this]() {
-                    return this->loader_ptr->bShuttingDown.load() || this->loader_ptr->iActiveWorkCount.load() > 0;
+                    return this->loader_ptr->bShuttingDown.load(std::memory_order_acquire) ||
+                           this->loader_ptr->iActiveWorkCount.load(std::memory_order_acquire) > 0;
                 });
 
                 continue;
             }
 
             // notify that this thread completed work
-            this->last_active.store(std::chrono::steady_clock::now());
+            this->last_active.store(std::chrono::steady_clock::now(), std::memory_order_release);
 
             Resource *resource = work->resource;
-            work->state.store(AsyncResourceLoader::WorkState::ASYNC_IN_PROGRESS);
+            work->state.store(AsyncResourceLoader::WorkState::ASYNC_IN_PROGRESS, std::memory_order_release);
 
             std::string debugName;
             if(debug) {
@@ -92,7 +93,7 @@ class AsyncResourceLoader::LoaderThread final {
             logIf(debug, "AsyncResourceLoader: Thread #{} finished async loading {:8p} : {:s}", this->thread_index,
                   static_cast<const void *>(resource), debugName);
 
-            work->state.store(AsyncResourceLoader::WorkState::ASYNC_COMPLETE);
+            work->state.store(AsyncResourceLoader::WorkState::ASYNC_COMPLETE, std::memory_order_release);
             this->loader_ptr->markWorkAsyncComplete(std::move(work));
 
             // yield again before loop
@@ -212,7 +213,7 @@ void AsyncResourceLoader::update(bool lowLatency) {
 
         rs->load();
 
-        work->state.store(WorkState::SYNC_COMPLETE);
+        work->state.store(WorkState::SYNC_COMPLETE, std::memory_order_release);
 
         // remove from tracking set
         {
@@ -301,8 +302,8 @@ bool AsyncResourceLoader::isLoadingResource(Resource *resource) const {
 }
 
 void AsyncResourceLoader::ensureThreadAvailable() {
-    size_t activeThreads = this->iActiveThreadCount.load();
-    size_t activeWorkCount = this->iActiveWorkCount.load();
+    size_t activeThreads = this->iActiveThreadCount.load(std::memory_order_acquire);
+    size_t activeWorkCount = this->iActiveWorkCount.load(std::memory_order_acquire);
 
     if(activeWorkCount > activeThreads && activeThreads < this->iMaxThreads) {
         Sync::scoped_lock lock(this->threadsMutex);
@@ -336,7 +337,7 @@ void AsyncResourceLoader::cleanupIdleThreads() {
     this->lastCleanupTime = now;
 
     // don't cleanup if we still have work
-    if(this->iActiveWorkCount.load() > 0) return;
+    if(this->iActiveWorkCount.load(std::memory_order_acquire) > 0) return;
 
     Sync::scoped_lock lock(this->threadsMutex);
 

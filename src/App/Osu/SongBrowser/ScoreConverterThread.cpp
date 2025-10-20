@@ -34,7 +34,7 @@ static void update_ppv2(const FinishedScore& score) {
 
     // Load hitobjects
     auto diffres = DatabaseBeatmap::loadDifficultyHitObjects(map->getFilePath(), AR, CS, score.mods.speed, false, dead);
-    if(dead.load()) return;
+    if(dead.load(std::memory_order_acquire)) return;
     if(diffres.errorCode) return;
 
     pp_info info;
@@ -66,7 +66,7 @@ static void update_ppv2(const FinishedScore& score) {
     };
 
     info.total_stars = DifficultyCalculator::calculateStarDiffForHitObjects(params);
-    if(dead.load()) return;
+    if(dead.load(std::memory_order_acquire)) return;
 
     info.pp = DifficultyCalculator::calculatePPv2(
         score.mods, AR, OD, info.aim_stars, info.aim_slider_factor, info.difficult_aim_sliders,
@@ -127,18 +127,18 @@ static void run_sct(const std::unordered_map<MD5Hash, std::vector<FinishedScore>
     scores_to_calc.shrink_to_fit();
     sct_total = scores_to_calc.size();
 
-    debugLog("Found {} scores which need pp recalculation", sct_total.load());
+    debugLog("Found {} scores which need pp recalculation", sct_total.load(std::memory_order_acquire));
 
     // nothing to do...
     if(sct_total == 0) return;
 
     for(i32 idx = 0; auto& score : scores_to_calc) {
-        while(osu->shouldPauseBGThreads() && !dead.load()) {
+        while(osu->shouldPauseBGThreads() && !dead.load(std::memory_order_acquire)) {
             Timing::sleepMS(100);
         }
         Timing::sleep(1);
 
-        if(dead.load()) return;
+        if(dead.load(std::memory_order_acquire)) return;
 
         // This is "placeholder" until we get accurate replay simulation
         {
@@ -206,7 +206,7 @@ static void run_sct(const std::unordered_map<MD5Hash, std::vector<FinishedScore>
 void sct_calc(std::unordered_map<MD5Hash, std::vector<FinishedScore>> scores_to_maybe_calc) {
     sct_abort();
 
-    dead = false;
+    dead.store(false, std::memory_order_release);
 
     // to be set in run_sct (find scores which actually need recalc)
     sct_total = 0;
@@ -218,9 +218,9 @@ void sct_calc(std::unordered_map<MD5Hash, std::vector<FinishedScore>> scores_to_
 }
 
 void sct_abort() {
-    if(dead.load()) return;
+    if(dead.load(std::memory_order_acquire)) return;
 
-    dead = true;
+    dead.store(true, std::memory_order_release);
     if(thr.joinable()) {
         thr.join();
     }

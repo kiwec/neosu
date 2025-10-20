@@ -19,12 +19,12 @@ DirectX11VertexArrayObject::DirectX11VertexArrayObject(Graphics::PRIMITIVE primi
     : VertexArrayObject(primitive, usage, keepInSystemMemory), convertedPrimitive(primitive) {}
 
 void DirectX11VertexArrayObject::init() {
-    if(!this->bAsyncReady || this->vertices.size() < 2) return;
+    if(!this->isAsyncReady() || this->vertices.size() < 2) return;
 
     auto* device = static_cast<DirectX11Interface*>(g.get())->getDevice();
     auto* context = static_cast<DirectX11Interface*>(g.get())->getDeviceContext();
 
-    if(this->bReady) {
+    if(this->isReady()) {
         const D3D11_USAGE usage = (D3D11_USAGE)usageToDirectX(this->usage);
 
         // TODO: somehow merge this with the partialUpdateColorIndices, annoying
@@ -79,7 +79,7 @@ void DirectX11VertexArrayObject::init() {
         // TODO: update color buffer
     }
 
-    if(this->vertexBuffer != nullptr && (!this->bKeepInSystemMemory || this->bReady))
+    if(this->vertexBuffer != nullptr && (!this->bKeepInSystemMemory || this->isReady()))
         return;  // only fully load if we are not already loaded
 
     // TODO: optimize this piece of shit
@@ -251,10 +251,10 @@ void DirectX11VertexArrayObject::init() {
         this->convertedVertices.clear();
     }
 
-    this->bReady = true;
+    this->setReady(true);
 }
 
-void DirectX11VertexArrayObject::initAsync() { this->bAsyncReady = true; }
+void DirectX11VertexArrayObject::initAsync() { this->setAsyncReady(true); }
 
 void DirectX11VertexArrayObject::destroy() {
     VertexArrayObject::destroy();
@@ -268,7 +268,7 @@ void DirectX11VertexArrayObject::destroy() {
 }
 
 void DirectX11VertexArrayObject::draw() {
-    if(!this->bReady) {
+    if(!this->isReady()) {
         debugLog("WARNING: called, but was not ready!");
         return;
     }

@@ -24,10 +24,10 @@ TextureAtlas::~TextureAtlas() { this->destroy(); }
 void TextureAtlas::init() {
     resourceManager->loadResource(this->atlasImage.get());
 
-    this->bReady = true;
+    this->setReady(true);
 }
 
-void TextureAtlas::initAsync() { this->bAsyncReady = true; }
+void TextureAtlas::initAsync() { this->setAsyncReady(true); }
 
 void TextureAtlas::destroy() { this->atlasImage.reset(); }
 

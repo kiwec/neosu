@@ -2205,8 +2205,8 @@ void BeatmapInterface::update() {
 
                 // XXX: slow
                 // NOTE: this should be using incremental calc, not recalc from the start every time...
-                auto diffres = DatabaseBeatmap::loadDifficultyHitObjects(osufile_path.c_str(), AR, CS, speedMultiplier);
                 std::atomic<bool> dead{false};
+                auto diffres = DatabaseBeatmap::loadDifficultyHitObjects(osufile_path.c_str(), AR, CS, speedMultiplier, dead);
 
                 DifficultyCalculator::StarCalcParams params{
                     .cachedDiffObjects = {},

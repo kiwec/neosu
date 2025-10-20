@@ -1659,8 +1659,8 @@ MainMenu::SongsFolderEnumerator::SongsFolderEnumerator() : Resource() {
 }
 
 void MainMenu::SongsFolderEnumerator::rebuild() {
-    this->bAsyncReady.store(false);
-    this->bReady = false;
+    this->setAsyncReady(false);
+    this->setReady(false);
     resourceManager->reloadResource(this, true);
 }
 
@@ -1680,5 +1680,5 @@ void MainMenu::SongsFolderEnumerator::initAsync() {
         this->entries.push_back(fmt::format(NEOSU_MAPS_PATH "/{}/", mapset));
     }
 
-    this->bAsyncReady = true;
+    this->setAsyncReady(true);
 }

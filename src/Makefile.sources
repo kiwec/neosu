@@ -74,6 +74,7 @@ neosu_SOURCES = \
 	src/App/Osu/UIAvatar.cpp \
 	src/App/Osu/UIBackButton.cpp \
 	src/App/Osu/UIButton.cpp \
+	src/App/Osu/UIButtonWithIcon.cpp \
 	src/App/Osu/UICheckbox.cpp \
 	src/App/Osu/UIContextMenu.cpp \
 	src/App/Osu/UIModSelectorModButton.cpp \

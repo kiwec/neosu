@@ -177,9 +177,7 @@ bool DatabaseBeatmap::parse_timing_point(std::string_view curLine, DatabaseBeatm
 }
 
 DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(std::string_view osuFilePath) {
-    std::atomic<bool> dead;
-    dead = false;
-    return loadPrimitiveObjects(osuFilePath, dead);
+    return loadPrimitiveObjects(osuFilePath, false);
 }
 
 DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(std::string_view osuFilePath,
@@ -223,7 +221,7 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(std::
                                reinterpret_cast<char *>(fileBuffer.get() + beatmapFileSize)};
             }
             // check for cancellation
-            if(dead.load()) {
+            if(dead.load(std::memory_order_acquire)) {
                 c.errorCode = 6;
                 return c;
             }
@@ -245,7 +243,7 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(std::
         using enum BlockId;
 
         for(auto curLineUnstripped : SString::split(beatmapFile, '\n')) {
-            if(dead.load()) {
+            if(dead.load(std::memory_order_acquire)) {
                 c.errorCode = 6;
                 return c;
             }
@@ -273,7 +271,7 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(std::
             // we don't care here
             if(curBlock == Metadata) continue;
 
-            if(dead.load()) {
+            if(dead.load(std::memory_order_acquire)) {
                 c.errorCode = 6;
                 return c;
             }
@@ -603,8 +601,6 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(std::
 DatabaseBeatmap::CALCULATE_SLIDER_TIMES_CLICKS_TICKS_RESULT DatabaseBeatmap::calculateSliderTimesClicksTicks(
     int beatmapVersion, std::vector<SLIDER> &sliders, zarray<DatabaseBeatmap::TIMINGPOINT> &timingpoints,
     float sliderMultiplier, float sliderTickRate) {
-    std::atomic<bool> dead;
-    dead = false;
     return calculateSliderTimesClicksTicks(beatmapVersion, sliders, timingpoints, sliderMultiplier, sliderTickRate,
                                            false);
 }
@@ -653,7 +649,7 @@ DatabaseBeatmap::CALCULATE_SLIDER_TIMES_CLICKS_TICKS_RESULT DatabaseBeatmap::cal
     };
 
     for(auto &s : sliders) {
-        if(dead.load()) {
+        if(dead.load(std::memory_order_acquire)) {
             r.errorCode = 6;
             return r;
         }
@@ -744,7 +740,7 @@ DatabaseBeatmap::CALCULATE_SLIDER_TIMES_CLICKS_TICKS_RESULT DatabaseBeatmap::cal
             .time = time,
         });
 
-        if(dead.load()) {
+        if(dead.load(std::memory_order_acquire)) {
             r.errorCode = 6;
             return r;
         }
@@ -761,9 +757,7 @@ DatabaseBeatmap::CALCULATE_SLIDER_TIMES_CLICKS_TICKS_RESULT DatabaseBeatmap::cal
 DatabaseBeatmap::LOAD_DIFFOBJ_RESULT DatabaseBeatmap::loadDifficultyHitObjects(std::string_view osuFilePath, float AR,
                                                                                float CS, float speedMultiplier,
                                                                                bool calculateStarsInaccurately) {
-    std::atomic<bool> dead;
-    dead = false;
-    return loadDifficultyHitObjects(osuFilePath, AR, CS, speedMultiplier, calculateStarsInaccurately, dead);
+    return loadDifficultyHitObjects(osuFilePath, AR, CS, speedMultiplier, calculateStarsInaccurately, false);
 }
 
 DatabaseBeatmap::LOAD_DIFFOBJ_RESULT DatabaseBeatmap::loadDifficultyHitObjects(std::string_view osuFilePath, float AR,
@@ -820,7 +814,7 @@ DatabaseBeatmap::LOAD_DIFFOBJ_RESULT DatabaseBeatmap::loadDifficultyHitObjects(P
     const bool calculateSliderCurveInConstructor =
         (c.sliders.size() < 5000);  // NOTE: for explanation see OsuDifficultyHitObject constructor
     for(auto &slider : c.sliders) {
-        if(dead.load()) {
+        if(dead.load(std::memory_order_acquire)) {
             result.errorCode = 6;
             return result;
         }
@@ -848,7 +842,7 @@ DatabaseBeatmap::LOAD_DIFFOBJ_RESULT DatabaseBeatmap::loadDifficultyHitObjects(P
                                         (i32)spinner.time, (i32)spinner.endTime);
     }
 
-    if(dead.load()) {
+    if(dead.load(std::memory_order_acquire)) {
         result.errorCode = 6;
         return result;
     }
@@ -867,7 +861,7 @@ DatabaseBeatmap::LOAD_DIFFOBJ_RESULT DatabaseBeatmap::loadDifficultyHitObjects(P
         std::ranges::sort(result.diffobjects, diffHitObjectSortComparator);
     }
 
-    if(dead.load()) {
+    if(dead.load(std::memory_order_acquire)) {
         result.errorCode = 6;
         return result;
     }
@@ -997,7 +991,7 @@ DatabaseBeatmap::LOAD_DIFFOBJ_RESULT DatabaseBeatmap::loadDifficultyHitObjects(P
         // update hitobject positions
         float stackOffset = rawHitCircleDiameter / 128.0f / GameRules::broken_gamefield_rounding_allowance * 6.4f;
         for(int i = 0; i < result.diffobjects.size(); i++) {
-            if(dead.load()) {
+            if(dead.load(std::memory_order_acquire)) {
                 result.errorCode = 6;
                 return result;
             }
@@ -1011,7 +1005,7 @@ DatabaseBeatmap::LOAD_DIFFOBJ_RESULT DatabaseBeatmap::loadDifficultyHitObjects(P
     if(speedMultiplier != 1.0f && speedMultiplier > 0.0f) {
         const double invSpeedMultiplier = 1.0 / (double)speedMultiplier;
         for(int i = 0; i < result.diffobjects.size(); i++) {
-            if(dead.load()) {
+            if(dead.load(std::memory_order_acquire)) {
                 result.errorCode = 6;
                 return result;
             }

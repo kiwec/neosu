@@ -1133,10 +1133,6 @@ CONVAR(scores_save_immediately, "scores_save_immediately"sv, true, CLIENT | SKIN
 CONVAR(scores_sort_by_pp, "scores_sort_by_pp"sv, true, CLIENT | SKINS | SERVER,
        "display pp in score browser instead of score"sv);
 CONVAR(scrubbing_smooth, "scrubbing_smooth"sv, true, CLIENT | SKINS | SERVER);
-CONVAR(sdl_joystick0_deadzone, "sdl_joystick0_deadzone"sv, 0.3f, CLIENT | SKINS | SERVER);
-CONVAR(sdl_joystick_mouse_sensitivity, "sdl_joystick_mouse_sensitivity"sv, 1.0f, CLIENT | SKINS | SERVER);
-CONVAR(sdl_joystick_zl_threshold, "sdl_joystick_zl_threshold"sv, -0.5f, CLIENT | SKINS | SERVER);
-CONVAR(sdl_joystick_zr_threshold, "sdl_joystick_zr_threshold"sv, -0.5f, CLIENT | SKINS | SERVER);
 CONVAR(seek_delta, "seek_delta"sv, 5, CLIENT | SKINS | SERVER,
        "how many seconds to skip backward/forward when quick seeking"sv);
 CONVAR(show_approach_circle_on_first_hidden_object, "show_approach_circle_on_first_hidden_object"sv, true,

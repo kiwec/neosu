@@ -210,8 +210,10 @@ void draw_bottombar() {
         g->popTransform();
         calcy += font->getHeight() + 10;
     }
-    if(sct_total.load() > 0 && sct_computed.load() < sct_total.load()) {
-        UString msg = UString::format("Converting scores (%i/%i) ...", sct_computed.load(), sct_total.load());
+    const auto calc_total = sct_total.load(std::memory_order_acquire);
+    const auto calc_computed = sct_computed.load(std::memory_order_acquire);
+    if(calc_total > 0 && calc_computed < calc_total) {
+        UString msg = UString::format("Converting scores (%i/%i) ...", calc_computed, calc_total);
         g->setColor(0xff333333);
         g->pushTransform();
         g->translate(calcx, calcy);

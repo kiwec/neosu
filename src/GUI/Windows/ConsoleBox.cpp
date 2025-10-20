@@ -150,9 +150,9 @@ ConsoleBox::ConsoleBox() : CBaseUIElement(0, 0, 0, 0, "") {
     this->fLogYPos = 0.0f;
 
     // initialize thread-safe log animation state
-    this->bLogAnimationResetPending.store(false);
-    this->fPendingLogTime.store(0.0f);
-    this->bForceLogVisible.store(false);
+    this->bLogAnimationResetPending.store(false, std::memory_order_release);
+    this->fPendingLogTime.store(0.0f, std::memory_order_release);
+    this->bForceLogVisible.store(false, std::memory_order_release);
 
     this->clearSuggestions();
 
@@ -244,7 +244,7 @@ void ConsoleBox::processPendingLogAnimations() {
         // execute animation operations on main thread only
         anim->deleteExistingAnimation(&this->fLogYPos);
         this->fLogYPos = 0;
-        this->fLogTime = this->fPendingLogTime.load();
+        this->fLogTime = this->fPendingLogTime.load(std::memory_order_acquire);
     }
 }
 
@@ -664,9 +664,9 @@ void ConsoleBox::log(const UString &text, Color textColor) {
 
     // defer animation operations to main thread to avoid data races
     // use force visibility flag to prevent immediate timeout on same frame (this is so dumb)
-    this->fPendingLogTime.store(Timing::getTimeReal<float>() + 8.0f);
-    this->bForceLogVisible.store(true);
-    this->bLogAnimationResetPending.store(true);
+    this->fPendingLogTime.store(Timing::getTimeReal<float>() + 8.0f, std::memory_order_release);
+    this->bForceLogVisible.store(true, std::memory_order_release);
+    this->bLogAnimationResetPending.store(true, std::memory_order_release);
 }
 
 float ConsoleBox::getAnimTargetY() { return 32.0f * this->getDPIScale(); }

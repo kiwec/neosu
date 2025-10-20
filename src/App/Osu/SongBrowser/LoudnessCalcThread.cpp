@@ -36,7 +36,7 @@ struct VolNormalization::LoudnessCalcThread {
 #ifdef MCENGINE_FEATURE_BASS
    public:
     LoudnessCalcThread(std::vector<DatabaseBeatmap *> maps_to_calc) {
-        this->dead = false;
+        this->dead.store(false, std::memory_order_release);
         this->maps = std::move(maps_to_calc);
         this->nb_total = this->maps.size() + 1;
         if(soundEngine->getTypeId() == SoundEngine::BASS) {  // TODO
@@ -45,7 +45,7 @@ struct VolNormalization::LoudnessCalcThread {
     }
 
     ~LoudnessCalcThread() {
-        this->dead = true;
+        this->dead.store(true, std::memory_order_release);
         if(this->thr.joinable()) {
             this->thr.join();
         }
@@ -68,13 +68,13 @@ struct VolNormalization::LoudnessCalcThread {
         BASS_SetConfig(BASS_CONFIG_UPDATETHREADS, 0);
 
         for(auto map : this->maps) {
-            while(osu->shouldPauseBGThreads() && !this->dead.load()) {
+            while(osu->shouldPauseBGThreads() && !this->dead.load(std::memory_order_acquire)) {
                 Timing::sleepMS(100);
             }
             Timing::sleep(1);
 
-            if(this->dead.load()) return;
-            if(map->loudness.load() != 0.f) continue;
+            if(this->dead.load(std::memory_order_acquire)) return;
+            if(map->loudness.load(std::memory_order_acquire) != 0.f) continue;
 
             UString song{map->getFullSoundFilePath()};
             if(song == last_song) {
@@ -148,7 +148,7 @@ u32 VolNormalization::get_computed_instance() {
     if(!Env::cfg(AUD::BASS) || soundEngine->getTypeId() != SoundEngine::BASS) return 0;  // TODO
     u32 x = 0;
     for(auto thr : this->threads) {
-        x += thr->nb_computed.load();
+        x += thr->nb_computed.load(std::memory_order_acquire);
     }
     return x;
 }
@@ -157,7 +157,7 @@ u32 VolNormalization::get_total_instance() {
     if(!Env::cfg(AUD::BASS) || soundEngine->getTypeId() != SoundEngine::BASS) return 0;  // TODO
     u32 x = 0;
     for(auto thr : this->threads) {
-        x += thr->nb_total.load();
+        x += thr->nb_total.load(std::memory_order_acquire);
     }
     return x;
 }

@@ -53,7 +53,9 @@ class DownloadManager {
     std::chrono::steady_clock::time_point last_download_start{};
 
     void checkAndStartNextDownload() {
-        if(this->shutting_down.load() || this->currently_downloading.load()) return;
+        if(this->shutting_down.load(std::memory_order_acquire) ||
+           this->currently_downloading.load(std::memory_order_acquire))
+            return;
 
         Sync::scoped_lock lock(this->queue_mutex);
         if(this->download_queue.empty()) return;
@@ -74,8 +76,8 @@ class DownloadManager {
     }
 
     void startDownloadNow(const std::shared_ptr<DownloadRequest>& request) {
-        if(this->shutting_down.load()) return;
-        this->currently_downloading.store(true);
+        if(this->shutting_down.load(std::memory_order_acquire)) return;
+        this->currently_downloading.store(true, std::memory_order_release);
         this->last_download_start = std::chrono::steady_clock::now();
 
         debugLog("Downloading {:s}", request->url.c_str());
@@ -85,7 +87,9 @@ class DownloadManager {
         options.connect_timeout = 5;
         options.user_agent = BanchoState::user_agent.toUtf8();
         options.follow_redirects = true;
-        options.progress_callback = [request](float progress) { request->progress.store(progress); };
+        options.progress_callback = [request](float progress) {
+            request->progress.store(progress, std::memory_order_release);
+        };
 
         // capture s_download_manager as a copy to keep DownloadManager alive during callback
         networkHandler->httpRequestAsync(
@@ -97,18 +101,18 @@ class DownloadManager {
     }
 
     void onDownloadComplete(const std::shared_ptr<DownloadRequest>& request, NetworkHandler::Response response) {
-        if(this->shutting_down.load()) return;
-        this->currently_downloading.store(false);
+        if(this->shutting_down.load(std::memory_order_acquire)) return;
+        this->currently_downloading.store(false, std::memory_order_release);
 
         // update request with results
         {
             Sync::scoped_lock lock(request->data_mutex);
-            request->response_code.store(static_cast<int>(response.response_code));
+            request->response_code.store(static_cast<int>(response.response_code), std::memory_order_release);
 
             if(response.success && response.response_code == 200) {
                 request->data = std::vector<u8>(response.body.begin(), response.body.end());
-                request->progress.store(1.0f);
-                request->completed.store(true);
+                request->progress.store(1.0f, std::memory_order_release);
+                request->completed.store(true, std::memory_order_release);
             } else {
                 if(!response.success) {
                     debugLog("Failed to download {:s}: network error", request->url.c_str());
@@ -117,15 +121,15 @@ class DownloadManager {
                     // rate limited, retry after 5 seconds
                     // TODO: read headers and if the usual retry-after are set, follow those
                     // TODO: per-domain rate limits
-                    request->progress.store(0.0f);
+                    request->progress.store(0.0f, std::memory_order_release);
                     request->retry_after = std::chrono::steady_clock::now() + std::chrono::seconds(5);
 
                     // re-queue for retry
                     Sync::scoped_lock lock(this->queue_mutex);
                     this->download_queue.push(request);
                 } else {
-                    request->progress.store(-1.0f);
-                    request->completed.store(true);
+                    request->progress.store(-1.0f, std::memory_order_release);
+                    request->completed.store(true, std::memory_order_release);
                 }
             }
         }
@@ -150,7 +154,7 @@ class DownloadManager {
     }
 
     std::shared_ptr<DownloadRequest> start_download(const std::string& url) {
-        if(this->shutting_down.load()) return nullptr;
+        if(this->shutting_down.load(std::memory_order_acquire)) return nullptr;
 
         Sync::scoped_lock lock(this->active_mutex);
 
@@ -158,7 +162,7 @@ class DownloadManager {
         auto it = this->active_downloads.find(url);
         if(it != this->active_downloads.end()) {
             // if we have been rate limited, we might need to resume downloads manually
-            if(!this->currently_downloading.load()) {
+            if(!this->currently_downloading.load(std::memory_order_acquire)) {
                 this->checkAndStartNextDownload();
             }
 
@@ -227,12 +231,12 @@ void download(const char* url, float* progress, std::vector<u8>& out, int* respo
         return;
     }
 
-    *progress = std::min(0.99f, request->progress.load());
+    *progress = std::min(0.99f, request->progress.load(std::memory_order_acquire));
 
-    if(request->completed.load()) {
+    if(request->completed.load(std::memory_order_acquire)) {
         Sync::scoped_lock lock(request->data_mutex);
         *progress = 1.f;
-        *response_code = request->response_code.load();
+        *response_code = request->response_code.load(std::memory_order_acquire);
         if(*response_code == 200) {
             out = request->data;
         }

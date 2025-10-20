@@ -31,7 +31,7 @@ void MapCalcThread::start_calc_instance(const std::vector<DatabaseBeatmap*>& map
 }
 
 void MapCalcThread::abort_instance() {
-    if(this->should_stop.load()) {
+    if(this->should_stop.load(std::memory_order_acquire)) {
         return;
     }
 
@@ -52,24 +52,24 @@ void MapCalcThread::run() {
 
     for(const auto& map : *this->maps_to_process) {
         // pause handling
-        while(osu->shouldPauseBGThreads() && !this->should_stop.load()) {
+        while(osu->shouldPauseBGThreads() && !this->should_stop.load(std::memory_order_acquire)) {
             Timing::sleepMS(100);
         }
         Timing::sleep(1);
 
-        if(this->should_stop.load()) {
+        if(this->should_stop.load(std::memory_order_acquire)) {
             return;
         }
 
         mct_result result{.map = map};
 
-        if(this->should_stop.load()) {
+        if(this->should_stop.load(std::memory_order_acquire)) {
             return;
         }
 
         auto c = DatabaseBeatmap::loadPrimitiveObjects(map->sFilePath, this->should_stop);
 
-        if(this->should_stop.load()) {
+        if(this->should_stop.load(std::memory_order_acquire)) {
             return;
         }
 
@@ -87,7 +87,7 @@ void MapCalcThread::run() {
         auto diffres =
             DatabaseBeatmap::loadDifficultyHitObjects(c, map->getAR(), map->getCS(), 1.f, false, this->should_stop);
 
-        if(this->should_stop.load()) {
+        if(this->should_stop.load(std::memory_order_acquire)) {
             return;
         }
 
@@ -117,10 +117,9 @@ void MapCalcThread::run() {
                                                     .outSpeedStrains = {},
                                                     .dead = this->should_stop};
 
-        result.star_rating =
-            static_cast<f32>(DifficultyCalculator::calculateStarDiffForHitObjects(params));
+        result.star_rating = static_cast<f32>(DifficultyCalculator::calculateStarDiffForHitObjects(params));
 
-        if(this->should_stop.load()) {
+        if(this->should_stop.load(std::memory_order_acquire)) {
             return;
         }
 

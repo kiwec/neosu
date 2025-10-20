@@ -16,9 +16,9 @@
 #include "Logging.h"
 
 void BassSound::init() {
-    if(this->bIgnored || this->sFilePath.length() < 2 || !(this->bAsyncReady.load())) return;
+    if(this->bIgnored || this->sFilePath.length() < 2 || !(this->isAsyncReady())) return;
 
-    this->bReady = this->bAsyncReady.load();
+    this->setReady(this->isAsyncReady());
 }
 
 void BassSound::initAsync() {
@@ -34,7 +34,7 @@ void BassSound::initAsync() {
         if(cv::snd_async_buffer.getInt() > 0) flags |= BASS_ASYNCFILE;
         if constexpr(Env::cfg(OS::WINDOWS)) flags |= BASS_UNICODE;
 
-        if(this->bInterrupted.load()) return;
+        if(this->isInterrupted()) return;
         this->stream = BASS_StreamCreateFile(BASS_FILE_NAME, file_path.plat_str(), 0, 0, flags);
         if(!this->stream) {
             debugLog("BASS_StreamCreateFile() error on file {}: {}", this->sFilePath.c_str(),
@@ -42,7 +42,7 @@ void BassSound::initAsync() {
             return;
         }
 
-        if(this->bInterrupted.load()) return;
+        if(this->isInterrupted()) return;
         this->stream = BASS_FX_TempoCreate(this->stream, BASS_FX_FREESOURCE | BASS_STREAM_DECODE);
         if(!this->stream) {
             debugLog("BASS_FX_TempoCreate() error on file {}: {}", this->sFilePath.c_str(),
@@ -56,13 +56,13 @@ void BassSound::initAsync() {
         BASS_ChannelSetAttribute(this->stream, BASS_ATTRIB_TEMPO_OPTION_OLDPOS, 1);  // use old position calculation
 
         // Only compute the length once
-        if(this->bInterrupted.load()) return;
+        if(this->isInterrupted()) return;
         handle = this->stream;
     } else {
         u32 flags = BASS_SAMPLE_FLOAT;
         if constexpr(Env::cfg(OS::WINDOWS)) flags |= BASS_UNICODE;
 
-        if(this->bInterrupted.load()) return;
+        if(this->isInterrupted()) return;
         this->sample = BASS_SampleLoad(false, file_path.plat_str(), 0, 0, 1, flags);
         if(!this->sample) {
             auto code = BASS_ErrorGetCode();
@@ -76,7 +76,7 @@ void BassSound::initAsync() {
             }
         }
 
-        if(this->bInterrupted.load()) return;
+        if(this->isInterrupted()) return;
         handle = this->sample;
     }
 
@@ -87,11 +87,11 @@ void BassSound::initAsync() {
     this->length = (u32)lengthInMilliSeconds;
 
     this->fSpeed = 1.0f;
-    this->bAsyncReady = true;
+    this->setAsyncReady(true);
 }
 
 void BassSound::destroy() {
-    if(!this->bAsyncReady) {
+    if(!this->isAsyncReady()) {
         this->interruptLoad();
     }
 
@@ -116,9 +116,9 @@ void BassSound::destroy() {
     this->activeHandleCache.clear();
 
     this->bStarted = false;
-    this->bReady = false;
+    this->setReady(false);
     this->bIsLooped = false;
-    this->bAsyncReady = false;
+    this->setAsyncReady(false);
     this->bPaused = false;
     this->paused_position_ms = 0;
     this->bIgnored = false;
@@ -126,7 +126,7 @@ void BassSound::destroy() {
 }
 
 void BassSound::setPositionMS(u32 ms) {
-    if(!this->bReady || ms > this->getLengthMS()) return;
+    if(!this->isReady() || ms > this->getLengthMS()) return;
     assert(this->bStream);  // can't call setPositionMS() on a sample
 
     f64 seconds = (f64)ms / 1000.0;
@@ -150,7 +150,7 @@ void BassSound::setPositionMS(u32 ms) {
 }
 
 void BassSound::setSpeed(float speed) {
-    if(!this->bReady) return;
+    if(!this->isReady()) return;
     assert(this->bStream);  // can't call setSpeed() on a sample
 
     speed = std::clamp<float>(speed, 0.05f, 50.0f);
@@ -171,7 +171,7 @@ void BassSound::setSpeed(float speed) {
 }
 
 void BassSound::setFrequency(float frequency) {
-    if(!this->bReady) return;
+    if(!this->isReady()) return;
 
     frequency = (frequency > 99.0f ? std::clamp<float>(frequency, 100.0f, 100000.0f) : 0.0f);
 
@@ -181,7 +181,7 @@ void BassSound::setFrequency(float frequency) {
 }
 
 void BassSound::setPan(float pan) {
-    if(!this->bReady) return;
+    if(!this->isReady()) return;
 
     this->fPan = std::clamp<float>(pan, -1.0f, 1.0f);
 
@@ -191,7 +191,7 @@ void BassSound::setPan(float pan) {
 }
 
 void BassSound::setLoop(bool loop) {
-    if(!this->bReady) return;
+    if(!this->isReady()) return;
     assert(this->bStream);  // can't call setLoop() on a sample
 
     this->bIsLooped = loop;
@@ -206,7 +206,7 @@ float BassSound::getPosition() const {
 }
 
 u32 BassSound::getPositionMS() const {
-    if(!this->bReady) return 0;
+    if(!this->isReady()) return 0;
     assert(this->bStream);  // can't call getPositionMS() on a sample
 
     if(this->bPaused) {
@@ -231,7 +231,7 @@ u32 BassSound::getPositionMS() const {
 }
 
 u32 BassSound::getLengthMS() const {
-    if(!this->bReady) return 0;
+    if(!this->isReady()) return 0;
     return this->length;
 }
 
@@ -239,7 +239,7 @@ float BassSound::getSpeed() const { return this->fSpeed; }
 
 float BassSound::getFrequency() const {
     auto default_freq = cv::snd_freq.getFloat();
-    if(!this->bReady) return default_freq;
+    if(!this->isReady()) return default_freq;
     assert(this->bStream);  // can't call getFrequency() on a sample
 
     float frequency = default_freq;
@@ -248,7 +248,7 @@ float BassSound::getFrequency() const {
 }
 
 bool BassSound::isPlaying() const {
-    return this->bReady && this->bStarted && !this->bPaused &&
+    return this->isReady() && this->bStarted && !this->bPaused &&
            !const_cast<BassSound*>(this)->getActiveHandles().empty();
 }
 

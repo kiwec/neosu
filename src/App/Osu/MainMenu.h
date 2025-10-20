@@ -170,7 +170,7 @@ class MainMenu final : public OsuScreen, public MouseListener {
         [[nodiscard]] Type getResType() const final { return APPDEFINED; }
 
        protected:
-        void init() override { this->bReady = true; }
+        void init() override { this->setReady(true); }
         void initAsync() override;
         void destroy() override { this->entries.clear(); }
 

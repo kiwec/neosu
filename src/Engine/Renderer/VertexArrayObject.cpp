@@ -23,7 +23,7 @@ void VertexArrayObject::init() {
     // this->bReady may only be set in inheriting classes, if baking was successful
 }
 
-void VertexArrayObject::initAsync() { this->bAsyncReady = true; }
+void VertexArrayObject::initAsync() { this->setAsyncReady(true); }
 
 void VertexArrayObject::destroy() {
     this->clear();

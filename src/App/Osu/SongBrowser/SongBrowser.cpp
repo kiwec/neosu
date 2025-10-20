@@ -93,7 +93,7 @@ class SongBrowserBackgroundSearchMatcher final : public Resource {
     SongBrowserBackgroundSearchMatcher() : Resource() {}
     ~SongBrowserBackgroundSearchMatcher() override { this->destroy(); }
 
-    [[nodiscard]] inline bool isDead() const { return this->bDead.load(); }
+    [[nodiscard]] inline bool isDead() const { return this->bDead.load(std::memory_order_acquire); }
     inline void kill() { this->bDead = true; }
     inline void revive() { this->bDead = false; }
 
@@ -115,11 +115,11 @@ class SongBrowserBackgroundSearchMatcher final : public Resource {
     [[nodiscard]] inline Type getResType() const override { return APPDEFINED; }  // TODO: handle this better?
 
    protected:
-    inline void init() override { this->bReady = true; }
+    inline void init() override { this->setReady(true); }
 
     inline void initAsync() override {
-        if(this->bDead.load()) {
-            this->bAsyncReady = true;
+        if(this->bDead.load(std::memory_order_acquire)) {
+            this->setAsyncReady(true);
             return;
         }
 
@@ -139,10 +139,10 @@ class SongBrowserBackgroundSearchMatcher final : public Resource {
             }
 
             // cancellation point
-            if(this->bDead.load()) break;
+            if(this->bDead.load(std::memory_order_acquire)) break;
         }
 
-        this->bAsyncReady = true;
+        this->setAsyncReady(true);
     }
 
     inline void destroy() override { ; }

@@ -59,19 +59,19 @@ class MapCalcThread {
     // progress tracking
     static inline u32 get_computed() {
         auto* inst = get_instance_ptr();
-        return inst ? inst->computed_count.load() : 0;
+        return inst ? inst->computed_count.load(std::memory_order_acquire) : 0;
     }
 
     static inline u32 get_total() {
         auto* inst = get_instance_ptr();
-        return inst ? inst->total_count.load() : 0;
+        return inst ? inst->total_count.load(std::memory_order_acquire) : 0;
     }
 
     static inline bool is_finished() {
         auto* inst = get_instance_ptr();
         if(!inst) return true;
-        const u32 computed = inst->computed_count.load();
-        const u32 total = inst->total_count.load();
+        const u32 computed = inst->computed_count.load(std::memory_order_acquire);
+        const u32 total = inst->total_count.load(std::memory_order_acquire);
         return total > 0 && computed >= total;
     }
 

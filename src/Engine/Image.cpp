@@ -381,7 +381,7 @@ Image::Image(i32 width, i32 height, bool mipmapped, bool keepInSystemMemory) : R
     }
 
     // special case: filled rawimage is always already async ready
-    this->bAsyncReady = true;
+    this->setAsyncReady(true);
 }
 
 bool Image::loadRawImage() {

@@ -41,11 +41,12 @@ class BGImageHandler::MapBGImagePathLoader final : public Resource {
     bool found_mojibake_filename{false};
 
     static Sync::once_flag init_fail_check;
-    static bool dont_attempt_mojibake_checks;  // set to true if demoji_bwd returned -1 (failed to initialize)
+    static std::atomic<bool>
+        dont_attempt_mojibake_checks;  // set to true if demoji_bwd returned -1 (failed to initialize)
 };
 
 Sync::once_flag BGImageHandler::MapBGImagePathLoader::init_fail_check;
-bool BGImageHandler::MapBGImagePathLoader::dont_attempt_mojibake_checks = false;
+std::atomic<bool> BGImageHandler::MapBGImagePathLoader::dont_attempt_mojibake_checks{false};
 
 struct BGImageHandler::ENTRY final {
     std::string folder;
@@ -93,7 +94,7 @@ BGImageHandler::~BGImageHandler() {
 void BGImageHandler::draw(DatabaseBeatmap *beatmap, f32 alpha) {
     if(beatmap == nullptr) return;
 
-    const Image *backgroundImage = osu->getBackgroundImageHandler()->getLoadBackgroundImage(beatmap);
+    const Image *backgroundImage = this->getLoadBackgroundImage(beatmap);
     if(backgroundImage == nullptr || !backgroundImage->isReady()) return;
 
     f32 scale = Osu::getImageScaleToFillResolution(backgroundImage, osu->getVirtScreenSize());
@@ -377,7 +378,7 @@ void BGImageHandler::MapBGImagePathLoader::initAsync() {
 
     if(this->isInterrupted()) return;
 
-    if(found && !dont_attempt_mojibake_checks) {
+    if(found && !dont_attempt_mojibake_checks.load(std::memory_order_acquire)) {
         this->found_mojibake_filename = checkMojibake();
     }
 
@@ -411,7 +412,9 @@ bool BGImageHandler::MapBGImagePathLoader::checkMojibake() {
         demoji_bwd(this->parsed_bg_filename.data(), this->parsed_bg_filename.size(), converted_output.get(), out_size);
 
     // if demoji_bwd is broken/unavailable for some reason then don't try to use it again
-    Sync::call_once(init_fail_check, [conv_result_len]() { dont_attempt_mojibake_checks = conv_result_len == -1; });
+    Sync::call_once(init_fail_check, [conv_result_len]() {
+        if(conv_result_len == -1) dont_attempt_mojibake_checks.store(true, std::memory_order_release);
+    });
 
     if(conv_result_len > 0) {
         std::string_view result = {converted_output.get(), converted_output.get() + conv_result_len};

@@ -19,12 +19,12 @@
 #include "soloud_wavstream.h"
 
 void SoLoudSound::init() {
-    if(this->bIgnored || this->sFilePath.length() < 2 || !(this->bAsyncReady.load())) return;
+    if(this->bIgnored || this->sFilePath.length() < 2 || !(this->isAsyncReady())) return;
 
     if(!this->audioSource)
         debugLog("Couldn't load sound \"{}\", stream = {}, file = {}", this->sFilePath, this->bStream, this->sFilePath);
     else
-        this->bReady = true;
+        this->setReady(true);
 }
 
 SoLoudSound::~SoLoudSound() { this->destroy(); }
@@ -98,15 +98,15 @@ void SoLoudSound::initAsync() {
     this->audioSource->setSingleInstance(this->bStream || !this->bIsOverlayable);
     this->audioSource->setLooping(this->bIsLooped);
 
-    this->bAsyncReady = true;
+    this->setAsyncReady(true);
 }
 
 SOUNDHANDLE SoLoudSound::getHandle() { return this->handle; }
 
 void SoLoudSound::destroy() {
-    if(!this->bReady) return;
+    if(!this->isReady()) return;
 
-    this->bReady = false;
+    this->setReady(false);
 
     // stop the sound if it's playing
     if(this->handle != 0) {
@@ -133,7 +133,7 @@ void SoLoudSound::destroy() {
     this->fLastPlayTime = 0.0f;
     this->bIsLooped = false;
     this->bIgnored = false;
-    this->bAsyncReady = false;
+    this->setAsyncReady(false);
 
     // reset position cache state
     this->cached_stream_position = 0.0;
@@ -144,7 +144,7 @@ void SoLoudSound::destroy() {
 }
 
 void SoLoudSound::setPositionMS(u32 ms) {
-    if(!this->bReady || !this->audioSource || !this->handle) return;
+    if(!this->isReady() || !this->audioSource || !this->handle) return;
 
     auto msD = static_cast<double>(ms);
 
@@ -166,7 +166,7 @@ void SoLoudSound::setPositionMS(u32 ms) {
 }
 
 void SoLoudSound::setSpeed(float speed) {
-    if(!this->bReady || !this->audioSource || !this->handle) return;
+    if(!this->isReady() || !this->audioSource || !this->handle) return;
 
     // sample speed could be supported, but there is nothing using it right now so i will only bother when the time
     // comes
@@ -200,7 +200,7 @@ void SoLoudSound::setSpeed(float speed) {
 }
 
 void SoLoudSound::setPitch(float pitch) {
-    if(!this->bReady || !this->audioSource) return;
+    if(!this->isReady() || !this->audioSource) return;
 
     // sample pitch could be supported, but there is nothing using it right now so i will only bother when the time
     // comes
@@ -225,7 +225,7 @@ void SoLoudSound::setPitch(float pitch) {
 }
 
 void SoLoudSound::setFrequency(float frequency) {
-    if(!this->bReady || !this->audioSource) return;
+    if(!this->isReady() || !this->audioSource) return;
 
     frequency = (frequency > 99.0f ? std::clamp<float>(frequency, 100.0f, 100000.0f) : 0.0f);
 
@@ -253,7 +253,7 @@ void SoLoudSound::setFrequency(float frequency) {
 }
 
 void SoLoudSound::setPan(float pan) {
-    if(!this->bReady || !this->handle) return;
+    if(!this->isReady() || !this->handle) return;
 
     pan = std::clamp<float>(pan, -1.0f, 1.0f);
 
@@ -264,7 +264,7 @@ void SoLoudSound::setPan(float pan) {
 }
 
 void SoLoudSound::setLoop(bool loop) {
-    if(!this->bReady || !this->audioSource) return;
+    if(!this->isReady() || !this->audioSource) return;
 
     this->bIsLooped = loop;
 
@@ -280,7 +280,7 @@ void SoLoudSound::setLoop(bool loop) {
 }
 
 float SoLoudSound::getPosition() const {
-    if(!this->bReady || !this->audioSource || !this->handle) return 0.0f;
+    if(!this->isReady() || !this->audioSource || !this->handle) return 0.0f;
 
     double streamLengthInSeconds = getSourceLengthInSeconds();
     if(streamLengthInSeconds <= 0.0) return 0.0f;
@@ -295,7 +295,7 @@ float SoLoudSound::getPosition() const {
 }
 
 i32 SoLoudSound::getBASSStreamLatencyCompensation() const {
-    if(!this->bReady || !this->bStream || !this->audioSource || !this->handle) return 0.0f;
+    if(!this->isReady() || !this->bStream || !this->audioSource || !this->handle) return 0.0f;
 
     return static_cast<i32>(std::round(static_cast<SoLoud::SLFXStream *>(this->audioSource)->getInternalLatency())) +
            cv::snd_soloud_hardcoded_offset.getInt();
@@ -303,14 +303,14 @@ i32 SoLoudSound::getBASSStreamLatencyCompensation() const {
 
 // slightly tweaked interp algo from the SDL_mixer version, to smooth out position updates
 u32 SoLoudSound::getPositionMS() const {
-    if(!this->bReady || !this->audioSource || !this->handle) return 0;
+    if(!this->isReady() || !this->audioSource || !this->handle) return 0;
 
     return this->interpolator.update(getStreamPositionInSeconds() * 1000.0, Timing::getTimeReal(), getSpeed(),
                                      isLooped(), getLengthMS(), isPlaying());
 }
 
 u32 SoLoudSound::getLengthMS() const {
-    if(!this->bReady || !this->audioSource) return 0;
+    if(!this->isReady() || !this->audioSource) return 0;
 
     const double lengthInMilliSeconds = getSourceLengthInSeconds() * 1000.0;
     // if (cv::debug_snd.getBool())
@@ -319,26 +319,26 @@ u32 SoLoudSound::getLengthMS() const {
 }
 
 float SoLoudSound::getSpeed() const {
-    if(!this->bReady) return 1.0f;
+    if(!this->isReady()) return 1.0f;
 
     return this->fSpeed;
 }
 
 float SoLoudSound::getPitch() const {
-    if(!this->bReady) return 1.0f;
+    if(!this->isReady()) return 1.0f;
 
     return this->fPitch;
 }
 
 bool SoLoudSound::isPlaying() const {
-    if(!this->bReady) return false;
+    if(!this->isReady()) return false;
 
     // a sound is playing if our handle is valid and the sound isn't paused
     return this->is_playing_cached();
 }
 
 bool SoLoudSound::isFinished() const {
-    if(!this->bReady) return false;
+    if(!this->isReady()) return false;
 
     // a sound is finished if our handle is no longer valid or we're somehow playing past the end?
     const bool finished = !this->valid_handle_cached();

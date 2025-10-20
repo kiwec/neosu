@@ -42,7 +42,7 @@ class AsyncIOHandler::InternalIOContext final {
 
             logIfCV(debug_file,
                     "destroying async I/O queue, sdlIOResult: {} activeFiles.size(): {} activeCallbacks: {}",
-                    sdlIOResult, m_activeFiles.size(), m_activeCallbacks.load());
+                    sdlIOResult, m_activeFiles.size(), m_activeCallbacks.load(std::memory_order_acquire));
 
             SDL_DestroyAsyncIOQueue(m_queue);
         }

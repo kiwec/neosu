@@ -308,10 +308,10 @@ void DirectX11Shader::init() {
         }
     }
 
-    this->bReady = compile((valid ? parsedVertexShader.source : ""), (valid ? parsedPixelShader.source : ""));
+    this->setReady(compile((valid ? parsedVertexShader.source : ""), (valid ? parsedPixelShader.source : "")));
 }
 
-void DirectX11Shader::initAsync() { this->bAsyncReady = true; }
+void DirectX11Shader::initAsync() { this->setAsyncReady(true); }
 
 void DirectX11Shader::destroy() {
     for(ID3D11Buffer *buffer : this->constantBuffers) {
@@ -342,7 +342,7 @@ void DirectX11Shader::destroy() {
 
 void DirectX11Shader::enable() {
     auto *dx11 = static_cast<DirectX11Interface *>(g.get());
-    if(!this->bReady || dx11->getActiveShader() == this) return;
+    if(!this->isReady() || dx11->getActiveShader() == this) return;
 
     auto *context = dx11->getDeviceContext();
 
@@ -368,7 +368,7 @@ void DirectX11Shader::enable() {
 
 void DirectX11Shader::disable() {
     auto *dx11 = static_cast<DirectX11Interface *>(g.get());
-    if(!this->bReady || dx11->getActiveShader() != this) return;
+    if(!this->isReady() || dx11->getActiveShader() != this) return;
 
     auto *context = dx11->getDeviceContext();
 
@@ -457,7 +457,7 @@ void DirectX11Shader::setUniformMatrix4fv(std::string_view name, const float *co
 }
 
 void DirectX11Shader::setUniform(std::string_view name, const void *const src, size_t numBytes) {
-    if(!this->bReady) return;
+    if(!this->isReady()) return;
 
     const CACHE_ENTRY cacheEntry = getAndCacheUniformLocation(name);
     if(cacheEntry.bindIndex > -1) {
@@ -476,7 +476,7 @@ void DirectX11Shader::setUniform(std::string_view name, const void *const src, s
 }
 
 void DirectX11Shader::onJustBeforeDraw() {
-    if(!this->bReady) return;
+    if(!this->isReady()) return;
 
     // lazy update uniforms
     if(!this->bConstantBuffersUpToDate) {
@@ -515,7 +515,7 @@ void DirectX11Shader::onJustBeforeDraw() {
 }
 
 const DirectX11Shader::CACHE_ENTRY DirectX11Shader::getAndCacheUniformLocation(std::string_view name) {
-    if(!this->bReady) return invalidCacheEntry;
+    if(!this->isReady()) return invalidCacheEntry;
 
     const auto &cachedValue = this->uniformLocationCache.find(name);
     const bool isCached = (cachedValue != this->uniformLocationCache.end());

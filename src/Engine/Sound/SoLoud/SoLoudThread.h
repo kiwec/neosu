@@ -349,7 +349,7 @@ class SoLoudThreadWrapper {
     }
 
     void shutdown_worker_thread() {
-        this->shutting_down.store(true);
+        this->shutting_down.store(true, std::memory_order_release);
         this->queue_cv.notify_all();
 
         // wait for worker to finish (this sets the stop_token)
@@ -360,7 +360,7 @@ class SoLoudThreadWrapper {
 
     void restart_worker_thread() {
         // shutdown current thread (it may be hung, so detach if needed)
-        this->shutting_down.store(true);
+        this->shutting_down.store(true, std::memory_order_release);
         this->queue_cv.notify_all();
 
         if(this->worker_thread.joinable()) {
@@ -384,7 +384,7 @@ class SoLoudThreadWrapper {
         }
 
         // reset state and start a new worker
-        this->shutting_down.store(false);
+        this->shutting_down.store(false, std::memory_order_release);
         this->initialized = false;
 
         this->start_worker_thread();
@@ -405,14 +405,14 @@ class SoLoudThreadWrapper {
         this->init_cv.notify_one();
 
         // main processing loop
-        while(!stoken.stop_requested() && !this->shutting_down.load()) {
+        while(!stoken.stop_requested() && !this->shutting_down.load(std::memory_order_acquire)) {
             Sync::unique_lock<Sync::mutex> lock(this->queue_mutex);
 
             // wait for tasks or stop signal
-            this->queue_cv.wait(lock, stoken, [&] { return !this->task_queue.empty() || this->shutting_down.load(); });
+            this->queue_cv.wait(lock, stoken, [&] { return !this->task_queue.empty() || this->shutting_down.load(std::memory_order_acquire); });
 
             // process all available tasks
-            while(!this->task_queue.empty() && !stoken.stop_requested() && !this->shutting_down.load()) {
+            while(!this->task_queue.empty() && !stoken.stop_requested() && !this->shutting_down.load(std::memory_order_acquire)) {
                 auto task = std::move(this->task_queue.front());
                 this->task_queue.pop();
 

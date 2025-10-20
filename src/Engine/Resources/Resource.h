@@ -59,6 +59,9 @@ protected:
 	virtual void destroy() = 0;
 	bool doPathFixup();
 
+	inline void setReady(bool ready) { return this->bReady.store(ready, std::memory_order_release); }
+	inline void setAsyncReady(bool ready) { return this->bAsyncReady.store(ready, std::memory_order_release); }
+
 	std::string sFilePath{};
 	std::string sName{};
 

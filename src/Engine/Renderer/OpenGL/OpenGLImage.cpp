@@ -35,13 +35,12 @@ void OpenGLImage::init() {
     // only load if not:
     // 1. already uploaded to gpu, and we didn't keep the image in system memory
     // 2. failed to async load
-    if((this->GLTexture != 0 && !this->bKeepInSystemMemory) || !(this->bAsyncReady.load())) {
+    if((this->GLTexture != 0 && !this->bKeepInSystemMemory) || !(this->isAsyncReady())) {
         if(cv::debug_image.getBool()) {
             debugLog(
                 "we are already loaded, bReady: {} createdImage: {} GLTexture: {} bKeepInSystemMemory: {} bAsyncReady: "
                 "{}",
-                this->bReady.load(), this->bCreatedImage, this->GLTexture, this->bKeepInSystemMemory,
-                this->bAsyncReady.load());
+                this->isReady(), this->bCreatedImage, this->GLTexture, this->bKeepInSystemMemory, this->isAsyncReady());
         }
         return;
     }
@@ -72,7 +71,7 @@ void OpenGLImage::init() {
 
     // upload to gpu
     {
-        if (!glTextureWasEmpty) { // just to avoid redundantly binding
+        if(!glTextureWasEmpty) {  // just to avoid redundantly binding
             glBindTexture(GL_TEXTURE_2D, this->GLTexture);
         }
 
@@ -88,7 +87,7 @@ void OpenGLImage::init() {
         this->rawImage.reset();
     }
 
-    this->bReady = true;
+    this->setReady(true);
 
     if(this->filterMode != Graphics::FILTER_MODE::FILTER_MODE_LINEAR) {
         setFilterMode(this->filterMode);
@@ -101,17 +100,17 @@ void OpenGLImage::init() {
 
 void OpenGLImage::initAsync() {
     if(this->GLTexture != 0) {
-        this->bAsyncReady = true;
+        this->setAsyncReady(true);
         return;  // only load if we are not already loaded
     }
 
     if(!this->bCreatedImage) {
         if(cv::debug_rm.getBool()) debugLog("Resource Manager: Loading {:s}", this->sFilePath.c_str());
 
-        this->bAsyncReady = loadRawImage();
+        this->setAsyncReady(loadRawImage());
     } else {
         // created image is always async ready
-        this->bAsyncReady = true;
+        this->setAsyncReady(true);
     }
 }
 
@@ -136,7 +135,7 @@ void OpenGLImage::deleteGL() {
 }
 
 void OpenGLImage::bind(unsigned int textureUnit) const {
-    if(!this->bReady) return;
+    if(!this->isReady()) return;
 
     this->iTextureUnitBackup = textureUnit;
 
@@ -153,7 +152,7 @@ void OpenGLImage::bind(unsigned int textureUnit) const {
 }
 
 void OpenGLImage::unbind() const {
-    if(!this->bReady) return;
+    if(!this->isReady()) return;
 
     // restore texture unit (just in case) and set to no texture
     glActiveTexture(GL_TEXTURE0 + this->iTextureUnitBackup);
@@ -165,7 +164,7 @@ void OpenGLImage::unbind() const {
 
 void OpenGLImage::setFilterMode(Graphics::FILTER_MODE filterMode) {
     Image::setFilterMode(filterMode);
-    if(!this->bReady) return;
+    if(!this->isReady()) return;
 
     bind();
     {
@@ -189,7 +188,7 @@ void OpenGLImage::setFilterMode(Graphics::FILTER_MODE filterMode) {
 
 void OpenGLImage::setWrapMode(Graphics::WRAP_MODE wrapMode) {
     Image::setWrapMode(wrapMode);
-    if(!this->bReady) return;
+    if(!this->isReady()) return;
 
     bind();
     {

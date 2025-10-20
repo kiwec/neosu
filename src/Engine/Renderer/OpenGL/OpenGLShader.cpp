@@ -21,9 +21,9 @@ OpenGLShader::OpenGLShader(std::string vertexShader, std::string fragmentShader,
     this->iProgramBackup = 0;
 }
 
-void OpenGLShader::init() { this->bReady = this->compile(this->sVsh, this->sFsh, this->bSource); }
+void OpenGLShader::init() { this->setReady(this->compile(this->sVsh, this->sFsh, this->bSource)); }
 
-void OpenGLShader::initAsync() { this->bAsyncReady = true; }
+void OpenGLShader::initAsync() { this->setAsyncReady(true); }
 
 void OpenGLShader::destroy() {
     if(this->iProgram != 0) glDeleteObjectARB(this->iProgram);
@@ -40,7 +40,7 @@ void OpenGLShader::destroy() {
 }
 
 void OpenGLShader::enable() {
-    if(!this->bReady) return;
+    if(!this->isReady()) return;
 
     int currentProgram = OpenGLStateCache::getCurrentProgram();
     if(currentProgram == this->iProgram) return;  // already active
@@ -51,7 +51,7 @@ void OpenGLShader::enable() {
 }
 
 void OpenGLShader::disable() {
-    if(!this->bReady) return;
+    if(!this->isReady()) return;
 
     glUseProgramObjectARB(this->iProgramBackup);
 
@@ -60,7 +60,7 @@ void OpenGLShader::disable() {
 }
 
 void OpenGLShader::setUniform1f(std::string_view name, float value) {
-    if(!this->bReady) return;
+    if(!this->isReady()) return;
 
     const int id = getAndCacheUniformLocation(name);
     if(id == -1) {
@@ -71,7 +71,7 @@ void OpenGLShader::setUniform1f(std::string_view name, float value) {
 }
 
 void OpenGLShader::setUniform1fv(std::string_view name, int count, const float *const values) {
-    if(!this->bReady) return;
+    if(!this->isReady()) return;
 
     const int id = getAndCacheUniformLocation(name);
     if(id == -1) {
@@ -82,7 +82,7 @@ void OpenGLShader::setUniform1fv(std::string_view name, int count, const float *
 }
 
 void OpenGLShader::setUniform1i(std::string_view name, int value) {
-    if(!this->bReady) return;
+    if(!this->isReady()) return;
 
     const int id = getAndCacheUniformLocation(name);
     if(id == -1) {
@@ -93,7 +93,7 @@ void OpenGLShader::setUniform1i(std::string_view name, int value) {
 }
 
 void OpenGLShader::setUniform2f(std::string_view name, float value1, float value2) {
-    if(!this->bReady) return;
+    if(!this->isReady()) return;
 
     const int id = getAndCacheUniformLocation(name);
     if(id == -1) {
@@ -104,7 +104,7 @@ void OpenGLShader::setUniform2f(std::string_view name, float value1, float value
 }
 
 void OpenGLShader::setUniform2fv(std::string_view name, int count, const float *const vectors) {
-    if(!this->bReady) return;
+    if(!this->isReady()) return;
 
     const int id = getAndCacheUniformLocation(name);
     if(id == -1) {
@@ -115,7 +115,7 @@ void OpenGLShader::setUniform2fv(std::string_view name, int count, const float *
 }
 
 void OpenGLShader::setUniform3f(std::string_view name, float x, float y, float z) {
-    if(!this->bReady) return;
+    if(!this->isReady()) return;
 
     const int id = getAndCacheUniformLocation(name);
     if(id == -1) {
@@ -126,7 +126,7 @@ void OpenGLShader::setUniform3f(std::string_view name, float x, float y, float z
 }
 
 void OpenGLShader::setUniform3fv(std::string_view name, int count, const float *const vectors) {
-    if(!this->bReady) return;
+    if(!this->isReady()) return;
 
     const int id = getAndCacheUniformLocation(name);
     if(id == -1) {
@@ -137,7 +137,7 @@ void OpenGLShader::setUniform3fv(std::string_view name, int count, const float *
 }
 
 void OpenGLShader::setUniform4f(std::string_view name, float x, float y, float z, float w) {
-    if(!this->bReady) return;
+    if(!this->isReady()) return;
 
     const int id = getAndCacheUniformLocation(name);
     if(id == -1) {
@@ -148,7 +148,7 @@ void OpenGLShader::setUniform4f(std::string_view name, float x, float y, float z
 }
 
 void OpenGLShader::setUniformMatrix4fv(std::string_view name, const Matrix4 &matrix) {
-    if(!this->bReady) return;
+    if(!this->isReady()) return;
 
     const int id = getAndCacheUniformLocation(name);
     if(id == -1) {
@@ -159,7 +159,7 @@ void OpenGLShader::setUniformMatrix4fv(std::string_view name, const Matrix4 &mat
 }
 
 void OpenGLShader::setUniformMatrix4fv(std::string_view name, const float *const v) {
-    if(!this->bReady) return;
+    if(!this->isReady()) return;
 
     const int id = getAndCacheUniformLocation(name);
     if(id == -1) {
@@ -170,13 +170,13 @@ void OpenGLShader::setUniformMatrix4fv(std::string_view name, const float *const
 }
 
 int OpenGLShader::getAttribLocation(std::string_view name) {
-    if(!this->bReady || name.empty()) return -1;
+    if(!this->isReady() || name.empty()) return -1;
 
     return glGetAttribLocation(this->iProgram, name.data());
 }
 
 int OpenGLShader::getAndCacheUniformLocation(std::string_view name) {
-    if(!this->bReady || name.empty()) return -1;
+    if(!this->isReady() || name.empty()) return -1;
 
     const auto cachedValue = this->uniformLocationCache.find(name);
     const bool cached = (cachedValue != this->uniformLocationCache.end());

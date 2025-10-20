@@ -46,7 +46,7 @@ DirectX11Image::~DirectX11Image() {
 }
 
 void DirectX11Image::init() {
-    if((this->texture != nullptr && !this->bKeepInSystemMemory) || !this->bAsyncReady)
+    if((this->texture != nullptr && !this->bKeepInSystemMemory) || !this->isAsyncReady())
         return;  // only load if we are not already loaded
 
     HRESULT hr;
@@ -187,22 +187,22 @@ void DirectX11Image::init() {
         }
     }
 
-    this->bReady = true;
+    this->setReady(true);
 }
 
 void DirectX11Image::initAsync() {
     if(this->texture != nullptr) {
-        this->bAsyncReady = true;
+        this->setAsyncReady(true);
         return;  // only load if we are not already loaded
     }
 
     if(!this->bCreatedImage) {
         logIfCV(debug_rm, "Resource Manager: Loading {:s}", this->sFilePath);
 
-        this->bAsyncReady = loadRawImage();
+        this->setAsyncReady(loadRawImage());
     } else {
         // created image is always async ready
-        this->bAsyncReady = true;
+        this->setAsyncReady(true);
     }
 }
 
@@ -228,7 +228,7 @@ void DirectX11Image::deleteDX() {
 }
 
 void DirectX11Image::bind(unsigned int textureUnit) const {
-    if(!this->bReady) return;
+    if(!this->isReady()) return;
 
     this->iTextureUnitBackup = textureUnit;
 
@@ -248,7 +248,7 @@ void DirectX11Image::bind(unsigned int textureUnit) const {
 }
 
 void DirectX11Image::unbind() const {
-    if(!this->bReady) return;
+    if(!this->isReady()) return;
 
     // restore
     // HACKHACK: slow af
@@ -283,7 +283,7 @@ void DirectX11Image::setFilterMode(Graphics::FILTER_MODE filterMode) {
 
     // TODO: anisotropic filtering support (this->samplerDesc.Filter = D3D11_FILTER_ANISOTROPIC), needs new FILTER_MODE_ANISOTROPIC and support in other renderers (implies mipmapping)
 
-    if(!this->bReady) return;
+    if(!this->isReady()) return;
 
     createOrUpdateSampler();
 }
@@ -304,7 +304,7 @@ void DirectX11Image::setWrapMode(Graphics::WRAP_MODE wrapMode) {
             break;
     }
 
-    if(!this->bReady) return;
+    if(!this->isReady()) return;
 
     createOrUpdateSampler();
 }

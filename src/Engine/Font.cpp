@@ -130,12 +130,12 @@ void McFont::constructor(const std::vector<char16_t> &characters, int fontSize, 
 McFont::~McFont() { destroy(); }
 
 void McFont::init() {
-    if(!this->bAsyncReady) return;  // failed
+    if(!this->isAsyncReady()) return;  // failed
 
     // finalize atlas texture
     resourceManager->loadResource(m_textureAtlas.get());
 
-    this->bReady = true;
+    this->setReady(true);
 }
 
 void McFont::initAsync() {
@@ -160,7 +160,7 @@ void McFont::initAsync() {
         m_fHeight = std::max(m_fHeight, static_cast<float>(curHeight));
     }
 
-    this->bAsyncReady = true;
+    this->setAsyncReady(true);
 }
 
 void McFont::destroy() {
@@ -709,7 +709,7 @@ void McFont::buildGlyphGeometry(const GLYPH_METRICS &gm, const vec3 &basePos, fl
 }
 
 void McFont::buildStringGeometry(const UString &text, size_t &vertexCount) {
-    if(!this->bReady || text.length() == 0 || text.length() > cv::r_drawstring_max_string_length.getInt()) return;
+    if(!this->isReady() || text.length() == 0 || text.length() > cv::r_drawstring_max_string_length.getInt()) return;
 
     float advanceX = 0.0f;
     const size_t maxGlyphs =
@@ -732,7 +732,7 @@ void McFont::buildStringGeometry(const UString &text, size_t &vertexCount) {
 }
 
 void McFont::drawString(const UString &text) {
-    if(!this->bReady) return;
+    if(!this->isReady()) return;
 
     const int maxNumGlyphs = cv::r_drawstring_max_string_length.getInt();
     if(text.length() == 0 || text.length() > maxNumGlyphs) return;
@@ -815,7 +815,7 @@ void McFont::flushBatch() {
 }
 
 float McFont::getStringWidth(const UString &text) const {
-    if(!this->bReady) return 1.0f;
+    if(!this->isReady()) return 1.0f;
 
     float width = 0.0f;
     for(int i = 0; i < text.length(); i++) {
@@ -825,7 +825,7 @@ float McFont::getStringWidth(const UString &text) const {
 }
 
 float McFont::getStringHeight(const UString &text) const {
-    if(!this->bReady) return 1.0f;
+    if(!this->isReady()) return 1.0f;
 
     float height = 0.0f;
     for(int i = 0; i < text.length(); i++) {

@@ -23,7 +23,7 @@ class UpdateHandler {
     void checkForUpdates(bool force_update);
     void installUpdate();
 
-    [[nodiscard]] inline STATUS getStatus() const { return this->status.load(); }
+    [[nodiscard]] inline STATUS getStatus() const { return this->status.load(std::memory_order_acquire); }
 
     // release stream management
     void onBleedingEdgeChanged(float oldVal, float newVal);
