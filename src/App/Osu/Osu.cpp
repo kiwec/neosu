@@ -246,7 +246,7 @@ Osu::Osu() {
     this->songBrowserFontBold =
         resourceManager->loadFont("SourceSansPro-Bold.otf", "FONT_OSU_SONGBROWSER_BOLD", 30, true, newDPI);
     this->fontIcons =
-        resourceManager->loadFont("fontawesome-webfont.ttf", "FONT_OSU_ICONS", Icons::icons, 26, true, newDPI);
+        resourceManager->loadFont("forkawesome-webfont.ttf", "FONT_OSU_ICONS", Icons::icons, 26, true, newDPI);
     this->fonts.push_back(defaultFont);
     this->fonts.push_back(this->titleFont);
     this->fonts.push_back(this->subTitleFont);
