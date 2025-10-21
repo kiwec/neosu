@@ -104,16 +104,23 @@ void Mouse::update() {
         // apply clipping manually for rawinput, because it only clips the absolute position
         // which is decoupled from the relative position in relative mode
         // check this after applying sensitivity
+        McRect clipRect;
+        bool doClip = false;
         if(env->isCursorClipped()) {
-            const McRect &clipRect{env->getCursorClip()};
-            if(!clipRect.contains(newAbs)) {
-                // re-calculate clamped cursor position
-                newAbs = vec2{std::clamp<float>(newAbs.x, clipRect.getMinX(), clipRect.getMaxX()),
-                              std::clamp<float>(newAbs.y, clipRect.getMinY(), clipRect.getMaxY())};
-                newRel = newAbs - this->vPosWithoutOffsets;
-                if(vec::length(newRel) == 0) {
-                    return;  // early return for the trivial case (like if we're confined in a corner)
-                }
+            clipRect = env->getCursorClip();
+            doClip = true;
+        } else if((env->isFullscreen() || env->isFullscreenWindowedBorderless()) && !env->isPointValid(newAbs)) {
+            // quickfix to avoid flashing cursor along the edges of the window when unconfined + in raw input
+            clipRect = env->getDesktopRect();
+            doClip = true;
+        }
+        if(doClip && !clipRect.contains(newAbs)) {
+            // re-calculate clamped cursor position
+            newAbs = vec2{std::clamp<float>(newAbs.x, clipRect.getMinX(), clipRect.getMaxX()),
+                          std::clamp<float>(newAbs.y, clipRect.getMinY(), clipRect.getMaxY())};
+            newRel = newAbs - this->vPosWithoutOffsets;
+            if(vec::length(newRel) == 0) {
+                return;  // early return for the trivial case (like if we're confined in a corner)
             }
         }
     }
