@@ -104,6 +104,7 @@ Environment::Environment(const std::unordered_map<std::string, std::optional<std
 
     m_sdldriver = SDL_GetCurrentVideoDriver();
     m_bIsX11 = (m_sdldriver == "x11");
+    m_bIsKMSDRM = (m_sdldriver == "kmsdrm");
     m_bIsWayland = (m_sdldriver == "wayland");
 
     // use directx if:
@@ -734,6 +735,7 @@ bool Environment::setWindowSize(int width, int height) { return SDL_SetWindowSiz
 // NOTE: the SDL header states:
 // "You can't change the resizable state of a fullscreen window."
 void Environment::setWindowResizable(bool resizable) {
+    if (m_bIsKMSDRM) return;
     if(!SDL_SetWindowResizable(m_window, resizable)) {
         debugLog("Failed to set window {:s} (currently {:s}): {:s}", resizable ? "resizable" : "non-resizable",
                  m_bResizable ? "resizable" : "non-resizable", SDL_GetError());

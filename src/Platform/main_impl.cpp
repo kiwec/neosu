@@ -408,12 +408,32 @@ bool SDLMain::createWindow() {
     // limit default window size so it fits the screen
     i32 windowCreateWidth = WINDOW_WIDTH;
     i32 windowCreateHeight = WINDOW_HEIGHT;
-    {
-        SDL_DisplayID di = SDL_GetPrimaryDisplay();
-        const SDL_DisplayMode *dm = SDL_GetDesktopDisplayMode(di);
-        if(dm) {
-            if(dm->w < windowCreateWidth) windowCreateWidth = dm->w;
-            if(dm->h < windowCreateHeight) windowCreateHeight = dm->h;
+    SDL_DisplayID initDisplayID = SDL_GetPrimaryDisplay();
+
+    // start on the highest refresh rate monitor for kmsdrm
+    if(m_bIsKMSDRM) {
+        int dispCount = 0;
+        float maxHz = 0;
+        SDL_DisplayID *ids = SDL_GetDisplays(&dispCount);
+        for(int i = 0; i < dispCount; i++) {
+            const SDL_DisplayMode *currentDisplayMode = SDL_GetCurrentDisplayMode(ids[i]);
+            if(currentDisplayMode && currentDisplayMode->refresh_rate >= maxHz) {
+                maxHz = currentDisplayMode->refresh_rate;
+                initDisplayID = currentDisplayMode->displayID;
+                windowCreateWidth = currentDisplayMode->w;
+                windowCreateHeight = currentDisplayMode->h;
+            }
+        }
+        SDL_free(ids);
+    } else {
+        if(!initDisplayID) {
+            debugLog("NOTICE: Couldn't get primary display: {}", SDL_GetError());
+        } else {
+            const SDL_DisplayMode *dm = SDL_GetDesktopDisplayMode(initDisplayID);
+            if(dm) {
+                if(dm->w < windowCreateWidth) windowCreateWidth = dm->w;
+                if(dm->h < windowCreateHeight) windowCreateHeight = dm->h;
+            }
         }
     }
 
@@ -423,13 +443,13 @@ bool SDLMain::createWindow() {
     SDL_PropertiesID props = SDL_CreateProperties();
     if(m_bUsingDX11) SDL_SetBooleanProperty(props, SDL_PROP_WINDOW_CREATE_EXTERNAL_GRAPHICS_CONTEXT_BOOLEAN, true);
     SDL_SetStringProperty(props, SDL_PROP_WINDOW_CREATE_TITLE_STRING, WINDOW_TITLE);
-    SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_X_NUMBER, SDL_WINDOWPOS_CENTERED);
-    SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_Y_NUMBER, SDL_WINDOWPOS_CENTERED);
+    SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_X_NUMBER, SDL_WINDOWPOS_CENTERED_DISPLAY(initDisplayID));
+    SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_Y_NUMBER, SDL_WINDOWPOS_CENTERED_DISPLAY(initDisplayID));
     SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_WIDTH_NUMBER, windowCreateWidth);
     SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_HEIGHT_NUMBER, windowCreateHeight);
     SDL_SetBooleanProperty(props, SDL_PROP_WINDOW_CREATE_RESIZABLE_BOOLEAN, false);
     SDL_SetBooleanProperty(props, SDL_PROP_WINDOW_CREATE_MAXIMIZED_BOOLEAN, false);
-    SDL_SetBooleanProperty(props, SDL_PROP_WINDOW_CREATE_FULLSCREEN_BOOLEAN, false);
+    SDL_SetBooleanProperty(props, SDL_PROP_WINDOW_CREATE_FULLSCREEN_BOOLEAN, m_bIsKMSDRM ? true : false);
     SDL_SetBooleanProperty(props, SDL_PROP_WINDOW_CREATE_BORDERLESS_BOOLEAN, false);
     SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_FLAGS_NUMBER, windowFlags);
 
@@ -450,7 +470,11 @@ bool SDLMain::createWindow() {
         return false;
     }
 
-    cv::monitor.setValue(SDL_GetDisplayForWindow(m_window), false);
+    if(m_bIsKMSDRM) {
+        cv::monitor.setValue(initDisplayID, false);
+    } else {
+        cv::monitor.setValue(SDL_GetDisplayForWindow(m_window), false);
+    }
 
     // create gl context
     if(!m_bUsingDX11) {
@@ -465,7 +489,11 @@ bool SDLMain::createWindow() {
         }
     }
 
-    SDL_SetWindowMinimumSize(m_window, WINDOW_WIDTH_MIN, WINDOW_HEIGHT_MIN);
+    if(m_bIsKMSDRM) {
+        SDL_SetWindowMinimumSize(m_window, windowCreateWidth, windowCreateHeight);
+    } else {
+        SDL_SetWindowMinimumSize(m_window, WINDOW_WIDTH_MIN, WINDOW_HEIGHT_MIN);
+    }
 
     // initialize with the display refresh rate of the current monitor
     m_fDisplayHzSecs = 1.0f / (m_fDisplayHz = queryDisplayHz());
