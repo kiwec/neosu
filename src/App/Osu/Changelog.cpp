@@ -25,7 +25,7 @@ Changelog::Changelog() : ScreenBackable() {
     std::vector<CHANGELOG> changelogs;
 
     CHANGELOG v41_04;
-    v41_04.title = "41.04";
+    v41_04.title = "41.04 (2025-10-21)";
     v41_04.changes = {
         R"(- Added "Singletap" and "No keylock" mods (for 1 key and 3/4 key players))",
         R"(- Merged updated PPv2 ver. 20250306 from McOsu (current))",
@@ -40,7 +40,7 @@ Changelog::Changelog() : ScreenBackable() {
     changelogs.push_back(v41_04);
 
     CHANGELOG v41_03;
-    v41_03.title = "41.03";
+    v41_03.title = "41.03 (2025-09-22)";
     v41_03.changes = {
         R"(- Added Escape confirmation for leaving multiplayer room)",
         R"(- Changed some default settings to be less annoying)",
