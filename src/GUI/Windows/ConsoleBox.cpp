@@ -647,10 +647,9 @@ void ConsoleBox::log(const UString &text, Color textColor) {
     if(text.find(u'\n') != -1) {
         auto stringVec = text.split(u"\n");
         this->log_entries.reserve(this->log_entries.size() + stringVec.size());
-        for(auto &entry : stringVec) {
-            if(entry.isEmpty() || entry.isWhitespaceOnly()) continue;
-            if(entry.endsWith(u'\r')) entry.pop_back();
-            if(entry.isEmpty()) continue;
+        for(const auto &entry : stringVec) {
+            auto trimmed = entry.trim();
+            if(trimmed.isEmpty()) continue;
             this->log_entries.push_back({entry, textColor});
         }
     } else {

@@ -798,12 +798,9 @@ bool Skin::parseSkinINI(std::string filepath) {
     using enum SkinSection;
 
     for(auto curLineUnstripped : SString::split(fileContent, '\n')) {
+        SString::trim_inplace(curLineUnstripped);
         // ignore comments, but only if at the beginning of a line
         if(curLineUnstripped.empty() || curLineUnstripped.starts_with("//")) continue;
-
-        // remove CR from the end of the line
-        if(curLineUnstripped.back() == '\r') curLineUnstripped.remove_suffix(1);
-        if(curLineUnstripped.empty()) continue;
         hasNonEmptyLines = true;
 
         const auto curLine = curLineUnstripped;  // don't want to accidentally modify it somewhere later

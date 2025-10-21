@@ -26,7 +26,7 @@
 #define VPROF_BUDGETGROUP_DRAW "Draw"
 #define VPROF_BUDGETGROUP_DRAW_SWAPBUFFERS "SwapBuffers"
 
-// #define DETAILED_PROFILING
+#define DETAILED_PROFILING
 
 #ifdef DETAILED_PROFILING
 #include <execution>

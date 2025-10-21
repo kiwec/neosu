@@ -248,12 +248,10 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(std::
                 return c;
             }
 
+            SString::trim_inplace(curLineUnstripped);
             // ignore comments, but only if at the beginning of a line (e.g. allow Artist:DJ'TEKINA//SOMETHING)
             if(curLineUnstripped.empty() || curLineUnstripped.starts_with("//")) continue;
 
-            // CR at the end breaks parsing, remove it
-            if(curLineUnstripped.back() == '\r') curLineUnstripped.remove_suffix(1);
-            if(curLineUnstripped.empty()) continue;
             const auto curLine = curLineUnstripped;  // don't want to accidentally modify it somewhere later
 
             // skip the for loop on the first go-around, the header has to be at the start
@@ -1075,12 +1073,10 @@ bool DatabaseBeatmap::loadMetadata(bool compute_md5) {
     using enum BlockId;
 
     for(auto curLineUnstripped : SString::split(beatmapFile, '\n')) {
+        SString::trim_inplace(curLineUnstripped);
         // ignore comments, but only if at the beginning of a line (e.g. allow Artist:DJ'TEKINA//SOMETHING)
         if(curLineUnstripped.empty() || curLineUnstripped.starts_with("//")) continue;
 
-        // CR at the end breaks parsing, remove it
-        if(curLineUnstripped.back() == '\r') curLineUnstripped.remove_suffix(1);
-        if(curLineUnstripped.empty()) continue;
         const auto curLine = curLineUnstripped;  // don't want to accidentally modify it somewhere later
 
         // skip the for loop on the first go-around, the header has to be at the start

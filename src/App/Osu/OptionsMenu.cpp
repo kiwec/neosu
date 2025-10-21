@@ -1481,8 +1481,7 @@ void OptionsMenu::mouse_update(bool *propagate_clicks) {
 
     // flash osu!folder textbox red if incorrect
     if(this->fOsuFolderTextboxInvalidAnim > engine->getTime()) {
-        float redness =
-            std::fabs(std::sin((this->fOsuFolderTextboxInvalidAnim - engine->getTime()) * 3.)) * 0.5f;
+        float redness = std::fabs(std::sin((this->fOsuFolderTextboxInvalidAnim - engine->getTime()) * 3.)) * 0.5f;
         this->osuFolderTextbox->setBackgroundColor(argb(1.f, redness, 0.f, 0.f));
     } else
         this->osuFolderTextbox->setBackgroundColor(0xff000000);
@@ -3723,8 +3722,8 @@ void OptionsMenu::save() {
         write_lines.reserve(read_lines.size());
 
         for(auto &line : read_lines) {
+            SString::trim_inplace(line);
             if(line.empty()) continue;
-            if(line.ends_with('\r')) line.pop_back();
             if(line.starts_with('#') || line.starts_with("//")) {
                 write_lines.append(line);
                 continue;

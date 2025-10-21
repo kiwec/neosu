@@ -184,6 +184,9 @@ class UString {
     inline void pop_back() noexcept {
         if(!this->isEmpty()) this->erase(this->length() - 1, 1);
     }
+    inline void pop_front() noexcept {
+        if(!this->isEmpty()) this->erase(0, 1);
+    }
 
     // actions (non-modifying)
     template <typename T = UString>
