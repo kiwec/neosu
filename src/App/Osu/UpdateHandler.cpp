@@ -24,10 +24,7 @@ using enum UpdateHandler::STATUS;
 
 void UpdateHandler::updateCallback() { this->checkForUpdates(true); }
 
-UpdateHandler::UpdateHandler() {
-    cv::cmd::update.setCallback(SA::MakeDelegate<&UpdateHandler::updateCallback>(this));
-    cv::bleedingedge.setCallback(SA::MakeDelegate<&UpdateHandler::onBleedingEdgeChanged>(this));
-}
+UpdateHandler::UpdateHandler() { cv::cmd::update.setCallback(SA::MakeDelegate<&UpdateHandler::updateCallback>(this)); }
 
 void UpdateHandler::onBleedingEdgeChanged(float oldVal, float newVal) {
     if(this->getStatus() != STATUS_IDLE && this->getStatus() != STATUS_ERROR) {

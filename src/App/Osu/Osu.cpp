@@ -212,6 +212,7 @@ Osu::Osu() {
     cv::mod_halftime_dummy.setCallback(
         [] { cv::speed_override.setValue(cv::mod_halftime_dummy.getBool() ? "0.75" : "-1.0"); });
     cv::draw_songbrowser_thumbnails.setCallback(SA::MakeDelegate<&Osu::onThumbnailsToggle>(this));
+    cv::bleedingedge.setCallback(SA::MakeDelegate<&UpdateHandler::onBleedingEdgeChanged>(this->updateHandler.get()));
 
     // These mods conflict with each other, prevent them from being enabled at the same time
     // TODO: allow fullalternate, needs extra logic to detect whether player is using 2K/3K/4K
