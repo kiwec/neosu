@@ -126,7 +126,7 @@ void ResourceManager::loadResource(Resource *res, bool load) {
     // NOLINTNEXTLINE(cppcoreguidelines-init-variables)
     bool isManaged;
     {
-        Sync::shared_lock<Sync::shared_mutex> lock(this->managedLoadMutex);
+        Sync::shared_lock lock(this->managedLoadMutex);
         isManaged = (this->nextLoadUnmanagedStack.size() < 1 || !this->nextLoadUnmanagedStack.top());
     }
 
@@ -163,7 +163,7 @@ size_t ResourceManager::getNumLoadingWorkAsyncDestroy() const {
 
 void ResourceManager::resetFlags() {
     {
-        Sync::unique_lock<Sync::shared_mutex> lock(this->managedLoadMutex);
+        Sync::unique_lock lock(this->managedLoadMutex);
         if(this->nextLoadUnmanagedStack.size() > 0) this->nextLoadUnmanagedStack.pop();
     }
 
@@ -173,7 +173,7 @@ void ResourceManager::resetFlags() {
 void ResourceManager::requestNextLoadAsync() { this->bNextLoadAsync.store(true, std::memory_order_release); }
 
 void ResourceManager::requestNextLoadUnmanaged() {
-    Sync::unique_lock<Sync::shared_mutex> lock(this->managedLoadMutex);
+    Sync::unique_lock lock(this->managedLoadMutex);
     this->nextLoadUnmanagedStack.push(true);
 }
 

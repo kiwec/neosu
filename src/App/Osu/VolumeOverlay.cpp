@@ -312,6 +312,9 @@ void VolumeOverlay::updateEffectVolume(Skin *skin) {
 
     float volume = cv::volume_effects.getFloat();
     for(auto &sound : skin->sounds) {
+        if(skin != osu->getSkin().get()) break;
+        if(!skin->isReady()) break;
+        if(osu->isSkinLoading()) break;  // if you hold CTRL+SHIFT+S down then weird things can happen...
         if(sound && sound->getBaseVolume() != volume) sound->setBaseVolume(volume);
     }
 }

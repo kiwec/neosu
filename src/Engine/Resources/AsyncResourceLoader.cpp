@@ -58,7 +58,7 @@ class AsyncResourceLoader::LoaderThread final {
                 // yield in case we're sharing a logical CPU, like on a single-core system
                 Timing::sleepMS(1);
 
-                Sync::unique_lock<Sync::mutex> lock(this->loader_ptr->workAvailableMutex);
+                Sync::unique_lock lock(this->loader_ptr->workAvailableMutex);
 
                 // wait indefinitely until work is available or stop is requested
                 this->loader_ptr->workAvailable.wait(lock, stoken, [this]() {
@@ -73,7 +73,7 @@ class AsyncResourceLoader::LoaderThread final {
             this->last_active.store(std::chrono::steady_clock::now(), std::memory_order_release);
 
             Resource *resource = work->resource;
-            work->state.store(AsyncResourceLoader::WorkState::ASYNC_IN_PROGRESS, std::memory_order_release);
+            work->state.store(WorkState::ASYNC_IN_PROGRESS, std::memory_order_release);
 
             std::string debugName;
             if(debug) {
@@ -93,7 +93,7 @@ class AsyncResourceLoader::LoaderThread final {
             logIf(debug, "AsyncResourceLoader: Thread #{} finished async loading {:8p} : {:s}", this->thread_index,
                   static_cast<const void *>(resource), debugName);
 
-            work->state.store(AsyncResourceLoader::WorkState::ASYNC_COMPLETE, std::memory_order_release);
+            work->state.store(WorkState::ASYNC_COMPLETE, std::memory_order_release);
             this->loader_ptr->markWorkAsyncComplete(std::move(work));
 
             // yield again before loop
@@ -208,10 +208,15 @@ void AsyncResourceLoader::update(bool lowLatency) {
         }
 
         Resource *rs = work->resource;
-
-        logIf(debug, "AsyncResourceLoader: Sync init for {:s} ({:8p})", rs->getName(), static_cast<const void *>(rs));
-
-        rs->load();
+        const bool interrupted = rs->isInterrupted();
+        if(!interrupted) {
+            logIf(debug, "AsyncResourceLoader: Sync init for {:s} ({:8p})", rs->getName(),
+                  static_cast<const void *>(rs));
+            rs->load();
+        } else {
+            logIf(debug, "AsyncResourceLoader: Skipping sync init for {:s} ({:8p}) due to interruption", rs->getName(),
+                  static_cast<const void *>(rs));
+        }
 
         work->state.store(WorkState::SYNC_COMPLETE, std::memory_order_release);
 
@@ -222,7 +227,7 @@ void AsyncResourceLoader::update(bool lowLatency) {
         }
 
         this->iActiveWorkCount.fetch_sub(1);
-        numProcessed++;
+        if(!interrupted) numProcessed++;
 
         // work will be automatically destroyed when unique_ptr goes out of scope
     }

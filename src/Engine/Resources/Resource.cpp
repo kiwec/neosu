@@ -29,7 +29,10 @@ bool Resource::doPathFixup() {
 
 void Resource::load() { init(); }
 
-void Resource::loadAsync() { initAsync(); }
+void Resource::loadAsync() {
+    this->bInterrupted.store(false, std::memory_order_release);
+    initAsync();
+}
 
 void Resource::reload() {
     release();
@@ -38,12 +41,12 @@ void Resource::reload() {
 }
 
 void Resource::release() {
+    this->bInterrupted.store(true, std::memory_order_release);
     destroy();
 
     // NOTE: these are set afterwards on purpose
     this->bReady.store(false, std::memory_order_release);
     this->bAsyncReady.store(false, std::memory_order_release);
-    this->bInterrupted.store(false, std::memory_order_release);
 }
 
 void Resource::interruptLoad() { this->bInterrupted.store(true, std::memory_order_release); }

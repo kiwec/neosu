@@ -3,7 +3,7 @@
 
 std::vector<char16_t> Icons::icons;
 
-char16_t Icons::Z_UNKNOWN_CHAR = Icons::addIcon('?');
+char16_t Icons::Z_UNKNOWN_CHAR = Icons::addIcon(u'?');
 char16_t Icons::Z_SPACE = Icons::addIcon(0x20);
 
 char16_t Icons::GEAR = Icons::addIcon(0xf013);
