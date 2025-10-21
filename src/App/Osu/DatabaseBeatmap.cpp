@@ -1177,6 +1177,7 @@ bool DatabaseBeatmap::loadMetadata(bool compute_md5) {
                 if(!haveFilename) {
                     std::string str;
                     i32 type{-1}, startTime;
+                    // NOTE: ignoring the optional xOffset/yOffset, surely no map is using that?
                     if(Parsing::parse(curLine, &type, ',', &startTime, ',', &str) && (type == 0)) {
                         this->sBackgroundImageFileName = str;
                         haveFilename = true;
