@@ -132,7 +132,7 @@ bool load_peppy_collections(std::string_view peppy_collections_path) {
 
         u32 progress_bytes = db->bytes_processed + peppy_collections.total_pos;
         f64 progress_float = (f64)progress_bytes / (f64)db->total_bytes;
-        db->fLoadingProgress = std::clamp(progress_float, 0.01, 0.99);
+        db->loading_progress = std::clamp(progress_float, 0.01, 0.99);
     }
 
     debugLog("Loaded {:d} peppy collections ({:d} maps)", nb_collections, total_maps);
@@ -195,7 +195,7 @@ bool load_mcneosu_collections(std::string_view neosu_collections_path) {
 
         u32 progress_bytes = db->bytes_processed + neosu_collections.total_pos;
         f64 progress_float = (f64)progress_bytes / (f64)db->total_bytes;
-        db->fLoadingProgress = std::clamp(progress_float, 0.01, 0.99);
+        db->loading_progress = std::clamp(progress_float, 0.01, 0.99);
     }
 
     debugLog("Loaded {:d} neosu collections ({:d} maps)", nb_collections, total_maps);

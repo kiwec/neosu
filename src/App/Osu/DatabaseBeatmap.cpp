@@ -1119,6 +1119,10 @@ bool DatabaseBeatmap::loadMetadata(bool compute_md5) {
                 break;
             }
 
+// to go to the next line after we successfully parse a line
+#define PARSE_LINE(...) \
+    if(!!(Parsing::parse(curLine, __VA_ARGS__))) break;
+
             // (e.g. "osu file format v12")
             case Header: {
                 if(Parsing::parse(curLine, "osu file format v", &this->iVersion)) {
@@ -1131,36 +1135,40 @@ bool DatabaseBeatmap::loadMetadata(bool compute_md5) {
             }
 
             case General: {
-                Parsing::parse(curLine, "AudioFilename", ':', &this->sAudioFileName);
-                Parsing::parse(curLine, "StackLeniency", ':', &this->fStackLeniency);
-                Parsing::parse(curLine, "PreviewTime", ':', &this->iPreviewTime);
-                Parsing::parse(curLine, "Mode", ':', &this->iGameMode);
+                PARSE_LINE("AudioFilename", ':', &this->sAudioFileName);
+                PARSE_LINE("StackLeniency", ':', &this->fStackLeniency);
+                PARSE_LINE("PreviewTime", ':', &this->iPreviewTime);
+                PARSE_LINE("Mode", ':', &this->iGameMode);
                 break;
             }
 
             case Metadata: {
-                Parsing::parse(curLine, "Title", ':', &this->sTitle);
-                Parsing::parse(curLine, "TitleUnicode", ':', &this->sTitleUnicode);
-                Parsing::parse(curLine, "Artist", ':', &this->sArtist);
-                Parsing::parse(curLine, "ArtistUnicode", ':', &this->sArtistUnicode);
-                Parsing::parse(curLine, "Creator", ':', &this->sCreator);
-                Parsing::parse(curLine, "Version", ':', &this->sDifficultyName);
-                Parsing::parse(curLine, "Source", ':', &this->sSource);
-                Parsing::parse(curLine, "Tags", ':', &this->sTags);
-                Parsing::parse(curLine, "BeatmapID", ':', &this->iID);
-                Parsing::parse(curLine, "BeatmapSetID", ':', &this->iSetID);
+                PARSE_LINE("Title", ':', &this->sTitle);
+                PARSE_LINE("TitleUnicode", ':', &this->sTitleUnicode);
+                PARSE_LINE("Artist", ':', &this->sArtist);
+                PARSE_LINE("ArtistUnicode", ':', &this->sArtistUnicode);
+                PARSE_LINE("Creator", ':', &this->sCreator);
+                PARSE_LINE("Version", ':', &this->sDifficultyName);
+                PARSE_LINE("Source", ':', &this->sSource);
+                PARSE_LINE("Tags", ':', &this->sTags);
+                PARSE_LINE("BeatmapID", ':', &this->iID);
+                PARSE_LINE("BeatmapSetID", ':', &this->iSetID);
                 break;
             }
 
             case Difficulty: {
-                Parsing::parse(curLine, "CircleSize", ':', &this->fCS);
-                if(Parsing::parse(curLine, "ApproachRate", ':', &this->fAR)) foundAR = true;
-                Parsing::parse(curLine, "HPDrainRate", ':', &this->fHP);
-                Parsing::parse(curLine, "OverallDifficulty", ':', &this->fOD);
-                Parsing::parse(curLine, "SliderMultiplier", ':', &this->fSliderMultiplier);
-                Parsing::parse(curLine, "SliderTickRate", ':', &this->fSliderTickRate);
+                PARSE_LINE("CircleSize", ':', &this->fCS);
+                if(Parsing::parse(curLine, "ApproachRate", ':', &this->fAR)) {
+                    foundAR = true;
+                    break;
+                }
+                PARSE_LINE("HPDrainRate", ':', &this->fHP);
+                PARSE_LINE("OverallDifficulty", ':', &this->fOD);
+                PARSE_LINE("SliderMultiplier", ':', &this->fSliderMultiplier);
+                PARSE_LINE("SliderTickRate", ':', &this->fSliderTickRate);
                 break;
             }
+#undef PARSE_LINE
 
             case Events: {
                 // short-circuit if we already have a stored filename

@@ -161,7 +161,7 @@ Database::DatabaseType Database::getDBType(std::string_view db_path) {
         } else {
             // We need to do some heuristics to detect whether this is an old neosu or a peppy database.
             u32 nb_beatmaps = score_db.read<u32>();
-            for(u32 i = 0; i < nb_beatmaps; i++) {
+            for(uSz i = 0; i < nb_beatmaps; i++) {
                 auto map_md5 = score_db.read_hash();
                 (void)map_md5;
                 u32 nb_scores = score_db.read<u32>();
@@ -199,7 +199,7 @@ void Database::AsyncDBLoader::init() {
 
     if(cv::debug_db.getBool() || cv::debug_async_db.getBool()) debugLog("(AsyncDBLoader) start");
 
-    if(db->bNeedRawLoad) {
+    if(db->needs_raw_load) {
         db->scheduleLoadRaw();
     } else {
         MapCalcThread::start_calc(db->maps_to_recalc);
@@ -208,7 +208,7 @@ void Database::AsyncDBLoader::init() {
     }
 
     // signal that we are done
-    db->fLoadingProgress = 1.0f;
+    db->loading_progress = 1.0f;
     this->setReady(true);
 
     if(cv::debug_db.getBool() || cv::debug_async_db.getBool()) debugLog("(AsyncDBLoader) done");
@@ -220,29 +220,29 @@ void Database::AsyncDBLoader::initAsync() {
     assert(db != nullptr);
 
     db->findDatabases();
-    if(db->bInterruptLoad.load(std::memory_order_acquire)) goto done;
+    if(db->load_interrupted.load(std::memory_order_acquire)) goto done;
 
     using enum Database::DatabaseType;
     db->loadScores(db->database_files[NEOSU_SCORES]);
-    if(db->bInterruptLoad.load(std::memory_order_acquire)) goto done;
+    if(db->load_interrupted.load(std::memory_order_acquire)) goto done;
     db->loadOldMcNeosuScores(db->database_files[MCNEOSU_SCORES]);
-    if(db->bInterruptLoad.load(std::memory_order_acquire)) goto done;
+    if(db->load_interrupted.load(std::memory_order_acquire)) goto done;
     db->loadPeppyScores(db->database_files[STABLE_SCORES]);
-    db->bScoresLoaded = true;
-    if(db->bInterruptLoad.load(std::memory_order_acquire)) goto done;
+    db->scores_loaded = true;
+    if(db->load_interrupted.load(std::memory_order_acquire)) goto done;
 
     db->loadMaps();
-    if(db->bInterruptLoad.load(std::memory_order_acquire)) goto done;
+    if(db->load_interrupted.load(std::memory_order_acquire)) goto done;
 
-    if(!db->bNeedRawLoad) {
+    if(!db->needs_raw_load) {
         load_collections();
-        if(db->bInterruptLoad.load(std::memory_order_acquire)) goto done;
+        if(db->load_interrupted.load(std::memory_order_acquire)) goto done;
     }
 
     // .db files that were dropped on the main window
     for(const auto &db_pair : db->external_databases) {
         db->importDatabase(db_pair);
-        if(db->bInterruptLoad.load(std::memory_order_acquire)) goto done;
+        if(db->load_interrupted.load(std::memory_order_acquire)) goto done;
     }
     db->external_databases.clear();
 
@@ -263,12 +263,12 @@ void Database::startLoader() {
     VolNormalization::abort();
 
     // only clear diffs/sets for full reloads (only handled for raw re-loading atm)
-    const bool lastLoadWasRaw{this->bNeedRawLoad};
+    const bool lastLoadWasRaw{this->needs_raw_load};
 
-    this->bNeedRawLoad =
+    this->needs_raw_load =
         (!Environment::fileExists(getDBPath(DatabaseType::STABLE_MAPS)) || !cv::database_enabled.getBool());
 
-    const bool nextLoadIsRaw{this->bNeedRawLoad};
+    const bool nextLoadIsRaw{this->needs_raw_load};
 
     if(!lastLoadWasRaw || !nextLoadIsRaw) {
         db->loudness_to_calc.clear();
@@ -299,34 +299,14 @@ void Database::destroyLoader() {
     if(cv::debug_db.getBool() || cv::debug_async_db.getBool()) debugLog("done");
 }
 
-Database::Database() {
+Database::Database() : importTimer(std::make_unique<Timer>()) {
     // convar callback
     cv::cmd::save.setCallback(SA::MakeDelegate<&Database::save>(this));
-
-    // vars
-    this->importTimer = new Timer();
-    this->bIsFirstLoad = true;
-    this->bFoundChanges = true;
-
-    this->iNumBeatmapsToLoad = 0;
-    this->fLoadingProgress = 0.0f;
-    this->bInterruptLoad = false;
-
-    this->iVersion = 0;
-    this->iFolderCount = 0;
-
-    this->prevPlayerStats.pp = 0.0f;
-    this->prevPlayerStats.accuracy = 0.0f;
-    this->prevPlayerStats.numScoresWithPP = 0;
-    this->prevPlayerStats.level = 0;
-    this->prevPlayerStats.percentToNextLevel = 0.0f;
-    this->prevPlayerStats.totalScore = 0;
 }
 
 Database::~Database() {
+    cv::cmd::save.removeCallback();
     this->destroyLoader();
-
-    SAFE_DELETE(this->importTimer);
 
     sct_abort();
     lct_set_map(nullptr);
@@ -350,19 +330,19 @@ Database::~Database() {
 
 void Database::update() {
     // loadRaw() logic
-    if(this->bRawBeatmapLoadScheduled) {
+    if(this->raw_load_scheduled) {
         Timer t;
 
         while(t.getElapsedTime() < 0.033f) {
-            if(this->bInterruptLoad.load(std::memory_order_acquire)) break;  // cancellation point
+            if(this->load_interrupted.load(std::memory_order_acquire)) break;  // cancellation point
 
-            if(this->rawLoadBeatmapFolders.size() > 0 &&
-               this->iCurRawBeatmapLoadIndex < this->rawLoadBeatmapFolders.size()) {
-                std::string curBeatmap = this->rawLoadBeatmapFolders[this->iCurRawBeatmapLoadIndex++];
-                this->rawBeatmapFolders.push_back(
+            if(this->raw_load_beatmap_folders.size() > 0 &&
+               this->cur_raw_load_idx < this->raw_load_beatmap_folders.size()) {
+                std::string curBeatmap = this->raw_load_beatmap_folders[this->cur_raw_load_idx++];
+                this->raw_loaded_beatmap_folders.push_back(
                     curBeatmap);  // for future incremental loads, so that we know what's been loaded already
 
-                std::string fullBeatmapPath = this->sRawBeatmapLoadOsuSongFolder;
+                std::string fullBeatmapPath = this->raw_load_osu_song_folder;
                 fullBeatmapPath.append(curBeatmap);
                 fullBeatmapPath.append("/");
 
@@ -370,13 +350,13 @@ void Database::update() {
             }
 
             // update progress
-            this->fLoadingProgress = (float)this->iCurRawBeatmapLoadIndex / (float)this->iNumBeatmapsToLoad;
+            this->loading_progress = (float)this->cur_raw_load_idx / (float)this->num_beatmaps_to_load;
 
             // check if we are finished
-            if(this->iCurRawBeatmapLoadIndex >= this->iNumBeatmapsToLoad ||
-               std::cmp_greater(this->iCurRawBeatmapLoadIndex, (this->rawLoadBeatmapFolders.size() - 1))) {
-                this->rawLoadBeatmapFolders.clear();
-                this->bRawBeatmapLoadScheduled = false;
+            if(this->cur_raw_load_idx >= this->num_beatmaps_to_load ||
+               std::cmp_greater(this->cur_raw_load_idx, (this->raw_load_beatmap_folders.size() - 1))) {
+                this->raw_load_beatmap_folders.clear();
+                this->raw_load_scheduled = false;
                 this->importTimer->update();
 
                 debugLog("Refresh finished, added {} beatmaps in {:f} seconds.", this->beatmapsets.size(),
@@ -395,7 +375,7 @@ void Database::update() {
                 }
                 // clang-format on
 
-                this->fLoadingProgress = 1.0f;
+                this->loading_progress = 1.0f;
 
                 MapCalcThread::start_calc(this->maps_to_recalc);
                 VolNormalization::start_calc(this->loudness_to_calc);
@@ -410,19 +390,19 @@ void Database::update() {
 }
 
 void Database::load() {
-    this->bInterruptLoad = false;
-    this->fLoadingProgress = 0.0f;
+    this->load_interrupted = false;
+    this->loading_progress = 0.0f;
 
     // reset scheduled logic
-    this->bRawBeatmapLoadScheduled = false;
+    this->raw_load_scheduled = false;
 
     this->startLoader();
 }
 
 void Database::cancel() {
-    this->bInterruptLoad = true;
-    this->fLoadingProgress = 1.0f;  // force finished
-    this->bFoundChanges = true;
+    this->load_interrupted = true;
+    this->loading_progress = 1.0f;  // force finished
+    this->raw_found_changes = true;
 }
 
 void Database::save() {
@@ -712,7 +692,7 @@ Database::PlayerStats Database::calculatePlayerStats(const std::string &playerNa
 
     float pp = 0.0f;
     float acc = 0.0f;
-    for(size_t i = 0; i < ps.ppScores.size(); i++) {
+    for(uSz i = 0; i < ps.ppScores.size(); i++) {
         const float weight = getWeightForIndex(ps.ppScores.size() - 1 - i);
 
         pp += ps.ppScores[i]->get_pp() * weight;
@@ -835,59 +815,59 @@ std::string Database::getOsuSongsFolder() {
 }
 
 void Database::scheduleLoadRaw() {
-    this->sRawBeatmapLoadOsuSongFolder = Database::getOsuSongsFolder();
+    this->raw_load_osu_song_folder = Database::getOsuSongsFolder();
 
-    debugLog("Database: sRawBeatmapLoadOsuSongFolder = {:s}", this->sRawBeatmapLoadOsuSongFolder);
+    debugLog("Database: sRawBeatmapLoadOsuSongFolder = {:s}", this->raw_load_osu_song_folder);
 
-    this->rawLoadBeatmapFolders = env->getFoldersInFolder(this->sRawBeatmapLoadOsuSongFolder);
-    this->iNumBeatmapsToLoad = this->rawLoadBeatmapFolders.size();
+    this->raw_load_beatmap_folders = env->getFoldersInFolder(this->raw_load_osu_song_folder);
+    this->num_beatmaps_to_load = this->raw_load_beatmap_folders.size();
 
     // if this isn't the first load, only load the differences
-    if(!this->bIsFirstLoad) {
+    if(!this->is_first_load) {
         std::vector<std::string> toLoad;
-        for(int i = 0; i < this->iNumBeatmapsToLoad; i++) {
+        for(uSz i = 0; i < this->num_beatmaps_to_load; i++) {
             bool alreadyLoaded = false;
-            for(const auto &rawBeatmapFolder : this->rawBeatmapFolders) {
-                if(this->rawLoadBeatmapFolders[i] == rawBeatmapFolder) {
+            for(const auto &rawBeatmapFolder : this->raw_loaded_beatmap_folders) {
+                if(this->raw_load_beatmap_folders[i] == rawBeatmapFolder) {
                     alreadyLoaded = true;
                     break;
                 }
             }
 
-            if(!alreadyLoaded) toLoad.push_back(this->rawLoadBeatmapFolders[i]);
+            if(!alreadyLoaded) toLoad.push_back(this->raw_load_beatmap_folders[i]);
         }
 
         // only load differences
-        this->rawLoadBeatmapFolders = toLoad;
-        this->iNumBeatmapsToLoad = this->rawLoadBeatmapFolders.size();
+        this->raw_load_beatmap_folders = toLoad;
+        this->num_beatmaps_to_load = this->raw_load_beatmap_folders.size();
 
-        debugLog("Database: Found {} new/changed beatmaps.", this->iNumBeatmapsToLoad);
+        debugLog("Database: Found {} new/changed beatmaps.", this->num_beatmaps_to_load);
 
-        this->bFoundChanges = this->iNumBeatmapsToLoad > 0;
-        if(this->bFoundChanges)
+        this->raw_found_changes = this->num_beatmaps_to_load > 0;
+        if(this->raw_found_changes)
             osu->getNotificationOverlay()->addNotification(
-                UString::format(this->iNumBeatmapsToLoad == 1 ? "Adding %i new beatmap." : "Adding %i new beatmaps.",
-                                this->iNumBeatmapsToLoad),
+                UString::format(this->num_beatmaps_to_load == 1 ? "Adding %i new beatmap." : "Adding %i new beatmaps.",
+                                this->num_beatmaps_to_load),
                 0xff00ff00);
         else
             osu->getNotificationOverlay()->addNotification(
-                UString::format("No new beatmaps detected.", this->iNumBeatmapsToLoad), 0xff00ff00);
+                UString::format("No new beatmaps detected.", this->num_beatmaps_to_load), 0xff00ff00);
     }
 
     debugLog("Database: Building beatmap database ...");
-    debugLog("Database: Found {} folders to load.", this->rawLoadBeatmapFolders.size());
+    debugLog("Database: Found {} folders to load.", this->raw_load_beatmap_folders.size());
 
     // only start loading if we have something to load
-    if(this->rawLoadBeatmapFolders.size() > 0) {
-        this->fLoadingProgress = 0.0f;
-        this->iCurRawBeatmapLoadIndex = 0;
+    if(this->raw_load_beatmap_folders.size() > 0) {
+        this->loading_progress = 0.0f;
+        this->cur_raw_load_idx = 0;
 
-        this->bRawBeatmapLoadScheduled = true;
+        this->raw_load_scheduled = true;
         this->importTimer->start();
     } else
-        this->fLoadingProgress = 1.0f;
+        this->loading_progress = 1.0f;
 
-    this->bIsFirstLoad = false;
+    this->is_first_load = false;
 }
 
 void Database::loadMaps() {
@@ -927,12 +907,12 @@ void Database::loadMaps() {
             }
 
             u32 nb_sets = neosu_maps.read<u32>();
-            for(u32 i = 0; i < nb_sets; i++) {
-                if(this->bInterruptLoad.load(std::memory_order_acquire)) break;  // cancellation point
+            for(uSz i = 0; i < nb_sets; i++) {
+                if(this->load_interrupted.load(std::memory_order_acquire)) break;  // cancellation point
 
                 u32 progress_bytes = this->bytes_processed + neosu_maps.total_pos;
                 f64 progress_float = (f64)progress_bytes / (f64)this->total_bytes;
-                this->fLoadingProgress = std::clamp(progress_float, 0.01, 0.99);
+                this->loading_progress = std::clamp(progress_float, 0.01, 0.99);
 
                 i32 set_id = neosu_maps.read<i32>();
                 u16 nb_diffs = neosu_maps.read<u16>();
@@ -941,7 +921,7 @@ void Database::loadMaps() {
 
                 auto *diffs = new std::vector<DatabaseBeatmap *>();
                 for(u16 j = 0; j < nb_diffs; j++) {
-                    if(this->bInterruptLoad.load(std::memory_order_acquire)) {  // cancellation point
+                    if(this->load_interrupted.load(std::memory_order_acquire)) {  // cancellation point
                         // clean up partially loaded diffs in current set
                         Sync::unique_lock lock(this->beatmap_difficulties_mtx);
                         for(DatabaseBeatmap *diff : *diffs) {
@@ -1058,7 +1038,7 @@ void Database::loadMaps() {
             if(version >= 20240812) {
                 nb_overrides = neosu_maps.read<u32>();
                 Sync::unique_lock lock(this->peppy_overrides_mtx);
-                for(u32 i = 0; i < nb_overrides; i++) {
+                for(uSz i = 0; i < nb_overrides; i++) {
                     MapOverrides over;
                     auto map_md5 = neosu_maps.read_hash();
                     over.local_offset = neosu_maps.read<i16>();
@@ -1080,26 +1060,28 @@ void Database::loadMaps() {
         this->neosu_maps_loaded = true;
     }
 
-    if(!this->bNeedRawLoad) {
+    if(!this->needs_raw_load) {
         ByteBufferedFile::Reader db(peppy_db_path);
         bool should_read_peppy_database = db.total_size > 0;
+        u32 osu_db_version = 0;
+        u32 osu_db_folder_count = 0;
         if(should_read_peppy_database) {
             // read header
-            this->iVersion = db.read<u32>();
-            this->iFolderCount = db.read<u32>();
+            osu_db_version = db.read<u32>();
+            osu_db_folder_count = db.read<u32>();
             db.skip<u8>();
             db.skip<u64>() /* timestamp */;
             auto playerName = db.read_string();
-            this->iNumBeatmapsToLoad = db.read<u32>();
+            this->num_beatmaps_to_load = db.read<u32>();
 
-            debugLog("Database: version = {:d}, folderCount = {:d}, playerName = {:s}, numDiffs = {:d}", this->iVersion,
-                     this->iFolderCount, playerName.c_str(), this->iNumBeatmapsToLoad);
+            debugLog("Database: version = {:d}, folderCount = {:d}, playerName = {:s}, numDiffs = {:d}", osu_db_version,
+                     osu_db_folder_count, playerName.c_str(), this->num_beatmaps_to_load);
 
             // hard cap upper db version
-            if(this->iVersion > cv::database_version.getInt() && !cv::database_ignore_version.getBool()) {
+            if(osu_db_version > cv::database_version.getVal<u32>() && !cv::database_ignore_version.getBool()) {
                 osu->getNotificationOverlay()->addToast(
                     UString::format("osu!.db version unknown (%i), osu!stable maps will not get loaded.",
-                                    this->iVersion),
+                                    osu_db_version),
                     ERROR_TOAST);
                 should_read_peppy_database = false;
             }
@@ -1109,20 +1091,20 @@ void Database::loadMaps() {
             zarray<BPMTuple> bpm_calculation_buffer;
             zarray<Database::TIMINGPOINT> timing_points_buffer;
 
-            for(int i = 0; i < this->iNumBeatmapsToLoad; i++) {
-                if(this->bInterruptLoad.load(std::memory_order_acquire)) break;  // cancellation point
+            for(uSz i = 0; i < this->num_beatmaps_to_load; i++) {
+                if(this->load_interrupted.load(std::memory_order_acquire)) break;  // cancellation point
 
-                logIfCV(debug_db, "Database: Reading beatmap {:d}/{:d} ...", (i + 1), this->iNumBeatmapsToLoad);
+                logIfCV(debug_db, "Database: Reading beatmap {:d}/{:d} ...", (i + 1), this->num_beatmaps_to_load);
                 // update progress (another thread checks if progress >= 1.f to know when we're done)
                 u32 progress_bytes = this->bytes_processed + db.total_pos;
                 f64 progress_float = (f64)progress_bytes / (f64)this->total_bytes;
-                this->fLoadingProgress = std::clamp(progress_float, 0.01, 0.99);
+                this->loading_progress = std::clamp(progress_float, 0.01, 0.99);
 
                 // NOTE: This is documented wrongly in many places.
                 //       This int was added in 20160408 and removed in 20191106
                 //       https://osu.ppy.sh/home/changelog/stable40/20160408.3
                 //       https://osu.ppy.sh/home/changelog/cuttingedge/20191106
-                if(this->iVersion >= 20160408 && this->iVersion < 20191106) {
+                if(osu_db_version >= 20160408 && osu_db_version < 20191106) {
                     // size in bytes of the beatmap entry
                     db.skip<u32>();
                 }
@@ -1158,7 +1140,7 @@ void Database::loadMaps() {
                 i64 lastModificationTime = db.read<u64>();
 
                 f32 AR, CS, HP, OD;
-                if(this->iVersion < 20140609) {
+                if(osu_db_version < 20140609) {
                     AR = db.read<u8>();
                     CS = db.read<u8>();
                     HP = db.read<u8>();
@@ -1173,64 +1155,31 @@ void Database::loadMaps() {
                 auto sliderMultiplier = db.read<f64>();
 
                 f32 nomod_star_rating = 0.0f;
-                if(this->iVersion >= 20140609) {
-                    auto numOsuStandardStarRatings = db.read<u32>();
-                    for(u64 s = 0; s < numOsuStandardStarRatings; s++) {
-                        db.skip<u8>();  // 0x08
+                if(osu_db_version >= 20140609) {
+                    // https://osu.ppy.sh/home/changelog/stable40/20250108.3
+                    const u32 sr_field_size = osu_db_version < 20250108 ? sizeof(f64) : sizeof(f32);
+
+                    const auto num_std_star_ratings = db.read<u32>();
+                    for(u64 s = 0; s < num_std_star_ratings; s++) {
+                        db.skip<u8>();  // 0x08 ObjType
                         auto mods = db.read<u32>();
-                        db.skip<u8>();  // 0x0c
+                        db.skip<u8>();  // 0x0c ObjType
 
-                        f32 sr = 0.f;
-
-                        // https://osu.ppy.sh/home/changelog/stable40/20250108.3
-                        if(this->iVersion >= 20250108) {
-                            sr = db.read<f32>();
+                        f32 sr;
+                        if(!db.read_bytes(reinterpret_cast<u8 *>(&sr), sr_field_size)) {
+                            debugLog("WARNING: failed to read SR for {}", md5hash.string());
                         } else {
-                            sr = db.read<f64>();
-                        }
-
-                        if(mods == 0) nomod_star_rating = sr;
-                    }
-
-                    auto numTaikoStarRatings = db.read<u32>();
-                    for(u32 s = 0; s < numTaikoStarRatings; s++) {
-                        db.skip<u8>();  // 0x08
-                        db.skip<u32>();
-                        db.skip<u8>();  // 0x0c
-
-                        // https://osu.ppy.sh/home/changelog/stable40/20250108.3
-                        if(this->iVersion >= 20250108) {
-                            db.skip<f32>();
-                        } else {
-                            db.skip<f64>();
+                            if(mods == 0) nomod_star_rating = sr;
                         }
                     }
 
-                    auto numCtbStarRatings = db.read<u32>();
-                    for(u32 s = 0; s < numCtbStarRatings; s++) {
-                        db.skip<u8>();  // 0x08
-                        db.skip<u32>();
-                        db.skip<u8>();  // 0x0c
-
-                        // https://osu.ppy.sh/home/changelog/stable40/20250108.3
-                        if(this->iVersion >= 20250108) {
-                            db.skip<f32>();
-                        } else {
-                            db.skip<f64>();
-                        }
-                    }
-
-                    auto numManiaStarRatings = db.read<u32>();
-                    for(u32 s = 0; s < numManiaStarRatings; s++) {
-                        db.skip<u8>();  // 0x08
-                        db.skip<u32>();
-                        db.skip<u8>();  // 0x0c
-
-                        // https://osu.ppy.sh/home/changelog/stable40/20250108.3
-                        if(this->iVersion >= 20250108) {
-                            db.skip<f32>();
-                        } else {
-                            db.skip<f64>();
+                    // taiko/ctb/mania are here only to skip the correct amount of bytes
+                    const u32 minigame_skip_bytes =
+                        sizeof(u8) /*ObjType*/ + sizeof(u32) /*mods*/ + sizeof(u8) /*ObjType*/ + sr_field_size;
+                    for(auto _ : {1 /*taiko*/, 2 /*ctb*/, 3 /*mania*/}) {
+                        const auto num_minigame_star_ratings = db.read<u32>();
+                        for(u32 s = 0; s < num_minigame_star_ratings; s++) {
+                            db.skip_bytes(minigame_skip_bytes);
                         }
                     }
                 }
@@ -1267,7 +1216,7 @@ void Database::loadMaps() {
                 /*unsigned char ctbGrade = */ db.skip<u8>();
                 /*unsigned char maniaGrade = */ db.skip<u8>();
 
-                short localOffset = db.read<u16>();
+                auto localOffset = db.read<u16>();
                 auto stackLeniency = db.read<f32>();
                 auto mode = db.read<u8>();
 
@@ -1276,7 +1225,7 @@ void Database::loadMaps() {
                 SString::trim_inplace(songSource);
                 SString::trim_inplace(songTags);
 
-                short onlineOffset = db.read<u16>();
+                auto onlineOffset = db.read<u16>();
                 db.skip_string();  // song title font
                 /*bool unplayed = */ db.skip<u8>();
                 /*i64 lastTimePlayed = */ db.skip<u64>();
@@ -1295,7 +1244,7 @@ void Database::loadMaps() {
                 /*bool disableVideo = */ db.skip<u8>();
                 /*bool visualOverride = */ db.skip<u8>();
 
-                if(this->iVersion < 20140609) {
+                if(osu_db_version < 20140609) {
                     // https://github.com/ppy/osu/wiki/Legacy-database-file-structure defines it as "Unknown"
                     db.skip<u16>();
                 }
@@ -1308,7 +1257,7 @@ void Database::loadMaps() {
                 // nobody got time for that so, since I've seen some concrete examples of what happens in such cases, we
                 // just exclude those
                 if(artistName.length() < 1 && songTitle.length() < 1 && creatorName.length() < 1 &&
-                   difficultyName.length() < 1 && md5hash.hash[0] == 0)
+                   difficultyName.length() < 1 && md5hash == MD5Hash{})
                     continue;
 
                 if(mode != 0) continue;
@@ -1453,7 +1402,7 @@ void Database::loadMaps() {
 
             // build beatmap sets
             for(const auto &beatmapSet : beatmapSets) {
-                if(this->bInterruptLoad.load(std::memory_order_acquire)) {  // cancellation point
+                if(this->load_interrupted.load(std::memory_order_acquire)) {  // cancellation point
                     // clean up remaining unprocessed diffs2 vectors and their contents
                     for(size_t i = &beatmapSet - &beatmapSets[0]; i < beatmapSets.size(); i++) {
                         if(beatmapSets[i].diffs2) {
@@ -1792,7 +1741,7 @@ void Database::loadScores(std::string_view dbPath) {
 
         u32 progress_bytes = this->bytes_processed + db.total_pos;
         f64 progress_float = (f64)progress_bytes / (f64)this->total_bytes;
-        this->fLoadingProgress = std::clamp(progress_float, 0.01, 0.99);
+        this->loading_progress = std::clamp(progress_float, 0.01, 0.99);
     }
 
     if(nb_neosu_scores != nb_scores) {
@@ -1822,7 +1771,7 @@ void Database::loadOldMcNeosuScores(std::string_view dbPath) {
         for(u32 b = 0; b < nb_beatmaps; b++) {
             u32 progress_bytes = this->bytes_processed + db.total_pos;
             f64 progress_float = (f64)progress_bytes / (f64)this->total_bytes;
-            this->fLoadingProgress = std::clamp(progress_float, 0.01, 0.99);
+            this->loading_progress = std::clamp(progress_float, 0.01, 0.99);
 
             auto md5hash = db.read_hash();
             u32 nb_scores = db.read<u32>();
@@ -1912,7 +1861,7 @@ void Database::loadOldMcNeosuScores(std::string_view dbPath) {
         for(int b = 0; b < numBeatmaps; b++) {
             u32 progress_bytes = this->bytes_processed + db.total_pos;
             f64 progress_float = (f64)progress_bytes / (f64)this->total_bytes;
-            this->fLoadingProgress = std::clamp(progress_float, 0.01, 0.99);
+            this->loading_progress = std::clamp(progress_float, 0.01, 0.99);
 
             const auto md5hash = db.read_hash();
             const int numScores = db.read<int32_t>();
@@ -2171,7 +2120,7 @@ void Database::loadPeppyScores(std::string_view dbPath) {
 
         u32 progress_bytes = this->bytes_processed + db.total_pos;
         f64 progress_float = (f64)progress_bytes / (f64)this->total_bytes;
-        this->fLoadingProgress = std::clamp(progress_float, 0.01, 0.99);
+        this->loading_progress = std::clamp(progress_float, 0.01, 0.99);
     }
 
     debugLog("Loaded {:d} osu!stable scores", nb_imported);
@@ -2180,7 +2129,7 @@ void Database::loadPeppyScores(std::string_view dbPath) {
 
 void Database::saveScores() {
     debugLog("Osu: Saving scores ...");
-    if(!this->bScoresLoaded) {
+    if(!this->scores_loaded) {
         debugLog("Cannot save scores since they weren't loaded properly first!");
         return;
     }

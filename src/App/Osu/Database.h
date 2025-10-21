@@ -101,13 +101,13 @@ class Database {
     static u64 getRequiredScoreForLevel(int level);
     static int getLevelForScore(u64 score, int maxLevel = 120);
 
-    inline float getProgress() const { return this->fLoadingProgress.load(std::memory_order_acquire); }
+    inline float getProgress() const { return this->loading_progress.load(std::memory_order_acquire); }
     inline bool isLoading() const {
         float progress = this->getProgress();
         return progress > 0.f && progress < 1.f;
     }
     inline bool isFinished() const { return (this->getProgress() >= 1.0f); }
-    inline bool foundChanges() const { return this->bFoundChanges; }
+    inline bool foundChanges() const { return this->raw_found_changes; }
 
     DatabaseBeatmap *getBeatmapDifficulty(const MD5Hash &md5hash);
     DatabaseBeatmap *getBeatmapDifficulty(i32 map_id);
@@ -152,7 +152,7 @@ class Database {
 
     u64 bytes_processed{0};
     u64 total_bytes{0};
-    std::atomic<float> fLoadingProgress;
+    std::atomic<float> loading_progress{0.f};
 
     // fine to be modified as long as the db is not currently being loaded
     std::vector<std::string> dbPathsToImport;
@@ -193,35 +193,38 @@ class Database {
     int isScoreAlreadyInDB(u64 unix_timestamp, const MD5Hash &map_hash);
 
     AsyncDBLoader *loader{nullptr};
-    Timing::Timer *importTimer;
-    bool bIsFirstLoad;   // only load differences after first raw load
-    bool bFoundChanges;  // for total refresh detection of raw loading
+    std::unique_ptr<Timing::Timer> importTimer;
+    bool is_first_load{true};      // only load differences after first raw load
+    bool raw_found_changes{true};  // for total refresh detection of raw loading
 
     // global
-    int iNumBeatmapsToLoad;
-    std::atomic<bool> bInterruptLoad;
+    u32 num_beatmaps_to_load{0};
+    std::atomic<bool> load_interrupted{false};
     std::vector<BeatmapSet *> beatmapsets;
 
     Sync::shared_mutex beatmap_difficulties_mtx;
     std::unordered_map<MD5Hash, BeatmapDifficulty *> beatmap_difficulties;
 
-    bool neosu_maps_loaded = false;
-
-    // osu!.db
-    int iVersion;
-    int iFolderCount;
+    bool neosu_maps_loaded{false};
 
     // scores.db (legacy and custom)
-    bool bScoresLoaded = false;
+    bool scores_loaded{false};
 
-    bool bNeedRawLoad{false};
-
-    PlayerStats prevPlayerStats;
+    PlayerStats prevPlayerStats{
+        .name = "",
+        .pp = 0.0f,
+        .accuracy = 0.0f,
+        .numScoresWithPP = 0,
+        .level = 0,
+        .percentToNextLevel = 0.0f,
+        .totalScore = 0,
+    };
 
     // raw load
-    bool bRawBeatmapLoadScheduled{false};
-    int iCurRawBeatmapLoadIndex{0};
-    std::string sRawBeatmapLoadOsuSongFolder;
-    std::vector<std::string> rawBeatmapFolders;
-    std::vector<std::string> rawLoadBeatmapFolders;
+    bool needs_raw_load{false};
+    bool raw_load_scheduled{false};
+    u32 cur_raw_load_idx{0};
+    std::string raw_load_osu_song_folder;
+    std::vector<std::string> raw_loaded_beatmap_folders;
+    std::vector<std::string> raw_load_beatmap_folders;
 };

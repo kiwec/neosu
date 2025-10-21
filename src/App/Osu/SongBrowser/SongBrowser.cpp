@@ -2569,7 +2569,7 @@ void SongBrowser::onDatabaseLoadingFinished() {
 
     if(cv::songbrowser_search_hardcoded_filter.getString().length() > 0) this->onSearchUpdate();
 
-    if(this->loading_reselect_map.hash.hash != std::array<char, 33>{}) {
+    if(this->loading_reselect_map.hash != MD5Hash{}) {
         osu->getMainMenu()->clearPreloadedMaps();
 
         auto *beatmap = db->getBeatmapDifficulty(this->loading_reselect_map.hash);
