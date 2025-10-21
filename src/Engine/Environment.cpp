@@ -537,12 +537,25 @@ void Environment::setClipBoardText(const UString &text) {
 void Environment::showDialog(const char *title, const char *message, unsigned int flags, void *modalWindow) {
     auto *actualWin{static_cast<SDL_Window *>(modalWindow)};
 
-    // message does not show up for hidden windows
-    if(actualWin && ((SDL_GetWindowFlags(actualWin) & SDL_WINDOW_HIDDEN) == SDL_WINDOW_HIDDEN)) {
-        actualWin = nullptr;
+    bool wasFullscreen = false;
+    if(actualWin) {
+        const SDL_WindowFlags winflags = SDL_GetWindowFlags(actualWin);
+        if((winflags & SDL_WINDOW_HIDDEN) == SDL_WINDOW_HIDDEN) {
+            // message does not show up for hidden windows
+            actualWin = nullptr;
+        } else if((winflags & SDL_WINDOW_FULLSCREEN) == SDL_WINDOW_FULLSCREEN) {
+            // make sure to exit fullscreen so the dialog box shows up
+            SDL_SetWindowFullscreen(actualWin, false);
+            wasFullscreen = true;
+        }
     }
 
     SDL_ShowSimpleMessageBox(flags, title, message, actualWin);
+
+    // re-enable fullscreen
+    if(wasFullscreen) {
+        SDL_SetWindowFullscreen(actualWin, true);
+    }
 }
 
 void Environment::showMessageInfo(const UString &title, const UString &message) const {
@@ -892,6 +905,11 @@ void Environment::setRawInput(bool raw) {
         debugLog("FIXME (handle error): SDL_SetWindowRelativeMouseMode failed: {:s}", SDL_GetError());
         m_bActualRawInputState = !raw;
     }
+
+    if(m_bActualRawInputState) {
+        // always release grab if enabled
+        SDL_SetWindowMouseGrab(m_window, false);
+    }
 }
 
 void Environment::setCursorVisible(bool visible) {
@@ -908,9 +926,9 @@ void Environment::setCursorVisible(bool visible) {
 
         if(mouse && mouse->isRawInputWanted()) {  // re-enable rawinput
             setRawInput(true);
-        }
-        if(isCursorClipped()) {
-            SDL_SetWindowMouseGrab(m_window, true);  // re-enable grab
+        } else if(isCursorClipped()) {
+            // regrab if clipped
+            SDL_SetWindowMouseGrab(m_window, true);
         }
     }
 
@@ -923,7 +941,10 @@ void Environment::setCursorClip(bool clip, McRect rect) {
     if(clip) {
         const SDL_Rect sdlClip = McRectToSDLRect(rect);
         SDL_SetWindowMouseRect(m_window, &sdlClip);
-        SDL_SetWindowMouseGrab(m_window, true);
+        if(!(mouse && mouse->isRawInputWanted())) {
+            // only grab if rawinput is disabled, we clip manually if rawinput is enabled
+            SDL_SetWindowMouseGrab(m_window, true);
+        }
         m_bCursorClipped = true;
     } else {
         m_bCursorClipped = false;
@@ -1237,8 +1258,8 @@ bool Environment::sdl_x11eventhook(void *thisptr, XEvent *xev) {
     if(thisptr && xev && xev->type == 10 /* FocusOut */) {
         auto *envptr = static_cast<Environment *>(thisptr);
         if(envptr->m_window) {
-            // unconfine mouse manually
-            SDL_SetWindowMouseRect(envptr->m_window, nullptr);
+            // ungrab mouse manually
+            SDL_SetWindowMouseGrab(envptr->m_window, false);
         }
     }
 #endif

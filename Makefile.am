@@ -459,7 +459,7 @@ $(DEPS_PREFIX)/SDL3-$(SDL3_VERSION).built: $(DEPS_CACHE)/SDL3-$(SDL3_VERSION).so
 		$(if $(NOIME),-DSDL_DBUS=OFF -DSDL_USE_IME=OFF -DSDL_DISABLE_WINDOWS_IME=ON,) \
 		-D SDL_CCACHE="$(if $(filter ccache,$(CCACHE)),ON,OFF)" \
 		-D CMAKE_C_COMPILER="$(CC)" \
-		-D CMAKE_C_FLAGS="$(CFLAGS) -Wno-error=incompatible-pointer-types" && \
+		-D CMAKE_C_FLAGS="$(CFLAGS) -Wno-error=incompatible-pointer-types -DUSE_XINPUT2_KEYBOARD" && \
 	$(CMAKE) --build build "$(CMAKEPAROPT)" && \
 	$(CMAKE) --install build
 	$(PKG_CONFIG) --exists --print-errors sdl3

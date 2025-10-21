@@ -297,17 +297,20 @@ void SoLoudSoundEngine::allowInternalCallbacks() {
     cv::snd_freq.setCallback(SA::MakeDelegate<&SoLoudSoundEngine::restart>(this));
     cv::cmd::snd_restart.setCallback(SA::MakeDelegate<&SoLoudSoundEngine::restart>(this));
 
-    static auto backendSwitchCB = [&](std::string_view arg) -> void {
+    static auto backendSwitchCB = [](std::string_view arg) -> void {
         const bool nowSDL = SString::contains_ncase(arg, "sdl"sv);
-        const auto curDriver = soundEngine->getOutputDriverType();
+        if(!soundEngine || soundEngine->getTypeId() != SndEngineType::SOLOUD) return;
+
+        auto *enginePtr = static_cast<SoLoudSoundEngine *>(soundEngine.get());
+        const auto curDriver = enginePtr->getOutputDriverType();
         // don't do anything if we're already ready with the same output driver
-        if(this->bWasBackendEverReady &&
+        if(enginePtr->bWasBackendEverReady &&
            ((nowSDL && curDriver == OutputDriver::SOLOUD_SDL) || (!nowSDL && curDriver == OutputDriver::SOLOUD_MA)))
             return;
 
         // needed due to different device enumeration between backends
-        this->bWasBackendEverReady = false;
-        this->restart();
+        enginePtr->bWasBackendEverReady = false;
+        enginePtr->restart();
     };
 
     cv::snd_soloud_backend.setCallback(backendSwitchCB);
@@ -341,6 +344,11 @@ SoLoudSoundEngine::~SoLoudSoundEngine() {
         soloud->deinit();
     }
     soloud.reset();
+    cv::snd_freq.removeCallback();
+    cv::cmd::snd_restart.removeCallback();
+    cv::snd_soloud_backend.removeCallback();
+    cv::snd_sanity_simultaneous_limit.removeCallback();
+    cv::snd_output_device.removeCallback();
 }
 
 void SoLoudSoundEngine::setMasterVolume(float volume) {

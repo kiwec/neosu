@@ -766,6 +766,7 @@ OptionsMenu::OptionsMenu() : ScreenBackable() {
                 return ret;
             }};
 
+            // FIXME: this would break if OptionsMenu is ever recreated, due to capturing in a static lambda
             static auto setActiveColors = [MAButton, SDLButton]() -> void {
                 const std::string &current = cv::snd_soloud_backend.getString();
                 const bool MAactive = !SString::contains_ncase(current, "sdl");

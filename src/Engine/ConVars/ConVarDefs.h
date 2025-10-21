@@ -159,7 +159,7 @@ CONVAR(snd_file_min_size, "snd_file_min_size"sv, 51, CLIENT,
        "fail to load), this is a workaround for BASS crashes"sv);
 CONVAR(snd_force_load_unknown, "snd_force_load_unknown"sv, false, CLIENT,
        "force loading of assumed invalid audio files"sv);
-CONVAR(snd_freq, "snd_freq"sv, 44100, CLIENT | NOLOAD | NOSAVE, "output sampling rate in Hz"sv);
+CONVAR(snd_freq, "snd_freq"sv, 44100, CLIENT | NOSAVE, "output sampling rate in Hz"sv);
 CONVAR(snd_soloud_buffer, "snd_soloud_buffer"sv, 0, CLIENT | NOSAVE,
        "SoLoud audio device buffer size (recommended to leave this on 0/auto)"sv);
 CONVAR(snd_soloud_backend, "snd_soloud_backend"sv, "MiniAudio"sv, CLIENT,
