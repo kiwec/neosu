@@ -468,22 +468,38 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(std::
                         curves.erase(curves.begin());
                         for(const auto &curvePoints : curves) {
                             f32 cpX{}, cpY{};
-                            upd_last_error(!Parsing::parse(curvePoints, &cpX, ':', &cpY));
-                            upd_last_error(!std::isfinite(cpX) || std::isnan(cpX));
-                            upd_last_error(!std::isfinite(cpY) || std::isnan(cpY));
-                            if(err_line) break;
+                            // just skip infinite/invalid curve points (https://osu.ppy.sh/b/1029976)
+                            bool valid = true;
+                            valid &= !!Parsing::parse(curvePoints, &cpX, ':', &cpY);
+                            valid &= (std::isfinite(cpX) && !std::isnan(cpX));
+                            valid &= (std::isfinite(cpY) && !std::isnan(cpY));
+                            if(!valid) continue;
 
                             slider.points.emplace_back(std::clamp(cpX, -sliderSanityRange, sliderSanityRange),
                                                        std::clamp(cpY, -sliderSanityRange, sliderSanityRange));
                         }
 
+                        upd_last_error(!Parsing::parse(csvs[6], &slider.repeat));
                         if(err_line) {
-                            debugLog("Invalid slider (error on line {}): {}", err_line, curLine);
+                            debugLog("Invalid slider: (error on line {}): {}", err_line, curLine);
                             break;
                         }
-
-                        upd_last_error(!Parsing::parse(csvs[6], &slider.repeat));
                         upd_last_error(!Parsing::parse(csvs[7], &slider.pixelLength));
+                        if (err_line && !csvs[7].empty()) {
+                            // fix up infinite pixelLength
+                            if(SString::contains_ncase(csvs[7], "e+")) {
+                                if (csvs[7].starts_with('-')) {
+                                    slider.pixelLength = -sliderSanityRange;
+                                } else {
+                                    slider.pixelLength = sliderSanityRange;
+                                }
+                                err_line = 0;
+                            }
+                        }
+                        if (err_line) {
+                            debugLog("Invalid slider pixel length: {} slider.pixelLength: {}", csvs[7], slider.pixelLength);
+                            break;
+                        }
 
                         // special case: osu! logic for handling the hitobject point vs the controlpoints (since
                         // sliders have both, and older beatmaps store the start point inside the control
@@ -516,6 +532,7 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(std::
                                 upd_last_error(
                                     !Parsing::parse(edgeSets[i], &samples.normalSet, ':', &samples.additionSet));
                             }
+                            if(err_line) break;
 
                             slider.edgeSamples.push_back(samples);
                         }
