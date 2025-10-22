@@ -5,9 +5,13 @@ on:
       - master
   workflow_dispatch:
 
+env:
+  CCACHE_DIR: /tmp/.ccache
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    container: whrvt/neosu-linux:latest
     strategy:
       matrix:
         arch: [x64, x32]
@@ -23,15 +27,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up docker buildx
-        uses: docker/setup-buildx-action@v3.10.0
-        with:
-          driver: docker
-
       - name: Set up build directory
         run: |
           mkdir -p "$(pwd)"/build-out/build
-          mkdir -p "$(pwd)"/.ccache
+          mkdir -p ${{ env.CCACHE_DIR }}
 
       - name: Cache dependency tarballs
         uses: actions/cache@v4.3.0
@@ -54,25 +53,19 @@ jobs:
       - name: ccache
         uses: actions/cache@v4.3.0
         with:
-          path: .ccache
+          path: ${{ env.CCACHE_DIR }}
           key: ccache-linux-${{ matrix.arch }}-${{ github.sha }}
           restore-keys: |
             ccache-linux-${{ matrix.arch }}-
 
-      - name: Build neosu with Docker
+      - name: Building neosu
         run: |
-          docker buildx build --progress=plain \
-          -f .github/workflows/docker/Dockerfile \
-          -t neosu-builder .
-          docker run --rm \
-            -e HOST=${{ matrix.host }} \
-            -e STRIPFLAGS=${{ (github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/dev') && '--disable-strip' || '' }} \
-            -e CCACHE_DIR=/src/.ccache \
-            --mount type=bind,source="$(pwd)",target=/src \
-            --mount type=bind,source="$(pwd)"/build-out,target=/src/build-out \
-            --mount type=bind,source="$(pwd)"/build-aux,target=/src/build-aux \
-            --mount type=bind,source="$(pwd)"/.ccache,target=/src/.ccache \
-            neosu-builder
+          MAKEFLAGS="-j$(nproc)" ./autogen.sh
+          cd build-out && \
+          MAKEFLAGS="-j$(nproc)" ../configure \
+            ${{ (github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/dev') && '--disable-strip' || '' }} \
+            --with-audio="bass,soloud" --host=${{ matrix.host }} && \
+          CCACHE_DIR="${{ env.CCACHE_DIR }}" MAKEFLAGS="-j$(nproc)" make install
 
       - uses: actions/upload-artifact@v4
         with:
