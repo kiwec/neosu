@@ -1131,9 +1131,11 @@ void Skin::loadSound(Sound *&sndRef, const std::string &skinElementName, const s
 
                 was_first_load = true;
 
-                // user skin, destroy old sound resource (blocking)
-                if(existing_sound)
-                    resourceManager->destroyResource(existing_sound, ResourceManager::DestroyMode::FORCE_BLOCKING);
+                // user skin, rebuild with new path
+                if(existing_sound) {
+                    existing_sound->rebuild(path, cv::skin_async.getBool());
+                    return existing_sound;
+                }
 
                 if(cv::skin_async.getBool()) {
                     resourceManager->requestNextLoadAsync();
