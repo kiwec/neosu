@@ -122,7 +122,7 @@ neosu_SOURCES = \
 	src/Engine/Renderer/DirectX11/DirectX11VertexArrayObject.cpp \
 	src/Engine/Renderer/Graphics.cpp \
 	src/Engine/Renderer/OpenGL/OpenGLImage.cpp \
-	src/Engine/Renderer/OpenGL/OpenGLLegacyInterface.cpp \
+	src/Engine/Renderer/OpenGL/OpenGLInterface.cpp \
 	src/Engine/Renderer/OpenGL/OpenGLRenderTarget.cpp \
 	src/Engine/Renderer/OpenGL/OpenGLShader.cpp \
 	src/Engine/Renderer/OpenGL/OpenGLStateCache.cpp \

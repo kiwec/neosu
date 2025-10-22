@@ -9,11 +9,11 @@
 
 class Image;
 
-class OpenGLLegacyInterface : public Graphics {
-    NOCOPY_NOMOVE(OpenGLLegacyInterface)
+class OpenGLInterface : public Graphics {
+    NOCOPY_NOMOVE(OpenGLInterface)
    public:
-    OpenGLLegacyInterface();
-    ~OpenGLLegacyInterface() override = default;
+    OpenGLInterface();
+    ~OpenGLInterface() override = default;
 
     // scene
     void beginScene() override;
@@ -122,7 +122,7 @@ class OpenGLLegacyInterface : public Graphics {
 };
 
 #else
-class OpenGLLegacyInterface : public Graphics {};
+class OpenGLInterface : public Graphics {};
 #endif
 
 #endif

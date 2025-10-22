@@ -15,7 +15,7 @@
 #include "ModFPoSu3DModels.h"
 #include "Mouse.h"
 #include "OpenGLHeaders.h"
-#include "OpenGLLegacyInterface.h"
+#include "OpenGLInterface.h"
 #include "OptionsMenu.h"
 #include "Osu.h"
 #include "ResourceManager.h"

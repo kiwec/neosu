@@ -268,7 +268,7 @@ rendbackendlist=
 
 AS_IF([test "x$use_opengl" = "xyes" || test "x$use_opengl_default" = "xyes"], [
     use_opengl=yes
-    AC_DEFINE([MCENGINE_FEATURE_OPENGL], [1], [Defined if the OpenGLLegacy backend is to be used.])
+    AC_DEFINE([MCENGINE_FEATURE_OPENGL], [1], [Defined if the OpenGL backend is to be used.])
     rendbackendlist="opengl"
 ], [
     use_opengl=no
@@ -276,8 +276,9 @@ AS_IF([test "x$use_opengl" = "xyes" || test "x$use_opengl_default" = "xyes"], [
 
 # can't combine
 AS_IF([test "x$use_opengles32" = "xyes" && test "x$use_opengl" != "yes"], [
+    # TODO
     use_opengles32=yes
-    AC_DEFINE([MCENGINE_FEATURE_OPENGL], [1], [Defined if the OpenGLLegacy backend is to be used.])
+    AC_DEFINE([MCENGINE_FEATURE_GLES32], [1], [Defined if the OpenGL ES backend is to be used.])
     rendbackendlist="opengles32"
 ], [
     use_opengles32=no

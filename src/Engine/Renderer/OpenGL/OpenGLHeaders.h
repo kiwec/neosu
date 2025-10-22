@@ -21,11 +21,11 @@
 #define RENDERBUFFER_FREE_MEMORY_ATI					0x87FD
 
 #ifdef MCENGINE_FEATURE_OPENGL
-	#include "OpenGLLegacyInterface.h"
+	#include "OpenGLInterface.h"
 	#include "OpenGLVertexArrayObject.h"
 	#include "OpenGLShader.h"
 
-	using BackendGLInterface = OpenGLLegacyInterface;
+	using BackendGLInterface = OpenGLInterface;
 	using BackendGLVAO = OpenGLVertexArrayObject;
 	using BackendGLShader = OpenGLShader;
 #elif defined(MCENGINE_FEATURE_GLES32)

@@ -1,5 +1,5 @@
 // Copyright (c) 2016, PG, All rights reserved.
-#include "OpenGLLegacyInterface.h"
+#include "OpenGLInterface.h"
 
 #ifdef MCENGINE_FEATURE_OPENGL
 
@@ -21,7 +21,7 @@
 
 #include <cstddef>
 
-OpenGLLegacyInterface::OpenGLLegacyInterface()
+OpenGLInterface::OpenGLInterface()
     : Graphics(),
       vResolution(engine->getScreenSize())  // initial viewport size = window size
 {
@@ -62,7 +62,7 @@ OpenGLLegacyInterface::OpenGLLegacyInterface()
     OpenGLStateCache::initialize();
 }
 
-void OpenGLLegacyInterface::beginScene() {
+void OpenGLInterface::beginScene() {
     this->bInScene = true;
 
     Matrix4 defaultProjectionMatrix =
@@ -85,7 +85,7 @@ void OpenGLLegacyInterface::beginScene() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 }
 
-void OpenGLLegacyInterface::endScene() {
+void OpenGLInterface::endScene() {
     popTransform();
 
     if constexpr(Env::cfg(BUILD::DEBUG)) {
@@ -100,9 +100,9 @@ void OpenGLLegacyInterface::endScene() {
     this->bInScene = false;
 }
 
-void OpenGLLegacyInterface::clearDepthBuffer() { glClear(GL_DEPTH_BUFFER_BIT); }
+void OpenGLInterface::clearDepthBuffer() { glClear(GL_DEPTH_BUFFER_BIT); }
 
-void OpenGLLegacyInterface::setColor(Color color) {
+void OpenGLInterface::setColor(Color color) {
     if(color == this->color) return;
 
     this->color = color;
@@ -110,14 +110,14 @@ void OpenGLLegacyInterface::setColor(Color color) {
     glColor4ub(this->color.R(), this->color.G(), this->color.B(), this->color.A());
 }
 
-void OpenGLLegacyInterface::drawPixels(int x, int y, int width, int height, Graphics::DRAWPIXELS_TYPE type,
+void OpenGLInterface::drawPixels(int x, int y, int width, int height, Graphics::DRAWPIXELS_TYPE type,
                                        const void *pixels) {
     glRasterPos2i(x, y + height);  // '+height' because of opengl bottom left origin, but engine top left origin
     glDrawPixels(width, height, GL_RGBA,
                  (type == Graphics::DRAWPIXELS_TYPE::DRAWPIXELS_UBYTE ? GL_UNSIGNED_BYTE : GL_FLOAT), pixels);
 }
 
-void OpenGLLegacyInterface::drawPixel(int x, int y) {
+void OpenGLInterface::drawPixel(int x, int y) {
     updateTransform();
 
     glDisable(GL_TEXTURE_2D);
@@ -129,7 +129,7 @@ void OpenGLLegacyInterface::drawPixel(int x, int y) {
     glEnd();
 }
 
-void OpenGLLegacyInterface::drawLinef(float x1, float y1, float x2, float y2) {
+void OpenGLInterface::drawLinef(float x1, float y1, float x2, float y2) {
     updateTransform();
 
     glDisable(GL_TEXTURE_2D);
@@ -142,7 +142,7 @@ void OpenGLLegacyInterface::drawLinef(float x1, float y1, float x2, float y2) {
     glEnd();
 }
 
-void OpenGLLegacyInterface::drawRectf(const RectOptions &opts) {
+void OpenGLInterface::drawRectf(const RectOptions &opts) {
     updateTransform();
 
     glDisable(GL_TEXTURE_2D);
@@ -183,7 +183,7 @@ void OpenGLLegacyInterface::drawRectf(const RectOptions &opts) {
     }
 }
 
-void OpenGLLegacyInterface::fillRectf(float x, float y, float width, float height) {
+void OpenGLInterface::fillRectf(float x, float y, float width, float height) {
     updateTransform();
 
     glDisable(GL_TEXTURE_2D);
@@ -198,7 +198,7 @@ void OpenGLLegacyInterface::fillRectf(float x, float y, float width, float heigh
     glEnd();
 }
 
-void OpenGLLegacyInterface::fillRoundedRect(int x, int y, int width, int height, int radius) {
+void OpenGLInterface::fillRoundedRect(int x, int y, int width, int height, int radius) {
     float xOffset = x + radius;
     float yOffset = y + radius;
 
@@ -237,7 +237,7 @@ void OpenGLLegacyInterface::fillRoundedRect(int x, int y, int width, int height,
     glEnd();
 }
 
-void OpenGLLegacyInterface::fillGradient(int x, int y, int width, int height, Color topLeftColor, Color topRightColor,
+void OpenGLInterface::fillGradient(int x, int y, int width, int height, Color topLeftColor, Color topRightColor,
                                          Color bottomLeftColor, Color bottomRightColor) {
     updateTransform();
 
@@ -260,7 +260,7 @@ void OpenGLLegacyInterface::fillGradient(int x, int y, int width, int height, Co
     glEnd();
 }
 
-void OpenGLLegacyInterface::drawQuad(int x, int y, int width, int height) {
+void OpenGLInterface::drawQuad(int x, int y, int width, int height) {
     updateTransform();
 
     const int left = x;
@@ -286,7 +286,7 @@ void OpenGLLegacyInterface::drawQuad(int x, int y, int width, int height) {
     glEnd();
 }
 
-void OpenGLLegacyInterface::drawQuad(vec2 topLeft, vec2 topRight, vec2 bottomRight, vec2 bottomLeft, Color topLeftColor,
+void OpenGLInterface::drawQuad(vec2 topLeft, vec2 topRight, vec2 bottomRight, vec2 bottomLeft, Color topLeftColor,
                                      Color topRightColor, Color bottomRightColor, Color bottomLeftColor) {
     updateTransform();
 
@@ -311,7 +311,7 @@ void OpenGLLegacyInterface::drawQuad(vec2 topLeft, vec2 topRight, vec2 bottomRig
     glEnd();
 }
 
-void OpenGLLegacyInterface::drawImage(const Image *image, AnchorPoint anchor, float edgeSoftness, McRect clipRect) {
+void OpenGLInterface::drawImage(const Image *image, AnchorPoint anchor, float edgeSoftness, McRect clipRect) {
     if(image == nullptr) {
         debugLog("WARNING: Tried to draw image with NULL texture!");
         return;
@@ -420,7 +420,7 @@ void OpenGLLegacyInterface::drawImage(const Image *image, AnchorPoint anchor, fl
     }
 }
 
-void OpenGLLegacyInterface::drawString(McFont *font, const UString &text) {
+void OpenGLInterface::drawString(McFont *font, const UString &text) {
     if(font == nullptr || text.length() < 1 || !font->isReady()) return;
 
     updateTransform();
@@ -435,7 +435,7 @@ void OpenGLLegacyInterface::drawString(McFont *font, const UString &text) {
     font->drawString(text);
 }
 
-void OpenGLLegacyInterface::drawVAO(VertexArrayObject *vao) {
+void OpenGLInterface::drawVAO(VertexArrayObject *vao) {
     if(vao == nullptr) return;
 
     updateTransform();
@@ -537,7 +537,7 @@ void OpenGLLegacyInterface::drawVAO(VertexArrayObject *vao) {
     glDrawArrays(SDLGLInterface::primitiveToOpenGLMap[vao->getPrimitive()], 0, static_cast<GLint>(drawCount));
 }
 
-void OpenGLLegacyInterface::setClipRect(McRect clipRect) {
+void OpenGLInterface::setClipRect(McRect clipRect) {
     if(cv::r_debug_disable_cliprect.getBool()) return;
     // if (m_bIs3DScene) return; // TODO
 
@@ -554,7 +554,7 @@ void OpenGLLegacyInterface::setClipRect(McRect clipRect) {
     // debugLog("scissor = {}, {}, {}, {}", (int)clipRect.getX()+viewport[0],
 }
 
-void OpenGLLegacyInterface::pushClipRect(McRect clipRect) {
+void OpenGLInterface::pushClipRect(McRect clipRect) {
     if(this->clipRectStack.size() > 0)
         this->clipRectStack.push(this->clipRectStack.top().intersect(clipRect));
     else
@@ -563,7 +563,7 @@ void OpenGLLegacyInterface::pushClipRect(McRect clipRect) {
     setClipRect(this->clipRectStack.top());
 }
 
-void OpenGLLegacyInterface::popClipRect() {
+void OpenGLInterface::popClipRect() {
     this->clipRectStack.pop();
 
     if(this->clipRectStack.size() > 0)
@@ -572,7 +572,7 @@ void OpenGLLegacyInterface::popClipRect() {
         setClipping(false);
 }
 
-void OpenGLLegacyInterface::pushStencil() {
+void OpenGLInterface::pushStencil() {
     // init and clear
     glClearStencil(0);
     glClear(GL_STENCIL_BUFFER_BIT);
@@ -584,40 +584,40 @@ void OpenGLLegacyInterface::pushStencil() {
     glStencilOp(GL_REPLACE, GL_REPLACE, GL_REPLACE);
 }
 
-void OpenGLLegacyInterface::fillStencil(bool inside) {
+void OpenGLInterface::fillStencil(bool inside) {
     glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
     glStencilFunc(GL_NOTEQUAL, inside ? 0 : 1, 1);
     glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 }
 
-void OpenGLLegacyInterface::popStencil() { glDisable(GL_STENCIL_TEST); }
+void OpenGLInterface::popStencil() { glDisable(GL_STENCIL_TEST); }
 
-void OpenGLLegacyInterface::setClipping(bool enabled) {
+void OpenGLInterface::setClipping(bool enabled) {
     if(enabled) {
         if(this->clipRectStack.size() > 0) glEnable(GL_SCISSOR_TEST);
     } else
         glDisable(GL_SCISSOR_TEST);
 }
 
-void OpenGLLegacyInterface::setAlphaTesting(bool enabled) {
+void OpenGLInterface::setAlphaTesting(bool enabled) {
     if(enabled)
         glEnable(GL_ALPHA_TEST);
     else
         glDisable(GL_ALPHA_TEST);
 }
 
-void OpenGLLegacyInterface::setAlphaTestFunc(COMPARE_FUNC alphaFunc, float ref) {
+void OpenGLInterface::setAlphaTestFunc(COMPARE_FUNC alphaFunc, float ref) {
     glAlphaFunc(SDLGLInterface::compareFuncToOpenGLMap[alphaFunc], ref);
 }
 
-void OpenGLLegacyInterface::setBlending(bool enabled) {
+void OpenGLInterface::setBlending(bool enabled) {
     if(enabled)
         glEnable(GL_BLEND);
     else
         glDisable(GL_BLEND);
 }
 
-void OpenGLLegacyInterface::setBlendMode(BLEND_MODE blendMode) {
+void OpenGLInterface::setBlendMode(BLEND_MODE blendMode) {
     switch(blendMode) {
         case BLEND_MODE::BLEND_MODE_ALPHA:
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -634,23 +634,23 @@ void OpenGLLegacyInterface::setBlendMode(BLEND_MODE blendMode) {
     }
 }
 
-void OpenGLLegacyInterface::setDepthBuffer(bool enabled) {
+void OpenGLInterface::setDepthBuffer(bool enabled) {
     if(enabled)
         glEnable(GL_DEPTH_TEST);
     else
         glDisable(GL_DEPTH_TEST);
 }
 
-void OpenGLLegacyInterface::setDepthWriting(bool enabled) {
+void OpenGLInterface::setDepthWriting(bool enabled) {
     if(enabled)
         glDepthMask(GL_TRUE);
     else
         glDepthMask(GL_FALSE);
 }
 
-void OpenGLLegacyInterface::setColorWriting(bool r, bool g, bool b, bool a) { glColorMask(r, g, b, a); }
+void OpenGLInterface::setColorWriting(bool r, bool g, bool b, bool a) { glColorMask(r, g, b, a); }
 
-void OpenGLLegacyInterface::setColorInversion(bool enabled) {
+void OpenGLInterface::setColorInversion(bool enabled) {
     if(enabled) {
         glEnable(GL_COLOR_LOGIC_OP);
         glLogicOp(GL_COPY_INVERTED);
@@ -659,14 +659,14 @@ void OpenGLLegacyInterface::setColorInversion(bool enabled) {
     }
 }
 
-void OpenGLLegacyInterface::setCulling(bool culling) {
+void OpenGLInterface::setCulling(bool culling) {
     if(culling)
         glEnable(GL_CULL_FACE);
     else
         glDisable(GL_CULL_FACE);
 }
 
-void OpenGLLegacyInterface::setAntialiasing(bool aa) {
+void OpenGLInterface::setAntialiasing(bool aa) {
     this->bAntiAliasing = aa;
     if(aa)
         glEnable(GL_MULTISAMPLE);
@@ -674,18 +674,18 @@ void OpenGLLegacyInterface::setAntialiasing(bool aa) {
         glDisable(GL_MULTISAMPLE);
 }
 
-void OpenGLLegacyInterface::setWireframe(bool enabled) {
+void OpenGLInterface::setWireframe(bool enabled) {
     if(enabled)
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     else
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
-void OpenGLLegacyInterface::setLineWidth(float width) { glLineWidth(width); }
+void OpenGLInterface::setLineWidth(float width) { glLineWidth(width); }
 
-void OpenGLLegacyInterface::flush() { glFlush(); }
+void OpenGLInterface::flush() { glFlush(); }
 
-std::vector<u8> OpenGLLegacyInterface::getScreenshot(bool withAlpha) {
+std::vector<u8> OpenGLInterface::getScreenshot(bool withAlpha) {
     std::vector<u8> result;
     i32 width = this->vResolution.x;
     i32 height = this->vResolution.y;
@@ -724,7 +724,7 @@ std::vector<u8> OpenGLLegacyInterface::getScreenshot(bool withAlpha) {
     return result;
 }
 
-void OpenGLLegacyInterface::onResolutionChange(vec2 newResolution) {
+void OpenGLInterface::onResolutionChange(vec2 newResolution) {
     // rebuild viewport
     this->vResolution = newResolution;
     glViewport(0, 0, this->vResolution.x, this->vResolution.y);
@@ -740,34 +740,34 @@ void OpenGLLegacyInterface::onResolutionChange(vec2 newResolution) {
     }
 }
 
-Image *OpenGLLegacyInterface::createImage(std::string filePath, bool mipmapped, bool keepInSystemMemory) {
+Image *OpenGLInterface::createImage(std::string filePath, bool mipmapped, bool keepInSystemMemory) {
     return new OpenGLImage(filePath, mipmapped, keepInSystemMemory);
 }
 
-Image *OpenGLLegacyInterface::createImage(i32 width, i32 height, bool mipmapped, bool keepInSystemMemory) {
+Image *OpenGLInterface::createImage(i32 width, i32 height, bool mipmapped, bool keepInSystemMemory) {
     return new OpenGLImage(width, height, mipmapped, keepInSystemMemory);
 }
 
-RenderTarget *OpenGLLegacyInterface::createRenderTarget(int x, int y, int width, int height,
+RenderTarget *OpenGLInterface::createRenderTarget(int x, int y, int width, int height,
                                                         Graphics::MULTISAMPLE_TYPE multiSampleType) {
     return new OpenGLRenderTarget(x, y, width, height, multiSampleType);
 }
 
-Shader *OpenGLLegacyInterface::createShaderFromFile(std::string vertexShaderFilePath,
+Shader *OpenGLInterface::createShaderFromFile(std::string vertexShaderFilePath,
                                                     std::string fragmentShaderFilePath) {
     return new OpenGLShader(vertexShaderFilePath, fragmentShaderFilePath, false);
 }
 
-Shader *OpenGLLegacyInterface::createShaderFromSource(std::string vertexShader, std::string fragmentShader) {
+Shader *OpenGLInterface::createShaderFromSource(std::string vertexShader, std::string fragmentShader) {
     return new OpenGLShader(vertexShader, fragmentShader, true);
 }
 
-VertexArrayObject *OpenGLLegacyInterface::createVertexArrayObject(Graphics::PRIMITIVE primitive,
+VertexArrayObject *OpenGLInterface::createVertexArrayObject(Graphics::PRIMITIVE primitive,
                                                                   Graphics::USAGE_TYPE usage, bool keepInSystemMemory) {
     return new OpenGLVertexArrayObject(primitive, usage, keepInSystemMemory);
 }
 
-void OpenGLLegacyInterface::onTransformUpdate(Matrix4 &projectionMatrix, Matrix4 &worldMatrix) {
+void OpenGLInterface::onTransformUpdate(Matrix4 &projectionMatrix, Matrix4 &worldMatrix) {
     glMatrixMode(GL_PROJECTION);
     glLoadMatrixf(projectionMatrix.get());
 
@@ -775,7 +775,7 @@ void OpenGLLegacyInterface::onTransformUpdate(Matrix4 &projectionMatrix, Matrix4
     glLoadMatrixf(worldMatrix.get());
 }
 
-void OpenGLLegacyInterface::initSmoothClipShader() {
+void OpenGLInterface::initSmoothClipShader() {
     if(this->smoothClipShader != nullptr) return;
 
     this->smoothClipShader.reset(this->createShaderFromSource(

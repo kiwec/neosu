@@ -38,7 +38,7 @@ DirectX11Shader::SHADER_PARSE_RESULT DirectX11Shader::parseShaderFromString(
     const std::string &graphicsInterfaceAndShaderTypePrefix, const std::string &shaderSource) {
     DirectX11Shader::SHADER_PARSE_RESULT result;
 
-    // e.g. ###OpenGLLegacyInterface::VertexShader##########################################################################################
+    // e.g. ###OpenGLInterface::VertexShader##########################################################################################
     const std::string_view shaderPrefix = "###";
     // e.g. ##D3D11_BUFFER_DESC::D3D11_BIND_CONSTANT_BUFFER::ModelViewProjectionConstantBuffer::mvp::float4x4
     const std::string_view descPrefix = "##";

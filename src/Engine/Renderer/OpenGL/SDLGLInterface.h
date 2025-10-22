@@ -14,7 +14,7 @@ class OpenGLSync;
 typedef struct SDL_Window SDL_Window;
 class SDLGLInterface final : public BackendGLInterface {
     friend class Environment;
-    friend class OpenGLLegacyInterface;
+    friend class OpenGLInterface;
     friend class OpenGLVertexArrayObject;
     friend class OpenGLShader;
     friend class OpenGLES32Interface;
