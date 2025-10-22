@@ -70,8 +70,8 @@ class McRect {
         this->vSize = size;
     }
 
-    vec2 vMin{0.f};
-    vec2 vSize{0.f};
+    vec2 vMin{0.f, 0.f};
+    vec2 vSize{0.f, 0.f};
 
     friend struct fmt::formatter<McRect>;
 };
@@ -86,7 +86,7 @@ struct formatter<McRect> {
 
     template <typename FormatContext>
     auto format(const McRect &r, FormatContext &ctx) const {
-        return format_to(ctx.out(), "{}: {}"_cf, r.vMin, r.vSize);
+        return format_to(ctx.out(), "({:.2f},{:.2f}): {:.2f}x{:.2f}"_cf, r.vMin.x, r.vMin.y, r.vSize.x, r.vSize.y);
     }
 };
 }  // namespace fmt
