@@ -67,6 +67,13 @@ jobs:
             --with-audio="bass,soloud" --host=${{ matrix.host }} && \
           CCACHE_DIR="${{ env.CCACHE_DIR }}" MAKEFLAGS="-j$(nproc)" make install
 
+      - name: Package artifacts (fix symlinks)
+        run: |
+          cd build-out
+          zip -r -y -8 bin.zip ./dist/bin-*/
+          rm -rf dist/*
+          mv bin.zip dist/
+
       - uses: actions/upload-artifact@v4
         with:
           name: neosu-linux-${{ matrix.arch }}

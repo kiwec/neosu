@@ -736,7 +736,10 @@ bool Environment::setWindowSize(int width, int height) { return SDL_SetWindowSiz
 // NOTE: the SDL header states:
 // "You can't change the resizable state of a fullscreen window."
 void Environment::setWindowResizable(bool resizable) {
-    if(m_bIsKMSDRM) return;
+    if(m_bIsKMSDRM) {
+        m_bResizable = false;
+        return;
+    }
     if(!SDL_SetWindowResizable(m_window, resizable)) {
         debugLog("Failed to set window {:s} (currently {:s}): {:s}", resizable ? "resizable" : "non-resizable",
                  m_bResizable ? "resizable" : "non-resizable", SDL_GetError());
