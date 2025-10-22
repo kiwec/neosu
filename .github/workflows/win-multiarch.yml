@@ -41,18 +41,26 @@ jobs:
           mkdir -p "$(pwd)"/build-out/build
           mkdir -p ${{ env.CCACHE_DIR }}
 
-      - name: Cache dependencies
-        uses: actions/cache@v4
+      - name: Cache dependency tarballs
+        uses: actions/cache@v4.3.0
+        with:
+          path: |
+            build-aux/cache
+          key: tarballs-win-${{ matrix.arch }}-${{ github.sha }}
+          restore-keys: |
+            tarballs-win-${{ matrix.arch }}-
+
+      - name: Cache built dependencies
+        uses: actions/cache@v4.3.0
         with:
           path: |
             build-out/build/deps
-            build-aux/cache
           key: deps-win-${{ matrix.arch }}-${{ hashFiles('configure.ac', 'Makefile.am') }}
           restore-keys: |
             deps-win-${{ matrix.arch }}-${{ hashFiles('configure.ac', 'Makefile.am') }}
 
       - name: ccache
-        uses: actions/cache@v4
+        uses: actions/cache@v4.3.0
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ccache-win-${{ matrix.arch }}-${{ github.sha }}
