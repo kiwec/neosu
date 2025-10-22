@@ -358,8 +358,9 @@ std::string Environment::getFileExtensionFromFilePath(std::string_view filepath)
     const auto extIdx = filepath.find_last_of('.');
     if(extIdx != std::string::npos) {
         return std::string{filepath.substr(extIdx + 1)};
-    } else
-        return {""};
+    } else {
+        return "";
+    }
 }
 
 // sadly, sdl doesn't give a way to do this
@@ -735,7 +736,7 @@ bool Environment::setWindowSize(int width, int height) { return SDL_SetWindowSiz
 // NOTE: the SDL header states:
 // "You can't change the resizable state of a fullscreen window."
 void Environment::setWindowResizable(bool resizable) {
-    if (m_bIsKMSDRM) return;
+    if(m_bIsKMSDRM) return;
     if(!SDL_SetWindowResizable(m_window, resizable)) {
         debugLog("Failed to set window {:s} (currently {:s}): {:s}", resizable ? "resizable" : "non-resizable",
                  m_bResizable ? "resizable" : "non-resizable", SDL_GetError());
