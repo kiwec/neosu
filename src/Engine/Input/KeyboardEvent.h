@@ -10,7 +10,7 @@ using KEYCODE = uint16_t;
 
 class KeyboardEvent {
    public:
-    KeyboardEvent(KEYCODE keyCode) : keyCode(keyCode) {}
+    KeyboardEvent(KEYCODE keyCode, uint64_t timestamp) : timestamp(timestamp), keyCode(keyCode) {}
 
     constexpr forceinline void consume() { this->bConsumed = true; }
 
@@ -24,6 +24,7 @@ class KeyboardEvent {
     explicit operator KEYCODE() const { return this->keyCode; }
 
    private:
+    uint64_t timestamp;
     KEYCODE keyCode;
     bool bConsumed{false};
 };

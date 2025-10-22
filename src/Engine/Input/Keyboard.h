@@ -19,9 +19,9 @@ class Keyboard final : public InputDevice {
     void removeListener(KeyboardListener *keyboardListener);
     void reset();
 
-    void onKeyDown(KEYCODE keyCode);
-    void onKeyUp(KEYCODE keyCode);
-    void onChar(char16_t charCode);
+    void onKeyDown(KeyboardEvent event);
+    void onKeyUp(KeyboardEvent event);
+    void onChar(KeyboardEvent event);
 
     [[nodiscard]] inline bool isControlDown() const { return this->bControlDown; }
     [[nodiscard]] inline bool isAltDown() const { return this->bAltDown; }

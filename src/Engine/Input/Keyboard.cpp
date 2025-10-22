@@ -38,8 +38,8 @@ void Keyboard::reset() {
     this->bSuperDown = false;
 }
 
-void Keyboard::onKeyDown(KEYCODE keyCode) {
-    switch(keyCode) {
+void Keyboard::onKeyDown(KeyboardEvent event) {
+    switch(event.getKeyCode()) {
         case KEY_LCONTROL:
         case KEY_RCONTROL:
             this->bControlDown = true;
@@ -59,18 +59,16 @@ void Keyboard::onKeyDown(KEYCODE keyCode) {
             break;
     }
 
-    KeyboardEvent e(keyCode);
-
     for(auto &listener : this->listeners) {
-        listener->onKeyDown(e);
-        if(e.isConsumed()) {
+        listener->onKeyDown(event);
+        if(event.isConsumed()) {
             break;
         }
     }
 }
 
-void Keyboard::onKeyUp(KEYCODE keyCode) {
-    switch(keyCode) {
+void Keyboard::onKeyUp(KeyboardEvent event) {
+    switch(event.getKeyCode()) {
         case KEY_LCONTROL:
         case KEY_RCONTROL:
             this->bControlDown = false;
@@ -90,22 +88,18 @@ void Keyboard::onKeyUp(KEYCODE keyCode) {
             break;
     }
 
-    KeyboardEvent e(keyCode);
-
     for(auto &listener : this->listeners) {
-        listener->onKeyUp(e);
-        if(e.isConsumed()) {
+        listener->onKeyUp(event);
+        if(event.isConsumed()) {
             break;
         }
     }
 }
 
-void Keyboard::onChar(char16_t charCode) {
-    KeyboardEvent e(charCode);
-
+void Keyboard::onChar(KeyboardEvent event) {
     for(auto &listener : this->listeners) {
-        listener->onChar(e);
-        if(e.isConsumed()) {
+        listener->onChar(event);
+        if(event.isConsumed()) {
             break;
         }
     }

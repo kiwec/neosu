@@ -604,7 +604,7 @@ void ConsoleBox::clearSuggestions() {
 
 void ConsoleBox::show() {
     if(!this->textbox->isVisible()) {
-        KeyboardEvent fakeEvent(KEY_F1);
+        KeyboardEvent fakeEvent(KEY_F1, Timing::getTicksNS());
         this->toggle(fakeEvent);
     }
 }
