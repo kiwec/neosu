@@ -2773,7 +2773,7 @@ void SongBrowser::rebuildSongButtonsAndVisibleSongButtonsWithSearchMatchSupport(
 }
 
 void SongBrowser::onFilterScoresClicked(CBaseUIButton *button) {
-    const std::vector<std::string> filters{"Local", "Global", "Selected mods", "Country", "Friends"};
+    const std::vector<std::string> filters{"Local", "Global", "Selected mods", "Country", "Friends", "Team"};
 
     this->contextMenu->setPos(button->getPos());
     this->contextMenu->setRelPos(button->getRelPos());

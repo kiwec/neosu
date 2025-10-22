@@ -89,6 +89,9 @@ void fetch_online_scores(const DatabaseBeatmap *beatmap) {
         case 'C':  // Country
             lb_type = '4';
             break;
+        case 'T':  // Team
+            lb_type = '5';
+            break;
         default:  // Global / default
             break;
     }

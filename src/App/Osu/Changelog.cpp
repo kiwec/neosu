@@ -27,7 +27,7 @@ Changelog::Changelog() : ScreenBackable() {
     CHANGELOG v41_06;
     v41_06.title = "41.06";
     v41_06.changes = {
-        R"()",
+        R"(- Added "Team" leaderboard filter)",
     };
     changelogs.push_back(v41_06);
 
