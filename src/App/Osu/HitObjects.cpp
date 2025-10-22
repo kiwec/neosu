@@ -97,41 +97,41 @@ void HitObject::drawHitResult(const std::unique_ptr<Skin> &skin, float hitcircle
 
             case LiveScore::HIT::HIT_50:
                 doScaleOrRotateAnim = skin->getHit50()->getNumImages() == 1;
-                hasParticle = skin->getParticle50() != skin->getMissingTexture();
+                hasParticle = skin->getParticle50() != MISSING_TEXTURE;
                 hitImageScale = (rawHitcircleDiameter / skin->getHit50()->getSizeBaseRaw().x) * osuCoordScaleMultiplier;
                 break;
 
             case LiveScore::HIT::HIT_100:
                 doScaleOrRotateAnim = skin->getHit100()->getNumImages() == 1;
-                hasParticle = skin->getParticle100() != skin->getMissingTexture();
+                hasParticle = skin->getParticle100() != MISSING_TEXTURE;
                 hitImageScale =
                     (rawHitcircleDiameter / skin->getHit100()->getSizeBaseRaw().x) * osuCoordScaleMultiplier;
                 break;
 
             case LiveScore::HIT::HIT_300:
                 doScaleOrRotateAnim = skin->getHit300()->getNumImages() == 1;
-                hasParticle = skin->getParticle300() != skin->getMissingTexture();
+                hasParticle = skin->getParticle300() != MISSING_TEXTURE;
                 hitImageScale =
                     (rawHitcircleDiameter / skin->getHit300()->getSizeBaseRaw().x) * osuCoordScaleMultiplier;
                 break;
 
             case LiveScore::HIT::HIT_100K:
                 doScaleOrRotateAnim = skin->getHit100k()->getNumImages() == 1;
-                hasParticle = skin->getParticle100() != skin->getMissingTexture();
+                hasParticle = skin->getParticle100() != MISSING_TEXTURE;
                 hitImageScale =
                     (rawHitcircleDiameter / skin->getHit100k()->getSizeBaseRaw().x) * osuCoordScaleMultiplier;
                 break;
 
             case LiveScore::HIT::HIT_300K:
                 doScaleOrRotateAnim = skin->getHit300k()->getNumImages() == 1;
-                hasParticle = skin->getParticle300() != skin->getMissingTexture();
+                hasParticle = skin->getParticle300() != MISSING_TEXTURE;
                 hitImageScale =
                     (rawHitcircleDiameter / skin->getHit300k()->getSizeBaseRaw().x) * osuCoordScaleMultiplier;
                 break;
 
             case LiveScore::HIT::HIT_300G:
                 doScaleOrRotateAnim = skin->getHit300g()->getNumImages() == 1;
-                hasParticle = skin->getParticle300() != skin->getMissingTexture();
+                hasParticle = skin->getParticle300() != MISSING_TEXTURE;
                 hitImageScale =
                     (rawHitcircleDiameter / skin->getHit300g()->getSizeBaseRaw().x) * osuCoordScaleMultiplier;
                 break;
@@ -584,7 +584,7 @@ void Circle::drawSliderStartCircle(const std::unique_ptr<Skin> &skin, vec2 pos, 
     if(alpha <= 0.0f || !cv::draw_circles.getBool()) return;
 
     // if no sliderstartcircle image is preset, fallback to default circle
-    if(skin->getSliderStartCircle() == skin->getMissingTexture()) {
+    if(skin->getSliderStartCircle() == MISSING_TEXTURE) {
         drawCircle(skin, pos, hitcircleDiameter, numberScale, hitcircleOverlapScale, number, colorCounter, colorOffset,
                    colorRGBMultiplier, approachScale, alpha, numberAlpha, drawNumber,
                    overrideHDApproachCircle);  // normal
@@ -603,7 +603,7 @@ void Circle::drawSliderStartCircle(const std::unique_ptr<Skin> &skin, vec2 pos, 
 
     // overlay
     const float circleOverlayImageScale = hitcircleDiameter / skin->getSliderStartCircleOverlay2()->getSizeBaseRaw().x;
-    if(skin->getSliderStartCircleOverlay() != skin->getMissingTexture()) {
+    if(skin->getSliderStartCircleOverlay() != MISSING_TEXTURE) {
         if(!skin->getHitCircleOverlayAboveNumber())
             drawHitCircleOverlay(skin->getSliderStartCircleOverlay2(), pos, circleOverlayImageScale, alpha,
                                  colorRGBMultiplier);
@@ -614,7 +614,7 @@ void Circle::drawSliderStartCircle(const std::unique_ptr<Skin> &skin, vec2 pos, 
         drawHitCircleNumber(skin, numberScale, hitcircleOverlapScale, pos, number, numberAlpha, colorRGBMultiplier);
 
     // overlay
-    if(skin->getSliderStartCircleOverlay() != skin->getMissingTexture()) {
+    if(skin->getSliderStartCircleOverlay() != MISSING_TEXTURE) {
         if(skin->getHitCircleOverlayAboveNumber())
             drawHitCircleOverlay(skin->getSliderStartCircleOverlay2(), pos, circleOverlayImageScale, alpha,
                                  colorRGBMultiplier);
@@ -636,7 +636,7 @@ void Circle::drawSliderEndCircle(const std::unique_ptr<Skin> &skin, vec2 pos, fl
     if(alpha <= 0.0f || !cv::slider_draw_endcircle.getBool() || !cv::draw_circles.getBool()) return;
 
     // if no sliderendcircle image is preset, fallback to default circle
-    if(skin->getSliderEndCircle() == skin->getMissingTexture()) {
+    if(skin->getSliderEndCircle() == MISSING_TEXTURE) {
         drawCircle(skin, pos, hitcircleDiameter, numberScale, overlapScale, number, colorCounter, colorOffset,
                    colorRGBMultiplier, approachScale, alpha, numberAlpha, drawNumber, overrideHDApproachCircle);
         return;
@@ -653,7 +653,7 @@ void Circle::drawSliderEndCircle(const std::unique_ptr<Skin> &skin, vec2 pos, fl
     drawHitCircle(skin->getSliderEndCircle(), pos, comboColor, circleImageScale, alpha);
 
     // overlay
-    if(skin->getSliderEndCircleOverlay() != skin->getMissingTexture()) {
+    if(skin->getSliderEndCircleOverlay() != MISSING_TEXTURE) {
         const float circleOverlayImageScale =
             hitcircleDiameter / skin->getSliderEndCircleOverlay2()->getSizeBaseRaw().x;
         drawHitCircleOverlay(skin->getSliderEndCircleOverlay2(), pos, circleOverlayImageScale, alpha,
@@ -2462,10 +2462,10 @@ void Spinner::draw() {
         finishScaleRatio *
             0.20f;  // the spinner grows until reaching 100% during spinning, depending on how many spins are left
 
-    if(skin->getSpinnerBackground() != skin->getMissingTexture() || skin->getVersion() < 2.0f)  // old style
+    if(skin->getSpinnerBackground() != MISSING_TEXTURE || skin->getVersion() < 2.0f)  // old style
     {
         // draw spinner circle
-        if(skin->getSpinnerCircle() != skin->getMissingTexture()) {
+        if(skin->getSpinnerCircle() != MISSING_TEXTURE) {
             const float spinnerCircleScale =
                 globalBaseSize / (globalBaseSkinSize * (skin->isSpinnerCircle2x() ? 2.0f : 1.0f));
 
@@ -2500,7 +2500,7 @@ void Spinner::draw() {
     } else  // new style
     {
         // bottom
-        if(skin->getSpinnerBottom() != skin->getMissingTexture()) {
+        if(skin->getSpinnerBottom() != MISSING_TEXTURE) {
             const float spinnerBottomImageScale =
                 globalBaseSize / (globalBaseSkinSize * (skin->isSpinnerBottom2x() ? 2.0f : 1.0f));
 
@@ -2518,7 +2518,7 @@ void Spinner::draw() {
         }
 
         // top
-        if(skin->getSpinnerTop() != skin->getMissingTexture()) {
+        if(skin->getSpinnerTop() != MISSING_TEXTURE) {
             const float spinnerTopImageScale =
                 globalBaseSize / (globalBaseSkinSize * (skin->isSpinnerTop2x() ? 2.0f : 1.0f));
 
@@ -2536,7 +2536,7 @@ void Spinner::draw() {
         }
 
         // middle
-        if(skin->getSpinnerMiddle2() != skin->getMissingTexture()) {
+        if(skin->getSpinnerMiddle2() != MISSING_TEXTURE) {
             const float spinnerMiddle2ImageScale =
                 globalBaseSize / (globalBaseSkinSize * (skin->isSpinnerMiddle22x() ? 2.0f : 1.0f));
 
@@ -2552,7 +2552,7 @@ void Spinner::draw() {
             }
             g->popTransform();
         }
-        if(skin->getSpinnerMiddle() != skin->getMissingTexture()) {
+        if(skin->getSpinnerMiddle() != MISSING_TEXTURE) {
             const float spinnerMiddleImageScale =
                 globalBaseSize / (globalBaseSkinSize * (skin->isSpinnerMiddle2x() ? 2.0f : 1.0f));
 

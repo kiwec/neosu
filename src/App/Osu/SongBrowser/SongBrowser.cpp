@@ -596,7 +596,7 @@ void SongBrowser::draw() {
     } else if(cv::draw_songbrowser_menu_background_image.getBool()) {
         // menu-background
         Image *backgroundImage = osu->getSkin()->getMenuBackground();
-        if(backgroundImage != nullptr && backgroundImage != osu->getSkin()->getMissingTexture() &&
+        if(backgroundImage != nullptr && backgroundImage != MISSING_TEXTURE &&
            backgroundImage->isReady()) {
             const float scale = Osu::getImageScaleToFillResolution(backgroundImage, osu->getVirtScreenSize());
 

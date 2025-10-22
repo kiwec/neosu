@@ -357,7 +357,7 @@ void HUD::drawCursor(vec2 pos, float alphaMultiplier, bool secondTrail, bool upd
     g->popTransform();
 
     // draw cursor middle
-    if(osu->getSkin()->getCursorMiddle() != osu->getSkin()->getMissingTexture()) {
+    if(osu->getSkin()->getCursorMiddle() != MISSING_TEXTURE) {
         g->setColor(Color(0xffffffff).setA(cv::cursor_alpha.getFloat() * alphaMultiplier));
 
         g->pushTransform();
@@ -503,7 +503,7 @@ void HUD::drawCursorTrailRaw(float alpha, vec2 pos) {
 }
 
 void HUD::drawCursorRipples() {
-    if(osu->getSkin()->getCursorRipple() == osu->getSkin()->getMissingTexture()) return;
+    if(osu->getSkin()->getCursorRipple() == MISSING_TEXTURE) return;
 
     // allow overscale/underscale as usual
     // this does additionally scale with the resolution (which osu doesn't do for some reason for cursor ripples)
@@ -809,7 +809,7 @@ void HUD::drawComboSimple(int combo, float scale) {
         this->drawComboNumber(combo, scale);
 
         // draw 'x' at the end
-        if(osu->getSkin()->getComboX() != osu->getSkin()->getMissingTexture()) {
+        if(osu->getSkin()->getComboX() != MISSING_TEXTURE) {
             g->translate(osu->getSkin()->getComboX()->getWidth() * 0.5f * scale, 0);
             g->drawImage(osu->getSkin()->getComboX());
         }
@@ -836,7 +836,7 @@ void HUD::drawCombo(int combo) {
             this->drawComboNumber(combo, scale);
 
             // draw 'x' at the end
-            if(osu->getSkin()->getComboX() != osu->getSkin()->getMissingTexture()) {
+            if(osu->getSkin()->getComboX() != MISSING_TEXTURE) {
                 g->translate(osu->getSkin()->getComboX()->getWidth() * 0.5f * scale, 0);
                 g->drawImage(osu->getSkin()->getComboX());
             }
@@ -858,7 +858,7 @@ void HUD::drawCombo(int combo) {
         this->drawComboNumber(combo, scale);
 
         // draw 'x' at the end
-        if(osu->getSkin()->getComboX() != osu->getSkin()->getMissingTexture()) {
+        if(osu->getSkin()->getComboX() != MISSING_TEXTURE) {
             g->translate(osu->getSkin()->getComboX()->getWidth() * 0.5f * scale, 0);
             g->drawImage(osu->getSkin()->getComboX());
         }
@@ -991,7 +991,7 @@ void HUD::drawAccuracySimple(float accuracy, float scale) {
         this->drawScoreNumber(accuracyInt, scale, true);
 
         // draw dot '.' between the integer and fractional part
-        if(osu->getSkin()->getScoreDot() != osu->getSkin()->getMissingTexture()) {
+        if(osu->getSkin()->getScoreDot() != MISSING_TEXTURE) {
             g->setColor(0xffffffff);
             g->translate(osu->getSkin()->getScoreDot()->getWidth() * 0.5f * scale, 0);
             g->drawImage(osu->getSkin()->getScoreDot());
@@ -1002,7 +1002,7 @@ void HUD::drawAccuracySimple(float accuracy, float scale) {
         this->drawScoreNumber(accuracyFrac, scale, true);
 
         // draw '%' at the end
-        if(osu->getSkin()->getScorePercent() != osu->getSkin()->getMissingTexture()) {
+        if(osu->getSkin()->getScorePercent() != MISSING_TEXTURE) {
             g->setColor(0xffffffff);
             g->translate(osu->getSkin()->getScorePercent()->getWidth() * 0.5f * scale, 0);
             g->drawImage(osu->getSkin()->getScorePercent());
@@ -1028,11 +1028,11 @@ void HUD::drawAccuracy(float accuracy) {
         const int numDigits = (accuracyInt > 99 ? 5 : 4);
         const float xOffset =
             osu->getSkin()->getScore0()->getWidth() * scale * numDigits +
-            (osu->getSkin()->getScoreDot() != osu->getSkin()->getMissingTexture()
+            (osu->getSkin()->getScoreDot() != MISSING_TEXTURE
                  ? osu->getSkin()->getScoreDot()->getWidth()
                  : 0) *
                 scale +
-            (osu->getSkin()->getScorePercent() != osu->getSkin()->getMissingTexture()
+            (osu->getSkin()->getScorePercent() != MISSING_TEXTURE
                  ? osu->getSkin()->getScorePercent()->getWidth()
                  : 0) *
                 scale -
@@ -1048,7 +1048,7 @@ void HUD::drawAccuracy(float accuracy) {
         this->drawScoreNumber(accuracyInt, scale, true);
 
         // draw dot '.' between the integer and fractional part
-        if(osu->getSkin()->getScoreDot() != osu->getSkin()->getMissingTexture()) {
+        if(osu->getSkin()->getScoreDot() != MISSING_TEXTURE) {
             g->setColor(0xffffffff);
             g->translate(osu->getSkin()->getScoreDot()->getWidth() * 0.5f * scale, 0);
             g->drawImage(osu->getSkin()->getScoreDot());
@@ -1059,7 +1059,7 @@ void HUD::drawAccuracy(float accuracy) {
         this->drawScoreNumber(accuracyFrac, scale, true);
 
         // draw '%' at the end
-        if(osu->getSkin()->getScorePercent() != osu->getSkin()->getMissingTexture()) {
+        if(osu->getSkin()->getScorePercent() != MISSING_TEXTURE) {
             g->setColor(0xffffffff);
             g->translate(osu->getSkin()->getScorePercent()->getWidth() * 0.5f * scale, 0);
             g->drawImage(osu->getSkin()->getScorePercent());

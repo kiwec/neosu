@@ -49,8 +49,6 @@ class Skin final {
     [[nodiscard]] inline std::string getFilePath() const { return this->sFilePath; }
 
     // raw
-    [[nodiscard]] inline Image *getMissingTexture() const { return MISSING_TEXTURE; }
-
     [[nodiscard]] inline Image *getHitCircle() const { return this->hitCircle; }
     [[nodiscard]] inline SkinImage *getHitCircleOverlay2() const { return this->hitCircleOverlay2; }
     [[nodiscard]] inline Image *getApproachCircle() const { return this->approachCircle; }

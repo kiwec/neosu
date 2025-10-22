@@ -1739,7 +1739,7 @@ void BeatmapInterface::draw() {
 
 void BeatmapInterface::drawSmoke() {
     Image *smoke = this->getSkin()->getCursorSmoke();
-    if(smoke == this->getSkin()->getMissingTexture()) return;
+    if(smoke == MISSING_TEXTURE) return;
 
     // We're not using this->iCurMusicPos, because we want the user to be able
     // to draw while the music is loading / before the map starts.

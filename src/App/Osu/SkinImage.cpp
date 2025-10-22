@@ -40,7 +40,7 @@ SkinImage::SkinImage(Skin* skin, const std::string& skinElementName, vec2 baseSi
 
         IMAGE missingTexture;
 
-        missingTexture.img = this->skin->getMissingTexture();
+        missingTexture.img = MISSING_TEXTURE;
         missingTexture.scale = 2;
 
         this->images.push_back(missingTexture);
@@ -216,7 +216,7 @@ bool SkinImage::loadImage(const std::string& skinElementName, bool ignoreDefault
 
 SkinImage::~SkinImage() {
     for(auto& image : this->images) {
-        if(image.img != this->skin->getMissingTexture()) resourceManager->destroyResource(image.img);
+        if(image.img != MISSING_TEXTURE) resourceManager->destroyResource(image.img);
     }
     this->images.clear();
 
@@ -409,7 +409,7 @@ SkinImage::IMAGE SkinImage::getImageForCurrentFrame() {
     else {
         IMAGE image;
 
-        image.img = this->skin->getMissingTexture();
+        image.img = MISSING_TEXTURE;
         image.scale = 1.0f;
 
         return image;

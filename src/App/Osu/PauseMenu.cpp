@@ -73,7 +73,7 @@ void PauseMenu::draw() {
         else
             image = osu->getSkin()->getFailBackground();
 
-        if(image != osu->getSkin()->getMissingTexture()) {
+        if(image != MISSING_TEXTURE) {
             const float scale = Osu::getImageScaleToFillResolution(image, osu->getVirtScreenSize());
             const vec2 centerTrans = (osu->getVirtScreenSize() / 2.f);
 
@@ -297,7 +297,7 @@ void PauseMenu::updateLayout() {
     float maxHeight = 0.0f;
     for(auto &button : this->buttons) {
         Image *img = button->getImage();
-        if(img == nullptr) img = osu->getSkin()->getMissingTexture();
+        if(img == nullptr) img = MISSING_TEXTURE;
 
         const float scale = osu->getUIScale(256) / (411.0f * (osu->getSkin()->isPauseContinue2x() ? 2.0f : 1.0f));
 
