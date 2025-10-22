@@ -31,7 +31,7 @@
 
 #define STB_IMAGE_IMPLEMENTATION
 
-#include <stb_image.h>
+#include "stb_image.h"
 /* ==== end stb_image config ==== */
 
 #include "Engine.h"

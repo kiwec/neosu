@@ -1314,10 +1314,10 @@ void Osu::saveScreenshot() {
     while(env->fileExists(fmt::format(NEOSU_SCREENSHOTS_PATH "/screenshot{}.png", screenshotNumber)))
         screenshotNumber++;
 
-    const auto screenshotFilename{fmt::format(NEOSU_SCREENSHOTS_PATH "/screenshot{}.png", screenshotNumber)};
+    const auto screenshotFilename = fmt::format(NEOSU_SCREENSHOTS_PATH "/screenshot{}.png", screenshotNumber);
 
     constexpr u8 screenshotChannels{3};
-    std::vector<u8> pixels = g->getScreenshot(false);
+    std::vector<u8> pixels = g->getScreenshot(screenshotChannels > 3 /* withAlpha = false */);
 
     if(pixels.empty()) {
         static uint8_t once = 0;
@@ -1337,9 +1337,8 @@ void Osu::saveScreenshot() {
                                         CHAT_TOAST, [screenshotFilename] { env->openFileBrowser(screenshotFilename); });
 
     // don't need cropping
-    if(static_cast<i32>(innerWidth) == static_cast<i32>(outerWidth) &&
-       static_cast<i32>(innerHeight) == static_cast<i32>(outerHeight)) {
-        Image::saveToImage(pixels.data(), static_cast<i32>(innerWidth), static_cast<i32>(innerHeight),
+    if(!cv::crop_screenshots.getBool() || (g->getResolution() == this->vInternalResolution)) {
+        Image::saveToImage(pixels.data(), static_cast<i32>(outerWidth), static_cast<i32>(outerHeight),
                            screenshotChannels, screenshotFilename);
         return;
     }

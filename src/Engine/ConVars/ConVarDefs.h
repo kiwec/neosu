@@ -885,6 +885,8 @@ CONVAR(consolebox_draw_helptext, "consolebox_draw_helptext"sv, true, CLIENT | SK
        "whether convar suggestions also draw their helptext"sv);
 CONVAR(consolebox_draw_preview, "consolebox_draw_preview"sv, true, CLIENT | SKINS | SERVER,
        "whether the textbox shows the topmost suggestion while typing"sv);
+CONVAR(crop_screenshots, "crop_screenshots"sv, true, CLIENT,
+       "whether to crop screenshots to the letterboxed resolution"sv);
 CONVAR(cursor_alpha, "cursor_alpha"sv, 1.0f, CLIENT | SKINS | SERVER);
 CONVAR(cursor_expand_duration, "cursor_expand_duration"sv, 0.1f, CLIENT | SKINS | SERVER);
 CONVAR(cursor_expand_scale_multiplier, "cursor_expand_scale_multiplier"sv, 1.3f, CLIENT | SKINS | SERVER);
