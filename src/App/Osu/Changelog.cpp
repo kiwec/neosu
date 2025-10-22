@@ -24,6 +24,15 @@ Changelog::Changelog() : ScreenBackable() {
 
     std::vector<CHANGELOG> changelogs;
 
+    CHANGELOG v41_05;
+    v41_05.title = "41.05 (2025-10-22)";
+    v41_05.changes = {
+        R"(- Fixed cursor being visible at screen edges)",
+        R"(- Fixed random crashes while online)",
+        R"(- Fixed some skins not loading properly)",
+    };
+    changelogs.push_back(v41_05);
+
     CHANGELOG v41_04;
     v41_04.title = "41.04 (2025-10-21)";
     v41_04.changes = {
