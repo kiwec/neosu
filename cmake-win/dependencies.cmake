@@ -58,14 +58,14 @@ set(FMT_URL "https://github.com/fmtlib/fmt/archive/${FMT_VERSION}.tar.gz")
 set(FMT_HASH "SHA512=c4ab814c20fbad7e3f0ae169125a4988a2795631194703251481dc36b18da65c886c4faa9acd046b0a295005217b3689eb0126108a9ba5aac2ca909aae263c2f")
 set_download_name("fmt" "${FMT_VERSION}" "${FMT_URL}")
 
-set(SPDLOG_VERSION "1.15.3")
+set(SPDLOG_VERSION "1.16.0")
 set(SPDLOG_URL "https://github.com/gabime/spdlog/archive/refs/tags/v${SPDLOG_VERSION}.tar.gz")
-set(SPDLOG_HASH "SHA512=21c35f4091850ea3a0cd6a24867e06e943df70d76cd5a7ec0b15a33e0e9e0cc3584ed7930e1ac6f347e7e06f0e002d0e759884eaf05310014e24ea0e0419fcc4")
+set(SPDLOG_HASH "SHA512=3c330162201fb405a08040327e08bc3f90336f431b8865d250e1cf171e48eb8a07a0245a8f60118022869de1ee38209b14da76bf6bcc2ec3da60f1853adaf958")
 set_download_name("spdlog" "${SPDLOG_VERSION}" "${SPDLOG_URL}")
 
-set(GLM_VERSION "1.0.1")
+set(GLM_VERSION "1.0.2")
 set(GLM_URL "https://github.com/g-truc/glm/archive/refs/tags/${GLM_VERSION}.tar.gz")
-set(GLM_HASH "SHA512=c6c6fa1ea7a7e97820e36ee042a78be248ae828c99c1b1111080d9bf334a5160c9993a70312351c92a867cd49907c95f9f357c8dfe2bc29946da6e83e27ba20c")
+set(GLM_HASH "SHA512=e66e4f192f6579128198c47ed20442dda13c741f371b447722b7449200f05785e1b69386a465febf97f33b437f6eb69b3fb282e1e9eabf6261eb7b57998cd68c")
 set_download_name("glm" "${GLM_VERSION}" "${GLM_URL}")
 
 set(LZMA_VERSION "5.8.1")
@@ -73,9 +73,9 @@ set(LZMA_URL "https://github.com/tukaani-project/xz/releases/download/v${LZMA_VE
 set(LZMA_HASH "SHA512=151b2a47fdf00274c4fd71ceada8fb6c892bdac44070847ebf3259e602b97c95ee5ee88974e03d7aa821ab4f16d5c38e50dfb2baf660cf39c199878a666e19ad")
 set_download_name("lzma" "${LZMA_VERSION}" "${LZMA_URL}")
 
-set(LIBARCHIVE_VERSION "3.8.1")
+set(LIBARCHIVE_VERSION "3.8.2")
 set(LIBARCHIVE_URL "https://github.com/libarchive/libarchive/releases/download/v${LIBARCHIVE_VERSION}/libarchive-${LIBARCHIVE_VERSION}.tar.gz")
-set(LIBARCHIVE_HASH "SHA512=0eed931378e998590ec97b191322e5c48019cce447d9dbbbcbadd3008e26fdf000a11c45cbeefa0567bd101422afc0da10248220afa280dea1a9b4f91d8ee653")
+set(LIBARCHIVE_HASH "SHA512=8b752a7a22289fc18a05f9a153dbb2fdf4d73beb20bb3f85f60432f680b7f2e47d4fdcd7622be7524d769dfbb1d19c620f90f0c1e0d8f235c53f708c69b4937c")
 set_download_name("libarchive" "${LIBARCHIVE_VERSION}" "${LIBARCHIVE_URL}")
 
 set(MPG123_VERSION "fe143d4e9c885ec34596c561481dff96357fd797")
@@ -98,9 +98,9 @@ set(NSYNC_URL "https://github.com/google/nsync/archive/refs/tags/${NSYNC_VERSION
 set(NSYNC_HASH "SHA512=af463d768c9e4bacc5796410c6d368b8ad0cc0fcbae28ec35fbe7937e7939de1ccad97f51b4940e384b677bb8fbc9963a438f7687e002613f1669ab93e459f60")
 set_download_name("nsync" "${NSYNC_VERSION}" "${NSYNC_URL}")
 
-set(SIMDUTF_VERSION "7.4.0")
+set(SIMDUTF_VERSION "7.5.0")
 set(SIMDUTF_URL "https://github.com/simdutf/simdutf/archive/refs/tags/v${SIMDUTF_VERSION}.tar.gz")
-set(SIMDUTF_HASH "SHA512=b1f7da45533682ff3ce3fa114c7a59674e3a73880296e2f7e24a9279bb0e2ebe179f66be83d014339860063bf53484959f01a4ba3dd8c25ef8ba56cd92021fc4")
+set(SIMDUTF_HASH "SHA512=c64e048258787624c2afa0619c4b2a89c4a7f1992e56b4cd72f956dc41023bd0c423fd476a8dfeeacc48e131c19d771a1189cce29e2dc2256170f72a3c356fc4")
 set_download_name("simdutf" "${SIMDUTF_VERSION}" "${SIMDUTF_URL}")
 
 set(CURL_VERSION "8.16.0")
