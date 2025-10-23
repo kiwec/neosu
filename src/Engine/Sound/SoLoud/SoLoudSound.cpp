@@ -161,7 +161,7 @@ void SoLoudSound::setPositionMS(u32 ms) {
     this->force_sync_position_next = true;
 
     // reset position interp vars with the new position
-    this->interpolator.reset(getStreamPositionInSeconds() * 1000.0, Timing::getTimeReal(), getSpeed());
+    this->interpolator.reset(msD, Timing::getTimeReal(), getSpeed());
 }
 
 void SoLoudSound::setSpeed(float speed) {

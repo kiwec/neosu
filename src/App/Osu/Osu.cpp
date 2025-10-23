@@ -620,14 +620,14 @@ void Osu::update() {
     // main playfield update
     this->bSeeking = false;
     if(this->isInPlayMode()) {
-        map_iface->update();
+        this->map_iface->update();
 
         // NOTE: force keep loaded background images while playing
         this->backgroundImageHandler->scheduleFreezeCache();
 
         // skip button clicking
-        bool can_skip = map_iface->isInSkippableSection() && !this->bClickedSkipButton;
-        can_skip &= !map_iface->isPaused() && !this->volumeOverlay->isBusy();
+        bool can_skip = this->map_iface->isInSkippableSection() && !this->bClickedSkipButton;
+        can_skip &= !this->map_iface->isPaused() && !this->volumeOverlay->isBusy();
         if(can_skip) {
             const bool isAnyOsuKeyDown =
                 (this->bKeyboardKey1Down || this->bKeyboardKey2Down || this->bMouseKey1Down || this->bMouseKey2Down);
@@ -651,18 +651,18 @@ void Osu::update() {
 
         // skipping
         if(this->bSkipScheduled) {
-            const bool isLoading = map_iface->isLoading();
+            const bool isLoading = this->map_iface->isLoading();
 
-            if(map_iface->isInSkippableSection() && !map_iface->isPaused() && !isLoading) {
-                bool can_skip_intro = (cv::skip_intro_enabled.getBool() && map_iface->iCurrentHitObjectIndex < 1);
-                bool can_skip_break = (cv::skip_breaks_enabled.getBool() && map_iface->iCurrentHitObjectIndex > 0);
+            if(this->map_iface->isInSkippableSection() && !this->map_iface->isPaused() && !isLoading) {
+                bool can_skip_intro = (cv::skip_intro_enabled.getBool() && this->map_iface->iCurrentHitObjectIndex < 1);
+                bool can_skip_break = (cv::skip_breaks_enabled.getBool() && this->map_iface->iCurrentHitObjectIndex > 0);
                 if(BanchoState::is_playing_a_multi_map()) {
                     can_skip_intro = BanchoState::room.all_players_skipped;
                     can_skip_break = false;
                 }
 
                 if(can_skip_intro || can_skip_break) {
-                    map_iface->skipEmptySection();
+                    this->map_iface->skipEmptySection();
                 }
             }
 
@@ -671,35 +671,35 @@ void Osu::update() {
 
         // Reset m_bClickedSkipButton on mouse up
         // We only use m_bClickedSkipButton to prevent seeking when clicking the skip button
-        if(this->bClickedSkipButton && !map_iface->isInSkippableSection()) {
+        if(this->bClickedSkipButton && !this->map_iface->isInSkippableSection()) {
             if(!mouse->isLeftDown()) {
                 this->bClickedSkipButton = false;
             }
         }
 
         // scrubbing/seeking
-        this->bSeeking = (this->bSeekKey || map_iface->is_watching);
+        this->bSeeking = (this->bSeekKey || this->map_iface->is_watching);
         this->bSeeking &= !this->volumeOverlay->isBusy();
         this->bSeeking &= !BanchoState::is_playing_a_multi_map() && !this->bClickedSkipButton;
         this->bSeeking &= !BanchoState::spectating;
         if(this->bSeeking) {
             f32 mousePosX = std::round(mouse->getPos().x);
             f32 percent = std::clamp<f32>(mousePosX / (f32)this->getVirtScreenWidth(), 0.0f, 1.0f);
-            f32 seek_to_ms = percent * (map_iface->getStartTimePlayable() + map_iface->getLengthPlayable());
+            f32 seek_to_ms = percent * (this->map_iface->getStartTimePlayable() + this->map_iface->getLengthPlayable());
 
             if(mouse->isLeftDown()) {
                 if(mousePosX != this->fPrevSeekMousePosX || !cv::scrubbing_smooth.getBool()) {
                     this->fPrevSeekMousePosX = mousePosX;
 
                     // special case: allow cancelling the failing animation here
-                    if(map_iface->hasFailed()) map_iface->cancelFailing();
+                    if(this->map_iface->hasFailed()) this->map_iface->cancelFailing();
 
                     // when seeking during gameplay, add nofail for convenience
-                    if(!map_iface->is_watching && !cv::mod_nofail.getBool()) {
+                    if(!this->map_iface->is_watching && !cv::mod_nofail.getBool()) {
                         cv::mod_nofail.setValue(true);
                     }
 
-                    map_iface->seekMS(seek_to_ms);
+                    this->map_iface->seekMS(seek_to_ms);
                 }
             } else {
                 this->fPrevSeekMousePosX = -1.0f;
@@ -715,8 +715,8 @@ void Osu::update() {
             this->fQuickRetryTime = 0.0f;
 
             if(!BanchoState::is_playing_a_multi_map()) {
-                map_iface->restart(true);
-                map_iface->update();
+                this->map_iface->restart(true);
+                this->map_iface->update();
                 this->pauseMenu->setVisible(false);
             }
         }
