@@ -371,6 +371,7 @@ void Engine::onFocusGained() {
 
     logIfCV(debug_engine, "got focus");
 
+    if(soundEngine) soundEngine->onFocusGained(); // switch shared->exclusive if applicable
     if(app) app->onFocusGained();
 }
 
@@ -383,6 +384,7 @@ void Engine::onFocusLost() {
         keyboard->reset();
     }
 
+    if(soundEngine) soundEngine->onFocusLost(); // switch shared->exclusive if applicable
     if(app) app->onFocusLost();
 
     // auto minimize on certain conditions

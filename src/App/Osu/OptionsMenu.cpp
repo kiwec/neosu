@@ -788,6 +788,17 @@ OptionsMenu::OptionsMenu() : ScreenBackable() {
 
             // need to use a change callback here because we already have a single-arg callback for the convar...
             cv::snd_soloud_backend.setCallback([](float /**/, float /**/) -> void { setActiveColors(); });
+
+            this->addCheckbox("Auto-disable exclusive mode",
+                              "Toggle exclusive mode off/on\nwhen losing/gaining focus, if already\nin exclusive mode.",
+                              &cv::snd_disable_exclusive_unfocused);
+
+            this->elemContainers.back()->render_condition = {[]() -> bool {
+                if constexpr(!Env::cfg(OS::WINDOWS)) return false;
+                bool ret =
+                    soundEngine ? soundEngine->getOutputDriverType() == SoundEngine::OutputDriver::SOLOUD_MA : false;
+                return ret;
+            }};
         }
 
         // Dirty...
@@ -2612,6 +2623,11 @@ void OptionsMenu::onOutputDeviceSelect2(const UString &outputDeviceName, int /*i
         if(device.name != outputDeviceName) continue;
 
         soundEngine->setOutputDevice(device);
+        if((soundEngine->getOutputDriverType() == SoundEngine::OutputDriver::SOLOUD_MA)) {
+            if(device.name.find("(Exclusive)") != -1 && soundEngine->getOutputDeviceName().find("(Exclusive)") == -1) {
+                osu->getNotificationOverlay()->addToast("Tried to enable exclusive mode, but couldn't :(", ERROR_TOAST);
+            }
+        }
         if(this->outputDeviceLabel != nullptr) this->outputDeviceLabel->setText(soundEngine->getOutputDeviceName());
         return;
     }
@@ -3726,6 +3742,7 @@ void OptionsMenu::save() {
             SString::trim_inplace(line);
             if(line.empty()) continue;
             if(line.starts_with('#') || line.starts_with("//")) {
+                if(!line.ends_with('\n')) line.push_back('\n');
                 write_lines.append(line);
                 continue;
             }
@@ -3741,6 +3758,7 @@ void OptionsMenu::save() {
             }
 
             if(!cvar_found) {
+                if(!line.ends_with('\n')) line.push_back('\n');
                 write_lines.append(line);
                 continue;
             }

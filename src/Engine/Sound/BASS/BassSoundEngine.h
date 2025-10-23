@@ -21,6 +21,8 @@ class BassSoundEngine final : public SoundEngine {
 
     void restart() override;
     void shutdown() override;
+    void onFocusGained() override { ; }  // TODO: implement shared/exclusive toggling
+    void onFocusLost() override { ; }
 
     bool play(Sound *snd, f32 pan = 0.0f, f32 pitch = 0.f, f32 volume = 1.f, bool startPaused = false) override;
     void pause(Sound *snd) override;

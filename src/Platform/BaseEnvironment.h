@@ -288,6 +288,10 @@ typedef void* HWND;
 #define strcasecmp _stricmp
 #endif
 
+#ifndef strncasecmp
+#define strncasecmp _strnicmp
+#endif
+
 #if defined(_MSC_VER)
 typedef SSIZE_T ssize_t;
 #endif

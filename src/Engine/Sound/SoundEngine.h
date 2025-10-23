@@ -57,6 +57,8 @@ class SoundEngine {
     virtual void restart() = 0;
     virtual void shutdown() { ; }
     virtual void update() { ; }
+    virtual void onFocusGained() = 0;
+    virtual void onFocusLost() = 0;
 
     // Here, 'volume' means the volume for this play() call, NOT for the sound itself
     // e.g. when calling setVolume(), you're applying a modifier to all currently playing samples of that sound

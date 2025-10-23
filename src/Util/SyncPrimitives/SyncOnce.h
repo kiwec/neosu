@@ -22,7 +22,7 @@ using namespace nsync;
 // ===================================================================
 class nsync_once_flag {
    private:
-    nsync_once m_flag = NSYNC_ONCE_INIT;
+    nsync_once m_flag{};
 
    public:
     constexpr nsync_once_flag() noexcept = default;
@@ -36,11 +36,13 @@ class nsync_once_flag {
     nsync_once* native_handle() noexcept { return &m_flag; }
 };
 
+using once_flag = nsync_once_flag;
+
 // ===================================================================
 // call_once: execute callable exactly once
 // ===================================================================
 template <typename Callable, typename... Args>
-void call_once(nsync_once_flag& flag, Callable&& f, Args&&... args) {
+void call_once(once_flag& flag, Callable&& f, Args&&... args) {
     // check if already completed (2)
     if(flag.native_handle()->load(std::memory_order_relaxed) == 2) {
         return;

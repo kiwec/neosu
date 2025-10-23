@@ -27,6 +27,7 @@ Changelog::Changelog() : ScreenBackable() {
     CHANGELOG v41_06;
     v41_06.title = "41.06";
     v41_06.changes = {
+        R"(- Added WASAPI exclusive support to SoLoud when using MiniAudio)",
         R"(- Added "Team" leaderboard filter)",
     };
     changelogs.push_back(v41_06);

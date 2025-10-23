@@ -171,6 +171,10 @@ CONVAR(snd_soloud_hardcoded_offset, "snd_soloud_hardcoded_offset"sv, -18, CLIENT
 CONVAR(snd_soloud_prefer_ffmpeg, "snd_soloud_prefer_ffmpeg"sv, 0, CLIENT,
        "(0=no, 1=streams, 2=streams+samples) prioritize using ffmpeg as a decoder (if available) over other decoder "
        "backends"sv);
+CONVAR(snd_soloud_prefer_exclusive, "snd_soloud_prefer_exclusive"sv, false, CLIENT,
+       "try initializing in exclusive mode first for MiniAudio on Windows"sv);
+CONVAR(snd_disable_exclusive_unfocused, "snd_disable_exclusive_unfocused"sv, true, CLIENT,
+       "disable WASAPI exclusive mode when losing focus (currently SoLoud+MiniAudio only)"sv);
 CONVAR(volume_change_interval, "volume_change_interval"sv, 0.05f, CLIENT | SKINS | SERVER);
 CONVAR(volume_effects, "volume_effects"sv, 1.0f, CLIENT | SKINS | SERVER);
 CONVAR(volume_master, "volume_master"sv, 1.0f, CLIENT | SKINS | SERVER);

@@ -6,10 +6,9 @@
 #include "SoundEngine.h"
 #ifdef MCENGINE_FEATURE_SOLOUD
 
-#include "UString.h"
-
 #include <map>
 #include <memory>
+#include <optional>
 
 // fwd decls to avoid include external soloud headers here
 namespace SoLoud {
@@ -27,6 +26,8 @@ class SoLoudSoundEngine final : public SoundEngine {
     ~SoLoudSoundEngine() override;
 
     void restart() override;
+    void onFocusGained() override;
+    void onFocusLost() override;
 
     bool play(Sound *snd, f32 pan = 0.f, f32 pitch = 0.f, f32 playVolume = 1.f, bool startPaused = false) override;
     void pause(Sound *snd) override;
@@ -43,7 +44,8 @@ class SoLoudSoundEngine final : public SoundEngine {
    private:
     // internal helpers for play()
     bool playSound(SoLoudSound *soloudSound, f32 pan, f32 pitch, f32 playVolume, bool startPaused);
-    bool updateExistingSound(SoLoudSound *soloudSound, SOUNDHANDLE handle, f32 pan, f32 pitch, f32 playVolume, bool startPaused);
+    bool updateExistingSound(SoLoudSound *soloudSound, SOUNDHANDLE handle, f32 pan, f32 pitch, f32 playVolume,
+                             bool startPaused);
 
     void setVolumeGradual(SOUNDHANDLE handle, float targetVol, float fadeTimeMs = 10.0f);
     void updateOutputDevices(bool printInfo) override;
@@ -52,11 +54,17 @@ class SoLoudSoundEngine final : public SoundEngine {
 
     void setOutputDeviceByName(std::string_view desiredDeviceName);
     bool setOutputDeviceInt(const OUTPUT_DEVICE &desiredDevice, bool force = false);
+    bool switchShareModes(const std::optional<OUTPUT_DEVICE> &toKnownDevice = {});
 
-    int iMaxActiveVoices;
     void onMaxActiveChange(float newMax);
+    void updateLastDevice();
 
     std::map<int, SoLoud::DeviceInfo> mSoloudDevices;
+
+    std::optional<OUTPUT_DEVICE> lastMADevice;  // for switching between them (remember existing)
+    std::optional<OUTPUT_DEVICE> lastSDLDevice;
+
+    int iMaxActiveVoices;
 
     bool bReady{false};
     bool bWasBackendEverReady{false};
