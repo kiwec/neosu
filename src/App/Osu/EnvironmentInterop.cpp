@@ -119,6 +119,7 @@ bool sdl_windows_message_hook(void *userdata, MSG *msg) {
     if(!userdata || !msg || msg->message != neosu_msg) {
         return true;
     }
+    Environment *env_ptr{static_cast<Environment *>(userdata)};
 
     // check the custom registered message
 
@@ -170,13 +171,15 @@ bool sdl_windows_message_hook(void *userdata, MSG *msg) {
             // handle the arguments
             if(!args.empty()) {
                 debugLog("handling external arguments: {}", SString::join(args));
-                Environment *env_ptr{static_cast<Environment *>(userdata)};
                 env_ptr->getEnvInterop().handle_cmdline_args(args);
             }
         }
         CloseHandle(hMapFile);
         signal_completion();
     }
+
+    // focus current window
+    env_ptr->focus();
 
     return false;  // we already processed everything, don't fallthrough to sdl
 }

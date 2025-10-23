@@ -643,11 +643,14 @@ void Environment::openFileBrowser(std::string_view initialpath) const noexcept {
 }
 
 void Environment::focus() {
+    if(m_bMinimized) {
+        if(!SDL_RestoreWindow(m_window)) {
+            debugLog("Failed to restore window: {:s}", SDL_GetError());
+        }
+    }
     if(!SDL_RaiseWindow(m_window)) {
         debugLog("Failed to focus window: {:s}", SDL_GetError());
-        return;
     }
-    m_bHasFocus = true;
 }
 
 void Environment::center() {
@@ -664,8 +667,10 @@ void Environment::minimize() {
     m_bHasFocus = false;
     m_bMinimized = true;
     if(m_bFullscreen || m_bFullscreenWindowedBorderless) {
-        SDL_SetWindowFullscreen(m_window, false);
         m_bRestoreFullscreen = true;
+        syncWindow();
+        SDL_SetWindowFullscreen(m_window, false);
+        syncWindow();
     }
     if(!SDL_MinimizeWindow(m_window)) {
         debugLog("Failed to minimize window: {:s}", SDL_GetError());
@@ -680,7 +685,6 @@ void Environment::maximize() {
         debugLog("Failed to maximize window: {:s}", SDL_GetError());
         return;
     }
-    m_bHasFocus = true;
 }
 
 // TODO: implement exclusive fullscreen for dx11 backend

@@ -245,8 +245,9 @@ SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
 
                 case SDL_EVENT_WINDOW_RESTORED:
                     if(m_bMinimized && m_bRestoreFullscreen) {
-                        m_bRestoreFullscreen = false;
+                        syncWindow();
                         SDL_SetWindowFullscreen(m_window, true);
+                        syncWindow();
                     }
                     m_bMinimized = false;
                     m_bHasFocus = true;
@@ -257,6 +258,7 @@ SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
                 case SDL_EVENT_WINDOW_ENTER_FULLSCREEN:
                     cv::fullscreen.setValue(true, false);
                     m_bFullscreen = true;
+                    m_bRestoreFullscreen = false;
                     break;
 
                 case SDL_EVENT_WINDOW_LEAVE_FULLSCREEN:
@@ -269,7 +271,10 @@ SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
                     // don't trust the event coordinates, the window might have magically been resized in between somehow
                     // vec2(static_cast<float>(event->window.data1), static_cast<float>(event->window.data2)));
                     if(!m_bMinimized) {
-                        m_engine->requestResolutionChange(getWindowSize());
+                        vec2 resize = (m_bFullscreen || m_bFullscreenWindowedBorderless || m_bRestoreFullscreen)
+                                          ? getNativeScreenSize()
+                                          : getWindowSize();
+                        m_engine->requestResolutionChange(resize);
                         setFgFPS();
                     }
                     break;
