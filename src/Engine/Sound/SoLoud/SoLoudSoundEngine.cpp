@@ -693,7 +693,7 @@ bool SoLoudSoundEngine::initializeOutputDevice(const OUTPUT_DEVICE &device) {
             SoLoud::DeviceInfo currentDevice{};
             SoLoud::result res = soloud->getCurrentDevice(&currentDevice);
 
-            if(res != SoLoud::SO_NO_ERROR) {
+            if(res == SoLoud::SO_NO_ERROR) {
                 const bool nowExclusive = currentDevice.isExclusive;
                 cv::snd_soloud_prefer_exclusive.setValue(nowExclusive);
 
