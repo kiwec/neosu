@@ -68,6 +68,13 @@ configure_file(
     @ONLY
 )
 
+# Generate build_timestamp.h
+configure_file(
+    "${CMAKE_SOURCE_DIR}/../build_timestamp.h.in"
+    "${CMAKE_BINARY_DIR}/build_timestamp.h"
+    @ONLY
+)
+
 # Set CMAKE_PREFIX_PATH to help find_package locate our dependencies
 list(PREPEND CMAKE_PREFIX_PATH "${DEPS_INSTALL_DIR}")
 

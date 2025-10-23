@@ -51,6 +51,8 @@ release/
 /src/config.h
 /src/config.h.in
 /src/config.h.in~
+/src/build_timestamp.h
+/src/build_timestamp.h.in~
 /config.log
 /config.status
 /src/stamp-h1

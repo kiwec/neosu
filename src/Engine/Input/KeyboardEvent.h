@@ -17,6 +17,7 @@ class KeyboardEvent {
     [[nodiscard]] constexpr forceinline bool isConsumed() const { return this->bConsumed; }
     [[nodiscard]] constexpr forceinline KEYCODE getKeyCode() const { return this->keyCode; }
     [[nodiscard]] constexpr forceinline char16_t getCharCode() const { return this->keyCode; }  // these are equivalent
+    [[nodiscard]] constexpr forceinline uint64_t getTimestamp() const { return this->timestamp; }
 
     inline bool operator==(const KEYCODE &rhs) const { return this->keyCode == rhs; }
     inline bool operator!=(const KEYCODE &rhs) const { return this->keyCode != rhs; }

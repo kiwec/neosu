@@ -75,6 +75,7 @@ extern void _osuOptionsSliderQualityWrapper(float);
 
 #include "KeyBindings.h"
 #include "BanchoNetworking.h"  // defines some things we need like OSU_VERSION_DATEONLY
+#include "build_timestamp.h"
 namespace SliderRenderer {
 extern void onUniformConfigChanged();
 }

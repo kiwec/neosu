@@ -1,0 +1,7 @@
+/* Build timestamp for differentiating dev builds */
+#ifndef BUILD_TIMESTAMP_H
+#define BUILD_TIMESTAMP_H
+
+#define BUILD_TIMESTAMP "@BUILD_TIMESTAMP@"
+
+#endif /* BUILD_TIMESTAMP_H */

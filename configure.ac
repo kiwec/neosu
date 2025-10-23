@@ -11,8 +11,8 @@ AS_IF([test "$CI_DEVBUILD" = "1"], [
 
 AC_DEFINE_UNQUOTED([NEOSU_VERSION], [PACKAGE_VERSION], [Defined to the version of neosu being built.])
 
-_tstamp="\""$(TZ=UTC date +%y%m%d%H%M)"\""
-AC_DEFINE_UNQUOTED([BUILD_TIMESTAMP], [$_tstamp], [Defined to the UTC YYMMDDHHMM of the last run of ./configure. Used for differentiating dev builds.])
+_tstamp=$(TZ=UTC date +%y%m%d%H%M)
+AC_SUBST([BUILD_TIMESTAMP], [$_tstamp])
 
 # shut up wine (i need to find what part of configure is doing the "checking if we are cross compiling" check and remove it)
 export DISPLAY= WAYLAND_DISPLAY= WINEDLLOVERRIDES="mscoree=;mshtml=;winex11.drv=;winewayland.drv=" WINEDEBUG=-all
@@ -1162,8 +1162,8 @@ AM_CONDITIONAL([WINSHARED_DLLS_NEEDED], [test -n "$WINSHARED_DLLS"])
 
 AM_CONDITIONAL([AUDIO_SHORTCUTS], [test -n "$make_audio_shortcuts" && test -n "$WINE" && test "$SYSNAME" = "windows"])
 
-# output makefile
-AC_CONFIG_FILES([Makefile])
+# output makefile and build timestamp
+AC_CONFIG_FILES([Makefile src/build_timestamp.h])
 
 AC_OUTPUT
 
