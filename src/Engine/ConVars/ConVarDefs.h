@@ -238,6 +238,9 @@ CONVAR(r_image_unbind_after_drawimage, "r_image_unbind_after_drawimage"sv, true,
 CONVAR(r_globaloffset_x, "r_globaloffset_x"sv, 0.0f, CLIENT | PROTECTED | GAMEPLAY);
 CONVAR(r_globaloffset_y, "r_globaloffset_y"sv, 0.0f, CLIENT | PROTECTED | GAMEPLAY);
 CONVAR(r_sync_debug, "r_sync_debug"sv, false, CLIENT | HIDDEN, "print debug information about sync objects"sv);
+CONVAR(r_gpuupload_debug, "r_gpuupload_debug", false, CLIENT, "more verbose logging for async GPU uploads");
+CONVAR(r_async_gpu, "r_async_gpu", true, CLIENT,
+       "enable asynchronous GPU texture uploads for fewer lag spikes when loading images");
 CONVAR(slider_debug_draw, "slider_debug_draw"sv, false, CLIENT | SERVER | PROTECTED | GAMEPLAY,
        "draw hitcircle at every curve point and nothing else (no vao, no rt, no shader, nothing) "
        "(requires enabling legacy slider renderer)"sv);

@@ -9,6 +9,7 @@
 #include "OpenGLSync.h"
 #include "Logging.h"
 #include "ConVar.h"
+#include "GPUUploader.h"
 
 // resolve GL functions (static, called before construction)
 void SDLGLInterface::load() {
@@ -26,7 +27,18 @@ void SDLGLInterface::load() {
 }
 
 SDLGLInterface::SDLGLInterface(SDL_Window *window)
-    : BackendGLInterface(), window(window), syncobj(std::make_unique<OpenGLSync>()) {}
+    : BackendGLInterface(),
+      window(window),
+      context(SDL_GL_GetCurrentContext()),
+      syncobj(std::make_unique<OpenGLSync>()) {
+#if defined(__has_feature) && __has_feature(thread_sanitizer) || defined(__SANITIZE_THREAD__)
+    debugLog("Disabling async GPU uploader due to TSan breakage.");
+#else
+    gpuUploader = std::make_unique<GPUUploader>(window, this->context);
+#endif
+}
+
+SDLGLInterface::~SDLGLInterface() { gpuUploader.reset(); }
 
 void SDLGLInterface::beginScene() {
     // block on frame queue (if enabled)

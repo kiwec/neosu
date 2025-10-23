@@ -53,13 +53,6 @@ class Image : public Resource {
     // all images are converted to RGBA
     static constexpr const u8 NUM_CHANNELS{4};
 
-   protected:
-    void init() override = 0;
-    void initAsync() override = 0;
-    void destroy() override = 0;
-
-    bool loadRawImage();
-
     // holding actual pointer width/height separately, just in case
     struct SizedRGBABytes final {
         struct CFree {
@@ -126,6 +119,14 @@ class Image : public Resource {
         ivec2 size{0, 0};
         std::unique_ptr<u8, CFree> bytes{nullptr};
     };
+
+   protected:
+    void init() override = 0;
+    void initAsync() override = 0;
+    void destroy() override = 0;
+
+    bool loadRawImage();
+
     std::unique_ptr<SizedRGBABytes> rawImage{nullptr};
 
     [[nodiscard]] constexpr forceinline u64 totalBytes() const {

@@ -726,7 +726,8 @@ void McFont::buildStringGeometry(const UString &text, size_t &vertexCount) {
 
     // reload atlas if new glyphs were added to dynamic slots
     if(m_atlasNeedsReload) {
-        m_textureAtlas->getAtlasImage()->reload();
+        resourceManager->reloadResource(m_textureAtlas->getAtlasImage().get(),
+                                        Env::cfg(REND::GL | REND::GLES32) && !env->usingDX11() /* async for GL */);
         m_atlasNeedsReload = false;
     }
 }

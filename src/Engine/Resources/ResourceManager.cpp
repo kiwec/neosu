@@ -309,6 +309,8 @@ Image *ResourceManager::createImage(i32 width, i32 height, bool mipmapped, bool 
     }
 
     Image *img = g->createImage(width, height, mipmapped, keepInSystemMemory);
+    // otherwise they get no name
+    setResourceName(img, fmt::format("IMG_{}x{}_{}", width, height, std::rand() % 100));
 
     loadResource(img, false);
 

@@ -10,18 +10,23 @@
 #include "ConVar.h"
 #include "File.h"
 #include "Logging.h"
-
+#include "GPUUploader.h"
+#include "Timing.h"
 #include "OpenGLHeaders.h"
+
+namespace {
+// sentinel value for queued upload
+static int uploadPendingSentinel = 0;
+GLsync UPLOAD_PENDING = reinterpret_cast<GLsync>(&uploadPendingSentinel);
+}  // namespace
 
 OpenGLImage::OpenGLImage(std::string filepath, bool mipmapped, bool keepInSystemMemory)
     : Image(std::move(filepath), mipmapped, keepInSystemMemory) {
-    this->GLTexture = 0;
     this->iTextureUnitBackup = 0;
 }
 
 OpenGLImage::OpenGLImage(i32 width, i32 height, bool mipmapped, bool keepInSystemMemory)
     : Image(width, height, mipmapped, keepInSystemMemory) {
-    this->GLTexture = 0;
     this->iTextureUnitBackup = 0;
 }
 
@@ -31,90 +36,187 @@ OpenGLImage::~OpenGLImage() {
     this->rawImage.reset();
 }
 
+bool OpenGLImage::isReadyForSyncInit() const {
+    GLsync fence = this->uploadFence.load(std::memory_order_acquire);
+
+    // no async upload in progress
+    if(fence == nullptr) {
+        return true;
+    }
+
+    // upload queued but not yet processed by GPU thread
+    if(fence == UPLOAD_PENDING) {
+        return false;
+    }
+
+    // check if GPU upload is complete
+    GLint status = 0;
+    glGetSynciv(fence, GL_SYNC_STATUS, sizeof(GLint), nullptr, &status);
+    return status == GL_SIGNALED;
+}
+
 void OpenGLImage::init() {
-    // only load if not:
-    // 1. already uploaded to gpu, and we didn't keep the image in system memory
-    // 2. failed to async load
-    if((this->GLTexture != 0 && !this->bKeepInSystemMemory) || !(this->isAsyncReady())) {
-        if(cv::debug_image.getBool()) {
-            debugLog(
-                "we are already loaded, bReady: {} createdImage: {} GLTexture: {} bKeepInSystemMemory: {} bAsyncReady: "
-                "{}",
-                this->isReady(), this->bCreatedImage, this->GLTexture, this->bKeepInSystemMemory, this->isAsyncReady());
+    GLsync fence = this->uploadFence.load(std::memory_order_acquire);
+    const bool debug = cv::debug_image.getBool() || cv::r_gpuupload_debug.getBool();
+
+    // GPU upload was queued, wait (if we have to) for completion
+    if(fence != nullptr) {
+        // wait for GPU thread to process the request
+        if(fence == UPLOAD_PENDING) {
+            logIf(debug, "OpenGLImage: Waiting for GPU upload to be picked up for {:s}", this->sFilePath);
+
+            while((fence = this->uploadFence.load(std::memory_order_acquire)) == UPLOAD_PENDING) {
+                // check if uploader is shutting down to avoid infinite loop
+                if(gpuUploader && gpuUploader->isShuttingDown()) {
+                    logIf(debug, "OpenGLImage: GPU uploader shutting down, falling back to sync upload for {:s}",
+                          this->sFilePath);
+                    this->uploadFence.store(nullptr, std::memory_order_release);
+                    fence = nullptr;
+                    break;
+                }
+                Timing::sleep(0);
+            }
         }
+
+        // wait for GPU to complete the upload
+        if(fence != nullptr && fence != UPLOAD_PENDING) {
+            logIf(debug, "OpenGLImage: Waiting for GPU fence for {:s}",
+                  this->bCreatedImage ? this->sName : this->sFilePath);
+
+            glClientWaitSync(fence, 0, GL_TIMEOUT_IGNORED);
+            glDeleteSync(fence);
+            this->uploadFence.store(nullptr, std::memory_order_release);
+
+            logIf(debug, "OpenGLImage: GPU upload complete for {:s}",
+                  this->bCreatedImage ? this->sName : this->sFilePath);
+        }
+
+        // if fence was valid, texture is now uploaded and ready
+        GLuint texture = this->GLTexture.load(std::memory_order_acquire);
+        if(texture != 0) {
+            this->setReady(true);
+            return;
+        }
+        debugLog("OpenGLImage WARNING: Texture still 0 after async load for {}",
+                 this->bCreatedImage ? this->sName : this->sFilePath);
+        // if texture is still 0, something went wrong (fall through to sync path)
+    }
+
+    // fallback: synchronous upload path
+    // this happens when GPU uploader is unavailable, disabled, or failed
+    GLuint texture = this->GLTexture.load(std::memory_order_acquire);
+    if((texture != 0 && !this->bKeepInSystemMemory) || !this->isAsyncReady()) {
+        // already loaded (and not reloadable) or async failed
         return;
     }
 
-    // rawImage cannot be empty here, if it is, we're screwed
-    assert(this->totalBytes() != 0);
+    // we need rawImage for sync upload
+    if(!this->rawImage || this->totalBytes() == 0) {
+        debugLog("OpenGLImage ERROR: Cannot upload texture for {:s}, no pixel data available",
+                 this->bCreatedImage ? this->sName : this->sFilePath);
+        return;
+    }
 
-    // create texture object
-    const bool glTextureWasEmpty = this->GLTexture == 0;
-    if(glTextureWasEmpty) {
-        // FFP compatibility (part 1)
-        if constexpr(Env::cfg(REND::GL)) {
-            glEnable(GL_TEXTURE_2D);
-        }
+    logIf(debug, "OpenGLImage: Performing sync upload for {:s}", this->bCreatedImage ? this->sName : this->sFilePath);
 
-        // create texture and bind
-        glGenTextures(1, &this->GLTexture);
-        glBindTexture(GL_TEXTURE_2D, this->GLTexture);
+    // FFP compat
+    if constexpr(Env::cfg(REND::GL)) {
+        glEnable(GL_TEXTURE_2D);
+    }
 
-        // set texture filtering mode (mipmapping is disabled by default)
+    // create texture object only if it doesn't exist yet
+    if(texture == 0) {
+        glGenTextures(1, &texture);
+        glBindTexture(GL_TEXTURE_2D, texture);
+
+        // set texture filtering mode
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, this->bMipmapped ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-        // texture wrapping, defaults to clamp
+        // texture wrapping
         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    } else {
+        // texture exists (reload case with bKeepInSystemMemory)
+        glBindTexture(GL_TEXTURE_2D, texture);
     }
 
-    // upload to gpu
-    {
-        if(!glTextureWasEmpty) {  // just to avoid redundantly binding
-            glBindTexture(GL_TEXTURE_2D, this->GLTexture);
-        }
+    // upload (or re-upload) texture data to GPU
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, this->rawImage->getX(), this->rawImage->getY(), 0, GL_RGBA,
+                 GL_UNSIGNED_BYTE, this->rawImage->data());
 
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, this->rawImage->getX(), this->rawImage->getY(), 0, GL_RGBA,
-                     GL_UNSIGNED_BYTE, this->rawImage->data());
-        if(this->bMipmapped) {
-            glGenerateMipmap(GL_TEXTURE_2D);
-        }
+    if(this->bMipmapped) {
+        glGenerateMipmap(GL_TEXTURE_2D);
     }
 
-    // free from RAM (it's now in VRAM)
+    this->GLTexture.store(texture, std::memory_order_release);
+
+    // free from RAM if not keeping
     if(!this->bKeepInSystemMemory) {
         this->rawImage.reset();
     }
 
     this->setReady(true);
 
-    if(this->filterMode != Graphics::FILTER_MODE::FILTER_MODE_LINEAR) {
-        setFilterMode(this->filterMode);
-    }
+    // apply filter/wrap modes if non-default (only on first creation)
+    if(texture == 0) {
+        if(this->filterMode != Graphics::FILTER_MODE::FILTER_MODE_LINEAR) {
+            setFilterMode(this->filterMode);
+        }
 
-    if(this->wrapMode != Graphics::WRAP_MODE::WRAP_MODE_CLAMP) {
-        setWrapMode(this->wrapMode);
+        if(this->wrapMode != Graphics::WRAP_MODE::WRAP_MODE_CLAMP) {
+            setWrapMode(this->wrapMode);
+        }
     }
 }
 
 void OpenGLImage::initAsync() {
-    if(this->GLTexture != 0) {
+    GLuint texture = this->GLTexture.load(std::memory_order_acquire);
+    bool reupload = false;
+    /* we might be reuploading a changed image */
+    if(texture != 0 && !(reupload = (this->bCreatedImage && this->rawImage && this->bKeepInSystemMemory))) {
         this->setAsyncReady(true);
-        return;  // only load if we are not already loaded
+        return;
     }
 
+    // prepare pixel data
+    bool asyncReady = false;
     if(!this->bCreatedImage) {
         if(cv::debug_rm.getBool()) debugLog("Resource Manager: Loading {:s}", this->sFilePath.c_str());
-
-        this->setAsyncReady(loadRawImage());
+        asyncReady = this->loadRawImage();
     } else {
-        // created image is always async ready
-        this->setAsyncReady(true);
+        // created image is always async ready (created during ctor)
+        asyncReady = true && !this->isInterrupted();
     }
+
+    this->setAsyncReady(asyncReady);
+
+    // queue GPU upload for all cases if available
+    if(asyncReady && this->rawImage && gpuUploader && gpuUploader->isReady() && !gpuUploader->isShuttingDown() &&
+       cv::r_async_gpu.getBool()) {
+        // set sentinel
+        this->uploadFence.store(UPLOAD_PENDING, std::memory_order_release);
+
+        if(!this->bKeepInSystemMemory) {
+            // get rid of it
+            gpuUploader->queueImageUpload(std::move(this->rawImage), this->bMipmapped, this->filterMode, this->wrapMode,
+                                          &this->GLTexture, &this->uploadFence, &this->bInterrupted);
+            this->rawImage.reset();
+        } else if(reupload /* reuploading from system memory */) {
+            gpuUploader->queueImageReupload(this->rawImage, this->bMipmapped, &this->GLTexture, &this->uploadFence,
+                                            &this->bInterrupted);
+        } else {
+            // make a copy
+            auto copy = std::make_unique<Image::SizedRGBABytes>(*this->rawImage);
+            gpuUploader->queueImageUpload(std::move(copy), this->bMipmapped, this->filterMode, this->wrapMode,
+                                          &this->GLTexture, &this->uploadFence, &this->bInterrupted);
+        }
+    }
+    // if GPU uploader not available, init() will fall back to sync upload
 }
 
 void OpenGLImage::destroy() {
+    this->interruptLoad();
     // don't delete the texture if we're keeping it in memory, for reloads
     if(!this->bKeepInSystemMemory) {
         this->deleteGL();
@@ -123,19 +225,45 @@ void OpenGLImage::destroy() {
 }
 
 void OpenGLImage::deleteGL() {
-    if(this->GLTexture != 0 && glDeleteTextures != nullptr && glIsTexture != nullptr) {
-        if(!glIsTexture(this->GLTexture)) {
-            debugLog("WARNING: tried to glDeleteTexture on {} ({:p}), which is not a valid GL texture!", this->sName,
-                     static_cast<const void*>(&this->GLTexture));
-        } else {
-            glDeleteTextures(1, &this->GLTexture);
+    // wait for any pending GPU upload to complete before destroying
+    GLsync fence = this->uploadFence.load(std::memory_order_acquire);
+    if(fence && fence != UPLOAD_PENDING && !glIsSync(fence)) {
+        debugLog("WARNING: {:p} was not a valid sync fence for: {}", static_cast<void*>(fence),
+                 this->bCreatedImage ? this->sName : this->sFilePath);
+        this->uploadFence.store(nullptr, std::memory_order_release);
+    } else if(fence) {
+        if(!(gpuUploader && gpuUploader->isShuttingDown()) && fence == UPLOAD_PENDING) {
+            // upload queued but not processed, wait for GPU thread to pick it up
+            while((fence = this->uploadFence.load(std::memory_order_acquire)) == UPLOAD_PENDING) {
+                if((gpuUploader && gpuUploader->isShuttingDown())) {
+                    break;
+                }
+                Timing::sleep(0);
+            }
+        }
+
+        if(!(gpuUploader && gpuUploader->isShuttingDown()) &&
+           (fence = this->uploadFence.load(std::memory_order_acquire)) != nullptr && fence != UPLOAD_PENDING) {
+            glClientWaitSync(fence, 0, GL_TIMEOUT_IGNORED);
+            glDeleteSync(fence);
+            this->uploadFence.store(nullptr, std::memory_order_release);
         }
     }
-    this->GLTexture = 0;
+
+    GLuint texture = this->GLTexture.load(std::memory_order_acquire);
+    if(texture != 0 && glDeleteTextures != nullptr && glIsTexture != nullptr) {
+        if(!glIsTexture(texture)) {
+            debugLog("WARNING: tried to glDeleteTexture on {} ({:p}), which is not a valid GL texture!", this->sName,
+                     static_cast<const void*>(&texture));
+        } else {
+            glDeleteTextures(1, &texture);
+        }
+    }
+    this->GLTexture.store(0, std::memory_order_release);
 }
 
 void OpenGLImage::bind(unsigned int textureUnit) const {
-    if(!this->isReady()) return;
+    if(!this->isTextureReady()) return;
 
     this->iTextureUnitBackup = textureUnit;
 
@@ -143,7 +271,8 @@ void OpenGLImage::bind(unsigned int textureUnit) const {
     glActiveTexture(GL_TEXTURE0 + textureUnit);
 
     // set texture
-    glBindTexture(GL_TEXTURE_2D, this->GLTexture);
+    GLuint texture = this->GLTexture.load(std::memory_order_acquire);
+    glBindTexture(GL_TEXTURE_2D, texture);
 
     // FFP compatibility (part 2)
     if constexpr(Env::cfg(REND::GL)) {
@@ -152,7 +281,7 @@ void OpenGLImage::bind(unsigned int textureUnit) const {
 }
 
 void OpenGLImage::unbind() const {
-    if(!this->isReady()) return;
+    // don't check ready here, just unbind
 
     // restore texture unit (just in case) and set to no texture
     glActiveTexture(GL_TEXTURE0 + this->iTextureUnitBackup);
@@ -164,7 +293,7 @@ void OpenGLImage::unbind() const {
 
 void OpenGLImage::setFilterMode(Graphics::FILTER_MODE filterMode) {
     Image::setFilterMode(filterMode);
-    if(!this->isReady()) return;
+    if(!this->isTextureReady()) return;
 
     bind();
     {
@@ -188,7 +317,7 @@ void OpenGLImage::setFilterMode(Graphics::FILTER_MODE filterMode) {
 
 void OpenGLImage::setWrapMode(Graphics::WRAP_MODE wrapMode) {
     Image::setWrapMode(wrapMode);
-    if(!this->isReady()) return;
+    if(!this->isTextureReady()) return;
 
     bind();
     {

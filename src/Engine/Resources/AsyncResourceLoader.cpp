@@ -89,12 +89,18 @@ class AsyncResourceLoader::LoaderThread final {
 
             // restore loader thread name
             McThread::set_current_thread_name(loaderThreadName.c_str());
+            logIf(debug, "AsyncResourceLoader: Thread #{} finished loadAsync() (ready for load(): {}) {:8p} : {:s}",
+                  this->thread_index, resource->isReadyForSyncInit(), static_cast<const void *>(resource), debugName);
 
-            logIf(debug, "AsyncResourceLoader: Thread #{} finished async loading {:8p} : {:s}", this->thread_index,
-                  static_cast<const void *>(resource), debugName);
+            if(resource->isReadyForSyncInit()) {
+                work->state.store(WorkState::ASYNC_COMPLETE, std::memory_order_release);
+            }  // otherwise it's still not ready for sync load()
 
-            work->state.store(WorkState::ASYNC_COMPLETE, std::memory_order_release);
-            this->loader_ptr->markWorkAsyncComplete(std::move(work));
+            // put it in sync pending
+            {
+                Sync::scoped_lock lock(this->loader_ptr->workQueueMutex);
+                this->loader_ptr->syncPendingWork.push_back(std::move(work));
+            }
 
             // yield again before loop
             Timing::sleepMS(0);
@@ -148,11 +154,11 @@ void AsyncResourceLoader::shutdown() {
     // cleanup remaining work items
     {
         Sync::scoped_lock lock(this->workQueueMutex);
-        while(!this->pendingWork.empty()) {
-            this->pendingWork.pop();
+        while(!this->asyncPendingWork.empty()) {
+            this->asyncPendingWork.pop();
         }
-        while(!this->asyncCompleteWork.empty()) {
-            this->asyncCompleteWork.pop();
+        while(!this->syncPendingWork.empty()) {
+            this->syncPendingWork.pop_front();
         }
     }
 
@@ -181,7 +187,7 @@ void AsyncResourceLoader::requestAsyncLoad(Resource *resource) {
     // add to work queue
     {
         Sync::scoped_lock lock(this->workQueueMutex);
-        this->pendingWork.push(std::move(work));
+        this->asyncPendingWork.push(std::move(work));
     }
 
     this->iActiveWorkCount.fetch_add(1);
@@ -195,9 +201,11 @@ void AsyncResourceLoader::update(bool lowLatency) {
 
     const size_t amountToProcess = lowLatency ? 1 : this->iLoadsPerUpdate;
 
+    // things which are still not ready for sync init to put back into the queue after the loop
+    std::vector<std::unique_ptr<LoadingWork>> stillLoadingWork;
+
     // process completed async work
     size_t numProcessed = 0;
-
     while(numProcessed < amountToProcess) {
         auto work = getNextAsyncCompleteWork();
         if(!work) {
@@ -207,29 +215,46 @@ void AsyncResourceLoader::update(bool lowLatency) {
             break;
         }
 
+        bool processed = false;
         Resource *rs = work->resource;
-        const bool interrupted = rs->isInterrupted();
-        if(!interrupted) {
-            logIf(debug, "AsyncResourceLoader: Sync init for {:s} ({:8p})", rs->getName(),
-                  static_cast<const void *>(rs));
-            rs->load();
+        if(work->state == WorkState::ASYNC_COMPLETE ||
+           (work->state == WorkState::ASYNC_IN_PROGRESS && rs->isReadyForSyncInit())) {
+            const bool interrupted = rs->isInterrupted();
+            if(!interrupted) {
+                logIf(debug, "AsyncResourceLoader: Sync init for {:s} ({:8p})", rs->getName(),
+                      static_cast<const void *>(rs));
+                rs->load();
+                processed = true;
+            } else {
+                logIf(debug, "AsyncResourceLoader: Skipping sync init for {:s} ({:8p}) due to interruption",
+                      rs->getName(), static_cast<const void *>(rs));
+            }
+
+            work->state.store(WorkState::SYNC_COMPLETE, std::memory_order_release);
+
+            // remove from tracking set
+            {
+                Sync::scoped_lock lock(this->loadingResourcesMutex);
+                this->loadingResourcesSet.erase(rs);
+            }
+
+            this->iActiveWorkCount.fetch_sub(1);
         } else {
-            logIf(debug, "AsyncResourceLoader: Skipping sync init for {:s} ({:8p}) due to interruption", rs->getName(),
-                  static_cast<const void *>(rs));
+            processed = true;  // check back next time
+            logIf(debug, "AsyncResourceLoader: Skipping sync init for {:s} ({:8p}) due to ASYNC_IN_PROGRESS",
+                  rs->getName(), static_cast<const void *>(rs));
+            stillLoadingWork.push_back(std::move(work));
         }
 
-        work->state.store(WorkState::SYNC_COMPLETE, std::memory_order_release);
+        if(processed) numProcessed++;
+    }
 
-        // remove from tracking set
-        {
-            Sync::scoped_lock lock(this->loadingResourcesMutex);
-            this->loadingResourcesSet.erase(rs);
+    {
+        Sync::scoped_lock lock(this->workQueueMutex);
+        // put these at the front so we check them early next time
+        for(auto &&work : stillLoadingWork) {
+            this->syncPendingWork.push_front(std::move(work));
         }
-
-        this->iActiveWorkCount.fetch_sub(1);
-        if(!interrupted) numProcessed++;
-
-        // work will be automatically destroyed when unique_ptr goes out of scope
     }
 
     // process async destroy queue
@@ -364,24 +389,19 @@ void AsyncResourceLoader::cleanupIdleThreads() {
 std::unique_ptr<AsyncResourceLoader::LoadingWork> AsyncResourceLoader::getNextPendingWork() {
     Sync::scoped_lock lock(this->workQueueMutex);
 
-    if(this->pendingWork.empty()) return nullptr;
+    if(this->asyncPendingWork.empty()) return nullptr;
 
-    auto work = std::move(this->pendingWork.front());
-    this->pendingWork.pop();
+    auto work = std::move(this->asyncPendingWork.front());
+    this->asyncPendingWork.pop();
     return work;
-}
-
-void AsyncResourceLoader::markWorkAsyncComplete(std::unique_ptr<LoadingWork> work) {
-    Sync::scoped_lock lock(this->workQueueMutex);
-    this->asyncCompleteWork.push(std::move(work));
 }
 
 std::unique_ptr<AsyncResourceLoader::LoadingWork> AsyncResourceLoader::getNextAsyncCompleteWork() {
     Sync::scoped_lock lock(this->workQueueMutex);
 
-    if(this->asyncCompleteWork.empty()) return nullptr;
+    if(this->syncPendingWork.empty()) return nullptr;
 
-    auto work = std::move(this->asyncCompleteWork.front());
-    this->asyncCompleteWork.pop();
+    auto work = std::move(this->syncPendingWork.front());
+    this->syncPendingWork.pop_front();
     return work;
 }

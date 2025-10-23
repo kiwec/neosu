@@ -62,7 +62,6 @@ class AsyncResourceLoader final {
 
     // work queue management
     std::unique_ptr<LoadingWork> getNextPendingWork();
-    void markWorkAsyncComplete(std::unique_ptr<LoadingWork> work);
     std::unique_ptr<LoadingWork> getNextAsyncCompleteWork();
 
     // set during ctor, dependent on hardware
@@ -90,8 +89,9 @@ class AsyncResourceLoader final {
     std::atomic<size_t> iTotalThreadsCreated{0};
 
     // separate queues for different work states (avoids O(n) scanning)
-    std::queue<std::unique_ptr<LoadingWork>> pendingWork;
-    std::queue<std::unique_ptr<LoadingWork>> asyncCompleteWork;
+    std::queue<std::unique_ptr<LoadingWork>> asyncPendingWork;
+    // ASYNC_IN_PROGRESS gets put at the back, ASYNC_COMPLETE gets put at the front (prioritized)
+    std::deque<std::unique_ptr<LoadingWork>> syncPendingWork;
 
     // single mutex for both work queues (they're accessed in sequence, not concurrently)
     mutable Sync::mutex workQueueMutex;

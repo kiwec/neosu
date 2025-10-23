@@ -53,6 +53,11 @@ public:
 	[[nodiscard]] inline bool isAsyncReady() const { return this->bAsyncReady.load(std::memory_order_acquire); }
 	[[nodiscard]] inline bool isInterrupted() const { return this->bInterrupted.load(std::memory_order_acquire); }
 
+	// override this to defer sync initialization (init() call) until a condition is met
+	// called from main thread during AsyncResourceLoader::update()
+	// return false to defer init() to a later frame
+	[[nodiscard]] virtual bool isReadyForSyncInit() const { return true; }
+
 protected:
 	virtual void init() = 0;
 	virtual void initAsync() = 0;

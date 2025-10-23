@@ -12,6 +12,8 @@
 class OpenGLSync;
 
 typedef struct SDL_Window SDL_Window;
+typedef struct SDL_GLContextState *SDL_GLContext;
+
 class SDLGLInterface final : public BackendGLInterface {
     friend class Environment;
     friend class OpenGLInterface;
@@ -24,6 +26,7 @@ class SDLGLInterface final : public BackendGLInterface {
 
    public:
     SDLGLInterface(SDL_Window *window);
+    ~SDLGLInterface() override;
 
     // scene
     void beginScene() override;
@@ -52,6 +55,7 @@ class SDLGLInterface final : public BackendGLInterface {
    private:
     static void load();
     SDL_Window *window;
+    SDL_GLContext context;
 
     // frame queue management
     std::unique_ptr<OpenGLSync> syncobj;
