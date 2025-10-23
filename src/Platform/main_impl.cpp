@@ -130,6 +130,17 @@ static_assert(SDL_EVENT_WINDOW_FIRST == SDL_EVENT_WINDOW_SHOWN);
 static_assert(SDL_EVENT_WINDOW_LAST == SDL_EVENT_WINDOW_HDR_STATE_CHANGED);
 
 SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
+    if(m_bEnvDebug) {
+        static constexpr std::string_view logPfx = "[handleEvent] Got SDL Event: ";
+        static std::array<char, 512 + logPfx.size()> logBuf{"[handleEvent] Got SDL Event: "};
+        size_t logsz = std::min(logBuf.size() - logPfx.size(),
+                                static_cast<size_t>(SDL_GetEventDescription(event, logBuf.data() + logPfx.size(),
+                                                                            logBuf.size() - logPfx.size())));
+        if(logsz > 0) {
+            Logger::logRaw(std::string_view{logBuf.data(), logPfx.size() + logsz});
+        }
+    }
+
     switch(event->type) {
         case SDL_EVENT_QUIT:
         case SDL_EVENT_WINDOW_CLOSE_REQUESTED: {
@@ -233,6 +244,10 @@ SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
                     break;
 
                 case SDL_EVENT_WINDOW_RESTORED:
+                    if(m_bMinimized && m_bRestoreFullscreen) {
+                        m_bRestoreFullscreen = false;
+                        SDL_SetWindowFullscreen(m_window, true);
+                    }
                     m_bMinimized = false;
                     m_bHasFocus = true;
                     m_engine->onRestored();
@@ -251,10 +266,12 @@ SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
 
                 case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
                 case SDL_EVENT_WINDOW_RESIZED:
-                    m_bHasFocus = true;
-                    m_engine->requestResolutionChange(
-                        vec2(static_cast<float>(event->window.data1), static_cast<float>(event->window.data2)));
-                    setFgFPS();
+                    // don't trust the event coordinates, the window might have magically been resized in between somehow
+                    // vec2(static_cast<float>(event->window.data1), static_cast<float>(event->window.data2)));
+                    if(!m_bMinimized) {
+                        m_engine->requestResolutionChange(getWindowSize());
+                        setFgFPS();
+                    }
                     break;
 
                 case SDL_EVENT_WINDOW_DISPLAY_CHANGED:

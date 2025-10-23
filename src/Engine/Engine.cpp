@@ -371,7 +371,7 @@ void Engine::onFocusGained() {
 
     logIfCV(debug_engine, "got focus");
 
-    if(soundEngine) soundEngine->onFocusGained(); // switch shared->exclusive if applicable
+    if(soundEngine) soundEngine->onFocusGained();  // switch shared->exclusive if applicable
     if(app) app->onFocusGained();
 }
 
@@ -384,7 +384,7 @@ void Engine::onFocusLost() {
         keyboard->reset();
     }
 
-    if(soundEngine) soundEngine->onFocusLost(); // switch shared->exclusive if applicable
+    if(soundEngine) soundEngine->onFocusLost();  // switch shared->exclusive if applicable
     if(app) app->onFocusLost();
 
     // auto minimize on certain conditions
@@ -545,6 +545,7 @@ void Engine::runtime_assert(bool cond, const char *reason) {
 }
 
 void Engine::requestResolutionChange(vec2 newResolution) {
+    if(this->bIsMinimized) return;
     if(newResolution == this->vNewScreenSize) return;
 
     this->vNewScreenSize = newResolution;

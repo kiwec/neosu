@@ -225,8 +225,9 @@ class Environment {
     bool m_bDrawing;
     bool m_bIsRestartScheduled;
 
-    bool m_bMinimized;  // for fps_max_background
-    bool m_bHasFocus;   // for fps_max_background
+    bool m_bMinimized;
+    bool m_bHasFocus;
+    bool m_bRestoreFullscreen;
 
     // cache
     mutable UString m_sUsername;

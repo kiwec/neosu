@@ -61,10 +61,6 @@ Environment::Environment(const std::unordered_map<std::string, std::optional<std
     m_bDrawing = false;
     m_bIsRestartScheduled = false;
 
-    m_bMinimized = false;  // for fps_max_background
-    m_bHasFocus = true;    // for fps_max_background
-    m_bFullscreenWindowedBorderless = false;
-
     m_fDisplayHz = 360.0f;
     m_fDisplayHzSecs = 1.0f / m_fDisplayHz;
 
@@ -76,6 +72,10 @@ Environment::Environment(const std::unordered_map<std::string, std::optional<std
 
     m_bResizable = false;  // window is created non-resizable
     m_bFullscreen = false;
+    m_bFullscreenWindowedBorderless = false;
+    m_bRestoreFullscreen = false;  // if minimizing, whether we need to restore fullscreen state on restore
+    m_bMinimized = false;
+    m_bHasFocus = true;
 
     m_sUsername = {};
     m_sProgDataPath = {};  // local data for McEngine files
@@ -661,11 +661,18 @@ void Environment::center() {
 }
 
 void Environment::minimize() {
+    m_bHasFocus = false;
+    m_bMinimized = true;
+    if(m_bFullscreen || m_bFullscreenWindowedBorderless) {
+        SDL_SetWindowFullscreen(m_window, false);
+        m_bRestoreFullscreen = true;
+    }
     if(!SDL_MinimizeWindow(m_window)) {
         debugLog("Failed to minimize window: {:s}", SDL_GetError());
+        m_bMinimized = false;
+        m_bHasFocus = true;
         return;
     }
-    m_bHasFocus = false;
 }
 
 void Environment::maximize() {
