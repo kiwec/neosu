@@ -112,7 +112,8 @@ if not exist "%INSTALL_PREFIX%" mkdir "%INSTALL_PREFIX%"
 echo Configuring superbuild...
 cmake -S . -B "%BUILD_DIR%" -G "Visual Studio 17 2022" -A x64 ^
     -DCMAKE_INSTALL_PREFIX="%INSTALL_PREFIX%" ^
-    -DCMAKE_BUILD_TYPE=%BUILD_TYPE%
+    -DCMAKE_BUILD_TYPE=%BUILD_TYPE% ^
+    -DCMAKE_CXX_FLAGS="/DWIN32 /D_WINDOWS /EHs-c-"
 if %ERRORLEVEL% neq 0 (
     echo Configuration failed
     exit /b 1

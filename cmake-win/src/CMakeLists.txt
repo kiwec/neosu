@@ -177,6 +177,9 @@ target_include_directories(neosu PRIVATE
     ${LIBARCHIVE_STATIC_INCLUDE_DIRS}
 )
 
+# Strip default cmake exception handling flags
+string(REGEX REPLACE "/EH[^ ]*" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+
 # Apply compiler options
 target_compile_options(neosu PRIVATE
     "/utf-8"
@@ -185,9 +188,10 @@ target_compile_options(neosu PRIVATE
     "/MP"  # multi-processor compilation
     "/D_UNICODE"
     "/DUNICODE=1"
+    "/EHs-c-"
     "/D_HAS_EXCEPTIONS=0" # idk why it needs to be added here too...?
     $<$<CONFIG:Debug>:/Zi;/Od;/RTC1>
-    $<$<CONFIG:Release>:/O2;/Oi;/Oy;/Gw;/GL;/GS-;/Gy>
+    $<$<CONFIG:Release>:/O2;/Oi;/Oy;/Gw;/GS-;/Gy>
     ${BZIP2_STATIC_CFLAGS}
     ${LIBARCHIVE_STATIC_CFLAGS}
 )
@@ -208,7 +212,7 @@ target_compile_definitions(neosu PRIVATE
 # Link options
 target_link_options(neosu PRIVATE
     $<$<CONFIG:Debug>:/DEBUG:FULL;/SUBSYSTEM:CONSOLE;/ENTRY:wmainCRTStartup;/PROFILE>
-    $<$<CONFIG:Release>:/SUBSYSTEM:WINDOWS;/ENTRY:wWinMainCRTStartup;/LTCG;/OPT:REF;/OPT:ICF>
+    $<$<CONFIG:Release>:/SUBSYSTEM:WINDOWS;/ENTRY:wWinMainCRTStartup;/OPT:REF;/OPT:ICF>
     ${LIBARCHIVE_STATIC_LDFLAGS}
 )
 

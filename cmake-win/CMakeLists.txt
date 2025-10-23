@@ -66,10 +66,10 @@ set(PKG_CONFIG_ARGN "--msvc-syntax")
 # Strip default cmake exception handling flags
 string(REGEX REPLACE "/EH[^ ]*" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 
-set(COMMON_C_FLAGS "/utf-8" "/D_HAS_EXCEPTIONS=0" "/D_UNICODE" "/DUNICODE")
-set(COMMON_CXX_FLAGS "/utf-8" "/Zc:preprocessor" "/GR" "/D_HAS_EXCEPTIONS=0" "/DSOLOUD_NO_ASSERTS" "/D_UNICODE" "/DUNICODE")
+set(COMMON_C_FLAGS "/utf-8" "/D_HAS_EXCEPTIONS=0" "/D_UNICODE" "/DUNICODE" "/EHs-c-")
+set(COMMON_CXX_FLAGS "/utf-8" "/Zc:preprocessor" "/GR" "/D_HAS_EXCEPTIONS=0" "/DSOLOUD_NO_ASSERTS" "/D_UNICODE" "/DUNICODE" "/EHs-c-")
 set(DEBUG_FLAGS "/Zi" "/Od" "/RTC1")
-set(RELEASE_FLAGS "/O2" "/Oi" "/Oy" "/Gw" "/GL" "/GS-" "/Gy")
+set(RELEASE_FLAGS "/O2" "/Oi" "/Oy" "/Gw" "/GS-" "/Gy")
 
 # Link flags
 set(DEBUG_LINK_FLAGS "/DEBUG:FULL")
@@ -119,6 +119,7 @@ add_external_project(zlib
         ${EXTERNAL_PROJECT_CMAKE_ARGS}
         -DZLIB_COMPAT=ON
         -DZLIB_ENABLE_TESTS=OFF
+        -DZLIBNG_ENABLE_TESTS=OFF
     BUILD_COMMAND cmake --build <BINARY_DIR> --config ${CMAKE_BUILD_TYPE} --parallel ${CPU_COUNT}
 )
 

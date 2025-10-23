@@ -49,6 +49,7 @@ doit() {
 
 	mkdir -p "$INSTALL_DIR" "$BUILD_DIR" &&
 		cmake -S . -B "$BUILD_DIR" -G "Unix Makefiles" \
+			-DCMAKE_CXX_FLAGS="/DWIN32 /D_WINDOWS /EHs-c-" \
 			-DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
 			-DCMAKE_C_OUTPUT_EXTENSION=obj \
 			-DCMAKE_CXX_OUTPUT_EXTENSION=obj \
