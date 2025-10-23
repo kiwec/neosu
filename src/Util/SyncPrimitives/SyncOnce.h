@@ -41,6 +41,11 @@ class once_flag {
 // ===================================================================
 template <typename Callable, typename... Args>
 void call_once(once_flag& flag, Callable&& f, Args&&... args) {
+    // check if already completed (2)
+    if(flag.native_handle()->load(std::memory_order_relaxed) == 2) {
+        return;
+    }
+
     struct wrapper_t {
         Callable&& func;
         std::tuple<Args&&...> args_tuple;

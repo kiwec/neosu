@@ -24,7 +24,7 @@ typedef DatabaseBeatmap BeatmapSet;
 #define NEOSU_SCORE_DB_VERSION 20240725
 
 class Database;
-extern std::unique_ptr<Database> db;
+extern std::unique_ptr<Database> db; // global for convenience, created in osu constructor, destroyed in osu constructor
 
 class Database {
     NOCOPY_NOMOVE(Database)

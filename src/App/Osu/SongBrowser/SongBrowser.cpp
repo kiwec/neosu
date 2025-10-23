@@ -467,7 +467,6 @@ SongBrowser::SongBrowser()  // NOLINT(cert-msc51-cpp, cert-msc32-c)
     this->thumbnailYRatio = cv::draw_songbrowser_thumbnails.getBool() ? 1.333333f : 0.f;
 
     // beatmap database
-    db = std::make_unique<Database>();
     this->bBeatmapRefreshScheduled = false;
 
     // behaviour
@@ -540,7 +539,6 @@ SongBrowser::~SongBrowser() {
     SAFE_DELETE(this->topbarLeft);
     SAFE_DELETE(this->topbarRight);
     SAFE_DELETE(this->scoreBrowser);
-    db.reset();
 
     // Memory leak on shutdown, maybe
     this->invalidate();

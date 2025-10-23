@@ -40,12 +40,10 @@ class BGImageHandler::MapBGImagePathLoader final : public Resource {
     std::string parsed_bg_filename;
     bool found_mojibake_filename{false};
 
-    static Sync::once_flag init_fail_check;
-    static std::atomic<bool>
-        dont_attempt_mojibake_checks;  // set to true if demoji_bwd returned -1 (failed to initialize)
+    // set to true if demoji_bwd returned -1 (failed to initialize)
+    static std::atomic<bool> dont_attempt_mojibake_checks;
 };
 
-Sync::once_flag BGImageHandler::MapBGImagePathLoader::init_fail_check;
 std::atomic<bool> BGImageHandler::MapBGImagePathLoader::dont_attempt_mojibake_checks{false};
 
 struct BGImageHandler::ENTRY final {
@@ -55,7 +53,7 @@ struct BGImageHandler::ENTRY final {
     MapBGImagePathLoader *bg_image_path_ldr;
     Image *image;
 
-    f32 loading_time;
+    f64 loading_time;
 
     bool load_scheduled;
     bool used_last_frame;
@@ -223,7 +221,7 @@ const Image *BGImageHandler::getLoadBackgroundImage(const DatabaseBeatmap *beatm
             const_cast<DatabaseBeatmap *>(beatmap)->update_overrides();
         }
 
-        return this->getImageOrSkinFallback(entry.image, entry.ready_but_image_not_found);
+        return BGImageHandler::getImageOrSkinFallback(entry.image, entry.ready_but_image_not_found);
     } else {
         // 2) not found in cache, so create a new entry which will get handled in the next update
 
@@ -247,16 +245,15 @@ const Image *BGImageHandler::getLoadBackgroundImage(const DatabaseBeatmap *beatm
         }
 
         // create entry
-        ENTRY entry{
-            .folder = beatmap->getFolder(),
-            .bg_image_filename = beatmap->getBackgroundImageFileName(),
-            .bg_image_path_ldr = nullptr,
-            .image = nullptr,
-            .loading_time = static_cast<f32>(engine->getTime() + (load_immediately ? 0.f : this->image_loading_delay)),
-            .load_scheduled = true,
-            .used_last_frame = true,
-            .overwrite_db_entry = false,
-            .ready_but_image_not_found = false};
+        ENTRY entry{.folder = beatmap->getFolder(),
+                    .bg_image_filename = beatmap->getBackgroundImageFileName(),
+                    .bg_image_path_ldr = nullptr,
+                    .image = nullptr,
+                    .loading_time = engine->getTime() + (load_immediately ? 0. : this->image_loading_delay),
+                    .load_scheduled = true,
+                    .used_last_frame = true,
+                    .overwrite_db_entry = false,
+                    .ready_but_image_not_found = false};
 
         this->cache.try_emplace(beatmap_filepath, entry);
     }
@@ -293,7 +290,7 @@ u32 BGImageHandler::getMaxEvictions() const {
     return ret;
 }
 
-const Image *BGImageHandler::getImageOrSkinFallback(const Image *candidate_loaded, bool force_fallback) const {
+const Image *BGImageHandler::getImageOrSkinFallback(const Image *candidate_loaded, bool force_fallback) {
     const Image *ret = candidate_loaded;
     // if we got an image but it failed for whatever reason, return the user skin as a fallback instead
     if(force_fallback || (candidate_loaded && candidate_loaded->failedLoad())) {
@@ -416,9 +413,8 @@ bool BGImageHandler::MapBGImagePathLoader::checkMojibake() {
         demoji_bwd(this->parsed_bg_filename.data(), this->parsed_bg_filename.size(), converted_output.get(), out_size);
 
     // if demoji_bwd is broken/unavailable for some reason then don't try to use it again
-    Sync::call_once(init_fail_check, [conv_result_len]() {
-        if(conv_result_len == -1) dont_attempt_mojibake_checks.store(true, std::memory_order_release);
-    });
+    // (this function won't be called anymore)
+    if(conv_result_len == -1) dont_attempt_mojibake_checks.store(true, std::memory_order_release);
 
     if(conv_result_len > 0) {
         std::string_view result = {converted_output.get(), converted_output.get() + conv_result_len};

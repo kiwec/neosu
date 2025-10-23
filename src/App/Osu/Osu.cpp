@@ -154,6 +154,7 @@ Osu::Osu() {
     this->frameBuffer2 = resourceManager->createRenderTarget(0, 0, 64, 64);
 
     // load a few select subsystems very early
+    db = std::make_unique<Database>();  // global database instance
     this->map_iface = std::make_unique<BeatmapInterface>();
     this->notificationOverlay = std::make_unique<NotificationOverlay>();
     this->score = std::make_unique<LiveScore>(false);
@@ -366,6 +367,7 @@ Osu::~Osu() {
     BANCHO::Net::cleanup_networking();
 
     this->destroyAllScreensInOrder();
+    db.reset();  // shutdown db
 
     // remove the static callback
     ConVar::setOnSetValueProtectedCallback({});
