@@ -55,7 +55,7 @@ void SimulatedBeatmapInterface::simulate_to(i32 music_pos) {
         this->current_keys = current_frame.key_flags;
 
         Click click;
-        click.click_time = current_frame.cur_music_pos;
+        click.timestamp = current_frame.cur_music_pos;
         click.pos.x = current_frame.x;
         click.pos.y = current_frame.y;
 

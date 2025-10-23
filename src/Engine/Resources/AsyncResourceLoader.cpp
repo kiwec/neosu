@@ -22,7 +22,7 @@ class AsyncResourceLoader::LoaderThread final {
     size_t thread_index;
     std::atomic<std::chrono::steady_clock::time_point> last_active;
 
-    LoaderThread(AsyncResourceLoader *loader, size_t index) noexcept
+    LoaderThread(AsyncResourceLoader *const loader, size_t index) noexcept
         : thread_index(index),
           last_active(std::chrono::steady_clock::now()),
           loader_ptr(loader),
@@ -37,7 +37,7 @@ class AsyncResourceLoader::LoaderThread final {
     }
 
    private:
-    AsyncResourceLoader *loader_ptr;
+    AsyncResourceLoader *const loader_ptr;
     Sync::jthread thread;
 
     void run(const Sync::stop_token &stoken) noexcept {

@@ -176,7 +176,6 @@ void BGImageHandler::update(bool allow_eviction) {
                 }
             }
         }
-
         // (2) break early after one iteration if frozen
         if(this->frozen) break;
 

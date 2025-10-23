@@ -21,7 +21,7 @@ struct LiveReplayFrame;
 struct ScoreFrame;
 
 struct Click {
-    i32 click_time;
+    i32 timestamp; // current music position when the click happened
     vec2 pos{0.f};
 };
 

@@ -965,7 +965,7 @@ void Circle::onClickEvent(std::vector<Click> &clicks) {
             return;  // ignore click event completely
         }
 
-        const i32 delta = clicks[0].click_time - (i32)this->click_time;
+        const i32 delta = clicks[0].timestamp - (i32)this->click_time;
 
         LiveScore::HIT result = this->pi->getHitResult(delta);
         if(result != LiveScore::HIT::HIT_NULL) {
@@ -2040,7 +2040,7 @@ void Slider::onClickEvent(std::vector<Click> &clicks) {
         const float cursorDelta = vec::length(cursorPos - pos);
 
         if(cursorDelta < this->pi->fHitcircleDiameter / 2.0f) {
-            const i32 delta = clicks[0].click_time - (i32)this->click_time;
+            const i32 delta = clicks[0].timestamp - (i32)this->click_time;
 
             LiveScore::HIT result = this->pi->getHitResult(delta);
             if(result != LiveScore::HIT::HIT_NULL) {

@@ -330,7 +330,7 @@ void BeatmapInterface::keyPressed1(bool mouse) {
 
     if((!osu->getModAuto() && !osu->getModRelax()) || !cv::auto_and_relax_block_user_input.getBool()) {
         this->clicks.push_back(Click{
-            .click_time = this->iCurMusicPosWithOffsets,
+            .timestamp = this->iCurMusicPosWithOffsets,
             .pos = this->getCursorPos(),
         });
     }
@@ -378,7 +378,7 @@ void BeatmapInterface::keyPressed2(bool mouse) {
 
     if((!osu->getModAuto() && !osu->getModRelax()) || !cv::auto_and_relax_block_user_input.getBool()) {
         this->clicks.push_back(Click{
-            .click_time = this->iCurMusicPosWithOffsets,
+            .timestamp = this->iCurMusicPosWithOffsets,
             .pos = this->getCursorPos(),
         });
     }
@@ -2487,7 +2487,7 @@ void BeatmapInterface::update2() {
     // When CBF is disabled, set click timing and position to the current frame's
     if(!cv::cbf.getBool() && !this->is_watching && !BanchoState::spectating) {
         for(auto &click : this->clicks) {
-            click.click_time = this->iCurMusicPosWithOffsets;
+            click.timestamp = this->iCurMusicPosWithOffsets;
             click.pos = this->getCursorPos();
         }
     }
@@ -2507,7 +2507,7 @@ void BeatmapInterface::update2() {
             this->current_keys = current_frame.key_flags;
 
             Click click;
-            click.click_time = current_frame.cur_music_pos;
+            click.timestamp = current_frame.cur_music_pos;
             click.pos.x = current_frame.x;
             click.pos.y = current_frame.y;
             click.pos *= GameRules::getPlayfieldScaleFactor();
@@ -2905,7 +2905,7 @@ void BeatmapInterface::update2() {
                         continue;
 
                     misaimObject->misAimed();
-                    const i32 delta = click.click_time - (i32)misaimObject->click_time;
+                    const i32 delta = click.timestamp - (i32)misaimObject->click_time;
                     osu->getHUD()->addHitError(delta, false, true);
 
                     break;  // the current click has been dealt with (and the hitobject has been misaimed)
