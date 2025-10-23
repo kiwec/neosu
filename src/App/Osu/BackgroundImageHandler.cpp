@@ -60,6 +60,7 @@ struct BGImageHandler::ENTRY final {
     bool load_scheduled;
     bool used_last_frame;
     bool overwrite_db_entry;
+    bool ready_but_image_not_found;  // we tried getting the background image, but couldn't find one
 };
 
 // public
@@ -167,6 +168,8 @@ void BGImageHandler::update(bool allow_eviction) {
                     if(bg_loaded_name.length() > 1) {
                         entry.bg_image_filename = bg_loaded_name;
                         this->handleLoadImageForEntry(entry);
+                    } else {
+                        entry.ready_but_image_not_found = true;
                     }
 
                     resourceManager->destroyResource(entry.bg_image_path_ldr,
@@ -220,7 +223,7 @@ const Image *BGImageHandler::getLoadBackgroundImage(const DatabaseBeatmap *beatm
             const_cast<DatabaseBeatmap *>(beatmap)->update_overrides();
         }
 
-        return this->getImageOrSkinFallback(entry.image);
+        return this->getImageOrSkinFallback(entry.image, entry.ready_but_image_not_found);
     } else {
         // 2) not found in cache, so create a new entry which will get handled in the next update
 
@@ -252,7 +255,8 @@ const Image *BGImageHandler::getLoadBackgroundImage(const DatabaseBeatmap *beatm
             .loading_time = static_cast<f32>(engine->getTime() + (load_immediately ? 0.f : this->image_loading_delay)),
             .load_scheduled = true,
             .used_last_frame = true,
-            .overwrite_db_entry = false};
+            .overwrite_db_entry = false,
+            .ready_but_image_not_found = false};
 
         this->cache.try_emplace(beatmap_filepath, entry);
     }
@@ -289,10 +293,10 @@ u32 BGImageHandler::getMaxEvictions() const {
     return ret;
 }
 
-const Image *BGImageHandler::getImageOrSkinFallback(const Image *candidate_loaded) const {
+const Image *BGImageHandler::getImageOrSkinFallback(const Image *candidate_loaded, bool force_fallback) const {
     const Image *ret = candidate_loaded;
     // if we got an image but it failed for whatever reason, return the user skin as a fallback instead
-    if(candidate_loaded && candidate_loaded->failedLoad()) {
+    if(force_fallback || (candidate_loaded && candidate_loaded->failedLoad())) {
         const Image *skin_bg = nullptr;
         if(osu->getSkin() && (skin_bg = osu->getSkin()->getMenuBackground()) && skin_bg != MISSING_TEXTURE &&
            !skin_bg->failedLoad()) {

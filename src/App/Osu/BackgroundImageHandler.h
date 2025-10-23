@@ -32,7 +32,7 @@ class BGImageHandler final {
     struct ENTRY;
 
     [[nodiscard]] u32 getMaxEvictions() const;
-    [[nodiscard]] const Image *getImageOrSkinFallback(const Image *candidate_loaded) const;
+    [[nodiscard]] const Image *getImageOrSkinFallback(const Image *candidate_loaded, bool force_fallback) const;
 
     void handleLoadPathForEntry(const std::string &path, ENTRY &entry);
     void handleLoadImageForEntry(ENTRY &entry);
