@@ -575,7 +575,10 @@ void HUD::drawFps() {
 
     fps = std::round(fps);
     const UString fpsString = UString::format("%i fps", (int)(fps));
-    const UString msString = UString::format("%.1f ms", old_worst_frametime * 1000.0f);
+
+    const double frametime_ms = old_worst_frametime * 1000.0;
+    const UString msString =
+        frametime_ms < 0.1 ? UString::format("%.2f ms", frametime_ms) : UString::format("%.1f ms", frametime_ms);
 
     const float dpiScale = Osu::getUIScale();
 
@@ -1028,13 +1031,8 @@ void HUD::drawAccuracy(float accuracy) {
         const int numDigits = (accuracyInt > 99 ? 5 : 4);
         const float xOffset =
             osu->getSkin()->getScore0()->getWidth() * scale * numDigits +
-            (osu->getSkin()->getScoreDot() != MISSING_TEXTURE
-                 ? osu->getSkin()->getScoreDot()->getWidth()
-                 : 0) *
-                scale +
-            (osu->getSkin()->getScorePercent() != MISSING_TEXTURE
-                 ? osu->getSkin()->getScorePercent()->getWidth()
-                 : 0) *
+            (osu->getSkin()->getScoreDot() != MISSING_TEXTURE ? osu->getSkin()->getScoreDot()->getWidth() : 0) * scale +
+            (osu->getSkin()->getScorePercent() != MISSING_TEXTURE ? osu->getSkin()->getScorePercent()->getWidth() : 0) *
                 scale -
             osu->getSkin()->getScoreOverlap() * (osu->getSkin()->isScore02x() ? 2 : 1) * scale * (numDigits + 1);
 
