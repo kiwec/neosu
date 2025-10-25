@@ -40,21 +40,25 @@ void TooltipOverlay::draw() {
         const int height =
             font->getHeight() * this->lines.size() + lineSpacing * (this->lines.size() - 1) + 3 * dpiScale;
 
-        vec2 cursorPos = mouse->getPos();
+        const bool isPlayingFPoSu =
+            (cv::mod_fposu.getBool() && osu->isInPlayMode());
 
-        // clamp to right edge
-        if(cursorPos.x + width + offset.x + 2 * margin > osu->getVirtScreenWidth())
-            cursorPos.x -= (cursorPos.x + width + offset.x + 2 * margin) - osu->getVirtScreenWidth() + 1;
+        vec2 cursorPos = isPlayingFPoSu ? osu->getVirtScreenRect().getCenter() : mouse->getPos();
+        if(!isPlayingFPoSu) {
+            // clamp to right edge
+            if(cursorPos.x + width + offset.x + 2 * margin > osu->getVirtScreenWidth())
+                cursorPos.x -= (cursorPos.x + width + offset.x + 2 * margin) - osu->getVirtScreenWidth() + 1;
 
-        // clamp to bottom edge
-        if(cursorPos.y + height + offset.y + 2 * margin > osu->getVirtScreenHeight())
-            cursorPos.y -= (cursorPos.y + height + offset.y + 2 * margin) - osu->getVirtScreenHeight() + 1;
+            // clamp to bottom edge
+            if(cursorPos.y + height + offset.y + 2 * margin > osu->getVirtScreenHeight())
+                cursorPos.y -= (cursorPos.y + height + offset.y + 2 * margin) - osu->getVirtScreenHeight() + 1;
 
-        // clamp to left edge
-        if(cursorPos.x < 0) cursorPos.x += std::abs(cursorPos.x);
+            // clamp to left edge
+            if(cursorPos.x < 0) cursorPos.x += std::abs(cursorPos.x);
 
-        // clamp to top edge
-        if(cursorPos.y < 0) cursorPos.y += std::abs(cursorPos.y);
+            // clamp to top edge
+            if(cursorPos.y < 0) cursorPos.y += std::abs(cursorPos.y);
+        }
 
         // draw background
         g->setColor(Color(0xff000000).setA(alpha));

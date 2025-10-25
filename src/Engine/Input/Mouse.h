@@ -29,7 +29,7 @@ class Mouse final : public InputDevice {
     void onButtonChange(ButtonIndex button, bool down);
 
     // position/coordinate handling
-    void setPos(vec2 pos);
+    void setPos(vec2 pos); // NOT OS mouse pos, virtual mouse pos
     void setOffset(vec2 offset);
     void setScale(vec2 scale) { this->vScale = scale; }
 

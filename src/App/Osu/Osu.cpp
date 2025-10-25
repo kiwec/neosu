@@ -141,7 +141,7 @@ Osu::Osu() {
     this->windowManager = std::make_unique<CWindowManager>();
 
     // renderer
-    this->vInternalResolution = engine->getScreenSize();
+    this->internalRect = engine->getScreenRect();
 
     this->backBuffer =
         resourceManager->createRenderTarget(0, 0, this->getVirtScreenWidth(), this->getVirtScreenHeight());
@@ -344,7 +344,7 @@ Osu::Osu() {
 #endif
     }
 
-    env->setCursorVisible(!McRect{{}, this->vInternalResolution}.contains(mouse->getPos()));
+    env->setCursorVisible(this->internalRect.contains(mouse->getPos()));
 }
 
 // we want to destroy them in the same order as we listed them, to match the old (raw pointer) behavior
@@ -386,7 +386,7 @@ void Osu::draw() {
     }
 
     // if we are not using the native window resolution, draw into the buffer
-    const bool isBufferedDraw = (g->getResolution() != this->vInternalResolution);
+    const bool isBufferedDraw = (g->getResolution() != this->getVirtScreenSize());
     if(isBufferedDraw) {
         this->backBuffer->enable();
     }
@@ -574,13 +574,13 @@ void Osu::draw() {
         // draw a scaled version from the buffer to the screen
         this->backBuffer->disable();
 
-        vec2 offset = vec2(g->getResolution().x / 2 - this->vInternalResolution.x / 2,
-                           g->getResolution().y / 2 - this->vInternalResolution.y / 2);
+        vec2 offset = vec2(g->getResolution().x / 2 - this->internalRect.getWidth() / 2,
+                           g->getResolution().y / 2 - this->internalRect.getHeight() / 2);
         g->setBlending(false);
         if(cv::letterboxing.getBool()) {
             this->backBuffer->draw(offset.x * (1.0f + cv::letterboxing_offset_x.getFloat()),
                                    offset.y * (1.0f + cv::letterboxing_offset_y.getFloat()),
-                                   this->vInternalResolution.x, this->vInternalResolution.y);
+                                   this->internalRect.getWidth(), this->internalRect.getHeight());
         } else {
             if(cv::resolution_keep_aspect_ratio.getBool()) {
                 const float scale = getImageScaleToFitResolution(this->backBuffer->getSize(), g->getResolution());
@@ -655,7 +655,8 @@ void Osu::update() {
 
             if(this->map_iface->isInSkippableSection() && !this->map_iface->isPaused() && !isLoading) {
                 bool can_skip_intro = (cv::skip_intro_enabled.getBool() && this->map_iface->iCurrentHitObjectIndex < 1);
-                bool can_skip_break = (cv::skip_breaks_enabled.getBool() && this->map_iface->iCurrentHitObjectIndex > 0);
+                bool can_skip_break =
+                    (cv::skip_breaks_enabled.getBool() && this->map_iface->iCurrentHitObjectIndex > 0);
                 if(BanchoState::is_playing_a_multi_map()) {
                     can_skip_intro = BanchoState::room.all_players_skipped;
                     can_skip_break = false;
@@ -684,7 +685,7 @@ void Osu::update() {
         this->bSeeking &= !BanchoState::spectating;
         if(this->bSeeking) {
             f32 mousePosX = std::round(mouse->getPos().x);
-            f32 percent = std::clamp<f32>(mousePosX / (f32)this->getVirtScreenWidth(), 0.0f, 1.0f);
+            f32 percent = std::clamp<f32>(mousePosX / (f32)this->internalRect.getWidth(), 0.0f, 1.0f);
             f32 seek_to_ms = percent * (this->map_iface->getStartTimePlayable() + this->map_iface->getLengthPlayable());
 
             if(mouse->isLeftDown()) {
@@ -1331,15 +1332,15 @@ void Osu::saveScreenshot() {
 
     const f32 outerWidth = g->getResolution().x;
     const f32 outerHeight = g->getResolution().y;
-    const f32 innerWidth = this->vInternalResolution.x;
-    const f32 innerHeight = this->vInternalResolution.y;
+    const f32 innerWidth = this->internalRect.getWidth();
+    const f32 innerHeight = this->internalRect.getHeight();
 
     soundEngine->play(this->skin->getShutter());
     this->notificationOverlay->addToast(UString::format("Saved screenshot to %s", screenshotFilename.c_str()),
                                         CHAT_TOAST, [screenshotFilename] { env->openFileBrowser(screenshotFilename); });
 
     // don't need cropping
-    if(!cv::crop_screenshots.getBool() || (g->getResolution() == this->vInternalResolution)) {
+    if(!cv::crop_screenshots.getBool() || (g->getResolution() == this->getVirtScreenSize())) {
         Image::saveToImage(pixels.data(), static_cast<i32>(outerWidth), static_cast<i32>(outerHeight),
                            screenshotChannels, screenshotFilename);
         return;
@@ -1347,7 +1348,7 @@ void Osu::saveScreenshot() {
 
     // need cropping
     f32 offsetXpct = 0, offsetYpct = 0;
-    if((g->getResolution() != this->vInternalResolution) && cv::letterboxing.getBool()) {
+    if((g->getResolution() != this->getVirtScreenSize()) && cv::letterboxing.getBool()) {
         offsetXpct = cv::letterboxing_offset_x.getFloat();
         offsetYpct = cv::letterboxing_offset_y.getFloat();
     }
@@ -1485,23 +1486,23 @@ void Osu::onResolutionChanged(vec2 newResolution) {
     // We just force disable letterboxing while windowed.
     if(cv::letterboxing.getBool() && env->isFullscreen()) {
         // clamp upwards to internal resolution (osu_resolution)
-        if(this->vInternalResolution.x < this->vInternalResolution2.x)
-            this->vInternalResolution.x = this->vInternalResolution2.x;
-        if(this->vInternalResolution.y < this->vInternalResolution2.y)
-            this->vInternalResolution.y = this->vInternalResolution2.y;
+        if(this->internalRect.getWidth() < this->vInternalResolution2.x)
+            this->internalRect.setWidth(this->vInternalResolution2.x);
+        if(this->internalRect.getHeight() < this->vInternalResolution2.y)
+            this->internalRect.setHeight(this->vInternalResolution2.y);
 
         // clamp downwards to engine resolution
-        if(newResolution.x < this->vInternalResolution.x) this->vInternalResolution.x = newResolution.x;
-        if(newResolution.y < this->vInternalResolution.y) this->vInternalResolution.y = newResolution.y;
+        if(newResolution.x < this->internalRect.getWidth()) this->internalRect.setWidth(newResolution.x);
+        if(newResolution.y < this->internalRect.getHeight()) this->internalRect.setHeight(newResolution.y);
     } else {
-        this->vInternalResolution = newResolution;
+        this->internalRect = {vec2{}, newResolution};
     }
 
     // update dpi specific engine globals
     cv::ui_scrollview_scrollbarwidth.setValue(15.0f * Osu::getUIScale());  // not happy with this as a convar
 
     // interfaces
-    this->forEachScreen<&OsuScreen::onResolutionChange>(this->vInternalResolution);
+    this->forEachScreen<&OsuScreen::onResolutionChange>(this->getVirtScreenSize());
 
     // rendertargets
     this->rebuildRenderTargets();
@@ -1530,23 +1531,23 @@ void Osu::onDPIChanged() {
 }
 
 void Osu::rebuildRenderTargets() {
-    debugLog("{:.2f}x{:.2f}", this->vInternalResolution.x, this->vInternalResolution.y);
+    debugLog("{}x{}", this->internalRect.getWidth(), this->internalRect.getHeight());
 
-    this->backBuffer->rebuild(0, 0, this->vInternalResolution.x, this->vInternalResolution.y);
+    this->backBuffer->rebuild(0, 0, this->internalRect.getWidth(), this->internalRect.getHeight());
 
     if(cv::mod_fposu.getBool())
-        this->playfieldBuffer->rebuild(0, 0, this->vInternalResolution.x, this->vInternalResolution.y);
+        this->playfieldBuffer->rebuild(0, 0, this->internalRect.getWidth(), this->internalRect.getHeight());
     else
         this->playfieldBuffer->rebuild(0, 0, 64, 64);
 
-    this->sliderFrameBuffer->rebuild(0, 0, this->vInternalResolution.x, this->vInternalResolution.y,
+    this->sliderFrameBuffer->rebuild(0, 0, this->internalRect.getWidth(), this->internalRect.getHeight(),
                                      Graphics::MULTISAMPLE_TYPE::MULTISAMPLE_0X);
 
-    this->AAFrameBuffer->rebuild(0, 0, this->vInternalResolution.x, this->vInternalResolution.y);
+    this->AAFrameBuffer->rebuild(0, 0, this->internalRect.getWidth(), this->internalRect.getHeight());
 
     if(cv::mod_mafham.getBool()) {
-        this->frameBuffer->rebuild(0, 0, this->vInternalResolution.x, this->vInternalResolution.y);
-        this->frameBuffer2->rebuild(0, 0, this->vInternalResolution.x, this->vInternalResolution.y);
+        this->frameBuffer->rebuild(0, 0, this->internalRect.getWidth(), this->internalRect.getHeight());
+        this->frameBuffer2->rebuild(0, 0, this->internalRect.getWidth(), this->internalRect.getHeight());
     } else {
         this->frameBuffer->rebuild(0, 0, 64, 64);
         this->frameBuffer2->rebuild(0, 0, 64, 64);
@@ -1569,14 +1570,14 @@ void Osu::updateMouseSettings() {
     // mouse scaling & offset
     vec2 offset = vec2(0, 0);
     vec2 scale = vec2(1, 1);
-    if((g->getResolution() != this->vInternalResolution) && cv::letterboxing.getBool()) {
-        offset = -vec2((engine->getScreenWidth() / 2.f - this->vInternalResolution.x / 2.f) *
+    if((g->getResolution() != this->getVirtScreenSize()) && cv::letterboxing.getBool()) {
+        offset = -vec2((engine->getScreenWidth() / 2.f - this->internalRect.getWidth() / 2.f) *
                            (1.0f + cv::letterboxing_offset_x.getFloat()),
-                       (engine->getScreenHeight() / 2.f - this->vInternalResolution.y / 2.f) *
+                       (engine->getScreenHeight() / 2.f - this->internalRect.getHeight() / 2.f) *
                            (1.0f + cv::letterboxing_offset_y.getFloat()));
 
-        scale = vec2(this->vInternalResolution.x / engine->getScreenWidth(),
-                     this->vInternalResolution.y / engine->getScreenHeight());
+        scale = vec2(this->internalRect.getWidth() / engine->getScreenWidth(),
+                     this->internalRect.getHeight() / engine->getScreenHeight());
     }
 
     mouse->setOffset(offset);
@@ -1603,7 +1604,7 @@ void Osu::updateWindowsKeyDisable() {
     env->listenToTextInput(!isPlayerPlaying);
 }
 
-void Osu::fireResolutionChanged() { this->onResolutionChanged(this->vInternalResolution); }
+void Osu::fireResolutionChanged() { this->onResolutionChanged(this->getVirtScreenSize()); }
 
 void Osu::onWindowedResolutionChanged(std::string_view args) {
     if(env->isFullscreen()) return;
@@ -1647,7 +1648,7 @@ void Osu::onInternalResolutionChanged(std::string_view args) {
     }
 
     // store, then force onResolutionChanged()
-    this->vInternalResolution = newInternalResolution;
+    this->internalRect = {vec2{}, newInternalResolution};
     this->vInternalResolution2 = newInternalResolution;
     this->fireResolutionChanged();
 
@@ -1818,7 +1819,7 @@ void Osu::updateCursorVisibility() {
 
     // if it's not forced visible, check whether it's inside the internal window
     if(!forced_visible) {
-        const bool internal_contains_mouse = McRect{{}, this->vInternalResolution}.contains(mouse->getPos());
+        const bool internal_contains_mouse = this->internalRect.contains(mouse->getPos());
         if(internal_contains_mouse) {
             desired_vis = false;
         } else {
@@ -1854,11 +1855,10 @@ void Osu::updateConfineCursor() {
 
     bool confine_cursor = might_confine && !force_no_confine;
     if(confine_cursor) {
-        if((g->getResolution() != this->vInternalResolution) && cv::letterboxing.getBool()) {
-            clip = McRect{(f32)(-mouse->getOffset().x), (f32)(-mouse->getOffset().y), this->vInternalResolution.x,
-                          this->vInternalResolution.y};
+        if((g->getResolution() != this->getVirtScreenSize()) && cv::letterboxing.getBool()) {
+            clip = McRect{-mouse->getOffset(), this->getVirtScreenSize()};
         } else {
-            clip = McRect{0, 0, (f32)(engine->getScreenWidth()), (f32)(engine->getScreenHeight())};
+            clip = McRect{vec2{}, engine->getScreenSize()};
         }
     }
 

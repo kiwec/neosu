@@ -184,7 +184,6 @@ void Mouse::onButtonChange(ButtonIndex button, bool down) {
 
 void Mouse::setPos(vec2 newPos) {
     this->vPos = newPos;
-    env->setMousePos(newPos.x, newPos.y);
 }
 
 void Mouse::setOffset(vec2 offset) {

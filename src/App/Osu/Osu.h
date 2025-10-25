@@ -99,9 +99,10 @@ class Osu final : public MouseListener, public KeyboardListener {
     }
     inline void setShouldPauseBGThreads(bool pause) { this->pause_bg_threads.store(pause, std::memory_order_release); }
 
-    [[nodiscard]] inline vec2 getVirtScreenSize() const { return vInternalResolution; }
-    [[nodiscard]] inline int getVirtScreenWidth() const { return (int)vInternalResolution.x; }
-    [[nodiscard]] inline int getVirtScreenHeight() const { return (int)vInternalResolution.y; }
+    [[nodiscard]] inline McRect getVirtScreenRect() const { return this->internalRect; }
+    [[nodiscard]] inline vec2 getVirtScreenSize() const { return this->internalRect.getSize(); }
+    [[nodiscard]] inline int getVirtScreenWidth() const { return (int)this->internalRect.getWidth(); }
+    [[nodiscard]] inline int getVirtScreenHeight() const { return (int)this->internalRect.getHeight(); }
 
     [[nodiscard]] inline const std::unique_ptr<OptionsMenu> &getOptionsMenu() const { return this->optionsMenu; }
     [[nodiscard]] inline const std::unique_ptr<SongBrowser> &getSongBrowser() const { return this->songBrowser; }
@@ -289,7 +290,7 @@ class Osu final : public MouseListener, public KeyboardListener {
     Shader *actual_flashlight_shader{nullptr};
     Shader *flashlight_shader{nullptr};
 
-    vec2 vInternalResolution{0.f};
+    McRect internalRect{0.f};
     // wtf is this? why?
     vec2 vInternalResolution2{0.f};
 
