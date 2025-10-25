@@ -428,11 +428,10 @@ void Engine::onResolutionChange(vec2 newResolution) {
         newResolution = vec2(2, 2);
     }
 
-    this->screenRect = {vec2{}, newResolution};
-
     // to avoid double resolutionChange
     this->bResolutionChange = false;
     this->vNewScreenSize = newResolution;
+    this->screenRect = {vec2{}, newResolution};
 
     if(this->guiContainer) this->guiContainer->setSize(newResolution.x, newResolution.y);
     if(const auto &cbox = Engine::consoleBox.load(std::memory_order_relaxed); cbox != nullptr) {
@@ -440,7 +439,6 @@ void Engine::onResolutionChange(vec2 newResolution) {
     }
 
     // update everything
-    this->screenRect = {{}, newResolution};
     if(g) g->onResolutionChange(newResolution);
     if(app) app->onResolutionChanged(newResolution);
 }
