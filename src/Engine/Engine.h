@@ -87,9 +87,9 @@ class Engine final : public KeyboardListener {
     // screen
     void requestResolutionChange(vec2 newResolution);
     [[nodiscard]] constexpr McRect getScreenRect() const { return this->screenRect; }
-    [[nodiscard]] constexpr vec2 getScreenSize() const { return this->vScreenSize; }
-    [[nodiscard]] constexpr int getScreenWidth() const { return (int)this->vScreenSize.x; }
-    [[nodiscard]] constexpr int getScreenHeight() const { return (int)this->vScreenSize.y; }
+    [[nodiscard]] constexpr vec2 getScreenSize() const { return this->screenRect.getSize(); }
+    [[nodiscard]] constexpr int getScreenWidth() const { return (int)this->screenRect.getWidth(); }
+    [[nodiscard]] constexpr int getScreenHeight() const { return (int)this->screenRect.getHeight(); }
 
     // vars
     [[nodiscard]] constexpr double getTime() const { return this->dTime; }
@@ -133,7 +133,6 @@ class Engine final : public KeyboardListener {
 
     // primary screen
     McRect screenRect;
-    vec2 vScreenSize{0.f};
     vec2 vNewScreenSize{0.f};
     bool bResolutionChange;
 

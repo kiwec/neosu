@@ -161,8 +161,8 @@ class Environment {
     void setWindowResizable(bool resizable);
     void setFullscreenWindowedBorderless(bool fullscreenWindowedBorderless);
     void setMonitor(int monitor);
-    [[nodiscard]] inline const float &getDisplayRefreshRate() const { return m_fDisplayHz; }
-    [[nodiscard]] inline const float &getDisplayRefreshTime() const { return m_fDisplayHzSecs; }
+    [[nodiscard]] inline float getDisplayRefreshRate() const { return m_fDisplayHz; }
+    [[nodiscard]] inline float getDisplayRefreshTime() const { return m_fDisplayHzSecs; }
     [[nodiscard]] HWND getHwnd() const;
     [[nodiscard]] vec2 getWindowPos() const;
     [[nodiscard]] vec2 getWindowSize() const;

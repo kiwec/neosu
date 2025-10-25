@@ -59,11 +59,10 @@ Engine::Engine() {
 
     // screen
     this->bResolutionChange = false;
-    this->vScreenSize = env->getWindowSize();
-    this->vNewScreenSize = this->vScreenSize;
-    this->screenRect = {vec2{}, this->vScreenSize};
+    this->screenRect = {{}, env->getWindowSize()};
+    this->vNewScreenSize = this->screenRect.getSize();
 
-    debugLog("Engine: ScreenSize = ({}x{})", (int)this->vScreenSize.x, (int)this->vScreenSize.y);
+    debugLog("Engine: ScreenSize = ({}x{})", (int)this->screenRect.getWidth(), (int)this->screenRect.getHeight());
 
     // custom
     this->bDrawing = false;
@@ -77,7 +76,6 @@ Engine::Engine() {
         this->runtime_assert(!!io && io->succeeded(), "I/O subsystem failed to initialize!");
 
         // shared freetype init
-        McFont::initSharedResources();
         this->runtime_assert(McFont::initSharedResources(), "FreeType failed to initialize!");
 
         // input devices
@@ -421,8 +419,8 @@ void Engine::onRestored() {
 }
 
 void Engine::onResolutionChange(vec2 newResolution) {
-    debugLog("Engine: onResolutionChange() ({:d}, {:d}) -> ({:d}, {:d})", (int)this->vScreenSize.x,
-             (int)this->vScreenSize.y, (int)newResolution.x, (int)newResolution.y);
+    debugLog("Engine: onResolutionChange() ({:d}, {:d}) -> ({:d}, {:d})", (int)this->screenRect.getWidth(),
+             (int)this->screenRect.getHeight(), (int)newResolution.x, (int)newResolution.y);
 
     // NOTE: Windows [Show Desktop] button in the superbar causes (0,0)
     if(newResolution.x < 2 || newResolution.y < 2) {
@@ -442,7 +440,7 @@ void Engine::onResolutionChange(vec2 newResolution) {
     }
 
     // update everything
-    this->vScreenSize = newResolution;
+    this->screenRect = {{}, newResolution};
     if(g) g->onResolutionChange(newResolution);
     if(app) app->onResolutionChanged(newResolution);
 }
