@@ -9,6 +9,7 @@
 #include "Timing.h"
 #include "Logging.h"
 #include "ConVar.h"
+#include "Thread.h"
 
 #include "Osu.h"  // TODO: remove these hacks
 
@@ -126,7 +127,7 @@ Environment::Environment(const std::unordered_map<std::string, std::optional<std
     cv::monitor.setCallback(SA::MakeDelegate<&Environment::onMonitorChange>(this));
 
     // set high priority right away
-    Environment::setThreadPriority(cv::win_processpriority.getFloat());
+    McThread::set_current_thread_prio(cv::win_processpriority.getBool());
 }
 
 Environment::~Environment() {
@@ -997,11 +998,6 @@ void Environment::listenToTextInput(bool listen) {
 //******************************//
 //	internal helpers/callbacks  //
 //******************************//
-
-// convar callback
-void Environment::setThreadPriority(float newPrio) {
-    SDL_SetCurrentThreadPriority(!!static_cast<int>(newPrio) ? SDL_THREAD_PRIORITY_HIGH : SDL_THREAD_PRIORITY_NORMAL);
-}
 
 // convar callback
 void Environment::onLogLevelChange(float newval) {

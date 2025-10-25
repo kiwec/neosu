@@ -86,7 +86,6 @@ class Environment {
     static bool unsetEnvVariable(std::string_view varToUnset) noexcept;
 
     static const std::string &getExeFolder();
-    static void setThreadPriority(float newVal);  // != 0.0 : high
 
     static void openURLInDefaultBrowser(std::string_view url) noexcept;
 

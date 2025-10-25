@@ -1,6 +1,7 @@
 // Copyright (c) 2025, WH, All rights reserved.
 
 #include "Thread.h"
+#include "Logging.h"
 #include "UString.h"
 #include "Environment.h"
 
@@ -99,8 +100,19 @@ const char *get_current_thread_name() {
     return PACKAGE_NAME;
 }
 
-void set_current_thread_prio(bool high) { Environment::setThreadPriority(high ? 1.f : 0.f); }
-
 bool is_main_thread() { return SDL_IsMainThread(); }
+
+void set_current_thread_prio(bool high) {
+    if (!SDL_SetCurrentThreadPriority(high ? SDL_THREAD_PRIORITY_HIGH : SDL_THREAD_PRIORITY_NORMAL)) {
+        debugLog("couldn't set thread priority to {}", high ? "high" : "normal");
+    }
+#ifdef MCENGINE_PLATFORM_WINDOWS
+    if (is_main_thread()) {
+        if (!SetPriorityClass(GetCurrentProcess(), high ? HIGH_PRIORITY_CLASS : NORMAL_PRIORITY_CLASS)) {
+            debugLog("couldn't set process priority class to {}: {:#x}", high ? "high" : "normal", GetLastError());
+        }
+    }
+#endif
+}
 
 };  // namespace McThread

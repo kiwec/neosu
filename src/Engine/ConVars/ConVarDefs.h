@@ -32,9 +32,6 @@ dummyDatabase *db;
 //     inline void setFullscreenWindowedBorderless(bool /**/) { ; }
 // };
 // dummyEnv *env{};
-namespace Environment {
-extern void setThreadPriority(float /**/);
-}  // namespace Environment
 
 namespace ConVarHandler::ConVarBuiltins {
 extern void find(std::string_view args);
@@ -88,6 +85,9 @@ extern void vprofToggleCB(float);
 namespace Spectating {
 extern void start_by_username(std::string_view username);
 }
+namespace McThread {
+extern void set_current_thread_prio(bool /**/);
+}  // namespace McThread
 
 #else
 #define CONVAR(name, ...) extern ConVar _CV(name)
@@ -1279,7 +1279,8 @@ CONVAR(user_include_relax_and_autopilot_for_stats, "user_include_relax_and_autop
 CONVAR(vsync, "vsync"sv, false, CLIENT, [](float on) -> void { g ? g->setVSync(!!static_cast<int>(on)) : (void)0; });
 // this is not windows-only anymore, just keeping it with the "win_" prefix to not break old configs
 CONVAR(win_processpriority, "win_processpriority"sv, 1, CLIENT,
-       "sets the main process priority (0 = normal, 1 = high)"sv, CFUNC(Environment::setThreadPriority));
+       "sets the main process priority (0 = normal, 1 = high)"sv,
+       [](float newFloat) -> void { McThread::set_current_thread_prio(!!static_cast<int>(newFloat)); });
 
 // Unfinished features
 CONVAR(adblock, "adblock"sv, true, CLIENT | SKINS | SERVER);
