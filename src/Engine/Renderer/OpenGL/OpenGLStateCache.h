@@ -20,17 +20,19 @@ class OpenGLStateCache final {
     OpenGLStateCache(OpenGLStateCache &&) = delete;
 
     // program state
-    static void setCurrentProgram(int program);
-    [[nodiscard]] static int getCurrentProgram();
+    static void setCurrentProgram(unsigned int program);
+    [[nodiscard]] static unsigned int getCurrentProgram();
 
     // framebuffer state
-    static void setCurrentFramebuffer(int framebuffer);
-    [[nodiscard]] static int getCurrentFramebuffer();
+    static void setCurrentFramebuffer(unsigned int framebuffer);
+    [[nodiscard]] static unsigned int getCurrentFramebuffer();
 
     // viewport state
     static void setCurrentViewport(int x, int y, int width, int height);
     static void getCurrentViewport(int &x, int &y, int &width, int &height);
-    [[nodiscard]] inline static const std::array<int, 4> &getCurrentViewport() { return iViewport; }
+
+    static inline void setCurrentViewport(const std::array<int, 4> &vp) { iViewport = vp; }
+    [[nodiscard]] static inline const std::array<int, 4> &getCurrentViewport() { return iViewport; }
 
     static void bindArrayBuffer(unsigned int GLbuffer);
 
@@ -48,8 +50,8 @@ class OpenGLStateCache final {
     static std::array<int, 4> iViewport;
     static std::array<unsigned int, 4> iEnabledStateArray;
 
-    static int iCurrentProgram;
-    static int iCurrentFramebuffer;
+    static unsigned int iCurrentProgram;
+    static unsigned int iCurrentFramebuffer;
 
     static unsigned int iCurrentArrayBuffer;
 };

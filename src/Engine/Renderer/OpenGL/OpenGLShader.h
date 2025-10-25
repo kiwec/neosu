@@ -48,9 +48,9 @@ class OpenGLShader final : public Shader {
     bool bSource;
     int iVertexShader;
     int iFragmentShader;
-    int iProgram;
+    unsigned int iProgram;
 
-    int iProgramBackup;
+    unsigned int iProgramBackup;
 
     sv_unordered_map<int> uniformLocationCache;
 };

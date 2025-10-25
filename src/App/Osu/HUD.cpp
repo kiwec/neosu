@@ -1691,7 +1691,7 @@ void HUD::drawStatistics(int misses, int sliderbreaks, int maxPossibleCombo, flo
             const vec3 shadowPos(xOffset, currentY + yOffset, 0.25f);
             font->addToBatch(text, shadowPos, shadowColor);
 
-            const vec3 textPos(xOffset - 2, currentY + yOffset - 2, 0.325f);
+            const vec3 textPos(xOffset - 1, currentY + yOffset - 1, 0.325f);
             font->addToBatch(text, textPos, textColor);
 
             currentY += yDelta;

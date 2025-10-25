@@ -178,7 +178,7 @@ static ConVar debug_opengl_v("debug_opengl_v", false, CLIENT | HIDDEN,
 }  // namespace cv
 
 void SDLGLInterface::setLog(bool on) {
-    if(!g || !g.get() || !GLAD_GL_ARB_debug_output) return;
+    if(!g || !g.get() || !glDebugMessageCallbackARB) return;
     if(on) {
         glEnable(GL_DEBUG_OUTPUT);
     } else {

@@ -47,6 +47,7 @@ class RenderTarget : public Resource {
     [[nodiscard]] inline Graphics::MULTISAMPLE_TYPE getMultiSampleType() const { return this->multiSampleType; }
 
     [[nodiscard]] inline bool isMultiSampled() const {
+        if constexpr(Env::cfg(OS::WASM)) return false;
         return this->multiSampleType != Graphics::MULTISAMPLE_TYPE::MULTISAMPLE_0X;
     }
 

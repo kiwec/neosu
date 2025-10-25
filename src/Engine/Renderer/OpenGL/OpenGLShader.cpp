@@ -42,7 +42,7 @@ void OpenGLShader::destroy() {
 void OpenGLShader::enable() {
     if(!this->isReady()) return;
 
-    int currentProgram = OpenGLStateCache::getCurrentProgram();
+    unsigned int currentProgram = OpenGLStateCache::getCurrentProgram();
     if(currentProgram == this->iProgram) return;  // already active
 
     this->iProgramBackup = currentProgram;

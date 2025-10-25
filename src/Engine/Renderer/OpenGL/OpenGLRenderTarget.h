@@ -41,7 +41,7 @@ class OpenGLRenderTarget final : public RenderTarget {
     unsigned int iResolveFrameBuffer{0};
     unsigned int iResolveTexture{0};
 
-    int iFrameBufferBackup{0};
+    unsigned int iFrameBufferBackup{0};
     unsigned int iTextureUnitBackup{0};
     std::array<int, 4> iViewportBackup{};
 

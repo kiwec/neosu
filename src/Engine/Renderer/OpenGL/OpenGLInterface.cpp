@@ -55,8 +55,10 @@ OpenGLInterface::OpenGLInterface()
     glFrontFace(GL_CCW);
 
     // debugging
-    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB);
-    glDebugMessageCallbackARB(SDLGLInterface::glDebugCB, nullptr);
+    if(glDebugMessageCallbackARB) {
+        glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB);
+        glDebugMessageCallbackARB(SDLGLInterface::glDebugCB, nullptr);
+    }
 
     // initialize the state cache
     OpenGLStateCache::initialize();
@@ -111,7 +113,7 @@ void OpenGLInterface::setColor(Color color) {
 }
 
 void OpenGLInterface::drawPixels(int x, int y, int width, int height, Graphics::DRAWPIXELS_TYPE type,
-                                       const void *pixels) {
+                                 const void *pixels) {
     glRasterPos2i(x, y + height);  // '+height' because of opengl bottom left origin, but engine top left origin
     glDrawPixels(width, height, GL_RGBA,
                  (type == Graphics::DRAWPIXELS_TYPE::DRAWPIXELS_UBYTE ? GL_UNSIGNED_BYTE : GL_FLOAT), pixels);
@@ -238,7 +240,7 @@ void OpenGLInterface::fillRoundedRect(int x, int y, int width, int height, int r
 }
 
 void OpenGLInterface::fillGradient(int x, int y, int width, int height, Color topLeftColor, Color topRightColor,
-                                         Color bottomLeftColor, Color bottomRightColor) {
+                                   Color bottomLeftColor, Color bottomRightColor) {
     updateTransform();
 
     glDisable(GL_TEXTURE_2D);
@@ -287,7 +289,7 @@ void OpenGLInterface::drawQuad(int x, int y, int width, int height) {
 }
 
 void OpenGLInterface::drawQuad(vec2 topLeft, vec2 topRight, vec2 bottomRight, vec2 bottomLeft, Color topLeftColor,
-                                     Color topRightColor, Color bottomRightColor, Color bottomLeftColor) {
+                               Color topRightColor, Color bottomRightColor, Color bottomLeftColor) {
     updateTransform();
 
     glBegin(GL_QUADS);
@@ -749,12 +751,11 @@ Image *OpenGLInterface::createImage(i32 width, i32 height, bool mipmapped, bool 
 }
 
 RenderTarget *OpenGLInterface::createRenderTarget(int x, int y, int width, int height,
-                                                        Graphics::MULTISAMPLE_TYPE multiSampleType) {
+                                                  Graphics::MULTISAMPLE_TYPE multiSampleType) {
     return new OpenGLRenderTarget(x, y, width, height, multiSampleType);
 }
 
-Shader *OpenGLInterface::createShaderFromFile(std::string vertexShaderFilePath,
-                                                    std::string fragmentShaderFilePath) {
+Shader *OpenGLInterface::createShaderFromFile(std::string vertexShaderFilePath, std::string fragmentShaderFilePath) {
     return new OpenGLShader(vertexShaderFilePath, fragmentShaderFilePath, false);
 }
 
@@ -762,8 +763,8 @@ Shader *OpenGLInterface::createShaderFromSource(std::string vertexShader, std::s
     return new OpenGLShader(vertexShader, fragmentShader, true);
 }
 
-VertexArrayObject *OpenGLInterface::createVertexArrayObject(Graphics::PRIMITIVE primitive,
-                                                                  Graphics::USAGE_TYPE usage, bool keepInSystemMemory) {
+VertexArrayObject *OpenGLInterface::createVertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::USAGE_TYPE usage,
+                                                            bool keepInSystemMemory) {
     return new OpenGLVertexArrayObject(primitive, usage, keepInSystemMemory);
 }
 

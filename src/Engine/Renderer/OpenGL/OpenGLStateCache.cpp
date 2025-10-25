@@ -9,8 +9,8 @@
 std::array<int, 4> OpenGLStateCache::iViewport{};
 std::array<unsigned int, 4> OpenGLStateCache::iEnabledStateArray{};
 
-int OpenGLStateCache::iCurrentProgram{INT_MAX};
-int OpenGLStateCache::iCurrentFramebuffer{INT_MAX};
+unsigned int OpenGLStateCache::iCurrentProgram{INT_MAX};
+unsigned int OpenGLStateCache::iCurrentFramebuffer{INT_MAX};
 
 unsigned int OpenGLStateCache::iCurrentArrayBuffer{UINT_MAX};
 
@@ -25,19 +25,21 @@ void OpenGLStateCache::refresh() {
     // only do the expensive query when necessary
     glGetIntegerv(GL_VIEWPORT, OpenGLStateCache::iViewport.data());
 
-    glGetIntegerv(GL_CURRENT_PROGRAM, &OpenGLStateCache::iCurrentProgram);
-    glGetIntegerv(GL_FRAMEBUFFER_BINDING, &OpenGLStateCache::iCurrentFramebuffer);
+    glGetIntegerv(GL_CURRENT_PROGRAM, reinterpret_cast<GLint *>(&OpenGLStateCache::iCurrentProgram));
+    glGetIntegerv(GL_FRAMEBUFFER_BINDING, reinterpret_cast<GLint *>(&OpenGLStateCache::iCurrentFramebuffer));
 
     // glGetIntegerv(GL_ARRAY_BUFFER_BINDING, (GLint *)&OpenGLStateCache::iCurrentArrayBuffer);
 }
 
-void OpenGLStateCache::setCurrentProgram(int program) { OpenGLStateCache::iCurrentProgram = program; }
+void OpenGLStateCache::setCurrentProgram(unsigned int program) { OpenGLStateCache::iCurrentProgram = program; }
 
-int OpenGLStateCache::getCurrentProgram() { return OpenGLStateCache::iCurrentProgram; }
+unsigned int OpenGLStateCache::getCurrentProgram() { return OpenGLStateCache::iCurrentProgram; }
 
-void OpenGLStateCache::setCurrentFramebuffer(int framebuffer) { OpenGLStateCache::iCurrentFramebuffer = framebuffer; }
+void OpenGLStateCache::setCurrentFramebuffer(unsigned int framebuffer) {
+    OpenGLStateCache::iCurrentFramebuffer = framebuffer;
+}
 
-int OpenGLStateCache::getCurrentFramebuffer() { return OpenGLStateCache::iCurrentFramebuffer; }
+unsigned int OpenGLStateCache::getCurrentFramebuffer() { return OpenGLStateCache::iCurrentFramebuffer; }
 
 void OpenGLStateCache::setCurrentViewport(int x, int y, int width, int height) {
     OpenGLStateCache::iViewport[0] = x;
