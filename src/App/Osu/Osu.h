@@ -317,7 +317,6 @@ class Osu final : public MouseListener, public KeyboardListener {
     bool bF1{false};
     bool bUIToggleCheck{false};
     bool bScoreboardToggleCheck{false};
-    bool bEscape{false};
     bool bSkipScheduled{false};
     bool bQuickRetryDown{false};
     bool bSeekKey{false};

@@ -1116,10 +1116,10 @@ void Osu::onKeyDown(KeyboardEvent &key) {
         // if playing
         if(this->isInPlayMode()) {
             // toggle pause menu
-            bool pressed_pause = (key == cv::GAME_PAUSE.getVal<KEYCODE>()) || (key == KEY_ESCAPE);
-            pressed_pause &= !this->bEscape;  // ignore repeat events when key is held down
+            // ignore repeat events when key is held down
+            const bool pressed_pause =
+                ((key == cv::GAME_PAUSE.getVal<KEYCODE>()) || (key == KEY_ESCAPE)) && !key.isRepeat();
             if(pressed_pause) {
-                this->bEscape = true;
                 key.consume();
 
                 if(!BanchoState::is_playing_a_multi_map()) {
@@ -1203,7 +1203,6 @@ void Osu::onKeyUp(KeyboardEvent &key) {
     // misc hotkeys release
     // XXX: handle keypresses in the engine, instead of doing this hacky mess
     if(key == KEY_F1 || key == cv::TOGGLE_MODSELECT.getVal<KEYCODE>()) this->bF1 = false;
-    if(key == cv::GAME_PAUSE.getVal<KEYCODE>() || key == KEY_ESCAPE) this->bEscape = false;
     if(key == KEY_LSHIFT || key == KEY_RSHIFT) this->bUIToggleCheck = false;
     if(key == cv::TOGGLE_SCOREBOARD.getVal<KEYCODE>()) {
         this->bScoreboardToggleCheck = false;

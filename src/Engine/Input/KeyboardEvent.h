@@ -10,11 +10,13 @@ using KEYCODE = uint16_t;
 
 class KeyboardEvent {
    public:
-    KeyboardEvent(KEYCODE keyCode, uint64_t timestamp) : timestamp(timestamp), keyCode(keyCode) {}
+    KeyboardEvent(KEYCODE keyCode, uint64_t timestamp, bool repeat = false)
+        : timestamp(timestamp), keyCode(keyCode), bRepeat(repeat) {}
 
     constexpr forceinline void consume() { this->bConsumed = true; }
 
     [[nodiscard]] constexpr forceinline bool isConsumed() const { return this->bConsumed; }
+    [[nodiscard]] constexpr forceinline bool isRepeat() const { return this->bRepeat; }
     [[nodiscard]] constexpr forceinline KEYCODE getKeyCode() const { return this->keyCode; }
     [[nodiscard]] constexpr forceinline char16_t getCharCode() const { return this->keyCode; }  // these are equivalent
     [[nodiscard]] constexpr forceinline uint64_t getTimestamp() const { return this->timestamp; }
@@ -27,6 +29,7 @@ class KeyboardEvent {
    private:
     uint64_t timestamp;
     KEYCODE keyCode;
+    bool bRepeat;
     bool bConsumed{false};
 };
 

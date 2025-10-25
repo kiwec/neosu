@@ -316,15 +316,15 @@ SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
 
         // keyboard events
         case SDL_EVENT_KEY_DOWN:
-            keyboard->onKeyDown({static_cast<KEYCODE>(event->key.scancode), event->key.timestamp});
+            keyboard->onKeyDown({static_cast<KEYCODE>(event->key.scancode), event->key.timestamp, event->key.repeat});
             break;
 
         case SDL_EVENT_KEY_UP:
-            keyboard->onKeyUp({static_cast<KEYCODE>(event->key.scancode), event->key.timestamp});
+            keyboard->onKeyUp({static_cast<KEYCODE>(event->key.scancode), event->key.timestamp, event->key.repeat});
             break;
 
         case SDL_EVENT_TEXT_INPUT:
-            for(const auto &chr : UString(event->text.text)) keyboard->onChar({chr, event->text.timestamp});
+            for(const auto &chr : UString(event->text.text)) keyboard->onChar({chr, event->text.timestamp, false});
             break;
 
         // mouse events
