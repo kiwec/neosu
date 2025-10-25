@@ -1111,10 +1111,9 @@ void Osu::onKeyDown(KeyboardEvent &key) {
     // forward to all subsystem, if not already consumed
     this->forEachScreenWhile<&OsuScreen::onKeyDown>([&key]() -> bool { return !key.isConsumed(); }, key);
 
-    // special handling, after subsystems, if still not consumed
-    if(!key.isConsumed()) {
-        // if playing
-        if(this->isInPlayMode()) {
+    // special handling, after subsystems, if still not consumed, if playing
+    if(!key.isConsumed() && this->isInPlayMode()) {
+        do {
             // toggle pause menu
             // ignore repeat events when key is held down
             const bool pressed_pause =
@@ -1123,8 +1122,9 @@ void Osu::onKeyDown(KeyboardEvent &key) {
                 key.consume();
 
                 if(!BanchoState::is_playing_a_multi_map()) {
-                    // bit of a misnomer, this pauses OR unpauses the music
+                    // bit of a misnomer, this pauses OR unpauses the music OR stops if it was still loading/waiting
                     this->map_iface->pause();
+                    if(!this->isInPlayMode()) break;  // if we exit due to the "pause", don't do anything else
                 }
 
                 if(this->pauseMenu->isVisible() && this->map_iface->hasFailed()) {
@@ -1151,7 +1151,7 @@ void Osu::onKeyDown(KeyboardEvent &key) {
                 this->notificationOverlay->addNotification(
                     fmt::format("Local beatmap offset set to {} ms", this->map_iface->getBeatmap()->getLocalOffset()));
             }
-        }
+        } while(false);
     }
 }
 
