@@ -344,7 +344,7 @@ Osu::Osu() {
 #endif
     }
 
-    env->setCursorVisible(this->internalRect.contains(mouse->getPos()));
+    env->setCursorVisible(!this->internalRect.contains(mouse->getPos()));
 }
 
 // we want to destroy them in the same order as we listed them, to match the old (raw pointer) behavior
