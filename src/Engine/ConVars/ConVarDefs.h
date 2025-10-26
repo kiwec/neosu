@@ -234,7 +234,7 @@ CONVAR(r_opengl_legacy_vao_use_vertex_array, "r_opengl_legacy_vao_use_vertex_arr
        "texcoords/normals/etc. are NOT in gl_MultiTexCoord0 -> requiring a shader with attributes)"sv);
 CONVAR(font_load_system, "font_load_system"sv, true, CLIENT,
        "try to load a similar system font if a glyph is missing in the bundled fonts"sv);
-CONVAR(r_image_unbind_after_drawimage, "r_image_unbind_after_drawimage"sv, true, CLIENT);
+CONVAR(r_image_unbind_after_drawimage, "r_image_unbind_after_drawimage"sv, false, CLIENT);
 CONVAR(r_globaloffset_x, "r_globaloffset_x"sv, 0.0f, CLIENT | PROTECTED | GAMEPLAY);
 CONVAR(r_globaloffset_y, "r_globaloffset_y"sv, 0.0f, CLIENT | PROTECTED | GAMEPLAY);
 CONVAR(r_sync_debug, "r_sync_debug"sv, false, CLIENT | HIDDEN, "print debug information about sync objects"sv);

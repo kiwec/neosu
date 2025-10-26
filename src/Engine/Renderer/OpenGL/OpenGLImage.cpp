@@ -152,7 +152,7 @@ void OpenGLImage::bind(unsigned int textureUnit) const {
 }
 
 void OpenGLImage::unbind() const {
-    if(!this->isReady()) return;
+    if(!this->isReady() || !cv::r_image_unbind_after_drawimage.getBool()) return;
 
     // restore texture unit (just in case) and set to no texture
     glActiveTexture(GL_TEXTURE0 + this->iTextureUnitBackup);

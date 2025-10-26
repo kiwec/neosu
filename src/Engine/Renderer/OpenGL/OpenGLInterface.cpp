@@ -408,7 +408,7 @@ void OpenGLInterface::drawImage(const Image *image, AnchorPoint anchor, float ed
         }
         glEnd();
     }
-    if(cv::r_image_unbind_after_drawimage.getBool()) image->unbind();
+    image->unbind();
 
     if(smoothedEdges) {
         this->smoothClipShader->disable();
