@@ -107,7 +107,9 @@ void set_current_thread_prio(bool high) {
         debugLog("couldn't set thread priority to {}", high ? "high" : "normal");
     }
 #ifdef MCENGINE_PLATFORM_WINDOWS
-    if (is_main_thread()) {
+    static int logcpus = Environment::getLogicalCPUCount();
+    // tested in a windows vm, this causes things to just behave WAY worse than if you leave it alone with low core counts
+    if (logcpus > 4 && is_main_thread()) {
         if (!SetPriorityClass(GetCurrentProcess(), high ? HIGH_PRIORITY_CLASS : NORMAL_PRIORITY_CLASS)) {
             debugLog("couldn't set process priority class to {}: {:#x}", high ? "high" : "normal", GetLastError());
         }
