@@ -6,35 +6,72 @@
 
 #include "SyncStoptoken.h"
 
-#include <thread>
+#include <SDL3/SDL_thread.h>
+#include <SDL3/SDL_cpuinfo.h>
+
+#include <functional>
+#include <cassert>
 
 namespace Sync {
-#ifdef USE_NSYNC
-using namespace nsync;
 
 // ===================================================================
-// jthread: thread with nsync-backed stop_token support
+// jthread: thread with stop_token support + 8MB stack size
 // ===================================================================
 class jthread {
    private:
-    std::thread m_thread;
+    SDL_Thread* m_thread{nullptr};
     stop_source m_stop_source;
 
    public:
-    using id = std::thread::id;
-    using native_handle_type = std::thread::native_handle_type;
+    using id = SDL_ThreadID;
+    using native_handle_type = SDL_Thread*;
 
     jthread() noexcept = default;
 
     template <typename F, typename... Args>
     explicit jthread(F&& f, Args&&... args) {
-        if constexpr(std::is_invocable_v<std::decay_t<F>, stop_token, std::decay_t<Args>...>) {
-            // function takes stop_token as first parameter
-            m_thread = std::thread(std::forward<F>(f), m_stop_source.get_token(), std::forward<Args>(args)...);
-        } else {
-            // function doesn't take stop_token
-            m_thread = std::thread(std::forward<F>(f), std::forward<Args>(args)...);
+        // wrapper context
+        struct thread_context {
+            std::decay_t<F> func;
+            std::tuple<std::decay_t<Args>...> args;
+            stop_token token;
+
+            static int SDLCALL invoke(void* data) {
+                auto* ctx = static_cast<thread_context*>(data);
+
+                // invoke with or without stop_token depending on signature
+                if constexpr(std::is_invocable_v<std::decay_t<F>, stop_token, std::decay_t<Args>...>) {
+                    std::apply(
+                        [&](auto&&... a) { std::invoke(ctx->func, ctx->token, std::forward<decltype(a)>(a)...); },
+                        std::move(ctx->args));
+                } else {
+                    std::apply([&](auto&&... a) { std::invoke(ctx->func, std::forward<decltype(a)>(a)...); },
+                               std::move(ctx->args));
+                }
+
+                delete ctx;
+                return 0;
+            }
+        };
+
+        // allocate the context/arg wrapper
+        auto* ctx = new thread_context{std::forward<F>(f), std::make_tuple(std::forward<Args>(args)...),
+                                       m_stop_source.get_token()};
+
+        auto props = SDL_CreateProperties();
+        assert(props);
+
+        SDL_SetPointerProperty(props, SDL_PROP_THREAD_CREATE_ENTRY_FUNCTION_POINTER, (void*)&thread_context::invoke);
+        SDL_SetPointerProperty(props, SDL_PROP_THREAD_CREATE_USERDATA_POINTER, ctx);
+        SDL_SetNumberProperty(props, SDL_PROP_THREAD_CREATE_STACKSIZE_NUMBER, 8LL * 1024 * 1024); /* 8MB */
+
+        m_thread = SDL_CreateThreadWithProperties(props);
+
+        if(!m_thread) {
+            delete ctx;  // cleanup on failure
         }
+
+        SDL_DestroyProperties(props);
     }
 
     ~jthread() {
@@ -45,7 +82,9 @@ class jthread {
     }
 
     jthread(const jthread&) = delete;
-    jthread(jthread&&) noexcept = default;
+    jthread(jthread&& other) noexcept : m_thread(other.m_thread), m_stop_source(std::move(other.m_stop_source)) {
+        other.m_thread = nullptr;
+    }
     jthread& operator=(const jthread&) = delete;
     jthread& operator=(jthread&& other) noexcept {
         if(this != &other) {
@@ -53,28 +92,38 @@ class jthread {
                 request_stop();
                 join();
             }
-            m_thread = std::move(other.m_thread);
+            m_thread = other.m_thread;
+            other.m_thread = nullptr;
             m_stop_source = std::move(other.m_stop_source);
         }
         return *this;
     }
 
     void swap(jthread& other) noexcept {
-        m_thread.swap(other.m_thread);
+        auto last = m_thread;
+        m_thread = other.m_thread;
+        other.m_thread = last;
         m_stop_source.swap(other.m_stop_source);
     }
 
-    [[nodiscard]] bool joinable() const noexcept { return m_thread.joinable(); }
+    [[nodiscard]] bool joinable() const noexcept {
+        SDL_ThreadState state = SDL_THREAD_UNKNOWN;
+        return m_thread && ((state = SDL_GetThreadState(m_thread)) == SDL_THREAD_ALIVE || state == SDL_THREAD_COMPLETE);
+    }
 
-    void join() { m_thread.join(); }
+    void join() {
+        assert(joinable());
+        SDL_WaitThread(m_thread, nullptr);
+        m_thread = nullptr;
+    }
 
-    void detach() { m_thread.detach(); }
+    void detach() { SDL_DetachThread(m_thread); }
 
-    [[nodiscard]] id get_id() const noexcept { return m_thread.get_id(); }
+    [[nodiscard]] id get_id() const noexcept { return SDL_GetThreadID(m_thread); }
 
-    [[nodiscard]] native_handle_type native_handle() { return m_thread.native_handle(); }
+    [[nodiscard]] native_handle_type native_handle() { return m_thread; }
 
-    [[nodiscard]] static unsigned int hardware_concurrency() noexcept { return std::thread::hardware_concurrency(); }
+    [[nodiscard]] static unsigned int hardware_concurrency() noexcept { return SDL_GetNumLogicalCPUCores(); }
 
     // stop token functionality
     [[nodiscard]] stop_source& get_stop_source() noexcept { return m_stop_source; }
@@ -83,8 +132,5 @@ class jthread {
 
     bool request_stop() noexcept { return m_stop_source.request_stop(); }
 };
-#else
-using jthread = std::jthread;
-#endif
 
 }  // namespace Sync

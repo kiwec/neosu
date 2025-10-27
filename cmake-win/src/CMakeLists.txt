@@ -213,6 +213,7 @@ target_compile_definitions(neosu PRIVATE
 target_link_options(neosu PRIVATE
     $<$<CONFIG:Debug>:/DEBUG:FULL;/SUBSYSTEM:CONSOLE;/ENTRY:wmainCRTStartup;/PROFILE>
     $<$<CONFIG:Release>:/SUBSYSTEM:WINDOWS;/ENTRY:wWinMainCRTStartup;/OPT:REF;/OPT:ICF>
+    /STACK:8388608 # 8MB default stack size
     ${LIBARCHIVE_STATIC_LDFLAGS}
 )
 

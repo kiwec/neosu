@@ -476,6 +476,8 @@ __EOF__
         AC_SUBST([NASMOBJ],[win64])
     ])
 
+    # increase default stack size to 8mb from 1mb
+    NEOSU_LDFLAGS="$NEOSU_LDFLAGS -Wl,--stack,8388608"
     AC_DEFINE([MCENGINE_PLATFORM_WINDOWS], [1], [Define if compiling for Windows.])
 ])
 

@@ -1575,8 +1575,7 @@ void Osu::updateMouseSettings() {
                        (engine->getScreenHeight() / 2.f - this->internalRect.getHeight() / 2.f) *
                            (1.0f + cv::letterboxing_offset_y.getFloat()));
 
-        scale = vec2(this->internalRect.getWidth() / engine->getScreenWidth(),
-                     this->internalRect.getHeight() / engine->getScreenHeight());
+        scale = this->internalRect.getSize() / engine->getScreenSize();
     }
 
     mouse->setOffset(offset);

@@ -7,8 +7,7 @@
 #include <system_error>
 #include <cassert>
 
-ByteBufferedFile::Reader::Reader(std::string_view readPath)
-    : buffer(std::make_unique_for_overwrite<u8[]>(READ_BUFFER_SIZE)) {
+ByteBufferedFile::Reader::Reader(std::string_view readPath) {
     auto path = File::getFsPath(readPath);
     this->file.open(path, std::ios::binary);
     if(!this->file.is_open()) {
@@ -84,9 +83,13 @@ std::string ByteBufferedFile::Reader::read_string() {
     if(empty_check == 0) return {};
 
     u32 len = this->read_uleb128();
-    static std::string str_out;
-    str_out.resize(len);
-    if(this->read_bytes(reinterpret_cast<u8 *>(str_out.data()), len) != len) {
+
+    std::string str_out;
+    str_out.resize_and_overwrite(len, [this](char* data, uSz size) -> uSz {
+        return this->read_bytes(reinterpret_cast<u8 *>(data), size);
+    });
+
+    if(str_out.size() != len) {
         this->set_error("Failed to read " + std::to_string(len) + " bytes for string");
         return {};
     }
@@ -124,8 +127,7 @@ void ByteBufferedFile::Reader::skip_string() {
     this->skip_bytes(len);
 }
 
-ByteBufferedFile::Writer::Writer(std::string_view writePath)
-    : buffer(std::make_unique_for_overwrite<u8[]>(WRITE_BUFFER_SIZE)) {
+ByteBufferedFile::Writer::Writer(std::string_view writePath) {
     auto path = File::getFsPath(writePath);
     this->file_path = path;
     this->tmp_file_path = this->file_path;

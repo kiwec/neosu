@@ -1,7 +1,6 @@
 // Copyright (c) 2025, WH, All rights reserved.
 #include "dynutils.h"
 #include "Environment.h"
-#include "Logging.h"
 #include "EngineConfig.h"
 
 #include <SDL3/SDL_loadso.h>
@@ -23,10 +22,6 @@ void *load_func_impl(lib_obj *lib, const char *func_name) {
     void *retfunc = nullptr;
     if(lib) {
         retfunc = reinterpret_cast<void *>(SDL_LoadFunction(reinterpret_cast<SDL_SharedObject *>(lib), func_name));
-    }
-    if(!retfunc) {
-        debugLog("Failed to load function {:s} from lib ({:p}): {:s}", func_name, static_cast<const void *>(lib),
-                 get_error());
     }
     return retfunc;
 }
@@ -69,7 +64,6 @@ lib_obj *load_lib(const char *c_lib_name, const char *c_search_dir) {
                 }
             }
         }
-        if(!ret) debugLog("Failed to load library {:s}: {:s}", lib_name, get_error());
     }
     return ret;
 }
