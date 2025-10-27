@@ -64,7 +64,7 @@ void OpenGLRenderTarget::init() {
 
     // create framebuffer
     glGenFramebuffers(1, &this->iFrameBuffer);
-    glBindFramebuffer(GL_FRAMEBUFFER, this->iFrameBuffer);
+    GLStateCache::bindFramebuffer(this->iFrameBuffer);
     if(this->iFrameBuffer == 0) {
         engine->showMessageError("RenderTarget Error", "Couldn't glGenFramebuffers() or glBindFramebuffer()!");
         return;
@@ -143,7 +143,8 @@ void OpenGLRenderTarget::init() {
         if(this->iResolveFrameBuffer == 0) {
             // create resolve framebuffer
             glGenFramebuffers(1, &this->iResolveFrameBuffer);
-            glBindFramebuffer(GL_FRAMEBUFFER, this->iResolveFrameBuffer);
+            GLStateCache::bindFramebuffer(this->iResolveFrameBuffer);
+
             if(this->iResolveFrameBuffer == 0) {
                 engine->showMessageError("RenderTarget Error",
                                          "Couldn't glGenFramebuffers() or glBindFramebuffer() multisampled!");
@@ -186,13 +187,7 @@ void OpenGLRenderTarget::init() {
     }
 
     // reset bound texture and framebuffer
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    // check if the default framebuffer is active first before setting viewport
-    if(OpenGLStateCache::getCurrentFramebuffer() == 0) {
-        std::array<int, 4> viewport;  // NOLINT
-        glGetIntegerv(GL_VIEWPORT, viewport.data());
-        OpenGLStateCache::setCurrentViewport(viewport);
-    }
+    GLStateCache::bindFramebuffer(0);
 
     this->setReady(true);
 }
@@ -217,11 +212,10 @@ void OpenGLRenderTarget::enable() {
     if(!this->isReady()) return;
 
     // use the state cache instead of querying OpenGL directly
-    this->iFrameBufferBackup = OpenGLStateCache::getCurrentFramebuffer();
-    glBindFramebuffer(GL_FRAMEBUFFER, this->iFrameBuffer);
-    OpenGLStateCache::setCurrentFramebuffer(this->iFrameBuffer);
+    this->iFrameBufferBackup = GLStateCache::getCurrentFramebuffer();
+    GLStateCache::bindFramebuffer(this->iFrameBuffer);
 
-    this->iViewportBackup = OpenGLStateCache::getCurrentViewport();
+    this->iViewportBackup = GLStateCache::getCurrentViewport();
 
     // set new viewport
     std::array<int, 4> newViewport{/*x*/ static_cast<int>(-this->vPos.x),
@@ -229,10 +223,8 @@ void OpenGLRenderTarget::enable() {
                                    /*w*/ static_cast<int>(g->getResolution().x),
                                    /*h*/ static_cast<int>(g->getResolution().y)};
 
-    glViewport(newViewport[0], newViewport[1], newViewport[2], newViewport[3]);
-
     // update cache
-    OpenGLStateCache::setCurrentViewport(newViewport);
+    GLStateCache::setViewport(newViewport);
 
     if(glInvalidateFramebuffer) {
         if(this->bClearColorOnDraw && this->bClearDepthOnDraw) {
@@ -283,16 +275,10 @@ void OpenGLRenderTarget::disable() {
     }
 
     // restore viewport
-    glViewport(this->iViewportBackup[0], this->iViewportBackup[1], this->iViewportBackup[2], this->iViewportBackup[3]);
-
-    // update the cache with restored viewport
-    OpenGLStateCache::setCurrentViewport(this->iViewportBackup);
+    GLStateCache::setViewport(this->iViewportBackup);
 
     // restore framebuffer
-    glBindFramebuffer(GL_FRAMEBUFFER, this->iFrameBufferBackup);
-
-    // update cache for the restored framebuffer
-    OpenGLStateCache::setCurrentFramebuffer(this->iFrameBufferBackup);
+    GLStateCache::bindFramebuffer(this->iFrameBufferBackup);
 }
 
 void OpenGLRenderTarget::bind(unsigned int textureUnit) {
@@ -314,7 +300,7 @@ void OpenGLRenderTarget::bind(unsigned int textureUnit) {
 }
 
 void OpenGLRenderTarget::unbind() {
-    if(!this->isReady()) return;
+    if(!this->isReady() || !cv::r_gl_rt_unbind.getBool()) return;
 
     // restore texture unit (just in case) and set to no texture
     glActiveTexture(GL_TEXTURE0 + this->iTextureUnitBackup);

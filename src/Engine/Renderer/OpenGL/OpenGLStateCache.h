@@ -7,54 +7,49 @@
 
 #if defined(MCENGINE_FEATURE_OPENGL) || defined(MCENGINE_FEATURE_GLES32)
 #include <array>
+#include <climits>
 
-class OpenGLStateCache final {
-   public:
-    // entirely static class so no ctors/dtors necessary
-    OpenGLStateCache() = delete;
-    ~OpenGLStateCache() = delete;
+namespace GLStateCache {
+namespace detail {
+// cache
+extern std::array<int, 4> current_viewport;
+extern std::array<unsigned int, 4> current_state_array;
 
-    OpenGLStateCache &operator=(const OpenGLStateCache &) = delete;
-    OpenGLStateCache &operator=(OpenGLStateCache &&) = delete;
-    OpenGLStateCache(const OpenGLStateCache &) = delete;
-    OpenGLStateCache(OpenGLStateCache &&) = delete;
+extern unsigned int current_program;
+extern unsigned int current_framebuffer;
 
-    // program state
-    static void setCurrentProgram(unsigned int program);
-    [[nodiscard]] static unsigned int getCurrentProgram();
+extern unsigned int current_arraybuffer;
+}  // namespace detail
 
-    // framebuffer state
-    static void setCurrentFramebuffer(unsigned int framebuffer);
-    [[nodiscard]] static unsigned int getCurrentFramebuffer();
+using namespace detail;
 
-    // viewport state
-    static void setCurrentViewport(int x, int y, int width, int height);
-    static void getCurrentViewport(int &x, int &y, int &width, int &height);
+// program state
+inline void setCurrentProgram(unsigned int program) { current_program = program; }
+[[nodiscard]] inline unsigned int getCurrentProgram() { return current_program; }
 
-    static inline void setCurrentViewport(const std::array<int, 4> &vp) { iViewport = vp; }
-    [[nodiscard]] static inline const std::array<int, 4> &getCurrentViewport() { return iViewport; }
+// framebuffer state
+void bindFramebuffer(unsigned int framebuffer);
+[[nodiscard]] inline unsigned int getCurrentFramebuffer() { return current_framebuffer; }
 
-    static void bindArrayBuffer(unsigned int GLbuffer);
+// viewport state
+void setViewport(const std::array<int, 4> &vp);
+[[nodiscard]] inline const std::array<int, 4> &getCurrentViewport() { return current_viewport; }
 
-    static void enableClientState(unsigned int GLarray);
-    static void disableClientState(unsigned int GLarray);
-
-    // initialize cache with actual GL states (once at startup)
-    static void initialize();
-
-    // force a refresh of cached states from actual GL state (expensive, avoid)
-    static void refresh();
-
-   private:
-    // cache
-    static std::array<int, 4> iViewport;
-    static std::array<unsigned int, 4> iEnabledStateArray;
-
-    static unsigned int iCurrentProgram;
-    static unsigned int iCurrentFramebuffer;
-
-    static unsigned int iCurrentArrayBuffer;
+inline void setViewport(int x, int y, int width, int height) {
+    return setViewport({x, y, width, height});
 };
+
+void bindArrayBuffer(unsigned int GLbuffer);
+
+void enableClientState(unsigned int GLarray);
+void disableClientState(unsigned int GLarray);
+
+// initialize cache with actual GL states (once at startup)
+void initialize();
+
+// force a refresh of cached states from actual GL state (expensive, avoid)
+void refresh();
+};  // namespace GLStateCache
 
 #endif
 

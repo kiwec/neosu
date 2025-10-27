@@ -61,7 +61,7 @@ OpenGLInterface::OpenGLInterface()
     }
 
     // initialize the state cache
-    OpenGLStateCache::initialize();
+    GLStateCache::initialize();
 }
 
 void OpenGLInterface::beginScene() {
@@ -377,7 +377,7 @@ void OpenGLInterface::drawImage(const Image *image, AnchorPoint anchor, float ed
     if(smoothedEdges) {
         // compensate for viewport changed by rendertargets
         // flip Y for engine<->opengl coordinate origin
-        const auto &viewport{OpenGLStateCache::getCurrentViewport()};
+        const auto &viewport{GLStateCache::getCurrentViewport()};
         float clipMinX{clipRect.getX() + viewport[0]},                                           //
             clipMinY{viewport[3] - (clipRect.getY() - viewport[1] - 1 + clipRect.getHeight())},  //
             clipMaxX{clipMinX + clipRect.getWidth()},                                            //
@@ -481,25 +481,25 @@ void OpenGLInterface::drawVAO(VertexArrayObject *vao) {
     }
 
     // unbind any previous VBO/VAO to ensure client-side arrays are used correctly
-    OpenGLStateCache::bindArrayBuffer(0);
+    GLStateCache::bindArrayBuffer(0);
     if(cv::r_opengl_legacy_vao_use_vertex_array.getBool()) {
         glBindVertexArray(0);
     }
 
     // enable and set vertex array (always present)
-    OpenGLStateCache::enableClientState(GL_VERTEX_ARRAY);
+    GLStateCache::enableClientState(GL_VERTEX_ARRAY);
     glVertexPointer(3, GL_FLOAT, 0, vertices.data());
 
     // handle texcoords (only unit 0)
     if(hasTexcoords0) {
-        OpenGLStateCache::enableClientState(GL_TEXTURE_COORD_ARRAY);
+        GLStateCache::enableClientState(GL_TEXTURE_COORD_ARRAY);
         glTexCoordPointer(2, GL_FLOAT, 0, texcoords.data());
     } else {
-        OpenGLStateCache::disableClientState(GL_TEXTURE_COORD_ARRAY);
+        GLStateCache::disableClientState(GL_TEXTURE_COORD_ARRAY);
     }
 
     // handle colors
-    std::vector<Color> swapped_colors;
+    static std::vector<Color> swapped_colors;
     if(hasColors) {
         // check if any color needs conversion (only R and B are swapped)
         bool needsConversion = false;
@@ -512,27 +512,27 @@ void OpenGLInterface::drawVAO(VertexArrayObject *vao) {
         }
         // (create temporary swapped buffer for correct RGBA byte order)
         // TODO: just store them properly in the first place
+        GLStateCache::enableClientState(GL_COLOR_ARRAY);
         if(needsConversion) {
+            swapped_colors.clear();
             swapped_colors.reserve(drawCount);
             for(size_t i = 0; i < drawCount; ++i) {
                 swapped_colors.push_back(abgr(colors[i]));
             }
-            OpenGLStateCache::enableClientState(GL_COLOR_ARRAY);
             glColorPointer(4, GL_UNSIGNED_BYTE, 0, swapped_colors.data());
         } else {
-            OpenGLStateCache::enableClientState(GL_COLOR_ARRAY);
             glColorPointer(4, GL_UNSIGNED_BYTE, 0, colors.data());
         }
     } else {
-        OpenGLStateCache::disableClientState(GL_COLOR_ARRAY);
+        GLStateCache::disableClientState(GL_COLOR_ARRAY);
     }
 
     // handle normals
     if(hasNormals) {
-        OpenGLStateCache::enableClientState(GL_NORMAL_ARRAY);
+        GLStateCache::enableClientState(GL_NORMAL_ARRAY);
         glNormalPointer(GL_FLOAT, 0, normals.data());
     } else {
-        OpenGLStateCache::disableClientState(GL_NORMAL_ARRAY);
+        GLStateCache::disableClientState(GL_NORMAL_ARRAY);
     }
 
     // draw using client-side arrays
@@ -544,7 +544,7 @@ void OpenGLInterface::setClipRect(McRect clipRect) {
     // if (m_bIs3DScene) return; // TODO
 
     // rendertargets change the current viewport
-    const auto &viewport{OpenGLStateCache::getCurrentViewport()};
+    const auto &viewport{GLStateCache::getCurrentViewport()};
 
     // debugLog("viewport = {}, {}, {}, {}", viewport[0], viewport[1], viewport[2], viewport[3]);
 
@@ -729,10 +729,7 @@ std::vector<u8> OpenGLInterface::getScreenshot(bool withAlpha) {
 void OpenGLInterface::onResolutionChange(vec2 newResolution) {
     // rebuild viewport
     this->vResolution = newResolution;
-    glViewport(0, 0, this->vResolution.x, this->vResolution.y);
-
-    // update state cache with the new viewport
-    OpenGLStateCache::setCurrentViewport(0, 0, this->vResolution.x, this->vResolution.y);
+    GLStateCache::setViewport(0, 0, this->vResolution.x, this->vResolution.y);
 
     // special case: custom rendertarget resolution rendering, update active projection matrix immediately
     if(this->bInScene) {

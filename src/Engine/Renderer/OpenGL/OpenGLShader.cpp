@@ -42,12 +42,12 @@ void OpenGLShader::destroy() {
 void OpenGLShader::enable() {
     if(!this->isReady()) return;
 
-    unsigned int currentProgram = OpenGLStateCache::getCurrentProgram();
+    unsigned int currentProgram = GLStateCache::getCurrentProgram();
     if(currentProgram == this->iProgram) return;  // already active
 
     this->iProgramBackup = currentProgram;
     glUseProgramObjectARB(this->iProgram);
-    OpenGLStateCache::setCurrentProgram(this->iProgram);
+    GLStateCache::setCurrentProgram(this->iProgram);
 }
 
 void OpenGLShader::disable() {
@@ -56,7 +56,7 @@ void OpenGLShader::disable() {
     glUseProgramObjectARB(this->iProgramBackup);
 
     // update cache
-    OpenGLStateCache::setCurrentProgram(this->iProgramBackup);
+    GLStateCache::setCurrentProgram(this->iProgramBackup);
 }
 
 void OpenGLShader::setUniform1f(std::string_view name, float value) {

@@ -5,96 +5,87 @@
 
 #include "OpenGLHeaders.h"
 
+namespace GLStateCache {
+namespace detail {
 // init static cache
-std::array<int, 4> OpenGLStateCache::iViewport{};
-std::array<unsigned int, 4> OpenGLStateCache::iEnabledStateArray{};
+std::array<int, 4> current_viewport{};
+std::array<unsigned int, 4> current_state_array{};
 
-unsigned int OpenGLStateCache::iCurrentProgram{INT_MAX};
-unsigned int OpenGLStateCache::iCurrentFramebuffer{INT_MAX};
+unsigned int current_program{INT_MAX};
+unsigned int current_framebuffer{INT_MAX};
+unsigned int current_arraybuffer{UINT_MAX};
 
-unsigned int OpenGLStateCache::iCurrentArrayBuffer{UINT_MAX};
+}  // namespace detail
+using namespace detail;
 
-void OpenGLStateCache::initialize() {
-    if(OpenGLStateCache::iCurrentProgram != INT_MAX) return;
+void initialize() {
+    if(current_program != INT_MAX) return;
 
     // one-time initialization of cache from actual GL state
-    OpenGLStateCache::refresh();
+    refresh();
 }
 
-void OpenGLStateCache::refresh() {
+void refresh() {
     // only do the expensive query when necessary
-    glGetIntegerv(GL_VIEWPORT, OpenGLStateCache::iViewport.data());
+    glGetIntegerv(GL_VIEWPORT, current_viewport.data());
 
-    glGetIntegerv(GL_CURRENT_PROGRAM, reinterpret_cast<GLint *>(&OpenGLStateCache::iCurrentProgram));
-    glGetIntegerv(GL_FRAMEBUFFER_BINDING, reinterpret_cast<GLint *>(&OpenGLStateCache::iCurrentFramebuffer));
+    glGetIntegerv(GL_CURRENT_PROGRAM, reinterpret_cast<GLint *>(&current_program));
+    glGetIntegerv(GL_FRAMEBUFFER_BINDING, reinterpret_cast<GLint *>(&current_framebuffer));
 
-    // glGetIntegerv(GL_ARRAY_BUFFER_BINDING, (GLint *)&OpenGLStateCache::iCurrentArrayBuffer);
+    // glGetIntegerv(GL_ARRAY_BUFFER_BINDING, (GLint *)&iCurrentArrayBuffer);
 }
 
-void OpenGLStateCache::setCurrentProgram(unsigned int program) { OpenGLStateCache::iCurrentProgram = program; }
-
-unsigned int OpenGLStateCache::getCurrentProgram() { return OpenGLStateCache::iCurrentProgram; }
-
-void OpenGLStateCache::setCurrentFramebuffer(unsigned int framebuffer) {
-    OpenGLStateCache::iCurrentFramebuffer = framebuffer;
+void bindFramebuffer(unsigned int GLFramebuffer) {
+    if(current_framebuffer != GLFramebuffer) {
+        current_framebuffer = GLFramebuffer;
+        glBindFramebuffer(GL_FRAMEBUFFER, GLFramebuffer);
+    }
 }
 
-unsigned int OpenGLStateCache::getCurrentFramebuffer() { return OpenGLStateCache::iCurrentFramebuffer; }
-
-void OpenGLStateCache::setCurrentViewport(int x, int y, int width, int height) {
-    OpenGLStateCache::iViewport[0] = x;
-    OpenGLStateCache::iViewport[1] = y;
-    OpenGLStateCache::iViewport[2] = width;
-    OpenGLStateCache::iViewport[3] = height;
+void setViewport(const std::array<int, 4> &vp) {
+    if(current_viewport != vp) {
+        current_viewport = vp;
+        glViewport(vp[0], vp[1], vp[2], vp[3]);
+    }
 }
 
-void OpenGLStateCache::getCurrentViewport(int &x, int &y, int &width, int &height) {
-    x = OpenGLStateCache::iViewport[0];
-    y = OpenGLStateCache::iViewport[1];
-    width = OpenGLStateCache::iViewport[2];
-    height = OpenGLStateCache::iViewport[3];
-}
-
-void OpenGLStateCache::bindArrayBuffer(unsigned int GLbuffer) {
-    if(OpenGLStateCache::iCurrentArrayBuffer != GLbuffer) {
-        OpenGLStateCache::iCurrentArrayBuffer = GLbuffer;
+void bindArrayBuffer(unsigned int GLbuffer) {
+    if(current_arraybuffer != GLbuffer) {
+        current_arraybuffer = GLbuffer;
         glBindBuffer(GL_ARRAY_BUFFER, GLbuffer);
     }
 }
 
-void OpenGLStateCache::enableClientState(unsigned int GLarray) {
+void enableClientState(unsigned int GLarray) {
     if(GLarray != GL_VERTEX_ARRAY && GLarray != GL_TEXTURE_COORD_ARRAY && GLarray != GL_COLOR_ARRAY &&
        GLarray != GL_NORMAL_ARRAY) {
         return;
     }
 
-    for(auto &array : OpenGLStateCache::iEnabledStateArray) {
-        if(array == GLarray) {
-            // already enabled
-            return;
-        } else if(array == 0) {
-            // wasn't enabled
-            array = GLarray;
-            glEnableClientState(GLarray);
-            return;
-        } else {
-            // search for 0 or end
-            continue;
-        }
+    const auto &it = std::ranges::find(current_state_array, GLarray);
+    if(it != current_state_array.end()) {
+        return;  // already enabled
     }
+
+    const auto &zero = std::ranges::find(current_state_array, 0);
+    assert(zero != current_state_array.end());
+
+    *zero = GLarray;
+    glEnableClientState(GLarray);
 }
 
-void OpenGLStateCache::disableClientState(unsigned int GLarray) {
+void disableClientState(unsigned int GLarray) {
     if(GLarray != GL_VERTEX_ARRAY && GLarray != GL_TEXTURE_COORD_ARRAY && GLarray != GL_COLOR_ARRAY &&
        GLarray != GL_NORMAL_ARRAY) {
         return;
     }
 
-    const auto &array = std::ranges::find(OpenGLStateCache::iEnabledStateArray, GLarray);
-    if(array != OpenGLStateCache::iEnabledStateArray.end()) {
+    const auto &array = std::ranges::find(current_state_array, GLarray);
+    if(array != current_state_array.end()) {
         *array = 0;
         glDisableClientState(GLarray);
     }
 }
+}  // namespace GLStateCache
 
 #endif

@@ -32,7 +32,7 @@ void OpenGLVertexArrayObject::init() {
     if(this->isReady()) {
         // update vertex buffer
         if(this->partialUpdateVertexIndices.size() > 0) {
-            OpenGLStateCache::bindArrayBuffer(this->iVertexBuffer);
+            GLStateCache::bindArrayBuffer(this->iVertexBuffer);
             for(size_t i = 0; i < this->partialUpdateVertexIndices.size(); i++) {
                 const int offsetIndex = this->partialUpdateVertexIndices[i];
 
@@ -54,7 +54,7 @@ void OpenGLVertexArrayObject::init() {
 
         // update color buffer
         if(this->partialUpdateColorIndices.size() > 0) {
-            OpenGLStateCache::bindArrayBuffer(this->iColorBuffer);
+            GLStateCache::bindArrayBuffer(this->iColorBuffer);
             for(size_t i = 0; i < this->partialUpdateColorIndices.size(); i++) {
                 const int offsetIndex = this->partialUpdateColorIndices[i];
 
@@ -95,7 +95,7 @@ void OpenGLVertexArrayObject::init() {
     // build and fill vertex buffer
     {
         glGenBuffers(1, &this->iVertexBuffer);
-        OpenGLStateCache::bindArrayBuffer(this->iVertexBuffer);
+        GLStateCache::bindArrayBuffer(this->iVertexBuffer);
         glBufferData(GL_ARRAY_BUFFER, sizeof(vec3) * this->vertices.size(), &(this->vertices[0]),
                      SDLGLInterface::usageToOpenGLMap[this->usage]);
 
@@ -105,7 +105,7 @@ void OpenGLVertexArrayObject::init() {
             vertexAttribArrayIndexCounter++;
         } else {
             // NOTE: this state will persist engine-wide forever
-            OpenGLStateCache::enableClientState(GL_VERTEX_ARRAY);
+            GLStateCache::enableClientState(GL_VERTEX_ARRAY);
         }
     }
 
@@ -114,7 +114,7 @@ void OpenGLVertexArrayObject::init() {
         this->iNumTexcoords = this->texcoords.size();
 
         glGenBuffers(1, &this->iTexcoordBuffer);
-        OpenGLStateCache::bindArrayBuffer(this->iTexcoordBuffer);
+        GLStateCache::bindArrayBuffer(this->iTexcoordBuffer);
         glBufferData(GL_ARRAY_BUFFER, sizeof(vec2) * this->texcoords.size(), &(this->texcoords[0]),
                      SDLGLInterface::usageToOpenGLMap[this->usage]);
 
@@ -136,7 +136,7 @@ void OpenGLVertexArrayObject::init() {
         }
 
         glGenBuffers(1, &this->iColorBuffer);
-        OpenGLStateCache::bindArrayBuffer(this->iColorBuffer);
+        GLStateCache::bindArrayBuffer(this->iColorBuffer);
         glBufferData(GL_ARRAY_BUFFER, sizeof(Color) * this->colors.size(), &(this->colors[0]),
                      SDLGLInterface::usageToOpenGLMap[this->usage]);
 
@@ -154,7 +154,7 @@ void OpenGLVertexArrayObject::init() {
         this->iNumNormals = this->normals.size();
 
         glGenBuffers(1, &this->iNormalBuffer);
-        OpenGLStateCache::bindArrayBuffer(this->iNormalBuffer);
+        GLStateCache::bindArrayBuffer(this->iNormalBuffer);
         glBufferData(GL_ARRAY_BUFFER, sizeof(vec3) * this->normals.size(), &(this->normals[0]),
                      SDLGLInterface::usageToOpenGLMap[this->usage]);
 
@@ -228,37 +228,37 @@ void OpenGLVertexArrayObject::draw() {
                      end - start);  // (everything is already preconfigured inside the vertexArray)
     } else {
         // set vertices
-        OpenGLStateCache::bindArrayBuffer(this->iVertexBuffer);
+        GLStateCache::bindArrayBuffer(this->iVertexBuffer);
         glVertexPointer(3, GL_FLOAT, 0, (char*)nullptr);  // set vertex pointer to vertex buffer
 
         // set texture0
         if(this->iNumTexcoords > 0) {
-            OpenGLStateCache::enableClientState(GL_TEXTURE_COORD_ARRAY);
-            OpenGLStateCache::bindArrayBuffer(this->iTexcoordBuffer);
+            GLStateCache::enableClientState(GL_TEXTURE_COORD_ARRAY);
+            GLStateCache::bindArrayBuffer(this->iTexcoordBuffer);
             glTexCoordPointer(2, GL_FLOAT, 0, (char*)nullptr);  // set first texcoord pointer to texcoord buffer
         } else
-            OpenGLStateCache::disableClientState(GL_TEXTURE_COORD_ARRAY);
+            GLStateCache::disableClientState(GL_TEXTURE_COORD_ARRAY);
 
         // set colors
         if(this->iNumColors > 0) {
-            OpenGLStateCache::enableClientState(GL_COLOR_ARRAY);
-            OpenGLStateCache::bindArrayBuffer(this->iColorBuffer);
+            GLStateCache::enableClientState(GL_COLOR_ARRAY);
+            GLStateCache::bindArrayBuffer(this->iColorBuffer);
             glColorPointer(4, GL_UNSIGNED_BYTE, 0, (char*)nullptr);  // set color pointer to color buffer
         } else
-            OpenGLStateCache::disableClientState(GL_COLOR_ARRAY);
+            GLStateCache::disableClientState(GL_COLOR_ARRAY);
 
         // set normals
         if(this->iNumNormals > 0) {
-            OpenGLStateCache::enableClientState(GL_NORMAL_ARRAY);
-            OpenGLStateCache::bindArrayBuffer(this->iNormalBuffer);
+            GLStateCache::enableClientState(GL_NORMAL_ARRAY);
+            GLStateCache::bindArrayBuffer(this->iNormalBuffer);
             glNormalPointer(GL_FLOAT, 0, (char*)nullptr);  // set normal pointer to normal buffer
         } else
-            OpenGLStateCache::disableClientState(GL_NORMAL_ARRAY);
+            GLStateCache::disableClientState(GL_NORMAL_ARRAY);
 
         // render it
         glDrawArrays(SDLGLInterface::primitiveToOpenGLMap[this->primitive], start, end - start);
 
-        OpenGLStateCache::bindArrayBuffer(this->iNormalBuffer);
+        GLStateCache::bindArrayBuffer(this->iNormalBuffer);
     }
 }
 

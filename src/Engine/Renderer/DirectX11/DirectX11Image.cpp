@@ -248,7 +248,7 @@ void DirectX11Image::bind(unsigned int textureUnit) const {
 }
 
 void DirectX11Image::unbind() const {
-    if(!this->isReady() || !cv::r_image_unbind_after_drawimage.getBool()) return;
+    if(!this->isReady()) return;
 
     // restore
     // HACKHACK: slow af
