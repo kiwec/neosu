@@ -2301,9 +2301,8 @@ void HUD::animateInputOverlay(LegacyReplay::KeyFlags key_flag, bool down) {
         return;
 
     using LegacyReplay::KeyFlags;
-    for(const KeyFlags flag : {(KeyFlags)(key_flag & KeyFlags::K1), (KeyFlags)(key_flag & KeyFlags::K2),
-                               (KeyFlags)(key_flag & KeyFlags::M1), (KeyFlags)(key_flag & KeyFlags::M2)}) {
-        if (flag == 0) continue;
+    for(KeyFlags flag = KeyFlags::K2 /* 8 */; flag >= 1; flag = static_cast<KeyFlags>(flag >> 1)) {
+        if(!(flag & key_flag)) continue;
 
         float *animScale = nullptr;
         float *animColor = nullptr;

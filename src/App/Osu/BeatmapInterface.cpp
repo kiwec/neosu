@@ -1779,7 +1779,9 @@ void BeatmapInterface::drawFollowPoints() {
         lastObjectIndex = index - 1;
 
         // ignore future spinners
-        auto *spinnerPointer = dynamic_cast<Spinner *>(this->hitobjects[index]);
+        auto *spinnerPointer = this->hitobjects[index] && this->hitobjects[index]->type == HitObjectType::SPINNER
+                                   ? static_cast<Spinner *>(this->hitobjects[index])
+                                   : nullptr;
         if(spinnerPointer != nullptr && !followPointsConnectSpinners)  // if this is a spinner
         {
             lastObjectIndex = -1;
@@ -1790,12 +1792,16 @@ void BeatmapInterface::drawFollowPoints() {
             (lastObjectIndex >= 0 ? this->hitobjects[lastObjectIndex]->is_end_of_combo : false);
         const bool isCurrentHitObjectSpinner =
             (lastObjectIndex >= 0 && followPointsConnectSpinners
-                 ? dynamic_cast<Spinner *>(this->hitobjects[lastObjectIndex]) != nullptr
+                 ? this->hitobjects[lastObjectIndex] &&
+                       this->hitobjects[lastObjectIndex]->type == HitObjectType::SPINNER
                  : false);
         if(lastObjectIndex >= 0 && (!isCurrentHitObjectNewCombo || followPointsConnectCombos ||
                                     (isCurrentHitObjectSpinner && followPointsConnectSpinners))) {
             // ignore previous spinners
-            spinnerPointer = dynamic_cast<Spinner *>(this->hitobjects[lastObjectIndex]);
+            spinnerPointer =
+                this->hitobjects[lastObjectIndex] && this->hitobjects[lastObjectIndex]->type == HitObjectType::SPINNER
+                    ? static_cast<Spinner *>(this->hitobjects[lastObjectIndex])
+                    : nullptr;
             if(spinnerPointer != nullptr && !followPointsConnectSpinners)  // if this is a spinner
             {
                 lastObjectIndex = -1;
@@ -2088,7 +2094,8 @@ void BeatmapInterface::update() {
                 debugLog("Beatmap: Preloading done.");
                 break;
             } else {
-                auto *sliderPointer = dynamic_cast<Slider *>(this->hitobjects[this->iPreLoadingIndex]);
+                auto *ho = this->hitobjects[this->iPreLoadingIndex];
+                auto *sliderPointer = ho && ho->type == HitObjectType::SLIDER ? static_cast<Slider *>(ho) : nullptr;
                 if(sliderPointer != nullptr) sliderPointer->rebuildVertexBuffer();
             }
 
@@ -2470,13 +2477,12 @@ void BeatmapInterface::update2() {
             next_frame = this->spectated_replay[this->current_frame_idx + 1];
             this->current_keys = current_frame.key_flags;
 
-            Click click;
-            click.music_pos = current_frame.cur_music_pos;
-            click.timestamp = Timing::getTicksNS();
-            click.pos.x = current_frame.x;
-            click.pos.y = current_frame.y;
-            click.pos *= GameRules::getPlayfieldScaleFactor();
-            click.pos += GameRules::getPlayfieldOffset();
+            Click click{
+                .timestamp = Timing::getTicksNS(),
+                .pos = (vec2{current_frame.x, current_frame.y} * GameRules::getPlayfieldScaleFactor()) +
+                       GameRules::getPlayfieldOffset(),
+                .music_pos = static_cast<i32>(current_frame.cur_music_pos),
+            };
 
             // Flag fix to simplify logic (stable sets both K1 and M1 when K1 is pressed)
             const auto &mods = osu->getScore()->mods;
@@ -2499,13 +2505,9 @@ void BeatmapInterface::update2() {
                 this->lastPressedKey = pressed_keys;
                 osu->getHUD()->animateInputOverlay(pressed_keys, true);
 
-                using LegacyReplay::KeyFlags;
-                for(const KeyFlags f :
-                    {(KeyFlags)(pressed_keys & KeyFlags::K1), (KeyFlags)(pressed_keys & KeyFlags::K2),
-                     (KeyFlags)(pressed_keys & KeyFlags::M1), (KeyFlags)(pressed_keys & KeyFlags::M2)}) {
-                    if(f == 0) continue;
-                    this->clicks.push_back(click);
-                }
+                std::vector to_insert{static_cast<size_t>(std::popcount((u8)pressed_keys)), click};
+                this->clicks.insert(this->clicks.end(), to_insert.begin(), to_insert.end());
+
                 if(should_count_keypress) osu->getScore()->addKeyCount(pressed_keys);
             }
         }
@@ -2649,7 +2651,7 @@ void BeatmapInterface::update2() {
             }
 
             // note blocking / notelock (1)
-            const Slider *currentSliderPointer = dynamic_cast<Slider *>(this->hitobjects[i]);
+            const Slider *currentSliderPointer = isSlider ? static_cast<Slider *>(this->hitobjects[i]) : nullptr;
             if(notelockType > 0) {
                 this->hitobjects[i]->setBlocked(blockNextNotes);
 
@@ -2748,9 +2750,7 @@ void BeatmapInterface::update2() {
 
                     for(int m = i - 1; m >= 0; m--) {
                         if(!this->hitobjects[m]->isFinished()) {
-                            const Slider *sliderPointer = dynamic_cast<Slider *>(this->hitobjects[m]);
-
-                            const bool isSlider = (sliderPointer != nullptr);
+                            const bool isSlider = this->hitobjects[m]->type == HitObjectType::SLIDER;
                             const bool isSpinner = (!isSlider && !isCircle);
 
                             if(!isSpinner)  // spinners are completely ignored (transparent)
@@ -2774,9 +2774,7 @@ void BeatmapInterface::update2() {
 
                     for(int m = i - 1; m >= 0; m--) {
                         if(!this->hitobjects[m]->isFinished()) {
-                            const Slider *sliderPointer = dynamic_cast<Slider *>(this->hitobjects[m]);
-
-                            const bool isSlider = (sliderPointer != nullptr);
+                            const bool isSlider = this->hitobjects[m]->type == HitObjectType::SLIDER;
                             const bool isSpinner = (!isSlider && !isCircle);
 
                             if(!isSpinner)  // spinners are completely ignored (transparent)
@@ -3667,7 +3665,7 @@ void BeatmapInterface::updateAutoCursorPos() {
                 prevPos = o->getAutoCursorPos(curMusicPos);
                 if(o->duration > 0 && curMusicPos - o->click_time <= o->duration) {
                     if(cv::auto_cursordance.getBool()) {
-                        auto *sliderPointer = dynamic_cast<Slider *>(o);
+                        auto *sliderPointer = o->type == HitObjectType::SLIDER ? static_cast<Slider *>(o) : nullptr;
                         if(sliderPointer != nullptr) {
                             const std::vector<Slider::SLIDERCLICK> &clicks = sliderPointer->getClicks();
 
@@ -3853,7 +3851,8 @@ void BeatmapInterface::updateSliderVertexBuffers() {
     debugLog("Playfield::updateSliderVertexBuffers() for {:d} hitobjects ...", this->hitobjects.size());
 
     for(auto &hitobject : this->hitobjects) {
-        auto *sliderPointer = dynamic_cast<Slider *>(hitobject);
+        auto *sliderPointer =
+            hitobject && hitobject->type == HitObjectType::SLIDER ? static_cast<Slider *>(hitobject) : nullptr;
         if(sliderPointer != nullptr) sliderPointer->rebuildVertexBuffer();
     }
 }
@@ -3885,18 +3884,18 @@ void BeatmapInterface::calculateStacks() {
 
             HitObject *objectI = this->hitobjects[i];
 
-            bool isSpinner = dynamic_cast<Spinner *>(objectI) != nullptr;
+            bool isSpinner = objectI->type == HitObjectType::SPINNER;
 
             if(objectI->getStack() != 0 || isSpinner) continue;
 
-            bool isHitCircle = dynamic_cast<Circle *>(objectI) != nullptr;
-            bool isSlider = dynamic_cast<Slider *>(objectI) != nullptr;
+            bool isHitCircle = objectI->type == HitObjectType::CIRCLE;
+            bool isSlider = objectI->type == HitObjectType::SLIDER;
 
             if(isHitCircle) {
                 while(--n >= 0) {
                     HitObject *objectN = this->hitobjects[n];
 
-                    bool isSpinnerN = dynamic_cast<Spinner *>(objectN);
+                    bool isSpinnerN = objectN->type == HitObjectType::SPINNER;
 
                     if(isSpinnerN) continue;
 
@@ -3928,9 +3927,9 @@ void BeatmapInterface::calculateStacks() {
                 while(--n >= 0) {
                     HitObject *objectN = this->hitobjects[n];
 
-                    bool isSpinner = dynamic_cast<Spinner *>(objectN) != nullptr;
+                    bool isSpinnerN = objectN->type == HitObjectType::SPINNER;
 
-                    if(isSpinner) continue;
+                    if(isSpinnerN) continue;
 
                     if(objectI->click_time - (approachTime * stackLeniency) > objectN->click_time) break;
 
@@ -3951,7 +3950,9 @@ void BeatmapInterface::calculateStacks() {
 
         for(int i = 0; i < this->hitobjects.size(); i++) {
             HitObject *currHitObject = this->hitobjects[i];
-            auto *sliderPointer = dynamic_cast<Slider *>(currHitObject);
+            auto *sliderPointer = currHitObject && currHitObject->type == HitObjectType::SLIDER
+                                      ? static_cast<Slider *>(currHitObject)
+                                      : nullptr;
 
             const bool isSlider = (sliderPointer != nullptr);
 
@@ -4084,8 +4085,9 @@ void BeatmapInterface::computeDrainRate() {
 
             for(int i = 0; i < this->hitobjects.size(); i++) {
                 const HitObject *h = this->hitobjects[i];
-                const auto *sliderPointer = dynamic_cast<const Slider *>(h);
-                const auto *spinnerPointer = dynamic_cast<const Spinner *>(h);
+                const auto *sliderPointer = h->type == HitObjectType::SLIDER ? static_cast<const Slider *>(h) : nullptr;
+                const auto *spinnerPointer =
+                    h->type == HitObjectType::SPINNER ? static_cast<const Spinner *>(h) : nullptr;
 
                 const int localLastTime = lastTime;
 

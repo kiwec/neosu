@@ -336,9 +336,8 @@ void LiveScore::setDead(bool dead) {
 
 void LiveScore::addKeyCount(LegacyReplay::KeyFlags key_flag) {
     using LegacyReplay::KeyFlags;
-    for(const KeyFlags flag : {(KeyFlags)(key_flag & KeyFlags::K1), (KeyFlags)(key_flag & KeyFlags::K2),
-                               (KeyFlags)(key_flag & KeyFlags::M1), (KeyFlags)(key_flag & KeyFlags::M2)}) {
-        if(flag == 0) continue;
+    for(KeyFlags flag = KeyFlags::K2 /* 8 */; flag >= 1; flag = static_cast<KeyFlags>(flag >> 1)) {
+        if(!(flag & key_flag)) continue;
 
         switch(flag) {
             case KeyFlags::Smoke:

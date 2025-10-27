@@ -71,13 +71,8 @@ void SimulatedBeatmapInterface::simulate_to(i32 music_pos) {
         if(pressed_keys > 0) {
             this->lastPressedKey = pressed_keys;
 
-            using LegacyReplay::KeyFlags;
-            for(const KeyFlags f : {(KeyFlags)(pressed_keys & KeyFlags::K1), (KeyFlags)(pressed_keys & KeyFlags::K2),
-                                    (KeyFlags)(pressed_keys & KeyFlags::M1), (KeyFlags)(pressed_keys & KeyFlags::M2)}) {
-                if(f == 0) continue;
-
-                this->clicks.push_back(click);
-            }
+            std::vector to_insert{static_cast<size_t>(std::popcount((u8)pressed_keys)), click};
+            this->clicks.insert(this->clicks.end(), to_insert.begin(), to_insert.end());
 
             if(!this->bInBreak) this->live_score.addKeyCount(pressed_keys);
         }
