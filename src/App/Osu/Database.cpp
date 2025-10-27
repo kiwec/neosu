@@ -205,11 +205,11 @@ void Database::AsyncDBLoader::init() {
         MapCalcThread::start_calc(db->maps_to_recalc);
         VolNormalization::start_calc(db->loudness_to_calc);
         sct_calc(db->scores);
-    }
 
-    // signal that we are done
-    db->loading_progress = 1.0f;
-    this->setReady(true);
+        // signal that we are done
+        db->loading_progress = 1.0f;
+        this->setReady(true);
+    }
 
     if(cv::debug_db.getBool() || cv::debug_async_db.getBool()) debugLog("(AsyncDBLoader) done");
 }
@@ -433,10 +433,13 @@ BeatmapSet *Database::addBeatmapSet(const std::string &beatmapFolderPath, i32 se
         }
     }
 
-    osu->getSongBrowser()->addBeatmapSet(beatmap);
+    // do not add to songbrowser yet unless we are finished loading
+    if(this->isFinished()) {
+        osu->getSongBrowser()->addBeatmapSet(beatmap);
 
-    // XXX: Very slow
-    osu->getSongBrowser()->onSortChangeInt(cv::songbrowser_sortingtype.getString().c_str());
+        // XXX: Very slow
+        osu->getSongBrowser()->onSortChangeInt(cv::songbrowser_sortingtype.getString().c_str());
+    }
 
     return beatmap;
 }
@@ -1062,13 +1065,11 @@ void Database::loadMaps() {
 
     if(!this->needs_raw_load) {
         ByteBufferedFile::Reader dbr(peppy_db_path);
-        bool should_read_peppy_database = dbr.total_size > 0;
-        u32 osu_db_version = 0;
-        u32 osu_db_folder_count = 0;
+        u32 osu_db_version = (dbr.good() && dbr.total_size > 0) ? dbr.read<u32>() : 0;
+        bool should_read_peppy_database = osu_db_version > 0;
         if(should_read_peppy_database) {
             // read header
-            osu_db_version = dbr.read<u32>();
-            osu_db_folder_count = dbr.read<u32>();
+            u32 osu_db_folder_count = dbr.read<u32>();
             dbr.skip<u8>();
             dbr.skip<u64>() /* timestamp */;
             auto playerName = dbr.read_string();
@@ -1186,7 +1187,7 @@ void Database::loadMaps() {
 
                 /*unsigned int drainTime = */ dbr.skip<u32>();  // seconds
                 int duration = dbr.read<u32>();                 // milliseconds
-                duration = duration >= 0 ? duration : 0;       // sanity clamp
+                duration = duration >= 0 ? duration : 0;        // sanity clamp
                 int previewTime = dbr.read<u32>();
 
                 BPMInfo bpm;
@@ -1199,15 +1200,16 @@ void Database::loadMaps() {
                 } else if(nb_timing_points > 0) {
                     timing_points_buffer.resize(nb_timing_points);
                     if(dbr.read_bytes((u8 *)timing_points_buffer.data(),
-                                     sizeof(Database::TIMINGPOINT) * nb_timing_points) !=
+                                      sizeof(Database::TIMINGPOINT) * nb_timing_points) !=
                        sizeof(Database::TIMINGPOINT) * nb_timing_points) {
                         debugLog("WARNING: failed to read timing points from beatmap {:d} !", (i + 1));
                     }
                     bpm = getBPM(timing_points_buffer, bpm_calculation_buffer);
                 }
 
-                int beatmapID = dbr.read<i32>();  // fucking bullshit, this is NOT an unsigned integer as is described on
-                                                 // the wiki, it can and is -1 sometimes
+                int beatmapID =
+                    dbr.read<i32>();  // fucking bullshit, this is NOT an unsigned integer as is described on
+                                      // the wiki, it can and is -1 sometimes
                 int beatmapSetID = dbr.read<i32>();  // same here
                 /*unsigned int threadID = */ dbr.skip<u32>();
 
@@ -1878,7 +1880,7 @@ void Database::loadOldMcNeosuScores(std::string_view dbPath) {
 
             for(u32 s = 0; s < numScores; s++) {
                 const auto gamemode = dbr.read<uint8_t>();  // NOTE: abused as isImportedLegacyScore flag (because I
-                                                           // forgot to add a version cap to old builds)
+                                                            // forgot to add a version cap to old builds)
                 const int scoreVersion = dbr.read<int32_t>();
                 if(db_version == 20210103 && scoreVersion > 20190103) {
                     /* isImportedLegacyScore = */ dbr.skip<uint8_t>();  // too lazy to handle this logic

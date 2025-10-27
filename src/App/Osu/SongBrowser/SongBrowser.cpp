@@ -3109,7 +3109,7 @@ void SongBrowser::onSongButtonContextMenu(SongButton *songButton, const UString 
                     }
                 } else {
                     const DatabaseBeatmap *beatmap =
-                        db->getBeatmapDifficulty(songButton->getDatabaseBeatmap()->getMD5());
+                        db->getBeatmapSet(songButton->getDatabaseBeatmap()->getSetID());
                     if(beatmap != nullptr) {
                         const std::vector<DatabaseBeatmap *> &diffs = beatmap->getDifficulties();
                         for(auto diff : diffs) {
@@ -3137,7 +3137,7 @@ void SongBrowser::onSongButtonContextMenu(SongButton *songButton, const UString 
             auto collection = get_or_create_collection(name);
             const std::vector<MD5Hash> beatmapSetHashes =
                 CollectionManagementHelper::getBeatmapSetHashesForSongButton(songButton);
-            for(auto hash : beatmapSetHashes) {
+            for(const auto &hash : beatmapSetHashes) {
                 collection->add_map(hash);
             }
             save_collections();
@@ -3177,7 +3177,7 @@ void SongBrowser::onSongButtonContextMenu(SongButton *songButton, const UString 
             auto collection = get_or_create_collection(collectionName);
             const std::vector<MD5Hash> beatmapSetHashes =
                 CollectionManagementHelper::getBeatmapSetHashesForSongButton(songButton);
-            for(auto hash : beatmapSetHashes) {
+            for(const auto &hash : beatmapSetHashes) {
                 collection->remove_map(hash);
             }
             save_collections();
@@ -3195,8 +3195,8 @@ void SongBrowser::onSongButtonContextMenu(SongButton *songButton, const UString 
                 // id == -4 means beatmapset
                 const std::vector<MD5Hash> beatmapSetHashes =
                     CollectionManagementHelper::getBeatmapSetHashesForSongButton(songButton);
-                for(const auto &beatmapSetHashe : beatmapSetHashes) {
-                    collection->add_map(beatmapSetHashe);
+                for(const auto &hash : beatmapSetHashes) {
+                    collection->add_map(hash);
                 }
                 updateUIScheduled = true;
             }
