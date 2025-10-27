@@ -21,7 +21,7 @@ struct LiveReplayFrame;
 struct ScoreFrame;
 
 struct Click {
-    i32 timestamp; // current music position when the click happened
+    i32 timestamp;  // current music position when the click happened
     vec2 pos{0.f};
 };
 
@@ -125,7 +125,7 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
     void resetScore();
 
     // music/sound
-    inline void reloadMusicNow() {this->loadMusic(true, false);}
+    inline void reloadMusicNow() { this->loadMusic(true, false); }
     void loadMusic(bool reload = false, bool async = false);
     void unloadMusic();
     f32 getIdealVolume();
@@ -241,6 +241,7 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
     bool bIsRestartScheduled;
     bool bIsRestartScheduledQuick;
     bool bWasSeekFrame;
+    bool bTempSeekNF{false};
 
    protected:
     // internal

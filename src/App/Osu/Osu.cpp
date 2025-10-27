@@ -695,11 +695,6 @@ void Osu::update() {
                     // special case: allow cancelling the failing animation here
                     if(this->map_iface->hasFailed()) this->map_iface->cancelFailing();
 
-                    // when seeking during gameplay, add nofail for convenience
-                    if(!this->map_iface->is_watching && !cv::mod_nofail.getBool()) {
-                        cv::mod_nofail.setValue(true);
-                    }
-
                     this->map_iface->seekMS(seek_to_ms);
                 }
             } else {

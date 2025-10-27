@@ -788,6 +788,7 @@ void BeatmapInterface::actualRestart() {
     this->iCurMusicPos = 0;
 
     this->bIsPlaying = true;
+    this->bTempSeekNF = false;
     this->is_watching = false;
 }
 
@@ -1003,6 +1004,7 @@ void BeatmapInterface::setSpeed(f32 speed) {
 }
 
 void BeatmapInterface::seekMS(u32 ms) {
+    this->bTempSeekNF = false;
     if(this->beatmap == nullptr || this->music == nullptr || this->bFailed) return;
 
     // this->resetScore() resets this->is_submittable
@@ -1050,6 +1052,7 @@ void BeatmapInterface::seekMS(u32 ms) {
         if(was_submittable && BanchoState::can_submit_scores()) {
             osu->getNotificationOverlay()->addToast(u"Score will not submit due to seeking", ERROR_TOAST);
         }
+        this->bTempSeekNF = true;
     }
 }
 
@@ -1374,7 +1377,7 @@ void BeatmapInterface::addScorePoints(int points, bool isSpinner) { osu->getScor
 
 void BeatmapInterface::addHealth(f64 percent, bool isFromHitResult) {
     // never drain before first hitobject (or if drain is disabled)
-    if(cv::drain_disabled.getBool() || osu->getScore()->mods.has(ModFlags::NoHP) ||
+    if(this->bTempSeekNF || cv::drain_disabled.getBool() || osu->getScore()->mods.has(ModFlags::NoHP) ||
        (this->hitobjects.size() > 0 && this->iCurMusicPosWithOffsets < this->hitobjects[0]->click_time))
         return;
 
@@ -1641,6 +1644,7 @@ void BeatmapInterface::resetScore() {
     this->fHealth2 = 1.0f;
     this->bFailed = false;
     this->fFailAnim = 1.0f;
+    this->bTempSeekNF = false;
     anim->deleteExistingAnimation(&this->fFailAnim);
 
     osu->getScore()->reset();
@@ -2206,7 +2210,8 @@ void BeatmapInterface::update() {
                 // XXX: slow
                 // NOTE: this should be using incremental calc, not recalc from the start every time...
                 std::atomic<bool> dead{false};
-                auto diffres = DatabaseBeatmap::loadDifficultyHitObjects(osufile_path.c_str(), AR, CS, speedMultiplier, dead);
+                auto diffres =
+                    DatabaseBeatmap::loadDifficultyHitObjects(osufile_path.c_str(), AR, CS, speedMultiplier, dead);
 
                 DifficultyCalculator::StarCalcParams params{
                     .cachedDiffObjects = {},
