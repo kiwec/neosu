@@ -1,15 +1,15 @@
 // Copyright (c) 2024, kiwec, All rights reserved.
 #include "Collections.h"
 
-#include <algorithm>
-#include <utility>
-
 #include "ByteBufferedFile.h"
 #include "ConVar.h"
 #include "Database.h"
 #include "Engine.h"
 #include "Timing.h"
 #include "Logging.h"
+
+#include <algorithm>
+#include <utility>
 
 namespace {  // static namespace
 bool collections_loaded = false;
@@ -18,12 +18,12 @@ bool collections_loaded = false;
 std::vector<Collection*> collections;
 
 void Collection::delete_collection() {
-    for(auto map : this->maps) {
+    for(const auto& map : this->maps) {
         this->remove_map(map);
     }
 }
 
-void Collection::add_map(MD5Hash map_hash) {
+void Collection::add_map(const MD5Hash& map_hash) {
     {
         auto it = std::ranges::find(this->deleted_maps, map_hash);
         if(it != this->deleted_maps.end()) {
@@ -46,7 +46,7 @@ void Collection::add_map(MD5Hash map_hash) {
     }
 }
 
-void Collection::remove_map(MD5Hash map_hash) {
+void Collection::remove_map(const MD5Hash& map_hash) {
     {
         auto it = std::ranges::find(this->maps, map_hash);
         if(it != this->maps.end()) {
@@ -69,19 +69,19 @@ void Collection::remove_map(MD5Hash map_hash) {
     }
 }
 
-void Collection::rename_to(std::string new_name) {
+void Collection::rename_to(std::string_view new_name) {
     if(new_name.length() < 1) new_name = "Untitled collection";
     if(this->name == new_name) return;
 
     auto new_collection = get_or_create_collection(new_name);
 
-    for(auto map : this->maps) {
+    for(const auto& map : this->maps) {
         this->remove_map(map);
         new_collection->add_map(map);
     }
 }
 
-Collection* get_or_create_collection(std::string name) {
+Collection* get_or_create_collection(std::string_view name) {
     if(name.length() < 1) name = "Untitled collection";
 
     for(auto collection : collections) {
@@ -108,7 +108,8 @@ bool load_peppy_collections(std::string_view peppy_collections_path) {
 
     u32 version = peppy_collections.read<u32>();
     if(version > cv::database_version.getVal<u32>() && !cv::database_ignore_version.getBool()) {
-        debugLog("osu!stable collection.db (version {}) is newer than latest supported (version {})!", version, cv::database_version.getVal<u32>());
+        debugLog("osu!stable collection.db (version {}) is newer than latest supported (version {})!", version,
+                 cv::database_version.getVal<u32>());
         db->bytes_processed += peppy_collections.total_size;
         return false;
     }
@@ -125,7 +126,7 @@ bool load_peppy_collections(std::string_view peppy_collections_path) {
         collection->peppy_maps.reserve(nb_maps);
 
         for(int m = 0; m < nb_maps; m++) {
-            auto map_hash = peppy_collections.read_hash();
+            const auto& map_hash = peppy_collections.read_hash();
             collection->maps.push_back(map_hash);
             collection->peppy_maps.push_back(map_hash);
         }
@@ -167,7 +168,7 @@ bool load_mcneosu_collections(std::string_view neosu_collections_path) {
 
         collection->deleted_maps.reserve(nb_deleted_maps);
         for(int d = 0; std::cmp_less(d, nb_deleted_maps); d++) {
-            auto map_hash = neosu_collections.read_hash();
+            const auto& map_hash = neosu_collections.read_hash();
 
             auto it = std::ranges::find(collection->maps, map_hash);
             if(it != collection->maps.end()) {
@@ -183,7 +184,7 @@ bool load_mcneosu_collections(std::string_view neosu_collections_path) {
         collection->neosu_maps.reserve(nb_maps);
 
         for(int m = 0; std::cmp_less(m, nb_maps); m++) {
-            auto map_hash = neosu_collections.read_hash();
+            const auto& map_hash = neosu_collections.read_hash();
 
             auto it = std::ranges::find(collection->maps, map_hash);
             if(it == collection->maps.end()) {
@@ -256,14 +257,14 @@ bool save_collections() {
 
         u32 nb_deleted = collection->deleted_maps.size();
         db.write<u32>(nb_deleted);
-        for(auto map : collection->deleted_maps) {
-            db.write_string(map.string());
+        for(const auto& mapmd5 : collection->deleted_maps) {
+            db.write_hash(mapmd5);
         }
 
         u32 nb_neosu = collection->neosu_maps.size();
         db.write<u32>(nb_neosu);
-        for(auto map : collection->neosu_maps) {
-            db.write_string(map.string());
+        for(const auto& mapmd5 : collection->neosu_maps) {
+            db.write_hash(mapmd5);
         }
     }
 

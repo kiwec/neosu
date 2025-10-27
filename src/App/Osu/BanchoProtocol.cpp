@@ -10,20 +10,19 @@ Room::Room(Packet &packet) {
     this->in_progress = packet.read<u8>();
     this->match_type = packet.read<u8>();
     this->mods = packet.read<u32>();
-    this->name = packet.read_string();
+    this->name = packet.read_ustring();
 
     this->has_password = packet.read<u8>() > 0;
     if(this->has_password) {
         // Discard password. It should be an empty string, but just in case, read it properly.
         packet.pos--;
-        packet.read_string();
+        packet.read_ustring();
     }
 
-    this->map_name = packet.read_string();
+    this->map_name = packet.read_ustring();
     this->map_id = packet.read<i32>();
 
-    auto hash_str = packet.read_string();
-    this->map_md5 = hash_str.toUtf8();
+    this->map_md5 = packet.read_hash();
 
     this->nb_players = 0;
     for(auto &slot : this->slots) {
@@ -66,7 +65,7 @@ void Room::pack(Packet &packet) {
     packet.write_string(this->password.toUtf8());
     packet.write_string(this->map_name.toUtf8());
     packet.write<i32>(this->map_id);
-    packet.write_string(this->map_md5.string());
+    packet.write_hash(this->map_md5);
     for(auto &slot : this->slots) {
         packet.write<u8>(slot.status);
     }

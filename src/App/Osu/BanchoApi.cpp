@@ -13,7 +13,7 @@
 
 namespace BANCHO::Api {
 
-static void handle_api_response(Packet &packet) {
+static void handle_api_response(const Packet &packet) {
     switch(packet.id) {
         case GET_BEATMAPSET_INFO: {
             Downloader::process_beatmapset_info_response(packet);

@@ -89,7 +89,6 @@ MD5Hash BanchoState::md5(const u8 *msg, size_t msg_len) {
         out.hash[i * 2] = "0123456789abcdef"[digest[i] >> 4];
         out.hash[i * 2 + 1] = "0123456789abcdef"[digest[i] & 0xf];
     }
-    out.hash[32] = 0;
     return out;
 }
 
@@ -164,9 +163,9 @@ void BanchoState::handle_packet(Packet &packet) {
         }
 
         case RECV_MESSAGE: {
-            UString sender = packet.read_string();
-            UString text = packet.read_string();
-            UString recipient = packet.read_string();
+            UString sender = packet.read_ustring();
+            UString text = packet.read_ustring();
+            UString recipient = packet.read_ustring();
             i32 sender_id = packet.read<i32>();
 
             auto msg = ChatMessage{
@@ -218,7 +217,7 @@ void BanchoState::handle_packet(Packet &packet) {
             user->irc_user = raw_id < 0;
             user->stats_tms = Timing::getTicksMS();
             user->action = action;
-            user->info_text = packet.read_string();
+            user->info_text = packet.read_ustring();
             user->map_md5 = packet.read_hash();
             user->mods = packet.read<u32>();
             user->mode = (GameMode)packet.read<u8>();
@@ -365,7 +364,7 @@ void BanchoState::handle_packet(Packet &packet) {
         }
 
         case NOTIFICATION: {
-            UString notification = packet.read_string();
+            UString notification = packet.read_ustring();
             osu->getNotificationOverlay()->addToast(notification, INFO_TOAST);
             break;
         }
@@ -474,7 +473,7 @@ void BanchoState::handle_packet(Packet &packet) {
         }
 
         case CHANNEL_JOIN_SUCCESS: {
-            UString name = packet.read_string();
+            UString name = packet.read_ustring();
             auto msg = ChatMessage{
                 .tms = time(nullptr),
                 .author_id = 0,
@@ -487,22 +486,22 @@ void BanchoState::handle_packet(Packet &packet) {
         }
 
         case CHANNEL_INFO: {
-            UString channel_name = packet.read_string();
-            UString channel_topic = packet.read_string();
+            UString channel_name = packet.read_ustring();
+            UString channel_topic = packet.read_ustring();
             i32 nb_members = packet.read<i32>();
             BanchoState::update_channel(channel_name, channel_topic, nb_members, false);
             break;
         }
 
         case LEFT_CHANNEL: {
-            UString name = packet.read_string();
+            UString name = packet.read_ustring();
             osu->getChat()->removeChannel(name);
             break;
         }
 
         case CHANNEL_AUTO_JOIN: {
-            UString channel_name = packet.read_string();
-            UString channel_topic = packet.read_string();
+            UString channel_name = packet.read_ustring();
+            UString channel_topic = packet.read_ustring();
             i32 nb_members = packet.read<i32>();
             BanchoState::update_channel(channel_name, channel_topic, nb_members, true);
             break;
@@ -551,7 +550,7 @@ void BanchoState::handle_packet(Packet &packet) {
         case USER_PRESENCE: {
             i32 raw_id = packet.read<i32>();
             i32 presence_user_id = abs(raw_id);  // IRC clients are sent with negative IDs, hence the abs()
-            auto presence_username = packet.read_string();
+            auto presence_username = packet.read_ustring();
 
             UserInfo *user = BANCHO::User::get_user_info(presence_user_id);
             user->irc_user = raw_id < 0;
@@ -599,7 +598,7 @@ void BanchoState::handle_packet(Packet &packet) {
         }
 
         case ROOM_PASSWORD_CHANGED: {
-            UString new_password = packet.read_string();
+            UString new_password = packet.read_ustring();
             debugLog("Room changed password to {:s}", new_password.toUtf8());
             BanchoState::room.password = new_password;
             break;
@@ -634,18 +633,18 @@ void BanchoState::handle_packet(Packet &packet) {
         }
 
         case USER_DM_BLOCKED: {
-            packet.read_string();
-            packet.read_string();
-            UString blocked = packet.read_string();
+            packet.read_ustring();
+            packet.read_ustring();
+            UString blocked = packet.read_ustring();
             packet.read<u32>();
             debugLog("Blocked {:s}.", blocked.toUtf8());
             break;
         }
 
         case TARGET_IS_SILENCED: {
-            packet.read_string();
-            packet.read_string();
-            UString blocked = packet.read_string();
+            packet.read_ustring();
+            packet.read_ustring();
+            UString blocked = packet.read_ustring();
             packet.read<u32>();
             debugLog("Silenced {:s}.", blocked.toUtf8());
             break;
@@ -800,7 +799,7 @@ std::string BanchoState::build_login_packet() {
     if(cv::mp_oauth_token.getString().empty()) {
         req.append(BanchoState::username);
         req.append("\n");
-        req.append(BanchoState::pw_md5.string(), 32);
+        req.append(BanchoState::pw_md5.string());
         req.append("\n");
     } else {
         req.append("$oauth");

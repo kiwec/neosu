@@ -172,9 +172,9 @@ Info from_bytes(u8* data, uSz s_data) {
     }
 
     info.osu_version = replay.read<u32>();
-    info.map_md5 = replay.read_string();
-    info.username = replay.read_string();
-    info.replay_md5 = replay.read_string();
+    info.map_md5 = replay.read_ustring();
+    info.username = replay.read_ustring();
+    info.replay_md5 = replay.read_ustring();
     info.num300s = replay.read<u16>();
     info.num100s = replay.read<u16>();
     info.num50s = replay.read<u16>();
@@ -185,7 +185,7 @@ Info from_bytes(u8* data, uSz s_data) {
     info.comboMax = replay.read<u16>();
     info.perfect = replay.read<u8>();
     info.mod_flags = replay.read<u32>();
-    info.life_bar_graph = replay.read_string();
+    info.life_bar_graph = replay.read_ustring();
     info.timestamp = replay.read<i64>() / 10LL;
 
     i32 replay_size = replay.read<i32>();

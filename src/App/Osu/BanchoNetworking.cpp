@@ -383,7 +383,9 @@ void BanchoState::reconnect() {
 
     BanchoState::endpoint = cv::mp_server.getString();
     BanchoState::username = cv::name.getString().c_str();
-    BanchoState::pw_md5 = {cv::mp_password_md5.getString().c_str()};
+    if(strlen(cv::mp_password_md5.getString().c_str()) == 32) {
+        BanchoState::pw_md5 = {cv::mp_password_md5.getString().c_str()};
+    }
 
     // Admins told me they don't want any clients to connect
     static constexpr const auto server_blacklist = std::array{

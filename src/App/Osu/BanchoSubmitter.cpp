@@ -55,7 +55,7 @@ void submit_score(FinishedScore score) {
         .data = {visual_settings_b64.begin(), visual_settings_b64.end()},
     });
 
-    std::string beatmap_hash = score.beatmap_hash.string();
+    std::string_view beatmap_hash = score.beatmap_hash.string();
     options.mime_parts.push_back({
         .name = "bmk",
         .data = {beatmap_hash.begin(), beatmap_hash.end()},
@@ -68,7 +68,7 @@ void submit_score(FinishedScore score) {
         .data = {unique_ids.begin(), unique_ids.end()},
     });
 
-    std::string password = BanchoState::is_oauth ? BanchoState::cho_token.toUtf8() : BanchoState::pw_md5.string();
+    std::string_view password = BanchoState::is_oauth ? BanchoState::cho_token.utf8View() : BanchoState::pw_md5.string();
     options.mime_parts.push_back({
         .name = "pass",
         .data = {password.begin(), password.end()},

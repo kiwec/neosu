@@ -2052,10 +2052,8 @@ void Database::loadPeppyScores(std::string_view dbPath) {
             break;
         }
 
-        MD5Hash md5hash;
+        MD5Hash md5hash{md5hash_str.c_str()};
 
-        memcpy(md5hash.string(), md5hash_str.c_str(), 32);
-        md5hash.hash[32] = '\0';
         u32 nb_scores = dbr.read<u32>();
 
         for(u32 s = 0; s < nb_scores; s++) {

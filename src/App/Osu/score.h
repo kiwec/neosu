@@ -2,6 +2,8 @@
 #include "MD5Hash.h"
 #include "Replay.h"
 
+#include <vector>
+
 class ConVar;
 class DatabaseBeatmap;
 class AbstractBeatmapInterface;

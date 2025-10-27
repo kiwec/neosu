@@ -1,6 +1,7 @@
 // Copyright (c) 2023, kiwec, All rights reserved.
 
 #include "BanchoPacket.h"
+#include "UString.h"
 
 #include <cstdlib>
 #include <cstring>
@@ -43,6 +44,8 @@ std::string Packet::read_stdstring() {
     return str_out;
 }
 
+UString Packet::read_ustring() { return {std::string_view{this->read_stdstring()}}; }
+
 MD5Hash Packet::read_hash() {
     MD5Hash hash;
 
@@ -54,8 +57,7 @@ MD5Hash Packet::read_hash() {
         len = 32;
     }
 
-    this->read_bytes((u8 *)hash.string(), len);
-    hash.hash[len] = '\0';
+    this->read_bytes((u8 *)hash.data(), len);
     return hash;
 }
 
@@ -118,5 +120,5 @@ void Packet::write_string(const char *str) {
 void Packet::write_hash(const MD5Hash &hash) {
     this->write<u8>(0x0B);
     this->write<u8>(0x20);
-    this->write_bytes((u8 *)hash.string(), 32);
+    this->write_bytes((u8 *)hash.data(), 32);
 }

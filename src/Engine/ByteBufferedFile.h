@@ -9,6 +9,7 @@
 #include <fstream>
 
 #include "MD5Hash.h"
+#include "noinclude.h"
 #include "types.h"
 
 class ByteBufferedFile {

@@ -1,6 +1,7 @@
 #pragma once
 // Copyright (c) 2023, kiwec, All rights reserved.
 #include "BanchoPacket.h"
+#include "UString.h"
 
 enum Action : uint8_t {
     IDLE = 0,

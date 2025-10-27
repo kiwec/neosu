@@ -2,10 +2,12 @@
 // Copyright (c) 2024, kiwec, All rights reserved.
 
 #include "types.h"
-#include "MD5Hash.h"
 
 #include <atomic>
 #include <unordered_map>
+#include <vector>
+
+struct MD5Hash;
 
 class DatabaseBeatmap;
 struct FinishedScore;

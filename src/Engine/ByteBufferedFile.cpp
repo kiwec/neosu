@@ -64,13 +64,12 @@ MD5Hash ByteBufferedFile::Reader::read_hash() {
     }
 
     assert(len <= 32);  // shut up gcc PLEASE
-    if(this->read_bytes(reinterpret_cast<u8 *>(hash.string()), len) != len) {
+    if(this->read_bytes(reinterpret_cast<u8 *>(hash.data()), len) != len) {
         // just continue, don't set error flag
         debugLog("WARNING: failed to read {} bytes to obtain hash.", len);
         extra = len;
     }
     this->skip_bytes(extra);
-    hash.hash[len] = '\0';
     return hash;
 }
 
@@ -172,7 +171,7 @@ void ByteBufferedFile::Writer::write_hash(const MD5Hash &hash) {
 
     this->write<u8>(0x0B);
     this->write<u8>(0x20);
-    this->write_bytes(reinterpret_cast<const u8 *>(hash.string()), 32);
+    this->write_bytes(reinterpret_cast<const u8 *>(hash.data()), 32);
 }
 
 void ByteBufferedFile::Writer::write_string(const std::string &str) {

@@ -163,6 +163,7 @@ neosu_SOURCES = \
 	src/GUI/Windows/VisualProfiler.cpp \
 	src/Platform/main.cpp \
 	src/Platform/main_impl.cpp \
+	src/Util/MD5Hash.cpp \
 	src/Util/Quaternion.cpp \
 	src/Util/Rect.cpp \
 	src/Util/SString.cpp \

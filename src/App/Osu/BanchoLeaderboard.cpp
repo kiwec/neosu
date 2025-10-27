@@ -115,12 +115,12 @@ void fetch_online_scores(const DatabaseBeatmap *beatmap) {
     BANCHO::Api::Request request;
     request.type = BANCHO::Api::GET_MAP_LEADERBOARD;
     request.path = url;
-    request.extra = (u8 *)strdup(beatmap->getMD5().string());
+    request.extra = (u8 *)strdup(std::string{beatmap->getMD5().string()}.c_str());
 
     BANCHO::Api::send_request(request);
 }
 
-void process_leaderboard_response(Packet response) {
+void process_leaderboard_response(const Packet &response) {
     // Don't update the leaderboard while playing, that's weird
     if(osu->isInPlayMode()) return;
 
@@ -128,7 +128,7 @@ void process_leaderboard_response(Packet response) {
     //       Server can return partial responses in some cases, so make sure
     //       you actually received the data if you plan on using it.
     OnlineMapInfo info{};
-    MD5Hash beatmap_hash = (char *)response.extra;
+    MD5Hash beatmap_hash{(char *)response.extra};
     std::vector<FinishedScore> scores;
     char *body = (char *)response.memory;
 

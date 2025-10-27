@@ -2,7 +2,6 @@
 // Copyright (c) 2023, kiwec, All rights reserved.
 
 #include "BanchoProtocol.h"
-#include "UString.h"
 
 #include <atomic>
 #include <unordered_map>

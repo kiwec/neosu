@@ -686,7 +686,7 @@ void Osu::update() {
         if(this->bSeeking) {
             f32 mousePosX = std::round(mouse->getPos().x);
             f32 percent = std::clamp<f32>(mousePosX / (f32)this->internalRect.getWidth(), 0.0f, 1.0f);
-            f32 seek_to_ms = percent * (this->map_iface->getStartTimePlayable() + this->map_iface->getLengthPlayable());
+            u32 seek_to_ms = std::roundl(percent * (float)(this->map_iface->getStartTimePlayable() + this->map_iface->getLengthPlayable()));
 
             if(mouse->isLeftDown()) {
                 if(mousePosX != this->fPrevSeekMousePosX || !cv::scrubbing_smooth.getBool()) {
