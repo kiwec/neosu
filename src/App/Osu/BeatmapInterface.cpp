@@ -295,125 +295,66 @@ void BeatmapInterface::skipEmptySection() {
     }
 }
 
-void BeatmapInterface::keyPressed1(bool mouse) {
+void BeatmapInterface::onKey(LegacyReplay::KeyFlags key_flag, bool down, u64 timestamp) {
     if(this->is_watching || BanchoState::spectating) return;
 
-    if(this->bContinueScheduled) this->bClickedContinue = !osu->getModSelector()->isMouseInside();
+    if(down) {
+        if(this->bContinueScheduled) this->bClickedContinue = !osu->getModSelector()->isMouseInside();
 
-    u8 key_flag = mouse ? LegacyReplay::M1 : LegacyReplay::K1;
-
-    if(cv::mod_singletap.getBool() && this->lastPressedKey != key_flag) {
-        if(this->iCurrentHitObjectIndex > this->iAllowAnyNextKeyUntilHitObjectIndex) {
-            soundEngine->play(this->getSkin()->getCombobreak());
-            return;
+        if(cv::mod_singletap.getBool() && !(this->lastPressedKey & key_flag)) {
+            if(this->iCurrentHitObjectIndex > this->iAllowAnyNextKeyUntilHitObjectIndex) {
+                soundEngine->play(this->getSkin()->getCombobreak());
+                return;
+            }
         }
-    }
 
-    if(cv::mod_fullalternate.getBool() && this->lastPressedKey == key_flag) {
-        if(this->iCurrentHitObjectIndex > this->iAllowAnyNextKeyUntilHitObjectIndex) {
-            soundEngine->play(this->getSkin()->getCombobreak());
-            return;
+        if(cv::mod_fullalternate.getBool() && (this->lastPressedKey & key_flag)) {
+            if(this->iCurrentHitObjectIndex > this->iAllowAnyNextKeyUntilHitObjectIndex) {
+                soundEngine->play(this->getSkin()->getCombobreak());
+                return;
+            }
         }
-    }
 
-    // key overlay & counter
-    osu->getHUD()->animateInputoverlay(mouse ? 3 : 1, true);
+        // key overlay & counter
+        osu->getHUD()->animateInputOverlay(key_flag, true);
 
-    if(this->bFailed) return;
+        if(this->bFailed) return;
 
-    bool hasAnyHitObjects = (this->hitobjects.size() > 0);
-    bool is_too_early = hasAnyHitObjects && this->iCurMusicPosWithOffsets < this->hitobjects[0]->click_time;
-    bool should_count_keypress = !is_too_early && !this->bInBreak && !this->bIsInSkippableSection && this->bIsPlaying;
-    if(should_count_keypress) osu->getScore()->addKeyCount(mouse ? 3 : 1);
+        bool hasAnyHitObjects = (this->hitobjects.size() > 0);
+        bool is_too_early = hasAnyHitObjects && this->iCurMusicPosWithOffsets < this->hitobjects[0]->click_time;
+        bool should_count_keypress =
+            !is_too_early && !this->bInBreak && !this->bIsInSkippableSection && this->bIsPlaying;
+        if(should_count_keypress) osu->getScore()->addKeyCount(key_flag);
 
-    this->lastPressedKey = key_flag;
+        this->lastPressedKey = key_flag;
 
-    if((!osu->getModAuto() && !osu->getModRelax()) || !cv::auto_and_relax_block_user_input.getBool()) {
-        this->clicks.push_back(Click{
-            .timestamp = this->iCurMusicPosWithOffsets,
-            .pos = this->getCursorPos(),
-        });
-    }
-
-    u8 replay_key_flags = key_flag;
-    if(!cv::mod_no_keylock.getBool()) {
-        // In replays, "K1" is always stored as "K1+M1"
-        replay_key_flags |= LegacyReplay::M1;
-    }
-    this->current_keys |= replay_key_flags;
-}
-
-void BeatmapInterface::keyPressed2(bool mouse) {
-    if(this->is_watching || BanchoState::spectating) return;
-
-    if(this->bContinueScheduled) this->bClickedContinue = !osu->getModSelector()->isMouseInside();
-
-    u8 key_flag = mouse ? LegacyReplay::M2 : LegacyReplay::K2;
-
-    if(cv::mod_singletap.getBool() && this->lastPressedKey != key_flag) {
-        if(this->iCurrentHitObjectIndex > this->iAllowAnyNextKeyUntilHitObjectIndex) {
-            soundEngine->play(this->getSkin()->getCombobreak());
-            return;
+        if((!osu->getModAuto() && !osu->getModRelax()) || !cv::auto_and_relax_block_user_input.getBool()) {
+            // music position to be interped to next update (in update2())
+            this->clicks.push_back(
+                Click{.timestamp = timestamp, .pos = this->getCursorPos(), .music_pos = this->iCurMusicPosWithOffsets});
         }
-    }
 
-    if(cv::mod_fullalternate.getBool() && this->lastPressedKey == key_flag) {
-        if(this->iCurrentHitObjectIndex > this->iAllowAnyNextKeyUntilHitObjectIndex) {
-            soundEngine->play(this->getSkin()->getCombobreak());
-            return;
+        u8 replay_key_flags = key_flag;
+        if(!cv::mod_no_keylock.getBool()) {
+            // In replays, "K1" is always stored as "K1+M1"
+            // so mirror keypress as mouse buttonpress
+            replay_key_flags |= (key_flag & 0b1100) >> 2u;
         }
-    }
+        this->current_keys |= replay_key_flags;
+    } else {  // released
 
-    // key overlay & counter
-    osu->getHUD()->animateInputoverlay(mouse ? 4 : 2, true);
+        // i dont get this logic? this is how it was before, though...
+        if(!cv::mod_no_keylock.getBool()) {
+            const bool mouse = key_flag & 0b11;
+            u8 mirrored_flag = mouse ? key_flag << 2u : (key_flag & 0b1100) >> 2u;
+            auto both_flags = static_cast<LegacyReplay::KeyFlags>(key_flag | mirrored_flag);
 
-    if(this->bFailed) return;
-
-    bool hasAnyHitObjects = (this->hitobjects.size() > 0);
-    bool is_too_early = hasAnyHitObjects && this->iCurMusicPosWithOffsets < this->hitobjects[0]->click_time;
-    bool should_count_keypress = !is_too_early && !this->bInBreak && !this->bIsInSkippableSection && this->bIsPlaying;
-    if(should_count_keypress) osu->getScore()->addKeyCount(mouse ? 4 : 2);
-
-    this->lastPressedKey = key_flag;
-
-    if((!osu->getModAuto() && !osu->getModRelax()) || !cv::auto_and_relax_block_user_input.getBool()) {
-        this->clicks.push_back(Click{
-            .timestamp = this->iCurMusicPosWithOffsets,
-            .pos = this->getCursorPos(),
-        });
-    }
-
-    u8 replay_key_flags = key_flag;
-    if(!cv::mod_no_keylock.getBool()) {
-        // In replays, "K2" is always stored as "K2+M2"
-        replay_key_flags |= LegacyReplay::M2;
-    }
-    this->current_keys |= replay_key_flags;
-}
-
-void BeatmapInterface::keyReleased1(bool mouse) {
-    if(this->is_watching || BanchoState::spectating) return;
-
-    if(mouse || !cv::mod_no_keylock.getBool()) {
-        osu->getHUD()->animateInputoverlay(3, false);
-        this->current_keys &= ~LegacyReplay::M1;
-    }
-    if(!mouse || !cv::mod_no_keylock.getBool()) {
-        osu->getHUD()->animateInputoverlay(1, false);
-        this->current_keys &= ~LegacyReplay::K1;
-    }
-}
-
-void BeatmapInterface::keyReleased2(bool mouse) {
-    if(this->is_watching || BanchoState::spectating) return;
-
-    if(mouse || !cv::mod_no_keylock.getBool()) {
-        osu->getHUD()->animateInputoverlay(4, false);
-        this->current_keys &= ~LegacyReplay::M2;
-    }
-    if(!mouse || !cv::mod_no_keylock.getBool()) {
-        osu->getHUD()->animateInputoverlay(2, false);
-        this->current_keys &= ~LegacyReplay::K2;
+            osu->getHUD()->animateInputOverlay(both_flags, false);
+            this->current_keys &= ~both_flags;
+        } else {
+            osu->getHUD()->animateInputOverlay(key_flag, false);
+            this->current_keys &= ~key_flag;
+        }
     }
 }
 
@@ -585,10 +526,10 @@ bool BeatmapInterface::start() {
         osu->bMouseKey1Down = false;
         osu->bMouseKey2Down = false;
 
-        this->keyReleased1(false);
-        this->keyReleased1(true);
-        this->keyReleased2(false);
-        this->keyReleased2(true);
+        this->onKey(LegacyReplay::KeyFlags::K1, false, 0);
+        this->onKey(LegacyReplay::KeyFlags::M1, false, 0);
+        this->onKey(LegacyReplay::KeyFlags::K2, false, 0);
+        this->onKey(LegacyReplay::KeyFlags::M2, false, 0);
     }
 
     static const int OSU_COORD_WIDTH = 512;
@@ -2465,6 +2406,9 @@ void BeatmapInterface::update2() {
         }
     }
 
+    // get timestamp from the previous update cycle
+    const auto lastUpdateTime = this->iLastMusicPosUpdateTime;
+
     // update timing (points)
     this->iCurMusicPosWithOffsets = this->iCurMusicPos;
     this->iCurMusicPosWithOffsets += (i32)(cv::universal_offset.getFloat() * this->getSpeedMultiplier());
@@ -2474,6 +2418,10 @@ void BeatmapInterface::update2() {
     if(this->beatmap->getVersion() < 5) {
         this->iCurMusicPosWithOffsets -= cv::old_beatmap_offset.getInt();
     }
+
+    // update the update timestamp
+    const auto currentUpdateTime = Timing::getTicksNS();
+    this->iLastMusicPosUpdateTime = currentUpdateTime;
 
     if(this->iCurMusicPosWithOffsets >= 0) {
         this->current_timing_point = this->beatmap->getTimingInfoForTime(this->iCurMusicPosWithOffsets);
@@ -2489,11 +2437,22 @@ void BeatmapInterface::update2() {
         }
     }
 
-    // When CBF is disabled, set click timing and position to the current frame's
-    if(!cv::cbf.getBool() && !this->is_watching && !BanchoState::spectating) {
-        for(auto &click : this->clicks) {
-            click.timestamp = this->iCurMusicPosWithOffsets;
-            click.pos = this->getCursorPos();
+    // interpolate clicks that occurred between the last update and now
+    if(!cv::cbf.getBool() && !this->is_watching && !BanchoState::spectating && !this->clicks.empty()) {
+        const auto timeSinceLastUpdate = currentUpdateTime - lastUpdateTime;
+
+        if(timeSinceLastUpdate > 0) {
+            for(auto &click : this->clicks) {
+                // how long after the last music update did this click occur?
+                const auto clickDeltaSinceLastUpdate = click.timestamp - lastUpdateTime;
+                const auto percent =
+                    std::clamp((double)clickDeltaSinceLastUpdate / (double)timeSinceLastUpdate, 0.0, 1.0);
+
+                // interpolate between the music position when click was captured and current music position
+                click.music_pos = static_cast<i32>(
+                    std::roundl(std::lerp((double)click.music_pos, (double)this->iCurMusicPosWithOffsets, percent)));
+                click.pos = this->getCursorPos();
+            }
         }
     }
 
@@ -2512,7 +2471,8 @@ void BeatmapInterface::update2() {
             this->current_keys = current_frame.key_flags;
 
             Click click;
-            click.timestamp = current_frame.cur_music_pos;
+            click.music_pos = current_frame.cur_music_pos;
+            click.timestamp = Timing::getTicksNS();
             click.pos.x = current_frame.x;
             click.pos.y = current_frame.y;
             click.pos *= GameRules::getPlayfieldScaleFactor();
@@ -2525,52 +2485,28 @@ void BeatmapInterface::update2() {
                 if(this->current_keys & LegacyReplay::K2) this->current_keys &= ~LegacyReplay::M2;
             }
 
-            // Released key 1
-            if(this->last_keys & LegacyReplay::K1 && !(this->current_keys & LegacyReplay::K1)) {
-                osu->getHUD()->animateInputoverlay(1, false);
-            }
-            if(this->last_keys & LegacyReplay::M1 && !(this->current_keys & LegacyReplay::M1)) {
-                osu->getHUD()->animateInputoverlay(3, false);
-            }
-
-            // Released key 2
-            if(this->last_keys & LegacyReplay::K2 && !(this->current_keys & LegacyReplay::K2)) {
-                osu->getHUD()->animateInputoverlay(2, false);
-            }
-            if(this->last_keys & LegacyReplay::M2 && !(this->current_keys & LegacyReplay::M2)) {
-                osu->getHUD()->animateInputoverlay(4, false);
+            const auto released_keys = static_cast<LegacyReplay::KeyFlags>(this->last_keys & ~this->current_keys);
+            if(released_keys > 0) {
+                osu->getHUD()->animateInputOverlay(released_keys, false);
             }
 
             bool hasAnyHitObjects = (this->hitobjects.size() > 0);
             bool is_too_early = hasAnyHitObjects && this->iCurMusicPosWithOffsets < this->hitobjects[0]->click_time;
             bool should_count_keypress = !is_too_early && !this->bInBreak && !this->bIsInSkippableSection;
 
-            // Pressed key 1
-            if(!(this->last_keys & LegacyReplay::K1) && this->current_keys & LegacyReplay::K1) {
-                this->lastPressedKey = LegacyReplay::K1;
-                osu->getHUD()->animateInputoverlay(1, true);
-                this->clicks.push_back(click);
-                if(should_count_keypress) osu->getScore()->addKeyCount(1);
-            }
-            if(!(this->last_keys & LegacyReplay::M1) && this->current_keys & LegacyReplay::M1) {
-                this->lastPressedKey = LegacyReplay::M1;
-                osu->getHUD()->animateInputoverlay(3, true);
-                this->clicks.push_back(click);
-                if(should_count_keypress) osu->getScore()->addKeyCount(3);
-            }
+            const auto pressed_keys = static_cast<LegacyReplay::KeyFlags>(this->current_keys & ~this->last_keys);
+            if(pressed_keys > 0) {
+                this->lastPressedKey = pressed_keys;
+                osu->getHUD()->animateInputOverlay(pressed_keys, true);
 
-            // Pressed key 2
-            if(!(this->last_keys & LegacyReplay::K2) && this->current_keys & LegacyReplay::K2) {
-                this->lastPressedKey = LegacyReplay::K2;
-                osu->getHUD()->animateInputoverlay(2, true);
-                this->clicks.push_back(click);
-                if(should_count_keypress) osu->getScore()->addKeyCount(2);
-            }
-            if(!(this->last_keys & LegacyReplay::M2) && this->current_keys & LegacyReplay::M2) {
-                this->lastPressedKey = LegacyReplay::M2;
-                osu->getHUD()->animateInputoverlay(4, true);
-                this->clicks.push_back(click);
-                if(should_count_keypress) osu->getScore()->addKeyCount(4);
+                using LegacyReplay::KeyFlags;
+                for(const KeyFlags f :
+                    {(KeyFlags)(pressed_keys & KeyFlags::K1), (KeyFlags)(pressed_keys & KeyFlags::K2),
+                     (KeyFlags)(pressed_keys & KeyFlags::M1), (KeyFlags)(pressed_keys & KeyFlags::M2)}) {
+                    if(f == 0) continue;
+                    this->clicks.push_back(click);
+                }
+                if(should_count_keypress) osu->getScore()->addKeyCount(pressed_keys);
             }
         }
 
@@ -2910,7 +2846,7 @@ void BeatmapInterface::update2() {
                         continue;
 
                     misaimObject->misAimed();
-                    const i32 delta = click.timestamp - (i32)misaimObject->click_time;
+                    const i32 delta = click.music_pos - (i32)misaimObject->click_time;
                     osu->getHUD()->addHitError(delta, false, true);
 
                     break;  // the current click has been dealt with (and the hitobject has been misaimed)

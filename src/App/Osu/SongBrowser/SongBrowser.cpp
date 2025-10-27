@@ -594,8 +594,7 @@ void SongBrowser::draw() {
     } else if(cv::draw_songbrowser_menu_background_image.getBool()) {
         // menu-background
         Image *backgroundImage = osu->getSkin()->getMenuBackground();
-        if(backgroundImage != nullptr && backgroundImage != MISSING_TEXTURE &&
-           backgroundImage->isReady()) {
+        if(backgroundImage != nullptr && backgroundImage != MISSING_TEXTURE && backgroundImage->isReady()) {
             const float scale = Osu::getImageScaleToFillResolution(backgroundImage, osu->getVirtScreenSize());
 
             g->setColor(0xffffffff);
@@ -1164,8 +1163,8 @@ CBaseUIContainer *SongBrowser::setVisible(bool visible) {
         // HACKHACK: workaround for BaseUI framework deficiency (missing mouse events. if a mouse button is being held,
         // and then suddenly a BaseUIElement gets put under it and set visible, and then the mouse button is released,
         // that "incorrectly" fires onMouseUpInside/onClicked/etc.)
-        mouse->onButtonChange(ButtonIndex::BUTTON_LEFT, false);
-        mouse->onButtonChange(ButtonIndex::BUTTON_RIGHT, false);
+        mouse->onButtonChange({Timing::getTicksNS(), ButtonIndex::BUTTON_LEFT, false});
+        mouse->onButtonChange({Timing::getTicksNS(), ButtonIndex::BUTTON_RIGHT, false});
 
         // For multiplayer: if the host exits song selection without selecting a song, we want to be able to revert
         // to that previous song.
@@ -3108,8 +3107,7 @@ void SongBrowser::onSongButtonContextMenu(SongButton *songButton, const UString 
                         beatmapSetHashes.push_back(i->getDatabaseBeatmap()->getMD5());
                     }
                 } else {
-                    const DatabaseBeatmap *beatmap =
-                        db->getBeatmapSet(songButton->getDatabaseBeatmap()->getSetID());
+                    const DatabaseBeatmap *beatmap = db->getBeatmapSet(songButton->getDatabaseBeatmap()->getSetID());
                     if(beatmap != nullptr) {
                         const std::vector<DatabaseBeatmap *> &diffs = beatmap->getDifficulties();
                         for(auto diff : diffs) {

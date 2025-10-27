@@ -2295,53 +2295,64 @@ void HUD::addTarget(float delta, float angle) {
     this->targets.push_back(t);
 }
 
-void HUD::animateInputoverlay(int key, bool down) {
-    if(!cv::draw_inputoverlay.getBool() || (!cv::draw_hud.getBool() && cv::hud_shift_tab_toggles_everything.getBool()))
+void HUD::animateInputOverlay(LegacyReplay::KeyFlags key_flag, bool down) {
+    if(key_flag == LegacyReplay::KeyFlags::Smoke || !cv::draw_inputoverlay.getBool() ||
+       (!cv::draw_hud.getBool() && cv::hud_shift_tab_toggles_everything.getBool()))
         return;
 
-    float *animScale = &this->fInputoverlayK1AnimScale;
-    float *animColor = &this->fInputoverlayK1AnimColor;
+    using LegacyReplay::KeyFlags;
+    for(const KeyFlags flag : {(KeyFlags)(key_flag & KeyFlags::K1), (KeyFlags)(key_flag & KeyFlags::K2),
+                               (KeyFlags)(key_flag & KeyFlags::M1), (KeyFlags)(key_flag & KeyFlags::M2)}) {
+        if (flag == 0) continue;
 
-    switch(key) {
-        case 1:
-            animScale = &this->fInputoverlayK1AnimScale;
-            animColor = &this->fInputoverlayK1AnimColor;
-            break;
-        case 2:
-            animScale = &this->fInputoverlayK2AnimScale;
-            animColor = &this->fInputoverlayK2AnimColor;
-            break;
-        case 3:
-            animScale = &this->fInputoverlayM1AnimScale;
-            animColor = &this->fInputoverlayM1AnimColor;
-            break;
-        case 4:
-            animScale = &this->fInputoverlayM2AnimScale;
-            animColor = &this->fInputoverlayM2AnimColor;
-            break;
-    }
+        float *animScale = nullptr;
+        float *animColor = nullptr;
 
-    if(down) {
-        // scale
-        *animScale = 1.0f;
-        anim->moveQuadOut(animScale, cv::hud_inputoverlay_anim_scale_multiplier.getFloat(),
-                          cv::hud_inputoverlay_anim_scale_duration.getFloat(), true);
+        switch(flag) {
+            case KeyFlags::Smoke:
+                std::unreachable();
+                return;
+            case KeyFlags::K1:
+                animScale = &this->fInputoverlayK1AnimScale;
+                animColor = &this->fInputoverlayK1AnimColor;
+                break;
+            case KeyFlags::K2:
+                animScale = &this->fInputoverlayK2AnimScale;
+                animColor = &this->fInputoverlayK2AnimColor;
+                break;
+            case KeyFlags::M1:
+                animScale = &this->fInputoverlayM1AnimScale;
+                animColor = &this->fInputoverlayM1AnimColor;
+                break;
+            case KeyFlags::M2:
+                animScale = &this->fInputoverlayM2AnimScale;
+                animColor = &this->fInputoverlayM2AnimColor;
+                break;
+        }
 
-        // color
-        *animColor = 1.0f;
-        anim->deleteExistingAnimation(animColor);
-    } else {
-        // scale
-        // NOTE: osu is running the keyup anim in parallel, but only allowing it to override once the keydown anim has
-        // finished, and with some weird speedup?
-        const float remainingDuration = anim->getRemainingDuration(animScale);
-        anim->moveQuadOut(animScale, 1.0f,
-                          cv::hud_inputoverlay_anim_scale_duration.getFloat() -
-                              std::min(remainingDuration * 1.4f, cv::hud_inputoverlay_anim_scale_duration.getFloat()),
-                          remainingDuration);
+        if(down) {
+            // scale
+            *animScale = 1.0f;
+            anim->moveQuadOut(animScale, cv::hud_inputoverlay_anim_scale_multiplier.getFloat(),
+                              cv::hud_inputoverlay_anim_scale_duration.getFloat(), true);
 
-        // color
-        anim->moveLinear(animColor, 0.0f, cv::hud_inputoverlay_anim_color_duration.getFloat(), true);
+            // color
+            *animColor = 1.0f;
+            anim->deleteExistingAnimation(animColor);
+        } else {
+            // scale
+            // NOTE: osu is running the keyup anim in parallel, but only allowing it to override once the keydown anim has
+            // finished, and with some weird speedup?
+            const float remainingDuration = anim->getRemainingDuration(animScale);
+            anim->moveQuadOut(
+                animScale, 1.0f,
+                cv::hud_inputoverlay_anim_scale_duration.getFloat() -
+                    std::min(remainingDuration * 1.4f, cv::hud_inputoverlay_anim_scale_duration.getFloat()),
+                remainingDuration);
+
+            // color
+            anim->moveLinear(animColor, 0.0f, cv::hud_inputoverlay_anim_color_duration.getFloat(), true);
+        }
     }
 }
 

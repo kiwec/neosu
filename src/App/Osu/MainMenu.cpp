@@ -1228,10 +1228,10 @@ void MainMenu::onKeyDown(KeyboardEvent &e) {
     }
 }
 
-void MainMenu::onButtonChange(ButtonIndex button, bool down) {
+void MainMenu::onButtonChange(ButtonEvent ev) {
     using enum ButtonIndex;
-    if(!this->bVisible || button != BUTTON_MIDDLE ||
-       !(down && !anim->isAnimating(&this->fMainMenuAnim) && !this->bMenuElementsVisible))
+    if(!this->bVisible || ev.btn != BUTTON_MIDDLE ||
+       !(ev.down && !anim->isAnimating(&this->fMainMenuAnim) && !this->bMenuElementsVisible))
         return;
 
     if(keyboard->isShiftDown()) {

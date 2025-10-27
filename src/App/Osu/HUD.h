@@ -13,6 +13,9 @@ class Shader;
 class VertexArrayObject;
 
 class CBaseUIContainer;
+namespace LegacyReplay {
+enum KeyFlags : uint8_t;
+}
 
 struct SCORE_ENTRY {
     UString name;
@@ -68,7 +71,7 @@ class HUD final : public OsuScreen {
     void animateCombo();
     void addHitError(i32 delta, bool miss = false, bool misaim = false);
     void addTarget(float delta, float angle);
-    void animateInputoverlay(int key, bool down);
+    void animateInputOverlay(LegacyReplay::KeyFlags key_flag, bool down);
 
     void addCursorRipple(vec2 pos);
     void animateCursorExpand();

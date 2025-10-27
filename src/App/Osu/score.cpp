@@ -334,20 +334,29 @@ void LiveScore::setDead(bool dead) {
     this->onScoreChange();
 }
 
-void LiveScore::addKeyCount(int key) {
-    switch(key) {
-        case 1:
-            this->iNumK1++;
-            break;
-        case 2:
-            this->iNumK2++;
-            break;
-        case 3:
-            this->iNumM1++;
-            break;
-        case 4:
-            this->iNumM2++;
-            break;
+void LiveScore::addKeyCount(LegacyReplay::KeyFlags key_flag) {
+    using LegacyReplay::KeyFlags;
+    for(const KeyFlags flag : {(KeyFlags)(key_flag & KeyFlags::K1), (KeyFlags)(key_flag & KeyFlags::K2),
+                               (KeyFlags)(key_flag & KeyFlags::M1), (KeyFlags)(key_flag & KeyFlags::M2)}) {
+        if(flag == 0) continue;
+
+        switch(flag) {
+            case KeyFlags::Smoke:
+                std::unreachable();
+                return;
+            case KeyFlags::K1:
+                this->iNumK1++;
+                break;
+            case KeyFlags::K2:
+                this->iNumK2++;
+                break;
+            case KeyFlags::M1:
+                this->iNumM1++;
+                break;
+            case KeyFlags::M2:
+                this->iNumM2++;
+                break;
+        }
     }
 }
 

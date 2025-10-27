@@ -21,8 +21,9 @@ struct LiveReplayFrame;
 struct ScoreFrame;
 
 struct Click {
-    i32 timestamp;  // current music position when the click happened
+    u64 timestamp;  // Timing::getTicksNS() when the event occurred
     vec2 pos{0.f};
+    i32 music_pos;  // current music position when the click happened
 };
 
 class BeatmapInterface final : public AbstractBeatmapInterface {
@@ -97,10 +98,7 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
 
     // callbacks called by the Osu class (osu!standard)
     void skipEmptySection();
-    void keyPressed1(bool mouse);
-    void keyPressed2(bool mouse);
-    void keyReleased1(bool mouse);
-    void keyReleased2(bool mouse);
+    void onKey(LegacyReplay::KeyFlags key_flag, bool down, u64 timestamp);
 
     // loads the music of the currently selected diff and starts playing from the previewTime (e.g. clicking on a beatmap)
     void selectBeatmap();
@@ -268,6 +266,7 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
     f32 fMusicFrequencyBackup;
     i32 iCurMusicPos;
     i32 iCurMusicPosWithOffsets;
+    u64 iLastMusicPosUpdateTime{0};
     McOsuInterpolator musicInterp;
     f32 fAfterMusicIsFinishedVirtualAudioTimeStart;
     bool bIsFirstMissSound;

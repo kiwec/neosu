@@ -2,6 +2,8 @@
 #ifndef MOUSELISTENER_H
 #define MOUSELISTENER_H
 
+#include <cstdint>
+
 namespace ButtonIndices {
 enum idx : unsigned char {
  BUTTON_NONE = 0,
@@ -16,11 +18,17 @@ enum idx : unsigned char {
 
 using ButtonIndex = ButtonIndices::idx;
 
+struct ButtonEvent {
+    uint64_t timestamp;
+    ButtonIndex btn;
+    bool down;
+};
+
 class MouseListener {
    public:
     virtual ~MouseListener() = default;
 
-    virtual void onButtonChange(ButtonIndex /*button*/, bool /*down*/) {}
+    virtual void onButtonChange(ButtonEvent /*event*/) {}
 
     virtual void onWheelVertical(int /*delta*/) {}
     virtual void onWheelHorizontal(int /*delta*/) {}

@@ -65,7 +65,7 @@ class Osu final : public MouseListener, public KeyboardListener {
     void onChar(KeyboardEvent &e) override;
     void stealFocus();
 
-    void onButtonChange(ButtonIndex button, bool down) override;
+    void onButtonChange(ButtonEvent ev) override;
 
     void onResolutionChanged(vec2 newResolution);
     void onDPIChanged();
@@ -221,8 +221,8 @@ class Osu final : public MouseListener, public KeyboardListener {
     void onUIScaleToDPIChange(float oldValue, float newValue);
     void onLetterboxingChange(float oldValue, float newValue);
 
-    void onKey1Change(bool pressed, bool mouse);
-    void onKey2Change(bool pressed, bool mouse);
+    // not sure why this is duplicated here as a passthrough-ish thing to BeatmapInterface...?
+    void onGameplayKey(LegacyReplay::KeyFlags key_flag, bool down, u64 timestamp);
 
     void onLetterboxingOffsetChange();
 

@@ -26,7 +26,7 @@ class Mouse final : public InputDevice {
     void onPosChange(vec2 pos);
     void onWheelVertical(int delta);
     void onWheelHorizontal(int delta);
-    void onButtonChange(ButtonIndex button, bool down);
+    void onButtonChange(ButtonEvent ev);
 
     // position/coordinate handling
     void setPos(vec2 pos); // NOT OS mouse pos, virtual mouse pos

@@ -51,7 +51,7 @@ class MainMenu final : public OsuScreen, public MouseListener {
 
     void onKeyDown(KeyboardEvent &e) override;
 
-    void onButtonChange(ButtonIndex button, bool down) override;
+    void onButtonChange(ButtonEvent ev) override;
 
     void onResolutionChange(vec2 newResolution) override;
 

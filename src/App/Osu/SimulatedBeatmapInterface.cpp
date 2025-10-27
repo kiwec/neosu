@@ -8,6 +8,7 @@
 #include "HitObjects.h"
 #include "LegacyReplay.h"
 #include "Logging.h"
+#include "Timing.h"
 
 SimulatedBeatmapInterface::SimulatedBeatmapInterface(DatabaseBeatmap *map, const Replay::Mods &mods_)
     : AbstractBeatmapInterface() {
@@ -55,7 +56,8 @@ void SimulatedBeatmapInterface::simulate_to(i32 music_pos) {
         this->current_keys = current_frame.key_flags;
 
         Click click;
-        click.timestamp = current_frame.cur_music_pos;
+        click.timestamp = Timing::getTicksNS();
+        click.music_pos = current_frame.cur_music_pos;
         click.pos.x = current_frame.x;
         click.pos.y = current_frame.y;
 
@@ -65,28 +67,19 @@ void SimulatedBeatmapInterface::simulate_to(i32 music_pos) {
             if(this->current_keys & LegacyReplay::K2) this->current_keys &= ~LegacyReplay::M2;
         }
 
-        // Pressed key 1
-        if(!(this->last_keys & LegacyReplay::K1) && this->current_keys & LegacyReplay::K1) {
-            this->lastPressedKey = LegacyReplay::K1;
-            this->clicks.push_back(click);
-            if(!this->bInBreak) this->live_score.addKeyCount(1);
-        }
-        if(!(this->last_keys & LegacyReplay::M1) && this->current_keys & LegacyReplay::M1) {
-            this->lastPressedKey = LegacyReplay::M1;
-            this->clicks.push_back(click);
-            if(!this->bInBreak) this->live_score.addKeyCount(3);
-        }
+        const auto pressed_keys = static_cast<LegacyReplay::KeyFlags>(this->current_keys & ~this->last_keys);
+        if(pressed_keys > 0) {
+            this->lastPressedKey = pressed_keys;
 
-        // Pressed key 2
-        if(!(this->last_keys & LegacyReplay::K2) && this->current_keys & LegacyReplay::K2) {
-            this->lastPressedKey = LegacyReplay::K2;
-            this->clicks.push_back(click);
-            if(!this->bInBreak) this->live_score.addKeyCount(2);
-        }
-        if(!(this->last_keys & LegacyReplay::M2) && this->current_keys & LegacyReplay::M2) {
-            this->lastPressedKey = LegacyReplay::M2;
-            this->clicks.push_back(click);
-            if(!this->bInBreak) this->live_score.addKeyCount(4);
+            using LegacyReplay::KeyFlags;
+            for(const KeyFlags f : {(KeyFlags)(pressed_keys & KeyFlags::K1), (KeyFlags)(pressed_keys & KeyFlags::K2),
+                                    (KeyFlags)(pressed_keys & KeyFlags::M1), (KeyFlags)(pressed_keys & KeyFlags::M2)}) {
+                if(f == 0) continue;
+
+                this->clicks.push_back(click);
+            }
+
+            if(!this->bInBreak) this->live_score.addKeyCount(pressed_keys);
         }
 
         this->interpolatedMousePos = vec2{current_frame.x, current_frame.y};

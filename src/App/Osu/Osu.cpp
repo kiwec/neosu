@@ -686,7 +686,8 @@ void Osu::update() {
         if(this->bSeeking) {
             f32 mousePosX = std::round(mouse->getPos().x);
             f32 percent = std::clamp<f32>(mousePosX / (f32)this->internalRect.getWidth(), 0.0f, 1.0f);
-            u32 seek_to_ms = std::roundl(percent * (float)(this->map_iface->getStartTimePlayable() + this->map_iface->getLengthPlayable()));
+            u32 seek_to_ms = std::roundl(
+                percent * (float)(this->map_iface->getStartTimePlayable() + this->map_iface->getLengthPlayable()));
 
             if(mouse->isLeftDown()) {
                 if(mousePosX != this->fPrevSeekMousePosX || !cv::scrubbing_smooth.getBool()) {
@@ -965,41 +966,41 @@ void Osu::onKeyDown(KeyboardEvent &key) {
 
         // while playing and not paused
         if(!this->map_iface->isPaused()) {
-            // K1
-            if(key == cv::LEFT_CLICK.getVal<KEYCODE>()) {
+            const KEYCODE code = key.getKeyCode();
+            LegacyReplay::KeyFlags gameplayKeyPressed{0};
+            bool consume = false;
+
+            if(code == cv::LEFT_CLICK.getVal<KEYCODE>()) {  // K1
+                consume = true;
                 if(!this->bKeyboardKey1Down) {
                     this->bKeyboardKey1Down = true;
-                    this->onKey1Change(true, false);
+                    gameplayKeyPressed = LegacyReplay::KeyFlags::K1;
                 }
-                if(!this->map_iface->hasFailed()) key.consume();
-            }
-
-            // 'M1'
-            if(key == cv::LEFT_CLICK_2.getVal<KEYCODE>()) {
+            } else if(code == cv::LEFT_CLICK_2.getVal<KEYCODE>()) {  // 'M1'
+                consume = true;
                 if(!this->bMouseKey1Down) {
                     this->bMouseKey1Down = true;
-                    this->onKey1Change(true, true);
+                    gameplayKeyPressed = LegacyReplay::KeyFlags::M1;
                 }
-                if(!this->map_iface->hasFailed()) key.consume();
-            }
-
-            // K2
-            if(key == cv::RIGHT_CLICK.getVal<KEYCODE>()) {
+            } else if(code == cv::RIGHT_CLICK.getVal<KEYCODE>()) {  // K2
+                consume = true;
                 if(!this->bKeyboardKey2Down) {
                     this->bKeyboardKey2Down = true;
-                    this->onKey2Change(true, false);
+                    gameplayKeyPressed = LegacyReplay::KeyFlags::K2;
                 }
-                if(!this->map_iface->hasFailed()) key.consume();
-            }
-
-            // 'M2'
-            if(key == cv::RIGHT_CLICK_2.getVal<KEYCODE>()) {
+            } else if(code == cv::RIGHT_CLICK_2.getVal<KEYCODE>()) {  // 'M2'
+                consume = true;
                 if(!this->bMouseKey2Down) {
                     this->bMouseKey2Down = true;
-                    this->onKey2Change(true, true);
+                    gameplayKeyPressed = LegacyReplay::KeyFlags::M2;
                 }
-                if(!this->map_iface->hasFailed()) key.consume();
             }
+
+            if(gameplayKeyPressed > 0) {
+                this->onGameplayKey(gameplayKeyPressed, true, key.getTimestamp());
+            }
+
+            if(consume && !this->map_iface->hasFailed()) key.consume();
 
             // Smoke
             if(key == cv::SMOKE.getVal<KEYCODE>()) {
@@ -1153,36 +1154,32 @@ void Osu::onKeyDown(KeyboardEvent &key) {
 void Osu::onKeyUp(KeyboardEvent &key) {
     // clicks
     {
-        // K1
-        if(key == cv::LEFT_CLICK.getVal<KEYCODE>()) {
+        const KEYCODE code = key.getKeyCode();
+        LegacyReplay::KeyFlags gameplayKeyReleased{0};
+        if(code == cv::LEFT_CLICK.getVal<KEYCODE>()) {  // K1
             if(this->bKeyboardKey1Down) {
                 this->bKeyboardKey1Down = false;
-                if(this->isInPlayMode()) this->onKey1Change(false, false);
+                gameplayKeyReleased = LegacyReplay::KeyFlags::K1;
             }
-        }
-
-        // 'M1'
-        if(key == cv::LEFT_CLICK_2.getVal<KEYCODE>()) {
+        } else if(code == cv::LEFT_CLICK_2.getVal<KEYCODE>()) {  // 'M1'
             if(this->bMouseKey1Down) {
                 this->bMouseKey1Down = false;
-                if(this->isInPlayMode()) this->onKey1Change(false, true);
+                gameplayKeyReleased = LegacyReplay::KeyFlags::M1;
             }
-        }
-
-        // K2
-        if(key == cv::RIGHT_CLICK.getVal<KEYCODE>()) {
+        } else if(code == cv::RIGHT_CLICK.getVal<KEYCODE>()) {  // K2
             if(this->bKeyboardKey2Down) {
                 this->bKeyboardKey2Down = false;
-                if(this->isInPlayMode()) this->onKey2Change(false, false);
+                gameplayKeyReleased = LegacyReplay::KeyFlags::K2;
+            }
+        } else if(code == cv::RIGHT_CLICK_2.getVal<KEYCODE>()) {  // 'M2'
+            if(this->bMouseKey2Down) {
+                this->bMouseKey2Down = false;
+                gameplayKeyReleased = LegacyReplay::KeyFlags::M2;
             }
         }
 
-        // 'M2'
-        if(key == cv::RIGHT_CLICK_2.getVal<KEYCODE>()) {
-            if(this->bMouseKey2Down) {
-                this->bMouseKey2Down = false;
-                if(this->isInPlayMode()) this->onKey2Change(false, true);
-            }
+        if(gameplayKeyReleased > 0 && this->isInPlayMode()) {
+            this->onGameplayKey(gameplayKeyReleased, false, key.getTimestamp());
         }
 
         // Smoke
@@ -1216,22 +1213,22 @@ void Osu::onChar(KeyboardEvent &e) {
     this->forEachScreenWhile<&OsuScreen::onChar>([&e]() -> bool { return !e.isConsumed(); }, e);
 }
 
-void Osu::onButtonChange(ButtonIndex button, bool down) {
+void Osu::onButtonChange(ButtonEvent ev) {
     if(cv::disable_mousebuttons.getBool()) return;
 
     using enum ButtonIndex;
-    switch(button) {
+    switch(ev.btn) {
         case BUTTON_LEFT: {
-            if(down != this->bMouseKey1Down) {
-                this->bMouseKey1Down = down;
-                this->onKey1Change(down, true);
+            if(ev.down != this->bMouseKey1Down) {
+                this->bMouseKey1Down = ev.down;
+                this->onGameplayKey(LegacyReplay::KeyFlags::M1, ev.down, ev.timestamp);
             }
             break;
         }
         case BUTTON_RIGHT: {
-            if(down != this->bMouseKey2Down) {
-                this->bMouseKey2Down = down;
-                this->onKey2Change(down, true);
+            if(ev.down != this->bMouseKey2Down) {
+                this->bMouseKey2Down = ev.down;
+                this->onGameplayKey(LegacyReplay::KeyFlags::M2, ev.down, ev.timestamp);
             }
             break;
         }
@@ -1869,50 +1866,25 @@ void Osu::updateOsuFolder() {
     }
 }
 
-void Osu::onKey1Change(bool pressed, bool isMouse) {
-    const bool canPress = cv::mod_no_keylock.getBool() || (this->bKeyboardKey1Down != this->bMouseKey1Down);
+void Osu::onGameplayKey(LegacyReplay::KeyFlags key_flag, bool down, u64 timestamp) {
+    const bool firstKey = (key_flag & LegacyReplay::KeyFlags::K1) || (key_flag & LegacyReplay::KeyFlags::M1);
+    const bool canPress = cv::mod_no_keylock.getBool() || (firstKey ? this->bKeyboardKey1Down != this->bMouseKey1Down
+                                                                    : this->bKeyboardKey2Down != this->bMouseKey2Down);
 
     // NOTE: allow keyup even while beatmap is paused, to correctly not-continue immediately due to pressed keys
-    if(this->isInPlayMode()) {
-        if(pressed && canPress && !this->map_iface->isPaused())
-            this->map_iface->keyPressed1(isMouse);
-        else if(!pressed)
-            this->map_iface->keyReleased1(isMouse);
+    if(this->isInPlayMode() && (!down || (down && canPress && !this->map_iface->isPaused()))) {
+        this->map_iface->onKey(key_flag, down, timestamp);
     }
 
     // cursor anim + ripples
     // TODO: wtf is this correct???
     const bool doAnimate = !this->isInPlayMode() || this->map_iface->isPaused();
     if(doAnimate) {
-        if(pressed && canPress) {
+        if(down && canPress) {
             this->hud->animateCursorExpand();
             this->hud->addCursorRipple(mouse->getPos());
         } else if(!this->bKeyboardKey1Down && !this->bMouseKey1Down && !this->bKeyboardKey2Down &&
                   !this->bMouseKey2Down)
-            this->hud->animateCursorShrink();
-    }
-}
-
-void Osu::onKey2Change(bool pressed, bool isMouse) {
-    const bool canPress = cv::mod_no_keylock.getBool() || (this->bKeyboardKey2Down != this->bMouseKey2Down);
-
-    // NOTE: allow keyup even while beatmap is paused, to correctly not-continue immediately due to pressed keys
-    if(this->isInPlayMode()) {
-        if(pressed && canPress && !this->map_iface->isPaused())
-            this->map_iface->keyPressed2(isMouse);
-        else if(!pressed)
-            this->map_iface->keyReleased2(isMouse);
-    }
-
-    // cursor anim + ripples
-    // TODO: wtf is this correct???
-    const bool doAnimate = !this->isInPlayMode() || this->map_iface->isPaused();
-    if(doAnimate) {
-        if(pressed && canPress) {
-            this->hud->animateCursorExpand();
-            this->hud->addCursorRipple(mouse->getPos());
-        } else if(!this->bKeyboardKey2Down && !this->bMouseKey2Down && !this->bKeyboardKey1Down &&
-                  !this->bMouseKey1Down)
             this->hud->animateCursorShrink();
     }
 }
