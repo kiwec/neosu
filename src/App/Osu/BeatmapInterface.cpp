@@ -2430,28 +2430,20 @@ void BeatmapInterface::update2() {
         }
     }
 
-    if(!this->is_watching && !BanchoState::spectating) {
-        if(cv::cbf.getBool()) {
-            // Interpolate clicks that occurred between the last update and now
-            auto timeSinceLastUpdate = currentUpdateTime - lastUpdateTime;
-            if(timeSinceLastUpdate > 0) {
-                for(auto &click : this->clicks) {
-                    // how long after the last music update did this click occur?
-                    auto clickDeltaSinceLastUpdate = click.timestamp - lastUpdateTime;
-                    auto percent = std::clamp((f64)clickDeltaSinceLastUpdate / (f64)timeSinceLastUpdate, 0.0, 1.0);
+    // interpolate clicks that occurred between the last update and now
+    if(!cv::cbf.getBool() && !this->is_watching && !BanchoState::spectating && !this->clicks.empty()) {
+        const auto timeSinceLastUpdate = currentUpdateTime - lastUpdateTime;
 
-                    // interpolate between the music position when click was captured and current music position
-                    click.music_pos = static_cast<i32>(
-                        std::roundl(std::lerp((f64)click.music_pos, (f64)this->iCurMusicPosWithOffsets, percent)));
-                    click.pos = this->getCursorPos();
-                }
-            }
-        } else {
-            // When CBF is disabled, set click timing and position to the current frame's
-            auto now = Timing::getTicksMS();
+        if(timeSinceLastUpdate > 0) {
             for(auto &click : this->clicks) {
-                click.timestamp = now;
-                click.music_pos = this->iCurMusicPosWithOffsets;
+                // how long after the last music update did this click occur?
+                const auto clickDeltaSinceLastUpdate = click.timestamp - lastUpdateTime;
+                const auto percent =
+                    std::clamp((double)clickDeltaSinceLastUpdate / (double)timeSinceLastUpdate, 0.0, 1.0);
+
+                // interpolate between the music position when click was captured and current music position
+                click.music_pos = static_cast<i32>(
+                    std::roundl(std::lerp((double)click.music_pos, (double)this->iCurMusicPosWithOffsets, percent)));
                 click.pos = this->getCursorPos();
             }
         }
