@@ -193,10 +193,10 @@ void BeatmapInterface::drawBackground() {
     if(cv::background_brightness.getFloat() > 0.0f) {
         const auto brightness = cv::background_brightness.getFloat();
 
-        const auto red = brightness * cv::background_color_r.getFloat();
-        const auto green = brightness * cv::background_color_g.getFloat();
-        const auto blue = brightness * cv::background_color_b.getFloat();
-        const auto alpha =
+        const Channel red = std::clamp<float>(brightness * cv::background_color_r.getFloat(), 0.0f, 255.0f);
+        const Channel green = std::clamp<float>(brightness * cv::background_color_g.getFloat(), 0.0f, 255.0f);
+        const Channel blue = std::clamp<float>(brightness * cv::background_color_b.getFloat(), 0.0f, 255.0f);
+        const Channel alpha = 255 *
             (1.0f - this->fBreakBackgroundFade) * (cv::mod_fposu.getBool() ? cv::background_alpha.getFloat() : 1.0f);
 
         g->setColor(argb(alpha, red, green, blue));
@@ -2644,9 +2644,9 @@ void BeatmapInterface::update2() {
             // spinner visibility detection
             // XXX: there might be a "better" way to do it?
             if(isSpinner) {
-                bool spinner_started = this->iCurMusicPos >= this->hitobjects[i]->click_time;
+                bool spinner_started = this->iCurMusicPosWithOffsets >= this->hitobjects[i]->click_time;
                 bool spinner_ended =
-                    this->iCurMusicPos > this->hitobjects[i]->click_time + this->hitobjects[i]->duration;
+                    this->iCurMusicPosWithOffsets > this->hitobjects[i]->click_time + this->hitobjects[i]->duration;
                 spinner_active |= (spinner_started && !spinner_ended);
             }
 
