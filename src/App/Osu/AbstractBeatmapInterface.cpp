@@ -41,5 +41,5 @@ LiveScore::HIT AbstractBeatmapInterface::getHitResult(i32 delta) {
 }
 
 bool AbstractBeatmapInterface::isClickHeld() {
-    return this->getKeys() & (LegacyReplay::K1 | LegacyReplay::K2 | LegacyReplay::M1 | LegacyReplay::M2);
+    return this->getKeys() & ~LegacyReplay::Smoke;
 }

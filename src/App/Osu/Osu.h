@@ -221,7 +221,6 @@ class Osu final : public MouseListener, public KeyboardListener {
     void onUIScaleToDPIChange(float oldValue, float newValue);
     void onLetterboxingChange(float oldValue, float newValue);
 
-    // not sure why this is duplicated here as a passthrough-ish thing to BeatmapInterface...?
     void onGameplayKey(GameplayKeys key_flag, bool down, u64 timestamp);
 
     void onLetterboxingOffsetChange();

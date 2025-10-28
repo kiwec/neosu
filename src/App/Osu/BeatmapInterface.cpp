@@ -299,6 +299,9 @@ void BeatmapInterface::onKey(GameplayKeys key_flag, bool down, u64 timestamp) {
     if(this->is_watching || BanchoState::spectating) return;
 
     if(down) {  // pressed
+        // this needs to be immediately updated here, to update state outside of early returns
+        this->current_keys |= key_flag;
+
         if(this->bContinueScheduled) {
             // don't insta-unpause if we had a held key or doubleclicked or something
             if(engine->getTime() < this->fPrevUnpauseTime + cv::unpause_continue_delay.getFloat()) {
@@ -307,14 +310,14 @@ void BeatmapInterface::onKey(GameplayKeys key_flag, bool down, u64 timestamp) {
             this->bClickedContinue = !osu->getModSelector()->isMouseInside();
         }
 
-        if(cv::mod_singletap.getBool() && this->lastPressedKey != key_flag) {
+        if(cv::mod_singletap.getBool() && !(this->lastPressedKey & key_flag)) {
             if(this->iCurrentHitObjectIndex > this->iAllowAnyNextKeyUntilHitObjectIndex) {
                 soundEngine->play(this->getSkin()->getCombobreak());
                 return;
             }
         }
 
-        if(cv::mod_fullalternate.getBool() && this->lastPressedKey != key_flag) {
+        if(cv::mod_fullalternate.getBool() && (this->lastPressedKey & key_flag)) {
             if(this->iCurrentHitObjectIndex > this->iAllowAnyNextKeyUntilHitObjectIndex) {
                 soundEngine->play(this->getSkin()->getCombobreak());
                 return;
@@ -333,13 +336,13 @@ void BeatmapInterface::onKey(GameplayKeys key_flag, bool down, u64 timestamp) {
         if(should_count_keypress) osu->getScore()->addKeyCount(key_flag);
 
         this->lastPressedKey = key_flag;
-        this->current_keys |= key_flag;
 
         if((!osu->getModAuto() && !osu->getModRelax()) || !cv::auto_and_relax_block_user_input.getBool()) {
             // music position to be interped to next update (in update2())
             this->clicks.push_back(
                 Click{.timestamp = timestamp, .pos = this->getCursorPos(), .music_pos = this->iCurMusicPosWithOffsets});
         }
+
     } else {  // released
         osu->getHUD()->animateInputOverlay(key_flag, false);
         this->current_keys &= ~key_flag;
@@ -1500,7 +1503,6 @@ void BeatmapInterface::loadMusic(bool reload, bool async) {
 
         // for sync load it should be ready now (one-time manual call for a fresh load, then the callback should handle it after)
         if(!async) {
-            debugLog("calling onMusicLoadingFinished for {} manually", this->music->getFilePath());
             BeatmapInterface::onMusicLoadingFinished(this->music, this);
         }
 

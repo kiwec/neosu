@@ -963,23 +963,29 @@ void Osu::onKeyDown(KeyboardEvent &key) {
 
         // while playing and not paused
         if(!this->map_iface->isPaused()) {
-            auto code = key.getKeyCode();
+            // gameplay keys + smoke
+            {
+                GameplayKeys gameplayKeyPressed{0};
 
-            if(code == cv::LEFT_CLICK.getVal<KEYCODE>()) {
-                this->onGameplayKey(GameplayKeys::K1, true, key.getTimestamp());
-                key.consume();
-            } else if(code == cv::LEFT_CLICK_2.getVal<KEYCODE>()) {
-                this->onGameplayKey(GameplayKeys::M1, true, key.getTimestamp());
-                key.consume();
-            } else if(code == cv::RIGHT_CLICK.getVal<KEYCODE>()) {
-                this->onGameplayKey(GameplayKeys::K2, true, key.getTimestamp());
-                key.consume();
-            } else if(code == cv::RIGHT_CLICK_2.getVal<KEYCODE>()) {
-                this->onGameplayKey(GameplayKeys::M2, true, key.getTimestamp());
-                key.consume();
-            } else if(code == cv::SMOKE.getVal<KEYCODE>()) {
-                this->map_iface->current_keys |= GameplayKeys::Smoke;
-                key.consume();
+                if(key == cv::LEFT_CLICK.getVal<KEYCODE>()) {
+                    gameplayKeyPressed = GameplayKeys::K1;
+                } else if(key == cv::LEFT_CLICK_2.getVal<KEYCODE>()) {
+                    gameplayKeyPressed = GameplayKeys::M1;
+                } else if(key == cv::RIGHT_CLICK.getVal<KEYCODE>()) {
+                    gameplayKeyPressed = GameplayKeys::K2;
+                } else if(key == cv::RIGHT_CLICK_2.getVal<KEYCODE>()) {
+                    gameplayKeyPressed = GameplayKeys::M2;
+                } else if(key == cv::SMOKE.getVal<KEYCODE>()) {
+                    gameplayKeyPressed = GameplayKeys::Smoke;
+                }
+
+                if(gameplayKeyPressed > 0) {
+                    this->onGameplayKey(gameplayKeyPressed, true, key.getTimestamp());
+                    // consume if not failed
+                    if(!this->map_iface->hasFailed()) {
+                        key.consume();
+                    }
+                }
             }
 
             // handle skipping
@@ -1127,23 +1133,26 @@ void Osu::onKeyDown(KeyboardEvent &key) {
 
 void Osu::onKeyUp(KeyboardEvent &key) {
     // clicks + smoke
-    auto code = key.getKeyCode();
+    {
+        GameplayKeys gameplayKeyReleased{0};
 
-    if(code == cv::LEFT_CLICK.getVal<KEYCODE>()) {
-        this->onGameplayKey(GameplayKeys::K1, false, key.getTimestamp());
-        key.consume();
-    } else if(code == cv::LEFT_CLICK_2.getVal<KEYCODE>()) {
-        this->onGameplayKey(GameplayKeys::M1, false, key.getTimestamp());
-        key.consume();
-    } else if(code == cv::RIGHT_CLICK.getVal<KEYCODE>()) {
-        this->onGameplayKey(GameplayKeys::K2, false, key.getTimestamp());
-        key.consume();
-    } else if(code == cv::RIGHT_CLICK_2.getVal<KEYCODE>()) {
-        this->onGameplayKey(GameplayKeys::M2, false, key.getTimestamp());
-        key.consume();
-    } else if(code == cv::SMOKE.getVal<KEYCODE>()) {
-        this->map_iface->current_keys &= ~GameplayKeys::Smoke;
-        key.consume();
+        if(key == cv::LEFT_CLICK.getVal<KEYCODE>()) {
+            gameplayKeyReleased = GameplayKeys::K1;
+        } else if(key == cv::LEFT_CLICK_2.getVal<KEYCODE>()) {
+            gameplayKeyReleased = GameplayKeys::M1;
+        } else if(key == cv::RIGHT_CLICK.getVal<KEYCODE>()) {
+            gameplayKeyReleased = GameplayKeys::K2;
+        } else if(key == cv::RIGHT_CLICK_2.getVal<KEYCODE>()) {
+            gameplayKeyReleased = GameplayKeys::M2;
+        } else if(key == cv::SMOKE.getVal<KEYCODE>()) {
+            gameplayKeyReleased = GameplayKeys::Smoke;
+        }
+
+        // even if not playing, update currently held keys
+        if(gameplayKeyReleased > 0) {
+            this->onGameplayKey(gameplayKeyReleased, false, key.getTimestamp());
+            // don't consume keyup
+        }
     }
 
     // forward to all subsystems, if not consumed
@@ -1172,6 +1181,7 @@ void Osu::onChar(KeyboardEvent &e) {
 
 void Osu::onButtonChange(ButtonEvent ev) {
     if(cv::disable_mousebuttons.getBool()) return;
+    if(!ev.down && !this->isInPlayMode()) return;  // ignore keydown if not playing
 
     switch(ev.btn) {
         case ButtonIndex::BUTTON_LEFT:
@@ -1815,15 +1825,20 @@ void Osu::updateOsuFolder() {
 }
 
 void Osu::onGameplayKey(GameplayKeys key_flag, bool down, u64 timestamp) {
-    if(!this->isInPlayMode()) return;
-
     const auto held_now = this->map_iface->getKeys();
 
-    bool changed = !(held_now & key_flag) == down;
+    const bool changed = !(held_now & key_flag) == down;
     if(!changed) return;
 
-    bool can_press = !(held_now & key_flag);
-    if(!cv::mod_no_keylock.getBool()) {
+    if(key_flag & GameplayKeys::Smoke) {
+        // just add/remove smoke
+        this->map_iface->current_keys = down ? (held_now | GameplayKeys::Smoke) : (held_now & ~GameplayKeys::Smoke);
+        return;
+    }
+
+    // always allow keyup
+    bool can_press = !down || cv::mod_no_keylock.getBool();
+    if(!can_press) {
         auto k1m1 = (GameplayKeys::K1 | GameplayKeys::M1);
         auto k2m2 = (GameplayKeys::K2 | GameplayKeys::M2);
         bool is_k1m1 = !!(key_flag & k1m1);
