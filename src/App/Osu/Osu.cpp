@@ -1180,14 +1180,16 @@ void Osu::onChar(KeyboardEvent &e) {
 }
 
 void Osu::onButtonChange(ButtonEvent ev) {
-    if(cv::disable_mousebuttons.getBool()) return;
-    if(!ev.down && !this->isInPlayMode()) return;  // ignore keydown if not playing
+    using enum ButtonIndex;
+    if((ev.btn != BUTTON_LEFT && ev.btn != BUTTON_RIGHT) ||
+       (this->isInPlayMode() && !this->map_iface->isPaused() && cv::disable_mousebuttons.getBool()))
+        return;
 
     switch(ev.btn) {
-        case ButtonIndex::BUTTON_LEFT:
+        case BUTTON_LEFT:
             this->onGameplayKey(GameplayKeys::M1, ev.down, ev.timestamp);
             break;
-        case ButtonIndex::BUTTON_RIGHT:
+        case BUTTON_RIGHT:
             this->onGameplayKey(GameplayKeys::M2, ev.down, ev.timestamp);
             break;
         default:
@@ -1825,7 +1827,7 @@ void Osu::updateOsuFolder() {
 }
 
 void Osu::onGameplayKey(GameplayKeys key_flag, bool down, u64 timestamp) {
-    const auto held_now = this->map_iface->getKeys();
+    auto held_now = this->map_iface->getKeys();
 
     const bool changed = !(held_now & key_flag) == down;
     if(!changed) return;
@@ -1835,6 +1837,9 @@ void Osu::onGameplayKey(GameplayKeys key_flag, bool down, u64 timestamp) {
         this->map_iface->current_keys = down ? (held_now | GameplayKeys::Smoke) : (held_now & ~GameplayKeys::Smoke);
         return;
     }
+
+    // remove smoke from consideration
+    held_now &= ~GameplayKeys::Smoke;
 
     // always allow keyup
     bool can_press = !down || cv::mod_no_keylock.getBool();
@@ -1851,13 +1856,14 @@ void Osu::onGameplayKey(GameplayKeys key_flag, bool down, u64 timestamp) {
     }
 
     // cursor anim + ripples
-    // TODO: wtf is this correct???
-    const bool do_animate = !this->isInPlayMode() || this->map_iface->isPaused();
+    const bool mouse_event = key_flag & (GameplayKeys::M1 | GameplayKeys::M2);
+    const bool do_animate =
+        !(this->isInPlayMode() && !this->map_iface->isPaused() && mouse_event && cv::disable_mousebuttons.getBool());
     if(do_animate) {
         if(down && can_press) {
             this->hud->animateCursorExpand();
             this->hud->addCursorRipple(mouse->getPos());
-        } else if(held_now == 0) {
+        } else if(!this->map_iface->isClickHeld()) {
             this->hud->animateCursorShrink();
         }
     }

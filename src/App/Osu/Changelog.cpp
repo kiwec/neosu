@@ -36,6 +36,7 @@ Changelog::Changelog() : ScreenBackable() {
         R"(- Fixed NoFail staying on after seeking)",
         R"(- Fixed keyboard not registering after quickly exiting a map before it starts)",
         R"(- Fixed slider hitreg)",
+        R"(- Fixed CursorExpand: 1 skins)",
         R"(- Improved ingame statistics font rendering at small sizes)",
         R"(- Improved window minimize/refocus behavior)",
         R"(- Screenshots taken in letterboxed mode will now be cropped by default)",
