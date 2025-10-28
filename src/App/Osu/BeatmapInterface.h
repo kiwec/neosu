@@ -98,7 +98,7 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
 
     // callbacks called by the Osu class (osu!standard)
     void skipEmptySection();
-    void onKey(LegacyReplay::KeyFlags key_flag, bool down, u64 timestamp);
+    void onKey(GameplayKeys key_flag, bool down, u64 timestamp);
 
     // loads the music of the currently selected diff and starts playing from the previewTime (e.g. clicking on a beatmap)
     void selectBeatmap();
@@ -260,7 +260,8 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
     f32 fShouldFlashSectionFail;
     bool bContinueScheduled;
     u32 iContinueMusicPos;
-    f32 fWaitTime = 0.f;
+    f64 fWaitTime{0.f};
+    f64 fPrevUnpauseTime{0.f};
 
     // sound
     f32 fMusicFrequencyBackup;

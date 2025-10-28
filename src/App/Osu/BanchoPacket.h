@@ -3,6 +3,8 @@
 #include "MD5Hash.h"
 #include "types.h"
 
+#include <cstdlib>
+
 struct Packet {
     u16 id{0};
     u8 *memory{nullptr};

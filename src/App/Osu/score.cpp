@@ -334,25 +334,24 @@ void LiveScore::setDead(bool dead) {
     this->onScoreChange();
 }
 
-void LiveScore::addKeyCount(LegacyReplay::KeyFlags key_flag) {
-    using LegacyReplay::KeyFlags;
-    for(KeyFlags flag = KeyFlags::K2 /* 8 */; flag >= 1; flag = static_cast<KeyFlags>(flag >> 1)) {
+void LiveScore::addKeyCount(GameplayKeys key_flag) {
+    for(GameplayKeys flag = GameplayKeys::K2 /* 8 */; flag >= 1; flag = static_cast<GameplayKeys>(flag >> 1)) {
         if(!(flag & key_flag)) continue;
 
         switch(flag) {
-            case KeyFlags::Smoke:
+            case GameplayKeys::Smoke:
                 std::unreachable();
                 return;
-            case KeyFlags::K1:
+            case GameplayKeys::K1:
                 this->iNumK1++;
                 break;
-            case KeyFlags::K2:
+            case GameplayKeys::K2:
                 this->iNumK2++;
                 break;
-            case KeyFlags::M1:
+            case GameplayKeys::M1:
                 this->iNumM1++;
                 break;
-            case KeyFlags::M2:
+            case GameplayKeys::M2:
                 this->iNumM2++;
                 break;
         }

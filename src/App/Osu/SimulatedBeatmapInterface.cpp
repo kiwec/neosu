@@ -67,7 +67,7 @@ void SimulatedBeatmapInterface::simulate_to(i32 music_pos) {
             if(this->current_keys & LegacyReplay::K2) this->current_keys &= ~LegacyReplay::M2;
         }
 
-        const auto pressed_keys = static_cast<LegacyReplay::KeyFlags>(this->current_keys & ~this->last_keys);
+        const auto pressed_keys = static_cast<GameplayKeys>(this->current_keys & ~this->last_keys);
         if(pressed_keys > 0) {
             this->lastPressedKey = pressed_keys;
 

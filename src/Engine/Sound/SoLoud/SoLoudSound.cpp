@@ -339,11 +339,8 @@ bool SoLoudSound::isPlaying() const {
 bool SoLoudSound::isFinished() const {
     if(!this->isReady()) return false;
 
-    // a sound is finished if our handle is no longer valid or we're somehow playing past the end?
+    // a sound is finished if our handle is no longer valid
     const bool finished = !this->valid_handle_cached();
-
-    // fixup invalid state: obviously we can't be looped if we're finished
-    if(finished) const_cast<SoLoudSound *>(this)->bIsLooped = false;
 
     return finished;
 }

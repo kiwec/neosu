@@ -66,3 +66,5 @@ bool load_from_disk(FinishedScore& score, bool update_db);
 void load_and_watch(FinishedScore score);
 
 }  // namespace LegacyReplay
+
+using GameplayKeys = LegacyReplay::KeyFlags;

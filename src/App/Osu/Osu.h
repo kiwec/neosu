@@ -222,7 +222,7 @@ class Osu final : public MouseListener, public KeyboardListener {
     void onLetterboxingChange(float oldValue, float newValue);
 
     // not sure why this is duplicated here as a passthrough-ish thing to BeatmapInterface...?
-    void onGameplayKey(LegacyReplay::KeyFlags key_flag, bool down, u64 timestamp);
+    void onGameplayKey(GameplayKeys key_flag, bool down, u64 timestamp);
 
     void onLetterboxingOffsetChange();
 
@@ -308,10 +308,7 @@ class Osu final : public MouseListener, public KeyboardListener {
 
     // keys
    public:  // public due to "stuck key fix" in BeatmapInterface
-    bool bKeyboardKey1Down{false};
-    bool bKeyboardKey2Down{false};
-    bool bMouseKey1Down{false};
-    bool bMouseKey2Down{false};
+    u8 held_gameplay_keys{0};
 
    private:
     bool bF1{false};

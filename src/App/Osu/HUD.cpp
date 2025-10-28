@@ -2295,35 +2295,34 @@ void HUD::addTarget(float delta, float angle) {
     this->targets.push_back(t);
 }
 
-void HUD::animateInputOverlay(LegacyReplay::KeyFlags key_flag, bool down) {
-    if(key_flag == LegacyReplay::KeyFlags::Smoke || !cv::draw_inputoverlay.getBool() ||
+void HUD::animateInputOverlay(GameplayKeys key_flag, bool down) {
+    if(key_flag == GameplayKeys::Smoke || !cv::draw_inputoverlay.getBool() ||
        (!cv::draw_hud.getBool() && cv::hud_shift_tab_toggles_everything.getBool()))
         return;
 
-    using LegacyReplay::KeyFlags;
-    for(KeyFlags flag = KeyFlags::K2 /* 8 */; flag >= 1; flag = static_cast<KeyFlags>(flag >> 1)) {
+    for(GameplayKeys flag = GameplayKeys::K2 /* 8 */; flag >= 1; flag = static_cast<GameplayKeys>(flag >> 1)) {
         if(!(flag & key_flag)) continue;
 
         float *animScale = nullptr;
         float *animColor = nullptr;
 
         switch(flag) {
-            case KeyFlags::Smoke:
+            case GameplayKeys::Smoke:
                 std::unreachable();
                 return;
-            case KeyFlags::K1:
+            case GameplayKeys::K1:
                 animScale = &this->fInputoverlayK1AnimScale;
                 animColor = &this->fInputoverlayK1AnimColor;
                 break;
-            case KeyFlags::K2:
+            case GameplayKeys::K2:
                 animScale = &this->fInputoverlayK2AnimScale;
                 animColor = &this->fInputoverlayK2AnimColor;
                 break;
-            case KeyFlags::M1:
+            case GameplayKeys::M1:
                 animScale = &this->fInputoverlayM1AnimScale;
                 animColor = &this->fInputoverlayM1AnimColor;
                 break;
-            case KeyFlags::M2:
+            case GameplayKeys::M2:
                 animScale = &this->fInputoverlayM2AnimScale;
                 animColor = &this->fInputoverlayM2AnimColor;
                 break;

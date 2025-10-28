@@ -196,8 +196,8 @@ void BeatmapInterface::drawBackground() {
         const Channel red = std::clamp<float>(brightness * cv::background_color_r.getFloat(), 0.0f, 255.0f);
         const Channel green = std::clamp<float>(brightness * cv::background_color_g.getFloat(), 0.0f, 255.0f);
         const Channel blue = std::clamp<float>(brightness * cv::background_color_b.getFloat(), 0.0f, 255.0f);
-        const Channel alpha = 255 *
-            (1.0f - this->fBreakBackgroundFade) * (cv::mod_fposu.getBool() ? cv::background_alpha.getFloat() : 1.0f);
+        const Channel alpha = 255 * (1.0f - this->fBreakBackgroundFade) *
+                              (cv::mod_fposu.getBool() ? cv::background_alpha.getFloat() : 1.0f);
 
         g->setColor(argb(alpha, red, green, blue));
         g->fillRect(0, 0, osu->getVirtScreenWidth(), osu->getVirtScreenHeight());
@@ -295,11 +295,17 @@ void BeatmapInterface::skipEmptySection() {
     }
 }
 
-void BeatmapInterface::onKey(LegacyReplay::KeyFlags key_flag, bool down, u64 timestamp) {
+void BeatmapInterface::onKey(GameplayKeys key_flag, bool down, u64 timestamp) {
     if(this->is_watching || BanchoState::spectating) return;
 
     if(down) {
-        if(this->bContinueScheduled) this->bClickedContinue = !osu->getModSelector()->isMouseInside();
+        if(this->bContinueScheduled) {
+            // don't insta-unpause if we had a held key or doubleclicked or something
+            if(engine->getTime() < this->fPrevUnpauseTime + cv::unpause_continue_delay.getFloat()) {
+                return;
+            }
+            this->bClickedContinue = !osu->getModSelector()->isMouseInside();
+        }
 
         if(cv::mod_singletap.getBool() && !(this->lastPressedKey & key_flag)) {
             if(this->iCurrentHitObjectIndex > this->iAllowAnyNextKeyUntilHitObjectIndex) {
@@ -347,7 +353,7 @@ void BeatmapInterface::onKey(LegacyReplay::KeyFlags key_flag, bool down, u64 tim
         if(!cv::mod_no_keylock.getBool()) {
             const bool mouse = key_flag & 0b11;
             u8 mirrored_flag = mouse ? key_flag << 2u : (key_flag & 0b1100) >> 2u;
-            auto both_flags = static_cast<LegacyReplay::KeyFlags>(key_flag | mirrored_flag);
+            auto both_flags = static_cast<GameplayKeys>(key_flag | mirrored_flag);
 
             osu->getHUD()->animateInputOverlay(both_flags, false);
             this->current_keys &= ~both_flags;
@@ -521,15 +527,12 @@ bool BeatmapInterface::start() {
 
     // HACKHACK: stuck key quickfix
     {
-        osu->bKeyboardKey1Down = false;
-        osu->bKeyboardKey2Down = false;
-        osu->bMouseKey1Down = false;
-        osu->bMouseKey2Down = false;
+        osu->held_gameplay_keys = {0};
 
-        this->onKey(LegacyReplay::KeyFlags::K1, false, 0);
-        this->onKey(LegacyReplay::KeyFlags::M1, false, 0);
-        this->onKey(LegacyReplay::KeyFlags::K2, false, 0);
-        this->onKey(LegacyReplay::KeyFlags::M2, false, 0);
+        this->onKey(GameplayKeys::K1, false, 0);
+        this->onKey(GameplayKeys::M1, false, 0);
+        this->onKey(GameplayKeys::K2, false, 0);
+        this->onKey(GameplayKeys::M2, false, 0);
     }
 
     static const int OSU_COORD_WIDTH = 512;
@@ -807,6 +810,10 @@ void BeatmapInterface::pause(bool quitIfWaiting) {
         if(cv::mod_fps.getBool()) {
             this->vContinueCursorPoint = GameRules::getPlayfieldCenter();
         }
+    }
+
+    if(!this->bIsPaused) {
+        this->fPrevUnpauseTime = engine->getTime();
     }
 
     // if we have failed, and the user early exits to the pause menu, stop the failing animation
@@ -1691,7 +1698,7 @@ void BeatmapInterface::drawSmoke() {
     auto current_time = Timing::getTicksMS();
 
     // Add new smoke particles if unpaused & smoke key pressed
-    if(!this->bIsPaused && (this->current_keys & LegacyReplay::Smoke)) {
+    if(!this->bIsPaused && (this->current_keys & GameplayKeys::Smoke)) {
         SMOKETRAIL sm;
         sm.pos = this->pixels2OsuCoords(this->getCursorPos());
         sm.time = current_time;
@@ -2158,8 +2165,7 @@ void BeatmapInterface::update() {
                 // XXX: slow
                 // NOTE: this should be using incremental calc, not recalc from the start every time...
                 std::atomic<bool> dead{false};
-                auto diffres =
-                    DatabaseBeatmap::loadDifficultyHitObjects(osufile_path, AR, CS, speedMultiplier, dead);
+                auto diffres = DatabaseBeatmap::loadDifficultyHitObjects(osufile_path, AR, CS, speedMultiplier, dead);
 
                 DifficultyCalculator::StarCalcParams params{
                     .cachedDiffObjects = {},
@@ -2491,7 +2497,7 @@ void BeatmapInterface::update2() {
                 if(this->current_keys & LegacyReplay::K2) this->current_keys &= ~LegacyReplay::M2;
             }
 
-            const auto released_keys = static_cast<LegacyReplay::KeyFlags>(this->last_keys & ~this->current_keys);
+            const auto released_keys = static_cast<GameplayKeys>(this->last_keys & ~this->current_keys);
             if(released_keys > 0) {
                 osu->getHUD()->animateInputOverlay(released_keys, false);
             }
@@ -2500,7 +2506,7 @@ void BeatmapInterface::update2() {
             bool is_too_early = hasAnyHitObjects && this->iCurMusicPosWithOffsets < this->hitobjects[0]->click_time;
             bool should_count_keypress = !is_too_early && !this->bInBreak && !this->bIsInSkippableSection;
 
-            const auto pressed_keys = static_cast<LegacyReplay::KeyFlags>(this->current_keys & ~this->last_keys);
+            const auto pressed_keys = static_cast<GameplayKeys>(this->current_keys & ~this->last_keys);
             if(pressed_keys > 0) {
                 this->lastPressedKey = pressed_keys;
                 osu->getHUD()->animateInputOverlay(pressed_keys, true);

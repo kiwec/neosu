@@ -13,6 +13,7 @@ namespace LegacyReplay {
 struct Frame;
 enum KeyFlags : uint8_t;
 }
+using GameplayKeys = LegacyReplay::KeyFlags;
 
 struct FinishedScore {
     u64 score = 0;
@@ -143,7 +144,7 @@ class LiveScore {
     void setComboEndBitmask(int comboEndBitmask) { this->iComboEndBitmask = comboEndBitmask; }
     void setDead(bool dead);
 
-    void addKeyCount(LegacyReplay::KeyFlags key_flag);
+    void addKeyCount(GameplayKeys key_flag);
 
     void setStarsTomTotal(float starsTomTotal) { this->fStarsTomTotal = starsTomTotal; }
     void setStarsTomAim(float starsTomAim) { this->fStarsTomAim = starsTomAim; }

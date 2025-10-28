@@ -1116,6 +1116,7 @@ CONVAR(pause_anim_duration, "pause_anim_duration"sv, 0.15f, CLIENT | SKINS | SER
 CONVAR(pause_dim_alpha, "pause_dim_alpha"sv, 0.58f, CLIENT | SKINS | SERVER);
 CONVAR(pause_dim_background, "pause_dim_background"sv, true, CLIENT | SKINS | SERVER);
 CONVAR(pause_on_focus_loss, "pause_on_focus_loss"sv, true, CLIENT | SKINS | SERVER);
+CONVAR(unpause_continue_delay, "unpause_continue_delay"sv, 0.15f, CLIENT, "when unpausing, wait for this many seconds before allowing \"click to continue\" to be actually clicked (to avoid instantly triggering accidentally)"sv);
 CONVAR(pvs, "pvs"sv, true, CLIENT | SKINS | SERVER,
        "optimizes all loops over all hitobjects by clamping the range to the Potentially Visible Set"sv);
 CONVAR(quick_retry_delay, "quick_retry_delay"sv, 0.27f, CLIENT | SKINS | SERVER);

@@ -253,7 +253,7 @@ bool BassSound::isPlaying() const {
 
 bool BassSound::isFinished() const { return this->getPositionMS() >= this->getLengthMS(); }
 
-bool BassSound::isHandleValid(SOUNDHANDLE queryHandle) const { return BASS_Mixer_ChannelGetMixer(queryHandle); }
+bool BassSound::isHandleValid(SOUNDHANDLE queryHandle) const { return BASS_Mixer_ChannelGetMixer(queryHandle) != 0; }
 
 void BassSound::setHandleVolume(SOUNDHANDLE handle, float volume) {
     BASS_ChannelSetAttribute(handle, BASS_ATTRIB_VOL, volume);
