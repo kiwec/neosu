@@ -1816,11 +1816,10 @@ void Osu::updateOsuFolder() {
 
 void Osu::onGameplayKey(GameplayKeys key_flag, bool down, u64 timestamp) {
     if(!this->isInPlayMode()) return;
-    if(down && !this->map_iface->hasFailed()) return;
 
     const auto held_now = this->map_iface->getKeys();
 
-    bool changed = !!(held_now & key_flag) == down;
+    bool changed = !(held_now & key_flag) == down;
     if(!changed) return;
 
     bool can_press = !(held_now & key_flag);
