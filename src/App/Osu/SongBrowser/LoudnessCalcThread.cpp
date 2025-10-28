@@ -10,6 +10,7 @@
 #include "Thread.h"
 #include "Timing.h"
 #include "Logging.h"
+#include "SyncOnce.h"
 
 #ifdef MCENGINE_FEATURE_BASS
 #include "BassManager.h"
@@ -18,11 +19,6 @@
 #include <atomic>
 #include <utility>
 #include <thread>
-
-// static member definitions
-std::unique_ptr<VolNormalization> VolNormalization::instance = nullptr;
-Sync::once_flag VolNormalization::instance_flag;
-Sync::once_flag VolNormalization::shutdown_flag;
 
 struct VolNormalization::LoudnessCalcThread {
     NOCOPY_NOMOVE(LoudnessCalcThread)
@@ -203,14 +199,10 @@ VolNormalization::~VolNormalization() {
 }
 
 VolNormalization &VolNormalization::get_instance() {
-    Sync::call_once(instance_flag, []() {
-        instance = std::make_unique<VolNormalization>();
-        cv::loudness_calc_threads.setCallback(CFUNC(VolNormalization::loudness_cb));
-    });
-    return *instance;
-}
+    static VolNormalization instance;
+    static Sync::once_flag once;
 
-VolNormalization *VolNormalization::get_instance_ptr() {
-    // return existing instance without creating it
-    return instance.get();
+    Sync::call_once(once, []() { cv::loudness_calc_threads.setCallback(CFUNC(VolNormalization::loudness_cb)); });
+
+    return instance;
 }

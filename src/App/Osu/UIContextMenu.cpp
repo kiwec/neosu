@@ -170,9 +170,9 @@ void UIContextMenu::begin(int minWidth, bool bigStyle) {
     this->setSizeX(this->iWidthCounter);
 
     // HACKHACK: bad design workaround.
-    // HACKHACK: callbacks from the same context menu which call begin() to create a new context menu may crash because
-    // begin() deletes the object the callback is currently being called from HACKHACK: so, instead we just keep a list
-    // of things to delete whenever we get to the next update() tick
+    // - callbacks from the same context menu which call begin() to create a new context menu may crash because
+    //   begin() deletes the object the callback is currently being called from
+    // - so, instead, we just keep a list of things to delete whenever we get to the next update() tick
     {
         const std::vector<CBaseUIElement *> &oldElementsWeCanNotDeleteYet = this->getContainer()->getElements();
         this->selfDeletionCrashWorkaroundScheduledElementDeleteHack.insert(

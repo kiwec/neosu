@@ -9,11 +9,6 @@
 #include "Timing.h"
 #include "Thread.h"
 
-// static member definitions
-std::unique_ptr<MapCalcThread> MapCalcThread::instance = nullptr;
-Sync::once_flag MapCalcThread::instance_flag;
-Sync::once_flag MapCalcThread::shutdown_flag;
-
 void MapCalcThread::start_calc_instance(const std::vector<DatabaseBeatmap*>& maps_to_calc) {
     abort_instance();
 
@@ -140,11 +135,6 @@ void MapCalcThread::run() {
 }
 
 MapCalcThread& MapCalcThread::get_instance() {
-    Sync::call_once(instance_flag, []() { instance = std::make_unique<MapCalcThread>(); });
-    return *instance;
-}
-
-MapCalcThread* MapCalcThread::get_instance_ptr() {
-    // return existing instance without creating it
-    return instance.get();
+    static MapCalcThread instance;
+    return instance;
 }

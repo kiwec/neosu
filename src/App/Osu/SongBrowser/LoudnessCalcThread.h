@@ -2,9 +2,7 @@
 // Copyright (c) 2024, kiwec, All rights reserved.
 #include "noinclude.h"
 #include "types.h"
-#include "SyncOnce.h"
 
-#include <memory>
 #include <vector>
 
 class DatabaseBeatmap;
@@ -18,38 +16,20 @@ class VolNormalization {
         get_instance().start_calc_instance(maps_to_calc);
     }
 
-    static inline u32 get_total() {
-        auto* inst = get_instance_ptr();
-        return inst ? inst->get_total_instance() : 0;
-    }
+    static inline u32 get_total() { return get_instance().get_total_instance(); }
 
-    static inline u32 get_computed() {
-        auto* inst = get_instance_ptr();
-        return inst ? inst->get_computed_instance() : 0;
-    }
+    static inline u32 get_computed() { return get_instance().get_computed_instance(); }
 
-    static inline void abort() {
-        auto* inst = get_instance_ptr();
-        if(inst) {
-            inst->abort_instance();
-        }
-    }
+    static inline void abort() { get_instance().abort_instance(); }
 
     // shutdown the singleton
-    static inline void shutdown() {
-        Sync::call_once(shutdown_flag, []() {
-            if(instance) {
-                instance->abort_instance();
-                instance.reset();
-            }
-        });
-    }
+    static inline void shutdown() { get_instance().abort_instance(); }
 
     // convar callback
     static void loudness_cb();
+
    private:
     static VolNormalization& get_instance();
-    static VolNormalization* get_instance_ptr();
 
     void start_calc_instance(const std::vector<DatabaseBeatmap*>& maps_to_calc);
 
@@ -60,8 +40,4 @@ class VolNormalization {
 
     struct LoudnessCalcThread;
     std::vector<LoudnessCalcThread*> threads;
-
-    static std::unique_ptr<VolNormalization> instance;
-    static Sync::once_flag instance_flag;
-    static Sync::once_flag shutdown_flag;
 };

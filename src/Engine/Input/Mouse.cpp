@@ -112,7 +112,7 @@ void Mouse::update() {
         } else if((env->isFullscreen() || env->isFullscreenWindowedBorderless()) &&
                   !env->isPointValid(env->getWindowPos() + newAbs)) {
             // quickfix to avoid flashing cursor along the edges of the window when unconfined + in raw input
-            clipRect = env->getDesktopRect();
+            clipRect = engine->getScreenRect();
             doClip = true;
         }
         if(doClip && !clipRect.contains(newAbs)) {

@@ -4,11 +4,8 @@
 #include "noinclude.h"
 #include "types.h"
 #include "templates.h"
-#include "SyncOnce.h"
 
 #include <atomic>
-#include <memory>
-#include <mutex>
 #include <thread>
 #include <vector>
 
@@ -39,39 +36,20 @@ class MapCalcThread {
         get_instance().start_calc_instance(maps_to_calc);
     }
 
-    static inline void abort() {
-        auto* inst = get_instance_ptr();
-        if(inst) {
-            inst->abort_instance();
-        }
-    }
+    static inline void abort() { get_instance().abort_instance(); }
 
     // shutdown the singleton
-    static inline void shutdown() {
-        Sync::call_once(shutdown_flag, []() {
-            if(instance) {
-                instance->abort_instance();
-                instance.reset();
-            }
-        });
-    }
+    static inline void shutdown() { get_instance().abort_instance(); }
 
     // progress tracking
-    static inline u32 get_computed() {
-        auto* inst = get_instance_ptr();
-        return inst ? inst->computed_count.load(std::memory_order_acquire) : 0;
-    }
+    static inline u32 get_computed() { return get_instance().computed_count.load(std::memory_order_acquire); }
 
-    static inline u32 get_total() {
-        auto* inst = get_instance_ptr();
-        return inst ? inst->total_count.load(std::memory_order_acquire) : 0;
-    }
+    static inline u32 get_total() { return get_instance().total_count.load(std::memory_order_acquire); }
 
     static inline bool is_finished() {
-        auto* inst = get_instance_ptr();
-        if(!inst) return true;
-        const u32 computed = inst->computed_count.load(std::memory_order_acquire);
-        const u32 total = inst->total_count.load(std::memory_order_acquire);
+        const auto& inst = get_instance();
+        const u32 computed = inst.computed_count.load(std::memory_order_acquire);
+        const u32 total = inst.total_count.load(std::memory_order_acquire);
         return total > 0 && computed >= total;
     }
 
@@ -86,7 +64,6 @@ class MapCalcThread {
 
     // singleton access
     static MapCalcThread& get_instance();
-    static MapCalcThread* get_instance_ptr();
 
     std::thread worker_thread;
     std::atomic<bool> should_stop{true};
@@ -96,8 +73,4 @@ class MapCalcThread {
     zarray<BPMTuple> bpm_calc_buf;
 
     const std::vector<DatabaseBeatmap*>* maps_to_process{nullptr};
-
-    static std::unique_ptr<MapCalcThread> instance;
-    static Sync::once_flag instance_flag;
-    static Sync::once_flag shutdown_flag;
 };

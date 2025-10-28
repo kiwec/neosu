@@ -212,7 +212,7 @@ void CBaseUITextbox::mouse_update(bool *propagate_clicks) {
                     // TODO: animations which don't suck for usability
                     this->fTextScrollAddX =
                         std::clamp<int>(this->fTextScrollAddX + scrollspeed, 0,
-                                   this->fTextWidth - this->vSize.x + cv::ui_textbox_text_offset_x.getInt() * 2);
+                                        this->fTextWidth - this->vSize.x + cv::ui_textbox_text_offset_x.getInt() * 2);
                     /// animation->moveSmoothEnd(&m_fTextScrollAddX, clampi(this->fTextScrollAddX+scrollspeed, 0,
                     /// m_fTextWidth-m_vSize.x+cv::ui_textbox_text_offset_x.getInt()*2), 1);
                 }
@@ -223,7 +223,7 @@ void CBaseUITextbox::mouse_update(bool *propagate_clicks) {
                     // TODO: animations which don't suck for usability
                     this->fTextScrollAddX =
                         std::clamp<int>(this->fTextScrollAddX - scrollspeed, 0,
-                                   this->fTextWidth - this->vSize.x + cv::ui_textbox_text_offset_x.getInt() * 2);
+                                        this->fTextWidth - this->vSize.x + cv::ui_textbox_text_offset_x.getInt() * 2);
                     /// animation->moveSmoothEnd(&m_fTextScrollAddX, clampi(this->fTextScrollAddX-scrollspeed, 0,
                     /// m_fTextWidth-m_vSize.x+cv::ui_textbox_text_offset_x.getInt()*2), 1);
                 }
@@ -395,9 +395,10 @@ void CBaseUITextbox::onKeyDown(KeyboardEvent &e) {
                 this->iCaretPosition = this->iSelectEnd;
                 this->iSelectX = this->font->getStringWidth(this->getVisibleText());
                 this->iCaretX = 0;
-                this->fTextScrollAddX = this->fTextWidth < this->vSize.x ? 0
-                                                                         : this->fTextWidth - this->vSize.x +
-                                                                               cv::ui_textbox_text_offset_x.getInt() * 2;
+                this->fTextScrollAddX =
+                    this->fTextWidth < this->vSize.x
+                        ? 0
+                        : this->fTextWidth - this->vSize.x + cv::ui_textbox_text_offset_x.getInt() * 2;
             }
             break;
 
@@ -457,8 +458,8 @@ void CBaseUITextbox::onChar(KeyboardEvent &e) {
 
     this->tickCaret();
 
-    Sound *sounds[] = {osu->getSkin()->getTyping1Sound(), osu->getSkin()->getTyping2Sound(), osu->getSkin()->getTyping3Sound(),
-                       osu->getSkin()->getTyping4Sound()};
+    Sound *sounds[] = {osu->getSkin()->getTyping1Sound(), osu->getSkin()->getTyping2Sound(),
+                       osu->getSkin()->getTyping3Sound(), osu->getSkin()->getTyping4Sound()};
     soundEngine->play(sounds[rand() % 4]);
 }
 
@@ -649,7 +650,9 @@ void CBaseUITextbox::onResized() {
     this->setText(this->sText);
 }
 
-void CBaseUITextbox::onMouseDownInside(bool  /*left*/, bool  /*right*/) {
+void CBaseUITextbox::onMouseDownInside(bool left, bool right) {
+    CBaseUIElement::onMouseDownInside(left, right);
+
     // force busy, can't drag scroll release (textbox requires full focus due to text selection)
     this->bBusy = true;
 }

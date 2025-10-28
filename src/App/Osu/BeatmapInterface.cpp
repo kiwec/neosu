@@ -2159,7 +2159,7 @@ void BeatmapInterface::update() {
                 // NOTE: this should be using incremental calc, not recalc from the start every time...
                 std::atomic<bool> dead{false};
                 auto diffres =
-                    DatabaseBeatmap::loadDifficultyHitObjects(osufile_path.c_str(), AR, CS, speedMultiplier, dead);
+                    DatabaseBeatmap::loadDifficultyHitObjects(osufile_path, AR, CS, speedMultiplier, dead);
 
                 DifficultyCalculator::StarCalcParams params{
                     .cachedDiffObjects = {},
@@ -2314,7 +2314,7 @@ void BeatmapInterface::update2() {
 
                     i64 start_ms = 0;
 
-                    // if we are quick restarting, jump just before the first hitobject (even if there is a i32 waiting
+                    // if we are quick restarting, jump just before the first hitobject (even if there is a long waiting
                     // period at the beginning with nothing etc.)
                     if(this->bIsRestartScheduledQuick) {
                         if(this->hitobjects.size() > 0) {
