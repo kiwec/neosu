@@ -267,7 +267,8 @@ void OpenGLRenderTarget::disable() {
 
         if(glInvalidateFramebuffer) {
             // invalidate multisampled framebuffer, we don't need it anymore
-            glInvalidateFramebuffer(GL_READ_FRAMEBUFFER, 2, (GLenum[]){GL_COLOR_ATTACHMENT0, GL_DEPTH_ATTACHMENT});
+            constexpr GLenum attachments[] = {GL_COLOR_ATTACHMENT0, GL_DEPTH_ATTACHMENT};
+            glInvalidateFramebuffer(GL_READ_FRAMEBUFFER, 2, attachments);
         }
 
         glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
