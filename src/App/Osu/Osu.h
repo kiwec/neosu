@@ -306,10 +306,6 @@ class Osu final : public MouseListener, public KeyboardListener {
     Replay::Mods previous_mods{0};
     bool bModAutoTemp{false};  // when ctrl+clicking a map, the auto mod should disable itself after the map finishes
 
-    // keys
-   public:  // public due to "stuck key fix" in BeatmapInterface
-    u8 held_gameplay_keys{0};
-
    private:
     bool bF1{false};
     bool bUIToggleCheck{false};

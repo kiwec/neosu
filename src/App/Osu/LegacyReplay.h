@@ -7,8 +7,8 @@ struct FinishedScore;
 
 namespace LegacyReplay {
 struct Frame {
-    i64 cur_music_pos;
-    i64 milliseconds_since_last_frame;
+    i32 cur_music_pos;
+    i32 milliseconds_since_last_frame;
 
     f32 x;  // 0 - 512
     f32 y;  // 0 - 384

@@ -629,9 +629,7 @@ void Osu::update() {
         bool can_skip = this->map_iface->isInSkippableSection() && !this->bClickedSkipButton;
         can_skip &= !this->map_iface->isPaused() && !this->volumeOverlay->isBusy();
         if(can_skip) {
-            const bool isAnyOsuKeyDown = this->held_gameplay_keys != 0;
-            const bool isAnyKeyDown = (isAnyOsuKeyDown || mouse->isLeftDown());
-
+            const bool isAnyKeyDown = (this->map_iface->isClickHeld() || mouse->isLeftDown());
             if(isAnyKeyDown) {
                 if(this->hud->getSkipClickRect().contains(mouse->getPos())) {
                     if(!this->bSkipScheduled) {
@@ -965,33 +963,21 @@ void Osu::onKeyDown(KeyboardEvent &key) {
 
         // while playing and not paused
         if(!this->map_iface->isPaused()) {
-            const auto oldHeldKeys = this->held_gameplay_keys;
+            auto code = key.getKeyCode();
 
-            const KEYCODE code = key.getKeyCode();
-            GameplayKeys gameplayKeyPressed{0};
-
-            if(code == cv::LEFT_CLICK.getVal<KEYCODE>()) {  // K1
-                gameplayKeyPressed = GameplayKeys::K1;
-            } else if(code == cv::LEFT_CLICK_2.getVal<KEYCODE>()) {  // 'M1'
-                gameplayKeyPressed = GameplayKeys::M1;
-            } else if(code == cv::RIGHT_CLICK.getVal<KEYCODE>()) {  // K2
-                gameplayKeyPressed = GameplayKeys::K2;
-            } else if(code == cv::RIGHT_CLICK_2.getVal<KEYCODE>()) {  // 'M2'
-                gameplayKeyPressed = GameplayKeys::M2;
-            }
-
-            this->held_gameplay_keys |= gameplayKeyPressed;
-
-            // only send event if we got something new
-            if(oldHeldKeys != this->held_gameplay_keys) {
-                this->onGameplayKey(gameplayKeyPressed, true, key.getTimestamp());
-            }
-
-            // always consume if in gameplay even if it's not a new event
-            if(gameplayKeyPressed > 0 && !this->map_iface->hasFailed()) key.consume();
-
-            // Smoke
-            if(key == cv::SMOKE.getVal<KEYCODE>()) {
+            if(code == cv::LEFT_CLICK.getVal<KEYCODE>()) {
+                this->onGameplayKey(GameplayKeys::K1, true, key.getTimestamp());
+                key.consume();
+            } else if(code == cv::LEFT_CLICK_2.getVal<KEYCODE>()) {
+                this->onGameplayKey(GameplayKeys::M1, true, key.getTimestamp());
+                key.consume();
+            } else if(code == cv::RIGHT_CLICK.getVal<KEYCODE>()) {
+                this->onGameplayKey(GameplayKeys::K2, true, key.getTimestamp());
+                key.consume();
+            } else if(code == cv::RIGHT_CLICK_2.getVal<KEYCODE>()) {
+                this->onGameplayKey(GameplayKeys::M2, true, key.getTimestamp());
+                key.consume();
+            } else if(code == cv::SMOKE.getVal<KEYCODE>()) {
                 this->map_iface->current_keys |= GameplayKeys::Smoke;
                 key.consume();
             }
@@ -1035,9 +1021,9 @@ void Osu::onKeyDown(KeyboardEvent &key) {
             // allow live mod changing while playing
             if(!key.isConsumed() && (key == KEY_F1 || key == cv::TOGGLE_MODSELECT.getVal<KEYCODE>()) &&
                ((KEY_F1 != cv::LEFT_CLICK.getVal<KEYCODE>() && KEY_F1 != cv::LEFT_CLICK_2.getVal<KEYCODE>()) ||
-                !(this->held_gameplay_keys & (GameplayKeys::K1 | GameplayKeys::M1))) &&
+                !(this->map_iface->getKeys() & (GameplayKeys::K1 | GameplayKeys::M1))) &&
                ((KEY_F1 != cv::RIGHT_CLICK.getVal<KEYCODE>() && KEY_F1 != cv::RIGHT_CLICK_2.getVal<KEYCODE>()) ||
-                !(this->held_gameplay_keys & (GameplayKeys::K2 | GameplayKeys::M2))) &&
+                !(this->map_iface->getKeys() & (GameplayKeys::K2 | GameplayKeys::M2))) &&
                !this->bF1 && !this->map_iface->hasFailed() &&
                !BanchoState::is_playing_a_multi_map())  // only if not failed though
             {
@@ -1140,31 +1126,24 @@ void Osu::onKeyDown(KeyboardEvent &key) {
 }
 
 void Osu::onKeyUp(KeyboardEvent &key) {
-    // clicks
-    {
-        const KEYCODE code = key.getKeyCode();
-        GameplayKeys gameplayKeyReleased{0};
-        if(code == cv::LEFT_CLICK.getVal<KEYCODE>()) {  // K1
-            gameplayKeyReleased = GameplayKeys::K1;
-        } else if(code == cv::LEFT_CLICK_2.getVal<KEYCODE>()) {  // 'M1'
-            gameplayKeyReleased = GameplayKeys::M1;
-        } else if(code == cv::RIGHT_CLICK.getVal<KEYCODE>()) {  // K2
-            gameplayKeyReleased = GameplayKeys::K2;
-        } else if(code == cv::RIGHT_CLICK_2.getVal<KEYCODE>()) {  // 'M2'
-            gameplayKeyReleased = GameplayKeys::M2;
-        }
+    // clicks + smoke
+    auto code = key.getKeyCode();
 
-        this->held_gameplay_keys &= ~gameplayKeyReleased;
-
-        if(gameplayKeyReleased > 0 && this->isInPlayMode()) {
-            this->onGameplayKey(gameplayKeyReleased, false, key.getTimestamp());
-        }
-
-        // Smoke
-        if(this->map_iface && (key == cv::SMOKE.getVal<KEYCODE>())) {
-            this->map_iface->current_keys &= ~GameplayKeys::Smoke;
-            key.consume();
-        }
+    if(code == cv::LEFT_CLICK.getVal<KEYCODE>()) {
+        this->onGameplayKey(GameplayKeys::K1, false, key.getTimestamp());
+        key.consume();
+    } else if(code == cv::LEFT_CLICK_2.getVal<KEYCODE>()) {
+        this->onGameplayKey(GameplayKeys::M1, false, key.getTimestamp());
+        key.consume();
+    } else if(code == cv::RIGHT_CLICK.getVal<KEYCODE>()) {
+        this->onGameplayKey(GameplayKeys::K2, false, key.getTimestamp());
+        key.consume();
+    } else if(code == cv::RIGHT_CLICK_2.getVal<KEYCODE>()) {
+        this->onGameplayKey(GameplayKeys::M2, false, key.getTimestamp());
+        key.consume();
+    } else if(code == cv::SMOKE.getVal<KEYCODE>()) {
+        this->map_iface->current_keys &= ~GameplayKeys::Smoke;
+        key.consume();
     }
 
     // forward to all subsystems, if not consumed
@@ -1194,31 +1173,13 @@ void Osu::onChar(KeyboardEvent &e) {
 void Osu::onButtonChange(ButtonEvent ev) {
     if(cv::disable_mousebuttons.getBool()) return;
 
-    using enum ButtonIndex;
-    using enum LegacyReplay::KeyFlags;
     switch(ev.btn) {
-        case BUTTON_LEFT: {
-            if(ev.down != !!(this->held_gameplay_keys & M1)) {
-                if(!ev.down) {  // up
-                    this->held_gameplay_keys &= ~M1;
-                } else {  // down
-                    this->held_gameplay_keys |= M1;
-                }
-                this->onGameplayKey(M1, ev.down, ev.timestamp);
-            }
+        case ButtonIndex::BUTTON_LEFT:
+            this->onGameplayKey(GameplayKeys::M1, ev.down, ev.timestamp);
             break;
-        }
-        case BUTTON_RIGHT: {
-            if(ev.down != !!(this->held_gameplay_keys & M2)) {
-                if(!ev.down) {  // up
-                    this->held_gameplay_keys &= ~M2;
-                } else {  // down
-                    this->held_gameplay_keys |= M2;
-                }
-                this->onGameplayKey(M2, ev.down, ev.timestamp);
-            }
+        case ButtonIndex::BUTTON_RIGHT:
+            this->onGameplayKey(GameplayKeys::M2, ev.down, ev.timestamp);
             break;
-        }
         default:
             break;
     }
@@ -1854,15 +1815,24 @@ void Osu::updateOsuFolder() {
 }
 
 void Osu::onGameplayKey(GameplayKeys key_flag, bool down, u64 timestamp) {
-    using enum LegacyReplay::KeyFlags;
-    const auto held_now = this->held_gameplay_keys;
+    if(!this->isInPlayMode()) return;
+    if(down && !this->map_iface->hasFailed()) return;
 
-    const bool k1m1 = !!(key_flag & K1) || !!(key_flag & M1);
-    const bool can_press = cv::mod_no_keylock.getBool() ||
-                           (k1m1 ? (!!(held_now & K1) != !!(held_now & M1)) : (!!(held_now & K2) != !!(held_now & M2)));
+    const auto held_now = this->map_iface->getKeys();
+
+    bool changed = !!(held_now & key_flag) == down;
+    if(!changed) return;
+
+    bool can_press = !(held_now & key_flag);
+    if(!cv::mod_no_keylock.getBool()) {
+        auto k1m1 = (GameplayKeys::K1 | GameplayKeys::M1);
+        auto k2m2 = (GameplayKeys::K2 | GameplayKeys::M2);
+        bool is_k1m1 = !!(key_flag & k1m1);
+        can_press = !(held_now & (is_k1m1 ? k1m1 : k2m2));
+    }
 
     // NOTE: allow keyup even while beatmap is paused, to correctly not-continue immediately due to pressed keys
-    if(this->isInPlayMode() && (!down || (down && can_press && !this->map_iface->isPaused()))) {
+    if(!down || (can_press && !this->map_iface->isPaused())) {
         this->map_iface->onKey(key_flag, down, timestamp);
     }
 

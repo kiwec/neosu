@@ -53,28 +53,27 @@ void SimulatedBeatmapInterface::simulate_to(i32 music_pos) {
         this->current_frame_idx++;
         current_frame = this->spectated_replay[this->current_frame_idx];
         next_frame = this->spectated_replay[this->current_frame_idx + 1];
+
         this->current_keys = current_frame.key_flags;
 
-        Click click;
-        click.timestamp = Timing::getTicksNS();
-        click.music_pos = current_frame.cur_music_pos;
-        click.pos.x = current_frame.x;
-        click.pos.y = current_frame.y;
-
-        // Flag fix to simplify logic (stable sets both K1 and M1 when K1 is pressed)
+        // Replays have both K1 and M1 set when K1 is pressed, fix it now
         if(!this->mods.has(ModFlags::NoKeylock)) {
             if(this->current_keys & LegacyReplay::K1) this->current_keys &= ~LegacyReplay::M1;
             if(this->current_keys & LegacyReplay::K2) this->current_keys &= ~LegacyReplay::M2;
         }
 
-        const auto pressed_keys = static_cast<GameplayKeys>(this->current_keys & ~this->last_keys);
-        if(pressed_keys > 0) {
-            this->lastPressedKey = pressed_keys;
+        Click click{
+            .timestamp = Timing::getTicksNS(),
+            .pos = vec2(current_frame.x, current_frame.y),
+            .music_pos = current_frame.cur_music_pos,
+        };
 
-            std::vector to_insert{static_cast<size_t>(std::popcount((u8)pressed_keys)), click};
-            this->clicks.insert(this->clicks.end(), to_insert.begin(), to_insert.end());
-
-            if(!this->bInBreak) this->live_score.addKeyCount(pressed_keys);
+        for(auto key : {LegacyReplay::K1, LegacyReplay::K2, LegacyReplay::M1, LegacyReplay::M2}) {
+            if(!(this->last_keys & key) && (this->current_keys & key)) {
+                this->lastPressedKey = key;
+                this->clicks.push_back(click);
+                if(!this->bInBreak) this->live_score.addKeyCount(key);
+            }
         }
 
         this->interpolatedMousePos = vec2{current_frame.x, current_frame.y};

@@ -335,26 +335,22 @@ void LiveScore::setDead(bool dead) {
 }
 
 void LiveScore::addKeyCount(GameplayKeys key_flag) {
-    for(GameplayKeys flag = GameplayKeys::K2 /* 8 */; flag >= 1; flag = static_cast<GameplayKeys>(flag >> 1)) {
-        if(!(flag & key_flag)) continue;
-
-        switch(flag) {
-            case GameplayKeys::Smoke:
-                std::unreachable();
-                return;
-            case GameplayKeys::K1:
-                this->iNumK1++;
-                break;
-            case GameplayKeys::K2:
-                this->iNumK2++;
-                break;
-            case GameplayKeys::M1:
-                this->iNumM1++;
-                break;
-            case GameplayKeys::M2:
-                this->iNumM2++;
-                break;
-        }
+    switch(key_flag) {
+        case GameplayKeys::K1:
+            this->iNumK1++;
+            break;
+        case GameplayKeys::K2:
+            this->iNumK2++;
+            break;
+        case GameplayKeys::M1:
+            this->iNumM1++;
+            break;
+        case GameplayKeys::M2:
+            this->iNumM2++;
+            break;
+        default:
+            std::unreachable();
+            break;
     }
 }
 

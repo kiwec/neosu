@@ -298,7 +298,7 @@ void BeatmapInterface::skipEmptySection() {
 void BeatmapInterface::onKey(GameplayKeys key_flag, bool down, u64 timestamp) {
     if(this->is_watching || BanchoState::spectating) return;
 
-    if(down) {
+    if(down) {  // pressed
         if(this->bContinueScheduled) {
             // don't insta-unpause if we had a held key or doubleclicked or something
             if(engine->getTime() < this->fPrevUnpauseTime + cv::unpause_continue_delay.getFloat()) {
@@ -307,14 +307,14 @@ void BeatmapInterface::onKey(GameplayKeys key_flag, bool down, u64 timestamp) {
             this->bClickedContinue = !osu->getModSelector()->isMouseInside();
         }
 
-        if(cv::mod_singletap.getBool() && !(this->lastPressedKey & key_flag)) {
+        if(cv::mod_singletap.getBool() && this->lastPressedKey != key_flag) {
             if(this->iCurrentHitObjectIndex > this->iAllowAnyNextKeyUntilHitObjectIndex) {
                 soundEngine->play(this->getSkin()->getCombobreak());
                 return;
             }
         }
 
-        if(cv::mod_fullalternate.getBool() && (this->lastPressedKey & key_flag)) {
+        if(cv::mod_fullalternate.getBool() && this->lastPressedKey != key_flag) {
             if(this->iCurrentHitObjectIndex > this->iAllowAnyNextKeyUntilHitObjectIndex) {
                 soundEngine->play(this->getSkin()->getCombobreak());
                 return;
@@ -333,34 +333,16 @@ void BeatmapInterface::onKey(GameplayKeys key_flag, bool down, u64 timestamp) {
         if(should_count_keypress) osu->getScore()->addKeyCount(key_flag);
 
         this->lastPressedKey = key_flag;
+        this->current_keys |= key_flag;
 
         if((!osu->getModAuto() && !osu->getModRelax()) || !cv::auto_and_relax_block_user_input.getBool()) {
             // music position to be interped to next update (in update2())
             this->clicks.push_back(
                 Click{.timestamp = timestamp, .pos = this->getCursorPos(), .music_pos = this->iCurMusicPosWithOffsets});
         }
-
-        u8 replay_key_flags = key_flag;
-        if(!cv::mod_no_keylock.getBool()) {
-            // In replays, "K1" is always stored as "K1+M1"
-            // so mirror keypress as mouse buttonpress
-            replay_key_flags |= (key_flag & 0b1100) >> 2u;
-        }
-        this->current_keys |= replay_key_flags;
     } else {  // released
-
-        // i dont get this logic? this is how it was before, though...
-        if(!cv::mod_no_keylock.getBool()) {
-            const bool mouse = key_flag & 0b11;
-            u8 mirrored_flag = mouse ? key_flag << 2u : (key_flag & 0b1100) >> 2u;
-            auto both_flags = static_cast<GameplayKeys>(key_flag | mirrored_flag);
-
-            osu->getHUD()->animateInputOverlay(both_flags, false);
-            this->current_keys &= ~both_flags;
-        } else {
-            osu->getHUD()->animateInputOverlay(key_flag, false);
-            this->current_keys &= ~key_flag;
-        }
+        osu->getHUD()->animateInputOverlay(key_flag, false);
+        this->current_keys &= ~key_flag;
     }
 }
 
@@ -527,8 +509,6 @@ bool BeatmapInterface::start() {
 
     // HACKHACK: stuck key quickfix
     {
-        osu->held_gameplay_keys = {0};
-
         this->onKey(GameplayKeys::K1, false, 0);
         this->onKey(GameplayKeys::M1, false, 0);
         this->onKey(GameplayKeys::K2, false, 0);
@@ -2481,40 +2461,42 @@ void BeatmapInterface::update2() {
             this->current_frame_idx++;
             current_frame = this->spectated_replay[this->current_frame_idx];
             next_frame = this->spectated_replay[this->current_frame_idx + 1];
+
             this->current_keys = current_frame.key_flags;
 
-            Click click{
-                .timestamp = Timing::getTicksNS(),
-                .pos = (vec2{current_frame.x, current_frame.y} * GameRules::getPlayfieldScaleFactor()) +
-                       GameRules::getPlayfieldOffset(),
-                .music_pos = static_cast<i32>(current_frame.cur_music_pos),
-            };
-
-            // Flag fix to simplify logic (stable sets both K1 and M1 when K1 is pressed)
+            // Replays have both K1 and M1 set when K1 is pressed, fix it now
             const auto &mods = osu->getScore()->mods;
             if(!mods.has(ModFlags::NoKeylock)) {
                 if(this->current_keys & LegacyReplay::K1) this->current_keys &= ~LegacyReplay::M1;
                 if(this->current_keys & LegacyReplay::K2) this->current_keys &= ~LegacyReplay::M2;
             }
 
-            const auto released_keys = static_cast<GameplayKeys>(this->last_keys & ~this->current_keys);
-            if(released_keys > 0) {
-                osu->getHUD()->animateInputOverlay(released_keys, false);
-            }
+            Click click{
+                .timestamp = Timing::getTicksNS(),
+                .pos = (vec2{current_frame.x, current_frame.y} * GameRules::getPlayfieldScaleFactor()) +
+                       GameRules::getPlayfieldOffset(),
+                .music_pos = current_frame.cur_music_pos,
+            };
 
             bool hasAnyHitObjects = (this->hitobjects.size() > 0);
             bool is_too_early = hasAnyHitObjects && this->iCurMusicPosWithOffsets < this->hitobjects[0]->click_time;
             bool should_count_keypress = !is_too_early && !this->bInBreak && !this->bIsInSkippableSection;
 
-            const auto pressed_keys = static_cast<GameplayKeys>(this->current_keys & ~this->last_keys);
-            if(pressed_keys > 0) {
-                this->lastPressedKey = pressed_keys;
-                osu->getHUD()->animateInputOverlay(pressed_keys, true);
+            // Key presses
+            for(auto key : {GameplayKeys::K1, GameplayKeys::K2, GameplayKeys::M1, GameplayKeys::M2}) {
+                if(!(this->last_keys & key) && (this->current_keys & key)) {
+                    this->lastPressedKey = key;
+                    this->clicks.push_back(click);
+                    osu->getHUD()->animateInputOverlay(key, true);
+                    if(should_count_keypress) osu->getScore()->addKeyCount(key);
+                }
+            }
 
-                std::vector to_insert{static_cast<size_t>(std::popcount((u8)pressed_keys)), click};
-                this->clicks.insert(this->clicks.end(), to_insert.begin(), to_insert.end());
-
-                if(should_count_keypress) osu->getScore()->addKeyCount(pressed_keys);
+            // Key releases
+            for(auto key : {GameplayKeys::K1, GameplayKeys::K2, GameplayKeys::M1, GameplayKeys::M2}) {
+                if((this->last_keys & key) && !(this->current_keys & key)) {
+                    osu->getHUD()->animateInputOverlay(key, false);
+                }
             }
         }
 
@@ -3121,16 +3103,26 @@ void BeatmapInterface::write_frame() {
         pos.y = coords3.y;
     }
 
+    // TODO: not CBF-friendly, since it's called in the update loop and doesn't use click timestamps
+
+    // In replays, "K1" is always stored as "K1+M1"
+    // (unless we have the "no keylock" mod on, which uses 4 keys instead of only 2)
+    u8 replay_keys = this->current_keys;
+    if(!cv::mod_no_keylock.getBool()) {
+        if(this->current_keys & LegacyReplay::KeyFlags::K1) replay_keys |= LegacyReplay::KeyFlags::M1;
+        if(this->current_keys & LegacyReplay::KeyFlags::K2) replay_keys |= LegacyReplay::KeyFlags::M2;
+    }
+
     this->live_replay.push_back(LegacyReplay::Frame{
         .cur_music_pos = this->iCurMusicPosWithOffsets,
         .milliseconds_since_last_frame = delta,
         .x = pos.x,
         .y = pos.y,
-        .key_flags = this->current_keys,
+        .key_flags = replay_keys,
     });
 
     this->frame_batch.push_back(LiveReplayFrame{
-        .key_flags = this->current_keys,
+        .key_flags = replay_keys,
         .padding = 0,
         .mouse_x = pos.x,
         .mouse_y = pos.y,
