@@ -1195,7 +1195,7 @@ void Osu::onButtonChange(ButtonEvent ev) {
     if(cv::disable_mousebuttons.getBool()) return;
 
     using enum ButtonIndex;
-    using enum GameplayKeys;
+    using enum LegacyReplay::KeyFlags;
     switch(ev.btn) {
         case BUTTON_LEFT: {
             if(ev.down != !!(this->held_gameplay_keys & M1)) {
@@ -1854,7 +1854,7 @@ void Osu::updateOsuFolder() {
 }
 
 void Osu::onGameplayKey(GameplayKeys key_flag, bool down, u64 timestamp) {
-    using enum GameplayKeys;
+    using enum LegacyReplay::KeyFlags;
     const auto held_now = this->held_gameplay_keys;
 
     const bool k1m1 = !!(key_flag & K1) || !!(key_flag & M1);
