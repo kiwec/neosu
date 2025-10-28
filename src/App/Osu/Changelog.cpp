@@ -27,7 +27,7 @@ Changelog::Changelog() : ScreenBackable() {
     CHANGELOG v41_06;
     v41_06.title = "41.06";
     v41_06.changes = {
-        R"(- Added small delay before the unpause circle is clickable (configurable as "unpause_continue_delay")",
+        R"(- Added timestamped inputs (aka. "Click Between Frames"))",
         R"(- Added WASAPI exclusive support to SoLoud when using MiniAudio)",
         R"(- Added "Team" leaderboard filter)",
         R"(- Fixed a crash when switching skins)",
@@ -37,6 +37,7 @@ Changelog::Changelog() : ScreenBackable() {
         R"(- Fixed keyboard not registering after quickly exiting a map before it starts)",
         R"(- Fixed slider hitreg)",
         R"(- Fixed CursorExpand: 1 skins)",
+        R"(- Fixed unpause confirmation circle being clickable on the same frame as the continue button (configurable as "unpause_continue_delay")",
         R"(- Improved ingame statistics font rendering at small sizes)",
         R"(- Improved window minimize/refocus behavior)",
         R"(- Screenshots taken in letterboxed mode will now be cropped by default)",
