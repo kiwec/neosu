@@ -27,8 +27,19 @@ Changelog::Changelog() : ScreenBackable() {
     CHANGELOG v41_06;
     v41_06.title = "41.06";
     v41_06.changes = {
+        R"(- Added small delay before the unpause circle is clickable (configurable as "unpause_continue_delay")",
         R"(- Added WASAPI exclusive support to SoLoud when using MiniAudio)",
         R"(- Added "Team" leaderboard filter)",
+        R"(- Fixed a crash when switching skins)",
+        R"(- Fixed a rare case where music would desync on SoLoud)",
+        R"(- Fixed background brightness flashbang)",
+        R"(- Fixed NoFail staying on after seeking)",
+        R"(- Fixed keyboard not registering after quickly exiting a map before it starts)",
+        R"(- Fixed slider hitreg)",
+        R"(- Improved ingame statistics font rendering at small sizes)",
+        R"(- Improved window minimize/refocus behavior)",
+        R"(- Screenshots taken in letterboxed mode will now be cropped by default)",
+        R"(- Updated FPS counter to support frametimes above 10,000 fps)",
     };
     changelogs.push_back(v41_06);
 
