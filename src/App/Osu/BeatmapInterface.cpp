@@ -2464,7 +2464,7 @@ void BeatmapInterface::update2() {
     }
 
     // interpolate clicks that occurred between the last update and now
-    if(!cv::cbf.getBool() && !this->is_watching && !BanchoState::spectating && !this->clicks.empty()) {
+    if(!this->is_watching && !BanchoState::spectating && !this->clicks.empty()) {
         const auto timeSinceLastUpdate = currentUpdateTime - lastUpdateTime;
 
         if(timeSinceLastUpdate > 0) {

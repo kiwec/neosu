@@ -1116,7 +1116,9 @@ CONVAR(pause_anim_duration, "pause_anim_duration"sv, 0.15f, CLIENT | SKINS | SER
 CONVAR(pause_dim_alpha, "pause_dim_alpha"sv, 0.58f, CLIENT | SKINS | SERVER);
 CONVAR(pause_dim_background, "pause_dim_background"sv, true, CLIENT | SKINS | SERVER);
 CONVAR(pause_on_focus_loss, "pause_on_focus_loss"sv, true, CLIENT | SKINS | SERVER);
-CONVAR(unpause_continue_delay, "unpause_continue_delay"sv, 0.15f, CLIENT, "when unpausing, wait for this many seconds before allowing \"click to continue\" to be actually clicked (to avoid instantly triggering accidentally)"sv);
+CONVAR(
+    unpause_continue_delay, "unpause_continue_delay"sv, 0.15f, CLIENT,
+    "when unpausing, wait for this many seconds before allowing \"click to continue\" to be actually clicked (to avoid instantly triggering accidentally)"sv);
 CONVAR(pvs, "pvs"sv, true, CLIENT | SKINS | SERVER,
        "optimizes all loops over all hitobjects by clamping the range to the Potentially Visible Set"sv);
 CONVAR(quick_retry_delay, "quick_retry_delay"sv, 0.27f, CLIENT | SKINS | SERVER);
@@ -1288,7 +1290,6 @@ CONVAR(win_processpriority, "win_processpriority"sv, 1, CLIENT,
 CONVAR(adblock, "adblock"sv, true, CLIENT | SKINS | SERVER);
 CONVAR(prefer_websockets, "prefer_websockets"sv, false, CLIENT, "prefer websocket connections over http polling");
 CONVAR(load_db_immediately, "load_db_immediately"sv, false, CLIENT);
-CONVAR(cbf, "cbf"sv, false, CLIENT, "click between frames"sv);
 CONVAR(enable_spectating, "enable_spectating"sv, false, CLIENT);
 CONVAR(allow_mp_invites, "allow_mp_invites"sv, true, CLIENT, "allow multiplayer game invites from all users"sv);
 CONVAR(allow_stranger_dms, "allow_stranger_dms"sv, true, CLIENT, "allow private messages from non-friends"sv);
