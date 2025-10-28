@@ -27,22 +27,27 @@ bool Resource::doPathFixup() {
     return file_found;
 }
 
-void Resource::load() { init(); }
+void Resource::load() {
+    this->init();
+    if(this->onInit.has_value()) {
+        this->onInit->callback(this, this->onInit->userdata);
+    }
+}
 
 void Resource::loadAsync() {
     this->bInterrupted.store(false, std::memory_order_release);
-    initAsync();
+    this->initAsync();
 }
 
 void Resource::reload() {
-    release();
-    loadAsync();
-    load();
+    this->release();
+    this->loadAsync();
+    this->load();
 }
 
 void Resource::release() {
     this->bInterrupted.store(true, std::memory_order_release);
-    destroy();
+    this->destroy();
 
     // NOTE: these are set afterwards on purpose
     this->bReady.store(false, std::memory_order_release);

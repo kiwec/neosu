@@ -362,8 +362,8 @@ void BeatmapInterface::selectBeatmap(DatabaseBeatmap *map) {
         this->nb_hitobjects = map->getNumObjects();
 
         // need to recheck/reload the music here since every difficulty might be using a different sound file
-        this->loadMusic();
-        this->handlePreviewPlay();
+        this->bIsWaitingForPreview = true;
+        this->loadMusic(false /*not reload*/, true /*async*/);
     }
 
     if(cv::beatmap_preview_mods_live.getBool()) {
@@ -605,6 +605,7 @@ bool BeatmapInterface::start() {
     this->resetLiveStarsTasks();
 
     // load music
+    this->bIsWaitingForPreview = false;  // cancel pending preview music play
     if(cv::restart_sound_engine_before_playing.getBool()) {
         // HACKHACK: Reload sound engine before starting the song, as it starts lagging after a while
         //           (i haven't figured out the root cause yet)
@@ -1444,7 +1445,6 @@ void BeatmapInterface::handlePreviewPlay() {
     this->music->setLoop(cv::beatmap_preview_music_loop.getBool());
 }
 
-// TODO: async load for preview music
 void BeatmapInterface::loadMusic(bool reload, bool async) {
     const std::string &beatmapSoundPath = this->beatmap ? this->beatmap->getFullSoundFilePath() : "";
     if(beatmapSoundPath.empty()) {
@@ -1468,23 +1468,26 @@ void BeatmapInterface::loadMusic(bool reload, bool async) {
     const bool haveExistingMusic = !!this->music;
     const bool musicAlreadyLoadedSuccessfully = haveExistingMusic && this->music->isReady();
 
-    bool skipLoading = !reload;
-    if(!reload) {
-        if(async) {
-            // if we are already async loading the same path, nothing to do here
-            skipLoading = (haveExistingMusic && !pathChanged && resourceManager->isLoadingResource(this->music));
-        } else {
-            // we can skip if the path didn't change and we already loaded
-            skipLoading = !pathChanged && musicAlreadyLoadedSuccessfully;
-        }
-    }
+    // we can skip if the path didn't change and we already loaded
+    // also skip if we have async music being loaded and we are async
+    const bool skipLoading = !reload &&                          //
+                             !pathChanged &&                     //
+                             (musicAlreadyLoadedSuccessfully ||  //
+                              (async && haveExistingMusic && resourceManager->isLoadingResource(this->music)));
 
     logIf(cv::debug_osu.getBool() || cv::debug_snd.getBool(),
           "reload: {} async: {} path changed: {} existing music: {} existing music loaded successfully: {} skipping: "
           "{}",
           reload, async, pathChanged, haveExistingMusic, musicAlreadyLoadedSuccessfully, skipLoading);
 
-    if(skipLoading) return;
+    if(skipLoading) {
+        if(this->bIsWaitingForPreview && !resourceManager->isLoadingResource(this->music)) {
+            // manually handle preview play from selectBeatmap, since the callback won't be fired (was already)
+            this->bIsWaitingForPreview = false;
+            this->handlePreviewPlay();
+        }
+        return;
+    }
 
     // load the song (again)
     if(haveExistingMusic) {
@@ -1494,20 +1497,50 @@ void BeatmapInterface::loadMusic(bool reload, bool async) {
         // fresh load
         if(async) resourceManager->requestNextLoadAsync();
         this->music = resourceManager->loadSoundAbs(newPath, "BEATMAP_MUSIC", true /* stream */, false, false);
-    }
-    assert(this->music);
 
-    if(!this->music->isReady() || !soundEngine->enqueue(this->music)) {
-        logIf(cv::debug_osu.getBool() || cv::debug_snd.getBool(), "failed to enqueue music at {}", newPath);
-    } else {
-        // ready and enqueued
-        this->music->setBaseVolume(this->getIdealVolume());
-        this->fMusicFrequencyBackup = this->music->getFrequency();
-        this->music->setSpeed(this->getSpeedMultiplier());
+        // for sync load it should be ready now (one-time manual call for a fresh load, then the callback should handle it after)
+        if(!async) {
+            debugLog("calling onMusicLoadingFinished for {} manually", this->music->getFilePath());
+            BeatmapInterface::onMusicLoadingFinished(this->music, this);
+        }
+
+        // set the callback after we call it once manually
+        this->music->setOnInitCB({this, &BeatmapInterface::onMusicLoadingFinished});
     }
 
     // TODO: load custom hitsounds
     // TODO: load custom skin elements
+}
+
+void BeatmapInterface::onMusicLoadingFinished(Resource *rs, void *this_) {
+    auto *map_iface = static_cast<BeatmapInterface *>(this_);
+    if(osu->getMapInterface().get() != this_) {
+        map_iface = osu->getMapInterface().get();
+    }
+    if(!map_iface) return;
+
+    auto *music = static_cast<Sound *>(rs);
+    if(!music || music != map_iface->getMusic()) {
+        // impossible?
+        if(music) {
+            debugLog("loaded music was different from currently playing!?");
+        }
+        return;
+    }
+
+    if(!music->isReady() || !soundEngine->enqueue(music)) {
+        logIf(cv::debug_osu.getBool() || cv::debug_snd.getBool(), "failed to enqueue music at {}",
+              music->getFilePath());
+    } else {
+        // ready and enqueued
+        music->setBaseVolume(map_iface->getIdealVolume());
+        map_iface->fMusicFrequencyBackup = music->getFrequency();
+        music->setSpeed(map_iface->getSpeedMultiplier());
+        if(map_iface->bIsWaitingForPreview) {
+            map_iface->bIsWaitingForPreview = false;
+            map_iface->handlePreviewPlay();
+        }
+    }
 }
 
 void BeatmapInterface::unloadMusic() {

@@ -14,6 +14,7 @@
 class Sound;
 class ConVar;
 class Skin;
+class Resource;
 class HitObject;
 class DatabaseBeatmap;
 class SimulatedBeatmapInterface;
@@ -126,6 +127,8 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
     inline void reloadMusicNow() { this->loadMusic(true, false); }
     void loadMusic(bool reload = false, bool async = false);
     void unloadMusic();
+    static void onMusicLoadingFinished(Resource *rs, void *this_);
+
     f32 getIdealVolume();
     void setSpeed(f32 speed);
     void seekMS(u32 ms);
@@ -271,6 +274,7 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
     McOsuInterpolator musicInterp;
     f32 fAfterMusicIsFinishedVirtualAudioTimeStart;
     bool bIsFirstMissSound;
+    bool bIsWaitingForPreview{false};
     DatabaseBeatmap::TIMING_INFO current_timing_point{};
     i32 default_sample_set{1};
 

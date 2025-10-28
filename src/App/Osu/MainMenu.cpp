@@ -1101,7 +1101,7 @@ void MainMenu::mouse_update(bool *propagate_clicks) {
 
         if(!music) {
             this->selectRandomBeatmap();
-        } else {
+        } else if(!resourceManager->isLoadingResource(music)) {
             if(!music->isReady() || music->isFinished()) {
                 this->selectRandomBeatmap();
             } else if(music->isPlaying()) {
