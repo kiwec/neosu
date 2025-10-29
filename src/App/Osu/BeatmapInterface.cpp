@@ -302,6 +302,11 @@ void BeatmapInterface::onKey(GameplayKeys key_flag, bool down, u64 timestamp) {
         // this needs to be immediately updated here, to update state outside of early returns
         this->current_keys |= key_flag;
 
+        // allow held keys to change while paused, but don't animate or anything
+        // to reiterate, this needs to happen because we have no separate outside-gameplay-held-keys state (anymore),
+        // BeatmapInterface::current_keys is the only source of truth
+        if(this->bIsPaused) return;
+
         if(this->bContinueScheduled) {
             // don't insta-unpause if we had a held key or doubleclicked or something
             if(engine->getTime() < this->fPrevUnpauseTime + cv::unpause_continue_delay.getFloat()) {
@@ -342,8 +347,8 @@ void BeatmapInterface::onKey(GameplayKeys key_flag, bool down, u64 timestamp) {
             this->clicks.push_back(
                 Click{.timestamp = timestamp, .pos = this->getCursorPos(), .music_pos = this->iCurMusicPosWithOffsets});
         }
-
     } else {  // released
+        // always allow released key to animate
         osu->getHUD()->animateInputOverlay(key_flag, false);
         this->current_keys &= ~key_flag;
     }
@@ -511,11 +516,22 @@ bool BeatmapInterface::start() {
     }
 
     // HACKHACK: stuck key quickfix
-    {
+    const auto keys_held = this->current_keys & ~GameplayKeys::Smoke;
+    if(this->is_watching || BanchoState::spectating) {
         this->onKey(GameplayKeys::K1, false, 0);
         this->onKey(GameplayKeys::M1, false, 0);
         this->onKey(GameplayKeys::K2, false, 0);
         this->onKey(GameplayKeys::M2, false, 0);
+    } else {
+        // only clear potential stuck mouse buttons
+        if(cv::disable_mousebuttons.getBool()) {
+            if(mouse->isLeftDown()) this->onKey(GameplayKeys::M1, false, 0);
+            if(mouse->isRightDown()) this->onKey(GameplayKeys::M2, false, 0);
+        }
+    }
+    if(keys_held != (this->current_keys & ~GameplayKeys::Smoke)) {
+        // unexpand cursor if we released
+        osu->getHUD()->animateCursorShrink();
     }
 
     static const int OSU_COORD_WIDTH = 512;
@@ -797,6 +813,20 @@ void BeatmapInterface::pause(bool quitIfWaiting) {
     }
 
     if(!this->bIsPaused) {
+        // clear potential held mouse buttons from pause menu, if mousebuttons during gameplay are disabled
+        if(cv::disable_mousebuttons.getBool()) {
+            const auto keys_held = this->current_keys & ~GameplayKeys::Smoke;
+
+            // only clear if they're actually down, since M1/M2 might be mapped to keyboard keys
+            if(mouse->isLeftDown()) this->onKey(GameplayKeys::M1, false, 0);
+            if(mouse->isRightDown()) this->onKey(GameplayKeys::M2, false, 0);
+
+            if(keys_held != (this->current_keys & ~GameplayKeys::Smoke)) {
+                // unexpand cursor if we released
+                osu->getHUD()->animateCursorShrink();
+            }
+        }
+
         this->fPrevUnpauseTime = engine->getTime();
     }
 

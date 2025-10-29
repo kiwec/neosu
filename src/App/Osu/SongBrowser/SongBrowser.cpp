@@ -1227,10 +1227,12 @@ void SongBrowser::onPlayEnd(bool quit) {
 }
 
 void SongBrowser::onSelectionChange(CarouselButton *button, bool rebuild) {
+    const bool wasSelected = (this->selectedButton == button);
     this->selectedButton = button;
     if(button == nullptr) return;
 
     this->contextMenu->setVisible2(false);
+    if(wasSelected && !rebuild) return;
 
     // keep track and update all selection states
     // I'm still not happy with this, but at least all state update logic is localized in this function instead of

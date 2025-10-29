@@ -1182,15 +1182,15 @@ void Osu::onChar(KeyboardEvent &e) {
 void Osu::onButtonChange(ButtonEvent ev) {
     using enum ButtonIndex;
     if((ev.btn != BUTTON_LEFT && ev.btn != BUTTON_RIGHT) ||
-       (this->isInPlayMode() && !this->map_iface->isPaused() && cv::disable_mousebuttons.getBool()))
+       (cv::disable_mousebuttons.getBool() && (this->isInPlayMode() && !this->map_iface->isPaused())))
         return;
 
     switch(ev.btn) {
         case BUTTON_LEFT:
-            this->onGameplayKey(GameplayKeys::M1, ev.down, ev.timestamp);
+            this->onGameplayKey(GameplayKeys::M1, ev.down, ev.timestamp, true);
             break;
         case BUTTON_RIGHT:
-            this->onGameplayKey(GameplayKeys::M2, ev.down, ev.timestamp);
+            this->onGameplayKey(GameplayKeys::M2, ev.down, ev.timestamp, true);
             break;
         default:
             break;
@@ -1826,7 +1826,8 @@ void Osu::updateOsuFolder() {
     }
 }
 
-void Osu::onGameplayKey(GameplayKeys key_flag, bool down, u64 timestamp) {
+// needs a separate fromMouse parameter, since M1/M2 might be bound to keyboard keys too
+void Osu::onGameplayKey(GameplayKeys key_flag, bool down, u64 timestamp, bool fromMouse) {
     auto held_now = this->map_iface->getKeys();
 
     const bool changed = !(held_now & key_flag) == down;
@@ -1850,15 +1851,19 @@ void Osu::onGameplayKey(GameplayKeys key_flag, bool down, u64 timestamp) {
         can_press = !(held_now & (is_k1m1 ? k1m1 : k2m2));
     }
 
-    // NOTE: allow keyup even while beatmap is paused, to correctly not-continue immediately due to pressed keys
-    if(!down || (can_press && !this->map_iface->isPaused())) {
+    // NOTE: allow events even while beatmap is paused, to correctly not-continue immediately due to pressed keys
+    // debugLog("got key{} {:04b} fromMouse {} held_now {:04b} can_press {}", down ? "down" : "up",
+    //          static_cast<u8>(key_flag), fromMouse, held_now, can_press);
+    if(can_press) {
         this->map_iface->onKey(key_flag, down, timestamp);
     }
 
-    // cursor anim + ripples
-    const bool mouse_event = key_flag & (GameplayKeys::M1 | GameplayKeys::M2);
+    // only skip animating if it's a mouse event and we are in unpaused gameplay, otherwise animate
     const bool do_animate =
-        !(this->isInPlayMode() && !this->map_iface->isPaused() && mouse_event && cv::disable_mousebuttons.getBool());
+        fromMouse ? !(cv::disable_mousebuttons.getBool() && this->isInPlayMode() && !this->map_iface->isPaused())
+                  : true;
+
+    // cursor anim + ripples
     if(do_animate) {
         if(down && can_press) {
             this->hud->animateCursorExpand();

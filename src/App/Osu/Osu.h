@@ -221,7 +221,7 @@ class Osu final : public MouseListener, public KeyboardListener {
     void onUIScaleToDPIChange(float oldValue, float newValue);
     void onLetterboxingChange(float oldValue, float newValue);
 
-    void onGameplayKey(GameplayKeys key_flag, bool down, u64 timestamp);
+    void onGameplayKey(GameplayKeys key_flag, bool down, u64 timestamp, bool fromMouse = false);
 
     void onLetterboxingOffsetChange();
 
