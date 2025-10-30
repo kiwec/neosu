@@ -300,6 +300,11 @@ Osu::Osu() {
 
     this->bScreensReady = true;
 
+    // do this after reading configs if we wanted to set a windowed resolution
+    if(this->last_res_change_req_src & RESRQ_CV_WINDOWED_RESOLUTION) {
+        this->onWindowedResolutionChanged(cv::windowed_resolution.getString());
+    }
+
     this->mainMenu->setVisible(true);
 
     // update mod settings
@@ -1480,7 +1485,7 @@ void Osu::onResolutionChanged(vec2 newResolution, ResolutionRequestFlags src) {
     } else if(fs && (src & RESRQ_CV_RESOLUTION)) {
         logIf(dbgcond, "FS: updating from {} to {}", cv::resolution.getString(), res_str);
         cv::resolution.setValue(res_str, false);
-    } else if(!fs && !fs_letterboxed) {
+    } else if((!fs && !fs_letterboxed) && (src & RESRQ_CV_WINDOWED_RESOLUTION)) {
         logIf(dbgcond, "windowed: updating from {} to {}", cv::windowed_resolution.getString(), res_str);
         cv::windowed_resolution.setValue(res_str, false);
     }
@@ -1601,6 +1606,8 @@ void Osu::updateWindowsKeyDisable() {
 
 void Osu::onWindowedResolutionChanged(std::string_view args) {
     // ignore if we're still loading or not in fullscreen
+    this->last_res_change_req_src |= RESRQ_CV_WINDOWED_RESOLUTION;
+
     if(env->winFullscreened() || !this->bScreensReady) return;
 
     auto parsed = Parsing::parse_resolution(args);
@@ -1614,8 +1621,6 @@ void Osu::onWindowedResolutionChanged(std::string_view args) {
 
     i32 width{parsed->x}, height{parsed->y};
     debugLog("{}x{}", width, height);
-
-    this->last_res_change_req_src |= RESRQ_CV_WINDOWED_RESOLUTION;
 
     env->setWindowSize(width, height);
     env->center();
