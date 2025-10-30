@@ -68,7 +68,9 @@ extern void _osuOptionsSliderQualityWrapper(float);
 // defined and included at the end of ConVar.cpp
 #if defined(DEFINE_CONVARS)
 #undef CONVAR
+#undef KEYVAR
 #define CONVAR(name, ...) ConVar _CV(name)(#name __VA_OPT__(, ) __VA_ARGS__)
+#define KEYVAR(name, ...) ConVar _CV(name)(__VA_ARGS__)
 
 #include "KeyBindings.h"
 #include "BanchoNetworking.h"  // defines some things we need like OSU_VERSION_DATEONLY
@@ -91,6 +93,7 @@ extern void set_current_thread_prio(bool /**/);
 
 #else
 #define CONVAR(name, ...) extern ConVar _CV(name)
+#define KEYVAR(name, ...) extern ConVar _CV(name)
 #endif
 
 class ConVar;
@@ -245,48 +248,48 @@ CONVAR(vprof_spike, 0, CLIENT | SERVER,
        "measure and display largest spike details (1 = small info, 2 = extended info)");
 
 // Keybinds
-CONVAR(BOSS_KEY, (int)KEY_INSERT, CLIENT);
-CONVAR(DECREASE_LOCAL_OFFSET, (int)KEY_SUBTRACT, CLIENT);
-CONVAR(DECREASE_VOLUME, (int)KEY_DOWN, CLIENT);
-CONVAR(DISABLE_MOUSE_BUTTONS, (int)KEY_F10, CLIENT);
-CONVAR(FPOSU_ZOOM, 0, CLIENT);
-CONVAR(GAME_PAUSE, (int)KEY_ESCAPE, CLIENT);
-CONVAR(INCREASE_LOCAL_OFFSET, (int)KEY_ADD, CLIENT);
-CONVAR(INCREASE_VOLUME, (int)KEY_UP, CLIENT);
-CONVAR(INSTANT_REPLAY, (int)KEY_F2, CLIENT);
-CONVAR(LEFT_CLICK, (int)KEY_Z, CLIENT);
-CONVAR(LEFT_CLICK_2, 0, CLIENT);
-CONVAR(MOD_AUTO, (int)KEY_V, CLIENT);
-CONVAR(MOD_AUTOPILOT, (int)KEY_X, CLIENT);
-CONVAR(MOD_DOUBLETIME, (int)KEY_D, CLIENT);
-CONVAR(MOD_EASY, (int)KEY_Q, CLIENT);
-CONVAR(MOD_FLASHLIGHT, (int)KEY_G, CLIENT);
-CONVAR(MOD_HALFTIME, (int)KEY_E, CLIENT);
-CONVAR(MOD_HARDROCK, (int)KEY_A, CLIENT);
-CONVAR(MOD_HIDDEN, (int)KEY_F, CLIENT);
-CONVAR(MOD_NOFAIL, (int)KEY_W, CLIENT);
-CONVAR(MOD_RELAX, (int)KEY_Z, CLIENT);
-CONVAR(MOD_SCOREV2, (int)KEY_B, CLIENT);
-CONVAR(MOD_SPUNOUT, (int)KEY_C, CLIENT);
-CONVAR(MOD_SUDDENDEATH, (int)KEY_S, CLIENT);
-CONVAR(OPEN_SKIN_SELECT_MENU, 0, CLIENT);
-CONVAR(QUICK_LOAD, (int)KEY_F7, CLIENT);
-CONVAR(QUICK_RETRY, (int)KEY_BACKSPACE, CLIENT);
-CONVAR(QUICK_SAVE, (int)KEY_F6, CLIENT);
-CONVAR(RANDOM_BEATMAP, (int)KEY_F2, CLIENT);
-CONVAR(RIGHT_CLICK, (int)KEY_X, CLIENT);
-CONVAR(RIGHT_CLICK_2, 0, CLIENT);
-CONVAR(SAVE_SCREENSHOT, (int)KEY_F12, CLIENT);
-CONVAR(SEEK_TIME, (int)KEY_LSHIFT, CLIENT);
-CONVAR(SEEK_TIME_BACKWARD, (int)KEY_LEFT, CLIENT);
-CONVAR(SEEK_TIME_FORWARD, (int)KEY_RIGHT, CLIENT);
-CONVAR(SMOKE, 0, CLIENT);
-CONVAR(SKIP_CUTSCENE, (int)KEY_SPACE, CLIENT);
-CONVAR(TOGGLE_CHAT, (int)KEY_F8, CLIENT);
-CONVAR(TOGGLE_EXTENDED_CHAT, (int)KEY_F9, CLIENT);
-CONVAR(TOGGLE_MAP_BACKGROUND, 0, CLIENT);
-CONVAR(TOGGLE_MODSELECT, (int)KEY_F1, CLIENT);
-CONVAR(TOGGLE_SCOREBOARD, (int)KEY_TAB, CLIENT);
+KEYVAR(BOSS_KEY, "key_boss", (int)KEY_INSERT, CLIENT);
+KEYVAR(DECREASE_LOCAL_OFFSET, "key_decrease_local_offset", (int)KEY_SUBTRACT, CLIENT);
+KEYVAR(DECREASE_VOLUME, "key_decrease_volume", (int)KEY_DOWN, CLIENT);
+KEYVAR(DISABLE_MOUSE_BUTTONS, "key_disable_mouse_buttons", (int)KEY_F10, CLIENT);
+KEYVAR(FPOSU_ZOOM, "key_fposu_zoom", 0, CLIENT);
+KEYVAR(GAME_PAUSE, "key_game_pause", (int)KEY_ESCAPE, CLIENT);
+KEYVAR(INCREASE_LOCAL_OFFSET, "key_increase_local_offset", (int)KEY_ADD, CLIENT);
+KEYVAR(INCREASE_VOLUME, "key_increase_volume", (int)KEY_UP, CLIENT);
+KEYVAR(INSTANT_REPLAY, "key_instant_replay", (int)KEY_F2, CLIENT);
+KEYVAR(LEFT_CLICK, "key_left_click", (int)KEY_Z, CLIENT);
+KEYVAR(LEFT_CLICK_2, "key_left_click_2", 0, CLIENT);
+KEYVAR(MOD_AUTO, "key_mod_auto", (int)KEY_V, CLIENT);
+KEYVAR(MOD_AUTOPILOT, "key_mod_autopilot", (int)KEY_X, CLIENT);
+KEYVAR(MOD_DOUBLETIME, "key_mod_doubletime", (int)KEY_D, CLIENT);
+KEYVAR(MOD_EASY, "key_mod_easy", (int)KEY_Q, CLIENT);
+KEYVAR(MOD_FLASHLIGHT, "key_mod_flashlight", (int)KEY_G, CLIENT);
+KEYVAR(MOD_HALFTIME, "key_mod_halftime", (int)KEY_E, CLIENT);
+KEYVAR(MOD_HARDROCK, "key_mod_hardrock", (int)KEY_A, CLIENT);
+KEYVAR(MOD_HIDDEN, "key_mod_hidden", (int)KEY_F, CLIENT);
+KEYVAR(MOD_NOFAIL, "key_mod_nofail", (int)KEY_W, CLIENT);
+KEYVAR(MOD_RELAX, "key_mod_relax", (int)KEY_Z, CLIENT);
+KEYVAR(MOD_SCOREV2, "key_mod_scorev2", (int)KEY_B, CLIENT);
+KEYVAR(MOD_SPUNOUT, "key_mod_spunout", (int)KEY_C, CLIENT);
+KEYVAR(MOD_SUDDENDEATH, "key_mod_suddendeath", (int)KEY_S, CLIENT);
+KEYVAR(OPEN_SKIN_SELECT_MENU, "key_open_skin_select_menu", 0, CLIENT);
+KEYVAR(QUICK_LOAD, "key_quick_load", (int)KEY_F7, CLIENT);
+KEYVAR(QUICK_RETRY, "key_quick_retry", (int)KEY_BACKSPACE, CLIENT);
+KEYVAR(QUICK_SAVE, "key_quick_save", (int)KEY_F6, CLIENT);
+KEYVAR(RANDOM_BEATMAP, "key_random_beatmap", (int)KEY_F2, CLIENT);
+KEYVAR(RIGHT_CLICK, "key_right_click", (int)KEY_X, CLIENT);
+KEYVAR(RIGHT_CLICK_2, "key_right_click_2", 0, CLIENT);
+KEYVAR(SAVE_SCREENSHOT, "key_save_screenshot", (int)KEY_F12, CLIENT);
+KEYVAR(SEEK_TIME, "key_seek_time", (int)KEY_LSHIFT, CLIENT);
+KEYVAR(SEEK_TIME_BACKWARD, "key_seek_time_backward", (int)KEY_LEFT, CLIENT);
+KEYVAR(SEEK_TIME_FORWARD, "key_seek_time_forward", (int)KEY_RIGHT, CLIENT);
+KEYVAR(SMOKE, "key_smoke", 0, CLIENT);
+KEYVAR(SKIP_CUTSCENE, "key_skip_cutscene", (int)KEY_SPACE, CLIENT);
+KEYVAR(TOGGLE_CHAT, "key_toggle_chat", (int)KEY_F8, CLIENT);
+KEYVAR(TOGGLE_EXTENDED_CHAT, "key_toggle_extended_chat", (int)KEY_F9, CLIENT);
+KEYVAR(TOGGLE_MAP_BACKGROUND, "key_toggle_map_background", 0, CLIENT);
+KEYVAR(TOGGLE_MODSELECT, "key_toggle_modselect", (int)KEY_F1, CLIENT);
+KEYVAR(TOGGLE_SCOREBOARD, "key_toggle_scoreboard", (int)KEY_TAB, CLIENT);
 
 // Input behavior
 CONVAR(alt_f4_quits_even_while_playing, true, CLIENT);
