@@ -3,6 +3,7 @@
 
 #include "Archival.h"
 #include "BanchoNetworking.h"
+#include "Bancho.h"
 #include "ConVar.h"
 #include "crypto.h"
 #include "Engine.h"
@@ -56,6 +57,7 @@ void UpdateHandler::checkForUpdates(bool force_update) {
     NetworkHandler::RequestOptions options;
     options.timeout = 10;
     options.connect_timeout = 5;
+    options.user_agent = BanchoState::user_agent.toUtf8();
 
     this->status = STATUS_CHECKING_FOR_UPDATE;
     networkHandler->httpRequestAsync(
@@ -125,6 +127,7 @@ void UpdateHandler::onVersionCheckComplete(const std::string &response, bool suc
     options.timeout = 300;  // 5 minutes for large downloads
     options.connect_timeout = 10;
     options.follow_redirects = true;
+    options.user_agent = BanchoState::user_agent.toUtf8();
 
     this->status = STATUS_DOWNLOADING_UPDATE;
     networkHandler->httpRequestAsync(

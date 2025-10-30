@@ -1,5 +1,4 @@
 // Copyright (c) 2015, PG, All rights reserved.
-#include "Bancho.h"
 #include "NetworkHandler.h"
 #include "Engine.h"
 #include "Thread.h"
@@ -244,9 +243,7 @@ void NetworkHandler::setupCurlHandle(CURL* handle, NetworkRequest* request) {
     curl_easy_setopt(handle, CURLOPT_NOSIGNAL, 1L);
     curl_easy_setopt(handle, CURLOPT_FAILONERROR, 1L);  // fail on HTTP responses >= 400
 
-    if(request->options.user_agent.empty()) {
-        curl_easy_setopt(handle, CURLOPT_USERAGENT, BanchoState::user_agent.toUtf8());
-    } else {
+    if(!request->options.user_agent.empty()) {
         curl_easy_setopt(handle, CURLOPT_USERAGENT, request->options.user_agent.c_str());
     }
 

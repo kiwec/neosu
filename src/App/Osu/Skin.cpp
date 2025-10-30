@@ -114,7 +114,7 @@ Skin::Skin(const UString &name, std::string filepath, bool isDefaultSkin) {
 
     // vars
     this->spinnerApproachCircleColor = 0xffffffff;
-    this->spinnerBackgroundColor = 0xffdddddd;  // "by default, tinted grey"
+    this->spinnerBackgroundColor = rgb(100, 100, 100);  // https://osu.ppy.sh/wiki/en/Skinning/skin.ini#[colours]
     this->sliderBorderColor = 0xffffffff;
     this->sliderBallColor = 0xffffffff;  // NOTE: 0xff02aaff is a hardcoded special case for osu!'s default skin, but it
                                          // does not apply to user skins
