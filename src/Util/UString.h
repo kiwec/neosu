@@ -106,12 +106,6 @@ class UString {
         else
             return this->sUtf8.c_str();
     }
-    [[nodiscard]] constexpr auto plat_view() const noexcept {
-        if constexpr(Env::cfg(OS::WINDOWS))
-            return static_cast<std::wstring_view>(reinterpret_cast<const std::wstring &>(this->sUnicode));
-        else
-            return static_cast<std::string_view>(this->sUtf8);
-    }
 
     // state queries
     [[nodiscard]] constexpr bool isEmpty() const noexcept { return this->sUnicode.empty(); }

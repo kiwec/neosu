@@ -52,7 +52,7 @@ class CBaseUITextField : public CBaseUIScrollView {
 
         [[nodiscard]] inline Color getTextColor() const { return this->textColor; }
 
-        [[nodiscard]] inline UString getText() const { return this->sText; }
+        [[nodiscard]] inline const UString &getText() const { return this->sText; }
         [[nodiscard]] inline McFont *getFont() const { return this->font; }
 
         void onResized() override;

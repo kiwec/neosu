@@ -18,7 +18,6 @@ class CBaseUITextbox : public CBaseUIElement {
 
     UString getVisibleText();
     [[nodiscard]] inline const UString &getText() const { return this->sText; }
-    inline UString &getTextRef() { return this->sText; }  // DEPRECATED
     [[nodiscard]] inline McFont *getFont() const { return this->font; }
 
     CBaseUITextbox *setDrawFrame(bool drawFrame) {

@@ -80,7 +80,7 @@ class CBaseUILabel : public CBaseUIElement {
     [[nodiscard]] inline Color getBackgroundColor() const { return this->backgroundColor; }
     [[nodiscard]] inline Color getTextColor() const { return this->textColor; }
     [[nodiscard]] inline McFont *getFont() const { return this->font; }
-    [[nodiscard]] inline UString getText() const { return this->sText; }
+    [[nodiscard]] inline const UString &getText() const { return this->sText; }
 
     void onResized() override { this->updateStringMetrics(); }
 

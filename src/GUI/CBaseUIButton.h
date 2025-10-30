@@ -96,7 +96,7 @@ class CBaseUIButton : public CBaseUIElement {
     [[nodiscard]] inline Color getFrameColor() const { return this->frameColor; }
     [[nodiscard]] inline Color getBackgroundColor() const { return this->backgroundColor; }
     [[nodiscard]] inline Color getTextColor() const { return this->textColor; }
-    [[nodiscard]] inline UString getText() const { return this->sText; }
+    [[nodiscard]] inline const UString &getText() const { return this->sText; }
     [[nodiscard]] inline McFont *getFont() const { return this->font; }
     [[nodiscard]] inline bool isTextLeft() const { return this->bTextLeft; }
 
