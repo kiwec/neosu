@@ -1459,13 +1459,13 @@ void BeatmapInterface::handlePreviewPlay() {
             }
 
             if(start_at_song_beginning) {
-                this->music->setPositionMS(0);
+                this->music->setPositionMS_fast(0);
             } else if(this->iContinueMusicPos != 0) {
-                this->music->setPositionMS(this->iContinueMusicPos);
+                this->music->setPositionMS_fast(this->iContinueMusicPos);
             } else {
-                this->music->setPositionMS(this->beatmap->getPreviewTime() < 0
-                                               ? (u32)(this->music->getLengthMS() * 0.40f)
-                                               : this->beatmap->getPreviewTime());
+                this->music->setPositionMS_fast(this->beatmap->getPreviewTime() < 0
+                                                    ? (u32)(this->music->getLengthMS() * 0.40f)
+                                                    : this->beatmap->getPreviewTime());
             }
             this->bWasSeekFrame = true;
 

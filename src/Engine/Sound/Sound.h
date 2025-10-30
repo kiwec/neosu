@@ -44,6 +44,7 @@ class Sound : public Resource {
     static Sound *createSound(std::string filepath, bool stream, bool overlayable, bool loop);
 
     virtual void setPositionMS(u32 ms) = 0;
+    virtual void setPositionMS_fast(u32 ms) { setPositionMS(ms); }  // BASS currently needs slow seek to be accurate
     virtual void setSpeed(float speed) = 0;
     virtual void setPitch(float pitch) { this->fPitch = pitch; }
     virtual void setFrequency(float frequency) = 0;
@@ -60,7 +61,7 @@ class Sound : public Resource {
     virtual float getPan() const { return this->fPan; }
     virtual float getSpeed() const { return this->fSpeed; }
     virtual float getPitch() const { return this->fPitch; }
-    virtual i32 getBASSStreamLatencyCompensation() const { return 0; } // constant stream offset, backend dependent
+    virtual i32 getBASSStreamLatencyCompensation() const { return 0; }  // constant stream offset, backend dependent
 
     virtual bool isPlaying() const = 0;
     virtual bool isFinished() const = 0;

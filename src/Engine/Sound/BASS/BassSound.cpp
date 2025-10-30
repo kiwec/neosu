@@ -125,6 +125,76 @@ void BassSound::destroy() {
 }
 
 void BassSound::setPositionMS(u32 ms) {
+    if(!this->bReady || ms > this->getLengthMS()) return;
+    assert(this->bStream);  // can't call setPositionMS() on a sample
+
+    i64 target_pos = BASS_ChannelSeconds2Bytes(this->stream, ms / 1000.0);
+    if(target_pos < 0) {
+        debugLog("BASS_ChannelSeconds2Bytes( stream , {} ) error: {}\n", ms / 1000.0, BassManager::getErrorUString());
+        return;
+    }
+
+    // Naively setting position breaks with the current BASS version (& addons).
+    //
+    // BASS_STREAM_PRESCAN no longer seems to work, so our only recourse is to use the BASS_POS_DECODETO
+    // flag which renders the whole audio stream up until the requested seek point.
+    //
+    // The downside of BASS_POS_DECODETO is that it can only seek forward... furthermore, we can't
+    // just seek to 0 before seeking forward again, since BASS_Mixer_ChannelGetPosition breaks
+    // in that case. So, our only recourse is to just reload the whole fucking stream just for seeking.
+
+    bool was_playing = this->isPlaying();
+    auto pos = this->getPositionMS();
+    if(pos <= ms) {
+        // Lucky path, we can just seek forward and be done
+        if(this->isPlaying()) {
+            if(!BASS_Mixer_ChannelSetPosition(this->stream, target_pos,
+                                              BASS_POS_BYTE | BASS_POS_DECODETO | BASS_POS_MIXER_RESET)) {
+                if(cv::debug_snd.getBool()) {
+                    debugLog("setPositionMS( {} ) BASS_ChannelSetPosition() error on file {}: {}\n", ms,
+                             this->sFilePath.c_str(), BassManager::getErrorUString(BASS_ErrorGetCode()));
+                }
+            }
+            this->setLastPlayTime(engine->getTime() - ((f64)ms / 1000.0));
+        } else {
+            if(!BASS_ChannelSetPosition(this->stream, target_pos, BASS_POS_BYTE | BASS_POS_DECODETO | BASS_POS_FLUSH)) {
+                if(cv::debug_snd.getBool()) {
+                    debugLog("setPositionMS( {} ) BASS_ChannelSetPosition() error on file {}: {}\n", ms,
+                             this->sFilePath.c_str(), BassManager::getErrorUString(BASS_ErrorGetCode()));
+                }
+            }
+        }
+    } else {
+        // Unlucky path, we have to reload the stream
+        auto pan = this->getPan();
+        auto loop = this->isLooped();
+        auto speed = this->getSpeed();
+
+        resourceManager->reloadResource(this);
+
+        this->setSpeed(speed);
+        this->setPan(pan);
+        this->setLoop(loop);
+        this->bPaused = true;
+        this->paused_position_ms = ms;
+
+        if(!BASS_ChannelSetPosition(this->stream, target_pos, BASS_POS_BYTE | BASS_POS_DECODETO | BASS_POS_FLUSH)) {
+            if(cv::debug_snd.getBool()) {
+                debugLog("setPositionMS( {} ) BASS_ChannelSetPosition() error on file {}: {}\n", ms,
+                         this->sFilePath.c_str(), BassManager::getErrorUString());
+            }
+        }
+
+        if(was_playing) {
+            osu->music_unpause_scheduled = true;
+        }
+    }
+
+    // reset interpolation state after seeking
+    this->interpolator.reset(static_cast<f64>(ms), Timing::getTimeReal(), this->getSpeed());
+}
+
+void BassSound::setPositionMS_fast(u32 ms) {
     if(!this->isReady() || ms > this->getLengthMS()) return;
     assert(this->bStream);  // can't call setPositionMS() on a sample
 

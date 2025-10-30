@@ -570,8 +570,19 @@ void BassSoundEngine::pause(Sound *snd) {
     auto bassSound = snd->as<BassSound>();
     if(!bassSound->isPlaying()) return;
 
+    auto pan = bassSound->getPan();
     auto pos = bassSound->getPositionMS();
-    BASS_Mixer_ChannelFlags(bassSound->stream, BASS_MIXER_CHAN_PAUSE, BASS_MIXER_CHAN_PAUSE);
+    auto loop = bassSound->isLooped();
+    auto speed = bassSound->getSpeed();
+
+    // Calling BASS_Mixer_ChannelRemove automatically frees the stream due
+    // to BASS_STREAM_AUTOFREE. We need to reinitialize it.
+    resourceManager->reloadResource(bassSound);
+
+    bassSound->setPositionMS(pos);
+    bassSound->setSpeed(speed);
+    bassSound->setPan(pan);
+    bassSound->setLoop(loop);
     bassSound->bPaused = true;
     bassSound->paused_position_ms = pos;
     bassSound->interpolator.reset(pos, Timing::getTimeReal(), bassSound->getSpeed());
@@ -583,16 +594,10 @@ void BassSoundEngine::stop(Sound *snd) {
     auto bassSound = snd->as<BassSound>();
     if(!bassSound->isPlaying()) return;
 
-    if(snd->isStream()) {
-        BASS_Mixer_ChannelFlags(bassSound->stream, BASS_MIXER_CHAN_PAUSE, BASS_MIXER_CHAN_PAUSE);
-        bassSound->bPaused = true;
-        bassSound->setPositionMS(0);
-    } else {
-        for(auto &[handle, _] : bassSound->getActiveHandles()) {
-            BASS_Mixer_ChannelRemove(handle);
-            // sample channels get AUTOFREEd
-        }
-    }
+    // This will stop all samples, then re-init to be ready for a play()
+    // NOTE: async reload, because... we're doing this for sliderslides...
+    //       really need to fix the BASS_FX desync (or ditch BASS) to stop this madness
+    resourceManager->reloadResource(snd, true);
 }
 
 bool BassSoundEngine::isReady() {
@@ -632,6 +637,7 @@ void BassSoundEngine::setOutputDevice(const SoundEngine::OUTPUT_DEVICE &device) 
     osu->getOptionsMenu()->onOutputDeviceResetUpdate();
 
     // start playing music again after audio device changed
+    // TODO: here, it seems to restart the song at the beginning!
     if(osu->getMapInterface()->getMusic() != nullptr) {
         if(osu->isInPlayMode()) {
             osu->getMapInterface()->unloadMusic();

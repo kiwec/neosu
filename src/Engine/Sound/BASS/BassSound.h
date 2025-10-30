@@ -15,6 +15,7 @@ class BassSound final : public Sound {
     ~BassSound() override { this->destroy(); }
 
     void setPositionMS(u32 ms) override;
+    void setPositionMS_fast(u32 ms) override;
 
     void setSpeed(float speed) override;
     void setFrequency(float frequency) override;
