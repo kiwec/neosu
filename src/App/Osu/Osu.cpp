@@ -1462,43 +1462,17 @@ void Osu::onResolutionChanged(vec2 newResolution, ResChangeReq src) {
         (src & (RESRQ_ENGINE | RESRQ_CV_LETTERBOXING | RESRQ_CV_RESOLUTION | RESRQ_CV_LETTERBOXED_RES));
 
     if(res_from_cvars) {
-        std::string user_res_str = "";
-        const std::string &fs_res_cv_str = cv::resolution.getString();
+        const std::string &res_cv_str =
+            fs_letterboxed ? cv::letterboxed_resolution.getString() : cv::resolution.getString() /* fullscreen */;
 
-        if(fs_letterboxed) {
-            /*
-             * - we are in fullscreen
-             * - we have letterboxing _enabled_
-             * - we have a non-default letterboxed_resolution/resolution convar
-             * - our requested letterboxed resolution fits within the fullscreen resolution
-             * then just set newResolution to our desired resolution
-             */
-            const std::string &lb_res_cv_str = cv::letterboxed_resolution.getString();
-            if(lb_res_cv_str != cv::letterboxed_resolution.getDefaultString()) {
-                user_res_str = lb_res_cv_str;
-            } else if(fs_res_cv_str != cv::resolution.getDefaultString()) {
-                user_res_str = fs_res_cv_str;
-            }
-        } else {
-            /*
-             * - we are in fullscreen
-             * - we have letterboxing _disabled_
-             * - we have a non-default resolution convar
-             * - our requested resolution fits within the fullscreen resolution
-             * then just set newResolution to our desired resolution
-             */
-            if(fs_res_cv_str != cv::resolution.getDefaultString()) {
-                user_res_str = fs_res_cv_str;
-            }
+        if(!res_cv_str.empty()) {
+            newResolution = Parsing::parse_resolution(res_cv_str).value_or(this->internalRect.getSize());
         }
+    }
 
-        if(!user_res_str.empty()) {
-            const auto desired_res = Parsing::parse_resolution(user_res_str).value_or(this->internalRect.getSize());
-            if(env->getDesktopRect().Union(McRect{{}, desired_res}) == env->getDesktopRect()) {
-                // clamp it to desktop rect
-                newResolution = desired_res;
-            }
-        }
+    if(vec::any(vec::greaterThan(newResolution, env->getNativeScreenSize()))) {
+        // clamp it to desktop rect
+        newResolution = env->getNativeScreenSize();
     }
 
     auto res_str = fmt::format("{:d}x{:d}", (i32)newResolution.x, (i32)newResolution.y);
