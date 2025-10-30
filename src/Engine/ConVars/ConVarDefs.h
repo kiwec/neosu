@@ -1129,7 +1129,8 @@ CONVAR(rankingscreen_topbar_height_percent, "rankingscreen_topbar_height_percent
 CONVAR(
     relax_offset, "relax_offset"sv, -12, CLIENT | SERVER | PROTECTED | GAMEPLAY,
     "osu!relax always hits -12 ms too early, so set this to -12 (note the negative) if you want it to be the same"sv);
-CONVAR(resolution, "resolution"sv, "1280x720"sv, CLIENT | SKINS | SERVER);
+CONVAR(resolution, "resolution"sv, "1x1"sv, CLIENT | SKINS | SERVER);
+CONVAR(letterboxed_resolution, "letterboxed_resolution"sv, "1x1"sv, CLIENT | SKINS | SERVER);
 CONVAR(windowed_resolution, "windowed_resolution"sv, "1280x720"sv, CLIENT | SKINS | SERVER);
 CONVAR(resolution_keep_aspect_ratio, "resolution_keep_aspect_ratio"sv, false, CLIENT | SKINS | SERVER);
 CONVAR(restart_sound_engine_before_playing, "restart_sound_engine_before_playing"sv, false, CLIENT | SKINS | SERVER,

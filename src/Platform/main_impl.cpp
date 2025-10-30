@@ -100,8 +100,6 @@ SDL_AppResult SDLMain::initialize() {
 
     syncWindow();
 
-    setWindowResizable(true);
-
     updateWindowFlags();
 
     // initialize mouse position
@@ -211,15 +209,27 @@ SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
             // clang-format on
             updateWindowFlags();  // update our window flags enum from current SDL window flags
             switch(event->window.type) {
-                case SDL_EVENT_WINDOW_FOCUS_GAINED:
+                case SDL_EVENT_WINDOW_FOCUS_GAINED: {
+                    // add these window flags now to make env->winFocused() return true after this
+                    m_winflags |= (WFL_MOUSE_FOCUS | WFL_INPUT_FOCUS);
+                    if(!winMinimized() && m_bRestoreFullscreen) {
+                        // we can get into this state if the current window manager doesn't support minimizing
+                        // (i.e. re-gaining focus without first being restored, after we unfullscreened and tried to minimize the window)
+                        // re-fullscreen once, then set a flag to ignore future minimize requests
+                        m_bRestoreFullscreen = false;
+                        m_bMinimizeSupported = false;
+                        SDL_SetWindowFullscreen(m_window, true);
+                    }
                     m_engine->onFocusGained();
                     setFgFPS();
-                    break;
+                } break;
 
-                case SDL_EVENT_WINDOW_FOCUS_LOST:
+                case SDL_EVENT_WINDOW_FOCUS_LOST: {
+                    // remove these window flags now to avoid env->winFocused() returning true immediately
+                    m_winflags &= ~(WFL_MOUSE_FOCUS | WFL_INPUT_FOCUS);
                     m_engine->onFocusLost();
                     setBgFPS();
-                    break;
+                } break;
 
                 case SDL_EVENT_WINDOW_MAXIMIZED:
                     m_engine->onMaximized();
@@ -256,14 +266,17 @@ SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
 
                 case SDL_EVENT_WINDOW_LEAVE_FULLSCREEN:
                     cv::fullscreen.setValue(false, false);
+                    if(!m_bRestoreFullscreen) {  // make sure we re-add window borders, unless we're in the minimize-on-focus-lost-hack-state
+                        SDL_SetWindowBordered(m_window, true);
+                    }
                     break;
 
                 case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
                 case SDL_EVENT_WINDOW_RESIZED:
-                    // don't trust the event coordinates, the window might have magically been resized in between somehow
-                    // vec2(static_cast<float>(event->window.data1), static_cast<float>(event->window.data2)));
+                    // don't trust the event coordinates if we're in fullscreen, use the fullscreen size directly
                     if(!winMinimized() && !m_bRestoreFullscreen) {
-                        vec2 resize = winFullscreened() ? getNativeScreenSize() : getWindowSize();
+                        vec2 resize = winFullscreened() ? getNativeScreenSize()
+                                                        : vec2{(float)event->window.data1, (float)event->window.data2};
                         m_engine->requestResolutionChange(resize);
                         setFgFPS();
                     }
@@ -460,7 +473,7 @@ bool SDLMain::createWindow() {
     SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_Y_NUMBER, SDL_WINDOWPOS_CENTERED_DISPLAY(initDisplayID));
     SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_WIDTH_NUMBER, windowCreateWidth);
     SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_HEIGHT_NUMBER, windowCreateHeight);
-    SDL_SetBooleanProperty(props, SDL_PROP_WINDOW_CREATE_RESIZABLE_BOOLEAN, false);
+    SDL_SetBooleanProperty(props, SDL_PROP_WINDOW_CREATE_RESIZABLE_BOOLEAN, true);
     SDL_SetBooleanProperty(props, SDL_PROP_WINDOW_CREATE_MAXIMIZED_BOOLEAN, false);
     SDL_SetBooleanProperty(props, SDL_PROP_WINDOW_CREATE_FULLSCREEN_BOOLEAN, m_bIsKMSDRM ? true : false);
     SDL_SetBooleanProperty(props, SDL_PROP_WINDOW_CREATE_BORDERLESS_BOOLEAN, false);

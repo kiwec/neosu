@@ -67,7 +67,18 @@ class Osu final : public MouseListener, public KeyboardListener {
 
     void onButtonChange(ButtonEvent ev) override;
 
-    void onResolutionChanged(vec2 newResolution);
+    enum ResChangeReq : uint8_t {
+        RESRQ_NOT_PENDING = (1 << 0),
+        RESRQ_ENGINE = (1 << 1),
+        RESRQ_CV_RESOLUTION = (1 << 2),
+        RESRQ_CV_LETTERBOXED_RES = (1 << 3),
+        RESRQ_CV_LETTERBOXING = (1 << 4),
+        RESRQ_CV_WINDOWED_RESOLUTION = (1 << 5),
+        RESRQ_DELAYED_DESYNC_FIX = (1 << 6),
+        RESRQ_MISC_MANUAL =  (1 << 7),
+    };
+
+    void onResolutionChanged(vec2 newResolution, ResChangeReq src = ResChangeReq::RESRQ_ENGINE);
     void onDPIChanged();
 
     void onFocusGained();
@@ -205,7 +216,8 @@ class Osu final : public MouseListener, public KeyboardListener {
 
     // callbacks
     void onWindowedResolutionChanged(std::string_view args);
-    void onInternalResolutionChanged(std::string_view args);
+    void onFSResChanged(std::string_view args);
+    void onFSLetterboxedResChanged(std::string_view args);
 
     void onSkinReload();
     void onSkinChange(std::string_view newValue);
@@ -291,8 +303,6 @@ class Osu final : public MouseListener, public KeyboardListener {
     Shader *flashlight_shader{nullptr};
 
     McRect internalRect{0.f};
-    // wtf is this? why?
-    vec2 vInternalResolution2{0.f};
 
     // i don't like how these have to be public, but it's too annoying to change for now.
     // public members just mean their values can get rugpulled from under your feet at any moment,
@@ -345,14 +355,13 @@ class Osu final : public MouseListener, public KeyboardListener {
 
     // custom
    private:
+    ResChangeReq last_res_change_req_src{ResChangeReq::RESRQ_NOT_PENDING};
     std::atomic<bool> pause_bg_threads{false};
     bool bScheduleEndlessModNextBeatmap{false};
     bool bWasBossKeyPaused{false};
     bool bSkinLoadScheduled{false};
     bool bSkinLoadWasReload{false};
     bool bFontReloadScheduled{false};
-    bool bFireResolutionChangedScheduled{false};
-    bool bFireDelayedFontReloadAndResolutionChangeToFixDesyncedUIScaleScheduled{false};
     bool bScreensReady{false};
     bool bPreferCJK{false};
 

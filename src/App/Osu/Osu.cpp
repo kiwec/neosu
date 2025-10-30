@@ -1,14 +1,9 @@
 // Copyright (c) 2015, PG, All rights reserved.
 #include "Osu.h"
 
-#include <algorithm>
-#include <utility>
-
-#include "AnimationHandler.h"
 #include "AvatarManager.h"
 #include "BackgroundImageHandler.h"
 #include "Bancho.h"
-#include "BanchoApi.h"
 #include "BanchoNetworking.h"
 #include "BeatmapInterface.h"
 #include "CBaseUIScrollView.h"
@@ -38,7 +33,6 @@
 #include "ModFPoSu.h"
 #include "ModSelector.h"
 #include "Mouse.h"
-#include "NetworkHandler.h"
 #include "NotificationOverlay.h"
 #include "OptionsMenu.h"
 #include "Parsing.h"
@@ -49,9 +43,7 @@
 #include "RankingScreen.h"
 #include "RenderTarget.h"
 #include "ResourceManager.h"
-#include "RichPresence.h"
 #include "RoomScreen.h"
-#include "SString.h"
 #include "Shader.h"
 #include "Skin.h"
 #include "SongBrowser/LeaderboardPPCalcThread.h"
@@ -61,7 +53,6 @@
 #include "SongBrowser/SongBrowser.h"
 #include "SoundEngine.h"
 #include "SpectatorScreen.h"
-#include "Timing.h"
 #include "TooltipOverlay.h"
 #include "UIContextMenu.h"
 #include "UIModSelectorModButton.h"
@@ -76,6 +67,8 @@
 #include "score.h"
 
 #include "shaders.h"
+
+#include <algorithm>
 
 void Osu::globalOnSetValueProtectedCallback() {
     if(likely(this->map_iface)) {
@@ -117,12 +110,24 @@ Osu::Osu() {
     engine->getConsoleBox()->setRequireShiftToActivate(true);
     mouse->addListener(this);
 
-    // set default fullscreen resolution to match primary display
-    auto default_res = env->getNativeScreenSize();
-    cv::resolution.setValue(UString::format("%ix%i", (i32)default_res.x, (i32)default_res.y));
+    // set default fullscreen/letterboxed/windowed resolutions to match reality
+    {
+        const auto def_res = env->getNativeScreenSize();
+        std::string def_res_str = fmt::format("{:.0f}x{:.0f}", def_res.x, def_res.y);
+        cv::resolution.setValue(def_res_str);
+        cv::resolution.setDefaultString(def_res_str);
+        cv::letterboxed_resolution.setValue(def_res_str);
+        cv::letterboxed_resolution.setDefaultString(def_res_str);
+
+        const auto def_windowed_res = env->getWindowSize();
+        std::string def_windowed_res_str = fmt::format("{:.0f}x{:.0f}", def_windowed_res.x, def_windowed_res.y);
+        cv::windowed_resolution.setValue(def_windowed_res_str);
+        cv::windowed_resolution.setDefaultString(def_windowed_res_str);
+    }
 
     // convar callbacks
-    cv::resolution.setCallback(SA::MakeDelegate<&Osu::onInternalResolutionChanged>(this));
+    cv::resolution.setCallback(SA::MakeDelegate<&Osu::onFSResChanged>(this));
+    cv::letterboxed_resolution.setCallback(SA::MakeDelegate<&Osu::onFSLetterboxedResChanged>(this));
     cv::windowed_resolution.setCallback(SA::MakeDelegate<&Osu::onWindowedResolutionChanged>(this));
     cv::animation_speed_override.setCallback(SA::MakeDelegate<&Osu::onAnimationSpeedChange>(this));
     cv::ui_scale.setCallback(SA::MakeDelegate<&Osu::onUIScaleChange>(this));
@@ -267,7 +272,7 @@ Osu::Osu() {
 
     if(defaultFont->getDPI() != newDPI) {
         this->bFontReloadScheduled = true;
-        this->bFireResolutionChangedScheduled = true;
+        this->last_res_change_req_src = RESRQ_MISC_MANUAL;
     }
 
     // load subsystems, add them to the screens array
@@ -796,11 +801,9 @@ void Osu::update() {
     }
 
     // (must be before m_bFontReloadScheduled and m_bFireResolutionChangedScheduled are handled!)
-    if(this->bFireDelayedFontReloadAndResolutionChangeToFixDesyncedUIScaleScheduled) {
-        this->bFireDelayedFontReloadAndResolutionChangeToFixDesyncedUIScaleScheduled = false;
-
+    if(this->last_res_change_req_src == RESRQ_DELAYED_DESYNC_FIX) {
+        this->last_res_change_req_src = RESRQ_MISC_MANUAL;
         this->bFontReloadScheduled = true;
-        this->bFireResolutionChangedScheduled = true;
     }
 
     // delayed font reloads (must be before layout updates!)
@@ -810,8 +813,8 @@ void Osu::update() {
     }
 
     // delayed layout updates
-    if(this->bFireResolutionChangedScheduled) {
-        this->bFireResolutionChangedScheduled = false;
+    // ignore CV_WINDOWED_RESOLUTION since that will come from the window resize
+    if(this->last_res_change_req_src & ~(RESRQ_ENGINE | RESRQ_NOT_PENDING | RESRQ_CV_WINDOWED_RESOLUTION)) {
         this->fireResolutionChanged();
     }
 }
@@ -1418,45 +1421,119 @@ bool Osu::shouldFallBackToLegacySliderRenderer() {
         /* || (this->osu_playfield_rotation->getFloat() < -0.01f || m_osu_playfield_rotation->getFloat() > 0.01f)*/;
 }
 
-void Osu::onResolutionChanged(vec2 newResolution) {
-    debugLog("Osu::onResolutionChanged({:d}, {:d}), minimized = {:d}", (int)newResolution.x, (int)newResolution.y,
-             (int)env->winMinimized());
+void Osu::onResolutionChanged(vec2 newResolution, ResChangeReq src) {
+    if(src == RESRQ_ENGINE && this->last_res_change_req_src == RESRQ_CV_WINDOWED_RESOLUTION) {
+        // since cv::windowed_resolution does env->setWindowSize, it goes through the engine first
+        src = RESRQ_CV_WINDOWED_RESOLUTION;
+    }
 
-    if(env->winMinimized()) return;  // ignore if minimized
+    const bool fs = env->winFullscreened();
+    const bool fs_letterboxed = fs && cv::letterboxing.getBool();
 
-    const float prevUIScale = getUIScale();
+    // fixup delayed resolution/letterboxed_resolution requests possibly overwriting one another
+    if(fs_letterboxed && (src & RESRQ_CV_RESOLUTION)) {
+        src = RESRQ_CV_LETTERBOXED_RES;
+    } else if(fs && !fs_letterboxed && (src & RESRQ_CV_LETTERBOXED_RES)) {
+        src = RESRQ_CV_RESOLUTION;
+    }
 
-    // save setting
-    auto res_str = UString::format("%ix%i", (i32)newResolution.x, (i32)newResolution.y);
-    if(env->winFullscreened()) {
+    this->last_res_change_req_src = RESRQ_NOT_PENDING;  // reset to default
+
+    std::string req_srcstr;
+    if(src & RESRQ_ENGINE) req_srcstr += "engine/external ";
+    if(src & RESRQ_CV_RESOLUTION) req_srcstr += "convar (resolution) ";
+    if(src & RESRQ_CV_LETTERBOXED_RES) req_srcstr += "convar (letterboxed_res) ";
+    if(src & RESRQ_CV_LETTERBOXING) req_srcstr += "convar (letterboxing) ";
+    if(src & RESRQ_CV_WINDOWED_RESOLUTION) req_srcstr += "convar (windowed_resolution) ";
+    if(src & RESRQ_DELAYED_DESYNC_FIX) req_srcstr += "delayed desync fix ";
+    if(src & RESRQ_MISC_MANUAL) req_srcstr += "misc/manual ";
+    req_srcstr.pop_back();
+
+    debugLog("{:.0f}x{:.0f}, minimized: {} request source: {}", newResolution.x, newResolution.y, env->winMinimized(),
+             req_srcstr);
+
+    const bool manual_request = src != RESRQ_ENGINE;
+
+    if(env->winMinimized() && !manual_request) return;  // ignore if minimized and not a manual req
+
+    // ignore engine resolution size request and find it from cvars, if we are in fullscreen/letterboxed
+    const bool res_from_cvars =
+        (fs || fs_letterboxed) &&
+        (src & (RESRQ_ENGINE | RESRQ_CV_LETTERBOXING | RESRQ_CV_RESOLUTION | RESRQ_CV_LETTERBOXED_RES));
+
+    if(res_from_cvars) {
+        std::string user_res_str = "";
+        const std::string &fs_res_cv_str = cv::resolution.getString();
+
+        if(fs_letterboxed) {
+            /*
+             * - we are in fullscreen
+             * - we have letterboxing _enabled_
+             * - we have a non-default letterboxed_resolution/resolution convar
+             * - our requested letterboxed resolution fits within the fullscreen resolution
+             * then just set newResolution to our desired resolution
+             */
+            const std::string &lb_res_cv_str = cv::letterboxed_resolution.getString();
+            if(lb_res_cv_str != cv::letterboxed_resolution.getDefaultString()) {
+                user_res_str = lb_res_cv_str;
+            } else if(fs_res_cv_str != cv::resolution.getDefaultString()) {
+                user_res_str = fs_res_cv_str;
+            }
+        } else {
+            /*
+             * - we are in fullscreen
+             * - we have letterboxing _disabled_
+             * - we have a non-default resolution convar
+             * - our requested resolution fits within the fullscreen resolution
+             * then just set newResolution to our desired resolution
+             */
+            if(fs_res_cv_str != cv::resolution.getDefaultString()) {
+                user_res_str = fs_res_cv_str;
+            }
+        }
+
+        if(!user_res_str.empty()) {
+            const auto desired_res = Parsing::parse_resolution(user_res_str).value_or(this->internalRect.getSize());
+            if(env->getDesktopRect().Union(McRect{{}, desired_res}) == env->getDesktopRect()) {
+                // clamp it to desktop rect
+                newResolution = desired_res;
+            }
+        }
+    }
+
+    auto res_str = fmt::format("{:d}x{:d}", (i32)newResolution.x, (i32)newResolution.y);
+
+    const bool dbgcond = cv::debug_env.getBool() || cv::debug_osu.getBool();
+    logIf(dbgcond, "Actual ({}): {}", res_str, fs_letterboxed ? "FS letterboxed" : fs ? "FS" : "windowed");
+
+    // save setting depending on request source
+    if(fs_letterboxed && (src & RESRQ_CV_LETTERBOXED_RES)) {
+        logIf(dbgcond, "FS letterboxed: updating from {} to {}", cv::letterboxed_resolution.getString(), res_str);
+        cv::letterboxed_resolution.setValue(res_str, false);
+    } else if(fs && (src & RESRQ_CV_RESOLUTION)) {
+        logIf(dbgcond, "FS: updating from {} to {}", cv::resolution.getString(), res_str);
         cv::resolution.setValue(res_str, false);
-    } else {
+    } else if(!fs && !fs_letterboxed) {
+        logIf(dbgcond, "windowed: updating from {} to {}", cv::windowed_resolution.getString(), res_str);
         cv::windowed_resolution.setValue(res_str, false);
     }
 
-    // We just force disable letterboxing while windowed.
-    if(cv::letterboxing.getBool() && env->winFullscreened()) {
-        // clamp upwards to internal resolution (osu_resolution)
-        if(this->internalRect.getWidth() < this->vInternalResolution2.x)
-            this->internalRect.setWidth(this->vInternalResolution2.x);
-        if(this->internalRect.getHeight() < this->vInternalResolution2.y)
-            this->internalRect.setHeight(this->vInternalResolution2.y);
+    const float prevUIScale = getUIScale();
 
-        // clamp downwards to engine resolution
-        if(newResolution.x < this->internalRect.getWidth()) this->internalRect.setWidth(newResolution.x);
-        if(newResolution.y < this->internalRect.getHeight()) this->internalRect.setHeight(newResolution.y);
-    } else {
-        this->internalRect = {vec2{}, newResolution};
-    }
+    const bool resolution_changed = (this->backBuffer->getSize() != newResolution);
+    this->internalRect = {vec2{}, newResolution};
 
     // update dpi specific engine globals
     cv::ui_scrollview_scrollbarwidth.setValue(15.0f * Osu::getUIScale());  // not happy with this as a convar
 
-    // interfaces
-    this->forEachScreen<&OsuScreen::onResolutionChange>(this->getVirtScreenSize());
+    // skip rebuilding rendertargets if we didn't change resolution
+    if(resolution_changed) {
+        // interfaces
+        this->forEachScreen<&OsuScreen::onResolutionChange>(this->getVirtScreenSize());
 
-    // rendertargets
-    this->rebuildRenderTargets();
+        // rendertargets
+        this->rebuildRenderTargets();
+    }
 
     // mouse scale/offset
     this->updateMouseSettings();
@@ -1472,13 +1549,13 @@ void Osu::onResolutionChanged(vec2 newResolution) {
     // a bit hacky, but detect resolution-specific-dpi-scaling changes and force a font and layout reload after a 1
     // frame delay (1/2)
     if(!LossyComparisonToFixExcessFPUPrecisionBugBecauseFuckYou::equalEpsilon(getUIScale(), prevUIScale))
-        this->bFireDelayedFontReloadAndResolutionChangeToFixDesyncedUIScaleScheduled = true;
+        this->last_res_change_req_src = RESRQ_DELAYED_DESYNC_FIX;
 }
 
 void Osu::onDPIChanged() {
     // delay
     this->bFontReloadScheduled = true;
-    this->bFireResolutionChangedScheduled = true;
+    this->last_res_change_req_src = RESRQ_MISC_MANUAL;
 }
 
 void Osu::rebuildRenderTargets() {
@@ -1554,57 +1631,91 @@ void Osu::updateWindowsKeyDisable() {
     env->listenToTextInput(!isPlayerPlaying);
 }
 
-void Osu::fireResolutionChanged() { this->onResolutionChanged(this->getVirtScreenSize()); }
+void Osu::fireResolutionChanged() {
+    ResChangeReq src = this->last_res_change_req_src;
+    if(src == RESRQ_NOT_PENDING) {
+        src = RESRQ_MISC_MANUAL;
+    }
+    this->onResolutionChanged(this->getVirtScreenSize(), src);
+}
 
 void Osu::onWindowedResolutionChanged(std::string_view args) {
-    if(env->winFullscreened()) return;
+    // ignore if we're still loading or not in fullscreen
+    if(env->winFullscreened() || !this->bScreensReady) return;
 
     auto parsed = Parsing::parse_resolution(args);
     if(!parsed.has_value()) {
-        debugLog("Error: Invalid arguments {} for command 'osu_resolution'! (Usage: e.g. \"osu_resolution 1280x720\")",
-                 args);
+        debugLog(
+            "Error: Invalid arguments {} for command 'windowed_resolution'! (Usage: e.g. \"windowed_resolution "
+            "1280x720\")",
+            args);
         return;
     }
 
     i32 width{parsed->x}, height{parsed->y};
     debugLog("{}x{}", width, height);
 
+    this->last_res_change_req_src = RESRQ_CV_WINDOWED_RESOLUTION;
+
     env->setWindowSize(width, height);
     env->center();
 }
 
-void Osu::onInternalResolutionChanged(std::string_view args) {
-    if(!env->winFullscreened()) return;
-
+void Osu::onFSResChanged(std::string_view args) {
     auto parsed = Parsing::parse_resolution(args);
     if(!parsed.has_value()) {
-        debugLog("Error: Invalid arguments {} for command 'osu_resolution'! (Usage: e.g. \"osu_resolution 1280x720\")",
-                 args);
+        debugLog("Error: Invalid arguments {} for command 'resolution'! (Usage: e.g. \"resolution 1280x720\")", args);
         return;
     }
-    debugLog("{}x{}", parsed->x, parsed->y);
 
-    const float prevUIScale = getUIScale();
-    vec2 newInternalResolution = parsed.value();
+    vec2 newRes = parsed.value();
+    debugLog("{:.0f}x{:.0f}", newRes.x, newRes.y);
 
     // clamp requested internal resolution to current renderer resolution
     // however, this could happen while we are transitioning into fullscreen. therefore only clamp when not in
     // fullscreen or not in fullscreen transition
-    bool isTransitioningIntoFullscreenHack =
-        g->getResolution().x < env->getNativeScreenSize().x || g->getResolution().y < env->getNativeScreenSize().y;
-    if(!env->winFullscreened() || !isTransitioningIntoFullscreenHack) {
-        if(newInternalResolution.x > g->getResolution().x) newInternalResolution.x = g->getResolution().x;
-        if(newInternalResolution.y > g->getResolution().y) newInternalResolution.y = g->getResolution().y;
+    if(this->bScreensReady) {
+        bool isTransitioningIntoFullscreenHack =
+            g->getResolution().x < env->getNativeScreenSize().x || g->getResolution().y < env->getNativeScreenSize().y;
+        if(!env->winFullscreened() || !isTransitioningIntoFullscreenHack) {
+            if(newRes.x > g->getResolution().x) newRes.x = g->getResolution().x;
+            if(newRes.y > g->getResolution().y) newRes.y = g->getResolution().y;
+        }
+
+        std::string res_str = fmt::format("{:.0f}x{:.0f}", newRes.x, newRes.y);
+        cv::resolution.setValue(res_str, false);  // set it to the cleaned up value
     }
 
-    // store, then force onResolutionChanged()
-    this->internalRect = {vec2{}, newInternalResolution};
-    this->vInternalResolution2 = newInternalResolution;
-    this->fireResolutionChanged();
+    // delay
+    this->last_res_change_req_src = RESRQ_CV_RESOLUTION;
+}
 
-    // a bit hacky, but detect resolution-specific-dpi-scaling changes and force a font and layout reload after a 1
-    // frame delay (2/2)
-    if(getUIScale() != prevUIScale) this->bFireDelayedFontReloadAndResolutionChangeToFixDesyncedUIScaleScheduled = true;
+void Osu::onFSLetterboxedResChanged(std::string_view args) {
+    auto parsed = Parsing::parse_resolution(args);
+    if(!parsed.has_value()) {
+        debugLog(
+            "Error: Invalid arguments {} for command 'letterboxed_resolution'! (Usage: e.g. \"letterboxed_resolution "
+            "1280x720\")",
+            args);
+        return;
+    }
+
+    vec2 newRes = parsed.value();
+    debugLog("{:.0f}x{:.0f}", newRes.x, newRes.y);
+
+    if(this->bScreensReady) {
+        bool isTransitioningIntoFullscreenHack =
+            g->getResolution().x < env->getNativeScreenSize().x || g->getResolution().y < env->getNativeScreenSize().y;
+        if(!env->winFullscreened() || !isTransitioningIntoFullscreenHack) {
+            if(newRes.x > g->getResolution().x) newRes.x = g->getResolution().x;
+            if(newRes.y > g->getResolution().y) newRes.y = g->getResolution().y;
+        }
+
+        std::string res_str = fmt::format("{:.0f}x{:.0f}", newRes.x, newRes.y);
+        cv::letterboxed_resolution.setValue(res_str, false);  // set it to the cleaned up value
+    }
+
+    this->last_res_change_req_src = RESRQ_CV_LETTERBOXED_RES;
 }
 
 void Osu::onFocusGained() {
@@ -1735,7 +1846,7 @@ void Osu::onUIScaleChange(float oldValue, float newValue) {
     if(oldValue != newValue) {
         // delay
         this->bFontReloadScheduled = true;
-        this->bFireResolutionChangedScheduled = true;
+        this->last_res_change_req_src = RESRQ_MISC_MANUAL;
     }
 }
 
@@ -1743,12 +1854,15 @@ void Osu::onUIScaleToDPIChange(float oldValue, float newValue) {
     if((oldValue > 0) != (newValue > 0)) {
         // delay
         this->bFontReloadScheduled = true;
-        this->bFireResolutionChangedScheduled = true;
+        this->last_res_change_req_src = RESRQ_MISC_MANUAL;
     }
 }
 
 void Osu::onLetterboxingChange(float oldValue, float newValue) {
-    if((oldValue > 0) != (newValue > 0)) this->bFireResolutionChangedScheduled = true;  // delay
+    if((oldValue > 0) != (newValue > 0)) {
+        // delay
+        this->last_res_change_req_src = RESRQ_CV_LETTERBOXING;
+    }
 }
 
 // Here, "cursor" is the Windows mouse cursor, not the game cursor
@@ -1796,7 +1910,7 @@ void Osu::updateConfineCursor() {
                                (!is_fullscreen && cv::confine_cursor_windowed.getBool()) ||      //
                                (playing && !(this->pauseMenu && this->pauseMenu->isVisible()));  //
 
-    const bool force_no_confine = !env->winFocused() ||                                            //
+    const bool force_no_confine = !env->winFocused() ||                                             //
                                   (!playing_fposu_nonabs && cv::confine_cursor_never.getBool()) ||  //
                                   this->getModAuto() ||                                             //
                                   this->getModAutopilot() ||                                        //

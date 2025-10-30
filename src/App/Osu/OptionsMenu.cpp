@@ -2550,7 +2550,7 @@ void OptionsMenu::onResolutionSelect() {
     this->contextMenu->end(false, false);
     this->contextMenu->setClickCallback(SA::MakeDelegate<&OptionsMenu::onResolutionSelect2>(this));
 
-    // reposition context monu
+    // reposition context menu
     f32 menu_width = this->contextMenu->getSize().x;
     f32 btn_width = this->resolutionSelectButton->getSize().x;
     f32 menu_offset = btn_width / 2.f - menu_width / 2.f;
@@ -2562,7 +2562,10 @@ void OptionsMenu::onResolutionSelect() {
 }
 
 void OptionsMenu::onResolutionSelect2(const UString &resolution, int /*id*/) {
-    if(env->winFullscreened()) {
+    const bool win_fs = env->winFullscreened();
+    if(win_fs && cv::letterboxing.getBool()) {
+        cv::letterboxed_resolution.setValue(resolution);
+    } else if(win_fs) {
         cv::resolution.setValue(resolution);
     } else {
         cv::windowed_resolution.setValue(resolution);

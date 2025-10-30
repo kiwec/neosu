@@ -70,11 +70,11 @@ Environment::Environment(const std::unordered_map<std::string, std::optional<std
     m_bEnvDebug = false;
 
     m_bRestoreFullscreen = false;  // if minimizing, whether we need to restore fullscreen state on restore
+    m_bMinimizeSupported = true;   // will set to false if our minimize request didn't actually result in minimizing
 
     m_sUsername = {};
     m_sProgDataPath = {};  // local data for McEngine files
     m_sAppDataPath = {};
-    m_hwnd = nullptr;
 
     m_bIsCursorInsideWindow = true;
     m_bCursorClipped = false;
@@ -124,7 +124,8 @@ Environment::~Environment() {
 
 // well this doesn't do much atm... called at the end of engine->onUpdate
 void Environment::update() {
-    m_bIsCursorInsideWindow = winFocused() && m_engine->getScreenRect().contains(getMousePos());
+    // should be handled by the event loop
+    // m_bIsCursorInsideWindow = winFocused() && m_engine->getScreenRect().contains(getMousePos());
 }
 
 Graphics *Environment::createRenderer() {
@@ -650,9 +651,15 @@ void Environment::center() {
 }
 
 void Environment::minimize() {
+    if(!m_bMinimizeSupported) {
+        logIf(m_bEnvDebug, "Minimizing is unsupported, ignoring request.");
+        return;
+    }
+
     if(winFullscreened()) {
         m_bRestoreFullscreen = true;
         SDL_SetWindowFullscreen(m_window, false);
+        SDL_SetWindowBordered(m_window, false);
     }
     if(!SDL_MinimizeWindow(m_window)) {
         debugLog("Failed to minimize window: {:s}", SDL_GetError());
@@ -862,7 +869,7 @@ void Environment::setRawInput(bool raw) {
     }
 
 done:
-    if(raw && (m_winflags & WindowFlags::MOUSE_GRABBED)) {
+    if(raw && (m_winflags & WFL_MOUSE_GRABBED)) {
         // release grab if we enabled raw input
         SDL_SetWindowMouseGrab(m_window, false);
     }
