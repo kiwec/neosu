@@ -261,7 +261,7 @@ void CarouselButton::onMouseInside() {
     // hover sound
     if(engine->getTime() > lastHoverSoundTime + 0.05f)  // to avoid earraep
     {
-        if(engine->hasFocus()) soundEngine->play(osu->getSkin()->getMenuHover());
+        if(env->winFocused()) soundEngine->play(osu->getSkin()->getMenuHover());
 
         lastHoverSoundTime = engine->getTime();
     }

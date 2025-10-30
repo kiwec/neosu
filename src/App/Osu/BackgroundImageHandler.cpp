@@ -111,7 +111,7 @@ void BGImageHandler::update(bool allow_eviction) {
     if(this->disabled) return;
 
     const bool consider_evictions = !this->frozen && allow_eviction &&
-                                    engine->throttledShouldRun(this->eviction_delay_frames) && !engine->isMinimized();
+                                    engine->throttledShouldRun(this->eviction_delay_frames) && !env->winMinimized();
 
     u32 max_to_evict = 0, evicted = 0;
     if(consider_evictions) {

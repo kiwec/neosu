@@ -52,7 +52,7 @@ void UIPauseMenuButton::setBaseScale(float xScale, float yScale) {
 void UIPauseMenuButton::onMouseInside() {
     CBaseUIButton::onMouseInside();
 
-    if(engine->hasFocus()) soundEngine->play(osu->getSkin()->getMenuHover());
+    if(env->winFocused()) soundEngine->play(osu->getSkin()->getMenuHover());
 
     const float animationDuration = 0.09f;
     anim->moveLinear(&this->vScale.x, this->vBaseScale.x * this->fScaleMultiplier, animationDuration, true);

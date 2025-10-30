@@ -104,9 +104,7 @@ class Engine final : public KeyboardListener {
     }
     // clang-format on
 
-    [[nodiscard]] constexpr bool hasFocus() const { return this->bHasFocus; }
     [[nodiscard]] constexpr bool isDrawing() const { return this->bDrawing; }
-    [[nodiscard]] constexpr bool isMinimized() const { return this->bIsMinimized; }
 
     // debugging/console
     [[nodiscard]] inline std::shared_ptr<ConsoleBox> getConsoleBox() const {
@@ -135,10 +133,6 @@ class Engine final : public KeyboardListener {
     McRect screenRect;
     vec2 vNewScreenSize{0.f};
     bool bResolutionChange;
-
-    // window
-    bool bHasFocus;
-    bool bIsMinimized;
 
     // engine gui, mostly for debugging
     CBaseUIContainer *guiContainer;

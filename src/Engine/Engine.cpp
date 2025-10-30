@@ -53,10 +53,6 @@ Engine::Engine() {
 
     cv::engine_throttle.setCallback(SA::MakeDelegate<&Engine::onEngineThrottleChanged>(this));
 
-    // window
-    this->bHasFocus = false;
-    this->bIsMinimized = false;
-
     // screen
     this->bResolutionChange = false;
     this->screenRect = {{}, env->getWindowSize()};
@@ -235,7 +231,7 @@ void Engine::loadApp() {
 
 void Engine::onPaint() {
     VPROF_BUDGET("Engine::onPaint", VPROF_BUDGETGROUP_DRAW);
-    if(this->bShuttingDown || this->bIsMinimized) return;
+    if(this->bShuttingDown || env->winMinimized()) return;
 
     this->bDrawing = true;
     {
@@ -365,8 +361,6 @@ void Engine::onUpdate() {
 }
 
 void Engine::onFocusGained() {
-    this->bHasFocus = true;
-
     logIfCV(debug_engine, "got focus");
 
     if(soundEngine) soundEngine->onFocusGained();  // switch shared->exclusive if applicable
@@ -374,8 +368,6 @@ void Engine::onFocusGained() {
 }
 
 void Engine::onFocusLost() {
-    this->bHasFocus = false;
-
     logIfCV(debug_engine, "lost focus");
 
     for(auto &keyboard : this->keyboards) {
@@ -386,33 +378,21 @@ void Engine::onFocusLost() {
     if(app) app->onFocusLost();
 
     // auto minimize on certain conditions
-    if(env->isFullscreen() || env->isFullscreenWindowedBorderless()) {
-        if((!env->isFullscreenWindowedBorderless() && cv::minimize_on_focus_lost_if_fullscreen.getBool()) ||
-           (env->isFullscreenWindowedBorderless() &&
-            cv::minimize_on_focus_lost_if_borderless_windowed_fullscreen.getBool())) {
-            env->minimize();
-        }
+    if(env->winFullscreened() && (cv::minimize_on_focus_lost_if_borderless_windowed_fullscreen.getBool() ||
+                                  cv::minimize_on_focus_lost_if_fullscreen.getBool())) {
+        env->minimize();
     }
 }
 
 void Engine::onMinimized() {
-    this->bIsMinimized = true;
-    this->bHasFocus = false;
-
     logIfCV(debug_engine, "window minimized");
 
     if(app) app->onMinimized();
 }
 
-void Engine::onMaximized() {
-    this->bIsMinimized = false;
-
-    logIfCV(debug_engine, "window maximized");
-}
+void Engine::onMaximized() { logIfCV(debug_engine, "window maximized"); }
 
 void Engine::onRestored() {
-    this->bIsMinimized = false;
-
     logIfCV(debug_engine, "window restored");
 
     if(app) app->onRestored();
@@ -424,7 +404,6 @@ void Engine::onResolutionChange(vec2 newResolution) {
 
     // NOTE: Windows [Show Desktop] button in the superbar causes (0,0)
     if(newResolution.x < 2 || newResolution.y < 2) {
-        this->bIsMinimized = true;
         newResolution = vec2(2, 2);
     }
 
@@ -504,7 +483,7 @@ void Engine::focus() { env->focus(); }
 void Engine::center() { env->center(); }
 
 void Engine::toggleFullscreen() {
-    if(env->isFullscreen())
+    if(env->winFullscreened())
         env->disableFullscreen();
     else
         env->enableFullscreen();
@@ -541,7 +520,7 @@ void Engine::runtime_assert(bool cond, const char *reason) {
 }
 
 void Engine::requestResolutionChange(vec2 newResolution) {
-    if(this->bIsMinimized) return;
+    if(env->winMinimized()) return;
     if(newResolution == this->vNewScreenSize) return;
 
     this->vNewScreenSize = newResolution;
@@ -570,10 +549,10 @@ void _printsize(void) {
 void _borderless(void) {
     if(cv::fullscreen_windowed_borderless.getBool()) {
         cv::fullscreen_windowed_borderless.setValue(0.0f);
-        if(env->isFullscreen()) env->disableFullscreen();
+        if(env->winFullscreened()) env->disableFullscreen();
     } else {
         cv::fullscreen_windowed_borderless.setValue(1.0f);
-        if(!env->isFullscreen()) env->enableFullscreen();
+        if(!env->winFullscreened()) env->enableFullscreen();
     }
 }
 
@@ -581,7 +560,7 @@ void _minimize(void) { env->minimize(); }
 
 void _maximize(void) { env->maximize(); }
 
-void _toggleresizable(void) { env->setWindowResizable(!env->isWindowResizable()); }
+void _toggleresizable(void) { env->setWindowResizable(!env->winResizable()); }
 
 void _focus(void) { engine->focus(); }
 

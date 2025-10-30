@@ -294,7 +294,7 @@ void ModFPoSu::update() {
         // calculate ray-mesh intersection and set new mouse pos
         vec2 newMousePos = this->intersectRayMesh(this->camera->getPos(), this->camera->getViewDirection());
 
-        const bool osCursorVisible = (env->isCursorVisible() || !env->isCursorInWindow() || !engine->hasFocus());
+        const bool osCursorVisible = (env->isCursorVisible() || !env->isCursorInWindow() || !env->winFocused());
 
         if(!osCursorVisible) {
             if(newMousePos.x != 0.0f || newMousePos.y != 0.0f) {

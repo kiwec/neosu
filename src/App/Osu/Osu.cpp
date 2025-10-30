@@ -1420,22 +1420,22 @@ bool Osu::shouldFallBackToLegacySliderRenderer() {
 
 void Osu::onResolutionChanged(vec2 newResolution) {
     debugLog("Osu::onResolutionChanged({:d}, {:d}), minimized = {:d}", (int)newResolution.x, (int)newResolution.y,
-             (int)engine->isMinimized());
+             (int)env->winMinimized());
 
-    if(engine->isMinimized()) return;  // ignore if minimized
+    if(env->winMinimized()) return;  // ignore if minimized
 
     const float prevUIScale = getUIScale();
 
     // save setting
     auto res_str = UString::format("%ix%i", (i32)newResolution.x, (i32)newResolution.y);
-    if(env->isFullscreen()) {
+    if(env->winFullscreened()) {
         cv::resolution.setValue(res_str, false);
     } else {
         cv::windowed_resolution.setValue(res_str, false);
     }
 
     // We just force disable letterboxing while windowed.
-    if(cv::letterboxing.getBool() && env->isFullscreen()) {
+    if(cv::letterboxing.getBool() && env->winFullscreened()) {
         // clamp upwards to internal resolution (osu_resolution)
         if(this->internalRect.getWidth() < this->vInternalResolution2.x)
             this->internalRect.setWidth(this->vInternalResolution2.x);
@@ -1535,7 +1535,7 @@ void Osu::updateMouseSettings() {
 }
 
 void Osu::updateWindowsKeyDisable() {
-    const bool isPlayerPlaying = engine->hasFocus() && this->isInPlayMode() &&
+    const bool isPlayerPlaying = env->winFocused() && this->isInPlayMode() &&
                                  (!(this->map_iface->isPaused() || this->map_iface->isContinueScheduled()) ||
                                   this->map_iface->isRestartScheduled()) &&
                                  !cv::mod_autoplay.getBool();
@@ -1557,7 +1557,7 @@ void Osu::updateWindowsKeyDisable() {
 void Osu::fireResolutionChanged() { this->onResolutionChanged(this->getVirtScreenSize()); }
 
 void Osu::onWindowedResolutionChanged(std::string_view args) {
-    if(env->isFullscreen()) return;
+    if(env->winFullscreened()) return;
 
     auto parsed = Parsing::parse_resolution(args);
     if(!parsed.has_value()) {
@@ -1574,7 +1574,7 @@ void Osu::onWindowedResolutionChanged(std::string_view args) {
 }
 
 void Osu::onInternalResolutionChanged(std::string_view args) {
-    if(!env->isFullscreen()) return;
+    if(!env->winFullscreened()) return;
 
     auto parsed = Parsing::parse_resolution(args);
     if(!parsed.has_value()) {
@@ -1592,7 +1592,7 @@ void Osu::onInternalResolutionChanged(std::string_view args) {
     // fullscreen or not in fullscreen transition
     bool isTransitioningIntoFullscreenHack =
         g->getResolution().x < env->getNativeScreenSize().x || g->getResolution().y < env->getNativeScreenSize().y;
-    if(!env->isFullscreen() || !isTransitioningIntoFullscreenHack) {
+    if(!env->winFullscreened() || !isTransitioningIntoFullscreenHack) {
         if(newInternalResolution.x > g->getResolution().x) newInternalResolution.x = g->getResolution().x;
         if(newInternalResolution.y > g->getResolution().y) newInternalResolution.y = g->getResolution().y;
     }
@@ -1786,17 +1786,17 @@ void Osu::updateCursorVisibility() {
 
 void Osu::updateConfineCursor() {
     McRect clip{};
-    const bool effectivelyFS = env->isFullscreen() || env->isFullscreenWindowedBorderless();
+    const bool is_fullscreen = env->winFullscreened();
     const bool playing = this->isInPlayMode();
     // we need relative mode (rawinput) for fposu without absolute mode
     const bool playing_fposu_nonabs = (playing && cv::mod_fposu.getBool() && !cv::fposu_absolute_mode.getBool());
 
     const bool might_confine = (playing_fposu_nonabs) ||                                         //
-                               (effectivelyFS && cv::confine_cursor_fullscreen.getBool()) ||     //
-                               (!effectivelyFS && cv::confine_cursor_windowed.getBool()) ||      //
+                               (is_fullscreen && cv::confine_cursor_fullscreen.getBool()) ||     //
+                               (!is_fullscreen && cv::confine_cursor_windowed.getBool()) ||      //
                                (playing && !(this->pauseMenu && this->pauseMenu->isVisible()));  //
 
-    const bool force_no_confine = !engine->hasFocus() ||                                            //
+    const bool force_no_confine = !env->winFocused() ||                                            //
                                   (!playing_fposu_nonabs && cv::confine_cursor_never.getBool()) ||  //
                                   this->getModAuto() ||                                             //
                                   this->getModAutopilot() ||                                        //

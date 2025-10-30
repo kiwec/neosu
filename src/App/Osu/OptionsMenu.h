@@ -146,7 +146,6 @@ class OptionsMenu final : public ScreenBackable, public NotificationOverlayKeyLi
 
     // options
     void onFullscreenChange(CBaseUICheckbox *checkbox);
-    void onBorderlessWindowedChange(CBaseUICheckbox *checkbox);
     void onDPIScalingChange(CBaseUICheckbox *checkbox);
     void onRawInputToAbsoluteWindowChange(CBaseUICheckbox *checkbox);
     void openCurrentSkinFolder();

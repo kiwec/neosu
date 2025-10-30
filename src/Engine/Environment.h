@@ -17,6 +17,39 @@
 #include <filesystem>
 #include <functional>
 
+namespace EnvWindowFlags {
+// clang-format off
+// copied from SDL3/SDL_video.h::SDL_WindowFlags
+enum type : uint64_t {
+FULLSCREEN =            0x0000000000000001,    /**< window is in fullscreen mode */
+OPENGL =                0x0000000000000002,    /**< window usable with OpenGL context */
+OCCLUDED =              0x0000000000000004,    /**< window is occluded */
+HIDDEN =                0x0000000000000008,    /**< window is neither mapped onto the desktop nor shown in the taskbar/dock/window list; SDL_ShowWindow() is required for it to become visible */
+BORDERLESS =            0x0000000000000010,    /**< no window decoration */
+RESIZABLE =             0x0000000000000020,    /**< window can be resized */
+MINIMIZED =             0x0000000000000040,    /**< window is minimized */
+MAXIMIZED =             0x0000000000000080,    /**< window is maximized */
+MOUSE_GRABBED =         0x0000000000000100,    /**< window has grabbed mouse input */
+INPUT_FOCUS =           0x0000000000000200,    /**< window has input focus */
+MOUSE_FOCUS =           0x0000000000000400,    /**< window has mouse focus */
+EXTERNAL =              0x0000000000000800,    /**< window not created by SDL */
+MODAL =                 0x0000000000001000,    /**< window is modal */
+HIGH_PIXEL_DENSITY =    0x0000000000002000,    /**< window uses high pixel density back buffer if possible */
+MOUSE_CAPTURE =         0x0000000000004000,    /**< window has mouse captured (unrelated to MOUSE_GRABBED) */
+MOUSE_RELATIVE_MODE =   0x0000000000008000,    /**< window has relative mode enabled */
+ALWAYS_ON_TOP =         0x0000000000010000,    /**< window should always be above others */
+UTILITY =               0x0000000000020000,    /**< window should be treated as a utility window, not showing in the task bar and window list */
+TOOLTIP =               0x0000000000040000,    /**< window should be treated as a tooltip and does not get mouse or keyboard focus, requires a parent window */
+POPUP_MENU =            0x0000000000080000,    /**< window should be treated as a popup menu, requires a parent window */
+KEYBOARD_GRABBED =      0x0000000000100000,    /**< window has grabbed keyboard input */
+VULKAN =                0x0000000010000000,    /**< window usable for Vulkan surface */
+METAL =                 0x0000000020000000,    /**< window usable for Metal view */
+TRANSPARENT =           0x0000000040000000,    /**< window with transparent buffer */
+NOT_FOCUSABLE =         0x0000000080000000,    /**< window should not be focusable */
+};
+// clang-format on
+}  // namespace EnvWindowFlags
+
 typedef struct SDL_Window SDL_Window;
 typedef struct SDL_Cursor SDL_Cursor;
 typedef struct SDL_Environment SDL_Environment;
@@ -157,7 +190,6 @@ class Environment {
     bool setWindowPos(int x, int y);
     bool setWindowSize(int width, int height);
     void setWindowResizable(bool resizable);
-    void setFullscreenWindowedBorderless(bool fullscreenWindowedBorderless);
     void setMonitor(int monitor);
     [[nodiscard]] inline float getDisplayRefreshRate() const { return m_fDisplayHz; }
     [[nodiscard]] inline float getDisplayRefreshTime() const { return m_fDisplayHzSecs; }
@@ -169,12 +201,21 @@ class Environment {
     [[nodiscard]] vec2 getNativeScreenSize() const;
     [[nodiscard]] McRect getDesktopRect() const;
     [[nodiscard]] McRect getWindowRect() const;
-    [[nodiscard]] inline bool isFullscreenWindowedBorderless() const { return m_bFullscreenWindowedBorderless; }
     [[nodiscard]] int getDPI() const;
     [[nodiscard]] inline float getDPIScale() const { return (float)getDPI() / 96.0f; }
-    [[nodiscard]] inline bool isFullscreen() const { return m_bFullscreen; }
-    [[nodiscard]] inline bool isWindowResizable() const { return m_bResizable; }
-    [[nodiscard]] inline bool hasFocus() const { return m_bHasFocus; }
+
+    // window state queries
+    [[nodiscard]] inline bool winFullscreened() const {
+        // we do not use "real" fullscreen mode, so maximized+borderless+unoccluded is the same as fullscreen
+        return (m_winflags & WindowFlags::FULLSCREEN) ||
+               (!(m_winflags & WindowFlags::OCCLUDED) &&
+                (m_winflags & (WindowFlags::BORDERLESS | WindowFlags::MAXIMIZED)) ==
+                    (WindowFlags::BORDERLESS | WindowFlags::MAXIMIZED));
+    }
+    [[nodiscard]] inline bool winResizable() const { return m_winflags & WindowFlags::RESIZABLE; }
+    [[nodiscard]] inline bool winFocused() const { return m_winflags & WindowFlags::INPUT_FOCUS; }
+    [[nodiscard]] inline bool winMinimized() const { return m_winflags & WindowFlags::MINIMIZED; }
+    [[nodiscard]] inline bool winMaximized() const { return m_winflags & WindowFlags::MAXIMIZED; }
 
     [[nodiscard]] bool isPointValid(vec2 point) const;  // whether an x,y coordinate lands on an actual display
 
@@ -185,7 +226,7 @@ class Environment {
     [[nodiscard]] inline vec2 getMousePos() const { return m_vLastAbsMousePos; }
     [[nodiscard]] inline const McRect &getCursorClip() const { return m_cursorClipRect; }
     [[nodiscard]] inline CURSORTYPE getCursor() const { return m_cursorType; }
-    [[nodiscard]] inline bool isOSMouseInputRaw() const { return m_bActualRawInputState; }
+    [[nodiscard]] inline bool isOSMouseInputRaw() const { return m_winflags & WindowFlags::MOUSE_RELATIVE_MODE; }
 
     void setCursor(CURSORTYPE cur);
     void setCursorVisible(bool visible);
@@ -210,6 +251,8 @@ class Environment {
     [[nodiscard]] constexpr bool isWayland() const { return m_bIsWayland; }
 
    protected:
+    using WindowFlags = EnvWindowFlags::type;
+
     std::unordered_map<std::string, std::optional<std::string>> m_mArgMap;
     std::vector<std::string> m_vCmdLine;
     std::unique_ptr<Engine> m_engine;
@@ -223,8 +266,6 @@ class Environment {
     bool m_bDrawing;
     bool m_bIsRestartScheduled;
 
-    bool m_bMinimized;
-    bool m_bHasFocus;
     bool m_bRestoreFullscreen;
 
     // cache
@@ -251,13 +292,10 @@ class Environment {
     float m_fDisplayHzSecs;
 
     // window
+    void updateWindowFlags();
+    WindowFlags m_winflags{};  // initialized when window is created, updated on new window events in the event loop
+
     bool m_bDPIOverride;
-    bool m_bResizable;
-    bool m_bFullscreen;
-    bool m_bFullscreenWindowedBorderless;
-    inline void onFullscreenWindowBorderlessChange(float newValue) {
-        setFullscreenWindowedBorderless(!!static_cast<int>(newValue));
-    }
     inline void onMonitorChange(float oldValue, float newValue) {
         if(oldValue != newValue) setMonitor(static_cast<int>(newValue));
     }
@@ -278,7 +316,6 @@ class Environment {
     bool m_bIsCursorInsideWindow;
     bool m_bCursorClipped;
     bool m_bCursorVisible;
-    bool m_bActualRawInputState;
     McRect m_cursorClipRect;
     CURSORTYPE m_cursorType;
     std::map<CURSORTYPE, SDL_Cursor *> m_mCursorIcons;

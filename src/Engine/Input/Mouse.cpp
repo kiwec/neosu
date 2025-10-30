@@ -109,8 +109,7 @@ void Mouse::update() {
         if(env->isCursorClipped()) {
             clipRect = env->getCursorClip();
             doClip = true;
-        } else if((env->isFullscreen() || env->isFullscreenWindowedBorderless()) &&
-                  !env->isPointValid(env->getWindowPos() + newAbs)) {
+        } else if(env->winFullscreened() && !env->isPointValid(env->getWindowPos() + newAbs)) {
             // quickfix to avoid flashing cursor along the edges of the window when unconfined + in raw input
             clipRect = engine->getScreenRect();
             doClip = true;
@@ -182,9 +181,7 @@ void Mouse::onButtonChange(ButtonEvent ev) {
     }
 }
 
-void Mouse::setPos(vec2 newPos) {
-    this->vPos = newPos;
-}
+void Mouse::setPos(vec2 newPos) { this->vPos = newPos; }
 
 void Mouse::setOffset(vec2 offset) {
     vec2 oldOffset = this->vOffset;

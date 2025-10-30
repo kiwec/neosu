@@ -11,8 +11,6 @@
 #include "ConVar.h"
 #include "Thread.h"
 
-#include "Osu.h"  // TODO: remove these hacks
-
 #include "DirectX11Interface.h"
 #include "SDLGLInterface.h"
 
@@ -71,12 +69,7 @@ Environment::Environment(const std::unordered_map<std::string, std::optional<std
 
     m_bEnvDebug = false;
 
-    m_bResizable = false;  // window is created non-resizable
-    m_bFullscreen = false;
-    m_bFullscreenWindowedBorderless = false;
     m_bRestoreFullscreen = false;  // if minimizing, whether we need to restore fullscreen state on restore
-    m_bMinimized = false;
-    m_bHasFocus = true;
 
     m_sUsername = {};
     m_sProgDataPath = {};  // local data for McEngine files
@@ -84,7 +77,6 @@ Environment::Environment(const std::unordered_map<std::string, std::optional<std
     m_hwnd = nullptr;
 
     m_bIsCursorInsideWindow = true;
-    m_bActualRawInputState = false;
     m_bCursorClipped = false;
     m_bCursorVisible = false;
     m_cursorType = CURSORTYPE::CURSOR_NORMAL;
@@ -117,8 +109,6 @@ Environment::Environment(const std::unordered_map<std::string, std::optional<std
 
     // setup callbacks
     cv::debug_env.setCallback(SA::MakeDelegate<&Environment::onLogLevelChange>(this));
-    cv::fullscreen_windowed_borderless.setCallback(
-        SA::MakeDelegate<&Environment::onFullscreenWindowBorderlessChange>(this));
     cv::monitor.setCallback(SA::MakeDelegate<&Environment::onMonitorChange>(this));
 
     // set high priority right away
@@ -134,7 +124,7 @@ Environment::~Environment() {
 
 // well this doesn't do much atm... called at the end of engine->onUpdate
 void Environment::update() {
-    m_bIsCursorInsideWindow = m_bHasFocus && m_engine->getScreenRect().contains(getMousePos());
+    m_bIsCursorInsideWindow = winFocused() && m_engine->getScreenRect().contains(getMousePos());
 }
 
 Graphics *Environment::createRenderer() {
@@ -639,7 +629,7 @@ void Environment::openFileBrowser(std::string_view initialpath) const noexcept {
 }
 
 void Environment::focus() {
-    if(m_bMinimized) {
+    if(winMinimized()) {
         if(!SDL_RestoreWindow(m_window)) {
             debugLog("Failed to restore window: {:s}", SDL_GetError());
         }
@@ -660,81 +650,38 @@ void Environment::center() {
 }
 
 void Environment::minimize() {
-    m_bHasFocus = false;
-    m_bMinimized = true;
-    if(m_bFullscreen || m_bFullscreenWindowedBorderless) {
+    if(winFullscreened()) {
         m_bRestoreFullscreen = true;
-        syncWindow();
         SDL_SetWindowFullscreen(m_window, false);
-        syncWindow();
     }
     if(!SDL_MinimizeWindow(m_window)) {
         debugLog("Failed to minimize window: {:s}", SDL_GetError());
-        m_bMinimized = false;
-        m_bHasFocus = true;
-        return;
     }
 }
 
 void Environment::maximize() {
     if(!SDL_MaximizeWindow(m_window)) {
         debugLog("Failed to maximize window: {:s}", SDL_GetError());
-        return;
     }
 }
 
 // TODO: implement exclusive fullscreen for dx11 backend
 void Environment::enableFullscreen() {
     // NOTE: "fake" fullscreen since we don't want a videomode change
-    // XXX: (doesn't this make fullscreen_windowed_borderless irrelevant?)
     if(!SDL_SetWindowFullscreen(m_window, true)) {
         debugLog("Failed to enable fullscreen: {:s}", SDL_GetError());
-        return;
-    }
-
-    m_bFullscreen = true;
-    cv::fullscreen.setValue(m_bFullscreen, false);
-
-    syncWindow();
-
-    // TODO: fix/remove the need to have these here
-    if(osu) {
-        auto res = cv::resolution.getString().c_str();
-        osu->onInternalResolutionChanged(res);
     }
 }
 
 void Environment::disableFullscreen() {
     if(!SDL_SetWindowFullscreen(m_window, false)) {
         debugLog("Failed to disable fullscreen: {:s}", SDL_GetError());
-        return;
-    }
-
-    m_bFullscreen = false;
-    cv::fullscreen.setValue(m_bFullscreen, false);
-
-    syncWindow();
-
-    if(osu) {
-        auto res = cv::windowed_resolution.getString().c_str();
-        osu->onWindowedResolutionChanged(res);
-    }
-}
-
-void Environment::setFullscreenWindowedBorderless(bool fullscreenWindowedBorderless) {
-    m_bFullscreenWindowedBorderless = fullscreenWindowedBorderless;
-
-    if(isFullscreen()) {
-        disableFullscreen();
-        enableFullscreen();
     }
 }
 
 void Environment::setWindowTitle(const UString &title) { SDL_SetWindowTitle(m_window, title.toUtf8()); }
 
-void Environment::syncWindow() {
-    if(m_window) SDL_SyncWindow(m_window);
-}
+void Environment::syncWindow() { SDL_SyncWindow(m_window); }
 
 bool Environment::setWindowPos(int x, int y) { return SDL_SetWindowPosition(m_window, x, y); }
 
@@ -744,15 +691,12 @@ bool Environment::setWindowSize(int width, int height) { return SDL_SetWindowSiz
 // "You can't change the resizable state of a fullscreen window."
 void Environment::setWindowResizable(bool resizable) {
     if(m_bIsKMSDRM) {
-        m_bResizable = false;
         return;
     }
     if(!SDL_SetWindowResizable(m_window, resizable)) {
         debugLog("Failed to set window {:s} (currently {:s}): {:s}", resizable ? "resizable" : "non-resizable",
-                 m_bResizable ? "resizable" : "non-resizable", SDL_GetError());
-        return;
+                 winResizable() ? "resizable" : "non-resizable", SDL_GetError());
     }
-    m_bResizable = resizable;
 }
 
 void Environment::setMonitor(int monitor) {
@@ -764,7 +708,7 @@ void Environment::setMonitor(int monitor) {
         initMonitors(true);
     if(m_mMonitors.contains(monitor)) {
         // SDL: "If the window is in an exclusive fullscreen or maximized state, this request has no effect."
-        if(m_bFullscreen || m_bFullscreenWindowedBorderless) {
+        if(winFullscreened()) {
             disableFullscreen();
             syncWindow();
             success = setWindowPos(SDL_WINDOWPOS_CENTERED_DISPLAY(monitor), SDL_WINDOWPOS_CENTERED_DISPLAY(monitor));
@@ -902,11 +846,9 @@ void Environment::setCursor(CURSORTYPE cur) {
 }
 
 void Environment::setRawInput(bool raw) {
-    m_bActualRawInputState = raw;
-
     if(raw == SDL_GetWindowRelativeMouseMode(m_window)) {
         // nothing to do
-        return;
+        goto done;
     }
 
     if(!raw && mouse) {
@@ -916,13 +858,16 @@ void Environment::setRawInput(bool raw) {
 
     if(!SDL_SetWindowRelativeMouseMode(m_window, raw)) {
         debugLog("FIXME (handle error): SDL_SetWindowRelativeMouseMode failed: {:s}", SDL_GetError());
-        m_bActualRawInputState = !raw;
+        raw = !raw;
     }
 
-    if(m_bActualRawInputState) {
-        // always release grab if enabled
+done:
+    if(raw && (m_winflags & WindowFlags::MOUSE_GRABBED)) {
+        // release grab if we enabled raw input
         SDL_SetWindowMouseGrab(m_window, false);
     }
+    // to update MOUSE_RELATIVE_MODE
+    updateWindowFlags();
 }
 
 void Environment::setCursorVisible(bool visible) {
@@ -993,6 +938,11 @@ void Environment::listenToTextInput(bool listen) {
 //******************************//
 //	internal helpers/callbacks  //
 //******************************//
+
+void Environment::updateWindowFlags() {
+    assert(m_window);
+    m_winflags = static_cast<WindowFlags>(SDL_GetWindowFlags(m_window));
+}
 
 // convar callback
 void Environment::onLogLevelChange(float newval) {

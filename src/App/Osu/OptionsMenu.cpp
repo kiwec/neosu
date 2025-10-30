@@ -661,10 +661,6 @@ OptionsMenu::OptionsMenu() : ScreenBackable() {
     this->resolutionLabel = (CBaseUILabel *)resolutionSelect->baseElems[1];
     this->fullscreenCheckbox = this->addCheckbox("Fullscreen");
     this->fullscreenCheckbox->setChangeCallback(SA::MakeDelegate<&OptionsMenu::onFullscreenChange>(this));
-    this->addCheckbox("Borderless",
-                      "May cause extra input lag if enabled.\nDepends on your operating system version/updates.",
-                      &cv::fullscreen_windowed_borderless)
-        ->setChangeCallback(SA::MakeDelegate<&OptionsMenu::onBorderlessWindowedChange>(this));
     this->addCheckbox("Keep Aspect Ratio",
                       "Black borders instead of a stretched image.\nOnly relevant if fullscreen is enabled, and "
                       "letterboxing is disabled.\nUse the two position sliders below to move the viewport around.",
@@ -1724,9 +1720,7 @@ void OptionsMenu::onResolutionChange(vec2 newResolution) {
 
     // HACKHACK: magic
     if constexpr(Env::cfg(OS::WINDOWS)) {
-        if((env->isFullscreen() && env->isFullscreenWindowedBorderless() &&
-            (int)newResolution.y == (int)env->getNativeScreenSize().y + 1))
-            newResolution.y--;
+        if((env->winFullscreened() && (int)newResolution.y == (int)env->getNativeScreenSize().y + 1)) newResolution.y--;
     }
 
     if(this->resolutionLabel != nullptr)
@@ -1852,7 +1846,7 @@ void OptionsMenu::updateLayout() {
         this->onResetUpdate(element->resetButton);
     }
 
-    if(this->fullscreenCheckbox != nullptr) this->fullscreenCheckbox->setChecked(env->isFullscreen(), false);
+    if(this->fullscreenCheckbox != nullptr) this->fullscreenCheckbox->setChecked(env->winFullscreened(), false);
 
     this->updateSkinNameLabel();
     this->updateNotelockSelectLabel();
@@ -2362,23 +2356,6 @@ void OptionsMenu::onFullscreenChange(CBaseUICheckbox *checkbox) {
     }
 }
 
-void OptionsMenu::onBorderlessWindowedChange(CBaseUICheckbox *checkbox) {
-    this->onCheckboxChange(checkbox);
-
-    if(checkbox->isChecked() && !env->isFullscreen()) env->enableFullscreen();
-
-    // and update reset button as usual
-    for(auto &element : this->elemContainers) {
-        for(int e = 0; e < element->baseElems.size(); e++) {
-            if(element->baseElems[e] == checkbox) {
-                this->onResetUpdate(element->resetButton);
-
-                break;
-            }
-        }
-    }
-}
-
 void OptionsMenu::onDPIScalingChange(CBaseUICheckbox *checkbox) {
     for(auto &element : this->elemContainers) {
         for(int e = 0; e < element->baseElems.size(); e++) {
@@ -2585,7 +2562,7 @@ void OptionsMenu::onResolutionSelect() {
 }
 
 void OptionsMenu::onResolutionSelect2(const UString &resolution, int /*id*/) {
-    if(env->isFullscreen()) {
+    if(env->winFullscreened()) {
         cv::resolution.setValue(resolution);
     } else {
         cv::windowed_resolution.setValue(resolution);

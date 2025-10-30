@@ -151,7 +151,7 @@ bool DirectX11Interface::createSwapchain() {
 
     // dxvk-native throws an exception on wayland that we can't catch...
     // i shouldn't be wasting time working around external bugs, but this is one of them
-    BOOL startWindowed = env->isWayland() || !(env->isFullscreen() && !env->isFullscreenWindowedBorderless());
+    BOOL startWindowed = env->isWayland() || !env->winFullscreened();
     if(!startWindowed) {
         vec2 desktopRect = env->getNativeScreenSize();
         startingWidth = (UINT)desktopRect.x;

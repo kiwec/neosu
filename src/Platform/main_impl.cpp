@@ -45,13 +45,13 @@ void SDLMain::setBgFPS() {
 void SDLMain::fps_max_callback(float newVal) {
     int newFps = static_cast<int>(newVal);
     if((newFps == 0 || newFps >= 30)) m_iFpsMax = newFps;
-    if(m_bHasFocus) setFgFPS();
+    if(winFocused()) setFgFPS();
 }
 
 void SDLMain::fps_max_background_callback(float newVal) {
     int newFps = static_cast<int>(newVal);
     if(newFps >= 0) m_iFpsMaxBG = newFps;
-    if(!m_bHasFocus) setBgFPS();
+    if(!winFocused()) setBgFPS();
 }
 
 SDLMain::~SDLMain() {
@@ -101,6 +101,8 @@ SDL_AppResult SDLMain::initialize() {
     syncWindow();
 
     setWindowResizable(true);
+
+    updateWindowFlags();
 
     // initialize mouse position
     {
@@ -207,22 +209,19 @@ SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
         case SDL_EVENT_WINDOW_ENTER_FULLSCREEN:		 case SDL_EVENT_WINDOW_LEAVE_FULLSCREEN:  case SDL_EVENT_WINDOW_DESTROYED:
         case SDL_EVENT_WINDOW_HDR_STATE_CHANGED:
             // clang-format on
+            updateWindowFlags();  // update our window flags enum from current SDL window flags
             switch(event->window.type) {
                 case SDL_EVENT_WINDOW_FOCUS_GAINED:
-                    m_bHasFocus = true;
                     m_engine->onFocusGained();
                     setFgFPS();
                     break;
 
                 case SDL_EVENT_WINDOW_FOCUS_LOST:
-                    m_bHasFocus = false;
                     m_engine->onFocusLost();
                     setBgFPS();
                     break;
 
                 case SDL_EVENT_WINDOW_MAXIMIZED:
-                    m_bMinimized = false;
-                    m_bHasFocus = true;
                     m_engine->onMaximized();
                     setFgFPS();
                     break;
@@ -237,44 +236,34 @@ SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
                     break;
 
                 case SDL_EVENT_WINDOW_MINIMIZED:
-                    m_bMinimized = true;
-                    m_bHasFocus = false;
                     m_engine->onMinimized();
                     setBgFPS();
                     break;
 
                 case SDL_EVENT_WINDOW_RESTORED:
-                    if(m_bMinimized && m_bRestoreFullscreen) {
-                        syncWindow();
+                    if(m_bRestoreFullscreen) {
+                        m_bRestoreFullscreen = false;
                         SDL_SetWindowFullscreen(m_window, true);
-                        syncWindow();
                     }
-                    m_bMinimized = false;
-                    m_bHasFocus = true;
                     m_engine->onRestored();
                     setFgFPS();
                     break;
 
                 case SDL_EVENT_WINDOW_ENTER_FULLSCREEN:
                     cv::fullscreen.setValue(true, false);
-                    m_bFullscreen = true;
-                    m_bMinimized = false;
                     m_bRestoreFullscreen = false;
                     break;
 
                 case SDL_EVENT_WINDOW_LEAVE_FULLSCREEN:
                     cv::fullscreen.setValue(false, false);
-                    m_bFullscreen = false;
                     break;
 
                 case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
                 case SDL_EVENT_WINDOW_RESIZED:
                     // don't trust the event coordinates, the window might have magically been resized in between somehow
                     // vec2(static_cast<float>(event->window.data1), static_cast<float>(event->window.data2)));
-                    if(!m_bMinimized) {
-                        vec2 resize = (m_bFullscreen || m_bFullscreenWindowedBorderless || m_bRestoreFullscreen)
-                                          ? getNativeScreenSize()
-                                          : getWindowSize();
+                    if(!winMinimized() && !m_bRestoreFullscreen) {
+                        vec2 resize = winFullscreened() ? getNativeScreenSize() : getWindowSize();
                         m_engine->requestResolutionChange(resize);
                         setFgFPS();
                     }
@@ -303,6 +292,7 @@ SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
         case SDL_EVENT_DISPLAY_MOVED:				  case SDL_EVENT_DISPLAY_DESKTOP_MODE_CHANGED: case SDL_EVENT_DISPLAY_CURRENT_MODE_CHANGED:
         case SDL_EVENT_DISPLAY_CONTENT_SCALE_CHANGED:
             // clang-format on
+            updateWindowFlags();
             switch(event->display.type) {
                 case SDL_EVENT_DISPLAY_CONTENT_SCALE_CHANGED:
                     m_engine->onDPIChange();
@@ -381,7 +371,7 @@ SDL_AppResult SDLMain::iterate() {
         VPROF_BUDGET("FPSLimiter", VPROF_BUDGETGROUP_SLEEP);
 
         // if minimized or unfocused, use BG fps, otherwise use fps_max (if 0 it's unlimited)
-        const int targetFPS = (m_bMinimized || !m_bHasFocus)
+        const int targetFPS = (winMinimized() || !winFocused())
                                   ? m_iFpsMaxBG
                                   : ((osu && osu->isInPlayMode()) ? m_iFpsMax : cv::fps_max_menu.getInt());
         FPSLimiter::limit_frames(targetFPS);
@@ -530,6 +520,9 @@ bool SDLMain::createWindow() {
         cv::fps_max_menu.setDefaultDouble(hz);
         cv::fps_max_menu.setValue(hz);
     }
+
+    // initialize window flags
+    updateWindowFlags();
 
     return true;
 }
