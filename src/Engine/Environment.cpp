@@ -115,11 +115,6 @@ Environment::Environment(const std::unordered_map<std::string, std::optional<std
     m_bUsingDX11 = Env::cfg(REND::DX11) && (!Env::cfg(REND::GL | REND::GLES32) ||
                                             (m_mArgMap.contains("-directx") || m_mArgMap.contains("-dx11")));
 
-    if(m_bIsX11) {
-        // workaround alt tab bug (cursor getting stuck confined for 5 seconds)
-        SDL_SetX11EventHook(Environment::sdl_x11eventhook, this);
-    }
-
     // setup callbacks
     cv::debug_env.setCallback(SA::MakeDelegate<&Environment::onLogLevelChange>(this));
     cv::fullscreen_windowed_borderless.setCallback(
@@ -1263,18 +1258,3 @@ std::vector<std::string> Environment::enumerateDirectory(std::string_view pathTo
 }
 
 #endif  // MCENGINE_PLATFORM_WINDOWS
-
-// hotfix/workaround cursor confinement issue (maybe just with i3wm?)
-bool Environment::sdl_x11eventhook(void *thisptr, XEvent *xev) {
-    (void)thisptr, (void)xev;
-#ifdef MCENGINE_PLATFORM_LINUX
-    if(thisptr && xev && xev->type == 10 /* FocusOut */) {
-        auto *envptr = static_cast<Environment *>(thisptr);
-        if(envptr->m_window) {
-            // ungrab mouse manually
-            SDL_SetWindowMouseGrab(envptr->m_window, false);
-        }
-    }
-#endif
-    return true;
-}

@@ -210,7 +210,6 @@ SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
             switch(event->window.type) {
                 case SDL_EVENT_WINDOW_FOCUS_GAINED:
                     m_bHasFocus = true;
-                    m_bMinimized = false;
                     m_engine->onFocusGained();
                     setFgFPS();
                     break;
@@ -259,6 +258,7 @@ SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
                 case SDL_EVENT_WINDOW_ENTER_FULLSCREEN:
                     cv::fullscreen.setValue(true, false);
                     m_bFullscreen = true;
+                    m_bMinimized = false;
                     m_bRestoreFullscreen = false;
                     break;
 

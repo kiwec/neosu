@@ -21,7 +21,6 @@ typedef struct SDL_Window SDL_Window;
 typedef struct SDL_Cursor SDL_Cursor;
 typedef struct SDL_Environment SDL_Environment;
 typedef struct SDL_Rect SDL_Rect;
-typedef union _XEvent XEvent;
 
 class Graphics;
 class UString;
@@ -312,8 +311,6 @@ class Environment {
 
     static SDL_Rect McRectToSDLRect(const McRect &mcrect) noexcept;
     static McRect SDLRectToMcRect(const SDL_Rect &sdlrect) noexcept;
-
-    static bool sdl_x11eventhook(void *thisptr, XEvent *xev);
 };
 
 #endif
