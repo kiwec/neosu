@@ -27,7 +27,7 @@ Changelog::Changelog() : ScreenBackable() {
     CHANGELOG v41_07;
     v41_07.title = "41.07";
     v41_07.changes = {
-        R"()",
+        R"(- Fixed auto-updater for the third time)",
     };
     changelogs.push_back(v41_07);
 
@@ -42,6 +42,7 @@ Changelog::Changelog() : ScreenBackable() {
         R"(- Fixed a rare case where music would desync on SoLoud)",
         R"(- Fixed background brightness flashbang)",
         R"(- Fixed NoFail staying on after seeking)",
+        R"(- Fixed glitchy seeking/restarting on BASS)",
         R"(- Fixed keyboard not registering after quickly exiting a map before it starts)",
         R"(- Fixed slider hitreg)",
         R"(- Fixed unpause confirmation circle being clickable on the same frame as the continue button (configurable as "unpause_continue_delay")",
