@@ -25,18 +25,18 @@ Changelog::Changelog() : ScreenBackable() {
     std::vector<CHANGELOG> changelogs;
 
     CHANGELOG v41_06;
-    v41_06.title = "41.06";
+    v41_06.title = "41.06 (2025-10-30)";
     v41_06.changes = {
         R"(- Added timestamped inputs (aka. "Click Between Frames"))",
         R"(- Added WASAPI exclusive support to SoLoud when using MiniAudio)",
         R"(- Added "Team" leaderboard filter)",
+        R"(- Fixed "CursorExpand: 1" skins)",
         R"(- Fixed a crash when switching skins)",
         R"(- Fixed a rare case where music would desync on SoLoud)",
         R"(- Fixed background brightness flashbang)",
         R"(- Fixed NoFail staying on after seeking)",
         R"(- Fixed keyboard not registering after quickly exiting a map before it starts)",
         R"(- Fixed slider hitreg)",
-        R"(- Fixed CursorExpand: 1 skins)",
         R"(- Fixed unpause confirmation circle being clickable on the same frame as the continue button (configurable as "unpause_continue_delay")",
         R"(- Improved ingame statistics font rendering at small sizes)",
         R"(- Improved skin support for spinners (still lots more to fix))",
