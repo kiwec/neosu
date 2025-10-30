@@ -3750,7 +3750,7 @@ void OptionsMenu::save() {
 
         for(auto convar : cvars->getConVarArray()) {
             if(!convar->hasValue() || convar->isFlagSet(cv::NOSAVE)) continue;
-            if(convar->getString() == convar->getDefaultString()) continue;
+            if(convar->isDefault()) continue;
             write_lines.append(fmt::format("{} {}\n", convar->getName(), convar->getString()));
         }
 

@@ -435,9 +435,8 @@ void SoLoudSoundEngine::allowInternalCallbacks() {
     cv::snd_output_device.setCallback(SA::MakeDelegate<&SoLoudSoundEngine::setOutputDeviceByName>(this));
 
     bool doRestart = !this->bWasBackendEverReady ||  //
-                     (cv::snd_freq.getDefaultFloat() != cv::snd_freq.getFloat()) ||
-                     (cv::cmd::snd_restart.getDefaultFloat() != cv::cmd::snd_restart.getFloat()) ||
-                     (cv::snd_soloud_backend.getDefaultString() != cv::snd_soloud_backend.getString());
+                     !cv::snd_freq.isDefault() ||    //
+                     !cv::snd_soloud_backend.isDefault();
 
     if(doRestart) {
         this->restart();
@@ -450,7 +449,7 @@ void SoLoudSoundEngine::allowInternalCallbacks() {
     }
 
     // if we restarted already, then we already set the output device to the desired one
-    bool doChangeOutput = !doRestart && (cv::snd_output_device.getDefaultString() != cv::snd_output_device.getString());
+    bool doChangeOutput = !doRestart && !cv::snd_output_device.isDefault();
     if(doChangeOutput) {
         this->setOutputDeviceByName(cv::snd_output_device.getString());
     }

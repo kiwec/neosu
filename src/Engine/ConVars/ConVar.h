@@ -277,8 +277,7 @@ class ConVar {
     [[nodiscard]] inline bool hasVoidCallback() const { return std::holds_alternative<CVVoidCB>(this->callback); }
 
     [[nodiscard]] inline bool hasSingleArgCallback() const {
-        return std::holds_alternative<CVStringCB>(this->callback) ||
-               std::holds_alternative<CVFloatCB>(this->callback);
+        return std::holds_alternative<CVStringCB>(this->callback) || std::holds_alternative<CVFloatCB>(this->callback);
     }
 
     [[nodiscard]] inline bool hasChangeCallback() const {
@@ -286,6 +285,7 @@ class ConVar {
     }
 
     [[nodiscard]] inline bool isFlagSet(uint8_t flag) const { return ((this->iFlags & flag) == flag); }
+    [[nodiscard]] inline bool isDefault() const { return this->getString() == this->getDefaultString(); }
 
     void setServerProtected(ProtectionPolicy policy) {
         this->serverProtectionPolicy.store(policy, std::memory_order_release);

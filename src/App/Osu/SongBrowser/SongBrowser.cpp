@@ -2821,7 +2821,7 @@ void SongBrowser::onFilterScoresChange(const UString &text, int id) {
 
     // always change for manual setting, otherwise allow login state to affect filtering (if it was never manually set)
     const bool should_change =
-        id != LOGIN_STATE_FILTER_ID || (manual_type_cv->getString() == manual_type_cv->getDefaultString());
+        id != LOGIN_STATE_FILTER_ID || (manual_type_cv->isDefault());
     if(!should_change) {
         text_to_set = UString{manual_type_cv->getString()};
     }

@@ -272,7 +272,9 @@ Osu::Osu() {
 
     if(defaultFont->getDPI() != newDPI) {
         this->bFontReloadScheduled = true;
-        this->last_res_change_req_src = RESRQ_MISC_MANUAL;
+        if(this->last_res_change_req_src != RESRQ_NOT_PENDING) {
+            this->last_res_change_req_src = RESRQ_MISC_MANUAL;
+        }
     }
 
     // load subsystems, add them to the screens array
@@ -1462,6 +1464,13 @@ void Osu::onResolutionChanged(vec2 newResolution, ResChangeReq src) {
         (src & (RESRQ_ENGINE | RESRQ_CV_LETTERBOXING | RESRQ_CV_RESOLUTION | RESRQ_CV_LETTERBOXED_RES));
 
     if(res_from_cvars) {
+        // to be compatible with old configs, use the resolution convar for letterboxed resolution if it's default but cv::resolution isn't
+        // (and the request didn't come from the letterboxed resolution callback)
+        if(fs_letterboxed && !(src & RESRQ_CV_LETTERBOXED_RES) && cv::letterboxed_resolution.isDefault() &&
+           !cv::resolution.isDefault()) {
+            cv::letterboxed_resolution.setValue(cv::resolution.getString(), false);
+        }
+
         const std::string &res_cv_str =
             fs_letterboxed ? cv::letterboxed_resolution.getString() : cv::resolution.getString() /* fullscreen */;
 

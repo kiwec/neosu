@@ -138,24 +138,16 @@ std::vector<ConVar *> ConVarHandler::getNonSubmittableCvars() const {
     std::vector<ConVar *> list;
 
     for(const auto &cv : ConVarHandler::getConVarArray()) {
-        if(!cv->isProtected()) continue;
+        if(!cv->isProtected() || cv->isDefault()) continue;
 
-        if(cv->getString() != cv->getDefaultString()) {
-            list.push_back(cv);
-        }
+        list.push_back(cv);
     }
 
     return list;
 }
 
 bool ConVarHandler::areAllCvarsSubmittable() {
-    for(const auto &cv : ConVarHandler::getConVarArray()) {
-        if(!cv->isProtected()) continue;
-
-        if(cv->getString() != cv->getDefaultString()) {
-            return false;
-        }
-    }
+    if(!this->getNonSubmittableCvars().empty()) return false;
 
     // Also check for non-vanilla mod combinations here while we're at it
     if(osu != nullptr) {
