@@ -271,7 +271,6 @@ class Environment {
     mutable UString m_sUsername;
     mutable std::string m_sProgDataPath;
     mutable std::string m_sAppDataPath;
-    HWND m_hwnd;
 
     // logging
     inline bool envDebug(bool enable) {
