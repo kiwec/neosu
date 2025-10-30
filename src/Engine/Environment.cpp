@@ -78,7 +78,6 @@ Environment::Environment(const std::unordered_map<std::string, std::optional<std
 
     m_bIsCursorInsideWindow = true;
     m_bCursorClipped = false;
-    m_bCursorVisible = false;
     m_cursorType = CURSORTYPE::CURSOR_NORMAL;
 
     // lazy init
@@ -877,9 +876,9 @@ done:
     updateWindowFlags();
 }
 
-void Environment::setCursorVisible(bool visible) {
-    m_bCursorVisible = visible;
+bool Environment::isCursorVisible() const { return SDL_CursorVisible(); }
 
+void Environment::setCursorVisible(bool visible) {
     if(visible) {
         // disable rawinput (allow regular mouse movement)
         setRawInput(false);
@@ -896,9 +895,6 @@ void Environment::setCursorVisible(bool visible) {
             SDL_SetWindowMouseGrab(m_window, true);
         }
     }
-
-    // sanity
-    m_bCursorVisible = SDL_CursorVisible();
 }
 
 void Environment::setCursorClip(bool clip, McRect rect) {

@@ -209,7 +209,7 @@ SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
             // clang-format on
             updateWindowFlags();  // update our window flags enum from current SDL window flags
             switch(event->window.type) {
-                case SDL_EVENT_WINDOW_FOCUS_GAINED: {
+                case SDL_EVENT_WINDOW_FOCUS_GAINED:
                     // add these window flags now to make env->winFocused() return true after this
                     m_winflags |= (WFL_MOUSE_FOCUS | WFL_INPUT_FOCUS);
                     if(!winMinimized() && m_bRestoreFullscreen) {
@@ -222,14 +222,14 @@ SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
                     }
                     m_engine->onFocusGained();
                     setFgFPS();
-                } break;
+                    break;
 
-                case SDL_EVENT_WINDOW_FOCUS_LOST: {
+                case SDL_EVENT_WINDOW_FOCUS_LOST:
                     // remove these window flags now to avoid env->winFocused() returning true immediately
                     m_winflags &= ~(WFL_MOUSE_FOCUS | WFL_INPUT_FOCUS);
                     m_engine->onFocusLost();
                     setBgFPS();
-                } break;
+                    break;
 
                 case SDL_EVENT_WINDOW_MAXIMIZED:
                     m_engine->onMaximized();

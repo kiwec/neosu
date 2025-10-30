@@ -1609,6 +1609,7 @@ void Osu::updateMouseSettings() {
 
     mouse->setOffset(offset);
     mouse->setScale(scale);
+    logIf(cv::debug_mouse.getBool() || cv::debug_osu.getBool(), "offset {} scale {}", offset, scale);
 }
 
 void Osu::updateWindowsKeyDisable() {
@@ -1919,11 +1920,7 @@ void Osu::updateConfineCursor() {
 
     bool confine_cursor = might_confine && !force_no_confine;
     if(confine_cursor) {
-        if((g->getResolution() != this->getVirtScreenSize()) && cv::letterboxing.getBool()) {
-            clip = McRect{-mouse->getOffset(), this->getVirtScreenSize()};
-        } else {
-            clip = McRect{vec2{}, engine->getScreenSize()};
-        }
+        clip = McRect{-mouse->getOffset(), this->getVirtScreenSize()};
     }
 
     logIfCV(debug_mouse, "confined: {}, cliprect: {}", confine_cursor, clip);

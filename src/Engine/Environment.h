@@ -220,7 +220,7 @@ class Environment {
 
     // mouse
     [[nodiscard]] constexpr bool isCursorInWindow() const { return m_bIsCursorInsideWindow; }
-    [[nodiscard]] constexpr bool isCursorVisible() const { return m_bCursorVisible; }
+    [[nodiscard]] bool isCursorVisible() const;
     [[nodiscard]] constexpr bool isCursorClipped() const { return m_bCursorClipped; }
     [[nodiscard]] constexpr vec2 getMousePos() const { return m_vLastAbsMousePos; }
     [[nodiscard]] constexpr const McRect &getCursorClip() const { return m_cursorClipRect; }
@@ -313,7 +313,6 @@ class Environment {
     vec2 m_vLastAbsMousePos{0.f};
     bool m_bIsCursorInsideWindow;
     bool m_bCursorClipped;
-    bool m_bCursorVisible;
     McRect m_cursorClipRect;
     CURSORTYPE m_cursorType;
     std::map<CURSORTYPE, SDL_Cursor *> m_mCursorIcons;
