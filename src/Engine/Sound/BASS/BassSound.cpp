@@ -4,7 +4,8 @@
 #ifdef MCENGINE_FEATURE_BASS
 
 #include <algorithm>
-#include <utility>
+#include <chrono>
+#include <thread>
 
 #include "BassManager.h"
 #include "ConVar.h"
@@ -125,7 +126,11 @@ void BassSound::destroy() {
 }
 
 void BassSound::setPositionMS(u32 ms) {
-    if(!this->isReady() || ms > this->getLengthMS()) return;
+    if(!this->isReady() || ms > this->getLengthMS()) {
+        logIfCV(debug_snd, "can't set position to {}ms: {}", ms,
+                !this->isReady() ? "not ready" : fmt::format("{} > {}", ms, this->getLengthMS()));
+        return;
+    }
     assert(this->bStream);  // can't call setPositionMS() on a sample
 
     f64 seconds = (f64)ms / 1000.0;
@@ -139,13 +144,48 @@ void BassSound::setPositionMS(u32 ms) {
     if(!BASS_Mixer_ChannelSetPosition(this->stream, target_pos, BASS_POS_BYTE | BASS_POS_MIXER_RESET)) {
         logIfCV(debug_snd, "BASS_Mixer_ChannelSetPosition( stream , {} ) error on file {}: {}", ms,
                 this->sFilePath.c_str(), BassManager::getErrorUString());
+        return;
     }
 
+    // when paused, position change is immediate
     if(this->bPaused) {
         this->paused_position_ms = ms;
+        logIfCV(debug_snd, "set paused position to {}ms", ms);
+        this->interpolator.reset(static_cast<f64>(ms), Timing::getTimeReal(), this->getSpeed());
+        return;
     }
 
-    this->interpolator.reset(static_cast<f64>(ms), Timing::getTimeReal(), this->getSpeed());
+    // when playing, poll until position updates (with timeout)
+    // this is necessary because BASS_Mixer_ChannelGetPosition takes time to reflect the change
+    const auto start = Timing::getTicksMS();
+    constexpr u64 timeoutMS = 100;
+    constexpr u32 toleranceMS = 50;
+
+    u32 actual = 0;
+    while(true) {
+        i64 posBytes = BASS_Mixer_ChannelGetPosition(this->stream, BASS_POS_BYTE);
+        if(posBytes >= 0) {
+            f64 posSec = BASS_ChannelBytes2Seconds(this->stream, posBytes);
+            actual = static_cast<u32>(posSec * 1000.0);
+
+            // check if we're within tolerance of target
+            if(actual >= ms && actual <= ms + toleranceMS) {
+                break;
+            }
+        }
+
+        // check timeout
+        if(Timing::getTicksMS() - start > timeoutMS) {
+            debugLog("timeout waiting for position update on {} (wanted {}ms, got {}ms)", this->sFilePath.c_str(), ms,
+                     actual);
+            break;
+        }
+
+        Timing::sleepNS(100000);
+    }
+
+    logIfCV(debug_snd, "set position to actual: {}ms desired: {}ms", actual, ms);
+    this->interpolator.reset(static_cast<f64>(actual), Timing::getTimeReal(), this->getSpeed());
 }
 
 void BassSound::setSpeed(float speed) {
@@ -209,6 +249,8 @@ u32 BassSound::getPositionMS() const {
     assert(this->bStream);  // can't call getPositionMS() on a sample
 
     if(this->bPaused) {
+        this->interpolator.reset(static_cast<f64>(this->paused_position_ms), Timing::getTimeReal(), this->getSpeed());
+        logIfCV(debug_snd, "paused pos {}ms", this->paused_position_ms);
         return this->paused_position_ms;
     }
 
@@ -225,8 +267,11 @@ u32 BassSound::getPositionMS() const {
 
     f64 positionInSeconds = BASS_ChannelBytes2Seconds(this->stream, positionBytes);
     f64 rawPositionMS = positionInSeconds * 1000.0;
-    return this->interpolator.update(rawPositionMS, Timing::getTimeReal(), this->getSpeed(), this->isLooped(),
-                                     static_cast<u64>(this->length), this->isPlaying());
+    u32 ret = this->interpolator.update(rawPositionMS, Timing::getTimeReal(), this->getSpeed(), this->isLooped(),
+                                        static_cast<u64>(this->length), this->isPlaying());
+
+    logIfCV(debug_snd, "pos {}ms", ret);
+    return ret;
 }
 
 u32 BassSound::getLengthMS() const {
