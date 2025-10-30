@@ -299,7 +299,7 @@ void PauseMenu::updateLayout() {
         Image *img = button->getImage();
         if(img == nullptr) img = MISSING_TEXTURE;
 
-        const float scale = osu->getUIScale(256) / (411.0f * (osu->getSkin()->isPauseContinue2x() ? 2.0f : 1.0f));
+        const float scale = osu->getUIScale(256) / (411.0f * (osu->getSkin()->getPauseContinue().is2x() ? 2.0f : 1.0f));
 
         button->setBaseScale(scale, scale);
         button->setSize(img->getWidth() * scale, img->getHeight() * scale);

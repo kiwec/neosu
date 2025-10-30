@@ -31,6 +31,17 @@
 #define NOT_LOOPING false
 #define LOOPING true
 
+bool Skin::BasicSkinImage::is2x() const {
+    if(unlikely(!this->checked_2x)) {
+        this->checked_2x = true;
+        if(this->img && this->img != MISSING_TEXTURE && !this->img->getFilePath().empty()) {
+            this->file_2x = this->img->getFilePath().contains("@2x");
+        }
+    }
+
+    return this->file_2x;
+}
+
 void Skin::unpack(const char *filepath) {
     auto skin_name = env->getFileNameFromFilePath(filepath);
     debugLog("Extracting {:s}...", skin_name.c_str());
@@ -215,21 +226,21 @@ void Skin::load() {
     // spinner loading has top priority in async
     this->randomizeFilePath();
     {
-        this->checkLoadImage(&this->loadingSpinner, "loading-spinner", "SKIN_LOADING_SPINNER");
+        this->checkLoadImage(this->loadingSpinner, "loading-spinner", "SKIN_LOADING_SPINNER");
     }
 
     // and the cursor comes right after that
     this->randomizeFilePath();
     {
-        this->checkLoadImage(&this->cursor, "cursor", "SKIN_CURSOR");
-        this->checkLoadImage(&this->cursorMiddle, "cursormiddle", "SKIN_CURSORMIDDLE", true);
-        this->checkLoadImage(&this->cursorTrail, "cursortrail", "SKIN_CURSORTRAIL");
-        this->checkLoadImage(&this->cursorRipple, "cursor-ripple", "SKIN_CURSORRIPPLE");
-        this->checkLoadImage(&this->cursorSmoke, "cursor-smoke", "SKIN_CURSORSMOKE");
+        this->checkLoadImage(this->cursor, "cursor", "SKIN_CURSOR");
+        this->checkLoadImage(this->cursorMiddle, "cursormiddle", "SKIN_CURSORMIDDLE", true);
+        this->checkLoadImage(this->cursorTrail, "cursortrail", "SKIN_CURSORTRAIL");
+        this->checkLoadImage(this->cursorRipple, "cursor-ripple", "SKIN_CURSORRIPPLE");
+        this->checkLoadImage(this->cursorSmoke, "cursor-smoke", "SKIN_CURSORSMOKE");
 
         // special case: if fallback to default cursor, do load cursorMiddle
-        if(this->cursor == resourceManager->getImage("SKIN_CURSOR_DEFAULT"))
-            this->checkLoadImage(&this->cursorMiddle, "cursormiddle", "SKIN_CURSORMIDDLE");
+        if(this->cursor.img == resourceManager->getImage("SKIN_CURSOR_DEFAULT"))
+            this->checkLoadImage(this->cursorMiddle, "cursormiddle", "SKIN_CURSORMIDDLE");
     }
 
     // skin ini
@@ -256,14 +267,14 @@ void Skin::load() {
 
     // images
     this->randomizeFilePath();
-    this->checkLoadImage(&this->hitCircle, "hitcircle", "SKIN_HITCIRCLE");
+    this->checkLoadImage(this->hitCircle, "hitcircle", "SKIN_HITCIRCLE");
     this->hitCircleOverlay2 = this->createSkinImage("hitcircleoverlay", vec2(128, 128), 64);
     this->hitCircleOverlay2->setAnimationFramerate(2);
 
     this->randomizeFilePath();
-    this->checkLoadImage(&this->approachCircle, "approachcircle", "SKIN_APPROACHCIRCLE");
+    this->checkLoadImage(this->approachCircle, "approachcircle", "SKIN_APPROACHCIRCLE");
     this->randomizeFilePath();
-    this->checkLoadImage(&this->reverseArrow, "reversearrow", "SKIN_REVERSEARROW");
+    this->checkLoadImage(this->reverseArrow, "reversearrow", "SKIN_REVERSEARROW");
 
     this->randomizeFilePath();
     this->followPoint2 = this->createSkinImage("followpoint", vec2(16, 22), 64);
@@ -273,11 +284,11 @@ void Skin::load() {
         const std::string hitCirclePrefix = this->sHitCirclePrefix.empty() ? "default" : this->sHitCirclePrefix;
         for(int i = 0; i < 10; i++) {
             const std::string resName = fmt::format("SKIN_DEFAULT{}", i);
-            this->checkLoadImage(&this->defaultNumImgs[i], fmt::format("{}-{}", hitCirclePrefix, i), resName);
+            this->checkLoadImage(this->defaultNumImgs[i], fmt::format("{}-{}", hitCirclePrefix, i), resName);
             // special cases: fallback to default skin hitcircle numbers if the
             // defined prefix doesn't point to any valid files
-            if(this->defaultNumImgs[i] == MISSING_TEXTURE)
-                this->checkLoadImage(&this->defaultNumImgs[i], fmt::format("default-{}", i), resName);
+            if(this->defaultNumImgs[i].img == MISSING_TEXTURE)
+                this->checkLoadImage(this->defaultNumImgs[i], fmt::format("default-{}", i), resName);
         }
     }
 
@@ -286,18 +297,18 @@ void Skin::load() {
         const std::string scorePrefix = this->sScorePrefix.empty() ? "score" : this->sScorePrefix;
         for(int i = 0; i < 10; i++) {
             const std::string resName = fmt::format("SKIN_SCORE{}", i);
-            this->checkLoadImage(&this->scoreNumImgs[i], fmt::format("{}-{}", scorePrefix, i), resName);
+            this->checkLoadImage(this->scoreNumImgs[i], fmt::format("{}-{}", scorePrefix, i), resName);
             // fallback logic
-            if(this->scoreNumImgs[i] == MISSING_TEXTURE)
-                this->checkLoadImage(&this->scoreNumImgs[i], fmt::format("score-{}", i), resName);
+            if(this->scoreNumImgs[i].img == MISSING_TEXTURE)
+                this->checkLoadImage(this->scoreNumImgs[i], fmt::format("score-{}", i), resName);
         }
 
-        this->checkLoadImage(&this->scoreX, fmt::format("{}-x", scorePrefix), "SKIN_SCOREX");
-        // if (this->scoreX == MISSING_TEXTURE) checkLoadImage(&m_scoreX, "score-x", "SKIN_SCOREX"); // special
+        this->checkLoadImage(this->scoreX, fmt::format("{}-x", scorePrefix), "SKIN_SCOREX");
+        // if (this->scoreX == MISSING_TEXTURE) checkLoadImage(m_scoreX, "score-x", "SKIN_SCOREX"); // special
         // case: ScorePrefix'd skins don't get default fallbacks, instead missing extraneous things like the X are
         // simply not drawn
-        this->checkLoadImage(&this->scorePercent, fmt::format("{}-percent", scorePrefix), "SKIN_SCOREPERCENT");
-        this->checkLoadImage(&this->scoreDot, fmt::format("{}-dot", scorePrefix), "SKIN_SCOREDOT");
+        this->checkLoadImage(this->scorePercent, fmt::format("{}-percent", scorePrefix), "SKIN_SCOREPERCENT");
+        this->checkLoadImage(this->scoreDot, fmt::format("{}-dot", scorePrefix), "SKIN_SCOREDOT");
     }
 
     this->randomizeFilePath();
@@ -306,23 +317,23 @@ void Skin::load() {
         const std::string comboPrefix = this->sComboPrefix.empty() ? "score" : this->sComboPrefix;
         for(int i = 0; i < 10; i++) {
             const std::string resName = fmt::format("SKIN_COMBO{}", i);
-            this->checkLoadImage(&this->comboNumImgs[i], fmt::format("{}-{}", comboPrefix, i), resName);
+            this->checkLoadImage(this->comboNumImgs[i], fmt::format("{}-{}", comboPrefix, i), resName);
             // fallback logic
-            if(this->comboNumImgs[i] == MISSING_TEXTURE)
-                this->checkLoadImage(&this->comboNumImgs[i], fmt::format("score-{}", i), resName);
+            if(this->comboNumImgs[i].img == MISSING_TEXTURE)
+                this->checkLoadImage(this->comboNumImgs[i], fmt::format("score-{}", i), resName);
         }
 
         // special case as above for extras
-        this->checkLoadImage(&this->comboX, fmt::format("{}-x", comboPrefix), "SKIN_COMBOX");
+        this->checkLoadImage(this->comboX, fmt::format("{}-x", comboPrefix), "SKIN_COMBOX");
     }
 
     this->randomizeFilePath();
     this->playSkip = this->createSkinImage("play-skip", vec2(193, 147), 94);
     this->randomizeFilePath();
-    this->checkLoadImage(&this->playWarningArrow, "play-warningarrow", "SKIN_PLAYWARNINGARROW");
+    this->checkLoadImage(this->playWarningArrow, "play-warningarrow", "SKIN_PLAYWARNINGARROW");
     this->playWarningArrow2 = this->createSkinImage("play-warningarrow", vec2(167, 129), 128);
     this->randomizeFilePath();
-    this->checkLoadImage(&this->circularmetre, "circularmetre", "SKIN_CIRCULARMETRE");
+    this->checkLoadImage(this->circularmetre, "circularmetre", "SKIN_CIRCULARMETRE");
     this->randomizeFilePath();
     this->scorebarBg = this->createSkinImage("scorebar-bg", vec2(695, 44), 27.5f);
     this->scorebarColour = this->createSkinImage("scorebar-colour", vec2(645, 10), 6.25f);
@@ -361,52 +372,52 @@ void Skin::load() {
     this->hit300k->setAnimationFramerate(60);
 
     this->randomizeFilePath();
-    this->checkLoadImage(&this->particle50, "particle50", "SKIN_PARTICLE50", true);
-    this->checkLoadImage(&this->particle100, "particle100", "SKIN_PARTICLE100", true);
-    this->checkLoadImage(&this->particle300, "particle300", "SKIN_PARTICLE300", true);
+    this->checkLoadImage(this->particle50, "particle50", "SKIN_PARTICLE50", true);
+    this->checkLoadImage(this->particle100, "particle100", "SKIN_PARTICLE100", true);
+    this->checkLoadImage(this->particle300, "particle300", "SKIN_PARTICLE300", true);
 
     this->randomizeFilePath();
-    this->checkLoadImage(&this->sliderGradient, "slidergradient", "SKIN_SLIDERGRADIENT");
+    this->checkLoadImage(this->sliderGradient, "slidergradient", "SKIN_SLIDERGRADIENT");
     this->randomizeFilePath();
     this->sliderb = this->createSkinImage("sliderb", vec2(128, 128), 64, false, "");
     this->sliderb->setAnimationFramerate(/*45.0f*/ 50.0f);
     this->randomizeFilePath();
-    this->checkLoadImage(&this->sliderScorePoint, "sliderscorepoint", "SKIN_SLIDERSCOREPOINT");
+    this->checkLoadImage(this->sliderScorePoint, "sliderscorepoint", "SKIN_SLIDERSCOREPOINT");
     this->randomizeFilePath();
     this->sliderFollowCircle2 = this->createSkinImage("sliderfollowcircle", vec2(259, 259), 64);
     this->randomizeFilePath();
     this->checkLoadImage(
-        &this->sliderStartCircle, "sliderstartcircle", "SKIN_SLIDERSTARTCIRCLE",
+        this->sliderStartCircle, "sliderstartcircle", "SKIN_SLIDERSTARTCIRCLE",
         !this->bIsDefaultSkin);  // !m_bIsDefaultSkin ensures that default doesn't override user, in these special cases
     this->sliderStartCircle2 = this->createSkinImage("sliderstartcircle", vec2(128, 128), 64, !this->bIsDefaultSkin);
-    this->checkLoadImage(&this->sliderStartCircleOverlay, "sliderstartcircleoverlay", "SKIN_SLIDERSTARTCIRCLEOVERLAY",
+    this->checkLoadImage(this->sliderStartCircleOverlay, "sliderstartcircleoverlay", "SKIN_SLIDERSTARTCIRCLEOVERLAY",
                          !this->bIsDefaultSkin);
     this->sliderStartCircleOverlay2 =
         this->createSkinImage("sliderstartcircleoverlay", vec2(128, 128), 64, !this->bIsDefaultSkin);
     this->sliderStartCircleOverlay2->setAnimationFramerate(2);
     this->randomizeFilePath();
-    this->checkLoadImage(&this->sliderEndCircle, "sliderendcircle", "SKIN_SLIDERENDCIRCLE", !this->bIsDefaultSkin);
+    this->checkLoadImage(this->sliderEndCircle, "sliderendcircle", "SKIN_SLIDERENDCIRCLE", !this->bIsDefaultSkin);
     this->sliderEndCircle2 = this->createSkinImage("sliderendcircle", vec2(128, 128), 64, !this->bIsDefaultSkin);
-    this->checkLoadImage(&this->sliderEndCircleOverlay, "sliderendcircleoverlay", "SKIN_SLIDERENDCIRCLEOVERLAY",
+    this->checkLoadImage(this->sliderEndCircleOverlay, "sliderendcircleoverlay", "SKIN_SLIDERENDCIRCLEOVERLAY",
                          !this->bIsDefaultSkin);
     this->sliderEndCircleOverlay2 =
         this->createSkinImage("sliderendcircleoverlay", vec2(128, 128), 64, !this->bIsDefaultSkin);
     this->sliderEndCircleOverlay2->setAnimationFramerate(2);
 
     this->randomizeFilePath();
-    this->checkLoadImage(&this->spinnerBackground, "spinner-background", "SKIN_SPINNERBACKGROUND");
-    this->checkLoadImage(&this->spinnerCircle, "spinner-circle", "SKIN_SPINNERCIRCLE");
-    this->checkLoadImage(&this->spinnerApproachCircle, "spinner-approachcircle", "SKIN_SPINNERAPPROACHCIRCLE");
-    this->checkLoadImage(&this->spinnerBottom, "spinner-bottom", "SKIN_SPINNERBOTTOM");
-    this->checkLoadImage(&this->spinnerMiddle, "spinner-middle", "SKIN_SPINNERMIDDLE");
-    this->checkLoadImage(&this->spinnerMiddle2, "spinner-middle2", "SKIN_SPINNERMIDDLE2");
-    this->checkLoadImage(&this->spinnerTop, "spinner-top", "SKIN_SPINNERTOP");
-    this->checkLoadImage(&this->spinnerSpin, "spinner-spin", "SKIN_SPINNERSPIN");
-    this->checkLoadImage(&this->spinnerClear, "spinner-clear", "SKIN_SPINNERCLEAR");
-    this->checkLoadImage(&this->spinnerMetre, "spinner-metre", "SKIN_SPINNERMETRE");
-    this->checkLoadImage(&this->spinnerGlow, "spinner-glow", "SKIN_SPINNERGLOW");  // TODO: use
-    this->checkLoadImage(&this->spinnerOsu, "spinner-osu", "SKIN_SPINNEROSU");     // TODO: use
-    this->checkLoadImage(&this->spinnerRpm, "spinner-rpm", "SKIN_SPINNERRPM");     // TODO: use
+    this->checkLoadImage(this->spinnerBackground, "spinner-background", "SKIN_SPINNERBACKGROUND");
+    this->checkLoadImage(this->spinnerCircle, "spinner-circle", "SKIN_SPINNERCIRCLE");
+    this->checkLoadImage(this->spinnerApproachCircle, "spinner-approachcircle", "SKIN_SPINNERAPPROACHCIRCLE");
+    this->checkLoadImage(this->spinnerBottom, "spinner-bottom", "SKIN_SPINNERBOTTOM");
+    this->checkLoadImage(this->spinnerMiddle, "spinner-middle", "SKIN_SPINNERMIDDLE");
+    this->checkLoadImage(this->spinnerMiddle2, "spinner-middle2", "SKIN_SPINNERMIDDLE2");
+    this->checkLoadImage(this->spinnerTop, "spinner-top", "SKIN_SPINNERTOP");
+    this->checkLoadImage(this->spinnerSpin, "spinner-spin", "SKIN_SPINNERSPIN");
+    this->checkLoadImage(this->spinnerClear, "spinner-clear", "SKIN_SPINNERCLEAR");
+    this->checkLoadImage(this->spinnerMetre, "spinner-metre", "SKIN_SPINNERMETRE");
+    this->checkLoadImage(this->spinnerGlow, "spinner-glow", "SKIN_SPINNERGLOW");  // TODO: use
+    this->checkLoadImage(this->spinnerOsu, "spinner-osu", "SKIN_SPINNEROSU");     // TODO: use
+    this->checkLoadImage(this->spinnerRpm, "spinner-rpm", "SKIN_SPINNERRPM");     // TODO: use
 
     {
         // cursor loading was here, moved up to improve async usability
@@ -438,22 +449,22 @@ void Skin::load() {
     this->mode_osu_small = this->createSkinImage("mode-osu-small", vec2(32, 32), 32);
 
     this->randomizeFilePath();
-    this->checkLoadImage(&this->pauseContinue, "pause-continue", "SKIN_PAUSE_CONTINUE");
-    this->checkLoadImage(&this->pauseReplay, "pause-replay", "SKIN_PAUSE_REPLAY");
-    this->checkLoadImage(&this->pauseRetry, "pause-retry", "SKIN_PAUSE_RETRY");
-    this->checkLoadImage(&this->pauseBack, "pause-back", "SKIN_PAUSE_BACK");
-    this->checkLoadImage(&this->pauseOverlay, "pause-overlay", "SKIN_PAUSE_OVERLAY");
-    if(this->pauseOverlay == MISSING_TEXTURE)
-        this->checkLoadImage(&this->pauseOverlay, "pause-overlay", "SKIN_PAUSE_OVERLAY", true, "jpg");
-    this->checkLoadImage(&this->failBackground, "fail-background", "SKIN_FAIL_BACKGROUND");
-    if(this->failBackground == MISSING_TEXTURE)
-        this->checkLoadImage(&this->failBackground, "fail-background", "SKIN_FAIL_BACKGROUND", true, "jpg");
-    this->checkLoadImage(&this->unpause, "unpause", "SKIN_UNPAUSE");
+    this->checkLoadImage(this->pauseContinue, "pause-continue", "SKIN_PAUSE_CONTINUE");
+    this->checkLoadImage(this->pauseReplay, "pause-replay", "SKIN_PAUSE_REPLAY");
+    this->checkLoadImage(this->pauseRetry, "pause-retry", "SKIN_PAUSE_RETRY");
+    this->checkLoadImage(this->pauseBack, "pause-back", "SKIN_PAUSE_BACK");
+    this->checkLoadImage(this->pauseOverlay, "pause-overlay", "SKIN_PAUSE_OVERLAY");
+    if(this->pauseOverlay.img == MISSING_TEXTURE)
+        this->checkLoadImage(this->pauseOverlay, "pause-overlay", "SKIN_PAUSE_OVERLAY", true, "jpg");
+    this->checkLoadImage(this->failBackground, "fail-background", "SKIN_FAIL_BACKGROUND");
+    if(this->failBackground.img == MISSING_TEXTURE)
+        this->checkLoadImage(this->failBackground, "fail-background", "SKIN_FAIL_BACKGROUND", true, "jpg");
+    this->checkLoadImage(this->unpause, "unpause", "SKIN_UNPAUSE");
 
     this->randomizeFilePath();
-    this->checkLoadImage(&this->buttonLeft, "button-left", "SKIN_BUTTON_LEFT");
-    this->checkLoadImage(&this->buttonMiddle, "button-middle", "SKIN_BUTTON_MIDDLE");
-    this->checkLoadImage(&this->buttonRight, "button-right", "SKIN_BUTTON_RIGHT");
+    this->checkLoadImage(this->buttonLeft, "button-left", "SKIN_BUTTON_LEFT");
+    this->checkLoadImage(this->buttonMiddle, "button-middle", "SKIN_BUTTON_MIDDLE");
+    this->checkLoadImage(this->buttonRight, "button-right", "SKIN_BUTTON_RIGHT");
     this->randomizeFilePath();
     this->menuBackImg = this->createSkinImage("menu-back", vec2(225, 87), 54);
     this->randomizeFilePath();
@@ -470,29 +481,29 @@ void Skin::load() {
     this->selectionOptionsOver = this->createSkinImage("selection-options-over", vec2(74, 90), 38);
 
     this->randomizeFilePath();
-    this->checkLoadImage(&this->songSelectTop, "songselect-top", "SKIN_SONGSELECT_TOP");
-    this->checkLoadImage(&this->songSelectBottom, "songselect-bottom", "SKIN_SONGSELECT_BOTTOM");
+    this->checkLoadImage(this->songSelectTop, "songselect-top", "SKIN_SONGSELECT_TOP");
+    this->checkLoadImage(this->songSelectBottom, "songselect-bottom", "SKIN_SONGSELECT_BOTTOM");
     this->randomizeFilePath();
-    this->checkLoadImage(&this->menuButtonBackground, "menu-button-background", "SKIN_MENU_BUTTON_BACKGROUND");
+    this->checkLoadImage(this->menuButtonBackground, "menu-button-background", "SKIN_MENU_BUTTON_BACKGROUND");
     this->menuButtonBackground2 = this->createSkinImage("menu-button-background", vec2(699, 103), 64.0f);
     this->randomizeFilePath();
-    this->checkLoadImage(&this->star, "star", "SKIN_STAR");
+    this->checkLoadImage(this->star, "star", "SKIN_STAR");
 
     this->randomizeFilePath();
-    this->checkLoadImage(&this->rankingPanel, "ranking-panel", "SKIN_RANKING_PANEL");
-    this->checkLoadImage(&this->rankingGraph, "ranking-graph", "SKIN_RANKING_GRAPH");
-    this->checkLoadImage(&this->rankingTitle, "ranking-title", "SKIN_RANKING_TITLE");
-    this->checkLoadImage(&this->rankingMaxCombo, "ranking-maxcombo", "SKIN_RANKING_MAXCOMBO");
-    this->checkLoadImage(&this->rankingAccuracy, "ranking-accuracy", "SKIN_RANKING_ACCURACY");
+    this->checkLoadImage(this->rankingPanel, "ranking-panel", "SKIN_RANKING_PANEL");
+    this->checkLoadImage(this->rankingGraph, "ranking-graph", "SKIN_RANKING_GRAPH");
+    this->checkLoadImage(this->rankingTitle, "ranking-title", "SKIN_RANKING_TITLE");
+    this->checkLoadImage(this->rankingMaxCombo, "ranking-maxcombo", "SKIN_RANKING_MAXCOMBO");
+    this->checkLoadImage(this->rankingAccuracy, "ranking-accuracy", "SKIN_RANKING_ACCURACY");
 
-    this->checkLoadImage(&this->rankingA, "ranking-A", "SKIN_RANKING_A");
-    this->checkLoadImage(&this->rankingB, "ranking-B", "SKIN_RANKING_B");
-    this->checkLoadImage(&this->rankingC, "ranking-C", "SKIN_RANKING_C");
-    this->checkLoadImage(&this->rankingD, "ranking-D", "SKIN_RANKING_D");
-    this->checkLoadImage(&this->rankingS, "ranking-S", "SKIN_RANKING_S");
-    this->checkLoadImage(&this->rankingSH, "ranking-SH", "SKIN_RANKING_SH");
-    this->checkLoadImage(&this->rankingX, "ranking-X", "SKIN_RANKING_X");
-    this->checkLoadImage(&this->rankingXH, "ranking-XH", "SKIN_RANKING_XH");
+    this->checkLoadImage(this->rankingA, "ranking-A", "SKIN_RANKING_A");
+    this->checkLoadImage(this->rankingB, "ranking-B", "SKIN_RANKING_B");
+    this->checkLoadImage(this->rankingC, "ranking-C", "SKIN_RANKING_C");
+    this->checkLoadImage(this->rankingD, "ranking-D", "SKIN_RANKING_D");
+    this->checkLoadImage(this->rankingS, "ranking-S", "SKIN_RANKING_S");
+    this->checkLoadImage(this->rankingSH, "ranking-SH", "SKIN_RANKING_SH");
+    this->checkLoadImage(this->rankingX, "ranking-X", "SKIN_RANKING_X");
+    this->checkLoadImage(this->rankingXH, "ranking-XH", "SKIN_RANKING_XH");
 
     this->rankingAsmall = this->createSkinImage("ranking-A-small", vec2(34, 40), 128);
     this->rankingBsmall = this->createSkinImage("ranking-B-small", vec2(34, 40), 128);
@@ -506,23 +517,23 @@ void Skin::load() {
     this->rankingPerfect = this->createSkinImage("ranking-perfect", vec2(478, 150), 128);
 
     this->randomizeFilePath();
-    this->checkLoadImage(&this->beatmapImportSpinner, "beatmapimport-spinner", "SKIN_BEATMAP_IMPORT_SPINNER");
+    this->checkLoadImage(this->beatmapImportSpinner, "beatmapimport-spinner", "SKIN_BEATMAP_IMPORT_SPINNER");
     {
         // loading spinner load was here, moved up to improve async usability
     }
-    this->checkLoadImage(&this->circleEmpty, "circle-empty", "SKIN_CIRCLE_EMPTY");
-    this->checkLoadImage(&this->circleFull, "circle-full", "SKIN_CIRCLE_FULL");
+    this->checkLoadImage(this->circleEmpty, "circle-empty", "SKIN_CIRCLE_EMPTY");
+    this->checkLoadImage(this->circleFull, "circle-full", "SKIN_CIRCLE_FULL");
     this->randomizeFilePath();
-    this->checkLoadImage(&this->seekTriangle, "seektriangle", "SKIN_SEEKTRIANGLE");
+    this->checkLoadImage(this->seekTriangle, "seektriangle", "SKIN_SEEKTRIANGLE");
     this->randomizeFilePath();
-    this->checkLoadImage(&this->userIcon, "user-icon", "SKIN_USER_ICON");
+    this->checkLoadImage(this->userIcon, "user-icon", "SKIN_USER_ICON");
     this->randomizeFilePath();
-    this->checkLoadImage(&this->backgroundCube, "backgroundcube", "SKIN_FPOSU_BACKGROUNDCUBE", false, "png",
+    this->checkLoadImage(this->backgroundCube, "backgroundcube", "SKIN_FPOSU_BACKGROUNDCUBE", false, "png",
                          true);  // force mipmaps
     this->randomizeFilePath();
-    this->checkLoadImage(&this->menuBackground, "menu-background", "SKIN_MENU_BACKGROUND", false, "jpg");
+    this->checkLoadImage(this->menuBackground, "menu-background", "SKIN_MENU_BACKGROUND", false, "jpg");
     this->randomizeFilePath();
-    this->checkLoadImage(&this->skybox, "skybox", "SKIN_FPOSU_3D_SKYBOX");
+    this->checkLoadImage(this->skybox, "skybox", "SKIN_FPOSU_3D_SKYBOX");
 
     // slider ticks
     this->loadSound(this->normalSliderTick, "normal-slidertick", "SKIN_NORMALSLIDERTICK_SND",  //
@@ -665,84 +676,33 @@ void Skin::load() {
     if(!this->clickPauseRetry) this->clickPauseRetry = this->clickButton;
     if(!this->hoverPauseRetry) this->hoverPauseRetry = this->pauseHover;
 
-    // scaling
-    // HACKHACK: this is pure cancer
-    if(this->cursor && this->cursor->getFilePath().contains("@2x")) this->bCursor2x = true;
-    if(this->cursorTrail && this->cursorTrail->getFilePath().contains("@2x")) this->bCursorTrail2x = true;
-    if(this->cursorRipple && this->cursorRipple->getFilePath().contains("@2x")) this->bCursorRipple2x = true;
-    if(this->cursorSmoke && this->cursorSmoke->getFilePath().contains("@2x")) this->bCursorSmoke2x = true;
-    if(this->approachCircle && this->approachCircle->getFilePath().contains("@2x")) this->bApproachCircle2x = true;
-    if(this->reverseArrow && this->reverseArrow->getFilePath().contains("@2x")) this->bReverseArrow2x = true;
-    if(this->hitCircle && this->hitCircle->getFilePath().contains("@2x")) this->bHitCircle2x = true;
-    if(this->defaultNumImgs[0] && this->defaultNumImgs[0]->getFilePath().contains("@2x")) this->bIsDefault02x = true;
-    if(this->defaultNumImgs[1] && this->defaultNumImgs[1]->getFilePath().contains("@2x")) this->bIsDefault12x = true;
-    if(this->scoreNumImgs[0] && this->scoreNumImgs[0]->getFilePath().contains("@2x")) this->bIsScore02x = true;
-    if(this->comboNumImgs[0] && this->comboNumImgs[0]->getFilePath().contains("@2x")) this->bIsCombo02x = true;
-    if(this->spinnerApproachCircle && this->spinnerApproachCircle->getFilePath().contains("@2x"))
-        this->bSpinnerApproachCircle2x = true;
-    if(this->spinnerBackground && this->spinnerBackground->getFilePath().contains("@2x"))
-        this->bSpinnerBackground2x = true;
-    if(this->spinnerBottom && this->spinnerBottom->getFilePath().contains("@2x")) this->bSpinnerBottom2x = true;
-    if(this->spinnerCircle && this->spinnerCircle->getFilePath().contains("@2x")) this->bSpinnerCircle2x = true;
-    if(this->spinnerClear && this->spinnerClear->getFilePath().contains("@2x")) this->bSpinnerClear2x = true;
-    if(this->spinnerTop && this->spinnerTop->getFilePath().contains("@2x")) this->bSpinnerTop2x = true;
-    if(this->spinnerMetre && this->spinnerMetre->getFilePath().contains("@2x")) this->bSpinnerMetre2x = true;
-    if(this->spinnerMiddle && this->spinnerMiddle->getFilePath().contains("@2x")) this->bSpinnerMiddle2x = true;
-    if(this->spinnerMiddle2 && this->spinnerMiddle2->getFilePath().contains("@2x")) this->bSpinnerMiddle22x = true;
-    if(this->sliderScorePoint && this->sliderScorePoint->getFilePath().contains("@2x"))
-        this->bSliderScorePoint2x = true;
-    if(this->sliderStartCircle && this->sliderStartCircle->getFilePath().contains("@2x"))
-        this->bSliderStartCircle2x = true;
-    if(this->sliderEndCircle && this->sliderEndCircle->getFilePath().contains("@2x")) this->bSliderEndCircle2x = true;
-
-    if(this->circularmetre && this->circularmetre->getFilePath().contains("@2x")) this->bCircularmetre2x = true;
-
-    if(this->pauseContinue && this->pauseContinue->getFilePath().contains("@2x")) this->bPauseContinue2x = true;
-
-    if(this->menuButtonBackground && this->menuButtonBackground->getFilePath().contains("@2x"))
-        this->bMenuButtonBackground2x = true;
-    if(this->star && this->star->getFilePath().contains("@2x")) this->bStar2x = true;
-    if(this->rankingPanel && this->rankingPanel->getFilePath().contains("@2x")) this->bRankingPanel2x = true;
-    if(this->rankingMaxCombo && this->rankingMaxCombo->getFilePath().contains("@2x")) this->bRankingMaxCombo2x = true;
-    if(this->rankingAccuracy && this->rankingAccuracy->getFilePath().contains("@2x")) this->bRankingAccuracy2x = true;
-    if(this->rankingA && this->rankingA->getFilePath().contains("@2x")) this->bRankingA2x = true;
-    if(this->rankingB && this->rankingB->getFilePath().contains("@2x")) this->bRankingB2x = true;
-    if(this->rankingC && this->rankingC->getFilePath().contains("@2x")) this->bRankingC2x = true;
-    if(this->rankingD && this->rankingD->getFilePath().contains("@2x")) this->bRankingD2x = true;
-    if(this->rankingS && this->rankingS->getFilePath().contains("@2x")) this->bRankingS2x = true;
-    if(this->rankingSH && this->rankingSH->getFilePath().contains("@2x")) this->bRankingSH2x = true;
-    if(this->rankingX && this->rankingX->getFilePath().contains("@2x")) this->bRankingX2x = true;
-    if(this->rankingXH && this->rankingXH->getFilePath().contains("@2x")) this->bRankingXH2x = true;
-
-    // HACKHACK: all of the <>2 loads are temporary fixes until I fix the checkLoadImage() function logic
-
     // custom
-    Image *defaultCursor = resourceManager->getImage("SKIN_CURSOR_DEFAULT");
-    Image *defaultCursor2 = this->cursor;
-    if(defaultCursor != nullptr)
+    BasicSkinImage defaultCursor{resourceManager->getImage("SKIN_CURSOR_DEFAULT")};
+    BasicSkinImage defaultCursor2 = this->cursor;
+    if(defaultCursor)
         this->defaultCursor = defaultCursor;
-    else if(defaultCursor2 != nullptr)
+    else if(defaultCursor2)
         this->defaultCursor = defaultCursor2;
 
-    Image *defaultButtonLeft = resourceManager->getImage("SKIN_BUTTON_LEFT_DEFAULT");
-    Image *defaultButtonLeft2 = this->buttonLeft;
-    if(defaultButtonLeft != nullptr)
+    BasicSkinImage defaultButtonLeft{resourceManager->getImage("SKIN_BUTTON_LEFT_DEFAULT")};
+    BasicSkinImage defaultButtonLeft2 = this->buttonLeft;
+    if(defaultButtonLeft)
         this->defaultButtonLeft = defaultButtonLeft;
-    else if(defaultButtonLeft2 != nullptr)
+    else if(defaultButtonLeft2)
         this->defaultButtonLeft = defaultButtonLeft2;
 
-    Image *defaultButtonMiddle = resourceManager->getImage("SKIN_BUTTON_MIDDLE_DEFAULT");
-    Image *defaultButtonMiddle2 = this->buttonMiddle;
-    if(defaultButtonMiddle != nullptr)
+    BasicSkinImage defaultButtonMiddle{resourceManager->getImage("SKIN_BUTTON_MIDDLE_DEFAULT")};
+    BasicSkinImage defaultButtonMiddle2 = this->buttonMiddle;
+    if(defaultButtonMiddle)
         this->defaultButtonMiddle = defaultButtonMiddle;
-    else if(defaultButtonMiddle2 != nullptr)
+    else if(defaultButtonMiddle2)
         this->defaultButtonMiddle = defaultButtonMiddle2;
 
-    Image *defaultButtonRight = resourceManager->getImage("SKIN_BUTTON_RIGHT_DEFAULT");
-    Image *defaultButtonRight2 = this->buttonRight;
-    if(defaultButtonRight != nullptr)
+    BasicSkinImage defaultButtonRight{resourceManager->getImage("SKIN_BUTTON_RIGHT_DEFAULT")};
+    BasicSkinImage defaultButtonRight2 = this->buttonRight;
+    if(defaultButtonRight)
         this->defaultButtonRight = defaultButtonRight;
-    else if(defaultButtonRight2 != nullptr)
+    else if(defaultButtonRight2)
         this->defaultButtonRight = defaultButtonRight2;
 
     // print some debug info
@@ -995,9 +955,9 @@ SkinImage *Skin::createSkinImage(const std::string &skinElementName, vec2 baseSi
     return skinImage;
 }
 
-void Skin::checkLoadImage(Image **addressOfPointer, const std::string &skinElementName, const std::string &resourceName,
+void Skin::checkLoadImage(BasicSkinImage &imgRef, const std::string &skinElementName, const std::string &resourceName,
                           bool ignoreDefaultSkin, const std::string &fileExtension, bool forceLoadMipmaps) {
-    if(*addressOfPointer != MISSING_TEXTURE) return;  // we are already loaded
+    if(imgRef.img != MISSING_TEXTURE) return;  // we are already loaded
 
     // NOTE: only the default skin is loaded with a resource name (it must never be unloaded by other instances), and it
     // is NOT added to the resources vector
@@ -1037,8 +997,8 @@ void Skin::checkLoadImage(Image **addressOfPointer, const std::string &skinEleme
 
                 if(cv::skin_async.getBool()) resourceManager->requestNextLoadAsync();
 
-                *addressOfPointer = resourceManager->loadImageAbs(defaultFilePath1, defaultResourceName,
-                                                                  cv::skin_mipmaps.getBool() || forceLoadMipmaps);
+                imgRef = {resourceManager->loadImageAbs(defaultFilePath1, defaultResourceName,
+                                                        cv::skin_mipmaps.getBool() || forceLoadMipmaps)};
             } else {
                 // fallback to @1x
                 if(existsDefaultFilePath2) {
@@ -1047,8 +1007,8 @@ void Skin::checkLoadImage(Image **addressOfPointer, const std::string &skinEleme
 
                     if(cv::skin_async.getBool()) resourceManager->requestNextLoadAsync();
 
-                    *addressOfPointer = resourceManager->loadImageAbs(defaultFilePath2, defaultResourceName,
-                                                                      cv::skin_mipmaps.getBool() || forceLoadMipmaps);
+                    imgRef = {resourceManager->loadImageAbs(defaultFilePath2, defaultResourceName,
+                                                            cv::skin_mipmaps.getBool() || forceLoadMipmaps)};
                 }
             }
         }
@@ -1057,12 +1017,11 @@ void Skin::checkLoadImage(Image **addressOfPointer, const std::string &skinEleme
         if(existsFilepath1) {
             if(cv::skin_async.getBool()) resourceManager->requestNextLoadAsync();
 
-            *addressOfPointer =
-                resourceManager->loadImageAbs(filepath1, "", cv::skin_mipmaps.getBool() || forceLoadMipmaps);
-            this->resources.push_back(*addressOfPointer);
+            imgRef = {resourceManager->loadImageAbs(filepath1, "", cv::skin_mipmaps.getBool() || forceLoadMipmaps)};
+            this->resources.push_back(imgRef.img);
 
             // export
-            if(existsFilepath1) this->filepathsForExport.push_back(filepath1);
+            this->filepathsForExport.push_back(filepath1);
             if(existsFilepath2) this->filepathsForExport.push_back(filepath2);
 
             if(!existsFilepath1 && !existsFilepath2) {
@@ -1084,8 +1043,8 @@ void Skin::checkLoadImage(Image **addressOfPointer, const std::string &skinEleme
 
             if(cv::skin_async.getBool()) resourceManager->requestNextLoadAsync();
 
-            *addressOfPointer = resourceManager->loadImageAbs(defaultFilePath2, defaultResourceName,
-                                                              cv::skin_mipmaps.getBool() || forceLoadMipmaps);
+            imgRef = {resourceManager->loadImageAbs(defaultFilePath2, defaultResourceName,
+                                                    cv::skin_mipmaps.getBool() || forceLoadMipmaps)};
         }
     }
 
@@ -1093,9 +1052,8 @@ void Skin::checkLoadImage(Image **addressOfPointer, const std::string &skinEleme
     if(existsFilepath2) {
         if(cv::skin_async.getBool()) resourceManager->requestNextLoadAsync();
 
-        *addressOfPointer =
-            resourceManager->loadImageAbs(filepath2, "", cv::skin_mipmaps.getBool() || forceLoadMipmaps);
-        this->resources.push_back(*addressOfPointer);
+        imgRef = {resourceManager->loadImageAbs(filepath2, "", cv::skin_mipmaps.getBool() || forceLoadMipmaps)};
+        this->resources.push_back(imgRef.img);
     }
 
     // export

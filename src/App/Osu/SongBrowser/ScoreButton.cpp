@@ -57,10 +57,10 @@ void ScoreButton::draw() {
         // XXX: Make it flash with song BPM
         g->setColor(Color(0xff000000).setA(0.59f * (0.5f + 0.5f * this->fIndexNumberAnim)));
 
-        Image *backgroundImage = osu->getSkin()->getMenuButtonBackground();
+        const auto backgroundImage = osu->getSkin()->getMenuButtonBackground();
         g->pushTransform();
         {
-            f32 scale = SongBrowser::getUIScale2(osu->getSkin()->isMenuButtonBackground2x() ? 0.5f : 1.f);
+            f32 scale = SongBrowser::getUIScale2(backgroundImage.is2x() ? 0.5f : 1.f);
             scale *= 0.555f;  // idk (lol, idiot kiwec)
 
             g->scale(scale, scale);

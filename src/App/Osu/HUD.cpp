@@ -334,8 +334,8 @@ void HUD::drawCursor(vec2 pos, float alphaMultiplier, bool secondTrail, bool upd
         this->drawCursorTrailInt(this->cursorTrailShader, trail, pos, alphaMultiplier, false);
     }
 
-    Image *cursor = osu->getSkin()->getCursor();
-    const float scale = this->getCursorScaleFactor() * (osu->getSkin()->isCursor2x() ? 0.5f : 1.0f);
+    auto cursor = osu->getSkin()->getCursor();
+    const float scale = this->getCursorScaleFactor() * (cursor.is2x() ? 0.5f : 1.0f);
     const float animatedScale = scale * (osu->getSkin()->getCursorExpand() ? this->fCursorExpandAnim : 1.0f);
 
     // draw cursor
@@ -391,7 +391,7 @@ void HUD::drawCursorTrail(vec2 pos, float alphaMultiplier, bool secondTrail) {
 
 void HUD::drawCursorTrailInt(Shader *trailShader, std::vector<CURSORTRAIL> &trail, vec2 pos, float alphaMultiplier,
                              bool emptyTrailFrame) {
-    Image *trailImage = osu->getSkin()->getCursorTrail();
+    auto trailImage = osu->getSkin()->getCursorTrail();
 
     if(cv::draw_cursor_trail.getBool() && trailImage->isReady()) {
         const bool smoothCursorTrail =
@@ -484,7 +484,7 @@ void HUD::drawCursorTrailInt(Shader *trailShader, std::vector<CURSORTRAIL> &trai
 }
 
 void HUD::drawCursorTrailRaw(float alpha, vec2 pos) {
-    Image *trailImage = osu->getSkin()->getCursorTrail();
+    auto trailImage = osu->getSkin()->getCursorTrail();
     const float scale = this->getCursorTrailScaleFactor();
     const float animatedScale =
         scale *
@@ -503,15 +503,16 @@ void HUD::drawCursorTrailRaw(float alpha, vec2 pos) {
 }
 
 void HUD::drawCursorRipples() {
-    if(osu->getSkin()->getCursorRipple() == MISSING_TEXTURE) return;
+    auto cursorRipple = osu->getSkin()->getCursorRipple();
+    if(cursorRipple == MISSING_TEXTURE) return;
 
     // allow overscale/underscale as usual
     // this does additionally scale with the resolution (which osu doesn't do for some reason for cursor ripples)
-    const float normalized2xScale = (osu->getSkin()->isCursorRipple2x() ? 0.5f : 1.0f);
+    const float normalized2xScale = (cursorRipple.is2x() ? 0.5f : 1.0f);
     const float imageScale = Osu::getImageScale(vec2(520.0f, 520.0f), 233.0f);
 
-    const float normalizedWidth = osu->getSkin()->getCursorRipple()->getWidth() * normalized2xScale * imageScale;
-    const float normalizedHeight = osu->getSkin()->getCursorRipple()->getHeight() * normalized2xScale * imageScale;
+    const float normalizedWidth = cursorRipple->getWidth() * normalized2xScale * imageScale;
+    const float normalizedHeight = cursorRipple->getHeight() * normalized2xScale * imageScale;
 
     const float duration = std::max(cv::cursor_ripple_duration.getFloat(), 0.0001f);
     const float fadeDuration = std::max(
@@ -522,7 +523,7 @@ void HUD::drawCursorRipples() {
     g->setColor(argb(255, std::clamp<int>(cv::cursor_ripple_tint_r.getInt(), 0, 255),
                      std::clamp<int>(cv::cursor_ripple_tint_g.getInt(), 0, 255),
                      std::clamp<int>(cv::cursor_ripple_tint_b.getInt(), 0, 255)));
-    osu->getSkin()->getCursorRipple()->bind();
+    cursorRipple->bind();
     {
         for(auto &cursorRipple : this->cursorRipples) {
             const vec2 &pos = cursorRipple.pos;
@@ -540,7 +541,7 @@ void HUD::drawCursorRipples() {
                         normalizedWidth * scale, normalizedHeight * scale);
         }
     }
-    osu->getSkin()->getCursorRipple()->unbind();
+    cursorRipple->unbind();
 
     if(cv::cursor_ripple_additive.getBool()) g->setBlendMode(Graphics::BLEND_MODE::BLEND_MODE_ALPHA);
 }
@@ -784,11 +785,8 @@ void HUD::drawComboOrScoreDigits(u64 number, float scale, bool drawLeadingZeroes
     }
 
     const auto &skin = osu->getSkin();
-    const std::array<Image *, 10> &images = combo ? skin->getComboNumImgs() : skin->getScoreNumImgs();
+    const auto &images = combo ? skin->getComboNumImgs() : skin->getScoreNumImgs();
 
-    // TODO: some dumb skins might have mixed 2x and non-2x images, the spacing would break in that case
-    // (since only 0 is checked)
-    const float multiplier = (combo ? skin->isCombo02x() : skin->isScore02x()) ? 2.f : 1.f;
     const auto overlap = static_cast<float>(combo ? skin->getComboOverlap() : skin->getScoreOverlap());
 
     while(divisor >= 1) {
@@ -796,8 +794,10 @@ void HUD::drawComboOrScoreDigits(u64 number, float scale, bool drawLeadingZeroes
         number %= divisor;
         divisor /= 10;
 
-        const auto *img = images[digit];
+        const auto img = images[digit];
+        const float multiplier = img.is2x() ? 2.f : 1.f;
         auto width = static_cast<float>(img->getWidth());
+
         g->translate(width * 0.5f * scale, 0);
         g->drawImage(img);
         g->translate(width * 0.5f * scale, 0);
@@ -882,10 +882,10 @@ void HUD::drawScore(u64 score) {
     g->pushTransform();
     {
         g->scale(scale, scale);
-        g->translate(
-            osu->getVirtScreenWidth() - osu->getSkin()->getScore0()->getWidth() * scale * numDigits +
-                osu->getSkin()->getScoreOverlap() * (osu->getSkin()->isScore02x() ? 2 : 1) * scale * (numDigits - 1),
-            osu->getSkin()->getScore0()->getHeight() * scale / 2);
+        g->translate(osu->getVirtScreenWidth() - osu->getSkin()->getScore0()->getWidth() * scale * numDigits +
+                         osu->getSkin()->getScoreOverlap() * (osu->getSkin()->getScore0().is2x() ? 2 : 1) * scale *
+                             (numDigits - 1),
+                     osu->getSkin()->getScore0()->getHeight() * scale / 2);
         this->drawScoreNumber(score, scale, false);
     }
     g->popTransform();
@@ -998,7 +998,7 @@ void HUD::drawAccuracySimple(float accuracy, float scale) {
             g->translate(osu->getSkin()->getScoreDot()->getWidth() * 0.5f * scale, 0);
             g->drawImage(osu->getSkin()->getScoreDot());
             g->translate(osu->getSkin()->getScoreDot()->getWidth() * 0.5f * scale, 0);
-            g->translate(-osu->getSkin()->getScoreOverlap() * (osu->getSkin()->isScore02x() ? 2 : 1) * scale, 0);
+            g->translate(-osu->getSkin()->getScoreOverlap() * (osu->getSkin()->getScore0().is2x() ? 2 : 1) * scale, 0);
         }
 
         this->drawScoreNumber(accuracyFrac, scale, true);
@@ -1033,7 +1033,7 @@ void HUD::drawAccuracy(float accuracy) {
             (osu->getSkin()->getScoreDot() != MISSING_TEXTURE ? osu->getSkin()->getScoreDot()->getWidth() : 0) * scale +
             (osu->getSkin()->getScorePercent() != MISSING_TEXTURE ? osu->getSkin()->getScorePercent()->getWidth() : 0) *
                 scale -
-            osu->getSkin()->getScoreOverlap() * (osu->getSkin()->isScore02x() ? 2 : 1) * scale * (numDigits + 1);
+            osu->getSkin()->getScoreOverlap() * (osu->getSkin()->getScore0().is2x() ? 2 : 1) * scale * (numDigits + 1);
 
         this->fAccuracyXOffset = osu->getVirtScreenWidth() - xOffset - offset;
         this->fAccuracyYOffset = (cv::draw_score.getBool() ? this->fScoreHeight : 0.0f) +
@@ -1050,7 +1050,7 @@ void HUD::drawAccuracy(float accuracy) {
             g->translate(osu->getSkin()->getScoreDot()->getWidth() * 0.5f * scale, 0);
             g->drawImage(osu->getSkin()->getScoreDot());
             g->translate(osu->getSkin()->getScoreDot()->getWidth() * 0.5f * scale, 0);
-            g->translate(-osu->getSkin()->getScoreOverlap() * (osu->getSkin()->isScore02x() ? 2 : 1) * scale, 0);
+            g->translate(-osu->getSkin()->getScoreOverlap() * (osu->getSkin()->getScore0().is2x() ? 2 : 1) * scale, 0);
         }
 
         this->drawScoreNumber(accuracyFrac, scale, true);
@@ -1289,10 +1289,10 @@ void HUD::drawFancyScoreboard() {
 }
 
 void HUD::drawContinue(vec2 cursor, float hitcircleDiameter) {
-    Image *unpause = osu->getSkin()->getUnpause();
+    auto unpause = osu->getSkin()->getUnpause();
     const float unpauseScale = Osu::getImageScale(unpause, 80);
 
-    Image *cursorImage = osu->getSkin()->getDefaultCursor();
+    auto cursorImage = osu->getSkin()->getDefaultCursor();
     const float cursorScale =
         Osu::getImageScaleToFitResolution(cursorImage, vec2(hitcircleDiameter, hitcircleDiameter));
 
@@ -2244,7 +2244,7 @@ float HUD::getCursorScaleFactor() {
 }
 
 float HUD::getCursorTrailScaleFactor() {
-    return this->getCursorScaleFactor() * (osu->getSkin()->isCursorTrail2x() ? 0.5f : 1.0f);
+    return this->getCursorScaleFactor() * (osu->getSkin()->getCursorTrail().is2x() ? 0.5f : 1.0f);
 }
 
 float HUD::getScoreScale() {
@@ -2390,7 +2390,7 @@ void HUD::addCursorTrailPosition(std::vector<CURSORTRAIL> &trail, vec2 pos) {
        pos.y < -osu->getVirtScreenHeight() || pos.y > osu->getVirtScreenHeight() * 2)
         return;  // fuck oob trails
 
-    Image *trailImage = osu->getSkin()->getCursorTrail();
+    auto trailImage = osu->getSkin()->getCursorTrail();
 
     const bool smoothCursorTrail = osu->getSkin()->useSmoothCursorTrail() || cv::cursor_trail_smooth_force.getBool();
 

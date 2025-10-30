@@ -31,7 +31,7 @@ void UIRankingScreenRankingPanel::draw() {
     if(!this->bVisible) return;
 
     const float uiScale = /*cv::ui_scale.getFloat()*/ 1.0f;  // NOTE: commented for now, doesn't really work due to
-                                                            // legacy layout expectations
+                                                             // legacy layout expectations
 
     const float globalScoreScale = (osu->getSkin()->getVersion() > 1.0f ? 1.3f : 1.05f) * uiScale;
 
@@ -92,7 +92,7 @@ void UIRankingScreenRankingPanel::draw() {
 
     // draw maxcombo label
     vec2 hardcodedOsuRankingMaxComboImageSize =
-        vec2(162, 50) * (osu->getSkin()->isRankingMaxCombo2x() ? 2.0f : 1.0f);
+        vec2(162, 50) * (osu->getSkin()->getRankingMaxCombo().is2x() ? 2.0f : 1.0f);
     scale = osu->getImageScale(hardcodedOsuRankingMaxComboImageSize, 32.0f) * uiScale;
     g->pushTransform();
     {
@@ -118,7 +118,7 @@ void UIRankingScreenRankingPanel::draw() {
 
     // draw accuracy label
     vec2 hardcodedOsuRankingAccuracyImageSize =
-        vec2(192, 58) * (osu->getSkin()->isRankingAccuracy2x() ? 2.0f : 1.0f);
+        vec2(192, 58) * (osu->getSkin()->getRankingAccuracy().is2x() ? 2.0f : 1.0f);
     scale = osu->getImageScale(hardcodedOsuRankingAccuracyImageSize, 36.0f) * uiScale;
     g->pushTransform();
     {
@@ -136,26 +136,25 @@ void UIRankingScreenRankingPanel::draw() {
         osu->getSkin()->getRankingPerfect()->drawRaw(
             this->vPos +
                 vec2(osu->getUIScale(osu->getSkin()->getVersion() > 1.0f ? 260 : 200),
-                        osu->getUIScale(430.0f) + globalYOffset) *
+                     osu->getUIScale(430.0f) + globalYOffset) *
                     vec2(1.0f, 0.97f) * uiScale -
                 vec2(0, osu->getSkin()->getRankingPerfect()->getSizeBaseRaw().y) * scale * 0.5f,
             scale);
     }
 }
 
-void UIRankingScreenRankingPanel::drawHitImage(SkinImage *img, float  /*scale*/, vec2 pos) {
+void UIRankingScreenRankingPanel::drawHitImage(SkinImage *img, float /*scale*/, vec2 pos) {
     const float uiScale = /*cv::ui_scale.getFloat()*/ 1.0f;  // NOTE: commented for now, doesn't really work due to
-                                                            // legacy layout expectations
+                                                             // legacy layout expectations
 
     /// img->setAnimationFrameForce(0);
-    img->draw(
-        vec2(this->vPos.x + osu->getUIScale(pos.x) * uiScale, this->vPos.y + osu->getUIScale(pos.y) * uiScale),
-        uiScale);
+    img->draw(vec2(this->vPos.x + osu->getUIScale(pos.x) * uiScale, this->vPos.y + osu->getUIScale(pos.y) * uiScale),
+              uiScale);
 }
 
 void UIRankingScreenRankingPanel::drawNumHits(int numHits, float scale, vec2 pos) {
     const float uiScale = /*cv::ui_scale.getFloat()*/ 1.0f;  // NOTE: commented for now, doesn't really work due to
-                                                            // legacy layout expectations
+                                                             // legacy layout expectations
 
     g->pushTransform();
     {
@@ -181,7 +180,7 @@ void UIRankingScreenRankingPanel::setScore(LiveScore *score) {
     this->bPerfect = (score->getComboFull() > 0 && this->iCombo >= score->getComboFull());
 }
 
-void UIRankingScreenRankingPanel::setScore(const FinishedScore& score) {
+void UIRankingScreenRankingPanel::setScore(const FinishedScore &score) {
     this->iScore = score.score;
     this->iNum300s = score.num300s;
     this->iNum300gs = score.numGekis;

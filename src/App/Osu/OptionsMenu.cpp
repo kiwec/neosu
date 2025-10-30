@@ -74,7 +74,7 @@ class OptionsMenuSkinPreviewElement final : public CBaseUIElement {
         const auto &skin = osu->getSkin();
 
         float hitcircleDiameter = this->vSize.y * 0.5f;
-        float numberScale = (hitcircleDiameter / (160.0f * (skin->isDefault12x() ? 2.0f : 1.0f))) * 1 *
+        float numberScale = (hitcircleDiameter / (160.0f * (skin->getDefault1().is2x() ? 2.0f : 1.0f))) * 1 *
                             cv::number_scale_multiplier.getFloat();
         float overlapScale = (hitcircleDiameter / (160.0f)) * 1 * cv::number_scale_multiplier.getFloat();
         float scoreScale = 0.5f;
@@ -150,8 +150,9 @@ class OptionsMenuSliderPreviewElement final : public CBaseUIElement {
         if(!this->bVisible) return;
 
         const float hitcircleDiameter = this->vSize.y * 0.5f;
-        const float numberScale = (hitcircleDiameter / (160.0f * (osu->getSkin()->isDefault12x() ? 2.0f : 1.0f))) * 1 *
-                                  cv::number_scale_multiplier.getFloat();
+        const float numberScale =
+            (hitcircleDiameter / (160.0f * (osu->getSkin()->getDefault1().is2x() ? 2.0f : 1.0f))) * 1 *
+            cv::number_scale_multiplier.getFloat();
         const float overlapScale = (hitcircleDiameter / (160.0f)) * 1 * cv::number_scale_multiplier.getFloat();
 
         const float approachScale = std::clamp<float>(1.0f + 1.5f - fmod(engine->getTime() * 3, 3.0f), 0.0f, 2.5f);
