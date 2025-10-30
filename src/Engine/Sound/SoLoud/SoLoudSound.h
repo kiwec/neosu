@@ -31,7 +31,7 @@ class SoLoudSound final : public Sound {
     ~SoLoudSound() override;
 
     // Sound interface implementation
-    void setPositionMS(u32 ms) override;
+    void setPositionMS(i64 ms) override;
     void setSpeed(float speed) override;
     void setPitch(float pitch) override;
     void setFrequency(float frequency) override;
@@ -68,7 +68,7 @@ class SoLoudSound final : public Sound {
     [[nodiscard]] double getStreamPositionInSeconds() const;
 
     // current playback parameters
-    float fFrequency{44100.0f};         // sample rate in Hz
+    float fFrequency{44100.0f};  // sample rate in Hz
 
     // SoLoud-specific members
     SoLoud::AudioSource *audioSource{nullptr};  // base class pointer, could be either SLFXStream or Wav

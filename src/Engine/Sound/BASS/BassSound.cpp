@@ -124,7 +124,8 @@ void BassSound::destroy() {
     this->fLastPlayTime = 0.f;
 }
 
-void BassSound::setPositionMS(u32 ms) {
+void BassSound::setPositionMS(i64 ms) {
+    assert(ms >= 0);
     if(!this->bReady || ms > this->getLengthMS()) return;
     assert(this->bStream);  // can't call setPositionMS() on a sample
 
@@ -194,7 +195,8 @@ void BassSound::setPositionMS(u32 ms) {
     this->interpolator.reset(static_cast<f64>(ms), Timing::getTimeReal(), this->getSpeed());
 }
 
-void BassSound::setPositionMS_fast(u32 ms) {
+void BassSound::setPositionMS_fast(i64 ms) {
+    assert(ms >= 0);
     if(!this->isReady() || ms > this->getLengthMS()) return;
     assert(this->bStream);  // can't call setPositionMS() on a sample
 

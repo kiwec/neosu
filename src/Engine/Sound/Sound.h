@@ -43,8 +43,8 @@ class Sound : public Resource {
     // Factory method to create the appropriate sound object
     static Sound *createSound(std::string filepath, bool stream, bool overlayable, bool loop);
 
-    virtual void setPositionMS(u32 ms) = 0;
-    virtual void setPositionMS_fast(u32 ms) { setPositionMS(ms); }  // BASS currently needs slow seek to be accurate
+    virtual void setPositionMS(i64 ms) = 0;
+    virtual void setPositionMS_fast(i64 ms) { setPositionMS(ms); }  // BASS currently needs slow seek to be accurate
     virtual void setSpeed(float speed) = 0;
     virtual void setPitch(float pitch) { this->fPitch = pitch; }
     virtual void setFrequency(float frequency) = 0;

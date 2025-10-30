@@ -142,7 +142,8 @@ void SoLoudSound::destroy() {
     this->force_sync_position_next = true;
 }
 
-void SoLoudSound::setPositionMS(u32 ms) {
+void SoLoudSound::setPositionMS(i64 ms) {
+    assert(ms >= 0);
     if(!this->isReady() || !this->audioSource || !this->handle) return;
 
     auto msD = static_cast<double>(ms);

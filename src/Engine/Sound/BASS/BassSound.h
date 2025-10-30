@@ -14,8 +14,8 @@ class BassSound final : public Sound {
         : Sound(std::move(filepath), stream, overlayable, loop) {};
     ~BassSound() override { this->destroy(); }
 
-    void setPositionMS(u32 ms) override;
-    void setPositionMS_fast(u32 ms) override;
+    void setPositionMS(i64 ms) override;
+    void setPositionMS_fast(i64 ms) override;
 
     void setSpeed(float speed) override;
     void setFrequency(float frequency) override;
