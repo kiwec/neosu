@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(neosu VERSION 41.06 LANGUAGES C CXX)
+project(neosu VERSION 41.07 LANGUAGES C CXX)
 
 # MSVC specific configuration
 if(NOT MSVC)

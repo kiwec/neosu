@@ -24,6 +24,13 @@ Changelog::Changelog() : ScreenBackable() {
 
     std::vector<CHANGELOG> changelogs;
 
+    CHANGELOG v41_07;
+    v41_07.title = "41.07";
+    v41_07.changes = {
+        R"()",
+    };
+    changelogs.push_back(v41_07);
+
     CHANGELOG v41_06;
     v41_06.title = "41.06 (2025-10-30)";
     v41_06.changes = {
