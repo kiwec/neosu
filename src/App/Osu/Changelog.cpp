@@ -39,6 +39,7 @@ Changelog::Changelog() : ScreenBackable() {
         R"(- Fixed CursorExpand: 1 skins)",
         R"(- Fixed unpause confirmation circle being clickable on the same frame as the continue button (configurable as "unpause_continue_delay")",
         R"(- Improved ingame statistics font rendering at small sizes)",
+        R"(- Improved skin support for spinners (still lots more to fix))",
         R"(- Improved window minimize/refocus behavior)",
         R"(- Screenshots taken in letterboxed mode will now be cropped by default)",
         R"(- Updated FPS counter to support frametimes above 10,000 fps)",

@@ -103,6 +103,7 @@ Skin::Skin(const UString &name, std::string filepath, bool isDefaultSkin) {
 
     // vars
     this->spinnerApproachCircleColor = 0xffffffff;
+    this->spinnerBackgroundColor = 0xffdddddd;  // "by default, tinted grey"
     this->sliderBorderColor = 0xffffffff;
     this->sliderBallColor = 0xffffffff;  // NOTE: 0xff02aaff is a hardcoded special case for osu!'s default skin, but it
                                          // does not apply to user skins
@@ -402,6 +403,10 @@ void Skin::load() {
     this->checkLoadImage(&this->spinnerTop, "spinner-top", "SKIN_SPINNERTOP");
     this->checkLoadImage(&this->spinnerSpin, "spinner-spin", "SKIN_SPINNERSPIN");
     this->checkLoadImage(&this->spinnerClear, "spinner-clear", "SKIN_SPINNERCLEAR");
+    this->checkLoadImage(&this->spinnerMetre, "spinner-metre", "SKIN_SPINNERMETRE");
+    this->checkLoadImage(&this->spinnerGlow, "spinner-glow", "SKIN_SPINNERGLOW");  // TODO: use
+    this->checkLoadImage(&this->spinnerOsu, "spinner-osu", "SKIN_SPINNEROSU");     // TODO: use
+    this->checkLoadImage(&this->spinnerRpm, "spinner-rpm", "SKIN_SPINNERRPM");     // TODO: use
 
     {
         // cursor loading was here, moved up to improve async usability
@@ -675,9 +680,13 @@ void Skin::load() {
     if(this->comboNumImgs[0] && this->comboNumImgs[0]->getFilePath().contains("@2x")) this->bIsCombo02x = true;
     if(this->spinnerApproachCircle && this->spinnerApproachCircle->getFilePath().contains("@2x"))
         this->bSpinnerApproachCircle2x = true;
+    if(this->spinnerBackground && this->spinnerBackground->getFilePath().contains("@2x"))
+        this->bSpinnerBackground2x = true;
     if(this->spinnerBottom && this->spinnerBottom->getFilePath().contains("@2x")) this->bSpinnerBottom2x = true;
     if(this->spinnerCircle && this->spinnerCircle->getFilePath().contains("@2x")) this->bSpinnerCircle2x = true;
+    if(this->spinnerClear && this->spinnerClear->getFilePath().contains("@2x")) this->bSpinnerClear2x = true;
     if(this->spinnerTop && this->spinnerTop->getFilePath().contains("@2x")) this->bSpinnerTop2x = true;
+    if(this->spinnerMetre && this->spinnerMetre->getFilePath().contains("@2x")) this->bSpinnerMetre2x = true;
     if(this->spinnerMiddle && this->spinnerMiddle->getFilePath().contains("@2x")) this->bSpinnerMiddle2x = true;
     if(this->spinnerMiddle2 && this->spinnerMiddle2->getFilePath().contains("@2x")) this->bSpinnerMiddle22x = true;
     if(this->sliderScorePoint && this->sliderScorePoint->getFilePath().contains("@2x"))
@@ -833,6 +842,9 @@ bool Skin::parseSkinINI(std::string filepath) {
                 Parsing::parse(curLine, "SliderBallFlip", ':', &this->bSliderBallFlip);
                 Parsing::parse(curLine, "AllowSliderBallTint", ':', &this->bAllowSliderBallTint);
                 Parsing::parse(curLine, "HitCircleOverlayAboveNumber", ':', &this->bHitCircleOverlayAboveNumber);
+                Parsing::parse(curLine, "SpinnerFadePlayfield", ':', &this->bSpinnerFadePlayfield);
+                Parsing::parse(curLine, "SpinnerFrequencyModulate", ':', &this->bSpinnerFrequencyModulate);
+                Parsing::parse(curLine, "SpinnerNoBlink", ':', &this->bSpinnerNoBlink);
 
                 // https://osu.ppy.sh/community/forums/topics/314209
                 Parsing::parse(curLine, "HitCircleOverlayAboveNumer", ':', &this->bHitCircleOverlayAboveNumber);
@@ -858,6 +870,8 @@ bool Skin::parseSkinINI(std::string filepath) {
                     }
                 } else if(Parsing::parse(curLine, "SpinnerApproachCircle", ':', &r, ',', &g, ',', &b))
                     this->spinnerApproachCircleColor = rgb(r, g, b);
+                else if(Parsing::parse(curLine, "SpinnerBackground", ':', &r, ',', &g, ',', &b))
+                    this->spinnerBackgroundColor = rgb(r, g, b);
                 else if(Parsing::parse(curLine, "SliderBall", ':', &r, ',', &g, ',', &b))
                     this->sliderBallColor = rgb(r, g, b);
                 else if(Parsing::parse(curLine, "SliderBorder", ':', &r, ',', &g, ',', &b))

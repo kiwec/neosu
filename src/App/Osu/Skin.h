@@ -138,15 +138,19 @@ class Skin final {
     [[nodiscard]] inline Image *getSliderEndCircleOverlay() const { return this->sliderEndCircleOverlay; }
     [[nodiscard]] inline SkinImage *getSliderEndCircleOverlay2() const { return this->sliderEndCircleOverlay2; }
 
+    [[nodiscard]] inline Image *getSpinnerApproachCircle() const { return this->spinnerApproachCircle; }
     [[nodiscard]] inline Image *getSpinnerBackground() const { return this->spinnerBackground; }
     [[nodiscard]] inline Image *getSpinnerCircle() const { return this->spinnerCircle; }
-    [[nodiscard]] inline Image *getSpinnerApproachCircle() const { return this->spinnerApproachCircle; }
+    [[nodiscard]] inline Image *getSpinnerClear() const { return this->spinnerClear; }
     [[nodiscard]] inline Image *getSpinnerBottom() const { return this->spinnerBottom; }
+    [[nodiscard]] inline Image *getSpinnerGlow() const { return this->spinnerGlow; }
+    [[nodiscard]] inline Image *getSpinnerMetre() const { return this->spinnerMetre; }
     [[nodiscard]] inline Image *getSpinnerMiddle() const { return this->spinnerMiddle; }
     [[nodiscard]] inline Image *getSpinnerMiddle2() const { return this->spinnerMiddle2; }
-    [[nodiscard]] inline Image *getSpinnerTop() const { return this->spinnerTop; }
+    [[nodiscard]] inline Image *getSpinnerOsu() const { return this->spinnerOsu; }
+    [[nodiscard]] inline Image *getSpinnerRpm() const { return this->spinnerRpm; }
     [[nodiscard]] inline Image *getSpinnerSpin() const { return this->spinnerSpin; }
-    [[nodiscard]] inline Image *getSpinnerClear() const { return this->spinnerClear; }
+    [[nodiscard]] inline Image *getSpinnerTop() const { return this->spinnerTop; }
 
     [[nodiscard]] inline Image *getDefaultCursor() const { return this->defaultCursor; }
     [[nodiscard]] inline Image *getCursor() const { return this->cursor; }
@@ -291,9 +295,12 @@ class Skin final {
     [[nodiscard]] inline bool isScore02x() const { return this->bIsScore02x; }
     [[nodiscard]] inline bool isCombo02x() const { return this->bIsCombo02x; }
     [[nodiscard]] inline bool isSpinnerApproachCircle2x() const { return this->bSpinnerApproachCircle2x; }
+    [[nodiscard]] inline bool isSpinnerBackground2x() const { return this->bSpinnerBackground2x; }
     [[nodiscard]] inline bool isSpinnerBottom2x() const { return this->bSpinnerBottom2x; }
     [[nodiscard]] inline bool isSpinnerCircle2x() const { return this->bSpinnerCircle2x; }
+    [[nodiscard]] inline bool isSpinnerClear2x() const { return this->bSpinnerClear2x; }
     [[nodiscard]] inline bool isSpinnerTop2x() const { return this->bSpinnerTop2x; }
+    [[nodiscard]] inline bool isSpinnerMetre2x() const { return this->bSpinnerMetre2x; }
     [[nodiscard]] inline bool isSpinnerMiddle2x() const { return this->bSpinnerMiddle2x; }
     [[nodiscard]] inline bool isSpinnerMiddle22x() const { return this->bSpinnerMiddle22x; }
     [[nodiscard]] inline bool isSliderScorePoint2x() const { return this->bSliderScorePoint2x; }
@@ -445,15 +452,19 @@ class Skin final {
     Image *sliderEndCircleOverlay{MISSING_TEXTURE};
     SkinImage *sliderEndCircleOverlay2{nullptr};
 
+    Image *spinnerApproachCircle{MISSING_TEXTURE};
     Image *spinnerBackground{MISSING_TEXTURE};
     Image *spinnerCircle{MISSING_TEXTURE};
-    Image *spinnerApproachCircle{MISSING_TEXTURE};
+    Image *spinnerClear{MISSING_TEXTURE};
     Image *spinnerBottom{MISSING_TEXTURE};
+    Image *spinnerGlow{MISSING_TEXTURE};
+    Image *spinnerMetre{MISSING_TEXTURE};
     Image *spinnerMiddle{MISSING_TEXTURE};
     Image *spinnerMiddle2{MISSING_TEXTURE};
+    Image *spinnerOsu{MISSING_TEXTURE};
     Image *spinnerTop{MISSING_TEXTURE};
+    Image *spinnerRpm{MISSING_TEXTURE};
     Image *spinnerSpin{MISSING_TEXTURE};
-    Image *spinnerClear{MISSING_TEXTURE};
 
     Image *defaultCursor{MISSING_TEXTURE};
     Image *cursor{MISSING_TEXTURE};
@@ -552,6 +563,7 @@ class Skin final {
     std::vector<Color> comboColors;
     std::vector<Color> beatmapComboColors;
     Color spinnerApproachCircleColor;
+    Color spinnerBackgroundColor;
     Color sliderBorderColor;
     Color sliderTrackOverride;
     Color sliderBallColor;
@@ -574,9 +586,12 @@ class Skin final {
     bool bIsScore02x{false};
     bool bIsCombo02x{false};
     bool bSpinnerApproachCircle2x{false};
+    bool bSpinnerBackground2x{false};
     bool bSpinnerBottom2x{false};
     bool bSpinnerCircle2x{false};
+    bool bSpinnerClear2x{false};
     bool bSpinnerTop2x{false};
+    bool bSpinnerMetre2x{false};
     bool bSpinnerMiddle2x{false};
     bool bSpinnerMiddle22x{false};
     bool bSliderScorePoint2x{false};
@@ -608,6 +623,9 @@ class Skin final {
     bool bCursorRotate{true};
     bool bCursorExpand{true};
     bool bLayeredHitSounds{true};  // when true, hitnormal sounds must always be played regardless of map hitsound flags
+    bool bSpinnerFadePlayfield{false};     // Should the spinner add black bars during spins
+    bool bSpinnerFrequencyModulate{true};  // Should the spinnerspin sound pitch up the longer the spinner goes
+    bool bSpinnerNoBlink{false};           // Should the highest bar of the metre stay visible all the time
 
     bool bSliderBallFlip{true};
     bool bAllowSliderBallTint{false};
