@@ -64,8 +64,8 @@ class SongBrowser final : public ScreenBackable {
     static bool sort_by_title(SongButton const *a, SongButton const *b);
 
    public:
-    using SORT_ENUM = SortTypes::type;
-    using GROUP_ENUM = GroupTypes::type;
+    using SortType = SortTypes::type;
+    using GroupType = GroupTypes::type;
 
     // used also by SongButton
     static bool sort_by_difficulty(SongButton const *a, SongButton const *b);
@@ -142,36 +142,29 @@ class SongBrowser final : public ScreenBackable {
     struct SORTING_METHOD {
         std::string_view name;
         SORTING_COMPARATOR comparator;
-        SORT_ENUM type;
     };
 
-    struct GROUPING {
-        std::string_view name;
-        GROUP_ENUM type;
-    };
+    static constexpr std::array<SORTING_METHOD, SortType::MAX> SORTING_METHODS{
+        {{"By Artist", sort_by_artist},          //
+         {"By BPM", sort_by_bpm},                //
+         {"By Creator", sort_by_creator},        //
+         {"By Date Added", sort_by_date_added},  //
+         {"By Difficulty", sort_by_difficulty},  //
+         {"By Length", sort_by_length},          //
+         {"By Title", sort_by_title},            //
+         {"By Rank Achieved", sort_by_grade}}};  //
 
-    static constexpr std::array<SORTING_METHOD, SORT_ENUM::MAX> SORTING_METHODS{
-        {{"By Artist", sort_by_artist, SORT_ENUM::ARTIST},
-         {"By BPM", sort_by_bpm, SORT_ENUM::BPM},
-         {"By Creator", sort_by_creator, SORT_ENUM::CREATOR},
-         {"By Date Added", sort_by_date_added, SORT_ENUM::DATEADDED},
-         {"By Difficulty", sort_by_difficulty, SORT_ENUM::DIFFICULTY},
-         {"By Length", sort_by_length, SORT_ENUM::LENGTH},
-         {"By Title", sort_by_title, SORT_ENUM::TITLE},
-         {"By Rank Achieved", sort_by_grade, SORT_ENUM::RANKACHIEVED}}};
+    static constexpr std::array<std::string_view, GroupType::MAX> GROUP_NAMES{{"By Artist",      //
+                                                                               "By BPM",         //
+                                                                               "By Creator",     //
+                                                                               "By Date",        // not yet possible
+                                                                               "By Difficulty",  //
+                                                                               "By Length",      //
+                                                                               "By Title",       //
+                                                                               "Collections",    //
+                                                                               "No Grouping"}};  //
 
-    static constexpr std::array<GROUPING, GROUP_ENUM::MAX> GROUPINGS{
-        {{"By Artist", GROUP_ENUM::ARTIST},
-         {"By BPM", GROUP_ENUM::BPM},
-         {"By Creator", GROUP_ENUM::CREATOR},
-         {"By Date", GROUP_ENUM::DATEADDED},  // not yet possible
-         {"By Difficulty", GROUP_ENUM::DIFFICULTY},
-         {"By Length", GROUP_ENUM::LENGTH},
-         {"By Title", GROUP_ENUM::TITLE},
-         {"Collections", GROUP_ENUM::COLLECTIONS},
-         {"No Grouping", GROUP_ENUM::NO_GROUPING}}};
-
-    [[nodiscard]] inline GROUP_ENUM getGroupingMode() const { return this->curGroup.type; }
+    [[nodiscard]] inline GroupType getGroupingMode() const { return this->curGroup; }
 
     static bool searchMatcher(const DatabaseBeatmap *databaseBeatmap,
                               const std::vector<std::string_view> &searchStringTokens);
@@ -203,10 +196,8 @@ class SongBrowser final : public ScreenBackable {
 
     void onSortClicked(CBaseUIButton *button);
     void onSortChange(const UString &text, int id = -1);
-    void onSortChangeInt(const UString &text);
 
-    void rebuildAfterGroupOrSortChange(const GROUPING &group,
-                                       const std::optional<SORTING_METHOD> &sortMethod = std::nullopt);
+    void rebuildAfterGroupOrSortChange(GroupType group, const std::optional<SortType> &sortMethod = std::nullopt);
 
     void onSelectionMode();
     void onSelectionMods();
@@ -221,8 +212,8 @@ class SongBrowser final : public ScreenBackable {
 
     std::mt19937_64 rngalg;
 
-    GROUPING curGroup{GROUPINGS[GROUP_ENUM::NO_GROUPING]};
-    SORTING_METHOD curSortMethod{SORTING_METHODS[SORT_ENUM::ARTIST]};
+    GroupType curGroup{GroupType::NO_GROUPING};
+    SortType curSortMethod{SortType::ARTIST};
 
     // top bar left
     CBaseUIContainer *topbarLeft;
@@ -325,9 +316,9 @@ class SongBrowser final : public ScreenBackable {
     bool bInSearch;
     bool bShouldRecountMatchesAfterSearch{true};
     i32 currentVisibleSearchMatches{0};
-    std::optional<GROUPING> searchPrevGroup{std::nullopt};
+    std::optional<GroupType> searchPrevGroup{std::nullopt};
     SongBrowserBackgroundSearchMatcher *backgroundSearchMatcher;
 
    private:
-    std::vector<CollectionButton *> *getCollectionButtonsForGroup(GroupTypes::type group);
+    std::vector<CollectionButton *> *getCollectionButtonsForGroup(GroupType group);
 };

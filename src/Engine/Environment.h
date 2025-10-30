@@ -31,36 +31,37 @@ extern Environment *env;
 
 class Environment {
     NOCOPY_NOMOVE(Environment)
-   public:
+   protected:
     // clang-format off
-        using WindowFlag = uint64_t;
-        using WindowFlags = WindowFlag;
-        // copied from SDL3/SDL_video.h::SDL_WindowFlags
-        static constexpr const WindowFlag WFL_FULLSCREEN =          0x0000000000000001; /**< window is in fullscreen mode */
-        static constexpr const WindowFlag WFL_OPENGL =              0x0000000000000002; /**< window usable with OpenGL context */
-        static constexpr const WindowFlag WFL_OCCLUDED =            0x0000000000000004; /**< window is occluded */
-        static constexpr const WindowFlag WFL_HIDDEN =              0x0000000000000008; /**< window is neither mapped onto the desktop nor shown in the taskbar/dock/window list; ShowWindow() is required for it to become visible */
-        static constexpr const WindowFlag WFL_BORDERLESS =          0x0000000000000010; /**< no window decoration */
-        static constexpr const WindowFlag WFL_RESIZABLE =           0x0000000000000020; /**< window can be resized */
-        static constexpr const WindowFlag WFL_MINIMIZED =           0x0000000000000040; /**< window is minimized */
-        static constexpr const WindowFlag WFL_MAXIMIZED =           0x0000000000000080; /**< window is maximized */
-        static constexpr const WindowFlag WFL_MOUSE_GRABBED =       0x0000000000000100; /**< window has grabbed mouse input */
-        static constexpr const WindowFlag WFL_INPUT_FOCUS =         0x0000000000000200; /**< window has input focus */
-        static constexpr const WindowFlag WFL_MOUSE_FOCUS =         0x0000000000000400; /**< window has mouse focus */
-        static constexpr const WindowFlag WFL_EXTERNAL =            0x0000000000000800; /**< window not created by SDL */
-        static constexpr const WindowFlag WFL_MODAL =               0x0000000000001000; /**< window is modal */
-        static constexpr const WindowFlag WFL_HIGH_PIXEL_DENSITY =  0x0000000000002000; /**< window uses high pixel density back buffer if possible */
-        static constexpr const WindowFlag WFL_MOUSE_CAPTURE =       0x0000000000004000; /**< window has mouse captured (unrelated to MOUSE_GRABBED) */
-        static constexpr const WindowFlag WFL_MOUSE_RELATIVE_MODE = 0x0000000000008000; /**< window has relative mode enabled */
-        static constexpr const WindowFlag WFL_ALWAYS_ON_TOP =       0x0000000000010000; /**< window should always be above others */
-        static constexpr const WindowFlag WFL_UTILITY =             0x0000000000020000; /**< window should be treated as a utility window, not showing in the task bar and window list */
-        static constexpr const WindowFlag WFL_TOOLTIP =             0x0000000000040000; /**< window should be treated as a tooltip and does not get mouse or keyboard focus, requires a parent window */
-        static constexpr const WindowFlag WFL_POPUP_MENU =          0x0000000000080000; /**< window should be treated as a popup menu, requires a parent window */
-        static constexpr const WindowFlag WFL_KEYBOARD_GRABBED =    0x0000000000100000; /**< window has grabbed keyboard input */
-        static constexpr const WindowFlag WFL_VULKAN =              0x0000000010000000; /**< window usable for Vulkan surface */
-        static constexpr const WindowFlag WFL_METAL =               0x0000000020000000; /**< window usable for Metal view */
-        static constexpr const WindowFlag WFL_TRANSPARENT =         0x0000000040000000; /**< window with transparent buffer */
-        static constexpr const WindowFlag WFL_NOT_FOCUSABLE =       0x0000000080000000; /**< window should not be focusable */
+    using WindowFlag = uint64_t;
+    using WindowFlags = WindowFlag;
+    // copied from SDL3/SDL_video.h::SDL_WindowFlags
+    static constexpr const WindowFlag
+        WFL_FULLSCREEN =          0x0000000000000001, /**< window is in fullscreen mode */
+        WFL_OPENGL =              0x0000000000000002, /**< window usable with OpenGL context */
+        WFL_OCCLUDED =            0x0000000000000004, /**< window is occluded */
+        WFL_HIDDEN =              0x0000000000000008, /**< window is neither mapped onto the desktop nor shown in the taskbar/dock/window list; ShowWindow() is required for it to become visible */
+        WFL_BORDERLESS =          0x0000000000000010, /**< no window decoration */
+        WFL_RESIZABLE =           0x0000000000000020, /**< window can be resized */
+        WFL_MINIMIZED =           0x0000000000000040, /**< window is minimized */
+        WFL_MAXIMIZED =           0x0000000000000080, /**< window is maximized */
+        WFL_MOUSE_GRABBED =       0x0000000000000100, /**< window has grabbed mouse input */
+        WFL_INPUT_FOCUS =         0x0000000000000200, /**< window has input focus */
+        WFL_MOUSE_FOCUS =         0x0000000000000400, /**< window has mouse focus */
+        WFL_EXTERNAL =            0x0000000000000800, /**< window not created by SDL */
+        WFL_MODAL =               0x0000000000001000, /**< window is modal */
+        WFL_HIGH_PIXEL_DENSITY =  0x0000000000002000, /**< window uses high pixel density back buffer if possible */
+        WFL_MOUSE_CAPTURE =       0x0000000000004000, /**< window has mouse captured (unrelated to MOUSE_GRABBED) */
+        WFL_MOUSE_RELATIVE_MODE = 0x0000000000008000, /**< window has relative mode enabled */
+        WFL_ALWAYS_ON_TOP =       0x0000000000010000, /**< window should always be above others */
+        WFL_UTILITY =             0x0000000000020000, /**< window should be treated as a utility window, not showing in the task bar and window list */
+        WFL_TOOLTIP =             0x0000000000040000, /**< window should be treated as a tooltip and does not get mouse or keyboard focus, requires a parent window */
+        WFL_POPUP_MENU =          0x0000000000080000, /**< window should be treated as a popup menu, requires a parent window */
+        WFL_KEYBOARD_GRABBED =    0x0000000000100000, /**< window has grabbed keyboard input */
+        WFL_VULKAN =              0x0000000010000000, /**< window usable for Vulkan surface */
+        WFL_METAL =               0x0000000020000000, /**< window usable for Metal view */
+        WFL_TRANSPARENT =         0x0000000040000000, /**< window with transparent buffer */
+        WFL_NOT_FOCUSABLE =       0x0000000080000000; /**< window should not be focusable */
     // clang-format on
 
    public:

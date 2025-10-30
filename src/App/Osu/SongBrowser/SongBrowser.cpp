@@ -1429,8 +1429,8 @@ void SongBrowser::refreshBeatmaps(bool closeAfterLoading) {
     this->searchPrevGroup = std::nullopt;
 
     // force no grouping
-    if(this->curGroup.type != GROUP_ENUM::NO_GROUPING) {
-        this->onGroupChange("", GROUP_ENUM::NO_GROUPING);
+    if(this->curGroup != GroupType::NO_GROUPING) {
+        this->onGroupChange("", GroupType::NO_GROUPING);
     } else {
         this->groupByNothingBtn->setTextBrightColor(highlightColor);
     }
@@ -2614,12 +2614,12 @@ void SongBrowser::onSearchUpdate() {
             hasSearchStringChanged || hasHardcodedSearchStringChanged || hasInSearchChanged;
 
         // GROUP_COLLECTIONS is the only group that can filter beatmaps, so skip some work if we're not switching between that and something else
-        this->bShouldRecountMatchesAfterSearch = this->bShouldRecountMatchesAfterSearch ||                       //
-                                                 shouldRefreshMatches ||                                         //
-                                                 (!this->searchPrevGroup.has_value() ||                          //
-                                                  (this->curGroup.type != this->searchPrevGroup.value().type &&  //
-                                                   (this->curGroup.type == GROUP_ENUM::COLLECTIONS ||
-                                                    this->searchPrevGroup.value().type == GROUP_ENUM::COLLECTIONS)));
+        this->bShouldRecountMatchesAfterSearch =
+            this->bShouldRecountMatchesAfterSearch ||             //
+            shouldRefreshMatches ||                               //
+            (!this->searchPrevGroup.has_value() ||                //
+             (this->curGroup != this->searchPrevGroup.value() &&  //
+              (this->curGroup == GroupType::COLLECTIONS || this->searchPrevGroup.value() == GroupType::COLLECTIONS)));
 
         this->searchPrevGroup = this->curGroup;
 
@@ -2664,7 +2664,8 @@ void SongBrowser::onSearchUpdate() {
         // remember which tab was selected, instead of defaulting back to no grouping
         // this also rebuilds the visible buttons list
         if(this->searchPrevGroup.has_value()) {
-            this->onGroupChange(this->searchPrevGroup.value().name, this->searchPrevGroup.value().type);
+            auto prevgid = this->searchPrevGroup.value();
+            this->onGroupChange(GROUP_NAMES[prevgid], prevgid);
         }
     }
 
@@ -2689,7 +2690,7 @@ void SongBrowser::rebuildSongButtonsAndVisibleSongButtonsWithSearchMatchSupport(
     }
 
     // use flagged search matches to rebuild visible song buttons
-    if(this->curGroup.type == GROUP_ENUM::NO_GROUPING) {
+    if(this->curGroup == GroupType::NO_GROUPING) {
         for(auto &songButton : this->songButtons) {
             const auto &children = songButton->getChildren();
             if(children.size() > 0) {
@@ -2722,7 +2723,7 @@ void SongBrowser::rebuildSongButtonsAndVisibleSongButtonsWithSearchMatchSupport(
             }
         }
     } else {
-        std::vector<CollectionButton *> *groupButtons = getCollectionButtonsForGroup(this->curGroup.type);
+        std::vector<CollectionButton *> *groupButtons = getCollectionButtonsForGroup(this->curGroup);
 
         if(groupButtons != nullptr) {
             for(const auto &groupButton : *groupButtons) {
@@ -2820,8 +2821,7 @@ void SongBrowser::onFilterScoresChange(const UString &text, int id) {
     }
 
     // always change for manual setting, otherwise allow login state to affect filtering (if it was never manually set)
-    const bool should_change =
-        id != LOGIN_STATE_FILTER_ID || (manual_type_cv->isDefault());
+    const bool should_change = id != LOGIN_STATE_FILTER_ID || (manual_type_cv->isDefault());
     if(!should_change) {
         text_to_set = UString{manual_type_cv->getString()};
     }
@@ -2849,11 +2849,14 @@ void SongBrowser::onWebClicked(CBaseUIButton * /*button*/) {
 
 void SongBrowser::onQuickGroupClicked(CBaseUIButton *button) {
     if(button->getText().isEmpty()) return;
-    if(const auto it = std::ranges::find(GROUPINGS, button->getText().utf8View(),
-                                         [](const auto &grouping) { return grouping.name; });
-       it != GROUPINGS.end()) {
-        const auto &group = *it;
-        this->onGroupChange(group.name, group.type);
+    const std::string_view btntxt = button->getText().utf8View();
+
+    for(int gid = -1; const auto &gname : GROUP_NAMES) {
+        ++gid;
+        if(btntxt == gname) {
+            this->onGroupChange(gname, gid);
+            break;
+        }
     }
 }
 
@@ -2862,35 +2865,35 @@ void SongBrowser::onGroupClicked(CBaseUIButton *button) {
     this->contextMenu->setRelPos(button->getRelPos());
     this->contextMenu->begin(button->getSize().x);
     {
-        for(const auto &grouping : GROUPINGS) {
-            CBaseUIButton *button = this->contextMenu->addButton(grouping.name, grouping.type);
-            if(grouping.type == this->curGroup.type) button->setTextBrightColor(0xff00ff00);
+        for(int gid = -1; const auto &gname : GROUP_NAMES) {
+            ++gid;
+            CBaseUIButton *button = this->contextMenu->addButton(gname, gid);
+            if(gid == this->curGroup) button->setTextBrightColor(0xff00ff00);
         }
     }
     this->contextMenu->end(false, false);
     this->contextMenu->setClickCallback(SA::MakeDelegate<&SongBrowser::onGroupChange>(this));
 }
 
-std::vector<CollectionButton *> *SongBrowser::getCollectionButtonsForGroup(GROUP_ENUM group) {
+std::vector<CollectionButton *> *SongBrowser::getCollectionButtonsForGroup(GroupType group) {
     switch(group) {
-        case GROUP_ENUM::NO_GROUPING:
-            return nullptr;
-        case GROUP_ENUM::ARTIST:
+        case GroupType::ARTIST:
             return &this->artistCollectionButtons;
-        case GROUP_ENUM::CREATOR:
+        case GroupType::CREATOR:
             return &this->creatorCollectionButtons;
-        case GROUP_ENUM::DIFFICULTY:
+        case GroupType::DIFFICULTY:
             return &this->difficultyCollectionButtons;
-        case GROUP_ENUM::LENGTH:
+        case GroupType::LENGTH:
             return &this->lengthCollectionButtons;
-        case GROUP_ENUM::TITLE:
+        case GroupType::TITLE:
             return &this->titleCollectionButtons;
-        case GROUP_ENUM::BPM:
+        case GroupType::BPM:
             return &this->bpmCollectionButtons;
         // case GROUP::GROUP_DATEADDED:
         //     return &this->dateaddedCollectionButtons;
-        case GROUP_ENUM::COLLECTIONS:
+        case GroupType::COLLECTIONS:
             return &this->collectionButtons;
+        case GroupType::NO_GROUPING:
         default:
             return nullptr;
     }
@@ -2898,18 +2901,21 @@ std::vector<CollectionButton *> *SongBrowser::getCollectionButtonsForGroup(GROUP
 }
 
 void SongBrowser::onGroupChange(const UString &text, int id) {
-    GROUPING grouping = this->curGroup;
-    if(id >= 0 && id < GROUP_ENUM::MAX) {
-        grouping = GROUPINGS[id];
+    auto group_id = this->curGroup;
+    if(id >= 0 && id < GroupType::MAX) {
+        group_id = (GroupType)id;
     } else if(!text.isEmpty()) {
-        if(const auto it = std::ranges::find(GROUPINGS, text.utf8View(), [](const auto &g) { return g.name; });
-           it != GROUPINGS.end()) {
-            grouping = *it;
+        for(int gid = -1; const auto &gname : GROUP_NAMES) {
+            ++gid;
+            if(text.utf8View() == gname) {
+                group_id = (GroupType)gid;
+                break;
+            }
         }
     }
 
     // update group combobox button text
-    this->groupButton->setText(grouping.name);
+    this->groupButton->setText(GROUP_NAMES[group_id]);
 
     // set highlighted colour
     this->groupByCollectionBtn->setTextBrightColor(defaultColor);
@@ -2917,24 +2923,24 @@ void SongBrowser::onGroupChange(const UString &text, int id) {
     this->groupByDifficultyBtn->setTextBrightColor(defaultColor);
     this->groupByNothingBtn->setTextBrightColor(defaultColor);
 
-    switch(grouping.type) {
-        case GROUP_ENUM::ARTIST:
+    switch(group_id) {
+        case GroupType::ARTIST:
             this->groupByArtistBtn->setTextBrightColor(highlightColor);
             break;
-        case GROUP_ENUM::DIFFICULTY:
+        case GroupType::DIFFICULTY:
             this->groupByDifficultyBtn->setTextBrightColor(highlightColor);
             break;
-        case GROUP_ENUM::COLLECTIONS:
+        case GroupType::COLLECTIONS:
             this->groupByCollectionBtn->setTextBrightColor(highlightColor);
             break;
-        case GROUP_ENUM::NO_GROUPING:
+        case GroupType::NO_GROUPING:
         default:
             this->groupByNothingBtn->setTextBrightColor(highlightColor);
             break;
     }
 
     // and update the actual songbrowser contents
-    rebuildAfterGroupOrSortChange(grouping);
+    rebuildAfterGroupOrSortChange(group_id);
 }
 
 void SongBrowser::onSortClicked(CBaseUIButton *button) {
@@ -2942,27 +2948,33 @@ void SongBrowser::onSortClicked(CBaseUIButton *button) {
     this->contextMenu->setRelPos(button->getRelPos());
     this->contextMenu->begin(button->getSize().x);
     {
-        for(const auto &sortingMethod : SORTING_METHODS) {
-            CBaseUIButton *button = this->contextMenu->addButton(sortingMethod.name);
-            if(sortingMethod.type == this->curSortMethod.type) button->setTextBrightColor(0xff00ff00);
+        for(int stype = -1; const auto &sortmeth : SORTING_METHODS) {
+            ++stype;
+            CBaseUIButton *button = this->contextMenu->addButton(sortmeth.name, stype);
+            if(stype == this->curSortMethod) button->setTextBrightColor(0xff00ff00);
         }
     }
     this->contextMenu->end(false, false);
     this->contextMenu->setClickCallback(SA::MakeDelegate<&SongBrowser::onSortChange>(this));
 }
 
-void SongBrowser::onSortChange(const UString &text, int /*id*/) { this->onSortChangeInt(text); }
-
-void SongBrowser::onSortChangeInt(const UString &text) {
-    SORTING_METHOD newMethod = this->curSortMethod;
-    if(!text.isEmpty()) {
-        const auto it = std::ranges::find(SORTING_METHODS, text.utf8View(), [](const auto &g) { return g.name; });
-        if(it != SORTING_METHODS.end()) {
-            newMethod = *it;
+void SongBrowser::onSortChange(const UString &text, int id) {
+    auto sort_id = this->curSortMethod;
+    if(id >= 0 && id < SortType::MAX) {
+        sort_id = (SortType)id;
+    } else if(!text.isEmpty()) {
+        for(int sid = -1; const auto &sortmeth : SORTING_METHODS) {
+            ++sid;
+            if(text.utf8View() == sortmeth.name) {
+                sort_id = (SortType)sid;
+                break;
+            }
         }
     }
 
-    const bool sortChanged = newMethod.type != this->curSortMethod.type;
+    SORTING_METHOD newMethod = SORTING_METHODS[sort_id];
+
+    const bool sortChanged = sort_id != this->curSortMethod;
 
     this->sortButton->setText(newMethod.name);
     cv::songbrowser_sortingtype.setValue(newMethod.name);
@@ -2971,38 +2983,37 @@ void SongBrowser::onSortChangeInt(const UString &text) {
     if(!sortChanged) {
         this->rebuildAfterGroupOrSortChange(this->curGroup);
     } else {
-        this->rebuildAfterGroupOrSortChange(this->curGroup, newMethod);
+        this->rebuildAfterGroupOrSortChange(this->curGroup, sort_id);
     }
 }
 
-void SongBrowser::rebuildAfterGroupOrSortChange(const GROUPING &group,
-                                                const std::optional<SORTING_METHOD> &sortMethod) {
-    const bool sortingChanged = this->curSortMethod.type != sortMethod.value_or(this->curSortMethod).type;
-    const bool groupingChanged = this->curGroup.type != group.type;
+void SongBrowser::rebuildAfterGroupOrSortChange(GroupType group, const std::optional<SortType> &sortMethod) {
+    const bool sortingChanged = this->curSortMethod != sortMethod.value_or(this->curSortMethod);
+    const bool groupingChanged = this->curGroup != group;
 
     this->curGroup = group;
     this->curSortMethod = sortMethod.value_or(this->curSortMethod);
 
     if(this->bSongButtonsNeedSorting || sortingChanged) {
         // the master button list should be sorted for all groupings
-        std::ranges::sort(this->songButtons, this->curSortMethod.comparator);
+        std::ranges::sort(this->songButtons, SORTING_METHODS[this->curSortMethod].comparator);
         this->bSongButtonsNeedSorting = false;
     }
 
     this->visibleSongButtons.clear();
 
-    if(group.type == GROUP_ENUM::NO_GROUPING) {
+    if(group == GroupType::NO_GROUPING) {
         this->visibleSongButtons.reserve(this->songButtons.size());
         this->visibleSongButtons.insert(this->visibleSongButtons.end(), this->songButtons.begin(),
                                         this->songButtons.end());
     } else {
-        auto *groupButtons = this->getCollectionButtonsForGroup(group.type);
+        auto *groupButtons = this->getCollectionButtonsForGroup(group);
         if(groupButtons != nullptr) {
             this->visibleSongButtons.reserve(groupButtons->size());
             this->visibleSongButtons.insert(this->visibleSongButtons.end(), groupButtons->begin(), groupButtons->end());
 
             // only sort if switching TO this group/sorting method (not from it)
-            if(groupingChanged && this->curGroup.type == GROUP_ENUM::COLLECTIONS) {
+            if(groupingChanged && this->curGroup == GroupType::COLLECTIONS) {
                 // collections names are always sorted alphabetically
                 std::ranges::sort(
                     *groupButtons, [](const char *b1, const char *b2) -> bool { return strcasecmp(b1, b2) < 0; },
@@ -3013,7 +3024,7 @@ void SongBrowser::rebuildAfterGroupOrSortChange(const GROUPING &group,
                 for(auto &groupButton : *groupButtons) {
                     auto &children = groupButton->getChildren();
                     if(!children.empty()) {
-                        std::ranges::sort(children, this->curSortMethod.comparator);
+                        std::ranges::sort(children, SORTING_METHODS[this->curSortMethod].comparator);
                         groupButton->setChildren(children);
                     }
                 }
@@ -3215,7 +3226,7 @@ void SongBrowser::onSongButtonContextMenu(SongButton *songButton, const UString 
             this->recreateCollectionsButtons();
             this->rebuildSongButtonsAndVisibleSongButtonsWithSearchMatchSupport(
                 false, false);  // (last false = skipping rebuildSongButtons() here)
-            this->onSortChangeInt(
+            this->onSortChange(
                 cv::songbrowser_sortingtype.getString().c_str());  // (because this does the rebuildSongButtons())
         }
         if(previouslySelectedCollectionName.length() > 0) {
@@ -3248,14 +3259,14 @@ void SongBrowser::onCollectionButtonContextMenu(CollectionButton * /*collectionB
                 save_collections();
 
                 // update UI
-                this->rebuildAfterGroupOrSortChange(GROUPINGS[GROUP_ENUM::COLLECTIONS]);
+                this->rebuildAfterGroupOrSortChange(GroupType::COLLECTIONS);
 
                 break;
             }
         }
     } else if(id == 3) {  // collection has been renamed
         // update UI
-        this->onSortChangeInt(cv::songbrowser_sortingtype.getString().c_str());
+        this->onSortChange(cv::songbrowser_sortingtype.getString().c_str());
     }
 }
 
@@ -3374,7 +3385,7 @@ void SongBrowser::recreateCollectionsButtons() {
         this->collectionButtons.clear();
 
         // sanity
-        if(this->curGroup.type == GROUP_ENUM::COLLECTIONS) {
+        if(this->curGroup == GroupType::COLLECTIONS) {
             this->carousel->invalidate();
             this->visibleSongButtons.clear();
         }

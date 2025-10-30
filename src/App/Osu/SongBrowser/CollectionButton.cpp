@@ -19,9 +19,9 @@
 #include "Skin.h"
 #include "UIContextMenu.h"
 
-CollectionButton::CollectionButton(SongBrowser *songBrowser, UIContextMenu *contextMenu,
-                                   float xPos, float yPos, float xSize, float ySize, UString name,
-                                   const UString &collectionName, std::vector<SongButton *> children)
+CollectionButton::CollectionButton(SongBrowser *songBrowser, UIContextMenu *contextMenu, float xPos, float yPos,
+                                   float xSize, float ySize, UString name, const UString &collectionName,
+                                   std::vector<SongButton *> children)
     : CarouselButton(songBrowser, contextMenu, xPos, yPos, xSize, ySize, std::move(name)) {
     this->sCollectionName = collectionName.utf8View();
     this->children = std::move(children);
@@ -80,7 +80,7 @@ void CollectionButton::onSelected(bool wasSelected, bool autoSelectBottomMostChi
 void CollectionButton::onRightMouseUpInside() { this->triggerContextMenu(mouse->getPos()); }
 
 void CollectionButton::triggerContextMenu(vec2 pos) {
-    if(osu->getSongBrowser()->getGroupingMode() != SongBrowser::GROUP_ENUM::COLLECTIONS) return;
+    if(osu->getSongBrowser()->getGroupingMode() != SongBrowser::GroupType::COLLECTIONS) return;
 
     if(this->contextMenu != nullptr) {
         this->contextMenu->setPos(pos);

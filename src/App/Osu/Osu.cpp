@@ -272,9 +272,7 @@ Osu::Osu() {
 
     if(defaultFont->getDPI() != newDPI) {
         this->bFontReloadScheduled = true;
-        if(this->last_res_change_req_src != RESRQ_NOT_PENDING) {
-            this->last_res_change_req_src = RESRQ_MISC_MANUAL;
-        }
+        this->last_res_change_req_src |= RESRQ_MISC_MANUAL;
     }
 
     // load subsystems, add them to the screens array
@@ -787,10 +785,7 @@ void Osu::update() {
             this->skinScheduledToLoad = nullptr;
 
             // force layout update after all skin elements have been loaded
-            if(this->last_res_change_req_src != RESRQ_NOT_PENDING) {
-                this->last_res_change_req_src =
-                    static_cast<ResChangeReq>(this->last_res_change_req_src | RESRQ_MISC_MANUAL);
-            }
+            this->last_res_change_req_src |= RESRQ_MISC_MANUAL;
 
             // notify if done after reload
             if(this->bSkinLoadWasReload) {
@@ -807,8 +802,7 @@ void Osu::update() {
 
     // (must be before m_bFontReloadScheduled and m_bFireResolutionChangedScheduled are handled!)
     if(this->last_res_change_req_src & RESRQ_DELAYED_DESYNC_FIX) {
-        this->last_res_change_req_src =
-            static_cast<ResChangeReq>((this->last_res_change_req_src & ~RESRQ_DELAYED_DESYNC_FIX) | RESRQ_MISC_MANUAL);
+        this->last_res_change_req_src = (this->last_res_change_req_src & ~RESRQ_DELAYED_DESYNC_FIX) | RESRQ_MISC_MANUAL;
         this->bFontReloadScheduled = true;
     }
 
@@ -821,7 +815,7 @@ void Osu::update() {
     // delayed layout updates
     // ignore CV_WINDOWED_RESOLUTION since that will come from the window resize
     if(this->last_res_change_req_src & ~(RESRQ_ENGINE | RESRQ_NOT_PENDING | RESRQ_CV_WINDOWED_RESOLUTION)) {
-        this->fireResolutionChanged();
+        this->onResolutionChanged(this->getVirtScreenSize(), this->last_res_change_req_src);
     }
 }
 
@@ -1427,32 +1421,22 @@ bool Osu::shouldFallBackToLegacySliderRenderer() {
         /* || (this->osu_playfield_rotation->getFloat() < -0.01f || m_osu_playfield_rotation->getFloat() > 0.01f)*/;
 }
 
-void Osu::onResolutionChanged(vec2 newResolution, ResChangeReq src) {
-    if(src == RESRQ_ENGINE && this->last_res_change_req_src == RESRQ_CV_WINDOWED_RESOLUTION) {
+void Osu::onResolutionChanged(vec2 newResolution, ResolutionRequestFlags src) {
+    if(src == RESRQ_ENGINE && this->last_res_change_req_src != RESRQ_NOT_PENDING) {
         // since cv::windowed_resolution does env->setWindowSize, it goes through the engine first
-        src = RESRQ_CV_WINDOWED_RESOLUTION;
-    }
-
-    const bool fs = env->winFullscreened();
-    const bool fs_letterboxed = fs && cv::letterboxing.getBool();
-
-    // fixup delayed resolution/letterboxed_resolution requests possibly overwriting one another
-    if(fs_letterboxed && (src & RESRQ_CV_RESOLUTION)) {
-        src = RESRQ_CV_LETTERBOXED_RES;
-    } else if(fs && !fs_letterboxed && (src & RESRQ_CV_LETTERBOXED_RES)) {
-        src = RESRQ_CV_RESOLUTION;
+        src |= this->last_res_change_req_src;
     }
 
     this->last_res_change_req_src = RESRQ_NOT_PENDING;  // reset to default
 
     std::string req_srcstr;
-    if(src & RESRQ_ENGINE) req_srcstr += "engine/external ";
-    if(src & RESRQ_CV_RESOLUTION) req_srcstr += "convar (resolution) ";
-    if(src & RESRQ_CV_LETTERBOXED_RES) req_srcstr += "convar (letterboxed_res) ";
-    if(src & RESRQ_CV_LETTERBOXING) req_srcstr += "convar (letterboxing) ";
-    if(src & RESRQ_CV_WINDOWED_RESOLUTION) req_srcstr += "convar (windowed_resolution) ";
-    if(src & RESRQ_DELAYED_DESYNC_FIX) req_srcstr += "delayed desync fix ";
-    if(src & RESRQ_MISC_MANUAL) req_srcstr += "misc/manual ";
+    if(src & RESRQ_ENGINE) req_srcstr += "engine/external;";
+    if(src & RESRQ_CV_RESOLUTION) req_srcstr += "convar (resolution);";
+    if(src & RESRQ_CV_LETTERBOXED_RES) req_srcstr += "convar (letterboxed_res);";
+    if(src & RESRQ_CV_LETTERBOXING) req_srcstr += "convar (letterboxing);";
+    if(src & RESRQ_CV_WINDOWED_RESOLUTION) req_srcstr += "convar (windowed_resolution);";
+    if(src & RESRQ_DELAYED_DESYNC_FIX) req_srcstr += "delayed desync fix;";
+    if(src & RESRQ_MISC_MANUAL) req_srcstr += "misc/manual;";
     req_srcstr.pop_back();
 
     debugLog("{:.0f}x{:.0f}, minimized: {} request source: {}", newResolution.x, newResolution.y, env->winMinimized(),
@@ -1461,6 +1445,9 @@ void Osu::onResolutionChanged(vec2 newResolution, ResChangeReq src) {
     const bool manual_request = src != RESRQ_ENGINE;
 
     if(env->winMinimized() && !manual_request) return;  // ignore if minimized and not a manual req
+
+    const bool fs = env->winFullscreened();
+    const bool fs_letterboxed = fs && cv::letterboxing.getBool();
 
     // ignore engine resolution size request and find it from cvars, if we are in fullscreen/letterboxed
     const bool res_from_cvars =
@@ -1535,7 +1522,7 @@ void Osu::onResolutionChanged(vec2 newResolution, ResChangeReq src) {
 void Osu::onDPIChanged() {
     // delay
     this->bFontReloadScheduled = true;
-    this->last_res_change_req_src = RESRQ_MISC_MANUAL;
+    this->last_res_change_req_src |= RESRQ_MISC_MANUAL;
 }
 
 void Osu::rebuildRenderTargets() {
@@ -1612,14 +1599,6 @@ void Osu::updateWindowsKeyDisable() {
     env->listenToTextInput(!isPlayerPlaying);
 }
 
-void Osu::fireResolutionChanged() {
-    ResChangeReq src = this->last_res_change_req_src;
-    if(src == RESRQ_NOT_PENDING) {
-        src = RESRQ_MISC_MANUAL;
-    }
-    this->onResolutionChanged(this->getVirtScreenSize(), src);
-}
-
 void Osu::onWindowedResolutionChanged(std::string_view args) {
     // ignore if we're still loading or not in fullscreen
     if(env->winFullscreened() || !this->bScreensReady) return;
@@ -1636,7 +1615,7 @@ void Osu::onWindowedResolutionChanged(std::string_view args) {
     i32 width{parsed->x}, height{parsed->y};
     debugLog("{}x{}", width, height);
 
-    this->last_res_change_req_src = RESRQ_CV_WINDOWED_RESOLUTION;
+    this->last_res_change_req_src |= RESRQ_CV_WINDOWED_RESOLUTION;
 
     env->setWindowSize(width, height);
     env->center();
@@ -1668,7 +1647,7 @@ void Osu::onFSResChanged(std::string_view args) {
     }
 
     // delay
-    this->last_res_change_req_src = RESRQ_CV_RESOLUTION;
+    this->last_res_change_req_src |= RESRQ_CV_RESOLUTION;
 }
 
 void Osu::onFSLetterboxedResChanged(std::string_view args) {
@@ -1696,7 +1675,7 @@ void Osu::onFSLetterboxedResChanged(std::string_view args) {
         cv::letterboxed_resolution.setValue(res_str, false);  // set it to the cleaned up value
     }
 
-    this->last_res_change_req_src = RESRQ_CV_LETTERBOXED_RES;
+    this->last_res_change_req_src |= RESRQ_CV_LETTERBOXED_RES;
 }
 
 void Osu::onFocusGained() {
@@ -1827,7 +1806,7 @@ void Osu::onUIScaleChange(float oldValue, float newValue) {
     if(oldValue != newValue) {
         // delay
         this->bFontReloadScheduled = true;
-        this->last_res_change_req_src = RESRQ_MISC_MANUAL;
+        this->last_res_change_req_src |= RESRQ_MISC_MANUAL;
     }
 }
 
@@ -1835,14 +1814,14 @@ void Osu::onUIScaleToDPIChange(float oldValue, float newValue) {
     if((oldValue > 0) != (newValue > 0)) {
         // delay
         this->bFontReloadScheduled = true;
-        this->last_res_change_req_src = RESRQ_MISC_MANUAL;
+        this->last_res_change_req_src |= RESRQ_MISC_MANUAL;
     }
 }
 
 void Osu::onLetterboxingChange(float oldValue, float newValue) {
     if((oldValue > 0) != (newValue > 0)) {
         // delay
-        this->last_res_change_req_src = RESRQ_CV_LETTERBOXING;
+        this->last_res_change_req_src |= RESRQ_CV_LETTERBOXING;
     }
 }
 

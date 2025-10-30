@@ -41,7 +41,20 @@ class BeatmapInterface;
 
 class Osu final : public MouseListener, public KeyboardListener {
     NOCOPY_NOMOVE(Osu)
-
+   private:
+    // clang-format off
+    using ResolutionRequestFlag = uint8_t;
+    using ResolutionRequestFlags = ResolutionRequestFlag;
+    static constexpr const ResolutionRequestFlag
+        RESRQ_NOT_PENDING =             1 << 0,
+        RESRQ_ENGINE =                  1 << 1,
+        RESRQ_CV_RESOLUTION =           1 << 2,
+        RESRQ_CV_LETTERBOXED_RES =      1 << 3,
+        RESRQ_CV_LETTERBOXING =         1 << 4,
+        RESRQ_CV_WINDOWED_RESOLUTION =  1 << 5,
+        RESRQ_DELAYED_DESYNC_FIX =      1 << 6,
+        RESRQ_MISC_MANUAL =             1 << 7;
+    // clang-format on
    public:
     static constexpr const vec2 osuBaseResolution{640.0f, 480.0f};
 
@@ -67,18 +80,7 @@ class Osu final : public MouseListener, public KeyboardListener {
 
     void onButtonChange(ButtonEvent ev) override;
 
-    enum ResChangeReq : uint8_t {
-        RESRQ_NOT_PENDING = (1 << 0),
-        RESRQ_ENGINE = (1 << 1),
-        RESRQ_CV_RESOLUTION = (1 << 2),
-        RESRQ_CV_LETTERBOXED_RES = (1 << 3),
-        RESRQ_CV_LETTERBOXING = (1 << 4),
-        RESRQ_CV_WINDOWED_RESOLUTION = (1 << 5),
-        RESRQ_DELAYED_DESYNC_FIX = (1 << 6),
-        RESRQ_MISC_MANUAL =  (1 << 7),
-    };
-
-    void onResolutionChanged(vec2 newResolution, ResChangeReq src = ResChangeReq::RESRQ_ENGINE);
+    void onResolutionChanged(vec2 newResolution, ResolutionRequestFlags src = RESRQ_ENGINE);
     void onDPIChanged();
 
     void onFocusGained();
@@ -212,7 +214,6 @@ class Osu final : public MouseListener, public KeyboardListener {
 
     void rebuildRenderTargets();
     void reloadFonts();
-    void fireResolutionChanged();
 
     // callbacks
     void onWindowedResolutionChanged(std::string_view args);
@@ -355,7 +356,7 @@ class Osu final : public MouseListener, public KeyboardListener {
 
     // custom
    private:
-    ResChangeReq last_res_change_req_src{ResChangeReq::RESRQ_NOT_PENDING};
+    ResolutionRequestFlag last_res_change_req_src{RESRQ_NOT_PENDING};
     std::atomic<bool> pause_bg_threads{false};
     bool bScheduleEndlessModNextBeatmap{false};
     bool bWasBossKeyPaused{false};

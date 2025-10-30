@@ -69,11 +69,6 @@ void init_discord_sdk() {
         return;
     }
 
-    memset(&dapp, 0, sizeof(dapp));
-    memset(&activities_events, 0, sizeof(activities_events));
-    memset(&relationships_events, 0, sizeof(relationships_events));
-    memset(&users_events, 0, sizeof(users_events));
-
     // users_events.on_current_user_update = OnUserUpdated;
     // relationships_events.on_refresh = OnRelationshipsRefresh;
 
@@ -126,7 +121,6 @@ void clear_discord_presence() {
 
     // TODO @kiwec: test if this works
     struct DiscordActivity activity{};
-    memset(&activity, 0, sizeof(activity));
     dapp.activities->update_activity(dapp.activities, &activity, nullptr, nullptr);
 }
 
