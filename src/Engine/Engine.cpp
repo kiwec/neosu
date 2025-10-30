@@ -374,7 +374,7 @@ void Engine::onFocusLost() {
         keyboard->reset();
     }
 
-    if(soundEngine) soundEngine->onFocusLost();  // switch shared->exclusive if applicable
+    if(soundEngine) soundEngine->onFocusLost();  // switch exclusive->shared if applicable
     if(app) app->onFocusLost();
 
     // auto minimize on certain conditions

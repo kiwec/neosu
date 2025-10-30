@@ -71,7 +71,7 @@ ConVar *ConVarHandler::getConVarByName(std::string_view name, bool warnIfNotFoun
 }
 
 std::vector<ConVar *> ConVarHandler::getConVarByLetter(std::string_view letters) const {
-    std::unordered_set<std::string> matchingConVarNames;
+    std::unordered_set<std::string_view> matchingConVarNames;
     std::vector<ConVar *> matchingConVars;
     {
         if(letters.length() < 1) return matchingConVars;
@@ -82,7 +82,7 @@ std::vector<ConVar *> ConVarHandler::getConVarByLetter(std::string_view letters)
         for(auto convar : convars) {
             if(convar->isFlagSet(cv::HIDDEN)) continue;
 
-            const std::string &name = convar->getName();
+            const std::string_view name = convar->getName();
             if(name.find(letters) != std::string::npos) {
                 if(letters.length() > 1) matchingConVarNames.insert(name);
 
@@ -94,11 +94,11 @@ std::vector<ConVar *> ConVarHandler::getConVarByLetter(std::string_view letters)
         if(letters.length() > 1) {
             for(auto convar : convars) {
                 if(convar->isFlagSet(cv::HIDDEN)) continue;
+                const std::string_view name = convar->getName();
 
-                if(convar->getName().find(letters) != std::string::npos) {
-                    const std::string &stdName = convar->getName();
-                    if(!matchingConVarNames.contains(stdName)) {
-                        matchingConVarNames.insert(stdName);
+                if(name.find(letters) != std::string::npos) {
+                    if(!matchingConVarNames.contains(name)) {
+                        matchingConVarNames.insert(name);
                         matchingConVars.push_back(convar);
                     }
                 }
@@ -262,7 +262,8 @@ void ConVarHandler::ConVarBuiltins::help(std::string_view args) {
     }
     ConVar *match = matches[index];
 
-    if(match->getHelpstring().length() < 1) {
+    std::string_view helpstring = match->getHelpstring();
+    if(helpstring.length() < 1) {
         Logger::logRaw("ConVar {:s} does not have a helpstring.", match->getName());
         return;
     }
@@ -280,7 +281,7 @@ void ConVarHandler::ConVarBuiltins::help(std::string_view args) {
         }
 
         thelog.append(" - ");
-        thelog.append(match->getHelpstring());
+        thelog.append(helpstring);
     }
     Logger::logRaw("{:s}", thelog);
 }
@@ -308,7 +309,7 @@ void ConVarHandler::ConVarBuiltins::listcommands(void) {
                     tstring.append(" )");
                 }
 
-                if(var->getHelpstring().length() > 0) {
+                if(std::string_view{var->getHelpstring()}.length() > 0) {
                     tstring.append(" - ");
                     tstring.append(var->getHelpstring());
                 }

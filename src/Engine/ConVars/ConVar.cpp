@@ -17,7 +17,7 @@ void ConVar::setOnSetValueProtectedCallback(const CVVoidCB &callback) {
 }
 
 void ConVar::addConVar() {
-    const auto &name = this->sName;
+    std::string_view name = this->getName();
 
     // osu_ prefix is deprecated.
     // If you really need it, you'll also need to edit Console::execConfigFile to whitelist it there.

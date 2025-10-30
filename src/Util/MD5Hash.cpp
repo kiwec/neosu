@@ -5,7 +5,7 @@
 MD5Hash::MD5Hash(const char *str) {
     assert(str);
 
-    const size_t len = strlen(str);
+    const size_t len = strnlen(str, 33);
     if(len == 0) {  // for explicit "empty" construction
         this->clear();
         return;

@@ -591,7 +591,7 @@ void ModSelector::mouse_update(bool *propagate_clicks) {
         if(!nonSubmittableCvars.empty()) {
             osu->getTooltipOverlay()->begin();
             for(const auto &cvar : nonSubmittableCvars) {
-                osu->getTooltipOverlay()->addLine(cvar->getName().c_str());
+                osu->getTooltipOverlay()->addLine(cvar->getName());
             }
             osu->getTooltipOverlay()->end();
         }

@@ -787,7 +787,10 @@ void Osu::update() {
             this->skinScheduledToLoad = nullptr;
 
             // force layout update after all skin elements have been loaded
-            this->fireResolutionChanged();
+            if(this->last_res_change_req_src != RESRQ_NOT_PENDING) {
+                this->last_res_change_req_src =
+                    static_cast<ResChangeReq>(this->last_res_change_req_src | RESRQ_MISC_MANUAL);
+            }
 
             // notify if done after reload
             if(this->bSkinLoadWasReload) {
@@ -803,8 +806,9 @@ void Osu::update() {
     }
 
     // (must be before m_bFontReloadScheduled and m_bFireResolutionChangedScheduled are handled!)
-    if(this->last_res_change_req_src == RESRQ_DELAYED_DESYNC_FIX) {
-        this->last_res_change_req_src = RESRQ_MISC_MANUAL;
+    if(this->last_res_change_req_src & RESRQ_DELAYED_DESYNC_FIX) {
+        this->last_res_change_req_src =
+            static_cast<ResChangeReq>((this->last_res_change_req_src & ~RESRQ_DELAYED_DESYNC_FIX) | RESRQ_MISC_MANUAL);
         this->bFontReloadScheduled = true;
     }
 
@@ -1464,13 +1468,6 @@ void Osu::onResolutionChanged(vec2 newResolution, ResChangeReq src) {
         (src & (RESRQ_ENGINE | RESRQ_CV_LETTERBOXING | RESRQ_CV_RESOLUTION | RESRQ_CV_LETTERBOXED_RES));
 
     if(res_from_cvars) {
-        // to be compatible with old configs, use the resolution convar for letterboxed resolution if it's default but cv::resolution isn't
-        // (and the request didn't come from the letterboxed resolution callback)
-        if(fs_letterboxed && !(src & RESRQ_CV_LETTERBOXED_RES) && cv::letterboxed_resolution.isDefault() &&
-           !cv::resolution.isDefault()) {
-            cv::letterboxed_resolution.setValue(cv::resolution.getString(), false);
-        }
-
         const std::string &res_cv_str =
             fs_letterboxed ? cv::letterboxed_resolution.getString() : cv::resolution.getString() /* fullscreen */;
 

@@ -105,8 +105,7 @@ class ConVar {
 
    public:
     // command-only constructor
-    explicit ConVar(std::string_view name, uint8_t flags = 0) {
-        this->sName = this->sDefaultValue = name;
+    explicit ConVar(const char *name, uint8_t flags = 0) : sName(name), sHelpString(""), sDefaultValue(name) {
         this->type = CONVAR_TYPE::STRING;
         this->iFlags = cv::NOSAVE | flags;
         this->addConVar();
@@ -114,74 +113,75 @@ class ConVar {
 
     // callback-only constructors (no value)
     template <typename Callback>
-    explicit ConVar(std::string_view name, uint8_t flags, Callback callback)
+    explicit ConVar(const char *name, uint8_t flags, Callback callback)
         requires cb_invocable<Callback> || cb_invocable<Callback, std::string_view> || cb_invocable<Callback, float>
-    {
-        this->initCallback(name, flags, ""sv, callback);
+        : sName(name), sHelpString("") {
+        this->initCallback(flags, callback);
         this->addConVar();
     }
 
     template <typename Callback>
-    explicit ConVar(std::string_view name, uint8_t flags, std::string_view helpString, Callback callback)
+    explicit ConVar(const char *name, uint8_t flags, const char *helpString, Callback callback)
         requires cb_invocable<Callback> || cb_invocable<Callback, std::string_view> || cb_invocable<Callback, float>
-    {
-        this->initCallback(name, flags, helpString, callback);
+        : sName(name), sHelpString(helpString) {
+        this->initCallback(flags, callback);
         this->addConVar();
     }
 
     // value constructors handle all types uniformly
     template <typename T>
-    explicit ConVar(std::string_view name, T defaultValue, uint8_t flags, std::string_view helpString = ""sv)
+    explicit ConVar(const char *name, T defaultValue, uint8_t flags, const char *helpString = "")
         requires(!std::is_same_v<std::decay_t<T>, const char *>)
-    {
-        this->initValue(name, defaultValue, flags, helpString, nullptr);
+        : sName(name), sHelpString(helpString) {
+        this->initValue(defaultValue, flags, nullptr);
         this->addConVar();
     }
 
     template <typename T, typename Callback>
-    explicit ConVar(std::string_view name, T defaultValue, uint8_t flags, std::string_view helpString,
-                    Callback callback)
+    explicit ConVar(const char *name, T defaultValue, uint8_t flags, const char *helpString, Callback callback)
         requires(!std::is_same_v<std::decay_t<T>, const char *>) &&
-                (cb_invocable<Callback> || cb_invocable<Callback, std::string_view> || cb_invocable<Callback, float> ||
-                 cb_invocable<Callback, std::string_view, std::string_view> || cb_invocable<Callback, float, float>)
-    {
-        this->initValue(name, defaultValue, flags, helpString, callback);
+                    (cb_invocable<Callback> || cb_invocable<Callback, std::string_view> ||
+                     cb_invocable<Callback, float> || cb_invocable<Callback, std::string_view, std::string_view> ||
+                     cb_invocable<Callback, float, float>)
+        : sName(name), sHelpString(helpString) {
+        this->initValue(defaultValue, flags, callback);
         this->addConVar();
     }
 
     template <typename T, typename Callback>
-    explicit ConVar(std::string_view name, T defaultValue, uint8_t flags, Callback callback)
+    explicit ConVar(const char *name, T defaultValue, uint8_t flags, Callback callback)
         requires(!std::is_same_v<std::decay_t<T>, const char *>) &&
-                (cb_invocable<Callback> || cb_invocable<Callback, std::string_view> || cb_invocable<Callback, float> ||
-                 cb_invocable<Callback, std::string_view, std::string_view> || cb_invocable<Callback, float, float>)
-    {
-        this->initValue(name, defaultValue, flags, ""sv, callback);
+                    (cb_invocable<Callback> || cb_invocable<Callback, std::string_view> ||
+                     cb_invocable<Callback, float> || cb_invocable<Callback, std::string_view, std::string_view> ||
+                     cb_invocable<Callback, float, float>)
+        : sName(name), sHelpString("") {
+        this->initValue(defaultValue, flags, callback);
         this->addConVar();
     }
 
     // const char* specializations for string convars
-    explicit ConVar(std::string_view name, std::string_view defaultValue, uint8_t flags,
-                    std::string_view helpString = ""sv) {
-        this->initValue(name, defaultValue, flags, helpString, nullptr);
+    explicit ConVar(const char *name, std::string_view defaultValue, uint8_t flags, const char *helpString = "")
+        : sName(name), sHelpString(helpString) {
+        this->initValue(defaultValue, flags, nullptr);
         this->addConVar();
     }
 
     template <typename Callback>
-    explicit ConVar(std::string_view name, std::string_view defaultValue, uint8_t flags, std::string_view helpString,
+    explicit ConVar(const char *name, std::string_view defaultValue, uint8_t flags, const char *helpString,
                     Callback callback)
         requires(cb_invocable<Callback> || cb_invocable<Callback, std::string_view> || cb_invocable<Callback, float> ||
                  cb_invocable<Callback, std::string_view, std::string_view> || cb_invocable<Callback, float, float>)
-    {
-        this->initValue(name, defaultValue, flags, helpString, callback);
+        : sName(name), sHelpString(helpString) {
+        this->initValue(defaultValue, flags, callback);
         this->addConVar();
     }
 
     template <typename Callback>
-    explicit ConVar(std::string_view name, std::string_view defaultValue, uint8_t flags, Callback callback)
+    explicit ConVar(const char *name, std::string_view defaultValue, uint8_t flags, Callback callback)
         requires(cb_invocable<Callback> || cb_invocable<Callback, std::string_view> || cb_invocable<Callback, float> ||
                  cb_invocable<Callback, std::string_view, std::string_view> || cb_invocable<Callback, float, float>)
-    {
-        this->initValue(name, defaultValue, flags, ""sv, callback);
+        : sName(name), sHelpString("") {
+        this->initValue(defaultValue, flags, callback);
         this->addConVar();
     }
 
@@ -256,8 +256,8 @@ class ConVar {
     [[nodiscard]] inline bool get() const { return this->getBool(); }
     [[nodiscard]] inline float getFloat() const { return this->getVal<float>(); }
 
-    [[nodiscard]] inline const std::string &getHelpstring() const { return this->sHelpString; }
-    [[nodiscard]] inline const std::string &getName() const { return this->sName; }
+    [[nodiscard]] inline const char *getHelpstring() const { return this->sHelpString; }
+    [[nodiscard]] inline const char *getName() const { return this->sName; }
     [[nodiscard]] inline CONVAR_TYPE getType() const { return this->type; }
     [[nodiscard]] inline uint8_t getFlags() const { return this->iFlags; }
 
@@ -312,10 +312,8 @@ class ConVar {
 
     // unified init for callback-only convars
     template <typename Callback>
-    void initCallback(std::string_view name, uint8_t flags, std::string_view helpString, Callback callback) {
+    void initCallback(uint8_t flags, Callback callback) {
         this->iFlags = flags | cv::NOSAVE;
-        this->sName = name;
-        this->sHelpString = helpString;
 
         if constexpr(cb_invocable<Callback>) {
             this->callback = CVVoidCB(callback);
@@ -331,12 +329,9 @@ class ConVar {
 
     // unified init for value convars
     template <typename T, typename Callback>
-    void initValue(std::string_view name, const T &defaultValue, uint8_t flags, std::string_view helpString,
-                   Callback callback) {
+    void initValue(const T &defaultValue, uint8_t flags, Callback callback) {
         this->bHasValue = true;
         this->iFlags = flags;
-        this->sName = name;
-        this->sHelpString = helpString;
         this->type = getTypeFor<T>();
 
         if constexpr((std::is_convertible_v<std::decay_t<T>, double> || std::is_same_v<T, bool>) &&
@@ -465,15 +460,14 @@ class ConVar {
     // shared across all convars
     static CVVoidCB onSetValueProtectedCallback;
 
-    std::string sName;
-    std::string sHelpString;
+    const char *sName;
+    const char *sHelpString;
     std::string sDefaultValue{};
     double dDefaultValue{0.0};
 
     std::atomic<double> dClientValue{0.0};
     std::string sClientValue{};
 
-    std::atomic<bool> hasSkinValue{false};
     std::atomic<double> dSkinValue{0.0};
     std::string sSkinValue{};
 
@@ -490,9 +484,8 @@ class ConVar {
     uint8_t iFlags{0};
 
     bool bHasValue{false};
-
-   public:
     std::atomic<bool> hasServerValue{false};
+    std::atomic<bool> hasSkinValue{false};
 };
 
 #endif

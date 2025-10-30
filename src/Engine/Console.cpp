@@ -76,9 +76,10 @@ void Console::processCommand(std::string_view command, bool fromFile) {
                 logMessage.append(" )");
             }
 
-            if(var->getHelpstring().length() > 0) {
+            std::string_view helpstring = var->getHelpstring();
+            if(helpstring.length() > 0) {
                 logMessage.append(" - ");
-                logMessage.append(var->getHelpstring());
+                logMessage.append(helpstring);
             }
         } else if(var->hasValue()) {
             doLog = true;

@@ -149,11 +149,11 @@ MainMenu::MainMenu() : OsuScreen() {
         if(env->fileExists("version.txt")) {
             File versionFile("version.txt");
             std::string linebuf{};
-            float version = -1.f;
+            double version = -1.;
             u64 buildstamp = 0;
             // get version number
             if(versionFile.canRead() && ((linebuf = versionFile.readLine()) != "") &&
-               ((version = std::strtof(linebuf.c_str(), nullptr)) > 0.f)) {
+               ((version = std::strtod(linebuf.c_str(), nullptr)) > 0.)) {
                 // get build timestamp
                 if(versionFile.canRead() && ((linebuf = versionFile.readLine()) != "") &&
                    ((buildstamp = std::strtoull(linebuf.c_str(), nullptr, 10)) > 0)) {
@@ -164,7 +164,7 @@ MainMenu::MainMenu() : OsuScreen() {
                 }
                 // debugLog("versionFile version: {} our version: {}{}", version, cv::version.getFloat(),
                 //           buildstamp > 0.0f ? fmt::format(" build timestamp: {}", buildstamp) : "");
-                if(version < cv::version.getFloat() || buildstamp < cv::build_timestamp.getVal<u64>()) {
+                if(version < cv::version.getDouble() || buildstamp < cv::build_timestamp.getVal<u64>()) {
                     this->bDrawVersionNotificationArrow = true;
                 }
                 if(version < 35.06) {
@@ -204,6 +204,10 @@ MainMenu::MainMenu() : OsuScreen() {
                         if(key->getFloat() == key->getDefaultFloat()) continue;
                         key->setValue(KeyBindings::old_keycode_to_sdl_keycode(key->getInt()));
                     }
+                    osu->getOptionsMenu()->save();
+                }
+                if(version < 40.06) {
+                    cv::letterboxed_resolution.setValue(cv::resolution.getString());
                     osu->getOptionsMenu()->save();
                 }
             } else {
