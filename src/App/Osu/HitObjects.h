@@ -111,6 +111,7 @@ class HitObject {
     i32 iAutopilotDelta;
 
     HitSamples samples;
+    std::vector<HitSamples::Set_Slider_Hit> lastSliderSampleSets{};
     int iColorCounter;
     int iColorOffset;
 

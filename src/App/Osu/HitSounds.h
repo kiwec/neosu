@@ -1,6 +1,7 @@
 #pragma once
 // Copyright (c) 2025, kiwec, All rights reserved.
 #include <string>
+#include <vector>
 #include "types.h"
 
 namespace SampleSetType {
@@ -31,8 +32,14 @@ struct HitSamples {
     i32 index = 0;              // index of the sample (for custom map sounds). if 0, use skin sound instead
     std::string filename = "";  // when not empty, ignore all the above mess (except volume) and just play that file
 
-    void play(f32 pan, i32 delta, bool is_sliderslide = false);
-    void stop();
+    using Set_Slider_Hit = struct {
+        i32 set;
+        i32 slider;
+        i32 hit;
+    };
+
+    std::vector<Set_Slider_Hit> play(f32 pan, i32 delta, bool is_sliderslide = false);
+    void stop(const std::vector<Set_Slider_Hit> &specific_sets = {});
 
     i32 getAdditionSet();
     i32 getNormalSet();

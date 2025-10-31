@@ -2,6 +2,7 @@
 
 #include "BeatmapInterface.h"
 #include "ConVar.h"
+// #include "Logging.h"
 #include "Osu.h"
 #include "ResourceManager.h"
 #include "Skin.h"
@@ -65,64 +66,64 @@ f32 HitSamples::getVolume(i32 hitSoundType, bool is_sliderslide) {
 
 // O(1) lookup table for sound names
 // [set][is_sliderslide][hitSound]
-static constexpr const size_t HIT_IDX = 0;
-static constexpr const size_t SLIDER_IDX = 1;
+static constexpr const i32 HIT_IDX = 0;
+static constexpr const i32 SLIDER_IDX = 1;
 #define A_ std::array
-static constexpr const auto SOUND_NAMES =  //
-    A_{                                    //
+static constexpr auto SOUND_METHODS =  //
+    A_{                                //
        // SampleSetType::NORMAL            //
        A_{//
           // HIT sounds
           A_{
-              "SKIN_NORMALHITNORMAL_SND"sv,   // HitSoundType::NORMAL
-              "SKIN_NORMALHITWHISTLE_SND"sv,  // HitSoundType::WHISTLE
-              "SKIN_NORMALHITFINISH_SND"sv,   // HitSoundType::FINISH
-              "SKIN_NORMALHITCLAP_SND"sv      // HitSoundType::CLAP
+              &Skin::s_normal_hitnormal,   // HitSoundType::NORMAL
+              &Skin::s_normal_hitwhistle,  // HitSoundType::WHISTLE
+              &Skin::s_normal_hitfinish,   // HitSoundType::FINISH
+              &Skin::s_normal_hitclap      // HitSoundType::CLAP
           },
           // SLIDER sounds
           A_{
-              "SKIN_NORMALSLIDERSLIDE_SND"sv,    //
-              "SKIN_NORMALSLIDERWHISTLE_SND"sv,  //
-              ""sv,                              // SET-sliderfinish and SET-sliderclap aren't actually valid
-              ""sv                               //
+              &Skin::s_normal_sliderslide,    //
+              &Skin::s_normal_sliderwhistle,  //
+              (Sound* Skin::*)nullptr,        // SET-sliderfinish and SET-sliderclap aren't actually valid
+              (Sound* Skin::*)nullptr         //
           }},
        // SampleSetType::SOFT
        A_{//
           // HIT sounds
           A_{
-              "SKIN_SOFTHITNORMAL_SND"sv,   // ditto...
-              "SKIN_SOFTHITWHISTLE_SND"sv,  //
-              "SKIN_SOFTHITFINISH_SND"sv,   //
-              "SKIN_SOFTHITCLAP_SND"sv      //
-          },                                //
+              &Skin::s_soft_hitnormal,   // ditto...
+              &Skin::s_soft_hitwhistle,  //
+              &Skin::s_soft_hitfinish,   //
+              &Skin::s_soft_hitclap      //
+          },                             //
           // SLIDER sounds
           A_{
-              "SKIN_SOFTSLIDERSLIDE_SND"sv,    //
-              "SKIN_SOFTSLIDERWHISTLE_SND"sv,  //
-              ""sv,                            //
-              ""sv                             //
-          }},                                  //
+              &Skin::s_soft_sliderslide,    //
+              &Skin::s_soft_sliderwhistle,  //
+              (Sound* Skin::*)nullptr,      //
+              (Sound* Skin::*)nullptr       //
+          }},                               //
        // SampleSetType::DRUM
        A_{//
           // HIT sounds
           A_{
-              "SKIN_DRUMHITNORMAL_SND"sv,   //
-              "SKIN_DRUMHITWHISTLE_SND"sv,  //
-              "SKIN_DRUMHITFINISH_SND"sv,   //
-              "SKIN_DRUMHITCLAP_SND"sv      //
-          },                                //
+              &Skin::s_drum_hitnormal,   //
+              &Skin::s_drum_hitwhistle,  //
+              &Skin::s_drum_hitfinish,   //
+              &Skin::s_drum_hitclap      //
+          },                             //
           // SLIDER sounds
           A_{
-              "SKIN_DRUMSLIDERSLIDE_SND"sv,    //
-              "SKIN_DRUMSLIDERWHISTLE_SND"sv,  //
-              ""sv,                            //
-              ""sv                             //
+              &Skin::s_drum_sliderslide,    //
+              &Skin::s_drum_sliderwhistle,  //
+              (Sound* Skin::*)nullptr,      //
+              (Sound* Skin::*)nullptr       //
           }}};  //
 #undef A_
 
-void HitSamples::play(f32 pan, i32 delta, bool is_sliderslide) {
+std::vector<HitSamples::Set_Slider_Hit> HitSamples::play(f32 pan, i32 delta, bool is_sliderslide) {
     // Don't play hitsounds when seeking
-    if(osu->getMapInterface()->bWasSeekFrame) return;
+    if(osu->getMapInterface()->bWasSeekFrame) return {};
 
     if(!cv::sound_panning.getBool() || (cv::mod_fposu.getBool() && !cv::mod_fposu_sound_panning.getBool()) ||
        (cv::mod_fps.getBool() && !cv::mod_fps_sound_panning.getBool())) {
@@ -137,9 +138,14 @@ void HitSamples::play(f32 pan, i32 delta, bool is_sliderslide) {
         pitch = (f32)delta / range * cv::snd_pitch_hitsounds_factor.getFloat();
     }
 
-    auto get_default_sound = [is_sliderslide](i32 set, i32 hitSound) -> Sound* {
+    const auto* skin = osu->getMapInterface()->getSkin();
+
+    Set_Slider_Hit potentially_played;
+    std::vector<Set_Slider_Hit> played_list;
+
+    auto get_default_sound = [&potentially_played, skin, is_sliderslide](i32 set, i32 hitSound) -> Sound* {
         // map indices
-        size_t set_idx, slider_or_circle_idx, hit_idx;
+        i32 set_idx, slider_or_circle_idx, hit_idx;
         switch(set) {
             default:
             case SampleSetType::NORMAL:
@@ -171,7 +177,19 @@ void HitSamples::play(f32 pan, i32 delta, bool is_sliderslide) {
                 break;
         }
 
-        return resourceManager->getSound(SOUND_NAMES[set_idx][slider_or_circle_idx][hit_idx]);
+        Sound* Skin::* sound_ptr = SOUND_METHODS[set_idx][slider_or_circle_idx][hit_idx];
+        // debugLog("got {} for set_idx {} slider_or_circle_idx {} hit_idx {}", !!sound_ptr, set_idx, slider_or_circle_idx,
+        //          hit_idx);
+        if(sound_ptr != nullptr) {
+            auto ret = skin->*sound_ptr;
+            if(ret) {
+                // debugLog("returning {}", ret->getFilePath());
+                potentially_played = Set_Slider_Hit{set_idx, slider_or_circle_idx, hit_idx};
+            }
+            return ret;
+        }
+
+        return nullptr;
     };
 
     auto get_map_sound = [get_default_sound](i32 set, i32 hitSound) {
@@ -180,51 +198,86 @@ void HitSamples::play(f32 pan, i32 delta, bool is_sliderslide) {
         return get_default_sound(set, hitSound);
     };
 
-    auto try_play = [&](i32 set, i32 hitSound) {
+    auto try_play = [&](i32 set, i32 hitSound) -> bool {
         auto snd = get_map_sound(set, hitSound);
-        if(!snd) return;
+        if(!snd) return false;
 
         f32 volume = this->getVolume(hitSound, is_sliderslide);
-        if(volume == 0.0) return;
+        // debugLog("volume is {} for {}, sliderslide: {} isPlaying: {}", volume, snd->getFilePath(), is_sliderslide,
+        //          snd->isPlaying());
+        if(volume == 0.0) return false;
 
-        if(is_sliderslide && snd->isPlaying()) return;
+        if(is_sliderslide && snd->isPlaying()) return false;
 
-        soundEngine->play(snd, pan, pitch, volume);
+        return soundEngine->play(snd, pan, pitch, volume);
     };
 
     // NOTE: osu->getSkin()->layeredHitSounds seems to be forced even if the map uses custom hitsounds
     //       according to https://osu.ppy.sh/community/forums/topics/15937
     if((this->hitSounds & HitSoundType::NORMAL) || (this->hitSounds == 0) || osu->getSkin()->o_layered_hitsounds) {
-        try_play(this->getNormalSet(), HitSoundType::NORMAL);
+        if(try_play(this->getNormalSet(), HitSoundType::NORMAL)) {
+            played_list.push_back(potentially_played);
+            potentially_played = {};
+        }
     }
 
     if(this->hitSounds & HitSoundType::WHISTLE) {
-        try_play(this->getAdditionSet(), HitSoundType::WHISTLE);
+        if(try_play(this->getAdditionSet(), HitSoundType::WHISTLE)) {
+            played_list.push_back(potentially_played);
+            potentially_played = {};
+        }
     }
 
     if(this->hitSounds & HitSoundType::FINISH) {
-        try_play(this->getAdditionSet(), HitSoundType::FINISH);
+        if(try_play(this->getAdditionSet(), HitSoundType::FINISH)) {
+            played_list.push_back(potentially_played);
+            potentially_played = {};
+        }
     }
 
     if(this->hitSounds & HitSoundType::CLAP) {
-        try_play(this->getAdditionSet(), HitSoundType::CLAP);
+        if(try_play(this->getAdditionSet(), HitSoundType::CLAP)) {
+            played_list.push_back(potentially_played);
+            potentially_played = {};
+        }
     }
+
+    return played_list;
 }
 
-void HitSamples::stop() {
+void HitSamples::stop(const std::vector<Set_Slider_Hit>& specific_sets) {
     // TODO @kiwec: map hitsounds are not supported
+    const auto* skin = osu->getMapInterface()->getSkin();
+
+    // stop specified previously played sounds, otherwise stop everything
+    if(!specific_sets.empty()) {
+        for(const auto& triple : specific_sets) {
+            assert(SOUND_METHODS[triple.set][triple.slider][triple.hit]);
+            const auto& to_stop = skin->*SOUND_METHODS[triple.set][triple.slider][triple.hit];
+
+            if(to_stop && to_stop->isPlaying()) {
+                // debugLog("stopping specific set {} {} {} {}", triple.set, triple.slider, triple.hit,
+                //          to_stop->getFilePath());
+                soundEngine->stop(to_stop);
+            }
+        }
+        return;
+    }
 
     // NOTE: Timing point might have changed since the time we called play().
     //       So for now we're stopping ALL slider sounds, but in the future
     //       we'll need to store the started sounds somewhere.
 
     // Bruteforce approach. Will be rewritten when adding map hitsounds.
-    for(const auto& sample_set : SOUND_NAMES) {
+    for(const auto& sample_set : SOUND_METHODS) {
         const auto& slider_sounds = sample_set[SLIDER_IDX];
-        for(const auto& slider_snd_name : slider_sounds) {
-            if(slider_snd_name.empty()) continue;  // ugly
-            auto sound = resourceManager->getSound(slider_snd_name);
-            if(sound) soundEngine->stop(sound);
+        for(const auto& slider_snd_ptr : slider_sounds) {
+            if(slider_snd_ptr == nullptr) continue;  // ugly
+            const auto& snd_memb = skin->*slider_snd_ptr;
+            if(snd_memb != nullptr && snd_memb->isPlaying()) {
+                // debugLog("stopping {}", snd_memb->getFilePath());
+                soundEngine->stop(snd_memb);
+            }
         }
     }
 }

@@ -1879,9 +1879,18 @@ void Slider::update(i32 curPos, f64 frame_time) {
             if(sliding) {
                 const vec2 osuCoords = this->pf->pixels2OsuCoords(this->pf->osuCoords2Pixels(this->vCurPointRaw));
                 f32 pan = GameRules::osuCoords2Pan(osuCoords.x);
-                this->samples.play(pan, 0, true);
-            } else {
-                this->samples.stop();
+                this->lastSliderSampleSets = this->samples.play(pan, 0, true);
+            } else if(!this->lastSliderSampleSets.empty()) {
+                // debugLog("not sliding, stopping");
+                // debugLog(
+                //     "this->bStartFinished {} this->bEndFinished {} this->bCursorInside {} this->iDelta {} "
+                //     "this->isClickHeldSlider() {} this->pf->isPaused() {} this->pf->isWaiting() {} "
+                //     "this->pf->isPlaying() {} this->pf->bWasSeekFrame {}",
+                //     !!this->bStartFinished, !!this->bEndFinished, !!this->bCursorInside, this->iDelta,
+                //     this->isClickHeldSlider(), this->pf->isPaused(), this->pf->isWaiting(), this->pf->isPlaying(),
+                //     this->pf->bWasSeekFrame);
+                this->samples.stop(this->lastSliderSampleSets);
+                this->lastSliderSampleSets.clear();
             }
         }
     }
@@ -2080,7 +2089,7 @@ void Slider::onHit(LiveScore::HIT result, i32 delta, bool startOrEnd, float targ
             this->fEndSliderBodyFadeAnimation = 0.001f;  // quickfix for 1 frame missing images
             anim->moveQuadOut(&this->fEndSliderBodyFadeAnimation, 1.0f,
                               GameRules::getFadeOutTime() * cv::slider_body_fade_out_time_multiplier.getFloat(), true);
-
+            // debugLog("stopping due to end body fadeout");
             this->samples.stop();
         }
     }
@@ -2233,25 +2242,27 @@ void Slider::onTickHit(bool successful, int tickIndex) {
         f32 pan = GameRules::osuCoords2Pan(osuCoords.x);
 
         {
+            static constexpr auto SLIDERTICK_SAMPLESET_METHODS =  //
+                std::array{
+                    //
+                    &Skin::s_normal_slidertick,  //
+                    &Skin::s_soft_slidertick,    //
+                    &Skin::s_drum_slidertick,    //
+                };
+
             // NOTE: osu! wiki doesn't mention if ticks use the normal set or the addition set.
             //       in fact, it doesn't mention ticks at all.
-            std::string sound_name = "SKIN_";
-            switch(this->samples.getAdditionSet()) {
-                case SampleSetType::NORMAL:
-                    sound_name.append("NORMAL");
-                    break;
-                case SampleSetType::SOFT:
-                    sound_name.append("SOFT");
-                    break;
-                case SampleSetType::DRUM:
-                    sound_name.append("DRUM");
-                    break;
-            }
-            sound_name.append("SLIDERTICK_SND");
+            Sound *Skin::*sound_ptr = nullptr;
 
-            auto sound = resourceManager->getSound(sound_name);
-            if(sound != nullptr) {
-                soundEngine->play(sound, pan, 0.f, this->samples.getVolume(this->samples.getAdditionSet(), true));
+            auto additionSet = this->samples.getAdditionSet();
+            if(additionSet > 0 && additionSet < 4) /* NORMAL (1) SOFT (2) DRUM (3) */ {
+                additionSet--;
+                sound_ptr = SLIDERTICK_SAMPLESET_METHODS[additionSet];
+            }
+
+            Sound *skin_sound = sound_ptr && this->pf->getSkin() ? this->pf->getSkin()->*sound_ptr : nullptr;
+            if(skin_sound != nullptr) {
+                soundEngine->play(skin_sound, pan, 0.f, this->samples.getVolume(this->samples.getAdditionSet(), true));
             }
         }
 
@@ -2284,6 +2295,7 @@ void Slider::onReset(i32 curPos) {
     HitObject::onReset(curPos);
 
     if(this->pf != nullptr) {
+        // debugLog("stopping due to onReset");
         this->samples.stop();
 
         anim->deleteExistingAnimation(&this->fFollowCircleTickAnimationScale);
@@ -2292,6 +2304,7 @@ void Slider::onReset(i32 curPos) {
         anim->deleteExistingAnimation(&this->fEndSliderBodyFadeAnimation);
     }
 
+    this->lastSliderSampleSets.clear();
     this->iStrictTrackingModLastClickHeldTime = 0;
     this->iKeyFlags = 0;
     this->bCursorLeft = true;
