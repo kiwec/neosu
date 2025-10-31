@@ -97,7 +97,7 @@ void SongButton::draw() {
 }
 
 void SongButton::drawBeatmapBackgroundThumbnail(const Image *image) {
-    if(!cv::draw_songbrowser_thumbnails.getBool() || osu->getSkin()->getVersion() < 2.2f) return;
+    if(!cv::draw_songbrowser_thumbnails.getBool() || osu->getSkin()->version < 2.2f) return;
 
     float alpha = 1.0f;
     if(cv::songbrowser_thumbnail_fade_in_duration.getFloat() > 0.0f) {
@@ -170,8 +170,8 @@ void SongButton::drawTitle(float deselectedAlpha, bool forceSelectedStyle) {
     const vec2 size = this->getActualSize();
 
     const float titleScale = (size.y * this->fTitleScale) / this->font->getHeight();
-    g->setColor((this->bSelected || forceSelectedStyle) ? osu->getSkin()->getSongSelectActiveText()
-                                                        : osu->getSkin()->getSongSelectInactiveText());
+    g->setColor((this->bSelected || forceSelectedStyle) ? osu->getSkin()->c_song_select_active_text
+                                                        : osu->getSkin()->c_song_select_inactive_text);
     if(!(this->bSelected || forceSelectedStyle)) g->setAlpha(deselectedAlpha);
 
     g->pushTransform();
@@ -192,8 +192,8 @@ void SongButton::drawSubTitle(float deselectedAlpha, bool forceSelectedStyle) {
 
     const float titleScale = (size.y * this->fTitleScale) / this->font->getHeight();
     const float subTitleScale = (size.y * this->fSubTitleScale) / this->font->getHeight();
-    g->setColor((this->bSelected || forceSelectedStyle) ? osu->getSkin()->getSongSelectActiveText()
-                                                        : osu->getSkin()->getSongSelectInactiveText());
+    g->setColor((this->bSelected || forceSelectedStyle) ? osu->getSkin()->c_song_select_active_text
+                                                        : osu->getSkin()->c_song_select_inactive_text);
     if(!(this->bSelected || forceSelectedStyle)) g->setAlpha(deselectedAlpha);
 
     g->pushTransform();
@@ -224,7 +224,7 @@ void SongButton::updateLayoutEx() {
 
     if(this->grade != FinishedScore::Grade::N) this->fTextOffset += this->calculateGradeWidth();
 
-    if(osu->getSkin()->getVersion() < 2.2f) {
+    if(osu->getSkin()->version < 2.2f) {
         this->fTextOffset += size.x * 0.02f * 2.0f;
     } else {
         const f32 thumbnailYRatio = osu->getSongBrowser()->thumbnailYRatio;

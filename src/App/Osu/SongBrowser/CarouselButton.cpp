@@ -97,7 +97,7 @@ void CarouselButton::drawMenuButtonBackground() {
     {
         g->scale(this->fScale, this->fScale);
         g->translate(this->vPos.x + this->vSize.x / 2, this->vPos.y + this->vSize.y / 2);
-        g->drawImage(osu->getSkin()->getMenuButtonBackground());
+        g->drawImage(osu->getSkin()->i_menu_button_bg);
     }
     g->popTransform();
 }
@@ -147,10 +147,9 @@ void CarouselButton::mouse_update(bool *propagate_clicks) {
 void CarouselButton::updateLayoutEx() {
     const float uiScale = cv::ui_scale.getFloat();
 
-    Image *menuButtonBackground = osu->getSkin()->getMenuButtonBackground();
+    Image *menuButtonBackground = osu->getSkin()->i_menu_button_bg;
     {
-        const vec2 minimumSize =
-            vec2(699.0f, 103.0f) * (osu->getSkin()->getMenuButtonBackground().is2x() ? 2.0f : 1.0f);
+        const vec2 minimumSize = vec2(699.0f, 103.0f) * (osu->getSkin()->i_menu_button_bg.is2x() ? 2.0f : 1.0f);
         const float minimumScale = Osu::getImageScaleToFitResolution(menuButtonBackground, minimumSize);
         this->fScale = Osu::getImageScale(menuButtonBackground->getSize() * minimumScale, 64.0f) * uiScale;
     }
@@ -249,7 +248,7 @@ void CarouselButton::deselect() { this->bSelected = false; }
 void CarouselButton::resetAnimations() { this->setMoveAwayState(MOVE_AWAY_STATE::MOVE_CENTER, false); }
 
 void CarouselButton::onClicked(bool left, bool right) {
-    soundEngine->play(osu->getSkin()->getSelectDifficultySound());
+    soundEngine->play(osu->getSkin()->s_select_difficulty);
 
     CBaseUIButton::onClicked(left, right);
 
@@ -262,7 +261,7 @@ void CarouselButton::onMouseInside() {
     // hover sound
     if(engine->getTime() > lastHoverSoundTime + 0.05f)  // to avoid earraep
     {
-        if(env->winFocused()) soundEngine->play(osu->getSkin()->getMenuHover());
+        if(env->winFocused()) soundEngine->play(osu->getSkin()->s_menu_hover);
 
         lastHoverSoundTime = engine->getTime();
     }
@@ -310,9 +309,9 @@ void CarouselButton::setTargetRelPosY(float targetRelPosY) {
 }
 
 vec2 CarouselButton::getActualOffset() const {
-    const float hd2xMultiplier = osu->getSkin()->getMenuButtonBackground().is2x() ? 2.0f : 1.0f;
+    const float hd2xMultiplier = osu->getSkin()->i_menu_button_bg.is2x() ? 2.0f : 1.0f;
     const float correctedMarginPixelsY =
-        (2 * marginPixelsY + osu->getSkin()->getMenuButtonBackground()->getHeight() / hd2xMultiplier - 103.0f) / 2.0f;
+        (2 * marginPixelsY + osu->getSkin()->i_menu_button_bg->getHeight() / hd2xMultiplier - 103.0f) / 2.0f;
     return vec2((int)(marginPixelsX * this->fScale * hd2xMultiplier),
                 (int)(correctedMarginPixelsY * this->fScale * hd2xMultiplier));
 }

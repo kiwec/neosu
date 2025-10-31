@@ -28,8 +28,8 @@ class HitObject {
    public:
     static void drawHitResult(BeatmapInterface *pf, vec2 rawPos, LiveScore::HIT result, float animPercentInv,
                               float hitDeltaRangePercent);
-    static void drawHitResult(const std::unique_ptr<Skin> &skin, float hitcircleDiameter, float rawHitcircleDiameter,
-                              vec2 rawPos, LiveScore::HIT result, float animPercentInv, float hitDeltaRangePercent);
+    static void drawHitResult(const Skin *skin, float hitcircleDiameter, float rawHitcircleDiameter, vec2 rawPos,
+                              LiveScore::HIT result, float animPercentInv, float hitDeltaRangePercent);
 
    public:
     HitObject(i32 time, HitSamples samples, int comboNumber, bool isEndOfCombo, int colorCounter, int colorOffset,
@@ -139,38 +139,36 @@ class Circle final : public HitObject {
     static void drawCircle(BeatmapInterface *pf, vec2 rawPos, int number, int colorCounter, int colorOffset,
                            float colorRGBMultiplier, float approachScale, float alpha, float numberAlpha,
                            bool drawNumber = true, bool overrideHDApproachCircle = false);
-    static void drawCircle(const std::unique_ptr<Skin> &skin, vec2 pos, float hitcircleDiameter, float numberScale,
-                           float overlapScale, int number, int colorCounter, int colorOffset, float colorRGBMultiplier,
-                           float approachScale, float alpha, float numberAlpha, bool drawNumber = true,
+    static void drawCircle(const Skin *skin, vec2 pos, float hitcircleDiameter, float numberScale, float overlapScale,
+                           int number, int colorCounter, int colorOffset, float colorRGBMultiplier, float approachScale,
+                           float alpha, float numberAlpha, bool drawNumber = true,
                            bool overrideHDApproachCircle = false);
-    static void drawCircle(const std::unique_ptr<Skin> &skin, vec2 pos, float hitcircleDiameter, Color color,
-                           float alpha = 1.0f);
+    static void drawCircle(const Skin *skin, vec2 pos, float hitcircleDiameter, Color color, float alpha = 1.0f);
     static void drawSliderStartCircle(BeatmapInterface *pf, vec2 rawPos, int number, int colorCounter, int colorOffset,
                                       float colorRGBMultiplier, float approachScale, float alpha, float numberAlpha,
                                       bool drawNumber = true, bool overrideHDApproachCircle = false);
-    static void drawSliderStartCircle(const std::unique_ptr<Skin> &skin, vec2 pos, float hitcircleDiameter,
-                                      float numberScale, float hitcircleOverlapScale, int number, int colorCounter = 0,
+    static void drawSliderStartCircle(const Skin *skin, vec2 pos, float hitcircleDiameter, float numberScale,
+                                      float hitcircleOverlapScale, int number, int colorCounter = 0,
                                       int colorOffset = 0, float colorRGBMultiplier = 1.0f, float approachScale = 1.0f,
                                       float alpha = 1.0f, float numberAlpha = 1.0f, bool drawNumber = true,
                                       bool overrideHDApproachCircle = false);
     static void drawSliderEndCircle(BeatmapInterface *pf, vec2 rawPos, int number, int colorCounter, int colorOffset,
                                     float colorRGBMultiplier, float approachScale, float alpha, float numberAlpha,
                                     bool drawNumber = true, bool overrideHDApproachCircle = false);
-    static void drawSliderEndCircle(const std::unique_ptr<Skin> &skin, vec2 pos, float hitcircleDiameter,
-                                    float numberScale, float overlapScale, int number = 0, int colorCounter = 0,
-                                    int colorOffset = 0, float colorRGBMultiplier = 1.0f, float approachScale = 1.0f,
-                                    float alpha = 1.0f, float numberAlpha = 1.0f, bool drawNumber = true,
+    static void drawSliderEndCircle(const Skin *skin, vec2 pos, float hitcircleDiameter, float numberScale,
+                                    float overlapScale, int number = 0, int colorCounter = 0, int colorOffset = 0,
+                                    float colorRGBMultiplier = 1.0f, float approachScale = 1.0f, float alpha = 1.0f,
+                                    float numberAlpha = 1.0f, bool drawNumber = true,
                                     bool overrideHDApproachCircle = false);
 
     // split helper functions
-    static void drawApproachCircle(const std::unique_ptr<Skin> &skin, vec2 pos, Color comboColor,
-                                   float hitcircleDiameter, float approachScale, float alpha, bool modHD,
-                                   bool overrideHDApproachCircle);
+    static void drawApproachCircle(const Skin *skin, vec2 pos, Color comboColor, float hitcircleDiameter,
+                                   float approachScale, float alpha, bool modHD, bool overrideHDApproachCircle);
     static void drawHitCircleOverlay(SkinImage *hitCircleOverlayImage, vec2 pos, float circleOverlayImageScale,
                                      float alpha, float colorRGBMultiplier);
     static void drawHitCircle(Image *hitCircleImage, vec2 pos, Color comboColor, float circleImageScale, float alpha);
-    static void drawHitCircleNumber(const std::unique_ptr<Skin> &skin, float numberScale, float overlapScale, vec2 pos,
-                                    int number, float numberAlpha, float colorRGBMultiplier);
+    static void drawHitCircleNumber(const Skin *skin, float numberScale, float overlapScale, vec2 pos, int number,
+                                    float numberAlpha, float colorRGBMultiplier);
 
    public:
     Circle(int x, int y, i32 time, HitSamples samples, int comboNumber, bool isEndOfCombo, int colorCounter,

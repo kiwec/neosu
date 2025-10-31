@@ -65,10 +65,10 @@ void UserCard::draw() {
         g->pushTransform();
         {
             const float scale =
-                Osu::getImageScaleToFillResolution(osu->getSkin()->getUserIcon(), vec2(iconWidth, iconHeight));
+                Osu::getImageScaleToFillResolution(osu->getSkin()->i_user_icon, vec2(iconWidth, iconHeight));
             g->scale(scale, scale);
             g->translate(this->vPos.x + iconWidth / 2 + 1, this->vPos.y + iconHeight / 2 + 1);
-            g->drawImage(osu->getSkin()->getUserIcon());
+            g->drawImage(osu->getSkin()->i_user_icon);
         }
         g->popTransform();
         g->popClipRect();

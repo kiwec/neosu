@@ -49,38 +49,33 @@ void UIModList::draw() {
     std::vector<SkinImage *> mods;
 
     if(ModMasks::legacy_eq(*this->flags, LegacyFlags::Perfect))
-        mods.push_back(osu->getSkin()->getSelectionModPerfect());
+        mods.push_back(osu->getSkin()->i_modselect_pf);
     else if(ModMasks::legacy_eq(*this->flags, LegacyFlags::SuddenDeath))
-        mods.push_back(osu->getSkin()->getSelectionModSuddenDeath());
+        mods.push_back(osu->getSkin()->i_modselect_sd);
 
     if(cv::nightcore_enjoyer.getBool()) {
         if(ModMasks::legacy_eq(*this->flags, LegacyFlags::DoubleTime))
-            mods.push_back(osu->getSkin()->getSelectionModNightCore());
+            mods.push_back(osu->getSkin()->i_modselect_nc);
         if(ModMasks::legacy_eq(*this->flags, LegacyFlags::HalfTime))
-            mods.push_back(osu->getSkin()->getSelectionModDayCore());
+            mods.push_back(osu->getSkin()->i_modselect_dc);
     } else {
         if(ModMasks::legacy_eq(*this->flags, LegacyFlags::DoubleTime))
-            mods.push_back(osu->getSkin()->getSelectionModDoubleTime());
+            mods.push_back(osu->getSkin()->i_modselect_dt);
         if(ModMasks::legacy_eq(*this->flags, LegacyFlags::HalfTime))
-            mods.push_back(osu->getSkin()->getSelectionModHalfTime());
+            mods.push_back(osu->getSkin()->i_modselect_ht);
     }
 
-    if(ModMasks::legacy_eq(*this->flags, LegacyFlags::NoFail)) mods.push_back(osu->getSkin()->getSelectionModNoFail());
-    if(ModMasks::legacy_eq(*this->flags, LegacyFlags::Easy)) mods.push_back(osu->getSkin()->getSelectionModEasy());
-    if(ModMasks::legacy_eq(*this->flags, LegacyFlags::TouchDevice)) mods.push_back(osu->getSkin()->getSelectionModTD());
-    if(ModMasks::legacy_eq(*this->flags, LegacyFlags::Hidden)) mods.push_back(osu->getSkin()->getSelectionModHidden());
-    if(ModMasks::legacy_eq(*this->flags, LegacyFlags::HardRock))
-        mods.push_back(osu->getSkin()->getSelectionModHardRock());
-    if(ModMasks::legacy_eq(*this->flags, LegacyFlags::Relax)) mods.push_back(osu->getSkin()->getSelectionModRelax());
-    if(ModMasks::legacy_eq(*this->flags, LegacyFlags::Autoplay))
-        mods.push_back(osu->getSkin()->getSelectionModAutoplay());
-    if(ModMasks::legacy_eq(*this->flags, LegacyFlags::SpunOut))
-        mods.push_back(osu->getSkin()->getSelectionModSpunOut());
-    if(ModMasks::legacy_eq(*this->flags, LegacyFlags::Autopilot))
-        mods.push_back(osu->getSkin()->getSelectionModAutopilot());
-    if(ModMasks::legacy_eq(*this->flags, LegacyFlags::Target)) mods.push_back(osu->getSkin()->getSelectionModTarget());
-    if(ModMasks::legacy_eq(*this->flags, LegacyFlags::ScoreV2))
-        mods.push_back(osu->getSkin()->getSelectionModScorev2());
+    if(ModMasks::legacy_eq(*this->flags, LegacyFlags::NoFail)) mods.push_back(osu->getSkin()->i_modselect_nf);
+    if(ModMasks::legacy_eq(*this->flags, LegacyFlags::Easy)) mods.push_back(osu->getSkin()->i_modselect_ez);
+    if(ModMasks::legacy_eq(*this->flags, LegacyFlags::TouchDevice)) mods.push_back(osu->getSkin()->i_modselect_td);
+    if(ModMasks::legacy_eq(*this->flags, LegacyFlags::Hidden)) mods.push_back(osu->getSkin()->i_modselect_hd);
+    if(ModMasks::legacy_eq(*this->flags, LegacyFlags::HardRock)) mods.push_back(osu->getSkin()->i_modselect_hr);
+    if(ModMasks::legacy_eq(*this->flags, LegacyFlags::Relax)) mods.push_back(osu->getSkin()->i_modselect_rx);
+    if(ModMasks::legacy_eq(*this->flags, LegacyFlags::Autoplay)) mods.push_back(osu->getSkin()->i_modselect_auto);
+    if(ModMasks::legacy_eq(*this->flags, LegacyFlags::SpunOut)) mods.push_back(osu->getSkin()->i_modselect_so);
+    if(ModMasks::legacy_eq(*this->flags, LegacyFlags::Autopilot)) mods.push_back(osu->getSkin()->i_modselect_ap);
+    if(ModMasks::legacy_eq(*this->flags, LegacyFlags::Target)) mods.push_back(osu->getSkin()->i_modselect_target);
+    if(ModMasks::legacy_eq(*this->flags, LegacyFlags::ScoreV2)) mods.push_back(osu->getSkin()->i_modselect_sv2);
 
     g->setColor(0xffffffff);
     vec2 modPos = this->vPos;
@@ -344,7 +339,7 @@ CBaseUIContainer *RoomScreen::setVisible(bool visible) {
     this->bVisible = visible;
 
     if(visible) {
-        soundEngine->play(osu->getSkin()->getMenuBackSound());
+        soundEngine->play(osu->getSkin()->s_menu_back);
     }
 
     return this;
@@ -529,7 +524,7 @@ void RoomScreen::ragequit(bool play_sound) {
     Replay::Mods::use(osu->previous_mods);
 
     if(play_sound) {
-        soundEngine->play(osu->getSkin()->getMenuBackSound());
+        soundEngine->play(osu->getSkin()->s_menu_back);
     }
 }
 
@@ -623,17 +618,17 @@ void RoomScreen::on_room_updated(Room room) {
     if(BanchoState::is_playing_a_multi_map() || !BanchoState::is_in_a_multi_room()) return;
 
     if(BanchoState::room.nb_players < room.nb_players) {
-        soundEngine->play(osu->getSkin()->getRoomJoinedSound());
+        soundEngine->play(osu->getSkin()->s_room_joined);
     } else if(BanchoState::room.nb_players > room.nb_players) {
-        soundEngine->play(osu->getSkin()->getRoomQuitSound());
+        soundEngine->play(osu->getSkin()->s_room_quit);
     }
     if(BanchoState::room.nb_ready() < room.nb_ready()) {
-        soundEngine->play(osu->getSkin()->getRoomReadySound());
+        soundEngine->play(osu->getSkin()->s_room_ready);
     } else if(BanchoState::room.nb_ready() > room.nb_ready()) {
-        soundEngine->play(osu->getSkin()->getRoomNotReadySound());
+        soundEngine->play(osu->getSkin()->s_room_not_ready);
     }
     if(!BanchoState::room.all_players_ready() && room.all_players_ready()) {
-        soundEngine->play(osu->getSkin()->getMatchConfirmSound());
+        soundEngine->play(osu->getSkin()->s_match_confirm);
     }
 
     bool was_host = BanchoState::room.is_host();
@@ -692,7 +687,7 @@ void RoomScreen::on_match_started(Room room) {
         osu->getSongBrowser()->bHasSelectedAndIsPlaying = true;
         osu->getChat()->updateVisibility();
 
-        soundEngine->play(osu->getSkin()->getMatchStartSound());
+        soundEngine->play(osu->getSkin()->s_match_start);
     } else {
         osu->getNotificationOverlay()->addToast(u"Failed to load map", ERROR_TOAST);
         this->ragequit();  // map failed to load
@@ -821,7 +816,7 @@ void RoomScreen::onClientScoreChange(bool force) {
 
 void RoomScreen::onReadyButtonClick() {
     if(this->ready_btn->is_loading) return;
-    soundEngine->play(osu->getSkin()->getMenuHit());
+    soundEngine->play(osu->getSkin()->s_menu_hit);
 
     int nb_ready = 0;
     bool is_ready = false;
@@ -845,7 +840,7 @@ void RoomScreen::onReadyButtonClick() {
 }
 
 void RoomScreen::onSelectModsClicked() {
-    soundEngine->play(osu->getSkin()->getMenuHit());
+    soundEngine->play(osu->getSkin()->s_menu_hit);
     osu->getModSelector()->setVisible(true);
     this->bVisible = false;
 }
@@ -853,7 +848,7 @@ void RoomScreen::onSelectModsClicked() {
 void RoomScreen::onSelectMapClicked() {
     if(!BanchoState::room.is_host()) return;
 
-    soundEngine->play(osu->getSkin()->getMenuHit());
+    soundEngine->play(osu->getSkin()->s_menu_hit);
 
     Packet packet;
     packet.id = MATCH_CHANGE_SETTINGS;

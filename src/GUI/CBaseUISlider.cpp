@@ -255,7 +255,7 @@ CBaseUISlider *CBaseUISlider::setValue(float value, bool animate, bool call_call
     this->updateBlockPos();
 
     if(playAudio) {
-        soundEngine->play(osu->getSkin()->getSliderbarSound(), 0.f, 0.75f + (.075f * percent));
+        soundEngine->play(osu->getSkin()->s_sliderbar, 0.f, 0.75f + (.075f * percent));
         this->fLastSoundPlayTime = engine->getTime();
     }
 

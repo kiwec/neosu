@@ -294,7 +294,7 @@ const Image *BGImageHandler::getImageOrSkinFallback(const Image *candidate_loade
     // if we got an image but it failed for whatever reason, return the user skin as a fallback instead
     if(force_fallback || (candidate_loaded && candidate_loaded->failedLoad())) {
         const Image *skin_bg = nullptr;
-        if(osu->getSkin() && (skin_bg = osu->getSkin()->getMenuBackground()) && skin_bg != MISSING_TEXTURE &&
+        if(osu->getSkin() && (skin_bg = osu->getSkin()->i_menu_bg) && skin_bg != MISSING_TEXTURE &&
            !skin_bg->failedLoad()) {
             ret = skin_bg;
         }

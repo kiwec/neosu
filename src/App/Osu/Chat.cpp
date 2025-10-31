@@ -74,7 +74,7 @@ ChatChannel::~ChatChannel() {
 
 void ChatChannel::onChannelButtonClick(CBaseUIButton * /*btn*/) {
     if(this->chat == nullptr) return;
-    soundEngine->play(osu->getSkin()->getClickButtonSound());
+    soundEngine->play(osu->getSkin()->s_click_button);
     this->chat->switchToChannel(this);
 }
 
@@ -680,7 +680,7 @@ void Chat::onKeyDown(KeyboardEvent &key) {
                 this->send_message(this->input_box->getText());
             }
 
-            soundEngine->play(osu->getSkin()->getMessageSentSound());
+            soundEngine->play(osu->getSkin()->s_message_sent);
             this->input_box->clear();
         }
         this->tab_completion_prefix = "";
@@ -720,7 +720,7 @@ void Chat::onKeyDown(KeyboardEvent &key) {
             this->switchToChannel(new_chan);
         }
 
-        soundEngine->play(osu->getSkin()->getClickButtonSound());
+        soundEngine->play(osu->getSkin()->s_click_button);
 
         return;
     }
@@ -755,8 +755,8 @@ void Chat::onKeyDown(KeyboardEvent &key) {
             this->input_box->updateTextPos();
             this->input_box->tickCaret();
 
-            Sound *sounds[] = {osu->getSkin()->getTyping1Sound(), osu->getSkin()->getTyping2Sound(),
-                               osu->getSkin()->getTyping3Sound(), osu->getSkin()->getTyping4Sound()};
+            Sound *sounds[] = {osu->getSkin()->s_typing1, osu->getSkin()->s_typing2, osu->getSkin()->s_typing3,
+                               osu->getSkin()->s_typing4};
             soundEngine->play(sounds[rand() % 4]);
         }
 
@@ -845,7 +845,7 @@ void Chat::addChannel(const UString &channel_name, bool switch_to) {
     this->updateLayout(osu->getVirtScreenSize());
 
     if(this->isVisible()) {
-        soundEngine->play(osu->getSkin()->getExpandSound());
+        soundEngine->play(osu->getSkin()->s_expand);
     }
 }
 
@@ -895,7 +895,8 @@ void Chat::addMessage(UString channel_name, const ChatMessage &msg, bool mark_un
             notif, CHAT_TOAST, [channel_name] { osu->getChat()->openChannel(channel_name); }, ToastElement::TYPE::CHAT);
     }
 
-    bool is_pm = msg.author_id > 0 && channel_name[0] != '#' && msg.author_name.utf8View() != BanchoState::get_username();
+    bool is_pm =
+        msg.author_id > 0 && channel_name[0] != '#' && msg.author_name.utf8View() != BanchoState::get_username();
     if(is_pm) {
         // If it's a PM, the channel title should be the one who sent the message
         channel_name = msg.author_name;
@@ -909,7 +910,7 @@ void Chat::addMessage(UString channel_name, const ChatMessage &msg, bool mark_un
         if(cv::chat_ping_on_mention.getBool()) {
             // Yes, osu! really does use "match-start.wav" for when you get pinged
             // XXX: Use it as fallback, allow neosu-targeting skins to have custom ping sound
-            soundEngine->play(osu->getSkin()->getMatchStartSound());
+            soundEngine->play(osu->getSkin()->s_match_start);
         }
     }
 
@@ -924,7 +925,7 @@ void Chat::addMessage(UString channel_name, const ChatMessage &msg, bool mark_un
     if(mentioned && cv::chat_ping_on_mention.getBool()) {
         // Yes, osu! really does use "match-start.wav" for when you get pinged
         // XXX: Use it as fallback, allow neosu-targeting skins to have custom ping sound
-        soundEngine->play(osu->getSkin()->getMatchStartSound());
+        soundEngine->play(osu->getSkin()->s_match_start);
     }
 
     this->addChannel(channel_name);
@@ -1197,7 +1198,7 @@ void Chat::leave(const UString &channel_name) {
 
     this->removeChannel(channel_name);
 
-    soundEngine->play(osu->getSkin()->getCloseChatTabSound());
+    soundEngine->play(osu->getSkin()->s_close_chat_tab);
 }
 
 void Chat::send_message(const UString &msg) {
@@ -1282,7 +1283,7 @@ void Chat::updateVisibility() {
 CBaseUIContainer *Chat::setVisible(bool visible) {
     if(visible == this->bVisible) return this;
 
-    soundEngine->play(osu->getSkin()->getClickButtonSound());
+    soundEngine->play(osu->getSkin()->s_click_button);
 
     if(visible && BanchoState::get_uid() <= 0) {
         osu->getOptionsMenu()->askForLoginDetails();

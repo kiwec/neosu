@@ -628,7 +628,7 @@ void BassSoundEngine::setOutputDevice(const SoundEngine::OUTPUT_DEVICE &device) 
     }
 
     osu->getOptionsMenu()->outputDeviceLabel->setText(this->getOutputDeviceName());
-    osu->getSkin()->reloadSounds();
+    osu->getSkinMutable()->reloadSounds();
     osu->getOptionsMenu()->onOutputDeviceResetUpdate();
 
     // start playing music again after audio device changed

@@ -79,7 +79,7 @@ void start(i32 user_id) {
     osu->getMainMenu()->setVisible(false);
     if(osu->getRoom()->isVisible()) osu->getRoom()->ragequit(false);
 
-    soundEngine->play(osu->getSkin()->getMenuHit());
+    soundEngine->play(osu->getSkin()->s_menu_hit);
 }
 
 void start_by_username(std::string_view username) {
@@ -113,7 +113,7 @@ void stop() {
     BANCHO::Net::send_packet(packet);
 
     osu->getMainMenu()->setVisible(true);
-    soundEngine->play(osu->getSkin()->getMenuBackSound());
+    soundEngine->play(osu->getSkin()->s_menu_back);
 }
 
 }  // namespace Spectating

@@ -9,8 +9,6 @@
 #include "Skin.h"
 #include "SoundEngine.h"
 
-
-
 UIPauseMenuButton::UIPauseMenuButton(std::function<Image *()> getImageFunc, float xPos, float yPos, float xSize,
                                      float ySize, UString name)
     : CBaseUIButton(xPos, yPos, xSize, ySize, std::move(name)) {
@@ -52,18 +50,18 @@ void UIPauseMenuButton::setBaseScale(float xScale, float yScale) {
 void UIPauseMenuButton::onMouseInside() {
     CBaseUIButton::onMouseInside();
 
-    if(env->winFocused()) soundEngine->play(osu->getSkin()->getMenuHover());
+    if(env->winFocused()) soundEngine->play(osu->getSkin()->s_menu_hover);
 
     const float animationDuration = 0.09f;
     anim->moveLinear(&this->vScale.x, this->vBaseScale.x * this->fScaleMultiplier, animationDuration, true);
     anim->moveLinear(&this->vScale.y, this->vBaseScale.y * this->fScaleMultiplier, animationDuration, true);
 
     if(this->getName() == UString("Resume")) {
-        soundEngine->play(osu->getSkin()->getHoverPauseContinueSound());
+        soundEngine->play(osu->getSkin()->s_hover_pause_continue);
     } else if(this->getName() == UString("Retry")) {
-        soundEngine->play(osu->getSkin()->getHoverPauseRetrySound());
+        soundEngine->play(osu->getSkin()->s_hover_pause_retry);
     } else if(this->getName() == UString("Quit")) {
-        soundEngine->play(osu->getSkin()->getHoverPauseBackSound());
+        soundEngine->play(osu->getSkin()->s_hover_pause_back);
     }
 }
 

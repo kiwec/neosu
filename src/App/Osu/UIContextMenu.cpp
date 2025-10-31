@@ -40,13 +40,13 @@ void UIContextMenuButton::mouse_update(bool *propagate_clicks) {
 
 void UIContextMenuButton::onMouseInside() {
     if(button_sound_cooldown + 0.05f < engine->getTime()) {
-        soundEngine->play(osu->getSkin()->getHoverButtonSound());
+        soundEngine->play(osu->getSkin()->s_hover_button);
         button_sound_cooldown = engine->getTime();
     }
 }
 
 void UIContextMenuButton::onMouseDownInside(bool /*left*/, bool /*right*/) {
-    soundEngine->play(osu->getSkin()->getClickButtonSound());
+    soundEngine->play(osu->getSkin()->s_click_button);
 }
 
 void UIContextMenuButton::setTooltipText(const UString &text) { this->tooltipTextLines = text.split("\n"); }
@@ -282,7 +282,7 @@ void UIContextMenu::end(bool invertAnimation, bool clampUnderflowAndOverflowAndE
     this->fAnimation = 0.001f;
     anim->moveQuartOut(&this->fAnimation, 1.0f, 0.15f, true);
 
-    soundEngine->play(osu->getSkin()->getExpandSound());
+    soundEngine->play(osu->getSkin()->s_expand);
 }
 
 void UIContextMenu::setVisible2(bool visible2) {

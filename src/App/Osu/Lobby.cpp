@@ -108,7 +108,7 @@ void Lobby::onKeyDown(KeyboardEvent& key) {
         key.consume();
         this->setVisible(false);
         osu->getMainMenu()->setVisible(true);
-        soundEngine->play(osu->getSkin()->getMenuBackSound());
+        soundEngine->play(osu->getSkin()->s_menu_back);
         return;
     }
 

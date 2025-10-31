@@ -277,7 +277,7 @@ void BeatmapInterface::skipEmptySection() {
         this->bWasSeekFrame = true;
     }
 
-    soundEngine->play(this->getSkin()->getMenuHit());
+    soundEngine->play(this->getSkin()->s_menu_hit);
 
     if(!BanchoState::spectators.empty()) {
         // TODO @kiwec: how does skip work? does client jump to latest time or just skip beginning?
@@ -317,14 +317,14 @@ void BeatmapInterface::onKey(GameplayKeys key_flag, bool down, u64 timestamp) {
 
         if(cv::mod_singletap.getBool() && !(this->lastPressedKey & key_flag)) {
             if(this->iCurrentHitObjectIndex > this->iAllowAnyNextKeyUntilHitObjectIndex) {
-                soundEngine->play(this->getSkin()->getCombobreak());
+                soundEngine->play(this->getSkin()->s_combobreak);
                 return;
             }
         }
 
         if(cv::mod_fullalternate.getBool() && (this->lastPressedKey & key_flag)) {
             if(this->iCurrentHitObjectIndex > this->iAllowAnyNextKeyUntilHitObjectIndex) {
-                soundEngine->play(this->getSkin()->getCombobreak());
+                soundEngine->play(this->getSkin()->s_combobreak);
                 return;
             }
         }
@@ -503,7 +503,7 @@ bool BeatmapInterface::start() {
 
     osu->setShouldPauseBGThreads(true);
 
-    soundEngine->play(this->getSkin()->getMenuHit());
+    soundEngine->play(this->getSkin()->s_menu_hit);
 
     osu->updateMods();
 
@@ -597,13 +597,13 @@ bool BeatmapInterface::start() {
         // move temp result data into beatmap
         this->hitobjects = std::move(result.hitobjects);
         this->breaks = std::move(result.breaks);
-        this->getSkin()->setBeatmapComboColors(std::move(result.combocolors));  // update combo colors in skin
+        this->getSkinMutable()->setBeatmapComboColors(std::move(result.combocolors));  // update combo colors in skin
 
         this->current_timing_point = DatabaseBeatmap::TIMING_INFO{};
         this->default_sample_set = result.defaultSampleSet;
 
         // load beatmap skin
-        this->getSkin()->loadBeatmapOverride(this->beatmap->getFolder());
+        this->getSkinMutable()->loadBeatmapOverride(this->beatmap->getFolder());
     }
 
     // the drawing order is different from the playing/input order.
@@ -672,14 +672,14 @@ bool BeatmapInterface::start() {
     osu->updateConfineCursor();
     osu->updateWindowsKeyDisable();
 
-    soundEngine->play(this->getSkin()->getExpandSound());
+    soundEngine->play(this->getSkin()->s_expand);
 
     // NOTE: loading failures are handled dynamically in update(), so temporarily assume everything has worked in here
     return true;
 }
 
 void BeatmapInterface::restart(bool quick) {
-    soundEngine->stop(this->getSkin()->getFailsound());
+    soundEngine->stop(this->getSkin()->s_fail);
 
     if(!this->bIsWaiting) {
         this->bIsRestartScheduled = true;
@@ -851,7 +851,7 @@ bool BeatmapInterface::isPreviewMusicPlaying() {
 
 void BeatmapInterface::stop(bool quit) {
     osu->getSongBrowser()->bHasSelectedAndIsPlaying = false;
-    soundEngine->stop(this->getSkin()->getFailsound());
+    soundEngine->stop(this->getSkin()->s_fail);
 
     if(this->beatmap == nullptr) return;
 
@@ -905,7 +905,7 @@ void BeatmapInterface::fail(bool force_death) {
     if(BanchoState::is_online() && osu->getModRelax()) return;
 
     if(!BanchoState::is_playing_a_multi_map() && cv::drain_kill.getBool()) {
-        soundEngine->play(this->getSkin()->getFailsound());
+        soundEngine->play(this->getSkin()->s_fail);
 
         // trigger music slowdown and delayed menu, see update()
         this->bFailed = true;
@@ -939,7 +939,7 @@ void BeatmapInterface::cancelFailing() {
 
     if(this->music != nullptr) this->music->setFrequency(0.0f);
 
-    soundEngine->stop(this->getSkin()->getFailsound());
+    soundEngine->stop(this->getSkin()->s_fail);
 }
 
 f32 BeatmapInterface::getIdealVolume() {
@@ -1094,7 +1094,8 @@ f32 BeatmapInterface::getSpeedMultiplier() const {
 }
 
 // currently just a passthrough for the main skin, might return beatmap skins in the future
-const std::unique_ptr<Skin> &BeatmapInterface::getSkin() const { return osu->getSkin(); }
+const Skin *BeatmapInterface::getSkin() const { return osu->getSkin(); }
+Skin *BeatmapInterface::getSkinMutable() { return osu->getSkinMutable(); }
 
 u32 BeatmapInterface::getScoreV1DifficultyMultiplier_full() const {
     // NOTE: We intentionally get CS/HP/OD from beatmap data, not "real" CS/HP/OD
@@ -1651,7 +1652,7 @@ void BeatmapInterface::playMissSound() {
     if((this->bIsFirstMissSound && osu->getScore()->getCombo() > 0) ||
        osu->getScore()->getCombo() > cv::combobreak_sound_combo.getInt()) {
         this->bIsFirstMissSound = false;
-        soundEngine->play(this->getSkin()->getCombobreak());
+        soundEngine->play(this->getSkin()->s_combobreak);
     }
 }
 
@@ -1735,7 +1736,7 @@ void BeatmapInterface::draw() {
 }
 
 void BeatmapInterface::drawSmoke() {
-    Image *smoke = this->getSkin()->getCursorSmoke();
+    Image *smoke = this->getSkin()->i_cursor_smoke;
     if(smoke == MISSING_TEXTURE) return;
 
     // We're not using this->iCurMusicPos, because we want the user to be able
@@ -1767,7 +1768,7 @@ void BeatmapInterface::drawSmoke() {
         }
     }
 
-    f32 scale = osu->getHUD()->getCursorScaleFactor() * (this->getSkin()->getCursorSmoke().is2x() ? 0.5f : 1.0f);
+    f32 scale = osu->getHUD()->getCursorScaleFactor() * (this->getSkin()->i_cursor_smoke.is2x() ? 0.5f : 1.0f);
     scale *= cv::cursor_scale.getFloat();
     scale *= cv::smoke_scale.getFloat();
 
@@ -1926,17 +1927,17 @@ void BeatmapInterface::drawFollowPoints() {
                 {
                     g->rotate(glm::degrees(std::atan2(yDiff, xDiff)));
 
-                    skin->getFollowPoint2()->setAnimationTimeOffset(skin->getAnimationSpeed(), fadeInTime);
+                    skin->i_followpoint->setAnimationTimeOffset(fadeInTime);
 
                     // NOTE: getSizeBaseRaw() depends on the current animation time being set correctly beforehand!
                     // (otherwise you get incorrect scales, e.g. for animated elements with inconsistent @2x mixed in)
                     // the followpoints are scaled by one eighth of the hitcirclediameter (not the raw diameter, but the
                     // scaled diameter)
                     const f32 followPointImageScale =
-                        ((this->fHitcircleDiameter / 8.0f) / skin->getFollowPoint2()->getSizeBaseRaw().x) *
+                        ((this->fHitcircleDiameter / 8.0f) / skin->i_followpoint->getSizeBaseRaw().x) *
                         followPointScaleMultiplier;
 
-                    skin->getFollowPoint2()->drawRaw(followPos, followPointImageScale * scale);
+                    skin->i_followpoint->drawRaw(followPos, followPointImageScale * scale);
                 }
                 g->popTransform();
             }
@@ -3029,9 +3030,9 @@ void BeatmapInterface::update2() {
 
                 if(!wasSeekFrame) {
                     if(passing)
-                        soundEngine->play(this->getSkin()->getSectionPassSound());
+                        soundEngine->play(this->getSkin()->s_section_pass);
                     else
-                        soundEngine->play(this->getSkin()->getSectionFailSound());
+                        soundEngine->play(this->getSkin()->s_section_fail);
                 }
             }
         }
@@ -3889,7 +3890,7 @@ void BeatmapInterface::updateHitobjectMetrics() {
     this->fHitcircleDiameter = GameRules::getRawHitCircleDiameter(this->getCS()) * GameRules::getHitCircleXMultiplier();
 
     const f32 osuCoordScaleMultiplier = (this->fHitcircleDiameter / this->fRawHitcircleDiameter);
-    this->fNumberScale = (this->fRawHitcircleDiameter / (160.0f * (skin->getDefault1().is2x() ? 2.0f : 1.0f))) *
+    this->fNumberScale = (this->fRawHitcircleDiameter / (160.0f * (skin->i_defaults[1].is2x() ? 2.0f : 1.0f))) *
                          osuCoordScaleMultiplier * cv::number_scale_multiplier.getFloat();
     this->fHitcircleOverlapScale =
         (this->fRawHitcircleDiameter / (160.0f)) * osuCoordScaleMultiplier * cv::number_scale_multiplier.getFloat();

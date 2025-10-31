@@ -143,11 +143,11 @@ void draw(const std::vector<vec2> &points, const std::vector<vec2> &alwaysPoints
 
     // debug sliders
     if(cv::slider_debug_draw.getBool()) {
-        const float circleImageScale = hitcircleDiameter / (float)osu->getSkin()->getHitCircle()->getWidth();
+        const float circleImageScale = hitcircleDiameter / (float)osu->getSkin()->i_hitcircle->getWidth();
         const float circleImageScaleInv = (1.0f / circleImageScale);
 
-        const auto width = (float)osu->getSkin()->getHitCircle()->getWidth();
-        const auto height = (float)osu->getSkin()->getHitCircle()->getHeight();
+        const auto width = (float)osu->getSkin()->i_hitcircle->getWidth();
+        const auto height = (float)osu->getSkin()->i_hitcircle->getHeight();
 
         const float x = (-width / 2.0f);
         const float y = (-height / 2.0f);
@@ -161,7 +161,7 @@ void draw(const std::vector<vec2> &points, const std::vector<vec2> &alwaysPoints
 
             g->setColor(Color(dimmedColor).setA(alpha * cv::slider_alpha_multiplier.getFloat()));
 
-            osu->getSkin()->getHitCircle()->bind();
+            osu->getSkin()->i_hitcircle->bind();
             {
                 for(int i = drawFromIndex; i < drawUpToIndex; i++) {
                     const vec2 point = points[i] * circleImageScaleInv;
@@ -184,7 +184,7 @@ void draw(const std::vector<vec2> &points, const std::vector<vec2> &alwaysPoints
                     g->drawVAO(&vao);
                 }
             }
-            osu->getSkin()->getHitCircle()->unbind();
+            osu->getSkin()->i_hitcircle->unbind();
         }
         g->popTransform();
 
@@ -204,9 +204,9 @@ void draw(const std::vector<vec2> &points, const std::vector<vec2> &alwaysPoints
         osu->getSliderFrameBuffer()->enable();
         {
             const Color undimmedBorderColor =
-                cv::slider_border_tint_combo_color.getBool() ? undimmedColor : osu->getSkin()->getSliderBorderColor();
+                cv::slider_border_tint_combo_color.getBool() ? undimmedColor : osu->getSkin()->c_slider_border;
             const Color undimmedBodyColor =
-                osu->getSkin()->isSliderTrackOverridden() ? osu->getSkin()->getSliderTrackOverride() : undimmedColor;
+                osu->getSkin()->o_slider_track_overridden ? osu->getSkin()->c_slider_track_override : undimmedColor;
 
             Color dimmedBorderColor;
             Color dimmedBodyColor;
@@ -241,7 +241,7 @@ void draw(const std::vector<vec2> &points, const std::vector<vec2> &alwaysPoints
             g->setColor(argb(1.0f, colorRGBMultiplier, colorRGBMultiplier,
                              colorRGBMultiplier));  // this only affects the gradient image if used (meaning shaders
                                                     // either don't work or are disabled on purpose)
-            osu->getSkin()->getSliderGradient()->bind();
+            osu->getSkin()->i_slider_gradient->bind();
             {
                 // draw curve mesh
                 {
@@ -291,7 +291,7 @@ void draw(VertexArrayObject *vao, const std::vector<vec2> &alwaysPoints, vec2 tr
 
         g->setColor(Color(dimmedColor).setA(alpha * cv::slider_alpha_multiplier.getFloat()));
 
-        osu->getSkin()->getHitCircle()->bind();
+        osu->getSkin()->i_hitcircle->bind();
 
         vao->setDrawPercent(from, to, 6);  // HACKHACK: hardcoded magic number
         {
@@ -317,9 +317,9 @@ void draw(VertexArrayObject *vao, const std::vector<vec2> &alwaysPoints, vec2 tr
         // render
         {
             const Color undimmedBorderColor =
-                cv::slider_border_tint_combo_color.getBool() ? undimmedColor : osu->getSkin()->getSliderBorderColor();
+                cv::slider_border_tint_combo_color.getBool() ? undimmedColor : osu->getSkin()->c_slider_border;
             const Color undimmedBodyColor =
-                osu->getSkin()->isSliderTrackOverridden() ? osu->getSkin()->getSliderTrackOverride() : undimmedColor;
+                osu->getSkin()->o_slider_track_overridden ? osu->getSkin()->c_slider_track_override : undimmedColor;
 
             Color dimmedBorderColor;
             Color dimmedBodyColor;
@@ -353,7 +353,7 @@ void draw(VertexArrayObject *vao, const std::vector<vec2> &alwaysPoints, vec2 tr
             g->setColor(argb(1.0f, colorRGBMultiplier, colorRGBMultiplier,
                              colorRGBMultiplier));  // this only affects the gradient image if used (meaning shaders
                                                     // either don't work or are disabled on purpose)
-            osu->getSkin()->getSliderGradient()->bind();
+            osu->getSkin()->i_slider_gradient->bind();
             {
                 // draw curve mesh
                 {

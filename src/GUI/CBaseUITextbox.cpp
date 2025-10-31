@@ -283,7 +283,7 @@ void CBaseUITextbox::onKeyDown(KeyboardEvent &e) {
 
     switch(e.getKeyCode()) {
         case KEY_DELETE:
-            soundEngine->play(osu->getSkin()->getDeletingTextSound());
+            soundEngine->play(osu->getSkin()->s_deleting_text);
             if(this->sText.length() > 0) {
                 if(this->hasSelectedText())
                     this->handleDeleteSelectedText();
@@ -307,7 +307,7 @@ void CBaseUITextbox::onKeyDown(KeyboardEvent &e) {
             break;
 
         case KEY_BACKSPACE:
-            soundEngine->play(osu->getSkin()->getDeletingTextSound());
+            soundEngine->play(osu->getSkin()->s_deleting_text);
             if(this->sText.length() > 0) {
                 if(this->hasSelectedText())
                     this->handleDeleteSelectedText();
@@ -357,7 +357,7 @@ void CBaseUITextbox::onKeyDown(KeyboardEvent &e) {
             this->handleCaretKeyboardMove();
             this->updateCaretX();
 
-            soundEngine->play(osu->getSkin()->getMovingTextCursorSound());
+            soundEngine->play(osu->getSkin()->s_moving_text_cursor);
         } break;
 
         case KEY_RIGHT: {
@@ -375,7 +375,7 @@ void CBaseUITextbox::onKeyDown(KeyboardEvent &e) {
             this->handleCaretKeyboardMove();
             this->updateCaretX();
 
-            soundEngine->play(osu->getSkin()->getMovingTextCursorSound());
+            soundEngine->play(osu->getSkin()->s_moving_text_cursor);
         } break;
 
         case KEY_C:
@@ -404,7 +404,7 @@ void CBaseUITextbox::onKeyDown(KeyboardEvent &e) {
 
         case KEY_X:
             if(keyboard->isControlDown() && this->hasSelectedText()) {
-                soundEngine->play(osu->getSkin()->getDeletingTextSound());
+                soundEngine->play(osu->getSkin()->s_deleting_text);
                 env->setClipBoardText(this->getSelectedText());
                 this->handleDeleteSelectedText();
             }
@@ -417,7 +417,7 @@ void CBaseUITextbox::onKeyDown(KeyboardEvent &e) {
             this->handleCaretKeyboardMove();
             this->updateCaretX();
 
-            soundEngine->play(osu->getSkin()->getMovingTextCursorSound());
+            soundEngine->play(osu->getSkin()->s_moving_text_cursor);
             break;
 
         case KEY_END:
@@ -427,7 +427,7 @@ void CBaseUITextbox::onKeyDown(KeyboardEvent &e) {
             this->handleCaretKeyboardMove();
             this->updateCaretX();
 
-            soundEngine->play(osu->getSkin()->getMovingTextCursorSound());
+            soundEngine->play(osu->getSkin()->s_moving_text_cursor);
             break;
     }
 }
@@ -458,8 +458,8 @@ void CBaseUITextbox::onChar(KeyboardEvent &e) {
 
     this->tickCaret();
 
-    Sound *sounds[] = {osu->getSkin()->getTyping1Sound(), osu->getSkin()->getTyping2Sound(),
-                       osu->getSkin()->getTyping3Sound(), osu->getSkin()->getTyping4Sound()};
+    Sound *sounds[] = {osu->getSkin()->s_typing1, osu->getSkin()->s_typing2, osu->getSkin()->s_typing3,
+                       osu->getSkin()->s_typing4};
     soundEngine->play(sounds[rand() % 4]);
 }
 

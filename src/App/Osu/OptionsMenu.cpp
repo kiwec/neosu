@@ -74,7 +74,7 @@ class OptionsMenuSkinPreviewElement final : public CBaseUIElement {
         const auto &skin = osu->getSkin();
 
         float hitcircleDiameter = this->vSize.y * 0.5f;
-        float numberScale = (hitcircleDiameter / (160.0f * (skin->getDefault1().is2x() ? 2.0f : 1.0f))) * 1 *
+        float numberScale = (hitcircleDiameter / (160.0f * (skin->i_defaults[1].is2x() ? 2.0f : 1.0f))) * 1 *
                             cv::number_scale_multiplier.getFloat();
         float overlapScale = (hitcircleDiameter / (160.0f)) * 1 * cv::number_scale_multiplier.getFloat();
         float scoreScale = 0.5f;
@@ -125,7 +125,7 @@ class OptionsMenuSkinPreviewElement final : public CBaseUIElement {
 
                 g->pushTransform();
                 g->scale(scoreScale, scoreScale);
-                g->translate(pos.x - skin->getScore0()->getWidth() * scoreScale, pos.y);
+                g->translate(pos.x - skin->i_scores[0]->getWidth() * scoreScale, pos.y);
                 osu->getHUD()->drawScoreNumber(i - 1, 1.0f);
                 g->popTransform();
             }
@@ -151,7 +151,7 @@ class OptionsMenuSliderPreviewElement final : public CBaseUIElement {
 
         const float hitcircleDiameter = this->vSize.y * 0.5f;
         const float numberScale =
-            (hitcircleDiameter / (160.0f * (osu->getSkin()->getDefault1().is2x() ? 2.0f : 1.0f))) * 1 *
+            (hitcircleDiameter / (160.0f * (osu->getSkin()->i_defaults[1].is2x() ? 2.0f : 1.0f))) * 1 *
             cv::number_scale_multiplier.getFloat();
         const float overlapScale = (hitcircleDiameter / (160.0f)) * 1 * cv::number_scale_multiplier.getFloat();
 
@@ -2251,7 +2251,7 @@ void OptionsMenu::updateLayout() {
 
     this->options->getContainer()->update_pos();
 
-    f32 sidebarHeight = this->categories->getSize().y - osu->getSkin()->getMenuBack2()->getSize().y;
+    f32 sidebarHeight = this->categories->getSize().y - osu->getSkin()->i_menu_back2->getSize().y;
     i32 categoryPaddingTopBottom = sidebarHeight * 0.15f;
     i32 categoryHeight = (sidebarHeight - categoryPaddingTopBottom * 2) / this->categoryButtons.size();
     for(int i = 0; i < this->categoryButtons.size(); i++) {
@@ -2631,7 +2631,7 @@ void OptionsMenu::onLogInClicked(bool left, bool right) {
     if(left && this->logInButton->is_loading) {
         return;
     }
-    soundEngine->play(osu->getSkin()->getMenuHit());
+    soundEngine->play(osu->getSkin()->s_menu_hit);
 
     // Clear mp_oauth_token if the user is connecting to a non-oauth server
     // This makes it easy to check what we need to do when building the login packet
@@ -2947,7 +2947,7 @@ void OptionsMenu::onKeyBindingButtonPressed(CBaseUIButton *button) {
 }
 
 void OptionsMenu::onKeyUnbindButtonPressed(CBaseUIButton *button) {
-    soundEngine->play(osu->getSkin()->getCheckOff());
+    soundEngine->play(osu->getSkin()->s_check_off);
 
     for(auto &element : this->elemContainers) {
         for(int e = 0; e < element->baseElems.size(); e++) {

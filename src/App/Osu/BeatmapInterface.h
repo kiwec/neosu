@@ -13,7 +13,7 @@
 
 class Sound;
 class ConVar;
-class Skin;
+struct Skin;
 class Resource;
 class HitObject;
 class DatabaseBeatmap;
@@ -183,7 +183,8 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
     bool spectate_pause = false;  // the player we're spectating has paused
 
     // used by HitObject children and ModSelector
-    [[nodiscard]] const std::unique_ptr<Skin> &getSkin() const;  // maybe use this for beatmap skins, maybe
+    [[nodiscard]] const Skin *getSkin() const;  // maybe use this for beatmap skins, maybe
+    [[nodiscard]] Skin *getSkinMutable();
 
     [[nodiscard]] inline i32 getCurMusicPos() const { return this->iCurMusicPos; }
     [[nodiscard]] inline i32 getCurMusicPosWithOffsets() const { return this->iCurMusicPosWithOffsets; }

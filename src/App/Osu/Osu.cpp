@@ -76,7 +76,8 @@ void Osu::globalOnSetValueProtectedCallback() {
     }
 }
 
-Osu *osu = nullptr;
+Osu *osu{nullptr};
+
 Osu::Osu() {
     osu = this;
     srand(crypto::rng::get_rand<u32>());
@@ -797,9 +798,8 @@ void Osu::update() {
                 this->bSkinLoadWasReload = false;
 
                 this->notificationOverlay->addNotification(
-                    this->skin->getName().length() > 0
-                        ? UString::format("Skin reloaded! (%s)", this->skin->getName().c_str())
-                        : UString("Skin reloaded!"),
+                    this->skin->name.length() > 0 ? UString::format("Skin reloaded! (%s)", this->skin->name.c_str())
+                                                  : UString("Skin reloaded!"),
                     0xffffffff, false, 0.75f);
             }
         }
@@ -1294,7 +1294,7 @@ void Osu::saveScreenshot() {
     const f32 innerWidth = this->internalRect.getWidth();
     const f32 innerHeight = this->internalRect.getHeight();
 
-    soundEngine->play(this->skin->getShutter());
+    soundEngine->play(this->skin->s_shutter);
     this->notificationOverlay->addToast(UString::format("Saved screenshot to %s", screenshotFilename.c_str()),
                                         CHAT_TOAST, [screenshotFilename] { env->openFileBrowser(screenshotFilename); });
 
@@ -1339,7 +1339,7 @@ void Osu::onPlayEnd(const FinishedScore &score, bool quit, bool /*aborted*/) {
             this->rankingScreen->setScore(score);
             this->rankingScreen->setBeatmapInfo(this->map_iface->getBeatmap());
 
-            soundEngine->play(this->skin->getApplause());
+            soundEngine->play(this->skin->s_applause);
         } else {
             this->bScheduleEndlessModNextBeatmap = true;
             return;  // nothing more to do here
@@ -1765,15 +1765,15 @@ void Osu::onSkinChange(std::string_view newSkinName) {
     }
 
     // initial load
-    if(!this->skin.get()) this->skin.reset(this->skinScheduledToLoad);
+    if(!this->skin) this->skin.reset(this->skinScheduledToLoad);
 
     this->bSkinLoadScheduled = true;
 }
 
 void Osu::updateAnimationSpeed() {
-    if(this->getSkin() != nullptr) {
+    if(this->skin) {
         float speed = this->getAnimationSpeedMultiplier() / this->map_iface->getSpeedMultiplier();
-        this->getSkin()->setAnimationSpeed(speed >= 0.0f ? speed : 0.0f);
+        this->skin->anim_speed = (speed >= 0.0f ? speed : 0.0f);
     }
 }
 
@@ -2051,7 +2051,7 @@ void Osu::setupSoloud() {
 
     static auto output_changed_before_cb = []() -> void {
         Sound *map_music = nullptr;
-        if(osu && osu->getMapInterface() && (map_music = osu->getMapInterface()->getMusic())) {
+        if(osu && osu->map_iface && (map_music = osu->map_iface->getMusic())) {
             was_playing = map_music->isPlaying();
             prev_position_ms = map_music->getPositionMS();
         } else {
@@ -2062,14 +2062,14 @@ void Osu::setupSoloud() {
     // the actual reset will be sandwiched between these during restart
     static auto output_changed_after_cb = []() -> void {
         // part 2 of callback
-        if(osu && osu->getOptionsMenu() && osu->getOptionsMenu()->outputDeviceLabel && osu->getSkin()) {
-            osu->getOptionsMenu()->outputDeviceLabel->setText(soundEngine->getOutputDeviceName());
-            osu->getSkin()->reloadSounds();
-            osu->getOptionsMenu()->onOutputDeviceResetUpdate();
+        if(osu && osu->optionsMenu && osu->optionsMenu->outputDeviceLabel && osu->skin) {
+            osu->optionsMenu->outputDeviceLabel->setText(soundEngine->getOutputDeviceName());
+            osu->skin->reloadSounds();
+            osu->optionsMenu->onOutputDeviceResetUpdate();
 
             // start playing music again after audio device changed
             Sound *map_music = nullptr;
-            const auto &map_iface = osu->getMapInterface();
+            const auto &map_iface = osu->map_iface;
             if(map_iface && (map_music = map_iface->getMusic())) {
                 if(osu->isInPlayMode()) {
                     map_iface->unloadMusic();
@@ -2090,7 +2090,7 @@ void Osu::setupSoloud() {
             if(was_playing) {
                 osu->music_unpause_scheduled = true;
             }
-            osu->getOptionsMenu()->scheduleLayoutUpdate();
+            osu->optionsMenu->scheduleLayoutUpdate();
         }
     };
     soundEngine->setDeviceChangeBeforeCallback(output_changed_before_cb);

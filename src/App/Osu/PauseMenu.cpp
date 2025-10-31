@@ -43,10 +43,10 @@ PauseMenu::PauseMenu() : OsuScreen() {
     this->setSize(osu->getVirtScreenWidth(), osu->getVirtScreenHeight());
 
     UIPauseMenuButton *continueButton =
-        this->addButton([]() -> Image * { return osu->getSkin()->getPauseContinue(); }, "Resume");
+        this->addButton([]() -> Image * { return osu->getSkin()->i_pause_continue; }, "Resume");
     UIPauseMenuButton *retryButton =
-        this->addButton([]() -> Image * { return osu->getSkin()->getPauseRetry(); }, "Retry");
-    UIPauseMenuButton *backButton = this->addButton([]() -> Image * { return osu->getSkin()->getPauseBack(); }, "Quit");
+        this->addButton([]() -> Image * { return osu->getSkin()->i_pause_retry; }, "Retry");
+    UIPauseMenuButton *backButton = this->addButton([]() -> Image * { return osu->getSkin()->i_pause_back; }, "Quit");
 
     continueButton->setClickCallback(SA::MakeDelegate<&PauseMenu::onContinueClicked>(this));
     retryButton->setClickCallback(SA::MakeDelegate<&PauseMenu::onRetryClicked>(this));
@@ -69,9 +69,9 @@ void PauseMenu::draw() {
     if((this->bVisible || isAnimating)) {
         Image *image = nullptr;
         if(this->bContinueEnabled)
-            image = osu->getSkin()->getPauseOverlay();
+            image = osu->getSkin()->i_pause_overlay;
         else
-            image = osu->getSkin()->getFailBackground();
+            image = osu->getSkin()->i_fail_bg;
 
         if(image != MISSING_TEXTURE) {
             const float scale = Osu::getImageScaleToFillResolution(image, osu->getVirtScreenSize());
@@ -136,7 +136,7 @@ void PauseMenu::onContinueClicked() {
     if(!this->bContinueEnabled) return;
     if(anim->isAnimating(&this->fDimAnim)) return;
 
-    soundEngine->play(osu->getSkin()->getClickPauseContinueSound());
+    soundEngine->play(osu->getSkin()->s_click_pause_continue);
     osu->getMapInterface()->pause();
 
     this->scheduleVisibilityChange(false);
@@ -146,7 +146,7 @@ void PauseMenu::onRetryClicked() {
     if(BanchoState::is_playing_a_multi_map()) return;  // sanity
     if(anim->isAnimating(&this->fDimAnim)) return;
 
-    soundEngine->play(osu->getSkin()->getClickPauseRetrySound());
+    soundEngine->play(osu->getSkin()->s_click_pause_retry);
     osu->getMapInterface()->restart();
 
     this->scheduleVisibilityChange(false);
@@ -155,7 +155,7 @@ void PauseMenu::onRetryClicked() {
 void PauseMenu::onBackClicked() {
     if(anim->isAnimating(&this->fDimAnim)) return;
 
-    soundEngine->play(osu->getSkin()->getClickPauseBackSound());
+    soundEngine->play(osu->getSkin()->s_click_pause_back);
     osu->getMapInterface()->stop(true);
 
     this->scheduleVisibilityChange(false);
@@ -299,7 +299,7 @@ void PauseMenu::updateLayout() {
         Image *img = button->getImage();
         if(img == nullptr) img = MISSING_TEXTURE;
 
-        const float scale = osu->getUIScale(256) / (411.0f * (osu->getSkin()->getPauseContinue().is2x() ? 2.0f : 1.0f));
+        const float scale = osu->getUIScale(256) / (411.0f * (osu->getSkin()->i_pause_continue.is2x() ? 2.0f : 1.0f));
 
         button->setBaseScale(scale, scale);
         button->setSize(img->getWidth() * scale, img->getHeight() * scale);
@@ -336,11 +336,11 @@ CBaseUIContainer *PauseMenu::setVisible(bool visible) {
     if(!BanchoState::is_playing_a_multi_map()) {
         if(visible) {
             if(!osu->getScore()->isDead()) {
-                soundEngine->play(osu->getSkin()->getPauseLoopSound());
+                soundEngine->play(osu->getSkin()->s_pause_loop);
             }
         } else {
-            soundEngine->stop(osu->getSkin()->getFailsound());
-            soundEngine->stop(osu->getSkin()->getPauseLoopSound());
+            soundEngine->stop(osu->getSkin()->s_fail);
+            soundEngine->stop(osu->getSkin()->s_pause_loop);
         }
     }
 

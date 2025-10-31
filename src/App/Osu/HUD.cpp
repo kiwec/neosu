@@ -167,7 +167,7 @@ void HUD::draw() {
         if(cv::draw_combo.getBool()) this->drawCombo(osu->getScore()->getCombo());
 
         // dynamic hud scaling updates
-        this->fScoreHeight = osu->getSkin()->getScore0()->getHeight() * this->getScoreScale();
+        this->fScoreHeight = osu->getSkin()->i_scores[0]->getHeight() * this->getScoreScale();
 
         if(cv::draw_progressbar.getBool()) this->drawProgressBar(pf->getPercentFinishedPlayable(), pf->isWaiting());
 
@@ -334,9 +334,9 @@ void HUD::drawCursor(vec2 pos, float alphaMultiplier, bool secondTrail, bool upd
         this->drawCursorTrailInt(this->cursorTrailShader, trail, pos, alphaMultiplier, false);
     }
 
-    auto cursor = osu->getSkin()->getCursor();
+    const auto &cursor = osu->getSkin()->i_cursor;
     const float scale = this->getCursorScaleFactor() * (cursor.is2x() ? 0.5f : 1.0f);
-    const float animatedScale = scale * (osu->getSkin()->getCursorExpand() ? this->fCursorExpandAnim : 1.0f);
+    const float animatedScale = scale * (osu->getSkin()->o_cursor_expand ? this->fCursorExpandAnim : 1.0f);
 
     // draw cursor
     g->setColor(Color(0xffffffff).setA(cv::cursor_alpha.getFloat() * alphaMultiplier));
@@ -345,11 +345,11 @@ void HUD::drawCursor(vec2 pos, float alphaMultiplier, bool secondTrail, bool upd
     {
         g->scale(animatedScale * cv::cursor_scale.getFloat(), animatedScale * cv::cursor_scale.getFloat());
 
-        if(!osu->getSkin()->getCursorCenter())
+        if(!osu->getSkin()->o_cursor_centered)
             g->translate((cursor->getWidth() / 2.0f) * animatedScale * cv::cursor_scale.getFloat(),
                          (cursor->getHeight() / 2.0f) * animatedScale * cv::cursor_scale.getFloat());
 
-        if(osu->getSkin()->getCursorRotate()) g->rotate(fmod(engine->getTime() * 37.0f, 360.0f));
+        if(osu->getSkin()->o_cursor_rotate) g->rotate(fmod(engine->getTime() * 37.0f, 360.0f));
 
         g->translate(pos.x, pos.y);
         g->drawImage(cursor);
@@ -357,7 +357,7 @@ void HUD::drawCursor(vec2 pos, float alphaMultiplier, bool secondTrail, bool upd
     g->popTransform();
 
     // draw cursor middle
-    if(osu->getSkin()->getCursorMiddle() != MISSING_TEXTURE) {
+    if(osu->getSkin()->i_cursor_middle != MISSING_TEXTURE) {
         g->setColor(Color(0xffffffff).setA(cv::cursor_alpha.getFloat() * alphaMultiplier));
 
         g->pushTransform();
@@ -365,12 +365,11 @@ void HUD::drawCursor(vec2 pos, float alphaMultiplier, bool secondTrail, bool upd
             g->scale(scale * cv::cursor_scale.getFloat(), scale * cv::cursor_scale.getFloat());
             g->translate(pos.x, pos.y, 0.05f);
 
-            if(!osu->getSkin()->getCursorCenter())
-                g->translate(
-                    (osu->getSkin()->getCursorMiddle()->getWidth() / 2.0f) * scale * cv::cursor_scale.getFloat(),
-                    (osu->getSkin()->getCursorMiddle()->getHeight() / 2.0f) * scale * cv::cursor_scale.getFloat());
+            if(!osu->getSkin()->o_cursor_centered)
+                g->translate((osu->getSkin()->i_cursor_middle->getWidth() / 2.0f) * scale * cv::cursor_scale.getFloat(),
+                             (osu->getSkin()->i_cursor_middle->getHeight() / 2.0f) * scale * cv::cursor_scale.getFloat());
 
-            g->drawImage(osu->getSkin()->getCursorMiddle());
+            g->drawImage(osu->getSkin()->i_cursor_middle);
         }
         g->popTransform();
     }
@@ -391,7 +390,7 @@ void HUD::drawCursorTrail(vec2 pos, float alphaMultiplier, bool secondTrail) {
 
 void HUD::drawCursorTrailInt(Shader *trailShader, std::vector<CURSORTRAIL> &trail, vec2 pos, float alphaMultiplier,
                              bool emptyTrailFrame) {
-    auto trailImage = osu->getSkin()->getCursorTrail();
+    const auto &trailImage = osu->getSkin()->i_cursor_trail;
 
     if(cv::draw_cursor_trail.getBool() && trailImage->isReady()) {
         const bool smoothCursorTrail =
@@ -484,11 +483,10 @@ void HUD::drawCursorTrailInt(Shader *trailShader, std::vector<CURSORTRAIL> &trai
 }
 
 void HUD::drawCursorTrailRaw(float alpha, vec2 pos) {
-    auto trailImage = osu->getSkin()->getCursorTrail();
+    const auto &trailImage = osu->getSkin()->i_cursor_trail;
     const float scale = this->getCursorTrailScaleFactor();
     const float animatedScale =
-        scale *
-        (osu->getSkin()->getCursorExpand() && cv::cursor_trail_expand.getBool() ? this->fCursorExpandAnim : 1.0f) *
+        scale * (osu->getSkin()->o_cursor_expand && cv::cursor_trail_expand.getBool() ? this->fCursorExpandAnim : 1.0f) *
         cv::cursor_trail_scale.getFloat();
 
     g->setColor(Color(0xffffffff).setA(alpha));
@@ -503,7 +501,7 @@ void HUD::drawCursorTrailRaw(float alpha, vec2 pos) {
 }
 
 void HUD::drawCursorRipples() {
-    auto cursorRipple = osu->getSkin()->getCursorRipple();
+    const auto &cursorRipple = osu->getSkin()->i_cursor_ripple;
     if(cursorRipple == MISSING_TEXTURE) return;
 
     // allow overscale/underscale as usual
@@ -735,7 +733,7 @@ void HUD::drawPlayfieldBorder(vec2 playfieldCenter, vec2 playfieldSize, float hi
 }
 
 void HUD::drawLoadingSmall(const UString &text) {
-    const float scale = Osu::getImageScale(osu->getSkin()->getLoadingSpinner(), 29);
+    const float scale = Osu::getImageScale(osu->getSkin()->i_loading_spinner, 29);
 
     g->setColor(0xffffffff);
     g->pushTransform();
@@ -743,11 +741,11 @@ void HUD::drawLoadingSmall(const UString &text) {
         g->rotate(engine->getTime() * 180, 0, 0, 1);
         g->scale(scale, scale);
         g->translate(osu->getVirtScreenWidth() / 2, osu->getVirtScreenHeight() / 2);
-        g->drawImage(osu->getSkin()->getLoadingSpinner());
+        g->drawImage(osu->getSkin()->i_loading_spinner);
     }
     g->popTransform();
 
-    float spinner_height = osu->getSkin()->getLoadingSpinner()->getHeight() * scale;
+    const float &spinner_height = osu->getSkin()->i_loading_spinner->getHeight() * scale;
     g->setColor(0x44ffffff);
     g->pushTransform();
     {
@@ -759,7 +757,7 @@ void HUD::drawLoadingSmall(const UString &text) {
 }
 
 void HUD::drawBeatmapImportSpinner() {
-    const float scale = Osu::getImageScale(osu->getSkin()->getBeatmapImportSpinner(), 100);
+    const float scale = Osu::getImageScale(osu->getSkin()->i_beatmap_import_spinner, 100);
 
     g->setColor(0xffffffff);
     g->pushTransform();
@@ -767,7 +765,7 @@ void HUD::drawBeatmapImportSpinner() {
         g->rotate(engine->getTime() * 180, 0, 0, 1);
         g->scale(scale, scale);
         g->translate(osu->getVirtScreenWidth() / 2, osu->getVirtScreenHeight() / 2);
-        g->drawImage(osu->getSkin()->getBeatmapImportSpinner());
+        g->drawImage(osu->getSkin()->i_beatmap_import_spinner);
     }
     g->popTransform();
 }
@@ -784,17 +782,16 @@ void HUD::drawComboOrScoreDigits(u64 number, float scale, bool drawLeadingZeroes
         divisor = 10;
     }
 
-    const auto &skin = osu->getSkin();
-    const auto &images = combo ? skin->getComboNumImgs() : skin->getScoreNumImgs();
+    const auto &images = combo ? osu->getSkin()->i_combos : osu->getSkin()->i_scores;
 
-    const auto overlap = static_cast<float>(combo ? skin->getComboOverlap() : skin->getScoreOverlap());
+    const auto overlap = static_cast<float>(combo ? osu->getSkin()->combo_overlap_amt : osu->getSkin()->score_overlap_amt);
 
     while(divisor >= 1) {
         int digit = static_cast<int>(number / divisor);
         number %= divisor;
         divisor /= 10;
 
-        const auto img = images[digit];
+        const auto &img = images[digit];
         const float multiplier = img.is2x() ? 2.f : 1.f;
         auto width = static_cast<float>(img->getWidth());
 
@@ -811,9 +808,9 @@ void HUD::drawComboSimple(int combo, float scale) {
         this->drawComboNumber(combo, scale);
 
         // draw 'x' at the end
-        if(osu->getSkin()->getComboX() != MISSING_TEXTURE) {
-            g->translate(osu->getSkin()->getComboX()->getWidth() * 0.5f * scale, 0);
-            g->drawImage(osu->getSkin()->getComboX());
+        if(osu->getSkin()->i_combo_x != MISSING_TEXTURE) {
+            g->translate(osu->getSkin()->i_combo_x->getWidth() * 0.5f * scale, 0);
+            g->drawImage(osu->getSkin()->i_combo_x);
         }
     }
     g->popTransform();
@@ -826,21 +823,21 @@ void HUD::drawCombo(int combo) {
 
     // draw back (anim)
     float animScaleMultiplier = 1.0f + this->fComboAnim2 * cv::combo_anim2_size.getFloat();
-    float scale = osu->getImageScale(osu->getSkin()->getCombo0(), 32) * animScaleMultiplier * cv::hud_scale.getFloat() *
+    float scale = osu->getImageScale(osu->getSkin()->i_combos[0], 32) * animScaleMultiplier * cv::hud_scale.getFloat() *
                   cv::hud_combo_scale.getFloat();
     if(this->fComboAnim2 > 0.01f) {
         g->setAlpha(this->fComboAnim2 * 0.65f);
         g->pushTransform();
         {
             g->scale(scale, scale);
-            g->translate(offset, osu->getVirtScreenHeight() - osu->getSkin()->getCombo0()->getHeight() * scale / 2.0f,
+            g->translate(offset, osu->getVirtScreenHeight() - osu->getSkin()->i_combos[0]->getHeight() * scale / 2.0f,
                          0.0f);
             this->drawComboNumber(combo, scale);
 
             // draw 'x' at the end
-            if(osu->getSkin()->getComboX() != MISSING_TEXTURE) {
-                g->translate(osu->getSkin()->getComboX()->getWidth() * 0.5f * scale, 0);
-                g->drawImage(osu->getSkin()->getComboX());
+            if(osu->getSkin()->i_combo_x != MISSING_TEXTURE) {
+                g->translate(osu->getSkin()->i_combo_x->getWidth() * 0.5f * scale, 0);
+                g->drawImage(osu->getSkin()->i_combo_x);
             }
         }
         g->popTransform();
@@ -850,19 +847,19 @@ void HUD::drawCombo(int combo) {
     g->setAlpha(1.0f);
     const float animPercent = (this->fComboAnim1 < 1.0f ? this->fComboAnim1 : 2.0f - this->fComboAnim1);
     animScaleMultiplier = 1.0f + (0.5f * animPercent * animPercent) * cv::combo_anim1_size.getFloat();
-    scale = osu->getImageScale(osu->getSkin()->getCombo0(), 32) * animScaleMultiplier * cv::hud_scale.getFloat() *
+    scale = osu->getImageScale(osu->getSkin()->i_combos[0], 32) * animScaleMultiplier * cv::hud_scale.getFloat() *
             cv::hud_combo_scale.getFloat();
     g->pushTransform();
     {
         g->scale(scale, scale);
-        g->translate(offset, osu->getVirtScreenHeight() - osu->getSkin()->getCombo0()->getHeight() * scale / 2.0f,
+        g->translate(offset, osu->getVirtScreenHeight() - osu->getSkin()->i_combos[0]->getHeight() * scale / 2.0f,
                      0.0f);
         this->drawComboNumber(combo, scale);
 
         // draw 'x' at the end
-        if(osu->getSkin()->getComboX() != MISSING_TEXTURE) {
-            g->translate(osu->getSkin()->getComboX()->getWidth() * 0.5f * scale, 0);
-            g->drawImage(osu->getSkin()->getComboX());
+        if(osu->getSkin()->i_combo_x != MISSING_TEXTURE) {
+            g->translate(osu->getSkin()->i_combo_x->getWidth() * 0.5f * scale, 0);
+            g->drawImage(osu->getSkin()->i_combo_x);
         }
     }
     g->popTransform();
@@ -882,17 +879,17 @@ void HUD::drawScore(u64 score) {
     g->pushTransform();
     {
         g->scale(scale, scale);
-        g->translate(osu->getVirtScreenWidth() - osu->getSkin()->getScore0()->getWidth() * scale * numDigits +
-                         osu->getSkin()->getScoreOverlap() * (osu->getSkin()->getScore0().is2x() ? 2 : 1) * scale *
-                             (numDigits - 1),
-                     osu->getSkin()->getScore0()->getHeight() * scale / 2);
+        g->translate(
+            osu->getVirtScreenWidth() - osu->getSkin()->i_scores[0]->getWidth() * scale * numDigits +
+                osu->getSkin()->score_overlap_amt * (osu->getSkin()->i_scores[0].is2x() ? 2 : 1) * scale * (numDigits - 1),
+            osu->getSkin()->i_scores[0]->getHeight() * scale / 2);
         this->drawScoreNumber(score, scale, false);
     }
     g->popTransform();
 }
 
 void HUD::drawScorebarBg(float alpha, float breakAnim) {
-    if(osu->getSkin()->getScorebarBg()->isMissingTexture()) return;
+    if(osu->getSkin()->i_scorebar_bg->isMissingTexture()) return;
 
     const float scale = cv::hud_scale.getFloat() * cv::hud_scorebar_scale.getFloat();
     const float ratio = Osu::getImageScale(vec2(1, 1), 1.0f);
@@ -900,34 +897,34 @@ void HUD::drawScorebarBg(float alpha, float breakAnim) {
     const vec2 breakAnimOffset = vec2(0, -20.0f * breakAnim) * ratio;
     g->setColor(Color(0xffffffff).setA(alpha * (1.0f - breakAnim)));
 
-    osu->getSkin()->getScorebarBg()->draw(
-        (osu->getSkin()->getScorebarBg()->getSize() / 2.0f) * scale + (breakAnimOffset * scale), scale);
+    osu->getSkin()->i_scorebar_bg->draw((osu->getSkin()->i_scorebar_bg->getSize() / 2.0f) * scale + (breakAnimOffset * scale),
+                                     scale);
 }
 
 void HUD::drawSectionPass(float alpha) {
-    if(!osu->getSkin()->getSectionPassImage()->isMissingTexture()) {
+    if(!osu->getSkin()->i_section_pass->isMissingTexture()) {
         g->setColor(Color(0xffffffff).setA(alpha));
 
-        osu->getSkin()->getSectionPassImage()->draw(osu->getVirtScreenSize() / 2.f);
+        osu->getSkin()->i_section_pass->draw(osu->getVirtScreenSize() / 2.f);
     }
 }
 
 void HUD::drawSectionFail(float alpha) {
-    if(!osu->getSkin()->getSectionFailImage()->isMissingTexture()) {
+    if(!osu->getSkin()->i_section_fail->isMissingTexture()) {
         g->setColor(Color(0xffffffff).setA(alpha));
 
-        osu->getSkin()->getSectionFailImage()->draw(osu->getVirtScreenSize() / 2.f);
+        osu->getSkin()->i_section_fail->draw(osu->getVirtScreenSize() / 2.f);
     }
 }
 
 void HUD::drawHPBar(double health, float alpha, float breakAnim) {
-    const bool useNewDefault = !osu->getSkin()->getScorebarMarker()->isMissingTexture();
+    const bool useNewDefault = !osu->getSkin()->i_scorebar_marker->isMissingTexture();
 
     const float scale = cv::hud_scale.getFloat() * cv::hud_scorebar_scale.getFloat();
     const float ratio = Osu::getImageScale(vec2(1, 1), 1.0f);
 
     const vec2 colourOffset = (useNewDefault ? vec2(7.5f, 7.8f) : vec2(3.0f, 10.0f)) * ratio;
-    const float currentXPosition = (colourOffset.x + (health * osu->getSkin()->getScorebarColour()->getSize().x));
+    const float currentXPosition = (colourOffset.x + (health * osu->getSkin()->i_scorebar_colour->getSize().x));
     const vec2 markerOffset =
         (useNewDefault ? vec2(currentXPosition, (8.125f + 2.5f) * ratio) : vec2(currentXPosition, 10.0f * ratio));
     const vec2 breakAnimOffset = vec2(0, -20.0f * breakAnim) * ratio;
@@ -951,10 +948,10 @@ void HUD::drawHPBar(double health, float alpha, float breakAnim) {
 
     // draw health bar fill
     {
-        osu->getSkin()->getScorebarColour()->setDrawClipWidthPercent(health);
-        osu->getSkin()->getScorebarColour()->draw((osu->getSkin()->getScorebarColour()->getSize() / 2.0f * scale) +
-                                                      (colourOffset * scale) + (breakAnimOffset * scale),
-                                                  scale);
+        osu->getSkin()->i_scorebar_colour->setDrawClipWidthPercent(health);
+        osu->getSkin()->i_scorebar_colour->draw((osu->getSkin()->i_scorebar_colour->getSize() / 2.0f * scale) +
+                                                 (colourOffset * scale) + (breakAnimOffset * scale),
+                                             scale);
     }
 
     // draw ki
@@ -962,15 +959,15 @@ void HUD::drawHPBar(double health, float alpha, float breakAnim) {
         SkinImage *ki = nullptr;
 
         if(useNewDefault)
-            ki = osu->getSkin()->getScorebarMarker();
-        else if(osu->getSkin()->getScorebarColour()->isFromDefaultSkin() ||
-                !osu->getSkin()->getScorebarKi()->isFromDefaultSkin()) {
+            ki = osu->getSkin()->i_scorebar_marker;
+        else if(osu->getSkin()->i_scorebar_colour->isFromDefaultSkin() ||
+                !osu->getSkin()->i_scorebar_ki->isFromDefaultSkin()) {
             if(health < 0.2)
-                ki = osu->getSkin()->getScorebarKiDanger2();
+                ki = osu->getSkin()->i_scorebar_ki_danger2;
             else if(health < 0.5)
-                ki = osu->getSkin()->getScorebarKiDanger();
+                ki = osu->getSkin()->i_scorebad_ki_danger;
             else
-                ki = osu->getSkin()->getScorebarKi();
+                ki = osu->getSkin()->i_scorebar_ki;
         }
 
         if(ki != nullptr && !ki->isMissingTexture()) {
@@ -993,21 +990,21 @@ void HUD::drawAccuracySimple(float accuracy, float scale) {
         this->drawScoreNumber(accuracyInt, scale, true);
 
         // draw dot '.' between the integer and fractional part
-        if(osu->getSkin()->getScoreDot() != MISSING_TEXTURE) {
+        if(osu->getSkin()->i_score_dot != MISSING_TEXTURE) {
             g->setColor(0xffffffff);
-            g->translate(osu->getSkin()->getScoreDot()->getWidth() * 0.5f * scale, 0);
-            g->drawImage(osu->getSkin()->getScoreDot());
-            g->translate(osu->getSkin()->getScoreDot()->getWidth() * 0.5f * scale, 0);
-            g->translate(-osu->getSkin()->getScoreOverlap() * (osu->getSkin()->getScore0().is2x() ? 2 : 1) * scale, 0);
+            g->translate(osu->getSkin()->i_score_dot->getWidth() * 0.5f * scale, 0);
+            g->drawImage(osu->getSkin()->i_score_dot);
+            g->translate(osu->getSkin()->i_score_dot->getWidth() * 0.5f * scale, 0);
+            g->translate(-osu->getSkin()->score_overlap_amt * (osu->getSkin()->i_scores[0].is2x() ? 2 : 1) * scale, 0);
         }
 
         this->drawScoreNumber(accuracyFrac, scale, true);
 
         // draw '%' at the end
-        if(osu->getSkin()->getScorePercent() != MISSING_TEXTURE) {
+        if(osu->getSkin()->i_score_percent != MISSING_TEXTURE) {
             g->setColor(0xffffffff);
-            g->translate(osu->getSkin()->getScorePercent()->getWidth() * 0.5f * scale, 0);
-            g->drawImage(osu->getSkin()->getScorePercent());
+            g->translate(osu->getSkin()->i_score_percent->getWidth() * 0.5f * scale, 0);
+            g->drawImage(osu->getSkin()->i_score_percent);
         }
     }
     g->popTransform();
@@ -1023,21 +1020,21 @@ void HUD::drawAccuracy(float accuracy) {
 
     // draw it
     const int offset = 5;
-    const float scale = osu->getImageScale(osu->getSkin()->getScore0(), 13) * cv::hud_scale.getFloat() *
+    const float scale = osu->getImageScale(osu->getSkin()->i_scores[0], 13) * cv::hud_scale.getFloat() *
                         cv::hud_accuracy_scale.getFloat();
     g->pushTransform();
     {
         const int numDigits = (accuracyInt > 99 ? 5 : 4);
         const float xOffset =
-            osu->getSkin()->getScore0()->getWidth() * scale * numDigits +
-            (osu->getSkin()->getScoreDot() != MISSING_TEXTURE ? osu->getSkin()->getScoreDot()->getWidth() : 0) * scale +
-            (osu->getSkin()->getScorePercent() != MISSING_TEXTURE ? osu->getSkin()->getScorePercent()->getWidth() : 0) *
+            osu->getSkin()->i_scores[0]->getWidth() * scale * numDigits +
+            (osu->getSkin()->i_score_dot != MISSING_TEXTURE ? osu->getSkin()->i_score_dot->getWidth() : 0) * scale +
+            (osu->getSkin()->i_score_percent != MISSING_TEXTURE ? osu->getSkin()->i_score_percent->getWidth() : 0) *
                 scale -
-            osu->getSkin()->getScoreOverlap() * (osu->getSkin()->getScore0().is2x() ? 2 : 1) * scale * (numDigits + 1);
+            osu->getSkin()->score_overlap_amt * (osu->getSkin()->i_scores[0].is2x() ? 2 : 1) * scale * (numDigits + 1);
 
         this->fAccuracyXOffset = osu->getVirtScreenWidth() - xOffset - offset;
         this->fAccuracyYOffset = (cv::draw_score.getBool() ? this->fScoreHeight : 0.0f) +
-                                 osu->getSkin()->getScore0()->getHeight() * scale / 2 + offset * 2;
+                                 osu->getSkin()->i_scores[0]->getHeight() * scale / 2 + offset * 2;
 
         g->scale(scale, scale);
         g->translate(this->fAccuracyXOffset, this->fAccuracyYOffset);
@@ -1045,21 +1042,21 @@ void HUD::drawAccuracy(float accuracy) {
         this->drawScoreNumber(accuracyInt, scale, true);
 
         // draw dot '.' between the integer and fractional part
-        if(osu->getSkin()->getScoreDot() != MISSING_TEXTURE) {
+        if(osu->getSkin()->i_score_dot != MISSING_TEXTURE) {
             g->setColor(0xffffffff);
-            g->translate(osu->getSkin()->getScoreDot()->getWidth() * 0.5f * scale, 0);
-            g->drawImage(osu->getSkin()->getScoreDot());
-            g->translate(osu->getSkin()->getScoreDot()->getWidth() * 0.5f * scale, 0);
-            g->translate(-osu->getSkin()->getScoreOverlap() * (osu->getSkin()->getScore0().is2x() ? 2 : 1) * scale, 0);
+            g->translate(osu->getSkin()->i_score_dot->getWidth() * 0.5f * scale, 0);
+            g->drawImage(osu->getSkin()->i_score_dot);
+            g->translate(osu->getSkin()->i_score_dot->getWidth() * 0.5f * scale, 0);
+            g->translate(-osu->getSkin()->score_overlap_amt * (osu->getSkin()->i_scores[0].is2x() ? 2 : 1) * scale, 0);
         }
 
         this->drawScoreNumber(accuracyFrac, scale, true);
 
         // draw '%' at the end
-        if(osu->getSkin()->getScorePercent() != MISSING_TEXTURE) {
+        if(osu->getSkin()->i_score_percent != MISSING_TEXTURE) {
             g->setColor(0xffffffff);
-            g->translate(osu->getSkin()->getScorePercent()->getWidth() * 0.5f * scale, 0);
-            g->drawImage(osu->getSkin()->getScorePercent());
+            g->translate(osu->getSkin()->i_score_percent->getWidth() * 0.5f * scale, 0);
+            g->drawImage(osu->getSkin()->i_score_percent);
         }
     }
     g->popTransform();
@@ -1069,21 +1066,21 @@ void HUD::drawSkip() {
     const float scale = cv::hud_scale.getFloat();
 
     g->setColor(0xffffffff);
-    osu->getSkin()->getPlaySkip()->draw(
-        osu->getVirtScreenSize() - (osu->getSkin()->getPlaySkip()->getSize() / 2.f) * scale, cv::hud_scale.getFloat());
+    osu->getSkin()->i_play_skip->draw(osu->getVirtScreenSize() - (osu->getSkin()->i_play_skip->getSize() / 2.f) * scale,
+                                   cv::hud_scale.getFloat());
 }
 
 void HUD::drawWarningArrow(vec2 pos, bool flipVertically, bool originLeft) {
-    const float scale = cv::hud_scale.getFloat() * osu->getImageScale(osu->getSkin()->getPlayWarningArrow(), 78);
+    const float scale = cv::hud_scale.getFloat() * osu->getImageScale(osu->getSkin()->i_play_warning_arrow, 78);
 
     g->pushTransform();
     {
         g->scale(flipVertically ? -scale : scale, scale);
-        g->translate(pos.x + (flipVertically ? (-osu->getSkin()->getPlayWarningArrow()->getWidth() * scale / 2.0f)
-                                             : (osu->getSkin()->getPlayWarningArrow()->getWidth() * scale / 2.0f)) *
+        g->translate(pos.x + (flipVertically ? (-osu->getSkin()->i_play_warning_arrow->getWidth() * scale / 2.0f)
+                                             : (osu->getSkin()->i_play_warning_arrow->getWidth() * scale / 2.0f)) *
                                  (originLeft ? 1.0f : -1.0f),
                      pos.y, 0.0f);
-        g->drawImage(osu->getSkin()->getPlayWarningArrow());
+        g->drawImage(osu->getSkin()->i_play_warning_arrow);
     }
     g->popTransform();
 }
@@ -1289,10 +1286,10 @@ void HUD::drawFancyScoreboard() {
 }
 
 void HUD::drawContinue(vec2 cursor, float hitcircleDiameter) {
-    auto unpause = osu->getSkin()->getUnpause();
+    const auto &unpause = osu->getSkin()->i_unpause;
     const float unpauseScale = Osu::getImageScale(unpause, 80);
 
-    auto cursorImage = osu->getSkin()->getDefaultCursor();
+    const auto &cursorImage = osu->getSkin()->i_cursor_default;
     const float cursorScale =
         Osu::getImageScaleToFitResolution(cursorImage, vec2(hitcircleDiameter, hitcircleDiameter));
 
@@ -1584,14 +1581,14 @@ void HUD::drawProgressBar(float percent, bool waiting) {
     const int offset = 20;
     const float radius = osu->getUIScale(10.5f) * cv::hud_scale.getFloat() * cv::hud_progressbar_scale.getFloat();
     const float circularMetreScale =
-        ((2 * radius) / osu->getSkin()->getCircularmetre()->getWidth()) * 1.3f;  // hardcoded 1.3 multiplier?!
-    const float actualCircularMetreScale = ((2 * radius) / osu->getSkin()->getCircularmetre()->getWidth());
+        ((2 * radius) / osu->getSkin()->i_circular_metre->getWidth()) * 1.3f;  // hardcoded 1.3 multiplier?!
+    const float actualCircularMetreScale = ((2 * radius) / osu->getSkin()->i_circular_metre->getWidth());
     vec2 center = vec2(this->fAccuracyXOffset - radius - offset, this->fAccuracyYOffset);
 
     // clamp to top edge of screen
-    if(center.y - (osu->getSkin()->getCircularmetre()->getHeight() * actualCircularMetreScale + 5) / 2.0f < 0)
-        center.y += std::abs(center.y -
-                             (osu->getSkin()->getCircularmetre()->getHeight() * actualCircularMetreScale + 5) / 2.0f);
+    if(center.y - (osu->getSkin()->i_circular_metre->getHeight() * actualCircularMetreScale + 5) / 2.0f < 0)
+        center.y +=
+            std::abs(center.y - (osu->getSkin()->i_circular_metre->getHeight() * actualCircularMetreScale + 5) / 2.0f);
 
     // clamp to bottom edge of score numbers
     if(cv::draw_score.getBool() && center.y - radius < this->fScoreHeight) center.y = this->fScoreHeight + radius;
@@ -1648,7 +1645,7 @@ void HUD::drawProgressBar(float percent, bool waiting) {
     {
         g->scale(circularMetreScale, circularMetreScale);
         g->translate(center.x, center.y, 0.65f);
-        g->drawImage(osu->getSkin()->getCircularmetre());
+        g->drawImage(osu->getSkin()->i_circular_metre);
     }
     g->popTransform();
 }
@@ -1835,12 +1832,12 @@ void HUD::drawTargetHeatmap(float hitcircleDiameter) {
 
         // g->fillRect(center.x-size/2 - offset.x, center.y-size/2 - offset.y, size, size);
 
-        const float imageScale = osu->getImageScaleToFitResolution(osu->getSkin()->getCircleFull(), vec2(size, size));
+        const float imageScale = osu->getImageScaleToFitResolution(osu->getSkin()->i_circle_full, vec2(size, size));
         g->pushTransform();
         {
             g->scale(imageScale, imageScale);
             g->translate(center.x - offset.x, center.y - offset.y);
-            g->drawImage(osu->getSkin()->getCircleFull());
+            g->drawImage(osu->getSkin()->i_circle_full);
         }
         g->popTransform();
     }
@@ -1988,14 +1985,14 @@ void HUD::drawScrubbingTimeline(u32 beatmapTime, u32 beatmapLengthPlayable, u32 
     vec2 triangleTip = vec2(osu->getVirtScreenWidth() * beatmapPercentFinishedPlayable, cursorPos.y);
     g->pushTransform();
     {
-        g->translate(triangleTip.x + 1, triangleTip.y - osu->getSkin()->getSeekTriangle()->getHeight() / 2.0f + 1);
+        g->translate(triangleTip.x + 1, triangleTip.y - osu->getSkin()->i_seek_triangle->getHeight() / 2.0f + 1);
         g->setColor(Color(0xff000000).setA(galpha));
 
-        g->drawImage(osu->getSkin()->getSeekTriangle());
+        g->drawImage(osu->getSkin()->i_seek_triangle);
         g->translate(-1, -1);
         g->setColor(Color(green).setA(galpha));
 
-        g->drawImage(osu->getSkin()->getSeekTriangle());
+        g->drawImage(osu->getSkin()->i_seek_triangle);
     }
     g->popTransform();
 
@@ -2008,7 +2005,7 @@ void HUD::drawScrubbingTimeline(u32 beatmapTime, u32 beatmapLengthPlayable, u32 
                                      osu->getVirtScreenWidth() - timeFont->getStringWidth(currentTimeText) -
                                          currentTimeLeftRightTextOffset) +
                          1,
-                     triangleTip.y - osu->getSkin()->getSeekTriangle()->getHeight() - currentTimeTopTextOffset + 1);
+                     triangleTip.y - osu->getSkin()->i_seek_triangle->getHeight() - currentTimeTopTextOffset + 1);
         g->setColor(Color(0xff000000).setA(galpha));
 
         g->drawString(timeFont, currentTimeText);
@@ -2060,14 +2057,14 @@ void HUD::drawScrubbingTimeline(u32 beatmapTime, u32 beatmapLengthPlayable, u32 
         g->pushTransform();
         {
             g->rotate(180);
-            g->translate(triangleTip.x + 1, triangleTip.y + osu->getSkin()->getSeekTriangle()->getHeight() / 2.0f + 1);
+            g->translate(triangleTip.x + 1, triangleTip.y + osu->getSkin()->i_seek_triangle->getHeight() / 2.0f + 1);
             g->setColor(Color(0xff000000).setA(galpha));
 
-            g->drawImage(osu->getSkin()->getSeekTriangle());
+            g->drawImage(osu->getSkin()->i_seek_triangle);
             g->translate(-1, -1);
             g->setColor(Color(grey).setA(galpha));
 
-            g->drawImage(osu->getSkin()->getSeekTriangle());
+            g->drawImage(osu->getSkin()->i_seek_triangle);
         }
         g->popTransform();
 
@@ -2102,17 +2099,16 @@ void HUD::drawScrubbingTimeline(u32 beatmapTime, u32 beatmapLengthPlayable, u32 
     triangleTip = vec2(cursorPos.x, cursorPos.y);
     g->pushTransform();
     {
-        g->translate(
-            (i32)std::clamp<f32>(triangleTip.x - timeFont->getStringWidth(currentTimeText) / 2.0f,
-                                 currentTimeLeftRightTextOffset,
-                                 osu->getVirtScreenWidth() - timeFont->getStringWidth(currentTimeText) -
-                                     currentTimeLeftRightTextOffset) +
-                1,
-            (i32)(triangleTip.y - osu->getSkin()->getSeekTriangle()->getHeight() - timeFont->getHeight() * 1.2f -
-                  currentTimeTopTextOffset *
-                      std::max(1.0f, this->getCursorScaleFactor() * cv::cursor_scale.getFloat()) *
-                      cv::hud_scrubbing_timeline_hover_tooltip_offset_multiplier.getFloat() * 2.0f -
-                  1));
+        g->translate((i32)std::clamp<f32>(triangleTip.x - timeFont->getStringWidth(currentTimeText) / 2.0f,
+                                          currentTimeLeftRightTextOffset,
+                                          osu->getVirtScreenWidth() - timeFont->getStringWidth(currentTimeText) -
+                                              currentTimeLeftRightTextOffset) +
+                         1,
+                     (i32)(triangleTip.y - osu->getSkin()->i_seek_triangle->getHeight() - timeFont->getHeight() * 1.2f -
+                           currentTimeTopTextOffset *
+                               std::max(1.0f, this->getCursorScaleFactor() * cv::cursor_scale.getFloat()) *
+                               cv::hud_scrubbing_timeline_hover_tooltip_offset_multiplier.getFloat() * 2.0f -
+                           1));
         g->setColor(Color(0xff000000).setA(galpha));
 
         g->drawString(timeFont, hoverTimeText);
@@ -2125,8 +2121,8 @@ void HUD::drawScrubbingTimeline(u32 beatmapTime, u32 beatmapLengthPlayable, u32 
 }
 
 void HUD::drawInputOverlay(int numK1, int numK2, int numM1, int numM2) {
-    SkinImage *inputoverlayBackground = osu->getSkin()->getInputoverlayBackground();
-    SkinImage *inputoverlayKey = osu->getSkin()->getInputoverlayKey();
+    SkinImage *inputoverlayBackground = osu->getSkin()->i_input_overlay_bg;
+    SkinImage *inputoverlayKey = osu->getSkin()->i_input_overlay_key;
 
     const float scale = cv::hud_scale.getFloat() * cv::hud_inputoverlay_scale.getFloat();  // global scaler
     const float oScale = inputoverlayBackground->getResolutionScale() *
@@ -2219,7 +2215,7 @@ void HUD::drawInputOverlay(int numK1, int numK2, int numM1, int numM2) {
                 (inputoverlayKey->getSizeBase().y * textFontHeightPercent) / textFont->getHeight();
             const float stringWidth = textFont->getStringWidth(text) * keyFontScale;
             const float stringHeight = textFont->getHeight() * keyFontScale;
-            g->setColor(osu->getSkin()->getInputOverlayText());
+            g->setColor(osu->getSkin()->c_input_overlay_text);
             g->pushTransform();
             {
                 g->scale(keyFontScale * scale * animScale, keyFontScale * scale * animScale);
@@ -2244,11 +2240,11 @@ float HUD::getCursorScaleFactor() {
 }
 
 float HUD::getCursorTrailScaleFactor() {
-    return this->getCursorScaleFactor() * (osu->getSkin()->getCursorTrail().is2x() ? 0.5f : 1.0f);
+    return this->getCursorScaleFactor() * (osu->getSkin()->i_cursor_trail.is2x() ? 0.5f : 1.0f);
 }
 
 float HUD::getScoreScale() {
-    return osu->getImageScale(osu->getSkin()->getScore0(), 13 * 1.5f) * cv::hud_scale.getFloat() *
+    return osu->getImageScale(osu->getSkin()->i_scores[0], 13 * 1.5f) * cv::hud_scale.getFloat() *
            cv::hud_score_scale.getFloat();
 }
 
@@ -2390,12 +2386,12 @@ void HUD::addCursorTrailPosition(std::vector<CURSORTRAIL> &trail, vec2 pos) {
        pos.y < -osu->getVirtScreenHeight() || pos.y > osu->getVirtScreenHeight() * 2)
         return;  // fuck oob trails
 
-    auto trailImage = osu->getSkin()->getCursorTrail();
+    const auto &trailImage = osu->getSkin()->i_cursor_trail;
 
     const bool smoothCursorTrail = osu->getSkin()->useSmoothCursorTrail() || cv::cursor_trail_smooth_force.getBool();
 
     const float scaleAnim =
-        (osu->getSkin()->getCursorExpand() && cv::cursor_trail_expand.getBool() ? this->fCursorExpandAnim : 1.0f) *
+        (osu->getSkin()->o_cursor_expand && cv::cursor_trail_expand.getBool() ? this->fCursorExpandAnim : 1.0f) *
         cv::cursor_trail_scale.getFloat();
     const float trailWidth =
         trailImage->getWidth() * this->getCursorTrailScaleFactor() * scaleAnim * cv::cursor_scale.getFloat();
@@ -2458,8 +2454,7 @@ void HUD::resetHitErrorBar() { this->hiterrors.clear(); }
 
 McRect HUD::getSkipClickRect() {
     const float skipScale = cv::hud_scale.getFloat();
-    return McRect(osu->getVirtScreenWidth() - osu->getSkin()->getPlaySkip()->getSize().x * skipScale,
-                  osu->getVirtScreenHeight() - osu->getSkin()->getPlaySkip()->getSize().y * skipScale,
-                  osu->getSkin()->getPlaySkip()->getSize().x * skipScale,
-                  osu->getSkin()->getPlaySkip()->getSize().y * skipScale);
+    return McRect(osu->getVirtScreenWidth() - osu->getSkin()->i_play_skip->getSize().x * skipScale,
+                  osu->getVirtScreenHeight() - osu->getSkin()->i_play_skip->getSize().y * skipScale,
+                  osu->getSkin()->i_play_skip->getSize().x * skipScale, osu->getSkin()->i_play_skip->getSize().y * skipScale);
 }

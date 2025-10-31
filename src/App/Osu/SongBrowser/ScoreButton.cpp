@@ -57,7 +57,7 @@ void ScoreButton::draw() {
         // XXX: Make it flash with song BPM
         g->setColor(Color(0xff000000).setA(0.59f * (0.5f + 0.5f * this->fIndexNumberAnim)));
 
-        const auto backgroundImage = osu->getSkin()->getMenuButtonBackground();
+        const auto &backgroundImage = osu->getSkin()->i_menu_button_bg;
         g->pushTransform();
         {
             f32 scale = SongBrowser::getUIScale2(backgroundImage.is2x() ? 0.5f : 1.f);
@@ -505,7 +505,7 @@ void ScoreButton::updateElapsedTimeString() {
 }
 
 void ScoreButton::onClicked(bool left, bool right) {
-    soundEngine->play(osu->getSkin()->getMenuHit());
+    soundEngine->play(osu->getSkin()->s_menu_hit);
     CBaseUIButton::onClicked(left, right);
 }
 
@@ -612,7 +612,7 @@ void ScoreButton::onContextMenu(const UString &text, int id) {
 
 void ScoreButton::onUseModsClicked() {
     osu->useMods(this->score);
-    soundEngine->play(osu->getSkin()->getCheckOn());
+    soundEngine->play(osu->getSkin()->s_check_on);
 }
 
 void ScoreButton::onDeleteScoreClicked() {
@@ -829,21 +829,21 @@ SkinImage *ScoreButton::getGradeImage(FinishedScore::Grade grade) {
     using enum FinishedScore::Grade;
     switch(grade) {
         case XH:
-            return skin->getRankingXHsmall();
+            return skin->i_ranking_xh_small;
         case SH:
-            return skin->getRankingSHsmall();
+            return skin->i_ranking_sh_small;
         case X:
-            return skin->getRankingXsmall();
+            return skin->i_ranking_x_small;
         case S:
-            return skin->getRankingSsmall();
+            return skin->i_ranking_s_small;
         case A:
-            return skin->getRankingAsmall();
+            return skin->i_ranking_a_small;
         case B:
-            return skin->getRankingBsmall();
+            return skin->i_ranking_b_small;
         case C:
-            return skin->getRankingCsmall();
+            return skin->i_ranking_c_small;
         default:
-            return skin->getRankingDsmall();
+            return skin->i_ranking_d_small;
     }
 }
 

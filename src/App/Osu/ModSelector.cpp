@@ -111,7 +111,7 @@ class ModSelectorOverrideSliderLockButton final : public CBaseUICheckbox {
    private:
     void onPressed() override {
         CBaseUICheckbox::onPressed();
-        soundEngine->play(this->isChecked() ? osu->getSkin()->getCheckOn() : osu->getSkin()->getCheckOff());
+        soundEngine->play(this->isChecked() ? osu->getSkin()->s_check_on : osu->getSkin()->s_check_off);
 
         if(this->isChecked()) {
             // anim->moveQuadOut(&m_fAnim, 1.5f, 0.060f, true);
@@ -285,83 +285,83 @@ void ModSelector::updateButtons(bool initial) {
     this->modButtonEasy = this->setModButtonOnGrid(
         0, 0, 0, initial && osu->getModEZ(), &cv::mod_easy, "ez",
         "Reduces overall difficulty - larger circles, more forgiving HP drain, less accuracy required.",
-        []() -> SkinImage * { return osu->getSkin()->getSelectionModEasy(); });
+        []() -> SkinImage * { return osu->getSkin()->i_modselect_ez; });
     this->modButtonNofail = this->setModButtonOnGrid(
         1, 0, 0, initial && osu->getModNF(), &cv::mod_nofail, "nf",
         "You can't fail. No matter what.\nNOTE: To disable drain completely:\nOptions > Gameplay > "
         "Mechanics > \"Select HP Drain\" > \"None\".",
-        []() -> SkinImage * { return osu->getSkin()->getSelectionModNoFail(); });
+        []() -> SkinImage * { return osu->getSkin()->i_modselect_nf; });
     this->setModButtonOnGrid(4, 0, 0, initial && osu->getModNightmare(), &cv::mod_nightmare, "nightmare",
                              "Unnecessary clicks count as misses.\nMassively reduced slider follow circle radius.",
-                             []() -> SkinImage * { return osu->getSkin()->getSelectionModNightmare(); });
+                             []() -> SkinImage * { return osu->getSkin()->i_modselect_nightmare; });
 
     this->modButtonHardrock = this->setModButtonOnGrid(
         0, 1, 0, initial && osu->getModHR(), &cv::mod_hardrock, "hr", "Everything just got a bit harder...",
-        []() -> SkinImage * { return osu->getSkin()->getSelectionModHardRock(); });
+        []() -> SkinImage * { return osu->getSkin()->i_modselect_hr; });
     this->modButtonSuddendeath = this->setModButtonOnGrid(
         1, 1, 0, initial && osu->getModSD(), &cv::mod_suddendeath, "sd", "Miss a note and fail.",
-        []() -> SkinImage * { return osu->getSkin()->getSelectionModSuddenDeath(); });
+        []() -> SkinImage * { return osu->getSkin()->i_modselect_sd; });
     this->setModButtonOnGrid(1, 1, 1, initial && osu->getModSS(), &cv::mod_perfect, "ss", "SS or quit.",
-                             []() -> SkinImage * { return osu->getSkin()->getSelectionModPerfect(); });
+                             []() -> SkinImage * { return osu->getSkin()->i_modselect_pf; });
 
     if(cv::nightcore_enjoyer.getBool()) {
         this->modButtonHalftime = this->setModButtonOnGrid(
             2, 0, 0, initial && cv::mod_halftime_dummy.getBool(), &cv::mod_halftime_dummy, "dc", "A E S T H E T I C",
-            []() -> SkinImage * { return osu->getSkin()->getSelectionModDayCore(); });
+            []() -> SkinImage * { return osu->getSkin()->i_modselect_dc; });
         this->modButtonDoubletime = this->setModButtonOnGrid(
             2, 1, 0, initial && cv::mod_doubletime_dummy.getBool(), &cv::mod_doubletime_dummy, "nc", "uguuuuuuuu",
-            []() -> SkinImage * { return osu->getSkin()->getSelectionModNightCore(); });
+            []() -> SkinImage * { return osu->getSkin()->i_modselect_nc; });
     } else {
         this->modButtonHalftime = this->setModButtonOnGrid(
             2, 0, 0, initial && cv::mod_halftime_dummy.getBool(), &cv::mod_halftime_dummy, "ht", "Less zoom.",
-            []() -> SkinImage * { return osu->getSkin()->getSelectionModHalfTime(); });
+            []() -> SkinImage * { return osu->getSkin()->i_modselect_ht; });
         this->modButtonDoubletime = this->setModButtonOnGrid(
             2, 1, 0, initial && cv::mod_doubletime_dummy.getBool(), &cv::mod_doubletime_dummy, "dt", "Zoooooooooom.",
-            []() -> SkinImage * { return osu->getSkin()->getSelectionModDoubleTime(); });
+            []() -> SkinImage * { return osu->getSkin()->i_modselect_dt; });
     }
 
     this->modButtonHidden =
         this->setModButtonOnGrid(3, 1, 0, initial && osu->getModHD(), &cv::mod_hidden, "hd",
                                  "Play with no approach circles and fading notes for a slight score advantage.",
-                                 []() -> SkinImage * { return osu->getSkin()->getSelectionModHidden(); });
+                                 []() -> SkinImage * { return osu->getSkin()->i_modselect_hd; });
 
     this->modButtonFlashlight = this->setModButtonOnGrid(
         4, 1, 0, initial && osu->getModFlashlight(), &cv::mod_flashlight, "fl", "Restricted view area.",
-        []() -> SkinImage * { return osu->getSkin()->getSelectionModFlashlight(); });
+        []() -> SkinImage * { return osu->getSkin()->i_modselect_fl; });
     this->setModButtonOnGrid(4, 1, 1, initial && cv::mod_actual_flashlight.getBool(), &cv::mod_actual_flashlight, "afl",
                              "Actual flashlight.",
-                             []() -> SkinImage * { return osu->getSkin()->getSelectionModFlashlight(); });
+                             []() -> SkinImage * { return osu->getSkin()->i_modselect_fl; });
 
     this->modButtonTD = this->setModButtonOnGrid(5, 1, 0, initial && osu->getModTD(), &cv::mod_touchdevice, "nerftd",
                                                  "Simulate pp nerf for touch devices.\nOnly affects pp calculation.",
-                                                 []() -> SkinImage * { return osu->getSkin()->getSelectionModTD(); });
+                                                 []() -> SkinImage * { return osu->getSkin()->i_modselect_td; });
     this->getModButtonOnGrid(5, 1)->setAvailable(!cv::mod_touchdevice_always.getBool());
 
     this->modButtonRelax = this->setModButtonOnGrid(
         0, 2, 0, initial && osu->getModRelax(), &cv::mod_relax, "relax",
         "You don't need to click.\nGive your clicking/tapping fingers a break from the heat of things.\n** UNRANKED **",
-        []() -> SkinImage * { return osu->getSkin()->getSelectionModRelax(); });
+        []() -> SkinImage * { return osu->getSkin()->i_modselect_rx; });
     this->modButtonAutopilot =
         this->setModButtonOnGrid(1, 2, 0, initial && osu->getModAutopilot(), &cv::mod_autopilot, "autopilot",
                                  "Automatic cursor movement - just follow the rhythm.\n** UNRANKED **",
-                                 []() -> SkinImage * { return osu->getSkin()->getSelectionModAutopilot(); });
+                                 []() -> SkinImage * { return osu->getSkin()->i_modselect_ap; });
     this->modButtonSpunout =
         this->setModButtonOnGrid(2, 2, 0, initial && osu->getModSpunout(), &cv::mod_spunout, "spunout",
                                  "Spinners will be automatically completed.",
-                                 []() -> SkinImage * { return osu->getSkin()->getSelectionModSpunOut(); });
+                                 []() -> SkinImage * { return osu->getSkin()->i_modselect_so; });
     this->modButtonAuto =
         this->setModButtonOnGrid(3, 2, 0, initial && osu->getModAuto(), &cv::mod_autoplay, "auto",
                                  "Watch a perfect automated play through the song.",
-                                 []() -> SkinImage * { return osu->getSkin()->getSelectionModAutoplay(); });
+                                 []() -> SkinImage * { return osu->getSkin()->i_modselect_auto; });
     this->setModButtonOnGrid(
         4, 2, 0, initial && osu->getModTarget(), &cv::mod_target, "practicetarget",
         "Accuracy is based on the distance to the center of all hitobjects.\n300s still require at "
         "least being in the hit window of a 100 in addition to the rule above.",
-        []() -> SkinImage * { return osu->getSkin()->getSelectionModTarget(); });
+        []() -> SkinImage * { return osu->getSkin()->i_modselect_target; });
     this->modButtonScoreV2 =
         this->setModButtonOnGrid(5, 2, 0, initial && osu->getModScorev2(), &cv::mod_scorev2, "v2",
                                  "Try the future scoring system.\n** UNRANKED **",
-                                 []() -> SkinImage * { return osu->getSkin()->getSelectionModScorev2(); });
+                                 []() -> SkinImage * { return osu->getSkin()->i_modselect_sv2; });
 
     // Enable all mods that we disable conditionally below
     this->getModButtonOnGrid(2, 0)->setAvailable(true);
@@ -802,7 +802,7 @@ void ModSelector::updateLayout() {
     {
         // mod grid buttons
         vec2 center = osu->getVirtScreenSize() / 2.0f;
-        vec2 size = osu->getSkin()->getSelectionModEasy()->getSizeBase() * uiScale;
+        vec2 size = osu->getSkin()->i_modselect_ez->getSizeBase() * uiScale;
         vec2 offset = vec2(size.x * 1.0f, size.y * 0.25f);
         vec2 start = vec2(center.x - (size.x * this->iGridWidth) / 2.0f - (offset.x * (this->iGridWidth - 1)) / 2.0f,
                           center.y - (size.y * this->iGridHeight) / 2.0f - (offset.y * (this->iGridHeight - 1)) / 2.0f);
@@ -892,7 +892,7 @@ void ModSelector::updateLayout() {
     {
         // mod grid buttons
         vec2 center = osu->getVirtScreenSize() / 2.0f;
-        vec2 blockSize = osu->getSkin()->getSelectionModEasy()->getSizeBase() * uiScale;
+        vec2 blockSize = osu->getSkin()->i_modselect_ez->getSizeBase() * uiScale;
         vec2 offset = vec2(blockSize.x * 0.15f, blockSize.y * 0.05f);
         vec2 size = vec2((blockSize.x * this->iGridWidth) + (offset.x * (this->iGridWidth - 1)),
                          (blockSize.y * this->iGridHeight) + (offset.y * (this->iGridHeight - 1)));
@@ -1129,7 +1129,7 @@ UICheckbox *ModSelector::addExperimentalCheckbox(const UString &text, const UStr
 void ModSelector::resetModsUserInitiated() {
     this->resetMods();
 
-    soundEngine->play(osu->getSkin()->getCheckOff());
+    soundEngine->play(osu->getSkin()->s_check_off);
     this->resetModsButton->animateClickColor();
 
     if(BanchoState::is_in_a_multi_room()) {

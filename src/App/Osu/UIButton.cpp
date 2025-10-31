@@ -11,18 +11,14 @@
 #include "SoundEngine.h"
 #include "TooltipOverlay.h"
 
-
-
 static float button_sound_cooldown = 0.f;
 
 void UIButton::draw() {
     if(!this->bVisible || !this->bVisible2) return;
 
-    Image *buttonLeft = this->bDefaultSkin ? osu->getSkin()->getDefaultButtonLeft() : osu->getSkin()->getButtonLeft();
-    Image *buttonMiddle =
-        this->bDefaultSkin ? osu->getSkin()->getDefaultButtonMiddle() : osu->getSkin()->getButtonMiddle();
-    Image *buttonRight =
-        this->bDefaultSkin ? osu->getSkin()->getDefaultButtonRight() : osu->getSkin()->getButtonRight();
+    Image *buttonLeft = this->bDefaultSkin ? osu->getSkin()->i_button_left_default : osu->getSkin()->i_button_left;
+    Image *buttonMiddle = this->bDefaultSkin ? osu->getSkin()->i_button_mid_default : osu->getSkin()->i_button_mid;
+    Image *buttonRight = this->bDefaultSkin ? osu->getSkin()->i_button_right_default : osu->getSkin()->i_button_right;
 
     float leftScale = osu->getImageScaleToFitResolution(buttonLeft, this->vSize);
     float leftWidth = buttonLeft->getWidth() * leftScale;
@@ -61,13 +57,13 @@ void UIButton::draw() {
     buttonRight->unbind();
 
     if(this->is_loading) {
-        const float scale = (this->vSize.y * 0.8) / osu->getSkin()->getLoadingSpinner()->getSize().y;
+        const float scale = (this->vSize.y * 0.8) / osu->getSkin()->i_loading_spinner->getSize().y;
         g->setColor(0xffffffff);
         g->pushTransform();
         g->rotate(engine->getTime() * 180, 0, 0, 1);
         g->scale(scale, scale);
         g->translate(this->vPos.x + this->vSize.x / 2.0f, this->vPos.y + this->vSize.y / 2.0f);
-        g->drawImage(osu->getSkin()->getLoadingSpinner());
+        g->drawImage(osu->getSkin()->i_loading_spinner);
         g->popTransform();
     } else {
         this->drawText();
@@ -96,7 +92,7 @@ void UIButton::onMouseInside() {
     this->fHoverAnim = 1.f;
 
     if(button_sound_cooldown + 0.05f < engine->getTime()) {
-        soundEngine->play(osu->getSkin()->getHoverButtonSound());
+        soundEngine->play(osu->getSkin()->s_hover_button);
         button_sound_cooldown = engine->getTime();
     }
 }
@@ -110,7 +106,7 @@ void UIButton::onClicked(bool left, bool right) {
 
     this->animateClickColor();
 
-    soundEngine->play(osu->getSkin()->getClickButtonSound());
+    soundEngine->play(osu->getSkin()->s_click_button);
 }
 
 void UIButton::onFocusStolen() {
@@ -125,4 +121,4 @@ void UIButton::animateClickColor() {
     anim->moveLinear(&this->fClickAnim, 0.0f, 0.5f, true);
 }
 
-void UIButton::setTooltipText(const UString& text) { this->tooltipTextLines = text.split("\n"); }
+void UIButton::setTooltipText(const UString &text) { this->tooltipTextLines = text.split("\n"); }

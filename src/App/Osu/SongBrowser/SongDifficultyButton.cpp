@@ -74,7 +74,7 @@ void SongDifficultyButton::draw() {
     const float titleScale = (size.y * this->fTitleScale) / this->font->getHeight();
     const float subTitleScale = (size.y * this->fSubTitleScale) / this->font->getHeight();
     const float diffScale = (size.y * this->fDiffScale) / this->fontBold->getHeight();
-    g->setColor(this->bSelected ? skin->getSongSelectActiveText() : skin->getSongSelectInactiveText());
+    g->setColor(this->bSelected ? skin->c_song_select_active_text : skin->c_song_select_inactive_text);
     g->pushTransform();
     {
         g->scale(diffScale, diffScale);
@@ -92,12 +92,12 @@ void SongDifficultyButton::draw() {
     if(stars > 0) {
         const float starOffsetY = (size.y * 0.85);
         const float starWidth = (size.y * 0.2);
-        const float starScale = starWidth / skin->getStar()->getHeight();
+        const float starScale = starWidth / skin->i_star->getHeight();
         const int numFullStars = std::clamp<int>((int)stars, 0, 25);
         const float partialStarScale =
             std::max(0.5f, std::clamp<float>(stars - numFullStars, 0.0f, 1.0f));  // at least 0.5x
 
-        g->setColor(this->bSelected ? skin->getSongSelectActiveText() : skin->getSongSelectInactiveText());
+        g->setColor(this->bSelected ? skin->c_song_select_active_text : skin->c_song_select_inactive_text);
 
         // full stars
         for(int i = 0; i < numFullStars; i++) {
@@ -108,7 +108,7 @@ void SongDifficultyButton::draw() {
             {
                 g->scale(scale, scale);
                 g->translate(pos.x + this->fTextOffset + starWidth / 2 + i * starWidth * 1.75f, pos.y + starOffsetY);
-                g->drawImage(skin->getStar());
+                g->drawImage(skin->i_star);
             }
             g->popTransform();
         }
@@ -119,7 +119,7 @@ void SongDifficultyButton::draw() {
             g->scale(starScale * partialStarScale, starScale * partialStarScale);
             g->translate(pos.x + this->fTextOffset + starWidth / 2 + numFullStars * starWidth * 1.75f,
                          pos.y + starOffsetY);
-            g->drawImage(skin->getStar());
+            g->drawImage(skin->i_star);
         }
         g->popTransform();
 
@@ -135,7 +135,7 @@ void SongDifficultyButton::draw() {
                     g->scale(starScale * backgroundStarScale, starScale * backgroundStarScale);
                     g->translate(pos.x + this->fTextOffset + starWidth / 2 + i * starWidth * 1.75f,
                                  pos.y + starOffsetY);
-                    g->drawImage(skin->getStar());
+                    g->drawImage(skin->i_star);
                 }
                 g->popTransform();
             }
@@ -164,7 +164,7 @@ void SongDifficultyButton::mouse_update(bool* propagate_clicks) {
 }
 
 void SongDifficultyButton::onClicked(bool left, bool right) {
-    soundEngine->play(osu->getSkin()->getSelectDifficultySound());
+    soundEngine->play(osu->getSkin()->s_select_difficulty);
 
     // NOTE: Intentionally not calling Button::onClicked(left, right), since that one plays another sound
     CBaseUIButton::onClicked(left, right);

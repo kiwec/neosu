@@ -192,9 +192,9 @@ void HitSamples::play(f32 pan, i32 delta, bool is_sliderslide) {
         soundEngine->play(snd, pan, pitch, volume);
     };
 
-    // NOTE: osu->getSkin()->getLayeredHitSounds() seems to be forced even if the map uses custom hitsounds
+    // NOTE: osu->getSkin()->layeredHitSounds seems to be forced even if the map uses custom hitsounds
     //       according to https://osu.ppy.sh/community/forums/topics/15937
-    if((this->hitSounds & HitSoundType::NORMAL) || (this->hitSounds == 0) || osu->getSkin()->getLayeredHitSounds()) {
+    if((this->hitSounds & HitSoundType::NORMAL) || (this->hitSounds == 0) || osu->getSkin()->o_layered_hitsounds) {
         try_play(this->getNormalSet(), HitSoundType::NORMAL);
     }
 

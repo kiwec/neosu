@@ -158,7 +158,7 @@ void VolumeOverlay::mouse_update(bool *propagate_clicks) {
     // volume inactive to active animation
     if(this->bVolumeInactiveToActiveScheduled && this->fVolumeInactiveToActiveAnim > 0.0f) {
         soundEngine->setMasterVolume(std::lerp(cv::volume_master_inactive.getFloat() * cv::volume_master.getFloat(),
-                                         cv::volume_master.getFloat(), this->fVolumeInactiveToActiveAnim));
+                                               cv::volume_master.getFloat(), this->fVolumeInactiveToActiveAnim));
 
         // check if we're done
         if(this->fVolumeInactiveToActiveAnim == 1.0f) this->bVolumeInactiveToActiveScheduled = false;
@@ -304,7 +304,7 @@ void VolumeOverlay::onMasterVolumeChange(float newValue) {
 
 void VolumeOverlay::onEffectVolumeChange() {
     if(!osu || osu->isSkinLoading()) return;
-    updateEffectVolume(osu->getSkin().get());
+    updateEffectVolume(osu->getSkinMutable());
 }
 
 void VolumeOverlay::updateEffectVolume(Skin *skin) {
@@ -312,7 +312,7 @@ void VolumeOverlay::updateEffectVolume(Skin *skin) {
 
     float volume = cv::volume_effects.getFloat();
     for(auto &sound : skin->sounds) {
-        if(skin != osu->getSkin().get()) break;
+        if(skin != osu->getSkin()) break;
         if(!skin->isReady()) break;
         if(osu->isSkinLoading()) break;  // if you hold CTRL+SHIFT+S down then weird things can happen...
         if(sound && sound->getBaseVolume() != volume) sound->setBaseVolume(volume);

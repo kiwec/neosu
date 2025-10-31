@@ -3,7 +3,7 @@
 
 class CBaseUIContainer;
 class UIVolumeSlider;
-class Skin;
+struct Skin;
 
 class VolumeOverlay final : public OsuScreen {
    public:

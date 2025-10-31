@@ -216,7 +216,7 @@ void UIModSelectorModButton::setOn(bool on, bool silent) {
         }
 
         if(!silent) {
-            soundEngine->play(osu->getSkin()->getCheckOn());
+            soundEngine->play(osu->getSkin()->s_check_on);
         }
     } else {
         anim->moveLinear(&this->fRot, 0.0f, animationDuration, true);
@@ -225,7 +225,7 @@ void UIModSelectorModButton::setOn(bool on, bool silent) {
 
         if(prevState && !this->bOn && !silent) {
             // only play sound on specific change
-            soundEngine->play(osu->getSkin()->getCheckOff());
+            soundEngine->play(osu->getSkin()->s_check_off);
         }
     }
 }

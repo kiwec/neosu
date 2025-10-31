@@ -16,7 +16,7 @@ UISlider::UISlider(float xPos, float yPos, float xSize, float ySize, UString nam
 void UISlider::draw() {
     if(!this->bVisible) return;
 
-    Image *img = osu->getSkin()->getCircleEmpty();
+    Image *img = osu->getSkin()->i_circle_empty;
     if(img == nullptr) {
         CBaseUISlider::draw();
         return;
@@ -47,7 +47,7 @@ void UISlider::draw() {
     {
         g->scale(scale.x, scale.y);
         g->translate(blockCenter.x, blockCenter.y + 1);
-        g->drawImage(osu->getSkin()->getCircleEmpty());
+        g->drawImage(osu->getSkin()->i_circle_empty);
     }
     g->popTransform();
 }

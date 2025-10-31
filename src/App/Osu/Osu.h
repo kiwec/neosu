@@ -33,7 +33,7 @@ class UpdateHandler;
 class NotificationOverlay;
 class TooltipOverlay;
 class OsuScreen;
-class Skin;
+struct Skin;
 class HUD;
 class Changelog;
 class ModFPoSu;
@@ -164,7 +164,8 @@ class Osu final : public MouseListener, public KeyboardListener {
     [[nodiscard]] inline McFont *getSongBrowserFont() const { return this->songBrowserFont; }
     [[nodiscard]] inline McFont *getSongBrowserFontBold() const { return this->songBrowserFontBold; }
     [[nodiscard]] inline McFont *getFontIcons() const { return this->fontIcons; }
-    [[nodiscard]] inline const std::unique_ptr<Skin> &getSkin() const { return this->skin; }
+    [[nodiscard]] inline const Skin *getSkin() const { return this->skin.get(); }
+    [[nodiscard]] inline Skin *getSkinMutable() { return this->skin.get(); }
 
     float getDifficultyMultiplier();
     float getCSDifficultyMultiplier();

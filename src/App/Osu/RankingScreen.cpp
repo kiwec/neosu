@@ -162,7 +162,7 @@ RankingScreen::RankingScreen() : ScreenBackable() {
     this->songInfo = new UIRankingScreenInfoLabel(5, 5, 0, 0, "");
     this->addBaseUIElement(this->songInfo);
 
-    this->rankingTitle = new CBaseUIImage(osu->getSkin()->getRankingTitle()->getName(), 0, 0, 0, 0, "");
+    this->rankingTitle = new CBaseUIImage(osu->getSkin()->i_ranking_title->getName(), 0, 0, 0, 0, "");
     this->rankingTitle->setDrawBackground(false);
     this->rankingTitle->setDrawFrame(false);
     this->addBaseUIElement(this->rankingTitle);
@@ -172,7 +172,7 @@ RankingScreen::RankingScreen() : ScreenBackable() {
     this->rankingPanel->setDrawFrame(false);
     this->rankings->getContainer()->addBaseUIElement(this->rankingPanel);
 
-    this->rankingGrade = new CBaseUIImage(osu->getSkin()->getRankingA()->getName(), 0, 0, 0, 0, "");
+    this->rankingGrade = new CBaseUIImage(osu->getSkin()->i_ranking_a->getName(), 0, 0, 0, 0, "");
     this->rankingGrade->setDrawBackground(false);
     this->rankingGrade->setDrawFrame(false);
     this->rankings->getContainer()->addBaseUIElement(this->rankingGrade);
@@ -239,22 +239,22 @@ void RankingScreen::draw() {
         vec2(this->rankings->getSize().x - osu->getUIScale(20), this->rankings->getRelPosY() + osu->getUIScale(260));
     vec2 modPos = modPosStart;
     vec2 modPosMax{0.f};
-    if(this->bModTD) this->drawModImage(osu->getSkin()->getSelectionModTD(), modPos, modPosMax);
+    if(this->bModTD) this->drawModImage(osu->getSkin()->i_modselect_td, modPos, modPosMax);
     if(this->bModSS)
-        this->drawModImage(osu->getSkin()->getSelectionModPerfect(), modPos, modPosMax);
+        this->drawModImage(osu->getSkin()->i_modselect_pf, modPos, modPosMax);
     else if(this->bModSD)
-        this->drawModImage(osu->getSkin()->getSelectionModSuddenDeath(), modPos, modPosMax);
-    if(this->bModEZ) this->drawModImage(osu->getSkin()->getSelectionModEasy(), modPos, modPosMax);
-    if(this->bModHD) this->drawModImage(osu->getSkin()->getSelectionModHidden(), modPos, modPosMax);
-    if(this->bModHR) this->drawModImage(osu->getSkin()->getSelectionModHardRock(), modPos, modPosMax);
-    if(this->bModNightmare) this->drawModImage(osu->getSkin()->getSelectionModNightmare(), modPos, modPosMax);
-    if(this->bModScorev2) this->drawModImage(osu->getSkin()->getSelectionModScorev2(), modPos, modPosMax);
-    if(this->bModTarget) this->drawModImage(osu->getSkin()->getSelectionModTarget(), modPos, modPosMax);
-    if(this->bModSpunout) this->drawModImage(osu->getSkin()->getSelectionModSpunOut(), modPos, modPosMax);
-    if(this->bModRelax) this->drawModImage(osu->getSkin()->getSelectionModRelax(), modPos, modPosMax);
-    if(this->bModNF) this->drawModImage(osu->getSkin()->getSelectionModNoFail(), modPos, modPosMax);
-    if(this->bModAutopilot) this->drawModImage(osu->getSkin()->getSelectionModAutopilot(), modPos, modPosMax);
-    if(this->bModAuto) this->drawModImage(osu->getSkin()->getSelectionModAutoplay(), modPos, modPosMax);
+        this->drawModImage(osu->getSkin()->i_modselect_sd, modPos, modPosMax);
+    if(this->bModEZ) this->drawModImage(osu->getSkin()->i_modselect_ez, modPos, modPosMax);
+    if(this->bModHD) this->drawModImage(osu->getSkin()->i_modselect_hd, modPos, modPosMax);
+    if(this->bModHR) this->drawModImage(osu->getSkin()->i_modselect_hr, modPos, modPosMax);
+    if(this->bModNightmare) this->drawModImage(osu->getSkin()->i_modselect_nightmare, modPos, modPosMax);
+    if(this->bModScorev2) this->drawModImage(osu->getSkin()->i_modselect_sv2, modPos, modPosMax);
+    if(this->bModTarget) this->drawModImage(osu->getSkin()->i_modselect_target, modPos, modPosMax);
+    if(this->bModSpunout) this->drawModImage(osu->getSkin()->i_modselect_so, modPos, modPosMax);
+    if(this->bModRelax) this->drawModImage(osu->getSkin()->i_modselect_rx, modPos, modPosMax);
+    if(this->bModNF) this->drawModImage(osu->getSkin()->i_modselect_nf, modPos, modPosMax);
+    if(this->bModAutopilot) this->drawModImage(osu->getSkin()->i_modselect_ap, modPos, modPosMax);
+    if(this->bModAuto) this->drawModImage(osu->getSkin()->i_modselect_auto, modPos, modPosMax);
 
     // draw experimental mods
     if(this->extraMods.size() > 0) {
@@ -381,7 +381,7 @@ CBaseUIContainer *RankingScreen::setVisible(bool visible) {
         this->updateLayout();
     } else {
         // Stop applause sound
-        soundEngine->stop(osu->getSkin()->getApplause());
+        soundEngine->stop(osu->getSkin()->s_applause);
 
         if(BanchoState::is_in_a_multi_room()) {
             // We backed out of the ranking screen, display the room again
@@ -521,7 +521,7 @@ void RankingScreen::updateLayout() {
 
     this->setSize(osu->getVirtScreenSize());
 
-    this->rankingTitle->setImage(osu->getSkin()->getRankingTitle());
+    this->rankingTitle->setImage(osu->getSkin()->i_ranking_title);
     this->rankingTitle->setScale(Osu::getImageScale(this->rankingTitle->getImage(), 75.0f) * uiScale,
                                  Osu::getImageScale(this->rankingTitle->getImage(), 75.0f) * uiScale);
     this->rankingTitle->setSize(this->rankingTitle->getImage()->getWidth() * this->rankingTitle->getScale().x,
@@ -550,8 +550,8 @@ void RankingScreen::updateLayout() {
 
     // NOTE: no uiScale for rankingPanel and rankingGrade, doesn't really work due to legacy layout expectations
     const vec2 hardcodedOsuRankingPanelImageSize =
-        vec2(622, 505) * (osu->getSkin()->getRankingPanel().is2x() ? 2.0f : 1.0f);
-    this->rankingPanel->setImage(osu->getSkin()->getRankingPanel());
+        vec2(622, 505) * (osu->getSkin()->i_ranking_panel.is2x() ? 2.0f : 1.0f);
+    this->rankingPanel->setImage(osu->getSkin()->i_ranking_panel);
     this->rankingPanel->setScale(Osu::getImageScale(hardcodedOsuRankingPanelImageSize, 317.0f),
                                  Osu::getImageScale(hardcodedOsuRankingPanelImageSize, 317.0f));
     this->rankingPanel->setSize(
@@ -582,36 +582,36 @@ void RankingScreen::setGrade(FinishedScore::Grade grade) {
     vec2 hardcodedOsuRankingGradeImageSize = vec2(369, 422);
     switch(grade) {
         case FinishedScore::Grade::XH:
-            hardcodedOsuRankingGradeImageSize *= (osu->getSkin()->getRankingXH().is2x() ? 2.0f : 1.0f);
-            this->rankingGrade->setImage(osu->getSkin()->getRankingXH());
+            hardcodedOsuRankingGradeImageSize *= (osu->getSkin()->i_ranking_xh.is2x() ? 2.0f : 1.0f);
+            this->rankingGrade->setImage(osu->getSkin()->i_ranking_xh);
             break;
         case FinishedScore::Grade::SH:
-            hardcodedOsuRankingGradeImageSize *= (osu->getSkin()->getRankingSH().is2x() ? 2.0f : 1.0f);
-            this->rankingGrade->setImage(osu->getSkin()->getRankingSH());
+            hardcodedOsuRankingGradeImageSize *= (osu->getSkin()->i_ranking_sh.is2x() ? 2.0f : 1.0f);
+            this->rankingGrade->setImage(osu->getSkin()->i_ranking_sh);
             break;
         case FinishedScore::Grade::X:
-            hardcodedOsuRankingGradeImageSize *= (osu->getSkin()->getRankingX().is2x() ? 2.0f : 1.0f);
-            this->rankingGrade->setImage(osu->getSkin()->getRankingX());
+            hardcodedOsuRankingGradeImageSize *= (osu->getSkin()->i_ranking_x.is2x() ? 2.0f : 1.0f);
+            this->rankingGrade->setImage(osu->getSkin()->i_ranking_x);
             break;
         case FinishedScore::Grade::S:
-            hardcodedOsuRankingGradeImageSize *= (osu->getSkin()->getRankingS().is2x() ? 2.0f : 1.0f);
-            this->rankingGrade->setImage(osu->getSkin()->getRankingS());
+            hardcodedOsuRankingGradeImageSize *= (osu->getSkin()->i_ranking_s.is2x() ? 2.0f : 1.0f);
+            this->rankingGrade->setImage(osu->getSkin()->i_ranking_s);
             break;
         case FinishedScore::Grade::A:
-            hardcodedOsuRankingGradeImageSize *= (osu->getSkin()->getRankingA().is2x() ? 2.0f : 1.0f);
-            this->rankingGrade->setImage(osu->getSkin()->getRankingA());
+            hardcodedOsuRankingGradeImageSize *= (osu->getSkin()->i_ranking_a.is2x() ? 2.0f : 1.0f);
+            this->rankingGrade->setImage(osu->getSkin()->i_ranking_a);
             break;
         case FinishedScore::Grade::B:
-            hardcodedOsuRankingGradeImageSize *= (osu->getSkin()->getRankingB().is2x() ? 2.0f : 1.0f);
-            this->rankingGrade->setImage(osu->getSkin()->getRankingB());
+            hardcodedOsuRankingGradeImageSize *= (osu->getSkin()->i_ranking_b.is2x() ? 2.0f : 1.0f);
+            this->rankingGrade->setImage(osu->getSkin()->i_ranking_b);
             break;
         case FinishedScore::Grade::C:
-            hardcodedOsuRankingGradeImageSize *= (osu->getSkin()->getRankingC().is2x() ? 2.0f : 1.0f);
-            this->rankingGrade->setImage(osu->getSkin()->getRankingC());
+            hardcodedOsuRankingGradeImageSize *= (osu->getSkin()->i_ranking_c.is2x() ? 2.0f : 1.0f);
+            this->rankingGrade->setImage(osu->getSkin()->i_ranking_c);
             break;
         default:
-            hardcodedOsuRankingGradeImageSize *= (osu->getSkin()->getRankingD().is2x() ? 2.0f : 1.0f);
-            this->rankingGrade->setImage(osu->getSkin()->getRankingD());
+            hardcodedOsuRankingGradeImageSize *= (osu->getSkin()->i_ranking_d.is2x() ? 2.0f : 1.0f);
+            this->rankingGrade->setImage(osu->getSkin()->i_ranking_d);
             break;
     }
 
@@ -625,7 +625,7 @@ void RankingScreen::setGrade(FinishedScore::Grade grade) {
     this->rankingGrade->setRelPos(
         this->rankings->getSize().x - osu->getUIScale(120) -
             this->rankingGrade->getImage()->getWidth() * this->rankingGrade->getScale().x / 2.0f,
-        -this->rankings->getRelPos().y + osu->getUIScale(osu->getSkin()->getVersion() > 1.0f ? 200 : 170) -
+        -this->rankings->getRelPos().y + osu->getUIScale(osu->getSkin()->version > 1.0f ? 200 : 170) -
             this->rankingGrade->getImage()->getHeight() * this->rankingGrade->getScale().x / 2.0f);
 }
 

@@ -593,7 +593,7 @@ void SongBrowser::draw() {
         osu->getBackgroundImageHandler()->draw(osu->getMapInterface()->getBeatmap(), alpha);
     } else if(cv::draw_songbrowser_menu_background_image.getBool()) {
         // menu-background
-        Image *backgroundImage = osu->getSkin()->getMenuBackground();
+        Image *backgroundImage = osu->getSkin()->i_menu_bg;
         if(backgroundImage != nullptr && backgroundImage != MISSING_TEXTURE && backgroundImage->isReady()) {
             const float scale = Osu::getImageScaleToFillResolution(backgroundImage, osu->getVirtScreenSize());
 
@@ -609,7 +609,7 @@ void SongBrowser::draw() {
     }
 
     {
-        f32 mode_osu_scale = SongBrowser::getSkinScale2(osu->getSkin()->mode_osu);
+        f32 mode_osu_scale = SongBrowser::getSkinScale2(osu->getSkin()->i_mode_osu);
 
         g->setColor(0xffffffff);
         if(cv::avoid_flashes.getBool()) {
@@ -620,7 +620,7 @@ void SongBrowser::draw() {
         }
 
         g->setBlendMode(Graphics::BLEND_MODE::BLEND_MODE_ADDITIVE);
-        osu->getSkin()->mode_osu->drawRaw(vec2(osu->getVirtScreenWidth() / 2, osu->getVirtScreenHeight() / 2),
+        osu->getSkin()->i_mode_osu->drawRaw(vec2(osu->getVirtScreenWidth() / 2, osu->getVirtScreenHeight() / 2),
                                           mode_osu_scale, AnchorPoint::CENTER);
         g->setBlendMode(Graphics::BLEND_MODE::BLEND_MODE_ALPHA);
     }
@@ -759,7 +759,7 @@ void SongBrowser::draw() {
         auto screen = osu->getVirtScreenSize();
         bool is_widescreen = (screen.x / screen.y) > (4.f / 3.f);
 
-        Image *topbar = osu->getSkin()->songSelectTop;
+        Image *topbar = osu->getSkin()->i_songselect_top;
         f32 scale = (f32)osu->getVirtScreenWidth() / (f32)topbar->getWidth();
         if(!is_widescreen) scale /= 0.75;  // XXX: stupid
 
@@ -1147,7 +1147,7 @@ CBaseUIContainer *SongBrowser::setVisible(bool visible) {
     this->bShiftPressed = false;  // seems to get stuck sometimes otherwise
 
     if(this->bVisible) {
-        soundEngine->play(osu->getSkin()->getExpandSound());
+        soundEngine->play(osu->getSkin()->s_expand);
         RichPresence::onSongBrowser();
 
         this->updateLayout();
@@ -3052,12 +3052,12 @@ void SongBrowser::onSelectionMode() {
 }
 
 void SongBrowser::onSelectionMods() {
-    soundEngine->play(osu->getSkin()->getExpandSound());
+    soundEngine->play(osu->getSkin()->s_expand);
     osu->toggleModSelection(this->bF1Pressed);
 }
 
 void SongBrowser::onSelectionRandom() {
-    soundEngine->play(osu->getSkin()->getClickButtonSound());
+    soundEngine->play(osu->getSkin()->s_click_button);
     if(this->bShiftPressed)
         this->bPreviousRandomBeatmapScheduled = true;
     else
@@ -3065,7 +3065,7 @@ void SongBrowser::onSelectionRandom() {
 }
 
 void SongBrowser::onSelectionOptions() {
-    soundEngine->play(osu->getSkin()->getClickButtonSound());
+    soundEngine->play(osu->getSkin()->s_click_button);
 
     if(this->selectedButton != nullptr) {
         this->scrollToSongButton(this->selectedButton);
@@ -3093,7 +3093,7 @@ void SongBrowser::onScoreClicked(CBaseUIButton *button) {
     osu->getSongBrowser()->setVisible(false);
     osu->getRankingScreen()->setVisible(true);
 
-    soundEngine->play(osu->getSkin()->getMenuHit());
+    soundEngine->play(osu->getSkin()->s_menu_hit);
 }
 
 void SongBrowser::onScoreContextMenu(ScoreButton *scoreButton, int id) {

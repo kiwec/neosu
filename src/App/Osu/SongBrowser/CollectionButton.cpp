@@ -60,7 +60,7 @@ void CollectionButton::draw() {
 
     int textXOffset = size.x * 0.02f;
     float titleScale = (size.y * this->fTitleScale) / this->font->getHeight();
-    g->setColor(this->bSelected ? skin->getSongSelectActiveText() : skin->getSongSelectInactiveText());
+    g->setColor(this->bSelected ? skin->c_song_select_active_text : skin->c_song_select_inactive_text);
     g->pushTransform();
     {
         g->scale(titleScale, titleScale);

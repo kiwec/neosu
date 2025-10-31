@@ -47,8 +47,8 @@ SkinImage::SkinImage(Skin* skin, const std::string& skinElementName, vec2 baseSi
     }
 
     // if AnimationFramerate is defined in skin, use that. otherwise derive framerate from number of frames
-    if(this->skin->getAnimationFramerate() > 0.0f)
-        this->fFrameDuration = 1.0f / this->skin->getAnimationFramerate();
+    if(this->skin->anim_framerate > 0.0f)
+        this->fFrameDuration = 1.0f / this->skin->anim_framerate;
     else if(this->images.size() > 0)
         this->fFrameDuration = 1.0f / (float)this->images.size();
 }
@@ -86,11 +86,11 @@ bool SkinImage::load(const std::string& skinElementName, const std::string& anim
 }
 
 bool SkinImage::loadImage(const std::string& skinElementName, bool ignoreDefaultSkin) {
-    std::string filepath1 = this->skin->getFilePath();
+    std::string filepath1 = this->skin->file_path;
     filepath1.append(skinElementName);
     filepath1.append("@2x.png");
 
-    std::string filepath2 = this->skin->getFilePath();
+    std::string filepath2 = this->skin->file_path;
     filepath2.append(skinElementName);
     filepath2.append(".png");
 
@@ -352,9 +352,9 @@ void SkinImage::update(float speedMultiplier, bool useEngineTimeForAnimations, i
     }
 }
 
-void SkinImage::setAnimationTimeOffset(float speedMultiplier, i32 offset) {
+void SkinImage::setAnimationTimeOffset(i32 offset) {
     this->iBeatmapAnimationTimeStartOffset = offset;
-    this->update(speedMultiplier, false, this->iCurMusicPos);  // force update
+    this->update(this->skin->anim_speed, false, this->iCurMusicPos);  // force update
 }
 
 void SkinImage::setAnimationFrameForce(int frame) {

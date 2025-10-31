@@ -55,7 +55,7 @@ class MainMenu::CubeButton final : public CBaseUIButton {
         CBaseUIButton::onMouseInside();
 
         if(this->mm_ptr->button_sound_cooldown + 0.05f < engine->getTime()) {
-            soundEngine->play(osu->getSkin()->getHoverMainMenuCubeSound());
+            soundEngine->play(osu->getSkin()->s_hover_main_menu_cube);
             this->mm_ptr->button_sound_cooldown = engine->getTime();
         }
     }
@@ -85,13 +85,13 @@ class MainMenu::MainButton final : public CBaseUIButton {
 
         if(this->mm_ptr->button_sound_cooldown + 0.05f < engine->getTime()) {
             if(this->getText() == UString("Singleplayer")) {
-                soundEngine->play(osu->getSkin()->getHoverSingleplayerSound());
+                soundEngine->play(osu->getSkin()->s_hover_sp);
             } else if(this->getText() == UString("Multiplayer")) {
-                soundEngine->play(osu->getSkin()->getHoverMultiplayerSound());
+                soundEngine->play(osu->getSkin()->s_hover_mp);
             } else if(this->getText() == UString("Options (CTRL + O)")) {
-                soundEngine->play(osu->getSkin()->getHoverOptionsSound());
+                soundEngine->play(osu->getSkin()->s_hover_options);
             } else if(this->getText() == UString("Exit")) {
-                soundEngine->play(osu->getSkin()->getHoverExitSound());
+                soundEngine->play(osu->getSkin()->s_hover_exit);
             }
 
             this->mm_ptr->button_sound_cooldown = engine->getTime();
@@ -798,7 +798,7 @@ void MainMenu::drawMapBackground(DatabaseBeatmap *beatmap, f32 alpha) {
     if(beatmap == nullptr) {
         bool just_launched = engine->getTime() < 5.0;
         if(cv::draw_menu_background.getBool() && !just_launched) {
-            bg = osu->getSkin()->getMenuBackground();
+            bg = osu->getSkin()->i_menu_bg;
         }
     } else {
         bg = osu->getBackgroundImageHandler()->getLoadBackgroundImage(beatmap, true);
@@ -888,7 +888,7 @@ void MainMenu::draw() {
         float offset = osu->getUIScale(45.0f * animation);
 
         const float scale =
-            this->versionButton->getSize().x / osu->getSkin()->getPlayWarningArrow2()->getSizeBaseRaw().x;
+            this->versionButton->getSize().x / osu->getSkin()->i_play_warning_arrow2->getSizeBaseRaw().x;
 
         const vec2 arrowPos = vec2(this->versionButton->getSize().x / 1.75f,
                                    osu->getVirtScreenHeight() - this->versionButton->getSize().y * 2 -
@@ -901,7 +901,7 @@ void MainMenu::draw() {
             McFont *smallFont = osu->getSubTitleFont();
             g->translate(arrowPos.x - smallFont->getStringWidth(notificationText) / 2.0f,
                          (-offset * 2) * scale + arrowPos.y -
-                             (osu->getSkin()->getPlayWarningArrow2()->getSizeBaseRaw().y * scale) / 1.5f,
+                             (osu->getSkin()->i_play_warning_arrow2->getSizeBaseRaw().y * scale) / 1.5f,
                          0);
             g->drawString(smallFont, notificationText);
         }
@@ -912,7 +912,7 @@ void MainMenu::draw() {
         {
             g->rotate(90.0f);
             g->translate(0, -offset * 2, 0);
-            osu->getSkin()->getPlayWarningArrow2()->drawRaw(arrowPos, scale);
+            osu->getSkin()->i_play_warning_arrow2->drawRaw(arrowPos, scale);
         }
         g->popTransform();
     }
@@ -1482,7 +1482,7 @@ MainMenu::MainButton *MainMenu::addMainMenuButton(UString text) {
 }
 
 void MainMenu::onCubePressed() {
-    soundEngine->play(osu->getSkin()->getClickMainMenuCubeSound());
+    soundEngine->play(osu->getSkin()->s_click_main_menu_cube);
 
     anim->moveQuadInOut(&this->fSizeAddAnim, 0.0f, 0.06f, 0.0f, false);
     anim->moveQuadInOut(&this->fSizeAddAnim, 0.12f, 0.06f, 0.07f, false);
@@ -1532,8 +1532,8 @@ void MainMenu::onPlayButtonPressed() {
 
     osu->toggleSongBrowser();
 
-    soundEngine->play(osu->getSkin()->getMenuHit());
-    soundEngine->play(osu->getSkin()->getClickSingleplayerSound());
+    soundEngine->play(osu->getSkin()->s_menu_hit);
+    soundEngine->play(osu->getSkin()->s_click_sp);
 }
 
 void MainMenu::onMultiplayerButtonPressed() {
@@ -1545,14 +1545,14 @@ void MainMenu::onMultiplayerButtonPressed() {
     this->setVisible(false);
     osu->getLobby()->setVisible(true);
 
-    soundEngine->play(osu->getSkin()->getMenuHit());
-    soundEngine->play(osu->getSkin()->getClickMultiplayerSound());
+    soundEngine->play(osu->getSkin()->s_menu_hit);
+    soundEngine->play(osu->getSkin()->s_click_mp);
 }
 
 void MainMenu::onOptionsButtonPressed() {
     if(!osu->getOptionsMenu()->isVisible()) osu->toggleOptionsMenu();
 
-    soundEngine->play(osu->getSkin()->getClickOptionsSound());
+    soundEngine->play(osu->getSkin()->s_click_options);
 }
 
 void MainMenu::onExitButtonPressed() {
@@ -1560,7 +1560,7 @@ void MainMenu::onExitButtonPressed() {
     this->bWasCleanShutdown = true;
     this->setMenuElementsVisible(false);
 
-    soundEngine->play(osu->getSkin()->getClickExitSound());
+    soundEngine->play(osu->getSkin()->s_click_exit);
 }
 
 void MainMenu::onPausePressed() {

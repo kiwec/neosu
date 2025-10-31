@@ -66,19 +66,19 @@ void update_bottombar(bool* propagate_clicks) {
 
     auto screen = osu->getVirtScreenSize();
     bool is_widescreen = (screen.x / screen.y) > (4.f / 3.f);
-    auto mode_img = osu->getSkin()->selectionModeOver;
+    auto mode_img = osu->getSkin()->i_sel_mode_over;
     btns[MODE].setSize(SongBrowser::getSkinDimensions(mode_img));
     btns[MODE].setPos({Osu::getUIScale(is_widescreen ? 140.0f : 120.0f), screen.y - btns[MODE].getHeight()});
 
-    auto mods_img = osu->getSkin()->selectionModsOver;
+    auto mods_img = osu->getSkin()->i_sel_mods_over;
     btns[MODS].setSize(SongBrowser::getSkinDimensions(mods_img));
     btns[MODS].setPos({btns[MODE].getX() + SongBrowser::getUIScale(92.5f), screen.y - btns[MODS].getHeight()});
 
-    auto random_img = osu->getSkin()->selectionRandomOver;
+    auto random_img = osu->getSkin()->i_sel_random_over;
     btns[RANDOM].setSize(SongBrowser::getSkinDimensions(random_img));
     btns[RANDOM].setPos({btns[MODS].getX() + SongBrowser::getUIScale(77.5f), screen.y - btns[RANDOM].getHeight()});
 
-    auto options_img = osu->getSkin()->selectionOptionsOver;
+    auto options_img = osu->getSkin()->i_sel_options_over;
     btns[OPTIONS].setSize(SongBrowser::getSkinDimensions(options_img));
     btns[OPTIONS].setPos({btns[RANDOM].getX() + SongBrowser::getUIScale(77.5f), screen.y - btns[OPTIONS].getHeight()});
 
@@ -124,7 +124,7 @@ void draw_bottombar() {
     g->pushTransform();
     {
         f32 bar_height = bottombar_get_min_height();
-        Image* img = osu->getSkin()->songSelectBottom;
+        Image* img = osu->getSkin()->i_songselect_bot;
         g->setColor(0xffffffff);
         g->scale((f32)osu->getVirtScreenWidth() / (f32)img->getWidth(), bar_height / (f32)img->getHeight());
         g->translate(0, osu->getVirtScreenHeight() - bar_height);
@@ -140,8 +140,8 @@ void draw_bottombar() {
 
     // Careful, these buttons are often used as overlays
     // eg. selection-mode usually covers the whole screen, drawing topbar, bottom right osu cookie etc
-    SkinImage* base_imgs[4] = {osu->getSkin()->selectionMode, osu->getSkin()->selectionMods,
-                               osu->getSkin()->selectionRandom, osu->getSkin()->selectionOptions};
+    SkinImage* base_imgs[4] = {osu->getSkin()->i_sel_mode, osu->getSkin()->i_sel_mods,
+                               osu->getSkin()->i_sel_random, osu->getSkin()->i_sel_options};
     for(i32 i = 0; i < 4; i++) {
         if(base_imgs[i] == nullptr) continue;
 
@@ -151,29 +151,29 @@ void draw_bottombar() {
     }
 
     // Ok, and now for the hover images... which are drawn in a weird order, same as update_bottombar()
-    auto random_img = osu->getSkin()->selectionRandomOver;
+    auto random_img = osu->getSkin()->i_sel_random_over;
     f32 random_scale = SongBrowser::getSkinScale(random_img);
     g->setColor(Color(0xffffffff).setA(hovers[RANDOM]));
     random_img->drawRaw(vec2(btns[RANDOM].getX(), osu->getVirtScreenHeight()), random_scale, AnchorPoint::BOTTOM_LEFT);
 
-    auto mods_img = osu->getSkin()->selectionModsOver;
+    auto mods_img = osu->getSkin()->i_sel_mods_over;
     f32 mods_scale = SongBrowser::getSkinScale(mods_img);
     g->setColor(Color(0xffffffff).setA(hovers[MODS]));
     mods_img->drawRaw(vec2(btns[MODS].getX(), osu->getVirtScreenHeight()), mods_scale, AnchorPoint::BOTTOM_LEFT);
 
-    auto mode_img = osu->getSkin()->selectionModeOver;
+    auto mode_img = osu->getSkin()->i_sel_mode_over;
     f32 mode_scale = SongBrowser::getSkinScale(mode_img);
     g->setColor(Color(0xffffffff).setA(hovers[MODE]));
     mode_img->drawRaw(vec2(btns[MODE].getX(), osu->getVirtScreenHeight()), mode_scale, AnchorPoint::BOTTOM_LEFT);
 
-    auto options_img = osu->getSkin()->selectionOptionsOver;
+    auto options_img = osu->getSkin()->i_sel_options_over;
     f32 options_scale = SongBrowser::getSkinScale(options_img);
     g->setColor(Color(0xffffffff).setA(hovers[OPTIONS]));
     options_img->drawRaw(vec2(btns[OPTIONS].getX(), osu->getVirtScreenHeight()), options_scale,
                          AnchorPoint::BOTTOM_LEFT);
 
     // mode-osu-small (often used as overlay)
-    auto mos_img = osu->getSkin()->mode_osu_small;
+    auto mos_img = osu->getSkin()->i_mode_osu_small;
     if(mos_img != nullptr) {
         f32 mos_scale = SongBrowser::getSkinScale(mos_img);
         g->setBlendMode(Graphics::BLEND_MODE::BLEND_MODE_ADDITIVE);
