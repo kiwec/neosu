@@ -868,7 +868,7 @@ void Environment::setRawInput(bool raw) {
     }
 
 done:
-    if(raw && (m_winflags & WFL_MOUSE_GRABBED)) {
+    if(raw && !!(m_winflags & WinFlags::F_MOUSE_GRABBED)) {
         // release grab if we enabled raw input
         SDL_SetWindowMouseGrab(m_window, false);
     }
@@ -944,7 +944,7 @@ void Environment::listenToTextInput(bool listen) {
 
 void Environment::updateWindowFlags() {
     assert(m_window);
-    m_winflags = static_cast<WindowFlags>(SDL_GetWindowFlags(m_window));
+    m_winflags = static_cast<WinFlags>(SDL_GetWindowFlags(m_window));
 }
 
 // convar callback

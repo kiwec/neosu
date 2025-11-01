@@ -9,7 +9,7 @@ Room::Room(Packet &packet) {
     this->id = packet.read<u16>();
     this->in_progress = packet.read<u8>();
     this->match_type = packet.read<u8>();
-    this->mods = packet.read<u32>();
+    this->mods = packet.read<LegacyFlags>();
     this->name = packet.read_ustring();
 
     this->has_password = packet.read<u8>() > 0;
@@ -49,7 +49,7 @@ Room::Room(Packet &packet) {
     this->freemods = packet.read<u8>();
     if(this->freemods) {
         for(auto &slot : this->slots) {
-            slot.mods = packet.read<u32>();
+            slot.mods = packet.read<LegacyFlags>();
         }
     }
 
@@ -60,7 +60,7 @@ void Room::pack(Packet &packet) {
     packet.write<u16>(this->id);
     packet.write<u8>(this->in_progress);
     packet.write<u8>(this->match_type);
-    packet.write<u32>(this->mods);
+    packet.write<LegacyFlags>(this->mods);
     packet.write_string(this->name.toUtf8());
     packet.write_string(this->password.toUtf8());
     packet.write_string(this->map_name.toUtf8());
@@ -85,7 +85,7 @@ void Room::pack(Packet &packet) {
     packet.write<u8>(this->freemods);
     if(this->freemods) {
         for(auto &slot : this->slots) {
-            packet.write<u32>(slot.mods);
+            packet.write<LegacyFlags>(slot.mods);
         }
     }
 

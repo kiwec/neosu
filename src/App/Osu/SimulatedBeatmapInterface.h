@@ -22,7 +22,7 @@ class SimulatedBeatmapInterface final : public AbstractBeatmapInterface {
     i32 getPVS();
 
     [[nodiscard]] const Replay::Mods &getMods() const override { return this->mods; }
-    [[nodiscard]] u32 getModsLegacy() const override { return this->mods.to_legacy(); }
+    [[nodiscard]] LegacyFlags getModsLegacy() const override { return this->mods.to_legacy(); }
 
     [[nodiscard]] vec2 pixels2OsuCoords(vec2 pixelCoords) const override;  // only used for positional audio atm
     [[nodiscard]] vec2 osuCoords2Pixels(

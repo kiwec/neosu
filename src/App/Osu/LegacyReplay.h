@@ -56,7 +56,7 @@ struct Info {
     i64 bancho_score_id = 0;
 };
 
-BEATMAP_VALUES getBeatmapValuesForModsLegacy(u32 modsLegacy, float legacyAR, float legacyCS, float legacyOD,
+BEATMAP_VALUES getBeatmapValuesForModsLegacy(LegacyFlags modsLegacy, float legacyAR, float legacyCS, float legacyOD,
                                              float legacyHP);
 
 Info from_bytes(u8* data, uSz s_data);

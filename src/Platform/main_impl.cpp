@@ -211,7 +211,7 @@ SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
             switch(event->window.type) {
                 case SDL_EVENT_WINDOW_FOCUS_GAINED:
                     // add these window flags now to make env->winFocused() return true after this
-                    m_winflags |= (WFL_MOUSE_FOCUS | WFL_INPUT_FOCUS);
+                    m_winflags |= (WinFlags::F_MOUSE_FOCUS | WinFlags::F_INPUT_FOCUS);
                     if(!winMinimized() && m_bRestoreFullscreen) {
                         // we can get into this state if the current window manager doesn't support minimizing
                         // (i.e. re-gaining focus without first being restored, after we unfullscreened and tried to minimize the window)
@@ -226,7 +226,7 @@ SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
 
                 case SDL_EVENT_WINDOW_FOCUS_LOST:
                     // remove these window flags now to avoid env->winFocused() returning true immediately
-                    m_winflags &= ~(WFL_MOUSE_FOCUS | WFL_INPUT_FOCUS);
+                    m_winflags &= ~(WinFlags::F_MOUSE_FOCUS | WinFlags::F_INPUT_FOCUS);
                     m_engine->onFocusLost();
                     setBgFPS();
                     break;
@@ -333,11 +333,12 @@ SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
 
         // mouse events
         case SDL_EVENT_MOUSE_BUTTON_DOWN:
-            mouse->onButtonChange({event->button.timestamp, static_cast<ButtonIndex>(event->button.button), true});
+            mouse->onButtonChange({event->button.timestamp, (MouseButtonFlags)(1 << (event->button.button - 1)), true});
             break;
 
         case SDL_EVENT_MOUSE_BUTTON_UP:
-            mouse->onButtonChange({event->button.timestamp, static_cast<ButtonIndex>(event->button.button), false});
+            mouse->onButtonChange(
+                {event->button.timestamp, (MouseButtonFlags)(1 << (event->button.button - 1)), false});
             break;
 
         case SDL_EVENT_MOUSE_WHEEL:

@@ -904,7 +904,7 @@ void Circle::update(i32 curPos, f64 frame_time) {
             const vec2 pos = this->pi->osuCoords2Pixels(this->vRawPos);
             const float cursorDelta = vec::length(this->pi->getCursorPos() - pos);
             if((cursorDelta < this->pi->fHitcircleDiameter / 2.0f &&
-                (this->pi->getModsLegacy() & LegacyFlags::Relax))) {
+                (flags::has<LegacyFlags::Relax>(this->pi->getModsLegacy())))) {
                 LiveScore::HIT result = this->pi->getHitResult(delta);
 
                 if(result != LiveScore::HIT::HIT_NULL) {
@@ -931,10 +931,10 @@ void Circle::update(i32 curPos, f64 frame_time) {
 }
 
 void Circle::updateStackPosition(float stackOffset) {
-    this->vRawPos =
-        this->vOriginalRawPos -
-        vec2(this->iStack * stackOffset,
-             this->iStack * stackOffset * ((this->pi->getModsLegacy() & LegacyFlags::HardRock) ? -1.0f : 1.0f));
+    this->vRawPos = this->vOriginalRawPos -
+                    vec2(this->iStack * stackOffset,
+                         this->iStack * stackOffset *
+                             ((flags::has<LegacyFlags::HardRock>(this->pi->getModsLegacy())) ? -1.0f : 1.0f));
 }
 
 void Circle::miss(i32 curPos) {
@@ -1225,7 +1225,7 @@ void Slider::draw() {
                     vec2 pos = this->pf->osuCoords2Pixels(this->curve->pointAt(1.0f));
                     float rotation = this->curve->getEndAngle() - cv::playfield_rotation.getFloat() -
                                      this->pf->getPlayfieldRotation();
-                    if((this->pf->getModsLegacy() & LegacyFlags::HardRock)) rotation = 360.0f - rotation;
+                    if((flags::has<LegacyFlags::HardRock>(this->pf->getModsLegacy()))) rotation = 360.0f - rotation;
                     if(cv::playfield_mirror_horizontal.getBool()) rotation = 360.0f - rotation;
                     if(cv::playfield_mirror_vertical.getBool()) rotation = 180.0f - rotation;
 
@@ -1254,7 +1254,7 @@ void Slider::draw() {
                     vec2 pos = this->pf->osuCoords2Pixels(this->curve->pointAt(0.0f));
                     float rotation = this->curve->getStartAngle() - cv::playfield_rotation.getFloat() -
                                      this->pf->getPlayfieldRotation();
-                    if((this->pf->getModsLegacy() & LegacyFlags::HardRock)) rotation = 360.0f - rotation;
+                    if((flags::has<LegacyFlags::HardRock>(this->pf->getModsLegacy()))) rotation = 360.0f - rotation;
                     if(cv::playfield_mirror_horizontal.getBool()) rotation = 360.0f - rotation;
                     if(cv::playfield_mirror_vertical.getBool()) rotation = 180.0f - rotation;
 
@@ -1285,7 +1285,7 @@ void Slider::draw() {
     bool instafade_slider_body = cv::instafade_sliders.getBool();
     bool instafade_slider_head = cv::instafade.getBool();
     if(!instafade_slider_body && this->fEndSliderBodyFadeAnimation > 0.0f &&
-       this->fEndSliderBodyFadeAnimation != 1.0f && !(this->pf->getModsLegacy() & LegacyFlags::Hidden)) {
+       this->fEndSliderBodyFadeAnimation != 1.0f && !(flags::has<LegacyFlags::Hidden>(this->pf->getModsLegacy()))) {
         std::vector<vec2> emptyVector;
         std::vector<vec2> alwaysPoints;
         alwaysPoints.push_back(this->pf->osuCoords2Pixels(this->curve->pointAt(this->fSlidePercent)));
@@ -1298,7 +1298,7 @@ void Slider::draw() {
     }
 
     if(!instafade_slider_head && cv::slider_sliderhead_fadeout.getBool() && this->fStartHitAnimation > 0.0f &&
-       this->fStartHitAnimation != 1.0f && !(this->pf->getModsLegacy() & LegacyFlags::Hidden)) {
+       this->fStartHitAnimation != 1.0f && !(flags::has<LegacyFlags::Hidden>(this->pf->getModsLegacy()))) {
         float alpha = 1.0f - this->fStartHitAnimation;
 
         float scale = this->fStartHitAnimation;
@@ -1335,7 +1335,7 @@ void Slider::draw() {
     }
 
     if(!instafade_slider_head && this->fEndHitAnimation > 0.0f && this->fEndHitAnimation != 1.0f &&
-       !(this->pf->getModsLegacy() & LegacyFlags::Hidden)) {
+       !(flags::has<LegacyFlags::Hidden>(this->pf->getModsLegacy()))) {
         float alpha = 1.0f - this->fEndHitAnimation;
 
         float scale = this->fEndHitAnimation;
@@ -1400,8 +1400,7 @@ void Slider::draw2(bool drawApproachCircle, bool drawOnlyApproachCircle) {
     // HACKHACK: this is not entirely correct (due to m_bHeldTillEnd, if held within 300 range but then released, will
     // flash followcircle at the end)
     bool is_holding_click = this->isClickHeldSlider();
-    is_holding_click |= ModMasks::legacy_eq(this->pf->getModsLegacy(), LegacyFlags::Autoplay);
-    is_holding_click |= ModMasks::legacy_eq(this->pf->getModsLegacy(), LegacyFlags::Relax);
+    is_holding_click |= flags::any<LegacyFlags::Autoplay | LegacyFlags::Relax>(this->pf->getModsLegacy());
 
     bool should_draw_followcircle = (this->bVisible && this->bCursorInside && is_holding_click);
     should_draw_followcircle |= (this->bFinished && this->fFollowCircleAnimationAlpha > 0.0f && this->bHeldTillEnd);
@@ -1588,7 +1587,7 @@ void Slider::update(i32 curPos, f64 frame_time) {
     this->fReverseArrowAlpha *= cv::slider_reverse_arrow_alpha_multiplier.getFloat();
 
     this->fBodyAlpha = this->fAlpha;
-    if((this->pi->getModsLegacy() & LegacyFlags::Hidden))  // hidden modifies the body alpha
+    if((flags::has<LegacyFlags::Hidden>(this->pi->getModsLegacy())))  // hidden modifies the body alpha
     {
         this->fBodyAlpha = this->fAlphaWithoutHidden;  // fade in as usual
 
@@ -1652,14 +1651,14 @@ void Slider::update(i32 curPos, f64 frame_time) {
         this->bCursorLeft ? this->pi->fHitcircleDiameter / 2.0f : this->pi->fSliderFollowCircleDiameter / 2.0f;
     const bool isPlayfieldCursorInside = (vec::length(this->pi->getCursorPos() - this->vCurPoint) < followRadius);
     const bool isAutoCursorInside =
-        ((this->pi->getModsLegacy() & LegacyFlags::Autoplay) &&
+        ((flags::has<LegacyFlags::Autoplay>(this->pi->getModsLegacy())) &&
          (!cv::auto_cursordance.getBool() || (vec::length(this->pi->getCursorPos() - this->vCurPoint) < followRadius)));
     this->bCursorInside = (isAutoCursorInside || isPlayfieldCursorInside);
     this->bCursorLeft = !this->bCursorInside;
 
     // handle slider start
     if(!this->bStartFinished) {
-        if((this->pi->getModsLegacy() & LegacyFlags::Autoplay)) {
+        if((flags::has<LegacyFlags::Autoplay>(this->pi->getModsLegacy()))) {
             if(curPos >= this->click_time) {
                 this->onHit(LiveScore::HIT::HIT_300, 0, false);
                 this->pi->holding_slider = true;
@@ -1667,13 +1666,13 @@ void Slider::update(i32 curPos, f64 frame_time) {
         } else {
             i32 delta = curPos - this->click_time;
 
-            if((this->pi->getModsLegacy() & LegacyFlags::Relax)) {
+            if((flags::has<LegacyFlags::Relax>(this->pi->getModsLegacy()))) {
                 if(curPos >= this->click_time + (i32)cv::relax_offset.getInt() && !this->pi->isPaused() &&
                    !this->pi->isContinueScheduled()) {
                     const vec2 pos = this->pi->osuCoords2Pixels(this->curve->pointAt(0.0f));
                     const float cursorDelta = vec::length(this->pi->getCursorPos() - pos);
                     if((cursorDelta < this->pi->fHitcircleDiameter / 2.0f &&
-                        (this->pi->getModsLegacy() & LegacyFlags::Relax))) {
+                        (flags::has<LegacyFlags::Relax>(this->pi->getModsLegacy())))) {
                         LiveScore::HIT result = this->pi->getHitResult(delta);
 
                         if(result != LiveScore::HIT::HIT_NULL) {
@@ -1719,7 +1718,8 @@ void Slider::update(i32 curPos, f64 frame_time) {
         const i32 lenienceHackEndTime =
             std::max(this->click_time + this->duration / 2, (this->click_time + this->duration) - offset);
         const bool isTrackingCorrectly =
-            (this->isClickHeldSlider() || (this->pi->getModsLegacy() & LegacyFlags::Relax)) && this->bCursorInside;
+            (this->isClickHeldSlider() || (flags::has<LegacyFlags::Relax>(this->pi->getModsLegacy()))) &&
+            this->bCursorInside;
         if(isTrackingCorrectly) {
             if(isTrackingStrictTrackingMod) {
                 this->iStrictTrackingModLastClickHeldTime = curPos;
@@ -1779,8 +1779,8 @@ void Slider::update(i32 curPos, f64 frame_time) {
             if(!click.finished && curPos >= click.time) {
                 click.finished = true;
                 click.successful = (this->isClickHeldSlider() && this->bCursorInside) ||
-                                   (this->pi->getModsLegacy() & LegacyFlags::Autoplay) ||
-                                   ((this->pi->getModsLegacy() & LegacyFlags::Relax) && this->bCursorInside);
+                                   (flags::has<LegacyFlags::Autoplay>(this->pi->getModsLegacy())) ||
+                                   ((flags::has<LegacyFlags::Relax>(this->pi->getModsLegacy())) && this->bCursorInside);
 
                 if(click.type == 0) {
                     this->onRepeatHit(click.successful, click.sliderend);
@@ -1791,7 +1791,7 @@ void Slider::update(i32 curPos, f64 frame_time) {
         }
 
         // handle auto, and the last circle
-        if((this->pi->getModsLegacy() & LegacyFlags::Autoplay)) {
+        if((flags::has<LegacyFlags::Autoplay>(this->pi->getModsLegacy()))) {
             if(curPos >= this->click_time + this->duration) {
                 this->bHeldTillEnd = true;
                 this->onHit(LiveScore::HIT::HIT_300, 0, true);
@@ -1836,10 +1836,10 @@ void Slider::update(i32 curPos, f64 frame_time) {
 
                     const float percent = numActualHits / numMaxPossibleHits;
 
-                    const bool allow300 = (this->pi->getModsLegacy() & LegacyFlags::ScoreV2)
+                    const bool allow300 = (flags::has<LegacyFlags::ScoreV2>(this->pi->getModsLegacy()))
                                               ? (this->startResult == LiveScore::HIT::HIT_300)
                                               : true;
-                    const bool allow100 = (this->pi->getModsLegacy() & LegacyFlags::ScoreV2)
+                    const bool allow100 = (flags::has<LegacyFlags::ScoreV2>(this->pi->getModsLegacy()))
                                               ? (this->startResult == LiveScore::HIT::HIT_300 ||
                                                  this->startResult == LiveScore::HIT::HIT_100)
                                               : true;
@@ -1871,8 +1871,8 @@ void Slider::update(i32 curPos, f64 frame_time) {
         // TODO @kiwec: move this to draw()
         if(this->pf != nullptr) {
             bool sliding = this->bStartFinished && !this->bEndFinished && this->bCursorInside && this->iDelta <= 0;
-            sliding &= (this->isClickHeldSlider() || (this->pf->getModsLegacy() & LegacyFlags::Autoplay) ||
-                        (this->pf->getModsLegacy() & LegacyFlags::Relax));
+            sliding &= (this->isClickHeldSlider() || (flags::has<LegacyFlags::Autoplay>(this->pf->getModsLegacy())) ||
+                        (flags::has<LegacyFlags::Relax>(this->pf->getModsLegacy())));
             sliding &= !this->pf->isPaused() && !this->pf->isWaiting() && this->pf->isPlaying();
             sliding &= !this->pf->bWasSeekFrame;
 
@@ -1940,7 +1940,7 @@ void Slider::updateAnimations(i32 curPos) {
 void Slider::updateStackPosition(float stackOffset) {
     if(this->curve != nullptr)
         this->curve->updateStackPosition(this->iStack * stackOffset,
-                                         (this->pi->getModsLegacy() & LegacyFlags::HardRock));
+                                         (flags::has<LegacyFlags::HardRock>(this->pi->getModsLegacy())));
 }
 
 void Slider::miss(i32 curPos) {
@@ -2101,7 +2101,7 @@ void Slider::onHit(LiveScore::HIT result, i32 delta, bool startOrEnd, float targ
         this->bStartFinished = true;
         this->iKeyFlags = this->pi->lastPressedKey;
 
-        if(this->pi->getModsLegacy() & LegacyFlags::Target) {
+        if(flags::has<LegacyFlags::Target>(this->pi->getModsLegacy())) {
             // not end of combo, show in hiterrorbar, use for accuracy, increase combo, increase
             // score, ignore for health, don't add object duration to result anim
             this->addHitResult(result, delta, false, this->curve->pointAt(0.0f), targetDelta, targetAngle, false, false,
@@ -2511,7 +2511,7 @@ void Spinner::draw() {
         }
 
         // draw approach circle
-        if(!(this->pi->getModsLegacy() & LegacyFlags::Hidden) && this->fPercent > 0.0f) {
+        if(!(flags::has<LegacyFlags::Hidden>(this->pi->getModsLegacy())) && this->fPercent > 0.0f) {
             f32 spinnerApproachCircleImageScale = spinnerScale / (skin->i_spinner_approach_circle.is2x() ? 2.0f : 1.0f);
             g->setColor(Color(skin->c_spinner_approach_circle).setA(this->fAlphaWithoutHidden * alphaMultiplier));
 
@@ -2586,7 +2586,7 @@ void Spinner::draw() {
 
         // approach circle
         // TODO: only use when spinner-circle or spinner-top are skinned
-        if(!(this->pi->getModsLegacy() & LegacyFlags::Hidden) && this->fPercent > 0.0f) {
+        if(!(flags::has<LegacyFlags::Hidden>(this->pi->getModsLegacy())) && this->fPercent > 0.0f) {
             f32 spinnerApproachCircleImageScale = spinnerScale / (skin->i_spinner_approach_circle.is2x() ? 2.0f : 1.0f);
 
             // fun fact, peppy removed it: https://osu.ppy.sh/community/forums/topics/100765
@@ -2688,8 +2688,8 @@ void Spinner::update(i32 curPos, f64 frame_time) {
 
         // handle auto, mouse spinning movement
         float angleDiff = 0;
-        if((this->pi->getModsLegacy() & LegacyFlags::Autoplay) ||
-           (this->pi->getModsLegacy() & LegacyFlags::Autopilot) || (this->pi->getModsLegacy() & LegacyFlags::SpunOut)) {
+        if(flags::any<LegacyFlags::Autoplay | LegacyFlags::Autopilot | LegacyFlags::SpunOut>(
+               this->pi->getModsLegacy())) {
             angleDiff = frame_time * 1000.0f * AUTO_MULTIPLIER * this->pi->getSpeedMultiplier();
         } else {  // user spin
             vec2 mouseDelta = this->pi->getCursorPos() - this->pi->osuCoords2Pixels(this->vRawPos);
@@ -2705,9 +2705,9 @@ void Spinner::update(i32 curPos, f64 frame_time) {
         // handle spinning
         // HACKHACK: rewrite this
         if(delta <= 0) {
-            bool isSpinning = this->pi->isClickHeld() || (this->pi->getModsLegacy() & LegacyFlags::Autoplay) ||
-                              (this->pi->getModsLegacy() & LegacyFlags::Relax) ||
-                              (this->pi->getModsLegacy() & LegacyFlags::SpunOut);
+            bool isSpinning = this->pi->isClickHeld() ||
+                              flags::any<LegacyFlags::Autoplay | LegacyFlags::Relax | LegacyFlags::SpunOut>(
+                                  this->pi->getModsLegacy());
 
             this->fDeltaOverflow += frame_time * 1000.0f;
 
@@ -2784,7 +2784,7 @@ void Spinner::onReset(i32 curPos) {
 void Spinner::onHit() {
     // calculate hit result
     LiveScore::HIT result = LiveScore::HIT::HIT_NULL;
-    if(this->fRatio >= 1.0f || (this->pi->getModsLegacy() & LegacyFlags::Autoplay))
+    if(this->fRatio >= 1.0f || (flags::has<LegacyFlags::Autoplay>(this->pi->getModsLegacy())))
         result = LiveScore::HIT::HIT_300;
     else if(this->fRatio >= 0.9f && !cv::mod_ming3012.getBool() && !cv::mod_no100s.getBool())
         result = LiveScore::HIT::HIT_100;
@@ -2867,9 +2867,7 @@ vec2 Spinner::getAutoCursorPos(i32 curPos) const {
     vec2 actualPos = this->pi->osuCoords2Pixels(this->vRawPos);
     const float AUTO_MULTIPLIER = (1.0f / 20.0f);
     float multiplier =
-        ((this->pi->getModsLegacy() & LegacyFlags::Autoplay) || (this->pi->getModsLegacy() & LegacyFlags::Autopilot))
-            ? AUTO_MULTIPLIER
-            : 1.0f;
+        flags::any<LegacyFlags::Autoplay | LegacyFlags::Autopilot>(this->pi->getModsLegacy()) ? AUTO_MULTIPLIER : 1.0f;
     float angle = (delta * multiplier) - PI / 2.0f;
     float r = GameRules::getPlayfieldSize().y / 10.0f;  // XXX: slow?
     return vec2((float)(actualPos.x + r * std::cos(angle)), (float)(actualPos.y + r * std::sin(angle)));

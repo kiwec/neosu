@@ -202,7 +202,7 @@ void CBaseUIScrollView::mouse_update(bool *propagate_clicks) {
         // calculate remaining kinetic energy
         if(!this->bScrollbarScrolling)
             this->vVelocity = cv::ui_scrollview_kinetic_energy_multiplier.getFloat() * delta *
-                                  (engine->getFrameTime() != 0.0 ? 1.0 / engine->getFrameTime() : 60.0) / 60.0f +
+                                  (engine->getFrameTime() != 0.0 ? 1.0f / (float)engine->getFrameTime() : 60.0f) / 60.0f +
                               this->vScrollPos;
 
         // debugLog("kinetic = ({}), velocity = ({:}), frametime = {:f}", delta, this->vVelocity, engine->getFrameTime());

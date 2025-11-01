@@ -29,36 +29,35 @@ class Mouse final : public InputDevice {
     void onButtonChange(ButtonEvent ev);
 
     // position/coordinate handling
-    void setPos(vec2 pos); // NOT OS mouse pos, virtual mouse pos
+    void setPos(vec2 pos);  // NOT OS mouse pos, virtual mouse pos
     void setOffset(vec2 offset);
-    void setScale(vec2 scale) { this->vScale = scale; }
+    inline void setScale(vec2 scale) { this->vScale = scale; }
 
     // state getters
-    [[nodiscard]] inline const vec2 &getPos() const { return this->vPos; }
-    [[nodiscard]] inline const vec2 &getRealPos() const { return this->vPosWithoutOffsets; }
-    [[nodiscard]] inline const vec2 &getActualPos() const { return this->vActualPos; }
-    [[nodiscard]] inline const vec2 &getDelta() const { return this->vDelta; }
-    [[nodiscard]] inline const vec2 &getRawDelta() const { return this->vRawDelta; }
+    [[nodiscard]] inline vec2 getPos() const { return this->vPos; }
+    [[nodiscard]] inline vec2 getRealPos() const { return this->vPosWithoutOffsets; }
+    [[nodiscard]] inline vec2 getActualPos() const { return this->vActualPos; }
+    [[nodiscard]] inline vec2 getDelta() const { return this->vDelta; }
+    [[nodiscard]] inline vec2 getRawDelta() const { return this->vRawDelta; }
 
-    [[nodiscard]] inline const vec2 &getOffset() const { return this->vOffset; }
-    [[nodiscard]] inline const vec2 &getScale() const { return this->vScale; }
-    [[nodiscard]] inline const float &getSensitivity() const { return this->fSensitivity; }
+    [[nodiscard]] inline vec2 getOffset() const { return this->vOffset; }
+    [[nodiscard]] inline vec2 getScale() const { return this->vScale; }
+    [[nodiscard]] inline float getSensitivity() const { return this->fSensitivity; }
 
     // button state accessors
-    [[nodiscard]] constexpr bool isLeftDown() const { return this->bMouseButtonDownArray[ButtonIndex::BUTTON_LEFT]; }
-    [[nodiscard]] constexpr bool isMiddleDown() const {
-        return this->bMouseButtonDownArray[ButtonIndex::BUTTON_MIDDLE];
-    }
-    [[nodiscard]] constexpr bool isRightDown() const { return this->bMouseButtonDownArray[ButtonIndex::BUTTON_RIGHT]; }
-    [[nodiscard]] constexpr bool isButton4Down() const { return this->bMouseButtonDownArray[ButtonIndex::BUTTON_X1]; }
-    [[nodiscard]] constexpr bool isButton5Down() const { return this->bMouseButtonDownArray[ButtonIndex::BUTTON_X2]; }
+    [[nodiscard]] constexpr bool isLeftDown() const { return !!(this->buttonsHeldMask & MouseButtonFlags::MF_LEFT); }
+    [[nodiscard]] constexpr bool isMiddleDown() const { return !!(this->buttonsHeldMask & MouseButtonFlags::MF_MIDDLE); }
+    [[nodiscard]] constexpr bool isRightDown() const { return !!(this->buttonsHeldMask & MouseButtonFlags::MF_RIGHT); }
+    [[nodiscard]] constexpr bool isButton4Down() const { return !!(this->buttonsHeldMask & MouseButtonFlags::MF_X1); }
+    [[nodiscard]] constexpr bool isButton5Down() const { return !!(this->buttonsHeldMask & MouseButtonFlags::MF_X2); }
+    [[nodiscard]] constexpr MouseButtonFlags getHeldButtons() const { return this->buttonsHeldMask; }
 
-    [[nodiscard]] inline const int &getWheelDeltaVertical() const { return this->iWheelDeltaVertical; }
-    [[nodiscard]] inline const int &getWheelDeltaHorizontal() const { return this->iWheelDeltaHorizontal; }
+    [[nodiscard]] inline int getWheelDeltaVertical() const { return this->iWheelDeltaVertical; }
+    [[nodiscard]] inline int getWheelDeltaHorizontal() const { return this->iWheelDeltaHorizontal; }
 
     void resetWheelDelta();
 
-    [[nodiscard]] inline const bool &isRawInputWanted() const {
+    [[nodiscard]] inline bool isRawInputWanted() const {
         return this->bIsRawInputDesired;
     }  // "desired" rawinput state, NOT actual OS raw input state!
 
@@ -79,7 +78,7 @@ class Mouse final : public InputDevice {
     float fSensitivity{1.0f};
 
     // button state (using our internal button index)
-    std::array<bool, ButtonIndex::BUTTON_COUNT> bMouseButtonDownArray{};
+    MouseButtonFlags buttonsHeldMask{0};
 
     // wheel state
     int iWheelDeltaVertical{0};

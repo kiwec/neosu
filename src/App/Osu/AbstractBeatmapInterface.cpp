@@ -12,7 +12,7 @@ CACHED_BASE_METHODS
 #undef CACHED_METHOD_IMPL
 
 const Replay::Mods &AbstractBeatmapInterface::getMods() const { return osu->getScore()->mods; }
-u32 AbstractBeatmapInterface::getModsLegacy() const { return osu->getScore()->getModsLegacy(); }
+LegacyFlags AbstractBeatmapInterface::getModsLegacy() const { return osu->getScore()->getModsLegacy(); }
 
 LiveScore::HIT AbstractBeatmapInterface::getHitResult(i32 delta) {
     // "stable-like" hit windows, see https://github.com/ppy/osu/pull/33882

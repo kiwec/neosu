@@ -29,41 +29,40 @@ class Engine;
 class Environment;
 extern Environment *env;
 
+// clang-format off
+// copied from SDL3/SDL_video.h::SDL_WindowFlags
+enum class WinFlags : uint64_t {
+    F_FULLSCREEN =          0x0000000000000001, /**< window is in fullscreen mode */
+    F_OPENGL =              0x0000000000000002, /**< window usable with OpenGL context */
+    F_OCCLUDED =            0x0000000000000004, /**< window is occluded */
+    F_HIDDEN =              0x0000000000000008, /**< window is neither mapped onto the desktop nor shown in the taskbar/dock/window list; ShowWindow() is required for it to become visible */
+    F_BORDERLESS =          0x0000000000000010, /**< no window decoration */
+    F_RESIZABLE =           0x0000000000000020, /**< window can be resized */
+    F_MINIMIZED =           0x0000000000000040, /**< window is minimized */
+    F_MAXIMIZED =           0x0000000000000080, /**< window is maximized */
+    F_MOUSE_GRABBED =       0x0000000000000100, /**< window has grabbed mouse input */
+    F_INPUT_FOCUS =         0x0000000000000200, /**< window has input focus */
+    F_MOUSE_FOCUS =         0x0000000000000400, /**< window has mouse focus */
+    F_EXTERNAL =            0x0000000000000800, /**< window not created by SDL */
+    F_MODAL =               0x0000000000001000, /**< window is modal */
+    F_HIGH_PIXEL_DENSITY =  0x0000000000002000, /**< window uses high pixel density back buffer if possible */
+    F_MOUSE_CAPTURE =       0x0000000000004000, /**< window has mouse captured (unrelated to MOUSE_GRABBED) */
+    F_MOUSE_RELATIVE_MODE = 0x0000000000008000, /**< window has relative mode enabled */
+    F_ALWAYS_ON_TOP =       0x0000000000010000, /**< window should always be above others */
+    F_UTILITY =             0x0000000000020000, /**< window should be treated as a utility window, not showing in the task bar and window list */
+    F_TOOLTIP =             0x0000000000040000, /**< window should be treated as a tooltip and does not get mouse or keyboard focus, requires a parent window */
+    F_POPUP_MENU =          0x0000000000080000, /**< window should be treated as a popup menu, requires a parent window */
+    F_KEYBOARD_GRABBED =    0x0000000000100000, /**< window has grabbed keyboard input */
+    F_VULKAN =              0x0000000010000000, /**< window usable for Vulkan surface */
+    F_METAL =               0x0000000020000000, /**< window usable for Metal view */
+    F_TRANSPARENT =         0x0000000040000000, /**< window with transparent buffer */
+    F_NOT_FOCUSABLE =       0x0000000080000000  /**< window should not be focusable */
+};
+MAKE_FLAG_ENUM(WinFlags);
+// clang-format on
+
 class Environment {
     NOCOPY_NOMOVE(Environment)
-   protected:
-    // clang-format off
-    using WindowFlag = uint64_t;
-    using WindowFlags = WindowFlag;
-    // copied from SDL3/SDL_video.h::SDL_WindowFlags
-    static constexpr const WindowFlag
-        WFL_FULLSCREEN =          0x0000000000000001, /**< window is in fullscreen mode */
-        WFL_OPENGL =              0x0000000000000002, /**< window usable with OpenGL context */
-        WFL_OCCLUDED =            0x0000000000000004, /**< window is occluded */
-        WFL_HIDDEN =              0x0000000000000008, /**< window is neither mapped onto the desktop nor shown in the taskbar/dock/window list; ShowWindow() is required for it to become visible */
-        WFL_BORDERLESS =          0x0000000000000010, /**< no window decoration */
-        WFL_RESIZABLE =           0x0000000000000020, /**< window can be resized */
-        WFL_MINIMIZED =           0x0000000000000040, /**< window is minimized */
-        WFL_MAXIMIZED =           0x0000000000000080, /**< window is maximized */
-        WFL_MOUSE_GRABBED =       0x0000000000000100, /**< window has grabbed mouse input */
-        WFL_INPUT_FOCUS =         0x0000000000000200, /**< window has input focus */
-        WFL_MOUSE_FOCUS =         0x0000000000000400, /**< window has mouse focus */
-        WFL_EXTERNAL =            0x0000000000000800, /**< window not created by SDL */
-        WFL_MODAL =               0x0000000000001000, /**< window is modal */
-        WFL_HIGH_PIXEL_DENSITY =  0x0000000000002000, /**< window uses high pixel density back buffer if possible */
-        WFL_MOUSE_CAPTURE =       0x0000000000004000, /**< window has mouse captured (unrelated to MOUSE_GRABBED) */
-        WFL_MOUSE_RELATIVE_MODE = 0x0000000000008000, /**< window has relative mode enabled */
-        WFL_ALWAYS_ON_TOP =       0x0000000000010000, /**< window should always be above others */
-        WFL_UTILITY =             0x0000000000020000, /**< window should be treated as a utility window, not showing in the task bar and window list */
-        WFL_TOOLTIP =             0x0000000000040000, /**< window should be treated as a tooltip and does not get mouse or keyboard focus, requires a parent window */
-        WFL_POPUP_MENU =          0x0000000000080000, /**< window should be treated as a popup menu, requires a parent window */
-        WFL_KEYBOARD_GRABBED =    0x0000000000100000, /**< window has grabbed keyboard input */
-        WFL_VULKAN =              0x0000000010000000, /**< window usable for Vulkan surface */
-        WFL_METAL =               0x0000000020000000, /**< window usable for Metal view */
-        WFL_TRANSPARENT =         0x0000000040000000, /**< window with transparent buffer */
-        WFL_NOT_FOCUSABLE =       0x0000000080000000; /**< window should not be focusable */
-    // clang-format on
-
    public:
     struct Interop {
         NOCOPY_NOMOVE(Interop)
@@ -208,16 +207,19 @@ class Environment {
 
     // window state queries
     [[nodiscard]] constexpr bool winFullscreened() const {
+        using enum WinFlags;
         // we do not use "real" fullscreen mode, so maximized+borderless+unoccluded is the same as fullscreen
         // also return true if we are pending a re-fullscreen, to avoid issues related to that and event ordering on alt-tab
-        return m_bRestoreFullscreen || (m_winflags & WFL_FULLSCREEN) ||
-               (!(m_winflags & WFL_OCCLUDED) &&
-                (m_winflags & (WFL_BORDERLESS | WFL_MAXIMIZED)) == (WFL_BORDERLESS | WFL_MAXIMIZED));
+        return m_bRestoreFullscreen || !!(m_winflags & F_FULLSCREEN) ||
+               (!(m_winflags & F_OCCLUDED) &&
+                (m_winflags & (F_BORDERLESS | F_MAXIMIZED)) == (F_BORDERLESS | F_MAXIMIZED));
     }
-    [[nodiscard]] constexpr bool winResizable() const { return m_winflags & WFL_RESIZABLE; }
-    [[nodiscard]] constexpr bool winFocused() const { return m_winflags & (WFL_MOUSE_FOCUS | WFL_INPUT_FOCUS); }
-    [[nodiscard]] constexpr bool winMinimized() const { return m_winflags & WFL_MINIMIZED; }
-    [[nodiscard]] constexpr bool winMaximized() const { return m_winflags & WFL_MAXIMIZED; }
+    [[nodiscard]] constexpr bool winResizable() const { return !!(m_winflags & WinFlags::F_RESIZABLE); }
+    [[nodiscard]] constexpr bool winFocused() const {
+        return !!(m_winflags & (WinFlags::F_MOUSE_FOCUS | WinFlags::F_INPUT_FOCUS));
+    }
+    [[nodiscard]] constexpr bool winMinimized() const { return !!(m_winflags & WinFlags::F_MINIMIZED); }
+    [[nodiscard]] constexpr bool winMaximized() const { return !!(m_winflags & WinFlags::F_MAXIMIZED); }
 
     // mouse
     [[nodiscard]] constexpr bool isCursorInWindow() const { return m_bIsCursorInsideWindow; }
@@ -226,7 +228,7 @@ class Environment {
     [[nodiscard]] constexpr vec2 getMousePos() const { return m_vLastAbsMousePos; }
     [[nodiscard]] constexpr const McRect &getCursorClip() const { return m_cursorClipRect; }
     [[nodiscard]] constexpr CURSORTYPE getCursor() const { return m_cursorType; }
-    [[nodiscard]] constexpr bool isOSMouseInputRaw() const { return m_winflags & WFL_MOUSE_RELATIVE_MODE; }
+    [[nodiscard]] constexpr bool isOSMouseInputRaw() const { return !!(m_winflags & WinFlags::F_MOUSE_RELATIVE_MODE); }
 
     void setCursor(CURSORTYPE cur);
     void setCursorVisible(bool visible);
@@ -291,7 +293,7 @@ class Environment {
 
     // window
     void updateWindowFlags();
-    WindowFlags m_winflags{};  // initialized when window is created, updated on new window events in the event loop
+    WinFlags m_winflags{};  // initialized when window is created, updated on new window events in the event loop
 
     bool m_bDPIOverride;
     inline void onMonitorChange(float oldValue, float newValue) {

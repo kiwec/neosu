@@ -423,7 +423,7 @@ int LiveScore::getKeyCount(int key) {
     return 0;
 }
 
-u32 LiveScore::getModsLegacy() { return this->mods.to_legacy(); }
+LegacyFlags LiveScore::getModsLegacy() { return this->mods.to_legacy(); }
 
 UString LiveScore::getModsStringForRichPresence() {
     UString modsString;

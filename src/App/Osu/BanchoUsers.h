@@ -4,6 +4,7 @@
 #include <unordered_map>
 
 #include "BanchoProtocol.h"
+#include "ModFlags.h"
 #include "UString.h"
 
 struct UserInfo {
@@ -27,7 +28,7 @@ struct UserInfo {
     UString info_text = UString("Loading...");
     MD5Hash map_md5;
     i32 map_id = 0;
-    u32 mods = 0;
+    LegacyFlags mods{};
     i64 total_score = 0;
     i64 ranked_score = 0;
     i32 plays = 0;

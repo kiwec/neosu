@@ -68,7 +68,8 @@ void submit_score(FinishedScore score) {
         .data = {unique_ids.begin(), unique_ids.end()},
     });
 
-    std::string_view password = BanchoState::is_oauth ? BanchoState::cho_token.utf8View() : BanchoState::pw_md5.string();
+    std::string_view password =
+        BanchoState::is_oauth ? BanchoState::cho_token.utf8View() : BanchoState::pw_md5.string();
     options.mime_parts.push_back({
         .name = "pass",
         .data = {password.begin(), password.end()},
@@ -129,7 +130,8 @@ void submit_score(FinishedScore score) {
             }
 
             idiot_check.append(fmt::format("{}{}", score.score, GRADES[(int)score.grade]));
-            idiot_check.append(fmt::format("{}Q{}", score.mods.to_legacy(), score.passed ? "True" : "False"));
+            idiot_check.append(
+                fmt::format("{}Q{}", static_cast<u32>(score.mods.to_legacy()), score.passed ? "True" : "False"));
             idiot_check.append(fmt::format("0" OSU_VERSION_DATESTR "{}", score_time.data()));
             idiot_check.append(BanchoState::client_hashes.toUtf8());
 
@@ -147,7 +149,7 @@ void submit_score(FinishedScore score) {
         score_data.append(fmt::format(":{}", score.comboMax));
         score_data.append(fmt::format(":{}", score.perfect ? "True" : "False"));
         score_data.append(fmt::format(":{}", GRADES[(int)score.grade]));
-        score_data.append(fmt::format(":{}", score.mods.to_legacy()));
+        score_data.append(fmt::format(":{}", static_cast<u32>(score.mods.to_legacy())));
         score_data.append(fmt::format(":{}", score.passed ? "True" : "False"));
         score_data.append(":0");  // gamemode, always std
         score_data.append(fmt::format(":{}", score_time.data()));

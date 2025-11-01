@@ -48,34 +48,30 @@
 void UIModList::draw() {
     std::vector<SkinImage *> mods;
 
-    if(ModMasks::legacy_eq(*this->flags, LegacyFlags::Perfect))
+    if(flags::has<LegacyFlags::Perfect>(*this->flags))
         mods.push_back(osu->getSkin()->i_modselect_pf);
-    else if(ModMasks::legacy_eq(*this->flags, LegacyFlags::SuddenDeath))
+    else if(flags::has<LegacyFlags::SuddenDeath>(*this->flags))
         mods.push_back(osu->getSkin()->i_modselect_sd);
 
     if(cv::nightcore_enjoyer.getBool()) {
-        if(ModMasks::legacy_eq(*this->flags, LegacyFlags::DoubleTime))
-            mods.push_back(osu->getSkin()->i_modselect_nc);
-        if(ModMasks::legacy_eq(*this->flags, LegacyFlags::HalfTime))
-            mods.push_back(osu->getSkin()->i_modselect_dc);
+        if(flags::has<LegacyFlags::DoubleTime>(*this->flags)) mods.push_back(osu->getSkin()->i_modselect_nc);
+        if(flags::has<LegacyFlags::HalfTime>(*this->flags)) mods.push_back(osu->getSkin()->i_modselect_dc);
     } else {
-        if(ModMasks::legacy_eq(*this->flags, LegacyFlags::DoubleTime))
-            mods.push_back(osu->getSkin()->i_modselect_dt);
-        if(ModMasks::legacy_eq(*this->flags, LegacyFlags::HalfTime))
-            mods.push_back(osu->getSkin()->i_modselect_ht);
+        if(flags::has<LegacyFlags::DoubleTime>(*this->flags)) mods.push_back(osu->getSkin()->i_modselect_dt);
+        if(flags::has<LegacyFlags::HalfTime>(*this->flags)) mods.push_back(osu->getSkin()->i_modselect_ht);
     }
 
-    if(ModMasks::legacy_eq(*this->flags, LegacyFlags::NoFail)) mods.push_back(osu->getSkin()->i_modselect_nf);
-    if(ModMasks::legacy_eq(*this->flags, LegacyFlags::Easy)) mods.push_back(osu->getSkin()->i_modselect_ez);
-    if(ModMasks::legacy_eq(*this->flags, LegacyFlags::TouchDevice)) mods.push_back(osu->getSkin()->i_modselect_td);
-    if(ModMasks::legacy_eq(*this->flags, LegacyFlags::Hidden)) mods.push_back(osu->getSkin()->i_modselect_hd);
-    if(ModMasks::legacy_eq(*this->flags, LegacyFlags::HardRock)) mods.push_back(osu->getSkin()->i_modselect_hr);
-    if(ModMasks::legacy_eq(*this->flags, LegacyFlags::Relax)) mods.push_back(osu->getSkin()->i_modselect_rx);
-    if(ModMasks::legacy_eq(*this->flags, LegacyFlags::Autoplay)) mods.push_back(osu->getSkin()->i_modselect_auto);
-    if(ModMasks::legacy_eq(*this->flags, LegacyFlags::SpunOut)) mods.push_back(osu->getSkin()->i_modselect_so);
-    if(ModMasks::legacy_eq(*this->flags, LegacyFlags::Autopilot)) mods.push_back(osu->getSkin()->i_modselect_ap);
-    if(ModMasks::legacy_eq(*this->flags, LegacyFlags::Target)) mods.push_back(osu->getSkin()->i_modselect_target);
-    if(ModMasks::legacy_eq(*this->flags, LegacyFlags::ScoreV2)) mods.push_back(osu->getSkin()->i_modselect_sv2);
+    if(flags::has<LegacyFlags::NoFail>(*this->flags)) mods.push_back(osu->getSkin()->i_modselect_nf);
+    if(flags::has<LegacyFlags::Easy>(*this->flags)) mods.push_back(osu->getSkin()->i_modselect_ez);
+    if(flags::has<LegacyFlags::TouchDevice>(*this->flags)) mods.push_back(osu->getSkin()->i_modselect_td);
+    if(flags::has<LegacyFlags::Hidden>(*this->flags)) mods.push_back(osu->getSkin()->i_modselect_hd);
+    if(flags::has<LegacyFlags::HardRock>(*this->flags)) mods.push_back(osu->getSkin()->i_modselect_hr);
+    if(flags::has<LegacyFlags::Relax>(*this->flags)) mods.push_back(osu->getSkin()->i_modselect_rx);
+    if(flags::has<LegacyFlags::Autoplay>(*this->flags)) mods.push_back(osu->getSkin()->i_modselect_auto);
+    if(flags::has<LegacyFlags::SpunOut>(*this->flags)) mods.push_back(osu->getSkin()->i_modselect_so);
+    if(flags::has<LegacyFlags::Autopilot>(*this->flags)) mods.push_back(osu->getSkin()->i_modselect_ap);
+    if(flags::has<LegacyFlags::Target>(*this->flags)) mods.push_back(osu->getSkin()->i_modselect_target);
+    if(flags::has<LegacyFlags::ScoreV2>(*this->flags)) mods.push_back(osu->getSkin()->i_modselect_sv2);
 
     g->setColor(0xffffffff);
     vec2 modPos = this->vPos;
@@ -94,7 +90,7 @@ void UIModList::draw() {
     }
 }
 
-bool UIModList::isVisible() { return *this->flags != 0; }
+bool UIModList::isVisible() { return !!*this->flags; }
 
 #define INIT_LABEL(label_name, default_text, is_big)                      \
     do {                                                                  \
@@ -419,7 +415,7 @@ void RoomScreen::updateSettingsLayout(vec2 newResolution) {
         this->freemod->setChecked(BanchoState::room.freemods);
         ADD_ELEMENT(this->freemod);
     }
-    if(BanchoState::room.mods == 0) {
+    if(!BanchoState::room.mods) {
         ADD_ELEMENT(this->no_mods_selected);
     } else {
         this->mods->flags = &BanchoState::room.mods;

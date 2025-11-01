@@ -85,7 +85,7 @@ void setBanchoStatus(const char* info_text, Action action) {
     packet.write<u8>(action);
     packet.write_string(fancy_text);
     packet.write_hash(map_md5);
-    packet.write<u32>(osu->getModSelector()->getModFlags());
+    packet.write<LegacyFlags>(osu->getModSelector()->getModFlags());
     packet.write<u8>(0);  // osu!std
     packet.write<i32>(map_id);
     BANCHO::Net::send_packet(packet);
@@ -106,7 +106,7 @@ void updateBanchoMods() {
     packet.write<u8>(last_action);
     packet.write_string(last_status.toUtf8());
     packet.write_hash(map_md5);
-    packet.write<u32>(osu->getModSelector()->getModFlags());
+    packet.write<LegacyFlags>(osu->getModSelector()->getModFlags());
     packet.write<u8>(0);  // osu!std
     packet.write<i32>(map_id);
     BANCHO::Net::send_packet(packet);

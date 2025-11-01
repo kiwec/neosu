@@ -9,8 +9,7 @@
 bool CBaseUIElement::isVisibleOnScreen(const McRect &rect) { return engine->getScreenRect().intersects(rect); }
 
 void CBaseUIElement::stealFocus() {
-    this->mouseInsideCheck = static_cast<size_t>(static_cast<size_t>(this->bHandleLeftMouse) |
-                                                 (static_cast<size_t>((this->bHandleRightMouse) << 1)));
+    this->mouseInsideCheck = (u8)(this->bHandleLeftMouse << 1) | (u8)this->bHandleRightMouse;
     this->bActive = false;
     this->onFocusStolen();
 }
@@ -32,36 +31,36 @@ void CBaseUIElement::mouse_update(bool *propagate_clicks) {
         }
     }
 
-    const std::bitset<2> buttonMask{static_cast<size_t>((this->bHandleLeftMouse && mouse->isLeftDown()) |
-                                                        ((this->bHandleRightMouse && mouse->isRightDown()) << 1))};
+    const u8 buttonMask =
+        (u8)((this->bHandleLeftMouse && mouse->isLeftDown()) << 1) | (u8)(this->bHandleRightMouse && mouse->isRightDown());
 
-    if(buttonMask.any() && *propagate_clicks) {
+    if(buttonMask && *propagate_clicks) {
         this->mouseUpCheck |= buttonMask;
         if(this->bMouseInside) {
             *propagate_clicks = !this->grabs_clicks;
         }
 
         // onMouseDownOutside
-        if(!this->bMouseInside && (this->mouseInsideCheck & buttonMask).none()) {
+        if(!this->bMouseInside && !(this->mouseInsideCheck & buttonMask)) {
             this->mouseInsideCheck |= buttonMask;
-            this->onMouseDownOutside(buttonMask[0], buttonMask[1]);
+            this->onMouseDownOutside((buttonMask & 0b10), (buttonMask & 0b01));
         }
 
         // onMouseDownInside
-        if(this->bMouseInside && (this->mouseInsideCheck & buttonMask).none()) {
+        if(this->bMouseInside && !(this->mouseInsideCheck & buttonMask)) {
             this->bActive = true;
             this->mouseInsideCheck |= buttonMask;
-            this->onMouseDownInside(buttonMask[0], buttonMask[1]);
+            this->onMouseDownInside((buttonMask & 0b10), (buttonMask & 0b01));
         }
     }
 
     // detect which buttons were released for mouse up events
-    const std::bitset<2> releasedButtons{this->mouseUpCheck & (~buttonMask)};
-    if(releasedButtons.any() && this->bActive) {
+    const u8 releasedButtons = this->mouseUpCheck & ~buttonMask;
+    if(releasedButtons && this->bActive) {
         if(this->bMouseInside)
-            this->onMouseUpInside(releasedButtons[0], releasedButtons[1]);
+            this->onMouseUpInside((releasedButtons & 0b10), (releasedButtons & 0b01));
         else
-            this->onMouseUpOutside(releasedButtons[0], releasedButtons[1]);
+            this->onMouseUpOutside((releasedButtons & 0b10), (releasedButtons & 0b01));
 
         if(!this->bKeepActive) this->bActive = false;
     }
@@ -70,7 +69,7 @@ void CBaseUIElement::mouse_update(bool *propagate_clicks) {
     this->mouseUpCheck &= buttonMask;
 
     // reset mouseInsideCheck if all buttons are released
-    if(buttonMask.none()) {
+    if(!buttonMask) {
         this->mouseInsideCheck = 0b00;
     }
 }
@@ -94,10 +93,13 @@ bMouseInside: {}
 bHandleLeftMouse: {}
 bHandleRightMouse: {}
 vPos: {}
-vmPos: {})",
+vmPos: {},
+mouseInsideCheck: {:02b},
+mouseUpCheck: {:02b})",
                            currentFrame, updateCount, this->sName, this->bVisible, this->bActive, this->bBusy,
                            this->bEnabled, this->bKeepActive, this->bMouseInside, this->bHandleLeftMouse,
-                           this->bHandleRightMouse, this->rect, this->relRect);
+                           this->bHandleRightMouse, this->rect, this->relRect, this->mouseInsideCheck,
+                           this->mouseUpCheck);
         }
         lastUpdateFrame = currentFrame;
         updateCount = 0;

@@ -17,9 +17,10 @@ class UIContextMenu;
 
 class UIModList final : public CBaseUIContainer {
    public:
-    UIModList(u32* flags) : CBaseUIContainer(0, 0, 0, 0, "mod_list") { this->flags = flags; }
+    UIModList() = delete;
+    UIModList(LegacyFlags* flags) : CBaseUIContainer(0, 0, 0, 0, "mod_list"), flags(flags) {}
 
-    u32* flags;
+    LegacyFlags* flags;
 
     void draw() override;
     bool isVisible() override;

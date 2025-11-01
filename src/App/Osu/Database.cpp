@@ -1793,7 +1793,7 @@ void Database::loadOldMcNeosuScores(std::string_view dbPath) {
                 sc.numMisses = dbr.read<u16>();
                 sc.score = dbr.read<u64>();
                 sc.comboMax = dbr.read<u16>();
-                sc.mods = Replay::Mods::from_legacy(dbr.read<u32>());
+                sc.mods = Replay::Mods::from_legacy(dbr.read<LegacyFlags>());
                 sc.numSliderBreaks = dbr.read<u16>();
                 sc.ppv2_version = 20220902;
                 sc.ppv2_score = dbr.read<f32>();
@@ -1913,7 +1913,7 @@ void Database::loadOldMcNeosuScores(std::string_view dbPath) {
 
                 const auto score = dbr.read<int64_t>();
                 const auto maxCombo = dbr.read<uint16_t>();
-                const auto mods = Replay::Mods::from_legacy(dbr.read<uint32_t>());
+                const auto mods = Replay::Mods::from_legacy(dbr.read<LegacyFlags>());
 
                 // custom
                 const auto numSliderBreaks = dbr.read<uint16_t>();
@@ -2082,7 +2082,7 @@ void Database::loadPeppyScores(std::string_view dbPath) {
 
             sc.comboMax = dbr.read<u16>();
             sc.perfect = dbr.read<u8>();
-            sc.mods = Replay::Mods::from_legacy(dbr.read<u32>());
+            sc.mods = Replay::Mods::from_legacy(dbr.read<LegacyFlags>());
 
             dbr.skip_string();  // hp graph
 

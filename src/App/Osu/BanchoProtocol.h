@@ -1,6 +1,7 @@
 #pragma once
 // Copyright (c) 2023, kiwec, All rights reserved.
 #include "BanchoPacket.h"
+#include "ModFlags.h"
 #include "UString.h"
 
 enum Action : uint8_t {
@@ -165,7 +166,7 @@ struct Slot {
     u8 status = 0;  // bitfield of [quit, complete, playing, no_map, ready, not_ready, locked, open]
     u8 team = 0;
     i32 player_id = 0;
-    u32 mods = 0;
+    LegacyFlags mods{};
 
     // From MATCH_PLAYER_SKIPPED
     bool skipped = false;
@@ -221,7 +222,7 @@ class Room {
     u16 id = 0;
     u8 in_progress = 0;
     u8 match_type = 0;
-    u32 mods = 0;
+    LegacyFlags mods{};
     u32 seed = 0;
     bool all_players_loaded = false;
     bool all_players_skipped = false;

@@ -219,7 +219,7 @@ void BanchoState::handle_packet(Packet &packet) {
             user->action = action;
             user->info_text = packet.read_ustring();
             user->map_md5 = packet.read_hash();
-            user->mods = packet.read<u32>();
+            user->mods = packet.read<LegacyFlags>();
             user->mode = (GameMode)packet.read<u8>();
             user->map_id = packet.read<i32>();
             user->ranked_score = packet.read<i64>();

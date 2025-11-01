@@ -5,7 +5,6 @@
 
 #include "KeyboardListener.h"
 #include "cbase.h"
-#include <bitset>
 
 // Guidelines for avoiding hair pulling:
 // - Don't use m_vmSize
@@ -13,6 +12,7 @@
 // - In a container or in a scrollview, use getRelPos/setRelPos and call update_pos() on the container
 
 class CBaseUIElement : public KeyboardListener {
+    NOCOPY_NOMOVE(CBaseUIElement)
    public:
     CBaseUIElement(float xPos = 0, float yPos = 0, float xSize = 0, float ySize = 0, UString name = "")
         : sName(std::move(name)),
@@ -192,7 +192,7 @@ class CBaseUIElement : public KeyboardListener {
     vec2 &vmSize;  // reference to relRect.vSize
 
    private:
-    void dumpElem() const; // debug
-    std::bitset<2> mouseInsideCheck{0};
-    std::bitset<2> mouseUpCheck{0};
+    void dumpElem() const;  // debug
+    u8 mouseInsideCheck{0};
+    u8 mouseUpCheck{0};
 };

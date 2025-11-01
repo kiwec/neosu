@@ -58,10 +58,10 @@ void UIRankingScreenRankingPanel::draw() {
 
     this->drawHitImage(osu->getSkin()->i_hit300, scale, hitImageStartPos);
     this->drawHitImage(osu->getSkin()->i_hit100, scale, hitImageStartPos + hitGridOffsetY);
-    this->drawHitImage(osu->getSkin()->i_hit50, scale, hitImageStartPos + hitGridOffsetY * 2);
+    this->drawHitImage(osu->getSkin()->i_hit50, scale, hitImageStartPos + hitGridOffsetY * 2.f);
     this->drawHitImage(osu->getSkin()->i_hit300g, scale, hitImageStartPos + hitGridOffsetX);
     this->drawHitImage(osu->getSkin()->i_hit100k, scale, hitImageStartPos + hitGridOffsetX + hitGridOffsetY);
-    this->drawHitImage(osu->getSkin()->i_hit0, scale, hitImageStartPos + hitGridOffsetX + hitGridOffsetY * 2);
+    this->drawHitImage(osu->getSkin()->i_hit0, scale, hitImageStartPos + hitGridOffsetX + hitGridOffsetY * 2.f);
 
     // draw numHits
     const vec2 numHitStartPos = hitImageStartPos + vec2(40, osu->getSkin()->version > 1.0f ? -16 : -25);
@@ -69,11 +69,11 @@ void UIRankingScreenRankingPanel::draw() {
 
     this->drawNumHits(this->iNum300s, scale, numHitStartPos);
     this->drawNumHits(this->iNum100s, scale, numHitStartPos + hitGridOffsetY);
-    this->drawNumHits(this->iNum50s, scale, numHitStartPos + hitGridOffsetY * 2);
+    this->drawNumHits(this->iNum50s, scale, numHitStartPos + hitGridOffsetY * 2.f);
 
     this->drawNumHits(this->iNum300gs, scale, numHitStartPos + hitGridOffsetX);
     this->drawNumHits(this->iNum100ks, scale, numHitStartPos + hitGridOffsetX + hitGridOffsetY);
-    this->drawNumHits(this->iNumMisses, scale, numHitStartPos + hitGridOffsetX + hitGridOffsetY * 2);
+    this->drawNumHits(this->iNumMisses, scale, numHitStartPos + hitGridOffsetX + hitGridOffsetY * 2.f);
 
     const int row4 = 260;
     const int row4ImageOffset = (osu->getSkin()->version > 1.0f ? 20 : 8) - 20;
@@ -84,7 +84,7 @@ void UIRankingScreenRankingPanel::draw() {
     {
         g->scale(scale, scale);
         g->translate(this->vPos.x + osu->getUIScale(15.0f) * uiScale,
-                     this->vPos.y + (osu->getSkin()->i_scores[0]->getHeight() / 2) * scale +
+                     this->vPos.y + (osu->getSkin()->i_scores[0]->getHeight() / 2.f) * scale +
                          (osu->getUIScale(row4 + 10) + globalYOffset) * uiScale);
         osu->getHUD()->drawComboSimple(this->iCombo, scale);
     }

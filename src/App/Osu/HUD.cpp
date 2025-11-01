@@ -2421,7 +2421,7 @@ void HUD::addCursorTrailPosition(std::vector<CURSORTRAIL> &trail, vec2 pos) {
                     i < numMidPoints; i++)  // limit to half the maximum new mid points per frame
                 {
                     CURSORTRAIL mid;
-                    mid.pos = prevPos + step * (i + 1);
+                    mid.pos = prevPos + step * (i + 1.f);
                     mid.time = prevTime + timeStep * (i + 1);
                     mid.alpha = 1.0f;
                     mid.scale = prevScale + scaleStep * (i + 1);

@@ -1,14 +1,9 @@
 #pragma once
 
+#include "noinclude.h"
 #include "types.h"
 
-namespace ModMasks {
-static inline bool eq(u64 flags, u64 mod) { return (flags & mod) == mod; }
-static inline bool legacy_eq(u32 legacy_flags, u32 legacy_mod) { return (legacy_flags & legacy_mod) == legacy_mod; }
-}  // namespace ModMasks
-
-namespace ModFlags {
-enum : u64 {
+enum class ModFlags : u64 {
     // Green mods
     NoFail = 1ULL << 0,
     Easy = 1ULL << 1,
@@ -66,43 +61,43 @@ enum : u64 {
     NoHP = 1ULL << 62,
     Autoplay = 1ULL << 63
 };
-}
+MAKE_FLAG_ENUM(ModFlags);
 
-namespace LegacyFlags {
-enum : u32 {
-    NoFail = 1 << 0,
-    Easy = 1 << 1,
-    TouchDevice = 1 << 2,
-    Hidden = 1 << 3,
-    HardRock = 1 << 4,
-    SuddenDeath = 1 << 5,
-    DoubleTime = 1 << 6,
-    Relax = 1 << 7,
-    HalfTime = 1 << 8,
-    Nightcore = DoubleTime | (1 << 9),
-    Flashlight = 1 << 10,
-    Autoplay = 1 << 11,
-    SpunOut = 1 << 12,
-    Autopilot = 1 << 13,
-    Perfect = SuddenDeath | (1 << 14),
-    Key4 = 1 << 15,
-    Key5 = 1 << 16,
-    Key6 = 1 << 17,
-    Key7 = 1 << 18,
-    Key8 = 1 << 19,
-    FadeIn = 1 << 20,
-    Random = 1 << 21,
-    Cinema = 1 << 22,
-    Target = 1 << 23,
-    Key9 = 1 << 24,
-    KeyCoop = 1 << 25,
-    Key1 = 1 << 26,
-    Key3 = 1 << 27,
-    Key2 = 1 << 28,
-    ScoreV2 = 1 << 29,
-    Mirror = 1 << 30,
+enum class LegacyFlags : u32 {
+    NoFail = 1U << 0,
+    Easy = 1U << 1,
+    TouchDevice = 1U << 2,
+    Hidden = 1U << 3,
+    HardRock = 1U << 4,
+    SuddenDeath = 1U << 5,
+    DoubleTime = 1U << 6,
+    Relax = 1U << 7,
+    HalfTime = 1U << 8,
+    Nightcore = DoubleTime | (1U << 9),
+    Flashlight = 1U << 10,
+    Autoplay = 1U << 11,
+    SpunOut = 1U << 12,
+    Autopilot = 1U << 13,
+    Perfect = SuddenDeath | (1U << 14),
+    Key4 = 1U << 15,
+    Key5 = 1U << 16,
+    Key6 = 1U << 17,
+    Key7 = 1U << 18,
+    Key8 = 1U << 19,
+    FadeIn = 1U << 20,
+    Random = 1U << 21,
+    Cinema = 1U << 22,
+    Target = 1U << 23,
+    Key9 = 1U << 24,
+    KeyCoop = 1U << 25,
+    Key1 = 1U << 26,
+    Key3 = 1U << 27,
+    Key2 = 1U << 28,
+    ScoreV2 = 1U << 29,
+    Mirror = 1U << 30,
 
     Nightmare = Cinema,
     FPoSu = Key1,
 };
-}
+
+MAKE_FLAG_ENUM(LegacyFlags);

@@ -170,10 +170,13 @@ void Mouse::onWheelHorizontal(int delta) {
 }
 
 void Mouse::onButtonChange(ButtonEvent ev) {
-    using enum ButtonIndex;
-    if(ev.btn == BUTTON_NONE || ev.btn >= BUTTON_COUNT) return;
+    if(!ev.btn || ev.btn >= MouseButtonFlags::MF_COUNT) return;
 
-    this->bMouseButtonDownArray[ev.btn] = ev.down;
+    if(ev.down) {
+        this->buttonsHeldMask |= ev.btn;
+    } else {
+        this->buttonsHeldMask &= ~ev.btn;
+    }
 
     // notify listeners
     for(auto &listener : this->listeners) {

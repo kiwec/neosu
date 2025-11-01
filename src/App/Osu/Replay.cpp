@@ -10,31 +10,30 @@
 
 namespace Replay {
 
-u32 Mods::to_legacy() const {
-    using namespace ModMasks;
-    u32 legacy_flags = 0;
+LegacyFlags Mods::to_legacy() const {
+    LegacyFlags legacy_flags{};
     if(this->speed > 1.f) {
         legacy_flags |= LegacyFlags::DoubleTime;
-        if(eq(this->flags, ModFlags::NoPitchCorrection)) legacy_flags |= LegacyFlags::Nightcore;
+        if(flags::has<ModFlags::NoPitchCorrection>(this->flags)) legacy_flags |= LegacyFlags::Nightcore;
     } else if(this->speed < 1.f) {
         legacy_flags |= LegacyFlags::HalfTime;
     }
 
-    if(eq(this->flags, ModFlags::NoHP)) legacy_flags |= LegacyFlags::NoFail;
-    if(eq(this->flags, ModFlags::NoFail)) legacy_flags |= LegacyFlags::NoFail;
-    if(eq(this->flags, ModFlags::Easy)) legacy_flags |= LegacyFlags::Easy;
-    if(eq(this->flags, ModFlags::TouchDevice)) legacy_flags |= LegacyFlags::TouchDevice;
-    if(eq(this->flags, ModFlags::Hidden)) legacy_flags |= LegacyFlags::Hidden;
-    if(eq(this->flags, ModFlags::HardRock)) legacy_flags |= LegacyFlags::HardRock;
-    if(eq(this->flags, ModFlags::SuddenDeath)) legacy_flags |= LegacyFlags::SuddenDeath;
-    if(eq(this->flags, ModFlags::Relax)) legacy_flags |= LegacyFlags::Relax;
-    if(eq(this->flags, ModFlags::Flashlight)) legacy_flags |= LegacyFlags::Flashlight;
-    if(eq(this->flags, ModFlags::SpunOut)) legacy_flags |= LegacyFlags::SpunOut;
-    if(eq(this->flags, ModFlags::Autopilot)) legacy_flags |= LegacyFlags::Autopilot;
-    if(eq(this->flags, ModFlags::Perfect)) legacy_flags |= LegacyFlags::Perfect;
-    if(eq(this->flags, ModFlags::Target)) legacy_flags |= LegacyFlags::Target;
-    if(eq(this->flags, ModFlags::ScoreV2)) legacy_flags |= LegacyFlags::ScoreV2;
-    if(eq(this->flags, ModFlags::Autoplay)) {
+    if(flags::has<ModFlags::NoHP>(this->flags)) legacy_flags |= LegacyFlags::NoFail;
+    if(flags::has<ModFlags::NoFail>(this->flags)) legacy_flags |= LegacyFlags::NoFail;
+    if(flags::has<ModFlags::Easy>(this->flags)) legacy_flags |= LegacyFlags::Easy;
+    if(flags::has<ModFlags::TouchDevice>(this->flags)) legacy_flags |= LegacyFlags::TouchDevice;
+    if(flags::has<ModFlags::Hidden>(this->flags)) legacy_flags |= LegacyFlags::Hidden;
+    if(flags::has<ModFlags::HardRock>(this->flags)) legacy_flags |= LegacyFlags::HardRock;
+    if(flags::has<ModFlags::SuddenDeath>(this->flags)) legacy_flags |= LegacyFlags::SuddenDeath;
+    if(flags::has<ModFlags::Relax>(this->flags)) legacy_flags |= LegacyFlags::Relax;
+    if(flags::has<ModFlags::Flashlight>(this->flags)) legacy_flags |= LegacyFlags::Flashlight;
+    if(flags::has<ModFlags::SpunOut>(this->flags)) legacy_flags |= LegacyFlags::SpunOut;
+    if(flags::has<ModFlags::Autopilot>(this->flags)) legacy_flags |= LegacyFlags::Autopilot;
+    if(flags::has<ModFlags::Perfect>(this->flags)) legacy_flags |= LegacyFlags::Perfect;
+    if(flags::has<ModFlags::Target>(this->flags)) legacy_flags |= LegacyFlags::Target;
+    if(flags::has<ModFlags::ScoreV2>(this->flags)) legacy_flags |= LegacyFlags::ScoreV2;
+    if(flags::has<ModFlags::Autoplay>(this->flags)) {
         legacy_flags &= ~(LegacyFlags::Relax | LegacyFlags::Autopilot);
         legacy_flags |= LegacyFlags::Autoplay;
     }
@@ -88,7 +87,7 @@ f32 Mods::get_naive_od(const DatabaseBeatmap *map) const {
 }
 
 Mods Mods::from_cvars() {
-    using namespace ModFlags;
+    using enum ModFlags;
     Mods mods;
 
     if(cv::mod_nofail.getBool()) mods.flags |= NoFail;
@@ -156,87 +155,85 @@ Mods Mods::from_cvars() {
     return mods;
 }
 
-Mods Mods::from_legacy(u32 legacy_flags) {
-    using namespace ModMasks;
-    u64 neoflags = 0;
-    if(legacy_eq(legacy_flags, LegacyFlags::NoFail)) neoflags |= ModFlags::NoFail;
-    if(legacy_eq(legacy_flags, LegacyFlags::Easy)) neoflags |= ModFlags::Easy;
-    if(legacy_eq(legacy_flags, LegacyFlags::TouchDevice)) neoflags |= ModFlags::TouchDevice;
-    if(legacy_eq(legacy_flags, LegacyFlags::Hidden)) neoflags |= ModFlags::Hidden;
-    if(legacy_eq(legacy_flags, LegacyFlags::HardRock)) neoflags |= ModFlags::HardRock;
-    if(legacy_eq(legacy_flags, LegacyFlags::SuddenDeath)) neoflags |= ModFlags::SuddenDeath;
-    if(legacy_eq(legacy_flags, LegacyFlags::Relax)) neoflags |= ModFlags::Relax;
-    if(legacy_eq(legacy_flags, LegacyFlags::Nightcore)) neoflags |= ModFlags::NoPitchCorrection;
-    if(legacy_eq(legacy_flags, LegacyFlags::Flashlight)) neoflags |= ModFlags::Flashlight;
-    if(legacy_eq(legacy_flags, LegacyFlags::SpunOut)) neoflags |= ModFlags::SpunOut;
-    if(legacy_eq(legacy_flags, LegacyFlags::Autopilot)) neoflags |= ModFlags::Autopilot;
-    if(legacy_eq(legacy_flags, LegacyFlags::Perfect)) neoflags |= ModFlags::Perfect;
-    if(legacy_eq(legacy_flags, LegacyFlags::Target)) neoflags |= ModFlags::Target;
-    if(legacy_eq(legacy_flags, LegacyFlags::ScoreV2)) neoflags |= ModFlags::ScoreV2;
-    if(legacy_eq(legacy_flags, LegacyFlags::Nightmare)) neoflags |= ModFlags::Nightmare;
-    if(legacy_eq(legacy_flags, LegacyFlags::FPoSu)) neoflags |= ModFlags::FPoSu;
-    if(legacy_eq(legacy_flags, LegacyFlags::Mirror)) {
+Mods Mods::from_legacy(LegacyFlags legacy_flags) {
+    ModFlags neoflags{};
+    if(flags::has<LegacyFlags::NoFail>(legacy_flags)) neoflags |= ModFlags::NoFail;
+    if(flags::has<LegacyFlags::Easy>(legacy_flags)) neoflags |= ModFlags::Easy;
+    if(flags::has<LegacyFlags::TouchDevice>(legacy_flags)) neoflags |= ModFlags::TouchDevice;
+    if(flags::has<LegacyFlags::Hidden>(legacy_flags)) neoflags |= ModFlags::Hidden;
+    if(flags::has<LegacyFlags::HardRock>(legacy_flags)) neoflags |= ModFlags::HardRock;
+    if(flags::has<LegacyFlags::SuddenDeath>(legacy_flags)) neoflags |= ModFlags::SuddenDeath;
+    if(flags::has<LegacyFlags::Relax>(legacy_flags)) neoflags |= ModFlags::Relax;
+    if(flags::has<LegacyFlags::Nightcore>(legacy_flags)) neoflags |= ModFlags::NoPitchCorrection;
+    if(flags::has<LegacyFlags::Flashlight>(legacy_flags)) neoflags |= ModFlags::Flashlight;
+    if(flags::has<LegacyFlags::SpunOut>(legacy_flags)) neoflags |= ModFlags::SpunOut;
+    if(flags::has<LegacyFlags::Autopilot>(legacy_flags)) neoflags |= ModFlags::Autopilot;
+    if(flags::has<LegacyFlags::Perfect>(legacy_flags)) neoflags |= ModFlags::Perfect;
+    if(flags::has<LegacyFlags::Target>(legacy_flags)) neoflags |= ModFlags::Target;
+    if(flags::has<LegacyFlags::ScoreV2>(legacy_flags)) neoflags |= ModFlags::ScoreV2;
+    if(flags::has<LegacyFlags::Nightmare>(legacy_flags)) neoflags |= ModFlags::Nightmare;
+    if(flags::has<LegacyFlags::FPoSu>(legacy_flags)) neoflags |= ModFlags::FPoSu;
+    if(flags::has<LegacyFlags::Mirror>(legacy_flags)) {
         // NOTE: We don't know whether the original score was only horizontal, only vertical, or both
         neoflags |= (ModFlags::MirrorHorizontal | ModFlags::MirrorVertical);
     }
-    if(legacy_eq(legacy_flags, LegacyFlags::Autoplay)) {
+    if(flags::has<LegacyFlags::Autoplay>(legacy_flags)) {
         neoflags &= ~(ModFlags::Relax | ModFlags::Autopilot);
         neoflags |= ModFlags::Autoplay;
     }
 
     Mods mods;
     mods.flags = neoflags;
-    if(legacy_eq(legacy_flags, LegacyFlags::DoubleTime))
+    if(flags::has<LegacyFlags::DoubleTime>(legacy_flags))
         mods.speed = 1.5f;
-    else if(legacy_eq(legacy_flags, LegacyFlags::HalfTime))
+    else if(flags::has<LegacyFlags::HalfTime>(legacy_flags))
         mods.speed = 0.75f;
     return mods;
 }
 
 void Mods::use(const Mods &mods) {
-    using namespace ModFlags;
-    using namespace ModMasks;
+    using enum ModFlags;
     // Reset mod selector buttons and sliders
     const auto &mod_selector = osu->getModSelector();
     mod_selector->resetMods();
 
     // Set cvars
     // FIXME: NoHP should not be changed here, it's a global option
-    cv::drain_disabled.setValue(eq(mods.flags, NoHP));
-    cv::mod_nofail.setValue(eq(mods.flags, NoFail));
-    cv::mod_easy.setValue(eq(mods.flags, Easy));
-    cv::mod_hidden.setValue(eq(mods.flags, Hidden));
-    cv::mod_hardrock.setValue(eq(mods.flags, HardRock));
-    cv::mod_flashlight.setValue(eq(mods.flags, Flashlight));
-    cv::mod_suddendeath.setValue(eq(mods.flags, SuddenDeath));
-    cv::mod_perfect.setValue(eq(mods.flags, Perfect));
-    cv::mod_nightmare.setValue(eq(mods.flags, Nightmare));
-    cv::nightcore_enjoyer.setValue(eq(mods.flags, NoPitchCorrection));
-    cv::mod_touchdevice.setValue(eq(mods.flags, TouchDevice));
-    cv::mod_spunout.setValue(eq(mods.flags, SpunOut));
-    cv::mod_scorev2.setValue(eq(mods.flags, ScoreV2));
-    cv::mod_fposu.setValue(eq(mods.flags, FPoSu));
-    cv::mod_target.setValue(eq(mods.flags, Target));
-    cv::ar_override_lock.setValue(eq(mods.flags, AROverrideLock));
-    cv::od_override_lock.setValue(eq(mods.flags, ODOverrideLock));
-    cv::mod_timewarp.setValue(eq(mods.flags, Timewarp));
-    cv::mod_artimewarp.setValue(eq(mods.flags, ARTimewarp));
-    cv::mod_minimize.setValue(eq(mods.flags, Minimize));
-    cv::mod_jigsaw1.setValue(eq(mods.flags, Jigsaw1));
-    cv::mod_jigsaw2.setValue(eq(mods.flags, Jigsaw2));
-    cv::mod_wobble.setValue(eq(mods.flags, Wobble1));
-    cv::mod_wobble2.setValue(eq(mods.flags, Wobble2));
-    cv::mod_arwobble.setValue(eq(mods.flags, ARWobble));
-    cv::mod_fullalternate.setValue(eq(mods.flags, FullAlternate));
-    cv::mod_shirone.setValue(eq(mods.flags, Shirone));
-    cv::mod_mafham.setValue(eq(mods.flags, Mafham));
-    cv::mod_halfwindow.setValue(eq(mods.flags, HalfWindow));
-    cv::mod_halfwindow_allow_300s.setValue(eq(mods.flags, HalfWindowAllow300s));
-    cv::mod_ming3012.setValue(eq(mods.flags, Ming3012));
-    cv::mod_no100s.setValue(eq(mods.flags, No100s));
-    cv::mod_no50s.setValue(eq(mods.flags, No50s));
-    cv::mod_singletap.setValue(eq(mods.flags, Singletap));
-    cv::mod_no_keylock.setValue(eq(mods.flags, NoKeylock));
+    cv::drain_disabled.setValue(flags::has<NoHP>(mods.flags));
+    cv::mod_nofail.setValue(flags::has<NoFail>(mods.flags));
+    cv::mod_easy.setValue(flags::has<Easy>(mods.flags));
+    cv::mod_hidden.setValue(flags::has<Hidden>(mods.flags));
+    cv::mod_hardrock.setValue(flags::has<HardRock>(mods.flags));
+    cv::mod_flashlight.setValue(flags::has<Flashlight>(mods.flags));
+    cv::mod_suddendeath.setValue(flags::has<SuddenDeath>(mods.flags));
+    cv::mod_perfect.setValue(flags::has<Perfect>(mods.flags));
+    cv::mod_nightmare.setValue(flags::has<Nightmare>(mods.flags));
+    cv::nightcore_enjoyer.setValue(flags::has<NoPitchCorrection>(mods.flags));
+    cv::mod_touchdevice.setValue(flags::has<TouchDevice>(mods.flags));
+    cv::mod_spunout.setValue(flags::has<SpunOut>(mods.flags));
+    cv::mod_scorev2.setValue(flags::has<ScoreV2>(mods.flags));
+    cv::mod_fposu.setValue(flags::has<FPoSu>(mods.flags));
+    cv::mod_target.setValue(flags::has<Target>(mods.flags));
+    cv::ar_override_lock.setValue(flags::has<AROverrideLock>(mods.flags));
+    cv::od_override_lock.setValue(flags::has<ODOverrideLock>(mods.flags));
+    cv::mod_timewarp.setValue(flags::has<Timewarp>(mods.flags));
+    cv::mod_artimewarp.setValue(flags::has<ARTimewarp>(mods.flags));
+    cv::mod_minimize.setValue(flags::has<Minimize>(mods.flags));
+    cv::mod_jigsaw1.setValue(flags::has<Jigsaw1>(mods.flags));
+    cv::mod_jigsaw2.setValue(flags::has<Jigsaw2>(mods.flags));
+    cv::mod_wobble.setValue(flags::has<Wobble1>(mods.flags));
+    cv::mod_wobble2.setValue(flags::has<Wobble2>(mods.flags));
+    cv::mod_arwobble.setValue(flags::has<ARWobble>(mods.flags));
+    cv::mod_fullalternate.setValue(flags::has<FullAlternate>(mods.flags));
+    cv::mod_shirone.setValue(flags::has<Shirone>(mods.flags));
+    cv::mod_mafham.setValue(flags::has<Mafham>(mods.flags));
+    cv::mod_halfwindow.setValue(flags::has<HalfWindow>(mods.flags));
+    cv::mod_halfwindow_allow_300s.setValue(flags::has<HalfWindowAllow300s>(mods.flags));
+    cv::mod_ming3012.setValue(flags::has<Ming3012>(mods.flags));
+    cv::mod_no100s.setValue(flags::has<No100s>(mods.flags));
+    cv::mod_no50s.setValue(flags::has<No50s>(mods.flags));
+    cv::mod_singletap.setValue(flags::has<Singletap>(mods.flags));
+    cv::mod_no_keylock.setValue(flags::has<NoKeylock>(mods.flags));
     cv::notelock_type.setValue(mods.notelock_type);
     cv::autopilot_lenience.setValue(mods.autopilot_lenience);
     cv::mod_timewarp_multiplier.setValue(mods.timewarp_multiplier);
@@ -254,14 +251,14 @@ void Mods::use(const Mods &mods) {
     cv::cs_overridenegative.setValue(mods.cs_overridenegative);
     cv::hp_override.setValue(mods.hp_override);
     cv::od_override.setValue(mods.od_override);
-    if(eq(mods.flags, Autoplay)) {
+    if(flags::has<Autoplay>(mods.flags)) {
         cv::mod_autoplay.setValue(true);
         cv::mod_autopilot.setValue(false);
         cv::mod_relax.setValue(false);
     } else {
         cv::mod_autoplay.setValue(false);
-        cv::mod_autopilot.setValue(eq(mods.flags, Autopilot));
-        cv::mod_relax.setValue(eq(mods.flags, Relax));
+        cv::mod_autopilot.setValue(flags::has<Autopilot>(mods.flags));
+        cv::mod_relax.setValue(flags::has<Relax>(mods.flags));
     }
 
     f32 speed_override = mods.speed == 1.f ? -1.f : mods.speed;
@@ -270,8 +267,8 @@ void Mods::use(const Mods &mods) {
     // Update mod selector UI
     mod_selector->enableModsFromFlags(mods.to_legacy());
     cv::speed_override.setValue(speed_override);  // enableModsFromFlags() edits cv::speed_override
-    mod_selector->ARLock->setChecked(eq(mods.flags, AROverrideLock));
-    mod_selector->ODLock->setChecked(eq(mods.flags, ODOverrideLock));
+    mod_selector->ARLock->setChecked(flags::has<AROverrideLock>(mods.flags));
+    mod_selector->ODLock->setChecked(flags::has<ODOverrideLock>(mods.flags));
     mod_selector->speedSlider->setValue(mods.speed, false, false);
     mod_selector->CSSlider->setValue(mods.cs_override, false, false);
     mod_selector->ARSlider->setValue(mods.ar_override, false, false);

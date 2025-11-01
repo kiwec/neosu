@@ -2,25 +2,26 @@
 #ifndef MOUSELISTENER_H
 #define MOUSELISTENER_H
 
+#include "noinclude.h"
+
 #include <cstdint>
-
-namespace ButtonIndices {
-enum idx : unsigned char {
- BUTTON_NONE = 0,
- BUTTON_LEFT = 1,
- BUTTON_MIDDLE = 2,
- BUTTON_RIGHT = 3,
- BUTTON_X1 = 4,
- BUTTON_X2 = 5,
- BUTTON_COUNT = 6,
+// clang-format off
+enum class MouseButtonFlags : uint8_t {
+    MF_NONE =   0u,
+    MF_LEFT =   1u << 0,
+    MF_MIDDLE = 1u << 1,
+    MF_RIGHT =  1u << 2,
+    MF_X1 =     1u << 3,
+    MF_X2 =     1u << 4,
+    MF_COUNT =  1u << 5
 };
-}  // namespace ButtonIndices
+// clang-format on
 
-using ButtonIndex = ButtonIndices::idx;
+MAKE_FLAG_ENUM(MouseButtonFlags)
 
 struct ButtonEvent {
     uint64_t timestamp;
-    ButtonIndex btn;
+    MouseButtonFlags btn;
     bool down;
 };
 

@@ -1,5 +1,6 @@
 #pragma once
 // Copyright (c) 2015, PG, All rights reserved.
+#include "ModFlags.h"
 #include "OsuScreen.h"
 
 class SkinImage;
@@ -40,8 +41,8 @@ class ModSelector final : public OsuScreen {
     void toggleAuto();
     void resetModsUserInitiated();
     void resetMods();
-    u32 getModFlags();
-    void enableModsFromFlags(u32 flags);
+    LegacyFlags getModFlags();
+    void enableModsFromFlags(LegacyFlags flags);
 
     void setWaitForF1KeyUp(bool waitForF1KeyUp) { this->bWaitForF1KeyUp = waitForF1KeyUp; }
 

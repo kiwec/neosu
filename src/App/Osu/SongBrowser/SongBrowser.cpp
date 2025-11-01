@@ -621,7 +621,7 @@ void SongBrowser::draw() {
 
         g->setBlendMode(Graphics::BLEND_MODE::BLEND_MODE_ADDITIVE);
         osu->getSkin()->i_mode_osu->drawRaw(vec2(osu->getVirtScreenWidth() / 2, osu->getVirtScreenHeight() / 2),
-                                          mode_osu_scale, AnchorPoint::CENTER);
+                                            mode_osu_scale, AnchorPoint::CENTER);
         g->setBlendMode(Graphics::BLEND_MODE::BLEND_MODE_ALPHA);
     }
 
@@ -1163,8 +1163,8 @@ CBaseUIContainer *SongBrowser::setVisible(bool visible) {
         // HACKHACK: workaround for BaseUI framework deficiency (missing mouse events. if a mouse button is being held,
         // and then suddenly a BaseUIElement gets put under it and set visible, and then the mouse button is released,
         // that "incorrectly" fires onMouseUpInside/onClicked/etc.)
-        mouse->onButtonChange({Timing::getTicksNS(), ButtonIndex::BUTTON_LEFT, false});
-        mouse->onButtonChange({Timing::getTicksNS(), ButtonIndex::BUTTON_RIGHT, false});
+        mouse->onButtonChange({Timing::getTicksNS(), MouseButtonFlags::MF_LEFT, false});
+        mouse->onButtonChange({Timing::getTicksNS(), MouseButtonFlags::MF_RIGHT, false});
 
         // For multiplayer: if the host exits song selection without selecting a song, we want to be able to revert
         // to that previous song.

@@ -39,7 +39,7 @@ FinishedScore parse_score(char *score_line) {
     score.numKatus = static_cast<i32>(strtol(tokens[8].c_str(), nullptr, 10));
     score.numGekis = static_cast<i32>(strtol(tokens[9].c_str(), nullptr, 10));
     score.perfect = strtoul(tokens[10].c_str(), nullptr, 10) == 1;
-    score.mods = Replay::Mods::from_legacy(static_cast<u32>(strtoul(tokens[11].c_str(), nullptr, 10)));
+    score.mods = Replay::Mods::from_legacy(static_cast<LegacyFlags>(strtoul(tokens[11].c_str(), nullptr, 10)));
     score.player_id = static_cast<i32>(strtol(tokens[12].c_str(), nullptr, 10));
     score.unixTimestamp = strtoull(tokens[14].c_str(), nullptr, 10);
     score.is_online_replay_available = strtoul(tokens[15].c_str(), nullptr, 10) == 1;
@@ -107,7 +107,7 @@ void fetch_online_scores(const DatabaseBeatmap *beatmap) {
     url.append(fmt::format("&i={}", beatmap->getSetID()));
 
     // Some servers use mod flags, even without any leaderboard filter active (e.g. for relax)
-    url.append(fmt::format("&mods={}", osu->getModSelector()->getModFlags()));
+    url.append(fmt::format("&mods={}", static_cast<u32>(osu->getModSelector()->getModFlags())));
 
     // Auth (uses different params than default)
     BANCHO::Api::append_auth_params(url, "us", "ha");

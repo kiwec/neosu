@@ -193,7 +193,7 @@ class LiveScore {
                                     double hpMultiplierComboEnd = 1.0f, double hpBarMaximumForNormalization = 200.0f);
 
     int getKeyCount(int key);
-    u32 getModsLegacy();
+    LegacyFlags getModsLegacy();
     UString getModsStringForRichPresence();
     Replay::Mods mods;
     bool simulating;

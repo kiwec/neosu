@@ -85,7 +85,7 @@ class AbstractBeatmapInterface {
 #undef X
 
     [[nodiscard]] virtual const Replay::Mods &getMods() const; // overridden by SimulatedBeatmapInterface
-    [[nodiscard]] virtual u32 getModsLegacy() const; // overridden by SimulatedBeatmapInterface
+    [[nodiscard]] virtual LegacyFlags getModsLegacy() const; // overridden by SimulatedBeatmapInterface
 
     [[nodiscard]] virtual vec2 getCursorPos() const = 0;
 

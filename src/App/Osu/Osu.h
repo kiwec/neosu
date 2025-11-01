@@ -43,17 +43,18 @@ class Osu final : public MouseListener, public KeyboardListener {
     NOCOPY_NOMOVE(Osu)
    private:
     // clang-format off
-    using ResolutionRequestFlag = uint8_t;
-    using ResolutionRequestFlags = ResolutionRequestFlag;
-    static constexpr const ResolutionRequestFlag
-        RESRQ_NOT_PENDING =             1 << 0,
-        RESRQ_ENGINE =                  1 << 1,
-        RESRQ_CV_RESOLUTION =           1 << 2,
-        RESRQ_CV_LETTERBOXED_RES =      1 << 3,
-        RESRQ_CV_LETTERBOXING =         1 << 4,
-        RESRQ_CV_WINDOWED_RESOLUTION =  1 << 5,
-        RESRQ_DELAYED_DESYNC_FIX =      1 << 6,
-        RESRQ_MISC_MANUAL =             1 << 7;
+    enum ResolutionRequestFlags : uint8_t {
+        R_NOT_PENDING =             1u << 0,
+        R_ENGINE =                  1u << 1,
+        R_CV_RESOLUTION =           1u << 2,
+        R_CV_LETTERBOXED_RES =      1u << 3,
+        R_CV_LETTERBOXING =         1u << 4,
+        R_CV_WINDOWED_RESOLUTION =  1u << 5,
+        R_DELAYED_DESYNC_FIX =      1u << 6,
+        R_MISC_MANUAL =             1u << 7
+    };
+    friend constexpr bool is_flag(Osu::ResolutionRequestFlags /**/);
+
     // clang-format on
    public:
     static constexpr const vec2 osuBaseResolution{640.0f, 480.0f};
@@ -80,7 +81,7 @@ class Osu final : public MouseListener, public KeyboardListener {
 
     void onButtonChange(ButtonEvent ev) override;
 
-    void onResolutionChanged(vec2 newResolution, ResolutionRequestFlags src = RESRQ_ENGINE);
+    void onResolutionChanged(vec2 newResolution, ResolutionRequestFlags src = ResolutionRequestFlags::R_ENGINE);
     void onDPIChanged();
 
     void onFocusGained();
@@ -314,7 +315,7 @@ class Osu final : public MouseListener, public KeyboardListener {
 
     // mods
    public:  // public because of many external access
-    Replay::Mods previous_mods{0};
+    Replay::Mods previous_mods{};
     bool bModAutoTemp{false};  // when ctrl+clicking a map, the auto mod should disable itself after the map finishes
 
    private:
@@ -357,7 +358,7 @@ class Osu final : public MouseListener, public KeyboardListener {
 
     // custom
    private:
-    ResolutionRequestFlag last_res_change_req_src{RESRQ_NOT_PENDING};
+    ResolutionRequestFlags last_res_change_req_src{ResolutionRequestFlags::R_NOT_PENDING};
     std::atomic<bool> pause_bg_threads{false};
     bool bScheduleEndlessModNextBeatmap{false};
     bool bWasBossKeyPaused{false};
@@ -408,5 +409,7 @@ class Osu final : public MouseListener, public KeyboardListener {
     // we want to destroy them in the same order as we listed them, to match the old (raw pointer) behavior
     void destroyAllScreensInOrder();
 };
+
+MAKE_FLAG_ENUM(Osu::ResolutionRequestFlags)
 
 extern Osu *osu;

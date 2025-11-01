@@ -295,9 +295,9 @@ void ModSelector::updateButtons(bool initial) {
                              "Unnecessary clicks count as misses.\nMassively reduced slider follow circle radius.",
                              []() -> SkinImage * { return osu->getSkin()->i_modselect_nightmare; });
 
-    this->modButtonHardrock = this->setModButtonOnGrid(
-        0, 1, 0, initial && osu->getModHR(), &cv::mod_hardrock, "hr", "Everything just got a bit harder...",
-        []() -> SkinImage * { return osu->getSkin()->i_modselect_hr; });
+    this->modButtonHardrock = this->setModButtonOnGrid(0, 1, 0, initial && osu->getModHR(), &cv::mod_hardrock, "hr",
+                                                       "Everything just got a bit harder...",
+                                                       []() -> SkinImage * { return osu->getSkin()->i_modselect_hr; });
     this->modButtonSuddendeath = this->setModButtonOnGrid(
         1, 1, 0, initial && osu->getModSD(), &cv::mod_suddendeath, "sd", "Miss a note and fail.",
         []() -> SkinImage * { return osu->getSkin()->i_modselect_sd; });
@@ -329,8 +329,7 @@ void ModSelector::updateButtons(bool initial) {
         4, 1, 0, initial && osu->getModFlashlight(), &cv::mod_flashlight, "fl", "Restricted view area.",
         []() -> SkinImage * { return osu->getSkin()->i_modselect_fl; });
     this->setModButtonOnGrid(4, 1, 1, initial && cv::mod_actual_flashlight.getBool(), &cv::mod_actual_flashlight, "afl",
-                             "Actual flashlight.",
-                             []() -> SkinImage * { return osu->getSkin()->i_modselect_fl; });
+                             "Actual flashlight.", []() -> SkinImage * { return osu->getSkin()->i_modselect_fl; });
 
     this->modButtonTD = this->setModButtonOnGrid(5, 1, 0, initial && osu->getModTD(), &cv::mod_touchdevice, "nerftd",
                                                  "Simulate pp nerf for touch devices.\nOnly affects pp calculation.",
@@ -345,23 +344,20 @@ void ModSelector::updateButtons(bool initial) {
         this->setModButtonOnGrid(1, 2, 0, initial && osu->getModAutopilot(), &cv::mod_autopilot, "autopilot",
                                  "Automatic cursor movement - just follow the rhythm.\n** UNRANKED **",
                                  []() -> SkinImage * { return osu->getSkin()->i_modselect_ap; });
-    this->modButtonSpunout =
-        this->setModButtonOnGrid(2, 2, 0, initial && osu->getModSpunout(), &cv::mod_spunout, "spunout",
-                                 "Spinners will be automatically completed.",
-                                 []() -> SkinImage * { return osu->getSkin()->i_modselect_so; });
-    this->modButtonAuto =
-        this->setModButtonOnGrid(3, 2, 0, initial && osu->getModAuto(), &cv::mod_autoplay, "auto",
-                                 "Watch a perfect automated play through the song.",
-                                 []() -> SkinImage * { return osu->getSkin()->i_modselect_auto; });
+    this->modButtonSpunout = this->setModButtonOnGrid(2, 2, 0, initial && osu->getModSpunout(), &cv::mod_spunout,
+                                                      "spunout", "Spinners will be automatically completed.",
+                                                      []() -> SkinImage * { return osu->getSkin()->i_modselect_so; });
+    this->modButtonAuto = this->setModButtonOnGrid(3, 2, 0, initial && osu->getModAuto(), &cv::mod_autoplay, "auto",
+                                                   "Watch a perfect automated play through the song.",
+                                                   []() -> SkinImage * { return osu->getSkin()->i_modselect_auto; });
     this->setModButtonOnGrid(
         4, 2, 0, initial && osu->getModTarget(), &cv::mod_target, "practicetarget",
         "Accuracy is based on the distance to the center of all hitobjects.\n300s still require at "
         "least being in the hit window of a 100 in addition to the rule above.",
         []() -> SkinImage * { return osu->getSkin()->i_modselect_target; });
-    this->modButtonScoreV2 =
-        this->setModButtonOnGrid(5, 2, 0, initial && osu->getModScorev2(), &cv::mod_scorev2, "v2",
-                                 "Try the future scoring system.\n** UNRANKED **",
-                                 []() -> SkinImage * { return osu->getSkin()->i_modselect_sv2; });
+    this->modButtonScoreV2 = this->setModButtonOnGrid(5, 2, 0, initial && osu->getModScorev2(), &cv::mod_scorev2, "v2",
+                                                      "Try the future scoring system.\n** UNRANKED **",
+                                                      []() -> SkinImage * { return osu->getSkin()->i_modselect_sv2; });
 
     // Enable all mods that we disable conditionally below
     this->getModButtonOnGrid(2, 0)->setAvailable(true);
@@ -1133,7 +1129,7 @@ void ModSelector::resetModsUserInitiated() {
     this->resetModsButton->animateClickColor();
 
     if(BanchoState::is_in_a_multi_room()) {
-        u32 minimum_mods = 0;
+        LegacyFlags minimum_mods{};
         if(!BanchoState::room.is_host()) {
             minimum_mods = BanchoState::room.mods;
             minimum_mods &= (LegacyFlags::DoubleTime | LegacyFlags::HalfTime | LegacyFlags::Target);
@@ -1141,7 +1137,7 @@ void ModSelector::resetModsUserInitiated() {
 
         Packet packet;
         packet.id = MATCH_CHANGE_MODS;
-        packet.write<u32>(minimum_mods);
+        packet.write<LegacyFlags>(minimum_mods);
         BANCHO::Net::send_packet(packet);
 
         // Don't wait on server response to update UI
@@ -1184,17 +1180,16 @@ void ModSelector::resetMods() {
     }
 }
 
-u32 ModSelector::getModFlags() {
+LegacyFlags ModSelector::getModFlags() {
     // We need the mod flags to always be up to date
     auto mods = Replay::Mods::from_cvars();
     return mods.to_legacy();
 }
 
-void ModSelector::enableModsFromFlags(u32 flags) {
-    using namespace ModMasks;
-    if(legacy_eq(flags, LegacyFlags::DoubleTime) || legacy_eq(flags, LegacyFlags::Nightcore)) {
+void ModSelector::enableModsFromFlags(LegacyFlags flags) {
+    if(flags::any<LegacyFlags::DoubleTime | LegacyFlags::Nightcore>(flags)) {
         cv::speed_override.setValue(1.5f);
-    } else if(legacy_eq(flags, LegacyFlags::HalfTime)) {
+    } else if(flags::has<LegacyFlags::HalfTime>(flags)) {
         cv::speed_override.setValue(0.75f);
     } else {
         cv::speed_override.setValue(-1.f);
@@ -1202,25 +1197,25 @@ void ModSelector::enableModsFromFlags(u32 flags) {
 
     cv::mod_suddendeath.setValue(false);
     cv::mod_perfect.setValue(false);
-    if(legacy_eq(flags, LegacyFlags::Perfect)) {
+    if(flags::has<LegacyFlags::Perfect>(flags)) {
         this->modButtonSuddendeath->setState(1);
         this->modButtonSuddendeath->setOn(true, true);
-    } else if(legacy_eq(flags, LegacyFlags::SuddenDeath)) {
+    } else if(flags::has<LegacyFlags::SuddenDeath>(flags)) {
         this->modButtonSuddendeath->setState(0);
         this->modButtonSuddendeath->setOn(true, true);
     }
 
-    this->modButtonNofail->setOn(legacy_eq(flags, LegacyFlags::NoFail), true);
-    this->modButtonEasy->setOn(legacy_eq(flags, LegacyFlags::Easy), true);
-    this->modButtonTD->setOn(legacy_eq(flags, LegacyFlags::TouchDevice), true);
-    this->modButtonHidden->setOn(legacy_eq(flags, LegacyFlags::Hidden), true);
-    this->modButtonHardrock->setOn(legacy_eq(flags, LegacyFlags::HardRock), true);
-    this->modButtonRelax->setOn(legacy_eq(flags, LegacyFlags::Relax), true);
-    this->modButtonSpunout->setOn(legacy_eq(flags, LegacyFlags::SpunOut), true);
-    this->modButtonAutopilot->setOn(legacy_eq(flags, LegacyFlags::Autopilot), true);
-    this->getModButtonOnGrid(4, 2)->setOn(legacy_eq(flags, LegacyFlags::Target), true);
-    this->modButtonFlashlight->setOn(legacy_eq(flags, LegacyFlags::Flashlight), true);
-    this->modButtonScoreV2->setOn(legacy_eq(flags, LegacyFlags::ScoreV2), true);
+    this->modButtonNofail->setOn(flags::has<LegacyFlags::NoFail>(flags), true);
+    this->modButtonEasy->setOn(flags::has<LegacyFlags::Easy>(flags), true);
+    this->modButtonTD->setOn(flags::has<LegacyFlags::TouchDevice>(flags), true);
+    this->modButtonHidden->setOn(flags::has<LegacyFlags::Hidden>(flags), true);
+    this->modButtonHardrock->setOn(flags::has<LegacyFlags::HardRock>(flags), true);
+    this->modButtonRelax->setOn(flags::has<LegacyFlags::Relax>(flags), true);
+    this->modButtonSpunout->setOn(flags::has<LegacyFlags::SpunOut>(flags), true);
+    this->modButtonAutopilot->setOn(flags::has<LegacyFlags::Autopilot>(flags), true);
+    this->getModButtonOnGrid(4, 2)->setOn(flags::has<LegacyFlags::Target>(flags), true);
+    this->modButtonFlashlight->setOn(flags::has<LegacyFlags::Flashlight>(flags), true);
+    this->modButtonScoreV2->setOn(flags::has<LegacyFlags::ScoreV2>(flags), true);
 
     osu->updateMods();
 }

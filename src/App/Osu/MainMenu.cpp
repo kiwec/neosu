@@ -1233,8 +1233,7 @@ void MainMenu::onKeyDown(KeyboardEvent &e) {
 }
 
 void MainMenu::onButtonChange(ButtonEvent ev) {
-    using enum ButtonIndex;
-    if(!this->bVisible || ev.btn != BUTTON_MIDDLE ||
+    if(!this->bVisible || ev.btn != MouseButtonFlags::MF_MIDDLE ||
        !(ev.down && !anim->isAnimating(&this->fMainMenuAnim) && !this->bMenuElementsVisible))
         return;
 

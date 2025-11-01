@@ -21,7 +21,7 @@ concept GenericWriter = requires(T &t) {
 };
 
 struct Mods {
-    u64 flags = 0;
+    ModFlags flags{};
 
     f32 speed = 1.f;
     i32 notelock_type = 2;
@@ -45,9 +45,9 @@ struct Mods {
 
     bool operator==(const Mods &) const = default;
 
-    [[nodiscard]] inline bool has(u64 flag) const { return !!(ModMasks::eq(this->flags, flag)); }
+    [[nodiscard]] inline bool has(ModFlags flag) const { return (this->flags & flag) == flag; }
 
-    [[nodiscard]] u32 to_legacy() const;
+    [[nodiscard]] LegacyFlags to_legacy() const;
 
     // Get AR/CS/OD, ignoring mods which change it over time
     // Used for ppv2 calculations.
@@ -56,14 +56,14 @@ struct Mods {
     f32 get_naive_od(const DatabaseBeatmap *map) const;
 
     static Mods from_cvars();
-    static Mods from_legacy(u32 legacy_flags);
+    static Mods from_legacy(LegacyFlags legacy_flags);
     static void use(const Mods &mods);
 
     template <GenericReader R>
     static Mods unpack(R &reader) {
         Mods mods;
 
-        mods.flags = reader.template read<u64>();
+        mods.flags = static_cast<ModFlags>(reader.template read<u64>());
         mods.speed = reader.template read<f32>();
         mods.notelock_type = reader.template read<i32>();
         mods.ar_override = reader.template read<f32>();
@@ -72,33 +72,32 @@ struct Mods {
         mods.cs_overridenegative = reader.template read<f32>();
         mods.hp_override = reader.template read<f32>();
         mods.od_override = reader.template read<f32>();
-        using namespace ModMasks;
-        using namespace ModFlags;
-        if(eq(mods.flags, Autopilot)) {
+        using enum ModFlags;
+        if(flags::has<Autopilot>(mods.flags)) {
             mods.autopilot_lenience = reader.template read<f32>();
         }
-        if(eq(mods.flags, Timewarp)) {
+        if(flags::has<Timewarp>(mods.flags)) {
             mods.timewarp_multiplier = reader.template read<f32>();
         }
-        if(eq(mods.flags, Minimize)) {
+        if(flags::has<Minimize>(mods.flags)) {
             mods.minimize_multiplier = reader.template read<f32>();
         }
-        if(eq(mods.flags, ARTimewarp)) {
+        if(flags::has<ARTimewarp>(mods.flags)) {
             mods.artimewarp_multiplier = reader.template read<f32>();
         }
-        if(eq(mods.flags, ARWobble)) {
+        if(flags::has<ARWobble>(mods.flags)) {
             mods.arwobble_strength = reader.template read<f32>();
             mods.arwobble_interval = reader.template read<f32>();
         }
-        if(eq(mods.flags, Wobble1) || eq(mods.flags, Wobble2)) {
+        if(flags::any<Wobble1 | Wobble2>(mods.flags)) {
             mods.wobble_strength = reader.template read<f32>();
             mods.wobble_frequency = reader.template read<f32>();
             mods.wobble_rotation_speed = reader.template read<f32>();
         }
-        if(eq(mods.flags, Jigsaw1) || eq(mods.flags, Jigsaw2)) {
+        if(flags::any<Jigsaw1 | Jigsaw2>(mods.flags)) {
             mods.jigsaw_followcircle_radius_factor = reader.template read<f32>();
         }
-        if(eq(mods.flags, Shirone)) {
+        if(flags::has<Shirone>(mods.flags)) {
             mods.shirone_combo = reader.template read<f32>();
         }
 
@@ -107,7 +106,7 @@ struct Mods {
 
     template <GenericWriter W>
     static void pack_and_write(W &writer, const Replay::Mods &mods) {
-        writer.template write<u64>(mods.flags);
+        writer.template write<u64>(static_cast<u64>(mods.flags));
         writer.template write<f32>(mods.speed);
         writer.template write<i32>(mods.notelock_type);
         writer.template write<f32>(mods.ar_override);
@@ -116,33 +115,32 @@ struct Mods {
         writer.template write<f32>(mods.cs_overridenegative);
         writer.template write<f32>(mods.hp_override);
         writer.template write<f32>(mods.od_override);
-        using namespace ModMasks;
-        using namespace ModFlags;
-        if(eq(mods.flags, Autopilot)) {
+        using enum ModFlags;
+        if(flags::has<Autopilot>(mods.flags)) {
             writer.template write<f32>(mods.autopilot_lenience);
         }
-        if(eq(mods.flags, Timewarp)) {
+        if(flags::has<Timewarp>(mods.flags)) {
             writer.template write<f32>(mods.timewarp_multiplier);
         }
-        if(eq(mods.flags, Minimize)) {
+        if(flags::has<Minimize>(mods.flags)) {
             writer.template write<f32>(mods.minimize_multiplier);
         }
-        if(eq(mods.flags, ARTimewarp)) {
+        if(flags::has<ARTimewarp>(mods.flags)) {
             writer.template write<f32>(mods.artimewarp_multiplier);
         }
-        if(eq(mods.flags, ARWobble)) {
+        if(flags::has<ARWobble>(mods.flags)) {
             writer.template write<f32>(mods.arwobble_strength);
             writer.template write<f32>(mods.arwobble_interval);
         }
-        if(eq(mods.flags, Wobble1) || eq(mods.flags, Wobble2)) {
+        if(flags::any<Wobble1 | Wobble2>(mods.flags)) {
             writer.template write<f32>(mods.wobble_strength);
             writer.template write<f32>(mods.wobble_frequency);
             writer.template write<f32>(mods.wobble_rotation_speed);
         }
-        if(eq(mods.flags, Jigsaw1) || eq(mods.flags, Jigsaw2)) {
+        if(flags::any<Jigsaw1 | Jigsaw2>(mods.flags)) {
             writer.template write<f32>(mods.jigsaw_followcircle_radius_factor);
         }
-        if(eq(mods.flags, Shirone)) {
+        if(flags::has<Shirone>(mods.flags)) {
             writer.template write<f32>(mods.shirone_combo);
         }
     }

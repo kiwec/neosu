@@ -764,35 +764,34 @@ void ScoreButton::setScore(const FinishedScore &score, const DatabaseBeatmap *ma
     else
         tooltipMods.append("None");
 
-    using namespace ModMasks;
-    using namespace ModFlags;
+    using enum ModFlags;
 
     this->tooltipLines.push_back(tooltipMods);
-    if(eq(score.mods.flags, NoHP)) this->tooltipLines.emplace_back("+ no HP drain");
-    if(eq(score.mods.flags, ApproachDifferent)) this->tooltipLines.emplace_back("+ approach different");
-    if(eq(score.mods.flags, ARTimewarp)) this->tooltipLines.emplace_back("+ AR timewarp");
-    if(eq(score.mods.flags, ARWobble)) this->tooltipLines.emplace_back("+ AR wobble");
-    if(eq(score.mods.flags, FadingCursor)) this->tooltipLines.emplace_back("+ fading cursor");
-    if(eq(score.mods.flags, FullAlternate)) this->tooltipLines.emplace_back("+ full alternate");
-    if(eq(score.mods.flags, FPoSu_Strafing)) this->tooltipLines.emplace_back("+ FPoSu strafing");
-    if(eq(score.mods.flags, FPS)) this->tooltipLines.emplace_back("+ FPS");
-    if(eq(score.mods.flags, HalfWindow)) this->tooltipLines.emplace_back("+ half window");
-    if(eq(score.mods.flags, Jigsaw1)) this->tooltipLines.emplace_back("+ jigsaw1");
-    if(eq(score.mods.flags, Jigsaw2)) this->tooltipLines.emplace_back("+ jigsaw2");
-    if(eq(score.mods.flags, Mafham)) this->tooltipLines.emplace_back("+ mafham");
-    if(eq(score.mods.flags, Millhioref)) this->tooltipLines.emplace_back("+ millhioref");
-    if(eq(score.mods.flags, Minimize)) this->tooltipLines.emplace_back("+ minimize");
-    if(eq(score.mods.flags, Ming3012)) this->tooltipLines.emplace_back("+ ming3012");
-    if(eq(score.mods.flags, MirrorHorizontal)) this->tooltipLines.emplace_back("+ mirror (horizontal)");
-    if(eq(score.mods.flags, MirrorVertical)) this->tooltipLines.emplace_back("+ mirror (vertical)");
-    if(eq(score.mods.flags, No50s)) this->tooltipLines.emplace_back("+ no 50s");
-    if(eq(score.mods.flags, No100s)) this->tooltipLines.emplace_back("+ no 100s");
-    if(eq(score.mods.flags, ReverseSliders)) this->tooltipLines.emplace_back("+ reverse sliders");
-    if(eq(score.mods.flags, Timewarp)) this->tooltipLines.emplace_back("+ timewarp");
-    if(eq(score.mods.flags, Shirone)) this->tooltipLines.emplace_back("+ shirone");
-    if(eq(score.mods.flags, StrictTracking)) this->tooltipLines.emplace_back("+ strict tracking");
-    if(eq(score.mods.flags, Wobble1)) this->tooltipLines.emplace_back("+ wobble1");
-    if(eq(score.mods.flags, Wobble2)) this->tooltipLines.emplace_back("+ wobble2");
+    if(flags::has<NoHP>(score.mods.flags)) this->tooltipLines.emplace_back("+ no HP drain");
+    if(flags::has<ApproachDifferent>(score.mods.flags)) this->tooltipLines.emplace_back("+ approach different");
+    if(flags::has<ARTimewarp>(score.mods.flags)) this->tooltipLines.emplace_back("+ AR timewarp");
+    if(flags::has<ARWobble>(score.mods.flags)) this->tooltipLines.emplace_back("+ AR wobble");
+    if(flags::has<FadingCursor>(score.mods.flags)) this->tooltipLines.emplace_back("+ fading cursor");
+    if(flags::has<FullAlternate>(score.mods.flags)) this->tooltipLines.emplace_back("+ full alternate");
+    if(flags::has<FPoSu_Strafing>(score.mods.flags)) this->tooltipLines.emplace_back("+ FPoSu strafing");
+    if(flags::has<FPS>(score.mods.flags)) this->tooltipLines.emplace_back("+ FPS");
+    if(flags::has<HalfWindow>(score.mods.flags)) this->tooltipLines.emplace_back("+ half window");
+    if(flags::has<Jigsaw1>(score.mods.flags)) this->tooltipLines.emplace_back("+ jigsaw1");
+    if(flags::has<Jigsaw2>(score.mods.flags)) this->tooltipLines.emplace_back("+ jigsaw2");
+    if(flags::has<Mafham>(score.mods.flags)) this->tooltipLines.emplace_back("+ mafham");
+    if(flags::has<Millhioref>(score.mods.flags)) this->tooltipLines.emplace_back("+ millhioref");
+    if(flags::has<Minimize>(score.mods.flags)) this->tooltipLines.emplace_back("+ minimize");
+    if(flags::has<Ming3012>(score.mods.flags)) this->tooltipLines.emplace_back("+ ming3012");
+    if(flags::has<MirrorHorizontal>(score.mods.flags)) this->tooltipLines.emplace_back("+ mirror (horizontal)");
+    if(flags::has<MirrorVertical>(score.mods.flags)) this->tooltipLines.emplace_back("+ mirror (vertical)");
+    if(flags::has<No50s>(score.mods.flags)) this->tooltipLines.emplace_back("+ no 50s");
+    if(flags::has<No100s>(score.mods.flags)) this->tooltipLines.emplace_back("+ no 100s");
+    if(flags::has<ReverseSliders>(score.mods.flags)) this->tooltipLines.emplace_back("+ reverse sliders");
+    if(flags::has<Timewarp>(score.mods.flags)) this->tooltipLines.emplace_back("+ timewarp");
+    if(flags::has<Shirone>(score.mods.flags)) this->tooltipLines.emplace_back("+ shirone");
+    if(flags::has<StrictTracking>(score.mods.flags)) this->tooltipLines.emplace_back("+ strict tracking");
+    if(flags::has<Wobble1>(score.mods.flags)) this->tooltipLines.emplace_back("+ wobble1");
+    if(flags::has<Wobble2>(score.mods.flags)) this->tooltipLines.emplace_back("+ wobble2");
 
     if(this->style == STYLE::TOP_RANKS) {
         const int weightRounded = std::round(weight * 100.0f);
@@ -848,29 +847,28 @@ SkinImage *ScoreButton::getGradeImage(FinishedScore::Grade grade) {
 }
 
 UString ScoreButton::getModsStringForDisplay(const Replay::Mods &mods) {
-    using namespace ModMasks;
-    using namespace ModFlags;
+    using enum ModFlags;
 
     UString modsString;
 
-    if(eq(mods.flags, NoFail)) modsString.append("NF,");
-    if(eq(mods.flags, Easy)) modsString.append("EZ,");
-    if(eq(mods.flags, TouchDevice)) modsString.append("TD,");
-    if(eq(mods.flags, Hidden)) modsString.append("HD,");
-    if(eq(mods.flags, HardRock)) modsString.append("HR,");
-    if(eq(mods.flags, SuddenDeath)) modsString.append("SD,");
-    if(eq(mods.flags, Relax)) modsString.append("Relax,");
-    if(eq(mods.flags, Flashlight)) modsString.append("FL,");
-    if(eq(mods.flags, SpunOut)) modsString.append("SO,");
-    if(eq(mods.flags, Autopilot)) modsString.append("AP,");
-    if(eq(mods.flags, Perfect)) modsString.append("PF,");
-    if(eq(mods.flags, ScoreV2)) modsString.append("v2,");
-    if(eq(mods.flags, Target)) modsString.append("Target,");
-    if(eq(mods.flags, Nightmare)) modsString.append("Nightmare,");
-    if(eq(mods.flags, MirrorHorizontal) || eq(mods.flags, MirrorVertical)) modsString.append("Mirror,");
-    if(eq(mods.flags, FPoSu)) modsString.append("FPoSu,");
-    if(eq(mods.flags, Singletap)) modsString.append("1K,");
-    if(eq(mods.flags, NoKeylock)) modsString.append("4K,");
+    if(flags::has<NoFail>(mods.flags)) modsString.append("NF,");
+    if(flags::has<Easy>(mods.flags)) modsString.append("EZ,");
+    if(flags::has<TouchDevice>(mods.flags)) modsString.append("TD,");
+    if(flags::has<Hidden>(mods.flags)) modsString.append("HD,");
+    if(flags::has<HardRock>(mods.flags)) modsString.append("HR,");
+    if(flags::has<SuddenDeath>(mods.flags)) modsString.append("SD,");
+    if(flags::has<Relax>(mods.flags)) modsString.append("Relax,");
+    if(flags::has<Flashlight>(mods.flags)) modsString.append("FL,");
+    if(flags::has<SpunOut>(mods.flags)) modsString.append("SO,");
+    if(flags::has<Autopilot>(mods.flags)) modsString.append("AP,");
+    if(flags::has<Perfect>(mods.flags)) modsString.append("PF,");
+    if(flags::has<ScoreV2>(mods.flags)) modsString.append("v2,");
+    if(flags::has<Target>(mods.flags)) modsString.append("Target,");
+    if(flags::has<Nightmare>(mods.flags)) modsString.append("Nightmare,");
+    if(flags::any<MirrorHorizontal | MirrorVertical>(mods.flags)) modsString.append("Mirror,");
+    if(flags::has<FPoSu>(mods.flags)) modsString.append("FPoSu,");
+    if(flags::has<Singletap>(mods.flags)) modsString.append("1K,");
+    if(flags::has<NoKeylock>(mods.flags)) modsString.append("4K,");
 
     if(modsString.length() > 0) modsString.pop_back();
 

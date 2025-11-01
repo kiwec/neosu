@@ -135,7 +135,7 @@ void UIModSelectorModButton::onClicked(bool /*left*/, bool /*right*/) {
 
         Packet packet;
         packet.id = MATCH_CHANGE_MODS;
-        packet.write<u32>(mod_flags);
+        packet.write<LegacyFlags>(mod_flags);
         BANCHO::Net::send_packet(packet);
 
         // Don't wait on server response to update UI

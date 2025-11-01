@@ -25,22 +25,22 @@
 
 namespace LegacyReplay {
 
-BEATMAP_VALUES getBeatmapValuesForModsLegacy(u32 modsLegacy, float legacyAR, float legacyCS, float legacyOD,
+BEATMAP_VALUES getBeatmapValuesForModsLegacy(LegacyFlags modsLegacy, float legacyAR, float legacyCS, float legacyOD,
                                              float legacyHP) {
     BEATMAP_VALUES v;
 
     // HACKHACK: code duplication, see Osu::getDifficultyMultiplier()
     v.difficultyMultiplier = 1.0f;
     {
-        if(ModMasks::legacy_eq(modsLegacy, LegacyFlags::HardRock)) v.difficultyMultiplier = 1.4f;
-        if(ModMasks::legacy_eq(modsLegacy, LegacyFlags::Easy)) v.difficultyMultiplier = 0.5f;
+        if(flags::has<LegacyFlags::HardRock>(modsLegacy)) v.difficultyMultiplier = 1.4f;
+        if(flags::has<LegacyFlags::Easy>(modsLegacy)) v.difficultyMultiplier = 0.5f;
     }
 
     // HACKHACK: code duplication, see Osu::getCSDifficultyMultiplier()
     v.csDifficultyMultiplier = 1.0f;
     {
-        if(ModMasks::legacy_eq(modsLegacy, LegacyFlags::HardRock)) v.csDifficultyMultiplier = 1.3f;  // different!
-        if(ModMasks::legacy_eq(modsLegacy, LegacyFlags::Easy)) v.csDifficultyMultiplier = 0.5f;
+        if(flags::has<LegacyFlags::HardRock>(modsLegacy)) v.csDifficultyMultiplier = 1.3f;  // different!
+        if(flags::has<LegacyFlags::Easy>(modsLegacy)) v.csDifficultyMultiplier = 0.5f;
     }
 
     // apply legacy mods to legacy beatmap values
