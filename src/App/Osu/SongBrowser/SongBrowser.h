@@ -264,7 +264,6 @@ class SongBrowser final : public ScreenBackable {
     CollectionButton *selectionPreviousCollectionButton;
 
     // beatmap database
-    std::vector<DatabaseBeatmap *> beatmapsets;
     std::vector<SongButton *> songButtons;
     std::vector<CarouselButton *> visibleSongButtons;
     std::vector<CollectionButton *> collectionButtons;

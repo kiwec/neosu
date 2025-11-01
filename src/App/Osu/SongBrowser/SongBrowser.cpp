@@ -789,7 +789,7 @@ void SongBrowser::draw() {
     OsuScreen::draw();
 
     // no beatmaps found (osu folder is probably invalid)
-    if(this->beatmapsets.size() == 0 && !this->bBeatmapRefreshScheduled) {
+    if(db->getBeatmapSets().size() == 0 && !this->bBeatmapRefreshScheduled) {
         UString errorMessage1 = "Invalid osu! folder (or no beatmaps found): ";
         errorMessage1.append(this->sLastOsuFolder);
         UString errorMessage2 = "Go to Options -> osu!folder";
@@ -1416,7 +1416,6 @@ void SongBrowser::refreshBeatmaps(bool closeAfterLoading) {
     this->titleCollectionButtons.clear();
 
     this->visibleSongButtons.clear();
-    this->beatmapsets.clear();
     this->previousRandomBeatmaps.clear();
 
     this->contextMenu->setVisible2(false);
@@ -1454,9 +1453,9 @@ void SongBrowser::addBeatmapSet(BeatmapSet *mapset) {
     SongButton *songButton;
     if(mapset->getDifficulties().size() > 1) {
         songButton =
-            new SongButton(this, this->contextMenu, 250, 250 + this->beatmapsets.size() * 50, 200, 50, "", mapset);
+            new SongButton(this, this->contextMenu, 250, 250 + db->getBeatmapSets().size() * 50, 200, 50, "", mapset);
     } else {
-        songButton = new SongDifficultyButton(this, this->contextMenu, 250, 250 + this->beatmapsets.size() * 50, 200,
+        songButton = new SongDifficultyButton(this, this->contextMenu, 250, 250 + db->getBeatmapSets().size() * 50, 200,
                                               50, "", mapset->getDifficulties()[0], nullptr);
     }
 
@@ -2398,10 +2397,7 @@ void SongBrowser::onDatabaseLoadingFinished() {
     Timer t;
     t.start();
 
-    // having a copy of the vector in here is actually completely unnecessary
-    this->beatmapsets = db->getBeatmapSets();
-
-    debugLog("Loading {} beatmapsets from database.", this->beatmapsets.size());
+    debugLog("Loading {} beatmapsets from database.", db->getBeatmapSets().size());
 
     // initialize all collection (grouped) buttons
     {
@@ -2550,7 +2546,7 @@ void SongBrowser::onDatabaseLoadingFinished() {
     }
 
     // add all beatmaps (build buttons)
-    for(const auto &beatmap : this->beatmapsets) {
+    for(const auto &beatmap : db->getBeatmapSets()) {
         this->addBeatmapSet(beatmap);
     }
 
@@ -3445,7 +3441,7 @@ void SongBrowser::recreateCollectionsButtons() {
         if(!folder.empty()) {
             UString uname = collection->name.c_str();
             this->collectionButtons.push_back(new CollectionButton(
-                this, this->contextMenu, 250, 250 + this->beatmapsets.size() * 50, 200, 50, "", uname, folder));
+                this, this->contextMenu, 250, 250 + db->getBeatmapSets().size() * 50, 200, 50, "", uname, folder));
         }
     }
 

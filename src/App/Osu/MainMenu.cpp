@@ -1149,9 +1149,8 @@ void MainMenu::mouse_update(bool *propagate_clicks) {
 }
 
 void MainMenu::selectRandomBeatmap() {
-    const auto &sb = osu->getSongBrowser();
-    if(db->isFinished() && !sb->beatmapsets.empty()) {
-        sb->selectRandomBeatmap();
+    if(db->isFinished() && !db->getBeatmapSets().empty() && !osu->getSongBrowser()->songButtons.empty()) {
+        osu->getSongBrowser()->selectRandomBeatmap();
         RichPresence::onMainMenu();
     } else {
         // Database is not loaded yet, load a random map and select it

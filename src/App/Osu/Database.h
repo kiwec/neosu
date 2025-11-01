@@ -201,6 +201,7 @@ class Database {
     u32 num_beatmaps_to_load{0};
     std::atomic<bool> load_interrupted{false};
     std::vector<BeatmapSet *> beatmapsets;
+    std::vector<BeatmapSet *> temp_loading_beatmapsets; // only used during loading, contents moved into beatmapsets after
 
     Sync::shared_mutex beatmap_difficulties_mtx;
     std::unordered_map<MD5Hash, BeatmapDifficulty *> beatmap_difficulties;

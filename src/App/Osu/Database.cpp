@@ -277,10 +277,14 @@ void Database::startLoader() {
             Sync::unique_lock lock(this->beatmap_difficulties_mtx);
             this->beatmap_difficulties.clear();
         }
-        for(auto &beatmapset : db->beatmapsets) {
+        for(auto &beatmapset : this->temp_loading_beatmapsets) {
             SAFE_DELETE(beatmapset);
         }
-        db->beatmapsets.clear();
+        this->temp_loading_beatmapsets.clear();
+        for(auto &beatmapset : this->beatmapsets) {
+            SAFE_DELETE(beatmapset);
+        }
+        this->beatmapsets.clear();
     }
 
     this->loader = new AsyncDBLoader();
@@ -320,6 +324,10 @@ Database::~Database() {
         Sync::unique_lock lock(this->beatmap_difficulties_mtx);
         this->beatmap_difficulties.clear();
     }
+    for(auto &beatmapset : this->temp_loading_beatmapsets) {
+        SAFE_DELETE(beatmapset);
+    }
+    this->temp_loading_beatmapsets.clear();
     for(auto &beatmapset : this->beatmapsets) {
         SAFE_DELETE(beatmapset);
     }
@@ -358,6 +366,9 @@ void Database::update() {
                 this->raw_load_beatmap_folders.clear();
                 this->raw_load_scheduled = false;
                 this->importTimer->update();
+
+                this->beatmapsets = std::move(this->temp_loading_beatmapsets);
+                this->temp_loading_beatmapsets.clear();
 
                 debugLog("Refresh finished, added {} beatmaps in {:f} seconds.", this->beatmapsets.size(),
                          this->importTimer->getElapsedTime());
@@ -424,8 +435,6 @@ BeatmapSet *Database::addBeatmapSet(const std::string &beatmapFolderPath, i32 se
         }
     }
 
-    this->beatmapsets.push_back(beatmap);
-
     {
         Sync::unique_lock lock(this->beatmap_difficulties_mtx);
         for(const auto &diff : beatmap->getDifficulties()) {
@@ -435,10 +444,14 @@ BeatmapSet *Database::addBeatmapSet(const std::string &beatmapFolderPath, i32 se
 
     // do not add to songbrowser yet unless we are finished loading
     if(this->isFinished()) {
+        this->beatmapsets.push_back(beatmap);
+
         osu->getSongBrowser()->addBeatmapSet(beatmap);
 
         // XXX: Very slow
         osu->getSongBrowser()->onSortChange(cv::songbrowser_sortingtype.getString().c_str());
+    } else {
+        this->temp_loading_beatmapsets.push_back(beatmap);
     }
 
     return beatmap;
@@ -1031,7 +1044,7 @@ void Database::loadMaps() {
                     delete diffs;
                 } else {
                     auto set = new BeatmapSet(diffs, DatabaseBeatmap::BeatmapType::NEOSU_BEATMAPSET);
-                    this->beatmapsets.push_back(set);
+                    this->temp_loading_beatmapsets.push_back(set);
 
                     // NOTE: Don't add neosu sets to beatmapSets since they're already processed
                     // Adding them would create duplicate ownership of the diffs vector
@@ -1434,7 +1447,7 @@ void Database::loadMaps() {
 
                 if(beatmapSet.setID > 0) {
                     auto *set = new BeatmapSet(beatmapSet.diffs2, DatabaseBeatmap::BeatmapType::PEPPY_BEATMAPSET);
-                    this->beatmapsets.push_back(set);
+                    this->temp_loading_beatmapsets.push_back(set);
                     // beatmapSet.diffs2 ownership transferred to BeatmapSet
                 } else {
                     // set with invalid ID: treat all its diffs separately. we'll group the diffs by title+artist.
@@ -1454,7 +1467,7 @@ void Database::loadMaps() {
 
                     for(const auto &scuffed_set : titleArtistToBeatmap) {
                         auto *set = new BeatmapSet(scuffed_set.second, DatabaseBeatmap::BeatmapType::PEPPY_BEATMAPSET);
-                        this->beatmapsets.push_back(set);
+                        this->temp_loading_beatmapsets.push_back(set);
                     }
 
                     // clean up the original diffs2 vector (ownership of diffs transferred to new vectors)
@@ -1464,6 +1477,9 @@ void Database::loadMaps() {
         }
         this->bytes_processed += dbr.total_size;
     }
+    this->beatmapsets = std::move(this->temp_loading_beatmapsets);
+    this->temp_loading_beatmapsets.clear();
+
     this->importTimer->update();
     debugLog("peppy+neosu maps: loading took {:f} seconds ({:d} peppy, {:d} neosu, {:d} maps total)",
              this->importTimer->getElapsedTime(), nb_peppy_maps, nb_neosu_maps, nb_peppy_maps + nb_neosu_maps);
@@ -1472,6 +1488,10 @@ void Database::loadMaps() {
 }
 
 void Database::saveMaps() {
+    if(this->beatmapsets.empty() || this->isLoading()) {
+        return;
+    }
+
     debugLog("Osu: Saving maps ...");
     if(!this->neosu_maps_loaded) {
         debugLog("Cannot save maps since they weren't loaded properly first!");
