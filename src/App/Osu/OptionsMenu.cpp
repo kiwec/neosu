@@ -802,6 +802,12 @@ OptionsMenu::OptionsMenu() : ScreenBackable() {
         auto wasapi_idx = this->elemContainers.size();
         {
             this->addSubSection("WASAPI");
+
+            this->addCheckbox("Low-latency Callbacks",
+                              "Run BASSWASAPI in callback mode to potentially further decrease "
+                              "latency.\n(period/buffer size are ignored)",
+                              &cv::win_snd_wasapi_event_callbacks);
+
             this->wasapiBufferSizeSlider =
                 this->addSlider("Buffer Size:", 0.000f, 0.050f, &cv::win_snd_wasapi_buffer_size);
             this->wasapiBufferSizeSlider->setChangeCallback(SA::MakeDelegate<&OptionsMenu::onWASAPIBufferChange>(this));
@@ -1565,24 +1571,29 @@ void OptionsMenu::mouse_update(bool *propagate_clicks) {
             this->onResetUpdate(this->asioBufferSizeResetButton);
         }
     }
-    if(this->bWASAPIBufferChangeScheduled) {
-        if(!this->wasapiBufferSizeSlider->isActive()) {
-            this->bWASAPIBufferChangeScheduled = false;
 
-            cv::win_snd_wasapi_buffer_size.setValue(this->wasapiBufferSizeSlider->getFloat());
+    if(cv::win_snd_wasapi_event_callbacks.getBool()) {
+        if(this->bWASAPIBufferChangeScheduled) {
+            if(!this->wasapiBufferSizeSlider->isActive()) {
+                this->bWASAPIBufferChangeScheduled = false;
 
-            // and update reset buttons as usual
-            this->onResetUpdate(this->wasapiBufferSizeResetButton);
+                cv::win_snd_wasapi_buffer_size.setValue(this->wasapiBufferSizeSlider->getFloat());
+
+                // and update reset buttons as usual
+                this->onResetUpdate(this->wasapiBufferSizeResetButton);
+            }
         }
-    }
-    if(this->bWASAPIPeriodChangeScheduled) {
-        if(!this->wasapiPeriodSizeSlider->isActive()) {
-            this->bWASAPIPeriodChangeScheduled = false;
 
-            cv::win_snd_wasapi_period_size.setValue(this->wasapiPeriodSizeSlider->getFloat());
+        if(this->bWASAPIPeriodChangeScheduled) {
+            if(!this->wasapiPeriodSizeSlider->isActive()) {
+                this->bWASAPIPeriodChangeScheduled = false;
 
-            // and update reset buttons as usual
-            this->onResetUpdate(this->wasapiPeriodSizeResetButton);
+                // ignore if event callback mode is enabled
+                cv::win_snd_wasapi_period_size.setValue(this->wasapiPeriodSizeSlider->getFloat());
+
+                // and update reset buttons as usual
+                this->onResetUpdate(this->wasapiPeriodSizeResetButton);
+            }
         }
     }
 

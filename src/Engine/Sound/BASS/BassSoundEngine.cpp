@@ -356,10 +356,12 @@ bool BassSoundEngine::initializeOutputDevice(const SoundEngine::OUTPUT_DEVICE &d
     }
 
     if(device.driver == OutputDriver::BASS_WASAPI) {
+        const bool evcallback = cv::win_snd_wasapi_event_callbacks.getBool();
         const float bufferSize =
-            std::round(cv::win_snd_wasapi_buffer_size.getFloat() * 1000.0f) / 1000.0f;  // in seconds
+            evcallback ? 0.f : std::round(cv::win_snd_wasapi_buffer_size.getFloat() * 1000.0f) / 1000.0f;  // in seconds
         const float updatePeriod =
-            std::round(cv::win_snd_wasapi_period_size.getFloat() * 1000.0f) / 1000.0f;  // in seconds
+            evcallback ? 0.00000001f : /* see: https://github.com/ppy/osu-framework/pull/6651 */
+                std::round(cv::win_snd_wasapi_period_size.getFloat() * 1000.0f) / 1000.0f;  // in seconds
 
         BASS_WASAPI_DEVICEINFO info;
         if(!BASS_WASAPI_GetDeviceInfo(device.id, &info)) {
@@ -372,19 +374,14 @@ bool BassSoundEngine::initializeOutputDevice(const SoundEngine::OUTPUT_DEVICE &d
         }
 
         // BASS_MIXER_NONSTOP prevents some sound cards from going to sleep when there is no output
-        auto flags = BASS_MIXER_NONSTOP;
-
-#ifdef _WIN64
-        // BASS_WASAPI_RAW ignores sound "enhancements" that some sound cards offer (adds latency)
-        // It is only available on Windows 8.1 or above
-        flags |= BASS_WASAPI_RAW;
-#endif
+        auto flags = BASS_MIXER_NONSTOP |      //
+                     BASS_WASAPI_AUTOFORMAT |  // attempt to initialize with the best driver-compatible sample format
+                     BASS_WASAPI_RAW |  // ignores sound "enhancements" that some sound cards offer (adds latency)
+                     (evcallback ? BASS_WASAPI_EVENT : 0);  // use event-driven (pull) mode instead of timer (push) mode
 
         if(cv::win_snd_wasapi_exclusive.getBool()) {
             // BASS_WASAPI_EXCLUSIVE makes neosu have exclusive output to the sound card
-            // BASS_WASAPI_AUTOFORMAT chooses the best matching sample format, BASSWASAPI doesn't resample in exclusive
-            // mode
-            flags |= BASS_WASAPI_EXCLUSIVE | BASS_WASAPI_AUTOFORMAT;
+            flags |= BASS_WASAPI_EXCLUSIVE;
         }
         if(!BASS_WASAPI_Init(device.id, 0, 0, flags, bufferSize, updatePeriod, WASAPIPROC_BASS,
                              reinterpret_cast<void *>(static_cast<uintptr_t>(g_bassOutputMixer)))) {

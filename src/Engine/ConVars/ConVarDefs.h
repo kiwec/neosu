@@ -178,7 +178,9 @@ CONVAR(win_snd_wasapi_buffer_size, 0.011f, CLIENT,
 CONVAR(win_snd_wasapi_exclusive, true, CLIENT);
 CONVAR(win_snd_wasapi_period_size, 0.0f, CLIENT,
        "interval between OutputWasapiProc calls in seconds (e.g. 0.016 = 16 ms) (0 = use default)");
-
+CONVAR(win_snd_wasapi_event_callbacks, false, CLIENT,
+       "wait for WASAPI to ask for data instead of filling a buffer, potentially lower latency (ignores period/buffer "
+       "size)");  // convar for testing
 // Audio (mods)
 CONVAR(snd_pitch_hitsounds, false, CLIENT | SKINS | SERVER, "change hitsound pitch based on accuracy");
 CONVAR(snd_pitch_hitsounds_factor, -0.5f, CLIENT | SKINS | SERVER, "how much to change the pitch");

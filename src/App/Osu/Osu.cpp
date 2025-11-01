@@ -195,6 +195,8 @@ Osu::Osu() {
         cv::win_snd_wasapi_exclusive.setCallback(SA::MakeDelegate<&SoundEngine::onParamChanged>(soundEngine.get()));
         cv::win_snd_wasapi_buffer_size.setCallback(SA::MakeDelegate<&SoundEngine::onParamChanged>(soundEngine.get()));
         cv::win_snd_wasapi_period_size.setCallback(SA::MakeDelegate<&SoundEngine::onParamChanged>(soundEngine.get()));
+        cv::win_snd_wasapi_event_callbacks.setCallback(
+            SA::MakeDelegate<&SoundEngine::onParamChanged>(soundEngine.get()));
         cv::asio_buffer_size.setCallback(SA::MakeDelegate<&SoundEngine::onParamChanged>(soundEngine.get()));
     } else if(Env::cfg(AUD::SOLOUD) && soundEngine->getTypeId() == SoundEngine::SOLOUD) {
         this->setupSoloud();
@@ -1446,8 +1448,7 @@ void Osu::onResolutionChanged(vec2 newResolution, ResolutionRequestFlags src) {
 
     // ignore engine resolution size request and find it from cvars, if we are in fullscreen/letterboxed
     const bool res_from_cvars =
-        (fs || fs_letterboxed) &&
-        (src & (R_ENGINE | R_CV_LETTERBOXING | R_CV_RESOLUTION | R_CV_LETTERBOXED_RES));
+        (fs || fs_letterboxed) && (src & (R_ENGINE | R_CV_LETTERBOXING | R_CV_RESOLUTION | R_CV_LETTERBOXED_RES));
 
     if(res_from_cvars) {
         const std::string &res_cv_str =

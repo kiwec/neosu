@@ -27,6 +27,7 @@ Changelog::Changelog() : ScreenBackable() {
     CHANGELOG v41_07;
     v41_07.title = "41.07";
     v41_07.changes = {
+        R"(- Added option to use BASSWASAPI event callbacks (similar to https://github.com/ppy/osu-framework/pull/6651))",
         R"(- Fixed auto-updater for the third time)",
     };
     changelogs.push_back(v41_07);
