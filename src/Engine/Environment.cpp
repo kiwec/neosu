@@ -1130,12 +1130,6 @@ std::string Environment::getThingFromPathHelper(std::string_view path, bool fold
 
 #ifdef MCENGINE_PLATFORM_WINDOWS  // the win32 api is just WAY faster for this
 
-namespace {  // static
-forceinline bool is_dot_or_dotdot(const wchar_t *filename, size_t len) {
-    return len && len <= 2 && (filename[0] == L'.' && (len > 1 ? filename[1] == L'.' : true));
-}
-}  // namespace
-
 std::vector<std::string> Environment::enumerateDirectory(std::string_view pathToEnum,
                                                          /* enum SDL_PathType */ unsigned int type) noexcept {
     // Since we want to avoid wide strings in the codebase as much as possible,
@@ -1159,11 +1153,14 @@ std::vector<std::string> Environment::enumerateDirectory(std::string_view pathTo
         const size_t length = std::wcslen(wide_filename);
         if(length <= 0) break;
 
-        const bool add_entry = (!want_dirs || !is_dot_or_dotdot(wide_filename, length)) &&
-                               (want_dirs == !!(data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY));
+        const bool add_entry =
+            (!want_dirs || !(wide_filename[0] == L'.' &&
+                             (wide_filename[1] == L'\0' || (wide_filename[1] == L'.' && wide_filename[2] == L'\0')))) &&
+            (want_dirs == !!(data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY));
 
         if(add_entry) {
-            UString uFilename{wide_filename, static_cast<int>(length)};
+            static UString uFilename;
+            uFilename = {wide_filename, static_cast<int>(length)};
             utf8_entries.emplace_back(uFilename.toUtf8(), static_cast<size_t>(uFilename.lengthUtf8()));
         }
 
@@ -1171,6 +1168,53 @@ std::vector<std::string> Environment::enumerateDirectory(std::string_view pathTo
     }
 
     FindClose(handle);
+
+    return utf8_entries;
+}
+
+#elif defined(MCENGINE_PLATFORM_LINUX)
+
+#include <dirent.h>
+#include <sys/stat.h>
+
+std::vector<std::string> Environment::enumerateDirectory(std::string_view pathToEnum,
+                                                         /* enum SDL_PathType */ unsigned int type) noexcept {
+    std::vector<std::string> utf8_entries;
+    utf8_entries.reserve(512);
+
+    const bool want_dirs = (type == SDL_PATHTYPE_DIRECTORY);
+
+    DIR *dir = opendir(std::string(pathToEnum).c_str());
+    if(!dir) return utf8_entries;
+
+    struct dirent *entry;
+    while((entry = readdir(dir)) != nullptr) {
+        const char *name = &entry->d_name[0];
+
+        // skip . and .. for directories
+        if(want_dirs && name[0] == '.' && (name[1] == '\0' || (name[1] == '.' && name[2] == '\0'))) {
+            continue;
+        }
+
+        // d_type is supported on most linux filesystems (ext4, xfs, btrfs, etc)
+        // but may be DT_UNKNOWN on network filesystems
+        bool is_dir;
+        if(entry->d_type != DT_UNKNOWN) {
+            is_dir = (entry->d_type == DT_DIR);
+        } else {
+            // fallback for filesystems that don't populate d_type
+            struct stat st;
+            is_dir = (stat(fmt::format("{}/{}", pathToEnum, name).c_str(), &st) == 0 && S_ISDIR(st.st_mode));
+        }
+
+        const bool add_entry = (want_dirs == is_dir);
+
+        if(add_entry) {
+            utf8_entries.emplace_back(name);
+        }
+    }
+
+    closedir(dir);
 
     return utf8_entries;
 }
@@ -1194,12 +1238,7 @@ std::vector<std::string> Environment::enumerateDirectory(std::string_view pathTo
         auto fileType = entry.status(ec).type();
 
         if((wantFiles && fileType == fs::file_type::regular) || (wantDirs && fileType == fs::file_type::directory)) {
-            const auto &filename = entry.path().filename();
-            if constexpr(Env::cfg(OS::WINDOWS)) {  // std::filesystem BS
-                contents.emplace_back(UString{filename.generic_string()}.utf8View());
-            } else {
-                contents.emplace_back(filename.generic_string());
-            }
+            contents.emplace_back(entry.path().filename().generic_string());
         }
     }
 
