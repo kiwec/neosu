@@ -7,8 +7,6 @@ class HitObject;
 
 #define CACHED_VIRTUAL_METHODS                   \
     X(u32, getScoreV1DifficultyMultiplier, 0.01) \
-    X(Replay::Mods, getMods, 0.01)               \
-    X(u32, getModsLegacy, 0.01)                  \
     X(f32, getRawAR, 0.01)                       \
     X(f32, getRawOD, 0.01)                       \
     X(f32, getAR, 0.01)                          \
@@ -85,6 +83,9 @@ class AbstractBeatmapInterface {
     [[nodiscard]] inline rettype methodname() const { return methodname##_cached(); }
     CACHED_VIRTUAL_METHODS
 #undef X
+
+    [[nodiscard]] virtual const Replay::Mods &getMods() const; // overridden by SimulatedBeatmapInterface
+    [[nodiscard]] virtual u32 getModsLegacy() const; // overridden by SimulatedBeatmapInterface
 
     [[nodiscard]] virtual vec2 getCursorPos() const = 0;
 

@@ -11,6 +11,9 @@ CACHED_BASE_METHODS
 #undef CACHED_BASE_METHODS
 #undef CACHED_METHOD_IMPL
 
+const Replay::Mods &AbstractBeatmapInterface::getMods() const { return osu->getScore()->mods; }
+u32 AbstractBeatmapInterface::getModsLegacy() const { return osu->getScore()->getModsLegacy(); }
+
 LiveScore::HIT AbstractBeatmapInterface::getHitResult(i32 delta) {
     // "stable-like" hit windows, see https://github.com/ppy/osu/pull/33882
     f32 window300 = std::floor(this->getHitWindow300()) - 0.5f;
@@ -40,6 +43,4 @@ LiveScore::HIT AbstractBeatmapInterface::getHitResult(i32 delta) {
     return LiveScore::HIT::HIT_MISS;
 }
 
-bool AbstractBeatmapInterface::isClickHeld() {
-    return this->getKeys() & ~LegacyReplay::Smoke;
-}
+bool AbstractBeatmapInterface::isClickHeld() { return this->getKeys() & ~LegacyReplay::Smoke; }

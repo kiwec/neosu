@@ -4287,7 +4287,3 @@ f32 BeatmapInterface::getRawApproachTime_full() const {
                : GameRules::mapDifficultyRange(this->getRawAR(), GameRules::getMinApproachTime(),
                                                GameRules::getMidApproachTime(), GameRules::getMaxApproachTime());
 }
-
-Replay::Mods BeatmapInterface::getMods_full() const { return osu->getScore()->mods; }
-
-u32 BeatmapInterface::getModsLegacy_full() const { return osu->getScore()->getModsLegacy(); }

@@ -316,8 +316,6 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
 
    private:
     [[nodiscard]] u32 getScoreV1DifficultyMultiplier_full() const override;
-    [[nodiscard]] Replay::Mods getMods_full() const override;
-    [[nodiscard]] u32 getModsLegacy_full() const override;
     [[nodiscard]] f32 getRawAR_full() const override;
     [[nodiscard]] f32 getAR_full() const override;
     [[nodiscard]] f32 getCS_full() const override;

@@ -21,6 +21,9 @@ class SimulatedBeatmapInterface final : public AbstractBeatmapInterface {
     // Potentially Visible Set gate time size, for optimizing draw() and update() when iterating over all hitobjects
     i32 getPVS();
 
+    [[nodiscard]] const Replay::Mods &getMods() const override { return this->mods; }
+    [[nodiscard]] u32 getModsLegacy() const override { return this->mods.to_legacy(); }
+
     [[nodiscard]] vec2 pixels2OsuCoords(vec2 pixelCoords) const override;  // only used for positional audio atm
     [[nodiscard]] vec2 osuCoords2Pixels(
         vec2 coords) const override;  // hitobjects should use this one (includes lots of special behaviour)
@@ -119,8 +122,6 @@ class SimulatedBeatmapInterface final : public AbstractBeatmapInterface {
     i32 iCurrentNumSpinners;
 
    private:
-    [[nodiscard]] Replay::Mods getMods_full() const override { return this->mods; }
-    [[nodiscard]] u32 getModsLegacy_full() const override { return this->mods.to_legacy(); }
     [[nodiscard]] u32 getScoreV1DifficultyMultiplier_full() const override;
     [[nodiscard]] f32 getSpeedMultiplier() const override { return this->mods.speed; }
     [[nodiscard]] f32 getRawAR_full() const override;
