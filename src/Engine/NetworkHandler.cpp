@@ -119,9 +119,10 @@ void NetworkHandler::processNewRequests() {
         request->easy_handle = curl_easy_init();
         if(!request->easy_handle) {
             request->response.success = false;
-
-            Sync::scoped_lock completed_lock{this->completed_requests_mutex};
-            this->completed_requests.push_back(std::move(request));
+            if (request->callback) { // if there's no callback, don't put it in completed_requests
+                Sync::scoped_lock completed_lock{this->completed_requests_mutex};
+                this->completed_requests.push_back(std::move(request));
+            }
             continue;
         }
 
@@ -151,8 +152,10 @@ void NetworkHandler::processNewRequests() {
             request->response.easy_handle = request->easy_handle;
 
             // defer async callback execution
-            Sync::scoped_lock completed_lock{this->completed_requests_mutex};
-            this->completed_requests.push_back(std::move(request));
+            if (request->callback) {
+                Sync::scoped_lock completed_lock{this->completed_requests_mutex};
+                this->completed_requests.push_back(std::move(request));
+            }
             continue;
         }
 
@@ -161,8 +164,10 @@ void NetworkHandler::processNewRequests() {
             curl_easy_cleanup(request->easy_handle);
             request->response.success = false;
 
-            Sync::scoped_lock completed_lock{this->completed_requests_mutex};
-            this->completed_requests.push_back(std::move(request));
+            if (request->callback) {
+                Sync::scoped_lock completed_lock{this->completed_requests_mutex};
+                this->completed_requests.push_back(std::move(request));
+            }
             continue;
         }
 
@@ -212,7 +217,7 @@ void NetworkHandler::processCompletedRequests() {
             if(cv_it != this->sync_request_cvs.end()) {
                 cv_it->second->notify_one();
             }
-        } else {
+        } else if (request->callback) {
             // defer async callback execution
             Sync::scoped_lock completed_lock{this->completed_requests_mutex};
             this->completed_requests.push_back(std::move(request));
@@ -330,15 +335,18 @@ size_t NetworkHandler::headerCallback(char* buffer, size_t size, size_t nitems, 
 
 // Callbacks will all be run on the main thread, in engine->update()
 void NetworkHandler::update() {
-    std::vector<std::unique_ptr<NetworkRequest>> responses_to_handle;
     {
-        Sync::scoped_lock lock{this->completed_requests_mutex};
-        responses_to_handle = std::move(this->completed_requests);
-        this->completed_requests.clear();
-    }
-    for(auto& request : responses_to_handle) {
-        if(request == nullptr || request->callback == nullptr) continue;  // TODO: how??
-        request->callback(request->response);
+        std::vector<std::unique_ptr<NetworkRequest>> responses_to_handle;
+        {
+            Sync::scoped_lock lock{this->completed_requests_mutex};
+            responses_to_handle = std::move(this->completed_requests);
+            this->completed_requests.clear();
+        }
+        for(auto& request : responses_to_handle) {
+            assert(request && "null request in completed_requests");
+            assert(request->callback && "no callback for request in completed_requests");
+            request->callback(request->response);
+        }
     }
 
     // websocket recv

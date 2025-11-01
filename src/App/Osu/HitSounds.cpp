@@ -212,9 +212,9 @@ std::vector<HitSamples::Set_Slider_Hit> HitSamples::play(f32 pan, i32 delta, boo
         return soundEngine->play(snd, pan, pitch, volume);
     };
 
-    // NOTE: osu->getSkin()->layeredHitSounds seems to be forced even if the map uses custom hitsounds
+    // NOTE: LayeredHitSounds seems to be forced even if the map uses custom hitsounds
     //       according to https://osu.ppy.sh/community/forums/topics/15937
-    if((this->hitSounds & HitSoundType::NORMAL) || (this->hitSounds == 0) || osu->getSkin()->o_layered_hitsounds) {
+    if((this->hitSounds & HitSoundType::NORMAL) || (this->hitSounds == 0) || skin->o_layered_hitsounds) {
         if(try_play(this->getNormalSet(), HitSoundType::NORMAL)) {
             played_list.push_back(potentially_played);
             potentially_played = {};

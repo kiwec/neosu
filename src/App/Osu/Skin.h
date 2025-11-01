@@ -55,6 +55,8 @@ struct Skin final {
                    bool isOverlayable = false, bool isSample = false, bool loop = false,
                    bool fallback_to_default = true);
 
+    void load();
+
    public:
     static void unpack(const char *filepath);
 
@@ -65,7 +67,6 @@ struct Skin final {
 
     bool isReady();
 
-    void load();
     void loadBeatmapOverride(const std::string &filepath);
     void reloadSounds();
 
