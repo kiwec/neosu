@@ -1572,7 +1572,7 @@ void OptionsMenu::mouse_update(bool *propagate_clicks) {
         }
     }
 
-    if(cv::win_snd_wasapi_event_callbacks.getBool()) {
+    if(!cv::win_snd_wasapi_event_callbacks.getBool()) {
         if(this->bWASAPIBufferChangeScheduled) {
             if(!this->wasapiBufferSizeSlider->isActive()) {
                 this->bWASAPIBufferChangeScheduled = false;
