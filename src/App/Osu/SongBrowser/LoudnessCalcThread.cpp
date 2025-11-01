@@ -110,11 +110,21 @@ struct VolNormalization::LoudnessCalcThread {
             BASS_ChannelFree(decoder);
 
             f32 integrated_loudness = 0.f;
-            BASS_Loudness_GetLevel(loudness, BASS_LOUDNESS_INTEGRATED, &integrated_loudness);
+            const bool succeeded = BASS_Loudness_GetLevel(loudness, BASS_LOUDNESS_INTEGRATED, &integrated_loudness);
+            const int errc = succeeded ? 0 : BASS_ErrorGetCode();
+
             BASS_Loudness_Stop(loudness);
-            if(integrated_loudness == -HUGE_VAL) {
-                debugLog("No loudness information available for '{:s}' (silent song?)", song.toUtf8());
-            } else {
+
+            if(!succeeded || integrated_loudness == -HUGE_VAL) {
+                debugLog("No loudness information available for '{:s}' {}", song.toUtf8(),
+                         !succeeded ? BassManager::getErrorUString(errc) : "(silent song?)");
+
+                integrated_loudness = std::clamp<f32>(cv::loudness_fallback.getFloat(), -16.f, 0.f);
+            }
+
+            // it seems safe to assume integrated_loudness == -HUGE_VAL means it's actually silent
+            // so store it (with loudness_fallback), so we don't constantly re-calculate silent tracks
+            if(succeeded) {
                 map->loudness = integrated_loudness;
                 map->update_overrides();
                 last_loudness = integrated_loudness;
