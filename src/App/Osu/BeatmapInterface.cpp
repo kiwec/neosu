@@ -1957,7 +1957,10 @@ void BeatmapInterface::drawHitObjects() {
     const bool usePVS = cv::pvs.getBool();
 
     if(!cv::mod_mafham.getBool()) {
-        for(auto &obj : this->hitobjectsSortedByEndTime | std::views::reverse) {
+        static std::deque<HitObject *> to_draw;
+        to_draw.clear();
+
+        for(auto *obj : this->hitobjectsSortedByEndTime | std::views::reverse) {
             // PVS optimization (reversed)
             if(usePVS) {
                 if(obj->isFinished() && (curPos - pvs > obj->click_time + obj->duration))  // past objects
@@ -1966,9 +1969,20 @@ void BeatmapInterface::drawHitObjects() {
                     continue;
             }
 
+            // draw spinners first, overlay everything else on top
+            if(obj->type == HitObjectType::SPINNER) {
+                to_draw.push_front(obj);
+            } else {
+                to_draw.push_back(obj);
+            }
+        }
+
+        for(auto *obj : to_draw) {
             obj->draw();
         }
-        for(auto &obj : this->hitobjectsSortedByEndTime) {
+        to_draw.clear();
+
+        for(auto *obj : this->hitobjectsSortedByEndTime) {
             // NOTE: to fix mayday simultaneous sliders with increasing endtime getting culled here, would have to
             // switch from m_hitobjectsSortedByEndTime to m_hitobjects PVS optimization
             if(usePVS) {

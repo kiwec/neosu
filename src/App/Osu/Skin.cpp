@@ -34,8 +34,10 @@
 bool Skin::BasicSkinImage::is2x() const {
     if(unlikely(!this->checked_2x)) {
         this->checked_2x = true;
-        if(this->img && this->img != MISSING_TEXTURE && !this->img->getFilePath().empty()) {
-            this->file_2x = this->img->getFilePath().contains("@2x");
+        std::string_view path;
+        if(this->img && this->img != MISSING_TEXTURE && (path = this->img->getFilePath()).length() > 7 /* @2x.png == 7 */) {
+            path = path.substr(path.length() - 7);
+            this->file_2x = path.contains("@2x");
         }
     }
 

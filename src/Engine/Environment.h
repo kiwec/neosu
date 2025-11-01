@@ -210,16 +210,15 @@ class Environment {
         using enum WinFlags;
         // we do not use "real" fullscreen mode, so maximized+borderless+unoccluded is the same as fullscreen
         // also return true if we are pending a re-fullscreen, to avoid issues related to that and event ordering on alt-tab
-        return m_bRestoreFullscreen || !!(m_winflags & F_FULLSCREEN) ||
-               (!(m_winflags & F_OCCLUDED) &&
-                (m_winflags & (F_BORDERLESS | F_MAXIMIZED)) == (F_BORDERLESS | F_MAXIMIZED));
+        return m_bRestoreFullscreen || flags::has<F_FULLSCREEN>(m_winflags) ||
+               (!flags::has<F_OCCLUDED>(m_winflags) && flags::has<F_BORDERLESS | F_MAXIMIZED>(m_winflags));
     }
-    [[nodiscard]] constexpr bool winResizable() const { return !!(m_winflags & WinFlags::F_RESIZABLE); }
+    [[nodiscard]] constexpr bool winResizable() const { return flags::has<WinFlags::F_RESIZABLE>(m_winflags); }
     [[nodiscard]] constexpr bool winFocused() const {
-        return !!(m_winflags & (WinFlags::F_MOUSE_FOCUS | WinFlags::F_INPUT_FOCUS));
+        return flags::any<WinFlags::F_MOUSE_FOCUS | WinFlags::F_INPUT_FOCUS>(m_winflags);
     }
-    [[nodiscard]] constexpr bool winMinimized() const { return !!(m_winflags & WinFlags::F_MINIMIZED); }
-    [[nodiscard]] constexpr bool winMaximized() const { return !!(m_winflags & WinFlags::F_MAXIMIZED); }
+    [[nodiscard]] constexpr bool winMinimized() const { return flags::has<WinFlags::F_MINIMIZED>(m_winflags); }
+    [[nodiscard]] constexpr bool winMaximized() const { return flags::has<WinFlags::F_MAXIMIZED>(m_winflags); }
 
     // mouse
     [[nodiscard]] constexpr bool isCursorInWindow() const { return m_bIsCursorInsideWindow; }
@@ -228,7 +227,9 @@ class Environment {
     [[nodiscard]] constexpr vec2 getMousePos() const { return m_vLastAbsMousePos; }
     [[nodiscard]] constexpr const McRect &getCursorClip() const { return m_cursorClipRect; }
     [[nodiscard]] constexpr CURSORTYPE getCursor() const { return m_cursorType; }
-    [[nodiscard]] constexpr bool isOSMouseInputRaw() const { return !!(m_winflags & WinFlags::F_MOUSE_RELATIVE_MODE); }
+    [[nodiscard]] constexpr bool isOSMouseInputRaw() const {
+        return flags::has<WinFlags::F_MOUSE_RELATIVE_MODE>(m_winflags);
+    }
 
     void setCursor(CURSORTYPE cur);
     void setCursorVisible(bool visible);

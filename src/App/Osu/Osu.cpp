@@ -204,8 +204,7 @@ Osu::Osu() {
     cv::skin.setCallback(SA::MakeDelegate<&Osu::onSkinChange>(this));
     cv::skin_reload.setCallback(SA::MakeDelegate<&Osu::onSkinReload>(this));
     // load skin
-    if(!this->skin)  // sanity (the skin may already be loaded by Console::execConfigFile() above, should be impossible?)
-        this->onSkinChange(cv::skin.getString());
+    this->onSkinChange(cv::skin.getString());
 
     // Convar callbacks that should be set after loading the config
     cv::mod_mafham.setCallback(SA::MakeDelegate<&Osu::rebuildRenderTargets>(this));

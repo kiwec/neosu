@@ -19,6 +19,7 @@
 #include "SliderCurves.h"
 #include "SliderRenderer.h"
 #include "SoundEngine.h"
+#include "OpenGLHeaders.h"
 #include "Logging.h"
 
 void HitObject::drawHitResult(BeatmapInterface *pf, vec2 rawPos, LiveScore::HIT result, float animPercentInv,
@@ -2444,18 +2445,18 @@ void Spinner::draw() {
     if((this->bFinished || !this->bVisible) && (deltaEnd > 0 || (deltaEnd < -fadeOutTimeMS))) return;
 
     const Skin *skin = this->pf->getSkin();
-    vec2 center = this->pf->osuCoords2Pixels(this->vRawPos);
+    const vec2 center = this->pf->osuCoords2Pixels(this->vRawPos);
 
     // only used for fade out anim atm
-    f32 alphaMultiplier =
+    const f32 alphaMultiplier =
         std::clamp<f32>((deltaEnd < 0 ? 1.f - ((f32)std::abs(deltaEnd) / (f32)fadeOutTimeMS) : 1.f), 0.f, 1.f);
 
-    f32 spinnerScale = this->pf->getPlayfieldSize().y / 667.f;
+    const f32 spinnerScale = this->pf->getPlayfieldSize().y / 667.f;
 
     // the spinner grows until reaching 100% during spinning, depending on how many spins are left
-    f32 clampedRatio = std::clamp<float>(this->fRatio, 0.0f, 1.0f);
-    f32 finishScaleRatio = -clampedRatio * (clampedRatio - 2);
-    f32 finishScale = 0.80f + finishScaleRatio * 0.20f;
+    const f32 clampedRatio = std::clamp<float>(this->fRatio, 0.0f, 1.0f);
+    const f32 finishScaleRatio = -clampedRatio * (clampedRatio - 2);
+    const f32 finishScale = 0.80f + finishScaleRatio * 0.20f;
 
     // TODO: fix scaling/positioning, see https://osu.ppy.sh/wiki/en/Skinning/osu%21#spinner
     // TODO: skin->bSpinnerFadePlayfield
@@ -2465,11 +2466,16 @@ void Spinner::draw() {
         // draw background
         g->pushTransform();
         {
+            // not sure if blend mode is necessary here
+            g->setBlendMode(Graphics::BLEND_MODE::BLEND_MODE_PREMUL_COLOR);
+
             f32 backgroundScale = spinnerScale / (skin->i_spinner_bg.is2x() ? 2.f : 1.f);
             g->setColor(Color(skin->c_spinner_bg).setA(this->fAlphaWithoutHidden * alphaMultiplier));
             g->scale(backgroundScale, backgroundScale);
             g->translate(center.x, center.y);
             g->drawImage(skin->i_spinner_bg);
+
+            g->setBlendMode(Graphics::BLEND_MODE::BLEND_MODE_ALPHA);
         }
         g->popTransform();
 
@@ -2497,7 +2503,7 @@ void Spinner::draw() {
 
         // draw spinner circle
         if(skin->i_spinner_circle != MISSING_TEXTURE) {
-            f32 spinnerCircleScale = spinnerScale / (skin->i_spinner_circle.is2x() ? 2.0f : 1.0f);
+            const f32 spinnerCircleScale = spinnerScale / (skin->i_spinner_circle.is2x() ? 2.0f : 1.0f);
             g->setColor(Color(0xffffffff).setA(this->fAlphaWithoutHidden * alphaMultiplier));
 
             g->pushTransform();
@@ -2512,7 +2518,8 @@ void Spinner::draw() {
 
         // draw approach circle
         if(!(flags::has<LegacyFlags::Hidden>(this->pi->getModsLegacy())) && this->fPercent > 0.0f) {
-            f32 spinnerApproachCircleImageScale = spinnerScale / (skin->i_spinner_approach_circle.is2x() ? 2.0f : 1.0f);
+            const f32 spinnerApproachCircleImageScale =
+                (spinnerScale * 2) / (skin->i_spinner_approach_circle.is2x() ? 2.0f : 1.0f);
             g->setColor(Color(skin->c_spinner_approach_circle).setA(this->fAlphaWithoutHidden * alphaMultiplier));
 
             g->pushTransform();
@@ -2528,7 +2535,7 @@ void Spinner::draw() {
     {
         // bottom
         if(skin->i_spinner_bottom != MISSING_TEXTURE) {
-            f32 spinnerBottomImageScale = spinnerScale / (skin->i_spinner_bottom.is2x() ? 2.0f : 1.0f);
+            const f32 spinnerBottomImageScale = spinnerScale / (skin->i_spinner_bottom.is2x() ? 2.0f : 1.0f);
             g->setColor(Color(0xffffffff).setA(this->fAlphaWithoutHidden * alphaMultiplier));
 
             g->pushTransform();
@@ -2543,7 +2550,7 @@ void Spinner::draw() {
 
         // top
         if(skin->i_spinner_top != MISSING_TEXTURE) {
-            f32 spinnerTopImageScale = spinnerScale / (skin->i_spinner_top.is2x() ? 2.0f : 1.0f);
+            const f32 spinnerTopImageScale = spinnerScale / (skin->i_spinner_top.is2x() ? 2.0f : 1.0f);
             g->setColor(Color(0xffffffff).setA(this->fAlphaWithoutHidden * alphaMultiplier));
 
             g->pushTransform();
@@ -2558,7 +2565,7 @@ void Spinner::draw() {
 
         // middle
         if(skin->i_spinner_middle2 != MISSING_TEXTURE) {
-            f32 spinnerMiddle2ImageScale = spinnerScale / (skin->i_spinner_middle2.is2x() ? 2.0f : 1.0f);
+            const f32 spinnerMiddle2ImageScale = spinnerScale / (skin->i_spinner_middle2.is2x() ? 2.0f : 1.0f);
             g->setColor(Color(0xffffffff).setA(this->fAlphaWithoutHidden * alphaMultiplier));
 
             g->pushTransform();
@@ -2571,7 +2578,7 @@ void Spinner::draw() {
             g->popTransform();
         }
         if(skin->i_spinner_middle != MISSING_TEXTURE) {
-            f32 spinnerMiddleImageScale = spinnerScale / (skin->i_spinner_middle.is2x() ? 2.0f : 1.0f);
+            const f32 spinnerMiddleImageScale = spinnerScale / (skin->i_spinner_middle.is2x() ? 2.0f : 1.0f);
             g->setColor(
                 argb(this->fAlphaWithoutHidden * alphaMultiplier, 1.f, (1.f * this->fPercent), (1.f * this->fPercent)));
             g->pushTransform();
@@ -2587,7 +2594,8 @@ void Spinner::draw() {
         // approach circle
         // TODO: only use when spinner-circle or spinner-top are skinned
         if(!(flags::has<LegacyFlags::Hidden>(this->pi->getModsLegacy())) && this->fPercent > 0.0f) {
-            f32 spinnerApproachCircleImageScale = spinnerScale / (skin->i_spinner_approach_circle.is2x() ? 2.0f : 1.0f);
+            const f32 spinnerApproachCircleImageScale =
+                (spinnerScale * 2) / (skin->i_spinner_approach_circle.is2x() ? 2.0f : 1.0f);
 
             // fun fact, peppy removed it: https://osu.ppy.sh/community/forums/topics/100765
             g->setColor(Color(skin->c_spinner_approach_circle).setA(this->fAlphaWithoutHidden * alphaMultiplier));
@@ -2596,7 +2604,7 @@ void Spinner::draw() {
             {
                 g->scale(spinnerApproachCircleImageScale * this->fPercent,
                          spinnerApproachCircleImageScale * this->fPercent);
-                g->translate(center.x, 397.f);
+                g->translate(center.x, center.y); /* 397.f wtf is this hardcoded number? its completely off */
                 g->drawImage(skin->i_spinner_approach_circle);
             }
             g->popTransform();
@@ -2605,7 +2613,7 @@ void Spinner::draw() {
 
     // "CLEAR!"
     if(this->fRatio >= 1.0f) {
-        f32 spinnerClearImageScale = spinnerScale / (skin->i_spinner_clear.is2x() ? 2.0f : 1.0f);
+        const f32 spinnerClearImageScale = spinnerScale / (skin->i_spinner_clear.is2x() ? 2.0f : 1.0f);
         g->setColor(Color(0xffffffff).setA(alphaMultiplier));
 
         g->pushTransform();

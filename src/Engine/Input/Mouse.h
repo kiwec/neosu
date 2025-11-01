@@ -45,11 +45,21 @@ class Mouse final : public InputDevice {
     [[nodiscard]] inline float getSensitivity() const { return this->fSensitivity; }
 
     // button state accessors
-    [[nodiscard]] constexpr bool isLeftDown() const { return !!(this->buttonsHeldMask & MouseButtonFlags::MF_LEFT); }
-    [[nodiscard]] constexpr bool isMiddleDown() const { return !!(this->buttonsHeldMask & MouseButtonFlags::MF_MIDDLE); }
-    [[nodiscard]] constexpr bool isRightDown() const { return !!(this->buttonsHeldMask & MouseButtonFlags::MF_RIGHT); }
-    [[nodiscard]] constexpr bool isButton4Down() const { return !!(this->buttonsHeldMask & MouseButtonFlags::MF_X1); }
-    [[nodiscard]] constexpr bool isButton5Down() const { return !!(this->buttonsHeldMask & MouseButtonFlags::MF_X2); }
+    [[nodiscard]] constexpr bool isLeftDown() const {
+        return flags::has<MouseButtonFlags::MF_LEFT>(this->buttonsHeldMask);
+    }
+    [[nodiscard]] constexpr bool isMiddleDown() const {
+        return flags::has<MouseButtonFlags::MF_MIDDLE>(this->buttonsHeldMask);
+    }
+    [[nodiscard]] constexpr bool isRightDown() const {
+        return flags::has<MouseButtonFlags::MF_RIGHT>(this->buttonsHeldMask);
+    }
+    [[nodiscard]] constexpr bool isButton4Down() const {
+        return flags::has<MouseButtonFlags::MF_X1>(this->buttonsHeldMask);
+    }
+    [[nodiscard]] constexpr bool isButton5Down() const {
+        return flags::has<MouseButtonFlags::MF_X2>(this->buttonsHeldMask);
+    }
     [[nodiscard]] constexpr MouseButtonFlags getHeldButtons() const { return this->buttonsHeldMask; }
 
     [[nodiscard]] inline int getWheelDeltaVertical() const { return this->iWheelDeltaVertical; }
