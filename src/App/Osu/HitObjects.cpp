@@ -2466,16 +2466,11 @@ void Spinner::draw() {
         // draw background
         g->pushTransform();
         {
-            // not sure if blend mode is necessary here
-            g->setBlendMode(Graphics::BLEND_MODE::BLEND_MODE_PREMUL_COLOR);
-
             f32 backgroundScale = spinnerScale / (skin->i_spinner_bg.is2x() ? 2.f : 1.f);
             g->setColor(Color(skin->c_spinner_bg).setA(this->fAlphaWithoutHidden * alphaMultiplier));
             g->scale(backgroundScale, backgroundScale);
             g->translate(center.x, center.y);
             g->drawImage(skin->i_spinner_bg);
-
-            g->setBlendMode(Graphics::BLEND_MODE::BLEND_MODE_ALPHA);
         }
         g->popTransform();
 
