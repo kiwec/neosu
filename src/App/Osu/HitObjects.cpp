@@ -19,7 +19,6 @@
 #include "SliderCurves.h"
 #include "SliderRenderer.h"
 #include "SoundEngine.h"
-#include "OpenGLHeaders.h"
 #include "Logging.h"
 
 void HitObject::drawHitResult(BeatmapInterface *pf, vec2 rawPos, LiveScore::HIT result, float animPercentInv,

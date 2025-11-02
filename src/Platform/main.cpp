@@ -221,29 +221,15 @@ MAIN_FUNC /* int argc, char *argv[] */
 
     const auto restartArgs{fmain->getCommandLine()};
 
-    constexpr int SIZE_EVENTS = 64;
-    std::array<SDL_Event, SIZE_EVENTS> events{};
-
     while(fmain->isRunning()) {
         VPROF_MAIN();
         {
             // event collection
-            VPROF_BUDGET("SDL", VPROF_BUDGETGROUP_EVENTS);
-            int eventCount = 0;
-            {
-                VPROF_BUDGET("SDL_PumpEvents", VPROF_BUDGETGROUP_EVENTS);
-                SDL_PumpEvents();
+            VPROF_BUDGET("HandleEvent", VPROF_BUDGETGROUP_EVENTS);
+            SDL_Event event;
+            while(SDL_PollEvent(&event)) {
+                fmain->handleEvent(&event);
             }
-            do {
-                {
-                    VPROF_BUDGET("SDL_PeepEvents", VPROF_BUDGETGROUP_EVENTS);
-                    eventCount = SDL_PeepEvents(&events[0], SIZE_EVENTS, SDL_GETEVENT, SDL_EVENT_FIRST, SDL_EVENT_LAST);
-                }
-                {
-                    VPROF_BUDGET("handleEvent", VPROF_BUDGETGROUP_EVENTS);
-                    for(int i = 0; i < eventCount; ++i) fmain->handleEvent(&events[i]);
-                }
-            } while(eventCount == SIZE_EVENTS);
         }
         {
             // engine update + draw + fps limiter
