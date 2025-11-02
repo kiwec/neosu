@@ -14,8 +14,8 @@
 
 class ByteBufferedFile {
    private:
-    static constexpr const uSz READ_BUFFER_SIZE{3ULL * 1024 * 1024}; /* 3MB */
-    static constexpr const uSz WRITE_BUFFER_SIZE{3ULL * 1024 * 1024};
+    static constexpr const uSz READ_BUFFER_SIZE{4ULL * 1024 * 1024};
+    static constexpr const uSz WRITE_BUFFER_SIZE{4ULL * 1024 * 1024};
 
    public:
     class Reader {
@@ -175,7 +175,7 @@ class ByteBufferedFile {
        private:
         void set_error(const std::string &error_msg);
 
-        std::array<u8, READ_BUFFER_SIZE> buffer;
+        std::unique_ptr<u8[]> buffer;
 
         std::ifstream file;
 
@@ -211,7 +211,7 @@ class ByteBufferedFile {
        private:
         void set_error(const std::string &error_msg);
 
-        std::array<u8, WRITE_BUFFER_SIZE> buffer;
+        std::unique_ptr<u8[]> buffer;
 
         std::filesystem::path file_path;
         std::filesystem::path tmp_file_path;
