@@ -661,7 +661,7 @@ void DirectX11Interface::drawImage(const Image *image, AnchorPoint anchor, float
             y = -height / 2;
             break;
         default:
-            abort();
+            fubar_abort();
     }
 
     if(smoothedEdges && !clipRectSpecified) {

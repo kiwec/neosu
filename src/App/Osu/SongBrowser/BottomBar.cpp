@@ -40,7 +40,7 @@ void press_bottombar_button(i32 btn_index) {
             osu->getSongBrowser()->onSelectionOptions();
             break;
         default:
-            abort();
+            fubar_abort();
     }
 }
 

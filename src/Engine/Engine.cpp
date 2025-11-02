@@ -516,7 +516,7 @@ void Engine::showMessageErrorFatal(const UString &title, const UString &message)
 void Engine::runtime_assert(bool cond, const char *reason) {
     if(cond) return;
     this->showMessageErrorFatal("Engine Error", reason);
-    std::abort();
+    fubar_abort();
 }
 
 void Engine::requestResolutionChange(vec2 newResolution) {

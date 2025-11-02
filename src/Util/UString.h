@@ -35,7 +35,7 @@ class AlignedAllocator {
 
     [[nodiscard]] T *allocate(std::size_t n) noexcept {
         if(n > std::numeric_limits<std::size_t>::max() / sizeof(T)) {
-            std::abort();
+            fubar_abort();
         }
         const std::size_t bytes = n * sizeof(T);
         return static_cast<T *>(::operator new(bytes, alignment));

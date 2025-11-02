@@ -488,7 +488,7 @@ AS_IF([[case "$CC" in
 esac]])
 AC_PROG_CXX([$CXX])
 
-AC_CHECK_TOOL([STRIP], [strip], [strip])
+AC_CHECK_PROG([STRIP], [strip], [strip]) # don't use mingw-strip, seems to not work as well as regular binutils strip even for windows builds...
 
 AC_CHECK_PROG([CCACHE], [ccache], [ccache])
 
@@ -719,8 +719,8 @@ AS_IF([test "x$enable_debug" = "xyes"], [
 ], [
     AS_IF([test "x$enable_optimize" != "xno"], [
         CPPFLAGS="$CPPFLAGS -DNDEBUG -D_NDEBUG"
-        CXXFLAGS="${CXXFLAGS//-g -O2/} -Os" # where do those -g -O2 flags even come from...
-        CFLAGS="${CFLAGS//-g -O2/} -Os"
+        CXXFLAGS="${CXXFLAGS//-g -O2/} -O3" # where do those -g -O2 flags even come from...
+        CFLAGS="${CFLAGS//-g -O2/} -O3"
         NEOSU_LDFLAGS="$NEOSU_LDFLAGS -Wl,-O1"
 
         AS_IF([test "x$enable_clang" != "xyes"], [
@@ -929,7 +929,7 @@ ZLIB_BUILD_VERSION=2.2.5 # zlib-ng
 BZIP2_MIN_VERSION=1.0.8
 BZIP2_BUILD_VERSION=1.0.8
 FMT_MIN_VERSION=11.0.0
-FMT_BUILD_VERSION=12.0.0
+FMT_BUILD_VERSION=12.1.0
 LZMA_MIN_VERSION=5.4.7
 LZMA_BUILD_VERSION=5.8.1
 LIBARCHIVE_MIN_VERSION=3.6.2
@@ -970,7 +970,8 @@ AS_IF([test "$SYSNAME" = "linux"], [
         PKG_CHECK_AUTO([LIBACL], [libacl >= $LIBACL_MIN_VERSION], [have_libacl=yes], [have_libacl=no])
     ])
 ], [
-    AC_SUBST([EXTRA_WIN_LIBS], [["-lcomctl32"]])
+    EXTRA_WIN_LDFLAGS="-lcomctl32 -Wl,-Bstatic -ldbghelp -Wl,-Bdynamic"
+    AC_SUBST([EXTRA_WIN_LDFLAGS])
     have_curl="no"
     have_libacl="not required"
 ])

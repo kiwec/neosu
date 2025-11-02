@@ -271,7 +271,7 @@ bool SpectatorScreen::isVisible() { return BanchoState::spectating && !osu->isIn
 
 CBaseUIElement *SpectatorScreen::setVisible(bool /*visible*/) {
     engine->showMessageError("Programmer Error", "Idiot tried to control spectator screen visibility");
-    abort();
+    fubar_abort();
     return this;
 }
 

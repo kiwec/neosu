@@ -72,6 +72,7 @@ extern void _osuOptionsSliderQualityWrapper(float);
 #define CONVAR(name, ...) ConVar _CV(name)(#name __VA_OPT__(, ) __VA_ARGS__)
 #define KEYVAR(name, ...) ConVar _CV(name)(__VA_ARGS__)
 
+#include "BaseEnvironment.h"
 #include "KeyBindings.h"
 #include "BanchoNetworking.h"  // defines some things we need like OSU_VERSION_DATEONLY
 #include "build_timestamp.h"
@@ -91,8 +92,6 @@ namespace McThread {
 extern void set_current_thread_prio(bool /**/);
 }  // namespace McThread
 
-extern void _crash();
-
 #else
 #define CONVAR(name, ...) extern ConVar _CV(name)
 #define KEYVAR(name, ...) extern ConVar _CV(name)
@@ -103,7 +102,7 @@ namespace cv {
 namespace cmd {
 
 // Generic commands
-CONVAR(crash, CLIENT | HIDDEN | NOLOAD | NOSAVE, SA::delegate<void ()>::template create<std::abort>()); // debug
+CONVAR(crash, CLIENT | HIDDEN | NOLOAD | NOSAVE, SA::delegate<void ()>::template create<fubar_abort_>()); // debug
 CONVAR(borderless, CLIENT, CFUNC(_borderless));
 CONVAR(center, CLIENT, CFUNC(_center));
 CONVAR(clear);

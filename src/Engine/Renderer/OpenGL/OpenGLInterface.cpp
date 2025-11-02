@@ -366,7 +366,7 @@ void OpenGLInterface::drawImage(const Image *image, AnchorPoint anchor, float ed
             y = -height / 2;
             break;
         default:
-            abort();
+            fubar_abort();
     }
 
     if(smoothedEdges && !clipRectSpecified) {

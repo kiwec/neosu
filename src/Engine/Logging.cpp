@@ -5,6 +5,7 @@
 #include "ConsoleBox.h"
 #include "Thread.h"
 #include "UString.h"
+#include "CrashHandler.h"
 
 #ifdef MCENGINE_PLATFORM_WINDOWS
 #include "WinDebloatDefs.h"
@@ -138,6 +139,7 @@ class Logger::ConsoleBoxSink : public spdlog::sinks::base_sink<std::mutex> {
 // to be called in main(), for one-time setup/teardown
 void Logger::init() noexcept {
     if(s_initialized) return;
+    CrashHandler::init();  // also initialize crash handling immediately
 
     // initialize async thread pool before creating any async loggers
     // queue size: 8192 slots (each ~256 bytes), 1 background thread

@@ -1129,7 +1129,7 @@ neosu_LDFLAGS := \
 	$(NSYNC_LIBS) \
 	$(SIMDUTF_LIBS) \
 	$(NEOSU_LDFLAGS) \
-	$(EXTRA_WIN_LIBS) \
+	$(EXTRA_WIN_LDFLAGS) \
 	$(LDFLAGS_EXTRA)
 
 # make won't be able to track these if they change, because we use .incbin on them

@@ -36,13 +36,13 @@ void get_bytes(u8* out, std::size_t s_out) {
     HCRYPTPROV hCryptProv;
     if(!CryptAcquireContext(&hCryptProv, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT)) {
         // failed to acquire crypto context, nope out
-        std::abort();
+        fubar_abort();
     }
 
     if(!CryptGenRandom(hCryptProv, s_out, out)) {
         CryptReleaseContext(hCryptProv, 0);
         // failed to generate random bytes, nope out
-        std::abort();
+        fubar_abort();
     }
 
     CryptReleaseContext(hCryptProv, 0);
@@ -55,7 +55,7 @@ void get_bytes(u8* out, std::size_t s_out) {
                 continue;  // interrupted by signal, retry
             }
             // failed, nope out
-            std::abort();
+            fubar_abort();
         }
         offset += static_cast<size_t>(ret);
     }

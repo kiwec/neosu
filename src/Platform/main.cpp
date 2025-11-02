@@ -62,9 +62,7 @@ void setcwdexe(const std::string &exePathStr) noexcept {
 #include "Profiler.h"
 
 #if defined(__SSE__) || (defined(_M_IX86_FP) && (_M_IX86_FP > 0))
-#ifdef _MSC_VER
-#include <intrin.h>
-#else
+#ifndef _MSC_VER
 #include <xmmintrin.h>
 #endif
 #define SET_FPU_DAZ_FTZ _mm_setcsr(_mm_getcsr() | 0x8040);

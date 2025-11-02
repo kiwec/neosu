@@ -251,6 +251,9 @@ using Env::REND;
 #endif
 #endif
 
+#define fubar_abort_ abort
+#define fubar_abort() fubar_abort_()
+
 typedef void* HWND;
 
 #else  // Windows build
@@ -269,6 +272,7 @@ typedef void* HWND;
 
 #include <basetsd.h>
 #include <windef.h>
+#include <intrin.h>
 
 #ifdef _WIN64
 #define OS_NAME "win64"
@@ -291,6 +295,14 @@ typedef void* HWND;
 #ifndef strncasecmp
 #define strncasecmp _strnicmp
 #endif
+
+#define fubar_abort_     \
+    [] [[noreturn]] () { \
+        __debugbreak();  \
+        abort();         \
+    }
+
+#define fubar_abort() fubar_abort_()
 
 #if defined(_MSC_VER)
 typedef SSIZE_T ssize_t;
