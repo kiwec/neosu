@@ -682,7 +682,7 @@ AS_IF([test "$host_os" = "mingw32" && test "x$enable_clang" = "xyes"], [
             NEOSU_LDFLAGS="$NEOSU_LDFLAGS -Wl,/pdbaltpath:%_PDB%"
         ])
         AX_CHECK_LINK_FLAG([-Wl,/pdbsourcepath:], [
-            NEOSU_LDFLAGS="$NEOSU_LDFLAGS -Wl,/pdbsourcepath:${CUSTOMPDBPATH:-Z:\\}"
+            NEOSU_LDFLAGS="$NEOSU_LDFLAGS -Wl,/pdbsourcepath:${CUSTOMPDBPATH:-"X:\\"}"
         ])
     ])
 ])
@@ -917,7 +917,7 @@ AS_IF([test "x$use_dx11" = "xyes"], [
 ])
 
 SDL3_MIN_VERSION=3.2.20
-SDL3_BUILD_VERSION=91a559828364f1da8d0c73ce02dda22d2995756a # git
+SDL3_BUILD_VERSION=08826230923dfb70e4558a41179ac0744e69fdb8 # git
 FREETYPE2_MIN_VERSION=2.10.0
 FREETYPE2_BUILD_VERSION=2.14.1
 LIBJPEG_MIN_VERSION=3.0.0
