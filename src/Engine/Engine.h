@@ -157,17 +157,17 @@ extern std::unique_ptr<AsyncIOHandler> io;
 
 extern Engine *engine;
 
-void _restart(void);
-void _printsize(void);
-void _fullscreen(void);
-void _borderless(void);
-void _minimize(void);
-void _maximize(void);
-void _toggleresizable(void);
-void _focus(void);
-void _center(void);
-void _errortest(void);
-void _dpiinfo(void);
+void _restart();
+void _printsize();
+void _fullscreen();
+void _borderless();
+void _minimize();
+void _maximize();
+void _toggleresizable();
+void _focus();
+void _center();
+void _errortest();
+void _dpiinfo();
 
 // black and purple placeholder texture, valid from engine startup to shutdown
 extern Image *MISSING_TEXTURE;

@@ -539,14 +539,12 @@ void Engine::onEngineThrottleChanged(float newVal) {
 //	Engine ConCommands	//
 //**********************//
 
-void _restart(void) { engine->restart(); }
-
-void _printsize(void) {
+void _printsize() {
     vec2 s = engine->getScreenSize();
     debugLog("Engine: screenSize = ({:f}, {:f})", s.x, s.y);
 }
 
-void _borderless(void) {
+void _borderless() {
     if(cv::fullscreen_windowed_borderless.getBool()) {
         cv::fullscreen_windowed_borderless.setValue(0.0f);
         if(env->winFullscreened()) env->disableFullscreen();
@@ -556,20 +554,16 @@ void _borderless(void) {
     }
 }
 
-void _minimize(void) { env->minimize(); }
-
-void _maximize(void) { env->maximize(); }
-
-void _toggleresizable(void) { env->setWindowResizable(!env->winResizable()); }
-
-void _focus(void) { engine->focus(); }
-
-void _center(void) { engine->center(); }
-
-void _errortest(void) {
+void _errortest() {
     engine->showMessageError(
         "Error Test",
         "This is an error message, fullscreen mode should be disabled and you should be able to read this");
 }
 
-void _dpiinfo(void) { debugLog("env->getDPI() = {:d}, env->getDPIScale() = {:f}", env->getDPI(), env->getDPIScale()); }
+void _restart() { engine->restart(); }
+void _minimize() { env->minimize(); }
+void _maximize() { env->maximize(); }
+void _toggleresizable() { env->setWindowResizable(!env->winResizable()); }
+void _focus() { engine->focus(); }
+void _center() { engine->center(); }
+void _dpiinfo() { debugLog("env->getDPI() = {:d}, env->getDPIScale() = {:f}", env->getDPI(), env->getDPIScale()); }

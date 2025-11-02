@@ -7,6 +7,7 @@ on:
 
 env:
   CCACHE_DIR: /tmp/.ccache
+  LLVM_MINGW_VERSION: 20251021
 
 jobs:
   build:
@@ -32,9 +33,12 @@ jobs:
           pacman -Syu --noconfirm libx11 libxi glu \
             libjpeg-turbo libglvnd sdl3 zlib wget \
             cmake meson nasm git autoconf automake libtool autoconf-archive \
-            mingw-w64-gcc ccache unzip wine
-          pacman -U --noconfirm https://archive.archlinux.org/packages/f/freetype2/freetype2-2.13.3-3-x86_64.pkg.tar.zst
-          useradd user -G wheel && echo "user ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+            mingw-w64-gcc ccache unzip wine freetype2
+          if [[ "${{ matrix.arch }}" == "x64" ]]; then
+            mkdir -p /opt/llvm-mingw && \
+            wget -qO /opt/llvm-mingw/llvm-mingw.tar.xz "https://github.com/mstorsjo/llvm-mingw/releases/download/${{ env.LLVM_MINGW_VERSION }}/llvm-mingw-${{ env.LLVM_MINGW_VERSION }}-ucrt-ubuntu-22.04-x86_64.tar.xz" && \
+            tar xf /opt/llvm-mingw/llvm-mingw.tar.xz -C /opt/llvm-mingw --strip-components=1
+          fi
 
       - name: Set up build directory
         run: |
@@ -69,12 +73,21 @@ jobs:
 
       - name: Building neosu
         run: |
-          MAKEFLAGS="-j$(nproc)" ./autogen.sh
-          cd build-out && \
-          MAKEFLAGS="-j$(nproc)" ../configure \
-            ${{ (github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/dev') && '--disable-strip' || '' }} \
-            --with-audio="bass,soloud" --host=${{ matrix.host }} && \
-          CCACHE_DIR="${{ env.CCACHE_DIR }}" MAKEFLAGS="-j$(nproc)" make install
+          ./autogen.sh
+          cd build-out
+          export MAKEFLAGS="-j$(nproc)"
+          export CCACHE_DIR="${{ env.CCACHE_DIR }}"
+          if [[ "${{ matrix.arch }}" == "x32" ]]; then
+            ../configure \
+              ${{ (github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/dev') && '--disable-strip' || '' }} \
+              --with-audio="bass,soloud" --host=${{ matrix.host }}
+          else
+            export PATH="/opt/llvm-mingw/bin:$PATH"
+            ../configure --enable-clang \
+              ${{ (github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/dev') && '--disable-strip' || '' }} \
+              --with-audio="bass,soloud" --host=${{ matrix.host }}
+          fi
+          make install
 
       - uses: actions/upload-artifact@v4
         with:

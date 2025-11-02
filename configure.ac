@@ -717,10 +717,10 @@ AS_IF([test "x$enable_debug" = "xyes"], [
     AC_SUBST([ENABLE_DEBUG])
     AS_IF([test "x$enable_strip" != "xyes"], [enable_strip=no]) # disable stripping unless its explicitly requested for debug (why tho?)
 ], [
-    AS_IF([test "x$enable_optimization" != "xno"], [
+    AS_IF([test "x$enable_optimize" != "xno"], [
         CPPFLAGS="$CPPFLAGS -DNDEBUG -D_NDEBUG"
-        CXXFLAGS="${CXXFLAGS//-g -O2/} -O3" # where do those -g -O2 flags even come from...
-        CFLAGS="${CFLAGS//-g -O2/} -O3"
+        CXXFLAGS="${CXXFLAGS//-g -O2/} -Os" # where do those -g -O2 flags even come from...
+        CFLAGS="${CFLAGS//-g -O2/} -Os"
         NEOSU_LDFLAGS="$NEOSU_LDFLAGS -Wl,-O1"
 
         AS_IF([test "x$enable_clang" != "xyes"], [
