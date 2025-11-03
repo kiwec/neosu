@@ -142,20 +142,21 @@ SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
     }
 
     switch(event->type) {
-        case SDL_EVENT_QUIT:
-        case SDL_EVENT_WINDOW_CLOSE_REQUESTED: {
+        case SDL_EVENT_QUIT: {
             SDL_Window *source = SDL_GetWindowFromEvent(event);
             if(source && source != m_window) break;
             if(m_bRunning) {
                 m_bRunning = false;
-                m_engine->shutdown();
+                if(m_engine && !m_engine->isShuttingDown()) {
+                    m_engine->shutdown();
+                }
                 if constexpr(Env::cfg(FEAT::MAINCB))
                     return SDL_APP_SUCCESS;
                 else
                     SDL_AppQuit(this, SDL_APP_SUCCESS);
             }
-            break;
-        }
+        } break;
+
             // drag-drop events
             // clang-format off
         case SDL_EVENT_DROP_FILE: case SDL_EVENT_DROP_TEXT: case SDL_EVENT_DROP_BEGIN:
@@ -201,7 +202,7 @@ SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
         case SDL_EVENT_WINDOW_MOVED:				 case SDL_EVENT_WINDOW_RESIZED:			  case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
         case SDL_EVENT_WINDOW_METAL_VIEW_RESIZED:	 case SDL_EVENT_WINDOW_MINIMIZED:		  case SDL_EVENT_WINDOW_MAXIMIZED:
         case SDL_EVENT_WINDOW_RESTORED:				 case SDL_EVENT_WINDOW_MOUSE_ENTER:		  case SDL_EVENT_WINDOW_MOUSE_LEAVE:
-        case SDL_EVENT_WINDOW_FOCUS_GAINED:			 case SDL_EVENT_WINDOW_FOCUS_LOST:		  /* case SDL_EVENT_WINDOW_CLOSE_REQUESTED: */
+        case SDL_EVENT_WINDOW_FOCUS_GAINED:			 case SDL_EVENT_WINDOW_FOCUS_LOST:		  case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
         case SDL_EVENT_WINDOW_HIT_TEST:				 case SDL_EVENT_WINDOW_ICCPROF_CHANGED:	  case SDL_EVENT_WINDOW_DISPLAY_CHANGED:
         case SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED: case SDL_EVENT_WINDOW_SAFE_AREA_CHANGED: case SDL_EVENT_WINDOW_OCCLUDED:
         case SDL_EVENT_WINDOW_ENTER_FULLSCREEN:		 case SDL_EVENT_WINDOW_LEAVE_FULLSCREEN:  case SDL_EVENT_WINDOW_DESTROYED:
@@ -209,6 +210,14 @@ SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
             // clang-format on
             updateWindowFlags();  // update our window flags enum from current SDL window flags
             switch(event->window.type) {
+                case SDL_EVENT_WINDOW_CLOSE_REQUESTED: {
+                    SDL_Window *source = SDL_GetWindowFromEvent(event);
+                    if(source && source != m_window) break;
+                    if(m_bRunning) {
+                        m_engine->shutdown();
+                    }
+                } break;
+
                 case SDL_EVENT_WINDOW_FOCUS_GAINED:
                     // add these window flags now to make env->winFocused() return true after this
                     m_winflags |= (WinFlags::F_MOUSE_FOCUS | WinFlags::F_INPUT_FOCUS);
