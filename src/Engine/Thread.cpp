@@ -101,16 +101,40 @@ const char *get_current_thread_name() {
 
 bool is_main_thread() { return SDL_IsMainThread(); }
 
-void set_current_thread_prio(bool high) {
-    if (!SDL_SetCurrentThreadPriority(high ? SDL_THREAD_PRIORITY_HIGH : SDL_THREAD_PRIORITY_NORMAL)) {
-        debugLog("couldn't set thread priority to {}", high ? "high" : "normal");
+void set_current_thread_prio(Priority prio) {
+    SDL_ThreadPriority sdlprio;
+    const char *priostring;
+    switch(prio) {
+        case NORMAL:
+            sdlprio = SDL_THREAD_PRIORITY_NORMAL;
+            priostring = "normal";
+            break;
+        case HIGH:
+            sdlprio = SDL_THREAD_PRIORITY_HIGH;
+            priostring = "high";
+            break;
+        case LOW:
+            sdlprio = SDL_THREAD_PRIORITY_LOW;
+            priostring = "low";
+            break;
+        case REALTIME:
+            sdlprio = SDL_THREAD_PRIORITY_TIME_CRITICAL;
+            priostring = "realtime";
+            break;
+        default:
+            fubar_abort();
+    }
+    if(!SDL_SetCurrentThreadPriority(sdlprio)) {
+        debugLog("couldn't set thread priority to {}", priostring);
     }
 #ifdef MCENGINE_PLATFORM_WINDOWS
     static int logcpus = Environment::getLogicalCPUCount();
     // tested in a windows vm, this causes things to just behave WAY worse than if you leave it alone with low core counts
-    if (logcpus > 4 && is_main_thread()) {
-        if (!SetPriorityClass(GetCurrentProcess(), high ? HIGH_PRIORITY_CLASS : NORMAL_PRIORITY_CLASS)) {
-            debugLog("couldn't set process priority class to {}: {:#x}", high ? "high" : "normal", GetLastError());
+    if(logcpus > 4 && is_main_thread()) {
+        // only allow setting normal/high for process priority class
+        if(!SetPriorityClass(GetCurrentProcess(),
+                             (prio == REALTIME || prio == HIGH) ? HIGH_PRIORITY_CLASS : NORMAL_PRIORITY_CLASS)) {
+            debugLog("couldn't set process priority class to {}: {:#x}", priostring, GetLastError());
         }
     }
 #endif

@@ -48,7 +48,7 @@ class AsyncResourceLoader::LoaderThread final {
         const std::string loaderThreadName =
             fmt::format("res_ldr_thr{}", (this->thread_index % this->loader_ptr->iMaxThreads) + 1);
         McThread::set_current_thread_name(loaderThreadName.c_str());
-        McThread::set_current_thread_prio(false);  // reset priority (don't inherit from main thread)
+        McThread::set_current_thread_prio(McThread::Priority::NORMAL);  // reset priority (don't inherit from main thread)
 
         while(!stoken.stop_requested() && !this->loader_ptr->bShuttingDown.load(std::memory_order_acquire)) {
             const bool debug = cv::debug_rm.getBool();

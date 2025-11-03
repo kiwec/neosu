@@ -54,7 +54,7 @@ static std::vector<info_cache*> inf_cache;
 
 static void run_thread() {
     McThread::set_current_thread_name("lb_pp_calc");
-    McThread::set_current_thread_prio(false);  // reset priority
+    McThread::set_current_thread_prio(McThread::Priority::NORMAL);  // reset priority
 
     for(;;) {
         Sync::unique_lock<Sync::mutex> lock(work_mtx);

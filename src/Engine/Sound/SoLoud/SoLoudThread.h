@@ -392,7 +392,7 @@ class SoLoudThreadWrapper {
 
     void worker_loop(const Sync::stop_token& stoken) noexcept {
         McThread::set_current_thread_name("soloud_mixer");
-        McThread::set_current_thread_prio(false);
+        McThread::set_current_thread_prio(McThread::Priority::REALTIME); // raise priority to the max
 
         // initialize SoLoud on the audio thread
         this->soloud = std::make_unique<SoLoud::Soloud>();

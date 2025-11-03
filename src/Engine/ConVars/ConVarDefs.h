@@ -89,7 +89,8 @@ namespace Spectating {
 extern void start_by_username(std::string_view username);
 }
 namespace McThread {
-extern void set_current_thread_prio(bool /**/);
+enum Priority : unsigned char;
+extern void set_current_thread_prio(Priority /**/);
 }  // namespace McThread
 
 #else
@@ -102,7 +103,7 @@ namespace cv {
 namespace cmd {
 
 // Generic commands
-CONVAR(crash, CLIENT | HIDDEN | NOLOAD | NOSAVE, SA::delegate<void ()>::template create<fubar_abort_>()); // debug
+CONVAR(crash, CLIENT | HIDDEN | NOLOAD | NOSAVE, SA::delegate<void()>::template create<fubar_abort_>());  // debug
 CONVAR(borderless, CLIENT, CFUNC(_borderless));
 CONVAR(center, CLIENT, CFUNC(_center));
 CONVAR(clear);
@@ -1170,8 +1171,8 @@ CONVAR(user_draw_pp, true, CLIENT | SKINS | SERVER);
 CONVAR(user_include_relax_and_autopilot_for_stats, false, CLIENT | SKINS | SERVER);
 CONVAR(vsync, false, CLIENT, [](float on) -> void { g ? g->setVSync(!!static_cast<int>(on)) : (void)0; });
 // this is not windows-only anymore, just keeping it with the "win_" prefix to not break old configs
-CONVAR(win_processpriority, 1, CLIENT, "sets the main process priority (0 = normal, 1 = high)",
-       [](float newFloat) -> void { McThread::set_current_thread_prio(!!static_cast<int>(newFloat)); });
+CONVAR(win_processpriority, (McThread::Priority)1, CLIENT, "sets the main process priority (0 = normal, 1 = high)",
+       [](float newFloat) -> void { McThread::set_current_thread_prio((McThread::Priority)(int)newFloat); });
 
 // Unfinished features
 CONVAR(adblock, true, CLIENT | SKINS | SERVER);

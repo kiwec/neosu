@@ -39,7 +39,7 @@ void MapCalcThread::abort_instance() {
 
 void MapCalcThread::run() {
     McThread::set_current_thread_name("map_calc");
-    McThread::set_current_thread_prio(false);  // reset priority
+    McThread::set_current_thread_prio(McThread::Priority::NORMAL);  // reset priority
 
     for(const auto& map : *this->maps_to_process) {
         // pause handling

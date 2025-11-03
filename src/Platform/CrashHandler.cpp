@@ -109,6 +109,9 @@ static LONG write_crash_dump_internal(EXCEPTION_POINTERS* exceptionInfo) {
         CloseHandle(hFile);
     }
 
+    fflush(stdout);
+    fflush(stderr);
+
     // signal other threads that dump is complete
     if(g_dumpCompleteEvent != nullptr) {
         SetEvent(g_dumpCompleteEvent);

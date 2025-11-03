@@ -111,7 +111,7 @@ Environment::Environment(const std::unordered_map<std::string, std::optional<std
     cv::monitor.setCallback(SA::MakeDelegate<&Environment::onMonitorChange>(this));
 
     // set high priority right away
-    McThread::set_current_thread_prio(cv::win_processpriority.getBool());
+    McThread::set_current_thread_prio((McThread::Priority)(int)cv::win_processpriority.getFloat());
 }
 
 Environment::~Environment() {

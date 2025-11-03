@@ -3,10 +3,12 @@
 
 namespace McThread {
 // WARNING: must be called from within the thread itself! otherwise, the main process name/priority will be changed
-bool set_current_thread_name(const char *name);
-void set_current_thread_prio(bool high);
+bool set_current_thread_name(const char* name);
+
+enum Priority : unsigned char { NORMAL, HIGH, LOW, REALTIME };
+void set_current_thread_prio(Priority prio);
 
 const char* get_current_thread_name();
 
 bool is_main_thread();
-}
+}  // namespace McThread

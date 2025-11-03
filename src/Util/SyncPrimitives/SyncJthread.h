@@ -4,6 +4,15 @@
 
 #include "config.h"
 
+#ifdef MCENGINE_PLATFORM_WASM
+
+#include <thread>
+
+namespace Sync {
+using jthread = std::jthread;
+}
+
+#else
 #include "SyncStoptoken.h"
 
 #include <SDL3/SDL_thread.h>
@@ -134,3 +143,5 @@ class jthread {
 };
 
 }  // namespace Sync
+
+#endif

@@ -48,7 +48,7 @@ struct VolNormalization::LoudnessCalcThread {
    private:
     void run() {
         McThread::set_current_thread_name("loudness_calc");
-        McThread::set_current_thread_prio(false);  // reset priority
+        McThread::set_current_thread_prio(McThread::Priority::NORMAL);  // reset priority
 
         UString last_song = "";
         f32 last_loudness = 0.f;
