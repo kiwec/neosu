@@ -44,8 +44,7 @@ class BassSound final : public Sound {
    private:
     SOUNDHANDLE getNewHandle();
 
-    SOUNDHANDLE stream{0};
-    SOUNDHANDLE sample{0};
+    SOUNDHANDLE srchandle{0};
 };
 
 #else

@@ -28,44 +28,41 @@ void BassSound::initAsync() {
 
     UString file_path{this->sFilePath};
 
-    SOUNDHANDLE handle = 0;
-
     if(this->bStream) {
         u32 flags = BASS_STREAM_DECODE | BASS_SAMPLE_FLOAT | BASS_STREAM_PRESCAN;
         if(cv::snd_async_buffer.getInt() > 0) flags |= BASS_ASYNCFILE;
         if constexpr(Env::cfg(OS::WINDOWS)) flags |= BASS_UNICODE;
 
         if(this->isInterrupted()) return;
-        this->stream = BASS_StreamCreateFile(BASS_FILE_NAME, file_path.plat_str(), 0, 0, flags);
-        if(!this->stream) {
+        this->srchandle = BASS_StreamCreateFile(BASS_FILE_NAME, file_path.plat_str(), 0, 0, flags);
+        if(!this->srchandle) {
             debugLog("BASS_StreamCreateFile() error on file {}: {}", this->sFilePath.c_str(),
                      BassManager::getErrorUString());
             return;
         }
 
         if(this->isInterrupted()) return;
-        this->stream = BASS_FX_TempoCreate(this->stream, BASS_FX_FREESOURCE | BASS_STREAM_DECODE);
-        if(!this->stream) {
+        this->srchandle = BASS_FX_TempoCreate(this->srchandle, BASS_FX_FREESOURCE | BASS_STREAM_DECODE);
+        if(!this->srchandle) {
             debugLog("BASS_FX_TempoCreate() error on file {}: {}", this->sFilePath.c_str(),
                      BassManager::getErrorUString());
             return;
         }
 
-        BASS_ChannelSetAttribute(this->stream, BASS_ATTRIB_TEMPO_OPTION_USE_QUICKALGO, false);
-        BASS_ChannelSetAttribute(this->stream, BASS_ATTRIB_TEMPO_OPTION_OVERLAP_MS, 4.0f);
-        BASS_ChannelSetAttribute(this->stream, BASS_ATTRIB_TEMPO_OPTION_SEQUENCE_MS, 30.0f);
-        BASS_ChannelSetAttribute(this->stream, BASS_ATTRIB_TEMPO_OPTION_OLDPOS, 1);  // use old position calculation
+        BASS_ChannelSetAttribute(this->srchandle, BASS_ATTRIB_TEMPO_OPTION_USE_QUICKALGO, false);
+        BASS_ChannelSetAttribute(this->srchandle, BASS_ATTRIB_TEMPO_OPTION_OVERLAP_MS, 4.0f);
+        BASS_ChannelSetAttribute(this->srchandle, BASS_ATTRIB_TEMPO_OPTION_SEQUENCE_MS, 30.0f);
+        BASS_ChannelSetAttribute(this->srchandle, BASS_ATTRIB_TEMPO_OPTION_OLDPOS, 1);  // use old position calculation
 
         // Only compute the length once
         if(this->isInterrupted()) return;
-        handle = this->stream;
     } else {
         u32 flags = BASS_SAMPLE_FLOAT;
         if constexpr(Env::cfg(OS::WINDOWS)) flags |= BASS_UNICODE;
 
         if(this->isInterrupted()) return;
-        this->sample = BASS_SampleLoad(false, file_path.plat_str(), 0, 0, 1, flags);
-        if(!this->sample) {
+        this->srchandle = BASS_SampleLoad(false, file_path.plat_str(), 0, 0, 1, flags);
+        if(!this->srchandle) {
             auto code = BASS_ErrorGetCode();
             if(code == BASS_ERROR_EMPTY) {
                 debugLog("BassSound: Ignoring empty file {}", this->sFilePath.c_str());
@@ -78,12 +75,11 @@ void BassSound::initAsync() {
         }
 
         if(this->isInterrupted()) return;
-        handle = this->sample;
     }
 
     // Only compute the length once
-    i64 length = BASS_ChannelGetLength(handle, BASS_POS_BYTE);
-    f64 lengthInSeconds = BASS_ChannelBytes2Seconds(handle, length);
+    i64 length = BASS_ChannelGetLength(this->srchandle, BASS_POS_BYTE);
+    f64 lengthInSeconds = BASS_ChannelBytes2Seconds(this->srchandle, length);
     f64 lengthInMilliSeconds = lengthInSeconds * 1000.0;
     this->length = (u32)lengthInMilliSeconds;
 
@@ -96,17 +92,16 @@ void BassSound::destroy() {
         this->interruptLoad();
     }
 
-    if(this->sample != 0) {
-        BASS_SampleStop(this->sample);
-        BASS_SampleFree(this->sample);
-        this->sample = 0;
-    }
-
-    if(this->stream != 0) {
-        BASS_Mixer_ChannelRemove(this->stream);
-        BASS_ChannelStop(this->stream);
-        BASS_StreamFree(this->stream);
-        this->stream = 0;
+    if(this->srchandle) {
+        if(this->bStream) {
+            BASS_Mixer_ChannelRemove(this->srchandle);
+            BASS_ChannelStop(this->srchandle);
+            BASS_StreamFree(this->srchandle);
+        } else {
+            BASS_SampleStop(this->srchandle);
+            BASS_SampleFree(this->srchandle);
+        }
+        this->srchandle = 0;
     }
 
     for(const auto& [handle, _] : this->activeHandleCache) {
@@ -134,14 +129,14 @@ void BassSound::setPositionMS(u32 ms) {
     assert(this->bStream);  // can't call setPositionMS() on a sample
 
     f64 seconds = (f64)ms / 1000.0;
-    i64 target_pos = BASS_ChannelSeconds2Bytes(this->stream, seconds);
+    i64 target_pos = BASS_ChannelSeconds2Bytes(this->srchandle, seconds);
     if(target_pos < 0) {
         debugLog("BASS_ChannelSeconds2Bytes( stream , {} ) error on file {}: {}", seconds, this->sFilePath.c_str(),
                  BassManager::getErrorUString());
         return;
     }
 
-    if(!BASS_Mixer_ChannelSetPosition(this->stream, target_pos, BASS_POS_BYTE | BASS_POS_MIXER_RESET)) {
+    if(!BASS_Mixer_ChannelSetPosition(this->srchandle, target_pos, BASS_POS_BYTE | BASS_POS_MIXER_RESET)) {
         logIfCV(debug_snd, "BASS_Mixer_ChannelSetPosition( stream , {} ) error on file {}: {}", ms,
                 this->sFilePath.c_str(), BassManager::getErrorUString());
         return;
@@ -163,9 +158,9 @@ void BassSound::setPositionMS(u32 ms) {
 
     u32 actual = 0;
     while(true) {
-        i64 posBytes = BASS_Mixer_ChannelGetPosition(this->stream, BASS_POS_BYTE);
+        i64 posBytes = BASS_Mixer_ChannelGetPosition(this->srchandle, BASS_POS_BYTE);
         if(posBytes >= 0) {
-            f64 posSec = BASS_ChannelBytes2Seconds(this->stream, posBytes);
+            f64 posSec = BASS_ChannelBytes2Seconds(this->srchandle, posBytes);
             actual = static_cast<u32>(posSec * 1000.0);
 
             // check if we're within tolerance of target
@@ -195,15 +190,15 @@ void BassSound::setSpeed(float speed) {
     speed = std::clamp<float>(speed, 0.05f, 50.0f);
 
     float freq = cv::snd_freq.getFloat();
-    BASS_ChannelGetAttribute(this->stream, BASS_ATTRIB_FREQ, &freq);
+    BASS_ChannelGetAttribute(this->srchandle, BASS_ATTRIB_FREQ, &freq);
 
-    BASS_ChannelSetAttribute(this->stream, BASS_ATTRIB_TEMPO, 1.0f);
-    BASS_ChannelSetAttribute(this->stream, BASS_ATTRIB_TEMPO_FREQ, freq);
+    BASS_ChannelSetAttribute(this->srchandle, BASS_ATTRIB_TEMPO, 1.0f);
+    BASS_ChannelSetAttribute(this->srchandle, BASS_ATTRIB_TEMPO_FREQ, freq);
 
     if(cv::nightcore_enjoyer.getBool()) {
-        BASS_ChannelSetAttribute(this->stream, BASS_ATTRIB_TEMPO_FREQ, speed * freq);
+        BASS_ChannelSetAttribute(this->srchandle, BASS_ATTRIB_TEMPO_FREQ, speed * freq);
     } else {
-        BASS_ChannelSetAttribute(this->stream, BASS_ATTRIB_TEMPO, (speed - 1.0f) * 100.0f);
+        BASS_ChannelSetAttribute(this->srchandle, BASS_ATTRIB_TEMPO, (speed - 1.0f) * 100.0f);
     }
 
     this->fSpeed = speed;
@@ -234,7 +229,7 @@ void BassSound::setLoop(bool loop) {
     assert(this->bStream);  // can't call setLoop() on a sample
 
     this->bIsLooped = loop;
-    BASS_ChannelFlags(this->stream, this->bIsLooped ? BASS_SAMPLE_LOOP : 0, BASS_SAMPLE_LOOP);
+    BASS_ChannelFlags(this->srchandle, this->bIsLooped ? BASS_SAMPLE_LOOP : 0, BASS_SAMPLE_LOOP);
 }
 
 float BassSound::getPosition() const {
@@ -259,13 +254,13 @@ u32 BassSound::getPositionMS() const {
         return 0;
     }
 
-    i64 positionBytes = BASS_Mixer_ChannelGetPosition(this->stream, BASS_POS_BYTE);
+    i64 positionBytes = BASS_Mixer_ChannelGetPosition(this->srchandle, BASS_POS_BYTE);
     if(positionBytes < 0) {
         assert(false);  // invalid handle
         return 0;
     }
 
-    f64 positionInSeconds = BASS_ChannelBytes2Seconds(this->stream, positionBytes);
+    f64 positionInSeconds = BASS_ChannelBytes2Seconds(this->srchandle, positionBytes);
     f64 rawPositionMS = positionInSeconds * 1000.0;
     u32 ret = this->interpolator.update(rawPositionMS, Timing::getTimeReal(), this->getSpeed(), this->isLooped(),
                                         static_cast<u64>(this->length), this->isPlaying());
@@ -287,7 +282,7 @@ float BassSound::getFrequency() const {
     assert(this->bStream);  // can't call getFrequency() on a sample
 
     float frequency = default_freq;
-    BASS_ChannelGetAttribute(this->stream, BASS_ATTRIB_FREQ, &frequency);
+    BASS_ChannelGetAttribute(this->srchandle, BASS_ATTRIB_FREQ, &frequency);
     return frequency;
 }
 
@@ -308,9 +303,9 @@ void BassSound::setHandleVolume(SOUNDHANDLE handle, float volume) {
 // Will be stored in active instances if playback succeeds
 SOUNDHANDLE BassSound::getNewHandle() {
     if(this->bStream) {
-        return this->stream;
+        return this->srchandle;
     } else {
-        auto chan = BASS_SampleGetChannel(this->sample, BASS_SAMCHAN_STREAM | BASS_STREAM_DECODE);
+        auto chan = BASS_SampleGetChannel(this->srchandle, BASS_SAMCHAN_STREAM | BASS_STREAM_DECODE);
         return chan;
     }
 }

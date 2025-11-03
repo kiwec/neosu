@@ -488,7 +488,7 @@ bool BassSoundEngine::play(Sound *snd, f32 pan, f32 pitch, f32 playVolume, bool 
 
         bool success = true;
         if(!startPaused) {
-            success = this->actuallyPlay(bassSound, bassSound->paused_position_ms);
+            success = this->actuallyPlay(bassSound, handle, bassSound->paused_position_ms);
         }
 
         return success;
@@ -516,7 +516,7 @@ bool BassSoundEngine::play(Sound *snd, f32 pan, f32 pitch, f32 playVolume, bool 
 
     bool succeeded = true;
     if(!startPaused) {
-        succeeded = this->actuallyPlay(bassSound, 0);
+        succeeded = this->actuallyPlay(bassSound, handle, 0);
     } else {
         bassSound->bPaused = true;
     }
@@ -529,7 +529,7 @@ bool BassSoundEngine::play(Sound *snd, f32 pan, f32 pitch, f32 playVolume, bool 
     return succeeded;
 }
 
-bool BassSoundEngine::actuallyPlay(BassSound *bassSound, u32 positionMS) {
+bool BassSoundEngine::actuallyPlay(BassSound *bassSound, SOUNDHANDLE playHandle, u32 positionMS) {
     assert(bassSound);
     // Make sure the mixer is playing! Duh.
     if(bassSound->bPaused && this->currentOutputDevice.driver == OutputDriver::BASS) {
@@ -549,7 +549,7 @@ bool BassSoundEngine::actuallyPlay(BassSound *bassSound, u32 positionMS) {
         // set position, and unpause the channel if paused
         bassSound->setPositionMS(positionMS);
         if(wasPaused) {
-            BASS_Mixer_ChannelFlags(bassSound->stream, 0, BASS_MIXER_CHAN_PAUSE);
+            BASS_Mixer_ChannelFlags(playHandle, 0, BASS_MIXER_CHAN_PAUSE);
         }
     }
 
@@ -568,7 +568,7 @@ void BassSoundEngine::pause(Sound *snd) {
     if(!bassSound->isPlaying()) return;
 
     auto pos = bassSound->getPositionMS();
-    BASS_Mixer_ChannelFlags(bassSound->stream, BASS_MIXER_CHAN_PAUSE, BASS_MIXER_CHAN_PAUSE);
+    BASS_Mixer_ChannelFlags(bassSound->srchandle, BASS_MIXER_CHAN_PAUSE, BASS_MIXER_CHAN_PAUSE);
     bassSound->bPaused = true;
     bassSound->paused_position_ms = pos;
     bassSound->interpolator.reset(pos, Timing::getTimeReal(), bassSound->getSpeed());
@@ -581,7 +581,7 @@ void BassSoundEngine::stop(Sound *snd) {
     if(!bassSound->isPlaying()) return;
 
     if(snd->isStream()) {
-        BASS_Mixer_ChannelFlags(bassSound->stream, BASS_MIXER_CHAN_PAUSE, BASS_MIXER_CHAN_PAUSE);
+        BASS_Mixer_ChannelFlags(bassSound->srchandle, BASS_MIXER_CHAN_PAUSE, BASS_MIXER_CHAN_PAUSE);
         bassSound->bPaused = true;
         bassSound->setPositionMS(0);
     } else {
