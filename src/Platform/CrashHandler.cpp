@@ -11,19 +11,14 @@ void init() {}
 
 #include "BaseEnvironment.h"
 
-#ifdef _MSC_VER
-#pragma comment(lib, "dbghelp.lib")
-#define RET_ADDR() _ReturnAddress()
-#else
-#define RET_ADDR() __builtin_return_address(0)
-#endif
+#include <winver.h>
 
 #include <processthreadsapi.h>
-#include <winver.h>
-#include <dbghelp.h>
+#include <timezoneapi.h>  // windows headers are awesome...
 #include <sysinfoapi.h>
 #include <fileapi.h>
 #include <handleapi.h>
+#include <dbghelp.h>
 #include <errhandlingapi.h>
 
 #ifndef INVALID_HANDLE_VALUE
@@ -33,6 +28,13 @@ void init() {}
 #include <sstream>
 #include <iostream>
 #include <csignal>
+
+#ifdef _MSC_VER
+#pragma comment(lib, "dbghelp.lib")
+#define RET_ADDR() _ReturnAddress()
+#else
+#define RET_ADDR() __builtin_return_address(0)
+#endif
 
 namespace CrashHandler {
 
