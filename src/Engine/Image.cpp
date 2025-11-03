@@ -128,6 +128,11 @@ Image::DECODE_RESULT Image::decodePNGFromMemory(const std::unique_ptr<u8[]> &inD
 
     png_read_info(png_ptr, info_ptr);
 
+    if(this->isInterrupted()) {  // cancellation point
+        png_destroy_read_struct(&png_ptr, &info_ptr, nullptr);
+        return INTERRUPTED;
+    }
+
     u32 tempOutWidth = png_get_image_width(png_ptr, info_ptr);
     u32 tempOutHeight = png_get_image_height(png_ptr, info_ptr);
 

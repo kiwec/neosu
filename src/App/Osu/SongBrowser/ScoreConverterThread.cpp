@@ -8,6 +8,7 @@
 #include "score.h"
 #include "Timing.h"
 #include "Logging.h"
+#include "SyncJthread.h"
 
 // TODO
 static constexpr bool USE_PPV3{false};
@@ -15,7 +16,7 @@ static constexpr bool USE_PPV3{false};
 std::atomic<u32> sct_computed = 0;
 std::atomic<u32> sct_total = 0;
 
-static std::thread thr;
+static std::unique_ptr<Sync::jthread> thr;
 static std::atomic<bool> dead = true;
 
 // XXX: This is barebones, no caching, *hopefully* fast enough (worst part is loading the .osu files)
@@ -75,18 +76,18 @@ static void update_ppv2(const FinishedScore& score) {
         score.numMisses, score.num300s, score.num100s, score.num50s);
 
     // Update score
-    Sync::shared_lock readlock(db->scores_mtx);
+    db->scores_mtx.lock_shared();  // take read lock
     for(auto& other : (*db->getScores())[score.beatmap_hash]) {
         if(other.unixTimestamp == score.unixTimestamp) {
-            readlock.unlock();
-            readlock.release();
-            Sync::unique_lock writelock(db->scores_mtx);
+            db->scores_mtx.unlock_shared();
+            db->scores_mtx.lock();  // take write lock
 
             other.ppv2_version = DifficultyCalculator::PP_ALGORITHM_VERSION;
             other.ppv2_score = info.pp;
             other.ppv2_total_stars = info.total_stars;
             other.ppv2_aim_stars = info.aim_stars;
             other.ppv2_speed_stars = info.speed_stars;
+            db->scores_mtx.unlock();
             db->bDidScoresChangeForStats = true;
             break;
         }
@@ -181,14 +182,14 @@ static void run_sct(const std::unordered_map<MD5Hash, std::vector<FinishedScore>
                      smap.live_score.getNumMisses());
 
         {
-            Sync::shared_lock readlock(db->scores_mtx);
+            db->scores_mtx.lock_shared();  // take read lock
             for(auto& dbScore : (*db->getScores())[score.beatmap_hash]) {
                 if(dbScore.unixTimestamp == score.unixTimestamp) {
-                    readlock.unlock();
-                    readlock.release();
-                    Sync::unique_lock writelock(db->scores_mtx);
+                    db->scores_mtx.unlock_shared();
+                    db->scores_mtx.lock();  // take write lock
                     // @PPV3: currently hitdeltas is always empty
                     dbScore.hitdeltas = score.hitdeltas;
+                    db->scores_mtx.unlock();
                     break;
                 }
             }
@@ -205,7 +206,6 @@ static void run_sct(const std::unordered_map<MD5Hash, std::vector<FinishedScore>
 
 void sct_calc(std::unordered_map<MD5Hash, std::vector<FinishedScore>> scores_to_maybe_calc) {
     sct_abort();
-
     dead.store(false, std::memory_order_release);
 
     // to be set in run_sct (find scores which actually need recalc)
@@ -213,7 +213,7 @@ void sct_calc(std::unordered_map<MD5Hash, std::vector<FinishedScore>> scores_to_
     sct_computed = 0;
 
     if(!scores_to_maybe_calc.empty()) {
-        thr = std::thread(run_sct, std::move(scores_to_maybe_calc));
+        thr = std::make_unique<Sync::jthread>(run_sct, std::move(scores_to_maybe_calc));
     }
 }
 
@@ -221,9 +221,7 @@ void sct_abort() {
     if(dead.load(std::memory_order_acquire)) return;
 
     dead.store(true, std::memory_order_release);
-    if(thr.joinable()) {
-        thr.join();
-    }
+    thr.reset();
 
     sct_total = 0;
     sct_computed = 0;

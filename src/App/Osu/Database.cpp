@@ -969,7 +969,8 @@ void Database::loadMaps() {
                     diff->sDifficultyName = neosu_maps.read_string();
                     diff->sSource = neosu_maps.read_string();
                     diff->sTags = neosu_maps.read_string();
-                    diff->writeMD5(neosu_maps.read_hash());
+                    auto map_md5 = neosu_maps.read_hash();
+                    diff->writeMD5(map_md5);
                     diff->fAR = neosu_maps.read<f32>();
                     diff->fCS = neosu_maps.read<f32>();
                     diff->fHP = neosu_maps.read<f32>();
@@ -1029,7 +1030,7 @@ void Database::loadMaps() {
 
                     {
                         Sync::unique_lock lock(this->beatmap_difficulties_mtx);
-                        this->beatmap_difficulties[diff->getMD5()] = diff;
+                        this->beatmap_difficulties[map_md5] = diff;
                     }
                     diffs->push_back(diff);
                     nb_neosu_maps++;
@@ -1361,7 +1362,7 @@ void Database::loadMaps() {
                 bool diff_already_added = false;
                 if(beatmapSetExists) {
                     for(const auto &existing_diff : *beatmapSets[result->second].diffs2) {
-                        if(existing_diff->getMD5() == map->getMD5()) {
+                        if(existing_diff->getMD5() == md5hash) {
                             diff_already_added = true;
                             break;
                         }

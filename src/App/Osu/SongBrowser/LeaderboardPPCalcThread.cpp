@@ -7,8 +7,7 @@
 #include "Thread.h"
 #include "SyncMutex.h"
 #include "SyncCV.h"
-
-#include <thread>
+#include "SyncJthread.h"
 
 struct hitobject_cache {
     // Selectors
@@ -38,7 +37,7 @@ struct info_cache {
 static const BeatmapDifficulty* map = nullptr;
 
 static Sync::condition_variable cond;
-static std::thread thr;
+static std::unique_ptr<Sync::jthread> thr;
 static std::atomic<bool> dead = true;
 
 static Sync::mutex work_mtx;
@@ -214,9 +213,7 @@ void lct_set_map(const DatabaseBeatmap* new_map) {
     if(map != nullptr) {
         dead.store(true, std::memory_order_release);
         cond.notify_one();
-        if(thr.joinable()) {
-            thr.join();
-        }
+        thr.reset();
         cache.clear();
 
         for(auto ho : ho_cache) {
@@ -234,7 +231,7 @@ void lct_set_map(const DatabaseBeatmap* new_map) {
 
     map = new_map;
     if(new_map != nullptr) {
-        thr = std::thread(run_thread);
+        thr = std::make_unique<Sync::jthread>(run_thread);
     }
     return;
 }

@@ -1,8 +1,6 @@
 // Copyright (c) 2024, kiwec, All rights reserved.
 #include "MapCalcThread.h"
 
-#include <thread>
-
 #include "DatabaseBeatmap.h"
 #include "DifficultyCalculator.h"
 #include "Osu.h"
@@ -22,7 +20,7 @@ void MapCalcThread::start_calc_instance(const std::vector<DatabaseBeatmap*>& map
     this->total_count = static_cast<u32>(this->maps_to_process->size()) + 1;
     this->results.clear();
 
-    this->worker_thread = std::thread(&MapCalcThread::run, this);
+    this->worker_thread = std::make_unique<Sync::jthread>(&MapCalcThread::run, this);
 }
 
 void MapCalcThread::abort_instance() {
@@ -32,9 +30,7 @@ void MapCalcThread::abort_instance() {
 
     this->should_stop = true;
 
-    if(this->worker_thread.joinable()) {
-        this->worker_thread.join();
-    }
+    this->worker_thread.reset();
 
     this->total_count = 0;
     this->computed_count = 0;

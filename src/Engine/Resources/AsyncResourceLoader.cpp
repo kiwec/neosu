@@ -77,9 +77,9 @@ class AsyncResourceLoader::LoaderThread final {
 
             std::string debugName;
             if(debug) {
-                debugName = std::string{resource->getName()};
-                debugLog("AsyncResourceLoader: Thread #{} loading {:8p} : {:s}", this->thread_index,
-                         static_cast<const void *>(resource), debugName);
+                debugName = resource->getName();
+                debugLog("AsyncResourceLoader: Thread #{} loading workID {} {:8p} : {:s}", this->thread_index,
+                         work->workId, static_cast<const void *>(resource), debugName);
             }
 
             // prevent child threads from inheriting the name
