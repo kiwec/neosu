@@ -372,6 +372,8 @@ class DatabaseBeatmap final {
         this->md5_mtx.unlock();
     }
 
+#ifdef USE_NSYNC  // std::shared_mutex has issues in wine here
+
     inline MD5Hash getMD5() const {
         this->md5_mtx.lock_shared();
         auto hash = this->sMD5Hash;
@@ -382,6 +384,21 @@ class DatabaseBeatmap final {
    private:
     // must be protected from multithreaded access
     mutable Sync::shared_mutex md5_mtx;
+
+#else
+
+    inline MD5Hash getMD5() const {
+        this->md5_mtx.lock();
+        auto hash = this->sMD5Hash;
+        this->md5_mtx.unlock();
+        return hash;
+    }
+
+   private:
+    mutable Sync::mutex md5_mtx;
+
+#endif
+
     MD5Hash sMD5Hash;
 
     std::vector<DatabaseBeatmap *> *difficulties = nullptr;
