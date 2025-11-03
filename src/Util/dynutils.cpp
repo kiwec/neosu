@@ -18,10 +18,11 @@
 namespace dynutils {
 namespace detail {
 
-void *load_func_impl(lib_obj *lib, const char *func_name) {
+void *load_func_impl(const lib_obj *lib, const char *func_name) {
     void *retfunc = nullptr;
     if(lib) {
-        retfunc = reinterpret_cast<void *>(SDL_LoadFunction(reinterpret_cast<SDL_SharedObject *>(lib), func_name));
+        retfunc = reinterpret_cast<void *>(
+            SDL_LoadFunction(reinterpret_cast<SDL_SharedObject *>(const_cast<lib_obj *>(lib)), func_name));
     }
     return retfunc;
 }

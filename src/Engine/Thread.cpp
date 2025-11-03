@@ -28,8 +28,7 @@ void try_load_funcs() {
     static bool load_attempted{false};
     if(!load_attempted) {
         load_attempted = true;
-        kernel32_handle = reinterpret_cast<dynutils::lib_obj *>(
-            LoadLibraryEx(TEXT("kernel32.dll"), nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32));
+        kernel32_handle = reinterpret_cast<dynutils::lib_obj *>(GetModuleHandle(TEXT("kernel32.dll")));
         if(kernel32_handle) {
             pset_thread_desc = load_func<decltype(SetThreadDescription)>(kernel32_handle, "SetThreadDescription");
             pget_thread_desc = load_func<decltype(GetThreadDescription)>(kernel32_handle, "GetThreadDescription");

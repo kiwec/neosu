@@ -5,7 +5,7 @@ namespace dynutils {
 using lib_obj = struct lib_obj;
 
 namespace detail {
-void *load_func_impl(lib_obj *lib, const char *func_name);
+void *load_func_impl(const lib_obj *lib, const char *func_name);
 }  // namespace detail
 
 // example usage: load_lib("bass"), load_lib("libbass.so"), load_lib("bass.dll"), load_lib("bass", "lib/")
@@ -15,7 +15,7 @@ void unload_lib(lib_obj *&lib);
 
 // usage: auto func = load_func<func_prototype>(lib_obj_here, func_name_here)
 template <typename F>
-inline F* load_func(lib_obj *lib, const char *func_name) {
+inline F* load_func(const lib_obj *lib, const char *func_name) {
     return reinterpret_cast<F*>(detail::load_func_impl(lib, func_name));
 }
 
