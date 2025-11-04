@@ -202,11 +202,6 @@ void Skin::load() {
                 std::vector<std::string> skinFolders = env->getFoldersInFolder(skinFolder);
 
                 for(const auto &i : skinFolders) {
-                    if(i.compare(".") == 0 ||
-                       i.compare("..") == 0)  // is this universal in every file system? too lazy to check.
-                                              // should probably fix this in the engine and not here
-                        continue;
-
                     std::string randomSkinFolder = skinFolder;
                     randomSkinFolder.append(i);
                     randomSkinFolder.append("/");

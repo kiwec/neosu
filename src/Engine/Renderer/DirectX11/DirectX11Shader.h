@@ -24,38 +24,36 @@ MC_DO_PRAGMA(GCC diagnostic push)
 #include "d3d11.h"
 MC_DO_PRAGMA(GCC diagnostic pop)
 
-#ifdef MCENGINE_PLATFORM_LINUX
 namespace dynutils {
 using lib_obj = struct lib_obj;
 }
 
-// calling convention handling for vkd3d compatibility
+// calling convention handling
 #ifdef __x86_64__
-#define VKD3D_CALL __attribute__((ms_abi))
+#define D3D_CALL __attribute__((ms_abi))
 #else
-#define VKD3D_CALL __attribute__((__stdcall__)) __attribute__((__force_align_arg_pointer__))
+#define D3D_CALL __attribute__((__stdcall__)) __attribute__((__force_align_arg_pointer__))
 #endif
 
-// vkd3d blob interface
-typedef struct VKD3DBlob VKD3DBlob;
-typedef struct VKD3DBlobVtbl {
-    HRESULT(VKD3D_CALL *QueryInterface)(VKD3DBlob *This, REFIID riid, void **ppvObject);
-    ULONG(VKD3D_CALL *AddRef)(VKD3DBlob *This);
-    ULONG(VKD3D_CALL *Release)(VKD3DBlob *This);
-    void *(VKD3D_CALL *GetBufferPointer)(VKD3DBlob *This);
-    SIZE_T(VKD3D_CALL *GetBufferSize)(VKD3DBlob *This);
-} VKD3DBlobVtbl;
+// d3d blob interface
+typedef struct D3D_Blob D3D_Blob;
+typedef struct D3D_BlobVtbl {
+    HRESULT(D3D_CALL *QueryInterface)(D3D_Blob *This, REFIID riid, void **ppvObject);
+    ULONG(D3D_CALL *AddRef)(D3D_Blob *This);
+    ULONG(D3D_CALL *Release)(D3D_Blob *This);
+    void *(D3D_CALL *GetBufferPointer)(D3D_Blob *This);
+    SIZE_T(D3D_CALL *GetBufferSize)(D3D_Blob *This);
+} D3D_BlobVtbl;
 
-struct VKD3DBlob {
-    const VKD3DBlobVtbl *lpVtbl;
+struct D3D_Blob {
+    const D3D_BlobVtbl *lpVtbl;
 };
 
 // function pointer type for D3DCompile with proper calling convention
-typedef HRESULT(VKD3D_CALL *PFN_D3DCOMPILE_VKD3D)(LPCVOID pSrcData, SIZE_T SrcDataSize, LPCSTR pSourceName,
-                                                  const D3D_SHADER_MACRO *pDefines, ID3DInclude *pInclude,
-                                                  LPCSTR pEntrypoint, LPCSTR pTarget, UINT Flags1, UINT Flags2,
-                                                  ID3DBlob **ppCode, ID3DBlob **ppErrorMsgs);
-#endif
+typedef HRESULT(D3D_CALL D3DCompile_t)(LPCVOID pSrcData, SIZE_T SrcDataSize, LPCSTR pSourceName,
+                                       const D3D_SHADER_MACRO *pDefines, ID3DInclude *pInclude, LPCSTR pEntrypoint,
+                                       LPCSTR pTarget, UINT Flags1, UINT Flags2, ID3DBlob **ppCode,
+                                       ID3DBlob **ppErrorMsgs);
 
 class DirectX11Shader final : public Shader {
     NOCOPY_NOMOVE(DirectX11Shader);
@@ -163,11 +161,10 @@ class DirectX11Shader final : public Shader {
     unsigned long iStatsNumConstantBufferUploadsPerFrameCounter{0};
     unsigned long iStatsNumConstantBufferUploadsPerFrameCounterEngineFrameCount{0};
 
-#ifdef MCENGINE_PLATFORM_LINUX
-    // loading (dxvk-native)
-    static dynutils::lib_obj *s_vkd3dHandle;
-    static PFN_D3DCOMPILE_VKD3D s_d3dCompileFunc;
-#endif
+    // dynloading
+    static dynutils::lib_obj *s_d3dCompilerHandle;
+    static D3DCompile_t *s_d3dCompileFunc;
+
     // wrapper functions for dx blob ops
     static void *getBlobBufferPointer(ID3DBlob *blob);
     static SIZE_T getBlobBufferSize(ID3DBlob *blob);

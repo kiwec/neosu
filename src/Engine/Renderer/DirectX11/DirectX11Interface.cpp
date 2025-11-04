@@ -39,8 +39,8 @@
 
 DirectX11Interface::DirectX11Interface(HWND hwnd) : Graphics(), hwnd(hwnd) {}
 
-void DirectX11Interface::init() {
-    if(!DirectX11Shader::loadLibs()) return;
+bool DirectX11Interface::init() {
+    if(!DirectX11Shader::loadLibs()) return false;
 
     static constexpr std::array<D3D_FEATURE_LEVEL, 4> FEATURE_LEVELS11_1{
         D3D_FEATURE_LEVEL_11_1,
@@ -93,7 +93,7 @@ void DirectX11Interface::init() {
         engine->showMessageErrorFatal("DirectX Error", errorMessage);
         engine->shutdown();
 
-        return;
+        return false;
     }
 
     hr = this->device->QueryInterface(__uuidof(IDXGIDevice1), (void **)&this->dxgiDevice1);
@@ -124,8 +124,8 @@ void DirectX11Interface::init() {
     this->deviceContext->OMSetBlendState(this->blendState, nullptr, D3D11_DEFAULT_SAMPLE_MASK);
 
     // create default shader
-    const auto vertexShader = std::string{reinterpret_cast<const char *>(DX11_default_vsh), DX11_default_vsh_size()};
-    const auto pixelShader = std::string{reinterpret_cast<const char *>(DX11_default_fsh), DX11_default_fsh_size()};
+    const auto vertexShader = std::string(reinterpret_cast<const char *>(DX11_default_vsh), DX11_default_vsh_size());
+    const auto pixelShader = std::string(reinterpret_cast<const char *>(DX11_default_fsh), DX11_default_fsh_size());
 
     this->shaderTexturedGeneric = static_cast<DirectX11Shader *>(createShaderFromSource(vertexShader, pixelShader));
     this->shaderTexturedGeneric->load();
@@ -133,16 +133,17 @@ void DirectX11Interface::init() {
     if(!this->shaderTexturedGeneric->isReady()) {
         engine->showMessageErrorFatal("DirectX Error", "Failed to create default shader!\nThe engine will quit now.");
         engine->shutdown();
-        return;
+        return false;
     }
 
     if(FAILED(this->device->CreateBuffer(&this->vertexBufferDesc, nullptr, &this->vertexBuffer))) {
         engine->showMessageErrorFatal("DirectX Error",
                                       "Failed to create default vertex buffer!\nThe engine will quit now.");
         engine->shutdown();
-        return;
+        return false;
     }
     // defer swapchain creation until drawing actually begins
+    return true;
 }
 
 bool DirectX11Interface::createSwapchain() {

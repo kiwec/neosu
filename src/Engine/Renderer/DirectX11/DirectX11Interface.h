@@ -138,7 +138,7 @@ class DirectX11Interface final : public Graphics {
     void setTexturing(bool enabled);
 
    protected:
-    void init() override;
+    bool init() override;
 
     void onTransformUpdate(Matrix4 &projectionMatrix, Matrix4 &worldMatrix) override;
 

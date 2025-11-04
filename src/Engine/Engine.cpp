@@ -87,8 +87,8 @@ Engine::Engine() {
 
         // create graphics through environment
         g.reset(env->createRenderer());
-        this->runtime_assert(!!g, "Graphics failed to initialize!");
-        g->init();  // needs init() separation due to potential graphics access
+        // needs init() separation due to potential graphics access
+        this->runtime_assert(!!g && g->init(), "Graphics failed to initialize!");
 
         // make unique_ptrs for the rest
         networkHandler = std::make_unique<NetworkHandler>();

@@ -457,7 +457,6 @@ __EOF__
     LIBPREFIX=""
 
     AS_IF([test "$host_cpu" = "i686"], [ # uber compatibility configuration, works on xp
-        d3dcompiler_lib="-ld3dcompiler_43"
         ubercompat=on
         with_mimalloc="no"
         LDFLAGS="$LDFLAGS -m32 -Wl,--large-address-aware"
@@ -468,7 +467,6 @@ __EOF__
         CXXFLAGS="$CXXFLAGS -m32 -fno-omit-frame-pointer -momit-leaf-frame-pointer -DWINVER=0x0501 -D_WIN32_WINNT=0x0501 -D_WIN32_WINDOWS=0x0501 -D_WIN32_IE=0x0501 -mfpmath=sse"
         AC_SUBST([NASMOBJ],[win32])
     ], [
-        d3dcompiler_lib="-ld3dcompiler_47"
         # win10
         CPPFLAGS="$CPPFLAGS -DWINVER=0x0A00 -D_WIN32_WINNT=0x0A00 -D_WIN32_WINDOWS=0x0A00 -D_WIN32_IE=0x0A00"
         CFLAGS="$CFLAGS -DWINVER=0x0A00 -D_WIN32_WINNT=0x0A00 -D_WIN32_WINDOWS=0x0A00 -D_WIN32_IE=0x0A00"
@@ -908,7 +906,7 @@ AS_IF([test "x$use_dx11" = "xyes"], [
                             # it needs to be forced dynamic
     ],[
         AC_SUBST([D3D11_CFLAGS], [""])
-        AC_SUBST([D3D11_LIBS], [["-ld3d11 $d3dcompiler_lib -ldxgi"]])
+        AC_SUBST([D3D11_LIBS], [["-ld3d11 -ldxgi"]])
         AC_SUBST([DXGI_CFLAGS], [""])
         AC_SUBST([DXGI_LIBS], [["-ldxgi"]])
         AC_SUBST([VKD3D_CFLAGS], [""])

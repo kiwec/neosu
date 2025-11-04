@@ -552,93 +552,94 @@ const DirectX11Shader::CACHE_ENTRY DirectX11Shader::getAndCacheUniformLocation(s
 
     return invalidCacheEntry;
 }
-#ifdef MCENGINE_PLATFORM_LINUX
 
 #include "dynutils.h"
 using namespace dynutils;
 
-lib_obj *DirectX11Shader::s_vkd3dHandle = nullptr;
-PFN_D3DCOMPILE_VKD3D DirectX11Shader::s_d3dCompileFunc = nullptr;
+lib_obj *DirectX11Shader::s_d3dCompilerHandle = nullptr;
+D3DCompile_t *DirectX11Shader::s_d3dCompileFunc = nullptr;
 
 bool DirectX11Shader::loadLibs() {
     if(s_d3dCompileFunc != nullptr) return true;  // already initialized
 
+#ifdef MCENGINE_PLATFORM_LINUX
     setenv("DXVK_WSI_DRIVER", "SDL3", 1);
+#endif
 
-    // try to load vkd3d-utils
-    s_vkd3dHandle = load_lib("libvkd3d-utils.so.1");
-    if(s_vkd3dHandle == nullptr) {
-        debugLog("DirectX11Shader: Failed to load libvkd3d-utils.so.1: {:s}", get_error());
+    // try to load vkd3d-utils for linux, d3dcompiler for windows
+    constexpr const char *lib_name = Env::cfg(OS::LINUX) ? "libvkd3d-utils.so.1" : "d3dcompiler_";
+    unsigned int major, minor;
+
+    if constexpr(Env::cfg(OS::LINUX)) {
+        s_d3dCompilerHandle = load_lib(lib_name);
+    } else {
+        // try any d3dcompiler version from 43 to 47, any should be fine
+        for(auto version : std::array<std::pair<std::string_view, unsigned int>, 5>{
+                {{"43"sv, 43}, {"44"sv, 44}, {"45"sv, 45}, {"46"sv, 46}, {"47"sv, 47}}}) {
+            std::string full_lib = lib_name;
+            full_lib += version.first;
+            major = version.second;
+
+            s_d3dCompilerHandle = load_lib(full_lib.c_str());
+            if(s_d3dCompilerHandle) break;
+        }
+    }
+
+    if(s_d3dCompilerHandle == nullptr) {
+        debugLog("DirectX11Shader: Failed to load {}: {:s}", lib_name, get_error());
         return false;
     }
 
     // get D3DCompile function pointer
-    s_d3dCompileFunc = load_func<std::remove_pointer_t<PFN_D3DCOMPILE_VKD3D>>(s_vkd3dHandle, "D3DCompile");
+    s_d3dCompileFunc = load_func<D3DCompile_t>(s_d3dCompilerHandle, "D3DCompile");
     if(s_d3dCompileFunc == nullptr) {
-        debugLog("DirectX11Shader: Failed to find D3DCompile in vkd3d-utils: {:s}", get_error());
-        unload_lib(s_vkd3dHandle);
-        s_vkd3dHandle = nullptr;
+        debugLog("DirectX11Shader: Failed to find D3DCompile function: {:s}", get_error());
+        unload_lib(s_d3dCompilerHandle);
+        s_d3dCompilerHandle = nullptr;
         return false;
     }
 
     // check vkd3d version compatibility
-    auto vkd3d_shader_get_version =
-        load_func<const char *(unsigned int *, unsigned int *)>(s_vkd3dHandle, "vkd3d_shader_get_version");
-    if(vkd3d_shader_get_version) {
-        unsigned int major, minor;
-        vkd3d_shader_get_version(&major, &minor);
-        if(!((major > 1) || (major == 1 && minor >= 10))) {
-            debugLog("DirectX11Shader: vkd3d version {}.{} is too old, need >= 1.10", major, minor);
-            return false;
+    if constexpr(Env::cfg(OS::LINUX)) {
+        auto pvkd3d_shader_get_version =
+            load_func<const char *(unsigned int *, unsigned int *)>(s_d3dCompilerHandle, "vkd3d_shader_get_version");
+        if(pvkd3d_shader_get_version) {
+            pvkd3d_shader_get_version(&major, &minor);
+            if(!((major > 1) || (major == 1 && minor >= 10))) {
+                debugLog("DirectX11Shader: vkd3d version {}.{} is too old, need >= 1.10", major, minor);
+                return false;
+            }
+            debugLog("DirectX11Shader: Using vkd3d version {}.{}", major, minor);
         }
-        debugLog("DirectX11Shader: Using vkd3d version {}.{}", major, minor);
+    } else {
+        debugLog("DirectX11Shader: Using d3dcompiler_{}.dll", major);
     }
 
     return true;
 }
 
 void DirectX11Shader::cleanupLibs() {
-    if(s_vkd3dHandle != nullptr) {
-        unload_lib(s_vkd3dHandle);
-        s_vkd3dHandle = nullptr;
+    if(s_d3dCompilerHandle != nullptr) {
+        unload_lib(s_d3dCompilerHandle);
+        s_d3dCompilerHandle = nullptr;
     }
     s_d3dCompileFunc = nullptr;
 }
 
-#else
-
-bool DirectX11Shader::loadLibs() { return true; }
-
-void DirectX11Shader::cleanupLibs() { ; }
-
-#endif
-
 void *DirectX11Shader::getBlobBufferPointer(ID3DBlob *blob) {
-#ifdef MCENGINE_PLATFORM_LINUX
-    auto *vkdBlob = (VKD3DBlob *)blob;
-    return vkdBlob->lpVtbl->GetBufferPointer(vkdBlob);
-#else
-    return blob->GetBufferPointer();
-#endif
+    auto *d3dblob = (D3D_Blob *)blob;
+    return d3dblob->lpVtbl->GetBufferPointer(d3dblob);
 }
 
 SIZE_T DirectX11Shader::getBlobBufferSize(ID3DBlob *blob) {
-#ifdef MCENGINE_PLATFORM_LINUX
-    auto *vkdBlob = (VKD3DBlob *)blob;
-    return vkdBlob->lpVtbl->GetBufferSize(vkdBlob);
-#else
-    return blob->GetBufferSize();
-#endif
+    auto *d3dblob = (D3D_Blob *)blob;
+    return d3dblob->lpVtbl->GetBufferSize(d3dblob);
 }
 
 void DirectX11Shader::releaseBlob(ID3DBlob *blob) {
     if(blob != nullptr) {
-#ifdef MCENGINE_PLATFORM_LINUX
-        auto *vkdBlob = (VKD3DBlob *)blob;
-        vkdBlob->lpVtbl->Release(vkdBlob);
-#else
-        blob->Release();
-#endif
+        auto *d3dblob = (D3D_Blob *)blob;
+        d3dblob->lpVtbl->Release(d3dblob);
     }
 }
 
@@ -674,25 +675,13 @@ bool DirectX11Shader::compile(const std::string &vertexShader, const std::string
 
     HRESULT hr1{S_OK}, hr2{S_OK};
 
-#ifdef MCENGINE_PLATFORM_LINUX
-    // use vkd3d function pointer with proper calling convention
-    debugLog("DirectX11Shader: (VKD3D) D3DCompile()-ing vertex shader ...");
-    hr1 = DirectX11Shader::s_d3dCompileFunc(vsSource.c_str(), vsSource.length(), "VS_SOURCE", nullptr /*defines*/,
-                                            nullptr, vsEntryPoint, vsProfile, flags, 0, &vs, &vsError);
-
-    debugLog("DirectX11Shader: (VKD3D) D3DCompile()-ing pixel shader ...");
-    hr2 = DirectX11Shader::s_d3dCompileFunc(psSource.c_str(), psSource.length(), "PS_SOURCE", nullptr /*defines*/,
-                                            nullptr, psEntryPoint, psProfile, flags, 0, &ps, &psError);
-#else
-    // use standard D3DCompile on Windows
     debugLog("DirectX11Shader: D3DCompile()-ing vertex shader ...");
-    hr1 = D3DCompile(vsSource.c_str(), vsSource.length(), "VS_SOURCE", nullptr /*defines*/, nullptr, vsEntryPoint,
-                     vsProfile, flags, 0, &vs, &vsError);
+    hr1 = s_d3dCompileFunc(vsSource.c_str(), vsSource.length(), "VS_SOURCE", nullptr /*defines*/, nullptr, vsEntryPoint,
+                           vsProfile, flags, 0, &vs, &vsError);
 
     debugLog("DirectX11Shader: D3DCompile()-ing pixel shader ...");
-    hr2 = D3DCompile(psSource.c_str(), psSource.length(), "PS_SOURCE", nullptr /*defines*/, nullptr, psEntryPoint,
-                     psProfile, flags, 0, &ps, &psError);
-#endif
+    hr2 = s_d3dCompileFunc(psSource.c_str(), psSource.length(), "PS_SOURCE", nullptr /*defines*/, nullptr, psEntryPoint,
+                           psProfile, flags, 0, &ps, &psError);
 
     // check compilation results
     if(FAILED(hr1) || FAILED(hr2) || vs == nullptr || ps == nullptr) {

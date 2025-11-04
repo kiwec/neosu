@@ -1232,7 +1232,7 @@ void HUD::resetScoreboard() {
     if(map == nullptr) return;
 
     this->beatmap_md5 = map->getMD5();
-    this->player_slot = nullptr;
+    this->player_slot.reset();
     this->slots.clear();
 
     int player_entry_id = BanchoState::is_in_a_multi_room() ? BanchoState::get_uid() : 0;
