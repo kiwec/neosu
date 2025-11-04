@@ -12,6 +12,7 @@ void init() {}
 #include "BaseEnvironment.h"
 #include "UString.h"
 #include "dynutils.h"
+#include "Logging.h"
 
 #include <winver.h>
 #include <processthreadsapi.h>
@@ -45,7 +46,6 @@ void init() {}
 #include <exception>
 
 #ifdef _MSC_VER
-#pragma comment(lib, "dbghelp.lib")
 #define RET_ADDR() _ReturnAddress()
 #else
 #define RET_ADDR() __builtin_return_address(0)
@@ -54,6 +54,14 @@ void init() {}
 namespace CrashHandler {
 
 namespace {
+
+static dynutils::lib_obj* dbghelp_handle{nullptr};
+
+using MiniDumpWriteDump_t = WINBOOL WINAPI(HANDLE hProcess, DWORD ProcessId, HANDLE hFile, MINIDUMP_TYPE DumpType,
+                                           CONST PMINIDUMP_EXCEPTION_INFORMATION ExceptionParam,
+                                           CONST PMINIDUMP_USER_STREAM_INFORMATION UserStreamParam,
+                                           CONST PMINIDUMP_CALLBACK_INFORMATION CallbackParam);
+static MiniDumpWriteDump_t* pMiniDumpWriteDump{nullptr};
 
 static std::array<char, 1024 + 1> g_userStream{};
 static std::array<wchar_t, 256 + 1> g_dumpFilenameW{};
@@ -103,7 +111,7 @@ static LONG write_crash_dump_internal(EXCEPTION_POINTERS* exceptionInfo) {
         }
 
         WINBOOL success =
-            MiniDumpWriteDump(GetCurrentProcess(), pid, hFile, dumpType, &exceptionParam, &userStreamInfo, nullptr);
+            pMiniDumpWriteDump(GetCurrentProcess(), pid, hFile, dumpType, &exceptionParam, &userStreamInfo, nullptr);
         (void)success;
 
         CloseHandle(hFile);
@@ -230,6 +238,21 @@ static void invalid_parameter_handler(const wchar_t* expression, const wchar_t* 
 }  // namespace
 
 void init() {
+    // first, see if we can load MiniDumpWriteDump from dbghelp before doing anything
+    {
+        dbghelp_handle = reinterpret_cast<dynutils::lib_obj*>(
+            LoadLibraryEx(TEXT("dbghelp.dll"), nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32));
+        if(dbghelp_handle) {
+            pMiniDumpWriteDump = dynutils::load_func<MiniDumpWriteDump_t>(dbghelp_handle, "MiniDumpWriteDump");
+        }
+        if(!pMiniDumpWriteDump || !dbghelp_handle) {
+            debugLog("WARNING: can't generate crash dumps, could not load MiniDumpWriteDump: {}",
+                     dynutils::get_error());
+            dynutils::unload_lib(dbghelp_handle);
+            return;  // no point in continuing
+        }
+    }
+
     // NOTE: the first event to hit the unhandled exception handler is probably the one that we actually care about for writing the dump
     // so ignore any other crashes from other threads during any unclean shutdown teardown
     g_dumpCompleteEvent = CreateEventW(nullptr, TRUE, FALSE, nullptr);

@@ -906,9 +906,9 @@ AS_IF([test "x$use_dx11" = "xyes"], [
                             # it needs to be forced dynamic
     ],[
         AC_SUBST([D3D11_CFLAGS], [""])
-        AC_SUBST([D3D11_LIBS], [["-ld3d11 -ldxgi"]])
+        AC_SUBST([D3D11_LIBS], [["-ld3d11"]])
         AC_SUBST([DXGI_CFLAGS], [""])
-        AC_SUBST([DXGI_LIBS], [["-ldxgi"]])
+        AC_SUBST([DXGI_LIBS], [[""]])
         AC_SUBST([VKD3D_CFLAGS], [""])
         AC_SUBST([VKD3D_LIBS], [[""]])
     ])
@@ -968,7 +968,7 @@ AS_IF([test "$SYSNAME" = "linux"], [
         PKG_CHECK_AUTO([LIBACL], [libacl >= $LIBACL_MIN_VERSION], [have_libacl=yes], [have_libacl=no])
     ])
 ], [
-    EXTRA_WIN_LDFLAGS="-lcomctl32 -Wl,-Bstatic -ldbghelp -Wl,-Bdynamic"
+    EXTRA_WIN_LDFLAGS="-lcomctl32"
     AC_SUBST([EXTRA_WIN_LDFLAGS])
     have_curl="no"
     have_libacl="not required"

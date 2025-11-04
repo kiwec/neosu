@@ -554,10 +554,17 @@ const DirectX11Shader::CACHE_ENTRY DirectX11Shader::getAndCacheUniformLocation(s
 }
 
 #include "dynutils.h"
-using namespace dynutils;
 
-lib_obj *DirectX11Shader::s_d3dCompilerHandle = nullptr;
+dynutils::lib_obj *DirectX11Shader::s_d3dCompilerHandle = nullptr;
 D3DCompile_t *DirectX11Shader::s_d3dCompileFunc = nullptr;
+
+void DirectX11Shader::cleanupLibs() {
+    if(s_d3dCompilerHandle != nullptr) {
+        dynutils::unload_lib(s_d3dCompilerHandle);
+        s_d3dCompilerHandle = nullptr;
+    }
+    s_d3dCompileFunc = nullptr;
+}
 
 bool DirectX11Shader::loadLibs() {
     if(s_d3dCompileFunc != nullptr) return true;  // already initialized
@@ -571,7 +578,7 @@ bool DirectX11Shader::loadLibs() {
     unsigned int major, minor;
 
     if constexpr(Env::cfg(OS::LINUX)) {
-        s_d3dCompilerHandle = load_lib(lib_name);
+        s_d3dCompilerHandle = dynutils::load_lib(lib_name);
     } else {
         // try any d3dcompiler version from 43 to 47, any should be fine
         for(auto version : std::array<std::pair<std::string_view, unsigned int>, 5>{
@@ -580,20 +587,20 @@ bool DirectX11Shader::loadLibs() {
             full_lib += version.first;
             major = version.second;
 
-            s_d3dCompilerHandle = load_lib(full_lib.c_str());
+            s_d3dCompilerHandle = dynutils::load_lib(full_lib.c_str());
             if(s_d3dCompilerHandle) break;
         }
     }
 
     if(s_d3dCompilerHandle == nullptr) {
-        debugLog("DirectX11Shader: Failed to load {}: {:s}", lib_name, get_error());
+        debugLog("DirectX11Shader: Failed to load {}: {:s}", lib_name, dynutils::get_error());
         return false;
     }
 
     // get D3DCompile function pointer
     s_d3dCompileFunc = load_func<D3DCompile_t>(s_d3dCompilerHandle, "D3DCompile");
     if(s_d3dCompileFunc == nullptr) {
-        debugLog("DirectX11Shader: Failed to find D3DCompile function: {:s}", get_error());
+        debugLog("DirectX11Shader: Failed to find D3DCompile function: {:s}", dynutils::get_error());
         unload_lib(s_d3dCompilerHandle);
         s_d3dCompilerHandle = nullptr;
         return false;
@@ -616,14 +623,6 @@ bool DirectX11Shader::loadLibs() {
     }
 
     return true;
-}
-
-void DirectX11Shader::cleanupLibs() {
-    if(s_d3dCompilerHandle != nullptr) {
-        unload_lib(s_d3dCompilerHandle);
-        s_d3dCompilerHandle = nullptr;
-    }
-    s_d3dCompileFunc = nullptr;
 }
 
 void *DirectX11Shader::getBlobBufferPointer(ID3DBlob *blob) {
