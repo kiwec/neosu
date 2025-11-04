@@ -78,14 +78,12 @@ jobs:
           export MAKEFLAGS="-j$(nproc)"
           export CCACHE_DIR="${{ env.CCACHE_DIR }}"
           if [[ "${{ matrix.arch }}" == "x32" ]]; then
-            ../configure \
-              ${{ (github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/dev') && '--disable-strip' || '' }} \
-              --with-audio="bass,soloud" --host=${{ matrix.host }}
+            ../configure --with-audio="bass,soloud" --host=${{ matrix.host }} \
+              ${{ (github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/dev') && '--disable-strip' || '' }}
           else
             export PATH="/opt/llvm-mingw/bin:$PATH"
-            ../configure --enable-clang \
-              ${{ (github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/dev') && '--disable-strip' || '' }} \
-              --with-audio="bass,soloud" --host=${{ matrix.host }}
+            ../configure --enable-clang --with-audio="bass,soloud" --with-renderer="opengl,dx11" --host=${{ matrix.host }} \
+              ${{ (github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/dev') && '--disable-strip' || '' }}
           fi
           make install
 
