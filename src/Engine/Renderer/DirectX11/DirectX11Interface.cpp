@@ -40,6 +40,7 @@
 DirectX11Interface::DirectX11Interface(HWND hwnd) : Graphics(), hwnd(hwnd) {}
 
 bool DirectX11Interface::init() {
+    if(!DirectX11Interface::loadLibs()) return false;
     if(!DirectX11Shader::loadLibs()) return false;
 
     static constexpr std::array<D3D_FEATURE_LEVEL, 4> FEATURE_LEVELS11_1{
@@ -61,14 +62,14 @@ bool DirectX11Interface::init() {
 
     std::string error = "D3D11CreateDevice";
     D3D_FEATURE_LEVEL featureLevelOut;
-    HRESULT hr = D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, createDeviceFlags,
-                                   FEATURE_LEVELS11_1.data(), FEATURE_LEVELS11_1.size(), D3D11_SDK_VERSION,
-                                   &this->device, &featureLevelOut, &this->deviceContext);
+    HRESULT hr = s_d3dCreateDeviceFunc(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, createDeviceFlags,
+                                       FEATURE_LEVELS11_1.data(), FEATURE_LEVELS11_1.size(), D3D11_SDK_VERSION,
+                                       &this->device, &featureLevelOut, &this->deviceContext);
 
     if(hr == E_INVALIDARG) {  // try without 11_1
-        hr = D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, createDeviceFlags,
-                               FEATURE_LEVELS11_1.data() + 1, FEATURE_LEVELS11_1.size() - 1, D3D11_SDK_VERSION,
-                               &this->device, &featureLevelOut, &this->deviceContext);
+        hr = s_d3dCreateDeviceFunc(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, createDeviceFlags,
+                                   FEATURE_LEVELS11_1.data() + 1, FEATURE_LEVELS11_1.size() - 1, D3D11_SDK_VERSION,
+                                   &this->device, &featureLevelOut, &this->deviceContext);
     }
 
     if(SUCCEEDED(hr)) {
@@ -220,6 +221,7 @@ DirectX11Interface::~DirectX11Interface() {
     if(this->deviceContext) this->deviceContext->Release();
 
     DirectX11Shader::cleanupLibs();
+    DirectX11Interface::cleanupLibs();
 }
 
 void DirectX11Interface::beginScene() {
@@ -1447,6 +1449,36 @@ void DirectX11Interface::onFramecountNumChanged(const float newValue) {
             this->dxgiDevice1->SetMaximumFrameLatency(newLatency);
         }
     }
+}
+
+#include "dynutils.h"
+
+dynutils::lib_obj *DirectX11Interface::s_d3d11Handle{nullptr};
+D3D11CreateDevice_t *DirectX11Interface::s_d3dCreateDeviceFunc{nullptr};
+
+void DirectX11Interface::cleanupLibs() {
+    if(s_d3d11Handle != nullptr) {
+        dynutils::unload_lib(s_d3d11Handle);
+        s_d3d11Handle = nullptr;
+    }
+    s_d3dCreateDeviceFunc = nullptr;
+}
+
+bool DirectX11Interface::loadLibs() {
+    if(s_d3d11Handle != nullptr) return true;  // already initialized
+    s_d3d11Handle = dynutils::load_lib("d3d11");
+    if(!s_d3d11Handle) {
+        debugLog("DirectX11Interface: Failed to load d3d11.dll: {}", dynutils::get_error());
+        return false;
+    }
+
+    s_d3dCreateDeviceFunc = dynutils::load_func<D3D11CreateDevice_t>(s_d3d11Handle, "D3D11CreateDevice");
+    if(!s_d3dCreateDeviceFunc) {
+        debugLog("DirectX11Interface: Failed to load D3D11CreateDevice: {}", dynutils::get_error());
+        return false;
+    }
+
+    return true;
 }
 
 #endif

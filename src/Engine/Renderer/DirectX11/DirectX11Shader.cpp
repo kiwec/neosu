@@ -555,8 +555,8 @@ const DirectX11Shader::CACHE_ENTRY DirectX11Shader::getAndCacheUniformLocation(s
 
 #include "dynutils.h"
 
-dynutils::lib_obj *DirectX11Shader::s_d3dCompilerHandle = nullptr;
-D3DCompile_t *DirectX11Shader::s_d3dCompileFunc = nullptr;
+dynutils::lib_obj *DirectX11Shader::s_d3dCompilerHandle{nullptr};
+D3DCompile_t *DirectX11Shader::s_d3dCompileFunc{nullptr};
 
 void DirectX11Shader::cleanupLibs() {
     if(s_d3dCompilerHandle != nullptr) {

@@ -906,7 +906,7 @@ AS_IF([test "x$use_dx11" = "xyes"], [
                             # it needs to be forced dynamic
     ],[
         AC_SUBST([D3D11_CFLAGS], [""])
-        AC_SUBST([D3D11_LIBS], [["-ld3d11"]])
+        AC_SUBST([D3D11_LIBS], [[""]])
         AC_SUBST([DXGI_CFLAGS], [""])
         AC_SUBST([DXGI_LIBS], [[""]])
         AC_SUBST([VKD3D_CFLAGS], [""])

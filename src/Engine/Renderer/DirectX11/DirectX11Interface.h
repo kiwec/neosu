@@ -24,6 +24,13 @@ MC_DO_PRAGMA(GCC diagnostic push)
 #include "d3d11.h"
 MC_DO_PRAGMA(GCC diagnostic pop)
 
+namespace dynutils {
+using lib_obj = struct lib_obj;
+}
+
+using D3D11CreateDevice_t = HRESULT WINAPI(IDXGIAdapter *, D3D_DRIVER_TYPE, HMODULE, UINT, const D3D_FEATURE_LEVEL *,
+                                           UINT, UINT, ID3D11Device **, D3D_FEATURE_LEVEL *, ID3D11DeviceContext **);
+
 class DirectX11Interface final : public Graphics {
     NOCOPY_NOMOVE(DirectX11Interface)
    public:
@@ -279,6 +286,13 @@ class DirectX11Interface final : public Graphics {
 
     // stats
     int iStatsNumDrawCalls{0};
+
+    // dynloading
+    static dynutils::lib_obj *s_d3d11Handle;
+    static D3D11CreateDevice_t *s_d3dCreateDeviceFunc;
+
+    static bool loadLibs();
+    static void cleanupLibs();
 };
 
 #else
