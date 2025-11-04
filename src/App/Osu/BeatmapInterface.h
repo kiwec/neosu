@@ -129,7 +129,7 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
     static void onMusicLoadingFinished(Resource *rs, void *this_);
 
     f32 getIdealVolume();
-    void setSpeed(f32 speed);
+    void setMusicSpeed(f32 speed);
     void seekMS(u32 ms);
     [[nodiscard]] inline DatabaseBeatmap::TIMING_INFO getTimingPoint() const { return this->current_timing_point; }
     [[nodiscard]] inline i32 getDefaultSampleSet() const { return this->default_sample_set; }

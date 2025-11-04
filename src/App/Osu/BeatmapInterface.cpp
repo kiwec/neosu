@@ -501,6 +501,7 @@ bool BeatmapInterface::start() {
 
     if(this->beatmap == nullptr) return false;
 
+    osu->getSongBrowser()->bHasSelectedAndIsPlaying = true;
     osu->setShouldPauseBGThreads(true);
 
     soundEngine->play(this->getSkin()->s_menu_hit);
@@ -590,7 +591,9 @@ bool BeatmapInterface::start() {
                 } break;
             }
 
+            osu->getSongBrowser()->bHasSelectedAndIsPlaying = false;
             osu->setShouldPauseBGThreads(false);
+
             return false;
         }
 
@@ -664,10 +667,6 @@ bool BeatmapInterface::start() {
             0.75f);
 
     osu->fQuickSaveTime = 0.0f;  // reset
-
-    // this needs to be set here, because updateConfineCursor relies on this
-    // awesome spaghetti logic btw
-    osu->getSongBrowser()->bHasSelectedAndIsPlaying = true;
 
     osu->updateConfineCursor();
     osu->updateWindowsKeyDisable();
@@ -961,8 +960,14 @@ f32 BeatmapInterface::getIdealVolume() {
     return volume * modifier;
 }
 
-void BeatmapInterface::setSpeed(f32 speed) {
-    if(this->music != nullptr) this->music->setSpeed(speed);
+void BeatmapInterface::setMusicSpeed(f32 speed) {
+    if(this->music != nullptr) {
+        if((osu->isInPlayMode() || cv::beatmap_preview_mods_live.getBool())) {
+            this->music->setSpeed(speed);
+        } else {  // reset playback speed
+            this->music->setSpeed(1.f);
+        }
+    }
 }
 
 void BeatmapInterface::seekMS(u32 ms) {
@@ -977,7 +982,7 @@ void BeatmapInterface::seekMS(u32 ms) {
 
     this->music->setPositionMS(ms);
     this->music->setBaseVolume(this->getIdealVolume());
-    this->music->setSpeed(this->getSpeedMultiplier());
+    this->setMusicSpeed(this->getSpeedMultiplier());
 
     this->resetHitObjects(ms);
     this->resetScore();
@@ -1471,7 +1476,7 @@ void BeatmapInterface::handlePreviewPlay() {
             this->bWasSeekFrame = true;
 
             this->music->setBaseVolume(this->getIdealVolume());
-            this->music->setSpeed(this->getSpeedMultiplier());
+            this->setMusicSpeed(this->getSpeedMultiplier());
         }
     }
 
@@ -1568,7 +1573,7 @@ void BeatmapInterface::onMusicLoadingFinished(Resource *rs, void *this_) {
         // ready and enqueued
         music->setBaseVolume(map_iface->getIdealVolume());
         map_iface->fMusicFrequencyBackup = music->getFrequency();
-        music->setSpeed(map_iface->getSpeedMultiplier());
+        map_iface->setMusicSpeed(map_iface->getSpeedMultiplier());
         if(map_iface->bIsWaitingForPreview) {
             map_iface->bIsWaitingForPreview = false;
             map_iface->handlePreviewPlay();
@@ -2354,7 +2359,7 @@ void BeatmapInterface::update2() {
             f32 warp_multiplier = std::max(cv::mod_timewarp_multiplier.getFloat(), 1.f);
             const f32 speed =
                 this->getSpeedMultiplier() + percentFinished * this->getSpeedMultiplier() * (warp_multiplier - 1.0f);
-            this->music->setSpeed(speed);
+            this->setMusicSpeed(speed);
         }
     }
 
@@ -2396,7 +2401,6 @@ void BeatmapInterface::update2() {
                     this->music->setPositionMS(start_ms);
                     this->bWasSeekFrame = true;
                     this->music->setBaseVolume(this->getIdealVolume());
-                    this->music->setSpeed(this->getSpeedMultiplier());
 
                     // if there are calculations in there that need the hitobjects to be loaded, also applies
                     // speed/pitch
@@ -3226,10 +3230,8 @@ void BeatmapInterface::onModUpdate(bool rebuildSliderVertexBuffers, bool recompu
 
     if(recomputeDrainRate) this->computeDrainRate();
 
-    if(this->music != nullptr) {
-        // Updates not just speed but also nightcore state
-        this->music->setSpeed(this->getSpeedMultiplier());
-    }
+    // Updates not just speed but also nightcore state
+    this->setMusicSpeed(this->getSpeedMultiplier());
 
     // recalculate slider vertexbuffers
     if(osu->getModHR() != this->bWasHREnabled ||

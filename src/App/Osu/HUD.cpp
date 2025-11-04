@@ -366,8 +366,9 @@ void HUD::drawCursor(vec2 pos, float alphaMultiplier, bool secondTrail, bool upd
             g->translate(pos.x, pos.y, 0.05f);
 
             if(!osu->getSkin()->o_cursor_centered)
-                g->translate((osu->getSkin()->i_cursor_middle->getWidth() / 2.0f) * scale * cv::cursor_scale.getFloat(),
-                             (osu->getSkin()->i_cursor_middle->getHeight() / 2.0f) * scale * cv::cursor_scale.getFloat());
+                g->translate(
+                    (osu->getSkin()->i_cursor_middle->getWidth() / 2.0f) * scale * cv::cursor_scale.getFloat(),
+                    (osu->getSkin()->i_cursor_middle->getHeight() / 2.0f) * scale * cv::cursor_scale.getFloat());
 
             g->drawImage(osu->getSkin()->i_cursor_middle);
         }
@@ -486,7 +487,8 @@ void HUD::drawCursorTrailRaw(float alpha, vec2 pos) {
     const auto &trailImage = osu->getSkin()->i_cursor_trail;
     const float scale = this->getCursorTrailScaleFactor();
     const float animatedScale =
-        scale * (osu->getSkin()->o_cursor_expand && cv::cursor_trail_expand.getBool() ? this->fCursorExpandAnim : 1.0f) *
+        scale *
+        (osu->getSkin()->o_cursor_expand && cv::cursor_trail_expand.getBool() ? this->fCursorExpandAnim : 1.0f) *
         cv::cursor_trail_scale.getFloat();
 
     g->setColor(Color(0xffffffff).setA(alpha));
@@ -784,7 +786,8 @@ void HUD::drawComboOrScoreDigits(u64 number, float scale, bool drawLeadingZeroes
 
     const auto &images = combo ? osu->getSkin()->i_combos : osu->getSkin()->i_scores;
 
-    const auto overlap = static_cast<float>(combo ? osu->getSkin()->combo_overlap_amt : osu->getSkin()->score_overlap_amt);
+    const auto overlap =
+        static_cast<float>(combo ? osu->getSkin()->combo_overlap_amt : osu->getSkin()->score_overlap_amt);
 
     while(divisor >= 1) {
         int digit = static_cast<int>(number / divisor);
@@ -879,10 +882,10 @@ void HUD::drawScore(u64 score) {
     g->pushTransform();
     {
         g->scale(scale, scale);
-        g->translate(
-            osu->getVirtScreenWidth() - osu->getSkin()->i_scores[0]->getWidth() * scale * numDigits +
-                osu->getSkin()->score_overlap_amt * (osu->getSkin()->i_scores[0].is2x() ? 2 : 1) * scale * (numDigits - 1),
-            osu->getSkin()->i_scores[0]->getHeight() * scale / 2);
+        g->translate(osu->getVirtScreenWidth() - osu->getSkin()->i_scores[0]->getWidth() * scale * numDigits +
+                         osu->getSkin()->score_overlap_amt * (osu->getSkin()->i_scores[0].is2x() ? 2 : 1) * scale *
+                             (numDigits - 1),
+                     osu->getSkin()->i_scores[0]->getHeight() * scale / 2);
         this->drawScoreNumber(score, scale, false);
     }
     g->popTransform();
@@ -897,8 +900,8 @@ void HUD::drawScorebarBg(float alpha, float breakAnim) {
     const vec2 breakAnimOffset = vec2(0, -20.0f * breakAnim) * ratio;
     g->setColor(Color(0xffffffff).setA(alpha * (1.0f - breakAnim)));
 
-    osu->getSkin()->i_scorebar_bg->draw((osu->getSkin()->i_scorebar_bg->getSize() / 2.0f) * scale + (breakAnimOffset * scale),
-                                     scale);
+    osu->getSkin()->i_scorebar_bg->draw(
+        (osu->getSkin()->i_scorebar_bg->getSize() / 2.0f) * scale + (breakAnimOffset * scale), scale);
 }
 
 void HUD::drawSectionPass(float alpha) {
@@ -950,8 +953,8 @@ void HUD::drawHPBar(double health, float alpha, float breakAnim) {
     {
         osu->getSkin()->i_scorebar_colour->setDrawClipWidthPercent(health);
         osu->getSkin()->i_scorebar_colour->draw((osu->getSkin()->i_scorebar_colour->getSize() / 2.0f * scale) +
-                                                 (colourOffset * scale) + (breakAnimOffset * scale),
-                                             scale);
+                                                    (colourOffset * scale) + (breakAnimOffset * scale),
+                                                scale);
     }
 
     // draw ki
@@ -1067,7 +1070,7 @@ void HUD::drawSkip() {
 
     g->setColor(0xffffffff);
     osu->getSkin()->i_play_skip->draw(osu->getVirtScreenSize() - (osu->getSkin()->i_play_skip->getSize() / 2.f) * scale,
-                                   cv::hud_scale.getFloat());
+                                      cv::hud_scale.getFloat());
 }
 
 void HUD::drawWarningArrow(vec2 pos, bool flipVertically, bool originLeft) {
@@ -1248,6 +1251,8 @@ void HUD::resetScoreboard() {
 }
 
 void HUD::updateScoreboard(bool animate) {
+    if(!this->player_slot) return;  // wait for resetScoreboard() (FIXME: spaghetti)
+
     DatabaseBeatmap *map = osu->getMapInterface()->getBeatmap();
     if(map == nullptr) return;
 
@@ -2456,5 +2461,6 @@ McRect HUD::getSkipClickRect() {
     const float skipScale = cv::hud_scale.getFloat();
     return McRect(osu->getVirtScreenWidth() - osu->getSkin()->i_play_skip->getSize().x * skipScale,
                   osu->getVirtScreenHeight() - osu->getSkin()->i_play_skip->getSize().y * skipScale,
-                  osu->getSkin()->i_play_skip->getSize().x * skipScale, osu->getSkin()->i_play_skip->getSize().y * skipScale);
+                  osu->getSkin()->i_play_skip->getSize().x * skipScale,
+                  osu->getSkin()->i_play_skip->getSize().y * skipScale);
 }

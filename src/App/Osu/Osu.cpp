@@ -1771,7 +1771,7 @@ void Osu::updateAnimationSpeed() {
 void Osu::onAnimationSpeedChange() { this->updateAnimationSpeed(); }
 
 void Osu::onSpeedChange(float speed) {
-    this->map_iface->setSpeed(speed >= 0.0f ? speed : this->map_iface->getSpeedMultiplier());
+    this->map_iface->setMusicSpeed(speed >= 0.0f ? speed : this->map_iface->getSpeedMultiplier());
     this->updateAnimationSpeed();
 
     // Update mod menu UI
