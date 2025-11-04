@@ -908,13 +908,9 @@ void Database::loadMaps() {
     std::unordered_map<int, size_t> setIDToIndex;
 
     // Load neosu map database
-    // We don't want to reload it, ever. Would cause too much jank.
-    static bool first_load = true;
     {
         ByteBufferedFile::Reader neosu_maps(neosu_maps_path);
-        if(first_load && neosu_maps.total_size > 0) {
-            first_load = false;
-
+        if(neosu_maps.total_size > 0) {
             u32 version = neosu_maps.read<u32>();
             if(version < NEOSU_MAPS_DB_VERSION) {
                 // Reading from older database version: backup just in case
