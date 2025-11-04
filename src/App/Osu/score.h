@@ -12,20 +12,10 @@ class HitObject;
 namespace LegacyReplay {
 struct Frame;
 enum KeyFlags : uint8_t;
-}
+}  // namespace LegacyReplay
 using GameplayKeys = LegacyReplay::KeyFlags;
 
 struct FinishedScore {
-    u64 score = 0;
-    u64 spinner_bonus = 0;
-    Replay::Mods mods;
-
-    u64 unixTimestamp = 0;
-    i32 player_id = 0;
-    std::string playerName;
-    const DatabaseBeatmap *map = nullptr;  // NOTE: do NOT assume this is set
-    u64 play_time_ms = 0;
-
     enum class Grade : uint8_t {
         XH,
         SH,
@@ -38,15 +28,34 @@ struct FinishedScore {
         F,
         N  // means "no grade"
     };
-    Grade grade = Grade::N;
+
+    MD5Hash beatmap_hash;
+    Replay::Mods mods;
+
+    const DatabaseBeatmap *map = nullptr;  // NOTE: do NOT assume this is set
+    u64 score = 0;
+    u64 spinner_bonus = 0;
+    u64 unixTimestamp = 0;
+    u64 play_time_ms = 0;
+
+    std::string playerName;
 
     std::string client;
     std::string server;
-    i64 bancho_score_id = 0;
+
+    // Absolute hit deltas of every hitobject (0-254). 255 == miss
+    // This is exclusive to PPV3-converted scores
+    std::vector<u8> hitdeltas;
+
+    std::vector<LegacyReplay::Frame> replay;  // not always loaded
 
     // Only present in scores parsed from osu!.db, aka "peppy" replays
     // So it will always be 0 in mcosu/neosu scores, or in online scores
     u64 peppy_replay_tms = 0;
+
+    i64 bancho_score_id = 0;
+
+    i32 player_id = 0;
 
     int num300s = 0;
     int num100s = 0;
@@ -56,22 +65,12 @@ struct FinishedScore {
     int numMisses = 0;
 
     int comboMax = 0;
-    bool perfect = false;
-    bool passed = false;
-    bool ragequit = false;
 
     u32 ppv2_version = 0;
     float ppv2_score = 0.f;
     float ppv2_total_stars = 0.f;
     float ppv2_aim_stars = 0.f;
     float ppv2_speed_stars = 0.f;
-
-    std::string ppv3_algorithm;
-    float ppv3_score = 0.f;
-
-    // Absolute hit deltas of every hitobject (0-254). 255 == miss
-    // This is exclusive to PPV3-converted scores
-    std::vector<u8> hitdeltas;
 
     int numSliderBreaks = 0;
     float unstableRate = 0.f;
@@ -81,12 +80,18 @@ struct FinishedScore {
     int numHitObjects = -1;
     int numCircles = -1;
 
-    MD5Hash beatmap_hash;
-    std::vector<LegacyReplay::Frame> replay;  // not always loaded
+    Grade grade = Grade::N;
+    bool perfect = false;
+    bool passed = false;
+    bool ragequit = false;
 
     // Online scores are not saved to db
     bool is_online_score = false;
     bool is_online_replay_available = false;
+
+    // NOTE: unfinished feature
+    // float ppv3_score = 0.f;
+    // std::string ppv3_algorithm;
 
     [[nodiscard]] bool is_peppy_imported() const { return this->server == "ppy.sh"; }
 

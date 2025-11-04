@@ -504,9 +504,9 @@ f64 FinishedScore::get_or_calc_pp() {
 };
 
 f64 FinishedScore::get_pp() const {
-    if(cv::use_ppv3.getBool() && this->ppv3_algorithm.size() > 0) {
-        return this->ppv3_score;
-    }
+    // if(cv::use_ppv3.getBool() && this->ppv3_algorithm.size() > 0) {
+    //     return this->ppv3_score;
+    // }
 
     if(this->ppv2_version < DifficultyCalculator::PP_ALGORITHM_VERSION) {
         return -1.0;

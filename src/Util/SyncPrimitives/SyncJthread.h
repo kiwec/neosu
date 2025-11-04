@@ -24,9 +24,9 @@ using jthread = std::jthread;
 namespace Sync {
 
 // ===================================================================
-// jthread: thread with stop_token support + 8MB stack size
+// sdl_jthread: thread with stop_token support + 8MB stack size
 // ===================================================================
-class jthread {
+class sdl_jthread {
    private:
     SDL_Thread* m_thread{nullptr};
     stop_source m_stop_source;
@@ -35,10 +35,10 @@ class jthread {
     using id = SDL_ThreadID;
     using native_handle_type = SDL_Thread*;
 
-    jthread() noexcept = default;
+    sdl_jthread() noexcept = default;
 
     template <typename F, typename... Args>
-    explicit jthread(F&& f, Args&&... args) {
+    explicit sdl_jthread(F&& f, Args&&... args) {
         // wrapper context
         struct thread_context {
             std::decay_t<F> func;
@@ -83,24 +83,23 @@ class jthread {
         SDL_DestroyProperties(props);
     }
 
-    ~jthread() {
+    ~sdl_jthread() {
         if(joinable()) {
             request_stop();
             join();
         }
     }
 
-    jthread(const jthread&) = delete;
-    jthread(jthread&& other) noexcept : m_thread(other.m_thread), m_stop_source(std::move(other.m_stop_source)) {
+    sdl_jthread(const sdl_jthread&) = delete;
+    sdl_jthread(sdl_jthread&& other) noexcept
+        : m_thread(other.m_thread), m_stop_source(std::move(other.m_stop_source)) {
         other.m_thread = nullptr;
     }
-    jthread& operator=(const jthread&) = delete;
-    jthread& operator=(jthread&& other) noexcept {
+    sdl_jthread& operator=(const sdl_jthread&) = delete;
+    sdl_jthread& operator=(sdl_jthread&& other) noexcept {
         if(this != &other) {
-            if(joinable()) {
-                request_stop();
-                join();
-            }
+            this->~sdl_jthread();
+
             m_thread = other.m_thread;
             other.m_thread = nullptr;
             m_stop_source = std::move(other.m_stop_source);
@@ -108,7 +107,7 @@ class jthread {
         return *this;
     }
 
-    void swap(jthread& other) noexcept {
+    void swap(sdl_jthread& other) noexcept {
         auto last = m_thread;
         m_thread = other.m_thread;
         other.m_thread = last;
@@ -141,6 +140,8 @@ class jthread {
 
     bool request_stop() noexcept { return m_stop_source.request_stop(); }
 };
+
+using jthread = sdl_jthread;
 
 }  // namespace Sync
 

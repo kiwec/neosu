@@ -219,32 +219,34 @@ class Room {
     Room() = default;  // default-initialized room means we're not in multiplayer at the moment
     Room(Packet &packet);
 
+    MD5Hash map_md5;
+
+    u32 seed = 0;
+    i32 map_id = 0;
+    i32 host_id = 0;
     u16 id = 0;
+
     u8 in_progress = 0;
     u8 match_type = 0;
     LegacyFlags mods{};
-    u32 seed = 0;
     bool all_players_loaded = false;
     bool all_players_skipped = false;
     bool player_loaded = false;
+    bool has_password = false;
 
     UString name = "";
     UString password = "";
-    bool has_password = false;
-
     UString map_name = "";
-    MD5Hash map_md5;
-    i32 map_id = 0;
+
+    Slot slots[16];
 
     u8 mode = 0;
     u8 win_condition = 0;
     u8 team_type = 0;
     u8 freemods = 0;
 
-    i32 host_id = 0;
     u8 nb_players = 0;
     u8 nb_open_slots = 0;
-    Slot slots[16];
 
     bool nb_ready() {
         u8 nb = 0;

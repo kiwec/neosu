@@ -48,7 +48,7 @@ DatabaseBeatmap::DatabaseBeatmap(std::string filePath, std::string folder, Beatm
     // raw metadata (note the special default values)
 
     this->iVersion = cv::beatmap_version.getInt();
-    this->iGameMode = 0;
+    // this->iGameMode = 0;
     this->iID = 0;
     this->iSetID = -1;
 
@@ -485,10 +485,10 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(std::
                             break;
                         }
                         upd_last_error(!Parsing::parse(csvs[7], &slider.pixelLength));
-                        if (err_line && !csvs[7].empty()) {
+                        if(err_line && !csvs[7].empty()) {
                             // fix up infinite pixelLength
                             if(SString::contains_ncase(csvs[7], "e+")) {
-                                if (csvs[7].starts_with('-')) {
+                                if(csvs[7].starts_with('-')) {
                                     slider.pixelLength = -sliderSanityRange;
                                 } else {
                                     slider.pixelLength = sliderSanityRange;
@@ -496,8 +496,9 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(std::
                                 err_line = 0;
                             }
                         }
-                        if (err_line) {
-                            debugLog("Invalid slider pixel length: {} slider.pixelLength: {}", csvs[7], slider.pixelLength);
+                        if(err_line) {
+                            debugLog("Invalid slider pixel length: {} slider.pixelLength: {}", csvs[7],
+                                     slider.pixelLength);
                             break;
                         }
 
@@ -1073,13 +1074,13 @@ bool DatabaseBeatmap::loadMetadata(bool compute_md5) {
     }
 
     if(!fileBuffer || !beatmapFileSize) {
-        debugLog("Osu Error: Couldn't read file {:s}", this->sFilePath.c_str());
+        debugLog("Osu Error: Couldn't read file {}", this->sFilePath);
         return false;
     }
 
     // compute MD5 hash (very slow)
-    if(compute_md5) {
-        this->writeMD5({BanchoState::md5(reinterpret_cast<const u8 *>(beatmapFile.data()), beatmapFileSize)});
+    if(compute_md5 && !this->md5_init.load(std::memory_order_acquire)) {
+        this->writeMD5(BanchoState::md5(reinterpret_cast<const u8 *>(beatmapFile.data()), beatmapFileSize));
     }
 
     // load metadata
@@ -1135,10 +1136,16 @@ bool DatabaseBeatmap::loadMetadata(bool compute_md5) {
             }
 
             case General: {
+                // early return for non-std
+                u8 gamemode{(u8)-1};
+                if(Parsing::parse(curLine, "Mode", ':', &gamemode) && gamemode != 0) {
+                    logIfCV(debug_osu, "ignoring non-std gamemode {} for {}", gamemode, this->sFilePath);
+                    return false;
+                }
+                //PARSE_LINE("Mode", ':', &this->iGameMode);
                 PARSE_LINE("AudioFilename", ':', &this->sAudioFileName);
                 PARSE_LINE("StackLeniency", ':', &this->fStackLeniency);
                 PARSE_LINE("PreviewTime", ':', &this->iPreviewTime);
-                PARSE_LINE("Mode", ':', &this->iGameMode);
                 break;
             }
 
@@ -1207,9 +1214,6 @@ bool DatabaseBeatmap::loadMetadata(bool compute_md5) {
     if(SString::is_wspace_only(this->sArtistUnicode)) {
         this->bEmptyArtistUnicode = true;
     }
-
-    // gamemode filter
-    if(this->iGameMode != 0) return false;  // nothing more to do here
 
     // general sanity checks
     if((this->timingpoints.size() < 1)) {

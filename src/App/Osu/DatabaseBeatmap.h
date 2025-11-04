@@ -151,6 +151,7 @@ class DatabaseBeatmap final {
         i32 errorCode{0};
     };
 
+    DatabaseBeatmap() = delete;
     DatabaseBeatmap(std::string filePath, std::string folder, BeatmapType type);
     DatabaseBeatmap(std::vector<DatabaseBeatmap *> *difficulties, BeatmapType type);
     ~DatabaseBeatmap();
@@ -199,7 +200,7 @@ class DatabaseBeatmap final {
     // raw metadata
 
     [[nodiscard]] inline int getVersion() const { return this->iVersion; }
-    [[nodiscard]] inline int getGameMode() const { return this->iGameMode; }
+    // [[nodiscard]] inline int getGameMode() const { return this->iGameMode; }
     [[nodiscard]] inline int getID() const { return this->iID; }
     [[nodiscard]] inline int getSetID() const { return this->iSetID; }
 
@@ -270,12 +271,30 @@ class DatabaseBeatmap final {
     [[nodiscard]] inline int getNumSliders() const { return this->iNumSliders; }
     [[nodiscard]] inline int getNumSpinners() const { return this->iNumSpinners; }
 
-    // custom data
-
-    i64 last_modification_time = 0;
-
     [[nodiscard]] inline i32 getLocalOffset() const { return this->iLocalOffset; }
     [[nodiscard]] inline i32 getOnlineOffset() const { return this->iOnlineOffset; }
+
+    inline void writeMD5(const MD5Hash &hash) {
+        if(this->md5_init.load(std::memory_order_acquire)) return;
+
+        this->sMD5Hash = hash;
+        this->md5_init.store(true, std::memory_order_release);
+    }
+
+    inline const MD5Hash &getMD5() const {
+        if(this->md5_init.load(std::memory_order_acquire)) return this->sMD5Hash;
+
+        static MD5Hash empty;
+        return empty;
+    }
+
+   private:
+    // may be lazy-computed by loadMetadata, or loaded from disk off database
+    MD5Hash sMD5Hash;
+
+   public:
+    // if this is non-null we are a beatmapset, not a difficulty
+    std::vector<DatabaseBeatmap *> *difficulties = nullptr;
 
     zarray<DatabaseBeatmap::TIMINGPOINT> timingpoints;  // necessary for main menu anim
 
@@ -285,15 +304,12 @@ class DatabaseBeatmap final {
     std::string sFilePath;  // path to .osu file (e.g. "/path/to/beatmapfolder/beatmap.osu")
     std::string sFullBackgroundImageFilePath;
 
-   private:
+   private:  // private for lazy-fixing up filename casing with getFullSoundFilePath
     std::string sFullSoundFilePath;
-    bool bSoundFilePathAlreadyFixed{false};
 
    public:
-    bool bEmptyArtistUnicode{false};
-    bool bEmptyTitleUnicode{false};
-
     // raw metadata
+    i64 last_modification_time = 0;
 
     std::string sTitle;
     std::string sTitleUnicode;
@@ -309,10 +325,10 @@ class DatabaseBeatmap final {
     int iID;  // online ID, if uploaded
     u32 iLengthMS;
 
-    u8 iVersion;   // e.g. "osu file format v12" -> 12
-    u8 iGameMode;  // 0 = osu!standard, 1 = Taiko, 2 = Catch the Beat, 3 = osu!mania
-    int iSetID;    // online set ID, if uploaded
+    i16 iLocalOffset;
+    i16 iOnlineOffset;
 
+    int iSetID;  // online set ID, if uploaded
     int iPreviewTime;
 
     float fAR;
@@ -340,8 +356,19 @@ class DatabaseBeatmap final {
     // custom data (not necessary, not part of the beatmap file, and not precomputed)
     std::atomic<f32> loudness = 0.f;
 
-    i16 iLocalOffset;
-    i16 iOnlineOffset;
+    // this is from metadata but put here for struct layout purposes
+    u8 iVersion;  // e.g. "osu file format v12" -> 12
+    // u8 iGameMode;  // 0 = osu!standard, 1 = Taiko, 2 = Catch the Beat, 3 = osu!mania
+
+    BeatmapType type;
+
+    mutable std::atomic<bool> md5_init{false};
+
+    bool bSoundFilePathAlreadyFixed{false};
+    bool bEmptyArtistUnicode{false};
+    bool bEmptyTitleUnicode{false};
+    bool do_not_store{false};
+    bool draw_background{true};
 
     struct CALCULATE_SLIDER_TIMES_CLICKS_TICKS_RESULT {
         int errorCode;
@@ -360,48 +387,6 @@ class DatabaseBeatmap final {
     static CALCULATE_SLIDER_TIMES_CLICKS_TICKS_RESULT calculateSliderTimesClicksTicks(
         int beatmapVersion, std::vector<SLIDER> &sliders, zarray<DatabaseBeatmap::TIMINGPOINT> &timingpoints,
         float sliderMultiplier, float sliderTickRate, const std::atomic<bool> &dead);
-
-    BeatmapType type;
-
-    bool draw_background = true;
-    bool do_not_store = false;
-
-    inline void writeMD5(const MD5Hash &hash) {
-        this->md5_mtx.lock();
-        this->sMD5Hash = hash;
-        this->md5_mtx.unlock();
-    }
-
-#ifdef USE_NSYNC  // std::shared_mutex has issues in wine here
-
-    inline MD5Hash getMD5() const {
-        this->md5_mtx.lock_shared();
-        auto hash = this->sMD5Hash;
-        this->md5_mtx.unlock_shared();
-        return hash;
-    }
-
-   private:
-    // must be protected from multithreaded access
-    mutable Sync::shared_mutex md5_mtx;
-
-#else
-
-    inline MD5Hash getMD5() const {
-        this->md5_mtx.lock();
-        auto hash = this->sMD5Hash;
-        this->md5_mtx.unlock();
-        return hash;
-    }
-
-   private:
-    mutable Sync::mutex md5_mtx;
-
-#endif
-
-    MD5Hash sMD5Hash;
-
-    std::vector<DatabaseBeatmap *> *difficulties = nullptr;
 
     static bool parse_timing_point(std::string_view curLine, DatabaseBeatmap::TIMINGPOINT *out);
 

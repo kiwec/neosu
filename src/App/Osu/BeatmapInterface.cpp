@@ -3223,7 +3223,7 @@ void BeatmapInterface::write_frame() {
 }
 
 void BeatmapInterface::onModUpdate(bool rebuildSliderVertexBuffers, bool recomputeDrainRate) {
-    if(cv::debug_osu.getBool()) debugLog("Playfield::onModUpdate() @ {:f}", engine->getTime());
+    if(cv::debug_osu.getBool()) debugLog("onModUpdate() @ {:f}", engine->getTime());
 
     this->updatePlayfieldMetrics();
     this->updateHitobjectMetrics();
@@ -3273,7 +3273,7 @@ void BeatmapInterface::onModUpdate(bool rebuildSliderVertexBuffers, bool recompu
 }
 
 void BeatmapInterface::resetLiveStarsTasks() {
-    if(cv::debug_osu.getBool()) debugLog("Playfield::resetLiveStarsTasks() called");
+    if(cv::debug_osu.getBool()) debugLog("called");
 
     osu->getHUD()->live_pp = 0.0;
     osu->getHUD()->live_stars = 0.0;
@@ -3928,7 +3928,7 @@ void BeatmapInterface::updateSliderVertexBuffers() {
     this->fPrevHitCircleDiameter = this->fHitcircleDiameter;  // same here
     this->fPrevPlayfieldRotationFromConVar = cv::playfield_rotation.getFloat();  // same here
 
-    debugLog("Playfield::updateSliderVertexBuffers() for {:d} hitobjects ...", this->hitobjects.size());
+    debugLog("rebuilding for {:d} hitobjects ...", this->hitobjects.size());
 
     for(auto &hitobject : this->hitobjects) {
         auto *sliderPointer =

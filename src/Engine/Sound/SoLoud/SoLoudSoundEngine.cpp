@@ -415,11 +415,12 @@ void SoLoudSoundEngine::allowInternalCallbacks() {
     cv::cmd::snd_restart.setCallback(SA::MakeDelegate<&SoLoudSoundEngine::restart>(this));
 
     static auto backendSwitchCB = [](std::string_view arg) -> void {
-        const bool nowSDL = SString::contains_ncase(arg, "sdl"sv);
         if(!soundEngine || soundEngine->getTypeId() != SndEngineType::SOLOUD) return;
 
         auto *enginePtr = static_cast<SoLoudSoundEngine *>(soundEngine.get());
         const auto curDriver = enginePtr->getOutputDriverType();
+
+        const bool nowSDL = SString::contains_ncase(arg, "sdl"sv);
         // don't do anything if we're already ready with the same output driver
         if(enginePtr->bWasBackendEverReady &&
            ((nowSDL && curDriver == OutputDriver::SOLOUD_SDL) || (!nowSDL && curDriver == OutputDriver::SOLOUD_MA)))
