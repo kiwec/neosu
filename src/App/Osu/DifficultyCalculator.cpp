@@ -269,8 +269,7 @@ f64 DifficultyCalculator::calculateStarDiffForHitObjects(StarCalcParams &params)
                     vec2 lazy_diff = slider.lazyEndPos - cursor_pos;
                     if(vec::length(lazy_diff) < vec::length(diff)) diff = lazy_diff;
                     diff_len = scaling_factor * vec::length(diff);
-                } else if(slider.ho->scoringTimes[i].type ==
-                          OsuDifficultyHitObject::SLIDER_SCORING_TIME::TYPE::REPEAT) {
+                } else if(slider.ho->scoringTimes[i].type == OsuDifficultyHitObject::SLIDER_SCORING_TIME::TYPE::REPEAT) {
                     // Slider repeat
                     req_diff = 50.0;
                 }
@@ -420,17 +419,16 @@ f64 DifficultyCalculator::calculateStarDiffForHitObjects(StarCalcParams &params)
     }
 
     // calculate final difficulty (weigh strains)
-    f64 aimNoSliders = DiffObject::calculate_difficulty(
-        Skills::Skill::AIM_NO_SLIDERS, diffObjects, numDiffObjects,
-        params.incremental ? &params.incremental[(size_t)Skills::Skill::AIM_NO_SLIDERS] : nullptr);
-    *params.aim = DiffObject::calculate_difficulty(
-        Skills::Skill::AIM_SLIDERS, diffObjects, numDiffObjects,
-        params.incremental ? &params.incremental[(size_t)Skills::Skill::AIM_SLIDERS] : nullptr, params.outAimStrains,
-        params.difficultAimStrains, params.aimDifficultSliders);
+    f64 aimNoSliders =
+        DiffObject::calculate_difficulty(Skills::AIM_NO_SLIDERS, diffObjects, numDiffObjects,
+                                         params.incremental ? &params.incremental[Skills::AIM_NO_SLIDERS] : nullptr);
+    *params.aim =
+        DiffObject::calculate_difficulty(Skills::AIM_SLIDERS, diffObjects, numDiffObjects,
+                                         params.incremental ? &params.incremental[Skills::AIM_SLIDERS] : nullptr,
+                                         params.outAimStrains, params.difficultAimStrains, params.aimDifficultSliders);
     *params.speed = DiffObject::calculate_difficulty(
-        Skills::Skill::SPEED, diffObjects, numDiffObjects,
-        params.incremental ? &params.incremental[(size_t)Skills::Skill::SPEED] : nullptr, params.outSpeedStrains,
-        params.difficultSpeedStrains, params.speedNotes);
+        Skills::SPEED, diffObjects, numDiffObjects, params.incremental ? &params.incremental[Skills::SPEED] : nullptr,
+        params.outSpeedStrains, params.difficultSpeedStrains, params.speedNotes);
 
     static const f64 star_scaling_factor = 0.0675;
 
@@ -470,37 +468,32 @@ f64 DifficultyCalculator::calculatePPv2(const Replay::Mods &mods, f64 ar, f64 od
 
     if(combo < 1) return 0.0;
 
-    ScoreData score;
-    {
-        score.mods = mods;
-        score.countGreat = c300;
-        score.countGood = c100;
-        score.countMeh = c50;
-        score.countMiss = misses;
-        score.totalHits = c300 + c100 + c50 + misses;
-        score.totalSuccessfulHits = c300 + c100 + c50;
-        score.beatmapMaxCombo = maxPossibleCombo;
-        score.scoreMaxCombo = combo;
-        {
-            score.accuracy =
-                (score.totalHits > 0 ? (f64)(c300 * 300 + c100 * 100 + c50 * 50) / (f64)(score.totalHits * 300) : 0.0);
-            score.amountHitObjectsWithAccuracy = (mods.has(ModFlags::ScoreV2) ? numCircles + numSliders : numCircles);
-        }
-    }
+    const i32 totalHits = c300 + c100 + c50 + misses;
 
-    Attributes attributes;
-    {
-        attributes.AimStrain = aim;
-        attributes.SliderFactor = aimSliderFactor;
-        attributes.AimDifficultSliderCount = aimDifficultSliders;
-        attributes.AimDifficultStrainCount = aimDifficultStrains;
-        attributes.SpeedStrain = speed;
-        attributes.SpeedNoteCount = speedNotes;
-        attributes.SpeedDifficultStrainCount = speedDifficultStrains;
-        attributes.ApproachRate = ar;
-        attributes.OverallDifficulty = od;
-        attributes.SliderCount = numSliders;
-    }
+    ScoreData score{
+        .mods = mods,
+        .accuracy = (totalHits > 0 ? (f64)(c300 * 300 + c100 * 100 + c50 * 50) / (f64)(totalHits * 300) : 0.0),
+        .countGreat = c300,
+        .countGood = c100,
+        .countMeh = c50,
+        .countMiss = misses,
+        .totalHits = totalHits,
+        .totalSuccessfulHits = c300 + c100 + c50,
+        .beatmapMaxCombo = maxPossibleCombo,
+        .scoreMaxCombo = combo,
+        .amountHitObjectsWithAccuracy = (mods.has(ModFlags::ScoreV2) ? numCircles + numSliders : numCircles),
+    };
+
+    Attributes attributes{.AimStrain = aim,
+                          .SliderFactor = aimSliderFactor,
+                          .AimDifficultSliderCount = aimDifficultSliders,
+                          .AimDifficultStrainCount = aimDifficultStrains,
+                          .SpeedStrain = speed,
+                          .SpeedNoteCount = speedNotes,
+                          .SpeedDifficultStrainCount = speedDifficultStrains,
+                          .ApproachRate = ar,
+                          .OverallDifficulty = od,
+                          .SliderCount = numSliders};
 
     // calculateEffectiveMissCount @ https://github.com/ppy/osu/blob/master/osu.Game.Rulesets.Osu/Difficulty/OsuPerformanceCalculator.cs
     // required because slider breaks aren't exposed to pp calculation
@@ -1127,43 +1120,11 @@ f64 DifficultyCalculator::erfInvImp(f64 p, f64 q, f64 s) {
     return s * result;
 }
 
-DifficultyCalculator::DiffObject::DiffObject(OsuDifficultyHitObject *base_object, f32 radius_scaling_factor,
-                                             std::vector<DiffObject> &diff_objects, i32 prevObjectIdx)
-    : objects(diff_objects) {
-    ho = base_object;
-
-    for(i32 i = 0; i < Skills::NUM_SKILLS; i++) {
-        strains[i] = 0.0;
-    }
-    raw_speed_strain = 0.0;
-    rhythm = 0.0;
-
-    norm_start = ho->pos * radius_scaling_factor;
-
-    angle = std::numeric_limits<f32>::quiet_NaN();
-
-    jumpDistance = 0.0;
-    minJumpDistance = 0.0;
-    minJumpTime = 0.0;
-    travelDistance = 0.0;
-
-    delta_time = 0.0;
-    strain_time = 0.0;
-
-    lazyCalcFinished = false;
-    lazyEndPos = ho->pos;
-    lazyTravelDist = 0.0;
-    lazyTravelTime = 0.0;
-    travelTime = 0.0;
-
-    prevObjectIndex = prevObjectIdx;
-}
-
 void DifficultyCalculator::DiffObject::calculate_strains(const DiffObject &prev, const DiffObject *next,
                                                          f64 hitWindow300) {
-    calculate_strain(prev, next, hitWindow300, Skills::Skill::SPEED);
-    calculate_strain(prev, next, hitWindow300, Skills::Skill::AIM_SLIDERS);
-    calculate_strain(prev, next, hitWindow300, Skills::Skill::AIM_NO_SLIDERS);
+    calculate_strain(prev, next, hitWindow300, Skills::SPEED);
+    calculate_strain(prev, next, hitWindow300, Skills::AIM_SLIDERS);
+    calculate_strain(prev, next, hitWindow300, Skills::AIM_NO_SLIDERS);
 }
 
 void DifficultyCalculator::DiffObject::calculate_strain(const DiffObject &prev, const DiffObject *next,
@@ -1191,12 +1152,12 @@ void DifficultyCalculator::DiffObject::calculate_strain(const DiffObject &prev, 
     }
 
     // see Process() @ https://github.com/ppy/osu/blob/master/osu.Game/Rulesets/Difficulty/Skills/Skill.cs
-    f64 currentStrain = prev.strains[Skills::skillToIndex(dtype)];
+    f64 currentStrain = prev.strains[dtype];
     {
-        currentStrain *= strainDecay(dtype, dtype == Skills::Skill::SPEED ? strain_time : delta_time);
-        currentStrain += currentStrainOfDiffObject * weight_scaling[Skills::skillToIndex(dtype)];
+        currentStrain *= strainDecay(dtype, dtype == Skills::SPEED ? strain_time : delta_time);
+        currentStrain += currentStrainOfDiffObject * weight_scaling[dtype];
     }
-    strains[Skills::skillToIndex(dtype)] = currentStrain;
+    strains[dtype] = currentStrain;
 }
 
 f64 DifficultyCalculator::DiffObject::calculate_difficulty(const Skills::Skill type, const DiffObject *dobjects,
@@ -1231,7 +1192,7 @@ f64 DifficultyCalculator::DiffObject::calculate_difficulty(const Skills::Skill t
             else
                 highestStrainsRef->push_back(max_strain);
 
-            // skip calculating strain decay for very i32 breaks (e.g. beatmap upload size limit hack diffs)
+            // skip calculating strain decay for very long breaks (e.g. beatmap upload size limit hack diffs)
             // strainDecay with a base of 0.3 at 60 seconds is 4.23911583e-32, well below any meaningful difference even after being multiplied by object strain
             f64 strainDelta = interval_end - (f64)prev.ho->time;
             if(i < 1 || strainDelta > 600000.0)  // !prev
@@ -1247,7 +1208,7 @@ f64 DifficultyCalculator::DiffObject::calculate_difficulty(const Skills::Skill t
         max_strain = std::max(max_strain, cur_strain);
 
         // NOTE: this is done in StrainValueAt in lazer's code, but doing it here is more convenient for the incremental case
-        if(type == Skills::Skill::AIM_SLIDERS && cur.ho->type == OsuDifficultyHitObject::TYPE::SLIDER)
+        if(type == Skills::AIM_SLIDERS && cur.ho->type == OsuDifficultyHitObject::TYPE::SLIDER)
             sliderStrainsRef->push_back(cur_strain);
     }
 
@@ -1264,7 +1225,7 @@ f64 DifficultyCalculator::DiffObject::calculate_difficulty(const Skills::Skill t
     if(outStrains != nullptr) (*outStrains) = highestStrains;  // save a copy
 
     if(outSkillSpecificAttrib) {
-        if(type == Skills::Skill::SPEED) {
+        if(type == Skills::SPEED) {
             // calculate relevant speed note count
             // RelevantNoteCount @ https://github.com/ppy/osu/blob/master/osu.Game.Rulesets.Osu/Difficulty/Skills/Speed.cs
             const auto compareDiffObjects = [=](const DiffObject &x, const DiffObject &y) {
@@ -1303,7 +1264,7 @@ f64 DifficultyCalculator::DiffObject::calculate_difficulty(const Skills::Skill t
                 }
                 *outSkillSpecificAttrib = tempSum;
             }
-        } else if(type == Skills::Skill::AIM_SLIDERS) {
+        } else if(type == Skills::AIM_SLIDERS) {
             // calculate difficult sliders
             // GetDifficultSliders @ https://github.com/ppy/osu/blob/master/osu.Game.Rulesets.Osu/Difficulty/Skills/Aim.cs
             const auto compareSliderObjects = [=](const DiffObject &x, const DiffObject &y) {
@@ -1314,9 +1275,7 @@ f64 DifficultyCalculator::DiffObject::calculate_difficulty(const Skills::Skill t
                 *outSkillSpecificAttrib = incremental->difficult_sliders;
             else {
                 f64 maxSliderStrain;
-                f64 curSliderStrain =
-                    incremental ? dobjects[dobjectCount - 1].strains[Skills::skillToIndex(Skills::Skill::AIM_SLIDERS)]
-                                : 0.0;
+                f64 curSliderStrain = incremental ? dobjects[dobjectCount - 1].strains[Skills::AIM_SLIDERS] : 0.0;
                 {
                     if(incremental) {
                         incremental->slider_strains.push_back(curSliderStrain);
@@ -1377,11 +1336,11 @@ f64 DifficultyCalculator::DiffObject::calculate_difficulty(const Skills::Skill t
         size_t skillSpecificReducedSectionCount = reducedSectionCount;
         {
             switch(type) {
-                case Skills::Skill::SPEED:
+                case Skills::SPEED:
                     skillSpecificReducedSectionCount = 5;
                     break;
-                case Skills::Skill::AIM_SLIDERS:
-                case Skills::Skill::AIM_NO_SLIDERS:
+                case Skills::AIM_SLIDERS:
+                case Skills::AIM_NO_SLIDERS:
                     break;
             }
         }
@@ -1465,7 +1424,7 @@ f64 DifficultyCalculator::DiffObject::spacing_weight2(const Skills::Skill diff_t
     //f64 angle_bonus = 1.0; // (apparently unused now in lazer?)
 
     switch(diff_type) {
-        case Skills::Skill::SPEED: {
+        case Skills::SPEED: {
             // see https://github.com/ppy/osu/blob/master/osu.Game.Rulesets.Osu/Difficulty/Skills/Speed.cs
             if(ho->type == OsuDifficultyHitObject::TYPE::SPINNER) {
                 raw_speed_strain = 0.0;
@@ -1641,36 +1600,36 @@ f64 DifficultyCalculator::DiffObject::spacing_weight2(const Skills::Skill diff_t
             return raw_speed_strain;
         } break;
 
-        case Skills::Skill::AIM_SLIDERS:
-        case Skills::Skill::AIM_NO_SLIDERS: {
+        case Skills::AIM_SLIDERS:
+        case Skills::AIM_NO_SLIDERS: {
             // https://github.com/ppy/osu/blob/master/osu.Game.Rulesets.Osu/Difficulty/Evaluators/AimEvaluator.cs
-            static const f64 wide_angle_multiplier = 1.5;
-            static const f64 acute_angle_multiplier = 2.6;
-            static const f64 slider_multiplier = 1.35;
-            static const f64 velocity_change_multiplier = 0.75;
-            static const f64 wiggle_multiplier = 1.02;
+            static constexpr f64 wide_angle_multiplier = 1.5;
+            static constexpr f64 acute_angle_multiplier = 2.6;
+            static constexpr f64 slider_multiplier = 1.35;
+            static constexpr f64 velocity_change_multiplier = 0.75;
+            static constexpr f64 wiggle_multiplier = 1.02;
 
-            const bool withSliders = (diff_type == Skills::Skill::AIM_SLIDERS);
+            const bool withSliders = (diff_type == Skills::AIM_SLIDERS);
 
             if(ho->type == OsuDifficultyHitObject::TYPE::SPINNER || prevObjectIndex <= 1 ||
                prev.ho->type == OsuDifficultyHitObject::TYPE::SPINNER)
                 return 0.0;
 
-            auto reverseLerp = [](f64 x, f64 start, f64 end) {
+            static constexpr auto reverseLerp = [](f64 x, f64 start, f64 end) {
                 return std::clamp<f64>((x - start) / (end - start), 0.0, 1.0);
             };
-            auto smoothStep = [=](f64 x, f64 start, f64 end) {
+            static constexpr auto smoothStep = [](f64 x, f64 start, f64 end) {
                 x = reverseLerp(x, start, end);
                 return x * x * (3.0 - 2.0 * x);
             };
-            auto smootherStep = [=](f64 x, f64 start, f64 end) {
+            static constexpr auto smootherStep = [](f64 x, f64 start, f64 end) {
                 x = reverseLerp(x, start, end);
                 return x * x * x * (x * (x * 6.0 - 15.0) + 10.0);
             };
-            auto calcWideAngleBonus = [=](f64 angle) {
+            static constexpr auto calcWideAngleBonus = [](f64 angle) {
                 return smoothStep(angle, 40.0 * (PI / 180.0), 140.0 * (PI / 180.0));
             };
-            auto calcAcuteAngleBonus = [=](f64 angle) {
+            static constexpr auto calcAcuteAngleBonus = [](f64 angle) {
                 return smoothStep(angle, 140.0 * (PI / 180.0), 40.0 * (PI / 180.0));
             };
 

@@ -1,8 +1,9 @@
 #pragma once
 // Copyright (c) 2024, kiwec, All rights reserved.
+#include "types.h"
+#include "Replay.h"
 
-#include "DifficultyCalculator.h"  // for pp_info
-
+struct pp_info;
 class DatabaseBeatmap;
 
 struct pp_calc_request {
@@ -26,4 +27,4 @@ void lct_set_map(const DatabaseBeatmap* map);
 
 // Get pp for given parameters. Returns -1 pp values if not computed yet.
 // Second parameter == true forces calculation during gameplay (hack)
-pp_info lct_get_pp(const pp_calc_request &rqt, bool ignoreBGThreadPause = false);
+pp_info lct_get_pp(const pp_calc_request& rqt, bool ignoreBGThreadPause = false);

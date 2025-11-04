@@ -641,16 +641,16 @@ void RankingScreen::setIndex(int index) {
     }
 }
 
-UString RankingScreen::getPPString() {
+UString RankingScreen::getPPString() const {
     f32 pp = this->score.get_pp();
     if(pp == -1.0) {
-        return UString("??? pp");
+        return u"??? pp";
     } else {
-        return UString::format("%ipp", (int)(std::round(pp)));
+        return fmt::format("{:d}pp", (int)std::round(pp));
     }
 }
 
-vec2 RankingScreen::getPPPosRaw() {
+vec2 RankingScreen::getPPPosRaw() const {
     const UString ppString = this->getPPString();
     float ppStringWidth = osu->getTitleFont()->getStringWidth(ppString);
     return vec2(this->rankingGrade->getPos().x, cv::ui_scale.getFloat() * 10.f) +

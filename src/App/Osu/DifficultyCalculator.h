@@ -107,29 +107,9 @@ class DifficultyCalculator {
     static constexpr const i32 PP_ALGORITHM_VERSION = 20250306;
 
    public:
-    class Skills {
-       public:
+    struct Skills {
         static constexpr const i32 NUM_SKILLS = 3;
-
-       public:
-        enum class Skill : u8 {
-            SPEED,
-            AIM_SLIDERS,
-            AIM_NO_SLIDERS,
-        };
-
-        static i32 skillToIndex(const Skill skill) {
-            switch(skill) {
-                case Skill::SPEED:
-                    return 0;
-                case Skill::AIM_SLIDERS:
-                    return 1;
-                case Skill::AIM_NO_SLIDERS:
-                    return 2;
-            }
-
-            return 0;
-        }
+        enum Skill : u8 { SPEED, AIM_SLIDERS, AIM_NO_SLIDERS };
     };
 
     // see https://github.com/ppy/osu/blob/master/osu.Game.Rulesets.Osu/Difficulty/Skills/Speed.cs
@@ -155,41 +135,46 @@ class DifficultyCalculator {
         std::vector<f64> slider_strains;
     };
 
-    class DiffObject {
-       public:
-        OsuDifficultyHitObject *ho;
+    struct DiffObject {
+        DiffObject(OsuDifficultyHitObject *base_object, f32 radius_scaling_factor,
+                   std::vector<DiffObject> &diff_objects, i32 prevObjectIdx)
+            : ho(base_object),
+              norm_start(ho->pos * radius_scaling_factor),
+              lazyEndPos(ho->pos),
+              prevObjectIndex(prevObjectIdx),
+              objects(diff_objects) {}
 
-        f64 strains[Skills::NUM_SKILLS];
+        std::array<f64, Skills::NUM_SKILLS> strains{};
+
+        OsuDifficultyHitObject *ho;
 
         // https://github.com/ppy/osu/blob/master/osu.Game.Rulesets.Osu/Difficulty/Skills/Speed.cs
         // needed because raw speed strain and rhythm strain are combined in different ways
-        f64 raw_speed_strain;
-        f64 rhythm;
+        f64 raw_speed_strain{0.};
+        f64 rhythm{0.};
 
         vec2 norm_start;  // start position normalized on radius
 
-        f64 angle;  // precalc
+        f64 angle{std::numeric_limits<f64>::quiet_NaN()};  // precalc
 
-        f64 jumpDistance;     // precalc
-        f64 minJumpDistance;  // precalc
-        f64 minJumpTime;      // precalc
-        f64 travelDistance;   // precalc
+        f64 jumpDistance{0.};     // precalc
+        f64 minJumpDistance{0.};  // precalc
+        f64 minJumpTime{0.};      // precalc
+        f64 travelDistance{0.};   // precalc
 
-        f64 delta_time;   // strain temp
-        f64 strain_time;  // strain temp
+        f64 delta_time{0.};   // strain temp
+        f64 strain_time{0.};  // strain temp
 
-        bool lazyCalcFinished;  // precalc temp
-        vec2 lazyEndPos;        // precalc temp
-        f64 lazyTravelDist;     // precalc temp
-        f64 lazyTravelTime;     // precalc temp
-        f64 travelTime;         // precalc temp
+        vec2 lazyEndPos;               // precalc temp
+        f64 lazyTravelDist{0.};        // precalc temp
+        f64 lazyTravelTime{0.};        // precalc temp
+        f64 travelTime{0.};            // precalc temp
+        bool lazyCalcFinished{false};  // precalc temp
+
+        i32 prevObjectIndex;  // WARNING: this will be -1 for the first object (as the name implies), see note above
 
         // NOTE: McOsu stores the first object in this array while lazer doesn't. newer lazer algorithms require referencing objects "randomly", so we just keep the entire vector around.
         const std::vector<DiffObject> &objects;
-        i32 prevObjectIndex;  // WARNING: this will be -1 for the first object (as the name implies), see note above
-
-        DiffObject(OsuDifficultyHitObject *base_object, f32 radius_scaling_factor,
-                   std::vector<DiffObject> &diff_objects, i32 prevObjectIdx);
 
         [[nodiscard]] inline const DiffObject *get_previous(i32 backwardsIdx) const {
             return (objects.size() > 0 && prevObjectIndex - backwardsIdx < (i32)objects.size()
@@ -197,17 +182,13 @@ class DifficultyCalculator {
                         : nullptr);
         }
         [[nodiscard]] inline f64 get_strain(Skills::Skill type) const {
-            return strains[Skills::skillToIndex(type)] * (type == Skills::Skill::SPEED ? rhythm : 1.0);
+            return strains[type] * (type == Skills::SPEED ? rhythm : 1.0);
         }
         [[nodiscard]] inline f64 get_slider_aim_strain() const {
-            return ho->type == OsuDifficultyHitObject::TYPE::SLIDER
-                       ? strains[Skills::skillToIndex(Skills::Skill::AIM_SLIDERS)]
-                       : -1.0;
+            return ho->type == OsuDifficultyHitObject::TYPE::SLIDER ? strains[Skills::AIM_SLIDERS] : -1.0;
         }
         inline static f64 applyDiminishingExp(f64 val) { return std::pow(val, 0.99); }
-        inline static f64 strainDecay(Skills::Skill type, f64 ms) {
-            return std::pow(decay_base[Skills::skillToIndex(type)], ms / 1000.0);
-        }
+        inline static f64 strainDecay(Skills::Skill type, f64 ms) { return std::pow(decay_base[type], ms / 1000.0); }
 
         void calculate_strains(const DiffObject &prev, const DiffObject *next, f64 hitWindow300);
         void calculate_strain(const DiffObject &prev, const DiffObject *next, f64 hitWindow300,
@@ -260,7 +241,6 @@ class DifficultyCalculator {
     // helper functions
     static f64 calculateTotalStarsFromSkills(f64 aim, f64 speed);
 
-   private:
    private:
     struct Attributes {
         f64 AimStrain;

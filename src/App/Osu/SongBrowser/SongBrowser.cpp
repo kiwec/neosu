@@ -262,11 +262,11 @@ bool SongBrowser::sort_by_difficulty(SongButton const *a, SongButton const *b) {
 
     float diff1 = (aPtr->getAR() + 1) * (aPtr->getCS() + 1) * (aPtr->getHP() + 1) * (aPtr->getOD() + 1) *
                   (std::max(aPtr->getMostCommonBPM(), 1));
-    float map = (bPtr->getAR() + 1) * (bPtr->getCS() + 1) * (bPtr->getHP() + 1) * (bPtr->getOD() + 1) *
-                (std::max(bPtr->getMostCommonBPM(), 1));
+    float diff2 = (bPtr->getAR() + 1) * (bPtr->getCS() + 1) * (bPtr->getHP() + 1) * (bPtr->getOD() + 1) *
+                  (std::max(bPtr->getMostCommonBPM(), 1));
 
-    if(diff1 == map) return false;
-    return diff1 < map;
+    if(diff1 == diff2) return false;
+    return diff1 < diff2;
 }
 
 // not used anywhere else

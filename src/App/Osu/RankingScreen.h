@@ -1,10 +1,8 @@
 #pragma once
 // Copyright (c) 2016, PG, All rights reserved.
 #include "Database.h"
-#include "DifficultyCalculator.h"
 #include "ScreenBackable.h"
 #include "score.h"
-#include "uwu.h"
 
 class CBaseUIContainer;
 class CBaseUIScrollView;
@@ -44,8 +42,8 @@ class RankingScreen final : public ScreenBackable {
     void setGrade(FinishedScore::Grade grade);
     void setIndex(int index);
 
-    UString getPPString();
-    vec2 getPPPosRaw();
+    [[nodiscard]] UString getPPString() const;
+    [[nodiscard]] vec2 getPPPosRaw() const;
 
     CBaseUIScrollView *rankings;
 

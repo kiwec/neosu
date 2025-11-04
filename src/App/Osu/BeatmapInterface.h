@@ -3,7 +3,6 @@
 
 #include "AbstractBeatmapInterface.h"
 #include "DatabaseBeatmap.h"
-#include "DifficultyCalculator.h"
 #include "HUD.h"
 #include "LeaderboardPPCalcThread.h"
 #include "LegacyReplay.h"
