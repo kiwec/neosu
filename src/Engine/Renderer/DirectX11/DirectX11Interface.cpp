@@ -1447,18 +1447,23 @@ void DirectX11Interface::onFramecountNumChanged(const float newValue) {
 #include "dynutils.h"
 
 dynutils::lib_obj *DirectX11Interface::s_d3d11Handle{nullptr};
+
+#ifdef MCENGINE_PLATFORM_LINUX // we link directly to libdxvk-d3d11.so
+D3D11CreateDevice_t *DirectX11Interface::s_d3dCreateDeviceFunc{D3D11CreateDevice};
+#else
 D3D11CreateDevice_t *DirectX11Interface::s_d3dCreateDeviceFunc{nullptr};
+#endif
 
 void DirectX11Interface::cleanupLibs() {
     if(s_d3d11Handle != nullptr) {
         dynutils::unload_lib(s_d3d11Handle);
         s_d3d11Handle = nullptr;
+        s_d3dCreateDeviceFunc = nullptr;
     }
-    s_d3dCreateDeviceFunc = nullptr;
 }
 
 bool DirectX11Interface::loadLibs() {
-    if(s_d3d11Handle != nullptr) return true;  // already initialized
+    if(s_d3dCreateDeviceFunc != nullptr) return true;  // already initialized
     s_d3d11Handle = dynutils::load_lib("d3d11");
     if(!s_d3d11Handle) {
         debugLog("DirectX11Interface: Failed to load d3d11.dll: {}", dynutils::get_error());
