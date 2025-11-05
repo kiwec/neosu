@@ -56,6 +56,7 @@ set(MCENGINE_PLATFORM_WINDOWS ON)
 set(MCENGINE_FEATURE_OPENGL ON)
 set(MCENGINE_FEATURE_BASS ON)
 set(MCENGINE_FEATURE_SOLOUD ON)
+set(MCENGINE_FEATURE_DIRECTX11 ON)
 
 if(NOT DISABLE_NSYNC)
 set(USE_NSYNC ON)
@@ -235,6 +236,18 @@ target_binary_resources(neosu PRIVATE
     GL_actual_flashlight_fsh "${CMAKE_SOURCE_DIR}/../../assets/shaders/GL_actual_flashlight_f.glsl"
     GL_smoothclip_vsh "${CMAKE_SOURCE_DIR}/../../assets/shaders/GL_smoothclip_v.glsl"
     GL_smoothclip_fsh "${CMAKE_SOURCE_DIR}/../../assets/shaders/GL_smoothclip_f.glsl"
+    DX11_default_vsh "${CMAKE_SOURCE_DIR}/../../assets/shaders/DX11_default_v.hlsl"
+    DX11_default_fsh "${CMAKE_SOURCE_DIR}/../../assets/shaders/DX11_default_f.hlsl"
+    DX11_cursortrail_vsh "${CMAKE_SOURCE_DIR}/../../assets/shaders/DX11_cursortrail_v.hlsl"
+    DX11_cursortrail_fsh "${CMAKE_SOURCE_DIR}/../../assets/shaders/DX11_cursortrail_f.hlsl"
+    DX11_slider_vsh "${CMAKE_SOURCE_DIR}/../../assets/shaders/DX11_slider_v.hlsl"
+    DX11_slider_fsh "${CMAKE_SOURCE_DIR}/../../assets/shaders/DX11_slider_f.hlsl"
+    DX11_flashlight_vsh "${CMAKE_SOURCE_DIR}/../../assets/shaders/DX11_flashlight_v.hlsl"
+    DX11_flashlight_fsh "${CMAKE_SOURCE_DIR}/../../assets/shaders/DX11_flashlight_f.hlsl"
+    DX11_actual_flashlight_vsh "${CMAKE_SOURCE_DIR}/../../assets/shaders/DX11_actual_flashlight_v.hlsl"
+    DX11_actual_flashlight_fsh "${CMAKE_SOURCE_DIR}/../../assets/shaders/DX11_actual_flashlight_f.hlsl"
+    DX11_smoothclip_vsh "${CMAKE_SOURCE_DIR}/../../assets/shaders/DX11_smoothclip_v.hlsl"
+    DX11_smoothclip_fsh "${CMAKE_SOURCE_DIR}/../../assets/shaders/DX11_smoothclip_f.hlsl"
     convar_template "${CMAKE_SOURCE_DIR}/../../assets/misc/convar_template.html"
 )
 

@@ -46,6 +46,9 @@ void init() {}
 #include <exception>
 
 #ifdef _MSC_VER
+#ifndef snwprintf
+#define snwprintf _snwprintf
+#endif
 #define RET_ADDR() _ReturnAddress()
 #else
 #define RET_ADDR() __builtin_return_address(0)
@@ -56,7 +59,7 @@ namespace CrashHandler {
 namespace {
 
 static dynutils::lib_obj* dbghelp_handle{nullptr};
-
+using WINBOOL = int;
 using MiniDumpWriteDump_t = WINBOOL WINAPI(HANDLE hProcess, DWORD ProcessId, HANDLE hFile, MINIDUMP_TYPE DumpType,
                                            CONST PMINIDUMP_EXCEPTION_INFORMATION ExceptionParam,
                                            CONST PMINIDUMP_USER_STREAM_INFORMATION UserStreamParam,
@@ -274,6 +277,7 @@ void init() {
     std::set_terminate(terminate_handler);
 
     {
+
         using SetThreadStackGuarantee_t = WINBOOL WINAPI(PULONG StackSizeInBytes);
         using SetErrorMode_t = UINT WINAPI(UINT uMode);
 

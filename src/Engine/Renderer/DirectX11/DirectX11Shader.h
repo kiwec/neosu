@@ -29,10 +29,14 @@ using lib_obj = struct lib_obj;
 }
 
 // calling convention handling
+#ifdef _MSC_VER
+#define D3D_CALL WINAPI
+#else
 #ifdef __x86_64__
 #define D3D_CALL __attribute__((ms_abi))
 #else
 #define D3D_CALL __attribute__((__stdcall__)) __attribute__((__force_align_arg_pointer__))
+#endif
 #endif
 
 // d3d blob interface
