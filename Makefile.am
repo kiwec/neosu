@@ -397,7 +397,7 @@ $(DEPS_PREFIX)/mimalloc-$(MIMALLOC_VERSION).built: $(DEPS_CACHE)/mimalloc-$(MIMA
 		-D MI_NO_OPT_ARCH=$(if $(DISABLE_NATIVE),ON,OFF) \
 		-D MI_OPT_SIMD=$(if $(DISABLE_NATIVE),OFF,ON) \
 		-D MI_USE_CXX=ON \
-		-D MI_BUILD_SHARED=$(if $(findstring linux,$(host_os)),OFF,ON) \
+		-D MI_BUILD_SHARED=ON \
 		-D MI_BUILD_TESTS=OFF \
 		$(if $(findstring linux,$(host_os)),,-DMI_WIN_USE_FIXED_TLS=ON) \
 		$(if $(ENABLE_ASAN),-DMI_LOCAL_DYNAMIC_TLS=ON -DMI_TRACK_ASAN=ON -DMI_DEBUG_UBSAN=ON,) \
@@ -1222,10 +1222,14 @@ install-libs:
 if USE_DISCORDSDK
 	@cp -P $(DISCORDSDK_INSTALL_LIBS) "$(DESTDIR)$(bindir)/$(LIBDEST)"
 endif
-if WIN_PLATFORM
 if BUILD_MIMALLOC
+if WIN_PLATFORM
 	@cp -P "$(DEPS_PREFIX)/bin/mimalloc"{,-redirect$(if $(filter x86_64,$(host_cpu)),,32)}".dll" "$(DESTDIR)$(bindir)/$(LIBDEST)"
+else
+	@find $(DEPS_PREFIX)/lib/ -iname '*mimalloc*''.so*' -exec cp -P '{''}' "$(DESTDIR)$(bindir)/$(LIBDEST)" ';'
 endif
+endif
+if WIN_PLATFORM
 if WINSHARED_DLLS_NEEDED
 	@cp -P $(WINSHARED_DLLS) "$(DESTDIR)$(bindir)/$(LIBDEST)"
 endif
