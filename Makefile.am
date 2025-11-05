@@ -372,14 +372,14 @@ MIMALLOC_DYNAMIC_LIBS :=
 MIMALLOC_OBJ := $(DEPS_PREFIX)/lib/mimalloc$(if $(ENABLE_ASAN),-asan-debug,$(if $(ENABLE_DEBUG),-debug,)).o
 MIMALLOC_OVERRIDE_DEP :=
 endif
-$(DEPS_PREFIX)/mimalloc-$(MIMALLOC_VERSION).built: $(DEPS_CACHE)/mimalloc-$(MIMALLOC_VERSION).source
+$(DEPS_PREFIX)/mimalloc-$(MIMALLOC_VERSION).built: $(DEPS_CACHE)/mimalloc-$(MIMALLOC_VERSION).source $(DEPS_PREFIX)/winpthread-noversion.built
 	rm -rf $(DEPS_PREFIX)/mimalloc
 	$(MKDIR_P) $(DEPS_PREFIX)/mimalloc $(DEPS_PREFIX)/lib && \
 	$(TAR) xf $(DEPS_CACHE)/mimalloc-$(MIMALLOC_VERSION).tar.gz -C $(DEPS_PREFIX)/mimalloc --strip-components=1 && \
 	$(MKDIR_P) $(DEPS_PREFIX)/mimalloc/out/"$(if $(ENABLE_DEBUG),debug,release)" && \
 	cd $(DEPS_PREFIX)/mimalloc/out/"$(if $(ENABLE_DEBUG),debug,release)" && \
 	env PKG_CONFIG="$(PKG_CONFIG)" \
-		LDFLAGS="$(LDFLAGS) -xnone" $(CMAKE) -S ../.. -B . -G "$(CMAKE_GEN)" \
+		LDFLAGS="$(LDFLAGS) $(WINPTHREAD_LDFLAGS) -xnone" $(CMAKE) -S ../.. -B . -G "$(CMAKE_GEN)" \
 		-D CMAKE_C_COMPILER="$(CC)" \
 		-D CMAKE_C_FLAGS="$(CFLAGS) -Wno-array-bounds" \
 		-D CMAKE_SYSTEM_NAME="$(CMAKE_SYSTEM_NAME)" \
@@ -1032,6 +1032,19 @@ $(DEPS_PREFIX)/libacl-$(LIBACL_VERSION).built:
 	$(MKDIR_P) $(DEPS_PREFIX) && touch $@
 endif # BUILD_LIBARCHIVE
 
+if BUILD_WINPTHREAD_NOVERSION
+# strip version.o from winpthread to avoid it overwriting neosu_resource contents
+$(DEPS_PREFIX)/winpthread-noversion.built: | $(DEPS_PREFIX)
+	$(MKDIR_P) $(DEPS_PREFIX)/lib
+	cp "$(WINPTHREAD_ORIG)" $(DEPS_PREFIX)/lib/libwinpthread_noversion.a
+	$(AR) -d $(DEPS_PREFIX)/lib/libwinpthread_noversion.a version.o
+	touch $@
+else
+$(DEPS_PREFIX)/winpthread-noversion.built:
+	$(MKDIR_P) $(DEPS_PREFIX)
+	touch $@
+endif
+
 #####################################################################################################################################################
 ## END EXTERNAL DEPENDENCY BUILD/SETUP SECTION
 #####################################################################################################################################################
@@ -1043,6 +1056,7 @@ endif # BUILD_LIBARCHIVE
 # a list of all dependencies which need to be looked over before compiling the main executable
 # everything is here, no matter the build configuration, but unneeded dependencies are just marked with a dummy file to signal completion
 BUILT_SOURCES := \
+	$(DEPS_PREFIX)/winpthread-noversion.built \
 	$(DEPS_PREFIX)/mimalloc-$(MIMALLOC_VERSION).built \
 	$(DEPS_PREFIX)/SDL3-$(SDL3_VERSION).built \
 	$(DEPS_PREFIX)/bass-$(BASS_VERSION).built \
@@ -1144,7 +1158,7 @@ neosu_SOURCES += $(MIMALLOC_OVERRIDE_DEP)
 neosu_resource.o: $(srcdir)/$(ASSETS_DIR)/resource.rc $(srcdir)/$(ASSETS_DIR)/neosu.manifest $(srcdir)/$(ASSETS_DIR)/icon.ico
 	$(WINDRES) -I $(srcdir)/$(ASSETS_DIR) -i $(srcdir)/$(ASSETS_DIR)/resource.rc -o neosu_resource.o
 
-neosu_LDADD = neosu_resource.o
+neosu_LDADD = neosu_resource.o $(WINPTHREAD_LDFLAGS)
 endif
 
 compile_commands.json: mostlyclean-compile

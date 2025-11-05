@@ -543,6 +543,15 @@ AS_IF([test -n "$LLD" && test "x$using_mold" != "xyes" && test "x$enable_clang" 
 
 # putting this part here so that $CC is defined to the final value
 AS_IF([test "$host_os" = "mingw32"], [
+    WINPTHREAD_LDFLAGS=""
+    AS_IF([test "x$enable_static" = "xyes"], [
+        # locate the original winpthread library
+        WINPTHREAD_ORIG=$(${CC} -print-file-name=libwinpthread.a)
+        AC_SUBST([WINPTHREAD_ORIG])
+        WINPTHREAD_LDFLAGS="-L\$(DEPS_PREFIX)/lib -Wl,--whole-archive,-Bstatic -l:libwinpthread_noversion.a -Wl,--no-whole-archive,-Bdynamic"
+    ])
+    AC_SUBST([WINPTHREAD_LDFLAGS])
+
     # building on linux
     AS_IF([test "$build_os" = "linux-gnu" || test "$build_os" = "linux-musl"], [
         AC_SUBST([PKG_CONFIG_SYSTEM_LIBRARY_PATH])
@@ -1148,8 +1157,8 @@ AM_CONDITIONAL([WIN32_PLATFORM], [test "$SYSNAME" = "windows" && test "$host_cpu
 
 AM_CONDITIONAL([STRIPBINS], [test "x$enable_strip" != "xno" && ! { test "$SYSNAME" = "windows" && test "$host_cpu" = "i686" ; } ])
 
-# need dynamic winpthread because static linking to it causes problems
-AS_IF([test "$SYSNAME" = "windows"], [
+# copy winpthread dll to install directory
+AS_IF([test "$SYSNAME" = "windows" && test "x$enable_static" != "xyes"], [
     WINSHARED_DLLS="$($CC -print-search-dirs | grep '^programs:' | sed 's/programs: =//' | tr ':' '\n' | while read dir; do
                         if test -n "$dir"; then
                             find "$dir" -name "libwinpthread-1.dll" 2>/dev/null
@@ -1160,6 +1169,8 @@ AS_IF([test "$SYSNAME" = "windows"], [
 AC_SUBST([WINSHARED_DLLS])
 AC_SUBST([ubercompat])
 AM_CONDITIONAL([WINSHARED_DLLS_NEEDED], [test -n "$WINSHARED_DLLS"])
+AM_CONDITIONAL([BUILD_WINPTHREAD_NOVERSION], 
+    [test "$host_os" = "mingw32" && test "x$enable_static" = "xyes"])
 
 AM_CONDITIONAL([AUDIO_SHORTCUTS], [test -n "$make_audio_shortcuts" && test -n "$WINE" && test "$SYSNAME" = "windows"])
 
