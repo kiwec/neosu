@@ -203,6 +203,7 @@ class Graphics {
 
     // callbacks
     virtual void onResolutionChange(vec2 newResolution) = 0;
+    virtual void onRestored() {}  // optionally recreate swapchain
 
     // factory
     virtual Image *createImage(std::string filePath, bool mipmapped, bool keepInSystemMemory) = 0;

@@ -137,26 +137,10 @@ bool DirectX11Interface::init() {
         engine->shutdown();
         return false;
     }
-    // defer swapchain creation until drawing actually begins
-    return true;
-}
-
-bool DirectX11Interface::createSwapchain() {
-    UINT startingWidth = 0;  // 0x0 to create with window size
-    UINT startingHeight = 0;
-
-    // dxvk-native throws an exception on wayland that we can't catch...
-    // i shouldn't be wasting time working around external bugs, but this is one of them
-    BOOL startWindowed = env->isWayland() || !env->winFullscreened();
-    if(!startWindowed) {
-        vec2 desktopRect = env->getNativeScreenSize();
-        startingWidth = (UINT)desktopRect.x;
-        startingHeight = (UINT)desktopRect.y;
-    }
 
     DXGI_SWAP_CHAIN_DESC1 swapchainCreateDesc{
-        .Width = startingWidth,
-        .Height = startingHeight,
+        .Width = 0,  // 0x0 to create with window size
+        .Height = 0,
         .Format = DXGI_FORMAT_R8G8B8A8_UNORM,
         .Stereo = 0,
         .SampleDesc = {.Count = 1, .Quality = 0},
@@ -172,10 +156,10 @@ bool DirectX11Interface::createSwapchain() {
         .RefreshRate = {.Numerator = 0, .Denominator = 1},
         .ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_PROGRESSIVE,
         .Scaling = DXGI_MODE_SCALING_CENTERED,
-        .Windowed = startWindowed,
+        .Windowed = true,
     };
 
-    auto hr = this->dxgiFactory->CreateSwapChainForHwnd(this->device, this->hwnd, &swapchainCreateDesc, &fsDesc,
+    hr = this->dxgiFactory->CreateSwapChainForHwnd(this->device, this->hwnd, &swapchainCreateDesc, &fsDesc,
                                                         nullptr, &this->swapChain);
 
     if(FAILED(hr)) {
@@ -190,6 +174,9 @@ bool DirectX11Interface::createSwapchain() {
     // disable hardcoded DirectX ALT + ENTER fullscreen toggle functionality (this is instead handled by the engine internally)
     // disable dxgi interfering with mode changes and WndProc (again, handled by the engine internally)
     this->dxgiFactory->MakeWindowAssociation(this->hwnd, DXGI_MWA_NO_ALT_ENTER | DXGI_MWA_NO_WINDOW_CHANGES);
+
+    // NOTE: force build swapchain rendertarget
+    this->onResolutionChange(env->getWindowSize());
 
     return true;
 }
@@ -216,8 +203,6 @@ DirectX11Interface::~DirectX11Interface() {
 }
 
 void DirectX11Interface::beginScene() {
-    if(!this->swapChain) return;  // ignore until swapchain is created
-
     // ensure render targets are bound (needed because onResolutionChange might skip setup during init)
     // HACKHACK: remove this
     if(this->frameBuffer)
@@ -273,14 +258,9 @@ void DirectX11Interface::beginScene() {
 }
 
 void DirectX11Interface::endScene() {
-    if(!this->swapChain) return;  // ignore until swapchain is created
-
     this->popTransform();
 
-    UINT presentFlags = DXGI_PRESENT_DO_NOT_WAIT;
-    if(!this->bVSync && (this->bIsFullscreen && !this->bIsFullscreenBorderlessWindowed)) {
-        presentFlags |= DXGI_PRESENT_ALLOW_TEARING;
-    }
+    UINT presentFlags = DXGI_PRESENT_DO_NOT_WAIT | DXGI_PRESENT_ALLOW_TEARING;
 
     [[maybe_unused]] auto swapHR = this->swapChain->Present(this->bVSync, presentFlags);
 #if defined(_DEBUG) || defined(D3D11_DEBUG)
@@ -1182,8 +1162,6 @@ void DirectX11Interface::setVSync(bool vsync) { this->bVSync = vsync; }
 
 void DirectX11Interface::onResolutionChange(vec2 newResolution) {
     this->vResolution = newResolution;
-    // create initial swapchain if we haven't already
-    if(!this->swapChain && !this->createSwapchain()) return;
 
     if(!engine->isDrawing()) {  // HACKHACK: to allow viewport changes for rendertarget rendering OpenGL style
         // rebuild swapchain rendertarget + view
@@ -1217,17 +1195,13 @@ void DirectX11Interface::onResolutionChange(vec2 newResolution) {
             debugLog("FATAL ERROR: couldn't ResizeTarget({:#x}, {:#x})!!!", (u32)hr, (u32)MAKE_DXGI_HRESULT(hr));
 
         // resize
-        // NOTE: when in fullscreen mode, use 0 as width/height (because they were set internally by SetFullscreenState())
         // NOTE: DXGI_FORMAT_UNKNOWN preserves the existing format
-        const bool isTrueFS = this->bIsFullscreen && !this->bIsFullscreenBorderlessWindowed;
 
         // debugLog("actual resize fullscreen {} borderless {} {}x{}", this->bIsFullscreen,
         //          this->bIsFullscreenBorderlessWindowed, isTrueFS ? 0 : (UINT)newResolution.x,
         //          isTrueFS ? 0 : (UINT)newResolution.y);
 
-        UINT resizeWidth = isTrueFS ? 0 : newWidth;
-        UINT resizeHeight = isTrueFS ? 0 : newHeight;
-        hr = this->swapChain->ResizeBuffers(0, resizeWidth, resizeHeight, DXGI_FORMAT_UNKNOWN, swapChainCreateFlags);
+        hr = this->swapChain->ResizeBuffers(0, newWidth, newHeight, DXGI_FORMAT_UNKNOWN, swapChainCreateFlags);
 
         if(FAILED(hr))
             debugLog("FATAL ERROR: couldn't ResizeBuffers({:#x}, {:#x})!!!", (u32)hr, (u32)MAKE_DXGI_HRESULT(hr));
@@ -1309,25 +1283,9 @@ void DirectX11Interface::onResolutionChange(vec2 newResolution) {
     // debugLog("Set viewport {:g}x{:g}", viewport.Width, viewport.Height);
 }
 
-bool DirectX11Interface::enableFullscreen(bool borderlessWindowedFullscreen) {
-    this->bIsFullscreenBorderlessWindowed = borderlessWindowedFullscreen;
-
-    if(!this->bIsFullscreenBorderlessWindowed) {
-        HRESULT hr = this->swapChain->SetFullscreenState((BOOL) true, nullptr);
-        this->bIsFullscreen = !FAILED(hr);
-    } else
-        this->bIsFullscreen = true;  // ("fake" fullscreen)
-
-    return this->bIsFullscreen;
-}
-
-void DirectX11Interface::disableFullscreen() {
-    if(!this->bIsFullscreen) return;
-
-    if(!this->bIsFullscreenBorderlessWindowed) this->swapChain->SetFullscreenState((BOOL) false, nullptr);
-
-    this->bIsFullscreen = false;
-    this->bIsFullscreenBorderlessWindowed = false;
+void DirectX11Interface::onRestored() {
+    // TODO: optimize this (don't always rebuild everything)
+    this->onResolutionChange(this->vResolution);
 }
 
 void DirectX11Interface::setTexturing(bool enabled) {
@@ -1448,7 +1406,7 @@ void DirectX11Interface::onFramecountNumChanged(const float newValue) {
 
 dynutils::lib_obj *DirectX11Interface::s_d3d11Handle{nullptr};
 
-#ifdef MCENGINE_PLATFORM_LINUX // we link directly to libdxvk-d3d11.so
+#ifdef MCENGINE_PLATFORM_LINUX  // we link directly to libdxvk-d3d11.so
 D3D11CreateDevice_t *DirectX11Interface::s_d3dCreateDeviceFunc{D3D11CreateDevice};
 #else
 D3D11CreateDevice_t *DirectX11Interface::s_d3dCreateDeviceFunc{nullptr};

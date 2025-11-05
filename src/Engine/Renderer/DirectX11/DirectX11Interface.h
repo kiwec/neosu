@@ -123,6 +123,7 @@ class DirectX11Interface final : public Graphics {
 
     // callbacks
     void onResolutionChange(vec2 newResolution) override;
+    void onRestored() override;
 
     // factory
     Image *createImage(std::string filePath, bool mipmapped, bool keepInSystemMemory) override;
@@ -135,8 +136,6 @@ class DirectX11Interface final : public Graphics {
                                                bool keepInSystemMemory) override;
 
     // ILLEGAL:
-    bool enableFullscreen(bool borderlessWindowedFullscreen = false);
-    void disableFullscreen();
     void setActiveShader(DirectX11Shader *shader) { this->activeShader = shader; }
     inline ID3D11Device *getDevice() const { return this->device; }
     inline ID3D11DeviceContext *getDeviceContext() const { return this->deviceContext; }
@@ -160,7 +159,6 @@ class DirectX11Interface final : public Graphics {
     // clipping for drawImage
     void initSmoothClipShader();
 
-    bool createSwapchain();
     DXGI_MODE_DESC queryCurrentSwapchainDesc() const;
 
    private:
@@ -235,13 +233,11 @@ class DirectX11Interface final : public Graphics {
         .Scaling = DXGI_MODE_SCALING_CENTERED,
     };
 
-    static constexpr UINT swapChainCreateFlags = DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING | (Env::cfg(OS::WINDOWS) ? DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH : 0);
+    static constexpr UINT swapChainCreateFlags = DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
 
    private:
     // renderer
     vec2 vResolution{};  // to be initialized after swapchain creation
-    bool bIsFullscreen{false};
-    bool bIsFullscreenBorderlessWindowed{false};
 
     // device context
     HWND hwnd{};
@@ -299,12 +295,7 @@ class DirectX11Interface final : public Graphics {
 
 #else
 
-class DirectX11Interface : public Graphics {
-   public:
-    void resizeTarget(vec2) {}
-    bool enableFullscreen(bool) { return false; }
-    void disableFullscreen() {}
-};
+class DirectX11Interface : public Graphics {};
 
 #endif
 
