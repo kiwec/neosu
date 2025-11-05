@@ -193,7 +193,7 @@ target_compile_options(neosu PRIVATE
     "/EHs-c-"
     "/D_HAS_EXCEPTIONS=0" # idk why it needs to be added here too...?
     $<$<CONFIG:Debug>:/Zi;/Od;/RTC1>
-    $<$<CONFIG:Release>:/O2;/Oi;/Oy;/Gw;/GS-;/Gy>
+    $<$<CONFIG:Release>:/Zi;/O2;/Oi;/Oy;/Gw;/GS-;/Gy>
     ${BZIP2_STATIC_CFLAGS}
     ${LIBARCHIVE_STATIC_CFLAGS}
 )
@@ -214,7 +214,7 @@ target_compile_definitions(neosu PRIVATE
 # Link options
 target_link_options(neosu PRIVATE
     $<$<CONFIG:Debug>:/DEBUG:FULL;/SUBSYSTEM:CONSOLE;/ENTRY:wmainCRTStartup;/PROFILE>
-    $<$<CONFIG:Release>:/SUBSYSTEM:WINDOWS;/ENTRY:wWinMainCRTStartup;/OPT:REF;/OPT:ICF>
+    $<$<CONFIG:Release>:/DEBUG:FULL;/SUBSYSTEM:WINDOWS;/ENTRY:wWinMainCRTStartup;/OPT:REF;/OPT:ICF>
     /STACK:8388608 # 8MB default stack size
     ${LIBARCHIVE_STATIC_LDFLAGS}
 )
