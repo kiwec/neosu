@@ -19,7 +19,7 @@
 namespace PeppyImporter {
 namespace {  // static namespace
 void try_set_key(const std::string& key, ConVar* cvar) {
-    if(key == "Noe") {
+    if(key == "None") {
         cvar->setValue(0);
     } else if(key == "A") {
         cvar->setValue((int)KEY_A);
@@ -234,11 +234,11 @@ void import_settings_from_osu_stable() {
         if(Parsing::parse(curLineChar, "BeatmapDirectory", '=', &str)) {
             if(str.length() > 2) cv::songs_folder.setValue(str);
         } else if(Parsing::parse(curLineChar, "VolumeUniversal", '=', &flt))
-            cv::volume_master.setValue(flt / 100.f);
+            cv::volume_master.setValue(std::clamp<float>(flt / 100.f, 0.1f, 1.f));
         else if(Parsing::parse(curLineChar, "VolumeEffect", '=', &flt))
             cv::volume_effects.setValue(flt / 100.f);
         else if(Parsing::parse(curLineChar, "VolumeMusic", '=', &flt))
-            cv::volume_music.setValue(flt / 100.f);
+            cv::volume_music.setValue(std::clamp<float>(flt / 100.f, 0.1f, 1.f));
         else if(Parsing::parse(curLineChar, "AllowPublicInvites", '=', &b))
             cv::allow_mp_invites.setValue(b);
         else if(Parsing::parse(curLineChar, "AutoChatHide", '=', &b))
