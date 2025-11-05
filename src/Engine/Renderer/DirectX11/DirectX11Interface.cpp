@@ -203,9 +203,9 @@ DirectX11Interface::~DirectX11Interface() {
 }
 
 void DirectX11Interface::beginScene() {
-    // ensure render targets are bound (needed because onResolutionChange might skip setup during init)
-    // HACKHACK: remove this
-    if(this->frameBuffer)
+    // ensure render targets are bound (workaround for my poor understanding of DXGI)
+    // bJustResized will be set to false in endScene, so this will only be called once redundantly after resize
+    if(this->bJustResized && this->frameBuffer)
         this->deviceContext->OMSetRenderTargets(1, &this->frameBuffer, this->frameBufferDepthStencilView);
 
     Matrix4 defaultProjectionMatrix =
@@ -261,6 +261,10 @@ void DirectX11Interface::endScene() {
     this->popTransform();
 
     UINT presentFlags = DXGI_PRESENT_DO_NOT_WAIT | (this->bVSync ? 0 : DXGI_PRESENT_ALLOW_TEARING);
+    if(this->bJustResized) {
+        this->bJustResized = false;
+        presentFlags |= DXGI_PRESENT_RESTART;
+    }
 
     [[maybe_unused]] auto swapHR = this->swapChain->Present(this->bVSync, presentFlags);
 #if defined(_DEBUG) || defined(D3D11_DEBUG)
@@ -1164,6 +1168,7 @@ void DirectX11Interface::onResolutionChange(vec2 newResolution) {
     this->vResolution = newResolution;
 
     if(!engine->isDrawing()) {  // HACKHACK: to allow viewport changes for rendertarget rendering OpenGL style
+        this->bJustResized = true;
         // rebuild swapchain rendertarget + view
 
         // unset + release
