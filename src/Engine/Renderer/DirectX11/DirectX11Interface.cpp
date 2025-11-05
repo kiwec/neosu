@@ -198,8 +198,6 @@ DirectX11Interface::~DirectX11Interface() {
     if(this->device) this->device->Release();
     if(this->deviceContext) this->deviceContext->Release();
 
-    DirectX11Shader::cleanupLibs();
-    DirectX11Interface::cleanupLibs();
 }
 
 void DirectX11Interface::beginScene() {
@@ -1411,14 +1409,6 @@ D3D11CreateDevice_t *DirectX11Interface::s_d3dCreateDeviceFunc{D3D11CreateDevice
 #else
 D3D11CreateDevice_t *DirectX11Interface::s_d3dCreateDeviceFunc{nullptr};
 #endif
-
-void DirectX11Interface::cleanupLibs() {
-    if(s_d3d11Handle != nullptr) {
-        dynutils::unload_lib(s_d3d11Handle);
-        s_d3d11Handle = nullptr;
-        s_d3dCreateDeviceFunc = nullptr;
-    }
-}
 
 bool DirectX11Interface::loadLibs() {
     if(s_d3dCreateDeviceFunc != nullptr) return true;  // already initialized
