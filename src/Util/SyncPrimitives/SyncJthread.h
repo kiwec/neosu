@@ -98,7 +98,10 @@ class sdl_jthread {
     sdl_jthread& operator=(const sdl_jthread&) = delete;
     sdl_jthread& operator=(sdl_jthread&& other) noexcept {
         if(this != &other) {
-            this->~sdl_jthread();
+            if(joinable()) {
+                request_stop();
+                join();
+            }
 
             m_thread = other.m_thread;
             other.m_thread = nullptr;
