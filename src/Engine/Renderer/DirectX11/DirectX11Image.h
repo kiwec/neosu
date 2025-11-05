@@ -13,11 +13,17 @@
 
 #ifdef MCENGINE_FEATURE_DIRECTX11
 
+#if defined(__GNUC__) || defined(__clang__)
 MC_DO_PRAGMA(GCC diagnostic ignored "-Wpragmas")
 MC_DO_PRAGMA(GCC diagnostic ignored "-Wextern-c-compat")
 MC_DO_PRAGMA(GCC diagnostic push)
+#endif
+
 #include "d3d11.h"
+
+#if defined(__GNUC__) || defined(__clang__)
 MC_DO_PRAGMA(GCC diagnostic pop)
+#endif
 
 class DirectX11Interface;
 
