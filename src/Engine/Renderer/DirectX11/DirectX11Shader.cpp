@@ -50,6 +50,7 @@ DirectX11Shader::SHADER_PARSE_RESULT DirectX11Shader::parseShaderFromString(
     std::string curLine;
 
     while(!!std::getline(ss, curLine)) {
+        SString::trim_inplace(curLine); // remove CRLF
         const bool isShaderPrefixLine = (curLine.contains(shaderPrefix));
 
         if(isShaderPrefixLine) {
