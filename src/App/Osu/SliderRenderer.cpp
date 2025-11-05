@@ -453,19 +453,9 @@ void checkUpdateVars(float hitcircleDiameter) {
     if(s_BLEND_SHADER == nullptr)  // only do this once
     {
         // build shaders
-        if(env->usingDX11()) {
-#ifdef MCENGINE_FEATURE_DIRECTX11
-            s_BLEND_SHADER = resourceManager->createShader(
-                std::string(reinterpret_cast<const char *>(DX11_slider_vsh), DX11_slider_vsh_size()),
-                std::string(reinterpret_cast<const char *>(DX11_slider_fsh), DX11_slider_fsh_size()), "slider");
-#endif
-        } else {
-#if defined(MCENGINE_FEATURE_OPENGL) || defined(MCENGINE_FEATURE_GLES32)
-            s_BLEND_SHADER = resourceManager->createShader(
-                std::string(reinterpret_cast<const char *>(GL_slider_vsh), GL_slider_vsh_size()),
-                std::string(reinterpret_cast<const char *>(GL_slider_fsh), GL_slider_fsh_size()), "slider");
-#endif
-        }
+        s_BLEND_SHADER = resourceManager->createShader(
+            env->usingDX11() ? VSH_STRING(DX11_, slider) : VSH_STRING(GL_, slider),
+            env->usingDX11() ? FSH_STRING(DX11_, slider) : FSH_STRING(GL_, slider), "slider");
     }
 
     const int subdivisions = cv::slider_body_unit_circle_subdivisions.getInt();

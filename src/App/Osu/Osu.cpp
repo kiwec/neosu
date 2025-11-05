@@ -334,27 +334,14 @@ Osu::Osu() {
     }
 
     // Not the type of shader you want players to tweak or delete, so loading from string
-    if(env->usingDX11()) {
-#ifdef MCENGINE_FEATURE_DIRECTX11
-        this->actual_flashlight_shader = resourceManager->createShader(
-            std::string(reinterpret_cast<const char *>(DX11_actual_flashlight_vsh), DX11_actual_flashlight_vsh_size()),
-            std::string(reinterpret_cast<const char *>(DX11_actual_flashlight_fsh), DX11_actual_flashlight_fsh_size()),
-            "actual_flashlight");
-        this->flashlight_shader = resourceManager->createShader(
-            std::string(reinterpret_cast<const char *>(DX11_flashlight_vsh), DX11_flashlight_vsh_size()),
-            std::string(reinterpret_cast<const char *>(DX11_flashlight_fsh), DX11_flashlight_fsh_size()), "flashlight");
-#endif
-    } else {
-#if defined(MCENGINE_FEATURE_OPENGL) || defined(MCENGINE_FEATURE_GLES32)
-        this->actual_flashlight_shader = resourceManager->createShader(
-            std::string(reinterpret_cast<const char *>(GL_actual_flashlight_vsh), GL_actual_flashlight_vsh_size()),
-            std::string(reinterpret_cast<const char *>(GL_actual_flashlight_fsh), GL_actual_flashlight_fsh_size()),
-            "actual_flashlight");
-        this->flashlight_shader = resourceManager->createShader(
-            std::string(reinterpret_cast<const char *>(GL_flashlight_vsh), GL_flashlight_vsh_size()),
-            std::string(reinterpret_cast<const char *>(GL_flashlight_fsh), GL_flashlight_fsh_size()), "flashlight");
-#endif
-    }
+    const bool using_dx11 = env->usingDX11();
+    this->actual_flashlight_shader = resourceManager->createShader(
+        using_dx11 ? VSH_STRING(DX11_, actual_flashlight) : VSH_STRING(GL_, actual_flashlight),
+        using_dx11 ? FSH_STRING(DX11_, actual_flashlight) : FSH_STRING(GL_, actual_flashlight), "actual_flashlight");
+
+    this->flashlight_shader = resourceManager->createShader(
+        using_dx11 ? VSH_STRING(DX11_, flashlight) : VSH_STRING(GL_, flashlight),
+        using_dx11 ? FSH_STRING(DX11_, flashlight) : FSH_STRING(GL_, flashlight), "flashlight");
 
     env->setCursorVisible(!this->internalRect.contains(mouse->getPos()));
 }

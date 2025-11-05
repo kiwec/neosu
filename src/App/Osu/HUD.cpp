@@ -35,20 +35,9 @@
 HUD::HUD() : OsuScreen() {
     // resources
     this->tempFont = resourceManager->getFont("FONT_DEFAULT");
-    if(env->usingDX11()) {
-#ifdef MCENGINE_FEATURE_DIRECTX11
-        this->cursorTrailShader = resourceManager->createShader(
-            std::string(reinterpret_cast<const char *>(DX11_cursortrail_vsh), DX11_cursortrail_vsh_size()),
-            std::string(reinterpret_cast<const char *>(DX11_cursortrail_fsh), DX11_cursortrail_fsh_size()),
-            "cursortrail");
-#endif
-    } else {
-#if defined(MCENGINE_FEATURE_OPENGL) || defined(MCENGINE_FEATURE_GLES32)
-        this->cursorTrailShader = resourceManager->createShader(
-            std::string(reinterpret_cast<const char *>(GL_cursortrail_vsh), GL_cursortrail_vsh_size()),
-            std::string(reinterpret_cast<const char *>(GL_cursortrail_fsh), GL_cursortrail_fsh_size()), "cursortrail");
-#endif
-    }
+    this->cursorTrailShader = resourceManager->createShader(
+        env->usingDX11() ? VSH_STRING(DX11_, cursortrail) : VSH_STRING(GL_, cursortrail),
+        env->usingDX11() ? FSH_STRING(DX11_, cursortrail) : FSH_STRING(GL_, cursortrail), "cursortrail");
 
     this->cursorTrail.reserve(cv::cursor_trail_max_size.getInt() * 2);
     this->cursorTrailVAO = resourceManager->createVertexArrayObject(Graphics::PRIMITIVE::PRIMITIVE_QUADS,

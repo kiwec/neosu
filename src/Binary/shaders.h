@@ -47,3 +47,31 @@
     HLSL_SHADER_NAMES(f, X)
 
 ALL_SHADER_BINARIES(INCBIN_H)
+
+#if (defined(MCENGINE_FEATURE_OPENGL) || defined(MCENGINE_FEATURE_GLES32)) && defined(MCENGINE_FEATURE_DIRECTX11)
+
+#define VSH_STRING(bknd_pfx__, vertex_shader_name__)                              \
+    std::string(reinterpret_cast<const char *>(bknd_pfx__##vertex_shader_name__##_vsh), \
+                bknd_pfx__##vertex_shader_name__##_vsh_size())
+
+#define FSH_STRING(bknd_pfx__, fragment_shader_name__)                              \
+    std::string(reinterpret_cast<const char *>(bknd_pfx__##fragment_shader_name__##_fsh), \
+                bknd_pfx__##fragment_shader_name__##_fsh_size())
+
+#elif (defined(MCENGINE_FEATURE_OPENGL) || defined(MCENGINE_FEATURE_GLES32))
+
+#define VSH_STRING(bknd_pfx__, vertex_shader_name__) \
+    std::string(reinterpret_cast<const char *>(GL_##vertex_shader_name__##_vsh), GL_##vertex_shader_name__##_vsh_size())
+
+#define FSH_STRING(bknd_pfx__, fragment_shader_name__) \
+    std::string(reinterpret_cast<const char *>(GL_##fragment_shader_name__##_fsh), GL_##fragment_shader_name__##_fsh_size())
+
+#elif defined(MCENGINE_FEATURE_DIRECTX11)
+
+#define VSH_STRING(bknd_pfx__, vertex_shader_name__) \
+    std::string(reinterpret_cast<const char *>(DX11_##vertex_shader_name__##_vsh), DX11_##vertex_shader_name__##_vsh_size())
+
+#define FSH_STRING(bknd_pfx__, fragment_shader_name__) \
+    std::string(reinterpret_cast<const char *>(DX11_##fragment_shader_name__##_fsh), DX11_##fragment_shader_name__##_fsh_size())
+
+#endif

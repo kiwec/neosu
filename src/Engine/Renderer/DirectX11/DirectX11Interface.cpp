@@ -159,8 +159,8 @@ bool DirectX11Interface::init() {
         .Windowed = true,
     };
 
-    hr = this->dxgiFactory->CreateSwapChainForHwnd(this->device, this->hwnd, &swapchainCreateDesc, &fsDesc,
-                                                        nullptr, &this->swapChain);
+    hr = this->dxgiFactory->CreateSwapChainForHwnd(this->device, this->hwnd, &swapchainCreateDesc, &fsDesc, nullptr,
+                                                   &this->swapChain);
 
     if(FAILED(hr)) {
         engine->showMessageErrorFatal(
@@ -260,7 +260,7 @@ void DirectX11Interface::beginScene() {
 void DirectX11Interface::endScene() {
     this->popTransform();
 
-    UINT presentFlags = DXGI_PRESENT_DO_NOT_WAIT | DXGI_PRESENT_ALLOW_TEARING;
+    UINT presentFlags = DXGI_PRESENT_DO_NOT_WAIT | (this->bVSync ? 0 : DXGI_PRESENT_ALLOW_TEARING);
 
     [[maybe_unused]] auto swapHR = this->swapChain->Present(this->bVSync, presentFlags);
 #if defined(_DEBUG) || defined(D3D11_DEBUG)
