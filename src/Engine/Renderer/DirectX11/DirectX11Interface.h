@@ -167,6 +167,9 @@ class DirectX11Interface final : public Graphics {
 
     DXGI_MODE_DESC queryCurrentSwapchainDesc() const;
 
+    // batched vertex upload and drawing
+    void uploadAndDrawVertexBatch(D3D_PRIMITIVE_TOPOLOGY topology);
+
    private:
     // state and initialization settings
     static constexpr size_t MAX_VERTEX_BUFFER_VERTS{16384};

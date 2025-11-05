@@ -354,56 +354,7 @@ void DirectX11Interface::drawPixel(int x, int y) {
         .tex = {0.0f, 0.0f},
     });
 
-    // upload everything to gpu
-    size_t numVertexOffset = 0;
-    bool uploadedSuccessfully = true;
-    if(this->vertexBufferDesc.Usage == D3D11_USAGE_DEFAULT) {
-        D3D11_BOX box;
-        {
-            box.left = sizeof(DirectX11Interface::SimpleVertex) * 0;
-            box.right = box.left + (sizeof(DirectX11Interface::SimpleVertex) * this->vertices.size());
-            box.top = 0;
-            box.bottom = 1;
-            box.front = 0;
-            box.back = 1;
-        }
-        this->deviceContext->UpdateSubresource(this->vertexBuffer, 0, &box, &this->vertices[0], 0, 0);
-    } else {
-        const bool needsDiscardEntireBuffer =
-            (this->iVertexBufferNumVertexOffsetCounter + this->vertices.size() > MAX_VERTEX_BUFFER_VERTS);
-        const size_t writeOffsetNumVertices =
-            (needsDiscardEntireBuffer ? 0 : this->iVertexBufferNumVertexOffsetCounter);
-        numVertexOffset = writeOffsetNumVertices;
-        {
-            D3D11_MAPPED_SUBRESOURCE mappedResource{};
-            if(SUCCEEDED(this->deviceContext->Map(
-                   this->vertexBuffer, 0,
-                   (needsDiscardEntireBuffer ? D3D11_MAP_WRITE_DISCARD : D3D11_MAP_WRITE_NO_OVERWRITE), 0,
-                   &mappedResource))) {
-                memcpy((void *)(((SimpleVertex *)mappedResource.pData) + writeOffsetNumVertices), &this->vertices[0],
-                       sizeof(DirectX11Interface::SimpleVertex) * this->vertices.size());
-                this->deviceContext->Unmap(this->vertexBuffer, 0);
-            } else
-                uploadedSuccessfully = false;
-        }
-        this->iVertexBufferNumVertexOffsetCounter = writeOffsetNumVertices + this->vertices.size();
-    }
-
-    // shader update
-    if(uploadedSuccessfully) {
-        if(this->activeShader) this->activeShader->onJustBeforeDraw();
-    }
-
-    // draw it
-    if(uploadedSuccessfully) {
-        const UINT stride = sizeof(SimpleVertex);
-        const UINT offset = 0;
-
-        this->deviceContext->IASetVertexBuffers(0, 1, &this->vertexBuffer, &stride, &offset);
-        this->deviceContext->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
-        this->deviceContext->Draw(this->vertices.size(), numVertexOffset);
-        this->iStatsNumDrawCalls++;
-    }
+    this->uploadAndDrawVertexBatch(D3D_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
 }
 
 void DirectX11Interface::drawPixels(int /*x*/, int /*y*/, int /*width*/, int /*height*/,
@@ -841,60 +792,9 @@ void DirectX11Interface::drawVAO(VertexArrayObject *vao) {
         }
     }
 
-    // upload everything to gpu
-    size_t numVertexOffset = 0;
-    bool uploadedSuccessfully = true;
-    {
-        if(this->vertexBufferDesc.Usage == D3D11_USAGE_DEFAULT) {
-            D3D11_BOX box;
-            {
-                box.left = sizeof(DirectX11Interface::SimpleVertex) * 0;
-                box.right = box.left + (sizeof(DirectX11Interface::SimpleVertex) * this->vertices.size());
-                box.top = 0;
-                box.bottom = 1;
-                box.front = 0;
-                box.back = 1;
-            }
-            this->deviceContext->UpdateSubresource(this->vertexBuffer, 0, &box, &this->vertices[0], 0, 0);
-        } else {
-            const bool needsDiscardEntireBuffer =
-                (this->iVertexBufferNumVertexOffsetCounter + this->vertices.size() > MAX_VERTEX_BUFFER_VERTS);
-            const size_t writeOffsetNumVertices =
-                (needsDiscardEntireBuffer ? 0 : this->iVertexBufferNumVertexOffsetCounter);
-            numVertexOffset = writeOffsetNumVertices;
-            {
-                D3D11_MAPPED_SUBRESOURCE mappedResource{};
-                if(SUCCEEDED(this->deviceContext->Map(
-                       this->vertexBuffer, 0,
-                       (needsDiscardEntireBuffer ? D3D11_MAP_WRITE_DISCARD : D3D11_MAP_WRITE_NO_OVERWRITE), 0,
-                       &mappedResource))) {
-                    memcpy((void *)(((SimpleVertex *)mappedResource.pData) + writeOffsetNumVertices),
-                           &this->vertices[0], sizeof(DirectX11Interface::SimpleVertex) * this->vertices.size());
-                    this->deviceContext->Unmap(this->vertexBuffer, 0);
-                } else
-                    uploadedSuccessfully = false;
-            }
-            this->iVertexBufferNumVertexOffsetCounter = writeOffsetNumVertices + this->vertices.size();
-        }
-
-        // shader update
-        if(uploadedSuccessfully) {
-            this->setTexturing(hasTexcoords0);
-
-            if(this->activeShader) this->activeShader->onJustBeforeDraw();
-        }
-    }
-
-    // draw it
-    if(uploadedSuccessfully) {
-        const UINT stride = sizeof(SimpleVertex);
-        const UINT offset = 0;
-
-        this->deviceContext->IASetVertexBuffers(0, 1, &this->vertexBuffer, &stride, &offset);
-        this->deviceContext->IASetPrimitiveTopology((D3D_PRIMITIVE_TOPOLOGY)primitiveToDirectX(primitive));
-        this->deviceContext->Draw(this->vertices.size(), numVertexOffset);
-        this->iStatsNumDrawCalls++;
-    }
+    // upload and draw, batching if necessary
+    this->setTexturing(hasTexcoords0);
+    this->uploadAndDrawVertexBatch((D3D_PRIMITIVE_TOPOLOGY)primitiveToDirectX(primitive));
 }
 
 void DirectX11Interface::setClipRect(McRect clipRect) {
@@ -1373,6 +1273,65 @@ DXGI_MODE_DESC DirectX11Interface::queryCurrentSwapchainDesc() const {
     }
 
     return swapDesc.BufferDesc;
+}
+
+void DirectX11Interface::uploadAndDrawVertexBatch(D3D_PRIMITIVE_TOPOLOGY topology) {
+    const UINT stride = sizeof(SimpleVertex);
+    const UINT offset = 0;
+    this->deviceContext->IASetVertexBuffers(0, 1, &this->vertexBuffer, &stride, &offset);
+    this->deviceContext->IASetPrimitiveTopology(topology);
+
+    // batch large vertex arrays into multiple draw calls
+    size_t verticesRemaining = this->vertices.size();
+    size_t vertexOffset = 0;
+
+    while(verticesRemaining > 0) {
+        const size_t batchSize = std::min(verticesRemaining, MAX_VERTEX_BUFFER_VERTS);
+        size_t numVertexOffset = 0;
+        bool uploadedSuccessfully = true;
+
+        if(this->vertexBufferDesc.Usage == D3D11_USAGE_DEFAULT) {
+            D3D11_BOX box;
+            {
+                box.left = sizeof(DirectX11Interface::SimpleVertex) * 0;
+                box.right = box.left + (sizeof(DirectX11Interface::SimpleVertex) * batchSize);
+                box.top = 0;
+                box.bottom = 1;
+                box.front = 0;
+                box.back = 1;
+            }
+            this->deviceContext->UpdateSubresource(this->vertexBuffer, 0, &box, &this->vertices[vertexOffset], 0, 0);
+        } else {
+            const bool needsDiscardEntireBuffer =
+                (this->iVertexBufferNumVertexOffsetCounter + batchSize > MAX_VERTEX_BUFFER_VERTS);
+            const size_t writeOffsetNumVertices =
+                (needsDiscardEntireBuffer ? 0 : this->iVertexBufferNumVertexOffsetCounter);
+            numVertexOffset = writeOffsetNumVertices;
+            {
+                D3D11_MAPPED_SUBRESOURCE mappedResource{};
+                if(SUCCEEDED(this->deviceContext->Map(
+                       this->vertexBuffer, 0,
+                       (needsDiscardEntireBuffer ? D3D11_MAP_WRITE_DISCARD : D3D11_MAP_WRITE_NO_OVERWRITE), 0,
+                       &mappedResource))) {
+                    memcpy((void *)(((SimpleVertex *)mappedResource.pData) + writeOffsetNumVertices),
+                           &this->vertices[vertexOffset], sizeof(DirectX11Interface::SimpleVertex) * batchSize);
+                    this->deviceContext->Unmap(this->vertexBuffer, 0);
+                } else
+                    uploadedSuccessfully = false;
+            }
+            this->iVertexBufferNumVertexOffsetCounter = writeOffsetNumVertices + batchSize;
+        }
+
+        if(uploadedSuccessfully) {
+            if(this->activeShader) this->activeShader->onJustBeforeDraw();
+
+            this->deviceContext->Draw(batchSize, numVertexOffset);
+            this->iStatsNumDrawCalls++;
+        }
+
+        verticesRemaining -= batchSize;
+        vertexOffset += batchSize;
+    }
 }
 
 // frame latency
