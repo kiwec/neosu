@@ -4,6 +4,8 @@
 #include "ConVar.h"
 #include "Engine.h"
 #include "GameRules.h"
+#include "OpenGLHeaders.h"
+#include "OpenGLInterface.h"
 #include "Osu.h"
 #include "RenderTarget.h"
 #include "ResourceManager.h"
