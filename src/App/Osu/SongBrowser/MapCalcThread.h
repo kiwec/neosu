@@ -4,9 +4,9 @@
 #include "noinclude.h"
 #include "types.h"
 #include "templates.h"
-#include "SyncJthread.h"
 
 #include <atomic>
+#include <thread>
 #include <vector>
 
 class DatabaseBeatmap;
@@ -65,7 +65,7 @@ class MapCalcThread {
     // singleton access
     static MapCalcThread& get_instance();
 
-    std::unique_ptr<Sync::jthread> worker_thread;
+    std::thread worker_thread;
     std::atomic<bool> should_stop{true};
     std::atomic<u32> computed_count{0};
     std::atomic<u32> total_count{0};

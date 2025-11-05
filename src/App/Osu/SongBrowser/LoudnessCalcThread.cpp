@@ -11,7 +11,6 @@
 #include "Timing.h"
 #include "Logging.h"
 #include "SyncOnce.h"
-#include "SyncJthread.h"
 
 #ifdef MCENGINE_FEATURE_BASS
 #include "BassManager.h"
@@ -19,11 +18,12 @@
 
 #include <atomic>
 #include <utility>
+#include <thread>
 
 struct VolNormalization::LoudnessCalcThread {
     NOCOPY_NOMOVE(LoudnessCalcThread)
    public:
-    std::unique_ptr<Sync::jthread> thr;
+    std::thread thr;
     std::atomic<bool> dead{true};
     std::vector<DatabaseBeatmap *> maps;
 
@@ -36,13 +36,15 @@ struct VolNormalization::LoudnessCalcThread {
         this->maps = std::move(maps_to_calc);
         this->nb_total = this->maps.size() + 1;
         if(soundEngine->getTypeId() == SoundEngine::BASS) {  // TODO
-            this->thr = std::make_unique<Sync::jthread>(&LoudnessCalcThread::run, this);
+            this->thr = std::thread(&LoudnessCalcThread::run, this);
         }
     }
 
     ~LoudnessCalcThread() {
         this->dead.store(true, std::memory_order_release);
-        this->thr.reset();
+        if(this->thr.joinable()) {
+            this->thr.join();
+        }
     }
 
    private:

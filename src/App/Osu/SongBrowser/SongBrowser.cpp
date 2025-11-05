@@ -2249,13 +2249,12 @@ void SongBrowser::rebuildScoreButtons() {
     if(validBeatmap) {
         Sync::shared_lock lock(db->scores_mtx);
         auto map = osu->getMapInterface()->getBeatmap();
-        auto map_md5 = map->getMD5();
-        auto local_scores = db->scores[map_md5];
+        auto local_scores = db->scores[map->getMD5()];
         auto local_best = std::ranges::max_element(
             local_scores, [](FinishedScore const &a, FinishedScore const &b) { return a.score < b.score; });
 
         if(is_online) {
-            auto search = db->online_scores.find(map_md5);
+            auto search = db->online_scores.find(map->getMD5());
             if(search != db->online_scores.end()) {
                 scores = search->second;
 
@@ -2272,7 +2271,7 @@ void SongBrowser::rebuildScoreButtons() {
                     SAFE_DELETE(this->localBestButton);
                     this->localBestButton = new ScoreButton(this->contextMenu, 0, 0, 0, 0);
                     this->localBestButton->setClickCallback(SA::MakeDelegate<&SongBrowser::onScoreClicked>(this));
-                    this->localBestButton->map_hash = map_md5;
+                    this->localBestButton->map_hash = map->getMD5();
                     this->localBestButton->setScore(*local_best, map);
                     this->localBestButton->resetHighlight();
                     this->localBestButton->grabs_clicks = true;
@@ -2294,7 +2293,7 @@ void SongBrowser::rebuildScoreButtons() {
                     SAFE_DELETE(this->localBestButton);
                     this->localBestButton = new ScoreButton(this->contextMenu, 0, 0, 0, 0);
                     this->localBestButton->setClickCallback(SA::MakeDelegate<&SongBrowser::onScoreClicked>(this));
-                    this->localBestButton->map_hash = map_md5;
+                    this->localBestButton->map_hash = map->getMD5();
                     this->localBestButton->setScore(*local_best, map);
                     this->localBestButton->resetHighlight();
                     this->localBestButton->grabs_clicks = true;
