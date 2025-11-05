@@ -235,6 +235,8 @@ class DirectX11Interface final : public Graphics {
         .Scaling = DXGI_MODE_SCALING_CENTERED,
     };
 
+    static constexpr UINT swapChainCreateFlags = DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING | (Env::cfg(OS::WINDOWS) ? DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH : 0);
+
    private:
     // renderer
     vec2 vResolution{};  // to be initialized after swapchain creation

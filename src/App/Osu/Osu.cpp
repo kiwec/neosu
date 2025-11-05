@@ -1483,7 +1483,8 @@ void Osu::onResolutionChanged(vec2 newResolution, ResolutionRequestFlags src) {
 
     const float prevUIScale = getUIScale();
 
-    const bool resolution_changed = (this->backBuffer->getSize() != newResolution);
+    // HACK: always rebuild rendertargets for dx11
+    const bool resolution_changed = (env->usingDX11() || this->backBuffer->getSize() != newResolution);
     this->internalRect = {vec2{}, newResolution};
 
     // update dpi specific engine globals
@@ -1491,6 +1492,15 @@ void Osu::onResolutionChanged(vec2 newResolution, ResolutionRequestFlags src) {
 
     // skip rebuilding rendertargets if we didn't change resolution
     if(resolution_changed) {
+        // DX11 HACK: need to recreate swapchain the first time a window is created
+        static bool once = true;
+        if(once) {
+            once = false;
+            if(env->usingDX11()) {
+                g->onResolutionChange(engine->getScreenSize());
+            }
+        }
+
         // interfaces
         this->forEachScreen<&OsuScreen::onResolutionChange>(this->getVirtScreenSize());
 

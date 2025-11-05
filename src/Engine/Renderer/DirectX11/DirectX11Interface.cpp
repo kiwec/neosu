@@ -28,13 +28,6 @@
 
 #include <string_view>
 
-#if 1  // defined(_WINVER) && _WINVER < 0x0A00
-#define NO_FLIP \
-    true  // FIXME: for some reason, perf is lower with FLIP_DISCARD than DISCARD (def. doing something wrong)
-#else
-#define NO_FLIP false
-#endif
-
 // #define D3D11_DEBUG
 
 DirectX11Interface::DirectX11Interface(HWND hwnd) : Graphics(), hwnd(hwnd) {}
@@ -55,7 +48,8 @@ bool DirectX11Interface::init() {
     createDeviceFlags = D3D11_CREATE_DEVICE_SINGLETHREADED;
 
 #ifdef D3D11_DEBUG
-    createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG | D3D11_CREATE_DEVICE_DEBUGGABLE;
+    createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
+    // | D3D11_CREATE_DEVICE_DEBUGGABLE; // NOTE: not supported by all drivers
 #endif
 
     // create device + context
@@ -167,12 +161,11 @@ bool DirectX11Interface::createSwapchain() {
         .Stereo = 0,
         .SampleDesc = {.Count = 1, .Quality = 0},
         .BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT,
-        .BufferCount = NO_FLIP ? 1 : 2,
+        .BufferCount = 2,  // 2 for DXGI_SWAP_EFFECT_FLIP_DISCARD
         .Scaling = DXGI_SCALING_NONE,
-        .SwapEffect = NO_FLIP ? DXGI_SWAP_EFFECT_DISCARD : DXGI_SWAP_EFFECT_FLIP_DISCARD,
+        .SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD,
         .AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED,
-        .Flags =
-            DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING | (Env::cfg(OS::WINDOWS) ? DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH : 0),
+        .Flags = swapChainCreateFlags,
     };
 
     DXGI_SWAP_CHAIN_FULLSCREEN_DESC fsDesc{
@@ -198,8 +191,6 @@ bool DirectX11Interface::createSwapchain() {
     // disable dxgi interfering with mode changes and WndProc (again, handled by the engine internally)
     this->dxgiFactory->MakeWindowAssociation(this->hwnd, DXGI_MWA_NO_ALT_ENTER | DXGI_MWA_NO_WINDOW_CHANGES);
 
-    // NOTE: force build swapchain rendertarget for first time
-    onResolutionChange(this->vResolution);
     return true;
 }
 
@@ -225,14 +216,12 @@ DirectX11Interface::~DirectX11Interface() {
 }
 
 void DirectX11Interface::beginScene() {
-    // create initial swapchain if we haven't already
-    if(!this->swapChain && !this->createSwapchain()) return;
+    if(!this->swapChain) return;  // ignore until swapchain is created
 
-#ifndef NO_FLIP
     // ensure render targets are bound (needed because onResolutionChange might skip setup during init)
+    // HACKHACK: remove this
     if(this->frameBuffer)
         this->deviceContext->OMSetRenderTargets(1, &this->frameBuffer, this->frameBufferDepthStencilView);
-#endif
 
     Matrix4 defaultProjectionMatrix =
         Camera::buildMatrixOrtho2DDXLH(0, this->vResolution.x, this->vResolution.y, 0, -1.0f, 1.0f);
@@ -284,6 +273,8 @@ void DirectX11Interface::beginScene() {
 }
 
 void DirectX11Interface::endScene() {
+    if(!this->swapChain) return;  // ignore until swapchain is created
+
     this->popTransform();
 
     UINT presentFlags = DXGI_PRESENT_DO_NOT_WAIT;
@@ -1191,7 +1182,8 @@ void DirectX11Interface::setVSync(bool vsync) { this->bVSync = vsync; }
 
 void DirectX11Interface::onResolutionChange(vec2 newResolution) {
     this->vResolution = newResolution;
-    if(!this->swapChain) return;  // ignore until swapchain is created
+    // create initial swapchain if we haven't already
+    if(!this->swapChain && !this->createSwapchain()) return;
 
     if(!engine->isDrawing()) {  // HACKHACK: to allow viewport changes for rendertarget rendering OpenGL style
         // rebuild swapchain rendertarget + view
@@ -1215,36 +1207,36 @@ void DirectX11Interface::onResolutionChange(vec2 newResolution) {
         UINT newWidth = static_cast<UINT>(this->vResolution.x);
         UINT newHeight = static_cast<UINT>(this->vResolution.y);
 
-        auto oldDesc = this->queryCurrentSwapchainDesc();
-        UINT oldDescWidth = oldDesc.Width;
-        UINT oldDescHeight = oldDesc.Height;
+        auto swapDesc = this->queryCurrentSwapchainDesc();
+        swapDesc.Width = newWidth;
+        swapDesc.Height = newHeight;
+        this->swapChainModeDesc = swapDesc;
 
-        if(oldDescWidth != newHeight || oldDescHeight != newWidth) {
-            oldDesc.Width = newWidth;
-            oldDesc.Height = newHeight;
-            this->swapChainModeDesc = oldDesc;
-
-            this->swapChain->ResizeTarget(&this->swapChainModeDesc);
-        }
+        HRESULT hr = this->swapChain->ResizeTarget(&this->swapChainModeDesc);
+        if(FAILED(hr))
+            debugLog("FATAL ERROR: couldn't ResizeTarget({:#x}, {:#x})!!!", (u32)hr, (u32)MAKE_DXGI_HRESULT(hr));
 
         // resize
         // NOTE: when in fullscreen mode, use 0 as width/height (because they were set internally by SetFullscreenState())
         // NOTE: DXGI_FORMAT_UNKNOWN preserves the existing format
-        // debugLog("actual resize fullscreen {} borderless {} {}x{}", m_bIsFullscreen, m_bIsFullscreenBorderlessWindowed, m_bIsFullscreen &&
-        // !m_bIsFullscreenBorderlessWindowed ? 0 : (UINT)newResolution.x, m_bIsFullscreen && !m_bIsFullscreenBorderlessWindowed ? 0 : (UINT)newResolution.y);
         const bool isTrueFS = this->bIsFullscreen && !this->bIsFullscreenBorderlessWindowed;
+
+        // debugLog("actual resize fullscreen {} borderless {} {}x{}", this->bIsFullscreen,
+        //          this->bIsFullscreenBorderlessWindowed, isTrueFS ? 0 : (UINT)newResolution.x,
+        //          isTrueFS ? 0 : (UINT)newResolution.y);
+
         UINT resizeWidth = isTrueFS ? 0 : newWidth;
         UINT resizeHeight = isTrueFS ? 0 : newHeight;
-        HRESULT hr = this->swapChain->ResizeBuffers(0, resizeWidth, resizeHeight, DXGI_FORMAT_UNKNOWN, 0);
+        hr = this->swapChain->ResizeBuffers(0, resizeWidth, resizeHeight, DXGI_FORMAT_UNKNOWN, swapChainCreateFlags);
 
         if(FAILED(hr))
-            debugLog("FATAL ERROR: couldn't ResizeBuffers({}, {:#x})!!!", (u32)hr, (u32)MAKE_DXGI_HRESULT(hr));
+            debugLog("FATAL ERROR: couldn't ResizeBuffers({:#x}, {:#x})!!!", (u32)hr, (u32)MAKE_DXGI_HRESULT(hr));
 
         // get new (automatically generated) backbuffer
         ID3D11Texture2D *backBuffer{nullptr};
         hr = this->swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void **)&backBuffer);
         if(FAILED(hr)) {
-            debugLog("FATAL ERROR: couldn't GetBuffer({}, {:#x})!!!", (u32)hr, (u32)MAKE_DXGI_HRESULT(hr));
+            debugLog("FATAL ERROR: couldn't GetBuffer({:#x}, {:#x})!!!", (u32)hr, (u32)MAKE_DXGI_HRESULT(hr));
             return;
         }
 
@@ -1252,7 +1244,8 @@ void DirectX11Interface::onResolutionChange(vec2 newResolution) {
         hr = this->device->CreateRenderTargetView(backBuffer, nullptr, &this->frameBuffer);
         backBuffer->Release();  // (release temp buffer)
         if(FAILED(hr)) {
-            debugLog("FATAL ERROR: couldn't CreateRenderTargetView({}, {:#x})!!!", (u32)hr, (u32)MAKE_DXGI_HRESULT(hr));
+            debugLog("FATAL ERROR: couldn't CreateRenderTargetView({:#x}, {:#x})!!!", (u32)hr,
+                     (u32)MAKE_DXGI_HRESULT(hr));
             this->frameBuffer = nullptr;
             return;
         }
@@ -1296,7 +1289,7 @@ void DirectX11Interface::onResolutionChange(vec2 newResolution) {
 
         // use new framebuffer
         this->deviceContext->OMSetRenderTargets(1, &this->frameBuffer, this->frameBufferDepthStencilView);
-        // debugLog("Rebuilt resolution {:g}x{:g}", m_vResolution.x, m_vResolution.y);
+        // debugLog("Rebuilt resolution {:g}x{:g}", this->vResolution.x, this->vResolution.y);
     } else {
         // debugLog("Engine was drawing, not rebuilding rendertarget {:g}x{:g}", newResolution.x, newResolution.y);
     }

@@ -395,6 +395,12 @@ void Engine::onMaximized() { logIfCV(debug_engine, "window maximized"); }
 void Engine::onRestored() {
     logIfCV(debug_engine, "window restored");
 
+    // TODO: move this into g->onRestored
+    // need to recreate swapchain after minimizing from fullscreen
+    if(env->usingDX11()) {
+        g->onResolutionChange(this->getScreenSize());
+    }
+
     if(app) app->onRestored();
 }
 
