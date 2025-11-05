@@ -96,6 +96,7 @@ class DirectX11Shader final : public Shader {
     }
 
     static bool loadLibs();
+    static void cleanupLibs();
 
    private:
     struct INPUT_DESC_LINE {

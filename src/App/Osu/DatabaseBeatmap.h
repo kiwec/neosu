@@ -281,10 +281,11 @@ class DatabaseBeatmap final {
         this->md5_init.store(true, std::memory_order_release);
     }
 
-    inline MD5Hash getMD5() const {
+    inline const MD5Hash &getMD5() const {
         if(this->md5_init.load(std::memory_order_acquire)) return this->sMD5Hash;
 
-        return {};
+        static MD5Hash empty;
+        return empty;
     }
 
    private:

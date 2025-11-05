@@ -23,9 +23,8 @@ static std::atomic<bool> dead = true;
 // XXX: Probably code duplicated a lot, I'm pretty sure there's 4 places where I calc ppv2...
 static void update_ppv2(const FinishedScore& score) {
     if(score.ppv2_version >= DifficultyCalculator::PP_ALGORITHM_VERSION) return;
-    MD5Hash score_hash = score.beatmap_hash;
 
-    auto map = db->getBeatmapDifficulty(score_hash);
+    auto map = db->getBeatmapDifficulty(score.beatmap_hash);
     if(!map) return;
 
     f32 AR = score.mods.get_naive_ar(map);
@@ -78,7 +77,7 @@ static void update_ppv2(const FinishedScore& score) {
 
     // Update score
     db->scores_mtx.lock_shared();  // take read lock
-    for(auto& other : (*db->getScores())[score_hash]) {
+    for(auto& other : (*db->getScores())[score.beatmap_hash]) {
         if(other.unixTimestamp == score.unixTimestamp) {
             db->scores_mtx.unlock_shared();
             db->scores_mtx.lock();  // take write lock
@@ -163,9 +162,8 @@ static void run_sct(const std::unordered_map<MD5Hash, std::vector<FinishedScore>
                 continue;
             }
         }
-        MD5Hash score_hash = score.beatmap_hash;
 
-        auto map = db->getBeatmapDifficulty(score_hash);
+        auto map = db->getBeatmapDifficulty(score.beatmap_hash);
         SimulatedBeatmapInterface smap(map, score.mods);
         smap.spectated_replay = score.replay;
         smap.simulate_to(map->getLengthMS());
@@ -185,7 +183,7 @@ static void run_sct(const std::unordered_map<MD5Hash, std::vector<FinishedScore>
 
         {
             db->scores_mtx.lock_shared();  // take read lock
-            for(auto& dbScore : (*db->getScores())[score_hash]) {
+            for(auto& dbScore : (*db->getScores())[score.beatmap_hash]) {
                 if(dbScore.unixTimestamp == score.unixTimestamp) {
                     db->scores_mtx.unlock_shared();
                     db->scores_mtx.lock();  // take write lock

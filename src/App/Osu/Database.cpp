@@ -484,9 +484,8 @@ int Database::addScore(const FinishedScore &score) {
 
     // return sorted index
     Sync::shared_lock lock(this->scores_mtx);
-    MD5Hash score_hash = score.beatmap_hash;
-    for(int i = 0; i < this->scores[score_hash].size(); i++) {
-        if(this->scores[score_hash][i].unixTimestamp == score.unixTimestamp) return i;
+    for(int i = 0; i < this->scores[score.beatmap_hash].size(); i++) {
+        if(this->scores[score.beatmap_hash][i].unixTimestamp == score.unixTimestamp) return i;
     }
 
     return -1;
@@ -511,9 +510,8 @@ bool Database::addScoreRaw(const FinishedScore &score) {
 
     int existing_pos{-1};
     bool overwrite{false};
-    MD5Hash score_hash = score.beatmap_hash;
 
-    if((existing_pos = this->isScoreAlreadyInDB(score.unixTimestamp, score_hash)) >= 0) {
+    if((existing_pos = this->isScoreAlreadyInDB(score.unixTimestamp, score.beatmap_hash)) >= 0) {
         // a bit hacky, but allow overwriting mcosu scores with peppy/neosu scores
         // otherwise scores imported to mcosu from stable will be marked as "from mcosu"
         // which we consider to never have a replay available
@@ -527,7 +525,7 @@ bool Database::addScoreRaw(const FinishedScore &score) {
             Sync::shared_lock lock(this->scores_mtx);
             // otherwise check if the old one doesn't have a replay
             // if it has one, don't overwrite it
-            overwrite = !this->scores[score_hash][existing_pos].has_possible_replay();
+            overwrite = !this->scores[score.beatmap_hash][existing_pos].has_possible_replay();
         }
 
         if(!overwrite) {
@@ -539,10 +537,10 @@ bool Database::addScoreRaw(const FinishedScore &score) {
     Sync::unique_lock lock(this->scores_mtx);
 
     if(overwrite) {
-        this->scores[score_hash][existing_pos] = score;
+        this->scores[score.beatmap_hash][existing_pos] = score;
     } else {
         // new score
-        this->scores[score_hash].push_back(score);
+        this->scores[score.beatmap_hash].push_back(score);
     }
 
     return true;

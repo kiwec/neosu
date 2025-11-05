@@ -213,12 +213,11 @@ bool load_from_disk(FinishedScore& score, bool update_db) {
     u8* buffer = nullptr;
     uSz buffer_size = 0;
     bool success = false;
-    MD5Hash score_hash = score.beatmap_hash;
 
     if(score.peppy_replay_tms > 0) {
         auto osu_folder = cv::osu_folder.getString();
         auto path =
-            fmt::format("{:s}/Data/r/{:s}-{:d}.osr", osu_folder, score_hash.string(), score.peppy_replay_tms);
+            fmt::format("{:s}/Data/r/{:s}-{:d}.osr", osu_folder, score.beatmap_hash.string(), score.peppy_replay_tms);
 
         replay_file = File::fopen_c(path.c_str(), "rb");
         if(replay_file == nullptr) goto cleanup;
@@ -258,7 +257,7 @@ bool load_from_disk(FinishedScore& score, bool update_db) {
 
     if(update_db) {
         Sync::unique_lock lock(db->scores_mtx);
-        auto& map_scores = (*(db->getScores()))[score_hash];
+        auto& map_scores = (*(db->getScores()))[score.beatmap_hash];
         for(auto& db_score : map_scores) {
             if(db_score.unixTimestamp != score.unixTimestamp) continue;
             if(&db_score != &score) {  // interesting logic...?
