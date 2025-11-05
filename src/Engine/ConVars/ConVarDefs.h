@@ -769,7 +769,7 @@ CONVAR(version, NEOSU_VERSION, CONSTANT);
 CONVAR(beatmap_version, 128, CLIENT,
        "maximum supported .osu file version, above this will simply not load (this was 14 but got "
        "bumped to 128 due to lazer backports)");
-CONVAR(r_drawstring_max_string_length, 65536, CLIENT,
+CONVAR(r_drawstring_max_string_length, 16384, CLIENT,
        "maximum number of characters per call, sanity/memory buffer limit");
 
 // Online
