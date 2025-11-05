@@ -296,7 +296,6 @@ class DirectX11Interface final : public Graphics {
     static D3D11CreateDevice_t *s_d3dCreateDeviceFunc;
 
     static bool loadLibs();
-    static void cleanupLibs();
 };
 
 #else

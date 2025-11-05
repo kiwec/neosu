@@ -314,8 +314,11 @@ void DirectX11Shader::init() {
 void DirectX11Shader::initAsync() { this->setAsyncReady(true); }
 
 void DirectX11Shader::destroy() {
-    for(ID3D11Buffer *buffer : this->constantBuffers) {
-        buffer->Release();
+    for(auto &buffer : this->constantBuffers) {
+        if(buffer != nullptr) {
+            buffer->Release();
+            buffer = nullptr;
+        }
     }
     this->constantBuffers.clear();
 
@@ -557,14 +560,6 @@ const DirectX11Shader::CACHE_ENTRY DirectX11Shader::getAndCacheUniformLocation(s
 
 dynutils::lib_obj *DirectX11Shader::s_d3dCompilerHandle{nullptr};
 D3DCompile_t *DirectX11Shader::s_d3dCompileFunc{nullptr};
-
-void DirectX11Shader::cleanupLibs() {
-    if(s_d3dCompilerHandle != nullptr) {
-        dynutils::unload_lib(s_d3dCompilerHandle);
-        s_d3dCompilerHandle = nullptr;
-    }
-    s_d3dCompileFunc = nullptr;
-}
 
 bool DirectX11Shader::loadLibs() {
     if(s_d3dCompileFunc != nullptr) return true;  // already initialized

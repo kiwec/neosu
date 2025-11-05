@@ -85,6 +85,7 @@ set(ENV{PKG_CONFIG_PATH} "${DEPS_INSTALL_DIR}/lib/pkgconfig")
 set(ENV{PKG_CONFIG_LIBDIR} "${DEPS_INSTALL_DIR}/lib/pkgconfig")
 set(ENV{PKG_CONFIG_MSVC_SYNTAX} 1)
 set(PKG_CONFIG_ARGN "--msvc-syntax")
+set(CMAKE_ASM_NASM_OBJECT_FORMAT win64)
 
 # Find system dependencies
 find_package(OpenGL REQUIRED)
