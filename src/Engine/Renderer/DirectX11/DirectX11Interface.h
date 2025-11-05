@@ -277,7 +277,6 @@ class DirectX11Interface final : public Graphics {
     bool bVSync{false};
     bool bColorInversion{false};
     bool bTexturingEnabled{false};
-    bool bJustResized{false};
 
     // frame latency
     bool bFrameLatencyDisabled{false};
