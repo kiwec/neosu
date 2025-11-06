@@ -723,7 +723,7 @@ AX_CHECK_COMPILE_FLAG([-std=gnu++23], [
 ])
 
 AC_PATH_TOOL([LD], [ld], [AC_MSG_ERROR([ld not found])])
-AS_IF([test "x$enable_clang" = "xyes" && test "$host_os" = "linux-gnu"], [
+AS_IF([test "x$enable_clang" = "xyes"], [
     AC_PATH_PROG([AR], [llvm-ar], [llvm-ar], [AC_MSG_ERROR([llvm-ar not found])])
     AC_PATH_PROG([RANLIB], [llvm-ranlib], [llvm-ranlib], [AC_MSG_ERROR([llvm-ranlib not found])])
 ], [
