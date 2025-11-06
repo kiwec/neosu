@@ -1186,6 +1186,7 @@ void DirectX11Interface::onResolutionChange(vec2 newResolution) {
         if(!this->bFlipPresent) {
             DXGI_SWAP_CHAIN_FULLSCREEN_DESC fsDesc{};
             this->swapChain->GetFullscreenDesc(&fsDesc);
+            isExclusiveFS = !fsDesc.Windowed;
 
             const bool winCoversDesktop = env->getWindowSize() == env->getNativeScreenSize();
             if(winCoversDesktop && fsDesc.Windowed) {
@@ -1197,6 +1198,7 @@ void DirectX11Interface::onResolutionChange(vec2 newResolution) {
                 }
             } else if(!winCoversDesktop && !fsDesc.Windowed) {
                 this->swapChain->SetFullscreenState(FALSE, nullptr);
+                isExclusiveFS = false;
             }
         }
 
