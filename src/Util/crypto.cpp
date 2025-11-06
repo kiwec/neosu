@@ -12,6 +12,11 @@
 #include <cerrno>
 #include <random>
 
+#ifdef __APPLE__
+// TODO
+#undef USE_OPENSSL
+#endif
+
 #ifdef USE_OPENSSL
 #include <openssl/rand.h>
 #include <openssl/evp.h>
@@ -67,6 +72,8 @@ void get_bytes(u8* out, std::size_t s_out) {
     }
 
     CryptReleaseContext(hCryptProv, 0);
+#elif __APPLE__
+    arc4random_buf(out, s_out);
 #else
     size_t offset = 0;
     while(offset < s_out) {

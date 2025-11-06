@@ -332,10 +332,17 @@ lbq := '('
 rb := )
 rbq := ')'
 
+if MACOS_PLATFORM
+CURL_INCLUDEDIR := /opt/homebrew/opt/curl/include
+CURL_LIBDIR := /opt/homebrew/opt/curl/lib
+CURL_CFLAGS += -I$(CURL_INCLUDEDIR) -DWITH_GZFILEOP
+CURL_LIBS += -L$(CURL_LIBDIR) -lcurl
+else
 CURL_INCLUDEDIR := $(DEPS_CACHE)/curl-$(CURL_VERSION)-2/$(SYSNAME)$(host_cpu)/include
 CURL_LIBDIR := $(DEPS_CACHE)/curl-$(CURL_VERSION)-2/$(SYSNAME)$(host_cpu)/lib
 CURL_CFLAGS += -I$(CURL_INCLUDEDIR) -DWITH_GZFILEOP -DCURL_STATICLIB
 CURL_LIBS += -L$(CURL_LIBDIR) $(shell find $(CURL_LIBDIR) -mindepth 1 -maxdepth 1 -type f -not $(lbq) -name '*dll*' $(rbq) -execdir printf '%s ' '{''}' ';' | $(SED) -e 's|./lib|-l|g' -e 's|\.a||g' -e 's|-lcurl|-l:libcurl.a|g')
+endif
 
 PKG_CONFIG_PLUS_BUNDLED_OSSL += --with-path=$(CURL_LIBDIR)/pkgconfig
 OPENSSL_CFLAGS += -I$(CURL_INCLUDEDIR) $(shell $(PKG_CONFIG_PLUS_BUNDLED_OSSL) --cflags openssl)
@@ -349,19 +356,22 @@ endif
 $(DEPS_PREFIX)/curl-$(CURL_VERSION)-2.built: $(DEPS_CACHE)/curl-$(CURL_VERSION)-2-windows-binary.source
 	$(MKDIR_P) $(DEPS_PREFIX)
 	touch $@
-else
+endif # WIN_PLATFORM
 
+if LINUX_PLATFORM
 CURL_LIBS += -ldl -pthread
 $(DEPS_PREFIX)/curl-$(CURL_VERSION)-2.built: $(DEPS_CACHE)/curl-$(CURL_VERSION)-2-linux-binary.source
 	$(MKDIR_P) $(DEPS_PREFIX)
 	touch $@
-endif
-else # from host
-CURL_CFLAGS += $(OPENSSL_CFLAGS)
-CURL_LIBS += $(OPENSSL_LIBS)
+endif # LINUX_PLATFORM
+
+if MACOS_PLATFORM
+CURL_LIBS += -pthread
 $(DEPS_PREFIX)/curl-$(CURL_VERSION)-2.built:
 	$(MKDIR_P) $(DEPS_PREFIX)
 	touch $@
+endif # MACOS_PLATFORM
+
 endif # BUILD_CURL
 
 if BUILD_MIMALLOC
@@ -485,7 +495,7 @@ $(DEPS_PREFIX)/mpg123-$(MPG123_VERSION).built: $(DEPS_CACHE)/mpg123-$(MPG123_VER
 	cd $(DEPS_PREFIX)/mpg123 && \
 	patch -Np1<$(BUILD_MISCDIR)/0001-libmpg123-initial-support-for-VBRI-tag-parsing.patch && \
 	$(if $(ubercompat),$(SED) -i -e 's|.*ThreadErrorMode.*||g' -e 's|mode_ok|0|' src/compat/compat_dl.c,true) && \
-	autoreconf -fiv && cd $(DEPS_PREFIX)/mpg123/build && \
+	ACLOCAL_PATH="/opt/homebrew/opt/libtool/share/aclocal:$$ACLOCAL_PATH" autoreconf -fiv && cd $(DEPS_PREFIX)/mpg123/build && \
 	PKG_CONFIG="$(PKG_CONFIG)" \
 		../configure lt_cv_prog_gnu_ld=yes --host=$(host) --prefix="$(DEPS_PREFIX)" $(if $(STATICBUILD),--enable-static --disable-shared,--enable-shared --disable-static) \
 		--disable-components --enable-libmpg123 --with-audio=dummy --disable-modules \
@@ -503,7 +513,7 @@ if USE_SOLOUD
 AUDIO_CFLAGS += $(shell $(PKG_CONFIG) --cflags soloud) $(shell $(PKG_CONFIG) --cflags soundtouch) $(MPG123_CFLAGS) -DST_NO_EXCEPTION_HANDLING $(if $(and $(filter i686,$(host_cpu)),$(DISABLE_NATIVE)),-DSOUNDTOUCH_DISABLE_X86_OPTIMIZATIONS,)
 AUDIO_LIBS += $(shell $(PKG_CONFIG) --libs soloud) $(shell $(PKG_CONFIG) --libs soundtouch) $(MPG123_LIBS)
 
-FFMPEG_INSTALL_LIBS := `find $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION)/$(SYSNAME)$(host_cpu)/lib '(' -name '*avutil*' -o -name '*avcodec*' -o -name '*avformat*' -o -name '*swresample*' ')' -printf '%p '`
+FFMPEG_INSTALL_LIBS := `find $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION)/$(SYSNAME)$(host_cpu)/lib '(' -name '*avutil*' -o -name '*avcodec*' -o -name '*avformat*' -o -name '*swresample*' ')' -print | tr '\n' ' '`
 FFMPEG_INCDIR := $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION)/$(SYSNAME)$(host_cpu)/include
 
 $(DEPS_PREFIX)/SoLoud-$(SOLOUD_VERSION).built: $(DEPS_CACHE)/SoLoud-$(SOLOUD_VERSION).source $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION).source $(DEPS_PREFIX)/SDL3-$(SDL3_VERSION).built $(DEPS_PREFIX)/mpg123-$(MPG123_VERSION).built
@@ -820,6 +830,7 @@ $(DEPS_PREFIX)/nsync-$(NSYNC_VERSION).built: $(DEPS_CACHE)/nsync-$(NSYNC_VERSION
 	$(SED) -i 's|Windows.h|windows.h|' platform/win32/atomic.h && \
 	$(SED) -i 's|Windows.h|windows.h|' platform/win32/platform_c++11_os.h && \
 	$(SED) -i -e 's|.*"/TP".*||' -e 's|install (TARGETS nsync EXPORT nsync|\0 OPTIONAL|' CMakeLists.txt && \
+	mv BUILD BUILD.bazel 2>/dev/null || true && \
 	PKG_CONFIG="$(PKG_CONFIG)" LDFLAGS="$(LDFLAGS) -xnone" \
 	$(CMAKE) -S . -B build -G "$(CMAKE_GEN)" \
 		-DCMAKE_BUILD_TYPE="$(if $(ENABLE_DEBUG),Debug,Release)" \
@@ -1068,7 +1079,7 @@ BUILT_SOURCES := \
 $(neosu_OBJECTS): $(BUILT_SOURCES) $(EXTRA_BINDEPS)
 
 # add all paths with sources as an include ("-I") flag
-NEOSU_INCLUDE_FLAGS := $(shell find $(srcdir)/src -not -path '*/.*' -type d -printf "-I%p ")
+NEOSU_INCLUDE_FLAGS := $(shell find $(srcdir)/src -not -path '*/.*' -type d -print | sed 's|^|-I|' | tr '\n' ' ')
 
 # clang+lto for windows targets has broken assembler include paths, need to specify them manually...
 neosu_CPPFLAGS := $(NEOSU_CPPFLAGS) -DCACERT_INCDIR=\"$(CACERT_INCDIR)\" -DSHADERS_INCDIR=\"$(SHADERS_INCDIR)\" -DMISC_INCDIR=\"$(MISC_INCDIR)\"
@@ -1104,12 +1115,17 @@ neosu_CXXFLAGS := \
 	$(NEOSU_CXXFLAGS) \
 	$(CXXFLAGS_EXTRA)
 
+if !MACOS_PLATFORM
 # Wl,--start-group with no --end-group is a stupid hack.
+RPATH_FIX := \
+	-Wl,-rpath='$$ORIGIN/lib',-rpath='$$ORIGIN' \
+	-Wl,--start-group
+endif
+
 neosu_LDFLAGS := \
 	$(MIMALLOC_OBJ) \
 	$(MIMALLOC_DYNAMIC_LIBS) \
-	-Wl,-rpath='$$ORIGIN/lib',-rpath='$$ORIGIN' \
-	-Wl,--start-group \
+	$(RPATH_FIX) \
 	$(CURL_LIBS) \
 	$(SDL3_LIBS) \
 	$(AUDIO_LIBS) \
