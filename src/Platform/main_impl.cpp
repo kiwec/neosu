@@ -102,6 +102,11 @@ SDL_AppResult SDLMain::initialize() {
 
     updateWindowFlags();
 
+    // clear spurious window minimize/unfocus events accumulated during startup
+    SDL_PumpEvents();
+    SDL_FlushEvent(SDL_EVENT_WINDOW_MINIMIZED);
+    SDL_FlushEvent(SDL_EVENT_WINDOW_FOCUS_LOST);
+
     // initialize mouse position
     {
         float x{0.f}, y{0.f};
@@ -131,13 +136,12 @@ static_assert(SDL_EVENT_WINDOW_LAST == SDL_EVENT_WINDOW_HDR_STATE_CHANGED);
 
 SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
     if(m_bEnvDebug) {
-        static constexpr std::string_view logPfx = "[handleEvent] Got SDL Event: ";
-        static std::array<char, 512 + logPfx.size()> logBuf{"[handleEvent] Got SDL Event: "};
-        size_t logsz = std::min(logBuf.size() - logPfx.size(),
-                                static_cast<size_t>(SDL_GetEventDescription(event, logBuf.data() + logPfx.size(),
-                                                                            logBuf.size() - logPfx.size())));
+        static std::array<char, 512> logBuf{};
+        size_t logsz =
+            std::min(logBuf.size(), static_cast<size_t>(SDL_GetEventDescription(event, logBuf.data(), logBuf.size())));
         if(logsz > 0) {
-            Logger::logRaw(std::string_view{logBuf.data(), logPfx.size() + logsz});
+            Logger::logRaw(fmt::format("[handleEvent] frame: {}; event: {}"_cf, m_engine->getFrameCount(),
+                                       std::string_view{logBuf.data(), logsz}));
         }
     }
 
