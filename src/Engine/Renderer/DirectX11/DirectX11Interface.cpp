@@ -30,7 +30,75 @@
 
 // #define D3D11_DEBUG
 
-DirectX11Interface::DirectX11Interface(HWND hwnd) : Graphics(), hwnd(hwnd) {}
+#ifdef MCENGINE_PLATFORM_WINDOWS
+#include <atomic>
+
+#include "WinDebloatDefs.h"
+#include <windows.h>
+#endif
+
+static DirectX11Interface *dx11_p{nullptr};
+
+struct DirectX11Interface::OcclusionListener {
+#ifdef MCENGINE_PLATFORM_WINDOWS
+   private:
+    NOCOPY_NOMOVE(OcclusionListener)
+   public:
+    friend class DirectX11Interface;
+
+    OcclusionListener() {
+        // hook into window visibility events to track minimize/hide state
+        this->event_hook = SetWinEventHook(EVENT_SYSTEM_MINIMIZESTART,        // minimum event (0x0016)
+                                           EVENT_SYSTEM_MINIMIZEEND,          // maximum event (0x0017)
+                                           nullptr,                           // DLL handle (NULL for in-process)
+                                           &OcclusionListener::WinEventProc,  // callback
+                                           GetCurrentProcessId(),             // process id
+                                           0,                     // thread id (0 for all threads in process)
+                                           WINEVENT_OUTOFCONTEXT  // flags
+        );
+
+        if(!this->event_hook) {
+            debugLog("DirectX11Interface: NOTICE: failed to set up window event hook: {}", GetLastError());
+        }
+    }
+
+    ~OcclusionListener() {
+        if(this->event_hook) {
+            UnhookWinEvent(this->event_hook);
+        }
+    }
+
+    [[nodiscard]] forceinline bool isMinimized() const { return this->minimized.load(std::memory_order_acquire); }
+
+   private:
+    static void CALLBACK WinEventProc(HWINEVENTHOOK /*hWinEventHook*/, DWORD event, HWND hwnd, LONG /*idObject*/,
+                                      LONG /*idChild*/, DWORD /*dwEventThread*/, DWORD /*dwmsEventTime*/) {
+        if(!dx11_p || !dx11_p->minimizeListener) return;
+        if(hwnd != dx11_p->hwnd) return;
+
+        bool is_minimized = false;
+        switch(event) {
+            case EVENT_SYSTEM_MINIMIZESTART:
+                is_minimized = true;
+                logIfCV(debug_env, "window minimized (from event hook)");
+                break;
+            case EVENT_SYSTEM_MINIMIZEEND:
+                is_minimized = false;
+                logIfCV(debug_env, "window restored (from event hook)");
+                break;
+        }
+
+        dx11_p->minimizeListener->minimized.store(is_minimized, std::memory_order_release);
+    }
+
+    HWINEVENTHOOK event_hook{nullptr};
+    std::atomic<bool> minimized{false};
+#else
+    [[nodiscard]] constexpr forceinline bool isMinimized() const { return env->winMinimized(); }
+#endif
+};
+
+DirectX11Interface::DirectX11Interface(HWND hwnd) : Graphics(), hwnd(hwnd) { dx11_p = this; }
 
 bool DirectX11Interface::init() {
     if(!DirectX11Interface::loadLibs()) return false;
@@ -156,7 +224,7 @@ bool DirectX11Interface::init() {
         .RefreshRate = {.Numerator = 0, .Denominator = 1},
         .ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_PROGRESSIVE,
         .Scaling = DXGI_MODE_SCALING_CENTERED,
-        .Windowed = true,
+        .Windowed = TRUE,
     };
 
     hr = this->dxgiFactory->CreateSwapChainForHwnd(this->device, this->hwnd, &swapchainCreateDesc, &fsDesc, nullptr,
@@ -174,6 +242,8 @@ bool DirectX11Interface::init() {
     // disable hardcoded DirectX ALT + ENTER fullscreen toggle functionality (this is instead handled by the engine internally)
     // disable dxgi interfering with mode changes and WndProc (again, handled by the engine internally)
     this->dxgiFactory->MakeWindowAssociation(this->hwnd, DXGI_MWA_NO_ALT_ENTER | DXGI_MWA_NO_WINDOW_CHANGES);
+
+    this->minimizeListener = std::make_unique<OcclusionListener>();
 
     // NOTE: force build swapchain rendertarget
     this->onResolutionChange(env->getWindowSize());
@@ -198,9 +268,15 @@ DirectX11Interface::~DirectX11Interface() {
     if(this->device) this->device->Release();
     if(this->deviceContext) this->deviceContext->Release();
 
+    dx11_p = nullptr;
 }
 
 void DirectX11Interface::beginScene() {
+    if(this->minimizeListener->isMinimized()) {
+        this->bWasMinimized = true;
+        return;
+    }
+
     // ensure render targets are bound (needed because onResolutionChange might skip setup during init)
     // HACKHACK: remove this
     if(this->frameBuffer)
@@ -256,6 +332,13 @@ void DirectX11Interface::beginScene() {
 }
 
 void DirectX11Interface::endScene() {
+    if(this->bWasMinimized) {
+        if(!this->minimizeListener->isMinimized()) {
+            this->bWasMinimized = false;
+        }
+        return;
+    }
+
     this->popTransform();
 
     UINT presentFlags = DXGI_PRESENT_DO_NOT_WAIT | (this->bVSync ? 0 : DXGI_PRESENT_ALLOW_TEARING);

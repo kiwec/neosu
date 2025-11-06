@@ -49,10 +49,10 @@ Environment::Environment(const std::unordered_map<std::string, std::optional<std
     s_sdlenv = SDL_GetEnvironment();
 
     m_engine = nullptr;  // will be initialized by the mainloop once setup is complete
-    m_window = nullptr;
+    m_window = nullptr;  // ditto
+    m_windowID = 0;      // ditto
 
     m_bRunning = true;
-    m_bDrawing = false;
     m_bIsRestartScheduled = false;
 
     m_fDisplayHz = 360.0f;

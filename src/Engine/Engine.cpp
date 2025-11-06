@@ -231,7 +231,7 @@ void Engine::loadApp() {
 
 void Engine::onPaint() {
     VPROF_BUDGET("Engine::onPaint", VPROF_BUDGETGROUP_DRAW);
-    if(this->bShuttingDown || env->winMinimized()) return;
+    if(this->bShuttingDown) return;
 
     this->bDrawing = true;
     {

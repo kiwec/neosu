@@ -17,6 +17,7 @@
 #include <filesystem>
 #include <functional>
 
+typedef uint32_t SDL_WindowID;
 typedef struct SDL_Window SDL_Window;
 typedef struct SDL_Cursor SDL_Cursor;
 typedef struct SDL_Environment SDL_Environment;
@@ -68,15 +69,14 @@ class Environment {
         NOCOPY_NOMOVE(Interop)
        public:
         Interop() = delete;
-        Interop(Environment *env_ptr) : m_env(env_ptr) {}
-        ~Interop() { m_env = nullptr; }
+        Interop(Environment *env_ptr) : env_p(env_ptr) {}
+        ~Interop() { env_p = nullptr; }
         bool handle_cmdline_args(const std::vector<std::string> &args);
-        bool handle_cmdline_args() { return handle_cmdline_args(m_env->getCommandLine()); }
+        bool handle_cmdline_args() { return handle_cmdline_args(this->env_p->getCommandLine()); }
         void setup_system_integrations();
         static void handle_existing_window([[maybe_unused]] int argc,
                                            [[maybe_unused]] char *argv[]);  // only impl. for windows ATM
-       private:
-        Environment *m_env;
+        Environment *env_p;
     };
 
    private:
@@ -258,12 +258,12 @@ class Environment {
     std::unique_ptr<Engine> m_engine;
 
     SDL_Window *m_window;
+    SDL_WindowID m_windowID;
     std::string m_sdldriver;
     static SDL_Environment *s_sdlenv;
     bool m_bUsingDX11;
 
     bool m_bRunning;
-    bool m_bDrawing;
     bool m_bIsRestartScheduled;
 
     bool m_bRestoreFullscreen;

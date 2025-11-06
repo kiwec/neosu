@@ -286,6 +286,7 @@ class DirectX11Interface final : public Graphics {
     bool bVSync{false};
     bool bColorInversion{false};
     bool bTexturingEnabled{false};
+    bool bWasMinimized{false};  // hack?
 
     // frame latency
     bool bFrameLatencyDisabled{false};
@@ -299,6 +300,10 @@ class DirectX11Interface final : public Graphics {
     static D3D11CreateDevice_t *s_d3dCreateDeviceFunc;
 
     static bool loadLibs();
+
+    struct OcclusionListener;
+    friend struct OcclusionListener;
+    std::unique_ptr<OcclusionListener> minimizeListener;
 };
 
 #else

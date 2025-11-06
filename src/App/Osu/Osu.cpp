@@ -1563,7 +1563,7 @@ void Osu::updateMouseSettings() {
 }
 
 void Osu::updateWindowsKeyDisable() {
-    const bool isPlayerPlaying = env->winFocused() && this->isInPlayMode() &&
+    const bool isPlayerPlaying = (env->winFocused() && !env->winMinimized()) && this->isInPlayMode() &&
                                  (!(this->map_iface->isPaused() || this->map_iface->isContinueScheduled()) ||
                                   this->map_iface->isRestartScheduled()) &&
                                  !cv::mod_autoplay.getBool();

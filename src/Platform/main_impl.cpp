@@ -383,10 +383,8 @@ SDL_AppResult SDLMain::iterate() {
     }
 
     // draw
-    {
-        m_bDrawing = true;
+    if(!winMinimized() && !m_bRestoreFullscreen) {
         m_engine->onPaint();
-        m_bDrawing = false;
     }
 
     if constexpr(!Env::cfg(FEAT::MAINCB))  // main callbacks use SDL iteration rate to limit fps
@@ -505,6 +503,8 @@ bool SDLMain::createWindow() {
         debugLog("Couldn't SDL_CreateWindow(): {:s}", SDL_GetError());
         return false;
     }
+
+    m_windowID = SDL_GetWindowID(m_window);
 
     if(m_bIsKMSDRM) {
         cv::monitor.setValue(initDisplayID, false);

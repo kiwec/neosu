@@ -110,17 +110,18 @@ bool Environment::Interop::handle_cmdline_args(const std::vector<std::string> &a
 
 #include <SDL3/SDL_system.h>
 
-#define NEOSU_WINDOW_MESSAGE_ID TEXT("NEOSU_CMDLINE")
+#define NEOSU_CMDLINE_WINDOW_MSG_ID TEXT("NEOSU_CMDLINE")
+
 namespace {  // static
 bool sdl_windows_message_hook(void *userdata, MSG *msg) {
-    static UINT neosu_msg = RegisterWindowMessage(NEOSU_WINDOW_MESSAGE_ID);
+    static UINT cmdline_msg = RegisterWindowMessage(NEOSU_CMDLINE_WINDOW_MSG_ID);
 
     // true == continue processing
-    if(!userdata || !msg || msg->message != neosu_msg) {
+    if(!userdata || !msg || (msg->message != cmdline_msg)) {
         return true;
     }
-    Environment *env_ptr{static_cast<Environment *>(userdata)};
 
+    Environment::Interop *interop{static_cast<Environment::Interop *>(userdata)};
     // check the custom registered message
 
     // reconstruct the mapping/event names from the identifier passed in lParam
@@ -171,7 +172,7 @@ bool sdl_windows_message_hook(void *userdata, MSG *msg) {
             // handle the arguments
             if(!args.empty()) {
                 debugLog("handling external arguments: {}", SString::join(args));
-                env_ptr->getEnvInterop().handle_cmdline_args(args);
+                interop->handle_cmdline_args(args);
             }
         }
         CloseHandle(hMapFile);
@@ -179,7 +180,7 @@ bool sdl_windows_message_hook(void *userdata, MSG *msg) {
     }
 
     // focus current window
-    env_ptr->focus();
+    interop->env_p->focus();
 
     return false;  // we already processed everything, don't fallthrough to sdl
 }
@@ -232,7 +233,7 @@ void Environment::Interop::handle_existing_window(int argc, char *argv[]) {
                     UnmapViewOfFile(pBuf);
 
                     // post the identifier message
-                    UINT neosu_msg = RegisterWindowMessage(NEOSU_WINDOW_MESSAGE_ID);
+                    UINT neosu_msg = RegisterWindowMessage(NEOSU_CMDLINE_WINDOW_MSG_ID);
 
                     if(PostMessage(existing_window, neosu_msg, (WPARAM)sender_pid, (LPARAM)identifier)) {
                         // wait for the receiver to signal completion (with 5 second timeout)
@@ -267,7 +268,7 @@ void Environment::Interop::handle_existing_window(int argc, char *argv[]) {
 }
 
 void Environment::Interop::setup_system_integrations() {
-    SDL_SetWindowsMessageHook(sdl_windows_message_hook, (void *)this->m_env);
+    SDL_SetWindowsMessageHook(sdl_windows_message_hook, (void *)this);
 
     wchar_t exePath[MAX_PATH];
     GetModuleFileNameW(nullptr, exePath, MAX_PATH);
