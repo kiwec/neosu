@@ -734,6 +734,9 @@ bool SoLoudSoundEngine::initializeOutputDevice(const OUTPUT_DEVICE &device) {
     // it's 0.95 by default, for some reason
     soloud->setPostClipScaler(1.0f);
 
+    // it's LINEAR by default
+    soloud->setMainResampler(SoLoud::Soloud::RESAMPLER_CATMULLROM);
+
     cv::snd_freq.setValue(soloud->getBackendSamplerate(),
                           false);  // set the cvar to match the actual output sample rate (without running callbacks)
     cv::snd_soloud_backend.setValue(soloud->getBackendString(), false);  // ditto

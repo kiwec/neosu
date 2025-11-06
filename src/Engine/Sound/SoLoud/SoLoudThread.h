@@ -263,6 +263,10 @@ class SoLoudThreadWrapper {
         this->fire_and_forget([this, aScaler]() { this->soloud->setPostClipScaler(aScaler); });
     }
 
+    void setMainResampler(unsigned int aResampler) {
+        this->fire_and_forget([this, aResampler]() { this->soloud->setMainResampler(aResampler); });
+    }
+
     void stop(SoLoud::handle aVoiceHandle) {
         this->fire_and_forget([this, aVoiceHandle]() { this->soloud->stop(aVoiceHandle); });
     }
