@@ -1132,12 +1132,12 @@ neosu_CXXFLAGS := \
 	$(NEOSU_CXXFLAGS) \
 	$(CXXFLAGS_EXTRA)
 
+# TODO: kiwec removed stuff he probably shouldn't have
+
 # Wl,--start-group with no --end-group is a stupid hack.
 neosu_LDFLAGS := \
 	$(MIMALLOC_OBJ) \
 	$(MIMALLOC_DYNAMIC_LIBS) \
-	-Wl,-rpath='$$ORIGIN/lib',-rpath='$$ORIGIN' \
-	-Wl,--start-group \
 	$(CURL_LIBS) \
 	$(SDL3_LIBS) \
 	$(AUDIO_LIBS) \
