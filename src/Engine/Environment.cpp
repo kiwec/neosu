@@ -25,7 +25,6 @@
 #if defined(MCENGINE_PLATFORM_WINDOWS)
 #include "WinDebloatDefs.h"
 #include <lmcons.h>
-#include <windows.h>
 #elif defined(__APPLE__) || defined(MCENGINE_PLATFORM_LINUX)
 #include <pwd.h>
 #include <unistd.h>
@@ -48,10 +47,6 @@ Environment::Environment(const std::unordered_map<std::string, std::optional<std
     env = this;
 
     s_sdlenv = SDL_GetEnvironment();
-
-#ifdef MCENGINE_PLATFORM_WINDOWS
-    m_bIsWine = !!GetProcAddress(GetModuleHandle(TEXT("ntdll.dll")), "wine_get_version");
-#endif
 
     m_engine = nullptr;  // will be initialized by the mainloop once setup is complete
     m_window = nullptr;

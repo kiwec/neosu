@@ -8,6 +8,16 @@
 #ifdef MCENGINE_PLATFORM_WINDOWS
 #define LPREFIX ""
 #define LSUFFIX ".dll"
+
+#include "RuntimePlatform.h"
+
+#include "WinDebloatDefs.h"
+#include <winbase.h>
+#ifndef SUCCEEDED
+#define SUCCEEDED(hr) (((HRESULT)(hr)) >= 0)
+#endif
+#include <libloaderapi.h>
+
 #else
 #define LPREFIX "lib"
 #define LSUFFIX ".so"
@@ -68,6 +78,31 @@ lib_obj *load_lib(const char *c_lib_name, const char *c_search_dir) {
     }
     return ret;
 }
+
+#ifdef MCENGINE_PLATFORM_WINDOWS
+
+lib_obj *load_lib_system(const char *c_lib_name) {
+    if(!c_lib_name || *c_lib_name == '\0') return nullptr;  // TODO: make get_error report errors from this function
+
+    std::string lib_name{c_lib_name};
+    if(Environment::getFileExtensionFromFilePath(lib_name).empty()) {
+        lib_name = LNAMESTR(lib_name);
+    }
+
+    // LOAD_LIBRARY_SEARCH_SYSTEM32 is not supported on windows xp
+    const auto plat = RuntimePlatform::current();
+    const int ldlib_flags =
+        (!(plat & RuntimePlatform::WIN_WINE) && (plat & RuntimePlatform::WIN_XP)) ? 0 : LOAD_LIBRARY_SEARCH_SYSTEM32;
+
+    return reinterpret_cast<lib_obj *>(LoadLibraryExA(lib_name.c_str(), nullptr, ldlib_flags));
+}
+
+#else
+
+// not required for other platforms (they will load anything from LD_LIBRARY_PATH, which doesn't include relative paths by default)
+lib_obj *load_lib_system(const char *c_lib_name) { return load_lib(c_lib_name); }
+
+#endif
 
 const char *get_error() {
     const char *err = SDL_GetError();

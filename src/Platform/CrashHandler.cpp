@@ -1,3 +1,4 @@
+// Copyright (c) 2025, WH, All rights reserved.
 #include "config.h"
 #include "CrashHandler.h"
 
@@ -243,8 +244,7 @@ static void invalid_parameter_handler(const wchar_t* expression, const wchar_t* 
 void init() {
     // first, see if we can load MiniDumpWriteDump from dbghelp before doing anything
     {
-        dbghelp_handle = reinterpret_cast<dynutils::lib_obj*>(
-            LoadLibraryEx(TEXT("dbghelp.dll"), nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32));
+        dbghelp_handle = dynutils::load_lib_system("dbghelp.dll");
         if(dbghelp_handle) {
             pMiniDumpWriteDump = dynutils::load_func<MiniDumpWriteDump_t>(dbghelp_handle, "MiniDumpWriteDump");
         }
@@ -277,7 +277,6 @@ void init() {
     std::set_terminate(terminate_handler);
 
     {
-
         using SetThreadStackGuarantee_t = WINBOOL WINAPI(PULONG StackSizeInBytes);
         using SetErrorMode_t = UINT WINAPI(UINT uMode);
 

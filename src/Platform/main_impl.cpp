@@ -663,8 +663,7 @@ void SDLMain::doEarlyCmdlineOverrides() {
     if(m_mArgMap.contains("-noime"))
 #endif
     {
-        auto *imm32_handle =
-            reinterpret_cast<lib_obj *>(LoadLibraryEx(TEXT("imm32.dll"), nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32));
+        auto *imm32_handle = load_lib_system("imm32.dll");
         if(imm32_handle) {
             auto disable_ime_func = load_func<BOOL WINAPI(DWORD)>(imm32_handle, "ImmDisableIME");
             if(disable_ime_func) disable_ime_func(-1);

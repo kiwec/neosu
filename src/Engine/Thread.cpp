@@ -18,8 +18,10 @@
 #include "dynutils.h"
 
 namespace {
-decltype(SetThreadDescription) *pset_thread_desc{nullptr};
-decltype(GetThreadDescription) *pget_thread_desc{nullptr};
+using SetThreadDescription_t = HRESULT WINAPI(HANDLE hThread, PCWSTR lpThreadDescription);
+using GetThreadDescription_t = HRESULT WINAPI(HANDLE hThread, PWSTR *ppszThreadDescription);
+SetThreadDescription_t *pset_thread_desc{nullptr};
+GetThreadDescription_t *pget_thread_desc{nullptr};
 
 thread_local char thread_name_buffer[256];
 
@@ -30,8 +32,8 @@ void try_load_funcs() {
         load_attempted = true;
         kernel32_handle = reinterpret_cast<dynutils::lib_obj *>(GetModuleHandle(TEXT("kernel32.dll")));
         if(kernel32_handle) {
-            pset_thread_desc = load_func<decltype(SetThreadDescription)>(kernel32_handle, "SetThreadDescription");
-            pget_thread_desc = load_func<decltype(GetThreadDescription)>(kernel32_handle, "GetThreadDescription");
+            pset_thread_desc = load_func<SetThreadDescription_t>(kernel32_handle, "SetThreadDescription");
+            pget_thread_desc = load_func<GetThreadDescription_t>(kernel32_handle, "GetThreadDescription");
         }
     }
 }

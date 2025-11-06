@@ -248,7 +248,6 @@ class Environment {
     [[nodiscard]] inline bool envDebug() const { return m_bEnvDebug; }
 
     // platform
-    [[nodiscard]] constexpr bool isWine() const { return m_bIsWine; }
     [[nodiscard]] constexpr bool isX11() const { return m_bIsX11; }
     [[nodiscard]] constexpr bool isKMSDRM() const { return m_bIsKMSDRM; }
     [[nodiscard]] constexpr bool isWayland() const { return m_bIsWayland; }
@@ -324,7 +323,6 @@ class Environment {
     UString m_sCurrClipboardText;
 
     // misc platform
-    bool m_bIsWine{false};
     bool m_bIsX11;
     bool m_bIsKMSDRM;
     bool m_bIsWayland;
