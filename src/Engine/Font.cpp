@@ -145,6 +145,9 @@ void McFont::initAsync() {
 
     if(!initializeFreeType()) return;
 
+    // set font size for this instance's primary face
+    setFaceSize(m_ftFace);
+
     // load metrics for all initial glyphs
     for(char16_t ch : m_vGlyphs) {
         loadGlyphMetrics(ch);
@@ -454,9 +457,6 @@ bool McFont::initializeFreeType() {
         FT_Done_Face(m_ftFace);
         return false;
     }
-
-    // set font size for this instance's primary face
-    setFaceSize(m_ftFace);
 
     m_bFreeTypeInitialized = true;
     return true;

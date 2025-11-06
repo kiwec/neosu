@@ -689,7 +689,7 @@ OptionsMenu::OptionsMenu() : ScreenBackable() {
                             env->getDPI(), env->getDPI(), env->getDPIScale()),
             &cv::ui_scale_to_dpi)
         ->setChangeCallback(SA::MakeDelegate<&OptionsMenu::onDPIScalingChange>(this));
-    this->uiScaleSlider = this->addSlider("UI Scale:", 1.0f, 1.5f, &cv::ui_scale);
+    this->uiScaleSlider = this->addSlider("UI Scale:", 1.0f, 1.5f, &cv::ui_scale, 0.f, false, true);
     this->uiScaleSlider->setChangeCallback(SA::MakeDelegate<&OptionsMenu::onSliderChangeUIScale>(this));
     this->uiScaleSlider->setKeyDelta(0.01f);
     this->uiScaleSlider->setAnimated(false);
