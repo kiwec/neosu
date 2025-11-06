@@ -529,6 +529,9 @@ void Environment::showDialog(const char *title, const char *message, unsigned in
         } else if((winflags & SDL_WINDOW_FULLSCREEN) == SDL_WINDOW_FULLSCREEN) {
             // make sure to exit fullscreen so the dialog box shows up
             SDL_SetWindowFullscreen(actualWin, false);
+            // don't allow these synthetic events to reach the event loop
+            SDL_PumpEvents();
+            SDL_FlushEvents(SDL_EVENT_WINDOW_FIRST, SDL_EVENT_WINDOW_LAST);
             wasFullscreen = true;
         }
     }
@@ -538,6 +541,8 @@ void Environment::showDialog(const char *title, const char *message, unsigned in
     // re-enable fullscreen
     if(wasFullscreen) {
         SDL_SetWindowFullscreen(actualWin, true);
+        SDL_PumpEvents();
+        SDL_FlushEvents(SDL_EVENT_WINDOW_FIRST, SDL_EVENT_WINDOW_LAST);
     }
 }
 

@@ -242,8 +242,6 @@ class DirectX11Interface final : public Graphics {
         .Scaling = DXGI_MODE_SCALING_CENTERED,
     };
 
-    static constexpr UINT swapChainCreateFlags = DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
-
    private:
     // renderer
     vec2 vResolution{};  // to be initialized after swapchain creation
@@ -287,6 +285,8 @@ class DirectX11Interface final : public Graphics {
     bool bColorInversion{false};
     bool bTexturingEnabled{false};
     bool bWasMinimized{false};  // hack?
+    const bool bFlipPresent;
+    const UINT swapChainCreateFlags;
 
     // frame latency
     bool bFrameLatencyDisabled{false};

@@ -15,6 +15,7 @@
 #include "ConVar.h"
 #include "Engine.h"
 #include "Logging.h"
+#include "RuntimePlatform.h"
 
 #include "ResourceManager.h"
 #include "VisualProfiler.h"
@@ -98,7 +99,19 @@ struct DirectX11Interface::OcclusionListener {
 #endif
 };
 
-DirectX11Interface::DirectX11Interface(HWND hwnd) : Graphics(), hwnd(hwnd) { dx11_p = this; }
+DirectX11Interface::DirectX11Interface(HWND hwnd)
+    : Graphics(),
+      hwnd(hwnd),
+      // maybe TODO: allow runtime switching between exclusive/flip presentation
+      // requires recreating swapchain (complex!)
+      // flip presentation should theoretically be better/on par with exclusive fullscreen
+      bFlipPresent(!env->getLaunchArgs().contains("-exclusive") &&
+                   (!(RuntimePlatform::current() & RuntimePlatform::WIN_WINE) &&
+                    RuntimePlatform::current() & (RuntimePlatform::WIN_8 | RuntimePlatform::WIN_10 |
+                                                  RuntimePlatform::WIN_11 | RuntimePlatform::WIN_UNKNOWN))),
+      swapChainCreateFlags(this->bFlipPresent ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0) {
+    dx11_p = this;
+}
 
 bool DirectX11Interface::init() {
     if(!DirectX11Interface::loadLibs()) return false;
@@ -206,6 +219,10 @@ bool DirectX11Interface::init() {
         return false;
     }
 
+    const auto curver = RuntimePlatform::current();
+    const bool isAtLeastWin8 = curver & (RuntimePlatform::WIN_8 | RuntimePlatform::WIN_10 | RuntimePlatform::WIN_11 |
+                                         RuntimePlatform::WIN_UNKNOWN);
+
     DXGI_SWAP_CHAIN_DESC1 swapchainCreateDesc{
         .Width = 0,  // 0x0 to create with window size
         .Height = 0,
@@ -213,11 +230,11 @@ bool DirectX11Interface::init() {
         .Stereo = 0,
         .SampleDesc = {.Count = 1, .Quality = 0},
         .BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT,
-        .BufferCount = 2,  // 2 for DXGI_SWAP_EFFECT_FLIP_DISCARD
-        .Scaling = DXGI_SCALING_NONE,
-        .SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD,
+        .BufferCount = this->bFlipPresent ? 2U : 1U,  // 2 for DXGI_SWAP_EFFECT_FLIP_DISCARD
+        .Scaling = isAtLeastWin8 ? DXGI_SCALING_NONE : DXGI_SCALING_STRETCH,
+        .SwapEffect = this->bFlipPresent ? DXGI_SWAP_EFFECT_FLIP_DISCARD : DXGI_SWAP_EFFECT_DISCARD,
         .AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED,
-        .Flags = swapChainCreateFlags,
+        .Flags = this->swapChainCreateFlags,
     };
 
     DXGI_SWAP_CHAIN_FULLSCREEN_DESC fsDesc{
@@ -279,7 +296,7 @@ void DirectX11Interface::beginScene() {
 
     // ensure render targets are bound (needed because onResolutionChange might skip setup during init)
     // HACKHACK: remove this
-    if(this->frameBuffer)
+    if(this->frameBuffer && this->bFlipPresent)
         this->deviceContext->OMSetRenderTargets(1, &this->frameBuffer, this->frameBufferDepthStencilView);
 
     Matrix4 defaultProjectionMatrix =
@@ -341,7 +358,8 @@ void DirectX11Interface::endScene() {
 
     this->popTransform();
 
-    UINT presentFlags = DXGI_PRESENT_DO_NOT_WAIT | (this->bVSync ? 0 : DXGI_PRESENT_ALLOW_TEARING);
+    const UINT presentFlags =
+        DXGI_PRESENT_DO_NOT_WAIT | ((!this->bFlipPresent || this->bVSync) ? 0 : DXGI_PRESENT_ALLOW_TEARING);
 
     [[maybe_unused]] auto swapHR = this->swapChain->Present(this->bVSync, presentFlags);
 #if defined(_DEBUG) || defined(D3D11_DEBUG)
@@ -1163,6 +1181,25 @@ void DirectX11Interface::onResolutionChange(vec2 newResolution) {
             this->frameBufferDepthStencilTexture = nullptr;
         }
 
+        HRESULT hr = E_FAIL;
+        bool isExclusiveFS = false;
+        if(!this->bFlipPresent) {
+            DXGI_SWAP_CHAIN_FULLSCREEN_DESC fsDesc{};
+            this->swapChain->GetFullscreenDesc(&fsDesc);
+
+            const bool winCoversDesktop = env->getWindowSize() == env->getNativeScreenSize();
+            if(winCoversDesktop && fsDesc.Windowed) {
+                hr = this->swapChain->SetFullscreenState(TRUE, nullptr);
+                isExclusiveFS = !FAILED(hr);
+                if(!isExclusiveFS) {
+                    debugLog("failed to set fullscreen state: HR {:#x}, DXGI HR: {:#x}", (u32)hr,
+                             (u32)MAKE_DXGI_HRESULT(hr));
+                }
+            } else if(!winCoversDesktop && !fsDesc.Windowed) {
+                this->swapChain->SetFullscreenState(FALSE, nullptr);
+            }
+        }
+
         UINT newWidth = static_cast<UINT>(this->vResolution.x);
         UINT newHeight = static_cast<UINT>(this->vResolution.y);
 
@@ -1171,7 +1208,7 @@ void DirectX11Interface::onResolutionChange(vec2 newResolution) {
         swapDesc.Height = newHeight;
         this->swapChainModeDesc = swapDesc;
 
-        HRESULT hr = this->swapChain->ResizeTarget(&this->swapChainModeDesc);
+        hr = this->swapChain->ResizeTarget(&this->swapChainModeDesc);
         if(FAILED(hr))
             debugLog("FATAL ERROR: couldn't ResizeTarget({:#x}, {:#x})!!!", (u32)hr, (u32)MAKE_DXGI_HRESULT(hr));
 
@@ -1182,7 +1219,8 @@ void DirectX11Interface::onResolutionChange(vec2 newResolution) {
         //          this->bIsFullscreenBorderlessWindowed, isTrueFS ? 0 : (UINT)newResolution.x,
         //          isTrueFS ? 0 : (UINT)newResolution.y);
 
-        hr = this->swapChain->ResizeBuffers(0, newWidth, newHeight, DXGI_FORMAT_UNKNOWN, swapChainCreateFlags);
+        hr = this->swapChain->ResizeBuffers(0, isExclusiveFS ? newWidth : 0, isExclusiveFS ? newHeight : 0,
+                                            DXGI_FORMAT_UNKNOWN, this->swapChainCreateFlags);
 
         if(FAILED(hr))
             debugLog("FATAL ERROR: couldn't ResizeBuffers({:#x}, {:#x})!!!", (u32)hr, (u32)MAKE_DXGI_HRESULT(hr));
