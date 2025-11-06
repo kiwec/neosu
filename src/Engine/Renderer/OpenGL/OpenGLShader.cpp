@@ -26,9 +26,9 @@ void OpenGLShader::init() { this->setReady(this->compile(this->sVsh, this->sFsh,
 void OpenGLShader::initAsync() { this->setAsyncReady(true); }
 
 void OpenGLShader::destroy() {
-    if(this->iProgram != 0) glDeleteObjectARB(this->iProgram);
-    if(this->iFragmentShader != 0) glDeleteObjectARB(this->iFragmentShader);
-    if(this->iVertexShader != 0) glDeleteObjectARB(this->iVertexShader);
+    if(this->iProgram != 0) glDeleteProgram(this->iProgram);
+    if(this->iFragmentShader != 0) glDeleteShader(this->iFragmentShader);
+    if(this->iVertexShader != 0) glDeleteShader(this->iVertexShader);
 
     this->iProgram = 0;
     this->iFragmentShader = 0;
@@ -42,18 +42,18 @@ void OpenGLShader::destroy() {
 void OpenGLShader::enable() {
     if(!this->isReady()) return;
 
-    unsigned int currentProgram = GLStateCache::getCurrentProgram();
+    auto currentProgram = GLStateCache::getCurrentProgram();
     if(currentProgram == this->iProgram) return;  // already active
 
     this->iProgramBackup = currentProgram;
-    glUseProgramObjectARB(this->iProgram);
+    glUseProgram(this->iProgram);
     GLStateCache::setCurrentProgram(this->iProgram);
 }
 
 void OpenGLShader::disable() {
     if(!this->isReady()) return;
 
-    glUseProgramObjectARB(this->iProgramBackup);
+    glUseProgram(this->iProgramBackup);
 
     // update cache
     GLStateCache::setCurrentProgram(this->iProgramBackup);
@@ -67,7 +67,7 @@ void OpenGLShader::setUniform1f(std::string_view name, float value) {
         logIfCV(debug_shaders, "OpenGLShader Warning: Can't find uniform {:s}", name);
         return;
     }
-    glUniform1fARB(id, value);
+    glUniform1f(id, value);
 }
 
 void OpenGLShader::setUniform1fv(std::string_view name, int count, const float *const values) {
@@ -78,7 +78,7 @@ void OpenGLShader::setUniform1fv(std::string_view name, int count, const float *
         logIfCV(debug_shaders, "OpenGLShader Warning: Can't find uniform {:s}", name);
         return;
     }
-    glUniform1fvARB(id, count, values);
+    glUniform1fv(id, count, values);
 }
 
 void OpenGLShader::setUniform1i(std::string_view name, int value) {
@@ -89,7 +89,7 @@ void OpenGLShader::setUniform1i(std::string_view name, int value) {
         logIfCV(debug_shaders, "OpenGLShader Warning: Can't find uniform {:s}", name);
         return;
     }
-    glUniform1iARB(id, value);
+    glUniform1i(id, value);
 }
 
 void OpenGLShader::setUniform2f(std::string_view name, float value1, float value2) {
@@ -100,7 +100,7 @@ void OpenGLShader::setUniform2f(std::string_view name, float value1, float value
         logIfCV(debug_shaders, "OpenGLShader Warning: Can't find uniform {:s}", name);
         return;
     }
-    glUniform2fARB(id, value1, value2);
+    glUniform2f(id, value1, value2);
 }
 
 void OpenGLShader::setUniform2fv(std::string_view name, int count, const float *const vectors) {
@@ -122,7 +122,7 @@ void OpenGLShader::setUniform3f(std::string_view name, float x, float y, float z
         logIfCV(debug_shaders, "OpenGLShader Warning: Can't find uniform {:s}", name);
         return;
     }
-    glUniform3fARB(id, x, y, z);
+    glUniform3f(id, x, y, z);
 }
 
 void OpenGLShader::setUniform3fv(std::string_view name, int count, const float *const vectors) {
@@ -144,7 +144,7 @@ void OpenGLShader::setUniform4f(std::string_view name, float x, float y, float z
         logIfCV(debug_shaders, "OpenGLShader Warning: Can't find uniform {:s}", name);
         return;
     }
-    glUniform4fARB(id, x, y, z, w);
+    glUniform4f(id, x, y, z, w);
 }
 
 void OpenGLShader::setUniformMatrix4fv(std::string_view name, const Matrix4 &matrix) {
@@ -181,7 +181,7 @@ int OpenGLShader::getAndCacheUniformLocation(std::string_view name) {
     const auto cachedValue = this->uniformLocationCache.find(name);
     const bool cached = (cachedValue != this->uniformLocationCache.end());
 
-    const int id = (cached ? cachedValue->second : glGetUniformLocationARB(this->iProgram, name.data()));
+    const int id = (cached ? cachedValue->second : glGetUniformLocation(this->iProgram, name.data()));
     if(!cached && id != -1) this->uniformLocationCache[std::string{name}] = id;
 
     return id;
@@ -202,32 +202,32 @@ bool OpenGLShader::compile(const std::string &vertexShader, const std::string &f
     }
 
     // create program
-    this->iProgram = glCreateProgramObjectARB();
+    this->iProgram = glCreateProgram();
     if(this->iProgram == 0) {
-        engine->showMessageError("OpenGLShader Error", "Couldn't glCreateProgramObjectARB()");
+        engine->showMessageError("OpenGLShader Error", "Couldn't glCreateProgram()");
         return false;
     }
 
     // attach
-    glAttachObjectARB(this->iProgram, this->iVertexShader);
-    glAttachObjectARB(this->iProgram, this->iFragmentShader);
+    glAttachShader(this->iProgram, this->iVertexShader);
+    glAttachShader(this->iProgram, this->iFragmentShader);
 
     // link
-    glLinkProgramARB(this->iProgram);
+    glLinkProgram(this->iProgram);
 
     int returnValue = GL_TRUE;
-    glGetObjectParameterivARB(this->iProgram, GL_OBJECT_LINK_STATUS_ARB, &returnValue);
+    glGetProgramiv(this->iProgram, GL_OBJECT_LINK_STATUS_ARB, &returnValue);
     if(returnValue == GL_FALSE) {
-        engine->showMessageError("OpenGLShader Error", "Couldn't glLinkProgramARB()");
+        engine->showMessageError("OpenGLShader Error", "Couldn't glLinkProgram()");
         return false;
     }
 
     // validate
-    glValidateProgramARB(this->iProgram);
+    glValidateProgram(this->iProgram);
     returnValue = GL_TRUE;
-    glGetObjectParameterivARB(this->iProgram, GL_OBJECT_VALIDATE_STATUS_ARB, &returnValue);
+    glGetProgramiv(this->iProgram, GL_OBJECT_VALIDATE_STATUS_ARB, &returnValue);
     if(returnValue == GL_FALSE) {
-        engine->showMessageError("OpenGLShader Error", "Couldn't glValidateProgramARB()");
+        engine->showMessageError("OpenGLShader Error", "Couldn't glValidateProgram()");
         return false;
     }
 
@@ -235,36 +235,35 @@ bool OpenGLShader::compile(const std::string &vertexShader, const std::string &f
 }
 
 int OpenGLShader::createShaderFromString(const std::string &shaderSource, int shaderType) {
-    const GLhandleARB shader = glCreateShaderObjectARB(shaderType);
-
+    const auto shader = glCreateShader(shaderType);
     if(shader == 0) {
-        engine->showMessageError("OpenGLShader Error", "Couldn't glCreateShaderObjectARB()");
+        engine->showMessageError("OpenGLShader Error", "Couldn't glCreateShader()");
         return 0;
     }
 
     // compile shader
     const char *shaderSourceChar = shaderSource.c_str();
-    glShaderSourceARB(shader, 1, &shaderSourceChar, nullptr);
-    glCompileShaderARB(shader);
+    glShaderSource(shader, 1, &shaderSourceChar, nullptr);
+    glCompileShader(shader);
 
     int returnValue = GL_TRUE;
-    glGetObjectParameterivARB(shader, GL_OBJECT_COMPILE_STATUS_ARB, &returnValue);
+    glGetProgramiv(shader, GL_OBJECT_COMPILE_STATUS_ARB, &returnValue);
 
     if(returnValue == GL_FALSE) {
         debugLog("------------------OpenGLShader Compile Error------------------");
 
-        glGetObjectParameterivARB(shader, GL_OBJECT_INFO_LOG_LENGTH_ARB, &returnValue);
+        glGetProgramiv(shader, GL_OBJECT_INFO_LOG_LENGTH_ARB, &returnValue);
 
         if(returnValue > 0) {
             char *errorLog = new char[returnValue];
-            glGetInfoLogARB(shader, returnValue, &returnValue, errorLog);
+            glGetShaderInfoLog(shader, returnValue, &returnValue, errorLog);
             debugLog("{}", errorLog);
             delete[] errorLog;
         }
 
         debugLog("--------------------------------------------------------------");
 
-        engine->showMessageError("OpenGLShader Error", "Couldn't glShaderSourceARB() or glCompileShaderARB()");
+        engine->showMessageError("OpenGLShader Error", "Couldn't glShaderSource() or glCompileShader()");
         return 0;
     }
 

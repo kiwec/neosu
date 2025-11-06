@@ -875,7 +875,16 @@ AS_IF([test "x$enable_harden" = "xyes"], [
 
 NEOSU_CPPFLAGS="$NEOSU_CPPFLAGS -DCJSON_HIDE_SYMBOLS"
 NEOSU_CXXFLAGS="$NEOSU_CXXFLAGS -Wall -Wextra -Wno-sign-compare -Wunused-parameter -Wdeprecated-declarations -Wno-error=deprecated-declarations"
-NEOSU_LDFLAGS="$NEOSU_LDFLAGS -Wl,--gc-sections" # remove unused sections
+
+case "$host_os" in
+    darwin*)
+        # Linker doesn't support all flags
+    ;;
+    *)
+        NEOSU_LDFLAGS="$NEOSU_LDFLAGS -Wl,--gc-sections" # remove unused sections
+    ;;
+esac
+    
 AC_SUBST([NEOSU_CPPFLAGS])
 AC_SUBST([NEOSU_CXXFLAGS])
 AC_SUBST([NEOSU_LDFLAGS])
