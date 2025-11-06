@@ -12,6 +12,11 @@
 #include <cerrno>
 #include <random>
 
+#ifdef __APPLE__
+// TODO
+#undef USE_OPENSSL
+#endif
+
 #ifdef USE_OPENSSL
 #include <openssl/rand.h>
 #include <openssl/evp.h>
