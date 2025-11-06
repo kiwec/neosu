@@ -331,7 +331,7 @@ void ConVarHandler::ConVarBuiltins::dumpcommands(void) {
     std::string html = R"(<section class="variables">)";
     for(auto var : convars) {
         // only doing this because of some stupid spurious warning with LTO
-#define STRIF_(FLAG__, flag__) var->isFlagSet(cv::FLAG__) ? "<span class=\"flag" #flag__ "\">" #FLAG__ "</span>" : ""
+#define STRIF_(FLAG__, flag__) var->isFlagSet(cv::FLAG__) ? "<span class=\"flag " #flag__ "\">" #FLAG__ "</span>" : ""
         const std::string flags = fmt::format("\n{}{}{}{}{}\n",              //
                                               STRIF_(CLIENT, client),        //
                                               STRIF_(SKINS, skins),          //
