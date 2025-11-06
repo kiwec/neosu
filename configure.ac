@@ -58,7 +58,14 @@ AM_SILENT_RULES([yes])
 AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PROG_GREP
-AC_PROG_SED
+
+AC_DEFUN([AC_PROG_SED_CUSTOM], [
+    AC_CHECK_PROG([SED], [gsed], [gsed])
+    if test -z "$SED"; then
+        AC_PROG_SED
+    fi
+])
+AC_PROG_SED_CUSTOM
 
 AC_DEFUN([AC_PROG_WGET], [
     AC_CHECK_PROG([WGET], [wget], [wget])
@@ -79,7 +86,10 @@ AC_DEFUN([AC_PROG_GIT], [
     fi
 ])
 AC_DEFUN([AC_PROG_TAR], [
-    AC_CHECK_PROG([TAR], [tar], [tar])
+    AC_CHECK_PROG([TAR], [gtar], [gtar])
+    if test -z "$TAR"; then
+        AC_CHECK_PROG([TAR], [tar], [tar])
+    fi
     if test -z "$TAR"; then
         AC_MSG_ERROR([tar not found - required for extracting dependencies])
     fi
@@ -497,37 +507,78 @@ __EOF__
     LIBPREFIX="lib"
 
     AC_DEFINE([MCENGINE_PLATFORM_LINUX], [1], [Define if compiling for Linux.])
-],[
-    AC_CHECK_TOOL([WINDRES], [windres], [windres])
+], [case "$host_os" in
+    darwin*) # macOS
+        # Find full paths to compilers before creating wrappers
+        AC_PATH_PROG([CC_FOUND], [$CC], [], [/opt/homebrew/opt/llvm/bin:$PATH])
+        AC_PATH_PROG([CXX_FOUND], [$CXX], [], [/opt/homebrew/opt/llvm/bin:$PATH])
 
-    CMAKE_SYSTEM_NAME="Windows"
-    CMAKERCOPT="-DCMAKE_RC_COMPILER=$WINDRES"
-    SYSNAME="windows"
-    DLLEXT=".dll"
-    LIBPREFIX=""
+        cat > $target-$CC <<EOF
+#!/bin/bash
+$CC_FOUND "\$@"
+EOF
+        chmod +x $target-$CC
+        cat > $target-$CXX <<EOF
+#!/bin/bash
+$CXX_FOUND "\$@"
+EOF
+        chmod +x $target-$CXX
+        AC_SUBST([NASMOBJ],[macho64])
 
-    AS_IF([test "$host_cpu" = "i686"], [ # uber compatibility configuration, works on xp
-        ubercompat=on
-        with_mimalloc="no"
-        LDFLAGS="$LDFLAGS -m32 -Wl,--large-address-aware"
-        # xp
-        win_subsystem_ver="5.01"
-        CPPFLAGS="$CPPFLAGS -DWINVER=0x0501 -D_WIN32_WINNT=0x0501 -D_WIN32_WINDOWS=0x0501 -D_WIN32_IE=0x0501"
-        CFLAGS="$CFLAGS -m32 -fno-omit-frame-pointer -momit-leaf-frame-pointer -DWINVER=0x0501 -D_WIN32_WINNT=0x0501 -D_WIN32_WINDOWS=0x0501 -D_WIN32_IE=0x0501 -mfpmath=sse"
-        CXXFLAGS="$CXXFLAGS -m32 -fno-omit-frame-pointer -momit-leaf-frame-pointer -DWINVER=0x0501 -D_WIN32_WINNT=0x0501 -D_WIN32_WINDOWS=0x0501 -D_WIN32_IE=0x0501 -mfpmath=sse"
-        AC_SUBST([NASMOBJ],[win32])
-    ], [
-        # win10
-        CPPFLAGS="$CPPFLAGS -DWINVER=0x0A00 -D_WIN32_WINNT=0x0A00 -D_WIN32_WINDOWS=0x0A00 -D_WIN32_IE=0x0A00"
-        CFLAGS="$CFLAGS -DWINVER=0x0A00 -D_WIN32_WINNT=0x0A00 -D_WIN32_WINDOWS=0x0A00 -D_WIN32_IE=0x0A00"
-        CXXFLAGS="$CXXFLAGS -DWINVER=0x0A00 -D_WIN32_WINNT=0x0A00 -D_WIN32_WINDOWS=0x0A00 -D_WIN32_IE=0x0A00"
-        AC_SUBST([NASMOBJ],[win64])
-    ])
+        # Check if using Homebrew LLVM and add libc++ library path
+        AS_IF([test -d "/opt/homebrew/opt/llvm/lib/c++"], [
+            LIBS="$LIBS -L/opt/homebrew/opt/llvm/lib/c++ -lc++abi"
+        ])
 
-    # increase default stack size to 8mb from 1mb
-    NEOSU_LDFLAGS="$NEOSU_LDFLAGS -Wl,--stack,8388608"
-    AC_DEFINE([MCENGINE_PLATFORM_WINDOWS], [1], [Define if compiling for Windows.])
-])
+        cat > pkg-config <<__EOF__
+#!/bin/bash
+PKG_CONFIG_PATH="$PKG_CONFIG_PATH" $PKGCONF $pc_addflags "\$@"
+__EOF__
+        chmod +x pkg-config
+
+        CC="$ac_pwd/$target-$CC"
+        CXX="$ac_pwd/$target-$CXX"
+        ac_tool_prefix=
+        CMAKE_SYSTEM_NAME="Darwin"
+        CMAKE_GEN="Ninja"
+        SYSNAME="macos"
+        DLLEXT=".dylib"
+        LIBPREFIX="lib"
+
+        AC_DEFINE([MCENGINE_PLATFORM_MACOS], [1], [Define if compiling for macOS.])
+    ;;
+    *) # Windows/mingw32
+        AC_CHECK_TOOL([WINDRES], [windres], [windres])
+
+        CMAKE_SYSTEM_NAME="Windows"
+        CMAKERCOPT="-DCMAKE_RC_COMPILER=$WINDRES"
+        SYSNAME="windows"
+        DLLEXT=".dll"
+        LIBPREFIX=""
+
+        AS_IF([test "$host_cpu" = "i686"], [ # uber compatibility configuration, works on xp
+            ubercompat=on
+            with_mimalloc="no"
+            LDFLAGS="$LDFLAGS -m32 -Wl,--large-address-aware"
+            # xp
+            win_subsystem_ver="5.01"
+            CPPFLAGS="$CPPFLAGS -DWINVER=0x0501 -D_WIN32_WINNT=0x0501 -D_WIN32_WINDOWS=0x0501 -D_WIN32_IE=0x0501"
+            CFLAGS="$CFLAGS -m32 -fno-omit-frame-pointer -momit-leaf-frame-pointer -DWINVER=0x0501 -D_WIN32_WINNT=0x0501 -D_WIN32_WINDOWS=0x0501 -D_WIN32_IE=0x0501 -mfpmath=sse"
+            CXXFLAGS="$CXXFLAGS -m32 -fno-omit-frame-pointer -momit-leaf-frame-pointer -DWINVER=0x0501 -D_WIN32_WINNT=0x0501 -D_WIN32_WINDOWS=0x0501 -D_WIN32_IE=0x0501 -mfpmath=sse"
+            AC_SUBST([NASMOBJ],[win32])
+        ], [
+            # win10
+            CPPFLAGS="$CPPFLAGS -DWINVER=0x0A00 -D_WIN32_WINNT=0x0A00 -D_WIN32_WINDOWS=0x0A00 -D_WIN32_IE=0x0A00"
+            CFLAGS="$CFLAGS -DWINVER=0x0A00 -D_WIN32_WINNT=0x0A00 -D_WIN32_WINDOWS=0x0A00 -D_WIN32_IE=0x0A00"
+            CXXFLAGS="$CXXFLAGS -DWINVER=0x0A00 -D_WIN32_WINNT=0x0A00 -D_WIN32_WINDOWS=0x0A00 -D_WIN32_IE=0x0A00"
+            AC_SUBST([NASMOBJ],[win64])
+        ])
+
+        # increase default stack size to 8mb from 1mb
+        NEOSU_LDFLAGS="$NEOSU_LDFLAGS -Wl,--stack,8388608"
+        AC_DEFINE([MCENGINE_PLATFORM_WINDOWS], [1], [Define if compiling for Windows.])
+    ;;
+esac])
 
 AC_PROG_CC([$CC])
 AS_IF([[case "$CC" in
@@ -541,35 +592,40 @@ AC_CHECK_PROG([STRIP], [strip], [strip]) # don't use mingw-strip, seems to not w
 AC_CHECK_PROG([CCACHE], [ccache], [ccache])
 
 # we already set $CC and $CXX to absolute paths in the build/$arch-pc-linux-gnu-{$CC,$CXX} wrappers
-# for linux, so AC_PATH_PROG doesn't work for that (and isn't needed anyways)
+# for linux and macOS, so AC_PATH_PROG doesn't work for that (and isn't needed anyways)
 # this is done mostly for mingw targets so that configure --host=x86_64-w64-mingw32 --enable-clang
 # saves the full path to the llvm-mingw compiler, in case $PATH changes for future compiles
-AS_IF([test "$host_os" = "linux-gnu"],[
-    AS_VAR_SET([CC_REAL], [$CC])
-    AS_VAR_SET([CXX_REAL], [$CXX])
-],[
-    AC_PATH_PROG([CC_REAL], [$CC])
-    AC_PATH_PROG([CXX_REAL], [$CXX])
-])
+case "$host_os" in
+    linux-gnu|darwin*)
+        AS_VAR_SET([CC_REAL], [$CC])
+        AS_VAR_SET([CXX_REAL], [$CXX])
+    ;;
+    *)
+        AC_PATH_PROG([CC_REAL], [$CC])
+        AC_PATH_PROG([CXX_REAL], [$CXX])
+    ;;
+esac
 
 _cc_real_hash="$($CC --version | md5sum | cut -d ' ' -f 1),$host"
 _cxx_real_hash="$($CXX --version | md5sum | cut -d ' ' -f 1),$host"
 
-install -Dm755 /dev/stdin $PWD/build/cc <<EOF
+cat > $PWD/build/cc <<EOF
 #!/usr/bin/env bash
 CCACHE_SLOPPINESS=pch_defines,time_macros,include_file_mtime,include_file_ctime \\
 CCACHE_COMPRESS=1 CCACHE_COMPRESSLEVEL=4 CCACHE_COMPILERTYPE=$_ccache_ctype CCACHE_COMPILERCHECK="string:$_cc_real_hash" \\
 $CCACHE $CC_REAL "\$@"
 EOF
-install -Dm755 /dev/stdin $PWD/build/cxx <<EOF
+chmod +x $PWD/build/cc
+cat > $PWD/build/cxx <<EOF
 #!/usr/bin/env bash
 CCACHE_SLOPPINESS=pch_defines,time_macros,include_file_mtime,include_file_ctime \\
 CCACHE_COMPRESS=1 CCACHE_COMPRESSLEVEL=4 CCACHE_COMPILERTYPE=$_ccache_ctype CCACHE_COMPILERCHECK="string:$_cxx_real_hash" \\
 $CCACHE $CXX_REAL "\$@"
 EOF
+chmod +x $PWD/build/cxx
 
-export CC="$PWD/build/cc"
-export CXX="$PWD/build/cxx"
+export CC="$ac_pwd/cc"
+export CXX="$ac_pwd/cxx"
 
 AC_SUBST([CC])
 AC_SUBST([CXX])
@@ -661,7 +717,7 @@ __EOF__
     ])
 ])
 
-PKG_CONFIG="$PWD/build/pkg-config"
+PKG_CONFIG="$ac_pwd/pkg-config"
 AC_SUBST([PKG_CONFIG])
 AC_SUBST([CMAKE_SYSTEM_NAME])
 AC_SUBST([CMAKERCOPT])
@@ -680,7 +736,11 @@ CPPFLAGS="$CPPFLAGS -D_TIME_BITS=64 -D_FILE_OFFSET_BITS=64"
 COMMON_FLAGS="$COMMON_FLAGS -D_TIME_BITS=64 -D_FILE_OFFSET_BITS=64 -pipe -ffunction-sections -fdata-sections -fwrapv -fno-strict-aliasing -ftls-model=initial-exec -pthread"
 CXXFLAGS="$CXXFLAGS $COMMON_FLAGS -fno-exceptions" # -fno-unwind-tables -fno-rtti
 CFLAGS="$CFLAGS $COMMON_FLAGS"
-LDFLAGS="$LDFLAGS -static-libstdc++ -static-libgcc -pthread"
+AS_IF([test "$SYSNAME" != "macos"], [
+    LDFLAGS="$LDFLAGS -static-libstdc++ -static-libgcc -pthread"
+], [
+    LDFLAGS="$LDFLAGS -pthread"
+])
 
 AC_SUBST([CXXFLAGS])
 AC_SUBST([CFLAGS])
@@ -695,16 +755,13 @@ AS_IF([test "x$enable_native" != "xno"], [
     AS_IF([test "$host_cpu" = "i686"], [
         CXXFLAGS="$CXXFLAGS -march=pentium4 -mtune=generic"
         CFLAGS="$CFLAGS -march=pentium4 -mtune=generic"
+    ], [test "$host_cpu" = "aarch64"], [
+        # ARM64 - no specific march needed
+        :
     ], [
-        AS_IF([test "$host_cpu" = "x86_64"], [
-            CXXFLAGS="$CXXFLAGS -march=nocona -mtune=core-avx2"
-            CFLAGS="$CFLAGS -march=nocona -mtune=core-avx2"
-        ], [
-            AS_IF([test "$host_cpu" = "aarch64"], [
-                CXXFLAGS="$CXXFLAGS -march=armv8.2-a+fp16+simd -mtune=cortex-a76"
-                CFLAGS="$CFLAGS -march=armv8.2-a+fp16+simd -mtune=cortex-a76"
-            ])
-        ])
+        # x86_64
+        CXXFLAGS="$CXXFLAGS -march=nocona -mtune=core-avx2"
+        CFLAGS="$CFLAGS -march=nocona -mtune=core-avx2"
     ])
 ])
 # use c/c++23 because we can
@@ -715,7 +772,7 @@ AX_CHECK_COMPILE_FLAG([-std=gnu++23], [
 ])
 
 AC_PATH_TOOL([LD], [ld], [AC_MSG_ERROR([ld not found])])
-AS_IF([test "x$enable_clang" = "xyes" && test "$host_os" = "linux-gnu"], [
+AS_IF([test "x$enable_clang" = "xyes"], [
     AC_PATH_PROG([AR], [llvm-ar], [llvm-ar], [AC_MSG_ERROR([llvm-ar not found])])
     AC_PATH_PROG([RANLIB], [llvm-ranlib], [llvm-ranlib], [AC_MSG_ERROR([llvm-ranlib not found])])
 ], [
@@ -723,10 +780,15 @@ AS_IF([test "x$enable_clang" = "xyes" && test "$host_os" = "linux-gnu"], [
     AC_PATH_TOOL([RANLIB], [ranlib], [AC_MSG_ERROR([ranlib not found])])
 ])
 
-AS_IF([test "$host_os" = "linux-gnu"],[
-    AC_CHECK_HEADERS([X11/Xlib.h GL/gl.h GL/glu.h], [],
-        [AC_MSG_ERROR([Missing required X11/OpenGL development headers])])
-])
+case "$host_os" in
+    linux-gnu)
+        AC_CHECK_HEADERS([X11/Xlib.h GL/gl.h GL/glu.h], [],
+            [AC_MSG_ERROR([Missing required X11/OpenGL development headers])])
+    ;;
+    darwin*)
+        # macOS uses OpenGL framework, no X11 needed
+    ;;
+esac
 
 # depending on the type of build, we may want to remap the file paths
 SRCREMAP=${SRCREMAP:-}
@@ -938,7 +1000,16 @@ AS_IF([test "x$enable_harden" != "xno"], [
 # common flags
 NEOSU_CPPFLAGS="$NEOSU_CPPFLAGS"
 NEOSU_CXXFLAGS="$NEOSU_CXXFLAGS -Wall -Wextra -Wno-sign-compare -Wunused-parameter -Wdeprecated-declarations -Wno-error=deprecated-declarations"
-NEOSU_LDFLAGS="$NEOSU_LDFLAGS -Wl,--gc-sections" # remove unused sections
+
+# remove unused sections
+AX_CHECK_LINK_FLAG([-Wl,--gc-sections], [
+    NEOSU_LDFLAGS="$NEOSU_LDFLAGS -Wl,--gc-sections"
+], [
+    AX_CHECK_LINK_FLAG([-Wl,-dead_strip], [
+        NEOSU_LDFLAGS="$NEOSU_LDFLAGS -Wl,-dead_strip"
+    ])
+])
+
 AC_SUBST([NEOSU_CPPFLAGS])
 AC_SUBST([NEOSU_CXXFLAGS])
 AC_SUBST([NEOSU_LDFLAGS])
@@ -977,7 +1048,7 @@ AC_SUBST([AUDIO_CFLAGS])
 AC_SUBST([AUDIO_LIBS])
 
 # the source files are also added through autogen.sh to Makefile.sources
-BUNDLED_INCLUDES="-I\$(srcdir)/libraries -I\$(srcdir)/libraries/delegatesv2 -I\$(srcdir)/libraries/unordered_dense"
+BUNDLED_INCLUDES="-I\$(srcdir)/libraries -I\$(srcdir)/libraries/delegatesv2 -I\$(srcdir)/libraries/unordered_dense -I\$(srcdir)/libraries/glad"
 AC_SUBST([BUNDLED_INCLUDES])
 
 # misc. resources to be included as binary data
@@ -1034,6 +1105,22 @@ AS_IF([test "x$use_opengl" = "xyes" || test "x$use_opengles32" = "xyes"], [
         PKG_CHECK_AUTO([XI], [xi], [have_xi=yes], [AC_MSG_ERROR([Missing xi (xinput) libs, required for OpenGL on Linux])])
         PKG_CHECK_AUTO([XRANDR], [xrandr], [have_xrandr=yes], [AC_MSG_ERROR([Missing xrandr libs, required for Linux])])
         PKG_CHECK_AUTO([EGL], [egl], [have_egl=yes], [AC_MSG_ERROR([Missing egl libs, required for OpenGL on Linux])])
+    ], [test "$SYSNAME" = "macos"], [
+        # macOS uses OpenGL framework
+        GL_CFLAGS=""
+        GL_LIBS="-framework OpenGL"
+        GLU_CFLAGS=""
+        GLU_LIBS=""
+        AC_SUBST([GL_CFLAGS])
+        AC_SUBST([GL_LIBS])
+        AC_SUBST([GLU_CFLAGS])
+        AC_SUBST([GLU_LIBS])
+        have_glu="framework"
+        have_gl="framework"
+        have_x11="not required"
+        have_xi="not required"
+        have_xrandr="not required"
+        have_egl="not required"
     ], [
         have_glu="not required"
         have_gl="not required"
