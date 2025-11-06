@@ -1,6 +1,22 @@
 // Copyright (c) 2025, WH, All rights reserved.
 #pragma once
 
+#if defined(__APPLE__) && defined(__MACH__)  // mach-o (darwin)
+
+#define INCBIN_PLAT(sym, file)                \
+    __asm__(                                  \
+        ".section __DATA,__const\n"           \
+        ".balign 1\n"                         \
+        ".globl _" #sym "\n"                  \
+        "_" #sym ":\n"                        \
+        ".incbin \"" file "\"\n"              \
+        ".globl _" #sym "_end\n"              \
+        "_" #sym "_end:\n"                    \
+        ".balign 1\n"                         \
+        ".section __TEXT,__text\n");
+
+#else
+
 #if defined(_MSC_VER) && !defined(__clang__)  // MSVC COFF (needs external assembler (MASM/NASM/YASM))
 
 #define INCBIN_PLAT(sym, file)
@@ -47,6 +63,7 @@
         ".balign 1\n"                          \
         ".section \".text\"\n");
 
+#endif
 #endif
 
 /* declare the symbol in a header file */
