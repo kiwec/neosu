@@ -127,13 +127,13 @@ SDL_AppResult SDL_AppIterate(void *appstate) { return static_cast<SDLMain *>(app
 // actual main/init, called once
 MAIN_FUNC /* int argc, char *argv[] */
 {
-    // set up spdlog, do this here so that calling debugLog() anywhere after this won't explode
-    Logger::init();
-    atexit(Logger::shutdown);
-
     // if a neosu instance is already running, send it a message then quit
     // only works on windows for now
     Environment::Interop::handle_existing_window(argc, argv);
+
+    // set up spdlog logging (after handle_existing_window, so we don't clobber a running instance's log messages)
+    Logger::init();
+    atexit(Logger::shutdown);
 
 #if defined(_WIN32)
     // required for handle_existing_window to find this running instance

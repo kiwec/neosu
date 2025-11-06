@@ -127,14 +127,14 @@ bool sdl_windows_message_hook(void *userdata, MSG *msg) {
     auto sender_pid = static_cast<DWORD>(msg->wParam);
     auto identifier = static_cast<DWORD>(msg->lParam);
 
-    std::string mapping_name = fmt::format("neosu_cmdline_{}_{}", sender_pid, identifier);
-    std::string event_name = fmt::format("neosu_event_{}_{}", sender_pid, identifier);
+    const std::string mapping_name = fmt::format("neosu_cmdline_{}_{}", sender_pid, identifier);
+    const std::string event_name = fmt::format("neosu_event_{}_{}", sender_pid, identifier);
 
     HANDLE hMapFile = OpenFileMappingA(FILE_MAP_ALL_ACCESS, FALSE, mapping_name.c_str());
     if(hMapFile) {
         bool signaled = false;
 
-        auto signal_completion = [&signaled, event_name]() -> void {
+        auto signal_completion = [&signaled, &event_name]() -> void {
             if(signaled) return;
             signaled = true;
             HANDLE hEvent = OpenEventA(EVENT_MODIFY_STATE, FALSE, event_name.c_str());
@@ -201,8 +201,8 @@ void Environment::Interop::handle_existing_window(int argc, char *argv[]) {
             DWORD identifier = GetTickCount();
 
             // create unique names for mapping and event
-            std::string mapping_name = fmt::format("neosu_cmdline_{}_{}", sender_pid, identifier);
-            std::string event_name = fmt::format("neosu_event_{}_{}", sender_pid, identifier);
+            const std::string mapping_name = fmt::format("neosu_cmdline_{}_{}", sender_pid, identifier);
+            const std::string event_name = fmt::format("neosu_event_{}_{}", sender_pid, identifier);
 
             // create completion event first, so we know when we can exit this process
             HANDLE hEvent = CreateEventA(nullptr, FALSE, FALSE, event_name.c_str());
@@ -305,15 +305,10 @@ void Environment::Interop::setup_system_integrations() {
 
     // Add current launch arguments, so doing "Open with -> neosu"
     // will always use the last launch options the player used.
-    UString launch_args;
-    auto args = env->getLaunchArgs();
-    for(const auto &[k, v] : args) {
-        if(v.has_value()) {
-            launch_args.append(fmt::format(" {} {}", k, v.value()));
-        } else {
-            launch_args.append(fmt::format(" {}", k));
-        }
-    }
+    auto cmdline = env->getCommandLine();
+    assert(!cmdline.empty());
+    cmdline.erase(cmdline.begin());  // remove program name
+    const UString launch_args = SString::join(cmdline);
 
     wchar_t command[MAX_PATH + 10];
     swprintf_s(command, _countof(command), L"\"%s\"%s \"%%1\"", exePath, launch_args.wchar_str());
@@ -330,7 +325,7 @@ void Environment::Interop::setup_system_integrations() {
         debugLog("Failed to register neosu as .osk format handler. Error: {}", err);
         return;
     }
-    RegSetValueEx(osk_key, TEXT("neosu"), 0, REG_SZ, (BYTE *)L"", 2);
+    RegSetValueEx(osk_key, TEXT("neosu"), 0, REG_SZ, (BYTE *)TEXT(""), sizeof(TEXT("")));
     RegCloseKey(osk_key);
 
     // Register neosu as .osr handler
@@ -341,7 +336,7 @@ void Environment::Interop::setup_system_integrations() {
         debugLog("Failed to register neosu as .osr format handler. Error: {}", err);
         return;
     }
-    RegSetValueEx(osr_key, TEXT("neosu"), 0, REG_SZ, (BYTE *)L"", 2);
+    RegSetValueExW(osr_key, TEXT("neosu"), 0, REG_SZ, (BYTE *)TEXT(""), sizeof(TEXT("")));
     RegCloseKey(osr_key);
 
     // Register neosu as .osz handler
@@ -352,7 +347,7 @@ void Environment::Interop::setup_system_integrations() {
         debugLog("Failed to register neosu as .osz format handler. Error: {}", err);
         return;
     }
-    RegSetValueEx(osz_key, TEXT("neosu"), 0, REG_SZ, (BYTE *)L"", 2);
+    RegSetValueEx(osz_key, TEXT("neosu"), 0, REG_SZ, (BYTE *)TEXT(""), sizeof(TEXT("")));
     RegCloseKey(osz_key);
 }
 
