@@ -242,6 +242,11 @@ using Env::REND;
 #if !(defined(MCENGINE_PLATFORM_WINDOWS) || defined(_WIN32) || defined(_WIN64) || defined(__WIN32__) || \
       defined(__CYGWIN__) || defined(__CYGWIN32__) || defined(__TOS_WIN__) || defined(__WINDOWS__))
 
+
+#ifdef __APPLE__
+#define OS_NAME "apple"
+#endif
+
 #ifdef __linux__
 #ifdef __x86_64__
 #define OS_NAME "linux-x64"
@@ -324,6 +329,8 @@ typedef SSIZE_T ssize_t;
 #if defined(_X86_) || defined(__i386__) || (defined(_WIN32) && !defined(_WIN64))
 #define MC_ARCH32
 #elif defined(_AMD64_) || defined(__x86_64__) || (defined(_WIN64))
+#define MC_ARCH64
+#elif defined(__aarch64__)
 #define MC_ARCH64
 #else
 MC_MESSAGE("WARNING: unknown compilation arch??")

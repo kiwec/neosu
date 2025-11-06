@@ -1,15 +1,21 @@
 // Copyright (c) 2023, kiwec, All rights reserved.
 
 #ifdef _WIN32
+
 #include "WinDebloatDefs.h"
 #include <windows.h>
 #include <cinttypes>
 
+#elif __APPLE__
+// nothing
 #else
+
 #include <linux/limits.h>
 #include <sys/stat.h>
 #include "dynutils.h"
+
 #endif
+
 
 #include <algorithm>
 #include <cstdio>
