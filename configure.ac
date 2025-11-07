@@ -485,6 +485,11 @@ EOF
         chmod +x $target-$CXX
         AC_SUBST([NASMOBJ],[macho64])
 
+        # Check if using Homebrew LLVM and add libc++ library path
+        AS_IF([test -d "/opt/homebrew/opt/llvm/lib/c++"], [
+            LIBS="$LIBS -L/opt/homebrew/opt/llvm/lib/c++ -lc++abi"
+        ])
+
         cat > pkg-config <<__EOF__
 #!/bin/bash
 PKG_CONFIG_PATH="$PKG_CONFIG_PATH" $PKGCONF $pc_addflags "\$@"
@@ -1073,6 +1078,10 @@ AC_SUBST([BASS_VERSION], [20250813]) # just mark the date so we can invalidate t
 AS_IF([test "$SYSNAME" = "linux" || test "$SYSNAME" = "macos"], [
     AS_IF([test "x$enable_system_deps" != "xno"], [
         PKG_CHECK_AUTO([CURL], [libcurl >= $CURL_MIN_VERSION], [have_curl=yes], [have_curl=no])
+        # Add curl libraries when using system curl
+        AS_IF([test "x$have_curl" = "xyes"], [
+            LIBS="$LIBS -lcurl -lldap"
+        ])
         AS_IF([test "$SYSNAME" = "linux"], [
             PKG_CHECK_AUTO([LIBACL], [libacl >= $LIBACL_MIN_VERSION], [have_libacl=yes], [have_libacl=no])
         ], [
