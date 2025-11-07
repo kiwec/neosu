@@ -79,7 +79,7 @@ class Environment {
         Environment *env_p;
     };
 
-   private:
+   protected:
     friend struct Interop;
     Interop m_interop;
 

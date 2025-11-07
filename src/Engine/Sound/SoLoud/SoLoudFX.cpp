@@ -41,7 +41,8 @@ namespace SoLoud
 //-------------------------------------------------------------------------
 
 SLFXStream::SLFXStream(bool preferFFmpeg)
-    : mSpeedFactor(1.0f),
+    : AudioSource(),
+      mSpeedFactor(1.0f),
       mPitchFactor(1.0f),
       mSource(std::make_unique<WavStream>(preferFFmpeg)),
       mActiveInstance(nullptr)
@@ -245,7 +246,8 @@ UString SLFXStream::getDecoder()
 //-------------------------------------------------------------------------
 
 SoundTouchFilterInstance::SoundTouchFilterInstance(SLFXStream *aParent)
-    : mParent(aParent),
+    : AudioSourceInstance(),
+      mParent(aParent),
       mSourceInstance(nullptr),
       mSoundTouch(nullptr),
       mInitialSTLatencySamples(0),

@@ -1,0 +1,25 @@
+From 3b70553a4e42474d91aec05050c02c72534a30fe Mon Sep 17 00:00:00 2001
+From: William Horvath <william@horvath.blog>
+Date: Fri, 7 Nov 2025 13:54:59 -0800
+Subject: [PATCH] Use RIDEV_NOLEGACY for Windows raw mouse input
+
+---
+ src/video/windows/SDL_windowsrawinput.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/video/windows/SDL_windowsrawinput.c b/src/video/windows/SDL_windowsrawinput.c
+index 46da4a158..f810abe65 100644
+--- a/src/video/windows/SDL_windowsrawinput.c
++++ b/src/video/windows/SDL_windowsrawinput.c
+@@ -73,7 +73,7 @@ static DWORD WINAPI WIN_RawInputThread(LPVOID param)
+     if (data->flags & ENABLE_RAW_MOUSE_INPUT) {
+         devices[count].usUsagePage = USB_USAGEPAGE_GENERIC_DESKTOP;
+         devices[count].usUsage = USB_USAGE_GENERIC_MOUSE;
+-        devices[count].dwFlags = 0;
++        devices[count].dwFlags |= RIDEV_NOLEGACY;
+         devices[count].hwndTarget = window;
+         ++count;
+     }
+-- 
+2.51.2
+

@@ -29,7 +29,7 @@ void setcwdexe(const std::string &exePathStr) noexcept {
     // Fix path in case user is running it from the wrong folder.
     // We only do this if MCENGINE_DATA_DIR is set to its default value, since if it's changed,
     // the packager clearly wants the executable in a different location.
-    if(!(MCENGINE_DATA_DIR[0] == '.' && MCENGINE_DATA_DIR[1] == '/')) {
+    if constexpr(!(MCENGINE_DATA_DIR[0] == '.' && MCENGINE_DATA_DIR[1] == '/')) {
         return;
     }
     namespace fs = std::filesystem;
@@ -154,14 +154,10 @@ MAIN_FUNC /* int argc, char *argv[] */
         setcwdexe(selfpath);
     }
 
-    std::string lowerPackageName = PACKAGE_NAME;
-    SString::to_lower(lowerPackageName);
-
     // set up some common app metadata (SDL says these should be called as early as possible)
     SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_NAME_STRING, PACKAGE_NAME);
     SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_VERSION_STRING, NEOSU_VERSION);
-    SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_IDENTIFIER_STRING,
-                               fmt::format("com.mcengine.{}", lowerPackageName).c_str());
+    SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_IDENTIFIER_STRING, "net.kiwec.neosu");
     SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_CREATOR_STRING, "kiwec/spectator/McKay");
     SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_COPYRIGHT_STRING, "MIT/GPL3");  // neosu is gpl3, mcengine is mit
     SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_URL_STRING, PACKAGE_URL);

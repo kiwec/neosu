@@ -1819,15 +1819,16 @@ void BeatmapInterface::drawFollowPoints() {
     // people notice a change after all this time (26.02.2020)
 
     // 0.7x means animation lasts only 0.7 of it's time
-    const f64 animationMutiplier = this->getSpeedMultiplier() / osu->getAnimationSpeedMultiplier();
+    const f64 animationMultiplier = this->getSpeedMultiplier() / osu->getAnimationSpeedMultiplier();
     const i32 followPointApproachTime =
-        animationMutiplier * (cv::followpoints_clamp.getBool() ? std::min((i32)this->getApproachTime(),
-                                                                          (i32)cv::followpoints_approachtime.getFloat())
-                                                               : (i32)cv::followpoints_approachtime.getFloat());
+        animationMultiplier *
+        (cv::followpoints_clamp.getBool()
+             ? std::min((i32)this->getApproachTime(), (i32)cv::followpoints_approachtime.getFloat())
+             : (i32)cv::followpoints_approachtime.getFloat());
     const bool followPointsConnectCombos = cv::followpoints_connect_combos.getBool();
     const bool followPointsConnectSpinners = cv::followpoints_connect_spinners.getBool();
     const f32 followPointSeparationMultiplier = std::max(cv::followpoints_separation_multiplier.getFloat(), 0.1f);
-    const f32 followPointPrevFadeTime = animationMutiplier * cv::followpoints_prevfadetime.getFloat();
+    const f32 followPointPrevFadeTime = animationMultiplier * cv::followpoints_prevfadetime.getFloat();
     const f32 followPointScaleMultiplier = cv::followpoints_scale_multiplier.getFloat();
 
     // include previous object in followpoints
@@ -1987,6 +1988,7 @@ void BeatmapInterface::drawHitObjects() {
         }
         to_draw.clear();
 
+        // this doesn't need the spinner front-to-back thing because spinners have no draw2
         for(auto *obj : this->hitobjectsSortedByEndTime) {
             // NOTE: to fix mayday simultaneous sliders with increasing endtime getting culled here, would have to
             // switch from m_hitobjectsSortedByEndTime to m_hitobjects PVS optimization

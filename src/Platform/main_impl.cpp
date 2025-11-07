@@ -78,7 +78,7 @@ SDL_AppResult SDLMain::initialize() {
         return SDL_APP_FAILURE;
     }
 
-    this->getEnvInterop().setup_system_integrations();  // only does anything for windows atm
+    m_interop.setup_system_integrations();  // only does anything for windows atm
 
     // disable (filter) some SDL events we don't care about
     configureEvents();
@@ -171,7 +171,7 @@ SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
                     m_vDroppedData.clear();
                 } break;
                 case SDL_EVENT_DROP_COMPLETE: {
-                    this->getEnvInterop().handle_cmdline_args(m_vDroppedData);
+                    m_interop.handle_cmdline_args(m_vDroppedData);
                     m_vDroppedData.clear();
                 } break;
                 case SDL_EVENT_DROP_TEXT:
