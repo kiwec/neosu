@@ -26,6 +26,10 @@
 #define LNAMESTR(lib) fmt::format(LPREFIX "{:s}" LSUFFIX, (lib))
 
 namespace dynutils {
+namespace {
+static thread_local std::string last_error{"No error"};
+}
+
 namespace detail {
 
 void *load_func_impl(const lib_obj *lib, const char *func_name) {
@@ -33,6 +37,11 @@ void *load_func_impl(const lib_obj *lib, const char *func_name) {
     if(lib) {
         retfunc = reinterpret_cast<void *>(
             SDL_LoadFunction(reinterpret_cast<SDL_SharedObject *>(const_cast<lib_obj *>(lib)), func_name));
+        if(!retfunc) {
+            last_error = SDL_GetError();
+        } else {
+            last_error = "No error";
+        }
     }
     return retfunc;
 }
@@ -76,13 +85,25 @@ lib_obj *load_lib(const char *c_lib_name, const char *c_search_dir) {
             }
         }
     }
+    if(!ret) {
+        if(lib_name.empty()) {
+            last_error = "Empty library name";
+        } else {
+            last_error = SDL_GetError();
+        }
+    } else {
+        last_error = "No error";
+    }
     return ret;
 }
 
 #ifdef MCENGINE_PLATFORM_WINDOWS
 
 lib_obj *load_lib_system(const char *c_lib_name) {
-    if(!c_lib_name || *c_lib_name == '\0') return nullptr;  // TODO: make get_error report errors from this function
+    if(!c_lib_name || *c_lib_name == '\0') {
+        last_error = "Empty library name";
+        return nullptr;
+    }
 
     std::string lib_name{c_lib_name};
     if(Environment::getFileExtensionFromFilePath(lib_name).empty()) {
@@ -94,7 +115,28 @@ lib_obj *load_lib_system(const char *c_lib_name) {
     const int ldlib_flags =
         (!(plat & RuntimePlatform::WIN_WINE) && (plat & RuntimePlatform::WIN_XP)) ? 0 : LOAD_LIBRARY_SEARCH_SYSTEM32;
 
-    return reinterpret_cast<lib_obj *>(LoadLibraryExA(lib_name.c_str(), nullptr, ldlib_flags));
+    auto *ret = reinterpret_cast<lib_obj *>(LoadLibraryExA(lib_name.c_str(), nullptr, ldlib_flags));
+
+    if(!ret) {
+        DWORD errorCode = GetLastError();
+        if(errorCode != 0) {
+            LPSTR messageBuffer = nullptr;
+            DWORD size = FormatMessageA(
+                FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, nullptr,
+                errorCode, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&messageBuffer, 0, nullptr);
+            if(size != 0) {
+                std::string result(messageBuffer, size);
+                LocalFree(messageBuffer);
+                while(!result.empty() && (result.back() == '\n' || result.back() == '\r')) result.pop_back();
+                last_error = result;
+            } else {
+                last_error = std::string("Unknown error (code: ") + std::to_string(errorCode) + ")";
+            }
+        } else {
+            last_error = "No error";
+        }
+    }
+    return ret;
 }
 
 #else
@@ -104,10 +146,7 @@ lib_obj *load_lib_system(const char *c_lib_name) { return load_lib(c_lib_name); 
 
 #endif
 
-const char *get_error() {
-    const char *err = SDL_GetError();
-    return err ? err : "<no error>";
-}
+const char *get_error() { return last_error.c_str(); }
 
 #undef LNAME
 #undef LNAMESTR
