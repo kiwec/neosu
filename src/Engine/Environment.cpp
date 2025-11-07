@@ -971,6 +971,12 @@ McRect Environment::SDLRectToMcRect(const SDL_Rect &sdlrect) noexcept {
             static_cast<float>(sdlrect.h)};
 }
 
+vec2 Environment::getAsyncMousePos() const {
+    float x{}, y{};
+    SDL_GetGlobalMouseState(&x, &y);
+    return {x, y};
+}
+
 std::pair<vec2, vec2> Environment::consumeMousePositionCache() {
     float xRel{0.f}, yRel{0.f};
     float x{m_vLastAbsMousePos.x}, y{m_vLastAbsMousePos.y};

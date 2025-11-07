@@ -29,6 +29,11 @@ void Mouse::draw() {
     vec2 envPos = env->getMousePos();
     g->drawRect(envPos.x - size / 2, envPos.y - size / 2, size, size);
 
+    // green dot = synchronous OS mouse pos
+    g->setColor(rgb(0, 255, 0));
+    vec2 truePos = env->getAsyncMousePos();
+    g->fillRect(truePos.x - (size / 4) / 2, truePos.y - (size / 4) / 2, (size / 4), (size / 4));
+
     // red = cursor clip
     if(env->isCursorClipped()) {
         McRect cursorClip = env->getCursorClip();

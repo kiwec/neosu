@@ -306,6 +306,7 @@ class Environment {
 
     // mouse
     friend class Mouse;
+    [[nodiscard]] vec2 getAsyncMousePos() const;  // debug
     // <rel, abs>
     std::pair<vec2, vec2> consumeMousePositionCache();
     // allow Mouse to update the cached environment position post-sensitivity/clipping
