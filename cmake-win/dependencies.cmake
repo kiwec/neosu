@@ -21,9 +21,9 @@ macro(set_download_name dep_name version url)
     set(${_upper_dep_name}_DL_NAME "${dep_name}-${version}${_temp_ext}")
 endmacro()
 
-set(SDL3_VERSION "08826230923dfb70e4558a41179ac0744e69fdb8")
+set(SDL3_VERSION "ef5b1c8f5fb7e7d0e6e4249bcc8b5083295dfea7")
 set(SDL3_URL "https://github.com/libsdl-org/SDL/archive/${SDL3_VERSION}.tar.gz")
-set(SDL3_HASH "SHA512=0602c69d5e5e3fe4ce500ab1d598f4640e7bc48815803b0e795786e59c519af613b8a01fafea88dbfc1dd4ac9991991b780421d717c1c0a1a8e1f0d89f8b70b1")
+set(SDL3_HASH "SHA512=c8013de6c2b34b951f91dc880bd05706eb89c65eccd60ea54d8a8c0ac44d63af171e9aebc7054020bcc0073f41e074d5c8193ce4ee231028fba9ac7ef4ace74a")
 set_download_name("sdl3" "${SDL3_VERSION}" "${SDL3_URL}")
 
 set(FREETYPE_VERSION "2.13.3")
