@@ -199,12 +199,12 @@ File::FILETYPE File::exists(std::string_view filePath) {
 
 // private (cache the fs::path)
 File::FILETYPE File::existsCaseInsensitive(std::string &filePath, fs::path &path) {
+    auto retType = File::exists(filePath, path);
+
     // windows is already case insensitive
     if constexpr(Env::cfg(OS::WINDOWS)) {
-        return File::exists(filePath);
+        return retType;
     }
-
-    auto retType = File::exists(filePath, path);
 
     if(retType == File::FILETYPE::NONE)
         return File::FILETYPE::NONE;

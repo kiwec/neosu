@@ -13,13 +13,91 @@ using jthread = std::jthread;
 }
 
 #else
+#include "noinclude.h"
 #include "SyncStoptoken.h"
-
-#include <SDL3/SDL_thread.h>
-#include <SDL3/SDL_cpuinfo.h>
 
 #include <functional>
 #include <cassert>
+
+extern "C" {
+// SDL_stdinc.h
+#ifndef SDL_stdinc_h_
+typedef void (*SDL_FunctionPointer)(void);
+#endif
+
+// SDL_properties.h
+#ifndef SDL_properties_h_
+typedef uint32_t SDL_PropertiesID;
+extern SDL_DECLSPEC SDL_PropertiesID SDLCALL SDL_CreateProperties(void);
+extern SDL_DECLSPEC bool SDLCALL SDL_SetPointerProperty(SDL_PropertiesID props, const char* name, void* value);
+extern SDL_DECLSPEC bool SDLCALL SDL_SetNumberProperty(SDL_PropertiesID props, const char* name, int64_t value);
+extern SDL_DECLSPEC void SDLCALL SDL_DestroyProperties(SDL_PropertiesID props);
+#endif // SDL_properties.h
+
+// SDL_thread.h
+#ifndef SDL_thread_h_
+#include <cstdint>
+#if defined(MCENGINE_PLATFORM_WINDOWS)
+#include <process.h> /* _beginthreadex() and _endthreadex() */
+#endif
+
+#ifndef SDL_PROP_THREAD_CREATE_ENTRY_FUNCTION_POINTER
+#define SDL_PROP_THREAD_CREATE_ENTRY_FUNCTION_POINTER "SDL.thread.create.entry_function"
+#endif
+#ifndef SDL_PROP_THREAD_CREATE_NAME_STRING
+#define SDL_PROP_THREAD_CREATE_NAME_STRING "SDL.thread.create.name"
+#endif
+#ifndef SDL_PROP_THREAD_CREATE_USERDATA_POINTER
+#define SDL_PROP_THREAD_CREATE_USERDATA_POINTER "SDL.thread.create.userdata"
+#endif
+#ifndef SDL_PROP_THREAD_CREATE_STACKSIZE_NUMBER
+#define SDL_PROP_THREAD_CREATE_STACKSIZE_NUMBER "SDL.thread.create.stacksize"
+#endif
+
+#if defined(MCENGINE_PLATFORM_WINDOWS)
+#ifndef SDL_BeginThreadFunction
+#define SDL_BeginThreadFunction _beginthreadex
+#endif
+#ifndef SDL_EndThreadFunction
+#define SDL_EndThreadFunction _endthreadex
+#endif
+#else
+#ifndef SDL_BeginThreadFunction
+#define SDL_BeginThreadFunction NULL
+#endif
+#ifndef SDL_EndThreadFunction
+#define SDL_EndThreadFunction NULL
+#endif
+#endif
+
+#ifndef SDL_CreateThreadWithProperties
+#define SDL_CreateThreadWithProperties(props)                                                      \
+    SDL_CreateThreadWithPropertiesRuntime((props), (SDL_FunctionPointer)(SDL_BeginThreadFunction), \
+                                          (SDL_FunctionPointer)(SDL_EndThreadFunction))
+#endif
+typedef struct SDL_Thread SDL_Thread;
+typedef uint64_t SDL_ThreadID;
+typedef enum SDL_ThreadState {
+    SDL_THREAD_UNKNOWN,
+    SDL_THREAD_ALIVE,
+    SDL_THREAD_DETACHED,
+    SDL_THREAD_COMPLETE
+} SDL_ThreadState;
+
+extern SDL_DECLSPEC SDL_Thread* SDLCALL SDL_CreateThreadWithPropertiesRuntime(SDL_PropertiesID props,
+                                                                              SDL_FunctionPointer pfnBeginThread,
+                                                                              SDL_FunctionPointer pfnEndThread);
+extern SDL_DECLSPEC SDL_ThreadState SDLCALL SDL_GetThreadState(SDL_Thread* thread);
+extern SDL_DECLSPEC void SDLCALL SDL_WaitThread(SDL_Thread* thread, int* status);
+extern SDL_DECLSPEC void SDLCALL SDL_DetachThread(SDL_Thread* thread);
+extern SDL_DECLSPEC SDL_ThreadID SDLCALL SDL_GetCurrentThreadID(void);
+#endif // SDL_thread.h
+
+// SDL_cpuinfo.h
+#ifndef SDL_cpuinfo_h_
+extern SDL_DECLSPEC int SDLCALL SDL_GetNumLogicalCPUCores(void);
+#endif // SDL_cpuinfo.h
+}
 
 namespace Sync {
 
@@ -130,7 +208,7 @@ class sdl_jthread {
 
     void detach() { SDL_DetachThread(m_thread); }
 
-    [[nodiscard]] id get_id() const noexcept { return SDL_GetThreadID(m_thread); }
+    [[nodiscard]] id get_id() const noexcept { return SDL_GetCurrentThreadID(); }
 
     [[nodiscard]] native_handle_type native_handle() { return m_thread; }
 
