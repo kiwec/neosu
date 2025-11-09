@@ -567,7 +567,7 @@ void Osu::draw() {
     }
 
     // draw cursor (menus)
-    if(!this->isInPlayMode() || this->map_iface->isPaused()) {
+    if(!this->isInPlayMode() || (this->map_iface->isPaused() && !cv::mod_fposu.getBool())) {
         this->hud->drawCursor(mouse->getPos());
     }
 
