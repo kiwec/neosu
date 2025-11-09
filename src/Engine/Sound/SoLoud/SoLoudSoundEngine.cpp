@@ -36,6 +36,22 @@ SoundEngine::OutputDriver SoLoudSoundEngine::getMAorSDLCV() {
     return out;
 }
 
+unsigned int SoLoudSoundEngine::getResamplerFromCV() {
+    unsigned int resampler{SoLoud::Soloud::RESAMPLER_LINEAR};
+
+    const auto &cvResampler = cv::snd_soloud_resampler.getString();
+
+    if(SString::contains_ncase(cvResampler, "catmull")) {
+        resampler = SoLoud::Soloud::RESAMPLER_CATMULLROM;
+    } else if(SString::contains_ncase(cvResampler, "point")) {
+        resampler = SoLoud::Soloud::RESAMPLER_POINT;
+    } else {
+        cv::snd_soloud_resampler.setValue("linear", false);
+    }
+
+    return resampler;
+}
+
 SoLoudSoundEngine::SoLoudSoundEngine() : SoundEngine() {
     if(!soloud) {
         bool threaded = false;
@@ -434,10 +450,12 @@ void SoLoudSoundEngine::allowInternalCallbacks() {
     cv::snd_soloud_backend.setCallback(backendSwitchCB);
     cv::snd_sanity_simultaneous_limit.setCallback(SA::MakeDelegate<&SoLoudSoundEngine::onMaxActiveChange>(this));
     cv::snd_output_device.setCallback(SA::MakeDelegate<&SoLoudSoundEngine::setOutputDeviceByName>(this));
+    cv::snd_soloud_resampler.setCallback(SA::MakeDelegate<&SoLoudSoundEngine::restart>(this));
 
-    bool doRestart = !this->bWasBackendEverReady ||  //
-                     !cv::snd_freq.isDefault() ||    //
-                     !cv::snd_soloud_backend.isDefault();
+    bool doRestart = !this->bWasBackendEverReady ||          //
+                     !cv::snd_freq.isDefault() ||            //
+                     !cv::snd_soloud_backend.isDefault() ||  //
+                     !cv::snd_soloud_resampler.isDefault();
 
     if(doRestart) {
         this->restart();
@@ -735,7 +753,7 @@ bool SoLoudSoundEngine::initializeOutputDevice(const OUTPUT_DEVICE &device) {
     soloud->setPostClipScaler(1.0f);
 
     // it's LINEAR by default
-    soloud->setMainResampler(SoLoud::Soloud::RESAMPLER_CATMULLROM);
+    soloud->setMainResampler(getResamplerFromCV());
 
     cv::snd_freq.setValue(soloud->getBackendSamplerate(),
                           false);  // set the cvar to match the actual output sample rate (without running callbacks)
@@ -749,10 +767,10 @@ bool SoLoudSoundEngine::initializeOutputDevice(const OUTPUT_DEVICE &device) {
     debugLog(
         "SoundEngine: Initialized SoLoud ({}) with output device = \"{:s}\" flags: 0x{:x}, backend: {:s}, sampleRate: "
         "{}, "
-        "bufferSize: {}, channels: {}",
+        "bufferSize: {}, channels: {}, resampler: {}",
         soloud->isThreaded() ? "multi-threaded" : "single-thread", this->currentOutputDevice.name.toUtf8(),
         static_cast<unsigned int>(flags), soloud->getBackendString(), soloud->getBackendSamplerate(),
-        soloud->getBackendBufferSize(), soloud->getBackendChannels());
+        soloud->getBackendBufferSize(), soloud->getBackendChannels(), cv::snd_soloud_resampler.getString());
 
     // init global volume
     this->setMasterVolume(this->fMasterVolume);

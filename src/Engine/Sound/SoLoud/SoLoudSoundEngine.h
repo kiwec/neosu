@@ -71,6 +71,8 @@ class SoLoudSoundEngine final : public SoundEngine {
 
     // for backend
     static OutputDriver getMAorSDLCV();
+    // parse resampler string from cvar
+    static unsigned int getResamplerFromCV();
 };
 
 // raw pointer access to the s_SLInstance singleton, for SoLoudSound to use
