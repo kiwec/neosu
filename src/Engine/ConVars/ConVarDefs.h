@@ -308,7 +308,7 @@ CONVAR(win_disable_windows_key_while_playing, true, CLIENT);
 // Files
 CONVAR(database_enabled, true, CLIENT);
 CONVAR(database_ignore_version, true, CLIENT, "ignore upper version limit and force load the db file (may crash)");
-CONVAR(database_version, OSU_VERSION_DATESTR, CLIENT | NOLOAD | NOSAVE,
+CONVAR(database_version, OSU_VERSION_DATEONLY, CLIENT | NOLOAD | NOSAVE,
        "maximum supported osu!.db version, above this will use fallback loader");
 CONVAR(osu_folder, ""sv, CLIENT);
 CONVAR(osu_folder_sub_skins, "Skins/"sv, CLIENT);

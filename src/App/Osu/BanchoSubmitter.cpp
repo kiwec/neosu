@@ -75,7 +75,7 @@ void submit_score(FinishedScore score) {
         .data = {password.begin(), password.end()},
     });
 
-    const std::string osu_version = OSU_VERSION_DATESTR;
+    const std::string osu_version = MC_STRINGIZE(OSU_VERSION_DATEONLY);
     options.mime_parts.push_back({
         .name = "osuver",
         .data = {osu_version.begin(), osu_version.end()},
@@ -132,7 +132,7 @@ void submit_score(FinishedScore score) {
             idiot_check.append(fmt::format("{}{}", score.score, GRADES[(int)score.grade]));
             idiot_check.append(
                 fmt::format("{}Q{}", static_cast<u32>(score.mods.to_legacy()), score.passed ? "True" : "False"));
-            idiot_check.append(fmt::format("0" OSU_VERSION_DATESTR "{}", score_time.data()));
+            idiot_check.append(fmt::format("0{}{}", OSU_VERSION_DATEONLY, score_time.data()));
             idiot_check.append(BanchoState::client_hashes.toUtf8());
 
             auto idiot_hash = BanchoState::md5((u8 *)idiot_check.data(), idiot_check.size());

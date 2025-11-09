@@ -231,7 +231,7 @@ void aes_encrypt_block(u8 *in, u8 *out, u32 **k_e) {
 
 namespace BANCHO::AES {
 u8 *encrypt(const u8 *iv, u8 *msg, size_t s_msg, size_t *s_out) {
-    constexpr const char *key_str = "osu!-scoreburgr---------" OSU_VERSION_DATESTR;
+    constexpr const char *key_str = "osu!-scoreburgr---------" MC_STRINGIZE(OSU_VERSION_DATEONLY);
     u32 **key = aes_init_key((u8 *)key_str);
 
     int bytes_encrypted = 0;

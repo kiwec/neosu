@@ -35,6 +35,7 @@ Changelog::Changelog() : ScreenBackable() {
         R"(- Fixed pp strain graphs not updating)",
         R"(- Fixed windowed resolution not getting saved)",
         R"(- Updated FPS counter to use colors based on monitor refresh rate)",
+        R"(- Updated osu! version to b20251102.1)",
     };
     changelogs.push_back(v41_07);
 
