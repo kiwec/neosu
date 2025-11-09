@@ -1442,14 +1442,14 @@ void BeatmapInterface::handlePreviewPlay() {
     if(this->music == nullptr) return;
 
     if((!this->music->isPlaying() || this->music->getPosition() > 0.95f) && this->beatmap != nullptr) {
-        // this is an assumption, but should be good enough for most songs
-        // reset playback position when the song has nearly reached the end (when the user switches back to the results
-        // screen or the songbrowser after playing)
-        if(this->music->getPosition() > 0.95f) this->iContinueMusicPos = 0;
-
         soundEngine->stop(this->music);
 
         if(soundEngine->play(this->music)) {
+            // this is an assumption, but should be good enough for most songs
+            // reset playback position when the song has nearly reached the end (when the user switches back to the results
+            // screen or the songbrowser after playing)
+            if(this->music->getPosition() > 0.95f) this->iContinueMusicPos = 0;
+
             if(this->music->getFrequency() < this->fMusicFrequencyBackup)  // player has died, reset frequency
                 this->music->setFrequency(this->fMusicFrequencyBackup);
 
@@ -1462,22 +1462,26 @@ void BeatmapInterface::handlePreviewPlay() {
 
             // HACKHACK: continue playing where we left off (workaround for 5000 unload/load cycles during loading)
             const auto &reselect_map = osu->getSongBrowser()->loading_reselect_map;
-            u32 continue_hack_pos = reselect_map.musicpos_when_stopped;
+            const u32 continue_hack_pos = reselect_map.musicpos_when_stopped;
             if(continue_hack_pos > 0) {
                 this->iContinueMusicPos =
                     std::clamp<u32>(continue_hack_pos + (Timing::getTicksMS() - reselect_map.time_when_stopped), 0,
                                     this->music->getLengthMS());
             }
 
+            u32 position_to_set = 0;
+
             if(start_at_song_beginning) {
-                this->music->setPositionMS(0);
+                position_to_set = 0;
             } else if(this->iContinueMusicPos != 0) {
-                this->music->setPositionMS(this->iContinueMusicPos);
+                position_to_set = this->iContinueMusicPos;
             } else {
-                this->music->setPositionMS(this->beatmap->getPreviewTime() < 0
-                                               ? (u32)(this->music->getLengthMS() * 0.40f)
-                                               : this->beatmap->getPreviewTime());
+                position_to_set = this->beatmap->getPreviewTime() < 0 ? (u32)(this->music->getLengthMS() * 0.40f)
+                                                                      : this->beatmap->getPreviewTime();
             }
+
+            this->music->setPositionMS(position_to_set);
+
             this->bWasSeekFrame = true;
 
             this->music->setBaseVolume(this->getIdealVolume());
