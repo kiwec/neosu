@@ -1441,14 +1441,17 @@ bool BeatmapInterface::canDraw() {
 void BeatmapInterface::handlePreviewPlay() {
     if(this->music == nullptr) return;
 
-    if((!this->music->isPlaying() || this->music->getPosition() > 0.95f) && this->beatmap != nullptr) {
+    bool almost_finished = false;
+    if((!this->music->isPlaying() || (almost_finished = this->music->getPosition() > 0.95f)) &&
+       this->beatmap != nullptr) {
         soundEngine->stop(this->music);
 
         if(soundEngine->play(this->music)) {
             // this is an assumption, but should be good enough for most songs
             // reset playback position when the song has nearly reached the end (when the user switches back to the results
             // screen or the songbrowser after playing)
-            if(this->music->getPosition() > 0.95f) this->iContinueMusicPos = 0;
+            // (check again after restarting due to async)
+            if(almost_finished || this->music->getPosition() > 0.95f) this->iContinueMusicPos = 0;
 
             if(this->music->getFrequency() < this->fMusicFrequencyBackup)  // player has died, reset frequency
                 this->music->setFrequency(this->fMusicFrequencyBackup);
