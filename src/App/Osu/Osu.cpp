@@ -254,7 +254,16 @@ Osu::Osu() {
         resourceManager->loadFont("SourceSansPro-Regular.otf", "FONT_OSU_SONGBROWSER", 35, true, newDPI);
     this->songBrowserFontBold =
         resourceManager->loadFont("SourceSansPro-Bold.otf", "FONT_OSU_SONGBROWSER_BOLD", 30, true, newDPI);
+
+    {
+        const std::string newIconFontPath = MCENGINE_FONTS_PATH "/forkawesome.ttf";
+        const std::string oldIconFontPath = MCENGINE_FONTS_PATH "/forkawesome-webfont.ttf";
+        if(!Environment::fileExists(newIconFontPath) && Environment::fileExists(oldIconFontPath)) {
+            Environment::renameFile(oldIconFontPath, newIconFontPath);
+        }
+    }
     this->fontIcons = resourceManager->loadFont("forkawesome.ttf", "FONT_OSU_ICONS", Icons::icons, 26, true, newDPI);
+
     this->fonts.push_back(defaultFont);
     this->fonts.push_back(this->titleFont);
     this->fonts.push_back(this->subTitleFont);
