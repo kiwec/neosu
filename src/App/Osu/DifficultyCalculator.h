@@ -78,7 +78,11 @@ class OsuDifficultyHitObject {
     [[nodiscard]] vec2 getOriginalRawPosAt(i32 pos) const;
     [[nodiscard]] f32 getT(i32 pos, bool raw) const;
 
-    [[nodiscard]] inline i32 getDuration() const { return endTime - time; }
+    [[nodiscard]] inline i32 getDuration() const {
+        // Sanity clamp because of that one Aspire map
+        // (MSVC std::clamp doesn't like when MAX < MIN)
+        return std::max(0, endTime - time);
+    }
 
    public:
     // circles (base)
