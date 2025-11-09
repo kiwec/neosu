@@ -1205,14 +1205,16 @@ void DirectX11Interface::onResolutionChange(vec2 newResolution) {
         UINT newWidth = static_cast<UINT>(this->vResolution.x);
         UINT newHeight = static_cast<UINT>(this->vResolution.y);
 
-        // auto swapDesc = this->queryCurrentSwapchainDesc();
-        // swapDesc.Width = newWidth;
-        // swapDesc.Height = newHeight;
-        // this->swapChainModeDesc = swapDesc;
+        if(!isExclusiveFS) {
+            auto swapDesc = this->queryCurrentSwapchainDesc();
+            swapDesc.Width = newWidth;
+            swapDesc.Height = newHeight;
+            this->swapChainModeDesc = swapDesc;
 
-        // hr = this->swapChain->ResizeTarget(&this->swapChainModeDesc);
-        // if(FAILED(hr))
-        //     debugLog("FATAL ERROR: couldn't ResizeTarget({:#x}, {:#x})!!!", (u32)hr, (u32)MAKE_DXGI_HRESULT(hr));
+            hr = this->swapChain->ResizeTarget(&this->swapChainModeDesc);
+            if(FAILED(hr))
+                debugLog("FATAL ERROR: couldn't ResizeTarget({:#x}, {:#x})!!!", (u32)hr, (u32)MAKE_DXGI_HRESULT(hr));
+        }
 
         // resize
         // NOTE: DXGI_FORMAT_UNKNOWN preserves the existing format
