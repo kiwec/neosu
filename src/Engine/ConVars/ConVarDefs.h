@@ -1001,6 +1001,7 @@ CONVAR(load_beatmap_background_images, true, CLIENT | SKINS | SERVER);
 CONVAR(minimize_on_focus_lost_if_borderless_windowed_fullscreen, false, CLIENT | SKINS | SERVER);
 CONVAR(minimize_on_focus_lost_if_fullscreen, true, CLIENT | SKINS | SERVER);
 CONVAR(mouse_raw_input, false, CLIENT | SKINS | SERVER);
+CONVAR(keyboard_raw_input, false, CLIENT | SKINS | SERVER, "listen to keyboard input on a separate thread (Windows only)");
 CONVAR(mouse_sensitivity, 1.0f, CLIENT | SKINS | SERVER);
 CONVAR(pen_input, true, CLIENT | SKINS | SERVER, "support OTD Artist Mode and native tablet drivers' pen events");
 CONVAR(nightcore_enjoyer, false, CLIENT | SKINS | SERVER);

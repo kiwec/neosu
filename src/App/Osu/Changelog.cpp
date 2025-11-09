@@ -24,8 +24,15 @@ Changelog::Changelog() : ScreenBackable() {
 
     std::vector<CHANGELOG> changelogs;
 
+    CHANGELOG v41_08;
+    v41_08.title = "41.08";
+    v41_08.changes = {
+        R"(- Added option to enable raw keyboard input on Windows)",
+    };
+    changelogs.push_back(v41_08);
+
     CHANGELOG v41_07;
-    v41_07.title = "41.07";
+    v41_07.title = "41.07 (2025-11-09)";
     v41_07.changes = {
         R"(- Added crash dump generation support (send us the .dmp file next to neosu.exe if the game crashes))",
         R"(- Added option to use BASSWASAPI event callbacks (similar to https://github.com/ppy/osu-framework/pull/6651))",

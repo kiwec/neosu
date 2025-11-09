@@ -224,7 +224,7 @@ void Mouse::removeListener(MouseListener *mouseListener) {
 
 void Mouse::onRawInputChanged(float newval) {
     this->bIsRawInputDesired = !!static_cast<int>(newval);
-    env->setRawInput(this->bIsRawInputDesired);  // request environment to change the real OS cursor state (may or may
+    env->setRawMouseInput(this->bIsRawInputDesired);  // request environment to change the real OS cursor state (may or may
                                                  // not take effect immediately)
 
     // non-rawinput with sensitivity != 1 is unsupported

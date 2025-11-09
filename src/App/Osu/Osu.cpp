@@ -1569,14 +1569,12 @@ void Osu::updateWindowsKeyDisable() {
                                  (!(this->map_iface->isPaused() || this->map_iface->isContinueScheduled()) ||
                                   this->map_iface->isRestartScheduled()) &&
                                  !cv::mod_autoplay.getBool();
-    bool grab = false;
-    if(cv::win_disable_windows_key_while_playing.getBool()) {
-        grab = isPlayerPlaying;
-    }
-    logIfCV(debug_osu, "{} keyboard, {} to text input", grab ? "grabbed" : "ungrabbed",
+
+    const bool disable = cv::win_disable_windows_key_while_playing.getBool() && isPlayerPlaying;
+    logIfCV(debug_osu, "{} windows key, {} to text input", disable ? "disabling" : "enabling",
             isPlayerPlaying ? "not listening" : "listening");
 
-    env->grabKeyboard(grab);
+    env->setWindowsKeyDisabled(disable);
 
     // this is kind of a weird place to put this, but we don't care about text input when in gameplay
     // on some platforms, text input being enabled might result in an on-screen keyboard showing up

@@ -87,7 +87,7 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result) {
     auto *fmain = static_cast<SDLMain *>(appstate);
 
     fmain->setCursorClip(false, {});  // release input devices
-    fmain->grabKeyboard(false);
+    fmain->setWindowsKeyDisabled(false);
 
     const bool restart = fmain->isRestartScheduled();
     std::vector<std::string> restartArgs{};

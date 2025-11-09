@@ -1001,13 +1001,7 @@ OptionsMenu::OptionsMenu() : ScreenBackable() {
     this->addLabel("WARNING: Set Sensitivity to 1 for tablets!")->setTextColor(0xffff0000);
     this->addLabel("");
 
-    this->addCheckbox("Raw Input", &cv::mouse_raw_input);
-    // if constexpr(Env::cfg(OS::LINUX)) {
-    //     this->addLabel("Use system settings to change the mouse sensitivity.")->setTextColor(0xff555555);
-    //     this->addLabel("");
-    //     this->addLabel("Use xinput or xsetwacom to change the tablet area.")->setTextColor(0xff555555);
-    //     this->addLabel("");
-    // }
+    this->addCheckbox("Raw Mouse Input", &cv::mouse_raw_input);
     this->addCheckbox("Confine Cursor (Windowed)", &cv::confine_cursor_windowed);
     this->addCheckbox("Confine Cursor (Fullscreen)", &cv::confine_cursor_fullscreen);
     this->addCheckbox("Confine Cursor (NEVER)", "Overrides automatic cursor clipping during gameplay.",
@@ -1019,6 +1013,9 @@ OptionsMenu::OptionsMenu() : ScreenBackable() {
     this->addSpacer();
     const UString keyboardSectionTags = "keyboard keys key bindings binds keybinds keybindings";
     CBaseUIElement *subSectionKeyboard = this->addSubSection("Keyboard", keyboardSectionTags);
+    if constexpr(Env::cfg(OS::WINDOWS)) {
+        this->addCheckbox("Raw Keyboard Input", &cv::keyboard_raw_input);
+    }
     UIButton *resetAllKeyBindingsButton = this->addButton("Reset all key bindings");
     resetAllKeyBindingsButton->setColor(0xffd90000);
     resetAllKeyBindingsButton->setClickCallback(SA::MakeDelegate<&OptionsMenu::onKeyBindingsResetAllPressed>(this));

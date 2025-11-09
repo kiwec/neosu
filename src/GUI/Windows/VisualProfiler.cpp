@@ -102,6 +102,16 @@ void VisualProfiler::draw() {
                                 textFont, this->textLines);
                     addTextLine(fmt::format("Env Mouse Pos: {:d} x {:d}"_cf, (int)envMousePos.x, (int)envMousePos.y),
                                 textFont, this->textLines);
+                    addTextLine(fmt::format("Mouse Input Grabbed: {}"_cf, env->isMouseInputGrabbed()), textFont,
+                                this->textLines);
+                    addTextLine(fmt::format("Raw Mouse Input: {}"_cf, env->isOSMouseInputRaw()), textFont,
+                                this->textLines);
+                    addTextLine(fmt::format("Keyboard Input Grabbed: {}"_cf, env->isKeyboardInputGrabbed()), textFont,
+                                this->textLines);
+                    if constexpr(Env::cfg(OS::WINDOWS)) {
+                        addTextLine(fmt::format("Raw Keyboard Input: {}"_cf, env->isOSKeyboardInputRaw()), textFont,
+                                    this->textLines);
+                    }
                     addTextLine(fmt::format("Sound Device: {:s}"_cf, soundEngine->getOutputDeviceName()), textFont,
                                 this->textLines);
                     addTextLine(fmt::format("Sound Volume: {:f}"_cf, soundEngine->getVolume()), textFont,

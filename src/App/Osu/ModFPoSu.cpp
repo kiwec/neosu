@@ -452,7 +452,7 @@ void ModFPoSu::handleInputOverrides(bool rawDeltasRequired) {
             osu->getNotificationOverlay()->addToast(
                 R"(Forced raw input. Enable "Tablet/Absolute Mode" if you're using a tablet!)", INFO_TOAST);
         }
-        env->setRawInput(rawDeltasRequired);
+        env->setRawMouseInput(rawDeltasRequired);
     }
 }
 

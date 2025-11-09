@@ -94,6 +94,10 @@ Environment::Environment(const std::unordered_map<std::string, std::optional<std
     m_bIsKMSDRM = (m_sdldriver == "kmsdrm");
     m_bIsWayland = (m_sdldriver == "wayland");
 
+    m_bRawKB = SDL_GetHintBoolean(SDL_HINT_WINDOWS_RAW_KEYBOARD, false);
+    // the hints might already be set from the startup environment, so respect that here (1)
+    m_bWinKeyDisabled = m_bRawKB ? SDL_GetHintBoolean(SDL_HINT_WINDOWS_RAW_KEYBOARD_EXCLUDE_HOTKEYS, false) : false;
+
     // use directx if:
     // we we built with support for it, and
     // (either OpenGL(ES) is missing, or
@@ -104,6 +108,8 @@ Environment::Environment(const std::unordered_map<std::string, std::optional<std
     // setup callbacks
     cv::debug_env.setCallback(SA::MakeDelegate<&Environment::onLogLevelChange>(this));
     cv::monitor.setCallback(SA::MakeDelegate<&Environment::onMonitorChange>(this));
+    cv::keyboard_raw_input.setValue(m_bRawKB);  // (2)
+    cv::keyboard_raw_input.setCallback(SA::MakeDelegate<&Environment::onRawKeyboardChange>(this));
 
     // set high priority right away
     McThread::set_current_thread_prio((McThread::Priority)(int)cv::win_processpriority.getFloat());
@@ -135,7 +141,7 @@ Graphics *Environment::createRenderer() {
 }
 
 void Environment::shutdown() {
-    setRawInput(false);
+    setRawMouseInput(false);
 
     SDL_Event event{};
     event.quit = {.type = SDL_EVENT_QUIT, .reserved = {}, .timestamp = Timing::getTicksNS()};
@@ -851,7 +857,7 @@ void Environment::setCursor(CURSORTYPE cur) {
     }
 }
 
-void Environment::setRawInput(bool raw) {
+void Environment::setRawMouseInput(bool raw) {
     if(raw == SDL_GetWindowRelativeMouseMode(m_window)) {
         // nothing to do
         goto done;
@@ -876,12 +882,23 @@ done:
     updateWindowFlags();
 }
 
+void Environment::setRawKeyboardInput(bool raw) {
+    if constexpr(!Env::cfg(OS::WINDOWS)) return;  // does not exist
+
+    m_bRawKB = raw;
+
+    SDL_SetHint(SDL_HINT_WINDOWS_RAW_KEYBOARD, raw ? "1" : "0");
+
+    // different code paths for enabled/disabled, so update that here
+    setWindowsKeyDisabled(m_bWinKeyDisabled);
+}
+
 bool Environment::isCursorVisible() const { return SDL_CursorVisible(); }
 
 void Environment::setCursorVisible(bool visible) {
     if(visible) {
         // disable rawinput (allow regular mouse movement)
-        setRawInput(false);
+        setRawMouseInput(false);
         SDL_SetWindowMouseGrab(m_window, false);  // release grab
         SDL_ShowCursor();
     } else {
@@ -889,7 +906,7 @@ void Environment::setCursorVisible(bool visible) {
         SDL_HideCursor();
 
         if(mouse && mouse->isRawInputWanted()) {  // re-enable rawinput
-            setRawInput(true);
+            setRawMouseInput(true);
         } else if(isCursorClipped()) {
             // regrab if clipped
             SDL_SetWindowMouseGrab(m_window, true);
@@ -932,7 +949,24 @@ UString Environment::keyCodeToString(KEYCODE keyCode) {
     }
 }
 
-bool Environment::grabKeyboard(bool grab) { return SDL_SetWindowKeyboardGrab(m_window, grab); }
+bool Environment::setWindowsKeyDisabled(bool disable) {
+    m_bWinKeyDisabled = disable;
+    if constexpr(!Env::cfg(OS::WINDOWS)) {
+        // grabbing keyboard is the only way to do this outside of windows
+        m_bWinKeyDisabled = SDL_SetWindowKeyboardGrab(m_window, disable) && disable;
+    } else {
+        SDL_SetHint(SDL_HINT_WINDOWS_RAW_KEYBOARD_EXCLUDE_HOTKEYS, disable ? "1" : "0");
+        if(m_bRawKB) {
+            // always ungrab keyboard if we're using raw keyboard input (causes strange issues and isn't required)
+            SDL_SetWindowKeyboardGrab(m_window, false);
+        } else {
+            // if we're not using raw input, grab the keyboard to disable windows keys
+            m_bWinKeyDisabled = SDL_SetWindowKeyboardGrab(m_window, disable) && disable;
+        }
+    }
+
+    return m_bWinKeyDisabled;
+}
 
 void Environment::listenToTextInput(bool listen) {
     listen ? SDL_StartTextInput(m_window) : SDL_StopTextInput(m_window);
