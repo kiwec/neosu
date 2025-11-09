@@ -7,7 +7,7 @@ class UIBackButton final : public CBaseUIButton {
     UIBackButton(float xPos, float yPos, float xSize, float ySize, UString name);
 
     void draw() override;
-    void mouse_update(bool *propagate_clicks) override;
+    void mouse_update(bool* propagate_clicks) override;
 
     void onMouseDownInside(bool left = true, bool right = false) override;
     void onMouseInside() override;
@@ -20,4 +20,6 @@ class UIBackButton final : public CBaseUIButton {
    private:
     float fAnimation;
     float fImageScale;
+
+    bool bUseDefaultBack{false};
 };

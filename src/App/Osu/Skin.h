@@ -202,6 +202,7 @@ struct Skin final {
     BasicSkinImage i_button_left_default{};
     BasicSkinImage i_button_mid_default{};
     BasicSkinImage i_button_right_default{};
+    SkinImage *i_menu_back2_DEFAULTSKIN{nullptr};
     SkinImage *i_menu_back2{nullptr};
     SkinImage *i_sel_mode{nullptr};
     SkinImage *i_sel_mode_over{nullptr};

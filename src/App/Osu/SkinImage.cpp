@@ -223,7 +223,7 @@ SkinImage::~SkinImage() {
     this->filepathsForExport.clear();
 }
 
-void SkinImage::draw(vec2 pos, float scale) {
+void SkinImage::draw(vec2 pos, float scale) const {
     if(this->images.size() < 1) return;
 
     scale *= this->getScale();  // auto scale to current resolution
@@ -271,7 +271,7 @@ void SkinImage::draw(vec2 pos, float scale) {
     g->popTransform();
 }
 
-void SkinImage::drawRaw(vec2 pos, float scale, AnchorPoint anchor) {
+void SkinImage::drawRaw(vec2 pos, float scale, AnchorPoint anchor) const {
     if(this->images.size() < 1) return;
 
     g->pushTransform();
@@ -368,29 +368,29 @@ void SkinImage::setAnimationFrameClampUp() {
         this->iFrameCounter = this->images.size() - 1;
 }
 
-vec2 SkinImage::getSize() {
+vec2 SkinImage::getSize() const {
     if(this->images.size() > 0)
         return this->getImageForCurrentFrame().img->getSize() * this->getScale();
     else
         return this->getSizeBase();
 }
 
-vec2 SkinImage::getSizeBase() { return this->vBaseSizeForScaling2x * this->getResolutionScale(); }
+vec2 SkinImage::getSizeBase() const { return this->vBaseSizeForScaling2x * this->getResolutionScale(); }
 
-vec2 SkinImage::getSizeBaseRaw() { return this->vBaseSizeForScaling2x * this->getImageForCurrentFrame().scale; }
+vec2 SkinImage::getSizeBaseRaw() const { return this->vBaseSizeForScaling2x * this->getImageForCurrentFrame().scale; }
 
-vec2 SkinImage::getImageSizeForCurrentFrame() { return this->getImageForCurrentFrame().img->getSize(); }
+vec2 SkinImage::getImageSizeForCurrentFrame() const { return this->getImageForCurrentFrame().img->getSize(); }
 
-float SkinImage::getScale() { return this->getImageScale() * this->getResolutionScale(); }
+float SkinImage::getScale() const { return this->getImageScale() * this->getResolutionScale(); }
 
-float SkinImage::getImageScale() {
+float SkinImage::getImageScale() const {
     if(this->images.size() > 0)
         return this->vBaseSizeForScaling2x.x / this->getSizeBaseRaw().x;  // allow overscale and underscale
     else
         return 1.0f;
 }
 
-float SkinImage::getResolutionScale() { return Osu::getImageScale(this->vBaseSizeForScaling2x, this->fOsuSize); }
+float SkinImage::getResolutionScale() const { return Osu::getImageScale(this->vBaseSizeForScaling2x, this->fOsuSize); }
 
 bool SkinImage::isReady() {
     if(this->bReady) return true;
@@ -403,7 +403,7 @@ bool SkinImage::isReady() {
     return this->bReady;
 }
 
-SkinImage::IMAGE SkinImage::getImageForCurrentFrame() {
+SkinImage::IMAGE SkinImage::getImageForCurrentFrame() const {
     if(this->images.size() > 0)
         return this->images[this->iFrameCounter % this->images.size()];
     else {

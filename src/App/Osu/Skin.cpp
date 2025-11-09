@@ -464,7 +464,16 @@ void Skin::load() {
     this->checkLoadImage(this->i_button_mid, "button-middle", "SKIN_BUTTON_MIDDLE");
     this->checkLoadImage(this->i_button_right, "button-right", "SKIN_BUTTON_RIGHT");
     this->randomizeFilePath();
+    // always load default skin menu-back (to show in options menu)
+    { 
+        // HACKHACK to avoid annoying code changes
+        std::string origpath = this->file_path;
+        this->file_path = MCENGINE_IMAGES_PATH "/default/";
+        this->i_menu_back2_DEFAULTSKIN = this->createSkinImage("menu-back", vec2(225, 87), 54);
+        this->file_path = origpath;
+    }
     this->i_menu_back2 = this->createSkinImage("menu-back", vec2(225, 87), 54);
+
     this->randomizeFilePath();
 
     // NOTE: scaling is ignored when drawing this specific element

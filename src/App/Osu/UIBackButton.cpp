@@ -6,6 +6,7 @@
 #include "AnimationHandler.h"
 #include "ConVar.h"
 #include "Engine.h"
+#include "OptionsMenu.h"
 #include "Osu.h"
 #include "Skin.h"
 #include "SkinImage.h"
@@ -24,8 +25,10 @@ void UIBackButton::draw() {
     g->pushTransform();
     {
         g->setColor(0xffffffff);
-        osu->getSkin()->i_menu_back2->draw(
-            this->vPos + (osu->getSkin()->i_menu_back2->getSize() / 2.f) * this->fImageScale, this->fImageScale);
+
+        const SkinImage *backimg =
+            this->bUseDefaultBack ? osu->getSkin()->i_menu_back2_DEFAULTSKIN : osu->getSkin()->i_menu_back2;
+        backimg->draw(this->vPos + (backimg->getSize() / 2.f) * this->fImageScale, this->fImageScale);
     }
     g->popTransform();
 
@@ -67,8 +70,20 @@ void UIBackButton::onMouseOutside() {
 }
 
 void UIBackButton::updateLayout() {
+    const SkinImage *backimg = osu->getSkin()->i_menu_back2;
+    const auto &optmenu = osu->getOptionsMenu();
+
+    if(optmenu && optmenu->isVisible() && backimg->getSize().y > (optmenu->getSize().y / 4) &&
+       (osu->getSkin()->i_menu_back2_DEFAULTSKIN && osu->getSkin()->i_menu_back2_DEFAULTSKIN->isReady())) {
+        // always show default back button when options menu is showing, if its height is > 1/4 the options menu height
+        backimg = osu->getSkin()->i_menu_back2_DEFAULTSKIN;
+        this->bUseDefaultBack = true;
+    } else {
+        this->bUseDefaultBack = false;
+    }
+
     this->fImageScale = Osu::getUIScale();
-    this->setSize(osu->getSkin()->i_menu_back2->getSize() * this->fImageScale);
+    this->setSize(backimg->getSize() * this->fImageScale);
 }
 
 void UIBackButton::resetAnimation() {

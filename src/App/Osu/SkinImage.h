@@ -23,11 +23,11 @@ class SkinImage final {
     ~SkinImage();
 
     void draw(vec2 pos,
-              float scale = 1.0f);  // for objects scaled automatically to the current resolution
+              float scale = 1.0f) const;  // for objects scaled automatically to the current resolution
 
     // for objects which scale depending on external factors
     // (e.g. hitobjects, depending on the diameter defined by the CS)
-    void drawRaw(vec2 pos, float scale, AnchorPoint anchor = AnchorPoint::CENTER);
+    void drawRaw(vec2 pos, float scale, AnchorPoint anchor = AnchorPoint::CENTER) const;
 
     void update(float speedMultiplier, bool useEngineTimeForAnimations = true, i32 curMusicPos = 0);
 
@@ -40,18 +40,26 @@ class SkinImage final {
 
     void setDrawClipWidthPercent(float drawClipWidthPercent) { this->fDrawClipWidthPercent = drawClipWidthPercent; }
 
-    vec2 getSize();         // absolute size scaled to the current resolution (depending on the osuSize as defined when
-                            // loaded in Skin.cpp)
-    vec2 getSizeBase();     // default assumed size scaled to the current resolution. this is the base resolution which
-                            // is used for all scaling calculations (to allow skins to overscale or underscale objects)
-    vec2 getSizeBaseRaw();  // default assumed size UNSCALED. that means that e.g. hitcircles will return either
-                            // 128x128 or 256x256 depending on the @2x flag in the filename
+    // absolute size scaled to the current resolution (depending on the osuSize as defined when
+    // loaded in Skin.cpp)
+    [[nodiscard]] vec2 getSize() const;
+
+    // default assumed size scaled to the current resolution. this is the base resolution which
+    // is used for all scaling calculations (to allow skins to overscale or underscale objects)
+    [[nodiscard]] vec2 getSizeBase() const;
+
+    // default assumed size UNSCALED. that means that e.g. hitcircles will return either
+    // 128x128 or 256x256 depending on the @2x flag in the filename
+    [[nodiscard]] vec2 getSizeBaseRaw() const;
+
     [[nodiscard]] inline vec2 getSizeBaseRawForScaling2x() const { return this->vBaseSizeForScaling2x; }
 
-    vec2 getImageSizeForCurrentFrame();  // width/height of the actual image texture as loaded from disk
-    IMAGE getImageForCurrentFrame();
+    // width/height of the actual image texture as loaded from disk
+    [[nodiscard]] vec2 getImageSizeForCurrentFrame() const;
 
-    float getResolutionScale();
+    [[nodiscard]] IMAGE getImageForCurrentFrame() const;
+
+    [[nodiscard]] float getResolutionScale() const;
 
     bool isReady();
 
@@ -69,8 +77,8 @@ class SkinImage final {
     bool load(const std::string& skinElementName, const std::string& animationSeparator, bool ignoreDefaultSkin);
     bool loadImage(const std::string& skinElementName, bool ignoreDefaultSkin);
 
-    float getScale();
-    float getImageScale();
+    [[nodiscard]] float getScale() const;
+    [[nodiscard]] float getImageScale() const;
 
     Skin* skin;
     bool bReady;

@@ -779,7 +779,7 @@ void Osu::update() {
             this->skinScheduledToLoad = nullptr;
 
             // force layout update after all skin elements have been loaded
-            this->last_res_change_req_src |= R_MISC_MANUAL;
+            this->forEachScreen<&OsuScreen::onResolutionChange>(this->getVirtScreenSize());
 
             // notify if done after reload
             if(this->bSkinLoadWasReload) {
