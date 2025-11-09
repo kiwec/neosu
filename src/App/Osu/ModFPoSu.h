@@ -37,6 +37,7 @@ class ModFPoSu {
     [[nodiscard]] float get3DPlayfieldScale() const;
 
     [[nodiscard]] inline Shader *getHitcircleShader() const { return this->hitcircleShader; }
+    void resetCamera();
 
    private:
     void handleZoomedChange();

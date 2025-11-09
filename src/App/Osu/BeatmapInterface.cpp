@@ -671,6 +671,11 @@ bool BeatmapInterface::start() {
     osu->updateConfineCursor();
     osu->updateWindowsKeyDisable();
 
+    if(cv::mod_fposu.getBool() && cv::fposu_center_cursor_on_start.getBool() &&
+       !(env->isCursorVisible() || !env->isCursorInWindow() || !env->winFocused())) {
+        osu->getFPoSu()->resetCamera();
+    }
+
     soundEngine->play(this->getSkin()->s_expand);
 
     // NOTE: loading failures are handled dynamically in update(), so temporarily assume everything has worked in here

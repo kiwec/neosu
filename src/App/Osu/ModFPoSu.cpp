@@ -319,6 +319,10 @@ void ModFPoSu::update() {
     }
 }
 
+void ModFPoSu::resetCamera() {
+    this->camera->lookAt(this->calculateUnProjectedVector(osu->getVirtScreenRect().getCenter()));
+}
+
 void ModFPoSu::noclipMove() {
     const float noclipSpeed = cv::fposu_noclipspeed.getFloat() * (keyboard->isShiftDown() ? 3.0f : 1.0f) *
                               (keyboard->isControlDown() ? 0.2f : 1);

@@ -906,6 +906,8 @@ CONVAR(force_legacy_slider_renderer, false, CLIENT | SKINS | SERVER,
 CONVAR(fposu_3d_skybox, true, CLIENT | SKINS | SERVER);
 CONVAR(fposu_3d_skybox_size, 450.0f, CLIENT | SKINS | SERVER);
 CONVAR(fposu_absolute_mode, false, CLIENT | SKINS | SERVER);
+CONVAR(fposu_center_cursor_on_start, true, CLIENT,
+       "snap cursor to the center of the screen when starting a beatmap in fposu mode");
 CONVAR(fposu_cube, true, CLIENT | SKINS | SERVER);
 CONVAR(fposu_cube_size, 500.0f, CLIENT | SKINS | SERVER);
 CONVAR(fposu_cube_tint_b, 255, CLIENT | SKINS | SERVER, "from 0 to 255");
