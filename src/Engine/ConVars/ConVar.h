@@ -105,7 +105,7 @@ class ConVar {
 
    public:
     // command-only constructor
-    explicit ConVar(const char *name, uint8_t flags = 0) : sName(name), sHelpString(""), sDefaultValue(name) {
+    explicit ConVar(const char *name, uint8_t flags = cv::CLIENT) : sName(name), sHelpString(""), sDefaultValue(name) {
         this->type = CONVAR_TYPE::STRING;
         this->iFlags = cv::NOSAVE | flags;
         this->addConVar();
@@ -192,6 +192,7 @@ class ConVar {
 
     template <typename T>
     void setValue(T &&value, bool doCallback = true, CvarEditor editor = CvarEditor::CLIENT) {
+        if(!this->bHasValue) return; // ignore command convars
         if(editor == CvarEditor::CLIENT && !this->isFlagSet(cv::CLIENT)) return;
         if(editor == CvarEditor::SKIN && !this->isFlagSet(cv::SKINS)) return;
         if(editor == CvarEditor::SERVER && !this->isFlagSet(cv::SERVER)) return;

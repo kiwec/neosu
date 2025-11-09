@@ -159,6 +159,8 @@ ConsoleBox::ConsoleBox() : CBaseUIElement(0, 0, 0, 0, "") {
     // convar callbacks
     cv::cmd::showconsolebox.setCallback(SA::MakeDelegate<&ConsoleBox::show>(this));
     cv::cmd::clear.setCallback(SA::MakeDelegate<&ConsoleBox::clear>(this));
+
+    Console::execConfigFile("autoexec.cfg");
 }
 
 ConsoleBox::~ConsoleBox() {
