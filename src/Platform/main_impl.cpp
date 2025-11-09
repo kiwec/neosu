@@ -251,6 +251,9 @@ SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
 
                 case SDL_EVENT_WINDOW_MOUSE_ENTER:
                     m_bIsCursorInsideWindow = true;
+                    if(m_bHideCursorPending) {
+                        setCursorVisible(false);
+                    }
                     break;
 
                 case SDL_EVENT_WINDOW_MOUSE_LEAVE:

@@ -238,7 +238,6 @@ class Environment {
     void setCursorVisible(bool visible);
     void setCursorClip(bool clip, McRect rect);
     void setRawMouseInput(bool raw);     // enable/disable OS-level rawinput
-    void setRawKeyboardInput(bool raw);  // enable/disable OS-level rawinput
 
     void setOSMousePos(vec2 pos);
     inline void setMousePos(float x, float y) { setOSMousePos(vec2{x, y}); }
@@ -247,6 +246,8 @@ class Environment {
     UString keyCodeToString(KEYCODE keyCode);
     void listenToTextInput(bool listen);
     bool setWindowsKeyDisabled(bool disable);
+    void setRawKeyboardInput(bool raw);  // enable/disable OS-level rawinput
+
     [[nodiscard]] constexpr bool isOSKeyboardInputRaw() const { return Env::cfg(OS::WINDOWS) && m_bRawKB; }
     [[nodiscard]] constexpr bool isKeyboardInputGrabbed() const {
         return flags::has<WinFlags::F_KEYBOARD_GRABBED>(m_winflags);
@@ -324,6 +325,7 @@ class Environment {
     vec2 m_vLastAbsMousePos{0.f};
     bool m_bIsCursorInsideWindow;
     bool m_bCursorClipped;
+    bool m_bHideCursorPending;
     McRect m_cursorClipRect;
     CURSORTYPE m_cursorType;
     std::map<CURSORTYPE, SDL_Cursor *> m_mCursorIcons;

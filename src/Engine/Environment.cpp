@@ -73,6 +73,7 @@ Environment::Environment(const std::unordered_map<std::string, std::optional<std
 
     m_bIsCursorInsideWindow = true;
     m_bCursorClipped = false;
+    m_bHideCursorPending = false;
     m_cursorType = CURSORTYPE::CURSOR_NORMAL;
 
     // lazy init
@@ -897,11 +898,18 @@ bool Environment::isCursorVisible() const { return SDL_CursorVisible(); }
 
 void Environment::setCursorVisible(bool visible) {
     if(visible) {
+        m_bHideCursorPending = false;
         // disable rawinput (allow regular mouse movement)
         setRawMouseInput(false);
         SDL_SetWindowMouseGrab(m_window, false);  // release grab
         SDL_ShowCursor();
     } else {
+        // wait for cursor to enter the window before hiding (during event collection)
+        if(!m_bIsCursorInsideWindow) {
+            m_bHideCursorPending = true;
+            return;
+        }
+        m_bHideCursorPending = false;
         setCursor(CURSORTYPE::CURSOR_NORMAL);
         SDL_HideCursor();
 
