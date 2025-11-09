@@ -8,8 +8,10 @@
 #ifdef MCENGINE_FEATURE_SOLOUD
 #include "SyncMutex.h"
 
+#include "soloud.h"
 #include "soloud_audiosource.h"
 #include "soloud_intrin.h"
+
 #include <atomic>
 #include <memory>
 
