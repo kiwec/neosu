@@ -553,8 +553,8 @@ void Osu::draw() {
         this->hud->drawLoadingSmall("");
     }
 
-    // draw cursor
-    if(this->isInPlayMode() && !this->map_iface->isPaused()) {
+    // draw cursor (gameplay)
+    if(this->isInPlayMode()) {
         vec2 cursorPos = this->map_iface->getCursorPos();
         bool drawSecondTrail = (cv::mod_autoplay.getBool() || cv::mod_autopilot.getBool() ||
                                 this->map_iface->is_watching || BanchoState::spectating);
@@ -564,7 +564,10 @@ void Osu::draw() {
             updateAndDrawTrail = false;
         }
         this->hud->drawCursor(cursorPos, fadingCursorAlpha, drawSecondTrail, updateAndDrawTrail);
-    } else {
+    }
+
+    // draw cursor (menus)
+    if(!this->isInPlayMode() || this->map_iface->isPaused()) {
         this->hud->drawCursor(mouse->getPos());
     }
 
