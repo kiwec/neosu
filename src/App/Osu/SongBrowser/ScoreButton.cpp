@@ -61,8 +61,6 @@ void ScoreButton::draw() {
         g->pushTransform();
         {
             f32 scale = SongBrowser::getUIScale2(backgroundImage.is2x() ? 0.5f : 1.f);
-            scale *= 0.555f;  // idk (lol, idiot kiwec)
-
             g->scale(scale, scale);
             g->translate(this->vPos.x, this->vPos.y + this->vSize.y / 2);
             g->drawImage(backgroundImage, AnchorPoint::LEFT);
