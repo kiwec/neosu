@@ -59,8 +59,8 @@ static void update_ppv2(const FinishedScore& score) {
         .upToObjectIndex = -1,
         .incremental = {},
 
-        .outAimStrains = {},
-        .outSpeedStrains = {},
+        .outAimStrains = &info.aimStrains,
+        .outSpeedStrains = &info.speedStrains,
 
         .dead = dead,
     };

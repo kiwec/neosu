@@ -173,8 +173,8 @@ static void run_thread() {
                     .difficultSpeedStrains = &computed_info->info.difficult_speed_strains,
                     .upToObjectIndex = -1,
                     .incremental = {},
-                    .outAimStrains = {},
-                    .outSpeedStrains = {},
+                    .outAimStrains = &computed_info->info.aimStrains,
+                    .outSpeedStrains = &computed_info->info.speedStrains,
                     .dead = dead,
                 };
                 computed_info->info.total_stars = DifficultyCalculator::calculateStarDiffForHitObjects(params);

@@ -1883,8 +1883,8 @@ void HUD::drawScrubbingTimeline(u32 beatmapTime, u32 beatmapLengthPlayable, u32 
 
     // draw strain graph
     if(cv::draw_scrubbing_timeline_strain_graph.getBool()) {
-        const std::vector<f64> &aimStrains = osu->getMapInterface()->aimStrains;
-        const std::vector<f64> &speedStrains = osu->getMapInterface()->speedStrains;
+        const std::vector<f64> &aimStrains = osu->getMapInterface()->getWholeMapPPInfo().aimStrains;
+        const std::vector<f64> &speedStrains = osu->getMapInterface()->getWholeMapPPInfo().speedStrains;
 
         u32 nb_strains = aimStrains.size();
         if(aimStrains.size() > 0 && aimStrains.size() == speedStrains.size()) {

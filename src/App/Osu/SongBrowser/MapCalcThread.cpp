@@ -108,8 +108,8 @@ void MapCalcThread::run() {
                                                     .difficultSpeedStrains = &info.difficult_speed_strains,
                                                     .upToObjectIndex = -1,
                                                     .incremental = {},
-                                                    .outAimStrains = {},
-                                                    .outSpeedStrains = {},
+                                                    .outAimStrains = &info.aimStrains,
+                                                    .outSpeedStrains = &info.speedStrains,
                                                     .dead = this->should_stop};
 
         result.star_rating = static_cast<f32>(DifficultyCalculator::calculateStarDiffForHitObjects(params));

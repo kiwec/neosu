@@ -147,9 +147,6 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
     [[nodiscard]] inline int getNPS() const { return this->iNPS; }
     [[nodiscard]] inline int getND() const { return this->iND; }
 
-    std::vector<f64> aimStrains;
-    std::vector<f64> speedStrains;
-
     // set to false when using protected cvars
     bool is_submittable = true;
 

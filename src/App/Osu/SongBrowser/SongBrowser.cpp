@@ -635,8 +635,8 @@ void SongBrowser::draw() {
 
     // draw strain graph of currently selected beatmap
     if(cv::draw_songbrowser_strain_graph.getBool()) {
-        const std::vector<double> &aimStrains = osu->getMapInterface()->aimStrains;
-        const std::vector<double> &speedStrains = osu->getMapInterface()->speedStrains;
+        const std::vector<f64> &aimStrains = osu->getMapInterface()->getWholeMapPPInfo().aimStrains;
+        const std::vector<f64> &speedStrains = osu->getMapInterface()->getWholeMapPPInfo().speedStrains;
         const float speedMultiplier = osu->getMapInterface()->getSpeedMultiplier();
 
         if(aimStrains.size() > 0 && aimStrains.size() == speedStrains.size()) {

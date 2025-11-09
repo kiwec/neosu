@@ -2229,8 +2229,6 @@ void BeatmapInterface::update() {
             this->ppv2_calc.enqueue([=]() {
                 pp_info info;
 
-                // XXX: slow
-                // NOTE: this should be using incremental calc, not recalc from the start every time...
                 std::atomic<bool> dead{false};
                 auto diffres = DatabaseBeatmap::loadDifficultyHitObjects(osufile_path, AR, CS, speedMultiplier, dead);
 
@@ -2250,9 +2248,9 @@ void BeatmapInterface::update() {
                     .speedNotes = &info.speed_notes,
                     .difficultSpeedStrains = &info.difficult_speed_strains,
                     .upToObjectIndex = current_hitobject,
-                    .incremental = {},
-                    .outAimStrains = {},
-                    .outSpeedStrains = {},
+                    .incremental = {},  // XXX/TODO: slow, should be incremental calc here! but threads are scary...
+                    .outAimStrains = &info.aimStrains,
+                    .outSpeedStrains = &info.speedStrains,
                     .dead = dead,
                 };
 
@@ -3587,8 +3585,8 @@ FinishedScore BeatmapInterface::saveAndSubmitScore(bool quit) {
                                                 .difficultSpeedStrains = &difficultSpeedStrains,
                                                 .upToObjectIndex = -1,
                                                 .incremental = {},
-                                                .outAimStrains = &this->aimStrains,
-                                                .outSpeedStrains = &this->speedStrains,
+                                                .outAimStrains = {},
+                                                .outSpeedStrains = {},
                                                 .dead = dead};
 
     const f64 totalStars = DifficultyCalculator::calculateStarDiffForHitObjects(params);
