@@ -3,11 +3,11 @@
 
 #ifndef MCENGINE_FEATURE_DISCORD
 namespace DiscRPC {
-void init_discord_sdk() {}
-void tick_discord_sdk() {}
-void destroy_discord_sdk() {}
-void clear_discord_presence() {}
-void set_discord_presence(struct DiscordActivity* /*activity*/) {}
+void init() {}
+void tick() {}
+void destroy() {}
+void clear_activity() {}
+void set_activity(struct DiscordActivity* /*activity*/) {}
 }  // namespace DiscRPC
 
 #else
