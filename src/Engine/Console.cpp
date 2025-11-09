@@ -34,7 +34,7 @@ void Console::processCommand(std::string_view command, bool fromFile) {
             commandName = tokens[i];
         else {
             commandValue.append(tokens[i]);
-            if(i < (tokens.size() - 1)) commandValue.append(" ");
+            if(i < (tokens.size() - 1)) commandValue.push_back(' ');
         }
     }
 
@@ -64,11 +64,11 @@ void Console::processCommand(std::string_view command, bool fromFile) {
 
         bool doLog = false;
         if(commandValue.length() < 1) {
-            doLog = var->hasValue();  // assume ConCommands never have helpstrings
+            doLog = var->canHaveValue();  // assume ConCommands never have helpstrings
 
             logMessage = commandName;
 
-            if(var->hasValue()) {
+            if(var->canHaveValue()) {
                 logMessage.append(fmt::format(" = {:s} ( def. \"{:s}\" , ", var->getString(), var->getDefaultString()));
                 logMessage.append(ConVar::typeToString(var->getType()));
                 logMessage.append(", ");
@@ -81,7 +81,7 @@ void Console::processCommand(std::string_view command, bool fromFile) {
                 logMessage.append(" - ");
                 logMessage.append(helpstring);
             }
-        } else if(var->hasValue()) {
+        } else if(var->canHaveValue()) {
             doLog = true;
 
             logMessage = commandName;

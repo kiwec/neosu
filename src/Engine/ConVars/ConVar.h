@@ -192,7 +192,8 @@ class ConVar {
 
     template <typename T>
     void setValue(T &&value, bool doCallback = true, CvarEditor editor = CvarEditor::CLIENT) {
-        if(!this->bHasValue) return; // ignore command convars
+        // if(!this->bCanHaveValue) return; // ignore command convars
+        // STUPID: even command convars need to run through all of this validation logic to run callbacks (like find)
         if(editor == CvarEditor::CLIENT && !this->isFlagSet(cv::CLIENT)) return;
         if(editor == CvarEditor::SKIN && !this->isFlagSet(cv::SKINS)) return;
         if(editor == CvarEditor::SERVER && !this->isFlagSet(cv::SERVER)) return;
@@ -262,7 +263,7 @@ class ConVar {
     [[nodiscard]] inline CONVAR_TYPE getType() const { return this->type; }
     [[nodiscard]] inline uint8_t getFlags() const { return this->iFlags; }
 
-    [[nodiscard]] inline bool hasValue() const { return this->bHasValue; }
+    [[nodiscard]] inline bool canHaveValue() const { return this->bCanHaveValue; }
 
     [[nodiscard]] inline bool hasAnyCallbacks() const {
         return !std::holds_alternative<std::monostate>(this->callback) ||
@@ -331,7 +332,7 @@ class ConVar {
     // unified init for value convars
     template <typename T, typename Callback>
     void initValue(const T &defaultValue, uint8_t flags, Callback callback) {
-        this->bHasValue = true;
+        this->bCanHaveValue = true;
         this->iFlags = flags;
         this->type = getTypeFor<T>();
 
@@ -484,7 +485,7 @@ class ConVar {
     CONVAR_TYPE type{CONVAR_TYPE::FLOAT};
     uint8_t iFlags{0};
 
-    bool bHasValue{false};
+    bool bCanHaveValue{false};
     std::atomic<bool> hasServerValue{false};
     std::atomic<bool> hasSkinValue{false};
 };

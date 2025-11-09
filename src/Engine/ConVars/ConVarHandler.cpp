@@ -270,7 +270,7 @@ void ConVarHandler::ConVarBuiltins::help(std::string_view args) {
 
     std::string thelog{match->getName()};
     {
-        if(match->hasValue()) {
+        if(match->canHaveValue()) {
             const auto &cv_str = match->getString();
             const auto &default_str = match->getDefaultString();
             thelog.append(fmt::format(" = {:s} ( def. \"{:s}\" , ", cv_str, default_str));
@@ -299,7 +299,7 @@ void ConVarHandler::ConVarBuiltins::listcommands(void) {
 
             std::string tstring{var->getName()};
             {
-                if(var->hasValue()) {
+                if(var->canHaveValue()) {
                     const auto &var_str = var->getString();
                     const auto &default_str = var->getDefaultString();
                     tstring.append(fmt::format(" = {:s} ( def. \"{:s}\" , ", var_str, default_str));

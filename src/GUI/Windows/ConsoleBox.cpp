@@ -361,7 +361,7 @@ void ConsoleBox::onSuggestionClicked(CBaseUIButton *suggestion) {
     UString text = suggestion->getName();
 
     ConVar *temp = cvars->getConVarByName(text.toUtf8(), false);
-    if(temp != nullptr && (temp->hasValue() || temp->hasAnyNonVoidCallback())) text.append(" ");
+    if(temp != nullptr && (temp->canHaveValue() || temp->hasAnyNonVoidCallback())) text.append(" ");
 
     this->textbox->setSuggestion("");
     this->textbox->setText(text);
@@ -396,7 +396,7 @@ void ConsoleBox::onKeyDown(KeyboardEvent &e) {
                 UString command = this->vSuggestionButtons[this->iSelectedSuggestion]->getName();
 
                 ConVar *temp = cvars->getConVarByName(command.toUtf8(), false);
-                if(temp != nullptr && (temp->hasValue() || temp->hasAnyNonVoidCallback())) command.append(" ");
+                if(temp != nullptr && (temp->canHaveValue() || temp->hasAnyNonVoidCallback())) command.append(" ");
 
                 this->textbox->setSuggestion("");
                 this->textbox->setText(command);
@@ -423,7 +423,7 @@ void ConsoleBox::onKeyDown(KeyboardEvent &e) {
                 UString command = this->vSuggestionButtons[this->iSelectedSuggestion]->getName();
 
                 ConVar *temp = cvars->getConVarByName(command.toUtf8(), false);
-                if(temp != nullptr && (temp->hasValue() || temp->hasAnyNonVoidCallback())) command.append(" ");
+                if(temp != nullptr && (temp->canHaveValue() || temp->hasAnyNonVoidCallback())) command.append(" ");
 
                 this->textbox->setSuggestion("");
                 this->textbox->setText(command);
@@ -490,7 +490,7 @@ void ConsoleBox::onChar(KeyboardEvent &e) {
         for(const auto *suggestion : suggestions) {
             UString suggestionText{suggestion->getName()};
 
-            if(suggestion->hasValue()) {
+            if(suggestion->canHaveValue()) {
                 switch(suggestion->getType()) {
                     case ConVar::CONVAR_TYPE::BOOL:
                         suggestionText.append(UString::format(" %i", (int)suggestion->getBool()));
