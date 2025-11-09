@@ -27,10 +27,11 @@ Changelog::Changelog() : ScreenBackable() {
     CHANGELOG v41_07;
     v41_07.title = "41.07";
     v41_07.changes = {
+        R"(- Added crash dump generation support (send us the .dmp file next to neosu.exe if the game crashes))",
         R"(- Added option to use BASSWASAPI event callbacks (similar to https://github.com/ppy/osu-framework/pull/6651))",
         R"(- Added the experimental DirectX11 renderer to the regular build configuration (run with the -dx11 launch option to test))",
         R"(- Fixed auto-updater for the third time)",
-        R"(- Added crash dump generation support (send us the .dmp file next to neosu.exe if the game crashes))",
+        R"(- Updated FPS counter to use colors based on monitor refresh rate)",
     };
     changelogs.push_back(v41_07);
 

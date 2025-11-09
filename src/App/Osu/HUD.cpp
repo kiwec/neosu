@@ -593,11 +593,18 @@ void HUD::drawFps() {
 
     // top
 
+    // We round down the refresh rate, because some monitors report a rate slightly above vsync
+    // and that would leave us with an fps counter permanently in the yellow.
+    f64 yellow_refresh_rate = std::round(env->getDisplayRefreshRate() - 1);
+    f64 yellow_refresh_time = 1.0 / yellow_refresh_rate;
+    f64 red_refresh_rate = 0.6 * yellow_refresh_rate;
+    f64 red_refresh_time = 1.0 / red_refresh_rate;
+
     g->pushTransform();
     {
-        if(fps >= 200)
+        if(fps >= yellow_refresh_rate)
             g->setColor(0xffffffff);
-        else if(fps >= 120)
+        else if(fps >= red_refresh_rate)
             g->setColor(0xffdddd00);
         else {
             const float pulse = std::abs(std::sin(engine->getTime() * 4));
@@ -609,11 +616,12 @@ void HUD::drawFps() {
         g->drawString(font, fpsString);
     }
     g->popTransform();
+
     g->pushTransform();
     {
-        if(old_worst_frametime <= 0.005) {
+        if(old_worst_frametime <= yellow_refresh_time) {
             g->setColor(0xffffffff);
-        } else if(old_worst_frametime <= 0.008) {
+        } else if(old_worst_frametime <= red_refresh_time) {
             g->setColor(0xffdddd00);
         } else {
             const float pulse = std::abs(std::sin(engine->getTime() * 4));
