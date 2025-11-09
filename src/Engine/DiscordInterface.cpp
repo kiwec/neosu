@@ -1,17 +1,16 @@
 // Copyright (c) 2018, PG, All rights reserved.
 #include "DiscordInterface.h"
 
-#ifndef USE_DISCORD_SDK
-
+#ifndef MCENGINE_FEATURE_DISCORD
+namespace DiscRPC {
 void init_discord_sdk() {}
 void tick_discord_sdk() {}
 void destroy_discord_sdk() {}
 void clear_discord_presence() {}
-void set_discord_presence(struct DiscordActivity * /*activity*/) {}
+void set_discord_presence(struct DiscordActivity* /*activity*/) {}
+}  // namespace DiscRPC
 
 #else
-
-static bool initialized = false;
 
 #include "Bancho.h"
 #include "BeatmapInterface.h"
@@ -24,8 +23,11 @@ static bool initialized = false;
 
 #define DISCORD_CLIENT_ID 1288141291686989846
 
+namespace DiscRPC {
 namespace  // static
 {
+bool initialized{false};
+
 struct Application {
     struct IDiscordCore *core;
     struct IDiscordUserManager *users;
@@ -41,7 +43,7 @@ struct IDiscordActivityEvents activities_events{};
 struct IDiscordRelationshipEvents relationships_events{};
 struct IDiscordUserEvents users_events{};
 
-#if !(defined(_WIN32) && !defined(_WIN64))  // doesn't work on winx32
+#if !(defined(MCENGINE_PLATFORM_WINDOWS) && defined(MC_ARCH32))  // doesn't work on winx32
 void on_discord_log(void * /*cdata*/, enum EDiscordLogLevel level, const char *message) {
     //(void)cdata;
     if(level == DiscordLogLevel_Error) {
@@ -56,7 +58,9 @@ dynutils::lib_obj *discord_handle{nullptr};
 
 }  // namespace
 
-void init_discord_sdk() {
+void init() {
+    if (initialized) return;
+
     discord_handle = dynutils::load_lib("discord_game_sdk");
     if(!discord_handle) {
         debugLog("Failed to load Discord SDK! (error {:s})", dynutils::get_error());
@@ -86,7 +90,7 @@ void init_discord_sdk() {
         return;
     }
 
-#if !(defined(_WIN32) && !defined(_WIN64))
+#if !(defined(MCENGINE_PLATFORM_WINDOWS) && defined(MC_ARCH32))
     dapp.core->set_log_hook(dapp.core, DiscordLogLevel_Warn, nullptr, on_discord_log);
 #endif
     dapp.activities = dapp.core->get_activity_manager(dapp.core);
@@ -104,19 +108,19 @@ void init_discord_sdk() {
     initialized = true;
 }
 
-void tick_discord_sdk() {
+void tick() {
     if(!initialized) return;
     dapp.core->run_callbacks(dapp.core);
 }
 
-void destroy_discord_sdk() {
+void destroy() {
     // not doing anything because it will fucking CRASH if you close discord first
     if(discord_handle) {
         dynutils::unload_lib(discord_handle);
     }
 }
 
-void clear_discord_presence() {
+void clear_activity() {
     if(!initialized) return;
 
     // TODO @kiwec: test if this works
@@ -124,7 +128,7 @@ void clear_discord_presence() {
     dapp.activities->update_activity(dapp.activities, &activity, nullptr, nullptr);
 }
 
-void set_discord_presence([[maybe_unused]] struct DiscordActivity *activity) {
+void set_activity(struct DiscordActivity *activity) {
     if(!initialized) return;
 
     if(!cv::rich_presence.getBool()) return;
@@ -159,8 +163,8 @@ void set_discord_presence([[maybe_unused]] struct DiscordActivity *activity) {
     bool listening = map != nullptr && music != nullptr && music->isPlaying();
     bool playing = map != nullptr && osu->isInPlayMode();
     if(listening || playing) {
-        auto url = UString::format("https://assets.ppy.sh/beatmaps/%d/covers/list@2x.jpg?%d", map->getSetID(),
-                                   map->getID());
+        auto url =
+            UString::format("https://assets.ppy.sh/beatmaps/%d/covers/list@2x.jpg?%d", map->getSetID(), map->getID());
         strncpy(&activity->assets.large_image[0], url.toUtf8(), 127);
 
         if(BanchoState::server_icon_url.length() > 0 && cv::main_menu_use_server_logo.getBool()) {
@@ -185,5 +189,6 @@ void set_discord_presence([[maybe_unused]] struct DiscordActivity *activity) {
 
 // void (DISCORD_API *accept_invite)(struct IDiscordActivityManager* manager, DiscordUserId user_id, void*
 //     callback_data, void (DISCORD_API *callback)(void* callback_data, enum EDiscordResult result));
+}  // namespace DiscRPC
 
 #endif

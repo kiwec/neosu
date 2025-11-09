@@ -1,20 +1,14 @@
 #pragma once
 // Copyright (c) 2018, PG, All rights reserved.
 
-// Windows headers shit
-#include "cbase.h"
+#include "config.h"
 
-// not available for 32bit linux
-#if __has_include("discord_game_sdk.h") && !(defined(MCENGINE_PLATFORM_LINUX) && defined(__i386__))
-#define USE_DISCORD_SDK
-#endif
-
-#ifdef USE_DISCORD_SDK
+#ifdef MCENGINE_FEATURE_DISCORD
 #pragma pack(push, 8)
 #include "discord_game_sdk.h"
 #pragma pack(pop)
 #else
-enum DiscordActivityType : uint8_t { DiscordActivityType_Listening, DiscordActivityType_Playing };
+enum DiscordActivityType { DiscordActivityType_Listening, DiscordActivityType_Playing };
 struct DiscordActivity {
     struct {
         struct {
@@ -32,8 +26,10 @@ struct DiscordActivity {
 };
 #endif
 
-void init_discord_sdk();
-void tick_discord_sdk();
-void destroy_discord_sdk();
-void clear_discord_presence();
-void set_discord_presence(struct DiscordActivity *activity);
+namespace DiscRPC {
+void init();
+void tick();
+void destroy();
+void clear_activity();
+void set_activity(struct DiscordActivity *activity);
+}  // namespace DiscRPC

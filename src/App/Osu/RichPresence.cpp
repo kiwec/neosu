@@ -135,7 +135,7 @@ void onMainMenu() {
     }
 
     strcpy(activity.state, "Main menu");
-    set_discord_presence(&activity);
+    DiscRPC::set_activity(&activity);
 }
 
 void onSongBrowser() {
@@ -158,7 +158,7 @@ void onSongBrowser() {
         activity.party.size.max_size = 0;
     }
 
-    set_discord_presence(&activity);
+    DiscRPC::set_activity(&activity);
     env->setWindowTitle("neosu");
 }
 
@@ -210,7 +210,7 @@ void onPlayStart() {
     auto windowTitle = UString::format("neosu - %s", activity.details);
     env->setWindowTitle(windowTitle);
 
-    set_discord_presence(&activity);
+    DiscRPC::set_activity(&activity);
 }
 
 void onPlayEnd(bool quit) {
@@ -250,12 +250,12 @@ void onMultiplayerLobby() {
     activity.party.size.current_size = BanchoState::room.nb_players;
     activity.party.size.max_size = BanchoState::room.nb_open_slots;
 
-    set_discord_presence(&activity);
+    DiscRPC::set_activity(&activity);
 }
 
 void onRichPresenceChange(float oldValue, float newValue) {
     if(oldValue != newValue && !static_cast<int>(newValue)) {
-        clear_discord_presence();
+        DiscRPC::clear_activity();
     }
 }
 

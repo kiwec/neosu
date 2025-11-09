@@ -104,7 +104,7 @@ Engine::Engine() {
         anim = std::make_unique<AnimationHandler>();
         this->runtime_assert(!!anim, "Animation handler failed to initialize!");
 
-        init_discord_sdk();
+        DiscRPC::init();
 
         // default launch overrides
         g->setVSync(false);
@@ -133,7 +133,7 @@ Engine::~Engine() {
     Engine::consoleBox.store(nullptr, std::memory_order_release);
     SAFE_DELETE(this->guiContainer);
 
-    destroy_discord_sdk();
+    DiscRPC::destroy();
 
     debugLog("Engine: Freeing animation handler...");
     anim.reset();
@@ -351,7 +351,7 @@ void Engine::onUpdate() {
     }
 
     // update discord presence
-    tick_discord_sdk();
+    DiscRPC::tick();
 
     // update environment (after app, at the end here)
     {

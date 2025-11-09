@@ -93,8 +93,7 @@ consteval FEAT getFeatures() {
 #ifdef MCENGINE_FEATURE_STEAMWORKS
         FEAT::STEAM |
 #endif
-#if defined(MCENGINE_PLATFORM_WINDOWS) || \
-    defined(MCENGINE_FEATURE_DISCORD)  // TODO: this define is never set, only windows supports discord rpc atm
+#if defined(MCENGINE_FEATURE_DISCORD)
         FEAT::DISCORD |
 #endif
 #if defined(MCENGINE_PLATFORM_WASM) || defined(MCENGINE_FEATURE_MAINCALLBACKS)

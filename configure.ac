@@ -168,6 +168,9 @@ AC_ARG_WITH([mimalloc],
 AC_ARG_WITH([nsync],
     AS_HELP_STRING([--with-nsync], [Use nsync instead of std::mutex for synchronization (faster) (default: on if not winx86 (unsupported))]))
 
+AC_ARG_WITH([discord],
+    AS_HELP_STRING([--with-discord], [Build with Discord rich presence support (default on if supported (Windows, Linux 64-bit))]))
+
 # setup defaults
 AS_IF([test "x$enable_static" != "xno"], [
     enable_static=yes
@@ -215,6 +218,13 @@ AS_IF([test "x$enable_ime" != "xno"], [
     disable_ime=yes
 
     NOIME="yes"
+])
+
+AS_IF([test "x$with_discord" != "xno" && { test "$host_os" = "mingw32" || { test "$host_os" = "linux-gnu" && test "$host_cpu" = "x86_64" ; } ; } ], [
+    with_discord=yes
+    AC_DEFINE([MCENGINE_FEATURE_DISCORD], [1], [Defined if building with Discord RPC integration.])
+], [
+    with_discord=no
 ])
 
 AC_SUBST([NOIME])
@@ -1151,7 +1161,7 @@ AM_CONDITIONAL([BUILD_MIMALLOC], [{ test "x$enable_debug" != "xyes" || test "x$w
 AM_CONDITIONAL([USE_BASS], [test "$with_bass" = "yes"])
 AM_CONDITIONAL([USE_SOLOUD], [test "$with_soloud" = "yes"])
 # this just copies some libraries on installation
-AM_CONDITIONAL([USE_DISCORDSDK], [test "$SYSNAME" = "windows" || { test "$SYSNAME" = "linux" && test "$host_cpu" = "x86_64" ; } ])
+AM_CONDITIONAL([USE_DISCORDSDK], [test "$with_discord" = "yes"])
 AM_CONDITIONAL([WIN_PLATFORM], [test "$SYSNAME" = "windows"])
 AM_CONDITIONAL([WIN32_PLATFORM], [test "$SYSNAME" = "windows" && test "$host_cpu" = "i686"])
 
@@ -1197,6 +1207,7 @@ neosu build configuration:
     nsync:              ${with_nsync-yes}
     BASS:               ${with_bass-no}
     SoLoud:             ${with_soloud-no}
+    Discord:            ${with_discord-yes}
     IME enabled:        ${enable_ime-yes}
     Hardened build:     ${hardened_build-no}
     LTO:                ${enable_lto-auto}

@@ -3,6 +3,7 @@
 
 #include "AsyncIOHandler.h"
 #include "ByteBufferedFile.h"
+#include "DiscordInterface.h"
 #include "Parsing.h"
 #include "SString.h"
 #include "crypto.h"
@@ -622,10 +623,19 @@ OptionsMenu::OptionsMenu() : ScreenBackable() {
     this->addCheckbox("Replace main menu logo with server logo", &cv::main_menu_use_server_logo);
     this->addCheckbox("Show spectator list", &cv::draw_spectator_list);
     this->addCheckbox("Share currently played map with spectators", &cv::spec_share_map);
-    this->addCheckbox("Enable Discord Rich Presence",
-                      "Shows your current game state in your friends' friendslists.\ne.g.: Playing Gavin G - Reach Out "
-                      "[Cherry Blossom's Insane]",
-                      &cv::rich_presence);
+    if constexpr(Env::cfg(FEAT::DISCORD)) {
+        this->addCheckbox(
+            "Enable Discord Rich Presence",
+            "Shows your current game state in your friends' friendslists.\ne.g.: Playing Gavin G - Reach Out "
+            "[Cherry Blossom's Insane]",
+            &cv::rich_presence);
+    }
+
+    // there's an issue where if the game starts with discord closed, then the SDK fails to initialize, and there's
+    // no way to try reinitializing it (without restarting the game)
+    // so allow "turning it off and on again" to try reinitializing
+    // (DiscRPC::init() does nothing if already initialized)
+    cv::rich_presence.setCallback([](float newValue) -> void { return newValue > 0 ? DiscRPC::init() : (void)0; });
 
     //**************************************************************************************************************************//
 
