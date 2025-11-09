@@ -554,7 +554,7 @@ void Osu::draw() {
     }
 
     // draw cursor
-    if(this->isInPlayMode()) {
+    if(this->isInPlayMode() && !this->map_iface->isPaused()) {
         vec2 cursorPos = this->map_iface->getCursorPos();
         bool drawSecondTrail = (cv::mod_autoplay.getBool() || cv::mod_autopilot.getBool() ||
                                 this->map_iface->is_watching || BanchoState::spectating);
@@ -1815,13 +1815,10 @@ void Osu::updateCursorVisibility() {
     }
 
     const bool currently_visible = env->isCursorVisible();
-    bool forced_visible = false;
 
-    if(this->isInPlayMode() && (cv::mod_autoplay.getBool() || cv::mod_autopilot.getBool() ||
-                                this->map_iface->is_watching || BanchoState::spectating)) {
-        forced_visible = true;
-    }
-
+    bool forced_visible = this->isInPlayMode() && !this->map_iface->isPaused() &&
+                          (cv::mod_autoplay.getBool() || cv::mod_autopilot.getBool() || this->map_iface->is_watching ||
+                           BanchoState::spectating);
     bool desired_vis = forced_visible;
 
     // if it's not forced visible, check whether it's inside the internal window
