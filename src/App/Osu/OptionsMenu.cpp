@@ -3698,6 +3698,15 @@ void OptionsMenu::save() {
     this->updateFposuDPI();
     this->updateFposuCMper360();
 
+    // Update windowed resolution now, so we're always saving the correct window size
+    // (this function is also called on shutdown)
+    const bool fs = env->winFullscreened();
+    const bool fs_letterboxed = fs && cv::letterboxing.getBool();
+    if(!fs && !fs_letterboxed) {
+        const auto res_str = fmt::format("{:d}x{:d}", (i32)env->getWindowSize().x, (i32)env->getWindowSize().y);
+        cv::windowed_resolution.setValue(res_str, false);
+    }
+
     debugLog("Osu: Saving user config file ...");
 
     static constexpr const std::string_view cfg_name = NEOSU_CFG_PATH "/osu.cfg"sv;

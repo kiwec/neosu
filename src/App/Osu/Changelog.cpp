@@ -32,6 +32,7 @@ Changelog::Changelog() : ScreenBackable() {
         R"(- Added the experimental DirectX11 renderer to the regular build configuration (run with the -dx11 launch option to test))",
         R"(- Fixed auto-updater for the third time)",
         R"(- Fixed pp strain graphs not updating)",
+        R"(- Fixed windowed resolution not getting saved)",
         R"(- Updated FPS counter to use colors based on monitor refresh rate)",
     };
     changelogs.push_back(v41_07);
