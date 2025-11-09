@@ -2,37 +2,6 @@
 // miscellaneous utilities/macros which don't require transitive includes
 #pragma once
 
-// to avoid needing to include SDL headers in our headers
-// (avoids invalidating a ton of built objects when SDL is updated)
-#if !defined(MCENGINE_PLATFORM_WINDOWS) && (defined(_WIN32) || defined(_WIN64) || defined(__WIN32__) || defined(__CYGWIN__) || defined(__CYGWIN32__) || \
-    defined(__TOS_WIN__) || defined(__WINDOWS__))
-#define MCENGINE_PLATFORM_WINDOWS
-#endif
-
-#ifndef SDLCALL
-#if !defined(__GNUC__) && defined(MCENGINE_PLATFORM_WINDOWS)
-#define SDLCALL __cdecl
-#else
-#define SDLCALL
-#endif
-#endif
-
-#ifndef SDL_DECLSPEC
-# if defined(MCENGINE_PLATFORM_WINDOWS)
-#  ifdef DLL_EXPORT
-#   define SDL_DECLSPEC __declspec(dllexport)
-#  else
-#   define SDL_DECLSPEC
-#  endif
-# else
-#  if defined(__GNUC__) && __GNUC__ >= 4
-#   define SDL_DECLSPEC __attribute__ ((visibility("default")))
-#  else
-#   define SDL_DECLSPEC
-#  endif
-# endif
-#endif
-
 #define SAFE_DELETE(p)  \
     {                   \
         if(p) {         \

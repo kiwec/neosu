@@ -14,8 +14,6 @@
 #include <cassert>
 #endif
 
-#include <SDL3/SDL_timer.h>
-
 namespace Timing::detail {
 #ifdef MCENGINE_PLATFORM_WINDOWS
 namespace {  // static namespace

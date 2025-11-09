@@ -7,17 +7,15 @@ namespace Timing {
 class Timer;
 }
 
-extern "C" {
 #if !defined(SDL_h_) && !defined(SDL_main_h_)
 typedef struct SDL_GLContextState *SDL_GLContext;
 typedef union SDL_Event SDL_Event;
-enum SDL_AppResult : unsigned int;
+enum SDL_AppResult : uint8_t;
 #endif
 
 #if !(defined(SDL_main_h_) && defined(MCENGINE_FEATURE_MAINCALLBACKS))
-extern void SDLCALL SDL_AppQuit(void *appstate, SDL_AppResult result);
+extern void SDL_AppQuit(void *appstate, SDL_AppResult result);
 #endif
-}
 
 class SDLMain final : public Environment {
     NOCOPY_NOMOVE(SDLMain)

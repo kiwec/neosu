@@ -12,13 +12,7 @@
 #include "BaseEnvironment.h"
 #include "types.h"
 
-#ifndef SDL_timer_h_
-extern "C" {
-// SDL_timer.h
-extern SDL_DECLSPEC void SDLCALL SDL_DelayNS(u64 ns);
-extern SDL_DECLSPEC u64 SDLCALL SDL_GetTicksNS(void);
-}
-#endif
+#include <SDL3/SDL_timer.h>
 
 #include <thread>
 #include <concepts>
