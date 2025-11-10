@@ -252,7 +252,6 @@ class Osu final : public MouseListener, public KeyboardListener {
     // callback
     inline void preferCJKCallback(float newValue) { this->bPreferCJK = !!static_cast<int>(newValue); }
     void globalOnSetValueProtectedCallback();
-    static bool globalOnGetValueProtectedCallback(const char *cvarname);
     static bool globalOnSetValueGameplayCallback(const char *cvarname, CvarEditor setterkind);
 
     // NOTE: unique_ptrs are destroyed in reverse order of declaration in header

@@ -302,12 +302,10 @@ class ConVar {
         }
     }
 
-    // shared callbacks, app-defined
+    // shared callback, app-defined
     static void setOnSetValueProtectedCallback(const CVVoidCB &callback);
 
-    using ProtectedCVGetCB = bool (*)(const char *cvarname);
-    static void setOnGetValueProtectedCallback(ProtectedCVGetCB func);
-
+    // shared callback, app-defined
     using GameplayCVChangeCB = bool (*)(const char *cvarname, CvarEditor setterkind);
     static void setOnSetValueGameplayCallback(GameplayCVChangeCB func);
 
@@ -459,17 +457,9 @@ class ConVar {
     }
 
    private:
-    // static callbacks are shared across all convars
-    // to call when a convar with PROTECTED flag has been changed
+    // shared across all convars
     static CVVoidCB onSetValueProtectedCallback;
-
-    // to call when a PROTECTED convar has getString or getValue called on it
-    // if the callback returns FALSE, the default value will be returned instead
-    // TODO/LOOK INTO: this is only called if it doesn't have a skin or server value, is that cheeseable?
-    static ProtectedCVGetCB onGetValueProtectedCallback;
-
-    // to call when a GAMEPLAY convar is being changed
-    // if the callback returns FALSE, the convar won't be changed
+    // invalidates replay, returns true if value change should be allowed
     static GameplayCVChangeCB onSetValueGameplayCallback;
 
     const char *sName;

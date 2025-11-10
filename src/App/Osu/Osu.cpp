@@ -70,23 +70,12 @@
 
 #include <algorithm>
 
-// prevents score submission when/if a protected convar is changed during gameplay
 void Osu::globalOnSetValueProtectedCallback() {
     if(likely(this->map_iface)) {
         this->map_iface->is_submittable = false;
     }
 }
 
-// prevents getting changed protected convars while in a multi lobby
-bool Osu::globalOnGetValueProtectedCallback(const char *cvarname) {
-    if(BanchoState::is_in_a_multi_room()) {
-        debugLog("Returning default value for {}, currently in a multi room.", cvarname);
-        return false;
-    }
-    return true;
-}
-
-// prevents changing gameplay convars while playing multi and disables score submission
 bool Osu::globalOnSetValueGameplayCallback(const char *cvarname, CvarEditor setterkind) {
     // Only SERVER can edit GAMEPLAY cvars during multiplayer matches
     if(BanchoState::is_playing_a_multi_map() && setterkind != CvarEditor::SERVER) {
@@ -110,11 +99,12 @@ Osu::Osu() {
     osu = this;
     srand(crypto::rng::get_rand<u32>());
 
-    // global cvar callbacks will be removed in destructor
+    // prevents score submission when/if a protected convar is changed during gameplay
+    // will be removed in destructor
     ConVar::setOnSetValueProtectedCallback(SA::MakeDelegate<&Osu::globalOnSetValueProtectedCallback>(this));
 
-    ConVar::setOnGetValueProtectedCallback(Osu::globalOnGetValueProtectedCallback);
-
+    // prevents changing gameplay convars while playing multi and disables score submission
+    // will be removed in destructor
     ConVar::setOnSetValueGameplayCallback(Osu::globalOnSetValueGameplayCallback);
 
     if(Env::cfg(BUILD::DEBUG)) {
@@ -408,9 +398,8 @@ Osu::~Osu() {
     db.reset();  // shutdown db
 
     // remove the static callbacks
-    ConVar::setOnSetValueGameplayCallback({});
-    ConVar::setOnGetValueProtectedCallback({});
     ConVar::setOnSetValueProtectedCallback({});
+    ConVar::setOnSetValueGameplayCallback({});
 }
 
 void Osu::draw() {
