@@ -15,6 +15,8 @@ enum SDL_AppResult : unsigned int;
 extern void SDL_AppQuit(void *appstate, SDL_AppResult result);
 #endif
 
+class GPUDriverConfigurator;
+
 class SDLMain final : public Environment {
     NOCOPY_NOMOVE(SDLMain)
    public:
@@ -52,4 +54,7 @@ class SDLMain final : public Environment {
     int m_iFpsMaxBG{30};
 
     std::vector<std::string> m_vDroppedData;  // queued data dropped onto window
+
+    friend class GPUDriverConfigurator;
+    std::unique_ptr<GPUDriverConfigurator> m_gpuConfigurator;
 };

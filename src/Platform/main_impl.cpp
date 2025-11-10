@@ -20,13 +20,29 @@
 #include "Mouse.h"
 #include "Profiler.h"
 #include "Logging.h"
+#include "GPUDriverConfigurator.h"
 
 SDLMain::SDLMain(const std::unordered_map<std::string, std::optional<std::string>> &argMap,
                  const std::vector<std::string> &argVec)
-    : Environment(argMap, argVec) {
+    : Environment(argMap, argVec), m_gpuConfigurator(std::make_unique<GPUDriverConfigurator>(this)) {
     // setup callbacks
     cv::fps_max.setCallback(SA::MakeDelegate<&SDLMain::fps_max_callback>(this));
     cv::fps_max_background.setCallback(SA::MakeDelegate<&SDLMain::fps_max_background_callback>(this));
+}
+
+SDLMain::~SDLMain() {
+    m_engine.reset();
+
+    // clean up GL context
+    if(m_context && (!m_bUsingDX11)) {
+        SDL_GL_DestroyContext(m_context);
+        m_context = nullptr;
+    }
+    // close/delete the window
+    if(m_window) {
+        SDL_DestroyWindow(m_window);
+        m_window = nullptr;
+    }
 }
 
 void SDLMain::setFgFPS() {
@@ -52,21 +68,6 @@ void SDLMain::fps_max_background_callback(float newVal) {
     int newFps = static_cast<int>(newVal);
     if(newFps >= 0) m_iFpsMaxBG = newFps;
     if(!winFocused()) setBgFPS();
-}
-
-SDLMain::~SDLMain() {
-    m_engine.reset();
-
-    // clean up GL context
-    if(m_context && (!m_bUsingDX11)) {
-        SDL_GL_DestroyContext(m_context);
-        m_context = nullptr;
-    }
-    // close/delete the window
-    if(m_window) {
-        SDL_DestroyWindow(m_window);
-        m_window = nullptr;
-    }
 }
 
 SDL_AppResult SDLMain::initialize() {

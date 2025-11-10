@@ -94,14 +94,14 @@ void Console::processCommand(std::string_view command, bool fromFile) {
 }
 
 void Console::execConfigFile(std::string_view filename_view) {
-    if (filename_view.empty()) return;
+    if(filename_view.empty()) return;
     std::string filename{filename_view};
 
-    if (!filename.contains('/')) // allow absolute paths
+    if(!filename.contains('/'))  // allow absolute paths
         filename = fmt::format(MCENGINE_CFG_PATH "/{}", filename_view);
 
     // handle extension
-    if(filename.find(".cfg", (filename.length() - 4), filename.length()) == std::string::npos) filename.append(".cfg");
+    if(!filename.ends_with(".cfg")) filename.append(".cfg");
 
     bool needs_write = false;
 
@@ -110,7 +110,7 @@ void Console::execConfigFile(std::string_view filename_view) {
     {
         File configFile(filename, File::MODE::READ);
         if(!configFile.canRead()) {
-            debugLog("error, file \"{:s}\" not found!", filename);
+            debugLog("NOTICE: file \"{:s}\" not found!", filename);
             return;
         }
 

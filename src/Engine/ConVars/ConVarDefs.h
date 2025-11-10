@@ -165,7 +165,8 @@ CONVAR(snd_soloud_backend, "MiniAudio"sv, CLIENT, R"(SoLoud backend, "MiniAudio"
 CONVAR(snd_sanity_simultaneous_limit, 128, CLIENT | NOSAVE,
        "The maximum number of overlayable sounds that are allowed to be active at once");
 CONVAR(snd_soloud_hardcoded_offset, -18, CLIENT);  // should hopefully be "temporary"
-CONVAR(snd_soloud_resampler, "linear", CLIENT, "resampler to use. \"point\", \"linear\", or \"catmull-rom\" (in order of increasing quality/cpu usage)");
+CONVAR(snd_soloud_resampler, "linear", CLIENT,
+       "resampler to use. \"point\", \"linear\", or \"catmull-rom\" (in order of increasing quality/cpu usage)");
 CONVAR(snd_soloud_prefer_ffmpeg, 0, CLIENT,
        "(0=no, 1=streams, 2=streams+samples) prioritize using ffmpeg as a decoder (if available) over other decoder "
        "backends");
@@ -224,6 +225,8 @@ CONVAR(r_debug_drawstring_unbind, false, CLIENT);
 CONVAR(r_debug_font_unicode, false, CLIENT, "debug messages for unicode/fallback font related stuff");
 CONVAR(r_sync_timeout, 5000000, CLIENT, "timeout in microseconds for GPU synchronization operations");
 CONVAR(r_sync_enabled, true, CLIENT, "enable explicit GPU synchronization for OpenGL");
+CONVAR(r_disable_driver_threaded_opts, true, CLIENT,
+       "force disable driver-enforced threaded optimizations (they increase framerate, but also increase latency)");
 CONVAR(r_opengl_legacy_vao_use_vertex_array, Env::cfg(REND::GLES32) ? true : false, CLIENT,
        "dramatically reduces per-vao draw calls, but completely breaks legacy ffp draw calls (vertices work, but "
        "texcoords/normals/etc. are NOT in gl_MultiTexCoord0 -> requiring a shader with attributes)");
@@ -1003,7 +1006,8 @@ CONVAR(load_beatmap_background_images, true, CLIENT | SKINS | SERVER);
 CONVAR(minimize_on_focus_lost_if_borderless_windowed_fullscreen, false, CLIENT | SKINS | SERVER);
 CONVAR(minimize_on_focus_lost_if_fullscreen, true, CLIENT | SKINS | SERVER);
 CONVAR(mouse_raw_input, false, CLIENT | SKINS | SERVER);
-CONVAR(keyboard_raw_input, false, CLIENT | SKINS | SERVER, "listen to keyboard input on a separate thread (Windows only)");
+CONVAR(keyboard_raw_input, false, CLIENT | SKINS | SERVER,
+       "listen to keyboard input on a separate thread (Windows only)");
 CONVAR(mouse_sensitivity, 1.0f, CLIENT | SKINS | SERVER);
 CONVAR(pen_input, true, CLIENT | SKINS | SERVER, "support OTD Artist Mode and native tablet drivers' pen events");
 CONVAR(nightcore_enjoyer, false, CLIENT | SKINS | SERVER);
