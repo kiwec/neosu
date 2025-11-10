@@ -4,19 +4,18 @@
 
 #include "File.h"
 
-// TODO: remove the need for this here
-#include "Bancho.h"
-
 // set by app, shared across all convars, called when a protected convar changes
 ConVar::CVVoidCB ConVar::onSetValueProtectedCallback{};
-
 void ConVar::setOnSetValueProtectedCallback(const CVVoidCB &callback) {
     ConVar::onSetValueProtectedCallback = callback;
 }
 
 // ditto
-ConVar::GameplayCVChangeCB ConVar::onSetValueGameplayCallback{nullptr};
+ConVar::ProtectedCVGetCB ConVar::onGetValueProtectedCallback{nullptr};
+void ConVar::setOnGetValueProtectedCallback(ProtectedCVGetCB func) { ConVar::onGetValueProtectedCallback = func; }
 
+// ditto
+ConVar::GameplayCVChangeCB ConVar::onSetValueGameplayCallback{nullptr};
 void ConVar::setOnSetValueGameplayCallback(GameplayCVChangeCB func) { ConVar::onSetValueGameplayCallback = func; }
 
 void ConVar::addConVar() {
@@ -90,7 +89,8 @@ double ConVar::getDouble() const {
         return this->dSkinValue.load(std::memory_order_acquire);
     }
 
-    if(this->isProtected() && BanchoState::is_in_a_multi_room()) {
+    if(this->isProtected() &&
+       (likely(ConVar::onGetValueProtectedCallback) && !ConVar::onGetValueProtectedCallback(this->sName))) {
         return this->dDefaultValue;
     }
 
@@ -106,7 +106,8 @@ const std::string &ConVar::getString() const {
         return this->sSkinValue;
     }
 
-    if(this->isProtected() && BanchoState::is_in_a_multi_room()) {
+    if(this->isProtected() &&
+       (likely(ConVar::onGetValueProtectedCallback) && !ConVar::onGetValueProtectedCallback(this->sName))) {
         return this->sDefaultValue;
     }
 
