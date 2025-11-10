@@ -621,16 +621,16 @@ void Chat::onKeyDown(KeyboardEvent &key) {
 
     if(keyboard->isAltDown()) {
         i32 tab_select = -1;
-        if(key.getKeyCode() == KEY_1) tab_select = 0;
-        if(key.getKeyCode() == KEY_2) tab_select = 1;
-        if(key.getKeyCode() == KEY_3) tab_select = 2;
-        if(key.getKeyCode() == KEY_4) tab_select = 3;
-        if(key.getKeyCode() == KEY_5) tab_select = 4;
-        if(key.getKeyCode() == KEY_6) tab_select = 5;
-        if(key.getKeyCode() == KEY_7) tab_select = 6;
-        if(key.getKeyCode() == KEY_8) tab_select = 7;
-        if(key.getKeyCode() == KEY_9) tab_select = 8;
-        if(key.getKeyCode() == KEY_0) tab_select = 9;
+        if(key.getScanCode() == KEY_1) tab_select = 0;
+        if(key.getScanCode() == KEY_2) tab_select = 1;
+        if(key.getScanCode() == KEY_3) tab_select = 2;
+        if(key.getScanCode() == KEY_4) tab_select = 3;
+        if(key.getScanCode() == KEY_5) tab_select = 4;
+        if(key.getScanCode() == KEY_6) tab_select = 5;
+        if(key.getScanCode() == KEY_7) tab_select = 6;
+        if(key.getScanCode() == KEY_8) tab_select = 7;
+        if(key.getScanCode() == KEY_9) tab_select = 8;
+        if(key.getScanCode() == KEY_0) tab_select = 9;
 
         if(tab_select != -1) {
             if(tab_select >= this->channels.size()) {
@@ -644,7 +644,7 @@ void Chat::onKeyDown(KeyboardEvent &key) {
         }
     }
 
-    if(key.getKeyCode() == KEY_PAGEUP) {
+    if(key.getScanCode() == KEY_PAGEUP) {
         if(this->selected_channel != nullptr) {
             key.consume();
             this->selected_channel->ui->scrollY(this->getSize().y - this->input_box_height);
@@ -652,7 +652,7 @@ void Chat::onKeyDown(KeyboardEvent &key) {
         }
     }
 
-    if(key.getKeyCode() == KEY_PAGEDOWN) {
+    if(key.getScanCode() == KEY_PAGEDOWN) {
         if(this->selected_channel != nullptr) {
             key.consume();
             this->selected_channel->ui->scrollY(-(this->getSize().y - this->input_box_height));
@@ -661,7 +661,7 @@ void Chat::onKeyDown(KeyboardEvent &key) {
     }
 
     // Escape: close chat
-    if(key.getKeyCode() == KEY_ESCAPE) {
+    if(key.getScanCode() == KEY_ESCAPE) {
         if(this->isVisibilityForced()) return;
 
         key.consume();
@@ -671,7 +671,7 @@ void Chat::onKeyDown(KeyboardEvent &key) {
     }
 
     // Return: send message
-    if(key.getKeyCode() == KEY_ENTER || key.getKeyCode() == KEY_NUMPAD_ENTER) {
+    if(key.getScanCode() == KEY_ENTER || key.getScanCode() == KEY_NUMPAD_ENTER) {
         key.consume();
         if(this->selected_channel != nullptr && this->input_box->getText().length() > 0) {
             if(this->input_box->getText()[0] == L'/') {
@@ -689,7 +689,7 @@ void Chat::onKeyDown(KeyboardEvent &key) {
     }
 
     // Ctrl+W: Close current channel
-    if(keyboard->isControlDown() && key.getKeyCode() == KEY_W) {
+    if(keyboard->isControlDown() && key.getScanCode() == KEY_W) {
         key.consume();
         if(this->selected_channel != nullptr) {
             this->leave(this->selected_channel->name);
@@ -699,7 +699,7 @@ void Chat::onKeyDown(KeyboardEvent &key) {
 
     // Ctrl+Tab: Switch channels
     // KEY_TAB doesn't work on Linux
-    if(keyboard->isControlDown() && (key.getKeyCode() == 65056 || key.getKeyCode() == KEY_TAB)) {
+    if(keyboard->isControlDown() && (key.getScanCode() == 65056 || key.getScanCode() == KEY_TAB)) {
         key.consume();
         if(this->selected_channel == nullptr) return;
         int chan_index = this->channels.size();
@@ -727,7 +727,7 @@ void Chat::onKeyDown(KeyboardEvent &key) {
 
     // TAB: Complete nickname
     // KEY_TAB doesn't work on Linux
-    if(key.getKeyCode() == 65056 || key.getKeyCode() == KEY_TAB) {
+    if(key.getScanCode() == 65056 || key.getScanCode() == KEY_TAB) {
         key.consume();
 
         auto text = this->input_box->getText();

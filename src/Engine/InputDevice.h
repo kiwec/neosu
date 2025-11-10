@@ -2,7 +2,7 @@
 #ifndef INPUTDEVICE_H
 #define INPUTDEVICE_H
 
-#include "cbase.h"
+#include "noinclude.h"
 
 class InputDevice {
     NOCOPY_NOMOVE(InputDevice)

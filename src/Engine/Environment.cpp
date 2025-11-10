@@ -944,7 +944,7 @@ void Environment::setOSMousePos(vec2 pos) {
     m_vLastAbsMousePos = pos;
 }
 
-UString Environment::keyCodeToString(KEYCODE keyCode) {
+UString Environment::keyCodeToString(SCANCODE keyCode) {
     const char *name = SDL_GetScancodeName((SDL_Scancode)keyCode);
     if(name == nullptr)
         return UString::format("%lu", keyCode);

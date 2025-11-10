@@ -2,8 +2,9 @@
 #include "Keyboard.h"
 
 #include "Engine.h"
+#include "UString.h"
 
-Keyboard::Keyboard() : InputDevice() {
+void Keyboard::reset() {
     this->bControlDown = false;
     this->bAltDown = false;
     this->bShiftDown = false;
@@ -12,7 +13,7 @@ Keyboard::Keyboard() : InputDevice() {
 
 void Keyboard::addListener(KeyboardListener *keyboardListener, bool insertOnTop) {
     if(keyboardListener == nullptr) {
-        engine->showMessageError("Keyboard Error", "addListener(NULL)!");
+        engine->showMessageError(u"Keyboard Error", u"addListener(NULL)!");
         return;
     }
 
@@ -23,23 +24,12 @@ void Keyboard::addListener(KeyboardListener *keyboardListener, bool insertOnTop)
 }
 
 void Keyboard::removeListener(KeyboardListener *keyboardListener) {
-    for(size_t i = 0; i < this->listeners.size(); i++) {
-        if(this->listeners[i] == keyboardListener) {
-            this->listeners.erase(this->listeners.begin() + i);
-            i--;
-        }
-    }
-}
-
-void Keyboard::reset() {
-    this->bControlDown = false;
-    this->bAltDown = false;
-    this->bShiftDown = false;
-    this->bSuperDown = false;
+    std::erase_if(this->listeners,
+                  [keyboardListener](const auto &listener) -> bool { return listener == keyboardListener; });
 }
 
 void Keyboard::onKeyDown(KeyboardEvent event) {
-    switch(event.getKeyCode()) {
+    switch(event.getScanCode()) {
         case KEY_LCONTROL:
         case KEY_RCONTROL:
             this->bControlDown = true;
@@ -59,7 +49,7 @@ void Keyboard::onKeyDown(KeyboardEvent event) {
             break;
     }
 
-    for(auto &listener : this->listeners) {
+    for(auto *listener : this->listeners) {
         listener->onKeyDown(event);
         if(event.isConsumed()) {
             break;
@@ -68,7 +58,7 @@ void Keyboard::onKeyDown(KeyboardEvent event) {
 }
 
 void Keyboard::onKeyUp(KeyboardEvent event) {
-    switch(event.getKeyCode()) {
+    switch(event.getScanCode()) {
         case KEY_LCONTROL:
         case KEY_RCONTROL:
             this->bControlDown = false;
@@ -88,7 +78,7 @@ void Keyboard::onKeyUp(KeyboardEvent event) {
             break;
     }
 
-    for(auto &listener : this->listeners) {
+    for(auto *listener : this->listeners) {
         listener->onKeyUp(event);
         if(event.isConsumed()) {
             break;
@@ -97,7 +87,7 @@ void Keyboard::onKeyUp(KeyboardEvent event) {
 }
 
 void Keyboard::onChar(KeyboardEvent event) {
-    for(auto &listener : this->listeners) {
+    for(auto *listener : this->listeners) {
         listener->onChar(event);
         if(event.isConsumed()) {
             break;

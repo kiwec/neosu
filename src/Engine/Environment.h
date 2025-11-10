@@ -243,7 +243,7 @@ class Environment {
     inline void setMousePos(float x, float y) { setOSMousePos(vec2{x, y}); }
 
     // keyboard
-    UString keyCodeToString(KEYCODE keyCode);
+    UString keyCodeToString(SCANCODE keyCode);
     void listenToTextInput(bool listen);
     bool setWindowsKeyDisabled(bool disable);
     void setRawKeyboardInput(bool raw);  // enable/disable OS-level rawinput

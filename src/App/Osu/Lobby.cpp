@@ -104,7 +104,7 @@ Lobby::Lobby() : OsuScreen() {
 void Lobby::onKeyDown(KeyboardEvent& key) {
     if(!this->bVisible) return;
 
-    if(key.getKeyCode() == KEY_ESCAPE) {
+    if(key.getScanCode() == KEY_ESCAPE) {
         key.consume();
         this->setVisible(false);
         osu->getMainMenu()->setVisible(true);

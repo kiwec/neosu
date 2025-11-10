@@ -1017,7 +1017,7 @@ void SongBrowser::onKeyDown(KeyboardEvent &key) {
     if(!this->bVisible || key.isConsumed()) return;
 
     if(this->bVisible && this->bBeatmapRefreshScheduled &&
-       (key == KEY_ESCAPE || key == cv::GAME_PAUSE.getVal<KEYCODE>())) {
+       (key == KEY_ESCAPE || key == cv::GAME_PAUSE.getVal<SCANCODE>())) {
         db->cancel();
         key.consume();
         return;
@@ -1031,7 +1031,7 @@ void SongBrowser::onKeyDown(KeyboardEvent &key) {
 
     // searching text delete & escape key handling
     if(!this->sSearchString.isEmpty()) {
-        switch(key.getKeyCode()) {
+        switch(key.getScanCode()) {
             case KEY_DELETE:
             case KEY_BACKSPACE:
                 key.consume();
@@ -1083,11 +1083,11 @@ void SongBrowser::onKeyDown(KeyboardEvent &key) {
     if(key == KEY_LSHIFT || key == KEY_RSHIFT) this->bShiftPressed = true;
 
     // function hotkeys
-    if((key == KEY_F1 || key == cv::TOGGLE_MODSELECT.getVal<KEYCODE>()) && !this->bF1Pressed) {
+    if((key == KEY_F1 || key == cv::TOGGLE_MODSELECT.getVal<SCANCODE>()) && !this->bF1Pressed) {
         this->bF1Pressed = true;
         press_bottombar_button(1);
     }
-    if((key == KEY_F2 || key == cv::RANDOM_BEATMAP.getVal<KEYCODE>()) && !this->bF2Pressed) {
+    if((key == KEY_F2 || key == cv::RANDOM_BEATMAP.getVal<SCANCODE>()) && !this->bF2Pressed) {
         this->bF2Pressed = true;
         press_bottombar_button(2);
     }
@@ -1116,8 +1116,8 @@ void SongBrowser::onKeyUp(KeyboardEvent &key) {
     if(key == KEY_LEFT) this->bLeft = false;
     if(key == KEY_RIGHT) this->bRight = false;
 
-    if(key == KEY_F1 || key == cv::TOGGLE_MODSELECT.getVal<KEYCODE>()) this->bF1Pressed = false;
-    if(key == KEY_F2 || key == cv::RANDOM_BEATMAP.getVal<KEYCODE>()) this->bF2Pressed = false;
+    if(key == KEY_F1 || key == cv::TOGGLE_MODSELECT.getVal<SCANCODE>()) this->bF1Pressed = false;
+    if(key == KEY_F2 || key == cv::RANDOM_BEATMAP.getVal<SCANCODE>()) this->bF2Pressed = false;
     if(key == KEY_F3) this->bF3Pressed = false;
 }
 

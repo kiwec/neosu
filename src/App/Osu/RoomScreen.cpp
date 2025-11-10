@@ -289,7 +289,7 @@ void RoomScreen::mouse_update(bool *propagate_clicks) {
 void RoomScreen::onKeyDown(KeyboardEvent &key) {
     if(!this->bVisible || osu->getSongBrowser()->isVisible()) return;
 
-    if(key.getKeyCode() == KEY_ESCAPE) {
+    if(key.getScanCode() == KEY_ESCAPE) {
         key.consume();
 
         static f64 last_escape_press = 0.0;
@@ -304,7 +304,7 @@ void RoomScreen::onKeyDown(KeyboardEvent &key) {
         return;
     }
 
-    if(key.getKeyCode() == KEY_F1) {
+    if(key.getScanCode() == KEY_F1) {
         key.consume();
         if(BanchoState::room.freemods || BanchoState::room.is_host()) {
             osu->getModSelector()->setVisible(!osu->getModSelector()->isVisible());

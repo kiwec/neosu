@@ -775,7 +775,7 @@ void Changelog::updateLayout() {
 void Changelog::onBack() { osu->toggleChangelog(); }
 
 void Changelog::onChangeClicked(CBaseUIButton *button) {
-    const UString changeTextMaybeContainingClickableURL = button->getText();
+    const UString &changeTextMaybeContainingClickableURL = button->getText();
 
     const int maybeURLBeginIndex = changeTextMaybeContainingClickableURL.find("http");
     if(maybeURLBeginIndex != -1 && changeTextMaybeContainingClickableURL.find("://") != -1) {

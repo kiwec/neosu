@@ -274,7 +274,7 @@ class OptionsMenuKeyBindLabel final : public CBaseUILabel {
         if(!this->bVisible) return;
         CBaseUILabel::mouse_update(propagate_clicks);
 
-        const auto newKeyCode = (KEYCODE)this->key->getInt();
+        const auto newKeyCode = (SCANCODE)this->key->getInt();
         if(this->keyCode == newKeyCode) return;
 
         this->keyCode = newKeyCode;
@@ -308,7 +308,7 @@ class OptionsMenuKeyBindLabel final : public CBaseUILabel {
 
     Color textColorBound;
     Color textColorUnbound;
-    KEYCODE keyCode;
+    SCANCODE keyCode;
 };
 
 class OptionsMenuKeyBindButton final : public UIButton {
@@ -1646,7 +1646,7 @@ void OptionsMenu::onKeyDown(KeyboardEvent &e) {
     if(e.isConsumed()) return;
 
     // KEY_TAB doesn't work on Linux
-    if(e.getKeyCode() == 65056 || e.getKeyCode() == KEY_TAB) {
+    if(e.getScanCode() == 65056 || e.getScanCode() == KEY_TAB) {
         if(this->serverTextbox->isActive()) {
             this->serverTextbox->stealFocus();
             this->nameTextbox->focus();
@@ -1662,7 +1662,7 @@ void OptionsMenu::onKeyDown(KeyboardEvent &e) {
 
     // searching text delete
     if(!this->sSearchString.isEmpty()) {
-        switch(e.getKeyCode()) {
+        switch(e.getScanCode()) {
             case KEY_DELETE:
             case KEY_BACKSPACE:
                 if(keyboard->isControlDown()) {
@@ -1747,7 +1747,7 @@ void OptionsMenu::onResolutionChange(vec2 newResolution) {
 void OptionsMenu::onKey(KeyboardEvent &e) {
     // from NotificationOverlay
     if(this->waitingKey != nullptr) {
-        this->waitingKey->setValue((float)e.getKeyCode());
+        this->waitingKey->setValue((float)e.getScanCode());
         this->waitingKey = nullptr;
     }
 }

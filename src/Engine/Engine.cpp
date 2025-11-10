@@ -251,7 +251,7 @@ void Engine::onPaint() {
             if(this->guiContainer) this->guiContainer->draw();
 
             // debug input devices
-            for(const auto &inputDevice : this->inputDevices) {
+            for(auto *inputDevice : this->inputDevices) {
                 inputDevice->draw();
             }
         }
@@ -310,7 +310,7 @@ void Engine::onUpdate() {
 
         {
             VPROF_BUDGET("InputDevices::update", VPROF_BUDGETGROUP_UPDATE);
-            for(auto &inputDevice : this->inputDevices) {
+            for(auto *inputDevice : this->inputDevices) {
                 inputDevice->update();
             }
         }
@@ -370,7 +370,7 @@ void Engine::onFocusGained() {
 void Engine::onFocusLost() {
     logIfCV(debug_engine, "lost focus");
 
-    for(auto &keyboard : this->keyboards) {
+    for(auto *keyboard : this->keyboards) {
         keyboard->reset();
     }
 
@@ -439,7 +439,7 @@ void Engine::onShutdown() {
 
 // hardcoded engine hotkeys
 void Engine::onKeyDown(KeyboardEvent &e) {
-    auto keyCode = e.getKeyCode();
+    auto keyCode = e.getScanCode();
     // handle ALT+F4 quit
     if(keyboard->isAltDown() && keyCode == KEY_F4) {
         this->shutdown();

@@ -278,7 +278,7 @@ CBaseUIElement *SpectatorScreen::setVisible(bool /*visible*/) {
 void SpectatorScreen::onKeyDown(KeyboardEvent &key) {
     if(!this->isVisible()) return;
 
-    if(key.getKeyCode() == KEY_ESCAPE) {
+    if(key.getScanCode() == KEY_ESCAPE) {
         key.consume();
         this->onStopSpectatingClicked();
         return;

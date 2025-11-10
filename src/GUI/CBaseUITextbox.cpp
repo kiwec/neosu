@@ -281,7 +281,7 @@ void CBaseUITextbox::onKeyDown(KeyboardEvent &e) {
 
     e.consume();
 
-    switch(e.getKeyCode()) {
+    switch(e.getScanCode()) {
         case KEY_DELETE:
             soundEngine->play(osu->getSkin()->s_deleting_text);
             if(this->sText.length() > 0) {

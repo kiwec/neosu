@@ -176,7 +176,7 @@ void NotificationOverlay::onKeyDown(KeyboardEvent &e) {
     if(!this->isVisible()) return;
 
     // escape always stops waiting for a key
-    if(e.getKeyCode() == KEY_ESCAPE) {
+    if(e.getScanCode() == KEY_ESCAPE) {
         if(this->bWaitForKey) e.consume();
 
         this->stopWaitingForKey();
@@ -186,12 +186,12 @@ void NotificationOverlay::onKeyDown(KeyboardEvent &e) {
     if(this->bWaitForKey) {
         // HACKHACK: prevent left mouse click bindings if relevant
         if(Env::cfg(OS::WINDOWS) && this->bWaitForKeyDisallowsLeftClick &&
-           e.getKeyCode() == 0x01)  // 0x01 == VK_LBUTTON
+           e.getScanCode() == 0x01)  // 0x01 == VK_LBUTTON
             this->stopWaitingForKey();
         else {
             this->stopWaitingForKey(true);
 
-            debugLog("keyCode = {:d}", e.getKeyCode());
+            debugLog("keyCode = {:d}", e.getScanCode());
 
             if(this->keyListener != nullptr) this->keyListener->onKey(e);
         }

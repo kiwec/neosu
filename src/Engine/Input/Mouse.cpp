@@ -4,6 +4,7 @@
 #include "ConVar.h"
 #include "Engine.h"
 #include "Environment.h"
+#include "MakeDelegateWrapper.h"
 #include "ResourceManager.h"
 #include "Logging.h"
 
@@ -161,7 +162,7 @@ void Mouse::onPosChange(vec2 pos) {
 void Mouse::onWheelVertical(int delta) {
     this->iWheelDeltaVerticalActual += delta;
 
-    for(auto &listener : this->listeners) {
+    for(auto *listener : this->listeners) {
         listener->onWheelVertical(delta);
     }
 }
@@ -169,7 +170,7 @@ void Mouse::onWheelVertical(int delta) {
 void Mouse::onWheelHorizontal(int delta) {
     this->iWheelDeltaHorizontalActual += delta;
 
-    for(auto &listener : this->listeners) {
+    for(auto *listener : this->listeners) {
         listener->onWheelHorizontal(delta);
     }
 }
@@ -184,7 +185,7 @@ void Mouse::onButtonChange(ButtonEvent ev) {
     }
 
     // notify listeners
-    for(auto &listener : this->listeners) {
+    for(auto *listener : this->listeners) {
         listener->onButtonChange(ev);
     }
 }
@@ -214,18 +215,14 @@ void Mouse::addListener(MouseListener *mouseListener, bool insertOnTop) {
 }
 
 void Mouse::removeListener(MouseListener *mouseListener) {
-    for(size_t i = 0; i < this->listeners.size(); i++) {
-        if(this->listeners[i] == mouseListener) {
-            this->listeners.erase(this->listeners.begin() + i);
-            i--;
-        }
-    }
+    std::erase_if(this->listeners, [mouseListener](const auto &listener) -> bool { return listener == mouseListener; });
 }
 
 void Mouse::onRawInputChanged(float newval) {
     this->bIsRawInputDesired = !!static_cast<int>(newval);
-    env->setRawMouseInput(this->bIsRawInputDesired);  // request environment to change the real OS cursor state (may or may
-                                                 // not take effect immediately)
+    env->setRawMouseInput(
+        this->bIsRawInputDesired);  // request environment to change the real OS cursor state (may or may
+                                    // not take effect immediately)
 
     // non-rawinput with sensitivity != 1 is unsupported
     if(!this->bIsRawInputDesired && (this->fSensitivity < 0.999f || this->fSensitivity > 1.001f)) {

@@ -390,7 +390,7 @@ void ModFPoSu::noclipMove() {
 }
 
 void ModFPoSu::onKeyDown(KeyboardEvent &key) {
-    if(key == cv::FPOSU_ZOOM.getVal<KEYCODE>() && !this->bZoomKeyDown) {
+    if(key == cv::FPOSU_ZOOM.getVal<SCANCODE>() && !this->bZoomKeyDown) {
         this->bZoomKeyDown = true;
 
         if(!this->bZoomed || cv::fposu_zoom_toggle.getBool()) {
@@ -415,7 +415,7 @@ void ModFPoSu::onKeyDown(KeyboardEvent &key) {
 }
 
 void ModFPoSu::onKeyUp(KeyboardEvent &key) {
-    if(key == cv::FPOSU_ZOOM.getVal<KEYCODE>()) {
+    if(key == cv::FPOSU_ZOOM.getVal<SCANCODE>()) {
         this->bZoomKeyDown = false;
 
         if(this->bZoomed && !cv::fposu_zoom_toggle.getBool()) {

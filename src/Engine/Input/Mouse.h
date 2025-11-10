@@ -5,6 +5,9 @@
 
 #include "InputDevice.h"
 #include "MouseListener.h"
+#include "Vectors.h"
+
+#include <vector>
 
 class Mouse final : public InputDevice {
     NOCOPY_NOMOVE(Mouse)
@@ -34,40 +37,40 @@ class Mouse final : public InputDevice {
     inline void setScale(vec2 scale) { this->vScale = scale; }
 
     // state getters
-    [[nodiscard]] inline vec2 getPos() const { return this->vPos; }
-    [[nodiscard]] inline vec2 getRealPos() const { return this->vPosWithoutOffsets; }
-    [[nodiscard]] inline vec2 getActualPos() const { return this->vActualPos; }
-    [[nodiscard]] inline vec2 getDelta() const { return this->vDelta; }
-    [[nodiscard]] inline vec2 getRawDelta() const { return this->vRawDelta; }
+    [[nodiscard]] constexpr forceinline vec2 getPos() const { return this->vPos; }
+    [[nodiscard]] constexpr forceinline vec2 getRealPos() const { return this->vPosWithoutOffsets; }
+    [[nodiscard]] constexpr forceinline vec2 getActualPos() const { return this->vActualPos; }
+    [[nodiscard]] constexpr forceinline vec2 getDelta() const { return this->vDelta; }
+    [[nodiscard]] constexpr forceinline vec2 getRawDelta() const { return this->vRawDelta; }
 
-    [[nodiscard]] inline vec2 getOffset() const { return this->vOffset; }
-    [[nodiscard]] inline vec2 getScale() const { return this->vScale; }
-    [[nodiscard]] inline float getSensitivity() const { return this->fSensitivity; }
+    [[nodiscard]] constexpr forceinline vec2 getOffset() const { return this->vOffset; }
+    [[nodiscard]] constexpr forceinline vec2 getScale() const { return this->vScale; }
+    [[nodiscard]] constexpr forceinline float getSensitivity() const { return this->fSensitivity; }
 
     // button state accessors
-    [[nodiscard]] constexpr bool isLeftDown() const {
+    [[nodiscard]] constexpr forceinline bool isLeftDown() const {
         return flags::has<MouseButtonFlags::MF_LEFT>(this->buttonsHeldMask);
     }
-    [[nodiscard]] constexpr bool isMiddleDown() const {
+    [[nodiscard]] constexpr forceinline bool isMiddleDown() const {
         return flags::has<MouseButtonFlags::MF_MIDDLE>(this->buttonsHeldMask);
     }
-    [[nodiscard]] constexpr bool isRightDown() const {
+    [[nodiscard]] constexpr forceinline bool isRightDown() const {
         return flags::has<MouseButtonFlags::MF_RIGHT>(this->buttonsHeldMask);
     }
-    [[nodiscard]] constexpr bool isButton4Down() const {
+    [[nodiscard]] constexpr forceinline bool isButton4Down() const {
         return flags::has<MouseButtonFlags::MF_X1>(this->buttonsHeldMask);
     }
-    [[nodiscard]] constexpr bool isButton5Down() const {
+    [[nodiscard]] constexpr forceinline bool isButton5Down() const {
         return flags::has<MouseButtonFlags::MF_X2>(this->buttonsHeldMask);
     }
-    [[nodiscard]] constexpr MouseButtonFlags getHeldButtons() const { return this->buttonsHeldMask; }
+    [[nodiscard]] constexpr forceinline MouseButtonFlags getHeldButtons() const { return this->buttonsHeldMask; }
 
-    [[nodiscard]] inline int getWheelDeltaVertical() const { return this->iWheelDeltaVertical; }
-    [[nodiscard]] inline int getWheelDeltaHorizontal() const { return this->iWheelDeltaHorizontal; }
+    [[nodiscard]] constexpr forceinline int getWheelDeltaVertical() const { return this->iWheelDeltaVertical; }
+    [[nodiscard]] constexpr forceinline int getWheelDeltaHorizontal() const { return this->iWheelDeltaHorizontal; }
 
     void resetWheelDelta();
 
-    [[nodiscard]] inline bool isRawInputWanted() const {
+    [[nodiscard]] constexpr forceinline bool isRawInputWanted() const {
         return this->bIsRawInputDesired;
     }  // "desired" rawinput state, NOT actual OS raw input state!
 
