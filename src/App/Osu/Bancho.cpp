@@ -679,7 +679,7 @@ void BanchoState::handle_packet(Packet &packet) {
                 auto name = packet.read_stdstring();
                 auto cvar = cvars->getConVarByName(name, false);
                 if(cvar) {
-                    cvar->setServerProtected(ConVar::ProtectionPolicy::PROTECTED);
+                    cvar->setServerProtected(CvarProtection::PROTECTED);
                 } else {
                     debugLog("Server wanted to protect cvar '{}', but it doesn't exist!", name);
                 }
@@ -694,7 +694,7 @@ void BanchoState::handle_packet(Packet &packet) {
                 auto name = packet.read_stdstring();
                 auto cvar = cvars->getConVarByName(name, false);
                 if(cvar) {
-                    cvar->setServerProtected(ConVar::ProtectionPolicy::UNPROTECTED);
+                    cvar->setServerProtected(CvarProtection::UNPROTECTED);
                 } else {
                     debugLog("Server wanted to unprotect cvar '{}', but it doesn't exist!", name);
                 }
@@ -710,7 +710,7 @@ void BanchoState::handle_packet(Packet &packet) {
                 auto val = packet.read_stdstring();
                 auto cvar = cvars->getConVarByName(name, false);
                 if(cvar) {
-                    cvar->setValue(val, true, ConVar::CvarEditor::SERVER);
+                    cvar->setValue(val, true, CvarEditor::SERVER);
                 } else {
                     debugLog("Server wanted to set cvar '{}' to '{}', but it doesn't exist!", name, val);
                 }

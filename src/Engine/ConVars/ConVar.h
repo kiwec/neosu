@@ -51,6 +51,9 @@ enum CvarFlags : uint8_t {
 };
 }
 
+enum class CvarEditor : uint8_t { CLIENT, SERVER, SKIN };
+enum class CvarProtection : uint8_t { DEFAULT, PROTECTED, UNPROTECTED };
+
 class ConVar {
     // convenience for "tricking" clangd/intellisense into allowing us to use a namespace for ConVarHandler in ConVarDefs.h
 #ifndef DEFINE_CONVARS
@@ -59,8 +62,6 @@ class ConVar {
 
    public:
     enum class CONVAR_TYPE : uint8_t { BOOL, INT, FLOAT, STRING };
-    enum class CvarEditor : uint8_t { CLIENT, SERVER, SKIN };
-    enum class ProtectionPolicy : uint8_t { DEFAULT, PROTECTED, UNPROTECTED };
 
     // callback typedefs using Kryukov delegates
     using CVVoidCB = SA::delegate<void()>;
@@ -198,12 +199,8 @@ class ConVar {
         if(editor == CvarEditor::SKIN && !this->isFlagSet(cv::SKINS)) return;
         if(editor == CvarEditor::SERVER && !this->isFlagSet(cv::SERVER)) return;
 
-        bool can_set_value = true;
-        if(this->isFlagSet(cv::GAMEPLAY)) {
-            can_set_value &= this->onSetValueGameplay(editor);
-        }
-
-        if(can_set_value) {
+        if(this->isFlagSet(cv::GAMEPLAY) && (unlikely(!ConVar::onSetValueGameplayCallback) ||
+                                             likely(ConVar::onSetValueGameplayCallback(this->sName, editor)))) {
             this->setValueInt(std::forward<T>(value), doCallback, editor);
         }
     }
@@ -289,17 +286,17 @@ class ConVar {
     [[nodiscard]] inline bool isFlagSet(uint8_t flag) const { return ((this->iFlags & flag) == flag); }
     [[nodiscard]] inline bool isDefault() const { return this->getString() == this->getDefaultString(); }
 
-    void setServerProtected(ProtectionPolicy policy) {
+    void setServerProtected(CvarProtection policy) {
         this->serverProtectionPolicy.store(policy, std::memory_order_release);
     }
 
     [[nodiscard]] inline bool isProtected() const {
         switch(this->serverProtectionPolicy.load(std::memory_order_acquire)) {
-            case ProtectionPolicy::DEFAULT:
+            case CvarProtection::DEFAULT:
                 return this->isFlagSet(cv::PROTECTED);
-            case ProtectionPolicy::PROTECTED:
+            case CvarProtection::PROTECTED:
                 return true;
-            case ProtectionPolicy::UNPROTECTED:
+            case CvarProtection::UNPROTECTED:
             default:
                 return false;
         }
@@ -308,10 +305,11 @@ class ConVar {
     // shared callback, app-defined
     static void setOnSetValueProtectedCallback(const CVVoidCB &callback);
 
-   private:
-    // invalidates replay, returns true if value change should be allowed
-    [[nodiscard]] bool onSetValueGameplay(CvarEditor editor);
+    // shared callback, app-defined
+    using GameplayCVChangeCB = bool (*)(const char *cvarname, CvarEditor setterkind);
+    static void setOnSetValueGameplayCallback(GameplayCVChangeCB func);
 
+   private:
     // unified init for callback-only convars
     template <typename Callback>
     void initCallback(uint8_t flags, Callback callback) {
@@ -461,6 +459,8 @@ class ConVar {
    private:
     // shared across all convars
     static CVVoidCB onSetValueProtectedCallback;
+    // invalidates replay, returns true if value change should be allowed
+    static GameplayCVChangeCB onSetValueGameplayCallback;
 
     const char *sName;
     const char *sHelpString;
@@ -480,7 +480,7 @@ class ConVar {
     ExecCallback callback{std::monostate()};
     ChangeCB changeCallback{std::monostate()};
 
-    std::atomic<ProtectionPolicy> serverProtectionPolicy{ProtectionPolicy::DEFAULT};
+    std::atomic<CvarProtection> serverProtectionPolicy{CvarProtection::DEFAULT};
 
     CONVAR_TYPE type{CONVAR_TYPE::FLOAT};
     uint8_t iFlags{0};
