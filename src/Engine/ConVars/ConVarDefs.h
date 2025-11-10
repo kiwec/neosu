@@ -191,6 +191,7 @@ CONVAR(snd_pitch_hitsounds_factor, -0.5f, CLIENT | SKINS | SERVER, "how much to 
 
 // Debug
 CONVAR(debug_osu, false, CLIENT);
+CONVAR(debug_cv, false, CLIENT);
 CONVAR(debug_db, false, CLIENT);
 CONVAR(debug_async_db, false, CLIENT);
 CONVAR(debug_anim, false, CLIENT);

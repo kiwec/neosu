@@ -90,7 +90,7 @@ double ConVar::getDouble() const {
     }
 
     if(this->isProtected() &&
-       (likely(ConVar::onGetValueProtectedCallback) && !ConVar::onGetValueProtectedCallback(this->sName))) {
+       (likely(!!ConVar::onGetValueProtectedCallback) && !ConVar::onGetValueProtectedCallback(this->sName))) {
         return this->dDefaultValue;
     }
 
@@ -107,7 +107,7 @@ const std::string &ConVar::getString() const {
     }
 
     if(this->isProtected() &&
-       (likely(ConVar::onGetValueProtectedCallback) && !ConVar::onGetValueProtectedCallback(this->sName))) {
+       (likely(!!ConVar::onGetValueProtectedCallback) && !ConVar::onGetValueProtectedCallback(this->sName))) {
         return this->sDefaultValue;
     }
 

@@ -82,7 +82,7 @@ void Osu::globalOnSetValueProtectedCallback() {
 // prevents getting changed protected convars while in a multi lobby
 bool Osu::globalOnGetValueProtectedCallback(const char *cvarname) {
     if(BanchoState::is_in_a_multi_room()) {
-        debugLog("Returning default value for {}, currently in a multi room.", cvarname);
+        logIfCV(debug_cv, "Returning default value for {}, currently in a multi room.", cvarname);
         return false;
     }
     return true;
