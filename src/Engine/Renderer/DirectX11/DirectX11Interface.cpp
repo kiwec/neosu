@@ -1223,7 +1223,7 @@ void DirectX11Interface::onResolutionChange(vec2 newResolution) {
         //          this->bIsFullscreenBorderlessWindowed, isTrueFS ? 0 : (UINT)newResolution.x,
         //          isTrueFS ? 0 : (UINT)newResolution.y);
 
-        hr = this->swapChain->ResizeBuffers(0, isExclusiveFS ? newWidth : 0, isExclusiveFS ? newHeight : 0,
+        hr = this->swapChain->ResizeBuffers(0, !isExclusiveFS ? newWidth : 0, !isExclusiveFS ? newHeight : 0,
                                             DXGI_FORMAT_UNKNOWN, this->swapChainCreateFlags);
 
         if(FAILED(hr))
