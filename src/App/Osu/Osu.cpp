@@ -76,23 +76,6 @@ void Osu::globalOnSetValueProtectedCallback() {
     }
 }
 
-bool Osu::globalOnSetValueGameplayCallback(const char *cvarname, CvarEditor setterkind) {
-    // Only SERVER can edit GAMEPLAY cvars during multiplayer matches
-    if(BanchoState::is_playing_a_multi_map() && setterkind != CvarEditor::SERVER) {
-        debugLog("Can't edit {} while in a multiplayer match.", cvarname);
-        return false;
-    }
-
-    // Regardless of the editor, changing GAMEPLAY cvars in the middle of a map
-    // will result in an invalid replay. Set it as cheated so the score isn't saved.
-    if(osu->isInPlayMode()) {
-        debugLog("{} affects gameplay: won't submit score.", cvarname);
-    }
-    osu->getScore()->setCheated();
-
-    return true;
-}
-
 Osu *osu{nullptr};
 
 Osu::Osu() {
@@ -102,10 +85,6 @@ Osu::Osu() {
     // prevents score submission when/if a protected convar is changed during gameplay
     // will be removed in destructor
     ConVar::setOnSetValueProtectedCallback(SA::MakeDelegate<&Osu::globalOnSetValueProtectedCallback>(this));
-
-    // prevents changing gameplay convars while playing multi and disables score submission
-    // will be removed in destructor
-    ConVar::setOnSetValueGameplayCallback(Osu::globalOnSetValueGameplayCallback);
 
     if(Env::cfg(BUILD::DEBUG)) {
         BanchoState::neosu_version = fmt::format("dev-{}", cv::build_timestamp.getVal<u64>());
@@ -397,9 +376,8 @@ Osu::~Osu() {
     this->destroyAllScreensInOrder();
     db.reset();  // shutdown db
 
-    // remove the static callbacks
+    // remove the static callback
     ConVar::setOnSetValueProtectedCallback({});
-    ConVar::setOnSetValueGameplayCallback({});
 }
 
 void Osu::draw() {

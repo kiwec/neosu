@@ -3,8 +3,10 @@
 #include "ConVarHandler.h"
 
 #include "File.h"
+#include "Logging.h"
 
-// TODO: remove the need for this here
+// TODO: remove the need for these here
+#include "Osu.h"
 #include "Bancho.h"
 
 // set by app, shared across all convars, called when a protected convar changes
@@ -13,11 +15,6 @@ ConVar::CVVoidCB ConVar::onSetValueProtectedCallback{};
 void ConVar::setOnSetValueProtectedCallback(const CVVoidCB &callback) {
     ConVar::onSetValueProtectedCallback = callback;
 }
-
-// ditto
-ConVar::GameplayCVChangeCB ConVar::onSetValueGameplayCallback{nullptr};
-
-void ConVar::setOnSetValueGameplayCallback(GameplayCVChangeCB func) { ConVar::onSetValueGameplayCallback = func; }
 
 void ConVar::addConVar() {
     std::string_view name = this->getName();
@@ -126,4 +123,22 @@ void ConVar::setDefaultString(std::string_view defaultValue) {
     if(f != 0.0) {
         this->dDefaultValue = f;
     }
+}
+
+bool ConVar::onSetValueGameplay(CvarEditor editor) {
+    if(!osu) return true;  // osu may have been destroyed while shutting down
+    // Only SERVER can edit GAMEPLAY cvars during multiplayer matches
+    if(BanchoState::is_playing_a_multi_map() && editor != CvarEditor::SERVER) {
+        debugLog("Can't edit {} while in a multiplayer match.", this->sName);
+        return false;
+    }
+
+    // Regardless of the editor, changing GAMEPLAY cvars in the middle of a map
+    // will result in an invalid replay. Set it as cheated so the score isn't saved.
+    if(osu->isInPlayMode()) {
+        debugLog("{} affects gameplay: won't submit score.", this->sName);
+    }
+    osu->getScore()->setCheated();
+
+    return true;
 }

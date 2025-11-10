@@ -897,7 +897,7 @@ bool Skin::parseSkinINI(std::string filepath) {
                 if(shouldParse) {
                     auto cvar = cvars->getConVarByName(name, false);
                     if(cvar) {
-                        cvar->setValue(value, true, CvarEditor::SKIN);
+                        cvar->setValue(value, true, ConVar::CvarEditor::SKIN);
                     } else {
                         debugLog("Skin wanted to set cvar '{}' to '{}', but it doesn't exist!", name, value);
                     }
