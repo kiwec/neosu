@@ -269,7 +269,8 @@ f64 DifficultyCalculator::calculateStarDiffForHitObjects(StarCalcParams &params)
                     vec2 lazy_diff = slider.lazyEndPos - cursor_pos;
                     if(vec::length(lazy_diff) < vec::length(diff)) diff = lazy_diff;
                     diff_len = scaling_factor * vec::length(diff);
-                } else if(slider.ho->scoringTimes[i].type == OsuDifficultyHitObject::SLIDER_SCORING_TIME::TYPE::REPEAT) {
+                } else if(slider.ho->scoringTimes[i].type ==
+                          OsuDifficultyHitObject::SLIDER_SCORING_TIME::TYPE::REPEAT) {
                     // Slider repeat
                     req_diff = 50.0;
                 }
@@ -448,78 +449,78 @@ f64 DifficultyCalculator::calculateStarDiffForHitObjects(StarCalcParams &params)
     return calculateTotalStarsFromSkills(*params.aim, *params.speed);
 }
 
-f64 DifficultyCalculator::calculatePPv2(const Replay::Mods &mods, f64 ar, f64 od, f64 aim, f64 aimSliderFactor,
-                                        f64 aimDifficultSliders, f64 aimDifficultStrains, f64 speed, f64 speedNotes,
-                                        f64 speedDifficultStrains, i32 numHitObjects, i32 numCircles, i32 numSliders,
-                                        i32 numSpinners, i32 maxPossibleCombo, i32 combo, i32 misses, i32 c300,
-                                        i32 c100, i32 c50) {
+f64 DifficultyCalculator::calculatePPv2(PPv2CalcParams cpar) {
     // NOTE: depends on active mods + OD + AR
 
     // apply "timescale" aka speed multiplier to ar/od
     // (the original incoming ar/od values are guaranteed to not yet have any speed multiplier applied to them, but they do have non-time-related mods already applied, like HR or any custom overrides)
     // (yes, this does work correctly when the override slider "locking" feature is used. in this case, the stored ar/od is already compensated such that it will have the locked value AFTER applying the speed multiplier here)
     // (all UI elements which display ar/od from stored scores, like the ranking screen or score buttons, also do this calculation before displaying the values to the user. of course the mod selection screen does too.)
-    ar = GameRules::arWithSpeed(ar, mods.speed);
-    od = GameRules::odWithSpeed(od, mods.speed);
+    cpar.ar = GameRules::arWithSpeed(cpar.ar, cpar.mods.speed);
+    cpar.od = GameRules::odWithSpeed(cpar.od, cpar.mods.speed);
 
-    if(c300 < 0) c300 = numHitObjects - c100 - c50 - misses;
+    if(cpar.c300 < 0) cpar.c300 = cpar.numHitObjects - cpar.c100 - cpar.c50 - cpar.misses;
 
-    if(combo < 0) combo = maxPossibleCombo;
+    if(cpar.combo < 0) cpar.combo = cpar.maxPossibleCombo;
 
-    if(combo < 1) return 0.0;
+    if(cpar.combo < 1) return 0.0;
 
-    const i32 totalHits = c300 + c100 + c50 + misses;
+    const i32 totalHits = cpar.c300 + cpar.c100 + cpar.c50 + cpar.misses;
 
     ScoreData score{
-        .mods = mods,
-        .accuracy = (totalHits > 0 ? (f64)(c300 * 300 + c100 * 100 + c50 * 50) / (f64)(totalHits * 300) : 0.0),
-        .countGreat = c300,
-        .countGood = c100,
-        .countMeh = c50,
-        .countMiss = misses,
+        .mods = cpar.mods,
+        .accuracy =
+            (totalHits > 0 ? (f64)(cpar.c300 * 300 + cpar.c100 * 100 + cpar.c50 * 50) / (f64)(totalHits * 300) : 0.0),
+        .countGreat = cpar.c300,
+        .countGood = cpar.c100,
+        .countMeh = cpar.c50,
+        .countMiss = cpar.misses,
         .totalHits = totalHits,
-        .totalSuccessfulHits = c300 + c100 + c50,
-        .beatmapMaxCombo = maxPossibleCombo,
-        .scoreMaxCombo = combo,
-        .amountHitObjectsWithAccuracy = (mods.has(ModFlags::ScoreV2) ? numCircles + numSliders : numCircles),
+        .totalSuccessfulHits = cpar.c300 + cpar.c100 + cpar.c50,
+        .beatmapMaxCombo = cpar.maxPossibleCombo,
+        .scoreMaxCombo = cpar.combo,
+        .amountHitObjectsWithAccuracy =
+            (cpar.mods.has(ModFlags::ScoreV2) ? cpar.numCircles + cpar.numSliders : cpar.numCircles),
     };
 
-    Attributes attributes{.AimStrain = aim,
-                          .SliderFactor = aimSliderFactor,
-                          .AimDifficultSliderCount = aimDifficultSliders,
-                          .AimDifficultStrainCount = aimDifficultStrains,
-                          .SpeedStrain = speed,
-                          .SpeedNoteCount = speedNotes,
-                          .SpeedDifficultStrainCount = speedDifficultStrains,
-                          .ApproachRate = ar,
-                          .OverallDifficulty = od,
-                          .SliderCount = numSliders};
+    Attributes attributes{.AimStrain = cpar.aim,
+                          .SliderFactor = cpar.aimSliderFactor,
+                          .AimDifficultSliderCount = cpar.aimDifficultSliders,
+                          .AimDifficultStrainCount = cpar.aimDifficultStrains,
+                          .SpeedStrain = cpar.speed,
+                          .SpeedNoteCount = cpar.speedNotes,
+                          .SpeedDifficultStrainCount = cpar.speedDifficultStrains,
+                          .ApproachRate = cpar.ar,
+                          .OverallDifficulty = cpar.od,
+                          .SliderCount = cpar.numSliders};
 
     // calculateEffectiveMissCount @ https://github.com/ppy/osu/blob/master/osu.Game.Rulesets.Osu/Difficulty/OsuPerformanceCalculator.cs
     // required because slider breaks aren't exposed to pp calculation
     f64 comboBasedMissCount = 0.0;
-    if(numSliders > 0) {
-        f64 fullComboThreshold = maxPossibleCombo - (0.1 * numSliders);
-        if((f64)combo < fullComboThreshold) comboBasedMissCount = fullComboThreshold / std::max(1.0, (f64)combo);
+    if(cpar.numSliders > 0) {
+        f64 fullComboThreshold = cpar.maxPossibleCombo - (0.1 * cpar.numSliders);
+        if((f64)cpar.combo < fullComboThreshold)
+            comboBasedMissCount = fullComboThreshold / std::max(1.0, (f64)cpar.combo);
     }
-    f64 effectiveMissCount = std::clamp<f64>(comboBasedMissCount, (f64)misses, (f64)(c50 + c100 + misses));
+    f64 effectiveMissCount =
+        std::clamp<f64>(comboBasedMissCount, (f64)cpar.misses, (f64)(cpar.c50 + cpar.c100 + cpar.misses));
 
     // custom multipliers for nofail and spunout
     f64 multiplier = 1.15;  // keep final pp normalized across changes
     {
-        if(mods.has(ModFlags::NoFail))
+        if(cpar.mods.has(ModFlags::NoFail))
             multiplier *= std::max(
                 0.9, 1.0 - 0.02 * effectiveMissCount);  // see https://github.com/ppy/osu-performance/pull/127/files
 
-        if((mods.has(ModFlags::SpunOut)) && score.totalHits > 0)
-            multiplier *= 1.0 - std::pow((f64)numSpinners / (f64)score.totalHits,
+        if((cpar.mods.has(ModFlags::SpunOut)) && score.totalHits > 0)
+            multiplier *= 1.0 - std::pow((f64)cpar.numSpinners / (f64)score.totalHits,
                                          0.85);  // see https://github.com/ppy/osu-performance/pull/110/
 
-        if(mods.has(ModFlags::Relax)) {
-            f64 okMultiplier = std::max(0.0, od > 0.0 ? 1.0 - std::pow(od / 13.33, 1.8) : 1.0);   // 100
-            f64 mehMultiplier = std::max(0.0, od > 0.0 ? 1.0 - std::pow(od / 13.33, 5.0) : 1.0);  // 50
-            effectiveMissCount =
-                std::min(effectiveMissCount + c100 * okMultiplier + c50 * mehMultiplier, (f64)score.totalHits);
+        if(cpar.mods.has(ModFlags::Relax)) {
+            f64 okMultiplier = std::max(0.0, cpar.od > 0.0 ? 1.0 - std::pow(cpar.od / 13.33, 1.8) : 1.0);   // 100
+            f64 mehMultiplier = std::max(0.0, cpar.od > 0.0 ? 1.0 - std::pow(cpar.od / 13.33, 5.0) : 1.0);  // 50
+            effectiveMissCount = std::min(effectiveMissCount + cpar.c100 * okMultiplier + cpar.c50 * mehMultiplier,
+                                          (f64)score.totalHits);
         }
     }
 

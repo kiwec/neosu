@@ -2268,11 +2268,29 @@ void BeatmapInterface::update() {
 
                 info.total_stars = DifficultyCalculator::calculateStarDiffForHitObjects(params);
 
-                info.pp = DifficultyCalculator::calculatePPv2(
-                    mods, AR, params.OD, info.aim_stars, info.aim_slider_factor, info.difficult_aim_sliders,
-                    info.difficult_aim_strains, info.speed_stars, info.speed_notes, info.difficult_speed_strains,
-                    current_hitobject, nb_circles, nb_sliders, nb_spinners, diffres.maxPossibleCombo, highestCombo,
-                    numMisses, num300s, num100s, num50s);
+                DifficultyCalculator::PPv2CalcParams ppv2calcparams{
+                    .mods = mods,
+                    .ar = AR,
+                    .od = OD,
+                    .aim = info.aim_stars,
+                    .aimSliderFactor = info.aim_slider_factor,
+                    .aimDifficultSliders = info.difficult_aim_sliders,
+                    .aimDifficultStrains = info.difficult_aim_strains,
+                    .speed = info.speed_stars,
+                    .speedNotes = info.speed_notes,
+                    .speedDifficultStrains = info.difficult_speed_strains,
+                    .numHitObjects = current_hitobject,
+                    .numCircles = nb_circles,
+                    .numSliders = nb_sliders,
+                    .numSpinners = nb_spinners,
+                    .maxPossibleCombo = static_cast<i32>(diffres.maxPossibleCombo),
+                    .combo = highestCombo,
+                    .misses = numMisses,
+                    .c300 = num300s,
+                    .c100 = num100s,
+                    .c50 = num50s};
+
+                info.pp = DifficultyCalculator::calculatePPv2(ppv2calcparams);
 
                 return info;
             });
@@ -3616,10 +3634,30 @@ FinishedScore BeatmapInterface::saveAndSubmitScore(bool quit) {
     const int num300s = osu->getScore()->getNum300s();
     const int num100s = osu->getScore()->getNum100s();
     const int num50s = osu->getScore()->getNum50s();
-    const f32 pp = DifficultyCalculator::calculatePPv2(
-        osu->getScore()->mods, AR, OD, aim, aimSliderFactor, aimDifficultSliders, difficultAimStrains, speed,
-        speedNotes, difficultSpeedStrains, numHitObjects, numCircles, numSliders, numSpinners, this->iMaxPossibleCombo,
-        highestCombo, numMisses, num300s, num100s, num50s);
+
+    DifficultyCalculator::PPv2CalcParams ppv2calcparams{.mods = osu->getScore()->mods,
+                                                        .ar = AR,
+                                                        .od = OD,
+                                                        .aim = aim,
+                                                        .aimSliderFactor = aimSliderFactor,
+                                                        .aimDifficultSliders = aimDifficultSliders,
+                                                        .aimDifficultStrains = difficultAimStrains,
+                                                        .speed = speed,
+                                                        .speedNotes = speedNotes,
+                                                        .speedDifficultStrains = difficultSpeedStrains,
+                                                        .numHitObjects = numHitObjects,
+                                                        .numCircles = numCircles,
+                                                        .numSliders = numSliders,
+                                                        .numSpinners = numSpinners,
+                                                        .maxPossibleCombo = static_cast<i32>(this->iMaxPossibleCombo),
+                                                        .combo = highestCombo,
+                                                        .misses = numMisses,
+                                                        .c300 = num300s,
+                                                        .c100 = num100s,
+                                                        .c50 = num50s};
+
+    const f32 pp = DifficultyCalculator::calculatePPv2(ppv2calcparams);
+
     osu->getScore()->setStarsTomTotal(totalStars);
     osu->getScore()->setStarsTomAim(this->fAimStars);
     osu->getScore()->setStarsTomSpeed(this->fSpeedStars);

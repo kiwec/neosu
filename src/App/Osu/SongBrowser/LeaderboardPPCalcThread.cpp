@@ -191,13 +191,30 @@ static void run_thread() {
                 work_mtx.lock();
                 return;
             }
-            computed_info->info.pp = DifficultyCalculator::calculatePPv2(
-                rqt.mods, rqt.AR, rqt.OD, computed_info->info.aim_stars, computed_info->info.aim_slider_factor,
-                computed_info->info.difficult_aim_sliders, computed_info->info.difficult_aim_strains,
-                computed_info->info.speed_stars, computed_info->info.speed_notes,
-                computed_info->info.difficult_speed_strains, map->iNumObjects, map->iNumCircles, map->iNumSliders,
-                map->iNumSpinners, computed_ho->diffres.maxPossibleCombo, rqt.comboMax, rqt.numMisses, rqt.num300s,
-                rqt.num100s, rqt.num50s);
+
+            DifficultyCalculator::PPv2CalcParams ppv2calcparams{
+                .mods = rqt.mods,
+                .ar = rqt.AR,
+                .od = rqt.OD,
+                .aim = computed_info->info.aim_stars,
+                .aimSliderFactor = computed_info->info.aim_slider_factor,
+                .aimDifficultSliders = computed_info->info.difficult_aim_sliders,
+                .aimDifficultStrains = computed_info->info.difficult_aim_strains,
+                .speed = computed_info->info.speed_stars,
+                .speedNotes = computed_info->info.speed_notes,
+                .speedDifficultStrains = computed_info->info.difficult_speed_strains,
+                .numHitObjects = map->iNumObjects,
+                .numCircles = map->iNumCircles,
+                .numSliders = map->iNumSliders,
+                .numSpinners = map->iNumSpinners,
+                .maxPossibleCombo = static_cast<i32>(computed_ho->diffres.maxPossibleCombo),
+                .combo = rqt.comboMax,
+                .misses = rqt.numMisses,
+                .c300 = rqt.num300s,
+                .c100 = rqt.num100s,
+                .c50 = rqt.num50s};
+
+            computed_info->info.pp = DifficultyCalculator::calculatePPv2(ppv2calcparams);
 
             cache_mtx.lock();
             cache.emplace_back(rqt, computed_info->info);

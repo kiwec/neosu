@@ -240,11 +240,34 @@ class DifficultyCalculator {
     // stars, fully static
     static f64 calculateStarDiffForHitObjects(StarCalcParams &params);
 
+    struct PPv2CalcParams {
+        Replay::Mods mods;
+        f64 ar;
+        f64 od;
+        f64 aim;
+        f64 aimSliderFactor;
+
+        f64 aimDifficultSliders;
+        f64 aimDifficultStrains;
+        f64 speed;
+        f64 speedNotes;
+
+        f64 speedDifficultStrains;
+        i32 numHitObjects;
+        i32 numCircles;
+        i32 numSliders;
+
+        i32 numSpinners;
+        i32 maxPossibleCombo;
+        i32 combo;
+        i32 misses;
+        i32 c300;
+        i32 c100;
+        i32 c50;
+    };
+
     // pp, fully static
-    static f64 calculatePPv2(const Replay::Mods &mods, f64 ar, f64 od, f64 aim, f64 aimSliderFactor,
-                             f64 aimDifficultSliders, f64 difficultAimStrains, f64 speed, f64 speedNotes,
-                             f64 difficultSpeedStrains, i32 numHitObjects, i32 numCircles, i32 numSliders,
-                             i32 numSpinners, i32 maxPossibleCombo, i32 combo, i32 misses, i32 c300, i32 c100, i32 c50);
+    static f64 calculatePPv2(PPv2CalcParams cparams);
 
     // helper functions
     static f64 calculateTotalStarsFromSkills(f64 aim, f64 speed);
