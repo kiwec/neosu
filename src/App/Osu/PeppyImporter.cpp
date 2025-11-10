@@ -22,143 +22,143 @@ void try_set_key(const std::string& key, ConVar* cvar) {
     if(key == "None") {
         cvar->setValue(0);
     } else if(key == "A") {
-        cvar->setValue((int)KEY_A);
+        cvar->setValue<SCANCODE>(KEY_A);
     } else if(key == "B") {
-        cvar->setValue((int)KEY_B);
+        cvar->setValue<SCANCODE>(KEY_B);
     } else if(key == "C") {
-        cvar->setValue((int)KEY_C);
+        cvar->setValue<SCANCODE>(KEY_C);
     } else if(key == "D") {
-        cvar->setValue((int)KEY_D);
+        cvar->setValue<SCANCODE>(KEY_D);
     } else if(key == "E") {
-        cvar->setValue((int)KEY_E);
+        cvar->setValue<SCANCODE>(KEY_E);
     } else if(key == "F") {
-        cvar->setValue((int)KEY_F);
+        cvar->setValue<SCANCODE>(KEY_F);
     } else if(key == "G") {
-        cvar->setValue((int)KEY_G);
+        cvar->setValue<SCANCODE>(KEY_G);
     } else if(key == "H") {
-        cvar->setValue((int)KEY_H);
+        cvar->setValue<SCANCODE>(KEY_H);
     } else if(key == "I") {
-        cvar->setValue((int)KEY_I);
+        cvar->setValue<SCANCODE>(KEY_I);
     } else if(key == "J") {
-        cvar->setValue((int)KEY_J);
+        cvar->setValue<SCANCODE>(KEY_J);
     } else if(key == "K") {
-        cvar->setValue((int)KEY_K);
+        cvar->setValue<SCANCODE>(KEY_K);
     } else if(key == "L") {
-        cvar->setValue((int)KEY_L);
+        cvar->setValue<SCANCODE>(KEY_L);
     } else if(key == "M") {
-        cvar->setValue((int)KEY_M);
+        cvar->setValue<SCANCODE>(KEY_M);
     } else if(key == "N") {
-        cvar->setValue((int)KEY_N);
+        cvar->setValue<SCANCODE>(KEY_N);
     } else if(key == "O") {
-        cvar->setValue((int)KEY_O);
+        cvar->setValue<SCANCODE>(KEY_O);
     } else if(key == "P") {
-        cvar->setValue((int)KEY_P);
+        cvar->setValue<SCANCODE>(KEY_P);
     } else if(key == "Q") {
-        cvar->setValue((int)KEY_Q);
+        cvar->setValue<SCANCODE>(KEY_Q);
     } else if(key == "R") {
-        cvar->setValue((int)KEY_R);
+        cvar->setValue<SCANCODE>(KEY_R);
     } else if(key == "S") {
-        cvar->setValue((int)KEY_S);
+        cvar->setValue<SCANCODE>(KEY_S);
     } else if(key == "T") {
-        cvar->setValue((int)KEY_T);
+        cvar->setValue<SCANCODE>(KEY_T);
     } else if(key == "U") {
-        cvar->setValue((int)KEY_U);
+        cvar->setValue<SCANCODE>(KEY_U);
     } else if(key == "V") {
-        cvar->setValue((int)KEY_V);
+        cvar->setValue<SCANCODE>(KEY_V);
     } else if(key == "W") {
-        cvar->setValue((int)KEY_W);
+        cvar->setValue<SCANCODE>(KEY_W);
     } else if(key == "X") {
-        cvar->setValue((int)KEY_X);
+        cvar->setValue<SCANCODE>(KEY_X);
     } else if(key == "Y") {
-        cvar->setValue((int)KEY_Y);
+        cvar->setValue<SCANCODE>(KEY_Y);
     } else if(key == "Z") {
-        cvar->setValue((int)KEY_Z);
+        cvar->setValue<SCANCODE>(KEY_Z);
     } else if(key == "0") {
-        cvar->setValue((int)KEY_0);
+        cvar->setValue<SCANCODE>(KEY_0);
     } else if(key == "1") {
-        cvar->setValue((int)KEY_1);
+        cvar->setValue<SCANCODE>(KEY_1);
     } else if(key == "2") {
-        cvar->setValue((int)KEY_2);
+        cvar->setValue<SCANCODE>(KEY_2);
     } else if(key == "3") {
-        cvar->setValue((int)KEY_3);
+        cvar->setValue<SCANCODE>(KEY_3);
     } else if(key == "4") {
-        cvar->setValue((int)KEY_4);
+        cvar->setValue<SCANCODE>(KEY_4);
     } else if(key == "5") {
-        cvar->setValue((int)KEY_5);
+        cvar->setValue<SCANCODE>(KEY_5);
     } else if(key == "6") {
-        cvar->setValue((int)KEY_6);
+        cvar->setValue<SCANCODE>(KEY_6);
     } else if(key == "7") {
-        cvar->setValue((int)KEY_7);
+        cvar->setValue<SCANCODE>(KEY_7);
     } else if(key == "8") {
-        cvar->setValue((int)KEY_8);
+        cvar->setValue<SCANCODE>(KEY_8);
     } else if(key == "9") {
-        cvar->setValue((int)KEY_9);
+        cvar->setValue<SCANCODE>(KEY_9);
     } else if(key == "F1") {
-        cvar->setValue((int)KEY_F1);
+        cvar->setValue<SCANCODE>(KEY_F1);
     } else if(key == "F2") {
-        cvar->setValue((int)KEY_F2);
+        cvar->setValue<SCANCODE>(KEY_F2);
     } else if(key == "F3") {
-        cvar->setValue((int)KEY_F3);
+        cvar->setValue<SCANCODE>(KEY_F3);
     } else if(key == "F4") {
-        cvar->setValue((int)KEY_F4);
+        cvar->setValue<SCANCODE>(KEY_F4);
     } else if(key == "F5") {
-        cvar->setValue((int)KEY_F5);
+        cvar->setValue<SCANCODE>(KEY_F5);
     } else if(key == "F6") {
-        cvar->setValue((int)KEY_F6);
+        cvar->setValue<SCANCODE>(KEY_F6);
     } else if(key == "F7") {
-        cvar->setValue((int)KEY_F7);
+        cvar->setValue<SCANCODE>(KEY_F7);
     } else if(key == "F8") {
-        cvar->setValue((int)KEY_F8);
+        cvar->setValue<SCANCODE>(KEY_F8);
     } else if(key == "F9") {
-        cvar->setValue((int)KEY_F9);
+        cvar->setValue<SCANCODE>(KEY_F9);
     } else if(key == "F10") {
-        cvar->setValue((int)KEY_F10);
+        cvar->setValue<SCANCODE>(KEY_F10);
     } else if(key == "F11") {
-        cvar->setValue((int)KEY_F11);
+        cvar->setValue<SCANCODE>(KEY_F11);
     } else if(key == "F12") {
-        cvar->setValue((int)KEY_F12);
+        cvar->setValue<SCANCODE>(KEY_F12);
     } else if(key == "Left") {
-        cvar->setValue((int)KEY_LEFT);
+        cvar->setValue<SCANCODE>(KEY_LEFT);
     } else if(key == "Right") {
-        cvar->setValue((int)KEY_RIGHT);
+        cvar->setValue<SCANCODE>(KEY_RIGHT);
     } else if(key == "Up") {
-        cvar->setValue((int)KEY_UP);
+        cvar->setValue<SCANCODE>(KEY_UP);
     } else if(key == "Down") {
-        cvar->setValue((int)KEY_DOWN);
+        cvar->setValue<SCANCODE>(KEY_DOWN);
     } else if(key == "Tab") {
-        cvar->setValue((int)KEY_TAB);
+        cvar->setValue<SCANCODE>(KEY_TAB);
     } else if((key == "Return") || (key == "Enter")) {
-        cvar->setValue((int)KEY_ENTER);
+        cvar->setValue<SCANCODE>(KEY_ENTER);
     } else if(key == "Shift") {
-        cvar->setValue((int)KEY_LSHIFT);
+        cvar->setValue<SCANCODE>(KEY_LSHIFT);
     } else if(key == "Control") {
-        cvar->setValue((int)KEY_LCONTROL);
+        cvar->setValue<SCANCODE>(KEY_LCONTROL);
     } else if(key == "LeftAlt") {
-        cvar->setValue((int)KEY_LALT);
+        cvar->setValue<SCANCODE>(KEY_LALT);
     } else if(key == "RightAlt") {
-        cvar->setValue((int)KEY_RALT);
+        cvar->setValue<SCANCODE>(KEY_RALT);
     } else if(key == "Escape") {
-        cvar->setValue((int)KEY_ESCAPE);
+        cvar->setValue<SCANCODE>(KEY_ESCAPE);
     } else if(key == "Space") {
-        cvar->setValue((int)KEY_SPACE);
+        cvar->setValue<SCANCODE>(KEY_SPACE);
     } else if(key == "Back") {
-        cvar->setValue((int)KEY_BACKSPACE);
+        cvar->setValue<SCANCODE>(KEY_BACKSPACE);
     } else if(key == "End") {
-        cvar->setValue((int)KEY_END);
+        cvar->setValue<SCANCODE>(KEY_END);
     } else if(key == "Insert") {
-        cvar->setValue((int)KEY_INSERT);
+        cvar->setValue<SCANCODE>(KEY_INSERT);
     } else if(key == "Delete") {
-        cvar->setValue((int)KEY_DELETE);
+        cvar->setValue<SCANCODE>(KEY_DELETE);
     } else if(key == "Help") {
-        cvar->setValue((int)KEY_HELP);
+        cvar->setValue<SCANCODE>(KEY_HELP);
     } else if(key == "Home") {
-        cvar->setValue((int)KEY_HOME);
+        cvar->setValue<SCANCODE>(KEY_HOME);
     } else if(key == "Escape") {
-        cvar->setValue((int)KEY_ESCAPE);
+        cvar->setValue<SCANCODE>(KEY_ESCAPE);
     } else if(key == "PageUp") {
-        cvar->setValue((int)KEY_PAGEUP);
+        cvar->setValue<SCANCODE>(KEY_PAGEUP);
     } else if(key == "PageDown") {
-        cvar->setValue((int)KEY_PAGEDOWN);
+        cvar->setValue<SCANCODE>(KEY_PAGEDOWN);
     } else {
         debugLog("No key code found for '{}'!", key);
     }
@@ -225,187 +225,180 @@ void import_settings_from_osu_stable() {
 
     while(file.canRead()) {
         std::string curLine = file.readLine();
-        auto curLineChar = curLine.c_str();
 
         bool b;
         f32 flt;
         std::string str;
 
-        if(Parsing::parse(curLineChar, "BeatmapDirectory", '=', &str)) {
+        if(Parsing::parse(curLine, "BeatmapDirectory", '=', &str)) {
             if(str.length() > 2) cv::songs_folder.setValue(str);
-        } else if(Parsing::parse(curLineChar, "VolumeUniversal", '=', &flt))
+        } else if(Parsing::parse(curLine, "VolumeUniversal", '=', &flt))
             cv::volume_master.setValue(std::clamp<float>(flt / 100.f, 0.1f, 1.f));
-        else if(Parsing::parse(curLineChar, "VolumeEffect", '=', &flt))
+        else if(Parsing::parse(curLine, "VolumeEffect", '=', &flt))
             cv::volume_effects.setValue(flt / 100.f);
-        else if(Parsing::parse(curLineChar, "VolumeMusic", '=', &flt))
+        else if(Parsing::parse(curLine, "VolumeMusic", '=', &flt))
             cv::volume_music.setValue(std::clamp<float>(flt / 100.f, 0.1f, 1.f));
-        else if(Parsing::parse(curLineChar, "AllowPublicInvites", '=', &b))
+        else if(Parsing::parse(curLine, "AllowPublicInvites", '=', &b))
             cv::allow_mp_invites.setValue(b);
-        else if(Parsing::parse(curLineChar, "AutoChatHide", '=', &b))
+        else if(Parsing::parse(curLine, "AutoChatHide", '=', &b))
             cv::chat_auto_hide.setValue(b);
-        else if(Parsing::parse(curLineChar, "BlockNonFriendPM", '=', &b))
+        else if(Parsing::parse(curLine, "BlockNonFriendPM", '=', &b))
             cv::allow_stranger_dms.setValue(b);
-        else if(Parsing::parse(curLineChar, "ChatAudibleHighlight", '=', &b))
+        else if(Parsing::parse(curLine, "ChatAudibleHighlight", '=', &b))
             cv::chat_ping_on_mention.setValue(b);
-        else if(Parsing::parse(curLineChar, "ChatHighlightName", '=', &b))
+        else if(Parsing::parse(curLine, "ChatHighlightName", '=', &b))
             cv::chat_notify_on_mention.setValue(b);
-        else if(Parsing::parse(curLineChar, "ChatMessageNotification", '=', &b))
+        else if(Parsing::parse(curLine, "ChatMessageNotification", '=', &b))
             cv::chat_notify_on_dm.setValue(b);
-        else if(Parsing::parse(curLineChar, "CursorSize", '=', &flt))
+        else if(Parsing::parse(curLine, "CursorSize", '=', &flt))
             cv::cursor_scale.setValue(flt);
-        else if(Parsing::parse(curLineChar, "AutomaticCursorSizing", '=', &b))
+        else if(Parsing::parse(curLine, "AutomaticCursorSizing", '=', &b))
             cv::automatic_cursor_size.setValue(b);
-        else if(Parsing::parse(curLineChar, "DimLevel", '=', &flt))
+        else if(Parsing::parse(curLine, "DimLevel", '=', &flt))
             cv::background_dim.setValue(flt / 100.f);
-        else if(Parsing::parse(curLineChar, "IHateHavingFun", '=', &b))
+        else if(Parsing::parse(curLine, "IHateHavingFun", '=', &b))
             cv::background_dont_fade_during_breaks.setValue(b);
-        else if(Parsing::parse(curLineChar, "DiscordRichPresence", '=', &b))
+        else if(Parsing::parse(curLine, "DiscordRichPresence", '=', &b))
             cv::rich_presence.setValue(b);
-        else if(Parsing::parse(curLineChar, "FpsCounter", '=', &b))
+        else if(Parsing::parse(curLine, "FpsCounter", '=', &b))
             cv::draw_fps.setValue(b);
-        else if(Parsing::parse(curLineChar, "CursorRipple", '=', &b))
+        else if(Parsing::parse(curLine, "CursorRipple", '=', &b))
             cv::draw_cursor_ripples.setValue(b);
-        else if(Parsing::parse(curLineChar, "HighlightWords", '=', &str))
+        else if(Parsing::parse(curLine, "HighlightWords", '=', &str))
             cv::chat_highlight_words.setValue(str);
-        else if(Parsing::parse(curLineChar, "HighResolution", '=', &b))
+        else if(Parsing::parse(curLine, "HighResolution", '=', &b))
             cv::skin_hd.setValue(b);
-        else if(Parsing::parse(curLineChar, "IgnoreBeatmapSamples", '=', &b)) {
+        else if(Parsing::parse(curLine, "IgnoreBeatmapSamples", '=', &b)) {
             cv::ignore_beatmap_samples.setValue(b);
             cv::ignore_beatmap_sample_volume.setValue(b);  // Even though this isn't vanilla, it is "expected"
-        } else if(Parsing::parse(curLineChar, "IgnoreBeatmapSkins", '=', &b)) {
+        } else if(Parsing::parse(curLine, "IgnoreBeatmapSkins", '=', &b)) {
             cv::ignore_beatmap_skins.setValue(b);
             cv::ignore_beatmap_combo_colors.setValue(b);  // Apparently, this setting also affects combo colors!
-        } else if(Parsing::parse(curLineChar, "IgnoreList", '=', &str))
+        } else if(Parsing::parse(curLine, "IgnoreList", '=', &str))
             cv::chat_ignore_list.setValue(str);
-        else if(Parsing::parse(curLineChar, "KeyOverlay", '=', &b))
+        else if(Parsing::parse(curLine, "KeyOverlay", '=', &b))
             cv::draw_inputoverlay.setValue(b);
-        else if(Parsing::parse(curLineChar, "Language", '=', &str))
+        else if(Parsing::parse(curLine, "Language", '=', &str))
             cv::language.setValue(str);
-        else if(Parsing::parse(curLineChar, "ShowInterface", '=', &b))
+        else if(Parsing::parse(curLine, "ShowInterface", '=', &b))
             cv::draw_hud.setValue(b);
-        else if(Parsing::parse(curLineChar, "LowResolution", '=', &b))
+        else if(Parsing::parse(curLine, "LowResolution", '=', &b))
             cv::skin_hd.setValue(!b);  // note the '!' (this is mirror of HighResolution setting)
-        else if(Parsing::parse(curLineChar, "MouseDisableButtons", '=', &b))
+        else if(Parsing::parse(curLine, "MouseDisableButtons", '=', &b))
             cv::disable_mousebuttons.setValue(b);
-        else if(Parsing::parse(curLineChar, "MouseDisableWheel", '=', &b))
+        else if(Parsing::parse(curLine, "MouseDisableWheel", '=', &b))
             cv::disable_mousewheel.setValue(b);
-        else if(Parsing::parse(curLineChar, "MouseSpeed", '=', &flt))
+        else if(Parsing::parse(curLine, "MouseSpeed", '=', &flt))
             cv::mouse_sensitivity.setValue(flt);
-        else if(Parsing::parse(curLineChar, "Offset", '=', &flt))
+        else if(Parsing::parse(curLine, "Offset", '=', &flt))
             cv::universal_offset.setValue(flt);
-        else if(Parsing::parse(curLineChar, "ScoreMeterScale", '=', &flt))
+        else if(Parsing::parse(curLine, "ScoreMeterScale", '=', &flt))
             cv::hud_hiterrorbar_scale.setValue(flt);
-        else if(Parsing::parse(curLineChar, "NotifyFriends", '=', &b))
+        else if(Parsing::parse(curLine, "NotifyFriends", '=', &b))
             cv::notify_friend_status_change.setValue(b);
-        else if(Parsing::parse(curLineChar, "PopupDuringGameplay", '=', &b))
+        else if(Parsing::parse(curLine, "PopupDuringGameplay", '=', &b))
             cv::notify_during_gameplay.setValue(b);
-        else if(Parsing::parse(curLineChar, "ScoreboardVisible", '=', &b)) {
+        else if(Parsing::parse(curLine, "ScoreboardVisible", '=', &b)) {
             cv::draw_scoreboard.setValue(b);
             cv::draw_scoreboard_mp.setValue(b);
-        } else if(Parsing::parse(curLineChar, "SongSelectThumbnails", '=', &b))
+        } else if(Parsing::parse(curLine, "SongSelectThumbnails", '=', &b))
             cv::draw_songbrowser_thumbnails.setValue(b);
-        else if(Parsing::parse(curLineChar, "ShowSpectators", '=', &b))
+        else if(Parsing::parse(curLine, "ShowSpectators", '=', &b))
             cv::draw_spectator_list.setValue(b);
-        else if(Parsing::parse(curLineChar, "AutoSendNowPlaying", '=', &b))
+        else if(Parsing::parse(curLine, "AutoSendNowPlaying", '=', &b))
             cv::spec_share_map.setValue(b);
-        else if(Parsing::parse(curLineChar, "ShowStoryboard", '=', &b))
+        else if(Parsing::parse(curLine, "ShowStoryboard", '=', &b))
             cv::draw_storyboard.setValue(b);
-        else if(Parsing::parse(curLineChar, "Skin", '=', &str))
+        else if(Parsing::parse(curLine, "Skin", '=', &str))
             cv::skin.setValue(str);
-        else if(Parsing::parse(curLineChar, "SkinSamples", '=', &b))
+        else if(Parsing::parse(curLine, "SkinSamples", '=', &b))
             cv::skin_use_skin_hitsounds.setValue(b);
-        else if(Parsing::parse(curLineChar, "SnakingSliders", '=', &b))
+        else if(Parsing::parse(curLine, "SnakingSliders", '=', &b))
             cv::snaking_sliders.setValue(b);
-        else if(Parsing::parse(curLineChar, "Video", '=', &b))
+        else if(Parsing::parse(curLine, "Video", '=', &b))
             cv::draw_video.setValue(b);
-        else if(Parsing::parse(curLineChar, "RawInput", '=', &b))
+        else if(Parsing::parse(curLine, "RawInput", '=', &b))
             cv::mouse_raw_input.setValue(b);
-        else if(Parsing::parse(curLineChar, "ConfineMouse", '=', &str)) {
-            if(str == "Never") {
-                cv::confine_cursor_fullscreen.setValue(false);
-                cv::confine_cursor_windowed.setValue(false);
-            } else if(str == "Fullscreen") {
-                cv::confine_cursor_fullscreen.setValue(true);
-                cv::confine_cursor_windowed.setValue(false);
-            } else if(str == "Always") {
-                cv::confine_cursor_fullscreen.setValue(true);
-                cv::confine_cursor_windowed.setValue(true);
-            }
-        } else if(Parsing::parse(curLineChar, "HiddenShowFirstApproach", '=', &b))
+        else if(Parsing::parse(curLine, "ConfineMouse", '=', &str)) {
+            const bool never = str == "Never";
+            const bool fullscreen = !never && str == "Fullscreen";
+            const bool always = !fullscreen && !never && str == "Always";
+            cv::confine_cursor_fullscreen.setValue(fullscreen || always);
+            cv::confine_cursor_windowed.setValue(always);
+            cv::confine_cursor_never.setValue(never);
+        } else if(Parsing::parse(curLine, "HiddenShowFirstApproach", '=', &b))
             cv::show_approach_circle_on_first_hidden_object.setValue(b);
-        else if(Parsing::parse(curLineChar, "ComboColourSliderBall", '=', &b))
+        else if(Parsing::parse(curLine, "ComboColourSliderBall", '=', &b))
             cv::slider_ball_tint_combo_color.setValue(b);
-        else if(Parsing::parse(curLineChar, "Username", '=', &str))
+        else if(Parsing::parse(curLine, "Username", '=', &str))
             cv::name.setValue(str);
-        else if(Parsing::parse(curLineChar, "Letterboxing", '=', &b))
+        else if(Parsing::parse(curLine, "Letterboxing", '=', &b))
             cv::letterboxing.setValue(b);
-        else if(Parsing::parse(curLineChar, "LetterboxPositionX", '=', &flt))
+        else if(Parsing::parse(curLine, "LetterboxPositionX", '=', &flt))
             cv::letterboxing_offset_x.setValue(flt / 100.f);
-        else if(Parsing::parse(curLineChar, "LetterboxPositionY", '=', &flt))
+        else if(Parsing::parse(curLine, "LetterboxPositionY", '=', &flt))
             cv::letterboxing_offset_y.setValue(flt / 100.f);
-        else if(Parsing::parse(curLineChar, "ShowUnicode", '=', &b))
+        else if(Parsing::parse(curLine, "ShowUnicode", '=', &b))
             cv::prefer_cjk.setValue(b);
-        else if(Parsing::parse(curLineChar, "Ticker", '=', &b))
+        else if(Parsing::parse(curLine, "Ticker", '=', &b))
             cv::chat_ticker.setValue(b);
-        else if(Parsing::parse(curLineChar, "keyOsuLeft", '=', &str))
+        else if(Parsing::parse(curLine, "keyOsuLeft", '=', &str))
             try_set_key(str, &cv::LEFT_CLICK);
-        else if(Parsing::parse(curLineChar, "keyOsuLeft", '=', &str))
-            try_set_key(str, &cv::LEFT_CLICK);
-        else if(Parsing::parse(curLineChar, "keyOsuRight", '=', &str))
+        else if(Parsing::parse(curLine, "keyOsuRight", '=', &str))
             try_set_key(str, &cv::RIGHT_CLICK);
-        else if(Parsing::parse(curLineChar, "keyOsuSmoke", '=', &str))
+        else if(Parsing::parse(curLine, "keyOsuSmoke", '=', &str))
             try_set_key(str, &cv::SMOKE);
-        else if(Parsing::parse(curLineChar, "keyPause", '=', &str))
+        else if(Parsing::parse(curLine, "keyPause", '=', &str))
             try_set_key(str, &cv::GAME_PAUSE);
-        else if(Parsing::parse(curLineChar, "keySkip", '=', &str))
+        else if(Parsing::parse(curLine, "keySkip", '=', &str))
             try_set_key(str, &cv::SKIP_CUTSCENE);
-        else if(Parsing::parse(curLineChar, "keyToggleScoreboard", '=', &str))
+        else if(Parsing::parse(curLine, "keyToggleScoreboard", '=', &str))
             try_set_key(str, &cv::TOGGLE_SCOREBOARD);
-        else if(Parsing::parse(curLineChar, "keyToggleChat", '=', &str))
+        else if(Parsing::parse(curLine, "keyToggleChat", '=', &str))
             try_set_key(str, &cv::TOGGLE_CHAT);
-        else if(Parsing::parse(curLineChar, "keyToggleExtendedChat \n]", '=', &str))
+        else if(Parsing::parse(curLine, "keyToggleExtendedChat \n]", '=', &str))
             try_set_key(str, &cv::TOGGLE_EXTENDED_CHAT);
-        else if(Parsing::parse(curLineChar, "keyScreenshot", '=', &str))
+        else if(Parsing::parse(curLine, "keyScreenshot", '=', &str))
             try_set_key(str, &cv::SAVE_SCREENSHOT);
-        else if(Parsing::parse(curLineChar, "keyIncreaseAudioOffset", '=', &str))
+        else if(Parsing::parse(curLine, "keyIncreaseAudioOffset", '=', &str))
             try_set_key(str, &cv::INCREASE_LOCAL_OFFSET);
-        else if(Parsing::parse(curLineChar, "keyDecreaseAudioOffset", '=', &str))
+        else if(Parsing::parse(curLine, "keyDecreaseAudioOffset", '=', &str))
             try_set_key(str, &cv::DECREASE_LOCAL_OFFSET);
-        else if(Parsing::parse(curLineChar, "keyQuickRetry", '=', &str))
+        else if(Parsing::parse(curLine, "keyQuickRetry", '=', &str))
             try_set_key(str, &cv::QUICK_RETRY);
-        else if(Parsing::parse(curLineChar, "keyVolumeIncrease", '=', &str))
+        else if(Parsing::parse(curLine, "keyVolumeIncrease", '=', &str))
             try_set_key(str, &cv::INCREASE_VOLUME);
-        else if(Parsing::parse(curLineChar, "keyVolumeDecrease", '=', &str))
+        else if(Parsing::parse(curLine, "keyVolumeDecrease", '=', &str))
             try_set_key(str, &cv::DECREASE_VOLUME);
-        else if(Parsing::parse(curLineChar, "keyDisableMouseButtons", '=', &str))
+        else if(Parsing::parse(curLine, "keyDisableMouseButtons", '=', &str))
             try_set_key(str, &cv::DISABLE_MOUSE_BUTTONS);
-        else if(Parsing::parse(curLineChar, "keyBossKey", '=', &str))
+        else if(Parsing::parse(curLine, "keyBossKey", '=', &str))
             try_set_key(str, &cv::BOSS_KEY);
-        else if(Parsing::parse(curLineChar, "keyEasy", '=', &str))
+        else if(Parsing::parse(curLine, "keyEasy", '=', &str))
             try_set_key(str, &cv::MOD_EASY);
-        else if(Parsing::parse(curLineChar, "keyNoFail", '=', &str))
+        else if(Parsing::parse(curLine, "keyNoFail", '=', &str))
             try_set_key(str, &cv::MOD_NOFAIL);
-        else if(Parsing::parse(curLineChar, "keyHalfTime", '=', &str))
+        else if(Parsing::parse(curLine, "keyHalfTime", '=', &str))
             try_set_key(str, &cv::MOD_HALFTIME);
-        else if(Parsing::parse(curLineChar, "keyHardRock", '=', &str))
+        else if(Parsing::parse(curLine, "keyHardRock", '=', &str))
             try_set_key(str, &cv::MOD_HARDROCK);
-        else if(Parsing::parse(curLineChar, "keySuddenDeath", '=', &str))
+        else if(Parsing::parse(curLine, "keySuddenDeath", '=', &str))
             try_set_key(str, &cv::MOD_SUDDENDEATH);
-        else if(Parsing::parse(curLineChar, "keyDoubleTime", '=', &str))
+        else if(Parsing::parse(curLine, "keyDoubleTime", '=', &str))
             try_set_key(str, &cv::MOD_DOUBLETIME);
-        else if(Parsing::parse(curLineChar, "keyHidden", '=', &str))
+        else if(Parsing::parse(curLine, "keyHidden", '=', &str))
             try_set_key(str, &cv::MOD_HIDDEN);
-        else if(Parsing::parse(curLineChar, "keyFlashlight", '=', &str))
+        else if(Parsing::parse(curLine, "keyFlashlight", '=', &str))
             try_set_key(str, &cv::MOD_FLASHLIGHT);
-        else if(Parsing::parse(curLineChar, "keyRelax", '=', &str))
+        else if(Parsing::parse(curLine, "keyRelax", '=', &str))
             try_set_key(str, &cv::MOD_RELAX);
-        else if(Parsing::parse(curLineChar, "keyAutopilot", '=', &str))
+        else if(Parsing::parse(curLine, "keyAutopilot", '=', &str))
             try_set_key(str, &cv::MOD_AUTOPILOT);
-        else if(Parsing::parse(curLineChar, "keySpunOut", '=', &str))
+        else if(Parsing::parse(curLine, "keySpunOut", '=', &str))
             try_set_key(str, &cv::MOD_SPUNOUT);
-        else if(Parsing::parse(curLineChar, "keyAuto", '=', &str))
+        else if(Parsing::parse(curLine, "keyAuto", '=', &str))
             try_set_key(str, &cv::MOD_AUTO);
-        else if(Parsing::parse(curLineChar, "keyScoreV2", '=', &str))
+        else if(Parsing::parse(curLine, "keyScoreV2", '=', &str))
             try_set_key(str, &cv::MOD_SCOREV2);
     }
 }

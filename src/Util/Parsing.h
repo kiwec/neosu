@@ -135,7 +135,7 @@ const char* parse_impl(const char* begin, const char* end, T arg, Extra... extra
 }  // namespace detail
 
 template <typename S = const char*, typename T, typename... Extra>
-const char* parse(S str, T arg, Extra... extra)
+bool parse(S str, T arg, Extra... extra)
     requires(std::is_same_v<std::decay_t<S>, std::string> || std::is_same_v<std::decay_t<S>, std::string_view> ||
              std::is_same_v<std::decay_t<S>, const char*>)
 {
@@ -154,7 +154,7 @@ const char* parse(S str, T arg, Extra... extra)
         static_assert(Env::always_false_v<S>, "invalid first parameter type");
     }
 
-    return detail::parse_impl(begin, end, arg, extra...);
+    return !!detail::parse_impl(begin, end, arg, extra...);
 }
 
 // NOLINTEND(cppcoreguidelines-init-variables)

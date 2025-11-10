@@ -378,11 +378,11 @@ class ConVar {
             if constexpr(std::is_convertible_v<std::decay_t<T>, double> && !std::is_same_v<std::decay_t<T>, UString> &&
                          !std::is_same_v<std::decay_t<T>, std::string_view> &&
                          !std::is_same_v<std::decay_t<T>, const char *>) {
-                const auto f = static_cast<double>(value);
+                const auto f = static_cast<double>(std::forward<T>(value));
                 return std::make_pair(f, fmt::format("{:g}", f));
             } else if constexpr(std::is_same_v<T, bool>) {
-                const auto f = static_cast<double>(value ? 1. : 0.);
-                return std::make_pair(f, value ? "true" : "false");
+                const auto f = static_cast<double>(std::forward<T>(value) ? 1. : 0.);
+                return std::make_pair(f, f > 0 ? "true" : "false");
             } else if constexpr(std::is_same_v<std::decay_t<T>, UString>) {
                 const UString s = std::forward<T>(value);
                 const double f = !s.isEmpty() ? s.toDouble() : 0.;
