@@ -262,21 +262,21 @@ $(DEPS_CACHE)/discordsdk-$(DISCORDSDK_VERSION).source: $(DEPS_CACHE)/discordsdk-
 	mv lib/linux/x86_64/discord_game_sdk.so lib/linux/x86_64/libdiscord_game_sdk.so && \
 	touch $@
 
-$(DEPS_CACHE)/curl-$(CURL_VERSION)/certbundle/cacert.pem:
-	$(MKDIR_P) $(DEPS_CACHE)/curl-$(CURL_VERSION)/certbundle && \
-	$(WGET) -qO $(DEPS_CACHE)/curl-$(CURL_VERSION)/certbundle/cacert.pem "https://curl.se/ca/cacert.pem"
+$(DEPS_CACHE)/curl-$(CURL_VERSION)-2/certbundle/cacert.pem:
+	$(MKDIR_P) $(DEPS_CACHE)/curl-$(CURL_VERSION)-2/certbundle && \
+	$(WGET) -qO $(DEPS_CACHE)/curl-$(CURL_VERSION)-2/certbundle/cacert.pem "https://curl.se/ca/cacert.pem"
 
-$(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-windowsi686.tar.xz:
-	$(MKDIR_P) $(DEPS_CACHE)/curl-$(CURL_VERSION) && \
-	$(WGET) -qO $(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-windowsi686.tar.xz "https://github.com/whrvt/static-curl/releases/download/$(CURL_VERSION)/curl-windows-i686-dev-$(CURL_VERSION).tar.xz"
+$(DEPS_CACHE)/curl-$(CURL_VERSION)-2/curl-windowsi686.tar.xz:
+	$(MKDIR_P) $(DEPS_CACHE)/curl-$(CURL_VERSION)-2 && \
+	$(WGET) -qO $(DEPS_CACHE)/curl-$(CURL_VERSION)-2/curl-windowsi686.tar.xz "https://github.com/whrvt/static-curl/releases/download/$(CURL_VERSION)/curl-windows-i686-dev-$(CURL_VERSION).tar.xz"
 
-$(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-windowsx86_64.tar.xz:
-	$(MKDIR_P) $(DEPS_CACHE)/curl-$(CURL_VERSION) && \
-	$(WGET) -qO $(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-windowsx86_64.tar.xz "https://github.com/whrvt/static-curl/releases/download/$(CURL_VERSION)/curl-windows-x86_64-dev-$(CURL_VERSION).tar.xz"
+$(DEPS_CACHE)/curl-$(CURL_VERSION)-2/curl-windowsx86_64.tar.xz:
+	$(MKDIR_P) $(DEPS_CACHE)/curl-$(CURL_VERSION)-2 && \
+	$(WGET) -qO $(DEPS_CACHE)/curl-$(CURL_VERSION)-2/curl-windowsx86_64.tar.xz "https://github.com/whrvt/static-curl/releases/download/$(CURL_VERSION)/curl-windows-x86_64-dev-$(CURL_VERSION).tar.xz"
 
-$(DEPS_CACHE)/curl-$(CURL_VERSION)-windows-binary.source: $(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-windowsi686.tar.xz $\
-											$(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-windowsx86_64.tar.xz
-	cd $(DEPS_CACHE)/curl-$(CURL_VERSION) && \
+$(DEPS_CACHE)/curl-$(CURL_VERSION)-2-windows-binary.source: $(DEPS_CACHE)/curl-$(CURL_VERSION)-2/curl-windowsi686.tar.xz $\
+											$(DEPS_CACHE)/curl-$(CURL_VERSION)-2/curl-windowsx86_64.tar.xz
+	cd $(DEPS_CACHE)/curl-$(CURL_VERSION)-2 && \
 	rm -rf windowsi686 && \
 	$(MKDIR_P) windowsi686 && $(TAR) xf curl-windowsi686.tar.xz -C windowsi686 --strip-components=1 --wildcards --no-anchored \
 		include lib/'*'.a lib/pkgconfig/'*'ssl'*' lib/pkgconfig/'*'crypto'*' && \
@@ -287,17 +287,17 @@ $(DEPS_CACHE)/curl-$(CURL_VERSION)-windows-binary.source: $(DEPS_CACHE)/curl-$(C
 	rm -rf windows*/lib/*zlib*.a && \
 	touch $@
 
-$(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-linuxi686.tar.xz:
-	$(MKDIR_P) $(DEPS_CACHE)/curl-$(CURL_VERSION) && \
-	$(WGET) -qO $(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-linuxi686.tar.xz "https://github.com/whrvt/static-curl/releases/download/$(CURL_VERSION)/curl-linux-i686-dev-$(CURL_VERSION).tar.xz"
+$(DEPS_CACHE)/curl-$(CURL_VERSION)-2/curl-linuxi686.tar.xz:
+	$(MKDIR_P) $(DEPS_CACHE)/curl-$(CURL_VERSION)-2 && \
+	$(WGET) -qO $(DEPS_CACHE)/curl-$(CURL_VERSION)-2/curl-linuxi686.tar.xz "https://github.com/whrvt/static-curl/releases/download/$(CURL_VERSION)/curl-linux-i686-dev-$(CURL_VERSION).tar.xz"
 
-$(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-linuxx86_64.tar.xz:
-	$(MKDIR_P) $(DEPS_CACHE)/curl-$(CURL_VERSION) && \
-	$(WGET) -qO $(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-linuxx86_64.tar.xz "https://github.com/whrvt/static-curl/releases/download/$(CURL_VERSION)/curl-linux-x86_64-dev-$(CURL_VERSION).tar.xz"
+$(DEPS_CACHE)/curl-$(CURL_VERSION)-2/curl-linuxx86_64.tar.xz:
+	$(MKDIR_P) $(DEPS_CACHE)/curl-$(CURL_VERSION)-2 && \
+	$(WGET) -qO $(DEPS_CACHE)/curl-$(CURL_VERSION)-2/curl-linuxx86_64.tar.xz "https://github.com/whrvt/static-curl/releases/download/$(CURL_VERSION)/curl-linux-x86_64-dev-$(CURL_VERSION).tar.xz"
 
-$(DEPS_CACHE)/curl-$(CURL_VERSION)-linux-binary.source: $(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-linuxi686.tar.xz $\
-														$(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-linuxx86_64.tar.xz
-	cd $(DEPS_CACHE)/curl-$(CURL_VERSION) && \
+$(DEPS_CACHE)/curl-$(CURL_VERSION)-2-linux-binary.source: $(DEPS_CACHE)/curl-$(CURL_VERSION)-2/curl-linuxi686.tar.xz $\
+														$(DEPS_CACHE)/curl-$(CURL_VERSION)-2/curl-linuxx86_64.tar.xz
+	cd $(DEPS_CACHE)/curl-$(CURL_VERSION)-2 && \
 	rm -rf linuxx86_64 && \
 	$(MKDIR_P) linuxx86_64 && $(TAR) xf curl-linuxx86_64.tar.xz -C linuxx86_64 --strip-components=1 --wildcards --no-anchored \
 		include lib/'*'.a lib64/'*'.a lib64/pkgconfig/'*' && \
@@ -316,7 +316,7 @@ $(DEPS_CACHE)/curl-$(CURL_VERSION)-linux-binary.source: $(DEPS_CACHE)/curl-$(CUR
 ## BEGIN EXTERNAL DEPENDENCY BUILD/SETUP SECTION
 #####################################################################################################################################################
 
-CACERT_INCDIR := $(DEPS_CACHE)/curl-$(CURL_VERSION)/certbundle/
+CACERT_INCDIR := $(DEPS_CACHE)/curl-$(CURL_VERSION)-2/certbundle/
 INCBIN_FLAGS += -I$(CACERT_INCDIR)
 
 PKG_CONFIG_PLUS_BUNDLED_OSSL = $(PKG_CONFIG)
@@ -328,8 +328,8 @@ lbq := '('
 rb := )
 rbq := ')'
 
-CURL_INCLUDEDIR := $(DEPS_CACHE)/curl-$(CURL_VERSION)/$(SYSNAME)$(host_cpu)/include
-CURL_LIBDIR := $(DEPS_CACHE)/curl-$(CURL_VERSION)/$(SYSNAME)$(host_cpu)/lib
+CURL_INCLUDEDIR := $(DEPS_CACHE)/curl-$(CURL_VERSION)-2/$(SYSNAME)$(host_cpu)/include
+CURL_LIBDIR := $(DEPS_CACHE)/curl-$(CURL_VERSION)-2/$(SYSNAME)$(host_cpu)/lib
 CURL_CFLAGS += -I$(CURL_INCLUDEDIR) -DWITH_GZFILEOP -DCURL_STATICLIB
 CURL_LIBS += -L$(CURL_LIBDIR) $(shell find $(CURL_LIBDIR) -mindepth 1 -maxdepth 1 -type f -not $(lbq) -name '*dll*' $(rbq) -execdir printf '%s ' '{''}' ';' | $(SED) -e 's|./lib|-l|g' -e 's|\.a||g' -e 's|-lcurl|-l:libcurl.a|g')
 
@@ -342,20 +342,20 @@ CURL_LIBS += -lws2_32 -lwldap32 -lcrypt32 -lsecur32 -liphlpapi
 if !WIN32_PLATFORM
 CURL_LIBS += -lbcrypt
 endif
-$(DEPS_PREFIX)/curl-$(CURL_VERSION).built: $(DEPS_CACHE)/curl-$(CURL_VERSION)-windows-binary.source
+$(DEPS_PREFIX)/curl-$(CURL_VERSION)-2.built: $(DEPS_CACHE)/curl-$(CURL_VERSION)-2-windows-binary.source
 	$(MKDIR_P) $(DEPS_PREFIX)
 	touch $@
 else
 
 CURL_LIBS += -ldl -pthread
-$(DEPS_PREFIX)/curl-$(CURL_VERSION).built: $(DEPS_CACHE)/curl-$(CURL_VERSION)-linux-binary.source
+$(DEPS_PREFIX)/curl-$(CURL_VERSION)-2.built: $(DEPS_CACHE)/curl-$(CURL_VERSION)-2-linux-binary.source
 	$(MKDIR_P) $(DEPS_PREFIX)
 	touch $@
 endif
 else # from host
 CURL_CFLAGS += $(OPENSSL_CFLAGS)
 CURL_LIBS += $(OPENSSL_LIBS)
-$(DEPS_PREFIX)/curl-$(CURL_VERSION).built:
+$(DEPS_PREFIX)/curl-$(CURL_VERSION)-2.built:
 	$(MKDIR_P) $(DEPS_PREFIX)
 	touch $@
 endif # BUILD_CURL
@@ -1003,7 +1003,7 @@ endif # BUILD_LIBACL
 # ugly hack to make pkg-config/libarchive find the bundled openssl libs
 LIBARCHIVE_CFLAGS += $(shell $(PKG_CONFIG_PLUS_BUNDLED_OSSL) --cflags libarchive)
 LIBARCHIVE_LIBS += $(shell $(PKG_CONFIG_PLUS_BUNDLED_OSSL) --libs libarchive)
-$(DEPS_PREFIX)/libarchive-$(LIBARCHIVE_VERSION).built: $(DEPS_CACHE)/libarchive-$(LIBARCHIVE_VERSION).source $(DEPS_PREFIX)/curl-$(CURL_VERSION).built $\
+$(DEPS_PREFIX)/libarchive-$(LIBARCHIVE_VERSION).built: $(DEPS_CACHE)/libarchive-$(LIBARCHIVE_VERSION).source $(DEPS_PREFIX)/curl-$(CURL_VERSION)-2.built $\
 											$(DEPS_PREFIX)/libacl-$(LIBACL_VERSION).built $(DEPS_PREFIX)/liblzma-$(LZMA_VERSION).built $\
 											$(DEPS_PREFIX)/bzip2-$(BZIP2_VERSION).built $(DEPS_PREFIX)/zlib-$(ZLIB_VERSION).built
 	rm -rf $(DEPS_PREFIX)/libarchive
@@ -1078,8 +1078,8 @@ BUILT_SOURCES := \
 	$(DEPS_PREFIX)/libarchive-$(LIBARCHIVE_VERSION).built \
 	$(DEPS_PREFIX)/simdutf-$(SIMDUTF_VERSION).built \
 	$(DEPS_PREFIX)/libacl-$(LIBACL_VERSION).built \
-	$(DEPS_PREFIX)/curl-$(CURL_VERSION).built \
-	$(DEPS_CACHE)/curl-$(CURL_VERSION)/certbundle/cacert.pem
+	$(DEPS_PREFIX)/curl-$(CURL_VERSION)-2.built \
+	$(DEPS_CACHE)/curl-$(CURL_VERSION)-2/certbundle/cacert.pem
 
 # making sure deps are built before main compile
 $(neosu_OBJECTS): src/config.h $(BUILT_SOURCES) $(EXTRA_BINDEPS)

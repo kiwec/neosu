@@ -2175,28 +2175,28 @@ void HUD::drawInputOverlay(int numK1, int numK2, int numM1, int numM2) {
             float animColor = 0.0f;
             switch(i) {
                 case 0:
-                    text = numK1 > 0 ? UString::format("%i", numK1) : UString("K1");
+                    text = numK1 > 0 ? fmt::format("{:d}", numK1) : "K1";
                     color = colorKeyboard;
                     animScale = this->fInputoverlayK1AnimScale;
                     animColor = this->fInputoverlayK1AnimColor;
                     if(numK1 > 0) textFont = textFontBold;
                     break;
                 case 1:
-                    text = numK2 > 0 ? UString::format("%i", numK2) : UString("K2");
+                    text = numK2 > 0 ? fmt::format("{:d}", numK2) : "K2";
                     color = colorKeyboard;
                     animScale = this->fInputoverlayK2AnimScale;
                     animColor = this->fInputoverlayK2AnimColor;
                     if(numK2 > 0) textFont = textFontBold;
                     break;
                 case 2:
-                    text = numM1 > 0 ? UString::format("%i", numM1) : UString("M1");
+                    text = numM1 > 0 ? fmt::format("{:d}", numM1) : "M1";
                     color = colorMouse;
                     animScale = this->fInputoverlayM1AnimScale;
                     animColor = this->fInputoverlayM1AnimColor;
                     if(numM1 > 0) textFont = textFontBold;
                     break;
                 case 3:
-                    text = numM2 > 0 ? UString::format("%i", numM2) : UString("M2");
+                    text = numM2 > 0 ? fmt::format("{:d}", numM2) : "M2";
                     color = colorMouse;
                     animScale = this->fInputoverlayM2AnimScale;
                     animColor = this->fInputoverlayM2AnimColor;
@@ -2217,6 +2217,7 @@ void HUD::drawInputOverlay(int numK1, int numK2, int numM1, int numM2) {
                 (inputoverlayKey->getSizeBase().y * textFontHeightPercent) / textFont->getHeight();
             const float stringWidth = textFont->getStringWidth(text) * keyFontScale;
             const float stringHeight = textFont->getHeight() * keyFontScale;
+
             g->setColor(osu->getSkin()->c_input_overlay_text);
             g->pushTransform();
             {

@@ -47,7 +47,7 @@ void UIModSelectorModButton::draw() {
 
             g->setColor(0xffffffff);
             // HACK: For "Actual Flashlight" mod, I'm too lazy to add a new skin element
-            bool draw_inverted_colors = this->getActiveModName() == UString("afl");
+            bool draw_inverted_colors = this->getActiveModName() == u"afl";
             if(draw_inverted_colors) {
                 g->setColorInversion(true);
             }

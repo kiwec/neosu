@@ -3,14 +3,12 @@
 
 #include "Environment.h"
 
-namespace Timing {
-class Timer;
-}
-
 #if !defined(SDL_h_) && !defined(SDL_main_h_)
+extern "C" {
 typedef struct SDL_GLContextState *SDL_GLContext;
 typedef union SDL_Event SDL_Event;
-enum SDL_AppResult : uint8_t;
+enum SDL_AppResult : unsigned int;
+}
 #endif
 
 #if !(defined(SDL_main_h_) && defined(MCENGINE_FEATURE_MAINCALLBACKS))
