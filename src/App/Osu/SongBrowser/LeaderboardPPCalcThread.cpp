@@ -207,7 +207,7 @@ static void run_thread() {
                 .numCircles = map->iNumCircles,
                 .numSliders = map->iNumSliders,
                 .numSpinners = map->iNumSpinners,
-                .maxPossibleCombo = static_cast<i32>(computed_ho->diffres.maxPossibleCombo),
+                .maxPossibleCombo = computed_ho->diffres.maxPossibleCombo,
                 .combo = rqt.comboMax,
                 .misses = rqt.numMisses,
                 .c300 = rqt.num300s,

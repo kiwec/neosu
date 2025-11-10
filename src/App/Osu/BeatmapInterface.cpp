@@ -2283,7 +2283,7 @@ void BeatmapInterface::update() {
                     .numCircles = nb_circles,
                     .numSliders = nb_sliders,
                     .numSpinners = nb_spinners,
-                    .maxPossibleCombo = static_cast<i32>(diffres.maxPossibleCombo),
+                    .maxPossibleCombo = diffres.maxPossibleCombo,
                     .combo = highestCombo,
                     .misses = numMisses,
                     .c300 = num300s,

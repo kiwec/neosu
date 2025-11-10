@@ -53,7 +53,7 @@ class DatabaseBeatmap final {
     struct LOAD_DIFFOBJ_RESULT {
         std::vector<OsuDifficultyHitObject> diffobjects{};
 
-        u32 maxPossibleCombo{};
+        i32 maxPossibleCombo{};
         int errorCode{0};
     };
 

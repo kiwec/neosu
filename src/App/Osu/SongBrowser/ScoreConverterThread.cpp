@@ -82,7 +82,7 @@ static void update_ppv2(const FinishedScore& score) {
                                                         .numCircles = map->iNumCircles,
                                                         .numSliders = map->iNumSliders,
                                                         .numSpinners = map->iNumSpinners,
-                                                        .maxPossibleCombo = static_cast<i32>(diffres.maxPossibleCombo),
+                                                        .maxPossibleCombo = diffres.maxPossibleCombo,
                                                         .combo = score.comboMax,
                                                         .misses = score.numMisses,
                                                         .c300 = score.num300s,
