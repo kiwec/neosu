@@ -199,7 +199,7 @@ void ConsoleBox::draw() {
 }
 
 void ConsoleBox::drawLogOverlay() {
-    Sync::scoped_lock logGuard(this->logMutex);
+    Sync::shared_lock logGuard(this->logMutex);
 
     const float dpiScale = this->getDPIScale();
 
@@ -241,6 +241,7 @@ void ConsoleBox::drawLogOverlay() {
 }
 
 void ConsoleBox::processPendingLogAnimations() {
+    Sync::unique_lock lock(this->logMutex);
     // check if we have pending animation reset from logging thread
     if(this->bLogAnimationResetPending.exchange(false)) {
         // execute animation operations on main thread only
@@ -345,7 +346,7 @@ void ConsoleBox::mouse_update(bool *propagate_clicks) {
                                 this->logFont->getHeight() * (cv::console_overlay_lines.getFloat() + 1), 0.5f);
 
         if(this->fLogYPos == this->logFont->getHeight() * (cv::console_overlay_lines.getInt() + 1)) {
-            Sync::scoped_lock logGuard(this->logMutex);
+            Sync::unique_lock logGuard(this->logMutex);
             this->bClearPending = false;
             this->log_entries.clear();
         }

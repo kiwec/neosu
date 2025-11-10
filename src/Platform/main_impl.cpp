@@ -692,3 +692,51 @@ void SDLMain::shutdown(SDL_AppResult result) {
 
     Environment::shutdown();
 }
+
+#if defined(MCENGINE_PLATFORM_WINDOWS) && !defined(SDL_main_h_)
+extern "C" {
+extern SDL_DECLSPEC void SDLCALL SDL_UnregisterApp(void);
+}
+#endif
+
+void SDLMain::restart(const std::vector<std::string> &args) {
+    SDL_PropertiesID restartprops = SDL_CreateProperties();
+
+    std::vector<const char *> restartArgsChar(args.size() + 1);
+
+    restartArgsChar.back() = nullptr;
+
+    for(int i = 0; const auto &arg : args) {
+        restartArgsChar[i] = arg.c_str();
+        i++;
+    }
+
+    if(cv::debug_env.getBool()) {
+        std::string logString = "restart args: ";
+
+        for(int i = -1; const auto entry : restartArgsChar) {
+            i++;
+            if(!entry) continue;
+            logString += fmt::format("({}) {} ", i, entry);
+        }
+        logString += ".";
+        debugLog(logString);
+    }
+
+    SDL_SetPointerProperty(restartprops, SDL_PROP_PROCESS_CREATE_ARGS_POINTER, (void *)restartArgsChar.data());
+#ifdef MCENGINE_PLATFORM_WINDOWS
+    const char *wincmdline = GetCommandLineA();
+    if(wincmdline) {
+        SDL_SetStringProperty(restartprops, SDL_PROP_PROCESS_CREATE_CMDLINE_STRING, wincmdline);
+    }
+    // so that handle_existing_window doesn't find the currently running instance by the class name
+    SDL_UnregisterApp();
+#endif
+    SDL_SetBooleanProperty(restartprops, SDL_PROP_PROCESS_CREATE_BACKGROUND_BOOLEAN, true);
+
+    if(!SDL_CreateProcessWithProperties(restartprops)) {
+        debugLog("[restart]: WARNING: couldn't restart!");
+    }
+
+    SDL_DestroyProperties(restartprops);
+}

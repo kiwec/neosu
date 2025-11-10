@@ -5,7 +5,6 @@
 #include "ConsoleBox.h"
 #include "Thread.h"
 #include "UString.h"
-#include "CrashHandler.h"
 
 #ifdef MCENGINE_PLATFORM_WINDOWS
 #include "WinDebloatDefs.h"
@@ -82,7 +81,7 @@ class Logger::ConsoleBoxSink : public spdlog::sinks::base_sink<std::mutex> {
         size_t read_pos{(buffer_head_ + CONSOLE_BUFFER_SIZE - buffer_count_) % CONSOLE_BUFFER_SIZE};
         {
             // hold the lock outside the loop, so we don't continuously acquire and release it for each log call
-            Sync::scoped_lock lock{cbox->logMutex};
+            Sync::unique_lock lock(cbox->logMutex);
             for(size_t i = 0; i < buffer_count_; ++i) {
                 cbox->log(message_buffer_[read_pos]);
                 read_pos = (read_pos + 1) % CONSOLE_BUFFER_SIZE;
@@ -139,7 +138,6 @@ class Logger::ConsoleBoxSink : public spdlog::sinks::base_sink<std::mutex> {
 // to be called in main(), for one-time setup/teardown
 void Logger::init() noexcept {
     if(s_initialized) return;
-    CrashHandler::init();  // also initialize crash handling immediately
 
     // initialize async thread pool before creating any async loggers
     // queue size: 8192 slots (each ~256 bytes), 1 background thread

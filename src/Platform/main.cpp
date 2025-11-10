@@ -5,7 +5,6 @@
 
 #if defined(MCENGINE_PLATFORM_WASM) || defined(MCENGINE_FEATURE_MAINCALLBACKS)
 #define MAIN_FUNC SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
-#define nocbinline
 #define SDL_MAIN_USE_CALLBACKS  // this enables the use of SDL_AppInit/AppEvent/AppIterate instead of a traditional
                                 // mainloop, needed for wasm (works on desktop too, but it's not necessary)
 #include <SDL3/SDL_main.h>
@@ -19,7 +18,6 @@ void setcwdexe(const std::string & /*unused*/) {}
 #include <SDL3/SDL_hints.h>
 #include <SDL3/SDL_process.h>
 #define MAIN_FUNC int main(int argc, char *argv[])
-#define nocbinline forceinline
 #include <filesystem>
 
 #include "File.h"
@@ -57,8 +55,7 @@ void setcwdexe(const std::string &exePathStr) noexcept {
 #include <processenv.h>   // for GetCommandLine
 #endif
 
-#include "ConVar.h"
-#include "SString.h"
+#include "CrashHandler.h"
 #include "Profiler.h"
 
 #if defined(__SSE__) || (defined(_M_IX86_FP) && (_M_IX86_FP > 0))
@@ -130,6 +127,8 @@ MAIN_FUNC /* int argc, char *argv[] */
     // if a neosu instance is already running, send it a message then quit
     // only works on windows for now
     Environment::Interop::handle_existing_window(argc, argv);
+
+    CrashHandler::init();  // initialize minidump handling
 
     // set up spdlog logging (after handle_existing_window, so we don't clobber a running instance's log messages)
     Logger::init();
@@ -256,46 +255,4 @@ MAIN_FUNC /* int argc, char *argv[] */
     *appstate = fmain;
     return fmain->initialize();
 #endif  // SDL_MAIN_USE_CALLBACKS
-}
-
-void SDLMain::restart(const std::vector<std::string> &args) {
-    SDL_PropertiesID restartprops = SDL_CreateProperties();
-
-    std::vector<const char *> restartArgsChar(args.size() + 1);
-
-    restartArgsChar.back() = nullptr;
-
-    for(int i = 0; const auto &arg : args) {
-        restartArgsChar[i] = arg.c_str();
-        i++;
-    }
-
-    if(cv::debug_env.getBool()) {
-        std::string logString = "restart args: ";
-
-        for(int i = -1; const auto entry : restartArgsChar) {
-            i++;
-            if(!entry) continue;
-            logString += fmt::format("({}) {} ", i, entry);
-        }
-        logString += ".";
-        debugLog(logString);
-    }
-
-    SDL_SetPointerProperty(restartprops, SDL_PROP_PROCESS_CREATE_ARGS_POINTER, (void *)restartArgsChar.data());
-#ifdef MCENGINE_PLATFORM_WINDOWS
-    const char *wincmdline = GetCommandLineA();
-    if(wincmdline) {
-        SDL_SetStringProperty(restartprops, SDL_PROP_PROCESS_CREATE_CMDLINE_STRING, wincmdline);
-    }
-    // so that handle_existing_window doesn't find the currently running instance by the class name
-    SDL_UnregisterApp();
-#endif
-    SDL_SetBooleanProperty(restartprops, SDL_PROP_PROCESS_CREATE_BACKGROUND_BOOLEAN, true);
-
-    if(!SDL_CreateProcessWithProperties(restartprops)) {
-        debugLog("[restart]: WARNING: couldn't restart!");
-    }
-
-    SDL_DestroyProperties(restartprops);
 }
