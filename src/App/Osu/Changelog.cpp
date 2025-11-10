@@ -28,6 +28,9 @@ Changelog::Changelog() : ScreenBackable() {
     v41_08.title = "41.08";
     v41_08.changes = {
         R"(- Added option to enable raw keyboard input on Windows)",
+        R"(- Added ConVar to select resampler used for SoLoud (snd_soloud_resampler: "point", "linear", "catmull-rom"))",
+        R"(- Fixed command convars like "help" and "find" not working)",
+        R"(- Updated SDL to fix Windows 32-bit builds)",
     };
     changelogs.push_back(v41_08);
 
