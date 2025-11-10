@@ -168,7 +168,7 @@ bool ConVarHandler::areAllCvarsSubmittable() {
 void ConVarHandler::resetServerCvars() {
     for(const auto &cv : ConVarHandler::getConVarArray()) {
         cv->hasServerValue.store(false, std::memory_order_release);
-        cv->serverProtectionPolicy.store(ConVar::ProtectionPolicy::DEFAULT, std::memory_order_release);
+        cv->serverProtectionPolicy.store(CvarProtection::DEFAULT, std::memory_order_release);
     }
 }
 
