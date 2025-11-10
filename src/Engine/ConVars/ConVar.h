@@ -199,8 +199,10 @@ class ConVar {
         if(editor == CvarEditor::SKIN && !this->isFlagSet(cv::SKINS)) return;
         if(editor == CvarEditor::SERVER && !this->isFlagSet(cv::SERVER)) return;
 
-        if(this->isFlagSet(cv::GAMEPLAY) && (unlikely(!ConVar::onSetValueGameplayCallback) ||
-                                             likely(ConVar::onSetValueGameplayCallback(this->sName, editor)))) {
+        // if:
+        // (NOT gameplay flag) OR ((NOT onSetValueGameplayCallback is set) OR (onSetValueGameplayCallback returns true))
+        if(!this->isFlagSet(cv::GAMEPLAY) || (unlikely(!ConVar::onSetValueGameplayCallback) ||
+                                              likely(ConVar::onSetValueGameplayCallback(this->sName, editor)))) {
             this->setValueInt(std::forward<T>(value), doCallback, editor);
         }
     }

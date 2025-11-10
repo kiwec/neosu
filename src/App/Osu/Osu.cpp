@@ -70,6 +70,8 @@
 
 #include <algorithm>
 
+Osu *osu{nullptr};
+
 // prevents score submission when/if a protected convar is changed during gameplay
 void Osu::globalOnSetValueProtectedCallback() {
     if(likely(this->map_iface)) {
@@ -103,8 +105,6 @@ bool Osu::globalOnSetValueGameplayCallback(const char *cvarname, CvarEditor sett
 
     return true;
 }
-
-Osu *osu{nullptr};
 
 Osu::Osu() {
     osu = this;
