@@ -103,10 +103,10 @@ set(SIMDUTF_URL "https://github.com/simdutf/simdutf/archive/refs/tags/v${SIMDUTF
 set(SIMDUTF_HASH "SHA512=c64e048258787624c2afa0619c4b2a89c4a7f1992e56b4cd72f956dc41023bd0c423fd476a8dfeeacc48e131c19d771a1189cce29e2dc2256170f72a3c356fc4")
 set_download_name("simdutf" "${SIMDUTF_VERSION}" "${SIMDUTF_URL}")
 
-set(CURL_VERSION "8.16.0")
+set(CURL_VERSION "8.17.0")
 string(REPLACE "." "_" _curl_ver_temp "${CURL_VERSION}")
 set(CURL_URL "https://github.com/curl/curl/releases/download/curl-${_curl_ver_temp}/curl-${CURL_VERSION}.tar.gz")
-set(CURL_HASH "SHA512=7cf8378afbbbf2ace0d78342bf38fd8fe488170d9e758fd3aa1bade0a3c1f3841c2955d1434869e1ced078134436aa9a50d2fd9ac1e757dc97f9b2f465b55b50")
+set(CURL_HASH "SHA512=88ab4b7aac12b26a6ad32fb0e1a9675288a45894438cb031102ef5d4ab6b33c2bc99cae0c70b71bdfa12eb49762827e2490555114c5eb4a6876b95e1f2a4eb74")
 set_download_name("curl" "${CURL_VERSION}" "${CURL_URL}")
 unset(_curl_ver_temp)
 
