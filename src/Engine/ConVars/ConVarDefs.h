@@ -733,6 +733,7 @@ CONVAR(fps_max, 1000.0f, CLIENT, "framerate limiter, gameplay");
 CONVAR(fps_max_menu, 420.f, CLIENT, "framerate limiter, menus");
 CONVAR(fps_max_background, 30.0f, CLIENT, "framerate limiter, background");
 CONVAR(fps_max_yield, false, CLIENT, "always release rest of timeslice once per frame (call scheduler via sleep(0))");
+CONVAR(fps_limiter_nobusywait, false, CLIENT, "only use 1ms sleeps to reach the FPS target, without busywaiting");
 // fps_unlimited: Unused since v39.01. Instead we just check if fps_max <= 0 (see MainMenu.cpp for migration)
 CONVAR(fps_unlimited, false, CLIENT | HIDDEN | NOSAVE);
 CONVAR(
