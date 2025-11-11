@@ -17,6 +17,7 @@
 #include "ConsoleBox.h"
 #include "Database.h"
 #include "DatabaseBeatmap.h"
+#include "DirectoryWatcher.h"
 #include "Downloader.h"
 #include "Engine.h"
 #include "File.h"
@@ -370,6 +371,24 @@ Osu::Osu() {
     if(!reloading_db && cv::load_db_immediately.getBool()) {
         // Start loading db early
         this->songBrowser->refreshBeatmaps();
+    }
+
+    // extract osks & watch for osks to extract
+    {
+        auto osks = env->getFilesInFolder(NEOSU_SKINS_PATH "/");
+        for(auto file : osks) {
+            if(env->getFileExtensionFromFilePath(file) != "osk") continue;
+            auto path = NEOSU_SKINS_PATH "/" + file;
+            bool extracted = env->getEnvInterop().handle_osk(path.c_str());
+            if(extracted) env->deleteFile(path);
+        }
+
+        watch_directory(NEOSU_SKINS_PATH "/", [](FileChangeEvent ev) {
+            if(ev.type != FileChangeType::CREATED) return;
+            if(env->getFileExtensionFromFilePath(ev.path) != "osk") return;
+            bool extracted = env->getEnvInterop().handle_osk(ev.path.c_str());
+            if(extracted) env->deleteFile(ev.path);
+        });
     }
 
     // Not the type of shader you want players to tweak or delete, so loading from string

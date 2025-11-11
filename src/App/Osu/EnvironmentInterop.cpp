@@ -12,20 +12,20 @@
 #include "SongBrowser/SongBrowser.h"
 #include "Logging.h"
 
-namespace {  // static namespace
-
 // drag-drop/file associations/registry stuff below
-void handle_osk(const char *osk_path) {
-    Skin::unpack(osk_path);
+bool Environment::Interop::handle_osk(const char *osk_path) {
+    if(!Skin::unpack(osk_path)) return false;
 
     auto folder_name = Environment::getFileNameFromFilePath(osk_path);
     folder_name.erase(folder_name.size() - 4);  // remove .osk extension
 
     cv::skin.setValue(Environment::getFileNameFromFilePath(folder_name).c_str());
     osu->getOptionsMenu()->updateSkinNameLabel();
+
+    return true;
 }
 
-void handle_osz(const char *osz_path) {
+bool Environment::Interop::handle_osz(const char *osz_path) {
     uSz osz_filesize = 0;
     std::unique_ptr<u8[]> osz_data = nullptr;
     {
@@ -34,7 +34,7 @@ void handle_osz(const char *osz_path) {
         osz_data = osz.takeFileBuffer();
         if(!osz.canRead() || !osz_filesize || !osz_data) {
             osu->getNotificationOverlay()->addToast(fmt::format("Failed to import {}", osz_path), ERROR_TOAST);
-            return;
+            return false;
         }
     }
 
@@ -51,23 +51,24 @@ void handle_osz(const char *osz_path) {
     }
     if(set_id == -1) {
         osu->getNotificationOverlay()->addToast(u"Beatmapset doesn't have a valid ID.", ERROR_TOAST);
-        return;
+        return false;
     }
 
     std::string mapset_dir = fmt::format(NEOSU_MAPS_PATH "/{}/", set_id);
     Environment::createDirectory(mapset_dir);
     if(!Downloader::extract_beatmapset(osz_data.get(), osz_filesize, mapset_dir)) {
         osu->getNotificationOverlay()->addToast(u"Failed to extract beatmapset", ERROR_TOAST);
-        return;
+        return false;
     }
 
     db->addBeatmapSet(mapset_dir, set_id);
     if(!osu->getSongBrowser()->selectBeatmapset(set_id)) {
         osu->getNotificationOverlay()->addToast(u"Failed to import beatmapset", ERROR_TOAST);
-        return;
+        return false;
     }
+
+    return true;
 }
-}  // namespace
 
 bool Environment::Interop::handle_cmdline_args(const std::vector<std::string> &args) {
     bool need_to_reload_database = false;

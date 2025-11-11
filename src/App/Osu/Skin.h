@@ -58,7 +58,7 @@ struct Skin final {
     void load();
 
    public:
-    static void unpack(const char *filepath);
+    static bool unpack(const char *filepath);
 
     Skin(const UString &name, std::string filepath, bool isDefaultSkin = false);
     ~Skin();

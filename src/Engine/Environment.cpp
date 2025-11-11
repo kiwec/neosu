@@ -1207,8 +1207,7 @@ std::vector<std::string> Environment::enumerateDirectory(std::string_view pathTo
             (want_dirs == !!(data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY));
 
         if(add_entry) {
-            static UString uFilename;
-            uFilename = {wide_filename, static_cast<int>(length)};
+            UString uFilename{wide_filename, static_cast<int>(length)};
             utf8_entries.emplace_back(uFilename.toUtf8(), static_cast<size_t>(uFilename.lengthUtf8()));
         }
 

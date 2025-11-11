@@ -102,6 +102,7 @@ neosu_SOURCES = \
 	src/Engine/ConVars/ConVar.cpp \
 	src/Engine/ConVars/ConVarHandler.cpp \
 	src/Engine/Console.cpp \
+	src/Engine/DirectoryWatcher.cpp \
 	src/Engine/DiscordInterface.cpp \
 	src/Engine/Engine.cpp \
 	src/Engine/Environment.cpp \

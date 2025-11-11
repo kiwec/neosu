@@ -35,7 +35,8 @@ bool Skin::BasicSkinImage::is2x() const {
     if(unlikely(!this->checked_2x)) {
         this->checked_2x = true;
         std::string_view path;
-        if(this->img && this->img != MISSING_TEXTURE && (path = this->img->getFilePath()).length() > 7 /* @2x.png == 7 */) {
+        if(this->img && this->img != MISSING_TEXTURE &&
+           (path = this->img->getFilePath()).length() > 7 /* @2x.png == 7 */) {
             path = path.substr(path.length() - 7);
             this->file_2x = path.contains("@2x");
         }
@@ -44,7 +45,7 @@ bool Skin::BasicSkinImage::is2x() const {
     return this->file_2x;
 }
 
-void Skin::unpack(const char *filepath) {
+bool Skin::unpack(const char *filepath) {
     auto skin_name = env->getFileNameFromFilePath(filepath);
     debugLog("Extracting {:s}...", skin_name.c_str());
     skin_name.erase(skin_name.size() - 4);  // remove .osk extension
@@ -57,7 +58,7 @@ void Skin::unpack(const char *filepath) {
         File file(filepath);
         if(!file.canRead() || !(fileSize = file.getFileSize())) {
             debugLog("Failed to read skin file {:s}", filepath);
-            return;
+            return false;
         }
         fileBuffer = file.takeFileBuffer();
         // close the file here
@@ -66,13 +67,13 @@ void Skin::unpack(const char *filepath) {
     Archive archive(fileBuffer.get(), fileSize);
     if(!archive.isValid()) {
         debugLog("Failed to open .osk file");
-        return;
+        return false;
     }
 
     auto entries = archive.getAllEntries();
     if(entries.empty()) {
         debugLog(".osk file is empty!");
-        return;
+        return false;
     }
 
     if(!env->directoryExists(skin_root)) {
@@ -107,6 +108,8 @@ void Skin::unpack(const char *filepath) {
     skip_file:;
         // when a file can't be extracted we just ignore it (as long as the archive is valid)
     }
+
+    return true;
 }
 
 Skin::Skin(const UString &name, std::string filepath, bool isDefaultSkin) {
@@ -465,7 +468,7 @@ void Skin::load() {
     this->checkLoadImage(this->i_button_right, "button-right", "SKIN_BUTTON_RIGHT");
     this->randomizeFilePath();
     // always load default skin menu-back (to show in options menu)
-    { 
+    {
         // HACKHACK to avoid annoying code changes
         std::string origpath = this->file_path;
         this->file_path = MCENGINE_IMAGES_PATH "/default/";

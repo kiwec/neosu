@@ -18,6 +18,7 @@
 #include "ConVar.h"
 #include "Database.h"
 #include "DatabaseBeatmap.h"
+#include "DirectoryWatcher.h"
 #include "Downloader.h"
 #include "Engine.h"
 #include "HUD.h"
@@ -2394,6 +2395,15 @@ void SongBrowser::checkHandleKillBackgroundSearchMatcher() {
 }
 
 void SongBrowser::onDatabaseLoadingFinished() {
+    // Extract oszs from neosu's maps/ directory now
+    auto oszs = env->getFilesInFolder(NEOSU_MAPS_PATH "/");
+    for(auto file : oszs) {
+        if(env->getFileExtensionFromFilePath(file) != "osz") continue;
+        auto path = NEOSU_MAPS_PATH "/" + file;
+        bool extracted = env->getEnvInterop().handle_osz(path.c_str());
+        if(extracted) env->deleteFile(path);
+    }
+
     Timer t;
     t.start();
 
@@ -2594,6 +2604,14 @@ void SongBrowser::onDatabaseLoadingFinished() {
 
     t.update();
     debugLog("Took {} seconds.", t.getElapsedTime());
+
+    // Watch for new maps now
+    watch_directory(NEOSU_MAPS_PATH "/", [](FileChangeEvent ev) {
+        if(ev.type != FileChangeType::CREATED) return;
+        if(env->getFileExtensionFromFilePath(ev.path) != "osz") return;
+        bool extracted = env->getEnvInterop().handle_osz(ev.path.c_str());
+        if(extracted) env->deleteFile(ev.path);
+    });
 }
 
 void SongBrowser::onSearchUpdate() {

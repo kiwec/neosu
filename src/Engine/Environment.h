@@ -73,6 +73,8 @@ class Environment {
         ~Interop() { env_p = nullptr; }
         bool handle_cmdline_args(const std::vector<std::string> &args);
         bool handle_cmdline_args() { return handle_cmdline_args(this->env_p->getCommandLine()); }
+        bool handle_osk(const char *osk_path);
+        bool handle_osz(const char *osz_path);
         void setup_system_integrations();
         static void handle_existing_window([[maybe_unused]] int argc,
                                            [[maybe_unused]] char *argv[]);  // only impl. for windows ATM
@@ -237,7 +239,7 @@ class Environment {
     void setCursor(CURSORTYPE cur);
     void setCursorVisible(bool visible);
     void setCursorClip(bool clip, McRect rect);
-    void setRawMouseInput(bool raw);     // enable/disable OS-level rawinput
+    void setRawMouseInput(bool raw);  // enable/disable OS-level rawinput
 
     void setOSMousePos(vec2 pos);
     inline void setMousePos(float x, float y) { setOSMousePos(vec2{x, y}); }

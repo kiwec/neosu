@@ -8,6 +8,7 @@
 #include "CBaseUIContainer.h"
 #include "ConVar.h"
 #include "ConsoleBox.h"
+#include "DirectoryWatcher.h"
 #include "DiscordInterface.h"
 #include "Keyboard.h"
 #include "Mouse.h"
@@ -173,6 +174,7 @@ Engine::~Engine() {
     debugLog("Engine: Stopping I/O subsystem...");
     io->cleanup();
     io.reset();
+    stop_directory_watcher();
 
     debugLog("Engine: Goodbye.");
 
@@ -306,6 +308,11 @@ void Engine::onUpdate() {
         {
             VPROF_BUDGET("AsyncIO::update", VPROF_BUDGETGROUP_UPDATE);
             io->update();
+        }
+
+        {
+            VPROF_BUDGET("DirectoryWatcher::collect_directory_events", VPROF_BUDGETGROUP_UPDATE);
+            collect_directory_events();
         }
 
         {
