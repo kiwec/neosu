@@ -619,12 +619,11 @@ void ScoreButton::onDeleteScoreClicked() {
         {
             this->contextMenu->addButton("Really delete score?")->setEnabled(false);
             CBaseUIButton *spacer = this->contextMenu->addButton("---");
-            spacer->setTextLeft(false);
             spacer->setEnabled(false);
             spacer->setTextColor(0xff888888);
             spacer->setTextDarkColor(0xff000000);
-            this->contextMenu->addButton("Yes", 1)->setTextLeft(false);
-            this->contextMenu->addButton("No")->setTextLeft(false);
+            this->contextMenu->addButton("Yes", 1);
+            this->contextMenu->addButton("No");
         }
         this->contextMenu->end(false, false);
         this->contextMenu->setClickCallback(SA::MakeDelegate<&ScoreButton::onDeleteScoreConfirmed>(this));

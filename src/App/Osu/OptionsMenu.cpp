@@ -3350,7 +3350,7 @@ CBaseUILabel *OptionsMenu::addSection(const UString &text) {
     // label->setTextColor(0xff58dafe);
     label->setFont(osu->getTitleFont());
     label->setSizeToContent(0, 0);
-    label->setTextJustification(CBaseUILabel::TEXT_JUSTIFICATION_RIGHT);
+    label->setTextJustification(TEXT_JUSTIFICATION::RIGHT);
     label->setDrawFrame(false);
     label->setDrawBackground(false);
     this->options->getContainer()->addBaseUIElement(label);

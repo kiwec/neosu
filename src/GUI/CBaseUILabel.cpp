@@ -33,14 +33,14 @@ void CBaseUILabel::draw() {
 
 void CBaseUILabel::drawText() {
     if(this->font != nullptr && this->sText.length() > 0) {
-        float xPosAdd = 0;
+        f32 xPosAdd = 0;
         switch(this->textJustification) {
-            case TEXT_JUSTIFICATION_LEFT:
+            case TEXT_JUSTIFICATION::LEFT:
                 break;
-            case TEXT_JUSTIFICATION_CENTERED:
-                xPosAdd = this->vSize.x / 2.0f - this->fStringWidth / 2.0f;
+            case TEXT_JUSTIFICATION::CENTERED:
+                xPosAdd = this->vSize.x / 2.f - this->fStringWidth / 2.f;
                 break;
-            case TEXT_JUSTIFICATION_RIGHT:
+            case TEXT_JUSTIFICATION::RIGHT:
                 xPosAdd = this->vSize.x - this->fStringWidth;
                 break;
         }
@@ -51,9 +51,8 @@ void CBaseUILabel::drawText() {
         g->pushTransform();
         {
             g->scale(this->fScale, this->fScale);  // XXX: not sure if scaling respects text justification
-            g->translate(
-                (int)(this->vPos.x + (this->bCenterText ? +this->vSize.x / 2.0f - this->fStringWidth / 2.0f : xPosAdd)),
-                (int)(this->vPos.y + this->vSize.y / 2.0f + this->fStringHeight / 2.0f));
+            g->translate((i32)(this->vPos.x + xPosAdd),
+                         (i32)(this->vPos.y + this->vSize.y / 2.f + this->fStringHeight / 2.f));
             g->drawString(this->font, this->sText);
         }
         g->popTransform();

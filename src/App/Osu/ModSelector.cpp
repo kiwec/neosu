@@ -258,7 +258,7 @@ ModSelector::ModSelector() : OsuScreen() {
     this->nonSubmittableWarning->setText(
         "WARNING: Score submission will be disabled due to non-vanilla mod selection.");
     this->nonSubmittableWarning->setTextColor(0xffff0000);
-    this->nonSubmittableWarning->setCenterText(true);
+    this->nonSubmittableWarning->setTextJustification(TEXT_JUSTIFICATION::CENTERED);
     this->nonSubmittableWarning->setVisible(false);
     this->addBaseUIElement(this->nonSubmittableWarning);
 
@@ -266,7 +266,7 @@ ModSelector::ModSelector() : OsuScreen() {
     this->scoreMultiplierLabel = new CBaseUILabel();
     this->scoreMultiplierLabel->setDrawFrame(false);
     this->scoreMultiplierLabel->setDrawBackground(false);
-    this->scoreMultiplierLabel->setCenterText(true);
+    this->scoreMultiplierLabel->setTextJustification(TEXT_JUSTIFICATION::CENTERED);
     this->addBaseUIElement(this->scoreMultiplierLabel);
 
     // build action buttons
@@ -1054,7 +1054,6 @@ ModSelector::OVERRIDE_SLIDER ModSelector::addOverrideSlider(UString text, const 
     os.slider->setDrawFrame(debugDrawFrame);
     os.slider->setDrawBackground(false);
     os.slider->setFrameColor(0xff777777);
-    // os.desc->setTextJustification(CBaseUILabel::TEXT_JUSTIFICATION::TEXT_JUSTIFICATION_CENTERED);
     os.desc->setEnabled(lockCvar != nullptr);
     os.desc->setDrawFrame(debugDrawFrame);
     os.desc->setDrawBackground(false);

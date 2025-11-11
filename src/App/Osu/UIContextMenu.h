@@ -29,9 +29,10 @@ class UIContextMenu final : public CBaseUIScrollView {
     void setClickCallback(const ButtonClickCallback &clickCallback) { this->clickCallback = clickCallback; }
 
     void begin(int minWidth = 0, bool bigStyle = false);
-    UIContextMenuButton *addButtonJustified(const UString &text, bool left = true, int id = -1);
+    UIContextMenuButton *addButtonJustified(const UString &text, TEXT_JUSTIFICATION j = TEXT_JUSTIFICATION::CENTERED,
+                                            int id = -1);
     inline UIContextMenuButton *addButton(const UString &text, int id = -1) {
-        return this->addButtonJustified(text, true, id);
+        return this->addButtonJustified(text, TEXT_JUSTIFICATION::LEFT, id);
     };
     UIContextMenuTextbox *addTextbox(const UString &text, int id = -1);
 

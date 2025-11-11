@@ -186,7 +186,7 @@ void UIContextMenu::begin(int minWidth, bool bigStyle) {
     this->containedTextbox = nullptr;
 }
 
-UIContextMenuButton *UIContextMenu::addButtonJustified(const UString &text, bool left, int id) {
+UIContextMenuButton *UIContextMenu::addButtonJustified(const UString &text, TEXT_JUSTIFICATION j, int id) {
     const int buttonHeight = 30 * Osu::getUIScale() * (this->bBigStyle ? 1.27f : 1.0f);
     const int margin = 9 * Osu::getUIScale();
 
@@ -196,7 +196,7 @@ UIContextMenuButton *UIContextMenu::addButtonJustified(const UString &text, bool
 
         button->setClickCallback(SA::MakeDelegate<&UIContextMenu::onClick>(this));
         button->setWidthToContent(3 * Osu::getUIScale());
-        button->setTextLeft(left);
+        button->setTextJustification(j);
         button->setDrawFrame(false);
         button->setDrawBackground(false);
     }

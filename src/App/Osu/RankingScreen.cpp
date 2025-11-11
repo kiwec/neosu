@@ -182,7 +182,7 @@ RankingScreen::RankingScreen() : ScreenBackable() {
 
     this->rankingIndex = new RankingScreenIndexLabel();
     this->rankingIndex->setDrawFrame(false);
-    this->rankingIndex->setCenterText(true);
+    this->rankingIndex->setTextJustification(TEXT_JUSTIFICATION::CENTERED);
     this->rankingIndex->setFont(osu->getSongBrowserFont());
     this->rankingIndex->setTextColor(0xffffcb21);
     this->rankings->getContainer()->addBaseUIElement(this->rankingIndex);

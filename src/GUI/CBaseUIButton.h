@@ -23,7 +23,9 @@ class CBaseUIButton : public CBaseUIElement {
         if constexpr(std::is_invocable_v<CBType, CBaseUIButton *, bool, bool>) {
             this->clickCallback = std::forward<Callable>(cb);
         } else if constexpr(std::is_invocable_v<CBType, bool, bool>) {
-            this->clickCallback = [cb = std::forward<Callable>(cb)](CBaseUIButton *, bool left, bool right) { cb(left, right); };
+            this->clickCallback = [cb = std::forward<Callable>(cb)](CBaseUIButton *, bool left, bool right) {
+                cb(left, right);
+            };
         } else if constexpr(std::is_invocable_v<CBType, CBaseUIButton *>) {
             this->clickCallback = [cb = std::forward<Callable>(cb)](CBaseUIButton *btn, bool, bool) { cb(btn); };
         } else if constexpr(std::is_invocable_v<CBType>) {
@@ -42,11 +44,6 @@ class CBaseUIButton : public CBaseUIElement {
     }
     CBaseUIButton *setDrawBackground(bool drawBackground) {
         this->bDrawBackground = drawBackground;
-        return this;
-    }
-    CBaseUIButton *setTextLeft(bool textLeft) {
-        this->bTextLeft = textLeft;
-        this->updateStringMetrics();
         return this;
     }
 
@@ -69,6 +66,10 @@ class CBaseUIButton : public CBaseUIElement {
     }
     CBaseUIButton *setTextDarkColor(Color textDarkColor) {
         this->textDarkColor = textDarkColor;
+        return this;
+    }
+    CBaseUIButton *setTextJustification(TEXT_JUSTIFICATION j) {
+        this->textJustification = j;
         return this;
     }
 
@@ -98,7 +99,6 @@ class CBaseUIButton : public CBaseUIElement {
     [[nodiscard]] inline Color getTextColor() const { return this->textColor; }
     [[nodiscard]] inline const UString &getText() const { return this->sText; }
     [[nodiscard]] inline McFont *getFont() const { return this->font; }
-    [[nodiscard]] inline bool isTextLeft() const { return this->bTextLeft; }
 
     // events
     void onMouseUpInside(bool left = true, bool right = false) override;
@@ -131,5 +131,5 @@ class CBaseUIButton : public CBaseUIElement {
 
     bool bDrawFrame;
     bool bDrawBackground;
-    bool bTextLeft;
+    TEXT_JUSTIFICATION textJustification{TEXT_JUSTIFICATION::CENTERED};
 };

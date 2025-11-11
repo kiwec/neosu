@@ -90,7 +90,6 @@ void CollectionButton::triggerContextMenu(vec2 pos) {
             this->contextMenu->addButton("[...]      Rename Collection", 1);
 
             CBaseUIButton *spacer = this->contextMenu->addButton("---");
-            spacer->setTextLeft(false);
             spacer->setEnabled(false);
             spacer->setTextColor(0xff888888);
             spacer->setTextDarkColor(0xff000000);
@@ -109,11 +108,9 @@ void CollectionButton::onContextMenu(const UString &text, int id) {
         this->contextMenu->begin(0, true);
         {
             CBaseUIButton *label = this->contextMenu->addButton("Enter Collection Name:");
-            label->setTextLeft(false);
             label->setEnabled(false);
 
             CBaseUIButton *spacer = this->contextMenu->addButton("---");
-            spacer->setTextLeft(false);
             spacer->setEnabled(false);
             spacer->setTextColor(0xff888888);
             spacer->setTextDarkColor(0xff000000);
@@ -121,13 +118,11 @@ void CollectionButton::onContextMenu(const UString &text, int id) {
             this->contextMenu->addTextbox(this->sCollectionName.c_str(), id)->setCursorPosRight();
 
             spacer = this->contextMenu->addButton("---");
-            spacer->setTextLeft(false);
             spacer->setEnabled(false);
             spacer->setTextColor(0xff888888);
             spacer->setTextDarkColor(0xff000000);
 
             label = this->contextMenu->addButton("(Press ENTER to confirm.)", id);
-            label->setTextLeft(false);
             label->setTextColor(0xff555555);
             label->setTextDarkColor(0xff000000);
         }
@@ -143,12 +138,11 @@ void CollectionButton::onContextMenu(const UString &text, int id) {
             {
                 this->contextMenu->addButton("Really delete collection?")->setEnabled(false);
                 CBaseUIButton *spacer = this->contextMenu->addButton("---");
-                spacer->setTextLeft(false);
                 spacer->setEnabled(false);
                 spacer->setTextColor(0xff888888);
                 spacer->setTextDarkColor(0xff000000);
-                this->contextMenu->addButton("Yes", 2)->setTextLeft(false);
-                this->contextMenu->addButton("No")->setTextLeft(false);
+                this->contextMenu->addButton("Yes", 2);
+                this->contextMenu->addButton("No");
             }
             this->contextMenu->end(false, false);
             this->contextMenu->setClickCallback(SA::MakeDelegate<&CollectionButton::onDeleteCollectionConfirmed>(this));

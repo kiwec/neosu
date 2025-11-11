@@ -241,7 +241,7 @@ void SpectatorScreen::mouse_update(bool *propagate_clicks) {
         auto cardsize = this->userCard->getSize();
         this->userCard->setRelPos(bgsize.x / 2.f - cardsize.x / 2.f, bgsize.y / 2.f - cardsize.y / 2.f);
 
-        this->status->setTextJustification(CBaseUILabel::TEXT_JUSTIFICATION_CENTERED);
+        this->status->setTextJustification(TEXT_JUSTIFICATION::CENTERED);
         this->status->setRelPos(bgsize.x / 2.f, bgsize.y / 2.f + 100 * dpiScale);
     }
     this->background->setScrollSizeToContent();

@@ -274,25 +274,25 @@ void SongButton::triggerContextMenu(vec2 pos) {
         this->contextMenu->begin(0, true);
         {
             if(this->databaseBeatmap)
-                this->contextMenu->addButtonJustified("[...] Open Beatmap Folder", true, 0)
+                this->contextMenu->addButtonJustified("[...] Open Beatmap Folder", TEXT_JUSTIFICATION::LEFT, 0)
                     ->setClickCallback(SA::MakeDelegate<&SongButton::onOpenBeatmapFolderClicked>(this));
 
             if(this->databaseBeatmap != nullptr && this->databaseBeatmap->getDifficulties().size() < 1)
-                this->contextMenu->addButtonJustified("[+] Add to Collection", true, 1);
+                this->contextMenu->addButtonJustified("[+] Add to Collection", TEXT_JUSTIFICATION::LEFT, 1);
 
-            this->contextMenu->addButtonJustified("[+Set] Add to Collection", true, 2);
+            this->contextMenu->addButtonJustified("[+Set] Add to Collection", TEXT_JUSTIFICATION::LEFT, 2);
 
             if(osu->getSongBrowser()->getGroupingMode() == SongBrowser::GroupType::COLLECTIONS) {
-                CBaseUIButton *spacer = this->contextMenu->addButtonJustified("---", false);
+                CBaseUIButton *spacer = this->contextMenu->addButtonJustified("---", TEXT_JUSTIFICATION::CENTERED);
                 spacer->setEnabled(false);
                 spacer->setTextColor(0xff888888);
                 spacer->setTextDarkColor(0xff000000);
 
                 if(this->databaseBeatmap == nullptr || this->databaseBeatmap->getDifficulties().size() < 1) {
-                    this->contextMenu->addButtonJustified("[-] Remove from Collection", true, 3);
+                    this->contextMenu->addButtonJustified("[-] Remove from Collection", TEXT_JUSTIFICATION::LEFT, 3);
                 }
 
-                this->contextMenu->addButtonJustified("[-Set] Remove from Collection", true, 4);
+                this->contextMenu->addButtonJustified("[-Set] Remove from Collection", TEXT_JUSTIFICATION::LEFT, 4);
             }
         }
         this->contextMenu->end(false, false);
@@ -308,11 +308,11 @@ void SongButton::onContextMenu(const UString &text, int id) {
         // 2 = add set to collection
         this->contextMenu->begin(0, true);
         {
-            this->contextMenu->addButtonJustified("[+] Create new Collection?", true, -id * 2);
+            this->contextMenu->addButtonJustified("[+] Create new Collection?", TEXT_JUSTIFICATION::LEFT, -id * 2);
 
             for(auto collection : collections) {
                 if(!collection->maps.empty()) {
-                    CBaseUIButton *spacer = this->contextMenu->addButtonJustified("---", false);
+                    CBaseUIButton *spacer = this->contextMenu->addButtonJustified("---", TEXT_JUSTIFICATION::CENTERED);
                     spacer->setEnabled(false);
                     spacer->setTextColor(0xff888888);
                     spacer->setTextDarkColor(0xff000000);
@@ -338,7 +338,8 @@ void SongButton::onContextMenu(const UString &text, int id) {
                     // XXX: Don't mark as valid if the set is fully present in the collection
                 }
 
-                auto collectionButton = this->contextMenu->addButtonJustified(collection->name.c_str(), false, id);
+                auto collectionButton =
+                    this->contextMenu->addButtonJustified(collection->name.c_str(), TEXT_JUSTIFICATION::CENTERED, id);
                 if(!can_add_to_collection) {
                     collectionButton->setEnabled(false);
                     collectionButton->setTextColor(0xff555555);
@@ -361,22 +362,24 @@ void SongButton::onAddToCollectionConfirmed(const UString &text, int id) {
     if(id == -2 || id == -4) {
         this->contextMenu->begin(0, true);
         {
-            CBaseUIButton *label = this->contextMenu->addButtonJustified("Enter Collection Name:", false);
+            CBaseUIButton *label =
+                this->contextMenu->addButtonJustified("Enter Collection Name:", TEXT_JUSTIFICATION::CENTERED);
             label->setEnabled(false);
 
-            CBaseUIButton *spacer = this->contextMenu->addButtonJustified("---", false);
+            CBaseUIButton *spacer = this->contextMenu->addButtonJustified("---", TEXT_JUSTIFICATION::CENTERED);
             spacer->setEnabled(false);
             spacer->setTextColor(0xff888888);
             spacer->setTextDarkColor(0xff000000);
 
             this->contextMenu->addTextbox("", id);
 
-            spacer = this->contextMenu->addButtonJustified("---", false);
+            spacer = this->contextMenu->addButtonJustified("---", TEXT_JUSTIFICATION::CENTERED);
             spacer->setEnabled(false);
             spacer->setTextColor(0xff888888);
             spacer->setTextDarkColor(0xff000000);
 
-            label = this->contextMenu->addButtonJustified("(Press ENTER to confirm.)", false, id);
+            label =
+                this->contextMenu->addButtonJustified("(Press ENTER to confirm.)", TEXT_JUSTIFICATION::CENTERED, id);
             label->setTextColor(0xff555555);
             label->setTextDarkColor(0xff000000);
         }

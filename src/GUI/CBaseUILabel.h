@@ -4,13 +4,6 @@
 
 class CBaseUILabel : public CBaseUIElement {
    public:
-    enum TEXT_JUSTIFICATION : uint8_t {
-        TEXT_JUSTIFICATION_LEFT,
-        TEXT_JUSTIFICATION_CENTERED,
-        TEXT_JUSTIFICATION_RIGHT
-    };
-
-   public:
     CBaseUILabel(float xPos = 0, float yPos = 0, float xSize = 0, float ySize = 0, UString name = "",
                  const UString &text = "");
     ~CBaseUILabel() override { ; }
@@ -72,9 +65,6 @@ class CBaseUILabel : public CBaseUIElement {
         return this;
     }
 
-    // DEPRECATED! use setTextJustification() instead
-    void setCenterText(bool centerText) { this->bCenterText = centerText; }
-
     // get
     [[nodiscard]] inline Color getFrameColor() const { return this->frameColor; }
     [[nodiscard]] inline Color getBackgroundColor() const { return this->backgroundColor; }
@@ -99,10 +89,9 @@ class CBaseUILabel : public CBaseUIElement {
     Color backgroundColor{0xff000000};
     Color textColor{0xffffffff};
 
-    TEXT_JUSTIFICATION textJustification{TEXT_JUSTIFICATION::TEXT_JUSTIFICATION_LEFT};
+    TEXT_JUSTIFICATION textJustification{TEXT_JUSTIFICATION::LEFT};
     float fScale{1.f};
 
     bool bDrawFrame{true};
     bool bDrawBackground{true};
-    bool bCenterText{false};
 };

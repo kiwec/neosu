@@ -14,7 +14,6 @@ CBaseUIButton::CBaseUIButton(float xPos, float yPos, float xSize, float ySize, U
     // settings
     this->bDrawFrame = true;
     this->bDrawBackground = true;
-    this->bTextLeft = false;
 
     // colors
     this->frameColor = argb(255, 255, 255, 255);
@@ -41,7 +40,7 @@ void CBaseUIButton::draw() {
     }
 
     // draw hover rects
-    const int hoverRectOffset = std::round(3.0f * ((float)this->font->getDPI() / 96.0f));  // NOTE: abusing font dpi
+    const int hoverRectOffset = std::round(3.f * ((float)this->font->getDPI() / 96.f));  // NOTE: abusing font dpi
     g->setColor(this->frameColor);
     if(this->bMouseInside && this->bEnabled) {
         if(!this->bActive && !mouse->isLeftDown())
@@ -58,15 +57,28 @@ void CBaseUIButton::draw() {
 void CBaseUIButton::drawText() {
     if(this->font == nullptr || !this->isVisible() || !this->isVisibleOnScreen() || this->sText.length() < 1) return;
 
-    const int shadowOffset = std::round(1.0f * ((float)this->font->getDPI() / 96.0f));  // NOTE: abusing font dpi
+    const int shadowOffset = std::round(1.f * ((float)this->font->getDPI() / 96.f));  // NOTE: abusing font dpi
 
-    g->pushClipRect(McRect(this->vPos.x + 1, this->vPos.y + 1, this->vSize.x - 1, this->vSize.y - 1));
+    g->pushClipRect(McRect(this->vPos.x + 1, this->vPos.y + 1, this->vSize.x - 2, this->vSize.y - 2));
     {
         g->setColor(this->textColor);
         g->pushTransform();
         {
-            g->translate((int)(this->vPos.x + this->vSize.x / 2.0f - this->fStringWidth / 2.0f),
-                         (int)(this->vPos.y + this->vSize.y / 2.0f + this->fStringHeight / 2.0f));
+            // Justification logic pasted from CBaseUILabel::drawText()
+            f32 xPosAdd = 0;
+            switch(this->textJustification) {
+                case TEXT_JUSTIFICATION::LEFT:
+                    break;
+                case TEXT_JUSTIFICATION::CENTERED:
+                    xPosAdd = this->vSize.x / 2.0f - this->fStringWidth / 2.0f;
+                    break;
+                case TEXT_JUSTIFICATION::RIGHT:
+                    xPosAdd = this->vSize.x - this->fStringWidth;
+                    break;
+            }
+
+            g->translate((i32)(this->vPos.x + xPosAdd),
+                         (i32)(this->vPos.y + this->vSize.y / 2.f + this->fStringHeight / 2.f));
 
             // shadow
             g->translate(shadowOffset, shadowOffset);
@@ -111,13 +123,8 @@ void CBaseUIButton::onClicked(bool left, bool right) {
 }
 
 void CBaseUIButton::updateStringMetrics() {
-    if(this->font != nullptr) {
-        this->fStringHeight = this->font->getHeight();
+    if(this->font == nullptr) return;
 
-        if(this->bTextLeft)
-            this->fStringWidth =
-                this->vSize.x - 4;  // TODO: this is broken af, why is it like this? where is this even used/needed
-        else
-            this->fStringWidth = this->font->getStringWidth(this->sText);
-    }
+    this->fStringHeight = this->font->getHeight();
+    this->fStringWidth = this->font->getStringWidth(this->sText);
 }

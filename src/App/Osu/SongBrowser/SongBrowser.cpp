@@ -461,7 +461,7 @@ SongBrowser::SongBrowser()  // NOLINT(cert-msc51-cpp, cert-msc32-c)
     this->localBestLabel = new CBaseUILabel(0, 0, 0, 0, "", "Personal Best (from local scores)");
     this->localBestLabel->setDrawBackground(false);
     this->localBestLabel->setDrawFrame(false);
-    this->localBestLabel->setTextJustification(CBaseUILabel::TEXT_JUSTIFICATION::TEXT_JUSTIFICATION_CENTERED);
+    this->localBestLabel->setTextJustification(TEXT_JUSTIFICATION::CENTERED);
 
     // build carousel
     this->carousel = std::make_unique<BeatmapCarousel>(this, 0.f, 0.f, 0.f, 0.f, "Carousel");

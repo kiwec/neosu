@@ -69,7 +69,8 @@ RoomUIElement::RoomUIElement(Lobby* multi, Room* room, float x, float y, float w
 void RoomUIElement::onRoomJoinButtonClick(CBaseUIButton* /*btn*/) {
     if(this->has_password) {
         this->multi->room_to_join = this->room_id;
-        osu->getPromptScreen()->prompt("Room password:", SA::MakeDelegate<&Lobby::on_room_join_with_password>(this->multi));
+        osu->getPromptScreen()->prompt("Room password:",
+                                       SA::MakeDelegate<&Lobby::on_room_join_with_password>(this->multi));
     } else {
         this->multi->joinRoom(this->room_id, "");
     }
@@ -184,7 +185,7 @@ void Lobby::updateLayout(vec2 newResolution) {
 
     if(this->rooms.empty()) {
         auto noRoomsOpenElement = new CBaseUILabel(0, 0, 0, 0, "", "There are no matches available.");
-        noRoomsOpenElement->setTextJustification(CBaseUILabel::TEXT_JUSTIFICATION::TEXT_JUSTIFICATION_CENTERED);
+        noRoomsOpenElement->setTextJustification(TEXT_JUSTIFICATION::CENTERED);
         noRoomsOpenElement->setSizeToContent(20, 20);
         noRoomsOpenElement->setPos(this->list->getSize().x / 2 - noRoomsOpenElement->getSize().x / 2,
                                    this->list->getSize().y / 2 - noRoomsOpenElement->getSize().y / 2);
@@ -274,8 +275,8 @@ void Lobby::on_create_room_clicked() {
 
     if(osu->getMapInterface() && osu->getMapInterface()->getBeatmap()) {
         auto map = osu->getMapInterface()->getBeatmap();
-        BanchoState::room.map_name = UString::format("%s - %s [%s]", map->getArtist().c_str(),
-                                                     map->getTitle().c_str(), map->getDifficultyName().c_str());
+        BanchoState::room.map_name = UString::format("%s - %s [%s]", map->getArtist().c_str(), map->getTitle().c_str(),
+                                                     map->getDifficultyName().c_str());
         BanchoState::room.map_md5 = map->getMD5();
         BanchoState::room.map_id = map->getID();
     }

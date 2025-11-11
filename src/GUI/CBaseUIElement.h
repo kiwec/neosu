@@ -11,6 +11,8 @@
 // - When an element is standalone, use getPos/setPos
 // - In a container or in a scrollview, use getRelPos/setRelPos and call update_pos() on the container
 
+enum class TEXT_JUSTIFICATION : uint8_t { LEFT, CENTERED, RIGHT };
+
 class CBaseUIElement : public KeyboardListener {
     NOCOPY_NOMOVE(CBaseUIElement)
    public:
