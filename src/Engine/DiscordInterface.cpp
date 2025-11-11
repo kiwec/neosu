@@ -59,7 +59,7 @@ dynutils::lib_obj *discord_handle{nullptr};
 }  // namespace
 
 void init() {
-    if (initialized) return;
+    if(initialized) return;
 
     discord_handle = dynutils::load_lib("discord_game_sdk");
     if(!discord_handle) {
@@ -162,10 +162,11 @@ void set_activity(struct DiscordActivity *activity) {
     auto music = osu->getMapInterface()->getMusic();
     bool listening = map != nullptr && music != nullptr && music->isPlaying();
     bool playing = map != nullptr && osu->isInPlayMode();
-    if(listening || playing) {
+    bool bg_visible = map != nullptr && map->draw_background && cv::load_beatmap_background_images.getBool();
+    if(bg_visible && (listening || playing)) {
         auto url =
-            UString::format("https://assets.ppy.sh/beatmaps/%d/covers/list@2x.jpg?%d", map->getSetID(), map->getID());
-        strncpy(&activity->assets.large_image[0], url.toUtf8(), 127);
+            fmt::format("https://assets.ppy.sh/beatmaps/{}/covers/list@2x.jpg?{}", map->getSetID(), map->getID());
+        strncpy(&activity->assets.large_image[0], url.c_str(), 127);
 
         if(BanchoState::server_icon_url.length() > 0 && cv::main_menu_use_server_logo.getBool()) {
             strncpy(&activity->assets.small_image[0], BanchoState::server_icon_url.c_str(), 127);

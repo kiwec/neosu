@@ -18,6 +18,7 @@
 #include "Database.h"
 #include "DatabaseBeatmap.h"
 #include "DirectoryWatcher.h"
+#include "DiscordInterface.h"
 #include "Downloader.h"
 #include "Engine.h"
 #include "File.h"
@@ -935,6 +936,7 @@ void Osu::onKeyDown(KeyboardEvent &key) {
         } else {
             diff->draw_background = !diff->draw_background;
             diff->update_overrides();
+            DiscRPC::clear_activity();
         }
         key.consume();
         return;

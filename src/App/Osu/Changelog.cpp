@@ -30,6 +30,7 @@ Changelog::Changelog() : ScreenBackable() {
         R"(- .osk/.osz files in the maps/ and skins/ directories are now automatically imported)",
         R"(- Added option to enable raw keyboard input on Windows)",
         R"(- Added ConVar to select resampler used for SoLoud (snd_soloud_resampler: "point", "linear", "catmull-rom"))",
+        R"(- Background thumbnails will no longer show in Discord Rich Presence if they are disabled in-game)",
         R"(- Fixed command convars like "help" and "find" not working)",
         R"(- Updated SDL to fix Windows 32-bit builds)",
     };
