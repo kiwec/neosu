@@ -142,17 +142,16 @@ void SoLoudSound::destroy() {
     this->force_sync_position_next = true;
 }
 
-void SoLoudSound::setPositionMS(u32 ms) {
+void SoLoudSound::setPositionUS(u64 us) {
     if(!this->isReady() || !this->audioSource || !this->handle) return;
 
-    auto msD = static_cast<double>(ms);
+    const auto lengthUS = this->getLengthUS();
+    if(us > lengthUS) return;
 
-    auto streamLengthMS = static_cast<double>(getLengthMS());
-    if(msD > streamLengthMS) return;
+    const f64 positionInSeconds = static_cast<f64>(us) / (1000. * 1000.);
 
-    double positionInSeconds = msD / 1000.0;
-
-    logIfCV(debug_snd, "seeking to {:g}ms (length: {:g}ms)", msD, streamLengthMS);
+    logIfCV(debug_snd, "seeking to {:.4f}s (length: {:.4f}s)", positionInSeconds,
+            static_cast<f64>(lengthUS) / (1000. * 1000.));
 
     // seek
     soloud->seek(this->handle, positionInSeconds);
@@ -161,7 +160,7 @@ void SoLoudSound::setPositionMS(u32 ms) {
     this->force_sync_position_next = true;
 
     // reset position interp vars with the new position
-    this->interpolator.reset(msD, Timing::getTimeReal(), getSpeed());
+    this->interpolator.reset(positionInSeconds, Timing::getTimeReal(), getSpeed());
 }
 
 void SoLoudSound::setSpeed(float speed) {
@@ -278,19 +277,19 @@ void SoLoudSound::setLoop(bool loop) {
     }
 }
 
-float SoLoudSound::getPosition() const {
+f64 SoLoudSound::getPositionPct() const {
     if(!this->isReady() || !this->audioSource || !this->handle) return 0.0f;
 
-    double streamLengthInSeconds = getSourceLengthInSeconds();
+    const f64 streamLengthInSeconds = getSourceLengthInSeconds();
     if(streamLengthInSeconds <= 0.0) return 0.0f;
 
-    double streamPositionInSeconds = getStreamPositionInSeconds();
+    const f64 streamPositionInSeconds = getStreamPositionInSeconds();
 
     // update interped state while we're at it
-    this->interpolator.update(streamPositionInSeconds * 1000.0, Timing::getTimeReal(), getSpeed(), isLooped(),
-                              static_cast<u32>(streamLengthInSeconds * 1000.0), isPlaying());
+    this->interpolator.update(streamPositionInSeconds, Timing::getTimeReal(), getSpeed(), isLooped(),
+                              static_cast<u32>(std::round(streamLengthInSeconds * 1000.0)), isPlaying());
 
-    return std::clamp<float>(streamPositionInSeconds / streamLengthInSeconds, 0.0f, 1.0f);
+    return std::clamp<f64>(streamPositionInSeconds / streamLengthInSeconds, 0.0f, 1.0f);
 }
 
 i32 SoLoudSound::getBASSStreamLatencyCompensation() const {
@@ -301,20 +300,20 @@ i32 SoLoudSound::getBASSStreamLatencyCompensation() const {
 }
 
 // slightly tweaked interp algo from the SDL_mixer version, to smooth out position updates
-u32 SoLoudSound::getPositionMS() const {
+u64 SoLoudSound::getPositionUS() const {
     if(!this->isReady() || !this->audioSource || !this->handle) return 0;
 
-    return this->interpolator.update(getStreamPositionInSeconds() * 1000.0, Timing::getTimeReal(), getSpeed(),
+    return this->interpolator.update(getStreamPositionInSeconds(), Timing::getTimeReal(), getSpeed(),
                                      isLooped(), getLengthMS(), isPlaying());
 }
 
-u32 SoLoudSound::getLengthMS() const {
+u64 SoLoudSound::getLengthUS() const {
     if(!this->isReady() || !this->audioSource) return 0;
 
-    const double lengthInMilliSeconds = getSourceLengthInSeconds() * 1000.0;
+    const u64 lengthUS = static_cast<u64>(std::round(getSourceLengthInSeconds() * 1000.0 * 1000.0));
     // if (cv::debug_snd.getBool())
-    // 	debugLog("lengthMS for {:s}: {:g}", this->sFilePath, lengthInMilliSeconds);
-    return static_cast<u32>(lengthInMilliSeconds);
+    // 	debugLog("lengthUS for {:s}: {:g}", this->sFilePath, lengthUS);
+    return lengthUS;
 }
 
 float SoLoudSound::getSpeed() const {
@@ -359,7 +358,7 @@ void SoLoudSound::setHandleVolume(SOUNDHANDLE handle, float volume) {
 // soloud-specific accessors
 
 double SoLoudSound::getStreamPositionInSeconds() const {
-    if(!this->audioSource || !this->handle) return this->interpolator.getLastInterpolatedPositionMS() / 1000.0;
+    if(!this->audioSource || !this->handle) return this->interpolator.getLastInterpolatedPositionS();
 
     const auto now = Timing::getTimeReal();
 

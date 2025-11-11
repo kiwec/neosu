@@ -717,9 +717,9 @@ void Osu::update() {
         this->bSeeking &= !BanchoState::spectating;
         if(this->bSeeking) {
             f32 mousePosX = std::round(mouse->getPos().x);
-            f32 percent = std::clamp<f32>(mousePosX / (f32)this->internalRect.getWidth(), 0.0f, 1.0f);
-            u32 seek_to_ms = std::roundl(
-                percent * (float)(this->map_iface->getStartTimePlayable() + this->map_iface->getLengthPlayable()));
+            f64 percent = std::clamp<f64>(mousePosX / (f64)this->internalRect.getWidth(), 0., 1.);
+            u32 seek_to_ms = static_cast<u32>(std::round(
+                percent * (f64)(this->map_iface->getStartTimePlayable() + this->map_iface->getLengthPlayable())));
 
             if(mouse->isLeftDown()) {
                 if(mousePosX != this->fPrevSeekMousePosX || !cv::scrubbing_smooth.getBool()) {

@@ -14,16 +14,16 @@ class BassSound final : public Sound {
         : Sound(std::move(filepath), stream, overlayable, loop) {};
     ~BassSound() override { this->destroy(); }
 
-    void setPositionMS(u32 ms) override;
+    void setPositionUS(u64 us) override;
 
     void setSpeed(float speed) override;
     void setFrequency(float frequency) override;
     void setPan(float pan) override;
     void setLoop(bool loop) override;
 
-    float getPosition() const override;
-    u32 getPositionMS() const override;
-    u32 getLengthMS() const override;
+    f64 getPositionPct() const override;
+    u64 getPositionUS() const override;
+    u64 getLengthUS() const override;
     float getSpeed() const override;
     float getFrequency() const override;
 
@@ -43,6 +43,9 @@ class BassSound final : public Sound {
 
    private:
     SOUNDHANDLE getNewHandle();
+
+    u64 paused_position_us{0};
+    u32 lengthUS{0};
 
     SOUNDHANDLE srchandle{0};
 };

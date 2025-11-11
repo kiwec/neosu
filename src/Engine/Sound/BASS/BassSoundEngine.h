@@ -50,7 +50,7 @@ class BassSoundEngine final : public SoundEngine {
     bool isWASAPI() { return this->currentOutputDevice.driver == OutputDriver::BASS_WASAPI; }
     bool init_bass_mixer(const OUTPUT_DEVICE &device);
 
-    bool actuallyPlay(BassSound *bassSound, SOUNDHANDLE playHandle, u32 positionMS);
+    bool actuallyPlay(BassSound *bassSound, SOUNDHANDLE playHandle, u64 positionUS);
 
     double ready_since{-1.0};
     SOUNDHANDLE g_bassOutputMixer = 0;

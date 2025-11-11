@@ -5,73 +5,75 @@
 
 #include "ConVar.h"
 
-u32 PlaybackInterpolator::update(f64 rawPositionMS, f64 currentTime, f64 playbackSpeed, bool isLooped, u64 lengthMS,
+u64 PlaybackInterpolator::update(f64 rawPositionS, f64 currentTime, f64 playbackSpeed, bool isLooped, u32 lengthMS,
                                  bool isPlaying) {
-    if(!cv::interpolate_music_pos.getBool()) return rawPositionMS;
+    if(!cv::interpolate_music_pos.getBool()) return static_cast<u64>(std::round(rawPositionS * 1000. * 1000.));
 
     // reset state if not initialized or not playing
     if(this->dLastPositionTime <= 0.0 || !isPlaying) {
-        reset(rawPositionMS, currentTime, playbackSpeed);
-        return this->dLastInterpolatedPosition;
+        reset(rawPositionS, currentTime, playbackSpeed);
+        return this->iLastInterpolatedPositionUS;
     }
 
     // update rate estimate when position changes
-    if(this->dLastRawPosition != rawPositionMS) {
+    if(this->dLastRawPosition != rawPositionS) {
         const f64 timeDelta = currentTime - this->dLastPositionTime;
 
         // only update rate if enough time has passed (5ms minimum)
         if(timeDelta > 0.005) {
-            f64 newRate = 1000.0;
+            f64 newRate;
 
-            if(rawPositionMS >= this->dLastRawPosition) {
+            if(rawPositionS >= this->dLastRawPosition) {
                 // normal forward movement
-                newRate = (rawPositionMS - this->dLastRawPosition) / timeDelta;
+                newRate = (rawPositionS - this->dLastRawPosition) / timeDelta;
             } else if(isLooped && lengthMS > 0) {
                 // handle loop wraparound
-                f64 length = static_cast<f64>(lengthMS);
-                f64 wrappedChange = (length - this->dLastRawPosition) + rawPositionMS;
+                const f64 lengthS = lengthMS / 1000.;
+                const f64 wrappedChange = (lengthS - this->dLastRawPosition) + rawPositionS;
                 newRate = wrappedChange / timeDelta;
             } else {
                 // backward movement (seeking), keep current rate
-                newRate = this->iEstimatedRate;
+                newRate = this->dEstimatedRate;
             }
 
             // sanity check against expected rate (allow 20% deviation)
-            const f64 expectedRate = 1000.0 * playbackSpeed;
+            const f64 expectedRate = playbackSpeed;
             if(newRate < expectedRate * 0.8 || newRate > expectedRate * 1.2) {
                 newRate = expectedRate * 0.7 + newRate * 0.3;  // blend back toward expected
             }
 
             // smooth the rate estimate
-            this->iEstimatedRate = this->iEstimatedRate * 0.6 + newRate * 0.4;
+            this->dEstimatedRate = this->dEstimatedRate * 0.6 + newRate * 0.4;
         }
 
-        this->dLastRawPosition = rawPositionMS;
+        this->dLastRawPosition = rawPositionS;
         this->dLastPositionTime = currentTime;
     } else {
         // gradual adjustment when position hasn't changed for a while
         const f64 timeSinceLastChange = currentTime - this->dLastPositionTime;
         if(timeSinceLastChange > 0.1) {
-            const f64 expectedRate = 1000.0 * playbackSpeed;
-            this->iEstimatedRate = this->iEstimatedRate * 0.95 + expectedRate * 0.05;
+            const f64 expectedRate = playbackSpeed;
+            this->dEstimatedRate = this->dEstimatedRate * 0.95 + expectedRate * 0.05;
         }
     }
 
     // interpolate position based on estimated rate
     const f64 timeSinceLastReading = currentTime - this->dLastPositionTime;
-    const f64 interpolatedPosition = this->dLastRawPosition + (timeSinceLastReading * this->iEstimatedRate);
+    const f64 interpolatedPositionS = this->dLastRawPosition + (timeSinceLastReading * this->dEstimatedRate);
 
     // handle looping
     if(isLooped && lengthMS > 0) {
-        f64 length = static_cast<f64>(lengthMS);
-        if(interpolatedPosition >= length) {
-            this->dLastInterpolatedPosition = static_cast<u32>(fmod(interpolatedPosition, length));
-            return this->dLastInterpolatedPosition;
+        const f64 lengthS = lengthMS / 1000.;
+        if(interpolatedPositionS >= lengthS) {
+            this->iLastInterpolatedPositionUS =
+                static_cast<u64>(std::round(std::fmod(interpolatedPositionS, lengthS) * 1000. * 1000.));
+            return this->iLastInterpolatedPositionUS;
         }
     }
 
-    this->dLastInterpolatedPosition = static_cast<u32>(std::max(0.0, interpolatedPosition));
-    return this->dLastInterpolatedPosition;
+    this->iLastInterpolatedPositionUS =
+        static_cast<u64>(std::round(std::max(0.0, interpolatedPositionS) * 1000. * 1000.));
+    return this->iLastInterpolatedPositionUS;
 }
 
 // Playback interpolator used by McOsu

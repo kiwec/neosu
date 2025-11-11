@@ -1442,7 +1442,7 @@ void BeatmapInterface::handlePreviewPlay() {
     if(this->music == nullptr) return;
 
     bool almost_finished = false;
-    if((!this->music->isPlaying() || (almost_finished = this->music->getPosition() > 0.95f)) &&
+    if((!this->music->isPlaying() || (almost_finished = this->music->getPositionPct() > 0.95f)) &&
        this->beatmap != nullptr) {
         soundEngine->stop(this->music);
 
@@ -1451,7 +1451,7 @@ void BeatmapInterface::handlePreviewPlay() {
             // reset playback position when the song has nearly reached the end (when the user switches back to the results
             // screen or the songbrowser after playing)
             // (check again after restarting due to async)
-            if(almost_finished || this->music->getPosition() > 0.95f) this->iContinueMusicPos = 0;
+            if(almost_finished || this->music->getPositionPct() > 0.95f) this->iContinueMusicPos = 0;
 
             if(this->music->getFrequency() < this->fMusicFrequencyBackup)  // player has died, reset frequency
                 this->music->setFrequency(this->fMusicFrequencyBackup);
@@ -2557,7 +2557,7 @@ void BeatmapInterface::update2() {
 
                 // interpolate between the music position when click was captured and current music position
                 click.music_pos = static_cast<i32>(
-                    std::roundl(std::lerp((double)click.music_pos, (double)this->iCurMusicPosWithOffsets, percent)));
+                    std::round(std::lerp((double)click.music_pos, (double)this->iCurMusicPosWithOffsets, percent)));
                 click.pos = this->getCursorPos();
             }
         }

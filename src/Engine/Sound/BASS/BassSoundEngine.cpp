@@ -488,7 +488,7 @@ bool BassSoundEngine::play(Sound *snd, f32 pan, f32 pitch, f32 playVolume, bool 
 
         bool success = true;
         if(!startPaused) {
-            success = this->actuallyPlay(bassSound, handle, bassSound->paused_position_ms);
+            success = this->actuallyPlay(bassSound, handle, bassSound->paused_position_us);
         }
 
         return success;
@@ -529,7 +529,7 @@ bool BassSoundEngine::play(Sound *snd, f32 pan, f32 pitch, f32 playVolume, bool 
     return succeeded;
 }
 
-bool BassSoundEngine::actuallyPlay(BassSound *bassSound, SOUNDHANDLE playHandle, u32 positionMS) {
+bool BassSoundEngine::actuallyPlay(BassSound *bassSound, SOUNDHANDLE playHandle, u64 positionUS) {
     assert(bassSound);
     // Make sure the mixer is playing! Duh.
     if(bassSound->bPaused && this->currentOutputDevice.driver == OutputDriver::BASS) {
@@ -547,7 +547,7 @@ bool BassSoundEngine::actuallyPlay(BassSound *bassSound, SOUNDHANDLE playHandle,
 
     if(bassSound->isStream()) {
         // set position, and unpause the channel if paused
-        bassSound->setPositionMS(positionMS);
+        bassSound->setPositionUS(positionUS);
         if(wasPaused) {
             BASS_Mixer_ChannelFlags(playHandle, 0, BASS_MIXER_CHAN_PAUSE);
         }
@@ -567,11 +567,11 @@ void BassSoundEngine::pause(Sound *snd) {
     auto bassSound = snd->as<BassSound>();
     if(!bassSound->isPlaying()) return;
 
-    auto pos = bassSound->getPositionMS();
+    const u64 posUS = bassSound->getPositionUS();
     BASS_Mixer_ChannelFlags(bassSound->srchandle, BASS_MIXER_CHAN_PAUSE, BASS_MIXER_CHAN_PAUSE);
     bassSound->bPaused = true;
-    bassSound->paused_position_ms = pos;
-    bassSound->interpolator.reset(pos, Timing::getTimeReal(), bassSound->getSpeed());
+    bassSound->paused_position_us = posUS;
+    bassSound->interpolator.reset((f64)posUS / (1000. * 1000.), Timing::getTimeReal(), bassSound->getSpeed());
 }
 
 void BassSoundEngine::stop(Sound *snd) {
@@ -583,7 +583,7 @@ void BassSoundEngine::stop(Sound *snd) {
     if(snd->isStream()) {
         BASS_Mixer_ChannelFlags(bassSound->srchandle, BASS_MIXER_CHAN_PAUSE, BASS_MIXER_CHAN_PAUSE);
         bassSound->bPaused = true;
-        bassSound->setPositionMS(0);
+        bassSound->setPositionUS(0);
     } else {
         for(auto &[handle, _] : bassSound->getActiveHandles()) {
             BASS_Mixer_ChannelRemove(handle);
@@ -603,10 +603,10 @@ bool BassSoundEngine::hasExclusiveOutput() {
 
 void BassSoundEngine::setOutputDevice(const SoundEngine::OUTPUT_DEVICE &device) {
     bool was_playing = false;
-    u32 prevMusicPositionMS = 0;
+    u64 prevMusicPositionUS = 0;
     if(osu->getMapInterface()->getMusic() != nullptr) {
         was_playing = osu->getMapInterface()->getMusic()->isPlaying();
-        prevMusicPositionMS = osu->getMapInterface()->getMusic()->getPositionMS();
+        prevMusicPositionUS = osu->getMapInterface()->getMusic()->getPositionUS();
     }
 
     // TODO: This is blocking main thread, can freeze for a long time on some sound cards
@@ -634,11 +634,11 @@ void BassSoundEngine::setOutputDevice(const SoundEngine::OUTPUT_DEVICE &device) 
             osu->getMapInterface()->unloadMusic();
             osu->getMapInterface()->loadMusic();
             osu->getMapInterface()->getMusic()->setLoop(false);
-            osu->getMapInterface()->getMusic()->setPositionMS(prevMusicPositionMS);
+            osu->getMapInterface()->getMusic()->setPositionUS(prevMusicPositionUS);
         } else {
             osu->getMapInterface()->unloadMusic();
             osu->getMapInterface()->selectBeatmap();
-            osu->getMapInterface()->getMusic()->setPositionMS(prevMusicPositionMS);
+            osu->getMapInterface()->getMusic()->setPositionUS(prevMusicPositionUS);
         }
     }
 

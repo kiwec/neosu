@@ -31,16 +31,16 @@ class SoLoudSound final : public Sound {
     ~SoLoudSound() override;
 
     // Sound interface implementation
-    void setPositionMS(u32 ms) override;
+    void setPositionUS(u64 us) override;
     void setSpeed(float speed) override;
     void setPitch(float pitch) override;
     void setFrequency(float frequency) override;
     void setPan(float pan) override;
     void setLoop(bool loop) override;
 
-    float getPosition() const override;
-    u32 getPositionMS() const override;
-    u32 getLengthMS() const override;
+    f64 getPositionPct() const override;
+    u64 getPositionUS() const override;
+    u64 getLengthUS() const override;
     float getSpeed() const override;
     float getPitch() const override;
     // i.e. we would be hearing audio 15ms sooner than if we were using BASS

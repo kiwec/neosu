@@ -1,5 +1,6 @@
 #pragma once
 #include "types.h"
+#include <cmath>
 
 /**
  * PlaybackInterpolator provides smooth interpolated position tracking for audio playback.
@@ -17,43 +18,51 @@ class PlaybackInterpolator {
      * Update with current raw position and get interpolated position.
      * Call this regularly (every frame) with the raw position from your audio backend.
      *
-     * @param rawPositionMS Raw position from audio backend in milliseconds
+     * @param rawPositionS Raw position from audio backend in seconds
      * @param currentTime Current engine time in seconds
      * @param playbackSpeed Current playback speed multiplier (1.0 = normal)
      * @param isLooped Whether the audio is looped
      * @param lengthMS Total length of audio in milliseconds (required for loop handling)
      * @param isPlaying Whether the audio is currently playing
-     * @return Interpolated position in milliseconds
+     * @return Interpolated position in microseconds
      */
-    u32 update(f64 rawPositionMS, f64 currentTime, f64 playbackSpeed, bool isLooped = false, u64 lengthMS = 0,
+    u64 update(f64 rawPositionS, f64 currentTime, f64 playbackSpeed, bool isLooped = false, u32 lengthMS = 0,
                bool isPlaying = true);
 
     /**
      * Reset interpolation state.
      * Call this when seeking or starting playback to reset the interpolation.
      *
-     * @param rawPositionMS Current raw position in milliseconds
+     * @param rawPositionUS Current raw position in microseconds
      * @param currentTime Current engine time in seconds
      * @param playbackSpeed Current playback speed multiplier
      */
-    inline void reset(f64 rawPositionMS, f64 currentTime, f64 playbackSpeed) {
-        this->dLastRawPosition = rawPositionMS;
+    inline void reset(f64 rawPositionS, f64 currentTime, f64 playbackSpeed) {
+        this->dLastRawPosition = rawPositionS;
         this->dLastPositionTime = currentTime;
-        this->iEstimatedRate = 1000.0 * playbackSpeed;
-        this->dLastInterpolatedPosition = static_cast<u32>(rawPositionMS);
+        this->dEstimatedRate = playbackSpeed;
+        this->iLastInterpolatedPositionUS = static_cast<u64>(std::round(rawPositionS * 1000. * 1000.));
     }
 
     /**
-     * Get the last calculated interpolated position without updating.
-     * @return Last interpolated position in milliseconds
+     * Get the last calculated interpolated position (microseconds) without updating.
+     * @return Last interpolated position in microseconds
      */
-    [[nodiscard]] u32 getLastInterpolatedPositionMS() const { return this->dLastInterpolatedPosition; }
+    [[nodiscard]] u64 getLastInterpolatedPositionUS() const { return this->iLastInterpolatedPositionUS; }
+
+    /**
+     * Get the last calculated interpolated position (seconds) without updating.
+     * @return Last interpolated position in seconds
+     */
+    [[nodiscard]] f64 getLastInterpolatedPositionS() const {
+        return static_cast<f64>(this->iLastInterpolatedPositionUS) / (1000. * 1000.);
+    }
 
    private:
-    f64 dLastRawPosition{0.0};         // last raw position in milliseconds
-    f64 dLastPositionTime{0.0};        // engine time when last position was obtained
-    f64 iEstimatedRate{1000.0};        // estimated playback rate (ms per second)
-    u32 dLastInterpolatedPosition{0};  // last calculated interpolated position
+    f64 dLastRawPosition{0.0};           // last raw position in seconds
+    f64 dLastPositionTime{0.0};          // engine time when last position was obtained
+    f64 dEstimatedRate{1.};              // estimated playback rate (seconds per second)
+    u64 iLastInterpolatedPositionUS{0};  // last calculated interpolated position (seconds)
 };
 
 // Playback interpolator used by McOsu

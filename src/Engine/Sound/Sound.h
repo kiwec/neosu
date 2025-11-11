@@ -5,7 +5,7 @@
 #include "PlaybackInterpolator.h"
 
 #include <unordered_map>
-#include <optional>
+#include <cmath>
 
 #define SOUND_TYPE(ClassName, TypeID, ParentClass)                      \
     static constexpr TypeId TYPE_ID = TypeID;                           \
@@ -43,24 +43,35 @@ class Sound : public Resource {
     // Factory method to create the appropriate sound object
     static Sound *createSound(std::string filepath, bool stream, bool overlayable, bool loop);
 
-    virtual void setPositionMS(u32 ms) = 0;
+    virtual void setPositionUS(u64 us) = 0;
+    inline void setPositionMS(u32 ms) { return this->setPositionUS(ms * 1000ULL); };
+    inline void setPositionS(f64 secs) { return this->setPositionMS(static_cast<u32>(std::round(secs * 1000.))); };
+
     virtual void setSpeed(float speed) = 0;
     virtual void setPitch(float pitch) { this->fPitch = pitch; }
     virtual void setFrequency(float frequency) = 0;
     virtual void setPan(float pan) = 0;
     virtual void setLoop(bool loop) = 0;
+
     // NOTE: this will also update currently playing handle(s) for this sound
     void setBaseVolume(float volume);
-
     inline float getBaseVolume() const { return this->fBaseVolume; }
-    virtual float getPosition() const = 0;
-    virtual u32 getPositionMS() const = 0;
-    virtual u32 getLengthMS() const = 0;
+
+    virtual f64 getPositionPct() const = 0;
+    virtual u64 getPositionUS() const = 0;
+
+    inline u32 getPositionMS() const { return (this->getPositionUS() + 999) / 1000; }
+    inline f64 getPositionS() const { return this->getPositionMS() / 1000.; }
+
+    virtual u64 getLengthUS() const = 0;
+    inline u32 getLengthMS() const { return (this->getLengthUS() + 999) / 1000; }
+    inline f64 getLengthS() const { return this->getLengthMS() / 1000.; }
+
     virtual float getFrequency() const = 0;
     virtual float getPan() const { return this->fPan; }
     virtual float getSpeed() const { return this->fSpeed; }
     virtual float getPitch() const { return this->fPitch; }
-    virtual i32 getBASSStreamLatencyCompensation() const { return 0; } // constant stream offset, backend dependent
+    virtual i32 getBASSStreamLatencyCompensation() const { return 0; }  // constant stream offset, backend dependent
 
     virtual bool isPlaying() const = 0;
     virtual bool isFinished() const = 0;
@@ -125,9 +136,6 @@ class Sound : public Resource {
 
     // persistent across all plays for the sound object, only modifiable by setBaseVolume
     float fBaseVolume{1.0f};
-
-    u32 paused_position_ms{0};
-    u32 length{0};
 
     bool bStream;
     bool bIsLooped;
