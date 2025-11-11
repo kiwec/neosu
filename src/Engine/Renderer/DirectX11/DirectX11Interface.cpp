@@ -125,8 +125,8 @@ bool DirectX11Interface::init() {
     };
 
     // flags
-    UINT createDeviceFlags = 0;
-    createDeviceFlags = D3D11_CREATE_DEVICE_SINGLETHREADED;
+    UINT createDeviceFlags = D3D11_CREATE_DEVICE_SINGLETHREADED;
+    // | D3D11_CREATE_DEVICE_PREVENT_INTERNAL_THREADING_OPTIMIZATIONS;
 
 #ifdef D3D11_DEBUG
     createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
@@ -358,8 +358,8 @@ void DirectX11Interface::endScene() {
 
     this->popTransform();
 
-    const UINT presentFlags =
-        DXGI_PRESENT_DO_NOT_WAIT | ((!this->bFlipPresent || this->bVSync) ? 0 : DXGI_PRESENT_ALLOW_TEARING);
+    const UINT presentFlags = ((!this->bFlipPresent || this->bVSync) ? 0 : DXGI_PRESENT_ALLOW_TEARING);
+    // | DXGI_PRESENT_DO_NOT_WAIT // look into this, causes issues under high load
 
     [[maybe_unused]] auto swapHR = this->swapChain->Present(this->bVSync, presentFlags);
 #if defined(_DEBUG) || defined(D3D11_DEBUG)
