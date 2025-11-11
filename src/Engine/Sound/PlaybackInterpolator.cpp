@@ -7,7 +7,7 @@
 
 u64 PlaybackInterpolator::update(f64 rawPositionS, f64 currentTime, f64 playbackSpeed, bool isLooped, u32 lengthMS,
                                  bool isPlaying) {
-    if(!cv::interpolate_music_pos.getBool()) return static_cast<u64>(std::round(rawPositionS * 1000. * 1000.));
+    if(cv::interpolate_music_pos.getInt() == 0) return static_cast<u64>(std::round(rawPositionS * 1000. * 1000.));
 
     // reset state if not initialized or not playing
     if(this->dLastPositionTime <= 0.0 || !isPlaying) {

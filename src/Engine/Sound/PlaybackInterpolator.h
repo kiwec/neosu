@@ -65,13 +65,31 @@ class PlaybackInterpolator {
     u64 iLastInterpolatedPositionUS{0};  // last calculated interpolated position (seconds)
 };
 
+class GameplayInterpolator {
+   public:
+    GameplayInterpolator() = default;
+    virtual ~GameplayInterpolator() = default;
+
+    GameplayInterpolator(const GameplayInterpolator &) = default;
+    GameplayInterpolator &operator=(const GameplayInterpolator &) = default;
+    GameplayInterpolator(GameplayInterpolator &&) = default;
+    GameplayInterpolator &operator=(GameplayInterpolator &&) = default;
+
+    virtual u32 update(f64 rawPositionMS, f64 currentTime, f64 playbackSpeed, bool isLooped = false, u64 lengthMS = 0,
+                       bool isPlaying = true) = 0;
+
+    // types correspond to cv::interpolate_music_pos
+    [[nodiscard]] virtual inline int getType() const { return -1; }
+};
+
 // Playback interpolator used by McOsu
-class McOsuInterpolator {
+class McOsuInterpolator : public GameplayInterpolator {
    public:
     McOsuInterpolator() = default;
-
     u32 update(f64 rawPositionMS, f64 currentTime, f64 playbackSpeed, bool isLooped = false, u64 lengthMS = 0,
-               bool isPlaying = true);
+               bool isPlaying = true) override;
+
+    [[nodiscard]] inline int getType() const override { return 2; }
 
    private:
     f64 fInterpolatedMusicPos{0.0};
@@ -81,18 +99,20 @@ class McOsuInterpolator {
 
 // Playback interpolator used by osu-framework (LLM'd to C++)
 // NOTE(kiwec): i tried this and it is... stuttery? as if it does the reverse of interpolating. lol
-class TachyonInterpolator {
+class TachyonInterpolator : public GameplayInterpolator {
    public:
     TachyonInterpolator() = default;
 
+    u32 update(f64 rawPositionMS, f64 currentTime, f64 playbackSpeed, bool isLooped = false, u64 lengthMS = 0,
+               bool isPlaying = true) override;
+
+    [[nodiscard]] inline int getType() const override { return 3; }
+
+   private:
     f64 Lerp(f64 start, f64 final, f64 amount);
     f64 Damp(f64 start, f64 final, f64 base, f64 exponent);
     f64 DampContinuously(f64 current, f64 target, f64 halfTime, f64 elapsedTime);
 
-    u32 update(f64 rawPositionMS, f64 currentTime, f64 playbackSpeed, bool isLooped = false, u64 lengthMS = 0,
-               bool isPlaying = true);
-
-   private:
     f64 fAllowableErrorMilliseconds{1000.0 / 60 * 2};
     f64 fDriftRecoveryHalfLife{50.0};
     bool fIsInterpolating{false};

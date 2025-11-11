@@ -2332,6 +2332,42 @@ void BeatmapInterface::update() {
     }
 }
 
+void BeatmapInterface::updateInterpedMusicPos() {
+    const auto currentTime = Timing::getTimeReal<f64>();
+
+    const int interpCV = cv::interpolate_music_pos.getInt();
+    const bool useMcOsuInterp = interpCV == 2;
+    const bool useLazerInterp = !useMcOsuInterp && interpCV == 3;
+
+    // lazy switch on convar change
+    if(useMcOsuInterp && (!this->musicInterp || this->musicInterp->getType() != 2)) {
+        this->musicInterp = std::make_unique<McOsuInterpolator>();
+    } else if(useLazerInterp && (!this->musicInterp || this->musicInterp->getType() != 3)) {
+        this->musicInterp = std::make_unique<TachyonInterpolator>();
+    }
+
+    if(this->isActuallyLoading()) {
+        // fake negative start
+        this->iCurMusicPos = -1000;
+
+        if(useMcOsuInterp || useLazerInterp) {
+            this->musicInterp->update(0.0, currentTime, 0.0, false, 0.0, false);
+        }
+        // otherwise don't do anything (default interpolator is embedded in stream playback position)
+    } else {
+        if(useMcOsuInterp || useLazerInterp) {
+            this->iCurMusicPos = (i32)this->musicInterp->update(
+                (f64)this->music->getPositionMS(), currentTime, this->music->getSpeed(), false,
+                this->music->getLengthMS(), this->music->isPlaying() && !this->bWasSeekFrame);
+        } else {
+            this->iCurMusicPos = (i32)this->music->getPositionMS();
+        }
+    }
+
+    // debugLog("interpolator type: {} current music position (without offsets): {}", cv::interpolate_music_pos.getInt(),
+    //          this->iCurMusicPos);
+}
+
 void BeatmapInterface::update2() {
     if(this->bContinueScheduled) {
         // If we paused while m_bIsWaiting (green progressbar), then we have to let the 'if (this->bIsWaiting)' block
@@ -2366,14 +2402,7 @@ void BeatmapInterface::update2() {
     }
 
     // update current music position (this variable does not include any offsets!)
-    if(this->isActuallyLoading()) {
-        this->iCurMusicPos = -1000;
-        this->musicInterp.update(0.0, Timing::getTimeReal<f64>(), 0.0, false, 0.0, false);
-    } else {
-        this->iCurMusicPos = this->musicInterp.update((f64)this->music->getPositionMS(), Timing::getTimeReal<f64>(),
-                                                      this->music->getSpeed(), false, this->music->getLengthMS(),
-                                                      this->music->isPlaying() && !this->bWasSeekFrame);
-    }
+    this->updateInterpedMusicPos();
 
     this->iContinueMusicPos = this->music->getPositionMS();
     const bool wasSeekFrame = this->bWasSeekFrame;

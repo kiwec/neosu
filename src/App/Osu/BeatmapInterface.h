@@ -10,6 +10,8 @@
 #include "score.h"
 #include "uwu.h"
 
+#include <variant>
+
 class Sound;
 class ConVar;
 struct Skin;
@@ -254,6 +256,8 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
 
     void playMissSound();
 
+    void updateInterpedMusicPos();
+
     bool bIsInSkippableSection;
     bool bShouldFlashWarningArrows;
     f32 fShouldFlashSectionPass;
@@ -264,11 +268,12 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
     f64 fPrevUnpauseTime{0.f};
 
     // sound
+    std::unique_ptr<GameplayInterpolator> musicInterp;
+
     f32 fMusicFrequencyBackup;
     i32 iCurMusicPos;
     i32 iCurMusicPosWithOffsets;
     u64 iLastMusicPosUpdateTime{0};
-    McOsuInterpolator musicInterp;
     f32 fAfterMusicIsFinishedVirtualAudioTimeStart;
     bool bIsFirstMissSound;
     bool bIsWaitingForPreview{false};
