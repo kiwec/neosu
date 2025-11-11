@@ -32,6 +32,7 @@ std::unique_ptr<ResourceManager> resourceManager{nullptr};
 std::unique_ptr<NetworkHandler> networkHandler{nullptr};
 std::unique_ptr<AnimationHandler> anim{nullptr};
 std::unique_ptr<AsyncIOHandler> io{nullptr};
+std::unique_ptr<DirectoryWatcher> directoryWatcher{nullptr};
 
 mcatomic_shptr<ConsoleBox> Engine::consoleBox{nullptr};
 
@@ -70,7 +71,8 @@ Engine::Engine() {
     {
         // async io
         io = std::make_unique<AsyncIOHandler>();
-        this->runtime_assert(!!io && io->succeeded(), "I/O subsystem failed to initialize!");
+        directoryWatcher = std::make_unique<DirectoryWatcher>();
+        this->runtime_assert(!!io && io->succeeded() && !!directoryWatcher, "I/O subsystem failed to initialize!");
 
         // shared freetype init
         this->runtime_assert(McFont::initSharedResources(), "FreeType failed to initialize!");
@@ -174,7 +176,8 @@ Engine::~Engine() {
     debugLog("Engine: Stopping I/O subsystem...");
     io->cleanup();
     io.reset();
-    stop_directory_watcher();
+
+    directoryWatcher.reset();
 
     debugLog("Engine: Goodbye.");
 
@@ -311,8 +314,8 @@ void Engine::onUpdate() {
         }
 
         {
-            VPROF_BUDGET("DirectoryWatcher::collect_directory_events", VPROF_BUDGETGROUP_UPDATE);
-            collect_directory_events();
+            VPROF_BUDGET("DirectoryWatcher::update", VPROF_BUDGETGROUP_UPDATE);
+            directoryWatcher->update();
         }
 
         {

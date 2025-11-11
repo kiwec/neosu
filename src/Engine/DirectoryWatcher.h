@@ -1,9 +1,11 @@
 #pragma once
 // Copyright (c) 2025 kiwec, All rights reserved.
+
+#include "noinclude.h"
+#include "types.h"
+
 #include <filesystem>
 #include <functional>
-
-#include "types.h"
 
 enum class FileChangeType : u8 {
     CREATED,
@@ -22,10 +24,25 @@ struct FileChangeEvent {
 
 using FileChangeCallback = std::function<void(FileChangeEvent)>;
 
-void watch_directory(std::string path, FileChangeCallback cb);
-void stop_watching_directory(std::string path);
+class DirectoryWatcher {
+    NOCOPY_NOMOVE(DirectoryWatcher);
 
-// Similar to other neosu async APIs, let us control when callbacks are fired
-// to avoid race condition issues.
-void collect_directory_events();
-void stop_directory_watcher();
+   public:
+    DirectoryWatcher();
+    ~DirectoryWatcher();
+
+    void watch_directory(std::string path, FileChangeCallback cb);
+    void stop_watching(std::string path);
+
+   private:
+    friend class Engine;
+
+    // Similar to other neosu async APIs, let us control when callbacks are fired
+    // to avoid race condition issues.
+    void update();
+
+    class WatcherImpl;
+    std::unique_ptr<WatcherImpl> pImpl;
+};
+
+extern std::unique_ptr<DirectoryWatcher> directoryWatcher;

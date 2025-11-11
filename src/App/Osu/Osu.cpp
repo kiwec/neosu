@@ -377,14 +377,14 @@ Osu::Osu() {
     // extract osks & watch for osks to extract
     {
         auto osks = env->getFilesInFolder(NEOSU_SKINS_PATH "/");
-        for(auto file : osks) {
+        for(const auto& file : osks) {
             if(env->getFileExtensionFromFilePath(file) != "osk") continue;
             auto path = NEOSU_SKINS_PATH "/" + file;
             bool extracted = env->getEnvInterop().handle_osk(path.c_str());
             if(extracted) env->deleteFile(path);
         }
 
-        watch_directory(NEOSU_SKINS_PATH "/", [](FileChangeEvent ev) {
+        directoryWatcher->watch_directory(NEOSU_SKINS_PATH "/", [](const FileChangeEvent& ev) {
             if(ev.type != FileChangeType::CREATED) return;
             if(env->getFileExtensionFromFilePath(ev.path) != "osk") return;
             bool extracted = env->getEnvInterop().handle_osk(ev.path.c_str());

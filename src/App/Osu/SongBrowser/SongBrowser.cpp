@@ -2606,7 +2606,7 @@ void SongBrowser::onDatabaseLoadingFinished() {
     debugLog("Took {} seconds.", t.getElapsedTime());
 
     // Watch for new maps now
-    watch_directory(NEOSU_MAPS_PATH "/", [](FileChangeEvent ev) {
+    directoryWatcher->watch_directory(NEOSU_MAPS_PATH "/", [](const FileChangeEvent& ev) {
         if(ev.type != FileChangeType::CREATED) return;
         if(env->getFileExtensionFromFilePath(ev.path) != "osz") return;
         bool extracted = env->getEnvInterop().handle_osz(ev.path.c_str());

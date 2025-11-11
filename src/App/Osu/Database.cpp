@@ -297,7 +297,7 @@ void Database::startLoader() {
 
 void Database::destroyLoader() {
     if(cv::debug_db.getBool() || cv::debug_async_db.getBool()) debugLog("start");
-    stop_watching_directory(NEOSU_MAPS_PATH "/");
+    directoryWatcher->stop_watching(NEOSU_MAPS_PATH "/");
     if(this->loader) {
         resourceManager->destroyResource(this->loader, ResourceManager::DestroyMode::FORCE_BLOCKING);  // force blocking
         this->loader = nullptr;

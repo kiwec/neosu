@@ -27,6 +27,7 @@ class NetworkHandler;
 class ResourceManager;
 class AnimationHandler;
 class AsyncIOHandler;
+class DirectoryWatcher;
 
 class CBaseUIContainer;
 class VisualProfiler;
@@ -154,6 +155,7 @@ extern std::unique_ptr<ResourceManager> resourceManager;
 extern std::unique_ptr<NetworkHandler> networkHandler;
 extern std::unique_ptr<AnimationHandler> anim;
 extern std::unique_ptr<AsyncIOHandler> io;
+extern std::unique_ptr<DirectoryWatcher> directoryWatcher;
 
 extern Engine *engine;
 
