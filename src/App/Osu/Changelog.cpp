@@ -744,8 +744,6 @@ CBaseUIContainer *Changelog::setVisible(bool visible) {
 }
 
 void Changelog::updateLayout() {
-    ScreenBackable::updateLayout();
-
     const float dpiScale = Osu::getUIScale();
 
     this->setSize(osu->getVirtScreenSize() + vec2(2, 2));

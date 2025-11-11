@@ -514,8 +514,6 @@ void RankingScreen::setBeatmapInfo(const DatabaseBeatmap *map) {
 }
 
 void RankingScreen::updateLayout() {
-    ScreenBackable::updateLayout();
-
     const float uiScale = cv::ui_scale.getFloat();
 
     this->setSize(osu->getVirtScreenSize());

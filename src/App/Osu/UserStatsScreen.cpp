@@ -124,15 +124,14 @@ void UserStatsScreen::rebuildScoreButtons() {
 }
 
 void UserStatsScreen::updateLayout() {
-    ScreenBackable::updateLayout();
-
     const float dpiScale = Osu::getUIScale();
 
     setSize(osu->getVirtScreenSize());
 
     const int scoreListHeight = osu->getVirtScreenHeight() * 0.8f;
     m_scores->setSize(osu->getVirtScreenWidth() * 0.6f, scoreListHeight);
-    m_scores->setPos(osu->getVirtScreenWidth() / 2 - m_scores->getSize().x / 2, osu->getVirtScreenHeight() - scoreListHeight);
+    m_scores->setPos(osu->getVirtScreenWidth() / 2 - m_scores->getSize().x / 2,
+                     osu->getVirtScreenHeight() - scoreListHeight);
 
     const int margin = 5 * dpiScale;
     const int padding = 5 * dpiScale;
