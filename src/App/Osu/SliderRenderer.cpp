@@ -4,8 +4,6 @@
 #include "ConVar.h"
 #include "Engine.h"
 #include "GameRules.h"
-#include "OpenGLHeaders.h"
-#include "OpenGLInterface.h"
 #include "Osu.h"
 #include "RenderTarget.h"
 #include "ResourceManager.h"
@@ -41,7 +39,7 @@ float s_fBoundingBoxMaxY = 0.0f;
 
 // forward decls
 void drawFillSliderBodyPeppy(const std::vector<vec2> &points, VertexArrayObject *circleMesh, float radius,
-                             int drawFromIndex, int drawUpToIndex, Shader *shader = nullptr);
+                             int drawFromIndex, int drawUpToIndex);
 void checkUpdateVars(float hitcircleDiameter);
 
 struct UniformCache {
@@ -232,31 +230,29 @@ void draw(const std::vector<vec2> &points, const std::vector<vec2> &alwaysPoints
 
             const bool useGradientImage = cv::slider_use_gradient_image.getBool();
 
-            if(!useGradientImage) {
+            if(useGradientImage) {
+                // this only affects the gradient image if used (meaning shaders
+                // either don't work or are disabled on purpose)
+                g->setColor(argb(1.0f, colorRGBMultiplier, colorRGBMultiplier, colorRGBMultiplier));
+                osu->getSkin()->i_slider_gradient->bind();
+            } else {
                 s_BLEND_SHADER->enable();
                 updateConfigUniforms();
                 updateColorUniforms(dimmedBorderColor, dimmedBodyColor);
             }
 
-            g->setColor(argb(1.0f, colorRGBMultiplier, colorRGBMultiplier,
-                             colorRGBMultiplier));  // this only affects the gradient image if used (meaning shaders
-                                                    // either don't work or are disabled on purpose)
-            osu->getSkin()->i_slider_gradient->bind();
-            {
-                // draw curve mesh
-                {
-                    drawFillSliderBodyPeppy(
-                        points,
-                        (cv::slider_legacy_use_baked_vao.getBool() ? s_UNIT_CIRCLE_VAO_BAKED : s_UNIT_CIRCLE_VAO),
-                        hitcircleDiameter / 2.0f, drawFromIndex, drawUpToIndex, s_BLEND_SHADER);
+            // draw curve mesh
+            drawFillSliderBodyPeppy(
+                points, (cv::slider_legacy_use_baked_vao.getBool() ? s_UNIT_CIRCLE_VAO_BAKED : s_UNIT_CIRCLE_VAO),
+                hitcircleDiameter / 2.0f, drawFromIndex, drawUpToIndex);
 
-                    if(alwaysPoints.size() > 0)
-                        drawFillSliderBodyPeppy(alwaysPoints, s_UNIT_CIRCLE_VAO_BAKED, hitcircleDiameter / 2.0f, 0,
-                                                alwaysPoints.size(), s_BLEND_SHADER);
-                }
+            if(alwaysPoints.size() > 0)
+                drawFillSliderBodyPeppy(alwaysPoints, s_UNIT_CIRCLE_VAO_BAKED, hitcircleDiameter / 2.0f, 0,
+                                        alwaysPoints.size());
+
+            if(!useGradientImage) {
+                s_BLEND_SHADER->disable();
             }
-
-            if(!useGradientImage) s_BLEND_SHADER->disable();
         }
         osu->getSliderFrameBuffer()->disable();
     }
@@ -344,46 +340,37 @@ void draw(VertexArrayObject *vao, const std::vector<vec2> &alwaysPoints, vec2 tr
             }
             const bool useGradientImage = cv::slider_use_gradient_image.getBool();
 
-            if(!useGradientImage) {
+            if(useGradientImage) {
+                // this only affects the gradient image if used (meaning shaders
+                // either don't work or are disabled on purpose)
+                g->setColor(argb(1.0f, colorRGBMultiplier, colorRGBMultiplier, colorRGBMultiplier));
+                osu->getSkin()->i_slider_gradient->bind();
+            } else {
                 s_BLEND_SHADER->enable();
                 updateConfigUniforms();
                 updateColorUniforms(dimmedBorderColor, dimmedBodyColor);
             }
 
-            g->setColor(argb(1.0f, colorRGBMultiplier, colorRGBMultiplier,
-                             colorRGBMultiplier));  // this only affects the gradient image if used (meaning shaders
-                                                    // either don't work or are disabled on purpose)
-            osu->getSkin()->i_slider_gradient->bind();
+            // draw curve mesh
+            vao->setDrawPercent(from, to, s_UNIT_CIRCLE_VAO_TRIANGLES->getVertices().size());
+            g->pushTransform();
             {
-                // draw curve mesh
-                {
-                    vao->setDrawPercent(from, to, s_UNIT_CIRCLE_VAO_TRIANGLES->getVertices().size());
-                    g->pushTransform();
-                    {
-                        g->scale(scale, scale);
-                        g->translate(translation.x, translation.y);
-                        /// g->scale(scaleToApplyAfterTranslationX, scaleToApplyAfterTranslationY); // aspire slider
-                        /// distortions
+                g->scale(scale, scale);
+                g->translate(translation.x, translation.y);
+                /// g->scale(scaleToApplyAfterTranslationX, scaleToApplyAfterTranslationY); // aspire slider
+                /// distortions
 
-                        if(env->usingDX11()) {
-                            if(!useGradientImage) {
-                                g->forceUpdateTransform();
-                                Matrix4 mvp = g->getMVP();
-                                s_BLEND_SHADER->setUniformMatrix4fv("mvp", mvp);
-                            }
-                        }
-
-                        g->drawVAO(vao);
-                    }
-                    g->popTransform();
-
-                    if(alwaysPoints.size() > 0)
-                        drawFillSliderBodyPeppy(alwaysPoints, s_UNIT_CIRCLE_VAO_BAKED, hitcircleDiameter / 2.0f, 0,
-                                                alwaysPoints.size(), s_BLEND_SHADER);
-                }
+                g->drawVAO(vao);
             }
+            g->popTransform();
 
-            if(!useGradientImage) s_BLEND_SHADER->disable();
+            if(alwaysPoints.size() > 0)
+                drawFillSliderBodyPeppy(alwaysPoints, s_UNIT_CIRCLE_VAO_BAKED, hitcircleDiameter / 2.0f, 0,
+                                        alwaysPoints.size());
+
+            if(!useGradientImage) {
+                s_BLEND_SHADER->disable();
+            }
         }
 
         if(doDisableRenderTarget) osu->getSliderFrameBuffer()->disable();
@@ -400,7 +387,7 @@ void draw(VertexArrayObject *vao, const std::vector<vec2> &alwaysPoints, vec2 tr
 namespace {  // static
 
 void drawFillSliderBodyPeppy(const std::vector<vec2> &points, VertexArrayObject *circleMesh, float radius,
-                             int drawFromIndex, int drawUpToIndex, Shader *shader) {
+                             int drawFromIndex, int drawUpToIndex) {
     if(drawFromIndex < 0) drawFromIndex = 0;
     if(drawUpToIndex < 0) drawUpToIndex = points.size();
 
@@ -419,14 +406,6 @@ void drawFillSliderBodyPeppy(const std::vector<vec2> &points, VertexArrayObject 
                 continue;
 
             g->translate(x - startX, y - startY, 0);
-            if(env->usingDX11()) {
-                if(shader) {
-                    g->forceUpdateTransform();
-                    Matrix4 mvp = g->getMVP();
-                    shader->setUniformMatrix4fv("mvp", mvp);
-                }
-            }
-
             g->drawVAO(circleMesh);
 
             startX = x;

@@ -50,7 +50,7 @@ DirectX11Shader::SHADER_PARSE_RESULT DirectX11Shader::parseShaderFromString(
     std::string curLine;
 
     while(!!std::getline(ss, curLine)) {
-        SString::trim_inplace(curLine); // remove CRLF
+        SString::trim_inplace(curLine);  // remove CRLF
         const bool isShaderPrefixLine = (curLine.contains(shaderPrefix));
 
         if(isShaderPrefixLine) {
@@ -359,6 +359,8 @@ void DirectX11Shader::enable() {
         context->VSGetShader(&this->prevVS, nullptr, nullptr);
         context->PSGetShader(&this->prevPS, nullptr, nullptr);
         context->VSGetConstantBuffers(0, (UINT)this->prevConstantBuffers.size(), &this->prevConstantBuffers[0]);
+
+        this->bStateBackedUp = true;  // mark that we actually backed up state
     }
 
     context->IASetInputLayout(this->inputLayout);
@@ -372,7 +374,7 @@ void DirectX11Shader::enable() {
 
 void DirectX11Shader::disable() {
     auto *dx11 = static_cast<DirectX11Interface *>(g.get());
-    if(!this->isReady() || dx11->getActiveShader() != this) return;
+    if(!this->isReady() || dx11->getActiveShader() != this || !this->bStateBackedUp) return;
 
     auto *context = dx11->getDeviceContext();
 
@@ -418,6 +420,7 @@ void DirectX11Shader::disable() {
         }
 
         dx11->setActiveShader(this->prevShader);
+        this->bStateBackedUp = false;  // clear the flag after restore
     }
 }
 

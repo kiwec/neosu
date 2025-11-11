@@ -256,9 +256,7 @@ class Graphics {
 
    protected:
     virtual bool init() { return true; }  // must be called after the OS implementation constructor
-    virtual void onTransformUpdate(
-        Matrix4 &projectionMatrix,
-        Matrix4 &worldMatrix) = 0;  // called if matrices have changed and need to be (re-)applied/uploaded
+    virtual void onTransformUpdate() = 0;  // called if matrices have changed and need to be (re-)applied/uploaded
 
     void updateTransform(bool force = false);
     void checkStackLeaks();

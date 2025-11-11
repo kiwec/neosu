@@ -904,13 +904,11 @@ void DirectX11Interface::setClipRect(McRect clipRect) {
 
     this->setClipping(true);
 
-    D3D11_RECT rect;
-    {
-        rect.left = clipRect.getMinX();
-        rect.top = clipRect.getMinY() - 1;
-        rect.right = clipRect.getMaxX();
-        rect.bottom = clipRect.getMaxY() - 1;
-    }
+    D3D11_RECT rect{.left = static_cast<LONG>(clipRect.getMinX()),
+                    .top = static_cast<LONG>(clipRect.getMinY() - 1),
+                    .right = static_cast<LONG>(clipRect.getMaxX()),
+                    .bottom = static_cast<LONG>(clipRect.getMaxY() - 1)};
+
     this->deviceContext->RSSetScissorRects(1, &rect);
 }
 
@@ -1024,7 +1022,7 @@ void DirectX11Interface::setCulling(bool culling) {
     this->deviceContext->RSSetState(this->rasterizerState);
 }
 
-void DirectX11Interface::setColorWriting(bool /*r*/, bool /*g*/, bool /*b*/, bool /*a*/) { MC_MESSAGE("TODO") }
+void DirectX11Interface::setColorWriting(bool /*r*/, bool /*g*/, bool /*b*/, bool /*a*/) {}
 
 void DirectX11Interface::setColorInversion(bool enabled) {
     if(this->bColorInversion == enabled) return;
@@ -1033,7 +1031,7 @@ void DirectX11Interface::setColorInversion(bool enabled) {
     this->setTexturing(this->bTexturingEnabled);  // re-apply with new inversion state
 }
 
-void DirectX11Interface::setDepthWriting(bool /*enabled*/) { MC_MESSAGE("TODO") }
+void DirectX11Interface::setDepthWriting(bool /*enabled*/) {}
 
 void DirectX11Interface::setAntialiasing(bool aa) {
     this->rasterizerState->Release();
@@ -1049,7 +1047,7 @@ void DirectX11Interface::setWireframe(bool enabled) {
     this->deviceContext->RSSetState(this->rasterizerState);
 }
 
-void DirectX11Interface::setLineWidth(float /*width*/) { MC_MESSAGE("TODO"); }
+void DirectX11Interface::setLineWidth(float /*width*/) {}
 
 void DirectX11Interface::flush() { this->deviceContext->Flush(); }
 
@@ -1312,6 +1310,7 @@ void DirectX11Interface::onRestored() {
 }
 
 void DirectX11Interface::setTexturing(bool enabled) {
+    // debugLog("setTexturing: {}", enabled);
     this->bTexturingEnabled = enabled;
     this->shaderTexturedGeneric->setUniform4f("misc", enabled ? 1.f : 0.f, this->bColorInversion ? 1.f : 0.f, 0.f, 0.f);
 }
@@ -1342,12 +1341,12 @@ VertexArrayObject *DirectX11Interface::createVertexArrayObject(Graphics::PRIMITI
     return new DirectX11VertexArrayObject(primitive, usage, keepInSystemMemory);
 }
 
-void DirectX11Interface::onTransformUpdate(Matrix4 & /*projectionMatrix*/, Matrix4 & /*worldMatrix*/) {
-    // NOTE: convert from OpenGL coordinate space
-    static Matrix4 zflip = Matrix4().scale(1, 1, -1);
-
-    Matrix4 mvp = this->MP * zflip;
-    this->shaderTexturedGeneric->setUniformMatrix4fv("mvp", mvp);
+void DirectX11Interface::onTransformUpdate() {
+    if(!this->activeShader || (this->shaderTexturedGeneric == this->activeShader)) {
+        this->shaderTexturedGeneric->setUniformMatrix4fv("mvp", this->MP);
+    } else if(this->activeShader && this->activeShader->isReady()) {
+        this->activeShader->setUniformMatrix4fv("mvp", this->MP);
+    }
 }
 
 int DirectX11Interface::primitiveToDirectX(Graphics::PRIMITIVE primitive) {

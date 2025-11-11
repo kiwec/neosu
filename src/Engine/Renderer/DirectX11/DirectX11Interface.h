@@ -63,7 +63,8 @@ class DirectX11Interface final : public Graphics {
 
     // 2d primitive drawing
     void drawPixel(int x, int y) override;
-    void drawPixels(int x, int y, int width, int height, Graphics::DRAWPIXELS_TYPE type, const void *pixels) override;
+    [[deprecated("not implemented")]] void drawPixels(int x, int y, int width, int height,
+                                                      Graphics::DRAWPIXELS_TYPE type, const void *pixels) override;
     void drawLinef(float x1, float y1, float x2, float y2) final;
     void drawRectf(const RectOptions &opt) final;
     void fillRectf(float x, float y, float width, float height) final;
@@ -89,27 +90,30 @@ class DirectX11Interface final : public Graphics {
     void popClipRect() override;
 
     // TODO:
-    void fillRoundedRect(int /*x*/, int /*y*/, int /*width*/, int /*height*/, int /*radius*/) override { ; }
+    [[deprecated("not implemented")]] void fillRoundedRect(int /*x*/, int /*y*/, int /*width*/, int /*height*/,
+                                                           int /*radius*/) override {
+        ;
+    }
 
     // TODO (?): unused currently
-    void pushStencil() override { ; }
-    void fillStencil(bool /*inside*/) override { ; }
-    void popStencil() override { ; }
+    [[deprecated("not implemented")]] void pushStencil() override { ; }
+    [[deprecated("not implemented")]] void fillStencil(bool /*inside*/) override { ; }
+    [[deprecated("not implemented")]] void popStencil() override { ; }
 
     // renderer settings
     void setClipping(bool enabled) override;
-    void setAlphaTesting(bool enabled) override;
-    void setAlphaTestFunc(COMPARE_FUNC alphaFunc, float ref) override;
+    [[deprecated("not implemented")]] void setAlphaTesting(bool enabled) override;
+    [[deprecated("not implemented")]] void setAlphaTestFunc(COMPARE_FUNC alphaFunc, float ref) override;
     void setBlending(bool enabled) override;
     void setBlendMode(BLEND_MODE blendMode) override;
     void setDepthBuffer(bool enabled) override;
     void setCulling(bool culling) override;
-    void setDepthWriting(bool enabled) final;
+    [[deprecated("not implemented")]] void setDepthWriting(bool enabled) final;
     void setColorWriting(bool r, bool g, bool b, bool a) final;
     void setColorInversion(bool enabled) final;
     void setAntialiasing(bool aa) override;
     void setWireframe(bool enabled) override;
-    void setLineWidth(float width) override;
+    [[deprecated("not implemented")]] void setLineWidth(float width) override;
 
     // renderer actions
     void flush() override;
@@ -150,9 +154,9 @@ class DirectX11Interface final : public Graphics {
     void setTexturing(bool enabled);
 
    protected:
-    bool init() override;
+    bool init() final;
 
-    void onTransformUpdate(Matrix4 &projectionMatrix, Matrix4 &worldMatrix) override;
+    void onTransformUpdate() final;
 
     // frame latency
     void onSyncBehaviorChanged(const float newValue);
@@ -160,7 +164,7 @@ class DirectX11Interface final : public Graphics {
 
    private:
     static int primitiveToDirectX(Graphics::PRIMITIVE primitive);
-    static int compareFuncToDirectX(Graphics::COMPARE_FUNC compareFunc);
+    [[deprecated("not implemented")]] static int compareFuncToDirectX(Graphics::COMPARE_FUNC compareFunc);
 
     // clipping for drawImage
     void initSmoothClipShader();

@@ -175,12 +175,6 @@ void ModFPoSu::draw() {
 
                     Matrix4 worldMatrix = this->modelMatrix;
 
-                    if(env->usingDX11()) {
-                        // NOTE: convert from OpenGL coordinate system
-                        static Matrix4 zflip = Matrix4().scale(1, 1, -1);
-                        worldMatrix = worldMatrix * zflip;
-                    }
-
                     g->setWorldMatrixMul(worldMatrix);
                     {
                         osu->getPlayfieldBuffer()->bind();

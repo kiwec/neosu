@@ -765,12 +765,12 @@ VertexArrayObject *OpenGLInterface::createVertexArrayObject(Graphics::PRIMITIVE 
     return new OpenGLVertexArrayObject(primitive, usage, keepInSystemMemory);
 }
 
-void OpenGLInterface::onTransformUpdate(Matrix4 &projectionMatrix, Matrix4 &worldMatrix) {
+void OpenGLInterface::onTransformUpdate() {
     glMatrixMode(GL_PROJECTION);
-    glLoadMatrixf(projectionMatrix.get());
+    glLoadMatrixf(this->projectionMatrix.get());
 
     glMatrixMode(GL_MODELVIEW);
-    glLoadMatrixf(worldMatrix.get());
+    glLoadMatrixf(this->worldMatrix.get());
 }
 
 void OpenGLInterface::initSmoothClipShader() {

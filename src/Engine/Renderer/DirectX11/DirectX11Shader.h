@@ -154,6 +154,7 @@ class DirectX11Shader final : public Shader {
     ID3D11InputLayout *inputLayout{nullptr};
     std::vector<ID3D11Buffer *> constantBuffers;
     bool bConstantBuffersUpToDate{false};
+    bool bStateBackedUp{false};
 
     DirectX11Shader *prevShader{nullptr};
     ID3D11VertexShader *prevVS{nullptr};

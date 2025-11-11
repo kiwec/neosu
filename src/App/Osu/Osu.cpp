@@ -481,10 +481,6 @@ void Osu::draw() {
 
                 if(env->usingDX11()) {  // don't flip Y position for DX11
                     this->flashlight_shader->setUniform2f("flashlight_center", flashlightPos.x, flashlightPos.y);
-
-                    g->forceUpdateTransform();
-                    Matrix4 mvp = g->getMVP();
-                    this->flashlight_shader->setUniformMatrix4fv("mvp", mvp);
                 } else {
                     this->flashlight_shader->setUniform2f("flashlight_center", flashlightPos.x,
                                                           this->getVirtScreenSize().y - flashlightPos.y);
@@ -508,10 +504,6 @@ void Osu::draw() {
 
                 if(env->usingDX11()) {  // don't flip Y position for DX11
                     this->actual_flashlight_shader->setUniform2f("flashlight_center", flashlightPos.x, flashlightPos.y);
-
-                    g->forceUpdateTransform();
-                    Matrix4 mvp = g->getMVP();
-                    this->actual_flashlight_shader->setUniformMatrix4fv("mvp", mvp);
                 } else {
                     this->actual_flashlight_shader->setUniform2f("flashlight_center", flashlightPos.x,
                                                                  this->getVirtScreenSize().y - flashlightPos.y);

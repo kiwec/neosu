@@ -198,7 +198,7 @@ void Graphics::updateTransform(bool force) {
 
         this->MP = this->projectionMatrix * this->worldMatrix;
 
-        this->onTransformUpdate(this->projectionMatrix, this->worldMatrix);
+        this->onTransformUpdate();
 
         this->bTransformUpToDate = true;
     }

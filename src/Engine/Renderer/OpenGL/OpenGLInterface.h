@@ -101,7 +101,7 @@ class OpenGLInterface : public Graphics {
                                                bool keepInSystemMemory) final;
 
    protected:
-    void onTransformUpdate(Matrix4 &projectionMatrix, Matrix4 &worldMatrix) final;
+    void onTransformUpdate() final;
 
    private:
     std::unique_ptr<Shader> smoothClipShader{nullptr};
