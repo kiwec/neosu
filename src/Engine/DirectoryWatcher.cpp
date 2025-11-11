@@ -1,6 +1,8 @@
 // Copyright (c) 2025 kiwec, All rights reserved.
 #include "DirectoryWatcher.h"
 
+#include <vector>
+
 #include "Thread.h"
 #include "Timing.h"
 #include "SyncMutex.h"
