@@ -335,23 +335,7 @@ class OptionsMenuCategoryButton final : public CBaseUIButton {
         : CBaseUIButton(xPos, yPos, xSize, ySize, std::move(name), std::move(text)) {
         this->section = section;
         this->bActiveCategory = false;
-    }
-
-    void drawText() override {
-        if(this->font != nullptr && this->sText.length() > 0) {
-            g->pushClipRect(McRect(this->vPos.x + 1, this->vPos.y + 1, this->vSize.x - 1, this->vSize.y - 1));
-            {
-                g->setColor(this->textColor);
-                g->pushTransform();
-                {
-                    g->translate((int)(this->vPos.x + this->vSize.x / 2.0f - (this->fStringWidth / 2.0f)),
-                                 (int)(this->vPos.y + this->vSize.y / 2.0f + (this->fStringHeight / 2.0f)));
-                    g->drawString(this->font, this->sText);
-                }
-                g->popTransform();
-            }
-            g->popClipRect();
-        }
+        this->setTextJustification(TEXT_JUSTIFICATION::CENTERED);
     }
 
     void setActiveCategory(bool activeCategory) { this->bActiveCategory = activeCategory; }
@@ -2267,6 +2251,7 @@ void OptionsMenu::updateLayout() {
 
     this->options->getContainer()->update_pos();
 
+    // TODO: wrong? look at button borders when hovering... ew...
     f32 sidebarHeight = this->categories->getSize().y - osu->getSkin()->i_menu_back2->getSize().y;
     i32 categoryPaddingTopBottom = sidebarHeight * 0.15f;
     i32 categoryHeight = (sidebarHeight - categoryPaddingTopBottom * 2) / this->categoryButtons.size();
