@@ -999,7 +999,7 @@ CONVAR(ignore_beatmap_sample_volume, false, CLIENT | SKINS | SERVER);
 CONVAR(instafade, false, CLIENT | SKINS | SERVER, "don't draw hitcircle fadeout animations");
 CONVAR(instafade_sliders, false, CLIENT | SKINS | SERVER, "don't draw slider fadeout animations");
 CONVAR(instant_replay_duration, 15.f, CLIENT | SKINS | SERVER, "instant replay (F2) duration, in seconds");
-CONVAR(interpolate_music_pos, 1L, CLIENT | SKINS | SERVER,
+CONVAR(interpolate_music_pos, 2L, CLIENT | SKINS | SERVER,
        "interpolate song position with engine time (0 = none, 1 = new method, 2 = McOsu, 3 = \"lazer\" (broken?))");
 CONVAR(letterboxing, true, CLIENT | SKINS | SERVER);
 CONVAR(letterboxing_offset_x, 0.0f, CLIENT | SKINS | SERVER);
