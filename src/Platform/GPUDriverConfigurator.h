@@ -3,21 +3,22 @@
 
 #include "noinclude.h"
 
-class SDLMain;
+#include <string_view>
 
 // configures GPU driver settings through vendor-specific APIs (currently NVAPI for NVIDIA on Windows)
 class GPUDriverConfigurator {
     NOCOPY_NOMOVE(GPUDriverConfigurator);
 
    public:
-    GPUDriverConfigurator(SDLMain *mainp) noexcept;
+    GPUDriverConfigurator() noexcept;
     ~GPUDriverConfigurator() noexcept;
+
+    // if non-empty, contains initialization information (errors)
+    // to defer showing errors until we know whether it's relevant to (e.g. what GPU is in use)
+    [[nodiscard]] std::string_view getInitInfo() const noexcept;
 
    private:
     // convar callback
     void onDisableDrvThrdOptsChange(float newVal);
-
-    SDLMain *mainptr;
-
     bool currently_disabled;
 };

@@ -21,10 +21,11 @@
 #include "Profiler.h"
 #include "Logging.h"
 #include "GPUDriverConfigurator.h"
+#include "SString.h"
 
 SDLMain::SDLMain(const std::unordered_map<std::string, std::optional<std::string>> &argMap,
                  const std::vector<std::string> &argVec)
-    : Environment(argMap, argVec), m_gpuConfigurator(std::make_unique<GPUDriverConfigurator>(this)) {
+    : Environment(argMap, argVec), m_gpuConfigurator(std::make_unique<GPUDriverConfigurator>()) {
     // setup callbacks
     cv::fps_max.setCallback(SA::MakeDelegate<&SDLMain::fps_max_callback>(this));
     cv::fps_max_background.setCallback(SA::MakeDelegate<&SDLMain::fps_max_background_callback>(this));
@@ -89,6 +90,15 @@ SDL_AppResult SDLMain::initialize() {
 
     if(!m_engine || m_engine->isShuttingDown()) {
         return SDL_APP_FAILURE;
+    }
+
+    // delay info until we know what gpu we're running
+    // currently this only does anything for nvidia
+    if(!m_gpuConfigurator->getInitInfo().empty()) {
+        std::string graphicsVendor{g->getModel().toUtf8()};
+        if(SString::contains_ncase(graphicsVendor, "nvidia")) {
+            Logger::logRaw("[GPUDriverConfigurator]: {}", m_gpuConfigurator->getInitInfo());
+        }
     }
     // if we got to this point, all relevant subsystems (input handling, graphics interface, etc.) have been initialized
 

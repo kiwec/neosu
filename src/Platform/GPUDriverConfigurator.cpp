@@ -129,6 +129,8 @@ struct NvApiState {
     bool initialized{false};
 };
 
+std::string s_init_info{""};
+
 NvApiState &getNvAPIState() noexcept {
     static NvApiState state;
     return state;
@@ -142,14 +144,14 @@ bool initNvAPI() noexcept {
     state.lib = dynutils::load_lib(nvapi_libname);
 
     if(!state.lib) {
-        debugLog("NOTICE: failed to load {}: {}", nvapi_libname, dynutils::get_error());
+        s_init_info = fmt::format("NOTICE: failed to load {}: {}", nvapi_libname, dynutils::get_error());
         return false;
     }
 
     // load NvAPI_QueryInterface function
-    state.queryInterface = dynutils::load_func<NvAPI_QueryInterface_t>(state.lib, "NvAPI_QueryInterface");
+    state.queryInterface = dynutils::load_func<NvAPI_QueryInterface_t>(state.lib, "nvapi_QueryInterface");
     if(!state.queryInterface) {
-        debugLog("NOTICE: failed to load NvAPI_QueryInterface");
+        s_init_info = "NOTICE: failed to load nvapi_QueryInterface (can't set threaded optimizations setting)";
         return false;
     }
 
@@ -172,22 +174,23 @@ bool initNvAPI() noexcept {
     if(!state.initialize || !state.createSession || !state.destroySession || !state.loadSettings ||
        !state.findApplicationByName || !state.createProfile || !state.createApplication || !state.setSetting ||
        !state.saveSettings) {
-        debugLog("NOTICE: failed to load one or more NvAPI functions (can't set threaded optimizations setting)");
+        s_init_info = "NOTICE: failed to load one or more NvAPI functions (can't set threaded optimizations setting)";
         return false;
     }
 
     // initialize NvAPI
     NvStatus status = state.initialize();
     if(status != NvStatus::OK) {
-        debugLog("NOTICE: NvAPI_Initialize failed with status {} (can't set threaded optimizations setting)",
-                 static_cast<int>(status));
+        s_init_info =
+            fmt::format("NOTICE: NvAPI_Initialize failed with status {} (can't set threaded optimizations setting)",
+                        static_cast<int>(status));
         return false;
     }
 
     state.initialized = true;
 
     if constexpr(Env::cfg(BUILD::DEBUG | BUILD::EDGE)) {
-        debugLog("NvAPI initialized");
+        s_init_info = "NvAPI initialized";
     }
 
     return true;
@@ -314,8 +317,10 @@ bool setNvidiaThreadedOpts(bool enable) noexcept {
 
 }  // namespace
 
-GPUDriverConfigurator::GPUDriverConfigurator(SDLMain *mainp) noexcept
-    : mainptr(mainp), currently_disabled(cv::r_disable_driver_threaded_opts.getBool()) {
+std::string_view GPUDriverConfigurator::getInitInfo() const noexcept { return s_init_info; }
+
+GPUDriverConfigurator::GPUDriverConfigurator() noexcept
+    : currently_disabled(cv::r_disable_driver_threaded_opts.getBool()) {
     // only supported on windows through NVAPI currently
     if constexpr(Env::cfg(OS::WINDOWS)) {
         // initialize NvAPI on construction
@@ -324,6 +329,8 @@ GPUDriverConfigurator::GPUDriverConfigurator(SDLMain *mainp) noexcept
             if(!setNvidiaThreadedOpts(!this->currently_disabled)) {
                 this->currently_disabled = !this->currently_disabled;
                 cv::r_disable_driver_threaded_opts.setValue(this->currently_disabled);
+                // update default so we don't save it to config
+                cv::r_disable_driver_threaded_opts.setDefaultDouble(this->currently_disabled ? 1. : 0.);
             }
 
             cv::r_disable_driver_threaded_opts.setCallback(
@@ -347,6 +354,8 @@ void GPUDriverConfigurator::onDisableDrvThrdOptsChange(float newVal) {
             // revert convar value on failure
             cv::r_disable_driver_threaded_opts.setValue(this->currently_disabled,
                                                         false /* don't run callback (recursively) */);
+            // don't save the setting to config if we failed
+            cv::r_disable_driver_threaded_opts.setDefaultDouble(this->currently_disabled ? 1. : 0.);
         }
     }
 }
