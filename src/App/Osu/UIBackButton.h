@@ -19,7 +19,6 @@ class UIBackButton final : public CBaseUIButton {
 
    private:
     float fAnimation;
-    float fImageScale;
 
     bool bUseDefaultBack{false};
 };

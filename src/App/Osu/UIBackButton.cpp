@@ -15,7 +15,6 @@
 UIBackButton::UIBackButton(float xPos, float yPos, float xSize, float ySize, UString name)
     : CBaseUIButton(xPos, yPos, xSize, ySize, std::move(name), "") {
     this->fAnimation = 0.0f;
-    this->fImageScale = 1.0f;
 }
 
 void UIBackButton::draw() {
@@ -28,7 +27,7 @@ void UIBackButton::draw() {
 
         const SkinImage *backimg =
             this->bUseDefaultBack ? osu->getSkin()->i_menu_back2_DEFAULTSKIN : osu->getSkin()->i_menu_back2;
-        backimg->draw(this->vPos + (backimg->getSize() / 2.f) * this->fImageScale, this->fImageScale);
+        backimg->draw(this->vPos + (backimg->getSize() / 2.f));
     }
     g->popTransform();
 
@@ -82,8 +81,7 @@ void UIBackButton::updateLayout() {
         this->bUseDefaultBack = false;
     }
 
-    this->fImageScale = Osu::getUIScale();
-    this->setSize(backimg->getSize() * this->fImageScale);
+    this->setSize(backimg->getSize());
 }
 
 void UIBackButton::resetAnimation() {
