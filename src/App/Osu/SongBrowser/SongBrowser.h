@@ -72,10 +72,7 @@ class SongBrowser final : public ScreenBackable {
 
     static f32 getUIScale();
     static i32 getUIScale(f32 m) { return (i32)(m * getUIScale()); }
-    static f32 getUIScale2();
-    static i32 getUIScale2(f32 m) { return (i32)(m * getUIScale2()); }
     static f32 getSkinScale(SkinImage *img);
-    static f32 getSkinScale2(SkinImage *img);
     static vec2 getSkinDimensions(SkinImage *img);
 
     friend class SongBrowserBackgroundSearchMatcher;

@@ -31,7 +31,7 @@ UserCard2::~UserCard2() { SAFE_DELETE(this->avatar); }
 void UserCard2::draw() {
     if(!this->bVisible) return;
 
-    auto card_size = vec2{SongBrowser::getUIScale2(325), SongBrowser::getUIScale2(78)};
+    auto card_size = vec2{SongBrowser::getUIScale(325), SongBrowser::getUIScale(78)};
     this->setSize(card_size);
 
     // position user icon

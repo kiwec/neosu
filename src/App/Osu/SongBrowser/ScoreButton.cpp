@@ -60,7 +60,7 @@ void ScoreButton::draw() {
         const auto &backgroundImage = osu->getSkin()->i_menu_button_bg;
         g->pushTransform();
         {
-            f32 scale = SongBrowser::getUIScale2(backgroundImage.is2x() ? 0.5f : 1.f);
+            f32 scale = SongBrowser::getUIScale(backgroundImage.is2x() ? 0.5f : 1.f);
             g->scale(scale, scale);
             g->translate(this->vPos.x, this->vPos.y + this->vSize.y / 2);
             g->drawImage(backgroundImage, AnchorPoint::LEFT);

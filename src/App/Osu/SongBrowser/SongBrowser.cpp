@@ -64,16 +64,8 @@
 const Color highlightColor = argb(255, 0, 255, 0);
 const Color defaultColor = argb(255, 255, 255, 255);
 
-// Scale only when widescreen, with 1366x768 being the 'base' resolution
-// (weird logic, used for pixel-accurate songbrowser skinning)
+// XXX: remove this
 f32 SongBrowser::getUIScale() {
-    auto screen = osu->getVirtScreenSize();
-    bool is_widescreen = (screen.x / screen.y) > (4.f / 3.f);
-    return is_widescreen ? (screen.x / 1366.f) : 1.f;
-}
-
-// XXX: remove this (or the one above, or both)
-f32 SongBrowser::getUIScale2() {
     auto screen = osu->getVirtScreenSize();
     bool is_widescreen = (screen.x / screen.y) > (4.f / 3.f);
     return screen.x / (is_widescreen ? 1366.f : 1024.f);
@@ -82,7 +74,6 @@ f32 SongBrowser::getUIScale2() {
 // Because we draw skin elements 'manually' to enforce the correct scaling,
 // this helper function automatically adjusts for 2x image resolution.
 f32 SongBrowser::getSkinScale(SkinImage *img) { return SongBrowser::getUIScale() * (img->is_2x ? 0.5f : 1.f); }
-f32 SongBrowser::getSkinScale2(SkinImage *img) { return SongBrowser::getUIScale2() * (img->is_2x ? 0.5f : 1.f); }
 
 vec2 SongBrowser::getSkinDimensions(SkinImage *img) {
     return img->getImageSizeForCurrentFrame() * SongBrowser::getSkinScale(img);
@@ -610,7 +601,7 @@ void SongBrowser::draw() {
     }
 
     {
-        f32 mode_osu_scale = SongBrowser::getSkinScale2(osu->getSkin()->i_mode_osu);
+        f32 mode_osu_scale = SongBrowser::getSkinScale(osu->getSkin()->i_mode_osu);
 
         g->setColor(0xffffffff);
         if(cv::avoid_flashes.getBool()) {
@@ -2083,7 +2074,7 @@ void SongBrowser::updateLayout() {
     const int margin = 5 * dpiScale;
 
     // topbar left
-    this->topbarLeft->setSize(SongBrowser::getUIScale2(390.f), SongBrowser::getUIScale2(145.f));
+    this->topbarLeft->setSize(SongBrowser::getUIScale(390.f), SongBrowser::getUIScale(145.f));
     this->songInfo->setRelPos(margin, margin);
     this->songInfo->setSize(
         this->topbarLeft->getSize().x - margin,
@@ -2114,7 +2105,7 @@ void SongBrowser::updateLayout() {
     // topbar right
     this->topbarRight->setPosX(osu->getVirtScreenWidth() / 2);
     this->topbarRight->setSize(osu->getVirtScreenWidth() - this->topbarRight->getPos().x,
-                               SongBrowser::getUIScale2(80.f));
+                               SongBrowser::getUIScale(80.f));
 
     float btn_margin = 10.f * dpiScale;
     this->sortButton->setSize(200.f * dpiScale, 30.f * dpiScale);
@@ -2187,10 +2178,10 @@ void SongBrowser::updateScoreBrowserLayout() {
     this->scoreBrowser->setPos(this->topbarLeft->getPos().x + 2 * dpiScale,
                                this->topbarLeft->getPos().y + this->topbarLeft->getSize().y + 4 * dpiScale);
     this->scoreBrowser->setSize(scoreButtonWidthMax, browserHeight);
-    const i32 scoreHeight = SongBrowser::getUIScale2(53.f);
+    const i32 scoreHeight = SongBrowser::getUIScale(53.f);
 
     // In stable, even when looking at local scores, there is space where the "local best" would be.
-    f32 local_best_size = scoreHeight + SongBrowser::getUIScale2(61);
+    f32 local_best_size = scoreHeight + SongBrowser::getUIScale(61);
     browserHeight -= local_best_size;
     this->scoreBrowser->setSize(this->scoreBrowser->getSize().x, browserHeight);
     this->scoreBrowser->setScrollSizeToContent();
