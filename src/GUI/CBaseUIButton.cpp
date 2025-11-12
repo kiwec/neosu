@@ -81,23 +81,15 @@ void CBaseUIButton::drawText() {
                          (i32)(this->vPos.y + this->vSize.y / 2.f + this->fStringHeight / 2.f));
 
             // shadow
-            g->translate(shadowOffset, shadowOffset);
-            {
-                if(this->textDarkColor != 0)
-                    g->setColor(this->textDarkColor);
-                else
-                    g->setColor(Colors::invert(this->textColor));
+            if(this->bDrawShadow) {
+                g->translate(shadowOffset, shadowOffset);
+                g->setColor(this->textDarkColor ? this->textDarkColor : Colors::invert(this->textColor));
+                g->drawString(this->font, this->sText);
+                g->translate(-shadowOffset, -shadowOffset);
             }
-            g->drawString(this->font, this->sText);
 
             // top
-            g->translate(-shadowOffset, -shadowOffset);
-            {
-                if(this->textBrightColor != 0)
-                    g->setColor(this->textBrightColor);
-                else
-                    g->setColor(this->textColor);
-            }
+            g->setColor(this->textBrightColor ? this->textBrightColor : this->textColor);
             g->drawString(this->font, this->sText);
         }
         g->popTransform();

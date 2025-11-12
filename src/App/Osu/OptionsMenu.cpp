@@ -336,6 +336,7 @@ class OptionsMenuCategoryButton final : public CBaseUIButton {
         this->section = section;
         this->bActiveCategory = false;
         this->setTextJustification(TEXT_JUSTIFICATION::CENTERED);
+        this->setDrawShadow(false);
     }
 
     void setActiveCategory(bool activeCategory) { this->bActiveCategory = activeCategory; }

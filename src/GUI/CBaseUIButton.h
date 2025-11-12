@@ -46,6 +46,10 @@ class CBaseUIButton : public CBaseUIElement {
         this->bDrawBackground = drawBackground;
         return this;
     }
+    CBaseUIButton *setDrawShadow(bool enabled) {
+        this->bDrawShadow = enabled;
+        return this;
+    }
 
     CBaseUIButton *setFrameColor(Color frameColor) {
         this->frameColor = frameColor;
@@ -131,5 +135,6 @@ class CBaseUIButton : public CBaseUIElement {
 
     bool bDrawFrame;
     bool bDrawBackground;
+    bool bDrawShadow{true};
     TEXT_JUSTIFICATION textJustification{TEXT_JUSTIFICATION::CENTERED};
 };
