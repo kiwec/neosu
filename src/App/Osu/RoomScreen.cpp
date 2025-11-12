@@ -27,6 +27,7 @@
 #include "ModSelector.h"
 #include "Mouse.h"
 #include "NotificationOverlay.h"
+#include "OptionsMenu.h"
 #include "Osu.h"
 #include "PromptScreen.h"
 #include "RankingScreen.h"
@@ -290,11 +291,16 @@ void RoomScreen::mouse_update(bool *propagate_clicks) {
     this->contextMenu->mouse_update(propagate_clicks);
     if(!*propagate_clicks) return;
 
-    OsuScreen::mouse_update(propagate_clicks);
+    // HACK: disable "slotlist" scrollview when options menu is open, because it somehow takes priority
+    if(osu->getOptionsMenu()->isVisible()) {
+        this->settings->mouse_update(propagate_clicks);
+    } else {
+        OsuScreen::mouse_update(propagate_clicks);
+    }
 }
 
 void RoomScreen::onKeyDown(KeyboardEvent &key) {
-    if(!this->bVisible || osu->getSongBrowser()->isVisible()) return;
+    if(!this->bVisible || osu->getOptionsMenu()->isVisible() || osu->getSongBrowser()->isVisible()) return;
 
     if(key.getScanCode() == KEY_ESCAPE) {
         key.consume();
