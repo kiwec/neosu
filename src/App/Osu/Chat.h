@@ -88,8 +88,8 @@ class Chat final : public OsuScreen {
     bool visibility_was_forced = false;
     bool layout_update_scheduled = false;
 
-    const float input_box_height = 30.f;
-    const float button_height = 26.f;
+    f32 input_box_height = 30.f;
+    f32 button_height = 26.f;
 
     UString away_msg;
     UString tab_completion_prefix;

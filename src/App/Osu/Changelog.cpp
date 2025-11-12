@@ -32,6 +32,7 @@ Changelog::Changelog() : ScreenBackable() {
         R"(- Added ConVar to select resampler used for SoLoud (snd_soloud_resampler: "point", "linear", "catmull-rom"))",
         R"(- Background thumbnails will no longer show in Discord Rich Presence if they are disabled in-game)",
         R"(- Fixed command convars like "help" and "find" not working)",
+        R"(- Fixed UI scaling bugs)",
         R"(- Updated SDL to fix Windows 32-bit builds)",
         R"(- Added "fps_limiter_nobusywait" ConVar (don't use it))",
     };

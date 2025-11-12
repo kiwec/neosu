@@ -1016,6 +1016,9 @@ void Chat::removeChannel(const UString &channel_name) {
 }
 
 void Chat::updateLayout(vec2 newResolution) {
+    this->input_box_height = 30.f * osu->getUIScale();
+    this->button_height = 26.f * osu->getUIScale();
+
     this->updateTickerLayout(newResolution);
 
     // We don't want to update while the chat is hidden, to avoid lagspikes during gameplay
@@ -1052,20 +1055,23 @@ void Chat::updateLayout(vec2 newResolution) {
 }
 
 void Chat::updateButtonLayout(vec2 screen) {
-    const float initial_x = 2;
-    float total_x = initial_x;
+    const f32 dpiScale = osu->getUIScale();
+    const f32 space = 20.f * dpiScale;
+    const f32 border = 2.f * dpiScale;
+    const f32 initial_x = border;
+    f32 total_x = initial_x;
 
     std::ranges::sort(this->channels, [](ChatChannel *a, ChatChannel *b) { return a->name < b->name; });
 
     // Look, I really tried. But for some reason setPos() doesn't work until we change
     // the screen resolution once. So I'll just compute absolute position manually.
-    float button_container_height = this->button_height + 2;
+    f32 button_container_height = this->button_height + border;
     for(auto chan : this->channels) {
         UIButton *btn = chan->btn;
-        float button_width = chat_font->getStringWidth(btn->getText()) + 20;
+        const f32 button_width = chat_font->getStringWidth(btn->getText()) + space;
 
         // Wrap channel buttons
-        if(total_x + button_width > screen.x - 20) {
+        if(total_x + button_width > screen.x - space) {
             total_x = initial_x;
             button_container_height += this->button_height;
         }
@@ -1078,17 +1084,17 @@ void Chat::updateButtonLayout(vec2 screen) {
     total_x = initial_x;
     for(auto chan : this->channels) {
         UIButton *btn = chan->btn;
-        float button_width = chat_font->getStringWidth(btn->getText()) + 20;
+        float button_width = chat_font->getStringWidth(btn->getText()) + space;
 
         // Wrap channel buttons
-        if(total_x + button_width > screen.x - 20) {
+        if(total_x + button_width > screen.x - space) {
             total_x = initial_x;
             total_y += this->button_height;
         }
 
         btn->setPos(total_x, chat_y - button_container_height + total_y);
         // Buttons are drawn a bit smaller than they should, so we up the size here
-        btn->setSize(button_width + 2, this->button_height + 2);
+        btn->setSize(button_width + border, this->button_height + border);
 
         if(this->selected_channel->name == btn->getText()) {
             btn->setColor(0xffc9c9c9);
@@ -1104,6 +1110,7 @@ void Chat::updateButtonLayout(vec2 screen) {
     }
 
     this->join_channel_btn->setPos(total_x, chat_y - button_container_height + total_y);
+    this->join_channel_btn->setSize(button_container_height, button_container_height);
     this->button_container->setPos(0, chat_y - button_container_height);
     this->button_container->setSize(screen.x, button_container_height);
 
@@ -1114,7 +1121,7 @@ void Chat::updateButtonLayout(vec2 screen) {
 void Chat::updateTickerLayout(vec2 screen) {
     this->ticker->updateLayout(vec2{0.f, 0.f}, screen);
 
-    f32 h = this->ticker->ui->getScrollSize().y + 5;
+    f32 h = this->ticker->ui->getScrollSize().y + 5.f * osu->getUIScale();
     this->ticker->ui->setPos(vec2{0.f, screen.y - h});
     this->ticker->ui->setSize(vec2{screen.x, h});
 }
