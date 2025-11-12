@@ -22,14 +22,12 @@ class SkinImage final {
               const std::string& animationSeparator = "-", bool ignoreDefaultSkin = false);
     ~SkinImage();
 
-    // for objects scaled automatically to the current resolution
-    void draw(vec2 pos, float scale = 1.f) const;
+    void draw(vec2 pos,
+              float scale = 1.0f) const;  // for objects scaled automatically to the current resolution
 
     // for objects which scale depending on external factors
     // (e.g. hitobjects, depending on the diameter defined by the CS)
     void drawRaw(vec2 pos, float scale, AnchorPoint anchor = AnchorPoint::CENTER) const;
-
-    void drawToFit(vec2 pos, vec2 size, AnchorPoint anchor = AnchorPoint::TOP_LEFT) const;
 
     void update(float speedMultiplier, bool useEngineTimeForAnimations = true, i32 curMusicPos = 0);
 

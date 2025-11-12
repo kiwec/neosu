@@ -318,24 +318,6 @@ void SkinImage::drawRaw(vec2 pos, float scale, AnchorPoint anchor) const {
     g->popTransform();
 }
 
-void SkinImage::drawToFit(vec2 pos, vec2 size, AnchorPoint anchor) const {
-    if(this->images.size() < 1) return;
-
-    g->pushTransform();
-    {
-        Image* img = this->getImageForCurrentFrame().img;
-        if(!img->isReady()) return;
-
-        f32 x_scale = size.x / img->getWidth();
-        f32 y_scale = size.y / img->getHeight();
-
-        g->scale(x_scale, y_scale);
-        g->translate(pos.x, pos.y);
-        g->drawImage(img, anchor);
-    }
-    g->popTransform();
-}
-
 void SkinImage::update(float speedMultiplier, bool useEngineTimeForAnimations, i32 curMusicPos) {
     if(this->images.size() < 1 || speedMultiplier == 0.f) return;
 

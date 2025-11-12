@@ -4,8 +4,7 @@
 
 class UIBackButton final : public CBaseUIButton {
    public:
-    UIBackButton(float xPos, float yPos, float xSize, float ySize, UString name)
-        : CBaseUIButton(xPos, yPos, xSize, ySize, std::move(name), "") {}
+    UIBackButton(float xPos, float yPos, float xSize, float ySize, UString name);
 
     void draw() override;
     void mouse_update(bool* propagate_clicks) override;
@@ -14,8 +13,13 @@ class UIBackButton final : public CBaseUIButton {
     void onMouseInside() override;
     void onMouseOutside() override;
 
+    void updateLayout();
+
     void resetAnimation();
 
    private:
-    float fAnimation{0.f};
+    float fAnimation;
+    float fImageScale;
+
+    bool bUseDefaultBack{false};
 };

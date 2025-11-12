@@ -12,6 +12,8 @@
 ScreenBackable::ScreenBackable() : OsuScreen() {
     this->backButton = new UIBackButton(-1, 0, 0, 0, "");
     this->backButton->setClickCallback(SA::MakeDelegate<&ScreenBackable::onBack>(this));
+
+    this->updateLayout();
 }
 
 ScreenBackable::~ScreenBackable() { SAFE_DELETE(this->backButton); }
@@ -40,3 +42,10 @@ void ScreenBackable::onKeyDown(KeyboardEvent &e) {
         return;
     }
 }
+
+void ScreenBackable::updateLayout() {
+    this->backButton->updateLayout();
+    this->backButton->setPosY(osu->getVirtScreenHeight() - this->backButton->getSize().y);
+}
+
+void ScreenBackable::onResolutionChange(vec2  /*newResolution*/) { this->updateLayout(); }

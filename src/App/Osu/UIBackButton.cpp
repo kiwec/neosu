@@ -11,28 +11,24 @@
 #include "Skin.h"
 #include "SkinImage.h"
 #include "SoundEngine.h"
-#include "SongBrowser/BottomBar.h"
+
+UIBackButton::UIBackButton(float xPos, float yPos, float xSize, float ySize, UString name)
+    : CBaseUIButton(xPos, yPos, xSize, ySize, std::move(name), "") {
+    this->fAnimation = 0.0f;
+    this->fImageScale = 1.0f;
+}
 
 void UIBackButton::draw() {
     if(!this->bVisible) return;
-
-    const SkinImage *backimg = osu->getSkin()->i_menu_back2;
-    this->setSize(backimg->getSize());
-
-    // cap back button height when options menu is showing
-    const auto &optmenu = osu->getOptionsMenu();
-    if(optmenu && optmenu->isVisible() && this->getSize().y > (optmenu->getSize().y / 5)) {
-        f32 scale = (optmenu->getSize().y / 5) / this->getSize().y;
-        this->setSize(this->getSize() * scale);
-    }
-
-    this->setPosY(osu->getVirtScreenHeight() - this->getSize().y);
 
     // draw button image
     g->pushTransform();
     {
         g->setColor(0xffffffff);
-        backimg->draw(this->getPos() + this->getSize() / 2.f);
+
+        const SkinImage *backimg =
+            this->bUseDefaultBack ? osu->getSkin()->i_menu_back2_DEFAULTSKIN : osu->getSkin()->i_menu_back2;
+        backimg->draw(this->vPos + (backimg->getSize() / 2.f) * this->fImageScale, this->fImageScale);
     }
     g->popTransform();
 
@@ -71,6 +67,23 @@ void UIBackButton::onMouseOutside() {
     CBaseUIButton::onMouseOutside();
 
     anim->moveQuadOut(&this->fAnimation, 0.0f, this->fAnimation * 0.1f, 0.0f, true);
+}
+
+void UIBackButton::updateLayout() {
+    const SkinImage *backimg = osu->getSkin()->i_menu_back2;
+    const auto &optmenu = osu->getOptionsMenu();
+
+    if(optmenu && optmenu->isVisible() && backimg->getSize().y > (optmenu->getSize().y / 4) &&
+       (osu->getSkin()->i_menu_back2_DEFAULTSKIN && osu->getSkin()->i_menu_back2_DEFAULTSKIN->isReady())) {
+        // always show default back button when options menu is showing, if its height is > 1/4 the options menu height
+        backimg = osu->getSkin()->i_menu_back2_DEFAULTSKIN;
+        this->bUseDefaultBack = true;
+    } else {
+        this->bUseDefaultBack = false;
+    }
+
+    this->fImageScale = Osu::getUIScale();
+    this->setSize(backimg->getSize() * this->fImageScale);
 }
 
 void UIBackButton::resetAnimation() {

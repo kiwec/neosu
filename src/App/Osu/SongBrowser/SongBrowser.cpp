@@ -2070,6 +2070,8 @@ bool SongBrowser::searchMatcher(const DatabaseBeatmap *databaseBeatmap,
 }
 
 void SongBrowser::updateLayout() {
+    ScreenBackable::updateLayout();
+
     const float dpiScale = Osu::getUIScale();
     const int margin = 5 * dpiScale;
 

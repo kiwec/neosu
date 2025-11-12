@@ -1862,6 +1862,8 @@ void OptionsMenu::updateLayout() {
 
     // TODO: correctly scale individual UI elements to dpiScale (depend on initial value in e.g. addCheckbox())
 
+    ScreenBackable::updateLayout();
+
     const float dpiScale = Osu::getUIScale();
 
     this->setSize(osu->getVirtScreenSize());
