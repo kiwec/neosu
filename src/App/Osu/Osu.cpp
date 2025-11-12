@@ -1533,12 +1533,12 @@ void Osu::onResolutionChanged(vec2 newResolution, ResolutionRequestFlags src) {
     // update dpi specific engine globals
     cv::ui_scrollview_scrollbarwidth.setValue(15.0f * Osu::getUIScale());  // not happy with this as a convar
 
-    // reload fonts since they're sized based on this->internalRect, which we just changed
-    // (might be double reloading fonts here, see bFontReloadScheduled)
-    this->reloadFonts();
-
     // skip rebuilding rendertargets if we didn't change resolution
     if(resolution_changed) {
+        // reload fonts since they're sized based on this->internalRect, which we just changed
+        // (might be double reloading fonts here, see bFontReloadScheduled)
+        this->reloadFonts();
+
         // interfaces
         this->forEachScreen<&OsuScreen::onResolutionChange>(this->getVirtScreenSize());
 
