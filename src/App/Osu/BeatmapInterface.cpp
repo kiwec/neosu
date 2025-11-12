@@ -742,6 +742,8 @@ void BeatmapInterface::actualRestart() {
 
 void BeatmapInterface::pause(bool quitIfWaiting) {
     if(this->beatmap == nullptr) return;
+    if(cv::mod_no_pausing.getBool()) return;
+    if(BanchoState::is_playing_a_multi_map()) return;
     if(BanchoState::spectating) {
         Spectating::stop();
         return;

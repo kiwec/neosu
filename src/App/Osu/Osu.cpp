@@ -1150,11 +1150,9 @@ void Osu::onKeyDown(KeyboardEvent &key) {
             if(pressed_pause) {
                 key.consume();
 
-                if(!BanchoState::is_playing_a_multi_map()) {
-                    // bit of a misnomer, this pauses OR unpauses the music OR stops if it was still loading/waiting
-                    this->map_iface->pause();
-                    if(!this->isInPlayMode()) break;  // if we exit due to the "pause", don't do anything else
-                }
+                // bit of a misnomer, this pauses OR unpauses the music OR stops if it was still loading/waiting
+                this->map_iface->pause();
+                if(!this->isInPlayMode()) break;  // if we exit due to the "pause", don't do anything else
 
                 if(this->pauseMenu->isVisible() && this->map_iface->hasFailed()) {
                     // quit if we try to 'escape' the pause menu when dead (satisfying ragequit mechanic)

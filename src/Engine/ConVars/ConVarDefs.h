@@ -687,6 +687,7 @@ CONVAR(mod_wobble2, false, CLIENT | SERVER | PROTECTED | GAMEPLAY);
 CONVAR(mod_wobble_frequency, 1.0f, CLIENT | SERVER | GAMEPLAY);
 CONVAR(mod_wobble_rotation_speed, 1.0f, CLIENT | SERVER | GAMEPLAY);
 CONVAR(mod_wobble_strength, 25.0f, CLIENT | SERVER | GAMEPLAY);
+CONVAR(mod_no_pausing, false, CLIENT | SERVER | GAMEPLAY);
 
 // Important gameplay values
 CONVAR(animation_speed_override, -1.0f, CLIENT | SERVER | PROTECTED | GAMEPLAY);

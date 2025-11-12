@@ -498,6 +498,7 @@ void RankingScreen::setScore(const FinishedScore &score) {
     if(flags::has<ApproachDifferent>(score.mods.flags)) this->extraMods.push_back(&cv::mod_approach_different);
     if(flags::has<Singletap>(score.mods.flags)) this->extraMods.push_back(&cv::mod_singletap);
     if(flags::has<NoKeylock>(score.mods.flags)) this->extraMods.push_back(&cv::mod_no_keylock);
+    if(flags::has<NoPausing>(score.mods.flags)) this->extraMods.push_back(&cv::mod_no_pausing);
     if(flags::has<NoHP>(score.mods.flags)) this->extraMods.push_back(&cv::drain_disabled);
 }
 

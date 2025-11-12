@@ -189,7 +189,8 @@ void PauseMenu::onKeyDown(KeyboardEvent &e) {
             this->bClick1Down = true;
             fireButtonClick = true;
         }
-        if((e == cv::RIGHT_CLICK.getVal<SCANCODE>() || e == cv::RIGHT_CLICK_2.getVal<SCANCODE>()) && !this->bClick2Down) {
+        if((e == cv::RIGHT_CLICK.getVal<SCANCODE>() || e == cv::RIGHT_CLICK_2.getVal<SCANCODE>()) &&
+           !this->bClick2Down) {
             this->bClick2Down = true;
             fireButtonClick = true;
         }
@@ -333,7 +334,8 @@ void PauseMenu::onResolutionChange(vec2 newResolution) {
 CBaseUIContainer *PauseMenu::setVisible(bool visible) {
     this->bVisible = visible;
 
-    if(!BanchoState::is_playing_a_multi_map()) {
+    const bool can_pause = !cv::mod_no_pausing.getBool() && !BanchoState::is_playing_a_multi_map();
+    if(can_pause) {
         if(visible) {
             if(!osu->getScore()->isDead()) {
                 soundEngine->play(osu->getSkin()->s_pause_loop);
@@ -348,7 +350,7 @@ CBaseUIContainer *PauseMenu::setVisible(bool visible) {
 
     this->setContinueEnabled(!osu->getMapInterface()->hasFailed());
 
-    if(!BanchoState::is_playing_a_multi_map()) {
+    if(can_pause) {
         if(visible) {
             if(this->bContinueEnabled) {
                 RichPresence::setBanchoStatus("Taking a break", PAUSED);

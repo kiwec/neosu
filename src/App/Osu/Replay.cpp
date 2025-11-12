@@ -127,6 +127,7 @@ Mods Mods::from_cvars() {
     if(cv::mod_no50s.getBool()) mods.flags |= No50s;
     if(cv::mod_singletap.getBool()) mods.flags |= Singletap;
     if(cv::mod_no_keylock.getBool()) mods.flags |= NoKeylock;
+    if(cv::mod_no_pausing.getBool()) mods.flags |= NoPausing;
     if(cv::mod_autoplay.getBool()) {
         mods.flags &= ~(Relax | Autopilot);
         mods.flags |= Autoplay;
@@ -234,6 +235,7 @@ void Mods::use(const Mods &mods) {
     cv::mod_no50s.setValue(flags::has<No50s>(mods.flags));
     cv::mod_singletap.setValue(flags::has<Singletap>(mods.flags));
     cv::mod_no_keylock.setValue(flags::has<NoKeylock>(mods.flags));
+    cv::mod_no_pausing.setValue(flags::has<NoPausing>(mods.flags));
     cv::notelock_type.setValue(mods.notelock_type);
     cv::autopilot_lenience.setValue(mods.autopilot_lenience);
     cv::mod_timewarp_multiplier.setValue(mods.timewarp_multiplier);
