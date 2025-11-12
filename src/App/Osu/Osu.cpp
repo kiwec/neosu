@@ -1525,6 +1525,7 @@ void Osu::onResolutionChanged(vec2 newResolution, ResolutionRequestFlags src) {
         cv::windowed_resolution.setValue(res_str, false);
     }
 
+    // NOTE: when only changing DPI, "prevUIScale" is already the new UI scale!
     const float prevUIScale = getUIScale();
 
     const bool resolution_changed = (this->backBuffer->getSize() != newResolution);
@@ -1533,16 +1534,11 @@ void Osu::onResolutionChanged(vec2 newResolution, ResolutionRequestFlags src) {
     // update dpi specific engine globals
     cv::ui_scrollview_scrollbarwidth.setValue(15.0f * Osu::getUIScale());  // not happy with this as a convar
 
+    // always call onResolutionChange, since DPI changes cause layout changes
+    this->forEachScreen<&OsuScreen::onResolutionChange>(this->getVirtScreenSize());
+
     // skip rebuilding rendertargets if we didn't change resolution
     if(resolution_changed) {
-        // reload fonts since they're sized based on this->internalRect, which we just changed
-        // (might be double reloading fonts here, see bFontReloadScheduled)
-        this->reloadFonts();
-
-        // interfaces
-        this->forEachScreen<&OsuScreen::onResolutionChange>(this->getVirtScreenSize());
-
-        // rendertargets
         this->rebuildRenderTargets();
     }
 
