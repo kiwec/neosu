@@ -22,26 +22,25 @@ NotificationOverlay::NotificationOverlay() : OsuScreen() {
 
 NotificationOverlay::~NotificationOverlay() = default;
 
-static const f64 TOAST_WIDTH = 350.0;
-static const f64 TOAST_INNER_X_MARGIN = 5.0;
-static const f64 TOAST_INNER_Y_MARGIN = 5.0;
-static const f64 TOAST_OUTER_Y_MARGIN = 10.0;
-static const f64 TOAST_SCREEN_BOTTOM_MARGIN = 20.0;
-static const f64 TOAST_SCREEN_RIGHT_MARGIN = 10.0;
+static f64 TOAST_WIDTH = 350.0;
+static f64 TOAST_INNER_X_MARGIN = 5.0;
+static f64 TOAST_INNER_Y_MARGIN = 5.0;
+static f64 TOAST_OUTER_Y_MARGIN = 10.0;
+static f64 TOAST_SCREEN_BOTTOM_MARGIN = 20.0;
+static f64 TOAST_SCREEN_RIGHT_MARGIN = 10.0;
 
 ToastElement::ToastElement(const UString &text, Color borderColor_arg, ToastElement::TYPE type)
     : CBaseUIButton(0, 0, 0, 0, "", "") {
     this->grabs_clicks = true;
 
     // TODO: animations
-    // TODO: ui scaling
 
+    this->text = text;
     this->type = type;
     this->borderColor = borderColor_arg;
     this->creationTime = engine->getTime();
 
-    this->lines = this->font->wrap(text, TOAST_WIDTH - TOAST_INNER_X_MARGIN * 2.0);
-    this->setSize(TOAST_WIDTH, (this->font->getHeight() * 1.5 * this->lines.size()) + (TOAST_INNER_Y_MARGIN * 2.0));
+    this->updateLayout();
 }
 
 void ToastElement::onClicked(bool left, bool right) {
@@ -57,13 +56,11 @@ void ToastElement::draw() {
 
     // background
     g->setColor(Color(this->isMouseInside() ? 0xff222222 : 0xff111111).setA(alpha));
-
     g->fillRect(this->vPos.x, this->vPos.y, this->vSize.x, this->vSize.y);
 
     // border
     g->setColor(Color(this->isMouseInside() ? rgb(255, 255, 255) : this->borderColor).setA(alpha));
-
-    g->drawRect(this->vPos.x, this->vPos.y, this->vSize.x, this->vSize.y);
+    g->drawBorder(this->vPos.x, this->vPos.y, this->vSize.x, this->vSize.y, osu->getUIScale());
 
     // text
     f64 y = this->vPos.y;
@@ -76,6 +73,11 @@ void ToastElement::draw() {
         g->drawString(this->font, line);
         g->popTransform();
     }
+}
+
+void ToastElement::updateLayout() {
+    this->lines = this->font->wrap(text, TOAST_WIDTH - TOAST_INNER_X_MARGIN * 2.0);
+    this->setSize(TOAST_WIDTH, (this->font->getHeight() * 1.5 * this->lines.size()) + (TOAST_INNER_Y_MARGIN * 2.0));
 }
 
 void NotificationOverlay::mouse_update(bool *propagate_clicks) {
@@ -140,6 +142,21 @@ void NotificationOverlay::draw() {
     this->drawNotificationBackground(this->notification1);
     this->drawNotificationText(this->notification2);
     this->drawNotificationText(this->notification1);
+}
+
+void NotificationOverlay::onResolutionChange(vec2 newResolution) {
+    f64 scale = osu->getUIScale();
+
+    TOAST_WIDTH = 350.0 * scale;
+    TOAST_INNER_X_MARGIN = 5.0 * scale;
+    TOAST_INNER_Y_MARGIN = 5.0 * scale;
+    TOAST_OUTER_Y_MARGIN = 10.0 * scale;
+    TOAST_SCREEN_BOTTOM_MARGIN = 20.0 * scale;
+    TOAST_SCREEN_RIGHT_MARGIN = 10.0 * scale;
+
+    for(auto &toast : this->toasts) {
+        toast->updateLayout();
+    }
 }
 
 void NotificationOverlay::drawNotificationText(const NotificationOverlay::NOTIFICATION &n) {

@@ -20,7 +20,9 @@ class ToastElement final : public CBaseUIButton {
 
     void draw() override;
     void onClicked(bool left = true, bool right = false) override;
+    void updateLayout();
 
+    UString text;
     std::vector<UString> lines;
 
     f64 creationTime;
@@ -46,6 +48,7 @@ class NotificationOverlay final : public OsuScreen {
 
     void mouse_update(bool *propagate_clicks) override;
     void draw() override;
+    void onResolutionChange(vec2 newResolution) override;
 
     void onKeyDown(KeyboardEvent &e) override;
     void onKeyUp(KeyboardEvent &e) override;

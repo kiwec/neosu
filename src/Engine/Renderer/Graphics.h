@@ -138,6 +138,16 @@ class Graphics {
     inline void drawRect(int x, int y, int width, int height, Color top, Color right, Color bottom, Color left) {
         this->drawRectf((float)x + 0.5f, (float)y + 0.5f, (float)width, (float)height, top, right, bottom, left);
     }
+    inline void drawBorder(int x, int y, int width, int height, float thickness) {
+        this->drawRectf(RectOptions{
+            .x = (float)x + thickness / 2.f,
+            .y = (float)y + thickness / 2.f,
+            .width = (float)width - thickness,
+            .height = (float)height - thickness,
+            .lineThickness = thickness,
+            .withColor = false,
+        });
+    }
 
     virtual void fillRectf(float x, float y, float width, float height) = 0;
 
@@ -255,7 +265,7 @@ class Graphics {
     void offset3DScene(float x, float y, float z = 0);
 
    protected:
-    virtual bool init() { return true; }  // must be called after the OS implementation constructor
+    virtual bool init() { return true; }   // must be called after the OS implementation constructor
     virtual void onTransformUpdate() = 0;  // called if matrices have changed and need to be (re-)applied/uploaded
 
     void updateTransform(bool force = false);
