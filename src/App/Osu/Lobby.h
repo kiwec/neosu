@@ -26,7 +26,6 @@ struct RoomUIElement : CBaseUIScrollView {
     i32 room_id;
     bool has_password;
 
-    void updateLayout(vec2 pos, vec2 size);
     void onRoomJoinButtonClick(CBaseUIButton* btn);
 };
 

@@ -183,10 +183,12 @@ void Lobby::updateLayout(vec2 newResolution) {
     this->list->setPos(round(newResolution.x * 0.6), 0);
     this->list->setSize(round(newResolution.x * 0.4), newResolution.y);
 
+    const f32 padding = 20.f * osu->getUIScale();
+
     if(this->rooms.empty()) {
         auto noRoomsOpenElement = new CBaseUILabel(0, 0, 0, 0, "", "There are no matches available.");
         noRoomsOpenElement->setTextJustification(TEXT_JUSTIFICATION::CENTERED);
-        noRoomsOpenElement->setSizeToContent(20, 20);
+        noRoomsOpenElement->setSizeToContent(padding, padding);
         noRoomsOpenElement->setPos(this->list->getSize().x / 2 - noRoomsOpenElement->getSize().x / 2,
                                    this->list->getSize().y / 2 - noRoomsOpenElement->getSize().y / 2);
         this->list->getContainer()->addBaseUIElement(noRoomsOpenElement);
@@ -195,16 +197,21 @@ void Lobby::updateLayout(vec2 newResolution) {
     float heading_ratio = 70 / newResolution.y;
     float chat_ratio = 0.3;
     float free_ratio = 1.f - (heading_ratio + chat_ratio);
+    this->create_room_btn->onResized();
+    this->create_room_btn->setSizeToContent(padding, padding);
     this->create_room_btn->setPos(
         round(newResolution.x * 0.3) - this->create_room_btn->getSize().x / 2,
         70 + std::round(newResolution.y * free_ratio / 2) - this->create_room_btn->getSize().y / 2);
 
-    float y = 10;
-    const float room_height = 105;
+    const f32 room_margin = 20.f * osu->getUIScale();
+    const f32 room_height = 105.f * osu->getUIScale();
+    f32 y = room_margin / 2.f;
     for(auto room : this->rooms) {
-        auto room_ui = new RoomUIElement(this, room, 10, y, this->list->getSize().x - 20, room_height);
+        const f32 x = 10.f * osu->getUIScale();
+        const f32 room_width = this->list->getSize().x - room_margin;
+        auto room_ui = new RoomUIElement(this, room, x, y, room_width, room_height);
         this->list->getContainer()->addBaseUIElement(room_ui);
-        y += room_height + 20;
+        y += room_height + room_margin;
     }
 
     this->list->setScrollSizeToContent();

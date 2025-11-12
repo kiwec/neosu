@@ -12,6 +12,7 @@ class CBaseUITextbox : public CBaseUIElement {
     void draw() override;
     void mouse_update(bool *propagate_clicks) override;
     void onFocusStolen() override;
+    void onResized() override;
 
     void onChar(KeyboardEvent &e) override;
     void onKeyDown(KeyboardEvent &e) override;
@@ -93,7 +94,6 @@ class CBaseUITextbox : public CBaseUIElement {
     void onMouseDownOutside(bool left = true, bool right = false) override;
     void onMouseUpInside(bool left = true, bool right = false) override;
     void onMouseUpOutside(bool left = true, bool right = false) override;
-    void onResized() override;
 
     void handleCaretKeyboardMove();
     void handleCaretKeyboardDelete();

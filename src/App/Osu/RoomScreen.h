@@ -94,6 +94,7 @@ class RoomScreen final : public OsuScreen {
     UIButton* ready_btn = nullptr;
     UIContextMenu* contextMenu = nullptr;
 
+    CBaseUILabel* player_list_label = nullptr;
     PauseButton* pauseButton = nullptr;
     McFont* font = nullptr;
     McFont* lfont = nullptr;

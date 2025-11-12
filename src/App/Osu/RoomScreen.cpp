@@ -101,17 +101,23 @@ bool UIModList::isVisible() { return !!*this->flags; }
         label_name->setDrawBackground(false);                             \
     } while(0)
 
-#define ADD_ELEMENT(element)                                       \
-    do {                                                           \
-        element->setPos(10, settings_y);                           \
-        this->settings->getContainer()->addBaseUIElement(element); \
-        settings_y += element->getSize().y + 20;                   \
+#define ADD_ELEMENT(element)                                           \
+    do {                                                               \
+        element->onResized();                                          \
+        element->setPos(10.f * osu->getUIScale(), settings_y);         \
+        this->settings->getContainer()->addBaseUIElement(element);     \
+        settings_y += element->getSize().y + 20.f * osu->getUIScale(); \
     } while(0)
 
-#define ADD_BUTTON(button, label)                                       \
-    do {                                                                \
-        button->setPos(label->getSize().x + 20, label->getPos().y - 7); \
-        this->settings->getContainer()->addBaseUIElement(button);       \
+#define ADD_BUTTON(button, label)                                                             \
+    do {                                                                                      \
+        label->onResized();                                                                   \
+        label->setSizeToContent(0, 0);                                                        \
+        button->onResized();                                                                  \
+        button->setSizeToContent(button_padding, button_padding);                             \
+        button->setPos(label->getSize().x + 20.f * osu->getUIScale(),                         \
+                       label->getPos().y + (label->getSize().y - button->getSize().y) / 2.f); \
+        this->settings->getContainer()->addBaseUIElement(button);                             \
     } while(0)
 
 RoomScreen::RoomScreen() : OsuScreen() {
@@ -136,19 +142,19 @@ RoomScreen::RoomScreen() : OsuScreen() {
     this->room_name_ipt = new CBaseUITextbox(0, 0, this->settings->getSize().x, 40, "");
     this->room_name_ipt->setText("Multiplayer room");
 
-    this->change_password_btn = new UIButton(0, 0, 190, 40, "change_password_btn", "Change password");
+    this->change_password_btn = new UIButton(0, 0, 0, 0, "change_password_btn", "Change password");
     this->change_password_btn->setColor(0xff0c7c99);
     this->change_password_btn->setUseDefaultSkin();
     this->change_password_btn->setClickCallback(SA::MakeDelegate<&RoomScreen::onChangePasswordClicked>(this));
 
     INIT_LABEL(this->win_condition, "Win condition: Score", false);
-    this->change_win_condition_btn = new UIButton(0, 0, 240, 40, "change_win_condition_btn", "Win condition: Score");
+    this->change_win_condition_btn = new UIButton(0, 0, 0, 0, "change_win_condition_btn", "Win condition: Score");
     this->change_win_condition_btn->setColor(0xff00d900);
     this->change_win_condition_btn->setUseDefaultSkin();
     this->change_win_condition_btn->setClickCallback(SA::MakeDelegate<&RoomScreen::onChangeWinConditionClicked>(this));
 
     INIT_LABEL(map_label, "Beatmap", true);
-    this->select_map_btn = new UIButton(0, 0, 130, 40, "select_map_btn", "Select map");
+    this->select_map_btn = new UIButton(0, 0, 0, 0, "select_map_btn", "Select map");
     this->select_map_btn->setColor(0xff0c7c99);
     this->select_map_btn->setUseDefaultSkin();
     this->select_map_btn->setClickCallback(SA::MakeDelegate<&RoomScreen::onSelectMapClicked>(this));
@@ -159,29 +165,30 @@ RoomScreen::RoomScreen() : OsuScreen() {
     INIT_LABEL(this->map_attributes2, "", false);
 
     INIT_LABEL(mods_label, "Mods", true);
-    this->select_mods_btn = new UIButton(0, 0, 180, 40, "select_mods_btn", "Select mods [F1]");
+    this->select_mods_btn = new UIButton(0, 0, 0, 0, "select_mods_btn", "Select mods [F1]");
     this->select_mods_btn->setColor(0xff0c7c99);
     this->select_mods_btn->setUseDefaultSkin();
     this->select_mods_btn->setClickCallback(SA::MakeDelegate<&RoomScreen::onSelectModsClicked>(this));
-    this->freemod = new UICheckbox(0, 0, 200, 50, "allow_freemod", "Freemod");
+    this->freemod = new UICheckbox(0, 0, 0, 0, "allow_freemod", "Freemod");
     this->freemod->setDrawFrame(false);
     this->freemod->setDrawBackground(false);
     this->freemod->setChangeCallback(SA::MakeDelegate<&RoomScreen::onFreemodCheckboxChanged>(this));
     this->mods = new UIModList(&BanchoState::room.mods);
     INIT_LABEL(this->no_mods_selected, "No mods selected.", false);
 
-    this->ready_btn = new UIButton(0, 0, 300, 50, "start_game_btn", "Start game");
+    this->ready_btn = new UIButton(0, 0, 0, 0, "start_game_btn", "Start game");
     this->ready_btn->setColor(0xff00d900);
     this->ready_btn->setUseDefaultSkin();
     this->ready_btn->setClickCallback(SA::MakeDelegate<&RoomScreen::onReadyButtonClick>(this));
     this->ready_btn->is_loading = true;
 
-    auto player_list_label = new CBaseUILabel(50, 50, 0, 0, "label", "Player list");
-    player_list_label->setFont(this->lfont);
-    player_list_label->setSizeToContent(0, 0);
-    player_list_label->setDrawFrame(false);
-    player_list_label->setDrawBackground(false);
-    this->addBaseUIElement(player_list_label);
+    this->player_list_label = new CBaseUILabel(50, 50, 0, 0, "label", "Player list");
+    this->player_list_label->setFont(this->lfont);
+    this->player_list_label->setSizeToContent(0, 0);
+    this->player_list_label->setDrawFrame(false);
+    this->player_list_label->setDrawBackground(false);
+    this->addBaseUIElement(this->player_list_label);
+
     this->slotlist = new CBaseUIScrollView(50, 90, 0, 0, "slot_list");
     this->slotlist->setDrawFrame(true);
     this->slotlist->setDrawBackground(true);
@@ -342,8 +349,9 @@ CBaseUIContainer *RoomScreen::setVisible(bool visible) {
 }
 
 void RoomScreen::updateSettingsLayout(vec2 newResolution) {
+    const f32 button_padding = 10.f * osu->getUIScale();
     const bool is_host = BanchoState::room.is_host();
-    int settings_y = 10;
+    int settings_y = 10.f * osu->getUIScale();
 
     this->settings->invalidate();
     this->settings->setPos(round(newResolution.x * 0.6), 0);
@@ -371,7 +379,7 @@ void RoomScreen::updateSettingsLayout(vec2 newResolution) {
     if(is_host) {
         // Room name (input)
         ADD_ELEMENT(this->room_name_iptl);
-        this->room_name_ipt->setSize(this->settings->getSize().x - 20, 40);
+        this->room_name_ipt->setSize(this->settings->getSize().x - 20.f * osu->getUIScale(), 40.f * osu->getUIScale());
         ADD_ELEMENT(this->room_name_ipt);
     }
 
@@ -387,13 +395,14 @@ void RoomScreen::updateSettingsLayout(vec2 newResolution) {
     }
     if(is_host) {
         this->change_win_condition_btn->setText(this->win_condition->getText());
+        this->change_win_condition_btn->setSizeToContent(button_padding, button_padding);
         ADD_ELEMENT(this->change_win_condition_btn);
     } else {
         ADD_ELEMENT(this->win_condition);
     }
 
     // Beatmap
-    settings_y += 10;
+    settings_y += 10.f * osu->getUIScale();
     ADD_ELEMENT(map_label);
     if(is_host) {
         ADD_BUTTON(this->select_map_btn, map_label);
@@ -406,7 +415,7 @@ void RoomScreen::updateSettingsLayout(vec2 newResolution) {
     }
 
     // Mods
-    settings_y += 10;
+    settings_y += 10.f * osu->getUIScale();
     ADD_ELEMENT(mods_label);
     if(is_host || BanchoState::room.freemods) {
         ADD_BUTTON(this->select_mods_btn, mods_label);
@@ -419,7 +428,7 @@ void RoomScreen::updateSettingsLayout(vec2 newResolution) {
         ADD_ELEMENT(this->no_mods_selected);
     } else {
         this->mods->flags = &BanchoState::room.mods;
-        this->mods->setSize(300, 90);
+        this->mods->setSize(300.f * osu->getUIScale(), 90.f * osu->getUIScale());
         ADD_ELEMENT(this->mods);
     }
 
@@ -459,10 +468,14 @@ void RoomScreen::updateLayout(vec2 newResolution) {
     this->pauseButton->setPos(round(newResolution.x * 0.6) - this->pauseButton->getSize().x * 2 - 10 * dpiScale,
                               this->pauseButton->getSize().y + 10 * dpiScale);
 
+    this->player_list_label->onResized();
+    this->player_list_label->setSizeToContent(0, 0);
+
     // XXX: Display detailed user presence
-    this->slotlist->setSize(newResolution.x * 0.6 - 200, newResolution.y * 0.6 - 110);
+    this->slotlist->setPosY(100.f * dpiScale);
+    this->slotlist->setSize(newResolution.x * 0.6 - 200.f * dpiScale, newResolution.y * 0.6 - 110.f * dpiScale);
     this->slotlist->freeElements();
-    int y_total = 10;
+    i32 y_total = 10.f * dpiScale;
     for(auto &slot : BanchoState::room.slots) {
         if(slot.has_player()) {
             auto user_info = BANCHO::User::get_user_info(slot.player_id, true);
@@ -477,8 +490,8 @@ void RoomScreen::updateLayout(vec2 newResolution) {
                 color = 0xff00ff00;
             }
 
-            const float SLOT_HEIGHT = 40.f;
-            auto avatar = new UIAvatar(slot.player_id, 10, y_total, SLOT_HEIGHT, SLOT_HEIGHT);
+            const f32 SLOT_HEIGHT = 40.f * dpiScale;
+            auto avatar = new UIAvatar(slot.player_id, 10.f * dpiScale, y_total, SLOT_HEIGHT, SLOT_HEIGHT);
             this->slotlist->getContainer()->addBaseUIElement(avatar);
 
             auto user_box = new UIUserLabel(slot.player_id, username);
@@ -490,11 +503,11 @@ void RoomScreen::updateLayout(vec2 newResolution) {
             this->slotlist->getContainer()->addBaseUIElement(user_box);
 
             auto user_mods = new UIModList(&slot.mods);
-            user_mods->setPos(user_box->getPos().x + user_box->getSize().x + 30, y_total);
-            user_mods->setSize(350, SLOT_HEIGHT);
+            user_mods->setPos(user_box->getPos().x + user_box->getSize().x + 30.f * dpiScale, y_total);
+            user_mods->setSize(350.f * dpiScale, SLOT_HEIGHT);
             this->slotlist->getContainer()->addBaseUIElement(user_mods);
 
-            y_total += SLOT_HEIGHT + 5;
+            y_total += SLOT_HEIGHT + 5.f * dpiScale;
         }
     }
     this->slotlist->setScrollSizeToContent();
