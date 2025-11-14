@@ -427,9 +427,10 @@ unsigned int SoundTouchFilterInstance::getAudio(float *aBuffer, unsigned int aSa
 
 	// update SoundTouch parameters if they've changed, after the last getAudio chunk has played out with the old speed
 	bool updatePitchOrSpeed = false;
+	const bool compensatePitch = cv::snd_speed_compensate_pitch.getBool();
 	{
 		Sync::scoped_lock lock{mSettingUpdateMutex};
-		if (mNeedsSettingUpdate || (mSetRelativePlaySpeed != mOverallRelativePlaySpeed) || (mSetRelativePlaySpeed != mSoundTouchSpeed))
+		if (mNeedsSettingUpdate || (mSetRelativePlaySpeed != mOverallRelativePlaySpeed) || (compensatePitch && (mSetRelativePlaySpeed != mSoundTouchSpeed)))
 		{
 			updatePitchOrSpeed = true;
 			mNeedsSettingUpdate = false;
@@ -450,7 +451,12 @@ unsigned int SoundTouchFilterInstance::getAudio(float *aBuffer, unsigned int aSa
 		mSoundTouch->setPitchSemiTones(pitchSemitones);
 
 		// SoLoud AudioStreamInstance inherited, allows the main SoLoud mixer to advance the mStreamPosition by the correct proportional amount
-		mSetRelativePlaySpeed = mOverallRelativePlaySpeed = mSoundTouchSpeed;
+		if (compensatePitch) {
+			mSetRelativePlaySpeed = mOverallRelativePlaySpeed = mSoundTouchSpeed;
+		} else if (mSoundTouchSpeed != 1.f) {
+			// this should not be possible here
+			debugLog("DEBUG: we are not compensating pitch, but mSoundTouchSpeed ({}) != 1.0!", mSoundTouchSpeed);
+		}
 
 		updateSTLatency();
 	}

@@ -19,7 +19,7 @@ enum class ModFlags : u64 {
     Nightmare = 1ULL << 9,
 
     // Special mods
-    NoPitchCorrection = 1ULL << 10,
+    NoPitchCorrection = 1ULL << 10, // should rename to Nightcore?
     TouchDevice = 1ULL << 11,
     SpunOut = 1ULL << 12,
     ScoreV2 = 1ULL << 13,

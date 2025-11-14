@@ -1229,6 +1229,9 @@ f32 SimulatedBeatmapInterface::getRawApproachTime_full() const {
 }
 
 f32 SimulatedBeatmapInterface::getPitchMultiplier() const {
+    // if pitch compensation is off, keep pitch constant (do not apply daycore/nightcore pitch)
+    if(!cv::snd_speed_compensate_pitch.getBool()) return 1.f;
+
     float pitchMultiplier = 1.0f;
 
     // TODO: re-add actual nightcore/daycore mods

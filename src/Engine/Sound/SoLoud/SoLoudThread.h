@@ -172,9 +172,9 @@ class SoLoudThreadWrapper {
 
     // convenience passthroughs for the current methods we need
     void deinit() {
-        this->sync([this]() {
-            if(this->soloud) {
-                this->soloud->deinit();
+        this->sync([sl_ = this->soloud.get()]() {
+            if(sl_) {
+                sl_->deinit();
             }
         });
     }
@@ -209,134 +209,149 @@ class SoLoudThreadWrapper {
     }
 
     SoLoud::handle play(SoLoud::AudioSource& aSound, float aVolume = -1.0f, float aPan = 0.0f, bool aPaused = false) {
-        return this->sync([&, aVolume, aPan, aPaused]() { return this->soloud->play(aSound, aVolume, aPan, aPaused); });
+        return this->sync([sl_ = this->soloud.get(), &aSound, aVolume, aPan, aPaused]() {
+            return sl_->play(aSound, aVolume, aPan, aPaused);
+        });
     }
 
     // NOTE: currently unused
     std::future<SoLoud::handle> play_async(SoLoud::AudioSource& aSound, float aVolume = -1.0f, float aPan = 0.0f,
                                            bool aPaused = false) {
-        return this->async(
-            [&, aVolume, aPan, aPaused]() { return this->soloud->play(aSound, aVolume, aPan, aPaused); });
+        return this->async([sl_ = this->soloud.get(), &aSound, aVolume, aPan, aPaused]() {
+            return sl_->play(aSound, aVolume, aPan, aPaused);
+        });
     }
 
     void setPause(SoLoud::handle aVoiceHandle, bool aPause) {
-        this->fire_and_forget([this, aVoiceHandle, aPause]() { this->soloud->setPause(aVoiceHandle, aPause); });
+        this->fire_and_forget(
+            [sl_ = this->soloud.get(), aVoiceHandle, aPause]() { sl_->setPause(aVoiceHandle, aPause); });
     }
 
     void setVolume(SoLoud::handle aVoiceHandle, float aVolume) {
-        this->fire_and_forget([this, aVoiceHandle, aVolume]() { this->soloud->setVolume(aVoiceHandle, aVolume); });
+        this->fire_and_forget(
+            [sl_ = this->soloud.get(), aVoiceHandle, aVolume]() { sl_->setVolume(aVoiceHandle, aVolume); });
     }
 
     void fadeVolume(SoLoud::handle aVoiceHandle, float aTo, float aTime) {
         this->fire_and_forget(
-            [this, aVoiceHandle, aTo, aTime]() { this->soloud->fadeVolume(aVoiceHandle, aTo, aTime); });
+            [sl_ = this->soloud.get(), aVoiceHandle, aTo, aTime]() { sl_->fadeVolume(aVoiceHandle, aTo, aTime); });
     }
 
     void setRelativePlaySpeed(SoLoud::handle aVoiceHandle, float aSpeed) {
         this->fire_and_forget(
-            [this, aVoiceHandle, aSpeed]() { this->soloud->setRelativePlaySpeed(aVoiceHandle, aSpeed); });
+            [sl_ = this->soloud.get(), aVoiceHandle, aSpeed]() { sl_->setRelativePlaySpeed(aVoiceHandle, aSpeed); });
     }
 
     void setProtectVoice(SoLoud::handle aVoiceHandle, bool aProtect) {
         this->fire_and_forget(
-            [this, aVoiceHandle, aProtect]() { this->soloud->setProtectVoice(aVoiceHandle, aProtect); });
+            [sl_ = this->soloud.get(), aVoiceHandle, aProtect]() { sl_->setProtectVoice(aVoiceHandle, aProtect); });
     }
 
     void setSamplerate(SoLoud::handle aVoiceHandle, float aSamplerate) {
         this->fire_and_forget(
-            [this, aVoiceHandle, aSamplerate]() { this->soloud->setSamplerate(aVoiceHandle, aSamplerate); });
+            [sl_ = this->soloud.get(), aVoiceHandle, aSamplerate]() { sl_->setSamplerate(aVoiceHandle, aSamplerate); });
     }
 
     void setPan(SoLoud::handle aVoiceHandle, float aPan) {
-        this->fire_and_forget([this, aVoiceHandle, aPan]() { this->soloud->setPan(aVoiceHandle, aPan); });
+        this->fire_and_forget([sl_ = this->soloud.get(), aVoiceHandle, aPan]() { sl_->setPan(aVoiceHandle, aPan); });
     }
 
     void setLooping(SoLoud::handle aVoiceHandle, bool aLooping) {
-        this->fire_and_forget([this, aVoiceHandle, aLooping]() { this->soloud->setLooping(aVoiceHandle, aLooping); });
+        this->fire_and_forget(
+            [sl_ = this->soloud.get(), aVoiceHandle, aLooping]() { sl_->setLooping(aVoiceHandle, aLooping); });
     }
 
     void setGlobalVolume(float aVolume) {
-        this->fire_and_forget([this, aVolume]() { this->soloud->setGlobalVolume(aVolume); });
+        this->fire_and_forget([sl_ = this->soloud.get(), aVolume]() { sl_->setGlobalVolume(aVolume); });
     }
 
     void setPostClipScaler(float aScaler) {
-        this->fire_and_forget([this, aScaler]() { this->soloud->setPostClipScaler(aScaler); });
+        this->fire_and_forget([sl_ = this->soloud.get(), aScaler]() { sl_->setPostClipScaler(aScaler); });
     }
 
     void setMainResampler(unsigned int aResampler) {
-        this->fire_and_forget([this, aResampler]() { this->soloud->setMainResampler(aResampler); });
+        this->fire_and_forget([sl_ = this->soloud.get(), aResampler]() { sl_->setMainResampler(aResampler); });
     }
 
     void stop(SoLoud::handle aVoiceHandle) {
-        this->fire_and_forget([this, aVoiceHandle]() { this->soloud->stop(aVoiceHandle); });
+        this->fire_and_forget([sl_ = this->soloud.get(), aVoiceHandle]() { sl_->stop(aVoiceHandle); });
     }
 
     void seek_async(SoLoud::handle aVoiceHandle, SoLoud::time aSeconds) {
-        this->fire_and_forget([this, aVoiceHandle, aSeconds]() { this->soloud->seek(aVoiceHandle, aSeconds); });
+        this->fire_and_forget(
+            [sl_ = this->soloud.get(), aVoiceHandle, aSeconds]() { sl_->seek(aVoiceHandle, aSeconds); });
     }
 
     // use sync for methods that need return values (or where we want the effect to be applied immediately)
     void seek(SoLoud::handle aVoiceHandle, SoLoud::time aSeconds) {
-        this->sync([this, aVoiceHandle, aSeconds]() { this->soloud->seek(aVoiceHandle, aSeconds); });
+        this->sync([sl_ = this->soloud.get(), aVoiceHandle, aSeconds]() { sl_->seek(aVoiceHandle, aSeconds); });
     }
 
     bool isValidVoiceHandle(SoLoud::handle aVoiceHandle) {
-        return this->sync([this, aVoiceHandle]() { return this->soloud->isValidVoiceHandle(aVoiceHandle); });
+        return this->sync([sl_ = this->soloud.get(), aVoiceHandle]() { return sl_->isValidVoiceHandle(aVoiceHandle); });
+    }
+
+    float getRelativePlaySpeed(SoLoud::handle aVoiceHandle) {
+        return this->sync(
+            [sl_ = this->soloud.get(), aVoiceHandle]() { return sl_->getRelativePlaySpeed(aVoiceHandle); });
     }
 
     SoLoud::time getStreamPosition(SoLoud::handle aVoiceHandle) {
-        return this->sync([this, aVoiceHandle]() { return this->soloud->getStreamPosition(aVoiceHandle); });
+        return this->sync([sl_ = this->soloud.get(), aVoiceHandle]() { return sl_->getStreamPosition(aVoiceHandle); });
     }
 
     bool getPause(SoLoud::handle aVoiceHandle) {
-        return this->sync([this, aVoiceHandle]() { return this->soloud->getPause(aVoiceHandle); });
+        return this->sync([sl_ = this->soloud.get(), aVoiceHandle]() { return sl_->getPause(aVoiceHandle); });
     }
 
     unsigned int getBackendSamplerate() {
-        return this->sync([this]() { return this->soloud->getBackendSamplerate(); });
+        return this->sync([sl_ = this->soloud.get()]() { return sl_->getBackendSamplerate(); });
     }
 
     unsigned int getBackendBufferSize() {
-        return this->sync([this]() { return this->soloud->getBackendBufferSize(); });
+        return this->sync([sl_ = this->soloud.get()]() { return sl_->getBackendBufferSize(); });
     }
 
     unsigned int getBackendChannels() {
-        return this->sync([this]() { return this->soloud->getBackendChannels(); });
+        return this->sync([sl_ = this->soloud.get()]() { return sl_->getBackendChannels(); });
     }
 
     const char* getBackendString() {
-        return this->sync([this]() { return this->soloud->getBackendString(); });
+        return this->sync([sl_ = this->soloud.get()]() { return sl_->getBackendString(); });
     }
 
     unsigned int getMaxActiveVoiceCount() {
-        return this->sync([this]() { return this->soloud->getMaxActiveVoiceCount(); });
+        return this->sync([sl_ = this->soloud.get()]() { return sl_->getMaxActiveVoiceCount(); });
     }
 
     SoLoud::result setMaxActiveVoiceCount(unsigned int aVoiceCount) {
-        return this->sync([aVoiceCount, this]() { return this->soloud->setMaxActiveVoiceCount(aVoiceCount); });
+        return this->sync(
+            [sl_ = this->soloud.get(), aVoiceCount]() { return sl_->setMaxActiveVoiceCount(aVoiceCount); });
     }
 
     unsigned int getActiveVoiceCount() {
-        return this->sync([this]() { return this->soloud->getActiveVoiceCount(); });
+        return this->sync([sl_ = this->soloud.get()]() { return sl_->getActiveVoiceCount(); });
     }
 
     SoLoud::result getCurrentDevice(SoLoud::DeviceInfo* aInfo) {
-        return this->sync([this, aInfo]() { return this->soloud->getCurrentDevice(aInfo); });
+        return this->sync([sl_ = this->soloud.get(), aInfo]() { return sl_->getCurrentDevice(aInfo); });
     }
 
     SoLoud::result enumerateDevices(SoLoud::DeviceInfo** aDevices, unsigned int* aCount) {
-        return this->sync([this, aDevices, aCount]() { return this->soloud->enumerateDevices(aDevices, aCount); });
+        return this->sync(
+            [sl_ = this->soloud.get(), aDevices, aCount]() { return sl_->enumerateDevices(aDevices, aCount); });
     }
 
     SoLoud::result setDevice(const char* aDeviceIdentifier) {
-        return this->sync([this, aDeviceIdentifier]() { return this->soloud->setDevice(aDeviceIdentifier); });
+        return this->sync(
+            [sl_ = this->soloud.get(), aDeviceIdentifier]() { return sl_->setDevice(aDeviceIdentifier); });
     }
 
     // async position update helper (so we don't need to run tasks recursively)
     void updateCachedPosition(SoLoud::handle aVoiceHandle, std::atomic<double>& cacheTime,
                               std::atomic<double>& cachedPosition) {
-        this->fire_and_forget([this, aVoiceHandle, &cacheTime, &cachedPosition]() {
-            cachedPosition.store(this->soloud->getStreamPosition(aVoiceHandle), std::memory_order_release);
+        this->fire_and_forget([sl_ = this->soloud.get(), aVoiceHandle, &cacheTime, &cachedPosition]() {
+            cachedPosition.store(sl_->getStreamPosition(aVoiceHandle), std::memory_order_release);
             cacheTime.store(Timing::getTimeReal(), std::memory_order_release);
         });
     }
@@ -396,7 +411,7 @@ class SoLoudThreadWrapper {
 
     void worker_loop(const Sync::stop_token& stoken) noexcept {
         McThread::set_current_thread_name("soloud_mixer");
-        McThread::set_current_thread_prio(McThread::Priority::REALTIME); // raise priority to the max
+        McThread::set_current_thread_prio(McThread::Priority::REALTIME);  // raise priority to the max
 
         // initialize SoLoud on the audio thread
         this->soloud = std::make_unique<SoLoud::Soloud>();
@@ -413,10 +428,13 @@ class SoLoudThreadWrapper {
             Sync::unique_lock<Sync::mutex> lock(this->queue_mutex);
 
             // wait for tasks or stop signal
-            this->queue_cv.wait(lock, stoken, [&] { return !this->task_queue.empty() || this->shutting_down.load(std::memory_order_acquire); });
+            this->queue_cv.wait(lock, stoken, [&] {
+                return !this->task_queue.empty() || this->shutting_down.load(std::memory_order_acquire);
+            });
 
             // process all available tasks
-            while(!this->task_queue.empty() && !stoken.stop_requested() && !this->shutting_down.load(std::memory_order_acquire)) {
+            while(!this->task_queue.empty() && !stoken.stop_requested() &&
+                  !this->shutting_down.load(std::memory_order_acquire)) {
                 auto task = std::move(this->task_queue.front());
                 this->task_queue.pop();
 

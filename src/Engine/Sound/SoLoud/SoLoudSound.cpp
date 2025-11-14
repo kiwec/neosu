@@ -177,15 +177,31 @@ void SoLoudSound::setSpeed(float speed) {
 
     auto *filteredStream = static_cast<SoLoud::SLFXStream *>(this->audioSource);
 
-    // this should technically be == fSpeed, but get it/update it from the source directly just in case
-    const float previousSpeed = (this->fSpeed = filteredStream->getSpeedFactor());
-    if(previousSpeed != speed) {
-        this->fSpeed = speed;
+    const float filteredSpeed = filteredStream->getSpeedFactor();
+    const float previousSpeed = this->fSpeed;
+    this->fSpeed = speed;
 
-        // update the SLFXStream parameters
-        filteredStream->setSpeedFactor(this->fSpeed);
+    if(cv::snd_speed_compensate_pitch.getBool()) {
+        if(speed != filteredSpeed) {
+            // update the SLFXStream parameters
+            filteredStream->setSpeedFactor(speed);
+            logIfCV(debug_snd, "SoLoudSound: Speed change (compensated pitch) {:s}: {:f}->{:f}", this->sFilePath,
+                    previousSpeed, speed);
+        }
+    } else {
+        const float soloudSpeed = soloud->getRelativePlaySpeed(this->handle);
+        if(filteredSpeed != 1.f) {
+            // make sure the filter speed/pitch is reset, set the relative play speed directly for uncompensated playback
+            filteredStream->setSpeedFactor(1.f);
+            this->setPitch(1.f);
+        }
 
-        logIfCV(debug_snd, "SoLoudSound: Speed change {:s}: {:f}->{:f}", this->sFilePath, previousSpeed, this->fSpeed);
+        if(speed != soloudSpeed) {
+            soloud->setRelativePlaySpeed(this->handle, speed);
+
+            logIfCV(debug_snd, "SoLoudSound: Speed change (un-compensated pitch) {:s}: {:f}->{:f}", this->sFilePath,
+                    previousSpeed, speed);
+        }
     }
 }
 

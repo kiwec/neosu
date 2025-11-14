@@ -173,6 +173,7 @@ CONVAR(snd_soloud_prefer_ffmpeg, 0, CLIENT,
 CONVAR(snd_soloud_prefer_exclusive, false, CLIENT, "try initializing in exclusive mode first for MiniAudio on Windows");
 CONVAR(snd_disable_exclusive_unfocused, true, CLIENT,
        "disable WASAPI exclusive mode when losing focus (currently SoLoud+MiniAudio only)");
+CONVAR(snd_speed_compensate_pitch, true, CLIENT, "automatically keep pitch constant if speed changes");
 CONVAR(volume_change_interval, 0.05f, CLIENT | SKINS | SERVER);
 CONVAR(volume_effects, 1.0f, CLIENT | SKINS | SERVER);
 CONVAR(volume_master, 1.0f, CLIENT | SKINS | SERVER);

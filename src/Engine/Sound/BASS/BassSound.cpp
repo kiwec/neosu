@@ -42,7 +42,8 @@ void BassSound::initAsync() {
         }
 
         if(this->isInterrupted()) return;
-        this->srchandle = BASS_FX_TempoCreate(this->srchandle, BASS_FX_TEMPO_ALGO_SHANNON | BASS_FX_FREESOURCE | BASS_STREAM_DECODE);
+        this->srchandle =
+            BASS_FX_TempoCreate(this->srchandle, BASS_FX_TEMPO_ALGO_SHANNON | BASS_FX_FREESOURCE | BASS_STREAM_DECODE);
         if(!this->srchandle) {
             debugLog("BASS_FX_TempoCreate() error on file {}: {}", this->sFilePath.c_str(),
                      BassManager::getErrorUString());
@@ -194,7 +195,18 @@ void BassSound::setSpeed(f32 speed) {
     assert(this->bStream);  // can't call setSpeed() on a sample
 
     speed = std::clamp<float>(speed, 0.05f, 50.0f);
-    BASS_ChannelSetAttribute(this->srchandle, BASS_ATTRIB_TEMPO, (speed - 1.0f) * 100.0f);
+
+    float freq = cv::snd_freq.getFloat();
+    BASS_ChannelGetAttribute(this->srchandle, BASS_ATTRIB_FREQ, &freq);
+
+    BASS_ChannelSetAttribute(this->srchandle, BASS_ATTRIB_TEMPO, 1.0f);
+    BASS_ChannelSetAttribute(this->srchandle, BASS_ATTRIB_TEMPO_FREQ, freq);
+
+    if(cv::snd_speed_compensate_pitch.getBool()) {
+        BASS_ChannelSetAttribute(this->srchandle, BASS_ATTRIB_TEMPO, (speed - 1.0f) * 100.0f);
+    } else {
+        BASS_ChannelSetAttribute(this->srchandle, BASS_ATTRIB_TEMPO_FREQ, speed * freq);
+    }
 
     this->fSpeed = speed;
 }
