@@ -1049,7 +1049,7 @@ UString BanchoState::get_disk_uuid_win32() {
                 // format volume serial as hex string
                 std::array<char, 16> serial_buffer{};
                 snprintf(serial_buffer.data(), serial_buffer.size(), "%08x", volume_serial);
-                w_uuid = UString{serial_buffer.data()};
+                w_uuid = UString{serial_buffer.data(), static_cast<int>(serial_buffer.size())};
             }
         }
     }

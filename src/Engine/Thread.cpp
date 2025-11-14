@@ -3,9 +3,9 @@
 #include "Thread.h"
 #include "Logging.h"
 #include "UString.h"
-#include "Environment.h"
 
 #include <SDL3/SDL_init.h>
+#include <SDL3/SDL_cpuinfo.h>
 
 #if defined(_WIN32)
 #include "WinDebloatDefs.h"
@@ -103,6 +103,8 @@ const char *get_current_thread_name() {
 
 bool is_main_thread() { return SDL_IsMainThread(); }
 
+int get_logical_cpu_count() { return SDL_GetNumLogicalCPUCores(); }
+
 void set_current_thread_prio(Priority prio) {
     SDL_ThreadPriority sdlprio;
     const char *priostring;
@@ -130,7 +132,7 @@ void set_current_thread_prio(Priority prio) {
         debugLog("couldn't set thread priority to {}", priostring);
     }
 #ifdef MCENGINE_PLATFORM_WINDOWS
-    static int logcpus = Environment::getLogicalCPUCount();
+    static int logcpus = get_logical_cpu_count();
     // tested in a windows vm, this causes things to just behave WAY worse than if you leave it alone with low core counts
     if(logcpus > 4 && is_main_thread()) {
         // only allow setting normal/high for process priority class

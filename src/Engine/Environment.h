@@ -127,9 +127,6 @@ class Environment {
     }
     [[nodiscard]] inline const std::vector<std::string> &getCommandLine() const { return m_vCmdLine; }
 
-    // returns at least 1
-    static int getLogicalCPUCount() noexcept;
-
     // user
     [[nodiscard]] const UString &getUsername() const noexcept;
     [[nodiscard]] const std::string &getUserDataPath() const noexcept;

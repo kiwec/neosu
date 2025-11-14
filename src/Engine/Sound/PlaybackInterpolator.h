@@ -72,8 +72,8 @@ class GameplayInterpolator {
 
     GameplayInterpolator(const GameplayInterpolator &) = default;
     GameplayInterpolator &operator=(const GameplayInterpolator &) = default;
-    GameplayInterpolator(GameplayInterpolator &&) = default;
-    GameplayInterpolator &operator=(GameplayInterpolator &&) = default;
+    GameplayInterpolator(GameplayInterpolator &&) noexcept = default;
+    GameplayInterpolator &operator=(GameplayInterpolator &&) noexcept = default;
 
     virtual u32 update(f64 rawPositionMS, f64 currentTime, f64 playbackSpeed, bool isLooped = false, u64 lengthMS = 0,
                        bool isPlaying = true) = 0;

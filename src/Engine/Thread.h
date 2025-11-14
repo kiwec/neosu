@@ -11,4 +11,8 @@ void set_current_thread_prio(Priority prio);
 const char* get_current_thread_name();
 
 bool is_main_thread();
+
+// returns at least 1
+int get_logical_cpu_count();
+
 }  // namespace McThread

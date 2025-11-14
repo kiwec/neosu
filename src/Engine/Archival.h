@@ -19,9 +19,9 @@ class Archive {
         ~Entry() = default;
 
         Entry& operator=(const Entry&) = default;
-        Entry& operator=(Entry&&) = default;
+        Entry& operator=(Entry&&) noexcept = default;
         Entry(const Entry&) = default;
-        Entry(Entry&&) = default;
+        Entry(Entry&&) noexcept = default;
 
         // entry information
         [[nodiscard]] std::string getFilename() const;

@@ -113,7 +113,7 @@ Environment::Environment(const std::unordered_map<std::string, std::optional<std
     cv::keyboard_raw_input.setCallback(SA::MakeDelegate<&Environment::onRawKeyboardChange>(this));
 
     // set high priority right away
-    McThread::set_current_thread_prio((McThread::Priority)(int)cv::win_processpriority.getFloat());
+    McThread::set_current_thread_prio(cv::win_processpriority.getVal<McThread::Priority>());
 }
 
 Environment::~Environment() {
@@ -173,9 +173,6 @@ void Environment::openURLInDefaultBrowser(std::string_view url) noexcept {
         debugLog("Failed to open URL: {:s}", SDL_GetError());
     }
 }
-
-// returns at least 1
-int Environment::getLogicalCPUCount() noexcept { return SDL_GetNumLogicalCPUCores(); }
 
 const UString &Environment::getUsername() const noexcept {
     if(!m_sUsername.isEmpty()) return m_sUsername;
