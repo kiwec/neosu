@@ -13,6 +13,7 @@ class CBaseUIScrollView;
 class ConsoleBoxTextbox;
 
 class ConsoleBox : public CBaseUIElement {
+    NOCOPY_NOMOVE(ConsoleBox)
    public:
     ConsoleBox();
     ~ConsoleBox() override;

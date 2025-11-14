@@ -117,6 +117,8 @@ class Osu final : public MouseListener, public KeyboardListener {
     }
     inline void setShouldPauseBGThreads(bool pause) { this->pause_bg_threads.store(pause, std::memory_order_release); }
 
+    [[nodiscard]] bool shouldDrawRuntimeInfo() const;
+
     [[nodiscard]] inline McRect getVirtScreenRect() const { return this->internalRect; }
     [[nodiscard]] inline vec2 getVirtScreenSize() const { return this->internalRect.getSize(); }
     [[nodiscard]] inline int getVirtScreenWidth() const { return (int)this->internalRect.getWidth(); }
@@ -251,6 +253,9 @@ class Osu final : public MouseListener, public KeyboardListener {
     void setupSoloud();
     // callback
     inline void preferCJKCallback(float newValue) { this->bPreferCJK = !!static_cast<int>(newValue); }
+
+    void drawRuntimeInfo();
+
     void globalOnSetValueProtectedCallback();
     static bool globalOnGetValueProtectedCallback(const char *cvarname);
     static bool globalOnSetValueGameplayCallback(const char *cvarname, CvarEditor setterkind);
@@ -373,6 +378,7 @@ class Osu final : public MouseListener, public KeyboardListener {
     bool bFontReloadScheduled{false};
     bool bScreensReady{false};
     bool bPreferCJK{false};
+    bool bDrawBuildInfo{true};
 
    public:  // public due to BassSoundEngine access
     bool music_unpause_scheduled{false};

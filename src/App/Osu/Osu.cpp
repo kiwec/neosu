@@ -176,6 +176,10 @@ Osu::Osu() {
     cv::prefer_cjk.setCallback(SA::MakeDelegate<&Osu::preferCJKCallback>(this));
     this->bPreferCJK = cv::prefer_cjk.getBool();
 
+    cv::draw_runtime_info.setCallback(
+        [](float newVal) -> void { return (void)(osu ? (osu->bDrawBuildInfo = !!static_cast<int>(newVal)) : 0); });
+    this->bDrawBuildInfo = cv::draw_runtime_info.getBool();
+
     // debug
     this->windowManager = std::make_unique<CWindowManager>();
 
@@ -553,7 +557,9 @@ void Osu::draw() {
         this->user_actions->draw();
         this->optionsMenu->draw();
 
-        if(!isFPoSu) this->hud->drawFps();
+        if(!isFPoSu) {
+            this->hud->drawFps();
+        }
 
         this->windowManager->draw();
 
@@ -623,6 +629,8 @@ void Osu::draw() {
     if(!this->isInPlayMode() || (this->map_iface->isPaused() && !cv::mod_fposu.getBool())) {
         this->hud->drawCursor(mouse->getPos());
     }
+
+    this->drawRuntimeInfo();
 
     // if we are not using the native window resolution
     if(isBufferedDraw) {
@@ -2131,4 +2139,66 @@ void Osu::setupSoloud() {
     // this sets convar callbacks for things that require a soundengine reinit, do it
     // only after init so config files don't restart it over and over again
     soundEngine->allowInternalCallbacks();
+}
+
+bool Osu::shouldDrawRuntimeInfo() const {
+    if(this->isInPlayModeAndNotPaused()) return false;
+    return this->bDrawBuildInfo;
+}
+
+void Osu::drawRuntimeInfo() {
+    if(!this->shouldDrawRuntimeInfo()) return;
+
+    // this information shouldn't scale with DPI
+    McFont *font = engine->getConsoleFont();
+
+    static const UString infoString = []() -> UString {
+        const char *osstr;
+        switch(Env::getOS()) {
+            case OS::WINDOWS:
+                osstr = "win";
+                break;
+            case OS::LINUX:
+                osstr = "lnx";
+                break;
+            case OS::WASM:
+                osstr = "wsm";
+                break;
+            case OS::MAC:
+                osstr = "mac";
+                break;
+            case OS::NONE:
+                std::unreachable();
+                break;
+        }
+
+        return fmt::format("{}.{}{}.{}.{}",                    //
+                           cv::build_timestamp.getString(),    //
+                           osstr,                              //
+                           sizeof(void *) == 8 ? "64" : "32",  //
+                           env->usingDX11() ? "dx" : "gl",     //
+                           soundEngine->getTypeId() == SoundEngine::BASS ? "bss" : "sld");
+    }();
+
+    static const int infoStringWidth = font->getStringWidth(infoString);
+    static const int fontHeight = font->getHeight();
+
+    const int shadowOffset = 1;
+
+    g->pushTransform();
+    {
+        // shadow
+        g->setColor(rgba(0, 0, 0, 100));
+
+        g->translate(osu->getVirtScreenWidth() - infoStringWidth + shadowOffset,
+                     osu->getVirtScreenHeight() - fontHeight + shadowOffset + 8);
+        g->drawString(font, infoString);
+
+        // text
+        g->setColor(rgba(255, 255, 255, 100));
+
+        g->translate(-shadowOffset, -shadowOffset);
+        g->drawString(font, infoString);
+    }
+    g->popTransform();
 }

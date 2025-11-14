@@ -21,6 +21,7 @@ class Graphics;
 class Mouse;
 class ConVar;
 class Keyboard;
+class McFont;
 class InputDevice;
 class SoundEngine;
 class NetworkHandler;
@@ -113,6 +114,9 @@ class Engine final : public KeyboardListener {
     }
     [[nodiscard]] constexpr CBaseUIContainer *getGUI() const { return this->guiContainer; }
 
+    [[nodiscard]] constexpr McFont *getDefaultFont() const {return this->defaultFont; }
+    [[nodiscard]] constexpr McFont *getConsoleFont() const {return this->consoleFont; }
+
    private:
     void runtime_assert(bool cond, const char *reason);
 
@@ -140,6 +144,9 @@ class Engine final : public KeyboardListener {
     VisualProfiler *visualProfiler;
     friend class Logger;
     static mcatomic_shptr<ConsoleBox> consoleBox;
+
+    McFont *consoleFont{nullptr};
+    McFont *defaultFont{nullptr};
 
     // custom
     bool bShuttingDown;

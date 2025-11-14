@@ -145,7 +145,7 @@ NvApiState &getNvAPIState() noexcept {
     return state;
 }
 
-bool initNvAPI() noexcept {
+[[maybe_unused]] bool initNvAPI() noexcept {
     auto &state = getNvAPIState();
     if(state.initialized) return true;
 

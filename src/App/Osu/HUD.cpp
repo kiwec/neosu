@@ -568,19 +568,23 @@ void HUD::drawFps() {
     const int margin = std::round(3.0f * dpiScale);
     const int shadowOffset = std::round(1.0f * dpiScale);
 
+    // console font does not scale with DPI
+    static const int runtimeConfigHeight = (int)(engine->getConsoleFont()->getHeight() * 1.25f);
+    const int belowPadding = osu->shouldDrawRuntimeInfo() ? runtimeConfigHeight : 0;
+
     // shadow
     g->setColor(0xff000000);
     g->pushTransform();
     {
         g->translate(osu->getVirtScreenWidth() - font->getStringWidth(fpsString) - margin + shadowOffset,
-                     osu->getVirtScreenHeight() - margin - font->getHeight() - margin + shadowOffset);
+                     osu->getVirtScreenHeight() - margin - font->getHeight() - margin + shadowOffset - belowPadding);
         g->drawString(font, fpsString);
     }
     g->popTransform();
     g->pushTransform();
     {
         g->translate(osu->getVirtScreenWidth() - font->getStringWidth(msString) - margin + shadowOffset,
-                     osu->getVirtScreenHeight() - margin + shadowOffset);
+                     osu->getVirtScreenHeight() - margin + shadowOffset - belowPadding);
         g->drawString(font, msString);
     }
     g->popTransform();
@@ -606,7 +610,7 @@ void HUD::drawFps() {
         }
 
         g->translate(osu->getVirtScreenWidth() - font->getStringWidth(fpsString) - margin,
-                     osu->getVirtScreenHeight() - margin - font->getHeight() - margin);
+                     osu->getVirtScreenHeight() - margin - font->getHeight() - margin - belowPadding);
         g->drawString(font, fpsString);
     }
     g->popTransform();
@@ -623,7 +627,7 @@ void HUD::drawFps() {
         }
 
         g->translate(osu->getVirtScreenWidth() - font->getStringWidth(msString) - margin,
-                     osu->getVirtScreenHeight() - margin);
+                     osu->getVirtScreenHeight() - margin - belowPadding);
         g->drawString(font, msString);
     }
     g->popTransform();

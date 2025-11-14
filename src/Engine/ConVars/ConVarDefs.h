@@ -873,6 +873,7 @@ CONVAR(drain_disabled, false, CLIENT | SERVER | PROTECTED | GAMEPLAY,
        "determines if HP drain should be disabled entirely");
 CONVAR(drain_kill_notification_duration, 1.0f, CLIENT | SKINS | SERVER,
        "how long to display the \"You have failed, but you can keep playing!\" notification (0 = disabled)");
+CONVAR(draw_runtime_info, true, CLIENT | SERVER, "draw version identifier in the bottom right");
 CONVAR(early_note_time, 1500.0f, CLIENT | SKINS | SERVER | GAMEPLAY,
        "Timeframe in ms at the beginning of a beatmap which triggers a starting delay for easier reading");
 CONVAR(end_delay_time, 750.0f, CLIENT | SKINS | SERVER,

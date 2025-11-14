@@ -188,8 +188,8 @@ void Engine::loadApp() {
     if(this->bShuttingDown) return;
     // load core default resources
     debugLog("Engine: Loading default resources ...");
-    resourceManager->loadFont("weblysleekuisb.ttf", "FONT_DEFAULT", 15, true, env->getDPI());
-    resourceManager->loadFont("tahoma.ttf", "FONT_CONSOLE", 8, false, 96);
+    this->defaultFont = resourceManager->loadFont("weblysleekuisb.ttf", "FONT_DEFAULT", 15, true, env->getDPI());
+    this->consoleFont = resourceManager->loadFont("tahoma.ttf", "FONT_CONSOLE", 8, false, 96);
 
     // load other default resources and things which are not strictly necessary
     {
