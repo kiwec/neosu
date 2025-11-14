@@ -175,30 +175,22 @@ void SoLoudSound::setSpeed(float speed) {
 
     speed = std::clamp<float>(speed, 0.05f, 50.0f);
 
-    if(this->fSpeed != speed) {
-        float previousSpeed = this->fSpeed;
+    auto *filteredStream = static_cast<SoLoud::SLFXStream *>(this->audioSource);
+
+    // this should technically be == fSpeed, but get it/update it from the source directly just in case
+    const float previousSpeed = (this->fSpeed = filteredStream->getSpeedFactor());
+    if(previousSpeed != speed) {
         this->fSpeed = speed;
 
-        auto *filteredStream = static_cast<SoLoud::SLFXStream *>(this->audioSource);
+        // update the SLFXStream parameters
+        filteredStream->setSpeedFactor(this->fSpeed);
 
-        if(cv::nightcore_enjoyer.getBool()) {
-            this->setPitch(1.0f);  // make sure the filter pitch is reset
-            filteredStream->setSpeedFactor(1.0f);
-            // then directly set the relative play speed
-            soloud->setRelativePlaySpeed(this->handle, speed);
-        } else {
-            soloud->setRelativePlaySpeed(this->handle, 1.0f);
-            // update the SLFXStream parameters
-            filteredStream->setSpeedFactor(this->fSpeed);
-        }
-
-        logIfCV(debug_snd, "SoLoudSound: Speed change {:s}: {:f}->{:f} (nightcore_enjoyer={})", this->sFilePath,
-                previousSpeed, this->fSpeed, cv::nightcore_enjoyer.getBool());
+        logIfCV(debug_snd, "SoLoudSound: Speed change {:s}: {:f}->{:f}", this->sFilePath, previousSpeed, this->fSpeed);
     }
 }
 
 void SoLoudSound::setPitch(float pitch) {
-    if(!this->isReady() || !this->audioSource) return;
+    if(!this->isReady() || !this->audioSource || !this->handle) return;
 
     // sample pitch could be supported, but there is nothing using it right now so i will only bother when the time
     // comes
@@ -209,16 +201,17 @@ void SoLoudSound::setPitch(float pitch) {
 
     pitch = std::clamp<float>(pitch, 0.0f, 2.0f);
 
-    if(this->fPitch != pitch) {
-        float previousPitch = this->fPitch;
+    auto *filteredStream = static_cast<SoLoud::SLFXStream *>(this->audioSource);
+
+    // this should technically be == fPitch, but get it/update it from the source directly just in case
+    const float previousPitch = (this->fPitch = filteredStream->getPitchFactor());
+    if(previousPitch != pitch) {
         this->fPitch = pitch;
 
-        // simply update the SLFXStream parameters
-        auto *stream = static_cast<SoLoud::SLFXStream *>(this->audioSource);
-        stream->setPitchFactor(this->fPitch);
+        // update the SLFXStream parameters
+        filteredStream->setPitchFactor(this->fPitch);
 
-        logIfCV(debug_snd, "SoLoudSound: Pitch change {:s}: {:f}->{:f} (stream, updated live)", this->sFilePath,
-                previousPitch, this->fPitch);
+        logIfCV(debug_snd, "SoLoudSound: Pitch change {:s}: {:f}->{:f}", this->sFilePath, previousPitch, this->fPitch);
     }
 }
 
@@ -239,8 +232,7 @@ void SoLoudSound::setFrequency(float frequency) {
                 soloud->setSamplerate(this->handle, frequency);
             }
             this->fFrequency = frequency;
-        } else  // 0 means reset to default
-        {
+        } else {  // 0 means reset to default
             if(this->bStream)
                 this->setPitch(1.0f);
             else if(this->handle)
@@ -303,8 +295,8 @@ i32 SoLoudSound::getBASSStreamLatencyCompensation() const {
 u64 SoLoudSound::getPositionUS() const {
     if(!this->isReady() || !this->audioSource || !this->handle) return 0;
 
-    return this->interpolator.update(getStreamPositionInSeconds(), Timing::getTimeReal(), getSpeed(),
-                                     isLooped(), getLengthMS(), isPlaying());
+    return this->interpolator.update(getStreamPositionInSeconds(), Timing::getTimeReal(), getSpeed(), isLooped(),
+                                     getLengthMS(), isPlaying());
 }
 
 u64 SoLoudSound::getLengthUS() const {

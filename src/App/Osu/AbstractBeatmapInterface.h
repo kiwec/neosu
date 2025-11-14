@@ -75,6 +75,7 @@ class AbstractBeatmapInterface {
     [[nodiscard]] virtual bool isPlaying() const = 0;
     [[nodiscard]] virtual bool isWaiting() const = 0;
     [[nodiscard]] virtual f32 getSpeedMultiplier() const = 0;
+    [[nodiscard]] virtual f32 getPitchMultiplier() const = 0;
 
     virtual void addScorePoints(int points, bool isSpinner = false) = 0;
     virtual void addSliderBreak() = 0;

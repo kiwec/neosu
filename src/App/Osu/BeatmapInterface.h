@@ -92,6 +92,7 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
     [[nodiscard]] inline f32 getSpeedStars() const { return this->fSpeedStars; }
     [[nodiscard]] inline f32 getSpeedNotes() const { return this->fSpeedNotes; }
     [[nodiscard]] f32 getSpeedMultiplier() const override;
+    [[nodiscard]] f32 getPitchMultiplier() const override;
 
     const pp_info &getWholeMapPPInfo();
 
@@ -132,6 +133,7 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
 
     f32 getIdealVolume();
     void setMusicSpeed(f32 speed);
+    void setMusicPitch(f32 pitch);
     void seekMS(u32 ms);
     [[nodiscard]] inline DatabaseBeatmap::TIMING_INFO getTimingPoint() const { return this->current_timing_point; }
     [[nodiscard]] inline i32 getDefaultSampleSet() const { return this->default_sample_set; }

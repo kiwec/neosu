@@ -86,6 +86,9 @@ class SimulatedBeatmapInterface final : public AbstractBeatmapInterface {
     void addScorePoints(int points, bool isSpinner = false) override;
     [[nodiscard]] bool isWaiting() const override { return false; }
 
+    [[nodiscard]] f32 getSpeedMultiplier() const override { return this->mods.speed; }
+    [[nodiscard]] f32 getPitchMultiplier() const override;
+
    protected:
     // database
     DatabaseBeatmap *beatmap;
@@ -123,7 +126,6 @@ class SimulatedBeatmapInterface final : public AbstractBeatmapInterface {
 
    private:
     [[nodiscard]] u32 getScoreV1DifficultyMultiplier_full() const override;
-    [[nodiscard]] f32 getSpeedMultiplier() const override { return this->mods.speed; }
     [[nodiscard]] f32 getRawAR_full() const override;
     [[nodiscard]] f32 getAR_full() const override;
     [[nodiscard]] f32 getCS_full() const override;

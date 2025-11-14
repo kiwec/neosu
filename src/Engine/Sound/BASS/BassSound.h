@@ -16,7 +16,8 @@ class BassSound final : public Sound {
 
     void setPositionUS(u64 us) override;
 
-    void setSpeed(float speed) override;
+    void setSpeed(f32 speed) override;
+    void setPitch(f32 pitch) override;
     void setFrequency(float frequency) override;
     void setPan(float pan) override;
     void setLoop(bool loop) override;
@@ -24,7 +25,6 @@ class BassSound final : public Sound {
     f64 getPositionPct() const override;
     u64 getPositionUS() const override;
     u64 getLengthUS() const override;
-    float getSpeed() const override;
     float getFrequency() const override;
 
     bool isPlaying() const override;

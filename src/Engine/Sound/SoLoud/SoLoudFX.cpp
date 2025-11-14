@@ -298,7 +298,9 @@ SoundTouchFilterInstance::SoundTouchFilterInstance(SLFXStream *aParent)
 
 				// set the actual speed and pitch factors
 				mSoundTouch->setTempo(mParent->mSpeedFactor);
-				mSoundTouch->setPitch(mParent->mPitchFactor);
+				// convert pitch factor to semitones to match BASS behavior
+				float pitchSemitones = (mParent->mPitchFactor - 1.0f) * 60.0f;
+				mSoundTouch->setPitchSemiTones(pitchSemitones);
 
 				mSoundTouchSpeed = mParent->mSpeedFactor;
 				mSoundTouchPitch = mParent->mPitchFactor;
@@ -443,7 +445,9 @@ unsigned int SoundTouchFilterInstance::getAudio(float *aBuffer, unsigned int aSa
 
 		// actually update the parameters
 		mSoundTouch->setTempo(mSoundTouchSpeed);
-		mSoundTouch->setPitch(mSoundTouchPitch);
+		// convert to semitones
+		float pitchSemitones = (mSoundTouchPitch - 1.0f) * 60.0f;
+		mSoundTouch->setPitchSemiTones(pitchSemitones);
 
 		// SoLoud AudioStreamInstance inherited, allows the main SoLoud mixer to advance the mStreamPosition by the correct proportional amount
 		mSetRelativePlaySpeed = mOverallRelativePlaySpeed = mSoundTouchSpeed;

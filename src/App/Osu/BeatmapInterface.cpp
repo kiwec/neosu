@@ -975,6 +975,19 @@ void BeatmapInterface::setMusicSpeed(f32 speed) {
             this->music->setSpeed(1.f);
         }
     }
+
+    // also update music pitch
+    this->setMusicPitch(this->getPitchMultiplier());
+}
+
+void BeatmapInterface::setMusicPitch(f32 pitch) {
+    if(this->music != nullptr) {
+        if((osu->isInPlayMode() || cv::beatmap_preview_mods_live.getBool())) {
+            this->music->setPitch(pitch);
+        } else {  // reset playback pitch
+            this->music->setPitch(1.f);
+        }
+    }
 }
 
 void BeatmapInterface::seekMS(u32 ms) {
@@ -1103,6 +1116,18 @@ f32 BeatmapInterface::getSpeedMultiplier() const {
     } else {
         return 1.f;
     }
+}
+
+f32 BeatmapInterface::getPitchMultiplier() const {
+    float pitchMultiplier = 1.0f;
+
+    // TODO: re-add actual nightcore/daycore mods
+    const float speedMult = this->getSpeedMultiplier();
+    if(cv::nightcore_enjoyer.getBool() && speedMult != 1.f) {
+        pitchMultiplier = speedMult < 1.f ? 0.92f /* daycore */ : 1.1166f /* nightcore */;
+    }
+
+    return pitchMultiplier;
 }
 
 // currently just a passthrough for the main skin, might return beatmap skins in the future

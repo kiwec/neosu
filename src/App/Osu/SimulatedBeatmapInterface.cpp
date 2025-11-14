@@ -1227,3 +1227,15 @@ f32 SimulatedBeatmapInterface::getRawApproachTime_full() const {
                : GameRules::mapDifficultyRange(this->getRawAR(), GameRules::getMinApproachTime(),
                                                GameRules::getMidApproachTime(), GameRules::getMaxApproachTime());
 }
+
+f32 SimulatedBeatmapInterface::getPitchMultiplier() const {
+    float pitchMultiplier = 1.0f;
+
+    // TODO: re-add actual nightcore/daycore mods
+    const float speedMult = this->getSpeedMultiplier();
+    if(this->mods.has(ModFlags::NoPitchCorrection) && speedMult != 1.f) {
+        pitchMultiplier = speedMult < 1.f ? 0.92f /* daycore */ : 1.1166f /* nightcore */;
+    }
+
+    return pitchMultiplier;
+}

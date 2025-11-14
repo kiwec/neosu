@@ -42,16 +42,21 @@ void BassSound::initAsync() {
         }
 
         if(this->isInterrupted()) return;
-        this->srchandle = BASS_FX_TempoCreate(this->srchandle, BASS_FX_FREESOURCE | BASS_STREAM_DECODE);
+        this->srchandle = BASS_FX_TempoCreate(this->srchandle, BASS_FX_TEMPO_ALGO_SHANNON | BASS_FX_FREESOURCE | BASS_STREAM_DECODE);
         if(!this->srchandle) {
             debugLog("BASS_FX_TempoCreate() error on file {}: {}", this->sFilePath.c_str(),
                      BassManager::getErrorUString());
             return;
         }
 
-        BASS_ChannelSetAttribute(this->srchandle, BASS_ATTRIB_TEMPO_OPTION_USE_QUICKALGO, false);
-        BASS_ChannelSetAttribute(this->srchandle, BASS_ATTRIB_TEMPO_OPTION_OVERLAP_MS, 4.0f);
-        BASS_ChannelSetAttribute(this->srchandle, BASS_ATTRIB_TEMPO_OPTION_SEQUENCE_MS, 30.0f);
+        // copied from SoLoudFX.cpp
+        BASS_ChannelSetAttribute(this->srchandle, BASS_ATTRIB_TEMPO_OPTION_USE_AA_FILTER, 1.f);
+        BASS_ChannelSetAttribute(this->srchandle, BASS_ATTRIB_TEMPO_OPTION_AA_FILTER_LENGTH, 64.f);
+        BASS_ChannelSetAttribute(this->srchandle, BASS_ATTRIB_TEMPO_OPTION_USE_QUICKALGO, 0.f);
+        BASS_ChannelSetAttribute(this->srchandle, BASS_ATTRIB_TEMPO_OPTION_SEQUENCE_MS, 15.f);
+        BASS_ChannelSetAttribute(this->srchandle, BASS_ATTRIB_TEMPO_OPTION_SEEKWINDOW_MS, 30.f);
+        BASS_ChannelSetAttribute(this->srchandle, BASS_ATTRIB_TEMPO_OPTION_OVERLAP_MS, 6.f);
+
         BASS_ChannelSetAttribute(this->srchandle, BASS_ATTRIB_TEMPO_OPTION_OLDPOS, 1);  // use old position calculation
 
         // Only compute the length once
@@ -83,6 +88,7 @@ void BassSound::initAsync() {
     this->lengthUS = static_cast<u64>(std::round(lengthInSeconds * 1000. * 1000.));
 
     this->fSpeed = 1.0f;
+    this->fPitch = 1.0f;
     this->setAsyncReady(true);
 }
 
@@ -183,25 +189,24 @@ void BassSound::setPositionUS(u64 us) {
     this->interpolator.reset(actualSecs, Timing::getTimeReal(), this->getSpeed());
 }
 
-void BassSound::setSpeed(float speed) {
+void BassSound::setSpeed(f32 speed) {
     if(!this->isReady()) return;
     assert(this->bStream);  // can't call setSpeed() on a sample
 
     speed = std::clamp<float>(speed, 0.05f, 50.0f);
-
-    float freq = cv::snd_freq.getFloat();
-    BASS_ChannelGetAttribute(this->srchandle, BASS_ATTRIB_FREQ, &freq);
-
-    BASS_ChannelSetAttribute(this->srchandle, BASS_ATTRIB_TEMPO, 1.0f);
-    BASS_ChannelSetAttribute(this->srchandle, BASS_ATTRIB_TEMPO_FREQ, freq);
-
-    if(cv::nightcore_enjoyer.getBool()) {
-        BASS_ChannelSetAttribute(this->srchandle, BASS_ATTRIB_TEMPO_FREQ, speed * freq);
-    } else {
-        BASS_ChannelSetAttribute(this->srchandle, BASS_ATTRIB_TEMPO, (speed - 1.0f) * 100.0f);
-    }
+    BASS_ChannelSetAttribute(this->srchandle, BASS_ATTRIB_TEMPO, (speed - 1.0f) * 100.0f);
 
     this->fSpeed = speed;
+}
+
+void BassSound::setPitch(f32 pitch) {
+    if(!this->isReady()) return;
+    assert(this->bStream);  // can't call setPitch() on a sample
+
+    pitch = std::clamp<float>(pitch, 0.0f, 2.0f);
+    BASS_ChannelSetAttribute(this->srchandle, BASS_ATTRIB_TEMPO_PITCH, (pitch - 1.0f) * 60.0f);
+
+    this->fPitch = pitch;
 }
 
 void BassSound::setFrequency(float frequency) {
@@ -273,8 +278,6 @@ u64 BassSound::getLengthUS() const {
     if(!this->isReady()) return 0;
     return this->lengthUS;
 }
-
-float BassSound::getSpeed() const { return this->fSpeed; }
 
 float BassSound::getFrequency() const {
     auto default_freq = cv::snd_freq.getFloat();

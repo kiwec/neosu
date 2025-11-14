@@ -878,6 +878,10 @@ void Osu::updateMods() {
         // notify the possibly running playfield of mod changes
         // e.g. recalculating stacks dynamically if HR is toggled
         this->map_iface->onModUpdate();
+    } else {
+        // onModUpdate already updates speed
+        // do this to update nightcore/dt things outside gameplay
+        this->map_iface->setMusicSpeed(this->map_iface->getSpeedMultiplier());
     }
 
     // handle windows key disable/enable
