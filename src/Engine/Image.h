@@ -66,6 +66,7 @@ class Image : public Resource {
             // stb_image_free is just a macro to free, anyways
             forceinline void operator()(void *p) const noexcept { free(p); }
         };
+        SizedRGBABytes() = default;
         ~SizedRGBABytes() noexcept = default;
 
         // for taking ownership of some raw pointer (stb)
@@ -122,15 +123,19 @@ class Image : public Resource {
             return this->bytes.get()[i];
         }
 
+        void clear() {
+            this->size = {};
+            this->bytes = {};
+        }
+
        private:
         ivec2 size{0, 0};
         std::unique_ptr<u8, CFree> bytes{nullptr};
     };
-    std::unique_ptr<SizedRGBABytes> rawImage{nullptr};
 
-    [[nodiscard]] constexpr forceinline u64 totalBytes() const {
-        return this->rawImage ? this->rawImage->getNumBytes() : 0;
-    }
+    SizedRGBABytes rawImage;
+
+    [[nodiscard]] constexpr forceinline u64 totalBytes() const { return this->rawImage.getNumBytes(); }
 
     i32 iWidth;
     i32 iHeight;

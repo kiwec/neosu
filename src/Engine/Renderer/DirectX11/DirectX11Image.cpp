@@ -42,7 +42,7 @@ DirectX11Image::DirectX11Image(int width, int height, bool mipmapped, bool keepI
 DirectX11Image::~DirectX11Image() {
     this->destroy();
     this->deleteDX();
-    this->rawImage.reset();
+    this->rawImage.clear();
 }
 
 void DirectX11Image::init() {
@@ -83,7 +83,7 @@ void DirectX11Image::init() {
         if(this->texture == nullptr) {
             // initData
             {
-                initData.pSysMem = (void*)this->rawImage->data();
+                initData.pSysMem = (void*)this->rawImage.data();
                 initData.SysMemPitch = static_cast<UINT>(this->iWidth * Image::NUM_CHANNELS * sizeof(unsigned char));
                 initData.SysMemSlicePitch = 0;
             }
@@ -108,7 +108,7 @@ void DirectX11Image::init() {
     }
 
     // free memory (not mipmapped) (1/2)
-    if(!this->bKeepInSystemMemory && !this->bMipmapped) this->rawImage.reset();
+    if(!this->bKeepInSystemMemory && !this->bMipmapped) this->rawImage.clear();
 
     // create shader resource view
     if(this->shaderResourceView == nullptr) {
@@ -142,7 +142,7 @@ void DirectX11Image::init() {
     }
 
     // free memory (mipmapped) (2/2)
-    if(!this->bKeepInSystemMemory && this->bMipmapped) this->rawImage.reset();
+    if(!this->bKeepInSystemMemory && this->bMipmapped) this->rawImage.clear();
 
     // create mipmaps
     if(this->bMipmapped) context->GenerateMips(this->shaderResourceView);
@@ -211,7 +211,7 @@ void DirectX11Image::destroy() {
     // like opengl does it
     this->deleteDX();
     if(!this->bKeepInSystemMemory) {
-        this->rawImage.reset();
+        this->rawImage.clear();
     }
 }
 

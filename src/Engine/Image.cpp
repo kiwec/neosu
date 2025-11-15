@@ -180,11 +180,11 @@ Image::DECODE_RESULT Image::decodePNGFromMemory(const std::unique_ptr<u8[]> &inD
     }
 
     // allocate memory for the image
-    this->rawImage = std::make_unique<SizedRGBABytes>(outWidth, outHeight);
+    this->rawImage = SizedRGBABytes{outWidth, outHeight};
 
     auto row_pointers = std::make_unique_for_overwrite<png_bytep[]>(outHeight);
     for(sSz y = 0; y < outHeight; y++) {
-        row_pointers[y] = &this->rawImage->data()[y * outWidth * Image::NUM_CHANNELS];
+        row_pointers[y] = &this->rawImage.data()[y * outWidth * Image::NUM_CHANNELS];
     }
 
     png_read_image(png_ptr, row_pointers.get());
@@ -230,11 +230,11 @@ Image::DECODE_RESULT Image::decodeJPEGFromMemory(const std::unique_ptr<u8[]> &in
     }
 
     // preallocate
-    this->rawImage = std::make_unique<SizedRGBABytes>(outWidth, outHeight);
+    this->rawImage = SizedRGBABytes{outWidth, outHeight};
 
     // always convert to RGBA for consistency with PNG
     // decompress directly to RGBA
-    if(tj3Decompress8(tjInstance, inData.get(), size, this->rawImage->data(), 0, TJPF_RGBA) < 0) {
+    if(tj3Decompress8(tjInstance, inData.get(), size, this->rawImage.data(), 0, TJPF_RGBA) < 0) {
         debugLog("Image Error: tj3Decompress8 failed: {:s}", tj3GetErrorStr(tjInstance));
         tj3Destroy(tjInstance);
         return FAIL;
@@ -276,7 +276,7 @@ Image::DECODE_RESULT Image::decodeSTBFromMemory(const std::unique_ptr<u8[]> &inD
     }
 
     // don't stbi_image_free, we own the data now
-    this->rawImage = std::make_unique<SizedRGBABytes>(decoded, outWidth, outHeight);
+    this->rawImage = SizedRGBABytes{decoded, outWidth, outHeight};
 
     return SUCCESS;
 }
@@ -372,17 +372,17 @@ Image::Image(i32 width, i32 height, bool mipmapped, bool keepInSystemMemory) : R
     // reserve rawImage
     if(cv::debug_image.getBool()) {
         // don't calloc() if we're filling with pink anyways
-        this->rawImage = std::make_unique<SizedRGBABytes>(this->iWidth, this->iHeight);
+        this->rawImage = SizedRGBABytes{this->iWidth, this->iHeight};
         // fill with pink pixels
         for(u64 i = 0; i < static_cast<u64>(this->iWidth) * this->iHeight; i++) {
-            (*this->rawImage)[i * Image::NUM_CHANNELS + 0] = 255;  // R
-            (*this->rawImage)[i * Image::NUM_CHANNELS + 1] = 0;    // G
-            (*this->rawImage)[i * Image::NUM_CHANNELS + 2] = 255;  // B
-            (*this->rawImage)[i * Image::NUM_CHANNELS + 3] = 255;  // A
+            this->rawImage[i * Image::NUM_CHANNELS + 0] = 255;  // R
+            this->rawImage[i * Image::NUM_CHANNELS + 1] = 0;    // G
+            this->rawImage[i * Image::NUM_CHANNELS + 2] = 255;  // B
+            this->rawImage[i * Image::NUM_CHANNELS + 3] = 255;  // A
         }
     } else {
         // otherwise fill with zeroes (transparent black)
-        this->rawImage = std::make_unique<SizedRGBABytes>(this->iWidth, this->iHeight, true);
+        this->rawImage = SizedRGBABytes{this->iWidth, this->iHeight, true};
     }
 
     // special case: filled rawimage is always already async ready
@@ -390,14 +390,14 @@ Image::Image(i32 width, i32 height, bool mipmapped, bool keepInSystemMemory) : R
 }
 
 bool Image::loadRawImage() {
-    bool alreadyLoaded = !!this->rawImage && this->totalBytes() >= 4;
+    bool alreadyLoaded = !!this->rawImage.data() && this->totalBytes() >= 4;
 
     auto exit = [this]() -> bool {
         // if we were interrupted, it's not a load error
         this->bLoadError = !this->isInterrupted();
-        this->rawImage.reset();
-        this->iWidth = 1;
-        this->iHeight = 1;
+        this->rawImage.clear();
+        this->iWidth = 0;
+        this->iHeight = 0;
         this->bLoadedImageEntirelyTransparent = false;
         return false;
     };
@@ -504,13 +504,13 @@ bool Image::loadRawImage() {
     }
 
     // sanity check and one more cancellation point
-    if(this->isInterrupted() || !this->rawImage || this->rawImage->getNumBytes() < 4) {
+    if(this->isInterrupted() || !this->rawImage.data() || this->rawImage.getNumBytes() < 4) {
         return exit();
     }
 
     // update standard width/height to raw image's size (just in case)
-    this->iWidth = this->rawImage->getX();
-    this->iHeight = this->rawImage->getY();
+    this->iWidth = this->rawImage.getX();
+    this->iHeight = this->rawImage.getY();
 
     return !this->bLoadedImageEntirelyTransparent;
 }
@@ -518,16 +518,16 @@ bool Image::loadRawImage() {
 Color Image::getPixel(i32 x, i32 y) const {
     if(unlikely(x < 0 || y < 0 || this->totalBytes() < 1)) return 0xffffff00;
 
-    const u64 indexEnd = static_cast<u64>(Image::NUM_CHANNELS) * y * this->rawImage->getX() +
+    const u64 indexEnd = static_cast<u64>(Image::NUM_CHANNELS) * y * this->rawImage.getX() +
                          static_cast<u64>(Image::NUM_CHANNELS) * x + Image::NUM_CHANNELS;
     if(unlikely(indexEnd > this->totalBytes())) return 0xffffff00;
     const u64 indexBegin =
-        static_cast<u64>(Image::NUM_CHANNELS) * y * this->rawImage->getX() + static_cast<u64>(Image::NUM_CHANNELS) * x;
+        static_cast<u64>(Image::NUM_CHANNELS) * y * this->rawImage.getX() + static_cast<u64>(Image::NUM_CHANNELS) * x;
 
-    const Channel &r{(*this->rawImage)[indexBegin + 0]};
-    const Channel &g{(*this->rawImage)[indexBegin + 1]};
-    const Channel &b{(*this->rawImage)[indexBegin + 2]};
-    const Channel &a{(*this->rawImage)[indexBegin + 3]};
+    const Channel &r{this->rawImage[indexBegin + 0]};
+    const Channel &g{this->rawImage[indexBegin + 1]};
+    const Channel &b{this->rawImage[indexBegin + 2]};
+    const Channel &a{this->rawImage[indexBegin + 3]};
 
     return argb(a, r, g, b);
 }
@@ -535,16 +535,16 @@ Color Image::getPixel(i32 x, i32 y) const {
 void Image::setPixel(i32 x, i32 y, Color color) {
     if(unlikely(x < 0 || y < 0 || this->totalBytes() < 1)) return;
 
-    const u64 indexEnd = static_cast<u64>(Image::NUM_CHANNELS) * y * this->rawImage->getX() +
+    const u64 indexEnd = static_cast<u64>(Image::NUM_CHANNELS) * y * this->rawImage.getX() +
                          static_cast<u64>(Image::NUM_CHANNELS) * x + Image::NUM_CHANNELS;
     if(unlikely(indexEnd > this->totalBytes())) return;
     const u64 indexBegin =
-        static_cast<u64>(Image::NUM_CHANNELS) * y * this->rawImage->getX() + static_cast<u64>(Image::NUM_CHANNELS) * x;
+        static_cast<u64>(Image::NUM_CHANNELS) * y * this->rawImage.getX() + static_cast<u64>(Image::NUM_CHANNELS) * x;
 
-    (*this->rawImage)[indexBegin + 0] = color.R();
-    (*this->rawImage)[indexBegin + 1] = color.G();
-    (*this->rawImage)[indexBegin + 2] = color.B();
-    (*this->rawImage)[indexBegin + 3] = color.A();
+    this->rawImage[indexBegin + 0] = color.R();
+    this->rawImage[indexBegin + 1] = color.G();
+    this->rawImage[indexBegin + 2] = color.B();
+    this->rawImage[indexBegin + 3] = color.A();
     if(!this->bCreatedImage && color.A() != 0) {
         // play it safe, don't recompute the entire alpha channel visibility here
         this->bLoadedImageEntirelyTransparent = false;
@@ -560,7 +560,7 @@ void Image::setPixels(const std::vector<u8> &pixels) {
     assert(this->totalBytes() == static_cast<u64>(this->iWidth) * this->iHeight * NUM_CHANNELS &&
            "width and height are somehow out of sync with raw image");
 
-    std::memcpy(this->rawImage->data(), pixels.data(), this->totalBytes());
+    std::memcpy(this->rawImage.data(), pixels.data(), this->totalBytes());
     if(!this->bCreatedImage) {
         // recompute alpha channel visibility here (TODO: remove if slow)
         this->bLoadedImageEntirelyTransparent = isRawImageCompletelyTransparent();
@@ -583,17 +583,17 @@ bool Image::canHaveTransparency(const std::unique_ptr<u8[]> &data, u64 size) {
 }
 
 bool Image::isRawImageCompletelyTransparent() const {
-    if(!this->rawImage || this->totalBytes() == 0) return false;
+    if(!this->rawImage.data() || this->totalBytes() == 0) return false;
 
     const i64 alphaOffset = 3;
-    const i64 totalPixels = static_cast<i64>(this->rawImage->getArea());
+    const i64 totalPixels = static_cast<i64>(this->rawImage.getArea());
 
     for(i64 i = 0; i < totalPixels; ++i) {
         if(this->isInterrupted())  // cancellation point
             return false;
 
         // check alpha channel directly
-        if((*this->rawImage)[i * Image::NUM_CHANNELS + alphaOffset] > 0) return false;  // non-transparent pixel
+        if(this->rawImage[i * Image::NUM_CHANNELS + alphaOffset] > 0) return false;  // non-transparent pixel
     }
 
     return true;  // all pixels are transparent

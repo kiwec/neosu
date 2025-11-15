@@ -28,7 +28,7 @@ OpenGLImage::OpenGLImage(i32 width, i32 height, bool mipmapped, bool keepInSyste
 OpenGLImage::~OpenGLImage() {
     this->destroy();
     this->deleteGL();
-    this->rawImage.reset();
+    this->rawImage.clear();
 }
 
 void OpenGLImage::init() {
@@ -75,8 +75,8 @@ void OpenGLImage::init() {
             glBindTexture(GL_TEXTURE_2D, this->GLTexture);
         }
 
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, this->rawImage->getX(), this->rawImage->getY(), 0, GL_RGBA,
-                     GL_UNSIGNED_BYTE, this->rawImage->data());
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, this->rawImage.getX(), this->rawImage.getY(), 0, GL_RGBA,
+                     GL_UNSIGNED_BYTE, this->rawImage.data());
         if(this->bMipmapped) {
             glGenerateMipmap(GL_TEXTURE_2D);
         }
@@ -84,7 +84,7 @@ void OpenGLImage::init() {
 
     // free from RAM (it's now in VRAM)
     if(!this->bKeepInSystemMemory) {
-        this->rawImage.reset();
+        this->rawImage.clear();
     }
 
     this->setReady(true);
@@ -118,7 +118,7 @@ void OpenGLImage::destroy() {
     // don't delete the texture if we're keeping it in memory, for reloads
     if(!this->bKeepInSystemMemory) {
         this->deleteGL();
-        this->rawImage.reset();
+        this->rawImage.clear();
     }
 }
 
