@@ -41,9 +41,9 @@ class Resource {
     [[nodiscard]] inline const std::string &getName() const { return this->sName; }
     [[nodiscard]] inline const std::string &getFilePath() const { return this->sFilePath; }
 
-    [[nodiscard]] inline bool isReady() const { return this->bReady.load(std::memory_order_acquire); }
-    [[nodiscard]] inline bool isAsyncReady() const { return this->bAsyncReady.load(std::memory_order_acquire); }
-    [[nodiscard]] inline bool isInterrupted() const { return this->bInterrupted.load(std::memory_order_acquire); }
+    [[nodiscard]] forceinline bool isReady() const { return this->bReady.load(std::memory_order_acquire); }
+    [[nodiscard]] forceinline bool isAsyncReady() const { return this->bAsyncReady.load(std::memory_order_acquire); }
+    [[nodiscard]] forceinline bool isInterrupted() const { return this->bInterrupted.load(std::memory_order_acquire); }
 
     // run a callback after init() is called, rs parameter is the resource that finished loading
     // check rs->isReady() for success status

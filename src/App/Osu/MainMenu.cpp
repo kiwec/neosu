@@ -943,15 +943,15 @@ void MainMenu::draw() {
 void MainMenu::mouse_update(bool *propagate_clicks) {
     if(!this->bVisible) return;
 
-    UString versionString;
     if(cv::is_bleedingedge.getBool()) {
-        versionString = fmt::format("Version {:.2f} ({:s})", cv::version.getFloat(), cv::build_timestamp.getString());
+        static UString versionString = fmt::format("Version {:.2f} ({:s})", cv::version.getFloat(), cv::build_timestamp.getString());
         this->versionButton->setTextColor(rgb(255, 220, 220));
+        this->versionButton->setText(versionString);
     } else {
-        versionString = fmt::format("Version {:.2f}", cv::version.getFloat());
+        static UString versionString = fmt::format("Version {:.2f}", cv::version.getFloat());
         this->versionButton->setTextColor(rgb(255, 255, 255));
+        this->versionButton->setText(versionString);
     }
-    this->versionButton->setText(versionString);
 
     this->discordButton->setVisible(!cv::adblock.getBool());
     this->twitterButton->setVisible(!cv::adblock.getBool());

@@ -531,30 +531,25 @@ const DirectX11Shader::CACHE_ENTRY DirectX11Shader::getAndCacheUniformLocation(s
         return cachedValue->second;
     else {
         CACHE_ENTRY newCacheEntry;
-        {
-            newCacheEntry.bindIndex = -1;
-            newCacheEntry.offsetBytes = -1;
 
-            for(size_t i = 0; i < this->bindDescs.size(); i++) {
-                const BIND_DESC &bindDesc = this->bindDescs[i];
-                int offsetBytesCounter = 0;
-                for(size_t j = 0; j < bindDesc.lines.size(); j++) {
-                    const BIND_DESC_LINE &bindDescLine = bindDesc.lines[j];
-                    if(bindDescLine.variableName == name) {
-                        newCacheEntry.bindIndex = (int)i;
-                        newCacheEntry.offsetBytes = offsetBytesCounter;
-                        break;
-                    } else
-                        offsetBytesCounter += bindDescLine.variableBytes;
-                }
+        for(size_t i = 0; i < this->bindDescs.size(); i++) {
+            const BIND_DESC &bindDesc = this->bindDescs[i];
+            int offsetBytesCounter = 0;
+            for(const auto &bindDescLine : bindDesc.lines) {
+                if(bindDescLine.variableName == name) {
+                    newCacheEntry.bindIndex = (int)i;
+                    newCacheEntry.offsetBytes = offsetBytesCounter;
+                    break;
+                } else
+                    offsetBytesCounter += bindDescLine.variableBytes;
             }
-
-            if(newCacheEntry.bindIndex > -1 && newCacheEntry.offsetBytes > -1) {
-                this->uniformLocationCache[std::string{name}] = newCacheEntry;
-                return newCacheEntry;
-            } else if(cv::debug_shaders.getBool())
-                debugLog("DirectX11Shader Warning: Can't find uniform {:s}", name);
         }
+
+        if(newCacheEntry.bindIndex > -1 && newCacheEntry.offsetBytes > -1) {
+            this->uniformLocationCache[std::string{name}] = newCacheEntry;
+            return newCacheEntry;
+        } else if(cv::debug_shaders.getBool())
+            debugLog("DirectX11Shader Warning: Can't find uniform {:s}", name);
     }
 
     return invalidCacheEntry;

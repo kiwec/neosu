@@ -35,7 +35,7 @@ class CarouselButton : public CBaseUIButton {
     void setChildren(std::vector<SongButton *> children) { this->children = std::move(children); }
     void setOffsetPercent(float offsetPercent) { this->fOffsetPercent = offsetPercent; }
     void setHideIfSelected(bool hideIfSelected) { this->bHideIfSelected = hideIfSelected; }
-    void setIsSearchMatch(bool isSearchMatch) { this->bIsSearchMatch = isSearchMatch; }
+    void setIsSearchMatch(bool isSearchMatch) { this->bIsSearchMatch.store(isSearchMatch, std::memory_order_release); }
 
     [[nodiscard]] vec2 getActualOffset() const;
     [[nodiscard]] inline vec2 getActualSize() const { return this->vSize - 2.f * this->getActualOffset(); }

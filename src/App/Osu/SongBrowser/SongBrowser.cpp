@@ -2034,21 +2034,14 @@ bool SongBrowser::searchMatcher(const DatabaseBeatmap *databaseBeatmap,
     if(hasAnyValidLiteralSearchString) {
         static constexpr auto findSubstringInDiff = [](const DatabaseBeatmap *diff,
                                                        std::string_view searchString) -> bool {
-            if(!diff->getTitleLatin().empty() && SString::contains_ncase(diff->getTitleLatin(), searchString))
-                return true;
-            if(!diff->getArtistLatin().empty() && SString::contains_ncase(diff->getArtistLatin(), searchString))
-                return true;
-            if(!diff->getCreator().empty() && SString::contains_ncase(diff->getCreator(), searchString)) return true;
-            if(!diff->getDifficultyName().empty() && SString::contains_ncase(diff->getDifficultyName(), searchString))
-                return true;
-            if(!diff->getSource().empty() && SString::contains_ncase(diff->getSource(), searchString)) return true;
-            if(!diff->getTags().empty() && SString::contains_ncase(diff->getTags(), searchString)) return true;
-
-            if(diff->getID() > 0 && SString::contains_ncase(std::to_string(diff->getID()), searchString)) return true;
-            if(diff->getSetID() > 0 && SString::contains_ncase(std::to_string(diff->getSetID()), searchString))
-                return true;
-
-            return false;
+            return (SString::contains_ncase(diff->getTitleLatin(), searchString)) ||
+                   (SString::contains_ncase(diff->getArtistLatin(), searchString)) ||
+                   (SString::contains_ncase(diff->getCreator(), searchString)) ||
+                   (SString::contains_ncase(diff->getDifficultyName(), searchString)) ||
+                   (SString::contains_ncase(diff->getSource(), searchString)) ||
+                   (SString::contains_ncase(diff->getTags(), searchString)) ||
+                   (diff->getID() > 0 && SString::contains_ncase(std::to_string(diff->getID()), searchString)) ||
+                   (diff->getSetID() > 0 && SString::contains_ncase(std::to_string(diff->getSetID()), searchString));
         };
 
         for(const auto *diff : diffs) {
@@ -2597,7 +2590,7 @@ void SongBrowser::onDatabaseLoadingFinished() {
     debugLog("Took {} seconds.", t.getElapsedTime());
 
     // Watch for new maps now
-    directoryWatcher->watch_directory(NEOSU_MAPS_PATH "/", [](const FileChangeEvent& ev) {
+    directoryWatcher->watch_directory(NEOSU_MAPS_PATH "/", [](const FileChangeEvent &ev) {
         if(ev.type != FileChangeType::CREATED) return;
         if(env->getFileExtensionFromFilePath(ev.path) != "osz") return;
         bool extracted = env->getEnvInterop().handle_osz(ev.path.c_str());
