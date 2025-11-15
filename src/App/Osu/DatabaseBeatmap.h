@@ -1,7 +1,6 @@
 #pragma once
 // Copyright (c) 2020, PG, All rights reserved.
 
-#include "DifficultyCalculator.h"
 #include "HitSounds.h"
 #include "Osu.h"
 #include "Overrides.h"
@@ -13,6 +12,7 @@
 
 class AbstractBeatmapInterface;
 class HitObject;
+class DifficultyHitObject;
 
 class Database;
 
@@ -27,6 +27,17 @@ class BGImageHandler;
 class DatabaseBeatmap;
 typedef DatabaseBeatmap BeatmapDifficulty;
 typedef DatabaseBeatmap BeatmapSet;
+
+struct SLIDER_SCORING_TIME {
+    enum class TYPE : u8 {
+        TICK,
+        REPEAT,
+        END,
+    };
+
+    TYPE type;
+    f32 time;
+};
 
 class DatabaseBeatmap final {
     NOCOPY_NOMOVE(DatabaseBeatmap)
@@ -51,7 +62,15 @@ class DatabaseBeatmap final {
 
     // custom structs
     struct LOAD_DIFFOBJ_RESULT {
-        std::vector<DifficultyHitObject> diffobjects{};
+        LOAD_DIFFOBJ_RESULT();
+        ~LOAD_DIFFOBJ_RESULT();
+
+        LOAD_DIFFOBJ_RESULT(const LOAD_DIFFOBJ_RESULT &) = delete;
+        LOAD_DIFFOBJ_RESULT &operator=(const LOAD_DIFFOBJ_RESULT &) = delete;
+        LOAD_DIFFOBJ_RESULT(LOAD_DIFFOBJ_RESULT &&) noexcept;
+        LOAD_DIFFOBJ_RESULT &operator=(LOAD_DIFFOBJ_RESULT &&) noexcept;
+
+        std::vector<DifficultyHitObject> diffobjects;
 
         i32 maxPossibleCombo{};
         int errorCode{0};
@@ -115,7 +134,7 @@ class DatabaseBeatmap final {
         float sliderTimeWithoutRepeats;
         std::vector<float> ticks;
 
-        std::vector<DifficultyHitObject::SLIDER_SCORING_TIME> scoringTimesForStarCalc;
+        std::vector<SLIDER_SCORING_TIME> scoringTimesForStarCalc;
     };
 
     struct SPINNER {
@@ -385,7 +404,8 @@ class DatabaseBeatmap final {
     friend class BGImageHandler;
 
     static PRIMITIVE_CONTAINER loadPrimitiveObjects(std::string_view osuFilePath);
-    static PRIMITIVE_CONTAINER loadPrimitiveObjects(std::string_view osuFilePath, const std::function<bool(void)> &dead);
+    static PRIMITIVE_CONTAINER loadPrimitiveObjects(std::string_view osuFilePath,
+                                                    const std::function<bool(void)> &dead);
     static CALCULATE_SLIDER_TIMES_CLICKS_TICKS_RESULT calculateSliderTimesClicksTicks(
         int beatmapVersion, std::vector<SLIDER> &sliders, zarray<DatabaseBeatmap::TIMINGPOINT> &timingpoints,
         float sliderMultiplier, float sliderTickRate);

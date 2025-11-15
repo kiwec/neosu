@@ -1,5 +1,6 @@
 // Copyright (c) 2020, PG, All rights reserved.
 #include "DatabaseBeatmap.h"
+#include "DifficultyCalculator.h"
 
 #include "SString.h"
 #include "Bancho.h"  // md5
@@ -22,7 +23,21 @@
 #include <utility>
 #include <source_location>
 
+// defined here to avoid including diffcalc things in DatabaseBeatmap.h
+DatabaseBeatmap::LOAD_DIFFOBJ_RESULT::LOAD_DIFFOBJ_RESULT() = default;
+DatabaseBeatmap::LOAD_DIFFOBJ_RESULT::~LOAD_DIFFOBJ_RESULT() = default;
+
+DatabaseBeatmap::LOAD_DIFFOBJ_RESULT::LOAD_DIFFOBJ_RESULT(DatabaseBeatmap::LOAD_DIFFOBJ_RESULT &&) noexcept = default;
+DatabaseBeatmap::LOAD_DIFFOBJ_RESULT &DatabaseBeatmap::LOAD_DIFFOBJ_RESULT::operator=(
+    DatabaseBeatmap::LOAD_DIFFOBJ_RESULT &&) noexcept = default;
+
 namespace {  // static namespace
+
+bool sliderScoringTimeComparator(const SLIDER_SCORING_TIME &a, const SLIDER_SCORING_TIME &b) {
+    if(a.time != b.time) return a.time < b.time;
+    if(a.type != b.type) return static_cast<i32>(a.type) < static_cast<i32>(b.type);
+    return false;  // equivalent
+};
 
 bool timingPointSortComparator(DatabaseBeatmap::TIMINGPOINT const &a, DatabaseBeatmap::TIMINGPOINT const &b) {
     if(a.offset != b.offset) return a.offset < b.offset;
@@ -725,8 +740,8 @@ DatabaseBeatmap::CALCULATE_SLIDER_TIMES_CLICKS_TICKS_RESULT DatabaseBeatmap::cal
         // 2) add repeat times (either at slider begin or end)
         for(int i = 0; i < (s.repeat - 1); i++) {
             const f32 time = s.time + (s.sliderTimeWithoutRepeats * (i + 1));  // see Slider.cpp
-            s.scoringTimesForStarCalc.push_back(DifficultyHitObject::SLIDER_SCORING_TIME{
-                .type = DifficultyHitObject::SLIDER_SCORING_TIME::TYPE::REPEAT,
+            s.scoringTimesForStarCalc.push_back(SLIDER_SCORING_TIME{
+                .type = SLIDER_SCORING_TIME::TYPE::REPEAT,
                 .time = time,
             });
         }
@@ -739,8 +754,8 @@ DatabaseBeatmap::CALCULATE_SLIDER_TIMES_CLICKS_TICKS_RESULT DatabaseBeatmap::cal
                 const f32 time =
                     s.time + (s.sliderTimeWithoutRepeats * i) +
                     (tickPercentRelativeToRepeatFromStartAbs * s.sliderTimeWithoutRepeats);  // see Slider.cpp
-                s.scoringTimesForStarCalc.push_back(DifficultyHitObject::SLIDER_SCORING_TIME{
-                    .type = DifficultyHitObject::SLIDER_SCORING_TIME::TYPE::TICK,
+                s.scoringTimesForStarCalc.push_back(SLIDER_SCORING_TIME{
+                    .type = SLIDER_SCORING_TIME::TYPE::TICK,
                     .time = time,
                 });
             }
@@ -751,8 +766,8 @@ DatabaseBeatmap::CALCULATE_SLIDER_TIMES_CLICKS_TICKS_RESULT DatabaseBeatmap::cal
         const f32 time =
             std::max(static_cast<f32>(s.time) + s.sliderTime / 2.0f,
                      (static_cast<f32>(s.time) + s.sliderTime) - static_cast<f32>(osuSliderEndInsideCheckOffset));
-        s.scoringTimesForStarCalc.push_back(DifficultyHitObject::SLIDER_SCORING_TIME{
-            .type = DifficultyHitObject::SLIDER_SCORING_TIME::TYPE::END,
+        s.scoringTimesForStarCalc.push_back(SLIDER_SCORING_TIME{
+            .type = SLIDER_SCORING_TIME::TYPE::END,
             .time = time,
         });
 
@@ -763,7 +778,7 @@ DatabaseBeatmap::CALCULATE_SLIDER_TIMES_CLICKS_TICKS_RESULT DatabaseBeatmap::cal
 
         // 5) sort scoringTimes from earliest to latest
         if(s.scoringTimesForStarCalc.size() > 1) {
-            std::ranges::sort(s.scoringTimesForStarCalc, DifficultyHitObject::sliderScoringTimeComparator);
+            std::ranges::sort(s.scoringTimesForStarCalc, sliderScoringTimeComparator);
         }
     }
 
@@ -842,15 +857,15 @@ DatabaseBeatmap::LOAD_DIFFOBJ_RESULT DatabaseBeatmap::loadDifficultyHitObjects(P
                 slider.time + (i32)slider.sliderTime, slider.sliderTimeWithoutRepeats, slider.type, slider.points,
                 slider.pixelLength, slider.scoringTimesForStarCalc, slider.repeat, calculateSliderCurveInConstructor);
         } else {
-            result.diffobjects.emplace_back(
-                DifficultyHitObject::TYPE::SLIDER, vec2(slider.x, slider.y), slider.time,
-                slider.time + (i32)slider.sliderTime, slider.sliderTimeWithoutRepeats, slider.type,
-                std::vector<vec2>(),  // NOTE: ignore curve when calculating inaccurately
-                slider.pixelLength,
-                std::vector<DifficultyHitObject::SLIDER_SCORING_TIME>(),  // NOTE: ignore curve when calculating
-                                                                             // inaccurately
-                slider.repeat,
-                false);  // NOTE: ignore curve when calculating inaccurately
+            result.diffobjects.emplace_back(DifficultyHitObject::TYPE::SLIDER, vec2(slider.x, slider.y), slider.time,
+                                            slider.time + (i32)slider.sliderTime, slider.sliderTimeWithoutRepeats,
+                                            slider.type,
+                                            std::vector<vec2>(),  // NOTE: ignore curve when calculating inaccurately
+                                            slider.pixelLength,
+                                            std::vector<SLIDER_SCORING_TIME>(),  // NOTE: ignore curve when calculating
+                                                                                 // inaccurately
+                                            slider.repeat,
+                                            false);  // NOTE: ignore curve when calculating inaccurately
         }
     }
 

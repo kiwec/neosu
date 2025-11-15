@@ -16,6 +16,8 @@ class SliderCurve;
 class ConVar;
 class AbstractBeatmapInterface;
 
+struct SLIDER_SCORING_TIME;
+
 class DifficultyHitObject {
    public:
     enum class TYPE : u8 {
@@ -25,35 +27,21 @@ class DifficultyHitObject {
         SLIDER,
     };
 
-    struct SLIDER_SCORING_TIME {
-        enum class TYPE : u8 {
-            TICK,
-            REPEAT,
-            END,
-        };
-
-        TYPE type;
-        f32 time;
-    };
-
-    static inline bool sliderScoringTimeComparator(const SLIDER_SCORING_TIME &a, const SLIDER_SCORING_TIME &b) {
-        if(a.time != b.time) return a.time < b.time;
-        if(a.type != b.type) return static_cast<i32>(a.type) < static_cast<i32>(b.type);
-        return false;  // equivalent
-    };
-
    public:
+    DifficultyHitObject() = delete;
+
     DifficultyHitObject(TYPE type, vec2 pos, i32 time);               // circle
     DifficultyHitObject(TYPE type, vec2 pos, i32 time, i32 endTime);  // spinner
     DifficultyHitObject(TYPE type, vec2 pos, i32 time, i32 endTime, f32 spanDuration, i8 osuSliderCurveType,
-                           const std::vector<vec2> &controlPoints, f32 pixelLength,
-                           std::vector<SLIDER_SCORING_TIME> scoringTimes, i32 repeats,
-                           bool calculateSliderCurveInConstructor);  // slider
+                        const std::vector<vec2> &controlPoints, f32 pixelLength,
+                        std::vector<SLIDER_SCORING_TIME> scoringTimes, i32 repeats,
+                        bool calculateSliderCurveInConstructor);  // slider
     ~DifficultyHitObject();
 
     DifficultyHitObject(const DifficultyHitObject &) = delete;
     DifficultyHitObject(DifficultyHitObject &&dobj) noexcept;
 
+    DifficultyHitObject &operator=(const DifficultyHitObject &dobj) = delete;
     DifficultyHitObject &operator=(DifficultyHitObject &&dobj) noexcept;
 
     void updateStackPosition(f32 stackOffset);
@@ -129,8 +117,8 @@ class DifficultyCalculator {
     };
 
     struct DiffObject {
-        DiffObject(DifficultyHitObject *base_object, f32 radius_scaling_factor,
-                   std::vector<DiffObject> &diff_objects, i32 prevObjectIdx)
+        DiffObject(DifficultyHitObject *base_object, f32 radius_scaling_factor, std::vector<DiffObject> &diff_objects,
+                   i32 prevObjectIdx)
             : ho(base_object),
               norm_start(ho->pos * radius_scaling_factor),
               lazyEndPos(ho->pos),
@@ -221,7 +209,9 @@ class DifficultyCalculator {
 
         // cancellation
         std::optional<std::function<bool(void)>> cancelCheck{std::nullopt};
-        [[nodiscard]] inline bool shouldDie() const { return this->cancelCheck.has_value() ? (*this->cancelCheck)() : false; }
+        [[nodiscard]] inline bool shouldDie() const {
+            return this->cancelCheck.has_value() ? (*this->cancelCheck)() : false;
+        }
     };
 
     // stars, fully static

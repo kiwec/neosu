@@ -1,6 +1,7 @@
 // Copyright (c) 2019, PG & Francesco149, All rights reserved.
 #include "DifficultyCalculator.h"
 
+#include "DatabaseBeatmap.h"
 #include "SliderCurves.h"
 #include "GameRules.h"
 #include "ConVar.h"
@@ -8,17 +9,16 @@
 
 #include <algorithm>
 
-DifficultyHitObject::DifficultyHitObject(TYPE type, vec2 pos, i32 time)
-    : DifficultyHitObject(type, pos, time, time) {}
+DifficultyHitObject::DifficultyHitObject(TYPE type, vec2 pos, i32 time) : DifficultyHitObject(type, pos, time, time) {}
 
 DifficultyHitObject::DifficultyHitObject(TYPE type, vec2 pos, i32 time, i32 endTime)
     : DifficultyHitObject(type, pos, time, endTime, 0.0f, '\0', std::vector<vec2>(), 0.0f,
-                             std::vector<SLIDER_SCORING_TIME>(), 0, true) {}
+                          std::vector<SLIDER_SCORING_TIME>(), 0, true) {}
 
 DifficultyHitObject::DifficultyHitObject(TYPE type, vec2 pos, i32 time, i32 endTime, f32 spanDuration,
-                                               i8 osuSliderCurveType, const std::vector<vec2> &controlPoints,
-                                               f32 pixelLength, std::vector<SLIDER_SCORING_TIME> scoringTimes,
-                                               i32 repeats, bool calculateSliderCurveInConstructor)
+                                         i8 osuSliderCurveType, const std::vector<vec2> &controlPoints, f32 pixelLength,
+                                         std::vector<SLIDER_SCORING_TIME> scoringTimes, i32 repeats,
+                                         bool calculateSliderCurveInConstructor)
     : type(type),
       pos(pos),
       time(time),
@@ -239,7 +239,7 @@ f64 DifficultyCalculator::calculateStarDiffForHitObjects(StarCalcParams &params)
             for(size_t i = 0; i < slider.ho->scoringTimes.size(); i++) {
                 vec2 diff;
 
-                if(slider.ho->scoringTimes[i].type == DifficultyHitObject::SLIDER_SCORING_TIME::TYPE::END) {
+                if(slider.ho->scoringTimes[i].type == SLIDER_SCORING_TIME::TYPE::END) {
                     // NOTE: In lazer, the position of the slider end is at the visual end, but the time is at the scoring end
                     diff = slider.ho->curve->pointAt(slider.ho->repeats % 2 ? 1.0 : 0.0) - cursor_pos;
                 } else {
@@ -263,8 +263,7 @@ f64 DifficultyCalculator::calculateStarDiffForHitObjects(StarCalcParams &params)
                     vec2 lazy_diff = slider.lazyEndPos - cursor_pos;
                     if(vec::length(lazy_diff) < vec::length(diff)) diff = lazy_diff;
                     diff_len = scaling_factor * vec::length(diff);
-                } else if(slider.ho->scoringTimes[i].type ==
-                          DifficultyHitObject::SLIDER_SCORING_TIME::TYPE::REPEAT) {
+                } else if(slider.ho->scoringTimes[i].type == SLIDER_SCORING_TIME::TYPE::REPEAT) {
                     // Slider repeat
                     req_diff = 50.0;
                 }
@@ -1690,8 +1689,7 @@ f64 DifficultyCalculator::DiffObject::spacing_weight2(const Skills::Skill diff_t
                     std::pow(std::min(strain_time, prev.strain_time) / std::max(strain_time, prev.strain_time), 2.0);
             }
 
-            if(prev.ho->type == DifficultyHitObject::TYPE::SLIDER)
-                sliderBonus = prev.travelDistance / prev.travelTime;
+            if(prev.ho->type == DifficultyHitObject::TYPE::SLIDER) sliderBonus = prev.travelDistance / prev.travelTime;
 
             aimStrain += wiggleBonus * wiggle_multiplier;
 

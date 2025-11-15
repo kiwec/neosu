@@ -2,6 +2,7 @@
 #include "AsyncPPCalculator.h"
 
 #include "DatabaseBeatmap.h"
+#include "DifficultyCalculator.h"
 #include "Timing.h"
 #include "Thread.h"
 #include "SyncMutex.h"
