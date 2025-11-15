@@ -105,11 +105,11 @@ DirectX11Interface::DirectX11Interface(HWND hwnd)
       // maybe TODO: allow runtime switching between exclusive/flip presentation
       // requires recreating swapchain (complex!)
       // flip presentation should theoretically be better/on par with exclusive fullscreen
-      bFlipPresent(!env->getLaunchArgs().contains("-exclusive") &&
-                   (!(RuntimePlatform::current() & RuntimePlatform::WIN_WINE) &&
-                    RuntimePlatform::current() & (RuntimePlatform::WIN_8 | RuntimePlatform::WIN_10 |
-                                                  RuntimePlatform::WIN_11 | RuntimePlatform::WIN_UNKNOWN))),
-      swapChainCreateFlags(this->bFlipPresent ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0) {
+      bFlipping(!env->getLaunchArgs().contains("-exclusive") &&
+                (!(RuntimePlatform::current() & RuntimePlatform::WIN_WINE) &&
+                 RuntimePlatform::current() & (RuntimePlatform::WIN_8 | RuntimePlatform::WIN_10 |
+                                               RuntimePlatform::WIN_11 | RuntimePlatform::WIN_UNKNOWN))),
+      swapChainCreateFlags(this->bFlipping ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0) {
     dx11_p = this;
 }
 
@@ -230,9 +230,9 @@ bool DirectX11Interface::init() {
         .Stereo = 0,
         .SampleDesc = {.Count = 1, .Quality = 0},
         .BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT,
-        .BufferCount = this->bFlipPresent ? 2U : 1U,  // 2 for DXGI_SWAP_EFFECT_FLIP_DISCARD
-        .Scaling = (isAtLeastWin8 && this->bFlipPresent) ? DXGI_SCALING_NONE : DXGI_SCALING_STRETCH,
-        .SwapEffect = this->bFlipPresent ? DXGI_SWAP_EFFECT_FLIP_DISCARD : DXGI_SWAP_EFFECT_DISCARD,
+        .BufferCount = this->bFlipping ? 2U : 1U,  // 2 for DXGI_SWAP_EFFECT_FLIP_DISCARD
+        .Scaling = (isAtLeastWin8 && this->bFlipping) ? DXGI_SCALING_NONE : DXGI_SCALING_STRETCH,
+        .SwapEffect = this->bFlipping ? DXGI_SWAP_EFFECT_FLIP_DISCARD : DXGI_SWAP_EFFECT_DISCARD,
         .AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED,
         .Flags = this->swapChainCreateFlags,
     };
@@ -296,7 +296,7 @@ void DirectX11Interface::beginScene() {
 
     // ensure render targets are bound (needed because onResolutionChange might skip setup during init)
     // HACKHACK: remove this
-    if(this->frameBuffer && this->bFlipPresent)
+    if(this->frameBuffer && this->bFlipping)
         this->deviceContext->OMSetRenderTargets(1, &this->frameBuffer, this->frameBufferDepthStencilView);
 
     Matrix4 defaultProjectionMatrix =
@@ -358,7 +358,7 @@ void DirectX11Interface::endScene() {
 
     this->popTransform();
 
-    const UINT presentFlags = ((!this->bFlipPresent || this->bVSync) ? 0 : DXGI_PRESENT_ALLOW_TEARING);
+    const UINT presentFlags = ((!this->bFlipping || this->bVSync) ? 0 : DXGI_PRESENT_ALLOW_TEARING);
     // | DXGI_PRESENT_DO_NOT_WAIT // look into this, causes issues under high load
 
     [[maybe_unused]] auto swapHR = this->swapChain->Present(this->bVSync, presentFlags);
@@ -1181,12 +1181,15 @@ void DirectX11Interface::onResolutionChange(vec2 newResolution) {
 
         HRESULT hr = E_FAIL;
         bool isExclusiveFS = false;
-        if(!this->bFlipPresent) {
+        if(!this->bFlipping) {
             DXGI_SWAP_CHAIN_FULLSCREEN_DESC fsDesc{};
             this->swapChain->GetFullscreenDesc(&fsDesc);
             isExclusiveFS = !fsDesc.Windowed;
 
-            const bool winCoversDesktop = env->getWindowSize() == env->getNativeScreenSize();
+            const bool winCoversDesktop = this->vResolution == env->getNativeScreenSize();
+            // debugLog("winCoversDesktop: {} fsDesc.Windowed: {} this->vResolution: {} envNativeScreenSize: {}",
+            //          winCoversDesktop, fsDesc.Windowed, this->vResolution, env->getNativeScreenSize());
+
             if(winCoversDesktop && fsDesc.Windowed) {
                 hr = this->swapChain->SetFullscreenState(TRUE, nullptr);
                 isExclusiveFS = !FAILED(hr);
@@ -1221,8 +1224,7 @@ void DirectX11Interface::onResolutionChange(vec2 newResolution) {
         //          this->bIsFullscreenBorderlessWindowed, isTrueFS ? 0 : (UINT)newResolution.x,
         //          isTrueFS ? 0 : (UINT)newResolution.y);
 
-        hr = this->swapChain->ResizeBuffers(0, !isExclusiveFS ? newWidth : 0, !isExclusiveFS ? newHeight : 0,
-                                            DXGI_FORMAT_UNKNOWN, this->swapChainCreateFlags);
+        hr = this->swapChain->ResizeBuffers(0, newWidth, newHeight, DXGI_FORMAT_UNKNOWN, this->swapChainCreateFlags);
 
         if(FAILED(hr))
             debugLog("FATAL ERROR: couldn't ResizeBuffers({:#x}, {:#x})!!!", (u32)hr, (u32)MAKE_DXGI_HRESULT(hr));
@@ -1415,15 +1417,15 @@ void DirectX11Interface::uploadAndDrawVertexBatch(D3D_PRIMITIVE_TOPOLOGY topolog
         bool uploadedSuccessfully = true;
 
         if(this->vertexBufferDesc.Usage == D3D11_USAGE_DEFAULT) {
-            D3D11_BOX box;
-            {
-                box.left = sizeof(DirectX11Interface::SimpleVertex) * 0;
-                box.right = box.left + (sizeof(DirectX11Interface::SimpleVertex) * batchSize);
-                box.top = 0;
-                box.bottom = 1;
-                box.front = 0;
-                box.back = 1;
-            }
+            D3D11_BOX box{
+                .left = sizeof(DirectX11Interface::SimpleVertex) * 0,
+                .top = 0,
+                .front = 0,
+                .right = (UINT)(box.left + (sizeof(DirectX11Interface::SimpleVertex) * batchSize)),
+                .bottom = 1,
+                .back = 1,
+            };
+
             this->deviceContext->UpdateSubresource(this->vertexBuffer, 0, &box, &this->vertices[vertexOffset], 0, 0);
         } else {
             const bool needsDiscardEntireBuffer =

@@ -289,7 +289,7 @@ class DirectX11Interface final : public Graphics {
     bool bColorInversion{false};
     bool bTexturingEnabled{false};
     bool bWasMinimized{false};  // hack?
-    const bool bFlipPresent;
+    const bool bFlipping;
     const UINT swapChainCreateFlags;
 
     // frame latency

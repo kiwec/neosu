@@ -1130,7 +1130,7 @@ void MainMenu::mouse_update(bool *propagate_clicks) {
     if(!shutting_down && BanchoState::is_online() && BanchoState::server_icon_url.length() > 0 &&
        BanchoState::server_icon == nullptr) {
         const std::string icon_path =
-            fmt::format(NEOSU_AVATARS_PATH "/{}/server_icon", BanchoState::endpoint, "/server_icon");
+            fmt::format(NEOSU_AVATARS_PATH "/{}/server_icon", BanchoState::endpoint);
 
         float progress = -1.f;
         std::vector<u8> data;
