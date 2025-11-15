@@ -314,16 +314,11 @@ class Osu final : public MouseListener, public KeyboardListener {
     RenderTarget *frameBuffer{nullptr};
     RenderTarget *frameBuffer2{nullptr};
 
-    Shader *actual_flashlight_shader{nullptr};
-    Shader *flashlight_shader{nullptr};
-
     McRect internalRect{0.f};
 
     // i don't like how these have to be public, but it's too annoying to change for now.
     // public members just mean their values can get rugpulled from under your feet at any moment,
     // and make it more annoying to find everywhere its actually changed
-   public:
-    vec2 flashlight_position{0.f};
 
     // mods
    public:  // public because of many external access

@@ -69,8 +69,6 @@
 #include "crypto.h"
 #include "score.h"
 
-#include "shaders.h"
-
 #include <algorithm>
 
 Osu *osu{nullptr};
@@ -415,16 +413,6 @@ Osu::Osu() {
         });
     }
 
-    // Not the type of shader you want players to tweak or delete, so loading from string
-    const bool using_dx11 = env->usingDX11();
-    this->actual_flashlight_shader = resourceManager->createShader(
-        using_dx11 ? VSH_STRING(DX11_, actual_flashlight) : VSH_STRING(GL_, actual_flashlight),
-        using_dx11 ? FSH_STRING(DX11_, actual_flashlight) : FSH_STRING(GL_, actual_flashlight), "actual_flashlight");
-
-    this->flashlight_shader = resourceManager->createShader(
-        using_dx11 ? VSH_STRING(DX11_, flashlight) : VSH_STRING(GL_, flashlight),
-        using_dx11 ? FSH_STRING(DX11_, flashlight) : FSH_STRING(GL_, flashlight), "flashlight");
-
     env->setCursorVisible(!this->internalRect.contains(mouse->getPos()));
 }
 
@@ -458,7 +446,7 @@ Osu::~Osu() {
 }
 
 void Osu::draw() {
-    if(!this->skin.get() || this->flashlight_shader == nullptr)  // sanity check
+    if(!this->skin.get())  // sanity check
     {
         g->setColor(0xff000000);
         g->fillRect(0, 0, this->getVirtScreenWidth(), this->getVirtScreenHeight());
@@ -483,82 +471,8 @@ void Osu::draw() {
 
         if(isFPoSu) this->playfieldBuffer->enable();
 
+        // draw playfield (incl. flashlight/smoke etc.)
         this->map_iface->draw();
-
-        auto actual_flashlight_enabled = cv::mod_actual_flashlight.getBool();
-        if(cv::mod_flashlight.getBool() || actual_flashlight_enabled) {
-            // Convert screen mouse -> osu mouse pos
-            vec2 cursorPos = this->map_iface->getCursorPos();
-            vec2 mouse_position = cursorPos - GameRules::getPlayfieldOffset();
-            mouse_position /= GameRules::getPlayfieldScaleFactor();
-
-            // Update flashlight position
-            double follow_delay = cv::flashlight_follow_delay.getFloat();
-            double frame_time = std::min(engine->getFrameTime(), follow_delay);
-            float t = frame_time / follow_delay;
-            t = t * (2.f - t);
-            this->flashlight_position += t * (mouse_position - this->flashlight_position);
-            vec2 flashlightPos =
-                this->flashlight_position * GameRules::getPlayfieldScaleFactor() + GameRules::getPlayfieldOffset();
-
-            float base_fl_radius = cv::flashlight_radius.getFloat() * GameRules::getPlayfieldScaleFactor();
-            float anti_fl_radius = base_fl_radius * 0.625f;
-            float fl_radius = base_fl_radius;
-            if(this->getScore()->getCombo() >= 200 || cv::flashlight_always_hard.getBool()) {
-                anti_fl_radius = base_fl_radius;
-                fl_radius *= 0.625f;
-            } else if(this->getScore()->getCombo() >= 100) {
-                anti_fl_radius = base_fl_radius * 0.8125f;
-                fl_radius *= 0.8125f;
-            }
-
-            if(cv::mod_flashlight.getBool()) {
-                // Dim screen when holding a slider
-                float opacity = 1.f;
-                if(this->map_iface->holding_slider && !cv::avoid_flashes.getBool()) {
-                    opacity = 0.2f;
-                }
-
-                this->flashlight_shader->enable();
-                this->flashlight_shader->setUniform1f("max_opacity", opacity);
-                this->flashlight_shader->setUniform1f("flashlight_radius", fl_radius);
-
-                if(env->usingDX11()) {  // don't flip Y position for DX11
-                    this->flashlight_shader->setUniform2f("flashlight_center", flashlightPos.x, flashlightPos.y);
-                } else {
-                    this->flashlight_shader->setUniform2f("flashlight_center", flashlightPos.x,
-                                                          this->getVirtScreenSize().y - flashlightPos.y);
-                }
-
-                g->setColor(argb(255, 0, 0, 0));
-                g->fillRect(0, 0, this->getVirtScreenWidth(), this->getVirtScreenHeight());
-
-                this->flashlight_shader->disable();
-            }
-            if(actual_flashlight_enabled) {
-                // Brighten screen when holding a slider
-                float opacity = 1.f;
-                if(this->map_iface->holding_slider && !cv::avoid_flashes.getBool()) {
-                    opacity = 0.8f;
-                }
-
-                this->actual_flashlight_shader->enable();
-                this->actual_flashlight_shader->setUniform1f("max_opacity", opacity);
-                this->actual_flashlight_shader->setUniform1f("flashlight_radius", anti_fl_radius);
-
-                if(env->usingDX11()) {  // don't flip Y position for DX11
-                    this->actual_flashlight_shader->setUniform2f("flashlight_center", flashlightPos.x, flashlightPos.y);
-                } else {
-                    this->actual_flashlight_shader->setUniform2f("flashlight_center", flashlightPos.x,
-                                                                 this->getVirtScreenSize().y - flashlightPos.y);
-                }
-
-                g->setColor(argb(255, 0, 0, 0));
-                g->fillRect(0, 0, this->getVirtScreenWidth(), this->getVirtScreenHeight());
-
-                this->actual_flashlight_shader->disable();
-            }
-        }
 
         if(!isFPoSu) this->hud->draw();
 
@@ -899,8 +813,8 @@ void Osu::update() {
 bool Osu::isInPlayModeAndNotPaused() const { return this->isInPlayMode() && !this->map_iface->isPaused(); }
 
 void Osu::updateMods() {
-    this->getScore()->mods = Replay::Mods::from_cvars();
-    this->getScore()->setCheated();
+    this->score->mods = Replay::Mods::from_cvars();
+    this->score->setCheated();
 
     if(this->isInPlayMode()) {
         // notify the possibly running playfield of mod changes
@@ -1032,7 +946,7 @@ void Osu::onKeyDown(KeyboardEvent &key) {
                     FinishedScore score;
                     score.replay = this->map_iface->live_replay;
                     score.beatmap_hash = this->map_iface->getBeatmap()->getMD5();
-                    score.mods = this->getScore()->mods;
+                    score.mods = this->score->mods;
 
                     score.playerName = BanchoState::get_username();
                     score.player_id = std::max(0, BanchoState::get_uid());
@@ -2016,7 +1930,7 @@ void Osu::onLetterboxingOffsetChange() {
 
 void Osu::onUserCardChange(std::string_view new_username) {
     // NOTE: force update options textbox to avoid shutdown inconsistency
-    this->getOptionsMenu()->setUsername(UString{new_username.data(), static_cast<int>(new_username.length())});
+    this->optionsMenu->setUsername(UString{new_username.data(), static_cast<int>(new_username.length())});
     this->userButton->setID(BanchoState::get_uid());
 }
 

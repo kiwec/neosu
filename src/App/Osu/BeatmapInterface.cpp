@@ -46,6 +46,8 @@
 #include "SpectatorScreen.h"
 #include "UIModSelectorModButton.h"
 
+#include "shaders.h"
+
 BeatmapInterface::BeatmapInterface() : AbstractBeatmapInterface() {
     // vars
     this->bIsPlaying = false;
@@ -535,9 +537,7 @@ bool BeatmapInterface::start() {
         osu->getHUD()->animateCursorShrink();
     }
 
-    static const int OSU_COORD_WIDTH = 512;
-    static const int OSU_COORD_HEIGHT = 384;
-    osu->flashlight_position = vec2{OSU_COORD_WIDTH / 2, OSU_COORD_HEIGHT / 2};
+    this->flashlight_position = vec2{GameRules::OSU_COORD_WIDTH / 2, GameRules::OSU_COORD_HEIGHT / 2};
 
     // reset everything, including deleting any previously loaded hitobjects from another diff which we might just have
     // played
@@ -1765,6 +1765,14 @@ void BeatmapInterface::draw() {
     // draw smoke
     if(cv::draw_smoke.getBool()) this->drawSmoke();
 
+    // draw flashlight overlay
+    {
+        const bool flashlight_enabled = cv::mod_flashlight.getBool();
+        const bool actual_flashlight_enabled = cv::mod_actual_flashlight.getBool();
+        if(flashlight_enabled || actual_flashlight_enabled)
+            this->drawFlashlight(flashlight_enabled ? FLType::NORMAL_FL : FLType::ACTUAL_FL);
+    }
+
     // draw spectator pause message
     if(this->spectate_pause) {
         auto info = BANCHO::User::get_user_info(BanchoState::spectated_player_id);
@@ -1779,6 +1787,97 @@ void BeatmapInterface::draw() {
             vec2 pos = this->osuCoords2Pixels(misaimObject->getRawPosAt(0));
             g->fillRect(pos.x - 50, pos.y - 50, 100, 100);
         }
+    }
+}
+
+void BeatmapInterface::drawFlashlight(FLType type) {
+    // Convert screen mouse -> osu mouse pos
+    vec2 cursorPos = this->getCursorPos();
+    vec2 mouse_position = cursorPos - GameRules::getPlayfieldOffset();
+    mouse_position /= GameRules::getPlayfieldScaleFactor();
+
+    // Update flashlight position
+    double follow_delay = cv::flashlight_follow_delay.getFloat();
+    double frame_time = std::min(engine->getFrameTime(), follow_delay);
+    float t = frame_time / follow_delay;
+    t = t * (2.f - t);
+    this->flashlight_position += t * (mouse_position - this->flashlight_position);
+    vec2 flashlightPos =
+        this->flashlight_position * GameRules::getPlayfieldScaleFactor() + GameRules::getPlayfieldOffset();
+
+    float base_fl_radius = cv::flashlight_radius.getFloat() * GameRules::getPlayfieldScaleFactor();
+    float anti_fl_radius = base_fl_radius * 0.625f;
+    float fl_radius = base_fl_radius;
+
+    if(osu->getScore()->getCombo() >= 200 || cv::flashlight_always_hard.getBool()) {
+        anti_fl_radius = base_fl_radius;
+        fl_radius *= 0.625f;
+    } else if(osu->getScore()->getCombo() >= 100) {
+        anti_fl_radius = base_fl_radius * 0.8125f;
+        fl_radius *= 0.8125f;
+    }
+
+    if(type == FLType::NORMAL_FL) {
+        // Lazy-load shader
+        if(!this->flashlight_shader) {
+            this->flashlight_shader = resourceManager->createShader(
+                env->usingDX11() ? VSH_STRING(DX11_, flashlight) : VSH_STRING(GL_, flashlight),
+                env->usingDX11() ? FSH_STRING(DX11_, flashlight) : FSH_STRING(GL_, flashlight), "flashlight");
+        }
+
+        // Dim screen when holding a slider
+        float opacity = 1.f;
+        if(this->holding_slider && !cv::avoid_flashes.getBool()) {
+            opacity = 0.2f;
+        }
+
+        this->flashlight_shader->enable();
+        this->flashlight_shader->setUniform1f("max_opacity", opacity);
+        this->flashlight_shader->setUniform1f("flashlight_radius", fl_radius);
+
+        if(env->usingDX11()) {  // don't flip Y position for DX11
+            this->flashlight_shader->setUniform2f("flashlight_center", flashlightPos.x, flashlightPos.y);
+        } else {
+            this->flashlight_shader->setUniform2f("flashlight_center", flashlightPos.x,
+                                                  osu->getVirtScreenSize().y - flashlightPos.y);
+        }
+
+        g->setColor(argb(255, 0, 0, 0));
+        g->fillRect(0, 0, osu->getVirtScreenWidth(), osu->getVirtScreenHeight());
+
+        this->flashlight_shader->disable();
+    }
+
+    if(type == FLType::ACTUAL_FL) {
+        // Lazy-load shader
+        if(!this->actual_flashlight_shader) {
+            this->actual_flashlight_shader = resourceManager->createShader(
+                env->usingDX11() ? VSH_STRING(DX11_, actual_flashlight) : VSH_STRING(GL_, actual_flashlight),
+                env->usingDX11() ? FSH_STRING(DX11_, actual_flashlight) : FSH_STRING(GL_, actual_flashlight),
+                "actual_flashlight");
+        }
+
+        // Brighten screen when holding a slider
+        float opacity = 1.f;
+        if(this->holding_slider && !cv::avoid_flashes.getBool()) {
+            opacity = 0.8f;
+        }
+
+        this->actual_flashlight_shader->enable();
+        this->actual_flashlight_shader->setUniform1f("max_opacity", opacity);
+        this->actual_flashlight_shader->setUniform1f("flashlight_radius", anti_fl_radius);
+
+        if(env->usingDX11()) {  // don't flip Y position for DX11
+            this->actual_flashlight_shader->setUniform2f("flashlight_center", flashlightPos.x, flashlightPos.y);
+        } else {
+            this->actual_flashlight_shader->setUniform2f("flashlight_center", flashlightPos.x,
+                                                         osu->getVirtScreenSize().y - flashlightPos.y);
+        }
+
+        g->setColor(argb(255, 0, 0, 0));
+        g->fillRect(0, 0, osu->getVirtScreenWidth(), osu->getVirtScreenHeight());
+
+        this->actual_flashlight_shader->disable();
     }
 }
 
@@ -2291,8 +2390,7 @@ void BeatmapInterface::update() {
                     .upToObjectIndex = current_hitobject,
                     .incremental = {},  // XXX/TODO: slow, should be incremental calc here! but threads are scary...
                     .outAimStrains = &info.aimStrains,
-                    .outSpeedStrains = &info.speedStrains
-                };
+                    .outSpeedStrains = &info.speedStrains};
 
                 info.total_stars = DifficultyCalculator::calculateStarDiffForHitObjects(params);
 
@@ -3404,8 +3502,8 @@ const AsyncPPC::pp_res &BeatmapInterface::getWholeMapPPInfo() {
         };
     }
 
-    this->full_ppinfo =
-        AsyncPPC::query_result(this->full_calc_req_params, true /* ignore gameplay background thread freeze, we need this asap */);
+    this->full_ppinfo = AsyncPPC::query_result(this->full_calc_req_params,
+                                               true /* ignore gameplay background thread freeze, we need this asap */);
     // we'll take the fast path once it's done anyways
 
     return this->full_ppinfo;

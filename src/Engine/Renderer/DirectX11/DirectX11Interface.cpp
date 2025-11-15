@@ -1344,9 +1344,11 @@ VertexArrayObject *DirectX11Interface::createVertexArrayObject(Graphics::PRIMITI
 }
 
 void DirectX11Interface::onTransformUpdate() {
-    if(!this->activeShader || (this->shaderTexturedGeneric == this->activeShader)) {
-        this->shaderTexturedGeneric->setUniformMatrix4fv("mvp", this->MP);
-    } else if(this->activeShader && this->activeShader->isReady()) {
+    // always update default shader
+    if(this->shaderTexturedGeneric) this->shaderTexturedGeneric->setUniformMatrix4fv("mvp", this->MP);
+
+    // update active shader
+    if(this->activeShader && this->activeShader != this->shaderTexturedGeneric && this->activeShader->isReady()) {
         this->activeShader->setUniformMatrix4fv("mvp", this->MP);
     }
 }

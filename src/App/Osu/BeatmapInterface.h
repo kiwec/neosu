@@ -350,6 +350,9 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
     void drawHitObjects();
     void drawSmoke();
 
+    enum class FLType : uint8_t {NORMAL_FL, ACTUAL_FL};
+    void drawFlashlight(FLType type);
+
     void updateAutoCursorPos();
     void updatePlayfieldMetrics();
     void updateHitobjectMetrics();
@@ -400,6 +403,11 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
     bool bWasEZEnabled;
     bool bWasMafhamEnabled;
     f32 fPrevPlayfieldRotationFromConVar;
+
+    // FL
+    vec2 flashlight_position{0.f};
+    Shader *actual_flashlight_shader{nullptr};
+    Shader *flashlight_shader{nullptr};
 
     // custom
     bool bIsPreLoading;
