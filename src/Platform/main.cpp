@@ -68,6 +68,7 @@ void setcwdexe(const std::string &exePathStr) noexcept {
 #endif
 
 #include "main_impl.h"
+#include "DiffCalcTool.h"
 
 //*********************************//
 //	SDL CALLBACKS/MAINLOOP BEGINS  //
@@ -124,6 +125,11 @@ SDL_AppResult SDL_AppIterate(void *appstate) { return static_cast<SDLMain *>(app
 // actual main/init, called once
 MAIN_FUNC /* int argc, char *argv[] */
 {
+    const bool diffcalcOnly = argc >= 2 && strncmp(argv[1], "-diffcalc", sizeof("-diffcalc") - 1) == 0;
+    if(diffcalcOnly) {
+        return run_diffcalc(argc, argv);
+    }
+
     // if a neosu instance is already running, send it a message then quit
     // only works on windows for now
     Environment::Interop::handle_existing_window(argc, argv);
