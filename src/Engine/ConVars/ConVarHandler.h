@@ -46,13 +46,20 @@ class ConVarHandler {
 
     bool removeServerValue(std::string_view cvarName);
 
+    // extra check run during areAllCvarsSubmittable
+    using CVSubmittableCriteriaFunc = bool (*)();
+    static inline void setCVSubmittableCheckFunc(CVSubmittableCriteriaFunc func) {
+        ConVarHandler::areAllCvarsSubmittableExtraCheck = func;
+    }
+
    private:
     friend class ConVar;
+
+    static CVSubmittableCriteriaFunc areAllCvarsSubmittableExtraCheck;
 
     [[nodiscard]] static std::vector<ConVar *> &getConVarArray_int();
     [[nodiscard]] static sv_unordered_map<ConVar *> &getConVarMap_int();
     [[nodiscard]] static ConVar *getConVar_int(std::string_view name);
-
 };
 
 extern std::unique_ptr<ConVarHandler> cvars;

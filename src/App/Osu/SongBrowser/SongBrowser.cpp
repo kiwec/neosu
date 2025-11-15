@@ -26,7 +26,7 @@
 #include "InfoLabel.h"
 #include "KeyBindings.h"
 #include "Keyboard.h"
-#include "LeaderboardPPCalcThread.h"
+#include "AsyncPPCalculator.h"
 #include "LoudnessCalcThread.h"
 #include "MainMenu.h"
 #include "MapCalcThread.h"
@@ -478,7 +478,7 @@ SongBrowser::SongBrowser()  // NOLINT(cert-msc51-cpp, cert-msc32-c)
 
 SongBrowser::~SongBrowser() {
     sct_abort();
-    lct_set_map(nullptr);
+    AsyncPPC::set_map(nullptr);
     VolNormalization::abort();
     MapCalcThread::abort();
     this->checkHandleKillBackgroundSearchMatcher();

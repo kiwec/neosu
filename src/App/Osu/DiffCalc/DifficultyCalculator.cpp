@@ -1,43 +1,38 @@
 // Copyright (c) 2019, PG & Francesco149, All rights reserved.
 #include "DifficultyCalculator.h"
 
+#include "SliderCurves.h"
+#include "GameRules.h"
+#include "ConVar.h"
+#include "ModFlags.h"
+
 #include <algorithm>
 
-#include "BeatmapInterface.h"
-#include "ConVar.h"
-#include "Engine.h"
-#include "GameRules.h"
-#include "Osu.h"
-#include "SliderCurves.h"
+DifficultyHitObject::DifficultyHitObject(TYPE type, vec2 pos, i32 time)
+    : DifficultyHitObject(type, pos, time, time) {}
 
-OsuDifficultyHitObject::OsuDifficultyHitObject(TYPE type, vec2 pos, i32 time)
-    : OsuDifficultyHitObject(type, pos, time, time) {}
-
-OsuDifficultyHitObject::OsuDifficultyHitObject(TYPE type, vec2 pos, i32 time, i32 endTime)
-    : OsuDifficultyHitObject(type, pos, time, endTime, 0.0f, '\0', std::vector<vec2>(), 0.0f,
+DifficultyHitObject::DifficultyHitObject(TYPE type, vec2 pos, i32 time, i32 endTime)
+    : DifficultyHitObject(type, pos, time, endTime, 0.0f, '\0', std::vector<vec2>(), 0.0f,
                              std::vector<SLIDER_SCORING_TIME>(), 0, true) {}
 
-OsuDifficultyHitObject::OsuDifficultyHitObject(TYPE type, vec2 pos, i32 time, i32 endTime, f32 spanDuration,
+DifficultyHitObject::DifficultyHitObject(TYPE type, vec2 pos, i32 time, i32 endTime, f32 spanDuration,
                                                i8 osuSliderCurveType, const std::vector<vec2> &controlPoints,
                                                f32 pixelLength, std::vector<SLIDER_SCORING_TIME> scoringTimes,
-                                               i32 repeats, bool calculateSliderCurveInConstructor) {
-    this->type = type;
-    this->pos = pos;
-    this->time = time;
-    this->endTime = endTime;
-    this->spanDuration = spanDuration;
-    this->osuSliderCurveType = osuSliderCurveType;
-    this->pixelLength = pixelLength;
-    this->scoringTimes = std::move(scoringTimes);
-
-    this->curve = nullptr;
-    this->scheduledCurveAlloc = false;
-    this->scheduledCurveAllocStackOffset = 0.0f;
-    this->repeats = repeats;
-
-    this->stack = 0;
-    this->originalPos = this->pos;
-
+                                               i32 repeats, bool calculateSliderCurveInConstructor)
+    : type(type),
+      pos(pos),
+      time(time),
+      endTime(endTime),
+      spanDuration(spanDuration),
+      osuSliderCurveType(osuSliderCurveType),
+      pixelLength(pixelLength),
+      scoringTimes(std::move(scoringTimes)),
+      repeats(repeats),
+      curve(nullptr),
+      scheduledCurveAlloc(false),
+      scheduledCurveAllocStackOffset(0.f),
+      stack(0),
+      originalPos(pos) {
     // build slider curve, if this is a (valid) slider
     if(this->type == TYPE::SLIDER && controlPoints.size() > 1) {
         if(calculateSliderCurveInConstructor) {
@@ -64,12 +59,12 @@ OsuDifficultyHitObject::OsuDifficultyHitObject(TYPE type, vec2 pos, i32 time, i3
     }
 }
 
-OsuDifficultyHitObject::~OsuDifficultyHitObject() { SAFE_DELETE(curve); }
+DifficultyHitObject::~DifficultyHitObject() { SAFE_DELETE(curve); }
 
-OsuDifficultyHitObject::OsuDifficultyHitObject(OsuDifficultyHitObject &&dobj) noexcept {
+DifficultyHitObject::DifficultyHitObject(DifficultyHitObject &&dobj) noexcept
+    : pos(dobj.pos), originalPos(dobj.originalPos) {
     // move
     this->type = dobj.type;
-    this->pos = dobj.pos;
     this->time = dobj.time;
     this->endTime = dobj.endTime;
     this->spanDuration = dobj.spanDuration;
@@ -84,14 +79,13 @@ OsuDifficultyHitObject::OsuDifficultyHitObject(OsuDifficultyHitObject &&dobj) no
     this->repeats = dobj.repeats;
 
     this->stack = dobj.stack;
-    this->originalPos = dobj.originalPos;
 
     // reset source
     dobj.curve = nullptr;
     dobj.scheduledCurveAlloc = false;
 }
 
-OsuDifficultyHitObject &OsuDifficultyHitObject::operator=(OsuDifficultyHitObject &&dobj) noexcept {
+DifficultyHitObject &DifficultyHitObject::operator=(DifficultyHitObject &&dobj) noexcept {
     // self-assignment check
     if(this == &dobj) return *this;
 
@@ -126,7 +120,7 @@ OsuDifficultyHitObject &OsuDifficultyHitObject::operator=(OsuDifficultyHitObject
     return *this;
 }
 
-void OsuDifficultyHitObject::updateStackPosition(f32 stackOffset) {
+void DifficultyHitObject::updateStackPosition(f32 stackOffset) {
     scheduledCurveAllocStackOffset = stackOffset;
 
     pos = originalPos - vec2(stack * stackOffset, stack * stackOffset);
@@ -134,11 +128,11 @@ void OsuDifficultyHitObject::updateStackPosition(f32 stackOffset) {
     updateCurveStackPosition(stackOffset);
 }
 
-void OsuDifficultyHitObject::updateCurveStackPosition(f32 stackOffset) {
+void DifficultyHitObject::updateCurveStackPosition(f32 stackOffset) {
     if(curve != nullptr) curve->updateStackPosition(stack * stackOffset, false);
 }
 
-vec2 OsuDifficultyHitObject::getOriginalRawPosAt(i32 pos) const {
+vec2 DifficultyHitObject::getOriginalRawPosAt(i32 pos) const {
     // NOTE: the delayed curve creation has been deliberately disabled here for stacking purposes for beatmaps with insane slider counts for performance reasons
     // NOTE: this means that these aspire maps will have incorrect stars due to incorrect slider stacking, but the delta is below 0.02 even for the most insane maps which currently exist
     // NOTE: if this were to ever get implemented properly, then a sliding window for curve allocation must be added to the stack algorithm itself (as doing it in here is O(n!) madness)
@@ -160,7 +154,7 @@ vec2 OsuDifficultyHitObject::getOriginalRawPosAt(i32 pos) const {
     }
 }
 
-f32 OsuDifficultyHitObject::getT(i32 pos, bool raw) const {
+f32 DifficultyHitObject::getT(i32 pos, bool raw) const {
     f32 t = (f32)((i32)pos - (i32)time) / spanDuration;
     if(raw)
         return t;
@@ -178,7 +172,7 @@ f64 DifficultyCalculator::calculateStarDiffForHitObjects(StarCalcParams &params)
     // NOTE: osu always returns 0 stars for beatmaps with only 1 object, except if that object is a slider
     if(params.sortedHitObjects.size() < 2) {
         if(params.sortedHitObjects.size() < 1) return 0.0;
-        if(params.sortedHitObjects[0].type != OsuDifficultyHitObject::TYPE::SLIDER) return 0.0;
+        if(params.sortedHitObjects[0].type != DifficultyHitObject::TYPE::SLIDER) return 0.0;
     }
 
     // global independent variables/constants
@@ -245,7 +239,7 @@ f64 DifficultyCalculator::calculateStarDiffForHitObjects(StarCalcParams &params)
             for(size_t i = 0; i < slider.ho->scoringTimes.size(); i++) {
                 vec2 diff;
 
-                if(slider.ho->scoringTimes[i].type == OsuDifficultyHitObject::SLIDER_SCORING_TIME::TYPE::END) {
+                if(slider.ho->scoringTimes[i].type == DifficultyHitObject::SLIDER_SCORING_TIME::TYPE::END) {
                     // NOTE: In lazer, the position of the slider end is at the visual end, but the time is at the scoring end
                     diff = slider.ho->curve->pointAt(slider.ho->repeats % 2 ? 1.0 : 0.0) - cursor_pos;
                 } else {
@@ -270,7 +264,7 @@ f64 DifficultyCalculator::calculateStarDiffForHitObjects(StarCalcParams &params)
                     if(vec::length(lazy_diff) < vec::length(diff)) diff = lazy_diff;
                     diff_len = scaling_factor * vec::length(diff);
                 } else if(slider.ho->scoringTimes[i].type ==
-                          OsuDifficultyHitObject::SLIDER_SCORING_TIME::TYPE::REPEAT) {
+                          DifficultyHitObject::SLIDER_SCORING_TIME::TYPE::REPEAT) {
                     // Slider repeat
                     req_diff = 50.0;
                 }
@@ -288,7 +282,7 @@ f64 DifficultyCalculator::calculateStarDiffForHitObjects(StarCalcParams &params)
         }
 
         static vec2 getEndCursorPosition(DiffObject &hitObject, f32 circleRadius) {
-            if(hitObject.ho->type == OsuDifficultyHitObject::TYPE::SLIDER) {
+            if(hitObject.ho->type == DifficultyHitObject::TYPE::SLIDER) {
                 computeSliderCursorPosition(hitObject, circleRadius);
                 return hitObject
                     .lazyEndPos;  // (slider.lazyEndPos is already initialized to ho->pos in DiffObject constructor)
@@ -309,7 +303,7 @@ f64 DifficultyCalculator::calculateStarDiffForHitObjects(StarCalcParams &params)
         // not cached (full rebuild computation)
         params.cachedDiffObjects.reserve(numDiffObjects);
         for(size_t i = 0; i < numDiffObjects; i++) {
-            if(params.dead.load(std::memory_order_acquire)) return 0.0;
+            if(params.shouldDie()) return 0.0;
 
             params.cachedDiffObjects.emplace_back(&params.sortedHitObjects[i], radius_scaling_factor,
                                                   params.cachedDiffObjects,
@@ -322,7 +316,7 @@ f64 DifficultyCalculator::calculateStarDiffForHitObjects(StarCalcParams &params)
     if(!isUsingCachedDiffObjects) {
         const f32 starsSliderCurvePointsSeparation = cv::stars_slider_curve_points_separation.getFloat();
         for(size_t i = 0; i < numDiffObjects; i++) {
-            if(params.dead.load(std::memory_order_acquire)) return 0.0;
+            if(params.shouldDie()) return 0.0;
 
             // see setDistances() @ https://github.com/ppy/osu/blob/master/osu.Game.Rulesets.Osu/Difficulty/Preprocessing/OsuDifficultyHitObject.cs
 
@@ -343,15 +337,15 @@ f64 DifficultyCalculator::calculateStarDiffForHitObjects(StarCalcParams &params)
                     }
                 }
 
-                if(cur.ho->type == OsuDifficultyHitObject::TYPE::SLIDER) {
+                if(cur.ho->type == DifficultyHitObject::TYPE::SLIDER) {
                     DistanceCalc::computeSliderCursorPosition(cur, circleRadiusInOsuPixels);
                     cur.travelDistance = cur.lazyTravelDist * std::pow(1.0 + (cur.ho->repeats - 1) / 2.5, 1.0 / 2.5);
                     cur.travelTime = std::max(cur.lazyTravelTime, 25.0);
                 }
 
                 // don't need to jump to reach spinners
-                if(cur.ho->type == OsuDifficultyHitObject::TYPE::SPINNER ||
-                   prev1.ho->type == OsuDifficultyHitObject::TYPE::SPINNER)
+                if(cur.ho->type == DifficultyHitObject::TYPE::SPINNER ||
+                   prev1.ho->type == DifficultyHitObject::TYPE::SPINNER)
                     continue;
 
                 const vec2 lastCursorPosition = DistanceCalc::getEndCursorPosition(prev1, circleRadiusInOsuPixels);
@@ -362,7 +356,7 @@ f64 DifficultyCalculator::calculateStarDiffForHitObjects(StarCalcParams &params)
                 cur.minJumpDistance = cur.jumpDistance;
                 cur.minJumpTime = cur_strain_time;
 
-                if(prev1.ho->type == OsuDifficultyHitObject::TYPE::SLIDER) {
+                if(prev1.ho->type == DifficultyHitObject::TYPE::SLIDER) {
                     f64 last_travel = std::max(prev1.lazyTravelTime, 25.0);
                     cur.minJumpTime = std::max(cur_strain_time - last_travel, 25.0);
 
@@ -381,7 +375,7 @@ f64 DifficultyCalculator::calculateStarDiffForHitObjects(StarCalcParams &params)
                 // calculate angles
                 if(i > 1) {
                     DiffObject &prev2 = diffObjects[i - 2];
-                    if(prev2.ho->type == OsuDifficultyHitObject::TYPE::SPINNER) continue;
+                    if(prev2.ho->type == DifficultyHitObject::TYPE::SPINNER) continue;
 
                     const vec2 lastLastCursorPosition =
                         DistanceCalc::getEndCursorPosition(prev2, circleRadiusInOsuPixels);
@@ -456,8 +450,8 @@ f64 DifficultyCalculator::calculatePPv2(PPv2CalcParams cpar) {
     // (the original incoming ar/od values are guaranteed to not yet have any speed multiplier applied to them, but they do have non-time-related mods already applied, like HR or any custom overrides)
     // (yes, this does work correctly when the override slider "locking" feature is used. in this case, the stored ar/od is already compensated such that it will have the locked value AFTER applying the speed multiplier here)
     // (all UI elements which display ar/od from stored scores, like the ranking screen or score buttons, also do this calculation before displaying the values to the user. of course the mod selection screen does too.)
-    cpar.ar = GameRules::arWithSpeed(cpar.ar, cpar.mods.speed);
-    cpar.od = GameRules::odWithSpeed(cpar.od, cpar.mods.speed);
+    cpar.ar = GameRules::arWithSpeed(cpar.ar, cpar.speedOverride);
+    cpar.od = GameRules::odWithSpeed(cpar.od, cpar.speedOverride);
 
     if(cpar.c300 < 0) cpar.c300 = cpar.numHitObjects - cpar.c100 - cpar.c50 - cpar.misses;
 
@@ -468,7 +462,7 @@ f64 DifficultyCalculator::calculatePPv2(PPv2CalcParams cpar) {
     const i32 totalHits = cpar.c300 + cpar.c100 + cpar.c50 + cpar.misses;
 
     ScoreData score{
-        .mods = cpar.mods,
+        .modFlags = cpar.modFlags,
         .accuracy =
             (totalHits > 0 ? (f64)(cpar.c300 * 300 + cpar.c100 * 100 + cpar.c50 * 50) / (f64)(totalHits * 300) : 0.0),
         .countGreat = cpar.c300,
@@ -480,7 +474,7 @@ f64 DifficultyCalculator::calculatePPv2(PPv2CalcParams cpar) {
         .beatmapMaxCombo = cpar.maxPossibleCombo,
         .scoreMaxCombo = cpar.combo,
         .amountHitObjectsWithAccuracy =
-            (cpar.mods.has(ModFlags::ScoreV2) ? cpar.numCircles + cpar.numSliders : cpar.numCircles),
+            (flags::has<ModFlags::ScoreV2>(cpar.modFlags) ? cpar.numCircles + cpar.numSliders : cpar.numCircles),
     };
 
     Attributes attributes{.AimStrain = cpar.aim,
@@ -508,15 +502,15 @@ f64 DifficultyCalculator::calculatePPv2(PPv2CalcParams cpar) {
     // custom multipliers for nofail and spunout
     f64 multiplier = 1.15;  // keep final pp normalized across changes
     {
-        if(cpar.mods.has(ModFlags::NoFail))
+        if(flags::has<ModFlags::NoFail>(cpar.modFlags))
             multiplier *= std::max(
                 0.9, 1.0 - 0.02 * effectiveMissCount);  // see https://github.com/ppy/osu-performance/pull/127/files
 
-        if((cpar.mods.has(ModFlags::SpunOut)) && score.totalHits > 0)
+        if((flags::has<ModFlags::SpunOut>(cpar.modFlags)) && score.totalHits > 0)
             multiplier *= 1.0 - std::pow((f64)cpar.numSpinners / (f64)score.totalHits,
                                          0.85);  // see https://github.com/ppy/osu-performance/pull/110/
 
-        if(cpar.mods.has(ModFlags::Relax)) {
+        if(flags::has<ModFlags::Relax>(cpar.modFlags)) {
             f64 okMultiplier = std::max(0.0, cpar.od > 0.0 ? 1.0 - std::pow(cpar.od / 13.33, 1.8) : 1.0);   // 100
             f64 mehMultiplier = std::max(0.0, cpar.od > 0.0 ? 1.0 - std::pow(cpar.od / 13.33, 5.0) : 1.0);  // 50
             effectiveMissCount = std::min(effectiveMissCount + cpar.c100 * okMultiplier + cpar.c50 * mehMultiplier,
@@ -524,7 +518,7 @@ f64 DifficultyCalculator::calculatePPv2(PPv2CalcParams cpar) {
         }
     }
 
-    const f64 speedDeviation = calculateSpeedDeviation(score, attributes);
+    const f64 speedDeviation = calculateSpeedDeviation(score, attributes, cpar.speedOverride);
     const f64 aimValue = computeAimValue(score, attributes, effectiveMissCount);
     const f64 speedValue = computeSpeedValue(score, attributes, effectiveMissCount, speedDeviation);
     const f64 accuracyValue = computeAccuracyValue(score, attributes);
@@ -551,7 +545,7 @@ f64 DifficultyCalculator::calculateTotalStarsFromSkills(f64 aim, f64 speed) {
 
 f64 DifficultyCalculator::computeAimValue(const ScoreData &score, const DifficultyCalculator::Attributes &attributes,
                                           f64 effectiveMissCount) {
-    if(score.mods.has(ModFlags::Autopilot)) return 0.0;
+    if(flags::has<ModFlags::Autopilot>(score.modFlags)) return 0.0;
 
     f64 aimDifficulty = attributes.AimStrain;
 
@@ -583,7 +577,7 @@ f64 DifficultyCalculator::computeAimValue(const ScoreData &score, const Difficul
 
     // ar bonus
     f64 approachRateFactor = 0.0;  // see https://github.com/ppy/osu-performance/pull/125/
-    if(!score.mods.has(ModFlags::Relax)) {
+    if(!flags::has<ModFlags::Relax>(score.modFlags)) {
         if(attributes.ApproachRate > 10.33)
             approachRateFactor =
                 0.3 *
@@ -600,7 +594,7 @@ f64 DifficultyCalculator::computeAimValue(const ScoreData &score, const Difficul
     aimValue *= 1.0 + approachRateFactor * lengthBonus;
 
     // hidden
-    if(score.mods.has(ModFlags::Hidden))
+    if(flags::has<ModFlags::Hidden>(score.modFlags))
         aimValue *= 1.0 + 0.04 * (std::max(12.0 - attributes.ApproachRate,
                                            0.0));  // NOTE: clamped to 0 because McOsu allows AR > 12
 
@@ -614,7 +608,7 @@ f64 DifficultyCalculator::computeAimValue(const ScoreData &score, const Difficul
 
 f64 DifficultyCalculator::computeSpeedValue(const ScoreData &score, const Attributes &attributes,
                                             f64 effectiveMissCount, f64 speedDeviation) {
-    if((score.mods.has(ModFlags::Relax)) || std::isnan(speedDeviation)) return 0.0;
+    if((flags::has<ModFlags::Relax>(score.modFlags)) || std::isnan(speedDeviation)) return 0.0;
 
     f64 speedValue = std::pow(5.0 * std::max(1.0, attributes.SpeedStrain / 0.0675) - 4.0, 3.0) / 100000.0;
 
@@ -641,7 +635,7 @@ f64 DifficultyCalculator::computeSpeedValue(const ScoreData &score, const Attrib
     speedValue *= 1.0 + approachRateFactor * lengthBonus;
 
     // hidden
-    if(score.mods.has(ModFlags::Hidden))
+    if(flags::has<ModFlags::Hidden>(score.modFlags))
         speedValue *= 1.0 + 0.04 * (std::max(12.0 - attributes.ApproachRate,
                                              0.0));  // NOTE: clamped to 0 because McOsu allows AR > 12
 
@@ -665,12 +659,12 @@ f64 DifficultyCalculator::computeSpeedValue(const ScoreData &score, const Attrib
                   std::pow((score.accuracy + relevantAccuracy) / 2.0, (14.5 - attributes.OverallDifficulty) / 2.0);
 
     // singletap buff (XXX: might be too weak)
-    if(score.mods.has(ModFlags::Singletap)) {
+    if(flags::has<ModFlags::Singletap>(score.modFlags)) {
         speedValue *= 1.25;
     }
 
     // no keylock nerf (XXX: might be too harsh)
-    if(score.mods.has(ModFlags::NoKeylock)) {
+    if(flags::has<ModFlags::NoKeylock>(score.modFlags)) {
         speedValue *= 0.5;
     }
 
@@ -678,7 +672,7 @@ f64 DifficultyCalculator::computeSpeedValue(const ScoreData &score, const Attrib
 }
 
 f64 DifficultyCalculator::computeAccuracyValue(const ScoreData &score, const Attributes &attributes) {
-    if(score.mods.has(ModFlags::Relax)) return 0.0;
+    if(flags::has<ModFlags::Relax>(score.modFlags)) return 0.0;
 
     f64 betterAccuracyPercentage;
     if(score.amountHitObjectsWithAccuracy > 0)
@@ -700,14 +694,14 @@ f64 DifficultyCalculator::computeAccuracyValue(const ScoreData &score, const Att
     accuracyValue *= std::min(1.15, std::pow(score.amountHitObjectsWithAccuracy / 1000.0, 0.3));
 
     // hidden bonus
-    if(score.mods.has(ModFlags::Hidden)) accuracyValue *= 1.08;
+    if(flags::has<ModFlags::Hidden>(score.modFlags)) accuracyValue *= 1.08;
     // flashlight bonus
-    if(score.mods.has(ModFlags::Flashlight)) accuracyValue *= 1.02;
+    if(flags::has<ModFlags::Flashlight>(score.modFlags)) accuracyValue *= 1.02;
 
     return accuracyValue;
 }
 
-f64 DifficultyCalculator::calculateSpeedDeviation(const ScoreData &score, const Attributes &attributes) {
+f64 DifficultyCalculator::calculateSpeedDeviation(const ScoreData &score, const Attributes &attributes, f32 timescale) {
     if(score.countGreat + score.countGood + score.countMeh == 0) return std::numeric_limits<f64>::quiet_NaN();
 
     f64 speedNoteCount = attributes.SpeedNoteCount;
@@ -718,7 +712,7 @@ f64 DifficultyCalculator::calculateSpeedDeviation(const ScoreData &score, const 
     f64 relevantCountOk = std::min((f64)score.countGood, speedNoteCount - relevantCountMiss - relevantCountMeh);
     f64 relevantCountGreat = std::max(0.0, speedNoteCount - relevantCountMiss - relevantCountMeh - relevantCountOk);
 
-    return calculateDeviation(attributes, score.mods.speed, relevantCountGreat, relevantCountOk, relevantCountMeh,
+    return calculateDeviation(attributes, timescale, relevantCountGreat, relevantCountOk, relevantCountMeh,
                               relevantCountMiss);
 }
 
@@ -1139,15 +1133,15 @@ void DifficultyCalculator::DiffObject::calculate_strain(const DiffObject &prev, 
     strain_time = (f64)std::max(time_elapsed, 25);
 
     switch(ho->type) {
-        case OsuDifficultyHitObject::TYPE::SLIDER:
-        case OsuDifficultyHitObject::TYPE::CIRCLE:
+        case DifficultyHitObject::TYPE::SLIDER:
+        case DifficultyHitObject::TYPE::CIRCLE:
             currentStrainOfDiffObject = spacing_weight2(dtype, prev, next, hitWindow300);
             break;
 
-        case OsuDifficultyHitObject::TYPE::SPINNER:
+        case DifficultyHitObject::TYPE::SPINNER:
             break;
 
-        case OsuDifficultyHitObject::TYPE::INVALID:
+        case DifficultyHitObject::TYPE::INVALID:
             // NOTE: silently ignore
             return;
     }
@@ -1209,7 +1203,7 @@ f64 DifficultyCalculator::DiffObject::calculate_difficulty(const Skills::Skill t
         max_strain = std::max(max_strain, cur_strain);
 
         // NOTE: this is done in StrainValueAt in lazer's code, but doing it here is more convenient for the incremental case
-        if(type == Skills::AIM_SLIDERS && cur.ho->type == OsuDifficultyHitObject::TYPE::SLIDER)
+        if(type == Skills::AIM_SLIDERS && cur.ho->type == DifficultyHitObject::TYPE::SLIDER)
             sliderStrainsRef->push_back(cur_strain);
     }
 
@@ -1272,7 +1266,7 @@ f64 DifficultyCalculator::DiffObject::calculate_difficulty(const Skills::Skill t
                 return (x.get_slider_aim_strain() < y.get_slider_aim_strain());
             };
 
-            if(incremental && dobjects[dobjectCount - 1].ho->type != OsuDifficultyHitObject::TYPE::SLIDER)
+            if(incremental && dobjects[dobjectCount - 1].ho->type != DifficultyHitObject::TYPE::SLIDER)
                 *outSkillSpecificAttrib = incremental->difficult_sliders;
             else {
                 f64 maxSliderStrain;
@@ -1427,7 +1421,7 @@ f64 DifficultyCalculator::DiffObject::spacing_weight2(const Skills::Skill diff_t
     switch(diff_type) {
         case Skills::SPEED: {
             // see https://github.com/ppy/osu/blob/master/osu.Game.Rulesets.Osu/Difficulty/Skills/Speed.cs
-            if(ho->type == OsuDifficultyHitObject::TYPE::SPINNER) {
+            if(ho->type == DifficultyHitObject::TYPE::SPINNER) {
                 raw_speed_strain = 0.0;
                 rhythm = 0.0;
 
@@ -1514,11 +1508,11 @@ f64 DifficultyCalculator::DiffObject::spacing_weight2(const Skills::Skill diff_t
                         island.deltaCount++;
                     } else {
                         if(currObj->ho->type ==
-                           OsuDifficultyHitObject::TYPE::SLIDER)  // bpm change is into slider, this is easy acc window
+                           DifficultyHitObject::TYPE::SLIDER)  // bpm change is into slider, this is easy acc window
                             effectiveRatio *= 0.125;
 
                         if(prevObj->ho->type ==
-                           OsuDifficultyHitObject::TYPE::
+                           DifficultyHitObject::TYPE::
                                SLIDER)  // bpm change was from a slider, this is easier typically than circle -> circle
                             effectiveRatio *= 0.3;
 
@@ -1579,11 +1573,11 @@ f64 DifficultyCalculator::DiffObject::spacing_weight2(const Skills::Skill diff_t
                     firstDeltaSwitch = true;
 
                     if(currObj->ho->type ==
-                       OsuDifficultyHitObject::TYPE::SLIDER)  // bpm change is into slider, this is easy acc window
+                       DifficultyHitObject::TYPE::SLIDER)  // bpm change is into slider, this is easy acc window
                         effectiveRatio *= 0.6;
 
                     if(prevObj->ho->type ==
-                       OsuDifficultyHitObject::TYPE::
+                       DifficultyHitObject::TYPE::
                            SLIDER)  // bpm change was from a slider, this is easier typically than circle -> circle
                         effectiveRatio *= 0.6;
 
@@ -1612,8 +1606,8 @@ f64 DifficultyCalculator::DiffObject::spacing_weight2(const Skills::Skill diff_t
 
             const bool withSliders = (diff_type == Skills::AIM_SLIDERS);
 
-            if(ho->type == OsuDifficultyHitObject::TYPE::SPINNER || prevObjectIndex <= 1 ||
-               prev.ho->type == OsuDifficultyHitObject::TYPE::SPINNER)
+            if(ho->type == DifficultyHitObject::TYPE::SPINNER || prevObjectIndex <= 1 ||
+               prev.ho->type == DifficultyHitObject::TYPE::SPINNER)
                 return 0.0;
 
             static constexpr auto reverseLerp = [](f64 x, f64 start, f64 end) {
@@ -1637,7 +1631,7 @@ f64 DifficultyCalculator::DiffObject::spacing_weight2(const Skills::Skill diff_t
             const DiffObject *prevPrev = get_previous(1);
             f64 currVelocity = jumpDistance / strain_time;
 
-            if(prev.ho->type == OsuDifficultyHitObject::TYPE::SLIDER && withSliders) {
+            if(prev.ho->type == DifficultyHitObject::TYPE::SLIDER && withSliders) {
                 f64 travelVelocity = prev.travelDistance / prev.travelTime;
                 f64 movementVelocity = minJumpDistance / minJumpTime;
                 currVelocity = std::max(currVelocity, movementVelocity + travelVelocity);
@@ -1645,7 +1639,7 @@ f64 DifficultyCalculator::DiffObject::spacing_weight2(const Skills::Skill diff_t
             f64 aimStrain = currVelocity;
 
             f64 prevVelocity = prev.jumpDistance / prev.strain_time;
-            if(prevPrev->ho->type == OsuDifficultyHitObject::TYPE::SLIDER && withSliders) {
+            if(prevPrev->ho->type == DifficultyHitObject::TYPE::SLIDER && withSliders) {
                 f64 travelVelocity = prevPrev->travelDistance / prevPrev->travelTime;
                 f64 movementVelocity = prev.minJumpDistance / prev.minJumpTime;
                 prevVelocity = std::max(prevVelocity, movementVelocity + travelVelocity);
@@ -1696,7 +1690,7 @@ f64 DifficultyCalculator::DiffObject::spacing_weight2(const Skills::Skill diff_t
                     std::pow(std::min(strain_time, prev.strain_time) / std::max(strain_time, prev.strain_time), 2.0);
             }
 
-            if(prev.ho->type == OsuDifficultyHitObject::TYPE::SLIDER)
+            if(prev.ho->type == DifficultyHitObject::TYPE::SLIDER)
                 sliderBonus = prev.travelDistance / prev.travelTime;
 
             aimStrain += wiggleBonus * wiggle_multiplier;

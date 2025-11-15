@@ -105,6 +105,12 @@ void init() {
     // dapp.application->get_oauth2_token(dapp.application, &app, OnOAuth2Token);
     // dapp.relationships = dapp.core->get_relationship_manager(dapp.core);
 
+    cv::rich_presence.setCallback([](float oldValue, float newValue) -> void {
+        if(oldValue != newValue && !static_cast<int>(newValue)) {
+            DiscRPC::clear_activity();
+        }
+    });
+
     initialized = true;
 }
 

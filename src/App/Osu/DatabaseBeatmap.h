@@ -5,11 +5,11 @@
 #include "HitSounds.h"
 #include "Osu.h"
 #include "Overrides.h"
-#include "SyncMutex.h"
 #include "templates.h"
 
 #include <atomic>
 #include <string_view>
+#include <functional>
 
 class AbstractBeatmapInterface;
 class HitObject;
@@ -51,7 +51,7 @@ class DatabaseBeatmap final {
 
     // custom structs
     struct LOAD_DIFFOBJ_RESULT {
-        std::vector<OsuDifficultyHitObject> diffobjects{};
+        std::vector<DifficultyHitObject> diffobjects{};
 
         i32 maxPossibleCombo{};
         int errorCode{0};
@@ -115,7 +115,7 @@ class DatabaseBeatmap final {
         float sliderTimeWithoutRepeats;
         std::vector<float> ticks;
 
-        std::vector<OsuDifficultyHitObject::SLIDER_SCORING_TIME> scoringTimesForStarCalc;
+        std::vector<DifficultyHitObject::SLIDER_SCORING_TIME> scoringTimesForStarCalc;
     };
 
     struct SPINNER {
@@ -156,14 +156,19 @@ class DatabaseBeatmap final {
     DatabaseBeatmap(std::vector<DatabaseBeatmap *> *difficulties, BeatmapType type);
     ~DatabaseBeatmap();
 
+    static constexpr auto alwaysFalseStopPred = []() -> bool { return false; };
+
     static LOAD_DIFFOBJ_RESULT loadDifficultyHitObjects(std::string_view osuFilePath, float AR, float CS,
                                                         float speedMultiplier, bool calculateStarsInaccurately = false);
+
     static LOAD_DIFFOBJ_RESULT loadDifficultyHitObjects(std::string_view osuFilePath, float AR, float CS,
                                                         float speedMultiplier, bool calculateStarsInaccurately,
-                                                        const std::atomic<bool> &dead);
+                                                        const std::function<bool(void)> &dead = alwaysFalseStopPred);
+
     static LOAD_DIFFOBJ_RESULT loadDifficultyHitObjects(PRIMITIVE_CONTAINER &c, float AR, float CS,
                                                         float speedMultiplier, bool calculateStarsInaccurately,
-                                                        const std::atomic<bool> &dead);
+                                                        const std::function<bool(void)> &dead = alwaysFalseStopPred);
+
     bool loadMetadata(bool compute_md5 = true);
 
     static LOAD_GAMEPLAY_RESULT loadGameplay(DatabaseBeatmap *databaseBeatmap, AbstractBeatmapInterface *beatmap);
@@ -380,13 +385,13 @@ class DatabaseBeatmap final {
     friend class BGImageHandler;
 
     static PRIMITIVE_CONTAINER loadPrimitiveObjects(std::string_view osuFilePath);
-    static PRIMITIVE_CONTAINER loadPrimitiveObjects(std::string_view osuFilePath, const std::atomic<bool> &dead);
+    static PRIMITIVE_CONTAINER loadPrimitiveObjects(std::string_view osuFilePath, const std::function<bool(void)> &dead);
     static CALCULATE_SLIDER_TIMES_CLICKS_TICKS_RESULT calculateSliderTimesClicksTicks(
         int beatmapVersion, std::vector<SLIDER> &sliders, zarray<DatabaseBeatmap::TIMINGPOINT> &timingpoints,
         float sliderMultiplier, float sliderTickRate);
     static CALCULATE_SLIDER_TIMES_CLICKS_TICKS_RESULT calculateSliderTimesClicksTicks(
         int beatmapVersion, std::vector<SLIDER> &sliders, zarray<DatabaseBeatmap::TIMINGPOINT> &timingpoints,
-        float sliderMultiplier, float sliderTickRate, const std::atomic<bool> &dead);
+        float sliderMultiplier, float sliderTickRate, const std::function<bool(void)> &dead);
 
     static bool parse_timing_point(std::string_view curLine, DatabaseBeatmap::TIMINGPOINT *out);
 

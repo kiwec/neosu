@@ -1,5 +1,6 @@
 #include "AbstractBeatmapInterface.h"
 
+#include "Osu.h"
 #include "GameRules.h"
 #include "LegacyReplay.h"
 

@@ -8,6 +8,7 @@
 #include "HitObjects.h"
 #include "LegacyReplay.h"
 #include "Logging.h"
+#include "ConVar.h"
 #include "Timing.h"
 
 SimulatedBeatmapInterface::SimulatedBeatmapInterface(DatabaseBeatmap *map, const Replay::Mods &mods_)

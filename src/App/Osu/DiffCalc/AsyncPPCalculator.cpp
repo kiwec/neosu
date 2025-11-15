@@ -1,15 +1,17 @@
 // Copyright (c) 2024, kiwec, All rights reserved.
-#include "LeaderboardPPCalcThread.h"
+#include "AsyncPPCalculator.h"
 
-#include "ConVar.h"
 #include "DatabaseBeatmap.h"
 #include "Timing.h"
 #include "Thread.h"
 #include "SyncMutex.h"
 #include "SyncCV.h"
 
-#include <thread>
+#include "SyncJthread.h"
 
+namespace AsyncPPC {
+
+namespace {  // static namespace
 struct hitobject_cache {
     // Selectors
     f32 speed{};
@@ -32,14 +34,13 @@ struct info_cache {
     // Results
     std::vector<DifficultyCalculator::DiffObject> cachedDiffObjects{};
     std::vector<DifficultyCalculator::DiffObject> diffObjects{};
-    pp_info info{};
+    pp_res info{};
 };
 
 static const BeatmapDifficulty* map = nullptr;
 
-static Sync::condition_variable cond;
-static std::thread thr;
-static std::atomic<bool> dead = true;
+static Sync::condition_variable_any cond;
+static Sync::jthread thr;
 
 static Sync::mutex work_mtx;
 // bool to keep track of "high priority" state
@@ -47,23 +48,26 @@ static Sync::mutex work_mtx;
 static std::vector<std::pair<pp_calc_request, bool>> work;
 
 static Sync::mutex cache_mtx;
-static std::vector<std::pair<pp_calc_request, pp_info>> cache;
+static std::vector<std::pair<pp_calc_request, pp_res>> cache;
 
 // We have to use pointers because of C++ MOVE SEMANTICS BULLSHIT
 static std::vector<hitobject_cache*> ho_cache;
 static std::vector<info_cache*> inf_cache;
 
-static void run_thread() {
+static void run_thread(const Sync::stop_token& stoken) {
     McThread::set_current_thread_name("lb_pp_calc");
     McThread::set_current_thread_prio(McThread::Priority::NORMAL);  // reset priority
 
-    for(;;) {
+    const auto deadCheck = [&stoken](void) -> bool { return stoken.stop_requested(); };
+
+    while(!stoken.stop_requested()) {
         Sync::unique_lock<Sync::mutex> lock(work_mtx);
-        cond.wait(lock, [] { return !work.empty() || dead.load(std::memory_order_acquire); });
-        if(dead.load(std::memory_order_acquire)) return;
+        cond.wait(lock, stoken, [] { return !work.empty(); });
+        if(stoken.stop_requested()) return;
 
         while(!work.empty()) {
-            if(dead.load(std::memory_order_acquire)) return;
+            if(stoken.stop_requested()) return;
+
             auto [rqt, highprio] = work[0];
             if(!highprio && osu->shouldPauseBGThreads()) {
                 work_mtx.unlock();
@@ -88,7 +92,7 @@ static void run_thread() {
                 work_mtx.lock();
                 continue;
             }
-            if(dead.load(std::memory_order_acquire)) {
+            if(stoken.stop_requested()) {
                 work_mtx.lock();
                 return;
             }
@@ -97,7 +101,7 @@ static void run_thread() {
             bool found_hitobjects = false;
             hitobject_cache* computed_ho = nullptr;
             for(auto ho : ho_cache) {
-                if(ho->speed != rqt.mods.speed) continue;
+                if(ho->speed != rqt.speedOverride) continue;
                 if(ho->AR != rqt.AR) continue;
                 if(ho->CS != rqt.CS) continue;
 
@@ -107,16 +111,17 @@ static void run_thread() {
             }
             if(!found_hitobjects) {
                 computed_ho = new hitobject_cache();
-                computed_ho->speed = rqt.mods.speed;
+                computed_ho->speed = rqt.speedOverride;
                 computed_ho->AR = rqt.AR;
                 computed_ho->CS = rqt.CS;
-                if(dead.load(std::memory_order_acquire)) {
+                if(stoken.stop_requested()) {
                     work_mtx.lock();
                     return;
                 }
+
                 computed_ho->diffres = DatabaseBeatmap::loadDifficultyHitObjects(map->getFilePath(), rqt.AR, rqt.CS,
-                                                                                 rqt.mods.speed, false, dead);
-                if(dead.load(std::memory_order_acquire)) {
+                                                                                 rqt.speedOverride, false, deadCheck);
+                if(stoken.stop_requested()) {
                     work_mtx.lock();
                     return;
                 }
@@ -128,11 +133,11 @@ static void run_thread() {
                 ho_cache.push_back(computed_ho);
             }
 
-            // Load pp_info
+            // Load pp_res
             bool found_info = false;
             info_cache* computed_info = nullptr;
             for(auto info : inf_cache) {
-                if(info->speed != rqt.mods.speed) continue;
+                if(info->speed != rqt.speedOverride) continue;
                 if(info->AR != rqt.AR) continue;
                 if(info->CS != rqt.CS) continue;
                 if(info->OD != rqt.OD) continue;
@@ -145,13 +150,13 @@ static void run_thread() {
             }
             if(!found_info) {
                 computed_info = new info_cache();
-                computed_info->speed = rqt.mods.speed;
+                computed_info->speed = rqt.speedOverride;
                 computed_info->AR = rqt.AR;
                 computed_info->CS = rqt.CS;
                 computed_info->OD = rqt.OD;
                 computed_info->rx = rqt.rx;
                 computed_info->td = rqt.td;
-                if(dead.load(std::memory_order_acquire)) {
+                if(stoken.stop_requested()) {
                     work_mtx.lock();
                     return;
                 }
@@ -161,7 +166,7 @@ static void run_thread() {
                     .sortedHitObjects = computed_ho->diffres.diffobjects,
                     .CS = rqt.CS,
                     .OD = rqt.OD,
-                    .speedMultiplier = rqt.mods.speed,
+                    .speedMultiplier = rqt.speedOverride,
                     .relax = rqt.rx,
                     .touchDevice = rqt.td,
                     .aim = &computed_info->info.aim_stars,
@@ -175,11 +180,11 @@ static void run_thread() {
                     .incremental = {},
                     .outAimStrains = &computed_info->info.aimStrains,
                     .outSpeedStrains = &computed_info->info.speedStrains,
-                    .dead = dead,
+                    .cancelCheck = deadCheck,
                 };
                 computed_info->info.total_stars = DifficultyCalculator::calculateStarDiffForHitObjects(params);
                 computed_info->cachedDiffObjects = std::move(params.cachedDiffObjects);
-                if(dead.load(std::memory_order_acquire)) {
+                if(stoken.stop_requested()) {
                     work_mtx.lock();
                     return;
                 }
@@ -187,13 +192,14 @@ static void run_thread() {
                 inf_cache.push_back(computed_info);
             }
 
-            if(dead.load(std::memory_order_acquire)) {
+            if(stoken.stop_requested()) {
                 work_mtx.lock();
                 return;
             }
 
             DifficultyCalculator::PPv2CalcParams ppv2calcparams{
-                .mods = rqt.mods,
+                .modFlags = rqt.modFlags,
+                .speedOverride = rqt.speedOverride,
                 .ar = rqt.AR,
                 .od = rqt.OD,
                 .aim = computed_info->info.aim_stars,
@@ -224,14 +230,15 @@ static void run_thread() {
         }
     }
 }
+}  // namespace
 
-void lct_set_map(const DatabaseBeatmap* new_map) {
+void set_map(const DatabaseBeatmap* new_map) {
     if(map == new_map) return;
 
     if(map != nullptr) {
-        dead.store(true, std::memory_order_release);
         cond.notify_one();
         if(thr.joinable()) {
+            thr.request_stop();
             thr.join();
         }
         cache.clear();
@@ -245,23 +252,21 @@ void lct_set_map(const DatabaseBeatmap* new_map) {
             delete inf;
         }
         inf_cache.clear();
-
-        dead.store(false, std::memory_order_release);
     }
 
     map = new_map;
     if(new_map != nullptr) {
-        thr = std::thread(run_thread);
+        thr = Sync::jthread(run_thread);
     }
     return;
 }
 
-pp_info lct_get_pp(const pp_calc_request& rqt, bool ignoreBGThreadPause) {
+pp_res query_result(const pp_calc_request& rqt, bool ignoreBGThreadPause) {
     cache_mtx.lock();
     for(const auto& [request, info] : cache) {
         if(request != rqt) continue;
 
-        pp_info out = info;
+        pp_res out = info;
         cache_mtx.unlock();
         return out;
     }
@@ -281,7 +286,7 @@ pp_info lct_get_pp(const pp_calc_request& rqt, bool ignoreBGThreadPause) {
     work_mtx.unlock();
     cond.notify_one();
 
-    pp_info placeholder{
+    pp_res placeholder{
         .total_stars = -1.0,
         .aim_stars = -1.0,
         .aim_slider_factor = -1.0,
@@ -292,3 +297,4 @@ pp_info lct_get_pp(const pp_calc_request& rqt, bool ignoreBGThreadPause) {
 
     return placeholder;
 }
+}  // namespace AsyncPPC

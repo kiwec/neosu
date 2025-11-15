@@ -6,6 +6,7 @@
 #include "CBaseUISlider.h"
 #include "DatabaseBeatmap.h"
 #include "GameRules.h"
+#include "ConVar.h"
 #include "Osu.h"
 
 namespace Replay {

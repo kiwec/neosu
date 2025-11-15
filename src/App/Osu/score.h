@@ -165,7 +165,9 @@ class LiveScore {
     [[nodiscard]] inline float getPPv2() const { return this->fPPv2; }
     [[nodiscard]] inline int getIndex() const { return this->iIndex; }
 
-    u64 getScore();
+    [[nodiscard]] inline u64 getScore() const {
+        return this->mods.has(ModFlags::ScoreV2) ? this->iScoreV2 : this->iScoreV1;
+    }
     [[nodiscard]] inline FinishedScore::Grade getGrade() const { return this->grade; }
     [[nodiscard]] inline int getCombo() const { return this->iCombo; }
     [[nodiscard]] inline int getComboMax() const { return this->iComboMax; }

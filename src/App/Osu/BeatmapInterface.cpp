@@ -40,7 +40,7 @@
 #include "SimulatedBeatmapInterface.h"
 #include "Skin.h"
 #include "SkinImage.h"
-#include "SongBrowser/LeaderboardPPCalcThread.h"
+#include "AsyncPPCalculator.h"
 #include "SongBrowser/SongBrowser.h"
 #include "SoundEngine.h"
 #include "SpectatorScreen.h"
@@ -362,7 +362,7 @@ void BeatmapInterface::selectBeatmap() {
 }
 
 void BeatmapInterface::selectBeatmap(DatabaseBeatmap *map) {
-    lct_set_map(map);
+    AsyncPPC::set_map(map);
 
     if(map != nullptr) {
         this->beatmap = map;
@@ -2269,10 +2269,9 @@ void BeatmapInterface::update() {
             auto num50s = osu->getScore()->getNum50s();
 
             this->ppv2_calc.enqueue([=]() {
-                pp_info info;
+                AsyncPPC::pp_res info;
 
-                std::atomic<bool> dead{false};
-                auto diffres = DatabaseBeatmap::loadDifficultyHitObjects(osufile_path, AR, CS, speedMultiplier, dead);
+                auto diffres = DatabaseBeatmap::loadDifficultyHitObjects(osufile_path, AR, CS, speedMultiplier);
 
                 DifficultyCalculator::StarCalcParams params{
                     .cachedDiffObjects = {},
@@ -2292,14 +2291,14 @@ void BeatmapInterface::update() {
                     .upToObjectIndex = current_hitobject,
                     .incremental = {},  // XXX/TODO: slow, should be incremental calc here! but threads are scary...
                     .outAimStrains = &info.aimStrains,
-                    .outSpeedStrains = &info.speedStrains,
-                    .dead = dead,
+                    .outSpeedStrains = &info.speedStrains
                 };
 
                 info.total_stars = DifficultyCalculator::calculateStarDiffForHitObjects(params);
 
                 DifficultyCalculator::PPv2CalcParams ppv2calcparams{
-                    .mods = mods,
+                    .modFlags = mods.flags,
+                    .speedOverride = mods.speed,
                     .ar = AR,
                     .od = OD,
                     .aim = info.aim_stars,
@@ -3376,7 +3375,7 @@ void BeatmapInterface::invalidateWholeMapPPInfo() {
     this->getWholeMapPPInfo();                  // make new request immediately
 }
 
-const pp_info &BeatmapInterface::getWholeMapPPInfo() {
+const AsyncPPC::pp_res &BeatmapInterface::getWholeMapPPInfo() {
     auto map = this->beatmap;
     if(!map) return this->full_ppinfo;
 
@@ -3384,13 +3383,14 @@ const pp_info &BeatmapInterface::getWholeMapPPInfo() {
     if(!new_request && this->full_ppinfo.pp != -1.0) {
         return this->full_ppinfo;  // fast path exit
     } else if(new_request) {
-        lct_set_map(map);  // just in case...
+        AsyncPPC::set_map(map);  // just in case...
 
         // full-length pp calc for currently selected mods
         // (the fact that this is duplicated 50000 times means this interface is terrible)
         const auto &mods = osu->getScore()->mods;
         this->full_calc_req_params = {
-            .mods = mods,
+            .modFlags = mods.flags,
+            .speedOverride = mods.speed,
             .AR = mods.get_naive_ar(map),
             .CS = mods.get_naive_cs(map),
             .OD = mods.get_naive_od(map),
@@ -3405,7 +3405,7 @@ const pp_info &BeatmapInterface::getWholeMapPPInfo() {
     }
 
     this->full_ppinfo =
-        lct_get_pp(this->full_calc_req_params, true /* ignore gameplay background thread freeze, we need this asap */);
+        AsyncPPC::query_result(this->full_calc_req_params, true /* ignore gameplay background thread freeze, we need this asap */);
     // we'll take the fast path once it's done anyways
 
     return this->full_ppinfo;
@@ -3656,8 +3656,6 @@ FinishedScore BeatmapInterface::saveAndSubmitScore(bool quit) {
 
     auto diffres = DatabaseBeatmap::loadDifficultyHitObjects(osuFilePath, AR, CS, speedMultiplier);
 
-    std::atomic<bool> dead{false};
-
     DifficultyCalculator::StarCalcParams params{.cachedDiffObjects = {},
                                                 .sortedHitObjects = diffres.diffobjects,
                                                 .CS = CS,
@@ -3675,26 +3673,28 @@ FinishedScore BeatmapInterface::saveAndSubmitScore(bool quit) {
                                                 .upToObjectIndex = -1,
                                                 .incremental = {},
                                                 .outAimStrains = {},
-                                                .outSpeedStrains = {},
-                                                .dead = dead};
+                                                .outSpeedStrains = {}};
 
     const f64 totalStars = DifficultyCalculator::calculateStarDiffForHitObjects(params);
 
     this->fAimStars = (f32)aim;
     this->fSpeedStars = (f32)speed;
 
+    const auto &liveScore = osu->getScore();
+
     // calculate final pp
     const int numHitObjects = this->hitobjects.size();
     const int numCircles = this->beatmap->getNumCircles();
     const int numSliders = this->beatmap->getNumSliders();
     const int numSpinners = this->beatmap->getNumSpinners();
-    const int highestCombo = osu->getScore()->getComboMax();
-    const int numMisses = osu->getScore()->getNumMisses();
-    const int num300s = osu->getScore()->getNum300s();
-    const int num100s = osu->getScore()->getNum100s();
-    const int num50s = osu->getScore()->getNum50s();
+    const int highestCombo = liveScore->getComboMax();
+    const int numMisses = liveScore->getNumMisses();
+    const int num300s = liveScore->getNum300s();
+    const int num100s = liveScore->getNum100s();
+    const int num50s = liveScore->getNum50s();
 
-    DifficultyCalculator::PPv2CalcParams ppv2calcparams{.mods = osu->getScore()->mods,
+    DifficultyCalculator::PPv2CalcParams ppv2calcparams{.modFlags = liveScore->mods.flags,
+                                                        .speedOverride = liveScore->mods.speed,
                                                         .ar = AR,
                                                         .od = OD,
                                                         .aim = aim,
@@ -3717,16 +3717,16 @@ FinishedScore BeatmapInterface::saveAndSubmitScore(bool quit) {
 
     const f32 pp = DifficultyCalculator::calculatePPv2(ppv2calcparams);
 
-    osu->getScore()->setStarsTomTotal(totalStars);
-    osu->getScore()->setStarsTomAim(this->fAimStars);
-    osu->getScore()->setStarsTomSpeed(this->fSpeedStars);
-    osu->getScore()->setPPv2(pp);
+    liveScore->setStarsTomTotal(totalStars);
+    liveScore->setStarsTomAim(this->fAimStars);
+    liveScore->setStarsTomSpeed(this->fSpeedStars);
+    liveScore->setPPv2(pp);
 
     // save local score, but only under certain conditions
     bool isComplete = (num300s + num100s + num50s + numMisses >= numHitObjects);
-    bool isZero = (osu->getScore()->getScore() < 1);
-    bool isCheated = (osu->getModAuto() || (osu->getModAutopilot() && osu->getModRelax())) ||
-                     osu->getScore()->isUnranked() || this->is_watching || BanchoState::spectating;
+    bool isZero = (liveScore->getScore() < 1);
+    bool isCheated = (osu->getModAuto() || (osu->getModAutopilot() && osu->getModRelax())) || liveScore->isUnranked() ||
+                     this->is_watching || BanchoState::spectating;
 
     FinishedScore score;
     score.client = fmt::format("neosu-" OS_NAME "-{:s}", BanchoState::neosu_version.toUtf8());
@@ -3739,8 +3739,8 @@ FinishedScore BeatmapInterface::saveAndSubmitScore(bool quit) {
         score.server = BanchoState::endpoint;
     }
     score.playerName = BanchoState::get_username();
-    score.passed = isComplete && !isZero && !osu->getScore()->hasDied();
-    score.grade = score.passed ? osu->getScore()->getGrade() : FinishedScore::Grade::F;
+    score.passed = isComplete && !isZero && !liveScore->hasDied();
+    score.grade = score.passed ? liveScore->getGrade() : FinishedScore::Grade::F;
     score.map = this->beatmap;
     score.ragequit = quit;
     // iCurMusicPos < 0 means "did not start"
@@ -3749,23 +3749,23 @@ FinishedScore BeatmapInterface::saveAndSubmitScore(bool quit) {
     // osu!stable doesn't submit scores of less than 7 seconds
     isZero |= (score.play_time_ms < 7000);
 
-    score.num300s = osu->getScore()->getNum300s();
-    score.num100s = osu->getScore()->getNum100s();
-    score.num50s = osu->getScore()->getNum50s();
-    score.numGekis = osu->getScore()->getNum300gs();
-    score.numKatus = osu->getScore()->getNum100ks();
-    score.numMisses = osu->getScore()->getNumMisses();
-    score.score = osu->getScore()->getScore();
-    score.comboMax = osu->getScore()->getComboMax();
+    score.num300s = liveScore->getNum300s();
+    score.num100s = liveScore->getNum100s();
+    score.num50s = liveScore->getNum50s();
+    score.numGekis = liveScore->getNum300gs();
+    score.numKatus = liveScore->getNum100ks();
+    score.numMisses = liveScore->getNumMisses();
+    score.score = liveScore->getScore();
+    score.comboMax = liveScore->getComboMax();
     score.perfect = (this->iMaxPossibleCombo > 0 && score.comboMax > 0 && score.comboMax >= this->iMaxPossibleCombo);
-    score.numSliderBreaks = osu->getScore()->getNumSliderBreaks();
-    score.unstableRate = osu->getScore()->getUnstableRate();
-    score.hitErrorAvgMin = osu->getScore()->getHitErrorAvgMin();
-    score.hitErrorAvgMax = osu->getScore()->getHitErrorAvgMax();
+    score.numSliderBreaks = liveScore->getNumSliderBreaks();
+    score.unstableRate = liveScore->getUnstableRate();
+    score.hitErrorAvgMin = liveScore->getHitErrorAvgMin();
+    score.hitErrorAvgMax = liveScore->getHitErrorAvgMax();
     score.maxPossibleCombo = this->iMaxPossibleCombo;
     score.numHitObjects = numHitObjects;
     score.numCircles = numCircles;
-    score.mods = osu->getScore()->mods;
+    score.mods = liveScore->mods;
     score.beatmap_hash = this->beatmap->getMD5();  // NOTE: necessary for "Use Mods"
     score.replay = this->live_replay;
 
@@ -3808,7 +3808,7 @@ FinishedScore BeatmapInterface::saveAndSubmitScore(bool quit) {
 
     // special case: incomplete scores should NEVER show pp, even if auto
     if(!isComplete) {
-        osu->getScore()->setPPv2(0.0f);
+        liveScore->setPPv2(0.0f);
     }
 
     return score;

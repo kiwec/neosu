@@ -14,7 +14,7 @@
 #include "Engine.h"
 #include "Environment.h"
 #include "GameRules.h"
-#include "LeaderboardPPCalcThread.h"
+#include "AsyncPPCalculator.h"
 #include "Mouse.h"
 #include "NotificationOverlay.h"
 #include "OptionsMenu.h"

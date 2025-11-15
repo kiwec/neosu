@@ -26,9 +26,13 @@ neosu_SOURCES = \
 	src/App/Osu/Collections.cpp \
 	src/App/Osu/Database.cpp \
 	src/App/Osu/DatabaseBeatmap.cpp \
-	src/App/Osu/DifficultyCalculator.cpp \
+	src/App/Osu/DiffCalc/AsyncPPCalculator.cpp \
+	src/App/Osu/DiffCalc/DifficultyCalculator.cpp \
+	src/App/Osu/DiffCalc/MapCalcThread.cpp \
+	src/App/Osu/DiffCalc/ScoreConverterThread.cpp \
 	src/App/Osu/Downloader.cpp \
 	src/App/Osu/EnvironmentInterop.cpp \
+	src/App/Osu/GameRules.cpp \
 	src/App/Osu/HUD.cpp \
 	src/App/Osu/HitObjects.cpp \
 	src/App/Osu/HitSounds.cpp \
@@ -61,11 +65,8 @@ neosu_SOURCES = \
 	src/App/Osu/SongBrowser/CarouselButton.cpp \
 	src/App/Osu/SongBrowser/CollectionButton.cpp \
 	src/App/Osu/SongBrowser/InfoLabel.cpp \
-	src/App/Osu/SongBrowser/LeaderboardPPCalcThread.cpp \
 	src/App/Osu/SongBrowser/LoudnessCalcThread.cpp \
-	src/App/Osu/SongBrowser/MapCalcThread.cpp \
 	src/App/Osu/SongBrowser/ScoreButton.cpp \
-	src/App/Osu/SongBrowser/ScoreConverterThread.cpp \
 	src/App/Osu/SongBrowser/SongBrowser.cpp \
 	src/App/Osu/SongBrowser/SongButton.cpp \
 	src/App/Osu/SongBrowser/SongDifficultyButton.cpp \

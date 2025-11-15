@@ -29,7 +29,7 @@
 #include "RoomScreen.h"
 #include "Skin.h"
 #include "SkinImage.h"
-#include "SongBrowser/LeaderboardPPCalcThread.h"
+#include "AsyncPPCalculator.h"
 #include "SongBrowser/ScoreButton.h"
 #include "SongBrowser/SongBrowser.h"
 #include "SoundEngine.h"

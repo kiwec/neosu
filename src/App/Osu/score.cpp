@@ -14,7 +14,7 @@
 #include "LegacyReplay.h"
 #include "Osu.h"
 #include "RoomScreen.h"
-#include "SongBrowser/LeaderboardPPCalcThread.h"
+#include "AsyncPPCalculator.h"
 #include "Logging.h"
 
 LiveScore::LiveScore(bool simulating) {
@@ -446,8 +446,6 @@ UString LiveScore::getModsStringForRichPresence() {
     return modsString;
 }
 
-u64 LiveScore::getScore() { return this->mods.has(ModFlags::ScoreV2) ? this->iScoreV2 : this->iScoreV1; }
-
 void LiveScore::onScoreChange() {
     if(this->simulating || !osu->getRoom()) return;
 
@@ -477,20 +475,25 @@ f64 FinishedScore::get_or_calc_pp() {
     f64 pp = this->get_pp();
     if(pp != -1.0) return pp;
 
-    pp_calc_request request;
-    request.mods = this->mods;
-    request.AR = this->mods.get_naive_ar(this->map);
-    request.CS = this->mods.get_naive_cs(this->map);
-    request.OD = this->mods.get_naive_od(this->map);
-    request.rx = this->mods.has(ModFlags::Relax);
-    request.td = this->mods.has(ModFlags::TouchDevice);
-    request.comboMax = this->comboMax;
-    request.numMisses = this->numMisses;
-    request.num300s = this->num300s;
-    request.num100s = this->num100s;
-    request.num50s = this->num50s;
+    AsyncPPC::pp_calc_request request{
+        .modFlags = this->mods.flags,
+        .speedOverride = this->mods.speed,
 
-    auto info = lct_get_pp(request);
+        .AR = this->mods.get_naive_ar(this->map),
+        .CS = this->mods.get_naive_cs(this->map),
+        .OD = this->mods.get_naive_od(this->map),
+
+        .comboMax = this->comboMax,
+        .numMisses = this->numMisses,
+        .num300s = this->num300s,
+        .num100s = this->num100s,
+        .num50s = this->num50s,
+
+        .rx = this->mods.has(ModFlags::Relax),
+        .td = this->mods.has(ModFlags::TouchDevice),
+    };
+
+    auto info = AsyncPPC::query_result(request);
     if(info.pp != -1.0) {
         pp = info.pp;
         this->ppv2_score = info.pp;

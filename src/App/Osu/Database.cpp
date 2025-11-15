@@ -18,10 +18,10 @@
 #include "NotificationOverlay.h"
 #include "Osu.h"
 #include "ResourceManager.h"
-#include "SongBrowser/LeaderboardPPCalcThread.h"
+#include "AsyncPPCalculator.h"
 #include "SongBrowser/LoudnessCalcThread.h"
-#include "SongBrowser/MapCalcThread.h"
-#include "SongBrowser/ScoreConverterThread.h"
+#include "DiffCalc/MapCalcThread.h"
+#include "DiffCalc/ScoreConverterThread.h"
 #include "SongBrowser/SongBrowser.h"
 #include "Timing.h"
 #include "Logging.h"
@@ -259,7 +259,7 @@ void Database::startLoader() {
 
     // stop threads that rely on database content
     sct_abort();
-    lct_set_map(nullptr);
+    AsyncPPC::set_map(nullptr);
     MapCalcThread::abort();
     VolNormalization::abort();
 
@@ -315,7 +315,7 @@ Database::~Database() {
     this->destroyLoader();
 
     sct_abort();
-    lct_set_map(nullptr);
+    AsyncPPC::set_map(nullptr);
     VolNormalization::abort();
     this->loudness_to_calc.clear();
 

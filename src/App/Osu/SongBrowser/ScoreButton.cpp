@@ -20,7 +20,7 @@
 #include "GameRules.h"
 #include "Icons.h"
 #include "Keyboard.h"
-#include "LeaderboardPPCalcThread.h"
+#include "AsyncPPCalculator.h"
 #include "LegacyReplay.h"
 #include "ModSelector.h"
 #include "Mouse.h"

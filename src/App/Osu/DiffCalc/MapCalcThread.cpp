@@ -4,6 +4,7 @@
 #include <thread>
 
 #include "DatabaseBeatmap.h"
+#include "AsyncPPCalculator.h"
 #include "DifficultyCalculator.h"
 #include "Osu.h"
 #include "Timing.h"
@@ -45,6 +46,8 @@ void MapCalcThread::run() {
     McThread::set_current_thread_name("map_calc");
     McThread::set_current_thread_prio(McThread::Priority::NORMAL);  // reset priority
 
+    const auto deadCheck = [die = &this->should_stop](void) -> bool { return die->load(std::memory_order_acquire); };
+
     for(const auto& map : *this->maps_to_process) {
         // pause handling
         while(osu->shouldPauseBGThreads() && !this->should_stop.load(std::memory_order_acquire)) {
@@ -62,7 +65,7 @@ void MapCalcThread::run() {
             return;
         }
 
-        auto c = DatabaseBeatmap::loadPrimitiveObjects(map->sFilePath, this->should_stop);
+        auto c = DatabaseBeatmap::loadPrimitiveObjects(map->sFilePath, deadCheck);
 
         if(this->should_stop.load(std::memory_order_acquire)) {
             return;
@@ -78,9 +81,9 @@ void MapCalcThread::run() {
         result.nb_sliders = c.numSliders;
         result.nb_spinners = c.numSpinners;
 
-        pp_info info;
+        AsyncPPC::pp_res info;
         auto diffres =
-            DatabaseBeatmap::loadDifficultyHitObjects(c, map->getAR(), map->getCS(), 1.f, false, this->should_stop);
+            DatabaseBeatmap::loadDifficultyHitObjects(c, map->getAR(), map->getCS(), 1.f, false, deadCheck);
 
         if(this->should_stop.load(std::memory_order_acquire)) {
             return;
@@ -110,7 +113,7 @@ void MapCalcThread::run() {
                                                     .incremental = {},
                                                     .outAimStrains = &info.aimStrains,
                                                     .outSpeedStrains = &info.speedStrains,
-                                                    .dead = this->should_stop};
+                                                    .cancelCheck = deadCheck};
 
         result.star_rating = static_cast<f32>(DifficultyCalculator::calculateStarDiffForHitObjects(params));
 

@@ -259,6 +259,7 @@ class Osu final : public MouseListener, public KeyboardListener {
     void globalOnSetValueProtectedCallback();
     static bool globalOnGetValueProtectedCallback(const char *cvarname);
     static bool globalOnSetValueGameplayCallback(const char *cvarname, CvarEditor setterkind);
+    static bool globalOnAreAllCvarsSubmittableCallback();
 
     // NOTE: unique_ptrs are destroyed in reverse order of declaration in header
 

@@ -1,37 +1,22 @@
 #pragma once
 // Copyright (c) 2019, PG & Francesco149, All rights reserved.
 
-#include "BaseEnvironment.h"
+#include "config.h"
+#include "noinclude.h"
 #include "types.h"
-#include "Replay.h"
 #include "Vectors.h"
 
-#include <atomic>
 #include <vector>
 #include <array>
+#include <optional>
+
+enum class ModFlags : u64;
 
 class SliderCurve;
 class ConVar;
 class AbstractBeatmapInterface;
 
-struct pp_info {
-    f64 total_stars = 0.0;
-    f64 aim_stars = 0.0;
-    f64 aim_slider_factor = 0.0;
-    f64 speed_stars = 0.0;
-    f64 speed_notes = 0.0;
-    f64 difficult_aim_sliders = 0.0;
-    f64 difficult_aim_strains = 0.0;
-    f64 difficult_speed_strains = 0.0;
-    f64 pp = -1.0;
-
-    std::vector<f64> aimStrains{};
-    std::vector<f64> speedStrains{};
-
-    bool operator==(const pp_info &) const = default;
-};
-
-class OsuDifficultyHitObject {
+class DifficultyHitObject {
    public:
     enum class TYPE : u8 {
         INVALID = 0,
@@ -58,18 +43,18 @@ class OsuDifficultyHitObject {
     };
 
    public:
-    OsuDifficultyHitObject(TYPE type, vec2 pos, i32 time);               // circle
-    OsuDifficultyHitObject(TYPE type, vec2 pos, i32 time, i32 endTime);  // spinner
-    OsuDifficultyHitObject(TYPE type, vec2 pos, i32 time, i32 endTime, f32 spanDuration, i8 osuSliderCurveType,
+    DifficultyHitObject(TYPE type, vec2 pos, i32 time);               // circle
+    DifficultyHitObject(TYPE type, vec2 pos, i32 time, i32 endTime);  // spinner
+    DifficultyHitObject(TYPE type, vec2 pos, i32 time, i32 endTime, f32 spanDuration, i8 osuSliderCurveType,
                            const std::vector<vec2> &controlPoints, f32 pixelLength,
                            std::vector<SLIDER_SCORING_TIME> scoringTimes, i32 repeats,
                            bool calculateSliderCurveInConstructor);  // slider
-    ~OsuDifficultyHitObject();
+    ~DifficultyHitObject();
 
-    OsuDifficultyHitObject(const OsuDifficultyHitObject &) = delete;
-    OsuDifficultyHitObject(OsuDifficultyHitObject &&dobj) noexcept;
+    DifficultyHitObject(const DifficultyHitObject &) = delete;
+    DifficultyHitObject(DifficultyHitObject &&dobj) noexcept;
 
-    OsuDifficultyHitObject &operator=(OsuDifficultyHitObject &&dobj) noexcept;
+    DifficultyHitObject &operator=(DifficultyHitObject &&dobj) noexcept;
 
     void updateStackPosition(f32 stackOffset);
     void updateCurveStackPosition(f32 stackOffset);
@@ -144,7 +129,7 @@ class DifficultyCalculator {
     };
 
     struct DiffObject {
-        DiffObject(OsuDifficultyHitObject *base_object, f32 radius_scaling_factor,
+        DiffObject(DifficultyHitObject *base_object, f32 radius_scaling_factor,
                    std::vector<DiffObject> &diff_objects, i32 prevObjectIdx)
             : ho(base_object),
               norm_start(ho->pos * radius_scaling_factor),
@@ -154,7 +139,7 @@ class DifficultyCalculator {
 
         std::array<f64, Skills::NUM_SKILLS> strains{};
 
-        OsuDifficultyHitObject *ho;
+        DifficultyHitObject *ho;
 
         // https://github.com/ppy/osu/blob/master/osu.Game.Rulesets.Osu/Difficulty/Skills/Speed.cs
         // needed because raw speed strain and rhythm strain are combined in different ways
@@ -193,7 +178,7 @@ class DifficultyCalculator {
             return strains[type] * (type == Skills::SPEED ? rhythm : 1.0);
         }
         [[nodiscard]] inline f64 get_slider_aim_strain() const {
-            return ho->type == OsuDifficultyHitObject::TYPE::SLIDER ? strains[Skills::AIM_SLIDERS] : -1.0;
+            return ho->type == DifficultyHitObject::TYPE::SLIDER ? strains[Skills::AIM_SLIDERS] : -1.0;
         }
         inline static f64 applyDiminishingExp(f64 val) { return std::pow(val, 0.99); }
         inline static f64 strainDecay(Skills::Skill type, f64 ms) { return std::pow(decay_base[type], ms / 1000.0); }
@@ -212,7 +197,7 @@ class DifficultyCalculator {
    public:
     struct StarCalcParams {
         std::vector<DiffObject> cachedDiffObjects;
-        std::vector<OsuDifficultyHitObject> &sortedHitObjects;
+        std::vector<DifficultyHitObject> &sortedHitObjects;
 
         f32 CS{};
         f32 OD{};
@@ -234,14 +219,17 @@ class DifficultyCalculator {
         std::vector<f64> *outAimStrains{nullptr};
         std::vector<f64> *outSpeedStrains{nullptr};
 
-        const std::atomic<bool> &dead;
+        // cancellation
+        std::optional<std::function<bool(void)>> cancelCheck{std::nullopt};
+        [[nodiscard]] inline bool shouldDie() const { return this->cancelCheck.has_value() ? (*this->cancelCheck)() : false; }
     };
 
     // stars, fully static
     static f64 calculateStarDiffForHitObjects(StarCalcParams &params);
 
     struct PPv2CalcParams {
-        Replay::Mods mods;
+        ModFlags modFlags;
+        f32 speedOverride;
         f64 ar;
         f64 od;
         f64 aim;
@@ -287,7 +275,7 @@ class DifficultyCalculator {
     };
 
     struct ScoreData {
-        Replay::Mods mods;
+        ModFlags modFlags;
         f64 accuracy;
         i32 countGreat;
         i32 countGood;
@@ -316,7 +304,7 @@ class DifficultyCalculator {
                                  f64 speedDeviation);
     static f64 computeAccuracyValue(const ScoreData &score, const Attributes &attributes);
 
-    static f64 calculateSpeedDeviation(const ScoreData &score, const Attributes &attributes);
+    static f64 calculateSpeedDeviation(const ScoreData &score, const Attributes &attributes, f32 timescale);
     static f64 calculateDeviation(const Attributes &attributes, f64 timescale, f64 relevantCountGreat,
                                   f64 relevantCountOk, f64 relevantCountMeh, f64 relevantCountMiss);
     static f64 calculateSpeedHighDeviationNerf(const Attributes &attributes, f64 speedDeviation);

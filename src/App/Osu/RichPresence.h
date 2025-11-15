@@ -9,7 +9,6 @@ namespace RichPresence {
     void onPlayEnd(bool quit);
     void onMultiplayerLobby();
 
-    void onRichPresenceChange(float oldValue, float newValue);
     void setBanchoStatus(const char *info_text, Action action);
     void updateBanchoMods();
 };

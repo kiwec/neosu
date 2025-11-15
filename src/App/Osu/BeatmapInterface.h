@@ -4,7 +4,7 @@
 #include "AbstractBeatmapInterface.h"
 #include "DatabaseBeatmap.h"
 #include "HUD.h"
-#include "LeaderboardPPCalcThread.h"
+#include "AsyncPPCalculator.h"
 #include "LegacyReplay.h"
 #include "PlaybackInterpolator.h"
 #include "score.h"
@@ -94,7 +94,7 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
     [[nodiscard]] f32 getSpeedMultiplier() const override;
     [[nodiscard]] f32 getPitchMultiplier() const override;
 
-    const pp_info &getWholeMapPPInfo();
+    const AsyncPPC::pp_res &getWholeMapPPInfo();
 
     // hud
     [[nodiscard]] inline bool isSpinnerActive() const { return this->bIsSpinnerActive; }
@@ -229,7 +229,7 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
     [[nodiscard]] inline f32 getBreakBackgroundFadeAnim() const { return this->fBreakBackgroundFade; }
 
     // live pp/stars
-    uwu::lazy_promise<std::function<pp_info()>, pp_info> ppv2_calc{pp_info{}};
+    uwu::lazy_promise<std::function<AsyncPPC::pp_res()>, AsyncPPC::pp_res> ppv2_calc{AsyncPPC::pp_res{}};
     i32 last_calculated_hitobject = -1;
     int iCurrentHitObjectIndex;
     int iCurrentNumCircles;
@@ -384,8 +384,8 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
     void resetLiveStarsTasks();
     void invalidateWholeMapPPInfo();
 
-    pp_info full_ppinfo;
-    pp_calc_request full_calc_req_params;
+    AsyncPPC::pp_res full_ppinfo;
+    AsyncPPC::pp_calc_request full_calc_req_params;
 
     // pp calculation buffer (only needs to be recalculated in onModUpdate(), instead of on every hit)
     f32 fAimStars;

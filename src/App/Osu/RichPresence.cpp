@@ -253,10 +253,4 @@ void onMultiplayerLobby() {
     DiscRPC::set_activity(&activity);
 }
 
-void onRichPresenceChange(float oldValue, float newValue) {
-    if(oldValue != newValue && !static_cast<int>(newValue)) {
-        DiscRPC::clear_activity();
-    }
-}
-
 }  // namespace RichPresence

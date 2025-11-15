@@ -177,11 +177,11 @@ bool DatabaseBeatmap::parse_timing_point(std::string_view curLine, DatabaseBeatm
 }
 
 DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(std::string_view osuFilePath) {
-    return loadPrimitiveObjects(osuFilePath, false);
+    return loadPrimitiveObjects(osuFilePath, alwaysFalseStopPred);
 }
 
 DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(std::string_view osuFilePath,
-                                                                           const std::atomic<bool> &dead) {
+                                                                           const std::function<bool(void)> &dead) {
     PRIMITIVE_CONTAINER c;
     {
         c.errorCode = 0;
@@ -221,7 +221,7 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(std::
                                reinterpret_cast<char *>(fileBuffer.get() + beatmapFileSize)};
             }
             // check for cancellation
-            if(dead.load(std::memory_order_acquire)) {
+            if(dead()) {
                 c.errorCode = 6;
                 return c;
             }
@@ -243,7 +243,7 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(std::
         using enum BlockId;
 
         for(auto curLineUnstripped : SString::split(beatmapFile, '\n')) {
-            if(dead.load(std::memory_order_acquire)) {
+            if(dead()) {
                 c.errorCode = 6;
                 return c;
             }
@@ -269,7 +269,7 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(std::
             // we don't care here
             if(curBlock == Metadata) continue;
 
-            if(dead.load(std::memory_order_acquire)) {
+            if(dead()) {
                 c.errorCode = 6;
                 return c;
             }
@@ -618,12 +618,12 @@ DatabaseBeatmap::CALCULATE_SLIDER_TIMES_CLICKS_TICKS_RESULT DatabaseBeatmap::cal
     int beatmapVersion, std::vector<SLIDER> &sliders, zarray<DatabaseBeatmap::TIMINGPOINT> &timingpoints,
     float sliderMultiplier, float sliderTickRate) {
     return calculateSliderTimesClicksTicks(beatmapVersion, sliders, timingpoints, sliderMultiplier, sliderTickRate,
-                                           false);
+                                           alwaysFalseStopPred);
 }
 
 DatabaseBeatmap::CALCULATE_SLIDER_TIMES_CLICKS_TICKS_RESULT DatabaseBeatmap::calculateSliderTimesClicksTicks(
     int beatmapVersion, std::vector<SLIDER> &sliders, zarray<DatabaseBeatmap::TIMINGPOINT> &timingpoints,
-    float sliderMultiplier, float sliderTickRate, const std::atomic<bool> &dead) {
+    float sliderMultiplier, float sliderTickRate, const std::function<bool(void)> &dead) {
     CALCULATE_SLIDER_TIMES_CLICKS_TICKS_RESULT r;
     {
         r.errorCode = 0;
@@ -665,7 +665,7 @@ DatabaseBeatmap::CALCULATE_SLIDER_TIMES_CLICKS_TICKS_RESULT DatabaseBeatmap::cal
     };
 
     for(auto &s : sliders) {
-        if(dead.load(std::memory_order_acquire)) {
+        if(dead()) {
             r.errorCode = 6;
             return r;
         }
@@ -725,8 +725,8 @@ DatabaseBeatmap::CALCULATE_SLIDER_TIMES_CLICKS_TICKS_RESULT DatabaseBeatmap::cal
         // 2) add repeat times (either at slider begin or end)
         for(int i = 0; i < (s.repeat - 1); i++) {
             const f32 time = s.time + (s.sliderTimeWithoutRepeats * (i + 1));  // see Slider.cpp
-            s.scoringTimesForStarCalc.push_back(OsuDifficultyHitObject::SLIDER_SCORING_TIME{
-                .type = OsuDifficultyHitObject::SLIDER_SCORING_TIME::TYPE::REPEAT,
+            s.scoringTimesForStarCalc.push_back(DifficultyHitObject::SLIDER_SCORING_TIME{
+                .type = DifficultyHitObject::SLIDER_SCORING_TIME::TYPE::REPEAT,
                 .time = time,
             });
         }
@@ -739,8 +739,8 @@ DatabaseBeatmap::CALCULATE_SLIDER_TIMES_CLICKS_TICKS_RESULT DatabaseBeatmap::cal
                 const f32 time =
                     s.time + (s.sliderTimeWithoutRepeats * i) +
                     (tickPercentRelativeToRepeatFromStartAbs * s.sliderTimeWithoutRepeats);  // see Slider.cpp
-                s.scoringTimesForStarCalc.push_back(OsuDifficultyHitObject::SLIDER_SCORING_TIME{
-                    .type = OsuDifficultyHitObject::SLIDER_SCORING_TIME::TYPE::TICK,
+                s.scoringTimesForStarCalc.push_back(DifficultyHitObject::SLIDER_SCORING_TIME{
+                    .type = DifficultyHitObject::SLIDER_SCORING_TIME::TYPE::TICK,
                     .time = time,
                 });
             }
@@ -751,19 +751,19 @@ DatabaseBeatmap::CALCULATE_SLIDER_TIMES_CLICKS_TICKS_RESULT DatabaseBeatmap::cal
         const f32 time =
             std::max(static_cast<f32>(s.time) + s.sliderTime / 2.0f,
                      (static_cast<f32>(s.time) + s.sliderTime) - static_cast<f32>(osuSliderEndInsideCheckOffset));
-        s.scoringTimesForStarCalc.push_back(OsuDifficultyHitObject::SLIDER_SCORING_TIME{
-            .type = OsuDifficultyHitObject::SLIDER_SCORING_TIME::TYPE::END,
+        s.scoringTimesForStarCalc.push_back(DifficultyHitObject::SLIDER_SCORING_TIME{
+            .type = DifficultyHitObject::SLIDER_SCORING_TIME::TYPE::END,
             .time = time,
         });
 
-        if(dead.load(std::memory_order_acquire)) {
+        if(dead()) {
             r.errorCode = 6;
             return r;
         }
 
         // 5) sort scoringTimes from earliest to latest
         if(s.scoringTimesForStarCalc.size() > 1) {
-            std::ranges::sort(s.scoringTimesForStarCalc, OsuDifficultyHitObject::sliderScoringTimeComparator);
+            std::ranges::sort(s.scoringTimesForStarCalc, DifficultyHitObject::sliderScoringTimeComparator);
         }
     }
 
@@ -773,13 +773,14 @@ DatabaseBeatmap::CALCULATE_SLIDER_TIMES_CLICKS_TICKS_RESULT DatabaseBeatmap::cal
 DatabaseBeatmap::LOAD_DIFFOBJ_RESULT DatabaseBeatmap::loadDifficultyHitObjects(std::string_view osuFilePath, float AR,
                                                                                float CS, float speedMultiplier,
                                                                                bool calculateStarsInaccurately) {
-    return loadDifficultyHitObjects(osuFilePath, AR, CS, speedMultiplier, calculateStarsInaccurately, false);
+    return loadDifficultyHitObjects(osuFilePath, AR, CS, speedMultiplier, calculateStarsInaccurately,
+                                    alwaysFalseStopPred);
 }
 
 DatabaseBeatmap::LOAD_DIFFOBJ_RESULT DatabaseBeatmap::loadDifficultyHitObjects(std::string_view osuFilePath, float AR,
                                                                                float CS, float speedMultiplier,
                                                                                bool calculateStarsInaccurately,
-                                                                               const std::atomic<bool> &dead) {
+                                                                               const std::function<bool(void)> &dead) {
     // load primitive arrays
     PRIMITIVE_CONTAINER c = loadPrimitiveObjects(osuFilePath, dead);
     return loadDifficultyHitObjects(c, AR, CS, speedMultiplier, calculateStarsInaccurately, dead);
@@ -788,7 +789,7 @@ DatabaseBeatmap::LOAD_DIFFOBJ_RESULT DatabaseBeatmap::loadDifficultyHitObjects(s
 DatabaseBeatmap::LOAD_DIFFOBJ_RESULT DatabaseBeatmap::loadDifficultyHitObjects(PRIMITIVE_CONTAINER &c, float AR,
                                                                                float CS, float speedMultiplier,
                                                                                bool calculateStarsInaccurately,
-                                                                               const std::atomic<bool> &dead) {
+                                                                               const std::function<bool(void)> &dead) {
     LOAD_DIFFOBJ_RESULT result{};
 
     // build generalized OsuDifficultyHitObjects from the vectors (hitcircles, sliders, spinners)
@@ -823,30 +824,30 @@ DatabaseBeatmap::LOAD_DIFFOBJ_RESULT DatabaseBeatmap::loadDifficultyHitObjects(P
     result.diffobjects.reserve(c.hitcircles.size() + c.sliders.size() + c.spinners.size());
 
     for(auto &hitcircle : c.hitcircles) {
-        result.diffobjects.emplace_back(OsuDifficultyHitObject::TYPE::CIRCLE, vec2(hitcircle.x, hitcircle.y),
+        result.diffobjects.emplace_back(DifficultyHitObject::TYPE::CIRCLE, vec2(hitcircle.x, hitcircle.y),
                                         (i32)hitcircle.time);
     }
 
     const bool calculateSliderCurveInConstructor =
         (c.sliders.size() < 5000);  // NOTE: for explanation see OsuDifficultyHitObject constructor
     for(auto &slider : c.sliders) {
-        if(dead.load(std::memory_order_acquire)) {
+        if(dead()) {
             result.errorCode = 6;
             return result;
         }
 
         if(!calculateStarsInaccurately) {
             result.diffobjects.emplace_back(
-                OsuDifficultyHitObject::TYPE::SLIDER, vec2(slider.x, slider.y), slider.time,
+                DifficultyHitObject::TYPE::SLIDER, vec2(slider.x, slider.y), slider.time,
                 slider.time + (i32)slider.sliderTime, slider.sliderTimeWithoutRepeats, slider.type, slider.points,
                 slider.pixelLength, slider.scoringTimesForStarCalc, slider.repeat, calculateSliderCurveInConstructor);
         } else {
             result.diffobjects.emplace_back(
-                OsuDifficultyHitObject::TYPE::SLIDER, vec2(slider.x, slider.y), slider.time,
+                DifficultyHitObject::TYPE::SLIDER, vec2(slider.x, slider.y), slider.time,
                 slider.time + (i32)slider.sliderTime, slider.sliderTimeWithoutRepeats, slider.type,
                 std::vector<vec2>(),  // NOTE: ignore curve when calculating inaccurately
                 slider.pixelLength,
-                std::vector<OsuDifficultyHitObject::SLIDER_SCORING_TIME>(),  // NOTE: ignore curve when calculating
+                std::vector<DifficultyHitObject::SLIDER_SCORING_TIME>(),  // NOTE: ignore curve when calculating
                                                                              // inaccurately
                 slider.repeat,
                 false);  // NOTE: ignore curve when calculating inaccurately
@@ -854,18 +855,18 @@ DatabaseBeatmap::LOAD_DIFFOBJ_RESULT DatabaseBeatmap::loadDifficultyHitObjects(P
     }
 
     for(auto &spinner : c.spinners) {
-        result.diffobjects.emplace_back(OsuDifficultyHitObject::TYPE::SPINNER, vec2(spinner.x, spinner.y),
+        result.diffobjects.emplace_back(DifficultyHitObject::TYPE::SPINNER, vec2(spinner.x, spinner.y),
                                         (i32)spinner.time, (i32)spinner.endTime);
     }
 
-    if(dead.load(std::memory_order_acquire)) {
+    if(dead()) {
         result.errorCode = 6;
         return result;
     }
 
     // sort hitobjects by time
-    static constexpr auto diffHitObjectSortComparator = [](const OsuDifficultyHitObject &a,
-                                                           const OsuDifficultyHitObject &b) -> bool {
+    static constexpr auto diffHitObjectSortComparator = [](const DifficultyHitObject &a,
+                                                           const DifficultyHitObject &b) -> bool {
         if(a.time != b.time) return a.time < b.time;
         if(a.type != b.type) return static_cast<int>(a.type) < static_cast<int>(b.type);
         if(a.pos.x != b.pos.x) return a.pos.x < b.pos.x;
@@ -877,7 +878,7 @@ DatabaseBeatmap::LOAD_DIFFOBJ_RESULT DatabaseBeatmap::loadDifficultyHitObjects(P
         std::ranges::sort(result.diffobjects, diffHitObjectSortComparator);
     }
 
-    if(dead.load(std::memory_order_acquire)) {
+    if(dead()) {
         result.errorCode = 6;
         return result;
     }
@@ -904,20 +905,20 @@ DatabaseBeatmap::LOAD_DIFFOBJ_RESULT DatabaseBeatmap::loadDifficultyHitObjects(P
             for(int i = result.diffobjects.size() - 1; i >= 0; i--) {
                 int n = i;
 
-                OsuDifficultyHitObject *objectI = &result.diffobjects[i];
+                DifficultyHitObject *objectI = &result.diffobjects[i];
 
-                const bool isSpinner = (objectI->type == OsuDifficultyHitObject::TYPE::SPINNER);
+                const bool isSpinner = (objectI->type == DifficultyHitObject::TYPE::SPINNER);
 
                 if(objectI->stack != 0 || isSpinner) continue;
 
-                const bool isHitCircle = (objectI->type == OsuDifficultyHitObject::TYPE::CIRCLE);
-                const bool isSlider = (objectI->type == OsuDifficultyHitObject::TYPE::SLIDER);
+                const bool isHitCircle = (objectI->type == DifficultyHitObject::TYPE::CIRCLE);
+                const bool isSlider = (objectI->type == DifficultyHitObject::TYPE::SLIDER);
 
                 if(isHitCircle) {
                     while(--n >= 0) {
-                        OsuDifficultyHitObject *objectN = &result.diffobjects[n];
+                        DifficultyHitObject *objectN = &result.diffobjects[n];
 
-                        const bool isSpinnerN = (objectN->type == OsuDifficultyHitObject::TYPE::SPINNER);
+                        const bool isSpinnerN = (objectN->type == DifficultyHitObject::TYPE::SPINNER);
 
                         if(isSpinnerN) continue;
 
@@ -945,9 +946,9 @@ DatabaseBeatmap::LOAD_DIFFOBJ_RESULT DatabaseBeatmap::loadDifficultyHitObjects(P
                     }
                 } else if(isSlider) {
                     while(--n >= 0) {
-                        OsuDifficultyHitObject *objectN = &result.diffobjects[n];
+                        DifficultyHitObject *objectN = &result.diffobjects[n];
 
-                        const bool isSpinner = (objectN->type == OsuDifficultyHitObject::TYPE::SPINNER);
+                        const bool isSpinner = (objectN->type == DifficultyHitObject::TYPE::SPINNER);
 
                         if(isSpinner) continue;
 
@@ -969,9 +970,9 @@ DatabaseBeatmap::LOAD_DIFFOBJ_RESULT DatabaseBeatmap::loadDifficultyHitObjects(P
             // https://github.com/ppy/osu/blob/master/osu.Game.Rulesets.Osu/Beatmaps/OsuBeatmapProcessor.cs
 
             for(int i = 0; i < result.diffobjects.size(); i++) {
-                OsuDifficultyHitObject *currHitObject = &result.diffobjects[i];
+                DifficultyHitObject *currHitObject = &result.diffobjects[i];
 
-                const bool isSlider = (currHitObject->type == OsuDifficultyHitObject::TYPE::SLIDER);
+                const bool isSlider = (currHitObject->type == DifficultyHitObject::TYPE::SLIDER);
 
                 if(currHitObject->stack != 0 && !isSlider) continue;
 
@@ -979,7 +980,7 @@ DatabaseBeatmap::LOAD_DIFFOBJ_RESULT DatabaseBeatmap::loadDifficultyHitObjects(P
                 int sliderStack = 0;
 
                 for(int j = i + 1; j < result.diffobjects.size(); j++) {
-                    OsuDifficultyHitObject *objectJ = &result.diffobjects[j];
+                    DifficultyHitObject *objectJ = &result.diffobjects[j];
 
                     if(objectJ->time - (approachTime * c.stackLeniency) > startTime) break;
 
@@ -1007,7 +1008,7 @@ DatabaseBeatmap::LOAD_DIFFOBJ_RESULT DatabaseBeatmap::loadDifficultyHitObjects(P
         // update hitobject positions
         float stackOffset = rawHitCircleDiameter / 128.0f / GameRules::broken_gamefield_rounding_allowance * 6.4f;
         for(int i = 0; i < result.diffobjects.size(); i++) {
-            if(dead.load(std::memory_order_acquire)) {
+            if(dead()) {
                 result.errorCode = 6;
                 return result;
             }
@@ -1021,7 +1022,7 @@ DatabaseBeatmap::LOAD_DIFFOBJ_RESULT DatabaseBeatmap::loadDifficultyHitObjects(P
     if(speedMultiplier != 1.0f && speedMultiplier > 0.0f) {
         const double invSpeedMultiplier = 1.0 / (double)speedMultiplier;
         for(int i = 0; i < result.diffobjects.size(); i++) {
-            if(dead.load(std::memory_order_acquire)) {
+            if(dead()) {
                 result.errorCode = 6;
                 return result;
             }
@@ -1439,7 +1440,7 @@ MapOverrides DatabaseBeatmap::get_overrides() const {
 }
 
 void DatabaseBeatmap::update_overrides() {
-    if(this->do_not_store || this->type != BeatmapType::PEPPY_DIFFICULTY) return;
+    if(!db || this->do_not_store || this->type != BeatmapType::PEPPY_DIFFICULTY) return;
 
     Sync::unique_lock lock(db->peppy_overrides_mtx);
     db->peppy_overrides[this->getMD5()] = this->get_overrides();

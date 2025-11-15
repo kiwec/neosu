@@ -26,6 +26,8 @@ static void update_ppv2(const FinishedScore& score) {
     auto map = db->getBeatmapDifficulty(score.beatmap_hash);
     if(!map) return;
 
+    const auto deadCheck = [](void) -> bool { return dead.load(std::memory_order_acquire); };
+
     f32 AR = score.mods.get_naive_ar(map);
     f32 CS = score.mods.get_naive_cs(map);
     f32 OD = score.mods.get_naive_od(map);
@@ -33,11 +35,11 @@ static void update_ppv2(const FinishedScore& score) {
     bool TD = score.mods.has(ModFlags::TouchDevice);
 
     // Load hitobjects
-    auto diffres = DatabaseBeatmap::loadDifficultyHitObjects(map->getFilePath(), AR, CS, score.mods.speed, false, dead);
+    auto diffres = DatabaseBeatmap::loadDifficultyHitObjects(map->getFilePath(), AR, CS, score.mods.speed, false, deadCheck);
     if(dead.load(std::memory_order_acquire)) return;
     if(diffres.errorCode) return;
 
-    pp_info info;
+    AsyncPPC::pp_res info;
     DifficultyCalculator::StarCalcParams params{
         .cachedDiffObjects = {},
         .sortedHitObjects = diffres.diffobjects,
@@ -62,13 +64,14 @@ static void update_ppv2(const FinishedScore& score) {
         .outAimStrains = &info.aimStrains,
         .outSpeedStrains = &info.speedStrains,
 
-        .dead = dead,
+        .cancelCheck = deadCheck,
     };
 
     info.total_stars = DifficultyCalculator::calculateStarDiffForHitObjects(params);
     if(dead.load(std::memory_order_acquire)) return;
 
-    DifficultyCalculator::PPv2CalcParams ppv2calcparams{.mods = score.mods,
+    DifficultyCalculator::PPv2CalcParams ppv2calcparams{.modFlags = score.mods.flags,
+                                                        .speedOverride = score.mods.speed,
                                                         .ar = AR,
                                                         .od = OD,
                                                         .aim = info.aim_stars,

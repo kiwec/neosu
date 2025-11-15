@@ -8,9 +8,6 @@
 #include "SString.h"
 #include "SyncOnce.h"
 
-// TODO: remove the need for this here
-#include "Osu.h"
-
 #include "misc_bin.h"
 
 #include "fmt/chrono.h"
@@ -146,20 +143,13 @@ std::vector<ConVar *> ConVarHandler::getNonSubmittableCvars() const {
     return list;
 }
 
+ConVarHandler::CVSubmittableCriteriaFunc ConVarHandler::areAllCvarsSubmittableExtraCheck{nullptr};
+
 bool ConVarHandler::areAllCvarsSubmittable() {
     if(!this->getNonSubmittableCvars().empty()) return false;
 
-    // Also check for non-vanilla mod combinations here while we're at it
-    if(osu != nullptr) {
-        // We don't want to submit target scores, even though it's allowed in multiplayer
-        if(osu->getModTarget()) return false;
-
-        if(osu->getModEZ() && osu->getModHR()) return false;
-
-        if(!cv::sv_allow_speed_override.getBool()) {
-            f32 speed = cv::speed_override.getFloat();
-            if(speed != -1.f && speed != 0.75 && speed != 1.0 && speed != 1.5) return false;
-        }
+    if(!!areAllCvarsSubmittableExtraCheck) {
+        return areAllCvarsSubmittableExtraCheck();
     }
 
     return true;

@@ -18,11 +18,6 @@ struct dummyEngine {
 };
 dummyEngine *engine;
 
-struct dummyGraphics {
-    inline void setVSync(bool /**/) { ; }
-};
-dummyGraphics *g;
-
 struct dummyDatabase {
     inline void save() { ; }
 };
@@ -78,9 +73,6 @@ extern void _osuOptionsSliderQualityWrapper(float);
 #include "build_timestamp.h"
 namespace SliderRenderer {
 extern void onUniformConfigChanged();
-}
-namespace RichPresence {
-extern void onRichPresenceChange(float, float);
 }
 namespace Profiling {
 extern void vprofToggleCB(float);
@@ -1060,7 +1052,7 @@ CONVAR(windowed_resolution, "1280x720"sv, CLIENT | SKINS | SERVER);
 CONVAR(resolution_keep_aspect_ratio, false, CLIENT | SKINS | SERVER);
 CONVAR(restart_sound_engine_before_playing, false, CLIENT | SKINS | SERVER,
        "jank fix for users who experience sound issues after playing for a while");
-CONVAR(rich_presence, true, CLIENT | SKINS | SERVER, CFUNC(RichPresence::onRichPresenceChange));
+CONVAR(rich_presence, true, CLIENT | SKINS | SERVER); // callback set in DiscordInterface
 CONVAR(scoreboard_animations, true, CLIENT | SKINS | SERVER, "animate in-game scoreboard");
 CONVAR(scores_bonus_pp, true, CLIENT | SKINS | SERVER, "whether to add bonus pp to total (real) pp or not");
 CONVAR(scores_enabled, true, CLIENT | SKINS | SERVER);
@@ -1183,7 +1175,7 @@ CONVAR(user_draw_level, true, CLIENT | SKINS | SERVER);
 CONVAR(user_draw_level_bar, true, CLIENT | SKINS | SERVER);
 CONVAR(user_draw_pp, true, CLIENT | SKINS | SERVER);
 CONVAR(user_include_relax_and_autopilot_for_stats, false, CLIENT | SKINS | SERVER);
-CONVAR(vsync, false, CLIENT, [](float on) -> void { g ? g->setVSync(!!static_cast<int>(on)) : (void)0; });
+CONVAR(vsync, false, CLIENT); // callback set in Graphics.cpp
 // this is not windows-only anymore, just keeping it with the "win_" prefix to not break old configs
 CONVAR(win_processpriority, (McThread::Priority)1, CLIENT, "sets the main process priority (0 = normal, 1 = high)",
        [](float newFloat) -> void { McThread::set_current_thread_prio((McThread::Priority)(int)newFloat); });

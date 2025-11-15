@@ -13,6 +13,7 @@
 #include "Changelog.h"
 #include "Chat.h"
 #include "ConVar.h"
+#include "ConVarHandler.h"
 #include "Console.h"
 #include "ConsoleBox.h"
 #include "Database.h"
@@ -48,10 +49,10 @@
 #include "RoomScreen.h"
 #include "Shader.h"
 #include "Skin.h"
-#include "SongBrowser/LeaderboardPPCalcThread.h"
+#include "AsyncPPCalculator.h"
 #include "SongBrowser/LoudnessCalcThread.h"
-#include "SongBrowser/MapCalcThread.h"
-#include "SongBrowser/ScoreConverterThread.h"
+#include "DiffCalc/MapCalcThread.h"
+#include "DiffCalc/ScoreConverterThread.h"
 #include "SongBrowser/SongBrowser.h"
 #include "SoundEngine.h"
 #include "SpectatorScreen.h"
@@ -108,6 +109,22 @@ bool Osu::globalOnSetValueGameplayCallback(const char *cvarname, CvarEditor sett
     return true;
 }
 
+bool Osu::globalOnAreAllCvarsSubmittableCallback() {
+    // Also check for non-vanilla mod combinations here while we're at it
+    if(osu != nullptr) {
+        // We don't want to submit target scores, even though it's allowed in multiplayer
+        if(osu->getModTarget()) return false;
+
+        if(osu->getModEZ() && osu->getModHR()) return false;
+
+        if(!cv::sv_allow_speed_override.getBool()) {
+            f32 speed = cv::speed_override.getFloat();
+            if(speed != -1.f && speed != 0.75 && speed != 1.0 && speed != 1.5) return false;
+        }
+    }
+    return true;
+}
+
 Osu::Osu() {
     osu = this;
     srand(crypto::rng::get_rand<u32>());
@@ -118,6 +135,8 @@ Osu::Osu() {
     ConVar::setOnGetValueProtectedCallback(Osu::globalOnGetValueProtectedCallback);
 
     ConVar::setOnSetValueGameplayCallback(Osu::globalOnSetValueGameplayCallback);
+
+    ConVarHandler::setCVSubmittableCheckFunc(Osu::globalOnAreAllCvarsSubmittableCallback);
 
     if(Env::cfg(BUILD::DEBUG)) {
         BanchoState::neosu_version = fmt::format("dev-{}", cv::build_timestamp.getVal<u64>());
@@ -423,7 +442,7 @@ void Osu::destroyAllScreensInOrder() {
 
 Osu::~Osu() {
     sct_abort();
-    lct_set_map(nullptr);
+    AsyncPPC::set_map(nullptr);
     VolNormalization::shutdown();
     MapCalcThread::shutdown();
     BANCHO::Net::cleanup_networking();
@@ -432,6 +451,7 @@ Osu::~Osu() {
     db.reset();  // shutdown db
 
     // remove the static callbacks
+    ConVarHandler::setCVSubmittableCheckFunc({});
     ConVar::setOnSetValueGameplayCallback({});
     ConVar::setOnGetValueProtectedCallback({});
     ConVar::setOnSetValueProtectedCallback({});

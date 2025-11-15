@@ -1,8 +1,11 @@
 #pragma once
 // Copyright (c) 2016, PG, All rights reserved.
-#include "BeatmapInterface.h"
-#include "ConVar.h"
-#include "Osu.h"
+
+#include "noinclude.h"
+#include "types.h"
+#include "Vectors.h"
+
+class AbstractBeatmapInterface;
 
 class GameRules {
    public:
@@ -17,13 +20,8 @@ class GameRules {
     //************************//
 
     // this scales the fadeout duration with the current speed multiplier
-    static inline float getFadeOutTime() {
-        const float fade_out_time = cv::hitobject_fade_out_time.getFloat();
-        const float multiplier_min = cv::hitobject_fade_out_time_speed_multiplier_min.getFloat();
-        return fade_out_time * (1.0f / std::max(osu->getAnimationSpeedMultiplier(), multiplier_min));
-    }
-
-    static inline i32 getFadeInTime() { return (i32)cv::hitobject_fade_in_time.getInt(); }
+    static float getFadeOutTime();
+    static i32 getFadeInTime();
 
     //********************//
     //	Hitobject Timing  //
@@ -44,18 +42,9 @@ class GameRules {
     static constexpr float getHitWindowMiss() { return 400.f; }
 
     // respect mods and overrides
-    static inline float getMinApproachTime() {
-        return cv::approachtime_min.getFloat() *
-               (cv::mod_millhioref.getBool() ? cv::mod_millhioref_multiplier.getFloat() : 1.0f);
-    }
-    static inline float getMidApproachTime() {
-        return cv::approachtime_mid.getFloat() *
-               (cv::mod_millhioref.getBool() ? cv::mod_millhioref_multiplier.getFloat() : 1.0f);
-    }
-    static inline float getMaxApproachTime() {
-        return cv::approachtime_max.getFloat() *
-               (cv::mod_millhioref.getBool() ? cv::mod_millhioref_multiplier.getFloat() : 1.0f);
-    }
+    static float getMinApproachTime();
+    static float getMidApproachTime();
+    static float getMaxApproachTime();
 
     // AR 5 -> 1200 ms
     template <typename T>
@@ -67,10 +56,9 @@ class GameRules {
         else
             return mid - (mid - min) * (5.0f - scaledDiff) / 5.0f;
     }
-    static inline INLINE_BODY float arToMilliseconds(float AR) {
-        return mapDifficultyRange(AR, cv::approachtime_min.getFloat(), cv::approachtime_mid.getFloat(),
-                                  cv::approachtime_max.getFloat());
-    }
+
+    static float arToMilliseconds(float AR);
+
     static inline INLINE_BODY float odTo50HitWindowMS(float OD) {
         return mapDifficultyRange(OD, getMinHitWindow50(), getMidHitWindow50(), getMaxHitWindow50());
     }
@@ -92,11 +80,7 @@ class GameRules {
     }
 
     // AR 9, speed 1.5 -> AR 10.3
-    static inline INLINE_BODY float arWithSpeed(float AR, float speed) {
-        float approachTime = arToMilliseconds(AR);
-        return mapDifficultyRangeInv(approachTime / speed, cv::approachtime_min.getFloat(),
-                                     cv::approachtime_mid.getFloat(), cv::approachtime_max.getFloat());
-    }
+    static float arWithSpeed(float AR, float speed);
 
     // OD 9, speed 1.5 -> OD 10.4
     static inline INLINE_BODY float odWithSpeed(float OD, float speed) {
@@ -110,11 +94,9 @@ class GameRules {
     }
 
     // raw spins required per second
-    static inline INLINE_BODY float getSpinnerSpinsPerSecond(AbstractBeatmapInterface *beatmap) {
-        return mapDifficultyRange(beatmap->getOD(), 3.0f, 5.0f, 7.5f);
-    }
+    static float getSpinnerSpinsPerSecond(const AbstractBeatmapInterface *beatmap);
 
-    static inline INLINE_BODY float getSpinnerRotationsForSpeedMultiplier(AbstractBeatmapInterface *beatmap,
+    static inline INLINE_BODY float getSpinnerRotationsForSpeedMultiplier(const AbstractBeatmapInterface *beatmap,
                                                                           i32 spinnerDuration, float speedMultiplier) {
         /// return (int)((float)spinnerDuration / 1000.0f * getSpinnerSpinsPerSecond(beatmap)); // actual
         return (int)((((float)spinnerDuration / 1000.0f * getSpinnerSpinsPerSecond(beatmap)) * 0.5f) *
@@ -123,10 +105,8 @@ class GameRules {
 
     // spinner length compensated rotations
     // respect all mods and overrides
-    static inline INLINE_BODY float getSpinnerRotationsForSpeedMultiplier(AbstractBeatmapInterface *beatmap,
-                                                                          i32 spinnerDuration) {
-        return getSpinnerRotationsForSpeedMultiplier(beatmap, spinnerDuration, beatmap->getSpeedMultiplier());
-    }
+    static float getSpinnerRotationsForSpeedMultiplier(const AbstractBeatmapInterface *beatmap,
+                                                                          i32 spinnerDuration);
 
     //*********************//
     //	Hitobject Scaling  //
@@ -154,18 +134,7 @@ class GameRules {
     static constexpr const int OSU_COORD_WIDTH = 512;
     static constexpr const int OSU_COORD_HEIGHT = 384;
 
-    static forceinline float getPlayfieldScaleFactor() {
-        const float &osu_screen_width = osu->getVirtScreenSize().x;
-        const float &osu_screen_height = osu->getVirtScreenSize().y;
-        const float top_border_size = cv::playfield_border_top_percent.getFloat() * osu_screen_height;
-        const float bottom_border_size = cv::playfield_border_bottom_percent.getFloat() * osu_screen_height;
-
-        const float adjusted_playfield_height = osu_screen_height - bottom_border_size - top_border_size;
-
-        return (osu_screen_width / (float)OSU_COORD_WIDTH) > (adjusted_playfield_height / (float)OSU_COORD_HEIGHT)
-                   ? (adjusted_playfield_height / (float)OSU_COORD_HEIGHT)
-                   : (osu_screen_width / (float)OSU_COORD_WIDTH);
-    }
+    static float getPlayfieldScaleFactor();
 
     static forceinline vec2 getPlayfieldSize() {
         const float scaleFactor = getPlayfieldScaleFactor();
@@ -173,19 +142,7 @@ class GameRules {
         return {(float)OSU_COORD_WIDTH * scaleFactor, (float)OSU_COORD_HEIGHT * scaleFactor};
     }
 
-    static inline vec2 getPlayfieldOffset() {
-        const float &osu_screen_width = osu->getVirtScreenSize().x;
-        const float &osu_screen_height = osu->getVirtScreenSize().y;
-        const vec2 playfield_size = getPlayfieldSize();
-        const float bottom_border_size = cv::playfield_border_bottom_percent.getFloat() * osu_screen_height;
-
-        // first person mode doesn't need any offsets, cursor/crosshair should be centered on screen
-        const float playfield_y_offset =
-            cv::mod_fps.getBool() ? 0.f : (osu_screen_height / 2.0f - (playfield_size.y / 2.0f)) - bottom_border_size;
-
-        return {(osu_screen_width - playfield_size.x) / 2.0f,
-                (osu_screen_height - playfield_size.y) / 2.0f + playfield_y_offset};
-    }
+    static vec2 getPlayfieldOffset();
 
     static inline vec2 getPlayfieldCenter() {
         const float scaleFactor = getPlayfieldScaleFactor();
