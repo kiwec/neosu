@@ -2125,7 +2125,7 @@ void Osu::drawRuntimeInfo() {
         g->setColor(rgba(0, 0, 0, 100));
 
         g->translate(osu->getVirtScreenWidth() - infoStringWidth + shadowOffset,
-                     osu->getVirtScreenHeight() - fontHeight + shadowOffset + 8);
+                     osu->getVirtScreenHeight() - fontHeight + shadowOffset + 6);
         g->drawString(font, infoString);
 
         // text
