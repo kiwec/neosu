@@ -18,34 +18,32 @@
 #pragma once
 
 namespace SA {
-	
-	template<typename T>
-	class delegate_base;
-	
-	template<typename RET, typename ...PARAMS>
-	class delegate_base<RET(PARAMS...)> {
 
-	protected:
+template <typename T>
+class delegate_base;
 
-		using stub_type = RET(*)(void* this_ptr, PARAMS...);
+template <typename RET, typename... PARAMS>
+class delegate_base<RET(PARAMS...)> {
+   protected:
+    using stub_type = RET (*)(void* this_ptr, PARAMS...);
 
-		struct InvocationElement {
-			InvocationElement() = default;
-			InvocationElement(void* this_ptr, stub_type aStub) : object(this_ptr), stub(aStub) {}
-			void Clone(InvocationElement& target) const {
-				target.stub = stub;
-				target.object = object;
-			} //Clone
-			bool operator ==(const InvocationElement& another) const {
-				return another.stub == stub && another.object == object;
-			} //==
-			bool operator !=(const InvocationElement& another) const {
-				return another.stub != stub || another.object != object;
-			} //!=
-			void* object = nullptr;
-			stub_type stub = nullptr;
-		}; //InvocationElement
+    struct InvocationElement {
+        InvocationElement() = default;
+        InvocationElement(void* this_ptr, stub_type aStub) : object(this_ptr), stub(aStub) {}
+        void Clone(InvocationElement& target) const {
+            target.stub = stub;
+            target.object = object;
+        }  //Clone
+        bool operator==(const InvocationElement& another) const {
+            return another.stub == stub && another.object == object;
+        }  //==
+        bool operator!=(const InvocationElement& another) const {
+            return another.stub != stub || another.object != object;
+        }  //!=
+        void* object = nullptr;
+        stub_type stub = nullptr;
+    };  //InvocationElement
 
-	}; //class delegate_base
+};  //class delegate_base
 
 } /* namespace SA */

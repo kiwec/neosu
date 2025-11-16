@@ -214,15 +214,15 @@ class ConVar {
                  cb_invocable<Callback, std::string_view, std::string_view> || cb_invocable<Callback, float, float>)
     {
         if constexpr(cb_invocable<Callback>)
-            this->callback = CVVoidCB(std::forward<Callback>(callback));
+            this->callback.template emplace<CVVoidCB>(std::forward<Callback>(callback));
         else if constexpr(cb_invocable<Callback, std::string_view>)
-            this->callback = CVStringCB(std::forward<Callback>(callback));
+            this->callback.template emplace<CVStringCB>(std::forward<Callback>(callback));
         else if constexpr(cb_invocable<Callback, float>)
-            this->callback = CVFloatCB(std::forward<Callback>(callback));
+            this->callback.template emplace<CVFloatCB>(std::forward<Callback>(callback));
         else if constexpr(cb_invocable<Callback, std::string_view, std::string_view>)
-            this->changeCallback = CVStringChangeCB(std::forward<Callback>(callback));
+            this->changeCallback.template emplace<CVStringChangeCB>(std::forward<Callback>(callback));
         else if constexpr(cb_invocable<Callback, float, float>)
-            this->changeCallback = CBFloatChangeCB(std::forward<Callback>(callback));
+            this->changeCallback.template emplace<CBFloatChangeCB>(std::forward<Callback>(callback));
         else
             static_assert(Env::always_false_v<Callback>, "Unsupported callback signature");
     }
@@ -320,13 +320,13 @@ class ConVar {
         this->iFlags = flags | cv::NOSAVE;
 
         if constexpr(cb_invocable<Callback>) {
-            this->callback = CVVoidCB(callback);
+            this->callback.template emplace<CVVoidCB>(callback);
             this->type = CONVAR_TYPE::STRING;
         } else if constexpr(cb_invocable<Callback, std::string_view>) {
-            this->callback = CVStringCB(callback);
+            this->callback.template emplace<CVStringCB>(callback);
             this->type = CONVAR_TYPE::STRING;
         } else if constexpr(cb_invocable<Callback, float>) {
-            this->callback = CVFloatCB(callback);
+            this->callback.template emplace<CVFloatCB>(callback);
             this->type = CONVAR_TYPE::INT;
         }
     }
@@ -359,15 +359,15 @@ class ConVar {
         // set callback if provided
         if constexpr(!std::is_same_v<Callback, std::nullptr_t>) {
             if constexpr(cb_invocable<Callback>)
-                this->callback = CVVoidCB(callback);
+                this->callback.template emplace<CVVoidCB>(callback);
             else if constexpr(cb_invocable<Callback, std::string_view>)
-                this->callback = CVStringCB(callback);
+                this->callback.template emplace<CVStringCB>(callback);
             else if constexpr(cb_invocable<Callback, float>)
-                this->callback = CVFloatCB(callback);
+                this->callback.template emplace<CVFloatCB>(callback);
             else if constexpr(cb_invocable<Callback, std::string_view, std::string_view>)
-                this->changeCallback = CVStringChangeCB(callback);
+                this->changeCallback.template emplace<CVStringChangeCB>(callback);
             else if constexpr(cb_invocable<Callback, float, float>)
-                this->changeCallback = CBFloatChangeCB(callback);
+                this->changeCallback.template emplace<CBFloatChangeCB>(callback);
         }
     }
 

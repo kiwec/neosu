@@ -17,7 +17,7 @@ Graphics::Graphics() {
     this->bIs3dScene = false;
     this->scene3d_stack.push(false);
 
-    cv::vsync.setCallback([](float on) -> void { g ? g->setVSync(!!static_cast<int>(on)) : (void)0; });
+    cv::vsync.setCallback([](float on) -> void { return !!g ? g->setVSync(!!static_cast<int>(on)) : (void)0; });
 }
 
 void Graphics::pushTransform() {
