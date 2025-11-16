@@ -1149,7 +1149,7 @@ void MainMenu::mouse_update(bool *propagate_clicks) {
 }
 
 void MainMenu::selectRandomBeatmap() {
-    if(db->isFinished() && !db->getBeatmapSets().empty() && !osu->getSongBrowser()->songButtons.empty()) {
+    if(db->isFinished() && !db->getBeatmapSets().empty() && !osu->getSongBrowser()->parentButtons.empty()) {
         osu->getSongBrowser()->selectRandomBeatmap();
         RichPresence::onMainMenu();
     } else {

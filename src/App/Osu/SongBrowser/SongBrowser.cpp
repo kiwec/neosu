@@ -486,7 +486,7 @@ SongBrowser::~SongBrowser() {
     resourceManager->destroyResource(this->backgroundSearchMatcher);
     this->backgroundSearchMatcher = nullptr;
 
-    for(auto &songButton : this->songButtons) {
+    for(auto &songButton : this->parentButtons) {
         delete songButton;
     }
     for(auto &collectionButton : this->collectionButtons) {
@@ -848,7 +848,7 @@ bool SongBrowser::selectBeatmapset(i32 set_id) {
         osu->getNotificationOverlay()->addToast(u"Beatmapset has no difficulties", ERROR_TOAST);
         return false;
     } else {
-        this->onSelectionChange(this->hashToSongButton[best_diff->getMD5()], false);
+        this->onSelectionChange(this->hashToDiffButton[best_diff->getMD5()], false);
         this->onDifficultySelected(best_diff, false);
         this->selectSelectedBeatmapSongButton();
         return true;
@@ -1174,24 +1174,15 @@ CBaseUIContainer *SongBrowser::setVisible(bool visible) {
 
 void SongBrowser::selectSelectedBeatmapSongButton() {
     DatabaseBeatmap *map = nullptr;
-    if(this->hashToSongButton.empty() || !(map = osu->getMapInterface()->getBeatmap())) return;
+    if(this->hashToDiffButton.empty() || !(map = osu->getMapInterface()->getBeatmap())) return;
 
-    auto it = this->hashToSongButton.find(map->getMD5());
-    if(it == this->hashToSongButton.end()) {
+    auto it = this->hashToDiffButton.find(map->getMD5());
+    if(it == this->hashToDiffButton.end()) {
         debugLog("No song button found for currently selected beatmap...");
         return;
     }
 
     auto btn = it->second;
-    for(auto sub_btn : btn->getChildren()) {
-        // hashToSongButton points to the *beatmap* song button.
-        // We want to select the *difficulty* song button.
-        if(sub_btn->getDatabaseBeatmap() == map) {
-            btn = sub_btn;
-            break;
-        }
-    }
-
     if(btn->getDatabaseBeatmap() != map) {
         debugLog("Found matching beatmap, but not matching difficulty.");
         return;
@@ -1369,11 +1360,11 @@ void SongBrowser::refreshBeatmaps(bool closeAfterLoading) {
     // delete local database and UI
     this->carousel->invalidate();
 
-    for(auto &songButton : this->songButtons) {
+    for(auto &songButton : this->parentButtons) {
         delete songButton;
     }
-    this->songButtons.clear();
-    this->hashToSongButton.clear();
+    this->parentButtons.clear();
+    this->hashToDiffButton.clear();
     for(auto &collectionButton : this->collectionButtons) {
         delete collectionButton;
     }
@@ -1442,42 +1433,30 @@ void SongBrowser::addBeatmapSet(BeatmapSet *mapset) {
     if(mapset->getDifficulties().size() < 1) return;
     this->bSongButtonsNeedSorting = true;
 
-    SongButton *songButton;
-    if(mapset->getDifficulties().size() > 1) {
-        songButton =
-            new SongButton(this, this->contextMenu, 250, 250 + db->getBeatmapSets().size() * 50, 200, 50, "", mapset);
-    } else {
-        songButton = new SongDifficultyButton(this, this->contextMenu, 250, 250 + db->getBeatmapSets().size() * 50, 200,
-                                              50, "", mapset->getDifficulties()[0], nullptr);
+    // always create parent button for the set
+    auto *parentButton =
+        new SongButton(this, this->contextMenu, 250, 250 + db->getBeatmapSets().size() * 50, 200, 50, "", mapset);
+    this->parentButtons.push_back(parentButton);
+
+    // map each difficulty hash to its button
+    for(auto *child : parentButton->getChildren()) {
+        auto *diffButton = static_cast<SongDifficultyButton *>(child);
+        this->hashToDiffButton[child->getDatabaseBeatmap()->getMD5()] = diffButton;
     }
 
-    this->songButtons.push_back(songButton);
-    for(auto map : mapset->getDifficulties()) {
-        this->hashToSongButton[map->getMD5()] = songButton;
-    }
-
-    // prebuild temporary list of all relevant buttons, used by some groups
-    std::vector<SongButton *> tempChildrenForGroups;
-    {
-        if(songButton->getChildren().size() > 0) {
-            for(SongButton *child : songButton->getChildren()) {
-                tempChildrenForGroups.push_back(child);
-            }
-        } else {
-            tempChildrenForGroups.push_back(songButton);
-        }
-    }
+    // use parent's children for grouping
+    const std::vector<SongButton *> &tempChildrenForGroups = parentButton->getChildren();
 
     // add mapset to all necessary groups
     {
-        this->addSongButtonToAlphanumericGroup(songButton, this->artistCollectionButtons, mapset->getArtistLatin());
-        this->addSongButtonToAlphanumericGroup(songButton, this->creatorCollectionButtons, mapset->getCreator());
-        this->addSongButtonToAlphanumericGroup(songButton, this->titleCollectionButtons, mapset->getTitleLatin());
+        this->addSongButtonToAlphanumericGroup(parentButton, this->artistCollectionButtons, mapset->getArtistLatin());
+        this->addSongButtonToAlphanumericGroup(parentButton, this->creatorCollectionButtons, mapset->getCreator());
+        this->addSongButtonToAlphanumericGroup(parentButton, this->titleCollectionButtons, mapset->getTitleLatin());
 
         // difficulty
         if(this->difficultyCollectionButtons.size() == 12) {
             for(SongButton *diff_btn : tempChildrenForGroups) {
-                const auto &stars_tmp = diff_btn->getDatabaseBeatmap()->getStarsNomod();
+                const float stars_tmp = diff_btn->getDatabaseBeatmap()->getStarsNomod();
                 const int index = std::clamp<int>(
                     (std::isfinite(stars_tmp) && stars_tmp >= static_cast<float>(std::numeric_limits<int>::min()) &&
                      stars_tmp <= static_cast<float>(std::numeric_limits<int>::max()))
@@ -1576,31 +1555,45 @@ void SongBrowser::requestNextScrollToSongButtonJumpFix(SongDifficultyButton *dif
     if(diffButton == nullptr) return;
 
     this->bNextScrollToSongButtonJumpFixScheduled = true;
+
+    // use parent position only if the diff is NOT independent
+    // (i.e., parent is actually visible and expanded in the carousel)
     this->fNextScrollToSongButtonJumpFixOldRelPosY =
-        (diffButton->getParentSongButton() != nullptr ? diffButton->getParentSongButton()->getRelPos().y
-                                                      : diffButton->getRelPos().y);
+        (diffButton->isIndependentDiffButton() ? diffButton->getRelPos().y
+                                               : diffButton->getParentSongButton()->getRelPos().y);
+
     this->fNextScrollToSongButtonJumpFixOldScrollSizeY = this->carousel->getScrollSize().y;
 }
 
 bool SongBrowser::isButtonVisible(CarouselButton *songButton) {
+    bool ret = false;
+
     for(const auto &btn : this->visibleSongButtons) {
         if(btn == songButton) {
-            return true;
+            ret = true;
+            goto out;
         }
         for(const auto &child : btn->getChildren()) {
             if(child == songButton) {
-                return true;
+                ret = true;
+                goto out;
             }
 
             for(const auto &grandchild : child->getChildren()) {
                 if(grandchild == songButton) {
-                    return true;
+                    ret = true;
+                    goto out;
                 }
             }
         }
     }
 
-    return false;
+out:
+    // if(songButton->getDatabaseBeatmap()) {
+    //     debugLog("{}: {}", ret ? "VISIBLE" : "NOT VISIBLE", songButton->getDatabaseBeatmap()->getFilePath());
+    // }
+
+    return ret;
 }
 
 void SongBrowser::scrollToBestButton() {
@@ -1704,14 +1697,6 @@ void SongBrowser::rebuildSongButtons() {
         }
     }
 
-    // TODO: regroup diffs which are next to each other into one song button (parent button)
-    // TODO: regrouping is non-deterministic, depending on the searching method used.
-    //       meaning that any number of "clusters" of diffs belonging to the same beatmap could build, requiring
-    //       multiple song "parent" buttons for the same beatmap (if touching group size >= 2)
-    //       when regrouping, these "fake" parent buttons have to be deleted on every reload. this means that the
-    //       selection state logic has to be kept cleared of any invalid pointers!
-    //       (including everything else which would rely on having a permanent pointer to an SongButton)
-
     this->updateSongButtonLayout();
 }
 
@@ -1762,6 +1747,23 @@ void SongBrowser::updateSongButtonLayout() {
         }
     }
     this->carousel->setScrollSizeToContent(this->carousel->getSize().y / 2);
+}
+
+SongBrowser::SetVisibility SongBrowser::getSetVisibility(const SongButton *parent) const {
+    if(parent == nullptr) return SetVisibility::HIDDEN;
+
+    // count visible children
+    int visibleCount = 0;
+    for(const auto *child : parent->getChildren()) {
+        if(child->isSearchMatch()) {
+            visibleCount++;
+        }
+        if(visibleCount > 1) break;  // break early
+    }
+
+    if(visibleCount == 0) return SetVisibility::HIDDEN;
+    if(visibleCount == 1) return SetVisibility::SINGLE_CHILD;
+    return SetVisibility::SHOW_PARENT;
 }
 
 bool SongBrowser::searchMatcher(const DatabaseBeatmap *databaseBeatmap,
@@ -2381,7 +2383,7 @@ void SongBrowser::checkHandleKillBackgroundSearchMatcher() {
 void SongBrowser::onDatabaseLoadingFinished() {
     // Extract oszs from neosu's maps/ directory now
     auto oszs = env->getFilesInFolder(NEOSU_MAPS_PATH "/");
-    for(auto file : oszs) {
+    for(const auto &file : oszs) {
         if(env->getFileExtensionFromFilePath(file) != "osz") continue;
         auto path = NEOSU_MAPS_PATH "/" + file;
         bool extracted = env->getEnvInterop().handle_osz(path.c_str());
@@ -2628,7 +2630,7 @@ void SongBrowser::onSearchUpdate() {
 
             this->backgroundSearchMatcher->revive();
             this->backgroundSearchMatcher->release();
-            this->backgroundSearchMatcher->setSongButtonsAndSearchString(this->songButtons, this->sSearchString,
+            this->backgroundSearchMatcher->setSongButtonsAndSearchString(this->parentButtons, this->sSearchString,
                                                                          hardcodedFilterString);
 
             resourceManager->requestNextLoadAsync();
@@ -2649,14 +2651,10 @@ void SongBrowser::onSearchUpdate() {
         this->visibleSongButtons.clear();
 
         // reset all search flags
-        for(auto &songButton : this->songButtons) {
-            const auto &children = songButton->getChildren();
-            if(children.size() > 0) {
-                for(auto &c : children) {
-                    c->setIsSearchMatch(true);
-                }
-            } else
-                songButton->setIsSearchMatch(true);
+        for(auto &songButton : this->parentButtons) {
+            for(auto &c : songButton->getChildren()) {
+                c->setIsSearchMatch(true);
+            }
         }
 
         // remember which tab was selected, instead of defaulting back to no grouping
@@ -2689,35 +2687,36 @@ void SongBrowser::rebuildSongButtonsAndVisibleSongButtonsWithSearchMatchSupport(
 
     // use flagged search matches to rebuild visible song buttons
     if(this->curGroup == GroupType::NO_GROUPING) {
-        for(auto &songButton : this->songButtons) {
-            const auto &children = songButton->getChildren();
-            if(children.size() > 0) {
-                // if all children match, then we still want to display the parent wrapper button (without expanding
-                // all diffs)
-                bool allChildrenMatch = true;
-                for(const auto &c : children) {
-                    bool match = c->isSearchMatch();
-                    if(!match) {
-                        allChildrenMatch = false;
-                        if(canBreakEarly) break;
-                    } else if(recountMatches) {
-                        this->currentVisibleSearchMatches++;
-                    }
-                }
+        for(auto *parentButton : this->parentButtons) {
+            const SetVisibility visibility = this->getSetVisibility(parentButton);
 
-                if(allChildrenMatch)
-                    this->visibleSongButtons.push_back(songButton);
-                else {
-                    // rip matching children from parent
-                    for(const auto &c : children) {
-                        if(c->isSearchMatch()) this->visibleSongButtons.push_back(c);
+            switch(visibility) {
+                case SetVisibility::HIDDEN:
+                    // don't add to carousel
+                    break;
+
+                case SetVisibility::SINGLE_CHILD:
+                    // add only the visible child
+                    for(auto *child : parentButton->getChildren()) {
+                        if(child->isSearchMatch()) {
+                            if(recountMatches) this->currentVisibleSearchMatches++;
+                            this->visibleSongButtons.push_back(child);
+                            break;  // only one visible child
+                        }
                     }
-                }
-            } else if(songButton->isSearchMatch()) {
-                if(recountMatches) {
-                    this->currentVisibleSearchMatches++;
-                }
-                this->visibleSongButtons.push_back(songButton);
+                    break;
+
+                case SetVisibility::SHOW_PARENT:
+                    // add parent (which will expand to show children if selected)
+                    if(recountMatches) {
+                        for(const auto *child : parentButton->getChildren()) {
+                            if(child->isSearchMatch()) {
+                                this->currentVisibleSearchMatches++;
+                            }
+                        }
+                    }
+                    this->visibleSongButtons.push_back(parentButton);
+                    break;
             }
         }
     } else {
@@ -2994,16 +2993,37 @@ void SongBrowser::rebuildAfterGroupOrSortChange(GroupType group, const std::opti
 
     if(this->bSongButtonsNeedSorting || sortingChanged) {
         // the master button list should be sorted for all groupings
-        std::ranges::sort(this->songButtons, SORTING_METHODS[this->curSortMethod].comparator);
+        std::ranges::sort(this->parentButtons, SORTING_METHODS[this->curSortMethod].comparator);
         this->bSongButtonsNeedSorting = false;
     }
 
     this->visibleSongButtons.clear();
 
     if(group == GroupType::NO_GROUPING) {
-        this->visibleSongButtons.reserve(this->songButtons.size());
-        this->visibleSongButtons.insert(this->visibleSongButtons.end(), this->songButtons.begin(),
-                                        this->songButtons.end());
+        this->visibleSongButtons.reserve(this->parentButtons.size());
+
+        // apply visibility logic
+        for(auto *parentButton : this->parentButtons) {
+            const SetVisibility visibility = this->getSetVisibility(parentButton);
+
+            switch(visibility) {
+                case SetVisibility::HIDDEN:
+                    break;
+
+                case SetVisibility::SINGLE_CHILD:
+                    for(auto *child : parentButton->getChildren()) {
+                        if(child->isSearchMatch()) {
+                            this->visibleSongButtons.push_back(child);
+                            break;
+                        }
+                    }
+                    break;
+
+                case SetVisibility::SHOW_PARENT:
+                    this->visibleSongButtons.push_back(parentButton);
+                    break;
+            }
+        }
     } else {
         auto *groupButtons = this->getCollectionButtonsForGroup(group);
         if(groupButtons != nullptr) {
@@ -3399,29 +3419,26 @@ void SongBrowser::recreateCollectionsButtons() {
         std::vector<u32> matched_sets;
 
         for(auto &map : collection->maps) {
-            auto it = this->hashToSongButton.find(map);
-            if(it == this->hashToSongButton.end()) continue;
+            auto it = this->hashToDiffButton.find(map);
+            if(it == this->hashToDiffButton.end()) continue;
 
             std::vector<SongButton *> matching_diffs;
 
-            auto song_button = it->second;
-            i32 set_id = song_button->getDatabaseBeatmap()->getSetID();
+            auto *song_button = it->second;
 
-            const auto &songButtonChildren = song_button->getChildren();
-            if(songButtonChildren.empty()) {
-                // button is a difficulty, not a set
-                matching_diffs.push_back(song_button);
-            } else {
-                // FIXME: searching through all collections->maps here is slow
-                for(SongButton *sbc : songButtonChildren                                                              //
-                                          | std::views::filter([&](const auto &child) {                               //
-                                                return std::ranges::contains(collection->maps,                        //
-                                                                             child->getDatabaseBeatmap()->getMD5());  //
-                                            }))                                                                       //
-                {
-                    matching_diffs.push_back(sbc);
-                }
+            // get parent's children (we always have a parent now)
+            const auto *parent = song_button->getParentSongButton();
+            const std::vector<SongButton *> &songButtonChildren = parent->getChildren();
+
+            // filter to only diffs in this collection
+            for(SongButton *sbc : songButtonChildren | std::views::filter([&](const auto &child) {
+                                      return std::ranges::contains(collection->maps,
+                                                                   child->getDatabaseBeatmap()->getMD5());
+                                  })) {
+                matching_diffs.push_back(sbc);
             }
+
+            const i32 set_id = song_button->getDatabaseBeatmap()->getSetID();
 
             if(!std::ranges::contains(matched_sets, set_id)) {
                 // Mark set as processed so we don't add the diffs from the same set twice

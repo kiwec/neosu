@@ -1208,7 +1208,7 @@ void Osu::toggleSongBrowser() {
     this->songBrowser->setVisible(nextVisible);
 
     // try refreshing if we have no beatmaps and are not already refreshing
-    if(nextVisible && this->songBrowser->songButtons.size() == 0 && !this->songBrowser->bBeatmapRefreshScheduled) {
+    if(nextVisible && this->songBrowser->parentButtons.size() == 0 && !this->songBrowser->bBeatmapRefreshScheduled) {
         this->songBrowser->refreshBeatmaps();
     }
 

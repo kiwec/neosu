@@ -124,6 +124,14 @@ class SongBrowser final : public ScreenBackable {
     void rebuildScoreButtons();
     void updateSongButtonLayout();
 
+    enum class SetVisibility : u8 {
+        HIDDEN,        // 0 visible children
+        SINGLE_CHILD,  // 1 visible child (show child directly)
+        SHOW_PARENT    // 2+ children or parent selected (show parent+children)
+    };
+
+    SetVisibility getSetVisibility(const SongButton *parent) const;
+
     [[nodiscard]] inline const std::vector<CollectionButton *> &getCollectionButtons() const {
         return this->collectionButtons;
     }
@@ -261,7 +269,7 @@ class SongBrowser final : public ScreenBackable {
     CollectionButton *selectionPreviousCollectionButton;
 
     // beatmap database
-    std::vector<SongButton *> songButtons;
+    std::vector<SongButton *> parentButtons;
     std::vector<CarouselButton *> visibleSongButtons;
     std::vector<CollectionButton *> collectionButtons;
     std::vector<CollectionButton *> artistCollectionButtons;
@@ -271,7 +279,7 @@ class SongBrowser final : public ScreenBackable {
     std::vector<CollectionButton *> dateaddedCollectionButtons;
     std::vector<CollectionButton *> lengthCollectionButtons;
     std::vector<CollectionButton *> titleCollectionButtons;
-    std::unordered_map<MD5Hash, SongButton *> hashToSongButton;
+    std::unordered_map<MD5Hash, SongDifficultyButton *> hashToDiffButton;
     bool bBeatmapRefreshScheduled;
     bool bCloseAfterBeatmapRefreshFinished{false};
     UString sLastOsuFolder;

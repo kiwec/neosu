@@ -3,6 +3,7 @@
 
 #include <utility>
 
+#include "Font.h"
 #include "ScoreButton.h"
 #include "SongBrowser.h"
 // ---
@@ -16,10 +17,8 @@
 #include "Engine.h"
 #include "LegacyReplay.h"
 #include "Osu.h"
-#include "ResourceManager.h"
 #include "Skin.h"
 #include "SoundEngine.h"
-#include "Timing.h"
 
 SongDifficultyButton::SongDifficultyButton(SongBrowser* songBrowser, UIContextMenu* contextMenu, float xPos, float yPos,
                                            float xSize, float ySize, UString name, DatabaseBeatmap* map,
@@ -175,11 +174,22 @@ void SongDifficultyButton::onClicked(bool left, bool right) {
 void SongDifficultyButton::onSelected(bool wasSelected, bool autoSelectBottomMostChild, bool wasParentSelected) {
     CarouselButton::onSelected(wasSelected, autoSelectBottomMostChild, wasParentSelected);
 
-    const bool wasParentActuallySelected = (this->parentSongButton != nullptr && wasParentSelected);
+    const bool wasParentActuallySelected = (!this->isIndependentDiffButton() && !!this->parentSongButton &&
+                                            wasParentSelected && this->parentSongButton->isSelected());
 
     this->updateGrade();
 
-    if(!wasParentActuallySelected) this->songBrowser->requestNextScrollToSongButtonJumpFix(this);
+    // debugLog(
+    //     "wasParentActuallySelected {} isIndependentDiffButton {} parentSongButton {} wasParentSelected {} "
+    //     "parentSongButton->isSelected {}",
+    //     wasParentSelected, isIndependentDiffButton(), !!parentSongButton, wasParentSelected,
+    //     parentSongButton->isSelected());
+
+    if(!wasParentActuallySelected) {
+        // debugLog("running scroll jump fix for {}",
+        //          this->databaseBeatmap ? this->databaseBeatmap->getFilePath() : "???");
+        this->songBrowser->requestNextScrollToSongButtonJumpFix(this);
+    }
 
     this->songBrowser->onSelectionChange(this, true);
     this->songBrowser->onDifficultySelected(this->databaseBeatmap, wasSelected);
@@ -208,7 +218,19 @@ void SongDifficultyButton::updateGrade() {
 }
 
 bool SongDifficultyButton::isIndependentDiffButton() const {
-    return (this->parentSongButton == nullptr || !this->parentSongButton->isSelected());
+    if(this->parentSongButton == nullptr) return true;
+    if(!this->parentSongButton->isSelected()) return true;
+
+    // check if this is the only visible sibling
+    int visibleSiblings = 0;
+    for(const auto* sibling : this->parentSongButton->getChildren()) {
+        if(sibling->isSearchMatch()) {
+            visibleSiblings++;
+            if(visibleSiblings > 1) return false;  // early exit
+        }
+    }
+
+    return (visibleSiblings == 1);
 }
 
 Color SongDifficultyButton::getInactiveBackgroundColor() const {

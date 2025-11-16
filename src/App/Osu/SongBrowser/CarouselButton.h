@@ -41,6 +41,7 @@ class CarouselButton : public CBaseUIButton {
     [[nodiscard]] inline vec2 getActualSize() const { return this->vSize - 2.f * this->getActualOffset(); }
     [[nodiscard]] inline vec2 getActualPos() const { return this->vPos + this->getActualOffset(); }
     inline std::vector<SongButton *> &getChildren() { return this->children; }
+    [[nodiscard]] inline const std::vector<SongButton *> &getChildren() const { return this->children; }
 
     [[nodiscard]] virtual DatabaseBeatmap *getDatabaseBeatmap() const { return nullptr; }
     [[nodiscard]] virtual Color getActiveBackgroundColor() const;
