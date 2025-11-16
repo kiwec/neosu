@@ -307,7 +307,7 @@ void BeatmapInterface::onKey(GameplayKeys key_flag, bool down, u64 timestamp) {
         // allow held keys to change while paused, but don't animate or anything
         // to reiterate, this needs to happen because we have no separate outside-gameplay-held-keys state (anymore),
         // BeatmapInterface::current_keys is the only source of truth
-        if(this->bIsPaused) return;
+        if(this->bIsPaused || !osu->isInPlayMode()) return;
 
         if(this->bContinueScheduled) {
             // don't insta-unpause if we had a held key or doubleclicked or something
