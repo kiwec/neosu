@@ -31,22 +31,22 @@ i32 HitSamples::getAdditionSet() {
 }
 
 f32 HitSamples::getVolume(i32 hitSoundType, bool is_sliderslide) {
-    f32 volume = 1.0;
+    f32 volume = 1.0f;
 
     // Some hardcoded modifiers for hitcircle sounds
     if(!is_sliderslide) {
         switch(hitSoundType) {
             case HitSoundType::NORMAL:
-                volume *= 0.8;
+                volume *= 0.8f;
                 break;
             case HitSoundType::WHISTLE:
-                volume *= 0.85;
+                volume *= 0.85f;
                 break;
             case HitSoundType::FINISH:
-                volume *= 1.0;
+                volume *= 1.0f;
                 break;
             case HitSoundType::CLAP:
-                volume *= 0.85;
+                volume *= 0.85f;
                 break;
             default:
                 assert(false);  // unreachable
@@ -56,9 +56,12 @@ f32 HitSamples::getVolume(i32 hitSoundType, bool is_sliderslide) {
     if(cv::ignore_beatmap_sample_volume.getBool()) return volume;
 
     if(this->volume > 0) {
-        volume *= (f32)this->volume / 100.0;
+        volume *= (f32)this->volume / 100.0f;
     } else {
-        volume *= (f32)osu->getMapInterface()->getTimingPoint().volume / 100.0;
+        const auto mapTimingPointVol = osu->getMapInterface()->getTimingPoint().volume;
+        if (mapTimingPointVol > 0) {
+            volume *= (f32)mapTimingPointVol / 100.0f;
+        }
     }
 
     return volume;

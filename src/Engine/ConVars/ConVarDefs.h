@@ -990,7 +990,7 @@ CONVAR(hitresult_miss_fadein_scale, 2.0f, CLIENT | SKINS | SERVER);
 CONVAR(hitresult_scale, 1.0f, CLIENT | SKINS | SERVER);
 CONVAR(ignore_beatmap_combo_colors, true, CLIENT | SKINS | SERVER);
 CONVAR(ignore_beatmap_combo_numbers, false, CLIENT | SKINS | SERVER, "may be used in conjunction with number_max");
-CONVAR(ignore_beatmap_sample_volume, false, CLIENT | SKINS | SERVER);
+CONVAR(ignore_beatmap_sample_volume, true, CLIENT | SKINS | SERVER);
 CONVAR(instafade, false, CLIENT | SKINS | SERVER, "don't draw hitcircle fadeout animations");
 CONVAR(instafade_sliders, false, CLIENT | SKINS | SERVER, "don't draw slider fadeout animations");
 CONVAR(instant_replay_duration, 15.f, CLIENT | SKINS | SERVER, "instant replay (F2) duration, in seconds");
