@@ -1028,7 +1028,7 @@ void DirectX11Interface::setColorInversion(bool enabled) {
     if(this->bColorInversion == enabled) return;
 
     this->bColorInversion = enabled;
-    this->setTexturing(this->bTexturingEnabled);  // re-apply with new inversion state
+    this->setTexturing(this->bTexturingEnabled, true /* force */);  // re-apply with new inversion state
 }
 
 void DirectX11Interface::setDepthWriting(bool /*enabled*/) {}
@@ -1311,8 +1311,10 @@ void DirectX11Interface::onRestored() {
     this->onResolutionChange(this->vResolution);
 }
 
-void DirectX11Interface::setTexturing(bool enabled) {
+void DirectX11Interface::setTexturing(bool enabled, bool force) {
     // debugLog("setTexturing: {}", enabled);
+    if(!force && enabled == this->bTexturingEnabled) return;
+
     this->bTexturingEnabled = enabled;
     this->shaderTexturedGeneric->setUniform4f("misc", enabled ? 1.f : 0.f, this->bColorInversion ? 1.f : 0.f, 0.f, 0.f);
 }

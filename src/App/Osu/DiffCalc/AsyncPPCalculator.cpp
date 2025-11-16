@@ -21,6 +21,8 @@ struct hitobject_cache {
 
     // Results
     DatabaseBeatmap::LOAD_DIFFOBJ_RESULT diffres{};
+
+    [[nodiscard]] bool matches(f32 spd, f32 ar, f32 cs) const { return speed == spd && AR == ar && CS == cs; }
 };
 
 struct info_cache {
@@ -34,26 +36,39 @@ struct info_cache {
 
     // Results
     std::vector<DifficultyCalculator::DiffObject> cachedDiffObjects{};
-    std::vector<DifficultyCalculator::DiffObject> diffObjects{};
     pp_res info{};
+
+    [[nodiscard]] bool matches(f32 spd, f32 ar, f32 cs, f32 od, bool relax, bool touch) const {
+        return speed == spd && AR == ar && CS == cs && OD == od && rx == relax && td == touch;
+    }
 };
 
-static const BeatmapDifficulty* map = nullptr;
+static const BeatmapDifficulty* current_map = nullptr;
 
 static Sync::condition_variable_any cond;
 static Sync::jthread thr;
 
 static Sync::mutex work_mtx;
+
 // bool to keep track of "high priority" state
 // might need mod updates to be recalc'd mid-gameplay
 static std::vector<std::pair<pp_calc_request, bool>> work;
 
 static Sync::mutex cache_mtx;
-static std::vector<std::pair<pp_calc_request, pp_res>> cache;
 
-// We have to use pointers because of C++ MOVE SEMANTICS BULLSHIT
-static std::vector<hitobject_cache*> ho_cache;
-static std::vector<info_cache*> inf_cache;
+static std::vector<std::pair<pp_calc_request, pp_res>> cache;
+static std::vector<hitobject_cache> ho_cache;
+static std::vector<info_cache> inf_cache;
+
+static void clear_caches() {
+    Sync::unique_lock work_lock(work_mtx);
+    Sync::unique_lock cache_lock(cache_mtx);
+
+    work.clear();
+    cache.clear();
+    ho_cache.clear();
+    inf_cache.clear();
+}
 
 static void run_thread(const Sync::stop_token& stoken) {
     McThread::set_current_thread_name("async_pp_calc");
@@ -62,141 +77,131 @@ static void run_thread(const Sync::stop_token& stoken) {
     const auto deadCheck = [&stoken](void) -> bool { return stoken.stop_requested(); };
 
     while(!stoken.stop_requested()) {
-        Sync::unique_lock<Sync::mutex> lock(work_mtx);
+        Sync::unique_lock lock(work_mtx);
         cond.wait(lock, stoken, [] { return !work.empty(); });
         if(stoken.stop_requested()) return;
 
         while(!work.empty()) {
             if(stoken.stop_requested()) return;
 
-            auto [rqt, highprio] = work[0];
+            auto [rqt, highprio] = work.front();
             if(!highprio && osu->shouldPauseBGThreads()) {
-                work_mtx.unlock();
+                lock.unlock();
                 Timing::sleepMS(100);
-                work_mtx.lock();
+                lock.lock();
                 continue;
             }
 
             work.erase(work.begin());
-            work_mtx.unlock();
 
-            // Make sure we haven't already computed it
-            bool already_computed = false;
-            cache_mtx.lock();
-            for(const auto& [request, info] : cache) {
-                if(request != rqt) continue;
-                already_computed = true;
-                break;
-            }
-            cache_mtx.unlock();
-            if(already_computed) {
-                work_mtx.lock();
-                continue;
-            }
-            if(stoken.stop_requested()) {
-                work_mtx.lock();
-                return;
+            // capture current map before unlocking (work items are specific to this map)
+            const BeatmapDifficulty* map_for_rqt = current_map;
+            lock.unlock();
+
+            if(!map_for_rqt) continue;
+
+            // skip if already computed
+            {
+                Sync::unique_lock cache_lock(cache_mtx);
+                bool found = false;
+                for(const auto& [request, info] : cache) {
+                    if(request == rqt) {
+                        found = true;
+                        break;
+                    }
+                }
+                if(found) {
+                    lock.lock();
+                    continue;
+                }
             }
 
-            // Load hitobjects
-            bool found_hitobjects = false;
+            if(stoken.stop_requested()) return;
+
+            // find or compute hitobjects
             hitobject_cache* computed_ho = nullptr;
-            for(auto ho : ho_cache) {
-                if(ho->speed != rqt.speedOverride) continue;
-                if(ho->AR != rqt.AR) continue;
-                if(ho->CS != rqt.CS) continue;
-
-                computed_ho = ho;
-                found_hitobjects = true;
-                break;
+            for(auto& ho : ho_cache) {
+                if(ho.matches(rqt.speedOverride, rqt.AR, rqt.CS)) {
+                    computed_ho = &ho;
+                    break;
+                }
             }
-            if(!found_hitobjects) {
-                computed_ho = new hitobject_cache();
-                computed_ho->speed = rqt.speedOverride;
-                computed_ho->AR = rqt.AR;
-                computed_ho->CS = rqt.CS;
-                if(stoken.stop_requested()) {
-                    work_mtx.lock();
-                    return;
-                }
 
-                computed_ho->diffres = DatabaseBeatmap::loadDifficultyHitObjects(map->getFilePath(), rqt.AR, rqt.CS,
-                                                                                 rqt.speedOverride, false, deadCheck);
-                if(stoken.stop_requested()) {
-                    work_mtx.lock();
-                    return;
-                }
-                if(computed_ho->diffres.errorCode) {
-                    work_mtx.lock();
+            if(!computed_ho) {
+                if(stoken.stop_requested()) return;
+
+                hitobject_cache new_ho{
+                    .speed = rqt.speedOverride,
+                    .AR = rqt.AR,
+                    .CS = rqt.CS,
+                };
+
+                new_ho.diffres = DatabaseBeatmap::loadDifficultyHitObjects(map_for_rqt->getFilePath(), rqt.AR, rqt.CS,
+                                                                           rqt.speedOverride, false, deadCheck);
+
+                if(stoken.stop_requested()) return;
+                if(new_ho.diffres.errorCode) {
+                    lock.lock();
                     continue;
                 }
 
-                ho_cache.push_back(computed_ho);
+                ho_cache.push_back(std::move(new_ho));
+                computed_ho = &ho_cache.back();
             }
 
-            // Load pp_res
-            bool found_info = false;
+            // find or compute difficulty info
             info_cache* computed_info = nullptr;
-            for(auto info : inf_cache) {
-                if(info->speed != rqt.speedOverride) continue;
-                if(info->AR != rqt.AR) continue;
-                if(info->CS != rqt.CS) continue;
-                if(info->OD != rqt.OD) continue;
-                if(info->rx != rqt.rx) continue;
-                if(info->td != rqt.td) continue;
-
-                computed_info = info;
-                found_info = true;
-                break;
-            }
-            if(!found_info) {
-                computed_info = new info_cache();
-                computed_info->speed = rqt.speedOverride;
-                computed_info->AR = rqt.AR;
-                computed_info->CS = rqt.CS;
-                computed_info->OD = rqt.OD;
-                computed_info->rx = rqt.rx;
-                computed_info->td = rqt.td;
-                if(stoken.stop_requested()) {
-                    work_mtx.lock();
-                    return;
+            for(auto& info : inf_cache) {
+                if(info.matches(rqt.speedOverride, rqt.AR, rqt.CS, rqt.OD, rqt.rx, rqt.td)) {
+                    computed_info = &info;
+                    break;
                 }
+            }
+
+            if(!computed_info) {
+                if(stoken.stop_requested()) return;
+
+                info_cache new_info{
+                    .speed = rqt.speedOverride,
+                    .AR = rqt.AR,
+                    .CS = rqt.CS,
+                    .OD = rqt.OD,
+                    .rx = rqt.rx,
+                    .td = rqt.td,
+                };
 
                 DifficultyCalculator::StarCalcParams params{
-                    .cachedDiffObjects = std::move(computed_info->cachedDiffObjects),
+                    .cachedDiffObjects = std::move(new_info.cachedDiffObjects),
                     .sortedHitObjects = computed_ho->diffres.diffobjects,
                     .CS = rqt.CS,
                     .OD = rqt.OD,
                     .speedMultiplier = rqt.speedOverride,
                     .relax = rqt.rx,
                     .touchDevice = rqt.td,
-                    .aim = &computed_info->info.aim_stars,
-                    .aimSliderFactor = &computed_info->info.aim_slider_factor,
-                    .aimDifficultSliders = &computed_info->info.difficult_aim_sliders,
-                    .difficultAimStrains = &computed_info->info.difficult_aim_strains,
-                    .speed = &computed_info->info.speed_stars,
-                    .speedNotes = &computed_info->info.speed_notes,
-                    .difficultSpeedStrains = &computed_info->info.difficult_speed_strains,
+                    .aim = &new_info.info.aim_stars,
+                    .aimSliderFactor = &new_info.info.aim_slider_factor,
+                    .aimDifficultSliders = &new_info.info.difficult_aim_sliders,
+                    .difficultAimStrains = &new_info.info.difficult_aim_strains,
+                    .speed = &new_info.info.speed_stars,
+                    .speedNotes = &new_info.info.speed_notes,
+                    .difficultSpeedStrains = &new_info.info.difficult_speed_strains,
                     .upToObjectIndex = -1,
                     .incremental = {},
-                    .outAimStrains = &computed_info->info.aimStrains,
-                    .outSpeedStrains = &computed_info->info.speedStrains,
+                    .outAimStrains = &new_info.info.aimStrains,
+                    .outSpeedStrains = &new_info.info.speedStrains,
                     .cancelCheck = deadCheck,
                 };
-                computed_info->info.total_stars = DifficultyCalculator::calculateStarDiffForHitObjects(params);
-                computed_info->cachedDiffObjects = std::move(params.cachedDiffObjects);
-                if(stoken.stop_requested()) {
-                    work_mtx.lock();
-                    return;
-                }
 
-                inf_cache.push_back(computed_info);
+                new_info.info.total_stars = DifficultyCalculator::calculateStarDiffForHitObjects(params);
+                new_info.cachedDiffObjects = std::move(params.cachedDiffObjects);
+
+                if(stoken.stop_requested()) return;
+
+                inf_cache.push_back(std::move(new_info));
+                computed_info = &inf_cache.back();
             }
 
-            if(stoken.stop_requested()) {
-                work_mtx.lock();
-                return;
-            }
+            if(stoken.stop_requested()) return;
 
             DifficultyCalculator::PPv2CalcParams ppv2calcparams{
                 .modFlags = rqt.modFlags,
@@ -210,84 +215,78 @@ static void run_thread(const Sync::stop_token& stoken) {
                 .speed = computed_info->info.speed_stars,
                 .speedNotes = computed_info->info.speed_notes,
                 .speedDifficultStrains = computed_info->info.difficult_speed_strains,
-                .numHitObjects = map->iNumObjects,
-                .numCircles = map->iNumCircles,
-                .numSliders = map->iNumSliders,
-                .numSpinners = map->iNumSpinners,
+                .numHitObjects = map_for_rqt->iNumObjects,
+                .numCircles = map_for_rqt->iNumCircles,
+                .numSliders = map_for_rqt->iNumSliders,
+                .numSpinners = map_for_rqt->iNumSpinners,
                 .maxPossibleCombo = computed_ho->diffres.maxPossibleCombo,
                 .combo = rqt.comboMax,
                 .misses = rqt.numMisses,
                 .c300 = rqt.num300s,
                 .c100 = rqt.num100s,
-                .c50 = rqt.num50s};
+                .c50 = rqt.num50s,
+            };
 
             computed_info->info.pp = DifficultyCalculator::calculatePPv2(ppv2calcparams);
 
-            cache_mtx.lock();
-            cache.emplace_back(rqt, computed_info->info);
-            cache_mtx.unlock();
+            {
+                Sync::unique_lock cache_lock(cache_mtx);
+                cache.emplace_back(rqt, computed_info->info);
+            }
 
-            work_mtx.lock();
+            lock.lock();
         }
     }
 }
 }  // namespace
 
 void set_map(const DatabaseBeatmap* new_map) {
-    if(map == new_map) return;
+    if(current_map == new_map) return;
 
-    if(map != nullptr) {
-        cond.notify_one();
+    const bool had_map = (current_map != nullptr);
+    current_map = new_map;
+
+    if(had_map) {
+        clear_caches();
+    }
+
+    if(!had_map && new_map != nullptr) {
+        thr = Sync::jthread(run_thread);
+    } else if(had_map && new_map == nullptr) {
         if(thr.joinable()) {
             thr.request_stop();
+            cond.notify_one();
             thr.join();
         }
-        cache.clear();
-
-        for(auto ho : ho_cache) {
-            delete ho;
-        }
-        ho_cache.clear();
-
-        for(auto inf : inf_cache) {
-            delete inf;
-        }
-        inf_cache.clear();
     }
-
-    map = new_map;
-    if(new_map != nullptr) {
-        thr = Sync::jthread(run_thread);
-    }
-    return;
 }
 
 pp_res query_result(const pp_calc_request& rqt, bool ignoreBGThreadPause) {
-    cache_mtx.lock();
-    for(const auto& [request, info] : cache) {
-        if(request != rqt) continue;
-
-        pp_res out = info;
-        cache_mtx.unlock();
-        return out;
+    {
+        Sync::unique_lock cache_lock(cache_mtx);
+        for(const auto& [request, info] : cache) {
+            if(request == rqt) {
+                return info;
+            }
+        }
     }
-    cache_mtx.unlock();
 
-    work_mtx.lock();
-    bool work_exists = false;
-    for(const auto& [w, prio] : work) {
-        if(w != rqt) continue;
-
-        work_exists = true;
-        break;
+    {
+        Sync::unique_lock work_lock(work_mtx);
+        bool work_exists = false;
+        for(const auto& [w, prio] : work) {
+            if(w == rqt) {
+                work_exists = true;
+                break;
+            }
+        }
+        if(!work_exists) {
+            work.emplace_back(rqt, ignoreBGThreadPause);
+            cond.notify_one();
+        }
     }
-    if(!work_exists) {
-        work.emplace_back(rqt, ignoreBGThreadPause);
-    }
-    work_mtx.unlock();
-    cond.notify_one();
 
-    pp_res placeholder{
+    static pp_res dummy{
         .total_stars = -1.0,
         .aim_stars = -1.0,
         .aim_slider_factor = -1.0,
@@ -296,6 +295,6 @@ pp_res query_result(const pp_calc_request& rqt, bool ignoreBGThreadPause) {
         .pp = -1.0,
     };
 
-    return placeholder;
+    return dummy;
 }
 }  // namespace AsyncPPC

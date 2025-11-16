@@ -151,7 +151,7 @@ class DirectX11Interface final : public Graphics {
     inline ID3D11DeviceContext *getDeviceContext() const { return this->deviceContext; }
     inline DirectX11Shader *getShaderGeneric() const { return this->shaderTexturedGeneric; }
     inline DirectX11Shader *getActiveShader() const { return this->activeShader; }
-    void setTexturing(bool enabled);
+    void setTexturing(bool enabled, bool force = false);
 
    protected:
     bool init() final;

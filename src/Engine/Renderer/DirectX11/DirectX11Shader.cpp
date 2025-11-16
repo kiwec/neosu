@@ -126,16 +126,8 @@ void DirectX11Shader::init() {
 
                             // NOTE: remove integer from end of datatype string (e.g. "COLOR0", "TEXCOORD0" etc., since this is implied by the order and only
                             // necessary in actual shader code as CreateInputLayout() would fail otherwise)
-                            if(inputDescLine.dataType.find('0') == inputDescLine.dataType.length() - 1 ||
-                               inputDescLine.dataType.find('1') == inputDescLine.dataType.length() - 1 ||
-                               inputDescLine.dataType.find('2') == inputDescLine.dataType.length() - 1 ||
-                               inputDescLine.dataType.find('3') == inputDescLine.dataType.length() - 1 ||
-                               inputDescLine.dataType.find('4') == inputDescLine.dataType.length() - 1 ||
-                               inputDescLine.dataType.find('5') == inputDescLine.dataType.length() - 1 ||
-                               inputDescLine.dataType.find('6') == inputDescLine.dataType.length() - 1 ||
-                               inputDescLine.dataType.find('7') == inputDescLine.dataType.length() - 1 ||
-                               inputDescLine.dataType.find('8') == inputDescLine.dataType.length() - 1 ||
-                               inputDescLine.dataType.find('9') == inputDescLine.dataType.length() - 1) {
+                            if(!inputDescLine.dataType.empty() &&
+                               "0123456789"sv.contains(inputDescLine.dataType.back())) {
                                 inputDescLine.dataType.erase(inputDescLine.dataType.length() - 1, 1);
                             }
                         }
@@ -297,12 +289,12 @@ void DirectX11Shader::init() {
 
             if(cv::debug_shaders.getBool()) {
                 for(size_t i = 0; i < this->inputDescs.size(); i++) {
-                    debugLog("m_inputDescs[{}] = \"{:s}\", has {} line(s)", (int)i, this->inputDescs[i].type.c_str(),
+                    debugLog(R"(inputDescs[{}] = "{:s}", has {} line(s))", (int)i, this->inputDescs[i].type.c_str(),
                              (int)this->inputDescs[i].lines.size());
                 }
 
                 for(size_t i = 0; i < this->bindDescs.size(); i++) {
-                    debugLog("m_bindDescs[{}] = \"{:s}\", has {} lines(s)", (int)i, this->bindDescs[i].name.c_str(),
+                    debugLog(R"(bindDescs[{}] = "{:s}", has {} lines(s))", (int)i, this->bindDescs[i].name.c_str(),
                              (int)this->bindDescs[i].lines.size());
                 }
             }
