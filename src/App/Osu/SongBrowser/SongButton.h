@@ -8,6 +8,9 @@ class DatabaseBeatmap;
 class BeatmapCarousel;
 
 class SongButton : public CarouselButton {
+    NOCOPY_NOMOVE(SongButton)
+   public:
+    DEF_BUTTON_TYPE(SongButton, SongButton_, CarouselButton)
    public:
     SongButton(SongBrowser *songBrowser, UIContextMenu *contextMenu, float xPos, float yPos, float xSize, float ySize,
                UString name, DatabaseBeatmap *databaseBeatmap);

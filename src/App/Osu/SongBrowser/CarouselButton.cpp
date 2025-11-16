@@ -269,19 +269,18 @@ void CarouselButton::onMouseInside() {
     // hover anim
     anim->moveQuadOut(&this->fHoverOffsetAnimation, 1.0f, 1.0f * (1.0f - this->fHoverOffsetAnimation), true);
 
+    // all elements must be CarouselButtons, at least
+    const auto &elements{reinterpret_cast<const std::vector<CarouselButton *> &>(
+        this->songBrowser->getCarousel()->getContainer()->getElements())};
+
     // move the rest of the buttons away from hovered-over one
-    const std::vector<CBaseUIElement *> &elements = this->songBrowser->getCarousel()->getContainer()->getElements();
     bool foundCenter = false;
     for(auto element : elements) {
-        auto *b = dynamic_cast<CarouselButton *>(element);
-        if(b != nullptr)  // sanity
-        {
-            if(b == this) {
-                foundCenter = true;
-                b->setMoveAwayState(MOVE_AWAY_STATE::MOVE_CENTER);
-            } else
-                b->setMoveAwayState(foundCenter ? MOVE_AWAY_STATE::MOVE_DOWN : MOVE_AWAY_STATE::MOVE_UP);
-        }
+        if(element == this) {
+            foundCenter = true;
+            element->setMoveAwayState(MOVE_AWAY_STATE::MOVE_CENTER);
+        } else
+            element->setMoveAwayState(foundCenter ? MOVE_AWAY_STATE::MOVE_DOWN : MOVE_AWAY_STATE::MOVE_UP);
     }
 }
 
@@ -294,11 +293,11 @@ void CarouselButton::onMouseOutside() {
     // only reset all other elements' state if we still should do so (possible frame delay of onMouseOutside coming
     // together with the next element already getting onMouseInside!)
     if(this->moveAwayState == MOVE_AWAY_STATE::MOVE_CENTER) {
-        const std::vector<CBaseUIElement *> &elements = this->songBrowser->getCarousel()->getContainer()->getElements();
+        const auto &elements{reinterpret_cast<const std::vector<CarouselButton *> &>(
+            this->songBrowser->getCarousel()->getContainer()->getElements())};
+
         for(auto element : elements) {
-            auto *b = dynamic_cast<CarouselButton *>(element);
-            if(b != nullptr)  // sanity check
-                b->setMoveAwayState(MOVE_AWAY_STATE::MOVE_CENTER);
+            element->setMoveAwayState(MOVE_AWAY_STATE::MOVE_CENTER);
         }
     }
 }

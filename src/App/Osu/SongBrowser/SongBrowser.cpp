@@ -1199,7 +1199,7 @@ void SongBrowser::onPlayEnd(bool quit) {
     if(!quit) {
         this->rebuildScoreButtons();
 
-        auto *selectedSongDiffButton = dynamic_cast<SongDifficultyButton *>(this->selectedButton);
+        auto *selectedSongDiffButton = this->selectedButton->as<SongDifficultyButton>();
         if(selectedSongDiffButton != nullptr) selectedSongDiffButton->updateGrade();
     }
 
@@ -1221,9 +1221,9 @@ void SongBrowser::onSelectionChange(CarouselButton *button, bool rebuild) {
     // I'm still not happy with this, but at least all state update logic is localized in this function instead of
     // spread across all buttons
 
-    auto *songButtonPointer = dynamic_cast<SongButton *>(button);
-    auto *songDiffButtonPointer = dynamic_cast<SongDifficultyButton *>(button);
-    auto *collectionButtonPointer = dynamic_cast<CollectionButton *>(button);
+    auto *songButtonPointer = button->as<SongButton>();
+    auto *songDiffButtonPointer = button->as<SongDifficultyButton>();
+    auto *collectionButtonPointer = button->as<CollectionButton>();
 
     if(songDiffButtonPointer != nullptr) {
         if(this->selectionPreviousSongDiffButton != nullptr &&
@@ -1704,7 +1704,10 @@ void SongBrowser::updateSongButtonLayout() {
     // this rebuilds the entire songButton layout (songButtons in relation to others)
     // only the y axis is set, because the x axis is constantly animated and handled within the button classes
     // themselves
-    const std::vector<CBaseUIElement *> &elements = this->carousel->getContainer()->getElements();
+
+    // all elements must be CarouselButtons, at least
+    const auto &elements{
+        reinterpret_cast<const std::vector<CarouselButton *> &>(this->carousel->getContainer()->getElements())};
 
     int yCounter = this->carousel->getSize().y / 4;
     if(elements.size() <= 1) yCounter = this->carousel->getSize().y / 2;
@@ -1712,13 +1715,13 @@ void SongBrowser::updateSongButtonLayout() {
     bool isSelected = false;
     bool inOpenCollection = false;
     for(auto &element : elements) {
-        auto *songButton = dynamic_cast<CarouselButton *>(element);
+        auto *songButton = element->as<CarouselButton>();
 
         if(songButton != nullptr) {
-            const auto *diffButtonPointer = dynamic_cast<const SongDifficultyButton *>(songButton);
+            const auto *diffButtonPointer = songButton->as<const SongDifficultyButton>();
 
             // depending on the object type, layout differently
-            const bool isCollectionButton = dynamic_cast<CollectionButton *>(songButton) != nullptr;
+            const bool isCollectionButton = songButton->isType<CollectionButton>();
             const bool isDiffButton = diffButtonPointer != nullptr;
             const bool isIndependentDiffButton = isDiffButton && diffButtonPointer->isIndependentDiffButton();
 
@@ -2350,10 +2353,10 @@ void SongBrowser::rebuildScoreButtons() {
     if(validBeatmap) {
         for(auto &visibleSongButton : this->visibleSongButtons) {
             if(visibleSongButton->getDatabaseBeatmap() == osu->getMapInterface()->getBeatmap()) {
-                auto *songButtonPointer = dynamic_cast<SongButton *>(visibleSongButton);
+                auto *songButtonPointer = visibleSongButton->as<SongButton>();
                 if(songButtonPointer != nullptr) {
                     for(CarouselButton *diffButton : songButtonPointer->getChildren()) {
-                        auto *diffButtonPointer = dynamic_cast<SongButton *>(diffButton);
+                        auto *diffButtonPointer = diffButton->as<SongButton>();
                         if(diffButtonPointer != nullptr) diffButtonPointer->updateGrade();
                     }
                 }
@@ -3091,8 +3094,8 @@ void SongBrowser::onSelectionOptions() {
         const vec2 heuristicSongButtonPositionAfterSmoothScrollFinishes =
             (this->carousel->getPos() + this->carousel->getSize() / 2.f);
 
-        auto *songButtonPointer = dynamic_cast<SongButton *>(this->selectedButton);
-        auto *collectionButtonPointer = dynamic_cast<CollectionButton *>(this->selectedButton);
+        auto *songButtonPointer = this->selectedButton->as<SongButton>();
+        auto *collectionButtonPointer = this->selectedButton->as<CollectionButton>();
         if(songButtonPointer != nullptr) {
             songButtonPointer->triggerContextMenu(heuristicSongButtonPositionAfterSmoothScrollFinishes);
         } else if(collectionButtonPointer != nullptr) {
@@ -3307,11 +3310,13 @@ void SongBrowser::selectSongButton(CarouselButton *songButton) {
 
 void SongBrowser::selectRandomBeatmap() {
     // filter songbuttons or independent diffs
-    const std::vector<CBaseUIElement *> &elements = this->carousel->getContainer()->getElements();
+    const auto &elements{
+        reinterpret_cast<const std::vector<CarouselButton *> &>(this->carousel->getContainer()->getElements())};
+
     std::vector<SongButton *> songButtons;
     for(auto element : elements) {
-        auto *songButtonPointer = dynamic_cast<SongButton *>(element);
-        auto *songDifficultyButtonPointer = dynamic_cast<SongDifficultyButton *>(element);
+        auto *songButtonPointer = element->as<SongButton>();
+        auto *songDifficultyButtonPointer = element->as<SongDifficultyButton>();
 
         if(songButtonPointer != nullptr &&
            (songDifficultyButtonPointer == nullptr ||
@@ -3329,7 +3334,7 @@ void SongBrowser::selectRandomBeatmap() {
     std::uniform_int_distribution<size_t> rng(0, songButtons.size() - 1);
     size_t randomIndex = rng(this->rngalg);
 
-    auto *songButton = dynamic_cast<SongButton *>(songButtons[randomIndex]);
+    auto *songButton = songButtons[randomIndex]->as<SongButton>();
     this->selectSongButton(songButton);
 }
 
@@ -3343,10 +3348,12 @@ void SongBrowser::selectPreviousRandomBeatmap() {
                                                       // we don't switch to ourself)
 
         // filter songbuttons
-        const std::vector<CBaseUIElement *> &elements = this->carousel->getContainer()->getElements();
+        const auto &elements{
+            reinterpret_cast<const std::vector<CarouselButton *> &>(this->carousel->getContainer()->getElements())};
+
         std::vector<SongButton *> songButtons;
         for(auto element : elements) {
-            auto *songButtonPointer = dynamic_cast<SongButton *>(element);
+            auto *songButtonPointer = element->as<SongButton>();
 
             if(songButtonPointer != nullptr)  // allow ALL songbuttons
                 songButtons.push_back(songButtonPointer);
@@ -3383,9 +3390,11 @@ void SongBrowser::selectPreviousRandomBeatmap() {
 }
 
 void SongBrowser::playSelectedDifficulty() {
-    const std::vector<CBaseUIElement *> &elements = this->carousel->getContainer()->getElements();
+    const auto &elements{
+        reinterpret_cast<const std::vector<CarouselButton *> &>(this->carousel->getContainer()->getElements())};
+
     for(auto element : elements) {
-        auto *songDifficultyButton = dynamic_cast<SongDifficultyButton *>(element);
+        auto *songDifficultyButton = element->as<SongDifficultyButton>();
         if(songDifficultyButton != nullptr && songDifficultyButton->isSelected()) {
             songDifficultyButton->select();
             break;

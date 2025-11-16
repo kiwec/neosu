@@ -11,8 +11,41 @@ class SongBrowser;
 class SongButton;
 class UIContextMenu;
 
+#define DEF_BUTTON_TYPE(ClassName, TypeID, ParentClass)                 \
+    static constexpr TypeId TYPE_ID = TypeID;                           \
+    [[nodiscard]] TypeId getTypeId() const override { return TYPE_ID; } \
+    [[nodiscard]] bool isTypeOf(TypeId typeId) const override {         \
+        return typeId == TYPE_ID || ParentClass::isTypeOf(typeId);      \
+    }
+
 class CarouselButton : public CBaseUIButton {
     NOCOPY_NOMOVE(CarouselButton)
+   public:
+    enum TypeId : uint8_t {
+        CarouselButton_ = 0,
+        CollectionButton_ = 1,
+        SongButton_ = 2,
+        SongDifficultyButton_ = 3,
+    };
+
+    // manual RTTI
+    static constexpr TypeId TYPE_ID = CarouselButton_;
+    [[nodiscard]] virtual TypeId getTypeId() const { return TYPE_ID; }
+    [[nodiscard]] virtual bool isTypeOf(TypeId typeId) const { return typeId == TYPE_ID; }
+
+    template <typename T>
+    [[nodiscard]] bool isType() const {
+        return isTypeOf(T::TYPE_ID);
+    }
+    template <typename T>
+    T *as() {
+        return isType<T>() ? static_cast<T *>(this) : nullptr;
+    }
+    template <typename T>
+    const T *as() const {
+        return isType<T>() ? static_cast<const T *>(this) : nullptr;
+    }
+
    public:
     CarouselButton(SongBrowser *songBrowser, UIContextMenu *contextMenu, float xPos, float yPos, float xSize,
                    float ySize, UString name);

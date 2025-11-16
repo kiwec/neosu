@@ -56,7 +56,7 @@ static std::vector<hitobject_cache*> ho_cache;
 static std::vector<info_cache*> inf_cache;
 
 static void run_thread(const Sync::stop_token& stoken) {
-    McThread::set_current_thread_name("lb_pp_calc");
+    McThread::set_current_thread_name("async_pp_calc");
     McThread::set_current_thread_prio(McThread::Priority::NORMAL);  // reset priority
 
     const auto deadCheck = [&stoken](void) -> bool { return stoken.stop_requested(); };

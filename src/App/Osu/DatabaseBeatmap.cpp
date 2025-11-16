@@ -1369,28 +1369,24 @@ DatabaseBeatmap::LOAD_GAMEPLAY_RESULT DatabaseBeatmap::loadGameplay(DatabaseBeat
 
     // set isEndOfCombo + precalculate Score v2 combo portion maximum
     if(beatmap != nullptr) {
-        u64 scoreV2ComboPortionMaximum = 1;
+        u32 scoreV2ComboPortionMaximum = 1;
 
         if(result.hitobjects.size() > 0) scoreV2ComboPortionMaximum = 0;
 
-        int combo = 0;
+        uSz combo = 0;
         for(size_t i = 0; i < result.hitobjects.size(); i++) {
             HitObject *currentHitObject = result.hitobjects[i];
             const HitObject *nextHitObject = (i + 1 < result.hitobjects.size() ? result.hitobjects[i + 1] : nullptr);
 
-            const Circle *circlePointer = dynamic_cast<Circle *>(currentHitObject);
-            const Slider *sliderPointer = dynamic_cast<Slider *>(currentHitObject);
-            const Spinner *spinnerPointer = dynamic_cast<Spinner *>(currentHitObject);
+            uSz scoreComboMultiplier = combo == 0 ? 0 : combo - 1;
 
-            int scoreComboMultiplier = std::max(combo - 1, 0);
-
-            if(circlePointer != nullptr || spinnerPointer != nullptr) {
-                scoreV2ComboPortionMaximum += (u64)(300.0 * (1.0 + (double)scoreComboMultiplier / 10.0));
+            if(currentHitObject->type == HitObjectType::CIRCLE || currentHitObject->type == HitObjectType::SPINNER) {
+                scoreV2ComboPortionMaximum += (u32)(300.0 * (1.0 + (double)scoreComboMultiplier / 10.0));
                 combo++;
-            } else if(sliderPointer != nullptr) {
-                combo += 1 + sliderPointer->getClicks().size();
-                scoreComboMultiplier = std::max(combo - 1, 0);
-                scoreV2ComboPortionMaximum += (u64)(300.0 * (1.0 + (double)scoreComboMultiplier / 10.0));
+            } else if(currentHitObject->type == HitObjectType::SLIDER) {
+                combo += 1 + static_cast<const Slider *>(currentHitObject)->getClicks().size();
+                scoreComboMultiplier = combo == 0 ? 0 : combo - 1;
+                scoreV2ComboPortionMaximum += (u32)(300.0 * (1.0 + (double)scoreComboMultiplier / 10.0));
                 combo++;
             }
 
@@ -1414,9 +1410,7 @@ DatabaseBeatmap::LOAD_GAMEPLAY_RESULT DatabaseBeatmap::loadGameplay(DatabaseBeat
             // NOTE: spinners don't increment the combo number
             int comboNumber = 1;
             for(auto currentHitObject : result.hitobjects) {
-                const Spinner *spinnerPointer = dynamic_cast<Spinner *>(currentHitObject);
-
-                if(spinnerPointer == nullptr) {
+                if(currentHitObject->type != HitObjectType::SPINNER) {
                     currentHitObject->combo_number = comboNumber;
                     comboNumber++;
                 }

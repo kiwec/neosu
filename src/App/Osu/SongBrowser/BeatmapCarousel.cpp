@@ -69,30 +69,30 @@ void BeatmapCarousel::onKeyUp(KeyboardEvent & /*e*/) { /*this->getContainer()->o
 void BeatmapCarousel::onKeyDown(KeyboardEvent &key) {
     /*this->getContainer()->onKeyDown(e);*/
 
-    const std::vector<CBaseUIElement *> &elements{this->getContainer()->getElements()};
+    // all elements must be CarouselButtons, at least
+    const auto &elements{reinterpret_cast<const std::vector<CarouselButton *> &>(this->getContainer()->getElements())};
 
     // selection move
     if(!keyboard->isAltDown() && key == KEY_DOWN) {
         // get bottom selection
         int selectedIndex = -1;
         for(int i = 0; i < elements.size(); i++) {
-            auto *button = dynamic_cast<CarouselButton *>(elements[i]);
-            if(button != nullptr && button->isSelected()) selectedIndex = i;
+            if(elements[i]->isSelected()) selectedIndex = i;
         }
 
         // select +1
         if(selectedIndex > -1 && selectedIndex + 1 < elements.size()) {
             int nextSelectionIndex = selectedIndex + 1;
-            auto *nextButton = dynamic_cast<CarouselButton *>(elements[nextSelectionIndex]);
-            auto *songButton = dynamic_cast<SongButton *>(elements[nextSelectionIndex]);
-            if(nextButton != nullptr) {
-                nextButton->select(true, false);
+            auto *nextButton = elements[nextSelectionIndex];
 
-                // if this is a song button, select top child
-                if(songButton != nullptr) {
-                    const auto &children = songButton->getChildren();
-                    if(children.size() > 0 && !children[0]->isSelected()) children[0]->select(true, false, false);
-                }
+            nextButton->select(true, false);
+
+            auto *songButton = nextButton->as<SongButton>();
+
+            // if this is a song button, select top child
+            if(songButton != nullptr) {
+                const auto &children = songButton->getChildren();
+                if(children.size() > 0 && !children[0]->isSelected()) children[0]->select(true, false, false);
             }
         }
     }
@@ -101,30 +101,27 @@ void BeatmapCarousel::onKeyDown(KeyboardEvent &key) {
         // get bottom selection
         int selectedIndex = -1;
         for(int i = 0; i < elements.size(); i++) {
-            auto *button = dynamic_cast<CarouselButton *>(elements[i]);
-            if(button != nullptr && button->isSelected()) selectedIndex = i;
+            if(elements[i]->isSelected()) selectedIndex = i;
         }
 
         // select -1
         if(selectedIndex > -1 && selectedIndex - 1 > -1) {
             int nextSelectionIndex = selectedIndex - 1;
-            auto *nextButton = dynamic_cast<CarouselButton *>(elements[nextSelectionIndex]);
-            bool isCollectionButton = dynamic_cast<CollectionButton *>(elements[nextSelectionIndex]);
+            auto *nextButton = elements[nextSelectionIndex];
 
-            if(nextButton != nullptr) {
-                nextButton->select();
+            nextButton->select();
+            const bool isCollectionButton = nextButton->isType<CollectionButton>();
 
-                // automatically open collection on top of this one and go to bottom child
-                if(isCollectionButton && nextSelectionIndex - 1 > -1) {
-                    nextSelectionIndex = nextSelectionIndex - 1;
-                    auto *nextCollectionButton = dynamic_cast<CollectionButton *>(elements[nextSelectionIndex]);
-                    if(nextCollectionButton != nullptr) {
-                        nextCollectionButton->select();
+            // automatically open collection on top of this one and go to bottom child
+            if(isCollectionButton && nextSelectionIndex - 1 > -1) {
+                nextSelectionIndex = nextSelectionIndex - 1;
+                auto *nextCollectionButton = elements[nextSelectionIndex]->as<CollectionButton>();
+                if(nextCollectionButton != nullptr) {
+                    nextCollectionButton->select();
 
-                        const auto &children = nextCollectionButton->getChildren();
-                        if(children.size() > 0 && !children[children.size() - 1]->isSelected())
-                            children[children.size() - 1]->select();
-                    }
+                    const auto &children = nextCollectionButton->getChildren();
+                    if(children.size() > 0 && !children[children.size() - 1]->isSelected())
+                        children[children.size() - 1]->select();
                 }
             }
         }
@@ -137,10 +134,10 @@ void BeatmapCarousel::onKeyDown(KeyboardEvent &key) {
 
         bool foundSelected = false;
         for(sSz i = elements.size() - 1; i >= 0; i--) {
-            const auto *diffButtonPointer = dynamic_cast<const SongDifficultyButton *>(elements[i]);
-            const auto *collectionButtonPointer = dynamic_cast<const CollectionButton *>(elements[i]);
+            const auto *diffButtonPointer = elements[i]->as<const SongDifficultyButton>();
+            const auto *collectionButtonPointer = elements[i]->as<const CollectionButton>();
 
-            auto *button = dynamic_cast<CarouselButton *>(elements[i]);
+            auto *button = elements[i]->as<CarouselButton>();
             const bool isSongDifficultyButtonAndNotIndependent =
                 (diffButtonPointer != nullptr && !diffButtonPointer->isIndependentDiffButton());
 
@@ -152,7 +149,7 @@ void BeatmapCarousel::onKeyDown(KeyboardEvent &key) {
 
                     if(!jumpToNextGroup || collectionButtonPointer == nullptr) {
                         // automatically open collection below and go to bottom child
-                        auto *collectionButton = dynamic_cast<CollectionButton *>(elements[i]);
+                        auto *collectionButton = elements[i]->as<CollectionButton>();
                         if(collectionButton != nullptr) {
                             const auto &children = collectionButton->getChildren();
                             if(children.size() > 0 && !children[children.size() - 1]->isSelected())
@@ -175,18 +172,17 @@ void BeatmapCarousel::onKeyDown(KeyboardEvent &key) {
         const bool jumpToNextGroup = keyboard->isShiftDown();
 
         // get bottom selection
-        sSz selectedIndex = -1;
-        for(size_t i = 0; i < elements.size(); i++) {
-            const auto *button = dynamic_cast<const CarouselButton *>(elements[i]);
-            if(button != nullptr && button->isSelected()) selectedIndex = i;
+        int selectedIndex = -1;
+        for(int i = 0; i < elements.size(); i++) {
+            if(elements[i]->isSelected()) selectedIndex = i;
         }
 
         if(selectedIndex > -1) {
             for(size_t i = selectedIndex; i < elements.size(); i++) {
-                const auto *diffButtonPointer = dynamic_cast<const SongDifficultyButton *>(elements[i]);
-                const auto *collectionButtonPointer = dynamic_cast<const CollectionButton *>(elements[i]);
+                const auto *diffButtonPointer = elements[i]->as<const SongDifficultyButton>();
+                const auto *collectionButtonPointer = elements[i]->as<const CollectionButton>();
 
-                auto *button = dynamic_cast<CarouselButton *>(elements[i]);
+                auto *button = elements[i]->as<CarouselButton>();
                 const bool isSongDifficultyButtonAndNotIndependent =
                     (diffButtonPointer != nullptr && !diffButtonPointer->isIndependentDiffButton());
 
@@ -206,9 +202,9 @@ void BeatmapCarousel::onKeyDown(KeyboardEvent &key) {
     // NOTE: only closing works atm (no "focus" state on buttons yet)
     if((key == KEY_ENTER || key == KEY_NUMPAD_ENTER) && keyboard->isShiftDown()) {
         for(auto element : elements) {
-            const auto *collectionButtonPointer = dynamic_cast<const CollectionButton *>(element);
+            const auto *collectionButtonPointer = element->as<const CollectionButton>();
 
-            auto *button = dynamic_cast<CarouselButton *>(element);
+            auto *button = element->as<CarouselButton>();
 
             if(collectionButtonPointer != nullptr && button != nullptr && button->isSelected()) {
                 button->select();  // deselect

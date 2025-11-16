@@ -76,8 +76,8 @@ void SongButton::draw() {
         // use the bottom child (hardest diff, assuming default sorting, and respecting the current search matches)
         for(int i = this->children.size() - 1; i >= 0; i--) {
             // NOTE: if no search is active, then all search matches return true by default
-            if(this->children[i]->isSearchMatch()) {
-                auto representative_beatmap = dynamic_cast<SongButton *>(this->children[i])->getDatabaseBeatmap();
+            if(this->children[i]->isType<SongButton>() && this->children[i]->isSearchMatch()) {
+                auto representative_beatmap = this->children[i]->as<SongButton>()->getDatabaseBeatmap();
 
                 this->sTitle = representative_beatmap->getTitle();
                 this->sArtist = representative_beatmap->getArtist();

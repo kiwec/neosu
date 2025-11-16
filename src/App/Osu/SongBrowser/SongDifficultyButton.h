@@ -7,6 +7,8 @@ class ConVar;
 class SongDifficultyButton final : public SongButton {
     NOCOPY_NOMOVE(SongDifficultyButton)
    public:
+    DEF_BUTTON_TYPE(SongDifficultyButton, SongDifficultyButton_, SongButton)
+   public:
     SongDifficultyButton(SongBrowser *songBrowser, UIContextMenu *contextMenu, float xPos, float yPos, float xSize,
                          float ySize, UString name, DatabaseBeatmap *map, SongButton *parentSongButton);
     ~SongDifficultyButton() override;
