@@ -323,8 +323,8 @@ void HUD::drawCursor(vec2 pos, float alphaMultiplier, bool secondTrail, bool upd
         this->drawCursorTrailInt(this->cursorTrailShader, trail, pos, alphaMultiplier, false);
     }
 
-    const auto &cursor = osu->getSkin()->i_cursor;
-    const float scale = this->getCursorScaleFactor() * (cursor.is2x() ? 0.5f : 1.0f);
+    const auto &cursorImg = osu->getSkin()->i_cursor;
+    const float scale = this->getCursorScaleFactor() / (cursorImg.scale());
     const float animatedScale = scale * (osu->getSkin()->o_cursor_expand ? this->fCursorExpandAnim : 1.0f);
 
     // draw cursor
@@ -335,13 +335,13 @@ void HUD::drawCursor(vec2 pos, float alphaMultiplier, bool secondTrail, bool upd
         g->scale(animatedScale * cv::cursor_scale.getFloat(), animatedScale * cv::cursor_scale.getFloat());
 
         if(!osu->getSkin()->o_cursor_centered)
-            g->translate((cursor->getWidth() / 2.0f) * animatedScale * cv::cursor_scale.getFloat(),
-                         (cursor->getHeight() / 2.0f) * animatedScale * cv::cursor_scale.getFloat());
+            g->translate((cursorImg->getWidth() / 2.0f) * animatedScale * cv::cursor_scale.getFloat(),
+                         (cursorImg->getHeight() / 2.0f) * animatedScale * cv::cursor_scale.getFloat());
 
         if(osu->getSkin()->o_cursor_rotate) g->rotate(fmod(engine->getTime() * 37.0f, 360.0f));
 
         g->translate(pos.x, pos.y);
-        g->drawImage(cursor);
+        g->drawImage(cursorImg);
     }
     g->popTransform();
 
@@ -491,11 +491,11 @@ void HUD::drawCursorRipples() {
 
     // allow overscale/underscale as usual
     // this does additionally scale with the resolution (which osu doesn't do for some reason for cursor ripples)
-    const float normalized2xScale = (cursorRipple.is2x() ? 0.5f : 1.0f);
+    const float normalized2xScale = cursorRipple.scale();
     const float imageScale = Osu::getImageScale(vec2(520.0f, 520.0f), 233.0f);
 
-    const float normalizedWidth = cursorRipple->getWidth() * normalized2xScale * imageScale;
-    const float normalizedHeight = cursorRipple->getHeight() * normalized2xScale * imageScale;
+    const float normalizedWidth = cursorRipple->getWidth() / normalized2xScale * imageScale;
+    const float normalizedHeight = cursorRipple->getHeight() / normalized2xScale * imageScale;
 
     const float duration = std::max(cv::cursor_ripple_duration.getFloat(), 0.0001f);
     const float fadeDuration = std::max(
@@ -790,7 +790,7 @@ void HUD::drawComboOrScoreDigits(u64 number, float scale, bool drawLeadingZeroes
         divisor /= 10;
 
         const auto &img = images[digit];
-        const float multiplier = img.is2x() ? 2.f : 1.f;
+        const float multiplier = img.scale();
         auto width = static_cast<float>(img->getWidth());
 
         g->translate(width * 0.5f * scale, 0);
@@ -877,10 +877,10 @@ void HUD::drawScore(u64 score) {
     g->pushTransform();
     {
         g->scale(scale, scale);
-        g->translate(osu->getVirtScreenWidth() - osu->getSkin()->i_scores[0]->getWidth() * scale * numDigits +
-                         osu->getSkin()->score_overlap_amt * (osu->getSkin()->i_scores[0].is2x() ? 2 : 1) * scale *
-                             (numDigits - 1),
-                     osu->getSkin()->i_scores[0]->getHeight() * scale / 2);
+        g->translate(
+            osu->getVirtScreenWidth() - osu->getSkin()->i_scores[0]->getWidth() * scale * numDigits +
+                osu->getSkin()->score_overlap_amt * (osu->getSkin()->i_scores[0].scale()) * scale * (numDigits - 1),
+            osu->getSkin()->i_scores[0]->getHeight() * scale / 2);
         this->drawScoreNumber(score, scale, false);
     }
     g->popTransform();
@@ -993,7 +993,7 @@ void HUD::drawAccuracySimple(float accuracy, float scale) {
             g->translate(osu->getSkin()->i_score_dot->getWidth() * 0.5f * scale, 0);
             g->drawImage(osu->getSkin()->i_score_dot);
             g->translate(osu->getSkin()->i_score_dot->getWidth() * 0.5f * scale, 0);
-            g->translate(-osu->getSkin()->score_overlap_amt * (osu->getSkin()->i_scores[0].is2x() ? 2 : 1) * scale, 0);
+            g->translate(-osu->getSkin()->score_overlap_amt * (osu->getSkin()->i_scores[0].scale()) * scale, 0);
         }
 
         this->drawScoreNumber(accuracyFrac, scale, true);
@@ -1028,7 +1028,7 @@ void HUD::drawAccuracy(float accuracy) {
             (osu->getSkin()->i_score_dot != MISSING_TEXTURE ? osu->getSkin()->i_score_dot->getWidth() : 0) * scale +
             (osu->getSkin()->i_score_percent != MISSING_TEXTURE ? osu->getSkin()->i_score_percent->getWidth() : 0) *
                 scale -
-            osu->getSkin()->score_overlap_amt * (osu->getSkin()->i_scores[0].is2x() ? 2 : 1) * scale * (numDigits + 1);
+            osu->getSkin()->score_overlap_amt * (osu->getSkin()->i_scores[0].scale()) * scale * (numDigits + 1);
 
         this->fAccuracyXOffset = osu->getVirtScreenWidth() - xOffset - offset;
         this->fAccuracyYOffset = (cv::draw_score.getBool() ? this->fScoreHeight : 0.0f) +
@@ -1045,7 +1045,7 @@ void HUD::drawAccuracy(float accuracy) {
             g->translate(osu->getSkin()->i_score_dot->getWidth() * 0.5f * scale, 0);
             g->drawImage(osu->getSkin()->i_score_dot);
             g->translate(osu->getSkin()->i_score_dot->getWidth() * 0.5f * scale, 0);
-            g->translate(-osu->getSkin()->score_overlap_amt * (osu->getSkin()->i_scores[0].is2x() ? 2 : 1) * scale, 0);
+            g->translate(-osu->getSkin()->score_overlap_amt * (osu->getSkin()->i_scores[0].scale()) * scale, 0);
         }
 
         this->drawScoreNumber(accuracyFrac, scale, true);
@@ -2240,9 +2240,7 @@ float HUD::getCursorScaleFactor() {
     return ((float)osu->getVirtScreenHeight() / spriteRes) * mapScale;
 }
 
-float HUD::getCursorTrailScaleFactor() {
-    return this->getCursorScaleFactor() * (osu->getSkin()->i_cursor_trail.is2x() ? 0.5f : 1.0f);
-}
+float HUD::getCursorTrailScaleFactor() { return this->getCursorScaleFactor() / osu->getSkin()->i_cursor_trail.scale(); }
 
 float HUD::getScoreScale() {
     return osu->getImageScale(osu->getSkin()->i_scores[0], 13 * 1.5f) * cv::hud_scale.getFloat() *

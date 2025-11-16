@@ -31,18 +31,21 @@
 #define NOT_LOOPING false
 #define LOOPING true
 
-bool Skin::BasicSkinImage::is2x() const {
-    if(unlikely(!this->checked_2x)) {
-        this->checked_2x = true;
+float Skin::BasicSkinImage::scale() const {
+    if(unlikely(this->scale_mul == -1)) {
+        this->scale_mul = 1;
         std::string_view path;
         if(this->img && this->img != MISSING_TEXTURE &&
            (path = this->img->getFilePath()).length() > 7 /* @2x.png == 7 */) {
             path = path.substr(path.length() - 7);
-            this->file_2x = path.contains("@2x");
+
+            if(path.contains("@2x")) {
+                this->scale_mul = 2;
+            }
         }
     }
 
-    return this->file_2x;
+    return this->scale_mul;
 }
 
 bool Skin::unpack(const char *filepath) {

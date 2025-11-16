@@ -536,7 +536,7 @@ void Circle::drawCircle(const Skin *skin, vec2 pos, float hitcircleDiameter, flo
     /// overrideHDApproachCircle); // they are now drawn separately in draw2()
 
     // circle
-    const float circleImageScale = hitcircleDiameter / (128.0f * (skin->i_hitcircle.is2x() ? 2.0f : 1.0f));
+    const float circleImageScale = hitcircleDiameter / (128.0f * (skin->i_hitcircle.scale()));
     drawHitCircle(skin->i_hitcircle, pos, comboColor, circleImageScale, alpha);
 
     // overlay
@@ -556,7 +556,7 @@ void Circle::drawCircle(const Skin *skin, vec2 pos, float hitcircleDiameter, Col
     // this function is only used by the target practice heatmap
 
     // circle
-    const float circleImageScale = hitcircleDiameter / (128.0f * (skin->i_hitcircle.is2x() ? 2.0f : 1.0f));
+    const float circleImageScale = hitcircleDiameter / (128.0f * (skin->i_hitcircle.scale()));
     drawHitCircle(skin->i_hitcircle, pos, color, circleImageScale, alpha);
 
     // overlay
@@ -593,7 +593,7 @@ void Circle::drawSliderStartCircle(const Skin *skin, vec2 pos, float hitcircleDi
                                      colorRGBMultiplier * cv::circle_color_saturation.getFloat());
 
     // circle
-    const float circleImageScale = hitcircleDiameter / (128.0f * (skin->i_slider_start_circle.is2x() ? 2.0f : 1.0f));
+    const float circleImageScale = hitcircleDiameter / (128.0f * (skin->i_slider_start_circle.scale()));
     drawHitCircle(skin->i_slider_start_circle, pos, comboColor, circleImageScale, alpha);
 
     // overlay
@@ -644,7 +644,7 @@ void Circle::drawSliderEndCircle(const Skin *skin, vec2 pos, float hitcircleDiam
                                      colorRGBMultiplier * cv::circle_color_saturation.getFloat());
 
     // circle
-    const float circleImageScale = hitcircleDiameter / (128.0f * (skin->i_slider_end_circle.is2x() ? 2.0f : 1.0f));
+    const float circleImageScale = hitcircleDiameter / (128.0f * (skin->i_slider_end_circle.scale()));
     drawHitCircle(skin->i_slider_end_circle, pos, comboColor, circleImageScale, alpha);
 
     // overlay
@@ -661,7 +661,7 @@ void Circle::drawApproachCircle(const Skin *skin, vec2 pos, Color comboColor, fl
     if((!modHD || overrideHDApproachCircle) && cv::draw_approach_circles.getBool() && !cv::mod_mafham.getBool()) {
         if(approachScale > 1.0f) {
             const float approachCircleImageScale =
-                hitcircleDiameter / (128.0f * (skin->i_approachcircle.is2x() ? 2.0f : 1.0f));
+                hitcircleDiameter / (128.0f * (skin->i_approachcircle.scale()));
 
             g->setColor(comboColor);
 
@@ -875,7 +875,7 @@ void Circle::draw2() {
     // (https://github.com/McKay42/McOsu/issues/165)
     if(cv::bug_flicker_log.getBool()) {
         const float approachCircleImageScale =
-            this->pf->fHitcircleDiameter / (128.0f * (this->pf->getSkin()->i_approachcircle.is2x() ? 2.0f : 1.0f));
+            this->pf->fHitcircleDiameter / (128.0f * (this->pf->getSkin()->i_approachcircle.scale()));
         debugLog("click_time = {:d}, aScale = {:f}, iScale = {:f}", click_time, this->fApproachScale,
                  approachCircleImageScale);
     }
@@ -1151,7 +1151,7 @@ void Slider::draw() {
         Color tickColor = 0xffffffff;
         tickColor = Colors::scale(tickColor, this->fHittableDimRGBColorMultiplierPercent);
         const float tickImageScale =
-            (this->pf->fHitcircleDiameter / (16.0f * (skin->i_slider_score_point.is2x() ? 2.0f : 1.0f))) * 0.125f;
+            (this->pf->fHitcircleDiameter / (16.0f * (skin->i_slider_score_point.scale()))) * 0.125f;
         for(auto &tick : this->ticks) {
             if(tick.finished || tick.percent > sliderSnake) continue;
 
@@ -1233,7 +1233,7 @@ void Slider::draw() {
                     const float osuCoordScaleMultiplier =
                         this->pf->fHitcircleDiameter / this->pf->fRawHitcircleDiameter;
                     float reverseArrowImageScale =
-                        (this->pf->fRawHitcircleDiameter / (128.0f * (skin->i_reversearrow.is2x() ? 2.0f : 1.0f))) *
+                        (this->pf->fRawHitcircleDiameter / (128.0f * (skin->i_reversearrow.scale()))) *
                         osuCoordScaleMultiplier;
 
                     reverseArrowImageScale *= 1.0f + pulse * 0.30f;
@@ -1262,7 +1262,7 @@ void Slider::draw() {
                     const float osuCoordScaleMultiplier =
                         this->pf->fHitcircleDiameter / this->pf->fRawHitcircleDiameter;
                     float reverseArrowImageScale =
-                        (this->pf->fRawHitcircleDiameter / (128.0f * (skin->i_reversearrow.is2x() ? 2.0f : 1.0f))) *
+                        (this->pf->fRawHitcircleDiameter / (128.0f * (skin->i_reversearrow.scale()))) *
                         osuCoordScaleMultiplier;
 
                     reverseArrowImageScale *= 1.0f + pulse * 0.30f;
@@ -2466,7 +2466,7 @@ void Spinner::draw() {
         // draw background
         g->pushTransform();
         {
-            f32 backgroundScale = spinnerScale / (skin->i_spinner_bg.is2x() ? 2.f : 1.f);
+            f32 backgroundScale = spinnerScale / (skin->i_spinner_bg.scale());
             g->setColor(Color(skin->c_spinner_bg).setA(this->fAlphaWithoutHidden * alphaMultiplier));
             g->scale(backgroundScale, backgroundScale);
             g->translate(center.x, center.y);
@@ -2476,11 +2476,11 @@ void Spinner::draw() {
 
         // draw spinner metre
         if(skin->i_spinner_metre != MISSING_TEXTURE) {
-            f32 metreScale = spinnerScale / (skin->i_spinner_metre.is2x() ? 2.f : 1.f);
+            f32 metreScale = spinnerScale / (skin->i_spinner_metre.scale());
             g->setColor(Color(0xffffffff).setA(this->fAlphaWithoutHidden * alphaMultiplier));
 
-            f32 metreWidth = (f32)skin->i_spinner_metre->getWidth() / (skin->i_spinner_metre.is2x() ? 2.f : 1.f);
-            f32 metreHeight = (f32)skin->i_spinner_metre->getHeight() / (skin->i_spinner_metre.is2x() ? 2.f : 1.f);
+            f32 metreWidth = (f32)skin->i_spinner_metre->getWidth() / (skin->i_spinner_metre.scale());
+            f32 metreHeight = (f32)skin->i_spinner_metre->getHeight() / (skin->i_spinner_metre.scale());
 
             g->pushTransform();
             {
@@ -2498,7 +2498,7 @@ void Spinner::draw() {
 
         // draw spinner circle
         if(skin->i_spinner_circle != MISSING_TEXTURE) {
-            const f32 spinnerCircleScale = spinnerScale / (skin->i_spinner_circle.is2x() ? 2.0f : 1.0f);
+            const f32 spinnerCircleScale = spinnerScale / (skin->i_spinner_circle.scale());
             g->setColor(Color(0xffffffff).setA(this->fAlphaWithoutHidden * alphaMultiplier));
 
             g->pushTransform();
@@ -2514,7 +2514,7 @@ void Spinner::draw() {
         // draw approach circle
         if(!(flags::has<LegacyFlags::Hidden>(this->pi->getModsLegacy())) && this->fPercent > 0.0f) {
             const f32 spinnerApproachCircleImageScale =
-                (spinnerScale * 2) / (skin->i_spinner_approach_circle.is2x() ? 2.0f : 1.0f);
+                (spinnerScale * 2) / (skin->i_spinner_approach_circle.scale());
             g->setColor(Color(skin->c_spinner_approach_circle).setA(this->fAlphaWithoutHidden * alphaMultiplier));
 
             g->pushTransform();
@@ -2530,7 +2530,7 @@ void Spinner::draw() {
     {
         // bottom
         if(skin->i_spinner_bottom != MISSING_TEXTURE) {
-            const f32 spinnerBottomImageScale = spinnerScale / (skin->i_spinner_bottom.is2x() ? 2.0f : 1.0f);
+            const f32 spinnerBottomImageScale = spinnerScale / (skin->i_spinner_bottom.scale());
             g->setColor(Color(0xffffffff).setA(this->fAlphaWithoutHidden * alphaMultiplier));
 
             g->pushTransform();
@@ -2545,7 +2545,7 @@ void Spinner::draw() {
 
         // top
         if(skin->i_spinner_top != MISSING_TEXTURE) {
-            const f32 spinnerTopImageScale = spinnerScale / (skin->i_spinner_top.is2x() ? 2.0f : 1.0f);
+            const f32 spinnerTopImageScale = spinnerScale / (skin->i_spinner_top.scale());
             g->setColor(Color(0xffffffff).setA(this->fAlphaWithoutHidden * alphaMultiplier));
 
             g->pushTransform();
@@ -2560,7 +2560,7 @@ void Spinner::draw() {
 
         // middle
         if(skin->i_spinner_middle2 != MISSING_TEXTURE) {
-            const f32 spinnerMiddle2ImageScale = spinnerScale / (skin->i_spinner_middle2.is2x() ? 2.0f : 1.0f);
+            const f32 spinnerMiddle2ImageScale = spinnerScale / (skin->i_spinner_middle2.scale());
             g->setColor(Color(0xffffffff).setA(this->fAlphaWithoutHidden * alphaMultiplier));
 
             g->pushTransform();
@@ -2573,7 +2573,7 @@ void Spinner::draw() {
             g->popTransform();
         }
         if(skin->i_spinner_middle != MISSING_TEXTURE) {
-            const f32 spinnerMiddleImageScale = spinnerScale / (skin->i_spinner_middle.is2x() ? 2.0f : 1.0f);
+            const f32 spinnerMiddleImageScale = spinnerScale / (skin->i_spinner_middle.scale());
             g->setColor(
                 argb(this->fAlphaWithoutHidden * alphaMultiplier, 1.f, (1.f * this->fPercent), (1.f * this->fPercent)));
             g->pushTransform();
@@ -2590,7 +2590,7 @@ void Spinner::draw() {
         // TODO: only use when spinner-circle or spinner-top are skinned
         if(!(flags::has<LegacyFlags::Hidden>(this->pi->getModsLegacy())) && this->fPercent > 0.0f) {
             const f32 spinnerApproachCircleImageScale =
-                (spinnerScale * 2) / (skin->i_spinner_approach_circle.is2x() ? 2.0f : 1.0f);
+                (spinnerScale * 2) / (skin->i_spinner_approach_circle.scale());
 
             // fun fact, peppy removed it: https://osu.ppy.sh/community/forums/topics/100765
             g->setColor(Color(skin->c_spinner_approach_circle).setA(this->fAlphaWithoutHidden * alphaMultiplier));
@@ -2608,7 +2608,7 @@ void Spinner::draw() {
 
     // "CLEAR!"
     if(this->fRatio >= 1.0f) {
-        const f32 spinnerClearImageScale = spinnerScale / (skin->i_spinner_clear.is2x() ? 2.0f : 1.0f);
+        const f32 spinnerClearImageScale = spinnerScale / (skin->i_spinner_clear.scale());
         g->setColor(Color(0xffffffff).setA(alphaMultiplier));
 
         g->pushTransform();

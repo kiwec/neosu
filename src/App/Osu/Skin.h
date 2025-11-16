@@ -28,7 +28,8 @@ struct Skin final {
         BasicSkinImage(Image *img) : img(img) {}
 
         Image *img{MISSING_TEXTURE};
-        [[nodiscard]] bool is2x() const;
+
+        [[nodiscard]] float scale() const;
 
         inline Image *operator->() const noexcept { return img; }
         inline operator Image *() const noexcept { return img; }
@@ -36,8 +37,7 @@ struct Skin final {
         inline bool operator==(Image *other) const noexcept { return img == other; }
 
        private:
-        mutable bool file_2x{false};
-        mutable bool checked_2x{false};
+        mutable i8 scale_mul{-1};
     };
 
     // custom

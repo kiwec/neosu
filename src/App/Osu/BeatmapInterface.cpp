@@ -1914,7 +1914,7 @@ void BeatmapInterface::drawSmoke() {
         }
     }
 
-    f32 scale = osu->getHUD()->getCursorScaleFactor() * (this->getSkin()->i_cursor_smoke.is2x() ? 0.5f : 1.0f);
+    f32 scale = osu->getHUD()->getCursorScaleFactor() / this->getSkin()->i_cursor_smoke.scale();
     scale *= cv::cursor_scale.getFloat();
     scale *= cv::smoke_scale.getFloat();
 
@@ -4113,7 +4113,7 @@ void BeatmapInterface::updateHitobjectMetrics() {
     this->fHitcircleDiameter = GameRules::getRawHitCircleDiameter(this->getCS()) * GameRules::getHitCircleXMultiplier();
 
     const f32 osuCoordScaleMultiplier = (this->fHitcircleDiameter / this->fRawHitcircleDiameter);
-    this->fNumberScale = (this->fRawHitcircleDiameter / (160.0f * (skin->i_defaults[1].is2x() ? 2.0f : 1.0f))) *
+    this->fNumberScale = (this->fRawHitcircleDiameter / (160.0f * (skin->i_defaults[1].scale()))) *
                          osuCoordScaleMultiplier * cv::number_scale_multiplier.getFloat();
     this->fHitcircleOverlapScale =
         (this->fRawHitcircleDiameter / (160.0f)) * osuCoordScaleMultiplier * cv::number_scale_multiplier.getFloat();

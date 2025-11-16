@@ -149,7 +149,7 @@ void CarouselButton::updateLayoutEx() {
 
     Image *menuButtonBackground = osu->getSkin()->i_menu_button_bg;
     {
-        const vec2 minimumSize = vec2(699.0f, 103.0f) * (osu->getSkin()->i_menu_button_bg.is2x() ? 2.0f : 1.0f);
+        const vec2 minimumSize = vec2(699.0f, 103.0f) * (osu->getSkin()->i_menu_button_bg.scale());
         const float minimumScale = Osu::getImageScaleToFitResolution(menuButtonBackground, minimumSize);
         this->fScale = Osu::getImageScale(menuButtonBackground->getSize() * minimumScale, 64.0f) * uiScale;
     }
@@ -309,7 +309,7 @@ void CarouselButton::setTargetRelPosY(float targetRelPosY) {
 }
 
 vec2 CarouselButton::getActualOffset() const {
-    const float hd2xMultiplier = osu->getSkin()->i_menu_button_bg.is2x() ? 2.0f : 1.0f;
+    const float hd2xMultiplier = osu->getSkin()->i_menu_button_bg.scale();
     const float correctedMarginPixelsY =
         (2 * marginPixelsY + osu->getSkin()->i_menu_button_bg->getHeight() / hd2xMultiplier - 103.0f) / 2.0f;
     return vec2((int)(marginPixelsX * this->fScale * hd2xMultiplier),

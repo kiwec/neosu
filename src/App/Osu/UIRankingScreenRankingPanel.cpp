@@ -91,7 +91,7 @@ void UIRankingScreenRankingPanel::draw() {
     g->popTransform();
 
     // draw maxcombo label
-    vec2 hardcodedOsuRankingMaxComboImageSize = vec2(162, 50) * (osu->getSkin()->i_ranking_max_combo.is2x() ? 2.0f : 1.0f);
+    vec2 hardcodedOsuRankingMaxComboImageSize = vec2(162, 50) * (osu->getSkin()->i_ranking_max_combo.scale());
     scale = osu->getImageScale(hardcodedOsuRankingMaxComboImageSize, 32.0f) * uiScale;
     g->pushTransform();
     {
@@ -116,7 +116,7 @@ void UIRankingScreenRankingPanel::draw() {
     g->popTransform();
 
     // draw accuracy label
-    vec2 hardcodedOsuRankingAccuracyImageSize = vec2(192, 58) * (osu->getSkin()->i_ranking_accuracy.is2x() ? 2.0f : 1.0f);
+    vec2 hardcodedOsuRankingAccuracyImageSize = vec2(192, 58) * (osu->getSkin()->i_ranking_accuracy.scale());
     scale = osu->getImageScale(hardcodedOsuRankingAccuracyImageSize, 36.0f) * uiScale;
     g->pushTransform();
     {

@@ -550,7 +550,7 @@ void RankingScreen::updateLayout() {
 
     // NOTE: no uiScale for rankingPanel and rankingGrade, doesn't really work due to legacy layout expectations
     const vec2 hardcodedOsuRankingPanelImageSize =
-        vec2(622, 505) * (osu->getSkin()->i_ranking_panel.is2x() ? 2.0f : 1.0f);
+        vec2(622, 505) * (osu->getSkin()->i_ranking_panel.scale());
     this->rankingPanel->setImage(osu->getSkin()->i_ranking_panel);
     this->rankingPanel->setScale(Osu::getImageScale(hardcodedOsuRankingPanelImageSize, 317.0f),
                                  Osu::getImageScale(hardcodedOsuRankingPanelImageSize, 317.0f));
@@ -582,35 +582,35 @@ void RankingScreen::setGrade(FinishedScore::Grade grade) {
     vec2 hardcodedOsuRankingGradeImageSize = vec2(369, 422);
     switch(grade) {
         case FinishedScore::Grade::XH:
-            hardcodedOsuRankingGradeImageSize *= (osu->getSkin()->i_ranking_xh.is2x() ? 2.0f : 1.0f);
+            hardcodedOsuRankingGradeImageSize *= (osu->getSkin()->i_ranking_xh.scale());
             this->rankingGrade->setImage(osu->getSkin()->i_ranking_xh);
             break;
         case FinishedScore::Grade::SH:
-            hardcodedOsuRankingGradeImageSize *= (osu->getSkin()->i_ranking_sh.is2x() ? 2.0f : 1.0f);
+            hardcodedOsuRankingGradeImageSize *= (osu->getSkin()->i_ranking_sh.scale());
             this->rankingGrade->setImage(osu->getSkin()->i_ranking_sh);
             break;
         case FinishedScore::Grade::X:
-            hardcodedOsuRankingGradeImageSize *= (osu->getSkin()->i_ranking_x.is2x() ? 2.0f : 1.0f);
+            hardcodedOsuRankingGradeImageSize *= (osu->getSkin()->i_ranking_x.scale());
             this->rankingGrade->setImage(osu->getSkin()->i_ranking_x);
             break;
         case FinishedScore::Grade::S:
-            hardcodedOsuRankingGradeImageSize *= (osu->getSkin()->i_ranking_s.is2x() ? 2.0f : 1.0f);
+            hardcodedOsuRankingGradeImageSize *= (osu->getSkin()->i_ranking_s.scale());
             this->rankingGrade->setImage(osu->getSkin()->i_ranking_s);
             break;
         case FinishedScore::Grade::A:
-            hardcodedOsuRankingGradeImageSize *= (osu->getSkin()->i_ranking_a.is2x() ? 2.0f : 1.0f);
+            hardcodedOsuRankingGradeImageSize *= (osu->getSkin()->i_ranking_a.scale());
             this->rankingGrade->setImage(osu->getSkin()->i_ranking_a);
             break;
         case FinishedScore::Grade::B:
-            hardcodedOsuRankingGradeImageSize *= (osu->getSkin()->i_ranking_b.is2x() ? 2.0f : 1.0f);
+            hardcodedOsuRankingGradeImageSize *= (osu->getSkin()->i_ranking_b.scale());
             this->rankingGrade->setImage(osu->getSkin()->i_ranking_b);
             break;
         case FinishedScore::Grade::C:
-            hardcodedOsuRankingGradeImageSize *= (osu->getSkin()->i_ranking_c.is2x() ? 2.0f : 1.0f);
+            hardcodedOsuRankingGradeImageSize *= (osu->getSkin()->i_ranking_c.scale());
             this->rankingGrade->setImage(osu->getSkin()->i_ranking_c);
             break;
         default:
-            hardcodedOsuRankingGradeImageSize *= (osu->getSkin()->i_ranking_d.is2x() ? 2.0f : 1.0f);
+            hardcodedOsuRankingGradeImageSize *= (osu->getSkin()->i_ranking_d.scale());
             this->rankingGrade->setImage(osu->getSkin()->i_ranking_d);
             break;
     }
