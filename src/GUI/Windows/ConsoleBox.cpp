@@ -652,8 +652,10 @@ void ConsoleBox::log(const UString &text, Color textColor) {
         this->log_entries.reserve(this->log_entries.size() + stringVec.size());
         for(const auto &entry : stringVec) {
             auto trimmed = entry.trim();
-            if(trimmed.isEmpty()) continue;
-            this->log_entries.push_back({entry, textColor});
+            if(trimmed.isEmpty()) {
+                continue;
+            }
+            this->log_entries.push_back({trimmed, textColor});
         }
     } else {
         this->log_entries.push_back({text, textColor});

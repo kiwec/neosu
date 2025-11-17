@@ -11,94 +11,90 @@
 #include <algorithm>
 #include <utility>
 
+namespace Collections {
+
 namespace {  // static namespace
-bool collections_loaded = false;
-}
+bool collections_loaded{false};
+std::vector<Collection> s_collections;
 
-std::vector<Collection*> collections;
+}  // namespace
 
-void Collection::delete_collection() {
-    for(const auto& map : this->maps) {
-        this->remove_map(map);
-    }
+std::vector<Collection>& get_loaded() { return s_collections; }
+
+bool delete_collection(std::string_view collection_name) {
+    if(collection_name.empty() || s_collections.empty()) return false;
+
+    const auto& to_delete =
+        std::ranges::find(s_collections, collection_name, [](const auto& col) -> std::string_view { return col.name; });
+
+    if(to_delete == s_collections.end()) return false;
+
+    s_collections.erase(to_delete);
+
+    return true;
 }
 
 void Collection::add_map(const MD5Hash& map_hash) {
-    {
-        auto it = std::ranges::find(this->deleted_maps, map_hash);
-        if(it != this->deleted_maps.end()) {
-            this->deleted_maps.erase(it);
-        }
+    // remove from deleted maps
+    std::erase_if(this->deleted_maps,
+                  [&map_hash](const auto& deleted_hash) -> bool { return map_hash == deleted_hash; });
+
+    // add to neosu maps
+    if(!std::ranges::contains(this->neosu_maps, map_hash)) {
+        this->neosu_maps.push_back(map_hash);
     }
 
-    {
-        auto it = std::ranges::find(this->neosu_maps, map_hash);
-        if(it == this->neosu_maps.end()) {
-            this->neosu_maps.push_back(map_hash);
-        }
-    }
-
-    {
-        auto it = std::ranges::find(this->maps, map_hash);
-        if(it == this->maps.end()) {
-            this->maps.push_back(map_hash);
-        }
+    // add to maps (TODO: what's the difference...?)
+    if(!std::ranges::contains(this->maps, map_hash)) {
+        this->maps.push_back(map_hash);
     }
 }
 
 void Collection::remove_map(const MD5Hash& map_hash) {
-    {
-        auto it = std::ranges::find(this->maps, map_hash);
-        if(it != this->maps.end()) {
-            this->maps.erase(it);
-        }
-    }
+    std::erase_if(this->maps, [&map_hash](const auto& contained_hash) -> bool { return map_hash == contained_hash; });
+    std::erase_if(this->neosu_maps,
+                  [&map_hash](const auto& contained_hash) -> bool { return map_hash == contained_hash; });
 
-    {
-        auto it = std::ranges::find(this->neosu_maps, map_hash);
-        if(it != this->neosu_maps.end()) {
-            this->neosu_maps.erase(it);
-        }
-    }
-
-    {
-        auto it = std::ranges::find(this->peppy_maps, map_hash);
-        if(it != this->peppy_maps.end()) {
-            this->deleted_maps.push_back(map_hash);
-        }
+    if(std::ranges::contains(this->peppy_maps, map_hash)) {
+        this->deleted_maps.push_back(map_hash);
     }
 }
 
-void Collection::rename_to(std::string_view new_name) {
-    if(new_name.length() < 1) new_name = "Untitled collection";
-    if(this->name == new_name) return;
+bool Collection::rename_to(std::string_view new_name) {
+    if(new_name.empty() || new_name == this->name) return false;
 
-    auto new_collection = get_or_create_collection(new_name);
-
-    for(const auto& map : this->maps) {
-        this->remove_map(map);
-        new_collection->add_map(map);
+    // don't allow renaming to an existing collection name
+    if(std::ranges::contains(s_collections, new_name, [](const auto& col) -> std::string_view { return col.name; })) {
+        debugLog("not renaming {} -> {}, conflicting name", this->name, new_name);
+        return false;
     }
+
+    this->name = new_name;
+
+    return true;
 }
 
-Collection* get_or_create_collection(std::string_view name) {
+Collection& get_or_create_collection(std::string_view name) {
     if(name.length() < 1) name = "Untitled collection";
 
-    for(auto collection : collections) {
-        if(collection->name == name) {
-            return collection;
-        }
+    // get
+    const auto& it =
+        std::ranges::find(s_collections, name, [](const auto& col) -> std::string_view { return col.name; });
+    if(it != s_collections.end()) {
+        return *it;
     }
 
-    auto collection = new Collection();
-    collection->name = name;
-    collections.push_back(collection);
+    // create
+    Collection collection{};
+    collection.name = name;
 
-    return collection;
+    auto& ret = s_collections.emplace_back(std::move(collection));
+
+    return ret;
 }
 
 // Should only be called from db loader thread!
-bool load_peppy_collections(std::string_view peppy_collections_path) {
+bool load_peppy(std::string_view peppy_collections_path) {
     ByteBufferedFile::Reader peppy_collections(peppy_collections_path);
     if(peppy_collections.total_size == 0) return false;
     if(!cv::collections_legacy_enabled.getBool()) {
@@ -121,14 +117,14 @@ bool load_peppy_collections(std::string_view peppy_collections_path) {
         u32 nb_maps = peppy_collections.read<u32>();
         total_maps += nb_maps;
 
-        auto collection = get_or_create_collection(name);
-        collection->maps.reserve(nb_maps);
-        collection->peppy_maps.reserve(nb_maps);
+        auto& collection = get_or_create_collection(name);
+        collection.maps.reserve(nb_maps);
+        collection.peppy_maps.reserve(nb_maps);
 
-        for(int m = 0; m < nb_maps; m++) {
+        for(uSz m = 0; m < nb_maps; m++) {
             const auto& map_hash = peppy_collections.read_hash();
-            collection->maps.push_back(map_hash);
-            collection->peppy_maps.push_back(map_hash);
+            collection.maps.push_back(map_hash);
+            collection.peppy_maps.push_back(map_hash);
         }
 
         u32 progress_bytes = db->bytes_processed + peppy_collections.total_pos;
@@ -142,7 +138,7 @@ bool load_peppy_collections(std::string_view peppy_collections_path) {
 }
 
 // Should only be called from db loader thread!
-bool load_mcneosu_collections(std::string_view neosu_collections_path) {
+bool load_mcneosu(std::string_view neosu_collections_path) {
     ByteBufferedFile::Reader neosu_collections(neosu_collections_path);
     if(neosu_collections.total_size == 0) return false;
 
@@ -159,39 +155,36 @@ bool load_mcneosu_collections(std::string_view neosu_collections_path) {
 
     for(u32 c = 0; std::cmp_less(c, nb_collections); c++) {
         auto name = neosu_collections.read_string();
-        auto collection = get_or_create_collection(name);
+        auto& collection = get_or_create_collection(name);
 
         u32 nb_deleted_maps = 0;
         if(version >= 20240429) {
             nb_deleted_maps = neosu_collections.read<u32>();
         }
 
-        collection->deleted_maps.reserve(nb_deleted_maps);
-        for(int d = 0; std::cmp_less(d, nb_deleted_maps); d++) {
+        collection.deleted_maps.reserve(nb_deleted_maps);
+        for(uSz d = 0; d < nb_deleted_maps; d++) {
             const auto& map_hash = neosu_collections.read_hash();
 
-            auto it = std::ranges::find(collection->maps, map_hash);
-            if(it != collection->maps.end()) {
-                collection->maps.erase(it);
-            }
+            std::erase_if(collection.maps,
+                          [&map_hash](const auto& contained_hash) -> bool { return map_hash == contained_hash; });
 
-            collection->deleted_maps.push_back(map_hash);
+            collection.deleted_maps.push_back(map_hash);
         }
 
         u32 nb_maps = neosu_collections.read<u32>();
         total_maps += nb_maps;
-        collection->maps.reserve(collection->maps.size() + nb_maps);
-        collection->neosu_maps.reserve(nb_maps);
+        collection.maps.reserve(collection.maps.size() + nb_maps);
+        collection.neosu_maps.reserve(nb_maps);
 
         for(int m = 0; std::cmp_less(m, nb_maps); m++) {
             const auto& map_hash = neosu_collections.read_hash();
 
-            auto it = std::ranges::find(collection->maps, map_hash);
-            if(it == collection->maps.end()) {
-                collection->maps.push_back(map_hash);
+            if(!std::ranges::contains(collection.maps, map_hash)) {
+                collection.maps.push_back(map_hash);
             }
 
-            collection->neosu_maps.push_back(map_hash);
+            collection.neosu_maps.push_back(map_hash);
         }
 
         u32 progress_bytes = db->bytes_processed + neosu_collections.total_pos;
@@ -205,29 +198,26 @@ bool load_mcneosu_collections(std::string_view neosu_collections_path) {
 }
 
 // Should only be called from db loader thread!
-bool load_collections() {
+bool load_all() {
     const double startTime = Timing::getTimeReal();
 
-    unload_collections();
+    unload_all();
 
-    const auto& peppy_collections = db->database_files[Database::DatabaseType::STABLE_COLLECTIONS];
-    load_peppy_collections(peppy_collections);
+    const auto& peppy_path = db->database_files[Database::DatabaseType::STABLE_COLLECTIONS];
+    load_peppy(peppy_path);
 
-    const auto& mcneosu_collections = db->database_files[Database::DatabaseType::MCNEOSU_COLLECTIONS];
-    load_mcneosu_collections(mcneosu_collections);
+    const auto& mcneosu_path = db->database_files[Database::DatabaseType::MCNEOSU_COLLECTIONS];
+    load_mcneosu(mcneosu_path);
 
     debugLog("peppy+neosu collections: loading took {:f} seconds", (Timing::getTimeReal() - startTime));
     collections_loaded = true;
     return true;
 }
 
-void unload_collections() {
+void unload_all() {
     collections_loaded = false;
 
-    for(auto collection : collections) {
-        delete collection;
-    }
-    collections.clear();
+    s_collections.clear();
 }
 
 bool save_collections() {
@@ -249,21 +239,21 @@ bool save_collections() {
 
     db.write<u32>(COLLECTIONS_DB_VERSION);
 
-    u32 nb_collections = collections.size();
+    u32 nb_collections = s_collections.size();
     db.write<u32>(nb_collections);
 
-    for(auto collection : collections) {
-        db.write_string(collection->name.c_str());
+    for(const auto& collection : s_collections) {
+        db.write_string(collection.name);
 
-        u32 nb_deleted = collection->deleted_maps.size();
+        u32 nb_deleted = collection.deleted_maps.size();
         db.write<u32>(nb_deleted);
-        for(const auto& mapmd5 : collection->deleted_maps) {
+        for(const auto& mapmd5 : collection.deleted_maps) {
             db.write_hash(mapmd5);
         }
 
-        u32 nb_neosu = collection->neosu_maps.size();
+        u32 nb_neosu = collection.neosu_maps.size();
         db.write<u32>(nb_neosu);
-        for(const auto& mapmd5 : collection->neosu_maps) {
+        for(const auto& mapmd5 : collection.neosu_maps) {
             db.write_hash(mapmd5);
         }
     }
@@ -271,3 +261,4 @@ bool save_collections() {
     debugLog("collections.db: saving took {:f} seconds", (Timing::getTimeReal() - startTime));
     return true;
 }
+}  // namespace Collections

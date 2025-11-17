@@ -3034,14 +3034,7 @@ void SongBrowser::rebuildAfterGroupOrSortChange(GroupType group, const std::opti
             this->visibleSongButtons.insert(this->visibleSongButtons.end(), groupButtons->begin(), groupButtons->end());
 
             // only sort if switching TO this group/sorting method (not from it)
-            if(groupingChanged && this->curGroup == GroupType::COLLECTIONS) {
-                // collections names are always sorted alphabetically
-                std::ranges::sort(
-                    *groupButtons, [](const char *b1, const char *b2) -> bool { return strcasecmp(b1, b2) < 0; },
-                    [](const CollectionButton *btn) -> const char * { return btn->getCollectionName().c_str(); });
-            }
             if(groupingChanged || sortingChanged) {
-                // sort children only if needed (defer until group is active)
                 for(auto &groupButton : *groupButtons) {
                     auto &children = groupButton->getChildren();
                     if(!children.empty()) {
@@ -3159,20 +3152,20 @@ void SongBrowser::onSongButtonContextMenu(SongButton *songButton, const UString 
         if(id == 1) {
             // add diff to collection
             std::string name = text.toUtf8();
-            auto collection = get_or_create_collection(name);
-            collection->add_map(songButton->getDatabaseBeatmap()->getMD5());
-            save_collections();
+            auto &collection = Collections::get_or_create_collection(name);
+            collection.add_map(songButton->getDatabaseBeatmap()->getMD5());
+            Collections::save_collections();
             updateUIScheduled = true;
         } else if(id == 2) {
             // add set to collection
             std::string name = text.toUtf8();
-            auto collection = get_or_create_collection(name);
+            auto &collection = Collections::get_or_create_collection(name);
             const std::vector<MD5Hash> beatmapSetHashes =
                 CollectionManagementHelper::getBeatmapSetHashesForSongButton(songButton);
             for(const auto &hash : beatmapSetHashes) {
-                collection->add_map(hash);
+                collection.add_map(hash);
             }
-            save_collections();
+            Collections::save_collections();
             updateUIScheduled = true;
         } else if(id == 3) {
             // remove diff from collection
@@ -3188,9 +3181,9 @@ void SongBrowser::onSongButtonContextMenu(SongButton *songButton, const UString 
                 }
             }
 
-            auto collection = get_or_create_collection(collectionName);
-            collection->remove_map(songButton->getDatabaseBeatmap()->getMD5());
-            save_collections();
+            auto &collection = Collections::get_or_create_collection(collectionName);
+            collection.remove_map(songButton->getDatabaseBeatmap()->getMD5());
+            Collections::save_collections();
             updateUIScheduled = true;
         } else if(id == 4) {
             // remove entire set from collection
@@ -3206,34 +3199,34 @@ void SongBrowser::onSongButtonContextMenu(SongButton *songButton, const UString 
                 }
             }
 
-            auto collection = get_or_create_collection(collectionName);
+            auto &collection = Collections::get_or_create_collection(collectionName);
             const std::vector<MD5Hash> beatmapSetHashes =
                 CollectionManagementHelper::getBeatmapSetHashesForSongButton(songButton);
             for(const auto &hash : beatmapSetHashes) {
-                collection->remove_map(hash);
+                collection.remove_map(hash);
             }
-            save_collections();
+            Collections::save_collections();
             updateUIScheduled = true;
         } else if(id == -2 || id == -4) {
             // add beatmap(set) to new collection
             std::string name = text.toUtf8();
-            auto collection = get_or_create_collection(name);
+            auto &collection = Collections::get_or_create_collection(name);
 
             if(id == -2) {
                 // id == -2 means beatmap
-                collection->add_map(songButton->getDatabaseBeatmap()->getMD5());
+                collection.add_map(songButton->getDatabaseBeatmap()->getMD5());
                 updateUIScheduled = true;
             } else if(id == -4) {
                 // id == -4 means beatmapset
                 const std::vector<MD5Hash> beatmapSetHashes =
                     CollectionManagementHelper::getBeatmapSetHashesForSongButton(songButton);
                 for(const auto &hash : beatmapSetHashes) {
-                    collection->add_map(hash);
+                    collection.add_map(hash);
                 }
                 updateUIScheduled = true;
             }
 
-            save_collections();
+            Collections::save_collections();
         }
     }
 
@@ -3262,12 +3255,15 @@ void SongBrowser::onSongButtonContextMenu(SongButton *songButton, const UString 
     }
 }
 
-void SongBrowser::onCollectionButtonContextMenu(CollectionButton * /*collectionButton*/, const UString &text, int id) {
+void SongBrowser::onCollectionButtonContextMenu(CollectionButton *collectionButton, const UString &text, int id) {
     std::string collection_name = text.toUtf8();
 
     if(id == 2) {  // delete collection
         for(size_t i = 0; i < this->collectionButtons.size(); i++) {
-            if(this->collectionButtons[i]->getCollectionName() == collection_name) {
+            if(this->collectionButtons[i]->getCollectionName() == collection_name &&
+               Collections::delete_collection(collection_name)) {
+                Collections::save_collections();
+
                 // delete UI
                 delete this->collectionButtons[i];
                 this->collectionButtons.erase(this->collectionButtons.begin() + i);
@@ -3275,19 +3271,37 @@ void SongBrowser::onCollectionButtonContextMenu(CollectionButton * /*collectionB
                 // reset UI state
                 this->selectionPreviousCollectionButton = nullptr;
 
-                auto collection = get_or_create_collection(collection_name);
-                collection->delete_collection();
-                save_collections();
-
                 // update UI
                 this->rebuildAfterGroupOrSortChange(GroupType::COLLECTIONS);
 
                 break;
             }
         }
-    } else if(id == 3) {  // collection has been renamed
-        // update UI
-        this->onSortChange(cv::songbrowser_sortingtype.getString().c_str());
+    } else if(id == 3) {  // rename collection
+        const std::string &currentButtonName = collectionButton->getCollectionName();
+        if(!currentButtonName.empty()) {
+            auto &existingCollection = Collections::get_or_create_collection(currentButtonName);
+            std::string newName = text.toUtf8();
+
+            if(existingCollection.rename_to(newName)) {
+                Collections::save_collections();
+
+                const auto &it = std::ranges::find(this->collectionButtons, collectionButton);
+                // rename button
+                if(it != this->collectionButtons.end()) {
+                    (*it)->setCollectionName(newName);
+
+                    // resort collection buttons
+                    std::ranges::stable_sort(
+                        this->collectionButtons,
+                        [](const char *s1, const char *s2) -> bool { return strcasecmp(s1, s2) < 0; },
+                        [](const auto &colBtn) -> const char * { return colBtn->getCollectionName().c_str(); });
+                }
+
+                // update UI
+                this->onSortChange(cv::songbrowser_sortingtype.getString().c_str());
+            }
+        }
     }
 }
 
@@ -3421,13 +3435,13 @@ void SongBrowser::recreateCollectionsButtons() {
     Timer t;
     t.start();
 
-    for(auto collection : collections) {
-        if(collection->maps.empty()) continue;
+    for(auto &collection : Collections::get_loaded()) {
+        if(collection.get_maps().empty()) continue;
 
         std::vector<SongButton *> folder;
         std::vector<u32> matched_sets;
 
-        for(auto &map : collection->maps) {
+        for(auto &map : collection.get_maps()) {
             auto it = this->hashToDiffButton.find(map);
             if(it == this->hashToDiffButton.end()) continue;
 
@@ -3441,7 +3455,7 @@ void SongBrowser::recreateCollectionsButtons() {
 
             // filter to only diffs in this collection
             for(SongButton *sbc : songButtonChildren | std::views::filter([&](const auto &child) {
-                                      return std::ranges::contains(collection->maps,
+                                      return std::ranges::contains(collection.get_maps(),
                                                                    child->getDatabaseBeatmap()->getMD5());
                                   })) {
                 matching_diffs.push_back(sbc);
@@ -3467,11 +3481,16 @@ void SongBrowser::recreateCollectionsButtons() {
         }
 
         if(!folder.empty()) {
-            UString uname = collection->name.c_str();
-            this->collectionButtons.push_back(new CollectionButton(
-                this, this->contextMenu, 250, 250 + db->getBeatmapSets().size() * 50, 200, 50, "", uname, folder));
+            this->collectionButtons.push_back(new CollectionButton(this, this->contextMenu, 250,
+                                                                   250 + db->getBeatmapSets().size() * 50, 200, 50, "",
+                                                                   collection.get_name(), folder));
         }
     }
+
+    // sort buttons by name
+    std::ranges::stable_sort(
+        this->collectionButtons, [](const char *s1, const char *s2) -> bool { return strcasecmp(s1, s2) < 0; },
+        [](const auto &colBtn) -> const char * { return colBtn->getCollectionName().c_str(); });
 
     t.update();
     debugLog("recreateCollectionsButtons(): {:f} seconds", t.getElapsedTime());

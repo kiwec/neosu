@@ -6,8 +6,23 @@
 #include <vector>
 
 #define COLLECTIONS_DB_VERSION 20240429
+namespace Collections {
 
-struct Collection {
+class Collection;
+
+std::vector<Collection> &get_loaded();
+
+[[nodiscard]] bool delete_collection(std::string_view collection_name);
+
+Collection &get_or_create_collection(std::string_view name);
+
+bool load_all();
+bool load_peppy(std::string_view peppy_collections_path);
+bool load_mcneosu(std::string_view neosu_collections_path);
+void unload_all();
+bool save_collections();
+
+class Collection {
     std::string name;
     std::vector<MD5Hash> maps;
 
@@ -15,18 +30,22 @@ struct Collection {
     std::vector<MD5Hash> peppy_maps;
     std::vector<MD5Hash> deleted_maps;
 
-    void delete_collection();
+    friend bool delete_collection(std::string_view collection_name);
+    friend Collection &get_or_create_collection(std::string_view name);
+
+    friend bool load_all();
+    friend bool load_peppy(std::string_view peppy_collections_path);
+    friend bool load_mcneosu(std::string_view neosu_collections_path);
+    friend void unload_all();
+    friend bool save_collections();
+
+   public:
+    [[nodiscard]] inline const std::string &get_name() const { return this->name; }
+    [[nodiscard]] inline const std::vector<MD5Hash> &get_maps() const { return this->maps; }
+
     void add_map(const MD5Hash &map_hash);
     void remove_map(const MD5Hash &map_hash);
-    void rename_to(std::string_view new_name);
+    [[nodiscard]] bool rename_to(std::string_view new_name);
 };
 
-extern std::vector<Collection*> collections;
-
-Collection* get_or_create_collection(std::string_view name);
-
-bool load_collections();
-bool load_peppy_collections(std::string_view peppy_collections_path);
-bool load_mcneosu_collections(std::string_view neosu_collections_path);
-void unload_collections();
-bool save_collections();
+}  // namespace Collections

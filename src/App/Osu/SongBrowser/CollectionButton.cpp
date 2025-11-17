@@ -153,14 +153,9 @@ void CollectionButton::onContextMenu(const UString &text, int id) {
 }
 
 void CollectionButton::onRenameCollectionConfirmed(const UString &text, int /*id*/) {
-    if(text.length() > 0) {
-        std::string new_name = text.toUtf8();
-        auto collection = get_or_create_collection(this->sCollectionName);
-        collection->rename_to(new_name);
-        save_collections();
-
-        // (trigger re-sorting of collection buttons)
-        osu->getSongBrowser()->onCollectionButtonContextMenu(this, this->sCollectionName.c_str(), 3);
+    if(text.lengthUtf8() > 0) {
+        // forward it
+        osu->getSongBrowser()->onCollectionButtonContextMenu(this, text, 3);
     }
 }
 

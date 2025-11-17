@@ -310,8 +310,14 @@ void SongButton::onContextMenu(const UString &text, int id) {
         {
             this->contextMenu->addButtonJustified("[+] Create new Collection?", TEXT_JUSTIFICATION::LEFT, -id * 2);
 
-            for(auto collection : collections) {
-                if(!collection->maps.empty()) {
+            auto sorted_collections = Collections::get_loaded();  // sort by name
+
+            std::ranges::stable_sort(
+                sorted_collections, [](const char *s1, const char *s2) -> bool { return strcasecmp(s1, s2) < 0; },
+                [](const auto &col) -> const char * { return col.get_name().c_str(); });
+
+            for(auto &collection : sorted_collections) {
+                if(!collection.get_maps().empty()) {
                     CBaseUIButton *spacer = this->contextMenu->addButtonJustified("---", TEXT_JUSTIFICATION::CENTERED);
                     spacer->setEnabled(false);
                     spacer->setTextColor(0xff888888);
@@ -322,13 +328,13 @@ void SongButton::onContextMenu(const UString &text, int id) {
             }
 
             auto map_hash = this->databaseBeatmap->getMD5();
-            for(auto collection : collections) {
-                if(collection->maps.empty()) continue;
+            for(const auto &collection : sorted_collections) {
+                if(collection.get_maps().empty()) continue;
 
                 bool can_add_to_collection = true;
 
                 if(id == 1) {
-                    if(std::ranges::contains(collection->maps, map_hash)) {
+                    if(std::ranges::contains(collection.get_maps(), map_hash)) {
                         // Map already is present in the collection
                         can_add_to_collection = false;
                     }
@@ -339,7 +345,7 @@ void SongButton::onContextMenu(const UString &text, int id) {
                 }
 
                 auto collectionButton =
-                    this->contextMenu->addButtonJustified(collection->name.c_str(), TEXT_JUSTIFICATION::CENTERED, id);
+                    this->contextMenu->addButtonJustified(collection.get_name(), TEXT_JUSTIFICATION::CENTERED, id);
                 if(!can_add_to_collection) {
                     collectionButton->setEnabled(false);
                     collectionButton->setTextColor(0xff555555);

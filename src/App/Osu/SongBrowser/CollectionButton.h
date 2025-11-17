@@ -18,6 +18,7 @@ class CollectionButton final : public CarouselButton {
     [[nodiscard]] Color getInactiveBackgroundColor() const override;
 
     [[nodiscard]] const std::string &getCollectionName() const { return this->sCollectionName; }
+    void setCollectionName(std::string_view newName) { this->sCollectionName = newName; }
 
    private:
     void onSelected(bool wasSelected, bool autoSelectBottomMostChild, bool wasParentSelected) override;

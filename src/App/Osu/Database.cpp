@@ -236,7 +236,7 @@ void Database::AsyncDBLoader::initAsync() {
     if(db->load_interrupted.load(std::memory_order_acquire)) goto done;
 
     if(!db->needs_raw_load) {
-        load_collections();
+        Collections::load_all();
         if(db->load_interrupted.load(std::memory_order_acquire)) goto done;
     }
 
@@ -335,7 +335,7 @@ Database::~Database() {
     }
     this->beatmapsets.clear();
 
-    unload_collections();
+    Collections::unload_all();
 }
 
 void Database::update() {
@@ -375,7 +375,7 @@ void Database::update() {
                 debugLog("Refresh finished, added {} beatmaps in {:f} seconds.", this->beatmapsets.size(),
                          this->importTimer->getElapsedTime());
 
-                load_collections();
+                Collections::load_all();
 
                 // clang-format off
                 for(auto &diff : this->beatmapsets
@@ -419,7 +419,7 @@ void Database::cancel() {
 }
 
 void Database::save() {
-    save_collections();
+    Collections::save_collections();
     this->saveMaps();
     this->saveScores();
 }
@@ -1661,7 +1661,7 @@ bool Database::importDatabase(const std::pair<DatabaseType, std::string> &db_pai
             return true;
         }
         case MCNEOSU_COLLECTIONS:
-            return load_mcneosu_collections(db_path);
+            return Collections::load_mcneosu(db_path);
         case NEOSU_MAPS: {
             debugLog("tried to import external neosu_maps db {}, not supported", db_path);
             return false;
@@ -1671,7 +1671,7 @@ bool Database::importDatabase(const std::pair<DatabaseType, std::string> &db_pai
             return true;
         }
         case STABLE_COLLECTIONS:
-            return load_peppy_collections(db_path);
+            return Collections::load_peppy(db_path);
         case STABLE_MAPS: {
             debugLog("tried to import external stable maps db {}, not supported", db_path);
             return false;
