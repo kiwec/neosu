@@ -464,11 +464,10 @@ void Osu::draw() {
     }
 
     f32 fadingCursorAlpha = 1.f;
+    const bool isFPoSu = (cv::mod_fposu.getBool());
 
     // draw everything in the correct order
     if(this->isInPlayMode()) {  // if we are playing a beatmap
-        const bool isFPoSu = (cv::mod_fposu.getBool());
-
         if(isFPoSu) this->playfieldBuffer->enable();
 
         // draw playfield (incl. flashlight/smoke etc.)
@@ -505,8 +504,10 @@ void Osu::draw() {
             std::clamp<float>((float)this->score->getCombo() / cv::mod_fadingcursor_combo.getFloat(), 0.0f, 1.0f);
         if(this->pauseMenu->isVisible() || this->map_iface->isContinueScheduled() || !cv::mod_fadingcursor.getBool())
             fadingCursorAlpha = 1.0f;
-        if(isFPoSu && cv::fposu_draw_cursor_trail.getBool())
-            this->hud->drawCursorTrail(this->map_iface->getCursorPos(), fadingCursorAlpha);
+        if(isFPoSu && cv::fposu_draw_cursor_trail.getBool()) {
+            const vec2 trailpos = this->map_iface->isPaused() ? mouse->getPos() : this->map_iface->getCursorPos();
+            this->hud->drawCursorTrail(trailpos, fadingCursorAlpha);
+        }
 
         if(isFPoSu) {
             this->playfieldBuffer->disable();
@@ -550,21 +551,17 @@ void Osu::draw() {
         this->hud->drawLoadingSmall("");
     }
 
-    // draw cursor (gameplay)
     if(this->isInPlayMode()) {
-        vec2 cursorPos = this->map_iface->getCursorPos();
-        bool drawSecondTrail = (cv::mod_autoplay.getBool() || cv::mod_autopilot.getBool() ||
-                                this->map_iface->is_watching || BanchoState::spectating);
-        bool updateAndDrawTrail = true;
-        if(cv::mod_fposu.getBool()) {
-            cursorPos = this->getVirtScreenSize() / 2.0f;
-            updateAndDrawTrail = false;
-        }
+        // draw cursor (gameplay)
+        const bool paused = this->map_iface->isPaused();
+        const vec2 cursorPos =
+            isFPoSu ? (this->getVirtScreenSize() / 2.0f) : (paused ? mouse->getPos() : this->map_iface->getCursorPos());
+        const bool drawSecondTrail = !paused && (cv::mod_autoplay.getBool() || cv::mod_autopilot.getBool() ||
+                                                 this->map_iface->is_watching || BanchoState::spectating);
+        const bool updateAndDrawTrail = !isFPoSu;
         this->hud->drawCursor(cursorPos, fadingCursorAlpha, drawSecondTrail, updateAndDrawTrail);
-    }
-
-    // draw cursor (menus)
-    if(!this->isInPlayMode() || (this->map_iface->isPaused() && !cv::mod_fposu.getBool())) {
+    } else {
+        // draw cursor (menus)
         this->hud->drawCursor(mouse->getPos());
     }
 
