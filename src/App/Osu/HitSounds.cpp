@@ -210,15 +210,6 @@ std::vector<HitSamples::Set_Slider_Hit> HitSamples::play(f32 pan, i32 delta, std
         auto snd = get_map_sound(set, hitSound);
         if(!snd) return false;
 
-        // Logger::logRaw("[HitSamples::play] volume is {} for {}, sliderslide: {} isPlaying: {}", volume,
-        //                Environment::getFileNameFromFilePath(snd->getFilePath()), is_sliderslide, snd->isPlaying());
-        // {
-        //     const auto curtp = osu->getMapInterface()->getCurrentTimingInfo();
-        //     Logger::logRaw("\t(musicpos: {}) current timingpoint offs: {} vol: {} sampleset: {} sampleidx: {}",
-        //                    osu->getMapInterface()->getCurMusicPos(), curtp.offset, curtp.volume, curtp.sampleSet,
-        //                    curtp.sampleIndex);
-        // }
-
         if(is_sliderslide && snd->isPlaying()) return false;
 
         return soundEngine->play(snd, pan, pitch, volume);

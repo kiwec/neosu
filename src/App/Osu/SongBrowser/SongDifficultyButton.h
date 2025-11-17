@@ -30,10 +30,11 @@ class SongDifficultyButton final : public SongButton {
 
     std::string sDiff;
 
+    SongButton *parentSongButton;
+
     float fDiffScale;
     float fOffsetPercentAnim;
-
-    SongButton *parentSongButton;
+    float fVisibleFor{0.f};
 
     bool bUpdateGradeScheduled;
     bool bPrevOffsetPercentSelectionState;

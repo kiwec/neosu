@@ -719,7 +719,7 @@ CONVAR(auto_snapping_strength, 1.0f, CLIENT | SERVER,
 CONVAR(background_image_cache_size, 32, CLIENT, "how many images can stay loaded in parallel");
 CONVAR(background_image_eviction_delay_frames, 60, CLIENT,
        "how many vsync frames to keep stale background images in the cache before deleting them");
-CONVAR(background_image_loading_delay, 0.1f, CLIENT,
+CONVAR(background_image_loading_delay, 0.075f, CLIENT,
        "how many seconds to wait until loading background images for visible beatmaps starts");
 
 // Display settings

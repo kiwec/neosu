@@ -47,8 +47,10 @@ SongDifficultyButton::SongDifficultyButton(SongBrowser* songBrowser, UIContextMe
 SongDifficultyButton::~SongDifficultyButton() { anim->deleteExistingAnimation(&this->fOffsetPercentAnim); }
 
 void SongDifficultyButton::draw() {
+    if(!this->bVisible || this->vPos.y + this->vSize.y < 0 || this->vPos.y > osu->getVirtScreenHeight()) {
+        return;
+    }
     CarouselButton::draw();
-    if(!this->bVisible) return;
 
     const bool isIndependentDiff = this->isIndependentDiffButton();
 
@@ -59,8 +61,11 @@ void SongDifficultyButton::draw() {
     const vec2 size = this->getActualSize();
 
     // draw background image
-    this->drawBeatmapBackgroundThumbnail(
-        osu->getBackgroundImageHandler()->getLoadBackgroundImage(this->databaseBeatmap));
+    // delay requesting the image itself a bit
+    if(this->fVisibleFor >= ((std::clamp<f32>(cv::background_image_loading_delay.getFloat(), 0.f, 2.f)) / 4.f)) {
+        this->drawBeatmapBackgroundThumbnail(
+            osu->getBackgroundImageHandler()->getLoadBackgroundImage(this->databaseBeatmap));
+    }
 
     if(this->grade != FinishedScore::Grade::N) this->drawGrade();
 
@@ -144,8 +149,13 @@ void SongDifficultyButton::draw() {
 }
 
 void SongDifficultyButton::mouse_update(bool* propagate_clicks) {
-    if(!this->bVisible) return;
+    if(!this->bVisible) {
+        this->fVisibleFor = 0.f;
+        return;
+    }
     SongButton::mouse_update(propagate_clicks);
+
+    this->fVisibleFor += engine->getFrameTime();
 
     // dynamic settings (moved from constructor to here)
     const bool newOffsetPercentSelectionState = (this->bSelected || !this->isIndependentDiffButton());

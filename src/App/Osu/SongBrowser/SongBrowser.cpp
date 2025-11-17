@@ -1463,8 +1463,7 @@ void SongBrowser::addBeatmapSet(BeatmapSet *mapset) {
                         ? static_cast<int>(stars_tmp)
                         : 0,
                     0, 11);
-                auto &children = this->difficultyCollectionButtons[index]->getChildren();
-                children.push_back(diff_btn);
+                this->difficultyCollectionButtons[index]->addChild(diff_btn);
             }
         }
 
@@ -1486,8 +1485,8 @@ void SongBrowser::addBeatmapSet(BeatmapSet *mapset) {
                 } else {
                     index = 5;
                 }
-                auto &children = this->bpmCollectionButtons[index]->getChildren();
-                children.push_back(diff_btn);
+
+                this->bpmCollectionButtons[index]->addChild(diff_btn);
             }
         }
 
@@ -1501,30 +1500,30 @@ void SongBrowser::addBeatmapSet(BeatmapSet *mapset) {
             for(auto diff_btn : tempChildrenForGroups) {
                 const u32 lengthMS = diff_btn->getDatabaseBeatmap()->getLengthMS();
 
-                std::vector<SongButton *> *children = nullptr;
+                CollectionButton *btn = nullptr;
                 if(lengthMS <= 1000 * 60) {
-                    children = &this->lengthCollectionButtons[0]->getChildren();
+                    btn = this->lengthCollectionButtons[0];
                 } else if(lengthMS <= 1000 * 60 * 2) {
-                    children = &this->lengthCollectionButtons[1]->getChildren();
+                    btn = this->lengthCollectionButtons[1];
                 } else if(lengthMS <= 1000 * 60 * 3) {
-                    children = &this->lengthCollectionButtons[2]->getChildren();
+                    btn = this->lengthCollectionButtons[2];
                 } else if(lengthMS <= 1000 * 60 * 4) {
-                    children = &this->lengthCollectionButtons[3]->getChildren();
+                    btn = this->lengthCollectionButtons[3];
                 } else if(lengthMS <= 1000 * 60 * 5) {
-                    children = &this->lengthCollectionButtons[4]->getChildren();
+                    btn = this->lengthCollectionButtons[4];
                 } else if(lengthMS <= 1000 * 60 * 10) {
-                    children = &this->lengthCollectionButtons[5]->getChildren();
+                    btn = this->lengthCollectionButtons[5];
                 } else {
-                    children = &this->lengthCollectionButtons[6]->getChildren();
+                    btn = this->lengthCollectionButtons[6];
                 }
 
-                children->push_back(diff_btn);
+                btn->addChild(diff_btn);
             }
         }
     }
 }
 
-void SongBrowser::addSongButtonToAlphanumericGroup(SongButton *btn, std::vector<CollectionButton *> &group,
+void SongBrowser::addSongButtonToAlphanumericGroup(SongButton *sbtn, std::vector<CollectionButton *> &group,
                                                    std::string_view name) {
     if(group.size() != 28) {
         debugLog("Alphanumeric group wasn't initialized!");
@@ -1536,19 +1535,19 @@ void SongBrowser::addSongButtonToAlphanumericGroup(SongButton *btn, std::vector<
     const bool isLowerCase = (firstChar >= 'a' && firstChar <= 'z');
     const bool isUpperCase = (firstChar >= 'A' && firstChar <= 'Z');
 
-    std::vector<SongButton *> *children = nullptr;
+    CollectionButton *cbtn = nullptr;
     if(isNumber) {
-        children = &group[0]->getChildren();
+        cbtn = group[0];
     } else if(isLowerCase || isUpperCase) {
         const int index = 1 + (25 - (isLowerCase ? 'z' - firstChar : 'Z' - firstChar));
-        children = &group[index]->getChildren();
+        cbtn = group[index];
     } else {
-        children = &group[27]->getChildren();
+        cbtn = group[27];
     }
 
     logIfCV(debug_osu, "Inserting {:s}", name);
 
-    children->push_back(btn);
+    cbtn->addChild(sbtn);
 }
 
 void SongBrowser::requestNextScrollToSongButtonJumpFix(SongDifficultyButton *diffButton) {
@@ -1678,11 +1677,26 @@ void SongBrowser::rebuildSongButtons() {
 
                 button2->resetAnimations();
 
-                if(!(button2->isSelected() && button2->isHiddenIfSelected()))
-                    this->carousel->getContainer()->addBaseUIElement(button2);
+                bool addedSingleChild = false;
+
+                if(!(button2->isSelected() && button2->isHiddenIfSelected())) {
+                    if(this->getSetVisibility(button2) == SetVisibility::SINGLE_CHILD) {
+                        for(auto *child : button2->getChildren()) {
+                            if(child->isSearchMatch()) {
+                                addedSingleChild = true;
+                                child->resetAnimations();
+
+                                this->carousel->getContainer()->addBaseUIElement(child);
+                                break;  // only one visible child
+                            }
+                        }
+                    } else {
+                        this->carousel->getContainer()->addBaseUIElement(button2);
+                    }
+                }
 
                 // child children
-                if(button2->isSelected()) {
+                if(!addedSingleChild && button2->isSelected()) {
                     const auto &children2 = button2->getChildren();
                     for(auto button3 : children2) {
                         if(this->bInSearch && !button3->isSearchMatch()) continue;
@@ -3147,7 +3161,7 @@ void SongBrowser::onSongButtonContextMenu(SongButton *songButton, const UString 
         }
     };
 
-    bool updateUIScheduled = false;
+    bool updateUI = false;
     {
         if(id == 1) {
             // add diff to collection
@@ -3155,7 +3169,7 @@ void SongBrowser::onSongButtonContextMenu(SongButton *songButton, const UString 
             auto &collection = Collections::get_or_create_collection(name);
             collection.add_map(songButton->getDatabaseBeatmap()->getMD5());
             Collections::save_collections();
-            updateUIScheduled = true;
+            updateUI = true;
         } else if(id == 2) {
             // add set to collection
             std::string name = text.toUtf8();
@@ -3166,7 +3180,7 @@ void SongBrowser::onSongButtonContextMenu(SongButton *songButton, const UString 
                 collection.add_map(hash);
             }
             Collections::save_collections();
-            updateUIScheduled = true;
+            updateUI = true;
         } else if(id == 3) {
             // remove diff from collection
 
@@ -3184,7 +3198,7 @@ void SongBrowser::onSongButtonContextMenu(SongButton *songButton, const UString 
             auto &collection = Collections::get_or_create_collection(collectionName);
             collection.remove_map(songButton->getDatabaseBeatmap()->getMD5());
             Collections::save_collections();
-            updateUIScheduled = true;
+            updateUI = true;
         } else if(id == 4) {
             // remove entire set from collection
 
@@ -3206,7 +3220,7 @@ void SongBrowser::onSongButtonContextMenu(SongButton *songButton, const UString 
                 collection.remove_map(hash);
             }
             Collections::save_collections();
-            updateUIScheduled = true;
+            updateUI = true;
         } else if(id == -2 || id == -4) {
             // add beatmap(set) to new collection
             std::string name = text.toUtf8();
@@ -3215,7 +3229,7 @@ void SongBrowser::onSongButtonContextMenu(SongButton *songButton, const UString 
             if(id == -2) {
                 // id == -2 means beatmap
                 collection.add_map(songButton->getDatabaseBeatmap()->getMD5());
-                updateUIScheduled = true;
+                updateUI = true;
             } else if(id == -4) {
                 // id == -4 means beatmapset
                 const std::vector<MD5Hash> beatmapSetHashes =
@@ -3223,14 +3237,14 @@ void SongBrowser::onSongButtonContextMenu(SongButton *songButton, const UString 
                 for(const auto &hash : beatmapSetHashes) {
                     collection.add_map(hash);
                 }
-                updateUIScheduled = true;
+                updateUI = true;
             }
 
             Collections::save_collections();
         }
     }
 
-    if(updateUIScheduled) {
+    if(updateUI) {
         const float prevScrollPosY = this->carousel->getRelPosY();  // usability
         const auto previouslySelectedCollectionName =
             (this->selectionPreviousCollectionButton != nullptr
@@ -3259,37 +3273,34 @@ void SongBrowser::onCollectionButtonContextMenu(CollectionButton *collectionButt
     std::string collection_name = text.toUtf8();
 
     if(id == 2) {  // delete collection
-        for(size_t i = 0; i < this->collectionButtons.size(); i++) {
-            if(this->collectionButtons[i]->getCollectionName() == collection_name &&
-               Collections::delete_collection(collection_name)) {
-                Collections::save_collections();
+        if(const auto &it =
+               std::ranges::find(this->collectionButtons, collection_name,
+                                 [](const auto &collBtn) -> std::string { return collBtn->getCollectionName(); });
+           it != this->collectionButtons.end() && Collections::delete_collection(collection_name)) {
+            Collections::save_collections();
 
-                // delete UI
-                delete this->collectionButtons[i];
-                this->collectionButtons.erase(this->collectionButtons.begin() + i);
+            // delete UI
+            delete *it;
+            this->collectionButtons.erase(it);
 
-                // reset UI state
-                this->selectionPreviousCollectionButton = nullptr;
+            // reset UI state
+            this->selectionPreviousCollectionButton = nullptr;
 
-                // update UI
-                this->rebuildAfterGroupOrSortChange(GroupType::COLLECTIONS);
-
-                break;
-            }
+            // update UI
+            this->rebuildAfterGroupOrSortChange(GroupType::COLLECTIONS);
         }
     } else if(id == 3) {  // rename collection
         const std::string &currentButtonName = collectionButton->getCollectionName();
         if(!currentButtonName.empty()) {
             auto &existingCollection = Collections::get_or_create_collection(currentButtonName);
-            std::string newName = text.toUtf8();
 
-            if(existingCollection.rename_to(newName)) {
+            if(existingCollection.rename_to(collection_name)) {
                 Collections::save_collections();
 
-                const auto &it = std::ranges::find(this->collectionButtons, collectionButton);
                 // rename button
-                if(it != this->collectionButtons.end()) {
-                    (*it)->setCollectionName(newName);
+                if(const auto &it = std::ranges::find(this->collectionButtons, collectionButton);
+                   it != this->collectionButtons.end()) {
+                    (*it)->setCollectionName(collection_name);
 
                     // resort collection buttons
                     std::ranges::stable_sort(
@@ -3435,13 +3446,14 @@ void SongBrowser::recreateCollectionsButtons() {
     Timer t;
     t.start();
 
-    for(auto &collection : Collections::get_loaded()) {
-        if(collection.get_maps().empty()) continue;
+    for(const auto &collection : Collections::get_loaded()) {
+        const auto &maps = collection.get_maps();
+        if(maps.empty()) continue;
 
         std::vector<SongButton *> folder;
         std::vector<u32> matched_sets;
 
-        for(auto &map : collection.get_maps()) {
+        for(const auto &map : maps) {
             auto it = this->hashToDiffButton.find(map);
             if(it == this->hashToDiffButton.end()) continue;
 
@@ -3454,9 +3466,8 @@ void SongBrowser::recreateCollectionsButtons() {
             const std::vector<SongButton *> &songButtonChildren = parent->getChildren();
 
             // filter to only diffs in this collection
-            for(SongButton *sbc : songButtonChildren | std::views::filter([&](const auto &child) {
-                                      return std::ranges::contains(collection.get_maps(),
-                                                                   child->getDatabaseBeatmap()->getMD5());
+            for(SongButton *sbc : songButtonChildren | std::views::filter([&maps](const auto &child) {
+                                      return std::ranges::contains(maps, child->getDatabaseBeatmap()->getMD5());
                                   })) {
                 matching_diffs.push_back(sbc);
             }

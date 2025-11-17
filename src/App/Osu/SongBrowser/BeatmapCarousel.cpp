@@ -133,7 +133,7 @@ void BeatmapCarousel::onKeyDown(KeyboardEvent &key) {
         const bool jumpToNextGroup = keyboard->isShiftDown();
 
         bool foundSelected = false;
-        for(sSz i = elements.size() - 1; i >= 0; i--) {
+        for(uSz i = elements.size() - 1; i >= 0; i--) {
             const auto *diffButtonPointer = elements[i]->as<const SongDifficultyButton>();
             const auto *collectionButtonPointer = elements[i]->as<const CollectionButton>();
 

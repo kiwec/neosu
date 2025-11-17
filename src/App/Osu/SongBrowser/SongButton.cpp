@@ -4,7 +4,7 @@
 #include <algorithm>
 #include <utility>
 
-#include "CollectionButton.h"
+#include "Font.h"
 #include "ScoreButton.h"
 #include "SongBrowser.h"
 #include "SongDifficultyButton.h"
@@ -16,9 +16,7 @@
 #include "DatabaseBeatmap.h"
 #include "Engine.h"
 #include "Mouse.h"
-#include "NotificationOverlay.h"
 #include "Osu.h"
-#include "ResourceManager.h"
 #include "Skin.h"
 #include "SkinImage.h"
 #include "UIContextMenu.h"
@@ -46,11 +44,11 @@ SongButton::SongButton(SongBrowser *songBrowser, UIContextMenu *contextMenu, flo
         const std::vector<DatabaseBeatmap *> &difficulties = this->databaseBeatmap->getDifficulties();
 
         // and add them
-        for(auto difficultie : difficulties) {
+        for(auto diff : difficulties) {
             SongButton *songButton =
-                new SongDifficultyButton(this->songBrowser, this->contextMenu, 0, 0, 0, 0, "", difficultie, this);
+                new SongDifficultyButton(this->songBrowser, this->contextMenu, 0, 0, 0, 0, "", diff, this);
 
-            this->children.push_back(songButton);
+            this->addChild(songButton);
         }
     }
 
@@ -58,42 +56,65 @@ SongButton::SongButton(SongBrowser *songBrowser, UIContextMenu *contextMenu, flo
 }
 
 SongButton::~SongButton() {
-    for(auto &i : this->children) {
+    for(auto &i : this->getChildren()) {
         delete i;
     }
 }
 
 void SongButton::draw() {
-    if(!this->bVisible) return;
-    if(this->vPos.y + this->vSize.y < 0) return;
-    if(this->vPos.y > osu->getVirtScreenHeight()) return;
+    if(!this->bVisible || this->vPos.y + this->vSize.y < 0 || this->vPos.y > osu->getVirtScreenHeight()) {
+        return;
+    }
 
     CarouselButton::draw();
 
     // draw background image
-    this->sortChildren();
-    if(this->databaseBeatmap != nullptr && this->children.size() > 0) {
-        // use the bottom child (hardest diff, assuming default sorting, and respecting the current search matches)
-        for(int i = this->children.size() - 1; i >= 0; i--) {
-            // NOTE: if no search is active, then all search matches return true by default
-            if(this->children[i]->isType<SongButton>() && this->children[i]->isSearchMatch()) {
-                auto representative_beatmap = this->children[i]->as<SongButton>()->getDatabaseBeatmap();
-
-                this->sTitle = representative_beatmap->getTitle();
-                this->sArtist = representative_beatmap->getArtist();
-                this->sMapper = representative_beatmap->getCreator();
-
-                this->drawBeatmapBackgroundThumbnail(
-                    osu->getBackgroundImageHandler()->getLoadBackgroundImage(representative_beatmap));
-
-                break;
-            }
-        }
+    if(this->representativeBeatmap &&
+       // delay requesting the image itself a bit
+       this->fVisibleFor >= ((std::clamp<f32>(cv::background_image_loading_delay.getFloat(), 0.f, 2.f)) / 4.f)) {
+        this->drawBeatmapBackgroundThumbnail(
+            osu->getBackgroundImageHandler()->getLoadBackgroundImage(this->representativeBeatmap));
     }
 
     if(this->grade != FinishedScore::Grade::N) this->drawGrade();
     this->drawTitle();
     this->drawSubTitle();
+}
+
+void SongButton::mouse_update(bool *propagate_clicks) {
+    if(!this->bVisible) {
+        this->fVisibleFor = 0.f;
+        return;
+    }
+    this->fVisibleFor += engine->getFrameTime();
+
+    CarouselButton::mouse_update(propagate_clicks);
+
+    // HACKHACK: calling these two every frame is a bit insane, but too lazy to write delta detection logic atm. (UI
+    // desync is not a problem since parent buttons are invisible while selected, so no resorting happens in that state)
+    this->sortChildren();
+
+    if(this->databaseBeatmap != nullptr && this->getChildren().size() > 0) {
+        // use the bottom child (hardest diff, assuming default sorting, and respecting the current search matches)
+        for(int i = this->getChildren().size() - 1; i >= 0; i--) {
+            // NOTE: if no search is active, then all search matches return true by default
+            if(this->getChildren()[i]->isType<SongButton>() && this->getChildren()[i]->isSearchMatch()) {
+                const auto *currentRepresentativeBeatmap = this->representativeBeatmap;
+                auto *newRepresentativeBeatmap = this->getChildren()[i]->as<SongButton>()->getDatabaseBeatmap();
+
+                if(currentRepresentativeBeatmap == nullptr ||
+                   currentRepresentativeBeatmap != newRepresentativeBeatmap) {
+                    this->representativeBeatmap = newRepresentativeBeatmap;
+
+                    this->sTitle = newRepresentativeBeatmap->getTitle();
+                    this->sArtist = newRepresentativeBeatmap->getArtist();
+                    this->sMapper = newRepresentativeBeatmap->getCreator();
+                }
+
+                break;
+            }
+        }
+    }
 }
 
 void SongButton::drawBeatmapBackgroundThumbnail(const Image *image) {
@@ -117,7 +138,7 @@ void SongButton::drawBeatmapBackgroundThumbnail(const Image *image) {
     const vec2 pos = this->getActualPos();
     const vec2 size = this->getActualSize();
 
-    const f32 thumbnailYRatio = osu->getSongBrowser()->thumbnailYRatio;
+    const f32 thumbnailYRatio = this->songBrowser->thumbnailYRatio;
     const f32 beatmapBackgroundScale =
         Osu::getImageScaleToFillResolution(image, vec2(size.y * thumbnailYRatio, size.y)) * 1.05f;
 
@@ -211,7 +232,12 @@ void SongButton::drawSubTitle(float deselectedAlpha, bool forceSelectedStyle) {
     g->popTransform();
 }
 
-void SongButton::sortChildren() { std::ranges::sort(this->children, SongBrowser::sort_by_difficulty); }
+void SongButton::sortChildren() {
+    if(this->bChildrenNeedSorting) {
+        this->bChildrenNeedSorting = false;
+        std::ranges::sort(this->getChildren(), SongBrowser::sort_by_difficulty);
+    }
+}
 
 void SongButton::updateLayoutEx() {
     CarouselButton::updateLayoutEx();
@@ -227,7 +253,7 @@ void SongButton::updateLayoutEx() {
     if(osu->getSkin()->version < 2.2f) {
         this->fTextOffset += size.x * 0.02f * 2.0f;
     } else {
-        const f32 thumbnailYRatio = osu->getSongBrowser()->thumbnailYRatio;
+        const f32 thumbnailYRatio = this->songBrowser->thumbnailYRatio;
         this->fTextOffset += size.y * thumbnailYRatio + size.x * 0.02f;
         this->fGradeOffset += size.y * thumbnailYRatio + size.x * 0.0125f;
     }
@@ -244,7 +270,7 @@ void SongButton::onSelected(bool wasSelected, bool autoSelectBottomMostChild, bo
     this->songBrowser->updateSongButtonLayout();
 
     // update grade on child
-    for(auto &c : this->children) {
+    for(auto &c : this->getChildren()) {
         auto *child = (SongDifficultyButton *)c;
         child->updateGrade();
     }
@@ -254,11 +280,11 @@ void SongButton::onSelected(bool wasSelected, bool autoSelectBottomMostChild, bo
     // now, automatically select the bottom child (hardest diff, assuming default sorting, and respecting the current
     // search matches)
     if(autoSelectBottomMostChild) {
-        for(int i = this->children.size() - 1; i >= 0; i--) {
-            if(this->children[i]
+        for(int i = this->getChildren().size() - 1; i >= 0; i--) {
+            if(this->getChildren()[i]
                    ->isSearchMatch())  // NOTE: if no search is active, then all search matches return true by default
             {
-                this->children[i]->select(true, false, wasSelected);
+                this->getChildren()[i]->select(true, false, wasSelected);
                 break;
             }
         }
@@ -282,7 +308,7 @@ void SongButton::triggerContextMenu(vec2 pos) {
 
             this->contextMenu->addButtonJustified("[+Set] Add to Collection", TEXT_JUSTIFICATION::LEFT, 2);
 
-            if(osu->getSongBrowser()->getGroupingMode() == SongBrowser::GroupType::COLLECTIONS) {
+            if(this->songBrowser->getGroupingMode() == SongBrowser::GroupType::COLLECTIONS) {
                 CBaseUIButton *spacer = this->contextMenu->addButtonJustified("---", TEXT_JUSTIFICATION::CENTERED);
                 spacer->setEnabled(false);
                 spacer->setTextColor(0xff888888);
@@ -316,7 +342,7 @@ void SongButton::onContextMenu(const UString &text, int id) {
                 sorted_collections, [](const char *s1, const char *s2) -> bool { return strcasecmp(s1, s2) < 0; },
                 [](const auto &col) -> const char * { return col.get_name().c_str(); });
 
-            for(auto &collection : sorted_collections) {
+            for(const auto &collection : sorted_collections) {
                 if(!collection.get_maps().empty()) {
                     CBaseUIButton *spacer = this->contextMenu->addButtonJustified("---", TEXT_JUSTIFICATION::CENTERED);
                     spacer->setEnabled(false);
@@ -360,7 +386,7 @@ void SongButton::onContextMenu(const UString &text, int id) {
     } else if(id == 3 || id == 4) {
         // 3 = remove map from collection
         // 4 = remove set from collection
-        osu->getSongBrowser()->onSongButtonContextMenu(this, text, id);
+        this->songBrowser->onSongButtonContextMenu(this, text, id);
     }
 }
 
@@ -395,14 +421,14 @@ void SongButton::onAddToCollectionConfirmed(const UString &text, int id) {
         UIContextMenu::clampToBottomScreenEdge(this->contextMenu);
     } else {
         // just forward it
-        osu->getSongBrowser()->onSongButtonContextMenu(this, text, id);
+        this->songBrowser->onSongButtonContextMenu(this, text, id);
     }
 }
 
 void SongButton::onCreateNewCollectionConfirmed(const UString &text, int id) {
     if(id == -2 || id == -4) {
         // just forward it
-        osu->getSongBrowser()->onSongButtonContextMenu(this, text, id);
+        this->songBrowser->onSongButtonContextMenu(this, text, id);
     }
 }
 

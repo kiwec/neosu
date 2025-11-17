@@ -17,6 +17,7 @@ class SongButton : public CarouselButton {
     ~SongButton() override;
 
     void draw() override;
+    void mouse_update(bool *propagate_clicks) override;
 
     void triggerContextMenu(vec2 pos);
 
@@ -59,6 +60,9 @@ class SongButton : public CarouselButton {
     float fGradeScale;
 
    private:
+    DatabaseBeatmap *representativeBeatmap{nullptr};
+
+    float fVisibleFor{0.f};
     float fThumbnailFadeInTime;
     void onOpenBeatmapFolderClicked();
 };

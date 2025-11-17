@@ -152,17 +152,11 @@ void CBaseUIContainer::draw_debug() {
     g->drawLine(this->vPos.x + this->vSize.x, this->vPos.y, this->vPos.x + this->vSize.x, this->vPos.y + this->vSize.y);
 
     g->setColor(0xff0000ff);
-    for(size_t i = 0; i < this->vElements.size(); i++) {
-        g->drawLine(this->vElements[i]->vPos.x, this->vElements[i]->vPos.y,
-                    this->vElements[i]->vPos.x + this->vElements[i]->vSize.x, this->vElements[i]->vPos.y);
-        g->drawLine(this->vElements[i]->vPos.x, this->vElements[i]->vPos.y, this->vElements[i]->vPos.x,
-                    this->vElements[i]->vPos.y + this->vElements[i]->vSize.y);
-        g->drawLine(this->vElements[i]->vPos.x, this->vElements[i]->vPos.y + this->vElements[i]->vSize.y,
-                    this->vElements[i]->vPos.x + this->vElements[i]->vSize.x,
-                    this->vElements[i]->vPos.y + this->vElements[i]->vSize.y);
-        g->drawLine(this->vElements[i]->vPos.x + this->vElements[i]->vSize.x, this->vElements[i]->vPos.y,
-                    this->vElements[i]->vPos.x + this->vElements[i]->vSize.x,
-                    this->vElements[i]->vPos.y + this->vElements[i]->vSize.y);
+    for(auto *e : this->vElements) {
+        g->drawLine(e->vPos.x, e->vPos.y, e->vPos.x + e->vSize.x, e->vPos.y);
+        g->drawLine(e->vPos.x, e->vPos.y, e->vPos.x, e->vPos.y + e->vSize.y);
+        g->drawLine(e->vPos.x, e->vPos.y + e->vSize.y, e->vPos.x + e->vSize.x, e->vPos.y + e->vSize.y);
+        g->drawLine(e->vPos.x + e->vSize.x, e->vPos.y, e->vPos.x + e->vSize.x, e->vPos.y + e->vSize.y);
     }
 }
 

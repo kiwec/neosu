@@ -65,15 +65,26 @@ class CarouselButton : public CBaseUIButton {
     void resetAnimations();
 
     void setTargetRelPosY(float targetRelPosY);
-    void setChildren(std::vector<SongButton *> children) { this->children = std::move(children); }
-    void setOffsetPercent(float offsetPercent) { this->fOffsetPercent = offsetPercent; }
-    void setHideIfSelected(bool hideIfSelected) { this->bHideIfSelected = hideIfSelected; }
-    void setIsSearchMatch(bool isSearchMatch) { this->bIsSearchMatch.store(isSearchMatch, std::memory_order_release); }
+    inline void setChildren(std::vector<SongButton *> children) {
+        this->bChildrenNeedSorting = true;
+        this->children = std::move(children);
+    }
+
+    inline void addChild(SongButton *child) {
+        this->bChildrenNeedSorting = true;
+        this->children.push_back(child);
+    }
+
+    inline void setOffsetPercent(float offsetPercent) { this->fOffsetPercent = offsetPercent; }
+    inline void setHideIfSelected(bool hideIfSelected) { this->bHideIfSelected = hideIfSelected; }
+    inline void setIsSearchMatch(bool isSearchMatch) {
+        this->bIsSearchMatch.store(isSearchMatch, std::memory_order_release);
+    }
 
     [[nodiscard]] vec2 getActualOffset() const;
     [[nodiscard]] inline vec2 getActualSize() const { return this->vSize - 2.f * this->getActualOffset(); }
     [[nodiscard]] inline vec2 getActualPos() const { return this->vPos + this->getActualOffset(); }
-    inline std::vector<SongButton *> &getChildren() { return this->children; }
+    [[nodiscard]] inline std::vector<SongButton *> &getChildren() { return this->children; }
     [[nodiscard]] inline const std::vector<SongButton *> &getChildren() const { return this->children; }
 
     [[nodiscard]] virtual DatabaseBeatmap *getDatabaseBeatmap() const { return nullptr; }
@@ -97,8 +108,7 @@ class CarouselButton : public CBaseUIButton {
     McFont *fontBold;
 
     bool bSelected;
-
-    std::vector<SongButton *> children;
+    bool bChildrenNeedSorting{true};
 
    private:
     static int marginPixelsX;
@@ -112,6 +122,8 @@ class CarouselButton : public CBaseUIButton {
     void onMouseOutside() override;
 
     void setMoveAwayState(MOVE_AWAY_STATE moveAwayState, bool animate = true);
+
+    std::vector<SongButton *> children;
 
     bool bRightClick;
     bool bRightClickCheck;

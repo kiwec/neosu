@@ -14,7 +14,6 @@
 #include "Engine.h"
 #include "Mouse.h"
 #include "Osu.h"
-#include "ResourceManager.h"
 #include "Skin.h"
 #include "SoundEngine.h"
 
@@ -103,9 +102,7 @@ void CarouselButton::drawMenuButtonBackground() {
 }
 
 void CarouselButton::mouse_update(bool *propagate_clicks) {
-    // Not correct, but clears most of the lag
-    if(this->vPos.y + this->vSize.y < 0) return;
-    if(this->vPos.y > osu->getVirtScreenHeight()) return;
+    if(!this->bVisible) return;
 
     // HACKHACK: absolutely disgusting
     // temporarily fool CBaseUIElement with modified position and size
@@ -122,10 +119,10 @@ void CarouselButton::mouse_update(bool *propagate_clicks) {
         this->vSize = sizeBackup;
     }
 
-    if(!this->bVisible) return;
-
     // HACKHACK: this should really be part of the UI base
     // right click detection
+
+    // @spec TODO: it is now, but im too lazy to go through the logic to replace it
     if(mouse->isRightDown()) {
         if(!this->bRightClickCheck) {
             this->bRightClickCheck = true;
