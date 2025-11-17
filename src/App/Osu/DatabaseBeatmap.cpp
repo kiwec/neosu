@@ -430,10 +430,9 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(std::
                     upd_last_error(!Parsing::parse(csvs[4], &hitSounds));
                     upd_last_error((type & PpyHitObjectType::SLIDER) && (csvs.size() < 8));
                     upd_last_error((type & PpyHitObjectType::SPINNER) && (csvs.size() < 6));
-                    upd_last_error(
-                        !(type & (PpyHitObjectType::CIRCLE | PpyHitObjectType::SLIDER | PpyHitObjectType::SPINNER)));
+                    upd_last_error((type & (PpyHitObjectType::MANIA_HOLD_NOTE)));
                     if(err_line) {
-                        debugLog("Invalid hit object (error on line {}): {}", err_line, curLine);
+                        debugLog("File: {} Invalid hit object (error on line {}): {}", osuFilePath, err_line, curLine);
                         break;
                     }
 
@@ -465,7 +464,7 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(std::
 
                         if(csvs.size() > 5) {
                             if(!parse_hitsamples(csvs[5], h.samples)) {
-                                debugLog("Invalid circle hitSamples in line: {}", curLine);
+                                debugLog("File: {} Invalid circle hitSamples in line: {}", osuFilePath, curLine);
                                 break;
                             }
                         }
@@ -496,7 +495,7 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(std::
 
                         upd_last_error(!Parsing::parse(csvs[6], &slider.repeat));
                         if(err_line) {
-                            debugLog("Invalid slider: (error on line {}): {}", err_line, curLine);
+                            debugLog("File: {} Invalid slider: (error on line {}): {}", osuFilePath, err_line, curLine);
                             break;
                         }
                         upd_last_error(!Parsing::parse(csvs[7], &slider.pixelLength));
@@ -512,8 +511,8 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(std::
                             }
                         }
                         if(err_line) {
-                            debugLog("Invalid slider pixel length: {} slider.pixelLength: {}", csvs[7],
-                                     slider.pixelLength);
+                            debugLog("File: {} Invalid slider pixel length: {} slider.pixelLength: {}", osuFilePath,
+                                     csvs[7], slider.pixelLength);
                             break;
                         }
 
@@ -554,7 +553,8 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(std::
                         }
 
                         if(err_line) {
-                            debugLog("Invalid slider edgeSamples (error on line {}): {}", err_line, curLine);
+                            debugLog("File: {} Invalid slider edgeSamples (error on line {}): {}", osuFilePath,
+                                     err_line, curLine);
                             break;
                         }
 
@@ -566,7 +566,7 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(std::
 
                         if(csvs.size() > 10) {
                             if(!parse_hitsamples(csvs[10], slider.hoverSamples)) {
-                                debugLog("Invalid slider hitSamples in line: {}", curLine);
+                                debugLog("File: {} Invalid slider hitSamples in line: {}", osuFilePath, curLine);
                                 break;
                             }
                         }
@@ -587,13 +587,13 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(std::
                         upd_last_error(!Parsing::parse(csvs[5], &s.endTime));
 
                         if(err_line) {
-                            debugLog("Invalid spinner (error on line {}): {}", err_line, curLine);
+                            debugLog("File: {} Invalid spinner (error on line {}): {}", osuFilePath, err_line, curLine);
                             break;
                         }
 
                         if(csvs.size() > 6) {
                             if(!parse_hitsamples(csvs[6], s.samples)) {
-                                debugLog("Invalid spinner hitSamples in line: {}", curLine);
+                                debugLog("File: {} Invalid spinner hitSamples in line: {}", osuFilePath, curLine);
                                 break;
                             }
                         }

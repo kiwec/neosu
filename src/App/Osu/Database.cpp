@@ -593,8 +593,9 @@ std::vector<UString> Database::getPlayerNamesWithPPScores() {
         }
 
         for(const auto &key : keys) {
-            for(auto name :
-                this->scores[key] | std::views::transform([](const auto &score) -> auto { return score.playerName; })) {
+            const auto &cur = this->scores[key];
+            for(const auto &name :
+                cur | std::views::transform([](const auto &score) -> auto { return score.playerName; })) {
                 tempNames.insert(name);
             }
         }
@@ -618,8 +619,9 @@ std::vector<UString> Database::getPlayerNamesWithScoresForUserSwitcher() {
     {
         Sync::shared_lock lock(this->scores_mtx);
         for(const auto &[hash, _] : this->scores) {
-            for(auto name : this->scores[hash] |
-                                std::views::transform([](const auto &score) -> auto { return score.playerName; })) {
+            for(const auto &name : this->scores[hash] | std::views::transform([](const auto &score) -> auto {
+                                       return score.playerName;
+                                   })) {
                 tempNames.insert(name);
             }
         }
@@ -642,38 +644,38 @@ Database::PlayerPPScores Database::getPlayerPPScores(const std::string &playerNa
     ppScores.totalScore = 0;
     if(this->getProgress() < 1.0f) return ppScores;
 
-    std::vector<FinishedScore *> scores;
-    std::vector<MD5Hash> keys;
+    // hoist out of the loop
+    const bool include_autopilot_relax = cv::user_include_relax_and_autopilot_for_stats.getBool();
+
     u64 totalScore = 0;
+
+    std::vector<FinishedScore *> scores;
     {
         Sync::shared_lock lock(this->scores_mtx);
 
-        // collect all scores with pp data
-        keys.reserve(this->scores.size());
-
-        for(const auto &[hash, scorevec] : this->scores) {
-            keys.push_back(hash);
-        }
-
-        for(const auto &key : keys) {
-            if(this->scores[key].size() == 0) continue;
-
-            FinishedScore *tempScore = &this->scores[key][0];
+        for(auto &[hash, scorevec] : this->scores | std::views::filter([](const auto &pair) -> auto {
+                                         // filter out empty vectors
+                                         return pair.second.size() > 0;
+                                     })) {
+            FinishedScore *tempScore = &scorevec[0];
 
             // only add highest pp score per diff
             bool foundValidScore = false;
-            float prevPP = -1.0f;
-            for(auto &score : this->scores[key]) {
-                auto uses_rx_or_ap = (score.mods.has(ModFlags::Relax) || (score.mods.has(ModFlags::Autopilot)));
-                if(uses_rx_or_ap && !cv::user_include_relax_and_autopilot_for_stats.getBool()) continue;
-
-                if(score.playerName != playerName) continue;
+            f64 prevPP = -1.0;
+            for(auto &score :
+                scorevec | std::views::filter([&playerName, include_autopilot_relax](const auto &sc) -> auto {
+                    // filter out scores set with a different name or if we shouldn't allow relax/autopilot
+                    return !(!include_autopilot_relax &&
+                             (u64)sc.mods.flags & ((u64)ModFlags::Relax | (u64)ModFlags::Autopilot)) &&
+                           (playerName == sc.playerName);
+                })) {
 
                 foundValidScore = true;
                 totalScore += score.score;
 
-                if(score.get_pp() > prevPP || prevPP < 0.0f) {
-                    prevPP = score.get_pp();
+                const auto scorePP = score.get_pp();
+                if(scorePP > prevPP || prevPP < 0.0) {
+                    prevPP = scorePP;
                     tempScore = &score;
                 }
             }
@@ -688,6 +690,7 @@ Database::PlayerPPScores Database::getPlayerPPScores(const std::string &playerNa
             return !sortScoreByPP(*a, *b);
         });
     }
+
     ppScores.ppScores = std::move(scores);
     ppScores.totalScore = totalScore;
 
