@@ -1565,10 +1565,11 @@ void Osu::updateMouseSettings() {
 }
 
 void Osu::updateWindowsKeyDisable() {
-    const bool isPlayerPlaying = (env->winFocused() && !env->winMinimized()) && this->isInPlayMode() &&
-                                 (!(this->map_iface->isPaused() || this->map_iface->isContinueScheduled()) ||
-                                  this->map_iface->isRestartScheduled()) &&
-                                 !cv::mod_autoplay.getBool();
+    const bool isPlayerPlaying =
+        (env->winFocused() && !env->winMinimized()) && this->isInPlayMode() &&
+        (!(this->map_iface->isPaused() || this->map_iface->isContinueScheduled()) ||
+         this->map_iface->isRestartScheduled()) &&
+        !(cv::mod_autoplay.getBool() || this->map_iface->is_watching || BanchoState::spectating);
 
     const bool disable = cv::win_disable_windows_key_while_playing.getBool() && isPlayerPlaying;
     logIfCV(debug_osu, "{} windows key, {} to text input", disable ? "disabling" : "enabling",
