@@ -3141,9 +3141,9 @@ void SongBrowser::onSongButtonContextMenu(SongButton *songButton, const UString 
                         beatmapSetHashes.push_back(i->getDatabaseBeatmap()->getMD5());
                     }
                 } else {
-                    const DatabaseBeatmap *beatmap = db->getBeatmapSet(songButton->getDatabaseBeatmap()->getSetID());
-                    if(beatmap != nullptr) {
-                        const std::vector<DatabaseBeatmap *> &diffs = beatmap->getDifficulties();
+                    const BeatmapSet *mapset = db->getBeatmapSet(songButton->getDatabaseBeatmap()->getSetID());
+                    if(mapset != nullptr) {
+                        const std::vector<DatabaseBeatmap *> &diffs = mapset->getDifficulties();
                         for(auto diff : diffs) {
                             beatmapSetHashes.push_back(diff->getMD5());
                         }
@@ -3436,7 +3436,7 @@ void SongBrowser::recreateCollectionsButtons() {
             auto *song_button = it->second;
 
             // get parent's children (we always have a parent now)
-            const auto *parent = song_button->getParentSongButton();
+            auto *parent = song_button->getParentSongButton();
             const std::vector<SongButton *> &songButtonChildren = parent->getChildren();
 
             // filter to only diffs in this collection
@@ -3459,7 +3459,7 @@ void SongBrowser::recreateCollectionsButtons() {
 
             if(songButtonChildren.size() == matching_diffs.size()) {
                 // all diffs match: add the set button (user added all diffs of beatmap into collection)
-                folder.push_back(song_button);
+                folder.push_back(parent);  // fixed: add parent instead of song_button
             } else {
                 // only add matched diff buttons
                 folder.insert(folder.end(), matching_diffs.begin(), matching_diffs.end());
