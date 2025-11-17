@@ -51,10 +51,9 @@ class ConsoleBoxTextbox : public CBaseUITextbox {
 class ConsoleBoxSuggestionButton : public CBaseUIButton {
    public:
     ConsoleBoxSuggestionButton(float xPos, float yPos, float xSize, float ySize, UString name, UString text,
-                               UString helpText, ConsoleBox *consoleBox)
-        : CBaseUIButton(xPos, yPos, xSize, ySize, std::move(name), std::move(text)) {
+                               UString helpText, const ConsoleBoxTextbox *const textbox)
+        : CBaseUIButton(xPos, yPos, xSize, ySize, std::move(name), std::move(text)), cboxtbox(textbox) {
         this->sHelpText = std::move(helpText);
-        this->consoleBox = consoleBox;
     }
 
    protected:
@@ -73,8 +72,8 @@ class ConsoleBoxSuggestionButton : public CBaseUIButton {
                 g->pushTransform();
                 {
                     const float scale = std::min(
-                        1.0f, (std::max(1.0f, this->consoleBox->getTextbox()->getSize().x - this->fStringWidth -
-                                                  helpTextOffset * 1.5f - helpTextSeparatorStringWidth * 1.5f)) /
+                        1.0f, (std::max(1.0f, this->cboxtbox->getSize().x - this->fStringWidth - helpTextOffset * 1.5f -
+                                                  helpTextSeparatorStringWidth * 1.5f)) /
                                   (float)helpTextStringWidth);
 
                     g->scale(scale, scale);
@@ -95,39 +94,28 @@ class ConsoleBoxSuggestionButton : public CBaseUIButton {
     }
 
    private:
-    ConsoleBox *consoleBox;
+    const ConsoleBoxTextbox *const cboxtbox;
     UString sHelpText;
 };
 
-ConsoleBox::ConsoleBox() : CBaseUIElement(0, 0, 0, 0, "") {
-    // setup convar callback
-    cv::cmd::exec.setCallback(CFUNC(Console::execConfigFile));
-
+ConsoleBox::ConsoleBox() : CBaseUIElement(0, 0, 0, 0, ""), fConsoleDelay(engine->getTime() + 0.2f) {
     const float dpiScale = env->getDPIScale();
 
-    McFont *font = resourceManager->getFont("FONT_DEFAULT");
-    this->logFont = resourceManager->getFont("FONT_CONSOLE");
+    this->logFont = engine->getConsoleFont();
 
-    this->textbox = new ConsoleBoxTextbox(5 * dpiScale, engine->getScreenHeight(),
-                                          engine->getScreenWidth() - 10 * dpiScale, 26, "consoleboxtextbox");
+    this->textbox = std::make_unique<ConsoleBoxTextbox>(
+        5 * dpiScale, engine->getScreenHeight(), engine->getScreenWidth() - 10 * dpiScale, 26, "consoleboxtextbox");
     {
         this->textbox->setSizeY(this->textbox->getRelSize().y * dpiScale);
-        this->textbox->setFont(font);
+        this->textbox->setFont(engine->getDefaultFont());
         this->textbox->setDrawBackground(true);
         this->textbox->setVisible(false);
         this->textbox->setBusy(true);
     }
 
-    this->bRequireShiftToActivate = false;
-    this->fConsoleAnimation = 0;
-    this->bConsoleAnimateIn = false;
-    this->bConsoleAnimateOut = false;
-    this->fConsoleDelay = engine->getTime() + 0.2f;
-    this->bConsoleAnimateOnce = false;  // set to true for on-launch anim in
-
-    this->suggestion =
-        new CBaseUIScrollView(5 * dpiScale, engine->getScreenHeight(), engine->getScreenWidth() - 10 * dpiScale,
-                              90 * dpiScale, "consoleboxsuggestion");
+    this->suggestion = std::make_unique<CBaseUIScrollView>(5 * dpiScale, engine->getScreenHeight(),
+                                                           engine->getScreenWidth() - 10 * dpiScale, 90 * dpiScale,
+                                                           "consoleboxsuggestion");
     {
         this->suggestion->setDrawBackground(true);
         this->suggestion->setBackgroundColor(argb(255, 0, 0, 0));
@@ -136,39 +124,18 @@ ConsoleBox::ConsoleBox() : CBaseUIElement(0, 0, 0, 0, "") {
         this->suggestion->setVerticalScrolling(true);
         this->suggestion->setVisible(false);
     }
-    this->fSuggestionY = 0.0f;
-    this->fLogTime = 0.0f;
-    this->fSuggestionAnimation = 0;
-    this->bSuggestionAnimateIn = false;
-    this->bSuggestionAnimateOut = false;
-
-    this->iSuggestionCount = 0;
-    this->iSelectedSuggestion = -1;
-
-    this->iSelectedHistory = -1;
-
-    this->fLogYPos = 0.0f;
-
-    // initialize thread-safe log animation state
-    this->bLogAnimationResetPending.store(false, std::memory_order_release);
-    this->fPendingLogTime.store(0.0f, std::memory_order_release);
-    this->bForceLogVisible.store(false, std::memory_order_release);
 
     this->clearSuggestions();
 
-    // convar callbacks
+    // setup convar callbacks
+    cv::cmd::exec.setCallback(CFUNC(Console::execConfigFile));
     cv::cmd::showconsolebox.setCallback(SA::MakeDelegate<&ConsoleBox::show>(this));
     cv::cmd::clear.setCallback(SA::MakeDelegate<&ConsoleBox::clear>(this));
 
     Console::execConfigFile("autoexec.cfg");
 }
 
-ConsoleBox::~ConsoleBox() {
-    SAFE_DELETE(this->textbox);
-    SAFE_DELETE(this->suggestion);
-
-    anim->deleteExistingAnimation(&this->fLogYPos);
-}
+ConsoleBox::~ConsoleBox() { anim->deleteExistingAnimation(&this->fLogYPos); }
 
 void ConsoleBox::draw() {
     // HACKHACK: legacy OpenGL fix
@@ -266,7 +233,7 @@ void ConsoleBox::mouse_update(bool *propagate_clicks) {
 
     if(this->textbox->hitEnter()) {
         this->processCommand(this->textbox->getText().toUtf8());
-        Logger::flush();  // make sure its output immediately
+        Logger::flush();  // make sure it's output immediately
         this->textbox->clear();
         this->textbox->setSuggestion("");
     }
@@ -339,7 +306,9 @@ void ConsoleBox::mouse_update(bool *propagate_clicks) {
 
     // handle overlay animation and timeout
     // theres probably a better way to do it than yet another atomic boolean, but eh
-    bool forceVisible = this->bForceLogVisible.exchange(false);
+    const bool forceVisible =
+        cv::console_overlay_timeout.getFloat() == 0.f /* infinite timeout */ || this->bForceLogVisible.exchange(false);
+
     if(!forceVisible && engine->getTime() > this->fLogTime) {
         if(!anim->isAnimating(&this->fLogYPos) && this->fLogYPos == 0.0f)
             anim->moveQuadInOut(&this->fLogYPos,
@@ -570,7 +539,7 @@ void ConsoleBox::addSuggestion(const UString &text, const UString &helpText, con
 
     // create button and add it
     CBaseUIButton *button = new ConsoleBoxSuggestionButton(3 * dpiScale, (vsize - 1) * buttonheight + 2 * dpiScale, 100,
-                                                           addheight, command, text, helpText, this);
+                                                           addheight, command, text, helpText, this->textbox.get());
     {
         button->setDrawFrame(false);
         button->setSizeX(button->getFont()->getStringWidth(text));
@@ -668,7 +637,8 @@ void ConsoleBox::log(const UString &text, Color textColor) {
 
     // defer animation operations to main thread to avoid data races
     // use force visibility flag to prevent immediate timeout on same frame (this is so dumb)
-    this->fPendingLogTime.store(Timing::getTimeReal<float>() + 8.0f, std::memory_order_release);
+    const float timeout = cv::console_overlay_timeout.getFloat();
+    this->fPendingLogTime.store(Timing::getTimeReal<float>() + timeout, std::memory_order_release);
     this->bForceLogVisible.store(true, std::memory_order_release);
     this->bLogAnimationResetPending.store(true, std::memory_order_release);
 }

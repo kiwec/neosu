@@ -38,9 +38,6 @@ class ConsoleBox : public CBaseUIElement {
     bool isBusy() override;
     bool isActive() override;
 
-    // ILLEGAL:
-    [[nodiscard]] inline ConsoleBoxTextbox *getTextbox() const { return this->textbox; }
-
    private:
     friend class Logger;
     void log(const UString &text, Color textColor = 0xffffffff);
@@ -68,39 +65,40 @@ class ConsoleBox : public CBaseUIElement {
 
     void processPendingLogAnimations();
 
-    int iSuggestionCount;
-    int iSelectedSuggestion;  // for up/down buttons
+    int iSuggestionCount{0};
+    int iSelectedSuggestion{-1};  // for up/down buttons
 
-    ConsoleBoxTextbox *textbox;
-    CBaseUIScrollView *suggestion;
+    std::unique_ptr<ConsoleBoxTextbox> textbox{nullptr};
+    std::unique_ptr<CBaseUIScrollView> suggestion{nullptr};
     std::vector<CBaseUIButton *> vSuggestionButtons;
-    float fSuggestionY;
+    float fSuggestionY{0.f};
 
-    bool bRequireShiftToActivate;
-    bool bConsoleAnimateOnce;
+    bool bRequireShiftToActivate{false};
+    bool bConsoleAnimateOnce{false};  // set to true for on-launch anim in
     float fConsoleDelay;
-    float fConsoleAnimation;
-    bool bConsoleAnimateIn;
-    bool bConsoleAnimateOut;
+    float fConsoleAnimation{0.f};
+    bool bConsoleAnimateIn{false};
+    bool bConsoleAnimateOut{false};
 
-    bool bSuggestionAnimateIn;
-    bool bSuggestionAnimateOut;
-    float fSuggestionAnimation;
+    bool bSuggestionAnimateIn{false};
+    bool bSuggestionAnimateOut{false};
+    float fSuggestionAnimation{0.f};
 
-    float fLogTime;
-    float fLogYPos;
+    float fLogTime{0.f};
+    float fLogYPos{0.f};
     std::vector<LOG_ENTRY> log_entries;
     McFont *logFont;
 
     std::vector<std::string> commandHistory;
-    int iSelectedHistory;
+    int iSelectedHistory{-1};
     bool bClearPending{false};
 
     Sync::shared_mutex logMutex;
 
     // thread-safe log animation state
-    std::atomic<bool> bLogAnimationResetPending;
-    std::atomic<float> fPendingLogTime;
-    std::atomic<bool> bForceLogVisible;  // needed as an "ohshit" when a ton of lines are added in a single frame after
-                                         // the log has been hidden already
+    std::atomic<bool> bLogAnimationResetPending{false};
+    std::atomic<float> fPendingLogTime{0.f};
+    std::atomic<bool> bForceLogVisible{
+        false};  // needed as an "ohshit" when a ton of lines are added in a single frame after
+                 // the log has been hidden already
 };

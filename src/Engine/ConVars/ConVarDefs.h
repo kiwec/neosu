@@ -826,6 +826,7 @@ CONVAR(console_overlay, false, CLIENT | SKINS | SERVER,
        "should the log overlay always be visible (or only if the console is out)");
 CONVAR(console_overlay_lines, 12, CLIENT | SKINS | SERVER, "max number of lines of text");
 CONVAR(console_overlay_scale, 1.0f, CLIENT | SKINS | SERVER, "log text size multiplier");
+CONVAR(console_overlay_timeout, 8.0f, CLIENT | SKINS | SERVER, "how long to wait before fading out visible console log lines (0 = never fade out)");
 CONVAR(consolebox_animspeed, 12.0f, CLIENT | SKINS | SERVER);
 CONVAR(consolebox_draw_helptext, true, CLIENT | SKINS | SERVER, "whether convar suggestions also draw their helptext");
 CONVAR(consolebox_draw_preview, true, CLIENT | SKINS | SERVER,

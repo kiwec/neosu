@@ -1857,7 +1857,7 @@ void Osu::updateConfineCursor() {
                                   (this->map_iface && this->map_iface->is_watching) ||              //
                                   BanchoState::spectating;                                          //
 
-    bool confine_cursor = might_confine && !force_no_confine;
+    const bool confine_cursor = might_confine && !force_no_confine;
     if(confine_cursor) {
         clip = McRect{-mouse->getOffset(), this->getVirtScreenSize()};
     }
