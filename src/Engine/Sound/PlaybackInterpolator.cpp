@@ -15,22 +15,30 @@ u64 PlaybackInterpolator::update(f64 rawPositionS, f64 currentTime, f64 playback
         return this->iLastInterpolatedPositionUS;
     }
 
-    // update rate estimate when position changes
+    // time since last update() call (for interpolation)
+    const f64 timeDelta = currentTime - this->dLastPositionTime;
+
+    // always advance from last interpolated position
+    f64 currentInterpolatedS = static_cast<f64>(this->iLastInterpolatedPositionUS) / (1000.0 * 1000.0);
+    f64 interpolatedPositionS = currentInterpolatedS + (timeDelta * this->dEstimatedRate);
+
+    // update rate estimate and apply drift correction when raw position changes
     if(this->dLastRawPosition != rawPositionS) {
-        const f64 timeDelta = currentTime - this->dLastPositionTime;
+        // calculate time between raw position samples
+        const f64 rawPositionTimeDelta = currentTime - this->dLastPositionTime;
 
         // only update rate if enough time has passed (5ms minimum)
-        if(timeDelta > 0.005) {
+        if(rawPositionTimeDelta > 0.005) {
             f64 newRate;
 
             if(rawPositionS >= this->dLastRawPosition) {
                 // normal forward movement
-                newRate = (rawPositionS - this->dLastRawPosition) / timeDelta;
+                newRate = (rawPositionS - this->dLastRawPosition) / rawPositionTimeDelta;
             } else if(isLooped && lengthMS > 0) {
                 // handle loop wraparound
                 const f64 lengthS = lengthMS / 1000.;
                 const f64 wrappedChange = (lengthS - this->dLastRawPosition) + rawPositionS;
-                newRate = wrappedChange / timeDelta;
+                newRate = wrappedChange / rawPositionTimeDelta;
             } else {
                 // backward movement (seeking), keep current rate
                 newRate = this->dEstimatedRate;
@@ -46,10 +54,13 @@ u64 PlaybackInterpolator::update(f64 rawPositionS, f64 currentTime, f64 playback
             this->dEstimatedRate = this->dEstimatedRate * 0.6 + newRate * 0.4;
         }
 
+        // apply drift correction to sync with raw position
+        const f64 error = rawPositionS - interpolatedPositionS;
+        interpolatedPositionS += error * 0.3;
+
         this->dLastRawPosition = rawPositionS;
-        this->dLastPositionTime = currentTime;
     } else {
-        // gradual adjustment when position hasn't changed for a while
+        // gradual adjustment when raw position hasn't changed for a while
         const f64 timeSinceLastChange = currentTime - this->dLastPositionTime;
         if(timeSinceLastChange > 0.1) {
             const f64 expectedRate = playbackSpeed;
@@ -57,9 +68,8 @@ u64 PlaybackInterpolator::update(f64 rawPositionS, f64 currentTime, f64 playback
         }
     }
 
-    // interpolate position based on estimated rate
-    const f64 timeSinceLastReading = currentTime - this->dLastPositionTime;
-    const f64 interpolatedPositionS = this->dLastRawPosition + (timeSinceLastReading * this->dEstimatedRate);
+    // update time basis for next call
+    this->dLastPositionTime = currentTime;
 
     // handle looping
     if(isLooped && lengthMS > 0) {

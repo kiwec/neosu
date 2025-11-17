@@ -267,7 +267,7 @@ void BeatmapInterface::drawBackground() {
         y += 100;
 
         if(this->hitobjectsSortedByEndTime.size() > 0) {
-            HitObject *lastHitObject = this->hitobjectsSortedByEndTime[this->hitobjectsSortedByEndTime.size() - 1];
+            HitObject *lastHitObject = this->hitobjectsSortedByEndTime.back();
             if(lastHitObject->isFinished() && this->iCurMusicPos > lastHitObject->click_time + lastHitObject->duration +
                                                                        (i32)cv::end_skip_time.getInt()) {
                 g->setColor(0xff00ffff);
@@ -799,9 +799,8 @@ void BeatmapInterface::pause(bool quitIfWaiting) {
             // case 1: the beatmap is already "finished", jump to the ranking screen if some small amount of time past
             //         the last objects endTime
             // case 2: in the middle somewhere, pause as usual
-            HitObject *lastHitObject = this->hitobjectsSortedByEndTime.size() > 0
-                                           ? this->hitobjectsSortedByEndTime[this->hitobjectsSortedByEndTime.size() - 1]
-                                           : nullptr;
+            HitObject *lastHitObject =
+                this->hitobjectsSortedByEndTime.size() > 0 ? this->hitobjectsSortedByEndTime.back() : nullptr;
             if(lastHitObject != nullptr && lastHitObject->isFinished() &&
                (this->iCurMusicPos >
                 lastHitObject->click_time + lastHitObject->duration + (i32)cv::end_skip_time.getInt()) &&
@@ -1097,8 +1096,7 @@ u32 BeatmapInterface::getLength() const {
 
 u32 BeatmapInterface::getLengthPlayable() const {
     if(this->hitobjects.size() > 0)
-        return (u32)((this->hitobjects[this->hitobjects.size() - 1]->click_time +
-                      this->hitobjects[this->hitobjects.size() - 1]->duration) -
+        return (u32)((this->hitobjects.back()->click_time + this->hitobjects.back()->duration) -
                      this->hitobjects[0]->click_time);
     else
         return this->getLength();
@@ -1195,11 +1193,10 @@ f32 BeatmapInterface::getAR_full() const {
     if(cv::ar_override_lock.getBool()) AR = GameRules::arWithSpeed(AR, 1.f / this->getSpeedMultiplier());
 
     if(cv::mod_artimewarp.getBool() && this->hitobjects.size() > 0) {
-        const f32 percent =
-            1.0f - ((f64)(this->iCurMusicPos - this->hitobjects[0]->click_time) /
-                    (f64)(this->hitobjects[this->hitobjects.size() - 1]->click_time +
-                          this->hitobjects[this->hitobjects.size() - 1]->duration - this->hitobjects[0]->click_time)) *
-                       (1.0f - cv::mod_artimewarp_multiplier.getFloat());
+        const f32 percent = 1.0f - ((f64)(this->iCurMusicPos - this->hitobjects[0]->click_time) /
+                                    (f64)(this->hitobjects.back()->click_time + this->hitobjects.back()->duration -
+                                          this->hitobjects[0]->click_time)) *
+                                       (1.0f - cv::mod_artimewarp_multiplier.getFloat());
         AR *= percent;
     }
 
@@ -1222,8 +1219,7 @@ f32 BeatmapInterface::getCS_full() const {
     if(cv::mod_minimize.getBool() && this->hitobjects.size() > 0) {
         if(this->hitobjects.size() > 0) {
             const f32 percent = 1.0f + ((f64)(this->iCurMusicPos - this->hitobjects[0]->click_time) /
-                                        (f64)(this->hitobjects[this->hitobjects.size() - 1]->click_time +
-                                              this->hitobjects[this->hitobjects.size() - 1]->duration -
+                                        (f64)(this->hitobjects.back()->click_time + this->hitobjects.back()->duration -
                                               this->hitobjects[0]->click_time)) *
                                            cv::mod_minimize_multiplier.getFloat();
             CS *= percent;
@@ -1416,8 +1412,7 @@ void BeatmapInterface::addHealth(f64 percent, bool isFromHitResult) {
     // never drain after last hitobject
     if(this->hitobjectsSortedByEndTime.size() > 0 &&
        this->iCurMusicPosWithOffsets >
-           (this->hitobjectsSortedByEndTime[this->hitobjectsSortedByEndTime.size() - 1]->click_time +
-            this->hitobjectsSortedByEndTime[this->hitobjectsSortedByEndTime.size() - 1]->duration))
+           (this->hitobjectsSortedByEndTime.back()->click_time + this->hitobjectsSortedByEndTime.back()->duration))
         return;
 
     if(this->bFailed) {
@@ -1934,7 +1929,7 @@ void BeatmapInterface::drawSmoke() {
         //      Also our smoke_trail_spacing is too low, stable probably has it over 15ms.
         i64 last_trail_tms = 0;
         if(!this->smoke_trail.empty()) {
-            last_trail_tms = this->smoke_trail[this->smoke_trail.size() - 1].time;
+            last_trail_tms = this->smoke_trail.back().time;
         }
         if(sm.time - last_trail_tms > cv::smoke_trail_spacing.getInt()) {
             this->smoke_trail.push_back(sm);
@@ -1971,7 +1966,7 @@ void BeatmapInterface::drawSmoke() {
     smoke->unbind();
 
     // trail cleanup
-    while(!this->smoke_trail.empty() && current_time > this->smoke_trail[0].time + time_visible) {
+    while(!this->smoke_trail.empty() && std::cmp_greater(current_time, this->smoke_trail[0].time + time_visible)) {
         this->smoke_trail.erase(this->smoke_trail.begin());
     }
 }
@@ -2565,10 +2560,9 @@ void BeatmapInterface::update2() {
     // handle timewarp
     if(cv::mod_timewarp.getBool()) {
         if(this->hitobjects.size() > 0 && this->iCurMusicPos > this->hitobjects[0]->click_time) {
-            const f32 percentFinished =
-                ((f64)(this->iCurMusicPos - this->hitobjects[0]->click_time) /
-                 (f64)(this->hitobjects[this->hitobjects.size() - 1]->click_time +
-                       this->hitobjects[this->hitobjects.size() - 1]->duration - this->hitobjects[0]->click_time));
+            const f32 percentFinished = ((f64)(this->iCurMusicPos - this->hitobjects[0]->click_time) /
+                                         (f64)(this->hitobjects.back()->click_time + this->hitobjects.back()->duration -
+                                               this->hitobjects[0]->click_time));
             f32 warp_multiplier = std::max(cv::mod_timewarp_multiplier.getFloat(), 1.f);
             const f32 speed =
                 this->getSpeedMultiplier() + percentFinished * this->getSpeedMultiplier() * (warp_multiplier - 1.0f);
@@ -2684,8 +2678,7 @@ void BeatmapInterface::update2() {
         const bool hasAnyHitObjects = (this->hitobjects.size() > 0);
         const bool isTimePastLastHitObjectPlusLenience =
             (this->iCurMusicPos >
-             (this->hitobjectsSortedByEndTime[this->hitobjectsSortedByEndTime.size() - 1]->click_time +
-              this->hitobjectsSortedByEndTime[this->hitobjectsSortedByEndTime.size() - 1]->duration +
+             (this->hitobjectsSortedByEndTime.back()->click_time + this->hitobjectsSortedByEndTime.back()->duration +
               (i32)cv::end_delay_time.getInt()));
         if(!hasAnyHitObjects || (cv::end_skip.getBool() && isTimePastLastHitObjectPlusLenience) ||
            (!cv::end_skip.getBool() && isMusicFinished)) {
@@ -3232,9 +3225,8 @@ void BeatmapInterface::update2() {
         const bool inSectionPassFail =
             (gapSize > minGapSize && nextDelta > 0) &&
             this->iCurMusicPosWithOffsets > this->hitobjects[0]->click_time &&
-            this->iCurMusicPosWithOffsets <
-                (this->hitobjectsSortedByEndTime[this->hitobjectsSortedByEndTime.size() - 1]->click_time +
-                 this->hitobjectsSortedByEndTime[this->hitobjectsSortedByEndTime.size() - 1]->duration) &&
+            this->iCurMusicPosWithOffsets < (this->hitobjectsSortedByEndTime.back()->click_time +
+                                             this->hitobjectsSortedByEndTime.back()->duration) &&
             !this->bFailed && this->bInBreak && (breakEvent.endTime - breakEvent.startTime) > minGapSize;
 
         const bool passing = (this->fHealth >= 0.5);
@@ -3561,9 +3553,8 @@ bool BeatmapInterface::isBuffering() {
             this->is_buffering = false;
         }
     } else {
-        HitObject *lastHitObject = this->hitobjectsSortedByEndTime.size() > 0
-                                       ? this->hitobjectsSortedByEndTime[this->hitobjectsSortedByEndTime.size() - 1]
-                                       : nullptr;
+        HitObject *lastHitObject =
+            this->hitobjectsSortedByEndTime.size() > 0 ? this->hitobjectsSortedByEndTime.back() : nullptr;
         bool is_finished = lastHitObject != nullptr && lastHitObject->isFinished();
 
         if(leeway < 0 && !is_finished) {
