@@ -53,10 +53,15 @@ class OpenGLInterface : public Graphics {
     // 3d type drawing
     void drawVAO(VertexArrayObject *vao) final;
 
-    // DEPRECATED: 2d clipping
+    // 2d clipping
     void setClipRect(McRect clipRect) final;
     void pushClipRect(McRect clipRect) final;
     void popClipRect() final;
+
+    // viewport modification
+    void pushViewport() final;
+    void setViewport(int x, int y, int width, int height) final;
+    void popViewport() final;
 
     // stencil
     void pushStencil() final;

@@ -1364,8 +1364,7 @@ DatabaseBeatmap::LOAD_GAMEPLAY_RESULT DatabaseBeatmap::loadGameplay(DatabaseBeat
 
     // update beatmap length stat
     if(databaseBeatmap->iLengthMS == 0 && result.hitobjects.size() > 0)
-        databaseBeatmap->iLengthMS = result.hitobjects[result.hitobjects.size() - 1]->click_time +
-                                     result.hitobjects[result.hitobjects.size() - 1]->duration;
+        databaseBeatmap->iLengthMS = result.hitobjects.back()->click_time + result.hitobjects.back()->duration;
 
     // set isEndOfCombo + precalculate Score v2 combo portion maximum
     if(beatmap != nullptr) {

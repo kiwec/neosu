@@ -39,6 +39,7 @@ class PlaybackInterpolator {
      */
     inline void reset(f64 rawPositionS, f64 currentTime, f64 playbackSpeed) {
         this->dLastRawPosition = rawPositionS;
+        this->dLastRawPositionChangeTime = currentTime;
         this->dLastPositionTime = currentTime;
         this->dEstimatedRate = playbackSpeed;
         this->iLastInterpolatedPositionUS = static_cast<u64>(std::round(rawPositionS * 1000. * 1000.));
@@ -59,10 +60,11 @@ class PlaybackInterpolator {
     }
 
    private:
-    f64 dLastRawPosition{0.0};           // last raw position in seconds
-    f64 dLastPositionTime{0.0};          // engine time when last position was obtained
-    f64 dEstimatedRate{1.};              // estimated playback rate (seconds per second)
-    u64 iLastInterpolatedPositionUS{0};  // last calculated interpolated position (seconds)
+    f64 dLastRawPosition{0.0};            // last raw position in seconds
+    f64 dLastPositionTime{0.0};           // engine time when last position was obtained
+    f64 dEstimatedRate{1.};               // estimated playback rate (seconds per second)
+    f64 dLastRawPositionChangeTime{0.0};  // track when raw position last changed
+    u64 iLastInterpolatedPositionUS{0};   // last calculated interpolated position (seconds)
 };
 
 class GameplayInterpolator {

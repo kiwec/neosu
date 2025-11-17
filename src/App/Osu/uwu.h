@@ -69,7 +69,7 @@ struct lazy_promise {
                 continue;  // spurious wakeup
             }
 
-            Func func = this->funcs[this->funcs.size() - 1];
+            Func func = this->funcs.back();
             this->funcs.clear();
             lock.unlock();
 

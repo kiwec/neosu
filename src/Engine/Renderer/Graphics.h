@@ -176,6 +176,12 @@ class Graphics {
     virtual void pushClipRect(McRect clipRect) = 0;
     virtual void popClipRect() = 0;
 
+    // viewport modification
+    virtual void pushViewport() = 0;
+    virtual void setViewport(int x, int y, int width, int height) = 0;
+    inline void setViewport(vec2 size) { return setViewport(0, 0, (int)size.x, (int)size.y); }
+    virtual void popViewport() = 0;
+
     // stencil buffer
     virtual void pushStencil() = 0;
     virtual void fillStencil(bool inside) = 0;
@@ -274,6 +280,9 @@ class Graphics {
     // transforms
     std::stack<Matrix4> worldTransformStack;
     std::stack<Matrix4> projectionTransformStack;
+
+    std::stack<std::array<int, 4>> viewportStack;
+    std::stack<vec2> resolutionStack;
 
     // 3d gui scenes
     std::stack<bool> scene3d_stack;

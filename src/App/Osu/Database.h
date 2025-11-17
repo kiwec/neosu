@@ -24,18 +24,20 @@ typedef DatabaseBeatmap BeatmapSet;
 #define NEOSU_SCORE_DB_VERSION 20240725
 
 class Database;
-extern std::unique_ptr<Database> db; // global for convenience, created in osu constructor, destroyed in osu constructor
+// global for convenience, created in osu constructor, destroyed in osu constructor
+extern std::unique_ptr<Database> db;
+
+// Field ordering matters here
+#pragma pack(push, 1)
+struct alignas(1) DB_TIMINGPOINT {
+    double msPerBeat;
+    double offset;
+    bool uninherited;
+};
+#pragma pack(pop)
 
 class Database {
     NOCOPY_NOMOVE(Database)
-// Field ordering matters here
-#pragma pack(push, 1)
-    struct alignas(1) TIMINGPOINT {
-        double msPerBeat;
-        double offset;
-        bool uninherited;
-    };
-#pragma pack(pop)
    public:
     struct PlayerStats {
         UString name;
@@ -201,7 +203,8 @@ class Database {
     u32 num_beatmaps_to_load{0};
     std::atomic<bool> load_interrupted{false};
     std::vector<BeatmapSet *> beatmapsets;
-    std::vector<BeatmapSet *> temp_loading_beatmapsets; // only used during loading, contents moved into beatmapsets after
+    std::vector<BeatmapSet *>
+        temp_loading_beatmapsets;  // only used during loading, contents moved into beatmapsets after
 
     Sync::shared_mutex beatmap_difficulties_mtx;
     std::unordered_map<MD5Hash, BeatmapDifficulty *> beatmap_difficulties;

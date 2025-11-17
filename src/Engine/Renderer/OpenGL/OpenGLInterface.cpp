@@ -574,6 +574,29 @@ void OpenGLInterface::popClipRect() {
         setClipping(false);
 }
 
+void OpenGLInterface::pushViewport() {
+    this->viewportStack.push(GLStateCache::getCurrentViewport());
+    this->resolutionStack.push(this->vResolution);
+}
+
+void OpenGLInterface::setViewport(int x, int y, int width, int height) {
+    this->vResolution = vec2(width, height);
+    GLStateCache::setViewport(x, y, width, height);
+}
+
+void OpenGLInterface::popViewport() {
+    if(this->viewportStack.empty() || this->resolutionStack.empty()) {
+        debugLog("WARNING: viewport stack underflow!");
+        return;
+    }
+
+    this->vResolution = this->resolutionStack.top();
+    this->resolutionStack.pop();
+
+    GLStateCache::setViewport(this->viewportStack.top());
+    this->viewportStack.pop();
+}
+
 void OpenGLInterface::pushStencil() {
     // init and clear
     glClearStencil(0);

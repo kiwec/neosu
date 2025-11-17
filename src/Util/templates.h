@@ -6,6 +6,7 @@
 #include <string>
 #include <string_view>
 #include <unordered_map>
+#include <cassert>
 
 // zero-initialized dynamic array, similar to std::vector but way faster when you don't need constructors
 // obviously don't use it on complex types :)
@@ -74,6 +75,24 @@ struct zarray {
     [[nodiscard]] bool empty() const { return this->nb == 0; }
     T *end() const { return &this->memory[this->nb]; }
     [[nodiscard]] size_t size() const { return this->nb; }
+
+    inline T &front() noexcept {
+        assert(!this->empty());
+        return operator[](0);
+    }
+    inline T &back() noexcept {
+        assert(!this->empty());
+        return operator[](this->size() - 1);
+    }
+
+    inline constexpr const T &front() const noexcept {
+        assert(!this->empty());
+        return operator[](0);
+    }
+    inline constexpr const T &back() const noexcept {
+        assert(!this->empty());
+        return operator[](this->size() - 1);
+    }
 
    private:
     size_t max = 0;

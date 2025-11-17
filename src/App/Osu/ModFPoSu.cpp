@@ -14,8 +14,6 @@
 #include "ModSelector.h"
 #include "ModFPoSu3DModels.h"
 #include "Mouse.h"
-#include "OpenGLHeaders.h"
-#include "OpenGLInterface.h"
 #include "OptionsMenu.h"
 #include "Osu.h"
 #include "ResourceManager.h"
@@ -81,128 +79,116 @@ void ModFPoSu::draw() {
     Matrix4 viewMatrix = Camera::buildMatrixLookAt(
         this->camera->getPos(), this->camera->getPos() + this->camera->getViewDirection(), this->camera->getViewUp());
 
-    // HACKHACK: there is currently no way to directly modify the viewport origin, so the only option for rendering
-    // non-2d stuff with correct offsets (i.e. top left) is by rendering into a rendertarget HACKHACK: abusing
-    // sliderFrameBuffer
+    g->pushViewport();
+    g->setViewport(osu->getVirtScreenSize());
 
-    osu->getSliderFrameBuffer()->enable();
+    g->clearDepthBuffer();
+    g->pushTransform();
     {
-        const vec2 resolutionBackup = g->getResolution();
-        g->onResolutionChange(
-            osu->getSliderFrameBuffer()
-                ->getSize());  // set renderer resolution to game resolution (to correctly support letterboxing etc.)
+        g->setWorldMatrix(viewMatrix);
+        g->setProjectionMatrix(projectionMatrix);
+
+        g->setBlending(false);
         {
-            g->clearDepthBuffer();
-            g->pushTransform();
+            g->setDepthBuffer(true);
             {
-                g->setWorldMatrix(viewMatrix);
-                g->setProjectionMatrix(projectionMatrix);
-
-                g->setBlending(false);
-                {
-                    // regular fposu "2d" render path
-
-                    g->setDepthBuffer(true);
+                // axis lines at (0, 0, 0)
+                if(cv::fposu_noclip.getBool()) {
+                    static VertexArrayObject vao(Graphics::PRIMITIVE::PRIMITIVE_LINES);
+                    vao.clear();
                     {
-                        // axis lines at (0, 0, 0)
-                        if(cv::fposu_noclip.getBool()) {
-                            static VertexArrayObject vao(Graphics::PRIMITIVE::PRIMITIVE_LINES);
-                            vao.clear();
-                            {
-                                vec3 pos = vec3(0, 0, 0);
-                                float length = 1.0f;
+                        vec3 pos = vec3(0, 0, 0);
+                        float length = 1.0f;
 
-                                vao.addColor(0xffff0000);
-                                vao.addVertex(pos.x, pos.y, pos.z);
-                                vao.addColor(0xffff0000);
-                                vao.addVertex(pos.x + length, pos.y, pos.z);
+                        vao.addColor(0xffff0000);
+                        vao.addVertex(pos.x, pos.y, pos.z);
+                        vao.addColor(0xffff0000);
+                        vao.addVertex(pos.x + length, pos.y, pos.z);
 
-                                vao.addColor(0xff00ff00);
-                                vao.addVertex(pos.x, pos.y, pos.z);
-                                vao.addColor(0xff00ff00);
-                                vao.addVertex(pos.x, pos.y + length, pos.z);
+                        vao.addColor(0xff00ff00);
+                        vao.addVertex(pos.x, pos.y, pos.z);
+                        vao.addColor(0xff00ff00);
+                        vao.addVertex(pos.x, pos.y + length, pos.z);
 
-                                vao.addColor(0xff0000ff);
-                                vao.addVertex(pos.x, pos.y, pos.z);
-                                vao.addColor(0xff0000ff);
-                                vao.addVertex(pos.x, pos.y, pos.z + length);
-                            }
-                            g->setColor(0xffffffff);
-                            g->drawVAO(&vao);
-                        }
-
-                        // skybox/cube
-                        if(cv::fposu_skybox.getBool()) {
-                            this->handleLazyLoad3DModels();
-
-                            g->pushTransform();
-                            {
-                                Matrix4 modelMatrix;
-                                {
-                                    Matrix4 scale;
-                                    scale.scale(cv::fposu_3d_skybox_size.getFloat());
-
-                                    modelMatrix = scale;
-                                }
-                                g->setWorldMatrixMul(modelMatrix);
-
-                                g->setColor(0xffffffff);
-                                osu->getSkin()->i_skybox->bind();
-                                {
-                                    this->skyboxModel->draw3D();
-                                }
-                                osu->getSkin()->i_skybox->unbind();
-                            }
-                            g->popTransform();
-                        } else if(cv::fposu_cube.getBool()) {
-                            osu->getSkin()->i_background_cube->bind();
-                            {
-                                g->setColor(rgb(std::clamp<int>(cv::fposu_cube_tint_r.getInt(), 0, 255),
-                                                std::clamp<int>(cv::fposu_cube_tint_g.getInt(), 0, 255),
-                                                std::clamp<int>(cv::fposu_cube_tint_b.getInt(), 0, 255)));
-                                g->drawVAO(this->vaoCube);
-                            }
-                            osu->getSkin()->i_background_cube->unbind();
-                        }
+                        vao.addColor(0xff0000ff);
+                        vao.addVertex(pos.x, pos.y, pos.z);
+                        vao.addColor(0xff0000ff);
+                        vao.addVertex(pos.x, pos.y, pos.z + length);
                     }
-                    g->setDepthBuffer(false);
-
-                    const bool isTransparent = (cv::background_alpha.getFloat() < 1.0f);
-                    if(isTransparent) {
-                        g->setBlending(true);
-                        g->setBlendMode(Graphics::BLEND_MODE::BLEND_MODE_PREMUL_COLOR);
-                    }
-
-                    Matrix4 worldMatrix = this->modelMatrix;
-
-                    g->setWorldMatrixMul(worldMatrix);
-                    {
-                        osu->getPlayfieldBuffer()->bind();
-                        {
-                            g->setColor(0xffffffff);
-                            g->drawVAO(this->vao);
-                        }
-                        osu->getPlayfieldBuffer()->unbind();
-                    }
-
-                    if(isTransparent) g->setBlendMode(Graphics::BLEND_MODE::BLEND_MODE_ALPHA);
-
-                    // (no setBlending(false), since we are already at the end)
+                    g->setColor(0xffffffff);
+                    g->drawVAO(&vao);
                 }
-                if(!cv::fposu_transparent_playfield.getBool()) g->setBlending(true);
-            }
-            g->popTransform();
-        }
-        g->onResolutionChange(resolutionBackup);
-    }
-    osu->getSliderFrameBuffer()->disable();
 
-    // finally, draw that to the screen
-    g->setBlending(false);
-    {
-        osu->getSliderFrameBuffer()->draw(0, 0);
+                // skybox/cube
+                if(cv::fposu_skybox.getBool()) {
+                    this->handleLazyLoad3DModels();
+
+                    g->pushTransform();
+                    {
+                        Matrix4 modelMatrix;
+                        {
+                            Matrix4 scale;
+                            scale.scale(cv::fposu_3d_skybox_size.getFloat());
+
+                            modelMatrix = scale;
+                        }
+                        g->setWorldMatrixMul(modelMatrix);
+
+                        g->setColor(0xffffffff);
+                        osu->getSkin()->i_skybox->bind();
+                        {
+                            this->skyboxModel->draw3D();
+                        }
+                        osu->getSkin()->i_skybox->unbind();
+                    }
+                    g->popTransform();
+                } else if(cv::fposu_cube.getBool()) {
+                    osu->getSkin()->i_background_cube->bind();
+                    {
+                        g->setColor(rgb(std::clamp<int>(cv::fposu_cube_tint_r.getInt(), 0, 255),
+                                        std::clamp<int>(cv::fposu_cube_tint_g.getInt(), 0, 255),
+                                        std::clamp<int>(cv::fposu_cube_tint_b.getInt(), 0, 255)));
+                        g->drawVAO(this->vaoCube);
+                    }
+                    osu->getSkin()->i_background_cube->unbind();
+                }
+            }
+            g->setDepthBuffer(false);
+
+            const bool isTransparent =
+                // if we are not drawing a background, don't enable transparency (it will just make it totally transparent)
+                cv::background_alpha.getFloat() < 1.0f &&
+                (cv::background_brightness.getFloat() > 0.0f ||
+                 (cv::draw_beatmap_background_image.getBool() &&
+                  (cv::background_dim.getFloat() < 1.0f ||
+                   osu->getMapInterface()->getBreakBackgroundFadeAnim() > 0.0f)));
+
+            if(isTransparent) {
+                g->setBlending(true);
+                g->setBlendMode(Graphics::BLEND_MODE::BLEND_MODE_PREMUL_COLOR);
+            }
+
+            Matrix4 worldMatrix = this->modelMatrix;
+
+            g->setWorldMatrixMul(worldMatrix);
+            {
+                osu->getPlayfieldBuffer()->bind();
+                {
+                    g->setColor(0xffffffff);
+                    g->drawVAO(this->vao);
+                }
+                osu->getPlayfieldBuffer()->unbind();
+            }
+
+            if(isTransparent) g->setBlendMode(Graphics::BLEND_MODE::BLEND_MODE_ALPHA);
+
+            // (no setBlending(false), since we are already at the end)
+        }
+        if(!cv::fposu_transparent_playfield.getBool()) g->setBlending(true);
     }
-    g->setBlending(true);
+    g->popTransform();
+
+    g->popViewport();
 }
 
 void ModFPoSu::update() {

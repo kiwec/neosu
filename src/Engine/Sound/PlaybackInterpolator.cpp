@@ -25,7 +25,7 @@ u64 PlaybackInterpolator::update(f64 rawPositionS, f64 currentTime, f64 playback
     // update rate estimate and apply drift correction when raw position changes
     if(this->dLastRawPosition != rawPositionS) {
         // calculate time between raw position samples
-        const f64 rawPositionTimeDelta = currentTime - this->dLastPositionTime;
+        const f64 rawPositionTimeDelta = currentTime - this->dLastRawPositionChangeTime;
 
         // only update rate if enough time has passed (5ms minimum)
         if(rawPositionTimeDelta > 0.005) {
@@ -59,9 +59,10 @@ u64 PlaybackInterpolator::update(f64 rawPositionS, f64 currentTime, f64 playback
         interpolatedPositionS += error * 0.3;
 
         this->dLastRawPosition = rawPositionS;
+        this->dLastRawPositionChangeTime = currentTime;  // track when raw position changed
     } else {
         // gradual adjustment when raw position hasn't changed for a while
-        const f64 timeSinceLastChange = currentTime - this->dLastPositionTime;
+        const f64 timeSinceLastChange = currentTime - this->dLastRawPositionChangeTime;
         if(timeSinceLastChange > 0.1) {
             const f64 expectedRate = playbackSpeed;
             this->dEstimatedRate = this->dEstimatedRate * 0.95 + expectedRate * 0.05;

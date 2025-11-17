@@ -84,10 +84,15 @@ class DirectX11Interface final : public Graphics {
     // 3d type drawing
     void drawVAO(VertexArrayObject *vao) override;
 
-    // DEPRECATED: 2d clipping
+    // 2d clipping
     void setClipRect(McRect clipRect) override;
     void pushClipRect(McRect clipRect) override;
     void popClipRect() override;
+
+    // viewport modification
+    void pushViewport() override;
+    void setViewport(int x, int y, int width, int height) override;
+    void popViewport() override;
 
     // TODO:
     [[deprecated("not implemented")]] void fillRoundedRect(int /*x*/, int /*y*/, int /*width*/, int /*height*/,

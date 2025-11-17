@@ -940,6 +940,53 @@ void DirectX11Interface::setClipping(bool enabled) {
     this->deviceContext->RSSetState(this->rasterizerState);
 }
 
+void DirectX11Interface::pushViewport() {
+    D3D11_VIEWPORT vp;
+    UINT numViewports = 1;
+    this->deviceContext->RSGetViewports(&numViewports, &vp);
+
+    this->viewportStack.push({(int)vp.TopLeftX, (int)vp.TopLeftY, (int)vp.Width, (int)vp.Height});
+    this->resolutionStack.push(this->vResolution);
+}
+
+void DirectX11Interface::setViewport(int x, int y, int width, int height) {
+    this->vResolution = vec2(width, height);
+
+    D3D11_VIEWPORT viewport{
+        .TopLeftX = (float)x,
+        .TopLeftY = (float)y,
+        .Width = (float)width,
+        .Height = (float)height,
+        .MinDepth = 0.0f,
+        .MaxDepth = 1.0f,
+    };
+
+    this->deviceContext->RSSetViewports(1, &viewport);
+}
+
+void DirectX11Interface::popViewport() {
+    if(this->viewportStack.empty() || this->resolutionStack.empty()) {
+        debugLog("WARNING: viewport stack underflow!");
+        return;
+    }
+
+    this->vResolution = this->resolutionStack.top();
+    this->resolutionStack.pop();
+
+    const auto &vp = this->viewportStack.top();
+    D3D11_VIEWPORT viewport{
+        .TopLeftX = (float)vp[0],
+        .TopLeftY = (float)vp[1],
+        .Width = (float)vp[2],
+        .Height = (float)vp[3],
+        .MinDepth = 0.0f,
+        .MaxDepth = 1.0f,
+    };
+
+    this->deviceContext->RSSetViewports(1, &viewport);
+    this->viewportStack.pop();
+}
+
 void DirectX11Interface::setAlphaTesting(bool /*enabled*/) {
     // TODO: implement in default shader
 }

@@ -52,7 +52,7 @@ f32 HitSamples::getVolume(i32 hitSoundType, bool is_sliderslide, std::optional<i
                 volume *= 0.85f;
                 break;
             default:
-                assert(false);  // unreachable
+                std::unreachable();  // unreachable
         }
     }
 

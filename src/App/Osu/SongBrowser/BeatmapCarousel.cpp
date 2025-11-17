@@ -120,8 +120,8 @@ void BeatmapCarousel::onKeyDown(KeyboardEvent &key) {
                     nextCollectionButton->select();
 
                     const auto &children = nextCollectionButton->getChildren();
-                    if(children.size() > 0 && !children[children.size() - 1]->isSelected())
-                        children[children.size() - 1]->select();
+                    if(children.size() > 0 && !children.back()->isSelected())
+                        children.back()->select();
                 }
             }
         }
@@ -133,7 +133,7 @@ void BeatmapCarousel::onKeyDown(KeyboardEvent &key) {
         const bool jumpToNextGroup = keyboard->isShiftDown();
 
         bool foundSelected = false;
-        for(uSz i = elements.size() - 1; i >= 0; i--) {
+        for(sSz i = elements.size() - 1; i >= 0; i--) {
             const auto *diffButtonPointer = elements[i]->as<const SongDifficultyButton>();
             const auto *collectionButtonPointer = elements[i]->as<const CollectionButton>();
 
@@ -152,8 +152,8 @@ void BeatmapCarousel::onKeyDown(KeyboardEvent &key) {
                         auto *collectionButton = elements[i]->as<CollectionButton>();
                         if(collectionButton != nullptr) {
                             const auto &children = collectionButton->getChildren();
-                            if(children.size() > 0 && !children[children.size() - 1]->isSelected())
-                                children[children.size() - 1]->select();
+                            if(children.size() > 0 && !children.back()->isSelected())
+                                children.back()->select();
                         }
                     }
                 }

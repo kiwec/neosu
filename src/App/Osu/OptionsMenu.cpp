@@ -242,7 +242,7 @@ class OptionsMenuSliderPreviewElement final : public CBaseUIElement {
                     osu->getSkin(), points[0] + (!useLegacyRenderer ? this->vPos : vec2(0, 0)), hitcircleDiameter,
                     numberScale, overlapScale, number, colorCounter, colorOffset, colorRGBMultiplier);
                 Circle::drawSliderEndCircle(osu->getSkin(),
-                                            points[points.size() - 1] + (!useLegacyRenderer ? this->vPos : vec2(0, 0)),
+                                            points.back() + (!useLegacyRenderer ? this->vPos : vec2(0, 0)),
                                             hitcircleDiameter, numberScale, overlapScale, number, colorCounter,
                                             colorOffset, colorRGBMultiplier, 1.0f, 1.0f, 0.0f, false, false);
             }

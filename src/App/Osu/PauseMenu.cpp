@@ -233,7 +233,7 @@ void PauseMenu::onKeyDown(KeyboardEvent &e) {
         }
 
         if(!keyboard->isAltDown() && e == KEY_UP) {
-            UIPauseMenuButton *nextSelectedButton = this->buttons[this->buttons.size() - 1];
+            UIPauseMenuButton *nextSelectedButton = this->buttons.back();
 
             // get first visible button
             for(int i = this->buttons.size() - 1; i >= 0; i--) {

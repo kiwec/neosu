@@ -48,6 +48,24 @@ inline bool isInt(float f) { return (f == static_cast<float>(static_cast<int>(f)
 #define INLINE_BODY
 #endif
 
+#if defined(__clang__)
+#define MC_ASSUME(expr) __builtin_assume(expr)
+#elif defined(__GNUC__)
+#if defined(__has_attribute) && __has_attribute(assume)
+#define MC_ASSUME(expr) __attribute__((assume(expr)))
+#else
+#define MC_ASSUME(expr)              \
+    do {                             \
+        if(expr) {                   \
+        } else {                     \
+            __builtin_unreachable(); \
+        }                            \
+    } while(false)
+#endif
+#elif defined(_MSC_VER)
+#define MC_ASSUME(expr) __assume(expr)
+#endif
+
 #define MAKE_FLAG_ENUM(Enum_name__) \
     inline constexpr bool is_flag(Enum_name__) { return true; }
 
@@ -255,13 +273,15 @@ constexpr typename detail::enable_if<detail::is_flag_enum<decltype(mask)>::value
 }
 
 template <auto mask>
-constexpr typename detail::enable_if<detail::is_flag_enum<decltype(mask)>::value, bool>::type has(decltype(mask) value) {
+constexpr typename detail::enable_if<detail::is_flag_enum<decltype(mask)>::value, bool>::type has(
+    decltype(mask) value) {
     using namespace operators;
     return (value & mask) == mask;
 }
 
 template <auto mask>
-constexpr typename detail::enable_if<detail::is_flag_enum<decltype(mask)>::value, bool>::type any(decltype(mask) value) {
+constexpr typename detail::enable_if<detail::is_flag_enum<decltype(mask)>::value, bool>::type any(
+    decltype(mask) value) {
     using namespace operators;
     return !!(value & mask);
 }

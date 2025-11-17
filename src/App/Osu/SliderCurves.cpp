@@ -266,7 +266,7 @@ void SliderCurveEqualDistanceMulti::init(const std::vector<SliderCurveType *> &c
         // add the point to the current segment (this is not using the lerp'd point! would cause mm mesh artifacts if it
         // did)
         lastCurvePointForNextSegmentStart = thisCurve;
-        curCurvePoints[curCurvePoints.size() - 1] = thisCurve;
+        curCurvePoints.back() = thisCurve;
     }
 
     // if we only had one segment, no jump to any next curve has occurred (and therefore no insertion of the segment

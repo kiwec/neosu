@@ -991,7 +991,7 @@ void Database::loadMaps() {
 
                     if(version < 20240812) {
                         u32 nb_timing_points = neosu_maps.read<u32>();
-                        neosu_maps.skip_bytes(sizeof(Database::TIMINGPOINT) * nb_timing_points);
+                        neosu_maps.skip_bytes(sizeof(DB_TIMINGPOINT) * nb_timing_points);
                     }
 
                     if(version >= 20240703) {
@@ -1104,7 +1104,7 @@ void Database::loadMaps() {
 
         if(should_read_peppy_database) {
             zarray<BPMTuple> bpm_calculation_buffer;
-            zarray<Database::TIMINGPOINT> timing_points_buffer;
+            zarray<DB_TIMINGPOINT> timing_points_buffer;
 
             for(uSz i = 0; i < this->num_beatmaps_to_load; i++) {
                 if(this->load_interrupted.load(std::memory_order_acquire)) break;  // cancellation point
@@ -1207,15 +1207,15 @@ void Database::loadMaps() {
                 BPMInfo bpm;
                 auto nb_timing_points = dbr.read<u32>();
                 if(overrides_found) {
-                    dbr.skip_bytes(sizeof(Database::TIMINGPOINT) * nb_timing_points);
+                    dbr.skip_bytes(sizeof(DB_TIMINGPOINT) * nb_timing_points);
                     bpm.min = override.min_bpm;
                     bpm.max = override.max_bpm;
                     bpm.most_common = override.avg_bpm;
                 } else if(nb_timing_points > 0) {
                     timing_points_buffer.resize(nb_timing_points);
                     if(dbr.read_bytes((u8 *)timing_points_buffer.data(),
-                                      sizeof(Database::TIMINGPOINT) * nb_timing_points) !=
-                       sizeof(Database::TIMINGPOINT) * nb_timing_points) {
+                                      sizeof(DB_TIMINGPOINT) * nb_timing_points) !=
+                       sizeof(DB_TIMINGPOINT) * nb_timing_points) {
                         debugLog("WARNING: failed to read timing points from beatmap {:d} !", (i + 1));
                     }
                     bpm = getBPM(timing_points_buffer, bpm_calculation_buffer);

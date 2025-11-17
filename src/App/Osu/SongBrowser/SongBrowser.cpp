@@ -3366,9 +3366,7 @@ void SongBrowser::selectRandomBeatmap() {
 void SongBrowser::selectPreviousRandomBeatmap() {
     if(this->previousRandomBeatmaps.size() > 0) {
         const auto *currentRandomBeatmap = this->previousRandomBeatmaps.back();
-        if(this->previousRandomBeatmaps.size() > 1 &&
-           this->previousRandomBeatmaps[this->previousRandomBeatmaps.size() - 1] ==
-               osu->getMapInterface()->getBeatmap())
+        if(this->previousRandomBeatmaps.size() > 1 && currentRandomBeatmap == osu->getMapInterface()->getBeatmap())
             this->previousRandomBeatmaps.pop_back();  // deletes the current beatmap which may also be at the top (so
                                                       // we don't switch to ourself)
 

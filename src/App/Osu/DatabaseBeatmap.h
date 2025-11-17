@@ -454,8 +454,12 @@ struct BPMTuple {
     double duration;
 };
 
+struct DB_TIMINGPOINT;
+
 template <typename T>
-struct BPMInfo getBPM(const zarray<T> &timing_points, zarray<BPMTuple> &bpm_buffer) {
+BPMInfo getBPM(const zarray<T> &timing_points, zarray<BPMTuple> &bpm_buffer)
+    requires(std::is_same_v<T, DB_TIMINGPOINT> || std::is_same_v<T, DatabaseBeatmap::TIMINGPOINT>)
+{
     if(timing_points.empty()) {
         return {};
     }
@@ -463,7 +467,7 @@ struct BPMInfo getBPM(const zarray<T> &timing_points, zarray<BPMTuple> &bpm_buff
     bpm_buffer.clear();  // reuse existing buffer
     bpm_buffer.reserve(timing_points.size());
 
-    double lastTime = timing_points[timing_points.size() - 1].offset;
+    double lastTime = timing_points.back().offset;
     for(size_t i = 0; i < timing_points.size(); i++) {
         const T &t = timing_points[i];
         if(t.offset > lastTime) continue;

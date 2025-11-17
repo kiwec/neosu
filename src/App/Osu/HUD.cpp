@@ -2405,9 +2405,9 @@ void HUD::addCursorTrailPosition(std::vector<CURSORTRAIL> &trail, vec2 pos) {
     if(smoothCursorTrail) {
         // interpolate mid points between the last point and the current point
         if(trail.size() > 0) {
-            const vec2 prevPos = trail[trail.size() - 1].pos;
-            const float prevTime = trail[trail.size() - 1].time;
-            const float prevScale = trail[trail.size() - 1].scale;
+            const vec2 prevPos = trail.back().pos;
+            const float prevTime = trail.back().time;
+            const float prevScale = trail.back().scale;
 
             vec2 delta = pos - prevPos;
             const int numMidPoints = (int)(vec::length(delta) / (trailWidth / cv::cursor_trail_smooth_div.getFloat()));
@@ -2430,14 +2430,13 @@ void HUD::addCursorTrailPosition(std::vector<CURSORTRAIL> &trail, vec2 pos) {
         } else {
             trail.push_back(ct);
         }
-    } else if((trail.size() > 0 && engine->getTime() > trail[trail.size() - 1].time -
-                                                           cv::cursor_trail_length.getFloat() +
+    } else if((trail.size() > 0 && engine->getTime() > trail.back().time - cv::cursor_trail_length.getFloat() +
                                                            cv::cursor_trail_spacing.getFloat() / 1000.f) ||
               trail.size() == 0) {
-        if(trail.size() > 0 && trail[trail.size() - 1].pos == pos && !cv::always_render_cursor_trail.getBool()) {
-            trail[trail.size() - 1].time = ct.time;
-            trail[trail.size() - 1].alpha = 1.0f;
-            trail[trail.size() - 1].scale = ct.scale;
+        if(trail.size() > 0 && trail.back().pos == pos && !cv::always_render_cursor_trail.getBool()) {
+            trail.back().time = ct.time;
+            trail.back().alpha = 1.0f;
+            trail.back().scale = ct.scale;
         } else {
             trail.push_back(ct);
         }

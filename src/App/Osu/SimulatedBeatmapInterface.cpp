@@ -150,11 +150,10 @@ f32 SimulatedBeatmapInterface::getCS_full() const {
     if(this->mods.cs_overridenegative < 0.0f) CS = this->mods.cs_overridenegative;
 
     if(this->mods.has(ModFlags::Minimize)) {
-        const f32 percent =
-            1.0f + ((f64)(this->iCurMusicPos - this->hitobjects[0]->click_time) /
-                    (f64)(this->hitobjects[this->hitobjects.size() - 1]->click_time +
-                          this->hitobjects[this->hitobjects.size() - 1]->duration - this->hitobjects[0]->click_time)) *
-                       this->mods.minimize_multiplier;
+        const f32 percent = 1.0f + ((f64)(this->iCurMusicPos - this->hitobjects[0]->click_time) /
+                                    (f64)(this->hitobjects.back()->click_time + this->hitobjects.back()->duration -
+                                          this->hitobjects[0]->click_time)) *
+                                       this->mods.minimize_multiplier;
         CS *= percent;
     }
 
@@ -192,11 +191,10 @@ f32 SimulatedBeatmapInterface::getAR_full() const {
     }
 
     if(this->mods.has(ModFlags::ARTimewarp) && this->hitobjects.size() > 0) {
-        const f32 percent =
-            1.0f - ((f64)(this->iCurMusicPos - this->hitobjects[0]->click_time) /
-                    (f64)(this->hitobjects[this->hitobjects.size() - 1]->click_time +
-                          this->hitobjects[this->hitobjects.size() - 1]->duration - this->hitobjects[0]->click_time)) *
-                       (1.0f - this->mods.artimewarp_multiplier);
+        const f32 percent = 1.0f - ((f64)(this->iCurMusicPos - this->hitobjects[0]->click_time) /
+                                    (f64)(this->hitobjects.back()->click_time + this->hitobjects.back()->duration -
+                                          this->hitobjects[0]->click_time)) *
+                                       (1.0f - this->mods.artimewarp_multiplier);
         AR *= percent;
     }
 
@@ -229,8 +227,7 @@ u32 SimulatedBeatmapInterface::getLength() const { return this->beatmap->getLeng
 
 u32 SimulatedBeatmapInterface::getLengthPlayable() const {
     if(this->hitobjects.size() > 0)
-        return (u32)((this->hitobjects[this->hitobjects.size() - 1]->click_time +
-                      this->hitobjects[this->hitobjects.size() - 1]->duration) -
+        return (u32)((this->hitobjects.back()->click_time + this->hitobjects.back()->duration) -
                      this->hitobjects[0]->click_time);
     else
         return this->getLength();
@@ -342,8 +339,8 @@ void SimulatedBeatmapInterface::addHealth(f64 percent, bool isFromHitResult) {
     if(this->iCurMusicPos < this->hitobjects[0]->click_time) return;
 
     // never drain after last hitobject
-    if(this->iCurMusicPos > (this->hitobjectsSortedByEndTime[this->hitobjectsSortedByEndTime.size() - 1]->click_time +
-                             this->hitobjectsSortedByEndTime[this->hitobjectsSortedByEndTime.size() - 1]->duration))
+    if(this->iCurMusicPos >
+       (this->hitobjectsSortedByEndTime.back()->click_time + this->hitobjectsSortedByEndTime.back()->duration))
         return;
 
     if(this->bFailed) {
@@ -390,7 +387,7 @@ void SimulatedBeatmapInterface::resetScore() {
 void SimulatedBeatmapInterface::update(f64 frame_time) {
     if(this->hitobjects.empty()) return;
 
-    auto last_hitobject = this->hitobjectsSortedByEndTime[this->hitobjectsSortedByEndTime.size() - 1];
+    auto last_hitobject = this->hitobjectsSortedByEndTime.back();
     const bool isAfterLastHitObject = (this->iCurMusicPos > (last_hitobject->click_time + last_hitobject->duration));
     if(isAfterLastHitObject) {
         return;
