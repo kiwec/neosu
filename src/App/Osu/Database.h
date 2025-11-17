@@ -33,7 +33,7 @@ class Database {
     struct alignas(1) TIMINGPOINT {
         double msPerBeat;
         double offset;
-        bool timingChange;
+        bool uninherited;
     };
 #pragma pack(pop)
    public:

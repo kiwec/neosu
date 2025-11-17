@@ -2051,8 +2051,8 @@ void HUD::drawScrubbingTimeline(u32 beatmapTime, u32 beatmapLengthPlayable, u32 
     g->popTransform();
 
     // quicksave time triangle & text
-    if(osu->getQuickSaveTime() != 0.0f) {
-        f32 quickSavePercent = std::clamp<f32>(osu->getQuickSaveTime() / (f32)endTimeMS, 0.f, 1.f);
+    if(osu->getQuickSaveTimeMS() != 0) {
+        f32 quickSavePercent = std::clamp<f32>(osu->getQuickSaveTimeMS() / (f32)endTimeMS, 0.f, 1.f);
         triangleTip = vec2(osu->getVirtScreenWidth() * quickSavePercent, cursorPos.y);
         g->pushTransform();
         {
@@ -2069,7 +2069,7 @@ void HUD::drawScrubbingTimeline(u32 beatmapTime, u32 beatmapLengthPlayable, u32 
         g->popTransform();
 
         // end time text
-        u32 quickSaveTimeMS = osu->getQuickSaveTime();
+        u32 quickSaveTimeMS = osu->getQuickSaveTimeMS();
         UString endTimeText = UString::format("%i:%02i", (quickSaveTimeMS / 1000) / 60, (quickSaveTimeMS / 1000) % 60);
         g->pushTransform();
         {

@@ -203,7 +203,7 @@ class Osu final : public MouseListener, public KeyboardListener {
 
     [[nodiscard]] inline bool isSkipScheduled() const { return this->bSkipScheduled; }
     [[nodiscard]] inline bool isSeeking() const { return this->bSeeking; }
-    [[nodiscard]] inline float getQuickSaveTime() const { return this->fQuickSaveTime; }
+    [[nodiscard]] inline u32 getQuickSaveTimeMS() const { return this->iQuickSaveMS; }
 
     bool shouldFallBackToLegacySliderRenderer();  // certain mods or actions require Sliders to render dynamically
                                                   // (e.g. wobble or the CS override slider)
@@ -338,7 +338,7 @@ class Osu final : public MouseListener, public KeyboardListener {
     float fQuickRetryTime{0.f};
 
    public:  // public due to BeatmapInterface access
-    float fQuickSaveTime{0.f};
+    u32 iQuickSaveMS{0};
 
    private:
     // async toggles

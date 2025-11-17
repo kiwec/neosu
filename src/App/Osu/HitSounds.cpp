@@ -14,7 +14,7 @@ i32 HitSamples::getNormalSet() {
     if(this->normalSet != 0) return this->normalSet;
 
     // Fallback to timing point sample set
-    i32 tp_sampleset = osu->getMapInterface()->getTimingPoint().sampleSet;
+    i32 tp_sampleset = osu->getMapInterface()->getCurrentTimingInfo().sampleSet;
     if(tp_sampleset != 0) return tp_sampleset;
 
     // ...Fallback to beatmap sample set
@@ -58,10 +58,8 @@ f32 HitSamples::getVolume(i32 hitSoundType, bool is_sliderslide) {
     if(this->volume > 0) {
         volume *= (f32)this->volume / 100.0f;
     } else {
-        const auto mapTimingPointVol = osu->getMapInterface()->getTimingPoint().volume;
-        if (mapTimingPointVol > 0) {
-            volume *= (f32)mapTimingPointVol / 100.0f;
-        }
+        const auto mapTimingPointVol = osu->getMapInterface()->getCurrentTimingInfo().volume;
+        volume *= (f32)mapTimingPointVol / 100.0f;
     }
 
     return volume;
@@ -201,45 +199,40 @@ std::vector<HitSamples::Set_Slider_Hit> HitSamples::play(f32 pan, i32 delta, boo
         return get_default_sound(set, hitSound);
     };
 
-    auto try_play = [&](i32 set, i32 hitSound) -> bool {
+    auto try_play = [pan, pitch, is_sliderslide, &get_map_sound](i32 set, i32 hitSound, f32 volume) -> bool {
         auto snd = get_map_sound(set, hitSound);
         if(!snd) return false;
 
-        f32 volume = this->getVolume(hitSound, is_sliderslide);
-        // debugLog("volume is {} for {}, sliderslide: {} isPlaying: {}", volume, snd->getFilePath(), is_sliderslide,
-        //          snd->isPlaying());
-        if(volume == 0.0) return false;
+        // Logger::logRaw("[HitSamples::play] volume is {} for {}, sliderslide: {} isPlaying: {}", volume,
+        //                Environment::getFileNameFromFilePath(snd->getFilePath()), is_sliderslide, snd->isPlaying());
+        // {
+        //     const auto curtp = osu->getMapInterface()->getCurrentTimingInfo();
+        //     Logger::logRaw("\t(musicpos: {}) current timingpoint offs: {} vol: {} sampleset: {} sampleidx: {}",
+        //                    osu->getMapInterface()->getCurMusicPos(), curtp.offset, curtp.volume, curtp.sampleSet,
+        //                    curtp.sampleIndex);
+        // }
 
         if(is_sliderslide && snd->isPlaying()) return false;
 
         return soundEngine->play(snd, pan, pitch, volume);
     };
 
-    // NOTE: LayeredHitSounds seems to be forced even if the map uses custom hitsounds
-    //       according to https://osu.ppy.sh/community/forums/topics/15937
-    if((this->hitSounds & HitSoundType::NORMAL) || (this->hitSounds == 0) || skin->o_layered_hitsounds) {
-        if(try_play(this->getNormalSet(), HitSoundType::NORMAL)) {
-            played_list.push_back(potentially_played);
-            potentially_played = {};
-        }
-    }
+    namespace HT = HitSoundType;
+    for(const auto type : {HT::NORMAL, HT::WHISTLE, HT::FINISH, HT::CLAP}) {
+        // special case for NORMAL (play if this->hitSounds == 0 or layered hitsounds are enabled)
 
-    if(this->hitSounds & HitSoundType::WHISTLE) {
-        if(try_play(this->getAdditionSet(), HitSoundType::WHISTLE)) {
-            played_list.push_back(potentially_played);
-            potentially_played = {};
-        }
-    }
+        // NOTE: LayeredHitSounds seems to be forced even if the map uses custom hitsounds
+        //       according to https://osu.ppy.sh/community/forums/topics/15937
+        if(!(this->hitSounds & type) &&
+           !((type == HT::NORMAL) && ((this->hitSounds == 0) || skin->o_layered_hitsounds)))
+            continue;
 
-    if(this->hitSounds & HitSoundType::FINISH) {
-        if(try_play(this->getAdditionSet(), HitSoundType::FINISH)) {
-            played_list.push_back(potentially_played);
-            potentially_played = {};
-        }
-    }
+        const f32 volume = this->getVolume(type, is_sliderslide);
+        if(volume <= 0.) continue;  // don't play silence
 
-    if(this->hitSounds & HitSoundType::CLAP) {
-        if(try_play(this->getAdditionSet(), HitSoundType::CLAP)) {
+        const auto set = type == HT::NORMAL ? this->getNormalSet() : this->getAdditionSet();
+
+        if(try_play(set, type, volume)) {
             played_list.push_back(potentially_played);
             potentially_played = {};
         }

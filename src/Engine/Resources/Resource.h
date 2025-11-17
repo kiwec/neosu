@@ -53,8 +53,8 @@ class Resource {
         cb callback;
     };
 
-    inline void setOnInitCB(SyncLoadCB callback) {
-        // callback can be null to remove
+    inline void setOnInitCB(std::optional<SyncLoadCB> callback = std::nullopt) {
+        // arg can be empty to remove
         this->onInit = callback;
     }
 

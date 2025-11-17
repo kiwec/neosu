@@ -136,15 +136,14 @@ bool DirectX11Interface::init() {
     // create device + context
 
     std::string error = "D3D11CreateDevice";
-    D3D_FEATURE_LEVEL featureLevelOut;
     HRESULT hr = s_d3dCreateDeviceFunc(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, createDeviceFlags,
                                        FEATURE_LEVELS11_1.data(), FEATURE_LEVELS11_1.size(), D3D11_SDK_VERSION,
-                                       &this->device, &featureLevelOut, &this->deviceContext);
+                                       &this->device, nullptr, &this->deviceContext);
 
     if(hr == E_INVALIDARG) {  // try without 11_1
         hr = s_d3dCreateDeviceFunc(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, createDeviceFlags,
                                    FEATURE_LEVELS11_1.data() + 1, FEATURE_LEVELS11_1.size() - 1, D3D11_SDK_VERSION,
-                                   &this->device, &featureLevelOut, &this->deviceContext);
+                                   &this->device, nullptr, &this->deviceContext);
     }
 
     if(SUCCEEDED(hr)) {
@@ -233,7 +232,7 @@ bool DirectX11Interface::init() {
         .BufferCount = this->bFlipping ? 2U : 1U,  // 2 for DXGI_SWAP_EFFECT_FLIP_DISCARD
         .Scaling = (isAtLeastWin8 && this->bFlipping) ? DXGI_SCALING_NONE : DXGI_SCALING_STRETCH,
         .SwapEffect = this->bFlipping ? DXGI_SWAP_EFFECT_FLIP_DISCARD : DXGI_SWAP_EFFECT_DISCARD,
-        .AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED,
+        .AlphaMode = DXGI_ALPHA_MODE_IGNORE,
         .Flags = this->swapChainCreateFlags,
     };
 
@@ -1422,10 +1421,10 @@ void DirectX11Interface::uploadAndDrawVertexBatch(D3D_PRIMITIVE_TOPOLOGY topolog
 
         if(this->vertexBufferDesc.Usage == D3D11_USAGE_DEFAULT) {
             D3D11_BOX box{
-                .left = sizeof(DirectX11Interface::SimpleVertex) * 0,
+                .left = sizeof(SimpleVertex) * 0,
                 .top = 0,
                 .front = 0,
-                .right = (UINT)(box.left + (sizeof(DirectX11Interface::SimpleVertex) * batchSize)),
+                .right = (UINT)(box.left + (sizeof(SimpleVertex) * batchSize)),
                 .bottom = 1,
                 .back = 1,
             };
@@ -1444,7 +1443,7 @@ void DirectX11Interface::uploadAndDrawVertexBatch(D3D_PRIMITIVE_TOPOLOGY topolog
                        (needsDiscardEntireBuffer ? D3D11_MAP_WRITE_DISCARD : D3D11_MAP_WRITE_NO_OVERWRITE), 0,
                        &mappedResource))) {
                     memcpy((void *)(((SimpleVertex *)mappedResource.pData) + writeOffsetNumVertices),
-                           &this->vertices[vertexOffset], sizeof(DirectX11Interface::SimpleVertex) * batchSize);
+                           &this->vertices[vertexOffset], sizeof(SimpleVertex) * batchSize);
                     this->deviceContext->Unmap(this->vertexBuffer, 0);
                 } else
                     uploadedSuccessfully = false;

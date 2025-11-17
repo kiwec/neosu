@@ -51,8 +51,10 @@ class DatabaseBeatmap final {
         i32 sampleIndex;
         i32 volume;
 
-        bool timingChange;
+        bool uninherited;  // <=> timingChange
         bool kiai;
+
+        bool operator==(const TIMINGPOINT &) const = default;
     };
 
     struct BREAK {
@@ -86,16 +88,18 @@ class DatabaseBeatmap final {
     };
 
     struct TIMING_INFO {
-        i32 offset = 0;
+        i32 offset{0};
 
-        f32 beatLengthBase = 0.f;
-        f32 beatLength = 0.f;
+        f32 beatLengthBase{0.f};
+        f32 beatLength{0.f};
 
-        i32 sampleSet = 0;
-        i32 sampleIndex = 0;
-        i32 volume = 0;
+        i32 sampleSet{0};
+        i32 sampleIndex{0};
+        i32 volume{0};
 
-        bool isNaN = false;
+        bool isNaN{false};
+
+        bool operator==(const TIMING_INFO &) const = default;
     };
 
     enum class BeatmapType : uint8_t {
@@ -413,7 +417,7 @@ class DatabaseBeatmap final {
         int beatmapVersion, std::vector<SLIDER> &sliders, zarray<DatabaseBeatmap::TIMINGPOINT> &timingpoints,
         float sliderMultiplier, float sliderTickRate, const std::function<bool(void)> &dead);
 
-    static bool parse_timing_point(std::string_view curLine, DatabaseBeatmap::TIMINGPOINT *out);
+    static bool parse_timing_point(std::string_view curLine, DatabaseBeatmap::TIMINGPOINT &out);
 
     enum class BlockId : i8 {
         Sentinel = -2,  // for skipping the first string scan, header must come first

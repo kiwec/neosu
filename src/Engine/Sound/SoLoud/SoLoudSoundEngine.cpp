@@ -178,14 +178,11 @@ bool SoLoudSoundEngine::playSound(SoLoudSound *soloudSound, f32 pan, f32 pitch, 
         // start it at 0 volume and fade it in when we play it (to avoid clicks/pops)
         handle = soloud->play(*soloudSound->audioSource, 0, pan, true /* paused */);
         if(handle)
-            soloud->setProtectVoice(
-                handle,
-                true);  // protect the music channel (don't let it get interrupted when many sounds play back at once)
-                        // NOTE: this doesn't seem to work properly, not sure why... need to setMaxActiveVoiceCount
-                        // higher than the default 16 as a workaround, otherwise rapidly overlapping samples like from
-                        // buzzsliders can cause glitches in music playback
-                        // TODO: a better workaround would be to manually prevent samples from playing if
-                        // it would lead to getMaxActiveVoiceCount() <= getActiveVoiceCount()
+            // protect the music channel (don't let it get interrupted when many sounds play back at once)
+            // NOTE: this doesn't seem to work 100% properly, not sure why... need to setMaxActiveVoiceCount
+            // higher than the default 16 as a workaround, otherwise rapidly overlapping samples like from
+            // buzzsliders can cause glitches in music playback
+            soloud->setProtectVoice(handle, true);
     } else {
         // non-streams don't go through the SoLoudFX wrapper
         handle = soloud->play(*soloudSound->audioSource, soloudSound->fBaseVolume * playVolume, pan, true /* paused */);

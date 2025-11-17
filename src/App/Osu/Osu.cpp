@@ -514,6 +514,10 @@ void Osu::draw() {
             this->hud->draw();
             this->hud->drawFps();
         }
+
+        // draw debug info on top of everything else
+        if(cv::debug_draw_timingpoints.getBool()) this->map_iface->drawDebug();
+
     } else {  // if we are not playing
         this->spectatorScreen->draw();
 
@@ -697,7 +701,7 @@ void Osu::update() {
             }
 
             if(mouse->isRightDown()) {
-                this->fQuickSaveTime = seek_to_ms;
+                this->iQuickSaveMS = seek_to_ms;
             }
         }
 
@@ -1038,13 +1042,13 @@ void Osu::onKeyDown(KeyboardEvent &key) {
 
             // quick save/load
             if(!BanchoState::is_playing_a_multi_map()) {
-                if(key == cv::QUICK_SAVE.getVal<SCANCODE>()) this->fQuickSaveTime = this->map_iface->getTime();
+                if(key == cv::QUICK_SAVE.getVal<SCANCODE>()) this->iQuickSaveMS = this->map_iface->getTime();
 
                 if(key == cv::QUICK_LOAD.getVal<SCANCODE>()) {
                     // special case: allow cancelling the failing animation here
                     if(this->map_iface->hasFailed()) this->map_iface->cancelFailing();
 
-                    this->map_iface->seekMS(this->fQuickSaveTime);
+                    this->map_iface->seekMS(this->iQuickSaveMS);
                 }
             }
 

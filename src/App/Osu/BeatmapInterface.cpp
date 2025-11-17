@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <chrono>
 #include <limits>
+#include <utility>
 
 #include "AnimationHandler.h"
 #include "BackgroundImageHandler.h"
@@ -148,20 +149,48 @@ BeatmapInterface::~BeatmapInterface() {
 }
 
 void BeatmapInterface::drawDebug() {
-    if(cv::debug_draw_timingpoints.getBool()) {
-        McFont *debugFont = resourceManager->getFont("FONT_DEFAULT");
-        g->setColor(0xffffffff);
-        g->pushTransform();
-        g->translate(5, debugFont->getHeight() + 5 - this->getMousePos().y);
-        {
-            for(const DatabaseBeatmap::TIMINGPOINT &t : this->beatmap->getTimingpoints()) {
-                g->drawString(debugFont, UString::format("%li,%f,%i,%i,%i", t.offset, t.msPerBeat, t.sampleSet,
-                                                         t.sampleIndex, t.volume));
-                g->translate(0, debugFont->getHeight());
-            }
-        }
-        g->popTransform();
+    static constexpr Color shadowColor = argb(255, 0, 0, 0);
+    static constexpr Color textColor = argb(255, 255, 232, 255);
+
+    const auto &alltp = this->beatmap->getTimingpoints();
+    if(alltp.empty()) return;
+
+    McFont *debugFont = engine->getConsoleFont();
+    const i32 dbgfontheight = (i32)debugFont->getHeight() + 3;
+
+    const i32 totalTextLinesHeight = dbgfontheight * (i32)alltp.size();
+    const i32 offscreenPixels = totalTextLinesHeight - osu->getVirtScreenHeight();
+    const f32 textYRatio = (f32)osu->getVirtScreenHeight() / (f32)totalTextLinesHeight;
+
+    const i32 yOffset = textYRatio >= 1 ? 0
+                                        : -(i32)((f32)(offscreenPixels + dbgfontheight) *
+                                                 (this->getMousePos().y / (f32)osu->getVirtScreenHeight()));
+    const i32 xOffset = 5;
+    const i32 shadowOffset = 1;
+
+    debugFont->beginBatch();
+
+    i32 currentY = dbgfontheight;
+    for(const DatabaseBeatmap::TIMINGPOINT &t : alltp) {
+        // TODO: draw current TIMING_INFO in green (not timingpoint)
+        // next to (to the right) the closest timingpoint with an offset < (this->iCurMusicPos + cv::timingpoints_offset.getInt())
+
+        const UString curtpString = fmt::format("{},{},{},{},{},{},{}", (i32)t.offset, t.msPerBeat, t.sampleSet,
+                                                t.sampleIndex, t.volume, (i32)t.uninherited, (i32)t.kiai);
+
+        // shadow
+        const vec3 shadowPos{xOffset + shadowOffset, yOffset + currentY + shadowOffset, 0.25f};
+        debugFont->addToBatch(curtpString, shadowPos, shadowColor);
+
+        // text
+        const vec3 textPos{xOffset, yOffset + currentY, 0.325f};
+        debugFont->addToBatch(curtpString, textPos, textColor);
+
+        // spacing for next
+        currentY += dbgfontheight;
     }
+
+    debugFont->flushBatch();
 }
 
 void BeatmapInterface::drawBackground() {
@@ -602,7 +631,7 @@ bool BeatmapInterface::start() {
         this->breaks = std::move(result.breaks);
         this->getSkinMutable()->setBeatmapComboColors(std::move(result.combocolors));  // update combo colors in skin
 
-        this->current_timing_point = DatabaseBeatmap::TIMING_INFO{};
+        this->cur_timing_info = {};
         this->default_sample_set = result.defaultSampleSet;
 
         // load beatmap skin
@@ -666,7 +695,7 @@ bool BeatmapInterface::start() {
             fmt::format("Using local beatmap offset ({} ms)", this->beatmap->getLocalOffset()), 0xffffffff, false,
             0.75f);
 
-    osu->fQuickSaveTime = 0.0f;  // reset
+    osu->iQuickSaveMS = 0;  // reset
 
     osu->updateConfineCursor();
     osu->updateWindowsKeyDisable();
@@ -1027,7 +1056,7 @@ void BeatmapInterface::seekMS(u32 ms) {
 
     if(this->is_watching) {
         // When seeking backwards, restart simulation from beginning
-        if(ms < this->iCurMusicPos) {
+        if(std::cmp_less(ms, this->iCurMusicPos)) {
             SAFE_DELETE(this->sim);
             this->sim = new SimulatedBeatmapInterface(this->beatmap, osu->getScore()->mods);
             this->sim->spectated_replay = this->spectated_replay;
@@ -1076,10 +1105,10 @@ u32 BeatmapInterface::getLengthPlayable() const {
 }
 
 f32 BeatmapInterface::getPercentFinished() const {
-    f32 length = this->getLength();
-    if(length <= 0.f) return 0.f;
+    f64 length = this->getLength();
+    if(length <= 0.) return 0.f;
 
-    return (f32)this->getTime() / length;
+    return (f64)this->getTime() / length;
 }
 
 f32 BeatmapInterface::getPercentFinishedPlayable() const {
@@ -1585,18 +1614,16 @@ void BeatmapInterface::loadMusic(bool reload, bool async) {
         }
 
         // set the callback after we call it once manually
-        this->music->setOnInitCB({this, &BeatmapInterface::onMusicLoadingFinished});
+        this->music->setOnInitCB(
+            Resource::SyncLoadCB{.userdata = nullptr, .callback = &BeatmapInterface::onMusicLoadingFinished});
     }
 
     // TODO: load custom hitsounds
     // TODO: load custom skin elements
 }
 
-void BeatmapInterface::onMusicLoadingFinished(Resource *rs, void *this_) {
-    auto *map_iface = static_cast<BeatmapInterface *>(this_);
-    if(osu->getMapInterface().get() != this_) {
-        map_iface = osu->getMapInterface().get();
-    }
+void BeatmapInterface::onMusicLoadingFinished(Resource *rs, void * /*userdata*/) {
+    const auto &map_iface = osu->getMapInterface();
     if(!map_iface) return;
 
     auto *music = static_cast<Sound *>(rs);
@@ -2672,7 +2699,7 @@ void BeatmapInterface::update2() {
     // get timestamp from the previous update cycle
     const auto lastUpdateTime = this->iLastMusicPosUpdateTime;
 
-    // update timing (points)
+    // update timing (with offsets)
     this->iCurMusicPosWithOffsets = this->iCurMusicPos;
     this->iCurMusicPosWithOffsets += (i32)(cv::universal_offset.getFloat() * this->getSpeedMultiplier());
     this->iCurMusicPosWithOffsets += this->music->getBASSStreamLatencyCompensation();
@@ -2686,8 +2713,11 @@ void BeatmapInterface::update2() {
     const auto currentUpdateTime = Timing::getTicksNS();
     this->iLastMusicPosUpdateTime = currentUpdateTime;
 
+    // update current timingpoint
+    // TODO: should this be using post-offset music pos or not...?
     if(this->iCurMusicPosWithOffsets >= 0) {
-        this->current_timing_point = this->beatmap->getTimingInfoForTime(this->iCurMusicPosWithOffsets);
+        this->cur_timing_info =
+            this->beatmap->getTimingInfoForTime(this->iCurMusicPosWithOffsets + cv::timingpoints_offset.getInt());
     }
 
     // Make sure we're not too far behind the liveplay

@@ -149,42 +149,42 @@ DatabaseBeatmap::~DatabaseBeatmap() {
     }
 }
 
-bool DatabaseBeatmap::parse_timing_point(std::string_view curLine, DatabaseBeatmap::TIMINGPOINT *out) {
+bool DatabaseBeatmap::parse_timing_point(std::string_view curLine, DatabaseBeatmap::TIMINGPOINT &out) {
     // old beatmaps: Offset, Milliseconds per Beat
     // old new beatmaps: Offset, Milliseconds per Beat, Meter, sampleSet, sampleIndex, Volume,
     // !Inherited new new beatmaps: Offset, Milliseconds per Beat, Meter, sampleSet, sampleIndex,
     // Volume, !Inherited, Kiai Mode
 
     f64 tpOffset;
-    f32 tpMSPerBeat;
+    f64 tpMSPerBeat;
     i32 tpMeter;
     i32 tpSampleSet, tpSampleIndex;
     u8 tpVolume;
-    i32 tpTimingChange;
+    i32 tpUninherited;
     i32 tpKiai = 0;  // optional
 
     if(Parsing::parse(curLine, &tpOffset, ',', &tpMSPerBeat, ',', &tpMeter, ',', &tpSampleSet, ',', &tpSampleIndex, ',',
-                      &tpVolume, ',', &tpTimingChange, ',', &tpKiai) ||
+                      &tpVolume, ',', &tpUninherited, ',', &tpKiai) ||
        Parsing::parse(curLine, &tpOffset, ',', &tpMSPerBeat, ',', &tpMeter, ',', &tpSampleSet, ',', &tpSampleIndex, ',',
-                      &tpVolume, ',', &tpTimingChange)) {
-        out->offset = std::round(tpOffset);
-        out->msPerBeat = tpMSPerBeat;
-        out->sampleSet = tpSampleSet;
-        out->sampleIndex = tpSampleIndex;
-        out->volume = std::clamp<u8>(tpVolume, 0, 100);
-        out->timingChange = tpTimingChange == 1;
-        out->kiai = tpKiai > 0;
+                      &tpVolume, ',', &tpUninherited)) {
+        out.offset = std::round(tpOffset);
+        out.msPerBeat = tpMSPerBeat;
+        out.sampleSet = tpSampleSet;
+        out.sampleIndex = tpSampleIndex;
+        out.volume = std::clamp<u8>(tpVolume, 0, 100);
+        out.uninherited = tpUninherited == 1;
+        out.kiai = tpKiai > 0;
         return true;
     }
 
     if(Parsing::parse(curLine, &tpOffset, ',', &tpMSPerBeat)) {
-        out->offset = std::round(tpOffset);
-        out->msPerBeat = tpMSPerBeat;
-        out->sampleSet = 0;
-        out->sampleIndex = 0;
-        out->volume = 100;
-        out->timingChange = true;
-        out->kiai = false;
+        out.offset = std::round(tpOffset);
+        out.msPerBeat = tpMSPerBeat;
+        out.sampleSet = 0;
+        out.sampleIndex = 0;
+        out.volume = 100;
+        out.uninherited = true;
+        out.kiai = false;
         return true;
     }
 
@@ -338,7 +338,7 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(std::
 
                 case TimingPoints: {
                     DatabaseBeatmap::TIMINGPOINT t{};
-                    if(parse_timing_point(curLine, &t)) {
+                    if(parse_timing_point(curLine, t)) {
                         c.timingpoints.push_back(t);
                     }
                     break;
@@ -612,7 +612,7 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(std::
     c.numSliders = c.sliders.size();
     c.numSpinners = c.spinners.size();
     c.numHitobjects = c.numCircles + c.numSliders + c.numSpinners;
-    if(c.numHitobjects > (size_t)cv::beatmap_max_num_hitobjects.getInt()) {
+    if(c.numHitobjects > cv::beatmap_max_num_hitobjects.getVal<u32>()) {
         c.errorCode = 5;
         return c;
     }
@@ -1215,7 +1215,7 @@ bool DatabaseBeatmap::loadMetadata(bool compute_md5) {
 
             case TimingPoints: {
                 DatabaseBeatmap::TIMINGPOINT t{};
-                if(parse_timing_point(curLine, &t)) {
+                if(parse_timing_point(curLine, t)) {
                     this->timingpoints.push_back(t);
                 }
                 break;
@@ -1461,14 +1461,19 @@ DatabaseBeatmap::TIMING_INFO DatabaseBeatmap::getTimingInfoForTime(u32 positionM
 
 DatabaseBeatmap::TIMING_INFO DatabaseBeatmap::getTimingInfoForTimeAndTimingPoints(
     u32 positionMS, const zarray<DatabaseBeatmap::TIMINGPOINT> &timingpoints) {
-    TIMING_INFO ti{};
-    ti.offset = 0;
-    ti.beatLengthBase = 1;
-    ti.beatLength = 1;
-    ti.volume = 100;
-    ti.isNaN = false;
+    static TIMING_INFO default_info{
+        .offset = 0,
+        .beatLengthBase = 1,
+        .beatLength = 1,
+        .sampleSet = 0,
+        .sampleIndex = 0,
+        .volume = 100,
+        .isNaN = false,
+    };
 
-    if(timingpoints.size() < 1) return ti;
+    if(timingpoints.size() < 1) return default_info;
+
+    TIMING_INFO ti{default_info};
 
     // initial values
     ti.offset = timingpoints[0].offset;
@@ -1489,21 +1494,16 @@ DatabaseBeatmap::TIMING_INFO DatabaseBeatmap::getTimingInfoForTimeAndTimingPoint
             if(timingpoints[i].offset <= positionMS) {
                 audioPoint = i;
 
-                if(timingpoints[i].timingChange)
+                if(timingpoints[i].uninherited)
                     point = i;
                 else
                     samplePoint = i;
             }
         }
 
-        double mult = 1;
-
-        if(allowMultiplier && samplePoint > point && timingpoints[samplePoint].msPerBeat < 0) {
-            if(timingpoints[samplePoint].msPerBeat >= 0)
-                mult = 1;
-            else
-                mult = std::clamp<float>((float)-timingpoints[samplePoint].msPerBeat, 10.0f, 1000.0f) / 100.0f;
-        }
+        const f32 mult = (allowMultiplier && samplePoint > point && timingpoints[samplePoint].msPerBeat < 0)
+                             ? std::clamp<f32>((f32)-timingpoints[samplePoint].msPerBeat, 10.0f, 1000.0f) / 100.0f
+                             : 1.f;
 
         ti.beatLengthBase = timingpoints[point].msPerBeat;
         ti.offset = timingpoints[point].offset;

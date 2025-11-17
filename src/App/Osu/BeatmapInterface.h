@@ -135,7 +135,7 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
     void setMusicSpeed(f32 speed);
     void setMusicPitch(f32 pitch);
     void seekMS(u32 ms);
-    [[nodiscard]] inline DatabaseBeatmap::TIMING_INFO getTimingPoint() const { return this->current_timing_point; }
+    [[nodiscard]] inline DatabaseBeatmap::TIMING_INFO getCurrentTimingInfo() const { return this->cur_timing_info; }
     [[nodiscard]] inline i32 getDefaultSampleSet() const { return this->default_sample_set; }
 
     [[nodiscard]] inline Sound *getMusic() const { return this->music; }
@@ -279,7 +279,7 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
     f32 fAfterMusicIsFinishedVirtualAudioTimeStart;
     bool bIsFirstMissSound;
     bool bIsWaitingForPreview{false};
-    DatabaseBeatmap::TIMING_INFO current_timing_point{};
+    DatabaseBeatmap::TIMING_INFO cur_timing_info{};
     i32 default_sample_set{1};
 
     // health
