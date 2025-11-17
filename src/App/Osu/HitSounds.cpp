@@ -8,29 +8,32 @@
 #include "Skin.h"
 #include "SoundEngine.h"
 
-i32 HitSamples::getNormalSet() {
+i32 HitSamples::getNormalSet(std::optional<i32> play_time) {
     if(cv::skin_force_hitsound_sample_set.getInt() > 0) return cv::skin_force_hitsound_sample_set.getInt();
 
     if(this->normalSet != 0) return this->normalSet;
 
+    const auto& map_iface = osu->getMapInterface();
     // Fallback to timing point sample set
-    i32 tp_sampleset = osu->getMapInterface()->getCurrentTimingInfo().sampleSet;
+    const i32 tp_sampleset = play_time.has_value()
+                                 ? map_iface->getBeatmap()->getTimingInfoForTime(play_time.value()).sampleSet
+                                 : map_iface->getCurrentTimingInfo().sampleSet;
     if(tp_sampleset != 0) return tp_sampleset;
 
     // ...Fallback to beatmap sample set
-    return osu->getMapInterface()->getDefaultSampleSet();
+    return map_iface->getDefaultSampleSet();
 }
 
-i32 HitSamples::getAdditionSet() {
+i32 HitSamples::getAdditionSet(std::optional<i32> play_time) {
     if(cv::skin_force_hitsound_sample_set.getInt() > 0) return cv::skin_force_hitsound_sample_set.getInt();
 
     if(this->additionSet != 0) return this->additionSet;
 
     // Fallback to normal sample set
-    return this->getNormalSet();
+    return this->getNormalSet(play_time);
 }
 
-f32 HitSamples::getVolume(i32 hitSoundType, bool is_sliderslide) {
+f32 HitSamples::getVolume(i32 hitSoundType, bool is_sliderslide, std::optional<i32> play_time) {
     f32 volume = 1.0f;
 
     // Some hardcoded modifiers for hitcircle sounds
@@ -58,7 +61,10 @@ f32 HitSamples::getVolume(i32 hitSoundType, bool is_sliderslide) {
     if(this->volume > 0) {
         volume *= (f32)this->volume / 100.0f;
     } else {
-        const auto mapTimingPointVol = osu->getMapInterface()->getCurrentTimingInfo().volume;
+        const auto& map_iface = osu->getMapInterface();
+        const auto mapTimingPointVol = play_time.has_value()
+                                           ? map_iface->getBeatmap()->getTimingInfoForTime(play_time.value()).volume
+                                           : map_iface->getCurrentTimingInfo().volume;
         volume *= (f32)mapTimingPointVol / 100.0f;
     }
 
@@ -122,7 +128,8 @@ static constexpr auto SOUND_METHODS =  //
           }}};  //
 #undef A_
 
-std::vector<HitSamples::Set_Slider_Hit> HitSamples::play(f32 pan, i32 delta, bool is_sliderslide) {
+std::vector<HitSamples::Set_Slider_Hit> HitSamples::play(f32 pan, i32 delta, std::optional<i32> play_time,
+                                                         bool is_sliderslide) {
     // Don't play hitsounds when seeking
     if(osu->getMapInterface()->bWasSeekFrame) return {};
 
@@ -227,10 +234,10 @@ std::vector<HitSamples::Set_Slider_Hit> HitSamples::play(f32 pan, i32 delta, boo
            !((type == HT::NORMAL) && ((this->hitSounds == 0) || skin->o_layered_hitsounds)))
             continue;
 
-        const f32 volume = this->getVolume(type, is_sliderslide);
+        const f32 volume = this->getVolume(type, is_sliderslide, play_time);
         if(volume <= 0.) continue;  // don't play silence
 
-        const auto set = type == HT::NORMAL ? this->getNormalSet() : this->getAdditionSet();
+        const auto set = type == HT::NORMAL ? this->getNormalSet(play_time) : this->getAdditionSet(play_time);
 
         if(try_play(set, type, volume)) {
             played_list.push_back(potentially_played);

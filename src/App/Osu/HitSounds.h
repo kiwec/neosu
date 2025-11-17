@@ -1,5 +1,6 @@
 #pragma once
 // Copyright (c) 2025, kiwec, All rights reserved.
+#include <optional>
 #include <string>
 #include <vector>
 #include "types.h"
@@ -38,10 +39,11 @@ struct HitSamples {
         i32 hit;
     };
 
-    std::vector<Set_Slider_Hit> play(f32 pan, i32 delta, bool is_sliderslide = false);
+    std::vector<Set_Slider_Hit> play(f32 pan, i32 delta, std::optional<i32> play_time = std::nullopt,
+                                     bool is_sliderslide = false);
     void stop(const std::vector<Set_Slider_Hit> &specific_sets = {});
 
-    i32 getAdditionSet();
-    i32 getNormalSet();
-    f32 getVolume(i32 hitSoundType, bool is_sliderslide);
+    i32 getAdditionSet(std::optional<i32> play_time = std::nullopt);
+    i32 getNormalSet(std::optional<i32> play_time = std::nullopt);
+    f32 getVolume(i32 hitSoundType, bool is_sliderslide, std::optional<i32> play_time = std::nullopt);
 };

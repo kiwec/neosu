@@ -263,8 +263,8 @@ class Slider final : public HitObject {
 
     void onHit(LiveScore::HIT result, i32 delta, bool startOrEnd, float targetDelta = 0.0f, float targetAngle = 0.0f,
                bool isEndResultFromStrictTrackingMod = false);
-    void onRepeatHit(bool successful, bool sliderend);
-    void onTickHit(bool successful, int tickIndex);
+    void onRepeatHit(const SLIDERCLICK &click);
+    void onTickHit(const SLIDERCLICK &click);
     void onSliderBreak();
 
     [[nodiscard]] float getT(i32 pos, bool raw) const;

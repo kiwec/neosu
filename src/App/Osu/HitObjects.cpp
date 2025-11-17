@@ -660,8 +660,7 @@ void Circle::drawApproachCircle(const Skin *skin, vec2 pos, Color comboColor, fl
                                 float approachScale, float alpha, bool modHD, bool overrideHDApproachCircle) {
     if((!modHD || overrideHDApproachCircle) && cv::draw_approach_circles.getBool() && !cv::mod_mafham.getBool()) {
         if(approachScale > 1.0f) {
-            const float approachCircleImageScale =
-                hitcircleDiameter / (128.0f * (skin->i_approachcircle.scale()));
+            const float approachCircleImageScale = hitcircleDiameter / (128.0f * (skin->i_approachcircle.scale()));
 
             g->setColor(comboColor);
 
@@ -978,7 +977,7 @@ void Circle::onHit(LiveScore::HIT result, i32 delta, float targetDelta, float ta
     if(this->pf != nullptr && result != LiveScore::HIT::HIT_MISS) {
         const vec2 osuCoords = this->pf->pixels2OsuCoords(this->pf->osuCoords2Pixels(this->vRawPos));
         f32 pan = GameRules::osuCoords2Pan(osuCoords.x);
-        this->samples.play(pan, delta);
+        this->samples.play(pan, delta, this->click_time);
 
         this->fHitAnimation = 0.001f;  // quickfix for 1 frame missing images
         anim->moveQuadOut(&this->fHitAnimation, 1.0f, GameRules::getFadeOutTime(), true);
@@ -1784,9 +1783,9 @@ void Slider::update(i32 curPos, f64 frame_time) {
                                    ((flags::has<LegacyFlags::Relax>(this->pi->getModsLegacy())) && this->bCursorInside);
 
                 if(click.type == 0) {
-                    this->onRepeatHit(click.successful, click.sliderend);
+                    this->onRepeatHit(click);
                 } else {
-                    this->onTickHit(click.successful, click.tickIndex);
+                    this->onTickHit(click);
                 }
             }
         }
@@ -1880,7 +1879,7 @@ void Slider::update(i32 curPos, f64 frame_time) {
             if(sliding) {
                 const vec2 osuCoords = this->pf->pixels2OsuCoords(this->pf->osuCoords2Pixels(this->vCurPointRaw));
                 f32 pan = GameRules::osuCoords2Pan(osuCoords.x);
-                this->lastSliderSampleSets = this->samples.play(pan, 0, true);
+                this->lastSliderSampleSets = this->samples.play(pan, 0, {}, true);
             } else if(!this->lastSliderSampleSets.empty()) {
                 // debugLog("not sliding, stopping");
                 // debugLog(
@@ -1966,9 +1965,9 @@ void Slider::miss(i32 curPos) {
                     click.successful = false;
 
                     if(click.type == 0)
-                        this->onRepeatHit(click.successful, click.sliderend);
+                        this->onRepeatHit(click);
                     else
-                        this->onTickHit(click.successful, click.tickIndex);
+                        this->onTickHit(click);
                 }
             }
         }
@@ -2068,7 +2067,7 @@ void Slider::onHit(LiveScore::HIT result, i32 delta, bool startOrEnd, float targ
             f32 pan = GameRules::osuCoords2Pan(osuCoords.x);
 
             if(this->edgeSamples.size() > 0) {
-                this->edgeSamples[0].play(pan, delta);
+                this->edgeSamples[0].play(pan, delta, this->click_time);
             }
 
             if(!startOrEnd) {
@@ -2163,30 +2162,30 @@ void Slider::onHit(LiveScore::HIT result, i32 delta, bool startOrEnd, float targ
     this->iCurRepeatCounterForHitSounds++;
 }
 
-void Slider::onRepeatHit(bool successful, bool sliderend) {
+void Slider::onRepeatHit(const SLIDERCLICK &click) {
     if(this->points.size() == 0) return;
 
     // repeat hit of a slider adds +30 points, if successful
 
     // sound and hit animation
-    if(!successful) {
+    if(!click.successful) {
         this->onSliderBreak();
     } else if(this->pf != nullptr) {
         const vec2 osuCoords = this->pf->pixels2OsuCoords(this->pf->osuCoords2Pixels(this->vCurPointRaw));
         f32 pan = GameRules::osuCoords2Pan(osuCoords.x);
 
         auto nb_edge_samples = this->edgeSamples.size();
-        if(sliderend) {
+        if(click.sliderend) {
             // On sliderend, play the last edgeSample.
-            this->edgeSamples.back().play(pan, 0);
+            this->edgeSamples.back().play(pan, 0, click.time);
         } else {
             // NOTE: iCurRepeatCounterForHitSounds starts at 1
-            if(this->iCurRepeatCounterForHitSounds + 1 < nb_edge_samples) {
-                this->edgeSamples[this->iCurRepeatCounterForHitSounds].play(pan, 0);
+            if(std::cmp_less(this->iCurRepeatCounterForHitSounds + 1, nb_edge_samples)) {
+                this->edgeSamples[this->iCurRepeatCounterForHitSounds].play(pan, 0, click.time);
             } else {
                 // We have more repeats than edge samples!
                 // Just play whatever we can (either the last repeat sample, or the start sample)
-                this->edgeSamples[nb_edge_samples - 2].play(pan, 0);
+                this->edgeSamples[nb_edge_samples - 2].play(pan, 0, click.time);
             }
         }
 
@@ -2196,7 +2195,7 @@ void Slider::onRepeatHit(bool successful, bool sliderend) {
         this->fFollowCircleTickAnimationScale = 0.0f;
         anim->moveLinear(&this->fFollowCircleTickAnimationScale, 1.0f, tick_pulse_time, true);
 
-        if(sliderend) {
+        if(click.sliderend) {
             this->fEndHitAnimation = 0.001f;  // quickfix for 1 frame missing images
             anim->moveQuadOut(&this->fEndHitAnimation, 1.0f, GameRules::getFadeOutTime(), true);
         } else {
@@ -2206,7 +2205,7 @@ void Slider::onRepeatHit(bool successful, bool sliderend) {
     }
 
     // add score
-    if(!successful) {
+    if(!click.successful) {
         // add health manually
         // special case: missing a repeat drains HIT_MISS_SLIDERBREAK health (and not HIT_MISS health)
         this->pi->addHitResult(this, LiveScore::HIT::HIT_MISS_SLIDERBREAK, 0, false, true, true, true, true,
@@ -2223,20 +2222,20 @@ void Slider::onRepeatHit(bool successful, bool sliderend) {
     this->iCurRepeatCounterForHitSounds++;
 }
 
-void Slider::onTickHit(bool successful, int tickIndex) {
+void Slider::onTickHit(const SLIDERCLICK &click) {
     if(this->points.size() == 0) return;
 
     // tick hit of a slider adds +10 points, if successful
 
     // tick drawing visibility
     int numMissingTickClicks = 0;
-    for(auto &click : this->clicks) {
-        if(click.type == 1 && click.tickIndex == tickIndex && !click.finished) numMissingTickClicks++;
+    for(auto &c : this->clicks) {
+        if(c.type == 1 && c.tickIndex == click.tickIndex && !c.finished) numMissingTickClicks++;
     }
-    if(numMissingTickClicks == 0) this->ticks[tickIndex].finished = true;
+    if(numMissingTickClicks == 0) this->ticks[click.tickIndex].finished = true;
 
     // sound and hit animation
-    if(!successful) {
+    if(!click.successful) {
         this->onSliderBreak();
     } else if(this->pf != nullptr) {
         const vec2 osuCoords = this->pf->pixels2OsuCoords(this->pf->osuCoords2Pixels(this->vCurPointRaw));
@@ -2255,7 +2254,7 @@ void Slider::onTickHit(bool successful, int tickIndex) {
             //       in fact, it doesn't mention ticks at all.
             Sound *Skin::*sound_ptr = nullptr;
 
-            auto additionSet = this->samples.getAdditionSet();
+            auto additionSet = this->samples.getAdditionSet(click.time);
             if(additionSet > 0 && additionSet < 4) /* NORMAL (1) SOFT (2) DRUM (3) */ {
                 additionSet--;
                 sound_ptr = SLIDERTICK_SAMPLESET_METHODS[additionSet];
@@ -2263,7 +2262,8 @@ void Slider::onTickHit(bool successful, int tickIndex) {
 
             Sound *skin_sound = sound_ptr && this->pf->getSkin() ? this->pf->getSkin()->*sound_ptr : nullptr;
             if(skin_sound != nullptr) {
-                soundEngine->play(skin_sound, pan, 0.f, this->samples.getVolume(this->samples.getAdditionSet(), true));
+                soundEngine->play(skin_sound, pan, 0.f,
+                                  this->samples.getVolume(this->samples.getAdditionSet(click.time), true, click.time));
             }
         }
 
@@ -2275,7 +2275,7 @@ void Slider::onTickHit(bool successful, int tickIndex) {
     }
 
     // add score
-    if(!successful) {
+    if(!click.successful) {
         // add health manually
         // special case: missing a tick drains HIT_MISS_SLIDERBREAK health (and not HIT_MISS health)
         this->pi->addHitResult(this, LiveScore::HIT::HIT_MISS_SLIDERBREAK, 0, false, true, true, true, true,
@@ -2513,8 +2513,7 @@ void Spinner::draw() {
 
         // draw approach circle
         if(!(flags::has<LegacyFlags::Hidden>(this->pi->getModsLegacy())) && this->fPercent > 0.0f) {
-            const f32 spinnerApproachCircleImageScale =
-                (spinnerScale * 2) / (skin->i_spinner_approach_circle.scale());
+            const f32 spinnerApproachCircleImageScale = (spinnerScale * 2) / (skin->i_spinner_approach_circle.scale());
             g->setColor(Color(skin->c_spinner_approach_circle).setA(this->fAlphaWithoutHidden * alphaMultiplier));
 
             g->pushTransform();
@@ -2589,8 +2588,7 @@ void Spinner::draw() {
         // approach circle
         // TODO: only use when spinner-circle or spinner-top are skinned
         if(!(flags::has<LegacyFlags::Hidden>(this->pi->getModsLegacy())) && this->fPercent > 0.0f) {
-            const f32 spinnerApproachCircleImageScale =
-                (spinnerScale * 2) / (skin->i_spinner_approach_circle.scale());
+            const f32 spinnerApproachCircleImageScale = (spinnerScale * 2) / (skin->i_spinner_approach_circle.scale());
 
             // fun fact, peppy removed it: https://osu.ppy.sh/community/forums/topics/100765
             g->setColor(Color(skin->c_spinner_approach_circle).setA(this->fAlphaWithoutHidden * alphaMultiplier));

@@ -990,7 +990,7 @@ CONVAR(hitresult_miss_fadein_scale, 2.0f, CLIENT | SKINS | SERVER);
 CONVAR(hitresult_scale, 1.0f, CLIENT | SKINS | SERVER);
 CONVAR(ignore_beatmap_combo_colors, true, CLIENT | SKINS | SERVER);
 CONVAR(ignore_beatmap_combo_numbers, false, CLIENT | SKINS | SERVER, "may be used in conjunction with number_max");
-CONVAR(ignore_beatmap_sample_volume, true, CLIENT | SKINS | SERVER);
+CONVAR(ignore_beatmap_sample_volume, false, CLIENT | SKINS | SERVER);
 CONVAR(instafade, false, CLIENT | SKINS | SERVER, "don't draw hitcircle fadeout animations");
 CONVAR(instafade_sliders, false, CLIENT | SKINS | SERVER, "don't draw slider fadeout animations");
 CONVAR(instant_replay_duration, 15.f, CLIENT | SKINS | SERVER, "instant replay (F2) duration, in seconds");
@@ -1024,7 +1024,7 @@ CONVAR(od_override_lock, false, CLIENT | SERVER | PROTECTED | GAMEPLAY,
        "always force constant 300 hit window even through speed changes");
 CONVAR(old_beatmap_offset, 24.0f, CLIENT | SKINS | SERVER,
        "offset in ms which is added to beatmap versions < 5 (default value is hardcoded 24 ms in stable)");
-CONVAR(timingpoints_offset, 5.0f, CLIENT,
+CONVAR(timingpoints_offset, 0.0f, CLIENT,
        "offset in ms which is added before determining the active timingpoint for the sample type and sample volume "
        "(hitsounds) of the current frame");
 CONVAR(options_high_quality_sliders, false, CLIENT | SKINS | SERVER);
