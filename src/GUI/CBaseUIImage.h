@@ -10,7 +10,7 @@ class CBaseUIImage : public CBaseUIElement {
 
     void draw() override;
 
-    void setImage(Image *img);
+    void setImage(const Image *img);
 
     CBaseUIImage *setDrawFrame(bool drawFrame) {
         this->bDrawFrame = drawFrame;
@@ -60,10 +60,10 @@ class CBaseUIImage : public CBaseUIElement {
 
     [[nodiscard]] inline float getRotationDeg() const { return this->fRot; }
     [[nodiscard]] inline vec2 getScale() const { return this->vScale; }
-    [[nodiscard]] inline Image *getImage() const { return this->image; }
+    [[nodiscard]] inline const Image *getImage() const { return this->image; }
 
    private:
-    Image *image;
+    const Image *image;
 
     vec2 vScale{0.f};
 

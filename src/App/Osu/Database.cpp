@@ -1727,7 +1727,7 @@ void Database::loadScores(std::string_view dbPath) {
             sc.unixTimestamp = dbr.read<u64>();
             sc.player_id = dbr.read<i32>();
             sc.playerName = dbr.read_string();
-            sc.grade = (FinishedScore::Grade)dbr.read<u8>();
+            sc.grade = (ScoreGrade)dbr.read<u8>();
 
             sc.client = dbr.read_string();
             sc.server = dbr.read_string();

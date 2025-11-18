@@ -194,7 +194,7 @@ RankingScreen::RankingScreen() : ScreenBackable() {
     this->watch_btn->setClickCallback(SA::MakeDelegate<&RankingScreen::onWatchClicked>(this));
     this->rankings->getContainer()->addBaseUIElement(this->watch_btn);
 
-    this->setGrade(FinishedScore::Grade::D);
+    this->setGrade(ScoreGrade::D);
     this->setIndex(0);  // TEMP
 
     this->fUnstableRate = 0.0f;
@@ -576,44 +576,12 @@ void RankingScreen::updateLayout() {
 
 void RankingScreen::onBack() { this->setVisible(false); }
 
-void RankingScreen::setGrade(FinishedScore::Grade grade) {
+void RankingScreen::setGrade(ScoreGrade grade) {
     this->grade = grade;
 
-    vec2 hardcodedOsuRankingGradeImageSize = vec2(369, 422);
-    switch(grade) {
-        case FinishedScore::Grade::XH:
-            hardcodedOsuRankingGradeImageSize *= (osu->getSkin()->i_ranking_xh.scale());
-            this->rankingGrade->setImage(osu->getSkin()->i_ranking_xh);
-            break;
-        case FinishedScore::Grade::SH:
-            hardcodedOsuRankingGradeImageSize *= (osu->getSkin()->i_ranking_sh.scale());
-            this->rankingGrade->setImage(osu->getSkin()->i_ranking_sh);
-            break;
-        case FinishedScore::Grade::X:
-            hardcodedOsuRankingGradeImageSize *= (osu->getSkin()->i_ranking_x.scale());
-            this->rankingGrade->setImage(osu->getSkin()->i_ranking_x);
-            break;
-        case FinishedScore::Grade::S:
-            hardcodedOsuRankingGradeImageSize *= (osu->getSkin()->i_ranking_s.scale());
-            this->rankingGrade->setImage(osu->getSkin()->i_ranking_s);
-            break;
-        case FinishedScore::Grade::A:
-            hardcodedOsuRankingGradeImageSize *= (osu->getSkin()->i_ranking_a.scale());
-            this->rankingGrade->setImage(osu->getSkin()->i_ranking_a);
-            break;
-        case FinishedScore::Grade::B:
-            hardcodedOsuRankingGradeImageSize *= (osu->getSkin()->i_ranking_b.scale());
-            this->rankingGrade->setImage(osu->getSkin()->i_ranking_b);
-            break;
-        case FinishedScore::Grade::C:
-            hardcodedOsuRankingGradeImageSize *= (osu->getSkin()->i_ranking_c.scale());
-            this->rankingGrade->setImage(osu->getSkin()->i_ranking_c);
-            break;
-        default:
-            hardcodedOsuRankingGradeImageSize *= (osu->getSkin()->i_ranking_d.scale());
-            this->rankingGrade->setImage(osu->getSkin()->i_ranking_d);
-            break;
-    }
+    const auto &gradeImage = osu->getSkin()->getGradeImageLarge(grade);
+    const vec2 hardcodedOsuRankingGradeImageSize = vec2(369, 422) * gradeImage.scale();
+    this->rankingGrade->setImage(gradeImage);
 
     const float uiScale = /*cv::ui_scale.getFloat()*/ 1.0f;  // NOTE: no uiScale for rankingPanel and rankingGrade,
                                                              // doesn't really work due to legacy layout expectations

@@ -76,7 +76,7 @@ void SongButton::draw() {
             osu->getBackgroundImageHandler()->getLoadBackgroundImage(this->representativeBeatmap));
     }
 
-    if(this->grade != FinishedScore::Grade::N) this->drawGrade();
+    if(this->grade != ScoreGrade::N) this->drawGrade();
     this->drawTitle();
     this->drawSubTitle();
 }
@@ -175,12 +175,12 @@ void SongButton::drawGrade() {
     const vec2 pos = this->getActualPos();
     const vec2 size = this->getActualSize();
 
-    SkinImage *grade = ScoreButton::getGradeImage(this->grade);
+    const auto &gradeImg = osu->getSkin()->getGradeImageSmall(this->grade);
     g->pushTransform();
     {
         const float scale = this->calculateGradeScale();
         g->setColor(0xffffffff);
-        grade->drawRaw(vec2(pos.x + this->fGradeOffset, pos.y + size.y / 2), scale, AnchorPoint::LEFT);
+        gradeImg->drawRaw(vec2(pos.x + this->fGradeOffset, pos.y + size.y / 2), scale, AnchorPoint::LEFT);
     }
     g->popTransform();
 }
@@ -248,7 +248,7 @@ void SongButton::updateLayoutEx() {
     this->fTextOffset = 0.0f;
     this->fGradeOffset = 0.0f;
 
-    if(this->grade != FinishedScore::Grade::N) this->fTextOffset += this->calculateGradeWidth();
+    if(this->grade != ScoreGrade::N) this->fTextOffset += this->calculateGradeWidth();
 
     if(osu->getSkin()->version < 2.2f) {
         this->fTextOffset += size.x * 0.02f * 2.0f;
@@ -434,13 +434,13 @@ void SongButton::onCreateNewCollectionConfirmed(const UString &text, int id) {
 
 float SongButton::calculateGradeScale() {
     const vec2 size = this->getActualSize();
-    SkinImage *grade = ScoreButton::getGradeImage(this->grade);
-    return Osu::getImageScaleToFitResolution(grade->getSizeBaseRaw(), vec2(size.x, size.y * this->fGradeScale));
+    const auto &gradeImg = osu->getSkin()->getGradeImageSmall(this->grade);
+    return Osu::getImageScaleToFitResolution(gradeImg->getSizeBaseRaw(), vec2(size.x, size.y * this->fGradeScale));
 }
 
 float SongButton::calculateGradeWidth() {
-    SkinImage *grade = ScoreButton::getGradeImage(this->grade);
-    return grade->getSizeBaseRaw().x * this->calculateGradeScale();
+    const auto &gradeImg = osu->getSkin()->getGradeImageSmall(this->grade);
+    return gradeImg->getSizeBaseRaw().x * this->calculateGradeScale();
 }
 
 void SongButton::onOpenBeatmapFolderClicked() {

@@ -27,7 +27,7 @@ class SongButton : public CarouselButton {
     virtual void updateGrade() { ; }
 
     [[nodiscard]] DatabaseBeatmap *getDatabaseBeatmap() const override { return this->databaseBeatmap; }
-    FinishedScore::Grade grade = FinishedScore::Grade::N;
+    ScoreGrade grade = ScoreGrade::N;
 
    protected:
     void onSelected(bool wasSelected, bool autoSelectBottomMostChild, bool wasParentSelected) override;

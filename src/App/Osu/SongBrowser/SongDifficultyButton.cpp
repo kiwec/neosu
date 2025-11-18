@@ -67,7 +67,7 @@ void SongDifficultyButton::draw() {
             osu->getBackgroundImageHandler()->getLoadBackgroundImage(this->databaseBeatmap));
     }
 
-    if(this->grade != FinishedScore::Grade::N) this->drawGrade();
+    if(this->grade != ScoreGrade::N) this->drawGrade();
 
     this->sTitle = this->databaseBeatmap->getTitle();
     this->drawTitle(!isIndependentDiff ? 0.2f : 1.0f);

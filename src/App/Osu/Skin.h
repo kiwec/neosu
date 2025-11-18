@@ -16,6 +16,8 @@ class UString;
 
 class SkinImage;
 
+enum class ScoreGrade : uint8_t;
+
 extern Image *MISSING_TEXTURE;
 
 struct Skin final {
@@ -73,6 +75,9 @@ struct Skin final {
     // drawable helpers
     Color getComboColorForCounter(int i, int offset) const;
     inline void setBeatmapComboColors(std::vector<Color> colors) { this->c_beatmap_combo_colors = std::move(colors); }
+
+    [[nodiscard]] const BasicSkinImage &getGradeImageLarge(ScoreGrade grade) const;
+    [[nodiscard]] const SkinImage *getGradeImageSmall(ScoreGrade grade) const;
 
     [[nodiscard]] inline bool useSmoothCursorTrail() const { return this->i_cursor_middle.img != MISSING_TEXTURE; }
 

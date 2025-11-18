@@ -3859,7 +3859,7 @@ FinishedScore BeatmapInterface::saveAndSubmitScore(bool quit) {
     }
     score.playerName = BanchoState::get_username();
     score.passed = isComplete && !isZero && !liveScore->hasDied();
-    score.grade = score.passed ? liveScore->getGrade() : FinishedScore::Grade::F;
+    score.grade = score.passed ? liveScore->getGrade() : ScoreGrade::F;
     score.map = this->beatmap;
     score.ragequit = quit;
     // iCurMusicPos < 0 means "did not start"

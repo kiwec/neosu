@@ -1148,3 +1148,47 @@ void Skin::loadSound(Sound *&sndRef, const std::string &skinElementName, const s
     // export
     this->filepaths_for_export.push_back(sndRef->getFilePath());
 }
+
+const Skin::BasicSkinImage &Skin::getGradeImageLarge(ScoreGrade grade) const {
+    using enum ScoreGrade;
+    switch(grade) {
+        case XH:
+            return this->i_ranking_xh;
+        case SH:
+            return this->i_ranking_sh;
+        case X:
+            return this->i_ranking_x;
+        case S:
+            return this->i_ranking_s;
+        case A:
+            return this->i_ranking_a;
+        case B:
+            return this->i_ranking_b;
+        case C:
+            return this->i_ranking_c;
+        default:
+            return this->i_ranking_d;
+    }
+}
+
+const SkinImage *Skin::getGradeImageSmall(ScoreGrade grade) const {
+    using enum ScoreGrade;
+    switch(grade) {
+        case XH:
+            return this->i_ranking_xh_small;
+        case SH:
+            return this->i_ranking_sh_small;
+        case X:
+            return this->i_ranking_x_small;
+        case S:
+            return this->i_ranking_s_small;
+        case A:
+            return this->i_ranking_a_small;
+        case B:
+            return this->i_ranking_b_small;
+        case C:
+            return this->i_ranking_c_small;
+        default:
+            return this->i_ranking_d_small;
+    }
+}

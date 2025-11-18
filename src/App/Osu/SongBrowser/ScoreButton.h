@@ -12,7 +12,6 @@ class UIContextMenu;
 class ScoreButton final : public CBaseUIButton {
     NOCOPY_NOMOVE(ScoreButton)
    public:
-    static SkinImage *getGradeImage(FinishedScore::Grade grade);
     static UString getModsStringForDisplay(const Replay::Mods &mods);
 
     enum class STYLE : uint8_t { SONG_BROWSER, TOP_RANKS };
@@ -90,7 +89,7 @@ class ScoreButton final : public CBaseUIButton {
     int iScoreIndexNumber{1};
     u64 iScoreUnixTimestamp{0};
 
-    FinishedScore::Grade scoreGrade{FinishedScore::Grade::D};
+    ScoreGrade scoreGrade{ScoreGrade::D};
 
     STYLE style;
     float fIndexNumberAnim{0.0f};

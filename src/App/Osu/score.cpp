@@ -26,7 +26,7 @@ void LiveScore::reset() {
     this->hitresults = std::vector<HIT>();
     this->hitdeltas = std::vector<int>();
 
-    this->grade = FinishedScore::Grade::N;
+    this->grade = ScoreGrade::N;
     if(!this->simulating) {
         this->mods = Replay::Mods::from_cvars();
     }
@@ -201,19 +201,19 @@ void LiveScore::addHitResult(AbstractBeatmapInterface *beatmap, HitObject * /*hi
     }
 
     // recalculate grade
-    this->grade = FinishedScore::Grade::D;
+    this->grade = ScoreGrade::D;
 
     bool hd = this->mods.has(ModFlags::Hidden);
     bool fl = this->mods.has(ModFlags::Flashlight);
 
-    if(percent300s > 0.6f) this->grade = FinishedScore::Grade::C;
-    if((percent300s > 0.7f && this->iNumMisses == 0) || (percent300s > 0.8f)) this->grade = FinishedScore::Grade::B;
-    if((percent300s > 0.8f && this->iNumMisses == 0) || (percent300s > 0.9f)) this->grade = FinishedScore::Grade::A;
+    if(percent300s > 0.6f) this->grade = ScoreGrade::C;
+    if((percent300s > 0.7f && this->iNumMisses == 0) || (percent300s > 0.8f)) this->grade = ScoreGrade::B;
+    if((percent300s > 0.8f && this->iNumMisses == 0) || (percent300s > 0.9f)) this->grade = ScoreGrade::A;
     if(percent300s > 0.9f && percent50s <= 0.01f && this->iNumMisses == 0) {
-        this->grade = (hd || fl) ? FinishedScore::Grade::SH : FinishedScore::Grade::S;
+        this->grade = (hd || fl) ? ScoreGrade::SH : ScoreGrade::S;
     }
     if(this->iNumMisses == 0 && this->iNum50s == 0 && this->iNum100s == 0) {
-        this->grade = (hd || fl) ? FinishedScore::Grade::XH : FinishedScore::Grade::X;
+        this->grade = (hd || fl) ? ScoreGrade::XH : ScoreGrade::X;
     }
 
     // recalculate unstable rate
@@ -518,7 +518,7 @@ f64 FinishedScore::get_pp() const {
     }
 }
 
-FinishedScore::Grade FinishedScore::calculate_grade() const {
+ScoreGrade FinishedScore::calculate_grade() const {
     float totalNumHits = this->numMisses + this->num50s + this->num100s + this->num300s;
     bool modHidden = (this->mods.has(ModFlags::Hidden));
     bool modFlashlight = (this->mods.has(ModFlags::Flashlight));
@@ -530,14 +530,14 @@ FinishedScore::Grade FinishedScore::calculate_grade() const {
         percent50s = this->num50s / totalNumHits;
     }
 
-    FinishedScore::Grade grade = FinishedScore::Grade::D;
-    if(percent300s > 0.6f) grade = FinishedScore::Grade::C;
-    if((percent300s > 0.7f && this->numMisses == 0) || (percent300s > 0.8f)) grade = FinishedScore::Grade::B;
-    if((percent300s > 0.8f && this->numMisses == 0) || (percent300s > 0.9f)) grade = FinishedScore::Grade::A;
+    ScoreGrade grade = ScoreGrade::D;
+    if(percent300s > 0.6f) grade = ScoreGrade::C;
+    if((percent300s > 0.7f && this->numMisses == 0) || (percent300s > 0.8f)) grade = ScoreGrade::B;
+    if((percent300s > 0.8f && this->numMisses == 0) || (percent300s > 0.9f)) grade = ScoreGrade::A;
     if(percent300s > 0.9f && percent50s <= 0.01f && this->numMisses == 0)
-        grade = ((modHidden || modFlashlight) ? FinishedScore::Grade::SH : FinishedScore::Grade::S);
+        grade = ((modHidden || modFlashlight) ? ScoreGrade::SH : ScoreGrade::S);
     if(this->numMisses == 0 && this->num50s == 0 && this->num100s == 0)
-        grade = ((modHidden || modFlashlight) ? FinishedScore::Grade::XH : FinishedScore::Grade::X);
+        grade = ((modHidden || modFlashlight) ? ScoreGrade::XH : ScoreGrade::X);
 
     return grade;
 }

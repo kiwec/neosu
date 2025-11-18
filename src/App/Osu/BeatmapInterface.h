@@ -10,8 +10,6 @@
 #include "score.h"
 #include "uwu.h"
 
-#include <variant>
-
 class Sound;
 class ConVar;
 struct Skin;

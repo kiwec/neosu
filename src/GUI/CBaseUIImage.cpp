@@ -65,7 +65,7 @@ void CBaseUIImage::draw() {
     }
 }
 
-void CBaseUIImage::setImage(Image *img) {
+void CBaseUIImage::setImage(const Image* img) {
     this->image = img;
 
     if(this->image != nullptr) {

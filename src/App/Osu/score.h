@@ -15,20 +15,20 @@ enum KeyFlags : uint8_t;
 }  // namespace LegacyReplay
 using GameplayKeys = LegacyReplay::KeyFlags;
 
-struct FinishedScore {
-    enum class Grade : uint8_t {
-        XH,
-        SH,
-        X,
-        S,
-        A,
-        B,
-        C,
-        D,
-        F,
-        N  // means "no grade"
-    };
+enum class ScoreGrade : uint8_t {
+    XH,
+    SH,
+    X,
+    S,
+    A,
+    B,
+    C,
+    D,
+    F,
+    N  // means "no grade"
+};
 
+struct FinishedScore {
     MD5Hash beatmap_hash;
     Replay::Mods mods;
 
@@ -80,7 +80,7 @@ struct FinishedScore {
     int numHitObjects = -1;
     int numCircles = -1;
 
-    Grade grade = Grade::N;
+    ScoreGrade grade = ScoreGrade::N;
     bool perfect = false;
     bool passed = false;
     bool ragequit = false;
@@ -97,7 +97,7 @@ struct FinishedScore {
 
     f64 get_or_calc_pp();
     [[nodiscard]] f64 get_pp() const;
-    [[nodiscard]] Grade calculate_grade() const;
+    [[nodiscard]] ScoreGrade calculate_grade() const;
 
     [[nodiscard]] bool has_possible_replay() const {
         if(this->is_online_score) {
@@ -168,7 +168,7 @@ class LiveScore {
     [[nodiscard]] inline u64 getScore() const {
         return this->mods.has(ModFlags::ScoreV2) ? this->iScoreV2 : this->iScoreV1;
     }
-    [[nodiscard]] inline FinishedScore::Grade getGrade() const { return this->grade; }
+    [[nodiscard]] inline ScoreGrade getGrade() const { return this->grade; }
     [[nodiscard]] inline int getCombo() const { return this->iCombo; }
     [[nodiscard]] inline int getComboMax() const { return this->iComboMax; }
     [[nodiscard]] inline int getComboFull() const { return this->iComboFull; }
@@ -211,7 +211,7 @@ class LiveScore {
     std::vector<HIT> hitresults;
     std::vector<int> hitdeltas;
 
-    FinishedScore::Grade grade;
+    ScoreGrade grade;
 
     float fStarsTomTotal;
     float fStarsTomAim;

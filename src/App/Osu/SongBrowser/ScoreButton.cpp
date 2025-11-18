@@ -114,19 +114,19 @@ void ScoreButton::draw() {
 
     // grade
     const float gradeHeightPercent = 0.8f;
-    SkinImage *grade = getGradeImage(this->scoreGrade);
+    const auto &gradeImg = osu->getSkin()->getGradeImageSmall(this->scoreGrade);
     int gradeWidth = 0;
     g->pushTransform();
     {
         const float scale = Osu::getImageScaleToFitResolution(
-            grade->getSizeBaseRaw(),
+            gradeImg->getSizeBaseRaw(),
             vec2(this->vSize.x * (1.0f - indexNumberWidthPercent), this->vSize.y * gradeHeightPercent));
-        gradeWidth = grade->getSizeBaseRaw().x * scale;
+        gradeWidth = gradeImg->getSizeBaseRaw().x * scale;
 
         g->setColor(0xffffffff);
-        grade->drawRaw(vec2((int)(this->vPos.x + this->vSize.x * indexNumberWidthPercent + gradeWidth / 2.0f),
-                            (int)(this->vPos.y + this->vSize.y / 2.0f)),
-                       scale);
+        gradeImg->drawRaw(vec2((int)(this->vPos.x + this->vSize.x * indexNumberWidthPercent + gradeWidth / 2.0f),
+                               (int)(this->vPos.y + this->vSize.y / 2.0f)),
+                          scale);
     }
     g->popTransform();
 
@@ -814,34 +814,6 @@ void ScoreButton::setScore(const FinishedScore &score, const DatabaseBeatmap *ma
 }
 
 bool ScoreButton::isContextMenuVisible() { return (this->contextMenu != nullptr && this->contextMenu->isVisible()); }
-
-SkinImage *ScoreButton::getGradeImage(FinishedScore::Grade grade) {
-    const auto &skin{osu->getSkin()};
-    if(!skin) {
-        debugLog("no skin to return a grade image for");
-        return nullptr;
-    }
-
-    using enum FinishedScore::Grade;
-    switch(grade) {
-        case XH:
-            return skin->i_ranking_xh_small;
-        case SH:
-            return skin->i_ranking_sh_small;
-        case X:
-            return skin->i_ranking_x_small;
-        case S:
-            return skin->i_ranking_s_small;
-        case A:
-            return skin->i_ranking_a_small;
-        case B:
-            return skin->i_ranking_b_small;
-        case C:
-            return skin->i_ranking_c_small;
-        default:
-            return skin->i_ranking_d_small;
-    }
-}
 
 UString ScoreButton::getModsStringForDisplay(const Replay::Mods &mods) {
     using enum ModFlags;

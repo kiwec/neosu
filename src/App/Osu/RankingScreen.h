@@ -39,7 +39,7 @@ class RankingScreen final : public ScreenBackable {
 
     void drawModImage(SkinImage *image, vec2 &pos, vec2 &max);
 
-    void setGrade(FinishedScore::Grade grade);
+    void setGrade(ScoreGrade grade);
     void setIndex(int index);
 
     [[nodiscard]] UString getPPString() const;
@@ -57,7 +57,7 @@ class RankingScreen final : public ScreenBackable {
     UIButton *retry_btn;
     UIButton *watch_btn;
 
-    FinishedScore::Grade grade;
+    ScoreGrade grade;
     float fUnstableRate;
     float fHitErrorAvgMin;
     float fHitErrorAvgMax;
