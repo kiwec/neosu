@@ -1,5 +1,5 @@
 AC_PREREQ([2.69])
-AC_INIT([neosu], [[41.08]], [], [], [https://github.com/kiwec/neosu]) # don't report bugs to McKay :)
+AC_INIT([neosu], [[41.09]], [], [], [https://github.com/kiwec/neosu]) # don't report bugs to McKay :)
 AC_CONFIG_SRCDIR([src/Engine/Engine.cpp])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_HEADERS([src/config.h])
@@ -934,7 +934,7 @@ AS_IF([test "x$use_dx11" = "xyes"], [
 ])
 
 SDL3_MIN_VERSION=3.2.20
-SDL3_BUILD_VERSION=3f0545587fe1497bf22fe76eac75818d6fe5e9e3 # git
+SDL3_BUILD_VERSION=44471b3ea45e551b6a531e895f168934bf72d606 # git
 FREETYPE2_MIN_VERSION=2.10.0
 FREETYPE2_BUILD_VERSION=2.14.1
 LIBJPEG_MIN_VERSION=3.0.0

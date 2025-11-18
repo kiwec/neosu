@@ -24,8 +24,21 @@ Changelog::Changelog() : ScreenBackable() {
 
     std::vector<CHANGELOG> changelogs;
 
+    CHANGELOG v41_09;
+    v41_09.title = "41.09";
+    v41_09.changes = {
+        R"(- Fixed incorrect beatmap hitsound volumes and samplesets being used)",
+        R"(- Fixed nightcore/daycore with SoLoud)",
+        R"(- Fixed multiple songbrowser and collection management issues:)",
+        R"(  - Beatmap difficulties are now properly grouped by mapset when searching in "No Grouping" mode)",
+        R"(  - All collections are now sorted alphabetically)",
+        R"(  - Deleting/renaming collections now works properly)",
+        R"(- Improved gameplay animation smoothness (position interpolator fixes))",
+    };
+    changelogs.push_back(v41_09);
+
     CHANGELOG v41_08;
-    v41_08.title = "41.08";
+    v41_08.title = "41.08 (2025-11-14)";
     v41_08.changes = {
         R"(- .osk/.osz files in the maps/ and skins/ directories are now automatically imported)",
         R"(- Added option to enable raw keyboard input on Windows)",
