@@ -7,6 +7,7 @@ fi
 
 VERSION="$1"                 # 39.03
 VERSION_RC="${VERSION//./,}" # 39,03
+VERSION_RC="${VERSION_RC//,0/,}" # 39,3 (don't start a group 0)
 VERSION_CL="${VERSION//./_}" # 39_03
 
 sed -Ei "s/version=\"[0-9]+\.[0-9]+\.0\.0\"/version=\"$VERSION.0.0\"/" assets/neosu.manifest
