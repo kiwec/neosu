@@ -292,7 +292,9 @@ void Database::startLoader() {
     }
 
     // append, the copy will only be cleared if loading them succeeded
-    this->extern_db_paths_to_import_async_copy.append_range(this->extern_db_paths_to_import);
+    this->extern_db_paths_to_import_async_copy.insert(this->extern_db_paths_to_import_async_copy.end(),
+                                                      this->extern_db_paths_to_import.cbegin(),
+                                                      this->extern_db_paths_to_import.cend());
     this->extern_db_paths_to_import.clear();
 
     this->loader = new AsyncDBLoader();
