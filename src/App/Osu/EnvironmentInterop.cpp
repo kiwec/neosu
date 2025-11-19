@@ -82,13 +82,15 @@ bool Environment::Interop::handle_cmdline_args(const std::vector<std::string> &a
             handle_neosu_url(arg.c_str());
         } else {
             auto extension = Environment::getFileExtensionFromFilePath(arg);
-            if(!extension.compare("osz")) {
+            SString::lower_inplace(extension);
+
+            if(extension == "osz") {
                 // NOTE: we're assuming db is loaded here?
                 handle_osz(arg.c_str());
-            } else if(!extension.compare("osk") || !extension.compare("zip")) {
+            } else if(extension == "osk" || extension == "zip") {
                 handle_osk(arg.c_str());
-            } else if(!extension.compare("db") && !db->isLoading()) {
-                db->dbPathsToImport.emplace_back(arg.c_str());
+            } else if(extension == "db") {
+                db->addPathToImport(arg);
                 need_to_reload_database = true;
             }
         }

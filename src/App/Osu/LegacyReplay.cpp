@@ -257,12 +257,12 @@ bool load_from_disk(FinishedScore& score, bool update_db) {
 
     if(update_db) {
         Sync::unique_lock lock(db->scores_mtx);
-        auto& map_scores = (*(db->getScores()))[score.beatmap_hash];
+        // NOTE: this will add a new std::vector<FinishedScore> to the database scores hashmap,
+        // if it didn't contain the hash already... is that intended?
+        auto& map_scores = db->getScores()[score.beatmap_hash];
         for(auto& db_score : map_scores) {
             if(db_score.unixTimestamp != score.unixTimestamp) continue;
-            if(&db_score != &score) {  // interesting logic...?
-                db_score.replay = score.replay;
-            }
+            db_score.replay = score.replay;
 
             break;
         }

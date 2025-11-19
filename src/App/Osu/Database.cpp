@@ -221,6 +221,7 @@ void Database::AsyncDBLoader::initAsync() {
     assert(db != nullptr);
 
     db->findDatabases();
+
     if(db->load_interrupted.load(std::memory_order_acquire)) goto done;
 
     using enum Database::DatabaseType;
@@ -245,6 +246,8 @@ void Database::AsyncDBLoader::initAsync() {
         db->importDatabase(db_pair);
         if(db->load_interrupted.load(std::memory_order_acquire)) goto done;
     }
+    // only clear this after we have actually loaded them
+    db->extern_db_paths_to_import_async_copy.clear();
     db->external_databases.clear();
 
 done:
@@ -287,6 +290,10 @@ void Database::startLoader() {
         }
         this->beatmapsets.clear();
     }
+
+    // append, the copy will only be cleared if loading them succeeded
+    this->extern_db_paths_to_import_async_copy.append_range(this->extern_db_paths_to_import);
+    this->extern_db_paths_to_import.clear();
 
     this->loader = new AsyncDBLoader();
     resourceManager->requestNextLoadAsync();
@@ -463,7 +470,7 @@ int Database::addScore(const FinishedScore &score) {
     this->addScoreRaw(score);
     this->sortScores(score.beatmap_hash);
 
-    this->bDidScoresChangeForStats = true;
+    this->scores_changed = true;
 
     if(cv::scores_save_immediately.getBool()) this->saveScores();
 
@@ -496,7 +503,11 @@ int Database::addScore(const FinishedScore &score) {
 int Database::isScoreAlreadyInDB(u64 unix_timestamp, const MD5Hash &map_hash) {
     Sync::shared_lock lock(this->scores_mtx);
 
-    for(int existing_pos = -1; const auto &existing : this->scores[map_hash]) {
+    // operator[] might add a new entry
+    const auto &scoreit = this->scores.find(map_hash);
+    if(scoreit == this->scores.end()) return -1;
+
+    for(int existing_pos = -1; const auto &existing : scoreit->second) {
         existing_pos++;
         if(existing.unixTimestamp == unix_timestamp) {
             // Score has already been added
@@ -553,7 +564,7 @@ void Database::deleteScore(const MD5Hash &beatmapMD5Hash, u64 scoreUnixTimestamp
     for(int i = 0; i < this->scores[beatmapMD5Hash].size(); i++) {
         if(this->scores[beatmapMD5Hash][i].unixTimestamp == scoreUnixTimestamp) {
             this->scores[beatmapMD5Hash].erase(this->scores[beatmapMD5Hash].begin() + i);
-            this->bDidScoresChangeForStats = true;
+            this->scores_changed = true;
             break;
         }
     }
@@ -581,34 +592,21 @@ void Database::sortScores(const MD5Hash &beatmapMD5Hash) {
 }
 
 std::vector<UString> Database::getPlayerNamesWithPPScores() {
-    std::vector<MD5Hash> keys;
-    std::unordered_set<std::string> tempNames;
-
+    std::vector<UString> names;
     {
         Sync::shared_lock lock(this->scores_mtx);
-        keys.reserve(this->scores.size());
 
-        for(const auto &[hash, _] : this->scores) {
-            keys.push_back(hash);
-        }
-
-        for(const auto &key : keys) {
-            const auto &cur = this->scores[key];
-            for(const auto &name :
-                cur | std::views::transform([](const auto &score) -> auto { return score.playerName; })) {
-                tempNames.insert(name);
+        for(const auto &[hash, scoreVec] : this->scores) {
+            for(const auto &name : scoreVec | std::views::transform([](const auto &score) -> auto {
+                                       return score.playerName;
+                                   }) | std::views::filter([](const auto &name) -> bool { return !name.empty(); })) {
+                names.emplace_back(name);
             }
         }
     }
 
     // always add local user, even if there were no scores
-    tempNames.insert(BanchoState::get_username());
-
-    std::vector<UString> names;
-    names.reserve(tempNames.size());
-    for(const auto &name : tempNames) {
-        if(name.length() > 0) names.emplace_back(name);
-    }
+    names.emplace_back(BanchoState::get_username());
 
     return names;
 }
@@ -669,7 +667,6 @@ Database::PlayerPPScores Database::getPlayerPPScores(const std::string &playerNa
                              (u64)sc.mods.flags & ((u64)ModFlags::Relax | (u64)ModFlags::Autopilot)) &&
                            (playerName == sc.playerName);
                 })) {
-
                 foundValidScore = true;
                 totalScore += score.score;
 
@@ -698,14 +695,26 @@ Database::PlayerPPScores Database::getPlayerPPScores(const std::string &playerNa
 }
 
 Database::PlayerStats Database::calculatePlayerStats(const std::string &playerName) {
-    if(!this->bDidScoresChangeForStats.load(std::memory_order_acquire) &&
-       playerName == this->prevPlayerStats.name.utf8View())
+    // FIXME: returning cached statistics even if we got new scores
+    // this is makes this function a "sneaky" API that might return stale stats
+    // done for performance to not tank FPS during score recalc where this is done on the main thread
+    // every frame (by UserCard::updateUserStats)
+
+    // should be done by the caller but it's more complicated because the prevPlayerStats are
+    // cached inside Database...
+    const bool scoresChanged = this->scores_changed.load(std::memory_order_acquire);
+    const bool returnCached = playerName == this->prevPlayerStats.name.utf8View() &&
+                              (!scoresChanged || (sct_running() && !engine->throttledShouldRun(60)));
+    if(returnCached) {
         return this->prevPlayerStats;
+    }
 
     const PlayerPPScores ps = this->getPlayerPPScores(playerName);
 
     // delay caching until we actually have scores loaded
-    if(ps.ppScores.size() > 0 || db->isFinished()) this->bDidScoresChangeForStats = false;
+    if(ps.ppScores.size() > 0 || this->isFinished()) {
+        this->scores_changed.store(false, std::memory_order_release);
+    }
 
     // "If n is the amount of scores giving more pp than a given score, then the score's weight is 0.95^n"
     // "Total pp = PP[1] * 0.95^0 + PP[2] * 0.95^1 + PP[3] * 0.95^2 + ... + PP[n] * 0.95^(n-1)"
@@ -1213,8 +1222,7 @@ void Database::loadMaps() {
                     bpm.most_common = override.avg_bpm;
                 } else if(nb_timing_points > 0) {
                     timing_points_buffer.resize(nb_timing_points);
-                    if(dbr.read_bytes((u8 *)timing_points_buffer.data(),
-                                      sizeof(DB_TIMINGPOINT) * nb_timing_points) !=
+                    if(dbr.read_bytes((u8 *)timing_points_buffer.data(), sizeof(DB_TIMINGPOINT) * nb_timing_points) !=
                        sizeof(DB_TIMINGPOINT) * nb_timing_points) {
                         debugLog("WARNING: failed to read timing points from beatmap {:d} !", (i + 1));
                     }
@@ -1624,25 +1632,32 @@ void Database::findDatabases() {
     this->database_files.emplace(STABLE_COLLECTIONS, getDBPath(STABLE_COLLECTIONS));
     this->database_files.emplace(MCNEOSU_COLLECTIONS, getDBPath(MCNEOSU_COLLECTIONS));
 
-    for(const auto &db_path : this->dbPathsToImport) {
+    for(const auto &db_path : this->extern_db_paths_to_import_async_copy) {
         auto db_type = getDBType(db_path);
         if(db_type != INVALID_DB) {
             debugLog("adding external DB {} (type {}) for import", db_path, static_cast<u8>(db_type));
-            this->external_databases.emplace(db_type, db_path);
+            const auto &[_, added] = this->external_databases.emplace(db_type, db_path);
+            if(!added) {
+                debugLog("NOTE: ignored duplicate database {}", db_path);
+            }
         } else {
             debugLog("invalid external database: {}", db_path);
         }
     }
 
-    this->dbPathsToImport.clear();
+    for(const auto &[type, pathstr] : this->database_files) {
+        std::error_code ec;
+        auto db_filesize = std::filesystem::file_size(File::getFsPath(pathstr), ec);
+        if(!ec && db_filesize > 0) {
+            this->total_bytes += db_filesize;
+        }
+    }
 
-    for(const auto &db_files : {this->database_files, this->external_databases}) {
-        for(const auto &[type, pathstr] : db_files) {
-            std::error_code ec;
-            auto db_filesize = std::filesystem::file_size(File::getFsPath(pathstr), ec);
-            if(!ec && db_filesize > 0) {
-                this->total_bytes += db_filesize;
-            }
+    for(const auto &[type, pathstr] : this->external_databases) {
+        std::error_code ec;
+        auto db_filesize = std::filesystem::file_size(File::getFsPath(pathstr), ec);
+        if(!ec && db_filesize > 0) {
+            this->total_bytes += db_filesize;
         }
     }
 }

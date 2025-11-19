@@ -2253,13 +2253,13 @@ void SongBrowser::rebuildScoreButtons() {
     if(validBeatmap) {
         Sync::shared_lock lock(db->scores_mtx);
         auto map = osu->getMapInterface()->getBeatmap();
-        auto local_scores = db->scores[map->getMD5()];
+        const auto &local_scores = db->getScores()[map->getMD5()];
         auto local_best = std::ranges::max_element(
             local_scores, [](FinishedScore const &a, FinishedScore const &b) { return a.score < b.score; });
 
         if(is_online) {
-            auto search = db->online_scores.find(map->getMD5());
-            if(search != db->online_scores.end()) {
+            const auto &search = db->getOnlineScores().find(map->getMD5());
+            if(search != db->getOnlineScores().end()) {
                 scores = search->second;
 
                 if(local_best == local_scores.end()) {
@@ -2842,7 +2842,7 @@ void SongBrowser::onFilterScoresChange(const UString &text, int id) {
     type_cv->setValue(text_to_set);  // NOTE: remember
 
     this->filterScoresDropdown->setText(text_to_set);
-    db->online_scores.clear();
+    db->getOnlineScores().clear();
     this->rebuildScoreButtons();
     this->scoreBrowser->scrollToTop();
 }

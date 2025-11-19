@@ -113,7 +113,7 @@ void updateBanchoMods() {
 
     // Servers like akatsuki send different leaderboards based on what mods
     // you have selected. Reset leaderboard when switching mods.
-    db->online_scores.clear();
+    db->getOnlineScores().clear();
     osu->getSongBrowser()->rebuildScoreButtons();
 }
 

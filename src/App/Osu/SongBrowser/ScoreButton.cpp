@@ -371,7 +371,7 @@ void ScoreButton::mouse_update(bool *propagate_clicks) {
 
             {
                 Sync::unique_lock lock(db->scores_mtx);
-                auto &scores = this->score.is_online_score ? db->online_scores : db->scores;
+                auto &scores = this->score.is_online_score ? db->getOnlineScores() : db->getScores();
                 for(auto &other : scores[this->score.beatmap_hash]) {
                     if(other.unixTimestamp == this->score.unixTimestamp) {
                         osu->getSongBrowser()->score_resort_scheduled = true;

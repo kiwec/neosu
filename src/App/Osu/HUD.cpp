@@ -1158,30 +1158,41 @@ std::vector<SCORE_ENTRY> HUD::getCurrentScores() {
     } else {
         int nb_slots = 0;
         {
+            const bool is_online = cv::songbrowser_scores_filteringtype.getString() != "Local";
+
             Sync::shared_lock lock(db->scores_mtx);
-            std::vector<FinishedScore> *singleplayer_scores = &((*db->getScores())[this->beatmap_md5]);
-            bool is_online = cv::songbrowser_scores_filteringtype.getString() != "Local";
+
+            const std::vector<FinishedScore> *scoreVec = nullptr;
             if(is_online) {
-                auto search = db->online_scores.find(this->beatmap_md5);
-                if(search != db->online_scores.end()) {
-                    singleplayer_scores = &search->second;
+                const auto &scoreIt = db->getOnlineScores().find(this->beatmap_md5);
+                if(scoreIt != db->getOnlineScores().end()) {
+                    scoreVec = &scoreIt->second;
                 }
             }
 
-            const auto &scores_ref = *singleplayer_scores;
-            for(const auto &score : scores_ref) {
-                SCORE_ENTRY scoreEntry;
-                scoreEntry.entry_id = -(nb_slots + 1);
-                scoreEntry.player_id = score.player_id;
-                scoreEntry.name = score.playerName.c_str();
-                scoreEntry.combo = score.comboMax;
-                scoreEntry.score = score.score;
-                scoreEntry.accuracy =
-                    LiveScore::calculateAccuracy(score.num300s, score.num100s, score.num50s, score.numMisses);
-                scoreEntry.dead = false;
-                scoreEntry.highlight = false;
-                scores.push_back(std::move(scoreEntry));
-                nb_slots++;
+            // use local if we had no online scores or are not online
+            if(!scoreVec) {
+                const auto &scoreIt = db->getScores().find(this->beatmap_md5);
+                if(scoreIt != db->getScores().end()) {
+                    scoreVec = &scoreIt->second;
+                }
+            }
+
+            if(scoreVec) {
+                for(const auto &score : *scoreVec) {
+                    SCORE_ENTRY scoreEntry;
+                    scoreEntry.entry_id = -(nb_slots + 1);
+                    scoreEntry.player_id = score.player_id;
+                    scoreEntry.name = score.playerName.c_str();
+                    scoreEntry.combo = score.comboMax;
+                    scoreEntry.score = score.score;
+                    scoreEntry.accuracy =
+                        LiveScore::calculateAccuracy(score.num300s, score.num100s, score.num50s, score.numMisses);
+                    scoreEntry.dead = false;
+                    scoreEntry.highlight = false;
+                    scores.push_back(std::move(scoreEntry));
+                    nb_slots++;
+                }
             }
         }
 

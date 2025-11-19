@@ -212,11 +212,12 @@ void SongDifficultyButton::updateGrade() {
     }
 
     Sync::shared_lock lock(db->scores_mtx);
-    const auto& db_scores = db->getScores();
-    if(!db_scores) {
+    const auto& dbScoreIt = db->getScores().find(this->databaseBeatmap->getMD5());
+    if(dbScoreIt == db->getScores().end()) {
         return;
     }
-    for(const auto& score : (*db_scores)[this->databaseBeatmap->getMD5()]) {
+
+    for(const auto& score : dbScoreIt->second) {
         if(score.grade < this->grade) {
             this->grade = score.grade;
 

@@ -179,7 +179,7 @@ void process_leaderboard_response(const Packet &response) {
     if(map) {
         map->setOnlineOffset(info.online_offset);
     }
-    db->online_scores[beatmap_hash] = std::move(scores);
+    db->getOnlineScores()[beatmap_hash] = std::move(scores);
     osu->getSongBrowser()->rebuildScoreButtons();
 }
 }  // namespace BANCHO::Leaderboard

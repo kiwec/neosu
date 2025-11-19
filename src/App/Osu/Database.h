@@ -1,7 +1,6 @@
 #pragma once
 // Copyright (c) 2016, PG, All rights reserved.
 
-#include "templates.h"
 #include "Resource.h"
 #include "LegacyReplay.h"
 #include "Overrides.h"
@@ -10,10 +9,17 @@
 #include "SyncMutex.h"
 
 #include <atomic>
+#include <set>
 
 namespace Timing {
 class Timer;
 }
+namespace Collections {
+extern bool load_all();
+extern bool load_peppy(std::string_view peppy_collections_path);
+extern bool load_mcneosu(std::string_view neosu_collections_path);
+extern bool save_collections();
+}  // namespace Collections
 class ConVar;
 
 class DatabaseBeatmap;
@@ -113,23 +119,34 @@ class Database {
 
     DatabaseBeatmap *getBeatmapDifficulty(const MD5Hash &md5hash);
     DatabaseBeatmap *getBeatmapDifficulty(i32 map_id);
-    DatabaseBeatmap *getBeatmapSet(i32 set_id);
-    inline const std::vector<DatabaseBeatmap *> &getBeatmapSets() const { return this->beatmapsets; }
+    BeatmapSet *getBeatmapSet(i32 set_id);
+    inline const std::vector<BeatmapSet *> &getBeatmapSets() const { return this->beatmapsets; }
 
-    inline std::unordered_map<MD5Hash, std::vector<FinishedScore>> *getScores() { return &this->scores; }
+    inline std::unordered_map<MD5Hash, std::vector<FinishedScore>> &getScores() { return this->scores; }
+    inline std::unordered_map<MD5Hash, std::vector<FinishedScore>> &getOnlineScores() { return this->online_scores; }
     static std::string getOsuSongsFolder();
 
     BeatmapSet *loadRawBeatmap(const std::string &beatmapPath);  // only used for raw loading without db
 
-    UString parseLegacyCfgBeatmapDirectoryParameter();
-    void scheduleLoadRaw();
+    inline void addPathToImport(const std::string &dbPath) { this->extern_db_paths_to_import.push_back(dbPath); }
+
     Sync::shared_mutex peppy_overrides_mtx;
+    Sync::shared_mutex scores_mtx;
+    std::atomic<bool> scores_changed{true};
+
     std::unordered_map<MD5Hash, MapOverrides> peppy_overrides;
     std::vector<BeatmapDifficulty *> maps_to_recalc;
     std::vector<BeatmapDifficulty *> loudness_to_calc;
 
-    Sync::shared_mutex scores_mtx;
-    std::atomic<bool> bDidScoresChangeForStats = true;
+   private:
+    friend bool Collections::load_all();
+    friend bool Collections::load_peppy(std::string_view peppy_collections_path);
+    friend bool Collections::load_mcneosu(std::string_view neosu_collections_path);
+    friend bool Collections::save_collections();
+    friend class DatabaseBeatmap;
+
+    void scheduleLoadRaw();
+
     std::unordered_map<MD5Hash, std::vector<FinishedScore>> scores;
     std::unordered_map<MD5Hash, std::vector<FinishedScore>> online_scores;
 
@@ -150,16 +167,16 @@ class Database {
 
     // should only be accessed from database loader thread!
     std::unordered_map<DatabaseType, std::string> database_files;
-    std::unordered_map<DatabaseType, std::string> external_databases;
+    std::set<std::pair<DatabaseType, std::string>> external_databases;
 
     u64 bytes_processed{0};
     u64 total_bytes{0};
     std::atomic<float> loading_progress{0.f};
 
-    // fine to be modified as long as the db is not currently being loaded
-    std::vector<std::string> dbPathsToImport;
+    std::vector<std::string> extern_db_paths_to_import;
+    // copy so that more can be added without thread races during loading
+    std::vector<std::string> extern_db_paths_to_import_async_copy;
 
-   private:
     class AsyncDBLoader final : public Resource {
         NOCOPY_NOMOVE(AsyncDBLoader)
        public:

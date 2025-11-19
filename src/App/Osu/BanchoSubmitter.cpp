@@ -201,7 +201,7 @@ void submit_score(FinishedScore score) {
                 debugLogLambda("Score submit result: {}", response.body);
 
                 // Reset leaderboards so new score will appear
-                db->online_scores.clear();
+                db->getOnlineScores().clear();
                 osu->getSongBrowser()->rebuildScoreButtons();
             } else {
                 // TODO: handle failure

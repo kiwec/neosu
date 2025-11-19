@@ -17,3 +17,4 @@ extern std::atomic<u32> sct_total;
 
 void sct_calc(std::unordered_map<MD5Hash, std::vector<FinishedScore>> scores_to_maybe_calc);
 void sct_abort();
+bool sct_running();

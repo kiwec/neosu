@@ -35,7 +35,8 @@ static void update_ppv2(const FinishedScore& score) {
     bool TD = score.mods.has(ModFlags::TouchDevice);
 
     // Load hitobjects
-    auto diffres = DatabaseBeatmap::loadDifficultyHitObjects(map->getFilePath(), AR, CS, score.mods.speed, false, deadCheck);
+    auto diffres =
+        DatabaseBeatmap::loadDifficultyHitObjects(map->getFilePath(), AR, CS, score.mods.speed, false, deadCheck);
     if(dead.load(std::memory_order_acquire)) return;
     if(diffres.errorCode) return;
 
@@ -95,7 +96,7 @@ static void update_ppv2(const FinishedScore& score) {
 
     // Update score
     Sync::shared_lock readlock(db->scores_mtx);
-    for(auto& other : (*db->getScores())[score.beatmap_hash]) {
+    for(auto& other : db->getScores()[score.beatmap_hash]) {
         if(other.unixTimestamp == score.unixTimestamp) {
             readlock.unlock();
             readlock.release();
@@ -106,7 +107,7 @@ static void update_ppv2(const FinishedScore& score) {
             other.ppv2_total_stars = info.total_stars;
             other.ppv2_aim_stars = info.aim_stars;
             other.ppv2_speed_stars = info.speed_stars;
-            db->bDidScoresChangeForStats = true;
+            db->scores_changed.store(true, std::memory_order_release);
             break;
         }
     }
@@ -201,7 +202,7 @@ static void run_sct(const std::unordered_map<MD5Hash, std::vector<FinishedScore>
 
         {
             Sync::shared_lock readlock(db->scores_mtx);
-            for(auto& dbScore : (*db->getScores())[score.beatmap_hash]) {
+            for(auto& dbScore : db->getScores()[score.beatmap_hash]) {
                 if(dbScore.unixTimestamp == score.unixTimestamp) {
                     readlock.unlock();
                     readlock.release();
@@ -247,3 +248,5 @@ void sct_abort() {
     sct_total = 0;
     sct_computed = 0;
 }
+
+bool sct_running() { return thr.joinable(); }
