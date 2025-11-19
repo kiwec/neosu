@@ -283,7 +283,7 @@ KEYVAR(RANDOM_BEATMAP, "key_random_beatmap", (int)KEY_F2, CLIENT);
 KEYVAR(RIGHT_CLICK, "key_right_click", (int)KEY_X, CLIENT);
 KEYVAR(RIGHT_CLICK_2, "key_right_click_2", 0, CLIENT);
 KEYVAR(SAVE_SCREENSHOT, "key_save_screenshot", (int)KEY_F12, CLIENT);
-KEYVAR(SEEK_TIME, "key_seek_time", (int)KEY_LSHIFT, CLIENT);
+KEYVAR(SEEK_TIME, "key_seek_time", (int)KEY_RSHIFT, CLIENT);
 KEYVAR(SEEK_TIME_BACKWARD, "key_seek_time_backward", (int)KEY_LEFT, CLIENT);
 KEYVAR(SEEK_TIME_FORWARD, "key_seek_time_forward", (int)KEY_RIGHT, CLIENT);
 KEYVAR(SMOKE, "key_smoke", 0, CLIENT);

@@ -167,6 +167,8 @@ MainMenu::MainMenu() : OsuScreen() {
                 if(version < cv::version.getDouble() || buildstamp < cv::build_timestamp.getVal<u64>()) {
                     this->bDrawVersionNotificationArrow = true;
                 }
+
+                bool shouldSave = false;
                 if(version < 35.06) {
                     // SoundEngine choking issues have been fixed, option has been removed from settings menu
                     // We leave the cvar available as it could still be useful for some players
@@ -182,7 +184,7 @@ MainMenu::MainMenu() : OsuScreen() {
                         cv::relax_offset.setValue(-12.f);
                     }
 
-                    osu->getOptionsMenu()->save();
+                    shouldSave = true;
                 }
                 if(version < 39.00) {
                     if(!cv::mp_password.getString().empty()) {
@@ -190,13 +192,13 @@ MainMenu::MainMenu() : OsuScreen() {
                         const auto hash{BanchoState::md5((u8 *)plaintext_pw, strlen(plaintext_pw))};
                         cv::mp_password_md5.setValue(hash.string());
                         cv::mp_password.setValue("");
-                        osu->getOptionsMenu()->save();
+                        shouldSave = true;
                     }
                 }
                 if(version < 39.01) {
                     if(cv::fps_unlimited.getBool()) {
                         cv::fps_max.setValue(0);
-                        osu->getOptionsMenu()->save();
+                        shouldSave = true;
                     }
                 }
                 if(version < 40.00) {
@@ -204,10 +206,14 @@ MainMenu::MainMenu() : OsuScreen() {
                         if(key->getFloat() == key->getDefaultFloat()) continue;
                         key->setValue(KeyBindings::old_keycode_to_sdl_keycode(key->getInt()));
                     }
-                    osu->getOptionsMenu()->save();
+                    shouldSave = true;
                 }
                 if(version < 40.06) {
                     cv::letterboxed_resolution.setValue(cv::resolution.getString());
+                    shouldSave = true;
+                }
+
+                if(shouldSave) {
                     osu->getOptionsMenu()->save();
                 }
             } else {
@@ -944,7 +950,8 @@ void MainMenu::mouse_update(bool *propagate_clicks) {
     if(!this->bVisible) return;
 
     if(cv::is_bleedingedge.getBool()) {
-        static UString versionString = fmt::format("Version {:.2f} ({:s})", cv::version.getFloat(), cv::build_timestamp.getString());
+        static UString versionString =
+            fmt::format("Version {:.2f} ({:s})", cv::version.getFloat(), cv::build_timestamp.getString());
         this->versionButton->setTextColor(rgb(255, 220, 220));
         this->versionButton->setText(versionString);
     } else {
@@ -1129,8 +1136,7 @@ void MainMenu::mouse_update(bool *propagate_clicks) {
     // load server icon
     if(!shutting_down && BanchoState::is_online() && BanchoState::server_icon_url.length() > 0 &&
        BanchoState::server_icon == nullptr) {
-        const std::string icon_path =
-            fmt::format(NEOSU_AVATARS_PATH "/{}/server_icon", BanchoState::endpoint);
+        const std::string icon_path = fmt::format(NEOSU_AVATARS_PATH "/{}/server_icon", BanchoState::endpoint);
 
         float progress = -1.f;
         std::vector<u8> data;
