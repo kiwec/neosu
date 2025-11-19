@@ -98,7 +98,5 @@ class SoLoudSound final : public Sound {
     mutable bool force_sync_position_next{true};
 };
 
-#else
-class SoLoudSound : public Sound {};
 #endif
 #endif

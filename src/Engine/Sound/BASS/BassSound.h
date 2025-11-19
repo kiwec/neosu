@@ -50,6 +50,4 @@ class BassSound final : public Sound {
     SOUNDHANDLE srchandle{0};
 };
 
-#else
-class BassSound : public Sound {};
 #endif

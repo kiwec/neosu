@@ -56,6 +56,4 @@ class BassSoundEngine final : public SoundEngine {
     SOUNDHANDLE g_bassOutputMixer = 0;
 };
 
-#else
-class BassSoundEngine : public SoundEngine {};
 #endif

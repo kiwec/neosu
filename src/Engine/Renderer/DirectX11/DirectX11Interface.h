@@ -317,10 +317,6 @@ class DirectX11Interface final : public Graphics {
     std::unique_ptr<OcclusionListener> minimizeListener;
 };
 
-#else
-
-class DirectX11Interface : public Graphics {};
-
 #endif
 
 #endif

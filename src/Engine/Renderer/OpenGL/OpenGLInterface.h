@@ -127,8 +127,6 @@ class OpenGLInterface : public Graphics {
     std::stack<McRect> clipRectStack;
 };
 
-#else
-class OpenGLInterface : public Graphics {};
 #endif
 
 #endif

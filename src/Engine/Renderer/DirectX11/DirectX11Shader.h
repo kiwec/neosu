@@ -190,8 +190,6 @@ class DirectX11Shader final : public Shader {
                                               const std::string &shaderSource);
 };
 
-#else
-class DirectX11Shader : public Shader {};
 #endif
 
 #endif
