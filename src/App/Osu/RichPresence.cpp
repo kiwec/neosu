@@ -63,6 +63,7 @@ void mapstr(DatabaseBeatmap* map, char* output, bool /*include_difficulty*/) {
 }
 
 void set_activity_with_image(struct DiscordActivity* to_set) {
+#ifdef MCENGINE_FEATURE_DISCORD
     const auto map = osu->getMapInterface()->getBeatmap();
     const auto music = osu->getMapInterface()->getMusic();
     const bool listening = !!map && !!music && music->isPlaying();
@@ -84,6 +85,9 @@ void set_activity_with_image(struct DiscordActivity* to_set) {
     }
 
     DiscRPC::set_activity(to_set);
+#else
+    (void)to_set;
+#endif
 }
 }  // namespace
 
