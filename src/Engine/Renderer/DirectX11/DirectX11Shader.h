@@ -9,10 +9,11 @@
 
 #ifndef DIRECTX11SHADER_H
 #define DIRECTX11SHADER_H
-
-#include "Shader.h"
+#include "config.h"
 
 #ifdef MCENGINE_FEATURE_DIRECTX11
+
+#include "Shader.h"
 
 #include "templates.h"
 

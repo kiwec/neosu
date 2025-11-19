@@ -1,7 +1,9 @@
 // Copyright (c) 2025, WH, All rights reserved.
-#include "SoLoudSoundEngine.h"
+#include "config.h"
 
 #ifdef MCENGINE_FEATURE_SOLOUD
+
+#include "SoLoudSoundEngine.h"
 
 #include "MakeDelegateWrapper.h"
 #include "SString.h"

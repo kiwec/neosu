@@ -157,12 +157,16 @@ CONVAR(snd_soloud_backend, "MiniAudio"sv, CLIENT, R"(SoLoud backend, "MiniAudio"
 CONVAR(snd_sanity_simultaneous_limit, 128, CLIENT | NOSAVE,
        "The maximum number of overlayable sounds that are allowed to be active at once");
 CONVAR(snd_soloud_hardcoded_offset, -18, CLIENT);  // should hopefully be "temporary"
-CONVAR(snd_soloud_resampler, "linear", CLIENT,
-       "resampler to use. \"point\", \"linear\", or \"catmull-rom\" (in order of increasing quality/cpu usage)");
+CONVAR(
+    snd_soloud_resampler, "linear", CLIENT,
+    "resampler to use. \"point\", \"linear\", or \"catmull-rom\" (in order of increasing quality/cpu usage)");
 CONVAR(snd_soloud_prefer_ffmpeg, 0, CLIENT,
        "(0=no, 1=streams, 2=streams+samples) prioritize using ffmpeg as a decoder (if available) over other decoder "
        "backends");
 CONVAR(snd_soloud_prefer_exclusive, false, CLIENT, "try initializing in exclusive mode first for MiniAudio on Windows");
+CONVAR(snd_rate_transpose_algorithm, "cubic", CLIENT,
+       "rate changing algorithm to use. \"linear\", \"cubic\", or \"shannon\" (in order of increasing "
+       "quality/cpu usage)");
 CONVAR(snd_disable_exclusive_unfocused, true, CLIENT,
        "disable WASAPI exclusive mode when losing focus (currently SoLoud+MiniAudio only)");
 CONVAR(snd_speed_compensate_pitch, true, CLIENT, "automatically keep pitch constant if speed changes");
@@ -826,7 +830,8 @@ CONVAR(console_overlay, false, CLIENT | SKINS | SERVER,
        "should the log overlay always be visible (or only if the console is out)");
 CONVAR(console_overlay_lines, 12, CLIENT | SKINS | SERVER, "max number of lines of text");
 CONVAR(console_overlay_scale, 1.0f, CLIENT | SKINS | SERVER, "log text size multiplier");
-CONVAR(console_overlay_timeout, 8.0f, CLIENT | SKINS | SERVER, "how long to wait before fading out visible console log lines (0 = never fade out)");
+CONVAR(console_overlay_timeout, 8.0f, CLIENT | SKINS | SERVER,
+       "how long to wait before fading out visible console log lines (0 = never fade out)");
 CONVAR(consolebox_animspeed, 12.0f, CLIENT | SKINS | SERVER);
 CONVAR(consolebox_draw_helptext, true, CLIENT | SKINS | SERVER, "whether convar suggestions also draw their helptext");
 CONVAR(consolebox_draw_preview, true, CLIENT | SKINS | SERVER,

@@ -1,6 +1,7 @@
 // Copyright (c) 2018, PG, All rights reserved.
 #include "RichPresence.h"
 
+#include "ConVar.h"
 #include "Bancho.h"
 #include "BanchoNetworking.h"
 #include "BanchoUsers.h"
@@ -59,6 +60,30 @@ void mapstr(DatabaseBeatmap* map, char* output, bool /*include_difficulty*/) {
     }
 
     crop_to(playingInfo, output, 128);
+}
+
+void set_activity_with_image(struct DiscordActivity* to_set) {
+    const auto map = osu->getMapInterface()->getBeatmap();
+    const auto music = osu->getMapInterface()->getMusic();
+    const bool listening = !!map && !!music && music->isPlaying();
+    const bool playing = !!map && osu->isInPlayMode();
+    const bool bg_visible = !!map && map->draw_background && cv::load_beatmap_background_images.getBool();
+
+    if(bg_visible && (listening || playing)) {
+        auto url =
+            fmt::format("https://assets.ppy.sh/beatmaps/{}/covers/list@2x.jpg?{}", map->getSetID(), map->getID());
+        strncpy(&to_set->assets.large_image[0], url.c_str(), 127);
+
+        if(BanchoState::server_icon_url.length() > 0 && cv::main_menu_use_server_logo.getBool()) {
+            strncpy(&to_set->assets.small_image[0], BanchoState::server_icon_url.c_str(), 127);
+            strncpy(&to_set->assets.small_text[0], BanchoState::endpoint.c_str(), 127);
+        } else {
+            strcpy(&to_set->assets.small_image[0], "neosu_icon");
+            to_set->assets.small_text[0] = '\0';
+        }
+    }
+
+    DiscRPC::set_activity(to_set);
 }
 }  // namespace
 
@@ -135,7 +160,7 @@ void onMainMenu() {
     }
 
     strcpy(activity.state, "Main menu");
-    DiscRPC::set_activity(&activity);
+    set_activity_with_image(&activity);
 }
 
 void onSongBrowser() {
@@ -158,7 +183,7 @@ void onSongBrowser() {
         activity.party.size.max_size = 0;
     }
 
-    DiscRPC::set_activity(&activity);
+    set_activity_with_image(&activity);
     env->setWindowTitle("neosu");
 }
 
@@ -210,7 +235,7 @@ void onPlayStart() {
     auto windowTitle = UString::format("neosu - %s", activity.details);
     env->setWindowTitle(windowTitle);
 
-    DiscRPC::set_activity(&activity);
+    set_activity_with_image(&activity);
 }
 
 void onPlayEnd(bool quit) {
@@ -250,7 +275,7 @@ void onMultiplayerLobby() {
     activity.party.size.current_size = BanchoState::room.nb_players;
     activity.party.size.max_size = BanchoState::room.nb_open_slots;
 
-    DiscRPC::set_activity(&activity);
+    set_activity_with_image(&activity);
 }
 
 }  // namespace RichPresence

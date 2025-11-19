@@ -1,7 +1,9 @@
 // Copyright (c) 2017, PG, All rights reserved.
-#include "OpenGLVertexArrayObject.h"
+#include "config.h"
 
 #ifdef MCENGINE_FEATURE_OPENGL
+#include "OpenGLVertexArrayObject.h"
+
 #include "SDLGLInterface.h"
 #include "OpenGLStateCache.h"
 

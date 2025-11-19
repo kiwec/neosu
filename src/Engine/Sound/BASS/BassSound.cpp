@@ -13,6 +13,31 @@
 #include "ResourceManager.h"
 #include "Timing.h"
 #include "Logging.h"
+#include "SString.h"
+#include "SyncOnce.h"
+
+namespace {  // static
+int currentTransposerAlgorithm{BASS_FX_TEMPO_ALGO_CUBIC};
+
+int getTransposerValForString(std::string str) {
+    int ret = currentTransposerAlgorithm;
+
+    if(!str.empty()) {
+        SString::lower_inplace(str);
+
+        if(str.contains("linear"))
+            ret = BASS_FX_TEMPO_ALGO_LINEAR;
+        else if(str.contains("cubic"))
+            ret = BASS_FX_TEMPO_ALGO_CUBIC; // default
+        else if(str.contains("shannon"))
+            ret = BASS_FX_TEMPO_ALGO_SHANNON;
+    }
+
+    return ret;
+}
+
+Sync::once_flag transposerCallbackSet;
+}  // namespace
 
 void BassSound::init() {
     if(this->bIgnored || this->sFilePath.length() < 2 || !(this->isAsyncReady())) return;
@@ -27,6 +52,16 @@ void BassSound::initAsync() {
     UString file_path{this->sFilePath};
 
     if(this->bStream) {
+        Sync::call_once(transposerCallbackSet, []() -> void {
+            // set initial value
+            currentTransposerAlgorithm = getTransposerValForString(cv::snd_rate_transpose_algorithm.getString());
+
+            // SoLoudFX.cpp uses a change callback, so these dont conflict
+            cv::snd_rate_transpose_algorithm.setCallback([](std::string_view newv) {
+                currentTransposerAlgorithm = getTransposerValForString(std::string{newv});
+            });
+        });
+
         u32 flags = BASS_STREAM_DECODE | BASS_SAMPLE_FLOAT | BASS_STREAM_PRESCAN;
         if(cv::snd_async_buffer.getInt() > 0) flags |= BASS_ASYNCFILE;
         if constexpr(Env::cfg(OS::WINDOWS)) flags |= BASS_UNICODE;
@@ -41,7 +76,7 @@ void BassSound::initAsync() {
 
         if(this->isInterrupted()) return;
         this->srchandle =
-            BASS_FX_TempoCreate(this->srchandle, BASS_FX_TEMPO_ALGO_SHANNON | BASS_FX_FREESOURCE | BASS_STREAM_DECODE);
+            BASS_FX_TempoCreate(this->srchandle, currentTransposerAlgorithm | BASS_FX_FREESOURCE | BASS_STREAM_DECODE);
         if(!this->srchandle) {
             debugLog("BASS_FX_TempoCreate() error on file {}: {}", this->sFilePath.c_str(),
                      BassManager::getErrorUString());

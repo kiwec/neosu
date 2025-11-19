@@ -25,7 +25,7 @@ struct UserInfo {
     u64 stats_tms = 0;
     Action action = UNKNOWN;
     GameMode mode = STANDARD;
-    UString info_text = UString("Loading...");
+    UString info_text = ULITERAL("Loading...");
     MD5Hash map_md5;
     i32 map_id = 0;
     LegacyFlags mods{};

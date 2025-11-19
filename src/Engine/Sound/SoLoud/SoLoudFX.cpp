@@ -7,6 +7,8 @@
 #include "Engine.h"
 #include "Logging.h"
 #include "File.h"
+#include "SString.h"
+#include "SyncOnce.h"
 
 #include <algorithm>
 
@@ -15,21 +17,6 @@
 #include "soloud_error.h"
 #include "soloud_wavstream.h"
 #include "soloud_file.h"
-
-namespace soundtouch {
-// need to define this because for some reason soundtouch doesn't give you the header?
-// there's no other way to change the algorithm (default cubic)
-class TransposerBase {
-   public:
-    enum ALGORITHM : unsigned int;
-    static void setAlgorithm(ALGORITHM a);
-   protected:
-    static ALGORITHM algorithm;
-};
-
-}  // namespace soundtouch
-
-using ALGORITHM = soundtouch::TransposerBase::ALGORITHM;
 
 namespace cv
 {
@@ -49,6 +36,64 @@ ConVar snd_st_debug("snd_st_debug", false, CLIENT | NOSAVE, "Enable detailed Sou
 		debugLog(__VA_ARGS__); \
 	}
 
+namespace soundtouch {
+// need to define this because for some reason soundtouch doesn't give you the header?
+// there's no other way to change the algorithm (default cubic)
+
+// also we need to define the FULL class even though we only care about a single static member because of ODR...
+
+class FIFOSampleBuffer;
+class TransposerBase {
+   public:
+    enum ALGORITHM { LINEAR = 0, CUBIC, SHANNON };
+   protected:
+    virtual int transposeMono(SAMPLETYPE *dest, const SAMPLETYPE *src, int &srcSamples) = 0;
+    virtual int transposeStereo(SAMPLETYPE *dest, const SAMPLETYPE *src, int &srcSamples) = 0;
+    virtual int transposeMulti(SAMPLETYPE *dest, const SAMPLETYPE *src, int &srcSamples) = 0;
+    static ALGORITHM algorithm;
+   public:
+    double rate;
+    int numChannels;
+    TransposerBase();
+    virtual ~TransposerBase();
+    virtual int transpose(FIFOSampleBuffer &dest, FIFOSampleBuffer &src);
+    virtual void setRate(double newRate);
+    virtual void setChannels(int channels);
+    virtual int getLatency() const = 0;
+    virtual void resetRegisters() = 0;
+    static TransposerBase *newInstance();
+    // static function to set interpolation algorithm
+    static void setAlgorithm(ALGORITHM a);
+};
+
+}  // namespace soundtouch
+
+namespace { // static
+using ALGORITHM = soundtouch::TransposerBase::ALGORITHM;
+
+ALGORITHM currentTransposerAlgorithm{ALGORITHM::CUBIC};
+
+ALGORITHM getTransposerValForString(std::string str) {
+	ALGORITHM ret = currentTransposerAlgorithm;
+
+	if(!str.empty()) {
+		SString::lower_inplace(str);
+
+		if(str.contains("linear"))
+			ret = ALGORITHM::LINEAR;
+		else if(str.contains("cubic"))
+			ret = ALGORITHM::CUBIC;
+		else if(str.contains("shannon"))
+			ret = ALGORITHM::SHANNON;
+	}
+
+	return ret;
+}
+
+Sync::once_flag transposer_callback_set;
+}
+
+
 namespace SoLoud
 {
 //-------------------------------------------------------------------------
@@ -63,6 +108,18 @@ SLFXStream::SLFXStream(bool preferFFmpeg)
       mActiveInstance(nullptr)
 {
 	ST_DEBUG_LOG("SoundTouchFilter: Constructor called");
+
+	Sync::call_once(transposer_callback_set, []() -> void {
+		// set initial value
+		currentTransposerAlgorithm = getTransposerValForString(cv::snd_rate_transpose_algorithm.getString());
+		soundtouch::TransposerBase::setAlgorithm(currentTransposerAlgorithm);
+
+		// NOTE: using change callback so we can have a callback for BASS and SoLoud at the same time (hacky)
+		cv::snd_rate_transpose_algorithm.setCallback([](std::string_view /*oldv*/, std::string_view newv) {
+			currentTransposerAlgorithm = getTransposerValForString(std::string{newv});
+			soundtouch::TransposerBase::setAlgorithm(currentTransposerAlgorithm);
+		});
+	});
 }
 
 SLFXStream::~SLFXStream()
@@ -276,13 +333,6 @@ SoundTouchFilterInstance::SoundTouchFilterInstance(SLFXStream *aParent)
       mProcessingCounter(0)
 {
 	ST_DEBUG_LOG("SoundTouchFilterInstance: Constructor called");
-
-	static std::atomic<bool> once{false};
-	if (!once.load(std::memory_order_acquire))
-	{
-		once.store(true, std::memory_order_release);
-		soundtouch::TransposerBase::setAlgorithm((ALGORITHM)2 /* SHANNON */);
-	}
 
 	// create source instance
 	if (mParent && mParent->mSource)

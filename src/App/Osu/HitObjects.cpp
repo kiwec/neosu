@@ -1879,7 +1879,7 @@ void Slider::update(i32 curPos, f64 frame_time) {
             if(sliding) {
                 const vec2 osuCoords = this->pf->pixels2OsuCoords(this->pf->osuCoords2Pixels(this->vCurPointRaw));
                 f32 pan = GameRules::osuCoords2Pan(osuCoords.x);
-                this->lastSliderSampleSets = this->samples.play(pan, 0, {}, true);
+                this->lastSliderSampleSets = this->samples.play(pan, 0, -1, true);
             } else if(!this->lastSliderSampleSets.empty()) {
                 // debugLog("not sliding, stopping");
                 // debugLog(

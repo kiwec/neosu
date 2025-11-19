@@ -2,9 +2,10 @@
 // Copyright (c) 2025, WH, All rights reserved.
 #ifndef SOLOUD_SOUND_H
 #define SOLOUD_SOUND_H
+#include "config.h"
 
-#include "Sound.h"
 #ifdef MCENGINE_FEATURE_SOLOUD
+#include "Sound.h"
 
 #include <memory>
 #include <atomic>
@@ -66,6 +67,9 @@ class SoLoudSound final : public Sound {
     // helpers to access Wav/SLFXStream internals
     [[nodiscard]] double getSourceLengthInSeconds() const;
     [[nodiscard]] double getStreamPositionInSeconds() const;
+
+    static unsigned int getTransposerValForString(std::string str);
+    static std::atomic<unsigned int> currentTransposerAlgorithm;
 
     // current playback parameters
     float fFrequency{44100.0f};         // sample rate in Hz

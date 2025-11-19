@@ -7,10 +7,11 @@
 
 // TODO: prime full cache on load anyway
 // TODO: individually remember m_bConstantBuffersUpToDate per constant buffer
-
-#include "DirectX11Shader.h"
+#include "config.h"
 
 #ifdef MCENGINE_FEATURE_DIRECTX11
+
+#include "DirectX11Shader.h"
 
 #include "ConVar.h"
 #include "Engine.h"

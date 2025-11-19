@@ -3,8 +3,9 @@
 #ifndef SOLOUD_SOUNDENGINE_H
 #define SOLOUD_SOUNDENGINE_H
 
-#include "SoundEngine.h"
+#include "config.h"
 #ifdef MCENGINE_FEATURE_SOLOUD
+#include "SoundEngine.h"
 
 #include <map>
 #include <memory>

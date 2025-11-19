@@ -4,10 +4,11 @@
 //
 // $NoKeywords: $dxvao
 //===============================================================================//
-
-#include "DirectX11VertexArrayObject.h"
+#include "config.h"
 
 #ifdef MCENGINE_FEATURE_DIRECTX11
+
+#include "DirectX11VertexArrayObject.h"
 
 #include "Engine.h"
 #include "Logging.h"

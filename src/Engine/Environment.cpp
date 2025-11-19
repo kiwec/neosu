@@ -3,6 +3,7 @@
 #include "Environment.h"
 
 #include "Engine.h"
+#include "MakeDelegateWrapper.h"
 #include "Mouse.h"
 #include "File.h"
 #include "SString.h"
@@ -37,6 +38,18 @@
 
 #include <curl/curl.h>
 #include <SDL3/SDL.h>
+
+// sanity check
+#define SDL_WF_EQ(fname__) (WinFlags::F_##fname__ == (WinFlags)SDL_WINDOW_##fname__)
+static_assert(SDL_WF_EQ(FULLSCREEN) && SDL_WF_EQ(OPENGL) && SDL_WF_EQ(OCCLUDED) && SDL_WF_EQ(HIDDEN) &&
+                  SDL_WF_EQ(BORDERLESS) && SDL_WF_EQ(RESIZABLE) && SDL_WF_EQ(MINIMIZED) && SDL_WF_EQ(MAXIMIZED) &&
+                  SDL_WF_EQ(MOUSE_GRABBED) && SDL_WF_EQ(INPUT_FOCUS) && SDL_WF_EQ(MOUSE_FOCUS) && SDL_WF_EQ(EXTERNAL) &&
+                  SDL_WF_EQ(MODAL) && SDL_WF_EQ(HIGH_PIXEL_DENSITY) && SDL_WF_EQ(MOUSE_CAPTURE) &&
+                  SDL_WF_EQ(MOUSE_RELATIVE_MODE) && SDL_WF_EQ(ALWAYS_ON_TOP) && SDL_WF_EQ(UTILITY) &&
+                  SDL_WF_EQ(TOOLTIP) && SDL_WF_EQ(POPUP_MENU) && SDL_WF_EQ(KEYBOARD_GRABBED) && SDL_WF_EQ(VULKAN) &&
+                  SDL_WF_EQ(METAL) && SDL_WF_EQ(TRANSPARENT) && SDL_WF_EQ(NOT_FOCUSABLE),
+              "outdated WinFlags enum");
+#undef SDL_WF_EQ
 
 SDL_Environment *Environment::s_sdlenv{nullptr};
 
@@ -1193,22 +1206,25 @@ std::vector<std::string> Environment::enumerateDirectory(std::string_view pathTo
 
     WIN32_FIND_DATAW data{};
     HANDLE handle = FindFirstFileW(folder.wchar_str(), &data);
-    while(handle) {
-        const wchar_t *wide_filename = &data.cFileName[0];
-        const size_t length = std::wcslen(wide_filename);
-        if(length <= 0) break;
+    if(handle != INVALID_HANDLE_VALUE) {
+        while(true) {
+            const wchar_t *wide_filename = &data.cFileName[0];
+            const size_t length = std::wcslen(wide_filename);
+            if(length <= 0) break;
 
-        const bool add_entry =
-            (!want_dirs || !(wide_filename[0] == L'.' &&
-                             (wide_filename[1] == L'\0' || (wide_filename[1] == L'.' && wide_filename[2] == L'\0')))) &&
-            (want_dirs == !!(data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY));
+            const bool add_entry =
+                (!want_dirs ||
+                 !(wide_filename[0] == L'.' &&
+                   (wide_filename[1] == L'\0' || (wide_filename[1] == L'.' && wide_filename[2] == L'\0')))) &&
+                (want_dirs == !!(data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY));
 
-        if(add_entry) {
-            UString uFilename{wide_filename, static_cast<int>(length)};
-            utf8_entries.emplace_back(uFilename.toUtf8(), static_cast<size_t>(uFilename.lengthUtf8()));
+            if(add_entry) {
+                UString uFilename{wide_filename, static_cast<int>(length)};
+                utf8_entries.emplace_back(uFilename.toUtf8(), static_cast<size_t>(uFilename.lengthUtf8()));
+            }
+
+            if(!FindNextFileW(handle, &data)) break;
         }
-
-        if(!FindNextFileW(handle, &data)) break;
     }
 
     FindClose(handle);

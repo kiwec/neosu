@@ -47,7 +47,7 @@ void UIModSelectorModButton::draw() {
 
             g->setColor(0xffffffff);
             // HACK: For "Actual Flashlight" mod, I'm too lazy to add a new skin element
-            bool draw_inverted_colors = this->getActiveModName() == u"afl";
+            bool draw_inverted_colors = this->getActiveModName() == ULITERAL("afl");
             if(draw_inverted_colors) {
                 g->setColorInversion(true);
             }
@@ -103,7 +103,7 @@ void UIModSelectorModButton::onClicked(bool /*left*/, bool /*right*/) {
         this->iState = (this->iState + 1) % this->states.size();
 
         // HACK: In multi, skip "Actual Flashlight" mod
-        if(BanchoState::is_in_a_multi_room() && this->states[0].modName == UString("fl")) {
+        if(BanchoState::is_in_a_multi_room() && this->states[0].modName == ULITERAL("fl")) {
             this->iState = this->iState % this->states.size() - 1;
         }
 

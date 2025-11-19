@@ -42,17 +42,15 @@ NetworkHandler::NetworkHandler() {
     }
 
     // start network thread
-    this->network_thread = std::make_unique<Sync::jthread>(
-        [this](const Sync::stop_token& stopToken) { this->networkThreadFunc(stopToken); });
+    this->network_thread = Sync::jthread([this](const Sync::stop_token &stoken) { this->threadLoopFunc(stoken); });
 
-    if(!this->network_thread->joinable()) {
+    if(!this->network_thread.joinable()) {
         debugLog("ERROR: Failed to create network thread!");
     }
 }
 
 NetworkHandler::~NetworkHandler() {
-    // Sync::jthread destructor automatically requests stop and joins the thread
-    this->network_thread.reset();
+    this->network_thread = {};  // shut down the thread now
 
     // cleanup any remaining requests
     {
@@ -77,7 +75,7 @@ NetworkHandler::~NetworkHandler() {
     curl_global_cleanup();
 }
 
-void NetworkHandler::networkThreadFunc(const Sync::stop_token& stopToken) {
+void NetworkHandler::threadLoopFunc(const Sync::stop_token& stopToken) {
     McThread::set_current_thread_name("net_manager");
     McThread::set_current_thread_prio(McThread::Priority::NORMAL);  // reset priority
 
@@ -119,7 +117,7 @@ void NetworkHandler::processNewRequests() {
         request->easy_handle = curl_easy_init();
         if(!request->easy_handle) {
             request->response.success = false;
-            if (request->callback) { // if there's no callback, don't put it in completed_requests
+            if(request->callback) {  // if there's no callback, don't put it in completed_requests
                 Sync::scoped_lock completed_lock{this->completed_requests_mutex};
                 this->completed_requests.push_back(std::move(request));
             }
@@ -152,7 +150,7 @@ void NetworkHandler::processNewRequests() {
             request->response.easy_handle = request->easy_handle;
 
             // defer async callback execution
-            if (request->callback) {
+            if(request->callback) {
                 Sync::scoped_lock completed_lock{this->completed_requests_mutex};
                 this->completed_requests.push_back(std::move(request));
             }
@@ -164,7 +162,7 @@ void NetworkHandler::processNewRequests() {
             curl_easy_cleanup(request->easy_handle);
             request->response.success = false;
 
-            if (request->callback) {
+            if(request->callback) {
                 Sync::scoped_lock completed_lock{this->completed_requests_mutex};
                 this->completed_requests.push_back(std::move(request));
             }
@@ -217,7 +215,7 @@ void NetworkHandler::processCompletedRequests() {
             if(cv_it != this->sync_request_cvs.end()) {
                 cv_it->second->notify_one();
             }
-        } else if (request->callback) {
+        } else if(request->callback) {
             // defer async callback execution
             Sync::scoped_lock completed_lock{this->completed_requests_mutex};
             this->completed_requests.push_back(std::move(request));

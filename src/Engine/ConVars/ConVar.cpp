@@ -81,6 +81,8 @@ void ConVar::execFloat(float args) {
 }
 
 double ConVar::getDouble() const {
+    // FIXME: all of these checks for every get is TERRIBLE for cache locality
+    // should be able to return a single value immediately unless a SINGLE flag indicates that we have to do an expensive check
     if(this->isFlagSet(cv::SERVER) && this->hasServerValue.load(std::memory_order_acquire)) {
         return this->dServerValue.load(std::memory_order_acquire);
     }

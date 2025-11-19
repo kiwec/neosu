@@ -462,7 +462,6 @@ SongBrowser::SongBrowser()  // NOLINT(cert-msc51-cpp, cert-msc32-c)
     this->bBeatmapRefreshScheduled = false;
 
     // behaviour
-    this->bHasSelectedAndIsPlaying = false;
     this->fPulseAnimation = 0.0f;
     this->fBackgroundFadeInTime = 0.0f;
 
@@ -845,7 +844,7 @@ bool SongBrowser::selectBeatmapset(i32 set_id) {
     }
 
     if(best_diff == nullptr) {
-        osu->getNotificationOverlay()->addToast(u"Beatmapset has no difficulties", ERROR_TOAST);
+        osu->getNotificationOverlay()->addToast(ULITERAL("Beatmapset has no difficulties"), ERROR_TOAST);
         return false;
     } else {
         this->onSelectionChange(this->hashToDiffButton[best_diff->getMD5()], false);
@@ -1147,8 +1146,6 @@ CBaseUIContainer *SongBrowser::setVisible(bool visible) {
         // we have to re-select the current beatmap to start playing music again
         osu->getMapInterface()->selectBeatmap();
 
-        this->bHasSelectedAndIsPlaying = false;  // sanity
-
         // update user name/stats
         osu->onUserCardChange(BanchoState::get_username().c_str());
 
@@ -1193,8 +1190,6 @@ void SongBrowser::selectSelectedBeatmapSongButton() {
 }
 
 void SongBrowser::onPlayEnd(bool quit) {
-    this->bHasSelectedAndIsPlaying = false;
-
     // update score displays
     if(!quit) {
         this->rebuildScoreButtons();
@@ -1327,7 +1322,7 @@ void SongBrowser::onDifficultySelected(DatabaseBeatmap *map, bool play) {
 }
 
 void SongBrowser::refreshBeatmaps(bool closeAfterLoading) {
-    if(this->bHasSelectedAndIsPlaying) return;
+    if(osu->isInPlayMode()) return;
 
     // reset
     this->checkHandleKillBackgroundSearchMatcher();
@@ -3072,10 +3067,10 @@ void SongBrowser::rebuildAfterGroupOrSortChange(GroupType group, const std::opti
 void SongBrowser::onSelectionMode() {
     if(cv::mod_fposu.getBool()) {
         cv::mod_fposu.setValue(false);
-        osu->getNotificationOverlay()->addToast(u"Disabled FPoSu mode.", INFO_TOAST);
+        osu->getNotificationOverlay()->addToast(ULITERAL("Disabled FPoSu mode."), INFO_TOAST);
     } else {
         cv::mod_fposu.setValue(true);
-        osu->getNotificationOverlay()->addToast(u"Enabled FPoSu mode.", SUCCESS_TOAST);
+        osu->getNotificationOverlay()->addToast(ULITERAL("Enabled FPoSu mode."), SUCCESS_TOAST);
     }
 }
 

@@ -4,10 +4,11 @@
 //
 // $NoKeywords: $drt
 //===============================================================================//
-
-#include "DirectX11RenderTarget.h"
+#include "config.h"
 
 #ifdef MCENGINE_FEATURE_DIRECTX11
+
+#include "DirectX11RenderTarget.h"
 
 #include "Engine.h"
 #include "ConVar.h"

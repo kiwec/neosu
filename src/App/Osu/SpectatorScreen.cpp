@@ -165,7 +165,6 @@ void SpectatorScreen::mouse_update(bool *propagate_clicks) {
     if(user_info->map_id == -1 || user_info->map_id == 0) {
         if(osu->isInPlayMode()) {
             osu->getMapInterface()->stop(true);
-            osu->getSongBrowser()->bHasSelectedAndIsPlaying = false;
         }
     } else if(user_info->mode == STANDARD && user_info->map_id != current_map_id) {
         auto beatmap = Downloader::download_beatmap(user_info->map_id, user_info->map_md5, &download_progress);
@@ -178,7 +177,7 @@ void SpectatorScreen::mouse_update(bool *propagate_clicks) {
     }
 
     // Update spectator screen UI
-    static u32 last_player_id = 0;
+    static i32 last_player_id = 0;
     if(BanchoState::spectated_player_id != last_player_id) {
         this->userCard->setID(BanchoState::spectated_player_id);
         last_player_id = BanchoState::spectated_player_id;
@@ -202,7 +201,7 @@ void SpectatorScreen::mouse_update(bool *propagate_clicks) {
                 auto error_str = UString::format("Failed to download Beatmap #%d :(", user_info->map_id);
                 this->status->setText(error_str);
 
-                static u32 last_failed_map = 0;
+                static i32 last_failed_map = 0;
                 if(user_info->map_id != last_failed_map) {
                     Packet packet;
                     packet.id = CANT_SPECTATE;

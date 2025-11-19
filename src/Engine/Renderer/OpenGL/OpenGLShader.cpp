@@ -1,7 +1,8 @@
 // Copyright (c) 2016, PG, All rights reserved.
-#include "OpenGLShader.h"
+#include "config.h"
 
 #ifdef MCENGINE_FEATURE_OPENGL
+#include "OpenGLShader.h"
 
 #include "OpenGLHeaders.h"
 #include "OpenGLStateCache.h"

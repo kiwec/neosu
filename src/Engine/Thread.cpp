@@ -126,7 +126,8 @@ void set_current_thread_prio(Priority prio) {
             priostring = "realtime";
             break;
         default:
-            fubar_abort();
+            std::unreachable();
+            return;
     }
     if(!SDL_SetCurrentThreadPriority(sdlprio)) {
         debugLog("couldn't set thread priority to {}", priostring);
@@ -138,7 +139,7 @@ void set_current_thread_prio(Priority prio) {
         // only allow setting normal/high for process priority class
         if(!SetPriorityClass(GetCurrentProcess(),
                              (prio == REALTIME || prio == HIGH) ? HIGH_PRIORITY_CLASS : NORMAL_PRIORITY_CLASS)) {
-            debugLog("couldn't set process priority class to {}: {:#x}", priostring, GetLastError());
+            debugLog("couldn't set process priority class to {}: {}", priostring, GetLastError());
         }
     }
 #endif

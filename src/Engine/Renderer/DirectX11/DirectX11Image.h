@@ -8,10 +8,10 @@
 #pragma once
 #ifndef DIRECTX11IMAGE_H
 #define DIRECTX11IMAGE_H
-
-#include "Image.h"
+#include "config.h"
 
 #ifdef MCENGINE_FEATURE_DIRECTX11
+#include "Image.h"
 
 #if defined(__GNUC__) || defined(__clang__)
 MC_DO_PRAGMA(GCC diagnostic ignored "-Wpragmas")

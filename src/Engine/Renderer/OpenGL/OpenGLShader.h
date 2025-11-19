@@ -3,9 +3,11 @@
 #ifndef OPENGLSHADER_H
 #define OPENGLSHADER_H
 
-#include "Shader.h"
+#include "config.h"
 
 #ifdef MCENGINE_FEATURE_OPENGL
+
+#include "Shader.h"
 
 #include "templates.h"
 

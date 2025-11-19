@@ -12,12 +12,8 @@ void set_activity(struct DiscordActivity* /*activity*/) {}
 
 #else
 
-#include "Bancho.h"
-#include "BeatmapInterface.h"
 #include "ConVar.h"
 #include "Engine.h"
-#include "Osu.h"
-#include "Sound.h"
 #include "Logging.h"
 #include "dynutils.h"
 
@@ -163,25 +159,6 @@ void set_activity(struct DiscordActivity *activity) {
     activity->assets.large_text[0] = '\0';
     strcpy(&activity->assets.small_image[0], "None");
     activity->assets.small_text[0] = '\0';
-
-    auto map = osu->getMapInterface()->getBeatmap();
-    auto music = osu->getMapInterface()->getMusic();
-    bool listening = map != nullptr && music != nullptr && music->isPlaying();
-    bool playing = map != nullptr && osu->isInPlayMode();
-    bool bg_visible = map != nullptr && map->draw_background && cv::load_beatmap_background_images.getBool();
-    if(bg_visible && (listening || playing)) {
-        auto url =
-            fmt::format("https://assets.ppy.sh/beatmaps/{}/covers/list@2x.jpg?{}", map->getSetID(), map->getID());
-        strncpy(&activity->assets.large_image[0], url.c_str(), 127);
-
-        if(BanchoState::server_icon_url.length() > 0 && cv::main_menu_use_server_logo.getBool()) {
-            strncpy(&activity->assets.small_image[0], BanchoState::server_icon_url.c_str(), 127);
-            strncpy(&activity->assets.small_text[0], BanchoState::endpoint.c_str(), 127);
-        } else {
-            strcpy(&activity->assets.small_image[0], "neosu_icon");
-            activity->assets.small_text[0] = '\0';
-        }
-    }
 
     dapp.activities->update_activity(dapp.activities, activity, nullptr, nullptr);
 }

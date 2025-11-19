@@ -1,19 +1,21 @@
 // Copyright (c) 2025 kiwec, All rights reserved.
 #include "DirectoryWatcher.h"
 
-#include <vector>
-
 #include "Thread.h"
 #include "Timing.h"
 #include "SyncJthread.h"
 #include "SyncMutex.h"
+
+#include <algorithm>
+#include <vector>
+#include <atomic>
 
 namespace fs = std::filesystem;
 
 class DirectoryWatcher::WatcherImpl {
     NOCOPY_NOMOVE(WatcherImpl)
    public:
-    WatcherImpl() : thr(directory_watcher_thread, this) {}
+    WatcherImpl() : thr([this](const Sync::stop_token& stoken) { this->worker_loop(stoken); }) {}
     ~WatcherImpl() = default;
 
     void watch_directory(std::string path, FileChangeCallback cb) {
@@ -27,11 +29,14 @@ class DirectoryWatcher::WatcherImpl {
     }
 
     void update() {
+        if(this->finished_events_count.load(std::memory_order_acquire) == 0) return;
+
         Sync::scoped_lock lock(this->finished_events_mtx);
         for(const auto& [cb, event] : this->finished_events) {
             cb(event);
         }
         this->finished_events.clear();
+        this->finished_events_count.store(0, std::memory_order_release);
     }
 
    private:
@@ -41,6 +46,7 @@ class DirectoryWatcher::WatcherImpl {
 
     Sync::mutex finished_events_mtx;
     std::vector<std::pair<FileChangeCallback, FileChangeEvent>> finished_events;
+    std::atomic<uSz> finished_events_count{0};
 
     Sync::jthread thr;
 
@@ -60,8 +66,8 @@ class DirectoryWatcher::WatcherImpl {
         return files;
     }
 
-    static void directory_watcher_thread(const Sync::stop_token& stoken, WatcherImpl* watcher) {
-        McThread::set_current_thread_name("directory_watcher");
+    void worker_loop(const Sync::stop_token& stoken) {
+        McThread::set_current_thread_name("dir_watcher");
         McThread::set_current_thread_prio(McThread::Priority::LOW);
 
         // Windows & OSX do not provide APIs that tell you when a file is
@@ -81,41 +87,45 @@ class DirectoryWatcher::WatcherImpl {
             std::unordered_map<std::string, fs::file_time_type> files;
         };
 
-        std::unordered_map<std::string, DirectoryState> directories;
+        std::unordered_map<std::string, DirectoryState> active_directories;
 
         while(!stoken.stop_requested()) {
             // Add/remove directories
             std::vector<std::string> directories_to_init;
             {
-                Sync::scoped_lock lock(watcher->directories_mtx);
-                for(const auto& [path, cb] : watcher->directories_to_add) {
-                    directories_to_init.push_back(path);
-                    directories[path] = DirectoryState{.path = path, .cb = cb, .unconfirmed_events = {}, .files = {}};
-                }
-                watcher->directories_to_add.clear();
+                Sync::scoped_lock lock(this->directories_mtx);
+                for(const auto& [path, cb] : this->directories_to_add) {
+                    // Don't add if it's going to be removed
+                    if(std::ranges::contains(this->directories_to_remove, path)) continue;
 
-                for(const auto& path : watcher->directories_to_remove) {
-                    if(directories.contains(path)) directories.erase(path);
+                    directories_to_init.push_back(path);
+                    active_directories[path] =
+                        DirectoryState{.path = path, .cb = cb, .unconfirmed_events = {}, .files = {}};
                 }
-                watcher->directories_to_remove.clear();
+                this->directories_to_add.clear();
+
+                for(const auto& path : this->directories_to_remove) {
+                    if(active_directories.contains(path)) active_directories.erase(path);
+                }
+                this->directories_to_remove.clear();
             }
             {
                 // Initialize state now (avoiding lock)
                 for(const auto& path : directories_to_init) {
-                    directories[path].files = getFileTimes(path);
+                    active_directories[path].files = getFileTimes(path);
                 }
                 directories_to_init.clear();
             }
 
             // Check for changes
-            for(auto& [path, dir] : directories) {
+            for(auto& [path, dir] : active_directories) {
                 auto latest_files = getFileTimes(path);
 
                 // Deletions
                 for(auto& [file, tms] : dir.files) {
                     if(!latest_files.contains(file)) {
-                        Sync::scoped_lock lock(watcher->finished_events_mtx);
-                        watcher->finished_events.emplace_back(
+                        Sync::scoped_lock lock(this->finished_events_mtx);
+                        this->finished_events.emplace_back(
                             dir.cb, FileChangeEvent{.path = file, .type = FileChangeType::DELETED, .tms = tms});
                         continue;
                     }
@@ -145,8 +155,8 @@ class DirectoryWatcher::WatcherImpl {
                     // Finalization (no new writes)
                     if(dir.files[file] == tms) {
                         if(dir.unconfirmed_events.contains(file)) {
-                            Sync::scoped_lock lock(watcher->finished_events_mtx);
-                            watcher->finished_events.emplace_back(dir.cb, dir.unconfirmed_events[file]);
+                            Sync::scoped_lock lock(this->finished_events_mtx);
+                            this->finished_events.emplace_back(dir.cb, dir.unconfirmed_events[file]);
                             dir.unconfirmed_events.erase(file);
                         }
                         continue;
@@ -155,6 +165,9 @@ class DirectoryWatcher::WatcherImpl {
 
                 dir.files = latest_files;
             }
+
+            // Update finished event count
+            this->finished_events_count.store(this->finished_events.size(), std::memory_order_release);
 
             Timing::sleepMS(100);
         }

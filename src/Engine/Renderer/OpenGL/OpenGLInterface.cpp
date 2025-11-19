@@ -1,7 +1,8 @@
 // Copyright (c) 2016, PG, All rights reserved.
-#include "OpenGLInterface.h"
+#include "config.h"
 
 #ifdef MCENGINE_FEATURE_OPENGL
+#include "OpenGLInterface.h"
 
 #include "Camera.h"
 #include "ConVar.h"

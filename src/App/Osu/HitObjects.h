@@ -34,7 +34,7 @@ class HitObject {
    public:
     HitObject(i32 time, HitSamples samples, int comboNumber, bool isEndOfCombo, int colorCounter, int colorOffset,
               AbstractBeatmapInterface *beatmap);
-    virtual ~HitObject() { ; }
+    virtual ~HitObject() = default;
 
     virtual void draw() { ; }
     virtual void draw2();
@@ -43,7 +43,9 @@ class HitObject {
     virtual void updateStackPosition(float stackOffset) = 0;
     virtual void miss(i32 curPos) = 0;  // only used by notelock
 
-    virtual int getCombo() { return 1; }  // how much combo this hitobject is "worth"
+    // [[nodiscard]] virtual constexpr forceinline int getCombo() const {
+    //     return 1;
+    // }  // how much combo this hitobject is "worth"
 
     // Gameplay logic
     HitObjectType type{HitObjectType::CIRCLE};
@@ -231,9 +233,9 @@ class Slider final : public HitObject {
 
     void updateStackPosition(float stackOffset) override;
     void miss(i32 curPos) override;
-    int getCombo() override {
-        return 2 + std::max((this->iRepeat - 1), 0) + (std::max((this->iRepeat - 1), 0) + 1) * this->ticks.size();
-    }
+    // [[nodiscard]] constexpr forceinline int getCombo() const override {
+    //     return 2 + std::max((this->iRepeat - 1), 0) + (std::max((this->iRepeat - 1), 0) + 1) * this->ticks.size();
+    // }
 
     [[nodiscard]] vec2 getRawPosAt(i32 pos) const override;
     [[nodiscard]] vec2 getOriginalRawPosAt(i32 pos) const override;

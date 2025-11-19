@@ -1,8 +1,8 @@
 #pragma once
+#include "config.h"
 
-#include "SoundEngine.h"
 #ifdef MCENGINE_FEATURE_BASS
-
+#include "SoundEngine.h"
 #include "BassSound.h"
 
 class Sound;

@@ -4,10 +4,10 @@
 //
 // $NoKeywords: $dximg
 //===============================================================================//
-
-#include "DirectX11Image.h"
+#include "config.h"
 
 #ifdef MCENGINE_FEATURE_DIRECTX11
+#include "DirectX11Image.h"
 
 #include "Engine.h"
 #include "ConVar.h"

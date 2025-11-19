@@ -15,25 +15,25 @@
 
 static constexpr char16_t ESCAPE_CHAR = u'\\';
 
-UString::UString(const char16_t *str) {
+UString::UString(const char16_t *str) noexcept {
     if(!str) return;
     this->sUnicode = str;
     updateUtf8();
 }
 
-UString::UString(const char16_t *str, int length) {
+UString::UString(const char16_t *str, int length) noexcept {
     if(!str || length <= 0) return;
     this->sUnicode.assign(str, length);
     updateUtf8();
 }
 
-UString::UString(std::u16string_view str) {
+UString::UString(std::u16string_view str) noexcept {
     if(str.empty()) return;
     this->sUnicode = str;
     updateUtf8();
 }
 
-UString::UString(const wchar_t *str) {
+UString::UString(const wchar_t *str) noexcept {
     if(!str) return;
 #if WCHAR_MAX <= 0xFFFF
     this->sUnicode.assign(reinterpret_cast<const char16_t *>(str), std::wcslen(str));
@@ -43,7 +43,7 @@ UString::UString(const wchar_t *str) {
     updateUtf8();
 }
 
-UString::UString(const wchar_t *str, int length) {
+UString::UString(const wchar_t *str, int length) noexcept {
     if(!str || length <= 0) return;
 #if WCHAR_MAX <= 0xFFFF
     this->sUnicode.assign(reinterpret_cast<const char16_t *>(str), length);
@@ -53,31 +53,31 @@ UString::UString(const wchar_t *str, int length) {
     updateUtf8();
 }
 
-UString::UString(const char *utf8) {
+UString::UString(const char *utf8) noexcept {
     if(!utf8) return;
     this->sUtf8.assign(utf8, std::strlen(utf8));
     fromSupposedUtf8(this->sUtf8.data(), this->sUtf8.size());
 }
 
-UString::UString(const char *utf8, int length) {
+UString::UString(const char *utf8, int length) noexcept {
     if(!utf8 || length <= 0) return;
     this->sUtf8.assign(utf8, length);
     fromSupposedUtf8(this->sUtf8.data(), this->sUtf8.size());
 }
 
-UString::UString(const std::string &utf8) {
+UString::UString(const std::string &utf8) noexcept {
     if(utf8.empty()) return;
     this->sUtf8 = utf8;
     fromSupposedUtf8(this->sUtf8.data(), this->sUtf8.size());
 }
 
-UString::UString(std::string_view utf8) {
+UString::UString(std::string_view utf8) noexcept {
     if(utf8.empty()) return;
     this->sUtf8 = utf8;
     fromSupposedUtf8(this->sUtf8.data(), this->sUtf8.size());
 }
 
-UString &UString::operator=(std::nullptr_t) {
+UString &UString::operator=(std::nullptr_t) noexcept {
     this->clear();
     return *this;
 }
@@ -110,14 +110,15 @@ size_t UString::numCodepoints() const noexcept {
 }
 
 // private helper
-int UString::findCharSimd(char16_t ch, int start, int end) const {
+int UString::findCharSimd(char16_t ch, int start, int end) const noexcept {
     const char16_t *searchStart = this->sUnicode.data() + start;
     const char16_t *searchEnd = this->sUnicode.data() + end;
     const char16_t *result = simdutf::find(searchStart, searchEnd, ch);
     return (result != searchEnd) ? static_cast<int>(result - this->sUnicode.data()) : -1;
 }
 
-int UString::find(char16_t ch, std::optional<int> startOpt, std::optional<int> endOpt, bool respectEscapeChars) const {
+int UString::find(char16_t ch, std::optional<int> startOpt, std::optional<int> endOpt,
+                  bool respectEscapeChars) const noexcept {
     int len = length();
     int start = startOpt.value_or(0);
     int end = endOpt.value_or(len);
@@ -141,7 +142,7 @@ int UString::find(char16_t ch, std::optional<int> startOpt, std::optional<int> e
     return -1;
 }
 
-int UString::findFirstOf(const UString &str, int start, bool respectEscapeChars) const {
+int UString::findFirstOf(const UString &str, int start, bool respectEscapeChars) const noexcept {
     int len = length();
     int strLen = str.length();
     if(start < 0 || start >= len || strLen == 0) return -1;
@@ -170,7 +171,7 @@ int UString::findFirstOf(const UString &str, int start, bool respectEscapeChars)
     return -1;
 }
 
-int UString::find(const UString &str, std::optional<int> startOpt, std::optional<int> endOpt) const {
+int UString::find(const UString &str, std::optional<int> startOpt, std::optional<int> endOpt) const noexcept {
     int strLen = str.length();
     int len = length();
 
@@ -196,7 +197,7 @@ int UString::find(const UString &str, std::optional<int> startOpt, std::optional
     return (pos != std::u16string::npos) ? static_cast<int>(pos + start) : -1;
 }
 
-int UString::findLast(const UString &str, std::optional<int> startOpt, std::optional<int> endOpt) const {
+int UString::findLast(const UString &str, std::optional<int> startOpt, std::optional<int> endOpt) const noexcept {
     int strLen = str.length();
     int len = length();
     int start = startOpt.value_or(0);
@@ -219,7 +220,7 @@ int UString::findLast(const UString &str, std::optional<int> startOpt, std::opti
     return -1;
 }
 
-int UString::findIgnoreCase(const UString &str, std::optional<int> startOpt, std::optional<int> endOpt) const {
+int UString::findIgnoreCase(const UString &str, std::optional<int> startOpt, std::optional<int> endOpt) const noexcept {
     int strLen = str.length();
     int len = length();
     int start = startOpt.value_or(0);
@@ -240,7 +241,7 @@ int UString::findIgnoreCase(const UString &str, std::optional<int> startOpt, std
     return -1;
 }
 
-void UString::collapseEscapes() {
+void UString::collapseEscapes() noexcept {
     int len = length();
     if(len == 0) return;
 
@@ -261,20 +262,20 @@ void UString::collapseEscapes() {
     updateUtf8();
 }
 
-void UString::append(const UString &str) {
+void UString::append(const UString &str) noexcept {
     if(str.length() == 0) return;
     size_t oldLength = this->sUnicode.length();
     this->sUnicode.append(str.sUnicode);
     updateUtf8(oldLength);
 }
 
-void UString::append(char16_t ch) {
+void UString::append(char16_t ch) noexcept {
     size_t oldLength = this->sUnicode.length();
     this->sUnicode.push_back(ch);
     updateUtf8(oldLength);
 }
 
-void UString::insert(int offset, const UString &str) {
+void UString::insert(int offset, const UString &str) noexcept {
     if(str.length() == 0) return;
 
     int len = length();
@@ -283,14 +284,14 @@ void UString::insert(int offset, const UString &str) {
     updateUtf8();
 }
 
-void UString::insert(int offset, char16_t ch) {
+void UString::insert(int offset, char16_t ch) noexcept {
     int len = length();
     offset = std::clamp(offset, 0, len);
     this->sUnicode.insert(offset, 1, ch);
     updateUtf8();
 }
 
-void UString::erase(int offset, int count) {
+void UString::erase(int offset, int count) noexcept {
     int len = length();
     if(len == 0 || count == 0 || offset >= len) return;
 
@@ -301,7 +302,7 @@ void UString::erase(int offset, int count) {
     updateUtf8();
 }
 
-UString UString::trim() const {
+UString UString::trim() const noexcept {
     int len = length();
     if(len == 0) return {};
 
@@ -319,7 +320,7 @@ UString UString::trim() const {
     return substr(startPos, length);
 }
 
-void UString::lowerCase() {
+void UString::lowerCase() noexcept {
     if(length() == 0) return;
 
     std::ranges::transform(this->sUnicode, this->sUnicode.begin(),
@@ -328,7 +329,7 @@ void UString::lowerCase() {
     updateUtf8();
 }
 
-void UString::upperCase() {
+void UString::upperCase() noexcept {
     if(length() == 0) return;
 
     std::ranges::transform(this->sUnicode, this->sUnicode.begin(),
@@ -337,40 +338,40 @@ void UString::upperCase() {
     updateUtf8();
 }
 
-UString &UString::operator+=(const UString &ustr) {
+UString &UString::operator+=(const UString &ustr) noexcept {
     append(ustr);
     return *this;
 }
 
-UString UString::operator+(const UString &ustr) const {
+UString UString::operator+(const UString &ustr) const noexcept {
     UString result(*this);
     result.append(ustr);
     return result;
 }
 
-UString &UString::operator+=(char16_t ch) {
+UString &UString::operator+=(char16_t ch) noexcept {
     append(ch);
     return *this;
 }
 
-UString UString::operator+(char16_t ch) const {
+UString UString::operator+(char16_t ch) const noexcept {
     UString result(*this);
     result.append(ch);
     return result;
 }
 
-UString &UString::operator+=(char ch) {
+UString &UString::operator+=(char ch) noexcept {
     append(static_cast<char16_t>(ch));
     return *this;
 }
 
-UString UString::operator+(char ch) const {
+UString UString::operator+(char ch) const noexcept {
     UString result(*this);
     result.append(static_cast<char16_t>(ch));
     return result;
 }
 
-bool UString::equalsIgnoreCase(const UString &ustr) const {
+bool UString::equalsIgnoreCase(const UString &ustr) const noexcept {
     if(length() != ustr.length()) return false;
     if(length() == 0 && ustr.length() == 0) return true;
 
@@ -379,7 +380,7 @@ bool UString::equalsIgnoreCase(const UString &ustr) const {
     });
 }
 
-bool UString::lessThanIgnoreCase(const UString &ustr) const {
+bool UString::lessThanIgnoreCase(const UString &ustr) const noexcept {
     auto it1 = this->sUnicode.begin();
     auto it2 = ustr.sUnicode.begin();
 
@@ -419,7 +420,7 @@ std::wstring_view UString::wstringView() const noexcept {
 const wchar_t *UString::wchar_str() const noexcept { return reinterpret_cast<const wchar_t *>(this->sUnicode.data()); }
 #endif
 
-void UString::fromUtf32(const char32_t *utf32, size_t char32Length) {
+void UString::fromUtf32(const char32_t *utf32, size_t char32Length) noexcept {
     if(!utf32 || char32Length == 0) return;
 
     size_t utf16Length = simdutf::utf16_length_from_utf32(utf32, char32Length);
@@ -428,7 +429,7 @@ void UString::fromUtf32(const char32_t *utf32, size_t char32Length) {
     });
 }
 
-void UString::updateUtf8(size_t startUtf16) {
+void UString::updateUtf8(size_t startUtf16) noexcept {
     if(this->sUnicode.empty()) {
         this->sUtf8.clear();
         return;
@@ -459,7 +460,7 @@ void UString::updateUtf8(size_t startUtf16) {
 }
 
 // this is only called from specific constructors, so assume that the parameters utf8 == this->sUtf8, char8Length == this->sUtf8.length()
-void UString::fromSupposedUtf8(const char *utf8, size_t char8Length) {
+void UString::fromSupposedUtf8(const char *utf8, size_t char8Length) noexcept {
     if(!utf8 || !char8Length) {
         this->sUnicode.clear();
         return;

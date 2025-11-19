@@ -1,5 +1,5 @@
 // Copyright (c) 2014, PG, All rights reserved.
-#include "BaseEnvironment.h"
+#include "config.h"
 
 #ifdef MCENGINE_FEATURE_BASS
 

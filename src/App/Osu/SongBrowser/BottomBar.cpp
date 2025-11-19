@@ -28,20 +28,18 @@ void press_bottombar_button(i32 btn_index) {
 
     switch(btn_index) {
         case MODE:
-            osu->getSongBrowser()->onSelectionMode();
-            break;
+            return osu->getSongBrowser()->onSelectionMode();
         case MODS:
-            osu->getSongBrowser()->onSelectionMods();
-            break;
+            return osu->getSongBrowser()->onSelectionMods();
         case RANDOM:
-            osu->getSongBrowser()->onSelectionRandom();
-            break;
+            return osu->getSongBrowser()->onSelectionRandom();
         case OPTIONS:
-            osu->getSongBrowser()->onSelectionOptions();
-            break;
+            return osu->getSongBrowser()->onSelectionOptions();
         default:
-            fubar_abort();
+            std::unreachable();
+            break;
     }
+    std::unreachable();
 }
 
 f32 bottombar_get_min_height() { return SongBrowser::getUIScale() * 101.f; }
@@ -140,8 +138,8 @@ void draw_bottombar() {
 
     // Careful, these buttons are often used as overlays
     // eg. selection-mode usually covers the whole screen, drawing topbar, bottom right osu cookie etc
-    SkinImage* base_imgs[4] = {osu->getSkin()->i_sel_mode, osu->getSkin()->i_sel_mods,
-                               osu->getSkin()->i_sel_random, osu->getSkin()->i_sel_options};
+    SkinImage* base_imgs[4] = {osu->getSkin()->i_sel_mode, osu->getSkin()->i_sel_mods, osu->getSkin()->i_sel_random,
+                               osu->getSkin()->i_sel_options};
     for(i32 i = 0; i < 4; i++) {
         if(base_imgs[i] == nullptr) continue;
 

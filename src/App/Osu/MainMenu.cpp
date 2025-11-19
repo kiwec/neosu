@@ -37,9 +37,6 @@
 #include "VertexArrayObject.h"
 #include "Logging.h"
 
-UString MainMenu::NEOSU_MAIN_BUTTON_TEXT = UString("neosu");
-UString MainMenu::NEOSU_MAIN_BUTTON_SUBTEXT = UString("Multiplayer Client");
-
 class MainMenu::CubeButton final : public CBaseUIButton {
    public:
     CubeButton(MainMenu *parent, float xPos, float yPos, float xSize, float ySize, UString name, UString text)
@@ -84,13 +81,13 @@ class MainMenu::MainButton final : public CBaseUIButton {
         CBaseUIButton::onMouseInside();
 
         if(this->mm_ptr->button_sound_cooldown + 0.05f < engine->getTime()) {
-            if(this->getText() == UString("Singleplayer")) {
+            if(this->getText() == ULITERAL("Singleplayer")) {
                 soundEngine->play(osu->getSkin()->s_hover_sp);
-            } else if(this->getText() == UString("Multiplayer")) {
+            } else if(this->getText() == ULITERAL("Multiplayer")) {
                 soundEngine->play(osu->getSkin()->s_hover_mp);
-            } else if(this->getText() == UString("Options (CTRL + O)")) {
+            } else if(this->getText() == ULITERAL("Options (CTRL + O)")) {
                 soundEngine->play(osu->getSkin()->s_hover_options);
-            } else if(this->getText() == UString("Exit")) {
+            } else if(this->getText() == ULITERAL("Exit")) {
                 soundEngine->play(osu->getSkin()->s_hover_exit);
             }
 

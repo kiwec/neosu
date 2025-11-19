@@ -195,7 +195,7 @@ class Osu final : public MouseListener, public KeyboardListener {
     [[nodiscard]] bool getModNightmare() const;
     [[nodiscard]] bool getModTD() const;
 
-    [[nodiscard]] bool isInPlayMode() const;
+    [[nodiscard]] constexpr bool isInPlayMode() const { return this->bIsPlayingASelectedBeatmap; }
     [[nodiscard]] inline bool isSkinLoading() const {
         return this->bSkinLoadScheduled ||
                (this->skin && this->skinScheduledToLoad && this->skin.get() != this->skinScheduledToLoad);
@@ -375,6 +375,9 @@ class Osu final : public MouseListener, public KeyboardListener {
     bool bScreensReady{false};
     bool bPreferCJK{false};
     bool bDrawBuildInfo{true};
+
+    friend class BeatmapInterface;
+    bool bIsPlayingASelectedBeatmap{false};
 
    public:  // public due to BassSoundEngine access
     bool music_unpause_scheduled{false};

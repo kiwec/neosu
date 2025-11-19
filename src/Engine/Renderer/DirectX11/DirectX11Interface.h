@@ -8,13 +8,15 @@
 #pragma once
 #ifndef DIRECTX11INTERFACE_H
 #define DIRECTX11INTERFACE_H
+#include "config.h"
+
+#ifdef MCENGINE_FEATURE_DIRECTX11
 
 #include "BaseEnvironment.h"
 #include "Graphics.h"
 
 class DirectX11Shader;
 
-#ifdef MCENGINE_FEATURE_DIRECTX11
 struct IDXGIFactory2;
 struct IDXGISwapChain1;
 

@@ -786,7 +786,7 @@ void Osu::update() {
 
                 this->notificationOverlay->addNotification(
                     this->skin->name.length() > 0 ? UString::format("Skin reloaded! (%s)", this->skin->name.c_str())
-                                                  : UString("Skin reloaded!"),
+                                                  : ULITERAL("Skin reloaded!"),
                     0xffffffff, false, 0.75f);
             }
         }
@@ -1398,8 +1398,6 @@ float Osu::getAnimationSpeedMultiplier() {
 
     return animationSpeedMultiplier;
 }
-
-bool Osu::isInPlayMode() const { return (this->songBrowser != nullptr && this->songBrowser->bHasSelectedAndIsPlaying); }
 
 bool Osu::shouldFallBackToLegacySliderRenderer() {
     return cv::force_legacy_slider_renderer.getBool() || cv::mod_wobble.getBool() || cv::mod_wobble2.getBool() ||

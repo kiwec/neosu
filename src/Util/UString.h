@@ -64,23 +64,27 @@ class UString {
     // constructors
     constexpr UString() noexcept = default;
     UString(std::nullptr_t) = delete;
-    UString(const char16_t *str);
-    UString(const char16_t *str, int length);
-    UString(std::u16string_view str);
-    UString(const wchar_t *str);
-    UString(const wchar_t *str, int length);
-    UString(const char *utf8);
-    UString(const char *utf8, int length);
-    UString(std::string_view utf8);
-    UString(const std::string &utf8);
+    UString(const char16_t *str) noexcept;
+    UString(const char16_t *str, int length) noexcept;
+    UString(std::u16string_view str) noexcept;
+    UString(const wchar_t *str) noexcept;
+    UString(const wchar_t *str, int length) noexcept;
+    UString(const char *utf8) noexcept;
+    UString(const char *utf8, int length) noexcept;
+    UString(std::string_view utf8) noexcept;
+    UString(const std::string &utf8) noexcept;
+    inline constexpr UString(std::string_view utf8, std::u16string_view unicode) noexcept
+        : sUnicode(unicode), sUtf8(utf8) {}
+#define ULITERAL(str__) \
+    UString { str__, u##str__ }  // is C++ even powerful enough to do this without macros
 
     // member functions
-    UString(const UString &ustr) = default;
+    UString(const UString &ustr) noexcept = default;
     UString(UString &&ustr) noexcept = default;
-    UString &operator=(const UString &ustr) = default;
+    UString &operator=(const UString &ustr) noexcept = default;
     UString &operator=(UString &&ustr) noexcept = default;
-    UString &operator=(std::nullptr_t);
-    ~UString() = default;
+    UString &operator=(std::nullptr_t) noexcept;
+    ~UString() noexcept = default;
 
     // basic operations
     void clear() noexcept;
@@ -141,14 +145,14 @@ class UString {
 
     // search functions
     [[nodiscard]] int find(char16_t ch, std::optional<int> startOpt = std::nullopt,
-                           std::optional<int> endOpt = std::nullopt, bool respectEscapeChars = false) const;
-    [[nodiscard]] int findFirstOf(const UString &str, int start = 0, bool respectEscapeChars = false) const;
+                           std::optional<int> endOpt = std::nullopt, bool respectEscapeChars = false) const noexcept;
+    [[nodiscard]] int findFirstOf(const UString &str, int start = 0, bool respectEscapeChars = false) const noexcept;
     [[nodiscard]] int find(const UString &str, std::optional<int> startOpt = std::nullopt,
-                           std::optional<int> endOpt = std::nullopt) const;
+                           std::optional<int> endOpt = std::nullopt) const noexcept;
     [[nodiscard]] int findLast(const UString &str, std::optional<int> startOpt = std::nullopt,
-                               std::optional<int> endOpt = std::nullopt) const;
+                               std::optional<int> endOpt = std::nullopt) const noexcept;
     [[nodiscard]] int findIgnoreCase(const UString &str, std::optional<int> startOpt = std::nullopt,
-                                     std::optional<int> endOpt = std::nullopt) const;
+                                     std::optional<int> endOpt = std::nullopt) const noexcept;
 
     // iterators for range-based for loops
     [[nodiscard]] constexpr auto begin() noexcept { return this->sUnicode.begin(); }
@@ -159,13 +163,13 @@ class UString {
     [[nodiscard]] constexpr auto cend() const noexcept { return this->sUnicode.cend(); }
 
     // modifiers
-    void collapseEscapes();
-    void append(const UString &str);
-    void append(char16_t ch);
-    void insert(int offset, const UString &str);
-    void insert(int offset, char16_t ch);
+    void collapseEscapes() noexcept;
+    void append(const UString &str) noexcept;
+    void append(char16_t ch) noexcept;
+    void insert(int offset, const UString &str) noexcept;
+    void insert(int offset, char16_t ch) noexcept;
 
-    void erase(int offset, int count);
+    void erase(int offset, int count) noexcept;
 
     inline constexpr const char16_t &front() noexcept {
         assert(!this->isEmpty());
@@ -184,7 +188,7 @@ class UString {
 
     // actions (non-modifying)
     template <typename T = UString>
-    [[nodiscard]] constexpr T substr(int offset, int charCount = -1) const {
+    [[nodiscard]] constexpr T substr(int offset, int charCount = -1) const noexcept {
         int len = length();
         offset = std::clamp<int>(offset, 0, len);
 
@@ -202,7 +206,7 @@ class UString {
     }
 
     template <typename T = UString>
-    [[nodiscard]] std::vector<T> split(const UString &delim) const {
+    [[nodiscard]] std::vector<T> split(const UString &delim) const noexcept {
         std::vector<T> results;
         int delimLen = delim.length();
         int thisLen = length();
@@ -220,7 +224,7 @@ class UString {
         return results;
     }
 
-    [[nodiscard]] UString trim() const;
+    [[nodiscard]] UString trim() const noexcept;
 
     // type conversions
     template <typename T>
@@ -274,27 +278,29 @@ class UString {
     [[nodiscard]] constexpr unsigned long long toUnsignedLongLong() const noexcept { return to<unsigned long long>(); }
 
     // case conversion
-    void lowerCase();
-    void upperCase();
+    void lowerCase() noexcept;
+    void upperCase() noexcept;
 
     // operators
-    [[nodiscard]] constexpr const char16_t &operator[](int index) const {
+    [[nodiscard]] constexpr const char16_t &operator[](int index) const noexcept {
         int len = length();
         return this->sUnicode[std::clamp(index, 0, len - 1)];
     }
 
-    bool operator==(const UString &ustr) const = default;
-    auto operator<=>(const UString &ustr) const = default;
+    bool operator==(const char *utf8) const noexcept { return this->sUtf8 == utf8; }
+    auto operator<=>(const char *utf8) const noexcept { return std::operator<=>(this->sUtf8, utf8); }
+    bool operator==(const UString &ustr) const noexcept { return this->sUnicode == ustr.sUnicode; };
+    auto operator<=>(const UString &ustr) const noexcept { return std::operator<=>(this->sUnicode, ustr.sUnicode); };
 
-    UString &operator+=(const UString &ustr);
-    [[nodiscard]] UString operator+(const UString &ustr) const;
-    UString &operator+=(char16_t ch);
-    [[nodiscard]] UString operator+(char16_t ch) const;
-    UString &operator+=(char ch);
-    [[nodiscard]] UString operator+(char ch) const;
+    UString &operator+=(const UString &ustr) noexcept;
+    [[nodiscard]] UString operator+(const UString &ustr) const noexcept;
+    UString &operator+=(char16_t ch) noexcept;
+    [[nodiscard]] UString operator+(char16_t ch) const noexcept;
+    UString &operator+=(char ch) noexcept;
+    [[nodiscard]] UString operator+(char ch) const noexcept;
 
-    [[nodiscard]] bool equalsIgnoreCase(const UString &ustr) const;
-    [[nodiscard]] bool lessThanIgnoreCase(const UString &ustr) const;
+    [[nodiscard]] bool equalsIgnoreCase(const UString &ustr) const noexcept;
+    [[nodiscard]] bool lessThanIgnoreCase(const UString &ustr) const noexcept;
 
     friend struct std::hash<UString>;
 
@@ -302,14 +308,15 @@ class UString {
     using alignedUTF8String = std::basic_string<char, std::char_traits<char>, AlignedAllocator<char>>;
 
     // deduplication helper
-    [[nodiscard]] int findCharSimd(char16_t ch, int start, int end) const;
+    [[nodiscard]] int findCharSimd(char16_t ch, int start, int end) const noexcept;
 
     // constructor helpers
-    void fromUtf32(const char32_t *utf32, size_t length);
-    void fromSupposedUtf8(const char *utf8, size_t length);
+    void nonConstexprStringViewCtor(std::string_view utf8) noexcept;
+    void fromUtf32(const char32_t *utf32, size_t length) noexcept;
+    void fromSupposedUtf8(const char *utf8, size_t length) noexcept;
 
     // for updating utf8 representation when unicode representation changes
-    void updateUtf8(size_t startUtf16 = 0);
+    void updateUtf8(size_t startUtf16 = 0) noexcept;
 
     std::u16string sUnicode;
     alignedUTF8String sUtf8;
@@ -339,7 +346,7 @@ namespace fmt {
 template <>
 struct formatter<UString> : formatter<string_view> {
     template <typename FormatContext>
-    auto format(const UString &str, FormatContext &ctx) const {
+    auto format(const UString &str, FormatContext &ctx) const noexcept {
         return formatter<string_view>::format(str.utf8View(), ctx);
     }
 };
@@ -348,7 +355,7 @@ struct formatter<UString> : formatter<string_view> {
 template <>
 struct formatter<std::u16string_view> : formatter<string_view> {
     template <typename FormatContext>
-    auto format(std::u16string_view str, FormatContext &ctx) const {
+    auto format(std::u16string_view str, FormatContext &ctx) const noexcept {
         size_t utf8_length = simdutf::utf8_length_from_utf16le(str.data(), str.size());
         std::string result;
         result.resize_and_overwrite(utf8_length, [&](char *data, size_t /* size */) -> size_t {

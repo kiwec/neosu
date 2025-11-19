@@ -1,8 +1,9 @@
 // Copyright (c) 2025, WH, All rights reserved.
-#include "SoLoudSound.h"
+
+#include "config.h"
 
 #ifdef MCENGINE_FEATURE_SOLOUD
-
+#include "SoLoudSound.h"
 #include "SoLoudThread.h"
 
 #include "SoLoudFX.h"
@@ -13,10 +14,10 @@
 #include "File.h"
 #include "ResourceManager.h"
 #include "Logging.h"
+#include "SString.h"
 
 #include "soloud_file.h"
 #include "soloud_wav.h"
-#include "soloud_wavstream.h"
 
 void SoLoudSound::init() {
     if(this->bIgnored || this->sFilePath.length() < 2 || !(this->isAsyncReady())) return;

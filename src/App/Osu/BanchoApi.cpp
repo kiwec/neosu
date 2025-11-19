@@ -28,7 +28,7 @@ static void handle_api_response(const Packet &packet) {
         case GET_REPLAY: {
             if(packet.size == 0) {
                 // Most likely, 404
-                osu->getNotificationOverlay()->addToast(u"Failed to download replay", ERROR_TOAST);
+                osu->getNotificationOverlay()->addToast(ULITERAL("Failed to download replay"), ERROR_TOAST);
                 break;
             }
 
@@ -56,7 +56,7 @@ static void handle_api_response(const Packet &packet) {
                 if(success) {
                     LegacyReplay::load_and_watch(to_watch);
                 } else {
-                    osu->getNotificationOverlay()->addToast(u"Failed to save replay", ERROR_TOAST);
+                    osu->getNotificationOverlay()->addToast(ULITERAL("Failed to save replay"), ERROR_TOAST);
                 }
             });
 

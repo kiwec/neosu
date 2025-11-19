@@ -27,13 +27,14 @@ Changelog::Changelog() : ScreenBackable() {
     CHANGELOG v41_09;
     v41_09.title = "41.09";
     v41_09.changes = {
+        R"(- Improved gameplay animation smoothness (position interpolator fixes))",
+        R"(- Added "snd_rate_transpose_algorithm" ConVar to adjust rate changer quality)",
         R"(- Fixed incorrect beatmap hitsound volumes and samplesets being used)",
         R"(- Fixed nightcore/daycore with SoLoud)",
         R"(- Fixed multiple songbrowser and collection management issues:)",
         R"(  - Beatmap difficulties are now properly grouped by mapset when searching in "No Grouping" mode)",
         R"(  - All collections are now sorted alphabetically)",
         R"(  - Deleting/renaming collections now works properly)",
-        R"(- Improved gameplay animation smoothness (position interpolator fixes))",
     };
     changelogs.push_back(v41_09);
 

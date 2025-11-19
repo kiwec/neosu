@@ -1,6 +1,6 @@
 // Copyright (c) 2025, WH, All rights reserved.
 
-#include "BaseEnvironment.h"
+#include "config.h"
 
 #ifdef MCENGINE_FEATURE_SOLOUD
 
@@ -360,7 +360,7 @@ class SoLoudThreadWrapper {
 
    private:
     void start_worker_thread() {
-        this->worker_thread = Sync::jthread([this](const Sync::stop_token& stoken) { this->worker_loop(stoken); });
+        this->worker_thread = Sync::jthread([this](const Sync::stop_token &stoken) { this->worker_loop(stoken); });
 
         // wait for initialization to complete
         Sync::unique_lock<Sync::mutex> lock(this->init_mutex);
@@ -474,7 +474,6 @@ class SoLoudThreadWrapper {
     }
 
     std::unique_ptr<SoLoud::Soloud> soloud{nullptr};
-    Sync::jthread worker_thread;
 
     // task queue
     std::queue<std::unique_ptr<TaskBase>> task_queue;
@@ -492,6 +491,8 @@ class SoLoudThreadWrapper {
 
     bool initialized{false};
     bool threaded{false};
+
+    Sync::jthread worker_thread;
 };
 
 #endif

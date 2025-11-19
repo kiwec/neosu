@@ -10,9 +10,9 @@
 
 #include <algorithm>
 #include <utility>
-#include <thread>
 
 using namespace std::chrono_literals;
+namespace chrono = std::chrono;
 
 //==================================
 // LOADER THREAD
@@ -20,27 +20,27 @@ using namespace std::chrono_literals;
 class AsyncResourceLoader::LoaderThread final {
    public:
     size_t thread_index;
-    std::atomic<std::chrono::steady_clock::time_point> last_active;
+    std::atomic<chrono::steady_clock::time_point> last_active;
 
     LoaderThread(AsyncResourceLoader *const loader, size_t index) noexcept
         : thread_index(index),
-          last_active(std::chrono::steady_clock::now()),
+          last_active(chrono::steady_clock::now()),
           loader_ptr(loader),
-          thread(Sync::jthread([this](const Sync::stop_token &stoken) { this->run(stoken); })) {}
+          thread([this](const Sync::stop_token &stoken) { this->worker_loop(stoken); }) {}
 
     [[nodiscard]] bool isReady() const noexcept { return this->thread.joinable(); }
 
     [[nodiscard]] bool isIdleTooLong() const noexcept {
         auto lastActive = this->last_active.load(std::memory_order_acquire);
-        auto now = std::chrono::steady_clock::now();
-        return std::chrono::duration_cast<std::chrono::milliseconds>(now - lastActive) > IDLE_TIMEOUT;
+        auto now = chrono::steady_clock::now();
+        return chrono::duration_cast<chrono::milliseconds>(now - lastActive) > IDLE_TIMEOUT;
     }
 
    private:
     AsyncResourceLoader *const loader_ptr;
     Sync::jthread thread;
 
-    void run(const Sync::stop_token &stoken) noexcept {
+    void worker_loop(const Sync::stop_token &stoken) noexcept {
         this->loader_ptr->iActiveThreadCount.fetch_add(1);
 
         logIfCV(debug_rm, "AsyncResourceLoader: Thread #{} started", this->thread_index);
@@ -48,7 +48,8 @@ class AsyncResourceLoader::LoaderThread final {
         const std::string loaderThreadName =
             fmt::format("res_ldr_thr{}", (this->thread_index % this->loader_ptr->iMaxThreads) + 1);
         McThread::set_current_thread_name(loaderThreadName.c_str());
-        McThread::set_current_thread_prio(McThread::Priority::NORMAL);  // reset priority (don't inherit from main thread)
+        McThread::set_current_thread_prio(
+            McThread::Priority::NORMAL);  // reset priority (don't inherit from main thread)
 
         while(!stoken.stop_requested() && !this->loader_ptr->bShuttingDown.load(std::memory_order_acquire)) {
             const bool debug = cv::debug_rm.getBool();
@@ -70,7 +71,7 @@ class AsyncResourceLoader::LoaderThread final {
             }
 
             // notify that this thread completed work
-            this->last_active.store(std::chrono::steady_clock::now(), std::memory_order_release);
+            this->last_active.store(chrono::steady_clock::now(), std::memory_order_release);
 
             Resource *resource = work->resource;
             work->state.store(WorkState::ASYNC_IN_PROGRESS, std::memory_order_release);
@@ -111,9 +112,9 @@ class AsyncResourceLoader::LoaderThread final {
 //==================================
 
 AsyncResourceLoader::AsyncResourceLoader()
-    : iMaxThreads(std::clamp<size_t>(std::thread::hardware_concurrency() - 1, 1, HARD_THREADCOUNT_LIMIT)),
+    : iMaxThreads(std::clamp<size_t>(McThread::get_logical_cpu_count() - 1, 1, HARD_THREADCOUNT_LIMIT)),
       iLoadsPerUpdate(this->iMaxThreads),
-      lastCleanupTime(std::chrono::steady_clock::now()) {
+      lastCleanupTime(chrono::steady_clock::now()) {
     // pre-create at least a single thread for better startup responsiveness
     Sync::scoped_lock lock(this->threadsMutex);
 
@@ -335,8 +336,8 @@ void AsyncResourceLoader::cleanupIdleThreads() {
     if(this->threadpool.size() <= MIN_NUM_THREADS) return;
 
     // only run cleanup periodically to avoid overhead
-    auto now = std::chrono::steady_clock::now();
-    if(std::chrono::duration_cast<std::chrono::milliseconds>(now - this->lastCleanupTime) < IDLE_GRACE_PERIOD) {
+    auto now = chrono::steady_clock::now();
+    if(chrono::duration_cast<chrono::milliseconds>(now - this->lastCleanupTime) < IDLE_GRACE_PERIOD) {
         return;
     }
     this->lastCleanupTime = now;

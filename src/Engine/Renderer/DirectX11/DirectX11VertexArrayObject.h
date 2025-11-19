@@ -9,9 +9,11 @@
 #ifndef DIRECTX11VERTEXARRAYOBJECT_H
 #define DIRECTX11VERTEXARRAYOBJECT_H
 
-#include "VertexArrayObject.h"
+#include "config.h"
 
 #ifdef MCENGINE_FEATURE_DIRECTX11
+
+#include "VertexArrayObject.h"
 
 #include "DirectX11Interface.h"
 

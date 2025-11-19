@@ -4,10 +4,10 @@
 //
 // $NoKeywords: $dx11i
 //===============================================================================//
-
-#include "DirectX11Interface.h"
+#include "config.h"
 
 #ifdef MCENGINE_FEATURE_DIRECTX11
+#include "DirectX11Interface.h"
 
 #include "dxgi1_3.h"
 

@@ -119,10 +119,6 @@ class NetworkHandler {
     // forward declare for async requests
     struct NetworkRequest;
 
-    // curl_multi implementation
-    CURLM* multi_handle{nullptr};
-    std::unique_ptr<Sync::jthread> network_thread;
-
     // request queuing
     Sync::mutex request_queue_mutex;
     Sync::condition_variable_any request_queue_cv;
@@ -144,6 +140,10 @@ class NetworkHandler {
     // websockets
     std::vector<std::shared_ptr<Websocket>> active_websockets;
 
+    // curl_multi implementation
+    CURLM* multi_handle{nullptr};
+    Sync::jthread network_thread;
+
     void processNewRequests();
     void processCompletedRequests();
 
@@ -153,7 +153,7 @@ class NetworkHandler {
     static i32 progressCallback(void* clientp, i64 dltotal, i64 dlnow, i64, i64);
 
     // main async thread
-    void networkThreadFunc(const Sync::stop_token& stopToken);
+    void threadLoopFunc(const Sync::stop_token& stopToken);
 };
 
 extern std::unique_ptr<NetworkHandler> networkHandler;

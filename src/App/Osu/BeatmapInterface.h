@@ -204,9 +204,6 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
     [[nodiscard]] inline f32 shouldFlashSectionFail() const { return this->fShouldFlashSectionFail; }
     [[nodiscard]] bool isWaiting() const override { return this->bIsWaiting; }
 
-    [[nodiscard]] std::string getTitle() const;
-    [[nodiscard]] std::string getArtist() const;
-
     [[nodiscard]] inline const std::vector<DatabaseBeatmap::BREAK> &getBreaks() const { return this->breaks; }
     [[nodiscard]] u32 getBreakDurationTotal() const override;
     [[nodiscard]] DatabaseBeatmap::BREAK getBreakForTimeRange(i64 startMS, i64 positionMS, i64 endMS) const;

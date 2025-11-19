@@ -3,9 +3,10 @@
 #ifndef LEGACYOPENGLINTERFACE_H
 #define LEGACYOPENGLINTERFACE_H
 
-#include "cbase.h"
+#include "config.h"
 
 #ifdef MCENGINE_FEATURE_OPENGL
+#include "Graphics.h"
 
 class Image;
 

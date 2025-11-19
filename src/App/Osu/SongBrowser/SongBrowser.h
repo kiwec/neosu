@@ -302,7 +302,6 @@ class SongBrowser final : public ScreenBackable {
 
     // behaviour
     const DatabaseBeatmap *lastSelectedBeatmap{nullptr};
-    bool bHasSelectedAndIsPlaying;
     float fPulseAnimation;
     float fBackgroundFadeInTime;
     std::vector<const DatabaseBeatmap *> previousRandomBeatmaps;

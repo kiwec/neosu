@@ -34,9 +34,6 @@ class PauseButton final : public CBaseUIButton {
 class MainMenu final : public OsuScreen, public MouseListener {
     NOCOPY_NOMOVE(MainMenu)
    public:
-    static UString NEOSU_MAIN_BUTTON_TEXT;
-    static UString NEOSU_MAIN_BUTTON_SUBTEXT;
-
     void onPausePressed();
     void onCubePressed();
 

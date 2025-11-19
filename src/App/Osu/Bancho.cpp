@@ -115,7 +115,7 @@ void BanchoState::handle_packet(Packet &packet) {
                 Environment::createDirectory(replays_dir);
 
                 osu->onUserCardChange(BanchoState::username);
-                osu->getSongBrowser()->onFilterScoresChange(u"Global", SongBrowser::LOGIN_STATE_FILTER_ID);
+                osu->getSongBrowser()->onFilterScoresChange(ULITERAL("Global"), SongBrowser::LOGIN_STATE_FILTER_ID);
 
                 // If server sent a score submission policy, update options menu to hide the checkbox
                 osu->getOptionsMenu()->scheduleLayoutUpdate();
@@ -127,34 +127,34 @@ void BanchoState::handle_packet(Packet &packet) {
                 UString errmsg = fmt::format("Failed to log in: {} (code {})\n", BanchoState::cho_token.toUtf8(),
                                              BanchoState::get_uid());
                 if(new_user_id == -1) {
-                    errmsg = u"Incorrect username/password.";
+                    errmsg = ULITERAL("Incorrect username/password.");
                 } else if(new_user_id == -2) {
-                    errmsg = u"Client version is too old to connect to this server.";
+                    errmsg = ULITERAL("Client version is too old to connect to this server.");
                 } else if(new_user_id == -3 || new_user_id == -4) {
-                    errmsg = u"You are banned from this server.";
+                    errmsg = ULITERAL("You are banned from this server.");
                 } else if(new_user_id == -5) {
-                    errmsg = u"Server had an error while trying to log you in.";
+                    errmsg = ULITERAL("Server had an error while trying to log you in.");
                 } else if(new_user_id == -6) {
-                    errmsg = u"You need to buy supporter to connect to this server.";
+                    errmsg = ULITERAL("You need to buy supporter to connect to this server.");
                 } else if(new_user_id == -7) {
-                    errmsg = u"You need to reset your password to connect to this server.";
+                    errmsg = ULITERAL("You need to reset your password to connect to this server.");
                 } else if(new_user_id == -8) {
                     if(BanchoState::is_oauth) {
-                        errmsg = u"osu! session expired, please log in again.";
+                        errmsg = ULITERAL("osu! session expired, please log in again.");
                     } else {
-                        errmsg = u"Open the verification link sent to your email, then log in again.";
+                        errmsg = ULITERAL("Open the verification link sent to your email, then log in again.");
                     }
                 } else {
                     if(BanchoState::cho_token == "user-already-logged-in") {
-                        errmsg = u"Already logged in on another client.";
+                        errmsg = ULITERAL("Already logged in on another client.");
                     } else if(BanchoState::cho_token == "unknown-username") {
                         errmsg = fmt::format("No account by the username '{}' exists.", BanchoState::username);
                     } else if(BanchoState::cho_token == "incorrect-credentials") {
-                        errmsg = u"Incorrect username/password.";
+                        errmsg = ULITERAL("Incorrect username/password.");
                     } else if(BanchoState::cho_token == "incorrect-password") {
-                        errmsg = u"Incorrect password.";
+                        errmsg = ULITERAL("Incorrect password.");
                     } else if(BanchoState::cho_token == "contact-staff") {
-                        errmsg = u"Please contact an administrator of the server.";
+                        errmsg = ULITERAL("Please contact an administrator of the server.");
                     }
                 }
                 osu->getNotificationOverlay()->addToast(errmsg, ERROR_TOAST);
@@ -408,7 +408,7 @@ void BanchoState::handle_packet(Packet &packet) {
         }
 
         case ROOM_JOIN_FAIL: {
-            osu->getNotificationOverlay()->addToast(u"Failed to join room.", ERROR_TOAST);
+            osu->getNotificationOverlay()->addToast(ULITERAL("Failed to join room."), ERROR_TOAST);
             osu->getLobby()->on_room_join_failed();
             break;
         }
@@ -477,8 +477,8 @@ void BanchoState::handle_packet(Packet &packet) {
             auto msg = ChatMessage{
                 .tms = time(nullptr),
                 .author_id = 0,
-                .author_name = u"",
-                .text = u"Joined channel.",
+                .author_name = ULITERAL(""),
+                .text = ULITERAL("Joined channel."),
             };
             osu->getChat()->addChannel(name, true);
             osu->getChat()->addMessage(name, msg, false);
@@ -526,8 +526,8 @@ void BanchoState::handle_packet(Packet &packet) {
         case PROTOCOL_VERSION: {
             int protocol_version = packet.read<i32>();
             if(protocol_version != 19) {
-                osu->getNotificationOverlay()->addToast(u"This server may use an unsupported protocol version.",
-                                                        ERROR_TOAST);
+                osu->getNotificationOverlay()->addToast(
+                    ULITERAL("This server may use an unsupported protocol version."), ERROR_TOAST);
             }
             break;
         }
@@ -652,7 +652,8 @@ void BanchoState::handle_packet(Packet &packet) {
 
         case VERSION_UPDATE_FORCED: {
             BanchoState::disconnect();
-            osu->getNotificationOverlay()->addToast(u"This server requires a newer client version.", ERROR_TOAST);
+            osu->getNotificationOverlay()->addToast(ULITERAL("This server requires a newer client version."),
+                                                    ERROR_TOAST);
             break;
         }
 
@@ -661,7 +662,7 @@ void BanchoState::handle_packet(Packet &packet) {
         }
 
         case ACCOUNT_RESTRICTED: {
-            osu->getNotificationOverlay()->addToast(u"Account restricted.", ERROR_TOAST);
+            osu->getNotificationOverlay()->addToast(ULITERAL("Account restricted."), ERROR_TOAST);
             BanchoState::disconnect();
             break;
         }
@@ -886,7 +887,7 @@ void BanchoState::update_channel(const UString &name, const UString &topic, i32 
             auto msg = ChatMessage{
                 .tms = time(nullptr),
                 .author_id = 0,
-                .author_name = u"",
+                .author_name = ULITERAL(""),
                 .text = UString::format("%s: %s", name.toUtf8(), topic.toUtf8()),
             };
             osu->getChat()->addMessage(BanchoState::is_oauth ? "#neosu" : "#osu", msg, false);

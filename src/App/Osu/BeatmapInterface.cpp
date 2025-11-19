@@ -386,6 +386,9 @@ void BeatmapInterface::onKey(GameplayKeys key_flag, bool down, u64 timestamp) {
 }
 
 void BeatmapInterface::selectBeatmap() {
+    // sanity
+    osu->bIsPlayingASelectedBeatmap = false;
+
     // if possible, continue playing where we left off
     if(this->music != nullptr && (this->music->isPlaying())) this->iContinueMusicPos = this->music->getPositionMS();
 
@@ -441,7 +444,8 @@ bool BeatmapInterface::play() {
         }
 
         if(BanchoState::can_submit_scores() && !cvars->areAllCvarsSubmittable()) {
-            osu->getNotificationOverlay()->addToast(u"Score will not submit with current mods/settings", ERROR_TOAST);
+            osu->getNotificationOverlay()->addToast(ULITERAL("Score will not submit with current mods/settings"),
+                                                    ERROR_TOAST);
         }
 
         return true;
@@ -528,11 +532,11 @@ bool BeatmapInterface::spectate() {
 
 bool BeatmapInterface::start() {
     // set it to false to catch early returns first
-    osu->getSongBrowser()->bHasSelectedAndIsPlaying = false;
+    osu->bIsPlayingASelectedBeatmap = false;
 
     if(this->beatmap == nullptr) return false;
 
-    osu->getSongBrowser()->bHasSelectedAndIsPlaying = true;
+    osu->bIsPlayingASelectedBeatmap = true;
     osu->setShouldPauseBGThreads(true);
 
     soundEngine->play(this->getSkin()->s_menu_hit);
@@ -620,7 +624,7 @@ bool BeatmapInterface::start() {
                 } break;
             }
 
-            osu->getSongBrowser()->bHasSelectedAndIsPlaying = false;
+            osu->bIsPlayingASelectedBeatmap = false;
             osu->setShouldPauseBGThreads(false);
 
             return false;
@@ -884,7 +888,7 @@ bool BeatmapInterface::isPreviewMusicPlaying() {
 }
 
 void BeatmapInterface::stop(bool quit) {
-    osu->getSongBrowser()->bHasSelectedAndIsPlaying = false;
+    osu->bIsPlayingASelectedBeatmap = false;
     soundEngine->stop(this->getSkin()->s_fail);
 
     if(this->beatmap == nullptr) return;
@@ -1065,7 +1069,7 @@ void BeatmapInterface::seekMS(u32 ms) {
 
     if(!this->is_watching && !BanchoState::spectating) {  // score submission already disabled when watching replay
         if(was_submittable && BanchoState::can_submit_scores()) {
-            osu->getNotificationOverlay()->addToast(u"Score will not submit due to seeking", ERROR_TOAST);
+            osu->getNotificationOverlay()->addToast(ULITERAL("Score will not submit due to seeking"), ERROR_TOAST);
         }
         this->bTempSeekNF = true;
     }
@@ -1254,20 +1258,6 @@ f32 BeatmapInterface::getOD_full() const {
     if(cv::od_override_lock.getBool()) OD = GameRules::odWithSpeed(OD, 1.f / this->getSpeedMultiplier());
 
     return OD;
-}
-
-std::string BeatmapInterface::getTitle() const {
-    if(this->beatmap != nullptr)
-        return this->beatmap->getTitle();
-    else
-        return "NULL";
-}
-
-std::string BeatmapInterface::getArtist() const {
-    if(this->beatmap != nullptr)
-        return this->beatmap->getArtist();
-    else
-        return "NULL";
 }
 
 u32 BeatmapInterface::getBreakDurationTotal() const {
@@ -2651,7 +2641,7 @@ void BeatmapInterface::update2() {
 
     // handle music loading fail
     if(!this->music->isReady()) {
-        osu->getNotificationOverlay()->addToast(u"Couldn't load music file :(", ERROR_TOAST);
+        osu->getNotificationOverlay()->addToast(ULITERAL("Couldn't load music file :("), ERROR_TOAST);
         this->stop(true);
         return;
     }
@@ -3304,7 +3294,7 @@ void BeatmapInterface::update2() {
                 this->bIsPaused = true;
 
                 if(BanchoState::spectating) {
-                    osu->getSongBrowser()->bHasSelectedAndIsPlaying = false;
+                    osu->bIsPlayingASelectedBeatmap = false;
                 } else {
                     osu->getPauseMenu()->setVisible(true);
                     osu->updateConfineCursor();
@@ -3907,7 +3897,7 @@ FinishedScore BeatmapInterface::saveAndSubmitScore(bool quit) {
         if(score.passed || cv::save_failed_scores.getBool()) {
             int scoreIndex = db->addScore(score);
             if(scoreIndex == -1) {
-                osu->getNotificationOverlay()->addToast(u"Failed saving score!", ERROR_TOAST);
+                osu->getNotificationOverlay()->addToast(ULITERAL("Failed saving score!"), ERROR_TOAST);
             }
         }
     }

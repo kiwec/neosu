@@ -3,9 +3,10 @@
 #ifndef SOLOUD_FX_H
 #define SOLOUD_FX_H
 
-#include "BaseEnvironment.h"
+#include "config.h"
 
 #ifdef MCENGINE_FEATURE_SOLOUD
+
 #include "SyncMutex.h"
 
 #include "soloud.h"

@@ -3,34 +3,37 @@
 #ifndef OPENGLVERTEXARRAYOBJECT_H
 #define OPENGLVERTEXARRAYOBJECT_H
 
-#include "VertexArrayObject.h"
+#include "config.h"
 
 #ifdef MCENGINE_FEATURE_OPENGL
 
-class OpenGLVertexArrayObject final : public VertexArrayObject
-{
-	NOCOPY_NOMOVE(OpenGLVertexArrayObject)
-public:
-	OpenGLVertexArrayObject(Graphics::PRIMITIVE primitive = Graphics::PRIMITIVE::PRIMITIVE_TRIANGLES, Graphics::USAGE_TYPE usage = Graphics::USAGE_TYPE::USAGE_STATIC, bool keepInSystemMemory = false);
-	~OpenGLVertexArrayObject() override {destroy();}
+#include "VertexArrayObject.h"
 
-	void draw() override;
+class OpenGLVertexArrayObject final : public VertexArrayObject {
+    NOCOPY_NOMOVE(OpenGLVertexArrayObject)
+   public:
+    OpenGLVertexArrayObject(Graphics::PRIMITIVE primitive = Graphics::PRIMITIVE::PRIMITIVE_TRIANGLES,
+                            Graphics::USAGE_TYPE usage = Graphics::USAGE_TYPE::USAGE_STATIC,
+                            bool keepInSystemMemory = false);
+    ~OpenGLVertexArrayObject() override { destroy(); }
 
-private:
-	void init() override;
-	void initAsync() override;
-	void destroy() override;
+    void draw() override;
 
-	unsigned int iVertexBuffer;
-	unsigned int iTexcoordBuffer;
-	unsigned int iColorBuffer;
-	unsigned int iNormalBuffer;
+   private:
+    void init() override;
+    void initAsync() override;
+    void destroy() override;
 
-	unsigned int iNumTexcoords;
-	unsigned int iNumColors;
-	unsigned int iNumNormals;
+    unsigned int iVertexBuffer;
+    unsigned int iTexcoordBuffer;
+    unsigned int iColorBuffer;
+    unsigned int iNormalBuffer;
 
-	unsigned int iVertexArray;
+    unsigned int iNumTexcoords;
+    unsigned int iNumColors;
+    unsigned int iNumNormals;
+
+    unsigned int iVertexArray;
 };
 
 #endif

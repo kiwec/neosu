@@ -259,7 +259,7 @@ void RoomScreen::draw() {
 
     // Update avatar visibility status
     for(auto elm : this->slotlist->getContainer()->getElements()) {
-        if(elm->getName() == UString("avatar")) {
+        if(elm->getName() == ULITERAL("avatar")) {
             // NOTE: Not checking horizontal visibility
             auto avatar = (UIAvatar *)elm;
             bool is_below_top = avatar->getPos().y + avatar->getSize().y >= this->slotlist->getPos().y;
@@ -452,7 +452,7 @@ void RoomScreen::updateSettingsLayout(vec2 newResolution) {
     if(is_host && is_ready && nb_ready > 1) {
         auto force_start_str = UString::format("Force start (%d/%d)", nb_ready, BanchoState::room.nb_players);
         if(BanchoState::room.all_players_ready()) {
-            force_start_str = UString("Start game");
+            force_start_str = ULITERAL("Start game");
         }
         this->ready_btn->setText(force_start_str);
         this->ready_btn->setColor(0xff00d900);
@@ -699,12 +699,11 @@ void RoomScreen::on_match_started(Room room) {
     if(osu->getMapInterface()->play()) {
         this->bVisible = false;
         BanchoState::match_started = true;
-        osu->getSongBrowser()->bHasSelectedAndIsPlaying = true;
         osu->getChat()->updateVisibility();
 
         soundEngine->play(osu->getSkin()->s_match_start);
     } else {
-        osu->getNotificationOverlay()->addToast(u"Failed to load map", ERROR_TOAST);
+        osu->getNotificationOverlay()->addToast(ULITERAL("Failed to load map"), ERROR_TOAST);
         this->ragequit();  // map failed to load
     }
 }

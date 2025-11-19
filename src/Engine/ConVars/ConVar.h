@@ -248,7 +248,7 @@ class ConVar {
     [[nodiscard]] const std::string &getString() const;
 
     template <typename T = int>
-    [[nodiscard]] inline auto getVal() const {
+    [[nodiscard]] inline T getVal() const {
         return static_cast<T>(this->getDouble());
     }
 

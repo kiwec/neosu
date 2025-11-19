@@ -48,7 +48,7 @@ void Sound::initAsync() {
 }
 
 void Sound::rebuild(std::string_view newFilePath, bool async) {
-    if (!newFilePath.empty()) {
+    if(!newFilePath.empty()) {
         this->sRebuildFilePath = newFilePath;
     }
 
