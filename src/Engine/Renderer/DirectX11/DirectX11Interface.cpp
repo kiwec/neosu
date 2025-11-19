@@ -429,8 +429,10 @@ void DirectX11Interface::setColor(Color color) {
     if(this->color == color) return;
 
     this->color = color;
-    this->shaderTexturedGeneric->setUniform4f("col", this->color.Af(), this->color.Rf(), this->color.Gf(),
-                                              this->color.Bf());
+    if(this->bTexturingEnabled) {
+        this->shaderTexturedGeneric->setUniform4f("col", this->color.Af(), this->color.Rf(), this->color.Gf(),
+                                                  this->color.Bf());
+    }
 }
 
 void DirectX11Interface::setAlpha(float alpha) {

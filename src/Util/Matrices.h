@@ -18,6 +18,8 @@
 #define MATH_MATRICES_H
 
 #include "Vectors.h"
+
+#include "fmt/ostream.h"
 #include <cmath>
 #include <glm/gtc/matrix_inverse.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -658,5 +660,46 @@ inline std::ostream& operator<<(std::ostream& os, const Matrix4& m) {
     os << std::resetiosflags(std::ios_base::fixed | std::ios_base::floatfield);
     return os;
 }
+
+namespace fmt {
+template <>
+struct formatter<Matrix2> {
+    template <typename ParseContext>
+    constexpr auto parse(ParseContext& ctx) const {
+        return ctx.begin();
+    }
+
+    template <typename FormatContext>
+    auto format(const Matrix2& r, FormatContext& ctx) const {
+        return format_to(ctx.out(), "{}"_cf, fmt::streamed(r));
+    }
+};
+
+template <>
+struct formatter<Matrix3> {
+    template <typename ParseContext>
+    constexpr auto parse(ParseContext& ctx) const {
+        return ctx.begin();
+    }
+
+    template <typename FormatContext>
+    auto format(const Matrix3& r, FormatContext& ctx) const {
+        return format_to(ctx.out(), "{}"_cf, fmt::streamed(r));
+    }
+};
+
+template <>
+struct formatter<Matrix4> {
+    template <typename ParseContext>
+    constexpr auto parse(ParseContext& ctx) const {
+        return ctx.begin();
+    }
+
+    template <typename FormatContext>
+    auto format(const Matrix4& r, FormatContext& ctx) const {
+        return format_to(ctx.out(), "{}"_cf, fmt::streamed(r));
+    }
+};
+}  // namespace fmt
 
 #endif
