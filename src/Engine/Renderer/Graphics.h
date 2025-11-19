@@ -1,16 +1,17 @@
 #pragma once
 // Copyright (c) 2012, PG, All rights reserved.
 
-#include <memory>
-#include <stack>
-#include <vector>
-
 #include "noinclude.h"
 #include "types.h"
 #include "Color.h"
 #include "Matrices.h"
 #include "Rect.h"
 #include "Vectors.h"
+
+#include <memory>
+#include <stack>
+#include <vector>
+#include <array>
 
 class ConVar;
 class UString;

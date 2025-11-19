@@ -16,6 +16,21 @@
 #include "soloud_wavstream.h"
 #include "soloud_file.h"
 
+namespace soundtouch {
+// need to define this because for some reason soundtouch doesn't give you the header?
+// there's no other way to change the algorithm (default cubic)
+class TransposerBase {
+   public:
+    enum ALGORITHM : unsigned int;
+    static void setAlgorithm(ALGORITHM a);
+   protected:
+    static ALGORITHM algorithm;
+};
+
+}  // namespace soundtouch
+
+using ALGORITHM = soundtouch::TransposerBase::ALGORITHM;
+
 namespace cv
 {
 #ifdef _DEBUG
@@ -261,6 +276,13 @@ SoundTouchFilterInstance::SoundTouchFilterInstance(SLFXStream *aParent)
       mProcessingCounter(0)
 {
 	ST_DEBUG_LOG("SoundTouchFilterInstance: Constructor called");
+
+	static std::atomic<bool> once{false};
+	if (!once.load(std::memory_order_acquire))
+	{
+		once.store(true, std::memory_order_release);
+		soundtouch::TransposerBase::setAlgorithm((ALGORITHM)2 /* SHANNON */);
+	}
 
 	// create source instance
 	if (mParent && mParent->mSource)

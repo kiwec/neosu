@@ -12,12 +12,12 @@
 #include "ConVarHandler.h"
 #include "Console.h"
 #include "Engine.h"
+#include "Font.h"
 #include "Logging.h"
 #include "Environment.h"
 #include "Keyboard.h"
 #include "Mouse.h"
 #include "Timing.h"
-#include "ResourceManager.h"
 
 class ConsoleBoxTextbox : public CBaseUITextbox {
    public:
@@ -104,7 +104,7 @@ ConsoleBox::ConsoleBox() : CBaseUIElement(0, 0, 0, 0, ""), fConsoleDelay(engine-
     this->logFont = engine->getConsoleFont();
 
     this->textbox = std::make_unique<ConsoleBoxTextbox>(
-        5 * dpiScale, engine->getScreenHeight(), engine->getScreenWidth() - 10 * dpiScale, 26, "consoleboxtextbox");
+        5.f * dpiScale, (float)engine->getScreenHeight(), engine->getScreenWidth() - 10.f * dpiScale, 26.f, "consoleboxtextbox");
     {
         this->textbox->setSizeY(this->textbox->getRelSize().y * dpiScale);
         this->textbox->setFont(engine->getDefaultFont());
@@ -113,8 +113,8 @@ ConsoleBox::ConsoleBox() : CBaseUIElement(0, 0, 0, 0, ""), fConsoleDelay(engine-
         this->textbox->setBusy(true);
     }
 
-    this->suggestion = std::make_unique<CBaseUIScrollView>(5 * dpiScale, engine->getScreenHeight(),
-                                                           engine->getScreenWidth() - 10 * dpiScale, 90 * dpiScale,
+    this->suggestion = std::make_unique<CBaseUIScrollView>(5.f * dpiScale, (float)engine->getScreenHeight(),
+                                                           engine->getScreenWidth() - 10.f * dpiScale, 90.f * dpiScale,
                                                            "consoleboxsuggestion");
     {
         this->suggestion->setDrawBackground(true);

@@ -4,8 +4,6 @@
 #ifdef MCENGINE_FEATURE_BASS
 
 #include <algorithm>
-#include <chrono>
-#include <thread>
 
 #include "BassManager.h"
 #include "ConVar.h"
@@ -115,6 +113,7 @@ void BassSound::destroy() {
         BASS_ChannelStop(handle);
         BASS_ChannelFree(handle);
     }
+
     this->activeHandleCache.clear();
 
     this->bStarted = false;

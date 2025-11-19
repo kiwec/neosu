@@ -471,7 +471,7 @@ BPMInfo getBPM(const zarray<T> &timing_points, zarray<BPMTuple> &bpm_buffer)
     for(size_t i = 0; i < timing_points.size(); i++) {
         const T &t = timing_points[i];
         if(t.offset > lastTime) continue;
-        if(t.msPerBeat <= 0.0) continue;
+        if(t.msPerBeat <= 0.0 || std::isnan(t.msPerBeat)) continue;
 
         // "osu-stable forced the first control point to start at 0."
         // "This is reproduced here to maintain compatibility around osu!mania scroll speed and song
