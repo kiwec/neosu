@@ -244,18 +244,28 @@ class ConVar {
 
     std::string getFancyDefaultValue();
 
-    [[nodiscard]] double getDouble() const;
-    [[nodiscard]] const std::string &getString() const;
+    [[nodiscard]] inline double getDouble() const {
+        if(likely(this->bUseCachedDouble.load(std::memory_order_relaxed))) {
+            return this->dCachedReturnedDouble;
+        }
+        return this->getDoubleInt();
+    }
+    [[nodiscard]] inline const std::string &getString() const {
+        if(likely(this->bUseCachedString.load(std::memory_order_relaxed))) {
+            return this->sCachedReturnedString;
+        }
+        return this->getStringInt();
+    }
 
     template <typename T = int>
     [[nodiscard]] inline T getVal() const {
         return static_cast<T>(this->getDouble());
     }
 
-    [[nodiscard]] inline int getInt() const { return this->getVal<int>(); }
-    [[nodiscard]] inline bool getBool() const { return !!this->getVal<int>(); }
-    [[nodiscard]] inline bool get() const { return this->getBool(); }
-    [[nodiscard]] inline float getFloat() const { return this->getVal<float>(); }
+    [[nodiscard]] inline int getInt() const { return static_cast<int>(this->getDouble()); }
+    [[nodiscard]] inline bool getBool() const { return !!static_cast<int>(this->getDouble()); }
+    [[nodiscard]] inline bool get() const { return !!static_cast<int>(this->getDouble()); }
+    [[nodiscard]] inline float getFloat() const { return static_cast<float>(this->getDouble()); }
 
     [[nodiscard]] inline const char *getHelpstring() const { return this->sHelpString; }
     [[nodiscard]] inline const char *getName() const { return this->sName; }
@@ -290,6 +300,7 @@ class ConVar {
 
     void setServerProtected(CvarProtection policy) {
         this->serverProtectionPolicy.store(policy, std::memory_order_release);
+        this->invalidateCache();
     }
 
     [[nodiscard]] inline bool isProtected() const {
@@ -397,10 +408,10 @@ class ConVar {
         }();
 
         // backup old values, for passing into callbacks
-        double oldDouble{this->getDouble()};
+        double oldDouble{this->getDoubleInt()};
         std::string oldString;
         if(doCallback) {
-            oldString = this->getString();
+            oldString = this->getStringInt();
         }
 
         // set new values
@@ -423,6 +434,8 @@ class ConVar {
                 break;
             }
         }
+
+        this->invalidateCache();
 
         // run protected value change cb
         if(this->isProtected() && oldDouble != newDouble && likely(!ConVar::onSetValueProtectedCallback.isNull())) {
@@ -460,6 +473,15 @@ class ConVar {
         }
     }
 
+    [[nodiscard]] double getDoubleInt() const;
+    [[nodiscard]] const std::string &getStringInt() const;
+
+    inline void invalidateCache() {
+        // invalidate cache, after we stored new values
+        this->bUseCachedDouble.store(false, std::memory_order_release);
+        this->bUseCachedString.store(false, std::memory_order_release);
+    }
+
    private:
     // static callbacks are shared across all convars
     // to call when a convar with PROTECTED flag has been changed
@@ -476,6 +498,7 @@ class ConVar {
 
     const char *sName;
     const char *sHelpString;
+
     std::string sDefaultValue{};
     double dDefaultValue{0.0};
 
@@ -487,6 +510,10 @@ class ConVar {
 
     std::atomic<double> dServerValue{0.0};
     std::string sServerValue{};
+
+    // just return cached values to avoid checking flags, unless something changed
+    mutable std::string sCachedReturnedString{};
+    mutable double dCachedReturnedDouble{0.};
 
     // callback storage (allow having 1 "change" callback and 1 single value (or void) callback)
     ExecCallback callback{std::monostate()};
@@ -500,6 +527,9 @@ class ConVar {
     bool bCanHaveValue{false};
     std::atomic<bool> hasServerValue{false};
     std::atomic<bool> hasSkinValue{false};
+
+    mutable std::atomic<bool> bUseCachedDouble{false};
+    mutable std::atomic<bool> bUseCachedString{false};
 };
 
 #endif

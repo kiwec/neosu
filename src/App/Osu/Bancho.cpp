@@ -77,8 +77,19 @@ bool BanchoState::print_new_channels{true};
 UString BanchoState::disk_uuid;
 
 std::atomic<i32> BanchoState::user_id{0};
+bool BanchoState::was_in_a_multi_room{false};
 
 /*###################################################################################################*/
+
+bool BanchoState::is_in_a_multi_room() {
+    const bool now_multi = room.nb_players > 0;
+    if(was_in_a_multi_room != now_multi) {
+        was_in_a_multi_room = now_multi;
+        // temporary... hopefully
+        cvars->invalidateAllProtectedCaches();
+    }
+    return now_multi;
+}
 
 MD5Hash BanchoState::md5(const u8 *msg, size_t msg_len) {
     u8 digest[16];
@@ -854,7 +865,7 @@ std::string BanchoState::build_login_packet() {
     return req;
 }
 
-std::string BanchoState::get_username() {
+const std::string &BanchoState::get_username() {
     if(BanchoState::is_online()) {
         return BanchoState::username;
     } else {

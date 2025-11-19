@@ -34,12 +34,16 @@ class ConVarHandler {
     }
 
     [[nodiscard]] static forceinline size_t getNumConVars() { return getConVarArray().size(); }
+    [[nodiscard]] size_t getTotalMemUsageBytes();
 
     [[nodiscard]] ConVar *getConVarByName(std::string_view name, bool warnIfNotFound = true) const;
     [[nodiscard]] std::vector<ConVar *> getConVarByLetter(std::string_view letters) const;
 
     [[nodiscard]] std::vector<ConVar *> getNonSubmittableCvars() const;
     bool areAllCvarsSubmittable();
+
+    // HACKHACK: terrible API (currently necessary for making caching work 100% reliably)
+    void invalidateAllProtectedCaches();
 
     void resetServerCvars();
     void resetSkinCvars();

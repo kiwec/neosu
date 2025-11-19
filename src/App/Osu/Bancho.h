@@ -69,7 +69,7 @@ struct BanchoState final {
     [[nodiscard]] static inline const UString &get_install_id() { return get_disk_uuid(); }
 
     // Room ID can be 0 on private servers! So we check if the room has players instead.
-    [[nodiscard]] static inline bool is_in_a_multi_room() { return room.nb_players > 0; }
+    [[nodiscard]] static bool is_in_a_multi_room();
     [[nodiscard]] static inline bool is_playing_a_multi_map() { return match_started; }
     [[nodiscard]] static bool can_submit_scores();
 
@@ -77,7 +77,7 @@ struct BanchoState final {
     [[nodiscard]] static inline i32 get_uid() { return user_id.load(std::memory_order_acquire); }
     static inline void set_uid(i32 uid) { user_id.store(uid, std::memory_order_release); }
 
-    [[nodiscard]] static std::string get_username();
+    [[nodiscard]] static const std::string &get_username();
 
     static void disconnect();
     static void reconnect();
@@ -99,4 +99,5 @@ struct BanchoState final {
     // static UString install_id; // TODO?
 
     static std::atomic<i32> user_id;
+    static bool was_in_a_multi_room;
 };

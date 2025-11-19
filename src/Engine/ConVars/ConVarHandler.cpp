@@ -134,7 +134,7 @@ std::string ConVarHandler::flagsToString(uint8_t flags) {
 std::vector<ConVar *> ConVarHandler::getNonSubmittableCvars() const {
     std::vector<ConVar *> list;
 
-    for(const auto &cv : ConVarHandler::getConVarArray()) {
+    for(auto *cv : ConVarHandler::getConVarArray()) {
         if(!cv->isProtected() || cv->isDefault()) continue;
 
         list.push_back(cv);
@@ -155,16 +155,24 @@ bool ConVarHandler::areAllCvarsSubmittable() {
     return true;
 }
 
+void ConVarHandler::invalidateAllProtectedCaches() {
+    for(auto *cv : ConVarHandler::getConVarArray()) {
+        if(cv->isFlagSet(cv::PROTECTED)) cv->invalidateCache();
+    }
+}
+
 void ConVarHandler::resetServerCvars() {
-    for(const auto &cv : ConVarHandler::getConVarArray()) {
+    for(auto *cv : ConVarHandler::getConVarArray()) {
         cv->hasServerValue.store(false, std::memory_order_release);
-        cv->serverProtectionPolicy.store(CvarProtection::DEFAULT, std::memory_order_release);
+        cv->setServerProtected(CvarProtection::DEFAULT);
+        cv->invalidateCache();
     }
 }
 
 void ConVarHandler::resetSkinCvars() {
-    for(const auto &cv : ConVarHandler::getConVarArray()) {
+    for(auto *cv : ConVarHandler::getConVarArray()) {
         cv->hasSkinValue.store(false, std::memory_order_release);
+        cv->invalidateCache();
     }
 }
 
@@ -172,7 +180,39 @@ bool ConVarHandler::removeServerValue(std::string_view cvarName) {
     ConVar *cvarToChange = ConVarHandler::getConVar_int(cvarName);
     if(!cvarToChange) return false;
     cvarToChange->hasServerValue.store(false, std::memory_order_release);
+    cvarToChange->invalidateCache();
     return true;
+}
+
+size_t ConVarHandler::getTotalMemUsageBytes() {
+    static size_t ret = 0;
+    if(ret > 0 && !engine->throttledShouldRun(60)) return ret;
+    ret = 0;
+
+    for(auto *cv : ConVarHandler::getConVarArray()) {
+        ret += strlen(cv->sName);
+        ret += strlen(cv->sHelpString);
+        ret += cv->sDefaultValue.size();
+        ret += sizeof(cv->dDefaultValue);
+        ret += sizeof(cv->dClientValue);
+        ret += cv->sClientValue.size();
+        ret += sizeof(cv->dSkinValue);
+        ret += cv->sSkinValue.size();
+        ret += sizeof(cv->dServerValue);
+        ret += cv->sServerValue.size();
+        ret += cv->sCachedReturnedString.size();
+        ret += sizeof(cv->callback);
+        ret += sizeof(cv->changeCallback);
+        ret += sizeof(cv->serverProtectionPolicy);
+        ret += sizeof(cv->type);
+        ret += sizeof(cv->iFlags);
+        ret += sizeof(cv->bCanHaveValue);
+        ret += sizeof(cv->hasServerValue);
+        ret += sizeof(cv->hasSkinValue);
+        ret += sizeof(cv->bUseCachedDouble);
+        ret += sizeof(cv->bUseCachedString);
+    }
+    return ret;
 }
 
 //*****************************//

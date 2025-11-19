@@ -80,45 +80,50 @@ void ConVar::execFloat(float args) {
     if(auto *cb = std::get_if<CVFloatCB>(&this->callback)) (*cb)(args);
 }
 
-double ConVar::getDouble() const {
-    // FIXME: all of these checks for every get is TERRIBLE for cache locality
-    // should be able to return a single value immediately unless a SINGLE flag indicates that we have to do an expensive check
+double ConVar::getDoubleInt() const {
     if(this->isFlagSet(cv::SERVER) && this->hasServerValue.load(std::memory_order_acquire)) {
-        return this->dServerValue.load(std::memory_order_acquire);
+        this->dCachedReturnedDouble = this->dServerValue.load(std::memory_order_acquire);
+    } else if(this->isFlagSet(cv::SKINS) && this->hasSkinValue.load(std::memory_order_acquire)) {
+        this->dCachedReturnedDouble = this->dSkinValue.load(std::memory_order_acquire);
+    } else if(this->isProtected() &&
+              (likely(!!ConVar::onGetValueProtectedCallback) && !ConVar::onGetValueProtectedCallback(this->sName))) {
+        // FIXME: this is unreliable since onGetValueProtectedCallback might change arbitrarily,
+        // need to invalidate cached state when that happens
+        // currently relying on a cvars->invalidateAllProtectedCaches "loophole" (see Bancho.cpp),
+        // so the API user needs to know the implementation details or else they'll keep getting default values :)
+        this->dCachedReturnedDouble = this->dDefaultValue;
+    } else {
+        this->dCachedReturnedDouble = this->dClientValue.load(std::memory_order_acquire);
     }
 
-    if(this->isFlagSet(cv::SKINS) && this->hasSkinValue.load(std::memory_order_acquire)) {
-        return this->dSkinValue.load(std::memory_order_acquire);
-    }
-
-    if(this->isProtected() &&
-       (likely(!!ConVar::onGetValueProtectedCallback) && !ConVar::onGetValueProtectedCallback(this->sName))) {
-        return this->dDefaultValue;
-    }
-
-    return this->dClientValue.load(std::memory_order_acquire);
+    this->bUseCachedDouble.store(true, std::memory_order_release);
+    return this->dCachedReturnedDouble;
 }
 
-const std::string &ConVar::getString() const {
+const std::string &ConVar::getStringInt() const {
     if(this->isFlagSet(cv::SERVER) && this->hasServerValue.load(std::memory_order_acquire)) {
-        return this->sServerValue;
+        this->sCachedReturnedString = this->sServerValue;
+    } else if(this->isFlagSet(cv::SKINS) && this->hasSkinValue.load(std::memory_order_acquire)) {
+        this->sCachedReturnedString = this->sSkinValue;
+    } else if(this->isProtected() &&
+              (likely(!!ConVar::onGetValueProtectedCallback) && !ConVar::onGetValueProtectedCallback(this->sName))) {
+        this->sCachedReturnedString = this->sDefaultValue;
+    } else {
+        this->sCachedReturnedString = this->sClientValue;
     }
 
-    if(this->isFlagSet(cv::SKINS) && this->hasSkinValue.load(std::memory_order_acquire)) {
-        return this->sSkinValue;
-    }
-
-    if(this->isProtected() &&
-       (likely(!!ConVar::onGetValueProtectedCallback) && !ConVar::onGetValueProtectedCallback(this->sName))) {
-        return this->sDefaultValue;
-    }
-
-    return this->sClientValue;
+    this->bUseCachedString.store(true, std::memory_order_release);
+    return this->sCachedReturnedString;
 }
 
 void ConVar::setDefaultDouble(double defaultValue) {
     this->dDefaultValue = defaultValue;
     this->sDefaultValue = fmt::format("{:g}", defaultValue);
+
+    // FIXME: continued hacks from the protected value returning default value issue
+    if(this->isFlagSet(cv::PROTECTED)) {
+        this->invalidateCache();
+    }
 }
 
 void ConVar::setDefaultString(std::string_view defaultValue) {
@@ -128,5 +133,9 @@ void ConVar::setDefaultString(std::string_view defaultValue) {
     const double f = std::strtod(this->sDefaultValue.c_str(), nullptr);
     if(f != 0.0) {
         this->dDefaultValue = f;
+    }
+
+    if(this->isFlagSet(cv::PROTECTED)) {
+        this->invalidateCache();
     }
 }
