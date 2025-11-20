@@ -26,6 +26,17 @@ bool Environment::Interop::handle_osk(const char *osk_path) {
 }
 
 bool Environment::Interop::handle_osz(const char *osz_path) {
+    if(!osu) return false;
+
+    if(osu->isInPlayMode()) {
+        osu->getNotificationOverlay()->addToast(fmt::format("Can't import {} while playing.", osz_path), ERROR_TOAST);
+        return false;
+    } else if(!db->isFinished()) {
+        osu->getNotificationOverlay()->addToast(fmt::format("Can't import {} before songs have been loaded.", osz_path),
+                                                ERROR_TOAST);
+        return false;
+    }
+
     uSz osz_filesize = 0;
     std::unique_ptr<u8[]> osz_data = nullptr;
     {
@@ -91,7 +102,7 @@ bool Environment::Interop::handle_cmdline_args(const std::vector<std::string> &a
                 handle_osk(arg.c_str());
             } else if(extension == "db") {
                 db->addPathToImport(arg);
-                need_to_reload_database = true;
+                need_to_reload_database = (osu && !osu->isInPlayMode() /* don't immediately import if playing */);
             }
         }
     }
