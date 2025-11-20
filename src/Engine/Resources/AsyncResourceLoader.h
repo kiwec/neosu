@@ -43,7 +43,13 @@ class AsyncResourceLoader final {
     [[nodiscard]] inline size_t getNumLoadingWorkAsyncDestroy() const { return this->asyncDestroyQueue.size(); }
     [[nodiscard]] inline size_t getMaxPerUpdate() const { return this->iLoadsPerUpdate; }
 
-    enum class WorkState : uint8_t { PENDING = 0, ASYNC_IN_PROGRESS = 1, ASYNC_COMPLETE = 2, SYNC_COMPLETE = 3 };
+    enum class WorkState : uint8_t {
+        PENDING = 0,
+        ASYNC_IN_PROGRESS = 1,
+        ASYNC_INTERRUPTED = 2,
+        ASYNC_COMPLETE = 3,
+        SYNC_COMPLETE = 4
+    };
 
     struct LoadingWork {
         Resource *resource;

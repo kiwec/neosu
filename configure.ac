@@ -963,7 +963,7 @@ SPDLOG_BUILD_VERSION=1.16.0
 NSYNC_MIN_VERSION=1.29.2
 NSYNC_BUILD_VERSION=1.29.2
 SIMDUTF_MIN_VERSION=7.0.0
-SIMDUTF_BUILD_VERSION=7.5.0 # fast and correct utf conversion utilities
+SIMDUTF_BUILD_VERSION=7.6.0 # fast and correct utf conversion utilities
 
 # always build these from source if we want to use them
 AC_SUBST([SOLOUD_VERSION], [1.2.1]) # my fork

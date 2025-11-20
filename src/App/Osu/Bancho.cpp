@@ -62,10 +62,10 @@ Image *BanchoState::server_icon{nullptr};
 
 ServerPolicy BanchoState::score_submission_policy{ServerPolicy::NO_PREFERENCE};
 
-UString BanchoState::neosu_version;
-UString BanchoState::cho_token{""};
-UString BanchoState::user_agent;
-UString BanchoState::client_hashes;
+UString BanchoState::neosu_version{ULITERAL("")};
+UString BanchoState::cho_token{ULITERAL("")};
+UString BanchoState::user_agent{ULITERAL("")};
+UString BanchoState::client_hashes{ULITERAL("")};
 
 Room BanchoState::room;
 bool BanchoState::match_started{false};
@@ -935,7 +935,7 @@ const UString &BanchoState::get_disk_uuid() {
 }
 
 UString BanchoState::get_disk_uuid_blkid() {
-    UString w_uuid{"error getting disk UUID"};
+    UString w_uuid{ULITERAL("error getting disk UUID")};
 #ifdef MCENGINE_PLATFORM_LINUX
     using blkid_cache = struct blkid_struct_cache *;
 
@@ -1000,7 +1000,7 @@ UString BanchoState::get_disk_uuid_blkid() {
 }
 
 UString BanchoState::get_disk_uuid_win32() {
-    UString w_uuid{"error getting disk UUID"};
+    UString w_uuid{ULITERAL("error getting disk UUID")};
 #ifdef MCENGINE_PLATFORM_WINDOWS
 
     // get the path to the executable

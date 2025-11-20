@@ -74,27 +74,39 @@ class AsyncResourceLoader::LoaderThread final {
             this->last_active.store(chrono::steady_clock::now(), std::memory_order_release);
 
             Resource *resource = work->resource;
-            work->state.store(WorkState::ASYNC_IN_PROGRESS, std::memory_order_release);
+            const bool interrupted = resource->isInterrupted();
 
             std::string debugName;
             if(debug) {
                 debugName = resource->getName();
-                debugLog("AsyncResourceLoader: Thread #{} loading workID {} {:8p} : {:s}", this->thread_index,
-                         work->workId, static_cast<const void *>(resource), debugName);
+                if(interrupted) {
+                    debugLog("Thread #{} loading workID {} {:8p} : {:s}", this->thread_index, work->workId,
+                             static_cast<const void *>(resource), debugName);
+                } else {
+                    debugLog("Thread #{} skipping (interrupted) workID {} {:8p} : {:s}", this->thread_index,
+                             work->workId, static_cast<const void *>(resource), debugName);
+                }
             }
 
-            // prevent child threads from inheriting the name
-            McThread::set_current_thread_name(fmt::format("res_{}", work->workId).c_str());
+            if(interrupted) {
+                work->state.store(WorkState::ASYNC_INTERRUPTED, std::memory_order_release);
+            } else {
+                work->state.store(WorkState::ASYNC_IN_PROGRESS, std::memory_order_release);
 
-            resource->loadAsync();
+                // prevent child threads from inheriting the name
+                McThread::set_current_thread_name(fmt::format("res_{}", work->workId).c_str());
 
-            // restore loader thread name
-            McThread::set_current_thread_name(loaderThreadName.c_str());
+                resource->loadAsync();
 
-            logIf(debug, "AsyncResourceLoader: Thread #{} finished async loading {:8p} : {:s}", this->thread_index,
-                  static_cast<const void *>(resource), debugName);
+                // restore loader thread name
+                McThread::set_current_thread_name(loaderThreadName.c_str());
 
-            work->state.store(WorkState::ASYNC_COMPLETE, std::memory_order_release);
+                logIf(debug, "AsyncResourceLoader: Thread #{} finished async loading {:8p} : {:s}", this->thread_index,
+                      static_cast<const void *>(resource), debugName);
+
+                work->state.store(WorkState::ASYNC_COMPLETE, std::memory_order_release);
+            }
+
             this->loader_ptr->markWorkAsyncComplete(std::move(work));
 
             // yield again before loop
@@ -209,7 +221,8 @@ void AsyncResourceLoader::update(bool lowLatency) {
         }
 
         Resource *rs = work->resource;
-        const bool interrupted = rs->isInterrupted();
+        const bool interrupted =
+            work->state.load(std::memory_order_acquire) == WorkState::ASYNC_INTERRUPTED || rs->isInterrupted();
         if(!interrupted) {
             logIf(debug, "AsyncResourceLoader: Sync init for {:s} ({:8p})", rs->getName(),
                   static_cast<const void *>(rs));
@@ -243,7 +256,7 @@ void AsyncResourceLoader::update(bool lowLatency) {
 
             {
                 Sync::scoped_lock loadingLock(this->loadingResourcesMutex);
-                if(this->loadingResourcesSet.find(this->asyncDestroyQueue[i]) != this->loadingResourcesSet.end()) {
+                if(this->loadingResourcesSet.contains(this->asyncDestroyQueue[i])) {
                     canBeDestroyed = false;
                 }
             }
@@ -304,7 +317,7 @@ void AsyncResourceLoader::reloadResources(const std::vector<Resource *> &resourc
 
 bool AsyncResourceLoader::isLoadingResource(Resource *resource) const {
     Sync::scoped_lock lock(this->loadingResourcesMutex);
-    return this->loadingResourcesSet.find(resource) != this->loadingResourcesSet.end();
+    return this->loadingResourcesSet.contains(resource);
 }
 
 void AsyncResourceLoader::ensureThreadAvailable() {

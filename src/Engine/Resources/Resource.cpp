@@ -52,6 +52,7 @@ void Resource::release() {
     // NOTE: these are set afterwards on purpose
     this->bReady.store(false, std::memory_order_release);
     this->bAsyncReady.store(false, std::memory_order_release);
+    this->bInterrupted.store(false, std::memory_order_release);
 }
 
 void Resource::interruptLoad() { this->bInterrupted.store(true, std::memory_order_release); }

@@ -24,10 +24,7 @@
 namespace RichPresence {
 namespace {  // static
 
-const UString KEY_DISCORD_STATUS = "state";
-const UString KEY_DISCORD_DETAILS = "details";
-
-UString last_status = "[neosu]\nWaking up";
+UString last_status = ULITERAL("[neosu]\nWaking up");
 Action last_action = IDLE;
 
 void crop_to(const UString& str, char* output, int max_len) {

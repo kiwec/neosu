@@ -234,9 +234,9 @@ class Room {
     bool player_loaded = false;
     bool has_password = false;
 
-    UString name = "";
-    UString password = "";
-    UString map_name = "";
+    UString name{ULITERAL("")};
+    UString password{ULITERAL("")};
+    UString map_name{ULITERAL("")};
 
     Slot slots[16];
 

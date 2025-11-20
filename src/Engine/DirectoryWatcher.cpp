@@ -1,6 +1,7 @@
 // Copyright (c) 2025 kiwec, All rights reserved.
 #include "DirectoryWatcher.h"
 
+#include "Logging.h"
 #include "Thread.h"
 #include "Timing.h"
 #include "SyncJthread.h"
@@ -58,9 +59,12 @@ class DirectoryWatcher::WatcherImpl {
         for(const auto& entry : fs::directory_iterator(dir_path, ec)) {
             if(ec) continue;
             auto fileType = entry.status(ec).type();
+            // we only care about files, not directories right now
             if(fileType != fs::file_type::regular) continue;
 
-            files[entry.path().string()] = fs::last_write_time(entry);
+            auto time = fs::last_write_time(entry, ec);
+            if(ec) continue;
+            files[entry.path().string()] = time;
         }
 
         return files;
