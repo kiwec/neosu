@@ -397,18 +397,19 @@ Osu::Osu() {
 
     // extract osks & watch for osks to extract
     {
-        auto osks = env->getFilesInFolder(NEOSU_SKINS_PATH "/");
+        const auto osks = env->getFilesInFolder(NEOSU_SKINS_PATH "/");
         for(const auto &file : osks) {
             if(env->getFileExtensionFromFilePath(file) != "osk") continue;
             auto path = NEOSU_SKINS_PATH "/" + file;
-            bool extracted = env->getEnvInterop().handle_osk(path.c_str());
+            const bool extracted = env->getEnvInterop().handle_osk(path.c_str());
             if(extracted) env->deleteFile(path);
         }
 
-        directoryWatcher->watch_directory(NEOSU_SKINS_PATH "/", [](const FileChangeEvent &ev) {
+        directoryWatcher->watch_directory(NEOSU_SKINS_PATH "/", [](const FileChangeEvent &ev) -> void {
             if(ev.type != FileChangeType::CREATED) return;
+            Logger::logRaw("[DirectoryWatcher] Importing new skin {}: type {}", ev.path, static_cast<u32>(ev.type));
             if(env->getFileExtensionFromFilePath(ev.path) != "osk") return;
-            bool extracted = env->getEnvInterop().handle_osk(ev.path.c_str());
+            const bool extracted = env->getEnvInterop().handle_osk(ev.path.c_str());
             if(extracted) env->deleteFile(ev.path);
         });
     }

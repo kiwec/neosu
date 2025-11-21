@@ -24,6 +24,7 @@ struct FileChangeEvent {
 
 using FileChangeCallback = std::function<void(FileChangeEvent)>;
 
+class DirWatcherImpl;
 class DirectoryWatcher {
     NOCOPY_NOMOVE(DirectoryWatcher);
 
@@ -41,8 +42,7 @@ class DirectoryWatcher {
     // to avoid race condition issues.
     void update();
 
-    class WatcherImpl;
-    std::unique_ptr<WatcherImpl> pImpl;
+    std::unique_ptr<DirWatcherImpl> pImpl;
 };
 
 extern std::unique_ptr<DirectoryWatcher> directoryWatcher;

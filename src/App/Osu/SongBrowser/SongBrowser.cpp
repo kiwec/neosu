@@ -2606,8 +2606,9 @@ void SongBrowser::onDatabaseLoadingFinished() {
     // Watch for new maps now
     directoryWatcher->watch_directory(NEOSU_MAPS_PATH "/", [](const FileChangeEvent &ev) {
         if(ev.type != FileChangeType::CREATED) return;
+        Logger::logRaw("[DirectoryWatcher] Importing new beatmap {}: type {}", ev.path, (u32)ev.type);
         if(env->getFileExtensionFromFilePath(ev.path) != "osz") return;
-        bool extracted = env->getEnvInterop().handle_osz(ev.path.c_str());
+        const bool extracted = env->getEnvInterop().handle_osz(ev.path.c_str());
         if(extracted) env->deleteFile(ev.path);
     });
 }
