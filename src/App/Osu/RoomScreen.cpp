@@ -9,7 +9,6 @@
 #include "BanchoNetworking.h"
 #include "BanchoUsers.h"
 #include "BeatmapInterface.h"
-#include "CBaseUIButton.h"
 #include "CBaseUIContainer.h"
 #include "CBaseUILabel.h"
 #include "CBaseUITextbox.h"
@@ -105,6 +104,7 @@ bool UIModList::isVisible() { return !!*this->flags; }
 #define ADD_ELEMENT(element)                                           \
     do {                                                               \
         element->onResized();                                          \
+        element->setSizeToContent(button_padding, button_padding);     \
         element->setPos(10.f * osu->getUIScale(), settings_y);         \
         this->settings->getContainer()->addBaseUIElement(element);     \
         settings_y += element->getSize().y + 20.f * osu->getUIScale(); \

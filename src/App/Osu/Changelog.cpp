@@ -30,6 +30,7 @@ Changelog::Changelog() : ScreenBackable() {
         R"(- Improved gameplay animation smoothness (position interpolator fixes))",
         R"(- Added "snd_rate_transpose_algorithm" ConVar to adjust rate changer quality)",
         R"(- Fixed incorrect beatmap hitsound volumes and samplesets being used)",
+        R"(- Fixed multiplayer room screen missing ready button and freemods checkbox)",
         R"(- Fixed nightcore/daycore with SoLoud)",
         R"(- Fixed multiple songbrowser and collection management issues:)",
         R"(  - Beatmap difficulties are now properly grouped by mapset when searching in "No Grouping" mode)",

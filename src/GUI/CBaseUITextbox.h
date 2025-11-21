@@ -86,6 +86,9 @@ class CBaseUITextbox : public CBaseUIElement {
     void tickCaret();
     void updateTextPos();
 
+    // Dummy function for RoomScreen generic macro
+    void setSizeToContent(int /*a*/, int /*b*/) {}
+
    protected:
     virtual void drawText();
 

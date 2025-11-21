@@ -122,8 +122,10 @@ class Database {
     BeatmapSet *getBeatmapSet(i32 set_id);
     inline const std::vector<BeatmapSet *> &getBeatmapSets() const { return this->beatmapsets; }
 
+    // WARNING: Before calling getScores(), you need to lock db->scores_mtx!
     inline std::unordered_map<MD5Hash, std::vector<FinishedScore>> &getScores() { return this->scores; }
     inline std::unordered_map<MD5Hash, std::vector<FinishedScore>> &getOnlineScores() { return this->online_scores; }
+
     static std::string getOsuSongsFolder();
 
     BeatmapSet *loadRawBeatmap(const std::string &beatmapPath);  // only used for raw loading without db

@@ -24,6 +24,9 @@ class UIModList final : public CBaseUIContainer {
 
     void draw() override;
     bool isVisible() override;
+
+    // Dummy function for RoomScreen generic macro
+    void setSizeToContent(int /*a*/, int /*b*/) {}
 };
 
 class RoomScreen final : public OsuScreen {
