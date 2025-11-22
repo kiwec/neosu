@@ -213,13 +213,18 @@ Osu::Osu() {
     this->frameBuffer = resourceManager->createRenderTarget(0, 0, 64, 64);
     this->frameBuffer2 = resourceManager->createRenderTarget(0, 0, 64, 64);
 
+    int screenit = 0;
+
     // load a few select subsystems very early
     db = std::make_unique<Database>();  // global database instance
     this->map_iface = std::make_unique<BeatmapInterface>();
-    this->notificationOverlay = std::make_unique<NotificationOverlay>();
+    this->notificationOverlay = new NotificationOverlay();
+    this->screens[screenit++] = this->notificationOverlay;
     this->score = std::make_unique<LiveScore>(false);
     this->updateHandler = std::make_unique<UpdateHandler>();
     this->avatarManager = std::make_unique<AvatarManager>();
+    this->backgroundImageHandler = std::make_unique<BGImageHandler>();
+    this->fposu = std::make_unique<ModFPoSu>();
 
     // load main menu icon before skin
     resourceManager->loadImage("neosu.png", "NEOSU_LOGO");
@@ -342,25 +347,42 @@ Osu::Osu() {
     // load subsystems, add them to the screens array
     this->userButton = std::make_unique<UserCard>(BanchoState::get_uid());
 
-    this->songBrowser = std::make_unique<SongBrowser>();
-    this->volumeOverlay = std::make_unique<VolumeOverlay>();
-    this->tooltipOverlay = std::make_unique<TooltipOverlay>();
-    this->optionsMenu = std::make_unique<OptionsMenu>();
-    this->mainMenu = std::make_unique<MainMenu>();  // has to be after options menu
-    this->backgroundImageHandler = std::make_unique<BGImageHandler>();
-    this->modSelector = std::make_unique<ModSelector>();
-    this->rankingScreen = std::make_unique<RankingScreen>();
-    this->userStats = std::make_unique<UserStatsScreen>();
-    this->pauseMenu = std::make_unique<PauseMenu>();
-    this->hud = std::make_unique<HUD>();
-    this->changelog = std::make_unique<Changelog>();
-    this->fposu = std::make_unique<ModFPoSu>();
-    this->chat = std::make_unique<Chat>();
-    this->lobby = std::make_unique<Lobby>();
-    this->room = std::make_unique<RoomScreen>();
-    this->prompt = std::make_unique<PromptScreen>();
-    this->user_actions = std::make_unique<UIUserContextMenuScreen>();
-    this->spectatorScreen = std::make_unique<SpectatorScreen>();
+    this->songBrowser = new SongBrowser();
+    this->screens[screenit++] = this->songBrowser;
+    this->volumeOverlay = new VolumeOverlay();
+    this->screens[screenit++] = this->volumeOverlay;
+    this->tooltipOverlay = new TooltipOverlay();
+    this->screens[screenit++] = this->tooltipOverlay;
+    this->optionsMenu = new OptionsMenu();
+    this->screens[screenit++] = this->optionsMenu;
+    this->mainMenu = new MainMenu();  // has to be after options menu
+    this->screens[screenit++] = this->mainMenu;
+    this->modSelector = new ModSelector();
+    this->screens[screenit++] = this->modSelector;
+    this->rankingScreen = new RankingScreen();
+    this->screens[screenit++] = this->rankingScreen;
+    this->userStats = new UserStatsScreen();
+    this->screens[screenit++] = this->userStats;
+    this->pauseMenu = new PauseMenu();
+    this->screens[screenit++] = this->pauseMenu;
+    this->hud = new HUD();
+    this->screens[screenit++] = this->hud;
+    this->changelog = new Changelog();
+    this->screens[screenit++] = this->changelog;
+    this->chat = new Chat();
+    this->screens[screenit++] = this->chat;
+    this->lobby = new Lobby();
+    this->screens[screenit++] = this->lobby;
+    this->room = new RoomScreen();
+    this->screens[screenit++] = this->room;
+    this->prompt = new PromptScreen();
+    this->screens[screenit++] = this->prompt;
+    this->user_actions = new UIUserContextMenuScreen();
+    this->screens[screenit++] = this->user_actions;
+    this->spectatorScreen = new SpectatorScreen();
+    this->screens[screenit++] = this->spectatorScreen;
+
+    assert(screenit == NUM_SCREENS);
 
     this->bScreensReady = true;
 
@@ -417,33 +439,26 @@ Osu::Osu() {
     env->setCursorVisible(!this->internalRect.contains(mouse->getPos()));
 }
 
-// we want to destroy them in the same order as we listed them, to match the old (raw pointer) behavior
-// maybe unnecessary, but might avoid violating weird assumptions baked into the existing code
-void Osu::destroyAllScreensInOrder() {
-    if(!this->bScreensReady) return;
-#define X(unused__, name__) /*                                                                     */ \
-    this->name__.reset();
-    ALL_OSU_SCREENS
-#undef X
-#undef ALL_OSU_SCREENS
-    this->bScreensReady = false;
-}
-
 Osu::~Osu() {
+    // remove the static callbacks
+    ConVarHandler::setCVSubmittableCheckFunc({});
+    ConVar::setOnSetValueGameplayCallback({});
+    ConVar::setOnGetValueProtectedCallback({});
+    ConVar::setOnSetValueProtectedCallback({});
+
     sct_abort();
     AsyncPPC::set_map(nullptr);
     VolNormalization::shutdown();
     MapCalcThread::shutdown();
     BANCHO::Net::cleanup_networking();
 
-    this->destroyAllScreensInOrder();
+    // destroy screens in reverse order
+    this->bScreensReady = false;
+    for(auto *screen : this->screens | std::views::reverse) {
+        SAFE_DELETE(screen);
+    }
+    this->screens = {};
     db.reset();  // shutdown db
-
-    // remove the static callbacks
-    ConVarHandler::setCVSubmittableCheckFunc({});
-    ConVar::setOnSetValueGameplayCallback({});
-    ConVar::setOnGetValueProtectedCallback({});
-    ConVar::setOnSetValueProtectedCallback({});
 }
 
 void Osu::draw() {
@@ -606,8 +621,13 @@ void Osu::update() {
     // only update if not playing
     if(!this->isInPlayModeAndNotPaused()) this->avatarManager->update();
 
-    bool propagate_clicks = true;
-    this->forEachScreenWhile<&OsuScreen::mouse_update>(propagate_clicks, &propagate_clicks);
+    if(likely(this->bScreensReady)) {
+        bool propagate_clicks = true;
+        for(auto *screen : this->screens) {
+            screen->mouse_update(&propagate_clicks);
+            if(!propagate_clicks) break;
+        }
+    }
 
     if(this->music_unpause_scheduled && soundEngine->isReady()) {
         if(this->map_iface->getMusic() != nullptr) {
@@ -779,7 +799,7 @@ void Osu::update() {
             this->skinScheduledToLoad = nullptr;
 
             // force layout update after all skin elements have been loaded
-            this->forEachScreen<&OsuScreen::onResolutionChange>(this->getVirtScreenSize());
+            this->last_res_change_req_src |= R_MISC_MANUAL;
 
             // notify if done after reload
             if(this->bSkinLoadWasReload) {
@@ -1086,7 +1106,12 @@ void Osu::onKeyDown(KeyboardEvent &key) {
     }
 
     // forward to all subsystem, if not already consumed
-    this->forEachScreenWhile<&OsuScreen::onKeyDown>([&key]() -> bool { return !key.isConsumed(); }, key);
+    if(likely(this->bScreensReady) && !key.isConsumed()) {
+        for(auto *screen : this->screens) {
+            screen->onKeyDown(key);
+            if(key.isConsumed()) break;
+        }
+    }
 
     // special handling, after subsystems, if still not consumed, if playing
     if(!key.isConsumed() && this->isInPlayMode()) {
@@ -1155,7 +1180,12 @@ void Osu::onKeyUp(KeyboardEvent &key) {
     }
 
     // forward to all subsystems, if not consumed
-    this->forEachScreenWhile<&OsuScreen::onKeyUp>([&key]() -> bool { return !key.isConsumed(); }, key);
+    if(likely(this->bScreensReady) && !key.isConsumed()) {
+        for(auto *screen : this->screens) {
+            screen->onKeyUp(key);
+            if(key.isConsumed()) break;
+        }
+    }
 
     // misc hotkeys release
     // XXX: handle keypresses in the engine, instead of doing this hacky mess
@@ -1172,10 +1202,21 @@ void Osu::onKeyUp(KeyboardEvent &key) {
     this->fposu->onKeyUp(key);
 }
 
-void Osu::stealFocus() { this->forEachScreen<&OsuScreen::stealFocus>(); }
+void Osu::stealFocus() {
+    if(likely(this->bScreensReady)) {
+        for(auto *screen : this->screens) {
+            screen->stealFocus();
+        }
+    }
+}
 
 void Osu::onChar(KeyboardEvent &e) {
-    this->forEachScreenWhile<&OsuScreen::onChar>([&e]() -> bool { return !e.isConsumed(); }, e);
+    if(likely(this->bScreensReady) && !e.isConsumed()) {
+        for(auto *screen : this->screens) {
+            screen->onChar(e);
+            if(e.isConsumed()) break;
+        }
+    }
 }
 
 void Osu::onButtonChange(ButtonEvent ev) {
@@ -1479,7 +1520,11 @@ void Osu::onResolutionChanged(vec2 newResolution, ResolutionRequestFlags src) {
     cv::ui_scrollview_scrollbarwidth.setValue(15.0f * Osu::getUIScale());  // not happy with this as a convar
 
     // always call onResolutionChange, since DPI changes cause layout changes
-    this->forEachScreen<&OsuScreen::onResolutionChange>(this->getVirtScreenSize());
+    if(likely(this->bScreensReady)) {
+        for(auto *screen : this->screens) {
+            screen->onResolutionChange(this->getVirtScreenSize());
+        }
+    }
 
     // skip rebuilding rendertargets if we didn't change resolution
     if(resolution_changed) {

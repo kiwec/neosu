@@ -123,7 +123,7 @@ SpectatorScreen::SpectatorScreen() {
     this->lfont = osu->getSubTitleFont();
 
     this->pauseButton = new PauseButton(0, 0, 0, 0, "pause_btn", "");
-    this->pauseButton->setClickCallback(SA::MakeDelegate<&MainMenu::onPausePressed>(osu->getMainMenu().get()));
+    this->pauseButton->setClickCallback(SA::MakeDelegate<&MainMenu::onPausePressed>(osu->getMainMenu()));
     this->addBaseUIElement(this->pauseButton);
 
     this->background = new CBaseUIScrollView(0, 0, 0, 0, "spectator_bg");

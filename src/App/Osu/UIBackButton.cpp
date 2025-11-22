@@ -70,7 +70,7 @@ void UIBackButton::onMouseOutside() {
 
 void UIBackButton::updateLayout() {
     const SkinImage *backimg = osu->getSkin()->i_menu_back2;
-    const auto &optmenu = osu->getOptionsMenu();
+    OptionsMenu *optmenu = osu->getOptionsMenu();
 
     if(optmenu && optmenu->isVisible() && backimg->getSize().y > (optmenu->getSize().y / 4) &&
        (osu->getSkin()->i_menu_back2_DEFAULTSKIN && osu->getSkin()->i_menu_back2_DEFAULTSKIN->isReady())) {

@@ -124,38 +124,30 @@ class Osu final : public MouseListener, public KeyboardListener {
     [[nodiscard]] inline int getVirtScreenWidth() const { return (int)this->internalRect.getWidth(); }
     [[nodiscard]] inline int getVirtScreenHeight() const { return (int)this->internalRect.getHeight(); }
 
-    [[nodiscard]] inline const std::unique_ptr<OptionsMenu> &getOptionsMenu() const { return this->optionsMenu; }
-    [[nodiscard]] inline const std::unique_ptr<SongBrowser> &getSongBrowser() const { return this->songBrowser; }
-    [[nodiscard]] inline const std::unique_ptr<Changelog> &getChangelog() const { return this->changelog; }
+    [[nodiscard]] inline OptionsMenu *getOptionsMenu() { return this->optionsMenu; }
+    [[nodiscard]] inline SongBrowser *getSongBrowser() { return this->songBrowser; }
+    [[nodiscard]] inline Changelog *getChangelog() { return this->changelog; }
     [[nodiscard]] inline const std::unique_ptr<UserCard> &getUserButton() const { return this->userButton; }
-    [[nodiscard]] inline const std::unique_ptr<Lobby> &getLobby() const { return this->lobby; }
-    [[nodiscard]] inline const std::unique_ptr<SpectatorScreen> &getSpectatorScreen() const {
-        return this->spectatorScreen;
-    }
+    [[nodiscard]] inline Lobby *getLobby() { return this->lobby; }
+    [[nodiscard]] inline SpectatorScreen *getSpectatorScreen() { return this->spectatorScreen; }
     [[nodiscard]] inline const std::unique_ptr<BGImageHandler> &getBackgroundImageHandler() const {
         return this->backgroundImageHandler;
     }
-    [[nodiscard]] inline const std::unique_ptr<HUD> &getHUD() const { return this->hud; }
-    [[nodiscard]] inline const std::unique_ptr<TooltipOverlay> &getTooltipOverlay() const {
-        return this->tooltipOverlay;
-    }
-    [[nodiscard]] inline const std::unique_ptr<ModSelector> &getModSelector() const { return this->modSelector; }
+    [[nodiscard]] inline HUD *getHUD() { return this->hud; }
+    [[nodiscard]] inline TooltipOverlay *getTooltipOverlay() { return this->tooltipOverlay; }
+    [[nodiscard]] inline ModSelector *getModSelector() { return this->modSelector; }
     [[nodiscard]] inline const std::unique_ptr<ModFPoSu> &getFPoSu() const { return this->fposu; }
-    [[nodiscard]] inline const std::unique_ptr<PauseMenu> &getPauseMenu() const { return this->pauseMenu; }
-    [[nodiscard]] inline const std::unique_ptr<Chat> &getChat() const { return this->chat; }
-    [[nodiscard]] inline const std::unique_ptr<PromptScreen> &getPromptScreen() const { return this->prompt; }
-    [[nodiscard]] inline const std::unique_ptr<UIUserContextMenuScreen> &getUserActions() const {
-        return this->user_actions;
-    }
-    [[nodiscard]] inline const std::unique_ptr<RoomScreen> &getRoom() const { return this->room; }
-    [[nodiscard]] inline const std::unique_ptr<NotificationOverlay> &getNotificationOverlay() const {
-        return this->notificationOverlay;
-    }
-    [[nodiscard]] inline const std::unique_ptr<VolumeOverlay> &getVolumeOverlay() const { return this->volumeOverlay; }
-    [[nodiscard]] inline const std::unique_ptr<MainMenu> &getMainMenu() const { return this->mainMenu; }
-    [[nodiscard]] inline const std::unique_ptr<RankingScreen> &getRankingScreen() const { return this->rankingScreen; }
+    [[nodiscard]] inline PauseMenu *getPauseMenu() { return this->pauseMenu; }
+    [[nodiscard]] inline Chat *getChat() { return this->chat; }
+    [[nodiscard]] inline PromptScreen *getPromptScreen() { return this->prompt; }
+    [[nodiscard]] inline UIUserContextMenuScreen *getUserActions() { return this->user_actions; }
+    [[nodiscard]] inline RoomScreen *getRoom() { return this->room; }
+    [[nodiscard]] inline NotificationOverlay *getNotificationOverlay() { return this->notificationOverlay; }
+    [[nodiscard]] inline VolumeOverlay *getVolumeOverlay() { return this->volumeOverlay; }
+    [[nodiscard]] inline MainMenu *getMainMenu() { return this->mainMenu; }
+    [[nodiscard]] inline RankingScreen *getRankingScreen() { return this->rankingScreen; }
     [[nodiscard]] inline const std::unique_ptr<LiveScore> &getScore() const { return this->score; }
-    [[nodiscard]] inline const std::unique_ptr<UserStatsScreen> &getUserStatsScreen() const { return this->userStats; }
+    [[nodiscard]] inline UserStatsScreen *getUserStatsScreen() { return this->userStats; }
     [[nodiscard]] inline const std::unique_ptr<UpdateHandler> &getUpdateHandler() const { return this->updateHandler; }
     [[nodiscard]] inline const std::unique_ptr<BeatmapInterface> &getMapInterface() const { return this->map_iface; }
     [[nodiscard]] inline const std::unique_ptr<AvatarManager> &getAvatarManager() const { return this->avatarManager; }
@@ -273,35 +265,28 @@ class Osu final : public MouseListener, public KeyboardListener {
     std::unique_ptr<LiveScore> score{nullptr};
     std::unique_ptr<ModFPoSu> fposu{nullptr};
 
-    // interfaces ("OsuScreen"s)
+    // interfaces ("OsuScreen"s), manually created + added to the "screens" array and destroyed in reverse order in dtor
+    VolumeOverlay *volumeOverlay{nullptr};
+    PromptScreen *prompt{nullptr};
+    ModSelector *modSelector{nullptr};
+    UIUserContextMenuScreen *user_actions{nullptr};
+    RoomScreen *room{nullptr};
+    NotificationOverlay *notificationOverlay{nullptr};
+    Chat *chat{nullptr};
+    OptionsMenu *optionsMenu{nullptr};
+    RankingScreen *rankingScreen{nullptr};
+    UserStatsScreen *userStats{nullptr};
+    SpectatorScreen *spectatorScreen{nullptr};
+    PauseMenu *pauseMenu{nullptr};
+    HUD *hud{nullptr};
+    SongBrowser *songBrowser{nullptr};
+    Lobby *lobby{nullptr};
+    Changelog *changelog{nullptr};
+    MainMenu *mainMenu{nullptr};
+    TooltipOverlay *tooltipOverlay{nullptr};
 
-    // for looping through all screens in mouse_update/draw etc.
-    // the order matters to determine priority for event handling/consumption
-#define ALL_OSU_SCREENS                         \
-    X(VolumeOverlay, volumeOverlay)             \
-    X(PromptScreen, prompt)                     \
-    X(ModSelector, modSelector)                 \
-    X(UIUserContextMenuScreen, user_actions)    \
-    X(RoomScreen, room)                         \
-    X(NotificationOverlay, notificationOverlay) \
-    X(Chat, chat)                               \
-    X(OptionsMenu, optionsMenu)                 \
-    X(RankingScreen, rankingScreen)             \
-    X(UserStatsScreen, userStats)               \
-    X(SpectatorScreen, spectatorScreen)         \
-    X(PauseMenu, pauseMenu)                     \
-    X(HUD, hud)                                 \
-    X(SongBrowser, songBrowser)                 \
-    X(Lobby, lobby)                             \
-    X(Changelog, changelog)                     \
-    X(MainMenu, mainMenu)                       \
-    X(TooltipOverlay, tooltipOverlay)
-
-    // declare all screen unique_ptrs
-#define X(ptr_type__, name__) /*                                                          */ \
-    std::unique_ptr<ptr_type__> name__{nullptr};
-    ALL_OSU_SCREENS
-#undef X
+    static constexpr auto NUM_SCREENS{18};  // make sure to update this if adding/removing screens
+    std::array<OsuScreen *, NUM_SCREENS> screens{};
 
     // interfaces (debugging)
     std::unique_ptr<CWindowManager> windowManager{nullptr};
@@ -381,44 +366,6 @@ class Osu final : public MouseListener, public KeyboardListener {
 
    public:  // public due to BassSoundEngine access
     bool music_unpause_scheduled{false};
-
-    // helpers to do something for each screen, in order
-   private:
-    template <auto MemberFunc, typename Condition, typename... Args>
-    inline void forEachScreenWhile(const Condition &condition, Args &&...args)
-        requires std::is_invocable_v<Condition>
-    {
-        if(unlikely(!this->bScreensReady || !condition())) return;
-        // for each screen unique_ptr, as long as condition (lambda) is true
-#define X(unused__, name__)                                             \
-    std::invoke(MemberFunc, this->name__, std::forward<Args>(args)...); \
-    if(!condition()) return;
-        ALL_OSU_SCREENS
-#undef X
-    }
-
-    template <auto MemberFunc, typename Condition, typename... Args>
-    inline void forEachScreenWhile(Condition &condition, Args &&...args)
-        requires(!std::is_invocable_v<Condition>)
-    {
-        if(unlikely(!this->bScreensReady || !condition)) return;
-        // for each screen unique_ptr, as long as condition (lvalue) is true
-#define X(unused__, name__)                                             \
-    std::invoke(MemberFunc, this->name__, std::forward<Args>(args)...); \
-    if(!condition) return;
-        ALL_OSU_SCREENS
-#undef X
-    }
-
-    // passthrough for unconditional iteration
-    template <auto MemberFunc, typename... Args>
-    inline void forEachScreen(Args &&...args) {
-        static constexpr const bool always_true{true};  // so it's an lvalue...
-        this->forEachScreenWhile<MemberFunc>(always_true, std::forward<Args>(args)...);
-    }
-
-    // we want to destroy them in the same order as we listed them, to match the old (raw pointer) behavior
-    void destroyAllScreensInOrder();
 };
 
 MAKE_FLAG_ENUM(Osu::ResolutionRequestFlags)
