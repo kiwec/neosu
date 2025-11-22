@@ -18,6 +18,7 @@
 #include "OptionsMenu.h"
 #include "ResourceManager.h"
 #include "SongBrowser.h"
+#include "Timing.h"
 #include "UserCard.h"
 #include "Logging.h"
 
@@ -31,7 +32,7 @@ namespace BANCHO::Net {
 namespace {  // static namespace
 
 Packet outgoing;
-time_t last_packet_tms = {0};
+u64 last_packet_ms{0};
 double seconds_between_pings{1.0};
 std::string auth_token = "";
 bool use_websockets = false;
@@ -83,7 +84,7 @@ void attempt_logging_in() {
     auto scheme = cv::use_https.getBool() ? "https://" : "http://";
     auto query_url = fmt::format("{:s}c.{:s}/", scheme, BanchoState::endpoint);
 
-    last_packet_tms = time(nullptr);
+    last_packet_ms = Timing::getTicksMS();
 
     networkHandler->httpRequestAsync(
         query_url,
@@ -204,7 +205,7 @@ void update_networking() {
     // Initialize last_packet_tms on first call
     static bool initialized = false;
     if(!initialized) {
-        last_packet_tms = time(nullptr);
+        last_packet_ms = Timing::getTicksMS();
         initialized = true;
     }
 
@@ -214,8 +215,9 @@ void update_networking() {
     if(BanchoState::is_in_a_multi_room() && seconds_between_pings > 3) seconds_between_pings = 3;
     if(use_websockets) seconds_between_pings = 30;
 
-    bool should_ping = difftime(time(nullptr), last_packet_tms) > seconds_between_pings;
     if(BanchoState::get_uid() <= 0) return;
+
+    const bool should_ping = Timing::getTicksMS() - last_packet_ms > (u64)(seconds_between_pings * 1000);
 
     // Append missing presence/stats request packets
     // XXX: Rather than every second, this should be done once, and only once
@@ -241,7 +243,7 @@ void update_networking() {
     }
 
     if(outgoing.pos > 0) {
-        last_packet_tms = time(nullptr);
+        last_packet_ms = Timing::getTicksMS();
 
         Packet out = outgoing;
         outgoing = Packet();

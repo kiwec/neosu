@@ -4156,6 +4156,7 @@ void BeatmapInterface::updateSliderVertexBuffers() {
 }
 
 void BeatmapInterface::calculateStacks() {
+    if (!this->beatmap) return;
     this->updateHitobjectMetrics();
 
     debugLog("Beatmap: Calculating stacks ...");
