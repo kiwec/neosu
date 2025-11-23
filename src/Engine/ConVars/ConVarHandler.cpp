@@ -200,7 +200,7 @@ size_t ConVarHandler::getTotalMemUsageBytes() {
         ret += cv->sSkinValue.size();
         ret += sizeof(cv->dServerValue);
         ret += cv->sServerValue.size();
-        ret += cv->sCachedReturnedString.size();
+        ret += cv->sCachedReturnedString.load(std::memory_order_acquire)->size();
         ret += sizeof(cv->callback);
         ret += sizeof(cv->changeCallback);
         ret += sizeof(cv->serverProtectionPolicy);

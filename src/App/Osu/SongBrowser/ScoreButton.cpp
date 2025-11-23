@@ -683,7 +683,7 @@ void ScoreButton::setScore(const FinishedScore &newscore, const DatabaseBeatmap 
         this->avatar =
             std::make_unique<UIAvatar>(sc.player_id, this->vPos.x, this->vPos.y, this->vSize.y, this->vSize.y);
 
-        auto user = BANCHO::User::try_get_user_info(sc.player_id);
+        const UserInfo *user = BANCHO::User::try_get_user_info(sc.player_id);
         this->is_friend = user && user->is_friend();
     }
 

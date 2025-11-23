@@ -1,8 +1,6 @@
 // Copyright (c) 2023, kiwec, All rights reserved.
 #include "BanchoUsers.h"
 
-#include <algorithm>
-
 #include "Bancho.h"
 #include "BanchoNetworking.h"
 #include "BanchoProtocol.h"
@@ -15,29 +13,38 @@
 #include "SpectatorScreen.h"
 #include "Logging.h"
 
+#include <unordered_map>
+#include <algorithm>
+
 namespace BANCHO::User {
 
-std::unordered_map<i32, std::shared_ptr<UserInfo>> online_users;
+std::unordered_map<i32, UserInfo*> online_users;  // pointers to all_users elements
 std::vector<i32> friends;
 namespace {  // static
-std::unordered_map<i32, std::shared_ptr<UserInfo>> all_users;
-std::vector<std::shared_ptr<UserInfo>> presence_requests;
-std::vector<std::shared_ptr<UserInfo>> stats_requests;
-
-std::shared_ptr<UserInfo> null_user{nullptr};
+std::unordered_map<i32, UserInfo> all_users;
+std::vector<const UserInfo*> presence_requests;
+std::vector<const UserInfo*> stats_requests;
 }  // namespace
 
-void enqueue_presence_request(std::shared_ptr<UserInfo> info) {
-    if(info->has_presence) return;
-    if(!std::ranges::contains(presence_requests, info)) return;
-    presence_requests.push_back(std::move(info));
+void dequeue_presence_request(const UserInfo* info) {
+    std::erase_if(presence_requests, [info](const auto& uinfo) { return uinfo == info; });
 }
 
-void enqueue_stats_request(std::shared_ptr<UserInfo> info) {
+void dequeue_stats_request(const UserInfo* info) {
+    std::erase_if(stats_requests, [info](const auto& uinfo) { return uinfo == info; });
+}
+
+void enqueue_presence_request(const UserInfo* info) {
+    if(info->has_presence) return;
+    if(std::ranges::contains(presence_requests, info)) return;
+    presence_requests.push_back(info);
+}
+
+void enqueue_stats_request(const UserInfo* info) {
     if(info->irc_user) return;
     if(info->stats_tms + 5000 > Timing::getTicksMS()) return;
-    if(!std::ranges::contains(stats_requests, info)) return;
-    stats_requests.push_back(std::move(info));
+    if(std::ranges::contains(stats_requests, info)) return;
+    stats_requests.push_back(info);
 }
 
 void request_presence_batch() {
@@ -87,7 +94,7 @@ void login_user(i32 user_id) {
 
 void logout_user(i32 user_id) {
     if(const auto& it = online_users.find(user_id); it != online_users.end()) {
-        const auto& user_info = it->second;
+        const auto* user_info = it->second;
 
         debugLog("{:s} has disconnected.", user_info->name);
         if(user_id == BanchoState::spectated_player_id) {
@@ -100,6 +107,8 @@ void logout_user(i32 user_id) {
         }
 
         online_users.erase(it);
+        dequeue_presence_request(user_info);
+        dequeue_stats_request(user_info);
         osu->getChat()->updateUserList();
     }
 }
@@ -112,20 +121,18 @@ void logout_all_users() {
     stats_requests.clear();
 }
 
-const std::shared_ptr<UserInfo>& find_user(const UString& username) {
-    if(const auto& it = std::ranges::find_if(all_users,
-                                             [&username](const std::pair<i32, std::shared_ptr<UserInfo>>& uinfo) {
-                                                 return uinfo.second->name == username;
-                                             });
+UserInfo* find_user(const UString& username) {
+    if(const auto& it = std::ranges::find_if(
+           all_users, [&username](const auto& info_pair) { return info_pair.second.name == username; });
        it != all_users.end()) {
-        return it->second;
+        return &it->second;
     }
 
-    return null_user;
+    return nullptr;
 }
 
-const std::shared_ptr<UserInfo>& find_user_starting_with(UString prefix, const UString& last_match) {
-    if(prefix.isEmpty()) return null_user;
+UserInfo* find_user_starting_with(UString prefix, const UString& last_match) {
+    if(prefix.isEmpty()) return nullptr;
 
     prefix.lowerCase();
     // cycle through matches
@@ -144,15 +151,15 @@ const std::shared_ptr<UserInfo>& find_user_starting_with(UString prefix, const U
     }
 
     if(last_match.length() == 0) {
-        return null_user;
+        return nullptr;
     } else {
         return find_user_starting_with(prefix, "");
     }
 }
 
-const std::shared_ptr<UserInfo>& try_get_user_info(i32 user_id, bool wants_presence) {
+UserInfo* try_get_user_info(i32 user_id, bool wants_presence) {
     if(const auto& it = all_users.find(user_id); it != all_users.end()) {
-        auto& user_info = it->second;
+        auto* user_info = &it->second;
         if(wants_presence) {
             enqueue_presence_request(user_info);
         }
@@ -160,23 +167,22 @@ const std::shared_ptr<UserInfo>& try_get_user_info(i32 user_id, bool wants_prese
         return user_info;
     }
 
-    return null_user;
+    return nullptr;
 }
 
-std::shared_ptr<UserInfo>& get_user_info(i32 user_id, bool wants_presence) {
-    auto& existing_info = try_get_user_info(user_id, wants_presence);
-    // to avoid null_user sentinel being modified on the outside...
-    if(existing_info && existing_info != null_user) {
-        return const_cast<std::shared_ptr<UserInfo>&>(existing_info);
+UserInfo* get_user_info(i32 user_id, bool wants_presence) {
+    auto* existing_info = try_get_user_info(user_id, wants_presence);
+    if(existing_info) {
+        return existing_info;
     }
 
-    auto temp_new_info = std::make_shared<UserInfo>();
+    std::pair<i32, UserInfo> temp_new_info{user_id, UserInfo{}};
 
-    temp_new_info->user_id = user_id;
-    temp_new_info->name = UString::format("User #%d", user_id);
-    const auto& [inserted_it, successfully_inserted] = all_users.insert({user_id, std::move(temp_new_info)});
+    temp_new_info.second.user_id = user_id;
+    temp_new_info.second.name = UString::format("User #%d", user_id);
+    const auto& [inserted_it, successfully_inserted] = all_users.emplace(std::move(temp_new_info));
     assert(successfully_inserted);
-    auto& new_info = inserted_it->second;
+    auto* new_info = &inserted_it->second;
 
     osu->getChat()->updateUserList();
 
@@ -190,5 +196,11 @@ std::shared_ptr<UserInfo>& get_user_info(i32 user_id, bool wants_presence) {
 }  // namespace BANCHO::User
 
 using namespace BANCHO::User;
+
+UserInfo::~UserInfo() {
+    // remove from vectors
+    dequeue_presence_request(this);
+    dequeue_stats_request(this);
+}
 
 bool UserInfo::is_friend() const { return std::ranges::contains(friends, this->user_id); }

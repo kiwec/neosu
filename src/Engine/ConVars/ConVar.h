@@ -262,13 +262,13 @@ class ConVar {
 
     [[nodiscard]] inline double getDouble() const {
         if(likely(this->bUseCachedDouble.load(std::memory_order_relaxed))) {
-            return this->dCachedReturnedDouble;
+            return this->dCachedReturnedDouble.load(std::memory_order_acquire);
         }
         return this->getDoubleInt();
     }
     [[nodiscard]] inline const std::string &getString() const {
         if(likely(this->bUseCachedString.load(std::memory_order_relaxed))) {
-            return this->sCachedReturnedString;
+            return *(this->sCachedReturnedString.load(std::memory_order_acquire));
         }
         return this->getStringInt();
     }
@@ -540,8 +540,8 @@ class ConVar {
     std::string sServerValue{};
 
     // just return cached values to avoid checking flags, unless something changed
-    mutable std::string sCachedReturnedString{};
-    mutable double dCachedReturnedDouble{0.};
+    mutable std::atomic<const std::string *> sCachedReturnedString{&sDefaultValue};
+    mutable std::atomic<double> dCachedReturnedDouble{0.};
 
     // callback storage (allow having 1 "change" callback and 1 single value (or void) callback)
     ExecCallback callback{std::monostate()};

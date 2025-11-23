@@ -496,7 +496,7 @@ void Chat::handle_command(const UString &msg) {
 
     if(msg.startsWith("/addfriend ")) {
         auto friend_name = msg.substr(11);
-        auto user = BANCHO::User::find_user(friend_name);
+        auto *user = BANCHO::User::find_user(friend_name);
         if(!user) {
             this->addSystemMessage(UString::format("User '%s' not found. Are they online?", friend_name.toUtf8()));
             return;
@@ -537,7 +537,7 @@ void Chat::handle_command(const UString &msg) {
 
     if(msg.startsWith("/delfriend ")) {
         auto friend_name = msg.substr(11);
-        auto user = BANCHO::User::find_user(friend_name);
+        auto *user = BANCHO::User::find_user(friend_name);
         if(!user) {
             this->addSystemMessage(UString::format("User '%s' not found. Are they online?", friend_name.toUtf8()));
             return;
@@ -742,7 +742,7 @@ void Chat::onKeyDown(KeyboardEvent &key) {
             username_len = username_end_idx - username_start_idx;
         }
 
-        auto &user = BANCHO::User::find_user_starting_with(this->tab_completion_prefix, this->tab_completion_match);
+        auto *user = BANCHO::User::find_user_starting_with(this->tab_completion_prefix, this->tab_completion_match);
         if(user) {
             this->tab_completion_match = user->name;
 
@@ -850,7 +850,7 @@ void Chat::addChannel(const UString &channel_name, bool switch_to) {
 }
 
 void Chat::addMessage(UString channel_name, const ChatMessage &msg, bool mark_unread) {
-    auto user = BANCHO::User::get_user_info(msg.author_id);
+    const auto *user = BANCHO::User::get_user_info(msg.author_id);
     bool chatter_is_moderator = (user->privileges & Privileges::MODERATOR);
     chatter_is_moderator |= (msg.author_id == 0);  // system message
 
@@ -1147,14 +1147,13 @@ void Chat::updateUserList() {
 
     // XXX: Optimize so fps doesn't halve when F9 is open
 
-    std::vector<std::shared_ptr<UserInfo>> sorted_users;
+    std::vector<const UserInfo *> sorted_users;
     for(const auto &pair : BANCHO::User::online_users) {
         if(pair.second->user_id > 0) {
             sorted_users.push_back(pair.second);
         }
     }
-    std::ranges::sort(sorted_users, SString::alnum_comp,
-                      [](const std::shared_ptr<UserInfo> &ui) { return ui->name.toUtf8(); });
+    std::ranges::sort(sorted_users, SString::alnum_comp, [](const UserInfo *ui) { return ui->name.toUtf8(); });
 
     // Intentionally not calling this->user_list->clear(), because that would affect scroll position/animation
     this->user_list->getContainer()->freeElements();

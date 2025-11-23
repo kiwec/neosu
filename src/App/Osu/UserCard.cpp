@@ -210,7 +210,7 @@ void UserCard::mouse_update(bool *propagate_clicks) {
     if(!this->bVisible) return;
 
     if(this->user_id > 0) {
-        const auto &my = BANCHO::User::get_user_info(this->user_id, true);
+        const UserInfo *my = BANCHO::User::get_user_info(this->user_id, true);
         this->sText = my->name;
 
         static i64 total_score = 0;
@@ -237,7 +237,7 @@ void UserCard::updateUserStats() {
     if(is_self && !BanchoState::can_submit_scores()) {
         stats = db->calculatePlayerStats(this->sText.toUtf8());
     } else {
-        const auto &my = BANCHO::User::get_user_info(this->user_id, true);
+        const UserInfo *my = BANCHO::User::get_user_info(this->user_id, true);
 
         int level = Database::getLevelForScore(my->total_score);
         float percentToNextLevel = 1.f;

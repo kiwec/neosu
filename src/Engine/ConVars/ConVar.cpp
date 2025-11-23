@@ -84,38 +84,40 @@ void ConVar::execDouble(double args) {
 
 double ConVar::getDoubleInt() const {
     if(this->isFlagSet(cv::SERVER) && this->hasServerValue.load(std::memory_order_acquire)) {
-        this->dCachedReturnedDouble = this->dServerValue.load(std::memory_order_acquire);
+        this->dCachedReturnedDouble.store(this->dServerValue.load(std::memory_order_acquire),
+                                          std::memory_order_release);
     } else if(this->isFlagSet(cv::SKINS) && this->hasSkinValue.load(std::memory_order_acquire)) {
-        this->dCachedReturnedDouble = this->dSkinValue.load(std::memory_order_acquire);
+        this->dCachedReturnedDouble.store(this->dSkinValue.load(std::memory_order_acquire), std::memory_order_release);
     } else if(this->isProtected() &&
               (likely(!!ConVar::onGetValueProtectedCallback) && !ConVar::onGetValueProtectedCallback(this->sName))) {
         // FIXME: this is unreliable since onGetValueProtectedCallback might change arbitrarily,
         // need to invalidate cached state when that happens
         // currently relying on a cvars->invalidateAllProtectedCaches "loophole" (see Bancho.cpp),
         // so the API user needs to know the implementation details or else they'll keep getting default values :)
-        this->dCachedReturnedDouble = this->dDefaultValue;
+        this->dCachedReturnedDouble.store(this->dDefaultValue, std::memory_order_release);
     } else {
-        this->dCachedReturnedDouble = this->dClientValue.load(std::memory_order_acquire);
+        this->dCachedReturnedDouble.store(this->dClientValue.load(std::memory_order_acquire),
+                                          std::memory_order_release);
     }
 
     this->bUseCachedDouble.store(true, std::memory_order_release);
-    return this->dCachedReturnedDouble;
+    return this->dCachedReturnedDouble.load(std::memory_order_acquire);
 }
 
 const std::string &ConVar::getStringInt() const {
     if(this->isFlagSet(cv::SERVER) && this->hasServerValue.load(std::memory_order_acquire)) {
-        this->sCachedReturnedString = this->sServerValue;
+        this->sCachedReturnedString.store(&this->sServerValue, std::memory_order_release);
     } else if(this->isFlagSet(cv::SKINS) && this->hasSkinValue.load(std::memory_order_acquire)) {
-        this->sCachedReturnedString = this->sSkinValue;
+        this->sCachedReturnedString.store(&this->sSkinValue, std::memory_order_release);
     } else if(this->isProtected() &&
               (likely(!!ConVar::onGetValueProtectedCallback) && !ConVar::onGetValueProtectedCallback(this->sName))) {
-        this->sCachedReturnedString = this->sDefaultValue;
+        this->sCachedReturnedString.store(&this->sDefaultValue, std::memory_order_release);
     } else {
-        this->sCachedReturnedString = this->sClientValue;
+        this->sCachedReturnedString.store(&this->sClientValue, std::memory_order_release);
     }
 
     this->bUseCachedString.store(true, std::memory_order_release);
-    return this->sCachedReturnedString;
+    return *(this->sCachedReturnedString.load(std::memory_order_acquire));
 }
 
 void ConVar::setDefaultDouble(double defaultValue) {

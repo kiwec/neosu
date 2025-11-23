@@ -1,8 +1,8 @@
 // Copyright (c) 2025, WH, All rights reserved.
 #pragma once
 
-#include <map>
-#include <set>
+#include <unordered_map>
+#include <unordered_set>
 #include <utility>
 
 #include "Image.h"
@@ -38,7 +38,7 @@ class AvatarManager final {
 
    private:
     // only keep this many avatar Image resources loaded in VRAM at once
-    static constexpr size_t MAX_LOADED_AVATARS{192};
+    static constexpr size_t MAX_LOADED_AVATARS{256};
 
     struct AvatarEntry {
         std::string file_path;
@@ -53,9 +53,9 @@ class AvatarManager final {
 
     // all AvatarEntries added through add_avatar remain alive forever, but the actual Image resource
     // it references will be unloaded (by priority of access time) to keep VRAM/RAM usage sustainable
-    std::map<AvatarIdentifier, AvatarEntry> avatars;
+    std::unordered_map<AvatarIdentifier, AvatarEntry> avatars;
     std::deque<AvatarIdentifier> load_queue;
     std::unordered_map<AvatarIdentifier, std::atomic<u32>> avatar_refcount;
-    std::set<AvatarIdentifier> id_blacklist;
+    std::unordered_set<AvatarIdentifier> id_blacklist;
     std::vector<u8> temp_img_download_data;  // if it has something in it, we just downloaded something
 };

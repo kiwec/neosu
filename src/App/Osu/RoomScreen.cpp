@@ -382,7 +382,7 @@ void RoomScreen::updateSettingsLayout(vec2 newResolution) {
     if(!is_host) {
         UString host_str = "Host: None";
         if(BanchoState::room.host_id > 0) {
-            auto host = BANCHO::User::get_user_info(BanchoState::room.host_id, true);
+            const auto *host = BANCHO::User::get_user_info(BanchoState::room.host_id, true);
             host_str = UString::format("Host: %s", host->name.toUtf8());
         }
         this->host->setText(host_str);
@@ -493,7 +493,7 @@ void RoomScreen::updateLayout(vec2 newResolution) {
     i32 y_total = 10.f * dpiScale;
     for(auto &slot : BanchoState::room.slots) {
         if(slot.has_player()) {
-            const auto &user_info = BANCHO::User::get_user_info(slot.player_id, true);
+            const auto *user_info = BANCHO::User::get_user_info(slot.player_id, true);
 
             auto color = 0xffffffff;
             auto username = user_info->name;
@@ -607,7 +607,7 @@ void RoomScreen::on_room_joined(Room room) {
     debugLog("Joined room #{:d}\nPlayers:", room.id);
     for(auto &slot : room.slots) {
         if(slot.has_player()) {
-            const auto &user_info = BANCHO::User::get_user_info(slot.player_id, true);
+            const UserInfo *user_info = BANCHO::User::get_user_info(slot.player_id, true);
             debugLog("- {:s}", user_info->name.toUtf8());
         }
     }

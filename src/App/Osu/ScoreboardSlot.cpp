@@ -16,7 +16,7 @@ ScoreboardSlot::ScoreboardSlot(const SCORE_ENTRY &score, int index) {
     this->score = score;
     this->index = index;
 
-    auto user = BANCHO::User::try_get_user_info(score.player_id);
+    const UserInfo *user = BANCHO::User::try_get_user_info(score.player_id);
     this->is_friend = user && user->is_friend();
 }
 

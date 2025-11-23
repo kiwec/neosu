@@ -106,7 +106,7 @@ void AvatarManager::add_avatar(const AvatarIdentifier& id_folder) {
     }
 
     // avoid duplicates in queue
-    if(std::ranges::find(this->load_queue, id_folder) == this->load_queue.end()) {
+    if(!std::ranges::contains(this->load_queue, id_folder)) {
         this->load_queue.push_back(id_folder);
     }
 }
@@ -117,9 +117,7 @@ void AvatarManager::remove_avatar(const AvatarIdentifier& id_folder) {
 
     if(current_refcount == 0) {
         // dequeue if it's waiting to be loaded, that's all
-        auto it = std::ranges::find(this->load_queue, id_folder);
-        if(it != this->load_queue.end()) {
-            this->load_queue.erase(it);
+        if(std::erase_if(this->load_queue, [&id_folder](const auto& pair) { return pair == id_folder; }) > 0) {
             logIfCV(debug_avatars, "removed {} from load queue", id_folder.first);
         }
     }
@@ -140,7 +138,7 @@ void AvatarManager::prune_oldest_avatars() {
     if(this->avatars.size() <= (size_t)(MAX_LOADED_AVATARS * (7.f / 8.f))) return;
 
     // collect all loaded entries
-    std::vector<std::map<AvatarIdentifier, AvatarEntry>::iterator> loaded_entries;
+    std::vector<std::unordered_map<AvatarIdentifier, AvatarEntry>::iterator> loaded_entries;
 
     for(auto it = this->avatars.begin(); it != this->avatars.end(); ++it) {
         if(it->second.image && it->second.image->isReady()) {

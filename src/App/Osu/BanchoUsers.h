@@ -6,9 +6,16 @@
 #include "UString.h"
 
 #include <unordered_map>
-#include <memory>
 
 struct UserInfo {
+    UserInfo() noexcept = default;
+    ~UserInfo() noexcept;
+
+    UserInfo(const UserInfo &) noexcept = default;
+    UserInfo &operator=(const UserInfo &) noexcept = default;
+    UserInfo(UserInfo &&) noexcept = default;
+    UserInfo &operator=(UserInfo &&) noexcept = default;
+
     i32 user_id = 0;
     bool irc_user = false;
 
@@ -44,21 +51,22 @@ struct UserInfo {
 
 namespace BANCHO::User {
 
-extern std::unordered_map<i32, std::shared_ptr<UserInfo>> online_users;
+extern std::unordered_map<i32, UserInfo *> online_users;
 extern std::vector<i32> friends;
 
 void login_user(i32 user_id);
 void logout_user(i32 user_id);
 void logout_all_users();
 
-const std::shared_ptr<UserInfo> &find_user(const UString &username);
-const std::shared_ptr<UserInfo> &find_user_starting_with(UString prefix, const UString &last_match);
-const std::shared_ptr<UserInfo> &try_get_user_info(i32 user_id, bool wants_presence = false);
-std::shared_ptr<UserInfo> &get_user_info(i32 user_id, bool wants_presence = false);
+UserInfo *find_user(const UString &username);
+UserInfo *find_user_starting_with(UString prefix, const UString &last_match);
+UserInfo *try_get_user_info(i32 user_id, bool wants_presence = false);
+UserInfo *get_user_info(i32 user_id, bool wants_presence = false);
 
-void enqueue_presence_request(std::shared_ptr<UserInfo> info);
-void enqueue_stats_request(std::shared_ptr<UserInfo> info);
+void dequeue_presence_request(const UserInfo *info);
+void dequeue_stats_request(const UserInfo *info);
+void enqueue_presence_request(const UserInfo *info);
+void enqueue_stats_request(const UserInfo *info);
 void request_presence_batch();
 void request_stats_batch();
-
 }  // namespace BANCHO::User
