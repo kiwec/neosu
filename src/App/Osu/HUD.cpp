@@ -1158,7 +1158,8 @@ std::vector<SCORE_ENTRY> HUD::getCurrentScores() {
     } else {
         int nb_slots = 0;
         {
-            const bool is_online = cv::songbrowser_scores_filteringtype.getString() != "Local";
+            const bool is_online = (BanchoState::is_online() || BanchoState::is_logging_in()) &&
+                                   cv::songbrowser_scores_filteringtype.getString() != "Local";
 
             Sync::shared_lock lock(db->scores_mtx);
 

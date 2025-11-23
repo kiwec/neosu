@@ -2244,7 +2244,9 @@ void SongBrowser::rebuildScoreButtons() {
     const bool validBeatmap = (osu->getMapInterface()->getBeatmap() != nullptr);
     bool is_online = cv::songbrowser_scores_filteringtype.getString() != "Local";
 
-    std::vector<FinishedScore> scores;
+    bool is_online = (BanchoState::is_online() || BanchoState::is_logging_in()) &&
+                     cv::songbrowser_scores_filteringtype.getString() != "Local";
+
     if(validBeatmap) {
         Sync::shared_lock lock(db->scores_mtx);
         auto map = osu->getMapInterface()->getBeatmap();

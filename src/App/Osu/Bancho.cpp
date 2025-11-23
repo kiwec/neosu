@@ -79,6 +79,9 @@ UString BanchoState::disk_uuid;
 std::atomic<i32> BanchoState::user_id{0};
 bool BanchoState::was_in_a_multi_room{false};
 
+bool BanchoState::async_logout_pending{false};
+OnlineStatus BanchoState::online_status{OnlineStatus::LOGGED_OUT};
+
 /*###################################################################################################*/
 
 bool BanchoState::is_in_a_multi_room() {
@@ -103,6 +106,34 @@ MD5Hash BanchoState::md5(const u8 *msg, size_t msg_len) {
     return out;
 }
 
+void BanchoState::set_uid(i32 new_uid) {
+    const i32 old_uid = get_uid();
+    user_id.store(new_uid, std::memory_order_release);
+
+    if(is_logging_in() || old_uid != new_uid) {
+        update_online_status(new_uid > 0 ? OnlineStatus::LOGGED_IN : OnlineStatus::LOGGED_OUT);
+    }
+}
+
+void BanchoState::update_online_status(OnlineStatus new_status) {
+    const auto old_status = online_status;
+    online_status = new_status;
+
+    osu->getOptionsMenu()->update_login_button(new_status == OnlineStatus::LOGGED_IN);
+
+    // login failed, no update layout necessary
+    if(old_status == OnlineStatus::LOGIN_IN_PROGRESS && new_status != OnlineStatus::LOGGED_IN) return;
+
+    // in progress/logged out -> logged in, or logged in -> logged out
+    if(old_status != new_status && (new_status == OnlineStatus::LOGGED_OUT || new_status == OnlineStatus::LOGGED_IN)) {
+        osu->getOptionsMenu()->scheduleLayoutUpdate();
+    }
+    if(async_logout_pending && new_status == OnlineStatus::LOGGED_IN) {
+        async_logout_pending = false;
+        BanchoState::disconnect();
+    }
+}
+
 void BanchoState::handle_packet(Packet &packet) {
     logIfCV(debug_network, "packet id: {}", packet.id);
 
@@ -110,8 +141,6 @@ void BanchoState::handle_packet(Packet &packet) {
         case USER_ID: {
             i32 new_user_id = packet.read<i32>();
             BanchoState::set_uid(new_user_id);
-            osu->getOptionsMenu()->update_login_button();
-            osu->getOptionsMenu()->setLoginLoadingState(false);
             BanchoState::is_oauth = !cv::mp_oauth_token.getString().empty();
 
             if(new_user_id > 0) {

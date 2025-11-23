@@ -14,6 +14,8 @@ enum class ServerPolicy : uint8_t {
     NO_PREFERENCE,
 };
 
+enum class OnlineStatus : u8 { LOGGED_OUT, LOGIN_IN_PROGRESS, LOGGED_IN };
+
 struct BanchoState final {
     // entirely static
     BanchoState() = delete;
@@ -61,6 +63,7 @@ struct BanchoState final {
     static void handle_packet(Packet &packet);
     static std::string build_login_packet();
     static MD5Hash md5(const u8 *msg, size_t msg_len);
+    static void update_online_status(OnlineStatus new_status);
 
     // cached uuid
     [[nodiscard]] static const UString &get_disk_uuid();
@@ -74,8 +77,10 @@ struct BanchoState final {
     [[nodiscard]] static bool can_submit_scores();
 
     [[nodiscard]] static inline bool is_online() { return user_id.load(std::memory_order_acquire) > 0; }
+    [[nodiscard]] static inline bool is_logging_in() { return online_status == OnlineStatus::LOGIN_IN_PROGRESS; }
+
     [[nodiscard]] static inline i32 get_uid() { return user_id.load(std::memory_order_acquire); }
-    static inline void set_uid(i32 uid) { user_id.store(uid, std::memory_order_release); }
+    static void set_uid(i32 uid);
 
     [[nodiscard]] static const std::string &get_username();
 
@@ -99,5 +104,8 @@ struct BanchoState final {
     // static UString install_id; // TODO?
 
     static std::atomic<i32> user_id;
+    static OnlineStatus online_status;
+    // HACK: can't cancel async login (so log out immediately after logging in, if ever)
+    static bool async_logout_pending;
     static bool was_in_a_multi_room;
 };

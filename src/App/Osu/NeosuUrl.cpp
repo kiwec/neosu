@@ -24,7 +24,7 @@ void handle_neosu_url(const char *url) {
             return;
         }
 
-        osu->getOptionsMenu()->setLoginLoadingState(true);
+        BanchoState::update_online_status(OnlineStatus::LOGIN_IN_PROGRESS);
 
         auto endpoint = params[3];
 
@@ -45,7 +45,7 @@ void handle_neosu_url(const char *url) {
                     cv::mp_oauth_token.setValue(response.body);
                     BanchoState::reconnect();
                 } else {
-                    osu->getOptionsMenu()->setLoginLoadingState(false);
+                    BanchoState::update_online_status(OnlineStatus::LOGGED_OUT);
                     osu->getNotificationOverlay()->addToast(ULITERAL("Login failed."), ERROR_TOAST);
                 }
             },

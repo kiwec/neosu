@@ -1453,17 +1453,16 @@ void OptionsMenu::draw() {
     }
 }
 
-void OptionsMenu::update_login_button() {
-    if(BanchoState::is_online()) {
+void OptionsMenu::update_login_button(bool loggedIn) {
+    if(loggedIn || BanchoState::is_online()) {
         this->logInButton->setText("Disconnect");
         this->logInButton->setColor(0xffd90000);
-        this->logInButton->is_loading = false;
     } else {
         bool oauth = this->should_use_oauth_login();
         this->logInButton->setText(oauth ? "Log in with osu!" : "Log in");
         this->logInButton->setColor(oauth ? 0xffdd30c1 : 0xff00d900);
-        // intentionally not updating loading state here
     }
+    this->logInButton->is_loading = BanchoState::is_logging_in();
 }
 
 void OptionsMenu::mouse_update(bool *propagate_clicks) {
@@ -2633,7 +2632,7 @@ void OptionsMenu::onOutputDeviceResetUpdate() {
 void OptionsMenu::onOutputDeviceRestart() { soundEngine->restart(); }
 
 void OptionsMenu::onLogInClicked(bool left, bool right) {
-    if(left && this->logInButton->is_loading) {
+    if(left && BanchoState::is_logging_in()) {
         return;
     }
     soundEngine->play(osu->getSkin()->s_menu_hit);
@@ -2644,7 +2643,7 @@ void OptionsMenu::onLogInClicked(bool left, bool right) {
         cv::mp_oauth_token.setValue("");
     }
 
-    if((right && this->logInButton->is_loading) || BanchoState::is_online()) {
+    if((right && BanchoState::is_logging_in()) || BanchoState::is_online()) {
         BanchoState::disconnect();
 
         // Manually clicked disconnect button: clear oauth token
@@ -3803,5 +3802,3 @@ bool OptionsMenu::should_use_oauth_login() {
     // in whitelist
     return true;
 }
-
-void OptionsMenu::setLoginLoadingState(bool state) { this->logInButton->is_loading = state; }

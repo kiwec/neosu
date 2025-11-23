@@ -336,6 +336,9 @@ void BanchoState::disconnect() {
         NetworkHandler::Response response = networkHandler->httpRequestSynchronous(query_url, options);
 
         free(packet.memory);
+    } else if (BanchoState::is_logging_in()) {
+        // HACKHACK: can't cancel existing in-progress request directly
+        BanchoState::async_logout_pending = true;
     }
 
     free(BANCHO::Net::outgoing.memory);
@@ -357,9 +360,6 @@ void BanchoState::disconnect() {
     }
 
     BanchoState::score_submission_policy = ServerPolicy::NO_PREFERENCE;
-    osu->getOptionsMenu()->update_login_button();
-    osu->getOptionsMenu()->setLoginLoadingState(false);
-    osu->getOptionsMenu()->scheduleLayoutUpdate();
 
     BANCHO::User::logout_all_users();
     osu->getChat()->onDisconnect();
@@ -410,7 +410,7 @@ void BanchoState::reconnect() {
         BanchoState::score_submission_policy = ServerPolicy::NO;
     }
 
-    osu->getOptionsMenu()->setLoginLoadingState(true);
+    BanchoState::update_online_status(OnlineStatus::LOGIN_IN_PROGRESS);
 
     BANCHO::Net::attempt_logging_in();
 }

@@ -71,8 +71,7 @@ class OptionsMenu final : public ScreenBackable, public NotificationOverlayKeyLi
     void askForLoginDetails();
 
     // used by networking stuff
-    void setLoginLoadingState(bool state);
-    void update_login_button();
+    void update_login_button(bool loggedIn = false);
 
     // used by WindowsMain for osk handling (this needs to be moved...)
     void updateSkinNameLabel();
