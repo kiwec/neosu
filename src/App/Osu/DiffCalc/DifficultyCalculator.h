@@ -8,6 +8,7 @@
 
 #include <vector>
 #include <array>
+#include <memory>
 #include <optional>
 
 enum class ModFlags : u64;
@@ -74,7 +75,7 @@ class DifficultyHitObject {
     i32 repeats;
 
     // custom
-    SliderCurve *curve;
+    std::unique_ptr<SliderCurve> curve;
     bool scheduledCurveAlloc;
     std::vector<vec2> scheduledCurveAllocControlPoints;
     f32 scheduledCurveAllocStackOffset;

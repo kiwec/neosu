@@ -1672,7 +1672,6 @@ void MainMenu::SongsFolderEnumerator::rebuild() {
 void MainMenu::SongsFolderEnumerator::initAsync() {
     this->folderPath = Database::getOsuSongsFolder();
     if(env->directoryExists(this->folderPath)) {
-
         auto peppy_mapsets = env->getFoldersInFolder(this->folderPath);
         auto trimmed_folder = this->folderPath;
         if(trimmed_folder.back() == '/' || trimmed_folder.back() == '\\') trimmed_folder.pop_back();

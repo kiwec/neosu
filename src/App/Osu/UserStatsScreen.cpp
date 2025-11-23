@@ -87,7 +87,7 @@ void UserStatsScreen::rebuildScoreButtons() {
     this->m_userCard->updateUserStats();
 
     i32 i = 0;
-    std::vector<FinishedScore *> scores = db->getPlayerPPScores(BanchoState::get_username()).ppScores;
+    const std::vector<FinishedScore *> &scores = db->getPlayerPPScores(BanchoState::get_username()).ppScores;
     for(auto &score : scores | std::views::reverse) {
         if(i >= cv::ui_top_ranks_max.getInt()) break;
         const float weight = Database::getWeightForIndex(i);
@@ -109,11 +109,11 @@ void UserStatsScreen::rebuildScoreButtons() {
         button->map_hash = score->beatmap_hash;
         button->setScore(*score, map, ++i, title, weight);
         button->setClickCallback([](CBaseUIButton *button) {
-            auto score = ((ScoreButton *)button)->getScore();
-            auto song_button = (CarouselButton *)osu->getSongBrowser()->hashToDiffButton[score.beatmap_hash];
+            auto btnsc = ((ScoreButton *)button)->getScore();
+            auto song_button = (CarouselButton *)osu->getSongBrowser()->hashToDiffButton[btnsc.beatmap_hash];
             osu->getUserStatsScreen()->setVisible(false);
             osu->getSongBrowser()->selectSongButton(song_button);
-            osu->getSongBrowser()->highlightScore(score.unixTimestamp);
+            osu->getSongBrowser()->highlightScore(btnsc.unixTimestamp);
         });
 
         m_scoreButtons.push_back(button);
@@ -132,7 +132,8 @@ void UserStatsScreen::updateLayout() {
 
     const int scoreListHeight = osu->getVirtScreenHeight() * 0.8f;
     m_scores->setSize(osu->getVirtScreenWidth() * 0.6f, scoreListHeight);
-    m_scores->setPos(osu->getVirtScreenWidth() / 2 - m_scores->getSize().x / 2, osu->getVirtScreenHeight() - scoreListHeight);
+    m_scores->setPos(osu->getVirtScreenWidth() / 2 - m_scores->getSize().x / 2,
+                     osu->getVirtScreenHeight() - scoreListHeight);
 
     const int margin = 5 * dpiScale;
     const int padding = 5 * dpiScale;

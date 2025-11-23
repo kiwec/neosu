@@ -14,7 +14,7 @@
 namespace Collections {
 
 namespace {  // static namespace
-bool collections_loaded{false};
+bool s_collections_loaded{false};
 std::vector<Collection> s_collections;
 
 }  // namespace
@@ -210,19 +210,19 @@ bool load_all() {
     load_mcneosu(mcneosu_path);
 
     debugLog("peppy+neosu collections: loading took {:f} seconds", (Timing::getTimeReal() - startTime));
-    collections_loaded = true;
+    s_collections_loaded = true;
     return true;
 }
 
 void unload_all() {
-    collections_loaded = false;
+    s_collections_loaded = false;
 
     s_collections.clear();
 }
 
 bool save_collections() {
     debugLog("Osu: Saving collections ...");
-    if(!collections_loaded) {
+    if(!s_collections_loaded) {
         debugLog("Cannot save collections since they weren't loaded properly first!");
         return false;
     }

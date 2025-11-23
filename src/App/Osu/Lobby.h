@@ -18,7 +18,7 @@ class Room;
 // NOTE: We make a CBaseUIScrollView but won't enable scrolling.
 //       It's just to draw the frame! ^_^
 struct RoomUIElement : CBaseUIScrollView {
-    RoomUIElement(Lobby* multi, Room* room, float x, float y, float width, float height);
+    RoomUIElement(Lobby* multi, const Room& room, float x, float y, float width, float height);
 
     UIButton* join_btn;
     CBaseUIScrollView* ui;
@@ -43,7 +43,7 @@ class Lobby final : public OsuScreen {
 
     bool isVisible() override;
 
-    void addRoom(Room* room);
+    void addRoom(std::unique_ptr<Room> room);
     void joinRoom(u32 id, const UString& password);
     void updateRoom(const Room& room);
     void removeRoom(u32 room_id);
@@ -54,7 +54,7 @@ class Lobby final : public OsuScreen {
     void on_room_join_with_password(const UString& password);
     void on_room_join_failed();
 
-    std::vector<Room*> rooms;
+    std::vector<std::unique_ptr<Room>> rooms;
     UIButton* create_room_btn;
     CBaseUIScrollView* list;
     i32 room_to_join;

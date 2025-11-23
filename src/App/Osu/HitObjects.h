@@ -220,14 +220,15 @@ class Slider final : public HitObject {
     };
 
    public:
-    Slider(char stype, int repeat, float pixelLength, std::vector<vec2> points, const std::vector<float> &ticks,
-           float sliderTime, float sliderTimeWithoutRepeats, i32 time, HitSamples hoverSamples,
-           std::vector<HitSamples> edgeSamples, int comboNumber, bool isEndOfCombo, int colorCounter, int colorOffset,
-           AbstractBeatmapInterface *beatmap);
+    using SLIDERCURVETYPE = char;
+    Slider(SLIDERCURVETYPE stype, int repeat, float pixelLength, std::vector<vec2> points,
+           const std::vector<float> &ticks, float sliderTime, float sliderTimeWithoutRepeats, i32 time,
+           HitSamples hoverSamples, std::vector<HitSamples> edgeSamples, int comboNumber, bool isEndOfCombo,
+           int colorCounter, int colorOffset, AbstractBeatmapInterface *beatmap);
     ~Slider() override;
 
     void draw() override;
-    void draw2() override;
+    inline void draw2() override { this->draw2(true, false); }
     void draw2(bool drawApproachCircle, bool drawOnlyApproachCircle);
     void update(i32 curPos, f64 frame_time) override;
 
@@ -251,10 +252,6 @@ class Slider final : public HitObject {
     [[nodiscard]] inline std::vector<vec2> getRawPoints() const { return this->points; }
     [[nodiscard]] inline float getPixelLength() const { return this->fPixelLength; }
     [[nodiscard]] inline const std::vector<SLIDERCLICK> &getClicks() const { return this->clicks; }
-
-    // ILLEGAL:
-    [[nodiscard]] inline VertexArrayObject *getVAO() const { return this->vao; }
-    [[nodiscard]] inline SliderCurve *getCurve() const { return this->curve; }
 
    private:
     void drawStartCircle(float alpha);
@@ -286,8 +283,8 @@ class Slider final : public HitObject {
     // TEMP: auto cursordance
     std::vector<SLIDERCLICK> clicks;  // repeats (type 0) + ticks (type 1)
 
-    SliderCurve *curve;
-    VertexArrayObject *vao;
+    std::unique_ptr<SliderCurve> curve;
+    std::unique_ptr<VertexArrayObject> vao{nullptr};
 
     vec2 vCurPoint{0.f};
     vec2 vCurPointRaw{0.f};
@@ -319,7 +316,7 @@ class Slider final : public HitObject {
     int iCurRepeat;
     int iCurRepeatCounterForHitSounds;
 
-    char cType;
+    SLIDERCURVETYPE cType;
 
     LiveScore::HIT startResult : 4;
     LiveScore::HIT endResult : 4;
@@ -360,6 +357,8 @@ class Spinner final : public HitObject {
     vec2 vRawPos{0.f};
     vec2 vOriginalRawPos{0.f};
 
+    std::unique_ptr<float[]> storedDeltaAngles{nullptr};
+
     // bool bClickedOnce;
     float fPercent;
 
@@ -370,7 +369,6 @@ class Spinner final : public HitObject {
     float fSumDeltaAngle;
 
     int iMaxStoredDeltaAngles;
-    float *storedDeltaAngles;
     int iDeltaAngleIndex;
     float fDeltaAngleOverflow;
 

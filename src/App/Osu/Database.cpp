@@ -36,7 +36,7 @@
 
 std::unique_ptr<Database> db = nullptr;
 
-bool Database::sortScoreByScore(FinishedScore const &a, FinishedScore const &b) {
+bool Database::sortScoreByScore(const FinishedScore &a, const FinishedScore &b) {
     if(a.score != b.score) return a.score > b.score;
     if(a.unixTimestamp != b.unixTimestamp) return a.unixTimestamp > b.unixTimestamp;
     if(a.player_id != b.player_id) return a.player_id > b.player_id;
@@ -44,7 +44,7 @@ bool Database::sortScoreByScore(FinishedScore const &a, FinishedScore const &b) 
     return false;  // equivalent
 }
 
-bool Database::sortScoreByCombo(FinishedScore const &a, FinishedScore const &b) {
+bool Database::sortScoreByCombo(const FinishedScore &a, const FinishedScore &b) {
     if(a.comboMax != b.comboMax) return a.comboMax > b.comboMax;
     if(a.score != b.score) return a.score > b.score;
     if(a.unixTimestamp != b.unixTimestamp) return a.unixTimestamp > b.unixTimestamp;
@@ -53,14 +53,14 @@ bool Database::sortScoreByCombo(FinishedScore const &a, FinishedScore const &b) 
     return false;  // equivalent
 }
 
-bool Database::sortScoreByDate(FinishedScore const &a, FinishedScore const &b) {
+bool Database::sortScoreByDate(const FinishedScore &a, const FinishedScore &b) {
     if(a.unixTimestamp != b.unixTimestamp) return a.unixTimestamp > b.unixTimestamp;
     if(a.player_id != b.player_id) return a.player_id > b.player_id;
     if(a.play_time_ms != b.play_time_ms) return a.play_time_ms > b.play_time_ms;
     return false;  // equivalent
 }
 
-bool Database::sortScoreByMisses(FinishedScore const &a, FinishedScore const &b) {
+bool Database::sortScoreByMisses(const FinishedScore &a, const FinishedScore &b) {
     if(a.numMisses != b.numMisses) return a.numMisses < b.numMisses;
     if(a.score != b.score) return a.score > b.score;
     if(a.unixTimestamp != b.unixTimestamp) return a.unixTimestamp > b.unixTimestamp;
@@ -69,7 +69,7 @@ bool Database::sortScoreByMisses(FinishedScore const &a, FinishedScore const &b)
     return false;  // equivalent
 }
 
-bool Database::sortScoreByAccuracy(FinishedScore const &a, FinishedScore const &b) {
+bool Database::sortScoreByAccuracy(const FinishedScore &a, const FinishedScore &b) {
     auto a_acc = LiveScore::calculateAccuracy(a.num300s, a.num100s, a.num50s, a.numMisses);
     auto b_acc = LiveScore::calculateAccuracy(b.num300s, b.num100s, b.num50s, b.numMisses);
     if(a_acc != b_acc) return a_acc > b_acc;
@@ -80,7 +80,7 @@ bool Database::sortScoreByAccuracy(FinishedScore const &a, FinishedScore const &
     return false;  // equivalent
 }
 
-bool Database::sortScoreByPP(FinishedScore const &a, FinishedScore const &b) {
+bool Database::sortScoreByPP(const FinishedScore &a, const FinishedScore &b) {
     auto a_pp = std::max(a.get_pp() * 1000.0, 0.0);
     auto b_pp = std::max(b.get_pp() * 1000.0, 0.0);
     if(a_pp != b_pp) return a_pp > b_pp;
@@ -205,7 +205,7 @@ void Database::AsyncDBLoader::init() {
     } else {
         MapCalcThread::start_calc(db->maps_to_recalc);
         VolNormalization::start_calc(db->loudness_to_calc);
-        sct_calc(db->scores);
+        ScoreConverter::start_calc();  // all database scores
 
         // signal that we are done
         db->loading_progress = 1.0f;
@@ -261,7 +261,7 @@ void Database::startLoader() {
     this->destroyLoader();
 
     // stop threads that rely on database content
-    sct_abort();
+    ScoreConverter::abort_calc();
     AsyncPPC::set_map(nullptr);
     MapCalcThread::abort();
     VolNormalization::abort();
@@ -323,7 +323,7 @@ Database::~Database() {
     cv::cmd::save.removeCallback();
     this->destroyLoader();
 
-    sct_abort();
+    ScoreConverter::abort_calc();
     AsyncPPC::set_map(nullptr);
     VolNormalization::abort();
     this->loudness_to_calc.clear();
@@ -401,7 +401,7 @@ void Database::update() {
 
                 MapCalcThread::start_calc(this->maps_to_recalc);
                 VolNormalization::start_calc(this->loudness_to_calc);
-                sct_calc(this->scores);
+                ScoreConverter::start_calc();
 
                 break;
             }
@@ -469,19 +469,13 @@ BeatmapSet *Database::addBeatmapSet(const std::string &beatmapFolderPath, i32 se
 }
 
 int Database::addScore(const FinishedScore &score) {
-    this->addScoreRaw(score);
-    this->sortScores(score.beatmap_hash);
-
-    this->scores_changed = true;
-
-    if(cv::scores_save_immediately.getBool()) this->saveScores();
-
-    // @PPV3: use new replay format
+    const MD5Hash scoreHash = score.beatmap_hash;
+    const u64 scoreTS = score.unixTimestamp;
 
     // XXX: this is blocking main thread
     auto compressed_replay = LegacyReplay::compress_frames(score.replay);
     if(!compressed_replay.empty()) {
-        auto replay_path = fmt::format(NEOSU_REPLAYS_PATH "/{:d}.replay.lzma", score.unixTimestamp);
+        auto replay_path = fmt::format(NEOSU_REPLAYS_PATH "/{:d}.replay.lzma", scoreTS);
 
         debugLog("Saving replay to {}...", replay_path);
         io->write(replay_path, compressed_replay, [replay_path, func = __FUNCTION__](bool success) {
@@ -493,10 +487,24 @@ int Database::addScore(const FinishedScore &score) {
         });
     }
 
+    this->addScoreRaw(score);
+    this->sortScores(scoreHash);
+
+    this->scores_changed = true;
+
+    if(cv::scores_save_immediately.getBool()) this->saveScores();
+
+    // @PPV3: use new replay format
+
     // return sorted index
     Sync::shared_lock lock(this->scores_mtx);
-    for(int i = 0; i < this->scores[score.beatmap_hash].size(); i++) {
-        if(this->scores[score.beatmap_hash][i].unixTimestamp == score.unixTimestamp) return i;
+    if(const auto &scoreit = this->scores.find(scoreHash); scoreit != this->scores.end()) {
+        const auto &scoreVec = scoreit->second;
+        const u64 ts = scoreTS;
+
+        for(int i = 0; i < scoreVec.size(); i++) {
+            if(scoreVec[i].unixTimestamp == ts) return i;
+        }
     }
 
     return -1;
@@ -563,34 +571,45 @@ bool Database::addScoreRaw(const FinishedScore &score) {
 
 void Database::deleteScore(const MD5Hash &beatmapMD5Hash, u64 scoreUnixTimestamp) {
     Sync::unique_lock lock(this->scores_mtx);
-    for(int i = 0; i < this->scores[beatmapMD5Hash].size(); i++) {
-        if(this->scores[beatmapMD5Hash][i].unixTimestamp == scoreUnixTimestamp) {
-            this->scores[beatmapMD5Hash].erase(this->scores[beatmapMD5Hash].begin() + i);
-            this->scores_changed = true;
-            break;
+    if(const auto &scoreit = this->scores.find(beatmapMD5Hash); scoreit != this->scores.end()) {
+        if(std::erase_if(scoreit->second, [scoreUnixTimestamp](const auto &sc) -> bool {
+               return sc.unixTimestamp == scoreUnixTimestamp;
+           }) > 0) {
+            this->scores_changed.store(true, std::memory_order_release);
         }
     }
 }
 
-void Database::sortScoresInPlace(std::vector<FinishedScore> &scores) {
+void Database::sortScoresInPlaceInt(std::vector<FinishedScore> &scores, bool lock) {
     if(scores.size() < 2) return;
 
+    if(lock) {
+        this->scores_mtx.lock();
+    }
+
+    bool found = false;
     const auto &sortTypeString{cv::songbrowser_scores_sortingtype.getString()};
     for(const auto &sortMethod : Database::SCORE_SORTING_METHODS) {
         if(sortTypeString == sortMethod.name) {
             std::ranges::sort(scores, sortMethod.comparator);
-            return;
+            found = true;
+            break;
         }
     }
 
     // Fallback
-    cv::songbrowser_scores_sortingtype.setValue("By pp");
-    std::ranges::sort(scores, sortScoreByPP);
+    if(!found) {
+        cv::songbrowser_scores_sortingtype.setValue("By pp");
+        std::ranges::sort(scores, sortScoreByPP);
+    }
+
+    if(lock) {
+        this->scores_mtx.unlock();
+    }
 }
 
-void Database::sortScores(const MD5Hash &beatmapMD5Hash) {
-    Sync::unique_lock lock(this->scores_mtx);
-    this->sortScoresInPlace(this->scores[beatmapMD5Hash]);
+void Database::sortScoresInt(const MD5Hash &beatmapMD5Hash, bool lock) {
+    return this->sortScoresInPlaceInt(this->scores[beatmapMD5Hash], lock);
 }
 
 std::vector<UString> Database::getPlayerNamesWithPPScores() {
@@ -682,9 +701,9 @@ Database::PlayerPPScores Database::getPlayerPPScores(const std::string &playerNa
             if(foundValidScore) scores.push_back(tempScore);
         }
 
-        // sort by pp
+        // sort by pp (reversed)
         // for some reason this was originally backwards from sortScoreByPP, so negating it here
-        std::ranges::sort(scores, [](FinishedScore *a, FinishedScore *b) -> bool {
+        std::ranges::sort(scores, [](const FinishedScore *const a, const FinishedScore *const b) -> bool {
             if(a == b) return false;
             return !sortScoreByPP(*a, *b);
         });
@@ -706,7 +725,7 @@ Database::PlayerStats Database::calculatePlayerStats(const std::string &playerNa
     // cached inside Database...
     const bool scoresChanged = this->scores_changed.load(std::memory_order_acquire);
     const bool returnCached = playerName == this->prevPlayerStats.name.utf8View() &&
-                              (!scoresChanged || (sct_running() && !engine->throttledShouldRun(60)));
+                              (!scoresChanged || (ScoreConverter::running() && !engine->throttledShouldRun(60)));
     if(returnCached) {
         return this->prevPlayerStats;
     }
@@ -1821,6 +1840,7 @@ void Database::loadOldMcNeosuScores(std::string_view dbPath) {
                 dbr.skip<u32>();  // score version
 
                 FinishedScore sc;
+
                 sc.unixTimestamp = dbr.read<u64>();
                 sc.playerName = dbr.read_string();
                 sc.num300s = dbr.read<u16>();

@@ -1161,8 +1161,6 @@ std::vector<SCORE_ENTRY> HUD::getCurrentScores() {
             const bool is_online = (BanchoState::is_online() || BanchoState::is_logging_in()) &&
                                    cv::songbrowser_scores_filteringtype.getString() != "Local";
 
-            Sync::shared_lock lock(db->scores_mtx);
-
             const std::vector<FinishedScore> *scoreVec = nullptr;
             if(is_online) {
                 const auto &scoreIt = db->getOnlineScores().find(this->beatmap_md5);
@@ -1173,6 +1171,7 @@ std::vector<SCORE_ENTRY> HUD::getCurrentScores() {
 
             // use local if we had no online scores or are not online
             if(!scoreVec) {
+                Sync::shared_lock lock(db->scores_mtx);
                 const auto &scoreIt = db->getScores().find(this->beatmap_md5);
                 if(scoreIt != db->getScores().end()) {
                     scoreVec = &scoreIt->second;

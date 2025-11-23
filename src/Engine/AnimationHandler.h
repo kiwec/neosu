@@ -92,7 +92,6 @@ class AnimationHandler {
 
     void addAnimation(float *base, float target, float duration, float delay, bool overrideExisting,
                       ANIMATION_TYPE type, float smoothFactor = 0.0f);
-    void overrideExistingAnimation(float *base);
 
     std::vector<Animation> vAnimations;
 

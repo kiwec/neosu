@@ -208,8 +208,8 @@ void draw_bottombar() {
         g->popTransform();
         calcy += font->getHeight() + 10;
     }
-    const auto calc_total = sct_total.load(std::memory_order_acquire);
-    const auto calc_computed = sct_computed.load(std::memory_order_acquire);
+    const auto calc_total = ScoreConverter::get_total();
+    const auto calc_computed = ScoreConverter::get_computed();
     if(calc_total > 0 && calc_computed < calc_total) {
         UString msg = UString::format("Converting scores (%i/%i) ...", calc_computed, calc_total);
         g->setColor(0xff333333);

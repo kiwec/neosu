@@ -20,6 +20,12 @@ extern bool load_peppy(std::string_view peppy_collections_path);
 extern bool load_mcneosu(std::string_view neosu_collections_path);
 extern bool save_collections();
 }  // namespace Collections
+namespace LegacyReplay {
+extern bool load_from_disk(FinishedScore &score, bool update_db);
+}
+
+class ScoreButton;
+class ScoreConverter;
 class ConVar;
 
 class DatabaseBeatmap;
@@ -42,6 +48,8 @@ struct alignas(1) DB_TIMINGPOINT {
 };
 #pragma pack(pop)
 
+using HashToScoreMap = std::unordered_map<MD5Hash, std::vector<FinishedScore>>;
+
 class Database {
     NOCOPY_NOMOVE(Database)
    public:
@@ -61,19 +69,19 @@ class Database {
     };
 
     struct SCORE_SORTING_METHOD {
-        using SCORE_SORTING_COMPARATOR = bool (*)(FinishedScore const &, FinishedScore const &);
+        using SCORE_SORTING_COMPARATOR = bool (*)(const FinishedScore &, const FinishedScore &);
 
         std::string_view name;
         SCORE_SORTING_COMPARATOR comparator;
     };
 
     // sorting methods
-    static bool sortScoreByScore(FinishedScore const &a, FinishedScore const &b);
-    static bool sortScoreByCombo(FinishedScore const &a, FinishedScore const &b);
-    static bool sortScoreByDate(FinishedScore const &a, FinishedScore const &b);
-    static bool sortScoreByMisses(FinishedScore const &a, FinishedScore const &b);
-    static bool sortScoreByAccuracy(FinishedScore const &a, FinishedScore const &b);
-    static bool sortScoreByPP(FinishedScore const &a, FinishedScore const &b);
+    static bool sortScoreByScore(const FinishedScore &a, const FinishedScore &b);
+    static bool sortScoreByCombo(const FinishedScore &a, const FinishedScore &b);
+    static bool sortScoreByDate(const FinishedScore &a, const FinishedScore &b);
+    static bool sortScoreByMisses(const FinishedScore &a, const FinishedScore &b);
+    static bool sortScoreByAccuracy(const FinishedScore &a, const FinishedScore &b);
+    static bool sortScoreByPP(const FinishedScore &a, const FinishedScore &b);
 
    public:
     static constexpr std::array<SCORE_SORTING_METHOD, 6> SCORE_SORTING_METHODS{{{"By accuracy", sortScoreByAccuracy},
@@ -97,8 +105,10 @@ class Database {
 
     int addScore(const FinishedScore &score);
     void deleteScore(const MD5Hash &beatmapMD5Hash, u64 scoreUnixTimestamp);
-    void sortScoresInPlace(std::vector<FinishedScore> &scores);
-    void sortScores(const MD5Hash &beatmapMD5Hash);
+    inline void sortScoresInPlace(std::vector<FinishedScore> &scores) {
+        return this->sortScoresInPlaceInt(scores, true);
+    }
+    inline void sortScores(const MD5Hash &beatmapMD5Hash) { return this->sortScoresInt(beatmapMD5Hash, true); }
 
     std::vector<UString> getPlayerNamesWithPPScores();
     std::vector<UString> getPlayerNamesWithScoresForUserSwitcher();
@@ -123,8 +133,8 @@ class Database {
     inline const std::vector<BeatmapSet *> &getBeatmapSets() const { return this->beatmapsets; }
 
     // WARNING: Before calling getScores(), you need to lock db->scores_mtx!
-    inline std::unordered_map<MD5Hash, std::vector<FinishedScore>> &getScores() { return this->scores; }
-    inline std::unordered_map<MD5Hash, std::vector<FinishedScore>> &getOnlineScores() { return this->online_scores; }
+    inline const HashToScoreMap &getScores() const { return this->scores; }
+    inline HashToScoreMap &getOnlineScores() { return this->online_scores; }
 
     static std::string getOsuSongsFolder();
 
@@ -149,8 +159,14 @@ class Database {
 
     void scheduleLoadRaw();
 
-    std::unordered_map<MD5Hash, std::vector<FinishedScore>> scores;
-    std::unordered_map<MD5Hash, std::vector<FinishedScore>> online_scores;
+    // for updating scores externally
+    friend class ScoreConverter;
+    friend class ScoreButton;  // HACKHACK: why are we updating database scores from a BUTTON???
+    friend bool LegacyReplay::load_from_disk(FinishedScore &score, bool update_db);
+    inline HashToScoreMap &getScoresMutable() { return this->scores; }
+
+    HashToScoreMap scores;
+    HashToScoreMap online_scores;
 
     enum class DatabaseType : u8 {
         INVALID_DB = 0,
@@ -210,6 +226,8 @@ class Database {
     void loadPeppyScores(std::string_view dbPath);
     void saveScores();
     bool addScoreRaw(const FinishedScore &score);
+    void sortScoresInt(const MD5Hash &beatmapMD5Hash, bool lock);
+    void sortScoresInPlaceInt(std::vector<FinishedScore> &scores, bool lock);
     // returns position of existing score in the scores[hash] array if found, -1 otherwise
     int isScoreAlreadyInDB(u64 unix_timestamp, const MD5Hash &map_hash);
 

@@ -166,7 +166,7 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
     vec2 interpolatedMousePos{0.f};
     bool is_watching = false;
     i32 current_frame_idx = 0;
-    SimulatedBeatmapInterface *sim = nullptr;
+    std::unique_ptr<SimulatedBeatmapInterface> sim{nullptr};
 
     // getting spectated (live)
     void broadcast_spectator_frames();

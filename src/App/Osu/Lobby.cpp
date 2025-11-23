@@ -28,24 +28,24 @@
 #include "UIButton.h"
 #include "Logging.h"
 
-RoomUIElement::RoomUIElement(Lobby* multi, Room* room, float x, float y, float width, float height)
+RoomUIElement::RoomUIElement(Lobby* multi, const Room& room, float x, float y, float width, float height)
     : CBaseUIScrollView(x, y, width, height, "") {
     // NOTE: We can't store the room pointer, since it might expire later
     this->multi = multi;
-    this->room_id = room->id;
-    this->has_password = room->has_password;
+    this->room_id = room.id;
+    this->has_password = room.has_password;
 
     this->setBlockScrolling(true);
     this->setDrawFrame(true);
 
-    float title_width = multi->font->getStringWidth(room->name) + 20;
-    auto title_ui = new CBaseUILabel(10, 5, title_width, 30, "", room->name);
+    float title_width = multi->font->getStringWidth(room.name) + 20;
+    auto title_ui = new CBaseUILabel(10, 5, title_width, 30, "", room.name);
     title_ui->setDrawFrame(false);
     title_ui->setDrawBackground(false);
     this->getContainer()->addBaseUIElement(title_ui);
 
     char player_count_str[256] = {0};
-    snprintf(player_count_str, 255, "Players: %d/%d", room->nb_players, room->nb_open_slots);
+    snprintf(player_count_str, 255, "Players: %d/%d", room.nb_players, room.nb_open_slots);
     float player_count_width = multi->font->getStringWidth(player_count_str) + 20;
     auto slots_ui = new CBaseUILabel(10, 33, player_count_width, 30, "", UString(player_count_str));
     slots_ui->setDrawFrame(false);
@@ -58,7 +58,7 @@ RoomUIElement::RoomUIElement(Lobby* multi, Room* room, float x, float y, float w
     this->join_btn->setClickCallback(SA::MakeDelegate<&RoomUIElement::onRoomJoinButtonClick>(this));
     this->getContainer()->addBaseUIElement(this->join_btn);
 
-    if(room->has_password) {
+    if(room.has_password) {
         auto pwlabel = new CBaseUILabel(135, 64, 150, 30, "", "(password required)");
         pwlabel->setDrawFrame(false);
         pwlabel->setDrawBackground(false);
@@ -165,10 +165,6 @@ CBaseUIContainer* Lobby::setVisible(bool visible) {
         packet.id = CHANNEL_PART;
         packet.write_string("#lobby");
         BANCHO::Net::send_packet(packet);
-
-        for(auto room : this->rooms) {
-            delete room;
-        }
         this->rooms.clear();
     }
 
@@ -206,10 +202,10 @@ void Lobby::updateLayout(vec2 newResolution) {
     const f32 room_margin = 20.f * osu->getUIScale();
     const f32 room_height = 105.f * osu->getUIScale();
     f32 y = room_margin / 2.f;
-    for(auto room : this->rooms) {
+    for(auto& room : this->rooms) {
         const f32 x = 10.f * osu->getUIScale();
         const f32 room_width = this->list->getSize().x - room_margin;
-        auto room_ui = new RoomUIElement(this, room, x, y, room_width, room_height);
+        auto room_ui = new RoomUIElement(this, *room, x, y, room_width, room_height);
         this->list->getContainer()->addBaseUIElement(room_ui);
         y += room_height + room_margin;
     }
@@ -217,8 +213,8 @@ void Lobby::updateLayout(vec2 newResolution) {
     this->list->setScrollSizeToContent();
 }
 
-void Lobby::addRoom(Room* room) {
-    this->rooms.push_back(room);
+void Lobby::addRoom(std::unique_ptr<Room> room) {
+    this->rooms.push_back(std::move(room));
     this->updateLayout(this->getSize());
 }
 
@@ -242,32 +238,22 @@ void Lobby::joinRoom(u32 id, const UString& password) {
 }
 
 void Lobby::updateRoom(const Room& room) {
-    for(auto old_room : this->rooms) {
-        if(old_room->id == room.id) {
-            *old_room = room;
-            this->updateLayout(this->getSize());
-            return;
-        }
+    if(auto old_room = std::ranges::find(this->rooms, room.id, [](const auto& room_) -> u32 { return room_->id; });
+       old_room != this->rooms.end()) {
+        *(old_room->get()) = room;
+        this->updateLayout(this->getSize());
+        return;
     }
 
     // On bancho.py, if a player creates a room when we're already in the lobby,
     // we won't receive a ROOM_CREATED but only a ROOM_UPDATED packet.
-    auto new_room = new Room();
-    *new_room = room;
-    this->addRoom(new_room);
+    this->addRoom(std::make_unique<Room>(room));
 }
 
 void Lobby::removeRoom(u32 room_id) {
-    for(auto room : this->rooms) {
-        if(room->id == room_id) {
-            auto it = std::ranges::find(this->rooms, room);
-            this->rooms.erase(it);
-            delete room;
-            break;
-        }
+    if(std::erase_if(this->rooms, [room_id](const auto& room) -> bool { return room->id == room_id; }) > 0) {
+        this->updateLayout(this->getSize());
     }
-
-    this->updateLayout(this->getSize());
 }
 
 void Lobby::on_create_room_clicked() {

@@ -59,7 +59,7 @@ DifficultyHitObject::DifficultyHitObject(TYPE type, vec2 pos, i32 time, i32 endT
     }
 }
 
-DifficultyHitObject::~DifficultyHitObject() { SAFE_DELETE(curve); }
+DifficultyHitObject::~DifficultyHitObject() = default;
 
 DifficultyHitObject::DifficultyHitObject(DifficultyHitObject &&dobj) noexcept
     : pos(dobj.pos), originalPos(dobj.originalPos) {
@@ -72,7 +72,7 @@ DifficultyHitObject::DifficultyHitObject(DifficultyHitObject &&dobj) noexcept
     this->pixelLength = dobj.pixelLength;
     this->scoringTimes = std::move(dobj.scoringTimes);
 
-    this->curve = dobj.curve;
+    this->curve = std::move(dobj.curve);
     this->scheduledCurveAlloc = dobj.scheduledCurveAlloc;
     this->scheduledCurveAllocControlPoints = std::move(dobj.scheduledCurveAllocControlPoints);
     this->scheduledCurveAllocStackOffset = dobj.scheduledCurveAllocStackOffset;
@@ -89,7 +89,6 @@ DifficultyHitObject &DifficultyHitObject::operator=(DifficultyHitObject &&dobj) 
     // self-assignment check
     if(this == &dobj) return *this;
 
-    SAFE_DELETE(this->curve);
     this->scheduledCurveAllocControlPoints.clear();
 
     // move all data
@@ -102,7 +101,7 @@ DifficultyHitObject &DifficultyHitObject::operator=(DifficultyHitObject &&dobj) 
     this->pixelLength = dobj.pixelLength;
     this->scoringTimes = std::move(dobj.scoringTimes);
 
-    this->curve = dobj.curve;
+    this->curve = std::move(dobj.curve);
     this->scheduledCurveAlloc = dobj.scheduledCurveAlloc;
     this->scheduledCurveAllocControlPoints = std::move(dobj.scheduledCurveAllocControlPoints);
     this->scheduledCurveAllocStackOffset = dobj.scheduledCurveAllocStackOffset;
@@ -386,7 +385,7 @@ f64 DifficultyCalculator::calculateStarDiffForHitObjects(StarCalcParams &params)
                         if(i > 2) {
                             DiffObject &prev3 = diffObjects[i - 3];
 
-                            if(prev3.ho->scheduledCurveAlloc) SAFE_DELETE(prev3.ho->curve);
+                            if(prev3.ho->scheduledCurveAlloc) prev3.ho->curve.reset();
                         }
                     }
 

@@ -165,13 +165,6 @@ void process_leaderboard_response(const Packet &response) {
     char *pb_score = Parsing::strtok_x('\n', &body);
     (void)pb_score;
 
-    char *score_line = nullptr;
-    while((score_line = Parsing::strtok_x('\n', &body))[0] != '\0') {
-        FinishedScore score = parse_score(score_line);
-        score.beatmap_hash = beatmap_hash;
-        scores.push_back(score);
-    }
-
     // XXX: We should also separately display either the "personal best" the server sent us,
     //      or the local best, depending on which score is better.
     debugLog("Received online leaderboard for Beatmap ID {:d}", info.beatmap_id);
@@ -179,6 +172,15 @@ void process_leaderboard_response(const Packet &response) {
     if(map) {
         map->setOnlineOffset(info.online_offset);
     }
+
+    char *score_line = nullptr;
+    while((score_line = Parsing::strtok_x('\n', &body))[0] != '\0') {
+        FinishedScore score = parse_score(score_line);
+        score.beatmap_hash = beatmap_hash;
+        score.map = map;
+        scores.push_back(std::move(score));
+    }
+
     db->getOnlineScores()[beatmap_hash] = std::move(scores);
     osu->getSongBrowser()->rebuildScoreButtons();
 }

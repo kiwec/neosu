@@ -5,17 +5,21 @@
 #include "Engine.h"
 #include "Logging.h"
 
+#include <algorithm>
+
 void AnimationHandler::update() {
     const auto frameTime = static_cast<float>(engine->getFrameTime());
     const bool doLogging = cv::debug_anim.getBool();
 
-    for(sSz i = 0; i < this->vAnimations.size(); i++) {
-        Animation &animation = this->vAnimations[i];
+    int idx = 0;
+    for(auto it = this->vAnimations.begin(); it != this->vAnimations.end(); idx++) {
+        Animation &animation = *it;
 
         // handle delay before animation starts
         if(!animation.bStarted) {
             animation.fElapsedTime += frameTime;
             if(animation.fElapsedTime < animation.fDelay) {
+                ++it;
                 continue;
             }
             // delay has elapsed, capture the current value and start animating
@@ -36,28 +40,25 @@ void AnimationHandler::update() {
         if(diff <= threshold) {
             *animation.fBase = animation.fTarget;
 
-            logIf(doLogging, "removing animation #{:d} (epsilon completion), elapsed = {:f}", i,
+            logIf(doLogging, "removing animation #{:d} (epsilon completion), elapsed = {:f}", idx,
                   animation.fElapsedTime);
 
-            this->vAnimations.erase(this->vAnimations.begin() + i);
-            i--;
+            it = this->vAnimations.erase(it);
             continue;
         }
 
         // calculate percentage
         float percent = std::clamp<float>(animation.fElapsedTime / animation.fDuration, 0.0f, 1.0f);
 
-        logIf(doLogging, "animation #{:d}, percent = {:f}", i, percent);
+        logIf(doLogging, "animation #{:d}, percent = {:f}", idx, percent);
 
         // check if finished
         if(percent >= 1.0f) {
             *animation.fBase = animation.fTarget;
 
-            logIf(doLogging, "removing animation #{:d}, elapsed = {:f}", i, animation.fElapsedTime);
+            logIf(doLogging, "removing animation #{:d}, elapsed = {:f}", idx, animation.fElapsedTime);
 
-            this->vAnimations.erase(this->vAnimations.begin() + i);
-            i--;
-
+            it = this->vAnimations.erase(it);
             continue;
         }
 
@@ -110,6 +111,8 @@ void AnimationHandler::update() {
 
         // set new value
         *animation.fBase = animation.fStartValue * (1.0f - percent) + animation.fTarget * percent;
+
+        ++it;
     }
 
     if(this->vAnimations.size() > 512) {
@@ -159,9 +162,7 @@ void AnimationHandler::addAnimation(float *base, float target, float duration, f
                                     AnimationHandler::ANIMATION_TYPE type, float smoothFactor) {
     if(base == nullptr) return;
 
-    if(overrideExisting) this->overrideExistingAnimation(base);
-
-    this->vAnimations.push_back(Animation{
+    Animation newAnim{
         .fBase = base,
         .fTarget = target,
         .fDuration = duration,
@@ -171,39 +172,39 @@ void AnimationHandler::addAnimation(float *base, float target, float duration, f
         .fFactor = smoothFactor,
         .animType = type,
         .bStarted = (delay == 0.0f),
-    });
-}
+    };
 
-void AnimationHandler::overrideExistingAnimation(float *base) { this->deleteExistingAnimation(base); }
-
-void AnimationHandler::deleteExistingAnimation(float *base) {
-    for(sSz i = 0; i < this->vAnimations.size(); i++) {
-        if(this->vAnimations[i].fBase == base) {
-            this->vAnimations.erase(this->vAnimations.begin() + i);
-            i--;
+    if(overrideExisting) {
+        if(const auto &existing =
+               std::ranges::find(this->vAnimations, base, [](const auto &a) -> float * { return a.fBase; });
+           existing != this->vAnimations.end()) {
+            *existing = newAnim;
+            return;
         }
     }
+
+    this->vAnimations.push_back(newAnim);
+}
+
+void AnimationHandler::deleteExistingAnimation(float *base) {
+    std::erase_if(this->vAnimations, [base](const auto &a) -> bool { return a.fBase == base; });
 }
 
 float AnimationHandler::getRemainingDuration(float *base) const {
-    for(const auto &vAnimation : this->vAnimations) {
-        if(vAnimation.fBase == base) {
-            if(!vAnimation.bStarted) {
-                // still in delay phase
-                return (vAnimation.fDelay - vAnimation.fElapsedTime) + vAnimation.fDuration;
-            }
-            // in animation phase
-            return std::max(0.0f, vAnimation.fDuration - vAnimation.fElapsedTime);
+    if(const auto &it = std::ranges::find(this->vAnimations, base, [](const auto &a) -> float * { return a.fBase; });
+       it != this->vAnimations.end()) {
+        const auto &animation = *it;
+        if(!animation.bStarted) {
+            // still in delay phase
+            return (animation.fDelay - animation.fElapsedTime) + animation.fDuration;
         }
+        // in animation phase
+        return std::max(0.0f, animation.fDuration - animation.fElapsedTime);
     }
 
     return 0.0f;
 }
 
 bool AnimationHandler::isAnimating(float *base) const {
-    for(const auto &vAnimation : this->vAnimations) {
-        if(vAnimation.fBase == base) return true;
-    }
-
-    return false;
+    return std::ranges::contains(this->vAnimations, base, [](const auto &a) -> float * { return a.fBase; });
 }

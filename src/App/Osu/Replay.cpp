@@ -20,7 +20,6 @@ LegacyFlags Mods::to_legacy() const {
         legacy_flags |= LegacyFlags::HalfTime;
     }
 
-    if(flags::has<ModFlags::NoHP>(this->flags)) legacy_flags |= LegacyFlags::NoFail;
     if(flags::has<ModFlags::NoFail>(this->flags)) legacy_flags |= LegacyFlags::NoFail;
     if(flags::has<ModFlags::Easy>(this->flags)) legacy_flags |= LegacyFlags::Easy;
     if(flags::has<ModFlags::TouchDevice>(this->flags)) legacy_flags |= LegacyFlags::TouchDevice;

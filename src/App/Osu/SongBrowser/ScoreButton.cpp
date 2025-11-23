@@ -9,22 +9,17 @@
 #include <utility>
 
 #include "AnimationHandler.h"
-#include "Bancho.h"
-#include "BanchoNetworking.h"
 #include "BanchoUsers.h"
 #include "ConVar.h"
-#include "Console.h"
 #include "Database.h"
 #include "DatabaseBeatmap.h"
 #include "Engine.h"
-#include "GameRules.h"
 #include "Icons.h"
 #include "Keyboard.h"
 #include "AsyncPPCalculator.h"
 #include "LegacyReplay.h"
 #include "ModSelector.h"
 #include "Mouse.h"
-#include "NotificationOverlay.h"
 #include "Osu.h"
 #include "Timing.h"
 #include "ResourceManager.h"
@@ -363,27 +358,40 @@ void ScoreButton::draw() {
 
 void ScoreButton::mouse_update(bool *propagate_clicks) {
     // Update pp
-    if(this->score.get_pp() == -1.0) {
-        if(this->score.get_or_calc_pp() != -1.0) {
+    auto &sc = this->storedScore;
+    if(sc.get_pp() == -1.0) {
+        if(sc.get_or_calc_pp() != -1.0) {
             // NOTE: Allows dropped sliderends. Should fix with @PPV3
-            const bool fullCombo =
-                (this->score.maxPossibleCombo > 0 && this->score.numMisses == 0 && this->score.numSliderBreaks == 0);
+            const bool fullCombo = (sc.maxPossibleCombo > 0 && sc.numMisses == 0 && sc.numSliderBreaks == 0);
 
-            {
-                Sync::unique_lock lock(db->scores_mtx);
-                auto &scores = this->score.is_online_score ? db->getOnlineScores() : db->getScores();
-                for(auto &other : scores[this->score.beatmap_hash]) {
-                    if(other.unixTimestamp == this->score.unixTimestamp) {
-                        osu->getSongBrowser()->score_resort_scheduled = true;
-                        other = this->score;
-                        break;
+            if(sc.is_online_score) {
+                if(const auto &it = db->getOnlineScores().find(sc.beatmap_hash); it != db->getOnlineScores().end()) {
+                    for(auto &other : it->second) {
+                        if(other.unixTimestamp == sc.unixTimestamp) {
+                            osu->getSongBrowser()->score_resort_scheduled = true;
+                            other = this->storedScore;
+                            break;
+                        }
+                    }
+                }
+            } else {
+                Sync::shared_lock readlock(db->scores_mtx);
+                if(const auto &it = db->getScoresMutable().find(sc.beatmap_hash); it != db->getScoresMutable().end()) {
+                    for(auto &other : it->second) {
+                        if(other.unixTimestamp == sc.unixTimestamp) {
+                            osu->getSongBrowser()->score_resort_scheduled = true;
+                            readlock.unlock();
+                            readlock.release();
+                            Sync::unique_lock writelock(db->scores_mtx);
+                            other = this->storedScore;
+                            break;
+                        }
                     }
                 }
             }
-
             this->sScoreScorePP = UString::format(
-                (this->score.perfect ? "PP: %ipp (%ix PFC)" : (fullCombo ? "PP: %ipp (%ix FC)" : "PP: %ipp (%ix)")),
-                (int)std::round(this->score.get_pp()), this->score.comboMax);
+                (sc.perfect ? "PP: %ipp (%ix PFC)" : (fullCombo ? "PP: %ipp (%ix FC)" : "PP: %ipp (%ix)")),
+                (int)std::round(sc.get_pp()), sc.comboMax);
         }
     }
 
@@ -431,7 +439,7 @@ void ScoreButton::mouse_update(bool *propagate_clicks) {
                     }
                     // debug
                     if(keyboard->isShiftDown()) {
-                        tooltipOverlay->addLine(fmt::format("Client: {:s}", this->score.client));
+                        tooltipOverlay->addLine(fmt::format("Client: {:s}", sc.client));
                     }
                 }
                 tooltipOverlay->end();
@@ -533,19 +541,20 @@ void ScoreButton::onFocusStolen() {
 
 void ScoreButton::onRightMouseUpInside() {
     const vec2 pos = mouse->getPos();
+    auto &sc = this->storedScore;
 
     if(this->contextMenu != nullptr) {
         this->contextMenu->setPos(pos);
         this->contextMenu->setRelPos(pos);
         this->contextMenu->begin(0, true);
         {
-            if(!this->score.server.empty() && this->score.player_id != 0) {
+            if(!sc.server.empty() && sc.player_id != 0) {
                 this->contextMenu->addButton("View Profile", 4);
             }
 
             this->contextMenu->addButton("Use Mods", 1);  // for scores without mods this will just nomod
             auto *replayButton = this->contextMenu->addButton("Watch replay", 2);
-            if(!this->score.has_possible_replay())  // e.g. mcosu scores will never have replays
+            if(!sc.has_possible_replay())  // e.g. mcosu scores will never have replays
             {
                 replayButton->setEnabled(false);
                 replayButton->setTextColor(0xff888888);
@@ -558,7 +567,7 @@ void ScoreButton::onRightMouseUpInside() {
             spacer->setTextColor(0xff888888);
             spacer->setTextDarkColor(0xff000000);
             CBaseUIButton *deleteButton = this->contextMenu->addButton("Delete Score", 3);
-            if(this->score.is_peppy_imported()) {
+            if(sc.is_peppy_imported()) {
                 // XXX: gray it out and have hover reason why user can't delete instead
                 //      ...or allow delete and just store it as hidden in db
                 deleteButton->setEnabled(false);
@@ -574,11 +583,12 @@ void ScoreButton::onRightMouseUpInside() {
 }
 
 void ScoreButton::onContextMenu(const UString &text, int id) {
+    auto &sc = this->storedScore;
+
     if(osu->getUserStatsScreen()->isVisible()) {
-        auto score = this->getScore();
         osu->getUserStatsScreen()->setVisible(false);
 
-        auto song_button = (CarouselButton *)osu->getSongBrowser()->hashToDiffButton[score.beatmap_hash];
+        auto song_button = (CarouselButton *)osu->getSongBrowser()->hashToDiffButton[sc.beatmap_hash];
         osu->getSongBrowser()->selectSongButton(song_button);
     }
 
@@ -588,7 +598,7 @@ void ScoreButton::onContextMenu(const UString &text, int id) {
     }
 
     if(id == 2) {
-        LegacyReplay::load_and_watch(this->score);
+        LegacyReplay::load_and_watch(sc);
         return;
     }
 
@@ -602,14 +612,14 @@ void ScoreButton::onContextMenu(const UString &text, int id) {
     }
 
     if(id == 4) {
-        auto user_url = fmt::format("https://osu.{}/u/{}", this->score.server, this->score.player_id);
+        auto user_url = fmt::format("https://osu.{}/u/{}", sc.server, sc.player_id);
         env->openURLInDefaultBrowser(user_url);
         return;
     }
 }
 
 void ScoreButton::onUseModsClicked() {
-    osu->useMods(this->score);
+    osu->useMods(this->storedScore);
     soundEngine->play(osu->getSkin()->s_check_on);
 }
 
@@ -643,11 +653,13 @@ void ScoreButton::onDeleteScoreConfirmed(const UString & /*text*/, int id) {
     osu->getUserStatsScreen()->rebuildScoreButtons();
 }
 
-void ScoreButton::setScore(const FinishedScore &score, const DatabaseBeatmap *map, int index,
+void ScoreButton::setScore(const FinishedScore &newscore, const DatabaseBeatmap *map, int index,
                            const UString &titleString, float weight) {
-    this->score = score;
-    this->score.beatmap_hash = map->getMD5();
-    this->score.map = map;
+    this->storedScore = newscore;
+    auto &sc = this->storedScore;
+
+    sc.beatmap_hash = map->getMD5();
+    sc.map = map;
     // debugLog(
     //     "score.beatmap_hash {} this->beatmap_hash {} score.has_possible_replay {} this->has_possible_replay {} "
     //     "score.playername {} this->playername {}",
@@ -655,51 +667,50 @@ void ScoreButton::setScore(const FinishedScore &score, const DatabaseBeatmap *ma
     //     this->score.has_possible_replay(), score.playerName, this->score.playerName);
     this->iScoreIndexNumber = index;
 
-    f32 AR = score.mods.ar_override;
-    f32 OD = score.mods.od_override;
-    f32 HP = score.mods.hp_override;
-    f32 CS = score.mods.cs_override;
+    f32 AR = sc.mods.ar_override;
+    f32 OD = sc.mods.od_override;
+    f32 HP = sc.mods.hp_override;
+    f32 CS = sc.mods.cs_override;
 
-    const float accuracy =
-        LiveScore::calculateAccuracy(score.num300s, score.num100s, score.num50s, score.numMisses) * 100.0f;
+    const float accuracy = LiveScore::calculateAccuracy(sc.num300s, sc.num100s, sc.num50s, sc.numMisses) * 100.0f;
 
     // NOTE: Allows dropped sliderends. Should fix with @PPV3
-    const bool fullCombo = (score.maxPossibleCombo > 0 && score.numMisses == 0 && score.numSliderBreaks == 0);
+    const bool fullCombo = (sc.maxPossibleCombo > 0 && sc.numMisses == 0 && sc.numSliderBreaks == 0);
 
     this->is_friend = false;
 
     SAFE_DELETE(this->avatar);
-    if(score.player_id != 0) {
-        this->avatar = new UIAvatar(score.player_id, this->vPos.x, this->vPos.y, this->vSize.y, this->vSize.y);
+    if(sc.player_id != 0) {
+        this->avatar = new UIAvatar(sc.player_id, this->vPos.x, this->vPos.y, this->vSize.y, this->vSize.y);
 
-        auto user = BANCHO::User::try_get_user_info(score.player_id);
+        auto user = BANCHO::User::try_get_user_info(sc.player_id);
         this->is_friend = user && user->is_friend();
     }
 
     // display
-    this->scoreGrade = score.calculate_grade();
-    this->sScoreUsername = UString(score.playerName.c_str());
+    this->scoreGrade = sc.calculate_grade();
+    this->sScoreUsername = UString(sc.playerName.c_str());
     this->sScoreScore = UString::format(
-        (score.perfect ? "Score: %llu (%ix PFC)" : (fullCombo ? "Score: %llu (%ix FC)" : "Score: %llu (%ix)")),
-        score.score, score.comboMax);
+        (sc.perfect ? "Score: %llu (%ix PFC)" : (fullCombo ? "Score: %llu (%ix FC)" : "Score: %llu (%ix)")), sc.score,
+        sc.comboMax);
 
-    if(score.get_pp() == -1.0) {
+    if(sc.get_pp() == -1.0) {
         this->sScoreScorePP = UString::format(
-            (score.perfect ? "PP: ??? (%ix PFC)" : (fullCombo ? "PP: ??? (%ix FC)" : "PP: ??? (%ix)")), score.comboMax);
+            (sc.perfect ? "PP: ??? (%ix PFC)" : (fullCombo ? "PP: ??? (%ix FC)" : "PP: ??? (%ix)")), sc.comboMax);
     } else {
-        this->sScoreScorePP = UString::format(
-            (score.perfect ? "PP: %ipp (%ix PFC)" : (fullCombo ? "PP: %ipp (%ix FC)" : "PP: %ipp (%ix)")),
-            (int)std::round(score.get_pp()), score.comboMax);
+        this->sScoreScorePP =
+            UString::format((sc.perfect ? "PP: %ipp (%ix PFC)" : (fullCombo ? "PP: %ipp (%ix FC)" : "PP: %ipp (%ix)")),
+                            (int)std::round(sc.get_pp()), sc.comboMax);
     }
 
     this->sScoreAccuracy = UString::format("%.2f%%", accuracy);
     this->sScoreAccuracyFC =
-        UString::format((score.perfect ? "PFC %.2f%%" : (fullCombo ? "FC %.2f%%" : "%.2f%%")), accuracy);
-    this->sScoreMods = getModsStringForDisplay(score.mods);
-    this->sCustom = (score.mods.speed != 1.0f ? UString::format("Spd: %gx", score.mods.speed) : ULITERAL(""));
+        UString::format((sc.perfect ? "PFC %.2f%%" : (fullCombo ? "FC %.2f%%" : "%.2f%%")), accuracy);
+    this->sScoreMods = getModsStringForDisplay(sc.mods);
+    this->sCustom = (sc.mods.speed != 1.0f ? UString::format("Spd: %gx", sc.mods.speed) : ULITERAL(""));
     if(map != nullptr) {
         const LegacyReplay::BEATMAP_VALUES beatmapValuesForModsLegacy = LegacyReplay::getBeatmapValuesForModsLegacy(
-            score.mods.to_legacy(), map->getAR(), map->getCS(), map->getOD(), map->getHP());
+            sc.mods.to_legacy(), map->getAR(), map->getCS(), map->getOD(), map->getHP());
         if(AR == -1.f) AR = beatmapValuesForModsLegacy.AR;
         if(OD == -1.f) OD = beatmapValuesForModsLegacy.OD;
         if(HP == -1.f) HP = beatmapValuesForModsLegacy.HP;
@@ -734,14 +745,14 @@ void ScoreButton::setScore(const FinishedScore &score, const DatabaseBeatmap *ma
     }
 
     struct tm tm;
-    std::time_t timestamp = score.unixTimestamp;
+    std::time_t timestamp = sc.unixTimestamp;
     localtime_x(&timestamp, &tm);
 
     std::array<char, 64> dateString{};
     int written = std::strftime(dateString.data(), dateString.size(), "%d-%b-%y %H:%M:%S", &tm);
 
     this->sScoreDateTime = UString(dateString.data(), written);
-    this->iScoreUnixTimestamp = score.unixTimestamp;
+    this->iScoreUnixTimestamp = sc.unixTimestamp;
 
     UString achievedOn = "Achieved on ";
     achievedOn.append(this->sScoreDateTime);
@@ -750,8 +761,8 @@ void ScoreButton::setScore(const FinishedScore &score, const DatabaseBeatmap *ma
     this->tooltipLines.clear();
     this->tooltipLines.push_back(achievedOn);
 
-    this->tooltipLines.push_back(UString::format("300:%i 100:%i 50:%i Miss:%i SBreak:%i", score.num300s, score.num100s,
-                                                 score.num50s, score.numMisses, score.numSliderBreaks));
+    this->tooltipLines.push_back(UString::format("300:%i 100:%i 50:%i Miss:%i SBreak:%i", sc.num300s, sc.num100s,
+                                                 sc.num50s, sc.numMisses, sc.numSliderBreaks));
 
     this->tooltipLines.push_back(UString::format("Accuracy: %.2f%%", accuracy));
 
@@ -764,49 +775,49 @@ void ScoreButton::setScore(const FinishedScore &score, const DatabaseBeatmap *ma
     using enum ModFlags;
 
     this->tooltipLines.push_back(tooltipMods);
-    if(flags::has<NoHP>(score.mods.flags)) this->tooltipLines.emplace_back("+ no HP drain");
-    if(flags::has<ApproachDifferent>(score.mods.flags)) this->tooltipLines.emplace_back("+ approach different");
-    if(flags::has<ARTimewarp>(score.mods.flags)) this->tooltipLines.emplace_back("+ AR timewarp");
-    if(flags::has<ARWobble>(score.mods.flags)) this->tooltipLines.emplace_back("+ AR wobble");
-    if(flags::has<FadingCursor>(score.mods.flags)) this->tooltipLines.emplace_back("+ fading cursor");
-    if(flags::has<FullAlternate>(score.mods.flags)) this->tooltipLines.emplace_back("+ full alternate");
-    if(flags::has<FPoSu_Strafing>(score.mods.flags)) this->tooltipLines.emplace_back("+ FPoSu strafing");
-    if(flags::has<FPS>(score.mods.flags)) this->tooltipLines.emplace_back("+ FPS");
-    if(flags::has<HalfWindow>(score.mods.flags)) this->tooltipLines.emplace_back("+ half window");
-    if(flags::has<Jigsaw1>(score.mods.flags)) this->tooltipLines.emplace_back("+ jigsaw1");
-    if(flags::has<Jigsaw2>(score.mods.flags)) this->tooltipLines.emplace_back("+ jigsaw2");
-    if(flags::has<Mafham>(score.mods.flags)) this->tooltipLines.emplace_back("+ mafham");
-    if(flags::has<Millhioref>(score.mods.flags)) this->tooltipLines.emplace_back("+ millhioref");
-    if(flags::has<Minimize>(score.mods.flags)) this->tooltipLines.emplace_back("+ minimize");
-    if(flags::has<Ming3012>(score.mods.flags)) this->tooltipLines.emplace_back("+ ming3012");
-    if(flags::has<MirrorHorizontal>(score.mods.flags)) this->tooltipLines.emplace_back("+ mirror (horizontal)");
-    if(flags::has<MirrorVertical>(score.mods.flags)) this->tooltipLines.emplace_back("+ mirror (vertical)");
-    if(flags::has<No50s>(score.mods.flags)) this->tooltipLines.emplace_back("+ no 50s");
-    if(flags::has<No100s>(score.mods.flags)) this->tooltipLines.emplace_back("+ no 100s");
-    if(flags::has<ReverseSliders>(score.mods.flags)) this->tooltipLines.emplace_back("+ reverse sliders");
-    if(flags::has<Timewarp>(score.mods.flags)) this->tooltipLines.emplace_back("+ timewarp");
-    if(flags::has<Shirone>(score.mods.flags)) this->tooltipLines.emplace_back("+ shirone");
-    if(flags::has<StrictTracking>(score.mods.flags)) this->tooltipLines.emplace_back("+ strict tracking");
-    if(flags::has<Wobble1>(score.mods.flags)) this->tooltipLines.emplace_back("+ wobble1");
-    if(flags::has<Wobble2>(score.mods.flags)) this->tooltipLines.emplace_back("+ wobble2");
+    if(flags::has<NoHP>(sc.mods.flags)) this->tooltipLines.emplace_back("+ no HP drain");
+    if(flags::has<ApproachDifferent>(sc.mods.flags)) this->tooltipLines.emplace_back("+ approach different");
+    if(flags::has<ARTimewarp>(sc.mods.flags)) this->tooltipLines.emplace_back("+ AR timewarp");
+    if(flags::has<ARWobble>(sc.mods.flags)) this->tooltipLines.emplace_back("+ AR wobble");
+    if(flags::has<FadingCursor>(sc.mods.flags)) this->tooltipLines.emplace_back("+ fading cursor");
+    if(flags::has<FullAlternate>(sc.mods.flags)) this->tooltipLines.emplace_back("+ full alternate");
+    if(flags::has<FPoSu_Strafing>(sc.mods.flags)) this->tooltipLines.emplace_back("+ FPoSu strafing");
+    if(flags::has<FPS>(sc.mods.flags)) this->tooltipLines.emplace_back("+ FPS");
+    if(flags::has<HalfWindow>(sc.mods.flags)) this->tooltipLines.emplace_back("+ half window");
+    if(flags::has<Jigsaw1>(sc.mods.flags)) this->tooltipLines.emplace_back("+ jigsaw1");
+    if(flags::has<Jigsaw2>(sc.mods.flags)) this->tooltipLines.emplace_back("+ jigsaw2");
+    if(flags::has<Mafham>(sc.mods.flags)) this->tooltipLines.emplace_back("+ mafham");
+    if(flags::has<Millhioref>(sc.mods.flags)) this->tooltipLines.emplace_back("+ millhioref");
+    if(flags::has<Minimize>(sc.mods.flags)) this->tooltipLines.emplace_back("+ minimize");
+    if(flags::has<Ming3012>(sc.mods.flags)) this->tooltipLines.emplace_back("+ ming3012");
+    if(flags::has<MirrorHorizontal>(sc.mods.flags)) this->tooltipLines.emplace_back("+ mirror (horizontal)");
+    if(flags::has<MirrorVertical>(sc.mods.flags)) this->tooltipLines.emplace_back("+ mirror (vertical)");
+    if(flags::has<No50s>(sc.mods.flags)) this->tooltipLines.emplace_back("+ no 50s");
+    if(flags::has<No100s>(sc.mods.flags)) this->tooltipLines.emplace_back("+ no 100s");
+    if(flags::has<ReverseSliders>(sc.mods.flags)) this->tooltipLines.emplace_back("+ reverse sliders");
+    if(flags::has<Timewarp>(sc.mods.flags)) this->tooltipLines.emplace_back("+ timewarp");
+    if(flags::has<Shirone>(sc.mods.flags)) this->tooltipLines.emplace_back("+ shirone");
+    if(flags::has<StrictTracking>(sc.mods.flags)) this->tooltipLines.emplace_back("+ strict tracking");
+    if(flags::has<Wobble1>(sc.mods.flags)) this->tooltipLines.emplace_back("+ wobble1");
+    if(flags::has<Wobble2>(sc.mods.flags)) this->tooltipLines.emplace_back("+ wobble2");
 
     if(this->style == STYLE::TOP_RANKS) {
         const int weightRounded = std::round(weight * 100.0f);
-        const int ppWeightedRounded = std::round(score.get_pp() * weight);
+        const int ppWeightedRounded = std::round(sc.get_pp() * weight);
 
         this->sScoreTitle = titleString;
-        this->sScoreScorePPWeightedPP = UString::format("%ipp", (int)std::round(score.get_pp()));
+        this->sScoreScorePPWeightedPP = UString::format("%ipp", (int)std::round(sc.get_pp()));
         this->sScoreScorePPWeightedWeight =
             UString::format("     weighted %i%% (%ipp)", weightRounded, ppWeightedRounded);
         this->sScoreWeight = UString::format("weighted %i%%", weightRounded);
 
-        this->tooltipLines.push_back(UString::format("Stars: %.2f (%.2f aim, %.2f speed)", score.ppv2_total_stars,
-                                                     score.ppv2_aim_stars, score.ppv2_speed_stars));
-        this->tooltipLines.push_back(UString::format("Speed: %.3gx", score.mods.speed));
+        this->tooltipLines.push_back(UString::format("Stars: %.2f (%.2f aim, %.2f speed)", sc.ppv2_total_stars,
+                                                     sc.ppv2_aim_stars, sc.ppv2_speed_stars));
+        this->tooltipLines.push_back(UString::format("Speed: %.3gx", sc.mods.speed));
         this->tooltipLines.push_back(UString::format("CS:%.4g AR:%.4g OD:%.4g HP:%.4g", CS, AR, OD, HP));
         this->tooltipLines.push_back(
-            UString::format("Error: %.2fms - %.2fms avg", score.hitErrorAvgMin, score.hitErrorAvgMax));
-        this->tooltipLines.push_back(UString::format("Unstable Rate: %.2f", score.unstableRate));
+            UString::format("Error: %.2fms - %.2fms avg", sc.hitErrorAvgMin, sc.hitErrorAvgMax));
+        this->tooltipLines.push_back(UString::format("Unstable Rate: %.2f", sc.unstableRate));
     }
 
     // custom

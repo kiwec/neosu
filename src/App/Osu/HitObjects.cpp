@@ -1009,10 +1009,10 @@ void Circle::onReset(i32 curPos) {
 
 vec2 Circle::getAutoCursorPos(i32 /*curPos*/) const { return this->pi->osuCoords2Pixels(this->vRawPos); }
 
-Slider::Slider(char stype, int repeat, float pixelLength, std::vector<vec2> points, const std::vector<float> &ticks,
-               float sliderTime, float sliderTimeWithoutRepeats, i32 time, HitSamples hoverSamples,
-               std::vector<HitSamples> edgeSamples, int comboNumber, bool isEndOfCombo, int colorCounter,
-               int colorOffset, AbstractBeatmapInterface *pi)
+Slider::Slider(SLIDERCURVETYPE stype, int repeat, float pixelLength, std::vector<vec2> points,
+               const std::vector<float> &ticks, float sliderTime, float sliderTimeWithoutRepeats, i32 time,
+               HitSamples hoverSamples, std::vector<HitSamples> edgeSamples, int comboNumber, bool isEndOfCombo,
+               int colorCounter, int colorOffset, AbstractBeatmapInterface *pi)
     : HitObject(time, std::move(hoverSamples), comboNumber, isEndOfCombo, colorCounter, colorOffset, pi) {
     this->type = HitObjectType::SLIDER;
 
@@ -1110,15 +1110,6 @@ Slider::Slider(char stype, int repeat, float pixelLength, std::vector<vec2> poin
     this->iCurRepeatCounterForHitSounds = 0;
     this->bInReverse = false;
     this->bHideNumberAfterFirstRepeatHit = false;
-
-    this->vao = nullptr;
-}
-
-Slider::~Slider() {
-    this->onReset(0);
-
-    SAFE_DELETE(this->curve);
-    SAFE_DELETE(this->vao);
 }
 
 void Slider::draw() {
@@ -1362,8 +1353,6 @@ void Slider::draw() {
     HitObject::draw();
 }
 
-void Slider::draw2() { this->draw2(true, false); }
-
 void Slider::draw2(bool drawApproachCircle, bool drawOnlyApproachCircle) {
     HitObject::draw2();
 
@@ -1543,7 +1532,7 @@ void Slider::drawBody(float alpha, float from, float to) {
 
         if(cv::mod_fps.getBool()) translation += this->pf->getFirstPersonCursorDelta();
 
-        SliderRenderer::draw(this->vao, alwaysPoints, translation, scale, this->pf->fHitcircleDiameter, from, to,
+        SliderRenderer::draw(this->vao.get(), alwaysPoints, translation, scale, this->pf->fHitcircleDiameter, from, to,
                              undimmedComboColor, this->fHittableDimRGBColorMultiplierPercent, alpha, this->click_time);
     }
 }
@@ -2369,9 +2358,10 @@ void Slider::rebuildVertexBuffer(bool useRawCoords) {
             osuCoordPoint = this->pi->osuCoords2LegacyPixels(osuCoordPoint);
         }
     }
-    SAFE_DELETE(this->vao);
     this->vao = SliderRenderer::generateVAO(osuCoordPoints, this->pi->fRawHitcircleDiameter);
 }
+
+Slider::~Slider() { this->onReset(0); }
 
 bool Slider::isClickHeldSlider() {
     if(!this->pi->isClickHeld()) return false;
@@ -2403,10 +2393,7 @@ Spinner::Spinner(int x, int y, i32 time, HitSamples samples, bool isEndOfCombo, 
     int maxTime = 5000;
     this->iMaxStoredDeltaAngles = std::clamp<int>(
         (int)((endTime - time - minTime) * (maxVel - minVel) / (maxTime - minTime) + minVel), minVel, maxVel);
-    this->storedDeltaAngles = new float[this->iMaxStoredDeltaAngles];
-    for(int i = 0; i < this->iMaxStoredDeltaAngles; i++) {
-        this->storedDeltaAngles[i] = 0.0f;
-    }
+    this->storedDeltaAngles = std::make_unique<float[]>(this->iMaxStoredDeltaAngles);
     this->iDeltaAngleIndex = 0;
 
     this->fPercent = 0.0f;
@@ -2428,14 +2415,7 @@ Spinner::Spinner(int x, int y, i32 time, HitSamples samples, bool isEndOfCombo, 
     this->bUseFadeInTimeAsApproachTime = !cv::spinner_use_ar_fadein.getBool();
 }
 
-Spinner::~Spinner() {
-    this->onReset(0);
-
-    if(this->storedDeltaAngles) {
-        delete[] this->storedDeltaAngles;
-    }
-    this->storedDeltaAngles = nullptr;
-}
+Spinner::~Spinner() { this->onReset(0); }
 
 void Spinner::draw() {
     HitObject::draw();

@@ -221,8 +221,7 @@ class OptionsMenuSliderPreviewElement final : public CBaseUIElement {
 
                             debugLog("Regenerating options menu slider preview vao ...");
 
-                            this->vao.reset(
-                                SliderRenderer::generateVAO(points, hitcircleDiameter, vec3(0, 0, 0), false));
+                            this->vao = SliderRenderer::generateVAO(points, hitcircleDiameter, vec3(0, 0, 0), false);
                         }
                         SliderRenderer::draw(this->vao.get(), emptyVector, this->vPos, 1, hitcircleDiameter, 0, 1,
                                              osu->getSkin()->getComboColorForCounter(420, 0));
@@ -251,9 +250,9 @@ class OptionsMenuSliderPreviewElement final : public CBaseUIElement {
     void setDrawSliderHack(bool drawSliderHack) { this->bDrawSliderHack = drawSliderHack; }
 
    private:
-    bool bDrawSliderHack{true};
     std::unique_ptr<VertexArrayObject> vao{nullptr};
     float fPrevLength{0.f};
+    bool bDrawSliderHack{true};
 };
 
 class OptionsMenuKeyBindLabel final : public CBaseUILabel {

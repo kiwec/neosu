@@ -26,7 +26,6 @@ class UserStatsScreen final : public ScreenBackable {
     void onBack() override;
     void updateLayout() override;
 
-    void onScoreClicked(CBaseUIButton *button);
     void onMenuClicked(CBaseUIButton *button);
     void onMenuSelected(UString text, int id);
     void onCopyAllScoresClicked();

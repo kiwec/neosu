@@ -2,19 +2,27 @@
 // Copyright (c) 2024, kiwec, All rights reserved.
 
 #include "types.h"
-
-#include <atomic>
-#include <unordered_map>
-#include <vector>
+#include "noinclude.h"
 
 struct MD5Hash;
 
 class DatabaseBeatmap;
 struct FinishedScore;
+class ScoreConverter final {
+    NOCOPY_NOMOVE(ScoreConverter)
+   public:
+    ScoreConverter() = delete;
+    ~ScoreConverter() = delete;
 
-extern std::atomic<u32> sct_computed;
-extern std::atomic<u32> sct_total;
+    static u32 get_computed();
+    static u32 get_total();
 
-void sct_calc(std::unordered_map<MD5Hash, std::vector<FinishedScore>> scores_to_maybe_calc);
-void sct_abort();
-bool sct_running();
+    // run calc on entire database scores
+    static void start_calc();
+    static void abort_calc();
+    static bool running();
+
+   private:
+    static void update_ppv2(const FinishedScore& score);
+    static void runloop();
+};

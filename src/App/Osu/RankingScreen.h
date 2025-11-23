@@ -81,6 +81,6 @@ class RankingScreen final : public ScreenBackable {
     std::vector<ConVar *> extraMods;
 
     // custom
-    FinishedScore score;
+    FinishedScore storedScore;
     bool bIsUnranked;
 };

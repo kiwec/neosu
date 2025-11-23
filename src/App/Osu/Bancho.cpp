@@ -421,8 +421,7 @@ void BanchoState::handle_packet(Packet &packet) {
         }
 
         case ROOM_CREATED: {
-            auto room = new Room(packet);
-            osu->getLobby()->addRoom(room);
+            osu->getLobby()->addRoom(std::make_unique<Room>(packet));
             break;
         }
 

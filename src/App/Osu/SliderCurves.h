@@ -6,6 +6,13 @@
 #include "Vectors.h"
 
 #include <vector>
+#include <memory>
+
+using SLIDERCURVETYPE = char;
+static constexpr const SLIDERCURVETYPE CATMULL = 'C';
+static constexpr const SLIDERCURVETYPE BEZIER = 'B';
+static constexpr const SLIDERCURVETYPE LINEAR = 'L';
+static constexpr const SLIDERCURVETYPE PASSTHROUGH = 'P';
 
 //**********************//
 //	 Curve Base Class	//
@@ -13,20 +20,14 @@
 
 class SliderCurve {
    public:
-    enum OSUSLIDERCURVETYPE : i8 {
-        OSUSLIDERCURVETYPE_CATMULL = 'C',
-        OSUSLIDERCURVETYPE_BEZIER = 'B',
-        OSUSLIDERCURVETYPE_LINEAR = 'L',
-        OSUSLIDERCURVETYPE_PASSTHROUGH = 'P'
-    };
-
-    static SliderCurve *createCurve(char osuSliderCurveType, std::vector<vec2> controlPoints, float pixelLength);
-    static SliderCurve *createCurve(char osuSliderCurveType, std::vector<vec2> controlPoints, float pixelLength,
-                                    float curvePointsSeparation);
+    static std::unique_ptr<SliderCurve> createCurve(SLIDERCURVETYPE type, std::vector<vec2> controlPoints,
+                                                    float pixelLength);
+    static std::unique_ptr<SliderCurve> createCurve(SLIDERCURVETYPE type, std::vector<vec2> controlPoints,
+                                                    float pixelLength, float curvePointsSeparation);
 
    public:
     SliderCurve(std::vector<vec2> controlPoints, float pixelLength);
-    virtual ~SliderCurve() { ; }
+    virtual ~SliderCurve() = default;
 
     virtual void updateStackPosition(float stackMulStackOffset, bool HR);
 
@@ -64,7 +65,7 @@ class SliderCurve {
 class SliderCurveType {
    public:
     SliderCurveType();
-    virtual ~SliderCurveType() { ; }
+    virtual ~SliderCurveType() = default;
 
     virtual vec2 pointAt(float t) = 0;
 
@@ -78,7 +79,7 @@ class SliderCurveType {
     void init(
         float approxLength);  // subdivide the curve by calling virtual pointAt() to create all intermediary points
     void initCustom(std::vector<vec2> points);  // assume that the input vector = all intermediary points (already
-                                                   // precalculated somewhere else)
+                                                // precalculated somewhere else)
 
    private:
     void calculateIntermediaryPoints(float approxLength);
@@ -93,15 +94,15 @@ class SliderCurveType {
 class SliderCurveTypeBezier2 final : public SliderCurveType {
    public:
     SliderCurveTypeBezier2(const std::vector<vec2> &points);
-    ~SliderCurveTypeBezier2() override { ; }
+    ~SliderCurveTypeBezier2() override = default;
 
-    vec2 pointAt(float  /*t*/) override { return vec2(); }  // unused
+    vec2 pointAt(float /*t*/) override { return {0.f, 0.f}; }  // unused
 };
 
 class SliderCurveTypeCentripetalCatmullRom final : public SliderCurveType {
    public:
     SliderCurveTypeCentripetalCatmullRom(const std::vector<vec2> &points);
-    ~SliderCurveTypeCentripetalCatmullRom() override { ; }
+    ~SliderCurveTypeCentripetalCatmullRom() override = default;
 
     vec2 pointAt(float t) override;
 
@@ -117,13 +118,13 @@ class SliderCurveTypeCentripetalCatmullRom final : public SliderCurveType {
 class SliderCurveEqualDistanceMulti : public SliderCurve {
    public:
     SliderCurveEqualDistanceMulti(std::vector<vec2> controlPoints, float pixelLength, float curvePointsSeparation);
-    ~SliderCurveEqualDistanceMulti() override { ; }
-
-    // must be called from one of the subclasses
-    void init(const std::vector<SliderCurveType *> &curvesList);
+    ~SliderCurveEqualDistanceMulti() override = default;
 
     vec2 pointAt(float t) override;
     vec2 originalPointAt(float t) override;
+
+   protected:
+    void init(std::vector<std::unique_ptr<SliderCurveType>> curvesList);
 
    private:
     int iNCurve;
@@ -131,21 +132,20 @@ class SliderCurveEqualDistanceMulti : public SliderCurve {
 
 class SliderCurveLinearBezier final : public SliderCurveEqualDistanceMulti {
    public:
-    SliderCurveLinearBezier(std::vector<vec2> controlPoints, float pixelLength, bool line,
-                            float curvePointsSeparation);
-    ~SliderCurveLinearBezier() override { ; }
+    SliderCurveLinearBezier(std::vector<vec2> controlPoints, float pixelLength, bool line, float curvePointsSeparation);
+    ~SliderCurveLinearBezier() override = default;
 };
 
 class SliderCurveCatmull final : public SliderCurveEqualDistanceMulti {
    public:
     SliderCurveCatmull(std::vector<vec2> controlPoints, float pixelLength, float curvePointsSeparation);
-    ~SliderCurveCatmull() override { ; }
+    ~SliderCurveCatmull() override = default;
 };
 
 class SliderCurveCircumscribedCircle final : public SliderCurve {
    public:
     SliderCurveCircumscribedCircle(std::vector<vec2> controlPoints, float pixelLength, float curvePointsSeparation);
-    ~SliderCurveCircumscribedCircle() override { ; }
+    ~SliderCurveCircumscribedCircle() override = default;
 
     vec2 pointAt(float t) override;
     vec2 originalPointAt(float t) override;
@@ -180,7 +180,7 @@ class SliderBezierApproximator {
     std::vector<vec2> createBezier(const std::vector<vec2> &controlPoints);
 
    private:
-    static double TOLERANCE_SQ;
+    static constexpr const double TOLERANCE_SQ{0.25 * 0.25};
 
     bool isFlatEnough(const std::vector<vec2> &controlPoints);
     void subdivide(std::vector<vec2> &controlPoints, std::vector<vec2> &l, std::vector<vec2> &r);

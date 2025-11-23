@@ -455,7 +455,7 @@ bool BeatmapInterface::play() {
 }
 
 bool BeatmapInterface::watch(const FinishedScore &score, u32 start_ms) {
-    SAFE_DELETE(this->sim);
+    this->sim.reset();
     if(score.replay.size() < 3) {
         // Replay is invalid
         return false;
@@ -488,7 +488,7 @@ bool BeatmapInterface::watch(const FinishedScore &score, u32 start_ms) {
         this->seekMS(start_ms);
     }
 
-    this->sim = new SimulatedBeatmapInterface(this->beatmap, score.mods);
+    this->sim = std::make_unique<SimulatedBeatmapInterface>(this->beatmap, score.mods);
     this->sim->spectated_replay = score.replay;
 
     return true;
@@ -522,9 +522,8 @@ bool BeatmapInterface::spectate() {
 
     osu->getSongBrowser()->setVisible(false);
 
-    SAFE_DELETE(this->sim);
     score.mods.flags |= ModFlags::NoFail;
-    this->sim = new SimulatedBeatmapInterface(this->beatmap, score.mods);
+    this->sim = std::make_unique<SimulatedBeatmapInterface>(this->beatmap, score.mods);
     this->sim->spectated_replay.clear();
 
     return true;
@@ -897,7 +896,7 @@ void BeatmapInterface::stop(bool quit) {
     this->bIsPaused = false;
     this->bContinueScheduled = false;
 
-    auto score = this->saveAndSubmitScore(quit);
+    auto scoreptr = this->saveAndSubmitScore(quit);
 
     // Auto mod was "temporary" since it was set from Ctrl+Clicking a map, not from the mod selector
     if(osu->bModAutoTemp) {
@@ -914,13 +913,13 @@ void BeatmapInterface::stop(bool quit) {
     this->is_watching = false;
     this->spectated_replay.clear();
     this->score_frames.clear();
-    SAFE_DELETE(this->sim);
+    this->sim.reset();
 
     this->unloadObjects();
 
     if(BanchoState::is_playing_a_multi_map()) {
         if(quit) {
-            osu->onPlayEnd(score, true);
+            osu->onPlayEnd(scoreptr, true);
             osu->getRoom()->ragequit();
         } else {
             osu->getRoom()->onClientScoreChange(true);
@@ -929,7 +928,7 @@ void BeatmapInterface::stop(bool quit) {
             BANCHO::Net::send_packet(packet);
         }
     } else {
-        osu->onPlayEnd(score, quit);
+        osu->onPlayEnd(scoreptr, quit);
     }
 
     osu->setShouldPauseBGThreads(false);
@@ -1060,8 +1059,7 @@ void BeatmapInterface::seekMS(u32 ms) {
     if(this->is_watching) {
         // When seeking backwards, restart simulation from beginning
         if(std::cmp_less(ms, this->iCurMusicPos)) {
-            SAFE_DELETE(this->sim);
-            this->sim = new SimulatedBeatmapInterface(this->beatmap, osu->getScore()->mods);
+            this->sim = std::make_unique<SimulatedBeatmapInterface>(this->beatmap, osu->getScore()->mods);
             this->sim->spectated_replay = this->spectated_replay;
             osu->getScore()->reset();
         }
@@ -3838,6 +3836,7 @@ FinishedScore BeatmapInterface::saveAndSubmitScore(bool quit) {
                      this->is_watching || BanchoState::spectating;
 
     FinishedScore score;
+
     score.client = fmt::format("neosu-" OS_NAME "-{:s}", BanchoState::neosu_version.toUtf8());
 
     score.unixTimestamp =
@@ -4156,7 +4155,7 @@ void BeatmapInterface::updateSliderVertexBuffers() {
 }
 
 void BeatmapInterface::calculateStacks() {
-    if (!this->beatmap) return;
+    if(!this->beatmap) return;
     this->updateHitobjectMetrics();
 
     debugLog("Beatmap: Calculating stacks ...");

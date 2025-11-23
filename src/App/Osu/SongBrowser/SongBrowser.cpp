@@ -60,6 +60,7 @@
 #include <algorithm>
 #include <memory>
 #include <cwctype>
+#include <utility>
 
 const Color highlightColor = argb(255, 0, 255, 0);
 const Color defaultColor = argb(255, 255, 255, 255);
@@ -476,7 +477,7 @@ SongBrowser::SongBrowser()  // NOLINT(cert-msc51-cpp, cert-msc32-c)
 }
 
 SongBrowser::~SongBrowser() {
-    sct_abort();
+    ScoreConverter::abort_calc();
     AsyncPPC::set_map(nullptr);
     VolNormalization::abort();
     MapCalcThread::abort();
@@ -2241,25 +2242,35 @@ void SongBrowser::rebuildScoreButtons() {
     this->localBestContainer->invalidate();
     this->localBestContainer->setVisible(false);
 
-    const bool validBeatmap = (osu->getMapInterface()->getBeatmap() != nullptr);
-    bool is_online = cv::songbrowser_scores_filteringtype.getString() != "Local";
+    auto *map = osu->getMapInterface()->getBeatmap();
+    const bool validBeatmap = !!map;
+    const MD5Hash mapHash = validBeatmap ? map->getMD5() : MD5Hash{};
 
     bool is_online = (BanchoState::is_online() || BanchoState::is_logging_in()) &&
                      cv::songbrowser_scores_filteringtype.getString() != "Local";
 
+    std::vector<FinishedScore> scores;
     if(validBeatmap) {
         Sync::shared_lock lock(db->scores_mtx);
-        auto map = osu->getMapInterface()->getBeatmap();
-        const auto &local_scores = db->getScores()[map->getMD5()];
-        auto local_best = std::ranges::max_element(
-            local_scores, [](FinishedScore const &a, FinishedScore const &b) { return a.score < b.score; });
+
+        const FinishedScore *local_best = nullptr;
+        const auto &local_scores = db->getScores().find(mapHash);
 
         if(is_online) {
-            const auto &search = db->getOnlineScores().find(map->getMD5());
+            if(local_scores != db->getScores().end()) {
+                if(const auto &elem = std::ranges::max_element(
+                       local_scores->second,
+                       [](const FinishedScore &a, const FinishedScore &b) { return a.score < b.score; });
+                   elem != local_scores->second.end()) {
+                    local_best = &(*elem);
+                }
+            }
+
+            const auto &search = db->getOnlineScores().find(mapHash);
             if(search != db->getOnlineScores().end()) {
                 scores = search->second;
 
-                if(local_best == local_scores.end()) {
+                if(!local_best) {
                     if(!scores.empty()) {
                         // We only want to display "No scores" if there are online scores present
                         // Otherwise, it would be displayed twice
@@ -2272,7 +2283,7 @@ void SongBrowser::rebuildScoreButtons() {
                     SAFE_DELETE(this->localBestButton);
                     this->localBestButton = new ScoreButton(this->contextMenu, 0, 0, 0, 0);
                     this->localBestButton->setClickCallback(SA::MakeDelegate<&SongBrowser::onScoreClicked>(this));
-                    this->localBestButton->map_hash = map->getMD5();
+                    this->localBestButton->map_hash = mapHash;
                     this->localBestButton->setScore(*local_best, map);
                     this->localBestButton->resetHighlight();
                     this->localBestButton->grabs_clicks = true;
@@ -2290,11 +2301,11 @@ void SongBrowser::rebuildScoreButtons() {
                 BANCHO::Leaderboard::fetch_online_scores(map);
 
                 // Display local best while scores are loading
-                if(local_best != local_scores.end()) {
+                if(local_best) {
                     SAFE_DELETE(this->localBestButton);
                     this->localBestButton = new ScoreButton(this->contextMenu, 0, 0, 0, 0);
                     this->localBestButton->setClickCallback(SA::MakeDelegate<&SongBrowser::onScoreClicked>(this));
-                    this->localBestButton->map_hash = map->getMD5();
+                    this->localBestButton->map_hash = mapHash;
                     this->localBestButton->setScore(*local_best, map);
                     this->localBestButton->resetHighlight();
                     this->localBestButton->grabs_clicks = true;
@@ -2304,7 +2315,9 @@ void SongBrowser::rebuildScoreButtons() {
                 }
             }
         } else {
-            scores = local_scores;
+            if(local_scores != db->getScores().end()) {
+                scores = local_scores->second;
+            }
         }
     }
 
@@ -2313,7 +2326,7 @@ void SongBrowser::rebuildScoreButtons() {
     // top up cache as necessary
     if(numScores > this->scoreButtonCache.size()) {
         const int numNewButtons = numScores - this->scoreButtonCache.size();
-        for(size_t i = 0; i < numNewButtons; i++) {
+        for(size_t i = 0; std::cmp_less(i, numNewButtons); i++) {
             auto *scoreButton = new ScoreButton(this->contextMenu, 0, 0, 0, 0);
             scoreButton->setClickCallback(SA::MakeDelegate<&SongBrowser::onScoreClicked>(this));
             this->scoreButtonCache.push_back(scoreButton);
@@ -2337,15 +2350,15 @@ void SongBrowser::rebuildScoreButtons() {
 
         // build
         std::vector<ScoreButton *> scoreButtons;
-        for(size_t i = 0; i < numScores; i++) {
+        for(int i = 0; i < numScores; i++) {
             ScoreButton *button = this->scoreButtonCache[i];
-            button->map_hash = osu->getMapInterface()->getBeatmap()->getMD5();
-            button->setScore(scores[i], osu->getMapInterface()->getBeatmap(), i + 1);
+            button->map_hash = mapHash;
+            button->setScore(scores[i], map, i + 1);
             scoreButtons.push_back(button);
         }
 
         // add
-        for(size_t i = 0; i < numScores; i++) {
+        for(int i = 0; i < numScores; i++) {
             scoreButtons[i]->setIndex(i + 1);
             this->scoreBrowser->getContainer()->addBaseUIElement(scoreButtons[i]);
         }
@@ -2363,7 +2376,7 @@ void SongBrowser::rebuildScoreButtons() {
     // (weird place for this to be, i think the intent is to update them after you set a score)
     if(validBeatmap) {
         for(auto &visibleSongButton : this->visibleSongButtons) {
-            if(visibleSongButton->getDatabaseBeatmap() == osu->getMapInterface()->getBeatmap()) {
+            if(visibleSongButton->getDatabaseBeatmap() == map) {
                 auto *songButtonPointer = visibleSongButton->as<SongButton>();
                 if(songButtonPointer != nullptr) {
                     for(CarouselButton *diffButton : songButtonPointer->getChildren()) {

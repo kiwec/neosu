@@ -9,21 +9,24 @@
 #include "Timing.h"
 #include "Logging.h"
 
+#include <atomic>
+#include <memory>
+
 // TODO
 static constexpr bool USE_PPV3{false};
 
-std::atomic<u32> sct_computed = 0;
-std::atomic<u32> sct_total = 0;
+static std::atomic<u32> sct_computed{0};
+static std::atomic<u32> sct_total{0};
 
 static std::thread thr;
-static std::atomic<bool> dead = true;
+static std::atomic<bool> dead{true};
 
 // XXX: This is barebones, no caching, *hopefully* fast enough (worst part is loading the .osu files)
 // XXX: Probably code duplicated a lot, I'm pretty sure there's 4 places where I calc ppv2...
-static void update_ppv2(const FinishedScore& score) {
+void ScoreConverter::update_ppv2(const FinishedScore& score) {
     if(score.ppv2_version >= DifficultyCalculator::PP_ALGORITHM_VERSION) return;
 
-    auto map = db->getBeatmapDifficulty(score.beatmap_hash);
+    const auto* map = db->getBeatmapDifficulty(score.beatmap_hash);
     if(!map) return;
 
     const auto deadCheck = [](void) -> bool { return dead.load(std::memory_order_acquire); };
@@ -96,19 +99,21 @@ static void update_ppv2(const FinishedScore& score) {
 
     // Update score
     Sync::shared_lock readlock(db->scores_mtx);
-    for(auto& other : db->getScores()[score.beatmap_hash]) {
-        if(other.unixTimestamp == score.unixTimestamp) {
-            readlock.unlock();
-            readlock.release();
-            Sync::unique_lock writelock(db->scores_mtx);
+    if(const auto& it = db->getScoresMutable().find(score.beatmap_hash); it != db->getScoresMutable().end()) {
+        for(auto& dbScore : it->second) {
+            if(dbScore.unixTimestamp == score.unixTimestamp) {
+                readlock.unlock();
+                readlock.release();
+                Sync::unique_lock writelock(db->scores_mtx);
 
-            other.ppv2_version = DifficultyCalculator::PP_ALGORITHM_VERSION;
-            other.ppv2_score = info.pp;
-            other.ppv2_total_stars = info.total_stars;
-            other.ppv2_aim_stars = info.aim_stars;
-            other.ppv2_speed_stars = info.speed_stars;
-            db->scores_changed.store(true, std::memory_order_release);
-            break;
+                dbScore.ppv2_version = DifficultyCalculator::PP_ALGORITHM_VERSION;
+                dbScore.ppv2_score = info.pp;
+                dbScore.ppv2_total_stars = info.total_stars;
+                dbScore.ppv2_aim_stars = info.aim_stars;
+                dbScore.ppv2_speed_stars = info.speed_stars;
+                db->scores_changed.store(true, std::memory_order_release);
+                break;
+            }
         }
     }
 }
@@ -124,7 +129,7 @@ static forceinline bool score_needs_recalc(const FinishedScore& score) {
     return false;
 }
 
-static void run_sct(const std::unordered_map<MD5Hash, std::vector<FinishedScore>>& all_set_scores) {
+void ScoreConverter::runloop() {
     McThread::set_current_thread_name("score_cvt");
     McThread::set_current_thread_prio(McThread::Priority::NORMAL);  // reset priority
 
@@ -133,12 +138,16 @@ static void run_sct(const std::unordered_map<MD5Hash, std::vector<FinishedScore>
     // defer the actual needs-recalc check to run on the thread, to avoid unnecessarily blocking (O(n^2) loop)
     std::vector<FinishedScore> scores_to_calc;
     // lazy reserve, assume 3 scores per score vector
-    scores_to_calc.reserve(all_set_scores.size() * 3);
+    scores_to_calc.reserve(db->getScores().size() * 3);
 
-    for(const auto& [_, beatmap] : all_set_scores) {
-        for(const auto& score : beatmap) {
-            if(score_needs_recalc(score)) {
-                scores_to_calc.push_back(score);
+    {
+        Sync::shared_lock lock(db->scores_mtx);
+        for(const auto& [_, beatmap] : db->getScores()) {
+            for(const auto& score : beatmap) {
+                if(score_needs_recalc(score)) {
+                    // make a copy
+                    scores_to_calc.push_back(score);
+                }
             }
         }
     }
@@ -167,7 +176,7 @@ static void run_sct(const std::unordered_map<MD5Hash, std::vector<FinishedScore>
 
         // @PPV3: below
         if(!USE_PPV3) {
-            sct_computed++;
+            sct_computed.fetch_add(1, std::memory_order_relaxed);
             idx++;
             continue;
         }
@@ -176,7 +185,7 @@ static void run_sct(const std::unordered_map<MD5Hash, std::vector<FinishedScore>
             if(!LegacyReplay::load_from_disk(score, false)) {
                 debugLog("Failed to load replay for score {:d}", idx);
                 update_ppv2(score);
-                sct_computed++;
+                sct_computed.fetch_add(1, std::memory_order_relaxed);
                 idx++;
                 continue;
             }
@@ -202,42 +211,44 @@ static void run_sct(const std::unordered_map<MD5Hash, std::vector<FinishedScore>
 
         {
             Sync::shared_lock readlock(db->scores_mtx);
-            for(auto& dbScore : db->getScores()[score.beatmap_hash]) {
-                if(dbScore.unixTimestamp == score.unixTimestamp) {
-                    readlock.unlock();
-                    readlock.release();
-                    Sync::unique_lock writelock(db->scores_mtx);
-                    // @PPV3: currently hitdeltas is always empty
-                    dbScore.hitdeltas = score.hitdeltas;
-                    break;
+            if(const auto& it = db->getScoresMutable().find(score.beatmap_hash); it != db->getScoresMutable().end()) {
+                for(auto& dbScore : it->second) {
+                    if(dbScore.unixTimestamp == score.unixTimestamp) {
+                        readlock.unlock();
+                        readlock.release();
+                        Sync::unique_lock writelock(db->scores_mtx);
+                        // @PPV3: currently hitdeltas is always empty
+                        dbScore.hitdeltas = score.hitdeltas;
+                        break;
+                    }
                 }
             }
         }
 
         // TODO @kiwec: update & save scores/pp
 
-        sct_computed++;
+        sct_computed.fetch_add(1, std::memory_order_relaxed);
         idx++;
     }
 
-    sct_computed++;
+    sct_computed.fetch_add(1, std::memory_order_relaxed);
 }
 
-void sct_calc(std::unordered_map<MD5Hash, std::vector<FinishedScore>> scores_to_maybe_calc) {
-    sct_abort();
+void ScoreConverter::start_calc() {
+    ScoreConverter::abort_calc();
 
     dead.store(false, std::memory_order_release);
 
-    // to be set in run_sct (find scores which actually need recalc)
+    // to be set in runloop (find scores which actually need recalc)
     sct_total = 0;
     sct_computed = 0;
 
-    if(!scores_to_maybe_calc.empty()) {
-        thr = std::thread(run_sct, std::move(scores_to_maybe_calc));
+    if(!db->getScores().empty()) {
+        thr = std::thread(runloop);
     }
 }
 
-void sct_abort() {
+void ScoreConverter::abort_calc() {
     if(dead.load(std::memory_order_acquire)) return;
 
     dead.store(true, std::memory_order_release);
@@ -249,4 +260,7 @@ void sct_abort() {
     sct_computed = 0;
 }
 
-bool sct_running() { return thr.joinable(); }
+bool ScoreConverter::running() { return thr.joinable(); }
+
+u32 ScoreConverter::get_total() { return sct_total.load(std::memory_order_acquire); }
+u32 ScoreConverter::get_computed() { return sct_computed.load(std::memory_order_acquire); }

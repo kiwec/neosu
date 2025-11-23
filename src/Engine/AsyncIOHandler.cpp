@@ -99,9 +99,9 @@ class AsyncIOHandler::InternalIOContext final {
     }
 
 #define PERFORM_CALLBACK(cb__)      \
-    m_activeCallbacks.fetch_add(1); \
+    m_activeCallbacks.fetch_add(1, std::memory_order_relaxed); \
     cb__;                           \
-    m_activeCallbacks.fetch_sub(1);
+    m_activeCallbacks.fetch_sub(1, std::memory_order_acq_rel);
 
     bool read(std::string_view path, ReadCallback callback) {
         assert(!!m_queue);

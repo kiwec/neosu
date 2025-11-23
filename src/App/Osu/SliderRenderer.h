@@ -5,12 +5,13 @@
 #include "Color.h"
 
 #include <vector>
+#include <memory>
 
 class Shader;
 class VertexArrayObject;
 
 namespace SliderRenderer {
-VertexArrayObject *generateVAO(const std::vector<vec2> &points, float hitcircleDiameter,
+std::unique_ptr<VertexArrayObject> generateVAO(const std::vector<vec2> &points, float hitcircleDiameter,
                                vec3 translation = vec3(0, 0, 0), bool skipOOBPoints = true);
 
 void draw(const std::vector<vec2> &points, const std::vector<vec2> &alwaysPoints, float hitcircleDiameter,

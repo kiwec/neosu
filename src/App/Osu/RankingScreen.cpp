@@ -337,25 +337,25 @@ void RankingScreen::mouse_update(bool *propagate_clicks) {
     if(!osu->getOptionsMenu()->isMouseInside() && mouse->getPos().x < osu->getVirtScreenWidth() * 0.5f) {
         osu->getTooltipOverlay()->begin();
         {
-            osu->getTooltipOverlay()->addLine(UString::format("%.2fpp", this->score.get_or_calc_pp()));
-            if(this->score.ppv2_total_stars > 0.0) {
-                osu->getTooltipOverlay()->addLine(
-                    UString::format("Stars: %.2f (%.2f aim, %.2f speed)", this->score.ppv2_total_stars,
-                                    this->score.ppv2_aim_stars, this->score.ppv2_speed_stars));
+            auto &sc = this->storedScore;
+            osu->getTooltipOverlay()->addLine(UString::format("%.2fpp", sc.get_or_calc_pp()));
+            if(sc.ppv2_total_stars > 0.0) {
+                osu->getTooltipOverlay()->addLine(UString::format(
+                    "Stars: %.2f (%.2f aim, %.2f speed)", sc.ppv2_total_stars, sc.ppv2_aim_stars, sc.ppv2_speed_stars));
             }
-            osu->getTooltipOverlay()->addLine(UString::format("Speed: %.3gx", this->score.mods.speed));
-            f32 AR = this->score.mods.ar_override;
+            osu->getTooltipOverlay()->addLine(UString::format("Speed: %.3gx", sc.mods.speed));
+            f32 AR = sc.mods.ar_override;
             if(AR == -1.f) {
-                AR = GameRules::arWithSpeed(this->score.map->getAR(), this->score.mods.speed);
+                AR = GameRules::arWithSpeed(sc.map->getAR(), sc.mods.speed);
             }
-            f32 OD = this->score.mods.od_override;
+            f32 OD = sc.mods.od_override;
             if(OD == -1.f) {
-                OD = GameRules::odWithSpeed(this->score.map->getOD(), this->score.mods.speed);
+                OD = GameRules::odWithSpeed(sc.map->getOD(), sc.mods.speed);
             }
-            f32 HP = this->score.mods.hp_override;
-            if(HP == -1.f) HP = this->score.map->getHP();
-            f32 CS = this->score.mods.cs_override;
-            if(CS == -1.f) CS = this->score.map->getCS();
+            f32 HP = sc.mods.hp_override;
+            if(HP == -1.f) HP = sc.map->getHP();
+            f32 CS = sc.mods.cs_override;
+            if(CS == -1.f) CS = sc.map->getCS();
             osu->getTooltipOverlay()->addLine(UString::format("CS:%.2f AR:%.2f OD:%.2f HP:%.2f", CS, AR, OD, HP));
 
             if(this->sMods.length() > 0) osu->getTooltipOverlay()->addLine(this->sMods);
@@ -407,16 +407,17 @@ void RankingScreen::onRetryClicked() {
 
 void RankingScreen::onWatchClicked() {
     this->setVisible(false);
-    LegacyReplay::load_and_watch(this->score);
+    LegacyReplay::load_and_watch(this->storedScore);
 }
 
-void RankingScreen::setScore(const FinishedScore &score) {
-    this->score = score;
+void RankingScreen::setScore(const FinishedScore &newscore) {
+    this->storedScore = newscore;
+    auto &sc = this->storedScore;
 
-    bool is_same_player = !score.playerName.compare(BanchoState::get_username());
+    bool is_same_player = !sc.playerName.compare(BanchoState::get_username());
     this->retry_btn->bVisible2 = is_same_player && !BanchoState::is_in_a_multi_room();
 
-    if(!this->score.has_possible_replay()) {  // e.g. mcosu scores will never have replays
+    if(!sc.has_possible_replay()) {  // e.g. mcosu scores will never have replays
         this->watch_btn->setEnabled(false);
         this->watch_btn->setTextColor(0xff888888);
         this->watch_btn->setTextDarkColor(0xff000000);
@@ -431,24 +432,24 @@ void RankingScreen::setScore(const FinishedScore &score) {
     this->bIsUnranked = false;
 
     struct tm tm;
-    std::time_t timestamp = score.unixTimestamp;
+    std::time_t timestamp = sc.unixTimestamp;
     localtime_x(&timestamp, &tm);
 
     std::array<char, 64> dateString{};
     size_t written = std::strftime(dateString.data(), dateString.size(), "%d-%b-%y %H:%M:%S", &tm);
 
     this->songInfo->setDate(std::string(dateString.data(), written));
-    this->songInfo->setPlayer(score.playerName);
+    this->songInfo->setPlayer(sc.playerName);
 
-    this->rankingPanel->setScore(score);
-    this->setGrade(score.calculate_grade());
+    this->rankingPanel->setScore(sc);
+    this->setGrade(sc.calculate_grade());
     this->setIndex(-1);
 
-    this->fUnstableRate = score.unstableRate;
-    this->fHitErrorAvgMin = score.hitErrorAvgMin;
-    this->fHitErrorAvgMax = score.hitErrorAvgMax;
+    this->fUnstableRate = sc.unstableRate;
+    this->fHitErrorAvgMin = sc.hitErrorAvgMin;
+    this->fHitErrorAvgMax = sc.hitErrorAvgMax;
 
-    const UString modsString = ScoreButton::getModsStringForDisplay(score.mods);
+    const UString modsString = ScoreButton::getModsStringForDisplay(sc.mods);
     if(modsString.length() > 0) {
         this->sMods = "Mods: ";
         this->sMods.append(modsString);
@@ -456,60 +457,60 @@ void RankingScreen::setScore(const FinishedScore &score) {
         this->sMods = "";
 
     using enum ModFlags;
-    this->bModSS = flags::has<Perfect>(score.mods.flags);
-    this->bModSD = flags::has<SuddenDeath>(score.mods.flags);
-    this->bModEZ = flags::has<Easy>(score.mods.flags);
-    this->bModHD = flags::has<Hidden>(score.mods.flags);
-    this->bModHR = flags::has<HardRock>(score.mods.flags);
-    this->bModNightmare = flags::has<Nightmare>(score.mods.flags);
-    this->bModScorev2 = flags::has<ScoreV2>(score.mods.flags);
-    this->bModTarget = flags::has<Target>(score.mods.flags);
-    this->bModSpunout = flags::has<SpunOut>(score.mods.flags);
-    this->bModRelax = flags::has<Relax>(score.mods.flags);
-    this->bModNF = flags::has<NoFail>(score.mods.flags);
-    this->bModAutopilot = flags::has<Autopilot>(score.mods.flags);
-    this->bModAuto = flags::has<Autoplay>(score.mods.flags);
-    this->bModTD = flags::has<TouchDevice>(score.mods.flags);
+    this->bModSS = flags::has<Perfect>(sc.mods.flags);
+    this->bModSD = flags::has<SuddenDeath>(sc.mods.flags);
+    this->bModEZ = flags::has<Easy>(sc.mods.flags);
+    this->bModHD = flags::has<Hidden>(sc.mods.flags);
+    this->bModHR = flags::has<HardRock>(sc.mods.flags);
+    this->bModNightmare = flags::has<Nightmare>(sc.mods.flags);
+    this->bModScorev2 = flags::has<ScoreV2>(sc.mods.flags);
+    this->bModTarget = flags::has<Target>(sc.mods.flags);
+    this->bModSpunout = flags::has<SpunOut>(sc.mods.flags);
+    this->bModRelax = flags::has<Relax>(sc.mods.flags);
+    this->bModNF = flags::has<NoFail>(sc.mods.flags);
+    this->bModAutopilot = flags::has<Autopilot>(sc.mods.flags);
+    this->bModAuto = flags::has<Autoplay>(sc.mods.flags);
+    this->bModTD = flags::has<TouchDevice>(sc.mods.flags);
 
     this->extraMods.clear();
-    if(flags::has<FPoSu_Strafing>(score.mods.flags)) this->extraMods.push_back(&cv::fposu_mod_strafing);
-    if(flags::has<Wobble1>(score.mods.flags)) this->extraMods.push_back(&cv::mod_wobble);
-    if(flags::has<Wobble2>(score.mods.flags)) this->extraMods.push_back(&cv::mod_wobble2);
-    if(flags::has<ARWobble>(score.mods.flags)) this->extraMods.push_back(&cv::mod_arwobble);
-    if(flags::has<Timewarp>(score.mods.flags)) this->extraMods.push_back(&cv::mod_timewarp);
-    if(flags::has<ARTimewarp>(score.mods.flags)) this->extraMods.push_back(&cv::mod_artimewarp);
-    if(flags::has<Minimize>(score.mods.flags)) this->extraMods.push_back(&cv::mod_minimize);
-    if(flags::has<FadingCursor>(score.mods.flags)) this->extraMods.push_back(&cv::mod_fadingcursor);
-    if(flags::has<FPS>(score.mods.flags)) this->extraMods.push_back(&cv::mod_fps);
-    if(flags::has<Jigsaw1>(score.mods.flags)) this->extraMods.push_back(&cv::mod_jigsaw1);
-    if(flags::has<Jigsaw2>(score.mods.flags)) this->extraMods.push_back(&cv::mod_jigsaw2);
-    if(flags::has<FullAlternate>(score.mods.flags)) this->extraMods.push_back(&cv::mod_fullalternate);
-    if(flags::has<ReverseSliders>(score.mods.flags)) this->extraMods.push_back(&cv::mod_reverse_sliders);
-    if(flags::has<No50s>(score.mods.flags)) this->extraMods.push_back(&cv::mod_no50s);
-    if(flags::has<No100s>(score.mods.flags)) this->extraMods.push_back(&cv::mod_no100s);
-    if(flags::has<Ming3012>(score.mods.flags)) this->extraMods.push_back(&cv::mod_ming3012);
-    if(flags::has<HalfWindow>(score.mods.flags)) this->extraMods.push_back(&cv::mod_halfwindow);
-    if(flags::has<Millhioref>(score.mods.flags)) this->extraMods.push_back(&cv::mod_millhioref);
-    if(flags::has<Mafham>(score.mods.flags)) this->extraMods.push_back(&cv::mod_mafham);
-    if(flags::has<StrictTracking>(score.mods.flags)) this->extraMods.push_back(&cv::mod_strict_tracking);
-    if(flags::has<MirrorHorizontal>(score.mods.flags)) this->extraMods.push_back(&cv::playfield_mirror_horizontal);
-    if(flags::has<MirrorVertical>(score.mods.flags)) this->extraMods.push_back(&cv::playfield_mirror_vertical);
-    if(flags::has<Shirone>(score.mods.flags)) this->extraMods.push_back(&cv::mod_shirone);
-    if(flags::has<ApproachDifferent>(score.mods.flags)) this->extraMods.push_back(&cv::mod_approach_different);
-    if(flags::has<Singletap>(score.mods.flags)) this->extraMods.push_back(&cv::mod_singletap);
-    if(flags::has<NoKeylock>(score.mods.flags)) this->extraMods.push_back(&cv::mod_no_keylock);
-    if(flags::has<NoPausing>(score.mods.flags)) this->extraMods.push_back(&cv::mod_no_pausing);
-    if(flags::has<NoHP>(score.mods.flags)) this->extraMods.push_back(&cv::drain_disabled);
+    if(flags::has<FPoSu_Strafing>(sc.mods.flags)) this->extraMods.push_back(&cv::fposu_mod_strafing);
+    if(flags::has<Wobble1>(sc.mods.flags)) this->extraMods.push_back(&cv::mod_wobble);
+    if(flags::has<Wobble2>(sc.mods.flags)) this->extraMods.push_back(&cv::mod_wobble2);
+    if(flags::has<ARWobble>(sc.mods.flags)) this->extraMods.push_back(&cv::mod_arwobble);
+    if(flags::has<Timewarp>(sc.mods.flags)) this->extraMods.push_back(&cv::mod_timewarp);
+    if(flags::has<ARTimewarp>(sc.mods.flags)) this->extraMods.push_back(&cv::mod_artimewarp);
+    if(flags::has<Minimize>(sc.mods.flags)) this->extraMods.push_back(&cv::mod_minimize);
+    if(flags::has<FadingCursor>(sc.mods.flags)) this->extraMods.push_back(&cv::mod_fadingcursor);
+    if(flags::has<FPS>(sc.mods.flags)) this->extraMods.push_back(&cv::mod_fps);
+    if(flags::has<Jigsaw1>(sc.mods.flags)) this->extraMods.push_back(&cv::mod_jigsaw1);
+    if(flags::has<Jigsaw2>(sc.mods.flags)) this->extraMods.push_back(&cv::mod_jigsaw2);
+    if(flags::has<FullAlternate>(sc.mods.flags)) this->extraMods.push_back(&cv::mod_fullalternate);
+    if(flags::has<ReverseSliders>(sc.mods.flags)) this->extraMods.push_back(&cv::mod_reverse_sliders);
+    if(flags::has<No50s>(sc.mods.flags)) this->extraMods.push_back(&cv::mod_no50s);
+    if(flags::has<No100s>(sc.mods.flags)) this->extraMods.push_back(&cv::mod_no100s);
+    if(flags::has<Ming3012>(sc.mods.flags)) this->extraMods.push_back(&cv::mod_ming3012);
+    if(flags::has<HalfWindow>(sc.mods.flags)) this->extraMods.push_back(&cv::mod_halfwindow);
+    if(flags::has<Millhioref>(sc.mods.flags)) this->extraMods.push_back(&cv::mod_millhioref);
+    if(flags::has<Mafham>(sc.mods.flags)) this->extraMods.push_back(&cv::mod_mafham);
+    if(flags::has<StrictTracking>(sc.mods.flags)) this->extraMods.push_back(&cv::mod_strict_tracking);
+    if(flags::has<MirrorHorizontal>(sc.mods.flags)) this->extraMods.push_back(&cv::playfield_mirror_horizontal);
+    if(flags::has<MirrorVertical>(sc.mods.flags)) this->extraMods.push_back(&cv::playfield_mirror_vertical);
+    if(flags::has<Shirone>(sc.mods.flags)) this->extraMods.push_back(&cv::mod_shirone);
+    if(flags::has<ApproachDifferent>(sc.mods.flags)) this->extraMods.push_back(&cv::mod_approach_different);
+    if(flags::has<Singletap>(sc.mods.flags)) this->extraMods.push_back(&cv::mod_singletap);
+    if(flags::has<NoKeylock>(sc.mods.flags)) this->extraMods.push_back(&cv::mod_no_keylock);
+    if(flags::has<NoPausing>(sc.mods.flags)) this->extraMods.push_back(&cv::mod_no_pausing);
+    if(flags::has<NoHP>(sc.mods.flags)) this->extraMods.push_back(&cv::drain_disabled);
 }
 
 void RankingScreen::setBeatmapInfo(const DatabaseBeatmap *map) {
-    this->score.map = map;
     this->songInfo->setFromBeatmap(map);
+    this->storedScore.map = map;
 
     const std::string scorePlayer =
-        this->score.playerName.empty() ? BanchoState::get_username() : this->score.playerName;
-    this->songInfo->setPlayer(this->bIsUnranked ? "neosu" : scorePlayer);
+        this->storedScore.playerName.empty() ? BanchoState::get_username() : this->storedScore.playerName;
 
+    this->songInfo->setPlayer(this->bIsUnranked ? "neosu" : scorePlayer);
     // @PPV3: update m_score.ppv3_score, this->score.ppv3_aim_stars, this->score.ppv3_speed_stars,
     //        m_fHitErrorAvgMin, this->fHitErrorAvgMax, this->fUnstableRate
 }
@@ -549,8 +550,7 @@ void RankingScreen::updateLayout() {
     this->update_pos();
 
     // NOTE: no uiScale for rankingPanel and rankingGrade, doesn't really work due to legacy layout expectations
-    const vec2 hardcodedOsuRankingPanelImageSize =
-        vec2(622, 505) * (osu->getSkin()->i_ranking_panel.scale());
+    const vec2 hardcodedOsuRankingPanelImageSize = vec2(622, 505) * (osu->getSkin()->i_ranking_panel.scale());
     this->rankingPanel->setImage(osu->getSkin()->i_ranking_panel);
     this->rankingPanel->setScale(Osu::getImageScale(hardcodedOsuRankingPanelImageSize, 317.0f),
                                  Osu::getImageScale(hardcodedOsuRankingPanelImageSize, 317.0f));
@@ -611,8 +611,8 @@ void RankingScreen::setIndex(int index) {
 }
 
 UString RankingScreen::getPPString() const {
-    f32 pp = this->score.get_pp();
-    if(pp == -1.0) {
+    f32 pp = this->storedScore.get_pp();
+    if(pp == -1.0f) {
         return ULITERAL("??? pp");
     } else {
         return fmt::format("{:d}pp", (int)std::round(pp));

@@ -41,7 +41,7 @@ class AsyncResourceLoader::LoaderThread final {
     Sync::jthread thread;
 
     void worker_loop(const Sync::stop_token &stoken) noexcept {
-        this->loader_ptr->iActiveThreadCount.fetch_add(1);
+        this->loader_ptr->iActiveThreadCount.fetch_add(1, std::memory_order_relaxed);
 
         logIfCV(debug_rm, "AsyncResourceLoader: Thread #{} started", this->thread_index);
 
@@ -113,7 +113,7 @@ class AsyncResourceLoader::LoaderThread final {
             Timing::sleepMS(0);
         }
 
-        this->loader_ptr->iActiveThreadCount.fetch_sub(1);
+        this->loader_ptr->iActiveThreadCount.fetch_sub(1, std::memory_order_acq_rel);
 
         logIfCV(debug_rm, "AsyncResourceLoader: Thread #{} exiting", this->thread_index);
     }
@@ -130,7 +130,7 @@ AsyncResourceLoader::AsyncResourceLoader()
     // pre-create at least a single thread for better startup responsiveness
     Sync::scoped_lock lock(this->threadsMutex);
 
-    const size_t idx = this->iTotalThreadsCreated.fetch_add(1);
+    const size_t idx = this->iTotalThreadsCreated.fetch_add(1, std::memory_order_relaxed);
     auto loaderThread = std::make_unique<LoaderThread>(this, idx);
 
     if(!loaderThread->isReady()) {
@@ -183,7 +183,7 @@ void AsyncResourceLoader::shutdown() {
 }
 
 void AsyncResourceLoader::requestAsyncLoad(Resource *resource) {
-    auto work = std::make_unique<LoadingWork>(resource, this->iWorkIdCounter.fetch_add(1));
+    auto work = std::make_unique<LoadingWork>(resource, this->iWorkIdCounter.fetch_add(1, std::memory_order_relaxed));
 
     // add to tracking set
     {
@@ -197,7 +197,7 @@ void AsyncResourceLoader::requestAsyncLoad(Resource *resource) {
         this->pendingWork.push(std::move(work));
     }
 
-    this->iActiveWorkCount.fetch_add(1);
+    this->iActiveWorkCount.fetch_add(1, std::memory_order_relaxed);
     ensureThreadAvailable();
     this->workAvailable.notify_one();
 }
@@ -240,7 +240,7 @@ void AsyncResourceLoader::update(bool lowLatency) {
             this->loadingResourcesSet.erase(rs);
         }
 
-        this->iActiveWorkCount.fetch_sub(1);
+        this->iActiveWorkCount.fetch_sub(1, std::memory_order_acq_rel);
         if(!interrupted) numProcessed++;
 
         // work will be automatically destroyed when unique_ptr goes out of scope
@@ -330,7 +330,7 @@ void AsyncResourceLoader::ensureThreadAvailable() {
         if(this->threadpool.size() < this->iMaxThreads) {
             const bool debug = cv::debug_rm.getBool();
 
-            const size_t idx = this->iTotalThreadsCreated.fetch_add(1);
+            const size_t idx = this->iTotalThreadsCreated.fetch_add(1, std::memory_order_relaxed);
             auto loaderThread = std::make_unique<LoaderThread>(this, idx);
 
             if(!loaderThread->isReady()) {

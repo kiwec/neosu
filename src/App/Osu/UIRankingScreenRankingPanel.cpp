@@ -1,11 +1,9 @@
 // Copyright (c) 2016, PG, All rights reserved.
 #include "UIRankingScreenRankingPanel.h"
 
-#include "ConVar.h"
 #include "Engine.h"
 #include "HUD.h"
 #include "Osu.h"
-#include "ResourceManager.h"
 #include "Skin.h"
 #include "SkinImage.h"
 #include "score.h"

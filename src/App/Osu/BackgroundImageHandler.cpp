@@ -11,8 +11,6 @@
 
 #include "Skin.h"
 
-#include "SyncOnce.h"
-
 #include "demoji.h"
 
 // background image path parser (from .osu files)
@@ -79,8 +77,8 @@ BGImageHandler::BGImageHandler() {
 
 BGImageHandler::~BGImageHandler() {
     for(const auto &[_, entry] : this->cache) {
-        resourceManager->destroyResource(entry.bg_image_path_ldr);
-        resourceManager->destroyResource(entry.image);
+        if(entry.bg_image_path_ldr) resourceManager->destroyResource(entry.bg_image_path_ldr);
+        if(entry.image) resourceManager->destroyResource(entry.image);
     }
     this->cache.clear();
 
@@ -130,11 +128,14 @@ void BGImageHandler::update(bool allow_eviction) {
 
         // check and handle evictions
         if(evicted < max_to_evict && consider_evictions && !was_used_last_frame) {
-            if(entry.bg_image_path_ldr != nullptr) entry.bg_image_path_ldr->interruptLoad();
-            if(entry.image != nullptr) entry.image->interruptLoad();
-
-            resourceManager->destroyResource(entry.bg_image_path_ldr, ResourceManager::DestroyMode::FORCE_ASYNC);
-            resourceManager->destroyResource(entry.image, ResourceManager::DestroyMode::FORCE_ASYNC);
+            if(entry.bg_image_path_ldr) {
+                entry.bg_image_path_ldr->interruptLoad();
+                resourceManager->destroyResource(entry.bg_image_path_ldr, ResourceManager::DestroyMode::FORCE_ASYNC);
+            }
+            if(entry.image) {
+                entry.image->interruptLoad();
+                resourceManager->destroyResource(entry.image, ResourceManager::DestroyMode::FORCE_ASYNC);
+            }
 
             evicted++;
 

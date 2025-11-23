@@ -67,10 +67,10 @@ void updateConfigUniforms();
 // invalidate config uniforms (convar callbacks)
 void onUniformConfigChanged() { s_uniformCache.needsConfigUpdate = true; }
 
-VertexArrayObject *generateVAO(const std::vector<vec2> &points, float hitcircleDiameter, vec3 translation,
-                               bool skipOOBPoints) {
+std::unique_ptr<VertexArrayObject> generateVAO(const std::vector<vec2> &points, float hitcircleDiameter,
+                                               vec3 translation, bool skipOOBPoints) {
     resourceManager->requestNextLoadUnmanaged();
-    VertexArrayObject *vao = resourceManager->createVertexArrayObject();
+    std::unique_ptr<VertexArrayObject> vao{resourceManager->createVertexArrayObject()};
 
     checkUpdateVars(hitcircleDiameter);
 
@@ -123,7 +123,7 @@ VertexArrayObject *generateVAO(const std::vector<vec2> &points, float hitcircleD
     }
 
     if(vao->getNumVertices() > 0)
-        resourceManager->loadResource(vao);
+        resourceManager->loadResource(vao.get());
     else
         debugLog("generateSliderVAO() ERROR: Zero triangles!");
 

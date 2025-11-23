@@ -26,13 +26,13 @@ class ScoreButton final : public CBaseUIButton {
     void highlight();
     void resetHighlight();
 
-    void setScore(const FinishedScore &score, const DatabaseBeatmap *map, int index = 1, const UString &titleString = "",
-                  float weight = 1.0f);
+    void setScore(const FinishedScore &score, const DatabaseBeatmap *map, int index = 1,
+                  const UString &titleString = "", float weight = 1.0f);
     void setIndex(int index) { this->iScoreIndexNumber = index; }
 
-    [[nodiscard]] inline FinishedScore getScore() const { return this->score; }
-    [[nodiscard]] inline u64 getScoreUnixTimestamp() const { return this->score.unixTimestamp; }
-    [[nodiscard]] inline u64 getScoreScore() const { return this->score.score; }
+    [[nodiscard]] inline const FinishedScore &getScore() const { return this->storedScore; }
+    [[nodiscard]] inline u64 getScoreUnixTimestamp() const { return this->storedScore.unixTimestamp; }
+    [[nodiscard]] inline u64 getScoreScore() const { return this->storedScore.score; }
 
     [[nodiscard]] inline const UString &getDateTime() const { return this->sScoreDateTime; }
     [[nodiscard]] inline int getIndex() const { return this->iScoreIndexNumber; }
@@ -84,7 +84,7 @@ class ScoreButton final : public CBaseUIButton {
     UString sScoreDateTime;
 
     // score data
-    FinishedScore score;
+    FinishedScore storedScore;
 
     int iScoreIndexNumber{1};
     u64 iScoreUnixTimestamp{0};

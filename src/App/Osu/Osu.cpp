@@ -447,7 +447,7 @@ Osu::~Osu() {
     ConVar::setOnGetValueProtectedCallback({});
     ConVar::setOnSetValueProtectedCallback({});
 
-    sct_abort();
+    ScoreConverter::abort_calc();
     AsyncPPC::set_map(nullptr);
     VolNormalization::shutdown();
     MapCalcThread::shutdown();
