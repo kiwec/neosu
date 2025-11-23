@@ -75,8 +75,8 @@ class OptionsMenuSkinPreviewElement final : public CBaseUIElement {
         const auto &skin = osu->getSkin();
 
         float hitcircleDiameter = this->vSize.y * 0.5f;
-        float numberScale = (hitcircleDiameter / (160.0f * (skin->i_defaults[1].scale()))) * 1 *
-                            cv::number_scale_multiplier.getFloat();
+        float numberScale =
+            (hitcircleDiameter / (160.0f * (skin->i_defaults[1].scale()))) * 1 * cv::number_scale_multiplier.getFloat();
         float overlapScale = (hitcircleDiameter / (160.0f)) * 1 * cv::number_scale_multiplier.getFloat();
         float scoreScale = 0.5f;
 
@@ -151,9 +151,8 @@ class OptionsMenuSliderPreviewElement final : public CBaseUIElement {
         if(!this->bVisible) return;
 
         const float hitcircleDiameter = this->vSize.y * 0.5f;
-        const float numberScale =
-            (hitcircleDiameter / (160.0f * (osu->getSkin()->i_defaults[1].scale()))) * 1 *
-            cv::number_scale_multiplier.getFloat();
+        const float numberScale = (hitcircleDiameter / (160.0f * (osu->getSkin()->i_defaults[1].scale()))) * 1 *
+                                  cv::number_scale_multiplier.getFloat();
         const float overlapScale = (hitcircleDiameter / (160.0f)) * 1 * cv::number_scale_multiplier.getFloat();
 
         const float approachScale = std::clamp<float>(1.0f + 1.5f - fmod(engine->getTime() * 3, 3.0f), 0.0f, 2.5f);
@@ -1593,15 +1592,19 @@ void OptionsMenu::mouse_update(bool *propagate_clicks) {
     // HACKHACK (should just use callback)
     // XXX: disable serverTextbox while logging in
     // XXX: jank logic split between update_login_button/setLogingLoadingState
-    if(cv::mp_server.getString() != this->serverTextbox->getText().toUtf8()) {
-        cv::mp_server.setValue(this->serverTextbox->getText());
+    const auto server_text{this->serverTextbox->getText().utf8View()};
+    if(cv::mp_server.getString() != server_text) {
+        cv::mp_server.setValue(server_text);
         this->update_login_button();
         this->scheduleLayoutUpdate();  // toggle user/pass fields based on oauthness
     }
 
     // why does all of this need to run in update()...
-    cv::name.setValue(this->nameTextbox->getText());
-    const std::string password_text{this->passwordTextbox->getText().utf8View()};
+    const auto &name_text{this->nameTextbox->getText().utf8View()};
+    if(!name_text.empty() && cv::name.getString() != name_text) {
+        cv::name.setValue(name_text);
+    }
+    const auto &password_text{this->passwordTextbox->getText().utf8View()};
     if(!password_text.empty() && password_text != cv::mp_password_md5.getString()) {
         // passwordTextbox gets overwritten with mp_password_md5 on login
         // mp_password should remain empty after that

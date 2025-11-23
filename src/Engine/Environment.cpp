@@ -211,11 +211,11 @@ const UString &Environment::getUsername() const noexcept {
     return m_sUsername;
 }
 
-// i.e. toplevel appdata path
+// i.e. toplevel appdata path (or ~/.local/share/)
 const std::string &Environment::getUserDataPath() const noexcept {
     if(!m_sAppDataPath.empty()) return m_sAppDataPath;
 
-    m_sAppDataPath = ".";  // set it to non-empty to avoid endlessly failing if SDL_GetPrefPath fails once
+    m_sAppDataPath = MCENGINE_DATA_DIR;  // set it to non-empty to avoid endlessly failing if SDL_GetPrefPath fails once
 
     char *path = SDL_GetPrefPath("", "");
     if(path != nullptr) {
