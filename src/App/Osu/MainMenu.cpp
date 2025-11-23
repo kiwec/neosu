@@ -870,10 +870,12 @@ void MainMenu::draw() {
         }
 
         // TODO: don't store references to these in MainMenu
-        if(this->lastMap != this->currentMap) {
+        if(this->lastMap && this->lastMap != this->currentMap) {
             this->drawMapBackground(this->lastMap, 1.f - this->mapFadeAnim);
         }
-        this->drawMapBackground(this->currentMap, this->mapFadeAnim);
+        if(this->currentMap) {
+            this->drawMapBackground(this->currentMap, this->mapFadeAnim);
+        }
 
         // background_shader->disable();
     }
@@ -1292,6 +1294,9 @@ CBaseUIContainer *MainMenu::setVisible(bool visible) {
         }
     } else {
         this->setMenuElementsVisible(false, false);
+        // clear current/last map refs if setting invisible
+        this->lastMap = nullptr;
+        this->currentMap = nullptr;
     }
 
     return this;

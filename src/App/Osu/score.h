@@ -32,7 +32,7 @@ struct FinishedScore {
     MD5Hash beatmap_hash;
     Replay::Mods mods;
 
-    const DatabaseBeatmap *map = nullptr;  // NOTE: do NOT assume this is set
+    const DatabaseBeatmap *map{nullptr};  // NOTE: do NOT assume this is set
     u64 score = 0;
     u64 spinner_bonus = 0;
     u64 unixTimestamp = 0;

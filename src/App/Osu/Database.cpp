@@ -1302,7 +1302,7 @@ void Database::loadMaps() {
                 // nobody got time for that so, since I've seen some concrete examples of what happens in such cases, we
                 // just exclude those
                 if(artistName.length() < 1 && songTitle.length() < 1 && creatorName.length() < 1 &&
-                   difficultyName.length() < 1 && md5hash == MD5Hash{})
+                   difficultyName.length() < 1)
                     continue;
 
                 if(mode != 0) continue;
@@ -1379,10 +1379,7 @@ void Database::loadMaps() {
                     map->iMaxBPM = bpm.max;
                     map->iMostCommonBPM = bpm.most_common;
                 }
-
                 // (the diff is now fully built)
-                Sync::unique_lock lock(this->beatmap_difficulties_mtx);
-                this->beatmap_difficulties[md5hash] = map;
 
                 // now, search if the current set (to which this diff would belong) already exists and add it there, or
                 // if it doesn't exist then create the set
@@ -1436,6 +1433,9 @@ void Database::loadMaps() {
                     if(!loudness_found) {
                         this->loudness_to_calc.push_back(map);
                     }
+
+                    Sync::unique_lock lock(this->beatmap_difficulties_mtx);
+                    this->beatmap_difficulties[md5hash] = map;
                 } else {
                     SAFE_DELETE(map);  // we never added this diff to any container, so we have to free it here
                 }

@@ -12,9 +12,10 @@ MD5Hash::MD5Hash(const char *str) {
     }
 
     if(len != 32) {
-        engine->showMessageErrorFatal(u"Programmer Error",
-                                      u"Tried to construct an MD5Hash from\na string with length != 32.");
-        engine->shutdown();
+        engine->showMessageErrorFatal(
+            u"Programmer Error",
+            fmt::format("Tried to construct an MD5Hash from\na string with length != 32.\n{} length {}", str, len));
+        fubar_abort();
         return;
     }
 

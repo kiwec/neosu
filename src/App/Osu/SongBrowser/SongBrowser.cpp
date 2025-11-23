@@ -2591,8 +2591,8 @@ void SongBrowser::onDatabaseLoadingFinished() {
         osu->getMainMenu()->clearPreloadedMaps();
 
         auto *beatmap = db->getBeatmapDifficulty(this->loading_reselect_map.hash);
+        this->onDifficultySelected(beatmap, false);  // select even if null (clear existing)
         if(beatmap) {
-            this->onDifficultySelected(beatmap, false);
             this->selectSelectedBeatmapSongButton();
         }
     }

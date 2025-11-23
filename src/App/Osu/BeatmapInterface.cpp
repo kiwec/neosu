@@ -1440,6 +1440,8 @@ void BeatmapInterface::addHealth(f64 percent, bool isFromHitResult) {
 }
 
 bool BeatmapInterface::sortHitObjectByStartTimeComp(HitObject const *a, HitObject const *b) {
+    if(a == b) return false;
+
     if((a->click_time) != (b->click_time)) return (a->click_time) < (b->click_time);
 
     if(a->type != b->type) return static_cast<int>(a->type) < static_cast<int>(b->type);
@@ -1452,6 +1454,8 @@ bool BeatmapInterface::sortHitObjectByStartTimeComp(HitObject const *a, HitObjec
 }
 
 bool BeatmapInterface::sortHitObjectByEndTimeComp(HitObject const *a, HitObject const *b) {
+    if(a == b) return false;
+
     if((a->click_time + a->duration) != (b->click_time + b->duration))
         return (a->click_time + a->duration) < (b->click_time + b->duration);
 
