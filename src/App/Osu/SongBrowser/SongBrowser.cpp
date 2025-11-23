@@ -2283,7 +2283,6 @@ void SongBrowser::rebuildScoreButtons() {
                     SAFE_DELETE(this->localBestButton);
                     this->localBestButton = new ScoreButton(this->contextMenu, 0, 0, 0, 0);
                     this->localBestButton->setClickCallback(SA::MakeDelegate<&SongBrowser::onScoreClicked>(this));
-                    this->localBestButton->map_hash = mapHash;
                     this->localBestButton->setScore(*local_best, map);
                     this->localBestButton->resetHighlight();
                     this->localBestButton->grabs_clicks = true;
@@ -2305,7 +2304,6 @@ void SongBrowser::rebuildScoreButtons() {
                     SAFE_DELETE(this->localBestButton);
                     this->localBestButton = new ScoreButton(this->contextMenu, 0, 0, 0, 0);
                     this->localBestButton->setClickCallback(SA::MakeDelegate<&SongBrowser::onScoreClicked>(this));
-                    this->localBestButton->map_hash = mapHash;
                     this->localBestButton->setScore(*local_best, map);
                     this->localBestButton->resetHighlight();
                     this->localBestButton->grabs_clicks = true;
@@ -2322,6 +2320,11 @@ void SongBrowser::rebuildScoreButtons() {
     }
 
     const int numScores = scores.size();
+
+    if(numScores > 0) {
+        // sort
+        db->sortScoresInPlace(scores, !is_online /* don't lock scores_mtx if we're sorting online scores */);
+    }
 
     // top up cache as necessary
     if(numScores > this->scoreButtonCache.size()) {
@@ -2345,14 +2348,10 @@ void SongBrowser::rebuildScoreButtons() {
                 this->scoreBrowserScoresStillLoadingElement->getRelPos().y);
         }
     } else {
-        // sort
-        db->sortScoresInPlace(scores);
-
         // build
         std::vector<ScoreButton *> scoreButtons;
         for(int i = 0; i < numScores; i++) {
             ScoreButton *button = this->scoreButtonCache[i];
-            button->map_hash = mapHash;
             button->setScore(scores[i], map, i + 1);
             scoreButtons.push_back(button);
         }
@@ -3139,7 +3138,7 @@ void SongBrowser::onScoreContextMenu(ScoreButton *scoreButton, int id) {
     // NOTE: see ScoreButton::onContextMenu()
 
     if(id == 2) {
-        db->deleteScore(scoreButton->map_hash, scoreButton->getScoreUnixTimestamp());
+        db->deleteScore(scoreButton->getScore().beatmap_hash, scoreButton->getScoreUnixTimestamp());
 
         this->rebuildScoreButtons();
         osu->getUserButton()->updateUserStats();

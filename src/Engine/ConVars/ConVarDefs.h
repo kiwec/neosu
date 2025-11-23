@@ -209,6 +209,7 @@ CONVAR(debug_bg_loader, false, CLIENT);
 CONVAR(debug_rt, false, CLIENT | SERVER | PROTECTED | GAMEPLAY,
        "draws all rendertargets with a translucent green background");
 CONVAR(debug_shaders, false, CLIENT | PROTECTED | GAMEPLAY);
+CONVAR(debug_avatars, false, CLIENT);
 CONVAR(debug_vprof, false, CLIENT | SERVER);
 CONVAR(debug_opengl, false, CLIENT | PROTECTED | GAMEPLAY);
 CONVAR(debug_snd, false, CLIENT | NOSAVE);

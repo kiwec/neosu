@@ -57,7 +57,7 @@ FinishedScore parse_score(char *score_line) {
     // might also be missing some important fields here, double check
 
     // Set username for given user id, since we now know both
-    auto user = BANCHO::User::get_user_info(score.player_id);
+    const auto &user = BANCHO::User::get_user_info(score.player_id);
     user->name = UString(score.playerName.c_str());
 
     // Mark as a player. Setting this also makes the has_user_info check pass,

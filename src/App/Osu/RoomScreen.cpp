@@ -484,7 +484,7 @@ void RoomScreen::updateLayout(vec2 newResolution) {
     i32 y_total = 10.f * dpiScale;
     for(auto &slot : BanchoState::room.slots) {
         if(slot.has_player()) {
-            auto user_info = BANCHO::User::get_user_info(slot.player_id, true);
+            const auto &user_info = BANCHO::User::get_user_info(slot.player_id, true);
 
             auto color = 0xffffffff;
             auto username = user_info->name;
@@ -598,7 +598,7 @@ void RoomScreen::on_room_joined(Room room) {
     debugLog("Joined room #{:d}\nPlayers:", room.id);
     for(auto &slot : room.slots) {
         if(slot.has_player()) {
-            auto user_info = BANCHO::User::get_user_info(slot.player_id, true);
+            const auto &user_info = BANCHO::User::get_user_info(slot.player_id, true);
             debugLog("- {:s}", user_info->name.toUtf8());
         }
     }

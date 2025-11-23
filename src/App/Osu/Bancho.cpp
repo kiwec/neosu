@@ -229,7 +229,7 @@ void BanchoState::handle_packet(Packet &packet) {
             i32 stats_user_id = abs(raw_id);  // IRC clients are sent with negative IDs, hence the abs()
             auto action = (Action)packet.read<u8>();
 
-            UserInfo *user = BANCHO::User::get_user_info(stats_user_id);
+            const auto &user = BANCHO::User::get_user_info(stats_user_id);
             if(action != user->action) {
                 // TODO @kiwec: i think client is supposed to regularly poll for friend stats
                 if(user->is_friend() && cv::notify_friend_status_change.getBool() && action < NB_ACTIONS) {
@@ -243,7 +243,7 @@ void BanchoState::handle_packet(Packet &packet) {
                     static_assert(NB_ACTIONS == actions.size(), "missing action name");
                     auto text = fmt::format("{} is now {}", user->name, actions[action]);
                     auto open_dms = [uid = stats_user_id]() -> void {
-                        UserInfo *user = BANCHO::User::get_user_info(uid);
+                        const auto &user = BANCHO::User::get_user_info(uid);
                         osu->getChat()->openChannel(user->name);
                     };
 
@@ -319,7 +319,7 @@ void BanchoState::handle_packet(Packet &packet) {
             (void)extra;  // this is mania seed or something we can't use
 
             if(BanchoState::spectating) {
-                UserInfo *info = BANCHO::User::get_user_info(BanchoState::spectated_player_id, true);
+                const auto &info = BANCHO::User::get_user_info(BanchoState::spectated_player_id, true);
 
                 u16 nb_frames = packet.read<u16>();
                 for(u16 i = 0; i < nb_frames; i++) {
@@ -591,7 +591,7 @@ void BanchoState::handle_packet(Packet &packet) {
             i32 presence_user_id = abs(raw_id);  // IRC clients are sent with negative IDs, hence the abs()
             auto presence_username = packet.read_ustring();
 
-            UserInfo *user = BANCHO::User::get_user_info(presence_user_id);
+            const auto &user = BANCHO::User::get_user_info(presence_user_id);
             user->irc_user = raw_id < 0;
             user->has_presence = true;
             user->name = presence_username;

@@ -742,7 +742,7 @@ void Chat::onKeyDown(KeyboardEvent &key) {
             username_len = username_end_idx - username_start_idx;
         }
 
-        auto user = BANCHO::User::find_user_starting_with(this->tab_completion_prefix, this->tab_completion_match);
+        auto &user = BANCHO::User::find_user_starting_with(this->tab_completion_prefix, this->tab_completion_match);
         if(user) {
             this->tab_completion_match = user->name;
 
@@ -1147,13 +1147,14 @@ void Chat::updateUserList() {
 
     // XXX: Optimize so fps doesn't halve when F9 is open
 
-    std::vector<UserInfo *> sorted_users;
-    for(auto pair : BANCHO::User::online_users) {
+    std::vector<std::shared_ptr<UserInfo>> sorted_users;
+    for(const auto &pair : BANCHO::User::online_users) {
         if(pair.second->user_id > 0) {
             sorted_users.push_back(pair.second);
         }
     }
-    std::ranges::sort(sorted_users, SString::alnum_comp, [](const UserInfo *ui) { return ui->name.toUtf8(); });
+    std::ranges::sort(sorted_users, SString::alnum_comp,
+                      [](const std::shared_ptr<UserInfo> &ui) { return ui->name.toUtf8(); });
 
     // Intentionally not calling this->user_list->clear(), because that would affect scroll position/animation
     this->user_list->getContainer()->freeElements();

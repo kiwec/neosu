@@ -41,7 +41,6 @@ ScoreButton::ScoreButton(UIContextMenu *contextMenu, float xPos, float yPos, flo
 
 ScoreButton::~ScoreButton() {
     anim->deleteExistingAnimation(&this->fIndexNumberAnim);
-    SAFE_DELETE(this->avatar);
 }
 
 void ScoreButton::draw() {
@@ -679,9 +678,10 @@ void ScoreButton::setScore(const FinishedScore &newscore, const DatabaseBeatmap 
 
     this->is_friend = false;
 
-    SAFE_DELETE(this->avatar);
+    this->avatar.reset();
     if(sc.player_id != 0) {
-        this->avatar = new UIAvatar(sc.player_id, this->vPos.x, this->vPos.y, this->vSize.y, this->vSize.y);
+        this->avatar =
+            std::make_unique<UIAvatar>(sc.player_id, this->vPos.x, this->vPos.y, this->vSize.y, this->vSize.y);
 
         auto user = BANCHO::User::try_get_user_info(sc.player_id);
         this->is_friend = user && user->is_friend();

@@ -500,7 +500,7 @@ bool BeatmapInterface::spectate() {
     this->bContinueScheduled = false;
     this->unloadObjects();
 
-    auto user_info = BANCHO::User::get_user_info(BanchoState::spectated_player_id, true);
+    const auto &user_info = BANCHO::User::get_user_info(BanchoState::spectated_player_id, true);
     osu->watched_user_id = BanchoState::spectated_player_id;
     osu->watched_user_name = user_info->name;
 

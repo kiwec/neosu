@@ -14,7 +14,7 @@
 
 #include <sys/stat.h>
 
-Image* AvatarManager::get_avatar(const std::pair<i32, std::string>& id_folder) {
+Image* AvatarManager::get_avatar(const AvatarIdentifier& id_folder) {
     auto it = this->avatars.find(id_folder);
     if(it == this->avatars.end()) {
         return nullptr;
@@ -88,14 +88,20 @@ void AvatarManager::update() {
     }
 }
 
-void AvatarManager::add_avatar(const std::pair<i32, std::string>& id_folder) {
+void AvatarManager::add_avatar(const AvatarIdentifier& id_folder) {
+    // increment refcount even if we didn't add to load queue
+    const u32 current_refcount = this->avatar_refcount[id_folder].fetch_add(1, std::memory_order_relaxed) + 1;
+
+    logIfCV(debug_avatars, "trying to add {} to load queue, current refcount: {}", id_folder.first, current_refcount);
     if(this->id_blacklist.contains(id_folder) || this->avatars.contains(id_folder)) {
+        logIfCV(debug_avatars, "not adding {} to load queue, {}", id_folder.first,
+                this->avatars.contains(id_folder) ? "already have it in avatars" : "blacklisted");
         return;
     }
 
     if(resourceManager->getImage(id_folder.second)) {
         // shouldn't happen...
-        debugLog("{} already tracked by ResourceManager, not adding", id_folder.second);
+        logIfCV(debug_avatars, "{} already tracked by ResourceManager, not adding", id_folder.second);
         return;
     }
 
@@ -105,11 +111,17 @@ void AvatarManager::add_avatar(const std::pair<i32, std::string>& id_folder) {
     }
 }
 
-void AvatarManager::remove_avatar(const std::pair<i32, std::string>& id_folder) {
-    // dequeue if it's waiting to be loaded, that's all
-    auto it = std::ranges::find(this->load_queue, id_folder);
-    if(it != this->load_queue.end()) {
-        this->load_queue.erase(it);
+void AvatarManager::remove_avatar(const AvatarIdentifier& id_folder) {
+    const u32 current_refcount = this->avatar_refcount[id_folder].fetch_sub(1, std::memory_order_acq_rel) - 1;
+    logIfCV(debug_avatars, "current refcount for {} is {}", current_refcount, id_folder.first);
+
+    if(current_refcount == 0) {
+        // dequeue if it's waiting to be loaded, that's all
+        auto it = std::ranges::find(this->load_queue, id_folder);
+        if(it != this->load_queue.end()) {
+            this->load_queue.erase(it);
+            logIfCV(debug_avatars, "removed {} from load queue", id_folder.first);
+        }
     }
 }
 
@@ -124,8 +136,11 @@ void AvatarManager::load_avatar_image(AvatarEntry& entry) {
 }
 
 void AvatarManager::prune_oldest_avatars() {
+    // don't even do anything if we're not close to the limit (incl. unloaded)
+    if(this->avatars.size() <= (size_t)(MAX_LOADED_AVATARS * (7.f / 8.f))) return;
+
     // collect all loaded entries
-    std::vector<std::map<std::pair<i32, std::string>, AvatarEntry>::iterator> loaded_entries;
+    std::vector<std::map<AvatarIdentifier, AvatarEntry>::iterator> loaded_entries;
 
     for(auto it = this->avatars.begin(); it != this->avatars.end(); ++it) {
         if(it->second.image && it->second.image->isReady()) {
@@ -144,12 +159,13 @@ void AvatarManager::prune_oldest_avatars() {
     // unload oldest images (a bit more, to not constantly be unloading images for each new image added after we hit the limit once)
     size_t to_unload = std::clamp<size_t>((size_t)(MAX_LOADED_AVATARS / 4.f), 0, loaded_entries.size() / 2);
     for(size_t i = 0; i < to_unload; ++i) {
+        logIfCV(debug_avatars, "unloading {} from memory due to age", loaded_entries[i]->second.file_path);
         resourceManager->destroyResource(loaded_entries[i]->second.image);
         loaded_entries[i]->second.image = nullptr;
     }
 }
 
-bool AvatarManager::download_avatar(const std::pair<i32, std::string>& id_folder) {
+bool AvatarManager::download_avatar(const AvatarIdentifier& id_folder) {
     float progress = -1.f;
     auto scheme = cv::use_https.getBool() ? "https://" : "http://";
     auto img_url = fmt::format("{:s}a.{}/{:d}", scheme, BanchoState::endpoint, id_folder.first);

@@ -16,6 +16,6 @@ class UserCard2 final : public CBaseUIButton {
 
     void draw() override;
 
-    UserInfo* info = nullptr;
-    UIAvatar* avatar = nullptr;
+    std::shared_ptr<UserInfo> info{nullptr};
+    std::unique_ptr<UIAvatar> avatar{nullptr};
 };

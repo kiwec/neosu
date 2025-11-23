@@ -580,10 +580,10 @@ void Database::deleteScore(const MD5Hash &beatmapMD5Hash, u64 scoreUnixTimestamp
     }
 }
 
-void Database::sortScoresInPlaceInt(std::vector<FinishedScore> &scores, bool lock) {
+void Database::sortScoresInPlace(std::vector<FinishedScore> &scores, bool lock_scores_mutex) {
     if(scores.size() < 2) return;
 
-    if(lock) {
+    if(lock_scores_mutex) {
         this->scores_mtx.lock();
     }
 
@@ -603,13 +603,13 @@ void Database::sortScoresInPlaceInt(std::vector<FinishedScore> &scores, bool loc
         std::ranges::sort(scores, sortScoreByPP);
     }
 
-    if(lock) {
+    if(lock_scores_mutex) {
         this->scores_mtx.unlock();
     }
 }
 
-void Database::sortScoresInt(const MD5Hash &beatmapMD5Hash, bool lock) {
-    return this->sortScoresInPlaceInt(this->scores[beatmapMD5Hash], lock);
+void Database::sortScoresInt(const MD5Hash &beatmapMD5Hash, bool lock_scores_mutex) {
+    return this->sortScoresInPlace(this->scores[beatmapMD5Hash], lock_scores_mutex);
 }
 
 std::vector<UString> Database::getPlayerNamesWithPPScores() {

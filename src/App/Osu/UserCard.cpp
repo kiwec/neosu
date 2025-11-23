@@ -7,13 +7,10 @@
 #include "ConVar.h"
 #include "Database.h"
 #include "Engine.h"
-#include "Icons.h"
-#include "Mouse.h"
+#include "Font.h"
 #include "Osu.h"
-#include "ResourceManager.h"
 #include "Skin.h"
 #include "SongBrowser/SongBrowser.h"
-#include "TooltipOverlay.h"
 #include "UIAvatar.h"
 #include "UIUserContextMenu.h"
 #include "UserStatsScreen.h"
@@ -38,10 +35,7 @@ UserCard::UserCard(i32 user_id) : CBaseUIButton() {
     });
 }
 
-UserCard::~UserCard() {
-    anim->deleteExistingAnimation(&this->fPPDeltaAnim);
-    SAFE_DELETE(this->avatar);
-}
+UserCard::~UserCard() { anim->deleteExistingAnimation(&this->fPPDeltaAnim); }
 
 void UserCard::draw() {
     if(!this->bVisible) return;
@@ -216,7 +210,7 @@ void UserCard::mouse_update(bool *propagate_clicks) {
     if(!this->bVisible) return;
 
     if(this->user_id > 0) {
-        UserInfo *my = BANCHO::User::get_user_info(this->user_id, true);
+        const auto &my = BANCHO::User::get_user_info(this->user_id, true);
         this->sText = my->name;
 
         static i64 total_score = 0;
@@ -243,7 +237,7 @@ void UserCard::updateUserStats() {
     if(is_self && !BanchoState::can_submit_scores()) {
         stats = db->calculatePlayerStats(this->sText.toUtf8());
     } else {
-        UserInfo *my = BANCHO::User::get_user_info(this->user_id, true);
+        const auto &my = BANCHO::User::get_user_info(this->user_id, true);
 
         int level = Database::getLevelForScore(my->total_score);
         float percentToNextLevel = 1.f;
@@ -286,12 +280,12 @@ void UserCard::updateUserStats() {
     }
 }
 
-void UserCard::setID(u32 new_id) {
-    SAFE_DELETE(this->avatar);
+void UserCard::setID(i32 new_id) {
+    this->avatar.reset();
 
     this->user_id = new_id;
     if(this->user_id > 0) {
-        this->avatar = new UIAvatar(this->user_id, 0.f, 0.f, 0.f, 0.f);
+        this->avatar = std::make_unique<UIAvatar>(this->user_id, 0.f, 0.f, 0.f, 0.f);
         this->avatar->on_screen = true;
     }
 }

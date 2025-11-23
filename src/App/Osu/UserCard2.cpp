@@ -1,19 +1,12 @@
 // Copyright (c) 2025, kiwec, All rights reserved.
 #include "UserCard2.h"
 
-#include "AnimationHandler.h"
-#include "Bancho.h"
 #include "BanchoUsers.h"
-#include "ConVar.h"
-#include "Database.h"
 #include "Engine.h"
-#include "Icons.h"
-#include "Mouse.h"
 #include "Osu.h"
 #include "ResourceManager.h"
 #include "Skin.h"
 #include "SongBrowser/SongBrowser.h"
-#include "TooltipOverlay.h"
 #include "UIAvatar.h"
 #include "UIUserContextMenu.h"
 
@@ -21,12 +14,12 @@ static const u32 AVATAR_MARGIN = 4;
 
 UserCard2::UserCard2(i32 user_id) : CBaseUIButton() {
     this->info = BANCHO::User::get_user_info(user_id);
-    this->avatar = new UIAvatar(user_id, 0.f, 0.f, 0.f, 0.f);
+    this->avatar = std::make_unique<UIAvatar>(user_id, 0.f, 0.f, 0.f, 0.f);
     this->avatar->on_screen = true;
     this->setClickCallback([user_id] { osu->getUserActions()->open(user_id); });
 }
 
-UserCard2::~UserCard2() { SAFE_DELETE(this->avatar); }
+UserCard2::~UserCard2() = default;
 
 void UserCard2::draw() {
     if(!this->bVisible) return;

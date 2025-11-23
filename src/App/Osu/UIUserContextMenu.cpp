@@ -63,7 +63,7 @@ void UIUserContextMenuScreen::open(i32 user_id, bool is_song_browser_button) {
             this->menu->addButton("Kick", KICK);
         }
 
-        auto user_info = BANCHO::User::get_user_info(user_id, true);
+        const auto &user_info = BANCHO::User::get_user_info(user_id, true);
         if(user_info->has_presence) {
             // Without user info, we don't have the username
             this->menu->addButton("Start Chat", START_CHAT);
@@ -103,7 +103,7 @@ void UIUserContextMenuScreen::open(i32 user_id, bool is_song_browser_button) {
 void UIUserContextMenuScreen::close() { this->menu->setVisible(false); }
 
 void UIUserContextMenuScreen::on_action(const UString& /*text*/, int user_action) {
-    auto user_info = BANCHO::User::get_user_info(this->user_id);
+    const auto &user_info = BANCHO::User::get_user_info(this->user_id);
     int slot_number = -1;
     if(BanchoState::is_in_a_multi_room()) {
         for(int i = 0; i < 16; i++) {

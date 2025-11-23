@@ -4,15 +4,19 @@
 #include "HUD.h"
 #include "UIAvatar.h"
 
-struct ScoreboardSlot {
+class ScoreboardSlot final {
+    NOCOPY_NOMOVE(ScoreboardSlot)
+   public:
     ScoreboardSlot(const SCORE_ENTRY& score, int index);
     ~ScoreboardSlot();
 
     void draw();
     void updateIndex(int new_index, bool is_player, bool animate);
-
-    UIAvatar* avatar = nullptr;
     SCORE_ENTRY score;
+
+   private:
+    std::unique_ptr<UIAvatar> avatar{nullptr};
+
     int index;
     float y = 0.f;
     float fAlpha = 0.f;

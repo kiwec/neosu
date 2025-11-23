@@ -11,8 +11,8 @@
 #include "Skin.h"
 #include "SkinImage.h"
 
-ScoreboardSlot::ScoreboardSlot(const SCORE_ENTRY& score, int index) {
-    this->avatar = new UIAvatar(score.player_id, 0, 0, 0, 0);
+ScoreboardSlot::ScoreboardSlot(const SCORE_ENTRY &score, int index) {
+    this->avatar = std::make_unique<UIAvatar>(score.player_id, 0, 0, 0, 0);
     this->score = score;
     this->index = index;
 
@@ -24,8 +24,6 @@ ScoreboardSlot::~ScoreboardSlot() {
     anim->deleteExistingAnimation(&this->fAlpha);
     anim->deleteExistingAnimation(&this->fFlash);
     anim->deleteExistingAnimation(&this->y);
-
-    delete this->avatar;
 }
 
 void ScoreboardSlot::draw() {
@@ -72,7 +70,7 @@ void ScoreboardSlot::draw() {
         float oScale = bg_img->getResolutionScale() * 0.99f;
         g->fillRect(0, start_y, avatar_width, height);
         bg_img->draw(vec2(avatar_width + (bg_img->getSizeBase().x / 2) * bg_scale - (470 * oScale) * bg_scale,
-                             start_y + height / 2),
+                          start_y + height / 2),
                      bg_scale);
     } else {
         g->fillRect(0, start_y, avatar_width + width, height);

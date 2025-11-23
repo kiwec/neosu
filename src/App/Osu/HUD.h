@@ -4,7 +4,7 @@
 #include "MD5Hash.h"
 
 class UIAvatar;
-struct ScoreboardSlot;
+class ScoreboardSlot;
 class McFont;
 class ConVar;
 class Image;

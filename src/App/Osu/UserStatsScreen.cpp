@@ -3,26 +3,20 @@
 
 #include "Bancho.h"
 #include "CBaseUIContainer.h"
-#include "CBaseUILabel.h"
 #include "CBaseUIScrollView.h"
 #include "ConVar.h"
 #include "Database.h"
 #include "DatabaseBeatmap.h"
 #include "Engine.h"
 #include "HUD.h"
-#include "Icons.h"
-#include "Keyboard.h"
 #include "ModSelector.h"
-#include "Mouse.h"
 #include "OptionsMenu.h"
 #include "Osu.h"
 #include "Replay.h"
-#include "ResourceManager.h"
 #include "Skin.h"
 #include "SongBrowser/ScoreButton.h"
 #include "SongBrowser/SongBrowser.h"
 #include "SoundEngine.h"
-#include "TooltipOverlay.h"
 #include "UIContextMenu.h"
 #include "UserCard.h"
 
@@ -106,7 +100,6 @@ void UserStatsScreen::rebuildScoreButtons() {
         }
 
         auto *button = new ScoreButton(this->m_contextMenu.get(), 0, 0, 300, 100, ScoreButton::STYLE::TOP_RANKS);
-        button->map_hash = score->beatmap_hash;
         button->setScore(*score, map, ++i, title, weight);
         button->setClickCallback([](CBaseUIButton *button) {
             auto btnsc = ((ScoreButton *)button)->getScore();

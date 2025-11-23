@@ -37,10 +37,6 @@ class ScoreButton final : public CBaseUIButton {
     [[nodiscard]] inline const UString &getDateTime() const { return this->sScoreDateTime; }
     [[nodiscard]] inline int getIndex() const { return this->iScoreIndexNumber; }
 
-    bool is_friend = false;
-    UIAvatar *avatar = nullptr;
-    MD5Hash map_hash;
-
     void onMouseInside() override;
     void onMouseOutside() override;
 
@@ -62,6 +58,7 @@ class ScoreButton final : public CBaseUIButton {
 
     bool isContextMenuVisible();
 
+    std::unique_ptr<UIAvatar> avatar{nullptr};
     UIContextMenu *contextMenu;
 
     // STYLE::SCORE_BROWSER
@@ -85,7 +82,6 @@ class ScoreButton final : public CBaseUIButton {
 
     // score data
     FinishedScore storedScore;
-
     int iScoreIndexNumber{1};
     u64 iScoreUnixTimestamp{0};
 
@@ -97,4 +93,5 @@ class ScoreButton final : public CBaseUIButton {
 
     bool bRightClick{false};
     bool bRightClickCheck{false};
+    bool is_friend{false};
 };

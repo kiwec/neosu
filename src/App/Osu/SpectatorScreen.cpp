@@ -63,7 +63,7 @@ void start(i32 user_id) {
     packet.write<i32>(user_id);
     BANCHO::Net::send_packet(packet);
 
-    auto user_info = BANCHO::User::get_user_info(user_id, true);
+    const auto &user_info = BANCHO::User::get_user_info(user_id, true);
     auto notif = UString::format("Started spectating %s", user_info->name.toUtf8());
     osu->getNotificationOverlay()->addToast(notif, SUCCESS_TOAST);
 
@@ -100,7 +100,7 @@ void stop() {
         osu->getMapInterface()->stop(true);
     }
 
-    auto user_info = BANCHO::User::get_user_info(BanchoState::spectated_player_id, true);
+    const auto &user_info = BANCHO::User::get_user_info(BanchoState::spectated_player_id, true);
     auto notif = UString::format("Stopped spectating %s", user_info->name.toUtf8());
     osu->getNotificationOverlay()->addToast(notif, INFO_TOAST);
 
@@ -161,7 +161,7 @@ void SpectatorScreen::mouse_update(bool *propagate_clicks) {
     // Control client state
     // XXX: should use map_md5 instead of map_id
     f32 download_progress = -1.f;
-    auto user_info = BANCHO::User::get_user_info(BanchoState::spectated_player_id, true);
+    const auto &user_info = BANCHO::User::get_user_info(BanchoState::spectated_player_id, true);
     if(user_info->map_id == -1 || user_info->map_id == 0) {
         if(osu->isInPlayMode()) {
             osu->getMapInterface()->stop(true);

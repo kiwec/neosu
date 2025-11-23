@@ -16,13 +16,12 @@ class UserCard final : public CBaseUIButton {
     void mouse_update(bool* propagate_clicks) override;
 
     void updateUserStats();
-    void setID(u32 new_id);
-
-    i32 user_id = 0;
+    void setID(i32 new_id);
 
    private:
-    UIAvatar* avatar = nullptr;
+    std::unique_ptr<UIAvatar> avatar{nullptr};
 
+    i32 user_id = 0;
     float fPP;
     float fAcc;
     int iLevel;
