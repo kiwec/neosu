@@ -191,9 +191,11 @@ const UString &Environment::getUsername() const noexcept {
     if(!m_sUsername.isEmpty()) return m_sUsername;
 #if defined(MCENGINE_PLATFORM_WINDOWS)
     DWORD username_len = UNLEN + 1;
-    wchar_t username[UNLEN + 1];
+    std::array<wchar_t, UNLEN + 1> username{};
 
-    if(GetUserNameW(username, &username_len)) m_sUsername = username;
+    if(GetUserNameW(username.data(), &username_len)) {
+        m_sUsername = UString{username.data(), std::max(0, (int)username_len - 1)};
+    }
 #elif defined(__APPLE__) || defined(MCENGINE_PLATFORM_LINUX) || defined(MCENGINE_PLATFORM_WASM)
     const char *user = getenv("USER");
     if(user != nullptr) m_sUsername = {user};

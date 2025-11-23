@@ -27,7 +27,7 @@ template <typename T>
 class AlignedAllocator {
    public:
     using value_type = T;
-    static constexpr std::align_val_t alignment{alignof(char32_t)};
+    static constexpr std::align_val_t alignment{alignof(max_align_t)};
 
     AlignedAllocator() noexcept = default;
     template <typename U>
@@ -74,7 +74,7 @@ class UString {
     UString(std::string_view utf8) noexcept;
     UString(const std::string &utf8) noexcept;
     inline constexpr UString(std::string_view utf8, std::u16string_view unicode) noexcept
-        : sUnicode(unicode), sUtf8(utf8) {}
+        : sUtf8(utf8), sUnicode(unicode) {}
 #define ULITERAL(str__) \
     UString { str__, u##str__ }  // is C++ even powerful enough to do this without macros
 
@@ -318,8 +318,8 @@ class UString {
     // for updating utf8 representation when unicode representation changes
     void updateUtf8(size_t startUtf16 = 0) noexcept;
 
+    alignas(max_align_t) alignedUTF8String sUtf8;
     std::u16string sUnicode;
-    alignedUTF8String sUtf8;
 };
 
 namespace std {

@@ -5,10 +5,8 @@
 #include "File.h"
 
 // set by app, shared across all convars, called when a protected convar changes
-ConVar::CVVoidCB ConVar::onSetValueProtectedCallback{};
-void ConVar::setOnSetValueProtectedCallback(const CVVoidCB &callback) {
-    ConVar::onSetValueProtectedCallback = callback;
-}
+ConVar::VoidCB ConVar::onSetValueProtectedCallback{};
+void ConVar::setOnSetValueProtectedCallback(const VoidCB &callback) { ConVar::onSetValueProtectedCallback = callback; }
 
 // ditto
 ConVar::ProtectedCVGetCB ConVar::onGetValueProtectedCallback{nullptr};
@@ -69,15 +67,19 @@ std::string ConVar::typeToString(CONVAR_TYPE type) {
 }
 
 void ConVar::exec() {
-    if(auto *cb = std::get_if<CVVoidCB>(&this->callback)) (*cb)();
+    if(auto *cb = std::get_if<VoidCB>(&this->callback)) (*cb)();
 }
 
 void ConVar::execArgs(std::string_view args) {
-    if(auto *cb = std::get_if<CVStringCB>(&this->callback)) (*cb)(args);
+    if(auto *cb = std::get_if<StringCB>(&this->callback)) (*cb)(args);
 }
 
 void ConVar::execFloat(float args) {
-    if(auto *cb = std::get_if<CVFloatCB>(&this->callback)) (*cb)(args);
+    if(auto *cb = std::get_if<FloatCB>(&this->callback)) (*cb)(args);
+}
+
+void ConVar::execDouble(double args) {
+    if(auto *cb = std::get_if<DoubleCB>(&this->callback)) (*cb)(args);
 }
 
 double ConVar::getDoubleInt() const {
