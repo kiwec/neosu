@@ -144,7 +144,7 @@ void NotificationOverlay::draw() {
     this->drawNotificationText(this->notification1);
 }
 
-void NotificationOverlay::onResolutionChange(vec2 newResolution) {
+void NotificationOverlay::onResolutionChange(vec2 /*newResolution*/) {
     f64 scale = osu->getUIScale();
 
     TOAST_WIDTH = 350.0 * scale;
@@ -279,7 +279,7 @@ void NotificationOverlay::addNotification(UString text, Color textColor, bool wa
     anim->moveQuadOut(&this->notification1.backgroundAnim, 1.0f, 0.15f, 0.0f, true);
 }
 
-void NotificationOverlay::addToast(const UString &text, Color borderColor, const ToastClickCallback &callback,
+void NotificationOverlay::addToast(const UString &text, Color borderColor, ToastClickCallback callback,
                                    ToastElement::TYPE type) {
     auto toast = std::make_unique<ToastElement>(text, borderColor, type);
     if constexpr(Env::cfg(BUILD::DEBUG)) {
@@ -289,7 +289,7 @@ void NotificationOverlay::addToast(const UString &text, Color borderColor, const
     }
 
     if(!!callback) {
-        toast->setClickCallback(callback);
+        toast->setClickCallback(std::move(callback));
     }
     this->toasts.push_back(std::move(toast));
 }

@@ -214,12 +214,13 @@ Osu::Osu() {
     this->frameBuffer2 = resourceManager->createRenderTarget(0, 0, 64, 64);
 
     int screenit = 0;
+    OsuScreen *nextScreen = nullptr;
 
     // load a few select subsystems very early
     db = std::make_unique<Database>();  // global database instance
     this->map_iface = std::make_unique<BeatmapInterface>();
-    this->notificationOverlay = new NotificationOverlay();
-    this->screens[screenit++] = this->notificationOverlay;
+    nextScreen = this->notificationOverlay = new NotificationOverlay();
+    this->screens[screenit++] = nextScreen;
     this->score = std::make_unique<LiveScore>(false);
     this->updateHandler = std::make_unique<UpdateHandler>();
     this->avatarManager = std::make_unique<AvatarManager>();
@@ -347,40 +348,40 @@ Osu::Osu() {
     // load subsystems, add them to the screens array
     this->userButton = std::make_unique<UserCard>(BanchoState::get_uid());
 
-    this->songBrowser = new SongBrowser();
-    this->screens[screenit++] = this->songBrowser;
-    this->volumeOverlay = new VolumeOverlay();
-    this->screens[screenit++] = this->volumeOverlay;
-    this->tooltipOverlay = new TooltipOverlay();
-    this->screens[screenit++] = this->tooltipOverlay;
-    this->optionsMenu = new OptionsMenu();
-    this->screens[screenit++] = this->optionsMenu;
-    this->mainMenu = new MainMenu();  // has to be after options menu
-    this->screens[screenit++] = this->mainMenu;
-    this->modSelector = new ModSelector();
-    this->screens[screenit++] = this->modSelector;
-    this->rankingScreen = new RankingScreen();
-    this->screens[screenit++] = this->rankingScreen;
-    this->userStats = new UserStatsScreen();
-    this->screens[screenit++] = this->userStats;
-    this->pauseMenu = new PauseMenu();
-    this->screens[screenit++] = this->pauseMenu;
-    this->hud = new HUD();
-    this->screens[screenit++] = this->hud;
-    this->changelog = new Changelog();
-    this->screens[screenit++] = this->changelog;
-    this->chat = new Chat();
-    this->screens[screenit++] = this->chat;
-    this->lobby = new Lobby();
-    this->screens[screenit++] = this->lobby;
-    this->room = new RoomScreen();
-    this->screens[screenit++] = this->room;
-    this->prompt = new PromptScreen();
-    this->screens[screenit++] = this->prompt;
-    this->user_actions = new UIUserContextMenuScreen();
-    this->screens[screenit++] = this->user_actions;
-    this->spectatorScreen = new SpectatorScreen();
-    this->screens[screenit++] = this->spectatorScreen;
+    nextScreen = this->volumeOverlay = new VolumeOverlay();
+    this->screens[screenit++] = nextScreen;
+    nextScreen = this->prompt = new PromptScreen();
+    this->screens[screenit++] = nextScreen;
+    nextScreen = this->modSelector = new ModSelector();
+    this->screens[screenit++] = nextScreen;
+    nextScreen = this->user_actions = new UIUserContextMenuScreen();
+    this->screens[screenit++] = nextScreen;
+    nextScreen = this->room = new RoomScreen();
+    this->screens[screenit++] = nextScreen;
+    nextScreen = this->chat = new Chat();
+    this->screens[screenit++] = nextScreen;
+    nextScreen = this->optionsMenu = new OptionsMenu();
+    this->screens[screenit++] = nextScreen;
+    nextScreen = this->rankingScreen = new RankingScreen();
+    this->screens[screenit++] = nextScreen;
+    nextScreen = this->userStats = new UserStatsScreen();
+    this->screens[screenit++] = nextScreen;
+    nextScreen = this->spectatorScreen = new SpectatorScreen();
+    this->screens[screenit++] = nextScreen;
+    nextScreen = this->pauseMenu = new PauseMenu();
+    this->screens[screenit++] = nextScreen;
+    nextScreen = this->hud = new HUD();
+    this->screens[screenit++] = nextScreen;
+    nextScreen = this->songBrowser = new SongBrowser();
+    this->screens[screenit++] = nextScreen;
+    nextScreen = this->lobby = new Lobby();
+    this->screens[screenit++] = nextScreen;
+    nextScreen = this->changelog = new Changelog();
+    this->screens[screenit++] = nextScreen;
+    nextScreen = this->mainMenu = new MainMenu();
+    this->screens[screenit++] = nextScreen;
+    nextScreen = this->tooltipOverlay = new TooltipOverlay();
+    this->screens[screenit++] = nextScreen;
 
     assert(screenit == NUM_SCREENS);
 

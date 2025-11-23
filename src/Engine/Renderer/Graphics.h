@@ -195,7 +195,6 @@ class Graphics {
     virtual void setBlending(bool enabled) = 0;
     virtual void setBlendMode(BLEND_MODE blendMode) = 0;
     virtual void setDepthBuffer(bool enabled) = 0;
-    virtual void setDepthWriting(bool enabled) = 0;
     virtual void setColorWriting(bool r, bool g, bool b, bool a) = 0;
     inline void setColorWriting(bool enabled) { this->setColorWriting(enabled, enabled, enabled, enabled); }
     virtual void setColorInversion(bool enabled) = 0;
@@ -203,7 +202,6 @@ class Graphics {
     virtual void setVSync(bool enabled) = 0;
     virtual void setAntialiasing(bool enabled) = 0;
     virtual void setWireframe(bool enabled) = 0;
-    virtual void setLineWidth(float width) = 0;
 
     // renderer actions
     virtual void flush() = 0;

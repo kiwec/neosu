@@ -115,12 +115,10 @@ class DirectX11Interface final : public Graphics {
     void setBlendMode(BLEND_MODE blendMode) override;
     void setDepthBuffer(bool enabled) override;
     void setCulling(bool culling) override;
-    [[deprecated("not implemented")]] void setDepthWriting(bool enabled) final;
     void setColorWriting(bool r, bool g, bool b, bool a) final;
     void setColorInversion(bool enabled) final;
     void setAntialiasing(bool aa) override;
     void setWireframe(bool enabled) override;
-    [[deprecated("not implemented")]] void setLineWidth(float width) override;
 
     // renderer actions
     void flush() override;

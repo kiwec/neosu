@@ -76,13 +76,11 @@ class OpenGLInterface : public Graphics {
     void setBlending(bool enabled) final;
     void setBlendMode(BLEND_MODE blendMode) final;
     void setDepthBuffer(bool enabled) final;
-    void setDepthWriting(bool enabled) final;
     void setColorWriting(bool r, bool g, bool b, bool a) final;
     void setColorInversion(bool enabled) final;
     void setCulling(bool culling) final;
     void setAntialiasing(bool aa) final;
     void setWireframe(bool enabled) final;
-    void setLineWidth(float width) final;
 
     // renderer actions
     void flush() final;

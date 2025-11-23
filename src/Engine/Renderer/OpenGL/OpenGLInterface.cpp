@@ -667,13 +667,6 @@ void OpenGLInterface::setDepthBuffer(bool enabled) {
         glDisable(GL_DEPTH_TEST);
 }
 
-void OpenGLInterface::setDepthWriting(bool enabled) {
-    if(enabled)
-        glDepthMask(GL_TRUE);
-    else
-        glDepthMask(GL_FALSE);
-}
-
 void OpenGLInterface::setColorWriting(bool r, bool g, bool b, bool a) { glColorMask(r, g, b, a); }
 
 void OpenGLInterface::setColorInversion(bool enabled) {
@@ -706,8 +699,6 @@ void OpenGLInterface::setWireframe(bool enabled) {
     else
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
-
-void OpenGLInterface::setLineWidth(float width) { glLineWidth(width); }
 
 void OpenGLInterface::flush() { glFlush(); }
 

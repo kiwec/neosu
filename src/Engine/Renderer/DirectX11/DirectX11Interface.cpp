@@ -1079,8 +1079,6 @@ void DirectX11Interface::setColorInversion(bool enabled) {
     this->setTexturing(this->bTexturingEnabled, true /* force */);  // re-apply with new inversion state
 }
 
-void DirectX11Interface::setDepthWriting(bool /*enabled*/) {}
-
 void DirectX11Interface::setAntialiasing(bool aa) {
     this->rasterizerState->Release();
     this->rasterizerDesc.MultisampleEnable = (aa ? TRUE : FALSE);
@@ -1094,8 +1092,6 @@ void DirectX11Interface::setWireframe(bool enabled) {
     this->device->CreateRasterizerState(&this->rasterizerDesc, &this->rasterizerState);
     this->deviceContext->RSSetState(this->rasterizerState);
 }
-
-void DirectX11Interface::setLineWidth(float /*width*/) {}
 
 void DirectX11Interface::flush() { this->deviceContext->Flush(); }
 
