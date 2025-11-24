@@ -29,6 +29,7 @@ Changelog::Changelog() : ScreenBackable() {
     v41_09.changes = {
         R"(- Improved gameplay animation smoothness (position interpolator fixes))",
         R"(- Added "snd_rate_transpose_algorithm" ConVar to adjust rate changer quality)",
+        R"(- Added option to draw map backgrounds in discord rich presence)",
         R"(- Fixed incorrect beatmap hitsound volumes and samplesets being used)",
         R"(- Fixed multiplayer room screen missing ready button and freemods checkbox)",
         R"(- Fixed nightcore/daycore with SoLoud)",

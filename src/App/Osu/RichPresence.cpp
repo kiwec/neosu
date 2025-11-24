@@ -65,7 +65,11 @@ void set_activity_with_image(struct DiscordActivity* to_set) {
     const auto music = osu->getMapInterface()->getMusic();
     const bool listening = !!map && !!music && music->isPlaying();
     const bool playing = !!map && osu->isInPlayMode();
-    const bool bg_visible = !!map && map->draw_background && cv::load_beatmap_background_images.getBool();
+    const bool bg_visible = !!map && map->draw_background && cv::rich_presence_map_backgrounds.getBool();
+
+    strcpy(&to_set->assets.large_image[0], "neosu_icon");
+    to_set->assets.small_image[0] = '\0';
+    to_set->assets.small_text[0] = '\0';
 
     if(bg_visible && (listening || playing)) {
         auto url =

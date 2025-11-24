@@ -612,13 +612,17 @@ OptionsMenu::OptionsMenu() : ScreenBackable() {
             "Shows your current game state in your friends' friendslists.\ne.g.: Playing Gavin G - Reach Out "
             "[Cherry Blossom's Insane]",
             &cv::rich_presence);
-    }
+        this->addCheckbox("Draw map backgrounds in Discord Rich Presence", &cv::rich_presence_map_backgrounds);
 
-    // there's an issue where if the game starts with discord closed, then the SDK fails to initialize, and there's
-    // no way to try reinitializing it (without restarting the game)
-    // so allow "turning it off and on again" to try reinitializing
-    // (DiscRPC::init() does nothing if already initialized)
-    cv::rich_presence.setCallback([](float newValue) -> void { return newValue > 0 ? DiscRPC::init() : (void)0; });
+        // there's an issue where if the game starts with discord closed, then the SDK fails to initialize, and there's
+        // no way to try reinitializing it (without restarting the game)
+        // so allow "turning it off and on again" to try reinitializing
+        // (DiscRPC::init() does nothing if already initialized)
+        cv::rich_presence.setCallback([](float newValue) -> void { return newValue > 0 ? DiscRPC::init() : (void)0; });
+
+        // XXX: have a generic "update_activity"
+        cv::rich_presence_map_backgrounds.setCallback([]() { DiscRPC::clear_activity; });
+    }
 
     //**************************************************************************************************************************//
 

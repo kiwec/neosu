@@ -157,9 +157,8 @@ CONVAR(snd_soloud_backend, "MiniAudio"sv, CLIENT, R"(SoLoud backend, "MiniAudio"
 CONVAR(snd_sanity_simultaneous_limit, 128, CLIENT | NOSAVE,
        "The maximum number of overlayable sounds that are allowed to be active at once");
 CONVAR(snd_soloud_hardcoded_offset, -18, CLIENT);  // should hopefully be "temporary"
-CONVAR(
-    snd_soloud_resampler, "linear", CLIENT,
-    "resampler to use. \"point\", \"linear\", or \"catmull-rom\" (in order of increasing quality/cpu usage)");
+CONVAR(snd_soloud_resampler, "linear", CLIENT,
+       "resampler to use. \"point\", \"linear\", or \"catmull-rom\" (in order of increasing quality/cpu usage)");
 CONVAR(snd_soloud_prefer_ffmpeg, 0, CLIENT,
        "(0=no, 1=streams, 2=streams+samples) prioritize using ffmpeg as a decoder (if available) over other decoder "
        "backends");
@@ -1063,6 +1062,7 @@ CONVAR(resolution_keep_aspect_ratio, false, CLIENT | SKINS | SERVER);
 CONVAR(restart_sound_engine_before_playing, false, CLIENT | SKINS | SERVER,
        "jank fix for users who experience sound issues after playing for a while");
 CONVAR(rich_presence, true, CLIENT | SKINS | SERVER);  // callback set in DiscordInterface
+CONVAR(rich_presence_map_backgrounds, true, CLIENT | SKINS | SERVER);
 CONVAR(scoreboard_animations, true, CLIENT | SKINS | SERVER, "animate in-game scoreboard");
 CONVAR(scores_bonus_pp, true, CLIENT | SKINS | SERVER, "whether to add bonus pp to total (real) pp or not");
 CONVAR(scores_enabled, true, CLIENT | SKINS | SERVER);
