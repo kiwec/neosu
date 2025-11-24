@@ -5,6 +5,7 @@
 
 #include <atomic>
 #include <unordered_map>
+#include <array>
 
 class Image;
 
@@ -28,8 +29,8 @@ struct BanchoState final {
 
     static std::string endpoint;
     static MD5Hash pw_md5;
-    static u8 oauth_challenge[32];
-    static u8 oauth_verifier[32];
+    static std::array<u8, 32> oauth_challenge;
+    static std::array<u8, 32> oauth_verifier;
     static bool is_oauth;
 
     static bool spectating;
@@ -49,7 +50,7 @@ struct BanchoState final {
 
     static Room room;
     static bool match_started;
-    static Slot last_scores[16];
+    static std::array<Slot, 16> last_scores;
 
     struct Channel {
         UString name;

@@ -1352,7 +1352,7 @@ OptionsMenu::OptionsMenu() : ScreenBackable() {
     //**************************************************************************************************************************//
 
     // the context menu gets added last (drawn on top of everything)
-    this->options->getContainer()->addBaseUIElement(this->contextMenu);
+    this->options->container->addBaseUIElement(this->contextMenu);
 
     // HACKHACK: force current value update
     if(this->sliderQualitySlider != nullptr)
@@ -2036,11 +2036,11 @@ void OptionsMenu::updateLayout() {
         {
             // reset button
             if(this->elemContainers[i]->resetButton != nullptr)
-                this->options->getContainer()->addBaseUIElement(this->elemContainers[i]->resetButton);
+                this->options->container->addBaseUIElement(this->elemContainers[i]->resetButton);
 
             // (sub-)elements
             for(auto &element : this->elemContainers[i]->baseElems) {
-                this->options->getContainer()->addBaseUIElement(element);
+                this->options->container->addBaseUIElement(element);
             }
         }
 
@@ -2247,15 +2247,15 @@ void OptionsMenu::updateLayout() {
         }
     }
     this->spacer->setPosY(yCounter);
-    this->options->getContainer()->addBaseUIElement(this->spacer);
+    this->options->container->addBaseUIElement(this->spacer);
 
     this->options->setScrollSizeToContent();
     if(!enableHorizontalScrolling) this->options->scrollToLeft();
     this->options->setHorizontalScrolling(enableHorizontalScrolling);
 
-    this->options->getContainer()->addBaseUIElement(this->contextMenu);
+    this->options->container->addBaseUIElement(this->contextMenu);
 
-    this->options->getContainer()->update_pos();
+    this->options->container->update_pos();
 
     // TODO: wrong? look at button borders when hovering... ew...
     f32 sidebarHeight = this->categories->getSize().y - osu->getSkin()->i_menu_back2->getSize().y;
@@ -2267,7 +2267,7 @@ void OptionsMenu::updateLayout() {
         category->setRelPosY(categoryPaddingTopBottom + categoryHeight * i);
         category->setSize(this->categories->getSize().x - 1, categoryHeight);
     }
-    this->categories->getContainer()->update_pos();
+    this->categories->container->update_pos();
     this->categories->setScrollSizeToContent();
 
     this->update_pos();
@@ -2658,7 +2658,7 @@ void OptionsMenu::onLogInClicked(bool left, bool right) {
             crypto::rng::get_rand(BanchoState::oauth_verifier);
             crypto::hash::sha256(&BanchoState::oauth_verifier[0], 32, &BanchoState::oauth_challenge[0]);
 
-            auto challenge_b64 = env->urlEncode(crypto::conv::encode64(&BanchoState::oauth_challenge[0], 32));
+            auto challenge_b64 = env->urlEncode(crypto::conv::encode64(BanchoState::oauth_challenge));
             auto url = fmt::format("https://{}/connect/start?challenge={}", BanchoState::endpoint, challenge_b64);
 
             env->openURLInDefaultBrowser(url);
@@ -3344,7 +3344,7 @@ CBaseUILabel *OptionsMenu::addSection(const UString &text) {
     label->setTextJustification(TEXT_JUSTIFICATION::RIGHT);
     label->setDrawFrame(false);
     label->setDrawBackground(false);
-    this->options->getContainer()->addBaseUIElement(label);
+    this->options->container->addBaseUIElement(label);
 
     auto *e = new OPTIONS_ELEMENT;
     e->baseElems.push_back(label);
@@ -3360,7 +3360,7 @@ CBaseUILabel *OptionsMenu::addSubSection(const UString &text, UString searchTags
     label->setSizeToContent(0, 0);
     label->setDrawFrame(false);
     label->setDrawBackground(false);
-    this->options->getContainer()->addBaseUIElement(label);
+    this->options->container->addBaseUIElement(label);
 
     auto *e = new OPTIONS_ELEMENT;
     e->baseElems.push_back(label);
@@ -3376,7 +3376,7 @@ CBaseUILabel *OptionsMenu::addLabel(const UString &text) {
     label->setSizeToContent(0, 0);
     label->setDrawFrame(false);
     label->setDrawBackground(false);
-    this->options->getContainer()->addBaseUIElement(label);
+    this->options->container->addBaseUIElement(label);
 
     auto *e = new OPTIONS_ELEMENT;
     e->baseElems.push_back(label);
@@ -3390,7 +3390,7 @@ UIButton *OptionsMenu::addButton(const UString &text) {
     auto *button = new UIButton(0, 0, this->options->getSize().x, 50, text, text);
     button->setColor(0xff0c7c99);
     button->setUseDefaultSkin();
-    this->options->getContainer()->addBaseUIElement(button);
+    this->options->container->addBaseUIElement(button);
 
     auto *e = new OPTIONS_ELEMENT;
     e->baseElems.push_back(button);
@@ -3405,12 +3405,12 @@ OptionsMenu::OPTIONS_ELEMENT *OptionsMenu::addButton(const UString &text, const 
     auto *button = new UIButton(0, 0, this->options->getSize().x, 50, text, text);
     button->setColor(0xff0c7c99);
     button->setUseDefaultSkin();
-    this->options->getContainer()->addBaseUIElement(button);
+    this->options->container->addBaseUIElement(button);
 
     auto *label = new CBaseUILabel(0, 0, this->options->getSize().x, 50, labelText, labelText);
     label->setDrawFrame(false);
     label->setDrawBackground(false);
-    this->options->getContainer()->addBaseUIElement(label);
+    this->options->container->addBaseUIElement(label);
 
     auto *e = new OPTIONS_ELEMENT;
     if(withResetButton) {
@@ -3428,12 +3428,12 @@ OptionsMenu::OPTIONS_ELEMENT *OptionsMenu::addButtonButton(const UString &text1,
     auto *button = new UIButton(0, 0, this->options->getSize().x, 50, text1, text1);
     button->setColor(0xff0c7c99);
     button->setUseDefaultSkin();
-    this->options->getContainer()->addBaseUIElement(button);
+    this->options->container->addBaseUIElement(button);
 
     auto *button2 = new UIButton(0, 0, this->options->getSize().x, 50, text2, text2);
     button2->setColor(0xff0c7c99);
     button2->setUseDefaultSkin();
-    this->options->getContainer()->addBaseUIElement(button2);
+    this->options->container->addBaseUIElement(button2);
 
     auto *e = new OPTIONS_ELEMENT;
     e->baseElems.push_back(button);
@@ -3449,17 +3449,17 @@ OptionsMenu::OPTIONS_ELEMENT *OptionsMenu::addButtonButtonLabel(const UString &t
     auto *button = new UIButton(0, 0, this->options->getSize().x, 50, text1, text1);
     button->setColor(0xff0c7c99);
     button->setUseDefaultSkin();
-    this->options->getContainer()->addBaseUIElement(button);
+    this->options->container->addBaseUIElement(button);
 
     auto *button2 = new UIButton(0, 0, this->options->getSize().x, 50, text2, text2);
     button2->setColor(0xff0c7c99);
     button2->setUseDefaultSkin();
-    this->options->getContainer()->addBaseUIElement(button2);
+    this->options->container->addBaseUIElement(button2);
 
     auto *label = new CBaseUILabel(0, 0, this->options->getSize().x, 50, labelText, labelText);
     label->setDrawFrame(false);
     label->setDrawBackground(false);
-    this->options->getContainer()->addBaseUIElement(label);
+    this->options->container->addBaseUIElement(label);
 
     auto *e = new OPTIONS_ELEMENT;
     if(withResetButton) {
@@ -3482,18 +3482,18 @@ OptionsMenuKeyBindButton *OptionsMenu::addKeyBindButton(const UString &text, Con
     unbindButton->setUseDefaultSkin();
     unbindButton->setClickCallback(SA::MakeDelegate<&OptionsMenu::onKeyUnbindButtonPressed>(this));
     /// unbindButton->setFont(osu->getFontIcons());
-    this->options->getContainer()->addBaseUIElement(unbindButton);
+    this->options->container->addBaseUIElement(unbindButton);
 
     auto *bindButton = new OptionsMenuKeyBindButton(0, 0, this->options->getSize().x, 50, text, text);
     bindButton->setColor(0xff0c7c99);
     bindButton->setUseDefaultSkin();
     bindButton->setClickCallback(SA::MakeDelegate<&OptionsMenu::onKeyBindingButtonPressed>(this));
-    this->options->getContainer()->addBaseUIElement(bindButton);
+    this->options->container->addBaseUIElement(bindButton);
 
     auto *label = new OptionsMenuKeyBindLabel(0, 0, this->options->getSize().x, 50, "", "", cvar, bindButton);
     label->setDrawFrame(false);
     label->setDrawBackground(false);
-    this->options->getContainer()->addBaseUIElement(label);
+    this->options->container->addBaseUIElement(label);
 
     auto *e = new OPTIONS_ELEMENT;
     e->baseElems.push_back(unbindButton);
@@ -3523,7 +3523,7 @@ CBaseUICheckbox *OptionsMenu::addCheckbox(const UString &text, const UString &to
         checkbox->setChangeCallback(SA::MakeDelegate<&OptionsMenu::onCheckboxChange>(this));
     }
 
-    this->options->getContainer()->addBaseUIElement(checkbox);
+    this->options->container->addBaseUIElement(checkbox);
 
     auto *e = new OPTIONS_ELEMENT;
     if(cvar != nullptr) {
@@ -3543,7 +3543,7 @@ OptionsMenu::OPTIONS_ELEMENT *OptionsMenu::addButtonCheckbox(const UString &butt
     auto *button = new UIButton(0, 0, this->options->getSize().x, 50, buttontext, buttontext);
     button->setColor(0xff0c7c99);
     button->setUseDefaultSkin();
-    this->options->getContainer()->addBaseUIElement(button);
+    this->options->container->addBaseUIElement(button);
 
     auto *checkbox =
         new UICheckbox(button->getSize().x, 0, this->options->getSize().x - button->getSize().x, 50, "", "");
@@ -3551,7 +3551,7 @@ OptionsMenu::OPTIONS_ELEMENT *OptionsMenu::addButtonCheckbox(const UString &butt
     checkbox->setWidthToContent(0);
     checkbox->setDrawFrame(false);
     checkbox->setDrawBackground(false);
-    this->options->getContainer()->addBaseUIElement(checkbox);
+    this->options->container->addBaseUIElement(checkbox);
 
     auto *e = new OPTIONS_ELEMENT;
     e->baseElems.push_back(button);
@@ -3572,7 +3572,7 @@ UISlider *OptionsMenu::addSlider(const UString &text, float min, float max, ConV
         slider->setValue(cvar->getFloat(), false);
         slider->setChangeCallback(SA::MakeDelegate<&OptionsMenu::onSliderChange>(this));
     }
-    this->options->getContainer()->addBaseUIElement(slider);
+    this->options->container->addBaseUIElement(slider);
 
     auto *label1 = new CBaseUILabel(0, 0, this->options->getSize().x, 50, text, text);
     label1->setDrawFrame(false);
@@ -3580,14 +3580,14 @@ UISlider *OptionsMenu::addSlider(const UString &text, float min, float max, ConV
     label1->setWidthToContent();
     if(label1Width > 1) label1->setSizeX(label1Width);
     label1->setRelSizeX(label1->getSize().x);
-    this->options->getContainer()->addBaseUIElement(label1);
+    this->options->container->addBaseUIElement(label1);
 
     auto *label2 = new CBaseUILabel(0, 0, this->options->getSize().x, 50, "", "8.81");
     label2->setDrawFrame(false);
     label2->setDrawBackground(false);
     label2->setWidthToContent();
     label2->setRelSizeX(label2->getSize().x);
-    this->options->getContainer()->addBaseUIElement(label2);
+    this->options->container->addBaseUIElement(label2);
 
     auto *e = new OPTIONS_ELEMENT;
     if(cvar != nullptr) {
@@ -3612,7 +3612,7 @@ UISlider *OptionsMenu::addSlider(const UString &text, float min, float max, ConV
 CBaseUITextbox *OptionsMenu::addTextbox(UString text, ConVar *cvar) {
     auto *textbox = new CBaseUITextbox(0, 0, this->options->getSize().x, 40, "");
     textbox->setText(std::move(text));
-    this->options->getContainer()->addBaseUIElement(textbox);
+    this->options->container->addBaseUIElement(textbox);
 
     auto *e = new OPTIONS_ELEMENT;
     e->baseElems.push_back(textbox);
@@ -3626,7 +3626,7 @@ CBaseUITextbox *OptionsMenu::addTextbox(UString text, ConVar *cvar) {
 CBaseUITextbox *OptionsMenu::addTextbox(UString text, const UString &labelText, ConVar *cvar) {
     auto *textbox = new CBaseUITextbox(0, 0, this->options->getSize().x, 40, "");
     textbox->setText(std::move(text));
-    this->options->getContainer()->addBaseUIElement(textbox);
+    this->options->container->addBaseUIElement(textbox);
 
     auto *label = new CBaseUILabel(0, 0, this->options->getSize().x, 35, labelText, labelText);
     label->setDrawFrame(false);
@@ -3634,7 +3634,7 @@ CBaseUITextbox *OptionsMenu::addTextbox(UString text, const UString &labelText, 
     label->setTextColor(rgb(200, 200, 200));
     label->setWidthToContent();
     label->setScale(0.9f);
-    this->options->getContainer()->addBaseUIElement(label);
+    this->options->container->addBaseUIElement(label);
 
     auto *e = new OPTIONS_ELEMENT;
     e->baseElems.push_back(label);
@@ -3648,7 +3648,7 @@ CBaseUITextbox *OptionsMenu::addTextbox(UString text, const UString &labelText, 
 
 CBaseUIElement *OptionsMenu::addSkinPreview() {
     CBaseUIElement *skinPreview = new OptionsMenuSkinPreviewElement(0, 0, 0, 200, "skincirclenumberhitresultpreview");
-    this->options->getContainer()->addBaseUIElement(skinPreview);
+    this->options->container->addBaseUIElement(skinPreview);
 
     auto *e = new OPTIONS_ELEMENT;
     e->baseElems.push_back(skinPreview);
@@ -3660,7 +3660,7 @@ CBaseUIElement *OptionsMenu::addSkinPreview() {
 
 CBaseUIElement *OptionsMenu::addSliderPreview() {
     CBaseUIElement *sliderPreview = new OptionsMenuSliderPreviewElement(0, 0, 0, 200, "skinsliderpreview");
-    this->options->getContainer()->addBaseUIElement(sliderPreview);
+    this->options->container->addBaseUIElement(sliderPreview);
 
     auto *e = new OPTIONS_ELEMENT;
     e->baseElems.push_back(sliderPreview);
@@ -3678,7 +3678,7 @@ OptionsMenuCategoryButton *OptionsMenu::addCategory(CBaseUIElement *section, cha
     button->setDrawBackground(false);
     button->setDrawFrame(false);
     button->setClickCallback(SA::MakeDelegate<&OptionsMenu::onCategoryClicked>(this));
-    this->categories->getContainer()->addBaseUIElement(button);
+    this->categories->container->addBaseUIElement(button);
     this->categoryButtons.push_back(button);
 
     return button;

@@ -106,7 +106,7 @@ bool UIModList::isVisible() { return !!*this->flags; }
         element->onResized();                                      \
         element->setSizeToContent(x_padding, y_padding);           \
         element->setPos(10.f * osu->getUIScale(), settings_y);     \
-        this->settings->getContainer()->addBaseUIElement(element); \
+        this->settings->container->addBaseUIElement(element); \
         settings_y += element->getSize().y;                        \
     } while(0)
 
@@ -120,7 +120,7 @@ bool UIModList::isVisible() { return !!*this->flags; }
         button->setSizeToContent(button_padding, button_padding);                             \
         button->setPos(label->getSize().x + 20.f * osu->getUIScale(),                         \
                        label->getPos().y + (label->getSize().y - button->getSize().y) / 2.f); \
-        this->settings->getContainer()->addBaseUIElement(button);                             \
+        this->settings->container->addBaseUIElement(button);                             \
     } while(0)
 
 #define PAD(x)                               \
@@ -265,7 +265,7 @@ void RoomScreen::draw() {
     OsuScreen::draw();
 
     // Update avatar visibility status
-    for(auto elm : this->slotlist->getContainer()->getElements()) {
+    for(auto elm : this->slotlist->container->vElements) {
         if(elm->getName() == ULITERAL("avatar")) {
             // NOTE: Not checking horizontal visibility
             auto avatar = (UIAvatar *)elm;
@@ -507,7 +507,7 @@ void RoomScreen::updateLayout(vec2 newResolution) {
 
             const f32 SLOT_HEIGHT = 40.f * dpiScale;
             auto avatar = new UIAvatar(slot.player_id, 10.f * dpiScale, y_total, SLOT_HEIGHT, SLOT_HEIGHT);
-            this->slotlist->getContainer()->addBaseUIElement(avatar);
+            this->slotlist->container->addBaseUIElement(avatar);
 
             auto user_box = new UIUserLabel(slot.player_id, username);
             user_box->setFont(this->lfont);
@@ -515,12 +515,12 @@ void RoomScreen::updateLayout(vec2 newResolution) {
             user_box->setTextColor(color);
             user_box->setSizeToContent();
             user_box->setSize(user_box->getSize().x, SLOT_HEIGHT);
-            this->slotlist->getContainer()->addBaseUIElement(user_box);
+            this->slotlist->container->addBaseUIElement(user_box);
 
             auto user_mods = new UIModList(&slot.mods);
             user_mods->setPos(user_box->getPos().x + user_box->getSize().x + 30.f * dpiScale, y_total);
             user_mods->setSize(350.f * dpiScale, SLOT_HEIGHT);
-            this->slotlist->getContainer()->addBaseUIElement(user_mods);
+            this->slotlist->container->addBaseUIElement(user_mods);
 
             y_total += SLOT_HEIGHT + 5.f * dpiScale;
         }
@@ -763,22 +763,21 @@ FinishedScore RoomScreen::get_approximate_score() {
 
     score.map = osu->getMapInterface()->getBeatmap();
 
-    for(auto &i : BanchoState::room.slots) {
-        auto slot = &i;
-        if(slot->player_id != BanchoState::get_uid()) continue;
+    for(const auto &slot : BanchoState::room.slots) {
+        if(slot.player_id != BanchoState::get_uid()) continue;
 
-        score.mods = Replay::Mods::from_legacy(slot->mods);
-        score.passed = !slot->died;
-        score.unixTimestamp = slot->last_update_tms;
-        score.num300s = slot->num300;
-        score.num100s = slot->num100;
-        score.num50s = slot->num50;
-        score.numGekis = slot->num_geki;
-        score.numKatus = slot->num_katu;
-        score.numMisses = slot->num_miss;
-        score.score = slot->total_score;
-        score.comboMax = slot->max_combo;
-        score.perfect = slot->is_perfect;
+        score.mods = Replay::Mods::from_legacy(slot.mods);
+        score.passed = !slot.died;
+        score.unixTimestamp = slot.last_update_tms;
+        score.num300s = slot.num300;
+        score.num100s = slot.num100;
+        score.num50s = slot.num50;
+        score.numGekis = slot.num_geki;
+        score.numKatus = slot.num_katu;
+        score.numMisses = slot.num_miss;
+        score.score = slot.total_score;
+        score.comboMax = slot.max_combo;
+        score.perfect = slot.is_perfect;
     }
 
     score.grade = score.calculate_grade();
@@ -789,7 +788,7 @@ FinishedScore RoomScreen::get_approximate_score() {
 // All players have finished.
 void RoomScreen::on_match_finished() {
     if(!BanchoState::is_playing_a_multi_map()) return;
-    memcpy(BanchoState::last_scores, BanchoState::room.slots, sizeof(BanchoState::room.slots));
+    BanchoState::last_scores = BanchoState::room.slots;
 
     osu->onPlayEnd(this->get_approximate_score(), false, false);
 

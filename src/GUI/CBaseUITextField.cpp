@@ -13,7 +13,7 @@ CBaseUITextField::CBaseUITextField(float xPos, float yPos, float xSize, float yS
     : CBaseUIScrollView(xPos, yPos, xSize, ySize, name) {
     this->textObject = new TextObject(2, 1, xSize, ySize, std::move(text));
     this->textObject->setParentSize(this->vSize);
-    this->getContainer()->addBaseUIElement(this->textObject);
+    this->container->addBaseUIElement(this->textObject);
     this->setScrollSizeToContent(0);
 }
 

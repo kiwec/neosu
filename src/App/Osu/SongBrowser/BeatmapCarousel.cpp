@@ -26,7 +26,7 @@ void BeatmapCarousel::draw() { CBaseUIScrollView::draw(); }
 void BeatmapCarousel::mouse_update(bool *propagate_clicks) {
     CBaseUIScrollView::mouse_update(propagate_clicks);
     if(!this->isVisible()) return;
-    this->getContainer()->update_pos();  // necessary due to constant animations
+    this->container->update_pos();  // necessary due to constant animations
 
     // handle right click absolute scrolling
     {
@@ -36,7 +36,7 @@ void BeatmapCarousel::mouse_update(bool *propagate_clicks) {
 
                 bool isMouseInsideAnySongButton = false;
                 {
-                    const std::vector<CBaseUIElement *> &elements = this->getContainer()->getElements();
+                    const std::vector<CBaseUIElement *> &elements = this->container->vElements;
                     for(CBaseUIElement *songButton : elements) {
                         if(songButton->isMouseInside()) {
                             isMouseInsideAnySongButton = true;
@@ -63,14 +63,14 @@ void BeatmapCarousel::mouse_update(bool *propagate_clicks) {
     }
 }
 
-void BeatmapCarousel::onKeyUp(KeyboardEvent & /*e*/) { /*this->getContainer()->onKeyUp(e);*/ ; }
+void BeatmapCarousel::onKeyUp(KeyboardEvent & /*e*/) { /*this->container->onKeyUp(e);*/ ; }
 
 // don't consume keys, we are not a keyboard listener, but called from SongBrowser::onKeyDown manually
 void BeatmapCarousel::onKeyDown(KeyboardEvent &key) {
-    /*this->getContainer()->onKeyDown(e);*/
+    /*this->container->onKeyDown(e);*/
 
     // all elements must be CarouselButtons, at least
-    const auto &elements{reinterpret_cast<const std::vector<CarouselButton *> &>(this->getContainer()->getElements())};
+    const auto &elements{reinterpret_cast<const std::vector<CarouselButton *> &>(this->container->vElements)};
 
     // selection move
     if(!keyboard->isAltDown() && key == KEY_DOWN) {
@@ -219,4 +219,4 @@ void BeatmapCarousel::onKeyDown(KeyboardEvent &key) {
         this->browser_ptr->playSelectedDifficulty();
 }
 
-void BeatmapCarousel::onChar(KeyboardEvent & /*e*/) { /*this->getContainer()->onChar(e);*/ ; }
+void BeatmapCarousel::onChar(KeyboardEvent & /*e*/) { /*this->container->onChar(e);*/ ; }

@@ -729,7 +729,7 @@ void Changelog::addAllChangelogs(std::vector<CHANGELOG> &&logtexts) {
         changelog.title->setDrawBackground(false);
         changelog.title->setDrawFrame(false);
 
-        this->scrollView->getContainer()->addBaseUIElement(changelog.title);
+        this->scrollView->container->addBaseUIElement(changelog.title);
 
         // changes
         for(int c = 0; c < changelogs[i].changes.size(); c++) {
@@ -744,7 +744,7 @@ void Changelog::addAllChangelogs(std::vector<CHANGELOG> &&logtexts) {
 
             changelog.changes.push_back(change);
 
-            this->scrollView->getContainer()->addBaseUIElement(change);
+            this->scrollView->container->addBaseUIElement(change);
         }
 
         this->changelogs.push_back(changelog);

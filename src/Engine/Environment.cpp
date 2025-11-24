@@ -133,6 +133,7 @@ Environment::~Environment() {
     for(auto &[_, sdl_cur] : m_mCursorIcons) {
         SDL_DestroyCursor(sdl_cur);
     }
+    m_mCursorIcons.clear();
     env = nullptr;
 }
 

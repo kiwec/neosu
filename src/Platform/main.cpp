@@ -97,7 +97,7 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result) {
         restartArgs = fmain->getCommandLine();
     }
 
-    fmain->shutdown(result);
+    fmain->shutdown(result);  // FIXME: redundant?
     delete fmain;
     fmain = nullptr;
 
@@ -232,8 +232,6 @@ MAIN_FUNC /* int argc, char *argv[] */
         SDL_AppQuit(fmain, SDL_APP_FAILURE);
     }
 
-    const auto restartArgs{fmain->getCommandLine()};
-
     constexpr int SIZE_EVENTS = 64;
     std::array<SDL_Event, SIZE_EVENTS> events{};
 
@@ -267,7 +265,7 @@ MAIN_FUNC /* int argc, char *argv[] */
 
             if(lppAgent.WantsRestart()) {
                 // XXX: Not sure if this works, but I don't think I'll be using live++ restart
-                SDLMain::restart(restartArgs);
+                SDLMain::restart(arg_cmdline);
                 lppAgent.Restart(lpp::LPP_RESTART_BEHAVIOUR_INSTANT_TERMINATION, 0u, nullptr);
             }
 #endif
@@ -280,7 +278,7 @@ MAIN_FUNC /* int argc, char *argv[] */
     // i don't think this is reachable, but whatever
     // (we should hit SDL_AppQuit before this)
     if(fmain->isRestartScheduled()) {
-        SDLMain::restart(restartArgs);
+        SDLMain::restart(arg_cmdline);
     }
 
 #ifdef WITH_LIVEPP

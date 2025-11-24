@@ -268,7 +268,7 @@ void CarouselButton::onMouseInside() {
 
     // all elements must be CarouselButtons, at least
     const auto &elements{reinterpret_cast<const std::vector<CarouselButton *> &>(
-        this->songBrowser->getCarousel()->getContainer()->getElements())};
+        this->songBrowser->getCarousel()->container->vElements)};
 
     // move the rest of the buttons away from hovered-over one
     bool foundCenter = false;
@@ -291,7 +291,7 @@ void CarouselButton::onMouseOutside() {
     // together with the next element already getting onMouseInside!)
     if(this->moveAwayState == MOVE_AWAY_STATE::MOVE_CENTER) {
         const auto &elements{reinterpret_cast<const std::vector<CarouselButton *> &>(
-            this->songBrowser->getCarousel()->getContainer()->getElements())};
+            this->songBrowser->getCarousel()->container->vElements)};
 
         for(auto element : elements) {
             element->setMoveAwayState(MOVE_AWAY_STATE::MOVE_CENTER);

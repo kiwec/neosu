@@ -3,6 +3,7 @@
 #include "CBaseUIElement.h"
 
 class CBaseUIContainer : public CBaseUIElement {
+    NOCOPY_NOMOVE(CBaseUIContainer)
    public:
     CBaseUIContainer(float xPos = 0, float yPos = 0, float xSize = 0, float ySize = 0, UString name = "");
     ~CBaseUIContainer() override;
@@ -29,9 +30,7 @@ class CBaseUIContainer : public CBaseUIElement {
     CBaseUIContainer *removeBaseUIElement(CBaseUIElement *element);
     CBaseUIContainer *deleteBaseUIElement(CBaseUIElement *element);
 
-    CBaseUIElement *getBaseUIElement(const UString& name);
-
-    [[nodiscard]] inline const std::vector<CBaseUIElement *> &getElements() const { return this->vElements; }
+    CBaseUIElement *getBaseUIElement(const UString &name);
 
     void onMoved() override { this->update_pos(); }
     void onResized() override { this->update_pos(); }
@@ -47,6 +46,5 @@ class CBaseUIContainer : public CBaseUIElement {
 
     void update_pos();
 
-   protected:
     std::vector<CBaseUIElement *> vElements;
 };

@@ -23,6 +23,12 @@ T get_rand() {
 
 // fill an array with random bytes
 template <typename T, std::size_t N>
+void get_rand(std::array<T, N>& arr) {
+    static_assert(std::is_trivially_copyable_v<T>, "T must be trivially copyable");
+    get_bytes(reinterpret_cast<u8*>(arr.data()), sizeof(T) * N);
+}
+
+template <typename T, std::size_t N>
 void get_rand(T (&arr)[N]) {
     static_assert(std::is_trivially_copyable_v<T>, "T must be trivially copyable");
     get_bytes(reinterpret_cast<u8*>(arr), sizeof(T) * N);
@@ -50,6 +56,12 @@ void md5_f(std::string_view file_path, u8* hash);
 
 namespace conv {
 std::string encode64(const u8* src, size_t len);
+
+template <size_t N>
+std::string encode64(const std::array<u8, N>& src) {
+    return encode64(src.data(), N);
+}
+
 std::vector<u8> decode64(std::string src);
 
 template <size_t N>

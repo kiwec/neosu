@@ -92,7 +92,7 @@ double ConVar::getDoubleInt() const {
               (likely(!!ConVar::onGetValueProtectedCallback) && !ConVar::onGetValueProtectedCallback(this->sName))) {
         // FIXME: this is unreliable since onGetValueProtectedCallback might change arbitrarily,
         // need to invalidate cached state when that happens
-        // currently relying on a cvars->invalidateAllProtectedCaches "loophole" (see Bancho.cpp),
+        // currently relying on a cvars->invalidateAllProtectedCaches "backdoor" (see Bancho.cpp),
         // so the API user needs to know the implementation details or else they'll keep getting default values :)
         this->dCachedReturnedDouble.store(this->dDefaultValue, std::memory_order_release);
     } else {

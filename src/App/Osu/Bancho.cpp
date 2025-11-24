@@ -49,8 +49,8 @@ std::string BanchoState::username;
 MD5Hash BanchoState::pw_md5;
 
 bool BanchoState::is_oauth{false};
-u8 BanchoState::oauth_challenge[32]{};
-u8 BanchoState::oauth_verifier[32]{};
+std::array<u8, 32> BanchoState::oauth_challenge{};
+std::array<u8, 32> BanchoState::oauth_verifier{};
 
 bool BanchoState::spectating{false};
 i32 BanchoState::spectated_player_id{0};
@@ -69,7 +69,7 @@ UString BanchoState::client_hashes{ULITERAL("")};
 
 Room BanchoState::room;
 bool BanchoState::match_started{false};
-Slot BanchoState::last_scores[16];
+std::array<Slot, 16> BanchoState::last_scores{};
 
 std::unordered_map<std::string, BanchoState::Channel *> BanchoState::chat_channels;
 
@@ -116,7 +116,7 @@ void BanchoState::set_uid(i32 new_uid) {
 }
 
 void BanchoState::update_online_status(OnlineStatus new_status) {
-    const auto old_status = online_status;
+    const OnlineStatus old_status = online_status;
     online_status = new_status;
 
     osu->getOptionsMenu()->update_login_button(new_status == OnlineStatus::LOGGED_IN);
@@ -241,7 +241,7 @@ void BanchoState::handle_packet(Packet &packet) {
                         "multiplaying"sv, "browsing maps"sv,
                     };
                     static_assert(NB_ACTIONS == actions.size(), "missing action name");
-                    auto text = fmt::format("{} is now {}", user->name, actions[action]);
+                    UString text{fmt::format("{} is now {}", user->name, actions[action])};
                     auto open_dms = [uid = stats_user_id]() -> void {
                         UserInfo *user = BANCHO::User::get_user_info(uid);
                         osu->getChat()->openChannel(user->name);

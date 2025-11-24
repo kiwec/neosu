@@ -42,7 +42,7 @@ RoomUIElement::RoomUIElement(Lobby* multi, const Room& room, float x, float y, f
     auto title_ui = new CBaseUILabel(10, 5, title_width, 30, "", room.name);
     title_ui->setDrawFrame(false);
     title_ui->setDrawBackground(false);
-    this->getContainer()->addBaseUIElement(title_ui);
+    this->container->addBaseUIElement(title_ui);
 
     char player_count_str[256] = {0};
     snprintf(player_count_str, 255, "Players: %d/%d", room.nb_players, room.nb_open_slots);
@@ -50,19 +50,19 @@ RoomUIElement::RoomUIElement(Lobby* multi, const Room& room, float x, float y, f
     auto slots_ui = new CBaseUILabel(10, 33, player_count_width, 30, "", UString(player_count_str));
     slots_ui->setDrawFrame(false);
     slots_ui->setDrawBackground(false);
-    this->getContainer()->addBaseUIElement(slots_ui);
+    this->container->addBaseUIElement(slots_ui);
 
     this->join_btn = new UIButton(10, 65, 120, 30, "", "Join room");
     this->join_btn->setUseDefaultSkin();
     this->join_btn->setColor(0xff00d900);
     this->join_btn->setClickCallback(SA::MakeDelegate<&RoomUIElement::onRoomJoinButtonClick>(this));
-    this->getContainer()->addBaseUIElement(this->join_btn);
+    this->container->addBaseUIElement(this->join_btn);
 
     if(room.has_password) {
         auto pwlabel = new CBaseUILabel(135, 64, 150, 30, "", "(password required)");
         pwlabel->setDrawFrame(false);
         pwlabel->setDrawBackground(false);
-        this->getContainer()->addBaseUIElement(pwlabel);
+        this->container->addBaseUIElement(pwlabel);
     }
 }
 
@@ -187,7 +187,7 @@ void Lobby::updateLayout(vec2 newResolution) {
         noRoomsOpenElement->setSizeToContent(padding, padding);
         noRoomsOpenElement->setPos(this->list->getSize().x / 2 - noRoomsOpenElement->getSize().x / 2,
                                    this->list->getSize().y / 2 - noRoomsOpenElement->getSize().y / 2);
-        this->list->getContainer()->addBaseUIElement(noRoomsOpenElement);
+        this->list->container->addBaseUIElement(noRoomsOpenElement);
     }
 
     float heading_ratio = 70 / newResolution.y;
@@ -206,7 +206,7 @@ void Lobby::updateLayout(vec2 newResolution) {
         const f32 x = 10.f * osu->getUIScale();
         const f32 room_width = this->list->getSize().x - room_margin;
         auto room_ui = new RoomUIElement(this, *room, x, y, room_width, room_height);
-        this->list->getContainer()->addBaseUIElement(room_ui);
+        this->list->container->addBaseUIElement(room_ui);
         y += room_height + room_margin;
     }
 
@@ -225,7 +225,7 @@ void Lobby::joinRoom(u32 id, const UString& password) {
     packet.write_string(password.toUtf8());
     BANCHO::Net::send_packet(packet);
 
-    for(CBaseUIElement* elm : this->list->getContainer()->getElements()) {
+    for(CBaseUIElement* elm : this->list->container->vElements) {
         auto* room = dynamic_cast<RoomUIElement*>(elm);
         if(room == nullptr) continue;
         if(std::cmp_not_equal(room->room_id, id)) continue;

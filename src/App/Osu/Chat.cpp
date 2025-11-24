@@ -100,7 +100,7 @@ void ChatChannel::add_message(ChatMessage msg) {
     auto *timestamp = new CBaseUILabel(x, this->y_total, time_width, line_height, "", timestamp_str);
     timestamp->setDrawFrame(false);
     timestamp->setDrawBackground(false);
-    this->ui->getContainer()->addBaseUIElement(timestamp);
+    this->ui->container->addBaseUIElement(timestamp);
     x += time_width;
 
     bool is_system_message = msg.author_name.length() == 0;
@@ -110,7 +110,7 @@ void ChatChannel::add_message(ChatMessage msg) {
         user_box->setTextColor(0xff2596be);
         user_box->setPos(x, this->y_total);
         user_box->setSize(name_width, line_height);
-        this->ui->getContainer()->addBaseUIElement(user_box);
+        this->ui->container->addBaseUIElement(user_box);
         x += name_width;
 
         if(!is_action) {
@@ -224,11 +224,11 @@ void ChatChannel::add_message(ChatMessage msg) {
                     if(is_system_message) {
                         text->setTextColor(system_color);
                     }
-                    this->ui->getContainer()->addBaseUIElement(text);
+                    this->ui->container->addBaseUIElement(text);
                 } else {
                     auto *link =
                         new ChatLink(x, this->y_total, line_width - x, line_height, fragment->getName(), text_str);
-                    this->ui->getContainer()->addBaseUIElement(link);
+                    this->ui->container->addBaseUIElement(link);
                 }
 
                 x = 10;
@@ -249,10 +249,10 @@ void ChatChannel::add_message(ChatMessage msg) {
             if(is_system_message) {
                 text->setTextColor(system_color);
             }
-            this->ui->getContainer()->addBaseUIElement(text);
+            this->ui->container->addBaseUIElement(text);
         } else {
             auto *link = new ChatLink(x, this->y_total, line_width - x, line_height, fragment->getName(), text_str);
-            this->ui->getContainer()->addBaseUIElement(link);
+            this->ui->container->addBaseUIElement(link);
         }
 
         x = line_width;
@@ -398,7 +398,7 @@ void Chat::mouse_update(bool *propagate_clicks) {
 
     if(this->user_list->isVisible()) {
         // Request presence & stats for on-screen user cards
-        for(auto elm : this->user_list->getContainer()->getElements()) {
+        for(auto elm : this->user_list->container->vElements) {
             auto *card = (UserCard2 *)elm;
             bool is_above_bottom = card->getPos().y <= this->user_list->getPos().y + this->user_list->getSize().y;
             bool is_below_top = card->getPos().y + card->getSize().y >= this->user_list->getPos().y;
@@ -1156,7 +1156,7 @@ void Chat::updateUserList() {
     std::ranges::sort(sorted_users, SString::alnum_comp, [](const UserInfo *ui) { return ui->name.toUtf8(); });
 
     // Intentionally not calling this->user_list->clear(), because that would affect scroll position/animation
-    this->user_list->getContainer()->freeElements();
+    this->user_list->container->freeElements();
 
     for(auto user : sorted_users) {
         if(total_x + card_size.x + MARGIN > size.x) {
@@ -1169,7 +1169,7 @@ void Chat::updateUserList() {
         card->setPos(total_x, total_y);
         card->setVisible(false);
 
-        this->user_list->getContainer()->addBaseUIElement(card);
+        this->user_list->container->addBaseUIElement(card);
 
         // Only display the card if we have presence data
         // (presence data is only fetched *after* UserCard2 is initialized)

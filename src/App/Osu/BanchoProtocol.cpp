@@ -92,7 +92,7 @@ void Room::pack(Packet &packet) {
     packet.write<u32>(this->seed);
 }
 
-bool Room::is_host() { return this->host_id == BanchoState::get_uid(); }
+bool Room::is_host() const { return this->host_id == BanchoState::get_uid(); }
 
 ScoreFrame ScoreFrame::get() {
     u8 slot_id = 0;

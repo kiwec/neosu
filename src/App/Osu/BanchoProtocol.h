@@ -192,26 +192,26 @@ struct Slot {
     double sv2_bonus = 0.0;
 
     // locked
-    bool is_locked() { return (this->status & 0b00000010); }
+    [[nodiscard]] inline bool is_locked() const { return (this->status & 0b00000010); }
 
     // ready
-    bool is_ready() { return (this->status & 0b00001000); }
+    [[nodiscard]] inline bool is_ready() const { return (this->status & 0b00001000); }
 
     // no_map
-    bool no_map() { return (this->status & 0b00010000); }
+    [[nodiscard]] inline bool no_map() const { return (this->status & 0b00010000); }
 
     // playing
-    bool is_player_playing() { return (this->status & 0b00100000); }
-    bool has_finished_playing() { return (this->status & 0b01000000); }
+    [[nodiscard]] inline bool is_player_playing() const { return (this->status & 0b00100000); }
+    [[nodiscard]] inline bool has_finished_playing() const { return (this->status & 0b01000000); }
 
     // no_map
-    bool is_missing_beatmap() { return (this->status & 0b00010000); }
+    [[nodiscard]] inline bool is_missing_beatmap() const { return (this->status & 0b00010000); }
 
     // quit
-    bool has_quit() { return (this->status & 0b10000000); }
+    [[nodiscard]] inline bool has_quit() const { return (this->status & 0b10000000); }
 
     // not_ready | ready | no_map | playing | complete
-    bool has_player() { return (this->status & 0b01111100); }
+    [[nodiscard]] inline bool has_player() const { return (this->status & 0b01111100); }
 };
 
 class Room {
@@ -238,7 +238,7 @@ class Room {
     UString password{ULITERAL("")};
     UString map_name{ULITERAL("")};
 
-    Slot slots[16];
+    std::array<Slot, 16> slots{};
 
     u8 mode = 0;
     u8 win_condition = 0;
@@ -248,9 +248,9 @@ class Room {
     u8 nb_players = 0;
     u8 nb_open_slots = 0;
 
-    bool nb_ready() {
+    [[nodiscard]] inline bool nb_ready() const {
         u8 nb = 0;
-        for(auto &slot : this->slots) {
+        for(const auto &slot : this->slots) {
             if(slot.has_player() && slot.is_ready()) {
                 nb++;
             }
@@ -258,8 +258,8 @@ class Room {
         return nb;
     }
 
-    bool all_players_ready() {
-        for(auto &slot : this->slots) {
+    [[nodiscard]] inline bool all_players_ready() const {
+        for(const auto &slot : this->slots) {
             if(slot.has_player() && !slot.is_ready()) {
                 return false;
             }
@@ -267,7 +267,7 @@ class Room {
         return true;
     }
 
-    bool is_host();
+    [[nodiscard]] bool is_host() const;
     void pack(Packet &packet);
 };
 

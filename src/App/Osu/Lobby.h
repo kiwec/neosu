@@ -21,7 +21,6 @@ struct RoomUIElement : CBaseUIScrollView {
     RoomUIElement(Lobby* multi, const Room& room, float x, float y, float width, float height);
 
     UIButton* join_btn;
-    CBaseUIScrollView* ui;
     Lobby* multi;
     i32 room_id;
     bool has_password;

@@ -22,7 +22,7 @@ void submit_score(FinishedScore score) {
     debugLog("Submitting score...");
     constexpr auto GRADES = std::array{"XH", "SH", "X", "S", "A", "B", "C", "D", "F", "N"};
 
-    u8 iv[32];
+    std::array<u8, 32> iv;
     crypto::rng::get_rand(iv);
 
     NetworkHandler::RequestOptions options;
@@ -81,7 +81,7 @@ void submit_score(FinishedScore score) {
         .data = {osu_version.begin(), osu_version.end()},
     });
 
-    auto iv_b64 = crypto::conv::encode64(iv, sizeof(iv));
+    auto iv_b64 = crypto::conv::encode64(iv);
     options.mime_parts.push_back({
         .name = "iv",
         .data = {iv_b64.begin(), iv_b64.end()},
@@ -90,8 +90,8 @@ void submit_score(FinishedScore score) {
     {
         size_t s_client_hashes_encrypted = 0;
         u8 *client_hashes_encrypted =
-            BANCHO::AES::encrypt(iv, (u8 *)BanchoState::client_hashes.toUtf8(), BanchoState::client_hashes.lengthUtf8(),
-                                 &s_client_hashes_encrypted);
+            BANCHO::AES::encrypt(iv.data(), (u8 *)BanchoState::client_hashes.toUtf8(),
+                                 BanchoState::client_hashes.lengthUtf8(), &s_client_hashes_encrypted);
         auto client_hashes_b64 = crypto::conv::encode64(client_hashes_encrypted, s_client_hashes_encrypted);
         options.mime_parts.push_back({
             .name = "s",
@@ -157,7 +157,7 @@ void submit_score(FinishedScore score) {
 
         size_t s_score_data_encrypted = 0;
         u8 *score_data_encrypted =
-            BANCHO::AES::encrypt(iv, (u8 *)score_data.data(), score_data.size(), &s_score_data_encrypted);
+            BANCHO::AES::encrypt(iv.data(), (u8 *)score_data.data(), score_data.size(), &s_score_data_encrypted);
         auto score_data_b64 = crypto::conv::encode64(score_data_encrypted, s_score_data_encrypted);
         delete[] score_data_encrypted;
         options.mime_parts.push_back({

@@ -478,7 +478,7 @@ void CBaseUIScrollView::scrollToXInt(int scrollPosX, bool animated, bool slow) {
 }
 
 void CBaseUIScrollView::scrollToElement(CBaseUIElement *element, int /*xOffset*/, int yOffset, bool animated) {
-    const std::vector<CBaseUIElement *> &elements = this->container->getElements();
+    const std::vector<CBaseUIElement *> &elements = this->container->vElements;
     for(auto i : elements) {
         if(i == element) {
             this->scrollToY(-element->getRelPos().y + yOffset, animated);
@@ -490,7 +490,7 @@ void CBaseUIScrollView::scrollToElement(CBaseUIElement *element, int /*xOffset*/
 void CBaseUIScrollView::updateClipping() {
     bool didSomethingActuallyChangeVisibility = false;
 
-    const std::vector<CBaseUIElement *> &elements = this->container->getElements();
+    const std::vector<CBaseUIElement *> &elements = this->container->vElements;
     const McRect &me{this->getRect()};
 
     for(auto e : elements) {
@@ -566,7 +566,7 @@ CBaseUIScrollView *CBaseUIScrollView::setScrollSizeToContent(int border) {
 
     this->vScrollSize = {0.f, 0.f};
 
-    const std::vector<CBaseUIElement *> &elements = this->container->getElements();
+    const std::vector<CBaseUIElement *> &elements = this->container->vElements;
     for(auto e : elements) {
         const float x = e->getRelPos().x + e->getSize().x;
         const float y = e->getRelPos().y + e->getSize().y;

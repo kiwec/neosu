@@ -491,7 +491,7 @@ void ConsoleBox::onChar(KeyboardEvent &e) {
         this->suggestion->setVisible(suggestions.size() > 0);
 
         if(suggestions.size() > 0) {
-            this->suggestion->scrollToElement(this->suggestion->getContainer()->getElements()[0]);
+            this->suggestion->scrollToElement(this->suggestion->container->vElements[0]);
             this->textbox->setSuggestion(suggestions[0]->getName());
         } else
             this->textbox->setSuggestion(u"");
@@ -546,7 +546,7 @@ void ConsoleBox::addSuggestion(const UString &text, const UString &helpText, con
         button->setClickCallback(SA::MakeDelegate<&ConsoleBox::onSuggestionClicked>(this));
         button->setDrawBackground(false);
     }
-    this->suggestion->getContainer()->addBaseUIElement(button);
+    this->suggestion->container->addBaseUIElement(button);
     this->vSuggestionButtons.insert(this->vSuggestionButtons.begin(), button);
 
     // update suggestion size
@@ -569,7 +569,7 @@ void ConsoleBox::addSuggestion(const UString &text, const UString &helpText, con
 
 void ConsoleBox::clearSuggestions() {
     this->iSuggestionCount = 0;
-    this->suggestion->getContainer()->freeElements();
+    this->suggestion->container->freeElements();
     this->vSuggestionButtons = std::vector<CBaseUIButton *>();
     this->suggestion->setVisible(false);
 }
@@ -586,7 +586,7 @@ void ConsoleBox::toggle(KeyboardEvent &e) {
         this->bConsoleAnimateOut = true;
         anim->moveSmoothEnd(&this->fConsoleAnimation, 0, 2.0f * 0.8f);
 
-        if(this->suggestion->getContainer()->getElements().size() > 0) this->bSuggestionAnimateOut = true;
+        if(this->suggestion->container->vElements.size() > 0) this->bSuggestionAnimateOut = true;
 
         e.consume();
     } else if(!this->bConsoleAnimateOut && !this->bSuggestionAnimateOut) {
@@ -597,7 +597,7 @@ void ConsoleBox::toggle(KeyboardEvent &e) {
 
         anim->moveSmoothEnd(&this->fConsoleAnimation, this->getAnimTargetY(), 1.5f * 0.6f);
 
-        if(this->suggestion->getContainer()->getElements().size() > 0) {
+        if(this->suggestion->container->vElements.size() > 0) {
             this->bSuggestionAnimateIn = true;
             this->suggestion->setVisible(true);
         }

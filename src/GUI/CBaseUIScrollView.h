@@ -5,6 +5,7 @@
 class CBaseUIContainer;
 
 class CBaseUIScrollView : public CBaseUIElement {
+    NOCOPY_NOMOVE(CBaseUIScrollView)
    public:
     CBaseUIScrollView(float xPos = 0, float yPos = 0, float xSize = 0, float ySize = 0, const UString &name = "");
     ~CBaseUIScrollView() override;
@@ -93,7 +94,6 @@ class CBaseUIScrollView : public CBaseUIElement {
     }
 
     // get
-    [[nodiscard]] inline CBaseUIContainer *getContainer() const { return this->container; }
     [[nodiscard]] inline float getRelPosY() const { return this->vScrollPos.y; }
     [[nodiscard]] inline float getRelPosX() const { return this->vScrollPos.x; }
     [[nodiscard]] inline vec2 getScrollSize() const { return this->vScrollSize; }
@@ -113,6 +113,9 @@ class CBaseUIScrollView : public CBaseUIElement {
     void onEnabled() override;
     void onDisabled() override;
 
+    // main container
+    CBaseUIContainer *container;
+
    protected:
     void onMoved() override;
 
@@ -122,9 +125,6 @@ class CBaseUIScrollView : public CBaseUIElement {
 
     void scrollToYInt(int scrollPosY, bool animated = true, bool slow = true);
     void scrollToXInt(int scrollPosX, bool animated = true, bool slow = true);
-
-    // main container
-    CBaseUIContainer *container;
 
     // vars
     Color backgroundColor{0xff000000};
