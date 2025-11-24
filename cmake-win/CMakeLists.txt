@@ -21,6 +21,8 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
 endif()
 
+option(WITH_LIVEPP "Enable LivePP support" OFF)
+
 # Use static runtime libraries
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
@@ -503,6 +505,7 @@ ExternalProject_Add(neosu_main
         -DDEPS_INSTALL_DIR=${DEPS_INSTALL_DIR}
         -DDEPS_CACHE=${DEPS_CACHE}
         -DBASS_VERSION=${BASS_VERSION}
+        -DWITH_LIVEPP=${WITH_LIVEPP}
         -DCMAKE_PREFIX_PATH=${DEPS_INSTALL_DIR}
         -DCMAKE_FIND_ROOT_PATH=${DEPS_INSTALL_DIR}
         -DCMAKE_FIND_ROOT_PATH_MODE_PROGRAM=NEVER

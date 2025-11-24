@@ -106,6 +106,13 @@ echo Build directory: %BUILD_DIR%
 echo Dependency cache: depcache
 echo.
 
+:: Check for LivePP
+if exist "..\LivePP" (
+    set WITH_LIVEPP=ON
+) else (
+    set WITH_LIVEPP=OFF
+)
+
 :: Configure superbuild
 if not exist "%BUILD_DIR%" mkdir "%BUILD_DIR%"
 if not exist "%INSTALL_PREFIX%" mkdir "%INSTALL_PREFIX%"
@@ -113,6 +120,7 @@ echo Configuring superbuild...
 cmake -S . -B "%BUILD_DIR%" -G "Visual Studio 17 2022" -A x64 ^
     -DCMAKE_INSTALL_PREFIX="%INSTALL_PREFIX%" ^
     -DCMAKE_BUILD_TYPE=%BUILD_TYPE% ^
+    -DWITH_LIVEPP=%WITH_LIVEPP% ^
     -DCMAKE_CXX_FLAGS="/DWIN32 /D_WINDOWS /EHs-c-"
 if %ERRORLEVEL% neq 0 (
     echo Configuration failed

@@ -59,6 +59,13 @@ set(MCENGINE_FEATURE_OPENGL ON)
 set(MCENGINE_FEATURE_BASS ON)
 set(MCENGINE_FEATURE_SOLOUD ON)
 set(MCENGINE_FEATURE_DIRECTX11 ON)
+option(WITH_LIVEPP "Enable LivePP support" OFF)
+
+if(WITH_LIVEPP)
+    message(STATUS "LivePP support enabled")
+    add_compile_definitions(WITH_LIVEPP)
+    include_directories("${CMAKE_SOURCE_DIR}/../../LivePP/API/x64")
+endif()
 
 if(NOT DISABLE_NSYNC)
 set(USE_NSYNC ON)
@@ -193,7 +200,7 @@ target_compile_options(neosu PRIVATE
     "/DUNICODE=1"
     "/EHs-c-"
     "/D_HAS_EXCEPTIONS=0" # idk why it needs to be added here too...?
-    $<$<CONFIG:Debug>:/Zi;/Od;/RTC1>
+    $<$<CONFIG:Debug>:/Zi;/Od;/RTC1;/Gm->
     $<$<CONFIG:Release>:/Zi;/O2;/Oi;/Oy;/Gw;/GS-;/Gy>
     ${BZIP2_STATIC_CFLAGS}
     ${LIBARCHIVE_STATIC_CFLAGS}
@@ -214,7 +221,7 @@ target_compile_definitions(neosu PRIVATE
 
 # Link options
 target_link_options(neosu PRIVATE
-    $<$<CONFIG:Debug>:/DEBUG:FULL;/SUBSYSTEM:CONSOLE;/ENTRY:wmainCRTStartup;/PROFILE>
+    $<$<CONFIG:Debug>:/DEBUG:FULL;/SUBSYSTEM:CONSOLE;/ENTRY:wmainCRTStartup;/INCREMENTAL;/FUNCTIONPADMIN;/OPT:NOREF;/OPT:NOICF>
     $<$<CONFIG:Release>:/DEBUG:FULL;/SUBSYSTEM:WINDOWS;/ENTRY:wWinMainCRTStartup;/OPT:REF;/OPT:ICF>
     /STACK:8388608 # 8MB default stack size
     ${LIBARCHIVE_STATIC_LDFLAGS}

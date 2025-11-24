@@ -67,6 +67,10 @@ void setcwdexe(const std::string &exePathStr) noexcept {
 #define SET_FPU_DAZ_FTZ
 #endif
 
+#ifdef WITH_LIVEPP
+#include "LPP_API_x64_CPP.h"
+#endif
+
 #include "main_impl.h"
 #include "DiffCalcTool.h"
 
@@ -125,6 +129,16 @@ SDL_AppResult SDL_AppIterate(void *appstate) { return static_cast<SDLMain *>(app
 // actual main/init, called once
 MAIN_FUNC /* int argc, char *argv[] */
 {
+#ifdef WITH_LIVEPP
+    debugLog("Starting Live++");
+    lpp::LppSynchronizedAgent lppAgent = lpp::LppCreateSynchronizedAgent(nullptr, L"../../../LivePP");
+    if(!lpp::LppIsValidSynchronizedAgent(&lppAgent)) {
+        return 1;
+    }
+
+    lppAgent.EnableModule(lpp::LppGetCurrentModulePath(), lpp::LPP_MODULES_OPTION_NONE, nullptr, nullptr);
+#endif
+
     const bool diffcalcOnly = argc >= 2 && strncmp(argv[1], "-diffcalc", sizeof("-diffcalc") - 1) == 0;
     if(diffcalcOnly) {
         return run_diffcalc(argc, argv);
@@ -245,6 +259,19 @@ MAIN_FUNC /* int argc, char *argv[] */
             } while(eventCount == SIZE_EVENTS);
         }
         {
+#ifdef WITH_LIVEPP
+            if(lppAgent.WantsReload(lpp::LPP_RELOAD_OPTION_SYNCHRONIZE_WITH_RELOAD)) {
+                // XXX: Should pause/restart threads here instead of just yoloing
+                lppAgent.Reload(lpp::LPP_RELOAD_BEHAVIOUR_WAIT_UNTIL_CHANGES_ARE_APPLIED);
+            }
+
+            if(lppAgent.WantsRestart()) {
+                // XXX: Not sure if this works, but I don't think I'll be using live++ restart
+                SDLMain::restart(restartArgs);
+                lppAgent.Restart(lpp::LPP_RESTART_BEHAVIOUR_INSTANT_TERMINATION, 0u, nullptr);
+            }
+#endif
+
             // engine update + draw + fps limiter
             fmain->iterate();
         }
@@ -255,6 +282,10 @@ MAIN_FUNC /* int argc, char *argv[] */
     if(fmain->isRestartScheduled()) {
         SDLMain::restart(restartArgs);
     }
+
+#ifdef WITH_LIVEPP
+    lpp::LppDestroySynchronizedAgent(&lppAgent);
+#endif
 
     return 0;
 #else

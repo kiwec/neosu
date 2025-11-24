@@ -45,6 +45,7 @@ release/
 /cmake-win/build*/
 /cmake-win/dist*/
 /cmake-win/\.*
+/LivePP/
 
 /Makefile
 /Makefile.in
