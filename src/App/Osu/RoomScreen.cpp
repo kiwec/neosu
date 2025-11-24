@@ -101,14 +101,16 @@ bool UIModList::isVisible() { return !!*this->flags; }
         label_name->setDrawBackground(false);                             \
     } while(0)
 
-#define ADD_ELEMENT(element)                                           \
-    do {                                                               \
-        element->onResized();                                          \
-        element->setSizeToContent(button_padding, button_padding);     \
-        element->setPos(10.f * osu->getUIScale(), settings_y);         \
-        this->settings->getContainer()->addBaseUIElement(element);     \
-        settings_y += element->getSize().y + 20.f * osu->getUIScale(); \
+#define ADD_ELEMENT_WITH_PADDING(element, x_padding, y_padding)    \
+    do {                                                           \
+        element->onResized();                                      \
+        element->setSizeToContent(x_padding, y_padding);           \
+        element->setPos(10.f * osu->getUIScale(), settings_y);     \
+        this->settings->getContainer()->addBaseUIElement(element); \
+        settings_y += element->getSize().y;                        \
     } while(0)
+
+#define ADD_ELEMENT(element) ADD_ELEMENT_WITH_PADDING(element, button_padding, button_padding)
 
 #define ADD_BUTTON(button, label)                                                             \
     do {                                                                                      \
@@ -119,6 +121,11 @@ bool UIModList::isVisible() { return !!*this->flags; }
         button->setPos(label->getSize().x + 20.f * osu->getUIScale(),                         \
                        label->getPos().y + (label->getSize().y - button->getSize().y) / 2.f); \
         this->settings->getContainer()->addBaseUIElement(button);                             \
+    } while(0)
+
+#define PAD(x)                               \
+    do {                                     \
+        settings_y += x * osu->getUIScale(); \
     } while(0)
 
 RoomScreen::RoomScreen() : OsuScreen() {
@@ -387,6 +394,7 @@ void RoomScreen::updateSettingsLayout(vec2 newResolution) {
         ADD_ELEMENT(this->room_name_iptl);
         this->room_name_ipt->setSize(this->settings->getSize().x - 20.f * osu->getUIScale(), 40.f * osu->getUIScale());
         ADD_ELEMENT(this->room_name_ipt);
+        PAD(10.f);
     }
 
     // Win condition
@@ -408,7 +416,7 @@ void RoomScreen::updateSettingsLayout(vec2 newResolution) {
     }
 
     // Beatmap
-    settings_y += 10.f * osu->getUIScale();
+    PAD(20.f);
     ADD_ELEMENT(map_label);
     if(is_host) {
         ADD_BUTTON(this->select_map_btn, map_label);
@@ -421,7 +429,7 @@ void RoomScreen::updateSettingsLayout(vec2 newResolution) {
     }
 
     // Mods
-    settings_y += 10.f * osu->getUIScale();
+    PAD(20.f);
     ADD_ELEMENT(mods_label);
     if(is_host || BanchoState::room.freemods) {
         ADD_BUTTON(this->select_mods_btn, mods_label);
@@ -460,7 +468,8 @@ void RoomScreen::updateSettingsLayout(vec2 newResolution) {
         this->ready_btn->setText(is_ready ? "Not ready" : "Ready!");
         this->ready_btn->setColor(is_ready ? 0xffd90000 : 0xff00d900);
     }
-    ADD_ELEMENT(this->ready_btn);
+    PAD(20.f);
+    ADD_ELEMENT_WITH_PADDING(this->ready_btn, button_padding * 10, button_padding * 1.5);
 
     this->settings->setScrollSizeToContent();
 }
