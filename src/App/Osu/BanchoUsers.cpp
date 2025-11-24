@@ -27,11 +27,11 @@ std::vector<const UserInfo*> stats_requests;
 }  // namespace
 
 void dequeue_presence_request(const UserInfo* info) {
-    std::erase_if(presence_requests, [info](const auto& uinfo) { return uinfo == info; });
+    std::erase_if(presence_requests, [info](const UserInfo* uinfo) { return uinfo == info; });
 }
 
 void dequeue_stats_request(const UserInfo* info) {
-    std::erase_if(stats_requests, [info](const auto& uinfo) { return uinfo == info; });
+    std::erase_if(stats_requests, [info](const UserInfo* uinfo) { return uinfo == info; });
 }
 
 void enqueue_presence_request(const UserInfo* info) {

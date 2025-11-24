@@ -21,7 +21,7 @@ class AvatarManager final {
     NOCOPY_NOMOVE(AvatarManager)
 
    public:
-    AvatarManager() = default;
+    AvatarManager() { this->load_queue.reserve(128); };
     ~AvatarManager() { this->clear(); }
 
     // this is run during Osu::update(), while not in unpaused gameplay
@@ -54,8 +54,10 @@ class AvatarManager final {
     // all AvatarEntries added through add_avatar remain alive forever, but the actual Image resource
     // it references will be unloaded (by priority of access time) to keep VRAM/RAM usage sustainable
     std::unordered_map<AvatarIdentifier, AvatarEntry> avatars;
-    std::deque<AvatarIdentifier> load_queue;
+    std::vector<AvatarIdentifier> load_queue;
     std::unordered_map<AvatarIdentifier, std::atomic<u32>> avatar_refcount;
     std::unordered_set<AvatarIdentifier> id_blacklist;
     std::vector<u8> temp_img_download_data;  // if it has something in it, we just downloaded something
+
+    size_t last_checked_queue_element{0};
 };

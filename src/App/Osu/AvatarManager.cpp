@@ -14,6 +14,9 @@
 
 #include <sys/stat.h>
 
+class Osu;
+extern Osu* osu;
+
 Image* AvatarManager::get_avatar(const AvatarIdentifier& id_folder) {
     auto it = this->avatars.find(id_folder);
     if(it == this->avatars.end()) {
@@ -34,8 +37,10 @@ Image* AvatarManager::get_avatar(const AvatarIdentifier& id_folder) {
 
 // this is run during Osu::update(), while not in unpaused gameplay
 void AvatarManager::update() {
+    const uSz cur_load_queue_size = this->load_queue.size();
+
     // nothing to do
-    if(this->load_queue.empty()) {
+    if(cur_load_queue_size == 0) {
         return;
     }
 
@@ -49,10 +54,17 @@ void AvatarManager::update() {
     // remove oldest avatars if we have too many loaded
     this->prune_oldest_avatars();
 
-    // process download queue (we might not drain it fully due to only checking download progress once,
-    // but we'll check again next update)
-    for(int i = 0; i < this->load_queue.size(); i++) {
-        auto id_folder = this->load_queue.front();
+    // process 4 elements at a time from the download queue
+    // we might not drain it fully due to only checking download progress once,
+    // but we'll check again next update
+    static constexpr const uSz ELEMS_TO_CHECK{4};
+
+    this->last_checked_queue_element %= cur_load_queue_size;  // wrap at ends
+
+    for(uSz i = this->last_checked_queue_element, num_checked = 0;
+        num_checked < ELEMS_TO_CHECK && i < this->load_queue.size();
+        ++num_checked, ++i, ++this->last_checked_queue_element) {
+        auto id_folder = this->load_queue[i];
 
         bool exists_on_disk = false;
         struct stat attr;
@@ -74,39 +86,47 @@ void AvatarManager::update() {
         } else if((newly_downloaded = this->download_avatar(id_folder))) {
             // write async
             io->write(id_folder.second, std::move(this->temp_img_download_data),
-                      [this, pair = id_folder](bool success) -> void {
+                      [&avatars = this->avatars, pair = id_folder](bool success) -> void {
+                          if(!osu) return;  // do not run callback if osu has shut down
                           if(success) {
-                              this->avatars[pair] = {
-                                  .file_path = pair.second, .image = nullptr, .last_access_time = 0.0};
+                              avatars[pair] = {.file_path = pair.second, .image = nullptr, .last_access_time = 0.0};
                           }
                       });
         }
 
         if(exists_on_disk || newly_downloaded) {
-            this->load_queue.pop_front();  // remove it from the queue
+            this->load_queue.erase(this->load_queue.begin() + (sSz)i);  // remove it from the queue
         }
     }
 }
 
 void AvatarManager::add_avatar(const AvatarIdentifier& id_folder) {
+    const bool debug = cv::debug_avatars.getBool();
+
     // increment refcount even if we didn't add to load queue
     const u32 current_refcount = this->avatar_refcount[id_folder].fetch_add(1, std::memory_order_relaxed) + 1;
+    logIf(debug, "trying to add {} to load queue, current refcount: {}", id_folder.first, current_refcount);
 
-    logIfCV(debug_avatars, "trying to add {} to load queue, current refcount: {}", id_folder.first, current_refcount);
-    if(this->id_blacklist.contains(id_folder) || this->avatars.contains(id_folder)) {
-        logIfCV(debug_avatars, "not adding {} to load queue, {}", id_folder.first,
-                this->avatars.contains(id_folder) ? "already have it in avatars" : "blacklisted");
-        return;
+    {
+        bool already_added = false;
+        if(current_refcount > 1 || this->id_blacklist.contains(id_folder) ||
+           (already_added = this->avatars.contains(id_folder))) {
+            logIf(
+                debug, "not adding {} to load queue, {}", id_folder.first,
+                current_refcount > 1 ? "refcount > 1" : (already_added ? "already have it in avatars" : "blacklisted"));
+            return;
+        }
     }
 
     if(resourceManager->getImage(id_folder.second)) {
         // shouldn't happen...
-        logIfCV(debug_avatars, "{} already tracked by ResourceManager, not adding", id_folder.second);
+        logIf(debug, "{} already tracked by ResourceManager, not adding", id_folder.second);
         return;
     }
 
     // avoid duplicates in queue
     if(!std::ranges::contains(this->load_queue, id_folder)) {
+        logIf(debug, "added {} to load queue", id_folder.first);
         this->load_queue.push_back(id_folder);
     }
 }
@@ -135,7 +155,7 @@ void AvatarManager::load_avatar_image(AvatarEntry& entry) {
 
 void AvatarManager::prune_oldest_avatars() {
     // don't even do anything if we're not close to the limit (incl. unloaded)
-    if(this->avatars.size() <= (size_t)(MAX_LOADED_AVATARS * (7.f / 8.f))) return;
+    if(this->avatars.size() <= (uSz)(MAX_LOADED_AVATARS * (7.f / 8.f))) return;
 
     // collect all loaded entries
     std::vector<std::unordered_map<AvatarIdentifier, AvatarEntry>::iterator> loaded_entries;
@@ -155,8 +175,8 @@ void AvatarManager::prune_oldest_avatars() {
     });
 
     // unload oldest images (a bit more, to not constantly be unloading images for each new image added after we hit the limit once)
-    size_t to_unload = std::clamp<size_t>((size_t)(MAX_LOADED_AVATARS / 4.f), 0, loaded_entries.size() / 2);
-    for(size_t i = 0; i < to_unload; ++i) {
+    uSz to_unload = std::clamp<uSz>((uSz)(MAX_LOADED_AVATARS / 4.f), 0, loaded_entries.size() / 2);
+    for(uSz i = 0; i < to_unload; ++i) {
         logIfCV(debug_avatars, "unloading {} from memory due to age", loaded_entries[i]->second.file_path);
         resourceManager->destroyResource(loaded_entries[i]->second.image);
         loaded_entries[i]->second.image = nullptr;

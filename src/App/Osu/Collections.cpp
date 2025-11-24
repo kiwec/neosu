@@ -24,14 +24,9 @@ std::vector<Collection>& get_loaded() { return s_collections; }
 bool delete_collection(std::string_view collection_name) {
     if(collection_name.empty() || s_collections.empty()) return false;
 
-    const auto& to_delete =
-        std::ranges::find(s_collections, collection_name, [](const auto& col) -> std::string_view { return col.name; });
-
-    if(to_delete == s_collections.end()) return false;
-
-    s_collections.erase(to_delete);
-
-    return true;
+    const size_t erased = std::erase_if(
+        s_collections, [collection_name](const auto& col) -> bool { return col.name == collection_name; });
+    return erased > 0;
 }
 
 void Collection::add_map(const MD5Hash& map_hash) {
