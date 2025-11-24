@@ -37,6 +37,8 @@ Changelog::Changelog() : ScreenBackable() {
         R"(  - Beatmap difficulties are now properly grouped by mapset when searching in "No Grouping" mode)",
         R"(  - All collections are now sorted alphabetically)",
         R"(  - Deleting/renaming collections now works properly)",
+        R"(- Removed combobreak sound when pressing wrong key with Alternate mod)",
+        R"(- Renamed Full Alternate to Alternate)",
     };
     changelogs.push_back(v41_09);
 

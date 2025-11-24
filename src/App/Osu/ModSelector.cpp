@@ -210,7 +210,7 @@ ModSelector::ModSelector() : OsuScreen() {
     this->addExperimentalCheckbox("Flip Left/Right", "Playfield is flipped left/right (mirrored at vertical axis).",
                                   &cv::playfield_mirror_vertical);
     this->addExperimentalCheckbox("Singletap", "You can only press one key.", &cv::mod_singletap);
-    this->addExperimentalCheckbox("Full Alternate", "You can never use the same key twice in a row.",
+    this->addExperimentalCheckbox("Alternate", "You can never use the same key twice in a row.",
                                   &cv::mod_fullalternate);
     this->addExperimentalCheckbox("No keylock", "You can use 4 keys instead of only 2.", &cv::mod_no_keylock);
     this->addExperimentalCheckbox("No pausing", "Pausing is cheating", &cv::mod_no_pausing);

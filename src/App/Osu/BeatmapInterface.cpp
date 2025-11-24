@@ -355,7 +355,6 @@ void BeatmapInterface::onKey(GameplayKeys key_flag, bool down, u64 timestamp) {
 
         if(cv::mod_fullalternate.getBool() && (this->lastPressedKey & key_flag)) {
             if(this->iCurrentHitObjectIndex > this->iAllowAnyNextKeyUntilHitObjectIndex) {
-                soundEngine->play(this->getSkin()->s_combobreak);
                 return;
             }
         }

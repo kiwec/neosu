@@ -39,9 +39,7 @@ ScoreButton::ScoreButton(UIContextMenu *contextMenu, float xPos, float yPos, flo
     if(recentScoreIconString.length() < 1) recentScoreIconString.insert(0, Icons::ARROW_CIRCLE_UP);
 }
 
-ScoreButton::~ScoreButton() {
-    anim->deleteExistingAnimation(&this->fIndexNumberAnim);
-}
+ScoreButton::~ScoreButton() { anim->deleteExistingAnimation(&this->fIndexNumberAnim); }
 
 void ScoreButton::draw() {
     if(!this->bVisible) return;
@@ -780,7 +778,7 @@ void ScoreButton::setScore(const FinishedScore &newscore, const DatabaseBeatmap 
     if(flags::has<ARTimewarp>(sc.mods.flags)) this->tooltipLines.emplace_back("+ AR timewarp");
     if(flags::has<ARWobble>(sc.mods.flags)) this->tooltipLines.emplace_back("+ AR wobble");
     if(flags::has<FadingCursor>(sc.mods.flags)) this->tooltipLines.emplace_back("+ fading cursor");
-    if(flags::has<FullAlternate>(sc.mods.flags)) this->tooltipLines.emplace_back("+ full alternate");
+    if(flags::has<FullAlternate>(sc.mods.flags)) this->tooltipLines.emplace_back("+ alternate");
     if(flags::has<FPoSu_Strafing>(sc.mods.flags)) this->tooltipLines.emplace_back("+ FPoSu strafing");
     if(flags::has<FPS>(sc.mods.flags)) this->tooltipLines.emplace_back("+ FPS");
     if(flags::has<HalfWindow>(sc.mods.flags)) this->tooltipLines.emplace_back("+ half window");
@@ -800,6 +798,7 @@ void ScoreButton::setScore(const FinishedScore &newscore, const DatabaseBeatmap 
     if(flags::has<StrictTracking>(sc.mods.flags)) this->tooltipLines.emplace_back("+ strict tracking");
     if(flags::has<Wobble1>(sc.mods.flags)) this->tooltipLines.emplace_back("+ wobble1");
     if(flags::has<Wobble2>(sc.mods.flags)) this->tooltipLines.emplace_back("+ wobble2");
+    // TODO: missing mods such as singletap?
 
     if(this->style == STYLE::TOP_RANKS) {
         const int weightRounded = std::round(weight * 100.0f);
