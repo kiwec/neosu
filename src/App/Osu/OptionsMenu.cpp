@@ -621,7 +621,7 @@ OptionsMenu::OptionsMenu() : ScreenBackable() {
         cv::rich_presence.setCallback([](float newValue) -> void { return newValue > 0 ? DiscRPC::init() : (void)0; });
 
         // XXX: have a generic "update_activity"
-        cv::rich_presence_map_backgrounds.setCallback([]() { DiscRPC::clear_activity; });
+        cv::rich_presence_map_backgrounds.setCallback([]() { DiscRPC::clear_activity(); });
     }
 
     //**************************************************************************************************************************//
