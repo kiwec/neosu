@@ -2274,7 +2274,7 @@ void OptionsMenu::updateLayout() {
     this->options->container->update_pos();
 
     // TODO: wrong? look at button borders when hovering... ew...
-    f32 sidebarHeight = this->categories->getSize().y - osu->getSkin()->i_menu_back2->getSize().y;
+    f32 sidebarHeight = this->categories->getSize().y - this->backButton->getSize().y;
     i32 categoryPaddingTopBottom = sidebarHeight * 0.15f;
     i32 categoryHeight = (sidebarHeight - categoryPaddingTopBottom * 2) / this->categoryButtons.size();
     for(int i = 0; i < this->categoryButtons.size(); i++) {
