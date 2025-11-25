@@ -42,6 +42,8 @@ void UIBackButton::draw() {
         }
         g->popTransform();
     }
+
+    this->bFocusStolenDelay = false;
 }
 
 void UIBackButton::mouse_update(bool *propagate_clicks) {
@@ -55,11 +57,16 @@ void UIBackButton::onMouseDownInside(bool left, bool right) {
     soundEngine->play(osu->getSkin()->s_click_back_button);
 }
 
+static float button_sound_cooldown = 0.f;
 void UIBackButton::onMouseInside() {
     CBaseUIButton::onMouseInside();
+    if(this->bFocusStolenDelay) return;
 
     anim->moveQuadOut(&this->fAnimation, 1.0f, 0.1f, 0.0f, true);
-    soundEngine->play(osu->getSkin()->s_hover_back_button);
+    if(button_sound_cooldown + 0.05f < engine->getTime()) {
+        button_sound_cooldown = engine->getTime();
+        soundEngine->play(osu->getSkin()->s_hover_back_button);
+    }
 }
 
 void UIBackButton::onMouseOutside() {
@@ -87,4 +94,11 @@ void UIBackButton::updateLayout() {
 void UIBackButton::resetAnimation() {
     anim->deleteExistingAnimation(&this->fAnimation);
     this->fAnimation = 0.0f;
+}
+
+void UIBackButton::onFocusStolen() {
+    CBaseUIButton::onFocusStolen();
+
+    this->bMouseInside = false;
+    this->bFocusStolenDelay = true;
 }

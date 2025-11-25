@@ -52,8 +52,8 @@ class MainMenu::CubeButton final : public CBaseUIButton {
         CBaseUIButton::onMouseInside();
 
         if(this->mm_ptr->button_sound_cooldown + 0.05f < engine->getTime()) {
-            soundEngine->play(osu->getSkin()->s_hover_main_menu_cube);
             this->mm_ptr->button_sound_cooldown = engine->getTime();
+            soundEngine->play(osu->getSkin()->s_hover_main_menu_cube);
         }
     }
 
@@ -81,6 +81,7 @@ class MainMenu::MainButton final : public CBaseUIButton {
         CBaseUIButton::onMouseInside();
 
         if(this->mm_ptr->button_sound_cooldown + 0.05f < engine->getTime()) {
+            this->mm_ptr->button_sound_cooldown = engine->getTime();
             if(this->getText() == ULITERAL("Singleplayer")) {
                 soundEngine->play(osu->getSkin()->s_hover_sp);
             } else if(this->getText() == ULITERAL("Multiplayer")) {
@@ -90,8 +91,6 @@ class MainMenu::MainButton final : public CBaseUIButton {
             } else if(this->getText() == ULITERAL("Exit")) {
                 soundEngine->play(osu->getSkin()->s_hover_exit);
             }
-
-            this->mm_ptr->button_sound_cooldown = engine->getTime();
         }
     }
 

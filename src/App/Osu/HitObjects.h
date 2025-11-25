@@ -113,7 +113,6 @@ class HitObject {
     i32 iAutopilotDelta;
 
     HitSamples samples;
-    std::vector<HitSamples::Set_Slider_Hit> lastSliderSampleSets{};
     int iColorCounter;
     int iColorOffset;
 
@@ -277,6 +276,7 @@ class Slider final : public HitObject {
 
     std::vector<vec2> points;
     std::vector<HitSamples> edgeSamples;
+    std::vector<HitSamples::Set_Slider_Hit> lastSliderSampleSets{};
 
     std::vector<SLIDERTICK> ticks;  // ticks (drawing)
 

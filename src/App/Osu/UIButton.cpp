@@ -11,8 +11,6 @@
 #include "SoundEngine.h"
 #include "TooltipOverlay.h"
 
-static float button_sound_cooldown = 0.f;
-
 void UIButton::draw() {
     if(!this->bVisible || !this->bVisible2) return;
 
@@ -87,13 +85,17 @@ void UIButton::mouse_update(bool *propagate_clicks) {
     this->bFocusStolenDelay = false;
 }
 
+static float button_sound_cooldown = 0.f;
 void UIButton::onMouseInside() {
+    CBaseUIButton::onMouseInside();
+    if(this->bFocusStolenDelay) return;
+
     // There's actually no animation, it just goes to 1 instantly
     this->fHoverAnim = 1.f;
 
     if(button_sound_cooldown + 0.05f < engine->getTime()) {
-        soundEngine->play(osu->getSkin()->s_hover_button);
         button_sound_cooldown = engine->getTime();
+        soundEngine->play(osu->getSkin()->s_hover_button);
     }
 }
 

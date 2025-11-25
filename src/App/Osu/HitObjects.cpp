@@ -1858,11 +1858,12 @@ void Slider::update(i32 curPos, f64 frame_time) {
         // handle sliderslide sound
         // TODO @kiwec: move this to draw()
         if(this->pf != nullptr) {
-            bool sliding = this->bStartFinished && !this->bEndFinished && this->bCursorInside && this->iDelta <= 0;
-            sliding &= (this->isClickHeldSlider() || (flags::has<LegacyFlags::Autoplay>(this->pf->getModsLegacy())) ||
-                        (flags::has<LegacyFlags::Relax>(this->pf->getModsLegacy())));
-            sliding &= !this->pf->isPaused() && !this->pf->isWaiting() && this->pf->isPlaying();
-            sliding &= !this->pf->bWasSeekFrame;
+            const bool sliding =
+                this->bStartFinished && !this->bEndFinished && this->bCursorInside && this->iDelta <= 0             //
+                && (this->isClickHeldSlider() || (flags::has<LegacyFlags::Autoplay>(this->pf->getModsLegacy())) ||  //
+                    (flags::has<LegacyFlags::Relax>(this->pf->getModsLegacy())))                                    //
+                && !this->pf->isPaused() && !this->pf->isWaiting() && this->pf->isPlaying()                         //
+                && !this->pf->bWasSeekFrame;
 
             if(sliding) {
                 const vec2 osuCoords = this->pf->pixels2OsuCoords(this->pf->osuCoords2Pixels(this->vCurPointRaw));

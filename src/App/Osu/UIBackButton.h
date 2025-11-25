@@ -18,7 +18,10 @@ class UIBackButton final : public CBaseUIButton {
     void resetAnimation();
 
    private:
+    void onFocusStolen() override;
+
     float fAnimation;
 
     bool bUseDefaultBack{false};
+    bool bFocusStolenDelay{false};
 };
