@@ -1000,16 +1000,7 @@ OptionsMenu::OptionsMenu() : ScreenBackable() {
     {
         UISlider *sensSlider = this->addSlider("Sensitivity:", 0.1f, 6.0f, &cv::mouse_sensitivity);
         sensSlider->setKeyDelta(0.01f);
-        sensSlider->setChangeCallback([](CBaseUISlider *sldr) -> void {
-            OptionsMenu *this_ = osu->getOptionsMenu();
-            if(!this_) return;
-
-            this_->onSliderChange(sldr);
-
-            // to update the warning visibility... so disgusting
-            // don't update while dragging, though, as that immediately releases the click :)
-            if(!sldr->isBusy()) this_->scheduleLayoutUpdate();
-        });
+        sensSlider->setUpdateRelPosOnChange(true);
 
         static const RenderCondition sensWarningCondition{
             []() -> bool { return cv::mouse_sensitivity.getFloat() != 1.f; }};
@@ -2734,16 +2725,23 @@ void OptionsMenu::onNotelockSelectResetUpdate() {
                                                     (int)cv::notelock_type.getDefaultFloat());
 }
 
-// insane macro, don't think about it too much
-#define FOR_EACH_ELEMENT_MATCHING(param__)                                                                           \
-    OPTIONS_ELEMENT *element = nullptr;                                                                              \
-    constexpr const auto findfunc = [](const auto &param, const auto &begin, const auto &end) {                      \
-        return std::find_if(                                                                                         \
-            begin, end, [&param](const auto &optElem) { return std::ranges::contains(optElem->baseElems, param); }); \
-    };                                                                                                               \
-    for(auto it = findfunc(param__, this->elemContainers.begin(), this->elemContainers.end());                       \
-        it != this->elemContainers.end() && (element = *it) != nullptr;                                              \
+// insane macros, don't think about it too much
+#define FOR_EACH_ELEMENT_MATCHING(param__)                                                     \
+    OPTIONS_ELEMENT *element = nullptr;                                                        \
+    auto findfunc = []<typename T>(T &&param, const auto &begin, const auto &end) {            \
+        return std::find_if(begin, end, [&](const auto &optElem) {                             \
+            return std::ranges::contains(optElem->baseElems, std::forward<T>(param));          \
+        });                                                                                    \
+    };                                                                                         \
+    for(auto it = findfunc(param__, this->elemContainers.begin(), this->elemContainers.end()); \
+        it != this->elemContainers.end() && (element = *it) != nullptr;                        \
         it = findfunc(param__, std::next(it), this->elemContainers.end()))
+
+#define DO_UPDATE_LAYOUT_CHECK(slider__)                               \
+    if(!this->updating_layout && !(slider__)->isBusy() &&              \
+       static_cast<UISlider *>(slider__)->getUpdateRelPosOnChange()) { \
+        this->scheduleLayoutUpdate();                                  \
+    }
 
 void OptionsMenu::onCheckboxChange(CBaseUICheckbox *checkbox) {
     FOR_EACH_ELEMENT_MATCHING(checkbox) {
@@ -2769,6 +2767,7 @@ void OptionsMenu::onSliderChange(CBaseUISlider *slider) {
         }
 
         this->onResetUpdate(element->resetButton);
+        DO_UPDATE_LAYOUT_CHECK(slider);
     }
 }
 
@@ -2791,6 +2790,7 @@ void OptionsMenu::onFPSSliderChange(CBaseUISlider *slider) {
             }
         }
         this->onResetUpdate(element->resetButton);
+        DO_UPDATE_LAYOUT_CHECK(slider);
     }
 }
 
@@ -2806,6 +2806,7 @@ void OptionsMenu::onSliderChangeOneDecimalPlace(CBaseUISlider *slider) {
             }
         }
         this->onResetUpdate(element->resetButton);
+        DO_UPDATE_LAYOUT_CHECK(slider);
     }
 }
 
@@ -2821,6 +2822,7 @@ void OptionsMenu::onSliderChangeTwoDecimalPlaces(CBaseUISlider *slider) {
             }
         }
         this->onResetUpdate(element->resetButton);
+        DO_UPDATE_LAYOUT_CHECK(slider);
     }
 }
 
@@ -2836,6 +2838,7 @@ void OptionsMenu::onSliderChangeOneDecimalPlaceMeters(CBaseUISlider *slider) {
             }
         }
         this->onResetUpdate(element->resetButton);
+        DO_UPDATE_LAYOUT_CHECK(slider);
     }
 }
 
@@ -2851,6 +2854,7 @@ void OptionsMenu::onSliderChangeInt(CBaseUISlider *slider) {
             }
         }
         this->onResetUpdate(element->resetButton);
+        DO_UPDATE_LAYOUT_CHECK(slider);
     }
 }
 
@@ -2868,6 +2872,7 @@ void OptionsMenu::onSliderChangeIntMS(CBaseUISlider *slider) {
             }
         }
         this->onResetUpdate(element->resetButton);
+        DO_UPDATE_LAYOUT_CHECK(slider);
     }
 }
 
@@ -2885,6 +2890,7 @@ void OptionsMenu::onSliderChangeFloatMS(CBaseUISlider *slider) {
             }
         }
         this->onResetUpdate(element->resetButton);
+        DO_UPDATE_LAYOUT_CHECK(slider);
     }
 }
 
@@ -2902,6 +2908,7 @@ void OptionsMenu::onSliderChangePercent(CBaseUISlider *slider) {
             }
         }
         this->onResetUpdate(element->resetButton);
+        DO_UPDATE_LAYOUT_CHECK(slider);
     }
 }
 
@@ -2974,6 +2981,7 @@ void OptionsMenu::onSliderChangeSliderQuality(CBaseUISlider *slider) {
         }
 
         this->onResetUpdate(element->resetButton);
+        DO_UPDATE_LAYOUT_CHECK(slider);
     }
 }
 
@@ -2993,6 +3001,7 @@ void OptionsMenu::onSliderChangeLetterboxingOffset(CBaseUISlider *slider) {
         this->letterboxingOffsetResetButton = element->resetButton;  // HACKHACK: disgusting
 
         this->onResetUpdate(element->resetButton);
+        DO_UPDATE_LAYOUT_CHECK(slider);
     }
 }
 
@@ -3012,6 +3021,7 @@ void OptionsMenu::onSliderChangeUIScale(CBaseUISlider *slider) {
         this->uiScaleResetButton = element->resetButton;  // HACKHACK: disgusting
 
         this->onResetUpdate(element->resetButton);
+        DO_UPDATE_LAYOUT_CHECK(slider);
     }
 }
 
@@ -3047,6 +3057,7 @@ void OptionsMenu::onASIOBufferChange([[maybe_unused]] CBaseUISlider *slider) {
         }
 
         this->asioBufferSizeResetButton = element->resetButton;  // HACKHACK: disgusting
+        DO_UPDATE_LAYOUT_CHECK(slider);
     }
 #endif
 }
@@ -3065,6 +3076,7 @@ void OptionsMenu::onWASAPIBufferChange(CBaseUISlider *slider) {
         }
 
         this->wasapiBufferSizeResetButton = element->resetButton;  // HACKHACK: disgusting
+        DO_UPDATE_LAYOUT_CHECK(slider);
     }
 }
 
@@ -3082,6 +3094,7 @@ void OptionsMenu::onWASAPIPeriodChange(CBaseUISlider *slider) {
         }
 
         this->wasapiPeriodSizeResetButton = element->resetButton;  // HACKHACK: disgusting
+        DO_UPDATE_LAYOUT_CHECK(slider);
     }
 }
 
