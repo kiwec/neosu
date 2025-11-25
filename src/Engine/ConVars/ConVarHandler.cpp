@@ -6,7 +6,6 @@
 #include "Logging.h"
 #include "Engine.h"
 #include "SString.h"
-#include "SyncOnce.h"
 
 #include "misc_bin.h"
 
@@ -16,31 +15,23 @@
 #include <unordered_set>
 
 // singleton init
-std::unique_ptr<ConVarHandler> cvars{std::make_unique<ConVarHandler>()};
-
-// private static
-std::vector<ConVar *> &ConVarHandler::getConVarArray_int() {
-    static std::vector<ConVar *> vConVarArray;
-
-    static Sync::once_flag reserved;
-    Sync::call_once(reserved, []() { vConVarArray.reserve(1024); });
-
-    return vConVarArray;
+ConVarHandler &cvars() {
+    static ConVarHandler instance;
+    return instance;
 }
 
-sv_unordered_map<ConVar *> &ConVarHandler::getConVarMap_int() {
-    static sv_unordered_map<ConVar *> vConVarMap;
-
-    static Sync::once_flag reserved;
-    Sync::call_once(reserved, []() { vConVarMap.reserve(1024); });
-
-    return vConVarMap;
+ConVarHandler::ConVarHandler() {
+    this->vConVarArray.reserve(1024);
+    this->vConVarMap.reserve(1024);
 }
 
-ConVar *ConVarHandler::getConVar_int(std::string_view name) {
-    const auto &cvarMap = getConVarMap();
-    auto it = cvarMap.find(name);
-    if(it != cvarMap.end()) return it->second;
+void ConVarHandler::setCVSubmittableCheckFunc(CVSubmittableCriteriaFunc func) {
+    this->areAllCvarsSubmittableExtraCheck = func;
+}
+
+ConVar *ConVarHandler::getConVar_int(std::string_view name) const {
+    auto it = this->vConVarMap.find(name);
+    if(it != this->vConVarMap.end()) return it->second;
     return nullptr;
 }
 
@@ -48,9 +39,9 @@ ConVar *ConVarHandler::getConVar_int(std::string_view name) {
 ConVar *ConVarHandler::getConVarByName(std::string_view name, bool warnIfNotFound) const {
     static ConVar _emptyDummyConVar(
         "emptyDummyConVar", 42.0f, cv::CLIENT,
-        "this placeholder convar is returned by cvars->getConVarByName() if no matching convar is found");
+        "this placeholder convar is returned by cvars().getConVarByName() if no matching convar is found");
 
-    ConVar *found = ConVarHandler::getConVar_int(name);
+    ConVar *found = this->getConVar_int(name);
     if(found) return found;
 
     if(warnIfNotFound) {
@@ -73,7 +64,7 @@ std::vector<ConVar *> ConVarHandler::getConVarByLetter(std::string_view letters)
     {
         if(letters.length() < 1) return matchingConVars;
 
-        const std::vector<ConVar *> &convars = ConVarHandler::getConVarArray();
+        const std::vector<ConVar *> &convars = this->vConVarArray;
 
         // first try matching exactly
         for(auto convar : convars) {
@@ -134,7 +125,7 @@ std::string ConVarHandler::flagsToString(uint8_t flags) {
 std::vector<ConVar *> ConVarHandler::getNonSubmittableCvars() const {
     std::vector<ConVar *> list;
 
-    for(auto *cv : ConVarHandler::getConVarArray()) {
+    for(auto *cv : this->vConVarArray) {
         if(!cv->isProtected() || cv->isDefault()) continue;
 
         list.push_back(cv);
@@ -143,26 +134,24 @@ std::vector<ConVar *> ConVarHandler::getNonSubmittableCvars() const {
     return list;
 }
 
-ConVarHandler::CVSubmittableCriteriaFunc ConVarHandler::areAllCvarsSubmittableExtraCheck{nullptr};
-
 bool ConVarHandler::areAllCvarsSubmittable() {
     if(!this->getNonSubmittableCvars().empty()) return false;
 
-    if(!!areAllCvarsSubmittableExtraCheck) {
-        return areAllCvarsSubmittableExtraCheck();
+    if(!!this->areAllCvarsSubmittableExtraCheck) {
+        return this->areAllCvarsSubmittableExtraCheck();
     }
 
     return true;
 }
 
 void ConVarHandler::invalidateAllProtectedCaches() {
-    for(auto *cv : ConVarHandler::getConVarArray()) {
+    for(auto *cv : this->getConVarArray()) {
         if(cv->isFlagSet(cv::PROTECTED)) cv->invalidateCache();
     }
 }
 
 void ConVarHandler::resetServerCvars() {
-    for(auto *cv : ConVarHandler::getConVarArray()) {
+    for(auto *cv : this->getConVarArray()) {
         cv->hasServerValue.store(false, std::memory_order_release);
         cv->setServerProtected(CvarProtection::DEFAULT);
         cv->invalidateCache();
@@ -170,14 +159,14 @@ void ConVarHandler::resetServerCvars() {
 }
 
 void ConVarHandler::resetSkinCvars() {
-    for(auto *cv : ConVarHandler::getConVarArray()) {
+    for(auto *cv : this->getConVarArray()) {
         cv->hasSkinValue.store(false, std::memory_order_release);
         cv->invalidateCache();
     }
 }
 
 bool ConVarHandler::removeServerValue(std::string_view cvarName) {
-    ConVar *cvarToChange = ConVarHandler::getConVar_int(cvarName);
+    ConVar *cvarToChange = this->getConVar_int(cvarName);
     if(!cvarToChange) return false;
     cvarToChange->hasServerValue.store(false, std::memory_order_release);
     cvarToChange->invalidateCache();
@@ -189,7 +178,7 @@ size_t ConVarHandler::getTotalMemUsageBytes() {
     if(ret > 0 && !engine->throttledShouldRun(60)) return ret;
     ret = 0;
 
-    for(auto *cv : ConVarHandler::getConVarArray()) {
+    for(auto *cv : this->getConVarArray()) {
         ret += strlen(cv->sName);
         ret += strlen(cv->sHelpString);
         ret += cv->sDefaultValue.size();
@@ -200,7 +189,7 @@ size_t ConVarHandler::getTotalMemUsageBytes() {
         ret += cv->sSkinValue.size();
         ret += sizeof(cv->dServerValue);
         ret += cv->sServerValue.size();
-        ret += cv->sCachedReturnedString.load(std::memory_order_acquire)->size();
+        ret += sizeof(cv->sCachedReturnedString);
         ret += sizeof(cv->callback);
         ret += sizeof(cv->changeCallback);
         ret += sizeof(cv->serverProtectionPolicy);
@@ -233,7 +222,7 @@ void ConVarHandler::ConVarBuiltins::find(std::string_view args) {
         return;
     }
 
-    const std::vector<ConVar *> &convars = cvars->getConVarArray();
+    const std::vector<ConVar *> &convars = cvars().getConVarArray();
 
     std::vector<ConVar *> matchingConVars;
     for(auto convar : convars) {
@@ -275,7 +264,7 @@ void ConVarHandler::ConVarBuiltins::help(std::string_view args) {
         return;
     }
 
-    const std::vector<ConVar *> matches = cvars->getConVarByLetter(args);
+    const std::vector<ConVar *> matches = cvars().getConVarByLetter(args);
 
     if(matches.size() < 1) {
         Logger::logRaw("ConVar {:s} does not exist.", args);
@@ -319,8 +308,10 @@ void ConVarHandler::ConVarBuiltins::help(std::string_view args) {
 void ConVarHandler::ConVarBuiltins::listcommands(void) {
     Logger::logRaw("----------------------------------------------");
     {
-        std::vector<ConVar *> convars = cvars->getConVarArray();
-        std::ranges::sort(convars, {}, [](const ConVar *v) { return v->getName(); });
+        std::vector<ConVar *> convars = cvars().getConVarArray();
+        std::ranges::sort(
+            convars, [](const char *s1, const char *s2) -> bool { return strcmp(s1, s2) < 0; },
+            [](const ConVar *v) { return v->getName(); });
 
         for(auto &convar : convars) {
             if(convar->isFlagSet(cv::HIDDEN)) continue;
@@ -355,8 +346,10 @@ void ConVarHandler::ConVarBuiltins::dumpcommands(void) {
     std::string html_template{reinterpret_cast<const char *>(convar_template),
                               static_cast<size_t>(convar_template_size())};
 
-    std::vector<ConVar *> convars = cvars->getConVarArray();
-    std::ranges::sort(convars, {}, [](const ConVar *v) { return v->getName(); });
+    std::vector<ConVar *> convars = cvars().getConVarArray();
+    std::ranges::sort(
+        convars, [](const char *s1, const char *s2) -> bool { return strcmp(s1, s2) < 0; },
+        [](const ConVar *v) { return v->getName(); });
 
     std::string html = R"(<section class="variables">)";
     for(auto var : convars) {
@@ -403,7 +396,7 @@ void ConVarHandler::ConVarBuiltins::dumpcommands(void) {
 
 void ConVarHandler::ConVarBuiltins::echo(std::string_view args) {
     if(args.length() > 0) {
-        Logger::logRaw("{:s}", args);
+        Logger::logRaw(args);
     }
 }
 

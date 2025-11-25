@@ -330,7 +330,7 @@ void ConsoleBox::mouse_update(bool *propagate_clicks) {
 void ConsoleBox::onSuggestionClicked(CBaseUIButton *suggestion) {
     UString text = suggestion->getName();
 
-    ConVar *temp = cvars->getConVarByName(text.toUtf8(), false);
+    ConVar *temp = cvars().getConVarByName(text.toUtf8(), false);
     if(temp != nullptr && (temp->canHaveValue() || temp->hasAnyNonVoidCallback())) text.append(" ");
 
     this->textbox->setSuggestion("");
@@ -365,7 +365,7 @@ void ConsoleBox::onKeyDown(KeyboardEvent &e) {
             if(this->iSelectedSuggestion > -1 && this->iSelectedSuggestion < this->vSuggestionButtons.size()) {
                 UString command = this->vSuggestionButtons[this->iSelectedSuggestion]->getName();
 
-                ConVar *temp = cvars->getConVarByName(command.toUtf8(), false);
+                ConVar *temp = cvars().getConVarByName(command.toUtf8(), false);
                 if(temp != nullptr && (temp->canHaveValue() || temp->hasAnyNonVoidCallback())) command.append(" ");
 
                 this->textbox->setSuggestion("");
@@ -392,7 +392,7 @@ void ConsoleBox::onKeyDown(KeyboardEvent &e) {
             if(this->iSelectedSuggestion > -1 && this->iSelectedSuggestion < this->vSuggestionButtons.size()) {
                 UString command = this->vSuggestionButtons[this->iSelectedSuggestion]->getName();
 
-                ConVar *temp = cvars->getConVarByName(command.toUtf8(), false);
+                ConVar *temp = cvars().getConVarByName(command.toUtf8(), false);
                 if(temp != nullptr && (temp->canHaveValue() || temp->hasAnyNonVoidCallback())) command.append(" ");
 
                 this->textbox->setSuggestion("");
@@ -456,7 +456,7 @@ void ConsoleBox::onChar(KeyboardEvent &e) {
         // rebuild suggestion list
         this->clearSuggestions();
 
-        std::vector<ConVar *> suggestions = cvars->getConVarByLetter(this->textbox->getText().toUtf8());
+        std::vector<ConVar *> suggestions = cvars().getConVarByLetter(this->textbox->getText().toUtf8());
         for(const auto *suggestion : suggestions) {
             UString suggestionText{suggestion->getName()};
 

@@ -442,7 +442,7 @@ bool BeatmapInterface::play() {
             }
         }
 
-        if(BanchoState::can_submit_scores() && !cvars->areAllCvarsSubmittable()) {
+        if(BanchoState::can_submit_scores() && !cvars().areAllCvarsSubmittable()) {
             osu->getNotificationOverlay()->addToast(ULITERAL("Score will not submit with current mods/settings"),
                                                     ERROR_TOAST);
         }
@@ -1668,7 +1668,7 @@ void BeatmapInterface::resetHitObjects(i32 curPos) {
 }
 
 void BeatmapInterface::resetScore() {
-    this->is_submittable = cvars->areAllCvarsSubmittable();
+    this->is_submittable = cvars().areAllCvarsSubmittable();
 
     this->live_replay.clear();
     this->live_replay.push_back(LegacyReplay::Frame{

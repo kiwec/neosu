@@ -3688,7 +3688,7 @@ void OptionsMenu::save() {
 
             bool cvar_found = false;
             const auto parts = SString::split(line, ' ');
-            for(auto convar : cvars->getConVarArray()) {
+            for(auto convar : cvars().getConVarArray()) {
                 if(convar->isFlagSet(cv::NOSAVE)) continue;
                 if(convar->getName() == parts[0]) {
                     cvar_found = true;
@@ -3707,7 +3707,7 @@ void OptionsMenu::save() {
             write_lines.append("\n\n");
         }
 
-        for(auto convar : cvars->getConVarArray()) {
+        for(auto convar : cvars().getConVarArray()) {
             if(!convar->canHaveValue() || convar->isFlagSet(cv::NOSAVE)) continue;
             if(convar->isDefault()) continue;
             write_lines.append(fmt::format("{} {}\n", convar->getName(), convar->getString()));

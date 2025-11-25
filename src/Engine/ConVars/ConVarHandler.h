@@ -20,20 +20,16 @@ class ConVarHandler {
    public:
     struct ConVarBuiltins;
 
-    ConVarHandler() = default;
+    ConVarHandler();
     ~ConVarHandler() = default;
 
-    [[nodiscard]] static forceinline const std::vector<ConVar *> &getConVarArray() {
-        return static_cast<const std::vector<ConVar *> &>(getConVarArray_int());
-    }
-    [[nodiscard]] static forceinline const sv_unordered_map<ConVar *> &getConVarMap() {
-        return static_cast<const sv_unordered_map<ConVar *> &>(getConVarMap_int());
-    }
-    [[nodiscard]] static forceinline const ConVar *getConVar(std::string_view name) {
+    [[nodiscard]] forceinline const std::vector<ConVar *> &getConVarArray() { return this->vConVarArray; }
+    [[nodiscard]] forceinline const sv_unordered_map<ConVar *> &getConVarMap() { return this->vConVarMap; }
+    [[nodiscard]] forceinline const ConVar *getConVar(std::string_view name) {
         return static_cast<const ConVar *>(getConVar_int(name));
     }
 
-    [[nodiscard]] static forceinline size_t getNumConVars() { return getConVarArray().size(); }
+    [[nodiscard]] forceinline size_t getNumConVars() { return getConVarArray().size(); }
     [[nodiscard]] size_t getTotalMemUsageBytes();
 
     [[nodiscard]] ConVar *getConVarByName(std::string_view name, bool warnIfNotFound = true) const;
@@ -52,18 +48,16 @@ class ConVarHandler {
 
     // extra check run during areAllCvarsSubmittable
     using CVSubmittableCriteriaFunc = bool (*)();
-    static inline void setCVSubmittableCheckFunc(CVSubmittableCriteriaFunc func) {
-        ConVarHandler::areAllCvarsSubmittableExtraCheck = func;
-    }
+    void setCVSubmittableCheckFunc(CVSubmittableCriteriaFunc func);
 
    private:
     friend class ConVar;
 
-    static CVSubmittableCriteriaFunc areAllCvarsSubmittableExtraCheck;
+    CVSubmittableCriteriaFunc areAllCvarsSubmittableExtraCheck{nullptr};
+    std::vector<ConVar *> vConVarArray;
+    sv_unordered_map<ConVar *> vConVarMap;
 
-    [[nodiscard]] static std::vector<ConVar *> &getConVarArray_int();
-    [[nodiscard]] static sv_unordered_map<ConVar *> &getConVarMap_int();
-    [[nodiscard]] static ConVar *getConVar_int(std::string_view name);
+    [[nodiscard]] ConVar *getConVar_int(std::string_view name) const;
 };
 
-extern std::unique_ptr<ConVarHandler> cvars;
+extern ConVarHandler &cvars();

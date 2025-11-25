@@ -89,7 +89,7 @@ bool BanchoState::is_in_a_multi_room() {
     if(was_in_a_multi_room != now_multi) {
         was_in_a_multi_room = now_multi;
         // temporary... hopefully
-        cvars->invalidateAllProtectedCaches();
+        cvars().invalidateAllProtectedCaches();
     }
     return now_multi;
 }
@@ -717,7 +717,7 @@ void BanchoState::handle_packet(Packet &packet) {
             u16 nb_variables = packet.read<u16>();
             for(u16 i = 0; i < nb_variables; i++) {
                 auto name = packet.read_stdstring();
-                auto cvar = cvars->getConVarByName(name, false);
+                auto cvar = cvars().getConVarByName(name, false);
                 if(cvar) {
                     cvar->setServerProtected(CvarProtection::PROTECTED);
                 } else {
@@ -732,7 +732,7 @@ void BanchoState::handle_packet(Packet &packet) {
             u16 nb_variables = packet.read<u16>();
             for(u16 i = 0; i < nb_variables; i++) {
                 auto name = packet.read_stdstring();
-                auto cvar = cvars->getConVarByName(name, false);
+                auto cvar = cvars().getConVarByName(name, false);
                 if(cvar) {
                     cvar->setServerProtected(CvarProtection::UNPROTECTED);
                 } else {
@@ -748,7 +748,7 @@ void BanchoState::handle_packet(Packet &packet) {
             for(u16 i = 0; i < nb_variables; i++) {
                 auto name = packet.read_stdstring();
                 auto val = packet.read_stdstring();
-                auto cvar = cvars->getConVarByName(name, false);
+                auto cvar = cvars().getConVarByName(name, false);
                 if(cvar) {
                     cvar->setValue(val, true, CvarEditor::SERVER);
                 } else {
@@ -764,7 +764,7 @@ void BanchoState::handle_packet(Packet &packet) {
             u16 nb_variables = packet.read<u16>();
             for(u16 i = 0; i < nb_variables; i++) {
                 auto name = packet.read_stdstring();
-                if(!cvars->removeServerValue(name)) {
+                if(!cvars().removeServerValue(name)) {
                     debugLog("Server wanted to reset cvar '{}', but it doesn't exist!", name);
                 }
             }

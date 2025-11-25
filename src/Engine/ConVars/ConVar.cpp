@@ -23,13 +23,13 @@ void ConVar::addConVar() {
     // If you really need it, you'll also need to edit Console::execConfigFile to whitelist it there.
     assert(!(name.starts_with("osu_") && !name.starts_with("osu_folder")) && "osu_ ConVar prefix is deprecated.");
 
-    auto &convar_map = ConVarHandler::getConVarMap_int();
+    auto &convar_map = cvars().vConVarMap;
 
     // No duplicate ConVar names allowed
     assert(!convar_map.contains(name) && "no duplicate ConVar names allowed.");
 
     convar_map.emplace(name, this);
-    ConVarHandler::getConVarArray_int().push_back(this);
+    cvars().vConVarArray.push_back(this);
 }
 
 std::string ConVar::getFancyDefaultValue() {
@@ -92,7 +92,7 @@ double ConVar::getDoubleInt() const {
               (likely(!!ConVar::onGetValueProtectedCallback) && !ConVar::onGetValueProtectedCallback(this->sName))) {
         // FIXME: this is unreliable since onGetValueProtectedCallback might change arbitrarily,
         // need to invalidate cached state when that happens
-        // currently relying on a cvars->invalidateAllProtectedCaches "backdoor" (see Bancho.cpp),
+        // currently relying on a cvars().invalidateAllProtectedCaches "backdoor" (see Bancho.cpp),
         // so the API user needs to know the implementation details or else they'll keep getting default values :)
         this->dCachedReturnedDouble.store(this->dDefaultValue, std::memory_order_release);
     } else {

@@ -97,8 +97,8 @@ void VisualProfiler::draw() {
                     const double time = engine->getTime();
                     const vec2 envMousePos = env->getMousePos();
 
-                    addTextLine(fmt::format("ConVars: {:d}"_cf, cvars->getNumConVars()), textFont, this->textLines);
-                    // addTextLine(fmt::format("ConVar KB: {}"_cf, cvars->getTotalMemUsageBytes() / 1024ULL), textFont, this->textLines);
+                    addTextLine(fmt::format("ConVars: {:d}"_cf, cvars().getNumConVars()), textFont, this->textLines);
+                    // addTextLine(fmt::format("ConVar KB: {}"_cf, cvars().getTotalMemUsageBytes() / 1024ULL), textFont, this->textLines);
                     addTextLine(fmt::format("Monitor: [{:d}] of {:d}"_cf, env->getMonitor(), env->getMonitors().size()),
                                 textFont, this->textLines);
                     addTextLine(fmt::format("Env Mouse Pos: {:d} x {:d}"_cf, (int)envMousePos.x, (int)envMousePos.y),

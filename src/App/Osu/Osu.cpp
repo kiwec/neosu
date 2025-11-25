@@ -134,7 +134,7 @@ Osu::Osu() {
 
     ConVar::setOnSetValueGameplayCallback(Osu::globalOnSetValueGameplayCallback);
 
-    ConVarHandler::setCVSubmittableCheckFunc(Osu::globalOnAreAllCvarsSubmittableCallback);
+    cvars().setCVSubmittableCheckFunc(Osu::globalOnAreAllCvarsSubmittableCallback);
 
     if(Env::cfg(BUILD::DEBUG)) {
         BanchoState::neosu_version = fmt::format("dev-{}", cv::build_timestamp.getVal<u64>());
@@ -442,7 +442,7 @@ Osu::Osu() {
 
 Osu::~Osu() {
     // remove the static callbacks
-    ConVarHandler::setCVSubmittableCheckFunc({});
+    cvars().setCVSubmittableCheckFunc({});
     ConVar::setOnSetValueGameplayCallback({});
     ConVar::setOnGetValueProtectedCallback({});
     ConVar::setOnSetValueProtectedCallback({});

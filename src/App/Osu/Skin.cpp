@@ -253,11 +253,11 @@ void Skin::load() {
 
     bool parseSkinIni1Status = true;
     bool parseSkinIni2Status = true;
-    cvars->resetSkinCvars();
+    cvars().resetSkinCvars();
     if(!this->parseSkinINI(this->skin_ini_path)) {
         parseSkinIni1Status = false;
         this->skin_ini_path = MCENGINE_IMAGES_PATH "/default/skin.ini";
-        cvars->resetSkinCvars();
+        cvars().resetSkinCvars();
         parseSkinIni2Status = this->parseSkinINI(this->skin_ini_path);
     }
 
@@ -901,7 +901,7 @@ bool Skin::parseSkinINI(std::string filepath) {
 
                 // XXX: shouldn't be setting cvars directly in parsing method
                 if(shouldParse) {
-                    auto cvar = cvars->getConVarByName(name, false);
+                    auto cvar = cvars().getConVarByName(name, false);
                     if(cvar) {
                         cvar->setValue(value, true, CvarEditor::SKIN);
                     } else {
