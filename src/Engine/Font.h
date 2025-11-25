@@ -98,9 +98,9 @@ class McFont final : public Resource {
 
     // texture atlas dynamic slot management
     struct DynamicSlot {
-        int x, y;           // position in atlas
+        int x, y;            // position in atlas
         char16_t character;  // character in this slot (0 if empty)
-        uint64_t lastUsed;  // for LRU eviction
+        uint64_t lastUsed;   // for LRU eviction
         bool occupied;
     };
 
@@ -150,7 +150,7 @@ class McFont final : public Resource {
     std::unordered_map<char16_t, bool> m_vGlyphExistence;
     std::unordered_map<char16_t, GLYPH_METRICS> m_vGlyphMetrics;
 
-    VertexArrayObject m_vao;
+    std::unique_ptr<VertexArrayObject> m_vao;
     TextBatch m_batchQueue;
     std::vector<vec3> m_vertices;
     std::vector<vec2> m_texcoords;
@@ -171,8 +171,8 @@ class McFont final : public Resource {
     int m_slotsPerRow;         // number of slots per row in dynamic region
     std::vector<DynamicSlot> m_dynamicSlots;
     std::unordered_map<char16_t, int> m_dynamicSlotMap;  // character -> slot index for O(1) lookup
-    uint64_t m_currentTime;                             // for LRU tracking
-    bool m_atlasNeedsReload;                            // flag to batch atlas reloads
+    uint64_t m_currentTime;                              // for LRU tracking
+    bool m_atlasNeedsReload;                             // flag to batch atlas reloads
 
     bool m_batchActive;
     bool m_bFreeTypeInitialized;

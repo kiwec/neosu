@@ -11,6 +11,7 @@
 #include "Timing.h"
 #include "Logging.h"
 #include "SyncOnce.h"
+#include "SyncJthread.h"
 
 #ifdef MCENGINE_FEATURE_BASS
 #include "BassManager.h"
@@ -18,37 +19,29 @@
 
 #include <atomic>
 #include <utility>
-#include <thread>
 
 struct VolNormalization::LoudnessCalcThread {
     NOCOPY_NOMOVE(LoudnessCalcThread)
    public:
-    std::thread thr;
-    std::atomic<bool> dead{true};
-    std::vector<DatabaseBeatmap *> maps;
-
     std::atomic<u32> nb_computed{0};
     std::atomic<u32> nb_total{0};
 #ifdef MCENGINE_FEATURE_BASS
    public:
     LoudnessCalcThread(std::vector<DatabaseBeatmap *> maps_to_calc) {
-        this->dead.store(false, std::memory_order_release);
         this->maps = std::move(maps_to_calc);
         this->nb_total = this->maps.size() + 1;
         if(soundEngine->getTypeId() == SoundEngine::BASS) {  // TODO
-            this->thr = std::thread(&LoudnessCalcThread::run, this);
+            this->thr = Sync::jthread([this](const Sync::stop_token &stoken) { return this->run(stoken); });
         }
     }
 
-    ~LoudnessCalcThread() {
-        this->dead.store(true, std::memory_order_release);
-        if(this->thr.joinable()) {
-            this->thr.join();
-        }
-    }
+    ~LoudnessCalcThread() = default;
 
    private:
-    void run() {
+    std::vector<DatabaseBeatmap *> maps;
+    Sync::jthread thr;
+
+    void run(const Sync::stop_token &stoken) {
         McThread::set_current_thread_name("loudness_calc");
         McThread::set_current_thread_prio(McThread::Priority::NORMAL);  // reset priority
 
@@ -64,12 +57,12 @@ struct VolNormalization::LoudnessCalcThread {
         BASS_SetConfig(BASS_CONFIG_UPDATETHREADS, 0);
 
         for(auto map : this->maps) {
-            while(osu->shouldPauseBGThreads() && !this->dead.load(std::memory_order_acquire)) {
+            while(osu->shouldPauseBGThreads() && !stoken.stop_requested()) {
                 Timing::sleepMS(100);
             }
             Timing::sleep(1);
 
-            if(this->dead.load(std::memory_order_acquire)) return;
+            if(stoken.stop_requested()) return;
             if(map->loudness.load(std::memory_order_acquire) != 0.f) continue;
 
             UString song{map->getFullSoundFilePath()};
@@ -153,7 +146,7 @@ void VolNormalization::loudness_cb() {
 u32 VolNormalization::get_computed_instance() {
     if(!Env::cfg(AUD::BASS) || soundEngine->getTypeId() != SoundEngine::BASS) return 0;  // TODO
     u32 x = 0;
-    for(auto thr : this->threads) {
+    for(const auto &thr : this->threads) {
         x += thr->nb_computed.load(std::memory_order_acquire);
     }
     return x;
@@ -162,7 +155,7 @@ u32 VolNormalization::get_computed_instance() {
 u32 VolNormalization::get_total_instance() {
     if(!Env::cfg(AUD::BASS) || soundEngine->getTypeId() != SoundEngine::BASS) return 0;  // TODO
     u32 x = 0;
-    for(auto thr : this->threads) {
+    for(const auto &thr : this->threads) {
         x += thr->nb_total.load(std::memory_order_acquire);
     }
     return x;
@@ -190,17 +183,11 @@ void VolNormalization::start_calc_instance(const std::vector<DatabaseBeatmap *> 
         auto chunk = std::vector<DatabaseBeatmap *>(it, it + cur_chunk_size);
         it += cur_chunk_size;
 
-        auto lct = new LoudnessCalcThread(chunk);
-        this->threads.push_back(lct);
+        this->threads.emplace_back(std::make_unique<LoudnessCalcThread>(chunk));
     }
 }
 
-void VolNormalization::abort_instance() {
-    for(auto thr : this->threads) {
-        delete thr;
-    }
-    this->threads.clear();
-}
+void VolNormalization::abort_instance() { this->threads.clear(); }
 
 VolNormalization::~VolNormalization() {
     cv::loudness_calc_threads.removeAllCallbacks();

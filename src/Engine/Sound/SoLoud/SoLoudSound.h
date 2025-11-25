@@ -68,9 +68,6 @@ class SoLoudSound final : public Sound {
     [[nodiscard]] double getSourceLengthInSeconds() const;
     [[nodiscard]] double getStreamPositionInSeconds() const;
 
-    static unsigned int getTransposerValForString(std::string str);
-    static std::atomic<unsigned int> currentTransposerAlgorithm;
-
     // current playback parameters
     float fFrequency{44100.0f};         // sample rate in Hz
 

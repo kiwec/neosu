@@ -3,6 +3,7 @@
 #include "noinclude.h"
 #include "types.h"
 
+#include <memory>
 #include <vector>
 
 class DatabaseBeatmap;
@@ -39,5 +40,5 @@ class VolNormalization {
     void abort_instance();
 
     struct LoudnessCalcThread;
-    std::vector<LoudnessCalcThread*> threads;
+    std::vector<std::unique_ptr<LoudnessCalcThread>> threads;
 };

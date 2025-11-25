@@ -45,7 +45,9 @@ class Sound : public Resource {
 
     virtual void setPositionUS(u64 us) = 0;
     inline void setPositionMS(u32 ms) { return this->setPositionUS(ms * 1000ULL); };
-    inline void setPositionS(f64 secs) { return this->setPositionMS(static_cast<u32>(std::round(secs * 1000.))); };
+    inline void setPositionS(f64 secs) {
+        return this->setPositionUS(static_cast<u64>(std::round(secs * (1000. * 1000.))));
+    };
 
     virtual void setSpeed(float speed) = 0;
     virtual void setPitch(float pitch) { this->fPitch = pitch; }
@@ -55,17 +57,17 @@ class Sound : public Resource {
 
     // NOTE: this will also update currently playing handle(s) for this sound
     void setBaseVolume(float volume);
-    inline float getBaseVolume() const { return this->fBaseVolume; }
+    [[nodiscard]] constexpr float getBaseVolume() const { return this->fBaseVolume; }
 
     virtual f64 getPositionPct() const = 0;
-    virtual u64 getPositionUS() const = 0;
 
-    inline u32 getPositionMS() const { return (this->getPositionUS() + 999) / 1000; }
-    inline f64 getPositionS() const { return this->getPositionMS() / 1000.; }
+    virtual u64 getPositionUS() const = 0;
+    inline u32 getPositionMS() const { return (this->getPositionUS() + 500) / 1000; }
+    inline f64 getPositionS() const { return static_cast<f64>(this->getPositionUS()) / (1000. * 1000.); }
 
     virtual u64 getLengthUS() const = 0;
-    inline u32 getLengthMS() const { return (this->getLengthUS() + 999) / 1000; }
-    inline f64 getLengthS() const { return this->getLengthMS() / 1000.; }
+    inline u32 getLengthMS() const { return (this->getLengthUS() + 500) / 1000; }
+    inline f64 getLengthS() const { return static_cast<f64>(this->getLengthUS()) / (1000. * 1000.); }
 
     virtual float getFrequency() const = 0;
     virtual float getPan() const { return this->fPan; }

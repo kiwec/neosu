@@ -12,8 +12,6 @@ RenderTarget::RenderTarget(int x, int y, int width, int height, Graphics::MULTIS
                                       false)),
       vao2(g->createVertexArrayObject(Graphics::PRIMITIVE::PRIMITIVE_TRIANGLES, Graphics::USAGE_TYPE::USAGE_STATIC,
                                       false)),
-      vao3(g->createVertexArrayObject(Graphics::PRIMITIVE::PRIMITIVE_TRIANGLES, Graphics::USAGE_TYPE::USAGE_STATIC,
-                                      false)),
       vPos(vec2{x, y}),
       vSize(width, height),
       multiSampleType(multiSampleType) {}
@@ -112,8 +110,8 @@ void RenderTarget::draw(int x, int y, int width, int height) {
 }
 
 void RenderTarget::drawRect(int x, int y, int width, int height) {
-    if(!this->isReady()) {
-        logIfCV(debug_rt, "WARNING: RenderTarget is not ready!");
+    if(!this->bReady) {
+        if(cv::debug_rt.getBool()) debugLog("WARNING: RenderTarget is not ready!\n");
         return;
     }
 
@@ -126,38 +124,27 @@ void RenderTarget::drawRect(int x, int y, int width, int height) {
 
     this->bind();
     {
-        static std::vector<vec3> vertices(6, vec3{0.f, 0.f, 0.f});
-        static std::vector<vec2> texcoords(6, vec2{0.f, 0.f});
+        VertexArrayObject vao;
+        {
+            vao.addTexcoord(texCoordWidth0, texCoordHeight1);
+            vao.addVertex(x, y);
 
-        // clang-format off
-        std::vector<vec3> newVertices = {
-            {x, y, 0.f},
-            {x, y + height, 0.f},
-            {x + width, y + height, 0.f},
-            {x + width, y + height, 0.f},
-            {x + width, y, 0.f},
-            {x, y, 0.f}
-        };
-        // clang-format on
+            vao.addTexcoord(texCoordWidth0, texCoordHeight0);
+            vao.addVertex(x, y + height);
 
-        std::vector<vec2> newTexcoords = {{texCoordWidth0, texCoordHeight1}, {texCoordWidth0, texCoordHeight0},
-                                          {texCoordWidth1, texCoordHeight0}, {texCoordWidth1, texCoordHeight0},
-                                          {texCoordWidth1, texCoordHeight1}, {texCoordWidth0, texCoordHeight1}};
+            vao.addTexcoord(texCoordWidth1, texCoordHeight0);
+            vao.addVertex(x + width, y + height);
 
-        if(!this->vao3->isReady() || vertices != newVertices || texcoords != newTexcoords) {
-            this->vao3->release();
+            vao.addTexcoord(texCoordWidth1, texCoordHeight0);
+            vao.addVertex(x + width, y + height);
 
-            texcoords = std::move(newTexcoords);
-            vertices = std::move(newVertices);
+            vao.addTexcoord(texCoordWidth1, texCoordHeight1);
+            vao.addVertex(x + width, y);
 
-            this->vao3->setVertices(vertices);
-            this->vao3->setTexcoords(texcoords);
-
-            this->vao3->loadAsync();
-            this->vao3->load();
+            vao.addTexcoord(texCoordWidth0, texCoordHeight1);
+            vao.addVertex(x, y);
         }
-
-        g->drawVAO(this->vao3.get());
+        g->drawVAO(&vao);
     }
     this->unbind();
 }
@@ -171,7 +158,6 @@ void RenderTarget::rebuild(int x, int y, int width, int height, Graphics::MULTIS
 
     this->vao1->release();
     this->vao2->release();
-    this->vao3->release();
     this->reload();
 }
 

@@ -185,13 +185,9 @@ void OpenGLVertexArrayObject::destroy() {
     VertexArrayObject::destroy();
 
     if(this->iVertexBuffer > 0) glDeleteBuffers(1, &this->iVertexBuffer);
-
     if(this->iTexcoordBuffer > 0) glDeleteBuffers(1, &this->iTexcoordBuffer);
-
     if(this->iColorBuffer > 0) glDeleteBuffers(1, &this->iColorBuffer);
-
     if(this->iNormalBuffer > 0) glDeleteBuffers(1, &this->iNormalBuffer);
-
     if(this->iVertexArray > 0) glDeleteVertexArrays(1, &this->iVertexArray);
 
     this->iVertexBuffer = 0;

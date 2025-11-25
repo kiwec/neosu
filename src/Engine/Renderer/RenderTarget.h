@@ -64,7 +64,6 @@ class RenderTarget : public Resource {
 
     std::unique_ptr<VertexArrayObject> vao1;
     std::unique_ptr<VertexArrayObject> vao2;
-    std::unique_ptr<VertexArrayObject> vao3;
 
     vec2 vPos{0.f};
     vec2 vSize{0.f};

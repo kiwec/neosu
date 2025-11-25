@@ -65,9 +65,9 @@ constexpr const size_t VERTS_PER_VAO{Env::cfg(REND::GLES32 | REND::DX11) ? 6 : 4
 
 McFont::McFont(std::string filepath, int fontSize, bool antialiasing, int fontDPI)
     : Resource(std::move(filepath)),
-      m_vao((Env::cfg(REND::GLES32 | REND::DX11) ? Graphics::PRIMITIVE::PRIMITIVE_TRIANGLES
-                                                 : Graphics::PRIMITIVE::PRIMITIVE_QUADS),
-            Graphics::USAGE_TYPE::USAGE_DYNAMIC) {
+      m_vao(g->createVertexArrayObject((Env::cfg(REND::GLES32 | REND::DX11) ? Graphics::PRIMITIVE::PRIMITIVE_TRIANGLES
+                                                                            : Graphics::PRIMITIVE::PRIMITIVE_QUADS),
+                                       Graphics::USAGE_TYPE::USAGE_DYNAMIC, false)) {
     std::vector<char16_t> characters;
     characters.reserve(96);  // reserve space for basic ASCII, load the rest as needed
     for(int i = 32; i < 128; i++) {
@@ -80,9 +80,9 @@ McFont::McFont(std::string filepath, int fontSize, bool antialiasing, int fontDP
 McFont::McFont(std::string filepath, const std::vector<char16_t> &characters, int fontSize, bool antialiasing,
                int fontDPI)
     : Resource(std::move(filepath)),
-      m_vao((Env::cfg(REND::GLES32 | REND::DX11) ? Graphics::PRIMITIVE::PRIMITIVE_TRIANGLES
-                                                 : Graphics::PRIMITIVE::PRIMITIVE_QUADS),
-            Graphics::USAGE_TYPE::USAGE_DYNAMIC) {
+      m_vao(g->createVertexArrayObject((Env::cfg(REND::GLES32 | REND::DX11) ? Graphics::PRIMITIVE::PRIMITIVE_TRIANGLES
+                                                                            : Graphics::PRIMITIVE::PRIMITIVE_QUADS),
+                                       Graphics::USAGE_TYPE::USAGE_DYNAMIC, false)) {
     m_bTryFindFallbacks = false;
     constructor(characters, fontSize, antialiasing, fontDPI);
 }
@@ -737,21 +737,21 @@ void McFont::drawString(const UString &text) {
     const int maxNumGlyphs = cv::r_drawstring_max_string_length.getInt();
     if(text.length() == 0 || text.length() > maxNumGlyphs) return;
 
-    m_vao.clear();
+    m_vao->clear();
 
     const size_t totalVerts = text.length() * VERTS_PER_VAO;
-    m_vao.reserve(totalVerts);
+    m_vao->reserve(totalVerts);
     m_vertices.resize(totalVerts);
     m_texcoords.resize(totalVerts);
 
     size_t vertexCount = 0;
     buildStringGeometry(text, vertexCount);
 
-    m_vao.setVertices(m_vertices);
-    m_vao.setTexcoords(m_texcoords);
+    m_vao->setVertices(m_vertices);
+    m_vao->setTexcoords(m_texcoords);
 
     m_textureAtlas->getAtlasImage()->bind();
-    g->drawVAO(&m_vao);
+    g->drawVAO(m_vao.get());
 
     if(cv::r_debug_drawstring_unbind.getBool()) m_textureAtlas->getAtlasImage()->unbind();
 }
@@ -788,8 +788,8 @@ void McFont::flushBatch() {
 
     m_vertices.resize(m_batchQueue.totalVerts);
     m_texcoords.resize(m_batchQueue.totalVerts);
-    m_vao.clear();
-    m_vao.reserve(m_batchQueue.totalVerts);
+    m_vao->clear();
+    m_vao->reserve(m_batchQueue.totalVerts);
 
     size_t currentVertex = 0;
     for(size_t i = 0; i < m_batchQueue.usedEntries; i++) {
@@ -799,15 +799,15 @@ void McFont::flushBatch() {
 
         for(size_t j = stringStart; j < currentVertex; j++) {
             m_vertices[j] += entry.pos;
-            m_vao.addVertex(m_vertices[j]);
-            m_vao.addTexcoord(m_texcoords[j]);
-            m_vao.addColor(entry.color);
+            m_vao->addVertex(m_vertices[j]);
+            m_vao->addTexcoord(m_texcoords[j]);
+            m_vao->addColor(entry.color);
         }
     }
 
     m_textureAtlas->getAtlasImage()->bind();
 
-    g->drawVAO(&m_vao);
+    g->drawVAO(m_vao.get());
 
     if(cv::r_debug_drawstring_unbind.getBool()) m_textureAtlas->getAtlasImage()->unbind();
 
