@@ -62,6 +62,9 @@ UIContextMenu::UIContextMenu(float xPos, float yPos, float xSize, float ySize, c
     : CBaseUIScrollView(xPos, yPos, xSize, ySize, name) {
     this->parent = parent;
 
+    this->backgroundColor = defaultBGColor;
+    this->frameColor = defaultFrameColor;
+
     this->setPos(xPos, yPos);
     this->setSize(xSize, ySize);
     this->setName(name);
@@ -90,12 +93,12 @@ void UIContextMenu::draw() {
     }
 
     // draw background
-    g->setColor(Color(0xff222222).setA(this->fAnimation));
+    g->setColor(Color(this->backgroundColor).setA(this->backgroundColor.Af() * this->fAnimation));
 
     g->fillRect(this->vPos.x + 1, this->vPos.y + 1, this->vSize.x - 1, this->vSize.y - 1);
 
     // draw frame
-    g->setColor(Color(0xffffffff).setA(this->fAnimation * this->fAnimation));
+    g->setColor(Color(this->frameColor).setA(this->frameColor.Af() * (this->fAnimation * this->fAnimation)));
 
     g->drawRect(this->vPos.x, this->vPos.y, this->vSize.x, this->vSize.y);
 

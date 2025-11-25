@@ -119,13 +119,6 @@ class CBaseUIScrollView : public CBaseUIElement {
    protected:
     void onMoved() override;
 
-   private:
-    void updateClipping();
-    void updateScrollbars();
-
-    void scrollToYInt(int scrollPosY, bool animated = true, bool slow = true);
-    void scrollToXInt(int scrollPosX, bool animated = true, bool slow = true);
-
     // vars
     Color backgroundColor{0xff000000};
     Color frameColor{0xffffffff};
@@ -168,6 +161,13 @@ class CBaseUIScrollView : public CBaseUIElement {
     unsigned bDrawFrame : 1 = true;
     unsigned bDrawBackground : 1 = true;
     unsigned bDrawScrollbars : 1 = true;
+
+   private:
+    void updateClipping();
+    void updateScrollbars();
+
+    void scrollToYInt(int scrollPosY, bool animated = true, bool slow = true);
+    void scrollToXInt(int scrollPosX, bool animated = true, bool slow = true);
 
    public:
     // When you scrolled to the bottom, and new content is added, setting this

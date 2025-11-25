@@ -478,6 +478,8 @@ OptionsMenu::OptionsMenu() : ScreenBackable() {
     this->addBaseUIElement(this->categories);
 
     this->contextMenu = new UIContextMenu(50, 50, 150, 0, "", this->options);
+    this->contextMenu->setBackgroundColor(argb(200, 36, 36, 48));
+    this->contextMenu->setFrameColor(argb(240, 240, 240, 255));
 
     this->search = new UISearchOverlay(0, 0, 0, 0, "");
     this->search->setOffsetRight(20);

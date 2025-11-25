@@ -48,11 +48,16 @@ class UIContextMenu final : public CBaseUIScrollView {
 
     bool isVisible() override { return this->bVisible2; }
 
+    static constexpr const Color defaultBGColor{0xff222222};
+    static constexpr const Color defaultFrameColor{0xffffffff};
+
    private:
     void onMouseDownOutside(bool left = true, bool right = false) override;
 
     void onClick(CBaseUIButton *button);
     void onHitEnter(UIContextMenuTextbox *textbox);
+
+    std::vector<CBaseUIElement *> selfDeletionCrashWorkaroundScheduledElementDeleteHack;
 
     CBaseUIScrollView *parent = nullptr;
     UIContextMenuTextbox *containedTextbox = nullptr;
@@ -60,15 +65,13 @@ class UIContextMenu final : public CBaseUIScrollView {
 
     i32 iYCounter = 0;
     i32 iWidthCounter = 0;
+    f32 fAnimation = 0.f;
 
     bool bVisible2 = false;
-    f32 fAnimation = 0.f;
     bool bInvertAnimation = false;
 
     bool bBigStyle;
     bool bClampUnderflowAndOverflowAndEnableScrollingIfNecessary;
-
-    std::vector<CBaseUIElement *> selfDeletionCrashWorkaroundScheduledElementDeleteHack;
 };
 
 class UIContextMenuButton final : public CBaseUIButton {
