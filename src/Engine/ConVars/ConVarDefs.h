@@ -1088,6 +1088,9 @@ CONVAR(skin_random_elements, false, CLIENT | SKINS | SERVER, "sElECt RanDOM sKIn
 CONVAR(skin_reload);
 CONVAR(skin_use_skin_hitsounds, true, CLIENT | SKINS | SERVER,
        "If enabled: Use skin's sound samples. If disabled: Use default skin's sound samples. For hitsounds only.");
+CONVAR(
+    skin_use_spinner_metre, false, CLIENT | SKINS | SERVER,
+    "enable the spinner-metre graphic, which fills up as the spinner completes.");  // temporary until spinner-metre isn't ugly as hell
 CONVAR(skip_breaks_enabled, true, CLIENT | SKINS | SERVER,
        "enables/disables skip button for breaks in the middle of beatmaps");
 CONVAR(skip_intro_enabled, true, CLIENT | SKINS | SERVER,

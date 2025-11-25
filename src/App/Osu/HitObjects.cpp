@@ -19,7 +19,6 @@
 #include "SliderCurves.h"
 #include "SliderRenderer.h"
 #include "SoundEngine.h"
-#include "OpenGLHeaders.h"
 #include "Logging.h"
 
 void HitObject::drawHitResult(BeatmapInterface *pf, vec2 rawPos, LiveScore::HIT result, float animPercentInv,
@@ -2455,7 +2454,7 @@ void Spinner::draw() {
         g->popTransform();
 
         // draw spinner metre
-        if(skin->i_spinner_metre != MISSING_TEXTURE) {
+        if(cv::skin_use_spinner_metre.getBool() && skin->i_spinner_metre != MISSING_TEXTURE) {
             f32 metreScale = spinnerScale / (skin->i_spinner_metre.scale());
             g->setColor(Color(0xffffffff).setA(this->fAlphaWithoutHidden * alphaMultiplier));
 
