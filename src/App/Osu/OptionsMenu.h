@@ -59,7 +59,7 @@ class OptionsMenu final : public ScreenBackable, public NotificationOverlayKeyLi
     bool isBusy() override;
 
     // "illegal", used by BassSoundEngine, can easily be turned into callbacks like for SoLoud instead
-    void scheduleLayoutUpdate() { this->bSearchLayoutUpdateScheduled = true; }
+    void scheduleLayoutUpdate() { this->bLayoutUpdateScheduled.store(true, std::memory_order_release); }
     void onOutputDeviceResetUpdate();
     CBaseUISlider *asioBufferSizeSlider = nullptr;
     CBaseUILabel *outputDeviceLabel;
@@ -304,7 +304,7 @@ class OptionsMenu final : public ScreenBackable, public NotificationOverlayKeyLi
     bool bASIOBufferChangeScheduled;
     bool bWASAPIBufferChangeScheduled;
     bool bWASAPIPeriodChangeScheduled;
-    std::atomic<bool> bSearchLayoutUpdateScheduled;
+    std::atomic<bool> bLayoutUpdateScheduled;
 
     int iNumResetAllKeyBindingsPressed;
     int iNumResetEverythingPressed;

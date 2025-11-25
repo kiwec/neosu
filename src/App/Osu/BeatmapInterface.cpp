@@ -2698,7 +2698,6 @@ void BeatmapInterface::update2() {
     this->iLastMusicPosUpdateTime = currentUpdateTime;
 
     // update current timingpoint
-    // TODO: should this be using post-offset music pos or not...?
     if(this->iCurMusicPosWithOffsets >= 0) {
         this->cur_timing_info =
             this->beatmap->getTimingInfoForTime(this->iCurMusicPosWithOffsets + cv::timingpoints_offset.getInt());
@@ -2728,6 +2727,8 @@ void BeatmapInterface::update2() {
                 // interpolate between the music position when click was captured and current music position
                 click.music_pos = static_cast<i32>(
                     std::round(std::lerp((double)click.music_pos, (double)this->iCurMusicPosWithOffsets, percent)));
+                // also update click position to the _current_ position (it was set pre-update)
+                // TODO: aim-between-frames
                 click.pos = this->getCursorPos();
             }
         }
@@ -3310,7 +3311,7 @@ void BeatmapInterface::update2() {
 
     // spectator score correction
     if(BanchoState::spectating && this->spectated_replay.size() >= 2) {
-        auto current_frame = this->spectated_replay[this->current_frame_idx];
+        const auto &current_frame = this->spectated_replay[this->current_frame_idx];
 
         i32 score_frame_idx = -1;
         for(i32 i = 0; i < this->score_frames.size(); i++) {
