@@ -74,28 +74,27 @@ void ScoreConverter::update_ppv2(const FinishedScore& score) {
     info.total_stars = DifficultyCalculator::calculateStarDiffForHitObjects(params);
     if(dead.load(std::memory_order_acquire)) return;
 
-    DifficultyCalculator::PPv2CalcParams ppv2calcparams{.modFlags = score.mods.flags,
-                                                        .speedOverride = score.mods.speed,
-                                                        .ar = AR,
-                                                        .od = OD,
-                                                        .aim = info.aim_stars,
-                                                        .aimSliderFactor = info.aim_slider_factor,
-                                                        .aimDifficultSliders = info.difficult_aim_sliders,
-                                                        .aimDifficultStrains = info.difficult_aim_strains,
-                                                        .speed = info.speed_stars,
-                                                        .speedNotes = info.speed_notes,
-                                                        .speedDifficultStrains = info.difficult_speed_strains,
-                                                        .numHitObjects = map->iNumObjects,
-                                                        .numCircles = map->iNumCircles,
-                                                        .numSliders = map->iNumSliders,
-                                                        .numSpinners = map->iNumSpinners,
-                                                        .maxPossibleCombo = diffres.maxPossibleCombo,
-                                                        .combo = score.comboMax,
-                                                        .misses = score.numMisses,
-                                                        .c300 = score.num300s,
-                                                        .c100 = score.num100s,
-                                                        .c50 = score.num50s};
-    info.pp = DifficultyCalculator::calculatePPv2(ppv2calcparams);
+    info.pp = DifficultyCalculator::calculatePPv2({.modFlags = score.mods.flags,
+                                                   .speedOverride = score.mods.speed,
+                                                   .ar = AR,
+                                                   .od = OD,
+                                                   .aim = info.aim_stars,
+                                                   .aimSliderFactor = info.aim_slider_factor,
+                                                   .aimDifficultSliders = info.difficult_aim_sliders,
+                                                   .aimDifficultStrains = info.difficult_aim_strains,
+                                                   .speed = info.speed_stars,
+                                                   .speedNotes = info.speed_notes,
+                                                   .speedDifficultStrains = info.difficult_speed_strains,
+                                                   .numHitObjects = map->iNumObjects,
+                                                   .numCircles = map->iNumCircles,
+                                                   .numSliders = map->iNumSliders,
+                                                   .numSpinners = map->iNumSpinners,
+                                                   .maxPossibleCombo = diffres.maxPossibleCombo,
+                                                   .combo = score.comboMax,
+                                                   .misses = score.numMisses,
+                                                   .c300 = score.num300s,
+                                                   .c100 = score.num100s,
+                                                   .c50 = score.num50s});
 
     // Update score
     Sync::shared_lock readlock(db->scores_mtx);
@@ -130,7 +129,7 @@ static forceinline bool score_needs_recalc(const FinishedScore& score) {
 }
 
 void ScoreConverter::runloop() {
-    McThread::set_current_thread_name("score_cvt");
+    McThread::set_current_thread_name(ULITERAL("score_cvt"));
     McThread::set_current_thread_prio(McThread::Priority::NORMAL);  // reset priority
 
     debugLog("Started score converter thread");

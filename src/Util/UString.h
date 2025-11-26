@@ -16,6 +16,7 @@
 #include "fmt/compile.h"
 
 using fmt::literals::operator""_cf;
+using std::string_view_literals::operator""sv;
 
 #ifndef MCENGINE_PLATFORM_WINDOWS
 #define delete_if_not_windows = delete
@@ -27,7 +28,7 @@ template <typename T>
 class AlignedAllocator {
    public:
     using value_type = T;
-    static constexpr std::align_val_t alignment{alignof(max_align_t)};
+    static constexpr std::align_val_t alignment{alignof(char32_t)};
 
     AlignedAllocator() noexcept = default;
     template <typename U>
@@ -74,9 +75,9 @@ class UString {
     UString(std::string_view utf8) noexcept;
     UString(const std::string &utf8) noexcept;
     inline constexpr UString(std::string_view utf8, std::u16string_view unicode) noexcept
-        : sUtf8(utf8), sUnicode(unicode) {}
+        : sUnicode(unicode), sUtf8(utf8) {}
 #define ULITERAL(str__) \
-    UString { str__, u##str__ }  // is C++ even powerful enough to do this without macros
+    UString { str__##sv, u##str__##sv }  // is C++ even powerful enough to do this without macros
 
     // member functions
     UString(const UString &ustr) noexcept = default;
@@ -311,15 +312,14 @@ class UString {
     [[nodiscard]] int findCharSimd(char16_t ch, int start, int end) const noexcept;
 
     // constructor helpers
-    void nonConstexprStringViewCtor(std::string_view utf8) noexcept;
     void fromUtf32(const char32_t *utf32, size_t length) noexcept;
     void fromSupposedUtf8(const char *utf8, size_t length) noexcept;
 
     // for updating utf8 representation when unicode representation changes
     void updateUtf8(size_t startUtf16 = 0) noexcept;
 
-    alignedUTF8String sUtf8;
     std::u16string sUnicode;
+    alignedUTF8String sUtf8;
 };
 
 namespace std {

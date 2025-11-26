@@ -3,6 +3,7 @@
 #include <thread>
 #include <vector>
 
+#include "UString.h"
 #include "Thread.h"
 #include "SyncMutex.h"
 #include "SyncCV.h"
@@ -59,7 +60,7 @@ struct lazy_promise {
 
    private:
     void run() {
-        McThread::set_current_thread_name("lazy_func_thr");
+        McThread::set_current_thread_name(ULITERAL("lazy_func_thr"));
         McThread::set_current_thread_prio(McThread::Priority::NORMAL);  // reset priority
         for(;;) {
             Sync::unique_lock<Sync::mutex> lock(this->funcs_mtx);

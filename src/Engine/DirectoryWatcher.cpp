@@ -134,7 +134,7 @@ class WatcherImplWin : public DirWatcherImpl {
     };
 
     void worker_loop(const Sync::stop_token& stoken) {
-        McThread::set_current_thread_name("dir_watcher");
+        McThread::set_current_thread_name(ULITERAL("dir_watcher"));
         McThread::set_current_thread_prio(McThread::Priority::LOW);
 
         std::unordered_map<std::string, DirectoryState> active_directories;
@@ -418,7 +418,7 @@ class WatcherImplGeneric : public DirWatcherImpl {
 
     // Generic implementation (polling)
     void worker_loop(const Sync::stop_token& stoken) {
-        McThread::set_current_thread_name("dir_watcher");
+        McThread::set_current_thread_name(ULITERAL("dir_watcher"));
         McThread::set_current_thread_prio(McThread::Priority::LOW);
 
         // Windows & OSX do not provide APIs that tell you when a file is

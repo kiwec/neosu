@@ -45,9 +45,8 @@ class AsyncResourceLoader::LoaderThread final {
 
         logIfCV(debug_rm, "AsyncResourceLoader: Thread #{} started", this->thread_index);
 
-        const std::string loaderThreadName =
-            fmt::format("res_ldr_thr{}", (this->thread_index % this->loader_ptr->iMaxThreads) + 1);
-        McThread::set_current_thread_name(loaderThreadName.c_str());
+        const UString loaderThreadName{fmt::format("res_ldr_thr{}", (this->thread_index % this->loader_ptr->iMaxThreads) + 1)};
+        McThread::set_current_thread_name(loaderThreadName);
         McThread::set_current_thread_prio(
             McThread::Priority::NORMAL);  // reset priority (don't inherit from main thread)
 
@@ -94,12 +93,12 @@ class AsyncResourceLoader::LoaderThread final {
                 work->state.store(WorkState::ASYNC_IN_PROGRESS, std::memory_order_release);
 
                 // prevent child threads from inheriting the name
-                McThread::set_current_thread_name(fmt::format("res_{}", work->workId).c_str());
+                McThread::set_current_thread_name(fmt::format("res_{}", work->workId));
 
                 resource->loadAsync();
 
                 // restore loader thread name
-                McThread::set_current_thread_name(loaderThreadName.c_str());
+                McThread::set_current_thread_name(loaderThreadName);
 
                 logIf(debug, "AsyncResourceLoader: Thread #{} finished async loading {:8p} : {:s}", this->thread_index,
                       static_cast<const void *>(resource), debugName);

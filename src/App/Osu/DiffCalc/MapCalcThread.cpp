@@ -43,7 +43,7 @@ void MapCalcThread::abort_instance() {
 }
 
 void MapCalcThread::run() {
-    McThread::set_current_thread_name("map_calc");
+    McThread::set_current_thread_name(ULITERAL("map_calc"));
     McThread::set_current_thread_prio(McThread::Priority::NORMAL);  // reset priority
 
     const auto deadCheck = [die = &this->should_stop](void) -> bool { return die->load(std::memory_order_acquire); };

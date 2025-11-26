@@ -144,9 +144,9 @@ Osu::Osu() {
         BanchoState::neosu_version = fmt::format("release-{:.2f}", cv::version.getFloat());
     }
 
-    BanchoState::user_agent = "Mozilla/5.0 (compatible; neosu/";
+    BanchoState::user_agent = ULITERAL("Mozilla/5.0 (compatible; neosu/");
     BanchoState::user_agent.append(BanchoState::neosu_version);
-    BanchoState::user_agent.append("; " OS_NAME "; +https://" NEOSU_DOMAIN "/)");
+    BanchoState::user_agent.append(ULITERAL("; " OS_NAME "; +https://" NEOSU_DOMAIN "/)"));
 
     // create directories we will assume already exist later on
     Environment::createDirectory(NEOSU_AVATARS_PATH);

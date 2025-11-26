@@ -54,8 +54,7 @@ thread_local char thread_name_buffer[256];
 
 namespace McThread {
 // WARNING: must be called from within the thread itself! otherwise, the main process name will be changed
-bool set_current_thread_name(const char *cname) {
-    [[maybe_unused]] UString name{cname};
+bool set_current_thread_name(const UString &name) {
 #if defined(_WIN32)
     try_load_funcs();
     if(pset_thread_desc) {
