@@ -192,8 +192,10 @@ class Graphics {
     virtual void setClipping(bool enabled) = 0;
     virtual void setAlphaTesting(bool enabled) = 0;
     virtual void setAlphaTestFunc(COMPARE_FUNC alphaFunc, float ref) = 0;
-    virtual void setBlending(bool enabled) = 0;
-    virtual void setBlendMode(BLEND_MODE blendMode) = 0;
+    virtual void setBlending(bool enabled) { this->bBlendingEnabled = enabled; }
+    [[nodiscard]] inline bool getBlending() const { return this->bBlendingEnabled; }
+    virtual void setBlendMode(BLEND_MODE blendMode) { this->currentBlendMode = blendMode; }
+    [[nodiscard]] inline BLEND_MODE getBlendMode() const { return this->currentBlendMode; }
     virtual void setDepthBuffer(bool enabled) = 0;
     virtual void setColorWriting(bool r, bool g, bool b, bool a) = 0;
     inline void setColorWriting(bool enabled) { this->setColorWriting(enabled, enabled, enabled, enabled); }
@@ -295,6 +297,10 @@ class Graphics {
 
     McRect scene3d_region;
     vec3 v3dSceneOffset{0.f};
+
+    // info
+    BLEND_MODE currentBlendMode{BLEND_MODE::BLEND_MODE_ALPHA};
+    bool bBlendingEnabled{true};
     bool bTransformUpToDate;
     bool bIs3dScene;
 };

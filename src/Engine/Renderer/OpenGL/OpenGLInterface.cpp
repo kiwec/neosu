@@ -637,6 +637,8 @@ void OpenGLInterface::setAlphaTestFunc(COMPARE_FUNC alphaFunc, float ref) {
 }
 
 void OpenGLInterface::setBlending(bool enabled) {
+    Graphics::setBlending(enabled);
+
     if(enabled)
         glEnable(GL_BLEND);
     else
@@ -644,6 +646,8 @@ void OpenGLInterface::setBlending(bool enabled) {
 }
 
 void OpenGLInterface::setBlendMode(BLEND_MODE blendMode) {
+    Graphics::setBlendMode(blendMode);
+
     switch(blendMode) {
         case BLEND_MODE::BLEND_MODE_ALPHA:
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);

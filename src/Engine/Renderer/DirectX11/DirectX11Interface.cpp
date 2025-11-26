@@ -998,6 +998,8 @@ void DirectX11Interface::setAlphaTestFunc(COMPARE_FUNC /*alphaFunc*/, float /*re
 }
 
 void DirectX11Interface::setBlending(bool enabled) {
+    Graphics::setBlending(enabled);
+
     this->blendState->Release();
     this->blendDesc.RenderTarget[0].BlendEnable = (enabled ? TRUE : FALSE);
     this->device->CreateBlendState(&this->blendDesc, &this->blendState);
@@ -1005,6 +1007,8 @@ void DirectX11Interface::setBlending(bool enabled) {
 }
 
 void DirectX11Interface::setBlendMode(BLEND_MODE blendMode) {
+    Graphics::setBlendMode(blendMode);
+
     this->blendState->Release();
 
     auto &blendDescRT0 = this->blendDesc.RenderTarget[0];

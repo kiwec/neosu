@@ -27,21 +27,10 @@ void UIBackButton::draw() {
 
         const SkinImage *backimg =
             this->bUseDefaultBack ? osu->getSkin()->i_menu_back2_DEFAULTSKIN : osu->getSkin()->i_menu_back2;
-        backimg->draw(this->vPos + (backimg->getSize() / 2.f));
+        backimg->draw(this->vPos + (backimg->getSize() / 2.f), 1.f,
+                      this->fAnimation * 0.25f /* hover animation brightness */);
     }
     g->popTransform();
-
-    // draw anim highlight overlay
-    if(this->fAnimation > 0.0f) {
-        g->pushTransform();
-        {
-            g->setColor(Color(0xffffffff).setA(this->fAnimation * 0.15f));
-
-            g->translate(this->vPos.x + this->vSize.x / 2, this->vPos.y + this->vSize.y / 2);
-            g->fillRect(-this->vSize.x / 2, -this->vSize.y / 2, this->vSize.x, this->vSize.y + 5);
-        }
-        g->popTransform();
-    }
 
     this->bFocusStolenDelay = false;
 }
@@ -62,7 +51,7 @@ void UIBackButton::onMouseInside() {
     CBaseUIButton::onMouseInside();
     if(this->bFocusStolenDelay) return;
 
-    anim->moveQuadOut(&this->fAnimation, 1.0f, 0.1f, 0.0f, true);
+    anim->moveQuadOut(&this->fAnimation, 1.0f, 0.15f, 0.0f, true);
     if(button_sound_cooldown + 0.05f < engine->getTime()) {
         button_sound_cooldown = engine->getTime();
         soundEngine->play(osu->getSkin()->s_hover_back_button);

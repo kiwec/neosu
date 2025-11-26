@@ -22,8 +22,9 @@ class SkinImage final {
               const std::string& animationSeparator = "-", bool ignoreDefaultSkin = false);
     ~SkinImage();
 
-    void draw(vec2 pos,
-              float scale = 1.0f) const;  // for objects scaled automatically to the current resolution
+    // for objects scaled automatically to the current resolution
+    // brighten: 0 = normal, 1 = heavenly
+    void draw(vec2 pos, float scale = 1.0f, float brighten = 0.f) const;
 
     // for objects which scale depending on external factors
     // (e.g. hitobjects, depending on the diameter defined by the CS)
