@@ -1489,24 +1489,29 @@ void OptionsMenu::mouse_update(bool *propagate_clicks) {
         this->updateLayout();
     }
 
-    if(!this->bVisible) return;
+    const bool optionsMenuVisible = this->bVisible;
+    const bool contextMenuVisible = this->contextMenu->isVisible();
+
+    if(!optionsMenuVisible && !contextMenuVisible) return;
+    const bool onlyContextMenuVisible = contextMenuVisible && !optionsMenuVisible;
 
     // force context menu click handling focus
     this->contextMenu->mouse_update(propagate_clicks);
     if(!*propagate_clicks) return;
+    if(onlyContextMenuVisible) return;  // HACK: not returning early if options menu is hidden, for skins menu dropdown
 
     // force context menu mouse-inside focus
     // NOTE: "propagate_clicks" does not solve the issue of mouse hover focus
     // this hack is still required, otherwise hovering underneath e.g. skin dropdown will play duplicate sounds for
     // each element selected (at all z-orders!)
-    if(this->contextMenu->isVisible()) {
+    if(contextMenuVisible) {
         this->backButton->stealFocus();
     }
 
     ScreenBackable::mouse_update(propagate_clicks);
     if(!*propagate_clicks) return;
 
-    if(this->contextMenu->isVisible()) {
+    if(contextMenuVisible) {
         // eyes are bleeding...
         for(auto e : this->options->container->vElements) {
             if(e == this->contextMenu) continue;
