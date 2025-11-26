@@ -318,7 +318,7 @@ class UString {
     // for updating utf8 representation when unicode representation changes
     void updateUtf8(size_t startUtf16 = 0) noexcept;
 
-    alignas(max_align_t) alignedUTF8String sUtf8;
+    alignedUTF8String sUtf8;
     std::u16string sUnicode;
 };
 

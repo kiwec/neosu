@@ -1228,9 +1228,9 @@ std::vector<std::string> Environment::enumerateDirectory(std::string_view pathTo
 
             if(!FindNextFileW(handle, &data)) break;
         }
-    }
 
-    FindClose(handle);
+        FindClose(handle);
+    }
 
     return utf8_entries;
 }

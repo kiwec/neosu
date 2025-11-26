@@ -7,6 +7,7 @@
 #include "LoudnessCalcThread.h"
 #include "MapCalcThread.h"
 #include "Mouse.h"
+#include "OptionsMenu.h"
 #include "Osu.h"
 #include "ResourceManager.h"
 #include "ScoreConverterThread.h"
@@ -130,7 +131,10 @@ void draw_bottombar() {
     }
     g->popTransform();
 
-    osu->getSongBrowser()->backButton->draw();
+    // don't double-draw the back button
+    if(!osu->getOptionsMenu()->isVisible()) {
+        osu->getSongBrowser()->backButton->draw();
+    }
 
     // Draw the user card under selection elements, which can cover it for fancy effects
     // (we don't match stable perfectly, but close enough)
