@@ -6,6 +6,7 @@
 #include "Timing.h"
 #include "SyncJthread.h"
 #include "SyncMutex.h"
+#include "UString.h"
 
 #include <algorithm>
 #include <vector>
@@ -42,7 +43,6 @@ class DirWatcherImpl {
 };
 
 #ifdef MCENGINE_PLATFORM_WINDOWS
-#include "UString.h"
 
 #include "WinDebloatDefs.h"
 #include <windows.h>
