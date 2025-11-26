@@ -23,12 +23,12 @@ class SkinImage final {
     ~SkinImage();
 
     // for objects scaled automatically to the current resolution
-    // brighten: 0 = normal, 1 = heavenly
-    void draw(vec2 pos, float scale = 1.0f, float brighten = 0.f) const;
+    // brightness: 0.0 = normal, 1.0 = heavenly
+    void draw(vec2 pos, float scale = 1.0f, float brightness = 0.f) const;
 
     // for objects which scale depending on external factors
     // (e.g. hitobjects, depending on the diameter defined by the CS)
-    void drawRaw(vec2 pos, float scale, AnchorPoint anchor = AnchorPoint::CENTER) const;
+    void drawRaw(vec2 pos, float scale, AnchorPoint anchor = AnchorPoint::CENTER, float brightness = 0.f) const;
 
     void update(float speedMultiplier, bool useEngineTimeForAnimations = true, i32 curMusicPos = 0);
 
@@ -80,6 +80,7 @@ class SkinImage final {
 
     [[nodiscard]] float getScale() const;
     [[nodiscard]] float getImageScale() const;
+    void drawBrightQuad(float brightness, float x, float y, float width, float height) const;  // helper
 
     Skin* skin;
     bool bReady;

@@ -223,11 +223,43 @@ SkinImage::~SkinImage() {
     this->filepathsForExport.clear();
 }
 
-void SkinImage::draw(vec2 pos, float scale, float brighten) const {
+void SkinImage::drawBrightQuad(float brightness, float x, float y, float width, float height) const {
+    VertexArrayObject vao(Graphics::PRIMITIVE::PRIMITIVE_QUADS);
+
+    const bool oldBlending = g->getBlending();
+    const auto oldBlendMode = g->getBlendMode();
+
+    const Color brightColor = argb(brightness, 1.f, 1.f, 1.f);
+
+    g->setBlending(true);
+    g->setBlendMode(Graphics::BLEND_MODE::BLEND_MODE_ADDITIVE);
+
+    vao.addVertex(x, y);
+    vao.addTexcoord(0, 0);
+    vao.addColor(brightColor);
+
+    vao.addVertex(x, (y + height));
+    vao.addTexcoord(0, 1);
+    vao.addColor(brightColor);
+
+    vao.addVertex((x + width), (y + height));
+    vao.addTexcoord(this->fDrawClipWidthPercent, 1);
+    vao.addColor(brightColor);
+
+    vao.addVertex((x + width), y);
+    vao.addTexcoord(this->fDrawClipWidthPercent, 0);
+    vao.addColor(brightColor);
+
+    g->drawVAO(&vao);
+
+    g->setBlendMode(oldBlendMode);
+    g->setBlending(oldBlending);
+}
+
+void SkinImage::draw(vec2 pos, float scale, float brightness) const {
     if(this->images.size() < 1) return;
 
     scale *= this->getScale();  // auto scale to current resolution
-    brighten = std::clamp(brighten, 0.f, 1.f);
 
     g->pushTransform();
     {
@@ -236,7 +268,7 @@ void SkinImage::draw(vec2 pos, float scale, float brighten) const {
 
         Image* img = this->getImageForCurrentFrame().img;
 
-        if(this->fDrawClipWidthPercent == 1.0f && brighten == 0.f)
+        if(this->fDrawClipWidthPercent == 1.0f && brightness <= 0.f)
             g->drawImage(img);
         else if(img->isReady()) {
             const float realWidth = img->getWidth();
@@ -248,54 +280,26 @@ void SkinImage::draw(vec2 pos, float scale, float brighten) const {
             const float x = -realWidth / 2;
             const float y = -realHeight / 2;
 
+            VertexArrayObject vao(Graphics::PRIMITIVE::PRIMITIVE_QUADS);
+
+            vao.addVertex(x, y);
+            vao.addTexcoord(0, 0);
+
+            vao.addVertex(x, (y + height));
+            vao.addTexcoord(0, 1);
+
+            vao.addVertex((x + width), (y + height));
+            vao.addTexcoord(this->fDrawClipWidthPercent, 1);
+
+            vao.addVertex((x + width), y);
+            vao.addTexcoord(this->fDrawClipWidthPercent, 0);
+
             img->bind();
             {
-                VertexArrayObject vao(Graphics::PRIMITIVE::PRIMITIVE_QUADS);
-
-                vao.addVertex(x, y);
-                vao.addTexcoord(0, 0);
-
-                vao.addVertex(x, (y + height));
-                vao.addTexcoord(0, 1);
-
-                vao.addVertex((x + width), (y + height));
-                vao.addTexcoord(this->fDrawClipWidthPercent, 1);
-
-                vao.addVertex((x + width), y);
-                vao.addTexcoord(this->fDrawClipWidthPercent, 0);
-
                 g->drawVAO(&vao);
-                if(brighten > 0.f) {
-                    vao.clear();
 
-                    const bool oldBlending = g->getBlending();
-                    const auto oldBlendMode = g->getBlendMode();
-
-                    const Color brightColor = argb(brighten, 1.f, 1.f, 1.f);
-
-                    g->setBlending(true);
-                    g->setBlendMode(Graphics::BLEND_MODE::BLEND_MODE_ADDITIVE);
-
-                    vao.addVertex(x, y);
-                    vao.addTexcoord(0, 0);
-                    vao.addColor(brightColor);
-
-                    vao.addVertex(x, (y + height));
-                    vao.addTexcoord(0, 1);
-                    vao.addColor(brightColor);
-
-                    vao.addVertex((x + width), (y + height));
-                    vao.addTexcoord(this->fDrawClipWidthPercent, 1);
-                    vao.addColor(brightColor);
-
-                    vao.addVertex((x + width), y);
-                    vao.addTexcoord(this->fDrawClipWidthPercent, 0);
-                    vao.addColor(brightColor);
-
-                    g->drawVAO(&vao);
-
-                    g->setBlendMode(oldBlendMode);
-                    g->setBlending(oldBlending);
+                if(brightness > 0.f) {
+                    this->drawBrightQuad(brightness, x, y, width, height);
                 }
             }
             img->unbind();
@@ -304,7 +308,7 @@ void SkinImage::draw(vec2 pos, float scale, float brighten) const {
     g->popTransform();
 }
 
-void SkinImage::drawRaw(vec2 pos, float scale, AnchorPoint anchor) const {
+void SkinImage::drawRaw(vec2 pos, float scale, AnchorPoint anchor, float brightness) const {
     if(this->images.size() < 1) return;
 
     g->pushTransform();
@@ -314,7 +318,7 @@ void SkinImage::drawRaw(vec2 pos, float scale, AnchorPoint anchor) const {
 
         Image* img = this->getImageForCurrentFrame().img;
 
-        if(this->fDrawClipWidthPercent == 1.0f) {
+        if(this->fDrawClipWidthPercent == 1.0f && brightness <= 0.f) {
             g->drawImage(img, anchor);
         } else if(img->isReady()) {
             // NOTE: Anchor point not handled here, but fDrawClipWidthPercent only used for health bar right now
@@ -344,6 +348,10 @@ void SkinImage::drawRaw(vec2 pos, float scale, AnchorPoint anchor) const {
             img->bind();
             {
                 g->drawVAO(&vao);
+
+                if(brightness > 0.f) {
+                    this->drawBrightQuad(brightness, x, y, width, height);
+                }
             }
             img->unbind();
         }
