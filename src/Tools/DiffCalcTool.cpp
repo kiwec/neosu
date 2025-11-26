@@ -128,7 +128,7 @@ int run_diffcalc(int argc, char* argv[]) {
     f64 totalStars = DifficultyCalculator::calculateStarDiffForHitObjects(starParams);
 
     // calculate PP for SS play
-    f64 pp = DifficultyCalculator::calculatePPv2({
+    DifficultyCalculator::PPv2CalcParams ppParams{
         .modFlags = static_cast<ModFlags>(0),
         .speedOverride = speedMultiplier,
         .ar = settings.AR,
@@ -150,7 +150,9 @@ int run_diffcalc(int argc, char* argv[]) {
         .c300 = -1,
         .c100 = 0,
         .c50 = 0,
-    });
+    };
+
+    f64 pp = DifficultyCalculator::calculatePPv2(ppParams);
 
     // output results
     std::cout << "star rating: " << totalStars << '\n';

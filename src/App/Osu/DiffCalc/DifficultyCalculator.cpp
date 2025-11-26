@@ -441,7 +441,7 @@ f64 DifficultyCalculator::calculateStarDiffForHitObjects(StarCalcParams &params)
     return calculateTotalStarsFromSkills(*params.aim, *params.speed);
 }
 
-f64 DifficultyCalculator::calculatePPv2(PPv2CalcParams cpar) {
+f64 DifficultyCalculator::calculatePPv2(PPv2CalcParams &cpar) {
     // NOTE: depends on active mods + OD + AR
 
     // apply "timescale" aka speed multiplier to ar/od

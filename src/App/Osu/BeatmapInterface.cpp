@@ -2407,27 +2407,30 @@ void BeatmapInterface::update() {
 
                 info.total_stars = DifficultyCalculator::calculateStarDiffForHitObjects(params);
 
-                info.pp = DifficultyCalculator::calculatePPv2({.modFlags = mods.flags,
-                                                               .speedOverride = mods.speed,
-                                                               .ar = AR,
-                                                               .od = OD,
-                                                               .aim = info.aim_stars,
-                                                               .aimSliderFactor = info.aim_slider_factor,
-                                                               .aimDifficultSliders = info.difficult_aim_sliders,
-                                                               .aimDifficultStrains = info.difficult_aim_strains,
-                                                               .speed = info.speed_stars,
-                                                               .speedNotes = info.speed_notes,
-                                                               .speedDifficultStrains = info.difficult_speed_strains,
-                                                               .numHitObjects = current_hitobject,
-                                                               .numCircles = nb_circles,
-                                                               .numSliders = nb_sliders,
-                                                               .numSpinners = nb_spinners,
-                                                               .maxPossibleCombo = diffres.maxPossibleCombo,
-                                                               .combo = highestCombo,
-                                                               .misses = numMisses,
-                                                               .c300 = num300s,
-                                                               .c100 = num100s,
-                                                               .c50 = num50s});
+                DifficultyCalculator::PPv2CalcParams ppv2calcparams{
+                    .modFlags = mods.flags,
+                    .speedOverride = mods.speed,
+                    .ar = AR,
+                    .od = OD,
+                    .aim = info.aim_stars,
+                    .aimSliderFactor = info.aim_slider_factor,
+                    .aimDifficultSliders = info.difficult_aim_sliders,
+                    .aimDifficultStrains = info.difficult_aim_strains,
+                    .speed = info.speed_stars,
+                    .speedNotes = info.speed_notes,
+                    .speedDifficultStrains = info.difficult_speed_strains,
+                    .numHitObjects = current_hitobject,
+                    .numCircles = nb_circles,
+                    .numSliders = nb_sliders,
+                    .numSpinners = nb_spinners,
+                    .maxPossibleCombo = diffres.maxPossibleCombo,
+                    .combo = highestCombo,
+                    .misses = numMisses,
+                    .c300 = num300s,
+                    .c100 = num100s,
+                    .c50 = num50s};
+
+                info.pp = DifficultyCalculator::calculatePPv2(ppv2calcparams);
 
                 return info;
             });
@@ -3801,7 +3804,7 @@ FinishedScore BeatmapInterface::saveAndSubmitScore(bool quit) {
     const int num100s = liveScore->getNum100s();
     const int num50s = liveScore->getNum50s();
 
-    const f32 pp = DifficultyCalculator::calculatePPv2({.modFlags = liveScore->mods.flags,
+    DifficultyCalculator::PPv2CalcParams ppv2calcparams{.modFlags = liveScore->mods.flags,
                                                         .speedOverride = liveScore->mods.speed,
                                                         .ar = AR,
                                                         .od = OD,
@@ -3821,7 +3824,9 @@ FinishedScore BeatmapInterface::saveAndSubmitScore(bool quit) {
                                                         .misses = numMisses,
                                                         .c300 = num300s,
                                                         .c100 = num100s,
-                                                        .c50 = num50s});
+                                                        .c50 = num50s};
+
+    const f32 pp = DifficultyCalculator::calculatePPv2(ppv2calcparams);
 
     liveScore->setStarsTomTotal(totalStars);
     liveScore->setStarsTomAim(this->fAimStars);

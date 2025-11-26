@@ -11,6 +11,12 @@
 
 #include "BaseEnvironment.h"  // for Env::cfg (consteval)
 
+#ifdef MCENGINE_PLATFORM_WINDOWS
+#include <malloc.h>
+#else
+#include <cstdlib>
+#endif
+
 #include "fmt/format.h"
 #include "fmt/printf.h"
 #include "fmt/compile.h"
@@ -28,21 +34,33 @@ template <typename T>
 class AlignedAllocator {
    public:
     using value_type = T;
-    static constexpr std::align_val_t alignment{alignof(char32_t)};
+    static constexpr std::align_val_t alignment{alignof(max_align_t)};
 
     AlignedAllocator() noexcept = default;
     template <typename U>
     constexpr AlignedAllocator(const AlignedAllocator<U> & /**/) noexcept {}
 
-    [[nodiscard]] T *allocate(std::size_t n) noexcept {
-        if(n > std::numeric_limits<std::size_t>::max() / sizeof(T)) {
+    [[nodiscard]] T *allocate(size_t n) noexcept {
+        if(n > std::numeric_limits<size_t>::max() / sizeof(T)) {
             fubar_abort();
         }
-        const std::size_t bytes = n * sizeof(T);
-        return static_cast<T *>(::operator new(bytes, alignment));
+
+        const size_t bytes =
+            ((n * sizeof(T)) + (static_cast<size_t>(alignment) - 1)) & ~(static_cast<size_t>(alignment) - 1);
+#ifdef MCENGINE_PLATFORM_WINDOWS
+        return static_cast<T *>(_aligned_malloc(bytes, static_cast<size_t>(alignment)));
+#else
+        return static_cast<T *>(std::aligned_alloc(static_cast<size_t>(alignment), bytes));
+#endif
     }
 
-    void deallocate(T *p, std::size_t /**/) noexcept { ::operator delete(p, alignment); }
+    void deallocate(T *p, size_t /**/) noexcept {
+#ifdef MCENGINE_PLATFORM_WINDOWS
+        _aligned_free(p);
+#else
+        std::free(p);
+#endif
+    }
 
     template <typename U>
     constexpr bool operator==(const AlignedAllocator<U> & /**/) const noexcept {

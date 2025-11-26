@@ -12,7 +12,7 @@
 #include "SkinImage.h"
 
 ScoreboardSlot::ScoreboardSlot(const SCORE_ENTRY &score, int index) {
-    this->avatar = std::make_unique<UIAvatar>(score.player_id, 0, 0, 0, 0);
+    this->avatar = std::make_unique<UIAvatar>(score.player_id, 0.f, 0.f, 0.f, 0.f);
     this->score = score;
     this->index = index;
 

@@ -203,7 +203,7 @@ static void run_thread(const Sync::stop_token& stoken) {
 
             if(stoken.stop_requested()) return;
 
-            computed_info->info.pp = DifficultyCalculator::calculatePPv2({
+            DifficultyCalculator::PPv2CalcParams ppv2calcparams{
                 .modFlags = rqt.modFlags,
                 .speedOverride = rqt.speedOverride,
                 .ar = rqt.AR,
@@ -225,7 +225,9 @@ static void run_thread(const Sync::stop_token& stoken) {
                 .c300 = rqt.num300s,
                 .c100 = rqt.num100s,
                 .c50 = rqt.num50s,
-            });
+            };
+
+            computed_info->info.pp = DifficultyCalculator::calculatePPv2(ppv2calcparams);
 
             {
                 Sync::unique_lock cache_lock(cache_mtx);

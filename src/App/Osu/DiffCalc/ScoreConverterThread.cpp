@@ -74,27 +74,29 @@ void ScoreConverter::update_ppv2(const FinishedScore& score) {
     info.total_stars = DifficultyCalculator::calculateStarDiffForHitObjects(params);
     if(dead.load(std::memory_order_acquire)) return;
 
-    info.pp = DifficultyCalculator::calculatePPv2({.modFlags = score.mods.flags,
-                                                   .speedOverride = score.mods.speed,
-                                                   .ar = AR,
-                                                   .od = OD,
-                                                   .aim = info.aim_stars,
-                                                   .aimSliderFactor = info.aim_slider_factor,
-                                                   .aimDifficultSliders = info.difficult_aim_sliders,
-                                                   .aimDifficultStrains = info.difficult_aim_strains,
-                                                   .speed = info.speed_stars,
-                                                   .speedNotes = info.speed_notes,
-                                                   .speedDifficultStrains = info.difficult_speed_strains,
-                                                   .numHitObjects = map->iNumObjects,
-                                                   .numCircles = map->iNumCircles,
-                                                   .numSliders = map->iNumSliders,
-                                                   .numSpinners = map->iNumSpinners,
-                                                   .maxPossibleCombo = diffres.maxPossibleCombo,
-                                                   .combo = score.comboMax,
-                                                   .misses = score.numMisses,
-                                                   .c300 = score.num300s,
-                                                   .c100 = score.num100s,
-                                                   .c50 = score.num50s});
+    DifficultyCalculator::PPv2CalcParams ppv2calcparams{.modFlags = score.mods.flags,
+                                                        .speedOverride = score.mods.speed,
+                                                        .ar = AR,
+                                                        .od = OD,
+                                                        .aim = info.aim_stars,
+                                                        .aimSliderFactor = info.aim_slider_factor,
+                                                        .aimDifficultSliders = info.difficult_aim_sliders,
+                                                        .aimDifficultStrains = info.difficult_aim_strains,
+                                                        .speed = info.speed_stars,
+                                                        .speedNotes = info.speed_notes,
+                                                        .speedDifficultStrains = info.difficult_speed_strains,
+                                                        .numHitObjects = map->iNumObjects,
+                                                        .numCircles = map->iNumCircles,
+                                                        .numSliders = map->iNumSliders,
+                                                        .numSpinners = map->iNumSpinners,
+                                                        .maxPossibleCombo = diffres.maxPossibleCombo,
+                                                        .combo = score.comboMax,
+                                                        .misses = score.numMisses,
+                                                        .c300 = score.num300s,
+                                                        .c100 = score.num100s,
+                                                        .c50 = score.num50s};
+
+    info.pp = DifficultyCalculator::calculatePPv2(ppv2calcparams);
 
     // Update score
     Sync::shared_lock readlock(db->scores_mtx);

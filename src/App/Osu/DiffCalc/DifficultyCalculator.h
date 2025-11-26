@@ -246,7 +246,7 @@ class DifficultyCalculator {
     };
 
     // pp, fully static
-    static f64 calculatePPv2(PPv2CalcParams cparams);
+    static f64 calculatePPv2(PPv2CalcParams &cparams);
 
     // helper functions
     static f64 calculateTotalStarsFromSkills(f64 aim, f64 speed);
