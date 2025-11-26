@@ -643,7 +643,9 @@ bool BeatmapInterface::start() {
     // the drawing order is different from the playing/input order.
     // for drawing, if multiple hitobjects occupy the exact same time (duration) then they get drawn on top of the
     // active hitobject
-    this->hitobjectsSortedByEndTime = this->hitobjects;
+    this->hitobjectsSortedByEndTime =
+        this->hitobjects | std::views::transform([](const auto &hobjUniquePtr) { return hobjUniquePtr.get(); }) |
+        std::ranges::to<std::vector>();
     std::ranges::sort(this->hitobjectsSortedByEndTime, BeatmapInterface::sortHitObjectByEndTimeComp);
 
     // after the hitobjects have been loaded we can calculate the stacks
@@ -1648,9 +1650,6 @@ void BeatmapInterface::unloadMusic() {
 
 void BeatmapInterface::unloadObjects() {
     this->currentHitObject = nullptr;
-    for(auto &hitobject : this->hitobjects) {
-        delete hitobject;
-    }
     this->hitobjects.clear();
     this->hitobjectsSortedByEndTime.clear();
     this->misaimObjects.clear();
@@ -1993,7 +1992,7 @@ void BeatmapInterface::drawFollowPoints() {
 
         // ignore future spinners
         auto *spinnerPointer = this->hitobjects[index] && this->hitobjects[index]->type == HitObjectType::SPINNER
-                                   ? static_cast<Spinner *>(this->hitobjects[index])
+                                   ? static_cast<Spinner *>(this->hitobjects[index].get())
                                    : nullptr;
         if(spinnerPointer != nullptr && !followPointsConnectSpinners)  // if this is a spinner
         {
@@ -2013,7 +2012,7 @@ void BeatmapInterface::drawFollowPoints() {
             // ignore previous spinners
             spinnerPointer =
                 this->hitobjects[lastObjectIndex] && this->hitobjects[lastObjectIndex]->type == HitObjectType::SPINNER
-                    ? static_cast<Spinner *>(this->hitobjects[lastObjectIndex])
+                    ? static_cast<Spinner *>(this->hitobjects[lastObjectIndex].get())
                     : nullptr;
             if(spinnerPointer != nullptr && !followPointsConnectSpinners)  // if this is a spinner
             {
@@ -2322,7 +2321,7 @@ void BeatmapInterface::update() {
                 debugLog("Beatmap: Preloading done.");
                 break;
             } else {
-                auto *ho = this->hitobjects[this->iPreLoadingIndex];
+                auto *ho = this->hitobjects[this->iPreLoadingIndex].get();
                 auto *sliderPointer = ho && ho->type == HitObjectType::SLIDER ? static_cast<Slider *>(ho) : nullptr;
                 if(sliderPointer != nullptr) sliderPointer->rebuildVertexBuffer();
             }
@@ -2876,7 +2875,7 @@ void BeatmapInterface::update2() {
                 if(this->hitobjects[i]->click_time > this->iCurMusicPosWithOffsets)
                     this->iNextHitObjectTime = this->hitobjects[i]->click_time;
                 else {
-                    this->currentHitObject = this->hitobjects[i];
+                    this->currentHitObject = this->hitobjects[i].get();
                     const i32 actualPrevHitObjectTime = this->hitobjects[i]->click_time + this->hitobjects[i]->duration;
                     this->iPreviousHitObjectTime = actualPrevHitObjectTime;
 
@@ -2924,7 +2923,7 @@ void BeatmapInterface::update2() {
             }
 
             // note blocking / notelock (1)
-            const Slider *currentSliderPointer = isSlider ? static_cast<Slider *>(this->hitobjects[i]) : nullptr;
+            const Slider *currentSliderPointer = isSlider ? static_cast<Slider *>(this->hitobjects[i].get()) : nullptr;
             if(notelockType > 0) {
                 this->hitobjects[i]->setBlocked(blockNextNotes);
 
@@ -3096,9 +3095,9 @@ void BeatmapInterface::update2() {
             {
                 if(!hitobject->isFinished()) {
                     if(this->iCurMusicPosWithOffsets >= hitobject->click_time)
-                        lastUnfinishedHitObject = hitobject;
+                        lastUnfinishedHitObject = hitobject.get();
                     else if(std::abs(hitobject->click_time - this->iCurMusicPosWithOffsets) < hitWindow50)
-                        this->misaimObjects.push_back(hitobject);
+                        this->misaimObjects.push_back(hitobject.get());
                     else
                         break;
                 }
@@ -3882,7 +3881,7 @@ FinishedScore BeatmapInterface::saveAndSubmitScore(bool quit) {
     score.replay = this->live_replay;
 
     // @PPV3: store ppv3 data if not already done. also double check replay is marked correctly
-    score.ppv2_version = DifficultyCalculator::PP_ALGORITHM_VERSION;
+    score.ppv2_version = DiffCalc::PP_ALGORITHM_VERSION;
     score.ppv2_score = pp;
     score.ppv2_total_stars = totalStars;
     score.ppv2_aim_stars = aim;
@@ -3958,7 +3957,7 @@ void BeatmapInterface::updateAutoCursorPos() {
     if(osu->getModAuto()) {
         bool autoDanceOverride = false;
         for(int i = 0; i < this->hitobjects.size(); i++) {
-            HitObject *o = this->hitobjects[i];
+            HitObject *o = this->hitobjects[i].get();
 
             // get previous object
             if(o->click_time <= curMusicPos) {
@@ -4037,7 +4036,7 @@ void BeatmapInterface::updateAutoCursorPos() {
         }
     } else if(osu->getModAutopilot()) {
         for(int i = 0; i < this->hitobjects.size(); i++) {
-            HitObject *o = this->hitobjects[i];
+            HitObject *o = this->hitobjects[i].get();
 
             // get previous object
             if(o->isFinished() ||
@@ -4153,7 +4152,7 @@ void BeatmapInterface::updateSliderVertexBuffers() {
 
     for(auto &hitobject : this->hitobjects) {
         auto *sliderPointer =
-            hitobject && hitobject->type == HitObjectType::SLIDER ? static_cast<Slider *>(hitobject) : nullptr;
+            hitobject && hitobject->type == HitObjectType::SLIDER ? static_cast<Slider *>(hitobject.get()) : nullptr;
         if(sliderPointer != nullptr) sliderPointer->rebuildVertexBuffer();
     }
 }
@@ -4184,7 +4183,7 @@ void BeatmapInterface::calculateStacks() {
         for(int i = this->hitobjects.size() - 1; i >= 0; i--) {
             int n = i;
 
-            HitObject *objectI = this->hitobjects[i];
+            HitObject *objectI = this->hitobjects[i].get();
 
             bool isSpinner = objectI->type == HitObjectType::SPINNER;
 
@@ -4195,7 +4194,7 @@ void BeatmapInterface::calculateStacks() {
 
             if(isHitCircle) {
                 while(--n >= 0) {
-                    HitObject *objectN = this->hitobjects[n];
+                    HitObject *objectN = this->hitobjects[n].get();
 
                     bool isSpinnerN = objectN->type == HitObjectType::SPINNER;
 
@@ -4227,7 +4226,7 @@ void BeatmapInterface::calculateStacks() {
                 }
             } else if(isSlider) {
                 while(--n >= 0) {
-                    HitObject *objectN = this->hitobjects[n];
+                    HitObject *objectN = this->hitobjects[n].get();
 
                     bool isSpinnerN = objectN->type == HitObjectType::SPINNER;
 
@@ -4251,7 +4250,7 @@ void BeatmapInterface::calculateStacks() {
         // https://github.com/ppy/osu/blob/master/osu.Game.Rulesets.Osu/Beatmaps/BeatmapProcessor.cs
 
         for(int i = 0; i < this->hitobjects.size(); i++) {
-            HitObject *currHitObject = this->hitobjects[i];
+            HitObject *currHitObject = this->hitobjects[i].get();
             auto *sliderPointer = currHitObject && currHitObject->type == HitObjectType::SLIDER
                                       ? static_cast<Slider *>(currHitObject)
                                       : nullptr;
@@ -4264,7 +4263,7 @@ void BeatmapInterface::calculateStacks() {
             int sliderStack = 0;
 
             for(int j = i + 1; j < this->hitobjects.size(); j++) {
-                HitObject *objectJ = this->hitobjects[j];
+                HitObject *objectJ = this->hitobjects[j].get();
 
                 if(objectJ->click_time - (approachTime * stackLeniency) > startTime) break;
 
@@ -4386,7 +4385,7 @@ void BeatmapInterface::computeDrainRate() {
             int comboTooLowCount = 0;
 
             for(int i = 0; i < this->hitobjects.size(); i++) {
-                const HitObject *h = this->hitobjects[i];
+                const HitObject *h = this->hitobjects[i].get();
                 const auto *sliderPointer = h->type == HitObjectType::SLIDER ? static_cast<const Slider *>(h) : nullptr;
                 const auto *spinnerPointer =
                     h->type == HitObjectType::SPINNER ? static_cast<const Spinner *>(h) : nullptr;

@@ -122,7 +122,7 @@ int run_diffcalc(int argc, char* argv[]) {
         .incremental = nullptr,
         .outAimStrains = nullptr,
         .outSpeedStrains = nullptr,
-        .cancelCheck = std::nullopt,
+        .cancelCheck = nullptr,
     };
 
     f64 totalStars = DifficultyCalculator::calculateStarDiffForHitObjects(starParams);

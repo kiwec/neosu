@@ -140,6 +140,9 @@ class Database {
 
     inline void addPathToImport(const std::string &dbPath) { this->extern_db_paths_to_import.push_back(dbPath); }
 
+    // locks peppy_overrides mutex and updates overrides for loaded-from-stable-db maps which will be stored in the local database
+    void update_overrides(DatabaseBeatmap *beatmap);
+
     Sync::shared_mutex peppy_overrides_mtx;
     Sync::shared_mutex scores_mtx;
     std::atomic<bool> scores_changed{true};

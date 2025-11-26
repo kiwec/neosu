@@ -4,6 +4,8 @@
 #include "AsyncIOHandler.h"
 #include "ConVar.h"
 #include "Logging.h"
+
+#include "Osu.h"
 #include "LegacyReplay.h"
 #include "Bancho.h"
 #include "BanchoLeaderboard.h"

@@ -181,6 +181,19 @@ void md5_f(std::string_view file_path, u8* hash) {
     hasher.finalize();
     std::memcpy(hash, hasher.getDigest(), 16);
 }
+
+MD5Hash md5_hex(const u8* msg, size_t msg_len) {
+    u8 digest[16];
+    crypto::hash::md5(msg, msg_len, &digest[0]);
+
+    MD5Hash out;
+    for(uSz i = 0; i < 16; i++) {
+        out.hash[i * 2] = "0123456789abcdef"[digest[i] >> 4];
+        out.hash[i * 2 + 1] = "0123456789abcdef"[digest[i] & 0xf];
+    }
+    return out;
+}
+
 }  // namespace hash
 
 namespace conv {

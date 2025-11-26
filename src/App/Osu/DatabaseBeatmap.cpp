@@ -3,10 +3,8 @@
 #include "DifficultyCalculator.h"
 
 #include "SString.h"
-#include "Bancho.h"  // md5
 #include "BeatmapInterface.h"
 #include "ConVar.h"
-#include "Database.h"
 #include "Engine.h"
 #include "File.h"
 #include "GameRules.h"
@@ -17,11 +15,18 @@
 #include "Logging.h"
 #include "SongBrowser.h"
 #include "AsyncIOHandler.h"
+#include "crypto.h"
 
 #include <cassert>
 #include <algorithm>
 #include <utility>
 #include <source_location>
+
+#ifndef BUILD_TOOLS_ONLY
+bool DatabaseBeatmap::prefer_cjk_names() { return cv::prefer_cjk.getBool(); }
+#else
+bool DatabaseBeatmap::prefer_cjk_names() { return false; }
+#endif
 
 // defined here to avoid including diffcalc things in DatabaseBeatmap.h
 DatabaseBeatmap::LOAD_DIFFOBJ_RESULT::LOAD_DIFFOBJ_RESULT() = default;
@@ -30,6 +35,14 @@ DatabaseBeatmap::LOAD_DIFFOBJ_RESULT::~LOAD_DIFFOBJ_RESULT() = default;
 DatabaseBeatmap::LOAD_DIFFOBJ_RESULT::LOAD_DIFFOBJ_RESULT(DatabaseBeatmap::LOAD_DIFFOBJ_RESULT &&) noexcept = default;
 DatabaseBeatmap::LOAD_DIFFOBJ_RESULT &DatabaseBeatmap::LOAD_DIFFOBJ_RESULT::operator=(
     DatabaseBeatmap::LOAD_DIFFOBJ_RESULT &&) noexcept = default;
+
+DatabaseBeatmap::LOAD_GAMEPLAY_RESULT::LOAD_GAMEPLAY_RESULT() = default;
+DatabaseBeatmap::LOAD_GAMEPLAY_RESULT::~LOAD_GAMEPLAY_RESULT() = default;
+
+DatabaseBeatmap::LOAD_GAMEPLAY_RESULT::LOAD_GAMEPLAY_RESULT(DatabaseBeatmap::LOAD_GAMEPLAY_RESULT &&) noexcept =
+    default;
+DatabaseBeatmap::LOAD_GAMEPLAY_RESULT &DatabaseBeatmap::LOAD_GAMEPLAY_RESULT::operator=(
+    DatabaseBeatmap::LOAD_GAMEPLAY_RESULT &&) noexcept = default;
 
 namespace {  // static namespace
 
@@ -1096,7 +1109,7 @@ bool DatabaseBeatmap::loadMetadata(bool compute_md5) {
 
     // compute MD5 hash (very slow)
     if(compute_md5 && !this->md5_init.load(std::memory_order_acquire)) {
-        this->writeMD5(BanchoState::md5(reinterpret_cast<const u8 *>(beatmapFile.data()), beatmapFileSize));
+        this->writeMD5(crypto::hash::md5_hex(reinterpret_cast<const u8 *>(beatmapFile.data()), beatmapFileSize));
     }
 
     // load metadata
@@ -1330,8 +1343,8 @@ DatabaseBeatmap::LOAD_GAMEPLAY_RESULT DatabaseBeatmap::loadGameplay(DatabaseBeat
         int maxPossibleCombo = 0;
 
         for(auto &h : c.hitcircles) {
-            result.hitobjects.push_back(
-                new Circle(h.x, h.y, h.time, h.samples, h.number, false, h.colorCounter, h.colorOffset, beatmap));
+            result.hitobjects.push_back(std::make_unique<Circle>(h.x, h.y, h.time, h.samples, h.number, false,
+                                                                 h.colorCounter, h.colorOffset, beatmap));
         }
         maxPossibleCombo += c.hitcircles.size();
 
@@ -1341,16 +1354,17 @@ DatabaseBeatmap::LOAD_GAMEPLAY_RESULT DatabaseBeatmap::loadGameplay(DatabaseBeat
 
             if(cv::mod_reverse_sliders.getBool()) std::ranges::reverse(s.points);
 
-            result.hitobjects.push_back(new Slider(s.type, s.repeat, s.pixelLength, s.points, s.ticks, s.sliderTime,
-                                                   s.sliderTimeWithoutRepeats, s.time, s.hoverSamples, s.edgeSamples,
-                                                   s.number, false, s.colorCounter, s.colorOffset, beatmap));
+            result.hitobjects.push_back(std::make_unique<Slider>(
+                s.type, s.repeat, s.pixelLength, s.points, s.ticks, s.sliderTime, s.sliderTimeWithoutRepeats, s.time,
+                s.hoverSamples, s.edgeSamples, s.number, false, s.colorCounter, s.colorOffset, beatmap));
 
             const int repeats = std::max((s.repeat - 1), 0);
             maxPossibleCombo += 2 + repeats + (repeats + 1) * s.ticks.size();  // start/end + repeat arrow + ticks
         }
 
         for(auto &s : c.spinners) {
-            result.hitobjects.push_back(new Spinner(s.x, s.y, s.time, s.samples, false, s.endTime, beatmap));
+            result.hitobjects.push_back(
+                std::make_unique<Spinner>(s.x, s.y, s.time, s.samples, false, s.endTime, beatmap));
         }
         maxPossibleCombo += c.spinners.size();
 
@@ -1359,7 +1373,8 @@ DatabaseBeatmap::LOAD_GAMEPLAY_RESULT DatabaseBeatmap::loadGameplay(DatabaseBeat
 
     // sort hitobjects by starttime
     if(result.hitobjects.size() > 1) {
-        std::ranges::sort(result.hitobjects, BeatmapInterface::sortHitObjectByStartTimeComp);
+        std::ranges::sort(result.hitobjects, BeatmapInterface::sortHitObjectByStartTimeComp,
+                          [](const auto &objptr) { return objptr.get(); });
     }
 
     // update beatmap length stat
@@ -1374,8 +1389,9 @@ DatabaseBeatmap::LOAD_GAMEPLAY_RESULT DatabaseBeatmap::loadGameplay(DatabaseBeat
 
         uSz combo = 0;
         for(size_t i = 0; i < result.hitobjects.size(); i++) {
-            HitObject *currentHitObject = result.hitobjects[i];
-            const HitObject *nextHitObject = (i + 1 < result.hitobjects.size() ? result.hitobjects[i + 1] : nullptr);
+            HitObject *currentHitObject = result.hitobjects[i].get();
+            const HitObject *nextHitObject =
+                (i + 1 < result.hitobjects.size() ? result.hitobjects[i + 1].get() : nullptr);
 
             uSz scoreComboMultiplier = combo == 0 ? 0 : combo - 1;
 
@@ -1408,7 +1424,7 @@ DatabaseBeatmap::LOAD_GAMEPLAY_RESULT DatabaseBeatmap::loadGameplay(DatabaseBeat
         if(cv::ignore_beatmap_combo_numbers.getBool()) {
             // NOTE: spinners don't increment the combo number
             int comboNumber = 1;
-            for(auto currentHitObject : result.hitobjects) {
+            for(const auto &currentHitObject : result.hitobjects) {
                 if(currentHitObject->type != HitObjectType::SPINNER) {
                     currentHitObject->combo_number = comboNumber;
                     comboNumber++;
@@ -1418,7 +1434,7 @@ DatabaseBeatmap::LOAD_GAMEPLAY_RESULT DatabaseBeatmap::loadGameplay(DatabaseBeat
 
         const int numberMax = cv::number_max.getInt();
         if(numberMax > 0) {
-            for(auto currentHitObject : result.hitobjects) {
+            for(const auto &currentHitObject : result.hitobjects) {
                 const int currentComboNumber = currentHitObject->combo_number;
                 const int newComboNumber = (currentComboNumber % numberMax);
 
@@ -1445,13 +1461,6 @@ MapOverrides DatabaseBeatmap::get_overrides() const {
             .nb_sliders = static_cast<u16>(this->iNumSliders),
             .nb_spinners = static_cast<u16>(this->iNumSpinners),
             .draw_background = this->draw_background};
-}
-
-void DatabaseBeatmap::update_overrides() {
-    if(!db || this->do_not_store || this->type != BeatmapType::PEPPY_DIFFICULTY) return;
-
-    Sync::unique_lock lock(db->peppy_overrides_mtx);
-    db->peppy_overrides[this->getMD5()] = this->get_overrides();
 }
 
 DatabaseBeatmap::TIMING_INFO DatabaseBeatmap::getTimingInfoForTime(u32 positionMS) const {

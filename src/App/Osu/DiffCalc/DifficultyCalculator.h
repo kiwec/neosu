@@ -9,7 +9,6 @@
 #include <vector>
 #include <array>
 #include <memory>
-#include <optional>
 
 enum class ModFlags : u64;
 
@@ -84,14 +83,15 @@ class DifficultyHitObject {
     vec2 originalPos;
 };
 
+namespace DiffCalc {
+// for forward declaration
+extern const u32 PP_ALGORITHM_VERSION;
+}  // namespace DiffCalc
+
 class DifficultyCalculator {
    public:
-    static constexpr const i32 PP_ALGORITHM_VERSION = 20250306;
-
-   public:
     struct Skills {
-        static constexpr const i32 NUM_SKILLS = 3;
-        enum Skill : u8 { SPEED, AIM_SLIDERS, AIM_NO_SLIDERS };
+        enum Skill : u8 { SPEED, AIM_SLIDERS, AIM_NO_SLIDERS, NUM_SKILLS };
     };
 
     // see https://github.com/ppy/osu/blob/master/osu.Game.Rulesets.Osu/Difficulty/Skills/Speed.cs
@@ -209,10 +209,8 @@ class DifficultyCalculator {
         std::vector<f64> *outSpeedStrains{nullptr};
 
         // cancellation
-        std::optional<std::function<bool(void)>> cancelCheck{std::nullopt};
-        [[nodiscard]] inline bool shouldDie() const {
-            return this->cancelCheck.has_value() ? (*this->cancelCheck)() : false;
-        }
+        std::function<bool(void)> cancelCheck{nullptr};
+        [[nodiscard]] inline bool shouldDie() const { return this->cancelCheck ? this->cancelCheck() : false; }
     };
 
     // stars, fully static

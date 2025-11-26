@@ -7,8 +7,10 @@
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 
+#ifndef BUILD_TOOLS_ONLY
 #include "fmt/format.h"
 #include "fmt/compile.h"
+#endif
 
 using glm::vec2;
 using glm::vec3;
@@ -73,6 +75,7 @@ inline constexpr bool allEqual(const V &vec1, const V vec2) {
 
 }  // namespace vec
 
+#ifndef BUILD_TOOLS_ONLY
 namespace fmt {
 template <typename Vec, int N>
 struct float_vec_formatter {
@@ -149,3 +152,4 @@ template <>
 struct formatter<lvec4> : int_vec_formatter<lvec4, 4> {};
 
 }  // namespace fmt
+#endif

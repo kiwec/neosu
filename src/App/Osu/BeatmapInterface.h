@@ -10,6 +10,8 @@
 #include "score.h"
 #include "uwu.h"
 
+#include <memory>
+
 class Sound;
 class ConVar;
 struct Skin;
@@ -220,7 +222,6 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
     static bool sortHitObjectByEndTimeComp(HitObject const *a, HitObject const *b);
 
     // ILLEGAL:
-    [[nodiscard]] inline const std::vector<HitObject *> &getHitObjectsPointer() const { return this->hitobjects; }
     [[nodiscard]] inline f32 getBreakBackgroundFadeAnim() const { return this->fBreakBackgroundFade; }
 
     // live pp/stars
@@ -301,9 +302,9 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
     std::vector<Click> clicks;
 
     // hitobjects
-    std::vector<HitObject *> hitobjects;
-    std::vector<HitObject *> hitobjectsSortedByEndTime;
-    std::vector<HitObject *> misaimObjects;
+    std::vector<std::unique_ptr<HitObject>> hitobjects;
+    std::vector<HitObject *> hitobjectsSortedByEndTime;  // non-owning view of hitobjects data
+    std::vector<HitObject *> misaimObjects;              // non-owning view of hitobjects data
 
     // statistics
     int iNPS;
@@ -345,7 +346,7 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
     void drawHitObjects();
     void drawSmoke();
 
-    enum class FLType : uint8_t {NORMAL_FL, ACTUAL_FL};
+    enum class FLType : uint8_t { NORMAL_FL, ACTUAL_FL };
     void drawFlashlight(FLType type);
 
     void updateAutoCursorPos();

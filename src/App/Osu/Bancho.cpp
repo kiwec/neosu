@@ -94,18 +94,6 @@ bool BanchoState::is_in_a_multi_room() {
     return now_multi;
 }
 
-MD5Hash BanchoState::md5(const u8 *msg, size_t msg_len) {
-    u8 digest[16];
-    crypto::hash::md5(msg, msg_len, &digest[0]);
-
-    MD5Hash out;
-    for(int i = 0; i < 16; i++) {
-        out.hash[i * 2] = "0123456789abcdef"[digest[i] >> 4];
-        out.hash[i * 2 + 1] = "0123456789abcdef"[digest[i] & 0xf];
-    }
-    return out;
-}
-
 void BanchoState::set_uid(i32 new_uid) {
     const i32 old_uid = get_uid();
     user_id.store(new_uid, std::memory_order_release);
@@ -797,7 +785,7 @@ void BanchoState::handle_packet(Packet &packet) {
                     debugLogLambda("Failed to get map file data for md5: {} path: {}", md5.string(), file_path);
                     return;
                 }
-                auto md5_check = BanchoState::md5((u8 *)osu_file.data(), osu_file.size());
+                auto md5_check = crypto::hash::md5_hex((u8 *)osu_file.data(), osu_file.size());
                 if(md5 != md5_check) {
                     debugLogLambda("After loading map {}, we got different md5 {}!", md5.string(), md5_check.string());
                     return;
@@ -868,18 +856,20 @@ std::string BanchoState::build_login_packet() {
     req.append("0|");
 
     const char *osu_path = Environment::getPathToSelf().c_str();
-    MD5Hash osu_path_md5 = md5((u8 *)osu_path, strlen(osu_path));
+    MD5Hash osu_path_md5 = crypto::hash::md5_hex((u8 *)osu_path, strlen(osu_path));
 
     // XXX: Should get MAC addresses from network adapters
     // NOTE: Not sure how the MD5 is computed - does it include final "." ?
     const char *adapters = "runningunderwine";
-    MD5Hash adapters_md5 = md5((u8 *)adapters, strlen(adapters));
+    MD5Hash adapters_md5 = crypto::hash::md5_hex((u8 *)adapters, strlen(adapters));
 
     // XXX: Should remove '|' from the disk UUID just to be safe
-    MD5Hash disk_md5 = md5((u8 *)BanchoState::get_disk_uuid().toUtf8(), BanchoState::get_disk_uuid().lengthUtf8());
+    MD5Hash disk_md5 =
+        crypto::hash::md5_hex((u8 *)BanchoState::get_disk_uuid().toUtf8(), BanchoState::get_disk_uuid().lengthUtf8());
 
     // XXX: Not implemented, I'm lazy so just reusing disk signature
-    MD5Hash install_md5 = md5((u8 *)BanchoState::get_install_id().toUtf8(), BanchoState::get_install_id().lengthUtf8());
+    MD5Hash install_md5 =
+        crypto::hash::md5_hex((u8 *)BanchoState::get_install_id().toUtf8(), BanchoState::get_install_id().lengthUtf8());
 
     BanchoState::client_hashes = fmt::format("{:s}:{:s}:{:s}:{:s}:{:s}:", osu_path_md5.string(), adapters,
                                              adapters_md5.string(), install_md5.string(), disk_md5.string());

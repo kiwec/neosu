@@ -14,7 +14,6 @@
 #include "Chat.h"
 #include "ConVar.h"
 #include "DatabaseBeatmap.h"
-#include "DifficultyCalculator.h"
 #include "Engine.h"
 #include "GameRules.h"
 #include "Icons.h"

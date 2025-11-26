@@ -1,6 +1,7 @@
 // Copyright (c) 2023, kiwec, All rights reserved.
 #include "BanchoLeaderboard.h"
 
+#include "Osu.h"
 #include "Bancho.h"
 #include "BanchoApi.h"
 #include "BanchoNetworking.h"
@@ -170,7 +171,11 @@ void process_leaderboard_response(const Packet &response) {
     debugLog("Received online leaderboard for Beatmap ID {:d}", info.beatmap_id);
     auto map = db->getBeatmapDifficulty(beatmap_hash);
     if(map) {
+        const i16 previous_offset = map->getOnlineOffset();
         map->setOnlineOffset(info.online_offset);
+        if(previous_offset != info.online_offset) {
+            db->update_overrides(map);
+        }
     }
 
     char *score_line = nullptr;

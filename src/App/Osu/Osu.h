@@ -108,8 +108,6 @@ class Osu final : public MouseListener, public KeyboardListener {
 
     void reloadMapInterface();
 
-    [[nodiscard]] inline bool useCJKNames() const { return this->bPreferCJK; }
-
     // threading-related
     [[nodiscard]] bool isInPlayModeAndNotPaused() const;
     [[nodiscard]] inline bool shouldPauseBGThreads() const {
@@ -243,8 +241,6 @@ class Osu final : public MouseListener, public KeyboardListener {
    private:
     // internal audio setup
     void setupSoloud();
-    // callback
-    inline void preferCJKCallback(float newValue) { this->bPreferCJK = !!static_cast<int>(newValue); }
 
     void drawRuntimeInfo();
 
@@ -358,7 +354,6 @@ class Osu final : public MouseListener, public KeyboardListener {
     bool bSkinLoadWasReload{false};
     bool bFontReloadScheduled{false};
     bool bScreensReady{false};
-    bool bPreferCJK{false};
     bool bDrawBuildInfo{true};
 
     friend class BeatmapInterface;

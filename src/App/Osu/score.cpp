@@ -6,7 +6,6 @@
 #include "BeatmapInterface.h"
 #include "ConVar.h"
 #include "DatabaseBeatmap.h"
-#include "DifficultyCalculator.h"
 #include "Engine.h"
 #include "GameRules.h"
 #include "HUD.h"
@@ -469,6 +468,11 @@ float LiveScore::calculateAccuracy(int num300s, int num100s, int num50s, int num
     return 0.0f;
 }
 
+// fwd decl to avoid including DifficultyCalculator.h
+namespace DiffCalc {
+extern const u32 PP_ALGORITHM_VERSION;
+}
+
 f64 FinishedScore::get_or_calc_pp() {
     assert(this->map != nullptr);
 
@@ -497,7 +501,7 @@ f64 FinishedScore::get_or_calc_pp() {
     if(info.pp != -1.0) {
         pp = info.pp;
         this->ppv2_score = info.pp;
-        this->ppv2_version = DifficultyCalculator::PP_ALGORITHM_VERSION;
+        this->ppv2_version = DiffCalc::PP_ALGORITHM_VERSION;
         this->ppv2_total_stars = info.total_stars;
         this->ppv2_aim_stars = info.aim_stars;
         this->ppv2_speed_stars = info.speed_stars;
@@ -511,7 +515,7 @@ f64 FinishedScore::get_pp() const {
     //     return this->ppv3_score;
     // }
 
-    if(this->ppv2_version < DifficultyCalculator::PP_ALGORITHM_VERSION) {
+    if(this->ppv2_version < DiffCalc::PP_ALGORITHM_VERSION) {
         return -1.0;
     } else {
         return this->ppv2_score;

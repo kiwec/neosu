@@ -4,6 +4,7 @@
 #include "ConVar.h"
 #include "DatabaseBeatmap.h"
 #include "Database.h"
+#include "Osu.h"
 #include "Engine.h"
 #include "Sound.h"
 #include "SoundEngine.h"
@@ -119,7 +120,7 @@ struct VolNormalization::LoudnessCalcThread {
             // so store it (with loudness_fallback), so we don't constantly re-calculate silent tracks
             if(succeeded) {
                 map->loudness = integrated_loudness;
-                map->update_overrides();
+                db->update_overrides(map);
                 last_loudness = integrated_loudness;
                 last_song = song;
             }

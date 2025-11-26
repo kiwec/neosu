@@ -8,6 +8,7 @@
 #include "DatabaseBeatmap.h"
 #include "Engine.h"
 #include "NetworkHandler.h"
+#include "Osu.h"
 #include "SongBrowser/SongBrowser.h"
 #include "crypto.h"
 #include "Logging.h"
@@ -135,7 +136,7 @@ void submit_score(FinishedScore score) {
             idiot_check.append(fmt::format("0{}{}", OSU_VERSION_DATEONLY, score_time.data()));
             idiot_check.append(BanchoState::client_hashes.toUtf8());
 
-            auto idiot_hash = BanchoState::md5((u8 *)idiot_check.data(), idiot_check.size());
+            auto idiot_hash = crypto::hash::md5_hex((u8 *)idiot_check.data(), idiot_check.size());
             score_data.append(":");
             score_data.append(idiot_hash.string());
         }

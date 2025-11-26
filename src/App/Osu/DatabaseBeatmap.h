@@ -1,13 +1,18 @@
 #pragma once
 // Copyright (c) 2020, PG, All rights reserved.
 
+#include "config.h"
+#include "noinclude.h"
 #include "HitSounds.h"
-#include "Osu.h"
+#include "Color.h"
 #include "Overrides.h"
+#include "Vectors.h"
 #include "templates.h"
+#include "MD5Hash.h"
 
 #include <atomic>
 #include <string_view>
+#include <memory>
 #include <functional>
 
 class AbstractBeatmapInterface;
@@ -72,6 +77,7 @@ class DatabaseBeatmap final {
         LOAD_DIFFOBJ_RESULT(LOAD_DIFFOBJ_RESULT &&) noexcept;
         LOAD_DIFFOBJ_RESULT &operator=(LOAD_DIFFOBJ_RESULT &&) noexcept;
 
+        // DifficultyHitObject defined in DifficultyCalculator.h
         std::vector<DifficultyHitObject> diffobjects;
 
         i32 maxPossibleCombo{};
@@ -79,7 +85,15 @@ class DatabaseBeatmap final {
     };
 
     struct LOAD_GAMEPLAY_RESULT {
-        std::vector<HitObject *> hitobjects;
+        LOAD_GAMEPLAY_RESULT();
+        ~LOAD_GAMEPLAY_RESULT();
+
+        LOAD_GAMEPLAY_RESULT(const LOAD_GAMEPLAY_RESULT &) = delete;
+        LOAD_GAMEPLAY_RESULT &operator=(const LOAD_GAMEPLAY_RESULT &) = delete;
+        LOAD_GAMEPLAY_RESULT(LOAD_GAMEPLAY_RESULT &&) noexcept;
+        LOAD_GAMEPLAY_RESULT &operator=(LOAD_GAMEPLAY_RESULT &&) noexcept;
+
+        std::vector<std::unique_ptr<HitObject>> hitobjects;
         std::vector<BREAK> breaks;
         std::vector<Color> combocolors;
 
@@ -198,17 +212,9 @@ class DatabaseBeatmap final {
     inline LOAD_GAMEPLAY_RESULT loadGameplay(AbstractBeatmapInterface *beatmap) { return loadGameplay(this, beatmap); }
 
     [[nodiscard]] MapOverrides get_overrides() const;
-    void update_overrides();
 
-    void setLocalOffset(i16 localOffset) {
-        this->iLocalOffset = localOffset;
-        this->update_overrides();
-    }
-
-    void setOnlineOffset(i16 onlineOffset) {
-        this->iOnlineOffset = onlineOffset;
-        this->update_overrides();
-    }
+    inline void setLocalOffset(i16 localOffset) { this->iLocalOffset = localOffset; }
+    inline void setOnlineOffset(i16 onlineOffset) { this->iOnlineOffset = onlineOffset; }
 
     [[nodiscard]] inline const std::string &getFolder() const { return this->sFolder; }
     [[nodiscard]] inline const std::string &getFilePath() const { return this->sFilePath; }
@@ -233,7 +239,7 @@ class DatabaseBeatmap final {
     [[nodiscard]] inline int getSetID() const { return this->iSetID; }
 
     [[nodiscard]] inline const std::string &getTitle() const {
-        if(!this->bEmptyTitleUnicode && osu->useCJKNames()) {
+        if(!this->bEmptyTitleUnicode && prefer_cjk_names()) {
             return this->sTitleUnicode;
         } else {
             return this->sTitle;
@@ -243,7 +249,7 @@ class DatabaseBeatmap final {
     [[nodiscard]] inline const std::string &getTitleUnicode() const { return this->sTitleUnicode; }
 
     [[nodiscard]] inline const std::string &getArtist() const {
-        if(!this->bEmptyArtistUnicode && osu->useCJKNames()) {
+        if(!this->bEmptyArtistUnicode && prefer_cjk_names()) {
             return this->sArtistUnicode;
         } else {
             return this->sArtist;
@@ -418,6 +424,7 @@ class DatabaseBeatmap final {
         float sliderMultiplier, float sliderTickRate, const std::function<bool(void)> &dead);
 
     static bool parse_timing_point(std::string_view curLine, DatabaseBeatmap::TIMINGPOINT &out);
+    static bool prefer_cjk_names();
 
     enum class BlockId : i8 {
         Sentinel = -2,  // for skipping the first string scan, header must come first

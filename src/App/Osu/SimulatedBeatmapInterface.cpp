@@ -3,7 +3,6 @@
 #include <algorithm>
 
 #include "DatabaseBeatmap.h"
-#include "DifficultyCalculator.h"
 #include "GameRules.h"
 #include "HitObjects.h"
 #include "LegacyReplay.h"
@@ -32,12 +31,7 @@ SimulatedBeatmapInterface::SimulatedBeatmapInterface(DatabaseBeatmap *map, const
     this->start();
 }
 
-SimulatedBeatmapInterface::~SimulatedBeatmapInterface() {
-    for(auto &hitobject : this->hitobjects) {
-        delete hitobject;
-    }
-    this->hitobjects.clear();
-}
+SimulatedBeatmapInterface::~SimulatedBeatmapInterface() { this->hitobjects.clear(); }
 
 void SimulatedBeatmapInterface::simulate_to(i32 music_pos) {
     if(this->spectated_replay.size() < 2) return;
@@ -98,15 +92,14 @@ bool SimulatedBeatmapInterface::start() {
     if(result.errorCode != 0) {
         return false;
     }
-    for(auto &hitobject : this->hitobjects) {
-        delete hitobject;
-    }
     this->hitobjects.clear();
     this->hitobjects = std::move(result.hitobjects);
     this->breaks = std::move(result.breaks);
 
     // sort hitobjects by endtime
-    this->hitobjectsSortedByEndTime = this->hitobjects;
+    this->hitobjectsSortedByEndTime =
+        this->hitobjects | std::views::transform([](const auto &hobjUniquePtr) { return hobjUniquePtr.get(); }) |
+        std::ranges::to<std::vector>();
     std::ranges::sort(this->hitobjectsSortedByEndTime, BeatmapInterface::sortHitObjectByEndTimeComp);
 
     // after the hitobjects have been loaded we can calculate the stacks
@@ -456,7 +449,7 @@ void SimulatedBeatmapInterface::update(f64 frame_time) {
                 if(this->hitobjects[i]->click_time > this->iCurMusicPos) {
                     this->iNextHitObjectTime = this->hitobjects[i]->click_time;
                 } else {
-                    this->currentHitObject = this->hitobjects[i];
+                    this->currentHitObject = this->hitobjects[i].get();
                     const i32 actualPrevHitObjectTime = this->hitobjects[i]->click_time + this->hitobjects[i]->duration;
                     this->iPreviousHitObjectTime = actualPrevHitObjectTime;
                 }
@@ -499,7 +492,7 @@ void SimulatedBeatmapInterface::update(f64 frame_time) {
             }
 
             // note blocking / notelock (1)
-            const Slider *currentSliderPointer = dynamic_cast<Slider *>(this->hitobjects[i]);
+            const Slider *currentSliderPointer = dynamic_cast<Slider *>(this->hitobjects[i].get());
             if(notelockType > 0) {
                 this->hitobjects[i]->setBlocked(blockNextNotes);
 
@@ -790,7 +783,7 @@ void SimulatedBeatmapInterface::updateAutoCursorPos() {
     bool haveCurPos = false;
 
     if((this->mods.has(ModFlags::Autopilot))) {
-        for(auto o : this->hitobjects) {
+        for(const auto &o : this->hitobjects) {
             // get previous object
             if(o->isFinished() ||
                (this->iCurMusicPos >
@@ -888,7 +881,7 @@ void SimulatedBeatmapInterface::calculateStacks() {
         for(int i = this->hitobjects.size() - 1; i >= 0; i--) {
             int n = i;
 
-            HitObject *objectI = this->hitobjects[i];
+            HitObject *objectI = this->hitobjects[i].get();
 
             bool isSpinner = dynamic_cast<Spinner *>(objectI) != nullptr;
 
@@ -899,7 +892,7 @@ void SimulatedBeatmapInterface::calculateStacks() {
 
             if(isHitCircle) {
                 while(--n >= 0) {
-                    HitObject *objectN = this->hitobjects[n];
+                    HitObject *objectN = this->hitobjects[n].get();
 
                     bool isSpinnerN = dynamic_cast<Spinner *>(objectN);
 
@@ -930,7 +923,7 @@ void SimulatedBeatmapInterface::calculateStacks() {
                 }
             } else if(isSlider) {
                 while(--n >= 0) {
-                    HitObject *objectN = this->hitobjects[n];
+                    HitObject *objectN = this->hitobjects[n].get();
 
                     bool isSpinner = dynamic_cast<Spinner *>(objectN) != nullptr;
 
@@ -954,7 +947,7 @@ void SimulatedBeatmapInterface::calculateStacks() {
         // https://github.com/ppy/osu/blob/master/osu.Game.Rulesets.Osu/Beatmaps/BeatmapProcessor.cs
 
         for(int i = 0; i < this->hitobjects.size(); i++) {
-            HitObject *currHitObject = this->hitobjects[i];
+            HitObject *currHitObject = this->hitobjects[i].get();
             auto *sliderPointer = dynamic_cast<Slider *>(currHitObject);
 
             const bool isSlider = (sliderPointer != nullptr);
@@ -965,7 +958,7 @@ void SimulatedBeatmapInterface::calculateStacks() {
             int sliderStack = 0;
 
             for(int j = i + 1; j < this->hitobjects.size(); j++) {
-                HitObject *objectJ = this->hitobjects[j];
+                HitObject *objectJ = this->hitobjects[j].get();
 
                 if(objectJ->click_time - (approachTime * stackLeniency) > startTime) break;
 
@@ -1087,7 +1080,7 @@ void SimulatedBeatmapInterface::computeDrainRate() {
             int comboTooLowCount = 0;
 
             for(int i = 0; i < this->hitobjects.size(); i++) {
-                const HitObject *h = this->hitobjects[i];
+                const HitObject *h = this->hitobjects[i].get();
                 const auto *sliderPointer = dynamic_cast<const Slider *>(h);
                 const auto *spinnerPointer = dynamic_cast<const Spinner *>(h);
 

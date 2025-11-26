@@ -4,10 +4,26 @@
 #include "DatabaseBeatmap.h"
 #include "SliderCurves.h"
 #include "GameRules.h"
-#include "ConVar.h"
 #include "ModFlags.h"
 
+#ifndef BUILD_TOOLS_ONLY
+#include "ConVar.h"
+#define STARS_SLIDER_CURVE_POINTS_SEPARATION cv::stars_slider_curve_points_separation.getFloat()
+#define IGNORE_CLAMPED_SLIDERS cv::stars_ignore_clamped_sliders.getBool()
+#define SLIDER_CURVE_MAX_LENGTH cv::slider_curve_max_length.getFloat()
+#define SLIDER_END_INSIDE_CHECK_OFFSET (f64) cv::slider_end_inside_check_offset.getInt()
+#else
+#define STARS_SLIDER_CURVE_POINTS_SEPARATION 20.f
+#define IGNORE_CLAMPED_SLIDERS true
+#define SLIDER_CURVE_MAX_LENGTH 32768.f
+#define SLIDER_END_INSIDE_CHECK_OFFSET 36
+#endif
+
 #include <algorithm>
+
+namespace DiffCalc {
+const u32 PP_ALGORITHM_VERSION{20250306};
+}
 
 DifficultyHitObject::DifficultyHitObject(TYPE type, vec2 pos, i32 time) : DifficultyHitObject(type, pos, time, time) {}
 
@@ -50,7 +66,7 @@ DifficultyHitObject::DifficultyHitObject(TYPE type, vec2 pos, i32 time, i32 endT
             // 5208 sliders @ MillhioreF - haitai but every hai adds another haitai in the background (Chewy-san) [Weriko Rank the dream (nerf) but loli].osu
 
             this->curve = SliderCurve::createCurve(this->osuSliderCurveType, controlPoints, this->pixelLength,
-                                                   cv::stars_slider_curve_points_separation.getFloat());
+                                                   STARS_SLIDER_CURVE_POINTS_SEPARATION);
         } else {
             // new: delay curve creation to when it's needed, and also immediately delete afterwards (at the cost of having to store a copy of the control points)
             this->scheduledCurveAlloc = true;
@@ -183,10 +199,10 @@ f64 DifficultyCalculator::calculateStarDiffForHitObjects(StarCalcParams &params)
 
     // see setDistances() @ https://github.com/ppy/osu/blob/master/osu.Game.Rulesets.Osu/Difficulty/Preprocessing/OsuDifficultyHitObject.cs
 
-    static const f32 normalized_radius = 50.0f;  // normalization factor
-    static const f32 maximum_slider_radius = normalized_radius * 2.4f;
-    static const f32 assumed_slider_radius = normalized_radius * 1.8f;
-    static const f32 circlesize_buff_treshold = 30;  // non-normalized diameter where the circlesize buff starts
+    static constexpr f32 normalized_radius = 50.0f;  // normalization factor
+    static constexpr f32 maximum_slider_radius = normalized_radius * 2.4f;
+    static constexpr f32 assumed_slider_radius = normalized_radius * 1.8f;
+    static constexpr f32 circlesize_buff_treshold = 30;  // non-normalized diameter where the circlesize buff starts
 
     // multiplier to normalize positions so that we can calc as if everything was the same circlesize.
     // also handle high CS bonus
@@ -210,13 +226,13 @@ f64 DifficultyCalculator::calculateStarDiffForHitObjects(StarCalcParams &params)
             // this isn't entirely accurate to how lazer does it (as that skips loading the object entirely),
             // but this is a good middle ground for maps that aren't completely aspire and still have relatively normal star counts on lazer
             // see: DJ Noriken - Stargazer feat. YUC'e (PSYQUI Remix) (Hishiro Chizuru) [Starg-Azer isn't so great? Are you kidding me?]
-            if(cv::stars_ignore_clamped_sliders.getBool()) {
-                if(slider.ho->curve->getPixelLength() >= cv::slider_curve_max_length.getFloat()) return;
+            if(IGNORE_CLAMPED_SLIDERS) {
+                if(slider.ho->curve->getPixelLength() >= SLIDER_CURVE_MAX_LENGTH) return;
             }
 
             // NOTE: although this looks like a duplicate of the end tick time, this really does have a noticeable impact on some maps due to precision issues
             // see: Ocelot - KAEDE (Hollow Wings) [EX EX]
-            const f64 tailLeniency = (f64)cv::slider_end_inside_check_offset.getInt();
+            const f64 tailLeniency = SLIDER_END_INSIDE_CHECK_OFFSET;
             const f64 totalDuration = (f64)slider.ho->spanDuration * slider.ho->repeats;
             f64 trackingEndTime = (f64)slider.ho->time + std::max(totalDuration - tailLeniency, totalDuration / 2.0);
 
@@ -312,7 +328,7 @@ f64 DifficultyCalculator::calculateStarDiffForHitObjects(StarCalcParams &params)
 
     // calculate angles and travel/jump distances (before calculating strains)
     if(!isUsingCachedDiffObjects) {
-        const f32 starsSliderCurvePointsSeparation = cv::stars_slider_curve_points_separation.getFloat();
+        const f32 starsSliderCurvePointsSeparation = STARS_SLIDER_CURVE_POINTS_SEPARATION;
         for(size_t i = 0; i < numDiffObjects; i++) {
             if(params.shouldDie()) return 0.0;
 
@@ -423,7 +439,7 @@ f64 DifficultyCalculator::calculateStarDiffForHitObjects(StarCalcParams &params)
         Skills::SPEED, diffObjects, numDiffObjects, params.incremental ? &params.incremental[Skills::SPEED] : nullptr,
         params.outSpeedStrains, params.difficultSpeedStrains, params.speedNotes);
 
-    static const f64 star_scaling_factor = 0.0675;
+    static constexpr f64 star_scaling_factor = 0.0675;
 
     aimNoSliders = std::sqrt(aimNoSliders) * star_scaling_factor;
     *params.aim = std::sqrt(*params.aim) * star_scaling_factor;
@@ -1160,8 +1176,8 @@ f64 DifficultyCalculator::DiffObject::calculate_difficulty(const Skills::Skill t
     // (old) see https://github.com/ppy/osu/blob/master/osu.Game/Rulesets/Difficulty/Skills/Skill.cs
     // (new) see https://github.com/ppy/osu/blob/master/osu.Game/Rulesets/Difficulty/Skills/StrainSkill.cs
 
-    static const f64 strain_step = 400.0;  // the length of each strain section
-    static const f64 decay_weight =
+    static constexpr f64 strain_step = 400.0;  // the length of each strain section
+    static constexpr f64 decay_weight =
         0.9;  // max strains are weighted from highest to lowest, and this is how much the weight decays.
 
     if(dobjectCount < 1) return 0.0;
@@ -1221,8 +1237,8 @@ f64 DifficultyCalculator::DiffObject::calculate_difficulty(const Skills::Skill t
         if(type == Skills::SPEED) {
             // calculate relevant speed note count
             // RelevantNoteCount @ https://github.com/ppy/osu/blob/master/osu.Game.Rulesets.Osu/Difficulty/Skills/Speed.cs
-            const auto compareDiffObjects = [=](const DiffObject &x, const DiffObject &y) {
-                return (x.get_strain(type) < y.get_strain(type));
+            static constexpr auto compareDiffObjects = [](const DiffObject &x, const DiffObject &y) -> bool {
+                return (x.get_strain(Skills::SPEED) < y.get_strain(Skills::SPEED));
             };
 
             f64 maxObjectStrain;
@@ -1260,7 +1276,7 @@ f64 DifficultyCalculator::DiffObject::calculate_difficulty(const Skills::Skill t
         } else if(type == Skills::AIM_SLIDERS) {
             // calculate difficult sliders
             // GetDifficultSliders @ https://github.com/ppy/osu/blob/master/osu.Game.Rulesets.Osu/Difficulty/Skills/Aim.cs
-            const auto compareSliderObjects = [=](const DiffObject &x, const DiffObject &y) {
+            static constexpr auto compareSliderObjects = [](const DiffObject &x, const DiffObject &y) -> bool {
                 return (x.get_slider_aim_strain() < y.get_slider_aim_strain());
             };
 
@@ -1311,8 +1327,8 @@ f64 DifficultyCalculator::DiffObject::calculate_difficulty(const Skills::Skill t
     // (new) see DifficultyValue() @ https://github.com/ppy/osu/blob/master/osu.Game/Rulesets/Difficulty/Skills/StrainSkill.cs
     // (new) see DifficultyValue() @ https://github.com/ppy/osu/blob/master/osu.Game.Rulesets.Osu/Difficulty/Skills/OsuStrainSkill.cs
 
-    static const size_t reducedSectionCount = 10;
-    static const f64 reducedStrainBaseline = 0.75;
+    static constexpr size_t reducedSectionCount = 10;
+    static constexpr f64 reducedStrainBaseline = 0.75;
 
     f64 difficulty = 0.0;
     f64 weight = 1.0;
@@ -1329,6 +1345,9 @@ f64 DifficultyCalculator::DiffObject::calculate_difficulty(const Skills::Skill t
         size_t skillSpecificReducedSectionCount = reducedSectionCount;
         {
             switch(type) {
+                case Skills::NUM_SKILLS:
+                    std::unreachable();
+                    break;
                 case Skills::SPEED:
                     skillSpecificReducedSectionCount = 5;
                     break;
@@ -1403,20 +1422,23 @@ f64 DifficultyCalculator::DiffObject::calculate_difficulty(const Skills::Skill t
 // new implementation, Xexxar, (ppv2.1), see https://github.com/ppy/osu/blob/master/osu.Game.Rulesets.Osu/Difficulty/Skills/
 f64 DifficultyCalculator::DiffObject::spacing_weight2(const Skills::Skill diff_type, const DiffObject &prev,
                                                       const DiffObject *next, f64 hitWindow300) {
-    static const f64 single_spacing_threshold = 125.0;
+    static constexpr f64 single_spacing_threshold = 125.0;
 
-    static const f64 min_speed_bonus = 75.0; /* ~200BPM 1/4 streams */
-    static const f64 speed_balancing_factor = 40.0;
-    static const f64 distance_multiplier = 0.9;
+    static constexpr f64 min_speed_bonus = 75.0; /* ~200BPM 1/4 streams */
+    static constexpr f64 speed_balancing_factor = 40.0;
+    static constexpr f64 distance_multiplier = 0.9;
 
-    static const i32 history_time_max = 5000;
-    static const i32 history_objects_max = 32;
-    static const f64 rhythm_overall_multiplier = 0.95;
-    static const f64 rhythm_ratio_multiplier = 12.0;
+    static constexpr i32 history_time_max = 5000;
+    static constexpr i32 history_objects_max = 32;
+    static constexpr f64 rhythm_overall_multiplier = 0.95;
+    static constexpr f64 rhythm_ratio_multiplier = 12.0;
 
     //f64 angle_bonus = 1.0; // (apparently unused now in lazer?)
 
     switch(diff_type) {
+        case Skills::NUM_SKILLS:
+            std::unreachable();
+            break;
         case Skills::SPEED: {
             // see https://github.com/ppy/osu/blob/master/osu.Game.Rulesets.Osu/Difficulty/Skills/Speed.cs
             if(ho->type == DifficultyHitObject::TYPE::SPINNER) {

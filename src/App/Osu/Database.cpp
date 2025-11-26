@@ -2306,3 +2306,10 @@ BeatmapSet *Database::loadRawBeatmap(const std::string &beatmapPath) {
 
     return set;
 }
+
+void Database::update_overrides(DatabaseBeatmap *beatmap) {
+    if(!beatmap || beatmap->do_not_store || beatmap->type != DatabaseBeatmap::BeatmapType::PEPPY_DIFFICULTY) return;
+
+    Sync::unique_lock lock(this->peppy_overrides_mtx);
+    this->peppy_overrides[beatmap->getMD5()] = beatmap->get_overrides();
+}

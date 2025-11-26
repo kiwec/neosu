@@ -1,8 +1,8 @@
 #pragma once
 // Copyright (c) 2015, PG & Jeffrey Han (opsu!), All rights reserved.
 
-#include "BaseEnvironment.h"
-#include "types.h"
+#include "config.h"
+#include "noinclude.h"
 #include "Vectors.h"
 
 #include <vector>
@@ -27,6 +27,11 @@ class SliderCurve {
 
    public:
     SliderCurve(std::vector<vec2> controlPoints, float pixelLength);
+
+    SliderCurve(const SliderCurve &) = default;
+    SliderCurve &operator=(const SliderCurve &) = default;
+    SliderCurve(SliderCurve &&) = default;
+    SliderCurve &operator=(SliderCurve &&) = default;
     virtual ~SliderCurve() = default;
 
     virtual void updateStackPosition(float stackMulStackOffset, bool HR);
@@ -46,7 +51,6 @@ class SliderCurve {
 
    protected:
     // original input values
-    float fPixelLength;
     std::vector<vec2> controlPoints;
 
     // these must be explicitly calculated/set in one of the subclasses
@@ -56,6 +60,7 @@ class SliderCurve {
     std::vector<vec2> originalCurvePoints;
     float fStartAngle;
     float fEndAngle;
+    float fPixelLength;
 };
 
 //******************************************//
@@ -65,6 +70,11 @@ class SliderCurve {
 class SliderCurveType {
    public:
     SliderCurveType();
+
+    SliderCurveType(const SliderCurveType &) = default;
+    SliderCurveType &operator=(const SliderCurveType &) = default;
+    SliderCurveType(SliderCurveType &&) = default;
+    SliderCurveType &operator=(SliderCurveType &&) = default;
     virtual ~SliderCurveType() = default;
 
     virtual vec2 pointAt(float t) = 0;
@@ -86,14 +96,18 @@ class SliderCurveType {
     void calculateCurveDistances();
 
     std::vector<vec2> points;
-
-    float fTotalDistance;
     std::vector<float> curveDistances;
+    float fTotalDistance;
 };
 
 class SliderCurveTypeBezier2 final : public SliderCurveType {
    public:
     SliderCurveTypeBezier2(const std::vector<vec2> &points);
+
+    SliderCurveTypeBezier2(const SliderCurveTypeBezier2 &) = default;
+    SliderCurveTypeBezier2 &operator=(const SliderCurveTypeBezier2 &) = default;
+    SliderCurveTypeBezier2(SliderCurveTypeBezier2 &&) = default;
+    SliderCurveTypeBezier2 &operator=(SliderCurveTypeBezier2 &&) = default;
     ~SliderCurveTypeBezier2() override = default;
 
     vec2 pointAt(float /*t*/) override { return {0.f, 0.f}; }  // unused
@@ -102,13 +116,18 @@ class SliderCurveTypeBezier2 final : public SliderCurveType {
 class SliderCurveTypeCentripetalCatmullRom final : public SliderCurveType {
    public:
     SliderCurveTypeCentripetalCatmullRom(const std::vector<vec2> &points);
+
+    SliderCurveTypeCentripetalCatmullRom(const SliderCurveTypeCentripetalCatmullRom &) = default;
+    SliderCurveTypeCentripetalCatmullRom &operator=(const SliderCurveTypeCentripetalCatmullRom &) = default;
+    SliderCurveTypeCentripetalCatmullRom(SliderCurveTypeCentripetalCatmullRom &&) = default;
+    SliderCurveTypeCentripetalCatmullRom &operator=(SliderCurveTypeCentripetalCatmullRom &&) = default;
     ~SliderCurveTypeCentripetalCatmullRom() override = default;
 
     vec2 pointAt(float t) override;
 
    private:
-    float time[4];
     std::vector<vec2> points;
+    float time[4];
 };
 
 //*******************//
@@ -118,6 +137,11 @@ class SliderCurveTypeCentripetalCatmullRom final : public SliderCurveType {
 class SliderCurveEqualDistanceMulti : public SliderCurve {
    public:
     SliderCurveEqualDistanceMulti(std::vector<vec2> controlPoints, float pixelLength, float curvePointsSeparation);
+
+    SliderCurveEqualDistanceMulti(const SliderCurveEqualDistanceMulti &) = default;
+    SliderCurveEqualDistanceMulti &operator=(const SliderCurveEqualDistanceMulti &) = default;
+    SliderCurveEqualDistanceMulti(SliderCurveEqualDistanceMulti &&) = default;
+    SliderCurveEqualDistanceMulti &operator=(SliderCurveEqualDistanceMulti &&) = default;
     ~SliderCurveEqualDistanceMulti() override = default;
 
     vec2 pointAt(float t) override;
@@ -133,18 +157,33 @@ class SliderCurveEqualDistanceMulti : public SliderCurve {
 class SliderCurveLinearBezier final : public SliderCurveEqualDistanceMulti {
    public:
     SliderCurveLinearBezier(std::vector<vec2> controlPoints, float pixelLength, bool line, float curvePointsSeparation);
+
+    SliderCurveLinearBezier(const SliderCurveLinearBezier &) = default;
+    SliderCurveLinearBezier &operator=(const SliderCurveLinearBezier &) = default;
+    SliderCurveLinearBezier(SliderCurveLinearBezier &&) = default;
+    SliderCurveLinearBezier &operator=(SliderCurveLinearBezier &&) = default;
     ~SliderCurveLinearBezier() override = default;
 };
 
 class SliderCurveCatmull final : public SliderCurveEqualDistanceMulti {
    public:
     SliderCurveCatmull(std::vector<vec2> controlPoints, float pixelLength, float curvePointsSeparation);
+
+    SliderCurveCatmull(const SliderCurveCatmull &) = default;
+    SliderCurveCatmull &operator=(const SliderCurveCatmull &) = default;
+    SliderCurveCatmull(SliderCurveCatmull &&) = default;
+    SliderCurveCatmull &operator=(SliderCurveCatmull &&) = default;
     ~SliderCurveCatmull() override = default;
 };
 
 class SliderCurveCircumscribedCircle final : public SliderCurve {
    public:
     SliderCurveCircumscribedCircle(std::vector<vec2> controlPoints, float pixelLength, float curvePointsSeparation);
+
+    SliderCurveCircumscribedCircle(const SliderCurveCircumscribedCircle &) = default;
+    SliderCurveCircumscribedCircle &operator=(const SliderCurveCircumscribedCircle &) = default;
+    SliderCurveCircumscribedCircle(SliderCurveCircumscribedCircle &&) = default;
+    SliderCurveCircumscribedCircle &operator=(SliderCurveCircumscribedCircle &&) = default;
     ~SliderCurveCircumscribedCircle() override = default;
 
     vec2 pointAt(float t) override;
@@ -175,8 +214,6 @@ class SliderCurveCircumscribedCircle final : public SliderCurve {
 
 class SliderBezierApproximator {
    public:
-    SliderBezierApproximator();
-
     std::vector<vec2> createBezier(const std::vector<vec2> &controlPoints);
 
    private:
@@ -186,7 +223,7 @@ class SliderBezierApproximator {
     void subdivide(std::vector<vec2> &controlPoints, std::vector<vec2> &l, std::vector<vec2> &r);
     void approximate(std::vector<vec2> &controlPoints, std::vector<vec2> &output);
 
-    int iCount;
     std::vector<vec2> subdivisionBuffer1;
     std::vector<vec2> subdivisionBuffer2;
+    int iCount{0};
 };

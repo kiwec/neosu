@@ -113,8 +113,8 @@ class SimulatedBeatmapInterface final : public AbstractBeatmapInterface {
     std::vector<Click> clicks;
 
     // hitobjects
-    std::vector<HitObject *> hitobjects;
-    std::vector<HitObject *> hitobjectsSortedByEndTime;
+    std::vector<std::unique_ptr<HitObject>> hitobjects;
+    std::vector<HitObject *> hitobjectsSortedByEndTime;  // non-owning view of hitobjects data
 
     // statistics
     i32 iNPS;

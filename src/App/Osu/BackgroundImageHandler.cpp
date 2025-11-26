@@ -2,6 +2,8 @@
 #include "BackgroundImageHandler.h"
 
 #include "ConVar.h"
+#include "Database.h"
+#include "Osu.h"
 #include "DatabaseBeatmap.h"
 #include "Engine.h"
 #include "File.h"
@@ -218,7 +220,7 @@ const Image *BGImageHandler::getLoadBackgroundImage(const DatabaseBeatmap *beatm
             entry.overwrite_db_entry = false;
 
             // update persistent overrides for this map too (so we keep them on db save)
-            const_cast<DatabaseBeatmap *>(beatmap)->update_overrides();
+            db->update_overrides(const_cast<DatabaseBeatmap *>(beatmap));
         }
 
         return BGImageHandler::getImageOrSkinFallback(entry.image, entry.ready_but_image_not_found);

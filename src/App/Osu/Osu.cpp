@@ -190,8 +190,6 @@ Osu::Osu() {
     cv::confine_cursor_fullscreen.setCallback(SA::MakeDelegate<&Osu::updateConfineCursor>(this));
     cv::confine_cursor_never.setCallback(SA::MakeDelegate<&Osu::updateConfineCursor>(this));
     cv::osu_folder.setCallback(SA::MakeDelegate<&Osu::updateOsuFolder>(this));
-    cv::prefer_cjk.setCallback(SA::MakeDelegate<&Osu::preferCJKCallback>(this));
-    this->bPreferCJK = cv::prefer_cjk.getBool();
 
     cv::draw_runtime_info.setCallback(
         [](float newVal) -> void { return (void)(osu ? (osu->bDrawBuildInfo = !!static_cast<int>(newVal)) : 0); });
@@ -904,7 +902,7 @@ void Osu::onKeyDown(KeyboardEvent &key) {
             this->notificationOverlay->addNotification("No beatmap is currently selected.");
         } else {
             diff->draw_background = !diff->draw_background;
-            diff->update_overrides();
+            db->update_overrides(diff);
             DiscRPC::clear_activity();
         }
         key.consume();
@@ -1139,18 +1137,22 @@ void Osu::onKeyDown(KeyboardEvent &key) {
 
             // local offset
             if(key == cv::INCREASE_LOCAL_OFFSET.getVal<SCANCODE>()) {
+                DatabaseBeatmap *curMap = this->map_iface->getBeatmap();
+
                 i32 offsetAdd = keyboard->isAltDown() ? 1 : 5;
-                this->map_iface->getBeatmap()->setLocalOffset(this->map_iface->getBeatmap()->getLocalOffset() +
-                                                              offsetAdd);
+                curMap->setLocalOffset(curMap->getLocalOffset() + offsetAdd);
+                db->update_overrides(curMap);
                 this->notificationOverlay->addNotification(
-                    fmt::format("Local beatmap offset set to {} ms", this->map_iface->getBeatmap()->getLocalOffset()));
+                    fmt::format("Local beatmap offset set to {} ms", curMap->getLocalOffset()));
             }
             if(key == cv::DECREASE_LOCAL_OFFSET.getVal<SCANCODE>()) {
+                DatabaseBeatmap *curMap = this->map_iface->getBeatmap();
+
                 i32 offsetAdd = -(keyboard->isAltDown() ? 1 : 5);
-                this->map_iface->getBeatmap()->setLocalOffset(this->map_iface->getBeatmap()->getLocalOffset() +
-                                                              offsetAdd);
+                curMap->setLocalOffset(curMap->getLocalOffset() + offsetAdd);
+                db->update_overrides(curMap);
                 this->notificationOverlay->addNotification(
-                    fmt::format("Local beatmap offset set to {} ms", this->map_iface->getBeatmap()->getLocalOffset()));
+                    fmt::format("Local beatmap offset set to {} ms", curMap->getLocalOffset()));
             }
         } while(false);
     }

@@ -1,9 +1,21 @@
 // Copyright (c) 2015, PG & Jeffrey Han (opsu!), All rights reserved.
 #include "SliderCurves.h"
 
-#include "ConVar.h"
+#ifndef BUILD_TOOLS_ONLY
 #include "Engine.h"
 #include "Logging.h"
+#include "ConVar.h"
+#define SLIDER_CURVE_POINTS_SEPARATION cv::slider_curve_points_separation.getFloat()
+#define SLIDER_CURVE_MAX_LENGTH cv::slider_curve_max_length.getFloat()
+#define SLIDER_CURVE_MAX_POINTS cv::slider_curve_max_points.getInt()
+#else
+#include <print>
+#include <algorithm>
+#define SLIDER_CURVE_POINTS_SEPARATION 2.5f
+#define SLIDER_CURVE_MAX_LENGTH 32768.f
+#define SLIDER_CURVE_MAX_POINTS 9999
+#define debugLog(...) std::println(__VA_ARGS__)
+#endif
 
 #include <stack>
 
@@ -13,7 +25,7 @@
 
 std::unique_ptr<SliderCurve> SliderCurve::createCurve(SLIDERCURVETYPE type, std::vector<vec2> controlPoints,
                                                       float pixelLength) {
-    const float points_separation = cv::slider_curve_points_separation.getFloat();
+    const float points_separation = SLIDER_CURVE_POINTS_SEPARATION;
     return createCurve(type, std::move(controlPoints), pixelLength, points_separation);
 }
 
@@ -166,7 +178,7 @@ vec2 SliderCurveTypeCentripetalCatmullRom::pointAt(float t) {
 SliderCurveEqualDistanceMulti::SliderCurveEqualDistanceMulti(std::vector<vec2> controlPoints, float pixelLength,
                                                              float curvePointsSeparation)
     : SliderCurve(std::move(controlPoints), pixelLength) {
-    const int max_points = cv::slider_curve_max_points.getInt();
+    const int max_points = SLIDER_CURVE_MAX_POINTS;
     this->iNCurve =
         std::min((int)(this->fPixelLength / std::clamp<float>(curvePointsSeparation, 1.0f, 100.0f)), max_points);
 }
@@ -516,9 +528,9 @@ SliderCurveCircumscribedCircle::SliderCurveCircumscribedCircle(std::vector<vec2>
     vec2 midAngPoint = mid - this->vCircleCenter;
     vec2 endAngPoint = end - this->vCircleCenter;
 
-    this->fCalculationStartAngle = (float)std::atan2(startAngPoint.y, startAngPoint.x);
-    const auto midAng = (float)std::atan2(midAngPoint.y, midAngPoint.x);
-    this->fCalculationEndAngle = (float)std::atan2(endAngPoint.y, endAngPoint.x);
+    this->fCalculationStartAngle = std::atan2<float>(startAngPoint.y, startAngPoint.x);
+    const auto midAng = std::atan2<float>(midAngPoint.y, midAngPoint.x);
+    this->fCalculationEndAngle = std::atan2<float>(endAngPoint.y, endAngPoint.x);
 
     // find the angles that pass through midAng
     if(!this->isIn(this->fCalculationStartAngle, midAng, this->fCalculationEndAngle)) {
@@ -559,7 +571,7 @@ SliderCurveCircumscribedCircle::SliderCurveCircumscribedCircle(std::vector<vec2>
                                 180.0f / PI);
 
     // calculate points
-    const float max_points = cv::slider_curve_max_points.getInt();
+    const float max_points = SLIDER_CURVE_MAX_POINTS;
     const float steps =
         std::min(this->fPixelLength / (std::clamp<float>(curvePointsSeparation, 1.0f, 100.0f)), max_points);
     const int intSteps = (int)std::round(steps) + 2;  // must guarantee an int range of 0 to steps!
@@ -588,8 +600,7 @@ void SliderCurveCircumscribedCircle::updateStackPosition(float stackMulStackOffs
 
 vec2 SliderCurveCircumscribedCircle::pointAt(float t) {
     const float sanityRange =
-        cv::slider_curve_max_length
-            .getFloat();  // NOTE: added to fix some aspire problems (endless drawFollowPoints and star calc etc.)
+        SLIDER_CURVE_MAX_LENGTH;  // NOTE: added to fix some aspire problems (endless drawFollowPoints and star calc etc.)
     const float ang = std::lerp(this->fCalculationStartAngle, this->fCalculationEndAngle, t);
 
     return vec2(std::clamp<float>(std::cos(ang) * this->fRadius + this->vCircleCenter.x, -sanityRange, sanityRange),
@@ -598,8 +609,7 @@ vec2 SliderCurveCircumscribedCircle::pointAt(float t) {
 
 vec2 SliderCurveCircumscribedCircle::originalPointAt(float t) {
     const float sanityRange =
-        cv::slider_curve_max_length
-            .getFloat();  // NOTE: added to fix some aspire problems (endless drawFollowPoints and star calc etc.)
+        SLIDER_CURVE_MAX_LENGTH;  // NOTE: added to fix some aspire problems (endless drawFollowPoints and star calc etc.)
     const float ang = std::lerp(this->fCalculationStartAngle, this->fCalculationEndAngle, t);
 
     return vec2(
@@ -625,8 +635,6 @@ vec2 SliderCurveCircumscribedCircle::intersect(vec2 a, vec2 ta, vec2 b, vec2 tb)
 // https://github.com/ppy/osu/blob/master/osu.Game/Rulesets/Objects/BezierApproximator.cs
 // https://github.com/ppy/osu-framework/blob/master/osu.Framework/MathUtils/PathApproximator.cs
 // Copyright (c) ppy Pty Ltd <contact@ppy.sh>. Licensed under the MIT Licence.
-
-SliderBezierApproximator::SliderBezierApproximator() { this->iCount = 0; }
 
 std::vector<vec2> SliderBezierApproximator::createBezier(const std::vector<vec2> &controlPoints) {
     this->iCount = controlPoints.size();

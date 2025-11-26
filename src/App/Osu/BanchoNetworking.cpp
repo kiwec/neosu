@@ -1,6 +1,7 @@
 // Copyright (c) 2023, kiwec, All rights reserved.
 #include "BanchoNetworking.h"
 
+#include "Osu.h"
 #include "Bancho.h"
 #include "BanchoProtocol.h"
 #include "BanchoUsers.h"
@@ -21,6 +22,7 @@
 #include "Timing.h"
 #include "UserCard.h"
 #include "Logging.h"
+#include "crypto.h"
 
 #include <ctime>
 
@@ -378,7 +380,7 @@ void BanchoState::reconnect() {
     // XXX: Put this in cv::mp_password callback?
     if(!cv::mp_password.getString().empty()) {
         const char *password = cv::mp_password.getString().c_str();
-        const auto hash{BanchoState::md5((u8 *)password, strlen(password))};
+        const auto hash{crypto::hash::md5_hex((u8 *)password, strlen(password))};
         cv::mp_password_md5.setValue(hash.string());
         cv::mp_password.setValue("");
     }

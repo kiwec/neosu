@@ -3,6 +3,7 @@
 
 #include "Database.h"
 #include "DatabaseBeatmap.h"
+#include "Osu.h"
 #include "DifficultyCalculator.h"
 #include "SimulatedBeatmapInterface.h"
 #include "score.h"
@@ -24,7 +25,7 @@ static std::atomic<bool> dead{true};
 // XXX: This is barebones, no caching, *hopefully* fast enough (worst part is loading the .osu files)
 // XXX: Probably code duplicated a lot, I'm pretty sure there's 4 places where I calc ppv2...
 void ScoreConverter::update_ppv2(const FinishedScore& score) {
-    if(score.ppv2_version >= DifficultyCalculator::PP_ALGORITHM_VERSION) return;
+    if(score.ppv2_version >= DiffCalc::PP_ALGORITHM_VERSION) return;
 
     const auto* map = db->getBeatmapDifficulty(score.beatmap_hash);
     if(!map) return;
@@ -107,7 +108,7 @@ void ScoreConverter::update_ppv2(const FinishedScore& score) {
                 readlock.release();
                 Sync::unique_lock writelock(db->scores_mtx);
 
-                dbScore.ppv2_version = DifficultyCalculator::PP_ALGORITHM_VERSION;
+                dbScore.ppv2_version = DiffCalc::PP_ALGORITHM_VERSION;
                 dbScore.ppv2_score = info.pp;
                 dbScore.ppv2_total_stars = info.total_stars;
                 dbScore.ppv2_aim_stars = info.aim_stars;
@@ -122,7 +123,7 @@ void ScoreConverter::update_ppv2(const FinishedScore& score) {
 static forceinline bool score_needs_recalc(const FinishedScore& score) {
     if((USE_PPV3 && score.hitdeltas.empty())
        // should this be < or != ... ?
-       || (score.ppv2_version < DifficultyCalculator::PP_ALGORITHM_VERSION)
+       || (score.ppv2_version < DiffCalc::PP_ALGORITHM_VERSION)
        // is this correct? e.g. if we can never successfully calculate for a score, what to do? we just keep trying and failing
        || (score.ppv2_score <= 0.f)) {
         return true;
