@@ -59,7 +59,6 @@ class DifficultyHitObject {
 
    public:
     // circles (base)
-    TYPE type;
     vec2 pos;
     i32 time;
 
@@ -67,20 +66,22 @@ class DifficultyHitObject {
     i32 endTime;
 
     // sliders
-    f32 spanDuration;  // i.e. sliderTimeWithoutRepeats
-    i8 osuSliderCurveType;
-    f32 pixelLength;
     std::vector<SLIDER_SCORING_TIME> scoringTimes;
+    std::vector<vec2> scheduledCurveAllocControlPoints;
+    std::unique_ptr<SliderCurve> curve;
+
+    f32 spanDuration;  // i.e. sliderTimeWithoutRepeats
+    f32 pixelLength;
     i32 repeats;
 
     // custom
-    std::unique_ptr<SliderCurve> curve;
-    bool scheduledCurveAlloc;
-    std::vector<vec2> scheduledCurveAllocControlPoints;
     f32 scheduledCurveAllocStackOffset;
-
     i32 stack;
     vec2 originalPos;
+
+    TYPE type;
+    i8 osuSliderCurveType;
+    bool scheduledCurveAlloc;
 };
 
 namespace DiffCalc {

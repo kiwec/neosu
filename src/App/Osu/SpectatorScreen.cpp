@@ -24,6 +24,7 @@
 #include "SoundEngine.h"
 #include "UIButton.h"
 #include "UserCard.h"
+#include "Engine.h"
 
 static i32 current_map_id = 0;
 

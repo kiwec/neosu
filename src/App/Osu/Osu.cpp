@@ -694,10 +694,12 @@ void Osu::update() {
         }
 
         // scrubbing/seeking
-        this->bSeeking = (this->bSeekKey || this->map_iface->is_watching)                          //
-                         && (!this->volumeOverlay->isBusy())                                       //
-                         && (!BanchoState::is_playing_a_multi_map() && !this->bClickedSkipButton)  //
-                         && (!BanchoState::spectating);                                            //
+        this->bSeeking = (this->bSeekKey ||
+                          // only auto-seek if not paused (or we we immediately seek when unpausing)
+                          (this->map_iface->is_watching && !this->map_iface->isActuallyPausedAndNotSpectating()))  //
+                         && (!this->volumeOverlay->isBusy())                                                       //
+                         && (!BanchoState::is_playing_a_multi_map() && !this->bClickedSkipButton)                  //
+                         && (!BanchoState::spectating);                                                            //
         if(this->bSeeking) {
             f32 mousePosX = std::round(mouse->getPos().x);
             f64 percent = std::clamp<f64>(mousePosX / (f64)this->internalRect.getWidth(), 0., 1.);

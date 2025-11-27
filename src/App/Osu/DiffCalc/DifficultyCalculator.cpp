@@ -35,20 +35,20 @@ DifficultyHitObject::DifficultyHitObject(TYPE type, vec2 pos, i32 time, i32 endT
                                          i8 osuSliderCurveType, const std::vector<vec2> &controlPoints, f32 pixelLength,
                                          std::vector<SLIDER_SCORING_TIME> scoringTimes, i32 repeats,
                                          bool calculateSliderCurveInConstructor)
-    : type(type),
-      pos(pos),
+    : pos(pos),
       time(time),
       endTime(endTime),
-      spanDuration(spanDuration),
-      osuSliderCurveType(osuSliderCurveType),
-      pixelLength(pixelLength),
       scoringTimes(std::move(scoringTimes)),
-      repeats(repeats),
       curve(nullptr),
-      scheduledCurveAlloc(false),
+      spanDuration(spanDuration),
+      pixelLength(pixelLength),
+      repeats(repeats),
       scheduledCurveAllocStackOffset(0.f),
       stack(0),
-      originalPos(pos) {
+      originalPos(pos),
+      type(type),
+      osuSliderCurveType(osuSliderCurveType),
+      scheduledCurveAlloc(false) {
     // build slider curve, if this is a (valid) slider
     if(this->type == TYPE::SLIDER && controlPoints.size() > 1) {
         if(calculateSliderCurveInConstructor) {

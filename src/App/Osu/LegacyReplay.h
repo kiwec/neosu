@@ -49,7 +49,7 @@ struct Info {
     i32 score;
     int comboMax;
     bool perfect;
-    u32 mod_flags;
+    LegacyFlags mod_flags;
     UString life_bar_graph;
     i64 timestamp;
     std::vector<Frame> frames;

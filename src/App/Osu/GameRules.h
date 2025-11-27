@@ -27,19 +27,19 @@ class GameRules {
     //	Hitobject Timing  //
     //********************//
 
-    static constexpr float getMinHitWindow300() { return 80.f; }
-    static constexpr float getMidHitWindow300() { return 50.f; }
-    static constexpr float getMaxHitWindow300() { return 20.f; }
+    static constexpr forceinline float getMinHitWindow300() { return 80.f; }
+    static constexpr forceinline float getMidHitWindow300() { return 50.f; }
+    static constexpr forceinline float getMaxHitWindow300() { return 20.f; }
 
-    static constexpr float getMinHitWindow100() { return 140.f; }
-    static constexpr float getMidHitWindow100() { return 100.f; }
-    static constexpr float getMaxHitWindow100() { return 60.f; }
+    static constexpr forceinline float getMinHitWindow100() { return 140.f; }
+    static constexpr forceinline float getMidHitWindow100() { return 100.f; }
+    static constexpr forceinline float getMaxHitWindow100() { return 60.f; }
 
-    static constexpr float getMinHitWindow50() { return 200.f; }
-    static constexpr float getMidHitWindow50() { return 150.f; }
-    static constexpr float getMaxHitWindow50() { return 100.f; }
+    static constexpr forceinline float getMinHitWindow50() { return 200.f; }
+    static constexpr forceinline float getMidHitWindow50() { return 150.f; }
+    static constexpr forceinline float getMaxHitWindow50() { return 100.f; }
 
-    static constexpr float getHitWindowMiss() { return 400.f; }
+    static constexpr forceinline float getHitWindowMiss() { return 400.f; }
 
     // respect mods and overrides
     static float getMinApproachTime();
@@ -105,8 +105,7 @@ class GameRules {
 
     // spinner length compensated rotations
     // respect all mods and overrides
-    static float getSpinnerRotationsForSpeedMultiplier(const AbstractBeatmapInterface *beatmap,
-                                                                          i32 spinnerDuration);
+    static float getSpinnerRotationsForSpeedMultiplier(const AbstractBeatmapInterface *beatmap, i32 spinnerDuration);
 
     //*********************//
     //	Hitobject Scaling  //

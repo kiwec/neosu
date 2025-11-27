@@ -184,7 +184,7 @@ Info from_bytes(u8* data, uSz s_data) {
     info.score = replay.read<i32>();
     info.comboMax = replay.read<u16>();
     info.perfect = replay.read<u8>();
-    info.mod_flags = replay.read<u32>();
+    info.mod_flags = replay.read<LegacyFlags>();
     info.life_bar_graph = replay.read_ustring();
     info.timestamp = replay.read<i64>() / 10LL;
 
@@ -235,6 +235,7 @@ bool load_from_disk(FinishedScore& score, bool update_db) {
 
         auto info = from_bytes(buffer, buffer_size);
         score.replay = info.frames;
+        score.mods = Replay::Mods::from_legacy(info.mod_flags);  // update mods just in case
     } else {
         auto path = fmt::format(NEOSU_REPLAYS_PATH "/{:s}/{:d}.replay.lzma", score.server, score.unixTimestamp);
 

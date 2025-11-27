@@ -71,6 +71,15 @@ class SimulatedBeatmapInterface final : public AbstractBeatmapInterface {
     [[nodiscard]] bool isContinueScheduled() const override { return false; }
     [[nodiscard]] bool isPaused() const override { return false; }
     [[nodiscard]] bool isPlaying() const override { return true; }
+    [[nodiscard]] u32 getScoreV1DifficultyMultiplier() const override;
+    [[nodiscard]] f32 getRawAR() const override;
+    [[nodiscard]] f32 getAR() const override;
+    [[nodiscard]] f32 getCS() const override;
+    [[nodiscard]] f32 getHP() const override;
+    [[nodiscard]] f32 getRawOD() const override;
+    [[nodiscard]] f32 getOD() const override;
+    [[nodiscard]] f32 getRawApproachTime() const override;
+    [[nodiscard]] f32 getApproachTime() const override;
     [[nodiscard]] u32 getLength() const override;
     [[nodiscard]] u32 getLengthPlayable() const override;
     [[nodiscard]] u32 getBreakDurationTotal() const override;
@@ -125,16 +134,6 @@ class SimulatedBeatmapInterface final : public AbstractBeatmapInterface {
     i32 iCurrentNumSpinners;
 
    private:
-    [[nodiscard]] u32 getScoreV1DifficultyMultiplier_full() const override;
-    [[nodiscard]] f32 getRawAR_full() const override;
-    [[nodiscard]] f32 getAR_full() const override;
-    [[nodiscard]] f32 getCS_full() const override;
-    [[nodiscard]] f32 getHP_full() const override;
-    [[nodiscard]] f32 getRawOD_full() const override;
-    [[nodiscard]] f32 getOD_full() const override;
-    [[nodiscard]] f32 getRawApproachTime_full() const override;
-    [[nodiscard]] f32 getApproachTime_full() const override;
-
     static inline vec2 mapNormalizedCoordsOntoUnitCircle(const vec2 &in) {
         return vec2(in.x * std::sqrt(1.0f - in.y * in.y / 2.0f), in.y * std::sqrt(1.0f - in.x * in.x / 2.0f));
     }

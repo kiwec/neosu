@@ -1167,7 +1167,7 @@ f32 BeatmapInterface::getPitchMultiplier() const {
 const Skin *BeatmapInterface::getSkin() const { return osu->getSkin(); }
 Skin *BeatmapInterface::getSkinMutable() { return osu->getSkinMutable(); }
 
-u32 BeatmapInterface::getScoreV1DifficultyMultiplier_full() const {
+u32 BeatmapInterface::getScoreV1DifficultyMultiplier() const {
     // NOTE: We intentionally get CS/HP/OD from beatmap data, not "real" CS/HP/OD
     //       Since this multiplier is only used for ScoreV1
     u32 breakTimeMS = this->getBreakDurationTotal();
@@ -1178,13 +1178,13 @@ u32 BeatmapInterface::getScoreV1DifficultyMultiplier_full() const {
                       38.0f * 5.0f);
 }
 
-f32 BeatmapInterface::getRawAR_full() const {
+f32 BeatmapInterface::getRawAR() const {
     if(this->beatmap == nullptr) return 5.0f;
 
     return std::clamp<f32>(this->beatmap->getAR() * osu->getDifficultyMultiplier(), 0.0f, 10.0f);
 }
 
-f32 BeatmapInterface::getAR_full() const {
+f32 BeatmapInterface::getAR() const {
     if(this->beatmap == nullptr) return 5.0f;
 
     f32 AR = this->getRawAR();
@@ -1210,7 +1210,7 @@ f32 BeatmapInterface::getAR_full() const {
     return AR;
 }
 
-f32 BeatmapInterface::getCS_full() const {
+f32 BeatmapInterface::getCS() const {
     if(this->beatmap == nullptr) return 5.0f;
 
     f32 CS = std::clamp<f32>(this->beatmap->getCS() * osu->getCSDifficultyMultiplier(), 0.0f, 10.0f);
@@ -1234,7 +1234,7 @@ f32 BeatmapInterface::getCS_full() const {
     return CS;
 }
 
-f32 BeatmapInterface::getHP_full() const {
+f32 BeatmapInterface::getHP() const {
     if(this->beatmap == nullptr) return 5.0f;
 
     f32 HP = std::clamp<f32>(this->beatmap->getHP() * osu->getDifficultyMultiplier(), 0.0f, 10.0f);
@@ -1243,13 +1243,13 @@ f32 BeatmapInterface::getHP_full() const {
     return HP;
 }
 
-f32 BeatmapInterface::getRawOD_full() const {
+f32 BeatmapInterface::getRawOD() const {
     if(this->beatmap == nullptr) return 5.0f;
 
     return std::clamp<f32>(this->beatmap->getOD() * osu->getDifficultyMultiplier(), 0.0f, 10.0f);
 }
 
-f32 BeatmapInterface::getOD_full() const {
+f32 BeatmapInterface::getOD() const {
     f32 OD = this->getRawOD();
 
     if(cv::od_override.getFloat() >= 0.0f) OD = cv::od_override.getFloat();
@@ -2306,7 +2306,7 @@ void BeatmapInterface::update() {
     this->update2();
 
     // handle preloading (only for distributed slider vertexbuffer generation atm)
-    bool was_preloading = this->bIsPreLoading;
+    const bool was_preloading = this->bIsPreLoading;
     if(this->bIsPreLoading) {
         if(cv::debug_osu.getBool() && this->iPreLoadingIndex == 0)
             debugLog("Beatmap: Preloading slider vertexbuffers ...");
@@ -2540,10 +2540,13 @@ void BeatmapInterface::update2() {
         return;
     }
 
+    const bool isIdlePaused = this->isActuallyPausedAndNotSpectating();
+
     // update current music position (this variable does not include any offsets!)
     this->updateInterpedMusicPos();
 
     this->iContinueMusicPos = this->music->getPositionMS();
+
     const bool wasSeekFrame = this->bWasSeekFrame;
     this->bWasSeekFrame = false;
 
@@ -2713,7 +2716,8 @@ void BeatmapInterface::update2() {
     }
 
     // interpolate clicks that occurred between the last update and now
-    if(!this->is_watching && !BanchoState::spectating && !this->clicks.empty()) {
+    // (except if we are paused)
+    if(!isIdlePaused && !this->is_watching && !BanchoState::spectating && !this->clicks.empty()) {
         const auto timeSinceLastUpdate = currentUpdateTime - lastUpdateTime;
 
         if(timeSinceLastUpdate > 0) {
@@ -2733,7 +2737,9 @@ void BeatmapInterface::update2() {
         }
     }
 
-    if((this->is_watching || BanchoState::spectating) && this->spectated_replay.size() >= 2) {
+    // don't advance replay frames if we are paused unless this was a seek
+    if((!isIdlePaused || wasSeekFrame) && (this->is_watching || BanchoState::spectating) &&
+       this->spectated_replay.size() >= 2) {
         LegacyReplay::Frame current_frame = this->spectated_replay[this->current_frame_idx];
         LegacyReplay::Frame next_frame = this->spectated_replay[this->current_frame_idx + 1];
 
@@ -3566,7 +3572,7 @@ bool BeatmapInterface::isLoading() {
             (BanchoState::is_playing_a_multi_map() && !BanchoState::room.all_players_loaded));
 }
 
-bool BeatmapInterface::isActuallyLoading() {
+bool BeatmapInterface::isActuallyLoading() const {
     return (!soundEngine->isReady() || !this->music->isAsyncReady() || this->bIsPreLoading);
 }
 
@@ -4511,16 +4517,27 @@ void BeatmapInterface::computeDrainRate() {
     }
 }
 
-f32 BeatmapInterface::getApproachTime_full() const {
+f32 BeatmapInterface::getApproachTime() const {
     return cv::mod_mafham.getBool()
                ? this->getLength() * 2
                : GameRules::mapDifficultyRange(this->getAR(), GameRules::getMinApproachTime(),
                                                GameRules::getMidApproachTime(), GameRules::getMaxApproachTime());
 }
 
-f32 BeatmapInterface::getRawApproachTime_full() const {
+f32 BeatmapInterface::getRawApproachTime() const {
     return cv::mod_mafham.getBool()
                ? this->getLength() * 2
                : GameRules::mapDifficultyRange(this->getRawAR(), GameRules::getMinApproachTime(),
                                                GameRules::getMidApproachTime(), GameRules::getMaxApproachTime());
+}
+
+bool BeatmapInterface::isActuallyPausedAndNotSpectating() const {
+    // TODO(spec): need to actually test spectating to make sure i dont break something, so not including that here for now
+    // this function is mainly to avoid running through replay frames while we are paused
+    // (see while(next_frame.cur_music_pos <= this->iCurMusicPosWithOffsets) ... in update2())
+    if(BanchoState::spectating) return false;
+
+    return (this->isPaused() && osu->getPauseMenu()->isVisible())  //
+           && (this->music && !this->music->isPlaying())           //
+           && !(this->bIsWaiting || this->isActuallyLoading());
 }

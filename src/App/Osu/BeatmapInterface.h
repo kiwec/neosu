@@ -55,7 +55,10 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
     bool isLoading();
 
     // Returns true if the local player is loading
-    bool isActuallyLoading();
+    bool isActuallyLoading() const;
+
+    // returns true if we are actually just in the pause menu doing nothing (but NOT in "continue" screen)
+    [[nodiscard]] bool isActuallyPausedAndNotSpectating() const;
 
     [[nodiscard]] vec2 pixels2OsuCoords(vec2 pixelCoords) const override;  // only used for positional audio atm
     [[nodiscard]] vec2 osuCoords2Pixels(
@@ -189,6 +192,16 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
     [[nodiscard]] inline i32 getCurMusicPos() const { return this->iCurMusicPos; }
     [[nodiscard]] inline i32 getCurMusicPosWithOffsets() const { return this->iCurMusicPosWithOffsets; }
 
+    [[nodiscard]] u32 getScoreV1DifficultyMultiplier() const override;
+    [[nodiscard]] f32 getRawAR() const override;
+    [[nodiscard]] f32 getAR() const override;
+    [[nodiscard]] f32 getCS() const override;
+    [[nodiscard]] f32 getHP() const override;
+    [[nodiscard]] f32 getRawOD() const override;
+    [[nodiscard]] f32 getOD() const override;
+    [[nodiscard]] f32 getApproachTime() const override;
+    [[nodiscard]] f32 getRawApproachTime() const override;
+
     // health
     [[nodiscard]] inline f64 getHealth() const { return this->fHealth; }
     [[nodiscard]] inline bool hasFailed() const { return this->bFailed; }
@@ -314,16 +327,6 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
     int iPreviousFollowPointObjectIndex;  // TODO: this shouldn't be in this class
 
    private:
-    [[nodiscard]] u32 getScoreV1DifficultyMultiplier_full() const override;
-    [[nodiscard]] f32 getRawAR_full() const override;
-    [[nodiscard]] f32 getAR_full() const override;
-    [[nodiscard]] f32 getCS_full() const override;
-    [[nodiscard]] f32 getHP_full() const override;
-    [[nodiscard]] f32 getRawOD_full() const override;
-    [[nodiscard]] f32 getOD_full() const override;
-    [[nodiscard]] f32 getApproachTime_full() const override;
-    [[nodiscard]] f32 getRawApproachTime_full() const override;
-
     static inline vec2 mapNormalizedCoordsOntoUnitCircle(const vec2 &in) {
         return vec2(in.x * std::sqrt(1.0f - in.y * in.y / 2.0f), in.y * std::sqrt(1.0f - in.x * in.x / 2.0f));
     }

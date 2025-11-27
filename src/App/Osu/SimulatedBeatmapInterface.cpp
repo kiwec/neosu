@@ -121,7 +121,7 @@ void SimulatedBeatmapInterface::fail(bool force_death) {
 
 void SimulatedBeatmapInterface::cancelFailing() { this->bFailed = false; }
 
-u32 SimulatedBeatmapInterface::getScoreV1DifficultyMultiplier_full() const {
+u32 SimulatedBeatmapInterface::getScoreV1DifficultyMultiplier() const {
     // NOTE: We intentionally get CS/HP/OD from beatmap data, not "real" CS/HP/OD
     //       Since this multiplier is only used for ScoreV1
     u32 breakTimeMS = this->getBreakDurationTotal();
@@ -132,7 +132,7 @@ u32 SimulatedBeatmapInterface::getScoreV1DifficultyMultiplier_full() const {
                       38.0f * 5.0f);
 }
 
-f32 SimulatedBeatmapInterface::getCS_full() const {
+f32 SimulatedBeatmapInterface::getCS() const {
     float CSdifficultyMultiplier = 1.0f;
     if(this->mods.has(ModFlags::HardRock)) CSdifficultyMultiplier = 1.3f;
     if(this->mods.has(ModFlags::Easy)) CSdifficultyMultiplier = 0.5f;
@@ -155,7 +155,7 @@ f32 SimulatedBeatmapInterface::getCS_full() const {
     return CS;
 }
 
-f32 SimulatedBeatmapInterface::getHP_full() const {
+f32 SimulatedBeatmapInterface::getHP() const {
     float HPdifficultyMultiplier = 1.0f;
     if(this->mods.has(ModFlags::HardRock)) HPdifficultyMultiplier = 1.4f;
     if(this->mods.has(ModFlags::Easy)) HPdifficultyMultiplier = 0.5f;
@@ -166,7 +166,7 @@ f32 SimulatedBeatmapInterface::getHP_full() const {
     return HP;
 }
 
-f32 SimulatedBeatmapInterface::getRawAR_full() const {
+f32 SimulatedBeatmapInterface::getRawAR() const {
     float ARdifficultyMultiplier = 1.0f;
     if(this->mods.has(ModFlags::HardRock)) ARdifficultyMultiplier = 1.4f;
     if(this->mods.has(ModFlags::Easy)) ARdifficultyMultiplier = 0.5f;
@@ -174,7 +174,7 @@ f32 SimulatedBeatmapInterface::getRawAR_full() const {
     return std::clamp<f32>(this->beatmap->getAR() * ARdifficultyMultiplier, 0.0f, 10.0f);
 }
 
-f32 SimulatedBeatmapInterface::getAR_full() const {
+f32 SimulatedBeatmapInterface::getAR() const {
     f32 AR = this->getRawAR();
     if(this->mods.ar_override >= 0.0f) AR = this->mods.ar_override;
     if(this->mods.ar_overridenegative < 0.0f) AR = this->mods.ar_overridenegative;
@@ -198,7 +198,7 @@ f32 SimulatedBeatmapInterface::getAR_full() const {
     return AR;
 }
 
-f32 SimulatedBeatmapInterface::getRawOD_full() const {
+f32 SimulatedBeatmapInterface::getRawOD() const {
     float ODdifficultyMultiplier = 1.0f;
     if(this->mods.has(ModFlags::HardRock)) ODdifficultyMultiplier = 1.4f;
     if(this->mods.has(ModFlags::Easy)) ODdifficultyMultiplier = 0.5f;
@@ -206,7 +206,7 @@ f32 SimulatedBeatmapInterface::getRawOD_full() const {
     return std::clamp<f32>(this->beatmap->getOD() * ODdifficultyMultiplier, 0.0f, 10.0f);
 }
 
-f32 SimulatedBeatmapInterface::getOD_full() const {
+f32 SimulatedBeatmapInterface::getOD() const {
     f32 OD = this->getRawOD();
 
     if(this->mods.od_override >= 0.0f) OD = this->mods.od_override;
@@ -1205,14 +1205,14 @@ void SimulatedBeatmapInterface::computeDrainRate() {
     }
 }
 
-f32 SimulatedBeatmapInterface::getApproachTime_full() const {
+f32 SimulatedBeatmapInterface::getApproachTime() const {
     return (this->mods.has(ModFlags::Mafham))
                ? this->getLength() * 2
                : GameRules::mapDifficultyRange(this->getAR(), GameRules::getMinApproachTime(),
                                                GameRules::getMidApproachTime(), GameRules::getMaxApproachTime());
 }
 
-f32 SimulatedBeatmapInterface::getRawApproachTime_full() const {
+f32 SimulatedBeatmapInterface::getRawApproachTime() const {
     return (this->mods.has(ModFlags::Mafham))
                ? this->getLength() * 2
                : GameRules::mapDifficultyRange(this->getRawAR(), GameRules::getMinApproachTime(),
