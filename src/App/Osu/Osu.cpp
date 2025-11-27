@@ -695,7 +695,7 @@ void Osu::update() {
 
         // scrubbing/seeking
         this->bSeeking = (this->bSeekKey ||
-                          // only auto-seek if not paused (or we we immediately seek when unpausing)
+                          // only auto-seek if not paused (or we immediately seek when unpausing)
                           (this->map_iface->is_watching && !this->map_iface->isActuallyPausedAndNotSpectating()))  //
                          && (!this->volumeOverlay->isBusy())                                                       //
                          && (!BanchoState::is_playing_a_multi_map() && !this->bClickedSkipButton)                  //
@@ -1394,32 +1394,32 @@ void Osu::onPlayEnd(const FinishedScore &score, bool quit, bool /*aborted*/) {
 }
 
 float Osu::getDifficultyMultiplier() {
-    float difficultyMultiplier = 1.0f;
-
-    if(cv::mod_hardrock.getBool()) difficultyMultiplier = 1.4f;
-    if(cv::mod_easy.getBool()) difficultyMultiplier = 0.5f;
-
-    return difficultyMultiplier;
+    if(cv::mod_easy.getBool())
+        return .5f;
+    else if(cv::mod_hardrock.getBool())
+        return 1.4f;
+    else
+        return 1.f;
 }
 
 float Osu::getCSDifficultyMultiplier() {
-    float difficultyMultiplier = 1.0f;
-
-    if(cv::mod_hardrock.getBool()) difficultyMultiplier = 1.3f;  // different!
-    if(cv::mod_easy.getBool()) difficultyMultiplier = 0.5f;
-
-    return difficultyMultiplier;
+    if(cv::mod_easy.getBool())
+        return .5f;
+    else if(cv::mod_hardrock.getBool())
+        return 1.3f;  // different!
+    else
+        return 1.f;
 }
 
-float Osu::getScoreMultiplier() {
+float Osu::getScoreMultiplier() const {
     float multiplier = 1.0f;
 
     // Dumb formula, but the values for HT/DT were dumb to begin with
     f32 s = this->map_iface->getSpeedMultiplier();
     if(s > 1.f) {
-        multiplier *= (0.24 * s) + 0.76;
+        multiplier *= (0.24f * s) + 0.76f;
     } else if(s < 1.f) {
-        multiplier *= 0.008 * std::exp(4.81588 * s);
+        multiplier *= 0.008f * std::expf(4.81588f * s);
     }
 
     if(cv::mod_easy.getBool() || (cv::mod_nofail.getBool() && !cv::mod_scorev2.getBool())) multiplier *= 0.50f;
@@ -1438,7 +1438,7 @@ float Osu::getScoreMultiplier() {
     return multiplier;
 }
 
-float Osu::getAnimationSpeedMultiplier() {
+float Osu::getAnimationSpeedMultiplier() const {
     float animationSpeedMultiplier = this->map_iface->getSpeedMultiplier();
 
     if(cv::animation_speed_override.getFloat() >= 0.0f) return std::max(cv::animation_speed_override.getFloat(), 0.05f);
@@ -1446,7 +1446,7 @@ float Osu::getAnimationSpeedMultiplier() {
     return animationSpeedMultiplier;
 }
 
-bool Osu::shouldFallBackToLegacySliderRenderer() {
+bool Osu::shouldFallBackToLegacySliderRenderer() const {
     return cv::force_legacy_slider_renderer.getBool() || cv::mod_wobble.getBool() || cv::mod_wobble2.getBool() ||
            cv::mod_minimize.getBool() || this->modSelector->isCSOverrideSliderActive()
         /* || (this->osu_playfield_rotation->getFloat() < -0.01f || m_osu_playfield_rotation->getFloat() > 0.01f)*/;

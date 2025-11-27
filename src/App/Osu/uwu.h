@@ -48,14 +48,14 @@ struct lazy_promise {
         this->cv.notify_one();
     }
 
-    Ret get() {
+    const Ret &get() {
         Sync::scoped_lock lock(this->ret_mtx);
         return this->ret;
     }
 
-    void set(Ret ret) {
+    void set(Ret &&ret) {
         Sync::scoped_lock lock(this->ret_mtx);
-        this->ret = ret;
+        this->ret = std::move(ret);
     }
 
    private:
@@ -70,11 +70,11 @@ struct lazy_promise {
                 continue;  // spurious wakeup
             }
 
-            Func func = this->funcs.back();
+            Func func = std::move(this->funcs.back());
             this->funcs.clear();
             lock.unlock();
 
-            this->set(func());
+            this->set(std::move(func()));
         }
     }
 

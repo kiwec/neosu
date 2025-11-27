@@ -1376,15 +1376,15 @@ UString ModSelector::getOverrideSliderLabelText(const ModSelector::OVERRIDE_SLID
         // for relevant values (AR/OD), any non-1.0x speed multiplier should show the fractional parts caused by such a
         // speed multiplier (same for non-1.0x difficulty multiplier)
         const bool forceDisplayTwoDecimalDigits =
-            (osu->getMapInterface()->getSpeedMultiplier() != 1.0f || osu->getDifficultyMultiplier() != 1.0f ||
-             osu->getCSDifficultyMultiplier() != 1.0f);
+            (osu->getMapInterface()->getSpeedMultiplier() != 1.0f || Osu::getDifficultyMultiplier() != 1.0f ||
+             Osu::getCSDifficultyMultiplier() != 1.0f);
 
         // HACKHACK: dirty
         bool wasSpeedSlider = false;
         float beatmapValue = 1.0f;
         if(s.label->getName().find("CS") != -1) {
             beatmapValue = std::clamp<float>(
-                osu->getMapInterface()->getBeatmap()->getCS() * osu->getCSDifficultyMultiplier(), 0.0f, 10.0f);
+                osu->getMapInterface()->getBeatmap()->getCS() * Osu::getCSDifficultyMultiplier(), 0.0f, 10.0f);
             convarValue = osu->getMapInterface()->getCS();
         } else if(s.label->getName().find("AR") != -1) {
             beatmapValue = active ? osu->getMapInterface()->getRawARForSpeedMultiplier()
@@ -1408,7 +1408,7 @@ UString ModSelector::getOverrideSliderLabelText(const ModSelector::OVERRIDE_SLID
                 convarValue = std::round(convarValue * 100.0f) / 100.0f;
         } else if(s.label->getName().find("HP") != -1) {
             beatmapValue = std::clamp<float>(
-                osu->getMapInterface()->getBeatmap()->getHP() * osu->getDifficultyMultiplier(), 0.0f, 10.0f);
+                osu->getMapInterface()->getBeatmap()->getHP() * Osu::getDifficultyMultiplier(), 0.0f, 10.0f);
             convarValue = osu->getMapInterface()->getHP();
         } else if(s.desc->getText().find("Speed") != -1) {
             beatmapValue = active ? 1.f : osu->getMapInterface()->getSpeedMultiplier();

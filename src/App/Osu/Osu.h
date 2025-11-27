@@ -164,10 +164,10 @@ class Osu final : public MouseListener, public KeyboardListener {
     [[nodiscard]] inline const Skin *getSkin() const { return this->skin.get(); }
     [[nodiscard]] inline Skin *getSkinMutable() { return this->skin.get(); }
 
-    float getDifficultyMultiplier();
-    float getCSDifficultyMultiplier();
-    float getScoreMultiplier();
-    float getAnimationSpeedMultiplier();
+    [[nodiscard]] static float getDifficultyMultiplier();
+    [[nodiscard]] static float getCSDifficultyMultiplier();
+    [[nodiscard]] float getScoreMultiplier() const;
+    [[nodiscard]] float getAnimationSpeedMultiplier() const;
 
     [[nodiscard]] bool getModAuto() const;
     [[nodiscard]] bool getModAutopilot() const;
@@ -195,7 +195,7 @@ class Osu final : public MouseListener, public KeyboardListener {
     [[nodiscard]] inline bool isSeeking() const { return this->bSeeking; }
     [[nodiscard]] inline u32 getQuickSaveTimeMS() const { return this->iQuickSaveMS; }
 
-    bool shouldFallBackToLegacySliderRenderer();  // certain mods or actions require Sliders to render dynamically
+    [[nodiscard]] bool shouldFallBackToLegacySliderRenderer() const;  // certain mods or actions require Sliders to render dynamically
                                                   // (e.g. wobble or the CS override slider)
 
     inline void useMods(const FinishedScore &score) { Replay::Mods::use(score.mods); }

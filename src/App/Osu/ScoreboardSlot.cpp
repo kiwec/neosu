@@ -28,8 +28,6 @@ ScoreboardSlot::~ScoreboardSlot() {
 
 void ScoreboardSlot::draw() {
     if(this->fAlpha == 0.f) return;
-    if(!cv::draw_scoreboard.getBool() && !BanchoState::is_playing_a_multi_map()) return;
-    if(!cv::draw_scoreboard_mp.getBool() && BanchoState::is_playing_a_multi_map()) return;
 
     g->pushTransform();
 

@@ -424,6 +424,8 @@ void SimulatedBeatmapInterface::update(f64 frame_time) {
         const int notelockType = this->mods.notelock_type;
         const i32 tolerance2B = 3;
 
+        this->fCachedApproachTimeForUpdate = this->getApproachTime();
+
         this->iCurrentHitObjectIndex = 0;  // reset below here, since it's needed for mafham pvs
 
         for(int i = 0; i < this->hitobjects.size(); i++) {

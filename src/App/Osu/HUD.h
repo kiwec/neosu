@@ -60,6 +60,8 @@ class HUD final : public OsuScreen {
     void drawAccuracySimple(float accuracy, float scale = 1.0f);  // used by RankingScreen
     void drawWarningArrow(vec2 pos, bool flipVertically, bool originLeft = true);
 
+    [[nodiscard]] bool shouldDrawScoreboard() const;
+
     std::vector<SCORE_ENTRY> getCurrentScores();
     void resetScoreboard();
     void updateScoreboard(bool animate);
@@ -160,6 +162,9 @@ class HUD final : public OsuScreen {
     McFont *tempFont;
 
     // shit code
+    const f64 fScoreboardCacheRefreshTime{0.250f};  // only update every 250ms instead of every frame
+    f64 fScoreboardLastUpdateTime{0.f};
+
     float fAccuracyXOffset;
     float fAccuracyYOffset;
     float fScoreHeight;

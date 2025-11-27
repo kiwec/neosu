@@ -84,7 +84,9 @@ void HUD::draw() {
                                        osu->getScore()->getKeyCount(3), osu->getScore()->getKeyCount(4));
         }
 
-        this->drawFancyScoreboard();
+        if(this->shouldDrawScoreboard()) {
+            this->drawFancyScoreboard();
+        }
 
         g->pushTransform();
         {
@@ -285,8 +287,7 @@ void HUD::drawDummy() {
     scoreEntry.accuracy = 1.0f;
     scoreEntry.dead = false;
     scoreEntry.highlight = true;
-    if((cv::draw_scoreboard.getBool() && !BanchoState::is_playing_a_multi_map()) ||
-       (cv::draw_scoreboard_mp.getBool() && BanchoState::is_playing_a_multi_map())) {
+    if(this->shouldDrawScoreboard()) {
         static std::vector<SCORE_ENTRY> scoreEntries;
         scoreEntries.clear();
         {
@@ -1104,6 +1105,15 @@ void HUD::drawWarningArrows(float /*hitcircleDiameter*/) {
         true);
 }
 
+bool HUD::shouldDrawScoreboard() const {
+    if(!BanchoState::is_playing_a_multi_map()) {
+        return cv::draw_scoreboard.getBool();
+    } else {
+        return cv::draw_scoreboard_mp.getBool();
+    }
+}
+
+// FIXME: this is extremely suboptimal, and runs on EVERY HITRESULT DURING GAMEPLAY!!!! (LiveScore::onScoreChange)
 std::vector<SCORE_ENTRY> HUD::getCurrentScores() {
     static std::vector<SCORE_ENTRY> scores;
     scores.clear();
@@ -1253,11 +1263,18 @@ void HUD::resetScoreboard() {
         i++;
     }
 
+    this->fScoreboardLastUpdateTime = 0.f;
     this->updateScoreboard(false);
 }
 
 void HUD::updateScoreboard(bool animate) {
-    if(!this->player_slot) return;  // wait for resetScoreboard() (FIXME: spaghetti)
+    const f64 timeNow = engine->getTime();
+    if(this->fScoreboardLastUpdateTime + this->fScoreboardCacheRefreshTime >= timeNow) {
+        // use cached
+        return;
+    }
+    if(!this->shouldDrawScoreboard()) return;  // don't do anything if we don't want to draw the scoreboard
+    if(!this->player_slot) return;             // wait for resetScoreboard() (FIXME: spaghetti)
 
     DatabaseBeatmap *map = osu->getMapInterface()->getBeatmap();
     if(map == nullptr) return;
@@ -1288,9 +1305,12 @@ void HUD::updateScoreboard(bool animate) {
             break;
         }
     }
+
+    this->fScoreboardLastUpdateTime = timeNow;
 }
 
 void HUD::drawFancyScoreboard() {
+    if(!this->shouldDrawScoreboard()) return;
     for(const auto &slot : this->slots) {
         slot->draw();
     }

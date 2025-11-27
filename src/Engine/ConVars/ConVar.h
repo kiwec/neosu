@@ -262,13 +262,13 @@ class ConVar {
 
     [[nodiscard]] inline double getDouble() const {
         if(likely(this->bUseCachedDouble.load(std::memory_order_relaxed))) {
-            return this->dCachedReturnedDouble.load(std::memory_order_acquire);
+            return this->dCachedReturnedDouble.load(std::memory_order_relaxed);
         }
         return this->getDoubleInt();
     }
     [[nodiscard]] inline const std::string &getString() const {
         if(likely(this->bUseCachedString.load(std::memory_order_relaxed))) {
-            return *(this->sCachedReturnedString.load(std::memory_order_acquire));
+            return *(this->sCachedReturnedString.load(std::memory_order_relaxed));
         }
         return this->getStringInt();
     }

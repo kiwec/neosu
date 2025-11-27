@@ -25,7 +25,7 @@ class AbstractBeatmapInterface {
     [[nodiscard]] virtual bool isPaused() const = 0;
     [[nodiscard]] virtual bool isPlaying() const = 0;
     [[nodiscard]] virtual bool isWaiting() const = 0;
-  
+
     [[nodiscard]] virtual f32 getSpeedMultiplier() const = 0;
     [[nodiscard]] virtual f32 getPitchMultiplier() const = 0;
     [[nodiscard]] virtual u32 getScoreV1DifficultyMultiplier() const = 0;
@@ -37,9 +37,9 @@ class AbstractBeatmapInterface {
     [[nodiscard]] virtual f32 getOD() const = 0;
     [[nodiscard]] virtual f32 getApproachTime() const = 0;
     [[nodiscard]] virtual f32 getRawApproachTime() const = 0;
-  
-    [[nodiscard]] virtual const Replay::Mods &getMods() const; // overridden by SimulatedBeatmapInterface
-    [[nodiscard]] virtual LegacyFlags getModsLegacy() const; // overridden by SimulatedBeatmapInterface
+
+    [[nodiscard]] virtual const Replay::Mods &getMods() const;  // overridden by SimulatedBeatmapInterface
+    [[nodiscard]] virtual LegacyFlags getModsLegacy() const;    // overridden by SimulatedBeatmapInterface
     [[nodiscard]] virtual vec2 getCursorPos() const = 0;
 
     virtual void addScorePoints(int points, bool isSpinner = false) = 0;
@@ -60,6 +60,7 @@ class AbstractBeatmapInterface {
     f32 fHitcircleDiameter = 0.f;
     f32 fRawHitcircleDiameter = 0.f;
     f32 fSliderFollowCircleDiameter = 0.f;
+    f32 fCachedApproachTimeForUpdate = 0.f;
     u8 lastPressedKey = 0;
     bool holding_slider = false;
 
@@ -77,4 +78,7 @@ class AbstractBeatmapInterface {
     [[nodiscard]] f32 getOverallDifficultyForSpeedMultiplier() const;
     [[nodiscard]] f32 getRawODForSpeedMultiplier() const;
     [[nodiscard]] f32 getConstantOverallDifficultyForSpeedMultiplier() const;
+
+    // for HitObject::update to avoid recalculating for each object every frame
+    [[nodiscard]] forceinline f32 getCachedApproachTimeForUpdate() const { return this->fCachedApproachTimeForUpdate; }
 };

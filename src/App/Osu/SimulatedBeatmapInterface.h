@@ -80,6 +80,7 @@ class SimulatedBeatmapInterface final : public AbstractBeatmapInterface {
     [[nodiscard]] f32 getOD() const override;
     [[nodiscard]] f32 getRawApproachTime() const override;
     [[nodiscard]] f32 getApproachTime() const override;
+
     [[nodiscard]] u32 getLength() const override;
     [[nodiscard]] u32 getLengthPlayable() const override;
     [[nodiscard]] u32 getBreakDurationTotal() const override;
