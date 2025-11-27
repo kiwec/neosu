@@ -2116,8 +2116,8 @@ void BeatmapInterface::drawHitObjects() {
     const bool usePVS = cv::pvs.getBool();
 
     if(!cv::mod_mafham.getBool()) {
-        static std::deque<HitObject *> to_draw;
-        to_draw.clear();
+        static std::vector<HitObject *> non_spinners_to_draw;
+        non_spinners_to_draw.clear();
 
         for(auto *obj : this->hitobjectsSortedByEndTime | std::views::reverse) {
             // PVS optimization (reversed)
@@ -2128,18 +2128,18 @@ void BeatmapInterface::drawHitObjects() {
                     continue;
             }
 
-            // draw spinners first, overlay everything else on top
+            // draw spinners first
             if(obj->type == HitObjectType::SPINNER) {
-                to_draw.push_front(obj);
+                obj->draw();
             } else {
-                to_draw.push_back(obj);
+                non_spinners_to_draw.push_back(obj);
             }
         }
 
-        for(auto *obj : to_draw) {
+        // draw non-spinners after
+        for(auto *obj : non_spinners_to_draw) {
             obj->draw();
         }
-        to_draw.clear();
 
         // this doesn't need the spinner front-to-back thing because spinners have no draw2
         for(auto *obj : this->hitobjectsSortedByEndTime) {
