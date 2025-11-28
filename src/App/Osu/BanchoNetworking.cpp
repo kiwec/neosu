@@ -48,7 +48,7 @@ void parse_packets(u8 *data, size_t s_data) {
     };
 
     // + 7 for packet header
-    while(batch.pos + 7 < batch.size) {
+    while(batch.pos + 7 <= batch.size) {
         u16 packet_id = batch.read<u16>();
         batch.pos++;  // skip compression flag
         u32 packet_len = batch.read<u32>();
@@ -338,7 +338,7 @@ void BanchoState::disconnect() {
         NetworkHandler::Response response = networkHandler->httpRequestSynchronous(query_url, options);
 
         free(packet.memory);
-    } else if (BanchoState::is_logging_in()) {
+    } else if(BanchoState::is_logging_in()) {
         // HACKHACK: can't cancel existing in-progress request directly
         BanchoState::async_logout_pending = true;
     }

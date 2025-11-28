@@ -479,7 +479,6 @@ void BanchoState::handle_packet(Packet &packet) {
         }
 
         case MATCH_ALL_PLAYERS_LOADED: {
-            debugLog("MATCH_ALL_PLAYERS_LOADED");
             osu->getMapInterface()->all_players_loaded = true;
             osu->getChat()->updateVisibility();
             break;
