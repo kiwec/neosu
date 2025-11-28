@@ -101,13 +101,13 @@ bool UIModList::isVisible() { return !!*this->flags; }
         label_name->setDrawBackground(false);                             \
     } while(0)
 
-#define ADD_ELEMENT_WITH_PADDING(element, x_padding, y_padding)    \
-    do {                                                           \
-        element->onResized();                                      \
-        element->setSizeToContent(x_padding, y_padding);           \
-        element->setPos(10.f * osu->getUIScale(), settings_y);     \
-        this->settings->container->addBaseUIElement(element); \
-        settings_y += element->getSize().y;                        \
+#define ADD_ELEMENT_WITH_PADDING(element, x_padding, y_padding) \
+    do {                                                        \
+        element->onResized();                                   \
+        element->setSizeToContent(x_padding, y_padding);        \
+        element->setPos(10.f * osu->getUIScale(), settings_y);  \
+        this->settings->container->addBaseUIElement(element);   \
+        settings_y += element->getSize().y;                     \
     } while(0)
 
 #define ADD_ELEMENT(element) ADD_ELEMENT_WITH_PADDING(element, button_padding, button_padding)
@@ -120,7 +120,7 @@ bool UIModList::isVisible() { return !!*this->flags; }
         button->setSizeToContent(button_padding, button_padding);                             \
         button->setPos(label->getSize().x + 20.f * osu->getUIScale(),                         \
                        label->getPos().y + (label->getSize().y - button->getSize().y) / 2.f); \
-        this->settings->container->addBaseUIElement(button);                             \
+        this->settings->container->addBaseUIElement(button);                                  \
     } while(0)
 
 #define PAD(x)                               \
@@ -746,7 +746,7 @@ void RoomScreen::on_match_score_updated(Packet &packet) {
 }
 
 void RoomScreen::on_all_players_loaded() {
-    BanchoState::room.all_players_loaded = true;
+    osu->getMapInterface()->all_players_loaded = true;
     osu->getChat()->updateVisibility();
 }
 
@@ -800,7 +800,7 @@ void RoomScreen::on_match_finished() {
     RichPresence::onMultiplayerLobby();
 }
 
-void RoomScreen::on_all_players_skipped() { BanchoState::room.all_players_skipped = true; }
+void RoomScreen::on_all_players_skipped() { osu->getMapInterface()->all_players_skipped = true; }
 
 void RoomScreen::on_player_skip(i32 user_id) {
     for(auto &slot : BanchoState::room.slots) {

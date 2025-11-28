@@ -673,7 +673,7 @@ void Osu::update() {
                 bool can_skip_break =
                     (cv::skip_breaks_enabled.getBool() && this->map_iface->iCurrentHitObjectIndex > 0);
                 if(BanchoState::is_playing_a_multi_map()) {
-                    can_skip_intro = BanchoState::room.all_players_skipped;
+                    can_skip_intro = this->map_iface->all_players_skipped;
                     can_skip_break = false;
                 }
 
@@ -2076,7 +2076,7 @@ void Osu::setupSoloud() {
 
     static auto output_changed_before_cb = []() -> void {
         Sound *map_music = nullptr;
-        if(osu && osu->map_iface && (map_music = osu->map_iface->getMusic())) {
+        if(osu && osu->getMapInterface() && (map_music = osu->getMapInterface()->getMusic())) {
             was_playing = map_music->isPlaying();
             prev_position_ms = map_music->getPositionMS();
         } else {
@@ -2094,7 +2094,7 @@ void Osu::setupSoloud() {
 
             // start playing music again after audio device changed
             Sound *map_music = nullptr;
-            const auto &map_iface = osu->map_iface;
+            const auto &map_iface = osu->getMapInterface();
             if(map_iface && (map_music = map_iface->getMusic())) {
                 if(osu->isInPlayMode()) {
                     map_iface->unloadMusic();

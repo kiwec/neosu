@@ -547,6 +547,10 @@ bool BeatmapInterface::start() {
         osu->getModSelector()->setVisible(false);
         osu->getOptionsMenu()->setVisible(false);
         osu->getPauseMenu()->setVisible(false);
+
+        this->all_players_loaded = false;
+        this->all_players_skipped = false;
+        this->player_loaded = false;
     }
 
     // HACKHACK: stuck key quickfix
@@ -1740,7 +1744,7 @@ void BeatmapInterface::draw() {
             osu->getHUD()->drawLoadingSmall(loadingMessage);
 
             // draw the rest of the playfield while buffering/paused
-        } else if(BanchoState::is_playing_a_multi_map() && !BanchoState::room.all_players_loaded) {
+        } else if(BanchoState::is_playing_a_multi_map() && !this->all_players_loaded) {
             osu->getHUD()->drawLoadingSmall("Waiting for players ...");
 
             // only start drawing the rest of the playfield if everything has loaded
@@ -2341,16 +2345,14 @@ void BeatmapInterface::update() {
         }
     }
 
-    // notify all other players (including ourself) once we've finished loading
+    // notify server once we've finished loading
     if(BanchoState::is_playing_a_multi_map()) {
-        if(!this->isActuallyLoading()) {
-            if(!BanchoState::room.player_loaded) {
-                BanchoState::room.player_loaded = true;
+        if(!osu->getMapInterface()->player_loaded && !this->isActuallyLoading()) {
+            osu->getMapInterface()->player_loaded = true;
 
-                Packet packet;
-                packet.id = MATCH_LOAD_COMPLETE;
-                BANCHO::Net::send_packet(packet);
-            }
+            Packet packet;
+            packet.id = MATCH_LOAD_COMPLETE;
+            BANCHO::Net::send_packet(packet);
         }
     }
 
@@ -3605,7 +3607,7 @@ bool BeatmapInterface::isBuffering() {
 
 bool BeatmapInterface::isLoading() {
     return (this->isActuallyLoading() || this->isBuffering() ||
-            (BanchoState::is_playing_a_multi_map() && !BanchoState::room.all_players_loaded));
+            (BanchoState::is_playing_a_multi_map() && !this->all_players_loaded));
 }
 
 bool BeatmapInterface::isActuallyLoading() const {

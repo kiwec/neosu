@@ -185,6 +185,11 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
     i32 last_frame_ms = 0;
     bool spectate_pause = false;  // the player we're spectating has paused
 
+    // multiplayer
+    bool all_players_loaded = false;
+    bool all_players_skipped = false;
+    bool player_loaded = false;
+
     // used by HitObject children and ModSelector
     [[nodiscard]] const Skin *getSkin() const;  // maybe use this for beatmap skins, maybe
     [[nodiscard]] Skin *getSkinMutable();
@@ -317,7 +322,7 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
     // hitobjects
     std::vector<std::unique_ptr<HitObject>> hitobjects;
     std::vector<HitObject *> hitobjectsSortedByEndTime;  // non-owning view of hitobjects data
-    std::vector<HitObject *> misaimObjects;                 // non-owning view of hitobjects data
+    std::vector<HitObject *> misaimObjects;              // non-owning view of hitobjects data
 
     // statistics
     int iNPS;

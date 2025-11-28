@@ -1271,7 +1271,7 @@ void Chat::updateVisibility() {
     bool is_spectating = cv::mod_autoplay.getBool() || (cv::mod_autopilot.getBool() && cv::mod_relax.getBool()) ||
                          osu->getMapInterface()->is_watching || BanchoState::spectating;
     bool is_clicking_circles = osu->isInPlayMode() && !can_skip && !is_spectating && !osu->getPauseMenu()->isVisible();
-    if(BanchoState::is_playing_a_multi_map() && !BanchoState::room.all_players_loaded) {
+    if(BanchoState::is_playing_a_multi_map() && !osu->getMapInterface()->all_players_loaded) {
         is_clicking_circles = false;
     }
     is_clicking_circles &= cv::chat_auto_hide.getBool();

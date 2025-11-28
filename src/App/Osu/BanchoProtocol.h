@@ -229,9 +229,6 @@ class Room {
     u8 in_progress = 0;
     u8 match_type = 0;
     LegacyFlags mods{};
-    bool all_players_loaded = false;
-    bool all_players_skipped = false;
-    bool player_loaded = false;
     bool has_password = false;
 
     UString name{ULITERAL("")};

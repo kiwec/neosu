@@ -38,6 +38,7 @@ Changelog::Changelog() : ScreenBackable() {
         R"(- Improved gameplay animation smoothness (position interpolator fixes))",
         R"(- Fixed incorrect beatmap hitsound volumes and samplesets being used)",
         R"(- Fixed some replay playback bugs)",
+        R"(- Fixed multiplayer matches failing to start)",
         R"(- Fixed multiplayer room screen missing ready button and freemods checkbox)",
         R"(- Fixed nightcore/daycore not speeding up/slowing down the map with SoLoud)",
         R"(- Fixed multiple songbrowser and collection management issues:)",
