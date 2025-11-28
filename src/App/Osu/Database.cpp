@@ -281,7 +281,7 @@ void Database::startLoader() {
             Sync::unique_lock lock(this->beatmap_difficulties_mtx);
             this->beatmap_difficulties.clear();
         }
-        for(auto &beatmapset : this->temp_loading_beatmapsets) {
+        for(auto &beatmapset : this->temp_loading_beatmapsets) { // FIXME(spec): this will remove import requests from before database is loaded!!!
             SAFE_DELETE(beatmapset);
         }
         this->temp_loading_beatmapsets.clear();

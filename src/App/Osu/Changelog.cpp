@@ -27,18 +27,27 @@ Changelog::Changelog() : ScreenBackable() {
     CHANGELOG v41_09;
     v41_09.title = "41.09";
     v41_09.changes = {
-        R"(- Improved gameplay animation smoothness (position interpolator fixes))",
         R"(- Added "snd_rate_transpose_algorithm" ConVar to adjust rate changer quality)",
         R"(- Added option to draw map backgrounds in discord rich presence)",
+        R"(- Added environment variables "SOLOUD_MINIAUDIO_DRIVER" and "SOLOUD_SDL_DRIVER" to control OS-level output backend)",
+        R"(  - Mainly relevant to non-Windows users: https://github.com/whrvt/neoloud/commit/5dd9074f159cc1462f3f2146f67b33bd56d54911)",
+        R"(- Various performance and audio latency improvements)",
+        R"(- Removed combobreak sound when pressing wrong key with Alternate mod)",
+        R"(- Renamed Full Alternate to Alternate)",
+        R"(- Improved the reliability of avatar images showing up when they're supposed to)",
+        R"(- Improved gameplay animation smoothness (position interpolator fixes))",
         R"(- Fixed incorrect beatmap hitsound volumes and samplesets being used)",
+        R"(- Fixed some replay playback bugs)",
         R"(- Fixed multiplayer room screen missing ready button and freemods checkbox)",
-        R"(- Fixed nightcore/daycore with SoLoud)",
+        R"(- Fixed nightcore/daycore not speeding up/slowing down the map with SoLoud)",
         R"(- Fixed multiple songbrowser and collection management issues:)",
         R"(  - Beatmap difficulties are now properly grouped by mapset when searching in "No Grouping" mode)",
         R"(  - All collections are now sorted alphabetically)",
         R"(  - Deleting/renaming collections now works properly)",
-        R"(- Removed combobreak sound when pressing wrong key with Alternate mod)",
-        R"(- Renamed Full Alternate to Alternate)",
+        R"(- Fixed audio clicks/pops with certain looped sounds when using SoLoud (e.g. some spinner-spin sounds))",
+        R"(- Fixed some options menu/back button layout issues)",
+        R"(- Fixed crashing when importing beatmaps during gameplay)",
+        R"(- Fixed some cases of memory corruption from certain database import combinations)",
     };
     changelogs.push_back(v41_09);
 
