@@ -190,6 +190,7 @@ CONVAR(snd_pitch_hitsounds_factor, -0.5f, CLIENT | SKINS | SERVER, "how much to 
 CONVAR(debug_osu, false, CLIENT);
 CONVAR(debug_cv, false, CLIENT);
 CONVAR(debug_db, false, CLIENT);
+CONVAR(debug_network, false, CLIENT);
 CONVAR(debug_async_db, false, CLIENT);
 CONVAR(debug_anim, false, CLIENT);
 CONVAR(debug_box_shadows, false, CLIENT);
@@ -753,7 +754,6 @@ CONVAR(beatmap_max_num_slider_scoringtimes, 32768, CONSTANT,
        "maximum number of slider score increase events allowed per slider "
        "(prevent crashing on deliberate game-breaking beatmaps)");
 CONVAR(build_timestamp, BUILD_TIMESTAMP, CONSTANT);
-CONVAR(debug_network, false, CONSTANT);
 CONVAR(slider_curve_max_length, 65536 / 2, CONSTANT,
        "maximum slider length in osu!pixels (i.e. pixelLength). also used to clamp all "
        "(control-)point coordinates to sane values.");

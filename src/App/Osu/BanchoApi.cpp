@@ -86,7 +86,7 @@ void send_request(const Request &request) {
         return;
     }
 
-    NetworkHandler::RequestOptions options;
+    NeoNet::RequestOptions options;
     options.timeout = 60;
     options.connect_timeout = 5;
     options.user_agent = "osu!";
@@ -96,7 +96,7 @@ void send_request(const Request &request) {
 
     networkHandler->httpRequestAsync(
         query_url,
-        [request](NetworkHandler::Response response) {
+        [request](NeoNet::Response response) {
             if(response.success) {
                 Packet api_response;
                 api_response.id = request.type;

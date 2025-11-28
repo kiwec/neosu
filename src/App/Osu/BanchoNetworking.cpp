@@ -38,7 +38,7 @@ u64 last_packet_ms{0};
 double seconds_between_pings{1.0};
 std::string auth_token = "";
 bool use_websockets = false;
-std::shared_ptr<NetworkHandler::Websocket> websocket{nullptr};
+std::shared_ptr<NeoNet::WSInstance> websocket{nullptr};
 
 void parse_packets(u8 *data, size_t s_data) {
     Packet batch = {
@@ -76,7 +76,7 @@ void parse_packets(u8 *data, size_t s_data) {
 void attempt_logging_in() {
     assert(BanchoState::get_uid() <= 0);
 
-    NetworkHandler::RequestOptions options;
+    NeoNet::RequestOptions options;
     options.timeout = 30;
     options.connect_timeout = 5;
     options.user_agent = "osu!";
@@ -90,7 +90,7 @@ void attempt_logging_in() {
 
     networkHandler->httpRequestAsync(
         query_url,
-        [func = __FUNCTION__](NetworkHandler::Response response) {
+        [func = __FUNCTION__](NeoNet::Response response) {
             if(!response.success) {
                 // TODO: shows "HTTP 0" on curl/network errors!
                 auto errmsg = UString::format("Failed to log in: HTTP %ld", response.response_code);
@@ -125,7 +125,7 @@ void attempt_logging_in() {
 void send_bancho_packet_http(Packet outgoing) {
     if(auth_token.empty()) return;
 
-    NetworkHandler::RequestOptions options;
+    NeoNet::RequestOptions options;
     options.timeout = 30;
     options.connect_timeout = 5;
     options.user_agent = "osu!";
@@ -140,7 +140,7 @@ void send_bancho_packet_http(Packet outgoing) {
 
     networkHandler->httpRequestAsync(
         query_url,
-        [func = __FUNCTION__](NetworkHandler::Response response) {
+        [func = __FUNCTION__](NeoNet::Response response) {
             if(!response.success) {
                 debugLogLambda("Failed to send packet, HTTP error {}", response.response_code);
                 return;
@@ -154,7 +154,7 @@ void send_bancho_packet_http(Packet outgoing) {
 void send_bancho_packet_ws(Packet outgoing) {
     if(auth_token.empty()) return;
 
-    if(websocket == nullptr || websocket->status == NetworkHandler::WEBSOCKET_DISCONNECTED) {
+    if(websocket == nullptr || websocket->status == NeoNet::WSStatus::DISCONNECTED) {
         // We have been disconnected in less than 5 seconds.
         // Don't try to reconnect, server clearly doesn't want us to.
         // (without this, we would be spamming retries every frame)
@@ -165,7 +165,7 @@ void send_bancho_packet_ws(Packet outgoing) {
             return;
         }
 
-        NetworkHandler::WebsocketOptions options;
+        NeoNet::WSOptions options;
         options.user_agent = "osu!";
         options.headers["x-mcosu-ver"] = BanchoState::neosu_version.toUtf8();
         options.headers["osu-token"] = auth_token;
@@ -178,7 +178,7 @@ void send_bancho_packet_ws(Packet outgoing) {
         websocket = new_websocket;
     }
 
-    if(websocket->status == NetworkHandler::WEBSOCKET_UNSUPPORTED) {
+    if(websocket->status == NeoNet::WSStatus::UNSUPPORTED) {
         // fallback to http!
         use_websockets = false;
         send_bancho_packet_http(outgoing);
@@ -322,7 +322,7 @@ void BanchoState::disconnect() {
         packet.write<u32>(4);
         packet.write<u32>(0);
 
-        NetworkHandler::RequestOptions options;
+        NeoNet::RequestOptions options;
         options.timeout = 5;
         options.connect_timeout = 5;
         options.user_agent = "osu!";
@@ -335,7 +335,7 @@ void BanchoState::disconnect() {
         auto query_url = fmt::format("{:s}c.{:s}/", scheme, BanchoState::endpoint);
 
         // use sync request for logout to ensure it completes
-        NetworkHandler::Response response = networkHandler->httpRequestSynchronous(query_url, options);
+        NeoNet::Response response = networkHandler->httpRequestSynchronous(query_url, options);
 
         free(packet.memory);
     } else if(BanchoState::is_logging_in()) {

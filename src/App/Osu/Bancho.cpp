@@ -793,7 +793,7 @@ void BanchoState::handle_packet(Packet &packet) {
                 }
 
                 // Submit map
-                NetworkHandler::RequestOptions options;
+                NeoNet::RequestOptions options;
                 options.timeout = 60;
                 options.connect_timeout = 5;
                 options.user_agent = "osu!";

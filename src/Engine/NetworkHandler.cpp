@@ -6,15 +6,27 @@
 #include "ConVar.h"
 #include "Timing.h"
 #include "Logging.h"
+#include "SyncJthread.h"
+#include "SyncCV.h"
 
 #include "curl_blob.h"
 
 #include "curl/curl.h"
 
 #include <utility>
+#include <queue>
+
+namespace NeoNet {
+
+WSInstance::~WSInstance() {
+    // This might be a bit mean to the server, not sending CLOSE message
+    // But we send LOGOUT packet on http anyway, so doesn't matter
+    curl_easy_cleanup(this->handle);
+    this->handle = nullptr;
+}
 
 // internal request structure
-struct NetworkHandler::NetworkRequest {
+struct Request {
     std::string url;
     AsyncCallback callback;
     RequestOptions options;
@@ -27,55 +39,100 @@ struct NetworkHandler::NetworkRequest {
     bool is_sync{false};
     void* sync_id{nullptr};
 
-    NetworkRequest(std::string_view url, AsyncCallback cb, RequestOptions opts)
+    Request(std::string_view url, AsyncCallback cb, RequestOptions opts)
         : url(url), callback(std::move(cb)), options(std::move(opts)) {}
 };
 
-NetworkHandler::NetworkHandler() {
-    // this needs to be called once to initialize curl on startup
-    curl_global_init(CURL_GLOBAL_DEFAULT);
+struct NetworkHandler::NetworkImpl {
+   private:
+    NOCOPY_NOMOVE(NetworkImpl)
+   public:
+    NetworkImpl() {
+        // this needs to be called once to initialize curl on startup
+        curl_global_init(CURL_GLOBAL_DEFAULT);
 
-    this->multi_handle = curl_multi_init();
-    if(!this->multi_handle) {
-        debugLog("ERROR: Failed to initialize curl multi handle!");
-        return;
-    }
-
-    // start network thread
-    this->network_thread = Sync::jthread([this](const Sync::stop_token &stoken) { this->threadLoopFunc(stoken); });
-
-    if(!this->network_thread.joinable()) {
-        debugLog("ERROR: Failed to create network thread!");
-    }
-}
-
-NetworkHandler::~NetworkHandler() {
-    this->network_thread = {};  // shut down the thread now
-
-    // cleanup any remaining requests
-    {
-        Sync::scoped_lock active_lock{this->active_requests_mutex};
-        for(auto& [handle, request] : this->active_requests) {
-            curl_multi_remove_handle(this->multi_handle, handle);
-            curl_easy_cleanup(handle);
-            if(request->headers_list) {
-                curl_slist_free_all(request->headers_list);
-            }
+        this->multi_handle = curl_multi_init();
+        if(!this->multi_handle) {
+            debugLog("ERROR: Failed to initialize curl multi handle!");
+            return;
         }
-        this->active_requests.clear();
 
-        Sync::scoped_lock completed_lock{this->completed_requests_mutex};
-        this->completed_requests.clear();
+        // start network thread
+        this->network_thread = Sync::jthread([this](const Sync::stop_token& stoken) { this->threadLoopFunc(stoken); });
+
+        if(!this->network_thread.joinable()) {
+            debugLog("ERROR: Failed to create network thread!");
+        }
     }
 
-    if(this->multi_handle) {
-        curl_multi_cleanup(this->multi_handle);
+    ~NetworkImpl() {
+        this->network_thread = {};  // shut down the thread now
+
+        // cleanup any remaining requests
+        {
+            Sync::scoped_lock active_lock{this->active_requests_mutex};
+            for(auto& [handle, request] : this->active_requests) {
+                curl_multi_remove_handle(this->multi_handle, handle);
+                curl_easy_cleanup(handle);
+                if(request->headers_list) {
+                    curl_slist_free_all(request->headers_list);
+                }
+            }
+            this->active_requests.clear();
+
+            Sync::scoped_lock completed_lock{this->completed_requests_mutex};
+            this->completed_requests.clear();
+        }
+
+        if(this->multi_handle) {
+            curl_multi_cleanup(this->multi_handle);
+        }
+
+        curl_global_cleanup();
     }
 
-    curl_global_cleanup();
-}
+    // request queuing
+    Sync::mutex request_queue_mutex;
+    Sync::condition_variable_any request_queue_cv;
+    std::queue<std::unique_ptr<Request>> pending_requests;
 
-void NetworkHandler::threadLoopFunc(const Sync::stop_token& stopToken) {
+    // active requests tracking
+    Sync::mutex active_requests_mutex;
+    std::unordered_map<CURL*, std::unique_ptr<Request>> active_requests;
+
+    // completed requests
+    Sync::mutex completed_requests_mutex;
+    std::vector<std::unique_ptr<Request>> completed_requests;
+
+    // sync request support
+    Sync::mutex sync_requests_mutex;
+    std::unordered_map<void*, Sync::condition_variable*> sync_request_cvs;
+    std::unordered_map<void*, Response> sync_responses;
+
+    // websockets
+    std::vector<std::shared_ptr<WSInstance>> active_websockets;
+
+    // curl_multi implementation
+    CURLM* multi_handle{nullptr};
+    Sync::jthread network_thread;
+
+    void processNewRequests();
+    void processCompletedRequests();
+
+    void setupCurlHandle(CURL* handle, Request* request);
+    static uSz headerCallback(char* buffer, uSz size, uSz nitems, void* userdata);
+    static uSz writeCallback(void* contents, uSz size, uSz nmemb, void* userp);
+    static i32 progressCallback(void* clientp, i64 dltotal, i64 dlnow, i64, i64);
+
+    // main async thread
+    void threadLoopFunc(const Sync::stop_token& stopToken);
+};
+
+// passthrough to implementation ctor/dtor
+NetworkHandler::NetworkHandler() : pImpl() {}
+NetworkHandler::~NetworkHandler() = default;
+
+void NetworkHandler::NetworkImpl::threadLoopFunc(const Sync::stop_token& stopToken) {
     McThread::set_current_thread_name(ULITERAL("net_manager"));
     McThread::set_current_thread_prio(McThread::Priority::NORMAL);  // reset priority
 
@@ -107,7 +164,7 @@ void NetworkHandler::threadLoopFunc(const Sync::stop_token& stopToken) {
     }
 }
 
-void NetworkHandler::processNewRequests() {
+void NetworkHandler::NetworkImpl::processNewRequests() {
     Sync::scoped_lock requests_lock{this->request_queue_mutex};
 
     while(!this->pending_requests.empty()) {
@@ -174,7 +231,7 @@ void NetworkHandler::processNewRequests() {
     }
 }
 
-void NetworkHandler::processCompletedRequests() {
+void NetworkHandler::NetworkImpl::processCompletedRequests() {
     CURLMsg* msg;
     i32 msgs_left;
 
@@ -223,8 +280,9 @@ void NetworkHandler::processCompletedRequests() {
     }
 }
 
-i32 NetworkHandler::progressCallback(void* clientp, i64 dltotal, i64 dlnow, i64 /*unused*/, i64 /*unused*/) {
-    auto* request = static_cast<NetworkRequest*>(clientp);
+i32 NetworkHandler::NetworkImpl::progressCallback(void* clientp, i64 dltotal, i64 dlnow, i64 /*unused*/,
+                                                  i64 /*unused*/) {
+    auto* request = static_cast<Request*>(clientp);
     if(request->options.progress_callback && dltotal > 0) {
         float progress = static_cast<float>(dlnow) / static_cast<float>(dltotal);
         request->options.progress_callback(progress);
@@ -232,7 +290,7 @@ i32 NetworkHandler::progressCallback(void* clientp, i64 dltotal, i64 dlnow, i64 
     return 0;
 }
 
-void NetworkHandler::setupCurlHandle(CURL* handle, NetworkRequest* request) {
+void NetworkHandler::NetworkImpl::setupCurlHandle(CURL* handle, Request* request) {
     curl_easy_setopt(handle, CURLOPT_VERBOSE, cv::debug_network.getVal<long>());
     curl_easy_setopt(handle, CURLOPT_URL, request->url.c_str());
     curl_easy_setopt(handle, CURLOPT_CONNECTTIMEOUT, request->options.connect_timeout);
@@ -301,15 +359,15 @@ void NetworkHandler::setupCurlHandle(CURL* handle, NetworkRequest* request) {
     }
 }
 
-size_t NetworkHandler::writeCallback(void* contents, size_t size, size_t nmemb, void* userp) {
-    auto* request = static_cast<NetworkRequest*>(userp);
+size_t NetworkHandler::NetworkImpl::writeCallback(void* contents, size_t size, size_t nmemb, void* userp) {
+    auto* request = static_cast<Request*>(userp);
     size_t real_size = size * nmemb;
     request->response.body.append(static_cast<char*>(contents), real_size);
     return real_size;
 }
 
-size_t NetworkHandler::headerCallback(char* buffer, size_t size, size_t nitems, void* userdata) {
-    auto* request = static_cast<NetworkRequest*>(userdata);
+size_t NetworkHandler::NetworkImpl::headerCallback(char* buffer, size_t size, size_t nitems, void* userdata) {
+    auto* request = static_cast<Request*>(userdata);
     size_t real_size = size * nitems;
 
     std::string header(buffer, real_size);
@@ -334,11 +392,11 @@ size_t NetworkHandler::headerCallback(char* buffer, size_t size, size_t nitems, 
 // Callbacks will all be run on the main thread, in engine->update()
 void NetworkHandler::update() {
     {
-        std::vector<std::unique_ptr<NetworkRequest>> responses_to_handle;
+        std::vector<std::unique_ptr<Request>> responses_to_handle;
         {
-            Sync::scoped_lock lock{this->completed_requests_mutex};
-            responses_to_handle = std::move(this->completed_requests);
-            this->completed_requests.clear();
+            Sync::scoped_lock lock{pImpl->completed_requests_mutex};
+            responses_to_handle = std::move(pImpl->completed_requests);
+            pImpl->completed_requests.clear();
         }
         for(auto& request : responses_to_handle) {
             assert(request && "null request in completed_requests");
@@ -348,7 +406,7 @@ void NetworkHandler::update() {
     }
 
     // websocket recv
-    for(auto& ws : this->active_websockets) {
+    for(auto& ws : pImpl->active_websockets) {
         u64 bytes_available = ws->max_recv - (ws->in.size() + ws->in_partial.size());
 
         CURLcode res = CURLE_OK;
@@ -371,17 +429,17 @@ void NetworkHandler::update() {
                 // nothing to do
             } else if(res == CURLE_GOT_NOTHING) {
                 debugLog("Websocket connection closed.");
-                ws->status = WEBSOCKET_DISCONNECTED;
+                ws->status = WSStatus::DISCONNECTED;
             } else {
                 debugLog("Failed to receive data on websocket: {}", curl_easy_strerror(res));
-                ws->status = WEBSOCKET_DISCONNECTED;
+                ws->status = WSStatus::DISCONNECTED;
             }
         }
     }
-    std::erase_if(this->active_websockets, [](const auto& ws) { return ws->status != WEBSOCKET_CONNECTED; });
+    std::erase_if(pImpl->active_websockets, [](const auto& ws) { return ws->status != WSStatus::CONNECTED; });
 
     // websocket send
-    for(auto& ws : this->active_websockets) {
+    for(auto& ws : pImpl->active_websockets) {
         CURLcode res = CURLE_OK;
         while(res == CURLE_OK && !ws->out.empty()) {
             size_t nb_sent = 0;
@@ -391,31 +449,24 @@ void NetworkHandler::update() {
 
         if(res != CURLE_AGAIN && !ws->out.empty()) {
             debugLog("Failed to send data on websocket: {}", curl_easy_strerror(res));
-            ws->status = WEBSOCKET_DISCONNECTED;
+            ws->status = WSStatus::DISCONNECTED;
         }
     }
-    std::erase_if(this->active_websockets, [](const auto& ws) { return ws->status != WEBSOCKET_CONNECTED; });
+    std::erase_if(pImpl->active_websockets, [](const auto& ws) { return ws->status != WSStatus::CONNECTED; });
 }
 
 void NetworkHandler::httpRequestAsync(std::string_view url, AsyncCallback callback, RequestOptions options) {
-    auto request = std::make_unique<NetworkRequest>(url, std::move(callback), std::move(options));
+    auto request = std::make_unique<Request>(url, std::move(callback), std::move(options));
 
-    Sync::scoped_lock lock{this->request_queue_mutex};
-    this->pending_requests.push(std::move(request));
-    this->request_queue_cv.notify_one();
+    Sync::scoped_lock lock{pImpl->request_queue_mutex};
+    pImpl->pending_requests.push(std::move(request));
+    pImpl->request_queue_cv.notify_one();
 }
 
-NetworkHandler::Websocket::~Websocket() {
-    // This might be a bit mean to the server, not sending CLOSE message
-    // But we send LOGOUT packet on http anyway, so doesn't matter
-    curl_easy_cleanup(this->handle);
-    this->handle = nullptr;
-}
-
-std::shared_ptr<NetworkHandler::Websocket> NetworkHandler::initWebsocket(const WebsocketOptions& options) {
+std::shared_ptr<WSInstance> NetworkHandler::initWebsocket(const WSOptions& options) {
     assert(options.url.starts_with("ws://") || options.url.starts_with("wss://"));
 
-    auto websocket = std::make_shared<Websocket>();
+    auto websocket = std::make_shared<WSInstance>();
     websocket->max_recv = options.max_recv;
     websocket->time_created = engine->getTime();
 
@@ -428,13 +479,13 @@ std::shared_ptr<NetworkHandler::Websocket> NetworkHandler::initWebsocket(const W
 
     this->httpRequestAsync(
         options.url,
-        [this, websocket](const NetworkHandler::Response& response) {
+        [this, websocket](const Response& response) {
             if(response.success) {
                 websocket->handle = response.easy_handle;
-                websocket->status = WEBSOCKET_CONNECTED;
-                this->active_websockets.push_back(websocket);
+                websocket->status = WSStatus::CONNECTED;
+                pImpl->active_websockets.push_back(websocket);
             } else {
-                websocket->status = WEBSOCKET_UNSUPPORTED;
+                websocket->status = WSStatus::UNSUPPORTED;
             }
         },
         httpOptions);
@@ -443,7 +494,7 @@ std::shared_ptr<NetworkHandler::Websocket> NetworkHandler::initWebsocket(const W
 }
 
 // synchronous API (blocking)
-NetworkHandler::Response NetworkHandler::httpRequestSynchronous(std::string_view url, RequestOptions options) {
+Response NetworkHandler::httpRequestSynchronous(std::string_view url, RequestOptions options) {
     Response result;
     Sync::condition_variable cv;
     Sync::mutex cv_mutex;
@@ -452,36 +503,37 @@ NetworkHandler::Response NetworkHandler::httpRequestSynchronous(std::string_view
 
     // register sync request
     {
-        Sync::scoped_lock lock{this->sync_requests_mutex};
-        this->sync_request_cvs[sync_id] = &cv;
+        Sync::scoped_lock lock{pImpl->sync_requests_mutex};
+        pImpl->sync_request_cvs[sync_id] = &cv;
     }
 
     // create sync request
-    auto request = std::make_unique<NetworkRequest>(url, [](const Response&) {}, std::move(options));
+    auto request = std::make_unique<Request>(url, [](const Response&) {}, std::move(options));
     request->is_sync = true;
     request->sync_id = sync_id;
 
     // submit request
     {
-        Sync::scoped_lock lock{this->request_queue_mutex};
-        this->pending_requests.push(std::move(request));
-        this->request_queue_cv.notify_one();
+        Sync::scoped_lock lock{pImpl->request_queue_mutex};
+        pImpl->pending_requests.push(std::move(request));
+        pImpl->request_queue_cv.notify_one();
     }
 
     // wait for completion
     Sync::unique_lock lock{cv_mutex};
     cv.wait(lock, [&] {
-        Sync::scoped_lock sync_lock{this->sync_requests_mutex};
-        return this->sync_responses.find(sync_id) != this->sync_responses.end();
+        Sync::scoped_lock sync_lock{pImpl->sync_requests_mutex};
+        return pImpl->sync_responses.find(sync_id) != pImpl->sync_responses.end();
     });
 
     // get result and cleanup
     {
-        Sync::scoped_lock sync_lock{this->sync_requests_mutex};
-        result = this->sync_responses[sync_id];
-        this->sync_responses.erase(sync_id);
-        this->sync_request_cvs.erase(sync_id);
+        Sync::scoped_lock sync_lock{pImpl->sync_requests_mutex};
+        result = pImpl->sync_responses[sync_id];
+        pImpl->sync_responses.erase(sync_id);
+        pImpl->sync_request_cvs.erase(sync_id);
     }
 
     return result;
 }
+}  // namespace NeoNet

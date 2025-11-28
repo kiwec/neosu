@@ -32,7 +32,7 @@ void handle_neosu_url(const char *url) {
         auto proof = env->urlEncode(crypto::conv::encode64(BanchoState::oauth_verifier));
         auto url = fmt::format("https://{}/connect/finish?code={}&proof={}", endpoint, code, proof);
 
-        NetworkHandler::RequestOptions options;
+        NeoNet::RequestOptions options;
         options.timeout = 30;
         options.connect_timeout = 5;
         options.user_agent = BanchoState::user_agent.toUtf8();
@@ -40,7 +40,7 @@ void handle_neosu_url(const char *url) {
 
         networkHandler->httpRequestAsync(
             url,
-            [](NetworkHandler::Response response) {
+            [](NeoNet::Response response) {
                 if(response.success) {
                     cv::mp_oauth_token.setValue(response.body);
                     BanchoState::reconnect();

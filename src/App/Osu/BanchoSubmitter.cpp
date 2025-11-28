@@ -26,7 +26,7 @@ void submit_score(FinishedScore score) {
     std::array<u8, 32> iv;
     crypto::rng::get_rand(iv);
 
-    NetworkHandler::RequestOptions options;
+    NeoNet::RequestOptions options;
     options.timeout = 60;
     options.connect_timeout = 5;
     options.user_agent = "osu!";
@@ -196,7 +196,7 @@ void submit_score(FinishedScore score) {
     auto url = fmt::format("{}osu.{}/web/osu-submit-modular-selector.php", scheme, BanchoState::endpoint);
     networkHandler->httpRequestAsync(
         url,
-        [func = __FUNCTION__](NetworkHandler::Response response) {
+        [func = __FUNCTION__](NeoNet::Response response) {
             if(response.success) {
                 // TODO: handle success (pp, etc + error codes)
                 debugLogLambda("Score submit result: {}", response.body);

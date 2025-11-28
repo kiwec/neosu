@@ -24,7 +24,12 @@ class Keyboard;
 class McFont;
 class InputDevice;
 class SoundEngine;
+
+namespace NeoNet {
 class NetworkHandler;
+}
+
+using NeoNet::NetworkHandler;
 class ResourceManager;
 class AnimationHandler;
 class AsyncIOHandler;
@@ -114,8 +119,8 @@ class Engine final : public KeyboardListener {
     }
     [[nodiscard]] constexpr CBaseUIContainer *getGUI() const { return this->guiContainer; }
 
-    [[nodiscard]] constexpr McFont *getDefaultFont() const {return this->defaultFont; }
-    [[nodiscard]] constexpr McFont *getConsoleFont() const {return this->consoleFont; }
+    [[nodiscard]] constexpr McFont *getDefaultFont() const { return this->defaultFont; }
+    [[nodiscard]] constexpr McFont *getConsoleFont() const { return this->consoleFont; }
 
    private:
     void runtime_assert(bool cond, const char *reason);
