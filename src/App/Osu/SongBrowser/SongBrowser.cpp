@@ -1279,34 +1279,36 @@ void SongBrowser::onDifficultySelected(DatabaseBeatmap *map, bool play) {
     osu->getMapInterface()->selectBeatmap(map);
 
     // update song info
-    this->songInfo->setFromBeatmap(map);
+    if(map) {
+        this->songInfo->setFromBeatmap(map);
 
-    // start playing
-    if(play) {
-        if(BanchoState::is_in_a_multi_room()) {
-            BanchoState::room.map_name =
-                UString::format("%s - %s [%s]", map->getArtistLatin().c_str(), map->getTitleLatin().c_str(),
-                                map->getDifficultyName().c_str());
-            BanchoState::room.map_md5 = map->getMD5();
-            BanchoState::room.map_id = map->getID();
+        // start playing
+        if(play) {
+            if(BanchoState::is_in_a_multi_room()) {
+                BanchoState::room.map_name =
+                    UString::format("%s - %s [%s]", map->getArtistLatin().c_str(), map->getTitleLatin().c_str(),
+                                    map->getDifficultyName().c_str());
+                BanchoState::room.map_md5 = map->getMD5();
+                BanchoState::room.map_id = map->getID();
 
-            Packet packet;
-            packet.id = MATCH_CHANGE_SETTINGS;
-            BanchoState::room.pack(packet);
-            BANCHO::Net::send_packet(packet);
+                Packet packet;
+                packet.id = MATCH_CHANGE_SETTINGS;
+                BanchoState::room.pack(packet);
+                BANCHO::Net::send_packet(packet);
 
-            osu->getRoom()->on_map_change();
+                osu->getRoom()->on_map_change();
 
-            this->setVisible(false);
-        } else {
-            // CTRL + click = auto
-            if(keyboard->isControlDown()) {
-                osu->bModAutoTemp = true;
-                osu->getModSelector()->enableAuto();
-            }
-
-            if(osu->getMapInterface()->play()) {
                 this->setVisible(false);
+            } else {
+                // CTRL + click = auto
+                if(keyboard->isControlDown()) {
+                    osu->bModAutoTemp = true;
+                    osu->getModSelector()->enableAuto();
+                }
+
+                if(osu->getMapInterface()->play()) {
+                    this->setVisible(false);
+                }
             }
         }
     }
@@ -1650,8 +1652,7 @@ void SongBrowser::rebuildSongButtons() {
         CarouselButton *button = visibleSongButton;
         button->resetAnimations();
 
-        if(!(button->isSelected() && button->isHiddenIfSelected()))
-            this->carousel->container->addBaseUIElement(button);
+        if(!(button->isSelected() && button->isHiddenIfSelected())) this->carousel->container->addBaseUIElement(button);
 
         // children
         if(button->isSelected()) {
@@ -1716,8 +1717,7 @@ void SongBrowser::updateSongButtonLayout() {
     // themselves
 
     // all elements must be CarouselButtons, at least
-    const auto &elements{
-        reinterpret_cast<const std::vector<CarouselButton *> &>(this->carousel->container->vElements)};
+    const auto &elements{reinterpret_cast<const std::vector<CarouselButton *> &>(this->carousel->container->vElements)};
 
     int yCounter = this->carousel->getSize().y / 4;
     if(elements.size() <= 1) yCounter = this->carousel->getSize().y / 2;
@@ -2339,13 +2339,13 @@ void SongBrowser::rebuildScoreButtons() {
     // and build the ui
     if(numScores < 1) {
         if(validBeatmap && is_online) {
-            this->scoreBrowser->container->addBaseUIElement(
-                this->scoreBrowserScoresStillLoadingElement, this->scoreBrowserScoresStillLoadingElement->getRelPos().x,
-                this->scoreBrowserScoresStillLoadingElement->getRelPos().y);
+            this->scoreBrowser->container->addBaseUIElement(this->scoreBrowserScoresStillLoadingElement,
+                                                            this->scoreBrowserScoresStillLoadingElement->getRelPos().x,
+                                                            this->scoreBrowserScoresStillLoadingElement->getRelPos().y);
         } else {
-            this->scoreBrowser->container->addBaseUIElement(
-                this->scoreBrowserNoRecordsYetElement, this->scoreBrowserScoresStillLoadingElement->getRelPos().x,
-                this->scoreBrowserScoresStillLoadingElement->getRelPos().y);
+            this->scoreBrowser->container->addBaseUIElement(this->scoreBrowserNoRecordsYetElement,
+                                                            this->scoreBrowserScoresStillLoadingElement->getRelPos().x,
+                                                            this->scoreBrowserScoresStillLoadingElement->getRelPos().y);
         }
     } else {
         // build
@@ -3345,8 +3345,7 @@ void SongBrowser::selectSongButton(CarouselButton *songButton) {
 
 void SongBrowser::selectRandomBeatmap() {
     // filter songbuttons or independent diffs
-    const auto &elements{
-        reinterpret_cast<const std::vector<CarouselButton *> &>(this->carousel->container->vElements)};
+    const auto &elements{reinterpret_cast<const std::vector<CarouselButton *> &>(this->carousel->container->vElements)};
 
     std::vector<SongButton *> songButtons;
     for(auto element : elements) {
@@ -3423,8 +3422,7 @@ void SongBrowser::selectPreviousRandomBeatmap() {
 }
 
 void SongBrowser::playSelectedDifficulty() {
-    const auto &elements{
-        reinterpret_cast<const std::vector<CarouselButton *> &>(this->carousel->container->vElements)};
+    const auto &elements{reinterpret_cast<const std::vector<CarouselButton *> &>(this->carousel->container->vElements)};
 
     for(auto element : elements) {
         auto *songDifficultyButton = element->as<SongDifficultyButton>();

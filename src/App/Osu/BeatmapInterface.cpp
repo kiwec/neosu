@@ -2346,14 +2346,12 @@ void BeatmapInterface::update() {
     }
 
     // notify server once we've finished loading
-    if(BanchoState::is_playing_a_multi_map()) {
-        if(!this->player_loaded && !this->isActuallyLoading()) {
-            this->player_loaded = true;
+    if(!this->player_loaded && BanchoState::is_playing_a_multi_map() && !this->isActuallyLoading()) {
+        this->player_loaded = true;
 
-            Packet packet;
-            packet.id = MATCH_LOAD_COMPLETE;
-            BANCHO::Net::send_packet(packet);
-        }
+        Packet packet;
+        packet.id = MATCH_LOAD_COMPLETE;
+        BANCHO::Net::send_packet(packet);
     }
 
     if(this->isLoading() || was_preloading) {

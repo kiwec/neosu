@@ -332,6 +332,7 @@ void PauseMenu::onResolutionChange(vec2 newResolution) {
 }
 
 CBaseUIContainer *PauseMenu::setVisible(bool visible) {
+    const bool wasVisible = this->bVisible;
     this->bVisible = visible;
 
     const bool can_pause = !cv::mod_no_pausing.getBool() && !BanchoState::is_playing_a_multi_map();
@@ -399,9 +400,11 @@ CBaseUIContainer *PauseMenu::setVisible(bool visible) {
     osu->updateConfineCursor();
     osu->updateWindowsKeyDisable();
 
-    anim->moveQuadOut(&this->fDimAnim, (this->bVisible ? 1.0f : 0.0f),
-                      cv::pause_anim_duration.getFloat() * (this->bVisible ? 1.0f - this->fDimAnim : this->fDimAnim),
-                      true);
+    if(this->bVisible != wasVisible) {
+        anim->moveQuadOut(
+            &this->fDimAnim, (this->bVisible ? 1.0f : 0.0f),
+            cv::pause_anim_duration.getFloat() * (this->bVisible ? 1.0f - this->fDimAnim : this->fDimAnim), true);
+    }
     osu->getChat()->updateVisibility();
     return this;
 }
