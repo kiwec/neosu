@@ -3,6 +3,7 @@
 
 #include "noinclude.h"
 #include "types.h"
+#include "templates.h"
 
 #include <filesystem>
 #include <functional>
@@ -24,7 +25,7 @@ struct FileChangeEvent {
 
 using FileChangeCallback = std::function<void(FileChangeEvent)>;
 
-class DirWatcherImpl;
+struct DirWatcherImpl;
 class DirectoryWatcher {
     NOCOPY_NOMOVE(DirectoryWatcher);
 
@@ -42,7 +43,7 @@ class DirectoryWatcher {
     // to avoid race condition issues.
     void update();
 
-    std::unique_ptr<DirWatcherImpl> pImpl;
+    StaticPImpl<DirWatcherImpl, 160> implementation;
 };
 
 extern std::unique_ptr<DirectoryWatcher> directoryWatcher;

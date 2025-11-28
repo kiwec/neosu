@@ -9,21 +9,52 @@
 #include "UString.h"
 
 #include <algorithm>
+#include <utility>
 #include <vector>
 #include <atomic>
 
+#ifdef MCENGINE_PLATFORM_WINDOWS
+#include "WinDebloatDefs.h"
+#include <windows.h>
+#endif
+
 namespace fs = std::filesystem;
-// Base class
-class DirWatcherImpl {
+
+// The Windows implementation does not poll, only wakes up when files in folders on disk have changed
+struct DirWatcherImpl {
+   private:
     NOCOPY_NOMOVE(DirWatcherImpl)
    public:
-    DirWatcherImpl() = default;
-    virtual ~DirWatcherImpl() = default;
-    virtual void watch_directory(std::string path, FileChangeCallback cb) = 0;
-    virtual void stop_watching(std::string path) = 0;
-    virtual void update() = 0;
+    DirWatcherImpl() {
+        this->init_wakeup_notification();
+        this->thr = Sync::jthread([this](const Sync::stop_token& stoken) { return this->worker_loop(stoken); });
+    }
+    ~DirWatcherImpl() { this->destroy_wakeup_notification(); }
 
-   protected:
+    void watch_directory(std::string path, FileChangeCallback cb) {
+        Sync::scoped_lock lock(this->directories_mtx);
+        this->directories_to_add.emplace_back(std::move(path), std::move(cb));
+        this->notify_thread();
+    }
+
+    void stop_watching(std::string path) {
+        Sync::scoped_lock lock(this->directories_mtx);
+        this->directories_to_remove.push_back(std::move(path));
+        this->notify_thread();
+    }
+
+    void update() {
+        if(this->finished_events_count.load(std::memory_order_acquire) == 0) return;
+
+        Sync::scoped_lock lock(this->finished_events_mtx);
+        for(const auto& [cb, event] : this->finished_events) {
+            cb(event);
+        }
+        this->finished_events.clear();
+        this->finished_events_count.store(0, std::memory_order_release);
+    }
+
+   private:
     struct UnconfirmedEvent {
         UnconfirmedEvent() = default;
         UnconfirmedEvent(FileChangeEvent fevent) : event(std::move(fevent)) {}
@@ -40,48 +71,17 @@ class DirWatcherImpl {
     std::atomic<uSz> finished_events_count{0};
 
     Sync::jthread thr;
-};
 
 #ifdef MCENGINE_PLATFORM_WINDOWS
-
-#include "WinDebloatDefs.h"
-#include <windows.h>
-
-// The Windows implementation does not poll, only wakes up when files in folders on disk have changed
-class WatcherImplWin : public DirWatcherImpl {
-    NOCOPY_NOMOVE(WatcherImplWin)
-   public:
-    WatcherImplWin() : DirWatcherImpl(), wakeup_event(CreateEventW(nullptr, FALSE, FALSE, nullptr)) {
-        assert(wakeup_event != INVALID_HANDLE_VALUE);
-        this->thr = Sync::jthread([this](const Sync::stop_token& stoken) { return this->worker_loop(stoken); });
-    }
-    ~WatcherImplWin() override { CloseHandle(this->wakeup_event); }
-
-    void watch_directory(std::string path, FileChangeCallback cb) override {
-        Sync::scoped_lock lock(this->directories_mtx);
-        this->directories_to_add.emplace_back(std::move(path), std::move(cb));
-        SetEvent(this->wakeup_event);
-    }
-
-    void stop_watching(std::string path) override {
-        Sync::scoped_lock lock(this->directories_mtx);
-        this->directories_to_remove.push_back(std::move(path));
-        SetEvent(this->wakeup_event);
-    }
-
-    void update() override {
-        if(this->finished_events_count.load(std::memory_order_acquire) == 0) return;
-
-        Sync::scoped_lock lock(this->finished_events_mtx);
-        for(const auto& [cb, event] : this->finished_events) {
-            cb(event);
-        }
-        this->finished_events.clear();
-        this->finished_events_count.store(0, std::memory_order_release);
-    }
-
    private:
     HANDLE wakeup_event{INVALID_HANDLE_VALUE};
+
+    void init_wakeup_notification() {
+        this->wakeup_event = CreateEventW(nullptr, FALSE, FALSE, nullptr);
+        assert(wakeup_event != INVALID_HANDLE_VALUE);
+    }
+    void destroy_wakeup_notification() { CloseHandle(this->wakeup_event); }
+    void notify_thread() { SetEvent(this->wakeup_event); }
 
     struct DirectoryState {
         DirectoryState(FileChangeCallback cb) : cb(std::move(cb)) {}
@@ -372,42 +372,15 @@ class WatcherImplWin : public DirWatcherImpl {
 
         CloseHandle(stop_event);
     }
-};
-
-#endif  // MCENGINE_PLATFORM_WINDOWS
-
-// Generic implementation
-
-class WatcherImplGeneric : public DirWatcherImpl {
-    NOCOPY_NOMOVE(WatcherImplGeneric)
-   public:
-    WatcherImplGeneric() : DirWatcherImpl() {
-        this->thr = Sync::jthread([this](const Sync::stop_token& stoken) { return this->worker_loop(stoken); });
-    }
-    ~WatcherImplGeneric() override = default;
-
-    void watch_directory(std::string path, FileChangeCallback cb) override {
-        Sync::scoped_lock lock(this->directories_mtx);
-        this->directories_to_add.emplace_back(std::move(path), std::move(cb));
-    }
-
-    void stop_watching(std::string path) override {
-        Sync::scoped_lock lock(this->directories_mtx);
-        this->directories_to_remove.push_back(std::move(path));
-    }
-
-    void update() override {
-        if(this->finished_events_count.load(std::memory_order_acquire) == 0) return;
-
-        Sync::scoped_lock lock(this->finished_events_mtx);
-        for(const auto& [cb, event] : this->finished_events) {
-            cb(event);
-        }
-        this->finished_events.clear();
-        this->finished_events_count.store(0, std::memory_order_release);
-    }
-
+#else
    private:
+    // Generic implementation (polling)
+
+    // These currently don't do anything
+    void init_wakeup_notification() {}
+    void destroy_wakeup_notification() {}
+    void notify_thread() {}
+
     struct DirectoryState {
         DirectoryState(FileChangeCallback cb) : cb(std::move(cb)) {}
         FileChangeCallback cb;
@@ -416,7 +389,6 @@ class WatcherImplGeneric : public DirWatcherImpl {
         std::unordered_map<std::string, fs::file_time_type> files{};
     };
 
-    // Generic implementation (polling)
     void worker_loop(const Sync::stop_token& stoken) {
         McThread::set_current_thread_name(ULITERAL("dir_watcher"));
         McThread::set_current_thread_prio(McThread::Priority::LOW);
@@ -552,22 +524,17 @@ class WatcherImplGeneric : public DirWatcherImpl {
             Timing::sleepMS(100);
         }
     }
+#endif
 };
 
-DirectoryWatcher::DirectoryWatcher() {
-#ifdef MCENGINE_PLATFORM_WINDOWS
-    pImpl = std::make_unique<WatcherImplWin>();
-#else
-    pImpl = std::make_unique<WatcherImplGeneric>();
-#endif
-}
+DirectoryWatcher::DirectoryWatcher() : implementation() {}
 
 DirectoryWatcher::~DirectoryWatcher() = default;
 
 void DirectoryWatcher::watch_directory(std::string path, FileChangeCallback cb) {
-    return pImpl->watch_directory(std::move(path), std::move(cb));
+    return implementation->watch_directory(std::move(path), std::move(cb));
 }
 
-void DirectoryWatcher::stop_watching(std::string path) { return pImpl->stop_watching(std::move(path)); }
+void DirectoryWatcher::stop_watching(std::string path) { return implementation->stop_watching(std::move(path)); }
 
-void DirectoryWatcher::update() { return pImpl->update(); }
+void DirectoryWatcher::update() { return implementation->update(); }
