@@ -328,10 +328,17 @@ lbq := '('
 rb := )
 rbq := ')'
 
+if MACOS_PLATFORM
+CURL_INCLUDEDIR := /opt/homebrew/opt/curl/include
+CURL_LIBDIR := /opt/homebrew/opt/curl/lib
+CURL_CFLAGS += -I$(CURL_INCLUDEDIR) -DWITH_GZFILEOP
+CURL_LIBS += -L$(CURL_LIBDIR) -lcurl
+else
 CURL_INCLUDEDIR := $(DEPS_CACHE)/curl-$(CURL_VERSION)-2/$(SYSNAME)$(host_cpu)/include
 CURL_LIBDIR := $(DEPS_CACHE)/curl-$(CURL_VERSION)-2/$(SYSNAME)$(host_cpu)/lib
 CURL_CFLAGS += -I$(CURL_INCLUDEDIR) -DWITH_GZFILEOP -DCURL_STATICLIB
 CURL_LIBS += -L$(CURL_LIBDIR) $(shell find $(CURL_LIBDIR) -mindepth 1 -maxdepth 1 -type f -not $(lbq) -name '*dll*' $(rbq) -execdir printf '%s ' '{''}' ';' | $(SED) -e 's|./lib|-l|g' -e 's|\.a||g' -e 's|-lcurl|-l:libcurl.a|g')
+endif
 
 PKG_CONFIG_PLUS_BUNDLED_OSSL += --with-path=$(CURL_LIBDIR)/pkgconfig
 OPENSSL_CFLAGS += -I$(CURL_INCLUDEDIR) $(shell $(PKG_CONFIG_PLUS_BUNDLED_OSSL) --cflags openssl)
@@ -345,29 +352,22 @@ endif
 $(DEPS_PREFIX)/curl-$(CURL_VERSION)-2.built: $(DEPS_CACHE)/curl-$(CURL_VERSION)-2-windows-binary.source
 	$(MKDIR_P) $(DEPS_PREFIX)
 	touch $@
-else
-if LINUX_PLATFORM
+endif # WIN_PLATFORM
 
+if LINUX_PLATFORM
 CURL_LIBS += -ldl -pthread
 $(DEPS_PREFIX)/curl-$(CURL_VERSION)-2.built: $(DEPS_CACHE)/curl-$(CURL_VERSION)-2-linux-binary.source
 	$(MKDIR_P) $(DEPS_PREFIX)
 	touch $@
-else # MACOS_PLATFORM
-
-CURL_LIBS += -pthread
-$(DEPS_PREFIX)/curl-$(CURL_VERSION).built:
-	$(MKDIR_P) $(DEPS_PREFIX)
-	$(MKDIR_P) $(DEPS_CACHE)/curl-$(CURL_VERSION)/$(SYSNAME)$(host_cpu)/lib
-	$(MKDIR_P) $(DEPS_CACHE)/curl-$(CURL_VERSION)/$(SYSNAME)$(host_cpu)/include
-	touch $@
 endif # LINUX_PLATFORM
-endif # WIN_PLATFORM
-else # from host
-CURL_CFLAGS += $(OPENSSL_CFLAGS)
-CURL_LIBS += $(OPENSSL_LIBS)
+
+if MACOS_PLATFORM
+CURL_LIBS += -pthread
 $(DEPS_PREFIX)/curl-$(CURL_VERSION)-2.built:
 	$(MKDIR_P) $(DEPS_PREFIX)
 	touch $@
+endif # MACOS_PLATFORM
+
 endif # BUILD_CURL
 
 if BUILD_MIMALLOC
@@ -1132,12 +1132,17 @@ neosu_CXXFLAGS := \
 	$(NEOSU_CXXFLAGS) \
 	$(CXXFLAGS_EXTRA)
 
-# TODO: kiwec removed stuff he probably shouldn't have
-
+if !MACOS_PLATFORM
 # Wl,--start-group with no --end-group is a stupid hack.
+RPATH_FIX := \
+	-Wl,-rpath='$$ORIGIN/lib',-rpath='$$ORIGIN' \
+	-Wl,--start-group
+endif
+
 neosu_LDFLAGS := \
 	$(MIMALLOC_OBJ) \
 	$(MIMALLOC_DYNAMIC_LIBS) \
+	$(RPATH_FIX) \
 	$(CURL_LIBS) \
 	$(SDL3_LIBS) \
 	$(AUDIO_LIBS) \
