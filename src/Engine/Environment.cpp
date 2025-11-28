@@ -130,10 +130,13 @@ Environment::Environment(const std::unordered_map<std::string, std::optional<std
 }
 
 Environment::~Environment() {
-    for(auto &[_, sdl_cur] : m_mCursorIcons) {
-        SDL_DestroyCursor(sdl_cur);
+    for(auto &sdl_cur : m_mCursorIcons) {
+        if(sdl_cur) {
+            SDL_DestroyCursor(sdl_cur);
+            sdl_cur = nullptr;
+        }
     }
-    m_mCursorIcons.clear();
+    m_mCursorIcons = {};
     env = nullptr;
 }
 
@@ -814,7 +817,7 @@ vec2 Environment::getWindowSize() const {
     return m_vLastKnownWindowSize;
 }
 
-const std::map<unsigned int, McRect> &Environment::getMonitors() {
+const std::unordered_map<unsigned int, McRect> &Environment::getMonitors() {
     if(m_mMonitors.size() < 1)  // lazy init
         initMonitors();
     return m_mMonitors;
@@ -864,10 +867,10 @@ int Environment::getDPI() const {
 }
 
 void Environment::setCursor(CURSORTYPE cur) {
-    if(m_mCursorIcons.empty()) initCursors();
-    if(m_cursorType != cur) {
+    if(!m_mCursorIcons[0]) initCursors();
+    if(m_cursorType != cur && (size_t)cur > (size_t)0 && cur < CURSORTYPE::CURSORTYPE_MAX) {
         m_cursorType = cur;
-        SDL_SetCursor(m_mCursorIcons.at(m_cursorType));  // does not make visible if the cursor isn't visible
+        SDL_SetCursor(m_mCursorIcons[(size_t)m_cursorType]);  // does not make visible if the cursor isn't visible
     }
 }
 
@@ -1046,15 +1049,15 @@ std::pair<vec2, vec2> Environment::consumeMousePositionCache() {
 }
 
 void Environment::initCursors() {
-    m_mCursorIcons = {
-        {CURSORTYPE::CURSOR_NORMAL, SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_DEFAULT)},
-        {CURSORTYPE::CURSOR_WAIT, SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_WAIT)},
-        {CURSORTYPE::CURSOR_SIZE_H, SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_EW_RESIZE)},
-        {CURSORTYPE::CURSOR_SIZE_V, SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_NS_RESIZE)},
-        {CURSORTYPE::CURSOR_SIZE_HV, SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_NESW_RESIZE)},
-        {CURSORTYPE::CURSOR_SIZE_VH, SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_NWSE_RESIZE)},
-        {CURSORTYPE::CURSOR_TEXT, SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_TEXT)},
-    };
+    m_mCursorIcons = {{
+        SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_DEFAULT),     /* CURSOR_NORMAL */
+        SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_WAIT),        /* CURSOR_WAIT */
+        SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_EW_RESIZE),   /* CURSOR_SIZE_H */
+        SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_NS_RESIZE),   /* CURSOR_SIZE_V */
+        SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_NESW_RESIZE), /* CURSOR_SIZE_HV */
+        SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_NWSE_RESIZE), /* CURSOR_SIZE_VH */
+        SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_TEXT),        /* CURSOR_TEXT */
+    }};
 }
 
 void Environment::initMonitors(bool force) const {

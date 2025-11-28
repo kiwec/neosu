@@ -8,7 +8,7 @@
 #include <string>
 #include <string_view>
 #include <functional>
-#include <map>
+#include <unordered_map>
 #include <memory>
 #include <queue>
 
@@ -31,7 +31,7 @@ class NetworkHandler {
 
     struct WebsocketOptions {
         std::string url;
-        std::map<std::string, std::string> headers;
+        std::unordered_map<std::string, std::string> headers;
         std::string user_agent;
         long timeout{5};
         long connect_timeout{5};
@@ -74,7 +74,7 @@ class NetworkHandler {
 
        public:
         RequestOptions() noexcept { ; }  // = default breaks clang
-        std::map<std::string, std::string> headers;
+        std::unordered_map<std::string, std::string> headers;
         std::string post_data;
         std::string user_agent;
         std::vector<MimePart> mime_parts;
@@ -98,7 +98,7 @@ class NetworkHandler {
        public:
         long response_code{0};
         std::string body;
-        std::map<std::string, std::string> headers;
+        std::unordered_map<std::string, std::string> headers;
         bool success{false};
     };
 
@@ -126,7 +126,7 @@ class NetworkHandler {
 
     // active requests tracking
     Sync::mutex active_requests_mutex;
-    std::map<CURL*, std::unique_ptr<NetworkRequest>> active_requests;
+    std::unordered_map<CURL*, std::unique_ptr<NetworkRequest>> active_requests;
 
     // completed requests
     Sync::mutex completed_requests_mutex;
@@ -134,8 +134,8 @@ class NetworkHandler {
 
     // sync request support
     Sync::mutex sync_requests_mutex;
-    std::map<void*, Sync::condition_variable*> sync_request_cvs;
-    std::map<void*, Response> sync_responses;
+    std::unordered_map<void*, Sync::condition_variable*> sync_request_cvs;
+    std::unordered_map<void*, Response> sync_responses;
 
     // websockets
     std::vector<std::shared_ptr<Websocket>> active_websockets;

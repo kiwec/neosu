@@ -11,7 +11,8 @@ enum class CURSORTYPE : uint8_t {
     CURSOR_SIZE_V,
     CURSOR_SIZE_HV,
     CURSOR_SIZE_VH,
-    CURSOR_TEXT
+    CURSOR_TEXT,
+    CURSORTYPE_MAX
 };
 
 #endif

@@ -195,7 +195,7 @@ class Environment {
     [[nodiscard]] vec2 getWindowPos() const;
     [[nodiscard]] vec2 getWindowSize() const;
     [[nodiscard]] int getMonitor() const;
-    [[nodiscard]] const std::map<unsigned int, McRect> &getMonitors();
+    [[nodiscard]] const std::unordered_map<unsigned int, McRect> &getMonitors();
     [[nodiscard]] vec2 getNativeScreenSize() const;
     [[nodiscard]] McRect getDesktopRect() const;
     [[nodiscard]] McRect getWindowRect() const;
@@ -293,7 +293,7 @@ class Environment {
     // monitors
     void initMonitors(bool force = false) const;
     // mutable due to lazy init
-    mutable std::map<unsigned int, McRect> m_mMonitors;
+    mutable std::unordered_map<unsigned int, McRect> m_mMonitors;
     mutable McRect m_fullDesktopBoundingBox;
 
     float m_fDisplayHz;
@@ -327,7 +327,7 @@ class Environment {
     bool m_bHideCursorPending;
     McRect m_cursorClipRect;
     CURSORTYPE m_cursorType;
-    std::map<CURSORTYPE, SDL_Cursor *> m_mCursorIcons;
+    std::array<SDL_Cursor *, (size_t)CURSORTYPE::CURSORTYPE_MAX> m_mCursorIcons;
 
     // keyboard
     inline void onRawKeyboardChange(float oldValue, float newValue) {
