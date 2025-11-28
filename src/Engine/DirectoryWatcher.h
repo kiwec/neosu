@@ -43,7 +43,7 @@ class DirectoryWatcher {
     // to avoid race condition issues.
     void update();
 
-    StaticPImpl<DirWatcherImpl, 160> implementation;
+    StaticPImpl<DirWatcherImpl, 256> implementation;
 };
 
 extern std::unique_ptr<DirectoryWatcher> directoryWatcher;
