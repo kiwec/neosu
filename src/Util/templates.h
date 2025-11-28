@@ -274,10 +274,12 @@ class StaticPImpl {
     // Construct a derived type U in-place (U must be T or derived from T)
     template <typename U, typename... Args>
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init, hicpp-member-init)
-    [[nodiscard]] inline explicit StaticPImpl(std::in_place_type_t<U> /**/, Args &&...args)
-        requires(sizeof(U) <= RealImplSize) && (alignof(U) <= alignof(std::max_align_t)) &&
-                (std::is_same_v<T, U> || std::is_base_of_v<T, U>)
-        : m_destructor([](void *ptr) { static_cast<U *>(ptr)->~U(); }) {
+    [[nodiscard]] inline explicit StaticPImpl(std::in_place_type_t<U> /**/, Args &&...args) {
+        static_assert(sizeof(U) <= RealImplSize);
+        static_assert(alignof(U) <= alignof(std::max_align_t));
+        static_assert(std::is_same_v<T, U> || std::is_base_of_v<T, U>);
+
+        m_destructor = [](void *ptr) { static_cast<U *>(ptr)->~U(); };
         new(m_buffer) U(std::forward<Args>(args)...);
     }
 
