@@ -38,14 +38,14 @@ set(LIBJPEG_URL "https://github.com/libjpeg-turbo/libjpeg-turbo/releases/downloa
 set(LIBJPEG_HASH "SHA512=79271ae4ddc12e3753cc7323dc15617f1d82b2d554ef27b555712f6ab5de603323dd33747620815e3b55663a20e07b292a55172aee9f401f9fd3557145967abe")
 set_download_name("libjpeg" "${LIBJPEG_VERSION}" "${LIBJPEG_URL}")
 
-set(LIBPNG_VERSION "1.6.50")
+set(LIBPNG_VERSION "1.6.51")
 set(LIBPNG_URL "https://github.com/pnggroup/libpng/archive/refs/tags/v${LIBPNG_VERSION}.tar.gz")
-set(LIBPNG_HASH "SHA512=34c806e0dda960b480ce2f5ea13e2e55a9540f07c51948be25d312b901c431bc814f730f9322a2e3b6f88d4104a0c49bde9e616762b342d07db44e2c7fd5f2dc")
+set(LIBPNG_HASH "SHA512=3b9b320b306388d0394404dbd6a978ba115743d913b4dd8d382b7ecf1f4e1979439e9829187058f52553f0aac0f73b274091a354c00286cdc699373b5c727fde")
 set_download_name("libpng" "${LIBPNG_VERSION}" "${LIBPNG_URL}")
 
-set(ZLIB_VERSION "2.2.5")
+set(ZLIB_VERSION "2.3.1")
 set(ZLIB_URL "https://github.com/zlib-ng/zlib-ng/archive/refs/tags/${ZLIB_VERSION}.tar.gz")
-set(ZLIB_HASH "SHA512=b599ea24375d08fa098ed7c3b14548e0d9731a155a024a0904b0ae4a6d3491a69f0c0574d66b6e4af1e40f10e38b6b555d4c4b1fe3589ca83a5f97fbd92f635f")
+set(ZLIB_HASH "SHA512=33722bfdd7d4f0b41f4ac99edcfd1a0f26aa52f86b1c16ce2e63962c26f8f8239634acef33051958f96b9593c29b7dedb29b136e710005de88fbb4cf40228a85")
 set_download_name("zlib" "${ZLIB_VERSION}" "${ZLIB_URL}")
 
 set(BZIP2_VERSION "1ea1ac188ad4b9cb662e3f8314673c63df95a589")
@@ -73,9 +73,9 @@ set(LZMA_URL "https://github.com/tukaani-project/xz/releases/download/v${LZMA_VE
 set(LZMA_HASH "SHA512=151b2a47fdf00274c4fd71ceada8fb6c892bdac44070847ebf3259e602b97c95ee5ee88974e03d7aa821ab4f16d5c38e50dfb2baf660cf39c199878a666e19ad")
 set_download_name("lzma" "${LZMA_VERSION}" "${LZMA_URL}")
 
-set(LIBARCHIVE_VERSION "3.8.2")
+set(LIBARCHIVE_VERSION "3.8.3")
 set(LIBARCHIVE_URL "https://github.com/libarchive/libarchive/releases/download/v${LIBARCHIVE_VERSION}/libarchive-${LIBARCHIVE_VERSION}.tar.gz")
-set(LIBARCHIVE_HASH "SHA512=8b752a7a22289fc18a05f9a153dbb2fdf4d73beb20bb3f85f60432f680b7f2e47d4fdcd7622be7524d769dfbb1d19c620f90f0c1e0d8f235c53f708c69b4937c")
+set(LIBARCHIVE_HASH "SHA512=bf3d86ef5930a19a4af6454d26d436f0364ca7a57ece269b2a6a594950af0f8bbf5267f638296a4abb1e197794412740c0b80cdd090cd1ea08c1de30e32dc77a")
 set_download_name("libarchive" "${LIBARCHIVE_VERSION}" "${LIBARCHIVE_URL}")
 
 set(MPG123_VERSION "fe143d4e9c885ec34596c561481dff96357fd797")
@@ -93,9 +93,9 @@ set(SOLOUD_URL "https://github.com/whrvt/neoloud/archive/${SOLOUD_VERSION}.tar.g
 set(SOLOUD_HASH "SHA512=3902c9bc21a51b258b2f96e1a57af17a597a9dc546d1166fbc3cafb2f7d6f45ca543d5401037bdc72e860b26333ae91c7ae2559e9cbec2329f5ee1a82d3a0ec8")
 set_download_name("soloud" "${SOLOUD_VERSION}" "${SOLOUD_URL}")
 
-set(NSYNC_VERSION "1.29.2")
+set(NSYNC_VERSION "1.30.0")
 set(NSYNC_URL "https://github.com/google/nsync/archive/refs/tags/${NSYNC_VERSION}.tar.gz")
-set(NSYNC_HASH "SHA512=af463d768c9e4bacc5796410c6d368b8ad0cc0fcbae28ec35fbe7937e7939de1ccad97f51b4940e384b677bb8fbc9963a438f7687e002613f1669ab93e459f60")
+set(NSYNC_HASH "SHA512=fdcd61eb686ca6d6804d82837fcd33ddee54d6b2aeb7bc20cdff8c5bd2a75f87b724f72c7e835459a1a82ee8bed3d6da5e4c111b3bca22545c6e037f129839f2")
 set_download_name("nsync" "${NSYNC_VERSION}" "${NSYNC_URL}")
 
 set(SIMDUTF_VERSION "7.6.0")

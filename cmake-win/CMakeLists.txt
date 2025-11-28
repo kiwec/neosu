@@ -325,10 +325,6 @@ add_external_project(nsync
         -DCMAKE_POLICY_VERSION_MINIMUM=3.5
         -DNSYNC_ENABLE_TESTS=OFF
         -DCMAKE_CXX_STANDARD=17
-    PATCH_COMMAND ${CMAKE_COMMAND} -E echo "Patching nsync platform.h to add chrono include"
-        COMMAND ${CMAKE_COMMAND}
-            -DFILE_TO_PATCH=<SOURCE_DIR>/platform/c++11/platform.h
-            -P ${CMAKE_SOURCE_DIR}/patch_nsync.cmake
     BUILD_COMMAND cmake --build <BINARY_DIR> --config ${CMAKE_BUILD_TYPE} --parallel ${CPU_COUNT}
 )
 else()
