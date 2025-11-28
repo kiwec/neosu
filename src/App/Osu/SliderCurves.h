@@ -193,7 +193,7 @@ class SliderCurveCircumscribedCircle final : public SliderCurve {
                              bool HR) override;  // must also override this, due to the custom pointAt() function!
 
    private:
-    vec2 intersect(vec2 a, vec2 ta, vec2 b, vec2 tb);
+    static vec2 intersect(vec2 a, vec2 ta, vec2 b, vec2 tb);
 
     static forceinline bool isIn(float a, float b, float c) { return ((b > a && b < c) || (b < a && b > c)); }
 

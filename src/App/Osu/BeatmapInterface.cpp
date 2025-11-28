@@ -1483,7 +1483,7 @@ i32 BeatmapInterface::getPVS() {
     // this is an approximation with generous boundaries, it doesn't need to be exact (just good enough to filter 10000
     // hitobjects down to a few hundred or so) it will be used in both positive and negative directions (previous and
     // future hitobjects) to speed up loops which iterate over all hitobjects
-    return this->getApproachTime() + GameRules::getFadeInTime() + (i32)GameRules::getHitWindowMiss() + 1500;  // sanity
+    return this->fCachedApproachTimeForUpdate + GameRules::getFadeInTime() + (i32)GameRules::getHitWindowMiss() + 1500;  // sanity
 }
 
 bool BeatmapInterface::canDraw() {
@@ -1985,7 +1985,7 @@ void BeatmapInterface::drawFollowPoints() {
     const i32 followPointApproachTime =
         animationMultiplier *
         (cv::followpoints_clamp.getBool()
-             ? std::min((i32)this->getApproachTime(), (i32)cv::followpoints_approachtime.getFloat())
+             ? std::min((i32)this->fCachedApproachTimeForUpdate, (i32)cv::followpoints_approachtime.getFloat())
              : (i32)cv::followpoints_approachtime.getFloat());
     const bool followPointsConnectCombos = cv::followpoints_connect_combos.getBool();
     const bool followPointsConnectSpinners = cv::followpoints_connect_spinners.getBool();
@@ -2868,6 +2868,9 @@ void BeatmapInterface::update2() {
         bool blockNextNotes = false;
         bool spinner_active = false;
 
+        // to avoid recalculating in HitObject::update every call
+        this->fCachedApproachTimeForUpdate = this->getApproachTime();
+
         const i32 pvs = !cv::mod_mafham.getBool()
                             ? this->getPVS()
                             : (likely(!this->hitobjects.empty())
@@ -2881,9 +2884,6 @@ void BeatmapInterface::update2() {
 
         const int notelockType = cv::notelock_type.getInt();
         const i32 tolerance2B = (i32)cv::notelock_stable_tolerance2b.getInt();
-
-        // to avoid recalculating in HitObject::update every call
-        this->fCachedApproachTimeForUpdate = this->getApproachTime();
 
         this->iCurrentHitObjectIndex = 0;  // reset below here, since it's needed for mafham pvs
 

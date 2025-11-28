@@ -437,7 +437,7 @@ bool McFont::loadGlyphFromFace(char16_t ch, FT_Face face, int fontIndex) {
 }
 
 void McFont::setFaceSize(FT_Face face) const {
-    FT_Set_Char_Size(face, m_iFontSize * 64LL, m_iFontSize * 64LL, m_iFontDPI, m_iFontDPI);
+    FT_Set_Char_Size(face, (FT_F26Dot6)(m_iFontSize * 64L), (FT_F26Dot6)(m_iFontSize * 64L), m_iFontDPI, m_iFontDPI);
 }
 
 bool McFont::initializeFreeType() {
@@ -709,10 +709,8 @@ void McFont::buildGlyphGeometry(const GLYPH_METRICS &gm, const vec3 &basePos, fl
 }
 
 void McFont::buildStringGeometry(const UString &text, size_t &vertexCount) {
-    if(!this->isReady() || text.length() == 0 || text.length() > cv::r_drawstring_max_string_length.getInt()) return;
-
     float advanceX = 0.0f;
-    const size_t maxGlyphs =
+    const int maxGlyphs =
         std::min(text.length(), (int)((double)(m_vertices.size() - vertexCount) / (double)VERTS_PER_VAO));
 
     for(int i = 0; i < maxGlyphs; i++) {
@@ -734,8 +732,7 @@ void McFont::buildStringGeometry(const UString &text, size_t &vertexCount) {
 void McFont::drawString(const UString &text) {
     if(!this->isReady()) return;
 
-    const int maxNumGlyphs = cv::r_drawstring_max_string_length.getInt();
-    if(text.length() == 0 || text.length() > maxNumGlyphs) return;
+    if(text.length() == 0 || text.length() > cv::r_drawstring_max_string_length.getInt()) return;
 
     m_vao->clear();
 
@@ -786,6 +783,8 @@ void McFont::flushBatch() {
         return;
     }
 
+    static std::vector<Color> colors;
+    colors.clear();
     m_vertices.resize(m_batchQueue.totalVerts);
     m_texcoords.resize(m_batchQueue.totalVerts);
     m_vao->clear();
@@ -799,11 +798,13 @@ void McFont::flushBatch() {
 
         for(size_t j = stringStart; j < currentVertex; j++) {
             m_vertices[j] += entry.pos;
-            m_vao->addVertex(m_vertices[j]);
-            m_vao->addTexcoord(m_texcoords[j]);
-            m_vao->addColor(entry.color);
+            colors.push_back(entry.color);
         }
     }
+
+    m_vao->setVertices(m_vertices);
+    m_vao->setTexcoords(m_texcoords);
+    m_vao->setColors(colors);
 
     m_textureAtlas->getAtlasImage()->bind();
 
