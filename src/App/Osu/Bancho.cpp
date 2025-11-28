@@ -479,7 +479,9 @@ void BanchoState::handle_packet(Packet &packet) {
         }
 
         case MATCH_ALL_PLAYERS_LOADED: {
-            osu->getRoom()->on_all_players_loaded();
+            debugLog("MATCH_ALL_PLAYERS_LOADED");
+            osu->getMapInterface()->all_players_loaded = true;
+            osu->getChat()->updateVisibility();
             break;
         }
 
@@ -495,7 +497,7 @@ void BanchoState::handle_packet(Packet &packet) {
         }
 
         case MATCH_SKIP: {
-            osu->getRoom()->on_all_players_skipped();
+            osu->getMapInterface()->all_players_skipped = true;
             break;
         }
 

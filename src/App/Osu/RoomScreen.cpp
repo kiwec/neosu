@@ -745,11 +745,6 @@ void RoomScreen::on_match_score_updated(Packet &packet) {
     osu->getHUD()->updateScoreboard(true);
 }
 
-void RoomScreen::on_all_players_loaded() {
-    osu->getMapInterface()->all_players_loaded = true;
-    osu->getChat()->updateVisibility();
-}
-
 void RoomScreen::on_player_failed(i32 slot_id) {
     if(slot_id < 0 || slot_id > 15) return;
     BanchoState::room.slots[slot_id].died = true;
@@ -799,8 +794,6 @@ void RoomScreen::on_match_finished() {
     // Display room presence instead of map again
     RichPresence::onMultiplayerLobby();
 }
-
-void RoomScreen::on_all_players_skipped() { osu->getMapInterface()->all_players_skipped = true; }
 
 void RoomScreen::on_player_skip(i32 user_id) {
     for(auto &slot : BanchoState::room.slots) {

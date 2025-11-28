@@ -2347,8 +2347,8 @@ void BeatmapInterface::update() {
 
     // notify server once we've finished loading
     if(BanchoState::is_playing_a_multi_map()) {
-        if(!osu->getMapInterface()->player_loaded && !this->isActuallyLoading()) {
-            osu->getMapInterface()->player_loaded = true;
+        if(!this->player_loaded && !this->isActuallyLoading()) {
+            this->player_loaded = true;
 
             Packet packet;
             packet.id = MATCH_LOAD_COMPLETE;

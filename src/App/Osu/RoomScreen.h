@@ -52,10 +52,8 @@ class RoomScreen final : public OsuScreen {
     void on_room_updated(Room room);
     void on_match_started(Room room);
     void on_match_score_updated(Packet& packet);
-    void on_all_players_loaded();
     void on_player_failed(i32 slot_id);
     void on_match_finished();
-    void on_all_players_skipped();
     void on_player_skip(i32 user_id);
     void on_match_aborted();
     void onClientScoreChange(bool force = false);
