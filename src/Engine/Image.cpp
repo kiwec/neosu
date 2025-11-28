@@ -394,7 +394,7 @@ bool Image::loadRawImage() {
 
     auto exit = [this]() -> bool {
         // if we were interrupted, it's not a load error
-        this->bLoadError = !this->isInterrupted();
+        this->bLoadError.store(!this->isInterrupted(), std::memory_order_release);
         this->rawImage.clear();
         this->iWidth = 0;
         this->iHeight = 0;

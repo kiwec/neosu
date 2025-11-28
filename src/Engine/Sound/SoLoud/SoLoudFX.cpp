@@ -137,7 +137,7 @@ AudioSourceInstance *SLFXStream::createInstance()
 	ST_DEBUG_LOG("SoundTouchFilter: Creating instance with speed={:f}, pitch={:f}", mSpeedFactor, mPitchFactor);
 
 	auto *instance = new SoundTouchFilterInstance(this);
-	mActiveInstance.store(instance, std::memory_order_release); // track the active instance for position queries
+	mActiveInstance.store(instance, std::memory_order_seq_cst); // track the active instance for position queries
 	return instance;
 }
 
@@ -145,16 +145,16 @@ void SLFXStream::setSpeedFactor(float aSpeed)
 {
 	ST_DEBUG_LOG("SoundTouchFilter: Speed changed from {:f} to {:f}", mSpeedFactor, aSpeed);
 	mSpeedFactor = aSpeed;
-	if (mActiveInstance.load(std::memory_order_acquire))
-		mActiveInstance.load(std::memory_order_relaxed)->requestSettingUpdate(mSpeedFactor, mPitchFactor);
+	if (mActiveInstance.load(std::memory_order_seq_cst))
+		mActiveInstance.load(std::memory_order_seq_cst)->requestSettingUpdate(mSpeedFactor, mPitchFactor);
 }
 
 void SLFXStream::setPitchFactor(float aPitch)
 {
 	ST_DEBUG_LOG("SoundTouchFilter: Pitch changed from {:f} to {:f}", mPitchFactor, aPitch);
 	mPitchFactor = aPitch;
-	if (mActiveInstance.load(std::memory_order_acquire))
-		mActiveInstance.load(std::memory_order_relaxed)->requestSettingUpdate(mSpeedFactor, mPitchFactor);
+	if (mActiveInstance.load(std::memory_order_seq_cst))
+		mActiveInstance.load(std::memory_order_seq_cst)->requestSettingUpdate(mSpeedFactor, mPitchFactor);
 }
 
 float SLFXStream::getSpeedFactor() const
@@ -169,8 +169,8 @@ float SLFXStream::getPitchFactor() const
 
 time SLFXStream::getInternalLatency() const
 {
-	if (mActiveInstance.load(std::memory_order_acquire))
-		return mActiveInstance.load(std::memory_order_relaxed)->getInternalLatency();
+	if (mActiveInstance.load(std::memory_order_seq_cst))
+		return mActiveInstance.load(std::memory_order_seq_cst)->getInternalLatency();
 	return 0.0;
 }
 
@@ -393,8 +393,10 @@ SoundTouchFilterInstance::SoundTouchFilterInstance(SLFXStream *aParent)
 SoundTouchFilterInstance::~SoundTouchFilterInstance()
 {
 	// clear the active instance reference in parent
-	if (mParent && mParent->mActiveInstance.load(std::memory_order_acquire) == this)
-		mParent->mActiveInstance.store(nullptr, std::memory_order_release);
+	if (mParent) {
+		auto thisptr = this;
+		mParent->mActiveInstance.compare_exchange_strong(thisptr, nullptr);
+	}
 
 	SAFE_DELETE(mSoundTouch);
 	SAFE_DELETE(mSourceInstance);

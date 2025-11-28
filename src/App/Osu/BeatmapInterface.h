@@ -317,7 +317,7 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
     // hitobjects
     std::vector<std::unique_ptr<HitObject>> hitobjects;
     std::vector<HitObject *> hitobjectsSortedByEndTime;  // non-owning view of hitobjects data
-    std::vector<HitObject *> misaimObjects;              // non-owning view of hitobjects data
+    std::vector<HitObject *> misaimObjects;                 // non-owning view of hitobjects data
 
     // statistics
     int iNPS;

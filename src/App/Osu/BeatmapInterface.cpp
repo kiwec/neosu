@@ -1483,7 +1483,8 @@ i32 BeatmapInterface::getPVS() {
     // this is an approximation with generous boundaries, it doesn't need to be exact (just good enough to filter 10000
     // hitobjects down to a few hundred or so) it will be used in both positive and negative directions (previous and
     // future hitobjects) to speed up loops which iterate over all hitobjects
-    return this->fCachedApproachTimeForUpdate + GameRules::getFadeInTime() + (i32)GameRules::getHitWindowMiss() + 1500;  // sanity
+    return this->fCachedApproachTimeForUpdate + GameRules::getFadeInTime() + (i32)GameRules::getHitWindowMiss() +
+           1500;  // sanity
 }
 
 bool BeatmapInterface::canDraw() {
@@ -2362,9 +2363,11 @@ void BeatmapInterface::update() {
 
     // @PPV3: also calculate live ppv3
     if(cv::draw_statistics_pp.getBool() || cv::draw_statistics_livestars.getBool()) {
-        const auto &result = this->ppv2_calc.get();
-        osu->getHUD()->live_pp = result.pp;
-        osu->getHUD()->live_stars = result.total_stars;
+        {
+            const auto &[lock, result] = this->ppv2_calc.get();
+            osu->getHUD()->live_pp = result.pp;
+            osu->getHUD()->live_stars = result.total_stars;
+        }
 
         if(this->last_calculated_hitobject < 0 || (this->last_calculated_hitobject != this->iCurrentHitObjectIndex)) {
             this->last_calculated_hitobject = this->iCurrentHitObjectIndex;

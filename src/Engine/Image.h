@@ -32,7 +32,7 @@ class Image : public Resource {
     void setPixel(i32 x, i32 y, Color color);
     void setPixels(const std::vector<u8> &pixels);
 
-    [[nodiscard]] inline bool failedLoad() const { return this->bLoadError; }
+    [[nodiscard]] inline bool failedLoad() const { return this->bLoadError.load(std::memory_order_acquire); }
     [[nodiscard]] Color getPixel(i32 x, i32 y) const;
 
     [[nodiscard]] inline Image::TYPE getType() const { return this->type; }
@@ -147,7 +147,7 @@ class Image : public Resource {
     bool bMipmapped;
     bool bCreatedImage;
     bool bKeepInSystemMemory;
-    bool bLoadError{false};
+    std::atomic<bool> bLoadError{false};
     bool bLoadedImageEntirelyTransparent{false};
 
    private:

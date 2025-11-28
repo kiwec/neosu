@@ -48,9 +48,9 @@ struct lazy_promise {
         this->cv.notify_one();
     }
 
-    const Ret &get() {
-        Sync::scoped_lock lock(this->ret_mtx);
-        return this->ret;
+    std::pair<Sync::unique_lock<Sync::mutex>, const Ret &> get() {
+        Sync::unique_lock<Sync::mutex> lock(this->ret_mtx);
+        return {std::move(lock), this->ret};
     }
 
     void set(Ret &&ret) {

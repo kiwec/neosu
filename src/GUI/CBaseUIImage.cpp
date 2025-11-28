@@ -10,7 +10,12 @@ CBaseUIImage::CBaseUIImage(const std::string& imageResourceName, float xPos, flo
                            UString name)
     : CBaseUIElement(xPos, yPos, xSize, ySize, std::move(name)) {
     this->bScaleToFit = true;  // must be up here because it's used in setImage()
-    this->setImage(resourceManager->getImage(std::move(imageResourceName)));
+
+    if(!imageResourceName.empty()) {
+        this->setImage(resourceManager->getImage(imageResourceName));
+    } else {
+        this->image = nullptr;
+    }
 
     this->fRot = 0.0f;
     this->vScale.x = 1.0f;
@@ -68,7 +73,7 @@ void CBaseUIImage::draw() {
 void CBaseUIImage::setImage(const Image* img) {
     this->image = img;
 
-    if(this->image != nullptr) {
+    if(this->image != nullptr && this->image->isReady()) {
         if(this->bScaleToFit) {
             this->vSize.x = this->image->getWidth();
             this->vSize.y = this->image->getHeight();

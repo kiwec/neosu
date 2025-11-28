@@ -201,11 +201,11 @@ void HUD::draw() {
             const u32 startTimePlayableMS = pf->getStartTimePlayable();
             const u32 endTimePlayableMS = startTimePlayableMS + lengthPlayableMS;
 
-            const std::vector<DatabaseBeatmap::BREAK> &beatmapBreaks = pf->getBreaks();
+            const auto &beatmapBreaks = pf->getBreaks();
 
             breaks.reserve(beatmapBreaks.size());
 
-            for(auto bk : beatmapBreaks) {
+            for(const auto &bk : beatmapBreaks) {
                 // ignore breaks after last hitobject
                 if(/*bk.endTime <= (int)startTimePlayableMS ||*/ bk.startTime >=
                    (int)(startTimePlayableMS + lengthPlayableMS))
