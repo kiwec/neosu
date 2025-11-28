@@ -335,7 +335,9 @@ class Environment {
             this->setRawKeyboardInput(newValue > 0);
         }
     }
+    void onUseIMEChange(float newValue);
 
+    bool m_bShouldListenToTextInput;
     bool m_bRawKB;
     bool m_bWinKeyDisabled;
 

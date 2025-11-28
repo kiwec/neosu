@@ -130,7 +130,7 @@ SDL_AppResult SDLMain::initialize() {
     }
 
     // SDL3 stops listening to text input globally when window is created
-    SDL_StartTextInput(m_window);
+    listenToTextInput(cv::use_ime.getBool());
     SDL_SetWindowKeyboardGrab(m_window, false);  // this allows windows key and such to work
 
     // return init success
@@ -635,6 +635,13 @@ void SDLMain::configureEvents() {
     SDL_SetEventEnabled(SDL_EVENT_FINGER_UP, false);
     SDL_SetEventEnabled(SDL_EVENT_FINGER_MOTION, false);
     SDL_SetEventEnabled(SDL_EVENT_FINGER_CANCELED, false);
+
+    // IME input
+    SDL_SetEventEnabled(SDL_EVENT_TEXT_EDITING_CANDIDATES, cv::use_ime.getBool());
+    SDL_SetEventEnabled(SDL_EVENT_TEXT_EDITING, cv::use_ime.getBool());
+
+    // allow callback to enable/disable too
+    cv::use_ime.setCallback(SA::MakeDelegate<&SDLMain::onUseIMEChange>(this));
 }
 
 void SDLMain::setupLogging() {

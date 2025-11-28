@@ -108,6 +108,7 @@ Environment::Environment(const std::unordered_map<std::string, std::optional<std
     m_bIsKMSDRM = (m_sdldriver == "kmsdrm");
     m_bIsWayland = (m_sdldriver == "wayland");
 
+    m_bShouldListenToTextInput = cv::use_ime.getBool();
     m_bRawKB = SDL_GetHintBoolean(SDL_HINT_WINDOWS_RAW_KEYBOARD, false);
     // the hints might already be set from the startup environment, so respect that here (1)
     m_bWinKeyDisabled = m_bRawKB ? SDL_GetHintBoolean(SDL_HINT_WINDOWS_RAW_KEYBOARD_EXCLUDE_HOTKEYS, false) : false;
@@ -993,12 +994,32 @@ bool Environment::setWindowsKeyDisabled(bool disable) {
 }
 
 void Environment::listenToTextInput(bool listen) {
-    listen ? SDL_StartTextInput(m_window) : SDL_StopTextInput(m_window);
+    m_bShouldListenToTextInput = listen;
+    if(cv::use_ime.getBool()) {
+        listen ? SDL_StartTextInput(m_window) : SDL_StopTextInput(m_window);
+    } else if(!SDL_TextInputActive(m_window)) {
+        // always keep text input active if we're not allowing IME events
+        SDL_StartTextInput(m_window);
+    }
 }
 
 //******************************//
 //	internal helpers/callbacks  //
 //******************************//
+
+void Environment::onUseIMEChange(float newValue) {
+    const bool enable = !!static_cast<int>(newValue);
+    SDL_SetEventEnabled(SDL_EVENT_TEXT_EDITING_CANDIDATES, enable);
+    SDL_SetEventEnabled(SDL_EVENT_TEXT_EDITING, enable);
+    if(enable) {
+        // use OS IME input
+        SDL_SetHintWithPriority(SDL_HINT_IME_IMPLEMENTED_UI, "none", SDL_HINT_NORMAL);
+    } else {
+        // tell SDL we're "handling it ourselves" so it doesn't pop up an OS IME input window, if we're disabling IME
+        SDL_SetHintWithPriority(SDL_HINT_IME_IMPLEMENTED_UI, "candidates,composition", SDL_HINT_NORMAL);
+    }
+    listenToTextInput(enable && m_bShouldListenToTextInput);
+}
 
 void Environment::updateWindowFlags() {
     assert(m_window);

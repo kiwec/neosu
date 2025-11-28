@@ -1176,6 +1176,9 @@ CONVAR(ui_scrollview_resistance, 5.0f, CLIENT | SKINS | SERVER,
 CONVAR(ui_scrollview_scrollbarwidth, 15.0f, CLIENT | SKINS | SERVER);
 CONVAR(ui_textbox_caret_blink_time, 0.5f, CLIENT | SKINS | SERVER);
 CONVAR(ui_textbox_text_offset_x, 3, CLIENT | SKINS | SERVER);
+CONVAR(use_ime, false, CLIENT,
+       "enable the use of the OS IME window for editing text (currently disabled by default due to UI textbox "
+       "constraints)");
 CONVAR(ui_top_ranks_max, 200, CLIENT | SKINS | SERVER,
        "maximum number of displayed scores, to keep the ui/scrollbar manageable");
 CONVAR(ui_window_animspeed, 0.29f, CLIENT | SKINS | SERVER);

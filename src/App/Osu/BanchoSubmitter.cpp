@@ -1,6 +1,7 @@
 // Copyright (c) 2024, kiwec, All rights reserved.
 #include "BanchoSubmitter.h"
 
+#include "Database.h"
 #include "Bancho.h"
 #include "BanchoAes.h"
 #include "BanchoNetworking.h"
