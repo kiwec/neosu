@@ -155,8 +155,15 @@ MAIN_FUNC /* int argc, char *argv[] */
     atexit(Logger::shutdown);
 
 #if defined(_WIN32)
-    // required for handle_existing_window to find this running instance
-    SDL_RegisterApp(PACKAGE_NAME, 0, nullptr);
+    {
+        constexpr int CS_VREDRAW_ = 0x1;
+        constexpr int CS_HREDRAW_ = 0x2;
+        constexpr int CS_BYTEALIGNCLIENT_ = 0x1000;
+        constexpr int CS_BYTEALIGNWINDOW_ = 0x2000;
+
+        // required for handle_existing_window to find this running instance
+        SDL_RegisterApp(PACKAGE_NAME, CS_BYTEALIGNCLIENT_ | CS_BYTEALIGNWINDOW_ | CS_VREDRAW_ | CS_HREDRAW_, nullptr);
+    }
 #if defined(_DEBUG)  // only debug builds create a console
     SetConsoleOutputCP(65001 /*CP_UTF8*/);
 #endif
@@ -182,7 +189,7 @@ MAIN_FUNC /* int argc, char *argv[] */
     SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_URL_STRING, PACKAGE_URL);
     SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_TYPE_STRING, "game");
 
-    SDL_SetHintWithPriority(SDL_HINT_VIDEO_DOUBLE_BUFFER, "1", SDL_HINT_OVERRIDE);
+    SDL_SetHintWithPriority(SDL_HINT_VIDEO_DOUBLE_BUFFER, "1", SDL_HINT_NORMAL);
 
     // parse args here
 
