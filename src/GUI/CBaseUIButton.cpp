@@ -59,7 +59,8 @@ void CBaseUIButton::drawText() {
 
     const int shadowOffset = std::round(1.f * ((float)this->font->getDPI() / 96.f));  // NOTE: abusing font dpi
 
-    g->pushClipRect(McRect(this->vPos.x + 1, this->vPos.y + 1, this->vSize.x - 2, this->vSize.y - 2));
+    // NOTE: don't decrease the size of this clip rect, console box suggestion text gets cut off at the bottom
+    g->pushClipRect(McRect(this->vPos.x + 1, this->vPos.y + 1, this->vSize.x - 1, this->vSize.y));
     {
         g->setColor(this->textColor);
         g->pushTransform();

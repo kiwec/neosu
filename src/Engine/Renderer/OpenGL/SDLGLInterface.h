@@ -51,6 +51,8 @@ class SDLGLInterface final : public BackendGLInterface {
 
    private:
     static void load();
+    static void dumpGLContextInfo();
+
     SDL_Window *window;
 
     // frame queue management

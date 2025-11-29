@@ -23,6 +23,12 @@ void SDLGLInterface::load() {
              !!SDL_EGL_GetCurrentDisplay() ? "true" : "false");
 #endif
     debugLog("GL_VERSION string: {}", reinterpret_cast<const char *>(glGetString(GL_VERSION)));
+
+    const auto &argMap = env->getLaunchArgs();
+    if(Env::cfg(BUILD::DEBUG) || argMap.contains("-info") || argMap.contains("-print") ||
+       argMap.contains("-printinfo")) {
+        dumpGLContextInfo();
+    }
 }
 
 SDLGLInterface::SDLGLInterface(SDL_Window *window)
@@ -111,6 +117,49 @@ std::unordered_map<Graphics::USAGE_TYPE, unsigned int> SDLGLInterface::usageToOp
     {Graphics::USAGE_TYPE::USAGE_DYNAMIC, GL_DYNAMIC_DRAW},
     {Graphics::USAGE_TYPE::USAGE_STREAM, GL_STREAM_DRAW},
 };
+
+void SDLGLInterface::dumpGLContextInfo() {
+    std::string info = "Initial OpenGL Context:\n";
+    int current;
+    for(int i = 0; auto [enm, str] : std::array<std::pair<SDL_GLAttr, std::string_view>, 28>{
+                       {{SDL_GL_RED_SIZE, "GL_RED_SIZE"sv},
+                        {SDL_GL_GREEN_SIZE, "GL_GREEN_SIZE"sv},
+                        {SDL_GL_BLUE_SIZE, "GL_BLUE_SIZE"sv},
+                        {SDL_GL_ALPHA_SIZE, "GL_ALPHA_SIZE"sv},
+                        {SDL_GL_BUFFER_SIZE, "GL_BUFFER_SIZE"sv},
+                        {SDL_GL_DOUBLEBUFFER, "GL_DOUBLEBUFFER"sv},
+                        {SDL_GL_DEPTH_SIZE, "GL_DEPTH_SIZE"sv},
+                        {SDL_GL_STENCIL_SIZE, "GL_STENCIL_SIZE"sv},
+                        {SDL_GL_ACCUM_RED_SIZE, "GL_ACCUM_RED_SIZE"sv},
+                        {SDL_GL_ACCUM_GREEN_SIZE, "GL_ACCUM_GREEN_SIZE"sv},
+                        {SDL_GL_ACCUM_BLUE_SIZE, "GL_ACCUM_BLUE_SIZE"sv},
+                        {SDL_GL_ACCUM_ALPHA_SIZE, "GL_ACCUM_ALPHA_SIZE"sv},
+                        {SDL_GL_STEREO, "GL_STEREO"sv},
+                        {SDL_GL_MULTISAMPLEBUFFERS, "GL_MULTISAMPLEBUFFERS"sv},
+                        {SDL_GL_MULTISAMPLESAMPLES, "GL_MULTISAMPLESAMPLES"sv},
+                        {SDL_GL_ACCELERATED_VISUAL, "GL_ACCELERATED_VISUAL"sv},
+                        {SDL_GL_RETAINED_BACKING, "GL_RETAINED_BACKING"sv},
+                        {SDL_GL_CONTEXT_MAJOR_VERSION, "GL_CONTEXT_MAJOR_VERSION"sv},
+                        {SDL_GL_CONTEXT_MINOR_VERSION, "GL_CONTEXT_MINOR_VERSION"sv},
+                        {SDL_GL_CONTEXT_FLAGS, "GL_CONTEXT_FLAGS"sv},
+                        {SDL_GL_CONTEXT_PROFILE_MASK, "GL_CONTEXT_PROFILE_MASK"sv},
+                        {SDL_GL_SHARE_WITH_CURRENT_CONTEXT, "GL_SHARE_WITH_CURRENT_CONTEXT"sv},
+                        {SDL_GL_FRAMEBUFFER_SRGB_CAPABLE, "GL_FRAMEBUFFER_SRGB_CAPABLE"sv},
+                        {SDL_GL_CONTEXT_RELEASE_BEHAVIOR, "GL_CONTEXT_RELEASE_BEHAVIOR"sv},
+                        {SDL_GL_CONTEXT_RESET_NOTIFICATION, "GL_CONTEXT_RESET_NOTIFICATION"sv},
+                        {SDL_GL_CONTEXT_NO_ERROR, "GL_CONTEXT_NO_ERROR"sv},
+                        {SDL_GL_FLOATBUFFERS, "GL_FLOATBUFFERS"sv},
+                        {SDL_GL_EGL_PLATFORM, "GL_EGL_PLATFORM"sv}}}) {
+        if(SDL_GL_GetAttribute(enm, &current)) {
+            i++;
+            info += fmt::format(" {:<30}: {:<3}", str, current);
+            if(!(i % 4)) info.push_back('\n');
+        }
+    }
+
+    info.pop_back();  // remove trailing newline
+    Logger::logRaw(info);
+}
 
 namespace {
 std::string glDebugSourceString(GLenum source) {

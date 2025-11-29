@@ -198,8 +198,9 @@ void BeatmapInterface::drawBackground() {
 
     // draw beatmap background image
     {
-        const Image *backgroundImage = osu->getBackgroundImageHandler()->getLoadBackgroundImage(this->beatmap);
-        if(cv::draw_beatmap_background_image.getBool() && backgroundImage != nullptr &&
+        const Image *backgroundImage = nullptr;
+        if(cv::draw_beatmap_background_image.getBool() &&
+           (backgroundImage = osu->getBackgroundImageHandler()->getLoadBackgroundImage(this->beatmap)) &&
            (cv::background_dim.getFloat() < 1.0f || this->fBreakBackgroundFade > 0.0f)) {
             const float scale = Osu::getImageScaleToFillResolution(backgroundImage, osu->getVirtScreenSize());
             const vec2 centerTrans = (osu->getVirtScreenSize() / 2.0f);
@@ -1299,58 +1300,56 @@ DatabaseBeatmap::BREAK BeatmapInterface::getBreakForTimeRange(i64 startMS, i64 p
 LiveScore::HIT BeatmapInterface::addHitResult(HitObject *hitObject, LiveScore::HIT hit, i32 delta, bool isEndOfCombo,
                                               bool ignoreOnHitErrorBar, bool hitErrorBarOnly, bool ignoreCombo,
                                               bool ignoreScore, bool ignoreHealth) {
+    using enum LiveScore::HIT;
+
     // Frames are already written on every keypress/release.
     // For some edge cases, we need to write extra frames to avoid replaybugs.
-    {
-        bool should_write_frame = false;
+    if(!hitErrorBarOnly) {
+        const bool should_write_frame =
+            // Slider interactions
+            // Surely buzz sliders won't be an issue... Clueless
+            (hit == HIT_SLIDER10)             //
+            || (hit == HIT_SLIDER30)          //
+            || (hit == HIT_MISS_SLIDERBREAK)  //
+            // Relax: no keypresses, instead we write on every hitresult
+            || (osu->getModRelax() && ((hit == HIT_50)        //
+                                       || (hit == HIT_100)    //
+                                       || (hit == HIT_300)    //
+                                       || (hit == HIT_MISS))  //
+               );
 
-        // Slider interactions
-        // Surely buzz sliders won't be an issue... Clueless
-        should_write_frame |= (hit == LiveScore::HIT::HIT_SLIDER10);
-        should_write_frame |= (hit == LiveScore::HIT::HIT_SLIDER30);
-        should_write_frame |= (hit == LiveScore::HIT::HIT_MISS_SLIDERBREAK);
-
-        // Relax: no keypresses, instead we write on every hitresult
-        if(osu->getModRelax()) {
-            should_write_frame |= (hit == LiveScore::HIT::HIT_50);
-            should_write_frame |= (hit == LiveScore::HIT::HIT_100);
-            should_write_frame |= (hit == LiveScore::HIT::HIT_300);
-            should_write_frame |= (hit == LiveScore::HIT::HIT_MISS);
-        }
-
-        if(should_write_frame && !hitErrorBarOnly) {
+        if(should_write_frame) {
             this->write_frame();
         }
     }
 
     // handle perfect & sudden death
     if(osu->getModSS()) {
-        if(!hitErrorBarOnly && hit != LiveScore::HIT::HIT_300 && hit != LiveScore::HIT::HIT_300G &&
-           hit != LiveScore::HIT::HIT_SLIDER10 && hit != LiveScore::HIT::HIT_SLIDER30 &&
-           hit != LiveScore::HIT::HIT_SPINNERSPIN && hit != LiveScore::HIT::HIT_SPINNERBONUS) {
+        if(!hitErrorBarOnly && hit != HIT_300 && hit != HIT_300G && hit != HIT_SLIDER10 && hit != HIT_SLIDER30 &&
+           hit != HIT_SPINNERSPIN && hit != HIT_SPINNERBONUS) {
             this->restart();
-            return LiveScore::HIT::HIT_MISS;
+            return HIT_MISS;
         }
     } else if(osu->getModSD()) {
-        if(hit == LiveScore::HIT::HIT_MISS) {
+        if(hit == HIT_MISS) {
             if(cv::mod_suddendeath_restart.getBool())
                 this->restart();
             else
                 this->fail();
 
-            return LiveScore::HIT::HIT_MISS;
+            return HIT_MISS;
         }
     }
 
     // miss sound
-    if(hit == LiveScore::HIT::HIT_MISS) this->playMissSound();
+    if(hit == HIT_MISS) this->playMissSound();
 
     // score
     osu->getScore()->addHitResult(this, hitObject, hit, delta, ignoreOnHitErrorBar, hitErrorBarOnly, ignoreCombo,
                                   ignoreScore);
 
     // health
-    LiveScore::HIT returnedHit = LiveScore::HIT::HIT_MISS;
+    LiveScore::HIT returnedHit = HIT_MISS;
     if(!ignoreHealth) {
         this->addHealth(osu->getScore()->getHealthIncrease(this, hit), true);
 
@@ -1359,21 +1358,21 @@ LiveScore::HIT BeatmapInterface::addHitResult(HitObject *hitObject, LiveScore::H
             const int comboEndBitmask = osu->getScore()->getComboEndBitmask();
 
             if(comboEndBitmask == 0) {
-                returnedHit = LiveScore::HIT::HIT_300G;
+                returnedHit = HIT_300G;
                 this->addHealth(osu->getScore()->getHealthIncrease(this, returnedHit), true);
                 osu->getScore()->addHitResultComboEnd(returnedHit);
             } else if((comboEndBitmask & 2) == 0) {
-                if(hit == LiveScore::HIT::HIT_100) {
-                    returnedHit = LiveScore::HIT::HIT_100K;
+                if(hit == HIT_100) {
+                    returnedHit = HIT_100K;
                     this->addHealth(osu->getScore()->getHealthIncrease(this, returnedHit), true);
                     osu->getScore()->addHitResultComboEnd(returnedHit);
-                } else if(hit == LiveScore::HIT::HIT_300) {
-                    returnedHit = LiveScore::HIT::HIT_300K;
+                } else if(hit == HIT_300) {
+                    returnedHit = HIT_300K;
                     this->addHealth(osu->getScore()->getHealthIncrease(this, returnedHit), true);
                     osu->getScore()->addHitResultComboEnd(returnedHit);
                 }
-            } else if(hit != LiveScore::HIT::HIT_MISS)
-                this->addHealth(osu->getScore()->getHealthIncrease(this, LiveScore::HIT::HIT_MU), true);
+            } else if(hit != HIT_MISS)
+                this->addHealth(osu->getScore()->getHealthIncrease(this, HIT_MU), true);
 
             osu->getScore()->setComboEndBitmask(0);
         }
@@ -1818,20 +1817,20 @@ void BeatmapInterface::draw() {
 
 void BeatmapInterface::drawFlashlight(FLType type) {
     // Convert screen mouse -> osu mouse pos
-    vec2 cursorPos = this->getCursorPos();
-    vec2 mouse_position = cursorPos - GameRules::getPlayfieldOffset();
-    mouse_position /= GameRules::getPlayfieldScaleFactor();
+    const vec2 cursorPos = this->getCursorPos();
+    const vec2 mouse_position = (cursorPos - GameRules::getPlayfieldOffset())  //
+                                / GameRules::getPlayfieldScaleFactor();
 
     // Update flashlight position
-    double follow_delay = cv::flashlight_follow_delay.getFloat();
-    double frame_time = std::min(engine->getFrameTime(), follow_delay);
+    const double follow_delay = cv::flashlight_follow_delay.getFloat();
+    const double frame_time = std::min(engine->getFrameTime(), follow_delay);
     float t = frame_time / follow_delay;
     t = t * (2.f - t);
     this->flashlight_position += t * (mouse_position - this->flashlight_position);
-    vec2 flashlightPos =
+    const vec2 flashlightPos =
         this->flashlight_position * GameRules::getPlayfieldScaleFactor() + GameRules::getPlayfieldOffset();
 
-    float base_fl_radius = cv::flashlight_radius.getFloat() * GameRules::getPlayfieldScaleFactor();
+    const float base_fl_radius = cv::flashlight_radius.getFloat() * GameRules::getPlayfieldScaleFactor();
     float anti_fl_radius = base_fl_radius * 0.625f;
     float fl_radius = base_fl_radius;
 
@@ -1913,7 +1912,7 @@ void BeatmapInterface::drawSmoke() {
 
     // We're not using this->iCurMusicPos, because we want the user to be able
     // to draw while the music is loading / before the map starts.
-    auto current_time = Timing::getTicksMS();
+    const u64 current_time = Timing::getTicksMS();
 
     // Add new smoke particles if unpaused & smoke key pressed
     if(!this->bIsPaused && (this->current_keys & GameplayKeys::Smoke)) {
@@ -1931,43 +1930,40 @@ void BeatmapInterface::drawSmoke() {
         //      so that there is no 'gap' in between particles.
         //      (similar to HUD::addCursorTrailPosition...)
         //      Also our smoke_trail_spacing is too low, stable probably has it over 15ms.
-        i64 last_trail_tms = 0;
-        if(!this->smoke_trail.empty()) {
-            last_trail_tms = this->smoke_trail.back().time;
-        }
+        const i64 last_trail_tms = !this->smoke_trail.empty() ? this->smoke_trail.back().time : 0;
         if(sm.time - last_trail_tms > cv::smoke_trail_spacing.getInt()) {
             this->smoke_trail.push_back(sm);
         }
     }
 
-    f32 scale = osu->getHUD()->getCursorScaleFactor() / this->getSkin()->i_cursor_smoke.scale();
-    scale *= cv::cursor_scale.getFloat();
-    scale *= cv::smoke_scale.getFloat();
+    const f32 scale = (osu->getHUD()->getCursorScaleFactor() / this->getSkin()->i_cursor_smoke.scale())  //
+                      * cv::cursor_scale.getFloat()                                                      //
+                      * cv::smoke_scale.getFloat();
 
-    i64 time_visible = (i64)(cv::smoke_trail_duration.getFloat() * 1000.f);
-    i64 time_fully_visible = (i64)(cv::smoke_trail_opaque_duration.getFloat() * 1000.f);
-    i64 fade_time = time_visible - time_fully_visible;
+    const i64 time_visible = (i64)(cv::smoke_trail_duration.getFloat() * 1000.f);
+    const i64 time_fully_visible = (i64)(cv::smoke_trail_opaque_duration.getFloat() * 1000.f);
+    const i64 fade_time = time_visible - time_fully_visible;
 
-    smoke->bind();
-    for(const auto &sm : this->smoke_trail) {
-        i64 active_for = current_time - sm.time;
-        if(active_for >= time_visible) continue;  // avoids division by 0 when (time_visible == time_fully_visible)
+    g->pushTransform();
+    {
+        g->scale(scale, scale);
+        for(const auto &sm : this->smoke_trail) {
+            const i64 active_for = current_time - sm.time;
+            if(active_for >= time_visible) continue;  // avoids division by 0 when (time_visible == time_fully_visible)
 
-        // Start fading out when time_fully_visible has passed
-        f32 alpha = (f32)std::min(fade_time, time_fully_visible - active_for) / (f32)fade_time;
-        if(alpha <= 0.f) continue;
+            // Start fading out when time_fully_visible has passed
+            const f32 alpha = (f32)std::min(fade_time, time_fully_visible - active_for) / (f32)fade_time;
+            if(alpha <= 0.f) continue;
 
-        g->setColor(argb(alpha, 1.f, 1.f, 1.f));
-        g->pushTransform();
-        {
-            auto pos = this->osuCoords2Pixels(sm.pos);
-            g->scale(scale, scale);
-            g->translate(pos.x, pos.y);
-            g->drawImage(smoke);
+            g->setColor(argb(alpha, 1.f, 1.f, 1.f));
+            {
+                const auto pos = this->osuCoords2Pixels(sm.pos);
+                g->translate(pos.x, pos.y);
+                g->drawImage(smoke);
+            }
         }
-        g->popTransform();
     }
-    smoke->unbind();
+    g->popTransform();
 
     // trail cleanup
     while(!this->smoke_trail.empty() && std::cmp_greater(current_time, this->smoke_trail[0].time + time_visible)) {

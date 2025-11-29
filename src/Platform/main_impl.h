@@ -34,7 +34,6 @@ class SDLMain final : public Environment {
    private:
     // init methods
     bool createWindow();
-    void dumpGLContextInfo() const;
     void setupLogging();
     void configureEvents();
     float queryDisplayHz();
