@@ -5,10 +5,10 @@
 #include "UString.h"
 
 void Keyboard::reset() {
-    this->bControlDown = false;
-    this->bAltDown = false;
-    this->bShiftDown = false;
-    this->bSuperDown = false;
+    this->controlDown = 0b00;
+    this->altDown = 0b00;
+    this->shiftDown = 0b00;
+    this->superDown = 0b00;
 }
 
 void Keyboard::addListener(KeyboardListener *keyboardListener, bool insertOnTop) {
@@ -31,21 +31,30 @@ void Keyboard::removeListener(KeyboardListener *keyboardListener) {
 void Keyboard::onKeyDown(KeyboardEvent event) {
     switch(event.getScanCode()) {
         case KEY_LCONTROL:
+            this->controlDown |= 0b10;
+            break;
         case KEY_RCONTROL:
-            this->bControlDown = true;
+            this->controlDown |= 0b01;
             break;
         case KEY_LALT:
-        case KEY_RALT:
-            this->bAltDown = true;
+            this->altDown |= 0b10;
             break;
-
+        case KEY_RALT:
+            this->altDown |= 0b01;
+            break;
         case KEY_LSHIFT:
+            this->shiftDown |= 0b10;
+            break;
         case KEY_RSHIFT:
-            this->bShiftDown = true;
+            this->shiftDown |= 0b01;
             break;
         case KEY_LSUPER:
+            this->superDown |= 0b10;
+            break;
         case KEY_RSUPER:
-            this->bSuperDown = true;
+            this->superDown |= 0b01;
+            break;
+        default:
             break;
     }
 
@@ -60,21 +69,30 @@ void Keyboard::onKeyDown(KeyboardEvent event) {
 void Keyboard::onKeyUp(KeyboardEvent event) {
     switch(event.getScanCode()) {
         case KEY_LCONTROL:
+            this->controlDown &= 0b01;
+            break;
         case KEY_RCONTROL:
-            this->bControlDown = false;
+            this->controlDown &= 0b10;
             break;
         case KEY_LALT:
-        case KEY_RALT:
-            this->bAltDown = false;
+            this->altDown &= 0b01;
             break;
-
+        case KEY_RALT:
+            this->altDown &= 0b10;
+            break;
         case KEY_LSHIFT:
+            this->shiftDown &= 0b01;
+            break;
         case KEY_RSHIFT:
-            this->bShiftDown = false;
+            this->shiftDown &= 0b10;
             break;
         case KEY_LSUPER:
+            this->superDown &= 0b01;
+            break;
         case KEY_RSUPER:
-            this->bSuperDown = false;
+            this->superDown &= 0b10;
+            break;
+        default:
             break;
     }
 

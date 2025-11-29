@@ -23,16 +23,18 @@ class Keyboard final : public InputDevice {
     void onKeyUp(KeyboardEvent event);
     void onChar(KeyboardEvent event);
 
-    [[nodiscard]] constexpr forceinline bool isControlDown() const { return this->bControlDown; }
-    [[nodiscard]] constexpr forceinline bool isAltDown() const { return this->bAltDown; }
-    [[nodiscard]] constexpr forceinline bool isShiftDown() const { return this->bShiftDown; }
-    [[nodiscard]] constexpr forceinline bool isSuperDown() const { return this->bSuperDown; }
+    [[nodiscard]] constexpr forceinline bool isControlDown() const { return this->controlDown > 0; }
+    [[nodiscard]] constexpr forceinline bool isAltDown() const { return this->altDown > 0; }
+    [[nodiscard]] constexpr forceinline bool isShiftDown() const { return this->shiftDown > 0; }
+    [[nodiscard]] constexpr forceinline bool isSuperDown() const { return this->superDown > 0; }
 
    private:
     std::vector<KeyboardListener *> listeners;
 
-    bool bControlDown{false};
-    bool bAltDown{false};
-    bool bShiftDown{false};
-    bool bSuperDown{false};
+    // 2 bits to handle left/right
+    // right bit is right ctrl/alt/shift/super, left bit is left
+    unsigned controlDown : 2 {false};
+    unsigned altDown : 2 {false};
+    unsigned shiftDown : 2 {false};
+    unsigned superDown : 2 {false};
 };
