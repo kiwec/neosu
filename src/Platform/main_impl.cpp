@@ -33,6 +33,10 @@ SDLMain::SDLMain(const std::unordered_map<std::string, std::optional<std::string
 }
 
 SDLMain::~SDLMain() {
+    if constexpr(Env::cfg(OS::WINDOWS) && !Env::cfg(FEAT::MAINCB)) {
+        SDL_RemoveEventWatch(SDLMain::resizeCallback, this);
+    }
+
     m_engine.reset();
 
     // clean up GL context
@@ -91,6 +95,11 @@ SDL_AppResult SDLMain::initialize() {
 
     if(!m_engine || m_engine->isShuttingDown()) {
         return SDL_APP_FAILURE;
+    }
+
+    // set up live-resize event callback
+    if constexpr(Env::cfg(OS::WINDOWS) && !Env::cfg(FEAT::MAINCB)) {
+        SDL_AddEventWatch(SDLMain::resizeCallback, this);
     }
 
     // delay info until we know what gpu we're running
@@ -319,6 +328,17 @@ SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
                 case SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED:
                     m_engine->onDPIChange();
                     break;
+
+                case SDL_EVENT_WINDOW_EXPOSED: {
+                    if constexpr(Env::cfg(OS::WINDOWS) && !Env::cfg(FEAT::MAINCB)) {
+                        if(event->window.data1 == 1 /* live resize event */ && !winMinimized() &&
+                           !m_bRestoreFullscreen) {
+                            m_engine->requestResolutionChange(getWindowSize());
+                            iterate();
+                            break;
+                        }
+                    }
+                }  // fallthrough
 
                 default:
                     if(m_bEnvDebug)
@@ -771,6 +791,22 @@ void SDLMain::shutdown(SDL_AppResult result) {
         SDL_StopTextInput(m_window);
 
     Environment::shutdown();
+}
+
+bool SDLMain::resizeCallback(void *userdata, SDL_Event *event) {
+    assert(userdata && event);
+
+    SDLMain *main_ptr;
+    if(event->type != SDL_EVENT_WINDOW_EXPOSED || event->window.data1 != 1 /* live resize event */ ||
+       (main_ptr = static_cast<SDLMain *>(userdata))->winMinimized() || main_ptr->m_bRestoreFullscreen) {
+        return false;  // return value is ignored from AddEventWatch
+    }
+    assert(main_ptr->m_engine);
+
+    main_ptr->m_engine->requestResolutionChange(main_ptr->getWindowSize());
+    main_ptr->iterate();
+
+    return false;
 }
 
 #if defined(MCENGINE_PLATFORM_WINDOWS) && !defined(SDL_main_h_)

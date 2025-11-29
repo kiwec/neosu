@@ -156,13 +156,11 @@ MAIN_FUNC /* int argc, char *argv[] */
 
 #if defined(_WIN32)
     {
-        constexpr int CS_VREDRAW_ = 0x1;
-        constexpr int CS_HREDRAW_ = 0x2;
         constexpr int CS_BYTEALIGNCLIENT_ = 0x1000;
         constexpr int CS_BYTEALIGNWINDOW_ = 0x2000;
 
         // required for handle_existing_window to find this running instance
-        SDL_RegisterApp(PACKAGE_NAME, CS_BYTEALIGNCLIENT_ | CS_BYTEALIGNWINDOW_ | CS_VREDRAW_ | CS_HREDRAW_, nullptr);
+        SDL_RegisterApp(PACKAGE_NAME, CS_BYTEALIGNCLIENT_ | CS_BYTEALIGNWINDOW_, nullptr);
     }
 #if defined(_DEBUG)  // only debug builds create a console
     SetConsoleOutputCP(65001 /*CP_UTF8*/);
@@ -253,12 +251,15 @@ MAIN_FUNC /* int argc, char *argv[] */
     constexpr int SIZE_EVENTS = 64;
     std::array<SDL_Event, SIZE_EVENTS> events{};
 
+    int eventCount = 0;
+
     while(fmain->isRunning()) {
         VPROF_MAIN();
         {
             // event collection
             VPROF_BUDGET("SDL", VPROF_BUDGETGROUP_EVENTS);
-            int eventCount = 0;
+            eventCount = 0;
+
             {
                 VPROF_BUDGET("SDL_PumpEvents", VPROF_BUDGETGROUP_EVENTS);
                 SDL_PumpEvents();

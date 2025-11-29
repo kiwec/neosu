@@ -48,6 +48,10 @@ class SDLMain final : public Environment {
     void setFgFPS();
     void setBgFPS();
 
+    // for live resizing on windows
+    // SDL will call this on the main thread when the window needs to be redrawn
+    static bool resizeCallback(void *userdata, SDL_Event *event);
+
     // GL context (must be created early, during window creation)
     SDL_GLContext m_context{nullptr};
 
