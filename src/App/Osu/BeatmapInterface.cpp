@@ -1944,26 +1944,24 @@ void BeatmapInterface::drawSmoke() {
     const i64 time_fully_visible = (i64)(cv::smoke_trail_opaque_duration.getFloat() * 1000.f);
     const i64 fade_time = time_visible - time_fully_visible;
 
-    g->pushTransform();
-    {
-        g->scale(scale, scale);
-        for(const auto &sm : this->smoke_trail) {
-            const i64 active_for = current_time - sm.time;
-            if(active_for >= time_visible) continue;  // avoids division by 0 when (time_visible == time_fully_visible)
+    for(const auto &sm : this->smoke_trail) {
+        const i64 active_for = current_time - sm.time;
+        if(active_for >= time_visible) continue;  // avoids division by 0 when (time_visible == time_fully_visible)
 
-            // Start fading out when time_fully_visible has passed
-            const f32 alpha = (f32)std::min(fade_time, time_fully_visible - active_for) / (f32)fade_time;
-            if(alpha <= 0.f) continue;
+        // Start fading out when time_fully_visible has passed
+        const f32 alpha = (f32)std::min(fade_time, time_fully_visible - active_for) / (f32)fade_time;
+        if(alpha <= 0.f) continue;
 
-            g->setColor(argb(alpha, 1.f, 1.f, 1.f));
-            {
-                const auto pos = this->osuCoords2Pixels(sm.pos);
-                g->translate(pos.x, pos.y);
-                g->drawImage(smoke);
-            }
+        g->setColor(argb(alpha, 1.f, 1.f, 1.f));
+        g->pushTransform();
+        {
+            const auto pos = this->osuCoords2Pixels(sm.pos);
+            g->scale(scale, scale);
+            g->translate(pos.x, pos.y);
+            g->drawImage(smoke);
         }
+        g->popTransform();
     }
-    g->popTransform();
 
     // trail cleanup
     while(!this->smoke_trail.empty() && std::cmp_greater(current_time, this->smoke_trail[0].time + time_visible)) {
