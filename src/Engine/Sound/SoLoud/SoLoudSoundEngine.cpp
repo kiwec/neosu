@@ -131,12 +131,18 @@ bool SoLoudSoundEngine::play(Sound *snd, f32 pan, f32 pitch, f32 playVolume, boo
 bool SoLoudSoundEngine::updateExistingSound(SoLoudSound *soloudSound, SOUNDHANDLE handle, f32 pan, f32 pitch,
                                             f32 playVolume, bool startPaused) {
     assert(soloudSound);
-    if(soloudSound->getPitch() != pitch) {
-        soloudSound->setPitch(pitch);
-    }
 
-    if(soloudSound->getPan() != pan) {
-        soloudSound->setPan(pan);
+    // TODO(spec): don't do pitch += 1.0f; in play(), and do soundEngine->play(music, 0, music->getPitch())
+    // for both bass/soloud
+    // workaround for now
+    if(!soloudSound->isStream()) {
+        if(soloudSound->getPitch() != pitch) {
+            soloudSound->setPitch(pitch);
+        }
+
+        if(soloudSound->getPan() != pan) {
+            soloudSound->setPan(pan);
+        }
     }
 
     soloudSound->setHandleVolume(handle, soloudSound->getBaseVolume() * playVolume);
