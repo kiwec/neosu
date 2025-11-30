@@ -129,7 +129,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) { return static_cast<SDLMain *>(app
 // actual main/init, called once
 MAIN_FUNC /* int argc, char *argv[] */
 {
-#if defined(_WIN32)
+#if defined(_WIN32) && defined(_DEBUG)  // only debug allocates a console immediately
     SetConsoleOutputCP(65001 /*CP_UTF8*/);
 #endif
 

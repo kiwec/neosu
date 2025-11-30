@@ -58,6 +58,8 @@ namespace {  // static
 static std::shared_ptr<spdlog::async_logger> g_logger;
 static std::shared_ptr<spdlog::async_logger> g_raw_logger;
 
+static bool s_created_console{false};
+
 // workaround for really odd internal template decisions in spdlog...
 struct custom_spdmtx : public Sync::mutex {
     using mutex_t = Sync::mutex;
@@ -174,11 +176,27 @@ void init(bool create_console) noexcept {
     if(g_initialized) return;
 
 #ifdef MCENGINE_PLATFORM_WINDOWS
+    // when the spdlog::sinks::wincolor_stdout_sink is created, it checks GetStdHandle(STD_OUTPUT_HANDLE) at initialization
+    // so, create a console, such that GetStdHandle(STD_OUTPUT_HANDLE) returns a handle to it
+    // this might be desirable on release builds, which are linked against the "windows" subsystem
+    // (which don't create a console when opening the app)
     if(create_console && !isaTTY() /* don't create console if we're already in one */) {
-        // when the spdlog::sinks::wincolor_stdout_sink is created, it checks GetStdHandle(STD_OUTPUT_HANDLE) at initialization
-        // so, TODO: create a console, such that GetStdHandle(STD_OUTPUT_HANDLE) returns a handle to it
-        // this might be desirable on release builds, which are linked against the "windows" subsystem
-        // (which don't create a console when opening the app)
+        // allocate a new console window
+        if((s_created_console = AllocConsole())) {
+            // redirect stdout/stderr to the new console
+            // using freopen is the simplest approach that works with both C and C++ streams
+            FILE *fp = nullptr;
+            freopen_s(&fp, "CONOUT$", "w", stdout);
+            freopen_s(&fp, "CONOUT$", "w", stderr);
+
+            SetConsoleTitleW(L"" PACKAGE_NAME L" " PACKAGE_VERSION L" console output");
+
+            // make console output visible immediately
+            setvbuf(stdout, nullptr, _IONBF, 0);
+            setvbuf(stderr, nullptr, _IONBF, 0);
+
+            SetConsoleOutputCP(65001 /*CP_UTF8*/);
+        }
     }
 #else
     (void)create_console;  // it's not as big of a commotion on platforms outside of windows
@@ -276,6 +294,13 @@ void shutdown() noexcept {
     // spdlog docs recommend calling this on exit
     // for async loggers, this waits for the background thread to finish processing queued messages
     spdlog::shutdown();
+
+#ifdef MCENGINE_PLATFORM_WINDOWS
+    if(s_created_console) {
+        FreeConsole();
+        s_created_console = false;
+    }
+#endif
 }
 
 // manual trigger for console commands
