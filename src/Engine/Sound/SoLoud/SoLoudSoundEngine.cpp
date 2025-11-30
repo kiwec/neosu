@@ -357,6 +357,7 @@ bool SoLoudSoundEngine::switchShareModes(const std::optional<OUTPUT_DEVICE> &toK
 
     if(soloud->setDevice(&desiredSLDevice.identifier[0]) == SoLoud::SO_NO_ERROR) {
         this->currentOutputDevice = desiredDevice;
+        logIfCV(debug_snd, "switched share modes to {}", desiredDevice.id);
         return true;
     } else {
         debugLog("SoundEngine: Tried to switch to {} mode, but couldn't.", toShared ? "shared" : "exclusive");
@@ -380,10 +381,26 @@ void SoLoudSoundEngine::onFocusLost() {
 }
 
 bool SoLoudSoundEngine::setOutputDeviceInt(const SoundEngine::OUTPUT_DEVICE &desiredDevice, bool force) {
+    auto dumpOutputDevices = [&, func = __FUNCTION__]() {
+        const auto &curDev = this->currentOutputDevice;
+        debugLogLambda("CURRENT id: {} drv: {} enbl: {} def: {} init: {} name: {}", curDev.id, (u8)curDev.driver,
+                       curDev.enabled, curDev.isDefault, curDev.isInit, curDev.name);
+        for(const auto &dev : this->outputDevices) {
+            debugLogLambda("OUR id: {} name: {} drv: {} enbl: {} def: {} init: {}", dev.id, dev.name, (u8)dev.driver,
+                           dev.enabled, dev.isDefault, dev.isInit, dev.name);
+        }
+        for(const auto &[id, dev] : this->mSoloudDevices) {
+            debugLogLambda("SOLOUD id: {} name: {} def: {} excl: {} identifier: {}", id,
+                           std::string_view{dev.name.data(), strlen(dev.name.data())}, dev.isDefault, dev.isExclusive,
+                           std::string_view{dev.identifier.data(), strlen(dev.identifier.data())});
+        }
+    };
+
     auto onOut = [&](bool ret) -> bool {
         cv::snd_output_device.setValue(this->currentOutputDevice.name, false);
         this->updateLastDevice();
         if(soloud) soloud->setGlobalVolume(this->fMasterVolume);
+        if(cv::debug_snd.getBool()) dumpOutputDevices();
         return ret;
     };
 
@@ -711,11 +728,12 @@ bool SoLoudSoundEngine::initializeOutputDevice(const OUTPUT_DEVICE &device) {
         }
 
         if(desiredDev.id != this->currentOutputDevice.id && this->outputDevices.size() > 1 &&
-           this->mSoloudDevices[desiredDev.id].identifier[0] !=
-               this->mSoloudDevices[this->currentOutputDevice.id].identifier[0]) {
+           this->mSoloudDevices[desiredDev.id].identifier !=
+               this->mSoloudDevices[this->currentOutputDevice.id].identifier) {
             // set the actual desired device, after we enumerated things
             if(soloud->setDevice(&this->mSoloudDevices[desiredDev.id].identifier[0]) != SoLoud::SO_NO_ERROR) {
                 // reset to default
+                debugLog("resetting to default, setting to {} failed", desiredDev.name);
                 this->currentOutputDevice = desiredDev = this->outputDevices[0];
                 soloud->setDevice(&this->mSoloudDevices[desiredDev.id].identifier[0]);
             }
@@ -786,6 +804,14 @@ bool SoLoudSoundEngine::initializeOutputDevice(const OUTPUT_DEVICE &device) {
         soloud->isThreaded() ? "multi-threaded" : "single-thread", this->currentOutputDevice.name.toUtf8(),
         static_cast<unsigned int>(flags), soloud->getBackendString(), soloud->getBackendSamplerate(),
         soloud->getBackendBufferSize(), soloud->getBackendChannels(), cv::snd_soloud_resampler.getString());
+
+    {
+        SoLoud::DeviceInfo inf{};
+        soloud->getCurrentDevice(&inf);
+        // sanity...
+        logIfCV(debug_snd, "ACTUAL current soloud device: {}",
+                std::string_view{inf.name.data(), strlen(inf.name.data())});
+    }
 
     // init global volume
     this->setMasterVolume(this->fMasterVolume);

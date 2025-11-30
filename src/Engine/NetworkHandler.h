@@ -121,7 +121,7 @@ class NetworkHandler {
     void update();
 
     struct NetworkImpl;
-    StaticPImpl<NetworkImpl, 512> pImpl;  // implementation details
+    StaticPImpl<NetworkImpl, 640> pImpl;  // implementation details
 };
 
 }  // namespace Net
