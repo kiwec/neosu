@@ -11,6 +11,6 @@
 #endif
 
 extern "C" {
-extern EXPORT_NAME_ void handle_existing_window_app(int argc, char *argv[]);
-extern EXPORT_NAME_ void *create_app_env_interop(void *envptr);
+extern EXPORT_NAME_ void NEOSU_handle_existing_window(int argc, char *argv[]);
+extern EXPORT_NAME_ void *NEOSU_create_env_interop(void *envptr);
 }

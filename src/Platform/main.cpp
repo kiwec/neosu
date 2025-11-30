@@ -141,7 +141,7 @@ MAIN_FUNC /* int argc, char *argv[] */
 
     // const bool diffcalcOnly = argc >= 2 && strncmp(argv[1], "-diffcalc", sizeof("-diffcalc") - 1) == 0;
     // if(diffcalcOnly) {
-    //     return run_diffcalc(argc, argv);
+    //     return NEOSU_run_diffcalc(argc, argv);
     // }
 
     // if a neosu instance is already running, send it a message then quit

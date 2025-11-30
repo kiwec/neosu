@@ -58,13 +58,13 @@ static_assert(SDL_WF_EQ(FULLSCREEN) && SDL_WF_EQ(OPENGL) && SDL_WF_EQ(OCCLUDED) 
 
 void Environment::Interop::handle_existing_window(int argc, char *argv[]) {
 #ifndef APP_LIBRARY_BUILD
-    return handle_existing_window_app(argc, argv);
+    return NEOSU_handle_existing_window(argc, argv);
 #else
     auto *selfHandle = dynutils::load_lib(nullptr);
     assert(selfHandle);
 
-    using handle_existing_window_app_t = void(int argc, char *argv[]);
-    auto *pHandler = dynutils::load_func<handle_existing_window_app_t>(selfHandle, "handle_existing_window_app");
+    using NEOSU_handle_existing_window_t = void(int argc, char *argv[]);
+    auto *pHandler = dynutils::load_func<NEOSU_handle_existing_window_t>(selfHandle, "NEOSU_handle_existing_window");
     if(pHandler) {
         debugLog("got handler function at {:p}", (void *)pHandler);
         pHandler(argc, argv);  // this may exit the program
@@ -82,13 +82,13 @@ void Environment::Interop::handle_existing_window(int argc, char *argv[]) {
 Environment::Interop *Environment::tryCreatingAppEnvInterop() {
     Interop *ret = nullptr;
 #ifndef APP_LIBRARY_BUILD
-    ret = static_cast<Interop *>(create_app_env_interop(this));
+    ret = static_cast<Interop *>(NEOSU_create_env_interop(this));
 #else
     auto *selfHandle = dynutils::load_lib(nullptr);
     assert(selfHandle);
 
-    using create_app_env_interop_t = void *(void *environmentPtr);
-    auto *pInteropCreator = dynutils::load_func<create_app_env_interop_t>(selfHandle, "create_app_env_interop");
+    using NEOSU_create_env_interop_t = void *(void *environmentPtr);
+    auto *pInteropCreator = dynutils::load_func<NEOSU_create_env_interop_t>(selfHandle, "NEOSU_create_env_interop");
     if(pInteropCreator) {
         debugLog("got app env interop creator function at {:p}", (void *)pInteropCreator);
         ret = static_cast<Interop *>(pInteropCreator(this));

@@ -66,7 +66,7 @@ BeatmapSettings parseDifficultySettings(std::string_view osuFilePath) {
 
 }  // namespace
 
-int run_diffcalc(int argc, char* argv[]) {
+int NEOSU_run_diffcalc(int argc, char* argv[]) {
     if(argc < 3) {
         std::cerr << "usage: " << argv[0] << "-diffcalc <osu_file>\n";
         return 1;

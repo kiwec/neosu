@@ -110,7 +110,7 @@ extern std::unique_ptr<App> app;
 #endif
 
 extern "C" {
-extern EXPORT_NAME_ App* create_app_real();
+extern EXPORT_NAME_ App* NEOSU_create_app_real();
 }
 
 #endif

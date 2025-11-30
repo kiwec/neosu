@@ -26,7 +26,7 @@ struct OsuEnvInterop : public Environment::Interop {
     void setup_system_integrations() override;
 };
 
-void *create_app_env_interop(void *void_envptr) {
+void *NEOSU_create_env_interop(void *void_envptr) {
     assert(void_envptr);
     auto *envptr = static_cast<Environment *>(void_envptr);
     return new OsuEnvInterop(envptr);
@@ -305,7 +305,7 @@ void OsuEnvInterop::setup_system_integrations() {
     RegCloseKey(osz_key);
 }
 
-void handle_existing_window_app(int argc, char *argv[]) {
+void NEOSU_handle_existing_window(int argc, char *argv[]) {
     // if a neosu instance is already running, send it a message then quit
     HWND existing_window = FindWindow(TEXT(PACKAGE_NAME), nullptr);
     if(existing_window && argc > 1) {  // only send if we have more than just the exe name as args
@@ -389,6 +389,6 @@ void handle_existing_window_app(int argc, char *argv[]) {
 #else  // not implemented
 void OsuEnvInterop::setup_system_integrations() { return; }
 
-void handle_existing_window_app(int /*argc*/, char * /*argv*/[]) {}
+void NEOSU_handle_existing_window(int /*argc*/, char * /*argv*/[]) {}
 
 #endif

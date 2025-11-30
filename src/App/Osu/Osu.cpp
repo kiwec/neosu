@@ -73,7 +73,7 @@
 
 Osu *osu{nullptr};
 
-App *create_app_real() { return new Osu(); }
+App *NEOSU_create_app_real() { return new Osu(); }
 
 // prevents score submission when/if a protected convar is changed during gameplay
 void Osu::globalOnSetValueProtectedCallback() {

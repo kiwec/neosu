@@ -173,10 +173,10 @@ Engine::~Engine() {
     McFont::cleanupSharedResources();
 
     debugLog("Engine: Stopping I/O subsystem...");
+    directoryWatcher.reset();
+
     io->cleanup();
     io.reset();
-
-    directoryWatcher.reset();
 
     debugLog("Engine: Goodbye.");
 

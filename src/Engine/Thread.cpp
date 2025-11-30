@@ -108,6 +108,8 @@ void set_current_thread_prio(Priority prio) {
     SDL_ThreadPriority sdlprio;
     const char *priostring;
     switch(prio) {
+        default:
+            prio = NORMAL;  // sanity
         case NORMAL:
             sdlprio = SDL_THREAD_PRIORITY_NORMAL;
             priostring = "normal";
@@ -124,9 +126,6 @@ void set_current_thread_prio(Priority prio) {
             sdlprio = SDL_THREAD_PRIORITY_TIME_CRITICAL;
             priostring = "realtime";
             break;
-        default:
-            std::unreachable();
-            return;
     }
     if(!SDL_SetCurrentThreadPriority(sdlprio)) {
         debugLog("couldn't set thread priority to {}", priostring);

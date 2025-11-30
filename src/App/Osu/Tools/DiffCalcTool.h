@@ -1,5 +1,5 @@
 #pragma once
 
 extern "C" {
-int run_diffcalc(int argc, char *argv[]);
+int NEOSU_run_diffcalc(int argc, char *argv[]);
 }

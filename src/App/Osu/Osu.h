@@ -50,7 +50,7 @@ class Osu final : public App, public MouseListener {
     Osu();
 
    private:
-    friend App* create_app_real();
+    friend App* NEOSU_create_app_real();
     struct GlobalOsuCtorDtorThing;
     // make sure the global "osu" name is created first and destroyed last... funny way to do it, but it works
     // so we don't have to break the compile barrier and do "osu = nullptr" in Engine.cpp

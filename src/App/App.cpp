@@ -9,20 +9,17 @@
 #endif
 
 App *App::create(bool dummy) {
+    if(dummy) return new App();
+
     App *ret = nullptr;
 #ifndef APP_LIBRARY_BUILD
-    if(dummy) {
-        ret = new App();
-    } else {
-        ret = create_app_real();
-    }
-
+    ret = NEOSU_create_app_real();
 #else
     auto *selfHandle = dynutils::load_lib(nullptr);
     assert(selfHandle);
 
-    using create_app_real_t = App *(void);
-    auto *pCreate = dynutils::load_func<create_app_real_t>(selfHandle, "create_app_real");
+    using NEOSU_create_app_real_t = App *(void);
+    auto *pCreate = dynutils::load_func<NEOSU_create_app_real_t>(selfHandle, "NEOSU_create_app_real");
     if(pCreate) {
         debugLog("got app creation function at {:p}", (void *)pCreate);
         ret = pCreate();
