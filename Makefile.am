@@ -74,7 +74,7 @@ $(DEPS_CACHE)/FMT-$(FMT_VERSION).source:
 # always needed (if not on host)
 $(DEPS_CACHE)/spdlog-$(SPDLOG_VERSION).source:
 	$(MKDIR_P) $(DEPS_CACHE)
-	$(WGET) -qO $(DEPS_CACHE)/spdlog-$(SPDLOG_VERSION).tar.gz "https://github.com/gabime/spdlog/archive/refs/tags/v$(SPDLOG_VERSION).tar.gz" && \
+	$(WGET) -qO $(DEPS_CACHE)/spdlog-$(SPDLOG_VERSION).tar.gz "https://github.com/gabime/spdlog/archive/$(SPDLOG_VERSION).tar.gz" && \
 	touch $@
 
 # always needed (if not on host)
@@ -783,38 +783,17 @@ $(DEPS_PREFIX)/FMT-$(FMT_VERSION).built:
 	$(MKDIR_P) $(DEPS_PREFIX) && touch $@
 endif # BUILD_FMT
 
-SPDLOG_CFLAGS += -DSPDLOG_NO_EXCEPTIONS -DSPDLOG_FMT_EXTERNAL
+SPDLOG_CFLAGS += -USPDLOG_SHARED_LIB -USPDLOG_COMPILED_LIB -DSPDLOG_NO_EXCEPTIONS -DSPDLOG_FMT_EXTERNAL
+if WIN_PLATFORM
+SPDLOG_CFLAGS += -DSPDLOG_WCHAR_TO_UTF8_SUPPORT -DSPDLOG_UTF8_TO_WCHAR_CONSOLE
+endif
 if BUILD_SPDLOG
-SPDLOG_CFLAGS += $(shell $(PKG_CONFIG) --cflags spdlog)
-SPDLOG_LIBS += $(shell $(PKG_CONFIG) --libs spdlog)
-$(DEPS_PREFIX)/spdlog-$(SPDLOG_VERSION).built: $(DEPS_CACHE)/spdlog-$(SPDLOG_VERSION).source $(DEPS_PREFIX)/FMT-$(FMT_VERSION).built
-	rm -rf $(DEPS_PREFIX)/spdlog
-	$(MKDIR_P) $(DEPS_PREFIX)/spdlog/build $(DEPS_PREFIX)/lib/pkgconfig
+$(DEPS_PREFIX)/spdlog-$(SPDLOG_VERSION).built: $(DEPS_CACHE)/spdlog-$(SPDLOG_VERSION).source
+	rm -rf $(DEPS_PREFIX)/spdlog $(DEPS_PREFIX)/include/spdlog $(DEPS_PREFIX)/lib/cmake/spdlog $(DEPS_PREFIX)/lib/pkgconfig/spdlog.pc
+	$(MKDIR_P) $(DEPS_PREFIX)/include/ $(DEPS_PREFIX)/spdlog
 	$(TAR) xf $(DEPS_CACHE)/spdlog-$(SPDLOG_VERSION).tar.gz -C $(DEPS_PREFIX)/spdlog --strip-components=1 && \
-	cd $(DEPS_PREFIX)/spdlog && \
-	PKG_CONFIG="$(PKG_CONFIG)" LDFLAGS="$(LDFLAGS) $(if $(and $(findstring i686,$(host_cpu)),$(findstring mingw,$(host_os))),-fno-lto,)" \
-	$(CMAKE) -S . -B build -G "$(CMAKE_GEN)" \
-		-DCMAKE_BUILD_TYPE="$(if $(ENABLE_DEBUG),Debug,Release)" \
-		-DCMAKE_INSTALL_PREFIX="$(DEPS_PREFIX)" \
-		-DCMAKE_SYSTEM_NAME="$(CMAKE_SYSTEM_NAME)" \
-		-DCMAKE_SYSTEM_PROCESSOR="$(host_cpu)" \
-		-DCMAKE_CXX_COMPILER="$(CXX)" \
-		-DCMAKE_CXX_STANDARD=23 \
-		-DCMAKE_CXX_FLAGS="$(CXXFLAGS) $(if $(and $(findstring i686,$(host_cpu)),$(findstring mingw,$(host_os))),-fno-lto,)" \
-		$(CMAKERCOPT) $(CMAKEIDOPT) \
-		-D CMAKE_C_COMPILER_AR=$(AR) \
-		-D CMAKE_C_COMPILER_RANLIB=$(RANLIB) \
-		-D CMAKE_CXX_COMPILER_AR=$(AR) \
-		-D CMAKE_CXX_COMPILER_RANLIB=$(RANLIB) \
-		-DSPDLOG_FMT_EXTERNAL=ON \
-		-DSPDLOG_INSTALL=ON \
-		-DSPDLOG_BUILD_EXAMPLE=OFF \
-		-DSPDLOG_NO_EXCEPTIONS=ON \
-		-DSPDLOG_BUILD_SHARED="$(if $(STATICBUILD),OFF,ON)" && \
-	$(CMAKE) --build build "$(CMAKEPAROPT)" && \
-	$(CMAKE) --install build && \
-	$(if $(ENABLE_DEBUG),$(SED) -i 's|\(.*\)\(-lspdlog[^d]\)|\1-lspdlogd |g' $(DEPS_PREFIX)/lib/pkgconfig/spdlog.pc,true)
-	$(PKG_CONFIG) --exists --print-errors spdlog
+	cp -r $(DEPS_PREFIX)/spdlog/include/spdlog $(DEPS_PREFIX)/include/
+	test -f $(DEPS_PREFIX)/include/spdlog/version.h
 	touch $@
 else
 $(DEPS_PREFIX)/spdlog-$(SPDLOG_VERSION).built:
@@ -1132,7 +1111,6 @@ neosu_LDFLAGS := \
 	$(AUDIO_LIBS) \
 	$(FREETYPE2_LIBS) \
 	$(FMT_LIBS) \
-	$(SPDLOG_LIBS) \
 	$(LIBPNG_LIBS) \
 	$(LIBARCHIVE_LIBS) \
 	$(BZIP2_LIBS) \
@@ -1267,9 +1245,6 @@ if BUILD_FREETYPE2
 endif
 if BUILD_FMT
 	$(if $(STATICBUILD),,@`find $(FMT_PREFIX) '(' -iname '*fmt*'$(DLLEXT) -o -iname '*fmt*''.so.*' ')' -exec cp -P '{''}' "$(DESTDIR)$(bindir)/$(LIBDEST)" ';'`)
-endif
-if BUILD_SPDLOG
-	$(if $(STATICBUILD),,@`find $(SPDLOG_PREFIX) '(' -iname '*spd*'$(DLLEXT) -o -iname '*spd*''.so.*' ')' -exec cp -P '{''}' "$(DESTDIR)$(bindir)/$(LIBDEST)" ';'`)
 endif
 if BUILD_NSYNC
 	$(if $(STATICBUILD),,@`find $(NSYNC_PREFIX) '(' -iname '*nsync*'$(DLLEXT) -o -iname '*nsync*''.so.*' ')' -exec cp -P '{''}' "$(DESTDIR)$(bindir)/$(LIBDEST)" ';'`)

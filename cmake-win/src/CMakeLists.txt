@@ -215,6 +215,11 @@ target_compile_definitions(neosu PRIVATE
     SOLOUD_NO_ASSERTS=1
     _UNICODE
     UNICODE=1
+    SPDLOG_NO_EXCEPTIONS
+    SPDLOG_FMT_EXTERNAL
+    SPDLOG_HEADER_ONLY
+    SPDLOG_WCHAR_TO_UTF8_SUPPORT
+    SPDLOG_UTF8_TO_WCHAR_CONSOLE
     $<$<CONFIG:Release>:NDEBUG>
     $<$<CONFIG:Debug>:_DEBUG>
 )
@@ -270,7 +275,7 @@ target_link_libraries(neosu PRIVATE
     PNG::PNG
     Freetype::Freetype
     fmt::fmt
-    spdlog::spdlog
+    spdlog::spdlog_header_only
     LibLZMA::LibLZMA
     CURL::libcurl
     SoundTouch::SoundTouch

@@ -5,7 +5,9 @@
 #include "SyncMutex.h"
 
 #include <atomic>
-
+namespace Logger {
+class ConsoleBoxSink;
+}
 class CBaseUITextbox;
 class CBaseUIButton;
 class CBaseUIScrollView;
@@ -39,7 +41,7 @@ class ConsoleBox : public CBaseUIElement {
     bool isActive() override;
 
    private:
-    friend class Logger;
+    friend class Logger::ConsoleBoxSink;
     void log(const UString &text, Color textColor = 0xffffffff);
 
     struct LOG_ENTRY {

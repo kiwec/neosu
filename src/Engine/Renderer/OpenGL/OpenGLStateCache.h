@@ -21,19 +21,17 @@ extern unsigned int current_framebuffer;
 extern unsigned int current_arraybuffer;
 }  // namespace detail
 
-using namespace detail;
-
 // program state
-inline void setCurrentProgram(unsigned int program) { current_program = program; }
-[[nodiscard]] inline unsigned int getCurrentProgram() { return current_program; }
+inline void setCurrentProgram(unsigned int program) { detail::current_program = program; }
+[[nodiscard]] inline unsigned int getCurrentProgram() { return detail::current_program; }
 
 // framebuffer state
 void bindFramebuffer(unsigned int framebuffer);
-[[nodiscard]] inline unsigned int getCurrentFramebuffer() { return current_framebuffer; }
+[[nodiscard]] inline unsigned int getCurrentFramebuffer() { return detail::current_framebuffer; }
 
 // viewport state
 void setViewport(const std::array<int, 4> &vp);
-[[nodiscard]] inline const std::array<int, 4> &getCurrentViewport() { return current_viewport; }
+[[nodiscard]] inline const std::array<int, 4> &getCurrentViewport() { return detail::current_viewport; }
 
 inline void setViewport(int x, int y, int width, int height) {
     return setViewport({x, y, width, height});

@@ -114,8 +114,8 @@ class Engine final : public KeyboardListener {
     [[nodiscard]] constexpr bool isDrawing() const { return this->bDrawing; }
 
     // debugging/console
-    [[nodiscard]] inline std::shared_ptr<ConsoleBox> getConsoleBox() const {
-        return Engine::consoleBox.load(std::memory_order_relaxed);
+    [[nodiscard]] static inline std::shared_ptr<ConsoleBox> getConsoleBox() {
+        return Engine::consoleBox.load(std::memory_order_acquire);
     }
     [[nodiscard]] constexpr CBaseUIContainer *getGUI() const { return this->guiContainer; }
 
@@ -147,7 +147,6 @@ class Engine final : public KeyboardListener {
     // engine gui, mostly for debugging
     CBaseUIContainer *guiContainer;
     VisualProfiler *visualProfiler;
-    friend class Logger;
     static mcatomic_shptr<ConsoleBox> consoleBox;
 
     McFont *consoleFont{nullptr};

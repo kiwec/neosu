@@ -129,6 +129,10 @@ SDL_AppResult SDL_AppIterate(void *appstate) { return static_cast<SDLMain *>(app
 // actual main/init, called once
 MAIN_FUNC /* int argc, char *argv[] */
 {
+#if defined(_WIN32)
+    SetConsoleOutputCP(65001 /*CP_UTF8*/);
+#endif
+
 #ifdef WITH_LIVEPP
     debugLog("Starting Live++");
     lpp::LppSynchronizedAgent lppAgent = lpp::LppCreateSynchronizedAgent(nullptr, L"../../../LivePP");
@@ -149,45 +153,6 @@ MAIN_FUNC /* int argc, char *argv[] */
     Environment::Interop::handle_existing_window(argc, argv);
 
     CrashHandler::init();  // initialize minidump handling
-
-    // set up spdlog logging (after handle_existing_window, so we don't clobber a running instance's log messages)
-    Logger::init();
-    atexit(Logger::shutdown);
-
-#if defined(_WIN32)
-    {
-        constexpr int CS_BYTEALIGNCLIENT_ = 0x1000;
-        constexpr int CS_BYTEALIGNWINDOW_ = 0x2000;
-
-        // required for handle_existing_window to find this running instance
-        SDL_RegisterApp(PACKAGE_NAME, CS_BYTEALIGNCLIENT_ | CS_BYTEALIGNWINDOW_, nullptr);
-    }
-#if defined(_DEBUG)  // only debug builds create a console
-    SetConsoleOutputCP(65001 /*CP_UTF8*/);
-#endif
-#endif
-
-    // improve floating point perf in case this isn't already enabled by the compiler
-    SET_FPU_DAZ_FTZ
-
-    // this sets and caches the path in getPathToSelf, so this must be called here
-    const auto &selfpath = Environment::getPathToSelf(argv[0]);
-    if constexpr(!Env::cfg(OS::WASM)) {
-        // set the current working directory to the executable directory, so that relative paths
-        // work as expected
-        setcwdexe(selfpath);
-    }
-
-    // set up some common app metadata (SDL says these should be called as early as possible)
-    SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_NAME_STRING, PACKAGE_NAME);
-    SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_VERSION_STRING, NEOSU_VERSION);
-    SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_IDENTIFIER_STRING, "net.kiwec.neosu");
-    SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_CREATOR_STRING, "kiwec/spectator/McKay");
-    SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_COPYRIGHT_STRING, "MIT/GPL3");  // neosu is gpl3, mcengine is mit
-    SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_URL_STRING, PACKAGE_URL);
-    SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_TYPE_STRING, "game");
-
-    SDL_SetHintWithPriority(SDL_HINT_VIDEO_DOUBLE_BUFFER, "1", SDL_HINT_NORMAL);
 
     // parse args here
 
@@ -215,6 +180,41 @@ MAIN_FUNC /* int argc, char *argv[] */
         }
         return args;
     }();
+
+    Logger::init(arg_map.contains("-console"));
+    atexit(Logger::shutdown);
+
+#if defined(_WIN32)
+    {
+        constexpr int CS_BYTEALIGNCLIENT_ = 0x1000;
+        constexpr int CS_BYTEALIGNWINDOW_ = 0x2000;
+
+        // required for handle_existing_window to find this running instance
+        SDL_RegisterApp(PACKAGE_NAME, CS_BYTEALIGNCLIENT_ | CS_BYTEALIGNWINDOW_, nullptr);
+    }
+#endif
+
+    // improve floating point perf in case this isn't already enabled by the compiler
+    SET_FPU_DAZ_FTZ
+
+    // this sets and caches the path in getPathToSelf, so this must be called here
+    const auto &selfpath = Environment::getPathToSelf(argv[0]);
+    if constexpr(!Env::cfg(OS::WASM)) {
+        // set the current working directory to the executable directory, so that relative paths
+        // work as expected
+        setcwdexe(selfpath);
+    }
+
+    // set up some common app metadata (SDL says these should be called as early as possible)
+    SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_NAME_STRING, PACKAGE_NAME);
+    SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_VERSION_STRING, NEOSU_VERSION);
+    SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_IDENTIFIER_STRING, "net.kiwec.neosu");
+    SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_CREATOR_STRING, "kiwec/spectator/McKay");
+    SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_COPYRIGHT_STRING, "MIT/GPL3");  // neosu is gpl3, mcengine is mit
+    SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_URL_STRING, PACKAGE_URL);
+    SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_TYPE_STRING, "game");
+
+    SDL_SetHintWithPriority(SDL_HINT_VIDEO_DOUBLE_BUFFER, "1", SDL_HINT_NORMAL);
 
 #if defined(_WIN32)
     // this hint needs to be set before SDL_Init
