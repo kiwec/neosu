@@ -455,6 +455,7 @@ bool SDLMain::createWindow() {
         SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
         SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
         SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
+        SDL_GL_SetAttribute(SDL_GL_FRAMEBUFFER_SRGB_CAPABLE, 1);
 
         // alpha context causes trouble when using EGL (so, wayland or forced)
         if(m_bIsWayland || SDL_GetHintBoolean(SDL_HINT_VIDEO_FORCE_EGL, false)) {
