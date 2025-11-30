@@ -3,7 +3,7 @@
 #include "Archival.h"
 #include "Bancho.h"
 #include "BanchoApi.h"
-#include "ConVar.h"
+#include "OsuConVars.h"
 #include "Database.h"
 #include "DatabaseBeatmap.h"
 #include "Engine.h"

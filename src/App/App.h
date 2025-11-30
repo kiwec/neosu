@@ -59,8 +59,15 @@ struct NotificationInfo {
 
 class App : public KeyboardListener {
     NOCOPY_NOMOVE(App)
-   public:
+
+   protected:
     App() = default;
+
+   public:
+    // load app dynamically, possibly
+    // dummy = true means don't try to return a dynamic base class
+    static App* create(bool dummy);
+
     ~App() override = default;
 
     virtual void draw() {}
@@ -91,5 +98,19 @@ class App : public KeyboardListener {
 };
 
 extern std::unique_ptr<App> app;
+
+#ifdef APP_LIBRARY_BUILD
+#ifdef _WIN32
+#define EXPORT_NAME_ __declspec(dllexport)
+#else
+#define EXPORT_NAME_ __attribute__((visibility("default")))
+#endif
+#else
+#define EXPORT_NAME_
+#endif
+
+extern "C" {
+extern EXPORT_NAME_ App* create_app_real();
+}
 
 #endif

@@ -1,7 +1,7 @@
 // Copyright (c) 2017, PG, All rights reserved.
 #include "SkinImage.h"
 
-#include "ConVar.h"
+#include "OsuConVars.h"
 #include "Engine.h"
 #include "Environment.h"
 #include "Osu.h"

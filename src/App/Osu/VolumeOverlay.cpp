@@ -5,7 +5,7 @@
 #include "CBaseUIContainer.h"
 #include "Changelog.h"
 #include "Chat.h"
-#include "ConVar.h"
+#include "OsuConVars.h"
 #include "Engine.h"
 #include "KeyBindings.h"
 #include "Keyboard.h"

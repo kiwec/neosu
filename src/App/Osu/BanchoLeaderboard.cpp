@@ -6,7 +6,7 @@
 #include "BanchoApi.h"
 #include "BanchoNetworking.h"
 #include "BanchoUsers.h"
-#include "ConVar.h"
+#include "OsuConVars.h"
 #include "Database.h"
 #include "Engine.h"
 #include "ModSelector.h"

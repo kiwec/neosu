@@ -12,7 +12,7 @@
 #include "BeatmapInterface.h"
 #include "CBaseUIButton.h"
 #include "CBaseUIContainer.h"
-#include "ConVar.h"
+#include "OsuConVars.h"
 #include "Database.h"
 #include "DatabaseBeatmap.h"
 #include "Downloader.h"

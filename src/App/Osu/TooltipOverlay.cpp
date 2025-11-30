@@ -2,7 +2,7 @@
 #include "TooltipOverlay.h"
 
 #include "AnimationHandler.h"
-#include "ConVar.h"
+#include "OsuConVars.h"
 #include "Engine.h"
 #include "Mouse.h"
 #include "Osu.h"

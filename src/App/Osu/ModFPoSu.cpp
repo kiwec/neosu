@@ -6,7 +6,7 @@
 #include "Bancho.h"
 #include "BeatmapInterface.h"
 #include "Camera.h"
-#include "ConVar.h"
+#include "OsuConVars.h"
 #include "Engine.h"
 #include "Environment.h"
 #include "KeyBindings.h"

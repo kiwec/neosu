@@ -70,20 +70,24 @@ class Environment {
        public:
         Interop() = delete;
         Interop(Environment *env_ptr) : env_p(env_ptr) {}
-        ~Interop() { env_p = nullptr; }
-        bool handle_cmdline_args(const std::vector<std::string> &args);
+        virtual ~Interop() { env_p = nullptr; }
         bool handle_cmdline_args() { return handle_cmdline_args(this->env_p->getCommandLine()); }
-        bool handle_osk(const char *osk_path);
-        bool handle_osz(const char *osz_path);
-        void setup_system_integrations();
+
+        virtual bool handle_cmdline_args(const std::vector<std::string> & /*args*/) { return false; }
+        virtual bool handle_osk(const char * /*osk_path*/) { return false; }
+        virtual bool handle_osz(const char * /*osz_path*/) { return false; }
+        virtual void setup_system_integrations() {}
+
         static void handle_existing_window([[maybe_unused]] int argc,
                                            [[maybe_unused]] char *argv[]);  // only impl. for windows ATM
         Environment *env_p;
     };
 
    protected:
+    Interop *tryCreatingAppEnvInterop();  // run on init
+
     friend struct Interop;
-    Interop m_interop;
+    std::unique_ptr<Interop> m_interop;
 
    public:
     Environment(const std::unordered_map<std::string, std::optional<std::string>> &argMap,
@@ -105,7 +109,7 @@ class Environment {
     void restart();
     [[nodiscard]] inline bool isRunning() const { return m_bRunning; }
     [[nodiscard]] inline bool isRestartScheduled() const { return m_bIsRestartScheduled; }
-    [[nodiscard]] inline Interop &getEnvInterop() { return m_interop; }
+    [[nodiscard]] inline Interop &getEnvInterop() { return *m_interop; }
 
     // resolved and cached at early startup with argv[0]
     // contains the full canonical path to the current exe

@@ -8,7 +8,6 @@
 #include "Keyboard.h"
 #include "Mouse.h"
 #include "App.h"
-#include "Skin.h"
 #include "SoundEngine.h"
 
 CBaseUISlider::CBaseUISlider(float xPos, float yPos, float xSize, float ySize, UString name)

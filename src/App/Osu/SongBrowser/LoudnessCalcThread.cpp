@@ -1,7 +1,7 @@
 // Copyright (c) 2024, kiwec, All rights reserved.
 #include "LoudnessCalcThread.h"
 
-#include "ConVar.h"
+#include "OsuConVars.h"
 #include "DatabaseBeatmap.h"
 #include "Database.h"
 #include "Osu.h"

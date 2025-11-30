@@ -12,7 +12,7 @@
 #include "CBaseUILabel.h"
 #include "CBaseUIScrollView.h"
 #include "Chat.h"
-#include "ConVar.h"
+#include "OsuConVars.h"
 #include "DatabaseBeatmap.h"
 #include "Engine.h"
 #include "GameRules.h"

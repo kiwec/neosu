@@ -4,7 +4,7 @@
 #include "Archival.h"
 #include "BanchoNetworking.h"
 #include "Bancho.h"
-#include "ConVar.h"
+#include "OsuConVars.h"
 #include "crypto.h"
 #include "Engine.h"
 #include "File.h"

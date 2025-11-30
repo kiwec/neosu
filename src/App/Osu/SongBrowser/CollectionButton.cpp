@@ -8,7 +8,7 @@
 #include "SongButton.h"
 // ---
 
-#include "ConVar.h"
+#include "OsuConVars.h"
 #include "Database.h"
 #include "Engine.h"
 #include "Keyboard.h"

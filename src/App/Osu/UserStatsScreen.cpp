@@ -4,7 +4,7 @@
 #include "Bancho.h"
 #include "CBaseUIContainer.h"
 #include "CBaseUIScrollView.h"
-#include "ConVar.h"
+#include "OsuConVars.h"
 #include "Database.h"
 #include "DatabaseBeatmap.h"
 #include "Engine.h"

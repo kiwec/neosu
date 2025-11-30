@@ -4,6 +4,7 @@
 #include "EngineConfig.h"
 
 #include <SDL3/SDL_loadso.h>
+#include <cassert>
 
 #ifdef MCENGINE_PLATFORM_WINDOWS
 #define LPREFIX ""
@@ -139,10 +140,24 @@ lib_obj *load_lib_system(const char *c_lib_name) {
     return ret;
 }
 
+lib_obj *load_lib(decltype(nullptr)) {
+    auto *ret = reinterpret_cast<lib_obj*>(GetModuleHandle(nullptr));
+    assert(ret);
+    return ret;
+}
+
 #else
+
+#include <dlfcn.h>
 
 // not required for other platforms (they will load anything from LD_LIBRARY_PATH, which doesn't include relative paths by default)
 lib_obj *load_lib_system(const char *c_lib_name) { return load_lib(c_lib_name); }
+
+lib_obj *load_lib(decltype(nullptr)) {
+    auto *ret = reinterpret_cast<lib_obj*>(dlopen(nullptr, RTLD_NOW | RTLD_GLOBAL));
+    assert(ret);
+    return ret;
+}
 
 #endif
 

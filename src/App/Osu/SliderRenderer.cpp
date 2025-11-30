@@ -1,7 +1,7 @@
 // Copyright (c) 2016, PG, All rights reserved.
 #include "SliderRenderer.h"
 
-#include "ConVar.h"
+#include "OsuConVars.h"
 #include "Engine.h"
 #include "GameRules.h"
 #include "Osu.h"

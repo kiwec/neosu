@@ -7,7 +7,7 @@
 #include "BanchoUsers.h"
 #include "BeatmapInterface.h"
 #include "Chat.h"
-#include "ConVar.h"
+#include "OsuConVars.h"
 #include "ConVarHandler.h"
 #include "Database.h"
 #include "Downloader.h"

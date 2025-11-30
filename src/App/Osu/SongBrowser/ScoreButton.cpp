@@ -10,7 +10,7 @@
 
 #include "AnimationHandler.h"
 #include "BanchoUsers.h"
-#include "ConVar.h"
+#include "OsuConVars.h"
 #include "Database.h"
 #include "DatabaseBeatmap.h"
 #include "Engine.h"

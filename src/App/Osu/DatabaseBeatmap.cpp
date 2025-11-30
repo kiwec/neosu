@@ -4,7 +4,7 @@
 
 #include "SString.h"
 #include "BeatmapInterface.h"
-#include "ConVar.h"
+#include "OsuConVars.h"
 #include "Engine.h"
 #include "File.h"
 #include "GameRules.h"

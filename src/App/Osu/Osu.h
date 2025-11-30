@@ -46,7 +46,11 @@ enum class CvarEditor : uint8_t;
 
 class Osu final : public App, public MouseListener {
     NOCOPY_NOMOVE(Osu)
+   protected:
+    Osu();
+
    private:
+    friend App* create_app_real();
     struct GlobalOsuCtorDtorThing;
     // make sure the global "osu" name is created first and destroyed last... funny way to do it, but it works
     // so we don't have to break the compile barrier and do "osu = nullptr" in Engine.cpp
@@ -71,7 +75,6 @@ class Osu final : public App, public MouseListener {
     // BASE CLASS OVERRIDES ACCESSIBLE FROM ENGINE //
     /////////////////////////////////////////////////
 
-    Osu();
     ~Osu() override;
 
     void draw() override;

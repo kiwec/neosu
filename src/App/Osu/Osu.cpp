@@ -12,7 +12,7 @@
 #include "CWindowManager.h"
 #include "Changelog.h"
 #include "Chat.h"
-#include "ConVar.h"
+#include "OsuConVars.h"
 #include "ConVarHandler.h"
 #include "Console.h"
 #include "ConsoleBox.h"
@@ -72,6 +72,8 @@
 #include <algorithm>
 
 Osu *osu{nullptr};
+
+App *create_app_real() { return new Osu(); }
 
 // prevents score submission when/if a protected convar is changed during gameplay
 void Osu::globalOnSetValueProtectedCallback() {

@@ -6,7 +6,7 @@
 #endif
 #include <lzma.h>
 
-#include "ConVar.h"
+#include "OsuConVars.h"
 #include "Bancho.h"
 #include "BanchoApi.h"
 #include "File.h"

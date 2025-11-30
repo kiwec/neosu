@@ -36,15 +36,11 @@ std::unique_ptr<DirectoryWatcher> directoryWatcher{nullptr};
 
 mcatomic_shptr<ConsoleBox> Engine::consoleBox{nullptr};
 
-#if !defined(BUILD_TOOLS_ONLY) && __has_include("Osu.h")
-#include "Osu.h"
-#endif
-
 Engine *engine{nullptr};
 Engine::Engine() {
     engine = this;
     // always keep a dummy App() alive so we don't have to null-check for "app" inside engine code
-    app = std::make_unique<App>();
+    app.reset(App::create(true));
 
     this->guiContainer = nullptr;
     this->visualProfiler = nullptr;
@@ -129,7 +125,7 @@ Engine::~Engine() {
 
     // reset() all global unique_ptrs
     debugLog("Engine: Freeing app...");
-    app = std::make_unique<App>();  // re-create a dummy app and delete it again at the end
+    app.reset(App::create(true));  // re-create a dummy app and delete it again at the end
 
     debugLog("Engine: Freeing engine GUI...");
     if(const auto &cbox = Engine::consoleBox.load(std::memory_order_acquire); cbox != nullptr) {
@@ -226,8 +222,9 @@ void Engine::loadApp() {
         //*****************//
         //	Load App here  //
         //*****************//
-#if !defined(BUILD_TOOLS_ONLY) && __has_include("Osu.h")  // otherwise just keep the dummy/fake "app"
-        app = std::make_unique<Osu>();
+
+#ifndef BUILD_TOOLS_ONLY
+        app.reset(App::create(false));
         this->runtime_assert(!!app, "App failed to initialize!");
 
         resourceManager->resetSyncLoadMaxBatchSize();

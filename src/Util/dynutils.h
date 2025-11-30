@@ -11,6 +11,8 @@ void *load_func_impl(const lib_obj *lib, const char *func_name);
 // only attempt loading from system libraries (don't allow local replacements)
 lib_obj *load_lib_system(const char *c_lib_name);
 
+lib_obj *load_lib(decltype(nullptr));  // i.e. GetModuleHandle(NULL)
+
 // example usage: load_lib("bass"), load_lib("libbass.so"), load_lib("bass.dll"), load_lib("bass", "lib/")
 // you get the point
 lib_obj *load_lib(const char *c_lib_name, const char *c_search_dir = "");

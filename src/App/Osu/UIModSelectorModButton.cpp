@@ -3,7 +3,7 @@
 
 #include <utility>
 
-#include "ConVar.h"
+#include "OsuConVars.h"
 #include "AnimationHandler.h"
 #include "Bancho.h"
 #include "BanchoNetworking.h"

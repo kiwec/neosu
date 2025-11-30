@@ -22,7 +22,7 @@ cat > "$SOURCES_FILE" << EOF
 neosu_SOURCES = \\
 EOF
 
-find src libraries -type f '(' -name "*.cpp" -o -name "*.c" ')' | LC_ALL=C sort | \
+find src libraries -not -path '*/[@.]*' -type f '(' -name "*.cpp" -o -name "*.c" ')' | LC_ALL=C sort | \
     sed 's/$/ \\/' | \
     sed 's/^/\t/' >> "$SOURCES_FILE"
 
@@ -33,7 +33,7 @@ cat >> "$SOURCES_FILE" << EOF
 EXTRA_BINDEPS = \\
 EOF
 
-find assets/shaders -type f | LC_ALL=C sort | \
+find assets/shaders -not -path '*/[@.]*' -type f | LC_ALL=C sort | \
     sed 's/$/ \\/' | \
     sed 's/^/\t/' >> "$SOURCES_FILE"
 

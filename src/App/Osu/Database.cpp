@@ -8,7 +8,7 @@
 #include "MD5Hash.h"
 #include "ByteBufferedFile.h"
 #include "Collections.h"
-#include "ConVar.h"
+#include "OsuConVars.h"
 #include "Database.h"
 #include "DatabaseBeatmap.h"
 #include "DirectoryWatcher.h"

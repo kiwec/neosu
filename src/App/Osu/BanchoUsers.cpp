@@ -5,7 +5,7 @@
 #include "BanchoNetworking.h"
 #include "BanchoProtocol.h"
 #include "Chat.h"
-#include "ConVar.h"
+#include "OsuConVars.h"
 #include "Engine.h"
 #include "NotificationOverlay.h"
 #include "Osu.h"

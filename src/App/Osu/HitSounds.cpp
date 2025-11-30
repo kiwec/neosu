@@ -1,7 +1,7 @@
 #include "HitSounds.h"
 
 #include "BeatmapInterface.h"
-#include "ConVar.h"
+#include "OsuConVars.h"
 // #include "Logging.h"
 #include "Osu.h"
 #include "ResourceManager.h"

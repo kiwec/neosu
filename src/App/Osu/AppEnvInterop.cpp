@@ -1,4 +1,4 @@
-#include "ConVar.h"
+#include "OsuConVars.h"
 #include "Database.h"
 #include "DatabaseBeatmap.h"
 #include "Downloader.h"  // for extract_beatmapset
@@ -11,9 +11,29 @@
 #include "Skin.h"
 #include "SongBrowser/SongBrowser.h"
 #include "Logging.h"
+#include "EnvironmentInterop.h"
+
+struct OsuEnvInterop : public Environment::Interop {
+    NOCOPY_NOMOVE(OsuEnvInterop)
+   public:
+    OsuEnvInterop() = delete;
+    OsuEnvInterop(Environment *env_ptr) : Interop(env_ptr) {}
+    ~OsuEnvInterop() override = default;
+
+    bool handle_cmdline_args(const std::vector<std::string> &args) override;
+    bool handle_osk(const char *osk_path) override;
+    bool handle_osz(const char *osz_path) override;
+    void setup_system_integrations() override;
+};
+
+void *create_app_env_interop(void *void_envptr) {
+    assert(void_envptr);
+    auto *envptr = static_cast<Environment *>(void_envptr);
+    return new OsuEnvInterop(envptr);
+}
 
 // drag-drop/file associations/registry stuff below
-bool Environment::Interop::handle_osk(const char *osk_path) {
+bool OsuEnvInterop::handle_osk(const char *osk_path) {
     if(!Skin::unpack(osk_path)) return false;
 
     auto folder_name = Environment::getFileNameFromFilePath(osk_path);
@@ -25,7 +45,7 @@ bool Environment::Interop::handle_osk(const char *osk_path) {
     return true;
 }
 
-bool Environment::Interop::handle_osz(const char *osz_path) {
+bool OsuEnvInterop::handle_osz(const char *osz_path) {
     if(!osu) return false;
 
     if(osu->isInPlayMode()) {
@@ -81,7 +101,7 @@ bool Environment::Interop::handle_osz(const char *osz_path) {
     return true;
 }
 
-bool Environment::Interop::handle_cmdline_args(const std::vector<std::string> &args) {
+bool OsuEnvInterop::handle_cmdline_args(const std::vector<std::string> &args) {
     bool need_to_reload_database = false;
 
     for(const auto &arg : args) {
@@ -135,7 +155,7 @@ bool sdl_windows_message_hook(void *userdata, MSG *msg) {
         return true;
     }
 
-    Environment::Interop *interop{static_cast<Environment::Interop *>(userdata)};
+    OsuEnvInterop *interop{static_cast<OsuEnvInterop *>(userdata)};
     // check the custom registered message
 
     // reconstruct the mapping/event names from the identifier passed in lParam
@@ -200,88 +220,7 @@ bool sdl_windows_message_hook(void *userdata, MSG *msg) {
 }
 }  // namespace
 
-void Environment::Interop::handle_existing_window(int argc, char *argv[]) {
-    // if a neosu instance is already running, send it a message then quit
-    HWND existing_window = FindWindow(TEXT(PACKAGE_NAME), nullptr);
-    if(existing_window && argc > 1) {  // only send if we have more than just the exe name as args
-
-        size_t total_size = 0;
-        for(int i = 1; i < argc; i++) {         // skip exe name
-            total_size += strlen(argv[i]) + 1;  // +1 for null terminator
-        }
-
-        if(total_size > 0 && total_size < 4096) {  // reasonable size limit...?
-            // need to create a unique identifier for this message
-            DWORD sender_pid = GetCurrentProcessId();
-            DWORD identifier = GetTickCount();
-
-            // create unique names for mapping and event
-            const std::string mapping_name = fmt::format("neosu_cmdline_{}_{}", sender_pid, identifier);
-            const std::string event_name = fmt::format("neosu_event_{}_{}", sender_pid, identifier);
-
-            // create completion event first, so we know when we can exit this process
-            HANDLE hEvent = CreateEventA(nullptr, FALSE, FALSE, event_name.c_str());
-
-            // create named shared memory for the data
-            // for some reason, WM_COPYDATA hooks don't work with the SDL message loop... this is the next best solution
-            HANDLE hMapFile = CreateFileMappingA(INVALID_HANDLE_VALUE, nullptr, PAGE_READWRITE, 0,
-                                                 total_size + sizeof(DWORD),  // extra space for size header
-                                                 mapping_name.c_str());
-
-            if(hMapFile && hEvent) {
-                LPVOID pBuf = MapViewOfFile(hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, 0);
-                if(pBuf) {
-                    // store the size first
-                    *((DWORD *)pBuf) = (DWORD)total_size;
-                    char *data = ((char *)pBuf) + sizeof(DWORD);
-                    char *current = data;
-
-                    // pack arguments with null separators, so we can split them easily
-                    for(int i = 1; i < argc; i++) {
-                        size_t len = strlen(argv[i]);
-                        memcpy(current, argv[i], len);
-                        current[len] = '\0';
-                        current += len + 1;
-                    }
-
-                    UnmapViewOfFile(pBuf);
-
-                    // post the identifier message
-                    UINT neosu_msg = RegisterWindowMessage(NEOSU_CMDLINE_WINDOW_MSG_ID);
-
-                    if(PostMessage(existing_window, neosu_msg, (WPARAM)sender_pid, (LPARAM)identifier)) {
-                        // wait for the receiver to signal completion (with 5 second timeout)
-                        DWORD wait_result = WaitForSingleObject(hEvent, 5000);
-                        switch(wait_result) {
-                            case WAIT_OBJECT_0:
-                                // success
-                                break;
-                            case WAIT_TIMEOUT:
-                                debugLog("timeout waiting for message processing completion");
-                                break;
-                            case WAIT_FAILED:
-                                debugLog("failed to wait for completion event, error: {}", GetLastError());
-                                break;
-                            default:
-                                debugLog("unexpected wait result: {}", wait_result);
-                                break;
-                        }
-                    } else {
-                        debugLog("failed to post message to existing HWND {}, error: {}",
-                                 static_cast<const void *>(existing_window), GetLastError());
-                    }
-                }
-            }
-            if(hMapFile) CloseHandle(hMapFile);
-            if(hEvent) CloseHandle(hEvent);
-        }
-
-        SetForegroundWindow(existing_window);
-        std::exit(0);
-    }
-}
-
-void Environment::Interop::setup_system_integrations() {
+void OsuEnvInterop::setup_system_integrations() {
     SDL_SetWindowsMessageHook(sdl_windows_message_hook, (void *)this);
 
     wchar_t exePath[MAX_PATH];
@@ -366,7 +305,90 @@ void Environment::Interop::setup_system_integrations() {
     RegCloseKey(osz_key);
 }
 
+void handle_existing_window_app(int argc, char *argv[]) {
+    // if a neosu instance is already running, send it a message then quit
+    HWND existing_window = FindWindow(TEXT(PACKAGE_NAME), nullptr);
+    if(existing_window && argc > 1) {  // only send if we have more than just the exe name as args
+
+        size_t total_size = 0;
+        for(int i = 1; i < argc; i++) {         // skip exe name
+            total_size += strlen(argv[i]) + 1;  // +1 for null terminator
+        }
+
+        if(total_size > 0 && total_size < 4096) {  // reasonable size limit...?
+            // need to create a unique identifier for this message
+            DWORD sender_pid = GetCurrentProcessId();
+            DWORD identifier = GetTickCount();
+
+            // create unique names for mapping and event
+            const std::string mapping_name = fmt::format("neosu_cmdline_{}_{}", sender_pid, identifier);
+            const std::string event_name = fmt::format("neosu_event_{}_{}", sender_pid, identifier);
+
+            // create completion event first, so we know when we can exit this process
+            HANDLE hEvent = CreateEventA(nullptr, FALSE, FALSE, event_name.c_str());
+
+            // create named shared memory for the data
+            // for some reason, WM_COPYDATA hooks don't work with the SDL message loop... this is the next best solution
+            HANDLE hMapFile = CreateFileMappingA(INVALID_HANDLE_VALUE, nullptr, PAGE_READWRITE, 0,
+                                                 total_size + sizeof(DWORD),  // extra space for size header
+                                                 mapping_name.c_str());
+
+            if(hMapFile && hEvent) {
+                LPVOID pBuf = MapViewOfFile(hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, 0);
+                if(pBuf) {
+                    // store the size first
+                    *((DWORD *)pBuf) = (DWORD)total_size;
+                    char *data = ((char *)pBuf) + sizeof(DWORD);
+                    char *current = data;
+
+                    // pack arguments with null separators, so we can split them easily
+                    for(int i = 1; i < argc; i++) {
+                        size_t len = strlen(argv[i]);
+                        memcpy(current, argv[i], len);
+                        current[len] = '\0';
+                        current += len + 1;
+                    }
+
+                    UnmapViewOfFile(pBuf);
+
+                    // post the identifier message
+                    UINT neosu_msg = RegisterWindowMessage(NEOSU_CMDLINE_WINDOW_MSG_ID);
+
+                    if(PostMessage(existing_window, neosu_msg, (WPARAM)sender_pid, (LPARAM)identifier)) {
+                        // wait for the receiver to signal completion (with 5 second timeout)
+                        DWORD wait_result = WaitForSingleObject(hEvent, 5000);
+                        switch(wait_result) {
+                            case WAIT_OBJECT_0:
+                                // success
+                                break;
+                            case WAIT_TIMEOUT:
+                                debugLog("timeout waiting for message processing completion");
+                                break;
+                            case WAIT_FAILED:
+                                debugLog("failed to wait for completion event, error: {}", GetLastError());
+                                break;
+                            default:
+                                debugLog("unexpected wait result: {}", wait_result);
+                                break;
+                        }
+                    } else {
+                        debugLog("failed to post message to existing HWND {}, error: {}",
+                                 static_cast<const void *>(existing_window), GetLastError());
+                    }
+                }
+            }
+            if(hMapFile) CloseHandle(hMapFile);
+            if(hEvent) CloseHandle(hEvent);
+        }
+
+        SetForegroundWindow(existing_window);
+        std::exit(0);
+    }
+}
+
 #else  // not implemented
-void Environment::Interop::setup_system_integrations() { return; }
-void Environment::Interop::handle_existing_window(int /*argc*/, char ** /*argv*/) { return; }
+void OsuEnvInterop::setup_system_integrations() { return; }
+
+void handle_existing_window_app(int /*argc*/, char * /*argv*/[]) {}
+
 #endif

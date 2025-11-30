@@ -12,6 +12,7 @@
 #include "ConVar.h"
 #include "Thread.h"
 
+#include "EnvironmentInterop.h"
 #include "DirectX11Interface.h"
 #include "SDLGLInterface.h"
 
@@ -51,12 +52,70 @@ static_assert(SDL_WF_EQ(FULLSCREEN) && SDL_WF_EQ(OPENGL) && SDL_WF_EQ(OCCLUDED) 
               "outdated WinFlags enum");
 #undef SDL_WF_EQ
 
-SDL_Environment *Environment::s_sdlenv{nullptr};
+#ifdef APP_LIBRARY_BUILD
+#include "dynutils.h"
+#endif
 
+void Environment::Interop::handle_existing_window(int argc, char *argv[]) {
+#ifndef APP_LIBRARY_BUILD
+    return handle_existing_window_app(argc, argv);
+#else
+    auto *selfHandle = dynutils::load_lib(nullptr);
+    assert(selfHandle);
+
+    using handle_existing_window_app_t = void(int argc, char *argv[]);
+    auto *pHandler = dynutils::load_func<handle_existing_window_app_t>(selfHandle, "handle_existing_window_app");
+    if(pHandler) {
+        debugLog("got handler function at {:p}", (void *)pHandler);
+        pHandler(argc, argv);  // this may exit the program
+    } else {
+        debugLog("could not resolve handler function");
+        debugLog(dynutils::get_error());
+    }
+
+    dynutils::unload_lib(selfHandle);
+
+    return;
+#endif
+}
+
+Environment::Interop *Environment::tryCreatingAppEnvInterop() {
+    Interop *ret = nullptr;
+#ifndef APP_LIBRARY_BUILD
+    ret = static_cast<Interop *>(create_app_env_interop(this));
+#else
+    auto *selfHandle = dynutils::load_lib(nullptr);
+    assert(selfHandle);
+
+    using create_app_env_interop_t = void *(void *environmentPtr);
+    auto *pInteropCreator = dynutils::load_func<create_app_env_interop_t>(selfHandle, "create_app_env_interop");
+    if(pInteropCreator) {
+        debugLog("got app env interop creator function at {:p}", (void *)pInteropCreator);
+        ret = static_cast<Interop *>(pInteropCreator(this));
+        if(ret) {
+            debugLog("got app interop at {:p}", (void *)ret);
+        }
+    }
+
+    if(!ret) {
+        ret = new Interop(this);
+        debugLog("could not resolve app env interop creator function");
+        debugLog(dynutils::get_error());
+    }
+
+    dynutils::unload_lib(selfHandle);
+
+#endif
+    assert(ret);
+    return ret;
+}
+
+SDL_Environment *Environment::s_sdlenv{nullptr};
 Environment *env{nullptr};
+
 Environment::Environment(const std::unordered_map<std::string, std::optional<std::string>> &argMap,
                          const std::vector<std::string> &cmdlineVec)
-    : m_interop(this), m_mArgMap(argMap), m_vCmdLine(cmdlineVec) {
+    : m_interop(tryCreatingAppEnvInterop()), m_mArgMap(argMap), m_vCmdLine(cmdlineVec) {
     env = this;
 
     s_sdlenv = SDL_GetEnvironment();

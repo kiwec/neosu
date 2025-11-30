@@ -9,7 +9,7 @@
 #include "BeatmapInterface.h"
 #include "CBaseUILabel.h"
 #include "Changelog.h"
-#include "ConVar.h"
+#include "OsuConVars.h"
 #include "Downloader.h"
 #include "KeyBindings.h"
 #include "Lobby.h"

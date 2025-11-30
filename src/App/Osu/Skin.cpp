@@ -3,7 +3,7 @@
 
 #include "Archival.h"
 #include "BeatmapInterface.h"
-#include "ConVar.h"
+#include "OsuConVars.h"
 #include "ConVarHandler.h"
 #include "Engine.h"
 #include "Environment.h"

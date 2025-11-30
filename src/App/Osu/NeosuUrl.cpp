@@ -3,7 +3,7 @@
 
 #include "crypto.h"
 #include "Bancho.h"
-#include "ConVar.h"
+#include "OsuConVars.h"
 #include "Engine.h"
 #include "NetworkHandler.h"
 #include "NotificationOverlay.h"

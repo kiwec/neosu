@@ -1,6 +1,6 @@
 // Copyright (c) 2016, PG, 2025, kiwec, 2025, WH, All rights reserved.
 #include "OsuKeyBinds.h"
-#include "ConVar.h"
+#include "OsuConVars.h"
 
 namespace OsuKeyBinds {
 

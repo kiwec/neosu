@@ -3,7 +3,7 @@
 #include "GameRules.h"
 #include "AbstractBeatmapInterface.h"
 #include "Osu.h"
-#include "ConVar.h"
+#include "OsuConVars.h"
 
 float GameRules::getFadeOutTime() {
     const float fade_out_time = cv::hitobject_fade_out_time.getFloat();

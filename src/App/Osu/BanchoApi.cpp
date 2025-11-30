@@ -2,7 +2,7 @@
 #include "BanchoApi.h"
 
 #include "AsyncIOHandler.h"
-#include "ConVar.h"
+#include "OsuConVars.h"
 #include "Logging.h"
 
 #include "Osu.h"

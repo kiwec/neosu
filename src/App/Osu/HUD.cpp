@@ -8,7 +8,7 @@
 #include "BanchoUsers.h"
 #include "BeatmapInterface.h"
 #include "CBaseUIContainer.h"
-#include "ConVar.h"
+#include "OsuConVars.h"
 #include "Database.h"
 #include "DatabaseBeatmap.h"
 #include "Engine.h"

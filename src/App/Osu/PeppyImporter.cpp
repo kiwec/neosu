@@ -1,7 +1,7 @@
 // Copyright (c) 2024, kiwec, All rights reserved.
 #include "PeppyImporter.h"
 
-#include "ConVar.h"
+#include "OsuConVars.h"
 #include "Engine.h"
 #include "File.h"
 #include "KeyBindings.h"

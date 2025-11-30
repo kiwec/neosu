@@ -15,7 +15,6 @@
 #include "Keyboard.h"
 #include "Mouse.h"
 #include "ResourceManager.h"
-#include "Skin.h"
 #include "SoundEngine.h"
 // #include "Logging.h"
 

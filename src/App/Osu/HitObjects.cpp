@@ -5,7 +5,7 @@
 
 #include "AnimationHandler.h"
 #include "Bancho.h"
-#include "ConVar.h"
+#include "OsuConVars.h"
 #include "Engine.h"
 #include "GameRules.h"
 #include "HUD.h"

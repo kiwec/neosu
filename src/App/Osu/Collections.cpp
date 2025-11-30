@@ -2,7 +2,7 @@
 #include "Collections.h"
 
 #include "ByteBufferedFile.h"
-#include "ConVar.h"
+#include "OsuConVars.h"
 #include "Database.h"
 #include "Engine.h"
 #include "Timing.h"

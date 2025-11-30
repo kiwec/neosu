@@ -2,7 +2,7 @@
 #include "BottomBar.h"
 
 #include "AnimationHandler.h"
-#include "ConVar.h"
+#include "OsuConVars.h"
 #include "Engine.h"
 #include "LoudnessCalcThread.h"
 #include "MapCalcThread.h"

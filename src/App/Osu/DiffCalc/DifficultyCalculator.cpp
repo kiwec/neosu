@@ -7,7 +7,7 @@
 #include "ModFlags.h"
 
 #ifndef BUILD_TOOLS_ONLY
-#include "ConVar.h"
+#include "OsuConVars.h"
 #define STARS_SLIDER_CURVE_POINTS_SEPARATION cv::stars_slider_curve_points_separation.getFloat()
 #define IGNORE_CLAMPED_SLIDERS cv::stars_ignore_clamped_sliders.getBool()
 #define SLIDER_CURVE_MAX_LENGTH cv::slider_curve_max_length.getFloat()

@@ -9,7 +9,7 @@
 #include "BeatmapInterface.h"
 #include "CBaseUIContainer.h"
 #include "Chat.h"
-#include "ConVar.h"
+#include "OsuConVars.h"
 #include "Engine.h"
 #include "BanchoNetworking.h"
 #include "HUD.h"

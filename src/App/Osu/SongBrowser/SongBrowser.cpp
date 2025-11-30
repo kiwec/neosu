@@ -15,7 +15,7 @@
 #include "Chat.h"
 #include "CollectionButton.h"
 #include "Collections.h"
-#include "ConVar.h"
+#include "OsuConVars.h"
 #include "Database.h"
 #include "DatabaseBeatmap.h"
 #include "DirectoryWatcher.h"

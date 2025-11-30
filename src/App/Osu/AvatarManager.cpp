@@ -7,7 +7,7 @@
 #include "Bancho.h"
 #include "ResourceManager.h"
 #include "Engine.h"
-#include "ConVar.h"
+#include "OsuConVars.h"
 #include "File.h"
 #include "Logging.h"
 #include "Timing.h"

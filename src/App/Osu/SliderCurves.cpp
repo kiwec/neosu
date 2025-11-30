@@ -4,7 +4,7 @@
 #ifndef BUILD_TOOLS_ONLY
 #include "Engine.h"
 #include "Logging.h"
-#include "ConVar.h"
+#include "OsuConVars.h"
 #define SLIDER_CURVE_POINTS_SEPARATION cv::slider_curve_points_separation.getFloat()
 #define SLIDER_CURVE_MAX_LENGTH cv::slider_curve_max_length.getFloat()
 #define SLIDER_CURVE_MAX_POINTS cv::slider_curve_max_points.getInt()

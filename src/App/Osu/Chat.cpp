@@ -11,7 +11,7 @@
 #include "CBaseUIContainer.h"
 #include "CBaseUILabel.h"
 #include "CBaseUITextbox.h"
-#include "ConVar.h"
+#include "OsuConVars.h"
 #include "ChatLink.h"
 #include "Engine.h"
 #include "Font.h"

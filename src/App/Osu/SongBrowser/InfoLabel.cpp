@@ -9,7 +9,7 @@
 // ---
 
 #include "BeatmapInterface.h"
-#include "ConVar.h"
+#include "OsuConVars.h"
 #include "DatabaseBeatmap.h"
 #include "Engine.h"
 #include "Environment.h"

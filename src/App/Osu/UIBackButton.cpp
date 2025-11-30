@@ -4,7 +4,7 @@
 #include <utility>
 
 #include "AnimationHandler.h"
-#include "ConVar.h"
+#include "OsuConVars.h"
 #include "Engine.h"
 #include "OptionsMenu.h"
 #include "Osu.h"

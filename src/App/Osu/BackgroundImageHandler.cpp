@@ -1,7 +1,7 @@
 // Copyright (c) 2020, PG, All rights reserved.
 #include "BackgroundImageHandler.h"
 
-#include "ConVar.h"
+#include "OsuConVars.h"
 #include "Database.h"
 #include "Osu.h"
 #include "DatabaseBeatmap.h"

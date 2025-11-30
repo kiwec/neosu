@@ -12,7 +12,7 @@
 
 #include "BackgroundImageHandler.h"
 #include "Collections.h"
-#include "ConVar.h"
+#include "OsuConVars.h"
 #include "DatabaseBeatmap.h"
 #include "Engine.h"
 #include "Mouse.h"

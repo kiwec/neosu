@@ -12,7 +12,7 @@
 #include "CBaseUILabel.h"
 #include "CBaseUIScrollView.h"
 #include "CBaseUISlider.h"
-#include "ConVar.h"
+#include "OsuConVars.h"
 #include "ConVarHandler.h"
 #include "DatabaseBeatmap.h"
 #include "Engine.h"

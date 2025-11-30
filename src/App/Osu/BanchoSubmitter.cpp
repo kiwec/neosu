@@ -5,7 +5,7 @@
 #include "Bancho.h"
 #include "BanchoAes.h"
 #include "BanchoNetworking.h"
-#include "ConVar.h"
+#include "OsuConVars.h"
 #include "DatabaseBeatmap.h"
 #include "Engine.h"
 #include "NetworkHandler.h"

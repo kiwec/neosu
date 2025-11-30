@@ -6,7 +6,7 @@
 #include "AnimationHandler.h"
 #include "CBaseUIContainer.h"
 #include "CBaseUIScrollView.h"
-#include "ConVar.h"
+#include "OsuConVars.h"
 #include "Engine.h"
 #include "KeyBindings.h"
 #include "Mouse.h"
