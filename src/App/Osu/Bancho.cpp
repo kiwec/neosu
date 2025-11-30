@@ -99,7 +99,8 @@ void BanchoState::set_uid(i32 new_uid) {
     user_id.store(new_uid, std::memory_order_release);
 
     if(is_logging_in() || old_uid != new_uid) {
-        update_online_status(new_uid > 0 ? OnlineStatus::LOGGED_IN : OnlineStatus::LOGGED_OUT);
+        const bool is_online = (new_uid > 0) || (new_uid < -10000);
+        update_online_status(is_online ? OnlineStatus::LOGGED_IN : OnlineStatus::LOGGED_OUT);
     }
 }
 
@@ -131,7 +132,8 @@ void BanchoState::handle_packet(Packet &packet) {
             BanchoState::set_uid(new_user_id);
             BanchoState::is_oauth = !cv::mp_oauth_token.getString().empty();
 
-            if(new_user_id > 0) {
+            const bool is_online = (new_user_id > 0) || (new_user_id < -10000);
+            if(is_online) {
                 debugLog("Logged in as user #{:d}.", new_user_id);
                 cv::mp_autologin.setValue(true);
                 BanchoState::print_new_channels = true;
@@ -213,8 +215,15 @@ void BanchoState::handle_packet(Packet &packet) {
         }
 
         case USER_STATS: {
-            i32 raw_id = packet.read<i32>();
-            i32 stats_user_id = abs(raw_id);  // IRC clients are sent with negative IDs, hence the abs()
+            i32 stats_user_id = packet.read<i32>();
+
+            bool is_irc_user = false;
+            if(cv::sv_has_irc_users.getBool()) {
+                // Vanilla servers send negative IDs for IRC clients
+                is_irc_user = stats_user_id < 0;
+                stats_user_id = abs(stats_user_id);
+            }
+
             auto action = (Action)packet.read<u8>();
 
             UserInfo *user = BANCHO::User::get_user_info(stats_user_id);
@@ -242,7 +251,7 @@ void BanchoState::handle_packet(Packet &packet) {
                 }
             }
 
-            user->irc_user = raw_id < 0;
+            user->irc_user = is_irc_user;
             user->stats_tms = Timing::getTicksMS();
             user->action = action;
             user->info_text = packet.read_ustring();
@@ -576,14 +585,19 @@ void BanchoState::handle_packet(Packet &packet) {
         }
 
         case USER_PRESENCE: {
-            i32 raw_id = packet.read<i32>();
-            i32 presence_user_id = abs(raw_id);  // IRC clients are sent with negative IDs, hence the abs()
-            auto presence_username = packet.read_ustring();
+            i32 presence_user_id = packet.read<i32>();
+
+            bool is_irc_user = false;
+            if(cv::sv_has_irc_users.getBool()) {
+                // Vanilla servers send negative IDs for IRC clients
+                is_irc_user = presence_user_id < 0;
+                presence_user_id = abs(presence_user_id);
+            }
 
             UserInfo *user = BANCHO::User::get_user_info(presence_user_id);
-            user->irc_user = raw_id < 0;
+            user->irc_user = is_irc_user;
             user->has_presence = true;
-            user->name = presence_username;
+            user->name = packet.read_ustring();
             user->utc_offset = packet.read<u8>();
             user->country = packet.read<u8>();
             user->privileges = packet.read<u8>();
@@ -595,8 +609,8 @@ void BanchoState::handle_packet(Packet &packet) {
 
             // Server can decide what username we use
             if(presence_user_id == BanchoState::get_uid()) {
-                BanchoState::username = presence_username.toUtf8();
-                osu->onUserCardChange(presence_username.utf8View());
+                BanchoState::username = user->name.toUtf8();
+                osu->onUserCardChange(user->name.utf8View());
             }
 
             osu->getChat()->updateUserList();

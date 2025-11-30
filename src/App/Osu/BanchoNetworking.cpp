@@ -26,8 +26,6 @@
 
 #include <ctime>
 
-#include <curl/curl.h>
-
 // Bancho protocol
 
 namespace BANCHO::Net {
@@ -74,7 +72,7 @@ void parse_packets(u8 *data, size_t s_data) {
 }
 
 void attempt_logging_in() {
-    assert(BanchoState::get_uid() <= 0);
+    assert(BanchoState::is_online());
 
     NeoNet::RequestOptions options;
     options.timeout = 30;
@@ -92,7 +90,7 @@ void attempt_logging_in() {
         query_url,
         [func = __FUNCTION__](NeoNet::Response response) {
             if(!response.success) {
-                // TODO: shows "HTTP 0" on curl/network errors!
+                // TODO: shows "HTTP 0" on error!
                 auto errmsg = UString::format("Failed to log in: HTTP %ld", response.response_code);
                 osu->getNotificationOverlay()->addToast(errmsg, ERROR_TOAST);
                 return;
@@ -217,7 +215,7 @@ void update_networking() {
     if(BanchoState::is_in_a_multi_room() && seconds_between_pings > 3) seconds_between_pings = 3;
     if(use_websockets) seconds_between_pings = 30;
 
-    if(BanchoState::get_uid() <= 0) return;
+    if(!BanchoState::is_online()) return;
 
     const bool should_ping = Timing::getTicksMS() - last_packet_ms > (u64)(seconds_between_pings * 1000);
 
@@ -271,7 +269,7 @@ void update_networking() {
 }
 
 void send_packet(Packet &packet) {
-    if(BanchoState::get_uid() <= 0) {
+    if(!BanchoState::is_online()) {
         // Don't queue any packets until we're logged in
         free(packet.memory);
         packet.memory = nullptr;

@@ -588,9 +588,7 @@ void Chat::handle_command(const UString &msg) {
                             BanchoState::room.password.toUtf8(), BanchoState::room.name.toUtf8());
 
         Packet packet;
-
         packet.id = SEND_PRIVATE_MESSAGE;
-
         packet.write_string((char *)BanchoState::get_username().c_str());
         packet.write_string((char *)invite_msg.toUtf8());
         packet.write_string((char *)username.toUtf8());
@@ -896,7 +894,7 @@ void Chat::addMessage(UString channel_name, const ChatMessage &msg, bool mark_un
     }
 
     bool is_pm =
-        msg.author_id > 0 && channel_name[0] != '#' && msg.author_name.utf8View() != BanchoState::get_username();
+        msg.author_id != 0 && channel_name[0] != '#' && msg.author_name.utf8View() != BanchoState::get_username();
     if(is_pm) {
         // If it's a PM, the channel title should be the one who sent the message
         channel_name = msg.author_name;
@@ -1149,7 +1147,7 @@ void Chat::updateUserList() {
 
     std::vector<const UserInfo *> sorted_users;
     for(const auto &pair : BANCHO::User::online_users) {
-        if(pair.second->user_id > 0) {
+        if(pair.second->user_id != 0) {
             sorted_users.push_back(pair.second);
         }
     }
@@ -1292,7 +1290,7 @@ CBaseUIContainer *Chat::setVisible(bool visible) {
 
     soundEngine->play(osu->getSkin()->s_click_button);
 
-    if(visible && BanchoState::get_uid() <= 0) {
+    if(visible && !BanchoState::is_online()) {
         osu->getOptionsMenu()->askForLoginDetails();
         return this;
     }

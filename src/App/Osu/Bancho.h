@@ -76,7 +76,10 @@ struct BanchoState final {
     [[nodiscard]] static inline bool is_playing_a_multi_map() { return match_started; }
     [[nodiscard]] static bool can_submit_scores();
 
-    [[nodiscard]] static inline bool is_online() { return user_id.load(std::memory_order_acquire) > 0; }
+    [[nodiscard]] static inline bool is_online() {
+        const i32 uid = user_id.load(std::memory_order_acquire);
+        return (uid > 0) || (uid < -10000);
+    }
     [[nodiscard]] static inline bool is_logging_in() { return online_status == OnlineStatus::LOGIN_IN_PROGRESS; }
 
     [[nodiscard]] static inline i32 get_uid() { return user_id.load(std::memory_order_acquire); }

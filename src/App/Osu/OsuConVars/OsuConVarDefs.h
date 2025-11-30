@@ -595,6 +595,7 @@ CONVAR(name, "Guest"sv, CLIENT);
 // Server settings
 CONVAR(sv_allow_speed_override, false, SERVER,
        "let clients submit scores with non-vanilla speeds (e.g. not only HT/DT speed)");
+CONVAR(sv_has_irc_users, true, SERVER, "players with negative IDs will show up as IRC users");
 
 // Main menu
 CONVAR(draw_menu_background, true, CLIENT | SKINS | SERVER);

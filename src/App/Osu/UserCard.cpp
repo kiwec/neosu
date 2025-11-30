@@ -209,7 +209,8 @@ void UserCard::draw() {
 void UserCard::mouse_update(bool *propagate_clicks) {
     if(!this->bVisible) return;
 
-    if(this->user_id > 0) {
+    const bool is_online = (this->user_id > 0) || (this->user_id < -10000);
+    if(is_online) {
         const UserInfo *my = BANCHO::User::get_user_info(this->user_id, true);
         this->sText = my->name;
 
@@ -233,7 +234,8 @@ void UserCard::mouse_update(bool *propagate_clicks) {
 void UserCard::updateUserStats() {
     Database::PlayerStats stats;
 
-    bool is_self = this->user_id <= 0 || (this->user_id == BanchoState::get_uid());
+    const bool is_online = (this->user_id > 0) || (this->user_id < -10000);
+    const bool is_self = !is_online || (this->user_id == BanchoState::get_uid());
     if(is_self && !BanchoState::can_submit_scores()) {
         stats = db->calculatePlayerStats(this->sText.toUtf8());
     } else {
@@ -284,7 +286,9 @@ void UserCard::setID(i32 new_id) {
     this->avatar.reset();
 
     this->user_id = new_id;
-    if(this->user_id > 0) {
+
+    const bool is_online = (this->user_id > 0) || (this->user_id < -10000);
+    if(is_online) {
         this->avatar = std::make_unique<UIAvatar>(this->user_id, 0.f, 0.f, 0.f, 0.f);
         this->avatar->on_screen = true;
     }

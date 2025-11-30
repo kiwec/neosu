@@ -10,8 +10,7 @@
 #include "SyncCV.h"
 
 #include "curl_blob.h"
-
-#include "curl/curl.h"
+#include <curl/curl.h>
 
 #include <utility>
 #include <queue>

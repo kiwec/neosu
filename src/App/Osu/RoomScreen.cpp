@@ -381,7 +381,7 @@ void RoomScreen::updateSettingsLayout(vec2 newResolution) {
     // Host name
     if(!is_host) {
         UString host_str = "Host: None";
-        if(BanchoState::room.host_id > 0) {
+        if(BanchoState::room.host_id != 0) {
             const auto *host = BANCHO::User::get_user_info(BanchoState::room.host_id, true);
             host_str = UString::format("Host: %s", host->name.toUtf8());
         }
