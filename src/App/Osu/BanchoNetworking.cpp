@@ -72,7 +72,7 @@ void parse_packets(u8 *data, size_t s_data) {
 }
 
 void attempt_logging_in() {
-    assert(BanchoState::is_online());
+    assert(!BanchoState::is_online());
 
     NeoNet::RequestOptions options;
     options.timeout = 30;
