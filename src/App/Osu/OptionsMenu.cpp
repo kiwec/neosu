@@ -27,6 +27,7 @@
 #include "HUD.h"
 #include "Icons.h"
 #include "KeyBindings.h"
+#include "OsuKeyBinds.h"
 #include "Keyboard.h"
 #include "MainMenu.h"
 #include "ModSelector.h"
@@ -858,6 +859,9 @@ OptionsMenu::OptionsMenu() : ScreenBackable() {
             UIButton *restartSoundEngine = this->addButton("Restart SoundEngine");
             restartSoundEngine->setClickCallback(SA::MakeDelegate<&OptionsMenu::onOutputDeviceRestart>(this));
             restartSoundEngine->setColor(0xff003947);
+
+            // FIXME: hacky
+            this->setupASIOClampedChangeCallback();
         }
         auto asio_end_idx = this->elemContainers.size();
         for(auto i = asio_idx; i < asio_end_idx; i++) {
@@ -1389,6 +1393,7 @@ OptionsMenu::~OptionsMenu() {
         }
         SAFE_DELETE(element);
     }
+    this->asioBufferSizeSlider = nullptr;
 }
 
 void OptionsMenu::draw() {
@@ -2973,7 +2978,7 @@ void OptionsMenu::onKeyBindingsResetAllPressed(CBaseUIButton * /*button*/) {
     if(this->iNumResetAllKeyBindingsPressed > (numRequiredPressesUntilReset - 1)) {
         this->iNumResetAllKeyBindingsPressed = 0;
 
-        for(ConVar *bind : KeyBindings::ALL) {
+        for(ConVar *bind : OsuKeyBinds::getAll()) {
             bind->setValue(bind->getDefaultFloat());
         }
 
@@ -3046,6 +3051,22 @@ void OptionsMenu::onSliderChangeUIScale(CBaseUISlider *slider) {
         this->onResetUpdate(element->resetButton);
         DO_UPDATE_LAYOUT_CHECK(slider);
     }
+}
+
+// FIXME: hacky
+void OptionsMenu::setupASIOClampedChangeCallback() {
+#if defined(MCENGINE_PLATFORM_WINDOWS) && defined(MCENGINE_FEATURE_BASS)
+    if(soundEngine->getTypeId() != SoundEngine::SndEngineType::BASS) return;
+
+    static_cast<BassSoundEngine *>(soundEngine.get())
+        ->setOnASIOBufferChangeCB(
+            [asioBufSizeSlider = &this->asioBufferSizeSlider](const BASS_ASIO_INFO &info) -> void {
+                if(!asioBufSizeSlider || !*asioBufSizeSlider) return;
+
+                (*asioBufSizeSlider)->setBounds(info.bufmin, info.bufmax);
+                (*asioBufSizeSlider)->setKeyDelta(info.bufgran == -1 ? info.bufmin : info.bufgran);
+            });
+#endif
 }
 
 void OptionsMenu::OpenASIOSettings() {
@@ -3276,7 +3297,7 @@ void OptionsMenu::onResetEverythingClicked(CBaseUIButton * /*button*/) {
         }
 
         // and then all key bindings (since these don't use the yellow reset button system)
-        for(ConVar *bind : KeyBindings::ALL) {
+        for(ConVar *bind : OsuKeyBinds::getAll()) {
             bind->setValue(bind->getDefaultFloat());
         }
 

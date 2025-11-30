@@ -182,6 +182,7 @@ class OptionsMenu final : public ScreenBackable, public NotificationOverlayKeyLi
     void onSliderChangeLetterboxingOffset(CBaseUISlider *slider);
     void onSliderChangeUIScale(CBaseUISlider *slider);
 
+    void setupASIOClampedChangeCallback();
     void OpenASIOSettings();
     void onASIOBufferChange(CBaseUISlider *slider);
     void onWASAPIBufferChange(CBaseUISlider *slider);

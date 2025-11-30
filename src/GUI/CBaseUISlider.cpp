@@ -7,7 +7,7 @@
 #include "Engine.h"
 #include "Keyboard.h"
 #include "Mouse.h"
-#include "Osu.h"
+#include "App.h"
 #include "Skin.h"
 #include "SoundEngine.h"
 
@@ -255,7 +255,7 @@ CBaseUISlider *CBaseUISlider::setValue(float value, bool animate, bool call_call
     this->updateBlockPos();
 
     if(playAudio) {
-        soundEngine->play(osu->getSkin()->s_sliderbar, 0.f, 0.75f + (.075f * percent));
+        soundEngine->play(app->getSound(ActionSound::ADJUST_SLIDER), 0.f, 0.75f + (.075f * percent));
         this->fLastSoundPlayTime = engine->getTime();
     }
 

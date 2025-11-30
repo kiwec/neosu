@@ -10,8 +10,6 @@
 #include <cstdint>  // IWYU pragma: keep
 #include <string>
 
-class UString;
-
 // can't be namespaced
 #ifdef MCENGINE_PLATFORM_WINDOWS
 
@@ -100,12 +98,12 @@ using bass_EXTERN::BASS_ATTRIB_TEMPO_FREQ;
 using bass_EXTERN::BASS_ATTRIB_TEMPO_PITCH;
 
 #ifdef MCENGINE_PLATFORM_WINDOWS
-using BASS_ASIO_INFO = bass_EXTERN::BASS_ASIO_INFO;
-using BASS_ASIO_DEVICEINFO = bass_EXTERN::BASS_ASIO_DEVICEINFO;
+using bass_EXTERN::BASS_ASIO_INFO;
+using bass_EXTERN::BASS_ASIO_DEVICEINFO;
 
-using BASS_WASAPI_INFO = bass_EXTERN::BASS_WASAPI_INFO;
-using BASS_WASAPI_DEVICEINFO = bass_EXTERN::BASS_WASAPI_DEVICEINFO;
-using WASAPIPROC = bass_EXTERN::WASAPIPROC;
+using bass_EXTERN::BASS_WASAPI_INFO;
+using bass_EXTERN::BASS_WASAPI_DEVICEINFO;
+using bass_EXTERN::WASAPIPROC;
 #endif
 
 // define all BASS functions we'll need from the libs
@@ -217,7 +215,7 @@ using WASAPIPROC = bass_EXTERN::WASAPIPROC;
 	std::string getFailedLoad();
 
 	std::string printBassError(const std::string &context, int code);
-    UString getErrorUString(int code = (-0x7fffffff - 1)); // anything it takes to avoid including another header within a header
+    std::string getErrorString(int code = (-0x7fffffff - 1)); // anything it takes to avoid including another header within a header
 //clang-format on
 }; // namespace BassManager
 

@@ -69,7 +69,7 @@ void BassSound::initAsync() {
         this->srchandle = BASS_StreamCreateFile(BASS_FILE_NAME, file_path.plat_str(), 0, 0, flags);
         if(!this->srchandle) {
             debugLog("BASS_StreamCreateFile() error on file {}: {}", this->sFilePath.c_str(),
-                     BassManager::getErrorUString());
+                     BassManager::getErrorString());
             return;
         }
 
@@ -78,7 +78,7 @@ void BassSound::initAsync() {
             BASS_FX_TempoCreate(this->srchandle, currentTransposerAlgorithm | BASS_FX_FREESOURCE | BASS_STREAM_DECODE);
         if(!this->srchandle) {
             debugLog("BASS_FX_TempoCreate() error on file {}: {}", this->sFilePath.c_str(),
-                     BassManager::getErrorUString());
+                     BassManager::getErrorString());
             return;
         }
 
@@ -107,7 +107,7 @@ void BassSound::initAsync() {
                 return;
             } else {
                 debugLog("BASS_SampleLoad() error on file {}: {}", this->sFilePath.c_str(),
-                         BassManager::getErrorUString(code));
+                         BassManager::getErrorString(code));
                 return;
             }
         }
@@ -171,13 +171,13 @@ void BassSound::setPositionUS(u64 us) {
     const i64 tgtByte = BASS_ChannelSeconds2Bytes(this->srchandle, tgtSecs);
     if(tgtByte < 0) {
         debugLog("BASS_ChannelSeconds2Bytes( stream , {} ) error on file {}: {}", tgtSecs, this->sFilePath.c_str(),
-                 BassManager::getErrorUString());
+                 BassManager::getErrorString());
         return;
     }
 
     if(!BASS_Mixer_ChannelSetPosition(this->srchandle, tgtByte, BASS_POS_BYTE | BASS_POS_MIXER_RESET)) {
         logIfCV(debug_snd, "BASS_Mixer_ChannelSetPosition( stream , {} ) error on file {}: {}", us,
-                this->sFilePath.c_str(), BassManager::getErrorUString());
+                this->sFilePath.c_str(), BassManager::getErrorString());
         return;
     }
 

@@ -480,6 +480,9 @@ void SoLoudSoundEngine::allowInternalCallbacks() {
 }
 
 SoLoudSoundEngine::~SoLoudSoundEngine() {
+    if(!this->restartCBs[0].isNull()) {
+        this->restartCBs[0]();
+    }
     if(soloud && this->isReady()) {
         soloud->deinit();
     }

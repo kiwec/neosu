@@ -5,26 +5,18 @@
 
 #include "BassManager.h"
 #include "BassSoundEngine.h"
-#include "BeatmapInterface.h"
-#include "CBaseUILabel.h"
 #include "ConVar.h"
-#include "Database.h"
 #include "Engine.h"
-
-#include <cmath>
-#include <utility>
-#include "OptionsMenu.h"
-#include "Osu.h"
 #include "ResourceManager.h"
-#include "Skin.h"
-#include "SongBrowser/LoudnessCalcThread.h"
-#include "SongBrowser/SongBrowser.h"
 #include "Sound.h"
 #include "Timing.h"
 #include "Logging.h"
+#include "App.h"
+
+#include <cmath>
+#include <utility>
 
 #ifdef MCENGINE_PLATFORM_WINDOWS
-#include "CBaseUISlider.h"
 
 DWORD BassSoundEngine::ASIO_clamp(const BASS_ASIO_INFO &info, DWORD buflen) {
     if(std::cmp_equal(buflen, -1)) return info.bufpref;
@@ -84,7 +76,12 @@ BassSoundEngine::BassSoundEngine() : SoundEngine() {
     this->bInitSuccess = true;
 }
 
-BassSoundEngine::~BassSoundEngine() { BassManager::cleanup(); }
+BassSoundEngine::~BassSoundEngine() {
+    if(!this->restartCBs[0].isNull()) {
+        this->restartCBs[0]();
+    }
+    BassManager::cleanup();
+}
 
 void BassSoundEngine::updateOutputDevices(bool /*printInfo*/) {
     this->outputDevices.clear();
@@ -219,7 +216,7 @@ bool BassSoundEngine::init_bass_mixer(const SoundEngine::OUTPUT_DEVICE &device) 
         if(code != BASS_ERROR_ALREADY) {
             this->ready_since = -1.0;
             debugLog("BASS_Init(0) failed.");
-            osu->getNotificationOverlay()->addToast(BassManager::getErrorUString(), ERROR_TOAST);
+            app->showNotification({BassManager::getErrorString(), NotificationPreset::ERROR});
             return false;
         }
     }
@@ -228,7 +225,7 @@ bool BassSoundEngine::init_bass_mixer(const SoundEngine::OUTPUT_DEVICE &device) 
         if(!BASS_Init(device.id, freq, bass_flags | BASS_DEVICE_SOFTWARE, nullptr, nullptr)) {
             this->ready_since = -1.0;
             debugLog("BASS_Init({:d}) errored out.", device.id);
-            osu->getNotificationOverlay()->addToast(BassManager::getErrorUString(), ERROR_TOAST);
+            app->showNotification({BassManager::getErrorString(), NotificationPreset::ERROR});
             return false;
         }
     }
@@ -239,7 +236,7 @@ bool BassSoundEngine::init_bass_mixer(const SoundEngine::OUTPUT_DEVICE &device) 
     if(this->g_bassOutputMixer == 0) {
         this->ready_since = -1.0;
         debugLog("BASS_Mixer_StreamCreate() failed.");
-        osu->getNotificationOverlay()->addToast(BassManager::getErrorUString(), ERROR_TOAST);
+        app->showNotification({BassManager::getErrorString(), NotificationPreset::ERROR});
         return false;
     }
 
@@ -248,7 +245,7 @@ bool BassSoundEngine::init_bass_mixer(const SoundEngine::OUTPUT_DEVICE &device) 
     BASS_ChannelSetAttribute(this->g_bassOutputMixer, BASS_ATTRIB_BUFFER, 0.f);
 
     // Switch to "No sound" device for all future sound processing
-    // Only g_bassOutputMixer will be output to the actual device!
+    // Only this->g_bassOutputMixer will be output to the actual device!
     BASS_SetDevice(0);
     return true;
 }
@@ -263,10 +260,6 @@ bool BassSoundEngine::initializeOutputDevice(const SoundEngine::OUTPUT_DEVICE &d
         this->currentOutputDevice = device;
         cv::snd_output_device.setValue(this->currentOutputDevice.name);
         debugLog("BassSoundEngine: Output Device = \"{:s}\"", this->currentOutputDevice.name.toUtf8());
-
-        if(osu && osu->getOptionsMenu()) {
-            osu->getOptionsMenu()->scheduleLayoutUpdate();
-        }
 
         return true;
     }
@@ -306,9 +299,9 @@ bool BassSoundEngine::initializeOutputDevice(const SoundEngine::OUTPUT_DEVICE &d
 #ifdef _WIN32
     if(device.driver == OutputDriver::BASS_ASIO) {
         if(!BASS_ASIO_Init(device.id, 0)) {
-            ready_since = -1.0;
+            this->ready_since = -1.0;
             debugLog("BASS_ASIO_Init() failed.");
-            osu->getNotificationOverlay()->addToast(BassManager::getErrorUString(), ERROR_TOAST);
+            app->showNotification({BassManager::getErrorString(), NotificationPreset::ERROR});
             return false;
         }
 
@@ -328,29 +321,26 @@ bool BassSoundEngine::initializeOutputDevice(const SoundEngine::OUTPUT_DEVICE &d
         auto bufsize = cv::asio_buffer_size.getVal<u32>();
         bufsize = ASIO_clamp(info, bufsize);
 
-        if(osu && osu->getOptionsMenu()) {
-            auto slider = osu->getOptionsMenu()->asioBufferSizeSlider;
-            slider->setBounds(info.bufmin, info.bufmax);
-            slider->setKeyDelta(info.bufgran == -1 ? info.bufmin : info.bufgran);
-        }
+        // TODO: this is weird and ugly and barely necessary, but lazy to figure out a proper solution for now
+        if(this->asio_buffer_change_cb) this->asio_buffer_change_cb(info);
 
-        if(!BASS_ASIO_ChannelEnableBASS(false, 0, g_bassOutputMixer, true)) {
-            ready_since = -1.0;
+        if(!BASS_ASIO_ChannelEnableBASS(false, 0, this->g_bassOutputMixer, true)) {
+            this->ready_since = -1.0;
             debugLog("BASS_ASIO_ChannelEnableBASS() failed.");
-            osu->getNotificationOverlay()->addToast(BassManager::getErrorUString(), ERROR_TOAST);
+            app->showNotification({BassManager::getErrorString(), NotificationPreset::ERROR});
             return false;
         }
 
         if(!BASS_ASIO_Start(bufsize, 0)) {
-            ready_since = -1.0;
+            this->ready_since = -1.0;
             debugLog("BASS_ASIO_Start() failed.");
-            osu->getNotificationOverlay()->addToast(BassManager::getErrorUString(), ERROR_TOAST);
+            app->showNotification({BassManager::getErrorString(), NotificationPreset::ERROR});
             return false;
         }
 
         double wanted_latency = 1000.0 * cv::asio_buffer_size.getFloat() / sample_rate;
         double actual_latency = 1000.0 * (double)BASS_ASIO_GetLatency(false) / sample_rate;
-        BASS_ChannelSetAttribute(g_bassOutputMixer, BASS_ATTRIB_MIXER_LATENCY, actual_latency / 1000.0);
+        BASS_ChannelSetAttribute(this->g_bassOutputMixer, BASS_ATTRIB_MIXER_LATENCY, actual_latency / 1000.0);
         debugLog("ASIO: wanted {:f} ms, got {:f} ms latency. Sample rate: {:f} Hz", wanted_latency, actual_latency,
                  sample_rate);
     }
@@ -385,20 +375,20 @@ bool BassSoundEngine::initializeOutputDevice(const SoundEngine::OUTPUT_DEVICE &d
         }
         if(!BASS_WASAPI_Init(device.id, 0, 0, flags, bufferSize, updatePeriod, WASAPIPROC_BASS,
                              reinterpret_cast<void *>(static_cast<uintptr_t>(g_bassOutputMixer)))) {
-            ready_since = -1.0;
+            this->ready_since = -1.0;
             debugLog("BASS_WASAPI_Init() failed.");
-            osu->getNotificationOverlay()->addToast(BassManager::getErrorUString(), ERROR_TOAST);
+            app->showNotification({BassManager::getErrorString(), NotificationPreset::ERROR});
             return false;
         }
 
         if(!BASS_WASAPI_Start()) {
-            ready_since = -1.0;
+            this->ready_since = -1.0;
             debugLog("BASS_WASAPI_Start() failed.");
-            osu->getNotificationOverlay()->addToast(BassManager::getErrorUString(), ERROR_TOAST);
+            app->showNotification({BassManager::getErrorString(), NotificationPreset::ERROR});
             return false;
         }
 
-        BASS_ChannelSetAttribute(g_bassOutputMixer, BASS_ATTRIB_MIXER_LATENCY,
+        BASS_ChannelSetAttribute(this->g_bassOutputMixer, BASS_ATTRIB_MIXER_LATENCY,
                                  cv::win_snd_wasapi_buffer_size.getFloat());
     }
 #endif
@@ -408,18 +398,12 @@ bool BassSoundEngine::initializeOutputDevice(const SoundEngine::OUTPUT_DEVICE &d
     cv::snd_output_device.setValue(this->currentOutputDevice.name);
     debugLog("BassSoundEngine: Output Device = \"{:s}\"", this->currentOutputDevice.name.toUtf8());
 
-    if(osu && osu->getOptionsMenu()) {
-        osu->getOptionsMenu()->scheduleLayoutUpdate();
-    }
-
     return true;
 }
 
 void BassSoundEngine::restart() { this->setOutputDevice(this->currentOutputDevice); }
 
 void BassSoundEngine::shutdown() {
-    VolNormalization::abort();
-
     if(this->currentOutputDevice.driver == OutputDriver::BASS) {
         BASS_SetDevice(this->currentOutputDevice.id);
         BASS_Free();
@@ -602,12 +586,8 @@ bool BassSoundEngine::hasExclusiveOutput() {
 }
 
 void BassSoundEngine::setOutputDevice(const SoundEngine::OUTPUT_DEVICE &device) {
-    bool was_playing = false;
-    u64 prevMusicPositionUS = 0;
-    if(osu->getMapInterface()->getMusic() != nullptr) {
-        was_playing = osu->getMapInterface()->getMusic()->isPlaying();
-        prevMusicPositionUS = osu->getMapInterface()->getMusic()->getPositionUS();
-    }
+    // run callbacks pt. 1
+    if(this->restartCBs[0] != nullptr) this->restartCBs[0]();
 
     // TODO: This is blocking main thread, can freeze for a long time on some sound cards
     auto previous = this->currentOutputDevice;
@@ -624,30 +604,8 @@ void BassSoundEngine::setOutputDevice(const SoundEngine::OUTPUT_DEVICE &device) 
         }
     }
 
-    osu->getOptionsMenu()->outputDeviceLabel->setText(this->getOutputDeviceName());
-    osu->getSkinMutable()->reloadSounds();
-    osu->getOptionsMenu()->onOutputDeviceResetUpdate();
-
-    // start playing music again after audio device changed
-    if(osu->getMapInterface()->getMusic() != nullptr) {
-        if(osu->isInPlayMode()) {
-            osu->getMapInterface()->unloadMusic();
-            osu->getMapInterface()->loadMusic();
-            osu->getMapInterface()->getMusic()->setLoop(false);
-            osu->getMapInterface()->getMusic()->setPositionUS(prevMusicPositionUS);
-        } else {
-            osu->getMapInterface()->unloadMusic();
-            osu->getMapInterface()->selectBeatmap();
-            osu->getMapInterface()->getMusic()->setPositionUS(prevMusicPositionUS);
-        }
-    }
-
-    // resume loudness calc
-    VolNormalization::start_calc(db->loudness_to_calc);
-
-    if(was_playing) {
-        osu->music_unpause_scheduled = true;
-    }
+    // run callbacks pt. 2
+    if(this->restartCBs[1] != nullptr) this->restartCBs[1]();
 }
 
 void BassSoundEngine::setMasterVolume(float volume) {
@@ -663,7 +621,7 @@ void BassSoundEngine::setMasterVolume(float volume) {
 #ifdef _WIN32
         if(hasExclusiveOutput()) {
             // Device volume doesn't seem to work, so we'll use DSP instead
-            BASS_ChannelSetAttribute(g_bassOutputMixer, BASS_ATTRIB_VOLDSP, this->fMasterVolume);
+            BASS_ChannelSetAttribute(this->g_bassOutputMixer, BASS_ATTRIB_VOLDSP, this->fMasterVolume);
         } else {
             BASS_WASAPI_SetVolume(BASS_WASAPI_CURVE_WINDOWS | BASS_WASAPI_VOL_SESSION, this->fMasterVolume);
         }

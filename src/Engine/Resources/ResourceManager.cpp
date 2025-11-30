@@ -13,6 +13,7 @@
 #include "Resource.h"
 #include "Engine.h"
 #include "Logging.h"
+#include "Environment.h"
 
 #include <algorithm>
 #include <utility>
@@ -49,7 +50,7 @@ ResourceManager::~ResourceManager() {
 
 void ResourceManager::update() {
     // delegate to async loader
-    bool lowLatency = app && app->isInPlayModeAndNotPaused();
+    bool lowLatency = app->isInUnpausedGameplay();
     this->asyncLoader->update(lowLatency);
 }
 

@@ -109,22 +109,29 @@ bool Osu::globalOnSetValueGameplayCallback(const char *cvarname, CvarEditor sett
 
 bool Osu::globalOnAreAllCvarsSubmittableCallback() {
     // Also check for non-vanilla mod combinations here while we're at it
-    if(osu != nullptr) {
-        // We don't want to submit target scores, even though it's allowed in multiplayer
-        if(osu->getModTarget()) return false;
+    // We don't want to submit target scores, even though it's allowed in multiplayer
+    if(osu->getModTarget()) return false;
 
-        if(osu->getModEZ() && osu->getModHR()) return false;
+    if(osu->getModEZ() && osu->getModHR()) return false;
 
-        if(!cv::sv_allow_speed_override.getBool()) {
-            f32 speed = cv::speed_override.getFloat();
-            if(speed != -1.f && speed != 0.75 && speed != 1.0 && speed != 1.5) return false;
-        }
+    if(!cv::sv_allow_speed_override.getBool()) {
+        f32 speed = cv::speed_override.getFloat();
+        if(speed != -1.f && speed != 0.75 && speed != 1.0 && speed != 1.5) return false;
     }
     return true;
 }
 
-Osu::Osu() {
-    osu = this;
+// just a funny mechanism to make sure the global "osu" is created first and destroyed last,
+// so destructors which might run at the end of ~Osu() still have an "osu" to refer to and not insta-segfault
+struct Osu::GlobalOsuCtorDtorThing {
+    NOCOPY_NOMOVE(GlobalOsuCtorDtorThing)
+   public:
+    GlobalOsuCtorDtorThing() = delete;
+    forceinline GlobalOsuCtorDtorThing(Osu *optr) { osu = optr; }
+    forceinline ~GlobalOsuCtorDtorThing() { osu = nullptr; }
+};
+
+Osu::Osu() : App(), MouseListener(), global_osu_(std::make_unique<GlobalOsuCtorDtorThing>(this)) {
     srand(crypto::rng::get_rand<u32>());
 
     // global cvar callbacks will be removed in destructor
@@ -245,17 +252,7 @@ Osu::Osu() {
     // Initialize sound here so we can load the preferred device from config
     // Avoids initializing the sound device twice, which can take a while depending on the driver
     if(Env::cfg(AUD::BASS) && soundEngine->getTypeId() == SoundEngine::BASS) {
-        soundEngine->updateOutputDevices(true);
-        soundEngine->initializeOutputDevice(soundEngine->getWantedDevice());
-        cv::snd_output_device.setValue(soundEngine->getOutputDeviceName());
-        cv::snd_freq.setCallback(SA::MakeDelegate<&SoundEngine::onFreqChanged>(soundEngine.get()));
-        cv::cmd::snd_restart.setCallback(SA::MakeDelegate<&SoundEngine::restart>(soundEngine.get()));
-        cv::win_snd_wasapi_exclusive.setCallback(SA::MakeDelegate<&SoundEngine::onParamChanged>(soundEngine.get()));
-        cv::win_snd_wasapi_buffer_size.setCallback(SA::MakeDelegate<&SoundEngine::onParamChanged>(soundEngine.get()));
-        cv::win_snd_wasapi_period_size.setCallback(SA::MakeDelegate<&SoundEngine::onParamChanged>(soundEngine.get()));
-        cv::win_snd_wasapi_event_callbacks.setCallback(
-            SA::MakeDelegate<&SoundEngine::onParamChanged>(soundEngine.get()));
-        cv::asio_buffer_size.setCallback(SA::MakeDelegate<&SoundEngine::onParamChanged>(soundEngine.get()));
+        this->setupBASS();
     } else if(Env::cfg(AUD::SOLOUD) && soundEngine->getTypeId() == SoundEngine::SOLOUD) {
         this->setupSoloud();
     }
@@ -458,6 +455,8 @@ Osu::~Osu() {
     }
     this->screens = {};
     db.reset();  // shutdown db
+
+    // "osu" will be set to null when global_osu_ is deleted (at the end of all automatically deleted members)
 }
 
 void Osu::draw() {
@@ -1231,6 +1230,83 @@ void Osu::onButtonChange(ButtonEvent ev) {
         return;
 
     this->onGameplayKey(!!(ev.btn & MF_LEFT) ? GameplayKeys::M1 : GameplayKeys::M2, ev.down, ev.timestamp, true);
+}
+
+Sound *Osu::getSound(ActionSound action) const {
+    const Skin *curSkin = this->skin.get();
+    if(!curSkin) return nullptr;
+    switch(action) {
+        case ActionSound::DELETING_TEXT:
+            return curSkin->s_deleting_text;
+        case ActionSound::MOVE_TEXT_CURSOR:
+            return curSkin->s_moving_text_cursor;
+        case ActionSound::ADJUST_SLIDER:
+            return curSkin->s_sliderbar;
+        case ActionSound::TYPING1:
+            return curSkin->s_typing1;
+        case ActionSound::TYPING2:
+            return curSkin->s_typing2;
+        case ActionSound::TYPING3:
+            return curSkin->s_typing3;
+        case ActionSound::TYPING4:
+            return curSkin->s_typing4;
+        default:
+            std::unreachable();
+    }
+    std::unreachable();
+}
+
+void Osu::showNotification(const NotificationInfo &info) {
+    if(!this->notificationOverlay) {
+        debugLog(info.text);
+    }
+
+    if(info.nclass == NotificationClass::TOAST) {
+        using enum NotificationPreset;
+        switch(info.preset) {
+            case CUSTOM:
+                this->notificationOverlay->addToast(info.text, info.custom_color, info.callback);
+                return;
+            case INFO:
+                this->notificationOverlay->addToast(info.text, INFO_TOAST, info.callback);
+                return;
+            case ERROR:
+                this->notificationOverlay->addToast(info.text, ERROR_TOAST, info.callback);
+                return;
+            case SUCCESS:
+                this->notificationOverlay->addToast(info.text, SUCCESS_TOAST, info.callback);
+                return;
+            case STATUS:
+                this->notificationOverlay->addToast(info.text, STATUS_TOAST, info.callback);
+                return;
+        }
+        std::unreachable();
+    } else if(info.nclass == NotificationClass::BANNER) {
+        using enum NotificationPreset;
+        // NOTE: currently abusing toast colors
+        switch(info.preset) {
+            case CUSTOM:
+                this->notificationOverlay->addNotification(info.text, info.custom_color, false, info.duration);
+                return;
+            case INFO:
+                this->notificationOverlay->addNotification(info.text, INFO_TOAST, false, info.duration);
+                return;
+            case ERROR:
+                this->notificationOverlay->addNotification(info.text, ERROR_TOAST, false, info.duration);
+                return;
+            case SUCCESS:
+                this->notificationOverlay->addNotification(info.text, SUCCESS_TOAST, false, info.duration);
+                return;
+            case STATUS:
+                this->notificationOverlay->addNotification(info.text, STATUS_TOAST, false, info.duration);
+                return;
+        }
+        std::unreachable();
+    }
+
+    // "CUSTOM" class does nothing
+    debugLog(info.text);
+    return;
 }
 
 void Osu::toggleModSelection(bool waitForF1KeyUp) {
@@ -2068,6 +2144,86 @@ bool Osu::getModSD() const { return cv::mod_suddendeath.getBool(); }
 bool Osu::getModSS() const { return cv::mod_perfect.getBool(); }
 bool Osu::getModNightmare() const { return cv::mod_nightmare.getBool(); }
 bool Osu::getModTD() const { return cv::mod_touchdevice.getBool() || cv::mod_touchdevice_always.getBool(); }
+
+void Osu::setupBASS() {
+    {
+        soundEngine->updateOutputDevices(true);
+        soundEngine->initializeOutputDevice(soundEngine->getWantedDevice());
+        cv::snd_output_device.setValue(soundEngine->getOutputDeviceName());
+        cv::snd_freq.setCallback(SA::MakeDelegate<&SoundEngine::onFreqChanged>(soundEngine.get()));
+        cv::cmd::snd_restart.setCallback(SA::MakeDelegate<&SoundEngine::restart>(soundEngine.get()));
+        cv::win_snd_wasapi_exclusive.setCallback(SA::MakeDelegate<&SoundEngine::onParamChanged>(soundEngine.get()));
+        cv::win_snd_wasapi_buffer_size.setCallback(SA::MakeDelegate<&SoundEngine::onParamChanged>(soundEngine.get()));
+        cv::win_snd_wasapi_period_size.setCallback(SA::MakeDelegate<&SoundEngine::onParamChanged>(soundEngine.get()));
+        cv::win_snd_wasapi_event_callbacks.setCallback(
+            SA::MakeDelegate<&SoundEngine::onParamChanged>(soundEngine.get()));
+        cv::asio_buffer_size.setCallback(SA::MakeDelegate<&SoundEngine::onParamChanged>(soundEngine.get()));
+        cv::snd_output_device.setCallback(
+            []() -> void { osu && osu->getOptionsMenu() ? osu->getOptionsMenu()->scheduleLayoutUpdate() : (void)0; });
+    }
+    // restart callbacks
+    {
+        static bool was_playing = false;
+        static u32 prev_position_ms = 0;
+
+        static auto output_changed_before_cb = []() -> void {
+            // abort loudness calc
+            VolNormalization::abort();
+
+            Sound *map_music = nullptr;
+            if(osu && osu->getMapInterface() && (map_music = osu->getMapInterface()->getMusic())) {
+                was_playing = map_music->isPlaying();
+                prev_position_ms = map_music->getPositionMS();
+            } else {
+                was_playing = false;
+                prev_position_ms = 0;
+            }
+        };
+
+        // the actual reset will be sandwiched between these during restart
+        static auto output_changed_after_cb = []() -> void {
+            // part 2 of callback
+            if(osu && osu->optionsMenu && osu->optionsMenu->outputDeviceLabel && osu->skin) {
+                osu->optionsMenu->outputDeviceLabel->setText(soundEngine->getOutputDeviceName());
+                osu->skin->reloadSounds();
+                osu->optionsMenu->onOutputDeviceResetUpdate();
+
+                // start playing music again after audio device changed
+                Sound *map_music = nullptr;
+                const auto &map_iface = osu->getMapInterface();
+                if(map_iface && (map_music = map_iface->getMusic())) {
+                    if(osu->isInPlayMode()) {
+                        map_iface->unloadMusic();
+                        map_iface->loadMusic();
+                        if((map_music = map_iface->getMusic())) {  // need to get new music after loading
+                            map_music->setLoop(false);
+                            map_music->setPositionMS(prev_position_ms);
+                        }
+                    } else {
+                        map_iface->unloadMusic();
+                        map_iface->selectBeatmap();
+                        if((map_music = map_iface->getMusic())) {
+                            map_music->setPositionMS(prev_position_ms);
+                        }
+                    }
+                }
+
+                if(was_playing) {
+                    osu->music_unpause_scheduled = true;
+                }
+                osu->optionsMenu->scheduleLayoutUpdate();
+            }
+
+            // resume loudness calc
+            if(db) {
+                VolNormalization::start_calc(db->loudness_to_calc);
+            }
+        };
+
+        soundEngine->setDeviceChangeBeforeCallback(output_changed_before_cb);
+        soundEngine->setDeviceChangeAfterCallback(output_changed_after_cb);
+    }
+}
 
 void Osu::setupSoloud() {
     // need to save this state somewhere to share data between callback stages

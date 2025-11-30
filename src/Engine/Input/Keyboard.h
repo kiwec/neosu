@@ -5,6 +5,8 @@
 #include "KeyBindings.h"
 #include "KeyboardListener.h"
 
+#include <vector>
+
 class Keyboard final : public InputDevice {
     NOCOPY_NOMOVE(Keyboard)
 

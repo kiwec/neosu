@@ -348,7 +348,7 @@ std::string printBassError(const std::string &context, int code) {
     return errstr;  // also return it
 }
 
-UString getErrorUString(int code) {
+std::string getErrorString(int code) {
     return fmt::format("BASS error: {:s}", getBassErrorStringFromCode(code == INT_MIN ? BASS_ErrorGetCode() : code));
 }
 

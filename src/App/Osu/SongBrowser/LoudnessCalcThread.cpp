@@ -111,7 +111,7 @@ struct VolNormalization::LoudnessCalcThread {
 
             if(!succeeded || integrated_loudness == -HUGE_VAL) {
                 debugLog("No loudness information available for '{:s}' {}", song.toUtf8(),
-                         !succeeded ? BassManager::getErrorUString(errc) : "(silent song?)");
+                         !succeeded ? BassManager::getErrorString(errc) : "(silent song?)");
 
                 integrated_loudness = std::clamp<f32>(cv::loudness_fallback.getFloat(), -16.f, 0.f);
             }

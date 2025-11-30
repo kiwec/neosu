@@ -36,9 +36,15 @@ std::unique_ptr<DirectoryWatcher> directoryWatcher{nullptr};
 
 mcatomic_shptr<ConsoleBox> Engine::consoleBox{nullptr};
 
+#if !defined(BUILD_TOOLS_ONLY) && __has_include("Osu.h")
+#include "Osu.h"
+#endif
+
 Engine *engine{nullptr};
 Engine::Engine() {
     engine = this;
+    // always keep a dummy App() alive so we don't have to null-check for "app" inside engine code
+    app = std::make_unique<App>();
 
     this->guiContainer = nullptr;
     this->visualProfiler = nullptr;
@@ -123,10 +129,7 @@ Engine::~Engine() {
 
     // reset() all global unique_ptrs
     debugLog("Engine: Freeing app...");
-    app.reset();
-    // this can't be in the "Osu" dtor, because the (implicitly run) dtors for its unique_ptr members would happen after we set it to null
-    // so they could crash when dereferencing the now-null "osu", if they do that at any point during destruction
-    osu = nullptr;
+    app = std::make_unique<App>();  // re-create a dummy app and delete it again at the end
 
     debugLog("Engine: Freeing engine GUI...");
     if(const auto &cbox = Engine::consoleBox.load(std::memory_order_acquire); cbox != nullptr) {
@@ -181,6 +184,7 @@ Engine::~Engine() {
 
     debugLog("Engine: Goodbye.");
 
+    app.reset();  // delete the dummy App() for real
     engine = nullptr;
 }
 
@@ -222,11 +226,12 @@ void Engine::loadApp() {
         //*****************//
         //	Load App here  //
         //*****************//
-
-        app = std::make_unique<App>();
+#if !defined(BUILD_TOOLS_ONLY) && __has_include("Osu.h")  // otherwise just keep the dummy/fake "app"
+        app = std::make_unique<Osu>();
         this->runtime_assert(!!app, "App failed to initialize!");
 
         resourceManager->resetSyncLoadMaxBatchSize();
+#endif
 
         // start listening to the default keyboard input
         keyboard->addListener(app.get());
@@ -248,7 +253,7 @@ void Engine::onPaint() {
 
         // middle
         {
-            if(app) {
+            {
                 VPROF_BUDGET("App::draw", VPROF_BUDGETGROUP_DRAW);
                 app->draw();
             }
@@ -355,7 +360,7 @@ void Engine::onUpdate() {
     }
 
     // update app
-    if(app) {
+    {
         VPROF_BUDGET("App::update", VPROF_BUDGETGROUP_UPDATE);
         app->update();
     }
@@ -374,7 +379,7 @@ void Engine::onFocusGained() {
     logIfCV(debug_engine, "got focus");
 
     if(soundEngine) soundEngine->onFocusGained();  // switch shared->exclusive if applicable
-    if(app) app->onFocusGained();
+    app->onFocusGained();
 }
 
 void Engine::onFocusLost() {
@@ -385,7 +390,7 @@ void Engine::onFocusLost() {
     }
 
     if(soundEngine) soundEngine->onFocusLost();  // switch exclusive->shared if applicable
-    if(app) app->onFocusLost();
+    app->onFocusLost();
 
     // auto minimize on certain conditions
     if(env->winFullscreened() && (cv::minimize_on_focus_lost_if_borderless_windowed_fullscreen.getBool() ||
@@ -397,7 +402,7 @@ void Engine::onFocusLost() {
 void Engine::onMinimized() {
     logIfCV(debug_engine, "window minimized");
 
-    if(app) app->onMinimized();
+    app->onMinimized();
 }
 
 void Engine::onMaximized() { logIfCV(debug_engine, "window maximized"); }
@@ -406,7 +411,7 @@ void Engine::onRestored() {
     logIfCV(debug_engine, "window restored");
 
     if(g) g->onRestored();
-    if(app) app->onRestored();
+    app->onRestored();
 }
 
 void Engine::onResolutionChange(vec2 newResolution) {
@@ -430,17 +435,17 @@ void Engine::onResolutionChange(vec2 newResolution) {
 
     // update everything
     if(g) g->onResolutionChange(newResolution);
-    if(app) app->onResolutionChanged(newResolution);
+    app->onResolutionChanged(newResolution);
 }
 
 void Engine::onDPIChange() {
     debugLog("Engine: DPI changed to {:d}", env->getDPI());
 
-    if(app) app->onDPIChanged();
+    app->onDPIChanged();
 }
 
 void Engine::onShutdown() {
-    if(this->bShuttingDown || (app && !app->onShutdown())) return;
+    if(this->bShuttingDown || !app->onShutdown()) return;
 
     this->bShuttingDown = true;
     if(!!soundEngine) soundEngine->shutdown();

@@ -7,9 +7,16 @@
 
 class Sound;
 
-#ifndef BASSASIO_H
-struct BASS_ASIO_INFO;
+#if defined(MCENGINE_PLATFORM_WINDOWS) && !defined(BASSASIO_H)
+namespace bass_EXTERN {
+extern "C" {
+using BASS_ASIO_INFO = struct BASS_ASIO_INFO;
+}
+}  // namespace bass_EXTERN
+using bass_EXTERN::BASS_ASIO_INFO;
 #endif
+
+#include <functional>
 
 class BassSoundEngine final : public SoundEngine {
     NOCOPY_NOMOVE(BassSoundEngine)
@@ -42,9 +49,13 @@ class BassSoundEngine final : public SoundEngine {
 
 #ifdef MCENGINE_PLATFORM_WINDOWS
     static DWORD ASIO_clamp(const BASS_ASIO_INFO &info, DWORD buflen);
+    inline void setOnASIOBufferChangeCB(std::function<void(const BASS_ASIO_INFO &info)> cb) {
+        this->asio_buffer_change_cb = std::move(cb);
+    }
 #endif
 
     SOUND_ENGINE_TYPE(BassSoundEngine, BASS, SoundEngine)
+
    private:
     bool isASIO() { return this->currentOutputDevice.driver == OutputDriver::BASS_ASIO; }
     bool isWASAPI() { return this->currentOutputDevice.driver == OutputDriver::BASS_WASAPI; }
@@ -54,6 +65,10 @@ class BassSoundEngine final : public SoundEngine {
 
     double ready_since{-1.0};
     SOUNDHANDLE g_bassOutputMixer = 0;
+
+#ifdef MCENGINE_PLATFORM_WINDOWS
+    std::function<void(const BASS_ASIO_INFO &info)> asio_buffer_change_cb{nullptr};
+#endif
 };
 
 #endif

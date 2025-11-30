@@ -1,16 +1,13 @@
 #pragma once
 // Copyright (c) 2016, PG, All rights reserved.
 #include <SDL3/SDL_scancode.h>
-#include <vector>
 #include "types.h"
 
 class ConVar;
 
-class KeyBindings {
-   public:
-    static std::vector<ConVar*> ALL;
-    static i32 old_keycode_to_sdl_keycode(i32 key);
-};
+namespace KeyBindings {
+extern i32 old_keycode_to_sdl_keycode(i32 key);
+}
 
 // alphabet
 #define KEY_A SDL_SCANCODE_A

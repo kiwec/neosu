@@ -1,5 +1,6 @@
 #pragma once
 // Copyright (c) 2015, PG, All rights reserved.
+#include "App.h"
 #include "ModSelector.h"
 #include "MouseListener.h"
 #include "score.h"
@@ -43,9 +44,14 @@ class BeatmapInterface;
 enum class CvarEditor : uint8_t;
 #endif
 
-class Osu final : public MouseListener, public KeyboardListener {
+class Osu final : public App, public MouseListener {
     NOCOPY_NOMOVE(Osu)
    private:
+    struct GlobalOsuCtorDtorThing;
+    // make sure the global "osu" name is created first and destroyed last... funny way to do it, but it works
+    // so we don't have to break the compile barrier and do "osu = nullptr" in Engine.cpp
+    std::unique_ptr<GlobalOsuCtorDtorThing> global_osu_;
+
     // clang-format off
     enum ResolutionRequestFlags : uint8_t {
         R_NOT_PENDING =             1u << 0,
@@ -61,6 +67,44 @@ class Osu final : public MouseListener, public KeyboardListener {
 
     // clang-format on
    public:
+    /////////////////////////////////////////////////
+    // BASE CLASS OVERRIDES ACCESSIBLE FROM ENGINE //
+    /////////////////////////////////////////////////
+
+    Osu();
+    ~Osu() override;
+
+    void draw() override;
+    void update() override;
+
+    [[nodiscard]] forceinline bool isInGameplay() const override { return isInPlayMode(); }
+    [[nodiscard]] forceinline bool isInUnpausedGameplay() const override { return isInPlayModeAndNotPaused(); }
+
+    void onKeyDown(KeyboardEvent &e) override;
+    void onKeyUp(KeyboardEvent &e) override;
+    void onChar(KeyboardEvent &e) override;
+    void stealFocus() override;
+
+    void onButtonChange(ButtonEvent ev) override;
+
+    forceinline void onResolutionChanged(vec2 newResolution) override {
+        onResolutionChanged(newResolution, ResolutionRequestFlags::R_ENGINE);
+    }
+    void onDPIChanged() override;
+
+    void onFocusGained() override;
+    void onFocusLost() override;
+    inline void onRestored() override {}
+    void onMinimized() override;
+    bool onShutdown() override;
+
+    [[nodiscard]] Sound *getSound(ActionSound action) const override;
+    void showNotification(const NotificationInfo &info) override;
+
+    /////////////////////////////////////////////////////
+    // CUSTOM METHODS/MEMBERS INACCESSIBLE FROM ENGINE //
+    /////////////////////////////////////////////////////
+
     static constexpr const vec2 osuBaseResolution{640.0f, 480.0f};
 
     static float getImageScaleToFitResolution(const Image *img, vec2 resolution);
@@ -72,27 +116,7 @@ class Osu final : public MouseListener, public KeyboardListener {
     static float getUIScale(float osuSize);
     static float getUIScale();  // NOTE: includes premultiplied dpi scale!
 
-    Osu();
-    ~Osu() override;
-
-    void draw();
-    void update();
-
-    void onKeyDown(KeyboardEvent &e) override;
-    void onKeyUp(KeyboardEvent &e) override;
-    void onChar(KeyboardEvent &e) override;
-    void stealFocus();
-
-    void onButtonChange(ButtonEvent ev) override;
-
-    void onResolutionChanged(vec2 newResolution, ResolutionRequestFlags src = ResolutionRequestFlags::R_ENGINE);
-    void onDPIChanged();
-
-    void onFocusGained();
-    void onFocusLost();
-    inline void onRestored() { ; }
-    void onMinimized();
-    bool onShutdown();
+    void onResolutionChanged(vec2 newResolution, ResolutionRequestFlags src);
 
     void onPlayEnd(const FinishedScore &score, bool quit = true, bool aborted = false);
 
@@ -110,6 +134,7 @@ class Osu final : public MouseListener, public KeyboardListener {
 
     // threading-related
     [[nodiscard]] bool isInPlayModeAndNotPaused() const;
+
     [[nodiscard]] inline bool shouldPauseBGThreads() const {
         return this->pause_bg_threads.load(std::memory_order_acquire);
     }
@@ -195,8 +220,9 @@ class Osu final : public MouseListener, public KeyboardListener {
     [[nodiscard]] inline bool isSeeking() const { return this->bSeeking; }
     [[nodiscard]] inline u32 getQuickSaveTimeMS() const { return this->iQuickSaveMS; }
 
-    [[nodiscard]] bool shouldFallBackToLegacySliderRenderer() const;  // certain mods or actions require Sliders to render dynamically
-                                                  // (e.g. wobble or the CS override slider)
+    [[nodiscard]] bool shouldFallBackToLegacySliderRenderer()
+        const;  // certain mods or actions require Sliders to render dynamically
+                // (e.g. wobble or the CS override slider)
 
     inline void useMods(const FinishedScore &score) { Replay::Mods::use(score.mods); }
 
@@ -240,6 +266,7 @@ class Osu final : public MouseListener, public KeyboardListener {
 
    private:
     // internal audio setup
+    void setupBASS();
     void setupSoloud();
 
     void drawRuntimeInfo();

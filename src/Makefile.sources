@@ -46,6 +46,7 @@ neosu_SOURCES = \
 	src/App/Osu/NotificationOverlay.cpp \
 	src/App/Osu/OptionsMenu.cpp \
 	src/App/Osu/Osu.cpp \
+	src/App/Osu/OsuKeyBinds.cpp \
 	src/App/Osu/PauseMenu.cpp \
 	src/App/Osu/PeppyImporter.cpp \
 	src/App/Osu/PromptScreen.cpp \

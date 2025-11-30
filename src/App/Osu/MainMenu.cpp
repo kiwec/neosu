@@ -25,6 +25,7 @@
 #include "Mouse.h"
 #include "OptionsMenu.h"
 #include "Osu.h"
+#include "OsuKeyBinds.h"
 #include "ResourceManager.h"
 #include "RichPresence.h"
 #include "Skin.h"
@@ -199,7 +200,7 @@ MainMenu::MainMenu() : OsuScreen() {
                     }
                 }
                 if(version < 40.00) {
-                    for(auto key : KeyBindings::ALL) {
+                    for(auto key : OsuKeyBinds::getAll()) {
                         if(key->getFloat() == key->getDefaultFloat()) continue;
                         key->setValue(KeyBindings::old_keycode_to_sdl_keycode(key->getInt()));
                     }
