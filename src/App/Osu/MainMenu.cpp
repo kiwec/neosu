@@ -1220,8 +1220,19 @@ void MainMenu::onKeyDown(KeyboardEvent &e) {
     OsuScreen::onKeyDown(e);  // only used for options menu
     if(!this->bVisible || e.isConsumed()) return;
 
+    // TODO: also allow media buttons to control playback when game isn't focused
     if(!osu->getOptionsMenu()->isMouseInside()) {
-        if(e == KEY_RIGHT || e == KEY_F2) this->selectRandomBeatmap();
+        if(e == KEY_PREV || e == KEY_LEFT) {
+            osu->getSongBrowser()->selectPreviousRandomBeatmap();
+            RichPresence::onMainMenu();
+        }
+        if(e == KEY_NEXT || e == KEY_RIGHT || e == KEY_F2) {
+            this->selectRandomBeatmap();
+        }
+        if(e == KEY_PLAYPAUSE || (e == KEY_PLAY && !osu->getMapInterface()->isPreviewMusicPlaying()) ||
+           (e == KEY_STOP && osu->getMapInterface()->isPreviewMusicPlaying())) {
+            this->onPausePressed();
+        }
     }
 
     if(e == KEY_C || e == KEY_F4) this->onPausePressed();

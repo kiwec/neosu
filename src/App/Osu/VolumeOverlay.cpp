@@ -194,15 +194,18 @@ void VolumeOverlay::updateLayout() {
 void VolumeOverlay::onResolutionChange(vec2 /*newResolution*/) { this->updateLayout(); }
 
 void VolumeOverlay::onKeyDown(KeyboardEvent &key) {
-    if(!this->canChangeVolume()) return;
-
-    if(key == cv::INCREASE_VOLUME.getVal<SCANCODE>()) {
+    if(key == KEY_MUTE) {
+        osu->getMapInterface()->pausePreviewMusic(true);
+        key.consume();
+    } else if(key == KEY_VOLUMEUP || key == cv::INCREASE_VOLUME.getVal<SCANCODE>()) {
         this->volumeUp();
         key.consume();
-    } else if(key == cv::DECREASE_VOLUME.getVal<SCANCODE>()) {
+    } else if(key == KEY_VOLUMEDOWN || key == cv::DECREASE_VOLUME.getVal<SCANCODE>()) {
         this->volumeDown();
         key.consume();
-    } else if(this->isVisible()) {
+    }
+
+    if(this->isVisible() && this->canChangeVolume()) {
         if(key == KEY_LEFT) {
             const std::vector<CBaseUIElement *> &elements = this->volumeSliderOverlayContainer->vElements;
             for(int i = 0; i < elements.size(); i++) {

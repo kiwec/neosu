@@ -298,7 +298,6 @@ class SongBrowser final : public ScreenBackable {
     bool bLeft;
     bool bRight;
     bool bRandomBeatmapScheduled;
-    bool bPreviousRandomBeatmapScheduled;
 
     // behaviour
     const DatabaseBeatmap *lastSelectedBeatmap{nullptr};

@@ -366,7 +366,6 @@ SongBrowser::SongBrowser()  // NOLINT(cert-msc51-cpp, cert-msc32-c)
     this->bRight = false;
 
     this->bRandomBeatmapScheduled = false;
-    this->bPreviousRandomBeatmapScheduled = false;
 
     // build topbar left
     this->topbarLeft = new CBaseUIContainer(0, 0, 0, 0, "");
@@ -967,10 +966,6 @@ void SongBrowser::mouse_update(bool *propagate_clicks) {
     if(this->bRandomBeatmapScheduled) {
         this->bRandomBeatmapScheduled = false;
         this->selectRandomBeatmap();
-    }
-    if(this->bPreviousRandomBeatmapScheduled) {
-        this->bPreviousRandomBeatmapScheduled = false;
-        this->selectPreviousRandomBeatmap();
     }
 
     // if cursor is to the left edge of the screen, force center currently selected beatmap/diff
@@ -3097,7 +3092,7 @@ void SongBrowser::onSelectionMods() {
 void SongBrowser::onSelectionRandom() {
     soundEngine->play(osu->getSkin()->s_click_button);
     if(this->bShiftPressed)
-        this->bPreviousRandomBeatmapScheduled = true;
+        this->selectPreviousRandomBeatmap();
     else
         this->bRandomBeatmapScheduled = true;
 }
