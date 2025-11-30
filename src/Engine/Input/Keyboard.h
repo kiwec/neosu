@@ -33,8 +33,8 @@ class Keyboard final : public InputDevice {
 
     // 2 bits to handle left/right
     // right bit is right ctrl/alt/shift/super, left bit is left
-    unsigned controlDown : 2 {false};
-    unsigned altDown : 2 {false};
-    unsigned shiftDown : 2 {false};
-    unsigned superDown : 2 {false};
+    unsigned controlDown : 2 {0};
+    unsigned altDown : 2 {0};
+    unsigned shiftDown : 2 {0};
+    unsigned superDown : 2 {0};
 };

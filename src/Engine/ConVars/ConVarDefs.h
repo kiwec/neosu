@@ -70,7 +70,6 @@ extern void _osuOptionsSliderQualityWrapper(float);
 #include "BaseEnvironment.h"
 #include "KeyBindings.h"
 #include "BanchoNetworking.h"  // defines some things we need like OSU_VERSION_DATEONLY
-#include "build_timestamp.h"
 namespace SliderRenderer {
 extern void onUniformConfigChanged();
 }
@@ -92,6 +91,8 @@ extern void set_current_thread_prio(Priority /**/);
 
 class ConVar;
 namespace cv {
+// special cased to improve dependency tracked rebuilds
+extern ConVar build_timestamp;
 namespace cmd {
 
 // Generic commands
@@ -753,7 +754,6 @@ CONVAR(
 CONVAR(beatmap_max_num_slider_scoringtimes, 32768, CONSTANT,
        "maximum number of slider score increase events allowed per slider "
        "(prevent crashing on deliberate game-breaking beatmaps)");
-CONVAR(build_timestamp, BUILD_TIMESTAMP, CONSTANT);
 CONVAR(slider_curve_max_length, 65536 / 2, CONSTANT,
        "maximum slider length in osu!pixels (i.e. pixelLength). also used to clamp all "
        "(control-)point coordinates to sane values.");

@@ -71,6 +71,7 @@ neosu_SOURCES = \
 	src/App/Osu/SongBrowser/SongButton.cpp \
 	src/App/Osu/SongBrowser/SongDifficultyButton.cpp \
 	src/App/Osu/SpectatorScreen.cpp \
+	src/App/Osu/Tools/DiffCalcTool.cpp \
 	src/App/Osu/TooltipOverlay.cpp \
 	src/App/Osu/UIAvatar.cpp \
 	src/App/Osu/UIBackButton.cpp \
@@ -168,7 +169,6 @@ neosu_SOURCES = \
 	src/Platform/RuntimePlatform.cpp \
 	src/Platform/main.cpp \
 	src/Platform/main_impl.cpp \
-	src/Tools/DiffCalcTool.cpp \
 	src/Util/MD5Hash.cpp \
 	src/Util/Quaternion.cpp \
 	src/Util/Rect.cpp \

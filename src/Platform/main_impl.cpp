@@ -10,7 +10,7 @@
 
 #include "main_impl.h"
 
-#include "Osu.h"  // TODO: remove needing this
+#include "App.h"  // TODO: remove needing this
 
 #include "MakeDelegateWrapper.h"
 #include "Engine.h"
@@ -433,7 +433,7 @@ SDL_AppResult SDLMain::iterate() {
         // if minimized or unfocused, use BG fps, otherwise use fps_max (if 0 it's unlimited)
         const int targetFPS = (winMinimized() || !winFocused())
                                   ? m_iFpsMaxBG
-                                  : ((osu && osu->isInPlayMode()) ? m_iFpsMax : cv::fps_max_menu.getInt());
+                                  : ((app && app->isInPlayMode()) ? m_iFpsMax : cv::fps_max_menu.getInt());
         FPSLimiter::limit_frames(targetFPS);
     }
 

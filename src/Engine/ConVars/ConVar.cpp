@@ -4,6 +4,12 @@
 
 #include "File.h"
 
+#include "build_timestamp.h"
+namespace cv {
+// special-cased to improve rebuild times (only declared as extern in ConVarDefs.h)
+ConVar build_timestamp("build_timestamp", BUILD_TIMESTAMP, cv::CONSTANT);
+}  // namespace cv
+
 // set by app, shared across all convars, called when a protected convar changes
 ConVar::VoidCB ConVar::onSetValueProtectedCallback{};
 void ConVar::setOnSetValueProtectedCallback(const VoidCB &callback) { ConVar::onSetValueProtectedCallback = callback; }
