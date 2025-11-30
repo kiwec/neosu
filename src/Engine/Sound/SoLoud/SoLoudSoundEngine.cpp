@@ -286,7 +286,7 @@ void SoLoudSoundEngine::setOutputDevice(const SoundEngine::OUTPUT_DEVICE &device
 void SoLoudSoundEngine::updateLastDevice() {
     if(this->currentOutputDevice.driver == OutputDriver::SOLOUD_MA) {
         this->lastMADevice = this->currentOutputDevice;
-    } else if(this->currentOutputDevice.driver == OutputDriver::SOLOUD_MA) {
+    } else if(this->currentOutputDevice.driver == OutputDriver::SOLOUD_SDL) {
         this->lastSDLDevice = this->currentOutputDevice;
     }
 }
@@ -357,7 +357,6 @@ bool SoLoudSoundEngine::switchShareModes(const std::optional<OUTPUT_DEVICE> &toK
 
     if(soloud->setDevice(&desiredSLDevice.identifier[0]) == SoLoud::SO_NO_ERROR) {
         this->currentOutputDevice = desiredDevice;
-        this->updateLastDevice();
         return true;
     } else {
         debugLog("SoundEngine: Tried to switch to {} mode, but couldn't.", toShared ? "shared" : "exclusive");
@@ -381,6 +380,13 @@ void SoLoudSoundEngine::onFocusLost() {
 }
 
 bool SoLoudSoundEngine::setOutputDeviceInt(const SoundEngine::OUTPUT_DEVICE &desiredDevice, bool force) {
+    auto onOut = [&](bool ret) -> bool {
+        cv::snd_output_device.setValue(this->currentOutputDevice.name, false);
+        this->updateLastDevice();
+        if(soloud) soloud->setGlobalVolume(this->fMasterVolume);
+        return ret;
+    };
+
     if(force || !this->bReady || !this->bWasBackendEverReady) {
         // TODO: This is blocking main thread, can freeze for a long time on some sound cards
         auto previous = this->currentOutputDevice;
@@ -389,10 +395,10 @@ bool SoLoudSoundEngine::setOutputDeviceInt(const SoundEngine::OUTPUT_DEVICE &des
                !this->initializeOutputDevice(previous)) {
                 // We failed to reinitialize the device, don't start an infinite loop, just give up
                 this->currentOutputDevice = {};
-                return false;
+                return onOut(false);
             }
         }
-        return true;
+        return onOut(true);
     }
 
     // non-forced device change, post-init
@@ -402,7 +408,7 @@ bool SoLoudSoundEngine::setOutputDeviceInt(const SoundEngine::OUTPUT_DEVICE &des
             // since this was a manual change, update the preference convar to reflect the choice
             cv::snd_soloud_prefer_exclusive.setValue(it->second.isExclusive);
         }
-        return true;
+        return onOut(true);
     }
 
     // otherwise, full reinit
@@ -417,16 +423,17 @@ bool SoLoudSoundEngine::setOutputDeviceInt(const SoundEngine::OUTPUT_DEVICE &des
             } else {
                 // multiple ids can map to the same device (e.g. default device), just update the name
                 this->currentOutputDevice.name = device.name;
+
                 debugLog("\"{:s}\" already is the current device.", desiredDevice.name);
-                return false;
+                return onOut(false);
             }
 
-            return true;
+            return onOut(true);
         }
     }
 
     debugLog("couldn't find output device \"{:s}\"!", desiredDevice.name);
-    return false;
+    return onOut(false);
 }
 
 // delay setting these until after everything is fully init, so we don't restart multiple times while reading config
@@ -758,7 +765,7 @@ bool SoLoudSoundEngine::initializeOutputDevice(const OUTPUT_DEVICE &device) {
     this->bWasBackendEverReady = true;
 
     // it's 0.95 by default, for some reason
-    soloud->setPostClipScaler(1.0f);
+    soloud->setPostClipScaler(0.99f);
 
     // it's LINEAR by default
     soloud->setMainResampler(getResamplerFromCV());
