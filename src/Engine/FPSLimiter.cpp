@@ -11,16 +11,16 @@ namespace  // static
 {
 
 // callbacks
-bool s_set_callbacks_once{false};
+static bool s_set_callbacks_once{false};
 
-bool s_nobusywait{false};
-bool s_max_yield{false};
-bool s_unlimited_yield{false};
+static bool s_nobusywait{false};
+static bool s_max_yield{false};
+static bool s_unlimited_yield{false};
 
 // state
-u64 s_next_frame_time{0};
+static u64 s_next_frame_time{0};
 
-void set_callbacks() {
+static void set_callbacks() {
     s_nobusywait = !!cv::fps_limiter_nobusywait.getVal<int>();
     s_max_yield = !!cv::fps_max_yield.getVal<int>();
     s_unlimited_yield = !!cv::fps_unlimited_yield.getVal<int>();

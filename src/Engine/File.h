@@ -15,7 +15,6 @@
 #include <filesystem>
 #include <fstream>
 #include <memory>
-#include <vector>
 
 class ConVar;
 class DirectoryCache;
@@ -91,9 +90,6 @@ class File {
 
     MODE fileMode;
     bool bReady;
-
-    // directory cache
-    static std::unique_ptr<DirectoryCache> s_directoryCache;
 };
 
 #endif

@@ -22,7 +22,7 @@
 #include <cstdio>
 
 namespace fs = std::filesystem;
-
+namespace {  // static namespace
 //------------------------------------------------------------------------------
 // encapsulation of directory caching logic
 //------------------------------------------------------------------------------
@@ -174,11 +174,9 @@ class DirectoryCache final {
 };
 
 // init static directory cache
-#ifndef MCENGINE_PLATFORM_WINDOWS
-std::unique_ptr<DirectoryCache> File::s_directoryCache = std::make_unique<DirectoryCache>();
-#else
-std::unique_ptr<DirectoryCache> File::s_directoryCache;
-#endif
+// this is only actually used outside of windows, should be optimized out in other cases
+[[maybe_unused]] static DirectoryCache s_directoryCache{};
+}  // namespace
 
 //------------------------------------------------------------------------------
 // path resolution methods
@@ -220,7 +218,7 @@ File::FILETYPE File::existsCaseInsensitive(std::string &filePath, fs::path &path
 
     // try case-insensitive lookup using cache
     auto [resolvedName, fileType] =
-        s_directoryCache->lookup(parentPath, {path.filename().string()});  // takes the bare filename
+        s_directoryCache.lookup(parentPath, {path.filename().string()});  // takes the bare filename
 
     if(fileType == File::FILETYPE::NONE) return File::FILETYPE::NONE;  // no match, even case-insensitively
 
@@ -281,13 +279,13 @@ FILE *File::fopen_c(const char *__restrict utf8filename, const char *__restrict 
 //------------------------------------------------------------------------------
 File::File(std::string_view filePath, MODE mode)
     : sFilePath(filePath), fsPath(getFsPath(this->sFilePath)), iFileSize(0), fileMode(mode), bReady(false) {
+    logIfCV(debug_file, "Opening {:s}", this->sFilePath);
+
     if(mode == MODE::READ) {
         if(!openForReading()) return;
     } else if(mode == MODE::WRITE) {
         if(!openForWriting()) return;
     }
-
-    logIfCV(debug_file, "Opening {:s}", this->sFilePath);
 
     this->bReady = true;
 }

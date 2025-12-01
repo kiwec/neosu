@@ -66,7 +66,6 @@
 #include "VolumeOverlay.h"
 #include "Logging.h"
 
-#include "crypto.h"
 #include "score.h"
 
 #include <algorithm>
@@ -123,19 +122,10 @@ bool Osu::globalOnAreAllCvarsSubmittableCallback() {
     return true;
 }
 
-// just a funny mechanism to make sure the global "osu" is created first and destroyed last,
-// so destructors which might run at the end of ~Osu() still have an "osu" to refer to and not insta-segfault
-struct Osu::GlobalOsuCtorDtorThing {
-    NOCOPY_NOMOVE(GlobalOsuCtorDtorThing)
-   public:
-    GlobalOsuCtorDtorThing() = delete;
-    forceinline GlobalOsuCtorDtorThing(Osu *optr) { osu = optr; }
-    forceinline ~GlobalOsuCtorDtorThing() { osu = nullptr; }
-};
+Osu::GlobalOsuCtorDtorThing::GlobalOsuCtorDtorThing(Osu *optr) { osu = optr; }
+Osu::GlobalOsuCtorDtorThing::~GlobalOsuCtorDtorThing() { osu = nullptr; }
 
-Osu::Osu() : App(), MouseListener(), global_osu_(std::make_unique<GlobalOsuCtorDtorThing>(this)) {
-    srand(crypto::rng::get_rand<u32>());
-
+Osu::Osu() : App(), MouseListener(), global_osu_(this) {
     // global cvar callbacks will be removed in destructor
     ConVar::setOnSetValueProtectedCallback(SA::MakeDelegate<&Osu::globalOnSetValueProtectedCallback>(this));
 

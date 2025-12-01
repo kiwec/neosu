@@ -18,7 +18,7 @@
 #include <algorithm>
 #include <utility>
 
-ResourceManager::ResourceManager() {
+ResourceManager::ResourceManager() : asyncLoader() /* create async loader */ {
     // create directories we will assume already exist later on
     Environment::createDirectory(MCENGINE_FONTS_PATH);
     Environment::createDirectory(MCENGINE_IMAGES_PATH);
@@ -35,9 +35,6 @@ ResourceManager::ResourceManager() {
     this->vRenderTargets.reserve(8);
     this->vTextureAtlases.reserve(8);
     this->vVertexArrayObjects.reserve(32);
-
-    // create async loader
-    this->asyncLoader = std::make_unique<AsyncResourceLoader>();
 }
 
 ResourceManager::~ResourceManager() {

@@ -21,9 +21,9 @@ namespace BANCHO::User {
 std::unordered_map<i32, UserInfo*> online_users;  // pointers to all_users elements
 std::vector<i32> friends;
 namespace {  // static
-std::unordered_map<i32, UserInfo> all_users;
-std::vector<const UserInfo*> presence_requests;
-std::vector<const UserInfo*> stats_requests;
+static std::unordered_map<i32, UserInfo> all_users;
+static std::vector<const UserInfo*> presence_requests;
+static std::vector<const UserInfo*> stats_requests;
 }  // namespace
 
 void dequeue_presence_request(const UserInfo* info) {

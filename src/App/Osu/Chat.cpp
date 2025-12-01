@@ -214,7 +214,7 @@ void ChatChannel::add_message(ChatMessage msg) {
         auto fragment_text = fragment->getText();
 
         for(int i = 0; i < fragment_text.length(); i++) {
-            float char_width = chat_font->getGlyphMetrics(fragment_text[i]).advance_x;
+            float char_width = chat_font->getGlyphWidth(fragment_text[i]);
             if(line_width + char_width + 20 >= this->ui->getSize().x) {
                 auto *link_fragment = dynamic_cast<ChatLink *>(fragment);
                 if(link_fragment == nullptr) {

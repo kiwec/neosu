@@ -27,8 +27,8 @@ using lvec4 = glm::i64vec4;
 
 namespace vec {
 
-static constexpr auto FLOAT_NORMALIZE_EPSILON = 0.000001f;
-static constexpr auto DOUBLE_NORMALIZE_EPSILON = FLOAT_NORMALIZE_EPSILON / 10e6;
+inline constexpr auto FLOAT_NORMALIZE_EPSILON = 0.000001f;
+inline constexpr auto DOUBLE_NORMALIZE_EPSILON = FLOAT_NORMALIZE_EPSILON / 10e6;
 
 using glm::all;
 using glm::any;

@@ -334,11 +334,7 @@ bool SongBrowser::sort_by_title(SongButton const *a, SongButton const *b) {
     return cmp < 0;
 }
 
-SongBrowser::SongBrowser()  // NOLINT(cert-msc51-cpp, cert-msc32-c)
-    : ScreenBackable() {
-    // random selection algorithm init
-    this->rngalg.seed(crypto::rng::get_rand<u64>());
-
+SongBrowser::SongBrowser() : ScreenBackable(), rngalg(crypto::rng::get_rand<u64>()) {
     // convar callback
     cv::songbrowser_search_hardcoded_filter.setCallback(
         [](std::string_view /* oldValue */, std::string_view newValue) -> void {

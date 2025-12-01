@@ -17,6 +17,7 @@
 #include "TextureAtlas.h"
 #include "VertexArrayObject.h"
 #include "templates.h"
+#include "StaticPImpl.h"
 
 #include "SyncMutex.h"
 
@@ -169,9 +170,6 @@ class ResourceManager final {
     void addResourceToTypedVector(Resource *res);
     void removeResourceFromTypedVector(Resource *res);
 
-    // async loading system
-    std::unique_ptr<AsyncResourceLoader> asyncLoader;
-
     // content
     std::vector<Resource *> vResources;
 
@@ -191,6 +189,10 @@ class ResourceManager final {
     Sync::shared_mutex managedLoadMutex;
     std::stack<bool> nextLoadUnmanagedStack;
     std::atomic<bool> bNextLoadAsync;
+
+    // async loading system
+    using AsyncResourceLoaderImpl = StaticPImpl<AsyncResourceLoader, 1024>;
+    AsyncResourceLoaderImpl asyncLoader;
 };
 
 // define/managed in Engine.cpp, declared here for convenience

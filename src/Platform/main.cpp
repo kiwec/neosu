@@ -57,6 +57,7 @@ void setcwdexe(const std::string &exePathStr) noexcept {
 
 #include "CrashHandler.h"
 #include "Profiler.h"
+#include "StaticPImpl.h"
 
 #if defined(__SSE__) || (defined(_M_IX86_FP) && (_M_IX86_FP > 0))
 #ifndef _MSC_VER
@@ -98,8 +99,13 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result) {
     }
 
     fmain->shutdown(result);  // FIXME: redundant?
-    delete fmain;
-    fmain = nullptr;
+    if constexpr(Env::cfg(OS::WASM) || Env::cfg(FEAT::MAINCB)) {
+        // we allocated it with new
+        delete fmain;
+    } else {
+        // not heap-allocated
+        fmain->~SDLMain();
+    }
 
     if constexpr(!Env::cfg(OS::WASM)) {
         if(restart) {
@@ -241,11 +247,16 @@ MAIN_FUNC /* int argc, char *argv[] */
         return SDL_APP_FAILURE;
     }
 
-    auto *fmain = new SDLMain(arg_map, arg_cmdline);
+#if defined(MCENGINE_PLATFORM_WASM) || defined(MCENGINE_FEATURE_MAINCALLBACKS)
+    auto *fmain = new SDLMain(arg_map, arg_cmdline);  // need to allocate dynamically
+    *appstate = fmain;
+    return !fmain ? SDL_APP_FAILURE : fmain->initialize();
+#else
 
-#if !(defined(MCENGINE_PLATFORM_WASM) || defined(MCENGINE_FEATURE_MAINCALLBACKS))
-    if(!fmain || fmain->initialize() == SDL_APP_FAILURE) {
-        SDL_AppQuit(fmain, SDL_APP_FAILURE);
+    // otherwise just put it on the stack
+    SDLMain fmain{arg_map, arg_cmdline};
+    if(fmain.initialize() == SDL_APP_FAILURE) {
+        SDL_AppQuit(&fmain, SDL_APP_FAILURE);
     }
 
     constexpr int SIZE_EVENTS = 64;
@@ -253,7 +264,7 @@ MAIN_FUNC /* int argc, char *argv[] */
 
     int eventCount = 0;
 
-    while(fmain->isRunning()) {
+    while(fmain.isRunning()) {
         VPROF_MAIN();
         {
             // event collection
@@ -271,7 +282,7 @@ MAIN_FUNC /* int argc, char *argv[] */
                 }
                 {
                     VPROF_BUDGET("handleEvent", VPROF_BUDGETGROUP_EVENTS);
-                    for(int i = 0; i < eventCount; ++i) fmain->handleEvent(&events[i]);
+                    for(int i = 0; i < eventCount; ++i) fmain.handleEvent(&events[i]);
                 }
             } while(eventCount == SIZE_EVENTS);
         }
@@ -290,13 +301,13 @@ MAIN_FUNC /* int argc, char *argv[] */
 #endif
 
             // engine update + draw + fps limiter
-            fmain->iterate();
+            fmain.iterate();
         }
     }
 
     // i don't think this is reachable, but whatever
     // (we should hit SDL_AppQuit before this)
-    if(fmain->isRestartScheduled()) {
+    if(fmain.isRestartScheduled()) {
         SDLMain::restart(arg_cmdline);
     }
 
@@ -305,8 +316,5 @@ MAIN_FUNC /* int argc, char *argv[] */
 #endif
 
     return 0;
-#else
-    *appstate = fmain;
-    return fmain->initialize();
 #endif  // SDL_MAIN_USE_CALLBACKS
 }

@@ -19,11 +19,11 @@
 
 namespace Timing {
 // conversion constants
-constexpr u64 NS_PER_SECOND = 1'000'000'000;
-constexpr u64 NS_PER_MS = 1'000'000;
-constexpr u64 NS_PER_US = 1'000;
-constexpr u64 US_PER_MS = 1'000;
-constexpr u64 MS_PER_SECOND = 1'000;
+inline constexpr u64 NS_PER_SECOND = 1'000'000'000;
+inline constexpr u64 NS_PER_MS = 1'000'000;
+inline constexpr u64 NS_PER_US = 1'000;
+inline constexpr u64 US_PER_MS = 1'000;
+inline constexpr u64 MS_PER_SECOND = 1'000;
 
 namespace detail {
 inline INLINE_BODY void yield_internal() noexcept {

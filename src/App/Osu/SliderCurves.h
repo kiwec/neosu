@@ -9,10 +9,10 @@
 #include <memory>
 
 using SLIDERCURVETYPE = char;
-static constexpr const SLIDERCURVETYPE CATMULL = 'C';
-static constexpr const SLIDERCURVETYPE BEZIER = 'B';
-static constexpr const SLIDERCURVETYPE LINEAR = 'L';
-static constexpr const SLIDERCURVETYPE PASSTHROUGH = 'P';
+inline constexpr const SLIDERCURVETYPE CATMULL = 'C';
+inline constexpr const SLIDERCURVETYPE BEZIER = 'B';
+inline constexpr const SLIDERCURVETYPE LINEAR = 'L';
+inline constexpr const SLIDERCURVETYPE PASSTHROUGH = 'P';
 
 //**********************//
 //	 Curve Base Class	//

@@ -252,69 +252,6 @@ struct FixedSizeArray {
     size_t size_{0};
 };
 
-template <typename T, size_t RealImplSize>
-class StaticPImpl {
-   private:
-    alignas(alignof(std::max_align_t)) unsigned char m_buffer[RealImplSize];
-    void (*m_destructor)(void *);
-
-   public:
-    [[nodiscard]] inline T *operator->() noexcept { return std::launder(reinterpret_cast<T *>(m_buffer)); }
-
-    [[nodiscard]] inline const T *operator->() const noexcept {
-        return std::launder(reinterpret_cast<const T *>(m_buffer));
-    }
-
-    [[nodiscard]] inline T &operator*() noexcept { return *std::launder(reinterpret_cast<T *>(m_buffer)); }
-
-    [[nodiscard]] inline const T &operator*() const noexcept {
-        return *std::launder(reinterpret_cast<const T *>(m_buffer));
-    }
-
-    // Construct a derived type U in-place (U must be T or derived from T)
-    template <typename U, typename... Args>
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init, hicpp-member-init)
-    [[nodiscard]] inline explicit StaticPImpl(std::in_place_type_t<U> /**/, Args &&...args)
-        : m_destructor([](void *ptr) { static_cast<U *>(ptr)->~U(); }) {
-        static_assert(sizeof(U) <= RealImplSize);
-        static_assert(alignof(U) <= alignof(std::max_align_t));
-        static_assert(std::is_same_v<T, U> || std::is_base_of_v<T, U>);
-
-        new(m_buffer) U(std::forward<Args>(args)...);
-    }
-
-    template <typename... Args>
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init, hicpp-member-init)
-    [[nodiscard]] inline explicit StaticPImpl(Args &&...args)
-        : StaticPImpl(std::in_place_type<T>, std::forward<Args>(args)...) {}
-
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init, hicpp-member-init)
-    [[nodiscard]] inline StaticPImpl(const StaticPImpl &rhs)
-        : m_destructor([](void *ptr) { static_cast<T *>(ptr)->~T(); }) {
-        new(m_buffer) T(*std::launder(reinterpret_cast<const T *>(rhs.m_buffer)));
-    }
-
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init, hicpp-member-init)
-    [[nodiscard]] inline StaticPImpl(StaticPImpl &&rhs) noexcept
-        : m_destructor([](void *ptr) { static_cast<T *>(ptr)->~T(); }) {
-        new(m_buffer) T(static_cast<T &&>(*std::launder(reinterpret_cast<T *>(rhs.m_buffer))));
-    }
-
-    // NOLINTNEXTLINE(bugprone-unhandled-self-assignment, cert-oop54-cpp) // let the actual object handle self assignment
-    inline StaticPImpl &operator=(const StaticPImpl &rhs) {
-        *std::launder(reinterpret_cast<T *>(m_buffer)) = *std::launder(reinterpret_cast<const T *>(rhs.m_buffer));
-        return *this;
-    }
-
-    inline StaticPImpl &operator=(StaticPImpl &&rhs) noexcept {
-        *std::launder(reinterpret_cast<T *>(m_buffer)) =
-            static_cast<T &&>(*std::launder(reinterpret_cast<T *>(rhs.m_buffer)));
-        return *this;
-    }
-
-    inline ~StaticPImpl() { m_destructor(m_buffer); }
-};
-
 // transparent hash and equality for heterogeneous lookup
 struct StringHash {
     using is_transparent = void;

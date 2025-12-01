@@ -51,10 +51,17 @@ class Osu final : public App, public MouseListener {
 
    private:
     friend App* NEOSU_create_app_real();
-    struct GlobalOsuCtorDtorThing;
+    struct GlobalOsuCtorDtorThing {
+        NOCOPY_NOMOVE(GlobalOsuCtorDtorThing)
+    public:
+        GlobalOsuCtorDtorThing() = delete;
+        GlobalOsuCtorDtorThing(Osu *optr);
+        ~GlobalOsuCtorDtorThing();
+    };
+
     // make sure the global "osu" name is created first and destroyed last... funny way to do it, but it works
     // so we don't have to break the compile barrier and do "osu = nullptr" in Engine.cpp
-    std::unique_ptr<GlobalOsuCtorDtorThing> global_osu_;
+    GlobalOsuCtorDtorThing global_osu_;
 
     // clang-format off
     enum ResolutionRequestFlags : uint8_t {

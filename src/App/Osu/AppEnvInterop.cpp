@@ -147,7 +147,7 @@ bool OsuEnvInterop::handle_cmdline_args(const std::vector<std::string> &args) {
 #define NEOSU_CMDLINE_WINDOW_MSG_ID TEXT("NEOSU_CMDLINE")
 
 namespace {  // static
-bool sdl_windows_message_hook(void *userdata, MSG *msg) {
+static bool sdl_windows_message_hook(void *userdata, MSG *msg) {
     static UINT cmdline_msg = RegisterWindowMessage(NEOSU_CMDLINE_WINDOW_MSG_ID);
 
     // true == continue processing

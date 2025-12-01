@@ -2,7 +2,7 @@
 // Copyright (c) 2015, PG, All rights reserved.
 #include "noinclude.h"
 #include "types.h"
-#include "templates.h"
+#include "StaticPImpl.h"
 
 #include <string>
 #include <string_view>

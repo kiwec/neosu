@@ -6,6 +6,7 @@
 
 #include <system_error>
 #include <cassert>
+#include <vector>
 
 ByteBufferedFile::Reader::Reader(std::string_view readPath)
     : buffer(std::make_unique_for_overwrite<u8[]>(READ_BUFFER_SIZE)) {

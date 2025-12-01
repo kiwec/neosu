@@ -46,13 +46,13 @@ DatabaseBeatmap::LOAD_GAMEPLAY_RESULT &DatabaseBeatmap::LOAD_GAMEPLAY_RESULT::op
 
 namespace {  // static namespace
 
-bool sliderScoringTimeComparator(const SLIDER_SCORING_TIME &a, const SLIDER_SCORING_TIME &b) {
+static bool sliderScoringTimeComparator(const SLIDER_SCORING_TIME &a, const SLIDER_SCORING_TIME &b) {
     if(a.time != b.time) return a.time < b.time;
     if(a.type != b.type) return static_cast<i32>(a.type) < static_cast<i32>(b.type);
     return false;  // equivalent
 };
 
-bool timingPointSortComparator(DatabaseBeatmap::TIMINGPOINT const &a, DatabaseBeatmap::TIMINGPOINT const &b) {
+static bool timingPointSortComparator(DatabaseBeatmap::TIMINGPOINT const &a, DatabaseBeatmap::TIMINGPOINT const &b) {
     if(a.offset != b.offset) return a.offset < b.offset;
 
     // non-inherited timingpoints go before inherited timingpoints

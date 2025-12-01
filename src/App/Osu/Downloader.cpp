@@ -27,7 +27,7 @@ namespace {  // static
 class DownloadManager;
 
 // shared global instance
-std::shared_ptr<DownloadManager> s_download_manager;
+static std::shared_ptr<DownloadManager> s_download_manager;
 
 class DownloadManager {
     NOCOPY_NOMOVE(DownloadManager)

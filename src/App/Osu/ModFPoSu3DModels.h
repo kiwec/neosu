@@ -2,7 +2,7 @@
 
 // GPLv3.0 copyleft McKay
 
-static constexpr const char *skyboxObj =
+inline constexpr const char *skyboxObj =
     R"(# Blender 3.6.0
 # www.blender.org
 o Cube

@@ -29,7 +29,7 @@
 #include <iomanip>
 #include <iostream>
 
-constexpr float EPSILON = 0.00001f;
+inline constexpr float MATRIX_FLOAT_EPSILON = 0.00001f;
 
 ///////////////////////////////////////////////////////////////////////////
 // 2x2 matrix wrapper around glm::mat2
@@ -96,7 +96,7 @@ struct Matrix2 : public glm::mat2 {
 
     Matrix2& invert() {
         float det = getDeterminant();
-        if(std::fabs(det) <= EPSILON) {
+        if(std::fabs(det) <= MATRIX_FLOAT_EPSILON) {
             return identity();
         }
         *this = glm::inverse(*this);
@@ -237,7 +237,7 @@ struct Matrix3 : public glm::mat3 {
 
     Matrix3& invert() {
         float det = getDeterminant();
-        if(std::fabs(det) <= EPSILON) {
+        if(std::fabs(det) <= MATRIX_FLOAT_EPSILON) {
             return identity();
         }
         *this = glm::inverse(*this);
@@ -408,7 +408,7 @@ struct Matrix4 : public glm::mat4 {
 
     Matrix4& invert() {
         float det = getDeterminant();
-        if(std::fabs(det) <= EPSILON) {
+        if(std::fabs(det) <= MATRIX_FLOAT_EPSILON) {
             return identity();
         }
         *this = glm::inverse(*this);

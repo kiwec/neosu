@@ -31,14 +31,14 @@
 namespace BANCHO::Net {
 namespace {  // static namespace
 
-Packet outgoing;
-u64 last_packet_ms{0};
-double seconds_between_pings{1.0};
-std::string auth_token = "";
-bool use_websockets = false;
-std::shared_ptr<NeoNet::WSInstance> websocket{nullptr};
+static Packet outgoing;
+static u64 last_packet_ms{0};
+static double seconds_between_pings{1.0};
+static std::string auth_token = "";
+static bool use_websockets = false;
+static std::shared_ptr<NeoNet::WSInstance> websocket{nullptr};
 
-void parse_packets(u8 *data, size_t s_data) {
+static void parse_packets(u8 *data, size_t s_data) {
     Packet batch = {
         .memory = data,
         .size = s_data,
@@ -71,7 +71,7 @@ void parse_packets(u8 *data, size_t s_data) {
     }
 }
 
-void attempt_logging_in() {
+static void attempt_logging_in() {
     assert(!BanchoState::is_online());
 
     NeoNet::RequestOptions options;
@@ -120,7 +120,7 @@ void attempt_logging_in() {
         options);
 }
 
-void send_bancho_packet_http(Packet outgoing) {
+static void send_bancho_packet_http(Packet outgoing) {
     if(auth_token.empty()) return;
 
     NeoNet::RequestOptions options;
@@ -149,7 +149,7 @@ void send_bancho_packet_http(Packet outgoing) {
         options);
 }
 
-void send_bancho_packet_ws(Packet outgoing) {
+static void send_bancho_packet_ws(Packet outgoing) {
     if(auth_token.empty()) return;
 
     if(websocket == nullptr || websocket->status == NeoNet::WSStatus::DISCONNECTED) {

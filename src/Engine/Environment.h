@@ -142,9 +142,9 @@ class Environment {
     [[nodiscard]] static bool fileExists(std::string_view filename) noexcept;
     [[nodiscard]] static bool directoryExists(std::string_view directoryName) noexcept;
 
-    static bool createDirectory(std::string_view directoryName) noexcept;
+    static bool createDirectory(const std::string &directoryName) noexcept;
     static bool renameFile(const std::string &oldFileName, const std::string &newFileName) noexcept;
-    static bool deleteFile(std::string_view filePath) noexcept;
+    static bool deleteFile(const std::string &filePath) noexcept;
     [[nodiscard]] static std::vector<std::string> getFilesInFolder(std::string_view folder) noexcept;
     [[nodiscard]] static std::vector<std::string> getFoldersInFolder(std::string_view folder) noexcept;
     [[nodiscard]] static std::vector<UString> getLogicalDrives();

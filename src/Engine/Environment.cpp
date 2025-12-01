@@ -329,8 +329,8 @@ bool Environment::directoryExists(std::string_view directoryName) noexcept {
     return File::exists(directoryName) == File::FILETYPE::FOLDER;
 }
 
-bool Environment::createDirectory(std::string_view directoryName) noexcept {
-    return SDL_CreateDirectory(std::string{directoryName}.c_str());  // returns true if it already exists
+bool Environment::createDirectory(const std::string &directoryName) noexcept {
+    return SDL_CreateDirectory(directoryName.c_str());  // returns true if it already exists
 }
 
 bool Environment::renameFile(const std::string &oldFileName, const std::string &newFileName) noexcept {
@@ -352,9 +352,7 @@ bool Environment::renameFile(const std::string &oldFileName, const std::string &
     return Environment::fileExists(newFileName);
 }
 
-bool Environment::deleteFile(std::string_view filePath) noexcept {
-    return SDL_RemovePath(std::string{filePath}.c_str());
-}
+bool Environment::deleteFile(const std::string &filePath) noexcept { return SDL_RemovePath(filePath.c_str()); }
 
 std::vector<std::string> Environment::getFilesInFolder(std::string_view folder) noexcept {
     return enumerateDirectory(folder, SDL_PATHTYPE_FILE);

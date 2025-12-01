@@ -20,6 +20,7 @@
 #include "Logging.h"
 #include "VisualProfiler.h"
 #include "SString.h"
+#include "crypto.h"
 
 Image *MISSING_TEXTURE{nullptr};
 
@@ -39,6 +40,10 @@ mcatomic_shptr<ConsoleBox> Engine::consoleBox{nullptr};
 Engine *engine{nullptr};
 Engine::Engine() {
     engine = this;
+
+    // init rng seeding for C rand()
+    srand(crypto::rng::get_rand<u32>());
+
     // always keep a dummy App() alive so we don't have to null-check for "app" inside engine code
     app.reset(App::create(true));
 
@@ -161,6 +166,7 @@ Engine::~Engine() {
     for(auto *device : this->inputDevices) {
         delete device;
     }
+
     this->inputDevices.clear();
     this->mice.clear();
     this->keyboards.clear();

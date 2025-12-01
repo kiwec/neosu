@@ -376,9 +376,17 @@ SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
             keyboard->onKeyUp({static_cast<SCANCODE>(event->key.scancode), event->key.timestamp, event->key.repeat});
             break;
 
-        case SDL_EVENT_TEXT_INPUT:
-            for(const auto &chr : UString(event->text.text)) keyboard->onChar({chr, event->text.timestamp, false});
-            break;
+        case SDL_EVENT_TEXT_INPUT: {
+            const char *evtextstr = event->text.text;
+            if(unlikely(!evtextstr || *evtextstr == '\0')) break; // probably should be assert() but there's no point in microoptimizing that hard
+
+            int length;
+            if(likely((length = strlen(evtextstr)) == 1)) {
+                keyboard->onChar({static_cast<SCANCODE>(evtextstr[0]), event->text.timestamp, false});
+            } else {
+                for(const auto &chr : UString(evtextstr, length)) keyboard->onChar({chr, event->text.timestamp, false});
+            }
+        } break;
 
         // mouse events
         case SDL_EVENT_MOUSE_BUTTON_DOWN:

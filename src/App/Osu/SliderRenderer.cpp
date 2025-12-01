@@ -20,27 +20,28 @@ namespace SliderRenderer {
 
 namespace {  // static namespace
 
-Shader *s_BLEND_SHADER = nullptr;
-float s_UNIT_CIRCLE_VAO_DIAMETER = 0.0f;
+static Shader *s_BLEND_SHADER = nullptr;
+static float s_UNIT_CIRCLE_VAO_DIAMETER = 0.0f;
 
 // base mesh
-float s_MESH_CENTER_HEIGHT = 0.5f;   // Camera::buildMatrixOrtho2D() uses -1 to 1 for zn/zf, so don't make this too high
-int s_UNIT_CIRCLE_SUBDIVISIONS = 0;  // see osu_slider_body_unit_circle_subdivisions now
-std::vector<float> s_UNIT_CIRCLE;
-VertexArrayObject *s_UNIT_CIRCLE_VAO = nullptr;
-VertexArrayObject *s_UNIT_CIRCLE_VAO_BAKED = nullptr;
-VertexArrayObject *s_UNIT_CIRCLE_VAO_TRIANGLES = nullptr;
+static float s_MESH_CENTER_HEIGHT =
+    0.5f;  // Camera::buildMatrixOrtho2D() uses -1 to 1 for zn/zf, so don't make this too high
+static int s_UNIT_CIRCLE_SUBDIVISIONS = 0;  // see osu_slider_body_unit_circle_subdivisions now
+static std::vector<float> s_UNIT_CIRCLE;
+static VertexArrayObject *s_UNIT_CIRCLE_VAO = nullptr;
+static VertexArrayObject *s_UNIT_CIRCLE_VAO_BAKED = nullptr;
+static VertexArrayObject *s_UNIT_CIRCLE_VAO_TRIANGLES = nullptr;
 
 // tiny rendering optimization for RenderTarget
-float s_fBoundingBoxMinX = (std::numeric_limits<float>::max)();
-float s_fBoundingBoxMaxX = 0.0f;
-float s_fBoundingBoxMinY = (std::numeric_limits<float>::max)();
-float s_fBoundingBoxMaxY = 0.0f;
+static float s_fBoundingBoxMinX = (std::numeric_limits<float>::max)();
+static float s_fBoundingBoxMaxX = 0.0f;
+static float s_fBoundingBoxMinY = (std::numeric_limits<float>::max)();
+static float s_fBoundingBoxMaxY = 0.0f;
 
 // forward decls
-void drawFillSliderBodyPeppy(const std::vector<vec2> &points, VertexArrayObject *circleMesh, float radius,
-                             int drawFromIndex, int drawUpToIndex);
-void checkUpdateVars(float hitcircleDiameter);
+static void drawFillSliderBodyPeppy(const std::vector<vec2> &points, VertexArrayObject *circleMesh, float radius,
+                                    int drawFromIndex, int drawUpToIndex);
+static void checkUpdateVars(float hitcircleDiameter);
 
 struct UniformCache {
     // convar-dependent settings (updated by convar callbacks)
@@ -57,11 +58,11 @@ struct UniformCache {
     bool needsConfigUpdate{true};  // for convar-based uniforms
 };
 
-UniformCache s_uniformCache;
+static UniformCache s_uniformCache;
 // helper function to update color uniforms (after ->enable-ing the shader)
-void updateColorUniforms(const Color &borderColor, const Color &bodyColor);
+static void updateColorUniforms(const Color &borderColor, const Color &bodyColor);
 // check if convar-dependent uniforms need to be updated (after ->enable-ing the shader)
-void updateConfigUniforms();
+static void updateConfigUniforms();
 }  // namespace
 
 // invalidate config uniforms (convar callbacks)
@@ -386,8 +387,8 @@ void draw(VertexArrayObject *vao, const std::vector<vec2> &alwaysPoints, vec2 tr
 
 namespace {  // static
 
-void drawFillSliderBodyPeppy(const std::vector<vec2> &points, VertexArrayObject *circleMesh, float radius,
-                             int drawFromIndex, int drawUpToIndex) {
+static void drawFillSliderBodyPeppy(const std::vector<vec2> &points, VertexArrayObject *circleMesh, float radius,
+                                    int drawFromIndex, int drawUpToIndex) {
     if(drawFromIndex < 0) drawFromIndex = 0;
     if(drawUpToIndex < 0) drawUpToIndex = points.size();
 
@@ -420,7 +421,7 @@ void drawFillSliderBodyPeppy(const std::vector<vec2> &points, VertexArrayObject 
     g->popTransform();
 }
 
-void checkUpdateVars(float hitcircleDiameter) {
+static void checkUpdateVars(float hitcircleDiameter) {
     // static globals
 
     if(env->usingDX11()) {
@@ -539,7 +540,7 @@ void checkUpdateVars(float hitcircleDiameter) {
 }
 
 // helper function to update color uniforms
-void updateColorUniforms(const Color &borderColor, const Color &bodyColor) {
+static void updateColorUniforms(const Color &borderColor, const Color &bodyColor) {
     if(!s_BLEND_SHADER) return;
 
     if(s_uniformCache.lastBorderColor != borderColor) {
@@ -553,7 +554,7 @@ void updateColorUniforms(const Color &borderColor, const Color &bodyColor) {
     }
 }
 
-void updateConfigUniforms() {
+static void updateConfigUniforms() {
     if(!s_BLEND_SHADER || !s_uniformCache.needsConfigUpdate) return;
 
     const int newStyle = cv::slider_osu_next_style.getBool() ? 1 : 0;

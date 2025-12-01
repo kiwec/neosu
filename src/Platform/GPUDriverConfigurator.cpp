@@ -113,15 +113,15 @@ using NvAPI_DRS_SetSetting_t = NvStatus(void *sessionHandle, void *profileHandle
 using NvAPI_DRS_SaveSettings_t = NvStatus(void *sessionHandle);
 
 // NvAPI_QueryInterface function interface IDs
-constexpr uint32_t NVAPI_INITIALIZE_ID = 0x0150E828;
-constexpr uint32_t NVAPI_DRS_CREATE_SESSION_ID = 0x0694D52E;
-constexpr uint32_t NVAPI_DRS_DESTROY_SESSION_ID = 0xDAD9CFF8;
-constexpr uint32_t NVAPI_DRS_LOAD_SETTINGS_ID = 0x375DBD6B;
-constexpr uint32_t NVAPI_DRS_FIND_APPLICATION_BY_NAME_ID = 0xEEE566B2;
-constexpr uint32_t NVAPI_DRS_CREATE_PROFILE_ID = 0xCC176068;
-constexpr uint32_t NVAPI_DRS_CREATE_APPLICATION_ID = 0x4347A9DE;
-constexpr uint32_t NVAPI_DRS_SET_SETTING_ID = 0x577DD202;
-constexpr uint32_t NVAPI_DRS_SAVE_SETTINGS_ID = 0xFCBC7E14;
+static constexpr uint32_t NVAPI_INITIALIZE_ID = 0x0150E828;
+static constexpr uint32_t NVAPI_DRS_CREATE_SESSION_ID = 0x0694D52E;
+static constexpr uint32_t NVAPI_DRS_DESTROY_SESSION_ID = 0xDAD9CFF8;
+static constexpr uint32_t NVAPI_DRS_LOAD_SETTINGS_ID = 0x375DBD6B;
+static constexpr uint32_t NVAPI_DRS_FIND_APPLICATION_BY_NAME_ID = 0xEEE566B2;
+static constexpr uint32_t NVAPI_DRS_CREATE_PROFILE_ID = 0xCC176068;
+static constexpr uint32_t NVAPI_DRS_CREATE_APPLICATION_ID = 0x4347A9DE;
+static constexpr uint32_t NVAPI_DRS_SET_SETTING_ID = 0x577DD202;
+static constexpr uint32_t NVAPI_DRS_SAVE_SETTINGS_ID = 0xFCBC7E14;
 
 struct NvApiState {
     dynutils::lib_obj *lib{nullptr};
@@ -140,12 +140,12 @@ struct NvApiState {
 
 std::string s_init_info{""};
 
-NvApiState &getNvAPIState() noexcept {
+static NvApiState &getNvAPIState() noexcept {
     static NvApiState state;
     return state;
 }
 
-[[maybe_unused]] bool initNvAPI() noexcept {
+[[maybe_unused]] static bool initNvAPI() noexcept {
     auto &state = getNvAPIState();
     if(state.initialized) return true;
 
@@ -205,7 +205,7 @@ NvApiState &getNvAPIState() noexcept {
     return true;
 }
 
-void unloadNvAPI() noexcept {
+static void unloadNvAPI() noexcept {
     if constexpr(!Env::cfg(OS::WINDOWS)) return;
     auto &state = getNvAPIState();
     if(!state.initialized || !state.lib) return;
@@ -213,7 +213,7 @@ void unloadNvAPI() noexcept {
     dynutils::unload_lib(state.lib);
 }
 
-bool setNvidiaThreadedOpts(bool enable) noexcept {
+static bool setNvidiaThreadedOpts(bool enable) noexcept {
     auto &state = getNvAPIState();
     if(!state.initialized) return false;
 

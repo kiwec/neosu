@@ -67,13 +67,13 @@ struct pngErrorManager {
     jmp_buf setjmp_buffer{};
 };
 
-void pngErrorExit(png_structp png_ptr, png_const_charp error_msg) {
+static void pngErrorExit(png_structp png_ptr, png_const_charp error_msg) {
     debugLog("PNG Error: {:s}", error_msg);
     auto *err = static_cast<pngErrorManager *>(png_get_error_ptr(png_ptr));
     longjmp(&err->setjmp_buffer[0], 1);
 }
 
-void pngWarning(png_structp /*unused*/, png_const_charp warning_msg) {
+static void pngWarning(png_structp /*unused*/, png_const_charp warning_msg) {
     if constexpr(Env::cfg(BUILD::DEBUG)) {
         debugLog("PNG Warning: {:s}", warning_msg);
     }
@@ -85,7 +85,7 @@ struct pngMemoryReader {
     u64 offset{0};
 };
 
-void pngReadFromMemory(png_structp png_ptr, png_bytep outBytes, png_size_t byteCountToRead) {
+static void pngReadFromMemory(png_structp png_ptr, png_bytep outBytes, png_size_t byteCountToRead) {
     auto *reader = static_cast<pngMemoryReader *>(png_get_io_ptr(png_ptr));
 
     if(reader->offset + byteCountToRead > reader->size) {

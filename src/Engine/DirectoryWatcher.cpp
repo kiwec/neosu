@@ -57,7 +57,7 @@ struct DirWatcherImpl {
    private:
     struct UnconfirmedEvent {
         UnconfirmedEvent() = default;
-        UnconfirmedEvent(FileChangeEvent fevent) : event(std::move(fevent)) {}
+        UnconfirmedEvent(FileChangeEvent fevent) : UnconfirmedEvent() { this->event = std::move(fevent); }
         FileChangeEvent event{};
         u8 stable_checks{0};  // consecutive checks where timestamp was stable
     };

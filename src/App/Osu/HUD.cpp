@@ -1248,18 +1248,18 @@ void HUD::resetScoreboard() {
     if(map == nullptr) return;
 
     this->beatmap_md5 = map->getMD5();
-    this->player_slot.reset();
+    this->player_slot = nullptr;
     this->slots.clear();
 
     int player_entry_id = BanchoState::is_in_a_multi_room() ? BanchoState::get_uid() : 0;
     auto scores = this->getCurrentScores();
     int i = 0;
     for(const auto &score : scores) {
-        auto slot = std::make_shared<ScoreboardSlot>(score, i);
+        auto slot = std::make_unique<ScoreboardSlot>(score, i);
         if(score.entry_id == player_entry_id) {
-            this->player_slot = slot;
+            this->player_slot = slot.get();
         }
-        this->slots.push_back(slot);
+        this->slots.push_back(std::move(slot));
         i++;
     }
 

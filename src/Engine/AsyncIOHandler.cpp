@@ -98,9 +98,9 @@ class AsyncIOHandler::InternalIOContext final {
         }
     }
 
-#define PERFORM_CALLBACK(cb__)      \
+#define PERFORM_CALLBACK(cb__)                                 \
     m_activeCallbacks.fetch_add(1, std::memory_order_relaxed); \
-    cb__;                           \
+    cb__;                                                      \
     m_activeCallbacks.fetch_sub(1, std::memory_order_acq_rel);
 
     bool read(std::string_view path, ReadCallback callback) {
@@ -330,32 +330,29 @@ class AsyncIOHandler::InternalIOContext final {
     std::atomic<size_t> m_activeCallbacks{0};
 };
 
-AsyncIOHandler::AsyncIOHandler() : m_io(std::make_unique<InternalIOContext>()) {}
+AsyncIOHandler::AsyncIOHandler() : m_impl() {}
 AsyncIOHandler::~AsyncIOHandler() { cleanup(); }
 
-void AsyncIOHandler::cleanup() {
-    if(m_io) m_io->cleanup();
-    m_io.reset();
-}
+void AsyncIOHandler::cleanup() { m_impl->cleanup(); }
 
 // if this doesn't succeed (checked once on startup), the engine immediately exits
-bool AsyncIOHandler::succeeded() const { return !!m_io && m_io->m_queue != nullptr; }
+bool AsyncIOHandler::succeeded() const { return m_impl->m_queue != nullptr; }
 
 // passthroughs
-void AsyncIOHandler::update() { m_io->update(); }
+void AsyncIOHandler::update() { m_impl->update(); }
 
 bool AsyncIOHandler::read(std::string_view path, ReadCallback callback) {
-    return m_io->read(path, std::move(callback));
+    return m_impl->read(path, std::move(callback));
 }
 
 bool AsyncIOHandler::write(std::string_view path, std::vector<u8> data, WriteCallback callback) {
-    return m_io->write(path, std::move(data), std::move(callback));
+    return m_impl->write(path, std::move(data), std::move(callback));
 }
 
 bool AsyncIOHandler::write(std::string_view path, std::string data, WriteCallback callback) {
-    return m_io->write(path, std::vector<u8>(data.begin(), data.end()), std::move(callback));
+    return m_impl->write(path, std::vector<u8>(data.begin(), data.end()), std::move(callback));
 }
 
 bool AsyncIOHandler::write(std::string_view path, const u8* data, size_t amount, WriteCallback callback) {
-    return m_io->write(path, std::vector<u8>(data, data + amount), std::move(callback));
+    return m_impl->write(path, std::vector<u8>(data, data + amount), std::move(callback));
 }

@@ -748,7 +748,7 @@ void Skin::reloadSounds() {
 }
 
 bool Skin::parseSkinINI(std::string filepath) {
-    std::string fileContent;
+    UString fileContent;
 
     size_t fileSize{0};
     {
@@ -758,9 +758,7 @@ bool Skin::parseSkinINI(std::string filepath) {
             return false;
         }
         // convert possible non-UTF8 file to UTF8
-        UString uFileContent{file.readToString().c_str(), static_cast<int>(fileSize)};
-        // then store the resulting std::string
-        fileContent = uFileContent.toUtf8();
+        fileContent = {file.readToString().c_str(), static_cast<int>(fileSize)};
         // close the file here
     }
 
@@ -779,7 +777,7 @@ bool Skin::parseSkinINI(std::string filepath) {
     SkinSection curBlock = SkinSection::GENERAL;
     using enum SkinSection;
 
-    for(auto curLineUnstripped : SString::split(fileContent, '\n')) {
+    for(auto curLineUnstripped : SString::split(fileContent.utf8View(), '\n')) {
         SString::trim_inplace(curLineUnstripped);
         // ignore comments, but only if at the beginning of a line
         if(curLineUnstripped.empty() || curLineUnstripped.starts_with("//")) continue;

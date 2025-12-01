@@ -107,9 +107,8 @@ int get_logical_cpu_count() { return SDL_GetNumLogicalCPUCores(); }
 void set_current_thread_prio(Priority prio) {
     SDL_ThreadPriority sdlprio;
     const char *priostring;
+    if(prio < NORMAL || prio > REALTIME) prio = NORMAL;  // sanity
     switch(prio) {
-        default:
-            prio = NORMAL;  // sanity
         case NORMAL:
             sdlprio = SDL_THREAD_PRIORITY_NORMAL;
             priostring = "normal";

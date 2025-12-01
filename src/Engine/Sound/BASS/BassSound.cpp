@@ -16,9 +16,9 @@
 #include "SyncOnce.h"
 
 namespace {  // static
-int currentTransposerAlgorithm{BASS_FX_TEMPO_ALGO_CUBIC};
+static int currentTransposerAlgorithm{BASS_FX_TEMPO_ALGO_CUBIC};
 
-int getTransposerValForString(std::string str) {
+static int getTransposerValForString(std::string str) {
     int ret = currentTransposerAlgorithm;
 
     if(!str.empty()) {
@@ -35,7 +35,7 @@ int getTransposerValForString(std::string str) {
     return ret;
 }
 
-Sync::once_flag transposerCallbackSet;
+static Sync::once_flag transposerCallbackSet;
 }  // namespace
 
 void BassSound::init() {

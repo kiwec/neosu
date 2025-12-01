@@ -91,8 +91,9 @@ class HUD final : public OsuScreen {
     // ILLEGAL:
     [[nodiscard]] inline float getScoreBarBreakAnim() const { return this->fScoreBarBreakAnim; }
 
-    std::shared_ptr<ScoreboardSlot> player_slot{nullptr};
-    std::vector<std::shared_ptr<ScoreboardSlot>> slots;
+    std::vector<std::unique_ptr<ScoreboardSlot>> slots;
+    ScoreboardSlot *player_slot{nullptr};  // pointer to an entry inside "slots"
+
     MD5Hash beatmap_md5;
 
     f32 live_pp = 0.0;

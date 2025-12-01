@@ -71,9 +71,9 @@ class TransposerBase {
 namespace { // static
 using ALGORITHM = soundtouch::TransposerBase::ALGORITHM;
 
-ALGORITHM currentTransposerAlgorithm{ALGORITHM::CUBIC};
+static ALGORITHM currentTransposerAlgorithm{ALGORITHM::CUBIC};
 
-ALGORITHM getTransposerValForString(std::string str) {
+static ALGORITHM getTransposerValForString(std::string str) {
 	ALGORITHM ret = currentTransposerAlgorithm;
 
 	if(!str.empty()) {
@@ -90,7 +90,7 @@ ALGORITHM getTransposerValForString(std::string str) {
 	return ret;
 }
 
-Sync::once_flag transposer_callback_set;
+static Sync::once_flag transposer_callback_set;
 }
 
 

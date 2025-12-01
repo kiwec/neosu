@@ -2,6 +2,7 @@
 #pragma once
 
 #include "noinclude.h"
+#include "StaticPImpl.h"
 #include "types.h"
 
 #include <functional>
@@ -44,7 +45,7 @@ class AsyncIOHandler final {
 
    private:
     class InternalIOContext;
-    std::unique_ptr<InternalIOContext> m_io;
+    StaticPImpl<InternalIOContext, 96> m_impl;
 };
 
 extern std::unique_ptr<AsyncIOHandler> io;

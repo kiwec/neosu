@@ -43,7 +43,7 @@ inline bool isInt(float f) { return (f == static_cast<float>(static_cast<int>(f)
 #ifdef _MSC_VER
 #define forceinline __forceinline
 #else
-#define forceinline
+#define forceinline inline
 #endif
 #define INLINE_BODY
 #endif

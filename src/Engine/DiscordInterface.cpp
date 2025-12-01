@@ -22,9 +22,9 @@ void set_activity(struct DiscordActivity* /*activity*/) {}
 namespace DiscRPC {
 namespace  // static
 {
-bool initialized{false};
+static bool initialized{false};
 
-struct Application {
+static struct Application {
     struct IDiscordCore *core;
     struct IDiscordUserManager *users;
     struct IDiscordAchievementManager *achievements;
@@ -35,12 +35,12 @@ struct Application {
     DiscordUserId user_id;
 } dapp{};
 
-struct IDiscordActivityEvents activities_events{};
-struct IDiscordRelationshipEvents relationships_events{};
-struct IDiscordUserEvents users_events{};
+static struct IDiscordActivityEvents activities_events{};
+static struct IDiscordRelationshipEvents relationships_events{};
+static struct IDiscordUserEvents users_events{};
 
 #if !(defined(MCENGINE_PLATFORM_WINDOWS) && defined(MC_ARCH32))  // doesn't work on winx32
-void on_discord_log(void * /*cdata*/, enum EDiscordLogLevel level, const char *message) {
+static void on_discord_log(void * /*cdata*/, enum EDiscordLogLevel level, const char *message) {
     //(void)cdata;
     if(level == DiscordLogLevel_Error) {
         Logger::logRaw("[Discord] ERROR: {:s}", message);

@@ -8,19 +8,6 @@
 #include <algorithm>
 #include <cstdint>
 
-#if defined(__BYTE_ORDER__) && defined(__ORDER_LITTLE_ENDIAN__) && defined(__ORDER_BIG_ENDIAN__)
-#define IS_LITTLE_ENDIAN (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__)
-#elif defined(__LITTLE_ENDIAN__) || defined(__ARMEL__) || defined(__THUMBEL__) || defined(__AARCH64EL__) || \
-    defined(_MIPSEL) || defined(__MIPSEL) || defined(__MIPSEL__) || defined(__i386) || defined(__i386__) || \
-    defined(__x86_64) || defined(__x86_64__) || defined(_M_IX86) || defined(_M_X64) || defined(_M_AMD64)
-#define IS_LITTLE_ENDIAN 1
-#elif defined(__BIG_ENDIAN__) || defined(__ARMEB__) || defined(__THUMBEB__) || defined(__AARCH64EB__) || \
-    defined(_MIPSEB) || defined(__MIPSEB) || defined(__MIPSEB__)
-#define IS_LITTLE_ENDIAN 0
-#else
-#error "impossible"
-#endif
-
 using Channel = u8;
 
 template <typename T>
@@ -87,7 +74,7 @@ struct Color {
 
 // helper to detect if types are "compatible"
 template <typename T, typename U>
-constexpr bool is_compatible_v =
+inline constexpr bool is_compatible_v =
     std::is_same_v<T, U> ||
     // integer literals
     (std::is_integral_v<T> && std::is_integral_v<U> && (std::is_convertible_v<T, U> || std::is_convertible_v<U, T>)) ||
@@ -96,8 +83,8 @@ constexpr bool is_compatible_v =
 
 // check if all four types are compatible with each other
 template <typename A, typename R, typename G, typename B>
-constexpr bool all_compatible_v = is_compatible_v<A, R> && is_compatible_v<A, G> && is_compatible_v<A, B> &&
-                                  is_compatible_v<R, G> && is_compatible_v<R, B> && is_compatible_v<G, B>;
+inline constexpr bool all_compatible_v = is_compatible_v<A, R> && is_compatible_v<A, G> && is_compatible_v<A, B> &&
+                                         is_compatible_v<R, G> && is_compatible_v<R, B> && is_compatible_v<G, B>;
 
 // main conversion func
 template <typename A, typename R, typename G, typename B>
