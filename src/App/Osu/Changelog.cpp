@@ -24,6 +24,26 @@ Changelog::Changelog() : ScreenBackable() {
 
     std::vector<CHANGELOG> changelogs;
 
+    CHANGELOG v41_10;
+    v41_10.title = "41.10";
+    v41_10.changes = {
+        R"(- Added -console launch option to open a separate console window on Windows)",
+        R"(- Added -info launch option to print OpenGL information)",
+        R"(- Fixed being unable to chat during gameplay)",
+        R"(- Fixed colors being wrong in fullscreen on Windows on AMD cards)",
+        R"(- Fixed restarting a map not keeping nightcore pitch)",
+        R"(- Fixed smoke)",  // idk what the bug was
+        R"(- Fixed multiple SoLoud specific issues:)",
+        R"(  - Clicking/popping when looping a song)",
+        R"(  - Rare deadlock/freeze when switching devices)",
+        R"(  - Selected audio device not always getting saved)",
+        R"(  - Volume sometimes getting set to 100% when switching devices)",
+        R"(- Made window resizing smoother)",
+        R"(- Media keyboard buttons (play/pause/prev/next) now work in the main menu)",
+        R"(- Updated osu! version to b20251128.1)",
+    };
+    changelogs.push_back(v41_10);
+
     CHANGELOG v41_09;
     v41_09.title = "41.09";
     v41_09.changes = {
