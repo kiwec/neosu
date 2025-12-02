@@ -328,7 +328,7 @@ void Chat::draw() {
     if(isAnimating) {
         // XXX: Setting BLEND_MODE_PREMUL_ALPHA is not enough, transparency is still incorrect
         osu->getSliderFrameBuffer()->enable();
-        g->setBlendMode(Graphics::BLEND_MODE::BLEND_MODE_PREMUL_ALPHA);
+        g->setBlendMode(DrawBlendMode::BLEND_MODE_PREMUL_ALPHA);
     }
 
     g->setColor(argb(100, 0, 10, 50));
@@ -350,7 +350,7 @@ void Chat::draw() {
     if(isAnimating) {
         osu->getSliderFrameBuffer()->disable();
 
-        g->setBlendMode(Graphics::BLEND_MODE::BLEND_MODE_ALPHA);
+        g->setBlendMode(DrawBlendMode::BLEND_MODE_ALPHA);
         g->push3DScene(McRect(0, 0, this->getSize().x, this->getSize().y));
         {
             g->rotate3DScene(-(1.0f - this->fAnimation) * 90, 0, 0);
@@ -379,11 +379,11 @@ void Chat::drawTicker() {
 
     // XXX: Setting BLEND_MODE_PREMUL_ALPHA is not enough, transparency is still incorrect
     osu->getSliderFrameBuffer()->enable();
-    g->setBlendMode(Graphics::BLEND_MODE::BLEND_MODE_PREMUL_ALPHA);
+    g->setBlendMode(DrawBlendMode::BLEND_MODE_PREMUL_ALPHA);
     this->ticker->ui->draw();
     osu->getSliderFrameBuffer()->disable();
 
-    g->setBlendMode(Graphics::BLEND_MODE::BLEND_MODE_ALPHA);
+    g->setBlendMode(DrawBlendMode::BLEND_MODE_ALPHA);
     g->push3DScene(McRect(0, 0, ticker_size.x, ticker_size.y));
     {
         g->rotate3DScene(this->fAnimation * 90, 0, 0);

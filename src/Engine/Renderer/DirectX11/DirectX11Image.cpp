@@ -172,9 +172,9 @@ void DirectX11Image::init() {
         // customize sampler
         // NOTE: this concatenates into one single actual createOrUpdateSampler() call below because we are not this->bReady yet here on purpose
         {
-            if(this->filterMode != Graphics::FILTER_MODE::FILTER_MODE_LINEAR) setFilterMode(this->filterMode);
+            if(this->filterMode != TextureFilterMode::FILTER_MODE_LINEAR) setFilterMode(this->filterMode);
 
-            if(this->wrapMode != Graphics::WRAP_MODE::WRAP_MODE_CLAMP) setWrapMode(this->wrapMode);
+            if(this->wrapMode != TextureWrapMode::WRAP_MODE_CLAMP) setWrapMode(this->wrapMode);
         }
 
         // actually create the (customized) sampler now
@@ -266,17 +266,17 @@ void DirectX11Image::unbind() const {
     }
 }
 
-void DirectX11Image::setFilterMode(Graphics::FILTER_MODE filterMode) {
+void DirectX11Image::setFilterMode(TextureFilterMode filterMode) {
     Image::setFilterMode(filterMode);
 
     switch(filterMode) {
-        case Graphics::FILTER_MODE::FILTER_MODE_NONE:
+        case TextureFilterMode::FILTER_MODE_NONE:
             this->samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
             break;
-        case Graphics::FILTER_MODE::FILTER_MODE_LINEAR:
+        case TextureFilterMode::FILTER_MODE_LINEAR:
             this->samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
             break;
-        case Graphics::FILTER_MODE::FILTER_MODE_MIPMAP:
+        case TextureFilterMode::FILTER_MODE_MIPMAP:
             this->samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
             break;
     }
@@ -288,16 +288,16 @@ void DirectX11Image::setFilterMode(Graphics::FILTER_MODE filterMode) {
     createOrUpdateSampler();
 }
 
-void DirectX11Image::setWrapMode(Graphics::WRAP_MODE wrapMode) {
+void DirectX11Image::setWrapMode(TextureWrapMode wrapMode) {
     Image::setWrapMode(wrapMode);
 
     switch(wrapMode) {
-        case Graphics::WRAP_MODE::WRAP_MODE_CLAMP:
+        case TextureWrapMode::WRAP_MODE_CLAMP:
             this->samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
             this->samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
             this->samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
             break;
-        case Graphics::WRAP_MODE::WRAP_MODE_REPEAT:
+        case TextureWrapMode::WRAP_MODE_REPEAT:
             this->samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
             this->samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
             this->samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;

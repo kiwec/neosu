@@ -7,6 +7,8 @@
 #include "Engine.h"
 #include "Osu.h"
 #include "ResourceManager.h"
+#include "Font.h"
+#include "Image.h"
 
 UIVolumeSlider::UIVolumeSlider(float xPos, float yPos, float xSize, float ySize, UString name)
     : CBaseUISlider(xPos, yPos, xSize, ySize, std::move(name)) {

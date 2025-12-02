@@ -8,8 +8,8 @@
 class VertexArrayObject : public Resource {
     NOCOPY_NOMOVE(VertexArrayObject)
    public:
-    VertexArrayObject(Graphics::PRIMITIVE primitive = Graphics::PRIMITIVE::PRIMITIVE_TRIANGLES,
-                      Graphics::USAGE_TYPE usage = Graphics::USAGE_TYPE::USAGE_STATIC, bool keepInSystemMemory = false);
+    VertexArrayObject(DrawPrimitive primitive = DrawPrimitive::PRIMITIVE_TRIANGLES,
+                      DrawUsageType usage = DrawUsageType::USAGE_STATIC, bool keepInSystemMemory = false);
     ~VertexArrayObject() override = default;
 
     void clear();
@@ -38,15 +38,15 @@ class VertexArrayObject : public Resource {
     inline void setColors(const std::vector<Color> &colors) { this->colors = colors; }
     void setColor(int index, Color color);
 
-    void setType(Graphics::PRIMITIVE primitive);
+    void setType(DrawPrimitive primitive);
     void setDrawRange(int fromIndex, int toIndex);
     void setDrawPercent(float fromPercent = 0.0f, float toPercent = 1.0f, int nearestMultiple = 0);  // DEPRECATED
 
     // optimization: pre-allocate space to avoid reallocations during batch operations
     void reserve(size_t vertexCount);
 
-    [[nodiscard]] inline Graphics::PRIMITIVE getPrimitive() const { return this->primitive; }
-    [[nodiscard]] inline Graphics::USAGE_TYPE getUsage() const { return this->usage; }
+    [[nodiscard]] inline DrawPrimitive getPrimitive() const { return this->primitive; }
+    [[nodiscard]] inline DrawUsageType getUsage() const { return this->usage; }
 
     [[nodiscard]] const std::vector<vec3> &getVertices() const { return this->vertices; }
     [[nodiscard]] const std::vector<vec2> &getTexcoords() const { return this->texcoords; }
@@ -87,8 +87,8 @@ class VertexArrayObject : public Resource {
     float fDrawPercentFromPercent;
     float fDrawPercentToPercent;
 
-    Graphics::PRIMITIVE primitive;
-    Graphics::USAGE_TYPE usage;
+    DrawPrimitive primitive;
+    DrawUsageType usage;
     bool bKeepInSystemMemory;
     bool bHasTexcoords;
 };

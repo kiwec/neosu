@@ -92,30 +92,30 @@ int SDLGLInterface::getVRAMRemaining() {
     return atiMemory[0];
 }
 
-std::unordered_map<Graphics::PRIMITIVE, int> SDLGLInterface::primitiveToOpenGLMap = {
-    {Graphics::PRIMITIVE::PRIMITIVE_LINES, GL_LINES},
-    {Graphics::PRIMITIVE::PRIMITIVE_LINE_STRIP, GL_LINE_STRIP},
-    {Graphics::PRIMITIVE::PRIMITIVE_TRIANGLES, GL_TRIANGLES},
-    {Graphics::PRIMITIVE::PRIMITIVE_TRIANGLE_FAN, GL_TRIANGLE_FAN},
-    {Graphics::PRIMITIVE::PRIMITIVE_TRIANGLE_STRIP, GL_TRIANGLE_STRIP},
-    {Graphics::PRIMITIVE::PRIMITIVE_QUADS, Env::cfg(REND::GLES32) ? 0 : GL_QUADS},
+std::unordered_map<DrawPrimitive, int> SDLGLInterface::primitiveToOpenGLMap = {
+    {DrawPrimitive::PRIMITIVE_LINES, GL_LINES},
+    {DrawPrimitive::PRIMITIVE_LINE_STRIP, GL_LINE_STRIP},
+    {DrawPrimitive::PRIMITIVE_TRIANGLES, GL_TRIANGLES},
+    {DrawPrimitive::PRIMITIVE_TRIANGLE_FAN, GL_TRIANGLE_FAN},
+    {DrawPrimitive::PRIMITIVE_TRIANGLE_STRIP, GL_TRIANGLE_STRIP},
+    {DrawPrimitive::PRIMITIVE_QUADS, Env::cfg(REND::GLES32) ? 0 : GL_QUADS},
 };
 
-std::unordered_map<Graphics::COMPARE_FUNC, int> SDLGLInterface::compareFuncToOpenGLMap = {
-    {Graphics::COMPARE_FUNC::COMPARE_FUNC_NEVER, GL_NEVER},
-    {Graphics::COMPARE_FUNC::COMPARE_FUNC_LESS, GL_LESS},
-    {Graphics::COMPARE_FUNC::COMPARE_FUNC_EQUAL, GL_EQUAL},
-    {Graphics::COMPARE_FUNC::COMPARE_FUNC_LESSEQUAL, GL_LEQUAL},
-    {Graphics::COMPARE_FUNC::COMPARE_FUNC_GREATER, GL_GREATER},
-    {Graphics::COMPARE_FUNC::COMPARE_FUNC_NOTEQUAL, GL_NOTEQUAL},
-    {Graphics::COMPARE_FUNC::COMPARE_FUNC_GREATEREQUAL, GL_GEQUAL},
-    {Graphics::COMPARE_FUNC::COMPARE_FUNC_ALWAYS, GL_ALWAYS},
+std::unordered_map<DrawCompareFunc, int> SDLGLInterface::compareFuncToOpenGLMap = {
+    {DrawCompareFunc::COMPARE_FUNC_NEVER, GL_NEVER},
+    {DrawCompareFunc::COMPARE_FUNC_LESS, GL_LESS},
+    {DrawCompareFunc::COMPARE_FUNC_EQUAL, GL_EQUAL},
+    {DrawCompareFunc::COMPARE_FUNC_LESSEQUAL, GL_LEQUAL},
+    {DrawCompareFunc::COMPARE_FUNC_GREATER, GL_GREATER},
+    {DrawCompareFunc::COMPARE_FUNC_NOTEQUAL, GL_NOTEQUAL},
+    {DrawCompareFunc::COMPARE_FUNC_GREATEREQUAL, GL_GEQUAL},
+    {DrawCompareFunc::COMPARE_FUNC_ALWAYS, GL_ALWAYS},
 };
 
-std::unordered_map<Graphics::USAGE_TYPE, unsigned int> SDLGLInterface::usageToOpenGLMap = {
-    {Graphics::USAGE_TYPE::USAGE_STATIC, GL_STATIC_DRAW},
-    {Graphics::USAGE_TYPE::USAGE_DYNAMIC, GL_DYNAMIC_DRAW},
-    {Graphics::USAGE_TYPE::USAGE_STREAM, GL_STREAM_DRAW},
+std::unordered_map<DrawUsageType, unsigned int> SDLGLInterface::usageToOpenGLMap = {
+    {DrawUsageType::USAGE_STATIC, GL_STATIC_DRAW},
+    {DrawUsageType::USAGE_DYNAMIC, GL_DYNAMIC_DRAW},
+    {DrawUsageType::USAGE_STREAM, GL_STREAM_DRAW},
 };
 
 void SDLGLInterface::dumpGLContextInfo() {

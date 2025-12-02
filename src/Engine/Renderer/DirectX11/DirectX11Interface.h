@@ -66,7 +66,7 @@ class DirectX11Interface final : public Graphics {
     // 2d primitive drawing
     void drawPixel(int x, int y) override;
     [[deprecated("not implemented")]] void drawPixels(int x, int y, int width, int height,
-                                                      Graphics::DRAWPIXELS_TYPE type, const void *pixels) override;
+                                                      DrawPixelsType type, const void *pixels) override;
     void drawLinef(float x1, float y1, float x2, float y2) final;
     void drawRectf(const RectOptions &opt) final;
     void fillRectf(float x, float y, float width, float height) final;
@@ -110,9 +110,9 @@ class DirectX11Interface final : public Graphics {
     // renderer settings
     void setClipping(bool enabled) override;
     [[deprecated("not implemented")]] void setAlphaTesting(bool enabled) override;
-    [[deprecated("not implemented")]] void setAlphaTestFunc(COMPARE_FUNC alphaFunc, float ref) override;
+    [[deprecated("not implemented")]] void setAlphaTestFunc(DrawCompareFunc alphaFunc, float ref) override;
     void setBlending(bool enabled) override;
-    void setBlendMode(BLEND_MODE blendMode) override;
+    void setBlendMode(DrawBlendMode blendMode) override;
     void setDepthBuffer(bool enabled) override;
     void setCulling(bool culling) override;
     void setColorWriting(bool r, bool g, bool b, bool a) final;
@@ -144,10 +144,10 @@ class DirectX11Interface final : public Graphics {
     Image *createImage(std::string filePath, bool mipmapped, bool keepInSystemMemory) override;
     Image *createImage(int width, int height, bool mipmapped, bool keepInSystemMemory) override;
     RenderTarget *createRenderTarget(int x, int y, int width, int height,
-                                     Graphics::MULTISAMPLE_TYPE multiSampleType) override;
+                                     MultisampleType multiSampleType) override;
     Shader *createShaderFromFile(std::string vertexShaderFilePath, std::string fragmentShaderFilePath) override;
     Shader *createShaderFromSource(std::string vertexShader, std::string fragmentShader) override;
-    VertexArrayObject *createVertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::USAGE_TYPE usage,
+    VertexArrayObject *createVertexArrayObject(DrawPrimitive primitive, DrawUsageType usage,
                                                bool keepInSystemMemory) override;
 
     // ILLEGAL:
@@ -168,8 +168,8 @@ class DirectX11Interface final : public Graphics {
     void onFramecountNumChanged(const float newValue);
 
    private:
-    static int primitiveToDirectX(Graphics::PRIMITIVE primitive);
-    [[deprecated("not implemented")]] static int compareFuncToDirectX(Graphics::COMPARE_FUNC compareFunc);
+    static int primitiveToDirectX(DrawPrimitive primitive);
+    [[deprecated("not implemented")]] static int compareFuncToDirectX(DrawCompareFunc compareFunc);
 
     // clipping for drawImage
     void initSmoothClipShader();

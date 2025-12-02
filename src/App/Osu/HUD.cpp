@@ -19,6 +19,7 @@
 #include "ModFPoSu.h"
 #include "Mouse.h"
 #include "Osu.h"
+#include "Font.h"
 #include "RankingScreen.h"
 #include "ResourceManager.h"
 #include "ScoreboardSlot.h"
@@ -40,8 +41,8 @@ HUD::HUD() : OsuScreen() {
         env->usingDX11() ? FSH_STRING(DX11_, cursortrail) : FSH_STRING(GL_, cursortrail), "cursortrail");
 
     this->cursorTrail.reserve(cv::cursor_trail_max_size.getInt() * 2);
-    this->cursorTrailVAO = resourceManager->createVertexArrayObject(Graphics::PRIMITIVE::PRIMITIVE_QUADS,
-                                                                    Graphics::USAGE_TYPE::USAGE_DYNAMIC);
+    this->cursorTrailVAO = resourceManager->createVertexArrayObject(DrawPrimitive::PRIMITIVE_QUADS,
+                                                                    DrawUsageType::USAGE_DYNAMIC);
 
     this->fCurFps = 60.0f;
     this->fCurFpsSmooth = 60.0f;
@@ -446,12 +447,12 @@ void HUD::drawCursorTrailInt(Shader *trailShader, std::vector<CURSORTRAIL> &trai
 
                 trailImage->bind();
                 {
-                    g->setBlendMode(Graphics::BLEND_MODE::BLEND_MODE_ADDITIVE);
+                    g->setBlendMode(DrawBlendMode::BLEND_MODE_ADDITIVE);
                     {
                         g->setColor(0xffffffff);
                         g->drawVAO(this->cursorTrailVAO);
                     }
-                    g->setBlendMode(Graphics::BLEND_MODE::BLEND_MODE_ALPHA);
+                    g->setBlendMode(DrawBlendMode::BLEND_MODE_ALPHA);
                 }
                 trailImage->unbind();
             }
@@ -502,7 +503,7 @@ void HUD::drawCursorRipples() {
     const float fadeDuration = std::max(
         cv::cursor_ripple_duration.getFloat() - cv::cursor_ripple_anim_start_fadeout_delay.getFloat(), 0.0001f);
 
-    if(cv::cursor_ripple_additive.getBool()) g->setBlendMode(Graphics::BLEND_MODE::BLEND_MODE_ADDITIVE);
+    if(cv::cursor_ripple_additive.getBool()) g->setBlendMode(DrawBlendMode::BLEND_MODE_ADDITIVE);
 
     g->setColor(argb(255, std::clamp<int>(cv::cursor_ripple_tint_r.getInt(), 0, 255),
                      std::clamp<int>(cv::cursor_ripple_tint_g.getInt(), 0, 255),
@@ -527,7 +528,7 @@ void HUD::drawCursorRipples() {
     }
     cursorRipple->unbind();
 
-    if(cv::cursor_ripple_additive.getBool()) g->setBlendMode(Graphics::BLEND_MODE::BLEND_MODE_ALPHA);
+    if(cv::cursor_ripple_additive.getBool()) g->setBlendMode(DrawBlendMode::BLEND_MODE_ALPHA);
 }
 
 void HUD::drawFps() {
@@ -657,7 +658,7 @@ void HUD::drawPlayfieldBorder(vec2 playfieldCenter, vec2 playfieldSize, float hi
 
         // top
         {
-            static VertexArrayObject vao(Graphics::PRIMITIVE::PRIMITIVE_QUADS);
+            static VertexArrayObject vao(DrawPrimitive::PRIMITIVE_QUADS);
             vao.clear();
 
             vao.addVertex(playfieldBorderTopLeft);
@@ -674,7 +675,7 @@ void HUD::drawPlayfieldBorder(vec2 playfieldCenter, vec2 playfieldSize, float hi
 
         // left
         {
-            static VertexArrayObject vao(Graphics::PRIMITIVE::PRIMITIVE_QUADS);
+            static VertexArrayObject vao(DrawPrimitive::PRIMITIVE_QUADS);
             vao.clear();
 
             vao.addVertex(playfieldBorderTopLeft);
@@ -691,7 +692,7 @@ void HUD::drawPlayfieldBorder(vec2 playfieldCenter, vec2 playfieldSize, float hi
 
         // right
         {
-            static VertexArrayObject vao(Graphics::PRIMITIVE::PRIMITIVE_QUADS);
+            static VertexArrayObject vao(DrawPrimitive::PRIMITIVE_QUADS);
             vao.clear();
 
             vao.addVertex(playfieldBorderTopLeft + vec2(playfieldBorderSize.x + 2 * borderSize, 0));
@@ -710,7 +711,7 @@ void HUD::drawPlayfieldBorder(vec2 playfieldCenter, vec2 playfieldSize, float hi
 
         // bottom
         {
-            static VertexArrayObject vao(Graphics::PRIMITIVE::PRIMITIVE_QUADS);
+            static VertexArrayObject vao(DrawPrimitive::PRIMITIVE_QUADS);
             vao.clear();
 
             vao.addVertex(playfieldBorderTopLeft + vec2(borderSize, playfieldBorderSize.y + borderSize));
@@ -1512,7 +1513,7 @@ void HUD::drawHitErrorBarInt(float hitWindow300, float hitWindow100, float hitWi
 
     // draw hit errors
     {
-        if(cv::hud_hiterrorbar_entry_additive.getBool()) g->setBlendMode(Graphics::BLEND_MODE::BLEND_MODE_ADDITIVE);
+        if(cv::hud_hiterrorbar_entry_additive.getBool()) g->setBlendMode(DrawBlendMode::BLEND_MODE_ADDITIVE);
 
         const bool modMing3012 = cv::mod_ming3012.getBool();
         const float hitFadeDuration = cv::hud_hiterrorbar_entry_hit_fade_time.getFloat();
@@ -1547,7 +1548,7 @@ void HUD::drawHitErrorBarInt(float hitWindow300, float hitWindow100, float hitWi
                         (entryHeight * missHeightMultiplier));
         }
 
-        if(cv::hud_hiterrorbar_entry_additive.getBool()) g->setBlendMode(Graphics::BLEND_MODE::BLEND_MODE_ALPHA);
+        if(cv::hud_hiterrorbar_entry_additive.getBool()) g->setBlendMode(DrawBlendMode::BLEND_MODE_ALPHA);
     }
 
     // white center line

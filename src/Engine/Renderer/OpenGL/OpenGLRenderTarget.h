@@ -12,7 +12,7 @@
 class OpenGLRenderTarget final : public RenderTarget {
    public:
     OpenGLRenderTarget(int x, int y, int width, int height,
-                       Graphics::MULTISAMPLE_TYPE multiSampleType = Graphics::MULTISAMPLE_TYPE::MULTISAMPLE_0X)
+                       MultisampleType multiSampleType = MultisampleType::MULTISAMPLE_0X)
         : RenderTarget(x, y, width, height, multiSampleType) {}
     ~OpenGLRenderTarget() override { destroy(); }
 

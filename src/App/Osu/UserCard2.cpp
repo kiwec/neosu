@@ -9,6 +9,7 @@
 #include "SongBrowser/SongBrowser.h"
 #include "UIAvatar.h"
 #include "UIUserContextMenu.h"
+#include "Font.h"
 
 static const u32 AVATAR_MARGIN = 4;
 

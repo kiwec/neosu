@@ -6,11 +6,11 @@
 #include "VertexArrayObject.h"
 #include "Logging.h"
 
-RenderTarget::RenderTarget(int x, int y, int width, int height, Graphics::MULTISAMPLE_TYPE multiSampleType)
+RenderTarget::RenderTarget(int x, int y, int width, int height, MultisampleType multiSampleType)
     : Resource(),
-      vao1(g->createVertexArrayObject(Graphics::PRIMITIVE::PRIMITIVE_TRIANGLES, Graphics::USAGE_TYPE::USAGE_STATIC,
+      vao1(g->createVertexArrayObject(DrawPrimitive::PRIMITIVE_TRIANGLES, DrawUsageType::USAGE_STATIC,
                                       false)),
-      vao2(g->createVertexArrayObject(Graphics::PRIMITIVE::PRIMITIVE_TRIANGLES, Graphics::USAGE_TYPE::USAGE_STATIC,
+      vao2(g->createVertexArrayObject(DrawPrimitive::PRIMITIVE_TRIANGLES, DrawUsageType::USAGE_STATIC,
                                       false)),
       vPos(vec2{x, y}),
       vSize(width, height),
@@ -149,7 +149,7 @@ void RenderTarget::drawRect(int x, int y, int width, int height) {
     this->unbind();
 }
 
-void RenderTarget::rebuild(int x, int y, int width, int height, Graphics::MULTISAMPLE_TYPE multiSampleType) {
+void RenderTarget::rebuild(int x, int y, int width, int height, MultisampleType multiSampleType) {
     this->vPos.x = x;
     this->vPos.y = y;
     this->vSize.x = width;
@@ -169,6 +169,6 @@ void RenderTarget::rebuild(int width, int height) {
     this->rebuild(this->vPos.x, this->vPos.y, width, height, this->multiSampleType);
 }
 
-void RenderTarget::rebuild(int width, int height, Graphics::MULTISAMPLE_TYPE multiSampleType) {
+void RenderTarget::rebuild(int width, int height, MultisampleType multiSampleType) {
     this->rebuild(this->vPos.x, this->vPos.y, width, height, multiSampleType);
 }

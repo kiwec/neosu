@@ -5,6 +5,7 @@
 
 #include "Engine.h"
 #include "ResourceManager.h"
+#include "Font.h"
 
 CBaseUILabel::CBaseUILabel(float xPos, float yPos, float xSize, float ySize, UString name, const UString& text)
     : CBaseUIElement(xPos, yPos, xSize, ySize, std::move(name)) {

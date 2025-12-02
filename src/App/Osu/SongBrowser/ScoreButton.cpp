@@ -26,6 +26,7 @@
 #include "Skin.h"
 #include "SkinImage.h"
 #include "SoundEngine.h"
+#include "Font.h"
 #include "TooltipOverlay.h"
 #include "UIAvatar.h"
 #include "UIContextMenu.h"

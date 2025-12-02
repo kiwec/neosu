@@ -39,6 +39,10 @@
 #include "RichPresence.h"
 #include "RoomScreen.h"
 #include "SimulatedBeatmapInterface.h"
+#include "Sound.h"
+#include "Font.h"
+#include "Shader.h"
+#include "RenderTarget.h"
 #include "Skin.h"
 #include "SkinImage.h"
 #include "AsyncPPCalculator.h"
@@ -2182,7 +2186,7 @@ void BeatmapInterface::drawHitObjects() {
 
             this->mafhamActiveRenderTarget->enable();
             {
-                g->setBlendMode(Graphics::BLEND_MODE::BLEND_MODE_PREMUL_ALPHA);
+                g->setBlendMode(DrawBlendMode::BLEND_MODE_PREMUL_ALPHA);
                 {
                     int chunkCounter = 0;
                     for(int i = this->hitobjectsSortedByEndTime.size() - 1 - this->iMafhamHitObjectRenderIndex; i >= 0;
@@ -2217,7 +2221,7 @@ void BeatmapInterface::drawHitObjects() {
                         this->iMafhamActiveRenderHitObjectIndex = i;
                     }
                 }
-                g->setBlendMode(Graphics::BLEND_MODE::BLEND_MODE_ALPHA);
+                g->setBlendMode(DrawBlendMode::BLEND_MODE_ALPHA);
             }
             this->mafhamActiveRenderTarget->disable();
 
@@ -2239,11 +2243,11 @@ void BeatmapInterface::drawHitObjects() {
 
         // draw scene buffer
         if(shouldDrawBuffer) {
-            g->setBlendMode(Graphics::BLEND_MODE::BLEND_MODE_PREMUL_COLOR);
+            g->setBlendMode(DrawBlendMode::BLEND_MODE_PREMUL_COLOR);
             {
                 this->mafhamFinishedRenderTarget->draw(0, 0);
             }
-            g->setBlendMode(Graphics::BLEND_MODE::BLEND_MODE_ALPHA);
+            g->setBlendMode(DrawBlendMode::BLEND_MODE_ALPHA);
         }
 
         // draw followpoints

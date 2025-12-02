@@ -3,7 +3,7 @@
 
 #include "Engine.h"
 
-VertexArrayObject::VertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::USAGE_TYPE usage, bool keepInSystemMemory)
+VertexArrayObject::VertexArrayObject(DrawPrimitive primitive, DrawUsageType usage, bool keepInSystemMemory)
     : Resource() {
     this->primitive = primitive;
     this->usage = usage;
@@ -117,7 +117,7 @@ void VertexArrayObject::setColor(int index, Color color) {
     this->partialUpdateColorIndices.push_back(index);
 }
 
-void VertexArrayObject::setType(Graphics::PRIMITIVE primitive) { this->primitive = primitive; }
+void VertexArrayObject::setType(DrawPrimitive primitive) { this->primitive = primitive; }
 
 void VertexArrayObject::setDrawRange(int fromIndex, int toIndex) {
     this->iDrawRangeFromIndex = fromIndex;

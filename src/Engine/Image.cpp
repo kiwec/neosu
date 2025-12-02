@@ -348,8 +348,8 @@ Image::Image(std::string filepath, bool mipmapped, bool keepInSystemMemory) : Re
 
     this->type = Image::TYPE::TYPE_PNG;
     this->filterMode =
-        mipmapped ? Graphics::FILTER_MODE::FILTER_MODE_MIPMAP : Graphics::FILTER_MODE::FILTER_MODE_LINEAR;
-    this->wrapMode = Graphics::WRAP_MODE::WRAP_MODE_CLAMP;
+        mipmapped ? TextureFilterMode::FILTER_MODE_MIPMAP : TextureFilterMode::FILTER_MODE_LINEAR;
+    this->wrapMode = TextureWrapMode::WRAP_MODE_CLAMP;
     this->iWidth = 1;
     this->iHeight = 1;
 
@@ -362,8 +362,8 @@ Image::Image(i32 width, i32 height, bool mipmapped, bool keepInSystemMemory) : R
 
     this->type = Image::TYPE::TYPE_RGBA;
     this->filterMode =
-        mipmapped ? Graphics::FILTER_MODE::FILTER_MODE_MIPMAP : Graphics::FILTER_MODE::FILTER_MODE_LINEAR;
-    this->wrapMode = Graphics::WRAP_MODE::WRAP_MODE_CLAMP;
+        mipmapped ? TextureFilterMode::FILTER_MODE_MIPMAP : TextureFilterMode::FILTER_MODE_LINEAR;
+    this->wrapMode = TextureWrapMode::WRAP_MODE_CLAMP;
     this->iWidth = std::min(16384, width);  // sanity
     this->iHeight = std::min(16384, height);
 

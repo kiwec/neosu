@@ -13,6 +13,7 @@
 #include "Downloader.h"
 #include "Engine.h"
 #include "File.h"
+#include "Image.h"
 #include "Lobby.h"
 #include "NeosuUrl.h"
 #include "NetworkHandler.h"

@@ -16,6 +16,8 @@
 #include "TextureAtlas.h"
 #include "Logging.h"
 #include "Environment.h"
+#include "SyncMutex.h"
+#include "Image.h"
 
 #include <algorithm>
 #include <cstddef>
@@ -156,9 +158,9 @@ struct McFontImpl final {
     McFontImpl(McFont *parent, int fontSize, bool antialiasing, int fontDPI)
         : m_parent(parent),
           m_vao(
-              g->createVertexArrayObject((Env::cfg(REND::GLES32 | REND::DX11) ? Graphics::PRIMITIVE::PRIMITIVE_TRIANGLES
-                                                                              : Graphics::PRIMITIVE::PRIMITIVE_QUADS),
-                                         Graphics::USAGE_TYPE::USAGE_DYNAMIC, false)) {
+              g->createVertexArrayObject((Env::cfg(REND::GLES32 | REND::DX11) ? DrawPrimitive::PRIMITIVE_TRIANGLES
+                                                                              : DrawPrimitive::PRIMITIVE_QUADS),
+                                         DrawUsageType::USAGE_DYNAMIC, false)) {
         std::vector<char16_t> characters;
         characters.reserve(96);  // reserve space for basic ASCII, load the rest as needed
         for(int i = 32; i < 128; i++) {
@@ -171,9 +173,9 @@ struct McFontImpl final {
     McFontImpl(McFont *parent, const std::vector<char16_t> &characters, int fontSize, bool antialiasing, int fontDPI)
         : m_parent(parent),
           m_vao(
-              g->createVertexArrayObject((Env::cfg(REND::GLES32 | REND::DX11) ? Graphics::PRIMITIVE::PRIMITIVE_TRIANGLES
-                                                                              : Graphics::PRIMITIVE::PRIMITIVE_QUADS),
-                                         Graphics::USAGE_TYPE::USAGE_DYNAMIC, false)) {
+              g->createVertexArrayObject((Env::cfg(REND::GLES32 | REND::DX11) ? DrawPrimitive::PRIMITIVE_TRIANGLES
+                                                                              : DrawPrimitive::PRIMITIVE_QUADS),
+                                         DrawUsageType::USAGE_DYNAMIC, false)) {
         // don't try to find fallbacks if we had an explicitly-passed character set on construction
         m_bTryFindFallbacks = false;
         constructor(characters, fontSize, antialiasing, fontDPI);
@@ -1050,45 +1052,38 @@ McFont::McFont(std::string filepath, const std::vector<char16_t> &characters, in
 
 McFont::~McFont() { destroy(); }
 
-// WTF? makes LTO take 10 minutes to link and use 50GB of memory?
-#if (defined(__GNUC__) && !defined(__clang__)) && (defined(_WIN32) && !defined(_WIN64))
-#define INLINE_BODY_IF_NOT_MINGW_GCC_32
-#else
-#define INLINE_BODY_IF_NOT_MINGW_GCC_32 INLINE_BODY
-#endif
+void McFont::init() { pImpl->init(); }
+void McFont::initAsync() { pImpl->initAsync(); }
+void McFont::destroy() { pImpl->destroy(); }
 
-INLINE_BODY_IF_NOT_MINGW_GCC_32 void McFont::init() { pImpl->init(); }
-INLINE_BODY_IF_NOT_MINGW_GCC_32 void McFont::initAsync() { pImpl->initAsync(); }
-INLINE_BODY_IF_NOT_MINGW_GCC_32 void McFont::destroy() { pImpl->destroy(); }
+void McFont::setSize(int fontSize) { pImpl->setSize(fontSize); }
+void McFont::setDPI(int dpi) { pImpl->setDPI(dpi); }
+void McFont::setHeight(float height) { pImpl->setHeight(height); }
 
-INLINE_BODY_IF_NOT_MINGW_GCC_32 void McFont::setSize(int fontSize) { pImpl->setSize(fontSize); }
-INLINE_BODY_IF_NOT_MINGW_GCC_32 void McFont::setDPI(int dpi) { pImpl->setDPI(dpi); }
-INLINE_BODY_IF_NOT_MINGW_GCC_32 void McFont::setHeight(float height) { pImpl->setHeight(height); }
+int McFont::getSize() const { return pImpl->getSize(); }
+int McFont::getDPI() const { return pImpl->getDPI(); }
+float McFont::getHeight() const { return pImpl->getHeight(); }
 
-INLINE_BODY_IF_NOT_MINGW_GCC_32 int McFont::getSize() const { return pImpl->getSize(); }
-INLINE_BODY_IF_NOT_MINGW_GCC_32 int McFont::getDPI() const { return pImpl->getDPI(); }
-INLINE_BODY_IF_NOT_MINGW_GCC_32 float McFont::getHeight() const { return pImpl->getHeight(); }
-
-INLINE_BODY_IF_NOT_MINGW_GCC_32 void McFont::drawString(const UString &text) { return pImpl->drawString(text); }
-INLINE_BODY_IF_NOT_MINGW_GCC_32 void McFont::beginBatch() { return pImpl->beginBatch(); }
-INLINE_BODY_IF_NOT_MINGW_GCC_32 void McFont::addToBatch(const UString &text, const vec3 &pos, Color color) {
+void McFont::drawString(const UString &text) { return pImpl->drawString(text); }
+void McFont::beginBatch() { return pImpl->beginBatch(); }
+void McFont::addToBatch(const UString &text, const vec3 &pos, Color color) {
     return pImpl->addToBatch(text, pos, color);
 }
-INLINE_BODY_IF_NOT_MINGW_GCC_32 void McFont::flushBatch() { return pImpl->flushBatch(); }
+void McFont::flushBatch() { return pImpl->flushBatch(); }
 
-INLINE_BODY_IF_NOT_MINGW_GCC_32 float McFont::getGlyphWidth(char16_t character) const {
+float McFont::getGlyphWidth(char16_t character) const {
     return pImpl->getGlyphWidth(character);
 }
-INLINE_BODY_IF_NOT_MINGW_GCC_32 float McFont::getGlyphHeight(char16_t character) const {
+float McFont::getGlyphHeight(char16_t character) const {
     return pImpl->getGlyphHeight(character);
 }
-INLINE_BODY_IF_NOT_MINGW_GCC_32 float McFont::getStringWidth(const UString &text) const {
+float McFont::getStringWidth(const UString &text) const {
     return pImpl->getStringWidth(text);
 }
-INLINE_BODY_IF_NOT_MINGW_GCC_32 float McFont::getStringHeight(const UString &text) const {
+float McFont::getStringHeight(const UString &text) const {
     return pImpl->getStringHeight(text);
 }
-INLINE_BODY_IF_NOT_MINGW_GCC_32 std::vector<UString> McFont::wrap(const UString &text, f64 max_width) const {
+std::vector<UString> McFont::wrap(const UString &text, f64 max_width) const {
     return pImpl->wrap(text, max_width);
 }
 

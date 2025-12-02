@@ -16,6 +16,8 @@
 #include "Mouse.h"
 #include "ResourceManager.h"
 #include "SoundEngine.h"
+#include "Font.h"
+
 // #include "Logging.h"
 
 CBaseUITextbox::CBaseUITextbox(float xPos, float yPos, float xSize, float ySize, UString name)

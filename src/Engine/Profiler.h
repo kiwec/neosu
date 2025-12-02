@@ -94,7 +94,7 @@ class ProfilerNode {
     [[nodiscard]] inline double getTimeLastFrame() const { return this->fTimeLastFrame; }
 
    private:
-    inline void constructor(const char *name, const char *group, ProfilerNode *parent);
+    void constructor(const char *name, const char *group, ProfilerNode *parent);
 
     ProfilerNode *getSubNode(const char *name, const char *group);
 

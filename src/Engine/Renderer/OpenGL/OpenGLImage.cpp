@@ -89,11 +89,11 @@ void OpenGLImage::init() {
 
     this->setReady(true);
 
-    if(this->filterMode != Graphics::FILTER_MODE::FILTER_MODE_LINEAR) {
+    if(this->filterMode != TextureFilterMode::FILTER_MODE_LINEAR) {
         setFilterMode(this->filterMode);
     }
 
-    if(this->wrapMode != Graphics::WRAP_MODE::WRAP_MODE_CLAMP) {
+    if(this->wrapMode != TextureWrapMode::WRAP_MODE_CLAMP) {
         setWrapMode(this->wrapMode);
     }
 }
@@ -162,22 +162,22 @@ void OpenGLImage::unbind() const {
     if(this->iTextureUnitBackup != 0) glActiveTexture(GL_TEXTURE0);
 }
 
-void OpenGLImage::setFilterMode(Graphics::FILTER_MODE filterMode) {
+void OpenGLImage::setFilterMode(TextureFilterMode filterMode) {
     Image::setFilterMode(filterMode);
     if(!this->isReady()) return;
 
     bind();
     {
         switch(filterMode) {
-            case Graphics::FILTER_MODE::FILTER_MODE_NONE:
+            case TextureFilterMode::FILTER_MODE_NONE:
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
                 break;
-            case Graphics::FILTER_MODE::FILTER_MODE_LINEAR:
+            case TextureFilterMode::FILTER_MODE_LINEAR:
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
                 break;
-            case Graphics::FILTER_MODE::FILTER_MODE_MIPMAP:
+            case TextureFilterMode::FILTER_MODE_MIPMAP:
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
                 break;
@@ -186,19 +186,19 @@ void OpenGLImage::setFilterMode(Graphics::FILTER_MODE filterMode) {
     unbind();
 }
 
-void OpenGLImage::setWrapMode(Graphics::WRAP_MODE wrapMode) {
+void OpenGLImage::setWrapMode(TextureWrapMode wrapMode) {
     Image::setWrapMode(wrapMode);
     if(!this->isReady()) return;
 
     bind();
     {
         switch(wrapMode) {
-            case Graphics::WRAP_MODE::WRAP_MODE_CLAMP:  // NOTE: there is also GL_CLAMP, which works a bit differently
+            case TextureWrapMode::WRAP_MODE_CLAMP:  // NOTE: there is also GL_CLAMP, which works a bit differently
                                                         // concerning the border color
                 glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
                 glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
                 break;
-            case Graphics::WRAP_MODE::WRAP_MODE_REPEAT:
+            case TextureWrapMode::WRAP_MODE_REPEAT:
                 glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
                 glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
                 break;

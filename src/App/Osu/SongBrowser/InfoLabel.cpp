@@ -19,6 +19,7 @@
 #include "NotificationOverlay.h"
 #include "OptionsMenu.h"
 #include "Osu.h"
+#include "Font.h"
 #include "ResourceManager.h"
 #include "Skin.h"
 #include "TooltipOverlay.h"

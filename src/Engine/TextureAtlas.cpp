@@ -6,6 +6,7 @@
 #include "Engine.h"
 #include "ResourceManager.h"
 #include "Logging.h"
+#include "Image.h"
 
 TextureAtlas::TextureAtlas(int width, int height, bool filtering) : Resource() {
     this->iWidth = width;
@@ -15,7 +16,7 @@ TextureAtlas::TextureAtlas(int width, int height, bool filtering) : Resource() {
     this->atlasImage.reset(resourceManager->createImage(this->iWidth, this->iHeight, false,
                                                         true /* keep in system memory, for faster reloads */));
     if(!filtering) {
-        this->atlasImage->setFilterMode(Graphics::FILTER_MODE::FILTER_MODE_NONE);
+        this->atlasImage->setFilterMode(TextureFilterMode::FILTER_MODE_NONE);
     }  // else linear filtering is default
 }
 

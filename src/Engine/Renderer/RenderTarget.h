@@ -10,7 +10,7 @@ class ConVar;
 class RenderTarget : public Resource {
    public:
     RenderTarget(int x, int y, int width, int height,
-                 Graphics::MULTISAMPLE_TYPE multiSampleType = Graphics::MULTISAMPLE_TYPE::MULTISAMPLE_0X);
+                 MultisampleType multiSampleType = MultisampleType::MULTISAMPLE_0X);
     ~RenderTarget() override;
 
     virtual void draw(int x, int y);
@@ -23,10 +23,10 @@ class RenderTarget : public Resource {
     virtual void bind(unsigned int textureUnit = 0) = 0;
     virtual void unbind() = 0;
 
-    void rebuild(int x, int y, int width, int height, Graphics::MULTISAMPLE_TYPE multiSampleType);
+    void rebuild(int x, int y, int width, int height, MultisampleType multiSampleType);
     void rebuild(int x, int y, int width, int height);
     void rebuild(int width, int height);
-    void rebuild(int width, int height, Graphics::MULTISAMPLE_TYPE multiSampleType);
+    void rebuild(int width, int height, MultisampleType multiSampleType);
 
     // set
     void setPos(int x, int y) {
@@ -44,11 +44,11 @@ class RenderTarget : public Resource {
     [[nodiscard]] float getHeight() const { return this->vSize.y; }
     [[nodiscard]] inline vec2 getSize() const { return this->vSize; }
     [[nodiscard]] inline vec2 getPos() const { return this->vPos; }
-    [[nodiscard]] inline Graphics::MULTISAMPLE_TYPE getMultiSampleType() const { return this->multiSampleType; }
+    [[nodiscard]] inline MultisampleType getMultiSampleType() const { return this->multiSampleType; }
 
     [[nodiscard]] inline bool isMultiSampled() const {
         if constexpr(Env::cfg(OS::WASM)) return false;
-        return this->multiSampleType != Graphics::MULTISAMPLE_TYPE::MULTISAMPLE_0X;
+        return this->multiSampleType != MultisampleType::MULTISAMPLE_0X;
     }
 
     // type inspection
@@ -71,7 +71,7 @@ class RenderTarget : public Resource {
     Color color{static_cast<uint32_t>(-1)};
     Color clearColor{0};
 
-    Graphics::MULTISAMPLE_TYPE multiSampleType;
+    MultisampleType multiSampleType;
 
     bool bClearColorOnDraw{true};
     bool bClearDepthOnDraw{true};

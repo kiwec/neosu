@@ -23,6 +23,8 @@
 #include "Downloader.h"
 #include "Engine.h"
 #include "File.h"
+#include "Font.h"
+#include "Sound.h"
 #include "Environment.h"
 #include "GameRules.h"
 #include "HUD.h"
@@ -206,7 +208,7 @@ Osu::Osu() : App(), MouseListener(), global_osu_(this) {
     this->sliderFrameBuffer =
         resourceManager->createRenderTarget(0, 0, this->getVirtScreenWidth(), this->getVirtScreenHeight());
     this->AAFrameBuffer = resourceManager->createRenderTarget(
-        0, 0, this->getVirtScreenWidth(), this->getVirtScreenHeight(), Graphics::MULTISAMPLE_TYPE::MULTISAMPLE_4X);
+        0, 0, this->getVirtScreenWidth(), this->getVirtScreenHeight(), MultisampleType::MULTISAMPLE_4X);
     this->frameBuffer = resourceManager->createRenderTarget(0, 0, 64, 64);
     this->frameBuffer2 = resourceManager->createRenderTarget(0, 0, 64, 64);
 
@@ -1638,7 +1640,7 @@ void Osu::rebuildRenderTargets() {
         this->playfieldBuffer->rebuild(0, 0, 64, 64);
 
     this->sliderFrameBuffer->rebuild(0, 0, this->internalRect.getWidth(), this->internalRect.getHeight(),
-                                     Graphics::MULTISAMPLE_TYPE::MULTISAMPLE_0X);
+                                     MultisampleType::MULTISAMPLE_0X);
 
     this->AAFrameBuffer->rebuild(0, 0, this->internalRect.getWidth(), this->internalRect.getHeight());
 

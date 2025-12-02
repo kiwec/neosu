@@ -15,6 +15,7 @@
 #include "SkinImage.h"
 #include "SongBrowser.h"
 #include "UserCard.h"
+#include "Font.h"
 
 enum { MODE = 0, MODS = 1, RANDOM = 2, OPTIONS = 3 };
 static McRect btns[4];
@@ -178,12 +179,12 @@ void draw_bottombar() {
     auto mos_img = osu->getSkin()->i_mode_osu_small;
     if(mos_img != nullptr) {
         f32 mos_scale = SongBrowser::getSkinScale(mos_img);
-        g->setBlendMode(Graphics::BLEND_MODE::BLEND_MODE_ADDITIVE);
+        g->setBlendMode(DrawBlendMode::BLEND_MODE_ADDITIVE);
         g->setColor(0xffffffff);
         mos_img->drawRaw(vec2(btns[MODE].getX() + (btns[MODS].getX() - btns[MODE].getX()) / 2.f,
                               osu->getVirtScreenHeight() - SongBrowser::getUIScale(56.f)),
                          mos_scale, AnchorPoint::CENTER);
-        g->setBlendMode(Graphics::BLEND_MODE::BLEND_MODE_ALPHA);
+        g->setBlendMode(DrawBlendMode::BLEND_MODE_ALPHA);
     }
 
     // background task busy notification

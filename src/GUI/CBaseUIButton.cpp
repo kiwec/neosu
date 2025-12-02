@@ -6,6 +6,7 @@
 #include "Engine.h"
 #include "Mouse.h"
 #include "ResourceManager.h"
+#include "Font.h"
 
 CBaseUIButton::CBaseUIButton(float xPos, float yPos, float xSize, float ySize, UString name, UString text)
     : CBaseUIElement(xPos, yPos, xSize, ySize, std::move(name)) {

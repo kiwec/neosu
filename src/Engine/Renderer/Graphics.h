@@ -34,54 +34,54 @@ enum class AnchorPoint : uint8_t {
     RIGHT          // x,y at middle right
 };
 
+enum class DrawPrimitive : uint8_t {
+    PRIMITIVE_LINES,
+    PRIMITIVE_LINE_STRIP,
+    PRIMITIVE_TRIANGLES,
+    PRIMITIVE_TRIANGLE_FAN,
+    PRIMITIVE_TRIANGLE_STRIP,
+    PRIMITIVE_QUADS
+};
+
+enum class DrawUsageType : uint8_t { USAGE_STATIC, USAGE_DYNAMIC, USAGE_STREAM };
+
+enum class DrawPixelsType : uint8_t { DRAWPIXELS_UBYTE, DRAWPIXELS_FLOAT };
+
+enum class MultisampleType : uint8_t {
+    MULTISAMPLE_0X,
+    MULTISAMPLE_2X,
+    MULTISAMPLE_4X,
+    MULTISAMPLE_8X,
+    MULTISAMPLE_16X
+};
+
+enum class TextureWrapMode : uint8_t { WRAP_MODE_CLAMP, WRAP_MODE_REPEAT };
+
+enum class TextureFilterMode : uint8_t { FILTER_MODE_NONE, FILTER_MODE_LINEAR, FILTER_MODE_MIPMAP };
+
+enum class DrawBlendMode : uint8_t {
+    BLEND_MODE_ALPHA,         // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA) (default)
+    BLEND_MODE_ADDITIVE,      // glBlendFunc(GL_SRC_ALPHA, GL_ONE)
+    BLEND_MODE_PREMUL_ALPHA,  // glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE,
+                              // GL_ONE_MINUS_SRC_ALPHA)
+    BLEND_MODE_PREMUL_COLOR   // glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA)
+};
+
+enum class DrawCompareFunc : uint8_t {
+    COMPARE_FUNC_NEVER,
+    COMPARE_FUNC_LESS,
+    COMPARE_FUNC_EQUAL,
+    COMPARE_FUNC_LESSEQUAL,
+    COMPARE_FUNC_GREATER,
+    COMPARE_FUNC_NOTEQUAL,
+    COMPARE_FUNC_GREATEREQUAL,
+    COMPARE_FUNC_ALWAYS
+};
+
 class Graphics {
     NOCOPY_NOMOVE(Graphics)
 
    public:
-    enum class PRIMITIVE : uint8_t {
-        PRIMITIVE_LINES,
-        PRIMITIVE_LINE_STRIP,
-        PRIMITIVE_TRIANGLES,
-        PRIMITIVE_TRIANGLE_FAN,
-        PRIMITIVE_TRIANGLE_STRIP,
-        PRIMITIVE_QUADS
-    };
-
-    enum class USAGE_TYPE : uint8_t { USAGE_STATIC, USAGE_DYNAMIC, USAGE_STREAM };
-
-    enum class DRAWPIXELS_TYPE : uint8_t { DRAWPIXELS_UBYTE, DRAWPIXELS_FLOAT };
-
-    enum class MULTISAMPLE_TYPE : uint8_t {
-        MULTISAMPLE_0X,
-        MULTISAMPLE_2X,
-        MULTISAMPLE_4X,
-        MULTISAMPLE_8X,
-        MULTISAMPLE_16X
-    };
-
-    enum class WRAP_MODE : uint8_t { WRAP_MODE_CLAMP, WRAP_MODE_REPEAT };
-
-    enum class FILTER_MODE : uint8_t { FILTER_MODE_NONE, FILTER_MODE_LINEAR, FILTER_MODE_MIPMAP };
-
-    enum class BLEND_MODE : uint8_t {
-        BLEND_MODE_ALPHA,         // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA) (default)
-        BLEND_MODE_ADDITIVE,      // glBlendFunc(GL_SRC_ALPHA, GL_ONE)
-        BLEND_MODE_PREMUL_ALPHA,  // glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE,
-                                  // GL_ONE_MINUS_SRC_ALPHA)
-        BLEND_MODE_PREMUL_COLOR   // glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA)
-    };
-
-    enum class COMPARE_FUNC : uint8_t {
-        COMPARE_FUNC_NEVER,
-        COMPARE_FUNC_LESS,
-        COMPARE_FUNC_EQUAL,
-        COMPARE_FUNC_LESSEQUAL,
-        COMPARE_FUNC_GREATER,
-        COMPARE_FUNC_NOTEQUAL,
-        COMPARE_FUNC_GREATEREQUAL,
-        COMPARE_FUNC_ALWAYS
-    };
-
     struct RectOptions {
         float x{0.f}, y{0.f}, width{0.f}, height{0.f}, lineThickness{1.f};
         Color top{(Color)-1}, right{(Color)-1}, bottom{(Color)-1}, left{(Color)-1};
@@ -106,7 +106,7 @@ class Graphics {
     virtual void setAlpha(float alpha) = 0;
 
     // 2d primitive drawing
-    virtual void drawPixels(int x, int y, int width, int height, Graphics::DRAWPIXELS_TYPE type,
+    virtual void drawPixels(int x, int y, int width, int height, DrawPixelsType type,
                             const void *pixels) = 0;
     virtual void drawPixel(int x, int y) = 0;
     virtual void drawLinef(float x1, float y1, float x2, float y2) = 0;
@@ -191,11 +191,11 @@ class Graphics {
     // renderer settings
     virtual void setClipping(bool enabled) = 0;
     virtual void setAlphaTesting(bool enabled) = 0;
-    virtual void setAlphaTestFunc(COMPARE_FUNC alphaFunc, float ref) = 0;
+    virtual void setAlphaTestFunc(DrawCompareFunc alphaFunc, float ref) = 0;
     virtual void setBlending(bool enabled) { this->bBlendingEnabled = enabled; }
     [[nodiscard]] inline bool getBlending() const { return this->bBlendingEnabled; }
-    virtual void setBlendMode(BLEND_MODE blendMode) { this->currentBlendMode = blendMode; }
-    [[nodiscard]] inline BLEND_MODE getBlendMode() const { return this->currentBlendMode; }
+    virtual void setBlendMode(DrawBlendMode blendMode) { this->currentBlendMode = blendMode; }
+    [[nodiscard]] inline DrawBlendMode getBlendMode() const { return this->currentBlendMode; }
     virtual void setDepthBuffer(bool enabled) = 0;
     virtual void setColorWriting(bool r, bool g, bool b, bool a) = 0;
     inline void setColorWriting(bool enabled) { this->setColorWriting(enabled, enabled, enabled, enabled); }
@@ -226,10 +226,10 @@ class Graphics {
     virtual Image *createImage(std::string filePath, bool mipmapped, bool keepInSystemMemory) = 0;
     virtual Image *createImage(i32 width, i32 height, bool mipmapped, bool keepInSystemMemory) = 0;
     virtual RenderTarget *createRenderTarget(int x, int y, int width, int height,
-                                             Graphics::MULTISAMPLE_TYPE multiSampleType) = 0;
+                                             MultisampleType multiSampleType) = 0;
     virtual Shader *createShaderFromFile(std::string vertexShaderFilePath, std::string fragmentShaderFilePath) = 0;
     virtual Shader *createShaderFromSource(std::string vertexShader, std::string fragmentShader) = 0;
-    virtual VertexArrayObject *createVertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::USAGE_TYPE usage,
+    virtual VertexArrayObject *createVertexArrayObject(DrawPrimitive primitive, DrawUsageType usage,
                                                        bool keepInSystemMemory) = 0;
 
    public:
@@ -299,7 +299,7 @@ class Graphics {
     vec3 v3dSceneOffset{0.f};
 
     // info
-    BLEND_MODE currentBlendMode{BLEND_MODE::BLEND_MODE_ALPHA};
+    DrawBlendMode currentBlendMode{DrawBlendMode::BLEND_MODE_ALPHA};
     bool bBlendingEnabled{true};
     bool bTransformUpToDate;
     bool bIs3dScene;

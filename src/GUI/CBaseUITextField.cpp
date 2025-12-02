@@ -8,6 +8,7 @@
 #include "CBaseUIContainer.h"
 #include "Engine.h"
 #include "ResourceManager.h"
+#include "Font.h"
 
 CBaseUITextField::CBaseUITextField(float xPos, float yPos, float xSize, float ySize, const UString& name, UString text)
     : CBaseUIScrollView(xPos, yPos, xSize, ySize, name) {

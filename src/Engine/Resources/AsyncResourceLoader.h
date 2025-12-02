@@ -15,6 +15,7 @@ class ConVar;
 class AsyncResourceLoader final {
     NOCOPY_NOMOVE(AsyncResourceLoader)
 
+    friend struct ResourceManagerImpl;
     friend class ResourceManager;
 
    public:

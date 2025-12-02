@@ -7,6 +7,8 @@
 #include "MakeDelegateWrapper.h"
 #include "ResourceManager.h"
 #include "Logging.h"
+#include "Graphics.h"
+#include "Font.h"
 
 Mouse::Mouse() : InputDevice(), vPos(env->getMousePos()), vPosWithoutOffsets(this->vPos), vActualPos(this->vPos) {
     this->fSensitivity = cv::mouse_sensitivity.getFloat();

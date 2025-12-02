@@ -4,6 +4,8 @@
 #include "Archival.h"
 #include "BeatmapInterface.h"
 #include "OsuConVars.h"
+#include "Font.h"
+#include "Sound.h"
 #include "ConVarHandler.h"
 #include "Engine.h"
 #include "Environment.h"

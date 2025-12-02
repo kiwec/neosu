@@ -20,8 +20,8 @@
 class DirectX11VertexArrayObject final : public VertexArrayObject {
     NOCOPY_NOMOVE(DirectX11VertexArrayObject)
    public:
-    DirectX11VertexArrayObject(Graphics::PRIMITIVE primitive = Graphics::PRIMITIVE::PRIMITIVE_TRIANGLES,
-                               Graphics::USAGE_TYPE usage = Graphics::USAGE_TYPE::USAGE_STATIC,
+    DirectX11VertexArrayObject(DrawPrimitive primitive = DrawPrimitive::PRIMITIVE_TRIANGLES,
+                               DrawUsageType usage = DrawUsageType::USAGE_STATIC,
                                bool keepInSystemMemory = false);
     ~DirectX11VertexArrayObject() override { destroy(); }
 
@@ -33,14 +33,14 @@ class DirectX11VertexArrayObject final : public VertexArrayObject {
     void destroy() override;
 
    private:
-    static int primitiveToDirectX(Graphics::PRIMITIVE primitive);
-    static int usageToDirectX(Graphics::USAGE_TYPE usage);
+    static int primitiveToDirectX(DrawPrimitive primitive);
+    static int usageToDirectX(DrawUsageType usage);
 
     std::vector<DirectX11Interface::SimpleVertex> convertedVertices;
 
     ID3D11Buffer *vertexBuffer{};
 
-    Graphics::PRIMITIVE convertedPrimitive;
+    DrawPrimitive convertedPrimitive;
 };
 
 #endif

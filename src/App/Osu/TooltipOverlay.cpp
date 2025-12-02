@@ -7,6 +7,7 @@
 #include "Mouse.h"
 #include "Osu.h"
 #include "ResourceManager.h"
+#include "Font.h"
 
 TooltipOverlay::TooltipOverlay() : OsuScreen() {
     this->fAnim = 0.0f;

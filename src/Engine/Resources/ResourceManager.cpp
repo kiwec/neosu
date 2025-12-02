@@ -7,6 +7,17 @@
 
 #include "ResourceManager.h"
 
+#include "Font.h"
+#include "Image.h"
+#include "RenderTarget.h"
+#include "Shader.h"
+#include "Sound.h"
+#include "TextureAtlas.h"
+#include "VertexArrayObject.h"
+#include "templates.h"
+
+#include "SyncMutex.h"
+
 #include "App.h"
 #include "AsyncResourceLoader.h"
 #include "ConVar.h"
@@ -15,55 +26,222 @@
 #include "Logging.h"
 #include "Environment.h"
 
-#include <algorithm>
+#include <stack>
 #include <utility>
 
-ResourceManager::ResourceManager() : asyncLoader() /* create async loader */ {
-    // create directories we will assume already exist later on
-    Environment::createDirectory(MCENGINE_FONTS_PATH);
-    Environment::createDirectory(MCENGINE_IMAGES_PATH);
-    Environment::createDirectory(MCENGINE_SHADERS_PATH);
-    Environment::createDirectory(MCENGINE_SOUNDS_PATH);
+static_assert(MultisampleType{0} == MultisampleType::MULTISAMPLE_0X);
+static_assert(DrawPrimitive{2} == DrawPrimitive::PRIMITIVE_TRIANGLES);
+static_assert(DrawUsageType{0} == DrawUsageType::USAGE_STATIC);
 
-    this->bNextLoadAsync.store(false, std::memory_order_release);
+struct ResourceManagerImpl final {
+    NOCOPY_NOMOVE(ResourceManagerImpl)
+   public:
+    ResourceManagerImpl() : asyncLoader() /* create async loader instance */ {
+        // create directories we will assume already exist later on
+        Environment::createDirectory(MCENGINE_FONTS_PATH);
+        Environment::createDirectory(MCENGINE_IMAGES_PATH);
+        Environment::createDirectory(MCENGINE_SHADERS_PATH);
+        Environment::createDirectory(MCENGINE_SOUNDS_PATH);
 
-    // reserve space for typed vectors
-    this->vImages.reserve(256);
-    this->vFonts.reserve(16);
-    this->vSounds.reserve(64);
-    this->vShaders.reserve(32);
-    this->vRenderTargets.reserve(8);
-    this->vTextureAtlases.reserve(8);
-    this->vVertexArrayObjects.reserve(32);
-}
+        this->bNextLoadAsync.store(false, std::memory_order_release);
 
+        // reserve space for typed vectors
+        this->vImages.reserve(256);
+        this->vFonts.reserve(16);
+        this->vSounds.reserve(64);
+        this->vShaders.reserve(32);
+        this->vRenderTargets.reserve(8);
+        this->vTextureAtlases.reserve(8);
+        this->vVertexArrayObjects.reserve(32);
+    }
+    ~ResourceManagerImpl() = default;
+
+    template <typename T>
+    [[nodiscard]] T *tryGet(std::string_view resourceName) const {
+        if(resourceName.empty()) return nullptr;
+        if(auto it = this->mNameToResourceMap.find(resourceName); it != this->mNameToResourceMap.end()) {
+            return it->second->as<T>();
+        }
+        logIfCV(debug_rm, R"(ResourceManager WARNING: Resource "{:s}" does not exist!)", resourceName);
+        return nullptr;
+    }
+
+    template <typename T>
+    [[nodiscard]] T *checkIfExistsAndHandle(std::string_view resourceName) {
+        if(resourceName.empty()) return nullptr;
+        auto it = this->mNameToResourceMap.find(resourceName);
+        if(it == this->mNameToResourceMap.end()) {
+            return nullptr;
+        }
+        logIfCV(debug_rm, R"(ResourceManager NOTICE: Resource "{:s}" already loaded.)", resourceName);
+        // handle flags (reset them)
+        resetFlags();
+        return it->second->as<T>();
+    }
+
+    void resetFlags() {
+        {
+            Sync::unique_lock lock(this->managedLoadMutex);
+            if(this->nextLoadUnmanagedStack.size() > 0) this->nextLoadUnmanagedStack.pop();
+        }
+
+        this->bNextLoadAsync.store(false, std::memory_order_release);
+    }
+
+    // add a managed resource to the main resources vector + the name map and typed vectors
+    void addManagedResource(Resource *res) {
+        if(!res) return;
+        logIfCV(debug_rm, "ResourceManager: Adding managed {}", res->getName());
+
+        this->vResources.push_back(res);
+
+        if(res->getName().length() > 0) this->mNameToResourceMap.try_emplace(res->getName(), res);
+        addResourceToTypedVector(res);
+    }
+
+    // remove a managed resource from the main resources vector + the name map and typed vectors
+    void removeManagedResource(Resource *res, int managedResourceIndex) {
+        if(!res) return;
+
+        this->vResources.erase(this->vResources.begin() + managedResourceIndex);
+
+        if(res->getName().length() > 0) this->mNameToResourceMap.erase(res->getName());
+        removeResourceFromTypedVector(res);
+    }
+
+    // helper methods for managing typed resource vectors
+    void addResourceToTypedVector(Resource *res) {
+        if(!res) return;
+
+        switch(res->getResType()) {
+            case Resource::Type::IMAGE:
+                this->vImages.push_back(res->asImage());
+                break;
+            case Resource::Type::FONT:
+                this->vFonts.push_back(res->asFont());
+                break;
+            case Resource::Type::SOUND:
+                this->vSounds.push_back(res->asSound());
+                break;
+            case Resource::Type::SHADER:
+                this->vShaders.push_back(res->asShader());
+                break;
+            case Resource::Type::RENDERTARGET:
+                this->vRenderTargets.push_back(res->asRenderTarget());
+                break;
+            case Resource::Type::TEXTUREATLAS:
+                this->vTextureAtlases.push_back(res->asTextureAtlas());
+                break;
+            case Resource::Type::VAO:
+                this->vVertexArrayObjects.push_back(res->asVAO());
+                break;
+            case Resource::Type::APPDEFINED:
+                // app-defined types aren't added to specific vectors
+                break;
+        }
+    }
+
+    void removeResourceFromTypedVector(Resource *res) {
+        if(!res) return;
+
+        switch(res->getResType()) {
+            case Resource::Type::IMAGE: {
+                std::erase_if(this->vImages, [res](const auto &contained) { return res == contained; });
+            } break;
+            case Resource::Type::FONT: {
+                std::erase_if(this->vFonts, [res](const auto &contained) { return res == contained; });
+            } break;
+            case Resource::Type::SOUND: {
+                std::erase_if(this->vSounds, [res](const auto &contained) { return res == contained; });
+            } break;
+            case Resource::Type::SHADER: {
+                std::erase_if(this->vShaders, [res](const auto &contained) { return res == contained; });
+            } break;
+            case Resource::Type::RENDERTARGET: {
+                std::erase_if(this->vRenderTargets, [res](const auto &contained) { return res == contained; });
+            } break;
+            case Resource::Type::TEXTUREATLAS: {
+                std::erase_if(this->vTextureAtlases, [res](const auto &contained) { return res == contained; });
+            } break;
+            case Resource::Type::VAO: {
+                std::erase_if(this->vVertexArrayObjects, [res](const auto &contained) { return res == contained; });
+            } break;
+            case Resource::Type::APPDEFINED:
+                // app-defined types aren't added to specific vectors
+                break;
+        }
+    }
+
+    // content
+    std::vector<Resource *> vResources;
+
+    // typed resource vectors for fast type-specific access
+    std::vector<Image *> vImages;
+    std::vector<McFont *> vFonts;
+    std::vector<Sound *> vSounds;
+    std::vector<Shader *> vShaders;
+    std::vector<RenderTarget *> vRenderTargets;
+    std::vector<TextureAtlas *> vTextureAtlases;
+    std::vector<VertexArrayObject *> vVertexArrayObjects;
+
+    // lookup map
+    sv_unordered_map<Resource *> mNameToResourceMap;
+
+    // async loading system
+    AsyncResourceLoader asyncLoader;
+
+    // flags
+    Sync::shared_mutex managedLoadMutex;
+    std::stack<bool> nextLoadUnmanagedStack;
+    std::atomic<bool> bNextLoadAsync;
+};
+
+ResourceManager::ResourceManager() : pImpl() /* create implementation */ {}
 ResourceManager::~ResourceManager() {
     // release all not-currently-being-loaded resources
     destroyResources();
 
     // async loader shutdown handles thread cleanup
-    this->asyncLoader->shutdown();
+    pImpl->asyncLoader.shutdown();
 }
+
+// resource access by name
+Image *ResourceManager::getImage(std::string_view resourceName) const { return pImpl->tryGet<Image>(resourceName); }
+McFont *ResourceManager::getFont(std::string_view resourceName) const { return pImpl->tryGet<McFont>(resourceName); }
+Sound *ResourceManager::getSound(std::string_view resourceName) const { return pImpl->tryGet<Sound>(resourceName); }
+Shader *ResourceManager::getShader(std::string_view resourceName) const { return pImpl->tryGet<Shader>(resourceName); }
+
+// methods for getting all resources of a type
+const std::vector<Image *> &ResourceManager::getImages() const { return pImpl->vImages; }
+const std::vector<McFont *> &ResourceManager::getFonts() const { return pImpl->vFonts; }
+const std::vector<Sound *> &ResourceManager::getSounds() const { return pImpl->vSounds; }
+const std::vector<Shader *> &ResourceManager::getShaders() const { return pImpl->vShaders; }
+const std::vector<RenderTarget *> &ResourceManager::getRenderTargets() const { return pImpl->vRenderTargets; }
+const std::vector<TextureAtlas *> &ResourceManager::getTextureAtlases() const { return pImpl->vTextureAtlases; }
+const std::vector<VertexArrayObject *> &ResourceManager::getVertexArrayObjects() const {
+    return pImpl->vVertexArrayObjects;
+}
+const std::vector<Resource *> &ResourceManager::getResources() const { return pImpl->vResources; }
 
 void ResourceManager::update() {
     // delegate to async loader
     bool lowLatency = app->isInUnpausedGameplay();
-    this->asyncLoader->update(lowLatency);
+    pImpl->asyncLoader.update(lowLatency);
 }
 
 void ResourceManager::destroyResources() {
-    while(this->vResources.size() > 0) {
-        destroyResource(this->vResources[0], DestroyMode::FORCE_BLOCKING);
+    while(pImpl->vResources.size() > 0) {
+        destroyResource(pImpl->vResources[0], DestroyMode::FORCE_BLOCKING);
     }
-    this->vResources.clear();
-    this->vImages.clear();
-    this->vFonts.clear();
-    this->vSounds.clear();
-    this->vShaders.clear();
-    this->vRenderTargets.clear();
-    this->vTextureAtlases.clear();
-    this->vVertexArrayObjects.clear();
-    this->mNameToResourceMap.clear();
+    pImpl->vResources.clear();
+    pImpl->vImages.clear();
+    pImpl->vFonts.clear();
+    pImpl->vSounds.clear();
+    pImpl->vShaders.clear();
+    pImpl->vRenderTargets.clear();
+    pImpl->vTextureAtlases.clear();
+    pImpl->vVertexArrayObjects.clear();
+    pImpl->mNameToResourceMap.clear();
 }
 
 void ResourceManager::destroyResource(Resource *rs, DestroyMode destroyMode) {
@@ -77,8 +255,8 @@ void ResourceManager::destroyResource(Resource *rs, DestroyMode destroyMode) {
 
     bool isManagedResource = false;
     int managedResourceIndex = -1;
-    for(size_t i = 0; i < this->vResources.size(); i++) {
-        if(this->vResources[i] == rs) {
+    for(size_t i = 0; i < pImpl->vResources.size(); i++) {
+        if(pImpl->vResources[i] == rs) {
             isManagedResource = true;
             managedResourceIndex = i;
             break;
@@ -87,28 +265,28 @@ void ResourceManager::destroyResource(Resource *rs, DestroyMode destroyMode) {
 
     // check if it's being loaded and schedule async destroy if so
     // (destroyMode == DestroyMode::FORCE_ASYNC) ||
-    if(this->asyncLoader->isLoadingResource(rs)) {
+    if(pImpl->asyncLoader.isLoadingResource(rs)) {
         logIf(debug, "Resource Manager: Scheduled async destroy of {:8p} : {:s}", static_cast<const void *>(rs),
               rs->getName());
 
         // interrupt async load
         rs->interruptLoad();
 
-        this->asyncLoader->scheduleAsyncDestroy(rs);
+        pImpl->asyncLoader.scheduleAsyncDestroy(rs);
 
-        if(isManagedResource) removeManagedResource(rs, managedResourceIndex);
+        if(isManagedResource) pImpl->removeManagedResource(rs, managedResourceIndex);
 
         if(destroyMode == DestroyMode::FORCE_BLOCKING) {
             do {
                 this->update();
-            } while(this->asyncLoader->isLoadingResource(rs));
+            } while(pImpl->asyncLoader.isLoadingResource(rs));
         }
 
         return;
     }
 
     // standard destroy
-    if(isManagedResource) removeManagedResource(rs, managedResourceIndex);
+    if(isManagedResource) pImpl->removeManagedResource(rs, managedResourceIndex);
 
     SAFE_DELETE(rs);
 }
@@ -116,7 +294,7 @@ void ResourceManager::destroyResource(Resource *rs, DestroyMode destroyMode) {
 void ResourceManager::loadResource(Resource *res, bool load) {
     if(res == nullptr) {
         logIfCV(debug_rm, "ResourceManager Warning: loadResource(NULL)!");
-        resetFlags();
+        pImpl->resetFlags();
         return;
     }
 
@@ -124,16 +302,16 @@ void ResourceManager::loadResource(Resource *res, bool load) {
     // NOLINTNEXTLINE(cppcoreguidelines-init-variables)
     bool isManaged;
     {
-        Sync::shared_lock lock(this->managedLoadMutex);
-        isManaged = (this->nextLoadUnmanagedStack.size() < 1 || !this->nextLoadUnmanagedStack.top());
+        Sync::shared_lock lock(pImpl->managedLoadMutex);
+        isManaged = (pImpl->nextLoadUnmanagedStack.size() < 1 || !pImpl->nextLoadUnmanagedStack.top());
     }
 
-    if(isManaged) addManagedResource(res);
+    if(isManaged) pImpl->addManagedResource(res);
 
-    const bool isNextLoadAsync = this->bNextLoadAsync.load(std::memory_order_acquire);
+    const bool isNextLoadAsync = pImpl->bNextLoadAsync.load(std::memory_order_acquire);
 
     // flags must be reset on every load, to not carry over
-    resetFlags();
+    pImpl->resetFlags();
 
     if(!load) return;
 
@@ -143,44 +321,35 @@ void ResourceManager::loadResource(Resource *res, bool load) {
         res->load();
     } else {
         // delegate to async loader
-        this->asyncLoader->requestAsyncLoad(res);
+        pImpl->asyncLoader.requestAsyncLoad(res);
     }
 }
 
-bool ResourceManager::isLoading() const { return this->asyncLoader->isLoading(); }
+bool ResourceManager::isLoading() const { return pImpl->asyncLoader.isLoading(); }
 
-bool ResourceManager::isLoadingResource(Resource *rs) const { return this->asyncLoader->isLoadingResource(rs); }
+bool ResourceManager::isLoadingResource(Resource *rs) const { return pImpl->asyncLoader.isLoadingResource(rs); }
 
-size_t ResourceManager::getNumLoadingWork() const { return this->asyncLoader->getNumLoadingWork(); }
+size_t ResourceManager::getNumLoadingWork() const { return pImpl->asyncLoader.getNumLoadingWork(); }
 
-size_t ResourceManager::getNumActiveThreads() const { return this->asyncLoader->getNumActiveThreads(); }
+size_t ResourceManager::getNumActiveThreads() const { return pImpl->asyncLoader.getNumActiveThreads(); }
 
 size_t ResourceManager::getNumLoadingWorkAsyncDestroy() const {
-    return this->asyncLoader->getNumLoadingWorkAsyncDestroy();
+    return pImpl->asyncLoader.getNumLoadingWorkAsyncDestroy();
 }
 
-void ResourceManager::resetFlags() {
-    {
-        Sync::unique_lock lock(this->managedLoadMutex);
-        if(this->nextLoadUnmanagedStack.size() > 0) this->nextLoadUnmanagedStack.pop();
-    }
-
-    this->bNextLoadAsync.store(false, std::memory_order_release);
-}
-
-void ResourceManager::requestNextLoadAsync() { this->bNextLoadAsync.store(true, std::memory_order_release); }
+void ResourceManager::requestNextLoadAsync() { pImpl->bNextLoadAsync.store(true, std::memory_order_release); }
 
 void ResourceManager::requestNextLoadUnmanaged() {
-    Sync::unique_lock lock(this->managedLoadMutex);
-    this->nextLoadUnmanagedStack.push(true);
+    Sync::unique_lock lock(pImpl->managedLoadMutex);
+    pImpl->nextLoadUnmanagedStack.push(true);
 }
 
-size_t ResourceManager::getSyncLoadMaxBatchSize() const { return this->asyncLoader->getMaxPerUpdate(); }
+size_t ResourceManager::getSyncLoadMaxBatchSize() const { return pImpl->asyncLoader.getMaxPerUpdate(); }
 
-void ResourceManager::resetSyncLoadMaxBatchSize() { this->asyncLoader->resetMaxPerUpdate(); }
+void ResourceManager::resetSyncLoadMaxBatchSize() { pImpl->asyncLoader.resetMaxPerUpdate(); }
 
 void ResourceManager::setSyncLoadMaxBatchSize(size_t resourcesToLoad) {
-    this->asyncLoader->setMaxPerUpdate(resourcesToLoad);
+    pImpl->asyncLoader.setMaxPerUpdate(resourcesToLoad);
 }
 
 void ResourceManager::reloadResource(Resource *rs, bool async) {
@@ -205,7 +374,7 @@ void ResourceManager::reloadResources(const std::vector<Resource *> &resources, 
         // so if we explicitly want to load synchronously we have to wait until that's finished
         std::vector<Resource *> asyncLoadingList;
         for(auto &res : resources) {
-            if(unlikely(this->asyncLoader->isLoadingResource(res))) {
+            if(unlikely(pImpl->asyncLoader.isLoadingResource(res))) {
                 res->interruptLoad();
                 asyncLoadingList.push_back(res);
             } else {
@@ -216,7 +385,7 @@ void ResourceManager::reloadResources(const std::vector<Resource *> &resources, 
         while(!asyncLoadingList.empty()) {
             this->update();
             for(auto resit = asyncLoadingList.begin(); resit != asyncLoadingList.end();) {
-                if(this->asyncLoader->isLoadingResource(*resit)) {
+                if(pImpl->asyncLoader.isLoadingResource(*resit)) {
                     ++resit;
                 } else {
                     (*resit)->reload();
@@ -230,7 +399,7 @@ void ResourceManager::reloadResources(const std::vector<Resource *> &resources, 
     }
 
     // delegate to async loader
-    this->asyncLoader->reloadResources(resources);
+    pImpl->asyncLoader.reloadResources(resources);
 }
 
 void ResourceManager::setResourceName(Resource *res, std::string name) {
@@ -247,14 +416,14 @@ void ResourceManager::setResourceName(Resource *res, std::string name) {
 
     res->setName(name);
     // add the new name to the resource map (if it's a managed resource)
-    if(this->nextLoadUnmanagedStack.size() < 1 || !this->nextLoadUnmanagedStack.top())
-        this->mNameToResourceMap.try_emplace(name, res);
+    if(pImpl->nextLoadUnmanagedStack.size() < 1 || !pImpl->nextLoadUnmanagedStack.top())
+        pImpl->mNameToResourceMap.try_emplace(name, res);
     return;
 }
 
 Image *ResourceManager::loadImage(std::string filepath, const std::string &resourceName, bool mipmapped,
                                   bool keepInSystemMemory) {
-    auto res = checkIfExistsAndHandle<Image>(resourceName);
+    auto res = pImpl->checkIfExistsAndHandle<Image>(resourceName);
     if(res != nullptr) return res;
 
     // create instance and load it
@@ -278,7 +447,7 @@ Image *ResourceManager::loadImageUnnamed(std::string filepath, bool mipmapped, b
 
 Image *ResourceManager::loadImageAbs(std::string absoluteFilepath, const std::string &resourceName, bool mipmapped,
                                      bool keepInSystemMemory) {
-    auto res = checkIfExistsAndHandle<Image>(resourceName);
+    auto res = pImpl->checkIfExistsAndHandle<Image>(resourceName);
     if(res != nullptr) return res;
 
     // create instance and load it
@@ -315,7 +484,7 @@ Image *ResourceManager::createImage(i32 width, i32 height, bool mipmapped, bool 
 
 McFont *ResourceManager::loadFont(std::string filepath, const std::string &resourceName, int fontSize,
                                   bool antialiasing, int fontDPI) {
-    auto res = checkIfExistsAndHandle<McFont>(resourceName);
+    auto res = pImpl->checkIfExistsAndHandle<McFont>(resourceName);
     if(res != nullptr) return res;
 
     // create instance and load it
@@ -331,7 +500,7 @@ McFont *ResourceManager::loadFont(std::string filepath, const std::string &resou
 McFont *ResourceManager::loadFont(std::string filepath, const std::string &resourceName,
                                   const std::vector<char16_t> &characters, int fontSize, bool antialiasing,
                                   int fontDPI) {
-    auto res = checkIfExistsAndHandle<McFont>(resourceName);
+    auto res = pImpl->checkIfExistsAndHandle<McFont>(resourceName);
     if(res != nullptr) return res;
 
     // create instance and load it
@@ -346,7 +515,7 @@ McFont *ResourceManager::loadFont(std::string filepath, const std::string &resou
 
 Sound *ResourceManager::loadSound(std::string filepath, const std::string &resourceName, bool stream, bool overlayable,
                                   bool loop) {
-    auto res = checkIfExistsAndHandle<Sound>(resourceName);
+    auto res = pImpl->checkIfExistsAndHandle<Sound>(resourceName);
     if(res != nullptr) return res;
 
     // create instance and load it
@@ -361,7 +530,7 @@ Sound *ResourceManager::loadSound(std::string filepath, const std::string &resou
 
 Sound *ResourceManager::loadSoundAbs(std::string filepath, const std::string &resourceName, bool stream,
                                      bool overlayable, bool loop) {
-    auto res = checkIfExistsAndHandle<Sound>(resourceName);
+    auto res = pImpl->checkIfExistsAndHandle<Sound>(resourceName);
     if(res != nullptr) return res;
 
     // create instance and load it
@@ -375,7 +544,7 @@ Sound *ResourceManager::loadSoundAbs(std::string filepath, const std::string &re
 
 Shader *ResourceManager::loadShader(std::string vertexShaderFilePath, std::string fragmentShaderFilePath,
                                     const std::string &resourceName) {
-    auto res = checkIfExistsAndHandle<Shader>(resourceName);
+    auto res = pImpl->checkIfExistsAndHandle<Shader>(resourceName);
     if(res != nullptr) return res;
 
     // create instance and load it
@@ -401,7 +570,7 @@ Shader *ResourceManager::loadShader(std::string vertexShaderFilePath, std::strin
 
 Shader *ResourceManager::createShader(std::string vertexShader, std::string fragmentShader,
                                       const std::string &resourceName) {
-    auto res = checkIfExistsAndHandle<Shader>(resourceName);
+    auto res = pImpl->checkIfExistsAndHandle<Shader>(resourceName);
     if(res != nullptr) return res;
 
     // create instance and load it
@@ -422,7 +591,7 @@ Shader *ResourceManager::createShader(std::string vertexShader, std::string frag
 }
 
 RenderTarget *ResourceManager::createRenderTarget(int x, int y, int width, int height,
-                                                  Graphics::MULTISAMPLE_TYPE multiSampleType) {
+                                                  MultisampleType multiSampleType) {
     RenderTarget *rt = g->createRenderTarget(x, y, width, height, multiSampleType);
     setResourceName(rt, UString::format("_RT_%ix%i", width, height).toUtf8());
 
@@ -431,7 +600,7 @@ RenderTarget *ResourceManager::createRenderTarget(int x, int y, int width, int h
     return rt;
 }
 
-RenderTarget *ResourceManager::createRenderTarget(int width, int height, Graphics::MULTISAMPLE_TYPE multiSampleType) {
+RenderTarget *ResourceManager::createRenderTarget(int width, int height, MultisampleType multiSampleType) {
     return createRenderTarget(0, 0, width, height, multiSampleType);
 }
 
@@ -444,109 +613,11 @@ TextureAtlas *ResourceManager::createTextureAtlas(int width, int height, bool fi
     return ta;
 }
 
-VertexArrayObject *ResourceManager::createVertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::USAGE_TYPE usage,
+VertexArrayObject *ResourceManager::createVertexArrayObject(DrawPrimitive primitive, DrawUsageType usage,
                                                             bool keepInSystemMemory) {
     VertexArrayObject *vao = g->createVertexArrayObject(primitive, usage, keepInSystemMemory);
 
     loadResource(vao, false);
 
     return vao;
-}
-
-// add a managed resource to the main resources vector + the name map and typed vectors
-void ResourceManager::addManagedResource(Resource *res) {
-    if(!res) return;
-    logIfCV(debug_rm, "ResourceManager: Adding managed {}", res->getName());
-
-    this->vResources.push_back(res);
-
-    if(res->getName().length() > 0) this->mNameToResourceMap.try_emplace(res->getName(), res);
-    addResourceToTypedVector(res);
-}
-
-// remove a managed resource from the main resources vector + the name map and typed vectors
-void ResourceManager::removeManagedResource(Resource *res, int managedResourceIndex) {
-    if(!res) return;
-
-    this->vResources.erase(this->vResources.begin() + managedResourceIndex);
-
-    if(res->getName().length() > 0) this->mNameToResourceMap.erase(res->getName());
-    removeResourceFromTypedVector(res);
-}
-
-void ResourceManager::addResourceToTypedVector(Resource *res) {
-    if(!res) return;
-
-    switch(res->getResType()) {
-        case Resource::Type::IMAGE:
-            this->vImages.push_back(res->asImage());
-            break;
-        case Resource::Type::FONT:
-            this->vFonts.push_back(res->asFont());
-            break;
-        case Resource::Type::SOUND:
-            this->vSounds.push_back(res->asSound());
-            break;
-        case Resource::Type::SHADER:
-            this->vShaders.push_back(res->asShader());
-            break;
-        case Resource::Type::RENDERTARGET:
-            this->vRenderTargets.push_back(res->asRenderTarget());
-            break;
-        case Resource::Type::TEXTUREATLAS:
-            this->vTextureAtlases.push_back(res->asTextureAtlas());
-            break;
-        case Resource::Type::VAO:
-            this->vVertexArrayObjects.push_back(res->asVAO());
-            break;
-        case Resource::Type::APPDEFINED:
-            // app-defined types aren't added to specific vectors
-            break;
-    }
-}
-
-void ResourceManager::removeResourceFromTypedVector(Resource *res) {
-    if(!res) return;
-
-    switch(res->getResType()) {
-        case Resource::Type::IMAGE: {
-            auto it = std::ranges::find(this->vImages, res);
-            if(it != this->vImages.end()) this->vImages.erase(it);
-        } break;
-        case Resource::Type::FONT: {
-            auto it = std::ranges::find(this->vFonts, res);
-            if(it != this->vFonts.end()) this->vFonts.erase(it);
-        } break;
-        case Resource::Type::SOUND: {
-            auto it = std::ranges::find(this->vSounds, res);
-            if(it != this->vSounds.end()) this->vSounds.erase(it);
-        } break;
-        case Resource::Type::SHADER: {
-            auto it = std::ranges::find(this->vShaders, res);
-            if(it != this->vShaders.end()) this->vShaders.erase(it);
-        } break;
-        case Resource::Type::RENDERTARGET: {
-            auto it = std::ranges::find(this->vRenderTargets, res);
-            if(it != this->vRenderTargets.end()) this->vRenderTargets.erase(it);
-        } break;
-        case Resource::Type::TEXTUREATLAS: {
-            auto it = std::ranges::find(this->vTextureAtlases, res);
-            if(it != this->vTextureAtlases.end()) this->vTextureAtlases.erase(it);
-        } break;
-        case Resource::Type::VAO: {
-            auto it = std::ranges::find(this->vVertexArrayObjects, res);
-            if(it != this->vVertexArrayObjects.end()) this->vVertexArrayObjects.erase(it);
-        } break;
-        case Resource::Type::APPDEFINED:
-            // app-defined types aren't added to specific vectors
-            break;
-    }
-}
-
-void ResourceManager::notExistLog(std::string_view resourceName) {
-    logIfCV(debug_rm, R"(ResourceManager WARNING: Resource "{:s}" does not exist!)", resourceName);
-}
-
-void ResourceManager::alreadyLoadedLog(std::string_view resourceName) {
-    logIfCV(debug_rm, R"(ResourceManager NOTICE: Resource "{:s}" already loaded.)", resourceName);
 }

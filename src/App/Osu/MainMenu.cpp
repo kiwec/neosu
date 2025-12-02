@@ -18,6 +18,9 @@
 #include "Downloader.h"
 #include "Engine.h"
 #include "File.h"
+#include "Font.h"
+#include "Sound.h"
+#include "RenderTarget.h"
 #include "HUD.h"
 #include "Icons.h"
 #include "Keyboard.h"
@@ -609,7 +612,7 @@ void MainMenu::drawMainButton() {
         inset = (1.0f - 0.5f * this->fMainMenuAnimFriendPercent);
         osu->getAAFrameBuffer()->enable();
 
-        g->setBlendMode(Graphics::BLEND_MODE::BLEND_MODE_PREMUL_ALPHA);
+        g->setBlendMode(DrawBlendMode::BLEND_MODE_PREMUL_ALPHA);
 
         // avoid ugly aliasing with rotation
         g->setAntialiasing(true);
@@ -774,7 +777,7 @@ void MainMenu::drawMainButton() {
         g->setDepthBuffer(false);
         g->setAntialiasing(false);
 
-        g->setBlendMode(Graphics::BLEND_MODE::BLEND_MODE_ALPHA);
+        g->setBlendMode(DrawBlendMode::BLEND_MODE_ALPHA);
 
         osu->getAAFrameBuffer()->disable();
         osu->getAAFrameBuffer()->draw(0, 0);

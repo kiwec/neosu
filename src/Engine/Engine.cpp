@@ -21,6 +21,8 @@
 #include "VisualProfiler.h"
 #include "SString.h"
 #include "crypto.h"
+#include "Font.h"
+#include "Image.h"
 
 Image *MISSING_TEXTURE{nullptr};
 

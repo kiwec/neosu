@@ -7,6 +7,7 @@
 #include "ResourceManager.h"
 #include "Skin.h"
 #include "SoundEngine.h"
+#include "Sound.h"
 
 i32 HitSamples::getNormalSet(i32 play_time) {
     if(cv::skin_force_hitsound_sample_set.getInt() > 0) return cv::skin_force_hitsound_sample_set.getInt();

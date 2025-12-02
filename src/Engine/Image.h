@@ -26,8 +26,8 @@ class Image : public Resource {
     virtual void bind(unsigned int textureUnit = 0) const = 0;
     virtual void unbind() const = 0;
 
-    virtual inline void setFilterMode(Graphics::FILTER_MODE filterMode) { this->filterMode = filterMode; };
-    virtual inline void setWrapMode(Graphics::WRAP_MODE wrapMode) { this->wrapMode = wrapMode; };
+    virtual inline void setFilterMode(TextureFilterMode filterMode) { this->filterMode = filterMode; };
+    virtual inline void setWrapMode(TextureWrapMode wrapMode) { this->wrapMode = wrapMode; };
 
     void setPixel(i32 x, i32 y, Color color);
     void setPixels(const std::vector<u8> &pixels);
@@ -140,9 +140,9 @@ class Image : public Resource {
     i32 iWidth;
     i32 iHeight;
 
-    Graphics::WRAP_MODE wrapMode;
+    TextureWrapMode wrapMode;
     Image::TYPE type;
-    Graphics::FILTER_MODE filterMode;
+    TextureFilterMode filterMode;
 
     bool bMipmapped;
     bool bCreatedImage;

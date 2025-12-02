@@ -131,7 +131,7 @@ void SongDifficultyButton::draw() {
         g->setColor(0x1effffff);
         const float backgroundStarScale = 0.6f;
 
-        g->setBlendMode(Graphics::BLEND_MODE::BLEND_MODE_ADDITIVE);
+        g->setBlendMode(DrawBlendMode::BLEND_MODE_ADDITIVE);
         {
             for(int i = (numFullStars + 1); i < 10; i++) {
                 g->pushTransform();
@@ -144,7 +144,7 @@ void SongDifficultyButton::draw() {
                 g->popTransform();
             }
         }
-        g->setBlendMode(Graphics::BLEND_MODE::BLEND_MODE_ALPHA);
+        g->setBlendMode(DrawBlendMode::BLEND_MODE_ALPHA);
     }
 }
 

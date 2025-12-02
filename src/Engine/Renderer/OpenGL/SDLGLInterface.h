@@ -45,9 +45,9 @@ class SDLGLInterface final : public BackendGLInterface {
                                    const GLchar *message, const void * /*userParam*/);
 
    protected:
-    static std::unordered_map<Graphics::PRIMITIVE, int> primitiveToOpenGLMap;
-    static std::unordered_map<Graphics::COMPARE_FUNC, int> compareFuncToOpenGLMap;
-    static std::unordered_map<Graphics::USAGE_TYPE, unsigned int> usageToOpenGLMap;
+    static std::unordered_map<DrawPrimitive, int> primitiveToOpenGLMap;
+    static std::unordered_map<DrawCompareFunc, int> compareFuncToOpenGLMap;
+    static std::unordered_map<DrawUsageType, unsigned int> usageToOpenGLMap;
 
    private:
     static void load();

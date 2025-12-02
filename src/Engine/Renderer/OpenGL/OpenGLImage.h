@@ -16,8 +16,8 @@ class OpenGLImage final : public Image {
     void bind(unsigned int textureUnit = 0) const override;
     void unbind() const override;
 
-    void setFilterMode(Graphics::FILTER_MODE filterMode) override;
-    void setWrapMode(Graphics::WRAP_MODE wrapMode) override;
+    void setFilterMode(TextureFilterMode filterMode) override;
+    void setWrapMode(TextureWrapMode wrapMode) override;
 
    private:
     void init() override;

@@ -13,6 +13,8 @@
 #include "Profiler.h"
 #include "ResourceManager.h"
 #include "SoundEngine.h"
+#include "Font.h"
+#include "VertexArrayObject.h"
 
 VisualProfiler *vprof = nullptr;
 
@@ -40,8 +42,8 @@ VisualProfiler::VisualProfiler() : CBaseUIElement(0, 0, 0, 0, "") {
 
     this->font = resourceManager->getFont("FONT_DEFAULT");
     this->fontConsole = resourceManager->getFont("FONT_CONSOLE");
-    this->lineVao = resourceManager->createVertexArrayObject(Graphics::PRIMITIVE::PRIMITIVE_LINES,
-                                                             Graphics::USAGE_TYPE::USAGE_DYNAMIC, true);
+    this->lineVao = resourceManager->createVertexArrayObject(DrawPrimitive::PRIMITIVE_LINES,
+                                                             DrawUsageType::USAGE_DYNAMIC, true);
 
     this->bScheduledForceRebuildLineVao = false;
     this->bRequiresAltShiftKeysToFreeze = false;

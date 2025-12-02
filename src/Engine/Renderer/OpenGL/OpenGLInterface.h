@@ -32,7 +32,7 @@ class OpenGLInterface : public Graphics {
     }
 
     // 2d primitive drawing
-    void drawPixels(int x, int y, int width, int height, Graphics::DRAWPIXELS_TYPE type, const void *pixels) final;
+    void drawPixels(int x, int y, int width, int height, DrawPixelsType type, const void *pixels) final;
     void drawPixel(int x, int y) final;
     void drawLinef(float x1, float y1, float x2, float y2) final;
     void drawRectf(const RectOptions &opt) final;
@@ -72,9 +72,9 @@ class OpenGLInterface : public Graphics {
     // renderer settings
     void setClipping(bool enabled) final;
     void setAlphaTesting(bool enabled) final;
-    void setAlphaTestFunc(COMPARE_FUNC alphaFunc, float ref) final;
+    void setAlphaTestFunc(DrawCompareFunc alphaFunc, float ref) final;
     void setBlending(bool enabled) final;
-    void setBlendMode(BLEND_MODE blendMode) final;
+    void setBlendMode(DrawBlendMode blendMode) final;
     void setDepthBuffer(bool enabled) final;
     void setColorWriting(bool r, bool g, bool b, bool a) final;
     void setColorInversion(bool enabled) final;
@@ -97,11 +97,11 @@ class OpenGLInterface : public Graphics {
     Image *createImage(std::string filePath, bool mipmapped, bool keepInSystemMemory) final;
     Image *createImage(i32 width, i32 height, bool mipmapped, bool keepInSystemMemory) final;
     RenderTarget *createRenderTarget(int x, int y, int width, int height,
-                                     Graphics::MULTISAMPLE_TYPE multiSampleType) final;
+                                     MultisampleType multiSampleType) final;
     Shader *createShaderFromFile(std::string vertexShaderFilePath,
                                  std::string fragmentShaderFilePath) final;                      // DEPRECATED
     Shader *createShaderFromSource(std::string vertexShader, std::string fragmentShader) final;  // DEPRECATED
-    VertexArrayObject *createVertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::USAGE_TYPE usage,
+    VertexArrayObject *createVertexArrayObject(DrawPrimitive primitive, DrawUsageType usage,
                                                bool keepInSystemMemory) final;
 
    protected:

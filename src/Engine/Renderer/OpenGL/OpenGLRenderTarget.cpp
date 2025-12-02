@@ -38,22 +38,22 @@ void OpenGLRenderTarget::init() {
     }
 
     if(iMaxMultiSamples == 0) {
-        this->multiSampleType = Graphics::MULTISAMPLE_TYPE::MULTISAMPLE_0X;
+        this->multiSampleType = MultisampleType::MULTISAMPLE_0X;
     }
 
     switch(this->multiSampleType) {
-        case Graphics::MULTISAMPLE_TYPE::MULTISAMPLE_0X:
+        case MultisampleType::MULTISAMPLE_0X:
             break;
-        case Graphics::MULTISAMPLE_TYPE::MULTISAMPLE_2X:
+        case MultisampleType::MULTISAMPLE_2X:
             numMultiSamples = 2;
             break;
-        case Graphics::MULTISAMPLE_TYPE::MULTISAMPLE_4X:
+        case MultisampleType::MULTISAMPLE_4X:
             numMultiSamples = 4;
             break;
-        case Graphics::MULTISAMPLE_TYPE::MULTISAMPLE_8X:
+        case MultisampleType::MULTISAMPLE_8X:
             numMultiSamples = 8;
             break;
-        case Graphics::MULTISAMPLE_TYPE::MULTISAMPLE_16X:
+        case MultisampleType::MULTISAMPLE_16X:
             numMultiSamples = 16;
             break;
     }

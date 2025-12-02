@@ -31,7 +31,7 @@ void ScoreboardSlot::draw() {
 
     g->pushTransform();
 
-    g->setBlendMode(Graphics::BLEND_MODE::BLEND_MODE_PREMUL_ALPHA);
+    g->setBlendMode(DrawBlendMode::BLEND_MODE_PREMUL_ALPHA);
 
     const float height = roundf(osu->getVirtScreenHeight() * 0.07f);
     const float width = roundf(height * 2.6f);  // does not include avatar_width
@@ -245,7 +245,7 @@ void ScoreboardSlot::draw() {
         g->popTransform();
     }
 
-    g->setBlendMode(Graphics::BLEND_MODE::BLEND_MODE_ALPHA);
+    g->setBlendMode(DrawBlendMode::BLEND_MODE_ALPHA);
 
     g->popTransform();
 }

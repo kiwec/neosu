@@ -369,7 +369,6 @@ AS_IF([test "x$enable_debug" = "xyes" && test "x$enable_lto" != "xyes"], [
 
 # enable lto by default otherwise
 AS_IF([test "x$enable_lto" != "xno"], [
-    enable_lto=yes
     disable_lto=no
 ])
 
@@ -530,7 +529,7 @@ AC_SUBST([CXX])
 # linker setup
 using_mold=no
 AS_IF([test -n "$MOLD" && test "$host_os" = "linux-gnu" &&
-      { test "x$enable_mold" = "xyes" || { test "x$enable_mold" != "xno" && test "x$enable_lto" != "xyes" ; } ; }], [
+      { test "x$enable_mold" = "xyes" || { test "x$enable_mold" != "xno" && test "x$enable_lto" = "xno" ; } ; }], [
     AX_CHECK_COMPILE_FLAG([-fuse-ld=mold], [
         AX_CHECK_LINK_FLAG([-fuse-ld=mold], [
             CXXFLAGS="$CXXFLAGS -fuse-ld=mold"

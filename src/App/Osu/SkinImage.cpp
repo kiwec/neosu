@@ -6,6 +6,7 @@
 #include "Environment.h"
 #include "Osu.h"
 #include "ResourceManager.h"
+#include "VertexArrayObject.h"
 #include "Skin.h"
 #include "Logging.h"
 
@@ -224,7 +225,7 @@ SkinImage::~SkinImage() {
 }
 
 void SkinImage::drawBrightQuad(float brightness, float x, float y, float width, float height) const {
-    VertexArrayObject vao(Graphics::PRIMITIVE::PRIMITIVE_QUADS);
+    VertexArrayObject vao(DrawPrimitive::PRIMITIVE_QUADS);
 
     const bool oldBlending = g->getBlending();
     const auto oldBlendMode = g->getBlendMode();
@@ -232,7 +233,7 @@ void SkinImage::drawBrightQuad(float brightness, float x, float y, float width, 
     const Color brightColor = argb(brightness, 1.f, 1.f, 1.f);
 
     g->setBlending(true);
-    g->setBlendMode(Graphics::BLEND_MODE::BLEND_MODE_ADDITIVE);
+    g->setBlendMode(DrawBlendMode::BLEND_MODE_ADDITIVE);
 
     vao.addVertex(x, y);
     vao.addTexcoord(0, 0);
@@ -280,7 +281,7 @@ void SkinImage::draw(vec2 pos, float scale, float brightness) const {
             const float x = -realWidth / 2;
             const float y = -realHeight / 2;
 
-            VertexArrayObject vao(Graphics::PRIMITIVE::PRIMITIVE_QUADS);
+            VertexArrayObject vao(DrawPrimitive::PRIMITIVE_QUADS);
 
             vao.addVertex(x, y);
             vao.addTexcoord(0, 0);
@@ -331,7 +332,7 @@ void SkinImage::drawRaw(vec2 pos, float scale, AnchorPoint anchor, float brightn
             const float x = -realWidth / 2;
             const float y = -realHeight / 2;
 
-            VertexArrayObject vao(Graphics::PRIMITIVE::PRIMITIVE_QUADS);
+            VertexArrayObject vao(DrawPrimitive::PRIMITIVE_QUADS);
 
             vao.addVertex(x, y);
             vao.addTexcoord(0, 0);

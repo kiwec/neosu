@@ -25,6 +25,10 @@
 #include "GameRules.h"
 #include "HitObjects.h"
 #include "HUD.h"
+#include "Font.h"
+#include "RenderTarget.h"
+#include "VertexArrayObject.h"
+#include "Sound.h"
 #include "Icons.h"
 #include "KeyBindings.h"
 #include "OsuKeyBinds.h"
@@ -1408,7 +1412,7 @@ void OptionsMenu::draw() {
     if(isAnimating) {
         osu->getSliderFrameBuffer()->enable();
 
-        g->setBlendMode(Graphics::BLEND_MODE::BLEND_MODE_PREMUL_ALPHA);
+        g->setBlendMode(DrawBlendMode::BLEND_MODE_PREMUL_ALPHA);
     }
 
     const bool isPlayingBeatmap = osu->isInPlayMode();
@@ -1460,7 +1464,7 @@ void OptionsMenu::draw() {
         // HACKHACK:
         if(!this->bVisible) this->backButton->draw();
 
-        g->setBlendMode(Graphics::BLEND_MODE::BLEND_MODE_ALPHA);
+        g->setBlendMode(DrawBlendMode::BLEND_MODE_ALPHA);
 
         osu->getSliderFrameBuffer()->disable();
 

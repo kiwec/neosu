@@ -18,7 +18,7 @@
 #include "DirectX11Interface.h"
 
 DirectX11RenderTarget::DirectX11RenderTarget(int x, int y, int width, int height,
-                                             Graphics::MULTISAMPLE_TYPE multiSampleType)
+                                             MultisampleType multiSampleType)
     : RenderTarget(x, y, width, height, multiSampleType) {
     this->renderTexture = nullptr;
     this->depthStencilTexture = nullptr;

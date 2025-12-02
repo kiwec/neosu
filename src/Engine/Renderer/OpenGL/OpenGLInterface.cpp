@@ -113,11 +113,11 @@ void OpenGLInterface::setColor(Color color) {
     glColor4ub(this->color.R(), this->color.G(), this->color.B(), this->color.A());
 }
 
-void OpenGLInterface::drawPixels(int x, int y, int width, int height, Graphics::DRAWPIXELS_TYPE type,
+void OpenGLInterface::drawPixels(int x, int y, int width, int height, DrawPixelsType type,
                                  const void *pixels) {
     glRasterPos2i(x, y + height);  // '+height' because of opengl bottom left origin, but engine top left origin
     glDrawPixels(width, height, GL_RGBA,
-                 (type == Graphics::DRAWPIXELS_TYPE::DRAWPIXELS_UBYTE ? GL_UNSIGNED_BYTE : GL_FLOAT), pixels);
+                 (type == DrawPixelsType::DRAWPIXELS_UBYTE ? GL_UNSIGNED_BYTE : GL_FLOAT), pixels);
 }
 
 void OpenGLInterface::drawPixel(int x, int y) {
@@ -444,8 +444,8 @@ void OpenGLInterface::drawVAO(VertexArrayObject *vao) {
     updateTransform();
 
     // HACKHACK: disable texturing for special primitives, also for untextured vaos
-    if(vao->getPrimitive() == Graphics::PRIMITIVE::PRIMITIVE_LINES ||
-       vao->getPrimitive() == Graphics::PRIMITIVE::PRIMITIVE_LINE_STRIP || !vao->hasTexcoords())
+    if(vao->getPrimitive() == DrawPrimitive::PRIMITIVE_LINES ||
+       vao->getPrimitive() == DrawPrimitive::PRIMITIVE_LINE_STRIP || !vao->hasTexcoords())
         glDisable(GL_TEXTURE_2D);
 
     // if baked, then we can directly draw the buffer
@@ -632,7 +632,7 @@ void OpenGLInterface::setAlphaTesting(bool enabled) {
         glDisable(GL_ALPHA_TEST);
 }
 
-void OpenGLInterface::setAlphaTestFunc(COMPARE_FUNC alphaFunc, float ref) {
+void OpenGLInterface::setAlphaTestFunc(DrawCompareFunc alphaFunc, float ref) {
     glAlphaFunc(SDLGLInterface::compareFuncToOpenGLMap[alphaFunc], ref);
 }
 
@@ -645,20 +645,20 @@ void OpenGLInterface::setBlending(bool enabled) {
         glDisable(GL_BLEND);
 }
 
-void OpenGLInterface::setBlendMode(BLEND_MODE blendMode) {
+void OpenGLInterface::setBlendMode(DrawBlendMode blendMode) {
     Graphics::setBlendMode(blendMode);
 
     switch(blendMode) {
-        case BLEND_MODE::BLEND_MODE_ALPHA:
+        case DrawBlendMode::BLEND_MODE_ALPHA:
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
             break;
-        case BLEND_MODE::BLEND_MODE_ADDITIVE:
+        case DrawBlendMode::BLEND_MODE_ADDITIVE:
             glBlendFunc(GL_SRC_ALPHA, GL_ONE);
             break;
-        case BLEND_MODE::BLEND_MODE_PREMUL_ALPHA:
+        case DrawBlendMode::BLEND_MODE_PREMUL_ALPHA:
             glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
             break;
-        case BLEND_MODE::BLEND_MODE_PREMUL_COLOR:
+        case DrawBlendMode::BLEND_MODE_PREMUL_COLOR:
             glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
             break;
     }
@@ -767,7 +767,7 @@ Image *OpenGLInterface::createImage(i32 width, i32 height, bool mipmapped, bool 
 }
 
 RenderTarget *OpenGLInterface::createRenderTarget(int x, int y, int width, int height,
-                                                  Graphics::MULTISAMPLE_TYPE multiSampleType) {
+                                                  MultisampleType multiSampleType) {
     return new OpenGLRenderTarget(x, y, width, height, multiSampleType);
 }
 
@@ -779,7 +779,7 @@ Shader *OpenGLInterface::createShaderFromSource(std::string vertexShader, std::s
     return new OpenGLShader(vertexShader, fragmentShader, true);
 }
 
-VertexArrayObject *OpenGLInterface::createVertexArrayObject(Graphics::PRIMITIVE primitive, Graphics::USAGE_TYPE usage,
+VertexArrayObject *OpenGLInterface::createVertexArrayObject(DrawPrimitive primitive, DrawUsageType usage,
                                                             bool keepInSystemMemory) {
     return new OpenGLVertexArrayObject(primitive, usage, keepInSystemMemory);
 }
