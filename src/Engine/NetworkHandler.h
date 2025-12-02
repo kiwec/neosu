@@ -10,6 +10,7 @@
 #include <unordered_map>
 #include <memory>
 #include <atomic>
+#include <vector>
 
 // forward defs
 typedef void CURL;
