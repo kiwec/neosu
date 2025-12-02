@@ -14,8 +14,8 @@
 namespace Collections {
 
 namespace {  // static namespace
-static bool s_collections_loaded{false};
-static std::vector<Collection> s_collections;
+bool s_collections_loaded{false};
+std::vector<Collection> s_collections;
 
 }  // namespace
 

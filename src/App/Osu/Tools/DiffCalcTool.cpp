@@ -20,7 +20,7 @@ struct BeatmapSettings {
     float HP = 5.0f;
 };
 
-static BeatmapSettings parseDifficultySettings(std::string_view osuFilePath) {
+BeatmapSettings parseDifficultySettings(std::string_view osuFilePath) {
     BeatmapSettings settings;
 
     File file(osuFilePath);

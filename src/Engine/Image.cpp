@@ -48,7 +48,7 @@
 #include "SyncOnce.h"
 
 namespace {
-static Sync::once_flag zlib_init_once;
+Sync::once_flag zlib_init_once;
 void zlibinit() {
     uLong dummy_crc = crc32(0L, Z_NULL, 0);
     dummy_crc = crc32(dummy_crc, reinterpret_cast<const Bytef *>("shit"), 4);
@@ -67,13 +67,13 @@ struct pngErrorManager {
     jmp_buf setjmp_buffer{};
 };
 
-static void pngErrorExit(png_structp png_ptr, png_const_charp error_msg) {
+void pngErrorExit(png_structp png_ptr, png_const_charp error_msg) {
     debugLog("PNG Error: {:s}", error_msg);
     auto *err = static_cast<pngErrorManager *>(png_get_error_ptr(png_ptr));
     longjmp(&err->setjmp_buffer[0], 1);
 }
 
-static void pngWarning(png_structp /*unused*/, png_const_charp warning_msg) {
+void pngWarning(png_structp /*unused*/, png_const_charp warning_msg) {
     if constexpr(Env::cfg(BUILD::DEBUG)) {
         debugLog("PNG Warning: {:s}", warning_msg);
     }
@@ -85,7 +85,7 @@ struct pngMemoryReader {
     u64 offset{0};
 };
 
-static void pngReadFromMemory(png_structp png_ptr, png_bytep outBytes, png_size_t byteCountToRead) {
+void pngReadFromMemory(png_structp png_ptr, png_bytep outBytes, png_size_t byteCountToRead) {
     auto *reader = static_cast<pngMemoryReader *>(png_get_io_ptr(png_ptr));
 
     if(reader->offset + byteCountToRead > reader->size) {

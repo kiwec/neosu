@@ -44,24 +44,24 @@ struct info_cache {
     }
 };
 
-static const BeatmapDifficulty* current_map = nullptr;
+const BeatmapDifficulty* current_map = nullptr;
 
-static Sync::condition_variable_any cond;
-static Sync::jthread thr;
+Sync::condition_variable_any cond;
+Sync::jthread thr;
 
-static Sync::mutex work_mtx;
+Sync::mutex work_mtx;
 
 // bool to keep track of "high priority" state
 // might need mod updates to be recalc'd mid-gameplay
-static std::vector<std::pair<pp_calc_request, bool>> work;
+std::vector<std::pair<pp_calc_request, bool>> work;
 
-static Sync::mutex cache_mtx;
+Sync::mutex cache_mtx;
 
-static std::vector<std::pair<pp_calc_request, pp_res>> cache;
-static std::vector<hitobject_cache> ho_cache;
-static std::vector<info_cache> inf_cache;
+std::vector<std::pair<pp_calc_request, pp_res>> cache;
+std::vector<hitobject_cache> ho_cache;
+std::vector<info_cache> inf_cache;
 
-static void clear_caches() {
+void clear_caches() {
     Sync::unique_lock work_lock(work_mtx);
     Sync::unique_lock cache_lock(cache_mtx);
 
@@ -71,7 +71,7 @@ static void clear_caches() {
     inf_cache.clear();
 }
 
-static void run_thread(const Sync::stop_token& stoken) {
+void run_thread(const Sync::stop_token& stoken) {
     McThread::set_current_thread_name(ULITERAL("async_pp_calc"));
     McThread::set_current_thread_prio(McThread::Priority::NORMAL);  // reset priority
 

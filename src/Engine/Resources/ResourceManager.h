@@ -191,8 +191,7 @@ class ResourceManager final {
     std::atomic<bool> bNextLoadAsync;
 
     // async loading system
-    using AsyncResourceLoaderImpl = StaticPImpl<AsyncResourceLoader, 1024>;
-    AsyncResourceLoaderImpl asyncLoader;
+    StaticPImpl<AsyncResourceLoader, 1024> asyncLoader;
 };
 
 // define/managed in Engine.cpp, declared here for convenience

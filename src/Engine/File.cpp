@@ -175,7 +175,7 @@ class DirectoryCache final {
 
 // init static directory cache
 // this is only actually used outside of windows, should be optimized out in other cases
-[[maybe_unused]] static DirectoryCache s_directoryCache{};
+[[maybe_unused]] DirectoryCache s_directoryCache{};
 }  // namespace
 
 //------------------------------------------------------------------------------

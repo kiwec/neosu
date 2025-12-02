@@ -1,5 +1,7 @@
 // Copyright (c) 2025, WH, All rights reserved.
 #pragma once
+#ifndef STATIC_PIMPL_H
+#define STATIC_PIMPL_H
 
 #include <cstddef>
 #include <cstdlib>
@@ -25,7 +27,7 @@
 template <typename T, size_t RealImplSize>
 class StaticPImpl {
    private:
-    alignas(alignof(std::max_align_t)) unsigned char m_buffer[RealImplSize];
+    alignas(16) unsigned char m_buffer[RealImplSize];
     void (*m_destructor)(void *);
 
    public:
@@ -47,7 +49,7 @@ class StaticPImpl {
     [[nodiscard]] forceinline explicit StaticPImpl(std::in_place_type_t<U> /**/, Args &&...args)
         : m_destructor([](void *ptr) { static_cast<U *>(ptr)->~U(); }) {
         static_assert(sizeof(U) <= RealImplSize);
-        static_assert(alignof(U) <= alignof(std::max_align_t));
+        static_assert(alignof(U) <= 16);
         static_assert(std::is_same_v<T, U> || std::is_base_of_v<T, U>);
 
         new(m_buffer) U(std::forward<Args>(args)...);
@@ -89,3 +91,5 @@ class StaticPImpl {
         m_destructor = nullptr;
     }
 };
+
+#endif

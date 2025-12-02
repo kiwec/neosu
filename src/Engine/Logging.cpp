@@ -55,11 +55,11 @@
 
 namespace Logger {
 namespace {  // static
-static std::shared_ptr<spdlog::async_logger> g_logger;
-static std::shared_ptr<spdlog::async_logger> g_raw_logger;
+std::shared_ptr<spdlog::async_logger> g_logger;
+std::shared_ptr<spdlog::async_logger> g_raw_logger;
 
 #ifdef MCENGINE_PLATFORM_WINDOWS
-static bool s_created_console{false};
+bool s_created_console{false};
 #endif
 
 // workaround for really odd internal template decisions in spdlog...

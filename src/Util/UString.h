@@ -34,7 +34,7 @@ template <typename T>
 class AlignedAllocator {
    public:
     using value_type = T;
-    static constexpr std::align_val_t alignment{alignof(max_align_t)};
+    static constexpr std::align_val_t alignment{16};
 
     AlignedAllocator() noexcept = default;
     template <typename U>

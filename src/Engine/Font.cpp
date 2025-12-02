@@ -42,23 +42,23 @@
 namespace {  // static namespace
 
 // constants for atlas generation and rendering
-static constexpr const float ATLAS_OCCUPANCY_TARGET{0.75f};  // target atlas occupancy before resize
+constexpr const float ATLAS_OCCUPANCY_TARGET{0.75f};  // target atlas occupancy before resize
 
 // how much larger to make atlas for dynamic region
-// we initially pack the ASCII characters + initial characters into a static region,
+// we initially pack the ASCII characters + initial characters into a region,
 // then dynamically loaded glyphs are placed in the remaining space in fixed-size slots (not packed)
 // this maximizes the amount of fallback glyphs we can have loaded at once for a fixed amount of memory usage
-static constexpr float ATLAS_SIZE_MULTIPLIER{4.0f};
+constexpr float ATLAS_SIZE_MULTIPLIER{4.0f};
 
 // size of each dynamic slot
-static constexpr int DYNAMIC_SLOT_SIZE{64};
+constexpr int DYNAMIC_SLOT_SIZE{64};
 
-static constexpr const size_t MIN_ATLAS_SIZE{256};
-static constexpr const size_t MAX_ATLAS_SIZE{4096};
+constexpr const size_t MIN_ATLAS_SIZE{256};
+constexpr const size_t MAX_ATLAS_SIZE{4096};
 
-static constexpr const char16_t UNKNOWN_CHAR{u'?'};  // ASCII '?'
+constexpr const char16_t UNKNOWN_CHAR{u'?'};  // ASCII '?'
 
-static constexpr const size_t VERTS_PER_VAO{Env::cfg(REND::GLES32 | REND::DX11) ? 6 : 4};
+constexpr const size_t VERTS_PER_VAO{Env::cfg(REND::GLES32 | REND::DX11) ? 6 : 4};
 
 // other shared-across-instances things
 struct FallbackFont {
@@ -68,14 +68,14 @@ struct FallbackFont {
 };
 
 // global shared freetype resources
-static FT_Library s_sharedFtLibrary{nullptr};
-static std::vector<FallbackFont> s_sharedFallbackFonts;
-static std::unordered_set<char16_t> s_sharedFallbackFaceBlacklist;
+FT_Library s_sharedFtLibrary{nullptr};
+std::vector<FallbackFont> s_sharedFallbackFonts;
+std::unordered_set<char16_t> s_sharedFallbackFaceBlacklist;
 
-static bool s_sharedFtLibraryInitialized{false};
-static bool s_sharedFallbacksInitialized{false};
+bool s_sharedFtLibraryInitialized{false};
+bool s_sharedFallbacksInitialized{false};
 
-static Sync::shared_mutex s_sharedResourcesMutex;
+Sync::shared_mutex s_sharedResourcesMutex;
 
 }  // namespace
 
@@ -1050,30 +1050,45 @@ McFont::McFont(std::string filepath, const std::vector<char16_t> &characters, in
 
 McFont::~McFont() { destroy(); }
 
-INLINE_BODY void McFont::init() { pImpl->init(); }
-INLINE_BODY void McFont::initAsync() { pImpl->initAsync(); }
-INLINE_BODY void McFont::destroy() { pImpl->destroy(); }
+// WTF? makes LTO take 10 minutes to link and use 50GB of memory?
+#if (defined(__GNUC__) && !defined(__clang__)) && (defined(_WIN32) && !defined(_WIN64))
+#define INLINE_BODY_IF_NOT_MINGW_GCC_32
+#else
+#define INLINE_BODY_IF_NOT_MINGW_GCC_32 INLINE_BODY
+#endif
 
-INLINE_BODY void McFont::setSize(int fontSize) { pImpl->setSize(fontSize); }
-INLINE_BODY void McFont::setDPI(int dpi) { pImpl->setDPI(dpi); }
-INLINE_BODY void McFont::setHeight(float height) { pImpl->setHeight(height); }
+INLINE_BODY_IF_NOT_MINGW_GCC_32 void McFont::init() { pImpl->init(); }
+INLINE_BODY_IF_NOT_MINGW_GCC_32 void McFont::initAsync() { pImpl->initAsync(); }
+INLINE_BODY_IF_NOT_MINGW_GCC_32 void McFont::destroy() { pImpl->destroy(); }
 
-INLINE_BODY int McFont::getSize() const { return pImpl->getSize(); }
-INLINE_BODY int McFont::getDPI() const { return pImpl->getDPI(); }
-INLINE_BODY float McFont::getHeight() const { return pImpl->getHeight(); }
+INLINE_BODY_IF_NOT_MINGW_GCC_32 void McFont::setSize(int fontSize) { pImpl->setSize(fontSize); }
+INLINE_BODY_IF_NOT_MINGW_GCC_32 void McFont::setDPI(int dpi) { pImpl->setDPI(dpi); }
+INLINE_BODY_IF_NOT_MINGW_GCC_32 void McFont::setHeight(float height) { pImpl->setHeight(height); }
 
-INLINE_BODY void McFont::drawString(const UString &text) { return pImpl->drawString(text); }
-INLINE_BODY void McFont::beginBatch() { return pImpl->beginBatch(); }
-INLINE_BODY void McFont::addToBatch(const UString &text, const vec3 &pos, Color color) {
+INLINE_BODY_IF_NOT_MINGW_GCC_32 int McFont::getSize() const { return pImpl->getSize(); }
+INLINE_BODY_IF_NOT_MINGW_GCC_32 int McFont::getDPI() const { return pImpl->getDPI(); }
+INLINE_BODY_IF_NOT_MINGW_GCC_32 float McFont::getHeight() const { return pImpl->getHeight(); }
+
+INLINE_BODY_IF_NOT_MINGW_GCC_32 void McFont::drawString(const UString &text) { return pImpl->drawString(text); }
+INLINE_BODY_IF_NOT_MINGW_GCC_32 void McFont::beginBatch() { return pImpl->beginBatch(); }
+INLINE_BODY_IF_NOT_MINGW_GCC_32 void McFont::addToBatch(const UString &text, const vec3 &pos, Color color) {
     return pImpl->addToBatch(text, pos, color);
 }
-INLINE_BODY void McFont::flushBatch() { return pImpl->flushBatch(); }
+INLINE_BODY_IF_NOT_MINGW_GCC_32 void McFont::flushBatch() { return pImpl->flushBatch(); }
 
-INLINE_BODY float McFont::getGlyphWidth(char16_t character) const { return pImpl->getGlyphWidth(character); }
-INLINE_BODY float McFont::getGlyphHeight(char16_t character) const { return pImpl->getGlyphHeight(character); }
-INLINE_BODY float McFont::getStringWidth(const UString &text) const { return pImpl->getStringWidth(text); }
-INLINE_BODY float McFont::getStringHeight(const UString &text) const { return pImpl->getStringHeight(text); }
-INLINE_BODY std::vector<UString> McFont::wrap(const UString &text, f64 max_width) const {
+INLINE_BODY_IF_NOT_MINGW_GCC_32 float McFont::getGlyphWidth(char16_t character) const {
+    return pImpl->getGlyphWidth(character);
+}
+INLINE_BODY_IF_NOT_MINGW_GCC_32 float McFont::getGlyphHeight(char16_t character) const {
+    return pImpl->getGlyphHeight(character);
+}
+INLINE_BODY_IF_NOT_MINGW_GCC_32 float McFont::getStringWidth(const UString &text) const {
+    return pImpl->getStringWidth(text);
+}
+INLINE_BODY_IF_NOT_MINGW_GCC_32 float McFont::getStringHeight(const UString &text) const {
+    return pImpl->getStringHeight(text);
+}
+INLINE_BODY_IF_NOT_MINGW_GCC_32 std::vector<UString> McFont::wrap(const UString &text, f64 max_width) const {
     return pImpl->wrap(text, max_width);
 }
 
@@ -1087,7 +1102,7 @@ INLINE_BODY std::vector<UString> McFont::wrap(const UString &text, f64 max_width
 
 namespace {  // static namespace
 
-static bool loadFallbackFont(const UString &fontPath, bool isSystemFont) {
+bool loadFallbackFont(const UString &fontPath, bool isSystemFont) {
     FT_Face face{};
     if(FT_New_Face(s_sharedFtLibrary, fontPath.toUtf8(), 0, &face)) {
         if(cv::r_debug_font_unicode.getBool()) debugLog("Font Warning: Failed to load fallback font: {:s}", fontPath);
@@ -1106,7 +1121,7 @@ static bool loadFallbackFont(const UString &fontPath, bool isSystemFont) {
     return true;
 }
 
-static void discoverSystemFallbacks() {
+void discoverSystemFallbacks() {
 #ifdef MCENGINE_PLATFORM_WINDOWS
     std::string windir;
     windir.resize(MAX_PATH + 1);

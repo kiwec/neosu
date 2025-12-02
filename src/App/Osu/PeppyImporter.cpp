@@ -18,7 +18,7 @@
 #endif
 namespace PeppyImporter {
 namespace {  // static namespace
-static void try_set_key(const std::string& key, ConVar* cvar) {
+void try_set_key(const std::string& key, ConVar* cvar) {
     if(key == "None") {
         cvar->setValue(0);
     } else if(key == "A") {

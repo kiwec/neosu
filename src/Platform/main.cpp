@@ -57,7 +57,6 @@ void setcwdexe(const std::string &exePathStr) noexcept {
 
 #include "CrashHandler.h"
 #include "Profiler.h"
-#include "StaticPImpl.h"
 
 #if defined(__SSE__) || (defined(_M_IX86_FP) && (_M_IX86_FP > 0))
 #ifndef _MSC_VER

@@ -25,13 +25,13 @@ NtDelayExecution_t *pNtDelayExecution{nullptr};
 NtQueryTimerResolution_t *pNtQueryTimerResolution{nullptr};
 NtSetTimerResolution_t *pNtSetTimerResolution{nullptr};
 
-static u64 s_actual_delay_amount{0};  // minimum time NtDelayExecution actually sleeps for in nanoseconds
-static bool s_use_ntdelayexec{false};
-static bool s_force_use_sdl_sleep{false};
+u64 s_actual_delay_amount{0};  // minimum time NtDelayExecution actually sleeps for in nanoseconds
+bool s_use_ntdelayexec{false};
+bool s_force_use_sdl_sleep{false};
 
-static bool s_sleeper_initialized{false};
+bool s_sleeper_initialized{false};
 
-static void measure_actual_ntdelayexecution_time() noexcept {
+void measure_actual_ntdelayexecution_time() noexcept {
     constexpr i32 num_samples = 3;  // 3 samples per delay amount
     constexpr const auto test_delays = std::array{50000ULL, 100000ULL, 250000ULL, 500000ULL};  // 0.05ms to 0.25ms
 
@@ -75,7 +75,7 @@ static void measure_actual_ntdelayexecution_time() noexcept {
     // else if we failed, m_actualDelayAmount will == the timer resolution
 }
 
-static void init_sleeper() {
+void init_sleeper() {
     auto *ntdll_handle{reinterpret_cast<dynutils::lib_obj *>(GetModuleHandle(TEXT("ntdll.dll")))};
     if(ntdll_handle) {
         pNtDelayExecution = dynutils::load_func<NtDelayExecution_t>(ntdll_handle, "NtDelayExecution");

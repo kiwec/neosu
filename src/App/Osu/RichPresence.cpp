@@ -24,10 +24,10 @@
 namespace RichPresence {
 namespace {  // static
 
-static UString last_status = ULITERAL("[neosu]\nWaking up");
-static Action last_action = IDLE;
+UString last_status = ULITERAL("[neosu]\nWaking up");
+Action last_action = IDLE;
 
-static void crop_to(const UString& str, char* output, int max_len) {
+void crop_to(const UString& str, char* output, int max_len) {
     if(str.lengthUtf8() < max_len) {
         strcpy(output, str.toUtf8());
     } else {
@@ -40,7 +40,7 @@ static void crop_to(const UString& str, char* output, int max_len) {
 }
 
 // output is assumed to be a char[128] string
-static void mapstr(DatabaseBeatmap* map, char* output, bool /*include_difficulty*/) {
+void mapstr(DatabaseBeatmap* map, char* output, bool /*include_difficulty*/) {
     if(map == nullptr) {
         strcpy(output, "No map selected");
         return;
@@ -59,7 +59,7 @@ static void mapstr(DatabaseBeatmap* map, char* output, bool /*include_difficulty
     crop_to(playingInfo, output, 128);
 }
 
-static void set_activity_with_image(struct DiscordActivity* to_set) {
+void set_activity_with_image(struct DiscordActivity* to_set) {
 #ifdef MCENGINE_FEATURE_DISCORD
     const auto map = osu->getMapInterface()->getBeatmap();
     const auto music = osu->getMapInterface()->getMusic();
