@@ -369,7 +369,8 @@ class ConVar {
         this->iFlags = flags;
         this->type = getTypeFor<T>();
 
-        if constexpr((std::is_convertible_v<std::decay_t<T>, double> || std::is_same_v<T, bool>) &&
+        if constexpr((std::is_convertible_v<std::decay_t<T>, double> || std::is_convertible_v<std::decay_t<T>, float> ||
+                      std::is_same_v<T, bool>) &&
                      !std::is_same_v<std::decay_t<T>, UString> && !std::is_same_v<std::decay_t<T>, std::string_view> &&
                      !std::is_same_v<std::decay_t<T>, const char *>) {
             // T is double-like
@@ -412,7 +413,9 @@ class ConVar {
         // determine double and string representations depending on whether setValue("string") or setValue(double) was
         // called
         const auto [newDouble, newString] = [&]() -> std::pair<double, std::string> {
-            if constexpr(std::is_convertible_v<std::decay_t<T>, double> && !std::is_same_v<std::decay_t<T>, UString> &&
+            if constexpr(((std::is_convertible_v<std::decay_t<T>, double> ||
+                           std::is_convertible_v<std::decay_t<T>, float>) &&
+                          !std::is_same_v<std::decay_t<T>, UString>) &&
                          !std::is_same_v<std::decay_t<T>, std::string_view> &&
                          !std::is_same_v<std::decay_t<T>, const char *>) {
                 const auto f = static_cast<double>(std::forward<T>(value));

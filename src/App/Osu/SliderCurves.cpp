@@ -18,6 +18,12 @@
 #endif
 
 #include <stack>
+namespace {
+constexpr const SLIDERCURVETYPE CATMULL = 'C';
+constexpr const SLIDERCURVETYPE BEZIER = 'B';
+constexpr const SLIDERCURVETYPE LINEAR = 'L';
+constexpr const SLIDERCURVETYPE PASSTHROUGH = 'P';
+}
 
 //**********************//
 //	 Curve Base Class	//

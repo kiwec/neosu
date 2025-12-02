@@ -558,28 +558,28 @@ CONVAR(background_image_eviction_delay_frames, 60, CLIENT,
 CONVAR(background_image_loading_delay, 0.075f, CLIENT,
        "how many seconds to wait until loading background images for visible beatmaps starts");
 
-// Constants (TODO: remove these)
+// Sanity checks/limits
+CONVAR(slider_curve_points_separation, 2.5f, CLIENT | GAMEPLAY,  // NOTE: adjusted by options_slider_quality
+       "slider body curve approximation step width in osu!pixels, don't set this lower than around 1.5");
 CONVAR(
-    beatmap_max_num_hitobjects, 40000, CONSTANT,
+    beatmap_max_num_hitobjects, 40000, CLIENT | PROTECTED | GAMEPLAY,
     "maximum number of total allowed hitobjects per beatmap (prevent crashing on deliberate game-breaking beatmaps)");
-CONVAR(beatmap_max_num_slider_scoringtimes, 32768, CONSTANT,
+CONVAR(beatmap_max_num_slider_scoringtimes, 32768, CLIENT | PROTECTED | GAMEPLAY,
        "maximum number of slider score increase events allowed per slider "
        "(prevent crashing on deliberate game-breaking beatmaps)");
-CONVAR(slider_curve_max_length, 65536 / 2, CONSTANT,
+CONVAR(slider_curve_max_length, 65536 / 2, CLIENT | PROTECTED | GAMEPLAY,
        "maximum slider length in osu!pixels (i.e. pixelLength). also used to clamp all "
        "(control-)point coordinates to sane values.");
-CONVAR(slider_curve_max_points, 9999.0f, CONSTANT,
+CONVAR(slider_curve_max_points, 9999.0f, CLIENT | PROTECTED | GAMEPLAY,
        "maximum number of allowed interpolated curve points. quality will be forced to go "
        "down if a slider has more steps than this");
-CONVAR(slider_curve_points_separation, 2.5f, CONSTANT,
-       "slider body curve approximation step width in osu!pixels, don't set this lower than around 1.5");
-CONVAR(slider_end_inside_check_offset, 36, CONSTANT,
+CONVAR(slider_end_inside_check_offset, 36, CLIENT | PROTECTED | GAMEPLAY,
        "offset in milliseconds going backwards from the end point, at which \"being "
        "inside the slider\" is checked. (osu bullshit behavior)");
-CONVAR(slider_max_repeats, 9000, CONSTANT, "maximum number of repeats allowed per slider (clamp range)");
-CONVAR(slider_max_ticks, 2048, CONSTANT, "maximum number of ticks allowed per slider (clamp range)");
-
-// Sanity checks
+CONVAR(slider_max_repeats, 9000, CLIENT | PROTECTED | GAMEPLAY,
+       "maximum number of repeats allowed per slider (clamp range)");
+CONVAR(slider_max_ticks, 2048, CLIENT | PROTECTED | GAMEPLAY,
+       "maximum number of ticks allowed per slider (clamp range)");
 CONVAR(beatmap_version, 128, CLIENT,
        "maximum supported .osu file version, above this will simply not load (this was 14 but got "
        "bumped to 128 due to lazer backports)");

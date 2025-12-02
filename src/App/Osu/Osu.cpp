@@ -192,6 +192,12 @@ Osu::Osu() : App(), MouseListener(), global_osu_(this) {
     cv::confine_cursor_never.setCallback(SA::MakeDelegate<&Osu::updateConfineCursor>(this));
     cv::osu_folder.setCallback(SA::MakeDelegate<&Osu::updateOsuFolder>(this));
 
+    // clamp to sane range
+    cv::slider_curve_points_separation.setCallback([](float /*oldValue*/, float newValue) -> void {
+        newValue = std::clamp(newValue, 1.0f, 2.5f);
+        cv::slider_curve_points_separation.setValue(newValue, false);
+    });
+
     cv::draw_runtime_info.setCallback(
         [](float newVal) -> void { return (void)(osu ? (osu->bDrawBuildInfo = !!static_cast<int>(newVal)) : 0); });
     this->bDrawBuildInfo = cv::draw_runtime_info.getBool();
