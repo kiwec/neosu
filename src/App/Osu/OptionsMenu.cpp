@@ -1036,6 +1036,11 @@ OptionsMenu::OptionsMenu() : ScreenBackable() {
     CBaseUIElement *subSectionKeyboard = this->addSubSection("Keyboard", keyboardSectionTags);
     if constexpr(Env::cfg(OS::WINDOWS)) {
         this->addCheckbox("Raw Keyboard Input", &cv::keyboard_raw_input);
+        if(cv::win_global_media_hotkeys.getDefaultDouble() != -1.) {  // it's set to -1 if it doesn't work
+            this->addCheckbox("Global Media Hotkeys",
+                              "Allows controlling main menu music with\nkeyboard media shortcuts, even while alt-tabbed",
+                              &cv::win_global_media_hotkeys);
+        }
     }
     UIButton *resetAllKeyBindingsButton = this->addButton("Reset all key bindings");
     resetAllKeyBindingsButton->setColor(0xffd90000);

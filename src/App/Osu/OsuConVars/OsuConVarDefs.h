@@ -131,6 +131,8 @@ KEYVAR(TOGGLE_MODSELECT, "key_toggle_modselect", (int)KEY_F1, CLIENT);
 KEYVAR(TOGGLE_SCOREBOARD, "key_toggle_scoreboard", (int)KEY_TAB, CLIENT);
 
 // Input behavior
+CONVAR(win_global_media_hotkeys, true, CLIENT,
+       "Watch for play/pause/next/previous media keys globally for main menu music (Windows only)");
 CONVAR(alt_f4_quits_even_while_playing, true, CLIENT);
 CONVAR(auto_and_relax_block_user_input, true, CLIENT);
 CONVAR(mod_suddendeath_restart, false, CLIENT,

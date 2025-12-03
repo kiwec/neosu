@@ -138,25 +138,118 @@ bool OsuEnvInterop::handle_cmdline_args(const std::vector<std::string> &args) {
 
 #include "Engine.h"
 #include "SString.h"
+#include "Timing.h"
 
 #include "WinDebloatDefs.h"
 #include <objbase.h>
 
 #include <SDL3/SDL_system.h>
+#include <SDL3/SDL_events.h>
+#include <SDL3/SDL_scancode.h>
 
 #define NEOSU_CMDLINE_WINDOW_MSG_ID TEXT("NEOSU_CMDLINE")
-
 namespace {  // static
+constexpr std::array<UINT, 5> VK_LIST{0xB3 /* VK_MEDIA_PLAY_PAUSE */, 0xFA /* VK_PLAY */, 0xB2 /* VK_MEDIA_STOP */,
+                                      0xB1 /* VK_MEDIA_PREV_TRACK */, 0xB0 /* VK_MEDIA_NEXT_TRACK */};
+bool hotkeys_enabled{false};
+
+// cvar callbacks
+bool register_hotkeys() {
+    if(!env) return false;
+    const HWND hwnd = env->getHwnd();
+
+    bool success = false;
+    int id = 0x0000;
+    UINT modifiers = 0x4000 /* MOD_NOREPEAT */;
+    for(UINT vk : VK_LIST) {
+        if(!(success = RegisterHotKey(hwnd, id, modifiers, vk))) {
+            if(!modifiers) break;  // its all over
+            modifiers = 0;         // try without MOD_NOREPEAT
+            id = 0x01A4;
+            if(!(success = RegisterHotKey(hwnd, id, modifiers, vk))) {
+                break;
+            }
+        }
+        id++;  // need unique id for each one
+    }
+    if(!success) {
+        debugLog("could not register global hotkeys: {}", GetLastError());
+    }
+    hotkeys_enabled = success;
+    return success;
+}
+
+void unregister_hotkeys() {
+    if(!env) return;
+
+    const HWND hwnd = env->getHwnd();
+    for(int idunregstart : {0, 0x01A4}) {
+        int id = idunregstart;
+        for(UINT _ : VK_LIST) {
+            UnregisterHotKey(hwnd, id);  // just unregister everything
+            id++;
+        }
+    }
+
+    hotkeys_enabled = false;
+    return;
+}
+
 bool sdl_windows_message_hook(void *userdata, MSG *msg) {
     static UINT cmdline_msg = RegisterWindowMessage(NEOSU_CMDLINE_WINDOW_MSG_ID);
 
     // true == continue processing
-    if(!userdata || !msg || (msg->message != cmdline_msg)) {
+    if(!userdata || !msg || ((msg->message != cmdline_msg) && (msg->message != WM_HOTKEY))) {
         return true;
     }
 
+    // check if its a hotkey
+    if(msg->message == WM_HOTKEY) {
+        // debugLog("WM_HOTKEY received, {} {}", msg->lParam, msg->wParam);
+        SDL_Event keydownev{}, keyupev{};
+        keydownev.key = {.type = SDL_EVENT_KEY_DOWN,
+                         .reserved = {},
+                         .timestamp = Timing::getTicksNS(),
+                         .windowID = {},
+                         .which = {},
+                         .scancode = {},  // to set in the switch-case
+                         .key = {},
+                         .mod = {},
+                         .raw = {},
+                         .down = true,
+                         .repeat = (msg->wParam < 0x01A4) ? false : false /* maybe? */};
+
+        switch(HIWORD(msg->lParam)) {
+            case VK_LIST[0]:
+                keydownev.key.scancode = SDL_SCANCODE_MEDIA_PLAY_PAUSE;
+                break;
+            case VK_LIST[1]:
+                keydownev.key.scancode = SDL_SCANCODE_MEDIA_PLAY;
+                break;
+            case VK_LIST[2]:
+                keydownev.key.scancode = SDL_SCANCODE_MEDIA_STOP;
+                break;
+            case VK_LIST[3]:
+                keydownev.key.scancode = SDL_SCANCODE_MEDIA_PREVIOUS_TRACK;
+                break;
+            case VK_LIST[4]:
+                keydownev.key.scancode = SDL_SCANCODE_MEDIA_NEXT_TRACK;
+                break;
+            default:
+                return false;  // not our hotkey?
+        }
+        // send a key up after too just in case...
+        keyupev = keydownev;
+        keyupev.key.type = SDL_EVENT_KEY_UP;
+        keyupev.key.down = false;
+        SDL_PushEvent(&keydownev);
+        SDL_PushEvent(&keyupev);
+        // debugLog("pushed events for {}", std::to_underlying(keydownev.key.scancode));
+        return false;
+    }
+
+    // else check the custom registered message
     OsuEnvInterop *interop{static_cast<OsuEnvInterop *>(userdata)};
-    // check the custom registered message
 
     // reconstruct the mapping/event names from the identifier passed in lParam
     auto sender_pid = static_cast<DWORD>(msg->wParam);
@@ -221,6 +314,25 @@ bool sdl_windows_message_hook(void *userdata, MSG *msg) {
 }  // namespace
 
 void OsuEnvInterop::setup_system_integrations() {
+    if(!register_hotkeys()) {
+        unregister_hotkeys();
+        // don't set up a callback
+        cv::win_global_media_hotkeys.setDefaultDouble(-1.);
+        cv::win_global_media_hotkeys.setValue(-1.);
+    } else {
+        cv::win_global_media_hotkeys.setCallback([](float newf) -> void {
+            const bool enable = !!static_cast<int>(newf);
+            cv::win_global_media_hotkeys.setValue(enable, false);  // clamp it to 0/1
+            if(enable != hotkeys_enabled) {
+                if(enable) {
+                    register_hotkeys();
+                } else {
+                    unregister_hotkeys();
+                }
+            }
+        });
+    }
+
     SDL_SetWindowsMessageHook(sdl_windows_message_hook, (void *)this);
 
     wchar_t exePath[MAX_PATH];
