@@ -16,6 +16,7 @@
 #include <string_view>
 #include <vector>
 #include <memory>
+#include <string>
 
 enum class MultisampleType : uint8_t;
 enum class DrawPrimitive : uint8_t;

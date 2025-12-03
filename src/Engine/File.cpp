@@ -275,6 +275,25 @@ FILE *File::fopen_c(const char *__restrict utf8filename, const char *__restrict 
 #endif
 }
 
+bool File::copy(std::string_view fromPath, std::string_view toPath) {
+    if(fromPath.empty() || toPath.empty() || fromPath == toPath) {
+        return false;
+    }
+
+    auto srcPath = getFsPath(fromPath);
+    auto dstPath = getFsPath(toPath);
+
+    std::error_code ec;
+    fs::copy_file(srcPath, dstPath, fs::copy_options::overwrite_existing, ec);
+
+    if(ec) {
+        debugLog("File::copy failed ({:s} -> {:s}): {:s}", fromPath, toPath, ec.message());
+        return false;
+    }
+
+    return true;
+}
+
 //------------------------------------------------------------------------------
 // File implementation
 //------------------------------------------------------------------------------

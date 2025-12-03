@@ -3,18 +3,28 @@
 
 #include "Logging.h"
 #include "File.h"
+#include "SyncMutex.h"
 
 #include <system_error>
 #include <cassert>
 #include <vector>
 
-ByteBufferedFile::Reader::Reader(std::string_view readPath)
-    : buffer(std::make_unique_for_overwrite<u8[]>(READ_BUFFER_SIZE)) {
-    auto path = File::getFsPath(readPath);
+namespace {
+constexpr size_t NUM_FILE_LOCKS = 16;
+
+std::array<Sync::shared_mutex, NUM_FILE_LOCKS> file_locks;
+size_t path_to_lock_index(std::string_view path) { return std::hash<std::string_view>{}(path) % NUM_FILE_LOCKS; }
+}  // namespace
+
+ByteBufferedFile::Reader::Reader(std::string_view readPath_param)
+    : buffer(std::make_unique_for_overwrite<u8[]>(READ_BUFFER_SIZE)), read_path(readPath_param) {
+    file_locks[path_to_lock_index(this->read_path)].lock_shared();
+
+    auto path = File::getFsPath(this->read_path);
     this->file.open(path, std::ios::binary);
     if(!this->file.is_open()) {
         this->set_error("Failed to open file for reading: " + std::generic_category().message(errno));
-        debugLog("Failed to open '{:s}': {:s}", readPath, std::generic_category().message(errno).c_str());
+        debugLog("Failed to open '{:s}': {:s}", this->read_path, std::generic_category().message(errno).c_str());
         return;
     }
 
@@ -34,10 +44,13 @@ ByteBufferedFile::Reader::Reader(std::string_view readPath)
 
 seek_error:
     this->set_error("Failed to initialize file reader: " + std::generic_category().message(errno));
-    debugLog("Failed to initialize file reader '{:s}': {:s}", readPath, std::generic_category().message(errno).c_str());
+    debugLog("Failed to initialize file reader '{:s}': {:s}", this->read_path,
+             std::generic_category().message(errno).c_str());
     this->file.close();
     return;
 }
+
+ByteBufferedFile::Reader::~Reader() { file_locks[path_to_lock_index(this->read_path)].unlock_shared(); }
 
 void ByteBufferedFile::Reader::set_error(const std::string &error_msg) {
     if(!this->error_flag) {  // only set first error
@@ -127,9 +140,11 @@ void ByteBufferedFile::Reader::skip_string() {
     this->skip_bytes(len);
 }
 
-ByteBufferedFile::Writer::Writer(std::string_view writePath)
-    : buffer(std::make_unique_for_overwrite<u8[]>(WRITE_BUFFER_SIZE)) {
-    auto path = File::getFsPath(writePath);
+ByteBufferedFile::Writer::Writer(std::string_view writePath_param)
+    : buffer(std::make_unique_for_overwrite<u8[]>(WRITE_BUFFER_SIZE)), write_path(writePath_param) {
+    file_locks[path_to_lock_index(this->write_path)].lock();
+
+    auto path = File::getFsPath(this->write_path);
     this->file_path = path;
     this->tmp_file_path = this->file_path;
     this->tmp_file_path += ".tmp";
@@ -137,7 +152,7 @@ ByteBufferedFile::Writer::Writer(std::string_view writePath)
     this->file.open(this->tmp_file_path, std::ios::binary);
     if(!this->file.is_open()) {
         this->set_error("Failed to open file for writing: " + std::generic_category().message(errno));
-        debugLog("Failed to open '{:s}': {:s}", writePath, std::generic_category().message(errno).c_str());
+        debugLog("Failed to open '{:s}': {:s}", this->write_path, std::generic_category().message(errno).c_str());
         return;
     }
 }
@@ -157,6 +172,8 @@ ByteBufferedFile::Writer::~Writer() {
             }
         }
     }
+
+    file_locks[path_to_lock_index(this->write_path)].unlock();
 }
 
 void ByteBufferedFile::Writer::set_error(const std::string &error_msg) {
@@ -248,39 +265,5 @@ void ByteBufferedFile::Writer::write_uleb128(u32 num) {
             next |= 0x80;
         }
         this->write<u8>(next);
-    }
-}
-
-void ByteBufferedFile::copy(std::string_view from_path, std::string_view to_path) {
-    Reader from(from_path);
-    if(!from.good()) {
-        debugLog("Failed to open source file for copying: {:s}", from.error().data());
-        return;
-    }
-
-    Writer to(to_path);
-    if(!to.good()) {
-        debugLog("Failed to open destination file for copying: {:s}", to.error().data());
-        return;
-    }
-
-    std::vector<u8> buf(READ_BUFFER_SIZE);
-
-    u32 remaining = from.total_size;
-    while(remaining > 0 && from.good() && to.good()) {
-        u32 len = std::min(remaining, static_cast<u32>(READ_BUFFER_SIZE));
-        if(from.read_bytes(buf.data(), len) != len) {
-            debugLog("Copy failed: could not read {} bytes, {} remaining", len, remaining);
-            break;
-        }
-        to.write_bytes(buf.data(), len);
-        remaining -= len;
-    }
-
-    if(!from.good()) {
-        debugLog("Copy failed during read: {:s}", from.error().data());
-    }
-    if(!to.good()) {
-        debugLog("Copy failed during write: {:s}", to.error().data());
     }
 }

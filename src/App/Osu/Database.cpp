@@ -281,7 +281,8 @@ void Database::startLoader() {
             Sync::unique_lock lock(this->beatmap_difficulties_mtx);
             this->beatmap_difficulties.clear();
         }
-        for(auto &beatmapset : this->temp_loading_beatmapsets) { // FIXME(spec): this will remove import requests from before database is loaded!!!
+        for(auto &beatmapset :
+            this->temp_loading_beatmapsets) {  // FIXME(spec): this will remove import requests from before database is loaded!!!
             SAFE_DELETE(beatmapset);
         }
         this->temp_loading_beatmapsets.clear();
@@ -469,38 +470,69 @@ BeatmapSet *Database::addBeatmapSet(const std::string &beatmapFolderPath, i32 se
 }
 
 int Database::addScore(const FinishedScore &score) {
-    const MD5Hash scoreHash = score.beatmap_hash;
-    const u64 scoreTS = score.unixTimestamp;
+    // if addScoreRaw returns false, it means it wasn't added because we already have the score
+    // so just skip everything and return the index
+    if(this->addScoreRaw(score)) {
+        this->sortScores(score.beatmap_hash);
 
-    // XXX: this is blocking main thread
-    auto compressed_replay = LegacyReplay::compress_frames(score.replay);
-    if(!compressed_replay.empty()) {
-        auto replay_path = fmt::format(NEOSU_REPLAYS_PATH "/{:d}.replay.lzma", scoreTS);
+        this->scores_changed = true;
 
-        debugLog("Saving replay to {}...", replay_path);
-        io->write(replay_path, compressed_replay, [replay_path, func = __FUNCTION__](bool success) {
-            if(success) {
-                debugLogLambda("Replay saved to {}.", replay_path);
-            } else {
-                debugLogLambda("Failed to save replay to {}", replay_path);
+        // abusing resourcemanager threadpool super hard here...
+        // should probably make the threadpool api more general and have resourcemanager specialize it,
+        // so we dont make too many threads for no reason
+        static constexpr auto func = __FUNCTION__;
+
+        struct AsyncScoreAdder : public Resource {
+            FinishedScore scorecopy;
+            AsyncScoreAdder(FinishedScore score) : Resource(), scorecopy(std::move(score)) {}
+
+            void init() override { this->setReady(true); }
+            void initAsync() override {
+                auto compressed_replay = LegacyReplay::compress_frames(this->scorecopy.replay);
+                if(!compressed_replay.empty()) {
+                    auto replay_path =
+                        fmt::format(NEOSU_REPLAYS_PATH "/{:d}.replay.lzma", this->scorecopy.unixTimestamp);
+                    debugLogLambda("Saving replay to {}...", replay_path);
+                    io->write(replay_path, std::move(compressed_replay), [replay_path](bool success) {
+                        if(success) {
+                            debugLogLambda("Replay saved.");
+                        } else {
+                            debugLogLambda("Failed to save replay to {}!", replay_path);
+                        }
+                    });
+                }
+
+                if(db && !engine->isShuttingDown() && cv::scores_save_immediately.getBool()) {
+                    db->saveScores();
+                }
+
+                this->setAsyncReady(true);
+                this->setReady(true);
             }
-        });
+            void destroy() override {}
+
+            [[nodiscard]] Type getResType() const override { return APPDEFINED; }
+        };
+
+        static std::unique_ptr<AsyncScoreAdder> saver{nullptr};
+        if(saver) {
+            auto *ptr = saver.release();
+            // dynamically allocating it so can block on it with this, because destroyResource "delete"s it.
+            // yeah, need better threadpool API :)
+            resourceManager->destroyResource(ptr, ResourceManager::DestroyMode::FORCE_BLOCKING);
+        }
+        saver = std::make_unique<AsyncScoreAdder>(score);
+        resourceManager->requestNextLoadAsync();
+        resourceManager->loadResource(saver.get());
     }
-
-    this->addScoreRaw(score);
-    this->sortScores(scoreHash);
-
-    this->scores_changed = true;
-
-    if(cv::scores_save_immediately.getBool()) this->saveScores();
 
     // @PPV3: use new replay format
 
     // return sorted index
     Sync::shared_lock lock(this->scores_mtx);
-    if(const auto &scoreit = this->scores.find(scoreHash); scoreit != this->scores.end()) {
+    if(const auto &scoreit = this->scores.find(score.beatmap_hash); scoreit != this->scores.end()) {
         const auto &scoreVec = scoreit->second;
-        const u64 ts = scoreTS;
+        const u64 ts = score.unixTimestamp;
 
         for(int i = 0; i < scoreVec.size(); i++) {
             if(scoreVec[i].unixTimestamp == ts) return i;
@@ -950,7 +982,10 @@ void Database::loadMaps() {
             if(version < NEOSU_MAPS_DB_VERSION) {
                 // Reading from older database version: backup just in case
                 auto backup_path = fmt::format("{}.{}", neosu_maps_path, version);
-                ByteBufferedFile::copy(neosu_maps_path, backup_path);
+                if(File::copy(neosu_maps_path, backup_path)) {
+                    debugLog("older database {} < {}, backed up {} -> {}", version, NEOSU_MAPS_DB_VERSION,
+                             neosu_maps_path, backup_path);
+                }
             }
 
             u32 nb_sets = neosu_maps.read<u32>();
@@ -1743,7 +1778,10 @@ void Database::loadScores(std::string_view dbPath) {
     } else if(db_version < NEOSU_SCORE_DB_VERSION) {
         // Reading from older database version: backup just in case
         auto backup_path = fmt::format("{}.{}", dbPath, db_version);
-        ByteBufferedFile::copy(dbPath, backup_path);
+        if(File::copy(dbPath, backup_path)) {
+            debugLog("older database {} < {}, backed up {} -> {}", db_version, NEOSU_SCORE_DB_VERSION, dbPath,
+                     backup_path);
+        }
     }
 
     u32 nb_beatmaps = dbr.read<u32>();

@@ -3714,8 +3714,10 @@ void OptionsMenu::save() {
             if(Environment::fileExists(cfg_name)) {
                 debugLogLambda("WARNING: read no data from previous osu.cfg!\n");
                 // back it up just in case
-                ByteBufferedFile::copy(cfg_name,
-                                       fmt::format("{}.{:%F}.bak", cfg_name, fmt::gmtime(std::time(nullptr))));
+                std::string backup_name = fmt::format("{}.{:%F}.bak", cfg_name, fmt::gmtime(std::time(nullptr)));
+                if(File::copy(cfg_name, backup_name)) {
+                    debugLogLambda("backed up {} -> {}\n", cfg_name, backup_name);
+                }
             }
         } else {
             read_lines = SString::split<std::string>(

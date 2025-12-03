@@ -67,6 +67,9 @@ class File {
     // passthrough to "_wfopen" on Windows, "fopen" otherwise
     [[nodiscard]] static FILE *fopen_c(const char *__restrict utf8filename, const char *__restrict modes);
 
+    // copy file from source to destination, overwriting if exists
+    [[nodiscard]] static bool copy(std::string_view fromPath, std::string_view toPath);
+
    private:
     // private implementation helpers
     bool openForReading();

@@ -12,6 +12,11 @@
 #include "noinclude.h"
 #include "types.h"
 
+// don't do something stupid like:
+// Writer("pathA");
+// Reader("pathA");
+// because that would deadlock.
+
 class ByteBufferedFile {
    private:
     static constexpr const uSz READ_BUFFER_SIZE{4ULL * 1024 * 1024};
@@ -23,7 +28,7 @@ class ByteBufferedFile {
        public:
         Reader() = delete;
         Reader(std::string_view readPath);
-        ~Reader() = default;
+        ~Reader();
 
         // always_inline is a 2x speedup here
         [[nodiscard]] forceinline uSz read_bytes(u8 *out, uSz len) {
@@ -178,6 +183,7 @@ class ByteBufferedFile {
         std::unique_ptr<u8[]> buffer;
 
         std::ifstream file;
+        std::string read_path;
 
         uSz read_pos{0};        // current read position in ring buffer
         uSz write_pos{0};       // current write position in ring buffer
@@ -213,6 +219,7 @@ class ByteBufferedFile {
 
         std::unique_ptr<u8[]> buffer;
 
+        std::string write_path;
         std::filesystem::path file_path;
         std::filesystem::path tmp_file_path;
         std::ofstream file;
@@ -221,6 +228,4 @@ class ByteBufferedFile {
         bool error_flag{false};
         std::string last_error;
     };
-
-    static void copy(std::string_view from_path, std::string_view to_path);
 };
