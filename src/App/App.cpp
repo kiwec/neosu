@@ -25,6 +25,7 @@ App *App::create(bool dummy) {
         ret = pCreate();
     } else {
         debugLog("could not resolve dynamic app creation function");
+        debugLog(dynutils::get_error());
         ret = new App();  // fallback
     }
     dynutils::unload_lib(selfHandle);

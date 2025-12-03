@@ -3118,8 +3118,8 @@ void SongBrowser::onScoreClicked(CBaseUIButton *button) {
     auto *scoreButton = (ScoreButton *)button;
 
     // NOTE: the order of these two calls matters
+    osu->getRankingScreen()->setBeatmapInfo(scoreButton->getScore().map);
     osu->getRankingScreen()->setScore(scoreButton->getScore());
-    osu->getRankingScreen()->setBeatmapInfo(osu->getMapInterface()->getBeatmap());
 
     osu->getSongBrowser()->setVisible(false);
     osu->getRankingScreen()->setVisible(true);

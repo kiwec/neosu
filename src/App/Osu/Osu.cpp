@@ -1440,8 +1440,8 @@ void Osu::onPlayEnd(const FinishedScore &score, bool quit, bool /*aborted*/) {
     if(!quit) {
         if(!cv::mod_endless.getBool()) {
             // NOTE: the order of these two calls matters
+            this->rankingScreen->setBeatmapInfo(score.map);
             this->rankingScreen->setScore(score);
-            this->rankingScreen->setBeatmapInfo(this->map_iface->getBeatmap());
 
             soundEngine->play(this->skin->s_applause);
         } else {

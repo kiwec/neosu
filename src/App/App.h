@@ -99,16 +99,6 @@ class App : public KeyboardListener {
 
 extern std::unique_ptr<App> app;
 
-#ifdef APP_LIBRARY_BUILD
-#ifdef _WIN32
-#define EXPORT_NAME_ __declspec(dllexport)
-#else
-#define EXPORT_NAME_ __attribute__((visibility("default")))
-#endif
-#else
-#define EXPORT_NAME_
-#endif
-
 extern "C" {
 extern EXPORT_NAME_ App* NEOSU_create_app_real();
 }

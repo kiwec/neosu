@@ -15,6 +15,16 @@
 
 inline bool isInt(float f) { return (f == static_cast<float>(static_cast<int>(f))); }
 
+#ifdef APP_LIBRARY_BUILD
+#ifdef _WIN32
+#define EXPORT_NAME_ __declspec(dllexport)
+#else
+#define EXPORT_NAME_ __attribute__((visibility("default")))
+#endif
+#else
+#define EXPORT_NAME_
+#endif
+
 // not copy or move constructable/assignable
 // purely for clarifying intent
 #define NOCOPY_NOMOVE(classname__)                        \
