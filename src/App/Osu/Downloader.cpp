@@ -43,7 +43,7 @@ class DownloadManager {
     };
 
     std::atomic<bool> shutting_down{false};
-    std::unordered_map<std::string, std::shared_ptr<DownloadRequest>> active_downloads;
+    sv_unordered_map<std::shared_ptr<DownloadRequest>> active_downloads;
     Sync::mutex active_mutex;
 
     // rate limiting and queuing

@@ -2,9 +2,9 @@
 // Copyright (c) 2023, kiwec, All rights reserved.
 
 #include "BanchoProtocol.h"
+#include "templates.h"
 
 #include <atomic>
-#include <unordered_map>
 #include <array>
 
 class Image;
@@ -58,7 +58,7 @@ struct BanchoState final {
         u32 nb_members;
     };
 
-    static std::unordered_map<std::string, BanchoState::Channel *> chat_channels;
+    static sv_unordered_map<BanchoState::Channel *> chat_channels;
 
     // utils
     static void handle_packet(Packet &packet);

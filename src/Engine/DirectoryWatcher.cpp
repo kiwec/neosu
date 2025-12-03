@@ -3,6 +3,7 @@
 
 #include "Logging.h"
 #include "Thread.h"
+#include "templates.h"
 #include "Timing.h"
 #include "SyncJthread.h"
 #include "SyncMutex.h"
@@ -88,7 +89,7 @@ struct DirWatcherImpl {
 
         FileChangeCallback cb;
 
-        std::unordered_map<std::string, UnconfirmedEvent> unconfirmed_events{};
+        sv_unordered_map<UnconfirmedEvent> unconfirmed_events{};
 
         struct WinDirState {
             WinDirState() = default;
@@ -137,7 +138,7 @@ struct DirWatcherImpl {
         McThread::set_current_thread_name(ULITERAL("dir_watcher"));
         McThread::set_current_thread_prio(McThread::Priority::LOW);
 
-        std::unordered_map<std::string, DirectoryState> active_directories;
+        sv_unordered_map<DirectoryState> active_directories;
 
         // Create manual-reset event for stop signaling
         HANDLE stop_event = CreateEventW(nullptr, TRUE, FALSE, nullptr);
@@ -151,7 +152,7 @@ struct DirWatcherImpl {
 
         while(!stoken.stop_requested()) {
             // Add/remove directories
-            std::vector<std::unordered_map<std::string, DirectoryState>::iterator> directories_to_init;
+            std::vector<sv_unordered_map<DirectoryState>::iterator> directories_to_init;
             {
                 Sync::scoped_lock lock(this->directories_mtx);
                 for(auto& [path, cb] : this->directories_to_add) {
@@ -385,8 +386,8 @@ struct DirWatcherImpl {
         DirectoryState(FileChangeCallback cb) : cb(std::move(cb)) {}
         FileChangeCallback cb;
 
-        std::unordered_map<std::string, UnconfirmedEvent> unconfirmed_events{};
-        std::unordered_map<std::string, fs::file_time_type> files{};
+        sv_unordered_map<UnconfirmedEvent> unconfirmed_events{};
+        sv_unordered_map<fs::file_time_type> files{};
     };
 
     void worker_loop(const Sync::stop_token& stoken) {
@@ -404,8 +405,8 @@ struct DirWatcherImpl {
         // just monitor the entire Skins/ and Songs/ directories.
 
         static auto getFileTimes =
-            [](const std::string& dir_path) -> std::unordered_map<std::string, fs::file_time_type> {
-            std::unordered_map<std::string, fs::file_time_type> files;
+            [](const std::string& dir_path) -> sv_unordered_map<fs::file_time_type> {
+            sv_unordered_map<fs::file_time_type> files;
 
             std::error_code ec;
             for(const auto& entry : fs::directory_iterator(dir_path, ec)) {
@@ -422,11 +423,11 @@ struct DirWatcherImpl {
             return files;
         };
 
-        std::unordered_map<std::string, DirectoryState> active_directories;
+        sv_unordered_map<DirectoryState> active_directories;
 
         while(!stoken.stop_requested()) {
             // Add/remove directories
-            std::vector<std::unordered_map<std::string, DirectoryState>::iterator> directories_to_init;
+            std::vector<sv_unordered_map<DirectoryState>::iterator> directories_to_init;
             {
                 Sync::scoped_lock lock(this->directories_mtx);
                 for(auto& [path, cb] : this->directories_to_add) {

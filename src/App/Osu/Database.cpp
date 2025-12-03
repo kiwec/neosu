@@ -1481,7 +1481,7 @@ void Database::loadMaps() {
                     // beatmapSet.diffs2 ownership transferred to BeatmapSet
                 } else {
                     // set with invalid ID: treat all its diffs separately. we'll group the diffs by title+artist.
-                    std::unordered_map<std::string, std::vector<DatabaseBeatmap *> *> titleArtistToBeatmap;
+                    sv_unordered_map<std::vector<DatabaseBeatmap *> *> titleArtistToBeatmap;
                     for(const auto &diff : (*beatmapSet.diffs2)) {
                         std::string titleArtist = diff->getTitleLatin();
                         titleArtist.append("|");

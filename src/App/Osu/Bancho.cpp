@@ -71,7 +71,7 @@ Room BanchoState::room;
 bool BanchoState::match_started{false};
 std::array<Slot, 16> BanchoState::last_scores{};
 
-std::unordered_map<std::string, BanchoState::Channel *> BanchoState::chat_channels;
+sv_unordered_map<BanchoState::Channel *> BanchoState::chat_channels;
 
 bool BanchoState::print_new_channels{true};
 UString BanchoState::disk_uuid;

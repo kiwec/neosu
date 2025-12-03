@@ -3,11 +3,11 @@
 #include "noinclude.h"
 #include "types.h"
 #include "StaticPImpl.h"
+#include "templates.h"
 
 #include <string>
 #include <string_view>
 #include <functional>
-#include <unordered_map>
 #include <memory>
 #include <atomic>
 #include <vector>
@@ -28,7 +28,7 @@ enum class WSStatus : u8 {
 
 struct WSOptions {
     std::string url;
-    std::unordered_map<std::string, std::string> headers;
+    sv_unordered_map<std::string> headers;
     std::string user_agent;
     long timeout{5};
     long connect_timeout{5};
@@ -71,7 +71,7 @@ struct RequestOptions {
 
    public:
     RequestOptions() noexcept { ; }  // = default breaks clang
-    std::unordered_map<std::string, std::string> headers;
+    sv_unordered_map<std::string> headers;
     std::string post_data;
     std::string user_agent;
     std::vector<MimePart> mime_parts;
@@ -95,7 +95,7 @@ struct Response {
    public:
     long response_code{0};
     std::string body;
-    std::unordered_map<std::string, std::string> headers;
+    sv_unordered_map<std::string> headers;
     bool success{false};
 };
 

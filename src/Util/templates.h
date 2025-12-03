@@ -261,14 +261,5 @@ struct StringHash {
     std::size_t operator()(const char *s) const { return std::hash<std::string_view>{}(std::string_view(s)); }
 };
 
-struct StringEqual {
-    using is_transparent = void;
-
-    bool operator()(std::string_view lhs, std::string_view rhs) const { return lhs == rhs; }
-    bool operator()(const std::string &lhs, std::string_view rhs) const { return lhs == rhs; }
-    bool operator()(std::string_view lhs, const std::string &rhs) const { return lhs == rhs; }
-    bool operator()(const std::string &lhs, const std::string &rhs) const { return lhs == rhs; }
-};
-
 template <typename T>
-using sv_unordered_map = std::unordered_map<std::string, T, StringHash, StringEqual>;
+using sv_unordered_map = std::unordered_map<std::string, T, StringHash, std::equal_to<>>;
