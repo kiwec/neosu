@@ -41,6 +41,7 @@
 #include "Mouse.h"
 #include "NotificationOverlay.h"
 #include "OptionsMenu.h"
+#include "OsuDirectScreen.h"
 #include "Parsing.h"
 #include "PauseMenu.h"
 #include "PeppyImporter.h"
@@ -351,6 +352,7 @@ Osu::Osu() : App(), MouseListener(), global_osu_(this) {
     this->screens[screenit++] = this->room = new RoomScreen();
     this->screens[screenit++] = this->chat = new Chat();
     this->screens[screenit++] = this->optionsMenu = new OptionsMenu();
+    this->screens[screenit++] = this->osuDirectScreen = new OsuDirectScreen();
     this->screens[screenit++] = this->rankingScreen = new RankingScreen();
     this->screens[screenit++] = this->userStats = new UserStatsScreen();
     this->screens[screenit++] = this->spectatorScreen = new SpectatorScreen();
@@ -527,6 +529,7 @@ void Osu::draw() {
 
         this->mainMenu->draw();
         this->changelog->draw();
+        this->osuDirectScreen->draw();
         this->rankingScreen->draw();
         this->userStats->draw();
         this->chat->draw();

@@ -48,6 +48,7 @@ neosu_SOURCES = \
 	src/App/Osu/OptionsMenu.cpp \
 	src/App/Osu/Osu.cpp \
 	src/App/Osu/OsuConVars/OsuConVars.cpp \
+	src/App/Osu/OsuDirectScreen.cpp \
 	src/App/Osu/OsuKeyBinds.cpp \
 	src/App/Osu/PauseMenu.cpp \
 	src/App/Osu/PeppyImporter.cpp \

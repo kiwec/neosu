@@ -499,6 +499,52 @@ DatabaseBeatmap* download_beatmap(i32 beatmap_id, i32 beatmapset_id, float* prog
     return beatmap;
 }
 
+BeatmapSetMetadata parse_beatmapset_metadata(std::string server_response) {
+    BeatmapSetMetadata meta;
+
+    // Reference: https://github.com/osuTitanic/deck/blob/8384b74e/app/routes/web/direct.py#L28-L69
+    const auto tokens = SString::split<std::string>(server_response, "|");
+    if(tokens.size() < 8) return meta;
+
+    meta.osz_filename = tokens[0];
+    meta.artist = tokens[1];
+    meta.title = tokens[2];
+    meta.creator = tokens[3];
+    meta.ranking_status = static_cast<u8>(strtol(tokens[4].c_str(), nullptr, 10));
+    meta.avg_user_rating = strtof(tokens[5].c_str(), nullptr);
+    meta.last_update = strtoull(tokens[6].c_str(), nullptr, 10);  // TODO: incorrect?
+    meta.set_id = static_cast<i32>(strtol(tokens[7].c_str(), nullptr, 10));
+
+    if(tokens.size() < 9) return meta;
+    meta.topic_id = static_cast<i32>(strtol(tokens[8].c_str(), nullptr, 10));
+
+    if(tokens.size() < 10) return meta;
+    meta.has_video = !!strtol(tokens[9].c_str(), nullptr, 10);
+
+    if(tokens.size() < 11) return meta;
+    meta.has_storyboard = !!strtol(tokens[10].c_str(), nullptr, 10);
+
+    if(tokens.size() < 12) return meta;
+    meta.osz_filesize = strtoull(tokens[11].c_str(), nullptr, 10);
+
+    if(tokens.size() < 13) return meta;
+    meta.osz_filesize_novideo = strtoull(tokens[12].c_str(), nullptr, 10);
+
+    if(tokens.size() < 14) return meta;
+    const auto maps = SString::split<std::string>(tokens[13], ",");
+    for(const auto& map : maps) {
+        const auto spl = SString::split<std::string>(map, "@");
+        if(spl.size() != 2) continue;
+
+        meta.beatmaps.push_back(BeatmapMetadata{
+            .version = spl[0],
+            .mode = static_cast<u8>(strtol(spl[1].c_str(), nullptr, 10)),
+        });
+    }
+
+    return meta;
+}
+
 void process_beatmapset_info_response(const Packet& packet) {
     i32 map_id = packet.extra_int;
     if(packet.size == 0) {
@@ -506,10 +552,7 @@ void process_beatmapset_info_response(const Packet& packet) {
         return;
     }
 
-    // {set_id}.osz|{artist}|{title}|{creator}|{status}|10.0|{last_update}|{set_id}|0|0|0|0|0
-    auto tokens = SString::split<std::string>(std::string{(char*)packet.memory}, "|");
-    if(tokens.size() < 13) return;
-
-    beatmap_to_beatmapset[map_id] = static_cast<i32>(strtol(tokens[7].c_str(), nullptr, 10));
+    auto metadata = parse_beatmapset_metadata((char*)packet.memory);
+    beatmap_to_beatmapset[map_id] = metadata.set_id;
 }
 }  // namespace Downloader

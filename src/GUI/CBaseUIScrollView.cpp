@@ -204,7 +204,8 @@ void CBaseUIScrollView::mouse_update(bool *propagate_clicks) {
         // calculate remaining kinetic energy
         if(!this->bScrollbarScrolling)
             this->vVelocity = cv::ui_scrollview_kinetic_energy_multiplier.getFloat() * delta *
-                                  (engine->getFrameTime() != 0.0 ? 1.0f / (float)engine->getFrameTime() : 60.0f) / 60.0f +
+                                  (engine->getFrameTime() != 0.0 ? 1.0f / (float)engine->getFrameTime() : 60.0f) /
+                                  60.0f +
                               this->vScrollPos;
 
         // debugLog("kinetic = ({}), velocity = ({:}), frametime = {:f}", delta, this->vVelocity, engine->getFrameTime());
@@ -564,7 +565,7 @@ void CBaseUIScrollView::updateScrollbars() {
 
 CBaseUIScrollView *CBaseUIScrollView::setScrollSizeToContent(int border) {
     auto oldScrollPos = this->vScrollPos;
-    bool wasAtBottom = (this->vSize.y - this->vScrollPos.y) >= this->vScrollSize.y;
+    const bool wasAtBottom = this->isAtBottom();
 
     this->vScrollSize = {0.f, 0.f};
 

@@ -28,6 +28,7 @@ class OptionsMenu;
 class SongBrowser;
 class SpectatorScreen;
 class BGImageHandler;
+class OsuDirectScreen;
 class RankingScreen;
 class UserStatsScreen;
 class UpdateHandler;
@@ -50,10 +51,10 @@ class Osu final : public App, public MouseListener {
     Osu();
 
    private:
-    friend App* NEOSU_create_app_real();
+    friend App *NEOSU_create_app_real();
     struct GlobalOsuCtorDtorThing {
         NOCOPY_NOMOVE(GlobalOsuCtorDtorThing)
-    public:
+       public:
         GlobalOsuCtorDtorThing() = delete;
         GlobalOsuCtorDtorThing(Osu *optr);
         ~GlobalOsuCtorDtorThing();
@@ -177,6 +178,7 @@ class Osu final : public App, public MouseListener {
     [[nodiscard]] inline NotificationOverlay *getNotificationOverlay() { return this->notificationOverlay; }
     [[nodiscard]] inline VolumeOverlay *getVolumeOverlay() { return this->volumeOverlay; }
     [[nodiscard]] inline MainMenu *getMainMenu() { return this->mainMenu; }
+    [[nodiscard]] inline OsuDirectScreen *getOsuDirectScreen() { return this->osuDirectScreen; }
     [[nodiscard]] inline RankingScreen *getRankingScreen() { return this->rankingScreen; }
     [[nodiscard]] inline const std::unique_ptr<LiveScore> &getScore() const { return this->score; }
     [[nodiscard]] inline UserStatsScreen *getUserStatsScreen() { return this->userStats; }
@@ -309,6 +311,7 @@ class Osu final : public App, public MouseListener {
     NotificationOverlay *notificationOverlay{nullptr};
     Chat *chat{nullptr};
     OptionsMenu *optionsMenu{nullptr};
+    OsuDirectScreen *osuDirectScreen{nullptr};
     RankingScreen *rankingScreen{nullptr};
     UserStatsScreen *userStats{nullptr};
     SpectatorScreen *spectatorScreen{nullptr};
@@ -320,7 +323,7 @@ class Osu final : public App, public MouseListener {
     MainMenu *mainMenu{nullptr};
     TooltipOverlay *tooltipOverlay{nullptr};
 
-    static constexpr auto NUM_SCREENS{18};  // make sure to update this if adding/removing screens
+    static constexpr auto NUM_SCREENS{19};  // make sure to update this if adding/removing screens
     std::array<OsuScreen *, NUM_SCREENS> screens{};
 
     // interfaces (debugging)

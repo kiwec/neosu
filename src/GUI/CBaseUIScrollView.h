@@ -100,6 +100,7 @@ class CBaseUIScrollView : public CBaseUIElement {
     [[nodiscard]] inline vec2 getScrollSize() const { return this->vScrollSize; }
     [[nodiscard]] inline vec2 getVelocity() const { return (this->vScrollPos - this->vVelocity); }
 
+    [[nodiscard]] inline bool isAtBottom() const { return (this->vSize.y - this->vScrollPos.y) >= this->vScrollSize.y; }
     [[nodiscard]] inline bool isScrolling() const { return this->bScrolling; }
     bool isBusy() override;
 

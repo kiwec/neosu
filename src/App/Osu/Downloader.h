@@ -10,6 +10,31 @@ struct Packet;
 
 namespace Downloader {
 
+struct BeatmapMetadata {
+    std::string version;
+    u8 mode;
+};
+
+struct BeatmapSetMetadata {
+    std::string osz_filename{};
+    std::string artist{};
+    std::string title{};
+    std::string creator{};
+    u8 ranking_status{0};
+    f32 avg_user_rating{10.0};
+    u64 last_update{0};  // TODO: wrong type?
+    i32 set_id{0};
+    i32 topic_id{0};
+    bool has_video{false};
+    bool has_storyboard{false};
+    u64 osz_filesize{0};
+    u64 osz_filesize_novideo{0};
+
+    std::vector<BeatmapMetadata> beatmaps;
+};
+
+BeatmapSetMetadata parse_beatmapset_metadata(std::string server_response);
+
 void abort_downloads();
 
 // Downloads `url` and stores downloaded file data into `out`
