@@ -167,13 +167,13 @@ void CBaseUIContainer::mouse_update(bool *propagate_clicks) {
     // NOTE: do NOT use a range-based for loop here, mouse_update might invalidate iterators by changing the container contents...
     MC_UNROLL
     for(size_t i = 0; i < this->vElements.size(); i++) {
-        const auto &e = this->vElements[i];
+        auto *e = this->vElements[i];
         if(e->isVisible()) e->mouse_update(propagate_clicks);
     }
 }
 
 void CBaseUIContainer::update_pos() {
-    const auto &thisPos = this->vPos;
+    const vec2 thisPos = this->vPos;
     MC_UNROLL
     for(auto *e : this->vElements) {
         e->setPos(thisPos + e->getRelPos());

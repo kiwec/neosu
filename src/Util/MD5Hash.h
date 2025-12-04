@@ -7,7 +7,7 @@
 
 class UString;
 
-struct alignas(32) MD5Hash final {
+struct alignas(16) MD5Hash final {
     MD5Hash() = default;
     MD5Hash(const char *str);
 

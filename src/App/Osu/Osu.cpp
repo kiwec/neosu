@@ -1250,8 +1250,6 @@ Sound *Osu::getSound(ActionSound action) const {
             return curSkin->s_typing3;
         case ActionSound::TYPING4:
             return curSkin->s_typing4;
-        default:
-            std::unreachable();
     }
     std::unreachable();
 }
