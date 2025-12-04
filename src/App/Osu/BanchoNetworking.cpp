@@ -372,7 +372,7 @@ void BanchoState::disconnect() {
 
 void BanchoState::reconnect() {
     BanchoState::disconnect();
-    BanchoState::async_logout_pending = true;
+    BanchoState::async_logout_pending = false;
 
     // Disable autologin, in case there's an error while logging in
     // Will be reenabled after the login succeeds
