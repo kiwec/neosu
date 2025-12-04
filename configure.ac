@@ -735,8 +735,8 @@ AS_IF([test "x$enable_debug" = "xyes"], [
 ], [
     AS_IF([test "x$enable_optimize" != "xno"], [
         CPPFLAGS="$CPPFLAGS -DNDEBUG -D_NDEBUG"
-        CXXFLAGS="${CXXFLAGS//-g -O2/} -O3" # where do those -g -O2 flags even come from...
-        CFLAGS="${CFLAGS//-g -O2/} -O3"
+        CXXFLAGS="-O3 ${CXXFLAGS//-g -O2/}" # where do those -g -O2 flags even come from...
+        CFLAGS="-O3 ${CFLAGS//-g -O2/}"
         NEOSU_LDFLAGS="$NEOSU_LDFLAGS -Wl,-O1"
 
         AS_IF([test "x$enable_clang" != "xyes"], [

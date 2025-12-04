@@ -330,7 +330,7 @@ class Environment {
     bool m_bHideCursorPending;
     McRect m_cursorClipRect;
     CURSORTYPE m_cursorType;
-    std::array<SDL_Cursor *, (size_t)CURSORTYPE::CURSORTYPE_MAX> m_mCursorIcons;
+    std::array<SDL_Cursor *, (size_t)CURSORTYPE::CURSORTYPE_MAX> m_cursorIcons;
 
     // keyboard
     inline void onRawKeyboardChange(float oldValue, float newValue) {

@@ -297,7 +297,7 @@ bool extract_beatmapset(const u8* data, size_t data_s, std::string& map_dir) {
         if(entry.isDirectory()) continue;
 
         std::string filename = entry.getFilename();
-        const auto folders = SString::split(filename, "/");
+        const auto folders = SString::split(filename, '/');
         std::string file_path = map_dir;
 
         for(const auto& folder : folders) {

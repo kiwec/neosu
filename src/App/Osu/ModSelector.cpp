@@ -290,7 +290,7 @@ void ModSelector::updateButtons(bool initial) {
     this->modButtonNofail = this->setModButtonOnGrid(
         1, 0, 0, initial && osu->getModNF(), &cv::mod_nofail, "nf",
         "You can't fail. No matter what.\nNOTE: To disable drain completely:\nOptions > Gameplay > "
-        "Mechanics > \"Select HP Drain\" > \"None\".",
+        "Mechanics > \"Disable HP Drain\".",
         []() -> SkinImage * { return osu->getSkin()->i_modselect_nf; });
     this->setModButtonOnGrid(4, 0, 0, initial && osu->getModNightmare(), &cv::mod_nightmare, "nightmare",
                              "Unnecessary clicks count as misses.\nMassively reduced slider follow circle radius.",

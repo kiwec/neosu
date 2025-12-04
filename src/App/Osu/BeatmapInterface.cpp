@@ -2370,25 +2370,24 @@ void BeatmapInterface::update() {
         if(this->last_calculated_hitobject < 0 || (this->last_calculated_hitobject != this->iCurrentHitObjectIndex)) {
             this->last_calculated_hitobject = this->iCurrentHitObjectIndex;
 
-            auto current_hitobject = this->iCurrentHitObjectIndex;
-            auto CS = this->getCS();
-            auto AR = this->getAR();
-            auto OD = this->getOD();
-            auto speedMultiplier = this->getSpeedMultiplier();
-            auto osufile_path = this->beatmap->getFilePath();
-            auto nb_circles = this->iCurrentNumCircles;
-            auto nb_sliders = this->iCurrentNumSliders;
-            auto nb_spinners = this->iCurrentNumSpinners;
-            auto mods = osu->getScore()->mods;
-            auto relax = osu->getModRelax();
-            auto td = osu->getModTD();
-            auto highestCombo = osu->getScore()->getComboMax();
-            auto numMisses = osu->getScore()->getNumMisses();
-            auto num300s = osu->getScore()->getNum300s();
-            auto num100s = osu->getScore()->getNum100s();
-            auto num50s = osu->getScore()->getNum50s();
-
-            this->ppv2_calc.enqueue([=]() {
+            this->ppv2_calc.enqueue([current_hitobject = this->iCurrentHitObjectIndex,  //
+                                     CS = this->getCS(),                                //
+                                     AR = this->getAR(),                                //
+                                     OD = this->getOD(),                                //
+                                     speedMultiplier = this->getSpeedMultiplier(),      //
+                                     osufile_path = this->beatmap->getFilePath(),       //
+                                     nb_circles = this->iCurrentNumCircles,             //
+                                     nb_sliders = this->iCurrentNumSliders,             //
+                                     nb_spinners = this->iCurrentNumSpinners,           //
+                                     mods = osu->getScore()->mods,                      //
+                                     relax = osu->getModRelax(),                        //
+                                     td = osu->getModTD(),                              //
+                                     highestCombo = osu->getScore()->getComboMax(),     //
+                                     numMisses = osu->getScore()->getNumMisses(),       //
+                                     num300s = osu->getScore()->getNum300s(),           //
+                                     num100s = osu->getScore()->getNum100s(),           //
+                                     num50s = osu->getScore()->getNum50s()              //
+            ]() {
                 AsyncPPC::pp_res retInfo;
 
                 static std::string lastCalcedPath = osufile_path;

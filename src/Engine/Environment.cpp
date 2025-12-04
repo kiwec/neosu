@@ -149,7 +149,7 @@ Environment::Environment(const std::unordered_map<std::string, std::optional<std
     m_cursorType = CURSORTYPE::CURSOR_NORMAL;
 
     // lazy init
-    m_mCursorIcons = {};
+    m_cursorIcons = {};
 
     m_vLastAbsMousePos = vec2{};
 
@@ -190,13 +190,13 @@ Environment::Environment(const std::unordered_map<std::string, std::optional<std
 }
 
 Environment::~Environment() {
-    for(auto &sdl_cur : m_mCursorIcons) {
+    for(auto &sdl_cur : m_cursorIcons) {
         if(sdl_cur) {
             SDL_DestroyCursor(sdl_cur);
             sdl_cur = nullptr;
         }
     }
-    m_mCursorIcons = {};
+    m_cursorIcons = {};
     env = nullptr;
 }
 
@@ -925,10 +925,10 @@ int Environment::getDPI() const {
 }
 
 void Environment::setCursor(CURSORTYPE cur) {
-    if(!m_mCursorIcons[0]) initCursors();
-    if(m_cursorType != cur && (size_t)cur > (size_t)0 && cur < CURSORTYPE::CURSORTYPE_MAX) {
+    if(!m_cursorIcons[0]) initCursors();
+    if(m_cursorType != cur && cur >= CURSORTYPE::CURSOR_NORMAL && cur < CURSORTYPE::CURSORTYPE_MAX) {
         m_cursorType = cur;
-        SDL_SetCursor(m_mCursorIcons[(size_t)m_cursorType]);  // does not make visible if the cursor isn't visible
+        SDL_SetCursor(m_cursorIcons[(size_t)m_cursorType]);  // does not make visible if the cursor isn't visible
     }
 }
 
@@ -1127,7 +1127,7 @@ std::pair<vec2, vec2> Environment::consumeMousePositionCache() {
 }
 
 void Environment::initCursors() {
-    m_mCursorIcons = {{
+    m_cursorIcons = {{
         SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_DEFAULT),     /* CURSOR_NORMAL */
         SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_WAIT),        /* CURSOR_WAIT */
         SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_EW_RESIZE),   /* CURSOR_SIZE_H */

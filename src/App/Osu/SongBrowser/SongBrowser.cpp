@@ -1,5 +1,5 @@
 // Copyright (c) 2016, PG, All rights reserved.
-#include "BaseEnvironment.h"
+#include "SongBrowser.h"
 
 #include "AnimationHandler.h"
 #include "BackgroundImageHandler.h"
@@ -45,7 +45,6 @@
 #include "ScoreConverterThread.h"
 #include "Skin.h"
 #include "SkinImage.h"
-#include "SongBrowser.h"
 #include "SongButton.h"
 #include "SongDifficultyButton.h"
 #include "SoundEngine.h"

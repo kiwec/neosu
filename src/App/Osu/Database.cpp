@@ -485,7 +485,9 @@ int Database::addScore(const FinishedScore &score) {
         struct AsyncScoreAdder : public Resource {
             FinishedScore scorecopy;
             AsyncScoreAdder(FinishedScore score) : Resource(), scorecopy(std::move(score)) {}
+            [[nodiscard]] Type getResType() const override { return APPDEFINED; }
 
+           protected:
             void init() override { this->setReady(true); }
             void initAsync() override {
                 auto compressed_replay = LegacyReplay::compress_frames(this->scorecopy.replay);
@@ -510,8 +512,6 @@ int Database::addScore(const FinishedScore &score) {
                 this->setReady(true);
             }
             void destroy() override {}
-
-            [[nodiscard]] Type getResType() const override { return APPDEFINED; }
         };
 
         static std::unique_ptr<AsyncScoreAdder> saver{nullptr};
