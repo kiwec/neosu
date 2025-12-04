@@ -71,6 +71,7 @@ release/
 *.swo
 .clangd
 .cache
+.DS_Store
 
 compile_commands.json
 core

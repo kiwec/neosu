@@ -95,6 +95,7 @@ struct Response {
    public:
     long response_code{0};
     std::string body;
+    std::string error_msg;
     sv_unordered_map<std::string> headers;
     bool success{false};
 };

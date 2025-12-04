@@ -188,6 +188,11 @@ void NetworkHandler::NetworkImpl::processNewRequests() {
             auto res = curl_easy_perform(request->easy_handle);
             curl_easy_getinfo(request->easy_handle, CURLINFO_RESPONSE_CODE, &request->response.response_code);
             request->response.success = (res == CURLE_OK) && (request->response.response_code == 101);
+            if(res == CURLE_OK) {
+                request->response.error_msg = "HTTP " + std::to_string(request->response.response_code);
+            } else {
+                request->response.error_msg = curl_easy_strerror(res);
+            }
 
             if(request->headers_list) {
                 curl_slist_free_all(request->headers_list);
@@ -251,6 +256,11 @@ void NetworkHandler::NetworkImpl::processCompletedRequests() {
         // get response code
         curl_easy_getinfo(easy_handle, CURLINFO_RESPONSE_CODE, &request->response.response_code);
         request->response.success = (msg->data.result == CURLE_OK);
+        if(msg->data.result == CURLE_OK) {
+            request->response.error_msg = "HTTP " + std::to_string(request->response.response_code);
+        } else {
+            request->response.error_msg = curl_easy_strerror(msg->data.result);
+        }
 
         if(request->headers_list) {
             curl_slist_free_all(request->headers_list);

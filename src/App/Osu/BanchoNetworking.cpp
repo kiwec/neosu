@@ -87,13 +87,14 @@ void attempt_logging_in() {
 
     last_packet_ms = Timing::getTicksMS();
 
+    // TODO: allow user to cancel login attempt
     networkHandler->httpRequestAsync(
         query_url,
         [func = __FUNCTION__](NeoNet::Response response) {
             if(!response.success) {
-                // TODO: shows "HTTP 0" on error!
-                auto errmsg = UString::format("Failed to log in: HTTP %ld", response.response_code);
+                auto errmsg = fmt::format("Failed to log in: {}", response.error_msg);
                 osu->getNotificationOverlay()->addToast(errmsg, ERROR_TOAST);
+                BanchoState::update_online_status(OnlineStatus::LOGGED_OUT);
                 return;
             }
 

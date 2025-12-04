@@ -1491,9 +1491,8 @@ void OptionsMenu::update_login_button(bool loggedIn) {
         this->logInButton->setText("Disconnect");
         this->logInButton->setColor(0xffd90000);
     } else {
-        bool oauth = this->should_use_oauth_login();
-        this->logInButton->setText(oauth ? "Log in with osu!" : "Log in");
-        this->logInButton->setColor(oauth ? 0xffdd30c1 : 0xff00d900);
+        this->logInButton->setText("Log in");
+        this->logInButton->setColor(0xff00d900);
     }
     this->logInButton->is_loading = BanchoState::is_logging_in();
 }
