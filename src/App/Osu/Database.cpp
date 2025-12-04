@@ -1245,20 +1245,22 @@ void Database::loadMaps() {
                             dbr.skip<u8>();  // 0x08 ObjType
                             auto mods = dbr.read<u32>();
                             dbr.skip<u8>();  // 0x0c ObjType
-                            if(mods != 0) continue;
-
-                            nomod_star_rating = static_cast<f32>(dbr.read<f64>());
-                            break;
+                            if(mods == 0 && nomod_star_rating == 0.f) {
+                                nomod_star_rating = static_cast<f32>(dbr.read<f64>());
+                            } else {
+                                dbr.skip<f64>();
+                            }
                         }
                     } else {
                         for(u64 s = 0; s < num_std_star_ratings; s++) {
                             dbr.skip<u8>();  // 0x08 ObjType
                             auto mods = dbr.read<u32>();
                             dbr.skip<u8>();  // 0x0c ObjType
-                            if(mods != 0) continue;
-
-                            nomod_star_rating = dbr.read<f32>();
-                            break;
+                            if(mods == 0 && nomod_star_rating == 0.f) {
+                                nomod_star_rating = dbr.read<f32>();
+                            } else {
+                                dbr.skip<f32>();
+                            }
                         }
                     }
 
