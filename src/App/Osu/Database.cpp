@@ -1240,16 +1240,25 @@ void Database::loadMaps() {
                     const u32 sr_field_size = osu_db_version < 20250108 ? sizeof(f64) : sizeof(f32);
 
                     const auto num_std_star_ratings = dbr.read<u32>();
-                    for(u64 s = 0; s < num_std_star_ratings; s++) {
-                        dbr.skip<u8>();  // 0x08 ObjType
-                        auto mods = dbr.read<u32>();
-                        dbr.skip<u8>();  // 0x0c ObjType
+                    if(sr_field_size == sizeof(f64)) {  // older format
+                        for(u64 s = 0; s < num_std_star_ratings; s++) {
+                            dbr.skip<u8>();  // 0x08 ObjType
+                            auto mods = dbr.read<u32>();
+                            dbr.skip<u8>();  // 0x0c ObjType
+                            if(mods != 0) continue;
 
-                        f32 sr;
-                        if(!dbr.read_bytes(reinterpret_cast<u8 *>(&sr), sr_field_size)) {
-                            debugLog("WARNING: failed to read SR for {}", md5hash.string());
-                        } else {
-                            if(mods == 0) nomod_star_rating = sr;
+                            nomod_star_rating = static_cast<f32>(dbr.read<f64>());
+                            break;
+                        }
+                    } else {
+                        for(u64 s = 0; s < num_std_star_ratings; s++) {
+                            dbr.skip<u8>();  // 0x08 ObjType
+                            auto mods = dbr.read<u32>();
+                            dbr.skip<u8>();  // 0x0c ObjType
+                            if(mods != 0) continue;
+
+                            nomod_star_rating = dbr.read<f32>();
+                            break;
                         }
                     }
 

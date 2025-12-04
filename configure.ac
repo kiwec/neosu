@@ -735,8 +735,9 @@ AS_IF([test "x$enable_debug" = "xyes"], [
 ], [
     AS_IF([test "x$enable_optimize" != "xno"], [
         CPPFLAGS="$CPPFLAGS -DNDEBUG -D_NDEBUG"
-        CXXFLAGS="-O3 ${CXXFLAGS//-g -O2/}" # where do those -g -O2 flags even come from...
-        CFLAGS="-O3 ${CFLAGS//-g -O2/}"
+        # put it at the start so -O3 is overrideable from the command line
+        CXXFLAGS="-O3 ${CXXFLAGS//-O2/}" # where do those -g -O2 flags even come from...
+        CFLAGS="-O3 ${CFLAGS//-O2/}"
         NEOSU_LDFLAGS="$NEOSU_LDFLAGS -Wl,-O1"
 
         AS_IF([test "x$enable_clang" != "xyes"], [
@@ -843,9 +844,8 @@ AUDIO_LIBS=""
 AC_SUBST([AUDIO_CFLAGS])
 AC_SUBST([AUDIO_LIBS])
 
-# the source file is also added through autogen.sh to Makefile.sources
-BUNDLED_INCLUDES="-I\$(srcdir)/libraries"
-BUNDLED_INCLUDES="$BUNDLED_INCLUDES -I\$(srcdir)/libraries/delegatesv2 -I\$(srcdir)/libraries/glad"
+# the source files are also added through autogen.sh to Makefile.sources
+BUNDLED_INCLUDES="-I\$(srcdir)/libraries -I\$(srcdir)/libraries/delegatesv2 -I\$(srcdir)/libraries/glad"
 AC_SUBST([BUNDLED_INCLUDES])
 
 # misc. resources to be included as binary data
