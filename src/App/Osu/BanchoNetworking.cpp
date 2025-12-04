@@ -200,7 +200,7 @@ void complete_oauth(std::string_view code) {
 void update_networking() {
     // Rate limit to every 1ms at most
     static double last_update = 0;
-    double current_time = engine->getTime();
+    const double current_time = engine->getTime();
     if(current_time - last_update < 0.001) return;
     last_update = current_time;
 
@@ -224,9 +224,9 @@ void update_networking() {
     // Append missing presence/stats request packets
     // XXX: Rather than every second, this should be done once, and only once
     //      (if we remove the check, right now it could spam 1000x/second)
-    static f64 last_presence_request = engine->getTime();
-    if(engine->getTime() > last_presence_request + 1.f) {
-        last_presence_request = engine->getTime();
+    static f64 last_presence_request = current_time;
+    if(current_time > last_presence_request + 1.f) {
+        last_presence_request = current_time;
 
         BANCHO::User::request_presence_batch();
         BANCHO::User::request_stats_batch();
@@ -372,6 +372,7 @@ void BanchoState::disconnect() {
 
 void BanchoState::reconnect() {
     BanchoState::disconnect();
+    BanchoState::async_logout_pending = true;
 
     // Disable autologin, in case there's an error while logging in
     // Will be reenabled after the login succeeds
