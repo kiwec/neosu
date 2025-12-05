@@ -559,10 +559,10 @@ CONVAR(background_image_eviction_delay_frames, 60, CLIENT,
        "how many vsync frames to keep stale background images in the cache before deleting them");
 CONVAR(background_image_loading_delay, 0.075f, CLIENT,
        "how many seconds to wait until loading background images for visible beatmaps starts");
+CONVAR(slider_curve_points_separation, 2.5f, CLIENT,  // NOTE: adjusted by options_slider_quality
+       "slider body curve approximation step width in osu!pixels, don't set this lower than around 1.5");
 
 // Sanity checks/limits
-CONVAR(slider_curve_points_separation, 2.5f, CLIENT | GAMEPLAY,  // NOTE: adjusted by options_slider_quality
-       "slider body curve approximation step width in osu!pixels, don't set this lower than around 1.5");
 CONVAR(
     beatmap_max_num_hitobjects, 40000, CLIENT | PROTECTED | GAMEPLAY,
     "maximum number of total allowed hitobjects per beatmap (prevent crashing on deliberate game-breaking beatmaps)");

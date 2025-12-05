@@ -1,7 +1,7 @@
 #pragma once
 // Copyright (c) 2016, PG, All rights reserved.
 #include "ModFlags.h"
-#include "cbase.h"
+#include "UString.h"
 
 struct FinishedScore;
 

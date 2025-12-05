@@ -25,10 +25,9 @@ class UIModSelectorModButton final : public CBaseUIButton {
     [[nodiscard]] inline int getState() const { return this->iState; }
     [[nodiscard]] inline bool isOn() const { return this->bOn; }
     void setOn(bool on, bool silent = false);
-
-   private:
     void onFocusStolen() override;
 
+   private:
     ModSelector *osuModSelector;
 
     bool bOn;

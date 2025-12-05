@@ -10,6 +10,7 @@
 
 #include <atomic>
 #include <set>
+#include <unordered_map>
 
 namespace Timing {
 class Timer;

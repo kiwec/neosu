@@ -162,7 +162,9 @@ void AnimationHandler::addAnimation(float *base, float target, float duration, f
                                     AnimationHandler::ANIMATION_TYPE type, float smoothFactor) {
     if(base == nullptr) return;
 
-    Animation newAnim{
+    if(overrideExisting) this->deleteExistingAnimation(base);
+
+    this->vAnimations.push_back({
         .fBase = base,
         .fTarget = target,
         .fDuration = duration,
@@ -172,18 +174,7 @@ void AnimationHandler::addAnimation(float *base, float target, float duration, f
         .fFactor = smoothFactor,
         .animType = type,
         .bStarted = (delay == 0.0f),
-    };
-
-    if(overrideExisting) {
-        if(const auto &existing =
-               std::ranges::find(this->vAnimations, base, [](const auto &a) -> float * { return a.fBase; });
-           existing != this->vAnimations.end()) {
-            *existing = newAnim;
-            return;
-        }
-    }
-
-    this->vAnimations.push_back(newAnim);
+    });
 }
 
 void AnimationHandler::deleteExistingAnimation(float *base) {
