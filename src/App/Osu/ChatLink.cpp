@@ -95,7 +95,7 @@ void ChatLink::onMouseUpInside(bool /*left*/, bool /*right*/) {
     // https:\/\/((osu\.)?akatsuki\.gg|osu\.ppy\.sh)\/b(eatmaps)?\/(\d+)
     UString map_pattern = "https?://((osu\\.)?";
     map_pattern.append(escaped_endpoint);
-    map_pattern.append("|osu\\.ppy\\.sh)/b(eatmaps)?/(\\d+)");
+    map_pattern.append(R"(|osu\.ppy\.sh)/b(eatmaps)?/(\d+))");
     if(std::regex_search(link_str, match, std::regex(map_pattern.toUtf8()))) {
         i32 map_id = std::stoi(match.str(4));
         this->open_beatmap_link(map_id, 0);
