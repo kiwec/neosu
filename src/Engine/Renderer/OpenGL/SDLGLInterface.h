@@ -21,7 +21,6 @@ class SDLGLInterface final : public BackendGLInterface {
     friend class OpenGLES32VertexArrayObject;
     friend class OpenGLES32Shader;
     friend class OpenGLShader;
-
    public:
     SDLGLInterface(SDL_Window *window);
 
@@ -41,8 +40,8 @@ class SDLGLInterface final : public BackendGLInterface {
 
     // debugging
     static void setLog(bool on);
-    static void APIENTRY glDebugCB(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length,
-                                   const GLchar *message, const void * /*userParam*/);
+    static void GLAPIENTRY glDebugCB(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length,
+                                     const GLchar *message, const void * /*userParam*/);
 
    protected:
     static std::unordered_map<DrawPrimitive, int> primitiveToOpenGLMap;
@@ -51,6 +50,7 @@ class SDLGLInterface final : public BackendGLInterface {
 
    private:
     static void load();
+    static void unload();
     static void dumpGLContextInfo();
 
     SDL_Window *window;

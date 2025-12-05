@@ -10,17 +10,50 @@
 #include "Logging.h"
 #include "ConVar.h"
 
+#ifdef MCENGINE_FEATURE_GLES32
+#include "glad/glad_egl.h"
+#endif
+
+#ifndef MCENGINE_PLATFORM_WASM
+namespace {  // static
+#ifdef MCENGINE_FEATURE_GLES32
+bool EGLLoaded{false};
+bool GLESLoaded{false};
+#else
+bool GLLoaded{false};
+#endif
+}  // namespace
+#endif
+
 // resolve GL functions (static, called before construction)
 void SDLGLInterface::load() {
 #ifndef MCENGINE_PLATFORM_WASM
-    if(!gladLoadGL()) {
-        debugLog("gladLoadGL() error");
-        engine->showMessageErrorFatal("OpenGL Error", "Couldn't gladLoadGL()!\nThe engine will exit now.");
+    int loadedGLVer = 0;
+    void *eglDisplay = SDL_EGL_GetCurrentDisplay();
+#ifdef MCENGINE_FEATURE_GLES32
+    int loadedEGLVer = gladLoaderLoadEGL(!!eglDisplay ? eglDisplay : EGL_NO_DISPLAY);
+    if(!loadedEGLVer) {
+        debugLog("WARNING: glad failed to load EGL, GL ES may fail to load");
+    } else {
+        EGLLoaded = true;
+        debugLog("gladLoaderLoadEGL({:p}) loaded version {:d}.{:d}",
+                 (void *)(!!eglDisplay ? eglDisplay : EGL_NO_DISPLAY), GLAD_VERSION_MAJOR(loadedEGLVer),
+                 GLAD_VERSION_MINOR(loadedEGLVer));
+    }
+    loadedGLVer = gladLoaderLoadGLES2();
+    GLESLoaded = loadedGLVer > 0;
+#else
+    loadedGLVer = gladLoaderLoadGL();
+    GLLoaded = loadedGLVer > 0;
+#endif
+    if(!loadedGLVer) {
+        debugLog("glad load error");
+        engine->showMessageErrorFatal("OpenGL Error", "Couldn't load OpenGL!\nThe engine will exit now.");
         engine->shutdown();
         return;
     }
-    debugLog("gladLoadGL() version: {:d}.{:d}, EGL: {:s}", GLVersion.major, GLVersion.minor,
-             !!SDL_EGL_GetCurrentDisplay() ? "true" : "false");
+    debugLog("glad loaded GL{} {:d}.{:d}, EGL: {:s}", Env::cfg(REND::GLES32) ? " ES" : "",
+             GLAD_VERSION_MAJOR(loadedGLVer), GLAD_VERSION_MINOR(loadedGLVer), !!eglDisplay ? "true" : "false");
 #endif
     debugLog("GL_VERSION string: {}", reinterpret_cast<const char *>(glGetString(GL_VERSION)));
 
@@ -30,6 +63,29 @@ void SDLGLInterface::load() {
         dumpGLContextInfo();
     }
 }
+
+#ifdef MCENGINE_PLATFORM_WASM
+// nothing
+void SDLGLInterface::unload() {}
+#else
+void SDLGLInterface::unload() {
+#ifdef MCENGINE_FEATURE_GLES32
+    if(EGLLoaded) {
+        gladLoaderUnloadEGL();
+        EGLLoaded = false;
+    }
+    if(GLESLoaded) {
+        gladLoaderUnloadGLES2();
+        GLESLoaded = false;
+    }
+#else
+    if(GLLoaded) {
+        gladLoaderUnloadGL();
+        GLLoaded = false;
+    }
+#endif
+}
+#endif
 
 SDLGLInterface::SDLGLInterface(SDL_Window *window)
     : BackendGLInterface(), window(window), syncobj(std::make_unique<OpenGLSync>()) {}
@@ -102,14 +158,10 @@ std::unordered_map<DrawPrimitive, int> SDLGLInterface::primitiveToOpenGLMap = {
 };
 
 std::unordered_map<DrawCompareFunc, int> SDLGLInterface::compareFuncToOpenGLMap = {
-    {DrawCompareFunc::COMPARE_FUNC_NEVER, GL_NEVER},
-    {DrawCompareFunc::COMPARE_FUNC_LESS, GL_LESS},
-    {DrawCompareFunc::COMPARE_FUNC_EQUAL, GL_EQUAL},
-    {DrawCompareFunc::COMPARE_FUNC_LESSEQUAL, GL_LEQUAL},
-    {DrawCompareFunc::COMPARE_FUNC_GREATER, GL_GREATER},
-    {DrawCompareFunc::COMPARE_FUNC_NOTEQUAL, GL_NOTEQUAL},
-    {DrawCompareFunc::COMPARE_FUNC_GREATEREQUAL, GL_GEQUAL},
-    {DrawCompareFunc::COMPARE_FUNC_ALWAYS, GL_ALWAYS},
+    {DrawCompareFunc::COMPARE_FUNC_NEVER, GL_NEVER},         {DrawCompareFunc::COMPARE_FUNC_LESS, GL_LESS},
+    {DrawCompareFunc::COMPARE_FUNC_EQUAL, GL_EQUAL},         {DrawCompareFunc::COMPARE_FUNC_LESSEQUAL, GL_LEQUAL},
+    {DrawCompareFunc::COMPARE_FUNC_GREATER, GL_GREATER},     {DrawCompareFunc::COMPARE_FUNC_NOTEQUAL, GL_NOTEQUAL},
+    {DrawCompareFunc::COMPARE_FUNC_GREATEREQUAL, GL_GEQUAL}, {DrawCompareFunc::COMPARE_FUNC_ALWAYS, GL_ALWAYS},
 };
 
 std::unordered_map<DrawUsageType, unsigned int> SDLGLInterface::usageToOpenGLMap = {
@@ -235,8 +287,8 @@ void SDLGLInterface::setLog(bool on) {
     }
 }
 
-void APIENTRY SDLGLInterface::glDebugCB(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length,
-                                        const GLchar *message, const void * /*userParam*/) {
+void GLAPIENTRY SDLGLInterface::glDebugCB(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length,
+                                          const GLchar *message, const void * /*userParam*/) {
     Logger::logRaw("[GLDebugCB]");
     Logger::logRaw("    message: {}", std::string(message, length));
     Logger::logRaw("    time: {:.4f}", engine->getTime());

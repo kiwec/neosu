@@ -183,7 +183,7 @@ int OpenGLShader::getAndCacheUniformLocation(std::string_view name) {
     const bool cached = (cachedValue != this->uniformLocationCache.end());
 
     const int id = (cached ? cachedValue->second : glGetUniformLocationARB(this->iProgram, name.data()));
-    if(!cached && id != -1) this->uniformLocationCache[std::string{name}] = id;
+    if(!cached && id != -1) this->uniformLocationCache.emplace(name, id);
 
     return id;
 }
@@ -235,12 +235,17 @@ bool OpenGLShader::compile(const std::string &vertexShader, const std::string &f
     return true;
 }
 
-int OpenGLShader::createShaderFromString(const std::string &shaderSource, int shaderType) {
+int OpenGLShader::createShaderFromString(std::string shaderSource, int shaderType) {
     const GLhandleARB shader = glCreateShaderObjectARB(shaderType);
 
     if(shader == 0) {
         engine->showMessageError("OpenGLShader Error", "Couldn't glCreateShaderObjectARB()");
         return 0;
+    }
+
+    size_t pos = shaderSource.find("{RUNTIME_VERSION}"sv);
+    if(pos != std::string::npos) {
+        shaderSource.replace(pos, "{RUNTIME_VERSION}"sv.length(), "110");
     }
 
     // compile shader
@@ -259,7 +264,7 @@ int OpenGLShader::createShaderFromString(const std::string &shaderSource, int sh
         if(returnValue > 0) {
             char *errorLog = new char[returnValue];
             glGetInfoLogARB(shader, returnValue, &returnValue, errorLog);
-            debugLog("{}", errorLog);
+            Logger::logRaw("{}", errorLog);
             delete[] errorLog;
         }
 

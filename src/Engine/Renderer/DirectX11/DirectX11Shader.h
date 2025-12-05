@@ -180,14 +180,6 @@ class DirectX11Shader final : public Shader {
     static void *getBlobBufferPointer(ID3DBlob *blob);
     static SIZE_T getBlobBufferSize(ID3DBlob *blob);
     static void releaseBlob(ID3DBlob *blob);
-
-    struct SHADER_PARSE_RESULT {
-        std::string source;
-        std::vector<std::string> descs;
-    };
-
-    SHADER_PARSE_RESULT parseShaderFromString(const std::string &graphicsInterfaceAndShaderTypePrefix,
-                                              const std::string &shaderSource);
 };
 
 #endif

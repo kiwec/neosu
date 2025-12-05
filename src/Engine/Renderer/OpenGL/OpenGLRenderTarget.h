@@ -10,6 +10,7 @@
 #include <array>
 
 class OpenGLRenderTarget final : public RenderTarget {
+    NOCOPY_NOMOVE(OpenGLRenderTarget)
    public:
     OpenGLRenderTarget(int x, int y, int width, int height,
                        MultisampleType multiSampleType = MultisampleType::MULTISAMPLE_0X)
@@ -30,11 +31,12 @@ class OpenGLRenderTarget final : public RenderTarget {
     [[nodiscard]] inline unsigned int getResolveFrameBuffer() const { return this->iResolveFrameBuffer; }
     [[nodiscard]] inline unsigned int getResolveTexture() const { return this->iResolveTexture; }
 
-   private:
+   protected:
     void init() override;
     void initAsync() override;
     void destroy() override;
 
+   private:
     unsigned int iFrameBuffer{0};
     unsigned int iRenderTexture{0};
     unsigned int iDepthBuffer{0};

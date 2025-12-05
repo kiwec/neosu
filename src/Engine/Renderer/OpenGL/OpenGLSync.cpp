@@ -25,11 +25,7 @@ OpenGLSync::OpenGLSync() {
 #ifdef MCENGINE_PLATFORM_WASM
     this->bAvailable = false;
 #else
-    if constexpr(Env::cfg(REND::GLES32)) {
-        this->bAvailable = true;
-    } else {
-        this->bAvailable = GLVersion.major > 3 || (GLVersion.major == 3 && GLVersion.minor >= 2);
-    }
+    this->bAvailable = !!glClientWaitSync && !!glFenceSync && !!glGetSynciv;
 #endif
     this->bEnabled = cv::r_sync_enabled.getBool() && this->bAvailable;
 
@@ -106,7 +102,7 @@ void OpenGLSync::manageFrameSyncQueue(bool forceWait) {
             if(signaled == GL_SIGNALED) {
                 logIf(debug, "Frame {:d} also completed", nextSync.frameNumber);
 
-                deleteSyncObject(nextSync.syncObject);
+                this->deleteSyncObject(nextSync.syncObject);
                 this->frameSyncQueue.pop_front();
             } else {
                 break;

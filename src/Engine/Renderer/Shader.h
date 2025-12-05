@@ -1,6 +1,7 @@
 #pragma once
 // Copyright (c) 2012, PG, All rights reserved.
 #include "Resource.h"
+#include <vector>
 
 struct Matrix4;
 
@@ -34,4 +35,12 @@ class Shader : public Resource {
     void init() override = 0;
     void initAsync() override = 0;
     void destroy() override = 0;
+
+    struct SHADER_PARSE_RESULT {
+        std::string source;
+        std::vector<std::string> descs;
+    };
+
+    SHADER_PARSE_RESULT parseShaderFromString(const std::string &graphicsInterfaceAndShaderTypePrefix,
+                                                      const std::string &shaderSource);
 };

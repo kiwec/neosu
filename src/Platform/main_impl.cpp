@@ -378,7 +378,8 @@ SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
 
         case SDL_EVENT_TEXT_INPUT: {
             const char *evtextstr = event->text.text;
-            if(unlikely(!evtextstr || *evtextstr == '\0')) break; // probably should be assert() but there's no point in microoptimizing that hard
+            if(unlikely(!evtextstr || *evtextstr == '\0'))
+                break;  // probably should be assert() but there's no point in microoptimizing that hard
 
             int length;
             if(likely((length = strlen(evtextstr)) == 1)) {
@@ -463,7 +464,11 @@ bool SDLMain::createWindow() {
         SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
         SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
         SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
-        SDL_GL_SetAttribute(SDL_GL_FRAMEBUFFER_SRGB_CAPABLE, 1);
+
+        // work around weird issue with AMD on windows
+        if constexpr(Env::cfg(OS::WINDOWS)) {
+            SDL_GL_SetAttribute(SDL_GL_FRAMEBUFFER_SRGB_CAPABLE, 1);
+        }
 
         // alpha context causes trouble when using EGL (so, wayland or forced)
         if(m_bIsWayland || SDL_GetHintBoolean(SDL_HINT_VIDEO_FORCE_EGL, false)) {
@@ -473,10 +478,11 @@ bool SDLMain::createWindow() {
         SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,
                             Env::cfg(REND::GL) ? SDL_GL_CONTEXT_PROFILE_COMPATIBILITY : SDL_GL_CONTEXT_PROFILE_ES);
-        if constexpr(!Env::cfg(REND::GL)) {  // OpenGL ES
+        if constexpr(Env::cfg(REND::GLES32)) {
             SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
             SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
-        }
+        }  // otherwise just leave it as whatever is default
+
         // setup antialiasing from -aa command line argument
         if(m_mArgMap["-aa"].has_value()) {
             auto aaSamples = std::strtoull(m_mArgMap["-aa"].value().c_str(), nullptr, 10);

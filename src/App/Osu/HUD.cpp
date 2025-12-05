@@ -443,7 +443,7 @@ void HUD::drawCursorTrailInt(Shader *trailShader, std::vector<CURSORTRAIL> &trai
         if(smoothCursorTrail) {
             trailShader->enable();
             {
-                trailShader->setUniform1f("time", engine->getTime());
+                // trailShader->setUniform1f("time", engine->getTime());
 
                 trailImage->bind();
                 {

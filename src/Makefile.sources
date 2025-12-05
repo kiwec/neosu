@@ -3,7 +3,8 @@ neosu_SOURCES = \
 	libraries/MD5.cpp \
 	libraries/base64.cpp \
 	libraries/demoji.cpp \
-	libraries/glad/glad.cpp \
+	libraries/glad/glad_egl.cpp \
+	libraries/glad/glad_gl.cpp \
 	libraries/sha256.cpp \
 	src/App/App.cpp \
 	src/App/Osu/AbstractBeatmapInterface.cpp \
@@ -125,6 +126,9 @@ neosu_SOURCES = \
 	src/Engine/Renderer/DirectX11/DirectX11Shader.cpp \
 	src/Engine/Renderer/DirectX11/DirectX11VertexArrayObject.cpp \
 	src/Engine/Renderer/Graphics.cpp \
+	src/Engine/Renderer/OpenGL/OpenGLES32Interface.cpp \
+	src/Engine/Renderer/OpenGL/OpenGLES32Shader.cpp \
+	src/Engine/Renderer/OpenGL/OpenGLES32VertexArrayObject.cpp \
 	src/Engine/Renderer/OpenGL/OpenGLImage.cpp \
 	src/Engine/Renderer/OpenGL/OpenGLInterface.cpp \
 	src/Engine/Renderer/OpenGL/OpenGLRenderTarget.cpp \
@@ -134,6 +138,7 @@ neosu_SOURCES = \
 	src/Engine/Renderer/OpenGL/OpenGLVertexArrayObject.cpp \
 	src/Engine/Renderer/OpenGL/SDLGLInterface.cpp \
 	src/Engine/Renderer/RenderTarget.cpp \
+	src/Engine/Renderer/Shader.cpp \
 	src/Engine/Renderer/VertexArrayObject.cpp \
 	src/Engine/Resources/AsyncResourceLoader.cpp \
 	src/Engine/Resources/Resource.cpp \

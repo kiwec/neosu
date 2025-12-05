@@ -272,6 +272,10 @@ AS_VAR_SET_IF([with_renderer],
 
 AS_IF([test "x$use_dx11" = "xyes" || test "x$use_opengles32" = "xyes"], [
     use_opengl_default=no
+    AS_IF([test "x$use_opengles32" = "xyes"], [
+        # can't combine GL and GL ES
+        use_opengl=no
+    ])
 ])
 
 rendbackendlist=
@@ -284,7 +288,6 @@ AS_IF([test "x$use_opengl" = "xyes" || test "x$use_opengl_default" = "xyes"], [
     use_opengl=no
 ])
 
-# can't combine
 AS_IF([test "x$use_opengles32" = "xyes" && test "x$use_opengl" != "yes"], [
     # TODO
     use_opengles32=yes
@@ -845,7 +848,7 @@ AC_SUBST([AUDIO_CFLAGS])
 AC_SUBST([AUDIO_LIBS])
 
 # the source files are also added through autogen.sh to Makefile.sources
-BUNDLED_INCLUDES="-I\$(srcdir)/libraries -I\$(srcdir)/libraries/delegatesv2 -I\$(srcdir)/libraries/glad"
+BUNDLED_INCLUDES="-I\$(srcdir)/libraries -I\$(srcdir)/libraries/delegatesv2"
 AC_SUBST([BUNDLED_INCLUDES])
 
 # misc. resources to be included as binary data

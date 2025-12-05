@@ -29,8 +29,7 @@ void OpenGLRenderTarget::init() {
     int numMultiSamples = 2;
 
     if(iMaxMultiSamples == -1) {
-        if(Env::cfg(OS::WASM) || (GLVersion.major < 3) || !glTexImage2DMultisample ||
-           !glRenderbufferStorageMultisample) {
+        if((!glTexImage2DMultisample && !glTexStorage2DMultisample) || !glRenderbufferStorageMultisample) {
             iMaxMultiSamples = 0;
         } else {
             glGetIntegerv(GL_MAX_SAMPLES, &iMaxMultiSamples);

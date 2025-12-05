@@ -2,9 +2,10 @@
 // Copyright (c) 2015, PG, All rights reserved.
 #ifndef OPENGLHEADERS_H
 #define OPENGLHEADERS_H
+#include "config.h"
 
 #ifndef __EMSCRIPTEN__
-#include "glad/glad.h"
+#include "glad/glad_gl.h"
 #else
 #include <GLES3/gl3.h>
 #include <GLES3/gl31.h>

@@ -197,6 +197,11 @@ Environment::~Environment() {
         }
     }
     m_cursorIcons = {};
+
+#if defined(MCENGINE_FEATURE_OPENGL) || defined(MCENGINE_FEATURE_GLES32)
+    SDLGLInterface::unload();
+#endif
+
     env = nullptr;
 }
 
