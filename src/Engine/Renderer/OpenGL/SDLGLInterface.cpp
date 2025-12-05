@@ -44,10 +44,10 @@ void SDLGLInterface::beginScene() {
 void SDLGLInterface::endScene() {
     BackendGLInterface::endScene();
 
+    SDL_GL_SwapWindow(this->window);
+
     // create sync obj for the gl commands this frame (if enabled)
     this->syncobj->end();
-
-    SDL_GL_SwapWindow(this->window);
 }
 
 void SDLGLInterface::setVSync(bool vsync) { SDL_GL_SetSwapInterval(vsync ? 1 : 0); }

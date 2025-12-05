@@ -6,7 +6,7 @@
 
 #include "ConVar.h"
 #include "Environment.h"
-#include "ByteBufferedFile.h"
+#include "File.h"
 #include "ResourceManager.h"
 #include "SoundEngine.h"
 #include "SString.h"
@@ -34,12 +34,10 @@ void Sound::initAsync() {
             debugLog("Sound: Ignoring malformed/corrupt .{:s} file {:s}", fileExtensionLowerCase, this->sFilePath);
             this->bIgnored = true;
         } else {
-            if(cv::debug_snd.getBool()) {
-                debugLog(
+            logIfCV(debug_snd,
                     "Sound: snd_force_load_unknown=true, loading what seems to be a malformed/corrupt .{:s} file "
                     "{:s}",
                     fileExtensionLowerCase, this->sFilePath);
-            }
             this->bIgnored = false;
         }
     } else {
@@ -70,11 +68,11 @@ Sound* Sound::createSound(std::string filepath, bool stream, bool overlayable, b
 
 // quick heuristic to check if it's going to be worth loading the audio
 bool Sound::isValidAudioFile(std::string_view filePath, std::string_view fileExt) {
-    ByteBufferedFile::Reader reader(filePath);
+    File testFile(filePath);
 
-    if(!reader.good()) return false;
+    if(!testFile.canRead()) return false;
 
-    size_t fileSize = reader.total_size;
+    size_t fileSize = testFile.getFileSize();
 
     // account for larger flac header
     size_t minSize = fileExt == "flac" ? std::max<size_t>(cv::snd_file_min_size.getVal<size_t>(), 96)

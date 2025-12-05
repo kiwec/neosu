@@ -13,17 +13,17 @@ class OpenGLVertexArrayObject final : public VertexArrayObject {
     NOCOPY_NOMOVE(OpenGLVertexArrayObject)
    public:
     OpenGLVertexArrayObject(DrawPrimitive primitive = DrawPrimitive::PRIMITIVE_TRIANGLES,
-                            DrawUsageType usage = DrawUsageType::USAGE_STATIC,
-                            bool keepInSystemMemory = false);
+                            DrawUsageType usage = DrawUsageType::USAGE_STATIC, bool keepInSystemMemory = false);
     ~OpenGLVertexArrayObject() override { destroy(); }
 
     void draw() override;
 
-   private:
+   protected:
     void init() override;
     void initAsync() override;
     void destroy() override;
 
+   private:
     unsigned int iVertexBuffer;
     unsigned int iTexcoordBuffer;
     unsigned int iColorBuffer;
