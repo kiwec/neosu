@@ -681,8 +681,8 @@ AS_IF([test "$host_os" = "mingw32" && test "x$enable_clang" = "xyes"], [
     cxxflags_save="$CXXFLAGS"
     cflags_save="$CFLAGS"
     AX_CHECK_COMPILE_FLAG([-gcodeview], [
-        CXXFLAGS="$CXXFLAGS -g -gcodeview" # add some debug info too since its detached
-        CFLAGS="$CFLAGS -g -gcodeview"
+        CXXFLAGS="-g $CXXFLAGS -gcodeview" # add some debug info too since its detached
+        CFLAGS="-g $CFLAGS -gcodeview"
         AX_CHECK_LINK_FLAG([-Wl,--pdb=], [
             NEOSU_LDFLAGS="$NEOSU_LDFLAGS -Wl,--pdb="
         ])
@@ -752,8 +752,8 @@ AS_IF([test "x$enable_debug" = "xyes"], [
         NEOSU_LDFLAGS="$NEOSU_LDFLAGS -Wl,-s" # strip flag
     ], [
         # add minimal debug info
-        CXXFLAGS="$CXXFLAGS -g"
-        CFLAGS="$CFLAGS -g"
+        CXXFLAGS="-g $CXXFLAGS"
+        CFLAGS="-g $CFLAGS"
     ])
     AS_IF([test "$host_os" = "mingw32"], [
         AS_IF([test "x$enable_clang" = "xyes"], [
