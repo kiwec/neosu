@@ -50,10 +50,12 @@
 #include "SoundEngine.h"
 #include "SpectatorScreen.h"
 #include "UIModSelectorModButton.h"
+#include "uwu.h"
 
 #include "shaders.h"
 
-BeatmapInterface::BeatmapInterface() : AbstractBeatmapInterface() {
+struct LazyPPCalc : public uwu::lazy_promise<std::function<AsyncPPC::pp_res()>> {};
+BeatmapInterface::BeatmapInterface() : AbstractBeatmapInterface(), ppv2_calc(std::make_unique<LazyPPCalc>()) {
     // vars
     this->bIsPlaying = false;
     this->bIsPaused = false;
@@ -2362,7 +2364,7 @@ void BeatmapInterface::update() {
     // @PPV3: also calculate live ppv3
     if(cv::draw_statistics_pp.getBool() || cv::draw_statistics_livestars.getBool()) {
         {
-            const auto &[lock, result] = this->ppv2_calc.get();
+            const auto &[lock, result] = this->ppv2_calc->get();
             osu->getHUD()->live_pp = result.pp;
             osu->getHUD()->live_stars = result.total_stars;
         }
@@ -2370,7 +2372,7 @@ void BeatmapInterface::update() {
         if(this->last_calculated_hitobject < 0 || (this->last_calculated_hitobject != this->iCurrentHitObjectIndex)) {
             this->last_calculated_hitobject = this->iCurrentHitObjectIndex;
 
-            this->ppv2_calc.enqueue([current_hitobject = this->iCurrentHitObjectIndex,  //
+            this->ppv2_calc->enqueue([current_hitobject = this->iCurrentHitObjectIndex,  //
                                      CS = this->getCS(),                                //
                                      AR = this->getAR(),                                //
                                      OD = this->getOD(),                                //
@@ -2387,7 +2389,7 @@ void BeatmapInterface::update() {
                                      num300s = osu->getScore()->getNum300s(),           //
                                      num100s = osu->getScore()->getNum100s(),           //
                                      num50s = osu->getScore()->getNum50s()              //
-            ]() {
+            ](void) -> AsyncPPC::pp_res {
                 AsyncPPC::pp_res retInfo;
 
                 static std::string lastCalcedPath = osufile_path;

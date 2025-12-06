@@ -175,7 +175,7 @@ inline char* strtok_x(char d, char** str) {
 
 // this is commonly used in a few places to parse some arbitrary width x height string, might as well make it a function
 inline std::optional<ivec2> parse_resolution(std::string_view width_x_height) {
-    // don't allow e.g. < 100x100 or > 10000x10000
+    // don't allow e.g. < 100x100 or > 9999x9999
     if(width_x_height.length() < 7 || width_x_height.length() > 9) {
         return std::nullopt;
     }

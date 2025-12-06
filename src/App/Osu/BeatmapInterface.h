@@ -8,7 +8,6 @@
 #include "LegacyReplay.h"
 #include "PlaybackInterpolator.h"
 #include "score.h"
-#include "uwu.h"
 
 #include <memory>
 
@@ -21,6 +20,7 @@ class DatabaseBeatmap;
 class SimulatedBeatmapInterface;
 struct LiveReplayFrame;
 struct ScoreFrame;
+struct LazyPPCalc;
 
 struct Click {
     u64 timestamp;  // Timing::getTicksNS() when the event occurred
@@ -243,7 +243,7 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
     [[nodiscard]] inline f32 getBreakBackgroundFadeAnim() const { return this->fBreakBackgroundFade; }
 
     // live pp/stars
-    uwu::lazy_promise<std::function<AsyncPPC::pp_res()>, AsyncPPC::pp_res> ppv2_calc{AsyncPPC::pp_res{}};
+    std::unique_ptr<LazyPPCalc> ppv2_calc;
     i32 last_calculated_hitobject = -1;
     int iCurrentHitObjectIndex;
     int iCurrentNumCircles;

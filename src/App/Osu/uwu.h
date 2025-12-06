@@ -1,46 +1,37 @@
 #pragma once
-#include <atomic>
-#include <thread>
 #include <vector>
 
 #include "UString.h"
 #include "Thread.h"
 #include "SyncMutex.h"
 #include "SyncCV.h"
+#include "SyncJthread.h"
 
 // Unified Wait Utilities (◕‿◕✿)
 namespace uwu {
 
+template <typename Func, typename... Args>
+concept WorkItem = std::is_invocable_v<Func, Args...>;
+
 // Promise for queuing work, but only the latest function will be run.
-template <typename Func, typename Ret>
+template <WorkItem Func>
 struct lazy_promise {
-    lazy_promise(Ret default_ret) : keep_running(true), thread_started(false), ret(default_ret) {
-        // don't start thread during construction to avoid races
-        // thread will be started lazily on first enqueue
-    }
+    using Ret = std::invoke_result_t<Func>;
+    lazy_promise()
+        requires(std::is_default_constructible_v<Ret>)
+    = default;
+    lazy_promise()
+        requires(!std::is_default_constructible_v<Ret>)
+    = delete;
 
-    ~lazy_promise() {
-        // signal thread to stop
-        {
-            Sync::scoped_lock lock(this->funcs_mtx);
-            this->keep_running = false;
-        }
-        this->cv.notify_one();
-
-        // wait for thread to finish, but only if it was started
-        if(this->thread_started && this->thread.joinable()) {
-            this->thread.join();
-        }
-    }
+    lazy_promise(Ret default_ret) : ret(default_ret) {}
 
     void enqueue(Func func) {
         {
             Sync::scoped_lock lock(this->funcs_mtx);
-
-            // start thread lazily on first enqueue to avoid construction races
-            if(!this->thread_started) {
-                this->thread = std::thread(&lazy_promise::run, this);
-                this->thread_started = true;
+            // start thread now
+            if(!this->thread.joinable()) {
+                this->thread = Sync::jthread([this](const Sync::stop_token &stoken) { return this->run(stoken); });
             }
 
             this->funcs.push_back(func);
@@ -59,13 +50,13 @@ struct lazy_promise {
     }
 
    private:
-    void run() {
+    void run(const Sync::stop_token &stoken) {
         McThread::set_current_thread_name(ULITERAL("lazy_func_thr"));
         McThread::set_current_thread_prio(McThread::Priority::NORMAL);  // reset priority
-        for(;;) {
+        while(!stoken.stop_requested()) {
             Sync::unique_lock<Sync::mutex> lock(this->funcs_mtx);
-            this->cv.wait(lock, [this]() { return !this->funcs.empty() || !this->keep_running; });
-            if(!this->keep_running) break;
+            this->cv.wait(lock, stoken, [this]() { return !this->funcs.empty(); });
+            if(stoken.stop_requested()) break;
             if(this->funcs.empty()) {
                 continue;  // spurious wakeup
             }
@@ -74,21 +65,19 @@ struct lazy_promise {
             this->funcs.clear();
             lock.unlock();
 
-            this->set(std::move(func()));
+            this->set(func());
         }
     }
 
-    std::atomic<bool> keep_running;
-    std::atomic<bool> thread_started;
     Sync::mutex funcs_mtx;
-    Sync::condition_variable cv;
+    Sync::condition_variable_any cv;
     std::vector<Func> funcs;
 
     Ret ret;
     Sync::mutex ret_mtx;
 
-    // only initialized when needed
-    std::thread thread;
+    // lazily created on first enqueue
+    Sync::jthread thread;
 };
 
 };  // namespace uwu

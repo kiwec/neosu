@@ -9,6 +9,7 @@
 #include "score.h"
 #include "Timing.h"
 #include "Logging.h"
+#include "Thread.h"
 
 #include <atomic>
 #include <memory>
