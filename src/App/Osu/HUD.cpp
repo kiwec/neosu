@@ -41,8 +41,8 @@ HUD::HUD() : OsuScreen() {
         env->usingDX11() ? FSH_STRING(DX11_, cursortrail) : FSH_STRING(GL_, cursortrail), "cursortrail");
 
     this->cursorTrail.reserve(cv::cursor_trail_max_size.getInt() * 2);
-    this->cursorTrailVAO = resourceManager->createVertexArrayObject(DrawPrimitive::PRIMITIVE_QUADS,
-                                                                    DrawUsageType::USAGE_DYNAMIC);
+    this->cursorTrailVAO =
+        resourceManager->createVertexArrayObject(DrawPrimitive::PRIMITIVE_QUADS, DrawUsageType::USAGE_DYNAMIC);
 
     this->fCurFps = 60.0f;
     this->fCurFpsSmooth = 60.0f;
@@ -786,15 +786,17 @@ void HUD::drawComboOrScoreDigits(u64 number, float scale, bool drawLeadingZeroes
     const auto overlap =
         static_cast<float>(combo ? osu->getSkin()->combo_overlap_amt : osu->getSkin()->score_overlap_amt);
 
+    // TODO: use per-digit scaling/positioning
+    // need to change a ton of calling code that only uses the first image too
+    const float multiplier = images[0].scale();
+    const auto width = static_cast<float>(images[0]->getWidth());
+
     while(divisor >= 1) {
         int digit = static_cast<int>(number / divisor);
         number %= divisor;
         divisor /= 10;
 
         const auto &img = images[digit];
-        const float multiplier = img.scale();
-        auto width = static_cast<float>(img->getWidth());
-
         g->translate(width * 0.5f * scale, 0);
         g->drawImage(img);
         g->translate(width * 0.5f * scale, 0);
