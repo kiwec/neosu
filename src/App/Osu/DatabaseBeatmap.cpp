@@ -169,7 +169,7 @@ bool DatabaseBeatmap::parse_timing_point(std::string_view curLine, DatabaseBeatm
     // !Inherited new new beatmaps: Offset, Milliseconds per Beat, Meter, sampleSet, sampleIndex,
     // Volume, !Inherited, Kiai Mode
 
-    i32 tpOffset;
+    f64 tpOffset;
     f64 tpMSPerBeat;
     i32 tpMeter;
     i32 tpSampleSet, tpSampleIndex;
@@ -181,7 +181,7 @@ bool DatabaseBeatmap::parse_timing_point(std::string_view curLine, DatabaseBeatm
                       &tpVolume, ',', &tpUninherited, ',', &tpKiai) ||
        Parsing::parse(curLine, &tpOffset, ',', &tpMSPerBeat, ',', &tpMeter, ',', &tpSampleSet, ',', &tpSampleIndex, ',',
                       &tpVolume, ',', &tpUninherited)) {
-        out.offset = tpOffset;
+        out.offset = (i32)std::round(tpOffset);
         out.msPerBeat = tpMSPerBeat;
         out.sampleSet = tpSampleSet;
         out.sampleIndex = tpSampleIndex;
@@ -192,7 +192,7 @@ bool DatabaseBeatmap::parse_timing_point(std::string_view curLine, DatabaseBeatm
     }
 
     if(Parsing::parse(curLine, &tpOffset, ',', &tpMSPerBeat)) {
-        out.offset = tpOffset;
+        out.offset = (i32)std::round(tpOffset);
         out.msPerBeat = tpMSPerBeat;
         out.sampleSet = 0;
         out.sampleIndex = 0;
