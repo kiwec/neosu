@@ -7,6 +7,7 @@
 #include "Color.h"
 
 #include <atomic>
+#include <memory>
 namespace Logger {
 class ConsoleBoxSink;
 }
