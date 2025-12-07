@@ -2,6 +2,7 @@
 // Copyright (c) 2024, kiwec, All rights reserved.
 
 #include "OsuScreen.h"
+#include "Delegate.h"
 
 class CBaseUILabel;
 class CBaseUITextbox;

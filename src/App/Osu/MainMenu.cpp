@@ -13,6 +13,8 @@
 #include "CBaseUIButton.h"
 #include "CBaseUIContainer.h"
 #include "OsuConVars.h"
+#include "Environment.h"
+#include "MakeDelegateWrapper.h"
 #include "Database.h"
 #include "DatabaseBeatmap.h"
 #include "Downloader.h"

@@ -5,6 +5,8 @@
 // TODO: this entire class is a mess
 
 #include "CBaseUIElement.h"
+#include "Color.h"
+#include "Delegate.h"
 
 class CBaseUISlider : public CBaseUIElement {
    public:

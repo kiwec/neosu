@@ -10,6 +10,7 @@
 
 #include "OsuConVars.h"
 #include "Database.h"
+#include "MakeDelegateWrapper.h"
 #include "Engine.h"
 #include "Keyboard.h"
 #include "Mouse.h"

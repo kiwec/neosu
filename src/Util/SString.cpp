@@ -27,7 +27,7 @@ bool alnum_comp(std::string_view a, std::string_view b) {
     return false;
 }
 
-// alphanumeric string comparator that ignores special characters at the start of strings
+// split a string by a delimiter
 template <typename R, typename S, split_ret_enabled_t<R>, split_join_enabled_t<S>>
 std::vector<R> split(std::string_view s, S delim) {
     size_t len = 0;

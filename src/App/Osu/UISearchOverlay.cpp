@@ -7,6 +7,7 @@
 #include "Osu.h"
 #include "ResourceManager.h"
 #include "Font.h"
+#include "Graphics.h"
 
 UISearchOverlay::UISearchOverlay(float xPos, float yPos, float xSize, float ySize, UString name)
     : CBaseUIElement(xPos, yPos, xSize, ySize, std::move(name)) {

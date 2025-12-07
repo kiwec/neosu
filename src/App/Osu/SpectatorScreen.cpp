@@ -14,6 +14,7 @@
 #include "KeyBindings.h"
 #include "Lobby.h"
 #include "Logging.h"
+#include "MakeDelegateWrapper.h"
 #include "MainMenu.h"
 #include "NotificationOverlay.h"
 #include "PromptScreen.h"
@@ -56,7 +57,7 @@ namespace Spectating {
         label_name->setDrawBackground(false);                             \
     } while(0)
 
-void start(i32 user_id) {
+void start(int user_id) {
     Spectating::stop();
 
     Packet packet;

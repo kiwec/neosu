@@ -1,7 +1,7 @@
 // Copyright (c) 2020, PG, All rights reserved.
 #include "VisualProfiler.h"
 
-#include <string.h>
+#include <cstring>
 
 #include "AnimationHandler.h"
 #include "ConVar.h"

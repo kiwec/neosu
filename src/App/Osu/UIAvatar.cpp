@@ -6,6 +6,7 @@
 #include "Engine.h"
 #include "Osu.h"
 #include "UIUserContextMenu.h"
+#include "MakeDelegateWrapper.h"
 
 UIAvatar::UIAvatar(i32 player_id, float xPos, float yPos, float xSize, float ySize)
     : CBaseUIButton(xPos, yPos, xSize, ySize, "avatar", "") {

@@ -31,8 +31,8 @@ void CBaseUIElement::mouse_update(bool *propagate_clicks) {
         }
     }
 
-    const u8 buttonMask =
-        (u8)((this->bHandleLeftMouse && mouse->isLeftDown()) << 1) | (u8)(this->bHandleRightMouse && mouse->isRightDown());
+    const u8 buttonMask = (u8)((this->bHandleLeftMouse && mouse->isLeftDown()) << 1) |
+                          (u8)(this->bHandleRightMouse && mouse->isRightDown());
 
     if(buttonMask && *propagate_clicks) {
         this->mouseUpCheck |= buttonMask;
@@ -75,14 +75,11 @@ void CBaseUIElement::mouse_update(bool *propagate_clicks) {
 }
 
 void CBaseUIElement::dumpElem() const {
-    static size_t lastUpdateFrame = 0;
-    static int updateCount = 0;
     size_t currentFrame = engine->getFrameCount();
 
-    if(currentFrame != lastUpdateFrame) {
-        if(lastUpdateFrame > 0) {
+    if(currentFrame != this->lastDumpFrame) {
+        if(this->lastDumpFrame > 0) {
             Logger::logRaw(R"(frame: {}
-updated {} times last frame
 sName: {}
 bVisible: {}
 bActive: {}
@@ -96,13 +93,10 @@ vPos: {}
 vmPos: {},
 mouseInsideCheck: {:02b},
 mouseUpCheck: {:02b})",
-                           currentFrame, updateCount, this->sName, this->bVisible, this->bActive, this->bBusy,
-                           this->bEnabled, this->bKeepActive, this->bMouseInside, this->bHandleLeftMouse,
-                           this->bHandleRightMouse, this->rect, this->relRect, this->mouseInsideCheck,
-                           this->mouseUpCheck);
+                           currentFrame, this->sName, this->bVisible, this->bActive, this->bBusy, this->bEnabled,
+                           this->bKeepActive, this->bMouseInside, this->bHandleLeftMouse, this->bHandleRightMouse,
+                           this->rect, this->relRect, this->mouseInsideCheck, this->mouseUpCheck);
         }
-        lastUpdateFrame = currentFrame;
-        updateCount = 0;
+        this->lastDumpFrame = currentFrame;
     }
-    updateCount++;
 }

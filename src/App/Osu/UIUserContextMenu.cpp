@@ -9,6 +9,8 @@
 #include "Chat.h"
 #include "OsuConVars.h"
 #include "Engine.h"
+#include "Environment.h"
+#include "MakeDelegateWrapper.h"
 #include "Mouse.h"
 #include "NotificationOverlay.h"
 #include "Osu.h"

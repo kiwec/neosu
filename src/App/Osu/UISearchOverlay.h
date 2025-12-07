@@ -1,8 +1,10 @@
 #pragma once
 // Copyright (c) 2017, PG, All rights reserved.
+#include "CBaseUIElement.h"
+
 #include <utility>
 
-#include "CBaseUIElement.h"
+class McFont;
 
 class UISearchOverlay final : public CBaseUIElement {
    public:

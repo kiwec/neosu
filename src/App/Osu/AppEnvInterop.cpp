@@ -1,3 +1,6 @@
+#include "EnvironmentInterop.h"
+#include "Environment.h"
+
 #include "OsuConVars.h"
 #include "Database.h"
 #include "DatabaseBeatmap.h"
@@ -11,7 +14,6 @@
 #include "Skin.h"
 #include "SongBrowser/SongBrowser.h"
 #include "Logging.h"
-#include "EnvironmentInterop.h"
 
 struct OsuEnvInterop : public Environment::Interop {
     NOCOPY_NOMOVE(OsuEnvInterop)

@@ -10,6 +10,7 @@
 #include "Font.h"
 #include "KeyBindings.h"
 #include "Osu.h"
+#include "Graphics.h"
 #include "PauseMenu.h"
 #include "Logging.h"
 

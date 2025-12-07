@@ -6,7 +6,9 @@
 #include "KeyBindings.h"
 #include "Engine.h"
 #include "Osu.h"
+#include "Graphics.h"
 #include "UIButton.h"
+#include "MakeDelegateWrapper.h"
 
 PromptScreen::PromptScreen() : OsuScreen() {
     this->prompt_label = new CBaseUILabel(0, 0, 0, 0, "", "");

@@ -1,6 +1,7 @@
 #pragma once
 // Copyright (c) 2015, PG, All rights reserved.
 #include "CBaseUIElement.h"
+#include "Color.h"
 
 class McFont;
 

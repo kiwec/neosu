@@ -5,6 +5,7 @@
 class SongBrowser;
 class CBaseUIContainer;
 class UIPauseMenuButton;
+class Image;
 
 class PauseMenu final : public OsuScreen {
    public:

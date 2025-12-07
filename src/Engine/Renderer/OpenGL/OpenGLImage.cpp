@@ -5,7 +5,6 @@
 
 #include <utility>
 
-#include "Environment.h"
 #include "Engine.h"
 #include "ConVar.h"
 #include "File.h"

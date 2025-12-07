@@ -5,10 +5,10 @@
 #include "UString.h"
 
 void Keyboard::reset() {
-    this->controlDown = 0b00;
-    this->altDown = 0b00;
-    this->shiftDown = 0b00;
-    this->superDown = 0b00;
+    this->controlDown = 0;
+    this->altDown = 0;
+    this->shiftDown = 0;
+    this->superDown = 0;
 }
 
 void Keyboard::addListener(KeyboardListener *keyboardListener, bool insertOnTop) {

@@ -4,6 +4,7 @@
 #include "Engine.h"
 #include "ConsoleBox.h"
 #include "Thread.h"
+#include "Environment.h"
 #include "UString.h"
 
 #ifdef MCENGINE_PLATFORM_WINDOWS

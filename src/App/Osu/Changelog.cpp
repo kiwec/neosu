@@ -11,6 +11,9 @@
 #include "OptionsMenu.h"
 #include "Osu.h"
 #include "SoundEngine.h"
+#include "Graphics.h"
+#include "Environment.h"
+#include "MakeDelegateWrapper.h"
 
 Changelog::Changelog() : ScreenBackable() {
     this->setPos(-1, -1);

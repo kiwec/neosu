@@ -8,6 +8,7 @@
 #include "Osu.h"
 #include "Skin.h"
 #include "SoundEngine.h"
+#include "Environment.h"
 
 UIPauseMenuButton::UIPauseMenuButton(std::function<Image *()> getImageFunc, float xPos, float yPos, float xSize,
                                      float ySize, UString name)

@@ -13,6 +13,7 @@
 #include "Mouse.h"
 #include "OptionsMenu.h"
 #include "Osu.h"
+#include "MakeDelegateWrapper.h"
 #include "PauseMenu.h"
 #include "RankingScreen.h"
 #include "Skin.h"

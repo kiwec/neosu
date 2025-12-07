@@ -14,6 +14,7 @@ class PauseButton;
 class UIButton;
 class UICheckbox;
 class UIContextMenu;
+class McFont;
 
 class UIModList final : public CBaseUIContainer {
    public:

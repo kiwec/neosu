@@ -4,6 +4,8 @@
 #include "KeyboardEvent.h"
 #include "OsuScreen.h"
 
+#include <memory>
+
 #define CHAT_TOAST 0xff8a2be2
 #define INFO_TOAST 0xffffdd00
 #define ERROR_TOAST 0xffdd0000

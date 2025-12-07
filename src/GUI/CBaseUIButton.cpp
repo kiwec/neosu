@@ -4,6 +4,7 @@
 #include <utility>
 
 #include "Engine.h"
+#include "Graphics.h"
 #include "Mouse.h"
 #include "ResourceManager.h"
 #include "Font.h"

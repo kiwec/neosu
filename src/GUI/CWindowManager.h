@@ -3,7 +3,9 @@
 #define CWINDOWMANAGER_H
 
 #include "KeyboardListener.h"
-#include "cbase.h"
+#include "Vectors.h"
+
+#include <vector>
 
 class CBaseUIWindow;
 

@@ -1,11 +1,14 @@
 #pragma once
 // Copyright (c) 2014, PG, All rights reserved.
 #include "CBaseUIElement.h"
+#include "Color.h"
+
+class Image;
 
 class CBaseUIImage : public CBaseUIElement {
    public:
-    CBaseUIImage(const std::string& imageResourceName = "", float xPos = 0, float yPos = 0, float xSize = 0, float ySize = 0,
-                 UString name = "");
+    CBaseUIImage(const std::string &imageResourceName = "", float xPos = 0, float yPos = 0, float xSize = 0,
+                 float ySize = 0, UString name = "");
     ~CBaseUIImage() override { ; }
 
     void draw() override;

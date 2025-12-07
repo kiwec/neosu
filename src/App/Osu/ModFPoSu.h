@@ -1,6 +1,7 @@
 #pragma once
 // Copyright (c) 2019, Colin Brook & PG, All rights reserved.
-#include "cbase.h"
+#include "Vectors.h"
+#include "Matrices.h"
 
 #include <list>
 #include <memory>
@@ -10,6 +11,8 @@ class ConVar;
 class Image;
 class Shader;
 class VertexArrayObject;
+class KeyboardEvent;
+class UString;
 
 class ModFPoSu3DModel;
 

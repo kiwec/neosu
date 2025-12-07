@@ -14,6 +14,7 @@
 #include "Chat.h"
 #include "OsuConVars.h"
 #include "ConVarHandler.h"
+#include "MakeDelegateWrapper.h"
 #include "Console.h"
 #include "ConsoleBox.h"
 #include "Database.h"

@@ -9,6 +9,7 @@
 #include "DatabaseBeatmap.h"
 #include "Engine.h"
 #include "Osu.h"
+#include "Graphics.h"
 #include "SString.h"
 #include "Font.h"
 

@@ -14,6 +14,8 @@
 #include "Collections.h"
 #include "OsuConVars.h"
 #include "DatabaseBeatmap.h"
+#include "MakeDelegateWrapper.h"
+#include "Environment.h"
 #include "Engine.h"
 #include "Mouse.h"
 #include "Osu.h"

@@ -16,6 +16,8 @@
 #include "Logging.h"
 #include "Environment.h"
 #include "Keyboard.h"
+#include "Graphics.h"
+#include "MakeDelegateWrapper.h"
 #include "Mouse.h"
 #include "Timing.h"
 
@@ -103,8 +105,9 @@ ConsoleBox::ConsoleBox() : CBaseUIElement(0, 0, 0, 0, ""), fConsoleDelay(engine-
 
     this->logFont = engine->getConsoleFont();
 
-    this->textbox = std::make_unique<ConsoleBoxTextbox>(
-        5.f * dpiScale, (float)engine->getScreenHeight(), engine->getScreenWidth() - 10.f * dpiScale, 26.f, "consoleboxtextbox");
+    this->textbox =
+        std::make_unique<ConsoleBoxTextbox>(5.f * dpiScale, (float)engine->getScreenHeight(),
+                                            engine->getScreenWidth() - 10.f * dpiScale, 26.f, "consoleboxtextbox");
     {
         this->textbox->setSizeY(this->textbox->getRelSize().y * dpiScale);
         this->textbox->setFont(engine->getDefaultFont());
@@ -512,13 +515,15 @@ void ConsoleBox::onResolutionChange(vec2 newResolution) {
     this->suggestion->setSizeX(newResolution.x - 10 * dpiScale);
 }
 
-void ConsoleBox::processCommand(const std::string &command) {
+void ConsoleBox::processCommand(const UString &command) {
     this->clearSuggestions();
     this->iSelectedHistory = -1;
 
-    if(command.length() > 0) this->commandHistory.push_back(command);
+    if(command.length() > 0) {
+        this->commandHistory.push_back(command);
 
-    Console::processCommand(command);
+        Console::processCommand(command.utf8View());
+    }
 }
 
 bool ConsoleBox::isBusy() {

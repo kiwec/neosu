@@ -14,6 +14,7 @@
 #include "SyncMutex.h"
 #include "Logging.h"
 #include "SongBrowser.h"
+#include "Environment.h"
 
 #include <atomic>
 #include <memory>

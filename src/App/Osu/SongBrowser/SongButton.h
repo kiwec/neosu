@@ -3,6 +3,7 @@
 #include "CarouselButton.h"
 #include "score.h"
 
+class Image;
 class SongBrowser;
 class DatabaseBeatmap;
 class BeatmapCarousel;

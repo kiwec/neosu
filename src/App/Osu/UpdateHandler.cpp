@@ -13,6 +13,8 @@
 #include "OptionsMenu.h"
 #include "Osu.h"
 #include "Logging.h"
+#include "Environment.h"
+#include "MakeDelegateWrapper.h"
 
 #ifndef _WIN32
 #include <sys/stat.h>

@@ -1,9 +1,10 @@
 #pragma once
 // Copyright (c) 2016, PG, All rights reserved.
-#include "CBaseUIImageButton.h"
+#include "CBaseUIButton.h"
 
 class SkinImage;
 class ModSelector;
+class ConVar;
 
 class UIModSelectorModButton final : public CBaseUIButton {
    public:

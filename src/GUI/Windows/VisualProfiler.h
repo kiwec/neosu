@@ -3,6 +3,7 @@
 #define VISUALPROFILER_H
 
 #include "CBaseUIElement.h"
+#include "Color.h"
 
 class ConVar;
 class ProfilerNode;

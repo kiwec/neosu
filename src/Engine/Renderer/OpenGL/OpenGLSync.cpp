@@ -7,6 +7,8 @@
 #include "ConVar.h"
 #include "Engine.h"
 #include "Logging.h"
+#include "MakeDelegateWrapper.h"
+
 
 void OpenGLSync::onFramecountNumChanged(float newValue) {
     int newInt = static_cast<int>(newValue);

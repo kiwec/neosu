@@ -1,11 +1,13 @@
 #pragma once
 // Copyright (c) 2014, PG, All rights reserved.
 #include "CBaseUIElement.h"
+#include "Color.h"
 
 class CBaseUIButton;
 class CBaseUIContainer;
 
 class RenderTarget;
+class McFont;
 
 class CBaseUIWindow : public CBaseUIElement {
    public:

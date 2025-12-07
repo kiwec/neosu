@@ -26,6 +26,8 @@
 #include "Timing.h"
 #include "Logging.h"
 #include "score.h"
+#include "Environment.h"
+#include "MakeDelegateWrapper.h"
 
 #include <algorithm>
 #include <unordered_set>

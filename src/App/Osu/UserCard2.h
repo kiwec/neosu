@@ -3,6 +3,8 @@
 
 #include "CBaseUIButton.h"
 
+#include <memory>
+
 class ConVar;
 
 class UIAvatar;

@@ -10,6 +10,7 @@
 #include "MainMenu.h"
 #include "NotificationOverlay.h"
 #include "Osu.h"
+#include "Environment.h"
 #include "RoomScreen.h"
 #include "SongBrowser/SongBrowser.h"
 #include "TooltipOverlay.h"

@@ -14,6 +14,8 @@
 #include "Camera.h"
 #include "ConVar.h"
 #include "Engine.h"
+#include "MakeDelegateWrapper.h"
+#include "Environment.h"
 #include "Font.h"
 #include "Logging.h"
 #include "RuntimePlatform.h"

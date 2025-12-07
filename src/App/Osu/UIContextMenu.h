@@ -4,6 +4,8 @@
 #include "CBaseUIScrollView.h"
 #include "CBaseUITextbox.h"
 
+#include "Delegate.h"
+
 class CBaseUIContainer;
 
 class UIContextMenuButton;

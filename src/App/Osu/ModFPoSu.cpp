@@ -19,6 +19,7 @@
 #include "ResourceManager.h"
 #include "Skin.h"
 #include "Logging.h"
+#include "MakeDelegateWrapper.h"
 
 #include "VertexArrayObject.h"
 #include "RenderTarget.h"

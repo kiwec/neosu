@@ -4,6 +4,7 @@
 #include "ScreenBackable.h"
 
 #include <random>
+#include <memory>
 
 class BeatmapCarousel;
 class Database;

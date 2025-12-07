@@ -35,7 +35,6 @@ documentation and/or software.
 #ifndef BZF_MD5_H
 #define BZF_MD5_H
 
-#include "cbase.h"
 #include <cstring>
 #include <iostream>
 

@@ -181,6 +181,46 @@ struct McFontImpl final {
         constructor(characters, fontSize, antialiasing, fontDPI);
     }
 
+    void constructor(const std::vector<char16_t> &characters, int fontSize, bool antialiasing, int fontDPI) {
+        m_iFontSize = fontSize;
+        m_bAntialiasing = antialiasing;
+        m_iFontDPI = fontDPI;
+        m_fHeight = 1.0f;
+        m_batchActive = false;
+        m_batchQueue.totalVerts = 0;
+        m_batchQueue.usedEntries = 0;
+
+        // per-instance freetype initialization state
+        m_ftFace = nullptr;
+        m_bFreeTypeInitialized = false;
+
+        // initialize dynamic atlas management
+        m_staticRegionHeight = 0;
+        m_dynamicRegionY = 0;
+        m_slotsPerRow = 0;
+        m_currentTime = 0;
+        m_atlasNeedsReload = false;
+
+        // setup error glyph
+        m_errorGlyph = {.character = UNKNOWN_CHAR,
+                        .uvPixelsX = 10,
+                        .uvPixelsY = 1,
+                        .sizePixelsX = 1,
+                        .sizePixelsY = 0,
+                        .left = 0,
+                        .top = 10,
+                        .width = 10,
+                        .rows = 1,
+                        .advance_x = 0,
+                        .fontIndex = 0};
+
+        // pre-allocate space for initial glyphs
+        m_vGlyphs.reserve(characters.size());
+        for(char16_t ch : characters) {
+            addGlyph(ch);
+        }
+    }
+
     ~McFontImpl() { destroy(); }
 
     void init() {
@@ -237,46 +277,6 @@ struct McFontImpl final {
         m_dynamicSlotMap.clear();
         m_fHeight = 1.0f;
         m_atlasNeedsReload = false;
-    }
-
-    void constructor(const std::vector<char16_t> &characters, int fontSize, bool antialiasing, int fontDPI) {
-        m_iFontSize = fontSize;
-        m_bAntialiasing = antialiasing;
-        m_iFontDPI = fontDPI;
-        m_fHeight = 1.0f;
-        m_batchActive = false;
-        m_batchQueue.totalVerts = 0;
-        m_batchQueue.usedEntries = 0;
-
-        // per-instance freetype initialization state
-        m_ftFace = nullptr;
-        m_bFreeTypeInitialized = false;
-
-        // initialize dynamic atlas management
-        m_staticRegionHeight = 0;
-        m_dynamicRegionY = 0;
-        m_slotsPerRow = 0;
-        m_currentTime = 0;
-        m_atlasNeedsReload = false;
-
-        // setup error glyph
-        m_errorGlyph = {.character = UNKNOWN_CHAR,
-                        .uvPixelsX = 10,
-                        .uvPixelsY = 1,
-                        .sizePixelsX = 1,
-                        .sizePixelsY = 0,
-                        .left = 0,
-                        .top = 10,
-                        .width = 10,
-                        .rows = 1,
-                        .advance_x = 0,
-                        .fontIndex = 0};
-
-        // pre-allocate space for initial glyphs
-        m_vGlyphs.reserve(characters.size());
-        for(char16_t ch : characters) {
-            addGlyph(ch);
-        }
     }
 
     void drawString(const UString &text) {

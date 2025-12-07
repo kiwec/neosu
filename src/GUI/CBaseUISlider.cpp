@@ -9,6 +9,7 @@
 #include "Mouse.h"
 #include "App.h"
 #include "SoundEngine.h"
+#include "Graphics.h"
 
 CBaseUISlider::CBaseUISlider(float xPos, float yPos, float xSize, float ySize, UString name)
     : CBaseUIElement(xPos, yPos, xSize, ySize, std::move(name)) {

@@ -1,5 +1,8 @@
 // Copyright (c) 2013, PG, All rights reserved.
 #include "Quaternion.h"
+#include "Matrices.h"
+
+#include "noinclude.h"
 
 void Quaternion::set(float x, float y, float z, float w) {
     this->x = x;

@@ -9,6 +9,8 @@
 #include "Engine.h"
 #include "Keyboard.h"
 #include "Mouse.h"
+#include "Graphics.h"
+
 // #include "ResourceManager.h"
 // #include "Logging.h"
 

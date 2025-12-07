@@ -7,6 +7,7 @@
 #include "Osu.h"
 #include "RenderTarget.h"
 #include "ResourceManager.h"
+#include "Environment.h"
 #include "Shader.h"
 #include "Skin.h"
 #include "VertexArrayObject.h"

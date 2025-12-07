@@ -9,6 +9,7 @@
 #include "NotificationOverlay.h"
 #include "OptionsMenu.h"
 #include "Osu.h"
+#include "Environment.h"
 #include "SString.h"
 #include "Logging.h"
 

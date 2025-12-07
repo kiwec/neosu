@@ -7,6 +7,7 @@
 #include "CBaseUIContainer.h"
 #include "CBaseUIScrollView.h"
 #include "OsuConVars.h"
+#include "MakeDelegateWrapper.h"
 #include "Engine.h"
 #include "KeyBindings.h"
 #include "Mouse.h"

@@ -10,6 +10,7 @@
 #include "CBaseUIContainer.h"
 #include "Chat.h"
 #include "OsuConVars.h"
+#include "MakeDelegateWrapper.h"
 #include "Engine.h"
 #include "BanchoNetworking.h"
 #include "HUD.h"

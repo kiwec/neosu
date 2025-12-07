@@ -3,9 +3,12 @@
 #ifndef OPENGLSYNC_H
 #define OPENGLSYNC_H
 
-#include "cbase.h"
+#include "config.h"
 
 #if defined(MCENGINE_FEATURE_OPENGL) || defined(MCENGINE_FEATURE_GLES32)
+#include "noinclude.h"
+#include "types.h"
+
 #include <deque>
 
 typedef struct __GLsync *GLsync;

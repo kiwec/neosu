@@ -10,6 +10,8 @@
 #include "Logging.h"
 #include "Parsing.h"
 #include "ResourceManager.h"
+#include "MakeDelegateWrapper.h"
+#include "Environment.h"
 
 #include "Skin.h"
 

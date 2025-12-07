@@ -11,6 +11,7 @@
 #include "CBaseUIContainer.h"
 #include "CBaseUIScrollView.h"
 #include "OsuConVars.h"
+#include "Environment.h"
 #include "Engine.h"
 #include "Mouse.h"
 #include "Osu.h"

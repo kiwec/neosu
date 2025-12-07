@@ -3,6 +3,8 @@
 
 #include "CBaseUIWindow.h"
 #include "Engine.h"
+#include "UString.h"
+
 // #include "ResourceManager.h"
 // #include "Logging.h"
 

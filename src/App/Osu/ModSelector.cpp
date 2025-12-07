@@ -14,6 +14,7 @@
 #include "CBaseUISlider.h"
 #include "OsuConVars.h"
 #include "ConVarHandler.h"
+#include "MakeDelegateWrapper.h"
 #include "DatabaseBeatmap.h"
 #include "Engine.h"
 #include "Environment.h"

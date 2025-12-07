@@ -15,6 +15,8 @@
 #include "DatabaseBeatmap.h"
 #include "Engine.h"
 #include "Icons.h"
+#include "Environment.h"
+#include "MakeDelegateWrapper.h"
 #include "Keyboard.h"
 #include "AsyncPPCalculator.h"
 #include "LegacyReplay.h"

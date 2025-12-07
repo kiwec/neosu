@@ -28,6 +28,8 @@
 #include "SoundEngine.h"
 #include "UIButton.h"
 #include "Logging.h"
+#include "Environment.h"
+#include "MakeDelegateWrapper.h"
 
 RoomUIElement::RoomUIElement(Lobby* multi, const Room& room, float x, float y, float width, float height)
     : CBaseUIScrollView(x, y, width, height, "") {

@@ -17,6 +17,8 @@
 #include "ResourceManager.h"
 #include "SoundEngine.h"
 #include "Font.h"
+#include "Graphics.h"
+#include "Environment.h"
 
 // #include "Logging.h"
 

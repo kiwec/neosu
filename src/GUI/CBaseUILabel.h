@@ -1,6 +1,9 @@
 #pragma once
 // Copyright (c) 2014, PG, All rights reserved.
 #include "CBaseUIElement.h"
+#include "Color.h"
+#include "UString.h"
+class McFont;
 
 class CBaseUILabel : public CBaseUIElement {
    public:
@@ -82,8 +85,8 @@ class CBaseUILabel : public CBaseUIElement {
     UString sText;
     McFont *font;
 
-    float fStringWidth;
-    float fStringHeight;
+    float fStringWidth{0.f};
+    float fStringHeight{0.f};
 
     Color frameColor{0xffffffff};
     Color backgroundColor{0xff000000};

@@ -33,10 +33,10 @@ class Keyboard final : public InputDevice {
    private:
     std::vector<KeyboardListener *> listeners;
 
-    // 2 bits to handle left/right
-    // right bit is right ctrl/alt/shift/super, left bit is left
-    unsigned controlDown : 2 {0};
-    unsigned altDown : 2 {0};
-    unsigned shiftDown : 2 {0};
-    unsigned superDown : 2 {0};
+    // each holds 2 bits of state to handle left/right
+    // first bit is right ctrl/alt/shift/super, second bit is left
+    u8 controlDown{0};
+    u8 altDown{0};
+    u8 shiftDown{0};
+    u8 superDown{0};
 };

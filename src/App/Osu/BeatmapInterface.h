@@ -11,6 +11,7 @@
 
 #include <memory>
 
+class RenderTarget;
 class Sound;
 class ConVar;
 struct Skin;

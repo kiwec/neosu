@@ -2,6 +2,10 @@
 // Copyright (c) 2016, PG, All rights reserved.
 #include "OsuScreen.h"
 #include "MD5Hash.h"
+#include "types.h"
+#include "UString.h"
+
+#include <memory>
 
 class UIAvatar;
 class ScoreboardSlot;
@@ -62,7 +66,6 @@ class HUD final : public OsuScreen {
 
     [[nodiscard]] bool shouldDrawScoreboard() const;
 
-    std::vector<SCORE_ENTRY> getCurrentScores();
     void resetScoreboard();
     void updateScoreboard(bool animate);
     void drawFancyScoreboard();
@@ -115,6 +118,8 @@ class HUD final : public OsuScreen {
     void addCursorTrailPosition(std::vector<CURSORTRAIL> &trail, vec2 pos);
 
    private:
+    std::vector<SCORE_ENTRY> getCurrentScores();
+
     struct HITERROR {
         float time;
         i32 delta;

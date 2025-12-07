@@ -1,6 +1,8 @@
 #pragma once
 #include "OsuScreen.h"
 
+#include <memory>
+
 class CBaseUIContainer;
 class UIVolumeSlider;
 struct Skin;

@@ -2,6 +2,8 @@
 // Copyright (c) 2019, PG, All rights reserved.
 #include "ScreenBackable.h"
 
+#include <memory>
+
 class ConVar;
 class CBaseUIContainer;
 class CBaseUIScrollView;

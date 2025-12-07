@@ -19,6 +19,7 @@
 #include "Chat.h"
 #include "OsuConVars.h"
 #include "Database.h"
+#include "MakeDelegateWrapper.h"
 #include "Engine.h"
 #include "Environment.h"
 #include "File.h"

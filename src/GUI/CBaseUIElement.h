@@ -1,10 +1,12 @@
 #pragma once
 // Copyright (c) 2013, PG, All rights reserved.
 
-#include <utility>
-
 #include "KeyboardListener.h"
-#include "cbase.h"
+#include "Vectors.h"
+#include "Rect.h"
+#include "UString.h"
+
+#include <utility>
 
 // Guidelines for avoiding hair pulling:
 // - Don't use m_vmSize
@@ -154,6 +156,7 @@ class CBaseUIElement : public KeyboardListener {
     // actions
     virtual void stealFocus();
 
+    void dumpElem() const;  // debug
    protected:
     // events
     virtual void onResized() { ; }
@@ -195,7 +198,8 @@ class CBaseUIElement : public KeyboardListener {
     vec2 &vmSize;  // reference to relRect.vSize
 
    private:
-    void dumpElem() const;  // debug
-    u8 mouseInsideCheck{0};
-    u8 mouseUpCheck{0};
+    mutable uint64_t lastDumpFrame{0}; // for avoiding debug spam
+
+    uint8_t mouseInsideCheck{0};
+    uint8_t mouseUpCheck{0};
 };

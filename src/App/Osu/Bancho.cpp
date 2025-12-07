@@ -24,6 +24,7 @@
 #include "BeatmapInterface.h"
 #include "Chat.h"
 #include "OsuConVars.h"
+#include "Environment.h"
 #include "ConVarHandler.h"
 #include "Engine.h"
 #include "Lobby.h"

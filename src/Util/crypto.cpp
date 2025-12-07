@@ -5,6 +5,8 @@
 #include "MD5.h"               // vendored library
 #include "ByteBufferedFile.h"  // for file hashing functions
 
+#include "BaseEnvironment.h"
+
 #include <vector>
 #include <cstring>
 #include <cerrno>

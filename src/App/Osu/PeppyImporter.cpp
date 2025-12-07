@@ -7,6 +7,7 @@
 #include "KeyBindings.h"
 #include "Database.h"
 #include "OptionsMenu.h"
+#include "Environment.h"
 #include "Parsing.h"
 #include "Logging.h"
 

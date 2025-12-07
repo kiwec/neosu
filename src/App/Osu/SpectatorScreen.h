@@ -37,7 +37,7 @@ namespace Spectating {
 // convar callback
 void start_by_username(std::string_view username);
 
-void start(i32 user_id);
+void start(int user_id);
 void stop();
 
 }  // namespace Spectating

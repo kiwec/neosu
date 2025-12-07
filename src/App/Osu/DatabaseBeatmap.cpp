@@ -9,6 +9,7 @@
 #include "File.h"
 #include "GameRules.h"
 #include "HitObjects.h"
+#include "Environment.h"
 #include "Osu.h"
 #include "Parsing.h"
 #include "Skin.h"

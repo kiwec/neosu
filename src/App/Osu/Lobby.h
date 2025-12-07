@@ -10,6 +10,9 @@
 #include "CBaseUIScrollView.h"
 #include "OsuScreen.h"
 
+#include <memory>
+
+class McFont;
 class CBaseUIButton;
 class Lobby;
 class UIButton;

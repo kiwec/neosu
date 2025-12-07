@@ -5,6 +5,7 @@
 
 #include "Engine.h"
 #include "Logging.h"
+#include "Graphics.h"
 
 CBaseUIContainer::CBaseUIContainer(float Xpos, float Ypos, float Xsize, float Ysize, UString name)
     : CBaseUIElement(Xpos, Ypos, Xsize, Ysize, std::move(name)) {}

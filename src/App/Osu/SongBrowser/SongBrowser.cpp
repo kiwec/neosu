@@ -17,6 +17,8 @@
 #include "Collections.h"
 #include "OsuConVars.h"
 #include "Database.h"
+#include "MakeDelegateWrapper.h"
+#include "Environment.h"
 #include "DatabaseBeatmap.h"
 #include "DirectoryWatcher.h"
 #include "Downloader.h"

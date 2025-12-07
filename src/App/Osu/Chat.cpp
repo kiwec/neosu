@@ -36,6 +36,8 @@
 #include "UIUserContextMenu.h"
 #include "UserCard2.h"
 #include "Timing.h"
+#include "Environment.h"
+#include "MakeDelegateWrapper.h"
 
 #include <algorithm>
 #include <cmath>

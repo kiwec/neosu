@@ -4,7 +4,9 @@
 #include <utility>
 
 #include "Engine.h"
+#include "MakeDelegateWrapper.h"
 #include "Font.h"
+#include "Graphics.h"
 
 CBaseUICheckbox::CBaseUICheckbox(float xPos, float yPos, float xSize, float ySize, UString name, UString text)
     : CBaseUIButton(xPos, yPos, xSize, ySize, std::move(name), std::move(text)) {

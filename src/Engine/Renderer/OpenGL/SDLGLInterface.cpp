@@ -8,6 +8,7 @@
 #include "Engine.h"
 #include "OpenGLSync.h"
 #include "Logging.h"
+#include "Environment.h"
 #include "ConVar.h"
 
 #ifdef MCENGINE_FEATURE_GLES32

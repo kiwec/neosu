@@ -3,6 +3,8 @@
 
 #include "CBaseUIElement.h"
 #include "SyncMutex.h"
+#include "UString.h"
+#include "Color.h"
 
 #include <atomic>
 namespace Logger {
@@ -11,7 +13,7 @@ class ConsoleBoxSink;
 class CBaseUITextbox;
 class CBaseUIButton;
 class CBaseUIScrollView;
-
+class McFont;
 class ConsoleBoxTextbox;
 
 class ConsoleBox : public CBaseUIElement {
@@ -29,7 +31,7 @@ class ConsoleBox : public CBaseUIElement {
 
     void onResolutionChange(vec2 newResolution);
 
-    void processCommand(const std::string &command);
+    void processCommand(const UString &command);
 
     // set
     void setRequireShiftToActivate(bool requireShiftToActivate) {
@@ -91,7 +93,7 @@ class ConsoleBox : public CBaseUIElement {
     std::vector<LOG_ENTRY> log_entries;
     McFont *logFont;
 
-    std::vector<std::string> commandHistory;
+    std::vector<UString> commandHistory;
     int iSelectedHistory{-1};
     bool bClearPending{false};
 

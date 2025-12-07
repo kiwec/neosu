@@ -8,6 +8,7 @@
 #include "Skin.h"
 #include "SoundEngine.h"
 #include "UIBackButton.h"
+#include "MakeDelegateWrapper.h"
 
 ScreenBackable::ScreenBackable() : OsuScreen() {
     this->backButton = new UIBackButton(-1, 0, 0, 0, "");

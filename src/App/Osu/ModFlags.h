@@ -4,6 +4,8 @@
 #include "types.h"
 
 enum class ModFlags : u64 {
+    None = 0,  // NOTE: not "nomod" (unless ModFlags == None, but not ModFlags & None)
+
     // Green mods
     NoFail = 1ULL << 0,
     Easy = 1ULL << 1,
@@ -19,7 +21,7 @@ enum class ModFlags : u64 {
     Nightmare = 1ULL << 9,
 
     // Special mods
-    NoPitchCorrection = 1ULL << 10, // should rename to Nightcore?
+    NoPitchCorrection = 1ULL << 10,  // should rename to Nightcore?
     TouchDevice = 1ULL << 11,
     SpunOut = 1ULL << 12,
     ScoreV2 = 1ULL << 13,
@@ -65,6 +67,8 @@ enum class ModFlags : u64 {
 MAKE_FLAG_ENUM(ModFlags);
 
 enum class LegacyFlags : u32 {
+    None = 0,
+
     NoFail = 1U << 0,
     Easy = 1U << 1,
     TouchDevice = 1U << 2,
