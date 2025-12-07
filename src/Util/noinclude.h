@@ -10,8 +10,16 @@
         }               \
     }
 
-#define PI 3.1415926535897932384626433832795
-#define PIOVER180 0.01745329251994329576923690768489
+#ifdef PI
+#undef PI
+#endif
+
+#ifdef PIOVER180
+#undef PIOVER180
+#endif
+
+#define PI 3.141592653589793238462643383279502884
+#define PIOVER180 0.017453292519943295769236907684886128
 
 inline bool isInt(float f) { return (f == static_cast<float>(static_cast<int>(f))); }
 

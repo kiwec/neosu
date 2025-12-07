@@ -32,11 +32,11 @@ class CBaseUIContainer : public CBaseUIElement {
 
     CBaseUIElement *getBaseUIElement(const UString &name);
 
-    void onMoved() override { this->update_pos(); }
-    void onResized() override { this->update_pos(); }
-
     bool isBusy() override;
     bool isActive() override;
+
+    void onMoved() override { this->update_pos(); }
+    void onResized() override { this->update_pos(); }
 
     void onMouseDownOutside(bool left = true, bool right = false) override;
 
