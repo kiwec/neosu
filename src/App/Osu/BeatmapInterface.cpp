@@ -1946,12 +1946,12 @@ void BeatmapInterface::drawSmoke() {
                       * cv::cursor_scale.getFloat()                                                      //
                       * cv::smoke_scale.getFloat();
 
-    const i64 time_visible = (i64)(cv::smoke_trail_duration.getFloat() * 1000.f);
-    const i64 time_fully_visible = (i64)(cv::smoke_trail_opaque_duration.getFloat() * 1000.f);
-    const i64 fade_time = time_visible - time_fully_visible;
+    const u64 time_visible = cv::smoke_trail_duration.getFloat() * 1000.f;
+    const u64 time_fully_visible = cv::smoke_trail_opaque_duration.getFloat() * 1000.f;
+    const u64 fade_time = time_visible - time_fully_visible;
 
     for(const auto &sm : this->smoke_trail) {
-        const i64 active_for = current_time - sm.time;
+        const u64 active_for = current_time - sm.time;
         if(active_for >= time_visible) continue;  // avoids division by 0 when (time_visible == time_fully_visible)
 
         // Start fading out when time_fully_visible has passed

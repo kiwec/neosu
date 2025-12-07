@@ -431,7 +431,7 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
 
     struct SMOKETRAIL {
         vec2 pos{0.f};
-        i64 time;
+        u64 time;
     };
     std::vector<SMOKETRAIL> smoke_trail;
 };

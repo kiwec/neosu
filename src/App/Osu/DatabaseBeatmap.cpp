@@ -168,11 +168,11 @@ bool DatabaseBeatmap::parse_timing_point(std::string_view curLine, DatabaseBeatm
     // !Inherited new new beatmaps: Offset, Milliseconds per Beat, Meter, sampleSet, sampleIndex,
     // Volume, !Inherited, Kiai Mode
 
-    f64 tpOffset;
+    i32 tpOffset;
     f64 tpMSPerBeat;
     i32 tpMeter;
     i32 tpSampleSet, tpSampleIndex;
-    u8 tpVolume;
+    i32 tpVolume;
     i32 tpUninherited;
     i32 tpKiai = 0;  // optional
 
@@ -180,18 +180,18 @@ bool DatabaseBeatmap::parse_timing_point(std::string_view curLine, DatabaseBeatm
                       &tpVolume, ',', &tpUninherited, ',', &tpKiai) ||
        Parsing::parse(curLine, &tpOffset, ',', &tpMSPerBeat, ',', &tpMeter, ',', &tpSampleSet, ',', &tpSampleIndex, ',',
                       &tpVolume, ',', &tpUninherited)) {
-        out.offset = std::round(tpOffset);
+        out.offset = tpOffset;
         out.msPerBeat = tpMSPerBeat;
         out.sampleSet = tpSampleSet;
         out.sampleIndex = tpSampleIndex;
-        out.volume = std::clamp<u8>(tpVolume, 0, 100);
+        out.volume = std::clamp(tpVolume, 0, 100);
         out.uninherited = tpUninherited == 1;
         out.kiai = tpKiai > 0;
         return true;
     }
 
     if(Parsing::parse(curLine, &tpOffset, ',', &tpMSPerBeat)) {
-        out.offset = std::round(tpOffset);
+        out.offset = tpOffset;
         out.msPerBeat = tpMSPerBeat;
         out.sampleSet = 0;
         out.sampleIndex = 0;
@@ -429,7 +429,7 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(std::
                     // after sorting just to be sure?
 
                     f32 x, y;
-                    u32 time;
+                    i32 time;
                     i32 hitSounds;
                     // this actually should be initialized since we use it unconditionally after trying to parse it
                     u8 type = 0;
@@ -591,18 +591,19 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(std::
                         slider.number = comboNumber++;
                         c.sliders.push_back(slider);
                     } else if(type & PpyHitObjectType::SPINNER) {
-                        SPINNER s{.x = (i32)x,
-                                  .y = (i32)y,
-                                  .time = time,
-                                  .endTime = 0,
-                                  .samples = {.hitSounds = (u8)(hitSounds & HitSoundType::VALID_HITSOUNDS)}};
-
-                        upd_last_error(!Parsing::parse(csvs[5], &s.endTime));
+                        i32 endTime{0};
+                        upd_last_error(!Parsing::parse(csvs[5], &endTime));
 
                         if(err_line) {
                             debugLog("File: {} Invalid spinner (error on line {}): {}", osuFilePath, err_line, curLine);
                             break;
                         }
+
+                        SPINNER s{.x = (i32)x,
+                                  .y = (i32)y,
+                                  .time = time,
+                                  .endTime = endTime,
+                                  .samples = {.hitSounds = (u8)(hitSounds & HitSoundType::VALID_HITSOUNDS)}};
 
                         if(csvs.size() > 6) {
                             if(!parse_hitsamples(csvs[6], s.samples)) {
@@ -1463,12 +1464,12 @@ MapOverrides DatabaseBeatmap::get_overrides() const {
             .draw_background = this->draw_background};
 }
 
-DatabaseBeatmap::TIMING_INFO DatabaseBeatmap::getTimingInfoForTime(u32 positionMS) const {
+DatabaseBeatmap::TIMING_INFO DatabaseBeatmap::getTimingInfoForTime(i32 positionMS) const {
     return getTimingInfoForTimeAndTimingPoints(positionMS, this->timingpoints);
 }
 
 DatabaseBeatmap::TIMING_INFO DatabaseBeatmap::getTimingInfoForTimeAndTimingPoints(
-    u32 positionMS, const zarray<DatabaseBeatmap::TIMINGPOINT> &timingpoints) {
+    i32 positionMS, const zarray<DatabaseBeatmap::TIMINGPOINT> &timingpoints) {
     static TIMING_INFO default_info{
         .offset = 0,
         .beatLengthBase = 1,

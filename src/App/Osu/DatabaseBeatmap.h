@@ -49,7 +49,7 @@ class DatabaseBeatmap final {
    public:
     // raw structs (not editable, we're following db format directly)
     struct TIMINGPOINT {
-        f64 offset;
+        i32 offset;
         f64 msPerBeat;
 
         i32 sampleSet;
@@ -127,7 +127,7 @@ class DatabaseBeatmap final {
 
     struct HITCIRCLE {
         int x, y;
-        u32 time;
+        i32 time;
         int number;
         int colorCounter;
         int colorOffset;
@@ -140,7 +140,7 @@ class DatabaseBeatmap final {
         char type;
         int repeat;
         float pixelLength;
-        u32 time;
+        i32 time;
         int number;
         int colorCounter;
         int colorOffset;
@@ -157,8 +157,8 @@ class DatabaseBeatmap final {
 
     struct SPINNER {
         int x, y;
-        u32 time;
-        u32 endTime;
+        i32 time;
+        i32 endTime;
         HitSamples samples;
     };
 
@@ -227,8 +227,8 @@ class DatabaseBeatmap final {
         return this->difficulties == nullptr ? empty : reinterpret_cast<const std::vector<T *> &>(*this->difficulties);
     }
 
-    [[nodiscard]] TIMING_INFO getTimingInfoForTime(u32 positionMS) const;
-    static TIMING_INFO getTimingInfoForTimeAndTimingPoints(u32 positionMS,
+    [[nodiscard]] TIMING_INFO getTimingInfoForTime(i32 positionMS) const;
+    static TIMING_INFO getTimingInfoForTimeAndTimingPoints(i32 positionMS,
                                                            const zarray<DatabaseBeatmap::TIMINGPOINT> &timingpoints);
 
     // raw metadata
