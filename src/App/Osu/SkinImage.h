@@ -80,7 +80,7 @@ class SkinImage final {
 
     [[nodiscard]] float getScale() const;
     [[nodiscard]] float getImageScale() const;
-    void drawBrightQuad(float brightness, float x, float y, float width, float height) const;  // helper
+    void drawBrightQuad(VertexArrayObject *vao, float brightness) const;  // helper
 
     Skin* skin;
     bool bReady;

@@ -662,7 +662,7 @@ void SongBrowser::draw() {
                 const float strainWidth = strainStepMS / msPerPixel;
                 const float strainHeightMultiplier = cv::hud_scrubbing_timeline_strains_height.getFloat() * dpiScale;
 
-                McRect graphRect(0, osu->getVirtScreenHeight() - (get_bottombar_height() + strainHeightMultiplier),
+                McRect graphRect(0, osu->getVirtScreenHeight() - (BottomBar::get_height() + strainHeightMultiplier),
                                  graphWidth, strainHeightMultiplier);
 
                 const float alpha =
@@ -690,7 +690,7 @@ void SongBrowser::draw() {
                     if(!keyboard->isShiftDown()) {
                         g->setColor(aimStrainColor);
                         g->fillRect(i * strainWidth,
-                                    osu->getVirtScreenHeight() - (get_bottombar_height() + aimStrainHeight),
+                                    osu->getVirtScreenHeight() - (BottomBar::get_height() + aimStrainHeight),
                                     std::max(1.0f, std::round(strainWidth + 0.5f)), aimStrainHeight);
                     }
 
@@ -698,7 +698,7 @@ void SongBrowser::draw() {
                         g->setColor(speedStrainColor);
                         g->fillRect(i * strainWidth,
                                     osu->getVirtScreenHeight() -
-                                        (get_bottombar_height() +
+                                        (BottomBar::get_height() +
                                          ((keyboard->isShiftDown() ? 0 : aimStrainHeight) - speedStrainHeight)),
                                     std::max(1.0f, std::round(strainWidth + 0.5f)), speedStrainHeight + 1);
                     }
@@ -717,7 +717,7 @@ void SongBrowser::draw() {
 
                     vec2 topLeftCenter = vec2(
                         highestStrainIndex * strainWidth + strainWidth / 2.0f,
-                        osu->getVirtScreenHeight() - (get_bottombar_height() + aimStrainHeight + speedStrainHeight));
+                        osu->getVirtScreenHeight() - (BottomBar::get_height() + aimStrainHeight + speedStrainHeight));
 
                     const float margin = 5.0f * dpiScale;
 
@@ -759,7 +759,7 @@ void SongBrowser::draw() {
     g->popTransform();
 
     // draw bottom bar
-    draw_bottombar();
+    BottomBar::draw();
 
     // draw top bar
     this->topbarLeft->draw();
@@ -871,11 +871,11 @@ void SongBrowser::mouse_update(bool *propagate_clicks) {
     this->localBestContainer->mouse_update(propagate_clicks);
     ScreenBackable::mouse_update(propagate_clicks);
 
-    // NOTE: This is placed before update_bottombar(), otherwise the context menu would close
+    // NOTE: This is placed before BottomBar::update(), otherwise the context menu would close
     //       on a bottombar selector click (yeah, a bit hacky)
     this->contextMenu->mouse_update(propagate_clicks);
 
-    update_bottombar(propagate_clicks);
+    BottomBar::update(propagate_clicks);
 
     // map star/bpm/other calc
     if(MapCalcThread::is_finished()) {
@@ -1071,15 +1071,15 @@ void SongBrowser::onKeyDown(KeyboardEvent &key) {
     // function hotkeys
     if((key == KEY_F1 || key == cv::TOGGLE_MODSELECT.getVal<SCANCODE>()) && !this->bF1Pressed) {
         this->bF1Pressed = true;
-        press_bottombar_button(1);
+        BottomBar::press_button(BottomBar::MODS);
     }
     if((key == KEY_F2 || key == cv::RANDOM_BEATMAP.getVal<SCANCODE>()) && !this->bF2Pressed) {
         this->bF2Pressed = true;
-        press_bottombar_button(2);
+        BottomBar::press_button(BottomBar::RANDOM);
     }
     if(key == KEY_F3 && !this->bF3Pressed) {
         this->bF3Pressed = true;
-        press_bottombar_button(3);
+        BottomBar::press_button(BottomBar::OPTIONS);
     }
 
     if(key == KEY_F5) this->refreshBeatmaps();
@@ -2156,7 +2156,7 @@ void SongBrowser::updateLayout() {
                            this->topbarRight->getPos().y + (this->topbarRight->getSize().y * 0.9));
     this->carousel->setSize(
         osu->getVirtScreenWidth() - (this->topbarLeft->getPos().x + this->topbarLeft->getSize().x),
-        (osu->getVirtScreenHeight() - this->carousel->getPos().y - (bottombar_get_min_height() * 0.75f)));
+        (osu->getVirtScreenHeight() - this->carousel->getPos().y - (BottomBar::get_min_height() * 0.75f)));
 
     this->updateSongButtonLayout();
 
@@ -2177,7 +2177,7 @@ void SongBrowser::updateScoreBrowserLayout() {
     const int scoreButtonWidthMax = this->topbarLeft->getSize().x;
 
     f32 browserHeight = osu->getVirtScreenHeight() -
-                        (get_bottombar_height() + (this->topbarLeft->getPos().y + this->topbarLeft->getSize().y)) +
+                        (BottomBar::get_height() + (this->topbarLeft->getPos().y + this->topbarLeft->getSize().y)) +
                         2 * dpiScale;
     this->scoreBrowser->setPos(this->topbarLeft->getPos().x + 2 * dpiScale,
                                this->topbarLeft->getPos().y + this->topbarLeft->getSize().y + 4 * dpiScale);

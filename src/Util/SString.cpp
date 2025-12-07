@@ -40,6 +40,16 @@ std::vector<R> split(std::string_view s, S delim) {
     }
 
     std::vector<R> r;
+
+    // pre-count delimiter occurrences and reserve that amount (to avoid reallocations)
+    size_t count = 0;
+    if constexpr(std::is_same_v<std::decay_t<S>, char>) {
+        count = std::ranges::count(s, delim);
+    } else {
+        for(size_t pos = 0; (pos = s.find(delim, pos)) != s.npos; pos += len) count++;
+    }
+    r.reserve(count + 1);
+
     size_t i = 0, j = 0;
     if constexpr(std::is_same_v<std::decay_t<R>, std::string>) {
         while((j = s.find(delim, i)) != s.npos) r.emplace_back(s, i, j - i), i = j + len;

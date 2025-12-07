@@ -17,12 +17,13 @@
 #include "UserCard.h"
 #include "Font.h"
 
-enum { MODE = 0, MODS = 1, RANDOM = 2, OPTIONS = 3 };
+namespace BottomBar {
+
 static McRect btns[4];
 static f32 hovers[4] = {0.f, 0.f, 0.f, 0.f};
-static i32 hovered_btn = -1;
+static Button hovered_btn = NONE;
 
-void press_bottombar_button(i32 btn_index) {
+void press_button(Button btn_index) {
     if(hovered_btn != btn_index) {
         hovers[btn_index] = 1.f;
         anim->moveLinear(&hovers[btn_index], 0.0f, 0.1f, 0.05f, true);
@@ -44,9 +45,9 @@ void press_bottombar_button(i32 btn_index) {
     std::unreachable();
 }
 
-f32 bottombar_get_min_height() { return SongBrowser::getUIScale() * 101.f; }
+f32 get_min_height() { return SongBrowser::getUIScale() * 101.f; }
 
-f32 get_bottombar_height() {
+f32 get_height() {
     f32 max = 0.f;
     for(auto& btn : btns) {
         if(btn.getHeight() > max) {
@@ -54,10 +55,10 @@ f32 get_bottombar_height() {
         }
     }
 
-    return std::max(bottombar_get_min_height(), max);
+    return std::max(get_min_height(), max);
 }
 
-void update_bottombar(bool* propagate_clicks) {
+void update(bool* propagate_clicks) {
     static bool mouse_was_down = false;
 
     auto mousePos = mouse->getPos();
@@ -88,7 +89,7 @@ void update_bottombar(bool* propagate_clicks) {
     osu->getUserButton()->mouse_update(propagate_clicks);
 
     // Yes, the order looks whack. That's the correct order.
-    i32 new_hover = -1;
+    Button new_hover = NONE;
     if(btns[OPTIONS].contains(mousePos)) {
         new_hover = OPTIONS;
     } else if(btns[MODE].contains(mousePos)) {
@@ -102,10 +103,10 @@ void update_bottombar(bool* propagate_clicks) {
     }
 
     if(hovered_btn != new_hover) {
-        if(hovered_btn != -1) {
+        if(hovered_btn != NONE) {
             anim->moveLinear(&hovers[hovered_btn], 0.0f, hovers[hovered_btn] * 0.1f, true);
         }
-        if(new_hover != -1) {
+        if(new_hover != NONE) {
             anim->moveLinear(&hovers[new_hover], 1.f, 0.1f, true);
         }
 
@@ -114,16 +115,16 @@ void update_bottombar(bool* propagate_clicks) {
 
     if(clicked && *propagate_clicks) {
         *propagate_clicks = false;
-        press_bottombar_button(hovered_btn);
+        press_button(hovered_btn);
     }
 
     // TODO @kiwec: do hovers make sound?
 }
 
-void draw_bottombar() {
+void draw() {
     g->pushTransform();
     {
-        f32 bar_height = bottombar_get_min_height();
+        f32 bar_height = get_min_height();
         Image* img = osu->getSkin()->i_songselect_bot;
         g->setColor(0xffffffff);
         g->scale((f32)osu->getVirtScreenWidth() / (f32)img->getWidth(), bar_height / (f32)img->getHeight());
@@ -227,3 +228,4 @@ void draw_bottombar() {
 }
 
 // TODO @kiwec: default icon for mode-osu-small
+}  // namespace BottomBar

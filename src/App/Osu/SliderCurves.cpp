@@ -62,8 +62,8 @@ class SliderCurveEqualDistanceMulti : public SliderCurve {
     struct SliderCurveDetails {
         // ctor helpers
        private:
-        [[nodiscard]] static FixedSizeArray<vec2> initBezier(const std::vector<vec2> &initPoints);
-        [[nodiscard]] static FixedSizeArray<vec2> initCatmull(const std::vector<vec2> &initPoints);
+        [[nodiscard]] static std::vector<vec2> initBezier(const std::vector<vec2> &initPoints);
+        [[nodiscard]] static std::vector<vec2> initCatmull(const std::vector<vec2> &initPoints);
 
        public:
         SliderCurveDetails() = delete;
@@ -76,7 +76,7 @@ class SliderCurveEqualDistanceMulti : public SliderCurve {
 
             // calculate curve distances
             // find the distance of each point from the previous point (needed for some curve types)
-            for(u64 i = 0; i < this->points.size(); i++) {
+            for(u64 i = 0; i < this->numCurveDistances(); i++) {
                 const f32 curDist = (i == 0) ? 0 : vec::length(this->points[i] - this->points[i - 1]);
 
                 this->curveDistances[i] = curDist;
@@ -86,7 +86,7 @@ class SliderCurveEqualDistanceMulti : public SliderCurve {
         [[nodiscard]] forceinline u64 numPoints() const { return this->points.size(); }
         [[nodiscard]] forceinline u64 numCurveDistances() const { return this->points.size(); }  // must be the same
 
-        FixedSizeArray<vec2> points;
+        std::vector<vec2> points;
         std::unique_ptr<f32[]> curveDistances;
     };
 
@@ -312,8 +312,7 @@ vec2 SliderCurveEqualDistanceMulti::originalPointAt(f32 t) const {
 //	 Bezier Curves	 //
 //*******************//
 
-FixedSizeArray<vec2> SliderCurveEqualDistanceMulti::SliderCurveDetails::initBezier(
-    const std::vector<vec2> &initPoints) {
+std::vector<vec2> SliderCurveEqualDistanceMulti::SliderCurveDetails::initBezier(const std::vector<vec2> &initPoints) {
     // init helper
     struct SliderBezierApproximator {
         // https://github.com/ppy/osu/blob/master/osu.Game/Rulesets/Objects/BezierApproximator.cs
@@ -396,7 +395,7 @@ FixedSizeArray<vec2> SliderCurveEqualDistanceMulti::SliderCurveDetails::initBezi
 
                 if(this->isFlatEnough(parent)) {
                     this->approximate(parent, output);
-                    freeBuffers.push(parent);
+                    freeBuffers.push(std::move(parent));
                     continue;
                 }
 
@@ -423,8 +422,7 @@ FixedSizeArray<vec2> SliderCurveEqualDistanceMulti::SliderCurveDetails::initBezi
     };
 
     // precalculate all intermediary points
-    FixedSizeArray<vec2> ret{SliderBezierApproximator().createBezier(initPoints)};
-    return ret;
+    return SliderBezierApproximator().createBezier(initPoints);
 }
 
 // beziers
@@ -495,8 +493,7 @@ SliderCurveEqualDistanceMulti::SliderCurveEqualDistanceMulti(std::vector<vec2> c
 //   Catmull Curves   //
 //********************//
 
-FixedSizeArray<vec2> SliderCurveEqualDistanceMulti::SliderCurveDetails::initCatmull(
-    const std::vector<vec2> &initPoints) {
+std::vector<vec2> SliderCurveEqualDistanceMulti::SliderCurveDetails::initCatmull(const std::vector<vec2> &initPoints) {
     if(initPoints.size() != 4) {
         debugLog("SliderCurveType::initCatmull() Error: points.size() != 4!!!");
         return {};
@@ -532,9 +529,10 @@ FixedSizeArray<vec2> SliderCurveEqualDistanceMulti::SliderCurveDetails::initCatm
     // subdivide the curve, calculate all intermediary points
     const i32 numPoints = (i32)(approxLength / 8.0f) + 2;
 
-    FixedSizeArray<vec2> ret(numPoints);
+    std::vector<vec2> ret;
+    ret.reserve(numPoints);
     for(i32 i = 0; i < numPoints; i++) {
-        ret[i] = cPointAt((f32)i / (f32)(numPoints - 1));
+        ret.emplace_back(cPointAt((f32)i / (f32)(numPoints - 1)));
     }
 
     return ret;

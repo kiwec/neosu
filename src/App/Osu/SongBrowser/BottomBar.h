@@ -8,8 +8,12 @@ class Graphics;
 // Bottom bar has some hacky logic to handle osu!stable skins properly.
 // Standard input handling logic won't work, as buttons can overlap.
 
-void update_bottombar(bool* propagate_clicks);
-void draw_bottombar();
-void press_bottombar_button(i32 btn_index);
-f32 get_bottombar_height();
-f32 bottombar_get_min_height();
+namespace BottomBar {
+enum Button : i8 { NONE = -1, MODE = 0, MODS = 1, RANDOM = 2, OPTIONS = 3 };
+
+void update(bool* propagate_clicks);
+void draw();
+void press_button(Button btn);
+[[nodiscard]] f32 get_height();
+[[nodiscard]] f32 get_min_height();
+}  // namespace BottomBar

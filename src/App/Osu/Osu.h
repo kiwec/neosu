@@ -115,7 +115,7 @@ class Osu final : public App, public MouseListener {
     // CUSTOM METHODS/MEMBERS INACCESSIBLE FROM ENGINE //
     /////////////////////////////////////////////////////
 
-    static constexpr const vec2 osuBaseResolution{640.0f, 480.0f};
+    static const vec2 osuBaseResolution;
 
     static float getImageScaleToFitResolution(const Image *img, vec2 resolution);
     static float getImageScaleToFitResolution(vec2 size, vec2 resolution);

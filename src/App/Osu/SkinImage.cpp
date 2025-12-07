@@ -224,9 +224,8 @@ SkinImage::~SkinImage() {
     this->filepathsForExport.clear();
 }
 
-void SkinImage::drawBrightQuad(float brightness, float x, float y, float width, float height) const {
-    VertexArrayObject vao(DrawPrimitive::PRIMITIVE_QUADS);
-
+void SkinImage::drawBrightQuad(VertexArrayObject* vao, float brightness) const {
+    // it is assumed that the vao is already set up as a quad with the right texcoords/vertices
     const bool oldBlending = g->getBlending();
     const auto oldBlendMode = g->getBlendMode();
 
@@ -235,23 +234,9 @@ void SkinImage::drawBrightQuad(float brightness, float x, float y, float width, 
     g->setBlending(true);
     g->setBlendMode(DrawBlendMode::BLEND_MODE_ADDITIVE);
 
-    vao.addVertex(x, y);
-    vao.addTexcoord(0, 0);
-    vao.addColor(brightColor);
+    vao->setColors(std::vector<Color>(4, brightColor));
 
-    vao.addVertex(x, (y + height));
-    vao.addTexcoord(0, 1);
-    vao.addColor(brightColor);
-
-    vao.addVertex((x + width), (y + height));
-    vao.addTexcoord(this->fDrawClipWidthPercent, 1);
-    vao.addColor(brightColor);
-
-    vao.addVertex((x + width), y);
-    vao.addTexcoord(this->fDrawClipWidthPercent, 0);
-    vao.addColor(brightColor);
-
-    g->drawVAO(&vao);
+    g->drawVAO(vao);
 
     g->setBlendMode(oldBlendMode);
     g->setBlending(oldBlending);
@@ -300,7 +285,7 @@ void SkinImage::draw(vec2 pos, float scale, float brightness) const {
                 g->drawVAO(&vao);
 
                 if(brightness > 0.f) {
-                    this->drawBrightQuad(brightness, x, y, width, height);
+                    this->drawBrightQuad(&vao, brightness);
                 }
             }
             img->unbind();
@@ -351,7 +336,7 @@ void SkinImage::drawRaw(vec2 pos, float scale, AnchorPoint anchor, float brightn
                 g->drawVAO(&vao);
 
                 if(brightness > 0.f) {
-                    this->drawBrightQuad(brightness, x, y, width, height);
+                    this->drawBrightQuad(&vao, brightness);
                 }
             }
             img->unbind();
