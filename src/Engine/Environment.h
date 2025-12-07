@@ -154,11 +154,8 @@ class Environment {
     [[nodiscard]] static std::string normalizeDirectory(std::string dirPath) noexcept;
     [[nodiscard]] static bool isAbsolutePath(std::string_view filePath) noexcept;
 
-    // URL-encodes a string, but keeps slashes intact
+    // URL-encodes a string, but keeps slashes intact (for file:/// URIs)
     [[nodiscard]] static std::string encodeStringToURI(std::string_view unencodedString) noexcept;
-
-    // Fully URL-encodes a string, including slashes
-    [[nodiscard]] static std::string urlEncode(std::string_view unencodedString) noexcept;
 
     // clipboard
     [[nodiscard]] const UString &getClipBoardText();
@@ -245,7 +242,7 @@ class Environment {
     inline void setMousePos(float x, float y) { setOSMousePos(vec2{x, y}); }
 
     // keyboard
-    UString keyCodeToString(SCANCODE keyCode);
+    [[nodiscard]] UString keyCodeToString(SCANCODE keyCode) const;
     void listenToTextInput(bool listen);
     bool setWindowsKeyDisabled(bool disable);
     void setRawKeyboardInput(bool raw);  // enable/disable OS-level rawinput
@@ -271,7 +268,6 @@ class Environment {
     SDL_Window *m_window;
     SDL_WindowID m_windowID;
     std::string m_sdldriver;
-    static SDL_Environment *s_sdlenv;
     bool m_bUsingDX11;
 
     bool m_bRunning;

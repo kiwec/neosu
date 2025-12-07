@@ -11,6 +11,7 @@
 #include "CBaseUIContainer.h"
 #include "CBaseUILabel.h"
 #include "CBaseUITextbox.h"
+#include "NetworkHandler.h"
 #include "OsuConVars.h"
 #include "ChatLink.h"
 #include "Engine.h"
@@ -794,7 +795,7 @@ void Chat::mark_as_read(ChatChannel *chan) {
     chan->read = true;
 
     std::string url{"web/osu-markasread.php?"};
-    url.append(fmt::format("channel={}", env->urlEncode(chan->name.toUtf8())));
+    url.append(fmt::format("channel={}", NeoNet::urlEncode(chan->name.toUtf8())));
     BANCHO::Api::append_auth_params(url);
 
     BANCHO::Api::Request request;

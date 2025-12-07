@@ -29,8 +29,8 @@ void handle_neosu_url(const char *url) {
 
         auto endpoint = params[3];
 
-        auto code = env->urlEncode(params[4]);
-        auto proof = env->urlEncode(crypto::conv::encode64(BanchoState::oauth_verifier));
+        auto code = NeoNet::urlEncode(params[4]);
+        auto proof = NeoNet::urlEncode(crypto::conv::encode64(BanchoState::oauth_verifier));
         auto url = fmt::format("https://{}/connect/finish?code={}&proof={}", endpoint, code, proof);
 
         NeoNet::RequestOptions options;

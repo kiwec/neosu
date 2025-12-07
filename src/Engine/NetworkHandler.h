@@ -18,6 +18,12 @@ class Engine;
 
 // generic networking things, not BANCHO::Net
 namespace NeoNet {
+
+// standalone helper
+
+// Fully URL-encodes a string, including slashes
+[[nodiscard]] std::string urlEncode(std::string_view unencodedString) noexcept;
+
 // public defs
 enum class WSStatus : u8 {
     CONNECTING,
@@ -126,7 +132,7 @@ class NetworkHandler {
     StaticPImpl<NetworkImpl, 640> pImpl;  // implementation details
 };
 
-}  // namespace Net
+}  // namespace NeoNet
 
 using NeoNet::NetworkHandler;
 extern std::unique_ptr<NetworkHandler> networkHandler;

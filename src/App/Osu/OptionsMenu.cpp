@@ -2,8 +2,8 @@
 #include "OptionsMenu.h"
 
 #include "AsyncIOHandler.h"
-#include "ByteBufferedFile.h"
 #include "DiscordInterface.h"
+#include "NetworkHandler.h"
 #include "Parsing.h"
 #include "SString.h"
 #include "crypto.h"
@@ -17,7 +17,6 @@
 #include "CBaseUIScrollView.h"
 #include "CBaseUITextbox.h"
 #include "Chat.h"
-#include "OsuConVars.h"
 #include "Database.h"
 #include "MakeDelegateWrapper.h"
 #include "Engine.h"
@@ -2711,7 +2710,7 @@ void OptionsMenu::onLogInClicked(bool left, bool right) {
             crypto::rng::get_rand(BanchoState::oauth_verifier);
             crypto::hash::sha256(&BanchoState::oauth_verifier[0], 32, &BanchoState::oauth_challenge[0]);
 
-            auto challenge_b64 = env->urlEncode(crypto::conv::encode64(BanchoState::oauth_challenge));
+            auto challenge_b64 = NeoNet::urlEncode(crypto::conv::encode64(BanchoState::oauth_challenge));
             auto url = fmt::format("https://{}/connect/start?challenge={}", BanchoState::endpoint, challenge_b64);
 
             env->openURLInDefaultBrowser(url);

@@ -17,6 +17,24 @@
 
 namespace NeoNet {
 
+std::string urlEncode(std::string_view unencodedString) noexcept {
+    CURL *curl = curl_easy_init();
+    if(!curl) {
+        return "";
+    }
+
+    char *encoded = curl_easy_escape(curl, unencodedString.data(), static_cast<int>(unencodedString.length()));
+    if(!encoded) {
+        curl_easy_cleanup(curl);
+        return "";
+    }
+
+    std::string result(encoded);
+    curl_free(encoded);
+    curl_easy_cleanup(curl);
+    return result;
+}
+
 WSInstance::~WSInstance() {
     // This might be a bit mean to the server, not sending CLOSE message
     // But we send LOGOUT packet on http anyway, so doesn't matter

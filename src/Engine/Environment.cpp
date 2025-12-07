@@ -37,8 +37,11 @@
 // TODO
 #endif
 
-#include <curl/curl.h>
 #include <SDL3/SDL.h>
+
+namespace {  // static
+SDL_Environment *s_sdlenv{nullptr};
+}
 
 // sanity check
 #define SDL_WF_EQ(fname__) (WinFlags::F_##fname__ == (WinFlags)SDL_WINDOW_##fname__)
@@ -110,7 +113,6 @@ Environment::Interop *Environment::tryCreatingAppEnvInterop() {
     return ret;
 }
 
-SDL_Environment *Environment::s_sdlenv{nullptr};
 Environment *env{nullptr};
 
 Environment::Environment(const std::unordered_map<std::string, std::optional<std::string>> &argMap,
@@ -548,24 +550,6 @@ std::string Environment::encodeStringToURI(std::string_view unencodedString) noe
     return escaped.str();
 }
 
-std::string Environment::urlEncode(std::string_view unencodedString) noexcept {
-    CURL *curl = curl_easy_init();
-    if(!curl) {
-        return "";
-    }
-
-    char *encoded = curl_easy_escape(curl, unencodedString.data(), static_cast<int>(unencodedString.length()));
-    if(!encoded) {
-        curl_easy_cleanup(curl);
-        return "";
-    }
-
-    std::string result(encoded);
-    curl_free(encoded);
-    curl_easy_cleanup(curl);
-    return result;
-}
-
 std::string Environment::filesystemPathToURI(const std::filesystem::path &path) noexcept {
     namespace fs = std::filesystem;
     // convert to absolute path and normalize
@@ -740,7 +724,7 @@ void Environment::minimize() {
     // a (harmless but wasteful of CPU) feedback loop can occur when alt tabbing for the first time and
     // calling SDL_SetWindowFullscreen(false)/SDL_SetWindowBordered(false), if they don't do anything
     // catch that here so it doesn't endlessly repeat
-    if(brokenMinimizeRepeatedSpamWorkaroundCounter > 600) {
+    if(brokenMinimizeRepeatedSpamWorkaroundCounter > 100) {
         m_bMinimizeSupported = false;
     }
 
@@ -1035,7 +1019,7 @@ void Environment::setOSMousePos(vec2 pos) {
     m_vLastAbsMousePos = pos;
 }
 
-UString Environment::keyCodeToString(SCANCODE keyCode) {
+UString Environment::keyCodeToString(SCANCODE keyCode) const {
     const char *name = SDL_GetScancodeName((SDL_Scancode)keyCode);
     if(name == nullptr)
         return UString::format("%lu", keyCode);

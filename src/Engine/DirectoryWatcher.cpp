@@ -528,14 +528,14 @@ struct DirWatcherImpl {
 #endif
 };
 
-DirectoryWatcher::DirectoryWatcher() : implementation() {}
+DirectoryWatcher::DirectoryWatcher() : pImpl() {}
 
 DirectoryWatcher::~DirectoryWatcher() = default;
 
 void DirectoryWatcher::watch_directory(std::string path, FileChangeCallback cb) {
-    return implementation->watch_directory(std::move(path), std::move(cb));
+    return pImpl->watch_directory(std::move(path), std::move(cb));
 }
 
-void DirectoryWatcher::stop_watching(std::string path) { return implementation->stop_watching(std::move(path)); }
+void DirectoryWatcher::stop_watching(std::string path) { return pImpl->stop_watching(std::move(path)); }
 
-void DirectoryWatcher::update() { return implementation->update(); }
+void DirectoryWatcher::update() { return pImpl->update(); }

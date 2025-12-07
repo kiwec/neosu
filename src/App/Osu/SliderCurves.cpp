@@ -2,7 +2,6 @@
 #include "SliderCurves.h"
 #include "noinclude.h"
 #include "types.h"
-#include "FixedSizeArray.h"
 
 #ifndef BUILD_TOOLS_ONLY
 #include "Engine.h"
