@@ -222,8 +222,8 @@ ModSelector::ModSelector() : OsuScreen() {
     this->addExperimentalCheckbox("AR Wobble", "Approach rate oscillates between -1 and +1.", &cv::mod_arwobble);
     this->addExperimentalCheckbox(
         "Approach Different",
-        "Customize the approach circle animation.\nSee osu_mod_approach_different_style.\nSee "
-        "osu_mod_approach_different_initial_size.",
+        "Customize the approach circle animation.\nSee mod_approach_different_style.\nSee "
+        "mod_approach_different_initial_size.",
         &cv::mod_approach_different);
     this->addExperimentalCheckbox("Timewarp", "Speed increases from 100% to 150% over the course of the beatmap.",
                                   &cv::mod_timewarp);

@@ -933,9 +933,9 @@ OptionsMenu::OptionsMenu() : ScreenBackable() {
         ((UIButton *)skinReload.baseElems[1])->setClickCallback(SA::MakeDelegate<&OptionsMenu::onSkinRandom>(this));
         ((UIButton *)skinReload.baseElems[1])
             ->setTooltipText(
-                "Temporary, does not change your configured skin (reload to reset).\nUse \"osu_skin_random 1\" to "
-                "randomize on every skin reload.\nUse \"osu_skin_random_elements 1\" to mix multiple skins.\nUse "
-                "\"osu_skin_export\" to export the currently active skin.");
+                "Temporary, does not change your configured skin (reload to reset).\nUse \"skin_random 1\" to "
+                "randomize on every skin reload.\nUse \"skin_random_elements 1\" to mix multiple skins.\nUse "
+                "\"skin_export\" to export the currently active skin.");
         ((UIButton *)skinReload.baseElems[1])->setColor(0xff003947);
     }
     this->addSpacer();
@@ -1218,7 +1218,7 @@ OptionsMenu::OptionsMenu() : ScreenBackable() {
     this->addCheckbox("Draw Stats: Unstable Rate", &cv::draw_statistics_ur);
     this->addCheckbox(
         "Draw Stats: Accuracy Error",
-        "Average hit error delta (e.g. -5ms +15ms).\nSee \"osu_hud_statistics_hitdelta_chunksize 30\",\nit "
+        "Average hit error delta (e.g. -5ms +15ms).\nSee \"hud_statistics_hitdelta_chunksize 30\",\nit "
         "defines how many recent hit deltas are averaged.",
         &cv::draw_statistics_hitdelta);
     this->addSpacer();
