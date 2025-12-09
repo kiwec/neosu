@@ -82,8 +82,7 @@ void MapCalcThread::run() {
         result.nb_spinners = c.numSpinners;
 
         AsyncPPC::pp_res info;
-        auto diffres =
-            DatabaseBeatmap::loadDifficultyHitObjects(c, map->getAR(), map->getCS(), 1.f, false, deadCheck);
+        auto diffres = DatabaseBeatmap::loadDifficultyHitObjects(c, map->getAR(), map->getCS(), 1.f, false, deadCheck);
 
         if(this->should_stop.load(std::memory_order_acquire)) {
             return;
@@ -95,24 +94,28 @@ void MapCalcThread::run() {
             continue;
         }
 
+        DifficultyCalculator::BeatmapDiffcalcData diffcalc_data{.sortedHitObjects = diffres.diffobjects,
+                                                              .CS = map->getCS(),
+                                                              .HP = map->getHP(),
+                                                              .AR = map->getAR(),
+                                                              .OD = map->getOD(),
+                                                              .hidden = false,
+                                                              .relax = false,
+                                                              .autopilot = false,
+                                                              .touchDevice = false,
+                                                              .speedMultiplier = 1.f,
+                                                              .breakDuration = c.totalBreakDuration,
+                                                              .playableLength = diffres.playableLength};
+
+        DifficultyCalculator::DifficultyAttributes attributes_out{};
+
         DifficultyCalculator::StarCalcParams params{.cachedDiffObjects = {},
-                                                    .sortedHitObjects = diffres.diffobjects,
-                                                    .CS = map->getCS(),
-                                                    .OD = map->getOD(),
-                                                    .speedMultiplier = 1.f,
-                                                    .relax = false,
-                                                    .touchDevice = false,
-                                                    .aim = &info.aim_stars,
-                                                    .aimSliderFactor = &info.aim_slider_factor,
-                                                    .aimDifficultSliders = &info.difficult_aim_sliders,
-                                                    .difficultAimStrains = &info.difficult_aim_strains,
-                                                    .speed = &info.speed_stars,
-                                                    .speedNotes = &info.speed_notes,
-                                                    .difficultSpeedStrains = &info.difficult_speed_strains,
-                                                    .upToObjectIndex = -1,
-                                                    .incremental = {},
+                                                    .outAttributes = attributes_out,
+                                                    .beatmapData = diffcalc_data,
                                                     .outAimStrains = &info.aimStrains,
                                                     .outSpeedStrains = &info.speedStrains,
+                                                    .incremental = nullptr,
+                                                    .upToObjectIndex = -1,
                                                     .cancelCheck = deadCheck};
 
         result.star_rating = static_cast<f32>(DifficultyCalculator::calculateStarDiffForHitObjects(params));
@@ -120,6 +123,14 @@ void MapCalcThread::run() {
         if(this->should_stop.load(std::memory_order_acquire)) {
             return;
         }
+
+        info.aim_stars = attributes_out.AimDifficulty;
+        info.aim_slider_factor = attributes_out.SliderFactor;
+        info.difficult_aim_sliders = attributes_out.AimDifficultSliderCount;
+        info.difficult_aim_strains = attributes_out.AimDifficultStrainCount;
+        info.speed_stars = attributes_out.SpeedDifficulty;
+        info.speed_notes = attributes_out.SpeedNoteCount;
+        info.difficult_speed_strains = attributes_out.SpeedDifficultStrainCount;
 
         BPMInfo bpm{};
         if(c.timingpoints.size() > 0) {

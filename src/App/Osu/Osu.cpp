@@ -1469,7 +1469,7 @@ float Osu::getCSDifficultyMultiplier() {
         return 1.f;
 }
 
-float Osu::getScoreMultiplier() const {
+float Osu::getScoreMultiplier() const {  // TODO: use Mods::get_scorev1_multiplier
     float multiplier = 1.0f;
 
     // Dumb formula, but the values for HT/DT were dumb to begin with

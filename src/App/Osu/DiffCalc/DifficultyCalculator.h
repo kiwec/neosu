@@ -15,7 +15,9 @@ enum class ModFlags : u64;
 class SliderCurve;
 class ConVar;
 class AbstractBeatmapInterface;
+class DatabaseBeatmap;
 
+struct FinishedScore;
 struct SLIDER_SCORING_TIME;
 
 class DifficultyHitObject {
@@ -61,9 +63,11 @@ class DifficultyHitObject {
     // circles (base)
     vec2 pos;
     i32 time;
+    i32 baseTime;  // not adjusted by clockrate
 
     // spinners + sliders
     i32 endTime;
+    i32 baseEndTime;  // not adjusted by clockrate
 
     // sliders
     std::vector<SLIDER_SCORING_TIME> scoringTimes;
@@ -95,27 +99,83 @@ class DifficultyCalculator {
         enum Skill : u8 { SPEED, AIM_SLIDERS, AIM_NO_SLIDERS, NUM_SKILLS };
     };
 
+    static constexpr const f64 performance_base_multiplier = 1.14;  // keep final pp normalized across changes
+
     // see https://github.com/ppy/osu/blob/master/osu.Game.Rulesets.Osu/Difficulty/Skills/Speed.cs
     // see https://github.com/ppy/osu/blob/master/osu.Game.Rulesets.Osu/Difficulty/Skills/Aim.cs
 
     // how much strains decay per interval (if the previous interval's peak strains after applying decay are still higher than the current one's, they will be used as the peak strains).
     static constexpr const f64 decay_base[Skills::NUM_SKILLS] = {0.3, 0.15, 0.15};
-    // used to keep speed and aim balanced between eachother
-    static constexpr const f64 weight_scaling[Skills::NUM_SKILLS] = {1.46, 25.6, 25.6};
 
     static constexpr const f64 DIFFCALC_EPSILON = 1e-32;
 
+    // This struct is the stripped out version of difficulty attributes needed for incremental (per-object) calculation
     struct IncrementalState {
         f64 interval_end;
         f64 max_strain;
         f64 max_object_strain;
-        f64 relevant_note_sum;  // speed only
+        f64 max_slider_strain;
+
+        // for difficult strain count calculation
         f64 consistent_top_strain;
         f64 difficult_strains;
-        f64 max_slider_strain;
-        f64 difficult_sliders;
+        f64 top_weighted_sliders;
+
+        // difficulty attributes
+        f64 aim_difficult_slider_count;
+        f64 speed_note_count;
+
         std::vector<f64> highest_strains;
         std::vector<f64> slider_strains;
+    };
+
+    // This struct is the core data computed by difficulty calculation and used in performance calculation
+    // TODO: this should match osu-lazer difficulty attributes:
+    // 1) Add StarRating here, and use it globally instead of separate variable
+    // 2) Add MaxCombo, HitCircle and Spinner count here, and use them globally instead of separate variable (together with SliderCount)
+    // 3) Remove ApproachRate and OverallDifficulty
+    struct DifficultyAttributes {
+        f64 AimDifficulty{0.};
+        f64 AimDifficultSliderCount{0.};
+
+        f64 SpeedDifficulty{0.};
+        f64 SpeedNoteCount{0.};
+
+        f64 SliderFactor{0.};
+
+        f64 AimTopWeightedSliderFactor{0.};
+        f64 SpeedTopWeightedSliderFactor{0.};
+
+        f64 AimDifficultStrainCount{0.};
+        f64 SpeedDifficultStrainCount{0.};
+
+        f64 NestedScorePerObject{0.};
+        f64 LegacyScoreBaseMultiplier{0.};
+
+        i32 SliderCount{0};
+        u32 MaximumLegacyComboScore{0};
+
+        // Those 3 attributes are performance calculator only (for now)
+        // TODO: use SliderCount globally like the attributes above and remove AR and OD
+        f64 ApproachRate{0.};
+        f64 OverallDifficulty{0.};
+    };
+
+    // This structs has all the beatmap data necessary for difficulty calculation
+    // Its purpose is to remove dependency of diffcalc on the specific beatmap class/object
+    struct BeatmapDiffcalcData {
+        // Hitobjects
+        std::vector<DifficultyHitObject> &sortedHitObjects;
+
+        // Basic attributes, they're NOT adjusted by rate
+        f32 CS{5.f}, HP{5.f}, AR{5.f}, OD{5.f};
+
+        // Relevant mods
+        bool hidden{false}, relax{false}, autopilot{false}, touchDevice{false};
+        f32 speedMultiplier{1.f};
+
+        u32 breakDuration{0};
+        u32 playableLength{0};
     };
 
     struct DiffObject {
@@ -145,16 +205,18 @@ class DifficultyCalculator {
         f64 minJumpTime{0.};      // precalc
         f64 travelDistance{0.};   // precalc
 
-        f64 delta_time{0.};   // strain temp
-        f64 strain_time{0.};  // strain temp
+        f64 delta_time{0.};           // strain temp
+        f64 adjusted_delta_time{0.};  // strain temp
 
-        vec2 lazyEndPos;               // precalc temp
-        f64 lazyTravelDist{0.};        // precalc temp
-        f64 lazyTravelTime{0.};        // precalc temp
-        f64 travelTime{0.};            // precalc temp
-        bool lazyCalcFinished{false};  // precalc temp
+        vec2 lazyEndPos;         // precalc temp
+        f64 lazyTravelDist{0.};  // precalc temp
+        f64 lazyTravelTime{0.};  // precalc temp
+        f64 travelTime{0.};      // precalc temp
+        f64 smallCircleBonus{1.};
 
         i32 prevObjectIndex;  // WARNING: this will be -1 for the first object (as the name implies), see note above
+
+        bool lazyCalcFinished{false};  // precalc temp
 
         // NOTE: McOsu stores the first object in this array while lazer doesn't. newer lazer algorithms require referencing objects "randomly", so we just keep the entire vector around.
         const std::vector<DiffObject> &objects;
@@ -164,50 +226,46 @@ class DifficultyCalculator {
                         ? &objects[std::max(0, prevObjectIndex - backwardsIdx)]
                         : nullptr);
         }
+        [[nodiscard]] inline const DiffObject *get_next(i32 forwardIdx) const {
+            return (objects.size() > 0 && prevObjectIndex + forwardIdx < (i32)objects.size()
+                        ? &objects[std::max(0, prevObjectIndex + forwardIdx)]
+                        : nullptr);
+        }
+
         [[nodiscard]] inline f64 get_strain(Skills::Skill type) const {
             return strains[type] * (type == Skills::SPEED ? rhythm : 1.0);
         }
-        [[nodiscard]] inline f64 get_slider_aim_strain() const {
-            return ho->type == DifficultyHitObject::TYPE::SLIDER ? strains[Skills::AIM_SLIDERS] : -1.0;
+        [[nodiscard]] inline f64 get_slider_strain(Skills::Skill type) const {
+            return ho->type == DifficultyHitObject::TYPE::SLIDER
+                       ? strains[type] * (type == Skills::Skill::SPEED ? rhythm : 1.0)
+                       : -1;
         }
+
         inline static f64 applyDiminishingExp(f64 val) { return std::pow(val, 0.99); }
         inline static f64 strainDecay(Skills::Skill type, f64 ms) { return std::pow(decay_base[type], ms / 1000.0); }
 
-        void calculate_strains(const DiffObject &prev, const DiffObject *next, f64 hitWindow300);
-        void calculate_strain(const DiffObject &prev, const DiffObject *next, f64 hitWindow300,
+        void calculate_strains(const DiffObject &prev, const DiffObject *next, f64 hitWindow300, bool autopilotNerf);
+        void calculate_strain(const DiffObject &prev, const DiffObject *next, f64 hitWindow300, bool autopilotNerf,
                               const Skills::Skill dtype);
-        static f64 calculate_difficulty(const Skills::Skill type, const DiffObject *dobjects, size_t dobjectCount,
+        static f64 calculate_difficulty(const Skills::Skill type, const DiffObject *dobjects, uSz dobjectCount,
                                         IncrementalState *incremental, std::vector<f64> *outStrains = nullptr,
-                                        f64 *outDifficultStrains = nullptr, f64 *outSkillSpecificAttrib = nullptr);
+                                        DifficultyAttributes *outAttributes = nullptr);
+
         f64 spacing_weight2(const Skills::Skill diff_type, const DiffObject &prev, const DiffObject *next,
-                            f64 hitWindow300);
+                            f64 hitWindow300, bool autopilotNerf);
         f64 get_doubletapness(const DiffObject *next, f64 hitWindow300) const;
     };
 
    public:
     struct StarCalcParams {
         std::vector<DiffObject> cachedDiffObjects;
-        std::vector<DifficultyHitObject> &sortedHitObjects;
+        DifficultyAttributes &outAttributes;
+        const BeatmapDiffcalcData &beatmapData;
 
-        f32 CS{};
-        f32 OD{};
-        f32 speedMultiplier{1};
-        bool relax{false};
-        bool touchDevice{false};
-        f64 *aim{};
-        f64 *aimSliderFactor{};
-
-        f64 *aimDifficultSliders{};
-        f64 *difficultAimStrains{};
-        f64 *speed{};
-        f64 *speedNotes{};
-        f64 *difficultSpeedStrains{};
-
+        std::vector<f64> *outAimStrains;
+        std::vector<f64> *outSpeedStrains;
+        IncrementalState *incremental;
         i32 upToObjectIndex{-1};
-        IncrementalState *incremental{nullptr};
-
-        std::vector<f64> *outAimStrains{nullptr};
-        std::vector<f64> *outSpeedStrains{nullptr};
 
         // cancellation
         std::function<bool(void)> cancelCheck{nullptr};
@@ -218,19 +276,13 @@ class DifficultyCalculator {
     static f64 calculateStarDiffForHitObjects(StarCalcParams &params);
 
     struct PPv2CalcParams {
+        DifficultyAttributes attributes;
+
         ModFlags modFlags;
-        f32 speedOverride;
+        f64 timescale;
         f64 ar;
         f64 od;
-        f64 aim;
-        f64 aimSliderFactor;
 
-        f64 aimDifficultSliders;
-        f64 aimDifficultStrains;
-        f64 speed;
-        f64 speedNotes;
-
-        f64 speedDifficultStrains;
         i32 numHitObjects;
         i32 numCircles;
         i32 numSliders;
@@ -242,33 +294,28 @@ class DifficultyCalculator {
         i32 c300;
         i32 c100;
         i32 c50;
+
+        u32 legacyTotalScore;
     };
 
     // pp, fully static
     static f64 calculatePPv2(PPv2CalcParams &cparams);
 
-    // helper functions
-    static f64 calculateTotalStarsFromSkills(f64 aim, f64 speed);
+    [[nodiscard]] static f64 getScoreV1ScoreMultiplier(ModFlags flags, f64 speedOverride);
 
    private:
-    struct Attributes {
-        f64 AimStrain;
-        f64 SliderFactor;
-        f64 AimDifficultSliderCount;
-        f64 AimDifficultStrainCount;
-        f64 SpeedStrain;
-        f64 SpeedNoteCount;
-        f64 SpeedDifficultStrainCount;
-        f64 ApproachRate;
-        f64 OverallDifficulty;
-        i32 SliderCount;
-    };
+    // helper functions
+    [[nodiscard]] static f64 calculateTotalStarsFromSkills(f64 aim, f64 speed);
+    static void calculateScoreV1Attributes(DifficultyAttributes &attributes, const BeatmapDiffcalcData &beatmapData,
+                                           i32 upToObjectIndex);
+    [[nodiscard]] static f64 calculateScoreV1SpinnerScore(f64 spinnerDuration);
 
+   private:
     struct ScoreData {
         ModFlags modFlags;
         f64 accuracy;
         i32 countGreat;
-        i32 countGood;
+        i32 countOk;
         i32 countMeh;
         i32 countMiss;
         i32 totalHits;
@@ -276,6 +323,7 @@ class DifficultyCalculator {
         i32 beatmapMaxCombo;
         i32 scoreMaxCombo;
         i32 amountHitObjectsWithAccuracy;
+        u32 legacyTotalScore;
     };
 
     struct RhythmIsland {
@@ -289,28 +337,70 @@ class DifficultyCalculator {
     };
 
    private:
-    static f64 computeAimValue(const ScoreData &score, const Attributes &attributes, f64 effectiveMissCount);
-    static f64 computeSpeedValue(const ScoreData &score, const Attributes &attributes, f64 effectiveMissCount,
+    // Skill values calculation
+    static f64 computeAimValue(const ScoreData &score, const DifficultyAttributes &attributes, f64 effectiveMissCount);
+    static f64 computeSpeedValue(const ScoreData &score, const DifficultyAttributes &attributes, f64 effectiveMissCount,
                                  f64 speedDeviation);
-    static f64 computeAccuracyValue(const ScoreData &score, const Attributes &attributes);
+    static f64 computeAccuracyValue(const ScoreData &score, const DifficultyAttributes &attributes);
 
-    static f64 calculateSpeedDeviation(const ScoreData &score, const Attributes &attributes, f32 timescale);
-    static f64 calculateDeviation(const Attributes &attributes, f64 timescale, f64 relevantCountGreat,
-                                  f64 relevantCountOk, f64 relevantCountMeh, f64 relevantCountMiss);
-    static f64 calculateSpeedHighDeviationNerf(const Attributes &attributes, f64 speedDeviation);
+    // High deviation nerf
+    static f64 calculateSpeedDeviation(const ScoreData &score, const DifficultyAttributes &attributes, f64 timescale);
+    static f64 calculateDeviation(const DifficultyAttributes &attributes, f64 timescale, f64 relevantCountGreat,
+                                  f64 relevantCountOk, f64 relevantCountMeh);
+    static f64 calculateSpeedHighDeviationNerf(const DifficultyAttributes &attributes, f64 speedDeviation);
 
+    static f64 calculateEstimatedSliderBreaks(const ScoreData &score, f64 topWeightedSliderFactor,
+                                              f64 effectiveMissCount);
+
+    // ScoreV1 misscount estimation
+    static f64 calculateScoreBasedMisscount(const DifficultyAttributes &attributes, const ScoreData &score,
+                                            f64 timescale);
+    static f64 calculateScoreAtCombo(const DifficultyAttributes &attributes, const ScoreData &score, f64 combo,
+                                     f64 relevantComboPerObject, f64 scoreV1Multiplier);
+    static f64 calculateRelevantScoreComboPerObject(const DifficultyAttributes &attributes, const ScoreData &score);
+    static f64 calculateMaximumComboBasedMissCount(const DifficultyAttributes &attributes, const ScoreData &score);
+
+    static f64 calculateDifficultyRating(f64 difficultyValue);
+    static f64 calculateAimVisibilityFactor(f64 approachRate, f64 mechanicalDifficultyRating);
+    static f64 calculateSpeedVisibilityFactor(f64 approachRate, f64 mechanicalDifficultyRating);
+    static f64 calculateVisibilityBonus(f64 approachRate, f64 visibilityFactor = 1.0, f64 sliderFactor = 1.0);
+    static f64 computeAimRating(f64 aimDifficultyValue, u32 totalHits, f64 approachRate, f64 overallDifficulty,
+                                f64 mechanicalDifficultyRating, f64 sliderFactor,
+                                const BeatmapDiffcalcData &beatmapData);
+    static f64 computeSpeedRating(f64 speedDifficultyValue, u32 totalHits, f64 approachRate, f64 overallDifficulty,
+                                  f64 mechanicalDifficultyRating, const BeatmapDiffcalcData &beatmapData);
+    static f64 calculateStarRating(f64 basePerformance);
+    static f64 calculateMechanicalDifficultyRating(f64 aimDifficultyValue, f64 speedDifficultyValue);
+
+    // helper functions
     static f64 erf(f64 x);
-    static f64 erfInv(f64 z);
-    static f64 erfImp(f64 x, bool invert);
-    static f64 erfInvImp(f64 p, f64 q, f64 s);
-
-    template <size_t N>
-    static forceinline f64 evaluatePolynomial(f64 z, const f64 (&coefficients)[N]) {
-        f64 sum = coefficients[N - 1];
-        for(i32 i = N - 2; i >= 0; --i) {
-            sum *= z;
-            sum += coefficients[i];
-        }
-        return sum;
+    static f64 erfInv(f64 x);
+    static forceinline f64 reverseLerp(f64 x, f64 start, f64 end) {
+        return std::clamp<f64>((x - start) / (end - start), 0.0, 1.0);
+    };
+    static forceinline f64 smoothstep(f64 x, f64 start, f64 end) {
+        x = reverseLerp(x, start, end);
+        return x * x * (3.0 - 2.0 * x);
+    };
+    static forceinline f64 smootherStep(f64 x, f64 start, f64 end) {
+        x = reverseLerp(x, start, end);
+        return x * x * x * (x * (x * 6.0 - 15.0) + 10.0);
+    };
+    static forceinline f64 smoothstepBellCurve(f64 x, f64 mean = 0.5, f64 width = 0.5) {
+        x -= mean;
+        x = x > 0 ? (width - x) : (width + x);
+        return smoothstep(x, 0, width);
+    };
+    static forceinline f64 logistic(f64 x, f64 midpointOffset, f64 multiplier, f64 maxValue = 1.0) {
+        return maxValue / (1 + std::exp(multiplier * (midpointOffset - x)));
     }
+    static forceinline f64 strainDifficultyToPerformance(f64 difficulty) {
+        return std::pow(5.0 * std::max(1.0, difficulty / 0.0675) - 4.0, 3.0) / 100000.0;
+    }
+
+    // Adjust hitwindow to match lazer
+    static forceinline f64 adjustHitWindow(f64 hitwindow) { return std::floor(hitwindow) - 0.5; }
+
+    // Lazer formula for adjusting OD by clock rate
+    static f64 adjustOverallDifficultyByClockRate(f64 OD, f64 clockRate);
 };

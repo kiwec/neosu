@@ -1281,12 +1281,18 @@ f32 BeatmapInterface::getOD() const {
 }
 
 u32 BeatmapInterface::getBreakDurationTotal() const {
-    u32 breakDurationTotal = 0;
-    for(const auto &i : this->breaks) {
-        breakDurationTotal += (u32)(i.endTime - i.startTime);
-    }
+    if(unlikely(!this->beatmap && this->breaks.empty())) return 0;
 
-    return breakDurationTotal;
+    if(this->beatmap)
+        return this->beatmap->totalBreakDuration;
+    else {
+        u32 breakDurationTotal = 0;
+        for(auto i : this->breaks) {
+            breakDurationTotal += (u32)(i.endTime - i.startTime);
+        }
+
+        return breakDurationTotal;
+    }
 }
 
 DatabaseBeatmap::BREAK BeatmapInterface::getBreakForTimeRange(i64 startMS, i64 positionMS, i64 endMS) const {
@@ -2376,6 +2382,7 @@ void BeatmapInterface::update() {
             this->ppv2_calc->enqueue([current_hitobject = this->iCurrentHitObjectIndex,  //
                                       CS = this->getCS(),                                //
                                       AR = this->getAR(),                                //
+                                      HP = this->getHP(),                                //
                                       OD = this->getOD(),                                //
                                       speedMultiplier = this->getSpeedMultiplier(),      //
                                       osufile_path = this->beatmap->getFilePath(),       //
@@ -2385,26 +2392,33 @@ void BeatmapInterface::update() {
                                       mods = osu->getScore()->mods,                      //
                                       relax = osu->getModRelax(),                        //
                                       td = osu->getModTD(),                              //
+                                      hidden = osu->getModHD(),                          //
+                                      autopilot = osu->getModAutopilot(),                //
                                       highestCombo = osu->getScore()->getComboMax(),     //
                                       numMisses = osu->getScore()->getNumMisses(),       //
                                       num300s = osu->getScore()->getNum300s(),           //
                                       num100s = osu->getScore()->getNum100s(),           //
-                                      num50s = osu->getScore()->getNum50s()              //
+                                      num50s = osu->getScore()->getNum50s(),             //
+                                      legacyTotalScore = osu->getScore()->getScore()     //
             ](void) -> AsyncPPC::pp_res {
                 AsyncPPC::pp_res retInfo;
 
                 static std::string lastCalcedPath = osufile_path;
                 static f32 lastCalcedAR = AR;
+                static f32 lastCalcedHP = HP;
                 static f32 lastCalcedCS = CS;
+                static f32 lastCalcedOD = OD;
                 static f32 lastCalcedSpeedMultiplier = speedMultiplier;
                 static auto diffres = DatabaseBeatmap::loadDifficultyHitObjects(osufile_path, AR, CS, speedMultiplier);
                 static std::vector<DifficultyCalculator::DiffObject> diffobjCache;
 
-                if(lastCalcedPath != osufile_path || lastCalcedAR != AR || lastCalcedCS != CS ||
-                   lastCalcedSpeedMultiplier != speedMultiplier) {
+                if(lastCalcedPath != osufile_path || lastCalcedAR != AR || lastCalcedCS != CS || lastCalcedHP != HP ||
+                   lastCalcedOD != OD || lastCalcedSpeedMultiplier != speedMultiplier) {
                     lastCalcedPath = osufile_path;
                     lastCalcedAR = AR;
+                    lastCalcedHP = HP;
                     lastCalcedCS = CS;
+                    lastCalcedOD = OD;
                     lastCalcedSpeedMultiplier = speedMultiplier;
                     // get new diffres
                     diffobjCache.clear();
@@ -2413,50 +2427,56 @@ void BeatmapInterface::update() {
 
                 if(diffres.errorCode != 0) return retInfo;  // uh-oh
 
-                DifficultyCalculator::StarCalcParams params{
-                    .cachedDiffObjects = diffobjCache,
-                    .sortedHitObjects = diffres.diffobjects,
-                    .CS = CS,
-                    .OD = OD,
-                    .speedMultiplier = speedMultiplier,
-                    .relax = relax,
-                    .touchDevice = td,
-                    .aim = &retInfo.aim_stars,
-                    .aimSliderFactor = &retInfo.aim_slider_factor,
-                    .aimDifficultSliders = &retInfo.difficult_aim_sliders,
-                    .difficultAimStrains = &retInfo.difficult_aim_strains,
-                    .speed = &retInfo.speed_stars,
-                    .speedNotes = &retInfo.speed_notes,
-                    .difficultSpeedStrains = &retInfo.difficult_speed_strains,
-                    .upToObjectIndex = current_hitobject,
-                    .incremental = {},  // XXX/TODO: slow, should be incremental calc here! but threads are scary...
-                    .outAimStrains = &retInfo.aimStrains,
-                    .outSpeedStrains = &retInfo.speedStrains};
+                DifficultyCalculator::BeatmapDiffcalcData diffcalcData{.sortedHitObjects = diffres.diffobjects,
+                                                                       .CS = CS,
+                                                                       .HP = HP,
+                                                                       .AR = AR,
+                                                                       .OD = OD,
+                                                                       .hidden = hidden,
+                                                                       .relax = relax,
+                                                                       .autopilot = autopilot,
+                                                                       .touchDevice = td,
+                                                                       .speedMultiplier = speedMultiplier,
+                                                                       .breakDuration = diffres.totalBreakDuration,
+                                                                       .playableLength = diffres.playableLength};
+
+                DifficultyCalculator::DifficultyAttributes diffAttributesOut{};
+
+                DifficultyCalculator::StarCalcParams params{.cachedDiffObjects = diffobjCache,
+                                                            .outAttributes = diffAttributesOut,
+                                                            .beatmapData = diffcalcData,
+                                                            .outAimStrains = &retInfo.aimStrains,
+                                                            .outSpeedStrains = &retInfo.speedStrains,
+                                                            .incremental = nullptr,
+                                                            .upToObjectIndex = current_hitobject,
+                                                            .cancelCheck = nullptr};
 
                 retInfo.total_stars = DifficultyCalculator::calculateStarDiffForHitObjects(params);
 
-                DifficultyCalculator::PPv2CalcParams ppv2calcparams{
-                    .modFlags = mods.flags,
-                    .speedOverride = mods.speed,
-                    .ar = AR,
-                    .od = OD,
-                    .aim = retInfo.aim_stars,
-                    .aimSliderFactor = retInfo.aim_slider_factor,
-                    .aimDifficultSliders = retInfo.difficult_aim_sliders,
-                    .aimDifficultStrains = retInfo.difficult_aim_strains,
-                    .speed = retInfo.speed_stars,
-                    .speedNotes = retInfo.speed_notes,
-                    .speedDifficultStrains = retInfo.difficult_speed_strains,
-                    .numHitObjects = current_hitobject,
-                    .numCircles = nb_circles,
-                    .numSliders = nb_sliders,
-                    .numSpinners = nb_spinners,
-                    .maxPossibleCombo = diffres.maxPossibleCombo,
-                    .combo = highestCombo,
-                    .misses = numMisses,
-                    .c300 = num300s,
-                    .c100 = num100s,
-                    .c50 = num50s};
+                retInfo.aim_stars = diffAttributesOut.AimDifficulty;
+                retInfo.aim_slider_factor = diffAttributesOut.SliderFactor;
+                retInfo.difficult_aim_sliders = diffAttributesOut.AimDifficultSliderCount;
+                retInfo.difficult_aim_strains = diffAttributesOut.AimDifficultStrainCount;
+                retInfo.speed_stars = diffAttributesOut.SpeedDifficulty;
+                retInfo.speed_notes = diffAttributesOut.SpeedNoteCount;
+                retInfo.difficult_speed_strains = diffAttributesOut.SpeedDifficultStrainCount;
+
+                DifficultyCalculator::PPv2CalcParams ppv2calcparams{.attributes = diffAttributesOut,
+                                                                    .modFlags = mods.flags,
+                                                                    .timescale = mods.speed,
+                                                                    .ar = AR,
+                                                                    .od = OD,
+                                                                    .numHitObjects = current_hitobject,
+                                                                    .numCircles = nb_circles,
+                                                                    .numSliders = nb_sliders,
+                                                                    .numSpinners = nb_spinners,
+                                                                    .maxPossibleCombo = diffres.maxPossibleCombo,
+                                                                    .combo = highestCombo,
+                                                                    .misses = numMisses,
+                                                                    .c300 = num300s,
+                                                                    .c100 = num100s,
+                                                                    .c50 = num50s,
+                                                                    .legacyTotalScore = legacyTotalScore};
 
                 retInfo.pp = DifficultyCalculator::calculatePPv2(ppv2calcparams);
 
@@ -3545,6 +3565,7 @@ const AsyncPPC::pp_res &BeatmapInterface::getWholeMapPPInfo() {
             .modFlags = mods.flags,
             .speedOverride = mods.speed,
             .AR = mods.get_naive_ar(map),
+            .HP = mods.get_naive_hp(map),
             .CS = mods.get_naive_cs(map),
             .OD = mods.get_naive_od(map),
             .comboMax = -1,
@@ -3552,8 +3573,7 @@ const AsyncPPC::pp_res &BeatmapInterface::getWholeMapPPInfo() {
             .num300s = map->getNumObjects(),
             .num100s = 0,
             .num50s = 0,
-            .rx = mods.has(ModFlags::Relax),
-            .td = mods.has(ModFlags::TouchDevice),
+            .legacyTotalScore = osu->getScore()->getScore()
         };
     }
 
@@ -3791,46 +3811,50 @@ vec2 BeatmapInterface::getFirstPersonCursorDelta() const {
 
 FinishedScore BeatmapInterface::saveAndSubmitScore(bool quit) {
     // calculate stars
-    f64 aim = 0.0;
-    f64 aimSliderFactor = 0.0;
-    f64 speed = 0.0;
-    f64 speedNotes = 0.0;
-    f64 aimDifficultSliders = 0.0;
-    f64 difficultAimStrains = 0.0;
-    f64 difficultSpeedStrains = 0.0;
     const std::string &osuFilePath = this->beatmap->getFilePath();
     const f32 AR = this->getAR();
+    const f32 HP = this->getHP();
     const f32 CS = this->getCS();
     const f32 OD = this->getOD();
     const f32 speedMultiplier = this->getSpeedMultiplier();  // NOTE: not this->getSpeedMultiplier()!
     const bool relax = osu->getModRelax();
+    const bool hidden = osu->getModHD();
     const bool touchDevice = osu->getModTD();
+    const bool autopilot = osu->getModAutopilot();
+
+    const u32 breakDuration = this->getBreakDurationTotal();
+    const u32 playableLength = this->getLengthPlayable();
 
     auto diffres = DatabaseBeatmap::loadDifficultyHitObjects(osuFilePath, AR, CS, speedMultiplier);
 
+    DifficultyCalculator::BeatmapDiffcalcData diffcalcData{.sortedHitObjects = diffres.diffobjects,
+                                                           .CS = CS,
+                                                           .HP = HP,
+                                                           .AR = AR,
+                                                           .OD = OD,
+                                                           .hidden = hidden,
+                                                           .relax = relax,
+                                                           .autopilot = autopilot,
+                                                           .touchDevice = touchDevice,
+                                                           .speedMultiplier = speedMultiplier,
+                                                           .breakDuration = breakDuration,
+                                                           .playableLength = playableLength};
+
+    DifficultyCalculator::DifficultyAttributes diffAttributesOut{};
+
     DifficultyCalculator::StarCalcParams params{.cachedDiffObjects = {},
-                                                .sortedHitObjects = diffres.diffobjects,
-                                                .CS = CS,
-                                                .OD = OD,
-                                                .speedMultiplier = speedMultiplier,
-                                                .relax = relax,
-                                                .touchDevice = touchDevice,
-                                                .aim = &aim,
-                                                .aimSliderFactor = &aimSliderFactor,
-                                                .aimDifficultSliders = &aimDifficultSliders,
-                                                .difficultAimStrains = &difficultAimStrains,
-                                                .speed = &speed,
-                                                .speedNotes = &speedNotes,
-                                                .difficultSpeedStrains = &difficultSpeedStrains,
+                                                .outAttributes = diffAttributesOut,
+                                                .beatmapData = diffcalcData,
+                                                .outAimStrains = nullptr,
+                                                .outSpeedStrains = nullptr,
+                                                .incremental = nullptr,
                                                 .upToObjectIndex = -1,
-                                                .incremental = {},
-                                                .outAimStrains = {},
-                                                .outSpeedStrains = {}};
+                                                .cancelCheck = nullptr};
 
     const f64 totalStars = DifficultyCalculator::calculateStarDiffForHitObjects(params);
 
-    this->fAimStars = (f32)aim;
-    this->fSpeedStars = (f32)speed;
+    this->fAimStars = (f32)diffAttributesOut.AimDifficulty;
+    this->fSpeedStars = (f32)diffAttributesOut.SpeedDifficulty;
 
     const auto &liveScore = osu->getScore();
 
@@ -3844,28 +3868,24 @@ FinishedScore BeatmapInterface::saveAndSubmitScore(bool quit) {
     const int num300s = liveScore->getNum300s();
     const int num100s = liveScore->getNum100s();
     const int num50s = liveScore->getNum50s();
+    const u32 legacyTotalScore = liveScore->getScore();
 
-    DifficultyCalculator::PPv2CalcParams ppv2calcparams{.modFlags = liveScore->mods.flags,
-                                                        .speedOverride = liveScore->mods.speed,
+    DifficultyCalculator::PPv2CalcParams ppv2calcparams{.attributes = diffAttributesOut,
+                                                        .modFlags = liveScore->mods.flags,
+                                                        .timescale = speedMultiplier,
                                                         .ar = AR,
                                                         .od = OD,
-                                                        .aim = aim,
-                                                        .aimSliderFactor = aimSliderFactor,
-                                                        .aimDifficultSliders = aimDifficultSliders,
-                                                        .aimDifficultStrains = difficultAimStrains,
-                                                        .speed = speed,
-                                                        .speedNotes = speedNotes,
-                                                        .speedDifficultStrains = difficultSpeedStrains,
                                                         .numHitObjects = numHitObjects,
                                                         .numCircles = numCircles,
                                                         .numSliders = numSliders,
                                                         .numSpinners = numSpinners,
-                                                        .maxPossibleCombo = static_cast<i32>(this->iMaxPossibleCombo),
+                                                        .maxPossibleCombo = (i32)this->iMaxPossibleCombo,
                                                         .combo = highestCombo,
                                                         .misses = numMisses,
                                                         .c300 = num300s,
                                                         .c100 = num100s,
-                                                        .c50 = num50s};
+                                                        .c50 = num50s,
+                                                        .legacyTotalScore = legacyTotalScore};
 
     const f32 pp = DifficultyCalculator::calculatePPv2(ppv2calcparams);
 
@@ -3926,8 +3946,8 @@ FinishedScore BeatmapInterface::saveAndSubmitScore(bool quit) {
     score.ppv2_version = DiffCalc::PP_ALGORITHM_VERSION;
     score.ppv2_score = pp;
     score.ppv2_total_stars = totalStars;
-    score.ppv2_aim_stars = aim;
-    score.ppv2_speed_stars = speed;
+    score.ppv2_aim_stars = this->fAimStars;
+    score.ppv2_speed_stars = this->fSpeedStars;
 
     if(!isCheated) {
         RichPresence::onPlayEnd(quit);
