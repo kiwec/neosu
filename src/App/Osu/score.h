@@ -205,7 +205,7 @@ class LiveScore {
     Replay::Mods mods;
     bool simulating;
 
-    f32 getScoreMultiplier();
+    f64 getScoreMultiplier();
     void onScoreChange();
 
     std::vector<HIT> hitresults;

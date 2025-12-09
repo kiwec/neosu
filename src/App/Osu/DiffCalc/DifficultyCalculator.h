@@ -9,6 +9,7 @@
 #include <vector>
 #include <array>
 #include <memory>
+#include <algorithm>
 
 enum class ModFlags : u64;
 

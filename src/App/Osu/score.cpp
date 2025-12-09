@@ -73,7 +73,7 @@ void LiveScore::reset() {
     this->onScoreChange();
 }
 
-float LiveScore::getScoreMultiplier() { return this->mods.get_scorev1_multiplier(); }
+f64 LiveScore::getScoreMultiplier() { return this->mods.get_scorev1_multiplier(); }
 
 void LiveScore::addHitResult(AbstractBeatmapInterface *beatmap, HitObject * /*hitObject*/, HIT hit, i32 delta,
                              bool ignoreOnHitErrorBar, bool hitErrorBarOnly, bool ignoreCombo, bool ignoreScore) {
@@ -466,7 +466,7 @@ f64 FinishedScore::get_or_calc_pp() {
         .num100s = this->num100s,
         .num50s = this->num50s,
 
-        .legacyTotalScore = this->score
+        .legacyTotalScore = (u32)this->score
     };
 
     auto info = AsyncPPC::query_result(request);

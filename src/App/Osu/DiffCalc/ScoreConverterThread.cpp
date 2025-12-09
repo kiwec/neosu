@@ -58,7 +58,7 @@ void ScoreConverter::update_ppv2(const FinishedScore& score) {
                                                             .relax = RX,
                                                             .autopilot = AP,
                                                             .touchDevice = TD,
-                                                            .speedMultiplier = 1.f,
+                                                            .speedMultiplier = score.mods.speed,
                                                             .breakDuration = diffres.totalBreakDuration,
                                                             .playableLength = diffres.playableLength};
 
