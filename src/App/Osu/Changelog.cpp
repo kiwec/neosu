@@ -32,6 +32,8 @@ Changelog::Changelog() : ScreenBackable() {
     v41_11.changes = {
         R"(- Merged updated PPv2 ver. 20251007 from McOsu (thanks @Givikap120))",
         R"(  - See https://osu.ppy.sh/home/news/2025-10-29-performance-points-star-rating-updates)",
+        R"(- Fixed inaccurate beatmap BPM values)",
+        R"(- Fixed song browser up/down arrow key navigation)",
     };
     changelogs.push_back(v41_11);
 

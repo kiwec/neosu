@@ -797,6 +797,8 @@ void BanchoState::handle_packet(Packet &packet) {
 
             DatabaseBeatmap::MapFileReadDoneCallback callback =
                 [url, md5, file_path, func = __FUNCTION__](std::vector<u8> osu_file) -> void {
+                if(!networkHandler) return;  // quit if we got called while shutting down
+
                 if(osu_file.empty()) {
                     debugLogLambda("Failed to get map file data for md5: {} path: {}", md5.string(), file_path);
                     return;

@@ -12,6 +12,7 @@
 #include "Engine.h"
 #include "OpenGLES32Interface.h"
 #include "OpenGLStateCache.h"
+#include "OpenGLHeaders.h"
 #include "Logging.h"
 
 #include "SDLGLInterface.h"

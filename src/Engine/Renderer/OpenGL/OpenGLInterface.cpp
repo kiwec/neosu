@@ -9,6 +9,7 @@
 #include "Engine.h"
 
 #include "Font.h"
+#include "OpenGLHeaders.h"
 #include "OpenGLImage.h"
 #include "OpenGLRenderTarget.h"
 #include "OpenGLShader.h"

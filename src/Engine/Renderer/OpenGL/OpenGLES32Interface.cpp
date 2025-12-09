@@ -19,6 +19,7 @@
 #include "OpenGLES32Shader.h"
 #include "OpenGLES32VertexArrayObject.h"
 #include "OpenGLImage.h"
+#include "OpenGLHeaders.h"
 #include "OpenGLRenderTarget.h"
 #include "OpenGLStateCache.h"
 

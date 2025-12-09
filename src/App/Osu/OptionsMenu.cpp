@@ -1022,7 +1022,7 @@ OptionsMenu::OptionsMenu() : ScreenBackable() {
         this->elemContainers.back()->render_condition = sensWarningCondition;
     }
 
-    this->addCheckbox("Raw Mouse Input", &cv::mouse_raw_input);
+    this->addCheckbox("Raw Mouse Input", "Not recommended if you're using a tablet.", &cv::mouse_raw_input);
     this->addCheckbox("Confine Cursor (Windowed)", &cv::confine_cursor_windowed);
     this->addCheckbox("Confine Cursor (Fullscreen)", &cv::confine_cursor_fullscreen);
     this->addCheckbox("Confine Cursor (NEVER)", "Overrides automatic cursor clipping during gameplay.",
@@ -1037,9 +1037,10 @@ OptionsMenu::OptionsMenu() : ScreenBackable() {
     if constexpr(Env::cfg(OS::WINDOWS)) {
         this->addCheckbox("Raw Keyboard Input", &cv::keyboard_raw_input);
         if(cv::win_global_media_hotkeys.getDefaultDouble() != -1.) {  // it's set to -1 if it doesn't work
-            this->addCheckbox("Global Media Hotkeys",
-                              "Allows controlling main menu music with\nkeyboard media shortcuts, even while alt-tabbed",
-                              &cv::win_global_media_hotkeys);
+            this->addCheckbox(
+                "Global Media Hotkeys",
+                "Allows controlling main menu music with\nkeyboard media shortcuts, even while alt-tabbed",
+                &cv::win_global_media_hotkeys);
         }
     }
     UIButton *resetAllKeyBindingsButton = this->addButton("Reset all key bindings");
@@ -1216,11 +1217,10 @@ OptionsMenu::OptionsMenu() : ScreenBackable() {
     this->addCheckbox("Draw Stats: Note Density", "How many objects are visible at the same time.",
                       &cv::draw_statistics_nd);
     this->addCheckbox("Draw Stats: Unstable Rate", &cv::draw_statistics_ur);
-    this->addCheckbox(
-        "Draw Stats: Accuracy Error",
-        "Average hit error delta (e.g. -5ms +15ms).\nSee \"hud_statistics_hitdelta_chunksize 30\",\nit "
-        "defines how many recent hit deltas are averaged.",
-        &cv::draw_statistics_hitdelta);
+    this->addCheckbox("Draw Stats: Accuracy Error",
+                      "Average hit error delta (e.g. -5ms +15ms).\nSee \"hud_statistics_hitdelta_chunksize 30\",\nit "
+                      "defines how many recent hit deltas are averaged.",
+                      &cv::draw_statistics_hitdelta);
     this->addSpacer();
     this->hudSizeSlider = this->addSlider("HUD Scale:", 0.01f, 3.0f, &cv::hud_scale, 165.0f);
     this->hudSizeSlider->setChangeCallback(SA::MakeDelegate<&OptionsMenu::onSliderChangePercent>(this));

@@ -3,6 +3,8 @@
 
 #if defined(MCENGINE_FEATURE_GLES32) || defined(MCENGINE_FEATURE_OPENGL)
 
+#include "OpenGLHeaders.h"
+
 #include <SDL3/SDL_video.h>
 
 #include "Engine.h"
@@ -257,6 +259,7 @@ std::string glDebugTypeString(GLenum type) {
             return fmt::format("{:04x}", type);
     }
 }
+
 std::string glDebugSeverityString(GLenum severity) {
     switch(severity) {
         case GL_DEBUG_SEVERITY_HIGH:
@@ -274,12 +277,7 @@ std::string glDebugSeverityString(GLenum severity) {
 
 }  // namespace
 
-namespace cv {
-static ConVar debug_opengl_v("debug_opengl_v", false, CLIENT | HIDDEN,
-                             [](float val) -> void { SDLGLInterface::setLog(!!static_cast<int>(val)); });
-}  // namespace cv
-
-void SDLGLInterface::setLog(bool on) {
+void SDLGLInterface::setGLLog(bool on) {
     if(!g || !g.get() || !glDebugMessageCallbackARB) return;
     if(on) {
         glEnable(GL_DEBUG_OUTPUT);
@@ -288,8 +286,8 @@ void SDLGLInterface::setLog(bool on) {
     }
 }
 
-void GLAPIENTRY SDLGLInterface::glDebugCB(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length,
-                                          const GLchar *message, const void * /*userParam*/) {
+void GLAPIENTRY SDLGLInterface::glDebugCB(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message,
+                          const void * /*userParam*/) {
     Logger::logRaw("[GLDebugCB]");
     Logger::logRaw("    message: {}", std::string(message, length));
     Logger::logRaw("    time: {:.4f}", engine->getTime());
@@ -298,5 +296,10 @@ void GLAPIENTRY SDLGLInterface::glDebugCB(GLenum source, GLenum type, GLuint id,
     Logger::logRaw("    type: {}", glDebugTypeString(type));
     Logger::logRaw("    severity: {}", glDebugSeverityString(severity));
 }
+
+namespace cv {
+static ConVar debug_opengl_v("debug_opengl_v", false, CLIENT | HIDDEN,
+                             [](float val) -> void { SDLGLInterface::setGLLog(!!static_cast<int>(val)); });
+}  // namespace cv
 
 #endif

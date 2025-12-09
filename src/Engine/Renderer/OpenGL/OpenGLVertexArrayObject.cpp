@@ -5,6 +5,7 @@
 #include "OpenGLVertexArrayObject.h"
 
 #include "SDLGLInterface.h"
+#include "OpenGLHeaders.h"
 #include "OpenGLStateCache.h"
 
 #include "Engine.h"
