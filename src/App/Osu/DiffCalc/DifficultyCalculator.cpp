@@ -1052,7 +1052,7 @@ f64 DifficultyCalculator::calculateAimVisibilityFactor(f64 approachRate, f64 mec
     const f64 ar_factor_end_point = 11.5;
 
     f64 mechanicalDifficultyFactor = reverseLerp(mechanicalDifficultyRating, 5.0, 10.0);
-    f64 arFactorStartingPoint = std::lerp<f64>(9., 10.33, mechanicalDifficultyFactor);
+    f64 arFactorStartingPoint = std::lerp(9., 10.33, mechanicalDifficultyFactor);
 
     return reverseLerp(approachRate, ar_factor_end_point, arFactorStartingPoint);
 }
@@ -1061,7 +1061,7 @@ f64 DifficultyCalculator::calculateSpeedVisibilityFactor(f64 approachRate, f64 m
     const f64 ar_factor_end_point = 11.5;
 
     f64 mechanicalDifficultyFactor = reverseLerp(mechanicalDifficultyRating, 5.0, 10.0);
-    f64 arFactorStartingPoint = std::lerp<f64>(10., 10.33, mechanicalDifficultyFactor);
+    f64 arFactorStartingPoint = std::lerp(10., 10.33, mechanicalDifficultyFactor);
 
     return reverseLerp(approachRate, ar_factor_end_point, arFactorStartingPoint);
 }

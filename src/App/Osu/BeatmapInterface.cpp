@@ -2476,7 +2476,7 @@ void BeatmapInterface::update() {
                                                                     .c300 = num300s,
                                                                     .c100 = num100s,
                                                                     .c50 = num50s,
-                                                                    .legacyTotalScore = legacyTotalScore};
+                                                                    .legacyTotalScore = (u32)legacyTotalScore};
 
                 retInfo.pp = DifficultyCalculator::calculatePPv2(ppv2calcparams);
 
@@ -3573,7 +3573,7 @@ const AsyncPPC::pp_res &BeatmapInterface::getWholeMapPPInfo() {
             .num300s = map->getNumObjects(),
             .num100s = 0,
             .num50s = 0,
-            .legacyTotalScore = osu->getScore()->getScore()
+            .legacyTotalScore = (u32)osu->getScore()->getScore()
         };
     }
 
