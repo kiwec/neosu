@@ -4,6 +4,7 @@
 #include "BaseEnvironment.h"
 
 #include "fmt/format.h"
+#include "fmt/ranges.h"
 
 #include <string_view>
 #include <cassert>

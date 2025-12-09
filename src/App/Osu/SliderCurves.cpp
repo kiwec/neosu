@@ -500,13 +500,7 @@ std::vector<vec2> SliderCurveEqualDistanceMulti::SliderCurveDetails::initCatmull
 
     f32 approxLength = 0;
     for(i32 i = 1; i < 4; i++) {
-        f32 len = 0;
-
-        if(i > 0) len = vec::length(initPoints[i] - initPoints[i - 1]);
-
-        if(len <= 0) len += 0.0001f;
-
-        approxLength += len;
+        approxLength += std::max(0.0001f, vec::length(initPoints[i] - initPoints[i - 1]));
     }
 
     // init helper lambda

@@ -1,5 +1,5 @@
 #pragma once
-// Copyright (c) 2019, PG & Francesco149, All rights reserved.
+// Copyright (c) 2019, PG & Francesco149 & Khangaroo & Givikap120, All rights reserved.
 
 #include "config.h"
 #include "noinclude.h"

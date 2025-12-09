@@ -2405,20 +2405,16 @@ void BeatmapInterface::update() {
 
                 static std::string lastCalcedPath = osufile_path;
                 static f32 lastCalcedAR = AR;
-                static f32 lastCalcedHP = HP;
                 static f32 lastCalcedCS = CS;
-                static f32 lastCalcedOD = OD;
                 static f32 lastCalcedSpeedMultiplier = speedMultiplier;
                 static auto diffres = DatabaseBeatmap::loadDifficultyHitObjects(osufile_path, AR, CS, speedMultiplier);
                 static std::vector<DifficultyCalculator::DiffObject> diffobjCache;
 
-                if(lastCalcedPath != osufile_path || lastCalcedAR != AR || lastCalcedCS != CS || lastCalcedHP != HP ||
-                   lastCalcedOD != OD || lastCalcedSpeedMultiplier != speedMultiplier) {
+                if(lastCalcedPath != osufile_path || lastCalcedAR != AR || lastCalcedCS != CS ||
+                   lastCalcedSpeedMultiplier != speedMultiplier) {
                     lastCalcedPath = osufile_path;
                     lastCalcedAR = AR;
-                    lastCalcedHP = HP;
                     lastCalcedCS = CS;
-                    lastCalcedOD = OD;
                     lastCalcedSpeedMultiplier = speedMultiplier;
                     // get new diffres
                     diffobjCache.clear();
@@ -3561,20 +3557,18 @@ const AsyncPPC::pp_res &BeatmapInterface::getWholeMapPPInfo() {
         // full-length pp calc for currently selected mods
         // (the fact that this is duplicated 50000 times means this interface is terrible)
         const auto &mods = osu->getScore()->mods;
-        this->full_calc_req_params = {
-            .modFlags = mods.flags,
-            .speedOverride = mods.speed,
-            .AR = mods.get_naive_ar(map),
-            .HP = mods.get_naive_hp(map),
-            .CS = mods.get_naive_cs(map),
-            .OD = mods.get_naive_od(map),
-            .comboMax = -1,
-            .numMisses = 0,  // unset sentinel for request (bad api)
-            .num300s = map->getNumObjects(),
-            .num100s = 0,
-            .num50s = 0,
-            .legacyTotalScore = (u32)osu->getScore()->getScore()
-        };
+        this->full_calc_req_params = {.modFlags = mods.flags,
+                                      .speedOverride = mods.speed,
+                                      .AR = mods.get_naive_ar(map),
+                                      .HP = mods.get_naive_hp(map),
+                                      .CS = mods.get_naive_cs(map),
+                                      .OD = mods.get_naive_od(map),
+                                      .comboMax = -1,
+                                      .numMisses = 0,  // unset sentinel for request (bad api)
+                                      .num300s = map->getNumObjects(),
+                                      .num100s = 0,
+                                      .num50s = 0,
+                                      .legacyTotalScore = 0};
     }
 
     this->full_ppinfo = AsyncPPC::query_result(this->full_calc_req_params,

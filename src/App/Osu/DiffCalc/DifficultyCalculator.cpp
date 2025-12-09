@@ -1,4 +1,4 @@
-// Copyright (c) 2019, PG & Francesco149, All rights reserved.
+// Copyright (c) 2019, PG & Francesco149 & Khangaroo & Givikap120, All rights reserved.
 #include "DifficultyCalculator.h"
 
 #include "DatabaseBeatmap.h"
@@ -18,8 +18,6 @@
 #define SLIDER_CURVE_MAX_LENGTH 32768.f
 #define SLIDER_END_INSIDE_CHECK_OFFSET 36
 #endif
-
-#include <algorithm>
 
 namespace DiffCalc {
 const u32 PP_ALGORITHM_VERSION{20251007};

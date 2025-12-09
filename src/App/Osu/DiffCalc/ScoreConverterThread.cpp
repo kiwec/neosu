@@ -100,7 +100,7 @@ void ScoreConverter::update_ppv2(const FinishedScore& score) {
                                                         .c300 = score.num300s,
                                                         .c100 = score.num100s,
                                                         .c50 = score.num50s,
-                                                        .legacyTotalScore = score.score};
+                                                        .legacyTotalScore = (u32)score.score};
 
     info.pp = DifficultyCalculator::calculatePPv2(ppv2calcparams);
 
