@@ -491,7 +491,7 @@ BPMInfo getBPM(const zarray<T> &timing_points, zarray<BPMTuple> &bpm_buffer)
         double currentTime = (i == 0 ? 0 : t.offset);
         double nextTime = (i == timing_points.size() - 1 ? lastTime : timing_points[i + 1].offset);
 
-        i32 bpm = std::min(60000.0 / t.msPerBeat, 9001.0);
+        i32 bpm = (i32)std::round(std::min(60000.0 / t.msPerBeat, 9001.0));
         double duration = std::max(nextTime - currentTime, 0.0);
 
         bool found = false;

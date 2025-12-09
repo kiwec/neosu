@@ -33,7 +33,7 @@ class DatabaseBeatmap;
 typedef DatabaseBeatmap BeatmapDifficulty;
 typedef DatabaseBeatmap BeatmapSet;
 
-#define NEOSU_MAPS_DB_VERSION 20251009
+#define NEOSU_MAPS_DB_VERSION 20251209
 #define NEOSU_SCORE_DB_VERSION 20240725
 
 class Database;

@@ -1052,9 +1052,14 @@ void Database::loadMaps() {
                     diff->iNumSpinners = neosu_maps.read<u16>();
                     diff->iNumObjects = diff->iNumCircles + diff->iNumSliders + diff->iNumSpinners;
                     diff->fStarsNomod = neosu_maps.read<f64>();
-                    diff->iMinBPM = neosu_maps.read<i32>();
-                    diff->iMaxBPM = neosu_maps.read<i32>();
-                    diff->iMostCommonBPM = neosu_maps.read<i32>();
+
+                    if(version >= 20251209) {  // prior versions had a rounding bug, force recalc
+                        diff->iMinBPM = neosu_maps.read<i32>();
+                        diff->iMaxBPM = neosu_maps.read<i32>();
+                        diff->iMostCommonBPM = neosu_maps.read<i32>();
+                    } else {
+                        neosu_maps.skip_bytes(sizeof(i32) * 3);
+                    }
 
                     if(version < 20240812) {
                         u32 nb_timing_points = neosu_maps.read<u32>();
@@ -1129,9 +1134,16 @@ void Database::loadMaps() {
                     over.online_offset = neosu_maps.read<i16>();
                     over.star_rating = neosu_maps.read<f32>();
                     over.loudness = neosu_maps.read<f32>();
-                    over.min_bpm = neosu_maps.read<i32>();
-                    over.max_bpm = neosu_maps.read<i32>();
-                    over.avg_bpm = neosu_maps.read<i32>();
+                    if(version >= 20251209) {  // only override if we have accurately calculated values
+                        over.min_bpm = neosu_maps.read<i32>();
+                        over.max_bpm = neosu_maps.read<i32>();
+                        over.avg_bpm = neosu_maps.read<i32>();
+                    } else {
+                        neosu_maps.skip_bytes(sizeof(i32) * 3);
+                        over.min_bpm = -1;  // sentinel values, to be re-calculated when importing the map from peppy db
+                        over.max_bpm = -1;
+                        over.avg_bpm = -1;
+                    }
                     over.draw_background = neosu_maps.read<u8>();
                     if(version >= 20251009) {
                         over.background_image_filename = neosu_maps.read_string();
@@ -1284,7 +1296,7 @@ void Database::loadMaps() {
 
                 BPMInfo bpm;
                 auto nb_timing_points = dbr.read<u32>();
-                if(overrides_found) {
+                if(overrides_found && override.min_bpm != -1) { // only use cached override bpm if it's not the sentinel -1
                     dbr.skip_bytes(sizeof(DB_TIMINGPOINT) * nb_timing_points);
                     bpm.min = override.min_bpm;
                     bpm.max = override.max_bpm;
