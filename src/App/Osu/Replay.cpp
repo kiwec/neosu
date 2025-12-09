@@ -8,6 +8,7 @@
 #include "GameRules.h"
 #include "OsuConVars.h"
 #include "Osu.h"
+#include "DifficultyCalculator.h"
 
 namespace Replay {
 
@@ -60,7 +61,7 @@ f32 Mods::get_naive_ar(const DatabaseBeatmap *map) const {
 }
 
 f32 Mods::get_naive_cs(const DatabaseBeatmap *map) const {
-    float CSdifficultyMultiplier = 1.0f;
+    f32 CSdifficultyMultiplier = 1.0f;
     if((this->has(ModFlags::HardRock))) CSdifficultyMultiplier = 1.3f;  // different!
     if((this->has(ModFlags::Easy))) CSdifficultyMultiplier = 0.5f;
 
@@ -71,8 +72,19 @@ f32 Mods::get_naive_cs(const DatabaseBeatmap *map) const {
     return CS;
 }
 
+f32 Mods::get_naive_hp(const DatabaseBeatmap *map) const {
+    f32 HPdifficultyMultiplier = 1.0f;
+    if((this->has(ModFlags::HardRock))) HPdifficultyMultiplier = 1.4f;
+    if((this->has(ModFlags::Easy))) HPdifficultyMultiplier = 0.5f;
+
+    f32 HP = std::clamp<f32>(map->getHP() * HPdifficultyMultiplier, 0.0f, 10.0f);
+    if(this->hp_override >= 0.0f) HP = this->hp_override;
+
+    return HP;
+}
+
 f32 Mods::get_naive_od(const DatabaseBeatmap *map) const {
-    float ODdifficultyMultiplier = 1.0f;
+    f32 ODdifficultyMultiplier = 1.0f;
     if((this->has(ModFlags::HardRock))) ODdifficultyMultiplier = 1.4f;
     if((this->has(ModFlags::Easy))) ODdifficultyMultiplier = 0.5f;
 
@@ -84,6 +96,10 @@ f32 Mods::get_naive_od(const DatabaseBeatmap *map) const {
     }
 
     return OD;
+}
+
+f64 Mods::get_scorev1_multiplier() const {
+    return DifficultyCalculator::getScoreV1ScoreMultiplier(this->flags, this->speed);
 }
 
 Mods Mods::from_cvars() {

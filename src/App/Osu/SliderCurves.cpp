@@ -780,17 +780,17 @@ std::unique_ptr<SliderCurve> SliderCurve::createCurve(SLIDERCURVETYPE type, std:
 
         if(std::abs(norb.x * nora.y - norb.y * nora.x) < 0.00001f) {
             return std::make_unique<SliderCurveEqualDistanceMulti>(SliderCurveEqualDistanceMulti::createLinearBezier(
-                controlPoints, pixelLength, curvePointsSeparation,
+                std::move(controlPoints), pixelLength, curvePointsSeparation,
                 false));  // vectors parallel, use linear bezier instead
         } else {
-            return std::make_unique<SliderCurveCircumscribedCircle>(controlPoints, pixelLength, curvePointsSeparation);
+            return std::make_unique<SliderCurveCircumscribedCircle>(std::move(controlPoints), pixelLength, curvePointsSeparation);
         }
     } else if(type == CATMULL) {
         return std::make_unique<SliderCurveEqualDistanceMulti>(
-            SliderCurveEqualDistanceMulti::createCatmull(controlPoints, pixelLength, curvePointsSeparation));
+            SliderCurveEqualDistanceMulti::createCatmull(std::move(controlPoints), pixelLength, curvePointsSeparation));
     } else {
         return std::make_unique<SliderCurveEqualDistanceMulti>(SliderCurveEqualDistanceMulti::createLinearBezier(
-            controlPoints, pixelLength, curvePointsSeparation, (type == LINEAR)));
+            std::move(controlPoints), pixelLength, curvePointsSeparation, (type == LINEAR)));
     }
 }
 

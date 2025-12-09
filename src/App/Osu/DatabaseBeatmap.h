@@ -81,6 +81,8 @@ class DatabaseBeatmap final {
         std::vector<DifficultyHitObject> diffobjects;
 
         i32 maxPossibleCombo{};
+        u32 playableLength{0};
+        u32 totalBreakDuration{0};
         int errorCode{0};
     };
 
@@ -179,6 +181,8 @@ class DatabaseBeatmap final {
         u32 numSliders{};
         u32 numSpinners{};
         u32 numHitobjects{};
+
+        u32 totalBreakDuration{0};
 
         // sample set to use if timing point doesn't specify it
         // 1 = normal, 2 = soft, 3 = drum
@@ -331,6 +335,7 @@ class DatabaseBeatmap final {
     std::vector<DatabaseBeatmap *> *difficulties = nullptr;
 
     zarray<DatabaseBeatmap::TIMINGPOINT> timingpoints;  // necessary for main menu anim
+    u32 totalBreakDuration;                             // necessary for ppv2 calc (initialized after loadMetadata)
 
     // redundant data (technically contained in metadata, but precomputed anyway)
 
