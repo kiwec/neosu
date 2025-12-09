@@ -198,12 +198,20 @@ void VolumeOverlay::onKeyDown(KeyboardEvent &key) {
     if(key == KEY_MUTE) {
         osu->getMapInterface()->pausePreviewMusic(true);
         key.consume();
-    } else if(key == KEY_VOLUMEUP || key == cv::INCREASE_VOLUME.getVal<SCANCODE>()) {
-        this->volumeUp();
-        key.consume();
-    } else if(key == KEY_VOLUMEDOWN || key == cv::DECREASE_VOLUME.getVal<SCANCODE>()) {
-        this->volumeDown();
-        key.consume();
+    } else {
+        // avoid conflicting focus with e.g. songbrowser up/down
+        const bool volIncreaseIsUp = cv::INCREASE_VOLUME.getVal<SCANCODE>() == KEY_UP;
+        const bool volDecreaseIsDown = cv::DECREASE_VOLUME.getVal<SCANCODE>() == KEY_DOWN;
+
+        if(key == KEY_VOLUMEUP || (key == cv::INCREASE_VOLUME.getVal<SCANCODE>() &&
+                                   (!volIncreaseIsUp || this->isVisible() || this->canChangeVolume()))) {
+            this->volumeUp();
+            key.consume();
+        } else if(key == KEY_VOLUMEDOWN || (key == cv::DECREASE_VOLUME.getVal<SCANCODE>() &&
+                                            (!volDecreaseIsDown || this->isVisible() || this->canChangeVolume()))) {
+            this->volumeDown();
+            key.consume();
+        }
     }
 
     if(this->isVisible() && this->canChangeVolume()) {
@@ -245,21 +253,19 @@ bool VolumeOverlay::isBusy() {
 bool VolumeOverlay::isVisible() { return engine->getTime() < this->fVolumeChangeTime; }
 
 bool VolumeOverlay::canChangeVolume() {
-    bool can_scroll = true;
-    if(osu->getSongBrowser()->isVisible() && db->isFinished() == 1.f) {
-        can_scroll = false;
-    }
-    if(osu->getOptionsMenu()->isVisible()) can_scroll = false;
-    if(osu->getOptionsMenu()->contextMenu->isVisible()) can_scroll = false;
-    if(osu->getChangelog()->isVisible()) can_scroll = false;
-    if(osu->getRankingScreen()->isVisible()) can_scroll = false;
-    if(osu->getModSelector()->isMouseInScrollView()) can_scroll = false;
-    if(osu->getChat()->isMouseInChat()) can_scroll = false;
-    if(osu->getUserStatsScreen()->isVisible()) can_scroll = false;
-    if(osu->isInPlayMode() && cv::disable_mousewheel.getBool() && !osu->getPauseMenu()->isVisible()) can_scroll = false;
-
-    if(this->isBusy()) can_scroll = true;
-    if(keyboard->isAltDown()) can_scroll = true;
+    const bool can_scroll =
+        this->isBusy() || keyboard->isAltDown() ||                                                           //
+        (                                                                                                    //
+            !(osu->getSongBrowser()->isVisible() && db->isFinished() == 1.f) &&                              //
+            !(osu->getOptionsMenu()->isVisible()) &&                                                         //
+            !(osu->getOptionsMenu()->contextMenu->isVisible()) &&                                            //
+            !(osu->getChangelog()->isVisible()) &&                                                           //
+            !(osu->getRankingScreen()->isVisible()) &&                                                       //
+            !(osu->getModSelector()->isMouseInScrollView()) &&                                               //
+            !(osu->getChat()->isMouseInChat()) &&                                                            //
+            !(osu->getUserStatsScreen()->isVisible()) &&                                                     //
+            !(osu->isInPlayMode() && cv::disable_mousewheel.getBool() && !osu->getPauseMenu()->isVisible())  //
+        );
 
     return can_scroll;
 }
