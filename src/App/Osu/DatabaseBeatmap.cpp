@@ -211,23 +211,22 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(std::
 
 DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(std::string_view osuFilePath,
                                                                            const std::function<bool(void)> &dead) {
-    PRIMITIVE_CONTAINER c{
-        .stackLeniency = 0.7f,
+    PRIMITIVE_CONTAINER c;
+    {
+        c.errorCode = 0;
 
-        .sliderMultiplier = 1.0f,
-        .sliderTickRate = 1.0f,
+        c.stackLeniency = 0.7f;
 
-        .numCircles = 0,
-        .numSliders = 0,
-        .numSpinners = 0,
-        .numHitobjects = 0,
+        c.sliderMultiplier = 1.0f;
+        c.sliderTickRate = 1.0f;
 
-        .totalBreakDuration = 0,
+        c.numCircles = 0;
+        c.numSliders = 0;
+        c.numSpinners = 0;
+        c.numHitobjects = 0;
 
-        .version = 14,
-
-        .errorCode = 0,
-    };
+        c.version = 14;
+    }
 
     const float sliderSanityRange = cv::slider_curve_max_length.getFloat();  // infinity sanity check, same as before
     const int sliderMaxRepeatRange =
@@ -639,11 +638,6 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(std::
         }
     }
 
-    // calculate total break duration
-    for(const auto &brk : c.breaks) {
-        c.totalBreakDuration += (u32)(brk.endTime - brk.startTime);
-    }
-
     // sort timingpoints by time
     if(c.timingpoints.size() > 1) std::ranges::sort(c.timingpoints, timingPointSortComparator);
 
@@ -836,9 +830,6 @@ DatabaseBeatmap::LOAD_DIFFOBJ_RESULT DatabaseBeatmap::loadDifficultyHitObjects(P
         result.errorCode = c.errorCode;
         return result;
     }
-
-    // save break duration (for pp calc)
-    result.totalBreakDuration = c.totalBreakDuration;
 
     // calculate sliderTimes, and build slider clicks and ticks
     CALCULATE_SLIDER_TIMES_CLICKS_TICKS_RESULT sliderTimeCalcResult = calculateSliderTimesClicksTicks(
@@ -1079,11 +1070,6 @@ DatabaseBeatmap::LOAD_DIFFOBJ_RESULT DatabaseBeatmap::loadDifficultyHitObjects(P
         }
     }
 
-    // calculate playable length (for pp calc)
-    if(!result.diffobjects.empty()) {
-        result.playableLength = (u32)(result.diffobjects.back().baseEndTime - result.diffobjects[0].baseTime);
-    }
-
     return result;
 }
 
@@ -1106,8 +1092,6 @@ bool DatabaseBeatmap::loadMetadata(bool compute_md5) {
     std::unique_ptr<u8[]> fileBuffer;
     std::string_view beatmapFile;
     size_t beatmapFileSize{0};
-
-    std::vector<BREAK> breaks;
 
     {
         File file(this->sFilePath);
@@ -1228,17 +1212,15 @@ bool DatabaseBeatmap::loadMetadata(bool compute_md5) {
                 // short-circuit if we already have a stored filename
                 bool haveFilename = this->sBackgroundImageFileName.length() > 2;
 
-                std::string str;
-                i64 type{-1}, startTime, endTime;
-                if(Parsing::parse(curLine, &type, ',', &startTime, ',', &endTime) && (type == 2)) {
-                    BREAK b{.startTime = startTime, .endTime = endTime};
-                    breaks.push_back(b);
-                } else if(!haveFilename && Parsing::parse(curLine, &type, ',', &startTime, ',', &str) && (type == 0)) {
-                    this->sBackgroundImageFileName = str;
-                    haveFilename = true;
+                if(!haveFilename) {
+                    std::string str;
+                    i32 type{-1}, startTime;
+                    if(Parsing::parse(curLine, &type, ',', &startTime, ',', &str) && (type == 0)) {
+                        this->sBackgroundImageFileName = str;
+                        haveFilename = true;
+                    }
                 }
-
-                if(haveFilename && this->sFullBackgroundImageFilePath.length() < 2) {
+                if(haveFilename) {
                     this->sFullBackgroundImageFilePath =
                         fmt::format("{}{}", this->sFolder, this->sBackgroundImageFileName);
                 }
@@ -1262,13 +1244,6 @@ bool DatabaseBeatmap::loadMetadata(bool compute_md5) {
     }
     if(SString::is_wspace_only(this->sArtistUnicode)) {
         this->bEmptyArtistUnicode = true;
-    }
-
-    // calculate total break duration
-    if(this->totalBreakDuration == 0) {
-        for(const auto &brk : breaks) {
-            this->totalBreakDuration += (u32)(brk.endTime - brk.startTime);
-        }
     }
 
     // general sanity checks
@@ -1336,7 +1311,6 @@ DatabaseBeatmap::LOAD_GAMEPLAY_RESULT DatabaseBeatmap::loadGameplay(DatabaseBeat
     databaseBeatmap->fSliderTickRate = c.sliderTickRate;
     databaseBeatmap->fStackLeniency = c.stackLeniency;
     databaseBeatmap->iVersion = c.version;
-    databaseBeatmap->totalBreakDuration = c.totalBreakDuration;
 
     // check if we have any timingpoints at all
     if(databaseBeatmap->timingpoints.size() == 0) {

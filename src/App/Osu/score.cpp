@@ -73,7 +73,35 @@ void LiveScore::reset() {
     this->onScoreChange();
 }
 
-float LiveScore::getScoreMultiplier() { return this->mods.get_scorev1_multiplier(); }
+float LiveScore::getScoreMultiplier() {
+    bool ez = this->mods.has(ModFlags::Easy);
+    bool nf = this->mods.has(ModFlags::NoFail);
+    bool sv2 = this->mods.has(ModFlags::ScoreV2);
+    bool hr = this->mods.has(ModFlags::HardRock);
+    bool fl = this->mods.has(ModFlags::Flashlight);
+    bool hd = this->mods.has(ModFlags::Hidden);
+    bool so = this->mods.has(ModFlags::SpunOut);
+    bool rx = this->mods.has(ModFlags::Relax);
+    bool ap = this->mods.has(ModFlags::Autopilot);
+
+    float multiplier = 1.0f;
+
+    // Dumb formula, but the values for HT/DT were dumb to begin with
+    if(this->mods.speed > 1.f) {
+        multiplier *= (0.24 * this->mods.speed) + 0.76;
+    } else if(this->mods.speed < 1.f) {
+        multiplier *= 0.008 * std::exp(4.81588 * this->mods.speed);
+    }
+
+    if(ez || (nf && !sv2)) multiplier *= 0.5f;
+    if(hr) multiplier *= sv2 ? 1.1f : 1.06f;
+    if(fl) multiplier *= 1.12f;
+    if(hd) multiplier *= 1.06f;
+    if(so) multiplier *= 0.90f;
+    if(rx || ap) multiplier *= 0.f;
+
+    return multiplier;
+}
 
 void LiveScore::addHitResult(AbstractBeatmapInterface *beatmap, HitObject * /*hitObject*/, HIT hit, i32 delta,
                              bool ignoreOnHitErrorBar, bool hitErrorBarOnly, bool ignoreCombo, bool ignoreScore) {
@@ -456,7 +484,6 @@ f64 FinishedScore::get_or_calc_pp() {
         .speedOverride = this->mods.speed,
 
         .AR = this->mods.get_naive_ar(this->map),
-        .HP = this->mods.get_naive_hp(this->map),
         .CS = this->mods.get_naive_cs(this->map),
         .OD = this->mods.get_naive_od(this->map),
 
@@ -466,7 +493,8 @@ f64 FinishedScore::get_or_calc_pp() {
         .num100s = this->num100s,
         .num50s = this->num50s,
 
-        .legacyTotalScore = this->score
+        .rx = this->mods.has(ModFlags::Relax),
+        .td = this->mods.has(ModFlags::TouchDevice),
     };
 
     auto info = AsyncPPC::query_result(request);

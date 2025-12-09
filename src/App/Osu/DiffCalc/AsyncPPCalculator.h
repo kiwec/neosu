@@ -31,7 +31,6 @@ struct pp_calc_request {
     ModFlags modFlags{};
     f32 speedOverride{1.f};
     f32 AR{};
-    f32 HP{};
     f32 CS{};
     f32 OD{};
     i32 comboMax{-1};
@@ -39,7 +38,8 @@ struct pp_calc_request {
     i32 num300s{-1};
     i32 num100s{};
     i32 num50s{};
-    u32 legacyTotalScore{};
+    bool rx{};
+    bool td{};
 
     bool operator==(const pp_calc_request&) const = default;
 };

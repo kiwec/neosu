@@ -34,13 +34,10 @@ void ScoreConverter::update_ppv2(const FinishedScore& score) {
     const auto deadCheck = [](void) -> bool { return dead.load(std::memory_order_acquire); };
 
     f32 AR = score.mods.get_naive_ar(map);
-    f32 HP = score.mods.get_naive_hp(map);
     f32 CS = score.mods.get_naive_cs(map);
     f32 OD = score.mods.get_naive_od(map);
-    bool HD = score.mods.has(ModFlags::Hidden);
     bool RX = score.mods.has(ModFlags::Relax);
     bool TD = score.mods.has(ModFlags::TouchDevice);
-    bool AP = score.mods.has(ModFlags::Autopilot);
 
     // Load hitobjects
     auto diffres =
@@ -49,47 +46,47 @@ void ScoreConverter::update_ppv2(const FinishedScore& score) {
     if(diffres.errorCode) return;
 
     AsyncPPC::pp_res info;
-    DifficultyCalculator::BeatmapDiffcalcData diffcalc_data{.sortedHitObjects = diffres.diffobjects,
-                                                            .CS = CS,
-                                                            .HP = HP,
-                                                            .AR = AR,
-                                                            .OD = OD,
-                                                            .hidden = HD,
-                                                            .relax = RX,
-                                                            .autopilot = AP,
-                                                            .touchDevice = TD,
-                                                            .speedMultiplier = 1.f,
-                                                            .breakDuration = diffres.totalBreakDuration,
-                                                            .playableLength = diffres.playableLength};
+    DifficultyCalculator::StarCalcParams params{
+        .cachedDiffObjects = {},
+        .sortedHitObjects = diffres.diffobjects,
 
-    DifficultyCalculator::DifficultyAttributes attributes_out{};
+        .CS = CS,
+        .OD = OD,
+        .speedMultiplier = score.mods.speed,
+        .relax = RX,
+        .touchDevice = TD,
+        .aim = &info.aim_stars,
+        .aimSliderFactor = &info.aim_slider_factor,
 
-    DifficultyCalculator::StarCalcParams params{.cachedDiffObjects = {},
-                                                .outAttributes = attributes_out,
-                                                .beatmapData = diffcalc_data,
-                                                .outAimStrains = &info.aimStrains,
-                                                .outSpeedStrains = &info.speedStrains,
-                                                .incremental = nullptr,
-                                                .upToObjectIndex = -1,
-                                                .cancelCheck = deadCheck};
+        .aimDifficultSliders = &info.difficult_aim_sliders,
+        .difficultAimStrains = &info.difficult_aim_strains,
+        .speed = &info.speed_stars,
+        .speedNotes = &info.speed_notes,
+        .difficultSpeedStrains = &info.difficult_speed_strains,
+
+        .upToObjectIndex = -1,
+        .incremental = {},
+
+        .outAimStrains = &info.aimStrains,
+        .outSpeedStrains = &info.speedStrains,
+
+        .cancelCheck = deadCheck,
+    };
 
     info.total_stars = DifficultyCalculator::calculateStarDiffForHitObjects(params);
-
-    info.aim_stars = attributes_out.AimDifficulty;
-    info.aim_slider_factor = attributes_out.SliderFactor;
-    info.difficult_aim_sliders = attributes_out.AimDifficultSliderCount;
-    info.difficult_aim_strains = attributes_out.AimDifficultStrainCount;
-    info.speed_stars = attributes_out.SpeedDifficulty;
-    info.speed_notes = attributes_out.SpeedNoteCount;
-    info.difficult_speed_strains = attributes_out.SpeedDifficultStrainCount;
-
     if(dead.load(std::memory_order_acquire)) return;
 
-    DifficultyCalculator::PPv2CalcParams ppv2calcparams{.attributes = attributes_out,
-                                                        .modFlags = score.mods.flags,
-                                                        .timescale = score.mods.speed,
+    DifficultyCalculator::PPv2CalcParams ppv2calcparams{.modFlags = score.mods.flags,
+                                                        .speedOverride = score.mods.speed,
                                                         .ar = AR,
                                                         .od = OD,
+                                                        .aim = info.aim_stars,
+                                                        .aimSliderFactor = info.aim_slider_factor,
+                                                        .aimDifficultSliders = info.difficult_aim_sliders,
+                                                        .aimDifficultStrains = info.difficult_aim_strains,
+                                                        .speed = info.speed_stars,
+                                                        .speedNotes = info.speed_notes,
+                                                        .speedDifficultStrains = info.difficult_speed_strains,
                                                         .numHitObjects = map->iNumObjects,
                                                         .numCircles = map->iNumCircles,
                                                         .numSliders = map->iNumSliders,
@@ -99,8 +96,7 @@ void ScoreConverter::update_ppv2(const FinishedScore& score) {
                                                         .misses = score.numMisses,
                                                         .c300 = score.num300s,
                                                         .c100 = score.num100s,
-                                                        .c50 = score.num50s,
-                                                        .legacyTotalScore = score.score};
+                                                        .c50 = score.num50s};
 
     info.pp = DifficultyCalculator::calculatePPv2(ppv2calcparams);
 

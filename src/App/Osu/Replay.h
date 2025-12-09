@@ -51,12 +51,9 @@ struct Mods {
 
     // Get AR/CS/OD, ignoring mods which change it over time
     // Used for ppv2 calculations.
-    [[nodiscard]] f32 get_naive_ar(const DatabaseBeatmap *map) const;
-    [[nodiscard]] f32 get_naive_cs(const DatabaseBeatmap *map) const;
-    [[nodiscard]] f32 get_naive_hp(const DatabaseBeatmap *map) const;
-    [[nodiscard]] f32 get_naive_od(const DatabaseBeatmap *map) const;
-
-    [[nodiscard]] f64 get_scorev1_multiplier() const;
+    f32 get_naive_ar(const DatabaseBeatmap *map) const;
+    f32 get_naive_cs(const DatabaseBeatmap *map) const;
+    f32 get_naive_od(const DatabaseBeatmap *map) const;
 
     static Mods from_cvars();
     static Mods from_legacy(LegacyFlags legacy_flags);

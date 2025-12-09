@@ -227,18 +227,12 @@ u32 SimulatedBeatmapInterface::getLengthPlayable() const {
 }
 
 u32 SimulatedBeatmapInterface::getBreakDurationTotal() const {
-    if (unlikely(!this->beatmap && this->breaks.empty())) return 0;
-
-    if (this->beatmap) return this->beatmap->totalBreakDuration;
-    else {
-        u32 breakDurationTotal = 0;
-        for(auto i : this->breaks) {
-            breakDurationTotal += (u32)(i.endTime - i.startTime);
-        }
-
-        return breakDurationTotal;
+    u32 breakDurationTotal = 0;
+    for(auto i : this->breaks) {
+        breakDurationTotal += (u32)(i.endTime - i.startTime);
     }
 
+    return breakDurationTotal;
 }
 
 DatabaseBeatmap::BREAK SimulatedBeatmapInterface::getBreakForTimeRange(i32 startMS, i32 positionMS, i32 endMS) const {
