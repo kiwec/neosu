@@ -300,9 +300,9 @@ class DifficultyCalculator {
     };
 
     // pp, fully static
-    static f64 calculatePPv2(PPv2CalcParams &cparams);
+    static f64 calculatePPv2(PPv2CalcParams &cparams, bool isMcOsuImported = false);
 
-    [[nodiscard]] static f64 getScoreV1ScoreMultiplier(ModFlags flags, f64 speedOverride);
+    [[nodiscard]] static f64 getScoreV1ScoreMultiplier(ModFlags flags, f64 speedOverride, bool mcosu = false);
 
    private:
     // helper functions
@@ -355,7 +355,7 @@ class DifficultyCalculator {
 
     // ScoreV1 misscount estimation
     static f64 calculateScoreBasedMisscount(const DifficultyAttributes &attributes, const ScoreData &score,
-                                            f64 timescale);
+                                            f64 timescale, bool isMcOsuImported);
     static f64 calculateScoreAtCombo(const DifficultyAttributes &attributes, const ScoreData &score, f64 combo,
                                      f64 relevantComboPerObject, f64 scoreV1Multiplier);
     static f64 calculateRelevantScoreComboPerObject(const DifficultyAttributes &attributes, const ScoreData &score);

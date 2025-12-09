@@ -466,7 +466,9 @@ f64 FinishedScore::get_or_calc_pp() {
         .num100s = this->num100s,
         .num50s = this->num50s,
 
-        .legacyTotalScore = (u32)this->score
+        .legacyTotalScore = (u32)this->score,
+
+        .scoreFromMcOsu = this->is_mcosu_imported()
     };
 
     auto info = AsyncPPC::query_result(request);

@@ -20,8 +20,9 @@
 #endif
 
 namespace DiffCalc {
-const u32 PP_ALGORITHM_VERSION{20251007};
-}
+// NOTE: bumped version from 20251007 because of a bug in the first implementation with mcosu-imported scores
+const u32 PP_ALGORITHM_VERSION{20251008};
+}  // namespace DiffCalc
 
 DifficultyHitObject::DifficultyHitObject(TYPE type, vec2 pos, i32 time) : DifficultyHitObject(type, pos, time, time) {}
 
@@ -590,7 +591,7 @@ f64 DifficultyCalculator::calculateScoreV1SpinnerScore(f64 spinnerDuration) {
     return score;
 }
 
-f64 DifficultyCalculator::calculatePPv2(PPv2CalcParams &cpar) {
+f64 DifficultyCalculator::calculatePPv2(PPv2CalcParams &cpar, bool isMcOsuImported) {
     // NOTE: depends on active mods + OD + AR
 
     if(cpar.c300 < 0) cpar.c300 = cpar.numHitObjects - cpar.c100 - cpar.c50 - cpar.misses;
@@ -640,7 +641,8 @@ f64 DifficultyCalculator::calculatePPv2(PPv2CalcParams &cpar) {
         std::clamp<f64>(comboBasedMissCount, (f64)cpar.misses, (f64)(cpar.c50 + cpar.c100 + cpar.misses));
 
     if(score.legacyTotalScore > 0) {
-        f64 scoreBasedMisscount = calculateScoreBasedMisscount(cpar.attributes, score, cpar.timescale);
+        f64 scoreBasedMisscount =
+            calculateScoreBasedMisscount(cpar.attributes, score, cpar.timescale, isMcOsuImported);
         effectiveMissCount =
             std::clamp<f64>(scoreBasedMisscount, (f64)cpar.misses, (f64)(cpar.c50 + cpar.c100 + cpar.misses));
     }
@@ -903,10 +905,11 @@ f64 DifficultyCalculator::calculateSpeedHighDeviationNerf(const DifficultyAttrib
 }
 
 f64 DifficultyCalculator::calculateScoreBasedMisscount(const DifficultyAttributes &attributes, const ScoreData &score,
-                                                       f64 timescale) {
+                                                       f64 timescale, bool isMcOsuImported) {
     if(score.beatmapMaxCombo == 0) return 0;
 
-    f64 scoreV1Multiplier = attributes.LegacyScoreBaseMultiplier * getScoreV1ScoreMultiplier(score.modFlags, timescale);
+    f64 scoreV1Multiplier =
+        attributes.LegacyScoreBaseMultiplier * getScoreV1ScoreMultiplier(score.modFlags, timescale, isMcOsuImported);
     f64 relevantComboPerObject = calculateRelevantScoreComboPerObject(attributes, score);
 
     f64 maximumMissCount = calculateMaximumComboBasedMissCount(attributes, score);
@@ -1009,32 +1012,45 @@ f64 DifficultyCalculator::calculateMaximumComboBasedMissCount(const DifficultyAt
     return missCount;
 }
 
-f64 DifficultyCalculator::getScoreV1ScoreMultiplier(ModFlags flags, f64 speedOverride) {
-    const bool ez = flags::has<ModFlags::Easy>(flags);
-    const bool nf = flags::has<ModFlags::NoFail>(flags);
-    const bool sv2 = flags::has<ModFlags::ScoreV2>(flags);
-    const bool hr = flags::has<ModFlags::HardRock>(flags);
-    const bool fl = flags::has<ModFlags::Flashlight>(flags);
-    const bool hd = flags::has<ModFlags::Hidden>(flags);
-    const bool so = flags::has<ModFlags::SpunOut>(flags);
-    const bool rx = flags::has<ModFlags::Relax>(flags);
-    const bool ap = flags::has<ModFlags::Autopilot>(flags);
-
+f64 DifficultyCalculator::getScoreV1ScoreMultiplier(ModFlags flags, f64 speedOverride, bool mcosu) {
+    // this has to match how the score's scorev1 was actually calculated
+    // neosu uses a custom curve for custom speeds, mcosu uses a flat 1.12/0.30 for "DT" (> 1.0) or "HT" (<1.0) speeds
     f64 multiplier = 1.0;
+    if(!mcosu) {
+        const bool ez = flags::has<ModFlags::Easy>(flags);
+        const bool nf = flags::has<ModFlags::NoFail>(flags);
+        const bool sv2 = flags::has<ModFlags::ScoreV2>(flags);
+        const bool hr = flags::has<ModFlags::HardRock>(flags);
+        const bool fl = flags::has<ModFlags::Flashlight>(flags);
+        const bool hd = flags::has<ModFlags::Hidden>(flags);
+        const bool so = flags::has<ModFlags::SpunOut>(flags);
+        const bool rx = flags::has<ModFlags::Relax>(flags);
+        const bool ap = flags::has<ModFlags::Autopilot>(flags);
 
-    // Dumb formula, but the values for HT/DT were dumb to begin with
-    if(speedOverride > 1.) {
-        multiplier *= (0.24 * speedOverride) + 0.76;
-    } else if(speedOverride < 1.) {
-        multiplier *= 0.008 * std::exp(4.81588 * speedOverride);
+        // Dumb formula, but the values for HT/DT were dumb to begin with
+        if(speedOverride > 1.) {
+            multiplier *= (0.24 * speedOverride) + 0.76;
+        } else if(speedOverride < 1.) {
+            multiplier *= 0.008 * std::exp(4.81588 * speedOverride);
+        }
+
+        if(ez || (nf && !sv2)) multiplier *= 0.5;
+        if(hr) multiplier *= sv2 ? 1.1f : 1.06;
+        if(fl) multiplier *= 1.12;
+        if(hd) multiplier *= 1.06;
+        if(so) multiplier *= 0.90;
+        if(rx || ap) multiplier *= 0.;
+    } else {
+        const bool dt = speedOverride > 1.;
+        const bool ht = speedOverride < 1.;
+
+        if(flags::has<ModFlags::Easy>(flags)) multiplier *= 0.50f;
+        if(ht) multiplier *= 0.30f;
+        if(flags::has<ModFlags::HardRock>(flags)) multiplier *= 1.06f;
+        if(dt) multiplier *= 1.12f;
+        if(flags::has<ModFlags::Hidden>(flags)) multiplier *= 1.06f;
+        if(flags::has<ModFlags::SpunOut>(flags)) multiplier *= 0.90f;
     }
-
-    if(ez || (nf && !sv2)) multiplier *= 0.5;
-    if(hr) multiplier *= sv2 ? 1.1f : 1.06;
-    if(fl) multiplier *= 1.12;
-    if(hd) multiplier *= 1.06;
-    if(so) multiplier *= 0.90;
-    if(rx || ap) multiplier *= 0.;
 
     return multiplier;
 }

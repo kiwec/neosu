@@ -3568,7 +3568,8 @@ const AsyncPPC::pp_res &BeatmapInterface::getWholeMapPPInfo() {
                                       .num300s = map->getNumObjects(),
                                       .num100s = 0,
                                       .num50s = 0,
-                                      .legacyTotalScore = 0};
+                                      .legacyTotalScore = 0,
+                                      .scoreFromMcOsu = false};
     }
 
     this->full_ppinfo = AsyncPPC::query_result(this->full_calc_req_params,

@@ -102,7 +102,8 @@ void ScoreConverter::update_ppv2(const FinishedScore& score) {
                                                         .c50 = score.num50s,
                                                         .legacyTotalScore = (u32)score.score};
 
-    info.pp = DifficultyCalculator::calculatePPv2(ppv2calcparams);
+    // mcosu scores use a different scorev1 algorithm
+    info.pp = DifficultyCalculator::calculatePPv2(ppv2calcparams, score.is_mcosu_imported());
 
     // Update score
     Sync::shared_lock readlock(db->scores_mtx);

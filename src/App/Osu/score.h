@@ -93,7 +93,8 @@ struct FinishedScore {
     // float ppv3_score = 0.f;
     // std::string ppv3_algorithm;
 
-    [[nodiscard]] bool is_peppy_imported() const { return this->server == "ppy.sh"; }
+    [[nodiscard]] inline bool is_peppy_imported() const { return this->server == "ppy.sh"; }
+    [[nodiscard]] inline bool is_mcosu_imported() const { return this->client.starts_with("mcosu"); }
 
     f64 get_or_calc_pp();
     [[nodiscard]] f64 get_pp() const;
@@ -104,7 +105,7 @@ struct FinishedScore {
             return this->is_online_replay_available;
         } else {
             // Assume we always have a replay, as long as it's not a McOsu-imported score
-            return !this->client.contains("mcosu");
+            return !this->is_mcosu_imported();
         }
     }
 };

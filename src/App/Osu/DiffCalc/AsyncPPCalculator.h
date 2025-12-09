@@ -40,6 +40,7 @@ struct pp_calc_request {
     i32 num100s{};
     i32 num50s{};
     u32 legacyTotalScore{};
+    bool scoreFromMcOsu{false};
 
     bool operator==(const pp_calc_request&) const = default;
 };
