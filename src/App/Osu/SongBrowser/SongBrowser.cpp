@@ -120,8 +120,8 @@ class SongBrowserBackgroundSearchMatcher final : public Resource {
         }
 
         // flag matches across entire database
-        const std::vector<std::string_view> searchStringTokens =
-            SString::split<std::string_view>(this->sSearchString.utf8View(), ' ');
+        const std::vector<std::string> searchStringTokens =
+            SString::split<std::string>(this->sSearchString.utf8View(), ' ');  // make a copy
         for(auto &songButton : this->songButtons) {
             const auto &children = songButton->getChildren();
             if(children.size() > 0) {
@@ -1774,7 +1774,7 @@ SongBrowser::SetVisibility SongBrowser::getSetVisibility(const SongButton *paren
 }
 
 bool SongBrowser::searchMatcher(const DatabaseBeatmap *databaseBeatmap,
-                                const std::vector<std::string_view> &searchStringTokens) {
+                                const std::vector<std::string> &searchStringTokens) {
     if(databaseBeatmap == nullptr) return false;
 
     const std::vector<const DatabaseBeatmap *> tmpContainer{databaseBeatmap};
@@ -1872,11 +1872,17 @@ bool SongBrowser::searchMatcher(const DatabaseBeatmap *databaseBeatmap,
 
                         const auto rvaluePercentIndex = rstring.find('%');
                         const bool rvalueIsPercent = (rvaluePercentIndex != std::string::npos);
-                        const float rvalue =
-                            (rvaluePercentIndex == std::string::npos
-                                 ? std::strtof(std::string{rstring}.c_str(), nullptr)
-                                 : std::strtof(std::string{rstring.substr(0, rvaluePercentIndex)}.c_str(),
-                                               nullptr));  // this must always be a number (at least, assume it is)
+                        const float rvalue = [&rstring, rvaluePercentIndex]() -> float {
+                            float rvalue_tmp{0.f};
+                            const std::string_view rstring_sub = rvaluePercentIndex == std::string::npos
+                                                                     ? rstring
+                                                                     : rstring.substr(0, rvaluePercentIndex);
+
+                            auto [ptr, ec] = std::from_chars(rstring_sub.data(),
+                                                             rstring_sub.data() + rstring_sub.size(), rvalue_tmp);
+                            if(ec != std::errc()) return 0.f;
+                            return rvalue_tmp;
+                        }();  // this must always be a number (at least, assume it is)
 
                         // find lvalue keyword in array (only continue if keyword exists)
                         for(const auto &[kw_str, kw_id] : keywords) {

@@ -173,7 +173,7 @@ class SongBrowser final : public ScreenBackable {
     [[nodiscard]] inline GroupType getGroupingMode() const { return this->curGroup; }
 
     static bool searchMatcher(const DatabaseBeatmap *databaseBeatmap,
-                              const std::vector<std::string_view> &searchStringTokens);
+                              const std::vector<std::string> &searchStringTokens);
 
     void updateLayout() override;
     void onBack() override;

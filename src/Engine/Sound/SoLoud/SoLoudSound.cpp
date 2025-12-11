@@ -308,7 +308,6 @@ i32 SoLoudSound::getBASSStreamLatencyCompensation() const {
            cv::snd_soloud_hardcoded_offset.getInt();
 }
 
-// slightly tweaked interp algo from the SDL_mixer version, to smooth out position updates
 u64 SoLoudSound::getPositionUS() const {
     if(!this->isReady() || !this->audioSource || !this->handle) return 0;
 

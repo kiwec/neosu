@@ -159,6 +159,17 @@ MAIN_FUNC /* int argc, char *argv[] */
 
     CrashHandler::init();  // initialize minidump handling
 
+    // improve floating point perf in case this isn't already enabled by the compiler
+    SET_FPU_DAZ_FTZ
+
+    // this sets and caches the path in getPathToSelf, so this must be called here
+    const auto &selfpath = Environment::getPathToSelf(argv[0]);
+    if constexpr(!Env::cfg(OS::WASM)) {
+        // set the current working directory to the executable directory, so that relative paths
+        // work as expected
+        setcwdexe(selfpath);
+    }
+
     // parse args here
 
     // simple vector representation of the whole cmdline including the program name (as the first element)
@@ -186,6 +197,7 @@ MAIN_FUNC /* int argc, char *argv[] */
         return args;
     }();
 
+    // now set up spdlog logging
     Logger::init(arg_map.contains("-console"));
     atexit(Logger::shutdown);
 
@@ -198,17 +210,6 @@ MAIN_FUNC /* int argc, char *argv[] */
         SDL_RegisterApp(PACKAGE_NAME, CS_BYTEALIGNCLIENT_ | CS_BYTEALIGNWINDOW_, nullptr);
     }
 #endif
-
-    // improve floating point perf in case this isn't already enabled by the compiler
-    SET_FPU_DAZ_FTZ
-
-    // this sets and caches the path in getPathToSelf, so this must be called here
-    const auto &selfpath = Environment::getPathToSelf(argv[0]);
-    if constexpr(!Env::cfg(OS::WASM)) {
-        // set the current working directory to the executable directory, so that relative paths
-        // work as expected
-        setcwdexe(selfpath);
-    }
 
     // set up some common app metadata (SDL says these should be called as early as possible)
     SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_NAME_STRING, PACKAGE_NAME);

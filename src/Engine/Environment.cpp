@@ -362,10 +362,13 @@ bool Environment::renameFile(const std::string &oldFileName, const std::string &
 bool Environment::deleteFile(const std::string &filePath) noexcept { return SDL_RemovePath(filePath.c_str()); }
 
 std::vector<std::string> Environment::getFilesInFolder(std::string_view folder) noexcept {
+    assert(!folder.empty());
+    assert(folder.ends_with('/') || (Env::cfg(OS::WINDOWS) && folder.ends_with('\\')));
     return enumerateDirectory(folder, SDL_PATHTYPE_FILE);
 }
 
 std::vector<std::string> Environment::getFoldersInFolder(std::string_view folder) noexcept {
+    assert(!folder.empty());
     if(folder.back() == '/') {
         return enumerateDirectory(folder, SDL_PATHTYPE_DIRECTORY);
     }
@@ -1292,6 +1295,8 @@ std::vector<std::string> Environment::enumerateDirectory(std::string_view pathTo
     WIN32_FIND_DATAW data{};
     HANDLE handle = FindFirstFileW(folder.wchar_str(), &data);
     if(handle != INVALID_HANDLE_VALUE) {
+        utf8_entries.reserve(512);
+
         while(true) {
             const wchar_t *wide_filename = &data.cFileName[0];
             const size_t length = std::wcslen(wide_filename);
@@ -1325,12 +1330,13 @@ std::vector<std::string> Environment::enumerateDirectory(std::string_view pathTo
 std::vector<std::string> Environment::enumerateDirectory(std::string_view pathToEnum,
                                                          /* enum SDL_PathType */ unsigned int type) noexcept {
     std::vector<std::string> utf8_entries;
-    utf8_entries.reserve(512);
 
     const bool want_dirs = (type == SDL_PATHTYPE_DIRECTORY);
 
     DIR *dir = opendir(std::string(pathToEnum).c_str());
     if(!dir) return utf8_entries;
+
+    utf8_entries.reserve(512);
 
     struct dirent *entry;
     while((entry = readdir(dir)) != nullptr) {
