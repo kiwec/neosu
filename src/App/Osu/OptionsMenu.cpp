@@ -898,15 +898,16 @@ OptionsMenu::OptionsMenu() : ScreenBackable() {
     offsetSlider->setChangeCallback(SA::MakeDelegate<&OptionsMenu::onSliderChangeIntMS>(this));
     offsetSlider->setKeyDelta(1);
 
+    this->addSubSection("Gameplay");
+    this->addCheckbox("Boost hitsound volume", "Apply a small logarithmic multiplier to non-sliderslide hitsounds.", &cv::snd_boost_hitsound_volume);
+    this->addCheckbox("Change hitsound pitch based on accuracy", &cv::snd_pitch_hitsounds);
+    this->addCheckbox("Prefer Nightcore over Double Time", &cv::nightcore_enjoyer)
+        ->setChangeCallback(SA::MakeDelegate<&OptionsMenu::onModChangingToggle>(this));
+
     this->addSubSection("Songbrowser");
     this->addCheckbox("Apply speed/pitch mods while browsing",
                       "Whether to always apply all mods, or keep the preview music normal.",
                       &cv::beatmap_preview_mods_live);
-
-    this->addSubSection("Gameplay");
-    this->addCheckbox("Change hitsound pitch based on accuracy", &cv::snd_pitch_hitsounds);
-    this->addCheckbox("Prefer Nightcore over Double Time", &cv::nightcore_enjoyer)
-        ->setChangeCallback(SA::MakeDelegate<&OptionsMenu::onModChangingToggle>(this));
 
     //**************************************************************************************************************************//
 

@@ -171,8 +171,10 @@ bool SoLoudSoundEngine::playSound(SoLoudSound *soloudSound, f32 pan, f32 pitch, 
     if(!allowPlayFrame) return false;
 
     logIfCV(debug_snd,
-            "SoLoudSoundEngine: Attempting to play {:s} (stream={:d}) with speed={:f}, pitch={:f}, playVolume={:f}",
-            soloudSound->sFilePath, soloudSound->bStream ? 1 : 0, soloudSound->fSpeed, pitch, playVolume);
+            "SoLoudSoundEngine: Attempting to play {:s} (stream={:d}) with speed={:f}, pitch={:f}, playVolume={:f} "
+            "(effective volume={:f})",
+            soloudSound->sFilePath, soloudSound->bStream ? 1 : 0, soloudSound->fSpeed, pitch, playVolume,
+            soloudSound->fBaseVolume * playVolume);
 
     // play the sound with appropriate method
     SOUNDHANDLE handle = 0;

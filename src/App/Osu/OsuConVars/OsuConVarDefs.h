@@ -65,6 +65,7 @@ CONVAR(sound_panning, true, CLIENT | SKINS | SERVER, "positional hitsound audio 
 CONVAR(sound_panning_multiplier, 1.0f, CLIENT | SKINS | SERVER,
        "the final panning value is multiplied with this, e.g. if you want to reduce or "
        "increase the effect strength by a percentage");
+CONVAR(snd_boost_hitsound_volume, false, CLIENT | SKINS | SERVER, "slightly increase non-sliderslide hitsound volume");
 
 // Audio (mods)
 CONVAR(snd_pitch_hitsounds, false, CLIENT | SKINS | SERVER, "change hitsound pitch based on accuracy");

@@ -56,15 +56,23 @@ f32 HitSamples::getVolume(i32 hitSoundType, bool is_sliderslide, i32 play_time) 
         }
     }
 
-    if(cv::ignore_beatmap_sample_volume.getBool()) return volume;
+    if(!cv::ignore_beatmap_sample_volume.getBool()) {
+        if(this->volume > 0) {
+            volume *= (f32)this->volume / 100.0f;
+        } else {
+            const auto& map_iface = osu->getMapInterface();
+            const auto mapTimingPointVol = play_time != -1
+                                               ? map_iface->getBeatmap()->getTimingInfoForTime(play_time).volume
+                                               : map_iface->getCurrentTimingInfo().volume;
+            volume *= (f32)mapTimingPointVol / 100.0f;
+        }
+    }
 
-    if(this->volume > 0) {
-        volume *= (f32)this->volume / 100.0f;
-    } else {
-        const auto& map_iface = osu->getMapInterface();
-        const auto mapTimingPointVol = play_time != -1 ? map_iface->getBeatmap()->getTimingInfoForTime(play_time).volume
-                                                       : map_iface->getCurrentTimingInfo().volume;
-        volume *= (f32)mapTimingPointVol / 100.0f;
+    if(!is_sliderslide && cv::snd_boost_hitsound_volume.getBool()) {
+        static constexpr const float ONE_OVER_E = 3.678795e-01f;
+        static constexpr const float ONE_IDENT_MUL = 0.761463f;
+        volume = (std::log(volume + ONE_OVER_E) + 1.f) * ONE_IDENT_MUL;
+        volume = std::clamp(volume, 0.f, 1.f);
     }
 
     return volume;
