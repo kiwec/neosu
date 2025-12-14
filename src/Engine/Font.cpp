@@ -1165,7 +1165,7 @@ bool McFont::initSharedResources() {
     s_sharedFtLibraryInitialized = true;
 
     // check all bundled fonts first
-    std::vector<std::string> bundledFallbacks = env->getFilesInFolder(MCENGINE_FONTS_PATH);
+    std::vector<std::string> bundledFallbacks = env->getFilesInFolder(MCENGINE_FONTS_PATH "/");
     for(const auto &fontName : bundledFallbacks) {
         if(loadFallbackFont(UString{fontName}, false)) {
             if(cv::r_debug_font_unicode.getBool()) debugLog("Font Info: Loaded bundled fallback font: {:s}", fontName);

@@ -228,20 +228,10 @@ void CBaseUIContainer::onMouseDownOutside(bool /*left*/, bool /*right*/) { this-
 
 bool CBaseUIContainer::isBusy() {
     if(!this->bVisible) return false;
-    MC_UNROLL
-    for(auto *elem : this->vElements) {
-        if(elem->isBusy()) return true;
-    }
-
-    return false;
+    return std::ranges::contains(this->vElements, true, [](const auto &elem) -> bool { return elem->isBusy(); });
 }
 
 bool CBaseUIContainer::isActive() {
     if(!this->bVisible) return false;
-    MC_UNROLL
-    for(auto *elem : this->vElements) {
-        if(elem->isActive()) return true;
-    }
-
-    return false;
+    return std::ranges::contains(this->vElements, true, [](const auto &elem) -> bool { return elem->isActive(); });
 }

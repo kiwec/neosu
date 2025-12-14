@@ -18,7 +18,7 @@
 #include "demoji.h"
 
 // background image path parser (from .osu files)
-class BGImageHandler::MapBGImagePathLoader final : public Resource {
+class MapBGImagePathLoader final : public Resource {
     NOCOPY_NOMOVE(MapBGImagePathLoader)
    public:
     MapBGImagePathLoader(const std::string &filePath) : Resource(filePath) {}
@@ -46,45 +46,114 @@ class BGImageHandler::MapBGImagePathLoader final : public Resource {
     static std::atomic<bool> dont_attempt_mojibake_checks;
 };
 
-std::atomic<bool> BGImageHandler::MapBGImagePathLoader::dont_attempt_mojibake_checks{false};
+std::atomic<bool> MapBGImagePathLoader::dont_attempt_mojibake_checks{false};
 
-struct BGImageHandler::ENTRY final {
-    std::string folder;
-    std::string bg_image_filename;
+// actual implementation
+struct BGImageHandlerImpl final {
+    NOCOPY_NOMOVE(BGImageHandlerImpl)
+   public:
+    BGImageHandlerImpl();
+    ~BGImageHandlerImpl();
 
-    MapBGImagePathLoader *bg_image_path_ldr;
-    Image *image;
+    void draw(DatabaseBeatmap *beatmap, f32 alpha = 1.f);
+    void update(bool allowEviction);
+    const Image *getLoadBackgroundImage(const DatabaseBeatmap *beatmap, bool load_immediately = false);
 
-    f64 loading_time;
+    struct ENTRY {
+        std::string folder;
+        std::string bg_image_filename;
 
-    bool load_scheduled;
-    bool used_last_frame;
-    bool overwrite_db_entry;
-    bool ready_but_image_not_found;  // we tried getting the background image, but couldn't find one
+        MapBGImagePathLoader *bg_image_path_ldr;
+        Image *image;
+
+        [[nodiscard]] inline bool isStale(u32 num_frames_before_stale) const {
+            return this->frame_last_accessed + (num_frames_before_stale + 1) < engine->getFrameCount();
+        }
+
+        f64 loading_time;
+        u64 frame_last_accessed;
+
+        bool load_scheduled;
+        bool overwrite_db_entry;
+        bool ready_but_image_not_found;  // we tried getting the background image, but couldn't find one
+        bool has_image_ref;              // true if this entry has claimed a reference in shared_images
+    };
+
+    // shared image pool to avoid loading the same image multiple times
+    // (common when beatmap sets share the same background across difficulties)
+    struct ImageRef {
+        Image *image{nullptr};
+        u32 ref_count{0};
+    };
+
+    [[nodiscard]] u32 getMaxEvictions() const;
+    [[nodiscard]] static const Image *getImageOrSkinFallback(const Image *candidate_loaded, bool force_fallback);
+
+    void handleLoadPathForEntry(const std::string &path, ENTRY &entry);
+    void handleLoadImageForEntry(ENTRY &entry);
+
+    void acquireImageRef(ENTRY &entry);
+    void releaseImageRef(ENTRY &entry);
+
+    // store convars as callbacks to avoid convar overhead
+    inline void cacheSizeCB(f32 new_value) {
+        u32 new_u32 = std::clamp<u32>(static_cast<u32>(std::round(new_value)), 0, 128);
+        this->max_cache_size = new_u32;
+    }
+    inline void evictionDelayCB(f32 new_value) {
+        u32 new_u32 = std::clamp<u32>(static_cast<u32>(std::round(new_value)), 0, 1024);
+        this->eviction_delay_frames = new_u32;
+    }
+    inline void loadingDelayCB(f32 new_value) {
+        f32 new_delay = std::clamp<f32>(new_value, 0.f, 2.f);
+        this->image_loading_delay = new_delay;
+    }
+    inline void enableToggleCB(f32 new_value) {
+        bool enabled = !!static_cast<int>(new_value);
+        this->disabled = !enabled;
+    }
+
+    sv_unordered_map<ENTRY> cache;
+    sv_unordered_map<ImageRef> shared_images;  // keyed by full image path
+    std::string last_requested_entry;
+
+    u32 max_cache_size;
+    u32 eviction_delay_frames;
+    f32 image_loading_delay;
+
+    bool frozen{false};
+    bool disabled{false};
 };
 
 // public
-BGImageHandler::BGImageHandler() {
+BGImageHandlerImpl::BGImageHandlerImpl() {
     this->max_cache_size =
         std::clamp<u32>(static_cast<u32>(std::round(cv::background_image_cache_size.getFloat())), 0, 128);
-    cv::background_image_cache_size.setCallback(SA::MakeDelegate<&BGImageHandler::cacheSizeCB>(this));
+    cv::background_image_cache_size.setCallback(SA::MakeDelegate<&BGImageHandlerImpl::cacheSizeCB>(this));
 
     this->eviction_delay_frames = std::clamp<u32>(cv::background_image_eviction_delay_frames.getVal<u32>(), 0, 1024);
-    cv::background_image_eviction_delay_frames.setCallback(SA::MakeDelegate<&BGImageHandler::evictionDelayCB>(this));
+    cv::background_image_eviction_delay_frames.setCallback(
+        SA::MakeDelegate<&BGImageHandlerImpl::evictionDelayCB>(this));
 
     this->image_loading_delay = std::clamp<f32>(cv::background_image_loading_delay.getFloat(), 0.f, 2.f);
-    cv::background_image_loading_delay.setCallback(SA::MakeDelegate<&BGImageHandler::loadingDelayCB>(this));
+    cv::background_image_loading_delay.setCallback(SA::MakeDelegate<&BGImageHandlerImpl::loadingDelayCB>(this));
 
     this->disabled = !cv::load_beatmap_background_images.getBool();
-    cv::load_beatmap_background_images.setCallback(SA::MakeDelegate<&BGImageHandler::enableToggleCB>(this));
+    cv::load_beatmap_background_images.setCallback(SA::MakeDelegate<&BGImageHandlerImpl::enableToggleCB>(this));
 }
 
-BGImageHandler::~BGImageHandler() {
-    for(const auto &[_, entry] : this->cache) {
+BGImageHandlerImpl::~BGImageHandlerImpl() {
+    for(auto &[_, entry] : this->cache) {
         if(entry.bg_image_path_ldr) resourceManager->destroyResource(entry.bg_image_path_ldr);
-        if(entry.image) resourceManager->destroyResource(entry.image);
+        this->releaseImageRef(entry);
     }
     this->cache.clear();
+
+    // sanity: any remaining shared images should have ref_count == 0
+    for(auto &[_, img_ref] : this->shared_images) {
+        if(img_ref.image) resourceManager->destroyResource(img_ref.image);
+    }
+    this->shared_images.clear();
 
     cv::background_image_cache_size.removeCallback();
     cv::background_image_eviction_delay_frames.removeCallback();
@@ -92,7 +161,7 @@ BGImageHandler::~BGImageHandler() {
     cv::load_beatmap_background_images.removeCallback();
 }
 
-void BGImageHandler::draw(DatabaseBeatmap *beatmap, f32 alpha) {
+void BGImageHandlerImpl::draw(DatabaseBeatmap *beatmap, f32 alpha) {
     if(beatmap == nullptr) return;
 
     const Image *backgroundImage = this->getLoadBackgroundImage(beatmap);
@@ -109,7 +178,7 @@ void BGImageHandler::draw(DatabaseBeatmap *beatmap, f32 alpha) {
     g->popTransform();
 }
 
-void BGImageHandler::update(bool allow_eviction) {
+void BGImageHandlerImpl::update(bool allow_eviction) {
     if(this->disabled) return;
 
     const bool consider_evictions = !this->frozen && allow_eviction &&
@@ -127,8 +196,7 @@ void BGImageHandler::update(bool allow_eviction) {
         auto &[osu_path, entry] = *it;
 
         // NOTE: avoid load/unload jitter if framerate is below eviction delay
-        const bool was_used_last_frame = entry.used_last_frame;
-        entry.used_last_frame = false;
+        const bool was_used_last_frame = !entry.isStale(this->eviction_delay_frames);
 
         // check and handle evictions
         if(evicted < max_to_evict && consider_evictions && !was_used_last_frame) {
@@ -136,10 +204,7 @@ void BGImageHandler::update(bool allow_eviction) {
                 entry.bg_image_path_ldr->interruptLoad();
                 resourceManager->destroyResource(entry.bg_image_path_ldr, ResourceManager::DestroyMode::FORCE_ASYNC);
             }
-            if(entry.image) {
-                entry.image->interruptLoad();
-                resourceManager->destroyResource(entry.image, ResourceManager::DestroyMode::FORCE_ASYNC);
-            }
+            this->releaseImageRef(entry);
 
             evicted++;
 
@@ -194,7 +259,7 @@ void BGImageHandler::update(bool allow_eviction) {
     // debugLog("cache.size() = {:d}", this->cache.size());
 }
 
-const Image *BGImageHandler::getLoadBackgroundImage(const DatabaseBeatmap *beatmap, bool load_immediately) {
+const Image *BGImageHandlerImpl::getLoadBackgroundImage(const DatabaseBeatmap *beatmap, bool load_immediately) {
     if(beatmap == nullptr || this->disabled || !beatmap->draw_background) return nullptr;
 
     // NOTE: no references to beatmap are kept anywhere (database can safely be deleted/reloaded without having to
@@ -208,7 +273,7 @@ const Image *BGImageHandler::getLoadBackgroundImage(const DatabaseBeatmap *beatm
         // of when it was last requested
         auto &entry = it->second;
 
-        entry.used_last_frame = true;
+        entry.frame_last_accessed = engine->getFrameCount();
 
         // HACKHACK: to improve future loading speed, if we have already loaded the backgroundImageFileName, force
         // update the database backgroundImageFileName and fullBackgroundImageFilePath this is similar to how it
@@ -225,7 +290,7 @@ const Image *BGImageHandler::getLoadBackgroundImage(const DatabaseBeatmap *beatm
             db->update_overrides(const_cast<DatabaseBeatmap *>(beatmap));
         }
 
-        return BGImageHandler::getImageOrSkinFallback(entry.image, entry.ready_but_image_not_found);
+        return BGImageHandlerImpl::getImageOrSkinFallback(entry.image, entry.ready_but_image_not_found);
     } else {
         // 2) not found in cache, so create a new entry which will get handled in the next update
 
@@ -239,7 +304,7 @@ const Image *BGImageHandler::getLoadBackgroundImage(const DatabaseBeatmap *beatm
                 if(evicted > max_to_evict) break;
 
                 const auto &[osu_path, entry] = *it;
-                if(entry.load_scheduled && !entry.used_last_frame) {
+                if(entry.load_scheduled && entry.isStale(this->eviction_delay_frames)) {
                     it = this->cache.erase(it);
                     evicted++;
                 } else {
@@ -254,10 +319,11 @@ const Image *BGImageHandler::getLoadBackgroundImage(const DatabaseBeatmap *beatm
                     .bg_image_path_ldr = nullptr,
                     .image = nullptr,
                     .loading_time = engine->getTime() + (load_immediately ? 0. : this->image_loading_delay),
+                    .frame_last_accessed = engine->getFrameCount(),
                     .load_scheduled = true,
-                    .used_last_frame = true,
                     .overwrite_db_entry = false,
-                    .ready_but_image_not_found = false};
+                    .ready_but_image_not_found = false,
+                    .has_image_ref = false};
 
         this->cache.try_emplace(beatmap_filepath, entry);
     }
@@ -267,7 +333,7 @@ const Image *BGImageHandler::getLoadBackgroundImage(const DatabaseBeatmap *beatm
 
 // private
 
-void BGImageHandler::handleLoadPathForEntry(const std::string &path, ENTRY &entry) {
+void BGImageHandlerImpl::handleLoadPathForEntry(const std::string &path, ENTRY &entry) {
     entry.bg_image_path_ldr = new MapBGImagePathLoader(path);
 
     // start path load
@@ -275,16 +341,46 @@ void BGImageHandler::handleLoadPathForEntry(const std::string &path, ENTRY &entr
     resourceManager->loadResource(entry.bg_image_path_ldr);
 }
 
-void BGImageHandler::handleLoadImageForEntry(ENTRY &entry) {
+void BGImageHandlerImpl::handleLoadImageForEntry(ENTRY &entry) { this->acquireImageRef(entry); }
+
+void BGImageHandlerImpl::acquireImageRef(ENTRY &entry) {
     std::string full_bg_image_path = fmt::format("{}{}", entry.folder, entry.bg_image_filename);
 
-    // start image load
-    resourceManager->requestNextLoadAsync();
-    resourceManager->requestNextLoadUnmanaged();
-    entry.image = resourceManager->loadImageAbsUnnamed(full_bg_image_path, true);
+    auto &img_ref = this->shared_images[full_bg_image_path];
+    if(img_ref.image == nullptr) {
+        resourceManager->requestNextLoadAsync();
+        resourceManager->requestNextLoadUnmanaged();
+        img_ref.image = resourceManager->loadImageAbsUnnamed(full_bg_image_path, true);
+    }
+
+    img_ref.ref_count++;
+    entry.image = img_ref.image;
+    entry.has_image_ref = true;
 }
 
-u32 BGImageHandler::getMaxEvictions() const {
+void BGImageHandlerImpl::releaseImageRef(ENTRY &entry) {
+    if(!entry.has_image_ref || entry.image == nullptr) return;
+
+    std::string full_bg_image_path = fmt::format("{}{}", entry.folder, entry.bg_image_filename);
+
+    if(auto it = this->shared_images.find(full_bg_image_path); it != this->shared_images.end()) {
+        auto &img_ref = it->second;
+        if(img_ref.ref_count > 0) img_ref.ref_count--;
+
+        if(img_ref.ref_count == 0) {
+            if(img_ref.image) {
+                img_ref.image->interruptLoad();
+                resourceManager->destroyResource(img_ref.image, ResourceManager::DestroyMode::FORCE_ASYNC);
+            }
+            this->shared_images.erase(it);
+        }
+    }
+
+    entry.image = nullptr;
+    entry.has_image_ref = false;
+}
+
+u32 BGImageHandlerImpl::getMaxEvictions() const {
     u32 ret = static_cast<u32>(static_cast<float>(this->cache.size()) * (1.f / 4.f));
     if(this->cache.size() > this->max_cache_size) {
         ret += static_cast<u32>(
@@ -294,7 +390,7 @@ u32 BGImageHandler::getMaxEvictions() const {
     return ret;
 }
 
-const Image *BGImageHandler::getImageOrSkinFallback(const Image *candidate_loaded, bool force_fallback) {
+const Image *BGImageHandlerImpl::getImageOrSkinFallback(const Image *candidate_loaded, bool force_fallback) {
     const Image *ret = candidate_loaded;
     // if we got an image but it failed for whatever reason, return the user skin as a fallback instead
     if(force_fallback || (candidate_loaded && candidate_loaded->failedLoad())) {
@@ -313,7 +409,7 @@ const Image *BGImageHandler::getImageOrSkinFallback(const Image *candidate_loade
 
 #include <cassert>
 
-void BGImageHandler::MapBGImagePathLoader::initAsync() {
+void MapBGImagePathLoader::initAsync() {
     if(this->isInterrupted()) return;
     // sanity
     assert(!McThread::is_main_thread());
@@ -392,7 +488,7 @@ void BGImageHandler::MapBGImagePathLoader::initAsync() {
     this->bReady.store(true, std::memory_order_release);
 };
 
-bool BGImageHandler::MapBGImagePathLoader::checkMojibake() {
+bool MapBGImagePathLoader::checkMojibake() {
     bool ret = false;
     const bool debug = cv::debug_bg_loader.getBool();
 
@@ -446,3 +542,14 @@ bool BGImageHandler::MapBGImagePathLoader::checkMojibake() {
 
     return ret;
 }
+
+// passthroughs to impl.
+BGImageHandler::BGImageHandler() : pImpl() {}
+BGImageHandler::~BGImageHandler() = default;
+
+void BGImageHandler::draw(DatabaseBeatmap *beatmap, f32 alpha) { return pImpl->draw(beatmap, alpha); }
+void BGImageHandler::update(bool allowEviction) { return pImpl->update(allowEviction); }
+const Image *BGImageHandler::getLoadBackgroundImage(const DatabaseBeatmap *beatmap, bool load_immediately) {
+    return pImpl->getLoadBackgroundImage(beatmap, load_immediately);
+}
+void BGImageHandler::scheduleFreezeCache() { pImpl->frozen = true; }
