@@ -134,7 +134,6 @@ class Osu final : public App, public MouseListener {
     void toggleSongBrowser();
     void toggleOptionsMenu();
     void toggleChangelog();
-    void toggleEditor();
 
     void saveScreenshot();
 
@@ -365,7 +364,6 @@ class Osu final : public App, public MouseListener {
     bool bToggleOptionsMenuScheduled{false};
     bool bOptionsMenuFullscreen{true};
     bool bToggleChangelogScheduled{false};
-    bool bToggleEditorScheduled{false};
 
     // global resources
     std::vector<McFont *> fonts;

@@ -750,11 +750,6 @@ void Osu::update() {
         this->mainMenu->setVisible(!this->mainMenu->isVisible());
         this->changelog->setVisible(!this->mainMenu->isVisible());
     }
-    if(this->bToggleEditorScheduled) {
-        this->bToggleEditorScheduled = false;
-
-        this->mainMenu->setVisible(!this->mainMenu->isVisible());
-    }
 
     this->updateCursorVisibility();
 
@@ -1345,8 +1340,6 @@ void Osu::toggleOptionsMenu() {
 }
 
 void Osu::toggleChangelog() { this->bToggleChangelogScheduled = true; }
-
-void Osu::toggleEditor() { this->bToggleEditorScheduled = true; }
 
 void Osu::reloadMapInterface() { this->map_iface = std::make_unique<BeatmapInterface>(); }
 
