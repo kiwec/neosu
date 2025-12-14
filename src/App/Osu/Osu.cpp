@@ -2130,6 +2130,9 @@ bool Osu::getModSD() const { return cv::mod_suddendeath.getBool(); }
 bool Osu::getModSS() const { return cv::mod_perfect.getBool(); }
 bool Osu::getModNightmare() const { return cv::mod_nightmare.getBool(); }
 bool Osu::getModTD() const { return cv::mod_touchdevice.getBool() || cv::mod_touchdevice_always.getBool(); }
+bool Osu::getModDT() const { return cv::mod_doubletime_dummy.getBool(); }
+bool Osu::getModNC() const { return cv::mod_doubletime_dummy.getBool() && cv::nightcore_enjoyer.getBool(); }
+bool Osu::getModHT() const { return cv::mod_halftime_dummy.getBool(); }
 
 void Osu::setupBASS() {
     {

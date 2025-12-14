@@ -77,6 +77,9 @@ class RankingScreen final : public ScreenBackable {
     bool bModAutopilot;
     bool bModAuto;
     bool bModTD;
+    bool bModNC;
+    bool bModDT;
+    bool bModHT;
 
     std::vector<ConVar *> extraMods;
 

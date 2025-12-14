@@ -834,13 +834,21 @@ UString ScoreButton::getModsStringForDisplay(const Replay::Mods &mods) {
 
     UString modsString;
 
+    // only for exact values
+    const bool nc = mods.speed == 1.5f && flags::has<NoPitchCorrection>(mods.flags);
+    const bool dt = mods.speed == 1.5f && !nc;  // only show dt/nc, not both
+    const bool ht = mods.speed == 0.75f;
+
     if(flags::has<NoFail>(mods.flags)) modsString.append("NF,");
     if(flags::has<Easy>(mods.flags)) modsString.append("EZ,");
     if(flags::has<TouchDevice>(mods.flags)) modsString.append("TD,");
     if(flags::has<Hidden>(mods.flags)) modsString.append("HD,");
     if(flags::has<HardRock>(mods.flags)) modsString.append("HR,");
     if(flags::has<SuddenDeath>(mods.flags)) modsString.append("SD,");
+    if(dt) modsString.append("DT,");
+    if(nc) modsString.append("NC,");
     if(flags::has<Relax>(mods.flags)) modsString.append("Relax,");
+    if(ht) modsString.append("HT,");
     if(flags::has<Flashlight>(mods.flags)) modsString.append("FL,");
     if(flags::has<SpunOut>(mods.flags)) modsString.append("SO,");
     if(flags::has<Autopilot>(mods.flags)) modsString.append("AP,");
@@ -853,7 +861,7 @@ UString ScoreButton::getModsStringForDisplay(const Replay::Mods &mods) {
     if(flags::has<Singletap>(mods.flags)) modsString.append("1K,");
     if(flags::has<NoKeylock>(mods.flags)) modsString.append("4K,");
 
-    if(modsString.length() > 0) modsString.pop_back();
+    if(modsString.length() > 0) modsString.pop_back();  // remove trailing comma
 
     return modsString;
 }

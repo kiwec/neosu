@@ -404,7 +404,12 @@ UString LiveScore::getModsStringForRichPresence() {
     if(osu->getModHD()) modsString.append("HD");
     if(osu->getModHR()) modsString.append("HR");
     if(osu->getModSD()) modsString.append("SD");
+    if(osu->getModNC())
+        modsString.append("NC");
+    else if(osu->getModDT())
+        modsString.append("DT");
     if(osu->getModRelax()) modsString.append("RX");
+    if(osu->getModHT()) modsString.append("HT");
     if(osu->getModAuto()) modsString.append("AT");
     if(osu->getModSpunout()) modsString.append("SO");
     if(osu->getModAutopilot()) modsString.append("AP");
@@ -451,25 +456,23 @@ f64 FinishedScore::get_or_calc_pp() {
     f64 pp = this->get_pp();
     if(pp != -1.0) return pp;
 
-    AsyncPPC::pp_calc_request request{
-        .modFlags = this->mods.flags,
-        .speedOverride = this->mods.speed,
+    AsyncPPC::pp_calc_request request{.modFlags = this->mods.flags,
+                                      .speedOverride = this->mods.speed,
 
-        .AR = this->mods.get_naive_ar(this->map),
-        .HP = this->mods.get_naive_hp(this->map),
-        .CS = this->mods.get_naive_cs(this->map),
-        .OD = this->mods.get_naive_od(this->map),
+                                      .AR = this->mods.get_naive_ar(this->map),
+                                      .HP = this->mods.get_naive_hp(this->map),
+                                      .CS = this->mods.get_naive_cs(this->map),
+                                      .OD = this->mods.get_naive_od(this->map),
 
-        .comboMax = this->comboMax,
-        .numMisses = this->numMisses,
-        .num300s = this->num300s,
-        .num100s = this->num100s,
-        .num50s = this->num50s,
+                                      .comboMax = this->comboMax,
+                                      .numMisses = this->numMisses,
+                                      .num300s = this->num300s,
+                                      .num100s = this->num100s,
+                                      .num50s = this->num50s,
 
-        .legacyTotalScore = (u32)this->score,
+                                      .legacyTotalScore = (u32)this->score,
 
-        .scoreFromMcOsu = this->is_mcosu_imported()
-    };
+                                      .scoreFromMcOsu = this->is_mcosu_imported()};
 
     auto info = AsyncPPC::query_result(request);
     if(info.pp != -1.0) {

@@ -217,6 +217,10 @@ RankingScreen::RankingScreen() : ScreenBackable() {
     this->bModAuto = false;
     this->bModTD = false;
 
+    this->bModNC = false;
+    this->bModDT = false;
+    this->bModHT = false;
+
     this->bIsUnranked = false;
 }
 
@@ -240,22 +244,28 @@ void RankingScreen::draw() {
         vec2(this->rankings->getSize().x - osu->getUIScale(20), this->rankings->getRelPosY() + osu->getUIScale(260));
     vec2 modPos = modPosStart;
     vec2 modPosMax{0.f};
-    if(this->bModTD) this->drawModImage(osu->getSkin()->i_modselect_td, modPos, modPosMax);
+    const auto &skin = osu->getSkin();
+    if(this->bModTD) this->drawModImage(skin->i_modselect_td, modPos, modPosMax);
     if(this->bModSS)
-        this->drawModImage(osu->getSkin()->i_modselect_pf, modPos, modPosMax);
+        this->drawModImage(skin->i_modselect_pf, modPos, modPosMax);
     else if(this->bModSD)
-        this->drawModImage(osu->getSkin()->i_modselect_sd, modPos, modPosMax);
-    if(this->bModEZ) this->drawModImage(osu->getSkin()->i_modselect_ez, modPos, modPosMax);
-    if(this->bModHD) this->drawModImage(osu->getSkin()->i_modselect_hd, modPos, modPosMax);
-    if(this->bModHR) this->drawModImage(osu->getSkin()->i_modselect_hr, modPos, modPosMax);
-    if(this->bModNightmare) this->drawModImage(osu->getSkin()->i_modselect_nightmare, modPos, modPosMax);
-    if(this->bModScorev2) this->drawModImage(osu->getSkin()->i_modselect_sv2, modPos, modPosMax);
-    if(this->bModTarget) this->drawModImage(osu->getSkin()->i_modselect_target, modPos, modPosMax);
-    if(this->bModSpunout) this->drawModImage(osu->getSkin()->i_modselect_so, modPos, modPosMax);
-    if(this->bModRelax) this->drawModImage(osu->getSkin()->i_modselect_rx, modPos, modPosMax);
-    if(this->bModNF) this->drawModImage(osu->getSkin()->i_modselect_nf, modPos, modPosMax);
-    if(this->bModAutopilot) this->drawModImage(osu->getSkin()->i_modselect_ap, modPos, modPosMax);
-    if(this->bModAuto) this->drawModImage(osu->getSkin()->i_modselect_auto, modPos, modPosMax);
+        this->drawModImage(skin->i_modselect_sd, modPos, modPosMax);
+    if(this->bModEZ) this->drawModImage(skin->i_modselect_ez, modPos, modPosMax);
+    if(this->bModHD) this->drawModImage(skin->i_modselect_hd, modPos, modPosMax);
+    if(this->bModHR) this->drawModImage(skin->i_modselect_hr, modPos, modPosMax);
+    if(this->bModNC)
+        this->drawModImage(skin->i_modselect_nc, modPos, modPosMax);
+    else if(this->bModDT)
+        this->drawModImage(skin->i_modselect_dt, modPos, modPosMax);
+    if(this->bModNightmare) this->drawModImage(skin->i_modselect_nightmare, modPos, modPosMax);
+    if(this->bModScorev2) this->drawModImage(skin->i_modselect_sv2, modPos, modPosMax);
+    if(this->bModTarget) this->drawModImage(skin->i_modselect_target, modPos, modPosMax);
+    if(this->bModSpunout) this->drawModImage(skin->i_modselect_so, modPos, modPosMax);
+    if(this->bModRelax) this->drawModImage(skin->i_modselect_rx, modPos, modPosMax);
+    if(this->bModNF) this->drawModImage(skin->i_modselect_nf, modPos, modPosMax);
+    if(this->bModHT) this->drawModImage(skin->i_modselect_ht, modPos, modPosMax);
+    if(this->bModAutopilot) this->drawModImage(skin->i_modselect_ap, modPos, modPosMax);
+    if(this->bModAuto) this->drawModImage(skin->i_modselect_auto, modPos, modPosMax);
 
     // draw experimental mods
     if(this->extraMods.size() > 0) {
@@ -458,6 +468,7 @@ void RankingScreen::setScore(const FinishedScore &newscore) {
         this->sMods = "";
 
     using enum ModFlags;
+
     this->bModSS = flags::has<Perfect>(sc.mods.flags);
     this->bModSD = flags::has<SuddenDeath>(sc.mods.flags);
     this->bModEZ = flags::has<Easy>(sc.mods.flags);
@@ -472,6 +483,15 @@ void RankingScreen::setScore(const FinishedScore &newscore) {
     this->bModAutopilot = flags::has<Autopilot>(sc.mods.flags);
     this->bModAuto = flags::has<Autoplay>(sc.mods.flags);
     this->bModTD = flags::has<TouchDevice>(sc.mods.flags);
+
+    // only for exact values
+    const bool nc = sc.mods.speed == 1.5f && flags::has<NoPitchCorrection>(sc.mods.flags);
+    const bool dt = sc.mods.speed == 1.5f && !nc;  // only show dt/nc, not both
+    const bool ht = sc.mods.speed == 0.75f;
+
+    this->bModNC = nc;
+    this->bModDT = dt;
+    this->bModHT = ht;
 
     this->extraMods.clear();
     if(flags::has<FPoSu_Strafing>(sc.mods.flags)) this->extraMods.push_back(&cv::fposu_mod_strafing);

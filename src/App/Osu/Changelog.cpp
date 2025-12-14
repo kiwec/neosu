@@ -33,6 +33,7 @@ Changelog::Changelog() : ScreenBackable() {
         R"(- Merged updated PPv2 ver. 20251007 from McOsu (thanks @Givikap120))",
         R"(  - See https://osu.ppy.sh/home/news/2025-10-29-performance-points-star-rating-updates)",
         R"(- Added "Boost hitsound volume" option to make hitsounds slightly louder than usual)",
+        R"(- Re-added DT/NC/HT labels when speed override is exactly 1.5x/0.75x)",
         R"(- Fixed inaccurate beatmap BPM values)",
         R"(- Fixed song browser up/down arrow key navigation)",
     };
