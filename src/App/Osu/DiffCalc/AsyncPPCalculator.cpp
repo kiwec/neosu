@@ -108,19 +108,20 @@ void run_thread(const Sync::stop_token& stoken) {
             if(!map_for_rqt) continue;
 
             // skip if already computed
+            bool already_cached = false;
             {
                 Sync::unique_lock cache_lock(cache_mtx);
-                bool found = false;
                 for(const auto& [request, info] : cache) {
                     if(request == rqt) {
-                        found = true;
+                        already_cached = true;
                         break;
                     }
                 }
-                if(found) {
-                    lock.lock();
-                    continue;
-                }
+            }
+
+            if(already_cached) {
+                lock.lock();
+                continue;
             }
 
             if(stoken.stop_requested()) return;
