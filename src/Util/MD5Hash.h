@@ -7,7 +7,14 @@
 
 class UString;
 
-struct alignas(16) MD5Hash final {
+#if defined(__GNUC__) && !defined(__clang__) && (defined(__MINGW32__) || defined(__MINGW64__))
+// inexplicably broken in unpredictable ways with mingw-gcc
+#define ALIGNED_TO(x)
+#else
+#define ALIGNED_TO(x) alignas(x)
+#endif
+
+struct ALIGNED_TO(16) MD5Hash final {
     MD5Hash() = default;
     MD5Hash(const char *str);
 
@@ -26,6 +33,8 @@ struct alignas(16) MD5Hash final {
 
     std::array<char, 32> hash{};
 };
+
+#undef ALIGNED_TO
 
 namespace std {
 template <>
