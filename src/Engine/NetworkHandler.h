@@ -1,5 +1,5 @@
 #pragma once
-// Copyright (c) 2015, PG, All rights reserved.
+// Copyright (c) 2015, PG & 2025, WH & 2025, kiwec, All rights reserved.
 #include "noinclude.h"
 #include "types.h"
 #include "StaticPImpl.h"
@@ -18,9 +18,9 @@ class Engine;
 
 // generic networking things, not BANCHO::Net
 namespace NeoNet {
+struct NetworkImpl;
 
 // standalone helper
-
 // Fully URL-encodes a string, including slashes
 [[nodiscard]] std::string urlEncode(std::string_view unencodedString) noexcept;
 
@@ -45,6 +45,7 @@ struct WSInstance {
    private:
     NOCOPY_NOMOVE(WSInstance)
     friend class NetworkHandler;
+    friend struct NetworkImpl;
 
    public:
     WSInstance() = default;
@@ -68,14 +69,15 @@ struct WSInstance {
 struct RequestOptions {
    private:
     friend class NetworkHandler;
+    friend struct NetworkImpl;
 
+   public:
     struct MimePart {
         std::string filename{};
         std::string name{};
         std::vector<u8> data{};
     };
 
-   public:
     RequestOptions() noexcept { ; }  // = default breaks clang
     sv_unordered_map<std::string> headers;
     std::string post_data;
@@ -94,7 +96,7 @@ struct RequestOptions {
 struct Response {
    private:
     friend class NetworkHandler;
-
+    friend struct NetworkImpl;
     // HACK for passing websocket handle
     CURL* easy_handle{nullptr};
 
@@ -121,6 +123,8 @@ class NetworkHandler {
     void httpRequestAsync(std::string_view url, AsyncCallback callback, RequestOptions options = {});
 
     // websockets
+    // TODO: consolidate websocket/http to avoid needing this entirely
+    // (should be able to just choose the implementation based off of http(s):// or ws(s):// protocol prefix)
     std::shared_ptr<WSInstance> initWebsocket(const WSOptions& options);
 
    private:
@@ -128,7 +132,7 @@ class NetworkHandler {
     friend class ::Engine;
     void update();
 
-    struct NetworkImpl;
+    friend struct NetworkImpl;
     StaticPImpl<NetworkImpl, 640> pImpl;  // implementation details
 };
 

@@ -7,7 +7,7 @@
 extern "C" {
 typedef struct SDL_GLContextState *SDL_GLContext;
 typedef union SDL_Event SDL_Event;
-enum SDL_AppResult : int;
+enum SDL_AppResult : unsigned int;
 }
 #endif
 

@@ -42,7 +42,7 @@ BeatmapSettings parseDifficultySettings(std::string_view osuFilePath) {
             continue;
         }
 
-        if(line.starts_with("[") && inDifficulty) {
+        if(line.starts_with('[') && inDifficulty) {
             break;
         }
 
