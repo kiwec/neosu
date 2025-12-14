@@ -1,6 +1,10 @@
 // Copyright (c) 2019, PG & Francesco149 & Khangaroo & Givikap120, All rights reserved.
 #include "DifficultyCalculator.h"
 
+#include <numbers>
+
+#include <numbers>
+
 #include "DatabaseBeatmap.h"
 #include "SliderCurves.h"
 #include "GameRules.h"
@@ -18,6 +22,12 @@
 #define SLIDER_CURVE_MAX_LENGTH 32768.f
 #define SLIDER_END_INSIDE_CHECK_OFFSET 36
 #endif
+
+#ifdef PI
+#undef PI
+#endif
+
+static constexpr const auto PI = std::numbers::pi;
 
 namespace DiffCalc {
 // NOTE: bumped version from 20251007 because of a bug in the first implementation with mcosu-imported scores
@@ -197,7 +207,7 @@ f64 DifficultyCalculator::calculateStarDiffForHitObjects(StarCalcParams &params)
     // NOTE: clamped CS because McOsu allows CS > ~12.1429 (at which point the diameter becomes negative)
     f32 circleRadiusInOsuPixels =
         64.0f * GameRules::getRawHitCircleScale(std::clamp<f32>(params.beatmapData.CS, 0.0f, 12.142f));
-    const f32 hitWindow300 = 2.0f * adjustHitWindow(GameRules::odTo300HitWindowMS(params.beatmapData.OD)) /
+    const f64 hitWindow300 = 2.0 * adjustHitWindow(GameRules::odTo300HitWindowMS(params.beatmapData.OD)) /
                              params.beatmapData.speedMultiplier;
 
     // ****************************************************************************************************************************************** //
@@ -466,14 +476,14 @@ f64 DifficultyCalculator::calculateStarDiffForHitObjects(StarCalcParams &params)
     f64 mechanicalDifficultyRating = calculateMechanicalDifficultyRating(aim, speed);
 
     // Don't forget to scale AR and OD by rate here before using it in rating calculation
-    f64 AR = GameRules::arWithSpeed(params.beatmapData.AR, params.beatmapData.speedMultiplier);
-    f64 OD = adjustOverallDifficultyByClockRate(params.beatmapData.OD, params.beatmapData.speedMultiplier);
+    const f64 adjAR = GameRules::arWithSpeed(params.beatmapData.AR, params.beatmapData.speedMultiplier);
+    const f64 adjOD = adjustOverallDifficultyByClockRate(params.beatmapData.OD, params.beatmapData.speedMultiplier);
 
-    aimNoSliders = computeAimRating(aimNoSliders, numDiffObjects, AR, OD, mechanicalDifficultyRating,
+    aimNoSliders = computeAimRating(aimNoSliders, numDiffObjects, adjAR, adjOD, mechanicalDifficultyRating,
                                     params.outAttributes.SliderFactor, params.beatmapData);
-    aim = computeAimRating(aim, numDiffObjects, AR, OD, mechanicalDifficultyRating, params.outAttributes.SliderFactor,
+    aim = computeAimRating(aim, numDiffObjects, adjAR, adjOD, mechanicalDifficultyRating, params.outAttributes.SliderFactor,
                            params.beatmapData);
-    speed = computeSpeedRating(speed, numDiffObjects, AR, OD, mechanicalDifficultyRating, params.beatmapData);
+    speed = computeSpeedRating(speed, numDiffObjects, adjAR, adjOD, mechanicalDifficultyRating, params.beatmapData);
 
     // Scorev1
     calculateScoreV1Attributes(params.outAttributes, params.beatmapData, params.upToObjectIndex);
@@ -626,8 +636,8 @@ f64 DifficultyCalculator::calculatePPv2(PPv2CalcParams &cpar, bool isMcOsuImport
     // (the original incoming ar/od values are guaranteed to not yet have any speed multiplier applied to them, but they do have non-time-related mods already applied, like HR or any custom overrides)
     // (yes, this does work correctly when the override slider "locking" feature is used. in this case, the stored ar/od is already compensated such that it will have the locked value AFTER applying the speed multiplier here)
     // (all UI elements which display ar/od from stored scores, like the ranking screen or score buttons, also do this calculation before displaying the values to the user. of course the mod selection screen does too.)
-    cpar.ar = GameRules::arWithSpeed(cpar.ar, cpar.timescale);
-    cpar.od = GameRules::odWithSpeed(cpar.od, cpar.timescale);
+    const f64 adjAR = GameRules::arWithSpeed(cpar.ar, cpar.timescale);
+    const f64 adjOD = adjustOverallDifficultyByClockRate(cpar.od, cpar.timescale);
 
     // calculateEffectiveMissCount @ https://github.com/ppy/osu/blob/master/osu.Game.Rulesets.Osu/Difficulty/OsuPerformanceCalculator.cs
     // required because slider breaks aren't exposed to pp calculation
@@ -658,8 +668,8 @@ f64 DifficultyCalculator::calculatePPv2(PPv2CalcParams &cpar, bool isMcOsuImport
                                          0.85);  // see https://github.com/ppy/osu-performance/pull/110/
 
         if(flags::has<ModFlags::Relax>(cpar.modFlags)) {
-            f64 okMultiplier = 0.75 * std::max(0.0, cpar.od > 0.0 ? 1 - cpar.od / 13.33 : 1.0);             // 100
-            f64 mehMultiplier = std::max(0.0, cpar.od > 0.0 ? 1.0 - std::pow(cpar.od / 13.33, 5.0) : 1.0);  // 50
+            f64 okMultiplier = 0.75 * std::max(0.0, adjOD > 0.0 ? 1 - adjOD / 13.33 : 1.0);             // 100
+            f64 mehMultiplier = std::max(0.0, adjOD > 0.0 ? 1.0 - std::pow(adjOD / 13.33, 5.0) : 1.0);  // 50
             effectiveMissCount = std::min(effectiveMissCount + cpar.c100 * okMultiplier + cpar.c50 * mehMultiplier,
                                           (f64)score.totalHits);
         }
@@ -668,8 +678,8 @@ f64 DifficultyCalculator::calculatePPv2(PPv2CalcParams &cpar, bool isMcOsuImport
     const f64 speedDeviation = calculateSpeedDeviation(score, cpar.attributes, cpar.timescale);
 
     // Apply adjusted AR and OD when deviation is calculated
-    cpar.attributes.ApproachRate = cpar.ar;
-    cpar.attributes.OverallDifficulty = cpar.od;
+    cpar.attributes.ApproachRate = adjAR;
+    cpar.attributes.OverallDifficulty = adjOD;
 
     const f64 aimValue = computeAimValue(score, cpar.attributes, effectiveMissCount);
     const f64 speedValue = computeSpeedValue(score, cpar.attributes, effectiveMissCount, speedDeviation);
@@ -860,10 +870,10 @@ f64 DifficultyCalculator::calculateDeviation(const DifficultyAttributes &attribu
     const f64 okHitWindow = adjustHitWindow(GameRules::odTo100HitWindowMS(attributes.OverallDifficulty)) / timescale;
     const f64 mehHitWindow = adjustHitWindow(GameRules::odTo50HitWindowMS(attributes.OverallDifficulty)) / timescale;
 
-    const f64 z = 2.32634787404;
-    const f64 sqrt2 = 1.4142135623730951;
-    const f64 sqrt3 = 1.7320508075688772;
-    const f64 sqrt2OverPi = 0.7978845608028654;
+    static constexpr const f64 z = 2.32634787404;
+    static constexpr const f64 sqrt2 = std::numbers::sqrt2;
+    static constexpr const f64 sqrt3 = std::numbers::sqrt3;
+    static constexpr const f64 sqrt2OverPi = 0.7978845608028654;
 
     f64 n = std::max(1.0, relevantCountGreat + relevantCountOk);
     f64 p = relevantCountGreat / n;
@@ -1241,7 +1251,7 @@ f64 DifficultyCalculator::erfInv(f64 x) {
     else if(x <= -1.0)
         return -std::numeric_limits<f64>::infinity();
 
-    const f64 a = 0.147;
+    static constexpr const f64 a = 0.147;
     f64 sgn = (x > 0.0) ? 1.0 : (x < 0.0 ? -1.0 : 0.0);
     x = std::fabs(x);
 

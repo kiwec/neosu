@@ -72,7 +72,7 @@ void setcwdexe(const std::string &exePathStr) noexcept {
 #endif
 
 #include "main_impl.h"
-// #include "DiffCalcTool.h"
+#include "DiffCalcTool.h"
 
 //*********************************//
 //	SDL CALLBACKS/MAINLOOP BEGINS  //
@@ -148,10 +148,10 @@ MAIN_FUNC /* int argc, char *argv[] */
     lppAgent.EnableModule(lpp::LppGetCurrentModulePath(), lpp::LPP_MODULES_OPTION_NONE, nullptr, nullptr);
 #endif
 
-    // const bool diffcalcOnly = argc >= 2 && strncmp(argv[1], "-diffcalc", sizeof("-diffcalc") - 1) == 0;
-    // if(diffcalcOnly) {
-    //     return NEOSU_run_diffcalc(argc, argv);
-    // }
+    const bool diffcalcOnly = argc >= 2 && strncmp(argv[1], "-diffcalc", sizeof("-diffcalc") - 1) == 0;
+    if(diffcalcOnly) {
+        return NEOSU_run_diffcalc(argc, argv);
+    }
 
     // if a neosu instance is already running, send it a message then quit
     // only works on windows for now

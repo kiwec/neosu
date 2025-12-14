@@ -48,13 +48,15 @@ class GameRules {
 
     // AR 5 -> 1200 ms
     template <typename T>
-    static forceinline T mapDifficultyRange(T scaledDiff, T min, T mid, T max) {
-        if(scaledDiff == 5.0f)
+    static forceinline T mapDifficultyRange(T scaledDiff, T min, T mid, T max)
+        requires(std::is_same_v<T, float> || std::is_same_v<T, double>)
+    {
+        if(scaledDiff == (T)5.)
             return mid;
-        else if(scaledDiff > 5.0f)
-            return mid + (max - mid) * (scaledDiff - 5.0f) / 5.0f;
+        else if(scaledDiff > (T)5.)
+            return mid + (max - mid) * (scaledDiff - (T)5.) / (T)5.;
         else
-            return mid - (mid - min) * (5.0f - scaledDiff) / 5.0f;
+            return mid - (mid - min) * ((T)5. - scaledDiff) / (T)5.;
     }
 
     static float arToMilliseconds(float AR);

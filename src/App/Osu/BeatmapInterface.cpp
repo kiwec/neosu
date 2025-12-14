@@ -3925,7 +3925,7 @@ FinishedScore BeatmapInterface::saveAndSubmitScore(bool quit) {
     score.numMisses = liveScore->getNumMisses();
     score.score = liveScore->getScore();
     score.comboMax = liveScore->getComboMax();
-    score.perfect = (this->iMaxPossibleCombo > 0 && score.comboMax > 0 && score.comboMax >= this->iMaxPossibleCombo);
+    score.perfect = (this->iMaxPossibleCombo > 0 && score.comboMax > 0 && std::cmp_greater_equal(score.comboMax, this->iMaxPossibleCombo));
     score.numSliderBreaks = liveScore->getNumSliderBreaks();
     score.unstableRate = liveScore->getUnstableRate();
     score.hitErrorAvgMin = liveScore->getHitErrorAvgMin();

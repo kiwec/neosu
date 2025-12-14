@@ -33,14 +33,14 @@ void ScoreConverter::update_ppv2(const FinishedScore& score) {
 
     const auto deadCheck = [](void) -> bool { return dead.load(std::memory_order_acquire); };
 
-    f32 AR = score.mods.get_naive_ar(map);
-    f32 HP = score.mods.get_naive_hp(map);
-    f32 CS = score.mods.get_naive_cs(map);
-    f32 OD = score.mods.get_naive_od(map);
-    bool HD = score.mods.has(ModFlags::Hidden);
-    bool RX = score.mods.has(ModFlags::Relax);
-    bool TD = score.mods.has(ModFlags::TouchDevice);
-    bool AP = score.mods.has(ModFlags::Autopilot);
+    const f32 AR = score.mods.get_naive_ar(map);
+    const f32 HP = score.mods.get_naive_hp(map);
+    const f32 CS = score.mods.get_naive_cs(map);
+    const f32 OD = score.mods.get_naive_od(map);
+    const bool HD = score.mods.has(ModFlags::Hidden);
+    const bool RX = score.mods.has(ModFlags::Relax);
+    const bool TD = score.mods.has(ModFlags::TouchDevice);
+    const bool AP = score.mods.has(ModFlags::Autopilot);
 
     // Load hitobjects
     auto diffres =
