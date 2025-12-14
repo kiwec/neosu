@@ -90,7 +90,7 @@ struct BGImageHandlerImpl final {
     [[nodiscard]] static const Image *getImageOrSkinFallback(const Image *candidate_loaded, bool force_fallback);
 
     void handleLoadPathForEntry(const std::string &path, ENTRY &entry);
-    void handleLoadImageForEntry(ENTRY &entry);
+    inline void handleLoadImageForEntry(ENTRY &entry) { return this->acquireImageRef(entry); }
 
     void acquireImageRef(ENTRY &entry);
     void releaseImageRef(ENTRY &entry);
@@ -340,8 +340,6 @@ void BGImageHandlerImpl::handleLoadPathForEntry(const std::string &path, ENTRY &
     resourceManager->requestNextLoadAsync();
     resourceManager->loadResource(entry.bg_image_path_ldr);
 }
-
-void BGImageHandlerImpl::handleLoadImageForEntry(ENTRY &entry) { this->acquireImageRef(entry); }
 
 void BGImageHandlerImpl::acquireImageRef(ENTRY &entry) {
     std::string full_bg_image_path = fmt::format("{}{}", entry.folder, entry.bg_image_filename);
