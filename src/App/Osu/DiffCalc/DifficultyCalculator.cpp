@@ -641,8 +641,7 @@ f64 DifficultyCalculator::calculatePPv2(PPv2CalcParams &cpar, bool isMcOsuImport
         std::clamp<f64>(comboBasedMissCount, (f64)cpar.misses, (f64)(cpar.c50 + cpar.c100 + cpar.misses));
 
     if(score.legacyTotalScore > 0) {
-        f64 scoreBasedMisscount =
-            calculateScoreBasedMisscount(cpar.attributes, score, cpar.timescale, isMcOsuImported);
+        f64 scoreBasedMisscount = calculateScoreBasedMisscount(cpar.attributes, score, cpar.timescale, isMcOsuImported);
         effectiveMissCount =
             std::clamp<f64>(scoreBasedMisscount, (f64)cpar.misses, (f64)(cpar.c50 + cpar.c100 + cpar.misses));
     }
@@ -908,21 +907,28 @@ f64 DifficultyCalculator::calculateScoreBasedMisscount(const DifficultyAttribute
                                                        f64 timescale, bool isMcOsuImported) {
     if(score.beatmapMaxCombo == 0) return 0;
 
-    f64 scoreV1Multiplier =
-        attributes.LegacyScoreBaseMultiplier * getScoreV1ScoreMultiplier(score.modFlags, timescale, isMcOsuImported);
+    const bool scoreV2 = flags::has<ModFlags::ScoreV2>(score.modFlags);
+
+    f64 modMultiplier = getScoreV1ScoreMultiplier(score.modFlags, timescale, isMcOsuImported);
+    f64 scoreV1Multiplier = attributes.LegacyScoreBaseMultiplier * modMultiplier;
     f64 relevantComboPerObject = calculateRelevantScoreComboPerObject(attributes, score);
 
     f64 maximumMissCount = calculateMaximumComboBasedMissCount(attributes, score);
 
     f64 scoreObtainedDuringMaxCombo =
         calculateScoreAtCombo(attributes, score, score.scoreMaxCombo, relevantComboPerObject, scoreV1Multiplier);
-    f64 remainingScore = score.legacyTotalScore - scoreObtainedDuringMaxCombo;
+    if(scoreV2) scoreObtainedDuringMaxCombo *= 700000. / attributes.MaximumLegacyComboScore;
+
+    f64 scoreLegacyTotalScore =
+        score.legacyTotalScore - (scoreV2 ? 300000. * std::pow(score.accuracy, 10) * modMultiplier : 0);
+    f64 remainingScore = scoreLegacyTotalScore - scoreObtainedDuringMaxCombo;
 
     if(remainingScore <= 0) return maximumMissCount;
 
     f64 remainingCombo = score.beatmapMaxCombo - score.scoreMaxCombo;
     f64 expectedRemainingScore =
         calculateScoreAtCombo(attributes, score, remainingCombo, relevantComboPerObject, scoreV1Multiplier);
+    if(scoreV2) expectedRemainingScore *= 700000. / attributes.MaximumLegacyComboScore;
 
     f64 scoreBasedMissCount = expectedRemainingScore / remainingScore;
 
@@ -952,14 +958,20 @@ f64 DifficultyCalculator::calculateScoreAtCombo(const DifficultyAttributes &attr
                          : 0.0;
 
     // We then apply the accuracy and ScoreV1 multipliers to the resulting score.
-    comboScore *= score.accuracy * 300.0 / 25.0 * scoreV1Multiplier;
+    comboScore *= 300.0 / 25.0 * scoreV1Multiplier;
+
+    // For scoreV2 we need only combo score not scaled by accuracy.
+    // This is technically incorrect because scoreV2 is using different formula,
+    // but we have to sacrifice estimation precision, since it's not as important here.
+    const bool scoreV2 = flags::has<ModFlags::ScoreV2>(score.modFlags);
+    if(scoreV2) return comboScore;
 
     f64 objectsHit = (totalHits - countMiss) * combo / score.beatmapMaxCombo;
 
     // Score also has a non-combo portion we need to create the final score value.
-    f64 nonComboScore = (300.0 + attributes.NestedScorePerObject) * score.accuracy * objectsHit;
+    f64 nonComboScore = (300.0 + attributes.NestedScorePerObject) * objectsHit;
 
-    return comboScore + nonComboScore;
+    return (comboScore + nonComboScore) * score.accuracy;
 }
 
 f64 DifficultyCalculator::calculateRelevantScoreComboPerObject(const DifficultyAttributes &attributes,
@@ -1041,13 +1053,15 @@ f64 DifficultyCalculator::getScoreV1ScoreMultiplier(ModFlags flags, f64 speedOve
         if(so) multiplier *= 0.90;
         if(rx || ap) multiplier *= 0.;
     } else {
+        const bool sv2 = flags::has<ModFlags::ScoreV2>(flags);
         const bool dt = speedOverride > 1.;
         const bool ht = speedOverride < 1.;
 
+        if(flags::has<ModFlags::NoFail>(flags)) multiplier *= sv2 ? 1.0f : 0.50f;
         if(flags::has<ModFlags::Easy>(flags)) multiplier *= 0.50f;
         if(ht) multiplier *= 0.30f;
-        if(flags::has<ModFlags::HardRock>(flags)) multiplier *= 1.06f;
-        if(dt) multiplier *= 1.12f;
+        if(flags::has<ModFlags::HardRock>(flags)) multiplier *= sv2 ? 1.1f : 1.06f;
+        if(dt) multiplier *= sv2 ? 1.2f : 1.12f;
         if(flags::has<ModFlags::Hidden>(flags)) multiplier *= 1.06f;
         if(flags::has<ModFlags::SpunOut>(flags)) multiplier *= 0.90f;
     }
