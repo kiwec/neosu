@@ -722,7 +722,7 @@ void Environment::center() {
     setWindowPos(SDL_WINDOWPOS_CENTERED_DISPLAY(di), SDL_WINDOWPOS_CENTERED_DISPLAY(di));
 }
 
-void Environment::minimize() {
+bool Environment::minimize() {
     static int brokenMinimizeRepeatedSpamWorkaroundCounter{0};
     // a (harmless but wasteful of CPU) feedback loop can occur when alt tabbing for the first time and
     // calling SDL_SetWindowFullscreen(false)/SDL_SetWindowBordered(false), if they don't do anything
@@ -733,7 +733,7 @@ void Environment::minimize() {
 
     if(!m_bMinimizeSupported) {
         logIf(m_bEnvDebug, "Minimizing is unsupported, ignoring request.");
-        return;
+        return false;
     }
 
     if(winFullscreened()) {
@@ -748,6 +748,7 @@ void Environment::minimize() {
     if(!SDL_MinimizeWindow(m_window)) {
         debugLog("Failed to minimize window: {:s}", SDL_GetError());
     }
+    return true;
 }
 
 void Environment::maximize() {

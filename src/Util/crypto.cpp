@@ -4,7 +4,7 @@
 #include "base64.h"            // vendored library
 #include "MD5.h"               // vendored library
 #include "ByteBufferedFile.h"  // for file hashing functions
-
+#include "MD5Hash.h"
 #include "BaseEnvironment.h"
 
 #include <vector>

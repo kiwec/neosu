@@ -179,7 +179,7 @@ class Environment {
     // window
     void focus();
     void center();
-    void minimize();
+    bool minimize(); // if it returns false, minimize is not supported
     void maximize();
     void enableFullscreen();
     void disableFullscreen();

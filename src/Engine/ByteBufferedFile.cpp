@@ -4,6 +4,7 @@
 #include "Logging.h"
 #include "File.h"
 #include "SyncMutex.h"
+#include "MD5Hash.h"
 
 #include <system_error>
 #include <cassert>

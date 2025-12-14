@@ -8,9 +8,10 @@
 #include <filesystem>
 #include <fstream>
 
-#include "MD5Hash.h"
 #include "noinclude.h"
 #include "types.h"
+
+struct MD5Hash;
 
 // don't do something stupid like:
 // Writer("pathA");

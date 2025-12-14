@@ -844,18 +844,23 @@ void Osu::onKeyDown(KeyboardEvent &key) {
     // special hotkeys
     // reload & recompile shaders
     if(keyboard->isAltDown() && keyboard->isControlDown() && key == KEY_R) {
-        Shader *sliderShader = resourceManager->getShader("slider");
-        Shader *cursorTrailShader = resourceManager->getShader("cursortrail");
+        // only non-repeat keypresses
+        if(!key.isRepeat()) {
+            Shader *sliderShader = resourceManager->getShader("slider");
+            Shader *cursorTrailShader = resourceManager->getShader("cursortrail");
 
-        if(sliderShader != nullptr) sliderShader->reload();
-        if(cursorTrailShader != nullptr) cursorTrailShader->reload();
-
+            if(sliderShader != nullptr) sliderShader->reload();
+            if(cursorTrailShader != nullptr) cursorTrailShader->reload();
+        }
         key.consume();
     }
 
     // reload skin (alt)
     if(keyboard->isAltDown() && keyboard->isControlDown() && key == KEY_S) {
-        this->onSkinReload();
+        // only non-repeat keypresses
+        if(!key.isRepeat()) {
+            this->onSkinReload();
+        }
         key.consume();
     }
 
@@ -927,13 +932,19 @@ void Osu::onKeyDown(KeyboardEvent &key) {
     }
 
     // screenshots
-    if(key == cv::SAVE_SCREENSHOT.getVal<SCANCODE>()) this->saveScreenshot();
+    if(key == cv::SAVE_SCREENSHOT.getVal<SCANCODE>()) {
+        if(!key.isRepeat()) {
+            this->saveScreenshot();
+        }
+        key.consume();
+    }
 
     // boss key (minimize + mute)
     if(key == cv::BOSS_KEY.getVal<SCANCODE>()) {
-        env->minimize();
-        this->bWasBossKeyPaused = this->map_iface->isPreviewMusicPlaying();
-        this->map_iface->pausePreviewMusic(false);
+        if(env->minimize()) {
+            this->bWasBossKeyPaused = this->map_iface->isPreviewMusicPlaying();
+            this->map_iface->pausePreviewMusic(false);
+        }
     }
 
     // local hotkeys (and gameplay keys)
