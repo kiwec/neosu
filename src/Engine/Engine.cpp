@@ -36,7 +36,6 @@ std::unique_ptr<Graphics> g{nullptr};
 std::unique_ptr<SoundEngine> soundEngine{nullptr};
 std::unique_ptr<ResourceManager> resourceManager{nullptr};
 std::unique_ptr<NetworkHandler> networkHandler{nullptr};
-std::unique_ptr<AnimationHandler> anim{nullptr};
 std::unique_ptr<AsyncIOHandler> io{nullptr};
 std::unique_ptr<DirectoryWatcher> directoryWatcher{nullptr};
 
@@ -116,9 +115,6 @@ Engine::Engine() {
         soundEngine.reset(SoundEngine::initialize());
         this->runtime_assert(!!soundEngine && soundEngine->succeeded(), "Sound engine failed to initialize!");
 
-        anim = std::make_unique<AnimationHandler>();
-        this->runtime_assert(!!anim, "Animation handler failed to initialize!");
-
         DiscRPC::init();
 
         // default launch overrides
@@ -148,7 +144,7 @@ Engine::~Engine() {
     DiscRPC::destroy();
 
     debugLog("Engine: Freeing animation handler...");
-    anim.reset();
+    anim::clearAll();
 
     debugLog("Engine: Freeing resource manager...");
     resourceManager.reset();
@@ -340,7 +336,7 @@ void Engine::onUpdate() {
 
         {
             VPROF_BUDGET("AnimationHandler::update", VPROF_BUDGETGROUP_UPDATE);
-            anim->update();
+            anim::update();
         }
 
         {

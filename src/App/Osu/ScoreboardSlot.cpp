@@ -21,9 +21,9 @@ ScoreboardSlot::ScoreboardSlot(const SCORE_ENTRY &score, int index) {
 }
 
 ScoreboardSlot::~ScoreboardSlot() {
-    anim->deleteExistingAnimation(&this->fAlpha);
-    anim->deleteExistingAnimation(&this->fFlash);
-    anim->deleteExistingAnimation(&this->y);
+    anim::deleteExistingAnimation(&this->fAlpha);
+    anim::deleteExistingAnimation(&this->fFlash);
+    anim::deleteExistingAnimation(&this->y);
 }
 
 void ScoreboardSlot::draw() {
@@ -255,7 +255,7 @@ void ScoreboardSlot::updateIndex(int new_index, bool is_player, bool animate) {
     if(is_player) {
         if(animate && new_index < this->index) {
             this->fFlash = 1.f;
-            anim->moveQuartOut(&this->fFlash, 0.0f, 0.5f, 0.0f, true);
+            anim::moveQuartOut(&this->fFlash, 0.0f, 0.5f, 0.0f, true);
         }
 
         // Ensure the player is always visible
@@ -279,26 +279,26 @@ void ScoreboardSlot::updateIndex(int new_index, bool is_player, bool animate) {
 
     if(this->was_visible && !is_visible) {
         if(animate) {
-            anim->moveQuartOut(&this->y, scoreboard_y, 0.5f, 0.0f, true);
-            anim->moveQuartOut(&this->fAlpha, 0.0f, 0.5f, 0.0f, true);
+            anim::moveQuartOut(&this->y, scoreboard_y, 0.5f, 0.0f, true);
+            anim::moveQuartOut(&this->fAlpha, 0.0f, 0.5f, 0.0f, true);
         } else {
             this->y = scoreboard_y;
             this->fAlpha = 0.0f;
         }
         this->was_visible = false;
     } else if(!this->was_visible && is_visible) {
-        anim->deleteExistingAnimation(&this->y);
+        anim::deleteExistingAnimation(&this->y);
         this->y = scoreboard_y;
         if(animate) {
             this->fAlpha = 0.f;
-            anim->moveQuartOut(&this->fAlpha, 1.0f, 0.5f, 0.0f, true);
+            anim::moveQuartOut(&this->fAlpha, 1.0f, 0.5f, 0.0f, true);
         } else {
             this->fAlpha = 1.0f;
         }
         this->was_visible = true;
     } else if(this->was_visible || is_visible) {
         if(animate) {
-            anim->moveQuartOut(&this->y, scoreboard_y, 0.5f, 0.0f, true);
+            anim::moveQuartOut(&this->y, scoreboard_y, 0.5f, 0.0f, true);
         } else {
             this->y = scoreboard_y;
         }

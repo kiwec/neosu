@@ -115,10 +115,10 @@ class ModSelectorOverrideSliderLockButton final : public CBaseUICheckbox {
         soundEngine->play(this->isChecked() ? osu->getSkin()->s_check_on : osu->getSkin()->s_check_off);
 
         if(this->isChecked()) {
-            // anim->moveQuadOut(&m_fAnim, 1.5f, 0.060f, true);
-            // anim->moveQuadIn(&m_fAnim, 1.0f, 0.250f, 0.150f, false);
+            // anim::moveQuadOut(&m_fAnim, 1.5f, 0.060f, true);
+            // anim::moveQuadIn(&m_fAnim, 1.0f, 0.250f, 0.150f, false);
         } else {
-            anim->deleteExistingAnimation(&this->fAnim);
+            anim::deleteExistingAnimation(&this->fAnim);
             this->fAnim = 1.0f;
         }
     }
@@ -630,13 +630,13 @@ void ModSelector::mouse_update(bool *propagate_clicks) {
         if(experimentalTrigger.contains(mouse->getPos())) {
             if(!this->bExperimentalVisible) {
                 this->bExperimentalVisible = true;
-                anim->moveQuadOut(&this->fExperimentalAnimation, 1.0f, (1.0f - this->fExperimentalAnimation) * 0.11f,
+                anim::moveQuadOut(&this->fExperimentalAnimation, 1.0f, (1.0f - this->fExperimentalAnimation) * 0.11f,
                                   0.0f, true);
             }
         } else if(this->bExperimentalVisible && !this->experimentalContainer->isMouseInside() &&
                   !this->experimentalContainer->isActive() && !experimentalModEnabled) {
             this->bExperimentalVisible = false;
-            anim->moveQuadIn(&this->fExperimentalAnimation, 0.0f, this->fExperimentalAnimation * 0.11f, 0.0f, true);
+            anim::moveQuadIn(&this->fExperimentalAnimation, 0.0f, this->fExperimentalAnimation * 0.11f, 0.0f, true);
         }
     }
 
@@ -723,7 +723,7 @@ CBaseUIContainer *ModSelector::setVisible(bool visible) {
         this->updateOverrideSliderLabels();
 
         this->fAnimation = 0.0f;
-        anim->moveQuadOut(&this->fAnimation, 1.0f, 0.1f, 0.0f, true);
+        anim::moveQuadOut(&this->fAnimation, 1.0f, 0.1f, 0.0f, true);
 
         bool experimentalModEnabled = false;
         for(auto &experimentalMod : this->experimentalMods) {
@@ -736,25 +736,25 @@ CBaseUIContainer *ModSelector::setVisible(bool visible) {
         if(experimentalModEnabled) {
             this->bExperimentalVisible = true;
             if(this->isInCompactMode())
-                anim->moveQuadOut(&this->fExperimentalAnimation, 1.0f, (1.0f - this->fExperimentalAnimation) * 0.06f,
+                anim::moveQuadOut(&this->fExperimentalAnimation, 1.0f, (1.0f - this->fExperimentalAnimation) * 0.06f,
                                   0.0f, true);
             else
                 this->fExperimentalAnimation = 1.0f;
         } else {
             this->bExperimentalVisible = false;
             this->fExperimentalAnimation = 0.0f;
-            anim->deleteExistingAnimation(&this->fExperimentalAnimation);
+            anim::deleteExistingAnimation(&this->fExperimentalAnimation);
         }
     } else if(!visible && this->bVisible) {
         this->bScheduledHide = this->isInCompactMode();
 
         this->fAnimation = 1.0f;
-        anim->moveQuadIn(&this->fAnimation, 0.0f, 0.06f, 0.0f, true);
+        anim::moveQuadIn(&this->fAnimation, 0.0f, 0.06f, 0.0f, true);
         this->updateScoreMultiplierLabelText();
         this->updateOverrideSliderLabels();
 
         this->bExperimentalVisible = false;
-        anim->moveQuadIn(&this->fExperimentalAnimation, 0.0f, 0.06f, 0.0f, true);
+        anim::moveQuadIn(&this->fExperimentalAnimation, 0.0f, 0.06f, 0.0f, true);
     }
 
     this->bVisible = visible;

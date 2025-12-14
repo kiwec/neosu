@@ -981,7 +981,7 @@ void Circle::onHit(LiveScore::HIT result, i32 delta, float targetDelta, float ta
         this->samples.play(pan, delta, this->click_time);
 
         this->fHitAnimation = 0.001f;  // quickfix for 1 frame missing images
-        anim->moveQuadOut(&this->fHitAnimation, 1.0f, GameRules::getFadeOutTime(), true);
+        anim::moveQuadOut(&this->fHitAnimation, 1.0f, GameRules::getFadeOutTime(), true);
     }
 
     // add it, and we are finished
@@ -996,7 +996,7 @@ void Circle::onReset(i32 curPos) {
     this->fShakeAnimation = 0.0f;
 
     if(this->pf != nullptr) {
-        anim->deleteExistingAnimation(&this->fHitAnimation);
+        anim::deleteExistingAnimation(&this->fHitAnimation);
     }
 
     if(this->click_time > curPos) {
@@ -2070,14 +2070,14 @@ void Slider::onHit(LiveScore::HIT result, i32 delta, bool startOrEnd, float targ
 
             if(!startOrEnd) {
                 this->fStartHitAnimation = 0.001f;  // quickfix for 1 frame missing images
-                anim->moveQuadOut(&this->fStartHitAnimation, 1.0f, GameRules::getFadeOutTime(), true);
+                anim::moveQuadOut(&this->fStartHitAnimation, 1.0f, GameRules::getFadeOutTime(), true);
             } else {
                 if(this->iRepeat % 2 != 0) {
                     this->fEndHitAnimation = 0.001f;  // quickfix for 1 frame missing images
-                    anim->moveQuadOut(&this->fEndHitAnimation, 1.0f, GameRules::getFadeOutTime(), true);
+                    anim::moveQuadOut(&this->fEndHitAnimation, 1.0f, GameRules::getFadeOutTime(), true);
                 } else {
                     this->fStartHitAnimation = 0.001f;  // quickfix for 1 frame missing images
-                    anim->moveQuadOut(&this->fStartHitAnimation, 1.0f, GameRules::getFadeOutTime(), true);
+                    anim::moveQuadOut(&this->fStartHitAnimation, 1.0f, GameRules::getFadeOutTime(), true);
                 }
             }
         }
@@ -2085,7 +2085,7 @@ void Slider::onHit(LiveScore::HIT result, i32 delta, bool startOrEnd, float targ
         // end body fadeout
         if(this->pf != nullptr && startOrEnd) {
             this->fEndSliderBodyFadeAnimation = 0.001f;  // quickfix for 1 frame missing images
-            anim->moveQuadOut(&this->fEndSliderBodyFadeAnimation, 1.0f,
+            anim::moveQuadOut(&this->fEndSliderBodyFadeAnimation, 1.0f,
                               GameRules::getFadeOutTime() * cv::slider_body_fade_out_time_multiplier.getFloat(), true);
             // debugLog("stopping due to end body fadeout");
             this->samples.stop();
@@ -2191,14 +2191,14 @@ void Slider::onRepeatHit(const SLIDERCLICK &click) {
         float tick_pulse_time = cv::slider_followcircle_tick_pulse_time.getFloat() * animation_multiplier;
 
         this->fFollowCircleTickAnimationScale = 0.0f;
-        anim->moveLinear(&this->fFollowCircleTickAnimationScale, 1.0f, tick_pulse_time, true);
+        anim::moveLinear(&this->fFollowCircleTickAnimationScale, 1.0f, tick_pulse_time, true);
 
         if(click.sliderend) {
             this->fEndHitAnimation = 0.001f;  // quickfix for 1 frame missing images
-            anim->moveQuadOut(&this->fEndHitAnimation, 1.0f, GameRules::getFadeOutTime(), true);
+            anim::moveQuadOut(&this->fEndHitAnimation, 1.0f, GameRules::getFadeOutTime(), true);
         } else {
             this->fStartHitAnimation = 0.001f;  // quickfix for 1 frame missing images
-            anim->moveQuadOut(&this->fStartHitAnimation, 1.0f, GameRules::getFadeOutTime(), true);
+            anim::moveQuadOut(&this->fStartHitAnimation, 1.0f, GameRules::getFadeOutTime(), true);
         }
     }
 
@@ -2269,7 +2269,7 @@ void Slider::onTickHit(const SLIDERCLICK &click) {
         float tick_pulse_time = cv::slider_followcircle_tick_pulse_time.getFloat() * animation_multiplier;
 
         this->fFollowCircleTickAnimationScale = 0.0f;
-        anim->moveLinear(&this->fFollowCircleTickAnimationScale, 1.0f, tick_pulse_time, true);
+        anim::moveLinear(&this->fFollowCircleTickAnimationScale, 1.0f, tick_pulse_time, true);
     }
 
     // add score
@@ -2297,10 +2297,10 @@ void Slider::onReset(i32 curPos) {
         // debugLog("stopping due to onReset");
         this->samples.stop();
 
-        anim->deleteExistingAnimation(&this->fFollowCircleTickAnimationScale);
-        anim->deleteExistingAnimation(&this->fStartHitAnimation);
-        anim->deleteExistingAnimation(&this->fEndHitAnimation);
-        anim->deleteExistingAnimation(&this->fEndSliderBodyFadeAnimation);
+        anim::deleteExistingAnimation(&this->fFollowCircleTickAnimationScale);
+        anim::deleteExistingAnimation(&this->fStartHitAnimation);
+        anim::deleteExistingAnimation(&this->fEndHitAnimation);
+        anim::deleteExistingAnimation(&this->fEndSliderBodyFadeAnimation);
     }
 
     this->lastSliderSampleSets.clear();

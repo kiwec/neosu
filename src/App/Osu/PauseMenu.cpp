@@ -57,7 +57,7 @@ PauseMenu::PauseMenu() : OsuScreen() {
 }
 
 void PauseMenu::draw() {
-    const bool isAnimating = anim->isAnimating(&this->fDimAnim);
+    const bool isAnimating = anim::isAnimating(&this->fDimAnim);
     if(!this->bVisible && !isAnimating) return;
 
     // draw dim
@@ -130,12 +130,12 @@ void PauseMenu::mouse_update(bool *propagate_clicks) {
         this->setVisible(this->bScheduledVisibility);
     }
 
-    if(anim->isAnimating(&this->fWarningArrowsAnimX)) this->fWarningArrowsAnimStartTime = engine->getTime();
+    if(anim::isAnimating(&this->fWarningArrowsAnimX)) this->fWarningArrowsAnimStartTime = engine->getTime();
 }
 
 void PauseMenu::onContinueClicked() {
     if(!this->bContinueEnabled) return;
-    if(anim->isAnimating(&this->fDimAnim)) return;
+    if(anim::isAnimating(&this->fDimAnim)) return;
 
     soundEngine->play(osu->getSkin()->s_click_pause_continue);
     osu->getMapInterface()->pause();
@@ -145,7 +145,7 @@ void PauseMenu::onContinueClicked() {
 
 void PauseMenu::onRetryClicked() {
     if(BanchoState::is_playing_a_multi_map()) return;  // sanity
-    if(anim->isAnimating(&this->fDimAnim)) return;
+    if(anim::isAnimating(&this->fDimAnim)) return;
 
     soundEngine->play(osu->getSkin()->s_click_pause_retry);
     osu->getMapInterface()->restart();
@@ -154,7 +154,7 @@ void PauseMenu::onRetryClicked() {
 }
 
 void PauseMenu::onBackClicked() {
-    if(anim->isAnimating(&this->fDimAnim)) return;
+    if(anim::isAnimating(&this->fDimAnim)) return;
 
     soundEngine->play(osu->getSkin()->s_click_pause_back);
     osu->getMapInterface()->stop(true);
@@ -170,12 +170,12 @@ void PauseMenu::onSelectionChange() {
             this->fWarningArrowsAnimY = this->selectedButton->getPos().y;
             this->fWarningArrowsAnimX = this->selectedButton->getPos().x - osu->getUIScale(170.0f);
 
-            anim->moveLinear(&this->fWarningArrowsAnimAlpha, 1.0f, 0.3f);
-            anim->moveQuadIn(&this->fWarningArrowsAnimX, this->selectedButton->getPos().x, 0.3f);
+            anim::moveLinear(&this->fWarningArrowsAnimAlpha, 1.0f, 0.3f);
+            anim::moveQuadIn(&this->fWarningArrowsAnimX, this->selectedButton->getPos().x, 0.3f);
         } else
             this->fWarningArrowsAnimX = this->selectedButton->getPos().x;
 
-        anim->moveQuadOut(&this->fWarningArrowsAnimY, this->selectedButton->getPos().y, 0.1f);
+        anim::moveQuadOut(&this->fWarningArrowsAnimY, this->selectedButton->getPos().y, 0.1f);
     }
 }
 
@@ -402,7 +402,7 @@ CBaseUIContainer *PauseMenu::setVisible(bool visible) {
     osu->updateWindowsKeyDisable();
 
     if(this->bVisible != wasVisible) {
-        anim->moveQuadOut(
+        anim::moveQuadOut(
             &this->fDimAnim, (this->bVisible ? 1.0f : 0.0f),
             cv::pause_anim_duration.getFloat() * (this->bVisible ? 1.0f - this->fDimAnim : this->fDimAnim), true);
     }

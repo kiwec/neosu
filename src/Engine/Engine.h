@@ -31,7 +31,6 @@ class NetworkHandler;
 
 using NeoNet::NetworkHandler;
 class ResourceManager;
-class AnimationHandler;
 class AsyncIOHandler;
 class DirectoryWatcher;
 
@@ -164,7 +163,6 @@ extern std::unique_ptr<Graphics> g;
 extern std::unique_ptr<SoundEngine> soundEngine;
 extern std::unique_ptr<ResourceManager> resourceManager;
 extern std::unique_ptr<NetworkHandler> networkHandler;
-extern std::unique_ptr<AnimationHandler> anim;
 extern std::unique_ptr<AsyncIOHandler> io;
 extern std::unique_ptr<DirectoryWatcher> directoryWatcher;
 

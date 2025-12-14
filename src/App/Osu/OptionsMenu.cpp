@@ -360,7 +360,7 @@ class OptionsMenuResetButton final : public CBaseUIButton {
         this->fAnim = 1.0f;
     }
 
-    ~OptionsMenuResetButton() override { anim->deleteExistingAnimation(&this->fAnim); }
+    ~OptionsMenuResetButton() override { anim::deleteExistingAnimation(&this->fAnim); }
 
     void draw() override {
         if(!this->bVisible || this->fAnim <= 0.0f) return;
@@ -391,12 +391,12 @@ class OptionsMenuResetButton final : public CBaseUIButton {
    private:
     void onEnabled() override {
         CBaseUIButton::onEnabled();
-        anim->moveQuadOut(&this->fAnim, 1.0f, (1.0f - this->fAnim) * 0.15f, true);
+        anim::moveQuadOut(&this->fAnim, 1.0f, (1.0f - this->fAnim) * 0.15f, true);
     }
 
     void onDisabled() override {
         CBaseUIButton::onDisabled();
-        anim->moveQuadOut(&this->fAnim, 0.0f, this->fAnim * 0.15f, true);
+        anim::moveQuadOut(&this->fAnim, 0.0f, this->fAnim * 0.15f, true);
     }
 
     float fAnim;
@@ -1407,7 +1407,7 @@ OptionsMenu::~OptionsMenu() {
 }
 
 void OptionsMenu::draw() {
-    const bool isAnimating = anim->isAnimating(&this->fAnimation);
+    const bool isAnimating = anim::isAnimating(&this->fAnimation);
     if(!this->bVisible && !isAnimating) {
         this->contextMenu->draw();
         return;
@@ -1805,9 +1805,9 @@ void OptionsMenu::setVisibleInt(bool visible, bool fromOnBack) {
         // open/close animation
         if(!this->bFullscreen) {
             if(!this->bVisible)
-                anim->moveQuartOut(&this->fAnimation, 1.0f, 0.25f * (1.0f - this->fAnimation), true);
+                anim::moveQuartOut(&this->fAnimation, 1.0f, 0.25f * (1.0f - this->fAnimation), true);
             else
-                anim->moveQuadOut(&this->fAnimation, 0.0f, 0.25f * this->fAnimation, true);
+                anim::moveQuadOut(&this->fAnimation, 0.0f, 0.25f * this->fAnimation, true);
         }
 
         // save even if not closed via onBack(), e.g. if closed via setVisible(false) from outside

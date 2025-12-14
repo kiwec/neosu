@@ -66,7 +66,7 @@ ModFPoSu::ModFPoSu() {
     this->makeBackgroundCube();
 }
 
-ModFPoSu::~ModFPoSu() { anim->deleteExistingAnimation(&this->fZoomFOVAnimPercent); }
+ModFPoSu::~ModFPoSu() { anim::deleteExistingAnimation(&this->fZoomFOVAnimPercent); }
 
 void ModFPoSu::draw() {
     if(!cv::mod_fposu.getBool()) return;
@@ -417,10 +417,10 @@ void ModFPoSu::onKeyUp(KeyboardEvent &key) {
 
 void ModFPoSu::handleZoomedChange() {
     if(this->bZoomed)
-        anim->moveQuadOut(&this->fZoomFOVAnimPercent, 1.0f,
+        anim::moveQuadOut(&this->fZoomFOVAnimPercent, 1.0f,
                           (1.0f - this->fZoomFOVAnimPercent) * cv::fposu_zoom_anim_duration.getFloat(), true);
     else
-        anim->moveQuadOut(&this->fZoomFOVAnimPercent, 0.0f,
+        anim::moveQuadOut(&this->fZoomFOVAnimPercent, 0.0f,
                           this->fZoomFOVAnimPercent * cv::fposu_zoom_anim_duration.getFloat(), true);
 }
 

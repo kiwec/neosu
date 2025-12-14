@@ -245,10 +245,10 @@ void NotificationOverlay::addNotification(UString text, Color textColor, bool wa
         this->notification2.backgroundAnim = 1.0f;
         this->notification2.fallAnim = 0.0f;
 
-        anim->deleteExistingAnimation(&this->notification1.alpha);
+        anim::deleteExistingAnimation(&this->notification1.alpha);
 
-        anim->moveQuadIn(&this->notification2.fallAnim, 1.0f, 0.2f, 0.0f, true);
-        anim->moveQuadIn(&this->notification2.alpha, 0.0f, 0.2f, 0.0f, true);
+        anim::moveQuadIn(&this->notification2.fallAnim, 1.0f, 0.2f, 0.0f, true);
+        anim::moveQuadIn(&this->notification2.alpha, 0.0f, 0.2f, 0.0f, true);
     }
 
     // build new notification
@@ -273,11 +273,11 @@ void NotificationOverlay::addNotification(UString text, Color textColor, bool wa
     if(this->isVisible())
         this->notification1.alpha = 1.0f;
     else
-        anim->moveLinear(&this->notification1.alpha, 1.0f, 0.075f, true);
+        anim::moveLinear(&this->notification1.alpha, 1.0f, 0.075f, true);
 
-    if(!waitForKey) anim->moveQuadOut(&this->notification1.alpha, 0.0f, fadeOutTime, notificationDuration, false);
+    if(!waitForKey) anim::moveQuadOut(&this->notification1.alpha, 0.0f, fadeOutTime, notificationDuration, false);
 
-    anim->moveQuadOut(&this->notification1.backgroundAnim, 1.0f, 0.15f, 0.0f, true);
+    anim::moveQuadOut(&this->notification1.backgroundAnim, 1.0f, 0.15f, 0.0f, true);
 }
 
 void NotificationOverlay::addToast(const UString &text, Color borderColor, ToastClickCallback callback,

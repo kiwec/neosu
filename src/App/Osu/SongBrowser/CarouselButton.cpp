@@ -55,10 +55,10 @@ CarouselButton::CarouselButton(SongBrowser *songBrowser, UIContextMenu *contextM
 CarouselButton::~CarouselButton() { this->deleteAnimations(); }
 
 void CarouselButton::deleteAnimations() {
-    anim->deleteExistingAnimation(&this->fCenterOffsetAnimation);
-    anim->deleteExistingAnimation(&this->fCenterOffsetVelocityAnimation);
-    anim->deleteExistingAnimation(&this->fHoverOffsetAnimation);
-    anim->deleteExistingAnimation(&this->fHoverMoveAwayAnimation);
+    anim::deleteExistingAnimation(&this->fCenterOffsetAnimation);
+    anim::deleteExistingAnimation(&this->fCenterOffsetVelocityAnimation);
+    anim::deleteExistingAnimation(&this->fHoverOffsetAnimation);
+    anim::deleteExistingAnimation(&this->fHoverMoveAwayAnimation);
 }
 
 void CarouselButton::draw() {
@@ -160,7 +160,7 @@ void CarouselButton::updateLayoutEx() {
                                  this->songBrowser->getCarousel()->getSize().y / 2) /
                                 (this->songBrowser->getCarousel()->getSize().y / 2)),
                        0.0f, 1.0f);
-        anim->moveQuadOut(&this->fCenterOffsetAnimation, centerOffsetAnimationTarget, 0.5f, true);
+        anim::moveQuadOut(&this->fCenterOffsetAnimation, centerOffsetAnimationTarget, 0.5f, true);
 
         float centerOffsetVelocityAnimationTarget =
             std::clamp<float>((std::abs(this->songBrowser->getCarousel()->getVelocity().y)) / 3500.0f, 0.0f, 1.0f);
@@ -168,9 +168,9 @@ void CarouselButton::updateLayoutEx() {
         if(this->songBrowser->isRightClickScrolling()) centerOffsetVelocityAnimationTarget = 0.0f;
 
         if(this->songBrowser->getCarousel()->isScrolling())
-            anim->moveQuadOut(&this->fCenterOffsetVelocityAnimation, 0.0f, 1.0f, true);
+            anim::moveQuadOut(&this->fCenterOffsetVelocityAnimation, 0.0f, 1.0f, true);
         else
-            anim->moveQuadOut(&this->fCenterOffsetVelocityAnimation, centerOffsetVelocityAnimationTarget, 1.25f, true);
+            anim::moveQuadOut(&this->fCenterOffsetVelocityAnimation, centerOffsetVelocityAnimationTarget, 1.25f, true);
     }
 
     this->setSize((int)(menuButtonBackground->getWidth() * this->fScale),
@@ -265,7 +265,7 @@ void CarouselButton::onMouseInside() {
     }
 
     // hover anim
-    anim->moveQuadOut(&this->fHoverOffsetAnimation, 1.0f, 1.0f * (1.0f - this->fHoverOffsetAnimation), true);
+    anim::moveQuadOut(&this->fHoverOffsetAnimation, 1.0f, 1.0f * (1.0f - this->fHoverOffsetAnimation), true);
 
     // all elements must be CarouselButtons, at least
     const auto &elements{reinterpret_cast<const std::vector<CarouselButton *> &>(
@@ -286,7 +286,7 @@ void CarouselButton::onMouseOutside() {
     CBaseUIButton::onMouseOutside();
 
     // reverse hover anim
-    anim->moveQuadOut(&this->fHoverOffsetAnimation, 0.0f, 1.0f * this->fHoverOffsetAnimation, true);
+    anim::moveQuadOut(&this->fHoverOffsetAnimation, 0.0f, 1.0f * this->fHoverOffsetAnimation, true);
 
     // only reset all other elements' state if we still should do so (possible frame delay of onMouseOutside coming
     // together with the next element already getting onMouseInside!)
@@ -317,7 +317,7 @@ void CarouselButton::setMoveAwayState(CarouselButton::MOVE_AWAY_STATE moveAwaySt
     this->moveAwayState = moveAwayState;
 
     // if we are not visible, destroy possibly existing animation
-    if(!this->isVisible() || !animate) anim->deleteExistingAnimation(&this->fHoverMoveAwayAnimation);
+    if(!this->isVisible() || !animate) anim::deleteExistingAnimation(&this->fHoverMoveAwayAnimation);
 
     // only submit a new animation if we are visible, otherwise we would overwhelm the animationhandler with a shitload
     // of requests every time for every button (if we are not visible then we can just directly set the new value)
@@ -326,7 +326,7 @@ void CarouselButton::setMoveAwayState(CarouselButton::MOVE_AWAY_STATE moveAwaySt
             if(!this->isVisible() || !animate)
                 this->fHoverMoveAwayAnimation = 0.0f;
             else
-                anim->moveQuartOut(&this->fHoverMoveAwayAnimation, 0, 0.7f, this->isMouseInside() ? 0.0f : 0.05f,
+                anim::moveQuartOut(&this->fHoverMoveAwayAnimation, 0, 0.7f, this->isMouseInside() ? 0.0f : 0.05f,
                                    true);  // add a tiny bit of delay to avoid jerky movement if the cursor is briefly
                                            // between songbuttons while moving
         } break;
@@ -335,14 +335,14 @@ void CarouselButton::setMoveAwayState(CarouselButton::MOVE_AWAY_STATE moveAwaySt
             if(!this->isVisible() || !animate)
                 this->fHoverMoveAwayAnimation = -1.0f;
             else
-                anim->moveQuartOut(&this->fHoverMoveAwayAnimation, -1.0f, 0.7f, true);
+                anim::moveQuartOut(&this->fHoverMoveAwayAnimation, -1.0f, 0.7f, true);
         } break;
 
         case MOVE_AWAY_STATE::MOVE_DOWN: {
             if(!this->isVisible() || !animate)
                 this->fHoverMoveAwayAnimation = 1.0f;
             else
-                anim->moveQuartOut(&this->fHoverMoveAwayAnimation, 1.0f, 0.7f, true);
+                anim::moveQuartOut(&this->fHoverMoveAwayAnimation, 1.0f, 0.7f, true);
         } break;
     }
 }

@@ -325,7 +325,7 @@ Chat::~Chat() {
 void Chat::draw() {
     this->drawTicker();
 
-    const bool isAnimating = anim->isAnimating(&this->fAnimation);
+    const bool isAnimating = anim::isAnimating(&this->fAnimation);
     if(!this->bVisible && !isAnimating) return;
 
     if(isAnimating) {
@@ -375,7 +375,7 @@ void Chat::drawTicker() {
 
     f32 a = std::clamp(6.0 - time_elapsed, 0.0, 1.0);
     auto ticker_size = this->ticker->ui->getSize();
-    if(!anim->isAnimating(&this->fAnimation)) {
+    if(!anim::isAnimating(&this->fAnimation)) {
         this->fAnimation = 0.f;
         if(this->isVisible()) return;  // don't draw ticker while chat is visible
     }
@@ -1301,7 +1301,7 @@ CBaseUIContainer *Chat::setVisible(bool visible) {
     this->bVisible = visible;
     if(visible) {
         osu->getOptionsMenu()->setVisible(false);
-        anim->moveQuartOut(&this->fAnimation, 1.0f, 0.25f * (1.0f - this->fAnimation), true);
+        anim::moveQuartOut(&this->fAnimation, 1.0f, 0.25f * (1.0f - this->fAnimation), true);
 
         if(this->selected_channel != nullptr && !this->selected_channel->read) {
             this->mark_as_read(this->selected_channel);
@@ -1311,7 +1311,7 @@ CBaseUIContainer *Chat::setVisible(bool visible) {
             this->updateLayout(osu->getVirtScreenSize());
         }
     } else {
-        anim->moveQuadOut(&this->fAnimation, 0.0f, 0.25f * this->fAnimation, true);
+        anim::moveQuadOut(&this->fAnimation, 0.0f, 0.25f * this->fAnimation, true);
     }
 
     return this;

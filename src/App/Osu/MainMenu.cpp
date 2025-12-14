@@ -54,7 +54,7 @@ class MainMenu::CubeButton final : public CBaseUIButton {
     }
 
     void onMouseInside() override {
-        anim->moveQuadInOut(&this->mm_ptr->fSizeAddAnim, 0.12f, 0.15f, 0.0f, true);
+        anim::moveQuadInOut(&this->mm_ptr->fSizeAddAnim, 0.12f, 0.15f, 0.0f, true);
 
         CBaseUIButton::onMouseInside();
 
@@ -65,7 +65,7 @@ class MainMenu::CubeButton final : public CBaseUIButton {
     }
 
     void onMouseOutside() override {
-        anim->moveQuadInOut(&this->mm_ptr->fSizeAddAnim, 0.0f, 0.15f, 0.0f, true);
+        anim::moveQuadInOut(&this->mm_ptr->fSizeAddAnim, 0.0f, 0.15f, 0.0f, true);
 
         CBaseUIButton::onMouseOutside();
     }
@@ -269,19 +269,19 @@ MainMenu::~MainMenu() {
     this->clearPreloadedMaps();
     SAFE_DELETE(this->updateAvailableButton);
 
-    anim->deleteExistingAnimation(&this->fUpdateButtonAnim);
+    anim::deleteExistingAnimation(&this->fUpdateButtonAnim);
 
-    anim->deleteExistingAnimation(&this->fMainMenuAnimFriendEyeFollowX);
-    anim->deleteExistingAnimation(&this->fMainMenuAnimFriendEyeFollowY);
+    anim::deleteExistingAnimation(&this->fMainMenuAnimFriendEyeFollowX);
+    anim::deleteExistingAnimation(&this->fMainMenuAnimFriendEyeFollowY);
 
-    anim->deleteExistingAnimation(&this->fMainMenuAnim);
-    anim->deleteExistingAnimation(&this->fMainMenuAnim1);
-    anim->deleteExistingAnimation(&this->fMainMenuAnim2);
-    anim->deleteExistingAnimation(&this->fMainMenuAnim3);
+    anim::deleteExistingAnimation(&this->fMainMenuAnim);
+    anim::deleteExistingAnimation(&this->fMainMenuAnim1);
+    anim::deleteExistingAnimation(&this->fMainMenuAnim2);
+    anim::deleteExistingAnimation(&this->fMainMenuAnim3);
 
-    anim->deleteExistingAnimation(&this->fCenterOffsetAnim);
-    anim->deleteExistingAnimation(&this->fStartupAnim);
-    anim->deleteExistingAnimation(&this->fStartupAnim2);
+    anim::deleteExistingAnimation(&this->fCenterOffsetAnim);
+    anim::deleteExistingAnimation(&this->fStartupAnim);
+    anim::deleteExistingAnimation(&this->fStartupAnim2);
 
     // if the user didn't click on the update notification during this session, quietly remove it so it's not annoying
     if(this->bWasCleanShutdown) this->writeVersionFile();
@@ -872,7 +872,7 @@ void MainMenu::draw() {
             this->lastMap = this->currentMap ? this->currentMap : currentOsuMap;  // don't fade from NULL?
             this->currentMap = currentOsuMap;
             this->mapFadeAnim = 0.f;
-            anim->moveLinear(&this->mapFadeAnim, 1.f, cv::main_menu_background_fade_duration.getFloat(), true);
+            anim::moveLinear(&this->mapFadeAnim, 1.f, cv::main_menu_background_fade_duration.getFloat(), true);
         }
 
         // TODO: don't store references to these in MainMenu
@@ -984,7 +984,7 @@ void MainMenu::mouse_update(bool *propagate_clicks) {
     }
 
     // hide the buttons if the closing animation finished
-    if(!anim->isAnimating(&this->fCenterOffsetAnim) && this->fCenterOffsetAnim == 0.0f) {
+    if(!anim::isAnimating(&this->fCenterOffsetAnim) && this->fCenterOffsetAnim == 0.0f) {
         for(auto &menuElement : this->menuElements) {
             menuElement->setVisible(false);
         }
@@ -993,7 +993,7 @@ void MainMenu::mouse_update(bool *propagate_clicks) {
     // handle delayed shutdown
     bool shutting_down = false;
     if(this->fShutdownScheduledTime != 0.0f &&
-       (engine->getTime() > this->fShutdownScheduledTime || !anim->isAnimating(&this->fCenterOffsetAnim))) {
+       (engine->getTime() > this->fShutdownScheduledTime || !anim::isAnimating(&this->fCenterOffsetAnim))) {
         engine->shutdown();
         this->fShutdownScheduledTime = 0.0f;
         shutting_down = true;
@@ -1013,7 +1013,7 @@ void MainMenu::mouse_update(bool *propagate_clicks) {
         this->animMainButton();
     }
 
-    if(this->bInMainMenuRandomAnim && this->iMainMenuRandomAnimType == 1 && anim->isAnimating(&this->fMainMenuAnim)) {
+    if(this->bInMainMenuRandomAnim && this->iMainMenuRandomAnimType == 1 && anim::isAnimating(&this->fMainMenuAnim)) {
         vec2 mouseDelta = (this->cube->getPos() + this->cube->getSize() / 2.f) - mouse->getPos();
         mouseDelta.x = std::clamp<float>(mouseDelta.x, -engine->getScreenSize().x / 2, engine->getScreenSize().x / 2);
         mouseDelta.y = std::clamp<float>(mouseDelta.y, -engine->getScreenSize().y / 2, engine->getScreenSize().y / 2);
@@ -1024,11 +1024,11 @@ void MainMenu::mouse_update(bool *propagate_clicks) {
 
         const vec2 pushAngle = vec2(mouseDelta.y, -mouseDelta.x) * vec2(0.15f, 0.15f) * decay;
 
-        anim->moveQuadOut(&this->fMainMenuAnim1, pushAngle.x, 0.15f, true);
+        anim::moveQuadOut(&this->fMainMenuAnim1, pushAngle.x, 0.15f, true);
 
-        anim->moveQuadOut(&this->fMainMenuAnim2, pushAngle.y, 0.15f, true);
+        anim::moveQuadOut(&this->fMainMenuAnim2, pushAngle.y, 0.15f, true);
 
-        anim->moveQuadOut(&this->fMainMenuAnim3, 0.0f, 0.15f, true);
+        anim::moveQuadOut(&this->fMainMenuAnim3, 0.0f, 0.15f, true);
     }
 
     {
@@ -1050,8 +1050,8 @@ void MainMenu::mouse_update(bool *propagate_clicks) {
 
         const vec2 pushAngle = vec2(mouseDelta.x, mouseDelta.y) * 0.1f;
 
-        anim->moveLinear(&this->fMainMenuAnimFriendEyeFollowX, pushAngle.x, 0.25f, true);
-        anim->moveLinear(&this->fMainMenuAnimFriendEyeFollowY, pushAngle.y, 0.25f, true);
+        anim::moveLinear(&this->fMainMenuAnimFriendEyeFollowX, pushAngle.x, 0.25f, true);
+        anim::moveLinear(&this->fMainMenuAnimFriendEyeFollowY, pushAngle.y, 0.25f, true);
     }
 
     // handle update checker and status text
@@ -1076,7 +1076,7 @@ void MainMenu::mouse_update(bool *propagate_clicks) {
                 this->updateAvailableButton->setVisible(true);
                 break;
             case UpdateHandler::STATUS::STATUS_DOWNLOAD_COMPLETE:
-                if(engine->getTime() > this->fUpdateButtonTextTime && anim->isAnimating(&this->fUpdateButtonAnim) &&
+                if(engine->getTime() > this->fUpdateButtonTextTime && anim::isAnimating(&this->fUpdateButtonAnim) &&
                    this->fUpdateButtonAnim > 0.175f) {
                     this->fUpdateButtonTextTime = this->fUpdateButtonAnimTime;
 
@@ -1092,7 +1092,7 @@ void MainMenu::mouse_update(bool *propagate_clicks) {
                 if(engine->getTime() > this->fUpdateButtonAnimTime) {
                     this->fUpdateButtonAnimTime = engine->getTime() + 3.0f;
                     this->fUpdateButtonAnim = 0.0f;
-                    anim->moveQuadInOut(&this->fUpdateButtonAnim, 1.0f, 0.5f, true);
+                    anim::moveQuadInOut(&this->fUpdateButtonAnim, 1.0f, 0.5f, true);
                 }
                 break;
             case UpdateHandler::STATUS::STATUS_ERROR:
@@ -1255,7 +1255,7 @@ void MainMenu::onKeyDown(KeyboardEvent &e) {
 
 void MainMenu::onButtonChange(ButtonEvent ev) {
     if(!this->bVisible || ev.btn != MouseButtonFlags::MF_MIDDLE ||
-       !(ev.down && !anim->isAnimating(&this->fMainMenuAnim) && !this->bMenuElementsVisible))
+       !(ev.down && !anim::isAnimating(&this->fMainMenuAnim) && !this->bMenuElementsVisible))
         return;
 
     if(keyboard->isShiftDown()) {
@@ -1281,7 +1281,7 @@ CBaseUIContainer *MainMenu::setVisible(bool visible) {
         // Clear background change animation, to avoid "fade" when backing out from song browser
         {
             this->currentMap = osu->getMapInterface()->getBeatmap();
-            anim->deleteExistingAnimation(&this->mapFadeAnim);
+            anim::deleteExistingAnimation(&this->mapFadeAnim);
             this->mapFadeAnim = 1.f;
         }
 
@@ -1305,8 +1305,8 @@ CBaseUIContainer *MainMenu::setVisible(bool visible) {
 
         if(this->bStartupAnim) {
             this->bStartupAnim = false;
-            anim->moveQuadOut(&this->fStartupAnim, 1.0f, cv::main_menu_startup_anim_duration.getFloat());
-            anim->moveQuartOut(&this->fStartupAnim2, 1.0f, cv::main_menu_startup_anim_duration.getFloat() * 6.0f,
+            anim::moveQuadOut(&this->fStartupAnim, 1.0f, cv::main_menu_startup_anim_duration.getFloat());
+            anim::moveQuartOut(&this->fStartupAnim2, 1.0f, cv::main_menu_startup_anim_duration.getFloat() * 6.0f,
                                cv::main_menu_startup_anim_duration.getFloat() * 0.5f);
         }
     } else {
@@ -1411,11 +1411,11 @@ void MainMenu::animMainButton() {
         const float randomDuration2 = (static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * 3.5f;
         const float randomDuration3 = (static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * 3.5f;
 
-        anim->moveQuadOut(&this->fMainMenuAnim, 1.0f,
+        anim::moveQuadOut(&this->fMainMenuAnim, 1.0f,
                           1.5f + std::max(randomDuration1, std::max(randomDuration2, randomDuration3)));
-        anim->moveQuadOut(&this->fMainMenuAnim1, this->fMainMenuAnim1Target, 1.5f + randomDuration1);
-        anim->moveQuadOut(&this->fMainMenuAnim2, this->fMainMenuAnim2Target, 1.5f + randomDuration2);
-        anim->moveQuadOut(&this->fMainMenuAnim3, this->fMainMenuAnim3Target, 1.5f + randomDuration3);
+        anim::moveQuadOut(&this->fMainMenuAnim1, this->fMainMenuAnim1Target, 1.5f + randomDuration1);
+        anim::moveQuadOut(&this->fMainMenuAnim2, this->fMainMenuAnim2Target, 1.5f + randomDuration2);
+        anim::moveQuadOut(&this->fMainMenuAnim3, this->fMainMenuAnim3Target, 1.5f + randomDuration3);
     } else {
         this->fMainMenuAnim3 = 0.0f;
 
@@ -1424,21 +1424,21 @@ void MainMenu::animMainButton() {
         this->fMainMenuAnim3Target = 0.0f;
 
         this->fMainMenuAnim = 0.0f;
-        anim->moveQuadOut(&this->fMainMenuAnim, 1.0f, 5.0f);
+        anim::moveQuadOut(&this->fMainMenuAnim, 1.0f, 5.0f);
     }
 }
 
 void MainMenu::animMainButtonBack() {
     this->bInMainMenuRandomAnim = false;
 
-    if(anim->isAnimating(&this->fMainMenuAnim)) {
-        anim->moveQuadOut(&this->fMainMenuAnim, 1.0f, 0.25f, true);
-        anim->moveQuadOut(&this->fMainMenuAnim1, this->fMainMenuAnim1Target, 0.25f, true);
-        anim->moveQuadOut(&this->fMainMenuAnim1, 0.0f, 0.0f, 0.25f);
-        anim->moveQuadOut(&this->fMainMenuAnim2, this->fMainMenuAnim2Target, 0.25f, true);
-        anim->moveQuadOut(&this->fMainMenuAnim2, 0.0f, 0.0f, 0.25f);
-        anim->moveQuadOut(&this->fMainMenuAnim3, this->fMainMenuAnim3Target, 0.10f, true);
-        anim->moveQuadOut(&this->fMainMenuAnim3, 0.0f, 0.0f, 0.1f);
+    if(anim::isAnimating(&this->fMainMenuAnim)) {
+        anim::moveQuadOut(&this->fMainMenuAnim, 1.0f, 0.25f, true);
+        anim::moveQuadOut(&this->fMainMenuAnim1, this->fMainMenuAnim1Target, 0.25f, true);
+        anim::moveQuadOut(&this->fMainMenuAnim1, 0.0f, 0.0f, 0.25f);
+        anim::moveQuadOut(&this->fMainMenuAnim2, this->fMainMenuAnim2Target, 0.25f, true);
+        anim::moveQuadOut(&this->fMainMenuAnim2, 0.0f, 0.0f, 0.25f);
+        anim::moveQuadOut(&this->fMainMenuAnim3, this->fMainMenuAnim3Target, 0.10f, true);
+        anim::moveQuadOut(&this->fMainMenuAnim3, 0.0f, 0.0f, 0.1f);
     }
 }
 
@@ -1452,9 +1452,9 @@ void MainMenu::setMenuElementsVisible(bool visible, bool animate) {
             this->fCenterOffsetAnim = this->vSize.x / 2.0f;
 
         if(animate)
-            anim->moveQuadInOut(&this->fCenterOffsetAnim, this->vSize.x / 2.0f, 0.35f, 0.0f, true);
+            anim::moveQuadInOut(&this->fCenterOffsetAnim, this->vSize.x / 2.0f, 0.35f, 0.0f, true);
         else {
-            anim->deleteExistingAnimation(&this->fCenterOffsetAnim);
+            anim::deleteExistingAnimation(&this->fCenterOffsetAnim);
             this->fCenterOffsetAnim = this->vSize.x / 2.0f;
         }
 
@@ -1466,12 +1466,12 @@ void MainMenu::setMenuElementsVisible(bool visible, bool animate) {
         }
     } else {
         if(animate)
-            anim->moveQuadOut(&this->fCenterOffsetAnim, 0.0f,
+            anim::moveQuadOut(&this->fCenterOffsetAnim, 0.0f,
                               0.5f * (this->fCenterOffsetAnim / (this->vSize.x / 2.0f)) *
                                   (this->fShutdownScheduledTime != 0.0f ? 0.4f : 1.0f),
                               0.0f, true);
         else {
-            anim->deleteExistingAnimation(&this->fCenterOffsetAnim);
+            anim::deleteExistingAnimation(&this->fCenterOffsetAnim);
             this->fCenterOffsetAnim = 0.0f;
         }
 
@@ -1507,8 +1507,8 @@ MainMenu::MainButton *MainMenu::addMainMenuButton(UString text) {
 void MainMenu::onCubePressed() {
     soundEngine->play(osu->getSkin()->s_click_main_menu_cube);
 
-    anim->moveQuadInOut(&this->fSizeAddAnim, 0.0f, 0.06f, 0.0f, false);
-    anim->moveQuadInOut(&this->fSizeAddAnim, 0.12f, 0.06f, 0.07f, false);
+    anim::moveQuadInOut(&this->fSizeAddAnim, 0.0f, 0.06f, 0.0f, false);
+    anim::moveQuadInOut(&this->fSizeAddAnim, 0.12f, 0.06f, 0.07f, false);
 
     // if the menu is already visible, this counts as pressing the play button
     if(this->bMenuElementsVisible)
@@ -1516,7 +1516,7 @@ void MainMenu::onCubePressed() {
     else
         this->setMenuElementsVisible(true);
 
-    if(anim->isAnimating(&this->fMainMenuAnim) && this->bInMainMenuRandomAnim)
+    if(anim::isAnimating(&this->fMainMenuAnim) && this->bInMainMenuRandomAnim)
         this->animMainButtonBack();
     else {
         this->bInMainMenuRandomAnim = false;
@@ -1530,21 +1530,21 @@ void MainMenu::onCubePressed() {
         const vec2 pushAngle = vec2(mouseDelta.y, -mouseDelta.x) * vec2(0.15f, 0.15f);
 
         this->fMainMenuAnim = 0.001f;
-        anim->moveQuadOut(&this->fMainMenuAnim, 1.0f, 0.15f + 0.4f, true);
+        anim::moveQuadOut(&this->fMainMenuAnim, 1.0f, 0.15f + 0.4f, true);
 
-        if(!anim->isAnimating(&this->fMainMenuAnim1)) this->fMainMenuAnim1 = 0.0f;
+        if(!anim::isAnimating(&this->fMainMenuAnim1)) this->fMainMenuAnim1 = 0.0f;
 
-        anim->moveQuadOut(&this->fMainMenuAnim1, pushAngle.x, 0.15f, true);
-        anim->moveQuadOut(&this->fMainMenuAnim1, 0.0f, 0.4f, 0.15f);
+        anim::moveQuadOut(&this->fMainMenuAnim1, pushAngle.x, 0.15f, true);
+        anim::moveQuadOut(&this->fMainMenuAnim1, 0.0f, 0.4f, 0.15f);
 
-        if(!anim->isAnimating(&this->fMainMenuAnim2)) this->fMainMenuAnim2 = 0.0f;
+        if(!anim::isAnimating(&this->fMainMenuAnim2)) this->fMainMenuAnim2 = 0.0f;
 
-        anim->moveQuadOut(&this->fMainMenuAnim2, pushAngle.y, 0.15f, true);
-        anim->moveQuadOut(&this->fMainMenuAnim2, 0.0f, 0.4f, 0.15f);
+        anim::moveQuadOut(&this->fMainMenuAnim2, pushAngle.y, 0.15f, true);
+        anim::moveQuadOut(&this->fMainMenuAnim2, 0.0f, 0.4f, 0.15f);
 
-        if(!anim->isAnimating(&this->fMainMenuAnim3)) this->fMainMenuAnim3 = 0.0f;
+        if(!anim::isAnimating(&this->fMainMenuAnim3)) this->fMainMenuAnim3 = 0.0f;
 
-        anim->moveQuadOut(&this->fMainMenuAnim3, 0.0f, 0.15f, true);
+        anim::moveQuadOut(&this->fMainMenuAnim3, 0.0f, 0.15f, true);
     }
 }
 

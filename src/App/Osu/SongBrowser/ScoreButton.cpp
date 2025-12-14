@@ -42,7 +42,7 @@ ScoreButton::ScoreButton(UIContextMenu *contextMenu, float xPos, float yPos, flo
     if(recentScoreIconString.length() < 1) recentScoreIconString.insert(0, Icons::ARROW_CIRCLE_UP);
 }
 
-ScoreButton::~ScoreButton() { anim->deleteExistingAnimation(&this->fIndexNumberAnim); }
+ScoreButton::~ScoreButton() { anim::deleteExistingAnimation(&this->fIndexNumberAnim); }
 
 void ScoreButton::draw() {
     if(!this->bVisible) return;
@@ -446,7 +446,7 @@ void ScoreButton::mouse_update(bool *propagate_clicks) {
                 tooltipOverlay->end();
             }
         } else {
-            anim->deleteExistingAnimation(&this->fIndexNumberAnim);
+            anim::deleteExistingAnimation(&this->fIndexNumberAnim);
             this->fIndexNumberAnim = 0.0f;
         }
     }
@@ -455,7 +455,7 @@ void ScoreButton::mouse_update(bool *propagate_clicks) {
     this->updateElapsedTimeString();
 
     // stuck anim reset
-    if(!this->isMouseInside() && !anim->isAnimating(&this->fIndexNumberAnim)) this->fIndexNumberAnim = 0.0f;
+    if(!this->isMouseInside() && !anim::isAnimating(&this->fIndexNumberAnim)) this->fIndexNumberAnim = 0.0f;
 }
 
 void ScoreButton::highlight() {
@@ -465,17 +465,17 @@ void ScoreButton::highlight() {
     const float timescale = 1.75f;
     for(int i = 0; i < 2 * numPulses; i++) {
         if(i % 2 == 0)
-            anim->moveQuadOut(&this->fIndexNumberAnim, 1.0f, 0.125f * timescale,
+            anim::moveQuadOut(&this->fIndexNumberAnim, 1.0f, 0.125f * timescale,
                               ((i / 2) * (0.125f + 0.15f)) * timescale - 0.001f, (i == 0));
         else
-            anim->moveLinear(&this->fIndexNumberAnim, 0.0f, 0.15f * timescale,
+            anim::moveLinear(&this->fIndexNumberAnim, 0.0f, 0.15f * timescale,
                              (0.125f + (i / 2) * (0.125f + 0.15f)) * timescale - 0.001f);
     }
 }
 
 void ScoreButton::resetHighlight() {
     this->bIsPulseAnim = false;
-    anim->deleteExistingAnimation(&this->fIndexNumberAnim);
+    anim::deleteExistingAnimation(&this->fIndexNumberAnim);
     this->fIndexNumberAnim = 0.0f;
 }
 
@@ -520,13 +520,13 @@ void ScoreButton::onMouseInside() {
     this->bIsPulseAnim = false;
 
     if(!this->isContextMenuVisible())
-        anim->moveQuadOut(&this->fIndexNumberAnim, 1.0f, 0.125f * (1.0f - this->fIndexNumberAnim), true);
+        anim::moveQuadOut(&this->fIndexNumberAnim, 1.0f, 0.125f * (1.0f - this->fIndexNumberAnim), true);
 }
 
 void ScoreButton::onMouseOutside() {
     this->bIsPulseAnim = false;
 
-    anim->moveLinear(&this->fIndexNumberAnim, 0.0f, 0.15f * this->fIndexNumberAnim, true);
+    anim::moveLinear(&this->fIndexNumberAnim, 0.0f, 0.15f * this->fIndexNumberAnim, true);
 }
 
 void ScoreButton::onFocusStolen() {
@@ -535,7 +535,7 @@ void ScoreButton::onFocusStolen() {
     this->bRightClick = false;
 
     if(!this->bIsPulseAnim) {
-        anim->deleteExistingAnimation(&this->fIndexNumberAnim);
+        anim::deleteExistingAnimation(&this->fIndexNumberAnim);
         this->fIndexNumberAnim = 0.0f;
     }
 }

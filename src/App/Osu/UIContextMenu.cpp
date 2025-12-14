@@ -285,7 +285,7 @@ void UIContextMenu::end(bool invertAnimation, bool clampUnderflowAndOverflowAndE
     this->setVisible2(true);
 
     this->fAnimation = 0.001f;
-    anim->moveQuartOut(&this->fAnimation, 1.0f, 0.15f, true);
+    anim::moveQuartOut(&this->fAnimation, 1.0f, 0.15f, true);
 
     soundEngine->play(osu->getSkin()->s_expand);
 }

@@ -1,18 +1,77 @@
 // Copyright (c) 2012, PG, All rights reserved.
 #include "AnimationHandler.h"
 
+#include "noinclude.h"
+
 #include "ConVar.h"
 #include "Engine.h"
 #include "Logging.h"
 
 #include <algorithm>
+#include <vector>
+#include <memory>
 
-void AnimationHandler::update() {
-    const auto frameTime = static_cast<float>(engine->getFrameTime());
+namespace AnimationHandler {
+namespace {  // static namespace
+
+static constexpr const f32 ANIM_EPSILON{1e-6f};
+enum class ANIMATION_TYPE : uint8_t {
+    MOVE_LINEAR,
+    MOVE_SMOOTH_END,
+    MOVE_QUAD_INOUT,
+    MOVE_QUAD_IN,
+    MOVE_QUAD_OUT,
+    MOVE_CUBIC_IN,
+    MOVE_CUBIC_OUT,
+    MOVE_QUART_IN,
+    MOVE_QUART_OUT
+};
+
+struct Animation {
+    f32 *fBase;
+    f32 fTarget;
+    f32 fDuration;
+
+    f32 fStartValue;
+    f32 fDelay;
+    f32 fElapsedTime;
+    f32 fFactor;
+
+    ANIMATION_TYPE animType;
+    bool bStarted;
+};
+
+std::vector<Animation> s_animations;
+
+void addAnimation(f32 *base, f32 target, f32 duration, f32 delay, bool overrideExisting, ANIMATION_TYPE type,
+                  f32 smoothFactor = 0.f) {
+    if(base == nullptr) return;
+
+    if(overrideExisting) deleteExistingAnimation(base);
+
+    s_animations.push_back({
+        .fBase = base,
+        .fTarget = target,
+        .fDuration = duration,
+        .fStartValue = *base,
+        .fDelay = delay,
+        .fElapsedTime = 0.0f,
+        .fFactor = smoothFactor,
+        .animType = type,
+        .bStarted = (delay == 0.0f),
+    });
+}
+
+}  // namespace
+
+void clearAll() { s_animations.clear(); }
+
+void update() {
+    const auto frameTime = static_cast<f32>(engine->getFrameTime());
     const bool doLogging = cv::debug_anim.getBool();
 
     int idx = 0;
-    for(auto it = this->vAnimations.begin(); it != this->vAnimations.end(); idx++) {
+    for(auto it = s_animations.begin(); it != s_animations.end(); idx++) {
         Animation &animation = *it;
 
         // handle delay before animation starts
@@ -33,9 +92,9 @@ void AnimationHandler::update() {
 
         // check if animation is close enough to target
         // use relative epsilon for large values, absolute epsilon for small values
-        const float diff = std::abs(*animation.fBase - animation.fTarget);
-        const float absMax = std::max(std::abs(*animation.fBase), std::abs(animation.fTarget));
-        const float threshold = std::max(ANIM_EPSILON, absMax * ANIM_EPSILON);
+        const f32 diff = std::abs(*animation.fBase - animation.fTarget);
+        const f32 absMax = std::max(std::abs(*animation.fBase), std::abs(animation.fTarget));
+        const f32 threshold = std::max(ANIM_EPSILON, absMax * ANIM_EPSILON);
 
         if(diff <= threshold) {
             *animation.fBase = animation.fTarget;
@@ -43,12 +102,12 @@ void AnimationHandler::update() {
             logIf(doLogging, "removing animation #{:d} (epsilon completion), elapsed = {:f}", idx,
                   animation.fElapsedTime);
 
-            it = this->vAnimations.erase(it);
+            it = s_animations.erase(it);
             continue;
         }
 
         // calculate percentage
-        float percent = std::clamp<float>(animation.fElapsedTime / animation.fDuration, 0.0f, 1.0f);
+        f32 percent = std::clamp<f32>(animation.fElapsedTime / animation.fDuration, 0.0f, 1.0f);
 
         logIf(doLogging, "animation #{:d}, percent = {:f}", idx, percent);
 
@@ -58,28 +117,29 @@ void AnimationHandler::update() {
 
             logIf(doLogging, "removing animation #{:d}, elapsed = {:f}", idx, animation.fElapsedTime);
 
-            it = this->vAnimations.erase(it);
+            it = s_animations.erase(it);
             continue;
         }
 
         // modify percentage
+        using enum ANIMATION_TYPE;
         switch(animation.animType) {
-            case ANIMATION_TYPE::MOVE_SMOOTH_END:
-                percent = std::clamp<float>(1.0f - std::pow(1.0f - percent, animation.fFactor), 0.0f, 1.0f);
+            case MOVE_SMOOTH_END:
+                percent = std::clamp<f32>(1.0f - std::pow(1.0f - percent, animation.fFactor), 0.0f, 1.0f);
                 if((int)(percent * (animation.fTarget - animation.fStartValue) + animation.fStartValue) ==
                    (int)animation.fTarget)
                     percent = 1.0f;
                 break;
 
-            case ANIMATION_TYPE::MOVE_QUAD_IN:
+            case MOVE_QUAD_IN:
                 percent = percent * percent;
                 break;
 
-            case ANIMATION_TYPE::MOVE_QUAD_OUT:
+            case MOVE_QUAD_OUT:
                 percent = -percent * (percent - 2.0f);
                 break;
 
-            case ANIMATION_TYPE::MOVE_QUAD_INOUT:
+            case MOVE_QUAD_INOUT:
                 if((percent *= 2.0f) < 1.0f)
                     percent = 0.5f * percent * percent;
                 else {
@@ -88,20 +148,20 @@ void AnimationHandler::update() {
                 }
                 break;
 
-            case ANIMATION_TYPE::MOVE_CUBIC_IN:
+            case MOVE_CUBIC_IN:
                 percent = percent * percent * percent;
                 break;
 
-            case ANIMATION_TYPE::MOVE_CUBIC_OUT:
+            case MOVE_CUBIC_OUT:
                 percent = percent - 1.0f;
                 percent = percent * percent * percent + 1.0f;
                 break;
 
-            case ANIMATION_TYPE::MOVE_QUART_IN:
+            case MOVE_QUART_IN:
                 percent = percent * percent * percent * percent;
                 break;
 
-            case ANIMATION_TYPE::MOVE_QUART_OUT:
+            case MOVE_QUART_OUT:
                 percent = percent - 1.0f;
                 percent = 1.0f - percent * percent * percent * percent;
                 break;
@@ -115,75 +175,56 @@ void AnimationHandler::update() {
         ++it;
     }
 
-    if(this->vAnimations.size() > 512) {
-        debugLog("WARNING: AnimationHandler has {:d} animations!", this->vAnimations.size());
+    if(s_animations.size() > 512) {
+        debugLog("WARNING: AnimationHandler has {:d} animations!", s_animations.size());
     }
 
-    // printf("AnimStackSize = %i\n", this->vAnimations.size());
+    // printf("AnimStackSize = %i\n", s_animations.size());
 }
 
-void AnimationHandler::moveLinear(float *base, float target, float duration, float delay, bool overrideExisting) {
-    this->addAnimation(base, target, duration, delay, overrideExisting, ANIMATION_TYPE::MOVE_LINEAR);
+void moveLinear(f32 *base, f32 target, f32 duration, f32 delay, bool overrideExisting) {
+    addAnimation(base, target, duration, delay, overrideExisting, ANIMATION_TYPE::MOVE_LINEAR);
 }
 
-void AnimationHandler::moveQuadIn(float *base, float target, float duration, float delay, bool overrideExisting) {
-    this->addAnimation(base, target, duration, delay, overrideExisting, ANIMATION_TYPE::MOVE_QUAD_IN);
+void moveQuadIn(f32 *base, f32 target, f32 duration, f32 delay, bool overrideExisting) {
+    addAnimation(base, target, duration, delay, overrideExisting, ANIMATION_TYPE::MOVE_QUAD_IN);
 }
 
-void AnimationHandler::moveQuadOut(float *base, float target, float duration, float delay, bool overrideExisting) {
-    this->addAnimation(base, target, duration, delay, overrideExisting, ANIMATION_TYPE::MOVE_QUAD_OUT);
+void moveQuadOut(f32 *base, f32 target, f32 duration, f32 delay, bool overrideExisting) {
+    addAnimation(base, target, duration, delay, overrideExisting, ANIMATION_TYPE::MOVE_QUAD_OUT);
 }
 
-void AnimationHandler::moveQuadInOut(float *base, float target, float duration, float delay, bool overrideExisting) {
-    this->addAnimation(base, target, duration, delay, overrideExisting, ANIMATION_TYPE::MOVE_QUAD_INOUT);
+void moveQuadInOut(f32 *base, f32 target, f32 duration, f32 delay, bool overrideExisting) {
+    addAnimation(base, target, duration, delay, overrideExisting, ANIMATION_TYPE::MOVE_QUAD_INOUT);
 }
 
-void AnimationHandler::moveCubicIn(float *base, float target, float duration, float delay, bool overrideExisting) {
-    this->addAnimation(base, target, duration, delay, overrideExisting, ANIMATION_TYPE::MOVE_CUBIC_IN);
+void moveCubicIn(f32 *base, f32 target, f32 duration, f32 delay, bool overrideExisting) {
+    addAnimation(base, target, duration, delay, overrideExisting, ANIMATION_TYPE::MOVE_CUBIC_IN);
 }
 
-void AnimationHandler::moveCubicOut(float *base, float target, float duration, float delay, bool overrideExisting) {
-    this->addAnimation(base, target, duration, delay, overrideExisting, ANIMATION_TYPE::MOVE_CUBIC_OUT);
+void moveCubicOut(f32 *base, f32 target, f32 duration, f32 delay, bool overrideExisting) {
+    addAnimation(base, target, duration, delay, overrideExisting, ANIMATION_TYPE::MOVE_CUBIC_OUT);
 }
 
-void AnimationHandler::moveQuartIn(float *base, float target, float duration, float delay, bool overrideExisting) {
-    this->addAnimation(base, target, duration, delay, overrideExisting, ANIMATION_TYPE::MOVE_QUART_IN);
+void moveQuartIn(f32 *base, f32 target, f32 duration, f32 delay, bool overrideExisting) {
+    addAnimation(base, target, duration, delay, overrideExisting, ANIMATION_TYPE::MOVE_QUART_IN);
 }
 
-void AnimationHandler::moveQuartOut(float *base, float target, float duration, float delay, bool overrideExisting) {
-    this->addAnimation(base, target, duration, delay, overrideExisting, ANIMATION_TYPE::MOVE_QUART_OUT);
+void moveQuartOut(f32 *base, f32 target, f32 duration, f32 delay, bool overrideExisting) {
+    addAnimation(base, target, duration, delay, overrideExisting, ANIMATION_TYPE::MOVE_QUART_OUT);
 }
 
-void AnimationHandler::moveSmoothEnd(float *base, float target, float duration, float smoothFactor, float delay) {
-    this->addAnimation(base, target, duration, delay, true, ANIMATION_TYPE::MOVE_SMOOTH_END, smoothFactor);
+void moveSmoothEnd(f32 *base, f32 target, f32 duration, f32 smoothFactor, f32 delay) {
+    addAnimation(base, target, duration, delay, true, ANIMATION_TYPE::MOVE_SMOOTH_END, smoothFactor);
 }
 
-void AnimationHandler::addAnimation(float *base, float target, float duration, float delay, bool overrideExisting,
-                                    AnimationHandler::ANIMATION_TYPE type, float smoothFactor) {
-    if(base == nullptr) return;
-
-    if(overrideExisting) this->deleteExistingAnimation(base);
-
-    this->vAnimations.push_back({
-        .fBase = base,
-        .fTarget = target,
-        .fDuration = duration,
-        .fStartValue = *base,
-        .fDelay = delay,
-        .fElapsedTime = 0.0f,
-        .fFactor = smoothFactor,
-        .animType = type,
-        .bStarted = (delay == 0.0f),
-    });
+void deleteExistingAnimation(f32 *base) {
+    std::erase_if(s_animations, [base](const auto &a) -> bool { return a.fBase == base; });
 }
 
-void AnimationHandler::deleteExistingAnimation(float *base) {
-    std::erase_if(this->vAnimations, [base](const auto &a) -> bool { return a.fBase == base; });
-}
-
-float AnimationHandler::getRemainingDuration(float *base) const {
-    if(const auto &it = std::ranges::find(this->vAnimations, base, [](const auto &a) -> float * { return a.fBase; });
-       it != this->vAnimations.end()) {
+f32 getRemainingDuration(f32 *base) {
+    if(const auto &it = std::ranges::find_if(s_animations, [base](const auto &a) -> bool { return a.fBase == base; });
+       it != s_animations.end()) {
         const auto &animation = *it;
         if(!animation.bStarted) {
             // still in delay phase
@@ -196,6 +237,10 @@ float AnimationHandler::getRemainingDuration(float *base) const {
     return 0.0f;
 }
 
-bool AnimationHandler::isAnimating(float *base) const {
-    return std::ranges::contains(this->vAnimations, base, [](const auto &a) -> float * { return a.fBase; });
+bool isAnimating(f32 *base) {
+    return std::ranges::contains(s_animations, base, [](const auto &a) -> f32 * { return a.fBase; });
 }
+
+uSz getNumActiveAnimations() { return s_animations.size(); }
+
+}  // namespace AnimationHandler

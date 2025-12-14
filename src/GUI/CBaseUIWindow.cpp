@@ -98,7 +98,7 @@ void CBaseUIWindow::draw() {
 
     // TODO: structure
     /*
-    if (!anim->isAnimating(&m_fAnimation))
+    if (!anim::isAnimating(&m_fAnimation))
             m_shadow->draw();
     else
     {
@@ -116,7 +116,7 @@ void CBaseUIWindow::draw() {
     */
 
     // draw window
-    // if (anim->isAnimating(&m_fAnimation) && !m_bCoherenceMode)
+    // if (anim::isAnimating(&m_fAnimation) && !m_bCoherenceMode)
     //	m_rt->enable();
 
     {
@@ -205,7 +205,7 @@ void CBaseUIWindow::draw() {
     }
 
     // TODO: structure
-    if(anim->isAnimating(&this->fAnimation) && !this->bCoherenceMode) {
+    if(anim::isAnimating(&this->fAnimation) && !this->bCoherenceMode) {
         /*
         m_rt->disable();
 
@@ -422,24 +422,24 @@ void CBaseUIWindow::udpateResizeAndMoveLogic(bool captureMouse) {
 }
 
 void CBaseUIWindow::close() {
-    if(anim->isAnimating(&this->fAnimation)) return;
+    if(anim::isAnimating(&this->fAnimation)) return;
 
     this->bAnimIn = false;
     this->fAnimation = 1.0f;
-    anim->moveQuadInOut(&this->fAnimation, 0.0f, cv::ui_window_animspeed.getFloat());
+    anim::moveQuadInOut(&this->fAnimation, 0.0f, cv::ui_window_animspeed.getFloat());
 
     this->onClosed();
 }
 
 void CBaseUIWindow::open() {
-    if(anim->isAnimating(&this->fAnimation) || this->bVisible) return;
+    if(anim::isAnimating(&this->fAnimation) || this->bVisible) return;
 
     this->setVisible(true);
 
     if(!this->bCoherenceMode) {
         this->bAnimIn = true;
         this->fAnimation = 0.001f;
-        anim->moveQuadOut(&this->fAnimation, 1.0f, cv::ui_window_animspeed.getFloat());
+        anim::moveQuadOut(&this->fAnimation, 1.0f, cv::ui_window_animspeed.getFloat());
     } else
         this->fAnimation = 1.0f;
 }

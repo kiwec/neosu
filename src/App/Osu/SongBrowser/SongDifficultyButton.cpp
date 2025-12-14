@@ -44,7 +44,7 @@ SongDifficultyButton::SongDifficultyButton(SongBrowser* songBrowser, UIContextMe
     this->updateGrade();
 }
 
-SongDifficultyButton::~SongDifficultyButton() { anim->deleteExistingAnimation(&this->fOffsetPercentAnim); }
+SongDifficultyButton::~SongDifficultyButton() { anim::deleteExistingAnimation(&this->fOffsetPercentAnim); }
 
 void SongDifficultyButton::draw() {
     if(!this->bVisible || this->vPos.y + this->vSize.y < 0 || this->vPos.y > osu->getVirtScreenHeight()) {
@@ -161,7 +161,7 @@ void SongDifficultyButton::mouse_update(bool* propagate_clicks) {
     const bool newOffsetPercentSelectionState = (this->bSelected || !this->isIndependentDiffButton());
     if(newOffsetPercentSelectionState != this->bPrevOffsetPercentSelectionState) {
         this->bPrevOffsetPercentSelectionState = newOffsetPercentSelectionState;
-        anim->moveQuadOut(&this->fOffsetPercentAnim, newOffsetPercentSelectionState ? 1.0f : 0.0f,
+        anim::moveQuadOut(&this->fOffsetPercentAnim, newOffsetPercentSelectionState ? 1.0f : 0.0f,
                           0.25f * (1.0f - this->fOffsetPercentAnim), true);
     }
     this->setOffsetPercent(std::lerp(0.0f, 0.075f, this->fOffsetPercentAnim));

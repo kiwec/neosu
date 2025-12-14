@@ -71,12 +71,12 @@ void VolumeOverlay::animate() {
 
     if(!active) {
         this->fVolumeChangeFade = 0.0f;
-        anim->moveQuadOut(&this->fVolumeChangeFade, 1.0f, 0.15f, true);
+        anim::moveQuadOut(&this->fVolumeChangeFade, 1.0f, 0.15f, true);
     } else
-        anim->moveQuadOut(&this->fVolumeChangeFade, 1.0f, 0.1f * (1.0f - this->fVolumeChangeFade), true);
+        anim::moveQuadOut(&this->fVolumeChangeFade, 1.0f, 0.1f * (1.0f - this->fVolumeChangeFade), true);
 
-    anim->moveQuadOut(&this->fVolumeChangeFade, 0.0f, 0.20f, cv::hud_volume_duration.getFloat(), false);
-    anim->moveQuadOut(&this->fLastVolume, cv::volume_master.getFloat(), 0.15f, 0.0f, true);
+    anim::moveQuadOut(&this->fVolumeChangeFade, 0.0f, 0.20f, cv::hud_volume_duration.getFloat(), false);
+    anim::moveQuadOut(&this->fLastVolume, cv::volume_master.getFloat(), 0.15f, 0.0f, true);
 }
 
 void VolumeOverlay::draw() {
@@ -274,14 +274,14 @@ void VolumeOverlay::gainFocus() {
     if(soundEngine->hasExclusiveOutput()) return;
 
     this->fVolumeInactiveToActiveAnim = 0.0f;
-    anim->moveLinear(&this->fVolumeInactiveToActiveAnim, 1.0f, 0.3f, 0.1f, true);
+    anim::moveLinear(&this->fVolumeInactiveToActiveAnim, 1.0f, 0.3f, 0.1f, true);
 }
 
 void VolumeOverlay::loseFocus() {
     if(soundEngine->hasExclusiveOutput()) return;
 
     this->bVolumeInactiveToActiveScheduled = true;
-    anim->deleteExistingAnimation(&this->fVolumeInactiveToActiveAnim);
+    anim::deleteExistingAnimation(&this->fVolumeInactiveToActiveAnim);
     this->fVolumeInactiveToActiveAnim = 0.0f;
     soundEngine->setMasterVolume(cv::volume_master_inactive.getFloat() * cv::volume_master.getFloat());
 }
@@ -289,7 +289,7 @@ void VolumeOverlay::loseFocus() {
 void VolumeOverlay::onVolumeChange(int multiplier) {
     // sanity reset
     this->bVolumeInactiveToActiveScheduled = false;
-    anim->deleteExistingAnimation(&this->fVolumeInactiveToActiveAnim);
+    anim::deleteExistingAnimation(&this->fVolumeInactiveToActiveAnim);
     this->fVolumeInactiveToActiveAnim = 0.0f;
 
     // chose which volume to change, depending on the volume overlay, default is master

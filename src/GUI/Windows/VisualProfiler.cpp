@@ -128,7 +128,7 @@ void VisualProfiler::draw() {
                         textFont, this->textLines);
                     addTextLine(fmt::format("RM Named Resources: {:d}"_cf, resourceManager->getResources().size()),
                                 textFont, this->textLines);
-                    addTextLine(fmt::format("Animations: {:d}"_cf, anim->getNumActiveAnimations()), textFont,
+                    addTextLine(fmt::format("Animations: {:d}"_cf, anim::getNumActiveAnimations()), textFont,
                                 this->textLines);
                     addTextLine(fmt::format("Frame: {:d}"_cf, engine->getFrameCount()), textFont, this->textLines);
                     addTextLine(fmt::format("Time: {:f}"_cf, time), textFont, this->textLines);

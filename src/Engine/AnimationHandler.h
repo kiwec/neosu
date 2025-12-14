@@ -2,102 +2,62 @@
 #ifndef ANIMATIONHANDLER_H
 #define ANIMATIONHANDLER_H
 
-#include "noinclude.h"
 #include "types.h"
 
-#include <vector>
-#include <memory>
+namespace AnimationHandler {
 
-class AnimationHandler {
-    NOCOPY_NOMOVE(AnimationHandler)
+// called by engine once per frame, after updating time
+void update();
+void clearAll(); // called when shutting down, for safety
 
-   public:
-    AnimationHandler() = default;
-    ~AnimationHandler() = default;
+// base
+void moveLinear(f32 *base, f32 target, f32 duration, f32 delay, bool overrideExisting = false);
+void moveQuadIn(f32 *base, f32 target, f32 duration, f32 delay, bool overrideExisting = false);
+void moveQuadOut(f32 *base, f32 target, f32 duration, f32 delay, bool overrideExisting = false);
+void moveQuadInOut(f32 *base, f32 target, f32 duration, f32 delay, bool overrideExisting = false);
+void moveCubicIn(f32 *base, f32 target, f32 duration, f32 delay, bool overrideExisting = false);
+void moveCubicOut(f32 *base, f32 target, f32 duration, f32 delay, bool overrideExisting = false);
+void moveQuartIn(f32 *base, f32 target, f32 duration, f32 delay, bool overrideExisting = false);
+void moveQuartOut(f32 *base, f32 target, f32 duration, f32 delay, bool overrideExisting = false);
 
-    void update();
+// simplified, without delay
+inline void moveLinear(f32 *base, f32 target, f32 duration, bool overrideExisting = false) {
+    moveLinear(base, target, duration, 0.0f, overrideExisting);
+}
+inline void moveQuadIn(f32 *base, f32 target, f32 duration, bool overrideExisting = false) {
+    moveQuadIn(base, target, duration, 0.0f, overrideExisting);
+}
+inline void moveQuadOut(f32 *base, f32 target, f32 duration, bool overrideExisting = false) {
+    moveQuadOut(base, target, duration, 0.0f, overrideExisting);
+}
+inline void moveQuadInOut(f32 *base, f32 target, f32 duration, bool overrideExisting = false) {
+    moveQuadInOut(base, target, duration, 0.0f, overrideExisting);
+}
+inline void moveCubicIn(f32 *base, f32 target, f32 duration, bool overrideExisting = false) {
+    moveCubicIn(base, target, duration, 0.0f, overrideExisting);
+}
+inline void moveCubicOut(f32 *base, f32 target, f32 duration, bool overrideExisting = false) {
+    moveCubicOut(base, target, duration, 0.0f, overrideExisting);
+}
+inline void moveQuartIn(f32 *base, f32 target, f32 duration, bool overrideExisting = false) {
+    moveQuartIn(base, target, duration, 0.0f, overrideExisting);
+}
+inline void moveQuartOut(f32 *base, f32 target, f32 duration, bool overrideExisting = false) {
+    moveQuartOut(base, target, duration, 0.0f, overrideExisting);
+}
 
-    // base
-    void moveLinear(float *base, float target, float duration, float delay, bool overrideExisting = false);
-    void moveQuadIn(float *base, float target, float duration, float delay, bool overrideExisting = false);
-    void moveQuadOut(float *base, float target, float duration, float delay, bool overrideExisting = false);
-    void moveQuadInOut(float *base, float target, float duration, float delay, bool overrideExisting = false);
-    void moveCubicIn(float *base, float target, float duration, float delay, bool overrideExisting = false);
-    void moveCubicOut(float *base, float target, float duration, float delay, bool overrideExisting = false);
-    void moveQuartIn(float *base, float target, float duration, float delay, bool overrideExisting = false);
-    void moveQuartOut(float *base, float target, float duration, float delay, bool overrideExisting = false);
+// DEPRECATED:
+void moveSmoothEnd(f32 *base, f32 target, f32 duration, f32 smoothFactor = 20.f, f32 delay = 0.0f);
 
-    // simplified, without delay
-    void moveLinear(float *base, float target, float duration, bool overrideExisting = false) {
-        this->moveLinear(base, target, duration, 0.0f, overrideExisting);
-    }
-    void moveQuadIn(float *base, float target, float duration, bool overrideExisting = false) {
-        this->moveQuadIn(base, target, duration, 0.0f, overrideExisting);
-    }
-    void moveQuadOut(float *base, float target, float duration, bool overrideExisting = false) {
-        this->moveQuadOut(base, target, duration, 0.0f, overrideExisting);
-    }
-    void moveQuadInOut(float *base, float target, float duration, bool overrideExisting = false) {
-        this->moveQuadInOut(base, target, duration, 0.0f, overrideExisting);
-    }
-    void moveCubicIn(float *base, float target, float duration, bool overrideExisting = false) {
-        this->moveCubicIn(base, target, duration, 0.0f, overrideExisting);
-    }
-    void moveCubicOut(float *base, float target, float duration, bool overrideExisting = false) {
-        this->moveCubicOut(base, target, duration, 0.0f, overrideExisting);
-    }
-    void moveQuartIn(float *base, float target, float duration, bool overrideExisting = false) {
-        this->moveQuartIn(base, target, duration, 0.0f, overrideExisting);
-    }
-    void moveQuartOut(float *base, float target, float duration, bool overrideExisting = false) {
-        this->moveQuartOut(base, target, duration, 0.0f, overrideExisting);
-    }
+void deleteExistingAnimation(f32 *base);
 
-    // DEPRECATED:
-    void moveSmoothEnd(float *base, float target, float duration, float smoothFactor = 20.f, float delay = 0.0f);
+[[nodiscard]] f32 getRemainingDuration(f32 *base);
 
-    void deleteExistingAnimation(float *base);
+[[nodiscard]] bool isAnimating(f32 *base);
 
-    float getRemainingDuration(float *base) const;
-    bool isAnimating(float *base) const;
+[[nodiscard]] uSz getNumActiveAnimations();
+}  // namespace AnimationHandler
 
-    [[nodiscard]] inline size_t getNumActiveAnimations() const { return this->vAnimations.size(); }
-
-   private:
-    enum class ANIMATION_TYPE : uint8_t {
-        MOVE_LINEAR,
-        MOVE_SMOOTH_END,
-        MOVE_QUAD_INOUT,
-        MOVE_QUAD_IN,
-        MOVE_QUAD_OUT,
-        MOVE_CUBIC_IN,
-        MOVE_CUBIC_OUT,
-        MOVE_QUART_IN,
-        MOVE_QUART_OUT
-    };
-
-    struct Animation {
-        float *fBase;
-        float fTarget;
-        float fDuration;
-
-        float fStartValue;
-        float fDelay;
-        float fElapsedTime;
-        float fFactor;
-
-        ANIMATION_TYPE animType;
-        bool bStarted;
-    };
-
-    void addAnimation(float *base, float target, float duration, float delay, bool overrideExisting,
-                      ANIMATION_TYPE type, float smoothFactor = 0.0f);
-
-    std::vector<Animation> vAnimations;
-
-    static constexpr const float ANIM_EPSILON{1e-6f};
-};
-
-extern std::unique_ptr<AnimationHandler> anim;
+namespace anim = AnimationHandler;
 
 #endif

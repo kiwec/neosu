@@ -1310,7 +1310,7 @@ void SongBrowser::onDifficultySelected(DatabaseBeatmap *map, bool play) {
 
     // animate
     this->fPulseAnimation = 1.0f;
-    anim->moveLinear(&this->fPulseAnimation, 0.0f, 0.55f, true);
+    anim::moveLinear(&this->fPulseAnimation, 0.0f, 0.55f, true);
 
     // update score display
     this->rebuildScoreButtons();

@@ -97,7 +97,7 @@ void CBaseUISlider::mouse_update(bool *propagate_clicks) {
         // calculate new values
         if(!this->bHorizontal) {
             if(this->bAnimated) {
-                anim->moveQuadOut(
+                anim::moveQuadOut(
                     &this->vBlockPos.y,
                     std::clamp<float>(mousepos.y - this->vGrabBackup.y, 0.0f, this->vSize.y - this->vBlockSize.y),
                     0.10f, 0, true);
@@ -110,7 +110,7 @@ void CBaseUISlider::mouse_update(bool *propagate_clicks) {
                 1.0f - (std::round(this->vBlockPos.y) / (this->vSize.y - this->vBlockSize.y)), 0.0f, 1.0f);
         } else {
             if(this->bAnimated) {
-                anim->moveQuadOut(
+                anim::moveQuadOut(
                     &this->vBlockPos.x,
                     std::clamp<float>(mousepos.x - this->vGrabBackup.x, 0.0f, this->vSize.x - this->vBlockSize.x),
                     0.10f, 0, true);
@@ -153,7 +153,7 @@ void CBaseUISlider::mouse_update(bool *propagate_clicks) {
 
     // handle animation value settings after mouse release
     if(!activeMouseMotion) {
-        if(anim->isAnimating(&this->vBlockPos.x)) {
+        if(anim::isAnimating(&this->vBlockPos.x)) {
             this->fCurPercent =
                 std::clamp<float>(std::round(this->vBlockPos.x) / (this->vSize.x - this->vBlockSize.x), 0.0f, 1.0f);
 
@@ -163,7 +163,7 @@ void CBaseUISlider::mouse_update(bool *propagate_clicks) {
                 this->fCurValue = std::lerp(this->fMinValue, this->fMaxValue, this->fCurPercent);
         }
 
-        if(anim->isAnimating(&this->vBlockPos.y)) {
+        if(anim::isAnimating(&this->vBlockPos.y)) {
             this->fCurPercent = std::clamp<float>(
                 1.0f - (std::round(this->vBlockPos.y) / (this->vSize.y - this->vBlockSize.y)), 0.0f, 1.0f);
 
@@ -228,13 +228,13 @@ CBaseUISlider *CBaseUISlider::setValue(float value, bool animate, bool call_call
 
     if(!this->bHorizontal) {
         if(animate)
-            anim->moveQuadOut(&this->vBlockPos.y, (this->vSize.y - this->vBlockSize.y) * (1.0f - percent), 0.2f, 0,
+            anim::moveQuadOut(&this->vBlockPos.y, (this->vSize.y - this->vBlockSize.y) * (1.0f - percent), 0.2f, 0,
                               true);
         else
             this->vBlockPos.y = (this->vSize.y - this->vBlockSize.y) * (1.0f - percent);
     } else {
         if(animate)
-            anim->moveQuadOut(&this->vBlockPos.x, (this->vSize.x - this->vBlockSize.x) * percent, 0.2f, 0, true);
+            anim::moveQuadOut(&this->vBlockPos.x, (this->vSize.x - this->vBlockSize.x) * percent, 0.2f, 0, true);
         else
             this->vBlockPos.x = (this->vSize.x - this->vBlockSize.x) * percent;
     }
@@ -286,7 +286,7 @@ float CBaseUISlider::getPercent() {
 }
 
 bool CBaseUISlider::hasChanged() {
-    if(anim->isAnimating(&this->vBlockPos.x)) return true;
+    if(anim::isAnimating(&this->vBlockPos.x)) return true;
     if(this->bHasChanged) {
         this->bHasChanged = false;
         return true;

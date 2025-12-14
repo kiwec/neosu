@@ -54,8 +54,8 @@ void UIPauseMenuButton::onMouseInside() {
     if(env->winFocused()) soundEngine->play(osu->getSkin()->s_menu_hover);
 
     const float animationDuration = 0.09f;
-    anim->moveLinear(&this->vScale.x, this->vBaseScale.x * this->fScaleMultiplier, animationDuration, true);
-    anim->moveLinear(&this->vScale.y, this->vBaseScale.y * this->fScaleMultiplier, animationDuration, true);
+    anim::moveLinear(&this->vScale.x, this->vBaseScale.x * this->fScaleMultiplier, animationDuration, true);
+    anim::moveLinear(&this->vScale.y, this->vBaseScale.y * this->fScaleMultiplier, animationDuration, true);
 
     if(this->getName() == ULITERAL("Resume")) {
         soundEngine->play(osu->getSkin()->s_hover_pause_continue);
@@ -70,6 +70,6 @@ void UIPauseMenuButton::onMouseOutside() {
     CBaseUIButton::onMouseOutside();
 
     const float animationDuration = 0.09f;
-    anim->moveLinear(&this->vScale.x, this->vBaseScale.x, animationDuration, true);
-    anim->moveLinear(&this->vScale.y, this->vBaseScale.y, animationDuration, true);
+    anim::moveLinear(&this->vScale.x, this->vBaseScale.x, animationDuration, true);
+    anim::moveLinear(&this->vScale.y, this->vBaseScale.y, animationDuration, true);
 }

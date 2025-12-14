@@ -83,11 +83,11 @@ void UIVolumeSlider::setSelected(bool selected) {
 
     if(this->bSelected) {
         this->setFrameColor(0xffffffff);
-        anim->moveQuadOut(&this->fSelectionAnim, 1.0f, 0.1f, true);
-        anim->moveQuadIn(&this->fSelectionAnim, 0.0f, 0.15f, 0.1f, false);
+        anim::moveQuadOut(&this->fSelectionAnim, 1.0f, 0.1f, true);
+        anim::moveQuadIn(&this->fSelectionAnim, 0.0f, 0.15f, 0.1f, false);
     } else {
         this->setFrameColor(0xff7f7f7f);
-        anim->moveLinear(&this->fSelectionAnim, 0.0f, 0.15f * this->fSelectionAnim, true);
+        anim::moveLinear(&this->fSelectionAnim, 0.0f, 0.15f * this->fSelectionAnim, true);
     }
 }
 

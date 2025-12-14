@@ -35,7 +35,7 @@ UserCard::UserCard(i32 user_id) : CBaseUIButton() {
     });
 }
 
-UserCard::~UserCard() { anim->deleteExistingAnimation(&this->fPPDeltaAnim); }
+UserCard::~UserCard() { anim::deleteExistingAnimation(&this->fPPDeltaAnim); }
 
 void UserCard::draw() {
     if(!this->bVisible) return;
@@ -277,7 +277,7 @@ void UserCard::updateUserStats() {
     if(changed) {
         if(changedPP && !isFirstLoad && this->fPPDelta != 0.0f && this->fPP != 0.0f) {
             this->fPPDeltaAnim = 1.0f;
-            anim->moveLinear(&this->fPPDeltaAnim, 0.0f, 25.0f, true);
+            anim::moveLinear(&this->fPPDeltaAnim, 0.0f, 25.0f, true);
         }
     }
 }

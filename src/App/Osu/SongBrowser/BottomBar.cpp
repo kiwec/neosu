@@ -26,7 +26,7 @@ static Button hovered_btn = NONE;
 void press_button(Button btn_index) {
     if(hovered_btn != btn_index) {
         hovers[btn_index] = 1.f;
-        anim->moveLinear(&hovers[btn_index], 0.0f, 0.1f, 0.05f, true);
+        anim::moveLinear(&hovers[btn_index], 0.0f, 0.1f, 0.05f, true);
     }
 
     switch(btn_index) {
@@ -104,10 +104,10 @@ void update(bool* propagate_clicks) {
 
     if(hovered_btn != new_hover) {
         if(hovered_btn != NONE) {
-            anim->moveLinear(&hovers[hovered_btn], 0.0f, hovers[hovered_btn] * 0.1f, true);
+            anim::moveLinear(&hovers[hovered_btn], 0.0f, hovers[hovered_btn] * 0.1f, true);
         }
         if(new_hover != NONE) {
-            anim->moveLinear(&hovers[new_hover], 1.f, 0.1f, true);
+            anim::moveLinear(&hovers[new_hover], 1.f, 0.1f, true);
         }
 
         hovered_btn = new_hover;

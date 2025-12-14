@@ -195,23 +195,23 @@ void UIModSelectorModButton::setOn(bool on, bool silent) {
         if(prevState) {
             // swap effect
             float swapDurationMultiplier = 0.65f;
-            anim->moveLinear(&this->fRot, 0.0f, animationDuration * swapDurationMultiplier, true);
-            anim->moveLinear(&this->vScale.x, this->vBaseScale.x, animationDuration * swapDurationMultiplier, true);
-            anim->moveLinear(&this->vScale.y, this->vBaseScale.y, animationDuration * swapDurationMultiplier, true);
+            anim::moveLinear(&this->fRot, 0.0f, animationDuration * swapDurationMultiplier, true);
+            anim::moveLinear(&this->vScale.x, this->vBaseScale.x, animationDuration * swapDurationMultiplier, true);
+            anim::moveLinear(&this->vScale.y, this->vBaseScale.y, animationDuration * swapDurationMultiplier, true);
 
-            anim->moveLinear(&this->fRot, this->fEnabledRotationDeg, animationDuration * swapDurationMultiplier,
+            anim::moveLinear(&this->fRot, this->fEnabledRotationDeg, animationDuration * swapDurationMultiplier,
                              animationDuration * swapDurationMultiplier, false);
-            anim->moveLinear(&this->vScale.x, this->vBaseScale.x * this->fEnabledScaleMultiplier,
+            anim::moveLinear(&this->vScale.x, this->vBaseScale.x * this->fEnabledScaleMultiplier,
                              animationDuration * swapDurationMultiplier, animationDuration * swapDurationMultiplier,
                              false);
-            anim->moveLinear(&this->vScale.y, this->vBaseScale.y * this->fEnabledScaleMultiplier,
+            anim::moveLinear(&this->vScale.y, this->vBaseScale.y * this->fEnabledScaleMultiplier,
                              animationDuration * swapDurationMultiplier, animationDuration * swapDurationMultiplier,
                              false);
         } else {
-            anim->moveLinear(&this->fRot, this->fEnabledRotationDeg, animationDuration, true);
-            anim->moveLinear(&this->vScale.x, this->vBaseScale.x * this->fEnabledScaleMultiplier, animationDuration,
+            anim::moveLinear(&this->fRot, this->fEnabledRotationDeg, animationDuration, true);
+            anim::moveLinear(&this->vScale.x, this->vBaseScale.x * this->fEnabledScaleMultiplier, animationDuration,
                              true);
-            anim->moveLinear(&this->vScale.y, this->vBaseScale.y * this->fEnabledScaleMultiplier, animationDuration,
+            anim::moveLinear(&this->vScale.y, this->vBaseScale.y * this->fEnabledScaleMultiplier, animationDuration,
                              true);
         }
 
@@ -219,9 +219,9 @@ void UIModSelectorModButton::setOn(bool on, bool silent) {
             soundEngine->play(osu->getSkin()->s_check_on);
         }
     } else {
-        anim->moveLinear(&this->fRot, 0.0f, animationDuration, true);
-        anim->moveLinear(&this->vScale.x, this->vBaseScale.x, animationDuration, true);
-        anim->moveLinear(&this->vScale.y, this->vBaseScale.y, animationDuration, true);
+        anim::moveLinear(&this->fRot, 0.0f, animationDuration, true);
+        anim::moveLinear(&this->vScale.x, this->vBaseScale.x, animationDuration, true);
+        anim::moveLinear(&this->vScale.y, this->vBaseScale.y, animationDuration, true);
 
         if(prevState && !this->bOn && !silent) {
             // only play sound on specific change
