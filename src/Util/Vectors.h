@@ -15,9 +15,9 @@
 using glm::vec2;
 using glm::vec3;
 using glm::vec4;
-using vec2d = glm::dvec2;
-using vec3d = glm::dvec3;
-using vec4d = glm::dvec4;
+using glm::dvec2;
+using glm::dvec3;
+using glm::dvec4;
 using ivec2 = glm::i32vec2;
 using ivec3 = glm::i32vec3;
 using ivec4 = glm::i32vec4;
@@ -57,7 +57,7 @@ void setLength(T &vec, const V &len) {
 
 template <typename T, typename V>
     requires(std::is_floating_point_v<V>) &&
-            (std::is_same_v<T, vec2d> || std::is_same_v<T, vec3d> || std::is_same_v<T, vec4d>)
+            (std::is_same_v<T, dvec2> || std::is_same_v<T, dvec3> || std::is_same_v<T, dvec4>)
 void setLength(T &vec, const V &len) {
     if(length(vec) > DOUBLE_NORMALIZE_EPSILON) {
         vec = normalize(vec) * static_cast<double>(len);
@@ -66,7 +66,7 @@ void setLength(T &vec, const V &len) {
 
 template <typename V>
     requires(std::is_same_v<V, vec2> || std::is_same_v<V, vec3> || std::is_same_v<V, vec4> ||
-             std::is_same_v<V, vec2d> || std::is_same_v<V, vec3d> || std::is_same_v<V, vec4d> ||
+             std::is_same_v<V, dvec2> || std::is_same_v<V, dvec3> || std::is_same_v<V, dvec4> ||
              std::is_same_v<V, ivec2> || std::is_same_v<V, ivec3> || std::is_same_v<V, ivec4> ||
              std::is_same_v<V, lvec2> || std::is_same_v<V, lvec3> || std::is_same_v<V, lvec4>)
 inline constexpr bool allEqual(const V &vec1, const V vec2) {
@@ -119,19 +119,19 @@ template <>
 struct formatter<vec2> : float_vec_formatter<vec2, 2> {};
 
 template <>
-struct formatter<vec2d> : float_vec_formatter<vec2d, 2> {};
+struct formatter<dvec2> : float_vec_formatter<dvec2, 2> {};
 
 template <>
 struct formatter<vec3> : float_vec_formatter<vec3, 3> {};
 
 template <>
-struct formatter<vec3d> : float_vec_formatter<vec3d, 3> {};
+struct formatter<dvec3> : float_vec_formatter<dvec3, 3> {};
 
 template <>
 struct formatter<vec4> : float_vec_formatter<vec4, 4> {};
 
 template <>
-struct formatter<vec4d> : float_vec_formatter<vec4d, 4> {};
+struct formatter<dvec4> : float_vec_formatter<dvec4, 4> {};
 
 template <>
 struct formatter<ivec2> : int_vec_formatter<ivec2, 2> {};

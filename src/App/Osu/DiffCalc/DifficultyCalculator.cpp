@@ -3,8 +3,6 @@
 
 #include <numbers>
 
-#include <numbers>
-
 #include "DatabaseBeatmap.h"
 #include "SliderCurves.h"
 #include "GameRules.h"
@@ -20,14 +18,8 @@
 #define STARS_SLIDER_CURVE_POINTS_SEPARATION 20.f
 #define IGNORE_CLAMPED_SLIDERS true
 #define SLIDER_CURVE_MAX_LENGTH 32768.f
-#define SLIDER_END_INSIDE_CHECK_OFFSET 36
+#define SLIDER_END_INSIDE_CHECK_OFFSET 36.
 #endif
-
-#ifdef PI
-#undef PI
-#endif
-
-static constexpr const auto PI = std::numbers::pi;
 
 namespace DiffCalc {
 // NOTE: bumped version from 20251007 because of a bug in the first implementation with mcosu-imported scores
@@ -335,7 +327,7 @@ f64 DifficultyCalculator::calculateStarDiffForHitObjects(StarCalcParams &params)
                                      params.cachedDiffObjects,
                                      (i32)i - 1};  // this already initializes the angle to NaN
             newDiffObject.smallCircleBonus = smallCircleBonus;
-            params.cachedDiffObjects.push_back(newDiffObject);
+            params.cachedDiffObjects.push_back(std::move(newDiffObject));
         }
     }
     diffObjects = params.cachedDiffObjects.data();
@@ -444,14 +436,12 @@ f64 DifficultyCalculator::calculateStarDiffForHitObjects(StarCalcParams &params)
 
     // calculate final difficulty (weigh strains)
     f64 aimNoSliders = DiffObject::calculate_difficulty(
-        Skills::Skill::AIM_NO_SLIDERS, diffObjects, numDiffObjects,
-        params.incremental ? &params.incremental[Skills::Skill::AIM_NO_SLIDERS] : nullptr, nullptr,
-        &params.outAttributes);
+        Skills::AIM_NO_SLIDERS, diffObjects, numDiffObjects,
+        params.incremental ? &params.incremental[Skills::AIM_NO_SLIDERS] : nullptr, nullptr, &params.outAttributes);
 
-    f64 speed =
-        DiffObject::calculate_difficulty(Skills::Skill::SPEED, diffObjects, numDiffObjects,
-                                         params.incremental ? &params.incremental[Skills::Skill::SPEED] : nullptr,
-                                         params.outSpeedStrains, &params.outAttributes);
+    f64 speed = DiffObject::calculate_difficulty(Skills::SPEED, diffObjects, numDiffObjects,
+                                                 params.incremental ? &params.incremental[Skills::SPEED] : nullptr,
+                                                 params.outSpeedStrains, &params.outAttributes);
 
     // Very important hack (because otherwise I have to rewrite how to `DiffObject::calculate_difficulty` works):
     // At this point params.outAttributes `AimDifficultStrains` and `AimTopWeightedSlidersFactor` are calculated on aimNoSliders, what is exactly what we need here
@@ -465,10 +455,9 @@ f64 DifficultyCalculator::calculateStarDiffForHitObjects(StarCalcParams &params)
                                                          params.outAttributes.SpeedTopWeightedSliderFactor);
 
     // Don't move this aim above, it's intended, read previous comments
-    f64 aim =
-        DiffObject::calculate_difficulty(Skills::Skill::AIM_SLIDERS, diffObjects, numDiffObjects,
-                                         params.incremental ? &params.incremental[Skills::Skill::AIM_SLIDERS] : nullptr,
-                                         params.outAimStrains, &params.outAttributes);
+    f64 aim = DiffObject::calculate_difficulty(Skills::AIM_SLIDERS, diffObjects, numDiffObjects,
+                                               params.incremental ? &params.incremental[Skills::AIM_SLIDERS] : nullptr,
+                                               params.outAimStrains, &params.outAttributes);
 
     params.outAttributes.SliderFactor =
         aim > 0.0 ? calculateDifficultyRating(aimNoSliders) / calculateDifficultyRating(aim) : 1.0;
@@ -481,8 +470,8 @@ f64 DifficultyCalculator::calculateStarDiffForHitObjects(StarCalcParams &params)
 
     aimNoSliders = computeAimRating(aimNoSliders, numDiffObjects, adjAR, adjOD, mechanicalDifficultyRating,
                                     params.outAttributes.SliderFactor, params.beatmapData);
-    aim = computeAimRating(aim, numDiffObjects, adjAR, adjOD, mechanicalDifficultyRating, params.outAttributes.SliderFactor,
-                           params.beatmapData);
+    aim = computeAimRating(aim, numDiffObjects, adjAR, adjOD, mechanicalDifficultyRating,
+                           params.outAttributes.SliderFactor, params.beatmapData);
     speed = computeSpeedRating(speed, numDiffObjects, adjAR, adjOD, mechanicalDifficultyRating, params.beatmapData);
 
     // Scorev1
@@ -1305,8 +1294,8 @@ void DifficultyCalculator::DiffObject::calculate_strain(const DiffObject &prev, 
     // see Process() @ https://github.com/ppy/osu/blob/master/osu.Game/Rulesets/Difficulty/Skills/Skill.cs
     f64 currentStrain = prev.strains[dtype];
     {
-        currentStrain *= strainDecay(dtype, dtype == Skills::Skill::SPEED ? adjusted_delta_time : delta_time);
-        currentStrain += currentStrainOfDiffObject * (dtype == Skills::Skill::SPEED ? SpeedMultiplier : AimMultiplier);
+        currentStrain *= strainDecay(dtype, dtype == Skills::SPEED ? adjusted_delta_time : delta_time);
+        currentStrain += currentStrainOfDiffObject * (dtype == Skills::SPEED ? SpeedMultiplier : AimMultiplier);
     }
     strains[dtype] = currentStrain;
 }
@@ -1419,8 +1408,7 @@ f64 DifficultyCalculator::DiffObject::calculate_difficulty(const Skills::Skill t
             // calculate difficult sliders
             // GetDifficultSliders @ https://github.com/ppy/osu/blob/master/osu.Game.Rulesets.Osu/Difficulty/Skills/Aim.cs
             static constexpr auto compareSliderObjects = [](const DiffObject &x, const DiffObject &y) -> bool {
-                return (x.get_slider_strain(Skills::Skill::AIM_SLIDERS) <
-                        y.get_slider_strain(Skills::Skill::AIM_SLIDERS));
+                return (x.get_slider_strain(Skills::AIM_SLIDERS) < y.get_slider_strain(Skills::AIM_SLIDERS));
             };
 
             if(incremental && dobjects[dobjectCount - 1].ho->type != DifficultyHitObject::TYPE::SLIDER)
@@ -1434,7 +1422,7 @@ f64 DifficultyCalculator::DiffObject::calculate_difficulty(const Skills::Skill t
                         maxSliderStrain = std::max(incremental->max_slider_strain, curSliderStrain);
                     } else
                         maxSliderStrain = (*std::max_element(dobjects, dobjects + dobjectCount, compareSliderObjects))
-                                              .get_slider_strain(Skills::Skill::AIM_SLIDERS);
+                                              .get_slider_strain(Skills::AIM_SLIDERS);
                 }
 
                 if(maxSliderStrain <= 0.0)
@@ -1454,7 +1442,7 @@ f64 DifficultyCalculator::DiffObject::calculate_difficulty(const Skills::Skill t
                             incremental->aim_difficult_slider_count = tempSum;
                         } else {
                             for(uSz i = 0; i < dobjectCount; i++) {
-                                f64 sliderStrain = dobjects[i].get_slider_strain(Skills::Skill::AIM_SLIDERS);
+                                f64 sliderStrain = dobjects[i].get_slider_strain(Skills::AIM_SLIDERS);
                                 if(sliderStrain >= 0.0)
                                     tempSum += 1.0 / (1.0 + std::exp(-((sliderStrain / maxSliderStrain * 12.0) - 6.0)));
                             }
@@ -1529,10 +1517,10 @@ f64 DifficultyCalculator::DiffObject::calculate_difficulty(const Skills::Skill t
 
     // see CountDifficultStrains @ https://github.com/ppy/osu/pull/16280/files#diff-07543a9ffe2a8d7f02cadf8ef7f81e3d7ec795ec376b2fff8bba7b10fb574e19R78
     if(outAttributes) {
-        f64 &difficultStrainCount = (type == Skills::Skill::SPEED ? outAttributes->SpeedDifficultStrainCount
-                                                                  : outAttributes->AimDifficultStrainCount);
-        f64 &topWeightedSlidersCount = (type == Skills::Skill::SPEED ? outAttributes->SpeedTopWeightedSliderFactor
-                                                                     : outAttributes->AimTopWeightedSliderFactor);
+        f64 &difficultStrainCount =
+            (type == Skills::SPEED ? outAttributes->SpeedDifficultStrainCount : outAttributes->AimDifficultStrainCount);
+        f64 &topWeightedSlidersCount = (type == Skills::SPEED ? outAttributes->SpeedTopWeightedSliderFactor
+                                                              : outAttributes->AimTopWeightedSliderFactor);
 
         if(difficulty == 0.0) {
             difficultStrainCount = difficulty;

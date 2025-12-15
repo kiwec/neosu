@@ -97,6 +97,7 @@ extern const u32 PP_ALGORITHM_VERSION;
 class DifficultyCalculator {
    public:
     struct Skills {
+        // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
         enum Skill : u8 { SPEED, AIM_SLIDERS, AIM_NO_SLIDERS, NUM_SKILLS };
     };
 
@@ -180,6 +181,11 @@ class DifficultyCalculator {
     };
 
     struct DiffObject {
+        MOVEONLY(DiffObject)
+       public:
+        DiffObject() = delete;
+        ~DiffObject() = default;
+
         DiffObject(DifficultyHitObject *base_object, f32 radius_scaling_factor, std::vector<DiffObject> &diff_objects,
                    i32 prevObjectIdx)
             : ho(base_object),
@@ -238,7 +244,7 @@ class DifficultyCalculator {
         }
         [[nodiscard]] inline f64 get_slider_strain(Skills::Skill type) const {
             return ho->type == DifficultyHitObject::TYPE::SLIDER
-                       ? strains[type] * (type == Skills::Skill::SPEED ? rhythm : 1.0)
+                       ? strains[type] * (type == Skills::SPEED ? rhythm : 1.0)
                        : -1;
         }
 

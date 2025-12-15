@@ -464,7 +464,7 @@ vec2 ModFPoSu::intersectRayMesh(vec3 pos, vec3 dir) {
         const vec3 Right = vec3(right.x, right.y, right.z);
         const vec3 Down = vec3(down.x, down.y, down.z);
 
-        const vec3 calculatedNormal = glm::cross((Right - TopLeft), (Down - TopLeft));
+        const vec3 calculatedNormal = vec::cross((Right - TopLeft), (Down - TopLeft));
 
         const float denominator = vec::dot(calculatedNormal, dir);
         const float numerator = -vec::dot(calculatedNormal, pos - TopLeft);

@@ -6,3 +6,5 @@ SortIncludes: Never           # Otherwise breakage ensues when headers must be i
 DerivePointerAlignment: True  # some files are already right-aligned
 PointerAlignment: Left
 ReflowComments: Never
+BraceWrapping: # exclude extern "C" things
+  AfterExternBlock: false

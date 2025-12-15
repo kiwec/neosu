@@ -628,7 +628,8 @@ AC_SUBST([SYSNAME])
 AC_SUBST([DLLEXT])
 AC_SUBST([LIBPREFIX])
 
-AS_IF([test "$host_cpu" = "x86_64"], [COMMON_FLAGS="$COMMON_FLAGS -mcmodel=small"])
+# don't omit frame pointers, it's not worth it on 64-bit, and having them makes profiling/debugging better
+AS_IF([test "$host_cpu" = "x86_64"], [COMMON_FLAGS="$COMMON_FLAGS -mcmodel=small -fno-omit-frame-pointer -momit-leaf-frame-pointer"])
 
 CPPFLAGS="$CPPFLAGS -D_TIME_BITS=64 -D_FILE_OFFSET_BITS=64"
 COMMON_FLAGS="$COMMON_FLAGS -D_TIME_BITS=64 -D_FILE_OFFSET_BITS=64 -pipe -ffunction-sections -fdata-sections -fwrapv -fno-strict-aliasing -ftls-model=initial-exec -pthread"
@@ -679,6 +680,29 @@ AS_IF([test "$host_os" = "linux-gnu"],[
         [AC_MSG_ERROR([Missing required X11/OpenGL development headers])])
 ])
 
+# depending on the type of build, we may want to remap the file paths
+SRCREMAP=${SRCREMAP:-}
+CUSTOMPDBPATH=${CUSTOMPDBPATH:-}
+
+AS_IF([test -n "$CUSTOMPDBPATH"], [ # alias override
+    SRCREMAP="$CUSTOMPDBPATH"
+])
+
+AS_IF([test "$SRCREMAP" != "no" && test "$host_os" = "mingw32" && test "x$enable_clang" = "xyes"], [
+    # so that the source folder can be mapped to a virtual drive like X:\ and be debugged under windows more easily
+
+    # this seems to be the only way i can get visual studio to find the source paths automatically,
+    # mounting the git source at X:\ and using -Wl,pdbsourcepath:'X:\'
+    # this ends up turning a path like "/home/xyz/neosu/build-folder" into "X:\build-folder"
+
+    # FIXME: non-portable realpath?
+    rel_src_to_build_dirname="$(realpath --relative-to="$srcdir" "$PWD")"
+
+    CXXFLAGS="$CXXFLAGS -ffile-prefix-map=\"\${abs_top_builddir}\"=\"${rel_src_to_build_dirname}\""
+    CFLAGS="$CFLAGS -ffile-prefix-map=\"\${abs_top_builddir}\"=\"${rel_src_to_build_dirname}\""
+    NEOSU_LDFLAGS="$NEOSU_LDFLAGS -ffile-prefix-map=\"\${abs_top_builddir}\"=\"${rel_src_to_build_dirname}\""
+])
+
 # this is currently extremely broken with mingw-gcc
 AS_IF([test "$host_os" = "mingw32" && test "x$enable_clang" = "xyes"], [
     cxxflags_save="$CXXFLAGS"
@@ -700,8 +724,10 @@ AS_IF([test "$host_os" = "mingw32" && test "x$enable_clang" = "xyes"], [
         AX_CHECK_LINK_FLAG([-Wl,/pdbaltpath:%_PDB%], [
             NEOSU_LDFLAGS="$NEOSU_LDFLAGS -Wl,/pdbaltpath:%_PDB%"
         ])
-        AX_CHECK_LINK_FLAG([-Wl,/pdbsourcepath:], [
-            NEOSU_LDFLAGS="$NEOSU_LDFLAGS -Wl,/pdbsourcepath:'${CUSTOMPDBPATH:-X:\\}'"
+        AS_IF([test "$SRCREMAP" != "no"], [
+            AX_CHECK_LINK_FLAG([-Wl,/pdbsourcepath:], [
+                NEOSU_LDFLAGS="$NEOSU_LDFLAGS -Wl,/pdbsourcepath:'${SRCREMAP:-X:\\}'"
+            ])
         ])
     ])
 ])
@@ -717,11 +743,10 @@ AS_IF([test "x$enable_debug" = "xyes"], [
             NEOSU_LDFLAGS="$NEOSU_LDFLAGS -mconsole -Wl,--subsystem,console:${win_subsystem_ver}"
         ])
 
-        # assuming this will be debugged on windows, remap the debug path to the relative path to the source from the install directory
-        CXXFLAGS="$CXXFLAGS -g3 -Og -ffile-prefix-map=\${abs_top_srcdir}=\${top_srcdir}"
-        CFLAGS="$CFLAGS -g3 -Og -ffile-prefix-map=\${abs_top_srcdir}=\${top_srcdir}"
-        NEOSU_LDFLAGS="$NEOSU_LDFLAGS -ffile-prefix-map=\${abs_top_srcdir}=\${top_srcdir}"
+        CXXFLAGS="$CXXFLAGS -g3 -Og"
+        CFLAGS="$CFLAGS -g3 -Og"
     ], [
+        # don't remap paths, the source should correspond to the real source location on linux
         # non-mingw
         CXXFLAGS="$CXXFLAGS -g3 -ggdb3 -gdwarf-5 -Og"
         CFLAGS="$CFLAGS -g3 -ggdb3 -gdwarf-5 -Og"
@@ -749,9 +774,6 @@ AS_IF([test "x$enable_debug" = "xyes"], [
         ])
     ])
     AS_IF([test "x$enable_strip" != "xno"], [
-        # for optimized/release builds (which are stripped), remap any paths to just ./
-        CXXFLAGS="$CXXFLAGS -ffile-prefix-map=$PWD=."
-        CFLAGS="$CFLAGS -ffile-prefix-map=$PWD=."
         NEOSU_LDFLAGS="$NEOSU_LDFLAGS -Wl,-s" # strip flag
     ], [
         # add minimal debug info
@@ -968,7 +990,7 @@ SIMDUTF_MIN_VERSION=7.0.0
 SIMDUTF_BUILD_VERSION=7.6.0 # fast and correct utf conversion utilities
 
 # always build these from source if we want to use them
-AC_SUBST([SOLOUD_VERSION], [68383edd6a39b8453d978f74cff5f45ade4fff11]) # my fork
+AC_SUBST([SOLOUD_VERSION], [1.2.4]) # my fork
 #AC_SUBST([SOLOUD_VERSION], [cb174f53804d8ba3fc81a2dfa49879103fbbcb2e])
 AC_SUBST([SOLOUD_PREFIX],[$DEPS_PREFIX])
 AC_SUBST([SOUNDTOUCH_VERSION], [2.4.0])
@@ -1133,7 +1155,7 @@ AS_IF([test "x$have_glm" != "xyes"], [have_glm="build from source"])
 AC_SUBST([GLM_PREFIX],[$DEPS_PREFIX])
 AC_SUBST([GLM_CFLAGS], [""])
 
-AS_IF([test "x$have_nsync" != "xyes"], [have_nsync="build from source"])
+AS_IF([test "x$have_nsync" != "xyes" && test -z "$ubercompat" && test "x$with_nsync" != "xno"], [have_nsync="build from source"])
 NSYNC_VERSION=$NSYNC_BUILD_VERSION
 NSYNC_PREFIX="${DEPS_PREFIX}"
 AC_SUBST([NSYNC_VERSION])
@@ -1153,7 +1175,7 @@ AM_CONDITIONAL([BUILD_LIBACL], [test "x$have_libacl" = "xbuild from source"])
 AM_CONDITIONAL([BUILD_CURL], [test "x$have_curl" != "xyes"])
 AM_CONDITIONAL([BUILD_MPG123], [test "$with_soloud" = "yes" && test "x$have_mpg123" != "xyes"])
 AM_CONDITIONAL([BUILD_SPDLOG], [test "x$have_spdlog" != "xyes"])
-AM_CONDITIONAL([BUILD_NSYNC], [test "x$have_nsync" != "xyes" && test -z "$ubercompat" && test "x$with_nsync" != "xno"])
+AM_CONDITIONAL([BUILD_NSYNC], [test "x$have_nsync" = "xbuild from source"])
 AM_CONDITIONAL([BUILD_GLM], [test "x$have_glm" != "xyes"])
 AM_CONDITIONAL([BUILD_MIMALLOC], [{ test "x$enable_debug" != "xyes" || test "x$with_mimalloc" = "xyes"; } &&
                                 { { test "$SYSNAME" = "windows" && test "$host_cpu" = "i686" && test "x$with_mimalloc" = "xyes" ; } ||

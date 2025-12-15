@@ -91,7 +91,7 @@ void logRaw_int(log_level::level_enum lvl, std::string_view str) noexcept {
 using namespace _detail;
 
 // implementation of ConsoleBoxSink
-class ConsoleBoxSink : public spdlog::sinks::base_sink<custom_spdmtx> {
+class ConsoleBoxSink final : public spdlog::sinks::base_sink<custom_spdmtx> {
    private:
     // circular buffer for batching console messages
     // size is a tradeoff for efficiency vs console update latency
@@ -102,7 +102,7 @@ class ConsoleBoxSink : public spdlog::sinks::base_sink<custom_spdmtx> {
     size_t buffer_count_{0};  // current number of messages
 
     // separate formatters for different logger types
-    std::unique_ptr<spdlog::pattern_formatter> main_formatter_{nullptr};
+    // the base class has a "formatter_" member which we can use as the main formatter
     std::unique_ptr<spdlog::pattern_formatter> raw_formatter_{nullptr};
 
     // ConsoleBox::log is thread-safe, batched console updates for better performance
@@ -133,7 +133,7 @@ class ConsoleBoxSink : public spdlog::sinks::base_sink<custom_spdmtx> {
     ConsoleBoxSink() noexcept {
         // create separate formatters for different logger types
         // also, don't auto-append newlines, each console log is already on a new line
-        main_formatter_ =
+        base_sink::formatter_ =
             std::make_unique<spdlog::pattern_formatter>(ENGINE_LOG_PATTERN, spdlog::pattern_time_type::local, "");
 
         // raw formatter always uses plain pattern
@@ -149,7 +149,7 @@ class ConsoleBoxSink : public spdlog::sinks::base_sink<custom_spdmtx> {
         if(msg.logger_name[0] == RAW_LOGGER_NAME[0]) {  // raw
             raw_formatter_->format(msg, formatted);
         } else {  // cooked
-            main_formatter_->format(msg, formatted);
+            base_sink::formatter_->format(msg, formatted);
         }
 
         // the formatter doesn't append newlines, but the engine console doesn't like having them, so doing this just in case
@@ -174,6 +174,61 @@ class ConsoleBoxSink : public spdlog::sinks::base_sink<custom_spdmtx> {
     inline void flush_() noexcept override { flush_buffer_to_console(); }
 };
 
+namespace {  // static
+// with basic_file_sink, it seems that multiple different sinks to the same file aren't properly synchronized (on Linux at least)
+// so the pattern of using 2 loggers and 2 sinks doesn't quite work
+// not a huge issue, we can just do a similar thing to ConsoleBoxSink to use a different formatter based on the logger name,
+// and register it with both loggers
+
+// annoyingly, though, basic_file_sink is marked final, so it can't be overridden (we just have to reimplement it entirely :/)
+class DualPatternFileSink final : public spdlog::sinks::base_sink<custom_spdmtx> {
+   private:
+    spdlog::details::file_helper file_helper_;
+
+    // separate formatters for different logger types (same as consolebox)
+    std::unique_ptr<spdlog::pattern_formatter> raw_formatter_{nullptr};
+
+   public:
+    explicit DualPatternFileSink(const spdlog::filename_t &filename, bool truncate = false,
+                                 const spdlog::file_event_handlers &event_handlers = {}) noexcept
+        : file_helper_{event_handlers} {
+        // do both the prefix and the fancy log pattern
+        base_sink::formatter_ =
+            std::make_unique<spdlog::pattern_formatter>(FILE_LOG_PATTERN_PREF " " FANCY_LOG_PATTERN);
+        // plain after the prefix
+        raw_formatter_ = std::make_unique<spdlog::pattern_formatter>(FILE_LOG_PATTERN_PREF " %v");
+
+        file_helper_.open(filename, truncate);
+    }
+
+    // the rest of this implementation is basically copied from spdlog's basic_file_sink
+
+    [[nodiscard]] inline const spdlog::filename_t &filename() const noexcept { return file_helper_.filename(); }
+
+    inline void truncate() {
+        Sync::lock_guard lock(base_sink::mutex_);
+        file_helper_.reopen(true);
+    }
+
+   protected:
+    inline void sink_it_(const spdlog::details::log_msg &msg) noexcept override {
+        spdlog::memory_buf_t formatted;
+
+        static_assert(RAW_LOGGER_NAME[0] == 'r');
+        if(msg.logger_name[0] == RAW_LOGGER_NAME[0]) {  // raw
+            raw_formatter_->format(msg, formatted);
+        } else {  // cooked
+            base_sink::formatter_->format(msg, formatted);
+        }
+
+        file_helper_.write(formatted);
+    }
+
+    inline void flush_() override { file_helper_.flush(); }
+};
+
+}  // namespace
+
 // to be called in main(), for one-time setup/teardown
 void init(bool create_console) noexcept {
     if(g_initialized) return;
@@ -194,16 +249,16 @@ void init(bool create_console) noexcept {
 
             SetConsoleTitleW(L"" PACKAGE_NAME L" " PACKAGE_VERSION L" console output");
 
-            // make console output visible immediately
-            setvbuf(stdout, nullptr, _IONBF, 0);
-            setvbuf(stderr, nullptr, _IONBF, 0);
-
             SetConsoleOutputCP(65001 /*CP_UTF8*/);
         }
     }
 #else
     (void)create_console;  // it's not as big of a commotion on platforms outside of windows
 #endif
+
+    // make console output visible immediately
+    setvbuf(stdout, nullptr, _IONBF, 0);
+    setvbuf(stderr, nullptr, _IONBF, 0);
 
     // initialize async thread pool before creating any async loggers
     // queue size: 8192 slots (each ~256 bytes), 1 background thread
@@ -220,7 +275,6 @@ void init(bool create_console) noexcept {
     using mt_stdout_sink_t = spdlog::sinks::ansicolor_stdout_sink<custom_spdmtx>;
 #endif
     auto stdout_sink{std::make_shared<mt_stdout_sink_t>()};
-
     stdout_sink->set_pattern(FANCY_LOG_PATTERN);
 
     // unformatted stdout sink
@@ -237,18 +291,11 @@ void init(bool create_console) noexcept {
 
     // add file sinks if directory is writable
     if(log_to_file) {
-        using mt_basic_file_sink_t = spdlog::sinks::basic_file_sink<custom_spdmtx>;
+        // similar to the ConsoleBoxSink, the logger source determines the output pattern
+        auto file_sink{std::make_shared<DualPatternFileSink>(LOGFILE_NAME, true /* overwrite */)};
 
-        // these will error (throw) if file cannot be created, but we're built with exceptions disabled
-        // spdlog should handle errors gracefully in this case by not writing to the sink
-        auto file_sink{std::make_shared<mt_basic_file_sink_t>(LOGFILE_NAME, true /* overwrite */)};
-        file_sink->set_pattern(FILE_LOG_PATTERN_PREF " " FANCY_LOG_PATTERN);  // extra pattern prefix
-
-        auto raw_file_sink{std::make_shared<mt_basic_file_sink_t>(LOGFILE_NAME, true)};
-        raw_file_sink->set_pattern(FILE_LOG_PATTERN_PREF " %v");
-
-        main_sinks.push_back(std::move(file_sink));
-        raw_sinks.push_back(std::move(raw_file_sink));
+        main_sinks.push_back(file_sink);
+        raw_sinks.push_back(file_sink);
     }
 
     // create main async logger with stdout + console + optional file sink

@@ -2438,7 +2438,7 @@ void BeatmapInterface::update() {
 
                 DifficultyCalculator::DifficultyAttributes diffAttributesOut{};
 
-                DifficultyCalculator::StarCalcParams params{.cachedDiffObjects = diffobjCache,
+                DifficultyCalculator::StarCalcParams params{.cachedDiffObjects = std::move(diffobjCache),
                                                             .outAttributes = diffAttributesOut,
                                                             .beatmapData = diffcalcData,
                                                             .outAimStrains = &retInfo.aimStrains,
@@ -2448,6 +2448,9 @@ void BeatmapInterface::update() {
                                                             .cancelCheck = nullptr};
 
                 retInfo.total_stars = DifficultyCalculator::calculateStarDiffForHitObjects(params);
+
+                // move back
+                diffobjCache = std::move(params.cachedDiffObjects);
 
                 retInfo.aim_stars = diffAttributesOut.AimDifficulty;
                 retInfo.aim_slider_factor = diffAttributesOut.SliderFactor;
@@ -3925,7 +3928,8 @@ FinishedScore BeatmapInterface::saveAndSubmitScore(bool quit) {
     score.numMisses = liveScore->getNumMisses();
     score.score = liveScore->getScore();
     score.comboMax = liveScore->getComboMax();
-    score.perfect = (this->iMaxPossibleCombo > 0 && score.comboMax > 0 && std::cmp_greater_equal(score.comboMax, this->iMaxPossibleCombo));
+    score.perfect = (this->iMaxPossibleCombo > 0 && score.comboMax > 0 &&
+                     std::cmp_greater_equal(score.comboMax, this->iMaxPossibleCombo));
     score.numSliderBreaks = liveScore->getNumSliderBreaks();
     score.unstableRate = liveScore->getUnstableRate();
     score.hitErrorAvgMin = liveScore->getHitErrorAvgMin();

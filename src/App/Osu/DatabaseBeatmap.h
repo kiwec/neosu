@@ -448,11 +448,11 @@ class DatabaseBeatmap final {
         BlockId id;
     };
 
-    static constexpr const std::initializer_list<MetadataBlock> metadataBlocks{
+    static constexpr const std::array<MetadataBlock, 7> metadataBlocks{{
         {.str = "[General]", .id = BlockId::General},           {.str = "[Metadata]", .id = BlockId::Metadata},
         {.str = "[Difficulty]", .id = BlockId::Difficulty},     {.str = "[Events]", .id = BlockId::Events},
         {.str = "[TimingPoints]", .id = BlockId::TimingPoints}, {.str = "[Colours]", .id = BlockId::Colours},
-        {.str = "[HitObjects]", .id = BlockId::HitObjects}};
+        {.str = "[HitObjects]", .id = BlockId::HitObjects}}};
 };
 
 struct BPMInfo {

@@ -50,14 +50,20 @@ struct CurlEasyDeleter {
         if(handle) curl_easy_cleanup(handle);
     }
 };
-using CurlEasy = std::unique_ptr<CURL, CurlEasyDeleter>;
+
+struct CurlEasy : public std::unique_ptr<CURL, CurlEasyDeleter> {
+    [[nodiscard]] operator CURL*() const { return this->get(); }
+};
 
 struct CurlMimeDeleter {
     void operator()(curl_mime* mime) const {
         if(mime) curl_mime_free(mime);
     }
 };
-using CurlMime = std::unique_ptr<curl_mime, CurlMimeDeleter>;
+
+struct CurlMime : public std::unique_ptr<curl_mime, CurlMimeDeleter> {
+    [[nodiscard]] operator curl_mime*() const { return this->get(); }
+};
 
 // append() can reallocate, so use a "builder" pattern
 class CurlSlist {
@@ -93,7 +99,7 @@ struct NetworkImpl {
     NOCOPY_NOMOVE(NetworkImpl)
 
    public:
-   // internal request structure
+    // internal request structure
     struct Request {
         std::string url;
         AsyncCallback callback;
@@ -265,8 +271,8 @@ void NetworkImpl::processNewRequests() {
         // curl_multi broken (TODO: check?) on websockets
         // HACK: we're blocking whole network thread here, while websocket is connecting
         if(request->options.is_websocket) {
-            auto res = curl_easy_perform(request->easy_handle.get());
-            curl_easy_getinfo(request->easy_handle.get(), CURLINFO_RESPONSE_CODE, &request->response.response_code);
+            auto res = curl_easy_perform(request->easy_handle);
+            curl_easy_getinfo(request->easy_handle, CURLINFO_RESPONSE_CODE, &request->response.response_code);
             request->response.success = (res == CURLE_OK) && (request->response.response_code == 101);
             if(res == CURLE_OK || res == CURLE_HTTP_RETURNED_ERROR) {
                 request->response.error_msg = "HTTP " + std::to_string(request->response.response_code);
@@ -289,8 +295,7 @@ void NetworkImpl::processNewRequests() {
             continue;
         }
 
-        CURL* raw_handle = request->easy_handle.get();
-        CURLMcode mres = curl_multi_add_handle(this->multi_handle, raw_handle);
+        CURLMcode mres = curl_multi_add_handle(this->multi_handle, request->easy_handle);
         if(mres != CURLM_OK) {
             request->response.success = false;
             if(request->callback) {
@@ -301,7 +306,7 @@ void NetworkImpl::processNewRequests() {
         }
 
         Sync::scoped_lock active_lock{this->active_requests_mutex};
-        this->active_requests[raw_handle] = std::move(request);
+        this->active_requests[request->easy_handle] = std::move(request);
     }
 }
 
@@ -366,38 +371,37 @@ struct curl_blob cert_blob{.data = (void*)curl_ca_embed, .len = curl_ca_embed_si
 #endif
 
 void NetworkImpl::Request::setupCurlHandle() {
-    CURL* handle = this->easy_handle.get();
-    assert(handle);
+    assert(this->easy_handle.get());
 
-    curl_easy_setopt(handle, CURLOPT_VERBOSE, cv::debug_network.getVal<long>());
-    curl_easy_setopt(handle, CURLOPT_URL, this->url.c_str());
-    curl_easy_setopt(handle, CURLOPT_CONNECTTIMEOUT, this->options.connect_timeout);
-    curl_easy_setopt(handle, CURLOPT_TIMEOUT, this->options.timeout);
-    curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, writeCallback);
-    curl_easy_setopt(handle, CURLOPT_WRITEDATA, this);
-    curl_easy_setopt(handle, CURLOPT_HEADERFUNCTION, headerCallback);
-    curl_easy_setopt(handle, CURLOPT_HEADERDATA, this);
-    curl_easy_setopt(handle, CURLOPT_SSL_VERIFYHOST, cv::ssl_verify.getBool() ? 2L : 0L);
-    curl_easy_setopt(handle, CURLOPT_SSL_VERIFYPEER, cv::ssl_verify.getBool() ? 1L : 0L);
-    curl_easy_setopt(handle, CURLOPT_NOSIGNAL, 1L);
-    curl_easy_setopt(handle, CURLOPT_FAILONERROR, 1L);  // fail on HTTP responses >= 400
+    curl_easy_setopt(this->easy_handle, CURLOPT_VERBOSE, cv::debug_network.getVal<long>());
+    curl_easy_setopt(this->easy_handle, CURLOPT_URL, this->url.c_str());
+    curl_easy_setopt(this->easy_handle, CURLOPT_CONNECTTIMEOUT, this->options.connect_timeout);
+    curl_easy_setopt(this->easy_handle, CURLOPT_TIMEOUT, this->options.timeout);
+    curl_easy_setopt(this->easy_handle, CURLOPT_WRITEFUNCTION, writeCallback);
+    curl_easy_setopt(this->easy_handle, CURLOPT_WRITEDATA, this);
+    curl_easy_setopt(this->easy_handle, CURLOPT_HEADERFUNCTION, headerCallback);
+    curl_easy_setopt(this->easy_handle, CURLOPT_HEADERDATA, this);
+    curl_easy_setopt(this->easy_handle, CURLOPT_SSL_VERIFYHOST, cv::ssl_verify.getBool() ? 2L : 0L);
+    curl_easy_setopt(this->easy_handle, CURLOPT_SSL_VERIFYPEER, cv::ssl_verify.getBool() ? 1L : 0L);
+    curl_easy_setopt(this->easy_handle, CURLOPT_NOSIGNAL, 1L);
+    curl_easy_setopt(this->easy_handle, CURLOPT_FAILONERROR, 1L);  // fail on HTTP responses >= 400
 
     if(!this->options.user_agent.empty()) {
-        curl_easy_setopt(handle, CURLOPT_USERAGENT, this->options.user_agent.c_str());
+        curl_easy_setopt(this->easy_handle, CURLOPT_USERAGENT, this->options.user_agent.c_str());
     }
 
     if(this->options.follow_redirects) {
-        curl_easy_setopt(handle, CURLOPT_FOLLOWLOCATION, 1L);
+        curl_easy_setopt(this->easy_handle, CURLOPT_FOLLOWLOCATION, 1L);
     }
 
     if(this->options.is_websocket) {
         // Special behavior: on CURLOPT_CONNECT_ONLY == 2,
         // curl actually waits for server response on perform
-        curl_easy_setopt(handle, CURLOPT_CONNECT_ONLY, 2L);
+        curl_easy_setopt(this->easy_handle, CURLOPT_CONNECT_ONLY, 2L);
     }
 
 #ifndef _MSC_VER
-    curl_easy_setopt(handle, CURLOPT_CAINFO_BLOB, &cert_blob);
+    curl_easy_setopt(this->easy_handle, CURLOPT_CAINFO_BLOB, &cert_blob);
 #endif
 
     // setup headers
@@ -406,21 +410,21 @@ void NetworkImpl::Request::setupCurlHandle() {
             std::string header = fmt::format("{}: {}", key, value);
             this->headers_list.append(header.c_str());
         }
-        curl_easy_setopt(handle, CURLOPT_HTTPHEADER, this->headers_list.get());
+        curl_easy_setopt(this->easy_handle, CURLOPT_HTTPHEADER, this->headers_list.get());
     }
 
     // setup POST data
     if(!this->options.post_data.empty()) {
-        curl_easy_setopt(handle, CURLOPT_POSTFIELDS, this->options.post_data.c_str());
-        curl_easy_setopt(handle, CURLOPT_POSTFIELDSIZE, this->options.post_data.length());
+        curl_easy_setopt(this->easy_handle, CURLOPT_POSTFIELDS, this->options.post_data.c_str());
+        curl_easy_setopt(this->easy_handle, CURLOPT_POSTFIELDSIZE, this->options.post_data.length());
     }
 
     // setup MIME data
     if(!this->options.mime_parts.empty()) {
-        this->mime.reset(curl_mime_init(handle));
+        this->mime.reset(curl_mime_init(this->easy_handle));
 
         for(const auto& info : this->options.mime_parts) {
-            auto part = curl_mime_addpart(this->mime.get());
+            auto part = curl_mime_addpart(this->mime);
             if(!info.filename.empty()) {
                 curl_mime_filename(part, info.filename.c_str());
             }
@@ -428,14 +432,14 @@ void NetworkImpl::Request::setupCurlHandle() {
             curl_mime_data(part, (const char*)info.data.data(), info.data.size());
         }
 
-        curl_easy_setopt(handle, CURLOPT_MIMEPOST, this->mime.get());
+        curl_easy_setopt(this->easy_handle, CURLOPT_MIMEPOST, this->mime.get());
     }
 
     // setup progress callback if provided
     if(this->options.progress_callback) {
-        curl_easy_setopt(handle, CURLOPT_NOPROGRESS, 0L);
-        curl_easy_setopt(handle, CURLOPT_XFERINFOFUNCTION, progressCallback);
-        curl_easy_setopt(handle, CURLOPT_XFERINFODATA, this);
+        curl_easy_setopt(this->easy_handle, CURLOPT_NOPROGRESS, 0L);
+        curl_easy_setopt(this->easy_handle, CURLOPT_XFERINFOFUNCTION, progressCallback);
+        curl_easy_setopt(this->easy_handle, CURLOPT_XFERINFODATA, this);
     }
 }
 

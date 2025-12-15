@@ -687,40 +687,47 @@ void SDLMain::configureEvents() {
 }
 
 void SDLMain::setupLogging() {
-    SDL_SetLogOutputFunction(
-        [](void *, int category, SDL_LogPriority, const char *message) {
-            const char *catStr = "???";
-            switch(category) {
-                case SDL_LOG_CATEGORY_APPLICATION:
-                    catStr = "APP";
-                    break;
-                case SDL_LOG_CATEGORY_ERROR:
-                    catStr = "ERR";
-                    break;
-                case SDL_LOG_CATEGORY_SYSTEM:
-                    catStr = "SYS";
-                    break;
-                case SDL_LOG_CATEGORY_AUDIO:
-                    catStr = "AUD";
-                    break;
-                case SDL_LOG_CATEGORY_VIDEO:
-                    catStr = "VID";
-                    break;
-                case SDL_LOG_CATEGORY_RENDER:
-                    catStr = "REN";
-                    break;
-                case SDL_LOG_CATEGORY_INPUT:
-                    catStr = "INP";
-                    break;
-                case SDL_LOG_CATEGORY_CUSTOM:
-                    catStr = "USR";
-                    break;
-                default:
-                    break;
-            }
-            Logger::logRaw("SDL[{}]: {}", catStr, message);
-        },
-        nullptr);
+    static SDL_LogOutputFunction SDLLogCB = [](void *, int category, SDL_LogPriority, const char *message) -> void {
+        const char *catStr = "???";
+        switch(category) {
+            case SDL_LOG_CATEGORY_APPLICATION:
+                catStr = "APP";
+                break;
+            case SDL_LOG_CATEGORY_ERROR:
+                catStr = "ERR";
+                break;
+            case SDL_LOG_CATEGORY_SYSTEM:
+                catStr = "SYS";
+                break;
+            case SDL_LOG_CATEGORY_AUDIO:
+                catStr = "AUD";
+                break;
+            case SDL_LOG_CATEGORY_VIDEO:
+                catStr = "VID";
+                break;
+            case SDL_LOG_CATEGORY_RENDER:
+                catStr = "REN";
+                break;
+            case SDL_LOG_CATEGORY_INPUT:
+                catStr = "INP";
+                break;
+            case SDL_LOG_CATEGORY_CUSTOM:
+                catStr = "USR";
+                break;
+            default:
+                break;
+        }
+
+        // avoid stray newlines
+        std::string formatted = fmt::format("SDL[{}]: {}"_cf, catStr, message);
+        while(formatted.back() == '\r' || formatted.back() == '\n') {
+            formatted.pop_back();
+        }
+
+        Logger::logRaw(formatted);
+    };
+
+    SDL_SetLogOutputFunction(SDLLogCB, nullptr);
 }
 
 #ifdef MCENGINE_PLATFORM_WINDOWS

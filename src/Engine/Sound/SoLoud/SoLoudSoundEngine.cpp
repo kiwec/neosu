@@ -55,6 +55,23 @@ unsigned int SoLoudSoundEngine::getResamplerFromCV() {
 }
 
 SoLoudSoundEngine::SoLoudSoundEngine() : SoundEngine() {
+#if SOLOUD_VERSION >= 202512
+    {
+        static SoLoud::logFunctionType SoLoudLogCB = [](const char *message, void * /*userdata*/) -> void {
+            // avoid stray newlines
+            size_t end_pos = message ? strlen(message) : 0;
+            while(end_pos > 0 && (message[end_pos - 1] == '\r' || message[end_pos - 1] == '\n')) {
+                --end_pos;
+            }
+
+            Logger::logRaw(std::string_view{message, end_pos});
+        };
+
+        // both the same for now
+        SoLoud::setStdoutLogFunction(SoLoudLogCB, nullptr);
+        SoLoud::setStderrLogFunction(SoLoudLogCB, nullptr);
+    }
+#endif
     if(!soloud) {
         bool threaded = false;
         auto args = env->getLaunchArgs();

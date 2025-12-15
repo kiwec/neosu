@@ -1060,22 +1060,22 @@ void MainMenu::mouse_update(bool *propagate_clicks) {
         const auto status = osu->getUpdateHandler()->getStatus();
 
         switch(status) {
-            case UpdateHandler::STATUS::STATUS_IDLE:
+            case STATUS_IDLE:
                 if(this->updateAvailableButton->isVisible()) {
                     this->updateAvailableButton->setVisible(false);
                 }
                 break;
-            case UpdateHandler::STATUS::STATUS_CHECKING_FOR_UPDATE:
+            case STATUS_CHECKING_FOR_UPDATE:
                 this->updateAvailableButton->setText("Checking for updates ...");
                 this->updateAvailableButton->setColor(0x2200d900);
                 this->updateAvailableButton->setVisible(true);
                 break;
-            case UpdateHandler::STATUS::STATUS_DOWNLOADING_UPDATE:
+            case STATUS_DOWNLOADING_UPDATE:
                 this->updateAvailableButton->setText("Downloading ...");
                 this->updateAvailableButton->setColor(0x2200d900);
                 this->updateAvailableButton->setVisible(true);
                 break;
-            case UpdateHandler::STATUS::STATUS_DOWNLOAD_COMPLETE:
+            case STATUS_DOWNLOAD_COMPLETE:
                 if(engine->getTime() > this->fUpdateButtonTextTime && anim::isAnimating(&this->fUpdateButtonAnim) &&
                    this->fUpdateButtonAnim > 0.175f) {
                     this->fUpdateButtonTextTime = this->fUpdateButtonAnimTime;
@@ -1095,7 +1095,7 @@ void MainMenu::mouse_update(bool *propagate_clicks) {
                     anim::moveQuadInOut(&this->fUpdateButtonAnim, 1.0f, 0.5f, true);
                 }
                 break;
-            case UpdateHandler::STATUS::STATUS_ERROR:
+            case STATUS_ERROR:
                 this->updateAvailableButton->setText("Update Error! Click to retry ...");
                 this->updateAvailableButton->setColor(rgb(220, 0, 0));
                 this->updateAvailableButton->setTextColor(0xffffffff);
@@ -1225,7 +1225,6 @@ void MainMenu::onKeyDown(KeyboardEvent &e) {
     OsuScreen::onKeyDown(e);  // only used for options menu
     if(!this->bVisible || e.isConsumed()) return;
 
-    // TODO: also allow media buttons to control playback when game isn't focused
     if(!osu->getOptionsMenu()->isMouseInside()) {
         if(e == KEY_PREV || e == KEY_LEFT) {
             osu->getSongBrowser()->selectPreviousRandomBeatmap();

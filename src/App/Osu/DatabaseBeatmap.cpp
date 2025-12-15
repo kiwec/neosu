@@ -288,7 +288,7 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(std::
             if(curBlock == Sentinel) {
                 curBlock = Header;
             } else {
-                for(const auto [blockStr, id] : metadataBlocks) {
+                for(const auto &[blockStr, id] : metadataBlocks) {
                     if(curLine.contains(blockStr)) {
                         curBlock = id;
                         break;
@@ -1148,7 +1148,7 @@ bool DatabaseBeatmap::loadMetadata(bool compute_md5) {
         if(curBlock == Sentinel) {
             curBlock = Header;
         } else {
-            for(const auto [blockStr, id] : metadataBlocks) {
+            for(const auto &[blockStr, id] : metadataBlocks) {
                 if(curLine.contains(blockStr)) {
                     curBlock = id;
                     break;

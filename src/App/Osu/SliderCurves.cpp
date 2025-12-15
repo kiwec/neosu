@@ -34,14 +34,10 @@ constexpr const SLIDERCURVETYPE PASSTHROUGH = 'P';
 
 class SliderCurveEqualDistanceMulti : public SliderCurve {
    public:
-    static inline SliderCurveEqualDistanceMulti createLinearBezier(std::vector<vec2> controlPoints, f32 pixelLength,
-                                                                   f32 curvePointsSeparation, bool line) {
-        return {std::move(controlPoints), pixelLength, curvePointsSeparation, line};
-    }
-    static inline SliderCurveEqualDistanceMulti createCatmull(std::vector<vec2> controlPoints, f32 pixelLength,
-                                                              f32 curvePointsSeparation) {
-        return {std::move(controlPoints), pixelLength, curvePointsSeparation};
-    }
+    SliderCurveEqualDistanceMulti(std::vector<vec2> controlPoints, f32 pixelLength, f32 curvePointsSeparation,
+                                  bool line);  // beziers
+    SliderCurveEqualDistanceMulti(std::vector<vec2> controlPoints, f32 pixelLength,
+                                  f32 curvePointsSeparation);  // catmulls
 
     SliderCurveEqualDistanceMulti(const SliderCurveEqualDistanceMulti &) = default;
     SliderCurveEqualDistanceMulti &operator=(const SliderCurveEqualDistanceMulti &) = default;
@@ -53,11 +49,6 @@ class SliderCurveEqualDistanceMulti : public SliderCurve {
     [[nodiscard]] vec2 originalPointAt(f32 t) const override;
 
    private:
-    // construct with createLinearBezier/createCatmull
-    SliderCurveEqualDistanceMulti(std::vector<vec2> controlPoints, f32 pixelLength, f32 curvePointsSeparation,
-                                  bool line);  // beziers
-    SliderCurveEqualDistanceMulti(std::vector<vec2> controlPoints, f32 pixelLength,
-                                  f32 curvePointsSeparation);  // catmulls
     struct SliderCurveDetails {
         // ctor helpers
        private:
@@ -93,6 +84,10 @@ class SliderCurveEqualDistanceMulti : public SliderCurve {
 
     u32 iNCurve;
 };
+
+// the only difference is that bezier's constructor takes a "line" parameter as an argument, catmull's doesn't
+using SliderCurveBezier = SliderCurveEqualDistanceMulti;
+using SliderCurveCatmull = SliderCurveEqualDistanceMulti;
 
 void SliderCurveEqualDistanceMulti::init(const std::vector<SliderCurveDetails> &curvesList) {
     i64 curCurveIndex = 0;
@@ -773,18 +768,17 @@ std::unique_ptr<SliderCurve> SliderCurve::createCurve(SLIDERCURVETYPE type, std:
         // segments if they are too big
 
         if(std::abs(norb.x * nora.y - norb.y * nora.x) < 0.00001f) {
-            return std::make_unique<SliderCurveEqualDistanceMulti>(SliderCurveEqualDistanceMulti::createLinearBezier(
-                std::move(controlPoints), pixelLength, curvePointsSeparation,
-                false));  // vectors parallel, use linear bezier instead
+            return std::make_unique<SliderCurveBezier>(std::move(controlPoints), pixelLength, curvePointsSeparation,
+                                                       false);  // vectors parallel, use linear bezier instead
         } else {
-            return std::make_unique<SliderCurveCircumscribedCircle>(std::move(controlPoints), pixelLength, curvePointsSeparation);
+            return std::make_unique<SliderCurveCircumscribedCircle>(std::move(controlPoints), pixelLength,
+                                                                    curvePointsSeparation);
         }
     } else if(type == CATMULL) {
-        return std::make_unique<SliderCurveEqualDistanceMulti>(
-            SliderCurveEqualDistanceMulti::createCatmull(std::move(controlPoints), pixelLength, curvePointsSeparation));
+        return std::make_unique<SliderCurveCatmull>(std::move(controlPoints), pixelLength, curvePointsSeparation);
     } else {
-        return std::make_unique<SliderCurveEqualDistanceMulti>(SliderCurveEqualDistanceMulti::createLinearBezier(
-            std::move(controlPoints), pixelLength, curvePointsSeparation, (type == LINEAR)));
+        return std::make_unique<SliderCurveBezier>(std::move(controlPoints), pixelLength, curvePointsSeparation,
+                                                   (type == LINEAR));
     }
 }
 

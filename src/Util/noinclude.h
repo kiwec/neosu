@@ -36,11 +36,23 @@ inline bool isInt(float f) { return (f == static_cast<float>(static_cast<int>(f)
 // not copy or move constructable/assignable
 // purely for clarifying intent
 #define NOCOPY_NOMOVE(classname__)                        \
-   private:                                               \
+   public:                                                \
     classname__(const classname__ &) = delete;            \
     classname__ &operator=(const classname__ &) = delete; \
     classname__(classname__ &&) = delete;                 \
-    classname__ &operator=(classname__ &&) = delete;
+    classname__ &operator=(classname__ &&) = delete;      \
+                                                          \
+   private:
+
+// only move constructable, nothing else
+#define MOVEONLY(classname__)                             \
+   public:                                                \
+    classname__(const classname__ &) = delete;            \
+    classname__ &operator=(const classname__ &) = delete; \
+    classname__(classname__ &&) = default;                \
+    classname__ &operator=(classname__ &&) = delete;      \
+                                                          \
+   private:
 
 // create string view literal
 #define MC_SV(string__) \
