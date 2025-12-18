@@ -2438,7 +2438,7 @@ void BeatmapInterface::update() {
 
                 DifficultyCalculator::DifficultyAttributes diffAttributesOut{};
 
-                DifficultyCalculator::StarCalcParams params{.cachedDiffObjects = std::move(diffobjCache),
+                DifficultyCalculator::StarCalcParams params{.cachedDiffObjects = {}, // std::move(diffobjCache), NOTE: temp crash revert, this will obviously crash when called multiple times
                                                             .outAttributes = diffAttributesOut,
                                                             .beatmapData = diffcalcData,
                                                             .outAimStrains = &retInfo.aimStrains,
@@ -2450,7 +2450,7 @@ void BeatmapInterface::update() {
                 retInfo.total_stars = DifficultyCalculator::calculateStarDiffForHitObjects(params);
 
                 // move back
-                diffobjCache = std::move(params.cachedDiffObjects);
+                //diffobjCache = std::move(params.cachedDiffObjects);
 
                 retInfo.aim_stars = diffAttributesOut.AimDifficulty;
                 retInfo.aim_slider_factor = diffAttributesOut.SliderFactor;
