@@ -45,6 +45,15 @@ DatabaseBeatmap::LOAD_GAMEPLAY_RESULT::LOAD_GAMEPLAY_RESULT(DatabaseBeatmap::LOA
 DatabaseBeatmap::LOAD_GAMEPLAY_RESULT &DatabaseBeatmap::LOAD_GAMEPLAY_RESULT::operator=(
     DatabaseBeatmap::LOAD_GAMEPLAY_RESULT &&) noexcept = default;
 
+u32 DatabaseBeatmap::LOAD_DIFFOBJ_RESULT::getMaxComboAtIndex(uSz index) const {
+    assert(maxComboAtIndex.size() > 0);
+    if(index < maxComboAtIndex.size()) {
+        return maxComboAtIndex[index];
+    }
+    // otherwise return total
+    return maxComboAtIndex.back();
+}
+
 namespace {  // static namespace
 
 bool sliderScoringTimeComparator(const SLIDER_SCORING_TIME &a, const SLIDER_SCORING_TIME &b) {
@@ -848,17 +857,6 @@ DatabaseBeatmap::LOAD_DIFFOBJ_RESULT DatabaseBeatmap::loadDifficultyHitObjects(P
         return result;
     }
 
-    // now we can calculate the max possible combo (because that needs ticks/clicks to be filled, mostly convenience)
-    {
-        result.maxPossibleCombo += c.hitcircles.size();
-        for(const auto &s : c.sliders) {
-            const int repeats = std::max((s.repeat - 1), 0);
-            result.maxPossibleCombo +=
-                2 + repeats + (repeats + 1) * s.ticks.size();  // start/end + repeat arrow + ticks
-        }
-        result.maxPossibleCombo += c.spinners.size();
-    }
-
     // and generate the difficultyhitobjects
     result.diffobjects.reserve(c.hitcircles.size() + c.sliders.size() + c.spinners.size());
 
@@ -1082,6 +1080,31 @@ DatabaseBeatmap::LOAD_DIFFOBJ_RESULT DatabaseBeatmap::loadDifficultyHitObjects(P
     // calculate playable length (for pp calc)
     if(!result.diffobjects.empty()) {
         result.playableLength = (u32)(result.diffobjects.back().baseEndTime - result.diffobjects[0].baseTime);
+    }
+
+    // calculate cumulative max combo per object
+    if(!calculateStarsInaccurately && !result.diffobjects.empty()) {
+        result.maxComboAtIndex.clear();  // remove dummy 0
+
+        result.maxComboAtIndex.reserve(result.diffobjects.size());
+        u32 runningCombo = 0;
+        for(const auto &obj : result.diffobjects) {
+            if(obj.type == DifficultyHitObject::TYPE::SLIDER)
+                runningCombo += 1 + (u32)obj.scoringTimes.size();
+            else
+                runningCombo += 1;
+            result.maxComboAtIndex.push_back(runningCombo);
+        }
+    } else {
+        result.maxComboAtIndex.clear();
+
+        // for inaccurate calculation, just store the total (scoringTimes is empty)
+        u32 totalCombo = (u32)c.hitcircles.size() + (u32)c.spinners.size();
+        for(const auto &s : c.sliders) {
+            const int repeats = std::max((s.repeat - 1), 0);
+            totalCombo += 2 + repeats + (repeats + 1) * s.ticks.size();
+        }
+        result.maxComboAtIndex.push_back(totalCombo);
     }
 
     return result;

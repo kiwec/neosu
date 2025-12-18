@@ -130,9 +130,6 @@ class SimulatedBeatmapInterface final : public AbstractBeatmapInterface {
     i32 iNPS;
     i32 iND;
     i32 iCurrentHitObjectIndex;
-    i32 iCurrentNumCircles;
-    i32 iCurrentNumSliders;
-    i32 iCurrentNumSpinners;
 
    private:
     static inline vec2 mapNormalizedCoordsOntoUnitCircle(const vec2 &in) {

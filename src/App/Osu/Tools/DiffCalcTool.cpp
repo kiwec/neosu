@@ -194,7 +194,7 @@ int NEOSU_run_diffcalc(int argc, char* argv[]) {
                                                   .numCircles = static_cast<i32>(primitives.numCircles),
                                                   .numSliders = static_cast<i32>(primitives.numSliders),
                                                   .numSpinners = static_cast<i32>(primitives.numSpinners),
-                                                  .maxPossibleCombo = diffResult.maxPossibleCombo,
+                                                  .maxPossibleCombo = diffResult.getTotalMaxCombo(),
                                                   .combo = -1,
                                                   .misses = 0,
                                                   .c300 = -1,
@@ -219,7 +219,7 @@ int NEOSU_run_diffcalc(int argc, char* argv[]) {
     std::cout << "  HP: " << settings.HP << '\n';
     std::cout << "  objects: " << primitives.numHitobjects << " (" << primitives.numCircles << "c + "
               << primitives.numSliders << "s + " << primitives.numSpinners << "sp)\n";
-    std::cout << "  max combo: " << diffResult.maxPossibleCombo << '\n';
+    std::cout << "  max combo: " << diffResult.getTotalMaxCombo() << '\n';
 
     return 0;
 }

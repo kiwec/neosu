@@ -19,9 +19,6 @@ SimulatedBeatmapInterface::SimulatedBeatmapInterface(DatabaseBeatmap *map, const
     this->iNPS = 0;
     this->iND = 0;
     this->iCurrentHitObjectIndex = 0;
-    this->iCurrentNumCircles = 0;
-    this->iCurrentNumSliders = 0;
-    this->iCurrentNumSpinners = 0;
     this->bIsSpinnerActive = false;
     this->fPlayfieldRotation = 0.0f;
     this->fXMultiplier = 1.0f;
@@ -419,9 +416,6 @@ void SimulatedBeatmapInterface::update(f64 frame_time) {
     this->iPreviousHitObjectTime = 0;
     this->iNPS = 0;
     this->iND = 0;
-    this->iCurrentNumCircles = 0;
-    this->iCurrentNumSliders = 0;
-    this->iCurrentNumSpinners = 0;
     {
         bool blockNextNotes = false;
         bool spinner_active = false;
@@ -445,11 +439,9 @@ void SimulatedBeatmapInterface::update(f64 frame_time) {
             //
             // (because the hitobjects need to know about note blocking before handling the click events)
 
-            // ************ live pp block start ************ //
-            const bool isCircle = this->hitobjects[i]->type == HitObjectType::CIRCLE;
+            // const bool isCircle = this->hitobjects[i]->type == HitObjectType::CIRCLE;
             const bool isSlider = this->hitobjects[i]->type == HitObjectType::SLIDER;
             const bool isSpinner = this->hitobjects[i]->type == HitObjectType::SPINNER;
-            // ************ live pp block end ************** //
 
             // determine previous & next object time, used for auto + followpoints + warning arrows + empty section
             // skipping
@@ -468,24 +460,15 @@ void SimulatedBeatmapInterface::update(f64 frame_time) {
                (this->iCurMusicPos - pvs >
                 this->hitobjects[i]->click_time + this->hitobjects[i]->duration))  // past objects
             {
-                // ************ live pp block start ************ //
-                if(isCircle) this->iCurrentNumCircles++;
-                if(isSlider) this->iCurrentNumSliders++;
-                if(isSpinner) this->iCurrentNumSpinners++;
-
                 this->iCurrentHitObjectIndex = i;
-                // ************ live pp block end ************** //
-
                 continue;
             }
             if(this->hitobjects[i]->click_time > this->iCurMusicPos + pvs)  // future objects
                 break;
 
-            // ************ live pp block start ************ //
             if(this->iCurMusicPos >= this->hitobjects[i]->click_time + this->hitobjects[i]->duration) {
                 this->iCurrentHitObjectIndex = i;
             }
-            // ************ live pp block end ************** //
 
             // main hitobject update
             this->hitobjects[i]->update(this->iCurMusicPos, frame_time);
@@ -625,13 +608,7 @@ void SimulatedBeatmapInterface::update(f64 frame_time) {
                 }
             }
 
-            // ************ live pp block start ************ //
-            if(isCircle && this->hitobjects[i]->isFinished()) this->iCurrentNumCircles++;
-            if(isSlider && this->hitobjects[i]->isFinished()) this->iCurrentNumSliders++;
-            if(isSpinner && this->hitobjects[i]->isFinished()) this->iCurrentNumSpinners++;
-
             if(this->hitobjects[i]->isFinished()) this->iCurrentHitObjectIndex = i;
-            // ************ live pp block end ************** //
 
             // notes per second
             const i32 npsHalfGateSizeMS = (i32)(500.0f * this->mods.speed);

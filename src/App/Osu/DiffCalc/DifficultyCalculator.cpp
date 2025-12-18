@@ -312,30 +312,42 @@ f64 DifficultyCalculator::calculateStarDiffForHitObjects(StarCalcParams &params)
 
     // ****************************************************************************************************************************************** //
 
+    // initialize if not given
+    if(!params.cachedDiffObjects) {
+        params.cachedDiffObjects = std::make_unique<std::vector<DifficultyCalculator::DiffObject>>();
+    }
+
+    auto &cachedDiffObjsRef = *params.cachedDiffObjects;
+
     // initialize dobjects
     const uSz numDiffObjects =
         (params.upToObjectIndex < 0) ? params.beatmapData.sortedHitObjects.size() : params.upToObjectIndex + 1;
-    const bool isUsingCachedDiffObjects = (params.cachedDiffObjects.size() > 0);
+
+    // only for first load
+    const uSz cacheSize = params.forceFillDiffobjCache ? params.beatmapData.sortedHitObjects.size() : numDiffObjects;
+
+    const bool isUsingCachedDiffObjects = (cachedDiffObjsRef.size() >= cacheSize);
+
     DiffObject *diffObjects;
     if(!isUsingCachedDiffObjects) {
         // not cached (full rebuild computation)
-        params.cachedDiffObjects.reserve(numDiffObjects);
-        for(uSz i = 0; i < numDiffObjects; i++) {
+        cachedDiffObjsRef.reserve(cacheSize);
+        for(uSz i = 0; i < cacheSize; i++) {
             if(params.shouldDie()) return 0.0;
 
             DiffObject newDiffObject{&params.beatmapData.sortedHitObjects[i], radius_scaling_factor,
-                                     params.cachedDiffObjects,
+                                     params.cachedDiffObjects.get(),
                                      (i32)i - 1};  // this already initializes the angle to NaN
             newDiffObject.smallCircleBonus = smallCircleBonus;
-            params.cachedDiffObjects.push_back(std::move(newDiffObject));
+            cachedDiffObjsRef.push_back(std::move(newDiffObject));
         }
     }
-    diffObjects = params.cachedDiffObjects.data();
+    diffObjects = cachedDiffObjsRef.data();
 
     // calculate angles and travel/jump distances (before calculating strains)
     if(!isUsingCachedDiffObjects) {
         const f32 starsSliderCurvePointsSeparation = STARS_SLIDER_CURVE_POINTS_SEPARATION;
-        for(uSz i = 0; i < numDiffObjects; i++) {
+        for(uSz i = 0; i < cacheSize; i++) {
             if(params.shouldDie()) return 0.0;
 
             // see setDistances() @ https://github.com/ppy/osu/blob/master/osu.Game.Rulesets.Osu/Difficulty/Preprocessing/OsuDifficultyHitObject.cs
@@ -426,11 +438,10 @@ f64 DifficultyCalculator::calculateStarDiffForHitObjects(StarCalcParams &params)
     // calculate strains/skills
     if(!isUsingCachedDiffObjects)  // NOTE: yes, this loses some extremely minor accuracy (~0.001 stars territory) for live star/pp for some rare individual upToObjectIndex due to not being recomputed for the cut set of cached diffObjects every time, but the performance gain is so insane I don't care
     {
-        for(uSz i = 1; i < numDiffObjects; i++)  // NOTE: start at 1
+        for(uSz i = 1; i < cacheSize; i++)  // NOTE: start at 1
         {
-            diffObjects[i].calculate_strains(diffObjects[i - 1],
-                                             (i == numDiffObjects - 1) ? nullptr : &diffObjects[i + 1], hitWindow300,
-                                             params.beatmapData.autopilot);
+            diffObjects[i].calculate_strains(diffObjects[i - 1], (i == cacheSize - 1) ? nullptr : &diffObjects[i + 1],
+                                             hitWindow300, params.beatmapData.autopilot);
         }
     }
 
@@ -1893,4 +1904,46 @@ f64 DifficultyCalculator::DiffObject::get_doubletapness(const DifficultyCalculat
         return 1.0 - std::pow(speedRatio, 1.0 - windowRatio);
     }
     return 0.0;
+}
+
+std::string DifficultyCalculator::PPv2CalcParamsToString(const PPv2CalcParams &pars) {
+    const auto &attrs = pars.attributes;
+    return fmt::format(R"(pars.attrs.AimDifficulty: {}
+attrs.AimDifficultSliderCount: {}
+attrs.SpeedDifficulty: {}
+attrs.SpeedNoteCount: {}
+attrs.SliderFactor: {}
+attrs.AimTopWeightedSliderFactor: {}
+attrs.SpeedTopWeightedSliderFactor: {}
+attrs.AimDifficultStrainCount: {}
+attrs.SpeedDifficultStrainCount: {}
+attrs.NestedScorePerObject: {}
+attrs.LegacyScoreBaseMultiplier: {}
+attrs.SliderCount: {}
+attrs.MaximumLegacyComboScore: {}
+attrs.ApproachRate: {}
+attrs.OverallDifficulty: {}
+modFlags: {:016x}
+timescale: {}
+ar: {}
+od: {}
+numHitObjects: {}
+numCircles: {}
+numSliders: {}
+numSpinners: {}
+maxPossibleCombo: {}
+combo: {}
+misses: {}
+c300: {}
+c100: {}
+c50: {}
+legacyTotalScore: {})",
+                       attrs.AimDifficulty, attrs.AimDifficultSliderCount, attrs.SpeedDifficulty, attrs.SpeedNoteCount,
+                       attrs.SliderFactor, attrs.AimTopWeightedSliderFactor, attrs.SpeedTopWeightedSliderFactor,
+                       attrs.AimDifficultStrainCount, attrs.SpeedDifficultStrainCount, attrs.NestedScorePerObject,
+                       attrs.LegacyScoreBaseMultiplier, attrs.SliderCount, attrs.MaximumLegacyComboScore,
+                       attrs.ApproachRate, attrs.OverallDifficulty, (u64)pars.modFlags, pars.timescale, pars.ar,
+                       pars.od, pars.numHitObjects, pars.numCircles, pars.numSliders, pars.numSpinners,
+                       pars.maxPossibleCombo, pars.combo, pars.misses, pars.c300, pars.c100, pars.c50,
+                       pars.legacyTotalScore);
 }

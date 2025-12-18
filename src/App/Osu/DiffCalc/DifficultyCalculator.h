@@ -181,13 +181,19 @@ class DifficultyCalculator {
     };
 
     struct DiffObject {
-        MOVEONLY(DiffObject)
+       public:
+        // move-only
+        DiffObject(const DiffObject &) = delete;
+        DiffObject &operator=(const DiffObject &) = delete;
+        DiffObject(DiffObject &&) = default;
+        DiffObject &operator=(DiffObject &&) = delete;
+
        public:
         DiffObject() = delete;
         ~DiffObject() = default;
 
-        DiffObject(DifficultyHitObject *base_object, f32 radius_scaling_factor, std::vector<DiffObject> &diff_objects,
-                   i32 prevObjectIdx)
+        DiffObject(DifficultyHitObject *base_object, f32 radius_scaling_factor,
+                   const std::vector<DiffObject> *diff_objects, i32 prevObjectIdx)
             : ho(base_object),
               norm_start(ho->pos * radius_scaling_factor),
               lazyEndPos(ho->pos),
@@ -226,16 +232,16 @@ class DifficultyCalculator {
         bool lazyCalcFinished{false};  // precalc temp
 
         // NOTE: McOsu stores the first object in this array while lazer doesn't. newer lazer algorithms require referencing objects "randomly", so we just keep the entire vector around.
-        const std::vector<DiffObject> &objects;
+        const std::vector<DiffObject> *objects;
 
         [[nodiscard]] inline const DiffObject *get_previous(i32 backwardsIdx) const {
-            return (objects.size() > 0 && prevObjectIndex - backwardsIdx < (i32)objects.size()
-                        ? &objects[std::max(0, prevObjectIndex - backwardsIdx)]
+            return (objects->size() > 0 && prevObjectIndex - backwardsIdx < (i32)objects->size()
+                        ? &(*objects)[std::max(0, prevObjectIndex - backwardsIdx)]
                         : nullptr);
         }
         [[nodiscard]] inline const DiffObject *get_next(i32 forwardIdx) const {
-            return (objects.size() > 0 && prevObjectIndex + forwardIdx < (i32)objects.size()
-                        ? &objects[std::max(0, prevObjectIndex + forwardIdx)]
+            return (objects->size() > 0 && prevObjectIndex + forwardIdx < (i32)objects->size()
+                        ? &(*objects)[std::max(0, prevObjectIndex + forwardIdx)]
                         : nullptr);
         }
 
@@ -265,7 +271,7 @@ class DifficultyCalculator {
 
    public:
     struct StarCalcParams {
-        std::vector<DiffObject> cachedDiffObjects;
+        std::unique_ptr<std::vector<DiffObject>> cachedDiffObjects;
         DifficultyAttributes &outAttributes;
         const BeatmapDiffcalcData &beatmapData;
 
@@ -277,6 +283,11 @@ class DifficultyCalculator {
         // cancellation
         std::function<bool(void)> cancelCheck{nullptr};
         [[nodiscard]] inline bool shouldDie() const { return this->cancelCheck ? this->cancelCheck() : false; }
+
+        // "pseudo-incremental":
+        // ignore "upToObjectIndex" to expect future calls with a larger object index
+        // by pre-calculating and filling cachedDiffObjects, if it's empty
+        bool forceFillDiffobjCache{false};
     };
 
     // stars, fully static
@@ -308,7 +319,9 @@ class DifficultyCalculator {
     // pp, fully static
     static f64 calculatePPv2(PPv2CalcParams &cparams, bool isMcOsuImported = false);
 
+    // misc public utils
     [[nodiscard]] static f64 getScoreV1ScoreMultiplier(ModFlags flags, f64 speedOverride, bool mcosu = false);
+    static std::string PPv2CalcParamsToString(const PPv2CalcParams &pars);
 
    private:
     // helper functions

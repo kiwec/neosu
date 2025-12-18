@@ -80,10 +80,16 @@ class DatabaseBeatmap final {
         // DifficultyHitObject defined in DifficultyCalculator.h
         std::vector<DifficultyHitObject> diffobjects;
 
-        i32 maxPossibleCombo{};
         u32 playableLength{0};
         u32 totalBreakDuration{0};
         int errorCode{0};
+
+        [[nodiscard]] u32 getTotalMaxCombo() const { return maxComboAtIndex.back(); }
+        [[nodiscard]] u32 getMaxComboAtIndex(uSz diffobjIndex) const;
+
+       private:
+        friend class DatabaseBeatmap;
+        std::vector<u32> maxComboAtIndex{0};
     };
 
     struct LOAD_GAMEPLAY_RESULT {
@@ -448,11 +454,14 @@ class DatabaseBeatmap final {
         BlockId id;
     };
 
-    static constexpr const std::array<MetadataBlock, 7> metadataBlocks{{
-        {.str = "[General]", .id = BlockId::General},           {.str = "[Metadata]", .id = BlockId::Metadata},
-        {.str = "[Difficulty]", .id = BlockId::Difficulty},     {.str = "[Events]", .id = BlockId::Events},
-        {.str = "[TimingPoints]", .id = BlockId::TimingPoints}, {.str = "[Colours]", .id = BlockId::Colours},
-        {.str = "[HitObjects]", .id = BlockId::HitObjects}}};
+    static constexpr const std::array<MetadataBlock, 7> metadataBlocks{
+        {{.str = "[General]", .id = BlockId::General},
+         {.str = "[Metadata]", .id = BlockId::Metadata},
+         {.str = "[Difficulty]", .id = BlockId::Difficulty},
+         {.str = "[Events]", .id = BlockId::Events},
+         {.str = "[TimingPoints]", .id = BlockId::TimingPoints},
+         {.str = "[Colours]", .id = BlockId::Colours},
+         {.str = "[HitObjects]", .id = BlockId::HitObjects}}};
 };
 
 struct BPMInfo {

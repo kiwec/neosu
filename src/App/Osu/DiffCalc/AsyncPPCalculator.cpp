@@ -39,7 +39,7 @@ struct info_cache {
     bool ap{};
 
     // Results
-    std::vector<DifficultyCalculator::DiffObject> cachedDiffObjects{};
+    std::unique_ptr<std::vector<DifficultyCalculator::DiffObject>> cachedDiffObjects{std::make_unique<std::vector<DifficultyCalculator::DiffObject>>()};
     pp_res info{};
     DifficultyCalculator::DifficultyAttributes diffattrs{};
 
@@ -232,7 +232,7 @@ void run_thread(const Sync::stop_token& stoken) {
                 .numCircles = map_for_rqt->iNumCircles,
                 .numSliders = map_for_rqt->iNumSliders,
                 .numSpinners = map_for_rqt->iNumSpinners,
-                .maxPossibleCombo = computed_ho->diffres.maxPossibleCombo,
+                .maxPossibleCombo = computed_ho->diffres.getTotalMaxCombo(),
                 .combo = rqt.comboMax,
                 .misses = rqt.numMisses,
                 .c300 = rqt.num300s,

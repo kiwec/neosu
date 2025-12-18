@@ -53,6 +53,7 @@ struct lazy_promise {
     void run(const Sync::stop_token &stoken) {
         McThread::set_current_thread_name(ULITERAL("lazy_func_thr"));
         McThread::set_current_thread_prio(McThread::Priority::NORMAL);  // reset priority
+
         while(!stoken.stop_requested()) {
             Sync::unique_lock<Sync::mutex> lock(this->funcs_mtx);
             this->cv.wait(lock, stoken, [this]() { return !this->funcs.empty(); });
@@ -61,11 +62,11 @@ struct lazy_promise {
                 continue;  // spurious wakeup
             }
 
-            Func func = std::move(this->funcs.back());
+            Func current = std::move(this->funcs.back());
             this->funcs.clear();
             lock.unlock();
 
-            this->set(func());
+            this->set(current());
         }
     }
 
