@@ -99,9 +99,9 @@ void HUD::draw() {
             const auto &whole_pp = pf->getWholeMapPPInfo();
             this->drawStatistics(
                 osu->getScore()->getNumMisses(), osu->getScore()->getNumSliderBreaks(), pf->iMaxPossibleCombo,
-                this->live_stars, whole_pp.total_stars, pf->getMostCommonBPM(), pf->getApproachRateForSpeedMultiplier(),
+                pf->live_stars(), whole_pp.total_stars, pf->getMostCommonBPM(), pf->getApproachRateForSpeedMultiplier(),
                 pf->getCS(), pf->getOverallDifficultyForSpeedMultiplier(), pf->getHP(), pf->getNPS(), pf->getND(),
-                osu->getScore()->getUnstableRate(), this->live_pp, whole_pp.pp,
+                osu->getScore()->getUnstableRate(), pf->live_pp(), whole_pp.pp,
                 ((int)pf->getHitWindow300() - 0.5f) * (1.0f / pf->getSpeedMultiplier()),  // see InfoLabel::update()
                 osu->getScore()->getHitErrorAvgCustomMin(), osu->getScore()->getHitErrorAvgCustomMax());
         }

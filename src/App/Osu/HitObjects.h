@@ -6,6 +6,7 @@ class ModFPoSu;
 class SkinImage;
 class SliderCurve;
 class VertexArrayObject;
+class Image;
 
 enum class HitObjectType : uint8_t {
     CIRCLE,

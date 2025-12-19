@@ -52,7 +52,7 @@ class AbstractBeatmapInterface {
 
     f64 fHpMultiplierComboEnd = 1.0;
     f64 fHpMultiplierNormal = 1.0;
-    u32 iMaxPossibleCombo = 0;
+    i32 iMaxPossibleCombo = 0;
     u32 iScoreV2ComboPortionMaximum = 0;
 
     // It is assumed these values are set correctly

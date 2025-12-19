@@ -124,7 +124,8 @@ class SongBrowserBackgroundSearchMatcher final : public Resource {
         const std::vector<std::string> searchStringTokens =
             SString::split<std::string>(this->sSearchString.utf8View(), ' ');  // make a copy
         for(auto &songButton : this->songButtons) {
-            const auto &children = songButton->getChildren();
+            // this is unsafe, children could be getting sorted while we do this
+            std::vector<SongButton *> children = songButton->getChildren();
             if(children.size() > 0) {
                 for(auto c : children) {
                     const bool match = SongBrowser::searchMatcher(c->getDatabaseBeatmap(), searchStringTokens);

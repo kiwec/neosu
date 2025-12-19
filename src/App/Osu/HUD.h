@@ -99,9 +99,6 @@ class HUD final : public OsuScreen {
 
     MD5Hash beatmap_md5;
 
-    f32 live_pp = 0.0;
-    f32 live_stars = 0.0;
-
     struct CURSORTRAIL {
         vec2 pos{0.f};
         float time;

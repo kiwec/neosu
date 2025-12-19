@@ -3,16 +3,17 @@
 
 #include "AbstractBeatmapInterface.h"
 #include "DatabaseBeatmap.h"
-#include "HUD.h"
 #include "AsyncPPCalculator.h"
 #include "LegacyReplay.h"
 #include "PlaybackInterpolator.h"
 #include "score.h"
+#include "LivePPCalc.h"
 
 #include <memory>
 
 class RenderTarget;
 class Sound;
+class Shader;
 class ConVar;
 struct Skin;
 class Resource;
@@ -21,7 +22,7 @@ class DatabaseBeatmap;
 class SimulatedBeatmapInterface;
 struct LiveReplayFrame;
 struct ScoreFrame;
-struct LazyPPCalc;
+struct LivePPCalc;
 
 struct Click {
     u64 timestamp;  // Timing::getTicksNS() when the event occurred
@@ -240,12 +241,12 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
     static bool sortHitObjectByStartTimeComp(HitObject const *a, HitObject const *b);
     static bool sortHitObjectByEndTimeComp(HitObject const *a, HitObject const *b);
 
+    [[nodiscard]] inline f32 live_pp() const { return this->ppv2_calc.get_pp(); }
+    [[nodiscard]] inline f32 live_stars() const { return this->ppv2_calc.get_stars(); }
+
     // ILLEGAL:
     [[nodiscard]] inline f32 getBreakBackgroundFadeAnim() const { return this->fBreakBackgroundFade; }
 
-    // live pp/stars
-    std::unique_ptr<LazyPPCalc> ppv2_calc;
-    i32 last_calculated_hitobject = -1;
     int iCurrentHitObjectIndex;
     int iCurrentNumCircles;
     int iCurrentNumSliders;
@@ -394,6 +395,10 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
 
     AsyncPPC::pp_res full_ppinfo;
     AsyncPPC::pp_calc_request full_calc_req_params;
+
+    // live pp/stars
+    friend struct LivePPCalc;
+    LivePPCalc ppv2_calc;
 
     // pp calculation buffer (only needs to be recalculated in onModUpdate(), instead of on every hit)
     f32 fAimStars;
