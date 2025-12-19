@@ -1296,7 +1296,8 @@ void Database::loadMaps() {
 
                 BPMInfo bpm;
                 auto nb_timing_points = dbr.read<u32>();
-                if(overrides_found && override.min_bpm != -1) { // only use cached override bpm if it's not the sentinel -1
+                if(overrides_found &&
+                   override.min_bpm != -1) {  // only use cached override bpm if it's not the sentinel -1
                     dbr.skip_bytes(sizeof(DB_TIMINGPOINT) * nb_timing_points);
                     bpm.min = override.min_bpm;
                     bpm.max = override.max_bpm;
@@ -1964,6 +1965,7 @@ void Database::loadOldMcNeosuScores(std::string_view dbPath) {
                     if(mod == "osu_playfield_mirror_vertical") sc.mods.flags |= ModFlags::MirrorVertical;
                     if(mod == "osu_mod_shirone") sc.mods.flags |= ModFlags::Shirone;
                     if(mod == "osu_mod_approach_different") sc.mods.flags |= ModFlags::ApproachDifferent;
+                    if(mod == "osu_mod_no_spinners") sc.mods.flags |= ModFlags::SpunOut;
                 }
 
                 sc.beatmap_hash = md5hash;
@@ -2129,6 +2131,7 @@ void Database::loadOldMcNeosuScores(std::string_view dbPath) {
                         if(mod == "osu_playfield_mirror_vertical") sc.mods.flags |= ModFlags::MirrorVertical;
                         if(mod == "osu_mod_shirone") sc.mods.flags |= ModFlags::Shirone;
                         if(mod == "osu_mod_approach_different") sc.mods.flags |= ModFlags::ApproachDifferent;
+                        if(mod == "osu_mod_no_spinners") sc.mods.flags |= ModFlags::SpunOut;
                     }
 
                     sc.beatmap_hash = md5hash;
