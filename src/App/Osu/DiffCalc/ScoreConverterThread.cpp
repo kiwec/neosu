@@ -94,7 +94,7 @@ void ScoreConverter::update_ppv2(const FinishedScore& score) {
                                                         .numCircles = map->iNumCircles,
                                                         .numSliders = map->iNumSliders,
                                                         .numSpinners = map->iNumSpinners,
-                                                        .maxPossibleCombo = diffres.getTotalMaxCombo(),
+                                                        .maxPossibleCombo = (i32)diffres.getTotalMaxCombo(),
                                                         .combo = score.comboMax,
                                                         .misses = score.numMisses,
                                                         .c300 = score.num300s,

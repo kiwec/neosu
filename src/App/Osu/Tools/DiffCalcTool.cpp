@@ -194,7 +194,7 @@ int NEOSU_run_diffcalc(int argc, char* argv[]) {
                                                   .numCircles = static_cast<i32>(primitives.numCircles),
                                                   .numSliders = static_cast<i32>(primitives.numSliders),
                                                   .numSpinners = static_cast<i32>(primitives.numSpinners),
-                                                  .maxPossibleCombo = diffResult.getTotalMaxCombo(),
+                                                  .maxPossibleCombo = static_cast<i32>(diffResult.getTotalMaxCombo()),
                                                   .combo = -1,
                                                   .misses = 0,
                                                   .c300 = -1,

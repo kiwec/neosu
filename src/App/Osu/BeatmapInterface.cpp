@@ -2473,7 +2473,7 @@ void BeatmapInterface::update() {
                     .numCircles = nb_circles,
                     .numSliders = nb_sliders,
                     .numSpinners = nb_spinners,
-                    .maxPossibleCombo = diffres.getMaxComboAtIndex(current_hitobject < 0 ? 0 : current_hitobject),
+                    .maxPossibleCombo = (i32)diffres.getMaxComboAtIndex(current_hitobject < 0 ? 0 : current_hitobject),
                     .combo = highestCombo,
                     .misses = numMisses,
                     .c300 = num300s,

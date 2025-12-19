@@ -25,7 +25,7 @@ class BGImageHandler final {
 
    private:
     friend struct BGImageHandlerImpl;
-    StaticPImpl<BGImageHandlerImpl, 200> pImpl;
+    StaticPImpl<BGImageHandlerImpl, 256> pImpl;
 };
 
 #endif
