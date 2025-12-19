@@ -266,7 +266,7 @@ void RoomScreen::draw() {
     OsuScreen::draw();
 
     // Update avatar visibility status
-    for(auto elm : this->slotlist->container->vElements) {
+    for(auto elm : this->slotlist->container->getElements()) {
         if(elm->getName() == ULITERAL("avatar")) {
             // NOTE: Not checking horizontal visibility
             auto avatar = (UIAvatar *)elm;

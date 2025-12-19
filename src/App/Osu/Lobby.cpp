@@ -228,7 +228,7 @@ void Lobby::joinRoom(u32 id, const UString& password) {
     packet.write_string(password.toUtf8());
     BANCHO::Net::send_packet(packet);
 
-    for(CBaseUIElement* elm : this->list->container->vElements) {
+    for(CBaseUIElement* elm : this->list->container->getElements()) {
         auto* room = dynamic_cast<RoomUIElement*>(elm);
         if(room == nullptr) continue;
         if(std::cmp_not_equal(room->room_id, id)) continue;

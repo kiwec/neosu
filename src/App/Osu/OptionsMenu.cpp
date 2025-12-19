@@ -1527,7 +1527,7 @@ void OptionsMenu::mouse_update(bool *propagate_clicks) {
 
     if(contextMenuVisible) {
         // eyes are bleeding...
-        for(auto e : this->options->container->vElements) {
+        for(auto e : this->options->container->getElements()) {
             if(e == this->contextMenu) continue;
             e->stealFocus();
         }

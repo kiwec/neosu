@@ -13,6 +13,7 @@ class CBaseUIContainer : public CBaseUIElement {
 
     void draw_debug();
     void draw() override;
+    // IMPORTANT: do NOT add/remove elements while inside mouse_update!!!
     void mouse_update(bool *propagate_clicks) override;
 
     void onKeyUp(KeyboardEvent &e) override;
@@ -46,5 +47,8 @@ class CBaseUIContainer : public CBaseUIElement {
 
     void update_pos();
 
+    [[nodiscard]] forceinline const std::vector<CBaseUIElement *> &getElements() const { return this->vElements; }
+
+   protected:
     std::vector<CBaseUIElement *> vElements;
 };

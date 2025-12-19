@@ -20,10 +20,10 @@
 #include "Skin.h"
 #include "SoundEngine.h"
 
-SongDifficultyButton::SongDifficultyButton(SongBrowser* songBrowser, UIContextMenu* contextMenu, float xPos, float yPos,
+SongDifficultyButton::SongDifficultyButton(UIContextMenu* contextMenu, float xPos, float yPos,
                                            float xSize, float ySize, UString name, DatabaseBeatmap* map,
                                            SongButton* parentSongButton)
-    : SongButton(songBrowser, contextMenu, xPos, yPos, xSize, ySize, std::move(name), nullptr) {
+    : SongButton(contextMenu, xPos, yPos, xSize, ySize, std::move(name), nullptr) {
     this->databaseBeatmap = map;  // NOTE: can't use parent constructor for passing this argument, as it would
                                   // otherwise try to build a full button (and not just a diff button)
     this->parentSongButton = parentSongButton;
@@ -86,7 +86,7 @@ void SongDifficultyButton::draw() {
                      pos.y + size.y * this->fTextMarginScale + this->font->getHeight() * titleScale +
                          size.y * this->fTextSpacingScale + this->font->getHeight() * subTitleScale * 0.85f +
                          size.y * this->fTextSpacingScale + this->fontBold->getHeight() * diffScale * 0.8f);
-        g->drawString(this->fontBold, this->sDiff.c_str());
+        g->drawString(this->fontBold, this->sDiff);
     }
     g->popTransform();
 
@@ -195,15 +195,16 @@ void SongDifficultyButton::onSelected(bool wasSelected, bool autoSelectBottomMos
     //     wasParentSelected, isIndependentDiffButton(), !!parentSongButton, wasParentSelected,
     //     parentSongButton->isSelected());
 
+    auto *sb = osu->getSongBrowser();
     if(!wasParentActuallySelected) {
         // debugLog("running scroll jump fix for {}",
         //          this->databaseBeatmap ? this->databaseBeatmap->getFilePath() : "???");
-        this->songBrowser->requestNextScrollToSongButtonJumpFix(this);
+        sb->requestNextScrollToSongButtonJumpFix(this);
     }
 
-    this->songBrowser->onSelectionChange(this, true);
-    this->songBrowser->onDifficultySelected(this->databaseBeatmap, wasSelected);
-    this->songBrowser->scrollToSongButton(this);
+    sb->onSelectionChange(this, true);
+    sb->onDifficultySelected(this->databaseBeatmap, wasSelected);
+    sb->scrollToSongButton(this);
 }
 
 void SongDifficultyButton::updateGrade() {
@@ -229,7 +230,6 @@ void SongDifficultyButton::updateGrade() {
 }
 
 bool SongDifficultyButton::isIndependentDiffButton() const {
-    if(this->parentSongButton == nullptr) return true;
     if(!this->parentSongButton->isSelected()) return true;
 
     // check if this is the only visible sibling

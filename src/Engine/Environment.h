@@ -239,7 +239,7 @@ class Environment {
     void setRawMouseInput(bool raw);  // enable/disable OS-level rawinput
 
     void setOSMousePos(vec2 pos);
-    inline void setMousePos(float x, float y) { setOSMousePos(vec2{x, y}); }
+    inline void setOSMousePos(float x, float y) { setOSMousePos(vec2{x, y}); }
 
     // keyboard
     [[nodiscard]] UString keyCodeToString(SCANCODE keyCode) const;
@@ -317,7 +317,7 @@ class Environment {
     // <rel, abs>
     std::pair<vec2, vec2> consumeMousePositionCache();
     // allow Mouse to update the cached environment position post-sensitivity/clipping
-    // the difference between setMousePos and this is that it doesn't actually warp the OS cursor
+    // the difference between setOSMousePos and this is that it doesn't actually warp the OS cursor
     inline void updateCachedMousePos(const vec2 &pos) { m_vLastAbsMousePos = pos; }
 
     vec2 m_vLastAbsMousePos{0.f};

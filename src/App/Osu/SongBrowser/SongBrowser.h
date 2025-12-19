@@ -112,7 +112,7 @@ class SongBrowser final : public ScreenBackable {
     }
 
     void refreshBeatmaps(bool closeAfterLoading = false);
-    void addBeatmapSet(BeatmapSet *beatmap);
+    void addBeatmapSet(BeatmapSet *beatmap, bool initialSongBrowserLoad = false);
     void addSongButtonToAlphanumericGroup(SongButton *btn, std::vector<CollectionButton *> &group,
                                           std::string_view name);
 

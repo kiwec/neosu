@@ -737,7 +737,9 @@ bool Environment::minimize() {
     }
 
     if(winFullscreened()) {
-        brokenMinimizeRepeatedSpamWorkaroundCounter++;
+        if(m_bRestoreFullscreen == true) {  // only increment the check if we're being called redundantly
+            brokenMinimizeRepeatedSpamWorkaroundCounter++;
+        }
         m_bRestoreFullscreen = true;
         SDL_SetWindowFullscreen(m_window, false);
         SDL_SetWindowBordered(m_window, false);
@@ -1210,7 +1212,7 @@ void Environment::sdlFileDialogCallback(void *userdata, const char *const *filel
         for(const char *const *curr = filelist; *curr; curr++) {
             results.emplace_back(*curr);
         }
-    } else if(strncmp(SDL_GetError(), "dialogg", 7) == 0) {
+    } else if(strncmp(SDL_GetError(), "dialogg", sizeof("dialogg") - 1) == 0) {
         // expect to be called by fallback path next... weird stuff, seems like an SDL bug? (double calling callback)
         return;
     }
@@ -1298,10 +1300,10 @@ std::vector<std::string> Environment::enumerateDirectory(std::string_view pathTo
     if(handle != INVALID_HANDLE_VALUE) {
         utf8_entries.reserve(512);
 
-        while(true) {
+        do {
             const wchar_t *wide_filename = &data.cFileName[0];
             const size_t length = std::wcslen(wide_filename);
-            if(length <= 0) break;
+            if(length == 0) continue;
 
             const bool add_entry =
                 (!want_dirs ||
@@ -1313,9 +1315,7 @@ std::vector<std::string> Environment::enumerateDirectory(std::string_view pathTo
                 UString uFilename{wide_filename, static_cast<int>(length)};
                 utf8_entries.emplace_back(uFilename.toUtf8(), static_cast<size_t>(uFilename.lengthUtf8()));
             }
-
-            if(!FindNextFileW(handle, &data)) break;
-        }
+        } while(FindNextFileW(handle, &data));
 
         FindClose(handle);
     }

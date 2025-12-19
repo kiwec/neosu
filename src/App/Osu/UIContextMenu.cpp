@@ -179,7 +179,7 @@ void UIContextMenu::begin(int minWidth, bool bigStyle) {
     //   begin() deletes the object the callback is currently being called from
     // - so, instead, we just keep a list of things to delete whenever we get to the next update() tick
     {
-        const std::vector<CBaseUIElement *> &oldElementsWeCanNotDeleteYet = this->container->vElements;
+        const std::vector<CBaseUIElement *> &oldElementsWeCanNotDeleteYet = this->container->getElements();
         this->selfDeletionCrashWorkaroundScheduledElementDeleteHack.insert(
             this->selfDeletionCrashWorkaroundScheduledElementDeleteHack.end(), oldElementsWeCanNotDeleteYet.begin(),
             oldElementsWeCanNotDeleteYet.end());
@@ -248,7 +248,7 @@ void UIContextMenu::end(bool invertAnimation, bool clampUnderflowAndOverflowAndE
 
     const int margin = 9 * Osu::getUIScale();
 
-    const std::vector<CBaseUIElement *> &elements = this->container->vElements;
+    const std::vector<CBaseUIElement *> &elements = this->container->getElements();
     if(elements.empty()) return;
 
     for(auto element : elements) {

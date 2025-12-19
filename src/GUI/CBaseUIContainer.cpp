@@ -167,10 +167,8 @@ void CBaseUIContainer::mouse_update(bool *propagate_clicks) {
     if(!this->bVisible) return;
     CBaseUIElement::mouse_update(propagate_clicks);
 
-    // NOTE: do NOT use a range-based for loop here, mouse_update might invalidate iterators by changing the container contents...
     MC_UNROLL
-    for(size_t i = 0; i < this->vElements.size(); i++) {
-        auto *e = this->vElements[i];
+    for(auto *e : this->vElements) {
         if(e->isVisible()) e->mouse_update(propagate_clicks);
     }
 }
@@ -228,10 +226,20 @@ void CBaseUIContainer::onMouseDownOutside(bool /*left*/, bool /*right*/) { this-
 
 bool CBaseUIContainer::isBusy() {
     if(!this->bVisible) return false;
-    return std::ranges::contains(this->vElements, true, [](const auto &elem) -> bool { return elem->isBusy(); });
+    MC_UNROLL
+    for(auto *elem : this->vElements) {
+        if(elem->isBusy()) return true;
+    }
+
+    return false;
 }
 
 bool CBaseUIContainer::isActive() {
     if(!this->bVisible) return false;
-    return std::ranges::contains(this->vElements, true, [](const auto &elem) -> bool { return elem->isActive(); });
+    MC_UNROLL
+    for(auto *elem : this->vElements) {
+        if(elem->isActive()) return true;
+    }
+
+    return false;
 }

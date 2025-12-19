@@ -13,8 +13,9 @@ class SongButton : public CarouselButton {
    public:
     DEF_BUTTON_TYPE(SongButton, SongButton_, CarouselButton)
    public:
-    SongButton(SongBrowser *songBrowser, UIContextMenu *contextMenu, float xPos, float yPos, float xSize, float ySize,
-               UString name, DatabaseBeatmap *databaseBeatmap);
+    SongButton(UIContextMenu *contextMenu, float xPos, float yPos, float xSize, float ySize, UString name,
+               DatabaseBeatmap *databaseBeatmap);
+    SongButton() = delete;
     ~SongButton() override;
 
     void draw() override;

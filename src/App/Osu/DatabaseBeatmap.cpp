@@ -123,7 +123,8 @@ DatabaseBeatmap::DatabaseBeatmap(std::string filePath, std::string folder, Beatm
 DatabaseBeatmap::DatabaseBeatmap(std::vector<DatabaseBeatmap *> *difficulties, BeatmapType type)
     : DatabaseBeatmap("", "", type) {
     this->difficulties = difficulties;
-    if(this->difficulties->empty()) return;
+
+    assert(!this->difficulties->empty() && "DatabaseBeatmap: tried to construct a beatmapset with 0 difficulties");
 
     // set representative values for this container (i.e. use values from first difficulty)
     this->sTitle = (*this->difficulties)[0]->sTitle;

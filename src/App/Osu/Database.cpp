@@ -1255,7 +1255,7 @@ void Database::loadMaps() {
 
                     const auto num_std_star_ratings = dbr.read<u32>();
                     if(sr_field_size == sizeof(f64)) {  // older format
-                        for(u64 s = 0; s < num_std_star_ratings; s++) {
+                        for(uSz s = 0; s < num_std_star_ratings; s++) {
                             dbr.skip<u8>();  // 0x08 ObjType
                             auto mods = dbr.read<u32>();
                             dbr.skip<u8>();  // 0x0c ObjType
@@ -1266,7 +1266,7 @@ void Database::loadMaps() {
                             }
                         }
                     } else {
-                        for(u64 s = 0; s < num_std_star_ratings; s++) {
+                        for(uSz s = 0; s < num_std_star_ratings; s++) {
                             dbr.skip<u8>();  // 0x08 ObjType
                             auto mods = dbr.read<u32>();
                             dbr.skip<u8>();  // 0x0c ObjType

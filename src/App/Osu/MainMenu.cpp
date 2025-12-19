@@ -1196,10 +1196,10 @@ void MainMenu::selectRandomBeatmap() {
 
             // We're picking a random diff and not the first one, because diffs of the same set
             // can have their own separate sound file.
-            const auto &candidate_diff{beatmap_diffs[rand() % beatmap_diffs.size()]};
+            BeatmapDifficulty *candidate_diff = beatmap_diffs[rand() % beatmap_diffs.size()];
             assert(candidate_diff);
 
-            const bool skip =
+            const bool skip =  // don't skip backgroundless if this is our last attempt
                 (i < RETRY_SETS - 1) && !env->fileExists(candidate_diff->getFullBackgroundImageFilePath());
             if(skip) {
                 debugLog("Beatmap '{:s}' has no background image, skipping.", candidate_diff->getFilePath());

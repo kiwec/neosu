@@ -47,7 +47,7 @@ class CarouselButton : public CBaseUIButton {
     }
 
    public:
-    CarouselButton(SongBrowser *songBrowser, UIContextMenu *contextMenu, float xPos, float yPos, float xSize,
+    CarouselButton(UIContextMenu *contextMenu, float xPos, float yPos, float xSize,
                    float ySize, UString name);
     ~CarouselButton() override;
     void deleteAnimations();
@@ -75,6 +75,12 @@ class CarouselButton : public CBaseUIButton {
         this->children.push_back(child);
     }
 
+    inline void addChildren(std::vector<SongButton *> children) {
+        this->bChildrenNeedSorting = true;
+        this->children.insert(this->children.end(), std::make_move_iterator(children.begin()),
+                              std::make_move_iterator(children.end()));
+    }
+
     inline void setOffsetPercent(float offsetPercent) { this->fOffsetPercent = offsetPercent; }
     inline void setHideIfSelected(bool hideIfSelected) { this->bHideIfSelected = hideIfSelected; }
     inline void setIsSearchMatch(bool isSearchMatch) {
@@ -99,34 +105,27 @@ class CarouselButton : public CBaseUIButton {
     void drawMenuButtonBackground();
 
     virtual void onSelected(bool /*wasSelected*/, bool /*autoSelectBottomMostChild*/, bool /*wasParentSelected*/) { ; }
-    virtual void onRightMouseUpInside() { ; }
 
-    SongBrowser *songBrowser;
+    virtual void onRightMouseUpInside() { ; }
+    void onClicked(bool left = true, bool right = false) override;
+
+    void onMouseInside() override;
+    void onMouseOutside() override;
+
+    enum class MOVE_AWAY_STATE : uint8_t { MOVE_CENTER, MOVE_UP, MOVE_DOWN };
+
+    void setMoveAwayState(MOVE_AWAY_STATE moveAwayState, bool animate = true);
+
+    static int marginPixelsX;
+    static int marginPixelsY;
+    static float lastHoverSoundTime;
+
     UIContextMenu *contextMenu;
 
     McFont *font;
     McFont *fontBold;
 
-    bool bSelected;
-    bool bChildrenNeedSorting{true};
-
-   private:
-    static int marginPixelsX;
-    static int marginPixelsY;
-    static float lastHoverSoundTime;
-
-    enum class MOVE_AWAY_STATE : uint8_t { MOVE_CENTER, MOVE_UP, MOVE_DOWN };
-
-    void onClicked(bool left = true, bool right = false) override;
-    void onMouseInside() override;
-    void onMouseOutside() override;
-
-    void setMoveAwayState(MOVE_AWAY_STATE moveAwayState, bool animate = true);
-
     std::vector<SongButton *> children;
-
-    bool bRightClick;
-    bool bRightClickCheck;
 
     float fTargetRelPosY;
     float fScale;
@@ -139,6 +138,10 @@ class CarouselButton : public CBaseUIButton {
     std::atomic<bool> bIsSearchMatch;
 
     bool bHideIfSelected;
+    bool bRightClick;
+    bool bRightClickCheck;
+    bool bSelected;
+    bool bChildrenNeedSorting{true};
 
     MOVE_AWAY_STATE moveAwayState;
 };

@@ -8,9 +8,14 @@ class SongDifficultyButton final : public SongButton {
     NOCOPY_NOMOVE(SongDifficultyButton)
    public:
     DEF_BUTTON_TYPE(SongDifficultyButton, SongDifficultyButton_, SongButton)
+   private:
+    // only allow construction through parent song button (as child)
+    friend class SongButton;
+    SongDifficultyButton(UIContextMenu *contextMenu, float xPos, float yPos, float xSize, float ySize, UString name,
+                         DatabaseBeatmap *map, SongButton *parentSongButton);
+
    public:
-    SongDifficultyButton(SongBrowser *songBrowser, UIContextMenu *contextMenu, float xPos, float yPos, float xSize,
-                         float ySize, UString name, DatabaseBeatmap *map, SongButton *parentSongButton);
+    SongDifficultyButton() = delete;
     ~SongDifficultyButton() override;
 
     void draw() override;
@@ -29,7 +34,6 @@ class SongDifficultyButton final : public SongButton {
     void onSelected(bool wasSelected, bool autoSelectBottomMostChild, bool wasParentSelected) override;
 
     std::string sDiff;
-
     SongButton *parentSongButton;
 
     float fDiffScale;

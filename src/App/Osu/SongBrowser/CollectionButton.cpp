@@ -18,10 +18,10 @@
 #include "Skin.h"
 #include "UIContextMenu.h"
 
-CollectionButton::CollectionButton(SongBrowser *songBrowser, UIContextMenu *contextMenu, float xPos, float yPos,
+CollectionButton::CollectionButton(UIContextMenu *contextMenu, float xPos, float yPos,
                                    float xSize, float ySize, UString name, const UString &collectionName,
                                    std::vector<SongButton *> children)
-    : CarouselButton(songBrowser, contextMenu, xPos, yPos, xSize, ySize, std::move(name)) {
+    : CarouselButton(contextMenu, xPos, yPos, xSize, ySize, std::move(name)) {
     this->sCollectionName = collectionName.utf8View();
     this->setChildren(std::move(children));
 
@@ -42,7 +42,7 @@ void CollectionButton::draw() {
     const vec2 size = this->getActualSize();
 
     // draw title
-    UString titleString = this->sCollectionName.c_str();
+    UString titleString{this->sCollectionName};
     int numChildren = 0;
     {
         for(const auto *c : this->getChildren()) {
@@ -72,14 +72,14 @@ void CollectionButton::draw() {
 void CollectionButton::onSelected(bool wasSelected, bool autoSelectBottomMostChild, bool wasParentSelected) {
     CarouselButton::onSelected(wasSelected, autoSelectBottomMostChild, wasParentSelected);
 
-    this->songBrowser->onSelectionChange(this, true);
-    this->songBrowser->scrollToSongButton(this, true);
+    osu->getSongBrowser()->onSelectionChange(this, true);
+    osu->getSongBrowser()->scrollToSongButton(this, true);
 }
 
 void CollectionButton::onRightMouseUpInside() { this->triggerContextMenu(mouse->getPos()); }
 
 void CollectionButton::triggerContextMenu(vec2 pos) {
-    if(this->songBrowser->getGroupingMode() != SongBrowser::GroupType::COLLECTIONS) return;
+    if(osu->getSongBrowser()->getGroupingMode() != SongBrowser::GroupType::COLLECTIONS) return;
 
     if(this->contextMenu != nullptr) {
         this->contextMenu->setPos(pos);
@@ -154,7 +154,7 @@ void CollectionButton::onContextMenu(const UString &text, int id) {
 void CollectionButton::onRenameCollectionConfirmed(const UString &text, int /*id*/) {
     if(text.lengthUtf8() > 0) {
         // forward it
-        this->songBrowser->onCollectionButtonContextMenu(this, text, 3);
+        osu->getSongBrowser()->onCollectionButtonContextMenu(this, text, 3);
     }
 }
 
@@ -162,7 +162,7 @@ void CollectionButton::onDeleteCollectionConfirmed(const UString & /*text*/, int
     if(id != 2) return;
 
     // just forward it
-    this->songBrowser->onCollectionButtonContextMenu(this, this->sCollectionName.c_str(), id);
+    osu->getSongBrowser()->onCollectionButtonContextMenu(this, this->sCollectionName.c_str(), id);
 }
 
 Color CollectionButton::getActiveBackgroundColor() const {

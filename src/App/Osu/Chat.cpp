@@ -401,7 +401,7 @@ void Chat::mouse_update(bool *propagate_clicks) {
 
     if(this->user_list->isVisible()) {
         // Request presence & stats for on-screen user cards
-        for(auto elm : this->user_list->container->vElements) {
+        for(auto elm : this->user_list->container->getElements()) {
             auto *card = (UserCard2 *)elm;
             bool is_above_bottom = card->getPos().y <= this->user_list->getPos().y + this->user_list->getSize().y;
             bool is_below_top = card->getPos().y + card->getSize().y >= this->user_list->getPos().y;

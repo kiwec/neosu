@@ -23,9 +23,9 @@
 #include "SkinImage.h"
 #include "UIContextMenu.h"
 
-SongButton::SongButton(SongBrowser *songBrowser, UIContextMenu *contextMenu, float xPos, float yPos, float xSize,
-                       float ySize, UString name, DatabaseBeatmap *databaseBeatmap)
-    : CarouselButton(songBrowser, contextMenu, xPos, yPos, xSize, ySize, std::move(name)) {
+SongButton::SongButton(UIContextMenu *contextMenu, float xPos, float yPos, float xSize, float ySize, UString name,
+                       DatabaseBeatmap *databaseBeatmap)
+    : CarouselButton(contextMenu, xPos, yPos, xSize, ySize, std::move(name)) {
     this->databaseBeatmap = databaseBeatmap;
 
     // settings
@@ -41,16 +41,14 @@ SongButton::SongButton(SongBrowser *songBrowser, UIContextMenu *contextMenu, flo
     this->fSubTitleScale = 0.14f;
     this->fGradeScale = 0.45f;
 
-    // build children
-    if(this->databaseBeatmap != nullptr) {
-        const std::vector<DatabaseBeatmap *> &difficulties = this->databaseBeatmap->getDifficulties();
-
-        // and add them
-        for(auto diff : difficulties) {
-            SongButton *songButton =
-                new SongDifficultyButton(this->songBrowser, this->contextMenu, 0, 0, 0, 0, "", diff, this);
-
-            this->addChild(songButton);
+    // build and add children
+    if(!!this->databaseBeatmap) {
+        const auto &diffs = this->databaseBeatmap->getDifficulties();
+        if(!diffs.empty()) {
+            this->children.reserve(diffs.size());
+            for(auto diff : diffs) {
+                this->children.emplace_back(new SongDifficultyButton(this->contextMenu, 0, 0, 0, 0, "", diff, this));
+            }
         }
     }
 
@@ -58,7 +56,7 @@ SongButton::SongButton(SongBrowser *songBrowser, UIContextMenu *contextMenu, flo
 }
 
 SongButton::~SongButton() {
-    for(auto &i : this->getChildren()) {
+    for(auto &i : this->children) {
         delete i;
     }
 }
@@ -140,7 +138,7 @@ void SongButton::drawBeatmapBackgroundThumbnail(const Image *image) {
     const vec2 pos = this->getActualPos();
     const vec2 size = this->getActualSize();
 
-    const f32 thumbnailYRatio = this->songBrowser->thumbnailYRatio;
+    const f32 thumbnailYRatio = osu->getSongBrowser()->thumbnailYRatio;
     const f32 beatmapBackgroundScale =
         Osu::getImageScaleToFillResolution(image, vec2(size.y * thumbnailYRatio, size.y)) * 1.05f;
 
@@ -199,7 +197,7 @@ void SongButton::drawTitle(float deselectedAlpha, bool forceSelectedStyle) {
 
     g->pushTransform();
     {
-        UString title = this->sTitle.c_str();
+        UString title{this->sTitle};
         g->scale(titleScale, titleScale);
         g->translate(pos.x + this->fTextOffset,
                      pos.y + size.y * this->fTextMarginScale + this->font->getHeight() * titleScale);
@@ -221,9 +219,9 @@ void SongButton::drawSubTitle(float deselectedAlpha, bool forceSelectedStyle) {
 
     g->pushTransform();
     {
-        UString subTitleString = this->sArtist.c_str();
+        UString subTitleString{this->sArtist};
         subTitleString.append(" // ");
-        subTitleString.append(this->sMapper.c_str());
+        subTitleString.append(this->sMapper);
 
         g->scale(subTitleScale, subTitleScale);
         g->translate(pos.x + this->fTextOffset,
@@ -255,7 +253,7 @@ void SongButton::updateLayoutEx() {
     if(osu->getSkin()->version < 2.2f) {
         this->fTextOffset += size.x * 0.02f * 2.0f;
     } else {
-        const f32 thumbnailYRatio = this->songBrowser->thumbnailYRatio;
+        const f32 thumbnailYRatio = osu->getSongBrowser()->thumbnailYRatio;
         this->fTextOffset += size.y * thumbnailYRatio + size.x * 0.02f;
         this->fGradeOffset += size.y * thumbnailYRatio + size.x * 0.0125f;
     }
@@ -269,7 +267,7 @@ void SongButton::onSelected(bool wasSelected, bool autoSelectBottomMostChild, bo
 
     // update button positions so the resort is actually applied
     // XXX: we shouldn't be updating ALL of the buttons
-    this->songBrowser->updateSongButtonLayout();
+    osu->getSongBrowser()->updateSongButtonLayout();
 
     // update grade on child
     for(auto &c : this->getChildren()) {
@@ -277,7 +275,7 @@ void SongButton::onSelected(bool wasSelected, bool autoSelectBottomMostChild, bo
         child->updateGrade();
     }
 
-    this->songBrowser->onSelectionChange(this, false);
+    osu->getSongBrowser()->onSelectionChange(this, false);
 
     // now, automatically select the bottom child (hardest diff, assuming default sorting, and respecting the current
     // search matches)
@@ -310,7 +308,7 @@ void SongButton::triggerContextMenu(vec2 pos) {
 
             this->contextMenu->addButtonJustified("[+Set] Add to Collection", TEXT_JUSTIFICATION::LEFT, 2);
 
-            if(this->songBrowser->getGroupingMode() == SongBrowser::GroupType::COLLECTIONS) {
+            if(osu->getSongBrowser()->getGroupingMode() == SongBrowser::GroupType::COLLECTIONS) {
                 CBaseUIButton *spacer = this->contextMenu->addButtonJustified("---", TEXT_JUSTIFICATION::CENTERED);
                 spacer->setEnabled(false);
                 spacer->setTextColor(0xff888888);
@@ -388,7 +386,7 @@ void SongButton::onContextMenu(const UString &text, int id) {
     } else if(id == 3 || id == 4) {
         // 3 = remove map from collection
         // 4 = remove set from collection
-        this->songBrowser->onSongButtonContextMenu(this, text, id);
+        osu->getSongBrowser()->onSongButtonContextMenu(this, text, id);
     }
 }
 
@@ -423,14 +421,14 @@ void SongButton::onAddToCollectionConfirmed(const UString &text, int id) {
         UIContextMenu::clampToBottomScreenEdge(this->contextMenu);
     } else {
         // just forward it
-        this->songBrowser->onSongButtonContextMenu(this, text, id);
+        osu->getSongBrowser()->onSongButtonContextMenu(this, text, id);
     }
 }
 
 void SongButton::onCreateNewCollectionConfirmed(const UString &text, int id) {
     if(id == -2 || id == -4) {
         // just forward it
-        this->songBrowser->onSongButtonContextMenu(this, text, id);
+        osu->getSongBrowser()->onSongButtonContextMenu(this, text, id);
     }
 }
 

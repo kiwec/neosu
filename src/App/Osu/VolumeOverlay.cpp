@@ -145,7 +145,7 @@ void VolumeOverlay::mouse_update(bool *propagate_clicks) {
          this->volumeMusic->isMouseInside()))) {
         this->animate();
 
-        const std::vector<CBaseUIElement *> &elements = this->volumeSliderOverlayContainer->vElements;
+        const std::vector<CBaseUIElement *> &elements = this->volumeSliderOverlayContainer->getElements();
         for(int i = 0; i < elements.size(); i++) {
             if(((UIVolumeSlider *)elements[i])->checkWentMouseInside()) {
                 for(int c = 0; c < elements.size(); c++) {
@@ -216,7 +216,7 @@ void VolumeOverlay::onKeyDown(KeyboardEvent &key) {
 
     if(this->isVisible() && this->canChangeVolume()) {
         if(key == KEY_LEFT) {
-            const std::vector<CBaseUIElement *> &elements = this->volumeSliderOverlayContainer->vElements;
+            const std::vector<CBaseUIElement *> &elements = this->volumeSliderOverlayContainer->getElements();
             for(int i = 0; i < elements.size(); i++) {
                 if(((UIVolumeSlider *)elements[i])->isSelected()) {
                     const int nextIndex = (i == elements.size() - 1 ? 0 : i + 1);
@@ -228,7 +228,7 @@ void VolumeOverlay::onKeyDown(KeyboardEvent &key) {
             this->animate();
             key.consume();
         } else if(key == KEY_RIGHT) {
-            const std::vector<CBaseUIElement *> &elements = this->volumeSliderOverlayContainer->vElements;
+            const std::vector<CBaseUIElement *> &elements = this->volumeSliderOverlayContainer->getElements();
             for(int i = 0; i < elements.size(); i++) {
                 if(((UIVolumeSlider *)elements[i])->isSelected()) {
                     const int prevIndex = (i == 0 ? elements.size() - 1 : i - 1);
