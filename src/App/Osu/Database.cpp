@@ -900,11 +900,24 @@ std::string Database::getOsuSongsFolder() {
 }
 
 void Database::scheduleLoadRaw() {
-    this->raw_load_osu_song_folder = Database::getOsuSongsFolder();
+    {
+        std::string folderToLoadFrom = Database::getOsuSongsFolder();
+        std::vector<std::string> foldersInFolder;
 
-    debugLog("Database: sRawBeatmapLoadOsuSongFolder = {:s}", this->raw_load_osu_song_folder);
+        if(!(File::exists(folderToLoadFrom) == File::FILETYPE::FOLDER) ||  //
+           (foldersInFolder = Environment::getFoldersInFolder(folderToLoadFrom)).empty()) {
+            folderToLoadFrom = NEOSU_MAPS_PATH "/";
+            foldersInFolder = Environment::getFoldersInFolder(folderToLoadFrom);
 
-    this->raw_load_beatmap_folders = env->getFoldersInFolder(this->raw_load_osu_song_folder);
+            debugLog("Loading raw beatmaps from folders in {} (no osu!stable maps found)", folderToLoadFrom);
+        } else {
+            debugLog("Loading raw beatmaps from folders in {}", folderToLoadFrom);
+        }
+
+        this->raw_load_osu_song_folder = std::move(folderToLoadFrom);
+        this->raw_load_beatmap_folders = std::move(foldersInFolder);
+    }
+
     this->num_beatmaps_to_load = this->raw_load_beatmap_folders.size();
 
     // if this isn't the first load, only load the differences
