@@ -269,7 +269,6 @@ void set_map(const DatabaseBeatmap* new_map) {
     } else if(had_map && new_map == nullptr) {
         if(thr.joinable()) {
             thr.request_stop();
-            cond.notify_one();
             thr.join();
         }
     }

@@ -12,7 +12,7 @@ class SongDifficultyButton final : public SongButton {
     // only allow construction through parent song button (as child)
     friend class SongButton;
     SongDifficultyButton(UIContextMenu *contextMenu, float xPos, float yPos, float xSize, float ySize, UString name,
-                         DatabaseBeatmap *map, SongButton *parentSongButton);
+                         BeatmapDifficulty *diff, SongButton *parentSongButton);
 
    public:
     SongDifficultyButton() = delete;
@@ -31,7 +31,7 @@ class SongDifficultyButton final : public SongButton {
     [[nodiscard]] bool isIndependentDiffButton() const;
 
    private:
-    void onSelected(bool wasSelected, bool autoSelectBottomMostChild, bool wasParentSelected) override;
+    void onSelected(bool wasSelected, SelOpts opts) override;
 
     std::string sDiff;
     SongButton *parentSongButton;

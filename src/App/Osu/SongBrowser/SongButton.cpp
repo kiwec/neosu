@@ -23,33 +23,26 @@
 #include "SkinImage.h"
 #include "UIContextMenu.h"
 
+// passthrough for SongDifficultyButton
+SongButton::SongButton(UIContextMenu *contextMenu, float xPos, float yPos, float xSize, float ySize, UString name)
+    : CarouselButton(contextMenu, xPos, yPos, xSize, ySize, std::move(name)) {}
+
 SongButton::SongButton(UIContextMenu *contextMenu, float xPos, float yPos, float xSize, float ySize, UString name,
                        DatabaseBeatmap *databaseBeatmap)
-    : CarouselButton(contextMenu, xPos, yPos, xSize, ySize, std::move(name)) {
+    : SongButton(contextMenu, xPos, yPos, xSize, ySize, std::move(name)) {
+    assert(databaseBeatmap && !databaseBeatmap->getDifficulties().empty());
+
     this->databaseBeatmap = databaseBeatmap;
 
     // settings
     this->setHideIfSelected(true);
 
-    // labels
-    this->fThumbnailFadeInTime = 0.0f;
-    this->fTextOffset = 0.0f;
-    this->fGradeOffset = 0.0f;
-    this->fTextSpacingScale = 0.075f;
-    this->fTextMarginScale = 0.075f;
-    this->fTitleScale = 0.22f;
-    this->fSubTitleScale = 0.14f;
-    this->fGradeScale = 0.45f;
-
     // build and add children
-    if(!!this->databaseBeatmap) {
-        const auto &diffs = this->databaseBeatmap->getDifficulties();
-        if(!diffs.empty()) {
-            this->children.reserve(diffs.size());
-            for(auto diff : diffs) {
-                this->children.emplace_back(new SongDifficultyButton(this->contextMenu, 0, 0, 0, 0, "", diff, this));
-            }
-        }
+    const auto &diffs = this->databaseBeatmap->getDifficulties();
+
+    this->children.reserve(diffs.size());
+    for(auto diff : diffs) {
+        this->children.emplace_back(new SongDifficultyButton(this->contextMenu, 0, 0, 0, 0, "", diff, this));
     }
 
     this->updateLayoutEx();
@@ -86,34 +79,36 @@ void SongButton::mouse_update(bool *propagate_clicks) {
         this->fVisibleFor = 0.f;
         return;
     }
-    this->fVisibleFor += engine->getFrameTime();
 
+    this->fVisibleFor += engine->getFrameTime();
     CarouselButton::mouse_update(propagate_clicks);
+
+    if(this->children.empty()) return;
 
     // HACKHACK: calling these two every frame is a bit insane, but too lazy to write delta detection logic atm. (UI
     // desync is not a problem since parent buttons are invisible while selected, so no resorting happens in that state)
     this->sortChildren();
 
-    if(this->databaseBeatmap != nullptr && this->getChildren().size() > 0) {
-        // use the bottom child (hardest diff, assuming default sorting, and respecting the current search matches)
-        for(int i = this->getChildren().size() - 1; i >= 0; i--) {
-            // NOTE: if no search is active, then all search matches return true by default
-            if(this->getChildren()[i]->isType<SongButton>() && this->getChildren()[i]->isSearchMatch()) {
-                const auto *currentRepresentativeBeatmap = this->representativeBeatmap;
-                auto *newRepresentativeBeatmap = this->getChildren()[i]->as<SongButton>()->getDatabaseBeatmap();
+    SongDifficultyButton *bottomChild = nullptr;
+    // use the bottom child (hardest diff, assuming default sorting, and respecting the current search matches)
+    for(auto *child : this->childDiffBtns() | std::views::reverse) {
+        // NOTE: if no search is active, then all search matches return true by default
+        if(!child->isSearchMatch()) continue;
+        bottomChild = child;
+        break;
+    }
+    // no children visible
+    if(!bottomChild) return;
 
-                if(currentRepresentativeBeatmap == nullptr ||
-                   currentRepresentativeBeatmap != newRepresentativeBeatmap) {
-                    this->representativeBeatmap = newRepresentativeBeatmap;
+    const auto *currentRepresentativeBeatmap = this->representativeBeatmap;
+    auto *newRepresentativeBeatmap = bottomChild->getDatabaseBeatmap();
 
-                    this->sTitle = newRepresentativeBeatmap->getTitle();
-                    this->sArtist = newRepresentativeBeatmap->getArtist();
-                    this->sMapper = newRepresentativeBeatmap->getCreator();
-                }
+    if(currentRepresentativeBeatmap == nullptr || currentRepresentativeBeatmap != newRepresentativeBeatmap) {
+        this->representativeBeatmap = newRepresentativeBeatmap;
 
-                break;
-            }
-        }
+        this->sTitle = newRepresentativeBeatmap->getTitle();
+        this->sArtist = newRepresentativeBeatmap->getArtist();
+        this->sMapper = newRepresentativeBeatmap->getCreator();
     }
 }
 
@@ -232,10 +227,13 @@ void SongButton::drawSubTitle(float deselectedAlpha, bool forceSelectedStyle) {
     g->popTransform();
 }
 
-void SongButton::sortChildren() {
+bool SongButton::sortChildren() {
     if(this->bChildrenNeedSorting) {
         this->bChildrenNeedSorting = false;
-        std::ranges::sort(this->getChildren(), SongBrowser::sort_by_difficulty);
+        std::ranges::sort(this->children, SongBrowser::sort_by_difficulty);
+        return true;
+    } else {
+        return false;
     }
 }
 
@@ -259,8 +257,8 @@ void SongButton::updateLayoutEx() {
     }
 }
 
-void SongButton::onSelected(bool wasSelected, bool autoSelectBottomMostChild, bool wasParentSelected) {
-    CarouselButton::onSelected(wasSelected, autoSelectBottomMostChild, wasParentSelected);
+void SongButton::onSelected(bool wasSelected, SelOpts opts) {
+    CarouselButton::onSelected(wasSelected, opts);
 
     // resort children (since they might have been updated in the meantime)
     this->sortChildren();
@@ -270,8 +268,7 @@ void SongButton::onSelected(bool wasSelected, bool autoSelectBottomMostChild, bo
     osu->getSongBrowser()->updateSongButtonLayout();
 
     // update grade on child
-    for(auto &c : this->getChildren()) {
-        auto *child = (SongDifficultyButton *)c;
+    for(auto *child : this->childDiffBtns()) {
         child->updateGrade();
     }
 
@@ -279,14 +276,13 @@ void SongButton::onSelected(bool wasSelected, bool autoSelectBottomMostChild, bo
 
     // now, automatically select the bottom child (hardest diff, assuming default sorting, and respecting the current
     // search matches)
-    if(autoSelectBottomMostChild) {
-        for(int i = this->getChildren().size() - 1; i >= 0; i--) {
-            if(this->getChildren()[i]
-                   ->isSearchMatch())  // NOTE: if no search is active, then all search matches return true by default
-            {
-                this->getChildren()[i]->select(true, false, wasSelected);
-                break;
-            }
+    if(!opts.noSelectBottomChild) {
+        for(auto *child : this->children | std::views::reverse) {
+            // NOTE: if no search is active, then all search matches return true by default
+            if(!child->isSearchMatch()) continue;
+            SelOpts childOpts{.parentUnselected = !wasSelected};
+            child->select(childOpts);
+            break;
         }
     }
 }

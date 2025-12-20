@@ -20,22 +20,25 @@
 #include "Skin.h"
 #include "SoundEngine.h"
 
-SongDifficultyButton::SongDifficultyButton(UIContextMenu* contextMenu, float xPos, float yPos,
-                                           float xSize, float ySize, UString name, DatabaseBeatmap* map,
-                                           SongButton* parentSongButton)
-    : SongButton(contextMenu, xPos, yPos, xSize, ySize, std::move(name), nullptr) {
-    this->databaseBeatmap = map;  // NOTE: can't use parent constructor for passing this argument, as it would
-                                  // otherwise try to build a full button (and not just a diff button)
+SongDifficultyButton::SongDifficultyButton(UIContextMenu* contextMenu, float xPos, float yPos, float xSize, float ySize,
+                                           UString name, BeatmapDifficulty* diff, SongButton* parentSongButton)
+    : SongButton(contextMenu, xPos, yPos, xSize, ySize, std::move(name)) {
+    // must exist and be a difficulty
+    assert(diff && diff->getDifficulties().empty());
+
+    this->databaseBeatmap = diff;
     this->parentSongButton = parentSongButton;
 
     this->sMapper = this->databaseBeatmap->getCreator();
     this->sDiff = this->databaseBeatmap->getDifficultyName();
 
+    const bool independentDiff = this->isIndependentDiffButton();
+
     this->fDiffScale = 0.18f;
-    this->fOffsetPercentAnim = (this->parentSongButton != nullptr ? 1.0f : 0.0f);
+    this->fOffsetPercentAnim = independentDiff ? 1.0f : 0.f;
 
     this->bUpdateGradeScheduled = true;
-    this->bPrevOffsetPercentSelectionState = this->isIndependentDiffButton();
+    this->bPrevOffsetPercentSelectionState = independentDiff;
 
     // settings
     this->setHideIfSelected(false);
@@ -153,7 +156,7 @@ void SongDifficultyButton::mouse_update(bool* propagate_clicks) {
         this->fVisibleFor = 0.f;
         return;
     }
-    SongButton::mouse_update(propagate_clicks);
+    CarouselButton::mouse_update(propagate_clicks);
 
     this->fVisibleFor += engine->getFrameTime();
 
@@ -178,14 +181,14 @@ void SongDifficultyButton::onClicked(bool left, bool right) {
     // NOTE: Intentionally not calling Button::onClicked(left, right), since that one plays another sound
     CBaseUIButton::onClicked(left, right);
 
-    this->select(true, true);
+    this->select();
 }
 
-void SongDifficultyButton::onSelected(bool wasSelected, bool autoSelectBottomMostChild, bool wasParentSelected) {
-    CarouselButton::onSelected(wasSelected, autoSelectBottomMostChild, wasParentSelected);
+void SongDifficultyButton::onSelected(bool wasSelected, SelOpts opts) {
+    CarouselButton::onSelected(wasSelected, opts);
 
     const bool wasParentActuallySelected = (!this->isIndependentDiffButton() && !!this->parentSongButton &&
-                                            wasParentSelected && this->parentSongButton->isSelected());
+                                            !(opts.parentUnselected) && this->parentSongButton->isSelected());
 
     this->updateGrade();
 
@@ -195,7 +198,7 @@ void SongDifficultyButton::onSelected(bool wasSelected, bool autoSelectBottomMos
     //     wasParentSelected, isIndependentDiffButton(), !!parentSongButton, wasParentSelected,
     //     parentSongButton->isSelected());
 
-    auto *sb = osu->getSongBrowser();
+    auto* sb = osu->getSongBrowser();
     if(!wasParentActuallySelected) {
         // debugLog("running scroll jump fix for {}",
         //          this->databaseBeatmap ? this->databaseBeatmap->getFilePath() : "???");

@@ -5,16 +5,22 @@
 
 class Image;
 class SongBrowser;
+class SongDifficultyButton;
 class DatabaseBeatmap;
+using BeatmapSet = DatabaseBeatmap;
+using BeatmapDifficulty = DatabaseBeatmap;
 class BeatmapCarousel;
 
 class SongButton : public CarouselButton {
     NOCOPY_NOMOVE(SongButton)
    public:
     DEF_BUTTON_TYPE(SongButton, SongButton_, CarouselButton)
+    // only for SongDifficultyButton as a passthrough (unnecessary inheritance...?)
+    SongButton(UIContextMenu *contextMenu, float xPos, float yPos, float xSize, float ySize, UString name);
+
    public:
     SongButton(UIContextMenu *contextMenu, float xPos, float yPos, float xSize, float ySize, UString name,
-               DatabaseBeatmap *databaseBeatmap);
+               BeatmapSet *databaseBeatmap);
     SongButton() = delete;
     ~SongButton() override;
 
@@ -23,7 +29,8 @@ class SongButton : public CarouselButton {
 
     void triggerContextMenu(vec2 pos);
 
-    void sortChildren();
+    // returns true if we did actually did something
+    bool sortChildren();
 
     void updateLayoutEx() override;
     virtual void updateGrade() { ; }
@@ -32,7 +39,7 @@ class SongButton : public CarouselButton {
     ScoreGrade grade = ScoreGrade::N;
 
    protected:
-    void onSelected(bool wasSelected, bool autoSelectBottomMostChild, bool wasParentSelected) override;
+    void onSelected(bool wasSelected, SelOpts opts) override;
     void onRightMouseUpInside() override;
 
     void onContextMenu(const UString &text, int id = -1);
@@ -47,24 +54,28 @@ class SongButton : public CarouselButton {
     float calculateGradeScale();
     float calculateGradeWidth();
 
-    DatabaseBeatmap *databaseBeatmap;
+    DatabaseBeatmap *databaseBeatmap{nullptr};
 
     std::string sTitle;
     std::string sArtist;
     std::string sMapper;
 
-    float fTextOffset;
-    float fGradeOffset;
-    float fTextSpacingScale;
-    float fTextMarginScale;
-    float fTitleScale;
-    float fSubTitleScale;
-    float fGradeScale;
+    // defaults
+    float fTextOffset{0.0f};
+    float fGradeOffset{0.0f};
+    float fTextSpacingScale{0.075f};
+    float fTextMarginScale{0.075f};
+    float fTitleScale{0.22f};
+    float fSubTitleScale{0.14f};
+    float fGradeScale{0.45f};
 
    private:
+    [[nodiscard]] inline std::vector<SongDifficultyButton *> &childDiffBtns() {
+        return reinterpret_cast<std::vector<SongDifficultyButton *> &>(this->children);
+    }
     DatabaseBeatmap *representativeBeatmap{nullptr};
 
     float fVisibleFor{0.f};
-    float fThumbnailFadeInTime;
+    float fThumbnailFadeInTime{0.0f};
     void onOpenBeatmapFolderClicked();
 };

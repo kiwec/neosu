@@ -224,7 +224,7 @@ struct LivePPCalc::LivePPCalcImpl {
             // this allows calculation after seeking and dropping combo
             // need to re-simulate the play up until that point to be accurate
             if(modAuto) {
-                ppv2pars.combo = (i32)ppv2pars.maxPossibleCombo;
+                ppv2pars.combo = ppv2pars.maxPossibleCombo;
                 ppv2pars.c300 = ppv2pars.numHitObjects;
                 ppv2pars.c100 = ppv2pars.c50 = ppv2pars.misses = 0;
                 ppv2pars.legacyTotalScore = 0;  // no score-based misscount

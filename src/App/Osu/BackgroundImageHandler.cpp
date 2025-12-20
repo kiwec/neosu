@@ -55,9 +55,11 @@ struct BGImageHandlerImpl final {
     BGImageHandlerImpl();
     ~BGImageHandlerImpl();
 
-    void draw(DatabaseBeatmap *beatmap, f32 alpha = 1.f);
+    void draw(const Image *backgroundImage, f32 alpha = 1.f);
+    void draw(const DatabaseBeatmap *beatmap, f32 alpha = 1.f);
     void update(bool allowEviction);
-    const Image *getLoadBackgroundImage(const DatabaseBeatmap *beatmap, bool load_immediately = false);
+    const Image *getLoadBackgroundImage(const DatabaseBeatmap *beatma, bool load_immediately = false,
+                                        bool allow_menubg_fallback = true);
 
     struct ENTRY {
         std::string folder;
@@ -87,7 +89,6 @@ struct BGImageHandlerImpl final {
     };
 
     [[nodiscard]] u32 getMaxEvictions() const;
-    [[nodiscard]] static const Image *getImageOrSkinFallback(const Image *candidate_loaded, bool force_fallback);
 
     void handleLoadPathForEntry(const std::string &path, ENTRY &entry);
     inline void handleLoadImageForEntry(ENTRY &entry) { return this->acquireImageRef(entry); }
@@ -161,21 +162,24 @@ BGImageHandlerImpl::~BGImageHandlerImpl() {
     cv::load_beatmap_background_images.removeCallback();
 }
 
-void BGImageHandlerImpl::draw(DatabaseBeatmap *beatmap, f32 alpha) {
-    if(beatmap == nullptr) return;
+void BGImageHandlerImpl::draw(const Image *image, f32 alpha) {
+    if(!image || !image->isReady()) return;
 
-    const Image *backgroundImage = this->getLoadBackgroundImage(beatmap);
-    if(backgroundImage == nullptr || !backgroundImage->isReady()) return;
-
-    f32 scale = Osu::getImageScaleToFillResolution(backgroundImage, osu->getVirtScreenSize());
+    f32 scale = Osu::getImageScaleToFillResolution(image, osu->getVirtScreenSize());
     g->pushTransform();
     {
         g->setColor(Color(0xff999999).setA(alpha));
         g->scale(scale, scale);
         g->translate(osu->getVirtScreenWidth() / 2, osu->getVirtScreenHeight() / 2);
-        g->drawImage(backgroundImage);
+        g->drawImage(image);
     }
     g->popTransform();
+}
+
+void BGImageHandlerImpl::draw(const DatabaseBeatmap *beatmap, f32 alpha) {
+    if(beatmap == nullptr) return;
+    const Image *backgroundImage = this->getLoadBackgroundImage(beatmap);
+    return this->draw(backgroundImage, alpha);
 }
 
 void BGImageHandlerImpl::update(bool allow_eviction) {
@@ -256,11 +260,16 @@ void BGImageHandlerImpl::update(bool allow_eviction) {
     this->frozen = false;
 
     // DEBUG:
-    // debugLog("cache.size() = {:d}", this->cache.size());
+    // debugLog("cache.size() = {:d}", this->shared_images.size());
 }
 
-const Image *BGImageHandlerImpl::getLoadBackgroundImage(const DatabaseBeatmap *beatmap, bool load_immediately) {
+const Image *BGImageHandlerImpl::getLoadBackgroundImage(const DatabaseBeatmap *beatmap, bool load_immediately,
+                                                        bool allow_menubg_fallback) {
     if(beatmap == nullptr || this->disabled || !beatmap->draw_background) return nullptr;
+    const Image *ret = nullptr;
+
+    // only fall back to skin menu-bg if it was found in the cache but not usable, or if we want to load immediately
+    bool try_menubg_fallback = load_immediately && allow_menubg_fallback;
 
     // NOTE: no references to beatmap are kept anywhere (database can safely be deleted/reloaded without having to
     // notify the BackgroundImageHandler)
@@ -290,12 +299,15 @@ const Image *BGImageHandlerImpl::getLoadBackgroundImage(const DatabaseBeatmap *b
             db->update_overrides(const_cast<DatabaseBeatmap *>(beatmap));
         }
 
-        return BGImageHandlerImpl::getImageOrSkinFallback(entry.image, entry.ready_but_image_not_found);
+        ret = entry.image;
+
+        // if we got an image but it failed for whatever reason, return the user skin as a fallback instead
+        try_menubg_fallback = allow_menubg_fallback && (entry.ready_but_image_not_found || (ret && ret->failedLoad()));
     } else {
         // 2) not found in cache, so create a new entry which will get handled in the next update
 
         // try evicting stale not-yet-loaded-nor-started-loading entries on overflow
-        if(this->cache.size() > this->max_cache_size) {
+        if(this->shared_images.size() > this->max_cache_size) {
             // don't evict more than a few at a time
             u32 max_to_evict = getMaxEvictions();
             u32 evicted = 0;
@@ -328,7 +340,15 @@ const Image *BGImageHandlerImpl::getLoadBackgroundImage(const DatabaseBeatmap *b
         this->cache.try_emplace(beatmap_filepath, entry);
     }
 
-    return nullptr;
+    if(try_menubg_fallback) {
+        const Image *skin_bg = nullptr;
+        const Skin *skin = osu->getSkin();
+        if(skin && (skin_bg = skin->i_menu_bg) && skin_bg != MISSING_TEXTURE && !skin_bg->failedLoad()) {
+            ret = skin_bg;
+        }
+    }
+
+    return ret;
 }
 
 // private
@@ -379,25 +399,12 @@ void BGImageHandlerImpl::releaseImageRef(ENTRY &entry) {
 }
 
 u32 BGImageHandlerImpl::getMaxEvictions() const {
-    u32 ret = static_cast<u32>(static_cast<float>(this->cache.size()) * (1.f / 4.f));
-    if(this->cache.size() > this->max_cache_size) {
+    u32 ret = static_cast<u32>(static_cast<float>(this->shared_images.size()) * (1.f / 4.f));
+    if(this->shared_images.size() > this->max_cache_size) {
         ret += static_cast<u32>(
-            std::round(std::log2<u32>(static_cast<u32>(this->cache.size() - this->max_cache_size)) * 2u));
+            std::round(std::log2<u32>(static_cast<u32>(this->shared_images.size() - this->max_cache_size)) * 2u));
     }
-    ret = std::clamp<u32>(ret, 0u, this->cache.size() / 2u);
-    return ret;
-}
-
-const Image *BGImageHandlerImpl::getImageOrSkinFallback(const Image *candidate_loaded, bool force_fallback) {
-    const Image *ret = candidate_loaded;
-    // if we got an image but it failed for whatever reason, return the user skin as a fallback instead
-    if(force_fallback || (candidate_loaded && candidate_loaded->failedLoad())) {
-        const Image *skin_bg = nullptr;
-        if(osu->getSkin() && (skin_bg = osu->getSkin()->i_menu_bg) && skin_bg != MISSING_TEXTURE &&
-           !skin_bg->failedLoad()) {
-            ret = skin_bg;
-        }
-    }
+    ret = std::clamp<u32>(ret, 0u, this->shared_images.size() / 2u);
     return ret;
 }
 
@@ -545,9 +552,11 @@ bool MapBGImagePathLoader::checkMojibake() {
 BGImageHandler::BGImageHandler() : pImpl() {}
 BGImageHandler::~BGImageHandler() = default;
 
-void BGImageHandler::draw(DatabaseBeatmap *beatmap, f32 alpha) { return pImpl->draw(beatmap, alpha); }
+void BGImageHandler::draw(const Image *backgroundImage, f32 alpha) { return pImpl->draw(backgroundImage, alpha); }
+void BGImageHandler::draw(const DatabaseBeatmap *beatmap, f32 alpha) { return pImpl->draw(beatmap, alpha); }
 void BGImageHandler::update(bool allowEviction) { return pImpl->update(allowEviction); }
-const Image *BGImageHandler::getLoadBackgroundImage(const DatabaseBeatmap *beatmap, bool load_immediately) {
-    return pImpl->getLoadBackgroundImage(beatmap, load_immediately);
+const Image *BGImageHandler::getLoadBackgroundImage(const DatabaseBeatmap *beatmap, bool load_immediately,
+                                                    bool allow_menubg_fallback) {
+    return pImpl->getLoadBackgroundImage(beatmap, load_immediately, allow_menubg_fallback);
 }
 void BGImageHandler::scheduleFreezeCache() { pImpl->frozen = true; }

@@ -1,5 +1,5 @@
 #pragma once
-// Copyright (c) 2016, PG, All rights reserved.
+// Copyright (c) 2016, PG & 2023-2025, kiwec & 2025, WH, All rights reserved.
 #include "MD5Hash.h"
 #include "ScreenBackable.h"
 

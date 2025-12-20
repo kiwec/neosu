@@ -202,7 +202,7 @@ class SoLoudThreadWrapper {
         // wait with 10 second timeout
         if(future.wait_for(std::chrono::seconds(10)) == std::future_status::timeout) {
             // restart the entire worker thread to recover from hung init
-            this->restart_worker_thread();
+            this->force_restart_worker_thread();
             return SoLoud::UNKNOWN_ERROR;
         }
 
@@ -361,7 +361,7 @@ class SoLoudThreadWrapper {
 
    private:
     void start_worker_thread() {
-        this->worker_thread = Sync::jthread([this](const Sync::stop_token &stoken) { this->worker_loop(stoken); });
+        this->worker_thread = Sync::jthread([this](const Sync::stop_token& stoken) { this->worker_loop(stoken); });
 
         // wait for initialization to complete
         Sync::unique_lock<Sync::mutex> lock(this->init_mutex);
@@ -369,30 +369,22 @@ class SoLoudThreadWrapper {
     }
 
     void shutdown_worker_thread() {
-        this->shutting_down.store(true, std::memory_order_release);
         this->queue_cv.notify_all();
 
-        // wait for worker to finish (this sets the stop_token)
+        // wait for worker to finish
         if(this->worker_thread.joinable()) {
+            this->worker_thread.request_stop();
             this->worker_thread.join();
         }
     }
 
-    void restart_worker_thread() {
-        // shutdown current thread (it may be hung, so detach if needed)
-        this->shutting_down.store(true, std::memory_order_release);
+    void force_restart_worker_thread() {
+        // detach hung thread, nothing we can do
         this->queue_cv.notify_all();
 
         if(this->worker_thread.joinable()) {
-            // give it a bit to shutdown normally
-            if(this->worker_thread.get_stop_source().stop_requested()) {
-                this->worker_thread.join();
-            } else {
-                // if it doesn't respond to stop request, it probably hung (so detach it)
-                // this is probably dangerous and can leave a zombie thread that we can't do anything about,
-                // but it's the best we can do at the moment
-                this->worker_thread.detach();
-            }
+            this->worker_thread.request_stop();
+            this->worker_thread.detach();
         }
 
         // clear any remaining tasks from the old thread
@@ -404,7 +396,6 @@ class SoLoudThreadWrapper {
         }
 
         // reset state and start a new worker
-        this->shutting_down.store(false, std::memory_order_release);
         this->initialized = false;
 
         this->start_worker_thread();
@@ -425,17 +416,14 @@ class SoLoudThreadWrapper {
         this->init_cv.notify_one();
 
         // main processing loop
-        while(!stoken.stop_requested() && !this->shutting_down.load(std::memory_order_acquire)) {
+        while(!stoken.stop_requested()) {
             Sync::unique_lock<Sync::mutex> lock(this->queue_mutex);
 
             // wait for tasks or stop signal
-            this->queue_cv.wait(lock, stoken, [&] {
-                return !this->task_queue.empty() || this->shutting_down.load(std::memory_order_acquire);
-            });
+            this->queue_cv.wait(lock, stoken, [&] { return !this->task_queue.empty(); });
 
             // process all available tasks
-            while(!this->task_queue.empty() && !stoken.stop_requested() &&
-                  !this->shutting_down.load(std::memory_order_acquire)) {
+            while(!this->task_queue.empty() && !stoken.stop_requested()) {
                 auto task = std::move(this->task_queue.front());
                 this->task_queue.pop();
 
@@ -482,10 +470,6 @@ class SoLoudThreadWrapper {
     Sync::condition_variable_any queue_cv;
 
     // init/shutdown signaling
-
-    // this extra flag shouldn't be required, but a (likely) glibc bug prevents the stop_token from reliably signaling the condition_variable_all
-    // https://sourceware.org/pipermail/glibc-bugs/2020-April/047751.html
-    std::atomic<bool> shutting_down{false};
 
     mutable Sync::mutex init_mutex;
     Sync::condition_variable init_cv;

@@ -800,29 +800,10 @@ void MainMenu::clearPreloadedMaps() {
 }
 
 // Differences from BackgroundImageHandler::draw:
-// - We use the menu-background skin element as fallback
 // - We load background images immediately
 void MainMenu::drawMapBackground(DatabaseBeatmap *beatmap, f32 alpha) {
-    const Image *bg = nullptr;
-    if(beatmap == nullptr) {
-        bool just_launched = engine->getTime() < 5.0;
-        if(cv::draw_menu_background.getBool() && !just_launched) {
-            bg = osu->getSkin()->i_menu_bg;
-        }
-    } else {
-        bg = osu->getBackgroundImageHandler()->getLoadBackgroundImage(beatmap, true);
-    }
-    if(bg == nullptr || !bg->isReady() || bg == MISSING_TEXTURE) return;
-
-    g->pushTransform();
-    {
-        const f32 scale = Osu::getImageScaleToFillResolution(bg, osu->getVirtScreenSize());
-        g->scale(scale, scale);
-        g->translate(osu->getVirtScreenWidth() / 2, osu->getVirtScreenHeight() / 2);
-        g->setColor(Color(0xff999999).setA(alpha));
-        g->drawImage(bg);
-    }
-    g->popTransform();
+    const auto &bgih = osu->getBackgroundImageHandler();
+    bgih->draw(bgih->getLoadBackgroundImage(beatmap, true), alpha);
 }
 
 void MainMenu::drawBanner() {
@@ -861,7 +842,7 @@ void MainMenu::draw() {
     if(!this->bVisible) return;
 
     // draw background
-    {
+    if(cv::draw_menu_background.getBool()) {
         // background_shader->enable();
         // background_shader->setUniform1f("time", engine->getTime());
         // background_shader->setUniform2f("resolution", osu->getVirtScreenWidth(), osu->getVirtScreenHeight());

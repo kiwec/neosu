@@ -47,8 +47,7 @@ class CarouselButton : public CBaseUIButton {
     }
 
    public:
-    CarouselButton(UIContextMenu *contextMenu, float xPos, float yPos, float xSize,
-                   float ySize, UString name);
+    CarouselButton(UIContextMenu *contextMenu, float xPos, float yPos, float xSize, float ySize, UString name);
     ~CarouselButton() override;
     void deleteAnimations();
 
@@ -59,7 +58,13 @@ class CarouselButton : public CBaseUIButton {
 
     CarouselButton *setVisible(bool visible) override;
 
-    void select(bool fireCallbacks = true, bool autoSelectBottomMostChild = true, bool wasParentSelected = true);
+    // i hate how difficult it is to understand a sequence of unnamed boolean arguments
+    struct SelOpts {
+        bool noCallbacks{false};
+        bool noSelectBottomChild{false};
+        bool parentUnselected{false};
+    };
+    void select(SelOpts opts = {false, false, false});
     void deselect();
 
     void resetAnimations();
@@ -104,7 +109,7 @@ class CarouselButton : public CBaseUIButton {
    protected:
     void drawMenuButtonBackground();
 
-    virtual void onSelected(bool /*wasSelected*/, bool /*autoSelectBottomMostChild*/, bool /*wasParentSelected*/) { ; }
+    virtual void onSelected(bool /*wasSelected*/, SelOpts /*opts*/) { ; }
 
     virtual void onRightMouseUpInside() { ; }
     void onClicked(bool left = true, bool right = false) override;

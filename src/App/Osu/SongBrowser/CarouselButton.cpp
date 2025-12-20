@@ -233,12 +233,12 @@ CarouselButton *CarouselButton::setVisible(bool visible) {
     return this;
 }
 
-void CarouselButton::select(bool fireCallbacks, bool autoSelectBottomMostChild, bool wasParentSelected) {
+void CarouselButton::select(SelOpts opts) {
     const bool wasSelected = this->bSelected;
     this->bSelected = true;
 
     // callback
-    if(fireCallbacks) this->onSelected(wasSelected, autoSelectBottomMostChild, wasParentSelected);
+    if(!opts.noCallbacks) this->onSelected(wasSelected, opts);
 }
 
 void CarouselButton::deselect() { this->bSelected = false; }
@@ -249,8 +249,7 @@ void CarouselButton::onClicked(bool left, bool right) {
     soundEngine->play(osu->getSkin()->s_select_difficulty);
 
     CBaseUIButton::onClicked(left, right);
-
-    this->select(true, true);
+    this->select();
 }
 
 void CarouselButton::onMouseInside() {

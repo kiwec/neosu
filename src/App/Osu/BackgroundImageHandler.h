@@ -17,9 +17,11 @@ class BGImageHandler final {
     BGImageHandler();
     ~BGImageHandler();
 
-    void draw(DatabaseBeatmap *beatmap, f32 alpha = 1.f);
+    void draw(const Image *backgroundImage, f32 alpha = 1.f);
+    void draw(const DatabaseBeatmap *beatmap, f32 alpha = 1.f);
     void update(bool allowEviction);
-    const Image *getLoadBackgroundImage(const DatabaseBeatmap *beatmap, bool load_immediately = false);
+    const Image *getLoadBackgroundImage(const DatabaseBeatmap *beatmap, bool load_immediately = false,
+                                        bool allow_menubg_fallback = true);
 
     void scheduleFreezeCache();
 

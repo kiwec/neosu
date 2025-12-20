@@ -1,64 +1,61 @@
-// Copyright (c) 2016, PG, All rights reserved.
+// Copyright (c) 2016, PG & 2023-2025, kiwec & 2025, WH, All rights reserved.
 #include "SongBrowser.h"
 
-#include "AnimationHandler.h"
-#include "BackgroundImageHandler.h"
-#include "Bancho.h"
-#include "BanchoLeaderboard.h"
-#include "BanchoNetworking.h"
-#include "BeatmapInterface.h"
-#include "BeatmapCarousel.h"
-#include "BottomBar.h"
-#include "CBaseUIContainer.h"
-#include "CBaseUILabel.h"
-#include "CBaseUIScrollView.h"
-#include "Chat.h"
-#include "CollectionButton.h"
-#include "Collections.h"
-#include "OsuConVars.h"
-#include "Database.h"
-#include "MakeDelegateWrapper.h"
-#include "Environment.h"
-#include "DatabaseBeatmap.h"
-#include "DirectoryWatcher.h"
-#include "Downloader.h"
 #include "Engine.h"
-#include "HUD.h"
-#include "Font.h"
-#include "Sound.h"
-#include "Icons.h"
-#include "InfoLabel.h"
-#include "KeyBindings.h"
+#include "Environment.h"
+#include "Logging.h"
+#include "ResourceManager.h"
+#include "AnimationHandler.h"
+#include "DirectoryWatcher.h"
+#include "Mouse.h"
 #include "Keyboard.h"
+#include "Font.h"
+#include "Timing.h"
+#include "crypto.h"
+#include "SString.h"
+#include "MakeDelegateWrapper.h"
+#include "Icons.h"
+#include "SoundEngine.h"
+#include "Sound.h"
+
+#include "Osu.h"
+#include "OsuConVars.h"
+
+#include "ScoreConverterThread.h"
 #include "AsyncPPCalculator.h"
 #include "LoudnessCalcThread.h"
-#include "MainMenu.h"
 #include "MapCalcThread.h"
-#include "ModSelector.h"
-#include "Mouse.h"
-#include "NotificationOverlay.h"
-#include "OptionsMenu.h"
-#include "Osu.h"
-#include "RankingScreen.h"
-#include "ResourceManager.h"
-#include "RichPresence.h"
-#include "RoomScreen.h"
-#include "ScoreButton.h"
-#include "ScoreConverterThread.h"
+
 #include "Skin.h"
 #include "SkinImage.h"
+#include "DatabaseBeatmap.h"
+#include "Downloader.h"
+#include "Collections.h"
+#include "Bancho.h"
+#include "BanchoNetworking.h"
+#include "BanchoLeaderboard.h"
+#include "RichPresence.h"
+
+#include "HUD.h"
+#include "OptionsMenu.h"
+#include "NotificationOverlay.h"
+#include "BeatmapInterface.h"
+#include "BackgroundImageHandler.h"
+#include "MainMenu.h"
+#include "RankingScreen.h"
+#include "CBaseUILabel.h"
+#include "BeatmapCarousel.h"
 #include "SongButton.h"
 #include "SongDifficultyButton.h"
-#include "SoundEngine.h"
-#include "Timing.h"
-#include "UIBackButton.h"
+#include "CollectionButton.h"
+#include "UserCard.h"
+#include "InfoLabel.h"
 #include "UIContextMenu.h"
 #include "UISearchOverlay.h"
-#include "UserCard.h"
-#include "VertexArrayObject.h"
-#include "SString.h"
-#include "crypto.h"
-#include "Logging.h"
+#include "ScoreButton.h"
+#include "BottomBar.h"
+#include "RoomScreen.h"
+#include "Chat.h"
 
 #include <algorithm>
 #include <memory>
@@ -66,8 +63,10 @@
 #include <cwctype>
 #include <utility>
 
-const Color highlightColor = argb(255, 0, 255, 0);
-const Color defaultColor = argb(255, 255, 255, 255);
+namespace {
+constexpr const Color highlightColor = argb(255, 0, 255, 0);
+constexpr const Color defaultColor = argb(255, 255, 255, 255);
+}  // namespace
 
 // XXX: remove this
 f32 SongBrowser::getUIScale() {
@@ -563,14 +562,14 @@ void SongBrowser::draw() {
 
     // draw background image
     if(cv::draw_songbrowser_background_image.getBool()) {
+        const DatabaseBeatmap *beatmap = osu->getMapInterface()->getBeatmap();
+        const auto &bgHandler = osu->getBackgroundImageHandler();
+        const Image *loadedImage = bgHandler->getLoadBackgroundImage(beatmap);
+
         float alpha = 1.0f;
         if(cv::songbrowser_background_fade_in_duration.getFloat() > 0.0f) {
-            // handle fadein trigger after handler is finished loading
-            const Image *loadedImage = nullptr;
-            const bool ready = osu->getMapInterface()->getBeatmap() != nullptr &&
-                               ((loadedImage = osu->getBackgroundImageHandler()->getLoadBackgroundImage(
-                                     osu->getMapInterface()->getBeatmap())) != nullptr) &&
-                               loadedImage->isReady();
+            // handle fadein trigger after bgHandler is finished loading
+            const bool ready = loadedImage && loadedImage->isReady();
 
             if(!ready)
                 this->fBackgroundFadeInTime = engine->getTime();
@@ -582,7 +581,7 @@ void SongBrowser::draw() {
             }
         }
 
-        osu->getBackgroundImageHandler()->draw(osu->getMapInterface()->getBeatmap(), alpha);
+        bgHandler->draw(loadedImage, alpha);
     } else if(cv::draw_songbrowser_menu_background_image.getBool()) {
         // menu-background
         Image *backgroundImage = osu->getSkin()->i_menu_bg;
@@ -920,8 +919,8 @@ void SongBrowser::mouse_update(bool *propagate_clicks) {
             auto text = UString::format("Downloading... %.2f%%", progress * 100.f);
             osu->getNotificationOverlay()->addNotification(text);
         } else if(beatmap != nullptr) {
-            osu->getSongBrowser()->onDifficultySelected(beatmap, false);
-            osu->getSongBrowser()->selectSelectedBeatmapSongButton();
+            this->onDifficultySelected(beatmap, false);
+            this->selectSelectedBeatmapSongButton();
             this->map_autodl = 0;
             this->set_autodl = 0;
         }
@@ -1228,7 +1227,7 @@ void SongBrowser::onSelectionChange(CarouselButton *button, bool rebuild) {
             if(!songDiffButtonPointer->getParentSongButton()->isSelected()) {
                 songDiffButtonPointer->getParentSongButton()
                     ->sortChildren();  // NOTE: workaround for disabled callback firing in select()
-                songDiffButtonPointer->getParentSongButton()->select(false);
+                songDiffButtonPointer->getParentSongButton()->select({.noCallbacks = true});
                 this->onSelectionChange(songDiffButtonPointer->getParentSongButton(), false);  // NOTE: recursive call
             }
         }
@@ -1717,40 +1716,36 @@ void SongBrowser::updateSongButtonLayout() {
 
     bool isSelected = false;
     bool inOpenCollection = false;
-    for(auto &element : elements) {
-        auto *songButton = element->as<CarouselButton>();
+    for(auto *carouselButton : elements) {
+        const auto *diffButtonPointer = carouselButton->as<const SongDifficultyButton>();
 
-        if(songButton != nullptr) {
-            const auto *diffButtonPointer = songButton->as<const SongDifficultyButton>();
+        // depending on the object type, layout differently
+        const bool isCollectionButton = carouselButton->isType<CollectionButton>();
+        const bool isDiffButton = diffButtonPointer != nullptr;
+        const bool isIndependentDiffButton = isDiffButton && diffButtonPointer->isIndependentDiffButton();
 
-            // depending on the object type, layout differently
-            const bool isCollectionButton = songButton->isType<CollectionButton>();
-            const bool isDiffButton = diffButtonPointer != nullptr;
-            const bool isIndependentDiffButton = isDiffButton && diffButtonPointer->isIndependentDiffButton();
+        // give selected items & diffs a bit more spacing, to make them stand out
+        if(((carouselButton->isSelected() && !isCollectionButton) || isSelected ||
+            (isDiffButton && !isIndependentDiffButton)))
+            yCounter += carouselButton->getSize().y * 0.1f;
 
-            // give selected items & diffs a bit more spacing, to make them stand out
-            if(((songButton->isSelected() && !isCollectionButton) || isSelected ||
-                (isDiffButton && !isIndependentDiffButton)))
-                yCounter += songButton->getSize().y * 0.1f;
+        isSelected = carouselButton->isSelected() || (isDiffButton && !isIndependentDiffButton);
 
-            isSelected = songButton->isSelected() || (isDiffButton && !isIndependentDiffButton);
-
-            // give collections a bit more spacing at start & end
-            if((songButton->isSelected() && isCollectionButton)) yCounter += songButton->getSize().y * 0.2f;
-            if(inOpenCollection && isCollectionButton && !songButton->isSelected())
-                yCounter += songButton->getSize().y * 0.2f;
-            if(isCollectionButton) {
-                if(songButton->isSelected())
-                    inOpenCollection = true;
-                else
-                    inOpenCollection = false;
-            }
-
-            songButton->setTargetRelPosY(yCounter);
-            songButton->updateLayoutEx();
-
-            yCounter += songButton->getActualSize().y;
+        // give collections a bit more spacing at start & end
+        if((carouselButton->isSelected() && isCollectionButton)) yCounter += carouselButton->getSize().y * 0.2f;
+        if(inOpenCollection && isCollectionButton && !carouselButton->isSelected())
+            yCounter += carouselButton->getSize().y * 0.2f;
+        if(isCollectionButton) {
+            if(carouselButton->isSelected())
+                inOpenCollection = true;
+            else
+                inOpenCollection = false;
         }
+
+        carouselButton->setTargetRelPosY(yCounter);
+        carouselButton->updateLayoutEx();
+
+        yCounter += carouselButton->getActualSize().y;
     }
     this->carousel->setScrollSizeToContent(this->carousel->getSize().y / 2);
 }
@@ -3134,7 +3129,7 @@ void SongBrowser::onScoreClicked(CBaseUIButton *button) {
     osu->getRankingScreen()->setBeatmapInfo(scoreButton->getScore().map);
     osu->getRankingScreen()->setScore(scoreButton->getScore());
 
-    osu->getSongBrowser()->setVisible(false);
+    this->setVisible(false);
     osu->getRankingScreen()->setVisible(true);
 
     soundEngine->play(osu->getSkin()->s_menu_hit);

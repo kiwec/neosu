@@ -69,8 +69,8 @@ void CollectionButton::draw() {
     g->popTransform();
 }
 
-void CollectionButton::onSelected(bool wasSelected, bool autoSelectBottomMostChild, bool wasParentSelected) {
-    CarouselButton::onSelected(wasSelected, autoSelectBottomMostChild, wasParentSelected);
+void CollectionButton::onSelected(bool wasSelected, SelOpts opts) {
+    CarouselButton::onSelected(wasSelected, opts);
 
     osu->getSongBrowser()->onSelectionChange(this, true);
     osu->getSongBrowser()->scrollToSongButton(this, true);

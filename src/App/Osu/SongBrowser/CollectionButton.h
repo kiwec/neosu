@@ -21,7 +21,7 @@ class CollectionButton final : public CarouselButton {
     void setCollectionName(std::string_view newName) { this->sCollectionName = newName; }
 
    private:
-    void onSelected(bool wasSelected, bool autoSelectBottomMostChild, bool wasParentSelected) override;
+    void onSelected(bool wasSelected, SelOpts opts) override;
     void onRightMouseUpInside() override;
 
     void onContextMenu(const UString &text, int id = -1);

@@ -85,14 +85,15 @@ void BeatmapCarousel::onKeyDown(KeyboardEvent &key) {
             int nextSelectionIndex = selectedIndex + 1;
             auto *nextButton = elements[nextSelectionIndex];
 
-            nextButton->select(true, false);
+            nextButton->select({.noSelectBottomChild = true});
 
             auto *songButton = nextButton->as<SongButton>();
 
             // if this is a song button, select top child
             if(songButton != nullptr) {
                 const auto &children = songButton->getChildren();
-                if(children.size() > 0 && !children[0]->isSelected()) children[0]->select(true, false, false);
+                if(children.size() > 0 && !children[0]->isSelected())
+                    children[0]->select({.noSelectBottomChild = true, .parentUnselected = true});
             }
         }
     }
@@ -120,8 +121,7 @@ void BeatmapCarousel::onKeyDown(KeyboardEvent &key) {
                     nextCollectionButton->select();
 
                     const auto &children = nextCollectionButton->getChildren();
-                    if(children.size() > 0 && !children.back()->isSelected())
-                        children.back()->select();
+                    if(children.size() > 0 && !children.back()->isSelected()) children.back()->select();
                 }
             }
         }
@@ -152,8 +152,7 @@ void BeatmapCarousel::onKeyDown(KeyboardEvent &key) {
                         auto *collectionButton = elements[i]->as<CollectionButton>();
                         if(collectionButton != nullptr) {
                             const auto &children = collectionButton->getChildren();
-                            if(children.size() > 0 && !children.back()->isSelected())
-                                children.back()->select();
+                            if(children.size() > 0 && !children.back()->isSelected()) children.back()->select();
                         }
                     }
                 }
