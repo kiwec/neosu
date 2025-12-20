@@ -5,6 +5,7 @@
 #include "noinclude.h"
 #include "types.h"
 #include "Vectors.h"
+#include "SyncStoptoken.h"
 
 #include <vector>
 #include <array>
@@ -281,8 +282,7 @@ class DifficultyCalculator {
         i32 upToObjectIndex{-1};
 
         // cancellation
-        std::function<bool(void)> cancelCheck{nullptr};
-        [[nodiscard]] inline bool shouldDie() const { return this->cancelCheck ? this->cancelCheck() : false; }
+        Sync::stop_token cancelCheck{};
 
         // "pseudo-incremental":
         // ignore "upToObjectIndex" to expect future calls with a larger object index

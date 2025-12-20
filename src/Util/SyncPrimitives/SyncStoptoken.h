@@ -10,7 +10,11 @@
 #include "noinclude.h"
 
 #ifdef _MSC_VER
-#include <intrin.h>
+#ifndef YieldProcessor
+#define YieldProcessor _mm_pause
+#pragma intrinsic(_mm_pause)
+void _mm_pause(void);
+#endif
 #endif
 
 #include <atomic>

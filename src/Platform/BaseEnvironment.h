@@ -260,11 +260,19 @@ typedef void* HWND;
 #if defined(_MSC_VER)
 #pragma execution_character_set("utf-8")  // msvc wrangling
 
-#ifdef _WIN64
-#define _AMD64_
-#elif defined(_WIN32)
+#if !defined(_68K_) && !defined(_MPPC_) && !defined(_X86_) && !defined(_IA64_) && !defined(_AMD64_) && !defined(_ARM_) && !defined(_ARM64_) && defined(_M_IX86)
 #define _X86_
 #endif
+#if !defined(_68K_) && !defined(_MPPC_) && !defined(_X86_) && !defined(_IA64_) && !defined(_AMD64_) && !defined(_ARM_) && !defined(_ARM64_) && defined(_M_AMD64)
+#define _AMD64_
+#endif
+#if !defined(_68K_) && !defined(_MPPC_) && !defined(_X86_) && !defined(_IA64_) && !defined(_AMD64_) && !defined(_ARM_) && !defined(_ARM64_) && defined(_M_ARM)
+#define _ARM_
+#endif
+#if !defined(_68K_) && !defined(_MPPC_) && !defined(_X86_) && !defined(_IA64_) && !defined(_AMD64_) && !defined(_ARM_) && !defined(_ARM64_) && defined(_M_ARM64)
+#define _ARM64_
+#endif
+
 #endif
 
 #include "WinDebloatDefs.h"

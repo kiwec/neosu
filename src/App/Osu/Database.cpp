@@ -2368,10 +2368,11 @@ BeatmapSet *Database::loadRawBeatmap(const std::string &beatmapPath) {
         fullFilePath.append(beatmapFile);
 
         auto *map = new BeatmapDifficulty(fullFilePath, beatmapPath, DatabaseBeatmap::BeatmapType::NEOSU_DIFFICULTY);
-        if(map->loadMetadata()) {
+        auto res = map->loadMetadata();
+        if(!res.error.errc) {
             diffs2->push_back(map);
         } else {
-            logIfCV(debug_db, "Couldn't loadMetadata(), deleting object.");
+            logIfCV(debug_db, "Couldn't loadMetadata: {}, deleting object.", res.error.error_string());
             SAFE_DELETE(map);
         }
     }

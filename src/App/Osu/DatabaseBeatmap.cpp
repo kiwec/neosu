@@ -220,7 +220,7 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(std::
 }
 
 DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(std::string_view osuFilePath,
-                                                                           const std::function<bool(void)> &dead) {
+                                                                           const Sync::stop_token &dead) {
     PRIMITIVE_CONTAINER c{
         .stackLeniency = 0.7f,
 
@@ -236,8 +236,58 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(std::
 
         .version = 14,
 
-        .errorCode = 0,
+        .error = {},
     };
+
+    // open osu file for parsing
+    std::unique_ptr<u8[]> fileBuffer;
+    uSz beatmapFileSize = 0;
+    {
+        File file(osuFilePath);
+        if(file.canRead()) {
+            beatmapFileSize = file.getFileSize();
+            fileBuffer = file.takeFileBuffer();
+        }
+        if(!file.canRead() || !beatmapFileSize || !fileBuffer) {
+            beatmapFileSize = 0;
+        }
+        // close the file here
+    }
+
+    return loadPrimitiveObjectsFromData(std::move(fileBuffer), beatmapFileSize, osuFilePath, dead);
+}
+
+DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjectsFromData(
+    std::unique_ptr<u8[]> fileBuffer, size_t beatmapFileSize, std::string_view osuFilePath,
+    const Sync::stop_token &dead) {
+    PRIMITIVE_CONTAINER c{
+        .stackLeniency = 0.7f,
+
+        .sliderMultiplier = 1.0f,
+        .sliderTickRate = 1.0f,
+
+        .numCircles = 0,
+        .numSliders = 0,
+        .numSpinners = 0,
+        .numHitobjects = 0,
+
+        .totalBreakDuration = 0,
+
+        .version = 14,
+
+        .error = {},
+    };
+    if(dead.stop_requested()) {
+        c.error.errc = LoadError::LOAD_INTERRUPTED;
+        return c;
+    }
+    if(!beatmapFileSize) {
+        c.error.errc = LoadError::FILE_LOAD;
+        return c;
+    }
+
+    std::string_view beatmapFile = {reinterpret_cast<char *>(fileBuffer.get()),
+                                    reinterpret_cast<char *>(fileBuffer.get() + beatmapFileSize)};
 
     const float sliderSanityRange = cv::slider_curve_max_length.getFloat();  // infinity sanity check, same as before
     const int sliderMaxRepeatRange =
@@ -246,389 +296,360 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(std::
 
     std::array<std::optional<Color>, 8> tempColors;
 
-    {
-        // open osu file for parsing
-        std::unique_ptr<u8[]> fileBuffer;
-        std::string_view beatmapFile;
-        uSz beatmapFileSize = 0;
+    // load the actual beatmap
+    int hitobjectsWithoutSpinnerCounter = 0;
+    int colorCounter = 1;
+    int colorOffset = 0;
+    int comboNumber = 1;
+    BlockId curBlock{BlockId::Sentinel};
 
-        {
-            File file(osuFilePath);
-            if(file.canRead()) {
-                beatmapFileSize = file.getFileSize();
-                fileBuffer = file.takeFileBuffer();
-                beatmapFile = {reinterpret_cast<char *>(fileBuffer.get()),
-                               reinterpret_cast<char *>(fileBuffer.get() + beatmapFileSize)};
-            }
-            // check for cancellation
-            if(dead()) {
-                c.errorCode = 6;
-                return c;
-            }
-            if(!file.canRead() || !beatmapFileSize || !fileBuffer) {
-                c.errorCode = 2;
-                return c;
-            }
+    using enum BlockId;
 
-            // close the file here
+    for(auto curLineUnstripped : SString::split(beatmapFile, '\n')) {
+        if(dead.stop_requested()) {
+            c.error.errc = LoadError::LOAD_INTERRUPTED;
+            return c;
         }
 
-        // load the actual beatmap
-        int hitobjectsWithoutSpinnerCounter = 0;
-        int colorCounter = 1;
-        int colorOffset = 0;
-        int comboNumber = 1;
-        BlockId curBlock{BlockId::Sentinel};
+        SString::trim_inplace(curLineUnstripped);
+        // ignore comments, but only if at the beginning of a line (e.g. allow Artist:DJ'TEKINA//SOMETHING)
+        if(curLineUnstripped.empty() || curLineUnstripped.starts_with("//")) continue;
 
-        using enum BlockId;
+        const auto curLine = curLineUnstripped;  // don't want to accidentally modify it somewhere later
 
-        for(auto curLineUnstripped : SString::split(beatmapFile, '\n')) {
-            if(dead()) {
-                c.errorCode = 6;
-                return c;
-            }
-
-            SString::trim_inplace(curLineUnstripped);
-            // ignore comments, but only if at the beginning of a line (e.g. allow Artist:DJ'TEKINA//SOMETHING)
-            if(curLineUnstripped.empty() || curLineUnstripped.starts_with("//")) continue;
-
-            const auto curLine = curLineUnstripped;  // don't want to accidentally modify it somewhere later
-
-            // skip the for loop on the first go-around, the header has to be at the start
-            if(curBlock == Sentinel) {
-                curBlock = Header;
-            } else {
-                for(const auto &[blockStr, id] : metadataBlocks) {
-                    if(curLine.contains(blockStr)) {
-                        curBlock = id;
-                        break;
-                    }
+        // skip the for loop on the first go-around, the header has to be at the start
+        if(curBlock == Sentinel) {
+            curBlock = Header;
+        } else {
+            for(const auto &[blockStr, id] : metadataBlocks) {
+                if(curLine.contains(blockStr)) {
+                    curBlock = id;
+                    break;
                 }
             }
+        }
 
-            // we don't care here
-            if(curBlock == Metadata) continue;
+        // we don't care here
+        if(curBlock == Metadata) continue;
 
-            if(dead()) {
-                c.errorCode = 6;
-                return c;
+        if(dead.stop_requested()) {
+            c.error.errc = LoadError::LOAD_INTERRUPTED;
+            return c;
+        }
+
+        switch(curBlock) {
+            case Sentinel:
+            case Metadata: {  // already handled above, shut up clang-tidy
+                std::unreachable();
+                break;
             }
 
-            switch(curBlock) {
-                case Sentinel:
-                case Metadata: {  // already handled above, shut up clang-tidy
-                    std::unreachable();
+            // (e.g. "osu file format v12")
+            case Header: {
+                Parsing::parse(curLine, "osu file format v", &c.version);
+                break;
+            }
+
+            case General: {
+                std::string sampleSet;
+                if(Parsing::parse(curLine, "SampleSet", ':', &sampleSet)) {
+                    SString::lower_inplace(sampleSet);
+                    if(sampleSet == "normal") {
+                        c.defaultSampleSet = SampleSetType::NORMAL;
+                    } else if(sampleSet == "soft") {
+                        c.defaultSampleSet = SampleSetType::SOFT;
+                    } else if(sampleSet == "drum") {
+                        c.defaultSampleSet = SampleSetType::DRUM;
+                    }
+                }
+
+                Parsing::parse(curLine, "StackLeniency", ':', &c.stackLeniency);
+                break;
+            }
+
+            case Difficulty: {
+                Parsing::parse(curLine, "SliderMultiplier", ':', &c.sliderMultiplier);
+                Parsing::parse(curLine, "SliderTickRate", ':', &c.sliderTickRate);
+                break;
+            }
+
+            case Events: {
+                i64 type, startTime, endTime;
+                if(Parsing::parse(curLine, &type, ',', &startTime, ',', &endTime)) {
+                    if(type == 2) {
+                        BREAK b{.startTime = startTime, .endTime = endTime};
+                        c.breaks.push_back(b);
+                    }
+                }
+                break;
+            }
+
+            case TimingPoints: {
+                DatabaseBeatmap::TIMINGPOINT t{};
+                if(parse_timing_point(curLine, t)) {
+                    c.timingpoints.push_back(t);
+                }
+                break;
+            }
+
+            case Colours: {
+                u8 comboNum;
+                u8 r, g, b;
+
+                if(Parsing::parse(curLine, "Combo", &comboNum, ':', &r, ',', &g, ',', &b)) {
+                    if(comboNum >= 1 && comboNum <= 8) {  // bare minimum validation effort
+                        tempColors[comboNum - 1] = rgb(r, g, b);
+                    }
+                }
+
+                break;
+            }
+
+            case HitObjects: {
+                size_t err_line = 0;
+
+                auto upd_last_error = [&err_line](bool parse_result_bad,
+                                                  size_t line = std::source_location::current().line()) -> void {
+                    if(err_line) {  // already got error
+                        return;
+                    } else {
+                        if(parse_result_bad) {
+                            err_line = line;
+                        }
+                    }
+                };
+
+                // circles:
+                // x,y,time,type,hitSounds,hitSamples
+                // sliders:
+                // x,y,time,type,hitSounds,sliderType|curveX:curveY|...,repeat,pixelLength,edgeHitsound,edgeSets,hitSamples
+                // spinners:
+                // x,y,time,type,hitSounds,endTime,hitSamples
+
+                // hitSamples are colon-separated optional components (up to 5), and not all 5 have to be specified
+                static auto parse_hitsamples = [](std::string_view hitSampleStr, HitSamples &samples) -> bool {
+                    samples.normalSet = 0;
+                    samples.additionSet = 0;
+                    samples.index = 0;
+                    samples.volume = 0;
+                    samples.filename = "";
+
+                    if(hitSampleStr.empty()) return true;
+
+                    auto parts = SString::split(hitSampleStr, ':');
+
+                    // Parse available components, using defaults for missing ones
+                    if(parts.size() >= 1 && !parts[0].empty()) {
+                        if(!Parsing::parse(parts[0], &samples.normalSet)) return false;
+                    }
+                    if(parts.size() >= 2 && !parts[1].empty()) {
+                        if(!Parsing::parse(parts[1], &samples.additionSet)) return false;
+                    }
+                    if(parts.size() >= 3 && !parts[2].empty()) {
+                        if(!Parsing::parse(parts[2], &samples.index)) return false;
+                    }
+                    if(parts.size() >= 4 && !parts[3].empty()) {
+                        if(!Parsing::parse(parts[3], &samples.volume)) return false;
+                    }
+                    if(parts.size() >= 5) {
+                        samples.filename = parts[4];  // filename can be empty
+                    }
+
+                    samples.volume = std::clamp<u8>(samples.volume, 0, 100);
+                    return true;
+                };
+
+                // NOTE: calculating combo numbers and color offsets based on the parsing order is dangerous.
+                // maybe the hitobjects are not sorted by time in the file; these values should be calculated
+                // after sorting just to be sure?
+
+                f32 x, y;
+                i32 time;
+                i32 hitSounds;
+                // this actually should be initialized since we use it unconditionally after trying to parse it
+                u8 type = 0;
+
+                auto csvs = SString::split(curLine, ',');
+                if(csvs.size() < 5) break;
+                upd_last_error(!Parsing::parse(csvs[0], &x) || !std::isfinite(x) || std::isnan(x));
+                upd_last_error(!Parsing::parse(csvs[1], &y) || !std::isfinite(y) || std::isnan(y));
+                upd_last_error(!Parsing::parse(csvs[2], &time));
+                upd_last_error(!Parsing::parse(csvs[3], &type));
+                upd_last_error(!Parsing::parse(csvs[4], &hitSounds));
+                upd_last_error((type & PpyHitObjectType::SLIDER) && (csvs.size() < 8));
+                upd_last_error((type & PpyHitObjectType::SPINNER) && (csvs.size() < 6));
+                upd_last_error((type & (PpyHitObjectType::MANIA_HOLD_NOTE)));
+                if(err_line) {
+                    debugLog("File: {} Invalid hit object (error on line {}): {}", osuFilePath, err_line, curLine);
                     break;
                 }
 
-                // (e.g. "osu file format v12")
-                case Header: {
-                    Parsing::parse(curLine, "osu file format v", &c.version);
-                    break;
+                if(!(type & PpyHitObjectType::SPINNER)) hitobjectsWithoutSpinnerCounter++;
+
+                if(type & PpyHitObjectType::NEW_COMBO) {
+                    comboNumber = 1;
+
+                    // special case 1: if the current object is a spinner, then the raw color counter is not
+                    // increased (but the offset still is!)
+                    // special case 2: the first (non-spinner) hitobject in a beatmap is always a new combo,
+                    // therefore the raw color counter is not increased for it (but the offset still is!)
+                    if(!(type & PpyHitObjectType::SPINNER) && hitobjectsWithoutSpinnerCounter > 1) colorCounter++;
+
+                    // special case 3: "Bits 4-6 (16, 32, 64) form a 3-bit number (0-7) that chooses how many combo colours to skip."
+                    colorOffset += (type >> 4) & 0b111;
                 }
 
-                case General: {
-                    std::string sampleSet;
-                    if(Parsing::parse(curLine, "SampleSet", ':', &sampleSet)) {
-                        SString::lower_inplace(sampleSet);
-                        if(sampleSet == "normal") {
-                            c.defaultSampleSet = SampleSetType::NORMAL;
-                        } else if(sampleSet == "soft") {
-                            c.defaultSampleSet = SampleSetType::SOFT;
-                        } else if(sampleSet == "drum") {
-                            c.defaultSampleSet = SampleSetType::DRUM;
+                if(type & PpyHitObjectType::CIRCLE) {
+                    HITCIRCLE h{};
+                    h.x = x;
+                    h.y = y;
+                    h.time = time;
+                    h.number = comboNumber++;
+                    h.colorCounter = colorCounter;
+                    h.colorOffset = colorOffset;
+                    h.clicked = false;
+                    h.samples.hitSounds = (hitSounds & HitSoundType::VALID_HITSOUNDS);
+
+                    if(csvs.size() > 5) {
+                        if(!parse_hitsamples(csvs[5], h.samples)) {
+                            debugLog("File: {} Invalid circle hitSamples in line: {}", osuFilePath, curLine);
+                            break;
                         }
                     }
 
-                    Parsing::parse(curLine, "StackLeniency", ':', &c.stackLeniency);
-                    break;
-                }
+                    c.hitcircles.push_back(h);
+                } else if(type & PpyHitObjectType::SLIDER) {
+                    SLIDER slider{};
+                    slider.colorCounter = colorCounter;
+                    slider.colorOffset = colorOffset;
+                    slider.time = time;
+                    slider.hoverSamples.hitSounds = (hitSounds & HitSoundType::VALID_SLIDER_HITSOUNDS);
 
-                case Difficulty: {
-                    Parsing::parse(curLine, "SliderMultiplier", ':', &c.sliderMultiplier);
-                    Parsing::parse(curLine, "SliderTickRate", ':', &c.sliderTickRate);
-                    break;
-                }
+                    auto curves = SString::split(csvs[5], '|');
+                    slider.type = curves[0][0];
+                    curves.erase(curves.begin());
+                    for(const auto &curvePoints : curves) {
+                        f32 cpX{}, cpY{};
+                        // just skip infinite/invalid curve points (https://osu.ppy.sh/b/1029976)
+                        bool valid = true;
+                        valid &= !!Parsing::parse(curvePoints, &cpX, ':', &cpY);
+                        valid &= (std::isfinite(cpX) && !std::isnan(cpX));
+                        valid &= (std::isfinite(cpY) && !std::isnan(cpY));
+                        if(!valid) continue;
 
-                case Events: {
-                    i64 type, startTime, endTime;
-                    if(Parsing::parse(curLine, &type, ',', &startTime, ',', &endTime)) {
-                        if(type == 2) {
-                            BREAK b{.startTime = startTime, .endTime = endTime};
-                            c.breaks.push_back(b);
-                        }
-                    }
-                    break;
-                }
-
-                case TimingPoints: {
-                    DatabaseBeatmap::TIMINGPOINT t{};
-                    if(parse_timing_point(curLine, t)) {
-                        c.timingpoints.push_back(t);
-                    }
-                    break;
-                }
-
-                case Colours: {
-                    u8 comboNum;
-                    u8 r, g, b;
-
-                    if(Parsing::parse(curLine, "Combo", &comboNum, ':', &r, ',', &g, ',', &b)) {
-                        if(comboNum >= 1 && comboNum <= 8) {  // bare minimum validation effort
-                            tempColors[comboNum - 1] = rgb(r, g, b);
-                        }
+                        slider.points.emplace_back(std::clamp(cpX, -sliderSanityRange, sliderSanityRange),
+                                                   std::clamp(cpY, -sliderSanityRange, sliderSanityRange));
                     }
 
-                    break;
-                }
-
-                case HitObjects: {
-                    size_t err_line = 0;
-
-                    auto upd_last_error = [&err_line](bool parse_result_bad,
-                                                      size_t line = std::source_location::current().line()) -> void {
-                        if(err_line) {  // already got error
-                            return;
-                        } else {
-                            if(parse_result_bad) {
-                                err_line = line;
-                            }
-                        }
-                    };
-
-                    // circles:
-                    // x,y,time,type,hitSounds,hitSamples
-                    // sliders:
-                    // x,y,time,type,hitSounds,sliderType|curveX:curveY|...,repeat,pixelLength,edgeHitsound,edgeSets,hitSamples
-                    // spinners:
-                    // x,y,time,type,hitSounds,endTime,hitSamples
-
-                    // hitSamples are colon-separated optional components (up to 5), and not all 5 have to be specified
-                    static auto parse_hitsamples = [](std::string_view hitSampleStr, HitSamples &samples) -> bool {
-                        samples.normalSet = 0;
-                        samples.additionSet = 0;
-                        samples.index = 0;
-                        samples.volume = 0;
-                        samples.filename = "";
-
-                        if(hitSampleStr.empty()) return true;
-
-                        auto parts = SString::split(hitSampleStr, ':');
-
-                        // Parse available components, using defaults for missing ones
-                        if(parts.size() >= 1 && !parts[0].empty()) {
-                            if(!Parsing::parse(parts[0], &samples.normalSet)) return false;
-                        }
-                        if(parts.size() >= 2 && !parts[1].empty()) {
-                            if(!Parsing::parse(parts[1], &samples.additionSet)) return false;
-                        }
-                        if(parts.size() >= 3 && !parts[2].empty()) {
-                            if(!Parsing::parse(parts[2], &samples.index)) return false;
-                        }
-                        if(parts.size() >= 4 && !parts[3].empty()) {
-                            if(!Parsing::parse(parts[3], &samples.volume)) return false;
-                        }
-                        if(parts.size() >= 5) {
-                            samples.filename = parts[4];  // filename can be empty
-                        }
-
-                        samples.volume = std::clamp<u8>(samples.volume, 0, 100);
-                        return true;
-                    };
-
-                    // NOTE: calculating combo numbers and color offsets based on the parsing order is dangerous.
-                    // maybe the hitobjects are not sorted by time in the file; these values should be calculated
-                    // after sorting just to be sure?
-
-                    f32 x, y;
-                    i32 time;
-                    i32 hitSounds;
-                    // this actually should be initialized since we use it unconditionally after trying to parse it
-                    u8 type = 0;
-
-                    auto csvs = SString::split(curLine, ',');
-                    if(csvs.size() < 5) break;
-                    upd_last_error(!Parsing::parse(csvs[0], &x) || !std::isfinite(x) || std::isnan(x));
-                    upd_last_error(!Parsing::parse(csvs[1], &y) || !std::isfinite(y) || std::isnan(y));
-                    upd_last_error(!Parsing::parse(csvs[2], &time));
-                    upd_last_error(!Parsing::parse(csvs[3], &type));
-                    upd_last_error(!Parsing::parse(csvs[4], &hitSounds));
-                    upd_last_error((type & PpyHitObjectType::SLIDER) && (csvs.size() < 8));
-                    upd_last_error((type & PpyHitObjectType::SPINNER) && (csvs.size() < 6));
-                    upd_last_error((type & (PpyHitObjectType::MANIA_HOLD_NOTE)));
+                    upd_last_error(!Parsing::parse(csvs[6], &slider.repeat));
                     if(err_line) {
-                        debugLog("File: {} Invalid hit object (error on line {}): {}", osuFilePath, err_line, curLine);
+                        debugLog("File: {} Invalid slider: (error on line {}): {}", osuFilePath, err_line, curLine);
+                        break;
+                    }
+                    upd_last_error(!Parsing::parse(csvs[7], &slider.pixelLength));
+                    if(err_line && !csvs[7].empty()) {
+                        // fix up infinite pixelLength
+                        if(SString::contains_ncase(csvs[7], "e+")) {
+                            if(csvs[7].starts_with('-')) {
+                                slider.pixelLength = -sliderSanityRange;
+                            } else {
+                                slider.pixelLength = sliderSanityRange;
+                            }
+                            err_line = 0;
+                        }
+                    }
+                    if(err_line) {
+                        debugLog("File: {} Invalid slider pixel length: {} slider.pixelLength: {}", osuFilePath,
+                                 csvs[7], slider.pixelLength);
                         break;
                     }
 
-                    if(!(type & PpyHitObjectType::SPINNER)) hitobjectsWithoutSpinnerCounter++;
-
-                    if(type & PpyHitObjectType::NEW_COMBO) {
-                        comboNumber = 1;
-
-                        // special case 1: if the current object is a spinner, then the raw color counter is not
-                        // increased (but the offset still is!)
-                        // special case 2: the first (non-spinner) hitobject in a beatmap is always a new combo,
-                        // therefore the raw color counter is not increased for it (but the offset still is!)
-                        if(!(type & PpyHitObjectType::SPINNER) && hitobjectsWithoutSpinnerCounter > 1) colorCounter++;
-
-                        // special case 3: "Bits 4-6 (16, 32, 64) form a 3-bit number (0-7) that chooses how many combo colours to skip."
-                        colorOffset += (type >> 4) & 0b111;
+                    // special case: osu! logic for handling the hitobject point vs the controlpoints (since
+                    // sliders have both, and older beatmaps store the start point inside the control
+                    // points)
+                    vec2 xy = vec2(std::clamp(x, -sliderSanityRange, sliderSanityRange),
+                                   std::clamp(y, -sliderSanityRange, sliderSanityRange));
+                    if(slider.points.size() > 0) {
+                        if(slider.points[0] != xy) slider.points.insert(slider.points.begin(), xy);
+                    } else {
+                        slider.points.push_back(xy);
                     }
 
-                    if(type & PpyHitObjectType::CIRCLE) {
-                        HITCIRCLE h{};
-                        h.x = x;
-                        h.y = y;
-                        h.time = time;
-                        h.number = comboNumber++;
-                        h.colorCounter = colorCounter;
-                        h.colorOffset = colorOffset;
-                        h.clicked = false;
-                        h.samples.hitSounds = (hitSounds & HitSoundType::VALID_HITSOUNDS);
+                    // partially allow bullshit sliders (add second point to make valid)
+                    // e.g. https://osu.ppy.sh/beatmapsets/791900#osu/1676490
+                    if(slider.points.size() == 1) slider.points.push_back(xy);
 
-                        if(csvs.size() > 5) {
-                            if(!parse_hitsamples(csvs[5], h.samples)) {
-                                debugLog("File: {} Invalid circle hitSamples in line: {}", osuFilePath, curLine);
-                                break;
-                            }
+                    std::vector<std::string_view> edgeSounds;
+                    if(csvs.size() > 8) edgeSounds = SString::split(csvs[8], '|');
+
+                    std::vector<std::string_view> edgeSets;
+                    if(csvs.size() > 9) edgeSets = SString::split(csvs[9], '|');
+                    upd_last_error((!edgeSets.empty() && (edgeSounds.size() != edgeSets.size())));
+
+                    for(i32 i = 0; !err_line && i < edgeSounds.size(); i++) {
+                        HitSamples samples;
+                        upd_last_error(!Parsing::parse(edgeSounds[i], &samples.hitSounds));
+                        samples.hitSounds &= HitSoundType::VALID_HITSOUNDS;
+
+                        if(!edgeSets.empty()) {
+                            upd_last_error(!Parsing::parse(edgeSets[i], &samples.normalSet, ':', &samples.additionSet));
                         }
+                        if(err_line) break;
 
-                        c.hitcircles.push_back(h);
-                    } else if(type & PpyHitObjectType::SLIDER) {
-                        SLIDER slider{};
-                        slider.colorCounter = colorCounter;
-                        slider.colorOffset = colorOffset;
-                        slider.time = time;
-                        slider.hoverSamples.hitSounds = (hitSounds & HitSoundType::VALID_SLIDER_HITSOUNDS);
-
-                        auto curves = SString::split(csvs[5], '|');
-                        slider.type = curves[0][0];
-                        curves.erase(curves.begin());
-                        for(const auto &curvePoints : curves) {
-                            f32 cpX{}, cpY{};
-                            // just skip infinite/invalid curve points (https://osu.ppy.sh/b/1029976)
-                            bool valid = true;
-                            valid &= !!Parsing::parse(curvePoints, &cpX, ':', &cpY);
-                            valid &= (std::isfinite(cpX) && !std::isnan(cpX));
-                            valid &= (std::isfinite(cpY) && !std::isnan(cpY));
-                            if(!valid) continue;
-
-                            slider.points.emplace_back(std::clamp(cpX, -sliderSanityRange, sliderSanityRange),
-                                                       std::clamp(cpY, -sliderSanityRange, sliderSanityRange));
-                        }
-
-                        upd_last_error(!Parsing::parse(csvs[6], &slider.repeat));
-                        if(err_line) {
-                            debugLog("File: {} Invalid slider: (error on line {}): {}", osuFilePath, err_line, curLine);
-                            break;
-                        }
-                        upd_last_error(!Parsing::parse(csvs[7], &slider.pixelLength));
-                        if(err_line && !csvs[7].empty()) {
-                            // fix up infinite pixelLength
-                            if(SString::contains_ncase(csvs[7], "e+")) {
-                                if(csvs[7].starts_with('-')) {
-                                    slider.pixelLength = -sliderSanityRange;
-                                } else {
-                                    slider.pixelLength = sliderSanityRange;
-                                }
-                                err_line = 0;
-                            }
-                        }
-                        if(err_line) {
-                            debugLog("File: {} Invalid slider pixel length: {} slider.pixelLength: {}", osuFilePath,
-                                     csvs[7], slider.pixelLength);
-                            break;
-                        }
-
-                        // special case: osu! logic for handling the hitobject point vs the controlpoints (since
-                        // sliders have both, and older beatmaps store the start point inside the control
-                        // points)
-                        vec2 xy = vec2(std::clamp(x, -sliderSanityRange, sliderSanityRange),
-                                       std::clamp(y, -sliderSanityRange, sliderSanityRange));
-                        if(slider.points.size() > 0) {
-                            if(slider.points[0] != xy) slider.points.insert(slider.points.begin(), xy);
-                        } else {
-                            slider.points.push_back(xy);
-                        }
-
-                        // partially allow bullshit sliders (add second point to make valid)
-                        // e.g. https://osu.ppy.sh/beatmapsets/791900#osu/1676490
-                        if(slider.points.size() == 1) slider.points.push_back(xy);
-
-                        std::vector<std::string_view> edgeSounds;
-                        if(csvs.size() > 8) edgeSounds = SString::split(csvs[8], '|');
-
-                        std::vector<std::string_view> edgeSets;
-                        if(csvs.size() > 9) edgeSets = SString::split(csvs[9], '|');
-                        upd_last_error((!edgeSets.empty() && (edgeSounds.size() != edgeSets.size())));
-
-                        for(i32 i = 0; !err_line && i < edgeSounds.size(); i++) {
-                            HitSamples samples;
-                            upd_last_error(!Parsing::parse(edgeSounds[i], &samples.hitSounds));
-                            samples.hitSounds &= HitSoundType::VALID_HITSOUNDS;
-
-                            if(!edgeSets.empty()) {
-                                upd_last_error(
-                                    !Parsing::parse(edgeSets[i], &samples.normalSet, ':', &samples.additionSet));
-                            }
-                            if(err_line) break;
-
-                            slider.edgeSamples.push_back(samples);
-                        }
-
-                        if(err_line) {
-                            debugLog("File: {} Invalid slider edgeSamples (error on line {}): {}", osuFilePath,
-                                     err_line, curLine);
-                            break;
-                        }
-
-                        // No start sample specified, use default
-                        if(slider.edgeSamples.empty()) slider.edgeSamples.emplace_back();
-
-                        // No end sample specified, use the same as start
-                        if(slider.edgeSamples.size() == 1) slider.edgeSamples.push_back(slider.edgeSamples.front());
-
-                        if(csvs.size() > 10) {
-                            if(!parse_hitsamples(csvs[10], slider.hoverSamples)) {
-                                debugLog("File: {} Invalid slider hitSamples in line: {}", osuFilePath, curLine);
-                                break;
-                            }
-                        }
-
-                        slider.x = xy.x;
-                        slider.y = xy.y;
-                        slider.repeat = std::clamp(slider.repeat, 0, sliderMaxRepeatRange);
-                        slider.pixelLength = std::clamp(slider.pixelLength, -sliderSanityRange, sliderSanityRange);
-                        slider.number = comboNumber++;
-                        c.sliders.push_back(slider);
-                    } else if(type & PpyHitObjectType::SPINNER) {
-                        i32 endTime{0};
-                        upd_last_error(!Parsing::parse(csvs[5], &endTime));
-
-                        if(err_line) {
-                            debugLog("File: {} Invalid spinner (error on line {}): {}", osuFilePath, err_line, curLine);
-                            break;
-                        }
-
-                        SPINNER s{.x = (i32)x,
-                                  .y = (i32)y,
-                                  .time = time,
-                                  .endTime = endTime,
-                                  .samples = {.hitSounds = (u8)(hitSounds & HitSoundType::VALID_HITSOUNDS)}};
-
-                        if(csvs.size() > 6) {
-                            if(!parse_hitsamples(csvs[6], s.samples)) {
-                                debugLog("File: {} Invalid spinner hitSamples in line: {}", osuFilePath, curLine);
-                                break;
-                            }
-                        }
-
-                        c.spinners.push_back(s);
+                        slider.edgeSamples.push_back(samples);
                     }
 
-                    break;
+                    if(err_line) {
+                        debugLog("File: {} Invalid slider edgeSamples (error on line {}): {}", osuFilePath, err_line,
+                                 curLine);
+                        break;
+                    }
+
+                    // No start sample specified, use default
+                    if(slider.edgeSamples.empty()) slider.edgeSamples.emplace_back();
+
+                    // No end sample specified, use the same as start
+                    if(slider.edgeSamples.size() == 1) slider.edgeSamples.push_back(slider.edgeSamples.front());
+
+                    if(csvs.size() > 10) {
+                        if(!parse_hitsamples(csvs[10], slider.hoverSamples)) {
+                            debugLog("File: {} Invalid slider hitSamples in line: {}", osuFilePath, curLine);
+                            break;
+                        }
+                    }
+
+                    slider.x = xy.x;
+                    slider.y = xy.y;
+                    slider.repeat = std::clamp(slider.repeat, 0, sliderMaxRepeatRange);
+                    slider.pixelLength = std::clamp(slider.pixelLength, -sliderSanityRange, sliderSanityRange);
+                    slider.number = comboNumber++;
+                    c.sliders.push_back(slider);
+                } else if(type & PpyHitObjectType::SPINNER) {
+                    i32 endTime{0};
+                    upd_last_error(!Parsing::parse(csvs[5], &endTime));
+
+                    if(err_line) {
+                        debugLog("File: {} Invalid spinner (error on line {}): {}", osuFilePath, err_line, curLine);
+                        break;
+                    }
+
+                    SPINNER s{.x = (i32)x,
+                              .y = (i32)y,
+                              .time = time,
+                              .endTime = endTime,
+                              .samples = {.hitSounds = (u8)(hitSounds & HitSoundType::VALID_HITSOUNDS)}};
+
+                    if(csvs.size() > 6) {
+                        if(!parse_hitsamples(csvs[6], s.samples)) {
+                            debugLog("File: {} Invalid spinner hitSamples in line: {}", osuFilePath, curLine);
+                            break;
+                        }
+                    }
+
+                    c.spinners.push_back(s);
                 }
+
+                break;
             }
         }
     }
@@ -639,7 +660,7 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(std::
     c.numSpinners = c.spinners.size();
     c.numHitobjects = c.numCircles + c.numSliders + c.numSpinners;
     if(c.numHitobjects > cv::beatmap_max_num_hitobjects.getVal<u32>()) {
-        c.errorCode = 5;
+        c.error.errc = LoadError::TOOMANY_HITOBJECTS;
         return c;
     }
 
@@ -660,23 +681,20 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(std::
     return c;
 }
 
-DatabaseBeatmap::CALCULATE_SLIDER_TIMES_CLICKS_TICKS_RESULT DatabaseBeatmap::calculateSliderTimesClicksTicks(
+DatabaseBeatmap::LoadError DatabaseBeatmap::calculateSliderTimesClicksTicks(
     int beatmapVersion, std::vector<SLIDER> &sliders, zarray<DatabaseBeatmap::TIMINGPOINT> &timingpoints,
     float sliderMultiplier, float sliderTickRate) {
     return calculateSliderTimesClicksTicks(beatmapVersion, sliders, timingpoints, sliderMultiplier, sliderTickRate,
                                            alwaysFalseStopPred);
 }
 
-DatabaseBeatmap::CALCULATE_SLIDER_TIMES_CLICKS_TICKS_RESULT DatabaseBeatmap::calculateSliderTimesClicksTicks(
+DatabaseBeatmap::LoadError DatabaseBeatmap::calculateSliderTimesClicksTicks(
     int beatmapVersion, std::vector<SLIDER> &sliders, zarray<DatabaseBeatmap::TIMINGPOINT> &timingpoints,
-    float sliderMultiplier, float sliderTickRate, const std::function<bool(void)> &dead) {
-    CALCULATE_SLIDER_TIMES_CLICKS_TICKS_RESULT r;
-    {
-        r.errorCode = 0;
-    }
+    float sliderMultiplier, float sliderTickRate, const Sync::stop_token &dead) {
+    LoadError r;
 
     if(timingpoints.size() < 1) {
-        r.errorCode = 3;
+        r.errc = LoadError::NO_TIMINGPOINTS;
         return r;
     }
 
@@ -711,8 +729,8 @@ DatabaseBeatmap::CALCULATE_SLIDER_TIMES_CLICKS_TICKS_RESULT DatabaseBeatmap::cal
     };
 
     for(auto &s : sliders) {
-        if(dead()) {
-            r.errorCode = 6;
+        if(dead.stop_requested()) {
+            r.errc = LoadError::LOAD_INTERRUPTED;
             return r;
         }
 
@@ -757,7 +775,7 @@ DatabaseBeatmap::CALCULATE_SLIDER_TIMES_CLICKS_TICKS_RESULT DatabaseBeatmap::cal
 
         // bail if too many predicted heuristic scoringTimes would run out of memory and crash
         if((size_t)std::abs(s.repeat) * s.ticks.size() > (size_t)cv::beatmap_max_num_slider_scoringtimes.getInt()) {
-            r.errorCode = 5;
+            r.errc = LoadError::TOOMANY_HITOBJECTS;
             return r;
         }
 
@@ -802,8 +820,8 @@ DatabaseBeatmap::CALCULATE_SLIDER_TIMES_CLICKS_TICKS_RESULT DatabaseBeatmap::cal
             .time = time,
         });
 
-        if(dead()) {
-            r.errorCode = 6;
+        if(dead.stop_requested()) {
+            r.errc = LoadError::LOAD_INTERRUPTED;
             return r;
         }
 
@@ -826,7 +844,7 @@ DatabaseBeatmap::LOAD_DIFFOBJ_RESULT DatabaseBeatmap::loadDifficultyHitObjects(s
 DatabaseBeatmap::LOAD_DIFFOBJ_RESULT DatabaseBeatmap::loadDifficultyHitObjects(std::string_view osuFilePath, float AR,
                                                                                float CS, float speedMultiplier,
                                                                                bool calculateStarsInaccurately,
-                                                                               const std::function<bool(void)> &dead) {
+                                                                               const Sync::stop_token &dead) {
     // load primitive arrays
     PRIMITIVE_CONTAINER c = loadPrimitiveObjects(osuFilePath, dead);
     return loadDifficultyHitObjects(c, AR, CS, speedMultiplier, calculateStarsInaccurately, dead);
@@ -835,15 +853,15 @@ DatabaseBeatmap::LOAD_DIFFOBJ_RESULT DatabaseBeatmap::loadDifficultyHitObjects(s
 DatabaseBeatmap::LOAD_DIFFOBJ_RESULT DatabaseBeatmap::loadDifficultyHitObjects(PRIMITIVE_CONTAINER &c, float AR,
                                                                                float CS, float speedMultiplier,
                                                                                bool calculateStarsInaccurately,
-                                                                               const std::function<bool(void)> &dead) {
+                                                                               const Sync::stop_token &dead) {
     LOAD_DIFFOBJ_RESULT result{};
 
     // build generalized OsuDifficultyHitObjects from the vectors (hitcircles, sliders, spinners)
     // the OsuDifficultyHitObject class is the one getting used in all pp/star calculations, it encompasses every object
     // type for simplicity
 
-    if(c.errorCode != 0) {
-        result.errorCode = c.errorCode;
+    if(c.error.errc) {
+        result.error.errc = c.error.errc;
         return result;
     }
 
@@ -851,10 +869,10 @@ DatabaseBeatmap::LOAD_DIFFOBJ_RESULT DatabaseBeatmap::loadDifficultyHitObjects(P
     result.totalBreakDuration = c.totalBreakDuration;
 
     // calculate sliderTimes, and build slider clicks and ticks
-    CALCULATE_SLIDER_TIMES_CLICKS_TICKS_RESULT sliderTimeCalcResult = calculateSliderTimesClicksTicks(
-        c.version, c.sliders, c.timingpoints, c.sliderMultiplier, c.sliderTickRate, dead);
-    if(sliderTimeCalcResult.errorCode != 0) {
-        result.errorCode = sliderTimeCalcResult.errorCode;
+    LoadError sliderTimeCalcResult = calculateSliderTimesClicksTicks(c.version, c.sliders, c.timingpoints,
+                                                                     c.sliderMultiplier, c.sliderTickRate, dead);
+    if(sliderTimeCalcResult.errc) {
+        result.error.errc = sliderTimeCalcResult.errc;
         return result;
     }
 
@@ -869,8 +887,8 @@ DatabaseBeatmap::LOAD_DIFFOBJ_RESULT DatabaseBeatmap::loadDifficultyHitObjects(P
     const bool calculateSliderCurveInConstructor =
         (c.sliders.size() < 5000);  // NOTE: for explanation see OsuDifficultyHitObject constructor
     for(auto &slider : c.sliders) {
-        if(dead()) {
-            result.errorCode = 6;
+        if(dead.stop_requested()) {
+            result.error.errc = LoadError::LOAD_INTERRUPTED;
             return result;
         }
 
@@ -897,8 +915,8 @@ DatabaseBeatmap::LOAD_DIFFOBJ_RESULT DatabaseBeatmap::loadDifficultyHitObjects(P
                                         (i32)spinner.time, (i32)spinner.endTime);
     }
 
-    if(dead()) {
-        result.errorCode = 6;
+    if(dead.stop_requested()) {
+        result.error.errc = LoadError::LOAD_INTERRUPTED;
         return result;
     }
 
@@ -916,8 +934,8 @@ DatabaseBeatmap::LOAD_DIFFOBJ_RESULT DatabaseBeatmap::loadDifficultyHitObjects(P
         std::ranges::sort(result.diffobjects, diffHitObjectSortComparator);
     }
 
-    if(dead()) {
-        result.errorCode = 6;
+    if(dead.stop_requested()) {
+        result.error.errc = LoadError::LOAD_INTERRUPTED;
         return result;
     }
 
@@ -1046,8 +1064,8 @@ DatabaseBeatmap::LOAD_DIFFOBJ_RESULT DatabaseBeatmap::loadDifficultyHitObjects(P
         // update hitobject positions
         float stackOffset = rawHitCircleDiameter / 128.0f / GameRules::broken_gamefield_rounding_allowance * 6.4f;
         for(int i = 0; i < result.diffobjects.size(); i++) {
-            if(dead()) {
-                result.errorCode = 6;
+            if(dead.stop_requested()) {
+                result.error.errc = LoadError::LOAD_INTERRUPTED;
                 return result;
             }
 
@@ -1060,8 +1078,8 @@ DatabaseBeatmap::LOAD_DIFFOBJ_RESULT DatabaseBeatmap::loadDifficultyHitObjects(P
     if(speedMultiplier != 1.0f && speedMultiplier > 0.0f) {
         const double invSpeedMultiplier = 1.0 / (double)speedMultiplier;
         for(int i = 0; i < result.diffobjects.size(); i++) {
-            if(dead()) {
-                result.errorCode = 6;
+            if(dead.stop_requested()) {
+                result.error.errc = LoadError::LOAD_INTERRUPTED;
                 return result;
             }
 
@@ -1119,19 +1137,18 @@ bool DatabaseBeatmap::getMapFileAsync(MapFileReadDoneCallback data_callback) {
 }
 
 // XXX: code duplication (see loadPrimitiveObjects)
-bool DatabaseBeatmap::loadMetadata(bool compute_md5) {
-    if(this->difficulties != nullptr) return false;  // we are a beatmapset, not a difficulty
-
-    // reset
-    this->timingpoints.clear();
+DatabaseBeatmap::LOAD_META_RESULT DatabaseBeatmap::loadMetadata(bool compute_md5) {
+    if(this->difficulties != nullptr) {
+        return {.fileData = {},
+                .fileSize = {},
+                .error = {LoadError::LOADMETADATA_ON_BEATMAPSET}};  // we are a beatmapset, not a difficulty
+    }
 
     if(cv::debug_osu.getBool() || cv::debug_db.getBool()) debugLog("loading {:s}", this->sFilePath.c_str());
 
     std::unique_ptr<u8[]> fileBuffer;
-    std::string_view beatmapFile;
     size_t beatmapFileSize{0};
-
-    std::vector<BREAK> breaks;
+    std::string_view beatmapFile;
 
     {
         File file(this->sFilePath);
@@ -1144,15 +1161,24 @@ bool DatabaseBeatmap::loadMetadata(bool compute_md5) {
         // close the file here
     }
 
+    const auto ret = [&](LoadError::code retcode) -> DatabaseBeatmap::LOAD_META_RESULT {
+        return {.fileData = std::move(fileBuffer), .fileSize = beatmapFileSize, .error = {retcode}};
+    };
+
     if(!fileBuffer || !beatmapFileSize) {
         debugLog("Osu Error: Couldn't read file {}", this->sFilePath);
-        return false;
+        return ret(LoadError::FILE_LOAD);
     }
 
     // compute MD5 hash (very slow)
     if(compute_md5 && !this->md5_init.load(std::memory_order_acquire)) {
         this->writeMD5(crypto::hash::md5_hex(reinterpret_cast<const u8 *>(beatmapFile.data()), beatmapFileSize));
     }
+
+    // reset
+    this->timingpoints.clear();
+
+    std::vector<BREAK> breaks;
 
     // load metadata
     bool foundAR = false;
@@ -1200,7 +1226,7 @@ bool DatabaseBeatmap::loadMetadata(bool compute_md5) {
                 if(Parsing::parse(curLine, "osu file format v", &this->iVersion)) {
                     if(this->iVersion > cv::beatmap_version.getInt()) {
                         debugLog("Ignoring unknown/invalid beatmap version {:d}", this->iVersion);
-                        return false;
+                        return ret(LoadError::METADATA);
                     }
                 }
                 break;
@@ -1211,7 +1237,7 @@ bool DatabaseBeatmap::loadMetadata(bool compute_md5) {
                 u8 gamemode{(u8)-1};
                 if(Parsing::parse(curLine, "Mode", ':', &gamemode) && gamemode != 0) {
                     logIfCV(debug_osu, "ignoring non-std gamemode {} for {}", gamemode, this->sFilePath);
-                    return false;
+                    return ret(LoadError::METADATA);
                 }
                 //PARSE_LINE("Mode", ':', &this->iGameMode);
                 PARSE_LINE("AudioFilename", ':', &this->sAudioFileName);
@@ -1298,7 +1324,7 @@ bool DatabaseBeatmap::loadMetadata(bool compute_md5) {
     // general sanity checks
     if((this->timingpoints.size() < 1)) {
         logIfCV(debug_osu, "no timingpoints in beatmap!");
-        return false;  // nothing more to do here
+        return ret(LoadError::NO_TIMINGPOINTS);  // nothing more to do here
     }
 
     // build sound file path
@@ -1328,7 +1354,7 @@ bool DatabaseBeatmap::loadMetadata(bool compute_md5) {
     // special case: old beatmaps have AR = OD, there is no ApproachRate stored
     if(!foundAR) this->fAR = this->fOD;
 
-    return true;
+    return ret(LoadError::NONE);
 }
 
 DatabaseBeatmap::LOAD_GAMEPLAY_RESULT DatabaseBeatmap::loadGameplay(DatabaseBeatmap *databaseBeatmap,
@@ -1338,15 +1364,17 @@ DatabaseBeatmap::LOAD_GAMEPLAY_RESULT DatabaseBeatmap::loadGameplay(DatabaseBeat
     // NOTE: reload metadata (force ensures that all necessary data is ready for creating hitobjects and playing etc.,
     // also if beatmap file is changed manually in the meantime)
     // XXX: file io, md5 calc, all on main thread!!
-    if(!databaseBeatmap->loadMetadata()) {
-        result.errorCode = 1;
+    auto metaRes = databaseBeatmap->loadMetadata();
+    result.error = metaRes.error;
+    if(result.error.errc) {
         return result;
     }
 
     // load primitives, put in temporary container
-    PRIMITIVE_CONTAINER c = loadPrimitiveObjects(databaseBeatmap->sFilePath);
-    if(c.errorCode != 0) {
-        result.errorCode = c.errorCode;
+    PRIMITIVE_CONTAINER c = loadPrimitiveObjectsFromData(std::move(metaRes.fileData), metaRes.fileSize,
+                                                         databaseBeatmap->sFilePath, alwaysFalseStopPred);
+    if(c.error.errc) {
+        result.error.errc = c.error.errc;
         return result;
     }
     result.breaks = std::move(c.breaks);
@@ -1364,7 +1392,7 @@ DatabaseBeatmap::LOAD_GAMEPLAY_RESULT DatabaseBeatmap::loadGameplay(DatabaseBeat
 
     // check if we have any timingpoints at all
     if(databaseBeatmap->timingpoints.size() == 0) {
-        result.errorCode = 3;
+        result.error.errc = LoadError::NO_TIMINGPOINTS;
         return result;
     }
 
@@ -1376,16 +1404,16 @@ DatabaseBeatmap::LOAD_GAMEPLAY_RESULT DatabaseBeatmap::loadGameplay(DatabaseBeat
 
     // check if we have any hitobjects at all
     if(databaseBeatmap->iNumObjects < 1) {
-        result.errorCode = 4;
+        result.error.errc = LoadError::NO_OBJECTS;
         return result;
     }
 
     // calculate sliderTimes, and build slider clicks and ticks
-    CALCULATE_SLIDER_TIMES_CLICKS_TICKS_RESULT sliderTimeCalcResult =
+    LoadError sliderTimeCalcResult =
         calculateSliderTimesClicksTicks(c.version, c.sliders, databaseBeatmap->timingpoints,
                                         databaseBeatmap->fSliderMultiplier, databaseBeatmap->fSliderTickRate);
-    if(sliderTimeCalcResult.errorCode != 0) {
-        result.errorCode = sliderTimeCalcResult.errorCode;
+    if(sliderTimeCalcResult.errc != LoadError::NONE) {
+        result.error.errc = sliderTimeCalcResult.errc;
         return result;
     }
 

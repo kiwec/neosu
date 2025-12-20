@@ -152,7 +152,7 @@ struct LivePPCalc::LivePPCalcImpl {
             auto &cache = p.get_cache();
             DatabaseBeatmap::LOAD_DIFFOBJ_RESULT &diffres = cache.diffres;
 
-            if(diffres.errorCode != 0) return result;  // uh-oh
+            if(diffres.error.errc) return result;  // uh-oh
 
             const bool relax = flags::has<ModFlags::Relax>(p.mods.flags);
             const bool td = flags::has<ModFlags::TouchDevice>(p.mods.flags);
@@ -186,7 +186,7 @@ struct LivePPCalc::LivePPCalcImpl {
                 .outSpeedStrains = &retInfo.speedStrains,
                 .incremental = nullptr,  // TODO: use incremental instead of this bs
                 .upToObjectIndex = p.current_hitobject,
-                .cancelCheck = nullptr,
+                .cancelCheck = {},
                 .forceFillDiffobjCache = true};
 
             retInfo.total_stars = DifficultyCalculator::calculateStarDiffForHitObjects(params);

@@ -86,7 +86,7 @@ bool SimulatedBeatmapInterface::start() {
 
     // actually load the difficulty (and the hitobjects)
     DatabaseBeatmap::LOAD_GAMEPLAY_RESULT result = DatabaseBeatmap::loadGameplay(this->beatmap, this);
-    if(result.errorCode != 0) {
+    if(result.error.errc) {
         return false;
     }
     this->hitobjects.clear();

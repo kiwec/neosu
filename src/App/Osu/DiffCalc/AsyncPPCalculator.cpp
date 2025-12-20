@@ -82,8 +82,6 @@ void run_thread(const Sync::stop_token& stoken) {
     McThread::set_current_thread_name(ULITERAL("async_pp_calc"));
     McThread::set_current_thread_prio(McThread::Priority::NORMAL);  // reset priority
 
-    const auto deadCheck = [&stoken](void) -> bool { return stoken.stop_requested(); };
-
     while(!stoken.stop_requested()) {
         Sync::unique_lock lock(work_mtx);
         cond.wait(lock, stoken, [] { return !work.empty(); });
@@ -146,10 +144,10 @@ void run_thread(const Sync::stop_token& stoken) {
                 };
 
                 new_ho.diffres = DatabaseBeatmap::loadDifficultyHitObjects(map_for_rqt->getFilePath(), rqt.AR, rqt.CS,
-                                                                           rqt.speedOverride, false, deadCheck);
+                                                                           rqt.speedOverride, false, stoken);
 
                 if(stoken.stop_requested()) return;
-                if(new_ho.diffres.errorCode) {
+                if(new_ho.diffres.error.errc) {
                     lock.lock();
                     continue;
                 }
@@ -201,7 +199,7 @@ void run_thread(const Sync::stop_token& stoken) {
                                                             .outSpeedStrains = &new_info.info.speedStrains,
                                                             .incremental = nullptr,
                                                             .upToObjectIndex = -1,
-                                                            .cancelCheck = deadCheck};
+                                                            .cancelCheck = stoken};
 
                 new_info.info.total_stars = DifficultyCalculator::calculateStarDiffForHitObjects(params);
                 new_info.cachedDiffObjects = std::move(params.cachedDiffObjects);

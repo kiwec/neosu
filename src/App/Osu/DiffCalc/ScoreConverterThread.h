@@ -8,21 +8,14 @@ struct MD5Hash;
 
 class DatabaseBeatmap;
 struct FinishedScore;
-class ScoreConverter final {
-    NOCOPY_NOMOVE(ScoreConverter)
-   public:
-    ScoreConverter() = delete;
-    ~ScoreConverter() = delete;
+namespace ScoreConverter {
+u32 get_computed();
+u32 get_total();
 
-    static u32 get_computed();
-    static u32 get_total();
+// run calc on entire database scores
+void start_calc();
+void abort_calc();
+bool running();
 
-    // run calc on entire database scores
-    static void start_calc();
-    static void abort_calc();
-    static bool running();
-
-   private:
-    static void update_ppv2(const FinishedScore& score);
-    static void runloop();
-};
+struct internal;
+}  // namespace ScoreConverter

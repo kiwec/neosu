@@ -117,8 +117,8 @@ int NEOSU_run_diffcalc(int argc, char* argv[]) {
 
     // load primitive hitobjects
     auto primitives = DatabaseBeatmap::loadPrimitiveObjects(osuFilePath);
-    if(primitives.errorCode != 0) {
-        std::cerr << "error loading beatmap primitives: code " << primitives.errorCode << '\n';
+    if(primitives.error.errc) {
+        std::cerr << "error loading beatmap primitives: " << primitives.error.error_string() << '\n';
         return 1;
     }
 
@@ -147,8 +147,8 @@ int NEOSU_run_diffcalc(int argc, char* argv[]) {
     auto diffResult =
         DatabaseBeatmap::loadDifficultyHitObjects(primitives, settings.AR, settings.CS, speedMultiplier, false);
 
-    if(diffResult.errorCode != 0) {
-        std::cerr << "error loading difficulty objects: code " << diffResult.errorCode << '\n';
+    if(diffResult.error.errc) {
+        std::cerr << "error loading difficulty objects: " << diffResult.error.errc << '\n';
         return 1;
     }
 
@@ -176,7 +176,7 @@ int NEOSU_run_diffcalc(int argc, char* argv[]) {
         .outSpeedStrains = nullptr,
         .incremental = nullptr,
         .upToObjectIndex = -1,
-        .cancelCheck = nullptr,
+        .cancelCheck = {},
     };
 
     f64 totalStars = DifficultyCalculator::calculateStarDiffForHitObjects(starParams);

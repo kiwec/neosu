@@ -10,28 +10,37 @@
 #include "Timing.h"
 #include "Logging.h"
 #include "Thread.h"
+#include "SyncJthread.h"
+#include "SyncStoptoken.h"
 
 #include <atomic>
 #include <memory>
 
+namespace ScoreConverter {
+namespace {
 // TODO
-static constexpr bool USE_PPV3{false};
+constexpr bool USE_PPV3{false};
 
-static std::atomic<u32> sct_computed{0};
-static std::atomic<u32> sct_total{0};
+std::atomic<u32> sct_computed{0};
+std::atomic<u32> sct_total{0};
 
-static std::thread thr;
-static std::atomic<bool> dead{true};
+Sync::jthread thr;
+}  // namespace
+
+// for Database to do friend struct ScoreConverter::internal
+struct internal {
+    static void update_ppv2(const FinishedScore& score, const Sync::stop_token& stoken);
+    static bool score_needs_recalc(const FinishedScore& score);
+    static void runloop(const Sync::stop_token& stoken);
+};
 
 // XXX: This is barebones, no caching, *hopefully* fast enough (worst part is loading the .osu files)
 // XXX: Probably code duplicated a lot, I'm pretty sure there's 4 places where I calc ppv2...
-void ScoreConverter::update_ppv2(const FinishedScore& score) {
+void internal::update_ppv2(const FinishedScore& score, const Sync::stop_token& stoken) {
     if(score.ppv2_version >= DiffCalc::PP_ALGORITHM_VERSION) return;
 
     const auto* map = db->getBeatmapDifficulty(score.beatmap_hash);
     if(!map) return;
-
-    const auto deadCheck = [](void) -> bool { return dead.load(std::memory_order_acquire); };
 
     const f32 AR = score.mods.get_naive_ar(map);
     const f32 HP = score.mods.get_naive_hp(map);
@@ -44,9 +53,9 @@ void ScoreConverter::update_ppv2(const FinishedScore& score) {
 
     // Load hitobjects
     auto diffres =
-        DatabaseBeatmap::loadDifficultyHitObjects(map->getFilePath(), AR, CS, score.mods.speed, false, deadCheck);
-    if(dead.load(std::memory_order_acquire)) return;
-    if(diffres.errorCode) return;
+        DatabaseBeatmap::loadDifficultyHitObjects(map->getFilePath(), AR, CS, score.mods.speed, false, stoken);
+    if(stoken.stop_requested()) return;
+    if(diffres.error.errc) return;
 
     AsyncPPC::pp_res info;
     DifficultyCalculator::BeatmapDiffcalcData diffcalc_data{.sortedHitObjects = diffres.diffobjects,
@@ -71,7 +80,7 @@ void ScoreConverter::update_ppv2(const FinishedScore& score) {
                                                 .outSpeedStrains = &info.speedStrains,
                                                 .incremental = nullptr,
                                                 .upToObjectIndex = -1,
-                                                .cancelCheck = deadCheck};
+                                                .cancelCheck = stoken};
 
     info.total_stars = DifficultyCalculator::calculateStarDiffForHitObjects(params);
 
@@ -83,7 +92,7 @@ void ScoreConverter::update_ppv2(const FinishedScore& score) {
     info.speed_notes = attributes_out.SpeedNoteCount;
     info.difficult_speed_strains = attributes_out.SpeedDifficultStrainCount;
 
-    if(dead.load(std::memory_order_acquire)) return;
+    if(stoken.stop_requested()) return;
 
     DifficultyCalculator::PPv2CalcParams ppv2calcparams{.attributes = attributes_out,
                                                         .modFlags = score.mods.flags,
@@ -126,7 +135,7 @@ void ScoreConverter::update_ppv2(const FinishedScore& score) {
     }
 }
 
-static forceinline bool score_needs_recalc(const FinishedScore& score) {
+bool internal::score_needs_recalc(const FinishedScore& score) {
     if((USE_PPV3 && score.hitdeltas.empty())
        // should this be < or != ... ?
        || (score.ppv2_version < DiffCalc::PP_ALGORITHM_VERSION)
@@ -137,7 +146,7 @@ static forceinline bool score_needs_recalc(const FinishedScore& score) {
     return false;
 }
 
-void ScoreConverter::runloop() {
+void internal::runloop(const Sync::stop_token& stoken) {
     McThread::set_current_thread_name(ULITERAL("score_cvt"));
     McThread::set_current_thread_prio(McThread::Priority::NORMAL);  // reset priority
 
@@ -170,16 +179,16 @@ void ScoreConverter::runloop() {
     if(sct_total == 0) return;
 
     for(i32 idx = 0; auto& score : scores_to_calc) {
-        while(osu->shouldPauseBGThreads() && !dead.load(std::memory_order_acquire)) {
+        while(osu->shouldPauseBGThreads() && !stoken.stop_requested()) {
             Timing::sleepMS(100);
         }
         Timing::sleep(1);
 
-        if(dead.load(std::memory_order_acquire)) return;
+        if(stoken.stop_requested()) return;
 
         // This is "placeholder" until we get accurate replay simulation
         {
-            update_ppv2(score);
+            update_ppv2(score, stoken);
         }
 
         // @PPV3: below
@@ -192,7 +201,7 @@ void ScoreConverter::runloop() {
         if(score.replay.empty()) {
             if(!LegacyReplay::load_from_disk(score, false)) {
                 debugLog("Failed to load replay for score {:d}", idx);
-                update_ppv2(score);
+                update_ppv2(score, stoken);
                 sct_computed.fetch_add(1, std::memory_order_relaxed);
                 idx++;
                 continue;
@@ -242,33 +251,29 @@ void ScoreConverter::runloop() {
     sct_computed.fetch_add(1, std::memory_order_relaxed);
 }
 
-void ScoreConverter::start_calc() {
-    ScoreConverter::abort_calc();
-
-    dead.store(false, std::memory_order_release);
+void start_calc() {
+    abort_calc();
 
     // to be set in runloop (find scores which actually need recalc)
     sct_total = 0;
     sct_computed = 0;
 
     if(!db->getScores().empty()) {
-        thr = std::thread(runloop);
+        thr = Sync::jthread(internal::runloop);
     }
 }
 
-void ScoreConverter::abort_calc() {
-    if(dead.load(std::memory_order_acquire)) return;
+void abort_calc() {
+    if(!thr.joinable()) return;
 
-    dead.store(true, std::memory_order_release);
-    if(thr.joinable()) {
-        thr.join();
-    }
+    thr = {};
 
     sct_total = 0;
     sct_computed = 0;
 }
 
-bool ScoreConverter::running() { return thr.joinable(); }
+bool running() { return thr.joinable(); }
 
-u32 ScoreConverter::get_total() { return sct_total.load(std::memory_order_acquire); }
-u32 ScoreConverter::get_computed() { return sct_computed.load(std::memory_order_acquire); }
+u32 get_total() { return sct_total.load(std::memory_order_acquire); }
+u32 get_computed() { return sct_computed.load(std::memory_order_acquire); }
+}  // namespace ScoreConverter

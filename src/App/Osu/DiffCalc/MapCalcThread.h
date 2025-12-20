@@ -5,8 +5,10 @@
 #include "types.h"
 #include "templates.h"
 
+#include "SyncJthread.h"
+#include "SyncStoptoken.h"
+
 #include <atomic>
-#include <thread>
 #include <vector>
 
 class DatabaseBeatmap;
@@ -57,7 +59,7 @@ class MapCalcThread {
     static inline std::vector<mct_result>& get_results() { return get_instance().results; }
 
    private:
-    void run();
+    void run(const Sync::stop_token &stoken);
 
     void start_calc_instance(const std::vector<DatabaseBeatmap*>& maps_to_calc);
     void abort_instance();
@@ -65,8 +67,7 @@ class MapCalcThread {
     // singleton access
     static MapCalcThread& get_instance();
 
-    std::thread worker_thread;
-    std::atomic<bool> should_stop{true};
+    Sync::jthread worker_thread;
     std::atomic<u32> computed_count{0};
     std::atomic<u32> total_count{0};
     std::vector<mct_result> results{};

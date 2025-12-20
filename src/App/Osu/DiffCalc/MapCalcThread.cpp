@@ -1,8 +1,6 @@
 // Copyright (c) 2024, kiwec, All rights reserved.
 #include "MapCalcThread.h"
 
-#include <thread>
-
 #include "DatabaseBeatmap.h"
 #include "AsyncPPCalculator.h"
 #include "DifficultyCalculator.h"
@@ -17,61 +15,54 @@ void MapCalcThread::start_calc_instance(const std::vector<DatabaseBeatmap*>& map
         return;
     }
 
-    this->should_stop = false;
     this->maps_to_process = &maps_to_calc;
     this->computed_count = 0;
     this->total_count = static_cast<u32>(this->maps_to_process->size()) + 1;
     this->results.clear();
 
-    this->worker_thread = std::thread(&MapCalcThread::run, this);
+    this->worker_thread = Sync::jthread([this](const Sync::stop_token& stoken) -> void { return this->run(stoken); });
 }
 
 void MapCalcThread::abort_instance() {
-    if(this->should_stop.load(std::memory_order_acquire)) {
+    if(!this->worker_thread.joinable()) {
         return;
     }
 
-    this->should_stop = true;
-
-    if(this->worker_thread.joinable()) {
-        this->worker_thread.join();
-    }
+    this->worker_thread = {};
 
     this->total_count = 0;
     this->computed_count = 0;
     this->maps_to_process = nullptr;
 }
 
-void MapCalcThread::run() {
+void MapCalcThread::run(const Sync::stop_token& stoken) {
     McThread::set_current_thread_name(ULITERAL("map_calc"));
     McThread::set_current_thread_prio(McThread::Priority::NORMAL);  // reset priority
 
-    const auto deadCheck = [die = &this->should_stop](void) -> bool { return die->load(std::memory_order_acquire); };
-
     for(const auto& map : *this->maps_to_process) {
         // pause handling
-        while(osu->shouldPauseBGThreads() && !this->should_stop.load(std::memory_order_acquire)) {
+        while(osu->shouldPauseBGThreads() && !stoken.stop_requested()) {
             Timing::sleepMS(100);
         }
         Timing::sleep(1);
 
-        if(this->should_stop.load(std::memory_order_acquire)) {
+        if(stoken.stop_requested()) {
             return;
         }
 
         mct_result result{.map = map};
 
-        if(this->should_stop.load(std::memory_order_acquire)) {
+        if(stoken.stop_requested()) {
             return;
         }
 
-        auto c = DatabaseBeatmap::loadPrimitiveObjects(map->sFilePath, deadCheck);
+        auto c = DatabaseBeatmap::loadPrimitiveObjects(map->sFilePath, stoken);
 
-        if(this->should_stop.load(std::memory_order_acquire)) {
+        if(stoken.stop_requested()) {
             return;
         }
 
-        if(c.errorCode) {
+        if(c.error.errc) {
             this->results.push_back(result);
             this->computed_count++;
             continue;
@@ -82,30 +73,30 @@ void MapCalcThread::run() {
         result.nb_spinners = c.numSpinners;
 
         AsyncPPC::pp_res info;
-        auto diffres = DatabaseBeatmap::loadDifficultyHitObjects(c, map->getAR(), map->getCS(), 1.f, false, deadCheck);
+        auto diffres = DatabaseBeatmap::loadDifficultyHitObjects(c, map->getAR(), map->getCS(), 1.f, false, stoken);
 
-        if(this->should_stop.load(std::memory_order_acquire)) {
+        if(stoken.stop_requested()) {
             return;
         }
 
-        if(diffres.errorCode) {
+        if(c.error.errc) {
             this->results.push_back(result);
             this->computed_count++;
             continue;
         }
 
         DifficultyCalculator::BeatmapDiffcalcData diffcalc_data{.sortedHitObjects = diffres.diffobjects,
-                                                              .CS = map->getCS(),
-                                                              .HP = map->getHP(),
-                                                              .AR = map->getAR(),
-                                                              .OD = map->getOD(),
-                                                              .hidden = false,
-                                                              .relax = false,
-                                                              .autopilot = false,
-                                                              .touchDevice = false,
-                                                              .speedMultiplier = 1.f,
-                                                              .breakDuration = c.totalBreakDuration,
-                                                              .playableLength = diffres.playableLength};
+                                                                .CS = map->getCS(),
+                                                                .HP = map->getHP(),
+                                                                .AR = map->getAR(),
+                                                                .OD = map->getOD(),
+                                                                .hidden = false,
+                                                                .relax = false,
+                                                                .autopilot = false,
+                                                                .touchDevice = false,
+                                                                .speedMultiplier = 1.f,
+                                                                .breakDuration = c.totalBreakDuration,
+                                                                .playableLength = diffres.playableLength};
 
         DifficultyCalculator::DifficultyAttributes attributes_out{};
 
@@ -116,11 +107,11 @@ void MapCalcThread::run() {
                                                     .outSpeedStrains = &info.speedStrains,
                                                     .incremental = nullptr,
                                                     .upToObjectIndex = -1,
-                                                    .cancelCheck = deadCheck};
+                                                    .cancelCheck = stoken};
 
         result.star_rating = static_cast<f32>(DifficultyCalculator::calculateStarDiffForHitObjects(params));
 
-        if(this->should_stop.load(std::memory_order_acquire)) {
+        if(stoken.stop_requested()) {
             return;
         }
 

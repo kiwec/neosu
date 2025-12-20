@@ -205,7 +205,8 @@ void BeatmapInterface::drawBackground() {
     {
         const Image *backgroundImage = nullptr;
         if(cv::draw_beatmap_background_image.getBool() &&
-           (backgroundImage = osu->getBackgroundImageHandler()->getLoadBackgroundImage(this->beatmap, false, cv::draw_menu_background.getBool())) &&
+           (backgroundImage = osu->getBackgroundImageHandler()->getLoadBackgroundImage(
+                this->beatmap, false, cv::draw_menu_background.getBool())) &&
            (cv::background_dim.getFloat() < 1.0f || this->fBreakBackgroundFade > 0.0f)) {
             const float scale = Osu::getImageScaleToFillResolution(backgroundImage, osu->getVirtScreenSize());
             const vec2 centerTrans = (osu->getVirtScreenSize() / 2.0f);
@@ -594,42 +595,47 @@ bool BeatmapInterface::start() {
     // actually load the difficulty (and the hitobjects)
     {
         DatabaseBeatmap::LOAD_GAMEPLAY_RESULT result = DatabaseBeatmap::loadGameplay(this->beatmap, this);
-        if(result.errorCode != 0) {
-            switch(result.errorCode) {
-                case 1: {
-                    UString errorMessage = "Error: Couldn't load beatmap metadata :(";
-                    debugLog("Osu Error: Couldn't load beatmap metadata {:s}", this->beatmap->getFilePath().c_str());
-
-                    osu->getNotificationOverlay()->addToast(errorMessage, ERROR_TOAST);
+        if(result.error.errc) {
+            using enum DatabaseBeatmap::LoadError::code;
+            UString errorMessage;
+            switch(result.error.errc) {
+                case METADATA:
+                case LOADMETADATA_ON_BEATMAPSET:
+                case NON_STD_GAMEMODE:
+                case UNKNOWN_VERSION: {
+                    errorMessage = "Error: Couldn't load beatmap metadata :(";
+                    debugLog("Osu Error: Couldn't load beatmap metadata {:s}", this->beatmap->getFilePath());
                 } break;
 
-                case 2: {
-                    UString errorMessage = "Error: Couldn't load beatmap file :(";
-                    debugLog("Osu Error: Couldn't load beatmap file {:s}", this->beatmap->getFilePath().c_str());
-
-                    osu->getNotificationOverlay()->addToast(errorMessage, ERROR_TOAST);
+                case FILE_LOAD: {
+                    errorMessage = "Error: Couldn't load beatmap file :(";
+                    debugLog("Osu Error: Couldn't load beatmap file {:s}", this->beatmap->getFilePath());
                 } break;
 
-                case 3: {
-                    UString errorMessage = "Error: No timingpoints in beatmap :(";
-                    debugLog("Osu Error: No timingpoints in beatmap {:s}", this->beatmap->getFilePath().c_str());
-
-                    osu->getNotificationOverlay()->addToast(errorMessage, ERROR_TOAST);
+                case NO_TIMINGPOINTS: {
+                    errorMessage = "Error: No timingpoints in beatmap :(";
+                    debugLog("Osu Error: No timingpoints in beatmap {:s}", this->beatmap->getFilePath());
                 } break;
 
-                case 4: {
-                    UString errorMessage = "Error: No hitobjects in beatmap :(";
-                    debugLog("Osu Error: No hitobjects in beatmap {:s}", this->beatmap->getFilePath().c_str());
-
-                    osu->getNotificationOverlay()->addToast(errorMessage, ERROR_TOAST);
+                case NO_OBJECTS: {
+                    errorMessage = "Error: No hitobjects in beatmap :(";
+                    debugLog("Osu Error: No hitobjects in beatmap {:s}", this->beatmap->getFilePath());
                 } break;
 
-                case 5: {
-                    UString errorMessage = "Error: Too many hitobjects in beatmap :(";
-                    debugLog("Osu Error: Too many hitobjects in beatmap {:s}", this->beatmap->getFilePath().c_str());
-
-                    osu->getNotificationOverlay()->addToast(errorMessage, ERROR_TOAST);
+                case TOOMANY_HITOBJECTS: {
+                    errorMessage = "Error: Too many hitobjects in beatmap :(";
+                    debugLog("Osu Error: Too many hitobjects in beatmap {:s}", this->beatmap->getFilePath());
                 } break;
+
+                default: {
+                    if(result.error.errc != LOAD_INTERRUPTED) errorMessage = "Error: Couldn't load beatmap :(";
+                    debugLog("Osu Error: Couldn't load beatmap {}: {}", this->beatmap->getFilePath(),
+                             result.error.error_string());
+                } break;
+            }
+
+            if(!errorMessage.isEmpty()) {
+                osu->getNotificationOverlay()->addToast(errorMessage, ERROR_TOAST);
             }
 
             osu->bIsPlayingASelectedBeatmap = false;
@@ -3729,7 +3735,7 @@ FinishedScore BeatmapInterface::saveAndSubmitScore(bool quit) {
                                                 .outSpeedStrains = nullptr,
                                                 .incremental = nullptr,
                                                 .upToObjectIndex = -1,
-                                                .cancelCheck = nullptr};
+                                                .cancelCheck = {}};
 
     const f64 totalStars = DifficultyCalculator::calculateStarDiffForHitObjects(params);
 

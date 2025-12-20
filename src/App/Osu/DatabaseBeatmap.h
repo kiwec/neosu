@@ -9,6 +9,7 @@
 #include "Vectors.h"
 #include "templates.h"
 #include "MD5Hash.h"
+#include "SyncStoptoken.h"
 
 #include <atomic>
 #include <string_view>
@@ -47,6 +48,41 @@ struct SLIDER_SCORING_TIME {
 class DatabaseBeatmap final {
     NOCOPY_NOMOVE(DatabaseBeatmap)
    public:
+    struct LoadError {
+       public:
+        enum code : u8 {
+            NONE = 0,
+            METADATA = 1,
+            FILE_LOAD = 2,
+            NO_TIMINGPOINTS = 3,
+            NO_OBJECTS = 4,
+            TOOMANY_HITOBJECTS = 5,
+            LOAD_INTERRUPTED = 6,
+            LOADMETADATA_ON_BEATMAPSET = 7,
+            NON_STD_GAMEMODE = 8,
+            UNKNOWN_VERSION = 9,
+            ERRC_COUNT = 9
+        };
+        code errc{0};
+
+        [[nodiscard]] forceinline std::string_view error_string() const { return reasons[errc]; }
+
+        explicit operator bool() const { return errc != NONE; }
+
+       private:
+        static constexpr const std::array<std::string_view, ERRC_COUNT> reasons{
+            {"no error",                               //
+             "failed to load file metadata",           //
+             "failed to load file",                    //
+             "no timingpoints in file",                //
+             "no objects in file",                     //
+             "too many objects in file"                //
+             "async load interrupted",                 //
+             "tried to load metadata for beatmapset",  //
+             "cannot load non-standard gamemode",      //
+             "unknown beatmap version"}};
+    };
+
     // raw structs (not editable, we're following db format directly)
     struct TIMINGPOINT {
         i32 offset;
@@ -82,7 +118,7 @@ class DatabaseBeatmap final {
 
         u32 playableLength{0};
         u32 totalBreakDuration{0};
-        int errorCode{0};
+        LoadError error;
 
         [[nodiscard]] u32 getTotalMaxCombo() const { return maxComboAtIndex.back(); }
         [[nodiscard]] u32 getMaxComboAtIndex(uSz diffobjIndex) const;
@@ -106,7 +142,7 @@ class DatabaseBeatmap final {
         std::vector<Color> combocolors;
 
         i32 defaultSampleSet{1};
-        int errorCode{0};
+        LoadError error;
     };
 
     struct TIMING_INFO {
@@ -195,7 +231,7 @@ class DatabaseBeatmap final {
         i32 defaultSampleSet{1};
 
         i32 version{};
-        i32 errorCode{0};
+        LoadError error;
     };
 
     DatabaseBeatmap() = delete;
@@ -203,20 +239,28 @@ class DatabaseBeatmap final {
     DatabaseBeatmap(std::vector<DatabaseBeatmap *> *difficulties, BeatmapType type);
     ~DatabaseBeatmap();
 
-    static constexpr auto alwaysFalseStopPred = []() -> bool { return false; };
+    static inline const auto alwaysFalseStopPred = Sync::stop_token{};
 
     static LOAD_DIFFOBJ_RESULT loadDifficultyHitObjects(std::string_view osuFilePath, float AR, float CS,
                                                         float speedMultiplier, bool calculateStarsInaccurately = false);
 
     static LOAD_DIFFOBJ_RESULT loadDifficultyHitObjects(std::string_view osuFilePath, float AR, float CS,
                                                         float speedMultiplier, bool calculateStarsInaccurately,
-                                                        const std::function<bool(void)> &dead = alwaysFalseStopPred);
+                                                        const Sync::stop_token &dead = alwaysFalseStopPred);
 
     static LOAD_DIFFOBJ_RESULT loadDifficultyHitObjects(PRIMITIVE_CONTAINER &c, float AR, float CS,
                                                         float speedMultiplier, bool calculateStarsInaccurately,
-                                                        const std::function<bool(void)> &dead = alwaysFalseStopPred);
+                                                        const Sync::stop_token &dead = alwaysFalseStopPred);
 
-    bool loadMetadata(bool compute_md5 = true);
+    struct LOAD_META_RESULT {
+        std::unique_ptr<u8[]> fileData;
+        size_t fileSize;
+        LoadError error;
+
+        explicit operator bool() const { return error.errc != 0; }
+    };
+
+    LOAD_META_RESULT loadMetadata(bool compute_md5 = true);
 
     static LOAD_GAMEPLAY_RESULT loadGameplay(DatabaseBeatmap *databaseBeatmap, AbstractBeatmapInterface *beatmap);
     inline LOAD_GAMEPLAY_RESULT loadGameplay(AbstractBeatmapInterface *beatmap) { return loadGameplay(this, beatmap); }
@@ -415,24 +459,22 @@ class DatabaseBeatmap final {
     bool do_not_store{false};
     bool draw_background{true};
 
-    struct CALCULATE_SLIDER_TIMES_CLICKS_TICKS_RESULT {
-        int errorCode;
-    };
-
     // class internal data (custom)
 
     friend class Database;
     friend class BGImageHandler;
 
     static PRIMITIVE_CONTAINER loadPrimitiveObjects(std::string_view osuFilePath);
-    static PRIMITIVE_CONTAINER loadPrimitiveObjects(std::string_view osuFilePath,
-                                                    const std::function<bool(void)> &dead);
-    static CALCULATE_SLIDER_TIMES_CLICKS_TICKS_RESULT calculateSliderTimesClicksTicks(
-        int beatmapVersion, std::vector<SLIDER> &sliders, zarray<DatabaseBeatmap::TIMINGPOINT> &timingpoints,
-        float sliderMultiplier, float sliderTickRate);
-    static CALCULATE_SLIDER_TIMES_CLICKS_TICKS_RESULT calculateSliderTimesClicksTicks(
-        int beatmapVersion, std::vector<SLIDER> &sliders, zarray<DatabaseBeatmap::TIMINGPOINT> &timingpoints,
-        float sliderMultiplier, float sliderTickRate, const std::function<bool(void)> &dead);
+    static PRIMITIVE_CONTAINER loadPrimitiveObjects(std::string_view osuFilePath, const Sync::stop_token &dead);
+    static PRIMITIVE_CONTAINER loadPrimitiveObjectsFromData(std::unique_ptr<u8[]> fileData, size_t fileSize,
+                                                            std::string_view osuFilePath, const Sync::stop_token &dead);
+    static LoadError calculateSliderTimesClicksTicks(int beatmapVersion, std::vector<SLIDER> &sliders,
+                                                     zarray<DatabaseBeatmap::TIMINGPOINT> &timingpoints,
+                                                     float sliderMultiplier, float sliderTickRate);
+    static LoadError calculateSliderTimesClicksTicks(int beatmapVersion, std::vector<SLIDER> &sliders,
+                                                     zarray<DatabaseBeatmap::TIMINGPOINT> &timingpoints,
+                                                     float sliderMultiplier, float sliderTickRate,
+                                                     const Sync::stop_token &dead);
 
     static bool parse_timing_point(std::string_view curLine, DatabaseBeatmap::TIMINGPOINT &out);
     static bool prefer_cjk_names();
