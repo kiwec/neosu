@@ -426,14 +426,17 @@ class ConVar {
                 const auto f = static_cast<double>(std::forward<T>(value) ? 1. : 0.);
                 return std::make_pair(f, f > 0 ? "true" : "false");
             } else if constexpr(std::is_same_v<std::decay_t<T>, UString>) {
-                const UString s = std::forward<T>(value);
-                const auto [dbl, err] = s.to<double>();
-                if(err != std::errc()) return std::make_pair(0., std::string{s.utf8View()});
-                return std::make_pair(dbl, std::string{s.utf8View()});
+                const std::string s{std::forward<T>(value).toUtf8()};
+                double dbl{};
+                const auto [ptr, err] = std::from_chars(s.data(), s.data() + s.size(), dbl);
+                if(err != std::errc()) return std::make_pair(this->dDefaultValue, s);
+                return std::make_pair(dbl, s);
             } else {
                 const std::string s{std::forward<T>(value)};
-                const double f = !s.empty() ? std::strtod(s.c_str(), nullptr) : 0.;
-                return std::make_pair(f, s);
+                double dbl{};
+                const auto [ptr, err] = std::from_chars(s.data(), s.data() + s.size(), dbl);
+                if(err != std::errc()) return std::make_pair(this->dDefaultValue, s);
+                return std::make_pair(dbl, s);
             }
         }();
 

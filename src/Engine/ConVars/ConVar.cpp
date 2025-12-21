@@ -140,10 +140,9 @@ void ConVar::setDefaultString(std::string_view defaultValue) {
     this->sDefaultValue = defaultValue;
 
     // also try to parse default float from the default string
-    const double f = std::strtod(this->sDefaultValue.c_str(), nullptr);
-    if(f != 0.0) {
-        this->dDefaultValue = f;
-    }
+    double dbl{};
+    const auto [ptr, err] = std::from_chars(defaultValue.data(), defaultValue.data() + defaultValue.size(), dbl);
+    if(err == std::errc()) this->dDefaultValue = dbl;
 
     if(this->isFlagSet(cv::PROTECTED)) {
         this->invalidateCache();
