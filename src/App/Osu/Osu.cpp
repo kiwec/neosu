@@ -419,6 +419,13 @@ Osu::Osu() : App(), MouseListener(), global_osu_(this) {
     }
 
     env->setCursorVisible(!this->internalRect.contains(mouse->getPos()));
+
+    // debug (no way to open it)
+    static ConVar toggle_direct("toggle_direct", cv::CLIENT | cv::HIDDEN, []() -> void {
+        OsuDirectScreen *odr = nullptr;
+        if(!osu || !(odr = osu->getOsuDirectScreen())) return;
+        odr->setVisible(!odr->isVisible());
+    });
 }
 
 Osu::~Osu() {

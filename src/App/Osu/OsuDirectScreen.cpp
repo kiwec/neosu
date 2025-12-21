@@ -16,6 +16,8 @@
 #include "SString.h"
 #include "UIButton.h"
 
+#include <charconv>
+
 class OnlineMapListing : public CBaseUIContainer {
    public:
     OnlineMapListing(Downloader::BeatmapSetMetadata meta);
@@ -35,20 +37,13 @@ class OnlineMapListing : public CBaseUIContainer {
     vec2 mousedown_coords{-999.f, -999.f};
 };
 
-OnlineMapListing::OnlineMapListing(Downloader::BeatmapSetMetadata meta) {
-    this->meta = meta;
-    this->installed = db->getBeatmapSet(meta.set_id) != nullptr;
+OnlineMapListing::OnlineMapListing(Downloader::BeatmapSetMetadata meta) : meta(std::move(meta)) {
+    this->installed = db->getBeatmapSet(this->meta.set_id) != nullptr;
 }
 
-void OnlineMapListing::onMouseDownInside(bool left, bool right) {
-    if(!left) return;
+void OnlineMapListing::onMouseDownInside(bool /*left*/, bool /*right*/) { this->mousedown_coords = mouse->getPos(); }
 
-    this->mousedown_coords = mouse->getPos();
-}
-
-void OnlineMapListing::onMouseUpInside(bool left, bool right) {
-    if(!left) return;
-
+void OnlineMapListing::onMouseUpInside(bool /*left*/, bool /*right*/) {
     const f32 distance = vec::distance(mouse->getPos(), this->mousedown_coords);
     if(distance < 5.f && !this->installed) {
         this->downloading = !this->downloading;
@@ -57,11 +52,7 @@ void OnlineMapListing::onMouseUpInside(bool left, bool right) {
     this->mousedown_coords = {-999.f, -999.f};
 }
 
-void OnlineMapListing::onMouseUpOutside(bool left, bool right) {
-    if(!left) return;
-
-    this->mousedown_coords = {-999.f, -999.f};
-}
+void OnlineMapListing::onMouseUpOutside(bool /*left*/, bool /*right*/) { this->mousedown_coords = {-999.f, -999.f}; }
 
 void OnlineMapListing::draw() {
     f32 x = this->getPos().x;
@@ -233,7 +224,7 @@ void OsuDirectScreen::reset() {
     this->search_bar->stealFocus();
 }
 
-void OsuDirectScreen::search(std::string query, i32 page) {
+void OsuDirectScreen::search(std::string_view query, i32 page) {
     assert(page >= 0);
 
     const i32 filter = RankingStatusFilter::ALL;
@@ -251,17 +242,23 @@ void OsuDirectScreen::search(std::string query, i32 page) {
 
     networkHandler->httpRequestAsync(
         url,
-        [&](NeoNet::Response response) {
+        [&](const NeoNet::Response& response) {
             if(current_request_id != this->request_id) {
                 // Request was "cancelled"
                 return;
             }
 
             if(response.success) {
-                auto set_lines = SString::split(response.body, "\n");
+                auto set_lines = SString::split(response.body, '\n');
+                if(!set_lines[0].empty() && set_lines[0].back() == '\r') {
+                    set_lines[0].remove_suffix(1);  // remove CR if it somehow had one
+                }
 
-                i32 nb_results = strtol(std::string(set_lines[0]).c_str(), nullptr, 10);
-                if(nb_results <= 0) {
+                i32 nb_results{0};
+                auto [ptr, ec] =
+                    std::from_chars(set_lines[0].data(), set_lines[0].data() + set_lines[0].size(), nb_results);
+
+                if(nb_results <= 0 || ec != std::errc()) {
                     // HACK: reached end of results (or errored), prevent further requests
                     this->last_search_time = 9999999.9;
 
@@ -274,7 +271,7 @@ void OsuDirectScreen::search(std::string query, i32 page) {
                 }
 
                 for(i32 i = 1; i < set_lines.size(); i++) {
-                    const auto meta = Downloader::parse_beatmapset_metadata(std::string(set_lines[i]));
+                    const auto meta = Downloader::parse_beatmapset_metadata(set_lines[i]);
                     if(meta.set_id == 0) continue;
 
                     this->results->container->addBaseUIElement(new OnlineMapListing(meta));

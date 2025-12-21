@@ -33,7 +33,7 @@ struct BeatmapSetMetadata {
     std::vector<BeatmapMetadata> beatmaps;
 };
 
-BeatmapSetMetadata parse_beatmapset_metadata(std::string server_response);
+BeatmapSetMetadata parse_beatmapset_metadata(std::string_view server_response);
 
 void abort_downloads();
 

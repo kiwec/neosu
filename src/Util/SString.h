@@ -7,6 +7,7 @@
 #include <vector>
 #include <type_traits>
 #include <cassert>
+#include <charconv>
 
 // non-UString-related fast and small string manipulation helpers
 
@@ -79,6 +80,34 @@ static forceinline std::string to_lower(const std::string_view str) {
     if(str.empty()) return lstr;
     lower_inplace(lstr);
     return lstr;
+}
+
+// same as e.g. strtol if you never checked errno anyways but supports non-cstrings
+template <typename T>
+static inline T strto(const std::string_view str) {
+    T ret{};
+    if(str.empty()) return ret;
+
+    const char* begin{str.data()};
+    const char* end{str.data() + str.size()};
+    if constexpr(std::is_same_v<T, bool>) {
+        long temp{};
+        auto [_, ec] = std::from_chars(begin, end, temp);
+        ret = (temp > 0) && ec == std::errc();
+    } else if constexpr(std::is_same_v<T, uint8_t>) {
+        uint32_t b{};
+        auto [ptr, ec] = std::from_chars(begin, end, b);
+        if(ec != std::errc() && b > 255) {
+            ret = static_cast<uint8_t>(b);
+        }
+    } else {
+        auto [_, ec] = std::from_chars(begin, end, ret);
+        if(ec != std::errc()) {
+            ret = T{};
+        }
+    }
+
+    return ret;
 }
 
 }  // namespace SString

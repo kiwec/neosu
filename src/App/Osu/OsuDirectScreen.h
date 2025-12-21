@@ -11,22 +11,21 @@ class CBaseUIScrollView;
 class CBaseUITextbox;
 class UIButton;
 
-namespace RankingStatusFilter {
-enum {
-    RANKED = 0,
-    PENDING = 2,
-    QUALIFIED = 3,
-    ALL = 4,
-    GRAVEYARD = 5,
-    PLAYED = 7,
-    LOVED = 8,
-};
-}
-
 class OsuDirectScreen final : public ScreenBackable {
     NOCOPY_NOMOVE(OsuDirectScreen)
    public:
     OsuDirectScreen();
+    ~OsuDirectScreen() override = default;
+
+    enum RankingStatusFilter : u8 {
+        RANKED = 0,
+        PENDING = 2,
+        QUALIFIED = 3,
+        ALL = 4,
+        GRAVEYARD = 5,
+        PLAYED = 7,
+        LOVED = 8,
+    };
 
     CBaseUIContainer* setVisible(bool visible) override;
     void mouse_update(bool* propagate_clicks) override;
@@ -34,7 +33,7 @@ class OsuDirectScreen final : public ScreenBackable {
     void onResolutionChange(vec2 newResolution) override;
 
     void reset();
-    void search(std::string query, i32 page);
+    void search(std::string_view query, i32 page);
 
    private:
     CBaseUILabel* title{nullptr};
