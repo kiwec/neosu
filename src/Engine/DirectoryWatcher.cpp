@@ -139,6 +139,7 @@ struct DirWatcherImpl {
         McThread::set_current_thread_prio(McThread::Priority::LOW);
 
         sv_unordered_map<DirectoryState> active_directories;
+        std::vector<sv_unordered_map<DirectoryState>::iterator> directories_to_init;
 
         // Create manual-reset event for stop signaling
         HANDLE stop_event = CreateEventW(nullptr, TRUE, FALSE, nullptr);
@@ -152,7 +153,6 @@ struct DirWatcherImpl {
 
         while(!stoken.stop_requested()) {
             // Add/remove directories
-            std::vector<sv_unordered_map<DirectoryState>::iterator> directories_to_init;
             {
                 Sync::scoped_lock lock(this->directories_mtx);
                 for(auto& [path, cb] : this->directories_to_add) {
@@ -424,10 +424,10 @@ struct DirWatcherImpl {
         };
 
         sv_unordered_map<DirectoryState> active_directories;
+        std::vector<sv_unordered_map<DirectoryState>::iterator> directories_to_init;
 
         while(!stoken.stop_requested()) {
             // Add/remove directories
-            std::vector<sv_unordered_map<DirectoryState>::iterator> directories_to_init;
             {
                 Sync::scoped_lock lock(this->directories_mtx);
                 for(auto& [path, cb] : this->directories_to_add) {

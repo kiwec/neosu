@@ -215,10 +215,6 @@ bool DatabaseBeatmap::parse_timing_point(std::string_view curLine, DatabaseBeatm
     return false;
 }
 
-DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(std::string_view osuFilePath) {
-    return loadPrimitiveObjects(osuFilePath, alwaysFalseStopPred);
-}
-
 DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(std::string_view osuFilePath,
                                                                            const Sync::stop_token &dead) {
     PRIMITIVE_CONTAINER c{
@@ -832,13 +828,6 @@ DatabaseBeatmap::LoadError DatabaseBeatmap::calculateSliderTimesClicksTicks(
     }
 
     return r;
-}
-
-DatabaseBeatmap::LOAD_DIFFOBJ_RESULT DatabaseBeatmap::loadDifficultyHitObjects(std::string_view osuFilePath, float AR,
-                                                                               float CS, float speedMultiplier,
-                                                                               bool calculateStarsInaccurately) {
-    return loadDifficultyHitObjects(osuFilePath, AR, CS, speedMultiplier, calculateStarsInaccurately,
-                                    alwaysFalseStopPred);
 }
 
 DatabaseBeatmap::LOAD_DIFFOBJ_RESULT DatabaseBeatmap::loadDifficultyHitObjects(std::string_view osuFilePath, float AR,

@@ -237,7 +237,7 @@ void NetworkImpl::threadLoopFunc(const Sync::stop_token& stopToken) {
             processCompletedRequests();
         }
 
-        if(this->active_requests.empty()) {
+        if(this->active_requests.empty() && !stopToken.stop_requested()) {
             // wait for new requests
             Sync::unique_lock lock{this->request_queue_mutex};
 

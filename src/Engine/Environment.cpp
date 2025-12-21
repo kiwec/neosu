@@ -363,8 +363,15 @@ bool Environment::deleteFile(const std::string &filePath) noexcept { return SDL_
 
 std::vector<std::string> Environment::getFilesInFolder(std::string_view folder) noexcept {
     assert(!folder.empty());
-    assert(folder.ends_with('/') || (Env::cfg(OS::WINDOWS) && folder.ends_with('\\')));
-    return enumerateDirectory(folder, SDL_PATHTYPE_FILE);
+    if(folder.back() == '/') {
+        return enumerateDirectory(folder, SDL_PATHTYPE_FILE);
+    }
+    std::string folderToEnumerate{folder};
+    while(folderToEnumerate.ends_with('\\') || folderToEnumerate.ends_with('/')) {
+        folderToEnumerate.pop_back();
+    }
+    folderToEnumerate.push_back('/');
+    return enumerateDirectory(folderToEnumerate, SDL_PATHTYPE_FILE);
 }
 
 std::vector<std::string> Environment::getFoldersInFolder(std::string_view folder) noexcept {

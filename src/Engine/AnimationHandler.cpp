@@ -9,12 +9,12 @@
 
 #include <algorithm>
 #include <vector>
-#include <memory>
 
 namespace AnimationHandler {
 namespace {  // static namespace
 
-static constexpr const f32 ANIM_EPSILON{1e-6f};
+static constexpr const f32 ANIM_EPSILON_ABS{1e-7f};
+static constexpr const f32 ANIM_EPSILON_REL{1e-4f};
 enum class ANIMATION_TYPE : uint8_t {
     MOVE_LINEAR,
     MOVE_SMOOTH_END,
@@ -94,7 +94,7 @@ void update() {
         // use relative epsilon for large values, absolute epsilon for small values
         const f32 diff = std::abs(*animation.fBase - animation.fTarget);
         const f32 absMax = std::max(std::abs(*animation.fBase), std::abs(animation.fTarget));
-        const f32 threshold = std::max(ANIM_EPSILON, absMax * ANIM_EPSILON);
+        const f32 threshold = std::max(ANIM_EPSILON_REL, absMax * ANIM_EPSILON_ABS);
 
         if(diff <= threshold) {
             *animation.fBase = animation.fTarget;

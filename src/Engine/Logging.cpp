@@ -238,7 +238,7 @@ void init(bool create_console) noexcept {
     // so, create a console, such that GetStdHandle(STD_OUTPUT_HANDLE) returns a handle to it
     // this might be desirable on release builds, which are linked against the "windows" subsystem
     // (which don't create a console when opening the app)
-    if(create_console && !isaTTY() /* don't create console if we're already in one */) {
+    if(create_console && isatty(fileno(stdout)) == 0 /* don't create console if we're already in one */) {
         // allocate a new console window
         if((s_created_console = AllocConsole())) {
             // redirect stdout/stderr to the new console

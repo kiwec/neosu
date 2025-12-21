@@ -127,7 +127,7 @@ void set_current_thread_prio(Priority prio) {
             break;
     }
     if(!SDL_SetCurrentThreadPriority(sdlprio)) {
-        debugLog("couldn't set thread priority to {}", priostring);
+        debugLog("couldn't set thread priority to {}: {}", priostring, SDL_GetError());
     }
 #ifdef MCENGINE_PLATFORM_WINDOWS
     static int logcpus = get_logical_cpu_count();

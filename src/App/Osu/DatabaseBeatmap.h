@@ -242,10 +242,7 @@ class DatabaseBeatmap final {
     static inline const auto alwaysFalseStopPred = Sync::stop_token{};
 
     static LOAD_DIFFOBJ_RESULT loadDifficultyHitObjects(std::string_view osuFilePath, float AR, float CS,
-                                                        float speedMultiplier, bool calculateStarsInaccurately = false);
-
-    static LOAD_DIFFOBJ_RESULT loadDifficultyHitObjects(std::string_view osuFilePath, float AR, float CS,
-                                                        float speedMultiplier, bool calculateStarsInaccurately,
+                                                        float speedMultiplier, bool calculateStarsInaccurately = false,
                                                         const Sync::stop_token &dead = alwaysFalseStopPred);
 
     static LOAD_DIFFOBJ_RESULT loadDifficultyHitObjects(PRIMITIVE_CONTAINER &c, float AR, float CS,
@@ -363,17 +360,18 @@ class DatabaseBeatmap final {
     [[nodiscard]] inline i32 getOnlineOffset() const { return this->iOnlineOffset; }
 
     inline void writeMD5(const MD5Hash &hash) {
-        if(this->md5_init.load(std::memory_order_acquire)) return;
+        if(this->md5_init.load(std::memory_order_relaxed) || this->md5_init.load(std::memory_order_acquire)) return;
 
         this->sMD5Hash = hash;
         this->md5_init.store(true, std::memory_order_release);
     }
 
     inline const MD5Hash &getMD5() const {
-        if(this->md5_init.load(std::memory_order_acquire)) return this->sMD5Hash;
+        if(this->md5_init.load(std::memory_order_relaxed) || this->md5_init.load(std::memory_order_acquire))
+            return this->sMD5Hash;
 
-        static MD5Hash empty;
-        return empty;
+        static MD5Hash dummy{"DEADBEEFDEADBEEFDEADBEEFDEADBEEF"};
+        return dummy;
     }
 
    private:
@@ -464,8 +462,7 @@ class DatabaseBeatmap final {
     friend class Database;
     friend class BGImageHandler;
 
-    static PRIMITIVE_CONTAINER loadPrimitiveObjects(std::string_view osuFilePath);
-    static PRIMITIVE_CONTAINER loadPrimitiveObjects(std::string_view osuFilePath, const Sync::stop_token &dead);
+    static PRIMITIVE_CONTAINER loadPrimitiveObjects(std::string_view osuFilePath, const Sync::stop_token &dead = alwaysFalseStopPred);
     static PRIMITIVE_CONTAINER loadPrimitiveObjectsFromData(std::unique_ptr<u8[]> fileData, size_t fileSize,
                                                             std::string_view osuFilePath, const Sync::stop_token &dead);
     static LoadError calculateSliderTimesClicksTicks(int beatmapVersion, std::vector<SLIDER> &sliders,

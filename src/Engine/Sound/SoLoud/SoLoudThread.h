@@ -83,7 +83,7 @@ class SoLoudThreadWrapper {
 
     // synchronous access: executes on audio thread but waits for completion
     template <typename F>
-    auto sync(F&& func) -> std::invoke_result_t<F> {
+    auto sync(F &&func) -> std::invoke_result_t<F> {
         if(likely(!this->threaded)) return func();
         using ReturnType = std::invoke_result_t<F>;
 
@@ -92,7 +92,7 @@ class SoLoudThreadWrapper {
             auto future = task->get_future();
 
             {
-                Sync::scoped_lock<Sync::mutex> lock(queue_mutex);
+                Sync::scoped_lock lock(queue_mutex);
                 this->task_queue.push(std::move(task));
             }
             this->queue_cv.notify_one();
@@ -103,7 +103,7 @@ class SoLoudThreadWrapper {
             auto future = task->get_future();
 
             {
-                Sync::scoped_lock<Sync::mutex> lock(queue_mutex);
+                Sync::scoped_lock lock(queue_mutex);
                 this->task_queue.push(std::move(task));
             }
             this->queue_cv.notify_one();
@@ -139,7 +139,7 @@ class SoLoudThreadWrapper {
     */
     // asynchronous access: returns future for result
     template <typename F>
-    auto async(F&& func) -> std::future<std::invoke_result_t<F>> {
+    auto async(F &&func) -> std::future<std::invoke_result_t<F>> {
         assert(this->threaded && "can't run SoLoud calls async without threading.");
         using ReturnType = std::invoke_result_t<F>;
 
@@ -147,7 +147,7 @@ class SoLoudThreadWrapper {
         auto future = task->get_future();
 
         {
-            Sync::scoped_lock<Sync::mutex> lock(queue_mutex);
+            Sync::scoped_lock lock(queue_mutex);
             this->task_queue.push(std::move(task));
         }
         this->queue_cv.notify_one();
@@ -157,7 +157,7 @@ class SoLoudThreadWrapper {
 
     // fire-and-forget: no return value, no waiting
     template <typename F>
-    void fire_and_forget(F&& func) {
+    void fire_and_forget(F &&func) {
         if(likely(!this->threaded)) {
             func();
             return;
@@ -165,7 +165,7 @@ class SoLoudThreadWrapper {
         auto task = std::make_unique<FireAndForgetTask>(std::forward<F>(func));
 
         {
-            Sync::scoped_lock<Sync::mutex> lock(queue_mutex);
+            Sync::scoped_lock lock(queue_mutex);
             this->task_queue.push(std::move(task));
         }
         this->queue_cv.notify_one();
@@ -173,7 +173,7 @@ class SoLoudThreadWrapper {
 
     // convenience passthroughs for the current methods we need
     void deinit() {
-        this->sync([sl_ = this->soloud.get()]() {
+        this->sync([&sl_ = this->soloud]() {
             if(sl_) {
                 sl_->deinit();
             }
@@ -194,7 +194,7 @@ class SoLoudThreadWrapper {
         auto future = task->get_future();
 
         {
-            Sync::scoped_lock<Sync::mutex> lock(queue_mutex);
+            Sync::scoped_lock lock(queue_mutex);
             this->task_queue.push(std::move(task));
         }
         this->queue_cv.notify_one();
@@ -209,149 +209,144 @@ class SoLoudThreadWrapper {
         return future.get();
     }
 
-    SoLoud::handle play(SoLoud::AudioSource& aSound, float aVolume = -1.0f, float aPan = 0.0f, bool aPaused = false) {
-        return this->sync([sl_ = this->soloud.get(), &aSound, aVolume, aPan, aPaused]() {
+    SoLoud::handle play(SoLoud::AudioSource &aSound, float aVolume = -1.0f, float aPan = 0.0f, bool aPaused = false) {
+        return this->sync([&sl_ = this->soloud, &aSound, aVolume, aPan, aPaused]() {
             return sl_->play(aSound, aVolume, aPan, aPaused);
         });
     }
 
     // NOTE: currently unused
-    std::future<SoLoud::handle> play_async(SoLoud::AudioSource& aSound, float aVolume = -1.0f, float aPan = 0.0f,
+    std::future<SoLoud::handle> play_async(SoLoud::AudioSource &aSound, float aVolume = -1.0f, float aPan = 0.0f,
                                            bool aPaused = false) {
-        return this->async([sl_ = this->soloud.get(), &aSound, aVolume, aPan, aPaused]() {
+        return this->async([&sl_ = this->soloud, &aSound, aVolume, aPan, aPaused]() {
             return sl_->play(aSound, aVolume, aPan, aPaused);
         });
     }
 
     void setPause(SoLoud::handle aVoiceHandle, bool aPause) {
-        this->fire_and_forget(
-            [sl_ = this->soloud.get(), aVoiceHandle, aPause]() { sl_->setPause(aVoiceHandle, aPause); });
+        this->fire_and_forget([&sl_ = this->soloud, aVoiceHandle, aPause]() { sl_->setPause(aVoiceHandle, aPause); });
     }
 
     void setVolume(SoLoud::handle aVoiceHandle, float aVolume) {
         this->fire_and_forget(
-            [sl_ = this->soloud.get(), aVoiceHandle, aVolume]() { sl_->setVolume(aVoiceHandle, aVolume); });
+            [&sl_ = this->soloud, aVoiceHandle, aVolume]() { sl_->setVolume(aVoiceHandle, aVolume); });
     }
 
     void fadeVolume(SoLoud::handle aVoiceHandle, float aTo, float aTime) {
         this->fire_and_forget(
-            [sl_ = this->soloud.get(), aVoiceHandle, aTo, aTime]() { sl_->fadeVolume(aVoiceHandle, aTo, aTime); });
+            [&sl_ = this->soloud, aVoiceHandle, aTo, aTime]() { sl_->fadeVolume(aVoiceHandle, aTo, aTime); });
     }
 
     void setRelativePlaySpeed(SoLoud::handle aVoiceHandle, float aSpeed) {
         this->fire_and_forget(
-            [sl_ = this->soloud.get(), aVoiceHandle, aSpeed]() { sl_->setRelativePlaySpeed(aVoiceHandle, aSpeed); });
+            [&sl_ = this->soloud, aVoiceHandle, aSpeed]() { sl_->setRelativePlaySpeed(aVoiceHandle, aSpeed); });
     }
 
     void setProtectVoice(SoLoud::handle aVoiceHandle, bool aProtect) {
         this->fire_and_forget(
-            [sl_ = this->soloud.get(), aVoiceHandle, aProtect]() { sl_->setProtectVoice(aVoiceHandle, aProtect); });
+            [&sl_ = this->soloud, aVoiceHandle, aProtect]() { sl_->setProtectVoice(aVoiceHandle, aProtect); });
     }
 
     void setSamplerate(SoLoud::handle aVoiceHandle, float aSamplerate) {
         this->fire_and_forget(
-            [sl_ = this->soloud.get(), aVoiceHandle, aSamplerate]() { sl_->setSamplerate(aVoiceHandle, aSamplerate); });
+            [&sl_ = this->soloud, aVoiceHandle, aSamplerate]() { sl_->setSamplerate(aVoiceHandle, aSamplerate); });
     }
 
     void setPan(SoLoud::handle aVoiceHandle, float aPan) {
-        this->fire_and_forget([sl_ = this->soloud.get(), aVoiceHandle, aPan]() { sl_->setPan(aVoiceHandle, aPan); });
+        this->fire_and_forget([&sl_ = this->soloud, aVoiceHandle, aPan]() { sl_->setPan(aVoiceHandle, aPan); });
     }
 
     void setLooping(SoLoud::handle aVoiceHandle, bool aLooping) {
         this->fire_and_forget(
-            [sl_ = this->soloud.get(), aVoiceHandle, aLooping]() { sl_->setLooping(aVoiceHandle, aLooping); });
+            [&sl_ = this->soloud, aVoiceHandle, aLooping]() { sl_->setLooping(aVoiceHandle, aLooping); });
     }
 
     void setGlobalVolume(float aVolume) {
-        this->fire_and_forget([sl_ = this->soloud.get(), aVolume]() { sl_->setGlobalVolume(aVolume); });
+        this->fire_and_forget([&sl_ = this->soloud, aVolume]() { sl_->setGlobalVolume(aVolume); });
     }
 
     void setPostClipScaler(float aScaler) {
-        this->fire_and_forget([sl_ = this->soloud.get(), aScaler]() { sl_->setPostClipScaler(aScaler); });
+        this->fire_and_forget([&sl_ = this->soloud, aScaler]() { sl_->setPostClipScaler(aScaler); });
     }
 
     void setMainResampler(unsigned int aResampler) {
-        this->fire_and_forget([sl_ = this->soloud.get(), aResampler]() { sl_->setMainResampler(aResampler); });
+        this->fire_and_forget([&sl_ = this->soloud, aResampler]() { sl_->setMainResampler(aResampler); });
     }
 
     void stop(SoLoud::handle aVoiceHandle) {
-        this->fire_and_forget([sl_ = this->soloud.get(), aVoiceHandle]() { sl_->stop(aVoiceHandle); });
+        this->fire_and_forget([&sl_ = this->soloud, aVoiceHandle]() { sl_->stop(aVoiceHandle); });
     }
 
     void seek_async(SoLoud::handle aVoiceHandle, SoLoud::time aSeconds) {
-        this->fire_and_forget(
-            [sl_ = this->soloud.get(), aVoiceHandle, aSeconds]() { sl_->seek(aVoiceHandle, aSeconds); });
+        this->fire_and_forget([&sl_ = this->soloud, aVoiceHandle, aSeconds]() { sl_->seek(aVoiceHandle, aSeconds); });
     }
 
     // use sync for methods that need return values (or where we want the effect to be applied immediately)
     void seek(SoLoud::handle aVoiceHandle, SoLoud::time aSeconds) {
-        this->sync([sl_ = this->soloud.get(), aVoiceHandle, aSeconds]() { sl_->seek(aVoiceHandle, aSeconds); });
+        this->sync([&sl_ = this->soloud, aVoiceHandle, aSeconds]() { sl_->seek(aVoiceHandle, aSeconds); });
     }
 
     bool isValidVoiceHandle(SoLoud::handle aVoiceHandle) {
-        return this->sync([sl_ = this->soloud.get(), aVoiceHandle]() { return sl_->isValidVoiceHandle(aVoiceHandle); });
+        return this->sync([&sl_ = this->soloud, aVoiceHandle]() { return sl_->isValidVoiceHandle(aVoiceHandle); });
     }
 
     float getRelativePlaySpeed(SoLoud::handle aVoiceHandle) {
-        return this->sync(
-            [sl_ = this->soloud.get(), aVoiceHandle]() { return sl_->getRelativePlaySpeed(aVoiceHandle); });
+        return this->sync([&sl_ = this->soloud, aVoiceHandle]() { return sl_->getRelativePlaySpeed(aVoiceHandle); });
     }
 
     SoLoud::time getStreamPosition(SoLoud::handle aVoiceHandle) {
-        return this->sync([sl_ = this->soloud.get(), aVoiceHandle]() { return sl_->getStreamPosition(aVoiceHandle); });
+        return this->sync([&sl_ = this->soloud, aVoiceHandle]() { return sl_->getStreamPosition(aVoiceHandle); });
     }
 
     bool getPause(SoLoud::handle aVoiceHandle) {
-        return this->sync([sl_ = this->soloud.get(), aVoiceHandle]() { return sl_->getPause(aVoiceHandle); });
+        return this->sync([&sl_ = this->soloud, aVoiceHandle]() { return sl_->getPause(aVoiceHandle); });
     }
 
     unsigned int getBackendSamplerate() {
-        return this->sync([sl_ = this->soloud.get()]() { return sl_->getBackendSamplerate(); });
+        return this->sync([&sl_ = this->soloud]() { return sl_->getBackendSamplerate(); });
     }
 
     unsigned int getBackendBufferSize() {
-        return this->sync([sl_ = this->soloud.get()]() { return sl_->getBackendBufferSize(); });
+        return this->sync([&sl_ = this->soloud]() { return sl_->getBackendBufferSize(); });
     }
 
     unsigned int getBackendChannels() {
-        return this->sync([sl_ = this->soloud.get()]() { return sl_->getBackendChannels(); });
+        return this->sync([&sl_ = this->soloud]() { return sl_->getBackendChannels(); });
     }
 
-    const char* getBackendString() {
-        return this->sync([sl_ = this->soloud.get()]() { return sl_->getBackendString(); });
+    const char *getBackendString() {
+        return this->sync([&sl_ = this->soloud]() { return sl_->getBackendString(); });
     }
 
     unsigned int getMaxActiveVoiceCount() {
-        return this->sync([sl_ = this->soloud.get()]() { return sl_->getMaxActiveVoiceCount(); });
+        return this->sync([&sl_ = this->soloud]() { return sl_->getMaxActiveVoiceCount(); });
     }
 
     SoLoud::result setMaxActiveVoiceCount(unsigned int aVoiceCount) {
-        return this->sync(
-            [sl_ = this->soloud.get(), aVoiceCount]() { return sl_->setMaxActiveVoiceCount(aVoiceCount); });
+        return this->sync([&sl_ = this->soloud, aVoiceCount]() { return sl_->setMaxActiveVoiceCount(aVoiceCount); });
     }
 
     unsigned int getActiveVoiceCount() {
-        return this->sync([sl_ = this->soloud.get()]() { return sl_->getActiveVoiceCount(); });
+        return this->sync([&sl_ = this->soloud]() { return sl_->getActiveVoiceCount(); });
     }
 
-    SoLoud::result getCurrentDevice(SoLoud::DeviceInfo* aInfo) {
-        return this->sync([sl_ = this->soloud.get(), aInfo]() { return sl_->getCurrentDevice(aInfo); });
+    SoLoud::result getCurrentDevice(SoLoud::DeviceInfo *aInfo) {
+        return this->sync([&sl_ = this->soloud, aInfo]() { return sl_->getCurrentDevice(aInfo); });
     }
 
-    SoLoud::result enumerateDevices(SoLoud::DeviceInfo** aDevices, unsigned int* aCount) {
+    SoLoud::result enumerateDevices(SoLoud::DeviceInfo **aDevices, unsigned int *aCount) {
         return this->sync(
-            [sl_ = this->soloud.get(), aDevices, aCount]() { return sl_->enumerateDevices(aDevices, aCount); });
+            [&sl_ = this->soloud, aDevices, aCount]() { return sl_->enumerateDevices(aDevices, aCount); });
     }
 
-    SoLoud::result setDevice(const char* aDeviceIdentifier) {
-        return this->sync(
-            [sl_ = this->soloud.get(), aDeviceIdentifier]() { return sl_->setDevice(aDeviceIdentifier); });
+    SoLoud::result setDevice(const char *aDeviceIdentifier) {
+        return this->sync([&sl_ = this->soloud, aDeviceIdentifier]() { return sl_->setDevice(aDeviceIdentifier); });
     }
 
     // async position update helper (so we don't need to run tasks recursively)
-    void updateCachedPosition(SoLoud::handle aVoiceHandle, std::atomic<double>& cacheTime,
-                              std::atomic<double>& cachedPosition) {
-        this->fire_and_forget([sl_ = this->soloud.get(), aVoiceHandle, &cacheTime, &cachedPosition]() {
+    void updateCachedPosition(SoLoud::handle aVoiceHandle, std::atomic<double> &cacheTime,
+                              std::atomic<double> &cachedPosition) {
+        this->fire_and_forget([&sl_ = this->soloud, aVoiceHandle, &cacheTime, &cachedPosition]() {
             cachedPosition.store(sl_->getStreamPosition(aVoiceHandle), std::memory_order_release);
             cacheTime.store(Timing::getTimeReal(), std::memory_order_release);
         });
@@ -361,35 +356,42 @@ class SoLoudThreadWrapper {
 
    private:
     void start_worker_thread() {
-        this->worker_thread = Sync::jthread([this](const Sync::stop_token& stoken) { this->worker_loop(stoken); });
+        this->worker_thread = Sync::jthread([this](const Sync::stop_token &stoken) { this->worker_loop(stoken); });
 
         // wait for initialization to complete
-        Sync::unique_lock<Sync::mutex> lock(this->init_mutex);
+        Sync::unique_lock lock(this->init_mutex);
         this->init_cv.wait(lock, [this] { return this->initialized; });
     }
 
     void shutdown_worker_thread() {
+        {
+            Sync::scoped_lock lock(queue_mutex);
+            this->worker_thread.request_stop();
+        }
         this->queue_cv.notify_all();
 
         // wait for worker to finish
         if(this->worker_thread.joinable()) {
-            this->worker_thread.request_stop();
             this->worker_thread.join();
         }
     }
 
     void force_restart_worker_thread() {
-        // detach hung thread, nothing we can do
+        // request stop anyways just in case it magically gets un-stuck
+        {
+            Sync::scoped_lock lock(queue_mutex);
+            this->worker_thread.request_stop();
+        }
         this->queue_cv.notify_all();
 
         if(this->worker_thread.joinable()) {
-            this->worker_thread.request_stop();
+            // detach hung thread, nothing we can do
             this->worker_thread.detach();
         }
 
         // clear any remaining tasks from the old thread
         {
-            Sync::scoped_lock<Sync::mutex> lock(this->queue_mutex);
+            Sync::scoped_lock lock(this->queue_mutex);
             while(!this->task_queue.empty()) {
                 this->task_queue.pop();
             }
@@ -401,7 +403,7 @@ class SoLoudThreadWrapper {
         this->start_worker_thread();
     }
 
-    void worker_loop(const Sync::stop_token& stoken) noexcept {
+    void worker_loop(const Sync::stop_token &stoken) noexcept {
         McThread::set_current_thread_name(ULITERAL("soloud_mixer"));
         McThread::set_current_thread_prio(McThread::Priority::REALTIME);  // raise priority to the max
 
@@ -410,17 +412,19 @@ class SoLoudThreadWrapper {
 
         // signal completion
         {
-            Sync::scoped_lock<Sync::mutex> lock(this->init_mutex);
+            Sync::scoped_lock lock(this->init_mutex);
             this->initialized = true;
         }
         this->init_cv.notify_one();
 
         // main processing loop
         while(!stoken.stop_requested()) {
-            Sync::unique_lock<Sync::mutex> lock(this->queue_mutex);
+            Sync::unique_lock lock(this->queue_mutex);
 
             // wait for tasks or stop signal
-            this->queue_cv.wait(lock, stoken, [&] { return !this->task_queue.empty(); });
+            this->queue_cv.wait(lock, [&stoken, &task_queue = this->task_queue] {
+                return !task_queue.empty() || stoken.stop_requested();
+            });
 
             // process all available tasks
             while(!this->task_queue.empty() && !stoken.stop_requested()) {
@@ -455,7 +459,7 @@ class SoLoudThreadWrapper {
     // since the backend may create a thread of its own
     SoLoud::result init_with_name(unsigned int aFlags, unsigned int aBackend, unsigned int aSamplerate,
                                   unsigned int aBufferSize, unsigned int aChannels) {
-        const char* old_thread_name = McThread::get_current_thread_name();
+        const char *old_thread_name = McThread::get_current_thread_name();
         McThread::set_current_thread_name(ULITERAL("soloud_output"));
         const auto result = this->soloud->init(aFlags, aBackend, aSamplerate, aBufferSize, aChannels);
         McThread::set_current_thread_name(old_thread_name);
@@ -467,7 +471,7 @@ class SoLoudThreadWrapper {
     // task queue
     std::queue<std::unique_ptr<TaskBase>> task_queue;
     mutable Sync::mutex queue_mutex;
-    Sync::condition_variable_any queue_cv;
+    Sync::condition_variable queue_cv;
 
     // init/shutdown signaling
 

@@ -2562,11 +2562,19 @@ void SongBrowser::onDatabaseLoadingFinished() {
     }
 
     // add all beatmaps (build buttons)
-    this->parentButtons.reserve(db->getBeatmapSets().size());
-    for(const auto &beatmap : db->getBeatmapSets()) {
-        this->addBeatmapSet(beatmap, true /* initial songbrowser load flag (skip some checks) */);
+    {
+        const size_t numSets = db->getBeatmapSets().size();
+        size_t numDiffs = 0;
+        for(const auto &mapset : db->getBeatmapSets()) {
+            numDiffs += mapset->getDifficulties().size();
+        }
+        this->parentButtons.reserve(numSets);
+        this->hashToDiffButton.reserve(numDiffs);
+        for(const auto &mapset : db->getBeatmapSets()) {
+            this->addBeatmapSet(mapset, true /* initial songbrowser load flag (skip some checks) */);
+        }
+        this->parentButtons.shrink_to_fit();
     }
-    this->parentButtons.shrink_to_fit();
 
     // build collections
     this->recreateCollectionsButtons();
