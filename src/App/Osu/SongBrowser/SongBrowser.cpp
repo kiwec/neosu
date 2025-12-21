@@ -1316,26 +1316,9 @@ void SongBrowser::refreshBeatmaps(bool closeAfterLoading) {
     // reset
     this->checkHandleKillBackgroundSearchMatcher();
 
-    auto map = osu->getMapInterface()->getBeatmap();
-    if(map) {
-        this->loading_reselect_map.hash = map->getMD5();
-        const auto *music = osu->getMapInterface()->getMusic();
-        if(music && music->isPlaying()) {
-            this->loading_reselect_map.time_when_stopped = Timing::getTicksMS();
-            this->loading_reselect_map.musicpos_when_stopped = music->getPositionMS();
-        }
-    } else {
-        this->loading_reselect_map = {};
-    }
-
-    // don't pause the music the first time we load the song database
-    // TODO: don't do any of this shit
-    static bool first_refresh = true;
-    if(first_refresh) {
-        first_refresh = false;
-    } else {
-        osu->reloadMapInterface();
-    }
+    // clear beatmap interface to lose any potential stale references
+    osu->reloadMapInterface();
+    osu->getMainMenu()->clearPreloadedMaps();
 
     this->selectionPreviousSongButton = nullptr;
     this->selectionPreviousSongDiffButton = nullptr;
@@ -2604,8 +2587,11 @@ void SongBrowser::onDatabaseLoadingFinished() {
     // ugly hack to transition from preloaded main menu beatmap to database-loaded beatmap without pausing music
     {
         DatabaseBeatmap *reselectMap = nullptr;
-        if(this->loading_reselect_map.hash != MD5Hash{}) {
-            reselectMap = db->getBeatmapDifficulty(this->loading_reselect_map.hash);
+        if(BeatmapInterface::loading_reselect_map != MD5Hash{}) {
+            reselectMap = db->getBeatmapDifficulty(BeatmapInterface::loading_reselect_map);
+            if(!reselectMap) {
+                debugLog("failed to get reselect map for {}", BeatmapInterface::loading_reselect_map.string());
+            }
         }
 
         this->onDifficultySelected(reselectMap, false);  // select even if null (clear existing)
@@ -2613,10 +2599,7 @@ void SongBrowser::onDatabaseLoadingFinished() {
             this->selectSelectedBeatmapSongButton();
         }
 
-        // always clear preloaded maps to avoid stale references
-        osu->getMainMenu()->clearPreloadedMaps();
-
-        this->loading_reselect_map = {};
+        // the reselect map is cleared when the preview starts playing
     }
 
     // ok, if we still haven't selected a song, do so now

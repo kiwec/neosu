@@ -31,8 +31,9 @@ class BGImageHandler;
 // 4) be a container for difficulties (all top level DatabaseBeatmap objects are containers)
 
 class DatabaseBeatmap;
-typedef DatabaseBeatmap BeatmapDifficulty;
-typedef DatabaseBeatmap BeatmapSet;
+using BeatmapDifficulty = DatabaseBeatmap;
+using BeatmapSet = DatabaseBeatmap;
+using DiffContainer = std::vector<std::unique_ptr<BeatmapDifficulty>>;
 
 struct SLIDER_SCORING_TIME {
     enum class TYPE : u8 {
@@ -235,8 +236,9 @@ class DatabaseBeatmap final {
     };
 
     DatabaseBeatmap() = delete;
-    DatabaseBeatmap(std::string filePath, std::string folder, BeatmapType type);
-    DatabaseBeatmap(std::vector<std::unique_ptr<BeatmapDifficulty>> &&difficulties, BeatmapType type);
+    DatabaseBeatmap(std::string filePath, std::string folder, BeatmapType type);  // beatmap difficulty
+    DatabaseBeatmap(std::unique_ptr<DiffContainer> &&difficulties,
+                    BeatmapType type);  // beatmapset
     ~DatabaseBeatmap();
 
     static inline const auto alwaysFalseStopPred = Sync::stop_token{};
@@ -274,7 +276,10 @@ class DatabaseBeatmap final {
     [[nodiscard]] inline const std::vector<std::unique_ptr<T>> &getDifficulties() const
         requires(std::is_same_v<std::remove_cv_t<T>, BeatmapDifficulty>)
     {
-        return reinterpret_cast<const std::vector<std::unique_ptr<T>> &>(this->difficulties);
+        static std::vector<std::unique_ptr<T>> empty;
+        return this->difficulties == nullptr
+                   ? empty
+                   : reinterpret_cast<const std::vector<std::unique_ptr<T>> &>(*this->difficulties);
     }
 
     [[nodiscard]] TIMING_INFO getTimingInfoForTime(i32 positionMS) const;
@@ -378,11 +383,7 @@ class DatabaseBeatmap final {
     MD5Hash sMD5Hash;
 
    public:
-    // if this is non-empty we are a beatmapset, not a difficulty
-    std::vector<std::unique_ptr<DatabaseBeatmap>> difficulties;
-
     zarray<DatabaseBeatmap::TIMINGPOINT> timingpoints;  // necessary for main menu anim
-    u32 totalBreakDuration;                             // necessary for ppv2 calc (initialized after loadMetadata)
 
     // redundant data (technically contained in metadata, but precomputed anyway)
 
@@ -392,6 +393,11 @@ class DatabaseBeatmap final {
 
    private:  // private for lazy-fixing up filename casing with getFullSoundFilePath
     std::string sFullSoundFilePath;
+
+    // if this is null we are a beatmapset, not a difficulty
+    // if this is non-null then it MUST contain at least 1 entry
+    // NOTE: this class has ownership of the individual beatmap difficulties, Database owns the top-level beatmapsets
+    std::unique_ptr<DiffContainer> difficulties;
 
    public:
     // raw metadata
@@ -441,6 +447,7 @@ class DatabaseBeatmap final {
 
     // custom data (not necessary, not part of the beatmap file, and not precomputed)
     std::atomic<f32> loudness = 0.f;
+    u32 totalBreakDuration{0};  // necessary for ppv2 calc (initialized after loadMetadata)
 
     // this is from metadata but put here for struct layout purposes
     u8 iVersion;  // e.g. "osu file format v12" -> 12

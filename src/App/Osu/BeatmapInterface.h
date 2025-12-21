@@ -33,6 +33,9 @@ struct Click {
 class BeatmapInterface final : public AbstractBeatmapInterface {
     NOCOPY_NOMOVE(BeatmapInterface)
    public:
+    // for handling transition from unloaded database to loaded database
+    static inline MD5Hash loading_reselect_map{};
+
     BeatmapInterface();
     ~BeatmapInterface() override;
 

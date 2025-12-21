@@ -1518,6 +1518,14 @@ bool BeatmapInterface::canDraw() {
 void BeatmapInterface::handlePreviewPlay() {
     if(unlikely(!this->music)) return;
 
+    if(!osu->getMainMenu()->isVisible() && loading_reselect_map != MD5Hash{}) {
+        // if we are waiting to reselect a main menu beatmap after loading song browser, don't seek at all
+        this->music->setLoop(cv::beatmap_preview_music_loop.getBool());
+        if(this->music->isPlaying()) {
+            return;
+        }
+    }
+
     bool almost_finished = false;
     if((!this->music->isPlaying() || (almost_finished = this->music->getPositionPct() > 0.95f)) &&
        likely(!!this->beatmap)) {
@@ -1537,31 +1545,20 @@ void BeatmapInterface::handlePreviewPlay() {
             // Users can set a convar to make it start at its preview point instead.
             // The next songs will start at the beginning regardless.
             static bool should_start_song_at_preview_point = cv::start_first_main_menu_song_at_preview_point.getBool();
-            bool start_at_song_beginning = osu->getMainMenu()->isVisible() && !should_start_song_at_preview_point;
+            const bool start_at_song_beginning = osu->getMainMenu()->isVisible() && !should_start_song_at_preview_point;
             should_start_song_at_preview_point = false;
 
-            // HACKHACK: continue playing where we left off (workaround for 5000 unload/load cycles during loading)
-            const auto &reselect_map = osu->getSongBrowser()->loading_reselect_map;
-            const u32 continue_hack_pos = reselect_map.musicpos_when_stopped;
-            if(continue_hack_pos > 0) {
-                this->iContinueMusicPos =
-                    std::clamp<u32>(continue_hack_pos + (Timing::getTicksMS() - reselect_map.time_when_stopped), 0,
-                                    this->music->getLengthMS());
-            }
-
-            u32 position_to_set = 0;
-
             if(start_at_song_beginning) {
-                position_to_set = 0;
-            } else if(this->iContinueMusicPos != 0) {
-                position_to_set = this->iContinueMusicPos;
-            } else {
-                position_to_set = this->beatmap->getPreviewTime() < 0 ? (u32)(this->music->getLengthMS() * 0.40f)
-                                                                      : this->beatmap->getPreviewTime();
+                this->iContinueMusicPos = 0;
             }
+
+            const u32 position_to_set =
+                (this->iContinueMusicPos != 0 || start_at_song_beginning)
+                    ? this->iContinueMusicPos
+                    : (this->beatmap->getPreviewTime() < 0 ? (u32)(this->music->getLengthMS() * 0.40f)
+                                                           : this->beatmap->getPreviewTime());
 
             this->music->setPositionMS(position_to_set);
-
             this->bWasSeekFrame = true;
 
             this->music->setBaseVolume(this->getIdealVolume());
@@ -1580,7 +1577,10 @@ void BeatmapInterface::loadMusic(bool reload, bool async) {
             debugLog("no music file for {}!", this->beatmap->getFilePath());
         }
         // pause previously playing music, if any
-        soundEngine->pause(this->music);
+        // only if we are not waiting for reload
+        if(loading_reselect_map == MD5Hash{}) {
+            soundEngine->pause(this->music);
+        }
         return;
     }
 
@@ -1613,6 +1613,9 @@ void BeatmapInterface::loadMusic(bool reload, bool async) {
             // manually handle preview play from selectBeatmap, since the callback won't be fired (was already)
             this->bIsWaitingForPreview = false;
             this->handlePreviewPlay();
+            if(!osu->getMainMenu()->isVisible() && db->isFinished()) {
+                loading_reselect_map.clear();
+            }
         }
         return;
     }
@@ -1664,6 +1667,9 @@ void BeatmapInterface::onMusicLoadingFinished(Resource *rs, void * /*userdata*/)
         if(map_iface->bIsWaitingForPreview) {
             map_iface->bIsWaitingForPreview = false;
             map_iface->handlePreviewPlay();
+            if(!osu->getMainMenu()->isVisible() && db->isFinished()) {
+                loading_reselect_map.clear();
+            }
         }
     }
 }

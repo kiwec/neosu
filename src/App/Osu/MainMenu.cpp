@@ -786,7 +786,11 @@ void MainMenu::drawMainButton() {
     }
 }
 
-void MainMenu::clearPreloadedMaps() { this->preloadedMaps.clear(); }
+void MainMenu::clearPreloadedMaps() {
+    this->lastMap = nullptr;
+    this->currentMap = nullptr;
+    this->preloadedMaps.clear();
+}
 
 // Differences from BackgroundImageHandler::draw:
 // - We load background images immediately
@@ -1165,8 +1169,10 @@ void MainMenu::selectRandomBeatmap() {
 
             // We're picking a random diff and not the first one, because diffs of the same set
             // can have their own separate sound file.
-            auto &candidate_diff = beatmap_diffs[rand() % beatmap_diffs.size()];
-            assert(candidate_diff);
+            auto &candidate_diff_ = beatmap_diffs[rand() % beatmap_diffs.size()];
+            assert(candidate_diff_);
+
+            BeatmapDifficulty *candidate_diff = candidate_diff_.get();
 
             const bool skip =  // don't skip backgroundless if this is our last attempt
                 (i < RETRY_SETS - 1) && !env->fileExists(candidate_diff->getFullBackgroundImageFilePath());
@@ -1177,10 +1183,15 @@ void MainMenu::selectRandomBeatmap() {
 
             set->do_not_store = true;  // don't store in songbrowser f2 history
             candidate_diff->do_not_store = true;
-            this->preloadedMaps.push_back(std::move(set));
 
-            osu->getSongBrowser()->onDifficultySelected(candidate_diff.get(), false);
+            osu->getSongBrowser()->onDifficultySelected(candidate_diff, false);
+
+            // remember for initial songbrowser load
+            BeatmapInterface::loading_reselect_map = candidate_diff->getMD5();
+
             RichPresence::onMainMenu();
+
+            this->preloadedMaps.push_back(std::move(set));
 
             return;
         }

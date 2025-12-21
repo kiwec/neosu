@@ -237,7 +237,7 @@ bool SongDifficultyButton::isIndependentDiffButton() const {
 
     // check if this is the only visible sibling
     int visibleSiblings = 0;
-    for(const auto* sibling : this->parentSongButton->getChildren()) {
+    for(const auto& sibling : this->parentSongButton->getChildren()) {
         if(sibling->isSearchMatch()) {
             visibleSiblings++;
             if(visibleSiblings > 1) return false;  // early exit

@@ -120,22 +120,24 @@ DatabaseBeatmap::DatabaseBeatmap(std::string filePath, std::string folder, Beatm
     this->iOnlineOffset = 0;
 }
 
-DatabaseBeatmap::DatabaseBeatmap(std::vector<std::unique_ptr<BeatmapDifficulty>> &&difficulties, BeatmapType type)
+DatabaseBeatmap::DatabaseBeatmap(std::unique_ptr<DiffContainer> &&difficulties, BeatmapType type)
     : DatabaseBeatmap("", "", type) {
     this->difficulties = std::move(difficulties);
 
-    assert(!this->difficulties.empty() && "DatabaseBeatmap: tried to construct a beatmapset with 0 difficulties");
+    assert(this->difficulties && !this->difficulties->empty() &&
+           "DatabaseBeatmap: tried to construct a beatmapset with 0 difficulties");
+    auto &diffs = *this->difficulties;
 
     // set representative values for this container (i.e. use values from first difficulty)
-    this->sTitle = this->difficulties[0]->sTitle;
-    this->sTitleUnicode = this->difficulties[0]->sTitleUnicode;
-    this->bEmptyTitleUnicode = this->difficulties[0]->bEmptyTitleUnicode;
-    this->sArtist = this->difficulties[0]->sArtist;
-    this->sArtistUnicode = this->difficulties[0]->sArtistUnicode;
-    this->bEmptyArtistUnicode = this->difficulties[0]->bEmptyArtistUnicode;
-    this->sCreator = this->difficulties[0]->sCreator;
-    this->sBackgroundImageFileName = this->difficulties[0]->sBackgroundImageFileName;
-    this->iSetID = this->difficulties[0]->iSetID;
+    this->sTitle = diffs[0]->sTitle;
+    this->sTitleUnicode = diffs[0]->sTitleUnicode;
+    this->bEmptyTitleUnicode = diffs[0]->bEmptyTitleUnicode;
+    this->sArtist = diffs[0]->sArtist;
+    this->sArtistUnicode = diffs[0]->sArtistUnicode;
+    this->bEmptyArtistUnicode = diffs[0]->bEmptyArtistUnicode;
+    this->sCreator = diffs[0]->sCreator;
+    this->sBackgroundImageFileName = diffs[0]->sBackgroundImageFileName;
+    this->iSetID = diffs[0]->iSetID;
 
     // also calculate largest representative values
     this->iLengthMS = 0;
@@ -148,7 +150,7 @@ DatabaseBeatmap::DatabaseBeatmap(std::vector<std::unique_ptr<BeatmapDifficulty>>
     this->iMaxBPM = 0;
     this->iMostCommonBPM = 0;
     this->last_modification_time = 0;
-    for(const auto &diff : this->difficulties) {
+    for(const auto &diff : diffs) {
         if(diff->getLengthMS() > this->iLengthMS) this->iLengthMS = diff->getLengthMS();
         if(diff->getCS() < this->fCS) this->fCS = diff->getCS();
         if(diff->getAR() > this->fAR) this->fAR = diff->getAR();
@@ -1123,7 +1125,7 @@ bool DatabaseBeatmap::getMapFileAsync(MapFileReadDoneCallback data_callback) {
 
 // XXX: code duplication (see loadPrimitiveObjects)
 DatabaseBeatmap::LOAD_META_RESULT DatabaseBeatmap::loadMetadata(bool compute_md5) {
-    if(!this->difficulties.empty()) {
+    if(this->difficulties) {
         return {.fileData = {},
                 .fileSize = {},
                 .error = {LoadError::LOADMETADATA_ON_BEATMAPSET}};  // we are a beatmapset, not a difficulty

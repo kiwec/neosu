@@ -261,11 +261,11 @@ void SongButton::onSelected(bool wasSelected, SelOpts opts) {
     CarouselButton::onSelected(wasSelected, opts);
 
     // resort children (since they might have been updated in the meantime)
-    this->sortChildren();
-
-    // update button positions so the resort is actually applied
-    // XXX: we shouldn't be updating ALL of the buttons
-    osu->getSongBrowser()->updateSongButtonLayout();
+    if(this->sortChildren()) {
+        // update button positions so the resort is actually applied
+        // XXX: we shouldn't be updating ALL of the buttons
+        osu->getSongBrowser()->updateSongButtonLayout();
+    }
 
     // update grade on child
     for(auto *child : this->childDiffBtns()) {
@@ -280,7 +280,7 @@ void SongButton::onSelected(bool wasSelected, SelOpts opts) {
         for(auto *child : this->children | std::views::reverse) {
             // NOTE: if no search is active, then all search matches return true by default
             if(!child->isSearchMatch()) continue;
-            SelOpts childOpts{.parentUnselected = !wasSelected};
+            SelOpts childOpts{.noSelectBottomChild = true, .parentUnselected = !wasSelected};
             child->select(childOpts);
             break;
         }
