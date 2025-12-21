@@ -1347,23 +1347,28 @@ DatabaseBeatmap::LOAD_META_RESULT DatabaseBeatmap::loadMetadata(bool compute_md5
 DatabaseBeatmap::LOAD_GAMEPLAY_RESULT DatabaseBeatmap::loadGameplay(BeatmapDifficulty *databaseBeatmap,
                                                                     AbstractBeatmapInterface *beatmap) {
     LOAD_GAMEPLAY_RESULT result = LOAD_GAMEPLAY_RESULT();
+    PRIMITIVE_CONTAINER c;
 
-    // NOTE: reload metadata (force ensures that all necessary data is ready for creating hitobjects and playing etc.,
-    // also if beatmap file is changed manually in the meantime)
-    // XXX: file io, md5 calc, all on main thread!!
-    auto metaRes = databaseBeatmap->loadMetadata();
-    result.error = metaRes.error;
-    if(result.error.errc) {
-        return result;
+    {
+        // NOTE: reload metadata (force ensures that all necessary data is ready for creating hitobjects and playing etc.,
+        // also if beatmap file is changed manually in the meantime)
+        // XXX: file io, md5 calc, all on main thread!!
+        auto metaRes = databaseBeatmap->loadMetadata();
+        result.error = metaRes.error;
+        if(result.error.errc) {
+            return result;
+        }
+
+        // load primitives, put in temporary container
+        c = loadPrimitiveObjectsFromData(std::move(metaRes.fileData), metaRes.fileSize, databaseBeatmap->sFilePath,
+                                         alwaysFalseStopPred);
     }
 
-    // load primitives, put in temporary container
-    PRIMITIVE_CONTAINER c = loadPrimitiveObjectsFromData(std::move(metaRes.fileData), metaRes.fileSize,
-                                                         databaseBeatmap->sFilePath, alwaysFalseStopPred);
     if(c.error.errc) {
         result.error.errc = c.error.errc;
         return result;
     }
+
     result.breaks = std::move(c.breaks);
     result.combocolors = std::move(c.combocolors);
     result.defaultSampleSet = c.defaultSampleSet;

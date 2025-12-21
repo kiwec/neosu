@@ -886,7 +886,10 @@ void SongBrowser::mouse_update(bool *propagate_clicks) {
             results = MapCalcThread::get_results();
             db->maps_to_recalc.clear();  // we are done
         } else {
-            results = MapCalcThread::try_get().value_or({});
+            auto maybe_result = MapCalcThread::try_get();
+            if(maybe_result.has_value()) {
+                results = maybe_result.value();
+            }
         }
 
         if(!results.empty()) {
