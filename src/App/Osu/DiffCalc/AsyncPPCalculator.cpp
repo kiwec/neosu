@@ -254,6 +254,7 @@ void run_thread(const Sync::stop_token& stoken) {
 
 void set_map(const DatabaseBeatmap* new_map) {
     if(current_map == new_map) return;
+    if(new_map && new_map->do_not_store) return;
 
     const bool had_map = (current_map != nullptr);
     current_map = new_map;

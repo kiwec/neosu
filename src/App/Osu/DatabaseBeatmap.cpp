@@ -286,6 +286,7 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjectsFromDa
                                           // 9000 repeats, here we just clamp it instead
 
     std::array<std::optional<Color>, 8> tempColors;
+    std::vector<DatabaseBeatmap::TIMINGPOINT> tempTimingpoints;
 
     // load the actual beatmap
     int hitobjectsWithoutSpinnerCounter = 0;
@@ -378,7 +379,7 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjectsFromDa
             case TimingPoints: {
                 DatabaseBeatmap::TIMINGPOINT t{};
                 if(parse_timing_point(curLine, t)) {
-                    c.timingpoints.push_back(t);
+                    tempTimingpoints.push_back(t);
                 }
                 break;
             }
@@ -666,21 +667,24 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjectsFromDa
         c.totalBreakDuration += (u32)(brk.endTime - brk.startTime);
     }
 
-    // sort timingpoints by time
-    if(c.timingpoints.size() > 1) std::ranges::sort(c.timingpoints, timingPointSortComparator);
+    if(!tempTimingpoints.empty()) {
+        // sort timingpoints by time
+        if(tempTimingpoints.size() > 1) std::ranges::sort(tempTimingpoints, timingPointSortComparator);
+        c.timingpoints = std::move(tempTimingpoints);
+    }
 
     return c;
 }
 
 DatabaseBeatmap::LoadError DatabaseBeatmap::calculateSliderTimesClicksTicks(
-    int beatmapVersion, std::vector<SLIDER> &sliders, zarray<DatabaseBeatmap::TIMINGPOINT> &timingpoints,
+    int beatmapVersion, std::vector<SLIDER> &sliders, FixedSizeArray<DatabaseBeatmap::TIMINGPOINT> &timingpoints,
     float sliderMultiplier, float sliderTickRate) {
     return calculateSliderTimesClicksTicks(beatmapVersion, sliders, timingpoints, sliderMultiplier, sliderTickRate,
                                            alwaysFalseStopPred);
 }
 
 DatabaseBeatmap::LoadError DatabaseBeatmap::calculateSliderTimesClicksTicks(
-    int beatmapVersion, std::vector<SLIDER> &sliders, zarray<DatabaseBeatmap::TIMINGPOINT> &timingpoints,
+    int beatmapVersion, std::vector<SLIDER> &sliders, FixedSizeArray<DatabaseBeatmap::TIMINGPOINT> &timingpoints,
     float sliderMultiplier, float sliderTickRate, const Sync::stop_token &dead) {
     LoadError r;
 
@@ -1165,6 +1169,8 @@ DatabaseBeatmap::LOAD_META_RESULT DatabaseBeatmap::loadMetadata(bool compute_md5
     // reset
     this->timingpoints.clear();
 
+    std::vector<DatabaseBeatmap::TIMINGPOINT> tempTimingpoints;
+
     std::vector<BREAK> breaks;
 
     // load metadata
@@ -1286,7 +1292,7 @@ DatabaseBeatmap::LOAD_META_RESULT DatabaseBeatmap::loadMetadata(bool compute_md5
             case TimingPoints: {
                 DatabaseBeatmap::TIMINGPOINT t{};
                 if(parse_timing_point(curLine, t)) {
-                    this->timingpoints.push_back(t);
+                    tempTimingpoints.push_back(t);
                 }
                 break;
             }
@@ -1309,10 +1315,12 @@ DatabaseBeatmap::LOAD_META_RESULT DatabaseBeatmap::loadMetadata(bool compute_md5
     }
 
     // general sanity checks
-    if((this->timingpoints.size() < 1)) {
+    if(tempTimingpoints.size() < 1) {
         logIfCV(debug_osu, "no timingpoints in beatmap!");
         return ret(LoadError::NO_TIMINGPOINTS);  // nothing more to do here
     }
+
+    this->timingpoints = std::move(tempTimingpoints);
 
     // build sound file path
     this->sFullSoundFilePath = this->sFolder;
@@ -1329,7 +1337,7 @@ DatabaseBeatmap::LOAD_META_RESULT DatabaseBeatmap::loadMetadata(bool compute_md5
             logIfCV(debug_osu, "calculating BPM range ...");
             BPMInfo bpm{};
             if(this->timingpoints.size() > 0) {
-                zarray<BPMTuple> bpm_calculation_buffer(this->timingpoints.size());
+                std::vector<BPMTuple> bpm_calculation_buffer;
                 bpm = getBPM(this->timingpoints, bpm_calculation_buffer);
             }
             this->iMinBPM = bpm.min;
@@ -1375,7 +1383,7 @@ DatabaseBeatmap::LOAD_GAMEPLAY_RESULT DatabaseBeatmap::loadGameplay(BeatmapDiffi
 
     // override some values with data from primitive load, even though they should already be loaded from metadata
     // (sanity)
-    databaseBeatmap->timingpoints.swap(c.timingpoints);
+    databaseBeatmap->timingpoints = std::move(c.timingpoints);
     databaseBeatmap->fSliderMultiplier = c.sliderMultiplier;
     databaseBeatmap->fSliderTickRate = c.sliderTickRate;
     databaseBeatmap->fStackLeniency = c.stackLeniency;
@@ -1540,7 +1548,7 @@ DatabaseBeatmap::TIMING_INFO DatabaseBeatmap::getTimingInfoForTime(i32 positionM
 }
 
 DatabaseBeatmap::TIMING_INFO DatabaseBeatmap::getTimingInfoForTimeAndTimingPoints(
-    i32 positionMS, const zarray<DatabaseBeatmap::TIMINGPOINT> &timingpoints) {
+    i32 positionMS, const FixedSizeArray<DatabaseBeatmap::TIMINGPOINT> &timingpoints) {
     static TIMING_INFO default_info{
         .offset = 0,
         .beatLengthBase = 1,

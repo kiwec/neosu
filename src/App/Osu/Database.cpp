@@ -1178,8 +1178,8 @@ void Database::loadMaps() {
         }
 
         if(should_read_peppy_database) {
-            zarray<BPMTuple> bpm_calculation_buffer;
-            zarray<DB_TIMINGPOINT> timing_points_buffer;
+            std::vector<BPMTuple> bpm_calculation_buffer;
+            std::vector<DB_TIMINGPOINT> timing_points_buffer;
 
             for(uSz i = 0; i < this->num_beatmaps_to_load; i++) {
                 if(this->load_interrupted.load(std::memory_order_acquire)) break;  // cancellation point
@@ -1303,8 +1303,9 @@ void Database::loadMaps() {
                     if(dbr.read_bytes((u8 *)timing_points_buffer.data(), sizeof(DB_TIMINGPOINT) * nb_timing_points) !=
                        sizeof(DB_TIMINGPOINT) * nb_timing_points) {
                         debugLog("WARNING: failed to read timing points from beatmap {:d} !", (i + 1));
+                    } else {
+                        bpm = getBPM(timing_points_buffer, bpm_calculation_buffer);
                     }
-                    bpm = getBPM(timing_points_buffer, bpm_calculation_buffer);
                 }
 
                 int beatmapID =

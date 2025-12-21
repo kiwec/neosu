@@ -12,6 +12,7 @@
 #include "ResourceManager.h"
 #include "MakeDelegateWrapper.h"
 #include "Environment.h"
+#include "templates.h"
 
 #include "Skin.h"
 

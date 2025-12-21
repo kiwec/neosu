@@ -157,6 +157,11 @@ std::optional<std::vector<MapCalcThread::mct_result>> MapCalcThread::try_get_ins
     return moved_from;
 }
 
+MapCalcThread::~MapCalcThread() {
+    // only clean up this instance's resources
+    abort_instance();
+}
+
 MapCalcThread& MapCalcThread::get_instance() {
     static MapCalcThread instance;
     return instance;

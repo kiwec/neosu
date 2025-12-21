@@ -3,7 +3,6 @@
 
 #include "noinclude.h"
 #include "types.h"
-#include "templates.h"
 
 #include "SyncMutex.h"
 #include "SyncJthread.h"
@@ -13,6 +12,7 @@
 #include <cassert>
 #include <vector>
 #include <optional>
+#include <vector>
 
 class DatabaseBeatmap;
 struct BPMTuple;
@@ -21,10 +21,7 @@ class MapCalcThread {
     NOCOPY_NOMOVE(MapCalcThread)
    public:
     MapCalcThread() = default;
-    ~MapCalcThread() {
-        // only clean up this instance's resources
-        abort_instance();
-    }
+    ~MapCalcThread();
 
     struct mct_result {
         DatabaseBeatmap* map{};
@@ -84,7 +81,7 @@ class MapCalcThread {
     std::atomic<u32> total_count{0};
     std::vector<mct_result> results{};
     Sync::mutex results_mutex;
-    zarray<BPMTuple> bpm_calc_buf;
+    std::vector<BPMTuple> bpm_calc_buf;
 
     const std::vector<DatabaseBeatmap*>* maps_to_process{nullptr};
 };

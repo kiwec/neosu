@@ -7,9 +7,9 @@
 #include "Color.h"
 #include "Overrides.h"
 #include "Vectors.h"
-#include "templates.h"
 #include "MD5Hash.h"
 #include "SyncStoptoken.h"
+#include "FixedSizeArray.h"
 
 #include <atomic>
 #include <string_view>
@@ -213,7 +213,7 @@ class DatabaseBeatmap final {
         std::vector<SPINNER> spinners{};
         std::vector<BREAK> breaks{};
 
-        zarray<DatabaseBeatmap::TIMINGPOINT> timingpoints{};
+        FixedSizeArray<DatabaseBeatmap::TIMINGPOINT> timingpoints{};
         std::vector<Color> combocolors{};
 
         f32 stackLeniency{};
@@ -283,8 +283,8 @@ class DatabaseBeatmap final {
     }
 
     [[nodiscard]] TIMING_INFO getTimingInfoForTime(i32 positionMS) const;
-    static TIMING_INFO getTimingInfoForTimeAndTimingPoints(i32 positionMS,
-                                                           const zarray<DatabaseBeatmap::TIMINGPOINT> &timingpoints);
+    static TIMING_INFO getTimingInfoForTimeAndTimingPoints(
+        i32 positionMS, const FixedSizeArray<DatabaseBeatmap::TIMINGPOINT> &timingpoints);
 
     // raw metadata
 
@@ -334,7 +334,7 @@ class DatabaseBeatmap final {
     [[nodiscard]] inline float getSliderTickRate() const { return this->fSliderTickRate; }
     [[nodiscard]] inline float getSliderMultiplier() const { return this->fSliderMultiplier; }
 
-    [[nodiscard]] inline const zarray<DatabaseBeatmap::TIMINGPOINT> &getTimingpoints() const {
+    [[nodiscard]] inline const FixedSizeArray<DatabaseBeatmap::TIMINGPOINT> &getTimingpoints() const {
         return this->timingpoints;
     }
 
@@ -382,8 +382,13 @@ class DatabaseBeatmap final {
     // may be lazy-computed by loadMetadata, or loaded from disk off database
     MD5Hash sMD5Hash;
 
+    // if this is null we are a beatmapset, not a difficulty
+    // if this is non-null then it MUST contain at least 1 entry
+    // NOTE: this class has ownership of the individual beatmap difficulties, Database owns the top-level beatmapsets
+    std::unique_ptr<DiffContainer> difficulties;
+
    public:
-    zarray<DatabaseBeatmap::TIMINGPOINT> timingpoints;  // necessary for main menu anim
+    FixedSizeArray<DatabaseBeatmap::TIMINGPOINT> timingpoints;  // necessary for main menu anim
 
     // redundant data (technically contained in metadata, but precomputed anyway)
 
@@ -393,11 +398,6 @@ class DatabaseBeatmap final {
 
    private:  // private for lazy-fixing up filename casing with getFullSoundFilePath
     std::string sFullSoundFilePath;
-
-    // if this is null we are a beatmapset, not a difficulty
-    // if this is non-null then it MUST contain at least 1 entry
-    // NOTE: this class has ownership of the individual beatmap difficulties, Database owns the top-level beatmapsets
-    std::unique_ptr<DiffContainer> difficulties;
 
    public:
     // raw metadata
@@ -473,10 +473,10 @@ class DatabaseBeatmap final {
     static PRIMITIVE_CONTAINER loadPrimitiveObjectsFromData(std::unique_ptr<u8[]> fileData, size_t fileSize,
                                                             std::string_view osuFilePath, const Sync::stop_token &dead);
     static LoadError calculateSliderTimesClicksTicks(int beatmapVersion, std::vector<SLIDER> &sliders,
-                                                     zarray<DatabaseBeatmap::TIMINGPOINT> &timingpoints,
+                                                     FixedSizeArray<DatabaseBeatmap::TIMINGPOINT> &timingpoints,
                                                      float sliderMultiplier, float sliderTickRate);
     static LoadError calculateSliderTimesClicksTicks(int beatmapVersion, std::vector<SLIDER> &sliders,
-                                                     zarray<DatabaseBeatmap::TIMINGPOINT> &timingpoints,
+                                                     FixedSizeArray<DatabaseBeatmap::TIMINGPOINT> &timingpoints,
                                                      float sliderMultiplier, float sliderTickRate,
                                                      const Sync::stop_token &dead);
 
@@ -524,8 +524,11 @@ struct BPMTuple {
 struct DB_TIMINGPOINT;
 
 template <typename T>
-BPMInfo getBPM(const zarray<T> &timing_points, zarray<BPMTuple> &bpm_buffer)
-    requires(std::is_same_v<T, DB_TIMINGPOINT> || std::is_same_v<T, DatabaseBeatmap::TIMINGPOINT>)
+BPMInfo getBPM(const T &timing_points, std::vector<BPMTuple> &bpm_buffer)
+    requires((std::is_same_v<T, std::vector<DB_TIMINGPOINT>> ||
+              std::is_same_v<T, std::vector<DatabaseBeatmap::TIMINGPOINT>>) ||
+             (std::is_same_v<T, FixedSizeArray<DB_TIMINGPOINT>> ||
+              std::is_same_v<T, FixedSizeArray<DatabaseBeatmap::TIMINGPOINT>>))
 {
     if(timing_points.empty()) {
         return {};
@@ -536,7 +539,7 @@ BPMInfo getBPM(const zarray<T> &timing_points, zarray<BPMTuple> &bpm_buffer)
 
     double lastTime = timing_points.back().offset;
     for(size_t i = 0; i < timing_points.size(); i++) {
-        const T &t = timing_points[i];
+        const auto &t = timing_points[i];
         if(t.offset > lastTime) continue;
         if(t.msPerBeat <= 0.0 || std::isnan(t.msPerBeat)) continue;
 
