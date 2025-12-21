@@ -281,20 +281,6 @@ class UString {
         }
     }
 
-    // conversion shortcuts (DEPRECATED: NO ERROR HANDLING)
-    [[nodiscard]] constexpr float toFloat() const noexcept { return to<float>().first; }
-    [[nodiscard]] constexpr double toDouble() const noexcept { return to<double>().first; }
-    [[nodiscard]] constexpr long double toLongDouble() const noexcept { return to<long double>().first; }
-    [[nodiscard]] constexpr int toInt() const noexcept { return to<int>().first; }
-    [[nodiscard]] constexpr bool toBool() const noexcept { return to<bool>().first; }
-    [[nodiscard]] constexpr long toLong() const noexcept { return to<long>().first; }
-    [[nodiscard]] constexpr long long toLongLong() const noexcept { return to<long long>().first; }
-    [[nodiscard]] constexpr unsigned int toUnsignedInt() const noexcept { return to<unsigned int>().first; }
-    [[nodiscard]] constexpr unsigned long toUnsignedLong() const noexcept { return to<unsigned long>().first; }
-    [[nodiscard]] constexpr unsigned long long toUnsignedLongLong() const noexcept {
-        return to<unsigned long long>().first;
-    }
-
     // case conversion
     void lowerCase() noexcept;
     void upperCase() noexcept;

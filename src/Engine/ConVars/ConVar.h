@@ -427,8 +427,9 @@ class ConVar {
                 return std::make_pair(f, f > 0 ? "true" : "false");
             } else if constexpr(std::is_same_v<std::decay_t<T>, UString>) {
                 const UString s = std::forward<T>(value);
-                const double f = !s.isEmpty() ? s.toDouble() : 0.;
-                return std::make_pair(f, std::string{s.toUtf8()});
+                const auto [dbl, err] = s.to<double>();
+                if(err != std::errc()) return std::make_pair(0., std::string{s.utf8View()});
+                return std::make_pair(dbl, std::string{s.utf8View()});
             } else {
                 const std::string s{std::forward<T>(value)};
                 const double f = !s.empty() ? std::strtod(s.c_str(), nullptr) : 0.;
