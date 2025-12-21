@@ -786,18 +786,7 @@ void MainMenu::drawMainButton() {
     }
 }
 
-void MainMenu::clearPreloadedMaps() {
-    for(auto preloaded_set : this->preloadedMaps) {
-        for(auto &diff : preloaded_set->getDifficulties()) {
-            if(diff == this->lastMap) this->lastMap = nullptr;
-            if(diff == this->currentMap) this->currentMap = nullptr;
-        }
-
-        SAFE_DELETE(preloaded_set);
-    }
-
-    this->preloadedMaps.clear();
-}
+void MainMenu::clearPreloadedMaps() { this->preloadedMaps.clear(); }
 
 // Differences from BackgroundImageHandler::draw:
 // - We load background images immediately
@@ -1162,37 +1151,35 @@ void MainMenu::selectRandomBeatmap() {
         constexpr int RETRY_SETS{10};
         for(int i = 0; i < RETRY_SETS; i++) {
             const auto &mapset_folder = mapset_folders[rand() % mapset_folders.size()];
-            BeatmapSet *set = db->loadRawBeatmap(mapset_folder);
+            auto set = db->loadRawBeatmap(mapset_folder);
             if(set == nullptr) {
                 debugLog("Failed to load beatmap set '{:s}'", mapset_folder.c_str());
                 continue;
             }
 
-            auto beatmap_diffs = set->getDifficulties();
+            auto &beatmap_diffs = set->getDifficulties();
             if(beatmap_diffs.empty()) {
                 debugLog("Mapset '{:s}' has no difficulties!", set->getFolder());
-                delete set;
                 continue;
             }
 
             // We're picking a random diff and not the first one, because diffs of the same set
             // can have their own separate sound file.
-            BeatmapDifficulty *candidate_diff = beatmap_diffs[rand() % beatmap_diffs.size()];
+            auto &candidate_diff = beatmap_diffs[rand() % beatmap_diffs.size()];
             assert(candidate_diff);
 
             const bool skip =  // don't skip backgroundless if this is our last attempt
                 (i < RETRY_SETS - 1) && !env->fileExists(candidate_diff->getFullBackgroundImageFilePath());
             if(skip) {
                 debugLog("Beatmap '{:s}' has no background image, skipping.", candidate_diff->getFilePath());
-                delete set;
                 continue;
             }
 
-            this->preloadedMaps.push_back(set);
             set->do_not_store = true;  // don't store in songbrowser f2 history
             candidate_diff->do_not_store = true;
+            this->preloadedMaps.push_back(std::move(set));
 
-            osu->getSongBrowser()->onDifficultySelected(candidate_diff, false);
+            osu->getSongBrowser()->onDifficultySelected(candidate_diff.get(), false);
             RichPresence::onMainMenu();
 
             return;

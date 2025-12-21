@@ -41,8 +41,8 @@ SongButton::SongButton(UIContextMenu *contextMenu, float xPos, float yPos, float
     const auto &diffs = this->databaseBeatmap->getDifficulties();
 
     this->children.reserve(diffs.size());
-    for(auto diff : diffs) {
-        this->children.emplace_back(new SongDifficultyButton(this->contextMenu, 0, 0, 0, 0, "", diff, this));
+    for(auto &diff : diffs) {
+        this->children.emplace_back(new SongDifficultyButton(this->contextMenu, 0, 0, 0, 0, "", diff.get(), this));
     }
 
     this->updateLayoutEx();

@@ -120,22 +120,22 @@ DatabaseBeatmap::DatabaseBeatmap(std::string filePath, std::string folder, Beatm
     this->iOnlineOffset = 0;
 }
 
-DatabaseBeatmap::DatabaseBeatmap(std::vector<DatabaseBeatmap *> *difficulties, BeatmapType type)
+DatabaseBeatmap::DatabaseBeatmap(std::vector<std::unique_ptr<BeatmapDifficulty>> &&difficulties, BeatmapType type)
     : DatabaseBeatmap("", "", type) {
-    this->difficulties = difficulties;
+    this->difficulties = std::move(difficulties);
 
-    assert(!this->difficulties->empty() && "DatabaseBeatmap: tried to construct a beatmapset with 0 difficulties");
+    assert(!this->difficulties.empty() && "DatabaseBeatmap: tried to construct a beatmapset with 0 difficulties");
 
     // set representative values for this container (i.e. use values from first difficulty)
-    this->sTitle = (*this->difficulties)[0]->sTitle;
-    this->sTitleUnicode = (*this->difficulties)[0]->sTitleUnicode;
-    this->bEmptyTitleUnicode = (*this->difficulties)[0]->bEmptyTitleUnicode;
-    this->sArtist = (*this->difficulties)[0]->sArtist;
-    this->sArtistUnicode = (*this->difficulties)[0]->sArtistUnicode;
-    this->bEmptyArtistUnicode = (*this->difficulties)[0]->bEmptyArtistUnicode;
-    this->sCreator = (*this->difficulties)[0]->sCreator;
-    this->sBackgroundImageFileName = (*this->difficulties)[0]->sBackgroundImageFileName;
-    this->iSetID = (*this->difficulties)[0]->iSetID;
+    this->sTitle = this->difficulties[0]->sTitle;
+    this->sTitleUnicode = this->difficulties[0]->sTitleUnicode;
+    this->bEmptyTitleUnicode = this->difficulties[0]->bEmptyTitleUnicode;
+    this->sArtist = this->difficulties[0]->sArtist;
+    this->sArtistUnicode = this->difficulties[0]->sArtistUnicode;
+    this->bEmptyArtistUnicode = this->difficulties[0]->bEmptyArtistUnicode;
+    this->sCreator = this->difficulties[0]->sCreator;
+    this->sBackgroundImageFileName = this->difficulties[0]->sBackgroundImageFileName;
+    this->iSetID = this->difficulties[0]->iSetID;
 
     // also calculate largest representative values
     this->iLengthMS = 0;
@@ -148,7 +148,7 @@ DatabaseBeatmap::DatabaseBeatmap(std::vector<DatabaseBeatmap *> *difficulties, B
     this->iMaxBPM = 0;
     this->iMostCommonBPM = 0;
     this->last_modification_time = 0;
-    for(auto diff : (*this->difficulties)) {
+    for(const auto &diff : this->difficulties) {
         if(diff->getLengthMS() > this->iLengthMS) this->iLengthMS = diff->getLengthMS();
         if(diff->getCS() < this->fCS) this->fCS = diff->getCS();
         if(diff->getAR() > this->fAR) this->fAR = diff->getAR();
@@ -163,15 +163,7 @@ DatabaseBeatmap::DatabaseBeatmap(std::vector<DatabaseBeatmap *> *difficulties, B
     }
 }
 
-DatabaseBeatmap::~DatabaseBeatmap() {
-    if(this->difficulties != nullptr) {
-        for(auto &diff : *this->difficulties) {
-            assert(diff->difficulties == nullptr);
-            SAFE_DELETE(diff);
-        }
-        SAFE_DELETE(this->difficulties);
-    }
-}
+DatabaseBeatmap::~DatabaseBeatmap() = default;
 
 bool DatabaseBeatmap::parse_timing_point(std::string_view curLine, DatabaseBeatmap::TIMINGPOINT &out) {
     // old beatmaps: Offset, Milliseconds per Beat
@@ -253,9 +245,10 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(std::
     return loadPrimitiveObjectsFromData(std::move(fileBuffer), beatmapFileSize, osuFilePath, dead);
 }
 
-DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjectsFromData(
-    std::unique_ptr<u8[]> fileBuffer, size_t beatmapFileSize, std::string_view osuFilePath,
-    const Sync::stop_token &dead) {
+DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjectsFromData(std::unique_ptr<u8[]> fileBuffer,
+                                                                                   size_t beatmapFileSize,
+                                                                                   std::string_view osuFilePath,
+                                                                                   const Sync::stop_token &dead) {
     PRIMITIVE_CONTAINER c{
         .stackLeniency = 0.7f,
 
@@ -1127,7 +1120,7 @@ bool DatabaseBeatmap::getMapFileAsync(MapFileReadDoneCallback data_callback) {
 
 // XXX: code duplication (see loadPrimitiveObjects)
 DatabaseBeatmap::LOAD_META_RESULT DatabaseBeatmap::loadMetadata(bool compute_md5) {
-    if(this->difficulties != nullptr) {
+    if(!this->difficulties.empty()) {
         return {.fileData = {},
                 .fileSize = {},
                 .error = {LoadError::LOADMETADATA_ON_BEATMAPSET}};  // we are a beatmapset, not a difficulty
@@ -1346,7 +1339,7 @@ DatabaseBeatmap::LOAD_META_RESULT DatabaseBeatmap::loadMetadata(bool compute_md5
     return ret(LoadError::NONE);
 }
 
-DatabaseBeatmap::LOAD_GAMEPLAY_RESULT DatabaseBeatmap::loadGameplay(DatabaseBeatmap *databaseBeatmap,
+DatabaseBeatmap::LOAD_GAMEPLAY_RESULT DatabaseBeatmap::loadGameplay(BeatmapDifficulty *databaseBeatmap,
                                                                     AbstractBeatmapInterface *beatmap) {
     LOAD_GAMEPLAY_RESULT result = LOAD_GAMEPLAY_RESULT();
 

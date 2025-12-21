@@ -283,14 +283,7 @@ void Database::startLoader() {
             Sync::unique_lock lock(this->beatmap_difficulties_mtx);
             this->beatmap_difficulties.clear();
         }
-        for(auto &beatmapset :
-            this->temp_loading_beatmapsets) {  // FIXME(spec): this will remove import requests from before database is loaded!!!
-            SAFE_DELETE(beatmapset);
-        }
         this->temp_loading_beatmapsets.clear();
-        for(auto &beatmapset : this->beatmapsets) {
-            SAFE_DELETE(beatmapset);
-        }
         this->beatmapsets.clear();
     }
 
@@ -338,13 +331,7 @@ Database::~Database() {
         Sync::unique_lock lock(this->beatmap_difficulties_mtx);
         this->beatmap_difficulties.clear();
     }
-    for(auto &beatmapset : this->temp_loading_beatmapsets) {
-        SAFE_DELETE(beatmapset);
-    }
     this->temp_loading_beatmapsets.clear();
-    for(auto &beatmapset : this->beatmapsets) {
-        SAFE_DELETE(beatmapset);
-    }
     this->beatmapsets.clear();
 
     Collections::unload_all();
@@ -392,11 +379,11 @@ void Database::update() {
                 // clang-format off
                 for(auto &diff : this->beatmapsets
                                 // for all diffs within the set with fStarsNomod <= 0.f
-                                | std::views::transform([](const auto &set) -> auto & { return *set->difficulties; })
+                                | std::views::transform([](const auto &set) -> auto & { return set->difficulties; })
                                 | std::views::join
                                 | std::views::filter([](const auto &diff) { return diff->fStarsNomod <= 0.f; })) {
                     diff->fStarsNomod *= -1.f;
-                    this->maps_to_recalc.push_back(diff);
+                    this->maps_to_recalc.push_back(diff.get());
                 }
                 // clang-format on
 
@@ -437,8 +424,10 @@ void Database::save() {
 }
 
 BeatmapSet *Database::addBeatmapSet(const std::string &beatmapFolderPath, i32 set_id_override) {
-    BeatmapSet *beatmap = this->loadRawBeatmap(beatmapFolderPath);
+    auto beatmap = this->loadRawBeatmap(beatmapFolderPath);
     if(beatmap == nullptr) return nullptr;
+
+    BeatmapSet *raw_beatmap = beatmap.get();
 
     // Some beatmaps don't provide beatmap/beatmapset IDs in the .osu files
     // But we know the beatmapset ID because we just downloaded it!
@@ -452,23 +441,23 @@ BeatmapSet *Database::addBeatmapSet(const std::string &beatmapFolderPath, i32 se
     {
         Sync::unique_lock lock(this->beatmap_difficulties_mtx);
         for(const auto &diff : beatmap->getDifficulties()) {
-            this->beatmap_difficulties[diff->getMD5()] = diff;
+            this->beatmap_difficulties[diff->getMD5()] = diff.get();
         }
     }
 
     // do not add to songbrowser yet unless we are finished loading
     if(this->isFinished()) {
-        this->beatmapsets.push_back(beatmap);
+        this->beatmapsets.push_back(std::move(beatmap));
 
-        osu->getSongBrowser()->addBeatmapSet(beatmap);
+        osu->getSongBrowser()->addBeatmapSet(raw_beatmap);
 
         // XXX: Very slow
         osu->getSongBrowser()->onSortChange(cv::songbrowser_sortingtype.getString().c_str());
     } else {
-        this->temp_loading_beatmapsets.push_back(beatmap);
+        this->temp_loading_beatmapsets.push_back(std::move(beatmap));
     }
 
-    return beatmap;
+    return raw_beatmap;
 }
 
 int Database::addScore(const FinishedScore &score) {
@@ -882,7 +871,7 @@ DatabaseBeatmap *Database::getBeatmapSet(i32 set_id) {
 
     for(const auto &beatmap : this->beatmapsets) {
         if(beatmap->getSetID() == set_id) {
-            return beatmap;
+            return beatmap.get();
         }
     }
 
@@ -984,7 +973,7 @@ void Database::loadMaps() {
     // read beatmapInfos, and also build two hashmaps (diff hash -> BeatmapDifficulty, diff hash -> Beatmap)
     struct Beatmap_Set {
         int setID{0};
-        std::vector<DatabaseBeatmap *> *diffs2{nullptr};
+        std::unique_ptr<std::vector<std::unique_ptr<BeatmapDifficulty>>> diffs;
     };
     std::vector<Beatmap_Set> beatmapSets;
     std::unordered_map<int, size_t> setIDToIndex;
@@ -1016,17 +1005,15 @@ void Database::loadMaps() {
 
                 std::string mapset_path = fmt::format(NEOSU_MAPS_PATH "/{}/", set_id);
 
-                auto *diffs = new std::vector<DatabaseBeatmap *>();
+                std::vector<std::unique_ptr<BeatmapDifficulty>> diffs;
                 for(u16 j = 0; j < nb_diffs; j++) {
                     if(this->load_interrupted.load(std::memory_order_acquire)) {  // cancellation point
                         // clean up partially loaded diffs in current set
                         Sync::unique_lock lock(this->beatmap_difficulties_mtx);
-                        for(DatabaseBeatmap *diff : *diffs) {
+                        for(const auto &diff : diffs) {
                             this->beatmap_difficulties.erase(diff->getMD5());
-                            delete diff;
                         }
-                        delete diffs;
-                        diffs = nullptr;
+                        diffs.clear();
                         break;
                     }
 
@@ -1035,8 +1022,8 @@ void Database::loadMaps() {
                     std::string map_path = mapset_path;
                     map_path.append(osu_filename);
 
-                    auto diff =
-                        new BeatmapDifficulty(map_path, mapset_path, DatabaseBeatmap::BeatmapType::NEOSU_DIFFICULTY);
+                    auto diff = std::make_unique<BeatmapDifficulty>(map_path, mapset_path,
+                                                                    DatabaseBeatmap::BeatmapType::NEOSU_DIFFICULTY);
                     diff->iID = neosu_maps.read<i32>();
                     diff->iSetID = set_id;
                     diff->sTitle = neosu_maps.read_string();
@@ -1088,7 +1075,7 @@ void Database::loadMaps() {
                         loudness = neosu_maps.read<f32>();
                     }
                     if(loudness == 0.f) {
-                        this->loudness_to_calc.push_back(diff);
+                        this->loudness_to_calc.push_back(diff.get());
                     } else {
                         diff->loudness = loudness;
                     }
@@ -1115,22 +1102,18 @@ void Database::loadMaps() {
 
                     {
                         Sync::unique_lock lock(this->beatmap_difficulties_mtx);
-                        this->beatmap_difficulties[diff->getMD5()] = diff;
+                        this->beatmap_difficulties[diff->getMD5()] = diff.get();
                     }
-                    diffs->push_back(diff);
+                    diffs.push_back(std::move(diff));
                     nb_neosu_maps++;
                 }
 
-                // if we were canceled during inner loop, diffs will be nullptr
-                if(diffs == nullptr) break;
-
                 // NOTE: Ignoring mapsets with ID -1, since we most likely saved them in the correct folder,
                 //       but mistakenly set their ID to -1 (because the ID was missing from the .osu file).
-                if(diffs->empty() || set_id == -1) {
-                    delete diffs;
-                } else {
-                    auto set = new BeatmapSet(diffs, DatabaseBeatmap::BeatmapType::NEOSU_BEATMAPSET);
-                    this->temp_loading_beatmapsets.push_back(set);
+                if(!(diffs.empty() || set_id == -1)) {
+                    auto set =
+                        std::make_unique<BeatmapSet>(std::move(diffs), DatabaseBeatmap::BeatmapType::NEOSU_BEATMAPSET);
+                    this->temp_loading_beatmapsets.push_back(std::move(set));
 
                     // NOTE: Don't add neosu sets to beatmapSets since they're already processed
                     // Adding them would create duplicate ownership of the diffs vector
@@ -1405,10 +1388,12 @@ void Database::loadMaps() {
                     }
                 }
 
-                // fill diff with data
-                auto *map =
-                    new DatabaseBeatmap(fullFilePath, beatmapPath, DatabaseBeatmap::BeatmapType::PEPPY_DIFFICULTY);
+                BeatmapDifficulty *diffp = nullptr;
                 {
+                    // fill diff with data
+                    auto map = std::make_unique<BeatmapDifficulty>(fullFilePath, beatmapPath,
+                                                                   DatabaseBeatmap::BeatmapType::PEPPY_DIFFICULTY);
+
                     map->sTitle = songTitle;
                     map->sTitleUnicode = songTitleUnicode;
                     if(SString::is_wspace_only(map->sTitleUnicode)) {
@@ -1452,66 +1437,66 @@ void Database::loadMaps() {
                     map->iMinBPM = bpm.min;
                     map->iMaxBPM = bpm.max;
                     map->iMostCommonBPM = bpm.most_common;
-                }
-                // (the diff is now fully built)
+                    // (the diff is now fully built)
 
-                // now, search if the current set (to which this diff would belong) already exists and add it there, or
-                // if it doesn't exist then create the set
-                const auto result = setIDToIndex.find(beatmapSetID);
-                const bool beatmapSetExists = (result != setIDToIndex.end());
-                bool diff_already_added = false;
-                if(beatmapSetExists) {
-                    for(const auto &existing_diff : *beatmapSets[result->second].diffs2) {
-                        if(existing_diff->getMD5() == map->getMD5()) {
-                            diff_already_added = true;
-                            break;
+                    // now, search if the current set (to which this diff would belong) already exists and add it there, or
+                    // if it doesn't exist then create the set
+                    const auto result = setIDToIndex.find(beatmapSetID);
+                    const bool beatmapSetExists = (result != setIDToIndex.end());
+                    bool diff_already_added = false;
+                    if(beatmapSetExists) {
+                        for(const auto &existing_diff : *beatmapSets[result->second].diffs) {
+                            if(existing_diff->getMD5() == map->getMD5()) {
+                                diff_already_added = true;
+                                break;
+                            }
                         }
-                    }
-                    if(!diff_already_added) {
-                        beatmapSets[result->second].diffs2->push_back(map);
-                    }
-                } else {
-                    setIDToIndex[beatmapSetID] = beatmapSets.size();
+                        if(!diff_already_added) {
+                            beatmapSets[result->second].diffs->push_back(std::move(map));
+                            diffp = map.get();
+                        }
+                    } else {
+                        diffp = map.get();
+                        setIDToIndex[beatmapSetID] = beatmapSets.size();
 
-                    Beatmap_Set s;
-                    s.setID = beatmapSetID;
-                    s.diffs2 = new std::vector<DatabaseBeatmap *>();
-                    s.diffs2->push_back(map);
-                    beatmapSets.push_back(s);
+                        Beatmap_Set s;
+                        s.setID = beatmapSetID;
+                        s.diffs = std::make_unique<std::vector<std::unique_ptr<BeatmapDifficulty>>>();
+                        s.diffs->push_back(std::move(map));
+                        beatmapSets.push_back(std::move(s));
+                    }
                 }
 
-                if(!diff_already_added) {
+                if(diffp != nullptr) {  // if we actually added it
                     bool loudness_found = false;
                     if(overrides_found) {
-                        map->iLocalOffset = override.local_offset;
-                        map->iOnlineOffset = override.online_offset;
-                        map->fStarsNomod = override.star_rating;
-                        map->loudness = override.loudness;
-                        map->draw_background = override.draw_background;
-                        map->sBackgroundImageFileName = override.background_image_filename;
+                        diffp->iLocalOffset = override.local_offset;
+                        diffp->iOnlineOffset = override.online_offset;
+                        diffp->fStarsNomod = override.star_rating;
+                        diffp->loudness = override.loudness;
+                        diffp->draw_background = override.draw_background;
+                        diffp->sBackgroundImageFileName = override.background_image_filename;
                         if(override.loudness != 0.f) {
                             loudness_found = true;
                         }
                     } else {
                         if(nomod_star_rating <= 0.f) {
                             nomod_star_rating *= -1.f;
-                            this->maps_to_recalc.push_back(map);
+                            this->maps_to_recalc.push_back(diffp);
                         }
 
-                        map->iLocalOffset = localOffset;
-                        map->iOnlineOffset = onlineOffset;
-                        map->fStarsNomod = nomod_star_rating;
-                        map->draw_background = true;
+                        diffp->iLocalOffset = localOffset;
+                        diffp->iOnlineOffset = onlineOffset;
+                        diffp->fStarsNomod = nomod_star_rating;
+                        diffp->draw_background = true;
                     }
 
                     if(!loudness_found) {
-                        this->loudness_to_calc.push_back(map);
+                        this->loudness_to_calc.push_back(diffp);
                     }
 
                     Sync::unique_lock lock(this->beatmap_difficulties_mtx);
-                    this->beatmap_difficulties[md5hash] = map;
-                } else {
-                    SAFE_DELETE(map);  // we never added this diff to any container, so we have to free it here
+                    this->beatmap_difficulties[md5hash] = diffp;
                 }
 
                 nb_peppy_maps++;
@@ -1520,62 +1505,64 @@ void Database::loadMaps() {
             Sync::unique_lock lock(this->beatmap_difficulties_mtx);
 
             // build beatmap sets
-            for(const auto &beatmapSet : beatmapSets) {
+            for(auto &beatmapSet : beatmapSets) {
                 if(this->load_interrupted.load(std::memory_order_acquire)) {  // cancellation point
                     // clean up remaining unprocessed diffs2 vectors and their contents
                     for(size_t i = &beatmapSet - &beatmapSets[0]; i < beatmapSets.size(); i++) {
-                        if(beatmapSets[i].diffs2) {
-                            for(DatabaseBeatmap *diff : *beatmapSets[i].diffs2) {
+                        if(beatmapSets[i].diffs) {
+                            for(const auto &diff : *beatmapSets[i].diffs) {
                                 this->beatmap_difficulties.erase(diff->getMD5());
 
                                 // remove from loudness_to_calc
-                                std::erase_if(this->loudness_to_calc,
-                                              [diff](const auto &loudness_diff) { return loudness_diff == diff; });
+                                std::erase_if(this->loudness_to_calc, [diff = diff.get()](const auto &loudness_diff) {
+                                    return loudness_diff == diff;
+                                });
                                 // remove from maps_to_recalc
-                                std::erase_if(this->maps_to_recalc,
-                                              [diff](const auto &recalc_diff) { return recalc_diff == diff; });
-
-                                delete diff;
+                                std::erase_if(this->maps_to_recalc, [diff = diff.get()](const auto &recalc_diff) {
+                                    return recalc_diff == diff;
+                                });
                             }
-                            delete beatmapSets[i].diffs2;
+                            beatmapSets[i].diffs.reset();
                         }
                     }
                     break;
                 }
 
-                if(beatmapSet.diffs2->empty()) {  // sanity check
+                if(!beatmapSet.diffs || beatmapSet.diffs->empty()) {  // sanity check
                     // clean up empty diffs2 vector
-                    delete beatmapSet.diffs2;
+                    beatmapSet.diffs.reset();
                     continue;
                 }
 
                 if(beatmapSet.setID > 0) {
-                    auto *set = new BeatmapSet(beatmapSet.diffs2, DatabaseBeatmap::BeatmapType::PEPPY_BEATMAPSET);
-                    this->temp_loading_beatmapsets.push_back(set);
+                    auto set = std::make_unique<BeatmapSet>(std::move(*beatmapSet.diffs),
+                                                            DatabaseBeatmap::BeatmapType::PEPPY_BEATMAPSET);
+                    this->temp_loading_beatmapsets.push_back(std::move(set));
                     // beatmapSet.diffs2 ownership transferred to BeatmapSet
                 } else {
                     // set with invalid ID: treat all its diffs separately. we'll group the diffs by title+artist.
-                    sv_unordered_map<std::vector<DatabaseBeatmap *> *> titleArtistToBeatmap;
-                    for(const auto &diff : (*beatmapSet.diffs2)) {
+                    sv_unordered_map<std::vector<std::unique_ptr<BeatmapDifficulty>>> titleArtistToBeatmap;
+                    for(auto &diff : (*beatmapSet.diffs)) {
                         std::string titleArtist = diff->getTitleLatin();
                         titleArtist.append("|");
                         titleArtist.append(diff->getArtistLatin());
 
                         auto it = titleArtistToBeatmap.find(titleArtist);
                         if(it == titleArtistToBeatmap.end()) {
-                            titleArtistToBeatmap[titleArtist] = new std::vector<DatabaseBeatmap *>();
+                            titleArtistToBeatmap[titleArtist] = std::vector<std::unique_ptr<BeatmapDifficulty>>();
                         }
 
-                        titleArtistToBeatmap[titleArtist]->push_back(diff);
+                        titleArtistToBeatmap[titleArtist].push_back(std::move(diff));
                     }
 
-                    for(const auto &scuffed_set : titleArtistToBeatmap) {
-                        auto *set = new BeatmapSet(scuffed_set.second, DatabaseBeatmap::BeatmapType::PEPPY_BEATMAPSET);
-                        this->temp_loading_beatmapsets.push_back(set);
+                    for(auto &[_, diffs] : titleArtistToBeatmap) {
+                        auto set = std::make_unique<BeatmapSet>(std::move(diffs),
+                                                                DatabaseBeatmap::BeatmapType::PEPPY_BEATMAPSET);
+                        this->temp_loading_beatmapsets.push_back(std::move(set));
                     }
 
                     // clean up the original diffs2 vector (ownership of diffs transferred to new vectors)
-                    delete beatmapSet.diffs2;
+                    beatmapSet.diffs.reset();
                 }
             }
         }
@@ -1617,7 +1604,7 @@ void Database::saveMaps() {
     std::vector<BeatmapSet *> temp_neosu_sets;
     for(const auto &beatmap : this->beatmapsets) {
         if(beatmap->type == DatabaseBeatmap::BeatmapType::NEOSU_BEATMAPSET) {
-            temp_neosu_sets.push_back(beatmap);
+            temp_neosu_sets.push_back(beatmap.get());
         }
     }
 
@@ -1630,7 +1617,7 @@ void Database::saveMaps() {
         maps.write<i32>(beatmap->getSetID());
         maps.write<u16>(beatmap->getDifficulties().size());
 
-        for(BeatmapDifficulty *diff : beatmap->getDifficulties()) {
+        for(const auto &diff : beatmap->getDifficulties()) {
             maps.write_string(env->getFileNameFromFilePath(diff->sFilePath).c_str());
             maps.write<i32>(diff->iID);
             maps.write_string(diff->sTitle.c_str());
@@ -2354,11 +2341,11 @@ void Database::saveScores() {
     debugLog("Saved {:d} scores in {:f} seconds.", nb_scores, (Timing::getTimeReal() - startTime));
 }
 
-BeatmapSet *Database::loadRawBeatmap(const std::string &beatmapPath) {
+std::unique_ptr<BeatmapSet> Database::loadRawBeatmap(const std::string &beatmapPath) {
     logIfCV(debug_db, "beatmap path: {:s}", beatmapPath);
 
     // try loading all diffs
-    auto *diffs2 = new std::vector<BeatmapDifficulty *>();
+    std::vector<std::unique_ptr<BeatmapDifficulty>> diffs;
     std::vector<std::string> beatmapFiles = env->getFilesInFolder(beatmapPath);
     for(const auto &beatmapFile : beatmapFiles) {
         std::string ext = env->getFileExtensionFromFilePath(beatmapFile);
@@ -2367,21 +2354,19 @@ BeatmapSet *Database::loadRawBeatmap(const std::string &beatmapPath) {
         std::string fullFilePath = beatmapPath;
         fullFilePath.append(beatmapFile);
 
-        auto *map = new BeatmapDifficulty(fullFilePath, beatmapPath, DatabaseBeatmap::BeatmapType::NEOSU_DIFFICULTY);
+        auto map = std::make_unique<BeatmapDifficulty>(fullFilePath, beatmapPath,
+                                                       DatabaseBeatmap::BeatmapType::NEOSU_DIFFICULTY);
         auto res = map->loadMetadata();
         if(!res.error.errc) {
-            diffs2->push_back(map);
+            diffs.push_back(std::move(map));
         } else {
             logIfCV(debug_db, "Couldn't loadMetadata: {}, deleting object.", res.error.error_string());
-            SAFE_DELETE(map);
         }
     }
 
-    BeatmapSet *set = nullptr;
-    if(diffs2->empty()) {
-        delete diffs2;
-    } else {
-        set = new BeatmapSet(diffs2, DatabaseBeatmap::BeatmapType::NEOSU_BEATMAPSET);
+    std::unique_ptr<BeatmapSet> set{nullptr};
+    if(!diffs.empty()) {
+        set = std::make_unique<BeatmapSet>(std::move(diffs), DatabaseBeatmap::BeatmapType::NEOSU_BEATMAPSET);
     }
 
     return set;

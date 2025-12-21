@@ -236,7 +236,7 @@ class DatabaseBeatmap final {
 
     DatabaseBeatmap() = delete;
     DatabaseBeatmap(std::string filePath, std::string folder, BeatmapType type);
-    DatabaseBeatmap(std::vector<DatabaseBeatmap *> *difficulties, BeatmapType type);
+    DatabaseBeatmap(std::vector<std::unique_ptr<BeatmapDifficulty>> &&difficulties, BeatmapType type);
     ~DatabaseBeatmap();
 
     static inline const auto alwaysFalseStopPred = Sync::stop_token{};
@@ -259,7 +259,7 @@ class DatabaseBeatmap final {
 
     LOAD_META_RESULT loadMetadata(bool compute_md5 = true);
 
-    static LOAD_GAMEPLAY_RESULT loadGameplay(DatabaseBeatmap *databaseBeatmap, AbstractBeatmapInterface *beatmap);
+    static LOAD_GAMEPLAY_RESULT loadGameplay(BeatmapDifficulty *databaseBeatmap, AbstractBeatmapInterface *beatmap);
     inline LOAD_GAMEPLAY_RESULT loadGameplay(AbstractBeatmapInterface *beatmap) { return loadGameplay(this, beatmap); }
 
     [[nodiscard]] MapOverrides get_overrides() const;
@@ -270,12 +270,11 @@ class DatabaseBeatmap final {
     [[nodiscard]] inline const std::string &getFolder() const { return this->sFolder; }
     [[nodiscard]] inline const std::string &getFilePath() const { return this->sFilePath; }
 
-    template <typename T = DatabaseBeatmap>
-    [[nodiscard]] inline const std::vector<T *> &getDifficulties() const
-        requires(std::is_same_v<std::remove_cv_t<T>, DatabaseBeatmap>)
+    template <typename T = BeatmapDifficulty>
+    [[nodiscard]] inline const std::vector<std::unique_ptr<T>> &getDifficulties() const
+        requires(std::is_same_v<std::remove_cv_t<T>, BeatmapDifficulty>)
     {
-        static std::vector<T *> empty;
-        return this->difficulties == nullptr ? empty : reinterpret_cast<const std::vector<T *> &>(*this->difficulties);
+        return reinterpret_cast<const std::vector<std::unique_ptr<T>> &>(this->difficulties);
     }
 
     [[nodiscard]] TIMING_INFO getTimingInfoForTime(i32 positionMS) const;
@@ -379,8 +378,8 @@ class DatabaseBeatmap final {
     MD5Hash sMD5Hash;
 
    public:
-    // if this is non-null we are a beatmapset, not a difficulty
-    std::vector<DatabaseBeatmap *> *difficulties = nullptr;
+    // if this is non-empty we are a beatmapset, not a difficulty
+    std::vector<std::unique_ptr<DatabaseBeatmap>> difficulties;
 
     zarray<DatabaseBeatmap::TIMINGPOINT> timingpoints;  // necessary for main menu anim
     u32 totalBreakDuration;                             // necessary for ppv2 calc (initialized after loadMetadata)
@@ -462,7 +461,8 @@ class DatabaseBeatmap final {
     friend class Database;
     friend class BGImageHandler;
 
-    static PRIMITIVE_CONTAINER loadPrimitiveObjects(std::string_view osuFilePath, const Sync::stop_token &dead = alwaysFalseStopPred);
+    static PRIMITIVE_CONTAINER loadPrimitiveObjects(std::string_view osuFilePath,
+                                                    const Sync::stop_token &dead = alwaysFalseStopPred);
     static PRIMITIVE_CONTAINER loadPrimitiveObjectsFromData(std::unique_ptr<u8[]> fileData, size_t fileSize,
                                                             std::string_view osuFilePath, const Sync::stop_token &dead);
     static LoadError calculateSliderTimesClicksTicks(int beatmapVersion, std::vector<SLIDER> &sliders,

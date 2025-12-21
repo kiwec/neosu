@@ -836,10 +836,10 @@ bool SongBrowser::selectBeatmapset(i32 set_id) {
 
     // Just picking the hardest diff for now
     DatabaseBeatmap *best_diff = nullptr;
-    const std::vector<DatabaseBeatmap *> &diffs = beatmapset->getDifficulties();
-    for(auto diff : diffs) {
+    const auto &diffs = beatmapset->getDifficulties();
+    for(auto &diff : diffs) {
         if(!best_diff || diff->getStarsNomod() > best_diff->getStarsNomod()) {
-            best_diff = diff;
+            best_diff = diff.get();
         }
     }
 
@@ -1771,10 +1771,19 @@ bool SongBrowser::searchMatcher(const DatabaseBeatmap *databaseBeatmap,
                                 const std::vector<std::string> &searchStringTokens) {
     if(databaseBeatmap == nullptr) return false;
 
-    const std::vector<const DatabaseBeatmap *> tmpContainer{databaseBeatmap};
-    const auto &diffs = databaseBeatmap->getDifficulties().size() > 0
-                            ? databaseBeatmap->getDifficulties<const DatabaseBeatmap>()
-                            : tmpContainer;
+    const auto diffs = [&bdiffs = databaseBeatmap->getDifficulties(),
+                        databaseBeatmap]() -> std::vector<const DatabaseBeatmap *> {
+        std::vector<const DatabaseBeatmap *> ret;
+        if(bdiffs.empty()) {
+            // standalone set
+            ret.push_back(databaseBeatmap);
+        } else {
+            for(const auto &diff : bdiffs) {
+                ret.push_back(diff.get());
+            }
+        }
+        return ret;
+    }();
 
     auto speed = osu->getMapInterface()->getSpeedMultiplier();
 
@@ -2573,7 +2582,7 @@ void SongBrowser::onDatabaseLoadingFinished() {
         this->parentButtons.reserve(numSets);
         this->hashToDiffButton.reserve(numDiffs);
         for(const auto &mapset : db->getBeatmapSets()) {
-            this->addBeatmapSet(mapset, true /* initial songbrowser load flag (skip some checks) */);
+            this->addBeatmapSet(mapset.get(), true /* initial songbrowser load flag (skip some checks) */);
         }
         this->parentButtons.shrink_to_fit();
     }
@@ -3171,8 +3180,8 @@ void SongBrowser::onSongButtonContextMenu(SongButton *songButton, const UString 
                 } else {
                     const BeatmapSet *mapset = db->getBeatmapSet(songButton->getDatabaseBeatmap()->getSetID());
                     if(mapset != nullptr) {
-                        const std::vector<DatabaseBeatmap *> &diffs = mapset->getDifficulties();
-                        for(auto diff : diffs) {
+                        const auto &diffs = mapset->getDifficulties();
+                        for(const auto &diff : diffs) {
                             beatmapSetHashes.push_back(diff->getMD5());
                         }
                     }

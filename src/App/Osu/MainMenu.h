@@ -151,7 +151,7 @@ class MainMenu final : public OsuScreen, public MouseListener {
     DatabaseBeatmap *lastMap{nullptr};
     Shader *background_shader = nullptr;
     f32 mapFadeAnim{1.f};
-    std::vector<BeatmapSet *> preloadedMaps;
+    std::vector<std::unique_ptr<BeatmapSet>> preloadedMaps;
 
     struct SongsFolderEnumerator final : public Resource {
         NOCOPY_NOMOVE(SongsFolderEnumerator)

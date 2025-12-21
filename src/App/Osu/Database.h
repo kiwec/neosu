@@ -132,7 +132,7 @@ class Database {
     DatabaseBeatmap *getBeatmapDifficulty(const MD5Hash &md5hash);
     DatabaseBeatmap *getBeatmapDifficulty(i32 map_id);
     BeatmapSet *getBeatmapSet(i32 set_id);
-    inline const std::vector<BeatmapSet *> &getBeatmapSets() const { return this->beatmapsets; }
+    inline const std::vector<std::unique_ptr<BeatmapSet>> &getBeatmapSets() const { return this->beatmapsets; }
 
     // WARNING: Before calling getScores(), you need to lock db->scores_mtx!
     inline const HashToScoreMap &getScores() const { return this->scores; }
@@ -140,7 +140,7 @@ class Database {
 
     static std::string getOsuSongsFolder();
 
-    BeatmapSet *loadRawBeatmap(const std::string &beatmapPath);  // only used for raw loading without db
+    std::unique_ptr<BeatmapSet> loadRawBeatmap(const std::string &beatmapPath);  // only used for raw loading without db
 
     inline void addPathToImport(const std::string &dbPath) { this->extern_db_paths_to_import.push_back(dbPath); }
 
@@ -243,8 +243,9 @@ class Database {
     // global
     u32 num_beatmaps_to_load{0};
     std::atomic<bool> load_interrupted{false};
-    std::vector<BeatmapSet *> beatmapsets;
-    std::vector<BeatmapSet *>
+    // this vector owns all loaded beatmapsets, raw beatmapset pointers are assumed not ownable
+    std::vector<std::unique_ptr<BeatmapSet>> beatmapsets;
+    std::vector<std::unique_ptr<BeatmapSet>>
         temp_loading_beatmapsets;  // only used during loading, contents moved into beatmapsets after
 
     Sync::shared_mutex beatmap_difficulties_mtx;
