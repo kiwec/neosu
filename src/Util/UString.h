@@ -8,6 +8,7 @@
 #include <string>
 #include <string_view>
 #include <vector>
+#include <charconv>
 
 #include "BaseEnvironment.h"  // for Env::cfg (consteval)
 
@@ -221,7 +222,7 @@ class UString {
         if constexpr(std::is_same_v<T, UString>)
             return result;
         else
-            return result.to<T>();
+            return result.to<T>().first;
     }
 
     template <typename T = UString>
@@ -247,54 +248,52 @@ class UString {
 
     // type conversions
     template <typename T>
-    [[nodiscard]] constexpr T to() const noexcept {
-        if(this->sUtf8.empty()) return T{};
+    [[nodiscard]] constexpr std::pair<T, std::errc> to() const noexcept {
+        if(this->sUtf8.empty()) return {T{}, std::errc::invalid_argument};
 
+        std::errc reterr{std::errc{}};
         if constexpr(std::is_same_v<T, UString>)
-            return *this;
+            return {*this, reterr};
         else if constexpr(std::is_same_v<T, std::string>)
-            return std::string{this->sUtf8};
+            return {std::string{this->sUtf8}, reterr};
         else if constexpr(std::is_same_v<T, std::string_view>)
-            return std::string_view{this->sUtf8};
+            return {std::string_view{this->sUtf8}, reterr};
         else if constexpr(std::is_same_v<T, std::u16string>)
-            return std::u16string{this->sUnicode};
+            return {std::u16string{this->sUnicode}, reterr};
         else if constexpr(std::is_same_v<T, std::u16string_view>)
-            return std::u16string_view{this->sUnicode};
-        else if constexpr(std::is_same_v<T, float>)
-            return std::strtof(this->sUtf8.c_str(), nullptr);
-        else if constexpr(std::is_same_v<T, double>)
-            return std::strtod(this->sUtf8.c_str(), nullptr);
-        else if constexpr(std::is_same_v<T, long double>)
-            return std::strtold(this->sUtf8.c_str(), nullptr);
-        else if constexpr(std::is_same_v<T, int>)
-            return static_cast<int>((std::strtol)(this->sUtf8.c_str(), nullptr, 0));
-        else if constexpr(std::is_same_v<T, bool>)
-            return !!static_cast<int>((std::strtol)(this->sUtf8.c_str(), nullptr, 0));
-        else if constexpr(std::is_same_v<T, long>)
-            return (std::strtol)(this->sUtf8.c_str(), nullptr, 0);
-        else if constexpr(std::is_same_v<T, long long>)
-            return (std::strtoll)(this->sUtf8.c_str(), nullptr, 0);
-        else if constexpr(std::is_same_v<T, unsigned int>)
-            return static_cast<unsigned int>((std::strtoul)(this->sUtf8.c_str(), nullptr, 0));
-        else if constexpr(std::is_same_v<T, unsigned long>)
-            return (std::strtoul)(this->sUtf8.c_str(), nullptr, 0);
-        else if constexpr(std::is_same_v<T, unsigned long long>)
-            return (std::strtoull)(this->sUtf8.c_str(), nullptr, 0);
-        else
-            static_assert(Env::always_false_v<T>, "unsupported type");
+            return {std::u16string_view{this->sUnicode}, reterr};
+        else {
+            T ret{};
+
+            const char *begin{this->sUtf8.data()};
+            const char *end{this->sUtf8.data() + this->sUtf8.size()};
+            if constexpr(std::is_same_v<T, bool>) {
+                long temp{};
+                auto [_, ec] = std::from_chars(begin, end, temp);
+                reterr = ec;
+                ret = (temp > 0);
+            } else {
+                auto [_, ec] = std::from_chars(begin, end, ret);
+                reterr = ec;
+            }
+
+            return {ret, reterr};
+        }
     }
 
-    // conversion shortcuts
-    [[nodiscard]] constexpr float toFloat() const noexcept { return to<float>(); }
-    [[nodiscard]] constexpr double toDouble() const noexcept { return to<double>(); }
-    [[nodiscard]] constexpr long double toLongDouble() const noexcept { return to<long double>(); }
-    [[nodiscard]] constexpr int toInt() const noexcept { return to<int>(); }
-    [[nodiscard]] constexpr bool toBool() const noexcept { return to<bool>(); }
-    [[nodiscard]] constexpr long toLong() const noexcept { return to<long>(); }
-    [[nodiscard]] constexpr long long toLongLong() const noexcept { return to<long long>(); }
-    [[nodiscard]] constexpr unsigned int toUnsignedInt() const noexcept { return to<unsigned int>(); }
-    [[nodiscard]] constexpr unsigned long toUnsignedLong() const noexcept { return to<unsigned long>(); }
-    [[nodiscard]] constexpr unsigned long long toUnsignedLongLong() const noexcept { return to<unsigned long long>(); }
+    // conversion shortcuts (DEPRECATED: NO ERROR HANDLING)
+    [[nodiscard]] constexpr float toFloat() const noexcept { return to<float>().first; }
+    [[nodiscard]] constexpr double toDouble() const noexcept { return to<double>().first; }
+    [[nodiscard]] constexpr long double toLongDouble() const noexcept { return to<long double>().first; }
+    [[nodiscard]] constexpr int toInt() const noexcept { return to<int>().first; }
+    [[nodiscard]] constexpr bool toBool() const noexcept { return to<bool>().first; }
+    [[nodiscard]] constexpr long toLong() const noexcept { return to<long>().first; }
+    [[nodiscard]] constexpr long long toLongLong() const noexcept { return to<long long>().first; }
+    [[nodiscard]] constexpr unsigned int toUnsignedInt() const noexcept { return to<unsigned int>().first; }
+    [[nodiscard]] constexpr unsigned long toUnsignedLong() const noexcept { return to<unsigned long>().first; }
+    [[nodiscard]] constexpr unsigned long long toUnsignedLongLong() const noexcept {
+        return to<unsigned long long>().first;
+    }
 
     // case conversion
     void lowerCase() noexcept;

@@ -1861,8 +1861,8 @@ bool SongBrowser::searchMatcher(const DatabaseBeatmap *databaseBeatmap,
                     // debugLog("splitting by string {:s}", operators[o].first.toUtf8());
                     std::vector<std::string_view> values{SString::split(searchStringToken, op_str)};
                     if(values.size() == 2 && values[0].length() > 0 && values[1].length() > 0) {
-                        std::string_view lvalue = values[0];
-                        std::string_view rstring = values[1];
+                        const std::string_view lvalue = values[0];
+                        const std::string_view rstring = values[1];
 
                         const auto rvaluePercentIndex = rstring.find('%');
                         const bool rvalueIsPercent = (rvaluePercentIndex != std::string::npos);
@@ -1981,7 +1981,7 @@ bool SongBrowser::searchMatcher(const DatabaseBeatmap *databaseBeatmap,
                                         break;
                                     case EQ:
                                         if(compareValue == rvalue ||
-                                           (!compareString.empty() && compareString == rstring))
+                                           (!compareString.empty() && compareString == SString::to_lower(rstring)))
                                             matches = true;
                                         break;
                                 }
@@ -2045,6 +2045,8 @@ bool SongBrowser::searchMatcher(const DatabaseBeatmap *databaseBeatmap,
                                                        std::string_view searchString) -> bool {
             return (SString::contains_ncase(diff->getTitleLatin(), searchString)) ||
                    (SString::contains_ncase(diff->getArtistLatin(), searchString)) ||
+                   (!diff->getTitleUnicode().empty() && diff->getTitleUnicode().contains(searchString)) ||
+                   (!diff->getArtistUnicode().empty() && diff->getArtistUnicode().contains(searchString)) ||
                    (SString::contains_ncase(diff->getCreator(), searchString)) ||
                    (SString::contains_ncase(diff->getDifficultyName(), searchString)) ||
                    (SString::contains_ncase(diff->getSource(), searchString)) ||

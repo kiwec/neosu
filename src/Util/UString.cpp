@@ -102,7 +102,7 @@ UString UString::join(std::span<const UString> strings, std::string_view delim) 
 }
 
 bool UString::isWhitespaceOnly() const noexcept {
-    return std::ranges::all_of(this->sUnicode, [](char16_t c) { return std::iswspace(static_cast<wint_t>(c)) != 0; });
+    return this->sUnicode.empty() || std::ranges::all_of(this->sUnicode, [](char16_t c) { return std::iswspace(static_cast<wint_t>(c)) != 0; });
 }
 
 size_t UString::numCodepoints() const noexcept {
