@@ -139,6 +139,7 @@ CBaseUIContainer* OsuDirectScreen::setVisible(bool visible) {
 
 void OsuDirectScreen::mouse_update(bool* propagate_clicks) {
     ScreenBackable::mouse_update(propagate_clicks);
+    if(!this->isVisible()) return;
 
     if(this->search_bar->hitEnter()) {
         if(this->current_query == this->search_bar->getText().toUtf8() && this->current_page == -1) {
@@ -242,7 +243,7 @@ void OsuDirectScreen::search(std::string_view query, i32 page) {
 
     networkHandler->httpRequestAsync(
         url,
-        [&](const NeoNet::Response& response) {
+        [current_request_id, page, this](const NeoNet::Response& response) {
             if(current_request_id != this->request_id) {
                 // Request was "cancelled"
                 return;
