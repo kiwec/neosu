@@ -784,7 +784,7 @@ std::unique_ptr<SliderCurve> SliderCurve::createCurve(SLIDERCURVETYPE type, std:
 
 SliderCurve::SliderCurve(std::vector<vec2> controlPoints, f32 pixelLength) {
     this->controlPoints = std::move(controlPoints);
-    this->fPixelLength = pixelLength;
+    this->fPixelLength = std::abs(pixelLength);
 
     this->fStartAngle = 0.0f;
     this->fEndAngle = 0.0f;

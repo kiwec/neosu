@@ -85,7 +85,7 @@ class DatabaseBeatmap final {
 
     // raw structs (not editable, we're following db format directly)
     struct TIMINGPOINT {
-        i32 offset;
+        f64 offset;
         f64 msPerBeat;
 
         i32 sampleSet;

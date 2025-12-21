@@ -37,7 +37,7 @@ void MapCalcThread::abort_instance() {
 
 void MapCalcThread::run(const Sync::stop_token& stoken) {
     McThread::set_current_thread_name(ULITERAL("map_calc"));
-    McThread::set_current_thread_prio(McThread::Priority::NORMAL);  // reset priority
+    McThread::set_current_thread_prio(McThread::Priority::LOW);  // set low prio
 
     for(const auto& map : *this->maps_to_process) {
         // pause handling
@@ -63,7 +63,10 @@ void MapCalcThread::run(const Sync::stop_token& stoken) {
         }
 
         if(c.error.errc) {
-            this->results.push_back(result);
+            {
+                Sync::scoped_lock lock(this->results_mutex);
+                this->results.push_back(result);
+            }
             this->computed_count++;
             continue;
         }
@@ -80,7 +83,10 @@ void MapCalcThread::run(const Sync::stop_token& stoken) {
         }
 
         if(c.error.errc) {
-            this->results.push_back(result);
+            {
+                Sync::scoped_lock lock(this->results_mutex);
+                this->results.push_back(result);
+            }
             this->computed_count++;
             continue;
         }
@@ -132,11 +138,23 @@ void MapCalcThread::run(const Sync::stop_token& stoken) {
         result.max_bpm = bpm.max;
         result.avg_bpm = bpm.most_common;
 
-        this->results.push_back(result);
+        {
+            Sync::scoped_lock lock(this->results_mutex);
+            this->results.push_back(result);
+        }
         this->computed_count++;
     }
 
     this->computed_count++;
+}
+
+std::optional<std::vector<MapCalcThread::mct_result>> MapCalcThread::try_get_instance() {
+    Sync::unique_lock lock(this->results_mutex, Sync::try_to_lock);
+    if(!lock.owns_lock()) return std::nullopt;
+
+    std::vector<mct_result> moved_from = std::move(this->results);
+    this->results.clear();
+    return moved_from;
 }
 
 MapCalcThread& MapCalcThread::get_instance() {

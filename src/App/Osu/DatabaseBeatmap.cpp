@@ -183,7 +183,7 @@ bool DatabaseBeatmap::parse_timing_point(std::string_view curLine, DatabaseBeatm
                       &tpVolume, ',', &tpUninherited, ',', &tpKiai) ||
        Parsing::parse(curLine, &tpOffset, ',', &tpMSPerBeat, ',', &tpMeter, ',', &tpSampleSet, ',', &tpSampleIndex, ',',
                       &tpVolume, ',', &tpUninherited)) {
-        out.offset = (i32)std::round(tpOffset);
+        out.offset = std::round(tpOffset);
         out.msPerBeat = tpMSPerBeat;
         out.sampleSet = tpSampleSet;
         out.sampleIndex = tpSampleIndex;
@@ -194,7 +194,7 @@ bool DatabaseBeatmap::parse_timing_point(std::string_view curLine, DatabaseBeatm
     }
 
     if(Parsing::parse(curLine, &tpOffset, ',', &tpMSPerBeat)) {
-        out.offset = (i32)std::round(tpOffset);
+        out.offset = std::round(tpOffset);
         out.msPerBeat = tpMSPerBeat;
         out.sampleSet = 0;
         out.sampleIndex = 0;
@@ -733,22 +733,25 @@ DatabaseBeatmap::LoadError DatabaseBeatmap::calculateSliderTimesClicksTicks(
         s.sliderTime = s.sliderTimeWithoutRepeats * s.repeat;
 
         // calculate ticks
-        {
+        int brk = 0;
+        // don't generate ticks for NaN timingpoints and infinite values
+        while(!(brk++) && !timingInfo.isNaN && !std::isnan(s.pixelLength) && std::isfinite(s.pixelLength)) {
             const float minTickPixelDistanceFromEnd =
                 0.01f * SliderHelper::getSliderVelocity(timingInfo, sliderMultiplier, sliderTickRate);
             const float tickPixelLength =
                 (beatmapVersion < 8 ? SliderHelper::getSliderTickDistance(sliderMultiplier, sliderTickRate)
                                     : SliderHelper::getSliderTickDistance(sliderMultiplier, sliderTickRate) /
                                           SliderHelper::getTimingPointMultiplierForSlider(timingInfo));
+
+            if(std::isnan(tickPixelLength) || !std::isfinite(tickPixelLength)) break;
+
             const float tickDurationPercentOfSliderLength =
                 tickPixelLength / (s.pixelLength == 0.0f ? 1.0f : s.pixelLength);
             const int max_ticks = cv::slider_max_ticks.getInt();
             const int tickCount = std::min((int)std::ceil(s.pixelLength / tickPixelLength) - 1,
                                            max_ticks);  // NOTE: hard sanity limit number of ticks per slider
 
-            if(tickCount > 0 && !timingInfo.isNaN && !std::isnan(s.pixelLength) &&
-               !std::isnan(tickPixelLength))  // don't generate ticks for NaN timingpoints and infinite values
-            {
+            if(tickCount > 0) {
                 const float tickTOffset = tickDurationPercentOfSliderLength;
                 float pixelDistanceToEnd = s.pixelLength;
                 float t = tickTOffset;

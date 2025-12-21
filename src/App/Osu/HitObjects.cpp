@@ -1019,7 +1019,7 @@ Slider::Slider(SLIDERCURVETYPE stype, int repeat, float pixelLength, std::vector
 
     this->cType = stype;
     this->iRepeat = repeat;
-    this->fPixelLength = pixelLength;
+    this->fPixelLength = std::abs(pixelLength);
     this->points = std::move(points);
     this->edgeSamples = std::move(edgeSamples);
     this->fSliderTime = sliderTime;

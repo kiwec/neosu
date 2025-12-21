@@ -148,7 +148,7 @@ bool internal::score_needs_recalc(const FinishedScore& score) {
 
 void internal::runloop(const Sync::stop_token& stoken) {
     McThread::set_current_thread_name(ULITERAL("score_cvt"));
-    McThread::set_current_thread_prio(McThread::Priority::NORMAL);  // reset priority
+    McThread::set_current_thread_prio(McThread::Priority::LOW);  // reset priority
 
     debugLog("Started score converter thread");
 

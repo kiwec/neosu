@@ -80,7 +80,7 @@ void clear_caches() {
 
 void run_thread(const Sync::stop_token& stoken) {
     McThread::set_current_thread_name(ULITERAL("async_pp_calc"));
-    McThread::set_current_thread_prio(McThread::Priority::NORMAL);  // reset priority
+    McThread::set_current_thread_prio(McThread::Priority::LOW);  // reset priority
 
     while(!stoken.stop_requested()) {
         Sync::unique_lock lock(work_mtx);

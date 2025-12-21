@@ -879,18 +879,20 @@ void SongBrowser::mouse_update(bool *propagate_clicks) {
     BottomBar::update(propagate_clicks);
 
     // map star/bpm/other calc
-    if(MapCalcThread::is_finished()) {
-        MapCalcThread::abort();  // join thread
+    if(!db->maps_to_recalc.empty()) {
+        std::vector<MapCalcThread::mct_result> results;
+        if(MapCalcThread::is_finished()) {
+            MapCalcThread::abort();  // join thread
+            results = MapCalcThread::get_results();
+            db->maps_to_recalc.clear();  // we are done
+        } else {
+            results = MapCalcThread::try_get().value_or({});
+        }
 
-        auto &maps = db->maps_to_recalc;
-
-        const auto &results = MapCalcThread::get_results();
-
-        {
+        if(!results.empty()) {
             Sync::unique_lock lock(db->peppy_overrides_mtx);
-            for(int i = 0; i < results.size(); i++) {
-                auto map = maps[i];
-                auto res = results[i];
+            for(const auto &res : results) {
+                auto map = res.map;
                 map->iNumCircles = res.nb_circles;
                 map->iNumSliders = res.nb_sliders;
                 map->iNumSpinners = res.nb_spinners;
@@ -901,8 +903,6 @@ void SongBrowser::mouse_update(bool *propagate_clicks) {
                 db->peppy_overrides[map->getMD5()] = map->get_overrides();
             }
         }
-
-        maps.clear();
     }
 
     // auto-download

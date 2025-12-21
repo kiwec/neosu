@@ -5,11 +5,14 @@
 #include "types.h"
 #include "templates.h"
 
+#include "SyncMutex.h"
 #include "SyncJthread.h"
 #include "SyncStoptoken.h"
 
 #include <atomic>
+#include <cassert>
 #include <vector>
+#include <optional>
 
 class DatabaseBeatmap;
 struct BPMTuple;
@@ -55,14 +58,23 @@ class MapCalcThread {
         return total > 0 && computed >= total;
     }
 
-    // results access
-    static inline std::vector<mct_result>& get_results() { return get_instance().results; }
+    // move results out once finished
+    static inline std::vector<mct_result> get_results() {
+        assert(is_finished());
+        std::vector<mct_result> moved_from = std::move(get_instance().results);
+        get_instance().results.clear();
+        return moved_from;
+    }
+
+    // return all results since last successful try_get of the currently in-progress results, without blocking
+    static inline std::optional<std::vector<mct_result>> try_get() { return get_instance().try_get_instance(); }
 
    private:
-    void run(const Sync::stop_token &stoken);
+    void run(const Sync::stop_token& stoken);
 
     void start_calc_instance(const std::vector<DatabaseBeatmap*>& maps_to_calc);
     void abort_instance();
+    std::optional<std::vector<mct_result>> try_get_instance();
 
     // singleton access
     static MapCalcThread& get_instance();
@@ -71,6 +83,7 @@ class MapCalcThread {
     std::atomic<u32> computed_count{0};
     std::atomic<u32> total_count{0};
     std::vector<mct_result> results{};
+    Sync::mutex results_mutex;
     zarray<BPMTuple> bpm_calc_buf;
 
     const std::vector<DatabaseBeatmap*>* maps_to_process{nullptr};
