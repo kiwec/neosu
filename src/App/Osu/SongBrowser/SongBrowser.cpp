@@ -904,6 +904,9 @@ void SongBrowser::mouse_update(bool *propagate_clicks) {
                 db->peppy_overrides[map->getMD5()] = map->get_overrides();
             }
         }
+    } else if(DBRecalculator::running() && DBRecalculator::is_finished()) {
+        // if there was never anything to do just make sure to join the thread
+        DBRecalculator::abort_calc();
     }
 
     // auto-download

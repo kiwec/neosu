@@ -83,8 +83,7 @@ struct stop_state {
     static constexpr uint32_t ssrc_counter_inc = 2;
 
     stop_state()
-        : m_value(ssrc_counter_inc)  // starts with 1 source
-          ,
+        : m_value(ssrc_counter_inc),  // starts with 1 source
           m_note(nsync_note_new(nullptr, nsync_time_no_deadline)) {
         assert(m_note && "stop_state: nsync_note_new failed");
     }

@@ -16,6 +16,12 @@
 #include <memory>
 #include <functional>
 
+// purpose:
+// 1) contain all infos which are ALWAYS kept in memory for beatmaps
+// 2) be the data source for Beatmap when starting a difficulty
+// 3) allow async calculations/loaders to work on the contained data (e.g. background image loader)
+// 4) be a container for difficulties (all top level DatabaseBeatmap objects are containers)
+
 class AbstractBeatmapInterface;
 class HitObject;
 class DifficultyHitObject;
@@ -24,18 +30,12 @@ class Database;
 
 class BGImageHandler;
 
-// purpose:
-// 1) contain all infos which are ALWAYS kept in memory for beatmaps
-// 2) be the data source for Beatmap when starting a difficulty
-// 3) allow async calculations/loaders to work on the contained data (e.g. background image loader)
-// 4) be a container for difficulties (all top level DatabaseBeatmap objects are containers)
-
 class DatabaseBeatmap;
 using BeatmapDifficulty = DatabaseBeatmap;
 using BeatmapSet = DatabaseBeatmap;
 using DiffContainer = std::vector<std::unique_ptr<BeatmapDifficulty>>;
 
-struct SLIDER_SCORING_TIME {
+struct SLIDER_SCORING_TIME {  // for difficulty calculation things
     enum class TYPE : u8 {
         TICK,
         REPEAT,
@@ -47,8 +47,30 @@ struct SLIDER_SCORING_TIME {
 };
 
 class DatabaseBeatmap final {
-    NOCOPY_NOMOVE(DatabaseBeatmap)
    public:
+    enum class BeatmapType : uint8_t {
+        NEOSU_BEATMAPSET,
+        PEPPY_BEATMAPSET,
+        NEOSU_DIFFICULTY,
+        PEPPY_DIFFICULTY,
+    };
+
+    DatabaseBeatmap();
+    ~DatabaseBeatmap();
+
+    DatabaseBeatmap(std::string filePath, std::string folder, BeatmapType type);  // beatmap difficulty
+    DatabaseBeatmap(std::unique_ptr<DiffContainer> &&difficulties,
+                    BeatmapType type);  // beatmapset
+
+    DatabaseBeatmap(const DatabaseBeatmap &);
+    DatabaseBeatmap &operator=(const DatabaseBeatmap &);
+    DatabaseBeatmap(DatabaseBeatmap &&) noexcept;
+    DatabaseBeatmap &operator=(DatabaseBeatmap &&) noexcept;
+
+    // for difficulties, compares MD5 hash for equality
+    // if both are mapsets, recursively compare their contained difficulties' MD5 hashes
+    bool operator==(const DatabaseBeatmap &other) const;
+
     struct LoadError {
        public:
         enum code : u8 {
@@ -62,7 +84,7 @@ class DatabaseBeatmap final {
             LOADMETADATA_ON_BEATMAPSET = 7,
             NON_STD_GAMEMODE = 8,
             UNKNOWN_VERSION = 9,
-            ERRC_COUNT = 9
+            ERRC_COUNT = 10
         };
         code errc{0};
 
@@ -72,16 +94,16 @@ class DatabaseBeatmap final {
 
        private:
         static constexpr const std::array<std::string_view, ERRC_COUNT> reasons{
-            {"no error",                               //
-             "failed to load file metadata",           //
-             "failed to load file",                    //
-             "no timingpoints in file",                //
-             "no objects in file",                     //
-             "too many objects in file"                //
-             "async load interrupted",                 //
-             "tried to load metadata for beatmapset",  //
-             "cannot load non-standard gamemode",      //
-             "unknown beatmap version"}};
+            "no error",                               //
+            "failed to load file metadata",           //
+            "failed to load file",                    //
+            "no timingpoints in file",                //
+            "no objects in file",                     //
+            "too many objects in file",               //
+            "async load interrupted",                 //
+            "tried to load metadata for beatmapset",  //
+            "cannot load non-standard gamemode",      //
+            "unknown beatmap version"};
     };
 
     // raw structs (not editable, we're following db format directly)
@@ -161,13 +183,6 @@ class DatabaseBeatmap final {
         bool operator==(const TIMING_INFO &) const = default;
     };
 
-    enum class BeatmapType : uint8_t {
-        NEOSU_BEATMAPSET,
-        PEPPY_BEATMAPSET,
-        NEOSU_DIFFICULTY,
-        PEPPY_DIFFICULTY,
-    };
-
     // primitive objects
 
     struct HITCIRCLE {
@@ -238,12 +253,6 @@ class DatabaseBeatmap final {
         // Allows reuse of the container for multiple loadDifficultyHitObjects calls.
         bool sliderTimesCalculated{false};
     };
-
-    DatabaseBeatmap() = delete;
-    DatabaseBeatmap(std::string filePath, std::string folder, BeatmapType type);  // beatmap difficulty
-    DatabaseBeatmap(std::unique_ptr<DiffContainer> &&difficulties,
-                    BeatmapType type);  // beatmapset
-    ~DatabaseBeatmap();
 
     static inline const auto alwaysFalseStopPred = Sync::stop_token{};
 
@@ -382,7 +391,7 @@ class DatabaseBeatmap final {
     }
 
    private:
-    // may be lazy-computed by loadMetadata, or loaded from disk off database
+    // may be lazy-computed by loadMetadata, or precomputed and loaded off disk from database
     MD5Hash sMD5Hash;
 
     // if this is null we are a beatmapset, not a difficulty
@@ -404,7 +413,7 @@ class DatabaseBeatmap final {
 
    public:
     // raw metadata
-    i64 last_modification_time = 0;
+    i64 last_modification_time{0};
 
     std::string sTitle;
     std::string sTitleUnicode;
@@ -417,46 +426,46 @@ class DatabaseBeatmap final {
     std::string sBackgroundImageFileName;
     std::string sAudioFileName;
 
-    int iID;  // online ID, if uploaded
-    u32 iLengthMS;
+    int iID{0};  // online ID, if uploaded
+    u32 iLengthMS{0};
 
-    i16 iLocalOffset;
-    i16 iOnlineOffset;
+    i16 iLocalOffset{0};
+    i16 iOnlineOffset{0};
 
-    int iSetID;  // online set ID, if uploaded
-    int iPreviewTime;
+    int iSetID{-1};  // online set ID, if uploaded
+    int iPreviewTime{-1};
 
-    float fAR;
-    float fCS;
-    float fHP;
-    float fOD;
+    float fAR{5.f};
+    float fCS{5.f};
+    float fHP{5.f};
+    float fOD{5.f};
 
-    float fStackLeniency;
-    float fSliderTickRate;
-    float fSliderMultiplier;
+    float fStackLeniency{.7f};
+    float fSliderTickRate{1.f};
+    float fSliderMultiplier{1.f};
 
     // precomputed data (can-run-without-but-nice-to-have data)
 
-    float fStarsNomod;
+    float fStarsNomod{0.f};
 
-    int iMinBPM = 0;
-    int iMaxBPM = 0;
-    int iMostCommonBPM = 0;
+    int iMinBPM{0};
+    int iMaxBPM{0};
+    int iMostCommonBPM{0};
 
-    int iNumObjects;
-    int iNumCircles;
-    int iNumSliders;
-    int iNumSpinners;
+    int iNumObjects{0};
+    int iNumCircles{0};
+    int iNumSliders{0};
+    int iNumSpinners{0};
 
     // custom data (not necessary, not part of the beatmap file, and not precomputed)
-    std::atomic<f32> loudness = 0.f;
+    std::atomic<f32> loudness{0.f};
     u32 totalBreakDuration{0};  // necessary for ppv2 calc (initialized after loadMetadata)
 
     // this is from metadata but put here for struct layout purposes
-    u8 iVersion;  // e.g. "osu file format v12" -> 12
+    u8 iVersion{128};  // e.g. "osu file format v12" -> 12
     // u8 iGameMode;  // 0 = osu!standard, 1 = Taiko, 2 = Catch the Beat, 3 = osu!mania
 
-    BeatmapType type;
+    BeatmapType type{BeatmapType::NEOSU_DIFFICULTY};
 
     mutable std::atomic<bool> md5_init{false};
 
@@ -503,13 +512,13 @@ class DatabaseBeatmap final {
     };
 
     static constexpr const std::array<MetadataBlock, 7> metadataBlocks{
-        {{.str = "[General]", .id = BlockId::General},
-         {.str = "[Metadata]", .id = BlockId::Metadata},
-         {.str = "[Difficulty]", .id = BlockId::Difficulty},
-         {.str = "[Events]", .id = BlockId::Events},
-         {.str = "[TimingPoints]", .id = BlockId::TimingPoints},
-         {.str = "[Colours]", .id = BlockId::Colours},
-         {.str = "[HitObjects]", .id = BlockId::HitObjects}}};
+        MetadataBlock{.str = "[General]", .id = BlockId::General},
+        MetadataBlock{.str = "[Metadata]", .id = BlockId::Metadata},
+        MetadataBlock{.str = "[Difficulty]", .id = BlockId::Difficulty},
+        MetadataBlock{.str = "[Events]", .id = BlockId::Events},
+        MetadataBlock{.str = "[TimingPoints]", .id = BlockId::TimingPoints},
+        MetadataBlock{.str = "[Colours]", .id = BlockId::Colours},
+        MetadataBlock{.str = "[HitObjects]", .id = BlockId::HitObjects}};
 };
 
 struct BPMInfo {

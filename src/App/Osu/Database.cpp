@@ -1883,8 +1883,9 @@ void Database::loadOldMcNeosuScores(std::string_view dbPath) {
     }
 
     u32 nb_imported = 0;
-    bool is_mcosu = (db_version == 20210106 || db_version == 20210108 || db_version == 20210110);
-    bool is_neosu = !is_mcosu;
+    const bool is_mcosu = (db_version == 20210106 || db_version == 20210108 || db_version == 20210110);
+    const bool is_neosu =
+        !is_mcosu && db_version > 20210110;  // if it's older, it can't be neosu (too old mcosu database)
 
     if(is_neosu) {
         u32 nb_beatmaps = dbr.read<u32>();

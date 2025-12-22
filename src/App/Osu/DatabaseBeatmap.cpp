@@ -54,70 +54,12 @@ u32 DatabaseBeatmap::LOAD_DIFFOBJ_RESULT::getMaxComboAtIndex(uSz index) const {
     return maxComboAtIndex.back();
 }
 
-namespace {  // static namespace
+DatabaseBeatmap::DatabaseBeatmap() = default;
+DatabaseBeatmap::~DatabaseBeatmap() = default;
 
-bool sliderScoringTimeComparator(const SLIDER_SCORING_TIME &a, const SLIDER_SCORING_TIME &b) {
-    if(a.time != b.time) return a.time < b.time;
-    if(a.type != b.type) return static_cast<i32>(a.type) < static_cast<i32>(b.type);
-    return false;  // equivalent
-};
-
-bool timingPointSortComparator(DatabaseBeatmap::TIMINGPOINT const &a, DatabaseBeatmap::TIMINGPOINT const &b) {
-    if(a.offset != b.offset) return a.offset < b.offset;
-
-    // non-inherited timingpoints go before inherited timingpoints
-    bool a_inherited = a.msPerBeat >= 0;
-    bool b_inherited = b.msPerBeat >= 0;
-    if(a_inherited != b_inherited) return a_inherited;
-
-    if(a.sampleSet != b.sampleSet) return a.sampleSet < b.sampleSet;
-    if(a.sampleIndex != b.sampleIndex) return a.sampleIndex < b.sampleIndex;
-    if(a.kiai != b.kiai) return a.kiai;
-
-    return false;  // equivalent
-}
-}  // namespace
-
-DatabaseBeatmap::DatabaseBeatmap(std::string filePath, std::string folder, BeatmapType type) {
-    this->sFilePath = std::move(filePath);
-    this->sFolder = std::move(folder);
-    this->type = type;
-
-    // raw metadata (note the special default values)
-
+DatabaseBeatmap::DatabaseBeatmap(std::string filePath, std::string folder, BeatmapType type)
+    : sFolder(std::move(folder)), sFilePath(std::move(filePath)), type(type) {
     this->iVersion = cv::beatmap_version.getInt();
-    // this->iGameMode = 0;
-    this->iID = 0;
-    this->iSetID = -1;
-
-    this->iLengthMS = 0;
-    this->iPreviewTime = -1;
-
-    this->fAR = 5.0f;
-    this->fCS = 5.0f;
-    this->fHP = 5.0f;
-    this->fOD = 5.0f;
-
-    this->fStackLeniency = 0.7f;
-    this->fSliderTickRate = 1.0f;
-    this->fSliderMultiplier = 1.0f;
-
-    // precomputed data
-
-    this->fStarsNomod = 0.0f;
-
-    this->iMinBPM = 0;
-    this->iMaxBPM = 0;
-    this->iMostCommonBPM = 0;
-
-    this->iNumObjects = 0;
-    this->iNumCircles = 0;
-    this->iNumSliders = 0;
-    this->iNumSpinners = 0;
-
-    // custom data
-    this->iLocalOffset = 0;
-    this->iOnlineOffset = 0;
 }
 
 DatabaseBeatmap::DatabaseBeatmap(std::unique_ptr<DiffContainer> &&difficulties, BeatmapType type)
@@ -165,11 +107,268 @@ DatabaseBeatmap::DatabaseBeatmap(std::unique_ptr<DiffContainer> &&difficulties, 
     }
 }
 
-DatabaseBeatmap::~DatabaseBeatmap() = default;
+DatabaseBeatmap::DatabaseBeatmap(const DatabaseBeatmap &other)
+    : sMD5Hash(other.sMD5Hash),
+      timingpoints(other.timingpoints),
+      sFolder(other.sFolder),
+      sFilePath(other.sFilePath),
+      sFullBackgroundImageFilePath(other.sFullBackgroundImageFilePath),
+      sFullSoundFilePath(other.sFullSoundFilePath),
+      last_modification_time(other.last_modification_time),
+      sTitle(other.sTitle),
+      sTitleUnicode(other.sTitleUnicode),
+      sArtist(other.sArtist),
+      sArtistUnicode(other.sArtistUnicode),
+      sCreator(other.sCreator),
+      sDifficultyName(other.sDifficultyName),
+      sSource(other.sSource),
+      sTags(other.sTags),
+      sBackgroundImageFileName(other.sBackgroundImageFileName),
+      sAudioFileName(other.sAudioFileName),
+      iID(other.iID),
+      iLengthMS(other.iLengthMS),
+      iLocalOffset(other.iLocalOffset),
+      iOnlineOffset(other.iOnlineOffset),
+      iSetID(other.iSetID),
+      iPreviewTime(other.iPreviewTime),
+      fAR(other.fAR),
+      fCS(other.fCS),
+      fHP(other.fHP),
+      fOD(other.fOD),
+      fStackLeniency(other.fStackLeniency),
+      fSliderTickRate(other.fSliderTickRate),
+      fSliderMultiplier(other.fSliderMultiplier),
+      fStarsNomod(other.fStarsNomod),
+      iMinBPM(other.iMinBPM),
+      iMaxBPM(other.iMaxBPM),
+      iMostCommonBPM(other.iMostCommonBPM),
+      iNumObjects(other.iNumObjects),
+      iNumCircles(other.iNumCircles),
+      iNumSliders(other.iNumSliders),
+      iNumSpinners(other.iNumSpinners),
+      loudness(other.loudness.load(std::memory_order_relaxed)),
+      totalBreakDuration(other.totalBreakDuration),
+      iVersion(other.iVersion),
+      type(other.type),
+      md5_init(other.md5_init.load(std::memory_order_relaxed)),
+      bSoundFilePathAlreadyFixed(other.bSoundFilePathAlreadyFixed),
+      bEmptyArtistUnicode(other.bEmptyArtistUnicode),
+      bEmptyTitleUnicode(other.bEmptyTitleUnicode),
+      do_not_store(other.do_not_store),
+      draw_background(other.draw_background) {
+    if(other.difficulties) {
+        this->difficulties = std::make_unique<DiffContainer>();
+        for(const auto &diff : *other.difficulties) {
+            assert(diff != nullptr);
+            this->difficulties->emplace_back(std::make_unique<BeatmapDifficulty>(*diff));
+        }
+    }
+}
 
-namespace {
+DatabaseBeatmap &DatabaseBeatmap::operator=(const DatabaseBeatmap &other) {
+    if(this == &other) return *this;
 
-static forceinline bool parse_timing_point(std::string_view curLine, DatabaseBeatmap::TIMINGPOINT &out) {
+    this->sMD5Hash = other.sMD5Hash;
+    this->timingpoints = other.timingpoints;
+    this->sFolder = other.sFolder;
+    this->sFilePath = other.sFilePath;
+    this->sFullBackgroundImageFilePath = other.sFullBackgroundImageFilePath;
+    this->sFullSoundFilePath = other.sFullSoundFilePath;
+    this->last_modification_time = other.last_modification_time;
+    this->sTitle = other.sTitle;
+    this->sTitleUnicode = other.sTitleUnicode;
+    this->sArtist = other.sArtist;
+    this->sArtistUnicode = other.sArtistUnicode;
+    this->sCreator = other.sCreator;
+    this->sDifficultyName = other.sDifficultyName;
+    this->sSource = other.sSource;
+    this->sTags = other.sTags;
+    this->sBackgroundImageFileName = other.sBackgroundImageFileName;
+    this->sAudioFileName = other.sAudioFileName;
+    this->iID = other.iID;
+    this->iLengthMS = other.iLengthMS;
+    this->iLocalOffset = other.iLocalOffset;
+    this->iOnlineOffset = other.iOnlineOffset;
+    this->iSetID = other.iSetID;
+    this->iPreviewTime = other.iPreviewTime;
+    this->fAR = other.fAR;
+    this->fCS = other.fCS;
+    this->fHP = other.fHP;
+    this->fOD = other.fOD;
+    this->fStackLeniency = other.fStackLeniency;
+    this->fSliderTickRate = other.fSliderTickRate;
+    this->fSliderMultiplier = other.fSliderMultiplier;
+    this->fStarsNomod = other.fStarsNomod;
+    this->iMinBPM = other.iMinBPM;
+    this->iMaxBPM = other.iMaxBPM;
+    this->iMostCommonBPM = other.iMostCommonBPM;
+    this->iNumObjects = other.iNumObjects;
+    this->iNumCircles = other.iNumCircles;
+    this->iNumSliders = other.iNumSliders;
+    this->iNumSpinners = other.iNumSpinners;
+    this->loudness = other.loudness.load(std::memory_order_relaxed);
+    this->totalBreakDuration = other.totalBreakDuration;
+    this->iVersion = other.iVersion;
+    this->type = other.type;
+    this->md5_init = other.md5_init.load(std::memory_order_relaxed);
+    this->bSoundFilePathAlreadyFixed = other.bSoundFilePathAlreadyFixed;
+    this->bEmptyArtistUnicode = other.bEmptyArtistUnicode;
+    this->bEmptyTitleUnicode = other.bEmptyTitleUnicode;
+    this->do_not_store = other.do_not_store;
+    this->draw_background = other.draw_background;
+
+    if(other.difficulties) {
+        this->difficulties = std::make_unique<DiffContainer>();
+        for(const auto &diff : *other.difficulties) {
+            assert(diff != nullptr);
+            this->difficulties->emplace_back(std::make_unique<BeatmapDifficulty>(*diff));
+        }
+    } else {
+        this->difficulties.reset();
+    }
+
+    return *this;
+}
+
+DatabaseBeatmap::DatabaseBeatmap(DatabaseBeatmap &&other) noexcept
+    : sMD5Hash(other.sMD5Hash),
+      difficulties(std::move(other.difficulties)),
+      timingpoints(std::move(other.timingpoints)),
+      sFolder(std::move(other.sFolder)),
+      sFilePath(std::move(other.sFilePath)),
+      sFullBackgroundImageFilePath(std::move(other.sFullBackgroundImageFilePath)),
+      sFullSoundFilePath(std::move(other.sFullSoundFilePath)),
+      last_modification_time(other.last_modification_time),
+      sTitle(std::move(other.sTitle)),
+      sTitleUnicode(std::move(other.sTitleUnicode)),
+      sArtist(std::move(other.sArtist)),
+      sArtistUnicode(std::move(other.sArtistUnicode)),
+      sCreator(std::move(other.sCreator)),
+      sDifficultyName(std::move(other.sDifficultyName)),
+      sSource(std::move(other.sSource)),
+      sTags(std::move(other.sTags)),
+      sBackgroundImageFileName(std::move(other.sBackgroundImageFileName)),
+      sAudioFileName(std::move(other.sAudioFileName)),
+      iID(other.iID),
+      iLengthMS(other.iLengthMS),
+      iLocalOffset(other.iLocalOffset),
+      iOnlineOffset(other.iOnlineOffset),
+      iSetID(other.iSetID),
+      iPreviewTime(other.iPreviewTime),
+      fAR(other.fAR),
+      fCS(other.fCS),
+      fHP(other.fHP),
+      fOD(other.fOD),
+      fStackLeniency(other.fStackLeniency),
+      fSliderTickRate(other.fSliderTickRate),
+      fSliderMultiplier(other.fSliderMultiplier),
+      fStarsNomod(other.fStarsNomod),
+      iMinBPM(other.iMinBPM),
+      iMaxBPM(other.iMaxBPM),
+      iMostCommonBPM(other.iMostCommonBPM),
+      iNumObjects(other.iNumObjects),
+      iNumCircles(other.iNumCircles),
+      iNumSliders(other.iNumSliders),
+      iNumSpinners(other.iNumSpinners),
+      loudness(other.loudness.load(std::memory_order_relaxed)),
+      totalBreakDuration(other.totalBreakDuration),
+      iVersion(other.iVersion),
+      type(other.type),
+      md5_init(other.md5_init.load(std::memory_order_relaxed)),
+      bSoundFilePathAlreadyFixed(other.bSoundFilePathAlreadyFixed),
+      bEmptyArtistUnicode(other.bEmptyArtistUnicode),
+      bEmptyTitleUnicode(other.bEmptyTitleUnicode),
+      do_not_store(other.do_not_store),
+      draw_background(other.draw_background) {
+    other.difficulties.reset();
+    other.timingpoints.clear();
+}
+
+DatabaseBeatmap &DatabaseBeatmap::operator=(DatabaseBeatmap &&other) noexcept {
+    if(this == &other) return *this;
+
+    this->sMD5Hash = other.sMD5Hash;
+    this->difficulties = std::move(other.difficulties);
+    other.difficulties.reset();
+    this->timingpoints = std::move(other.timingpoints);
+    other.timingpoints.clear();
+    this->sFolder = std::move(other.sFolder);
+    this->sFilePath = std::move(other.sFilePath);
+    this->sFullBackgroundImageFilePath = std::move(other.sFullBackgroundImageFilePath);
+    this->sFullSoundFilePath = std::move(other.sFullSoundFilePath);
+    this->last_modification_time = other.last_modification_time;
+    this->sTitle = std::move(other.sTitle);
+    this->sTitleUnicode = std::move(other.sTitleUnicode);
+    this->sArtist = std::move(other.sArtist);
+    this->sArtistUnicode = std::move(other.sArtistUnicode);
+    this->sCreator = std::move(other.sCreator);
+    this->sDifficultyName = std::move(other.sDifficultyName);
+    this->sSource = std::move(other.sSource);
+    this->sTags = std::move(other.sTags);
+    this->sBackgroundImageFileName = std::move(other.sBackgroundImageFileName);
+    this->sAudioFileName = std::move(other.sAudioFileName);
+    this->iID = other.iID;
+    this->iLengthMS = other.iLengthMS;
+    this->iLocalOffset = other.iLocalOffset;
+    this->iOnlineOffset = other.iOnlineOffset;
+    this->iSetID = other.iSetID;
+    this->iPreviewTime = other.iPreviewTime;
+    this->fAR = other.fAR;
+    this->fCS = other.fCS;
+    this->fHP = other.fHP;
+    this->fOD = other.fOD;
+    this->fStackLeniency = other.fStackLeniency;
+    this->fSliderTickRate = other.fSliderTickRate;
+    this->fSliderMultiplier = other.fSliderMultiplier;
+    this->fStarsNomod = other.fStarsNomod;
+    this->iMinBPM = other.iMinBPM;
+    this->iMaxBPM = other.iMaxBPM;
+    this->iMostCommonBPM = other.iMostCommonBPM;
+    this->iNumObjects = other.iNumObjects;
+    this->iNumCircles = other.iNumCircles;
+    this->iNumSliders = other.iNumSliders;
+    this->iNumSpinners = other.iNumSpinners;
+    this->loudness = other.loudness.load(std::memory_order_relaxed);
+    this->totalBreakDuration = other.totalBreakDuration;
+    this->iVersion = other.iVersion;
+    this->type = other.type;
+    this->md5_init = other.md5_init.load(std::memory_order_relaxed);
+    this->bSoundFilePathAlreadyFixed = other.bSoundFilePathAlreadyFixed;
+    this->bEmptyArtistUnicode = other.bEmptyArtistUnicode;
+    this->bEmptyTitleUnicode = other.bEmptyTitleUnicode;
+    this->do_not_store = other.do_not_store;
+    this->draw_background = other.draw_background;
+
+    return *this;
+}
+
+bool DatabaseBeatmap::operator==(const DatabaseBeatmap &other) const {
+    // we are both BeatmapDifficulties
+    if(!this->difficulties && !other.difficulties) {
+        // unlikely, but make sure we both have real md5 hashes loaded
+        return (this->md5_init.load(std::memory_order_acquire) && other.md5_init.load(std::memory_order_acquire)) &&
+               getMD5() == other.getMD5();
+    }
+    // we are both BeatmapSets, compare contained difficulties (recursive but only 1 level)
+    if(!!this->difficulties && !!other.difficulties) {
+        // quick size check
+        size_t numDiffs = this->difficulties->size();
+        if(numDiffs != other.difficulties->size()) return false;
+        for(size_t i = 0; i < numDiffs; i++) {
+            if(*(*this->difficulties)[i] != *(*other.difficulties)[i]) {
+                return false;
+            }
+        }
+        // all equal
+        return true;
+    }
+    // one is a set, one is a difficulty
+    return false;
+}
+
+namespace {  // internal helpers
+
+bool parse_timing_point(std::string_view curLine, DatabaseBeatmap::TIMINGPOINT &out) {
     // old beatmaps: Offset, Milliseconds per Beat
     // old new beatmaps: Offset, Milliseconds per Beat, Meter, sampleSet, sampleIndex, Volume,
     // !Inherited new new beatmaps: Offset, Milliseconds per Beat, Meter, sampleSet, sampleIndex,
@@ -212,7 +411,7 @@ static forceinline bool parse_timing_point(std::string_view curLine, DatabaseBea
 }
 
 // hitSamples are colon-separated optional components (up to 5), and not all 5 have to be specified
-static forceinline void parse_hitsamples(std::string_view hitSampleStr, HitSamples &samples) {
+void parse_hitsamples(std::string_view hitSampleStr, HitSamples &samples) {
     if(hitSampleStr.empty()) return;
 
     auto parts = SString::split(hitSampleStr, ':');
@@ -239,6 +438,27 @@ static forceinline void parse_hitsamples(std::string_view hitSampleStr, HitSampl
 
     return;
 };
+
+bool sliderScoringTimeComparator(const SLIDER_SCORING_TIME &a, const SLIDER_SCORING_TIME &b) {
+    if(a.time != b.time) return a.time < b.time;
+    if(a.type != b.type) return static_cast<i32>(a.type) < static_cast<i32>(b.type);
+    return false;  // equivalent
+};
+
+bool timingPointSortComparator(DatabaseBeatmap::TIMINGPOINT const &a, DatabaseBeatmap::TIMINGPOINT const &b) {
+    if(a.offset != b.offset) return a.offset < b.offset;
+
+    // non-inherited timingpoints go before inherited timingpoints
+    bool a_inherited = a.msPerBeat >= 0;
+    bool b_inherited = b.msPerBeat >= 0;
+    if(a_inherited != b_inherited) return a_inherited;
+
+    if(a.sampleSet != b.sampleSet) return a.sampleSet < b.sampleSet;
+    if(a.sampleIndex != b.sampleIndex) return a.sampleIndex < b.sampleIndex;
+    if(a.kiai != b.kiai) return a.kiai;
+
+    return false;  // equivalent
+}
 
 }  // namespace
 
@@ -1138,7 +1358,7 @@ DatabaseBeatmap::LOAD_META_RESULT DatabaseBeatmap::loadMetadata(bool compute_md5
 
     // compute MD5 hash (very slow)
     if(compute_md5 && !this->md5_init.load(std::memory_order_acquire)) {
-        this->writeMD5(crypto::hash::md5_hex(reinterpret_cast<const u8 *>(beatmapFile.data()), beatmapFileSize));
+        this->writeMD5(crypto::hash::md5_hex(fileBuffer.data(), fileBuffer.size()));
     }
 
     // reset
