@@ -55,8 +55,7 @@
 #include "Skin.h"
 #include "AsyncPPCalculator.h"
 #include "SongBrowser/LoudnessCalcThread.h"
-#include "DiffCalc/MapCalcThread.h"
-#include "DiffCalc/ScoreConverterThread.h"
+#include "DiffCalc/DBRecalculator.h"
 #include "SongBrowser/SongBrowser.h"
 #include "SoundEngine.h"
 #include "SpectatorScreen.h"
@@ -435,10 +434,9 @@ Osu::~Osu() {
     ConVar::setOnGetValueProtectedCallback({});
     ConVar::setOnSetValueProtectedCallback({});
 
-    ScoreConverter::abort_calc();
+    DBRecalculator::abort_calc();
     AsyncPPC::set_map(nullptr);
     VolNormalization::shutdown();
-    MapCalcThread::shutdown();
     BANCHO::Net::cleanup_networking();
 
     // destroy screens in reverse order

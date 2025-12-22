@@ -20,8 +20,7 @@
 #include "ResourceManager.h"
 #include "AsyncPPCalculator.h"
 #include "SongBrowser/LoudnessCalcThread.h"
-#include "DiffCalc/MapCalcThread.h"
-#include "DiffCalc/ScoreConverterThread.h"
+#include "DiffCalc/DBRecalculator.h"
 #include "SongBrowser/SongBrowser.h"
 #include "Timing.h"
 #include "Logging.h"
@@ -205,12 +204,12 @@ void Database::AsyncDBLoader::init() {
     if(db->needs_raw_load) {
         db->scheduleLoadRaw();
     } else {
-        MapCalcThread::start_calc(db->maps_to_recalc);
-        VolNormalization::start_calc(db->loudness_to_calc);
-        ScoreConverter::start_calc();  // all database scores
-
         // signal that we are done
         db->loading_progress = 1.0f;
+
+        DBRecalculator::start_calc(db->maps_to_recalc);
+        VolNormalization::start_calc(db->loudness_to_calc);
+
         this->setReady(true);
     }
 
@@ -263,9 +262,8 @@ void Database::startLoader() {
     this->destroyLoader();
 
     // stop threads that rely on database content
-    ScoreConverter::abort_calc();
+    DBRecalculator::abort_calc();
     AsyncPPC::set_map(nullptr);
-    MapCalcThread::abort();
     VolNormalization::abort();
 
     // only clear diffs/sets for full reloads (only handled for raw re-loading atm)
@@ -277,8 +275,8 @@ void Database::startLoader() {
     const bool nextLoadIsRaw{this->needs_raw_load};
 
     if(!lastLoadWasRaw || !nextLoadIsRaw) {
-        db->loudness_to_calc.clear();
-        db->maps_to_recalc.clear();
+        this->loudness_to_calc.clear();
+        this->maps_to_recalc.clear();
         {
             Sync::unique_lock lock(this->beatmap_difficulties_mtx);
             this->beatmap_difficulties.clear();
@@ -319,12 +317,10 @@ Database::~Database() {
     cv::cmd::save.removeCallback();
     this->destroyLoader();
 
-    ScoreConverter::abort_calc();
+    DBRecalculator::abort_calc();
     AsyncPPC::set_map(nullptr);
     VolNormalization::abort();
     this->loudness_to_calc.clear();
-
-    MapCalcThread::abort();
     this->maps_to_recalc.clear();
 
     {
@@ -389,9 +385,8 @@ void Database::update() {
 
                 this->loading_progress = 1.0f;
 
-                MapCalcThread::start_calc(this->maps_to_recalc);
+                DBRecalculator::start_calc(this->maps_to_recalc);
                 VolNormalization::start_calc(this->loudness_to_calc);
-                ScoreConverter::start_calc();
 
                 break;
             }
@@ -747,8 +742,9 @@ Database::PlayerStats Database::calculatePlayerStats(const std::string &playerNa
     // should be done by the caller but it's more complicated because the prevPlayerStats are
     // cached inside Database...
     const bool scoresChanged = this->scores_changed.load(std::memory_order_acquire);
-    const bool returnCached = playerName == this->prevPlayerStats.name.utf8View() &&
-                              (!scoresChanged || (ScoreConverter::running() && !engine->throttledShouldRun(60)));
+    const bool returnCached =
+        playerName == this->prevPlayerStats.name.utf8View() &&
+        (!scoresChanged || (!DBRecalculator::scores_finished() && !engine->throttledShouldRun(60)));
     if(returnCached) {
         return this->prevPlayerStats;
     }

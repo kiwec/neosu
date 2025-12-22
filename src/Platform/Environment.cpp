@@ -117,7 +117,7 @@ Environment *env{nullptr};
 
 Environment::Environment(const std::unordered_map<std::string, std::optional<std::string>> &argMap,
                          const std::vector<std::string> &cmdlineVec)
-    : m_interop(tryCreatingAppEnvInterop()), m_mArgMap(argMap), m_vCmdLine(cmdlineVec) {
+    : m_interop(tryCreatingAppEnvInterop()), m_mArgMap(argMap), m_vCmdLine(cmdlineVec), m_cursorIcons(/*lazy init*/) {
     env = this;
 
     s_sdlenv = SDL_GetEnvironment();
@@ -151,8 +151,6 @@ Environment::Environment(const std::unordered_map<std::string, std::optional<std
     m_cursorType = CURSORTYPE::CURSOR_NORMAL;
 
     // lazy init
-    m_cursorIcons = {};
-
     m_vLastAbsMousePos = vec2{};
 
     m_sCurrClipboardText = {};
@@ -361,30 +359,27 @@ bool Environment::renameFile(const std::string &oldFileName, const std::string &
 
 bool Environment::deleteFile(const std::string &filePath) noexcept { return SDL_RemovePath(filePath.c_str()); }
 
+namespace {
+// make sure we have a valid path for enumeration (ends in / etc.)
+std::string fixupEnumeratePath(std::string_view input) {
+    assert(!input.empty());
+    std::string fixed{input};
+    while(fixed.ends_with('\\') || fixed.ends_with('/')) {
+        fixed.pop_back();
+    }
+    fixed.push_back('/');
+    // always use forward slashes
+    std::ranges::replace(fixed, '\\', '/');
+    return fixed;
+}
+}  // namespace
+
 std::vector<std::string> Environment::getFilesInFolder(std::string_view folder) noexcept {
-    assert(!folder.empty());
-    if(folder.back() == '/') {
-        return enumerateDirectory(folder, SDL_PATHTYPE_FILE);
-    }
-    std::string folderToEnumerate{folder};
-    while(folderToEnumerate.ends_with('\\') || folderToEnumerate.ends_with('/')) {
-        folderToEnumerate.pop_back();
-    }
-    folderToEnumerate.push_back('/');
-    return enumerateDirectory(folderToEnumerate, SDL_PATHTYPE_FILE);
+    return enumerateDirectory(fixupEnumeratePath(folder), SDL_PATHTYPE_FILE);
 }
 
 std::vector<std::string> Environment::getFoldersInFolder(std::string_view folder) noexcept {
-    assert(!folder.empty());
-    if(folder.back() == '/') {
-        return enumerateDirectory(folder, SDL_PATHTYPE_DIRECTORY);
-    }
-    std::string folderToEnumerate{folder};
-    while(folderToEnumerate.ends_with('\\') || folderToEnumerate.ends_with('/')) {
-        folderToEnumerate.pop_back();
-    }
-    folderToEnumerate.push_back('/');
-    return enumerateDirectory(folderToEnumerate, SDL_PATHTYPE_DIRECTORY);
+    return enumerateDirectory(fixupEnumeratePath(folder), SDL_PATHTYPE_DIRECTORY);
 }
 
 std::string Environment::normalizeDirectory(std::string dirPath) noexcept {

@@ -233,6 +233,10 @@ class DatabaseBeatmap final {
 
         i32 version{};
         LoadError error;
+
+        // Set after calculateSliderTimesClicksTicks has populated slider timing data.
+        // Allows reuse of the container for multiple loadDifficultyHitObjects calls.
+        bool sliderTimesCalculated{false};
     };
 
     DatabaseBeatmap() = delete;
@@ -252,8 +256,7 @@ class DatabaseBeatmap final {
                                                         const Sync::stop_token &dead = alwaysFalseStopPred);
 
     struct LOAD_META_RESULT {
-        std::unique_ptr<u8[]> fileData;
-        size_t fileSize;
+        FixedSizeArray<u8> fileData;
         LoadError error;
 
         explicit operator bool() const { return error.errc != 0; }
@@ -470,8 +473,8 @@ class DatabaseBeatmap final {
 
     static PRIMITIVE_CONTAINER loadPrimitiveObjects(std::string_view osuFilePath,
                                                     const Sync::stop_token &dead = alwaysFalseStopPred);
-    static PRIMITIVE_CONTAINER loadPrimitiveObjectsFromData(std::unique_ptr<u8[]> fileData, size_t fileSize,
-                                                            std::string_view osuFilePath, const Sync::stop_token &dead);
+    static PRIMITIVE_CONTAINER loadPrimitiveObjectsFromData(FixedSizeArray<u8> fileData, std::string_view osuFilePath,
+                                                            const Sync::stop_token &dead);
     static LoadError calculateSliderTimesClicksTicks(int beatmapVersion, std::vector<SLIDER> &sliders,
                                                      FixedSizeArray<DatabaseBeatmap::TIMINGPOINT> &timingpoints,
                                                      float sliderMultiplier, float sliderTickRate);
@@ -480,7 +483,6 @@ class DatabaseBeatmap final {
                                                      float sliderMultiplier, float sliderTickRate,
                                                      const Sync::stop_token &dead);
 
-    static bool parse_timing_point(std::string_view curLine, DatabaseBeatmap::TIMINGPOINT &out);
     static bool prefer_cjk_names();
 
     enum class BlockId : i8 {

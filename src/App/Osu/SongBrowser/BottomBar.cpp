@@ -5,12 +5,11 @@
 #include "OsuConVars.h"
 #include "Engine.h"
 #include "LoudnessCalcThread.h"
-#include "MapCalcThread.h"
+#include "DBRecalculator.h"
 #include "Mouse.h"
 #include "OptionsMenu.h"
 #include "Osu.h"
 #include "ResourceManager.h"
-#include "ScoreConverterThread.h"
 #include "Skin.h"
 #include "SkinImage.h"
 #include "SongBrowser.h"
@@ -193,9 +192,9 @@ void draw() {
     McFont* font = resourceManager->getFont("FONT_DEFAULT");
     i32 calcx = osu->getUserButton()->getPos().x + osu->getUserButton()->getSize().x + 20;
     i32 calcy = osu->getUserButton()->getPos().y + 30;
-    if(MapCalcThread::get_total() > 0) {
-        UString msg =
-            UString::format("Calculating stars (%i/%i) ...", MapCalcThread::get_computed(), MapCalcThread::get_total());
+    if(DBRecalculator::get_maps_total() > 0) {
+        UString msg = UString::format("Calculating stars (%i/%i) ...", DBRecalculator::get_maps_processed(),
+                                      DBRecalculator::get_maps_total());
         g->setColor(0xff333333);
         g->pushTransform();
         g->translate(calcx, calcy);
@@ -214,8 +213,8 @@ void draw() {
         g->popTransform();
         calcy += font->getHeight() + 10;
     }
-    const auto calc_total = ScoreConverter::get_total();
-    const auto calc_computed = ScoreConverter::get_computed();
+    const auto calc_total = DBRecalculator::get_scores_total();
+    const auto calc_computed = DBRecalculator::get_scores_processed();
     if(calc_total > 0 && calc_computed < calc_total) {
         UString msg = UString::format("Converting scores (%i/%i) ...", calc_computed, calc_total);
         g->setColor(0xff333333);

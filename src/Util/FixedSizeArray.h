@@ -54,6 +54,9 @@ struct FixedSizeArray {
         return *this;
     }
 
+    // move construct/assign from a std::unique_ptr<T[]> + size
+    explicit FixedSizeArray(std::unique_ptr<T[]> &&uptr, size_t size) noexcept : data_(std::move(uptr)), size_(size) {}
+
     // constructors/assignment operators from a std::vector
     // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
     explicit FixedSizeArray(std::vector<T> &&vec) noexcept
@@ -111,7 +114,6 @@ struct FixedSizeArray {
         assert(i < size_ && "T &operator[](size_t i): i >= size_");
         return data_[i];
     }
-
 
     [[nodiscard]] constexpr inline T &front() noexcept {
         assert(!empty());

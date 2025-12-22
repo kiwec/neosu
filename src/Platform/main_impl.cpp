@@ -8,7 +8,7 @@
 
 #define SDL_h_
 
-#include "main_impl.h"
+#include "environment_private.h"
 
 #include "App.h"
 

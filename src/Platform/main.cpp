@@ -71,7 +71,7 @@ void setcwdexe(const std::string &exePathStr) noexcept {
 #include "LPP_API_x64_CPP.h"
 #endif
 
-#include "main_impl.h"
+#include "environment_private.h"
 #include "DiffCalcTool.h"
 
 //*********************************//

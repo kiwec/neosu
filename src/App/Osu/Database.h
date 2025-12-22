@@ -25,7 +25,7 @@ namespace LegacyReplay {
 extern bool load_from_disk(FinishedScore &score, bool update_db);
 }
 
-namespace ScoreConverter {
+namespace DBRecalculator {
 struct internal;
 }
 
@@ -165,7 +165,7 @@ class Database {
     void scheduleLoadRaw();
 
     // for updating scores externally
-    friend struct ScoreConverter::internal;
+    friend struct DBRecalculator::internal;
     friend class ScoreButton;  // HACKHACK: why are we updating database scores from a BUTTON???
     friend bool LegacyReplay::load_from_disk(FinishedScore &score, bool update_db);
     inline HashToScoreMap &getScoresMutable() { return this->scores; }

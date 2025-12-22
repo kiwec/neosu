@@ -167,7 +167,9 @@ DatabaseBeatmap::DatabaseBeatmap(std::unique_ptr<DiffContainer> &&difficulties, 
 
 DatabaseBeatmap::~DatabaseBeatmap() = default;
 
-bool DatabaseBeatmap::parse_timing_point(std::string_view curLine, DatabaseBeatmap::TIMINGPOINT &out) {
+namespace {
+
+static forceinline bool parse_timing_point(std::string_view curLine, DatabaseBeatmap::TIMINGPOINT &out) {
     // old beatmaps: Offset, Milliseconds per Beat
     // old new beatmaps: Offset, Milliseconds per Beat, Meter, sampleSet, sampleIndex, Volume,
     // !Inherited new new beatmaps: Offset, Milliseconds per Beat, Meter, sampleSet, sampleIndex,
@@ -209,46 +211,58 @@ bool DatabaseBeatmap::parse_timing_point(std::string_view curLine, DatabaseBeatm
     return false;
 }
 
+// hitSamples are colon-separated optional components (up to 5), and not all 5 have to be specified
+static forceinline void parse_hitsamples(std::string_view hitSampleStr, HitSamples &samples) {
+    if(hitSampleStr.empty()) return;
+
+    auto parts = SString::split(hitSampleStr, ':');
+
+    // Parse available components, using defaults for missing ones
+    // ignore errors, parse as many parts as we can
+    if(parts.size() >= 1) {
+        samples.normalSet = SString::strto<u8>(parts[0]);
+    }
+    if(parts.size() >= 2) {
+        samples.additionSet = SString::strto<u8>(parts[1]);
+    }
+    if(parts.size() >= 3) {
+        samples.index = SString::strto<i32>(parts[2]);
+    }
+    if(parts.size() >= 4) {
+        i32 volume{};
+        volume = SString::strto<i32>(parts[3]);  // for some reason this can be negative
+        samples.volume = std::clamp<u8>(volume, 0, 100);
+    }
+    if(parts.size() >= 5) {
+        samples.filename = parts[4];  // filename can be empty
+    }
+
+    return;
+};
+
+}  // namespace
+
 DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(std::string_view osuFilePath,
                                                                            const Sync::stop_token &dead) {
-    PRIMITIVE_CONTAINER c{
-        .stackLeniency = 0.7f,
-
-        .sliderMultiplier = 1.0f,
-        .sliderTickRate = 1.0f,
-
-        .numCircles = 0,
-        .numSliders = 0,
-        .numSpinners = 0,
-        .numHitobjects = 0,
-
-        .totalBreakDuration = 0,
-
-        .version = 14,
-
-        .error = {},
-    };
-
     // open osu file for parsing
-    std::unique_ptr<u8[]> fileBuffer;
+    FixedSizeArray<u8> fileBuffer;
     uSz beatmapFileSize = 0;
     {
         File file(osuFilePath);
         if(file.canRead()) {
             beatmapFileSize = file.getFileSize();
-            fileBuffer = file.takeFileBuffer();
+            fileBuffer = FixedSizeArray{file.takeFileBuffer(), beatmapFileSize};
         }
-        if(!file.canRead() || !beatmapFileSize || !fileBuffer) {
+        if(!file.canRead() || !beatmapFileSize || fileBuffer.empty()) {
             beatmapFileSize = 0;
         }
         // close the file here
     }
 
-    return loadPrimitiveObjectsFromData(std::move(fileBuffer), beatmapFileSize, osuFilePath, dead);
+    return loadPrimitiveObjectsFromData(std::move(fileBuffer), osuFilePath, dead);
 }
 
-DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjectsFromData(std::unique_ptr<u8[]> fileBuffer,
-                                                                                   size_t beatmapFileSize,
+DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjectsFromData(FixedSizeArray<u8> fileBuffer,
                                                                                    std::string_view osuFilePath,
                                                                                    const Sync::stop_token &dead) {
     PRIMITIVE_CONTAINER c{
@@ -272,13 +286,13 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjectsFromDa
         c.error.errc = LoadError::LOAD_INTERRUPTED;
         return c;
     }
-    if(!beatmapFileSize) {
+    if(fileBuffer.empty()) {
         c.error.errc = LoadError::FILE_LOAD;
         return c;
     }
 
-    std::string_view beatmapFile = {reinterpret_cast<char *>(fileBuffer.get()),
-                                    reinterpret_cast<char *>(fileBuffer.get() + beatmapFileSize)};
+    std::string_view beatmapFile = {reinterpret_cast<char *>(fileBuffer.data()),
+                                    reinterpret_cast<char *>(fileBuffer.data() + fileBuffer.size())};
 
     const float sliderSanityRange = cv::slider_curve_max_length.getFloat();  // infinity sanity check, same as before
     const int sliderMaxRepeatRange =
@@ -418,39 +432,6 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjectsFromDa
                 // spinners:
                 // x,y,time,type,hitSounds,endTime,hitSamples
 
-                // hitSamples are colon-separated optional components (up to 5), and not all 5 have to be specified
-                static auto parse_hitsamples = [](std::string_view hitSampleStr, HitSamples &samples) -> bool {
-                    samples.normalSet = 0;
-                    samples.additionSet = 0;
-                    samples.index = 0;
-                    samples.volume = 0;
-                    samples.filename = "";
-
-                    if(hitSampleStr.empty()) return true;
-
-                    auto parts = SString::split(hitSampleStr, ':');
-
-                    // Parse available components, using defaults for missing ones
-                    if(parts.size() >= 1 && !parts[0].empty()) {
-                        if(!Parsing::parse(parts[0], &samples.normalSet)) return false;
-                    }
-                    if(parts.size() >= 2 && !parts[1].empty()) {
-                        if(!Parsing::parse(parts[1], &samples.additionSet)) return false;
-                    }
-                    if(parts.size() >= 3 && !parts[2].empty()) {
-                        if(!Parsing::parse(parts[2], &samples.index)) return false;
-                    }
-                    if(parts.size() >= 4 && !parts[3].empty()) {
-                        if(!Parsing::parse(parts[3], &samples.volume)) return false;
-                    }
-                    if(parts.size() >= 5) {
-                        samples.filename = parts[4];  // filename can be empty
-                    }
-
-                    samples.volume = std::clamp<u8>(samples.volume, 0, 100);
-                    return true;
-                };
-
                 // NOTE: calculating combo numbers and color offsets based on the parsing order is dangerous.
                 // maybe the hitobjects are not sorted by time in the file; these values should be calculated
                 // after sorting just to be sure?
@@ -503,10 +484,8 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjectsFromDa
                     h.samples.hitSounds = (hitSounds & HitSoundType::VALID_HITSOUNDS);
 
                     if(csvs.size() > 5) {
-                        if(!parse_hitsamples(csvs[5], h.samples)) {
-                            debugLog("File: {} Invalid circle hitSamples in line: {}", osuFilePath, curLine);
-                            break;
-                        }
+                        // ignore errors, use defaults
+                        parse_hitsamples(csvs[5], h.samples);
                     }
 
                     c.hitcircles.push_back(h);
@@ -523,10 +502,10 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjectsFromDa
                     for(const auto &curvePoints : curves) {
                         f32 cpX{}, cpY{};
                         // just skip infinite/invalid curve points (https://osu.ppy.sh/b/1029976)
-                        bool valid = true;
-                        valid &= !!Parsing::parse(curvePoints, &cpX, ':', &cpY);
-                        valid &= (std::isfinite(cpX) && !std::isnan(cpX));
-                        valid &= (std::isfinite(cpY) && !std::isnan(cpY));
+                        const bool valid = Parsing::parse(curvePoints, &cpX, ':', &cpY) &&  //
+                                           std::isfinite(cpX) && !std::isnan(cpX) &&        //
+                                           std::isfinite(cpY) && !std::isnan(cpY);          //
+
                         if(!valid) continue;
 
                         slider.points.emplace_back(std::clamp(cpX, -sliderSanityRange, sliderSanityRange),
@@ -604,10 +583,7 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjectsFromDa
                     if(slider.edgeSamples.size() == 1) slider.edgeSamples.push_back(slider.edgeSamples.front());
 
                     if(csvs.size() > 10) {
-                        if(!parse_hitsamples(csvs[10], slider.hoverSamples)) {
-                            debugLog("File: {} Invalid slider hitSamples in line: {}", osuFilePath, curLine);
-                            break;
-                        }
+                        parse_hitsamples(csvs[10], slider.hoverSamples);
                     }
 
                     slider.x = xy.x;
@@ -632,10 +608,7 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjectsFromDa
                               .samples = {.hitSounds = (u8)(hitSounds & HitSoundType::VALID_HITSOUNDS)}};
 
                     if(csvs.size() > 6) {
-                        if(!parse_hitsamples(csvs[6], s.samples)) {
-                            debugLog("File: {} Invalid spinner hitSamples in line: {}", osuFilePath, curLine);
-                            break;
-                        }
+                        parse_hitsamples(csvs[6], s.samples);
                     }
 
                     c.spinners.push_back(s);
@@ -859,12 +832,15 @@ DatabaseBeatmap::LOAD_DIFFOBJ_RESULT DatabaseBeatmap::loadDifficultyHitObjects(P
     // save break duration (for pp calc)
     result.totalBreakDuration = c.totalBreakDuration;
 
-    // calculate sliderTimes, and build slider clicks and ticks
-    LoadError sliderTimeCalcResult = calculateSliderTimesClicksTicks(c.version, c.sliders, c.timingpoints,
-                                                                     c.sliderMultiplier, c.sliderTickRate, dead);
-    if(sliderTimeCalcResult.errc) {
-        result.error.errc = sliderTimeCalcResult.errc;
-        return result;
+    // calculate sliderTimes, and build slider clicks and ticks (only if not already done)
+    if(!c.sliderTimesCalculated) {
+        LoadError sliderTimeCalcResult = calculateSliderTimesClicksTicks(c.version, c.sliders, c.timingpoints,
+                                                                         c.sliderMultiplier, c.sliderTickRate, dead);
+        if(sliderTimeCalcResult.errc) {
+            result.error.errc = sliderTimeCalcResult.errc;
+            return result;
+        }
+        c.sliderTimesCalculated = true;
     }
 
     // and generate the difficultyhitobjects
@@ -877,7 +853,7 @@ DatabaseBeatmap::LOAD_DIFFOBJ_RESULT DatabaseBeatmap::loadDifficultyHitObjects(P
 
     const bool calculateSliderCurveInConstructor =
         (c.sliders.size() < 5000);  // NOTE: for explanation see OsuDifficultyHitObject constructor
-    for(auto &slider : c.sliders) {
+    for(const auto &slider : c.sliders) {
         if(dead.stop_requested()) {
             result.error.errc = LoadError::LOAD_INTERRUPTED;
             return result;
@@ -901,7 +877,7 @@ DatabaseBeatmap::LOAD_DIFFOBJ_RESULT DatabaseBeatmap::loadDifficultyHitObjects(P
         }
     }
 
-    for(auto &spinner : c.spinners) {
+    for(const auto &spinner : c.spinners) {
         result.diffobjects.emplace_back(DifficultyHitObject::TYPE::SPINNER, vec2(spinner.x, spinner.y),
                                         (i32)spinner.time, (i32)spinner.endTime);
     }
@@ -1131,13 +1107,12 @@ bool DatabaseBeatmap::getMapFileAsync(MapFileReadDoneCallback data_callback) {
 DatabaseBeatmap::LOAD_META_RESULT DatabaseBeatmap::loadMetadata(bool compute_md5) {
     if(this->difficulties) {
         return {.fileData = {},
-                .fileSize = {},
                 .error = {LoadError::LOADMETADATA_ON_BEATMAPSET}};  // we are a beatmapset, not a difficulty
     }
 
     if(cv::debug_osu.getBool() || cv::debug_db.getBool()) debugLog("loading {:s}", this->sFilePath.c_str());
 
-    std::unique_ptr<u8[]> fileBuffer;
+    FixedSizeArray<u8> fileBuffer;
     size_t beatmapFileSize{0};
     std::string_view beatmapFile;
 
@@ -1145,18 +1120,18 @@ DatabaseBeatmap::LOAD_META_RESULT DatabaseBeatmap::loadMetadata(bool compute_md5
         File file(this->sFilePath);
         if(file.canRead()) {
             beatmapFileSize = file.getFileSize();
-            fileBuffer = file.takeFileBuffer();
-            beatmapFile = {reinterpret_cast<char *>(fileBuffer.get()),
-                           reinterpret_cast<char *>(fileBuffer.get() + beatmapFileSize)};
+            fileBuffer = FixedSizeArray{file.takeFileBuffer(), beatmapFileSize};
+            beatmapFile = {reinterpret_cast<char *>(fileBuffer.data()),
+                           reinterpret_cast<char *>(fileBuffer.data() + beatmapFileSize)};
         }
         // close the file here
     }
 
     const auto ret = [&](LoadError::code retcode) -> DatabaseBeatmap::LOAD_META_RESULT {
-        return {.fileData = std::move(fileBuffer), .fileSize = beatmapFileSize, .error = {retcode}};
+        return {.fileData = std::move(fileBuffer), .error = {retcode}};
     };
 
-    if(!fileBuffer || !beatmapFileSize) {
+    if(fileBuffer.empty() || !beatmapFileSize) {
         debugLog("Osu Error: Couldn't read file {}", this->sFilePath);
         return ret(LoadError::FILE_LOAD);
     }
@@ -1366,8 +1341,7 @@ DatabaseBeatmap::LOAD_GAMEPLAY_RESULT DatabaseBeatmap::loadGameplay(BeatmapDiffi
         }
 
         // load primitives, put in temporary container
-        c = loadPrimitiveObjectsFromData(std::move(metaRes.fileData), metaRes.fileSize, databaseBeatmap->sFilePath,
-                                         alwaysFalseStopPred);
+        c = loadPrimitiveObjectsFromData(std::move(metaRes.fileData), databaseBeatmap->sFilePath, alwaysFalseStopPred);
     }
 
     if(c.error.errc) {

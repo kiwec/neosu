@@ -1007,6 +1007,7 @@ Slider::Slider(SLIDERCURVETYPE stype, int repeat, float pixelLength, std::vector
         this->clicks.emplace_back(SLIDERCLICK{
             .time = this->click_time + (i32)(this->fSliderTimeWithoutRepeats * (i + 1)),
             .type = 0,
+            .tickIndex = 0,
             .finished = false,
             .successful = false,
             .sliderend = ((i % 2) == 0),  // for hit animation on repeat hit

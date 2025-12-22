@@ -24,11 +24,7 @@
 #define debugLogLambda(str__, ...) Logger::log(__FILE__, __LINE__, CAPTURED_FUNC, str__ __VA_OPT__(, ) __VA_ARGS__)
 
 // log only if condition is true
-// (also this arcane-looking type check is just funny)
-#define logIf(cond__, str__, ...)                                                                                \
-    (void(0 * sizeof(char[!std::is_pointer_v<std::decay_t<decltype(cond__)>> ? 1 : -1])),                        \
-     static_cast<bool>(cond__) ? Logger::log(__FILE__, __LINE__, FUNC_TRIMMED, str__ __VA_OPT__(, ) __VA_ARGS__) \
-                               : void(0))
+#define logIf(cond__, str__, ...) (static_cast<bool>(cond__) ? debugLog(str__ __VA_OPT__(, ) __VA_ARGS__) : void(0))
 
 // log only if cvar__.getBool() == true
 #define logIfCV(cvar__, str__, ...) logIf(cv::cvar__.getBool(), str__ __VA_OPT__(, ) __VA_ARGS__)

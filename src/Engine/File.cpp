@@ -425,7 +425,7 @@ std::string File::readToString() {
 
 uSz File::readBytes(uSz start, uSz amount, std::unique_ptr<u8[]> &out) {
     if(!canRead()) return 0;
-    assert(out.get() == this->vFullBuffer.get() && "can't overwrite own buffer");
+    assert(out.get() != this->vFullBuffer.get() && "can't overwrite own buffer");
 
     if(start > this->iFileSize) {
         logIfCV(debug_file, "tried to read {} starting from {}, but total size is only {}", this->sFilePath, start,

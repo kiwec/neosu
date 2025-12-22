@@ -21,10 +21,9 @@
 #include "Osu.h"
 #include "OsuConVars.h"
 
-#include "ScoreConverterThread.h"
+#include "DBRecalculator.h"
 #include "AsyncPPCalculator.h"
 #include "LoudnessCalcThread.h"
-#include "MapCalcThread.h"
 
 #include "Skin.h"
 #include "SkinImage.h"
@@ -476,10 +475,9 @@ SongBrowser::SongBrowser() : ScreenBackable(), rngalg(crypto::rng::get_rand<u64>
 }
 
 SongBrowser::~SongBrowser() {
-    ScoreConverter::abort_calc();
+    DBRecalculator::abort_calc();
     AsyncPPC::set_map(nullptr);
     VolNormalization::abort();
-    MapCalcThread::abort();
     this->checkHandleKillBackgroundSearchMatcher();
 
     resourceManager->destroyResource(this->backgroundSearchMatcher);
@@ -880,13 +878,13 @@ void SongBrowser::mouse_update(bool *propagate_clicks) {
 
     // map star/bpm/other calc
     if(!db->maps_to_recalc.empty()) {
-        std::vector<MapCalcThread::mct_result> results;
-        if(MapCalcThread::is_finished()) {
-            MapCalcThread::abort();  // join thread
-            results = MapCalcThread::get_results();
+        std::vector<DBRecalculator::MapResult> results;
+        if(DBRecalculator::is_finished()) {
+            DBRecalculator::abort_calc();  // join thread
+            results = DBRecalculator::get_map_results();
             db->maps_to_recalc.clear();  // we are done
         } else {
-            auto maybe_result = MapCalcThread::try_get();
+            auto maybe_result = DBRecalculator::try_get_map_results();
             if(maybe_result.has_value()) {
                 results = maybe_result.value();
             }
