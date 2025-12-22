@@ -1336,10 +1336,8 @@ DatabaseBeatmap::LOAD_META_RESULT DatabaseBeatmap::loadMetadata(bool compute_md5
         if(this->iMostCommonBPM == 0) {
             logIfCV(debug_osu, "calculating BPM range ...");
             BPMInfo bpm{};
-            if(this->timingpoints.size() > 0) {
-                std::vector<BPMTuple> bpm_calculation_buffer;
-                bpm = getBPM(this->timingpoints, bpm_calculation_buffer);
-            }
+            std::vector<BPMTuple> bpm_calculation_buffer;
+            bpm = getBPM(this->timingpoints, bpm_calculation_buffer);
             this->iMinBPM = bpm.min;
             this->iMaxBPM = bpm.max;
             this->iMostCommonBPM = bpm.most_common;

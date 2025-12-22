@@ -664,6 +664,9 @@ bool BeatmapInterface::start() {
         std::ranges::to<std::vector>();
     std::ranges::sort(this->hitobjectsSortedByEndTime, BeatmapInterface::sortHitObjectByEndTimeComp);
 
+    this->hitobjectsSortedByEndTimeReversed =
+        this->hitobjectsSortedByEndTime | std::views::reverse | std::ranges::to<std::vector>();
+
     // after the hitobjects have been loaded we can calculate the stacks
     this->calculateStacks();
     this->computeDrainRate();
@@ -1688,6 +1691,7 @@ void BeatmapInterface::unloadObjects() {
     this->currentHitObject = nullptr;
     this->hitobjects.clear();
     this->hitobjectsSortedByEndTime.clear();
+    this->hitobjectsSortedByEndTimeReversed.clear();
     this->misaimObjects.clear();
     this->breaks.clear();
     this->clicks.clear();
@@ -2150,7 +2154,7 @@ void BeatmapInterface::drawHitObjects() {
         static std::vector<HitObject *> non_spinners_to_draw;
         non_spinners_to_draw.clear();
 
-        for(auto *obj : this->hitobjectsSortedByEndTime | std::views::reverse) {
+        for(auto *obj : this->hitobjectsSortedByEndTimeReversed) {
             // PVS optimization (reversed)
             if(usePVS) {
                 if(obj->isFinished() && (curPos - pvs > obj->click_time + obj->duration))  // past objects

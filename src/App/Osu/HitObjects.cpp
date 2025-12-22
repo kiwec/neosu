@@ -226,41 +226,15 @@ void HitObject::drawHitResult(const Skin *skin, float hitcircleDiameter, float r
 }
 
 HitObject::HitObject(i32 time, HitSamples samples, int comboNumber, bool isEndOfCombo, int colorCounter,
-                     int colorOffset, AbstractBeatmapInterface *pi) {
-    this->click_time = time;
-    this->samples = std::move(samples);
-    this->combo_number = comboNumber;
-    this->is_end_of_combo = isEndOfCombo;
-    this->iColorCounter = colorCounter;
-    this->iColorOffset = colorOffset;
-
-    this->fAlpha = 0.0f;
-    this->fAlphaWithoutHidden = 0.0f;
-    this->fAlphaForApproachCircle = 0.0f;
-    this->fApproachScale = 0.0f;
-    this->fHittableDimRGBColorMultiplierPercent = 1.0f;
-    this->iApproachTime = 0;
-    this->iFadeInTime = 0;
-    this->duration = 0;
-    this->iDelta = 0;
-    this->duration = 0;
-
-    this->bVisible = false;
-    this->bFinished = false;
-    this->bBlocked = false;
-    this->bMisAim = false;
-    this->iAutopilotDelta = 0;
-    this->bOverrideHDApproachCircle = false;
-    this->bUseFadeInTimeAsApproachTime = false;
-
-    this->iStack = 0;
-
-    this->hitresultanim1.time = -9999.0f;
-    this->hitresultanim2.time = -9999.0f;
-
-    this->pi = pi;
-    this->pf = dynamic_cast<BeatmapInterface *>(pi);  // should be NULL if SimulatedBeatmapInterface
-}
+                     int colorOffset, AbstractBeatmapInterface *pi)
+    : click_time(time),
+      combo_number(comboNumber),
+      pi(pi),
+      pf(dynamic_cast<BeatmapInterface *>(pi)),  // should be NULL if SimulatedBeatmapInterface
+      samples(std::move(samples)),
+      iColorCounter(colorCounter),
+      iColorOffset(colorOffset),
+      is_end_of_combo(isEndOfCombo) {}
 
 void HitObject::draw2() {
     this->drawHitResultAnim(this->hitresultanim1);
@@ -312,10 +286,10 @@ void HitObject::update(i32 curPos, f64 /*frame_time*/) {
 
     const auto mods = this->pi->getMods();
 
-    double animationSpeedMultipler = mods.speed / osu->getAnimationSpeedMultiplier();
-    this->iApproachTime = (this->bUseFadeInTimeAsApproachTime ? (GameRules::getFadeInTime() * animationSpeedMultipler)
-                                                              : (i32)this->pi->getCachedApproachTimeForUpdate());
-    this->iFadeInTime = GameRules::getFadeInTime() * animationSpeedMultipler;
+    const double animationSpeedMultiplier = mods.speed / osu->getAnimationSpeedMultiplier();
+    this->iFadeInTime = GameRules::getFadeInTime() * animationSpeedMultiplier;
+    this->iApproachTime =
+        (this->bUseFadeInTimeAsApproachTime ? this->iFadeInTime : (i32)this->pi->getCachedApproachTimeForUpdate());
 
     this->iDelta = this->click_time - curPos;
 
@@ -794,14 +768,10 @@ void Circle::drawHitCircleNumber(const Skin *skin, float numberScale, float over
 
 Circle::Circle(int x, int y, i32 time, HitSamples samples, int comboNumber, bool isEndOfCombo, int colorCounter,
                int colorOffset, AbstractBeatmapInterface *pi)
-    : HitObject(time, std::move(samples), comboNumber, isEndOfCombo, colorCounter, colorOffset, pi) {
+    : HitObject(time, std::move(samples), comboNumber, isEndOfCombo, colorCounter, colorOffset, pi),
+      vRawPos(x, y),
+      vOriginalRawPos(vRawPos) {
     this->type = HitObjectType::CIRCLE;
-
-    this->vOriginalRawPos = vec2(x, y);
-    this->vRawPos = this->vOriginalRawPos;
-    this->bWaiting = false;
-    this->fHitAnimation = 0.0f;
-    this->fShakeAnimation = 0.0f;
 }
 
 Circle::~Circle() { this->onReset(0); }
@@ -1014,23 +984,19 @@ Slider::Slider(SLIDERCURVETYPE stype, int repeat, float pixelLength, std::vector
                const std::vector<float> &ticks, float sliderTime, float sliderTimeWithoutRepeats, i32 time,
                HitSamples hoverSamples, std::vector<HitSamples> edgeSamples, int comboNumber, bool isEndOfCombo,
                int colorCounter, int colorOffset, AbstractBeatmapInterface *pi)
-    : HitObject(time, std::move(hoverSamples), comboNumber, isEndOfCombo, colorCounter, colorOffset, pi) {
+    : HitObject(time, std::move(hoverSamples), comboNumber, isEndOfCombo, colorCounter, colorOffset, pi),
+      points(std::move(points)),
+      edgeSamples(std::move(edgeSamples)),
+      fPixelLength(std::abs(pixelLength)),
+      fSliderTime(sliderTime),
+      fSliderTimeWithoutRepeats(sliderTimeWithoutRepeats),
+      iRepeat(repeat),
+      cType(stype) {
     this->type = HitObjectType::SLIDER;
-
-    this->cType = stype;
-    this->iRepeat = repeat;
-    this->fPixelLength = std::abs(pixelLength);
-    this->points = std::move(points);
-    this->edgeSamples = std::move(edgeSamples);
-    this->fSliderTime = sliderTime;
-    this->fSliderTimeWithoutRepeats = sliderTimeWithoutRepeats;
 
     // build raw ticks
     for(float tick : ticks) {
-        SLIDERTICK st;
-        st.finished = false;
-        st.percent = tick;
-        this->ticks.push_back(st);
+        this->ticks.emplace_back(SLIDERTICK{.percent = tick, .finished = false});
     }
 
     // build curve
@@ -1038,15 +1004,13 @@ Slider::Slider(SLIDERCURVETYPE stype, int repeat, float pixelLength, std::vector
 
     // build repeats
     for(int i = 0; i < (this->iRepeat - 1); i++) {
-        SLIDERCLICK sc;
-
-        sc.finished = false;
-        sc.successful = false;
-        sc.type = 0;
-        sc.sliderend = ((i % 2) == 0);  // for hit animation on repeat hit
-        sc.time = this->click_time + (i32)(this->fSliderTimeWithoutRepeats * (i + 1));
-
-        this->clicks.push_back(sc);
+        this->clicks.emplace_back(SLIDERCLICK{
+            .time = this->click_time + (i32)(this->fSliderTimeWithoutRepeats * (i + 1)),
+            .type = 0,
+            .finished = false,
+            .successful = false,
+            .sliderend = ((i % 2) == 0),  // for hit animation on repeat hit
+        });
     }
 
     // build ticks
@@ -1066,51 +1030,19 @@ Slider::Slider(SLIDERCURVETYPE stype, int repeat, float pixelLength, std::vector
             const float tickPercentRelativeToRepeatFromStartAbs =
                 (((i + 1) % 2) != 0 ? this->ticks[t].percent : 1.0f - this->ticks[t].percent);
 
-            SLIDERCLICK sc;
-
-            sc.time = this->click_time + (i32)(this->fSliderTimeWithoutRepeats * i) +
-                      (i32)(tickPercentRelativeToRepeatFromStartAbs * this->fSliderTimeWithoutRepeats);
-            sc.finished = false;
-            sc.successful = false;
-            sc.type = 1;
-            sc.tickIndex = t;
-
-            this->clicks.push_back(sc);
+            this->clicks.emplace_back(
+                SLIDERCLICK{.time = this->click_time + (i32)(this->fSliderTimeWithoutRepeats * i) +
+                                    (i32)(tickPercentRelativeToRepeatFromStartAbs * this->fSliderTimeWithoutRepeats),
+                            .type = 1,
+                            .tickIndex = t,
+                            .finished = false,
+                            .successful = false,
+                            .sliderend = false});
         }
     }
 
     this->duration = (i32)this->fSliderTime;
     this->duration = this->duration >= 0 ? this->duration : 1;  // force clamp to positive range
-
-    this->fSlidePercent = 0.0f;
-    this->fActualSlidePercent = 0.0f;
-    this->fSliderSnakePercent = 0.0f;
-    this->fReverseArrowAlpha = 0.0f;
-    this->fBodyAlpha = 0.0f;
-
-    this->startResult = LiveScore::HIT::HIT_NULL;
-    this->endResult = LiveScore::HIT::HIT_NULL;
-    this->bStartFinished = false;
-    this->fStartHitAnimation = 0.0f;
-    this->bEndFinished = false;
-    this->fEndHitAnimation = 0.0f;
-    this->fEndSliderBodyFadeAnimation = 0.0f;
-    this->iStrictTrackingModLastClickHeldTime = 0;
-    this->iKeyFlags = 0;
-    this->bCursorLeft = true;
-    this->bCursorInside = false;
-    this->bHeldTillEnd = false;
-    this->bHeldTillEndForLenienceHack = false;
-    this->bHeldTillEndForLenienceHackCheck = false;
-    this->fFollowCircleTickAnimationScale = 0.0f;
-    this->fFollowCircleAnimationScale = 0.0f;
-    this->fFollowCircleAnimationAlpha = 0.0f;
-
-    this->iReverseArrowPos = 0;
-    this->iCurRepeat = 0;
-    this->iCurRepeatCounterForHitSounds = 0;
-    this->bInReverse = false;
-    this->bHideNumberAfterFirstRepeatHit = false;
 }
 
 void Slider::draw() {
@@ -2388,13 +2320,9 @@ bool Slider::isClickHeldSlider() {
 
 Spinner::Spinner(int x, int y, i32 time, HitSamples samples, bool isEndOfCombo, i32 endTime,
                  AbstractBeatmapInterface *pi)
-    : HitObject(time, std::move(samples), -1, isEndOfCombo, -1, -1, pi) {
+    : HitObject(time, std::move(samples), -1, isEndOfCombo, -1, -1, pi), vRawPos(x, y), vOriginalRawPos(vRawPos) {
     this->type = HitObjectType::SPINNER;
-
-    this->vOriginalRawPos = vec2(x, y);
-    this->vRawPos = this->vOriginalRawPos;
     this->duration = endTime - time;
-    this->fRotationsNeeded = -1.0f;
 
     int minVel = 12;
     int maxVel = 48;
@@ -2403,18 +2331,6 @@ Spinner::Spinner(int x, int y, i32 time, HitSamples samples, bool isEndOfCombo, 
     this->iMaxStoredDeltaAngles = std::clamp<int>(
         (int)((endTime - time - minTime) * (maxVel - minVel) / (maxTime - minTime) + minVel), minVel, maxVel);
     this->storedDeltaAngles = std::make_unique<float[]>(this->iMaxStoredDeltaAngles);
-    this->iDeltaAngleIndex = 0;
-
-    this->fPercent = 0.0f;
-
-    this->fDrawRot = 0.0f;
-    this->fRotations = 0.0f;
-    this->fDeltaOverflow = 0.0f;
-    this->fSumDeltaAngle = 0.0f;
-    this->fDeltaAngleOverflow = 0.0f;
-    this->fRPM = 0.0f;
-    this->fLastMouseAngle = 0.0f;
-    this->fRatio = 0.0f;
 
     // spinners don't need misaims
     this->bMisAim = true;

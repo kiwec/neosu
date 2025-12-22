@@ -32,30 +32,36 @@ class HitObject {
     static void drawHitResult(const Skin *skin, float hitcircleDiameter, float rawHitcircleDiameter, vec2 rawPos,
                               LiveScore::HIT result, float animPercentInv, float hitDeltaRangePercent);
 
-   public:
+   protected:  // only constructable through subclasses
     HitObject(i32 time, HitSamples samples, int comboNumber, bool isEndOfCombo, int colorCounter, int colorOffset,
               AbstractBeatmapInterface *beatmap);
+
+   public:
+    HitObject() = delete;
     virtual ~HitObject() = default;
 
-    virtual void draw() { ; }
+    HitObject(const HitObject &) = delete;
+    HitObject &operator=(const HitObject &) = delete;
+    HitObject(HitObject &&) noexcept = default;
+    HitObject &operator=(HitObject &&) noexcept = default;
+
+    virtual void draw() {}
     virtual void draw2();
     virtual void update(i32 curPos, f64 frame_time);
 
-    virtual void updateStackPosition(float stackOffset) = 0;
-    virtual void miss(i32 curPos) = 0;  // only used by notelock
+    virtual void updateStackPosition(float /*stackOffset*/) {}  // unused by spinners
+    virtual void miss(i32 /*curPos*/) {}                        // only used by notelock
 
     // [[nodiscard]] virtual constexpr forceinline int getCombo() const {
     //     return 1;
     // }  // how much combo this hitobject is "worth"
 
     // Gameplay logic
-    HitObjectType type{HitObjectType::CIRCLE};
     i32 click_time;
-    i32 duration;
+    i32 duration{0};
 
     // Visual
     i32 combo_number;
-    bool is_end_of_combo = false;
 
     void addHitResult(LiveScore::HIT result, i32 delta, bool isEndOfCombo, vec2 posRaw, float targetDelta = 0.0f,
                       float targetAngle = 0.0f, bool ignoreOnHitErrorBar = false, bool ignoreCombo = false,
@@ -88,15 +94,14 @@ class HitObject {
     virtual void onReset(i32 curPos);
 
    private:
-   private:
     static float lerp3f(float a, float b, float c, float percent);
 
     struct HITRESULTANIM {
         vec2 rawPos{0.f};
-        i32 delta;
-        float time;
-        LiveScore::HIT result;
-        bool addObjectDurationToSkinAnimationTimeStartOffset;
+        i32 delta{0};
+        float time{-9999.0f};
+        LiveScore::HIT result{LiveScore::HIT::HIT_NULL};
+        bool addObjectDurationToSkinAnimationTimeStartOffset{false};
     };
 
     void drawHitResultAnim(const HITRESULTANIM &hitresultanim);
@@ -108,29 +113,33 @@ class HitObject {
     AbstractBeatmapInterface *pi = nullptr;
     BeatmapInterface *pf = nullptr;  // NULL when simulating
 
-    i32 iDelta;  // this must be signed
-    i32 iApproachTime;
-    i32 iFadeInTime;  // extra time added before the approachTime to let the object smoothly become visible
-    i32 iAutopilotDelta;
+    i32 iDelta{0};  // this must be signed
+    i32 iApproachTime{0};
+    i32 iFadeInTime{0};  // extra time added before the approachTime to let the object smoothly become visible
+    i32 iAutopilotDelta{0};
 
     HitSamples samples;
     int iColorCounter;
     int iColorOffset;
 
-    int iStack;
+    int iStack{0};
 
-    float fAlpha;
-    float fAlphaWithoutHidden;
-    float fAlphaForApproachCircle;
-    float fApproachScale;
-    float fHittableDimRGBColorMultiplierPercent;
+    float fAlpha{0.f};
+    float fAlphaWithoutHidden{0.f};
+    float fAlphaForApproachCircle{0.f};
+    float fApproachScale{0.f};
+    float fHittableDimRGBColorMultiplierPercent{1.f};
 
-    unsigned bBlocked : 1;
-    unsigned bOverrideHDApproachCircle : 1;
-    unsigned bMisAim : 1;
-    unsigned bUseFadeInTimeAsApproachTime : 1;
-    unsigned bVisible : 1;
-    unsigned bFinished : 1;
+    bool bBlocked{false};
+    bool bOverrideHDApproachCircle{false};
+    bool bMisAim{false};
+    bool bUseFadeInTimeAsApproachTime{false};
+    bool bVisible{false};
+    bool bFinished{false};
+
+   public:
+    bool is_end_of_combo;
+    HitObjectType type{HitObjectType::CIRCLE};
 };
 
 class Circle final : public HitObject {
@@ -174,9 +183,16 @@ class Circle final : public HitObject {
                                     float numberAlpha, float colorRGBMultiplier);
 
    public:
+    Circle() = delete;
+    ~Circle() override;
+
     Circle(int x, int y, i32 time, HitSamples samples, int comboNumber, bool isEndOfCombo, int colorCounter,
            int colorOffset, AbstractBeatmapInterface *beatmap);
-    ~Circle() override;
+
+    Circle(const Circle &) = delete;
+    Circle &operator=(const Circle &) = delete;
+    Circle(Circle &&) noexcept = default;
+    Circle &operator=(Circle &&) noexcept = default;
 
     void draw() override;
     void draw2() override;
@@ -199,13 +215,13 @@ class Circle final : public HitObject {
 
     void onHit(LiveScore::HIT result, i32 delta, float targetDelta = 0.0f, float targetAngle = 0.0f);
 
-    bool bWaiting;
+    bool bWaiting{false};
 
-    vec2 vRawPos{0.f};
-    vec2 vOriginalRawPos{0.f};  // for live mod changing
+    vec2 vRawPos;
+    vec2 vOriginalRawPos;  // for live mod changing
 
-    float fHitAnimation;
-    float fShakeAnimation;
+    float fHitAnimation{0.f};
+    float fShakeAnimation{0.f};
 };
 
 class Slider final : public HitObject {
@@ -221,11 +237,18 @@ class Slider final : public HitObject {
 
    public:
     using SLIDERCURVETYPE = char;
+    Slider() = delete;
+    ~Slider() override;
+
     Slider(SLIDERCURVETYPE stype, int repeat, float pixelLength, std::vector<vec2> points,
            const std::vector<float> &ticks, float sliderTime, float sliderTimeWithoutRepeats, i32 time,
            HitSamples hoverSamples, std::vector<HitSamples> edgeSamples, int comboNumber, bool isEndOfCombo,
            int colorCounter, int colorOffset, AbstractBeatmapInterface *beatmap);
-    ~Slider() override;
+
+    Slider(const Slider &) = delete;
+    Slider &operator=(const Slider &) = delete;
+    Slider(Slider &&) noexcept = default;
+    Slider &operator=(Slider &&) noexcept = default;
 
     void draw() override;
     inline void draw2() override { this->draw2(true, false); }
@@ -290,60 +313,63 @@ class Slider final : public HitObject {
     vec2 vCurPoint{0.f};
     vec2 vCurPointRaw{0.f};
 
-    i32 iStrictTrackingModLastClickHeldTime;
+    i32 iStrictTrackingModLastClickHeldTime{0};
 
     float fPixelLength;
 
     float fSliderTime;
     float fSliderTimeWithoutRepeats;
 
-    float fSlidePercent;        // 0.0f - 1.0f - 0.0f - 1.0f - etc.
-    float fActualSlidePercent;  // 0.0f - 1.0f
-    float fSliderSnakePercent;
-    float fReverseArrowAlpha;
-    float fBodyAlpha;
+    float fSlidePercent{0.f};        // 0.0f - 1.0f - 0.0f - 1.0f - etc.
+    float fActualSlidePercent{0.f};  // 0.0f - 1.0f
+    float fSliderSnakePercent{0.f};
+    float fReverseArrowAlpha{0.f};
+    float fBodyAlpha{0.f};
 
-    float fStartHitAnimation;
-    float fEndHitAnimation;
-    float fEndSliderBodyFadeAnimation;
+    float fStartHitAnimation{0.f};
+    float fEndHitAnimation{0.f};
+    float fEndSliderBodyFadeAnimation{0.f};
 
-    float fFollowCircleTickAnimationScale;
-    float fFollowCircleAnimationScale;
-    float fFollowCircleAnimationAlpha;
+    float fFollowCircleTickAnimationScale{0.f};
+    float fFollowCircleAnimationScale{0.f};
+    float fFollowCircleAnimationAlpha{0.f};
 
     int iRepeat;
-    int iKeyFlags;
-    int iReverseArrowPos;
-    int iCurRepeat;
-    int iCurRepeatCounterForHitSounds;
+    int iKeyFlags{0};
+    int iReverseArrowPos{0};
+    int iCurRepeat{0};
+    int iCurRepeatCounterForHitSounds{0};
 
     SLIDERCURVETYPE cType;
 
-    LiveScore::HIT startResult : 4;
-    LiveScore::HIT endResult : 4;
+    LiveScore::HIT startResult{LiveScore::HIT::HIT_NULL};
+    LiveScore::HIT endResult{LiveScore::HIT::HIT_NULL};
 
-    unsigned bStartFinished : 1;
-    unsigned bEndFinished : 1;
-    unsigned bCursorLeft : 1;
-    unsigned bCursorInside : 1;
-    unsigned bHeldTillEnd : 1;
-    unsigned bHeldTillEndForLenienceHack : 1;
-    unsigned bHeldTillEndForLenienceHackCheck : 1;
-    unsigned bInReverse : 1;
-    unsigned bHideNumberAfterFirstRepeatHit : 1;
+    bool bStartFinished{false};
+    bool bEndFinished{false};
+    bool bCursorLeft{true};
+    bool bCursorInside{false};
+    bool bHeldTillEnd{false};
+    bool bHeldTillEndForLenienceHack{false};
+    bool bHeldTillEndForLenienceHackCheck{false};
+    bool bInReverse{false};
+    bool bHideNumberAfterFirstRepeatHit{false};
 };
 
 class Spinner final : public HitObject {
    public:
+    Spinner() = delete;
     Spinner(int x, int y, i32 time, HitSamples samples, bool isEndOfCombo, i32 endTime,
             AbstractBeatmapInterface *beatmap);
     ~Spinner() override;
 
+    Spinner(const Spinner &) = delete;
+    Spinner &operator=(const Spinner &) = delete;
+    Spinner(Spinner &&) noexcept = default;
+    Spinner &operator=(Spinner &&) noexcept = default;
+
     void draw() override;
     void update(i32 curPos, f64 frame_time) override;
-
-    void updateStackPosition(float /*stackOffset*/) override { ; }
-    void miss(i32 /*curPos*/) override { ; }
 
     [[nodiscard]] vec2 getRawPosAt(i32 /*pos*/) const override { return this->vRawPos; }
     [[nodiscard]] vec2 getOriginalRawPosAt(i32 /*pos*/) const override { return this->vOriginalRawPos; }
@@ -355,26 +381,26 @@ class Spinner final : public HitObject {
     void onHit();
     void rotate(float rad);
 
-    vec2 vRawPos{0.f};
-    vec2 vOriginalRawPos{0.f};
+    vec2 vRawPos;
+    vec2 vOriginalRawPos;
 
     std::unique_ptr<float[]> storedDeltaAngles{nullptr};
 
     // bool bClickedOnce;
-    float fPercent;
+    float fPercent{0.f};
 
-    float fDrawRot;
-    float fRotations;
-    float fRotationsNeeded;
-    float fDeltaOverflow;
-    float fSumDeltaAngle;
+    float fDrawRot{0.f};
+    float fRotations{0.f};
+    float fRotationsNeeded{-1.f};
+    float fDeltaOverflow{0.f};
+    float fSumDeltaAngle{0.f};
 
     int iMaxStoredDeltaAngles;
-    int iDeltaAngleIndex;
-    float fDeltaAngleOverflow;
+    int iDeltaAngleIndex{0};
+    float fDeltaAngleOverflow{0.f};
 
-    float fRPM;
+    float fRPM{0.f};
 
-    float fLastMouseAngle;
-    float fRatio;
+    float fLastMouseAngle{0.f};
+    float fRatio{0.f};
 };

@@ -55,8 +55,13 @@ void limit_frames(int target_fps) {
                 }
             } else {  // precise sleeps per-frame
                 // never sleep more than the current target fps frame time
-                const u64 sleep_time = std::min(s_next_frame_time - now, frame_time_ns);
-                Timing::sleepNSPrecise(sleep_time);
+                const u64 sleep_time_ns = std::min(s_next_frame_time - now, frame_time_ns);
+                if(sleep_time_ns < (5 * Timing::NS_PER_MS)) {
+                    // only do precise sleeps if we're limiting to some high-ish framerate (>200fps)
+                    Timing::sleepNSPrecise(sleep_time_ns);
+                } else {
+                    Timing::sleepNS(sleep_time_ns);
+                }
             }
         } else if(s_max_yield) {
             Timing::sleep(0);

@@ -25,8 +25,7 @@ Shader *s_BLEND_SHADER = nullptr;
 float s_UNIT_CIRCLE_VAO_DIAMETER = 0.0f;
 
 // base mesh
-float s_MESH_CENTER_HEIGHT =
-    0.5f;  // Camera::buildMatrixOrtho2D() uses -1 to 1 for zn/zf, so don't make this too high
+float s_MESH_CENTER_HEIGHT = 0.5f;   // Camera::buildMatrixOrtho2D() uses -1 to 1 for zn/zf, so don't make this too high
 int s_UNIT_CIRCLE_SUBDIVISIONS = 0;  // see osu_slider_body_unit_circle_subdivisions now
 std::vector<float> s_UNIT_CIRCLE;
 VertexArrayObject *s_UNIT_CIRCLE_VAO = nullptr;
@@ -38,11 +37,6 @@ float s_fBoundingBoxMinX = (std::numeric_limits<float>::max)();
 float s_fBoundingBoxMaxX = 0.0f;
 float s_fBoundingBoxMinY = (std::numeric_limits<float>::max)();
 float s_fBoundingBoxMaxY = 0.0f;
-
-// forward decls
-void drawFillSliderBodyPeppy(const std::vector<vec2> &points, VertexArrayObject *circleMesh, float radius,
-                                    int drawFromIndex, int drawUpToIndex);
-void checkUpdateVars(float hitcircleDiameter);
 
 struct UniformCache {
     // convar-dependent settings (updated by convar callbacks)
@@ -60,10 +54,73 @@ struct UniformCache {
 };
 
 UniformCache s_uniformCache;
+
 // helper function to update color uniforms (after ->enable-ing the shader)
 void updateColorUniforms(const Color &borderColor, const Color &bodyColor);
 // check if convar-dependent uniforms need to be updated (after ->enable-ing the shader)
 void updateConfigUniforms();
+
+// forward decls
+void drawDebugLegacy(const std::vector<vec2> &points, float hitcircleDiameter, Color undimmedColor,
+                     float colorRGBMultiplier, float alpha, int drawFromIndex, int drawUpToIndex);
+void drawDebugVAO(VertexArrayObject *vao, vec2 translation, float scale, float from, float to, Color undimmedColor,
+                  float colorRGBMultiplier, float alpha);
+
+void drawFillSliderBodyPeppy(const std::vector<vec2> &points, VertexArrayObject *circleMesh, float radius,
+                             int drawFromIndex, int drawUpToIndex);
+void checkUpdateVars(float hitcircleDiameter);
+
+Color getRainbowColor(i32 rainbowTime, float initOffset) {
+    const float frequency = 0.3f;
+    const float time = engine->getTime() * 20;
+
+    const Channel red = std::sin(frequency * (time * initOffset) + 0 + rainbowTime) * 127 + 128;
+    const Channel green = std::sin(frequency * (time * initOffset) + 2 + rainbowTime) * 127 + 128;
+    const Channel blue = std::sin(frequency * (time * initOffset) + 4 + rainbowTime) * 127 + 128;
+
+    return rgb(red, green, blue);
+}
+
+forceinline Color getBodyColor(bool doRainbow, i32 rainbowTime, float colorRGBMultiplier, Color undimmedColor) {
+    if(doRainbow) {
+        return getRainbowColor(rainbowTime, 1.5f);
+    } else {
+        const Color undimmedBodyColor =
+            osu->getSkin()->o_slider_track_overridden ? osu->getSkin()->c_slider_track_override : undimmedColor;
+
+        return Colors::scale(undimmedBodyColor, colorRGBMultiplier);
+    }
+}
+
+forceinline Color getBorderColor(bool doRainbow, i32 rainbowTime, float colorRGBMultiplier, Color undimmedColor) {
+    if(doRainbow) {
+        return getRainbowColor(rainbowTime, 1.f);
+    } else {
+        const Color undimmedBorderColor =
+            cv::slider_border_tint_combo_color.getBool() ? undimmedColor : osu->getSkin()->c_slider_border;
+
+        return Colors::scale(undimmedBorderColor, colorRGBMultiplier);
+    }
+}
+
+forceinline void preDrawColorSetup(bool gradient, i32 sliderTime, float colorRGBMultiplier, Color undimmedColor) {
+    if(gradient) {
+        // this only affects the gradient image if used (meaning shaders
+        // either don't work or are disabled on purpose)
+        g->setColor(argb(1.0f, colorRGBMultiplier, colorRGBMultiplier, colorRGBMultiplier));
+        osu->getSkin()->i_slider_gradient->bind();
+    } else {
+        const bool doRainbow = cv::slider_rainbow.getBool();
+
+        const Color borderColor = getBorderColor(doRainbow, sliderTime, colorRGBMultiplier, undimmedColor);
+        const Color bodyColor = getBodyColor(doRainbow, sliderTime, colorRGBMultiplier, undimmedColor);
+
+        s_BLEND_SHADER->enable();
+        updateConfigUniforms();
+        updateColorUniforms(borderColor, bodyColor);
+    }
+}
+
 }  // namespace
 
 // invalidate config uniforms (convar callbacks)
@@ -143,51 +200,8 @@ void draw(const std::vector<vec2> &points, const std::vector<vec2> &alwaysPoints
 
     // debug sliders
     if(cv::slider_debug_draw.getBool()) {
-        const float circleImageScale = hitcircleDiameter / (float)osu->getSkin()->i_hitcircle->getWidth();
-        const float circleImageScaleInv = (1.0f / circleImageScale);
-
-        const auto width = (float)osu->getSkin()->i_hitcircle->getWidth();
-        const auto height = (float)osu->getSkin()->i_hitcircle->getHeight();
-
-        const float x = (-width / 2.0f);
-        const float y = (-height / 2.0f);
-        const float z = -1.0f;
-
-        g->pushTransform();
-        {
-            g->scale(circleImageScale, circleImageScale);
-
-            const Color dimmedColor = Colors::scale(undimmedColor, colorRGBMultiplier);
-
-            g->setColor(Color(dimmedColor).setA(alpha * cv::slider_alpha_multiplier.getFloat()));
-
-            osu->getSkin()->i_hitcircle->bind();
-            {
-                for(int i = drawFromIndex; i < drawUpToIndex; i++) {
-                    const vec2 point = points[i] * circleImageScaleInv;
-
-                    static VertexArrayObject vao(DrawPrimitive::PRIMITIVE_QUADS);
-                    vao.clear();
-                    {
-                        vao.addTexcoord(0, 0);
-                        vao.addVertex(point.x + x, point.y + y, z);
-
-                        vao.addTexcoord(0, 1);
-                        vao.addVertex(point.x + x, point.y + y + height, z);
-
-                        vao.addTexcoord(1, 1);
-                        vao.addVertex(point.x + x + width, point.y + y + height, z);
-
-                        vao.addTexcoord(1, 0);
-                        vao.addVertex(point.x + x + width, point.y + y, z);
-                    }
-                    g->drawVAO(&vao);
-                }
-            }
-            osu->getSkin()->i_hitcircle->unbind();
-        }
-        g->popTransform();
-
+        drawDebugLegacy(points, hitcircleDiameter, undimmedColor, colorRGBMultiplier, alpha, drawFromIndex,
+                        drawUpToIndex);
         return;  // nothing more to draw here
     }
 
@@ -203,45 +217,8 @@ void draw(const std::vector<vec2> &points, const std::vector<vec2> &alwaysPoints
     {
         osu->getSliderFrameBuffer()->enable();
         {
-            const Color undimmedBorderColor =
-                cv::slider_border_tint_combo_color.getBool() ? undimmedColor : osu->getSkin()->c_slider_border;
-            const Color undimmedBodyColor =
-                osu->getSkin()->o_slider_track_overridden ? osu->getSkin()->c_slider_track_override : undimmedColor;
-
-            Color dimmedBorderColor;
-            Color dimmedBodyColor;
-
-            if(cv::slider_rainbow.getBool()) {
-                float frequency = 0.3f;
-                float time = engine->getTime() * 20;
-
-                const Channel red1 = std::sin(frequency * time + 0 + sliderTimeForRainbow) * 127 + 128;
-                const Channel green1 = std::sin(frequency * time + 2 + sliderTimeForRainbow) * 127 + 128;
-                const Channel blue1 = std::sin(frequency * time + 4 + sliderTimeForRainbow) * 127 + 128;
-
-                const Channel red2 = std::sin(frequency * time * 1.5f + 0 + sliderTimeForRainbow) * 127 + 128;
-                const Channel green2 = std::sin(frequency * time * 1.5f + 2 + sliderTimeForRainbow) * 127 + 128;
-                const Channel blue2 = std::sin(frequency * time * 1.5f + 4 + sliderTimeForRainbow) * 127 + 128;
-
-                dimmedBorderColor = rgb(red1, green1, blue1);
-                dimmedBodyColor = rgb(red2, green2, blue2);
-            } else {
-                dimmedBorderColor = Colors::scale(undimmedBorderColor, colorRGBMultiplier);
-                dimmedBodyColor = Colors::scale(undimmedBodyColor, colorRGBMultiplier);
-            }
-
             const bool useGradientImage = cv::slider_use_gradient_image.getBool();
-
-            if(useGradientImage) {
-                // this only affects the gradient image if used (meaning shaders
-                // either don't work or are disabled on purpose)
-                g->setColor(argb(1.0f, colorRGBMultiplier, colorRGBMultiplier, colorRGBMultiplier));
-                osu->getSkin()->i_slider_gradient->bind();
-            } else {
-                s_BLEND_SHADER->enable();
-                updateConfigUniforms();
-                updateColorUniforms(dimmedBorderColor, dimmedBodyColor);
-            }
+            preDrawColorSetup(useGradientImage, sliderTimeForRainbow, colorRGBMultiplier, undimmedColor);
 
             // draw curve mesh
             drawFillSliderBodyPeppy(
@@ -285,25 +262,8 @@ void draw(VertexArrayObject *vao, const std::vector<vec2> &alwaysPoints, vec2 tr
     checkUpdateVars(hitcircleDiameter);
 
     if(cv::slider_debug_draw_square_vao.getBool()) {
-        const Color dimmedColor = Colors::scale(undimmedColor, colorRGBMultiplier);
-
-        g->setColor(Color(dimmedColor).setA(alpha * cv::slider_alpha_multiplier.getFloat()));
-
-        osu->getSkin()->i_hitcircle->bind();
-
-        vao->setDrawPercent(from, to, 6);  // HACKHACK: hardcoded magic number
-        {
-            g->pushTransform();
-            {
-                g->scale(scale, scale);
-                g->translate(translation.x, translation.y);
-
-                g->drawVAO(vao);
-            }
-            g->popTransform();
-        }
-
-        return;  // nothing more to draw here
+        drawDebugVAO(vao, translation, scale, from, to, undimmedColor, colorRGBMultiplier, alpha);
+        return;
     }
 
     // draw entire slider into framebuffer
@@ -314,44 +274,8 @@ void draw(VertexArrayObject *vao, const std::vector<vec2> &alwaysPoints, vec2 tr
 
         // render
         {
-            const Color undimmedBorderColor =
-                cv::slider_border_tint_combo_color.getBool() ? undimmedColor : osu->getSkin()->c_slider_border;
-            const Color undimmedBodyColor =
-                osu->getSkin()->o_slider_track_overridden ? osu->getSkin()->c_slider_track_override : undimmedColor;
-
-            Color dimmedBorderColor;
-            Color dimmedBodyColor;
-
-            if(cv::slider_rainbow.getBool()) {
-                float frequency = 0.3f;
-                float time = engine->getTime() * 20;
-
-                const Channel red1 = std::sin(frequency * time + 0 + sliderTimeForRainbow) * 127 + 128;
-                const Channel green1 = std::sin(frequency * time + 2 + sliderTimeForRainbow) * 127 + 128;
-                const Channel blue1 = std::sin(frequency * time + 4 + sliderTimeForRainbow) * 127 + 128;
-
-                const Channel red2 = std::sin(frequency * time * 1.5f + 0 + sliderTimeForRainbow) * 127 + 128;
-                const Channel green2 = std::sin(frequency * time * 1.5f + 2 + sliderTimeForRainbow) * 127 + 128;
-                const Channel blue2 = std::sin(frequency * time * 1.5f + 4 + sliderTimeForRainbow) * 127 + 128;
-
-                dimmedBorderColor = rgb(red1, green1, blue1);
-                dimmedBodyColor = rgb(red2, green2, blue2);
-            } else {
-                dimmedBorderColor = Colors::scale(undimmedBorderColor, colorRGBMultiplier);
-                dimmedBodyColor = Colors::scale(undimmedBodyColor, colorRGBMultiplier);
-            }
             const bool useGradientImage = cv::slider_use_gradient_image.getBool();
-
-            if(useGradientImage) {
-                // this only affects the gradient image if used (meaning shaders
-                // either don't work or are disabled on purpose)
-                g->setColor(argb(1.0f, colorRGBMultiplier, colorRGBMultiplier, colorRGBMultiplier));
-                osu->getSkin()->i_slider_gradient->bind();
-            } else {
-                s_BLEND_SHADER->enable();
-                updateConfigUniforms();
-                updateColorUniforms(dimmedBorderColor, dimmedBodyColor);
-            }
+            preDrawColorSetup(useGradientImage, sliderTimeForRainbow, colorRGBMultiplier, undimmedColor);
 
             // draw curve mesh
             vao->setDrawPercent(from, to, s_UNIT_CIRCLE_VAO_TRIANGLES->getVertices().size());
@@ -389,7 +313,7 @@ void draw(VertexArrayObject *vao, const std::vector<vec2> &alwaysPoints, vec2 tr
 namespace {  // static
 
 void drawFillSliderBodyPeppy(const std::vector<vec2> &points, VertexArrayObject *circleMesh, float radius,
-                                    int drawFromIndex, int drawUpToIndex) {
+                             int drawFromIndex, int drawUpToIndex) {
     if(drawFromIndex < 0) drawFromIndex = 0;
     if(drawUpToIndex < 0) drawUpToIndex = points.size();
 
@@ -482,8 +406,7 @@ void checkUpdateVars(float hitcircleDiameter) {
     }
 
     // build vaos
-    if(s_UNIT_CIRCLE_VAO == nullptr)
-        s_UNIT_CIRCLE_VAO = new VertexArrayObject(DrawPrimitive::PRIMITIVE_TRIANGLE_FAN);
+    if(s_UNIT_CIRCLE_VAO == nullptr) s_UNIT_CIRCLE_VAO = new VertexArrayObject(DrawPrimitive::PRIMITIVE_TRIANGLE_FAN);
     if(s_UNIT_CIRCLE_VAO_BAKED == nullptr)
         s_UNIT_CIRCLE_VAO_BAKED = resourceManager->createVertexArrayObject(DrawPrimitive::PRIMITIVE_TRIANGLE_FAN);
     if(s_UNIT_CIRCLE_VAO_TRIANGLES == nullptr)
@@ -590,6 +513,78 @@ void updateConfigUniforms() {
     }
 
     s_uniformCache.needsConfigUpdate = false;
+}
+
+void drawDebugLegacy(const std::vector<vec2> &points, float hitcircleDiameter, Color undimmedColor,
+                     float colorRGBMultiplier, float alpha, int drawFromIndex, int drawUpToIndex) {
+    const float circleImageScale = hitcircleDiameter / (float)osu->getSkin()->i_hitcircle->getWidth();
+    const float circleImageScaleInv = (1.0f / circleImageScale);
+
+    const auto width = (float)osu->getSkin()->i_hitcircle->getWidth();
+    const auto height = (float)osu->getSkin()->i_hitcircle->getHeight();
+
+    const float x = (-width / 2.0f);
+    const float y = (-height / 2.0f);
+    const float z = -1.0f;
+
+    g->pushTransform();
+    {
+        g->scale(circleImageScale, circleImageScale);
+
+        const Color dimmedColor = Colors::scale(undimmedColor, colorRGBMultiplier);
+
+        g->setColor(Color(dimmedColor).setA(alpha * cv::slider_alpha_multiplier.getFloat()));
+
+        osu->getSkin()->i_hitcircle->bind();
+        {
+            for(int i = drawFromIndex; i < drawUpToIndex; i++) {
+                const vec2 point = points[i] * circleImageScaleInv;
+
+                static VertexArrayObject vao(DrawPrimitive::PRIMITIVE_QUADS);
+                vao.clear();
+                {
+                    vao.addTexcoord(0, 0);
+                    vao.addVertex(point.x + x, point.y + y, z);
+
+                    vao.addTexcoord(0, 1);
+                    vao.addVertex(point.x + x, point.y + y + height, z);
+
+                    vao.addTexcoord(1, 1);
+                    vao.addVertex(point.x + x + width, point.y + y + height, z);
+
+                    vao.addTexcoord(1, 0);
+                    vao.addVertex(point.x + x + width, point.y + y, z);
+                }
+                g->drawVAO(&vao);
+            }
+        }
+        osu->getSkin()->i_hitcircle->unbind();
+    }
+    g->popTransform();
+    return;
+}
+
+void drawDebugVAO(VertexArrayObject *vao, vec2 translation, float scale, float from, float to, Color undimmedColor,
+                  float colorRGBMultiplier, float alpha) {
+    const Color dimmedColor = Colors::scale(undimmedColor, colorRGBMultiplier);
+
+    g->setColor(Color(dimmedColor).setA(alpha * cv::slider_alpha_multiplier.getFloat()));
+
+    osu->getSkin()->i_hitcircle->bind();
+
+    vao->setDrawPercent(from, to, 6);  // HACKHACK: hardcoded magic number
+    {
+        g->pushTransform();
+        {
+            g->scale(scale, scale);
+            g->translate(translation.x, translation.y);
+
+            g->drawVAO(vao);
+        }
+        g->popTransform();
+    }
+
+    return;
 }
 
 }  // namespace
