@@ -1854,11 +1854,10 @@ void Osu::onSkinChange(std::string_view newSkinName) {
         this->skinScheduledToLoad = new Skin(newSkinName, neosuSkinFolder, false);
     } else {
         std::string ppySkinFolder{cv::osu_folder.getString()};
-        if(!ppySkinFolder.ends_with('/')) ppySkinFolder.push_back('/');
+        ppySkinFolder.append("/");
         ppySkinFolder.append(cv::osu_folder_sub_skins.getString());
-        if(!ppySkinFolder.ends_with('/')) ppySkinFolder.push_back('/');
         ppySkinFolder.append(newSkinName);
-        if(!ppySkinFolder.ends_with('/')) ppySkinFolder.push_back('/');
+        ppySkinFolder.append("/");
         std::string sf = ppySkinFolder;
         this->skinScheduledToLoad = new Skin(newSkinName, sf, false);
     }

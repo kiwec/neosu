@@ -899,8 +899,7 @@ OptionsMenu::OptionsMenu() : ScreenBackable() {
     offsetSlider->setKeyDelta(1);
 
     this->addSubSection("Gameplay");
-    this->addCheckbox("Boost hitsound volume", "Apply a small logarithmic multiplier to non-sliderslide hitsounds.",
-                      &cv::snd_boost_hitsound_volume);
+    this->addCheckbox("Boost hitsound volume", "Apply a small logarithmic multiplier to non-sliderslide hitsounds.", &cv::snd_boost_hitsound_volume);
     this->addCheckbox("Change hitsound pitch based on accuracy", &cv::snd_pitch_hitsounds);
     this->addCheckbox("Prefer Nightcore over Double Time", &cv::nightcore_enjoyer)
         ->setChangeCallback(SA::MakeDelegate<&OptionsMenu::onModChangingToggle>(this));
@@ -2489,7 +2488,7 @@ void OptionsMenu::onSkinSelect() {
 
     cv::osu_folder.setValue(this->osuFolderTextbox->getText());
     std::string skinFolder{cv::osu_folder.getString()};
-    if(!skinFolder.ends_with('/')) skinFolder.push_back('/');
+    skinFolder.append("/");
     skinFolder.append(cv::osu_folder_sub_skins.getString());
 
     std::vector<std::string> skinFolders;
