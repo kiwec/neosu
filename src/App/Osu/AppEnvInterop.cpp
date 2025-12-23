@@ -337,9 +337,6 @@ void OsuEnvInterop::setup_system_integrations() {
 
     SDL_SetWindowsMessageHook(sdl_windows_message_hook, (void *)this);
 
-    wchar_t exePath[MAX_PATH];
-    GetModuleFileNameW(nullptr, exePath, MAX_PATH);
-
     // Register neosu as an application
     HKEY neosu_key;
     i32 err = RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\Classes\\neosu", 0, nullptr, REG_OPTION_NON_VOLATILE,
@@ -376,11 +373,17 @@ void OsuEnvInterop::setup_system_integrations() {
     auto cmdline = env->getCommandLine();
     assert(!cmdline.empty());
     cmdline.erase(cmdline.begin());  // remove program name
-    const UString launch_args = SString::join(cmdline);
 
-    wchar_t command[MAX_PATH + 10];
-    swprintf_s(command, _countof(command), L"\"%s\"%s \"%%1\"", exePath, launch_args.wchar_str());
-    RegSetValueExW(cmd_key, L"", 0, REG_SZ, (BYTE *)command, (wcslen(command) + 1) * sizeof(wchar_t));
+    const UString uLaunchArgs{SString::join(cmdline)};
+    const UString uExePath{Environment::getPathToSelf()};
+
+    std::wstring command;
+    command.resize(uExePath.length() + uLaunchArgs.length() + 10);
+
+    swprintf_s(command.data(), command.size(), LR"("%s" %s "%%1")", uExePath.wchar_str(), uLaunchArgs.wchar_str());
+    command.shrink_to_fit();
+
+    RegSetValueExW(cmd_key, L"", 0, REG_SZ, (BYTE *)command.data(), command.size() * sizeof(wchar_t));
     RegCloseKey(cmd_key);
 
     RegCloseKey(neosu_key);

@@ -360,26 +360,35 @@ bool Environment::renameFile(const std::string &oldFileName, const std::string &
 bool Environment::deleteFile(const std::string &filePath) noexcept { return SDL_RemovePath(filePath.c_str()); }
 
 namespace {
-// make sure we have a valid path for enumeration (ends in / etc.)
-std::string fixupEnumeratePath(std::string_view input) {
+// make sure we have a valid path for enumeration (ends with the right separator, and handles long paths on windows)
+std::string manualDirectoryFixup(std::string_view input) {
     assert(!input.empty());
-    std::string fixed{input};
-    while(fixed.ends_with('\\') || fixed.ends_with('/')) {
-        fixed.pop_back();
+
+    auto fsPath = File::getFsPath(input);
+    std::string ret = fsPath.string();
+    char endSep = '/';
+
+    if constexpr(Env::cfg(OS::WINDOWS)) {
+        // for UNC/long paths, make sure we use a backslash as the last separator
+        if(ret.starts_with(R"(\\?\)") || ret.starts_with(R"(\\.\)")) {
+            endSep = '\\';
+        }
     }
-    fixed.push_back('/');
-    // always use forward slashes
-    std::ranges::replace(fixed, '\\', '/');
-    return fixed;
+
+    if(!ret.ends_with(endSep)) {
+        ret.push_back(endSep);
+    }
+
+    return ret;
 }
 }  // namespace
 
 std::vector<std::string> Environment::getFilesInFolder(std::string_view folder) noexcept {
-    return enumerateDirectory(fixupEnumeratePath(folder), SDL_PATHTYPE_FILE);
+    return enumerateDirectory(manualDirectoryFixup(folder), SDL_PATHTYPE_FILE);
 }
 
 std::vector<std::string> Environment::getFoldersInFolder(std::string_view folder) noexcept {
-    return enumerateDirectory(fixupEnumeratePath(folder), SDL_PATHTYPE_DIRECTORY);
+    return enumerateDirectory(manualDirectoryFixup(folder), SDL_PATHTYPE_DIRECTORY);
 }
 
 std::string Environment::normalizeDirectory(std::string dirPath) noexcept {
@@ -414,7 +423,7 @@ bool Environment::isAbsolutePath(std::string_view filePath) noexcept {
 
     if constexpr(Env::cfg(OS::WINDOWS)) {
         // On Wine, linux paths are also valid, hence the OR
-        is_absolute_path |= ((filePath.find(':') == 1) || (filePath.starts_with(R"(\\?\)")));
+        is_absolute_path |= ((filePath.find(':') == 1) || (filePath.starts_with(R"(\\?\)") || filePath.starts_with(R"(\\.\)")));
     }
 
     return is_absolute_path;
@@ -479,8 +488,7 @@ const std::string &Environment::getPathToSelf(const char *argv0) {
     if constexpr(Env::cfg(OS::LINUX))
         exe_path = fs::canonical("/proc/self/exe", ec);
     else {
-        UString uPath{argv0};
-        exe_path = fs::canonical(fs::path(uPath.plat_str()), ec);
+        exe_path = fs::canonical(File::getFsPath(argv0), ec);
     }
 
     if(!ec && !exe_path.empty())  // canonical path found
@@ -1239,13 +1247,17 @@ std::string Environment::getThingFromPathHelper(std::string_view path, bool fold
 
     std::string retPath{path};
 
+    const bool longPath = Env::cfg(OS::WINDOWS) && (retPath.starts_with(R"(\\?\)") || retPath.starts_with(R"(\\.\)"));
+    const char prefSep = longPath ? '\\' : '/';
+    const char otherSep = longPath ? '/' : '\\';
+
     // find the last path separator (either / or \)
-    auto lastSlash = retPath.find_last_of('/');
-    if(lastSlash == std::string::npos) lastSlash = retPath.find_last_of('\\');
+    auto lastSlash = retPath.find_last_of(prefSep);
+    if(lastSlash == std::string::npos) lastSlash = retPath.find_last_of(otherSep);
 
     if(folder) {
         // if path ends with separator, it's already a directory
-        bool endsWithSeparator = retPath.back() == '/' || retPath.back() == '\\';
+        const bool endsWithSeparator = retPath.back() == prefSep || retPath.back() == otherSep;
 
         UString ustrPath{retPath};
         std::error_code ec;
@@ -1265,11 +1277,11 @@ std::string Environment::getThingFromPathHelper(std::string_view path, bool fold
             if(lastSlash != std::string::npos)  // return parent
                 ustrPath = ustrPath.substr(0, lastSlash);
             else  // no separators found, just use ./
-                ustrPath = fmt::format("./{}", ustrPath);
+                ustrPath = fmt::format(".{}{}", prefSep, ustrPath);
         }
         retPath = ustrPath.utf8View();
         // make sure whatever we got now ends with a slash
-        if(retPath.back() != '/' && retPath.back() != '\\') retPath = retPath + '/';
+        if(retPath.back() != prefSep && retPath.back() != otherSep) retPath = retPath + prefSep;
     } else if(lastSlash != std::string::npos)  // just return the file
     {
         retPath = retPath.substr(lastSlash + 1);
