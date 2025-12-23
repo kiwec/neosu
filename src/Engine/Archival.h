@@ -31,7 +31,7 @@ class Archive {
         [[nodiscard]] bool isFile() const;
 
         // extraction methods
-        [[nodiscard]] std::vector<u8> extractToMemory() const;
+        [[nodiscard]] const std::vector<u8> &getUncompressedData() const;
         [[nodiscard]] bool extractToFile(const std::string& outputPath) const;
 
        private:

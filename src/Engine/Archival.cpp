@@ -66,7 +66,7 @@ bool Archive::Entry::isDirectory() const { return this->bIsDirectory; }
 
 bool Archive::Entry::isFile() const { return !this->bIsDirectory; }
 
-std::vector<u8> Archive::Entry::extractToMemory() const { return this->data; }
+const std::vector<u8> &Archive::Entry::getUncompressedData() const { return this->data; }
 
 bool Archive::Entry::extractToFile(const std::string& outputPath) const {
     if(this->bIsDirectory) return false;
