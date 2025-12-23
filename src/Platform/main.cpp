@@ -20,7 +20,7 @@ void setcwdexe(const std::string & /*unused*/) {}
 #define MAIN_FUNC int main(int argc, char *argv[])
 #include <filesystem>
 
-#include "File.h"
+#include "UString.h"
 
 namespace {
 void setcwdexe(const std::string &exePathStr) noexcept {
@@ -35,7 +35,8 @@ void setcwdexe(const std::string &exePathStr) noexcept {
     bool failed = true;
     std::error_code ec;
 
-    fs::path exe_path{File::getFsPath(exePathStr)};
+    UString uPath{exePathStr};
+    fs::path exe_path{uPath.plat_str()};
 
     if(!exe_path.empty() && exe_path.has_parent_path()) {
         fs::current_path(exe_path.parent_path(), ec);

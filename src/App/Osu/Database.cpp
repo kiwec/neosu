@@ -876,6 +876,10 @@ DatabaseBeatmap *Database::getBeatmapSet(i32 set_id) {
 
 std::string Database::getOsuSongsFolder() {
     std::string songs_dir = cv::songs_folder.getString();
+    if(!songs_dir.ends_with('/') && !songs_dir.ends_with('\\')) {
+        songs_dir.push_back('/');
+    }
+
     if(!Environment::isAbsolutePath(songs_dir)) {
         // it's a subfolder (default)
         // cv::osu_folder is already normalized, so just concatenating is fine

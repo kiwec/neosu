@@ -347,6 +347,17 @@ UString adjustPath(std::string_view filepath) {
         if(len == 0) return UString{filepath};
         buf.resize(len);
 
+        // GetFullPathNameW may return an already-prefixed path if CWD has an extended prefix
+        std::wstring_view resolved{buf};
+        if(resolved.starts_with(LR"(\\?\)") || resolved.starts_with(LR"(\\.\)")) {
+            return UString{buf.data(), static_cast<int>(len)};
+        }
+
+        // Standard UNC path from GetFullPathNameW -> extended UNC
+        if(resolved.starts_with(LR"(\\)") && resolved.size() > 2) {
+            return UString{extUncPrefix} + UString{buf.data() + 2, static_cast<int>(len - 2)};
+        }
+
         return UString{outputPrefix} + UString{buf.data(), static_cast<int>(len)};
     }
 
