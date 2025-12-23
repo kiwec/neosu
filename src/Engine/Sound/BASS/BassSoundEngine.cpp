@@ -525,17 +525,16 @@ bool BassSoundEngine::actuallyPlay(BassSound *bassSound, SOUNDHANDLE playHandle,
         }
     }
 
-    const bool wasPaused = bassSound->bPaused;
-    bassSound->bPaused = false;
-    bassSound->bStarted = true;
-
     if(bassSound->isStream()) {
         // set position, and unpause the channel if paused
         bassSound->setPositionUS(positionUS);
-        if(wasPaused) {
+        if(bassSound->bPaused) {
             BASS_Mixer_ChannelFlags(playHandle, 0, BASS_MIXER_CHAN_PAUSE);
         }
     }
+
+    bassSound->bPaused = false;
+    bassSound->bStarted = true;
 
     bassSound->setLastPlayTime(engine->getTime());
 
