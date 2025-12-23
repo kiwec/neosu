@@ -17,6 +17,11 @@ Mouse::Mouse() : InputDevice(), vPos(env->getMousePos()), vPosWithoutOffsets(thi
     cv::mouse_sensitivity.setCallback(SA::MakeDelegate<&Mouse::onSensitivityChanged>(this));
 }
 
+void Mouse::reset() {
+    this->resetWheelDelta();
+    this->buttonsHeldMask = {};
+}
+
 void Mouse::draw() {
     if(!cv::debug_mouse.getBool()) return;
 
@@ -92,6 +97,23 @@ void Mouse::drawDebug() {
 }
 
 void Mouse::update() {
+    // first consume queued button events
+    while(!this->eventQueue.empty()) {
+        auto fullEvent = this->eventQueue.front();
+        this->eventQueue.pop();
+        switch(fullEvent.type) {
+            case Type::BUTTON:
+                this->onButtonChange_internal(fullEvent.orig);
+                break;
+            case Type::WHEELV:
+                this->onWheelVertical_internal(fullEvent.wheelVDelta);
+                break;
+            case Type::WHEELH:
+                this->onWheelHorizontal_internal(fullEvent.wheelHDelta);
+                break;
+        }
+    }
+
     this->resetWheelDelta();
     this->vDelta = {0.f, 0.f};
     this->vRawDelta = {0.f, 0.f};
@@ -162,6 +184,18 @@ void Mouse::onPosChange(vec2 pos) {
 }
 
 void Mouse::onWheelVertical(int delta) {
+    this->eventQueue.emplace(FullEvent{.orig = {}, .wheelVDelta = delta, .wheelHDelta = {}, .type = Type::WHEELV});
+}
+
+void Mouse::onWheelHorizontal(int delta) {
+    this->eventQueue.emplace(FullEvent{.orig = {}, .wheelVDelta = {}, .wheelHDelta = delta, .type = Type::WHEELH});
+}
+
+void Mouse::onButtonChange(ButtonEvent ev) {
+    this->eventQueue.emplace(FullEvent{.orig = ev, .wheelVDelta = {}, .wheelHDelta = {}, .type = Type::BUTTON});
+}
+
+void Mouse::onWheelVertical_internal(int delta) {
     this->iWheelDeltaVerticalActual += delta;
 
     for(auto *listener : this->listeners) {
@@ -169,7 +203,7 @@ void Mouse::onWheelVertical(int delta) {
     }
 }
 
-void Mouse::onWheelHorizontal(int delta) {
+void Mouse::onWheelHorizontal_internal(int delta) {
     this->iWheelDeltaHorizontalActual += delta;
 
     for(auto *listener : this->listeners) {
@@ -177,7 +211,7 @@ void Mouse::onWheelHorizontal(int delta) {
     }
 }
 
-void Mouse::onButtonChange(ButtonEvent ev) {
+void Mouse::onButtonChange_internal(ButtonEvent &ev) {
     if(!ev.btn || ev.btn >= MouseButtonFlags::MF_COUNT) return;
 
     if(ev.down) {

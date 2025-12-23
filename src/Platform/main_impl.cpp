@@ -369,11 +369,13 @@ SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
 
         // keyboard events
         case SDL_EVENT_KEY_DOWN:
-            keyboard->onKeyDown({static_cast<SCANCODE>(event->key.scancode), event->key.timestamp, event->key.repeat});
+            keyboard->onKeyDown({static_cast<SCANCODE>(event->key.scancode), static_cast<char16_t>(event->key.key),
+                                 event->key.timestamp, event->key.repeat});
             break;
 
         case SDL_EVENT_KEY_UP:
-            keyboard->onKeyUp({static_cast<SCANCODE>(event->key.scancode), event->key.timestamp, event->key.repeat});
+            keyboard->onKeyUp({static_cast<SCANCODE>(event->key.scancode), static_cast<char16_t>(event->key.key),
+                               event->key.timestamp, event->key.repeat});
             break;
 
         case SDL_EVENT_TEXT_INPUT: {
@@ -383,9 +385,10 @@ SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
 
             int length;
             if(likely((length = strlen(evtextstr)) == 1)) {
-                keyboard->onChar({static_cast<SCANCODE>(evtextstr[0]), event->text.timestamp, false});
+                keyboard->onChar({0, static_cast<char16_t>(evtextstr[0]), event->text.timestamp, false});
             } else {
-                for(const auto &chr : UString(evtextstr, length)) keyboard->onChar({chr, event->text.timestamp, false});
+                for(const auto &chr : UString(evtextstr, length))
+                    keyboard->onChar({0, chr, event->text.timestamp, false});
             }
         } break;
 

@@ -8,6 +8,7 @@
 #include "Vectors.h"
 
 #include <vector>
+#include <queue>
 
 class Mouse final : public InputDevice {
     NOCOPY_NOMOVE(Mouse)
@@ -16,6 +17,7 @@ class Mouse final : public InputDevice {
     Mouse();
     ~Mouse() override = default;
 
+    void reset() override;
     void draw() override;
     void update() override;
 
@@ -75,6 +77,23 @@ class Mouse final : public InputDevice {
     }  // "desired" rawinput state, NOT actual OS raw input state!
 
    private:
+    // same as keyboard input,
+    // mouse input events are only queued on onWheel/onButton, then dispatched during Engine::onUpdate
+    enum class Type : uint8_t { BUTTON, WHEELV, WHEELH };
+
+    struct FullEvent {
+        ButtonEvent orig;
+        int wheelVDelta;
+        int wheelHDelta;
+        Type type;
+    };
+
+    std::queue<FullEvent> eventQueue;
+
+    void onWheelVertical_internal(int delta);
+    void onWheelHorizontal_internal(int delta);
+    void onButtonChange_internal(ButtonEvent &ev);
+
     // callbacks
     void onSensitivityChanged(float newSens);
     void onRawInputChanged(float newVal);

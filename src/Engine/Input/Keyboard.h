@@ -5,6 +5,7 @@
 #include "KeyBindings.h"
 #include "KeyboardListener.h"
 
+#include <queue>
 #include <vector>
 
 class Keyboard final : public InputDevice {
@@ -14,9 +15,9 @@ class Keyboard final : public InputDevice {
     Keyboard() = default;
     ~Keyboard() override = default;
 
-    void reset();
+    void reset() override;
     void draw() override {}
-    void update() override {}
+    void update() override;
 
     void addListener(KeyboardListener *keyboardListener, bool insertOnTop = false);
     void removeListener(KeyboardListener *keyboardListener);
@@ -32,6 +33,21 @@ class Keyboard final : public InputDevice {
 
    private:
     std::vector<KeyboardListener *> listeners;
+
+    // keyboard events are only queued on onKeyDown/onKeyUp/onChar, then dispatched during Engine::onUpdate
+    enum class Type : u8 { KEYDOWN, KEYUP };
+
+    struct FullKeyEvent {
+        KeyboardEvent orig;
+        Type type{Type::KEYDOWN};
+    };
+
+    std::queue<FullKeyEvent> keyEventQueue;
+    std::queue<KeyboardEvent> charEventQueue;
+
+    void onKeyDown_internal(KeyboardEvent &event);
+    void onKeyUp_internal(KeyboardEvent &event);
+    void onChar_internal(KeyboardEvent &event);
 
     // each holds 2 bits of state to handle left/right
     // first bit is right ctrl/alt/shift/super, second bit is left

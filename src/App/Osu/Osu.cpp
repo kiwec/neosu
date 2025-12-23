@@ -1112,48 +1112,48 @@ void Osu::onKeyDown(KeyboardEvent &key) {
     }
 
     // special handling, after subsystems, if still not consumed, if playing
-    if(!key.isConsumed() && this->isInPlayMode()) {
-        do {
-            // toggle pause menu
-            // ignore repeat events when key is held down
-            const bool pressed_pause =
-                ((key == cv::GAME_PAUSE.getVal<SCANCODE>()) || (key == KEY_ESCAPE)) && !key.isRepeat();
-            if(pressed_pause) {
-                key.consume();
+    bool handle = !key.isConsumed() && this->isInPlayMode();
+    while(handle) {
+        handle = false;
+        // toggle pause menu
+        // ignore repeat events when key is held down
+        const bool pressed_pause =
+            ((key == cv::GAME_PAUSE.getVal<SCANCODE>()) || (key == KEY_ESCAPE)) && !key.isRepeat();
+        if(pressed_pause) {
+            key.consume();
 
-                // bit of a misnomer, this pauses OR unpauses the music OR stops if it was still loading/waiting
-                this->map_iface->pause();
-                if(!this->isInPlayMode()) break;  // if we exit due to the "pause", don't do anything else
+            // bit of a misnomer, this pauses OR unpauses the music OR stops if it was still loading/waiting
+            this->map_iface->pause();
+            if(!this->isInPlayMode()) break;  // if we exit due to the "pause", don't do anything else
 
-                if(this->pauseMenu->isVisible() && this->map_iface->hasFailed()) {
-                    // quit if we try to 'escape' the pause menu when dead (satisfying ragequit mechanic)
-                    this->map_iface->stop(true);
-                } else {
-                    // else just toggle the pause menu
-                    this->pauseMenu->setVisible(!this->pauseMenu->isVisible());
-                }
+            if(this->pauseMenu->isVisible() && this->map_iface->hasFailed()) {
+                // quit if we try to 'escape' the pause menu when dead (satisfying ragequit mechanic)
+                this->map_iface->stop(true);
+            } else {
+                // else just toggle the pause menu
+                this->pauseMenu->setVisible(!this->pauseMenu->isVisible());
             }
+        }
 
-            // local offset
-            if(key == cv::INCREASE_LOCAL_OFFSET.getVal<SCANCODE>()) {
-                DatabaseBeatmap *curMap = this->map_iface->getBeatmap();
+        // local offset
+        if(key == cv::INCREASE_LOCAL_OFFSET.getVal<SCANCODE>()) {
+            DatabaseBeatmap *curMap = this->map_iface->getBeatmap();
 
-                i32 offsetAdd = keyboard->isAltDown() ? 1 : 5;
-                curMap->setLocalOffset(curMap->getLocalOffset() + offsetAdd);
-                db->update_overrides(curMap);
-                this->notificationOverlay->addNotification(
-                    fmt::format("Local beatmap offset set to {} ms", curMap->getLocalOffset()));
-            }
-            if(key == cv::DECREASE_LOCAL_OFFSET.getVal<SCANCODE>()) {
-                DatabaseBeatmap *curMap = this->map_iface->getBeatmap();
+            i32 offsetAdd = keyboard->isAltDown() ? 1 : 5;
+            curMap->setLocalOffset(curMap->getLocalOffset() + offsetAdd);
+            db->update_overrides(curMap);
+            this->notificationOverlay->addNotification(
+                fmt::format("Local beatmap offset set to {} ms", curMap->getLocalOffset()));
+        }
+        if(key == cv::DECREASE_LOCAL_OFFSET.getVal<SCANCODE>()) {
+            DatabaseBeatmap *curMap = this->map_iface->getBeatmap();
 
-                i32 offsetAdd = -(keyboard->isAltDown() ? 1 : 5);
-                curMap->setLocalOffset(curMap->getLocalOffset() + offsetAdd);
-                db->update_overrides(curMap);
-                this->notificationOverlay->addNotification(
-                    fmt::format("Local beatmap offset set to {} ms", curMap->getLocalOffset()));
-            }
-        } while(false);
+            i32 offsetAdd = -(keyboard->isAltDown() ? 1 : 5);
+            curMap->setLocalOffset(curMap->getLocalOffset() + offsetAdd);
+            db->update_overrides(curMap);
+            this->notificationOverlay->addNotification(
+                fmt::format("Local beatmap offset set to {} ms", curMap->getLocalOffset()));
+        }
     }
 }
 

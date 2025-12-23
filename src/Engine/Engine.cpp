@@ -389,8 +389,8 @@ void Engine::onFocusGained() {
 void Engine::onFocusLost() {
     logIfCV(debug_engine, "lost focus");
 
-    for(auto *keyboard : this->keyboards) {
-        keyboard->reset();
+    for(auto *device : this->inputDevices) {
+        device->reset();
     }
 
     if(soundEngine) soundEngine->onFocusLost();  // switch exclusive->shared if applicable
