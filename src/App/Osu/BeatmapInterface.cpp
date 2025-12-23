@@ -2434,6 +2434,7 @@ void BeatmapInterface::updateInterpedMusicPos() {
         this->musicInterp = std::make_unique<TachyonInterpolator>();
     }
 
+    i64 realMusicPos = -1000;
     if(this->isActuallyLoading()) {
         // fake negative start
         this->iCurMusicPos = -1000;
@@ -2445,15 +2446,25 @@ void BeatmapInterface::updateInterpedMusicPos() {
     } else {
         if(useMcOsuInterp || useLazerInterp) {
             this->iCurMusicPos = (i32)this->musicInterp->update(
-                (f64)this->music->getPositionMS(), currentTime, this->music->getSpeed(), false,
+                (f64)(realMusicPos = (i64)this->music->getPositionMS()), currentTime, this->music->getSpeed(), false,
                 this->music->getLengthMS(), this->music->isPlaying() && !this->bWasSeekFrame);
         } else {
-            this->iCurMusicPos = (i32)this->music->getPositionMS();
+            this->iCurMusicPos = (i32)(realMusicPos = (i64)this->music->getPositionMS());
         }
     }
 
-    // debugLog("interpolator type: {} current music position (without offsets): {}", cv::interpolate_music_pos.getInt(),
-    //          this->iCurMusicPos);
+    if(cv::debug_snd.getInt() > 1) {
+        const std::string logString = fmt::format(
+            R"(==== MUSIC POSITION DEBUG ====
+real time: {}
+interpolator type: {}
+music->getPositionMS(): {}
+iCurMusicPos: {}
+==== END MUSIC POSITION DEBUG ====)",
+            currentTime, cv::interpolate_music_pos.getInt(), realMusicPos, this->iCurMusicPos);
+
+        Logger::logRaw(logString);
+    }
 }
 
 void BeatmapInterface::update2() {

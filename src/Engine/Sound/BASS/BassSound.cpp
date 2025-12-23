@@ -191,20 +191,20 @@ void BassSound::setPositionUS(u64 us) {
 
     // when playing, poll until position updates (with timeout)
     // this is necessary because BASS_Mixer_ChannelGetPosition takes time to reflect the change
-    const auto start = Timing::getTicksMS();
+    const u64 start = Timing::getTicksMS();
     constexpr u64 timeoutMS = 100;
-    constexpr u64 toleranceUS = 50 * 1000ULL;
+    constexpr i64 toleranceUS = 50 * 1000LL;
 
     f64 actualSecs = 0.;
-    u64 actualUS = 0;
+    i64 actualUS = 0;
     while(true) {
         i64 posBytes = BASS_Mixer_ChannelGetPosition(this->srchandle, BASS_POS_BYTE);
         if(posBytes >= 0) {
             actualSecs = BASS_ChannelBytes2Seconds(this->srchandle, posBytes);
-            actualUS = static_cast<u64>(std::round(actualSecs * 1000. * 1000.));
+            actualUS = static_cast<i64>(std::round(actualSecs * 1000. * 1000.));
 
             // check if we're within tolerance of target
-            if(actualUS >= us && actualUS <= us + toleranceUS) {
+            if(actualUS >= (i64)us && actualUS <= ((i64)us + toleranceUS)) {
                 break;
             }
         }
