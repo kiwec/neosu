@@ -30,6 +30,7 @@
 #include "Mouse.h"
 #include "OptionsMenu.h"
 #include "Osu.h"
+#include "OsuDirectScreen.h"
 #include "OsuKeyBinds.h"
 #include "ResourceManager.h"
 #include "RichPresence.h"
@@ -249,6 +250,11 @@ MainMenu::MainMenu() : OsuScreen() {
     this->updateAvailableButton->setClickCallback(SA::MakeDelegate<&MainMenu::onUpdatePressed>(this));
     this->updateAvailableButton->setColor(0x2200d900);
     this->updateAvailableButton->setTextColor(0x22ffffff);
+
+    this->onlineBeatmapsButton = new UIButtonVertical(0, 0, 0, 0, "", "Online Beatmaps");
+    this->onlineBeatmapsButton->setDrawBackground(false);
+    this->onlineBeatmapsButton->setClickCallback([]() { osu->getOsuDirectScreen()->setVisible(true); });
+    this->addBaseUIElement(this->onlineBeatmapsButton);
 
     this->versionButton = new CBaseUIButton(0, 0, 0, 0, "", "");
     this->versionButton->setDrawBackground(false);
@@ -942,6 +948,13 @@ void MainMenu::mouse_update(bool *propagate_clicks) {
     this->discordButton->setVisible(!cv::adblock.getBool());
     this->twitterButton->setVisible(!cv::adblock.getBool());
 
+    // NOTE: Not checking for supporter status, since every server enables direct anyway
+    // If we did want to check it, we'd have to store the result of the PRIVILEGES packet,
+    // because regular clients use *that* for checking for direct availability, instead
+    // of the privileges sent in presence/stats packets.
+    this->onlineBeatmapsButton->setVisible(false);
+    // this->onlineBeatmapsButton->setVisible(BanchoState::is_online());
+
     this->updateLayout();
 
     // update and focus handling
@@ -1317,6 +1330,11 @@ void MainMenu::updateLayout() {
             osu->getVirtScreenWidth() / 2 - this->updateAvailableButton->getSize().x / 2,
             osu->getVirtScreenHeight() - this->updateAvailableButton->getSize().y - 10 * dpiScale);
     }
+
+    this->onlineBeatmapsButton->onResized();
+    this->onlineBeatmapsButton->setSize(50 * dpiScale, 275 * dpiScale);
+    this->onlineBeatmapsButton->setRelPos(osu->getVirtScreenWidth() - this->onlineBeatmapsButton->getSize().x,
+                                          osu->getVirtScreenHeight() / 2 - this->onlineBeatmapsButton->getSize().y / 2);
 
     this->versionButton->onResized();  // HACKHACK: framework, setSizeToContent() does not update string metrics
     this->versionButton->setSizeToContent(8 * dpiScale, 8 * dpiScale);

@@ -91,7 +91,7 @@ class CBaseUIButton : public CBaseUIElement {
         return this;
     }
 
-    CBaseUIButton *setSizeToContent(int horizontalBorderSize = 1, int verticalBorderSize = 1) {
+    virtual CBaseUIButton *setSizeToContent(int horizontalBorderSize = 1, int verticalBorderSize = 1) {
         this->setSize(this->fStringWidth + 2 * horizontalBorderSize, this->fStringHeight + 2 * verticalBorderSize);
         return this;
     }

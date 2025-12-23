@@ -351,13 +351,13 @@ Osu::Osu() : App(), MouseListener(), global_osu_(this) {
     this->screens[screenit++] = this->room = new RoomScreen();
     this->screens[screenit++] = this->chat = new Chat();
     this->screens[screenit++] = this->optionsMenu = new OptionsMenu();
-    this->screens[screenit++] = this->osuDirectScreen = new OsuDirectScreen();
     this->screens[screenit++] = this->rankingScreen = new RankingScreen();
     this->screens[screenit++] = this->userStats = new UserStatsScreen();
     this->screens[screenit++] = this->spectatorScreen = new SpectatorScreen();
     this->screens[screenit++] = this->pauseMenu = new PauseMenu();
     this->screens[screenit++] = this->hud = new HUD();
     this->screens[screenit++] = this->songBrowser = new SongBrowser();
+    this->screens[screenit++] = this->osuDirectScreen = new OsuDirectScreen();
     this->screens[screenit++] = this->lobby = new Lobby();
     this->screens[screenit++] = this->changelog = new Changelog();
     this->screens[screenit++] = this->mainMenu = new MainMenu();
@@ -418,13 +418,6 @@ Osu::Osu() : App(), MouseListener(), global_osu_(this) {
     }
 
     env->setCursorVisible(!this->internalRect.contains(mouse->getPos()));
-
-    // debug (no way to open it)
-    static ConVar toggle_direct("toggle_direct", cv::CLIENT | cv::HIDDEN, []() -> void {
-        OsuDirectScreen *odr = nullptr;
-        if(!osu || !(odr = osu->getOsuDirectScreen())) return;
-        odr->setVisible(!odr->isVisible());
-    });
 }
 
 Osu::~Osu() {
@@ -528,13 +521,13 @@ void Osu::draw() {
         this->spectatorScreen->draw();
 
         this->lobby->draw();
+        this->osuDirectScreen->draw();
         this->room->draw();
 
         if(this->songBrowser != nullptr) this->songBrowser->draw();
 
         this->mainMenu->draw();
         this->changelog->draw();
-        this->osuDirectScreen->draw();
         this->rankingScreen->draw();
         this->userStats->draw();
         this->chat->draw();

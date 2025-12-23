@@ -18,6 +18,7 @@
 #include "NeosuUrl.h"
 #include "NetworkHandler.h"
 #include "OptionsMenu.h"
+#include "OsuDirectScreen.h"
 #include "ResourceManager.h"
 #include "SongBrowser.h"
 #include "Timing.h"
@@ -365,6 +366,7 @@ void BanchoState::disconnect() {
 
     BANCHO::User::logout_all_users();
     osu->getChat()->onDisconnect();
+    osu->getOsuDirectScreen()->setVisible(false);
     osu->getSongBrowser()->onFilterScoresChange("Local", SongBrowser::LOGIN_STATE_FILTER_ID);
 
     Downloader::abort_downloads();

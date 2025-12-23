@@ -124,3 +124,40 @@ void UIButton::animateClickColor() {
 }
 
 void UIButton::setTooltipText(const UString &text) { this->tooltipTextLines = text.split("\n"); }
+
+#include "Font.h"
+
+CBaseUIButton *UIButtonVertical::setSizeToContent(int horizontalBorderSize, int verticalBorderSize) {
+    this->setSize(this->fStringHeight + 2 * horizontalBorderSize, this->fStringWidth + 2 * verticalBorderSize);
+    return this;
+}
+
+void UIButtonVertical::drawText() {
+    if(this->font == nullptr || !this->isVisible() || !this->isVisibleOnScreen() || this->sText.length() < 1) return;
+
+    const int shadowOffset = std::round(1.f * ((float)this->font->getDPI() / 96.f));  // NOTE: abusing font dpi
+
+    g->setColor(this->textColor);
+    g->pushTransform();
+    {
+        const f32 scale = 1.5f;
+        f32 xPosAdd = this->vSize.x / 2.f + (this->fStringHeight / 2.f * scale);
+        g->rotate(-90);
+        g->scale(scale, scale);
+        g->translate((i32)(this->vPos.x + xPosAdd),
+                     (i32)(this->vPos.y + (this->fStringWidth / 2.f) * scale + this->vSize.y / 2.f));
+
+        // shadow
+        if(this->bDrawShadow) {
+            g->translate(shadowOffset, shadowOffset);
+            g->setColor(this->textDarkColor ? this->textDarkColor : Colors::invert(this->textColor));
+            g->drawString(this->font, this->sText);
+            g->translate(-shadowOffset, -shadowOffset);
+        }
+
+        // top
+        g->setColor(this->textBrightColor ? this->textBrightColor : this->textColor);
+        g->drawString(this->font, this->sText);
+    }
+    g->popTransform();
+}

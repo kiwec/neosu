@@ -36,3 +36,14 @@ class UIButton : public CBaseUIButton {
     std::vector<UString> tooltipTextLines;
     bool bFocusStolenDelay{false};
 };
+
+// Hacky vertical button - only used for main menu's "Online Beatmaps" button
+// I tried inheriting UIButton but it didn't like getting rotated :(
+class UIButtonVertical : public CBaseUIButton {
+   public:
+    UIButtonVertical(float xPos, float yPos, float xSize, float ySize, UString name, UString text)
+        : CBaseUIButton(xPos, yPos, xSize, ySize, std::move(name), std::move(text)) {}
+
+    CBaseUIButton* setSizeToContent(int horizontalBorderSize = 1, int verticalBorderSize = 1) override;
+    void drawText() override;
+};

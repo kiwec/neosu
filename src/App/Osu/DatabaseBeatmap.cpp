@@ -355,6 +355,7 @@ bool DatabaseBeatmap::operator==(const DatabaseBeatmap &other) const {
         size_t numDiffs = this->difficulties->size();
         if(numDiffs != other.difficulties->size()) return false;
         for(size_t i = 0; i < numDiffs; i++) {
+            // warning C5232: in C++20 this comparison calls 'bool DatabaseBeatmap::operator ==(const DatabaseBeatmap &) const' recursively
             if(*(*this->difficulties)[i] != *(*other.difficulties)[i]) {
                 return false;
             }

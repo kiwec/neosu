@@ -13,11 +13,10 @@ class DatabaseBeatmap;
 typedef DatabaseBeatmap BeatmapDifficulty;
 typedef DatabaseBeatmap BeatmapSet;
 
-class HitObject;
+class CBaseUIContainer;
 class UIButton;
 class UIButtonWithIcon;
-class CBaseUIContainer;
-class ConVar;
+class UIButtonVertical;
 
 class PauseButton final : public CBaseUIButton {
    public:
@@ -107,6 +106,7 @@ class MainMenu final : public OsuScreen, public MouseListener {
 
     PauseButton *pauseButton;
     UIButton *updateAvailableButton{nullptr};
+    UIButtonVertical *onlineBeatmapsButton{nullptr};
     CBaseUIButton *versionButton;
 
     UIButtonWithIcon *discordButton{nullptr};

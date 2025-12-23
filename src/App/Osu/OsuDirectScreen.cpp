@@ -1,6 +1,7 @@
 #include "OsuDirectScreen.h"
 
 #include "BanchoApi.h"
+#include "Bancho.h"
 #include "CBaseUILabel.h"
 #include "CBaseUIScrollView.h"
 #include "CBaseUITextbox.h"
@@ -8,9 +9,11 @@
 #include "Downloader.h"
 #include "Engine.h"
 #include "Graphics.h"
+#include "MainMenu.h"
 #include "Mouse.h"
 #include "NetworkHandler.h"
 #include "NotificationOverlay.h"
+#include "OptionsMenu.h"
 #include "Osu.h"
 #include "SongBrowser/SongBrowser.h"
 #include "SString.h"
@@ -124,8 +127,14 @@ OsuDirectScreen::OsuDirectScreen() {
 
 CBaseUIContainer* OsuDirectScreen::setVisible(bool visible) {
     if(visible) {
+        if(!BanchoState::is_online()) {
+            osu->getOptionsMenu()->askForLoginDetails();
+            return this;
+        }
+
         if(db->getProgress() == 0.0) {
             // Ensure database is loaded (same as Lobby screen)
+            // TODO: what happens if we cancel the load? same in lobby...
             osu->getSongBrowser()->refreshBeatmaps(true);
         }
 
@@ -134,6 +143,7 @@ CBaseUIContainer* OsuDirectScreen::setVisible(bool visible) {
     }
 
     ScreenBackable::setVisible(visible);
+    osu->getMainMenu()->setVisible(!visible);
     return this;
 }
 
