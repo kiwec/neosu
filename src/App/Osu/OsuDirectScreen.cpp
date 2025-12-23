@@ -8,13 +8,16 @@
 #include "Database.h"
 #include "Downloader.h"
 #include "Engine.h"
+#include "Font.h"
 #include "Graphics.h"
+#include "Logging.h"
 #include "MainMenu.h"
 #include "Mouse.h"
 #include "NetworkHandler.h"
 #include "NotificationOverlay.h"
 #include "OptionsMenu.h"
 #include "Osu.h"
+#include "OsuConVars.h"
 #include "SongBrowser/SongBrowser.h"
 #include "SString.h"
 #include "UIButton.h"
@@ -58,8 +61,12 @@ void OnlineMapListing::onMouseUpInside(bool /*left*/, bool /*right*/) {
 void OnlineMapListing::onMouseUpOutside(bool /*left*/, bool /*right*/) { this->mousedown_coords = {-999.f, -999.f}; }
 
 void OnlineMapListing::draw() {
-    f32 x = this->getPos().x;
-    f32 y = this->getPos().y;
+    // TODO: loading indicator while stuff is loading
+
+    const auto font = resourceManager->getFont("FONT_DEFAULT");
+    const f32 padding = 5.f;
+    const f32 x = this->getPos().x;
+    const f32 y = this->getPos().y;
     const f32 width = this->getSize().x;
     const f32 height = this->getSize().y;
 
@@ -68,10 +75,25 @@ void OnlineMapListing::draw() {
     g->setColor(argb(100, 0, 10, 50));
     g->fillRect(x, y, width, height);
 
+    g->pushClipRect(McRect(x, y, width, height));
+    g->pushTransform();
+    g->translate(x, y);
+
     // TODO: mapset background image
 
-    g->pushClipRect(McRect(x, y, width, height));
-    // TODO: map title, artist, creator
+    // XXX: slow
+    auto full_title = fmt::format("{} - {}", this->meta.artist, this->meta.title);
+    g->setColor(0xffffffff);
+    g->translate(padding, padding + font->getHeight());
+    font->drawString(full_title);
+
+    // XXX: slow
+    g->pushTransform();
+    f32 creator_width = font->getStringWidth(this->meta.creator);
+    g->translate(width - (creator_width + 2 * padding), 0);
+    font->drawString(this->meta.creator);
+    g->popTransform();
+
     // TODO: show if it's installed somehow (gray out?)
     // TODO: map difficulties (with their own hover text...)
 
@@ -93,6 +115,7 @@ void OnlineMapListing::draw() {
         }
     }
 
+    g->popTransform();
     g->popClipRect();
 }
 
@@ -106,6 +129,7 @@ OsuDirectScreen::OsuDirectScreen() {
     this->addBaseUIElement(this->search_bar);
 
     this->newest_btn = new UIButton(0, 0, 0, 0, "", "Newest maps");
+    this->newest_btn->setColor(0xff88FF00);
     this->newest_btn->setClickCallback([this]() {
         this->reset();
         this->search("Newest", 0);
@@ -113,6 +137,7 @@ OsuDirectScreen::OsuDirectScreen() {
     this->addBaseUIElement(this->newest_btn);
 
     this->best_rated_btn = new UIButton(0, 0, 0, 0, "", "Best maps");
+    this->best_rated_btn->setColor(0xffFF006A);
     this->best_rated_btn->setClickCallback([this]() {
         this->reset();
         this->search("Top Rated", 0);
@@ -137,18 +162,25 @@ CBaseUIContainer* OsuDirectScreen::setVisible(bool visible) {
             // TODO: what happens if we cancel the load? same in lobby...
             osu->getSongBrowser()->refreshBeatmaps(true);
         }
-
-        this->search_bar->clear();
-        this->newest_btn->click();
     }
 
     ScreenBackable::setVisible(visible);
     osu->getMainMenu()->setVisible(!visible);
+
+    if(visible) {
+        this->search_bar->clear();
+        this->newest_btn->click();
+        this->search_bar->focus();
+    }
+
     return this;
 }
 
 void OsuDirectScreen::mouse_update(bool* propagate_clicks) {
+    // TODO: there's some bug where we can't select anything or click anything except back button...
+    // TODO: scroll results on mouse wheel
     ScreenBackable::mouse_update(propagate_clicks);
+
     if(!this->isVisible()) return;
 
     if(this->search_bar->hitEnter()) {
@@ -180,11 +212,13 @@ void OsuDirectScreen::mouse_update(bool* propagate_clicks) {
 void OsuDirectScreen::onBack() { this->setVisible(false); }
 
 void OsuDirectScreen::onResolutionChange(vec2 newResolution) {
+    // TODO: proper sizing & dpi scaling
+
     ScreenBackable::onResolutionChange(newResolution);
 
-    f32 scale = osu->getUIScale();
-    f32 x = 0;  // TODO
-    f32 y = 0;  // TODO
+    const f32 scale = osu->getUIScale();
+    f32 x = 50.f;
+    f32 y = 30.f;
 
     // Screen title
     this->title->setFont(osu->getTitleFont());
@@ -192,21 +226,29 @@ void OsuDirectScreen::onResolutionChange(vec2 newResolution) {
     this->title->setRelPos(x, y);
     y += this->title->getSize().y;
 
+    const f32 results_width = 1000.f * scale;
+    const f32 x_start = osu->getVirtScreenWidth() / 2.f - results_width / 2.f;
+    x = x_start;
+    y += 50.f * scale;
+
     // Search bar & buttons
     this->search_bar->setRelPos(x, y);
-    this->search_bar->setSize(200.0 * scale, 10.0 * scale);
+    this->search_bar->setSize(400.0 * scale, 40.0 * scale);
     x += this->search_bar->getSize().x;
     const f32 BUTTONS_MARGIN = 10.f * scale;
     x += BUTTONS_MARGIN;
     this->newest_btn->setRelPos(x, y);
-    x += BUTTONS_MARGIN;
+    this->newest_btn->setSize(150.f * scale, this->search_bar->getSize().y);
+    x += this->newest_btn->getSize().x + BUTTONS_MARGIN;
     this->best_rated_btn->setRelPos(x, y);
+    this->best_rated_btn->setSize(150.f * scale, this->search_bar->getSize().y);
     y += this->search_bar->getSize().y;
 
     // Results list
-    // TODO: center & size properly
+    x = x_start;
+    y += 10.f * scale;
     this->results->setRelPos(x, y);
-    this->results->setSize(400.f, 400.f);
+    this->results->setSize(results_width, 600.f * scale);
 
     this->update_pos();
 
@@ -217,6 +259,7 @@ void OsuDirectScreen::onResolutionChange(vec2 newResolution) {
         f32 y = LISTING_MARGIN;
         for(auto& listing : this->results->container->getElements()) {
             listing->setRelPos(LISTING_MARGIN, y);
+            listing->setSize(results_width - 2 * LISTING_MARGIN, 75.f * scale);
             y += listing->getSize().y + LISTING_MARGIN;
         }
         this->results->container->update_pos();
@@ -239,7 +282,9 @@ void OsuDirectScreen::search(std::string_view query, i32 page) {
     assert(page >= 0);
 
     const i32 filter = RankingStatusFilter::ALL;
-    std::string url = fmt::format("/web/osu-search.php?m=0&r={}&q={}&p={}", filter, NeoNet::urlEncode(query), page);
+    auto scheme = cv::use_https.getBool() ? "https://" : "http://";
+    std::string url = fmt::format("{}osu.{}/web/osu-search.php?m=0&r={}&q={}&p={}", scheme, BanchoState::endpoint,
+                                  filter, NeoNet::urlEncode(query), page);
     BANCHO::Api::append_auth_params(url);
 
     NeoNet::RequestOptions options;
@@ -247,13 +292,14 @@ void OsuDirectScreen::search(std::string_view query, i32 page) {
     options.connect_timeout = 5;
     options.user_agent = "osu!";
 
+    debugLog("Searching for maps matching \"{}\" (page {})", query, page);
     const auto current_request_id = ++this->request_id;
     this->current_query = query;
     this->last_search_time = engine->getTime();
 
     networkHandler->httpRequestAsync(
         url,
-        [current_request_id, page, this](const NeoNet::Response& response) {
+        [func = __FUNCTION__, current_request_id, page, this](const NeoNet::Response& response) {
             if(current_request_id != this->request_id) {
                 // Request was "cancelled"
                 return;
@@ -281,10 +327,12 @@ void OsuDirectScreen::search(std::string_view query, i32 page) {
                     return;
                 }
 
+                debugLogLambda("Received {} maps", nb_results);
                 for(i32 i = 1; i < set_lines.size(); i++) {
                     const auto meta = Downloader::parse_beatmapset_metadata(set_lines[i]);
                     if(meta.set_id == 0) continue;
 
+                    debugLogLambda("- {}", meta.osz_filename);
                     this->results->container->addBaseUIElement(new OnlineMapListing(meta));
                 }
 

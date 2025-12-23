@@ -6,6 +6,7 @@
 #include "Changelog.h"
 #include "Chat.h"
 #include "OsuConVars.h"
+#include "OsuDirectScreen.h"
 #include "Engine.h"
 #include "KeyBindings.h"
 #include "Keyboard.h"
@@ -257,6 +258,7 @@ bool VolumeOverlay::canChangeVolume() {
         this->isBusy() || keyboard->isAltDown() ||                                                           //
         (                                                                                                    //
             !(osu->getSongBrowser()->isVisible() && db->isFinished() == 1.f) &&                              //
+            !(osu->getOsuDirectScreen()->isVisible()) &&                                                     //
             !(osu->getOptionsMenu()->isVisible()) &&                                                         //
             !(osu->getOptionsMenu()->contextMenu->isVisible()) &&                                            //
             !(osu->getChangelog()->isVisible()) &&                                                           //
