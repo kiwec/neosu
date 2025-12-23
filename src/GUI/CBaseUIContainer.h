@@ -13,7 +13,6 @@ class CBaseUIContainer : public CBaseUIElement {
 
     void draw_debug();
     void draw() override;
-    // IMPORTANT: do NOT add/remove elements while inside mouse_update!!!
     void mouse_update(bool *propagate_clicks) override;
 
     void onKeyUp(KeyboardEvent &e) override;

@@ -372,6 +372,12 @@ AS_IF([test "x$enable_debug" = "xyes" && test "x$enable_lto" != "xyes"], [
     disable_lto=yes
 ])
 
+# disable -Werror for debug by default
+AS_IF([test "x$enable_debug" = "xyes" && test "x$enable_werror" != "xyes"], [
+    enable_werror=no
+    disable_werror=yes
+])
+
 # enable lto by default otherwise
 AS_IF([test "x$enable_lto" != "xno"], [
     disable_lto=no
