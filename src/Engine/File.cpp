@@ -200,7 +200,7 @@ File::FILETYPE File::exists(std::string_view filePath) {
 File::FILETYPE File::existsCaseInsensitive(std::string &filePath, fs::path &path) {
     // windows is already case insensitive
     if constexpr(Env::cfg(OS::WINDOWS)) {
-        return File::exists(filePath);
+        return File::exists(filePath, path);
     }
 
     auto retType = File::exists(filePath, path);
@@ -252,12 +252,115 @@ File::FILETYPE File::exists(std::string_view filePath, const fs::path &path) {
         return File::FILETYPE::OTHER;
 }
 
-// public static helpers
-// fs::path works differently depending on the type of string it was constructed with (annoying)
+#ifdef MCENGINE_PLATFORM_WINDOWS
+#include "dynutils.h"
+#include "RuntimePlatform.h"
+
+#include "WinDebloatDefs.h"
+#include <fileapi.h>
+#include <libloaderapi.h>
+#include <heapapi.h>
+
+#include <string>
+
+namespace {
+
+using wine_get_dos_file_name_t = LPWSTR CDECL(LPCSTR);
+wine_get_dos_file_name_t *pwine_get_dos_file_name{nullptr};
+bool tried_load_wine_func{false};
+
+void normalizeSlashes(std::string &str, unsigned char oldSlash = '/', unsigned char newSlash = '\\') {
+    std::ranges::replace(str, oldSlash, newSlash);
+
+    bool prev = false;
+    std::erase_if(str, [&](unsigned char c) {
+        const bool remove = prev && c == newSlash;
+        prev = (c == newSlash);
+        return remove;
+    });
+}
+
+UString adjustPath(std::string_view filepath) {
+    static constexpr std::string_view extPrefix = R"(\\?\)";
+    static constexpr std::string_view devicePrefix = R"(\\.\)";
+    static constexpr std::string_view extUncPrefix = R"(\\?\UNC\)";
+    static constexpr std::string_view uncStart = R"(\\)";
+
+    if(filepath.empty()) return UString{};
+
+    // Handle Unix absolute paths under Wine
+    if(filepath.size() >= 1 && filepath[0] == '/' && (filepath.size() < 2 || filepath[1] != '/')) {
+        if(pwine_get_dos_file_name ||
+           (!tried_load_wine_func && (RuntimePlatform::current() & RuntimePlatform::WIN_WINE) &&
+            (pwine_get_dos_file_name = dynutils::load_func<wine_get_dos_file_name_t>(
+                 reinterpret_cast<dynutils::lib_obj *>(GetModuleHandleA("kernel32.dll")), "wine_get_dos_file_name")))) {
+            std::string path{filepath};
+            normalizeSlashes(path, '\\', '/');  // normalize any mixed slashes in the path portion
+
+            LPWSTR dosPath = pwine_get_dos_file_name(path.c_str());  // use original with forward slashes
+            if(dosPath) {
+                UString result{extPrefix};
+                result += UString{dosPath, static_cast<int>(wcslen(dosPath))};
+                HeapFree(GetProcessHeap(), 0, dosPath);
+                return result;
+            }
+        } else {
+            tried_load_wine_func = true;
+        }
+        // Fallback: return as-is and let Wine handle it at file I/O layer
+        return UString{filepath};
+    }
+
+    // Detect existing prefix type and determine output prefix
+    std::string_view outputPrefix = extPrefix;
+    size_t stripLen = 0;
+    bool resolveAbsolute = false;
+
+    if(filepath.starts_with(extUncPrefix)) {
+        outputPrefix = extUncPrefix;
+        stripLen = extUncPrefix.size();
+    } else if(filepath.starts_with(extPrefix)) {
+        outputPrefix = extPrefix;
+        stripLen = extPrefix.size();
+    } else if(filepath.starts_with(devicePrefix)) {
+        outputPrefix = devicePrefix;
+        stripLen = devicePrefix.size();
+    } else if(filepath.starts_with(uncStart) && filepath.size() > 2 && filepath[2] != '?' && filepath[2] != '.') {
+        // Standard UNC path -> extended UNC
+        outputPrefix = extUncPrefix;
+        stripLen = uncStart.size();
+    } else {
+        // Regular DOS path needs absolute resolution
+        resolveAbsolute = true;
+    }
+
+    std::string path{filepath.substr(stripLen)};
+    normalizeSlashes(path);
+
+    if(resolveAbsolute) {
+        UString widePath{path};
+        DWORD len = GetFullPathNameW(widePath.wchar_str(), 0, nullptr, nullptr);
+        if(len == 0) return UString{filepath};
+
+        std::wstring buf(len, L'\0');
+        len = GetFullPathNameW(widePath.wchar_str(), len, buf.data(), nullptr);
+        if(len == 0) return UString{filepath};
+        buf.resize(len);
+
+        return UString{outputPrefix} + UString{buf.data(), static_cast<int>(len)};
+    }
+
+    return UString{outputPrefix} + UString{path};
+}
+
+}  // namespace
+
+#endif
+
 fs::path File::getFsPath(std::string_view utf8path) {
     if(utf8path.empty()) return fs::path{};
 #ifdef MCENGINE_PLATFORM_WINDOWS
-    const UString filePathUStr{utf8path.data(), static_cast<int>(utf8path.length())};
+    const UString filePathUStr{adjustPath(utf8path)};
     return fs::path{filePathUStr.wchar_str()};
 #else
     return fs::path{utf8path};
@@ -267,7 +370,7 @@ fs::path File::getFsPath(std::string_view utf8path) {
 FILE *File::fopen_c(const char *__restrict utf8filename, const char *__restrict modes) {
     if(utf8filename == nullptr || utf8filename[0] == '\0') return nullptr;
 #ifdef MCENGINE_PLATFORM_WINDOWS
-    const UString wideFilename{utf8filename};
+    const UString wideFilename{adjustPath(utf8filename)};
     const UString wideModes{modes};
     return _wfopen(wideFilename.wchar_str(), wideModes.wchar_str());
 #else
