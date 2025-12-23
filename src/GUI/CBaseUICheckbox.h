@@ -16,7 +16,7 @@ class CBaseUICheckbox : public CBaseUIButton {
     [[nodiscard]] inline bool isChecked() const { return this->bChecked; }
 
     CBaseUICheckbox *setChecked(bool checked, bool fireChangeEvent = true);
-    CBaseUICheckbox *setSizeToContent(int horizontalBorderSize = 1, int verticalBorderSize = 1);
+    CBaseUICheckbox *setSizeToContent(int horizontalBorderSize = 1, int verticalBorderSize = 1) override;
     CBaseUICheckbox *setWidthToContent(int horizontalBorderSize = 1);
 
     using CheckboxChangeCallback = SA::delegate<void(CBaseUICheckbox *)>;

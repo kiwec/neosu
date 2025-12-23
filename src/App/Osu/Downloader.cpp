@@ -259,6 +259,11 @@ i32 extract_beatmapset_id(const u8* data, size_t data_s) {
         return set_id;
     }
 
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfree-nonheap-object"
+#endif
+
     for(const auto& entry : entries) {
         if(entry.isDirectory()) continue;
 
@@ -271,6 +276,10 @@ i32 extract_beatmapset_id(const u8* data, size_t data_s) {
         set_id = get_beatmapset_id_from_osu_file(osu_data.data(), osu_data.size());
         if(set_id != -1) break;
     }
+
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 
     return set_id;
 }

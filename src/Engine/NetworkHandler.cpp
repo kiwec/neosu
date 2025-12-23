@@ -366,7 +366,7 @@ i32 NetworkImpl::progressCallback(void* clientp, i64 dltotal, i64 dlnow, i64 /*u
 namespace {  // static
 // this is unnecessary with our MSVC build of curl, since it uses schannel instead of openssl
 // curl_ca_embed included from curl_blob.h
-struct curl_blob cert_blob{.data = (void*)curl_ca_embed, .len = curl_ca_embed_size(), .flags = CURL_BLOB_NOCOPY};
+struct curl_blob cert_blob{.data = (void*)curl_ca_embed, .len = (size_t)curl_ca_embed_size(), .flags = CURL_BLOB_NOCOPY};
 }  // namespace
 #endif
 

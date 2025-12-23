@@ -155,6 +155,8 @@ AC_ARG_ENABLE([system-deps],
     AS_HELP_STRING([--enable-system-deps], [Prefer system libraries over locally built ones (not recommended! If you do this, also recommend using --disable-static) (default: no)]))
 AC_ARG_ENABLE([static],
     AS_HELP_STRING([--enable-static], [Enable static linking where possible (default: yes, --disable-static implies shared)]))
+AC_ARG_ENABLE([werror],
+    AS_HELP_STRING([--enable-werror], [Build with -Werror (default: yes)]))
 
 AC_ARG_WITH([renderer],
     AS_HELP_STRING([--with-renderer={opengl,dx11,opengles}], [The (comma separated list of) renderer backend(s) to build with (default: opengl)]))
@@ -842,6 +844,20 @@ AS_IF([test "x$enable_harden" = "xyes"], [
         CFLAGS="$CFLAGS -fhardened"
         hardened_build=yes
     ])
+])
+
+AS_IF([test "x$enable_werror" != "xno"], [
+    werror_flags_temp="-Werror"
+    # dont error out on some false positive warnings during LTO
+    AX_CHECK_COMPILE_FLAG([-Wno-error=stringop-overflow -Wno-error=maybe-uninitialized], [
+        werror_flags_temp="$werror_flags_temp -Wno-error=stringop-overflow -Wno-error=maybe-uninitialized"
+    ])
+    AS_IF([test "$host_cpu" = "i686"], [
+        AX_CHECK_COMPILE_FLAG([-Wno-error=alloc-size-larger-than=], [
+            werror_flags_temp="$werror_flags_temp -Wno-error=alloc-size-larger-than="
+        ])
+    ])
+    NEOSU_CXXFLAGS="$werror_flags_temp $NEOSU_CXXFLAGS"
 ])
 
 NEOSU_CPPFLAGS="$NEOSU_CPPFLAGS"

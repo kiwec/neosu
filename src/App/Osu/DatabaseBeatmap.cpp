@@ -349,14 +349,18 @@ bool DatabaseBeatmap::operator==(const DatabaseBeatmap &other) const {
         return (this->md5_init.load(std::memory_order_acquire) && other.md5_init.load(std::memory_order_acquire)) &&
                getMD5() == other.getMD5();
     }
-    // we are both BeatmapSets, compare contained difficulties (recursive but only 1 level)
+    // we are both BeatmapSets, compare contained difficulties
     if(!!this->difficulties && !!other.difficulties) {
         // quick size check
         size_t numDiffs = this->difficulties->size();
         if(numDiffs != other.difficulties->size()) return false;
         for(size_t i = 0; i < numDiffs; i++) {
-            // warning C5232: in C++20 this comparison calls 'bool DatabaseBeatmap::operator ==(const DatabaseBeatmap &) const' recursively
-            if(*(*this->difficulties)[i] != *(*other.difficulties)[i]) {
+            // could recurse but msvc complains
+            const auto &ourdiff = *(*this->difficulties)[i];
+            const auto &theirdiff = *(*other.difficulties)[i];
+            if(!((ourdiff.md5_init.load(std::memory_order_acquire) &&
+                  theirdiff.md5_init.load(std::memory_order_acquire)) &&
+                 ourdiff.getMD5() == theirdiff.getMD5())) {
                 return false;
             }
         }
@@ -657,7 +661,7 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjectsFromDa
                 // maybe the hitobjects are not sorted by time in the file; these values should be calculated
                 // after sorting just to be sure?
 
-                f32 x, y;
+                f32 x{}, y{};
                 i32 time;
                 i32 hitSounds;
                 // this actually should be initialized since we use it unconditionally after trying to parse it

@@ -3047,8 +3047,8 @@ void BeatmapInterface::update2() {
             this->misaimObjects.clear();
             HitObject *lastUnfinishedHitObject = nullptr;
             const i32 hitWindow50 = (i32)this->getHitWindow50();
-            for(auto &hitobject : this->hitobjects)  // this shouldn't hurt performance too much, since no
-                                                     // expensive operations are happening within the loop
+            for(const auto &hitobject : this->hitobjects)  // this shouldn't hurt performance too much, since no
+                                                           // expensive operations are happening within the loop
             {
                 if(!hitobject->isFinished()) {
                     if(this->iCurMusicPosWithOffsets >= hitobject->click_time)
@@ -3067,8 +3067,8 @@ void BeatmapInterface::update2() {
             // handle misaim clicks sequentially (setting the misaim flag on the hitobjects to only allow 1 entry in the
             // hiterrorbar for misses per object) clicks don't have to be consumed here, as they are deleted below
             // anyway
-            for(auto &click : this->clicks) {
-                for(auto &misaimObject : this->misaimObjects) {
+            for(const auto &click : this->clicks) {
+                for(auto *misaimObject : this->misaimObjects) {
                     if(misaimObject->hasMisAimed())  // only 1 slot per object!
                         continue;
 

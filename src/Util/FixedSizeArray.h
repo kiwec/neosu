@@ -6,6 +6,7 @@
 #include <vector>
 #include <cassert>
 #include <cstddef>
+#include <cstring>  // memcpy
 
 // "fixed-size std::vector", but 2*sizeof(size_t) bytes instead of 3*sizeof(size_t)
 template <typename T>
