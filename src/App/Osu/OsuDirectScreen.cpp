@@ -257,6 +257,8 @@ CBaseUIContainer* OsuDirectScreen::setVisible(bool visible) {
 bool OsuDirectScreen::isVisible() { return this->bVisible && !osu->getSongBrowser()->isVisible(); }
 
 void OsuDirectScreen::draw() {
+    if(!this->isVisible()) return;
+
     osu->getBackgroundImageHandler()->draw(osu->getMapInterface()->getBeatmap());
     ScreenBackable::draw();
 
