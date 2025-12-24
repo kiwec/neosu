@@ -285,6 +285,7 @@ void OsuDirectScreen::onResolutionChange(vec2 newResolution) {
     this->title->setRelPos(x, y);
     y += this->title->getSize().y;
 
+    // XXX: kinda shit on widescreen
     const f32 results_width = std::min(newResolution.x - 10.f * scale, 1000.f * scale);
     const f32 x_start = osu->getVirtScreenWidth() / 2.f - results_width / 2.f;
     x = x_start;
@@ -352,6 +353,7 @@ void OsuDirectScreen::search(std::string_view query, i32 page) {
     NeoNet::RequestOptions options;
     options.timeout = 5;
     options.connect_timeout = 5;
+    options.follow_redirects = true;
     options.user_agent = "osu!";
 
     debugLog("Searching for maps matching \"{}\" (page {})", query, page);
