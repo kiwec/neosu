@@ -27,8 +27,15 @@ Changelog::Changelog() : ScreenBackable() {
 
     std::vector<CHANGELOG> changelogs;
 
+    CHANGELOG v41_12;
+    v41_12.title = "41.12";
+    v41_12.changes = {
+        R"(- Fixed map backgrounds being drawn in places they shouldn't be)",
+    };
+    changelogs.push_back(v41_12);
+
     CHANGELOG v41_11;
-    v41_11.title = "41.11";
+    v41_11.title = "41.11 (2025-12-24)";
     v41_11.changes = {
         R"(- Merged updated PPv2 ver. 20251007 from McOsu (thanks @Givikap120))",
         R"(  - See https://osu.ppy.sh/home/news/2025-10-29-performance-points-star-rating-updates)",
