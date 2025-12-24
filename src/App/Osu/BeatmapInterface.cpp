@@ -1532,7 +1532,8 @@ void BeatmapInterface::handlePreviewPlay() {
     bool almost_finished = false;
     if((!this->music->isPlaying() || (almost_finished = this->music->getPositionPct() > 0.95f)) &&
        likely(!!this->beatmap)) {
-        soundEngine->stop(this->music);
+
+        // soundEngine->stop(this->music);
 
         if(soundEngine->play(this->music)) {
             // this is an assumption, but should be good enough for most songs
