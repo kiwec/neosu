@@ -1932,7 +1932,7 @@ void OptionsMenu::updateLayout() {
     optionsWidth = std::min((int)(725.0f * (1.0f - categoriesOptionsPercent)), optionsWidth) * dpiScale;
     const int categoriesWidth = optionsWidth * categoriesOptionsPercent;
 
-    this->options->setRelPosX(-1);
+    this->options->setRelPosX(categoriesWidth);
     this->options->setSize(optionsWidth, osu->getVirtScreenHeight() + 1);
 
     this->search->setRelPos(this->options->getRelPos());
