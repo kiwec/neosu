@@ -1,7 +1,10 @@
 #include "OsuDirectScreen.h"
 
+#include "AnimationHandler.h"
+#include "BackgroundImageHandler.h"
 #include "BanchoApi.h"
 #include "Bancho.h"
+#include "BeatmapInterface.h"
 #include "CBaseUILabel.h"
 #include "CBaseUIScrollView.h"
 #include "CBaseUITextbox.h"
@@ -30,21 +33,35 @@ class OnlineMapListing : public CBaseUIContainer {
 
     void draw() override;
 
+    // NOT inherited, called manually
+    void onResolutionChange(vec2 newResolution);
+
     // Overriding click detection because buttons don't work well in scrollviews
     // Our custom behavior is "if clicked and cursor moved less than 5px"
     void onMouseDownInside(bool left = true, bool right = false) override;
     void onMouseUpInside(bool left = true, bool right = false) override;
     void onMouseUpOutside(bool left = true, bool right = false) override;
+    void onMouseInside() override;
+    void onMouseOutside() override;
 
    private:
     bool installed;
     bool downloading{false};
+    bool download_failed{false};
     Downloader::BeatmapSetMetadata meta;
     vec2 mousedown_coords{-999.f, -999.f};
+
+    f32 hover_anim{0.f};
+    f32 click_anim{0.f};
+
+    // Cache
+    std::string full_title;
+    f32 creator_width;
 };
 
 OnlineMapListing::OnlineMapListing(Downloader::BeatmapSetMetadata meta) : meta(std::move(meta)) {
     this->installed = db->getBeatmapSet(this->meta.set_id) != nullptr;
+    this->onResolutionChange(osu->getVirtScreenSize());
 }
 
 void OnlineMapListing::onMouseDownInside(bool /*left*/, bool /*right*/) { this->mousedown_coords = mouse->getPos(); }
@@ -52,6 +69,9 @@ void OnlineMapListing::onMouseDownInside(bool /*left*/, bool /*right*/) { this->
 void OnlineMapListing::onMouseUpInside(bool /*left*/, bool /*right*/) {
     const f32 distance = vec::distance(mouse->getPos(), this->mousedown_coords);
     if(distance < 5.f && !this->installed) {
+        this->click_anim = 1.f;
+        anim::moveQuadInOut(&this->click_anim, 0.0f, 0.15f, 0.0f, true);
+
         this->downloading = !this->downloading;
     }
 
@@ -60,8 +80,42 @@ void OnlineMapListing::onMouseUpInside(bool /*left*/, bool /*right*/) {
 
 void OnlineMapListing::onMouseUpOutside(bool /*left*/, bool /*right*/) { this->mousedown_coords = {-999.f, -999.f}; }
 
+void OnlineMapListing::onMouseInside() { anim::moveQuadInOut(&this->hover_anim, 0.25f, 0.15f, 0.0f, true); }
+void OnlineMapListing::onMouseOutside() { anim::moveQuadInOut(&this->hover_anim, 0.f, 0.15f, 0.0f, true); }
+
+void OnlineMapListing::onResolutionChange(vec2 newResolution) {
+    this->full_title = fmt::format("{} - {}", this->meta.artist, this->meta.title);
+
+    const auto font = resourceManager->getFont("FONT_DEFAULT");
+    this->creator_width = font->getStringWidth(this->meta.creator);
+}
+
 void OnlineMapListing::draw() {
-    // TODO: loading indicator while stuff is loading
+    // XXX: laggy/slow
+
+    f32 download_progress = 0.f;
+    if(this->downloading) {
+        // TODO: downloads will not finish if player leaves this screen
+        Downloader::download_beatmapset(this->meta.set_id, &download_progress);
+        if(download_progress == -1.f) {
+            // TODO: display error toast
+            this->downloading = false;
+            this->download_failed = true;
+            download_progress = 0.f;
+        } else if(download_progress < 1.f) {
+            // To show we're downloading, always draw at least 5%
+            download_progress = std::max(0.05f, download_progress);
+        } else {
+            // TODO: when downloads fail, they still show up as installed
+            // [Downloader.cpp:84] [`anonymous-namespace'::DownloadManager::startDownloadNow]: Downloading https://osu.akatsuki.gg/d/2286978
+            // [Downloader.cpp:119] [`anonymous-namespace'::DownloadManager::onDownloadComplete]: Failed to download https://osu.akatsuki.gg/d/2286978: network error
+            std::string mapset_path = fmt::format(NEOSU_MAPS_PATH "/{}/", this->meta.set_id);
+            db->addBeatmapSet(mapset_path, this->meta.set_id);
+            this->downloading = false;
+            this->installed = true;
+            download_progress = 0.f;
+        }
+    }
 
     const auto font = resourceManager->getFont("FONT_DEFAULT");
     const f32 padding = 5.f;
@@ -70,51 +124,47 @@ void OnlineMapListing::draw() {
     const f32 width = this->getSize().x;
     const f32 height = this->getSize().y;
 
-    // TODO: correct color
-    // TODO: hover anim
-    g->setColor(argb(100, 0, 10, 50));
-    g->fillRect(x, y, width, height);
+    const f32 alpha = std::min(0.25f + this->hover_anim + this->click_anim, 1.f);
+
+    // Download progress
+    const f32 download_width = width * download_progress;
+    g->setColor(rgb(100, 255, 100));
+    g->setAlpha(alpha);
+    g->fillRect(x, y, download_width, height);
+
+    // Background
+    Color color = rgb(255, 255, 255);
+    if(this->installed)
+        color = rgb(0, 255, 0);
+    else if(this->download_failed)
+        color = rgb(255, 0, 0);
+    g->setColor(color);
+    g->setAlpha(alpha);
+    g->fillRect(x + download_width, y, width - download_width, height);
 
     g->pushClipRect(McRect(x, y, width, height));
     g->pushTransform();
-    g->translate(x, y);
+    {
+        g->translate(x, y);
 
-    // TODO: mapset background image
+        // TODO: mapset background image
+        // Requires to save them in a cache folder; while we're at it,
+        // we should have a global cache folder for avatars/server_icons/map_bgs so we can
+        // respect XDG cache directory on linux instead of using ./cache (or currently ./avatars)
 
-    // XXX: slow
-    auto full_title = fmt::format("{} - {}", this->meta.artist, this->meta.title);
-    g->setColor(0xffffffff);
-    g->translate(padding, padding + font->getHeight());
-    font->drawString(full_title);
+        g->setColor(0xffffffff);
+        g->translate(padding, padding + font->getHeight());
+        font->drawString(this->full_title);
 
-    // XXX: slow
-    g->pushTransform();
-    f32 creator_width = font->getStringWidth(this->meta.creator);
-    g->translate(width - (creator_width + 2 * padding), 0);
-    font->drawString(this->meta.creator);
-    g->popTransform();
-
-    // TODO: show if it's installed somehow (gray out?)
-    // TODO: map difficulties (with their own hover text...)
-
-    if(this->downloading) {
-        // TODO: downloads will not finish if player leaves this screen
-
-        f32 progress = -1.f;
-        Downloader::download_beatmapset(this->meta.set_id, &progress);
-        if(progress == -1.f) {
-            // TODO: how to display download error?
-            this->downloading = false;
-        } else if(progress < 1.f) {
-            // TODO: draw download progress %
-        } else {
-            std::string mapset_path = fmt::format(NEOSU_MAPS_PATH "/{}/", this->meta.set_id);
-            db->addBeatmapSet(mapset_path, this->meta.set_id);
-            this->downloading = false;
-            this->installed = true;
+        g->pushTransform();
+        {
+            g->translate(width - (this->creator_width + 2 * padding), 0);
+            font->drawString(this->meta.creator);
         }
-    }
+        g->popTransform();
 
+        // TODO: map difficulties (with their own hover text)
+    }
     g->popTransform();
     g->popClipRect();
 }
@@ -126,6 +176,7 @@ OsuDirectScreen::OsuDirectScreen() {
     this->addBaseUIElement(this->title);
 
     this->search_bar = new CBaseUITextbox();
+    this->search_bar->setBackgroundColor(0xaa000000);
     this->addBaseUIElement(this->search_bar);
 
     this->newest_btn = new UIButton(0, 0, 0, 0, "", "Newest maps");
@@ -145,6 +196,10 @@ OsuDirectScreen::OsuDirectScreen() {
     this->addBaseUIElement(this->best_rated_btn);
 
     this->results = new CBaseUIScrollView();
+    this->results->setBackgroundColor(0xaa000000);
+    this->results->setHorizontalScrolling(false);
+    this->results->setVerticalScrolling(true);
+    this->results->grabs_clicks = false;
     this->addBaseUIElement(this->results);
 
     this->onResolutionChange(osu->getVirtScreenSize());
@@ -176,12 +231,17 @@ CBaseUIContainer* OsuDirectScreen::setVisible(bool visible) {
     return this;
 }
 
-void OsuDirectScreen::mouse_update(bool* propagate_clicks) {
-    // TODO: there's some bug where we can't select anything or click anything except back button...
-    // TODO: scroll results on mouse wheel
-    ScreenBackable::mouse_update(propagate_clicks);
+void OsuDirectScreen::draw() {
+    osu->getBackgroundImageHandler()->draw(osu->getMapInterface()->getBeatmap());
+    ScreenBackable::draw();
 
+    // TODO: loading indicator while stuff is loading
+    // TODO: message if no maps were found or server errored
+}
+
+void OsuDirectScreen::mouse_update(bool* propagate_clicks) {
     if(!this->isVisible()) return;
+    ScreenBackable::mouse_update(propagate_clicks);
 
     if(this->search_bar->hitEnter()) {
         if(this->current_query == this->search_bar->getText().toUtf8() && this->current_page == -1) {
@@ -212,8 +272,7 @@ void OsuDirectScreen::mouse_update(bool* propagate_clicks) {
 void OsuDirectScreen::onBack() { this->setVisible(false); }
 
 void OsuDirectScreen::onResolutionChange(vec2 newResolution) {
-    // TODO: proper sizing & dpi scaling
-
+    this->setSize(osu->getVirtScreenSize());  // HACK: don't forget this or else nothing works!
     ScreenBackable::onResolutionChange(newResolution);
 
     const f32 scale = osu->getUIScale();
@@ -226,7 +285,7 @@ void OsuDirectScreen::onResolutionChange(vec2 newResolution) {
     this->title->setRelPos(x, y);
     y += this->title->getSize().y;
 
-    const f32 results_width = 1000.f * scale;
+    const f32 results_width = std::min(newResolution.x - 10.f * scale, 1000.f * scale);
     const f32 x_start = osu->getVirtScreenWidth() / 2.f - results_width / 2.f;
     x = x_start;
     y += 50.f * scale;
@@ -248,22 +307,25 @@ void OsuDirectScreen::onResolutionChange(vec2 newResolution) {
     x = x_start;
     y += 10.f * scale;
     this->results->setRelPos(x, y);
-    this->results->setSize(results_width, 600.f * scale);
-
-    this->update_pos();
-
-    // Finally, update the contents of this->results
+    this->results->setSize(results_width, newResolution.y - (y + 100.f * scale));
     {
         const f32 LISTING_MARGIN = 10.f * scale;
 
         f32 y = LISTING_MARGIN;
-        for(auto& listing : this->results->container->getElements()) {
-            listing->setRelPos(LISTING_MARGIN, y);
-            listing->setSize(results_width - 2 * LISTING_MARGIN, 75.f * scale);
-            y += listing->getSize().y + LISTING_MARGIN;
+        for(auto elm : this->results->container->getElements()) {
+            elm->setRelPos(LISTING_MARGIN, y);
+            elm->setSize(results_width - 2 * LISTING_MARGIN, 75.f * scale);
+            y += elm->getSize().y + LISTING_MARGIN;
+
+            // Update font stuff
+            OnlineMapListing* listing = (OnlineMapListing*)elm;
+            listing->onResolutionChange(newResolution);
         }
-        this->results->container->update_pos();
+        this->results->setScrollSizeToContent();
+        this->results->container->update_pos();  // sigh...
     }
+
+    this->update_pos();
 }
 
 void OsuDirectScreen::reset() {
@@ -332,7 +394,6 @@ void OsuDirectScreen::search(std::string_view query, i32 page) {
                     const auto meta = Downloader::parse_beatmapset_metadata(set_lines[i]);
                     if(meta.set_id == 0) continue;
 
-                    debugLogLambda("- {}", meta.osz_filename);
                     this->results->container->addBaseUIElement(new OnlineMapListing(meta));
                 }
 

@@ -952,8 +952,7 @@ void MainMenu::mouse_update(bool *propagate_clicks) {
     // If we did want to check it, we'd have to store the result of the PRIVILEGES packet,
     // because regular clients use *that* for checking for direct availability, instead
     // of the privileges sent in presence/stats packets.
-    this->onlineBeatmapsButton->setVisible(false);
-    // this->onlineBeatmapsButton->setVisible(BanchoState::is_online());
+    this->onlineBeatmapsButton->setVisible(BanchoState::is_online());
 
     this->updateLayout();
 
