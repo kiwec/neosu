@@ -20,6 +20,8 @@ Mouse::Mouse() : InputDevice(), vPos(env->getMousePos()), vPosWithoutOffsets(thi
 void Mouse::reset() {
     this->resetWheelDelta();
     this->buttonsHeldMask = {};
+    this->vDelta = {0.f, 0.f};
+    this->vRawDelta = {0.f, 0.f};
 }
 
 void Mouse::draw() {
@@ -97,30 +99,12 @@ void Mouse::drawDebug() {
 }
 
 void Mouse::update() {
-    // first consume queued button events
-    while(!this->eventQueue.empty()) {
-        auto fullEvent = this->eventQueue.front();
-        this->eventQueue.pop();
-        switch(fullEvent.type) {
-            case Type::BUTTON:
-                this->onButtonChange_internal(fullEvent.orig);
-                break;
-            case Type::WHEELV:
-                this->onWheelVertical_internal(fullEvent.wheelVDelta);
-                break;
-            case Type::WHEELH:
-                this->onWheelHorizontal_internal(fullEvent.wheelHDelta);
-                break;
-        }
-    }
-
-    this->resetWheelDelta();
     this->vDelta = {0.f, 0.f};
     this->vRawDelta = {0.f, 0.f};
 
     // <rel, abs> pair
     auto [newRel, newAbs] = env->consumeMousePositionCache();
-    if(vec::length(newRel) <= 0.f) return;  // early return for no motion
+    if(vec::length(newRel) <= 0.f) goto out;  // early return for no motion
 
     // vRawDelta doesn't include sensitivity or clipping, which is useful for fposu
     this->vRawDelta = newRel;
@@ -150,7 +134,7 @@ void Mouse::update() {
                           std::clamp<float>(newAbs.y, clipRect.getMinY(), clipRect.getMaxY())};
             newRel = newAbs - this->vPosWithoutOffsets;
             if(vec::length(newRel) == 0) {
-                return;  // early return for the trivial case (like if we're confined in a corner)
+                goto out;  // early return for the trivial case (like if we're confined in a corner)
             }
         }
     }
@@ -164,6 +148,26 @@ void Mouse::update() {
     this->vPosWithoutOffsets = newAbs;
 
     this->onPosChange(this->vPosWithoutOffsets);
+
+out:
+    // relay collected button/wheel events to listeners (after updating position)
+    while(!this->eventQueue.empty()) {
+        auto fullEvent = this->eventQueue.front();
+        this->eventQueue.pop();
+        switch(fullEvent.type) {
+            case Type::BUTTON:
+                this->onButtonChange_internal(fullEvent.orig);
+                break;
+            case Type::WHEELV:
+                this->onWheelVertical_internal(fullEvent.wheelVDelta);
+                break;
+            case Type::WHEELH:
+                this->onWheelHorizontal_internal(fullEvent.wheelHDelta);
+                break;
+        }
+    }
+
+    this->resetWheelDelta();
 }
 
 void Mouse::resetWheelDelta() {

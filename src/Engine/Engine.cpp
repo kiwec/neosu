@@ -89,6 +89,7 @@ Engine::Engine() {
         this->runtime_assert(McFont::initSharedResources(), "FreeType failed to initialize!");
 
         // input devices
+        // put mouse before keyboard in inputDevices, so that mouse position is updated before relaying keyboard/mouse events
         mouse = std::make_unique<Mouse>();
         this->runtime_assert(!!mouse, "Mouse failed to initialize!");
         this->inputDevices.push_back(mouse.get());

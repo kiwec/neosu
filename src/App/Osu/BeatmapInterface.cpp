@@ -1532,7 +1532,6 @@ void BeatmapInterface::handlePreviewPlay() {
     bool almost_finished = false;
     if((!this->music->isPlaying() || (almost_finished = this->music->getPositionPct() > 0.95f)) &&
        likely(!!this->beatmap)) {
-
         // soundEngine->stop(this->music);
 
         if(soundEngine->play(this->music)) {
@@ -2689,11 +2688,9 @@ void BeatmapInterface::update2() {
                     std::clamp((double)clickDeltaSinceLastUpdate / (double)timeSinceLastUpdate, 0.0, 1.0);
 
                 // interpolate between the music position when click was captured and current music position
+                // TODO: aim-between-frames
                 click.music_pos = static_cast<i32>(
                     std::round(std::lerp((double)click.music_pos, (double)this->iCurMusicPosWithOffsets, percent)));
-                // also update click position to the _current_ position (it was set pre-update)
-                // TODO: aim-between-frames
-                click.pos = this->getCursorPos();
             }
         }
     }
