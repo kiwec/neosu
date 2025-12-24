@@ -140,8 +140,7 @@ void UIButtonVertical::drawText() {
     g->setColor(this->textColor);
     g->pushTransform();
     {
-        // HACK: Hardcoded scale!
-        const f32 scale = 1.5f;
+        const f32 scale = 1.f;
         f32 xPosAdd = this->vSize.x / 2.f + (this->fStringHeight / 2.f * scale);
         g->rotate(-90);
         g->scale(scale, scale);

@@ -1335,7 +1335,7 @@ void MainMenu::updateLayout() {
     }
 
     this->onlineBeatmapsButton->onResized();
-    this->onlineBeatmapsButton->setSize(50 * dpiScale, 350 * dpiScale);
+    this->onlineBeatmapsButton->setSize(50 * dpiScale, 275 * dpiScale);
     this->onlineBeatmapsButton->setRelPos(osu->getVirtScreenWidth() - this->onlineBeatmapsButton->getSize().x,
                                           osu->getVirtScreenHeight() / 2 - this->onlineBeatmapsButton->getSize().y / 2);
 
