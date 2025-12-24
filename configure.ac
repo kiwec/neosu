@@ -858,10 +858,8 @@ AS_IF([test "x$enable_werror" != "xno"], [
     AX_CHECK_COMPILE_FLAG([-Wno-error=stringop-overflow -Wno-error=maybe-uninitialized], [
         werror_flags_temp="$werror_flags_temp -Wno-error=stringop-overflow -Wno-error=maybe-uninitialized"
     ])
-    AS_IF([test "$host_cpu" = "i686"], [
-        AX_CHECK_COMPILE_FLAG([-Wno-error=alloc-size-larger-than=], [
-            werror_flags_temp="$werror_flags_temp -Wno-error=alloc-size-larger-than="
-        ])
+    AX_CHECK_COMPILE_FLAG([-Wno-error=alloc-size-larger-than=], [
+        werror_flags_temp="$werror_flags_temp -Wno-error=alloc-size-larger-than="
     ])
     NEOSU_CXXFLAGS="$werror_flags_temp $NEOSU_CXXFLAGS"
 ])

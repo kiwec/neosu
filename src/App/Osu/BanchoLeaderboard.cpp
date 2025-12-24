@@ -22,7 +22,7 @@
 #include <vector>
 
 namespace {  // static namespace
-FinishedScore parse_score(char *score_line) {
+FinishedScore parse_score(const char *score_line) {
     FinishedScore score;
     score.client = "peppy-unknown";
     score.server = BanchoState::endpoint;

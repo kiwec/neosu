@@ -49,7 +49,7 @@ static void handle_api_response(const Packet &packet) {
 #endif
 
             auto replay_path =
-                fmt::format(NEOSU_REPLAYS_PATH "/{:s}/{:d}.replay.lzma", score->server.c_str(), score->unixTimestamp);
+                fmt::format(NEOSU_REPLAYS_PATH "/{:s}/{:d}.replay.lzma", score->server, score->unixTimestamp);
 
             // TODO: progress bars? how do we make sure the user doesnt do anything weird while its saving to disk and break the flow
             debugLog("Saving replay to {}...", replay_path);

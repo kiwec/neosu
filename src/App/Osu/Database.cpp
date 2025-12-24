@@ -447,7 +447,7 @@ BeatmapSet *Database::addBeatmapSet(const std::string &beatmapFolderPath, i32 se
         osu->getSongBrowser()->addBeatmapSet(raw_beatmap);
 
         // XXX: Very slow
-        osu->getSongBrowser()->onSortChange(cv::songbrowser_sortingtype.getString().c_str());
+        osu->getSongBrowser()->onSortChange(cv::songbrowser_sortingtype.getString());
     } else {
         this->temp_loading_beatmapsets.push_back(std::move(beatmap));
     }
@@ -779,7 +779,7 @@ Database::PlayerStats Database::calculatePlayerStats(const std::string &playerNa
     if(ps.ppScores.size() > 0) acc /= (20.0f * (1.0f - getWeightForIndex(ps.ppScores.size())));
 
     // fill stats
-    this->prevPlayerStats.name = playerName.c_str();
+    this->prevPlayerStats.name = playerName;
     this->prevPlayerStats.pp = pp;
     this->prevPlayerStats.accuracy = acc;
     this->prevPlayerStats.numScoresWithPP = ps.ppScores.size();
@@ -966,7 +966,7 @@ void Database::loadMaps() {
     const auto &neosu_maps_path = this->database_files[DatabaseType::NEOSU_MAPS];
 
     const std::string &songFolder = Database::getOsuSongsFolder();
-    debugLog("Database: songFolder = {:s}", songFolder.c_str());
+    debugLog("Database: songFolder = {:s}", songFolder);
 
     this->importTimer->start();
 
@@ -1169,7 +1169,7 @@ void Database::loadMaps() {
             this->num_beatmaps_to_load = dbr.read<u32>();
 
             debugLog("Database: version = {:d}, folderCount = {:d}, playerName = {:s}, numDiffs = {:d}", osu_db_version,
-                     osu_db_folder_count, playerName.c_str(), this->num_beatmaps_to_load);
+                     osu_db_folder_count, playerName, this->num_beatmaps_to_load);
 
             // hard cap upper db version
             if(osu_db_version > cv::database_version.getVal<u32>() && !cv::database_ignore_version.getBool()) {
@@ -1376,7 +1376,7 @@ void Database::loadMaps() {
 
                 // build beatmap & diffs from all the data
                 std::string beatmapPath = songFolder;
-                beatmapPath.append(path.c_str());
+                beatmapPath.append(path);
                 beatmapPath.push_back('/');
                 std::string fullFilePath = beatmapPath;
                 fullFilePath.append(osuFileName);
@@ -1387,7 +1387,7 @@ void Database::loadMaps() {
                     std::string candidate = (slash != std::string::npos) ? path.substr(0, slash) : path;
 
                     if(!candidate.empty() && std::isdigit(static_cast<unsigned char>(candidate[0]))) {
-                        if(!Parsing::parse(candidate.c_str(), &beatmapSetID)) {
+                        if(!Parsing::parse(candidate, &beatmapSetID)) {
                             beatmapSetID = -1;
                         }
                     }
@@ -1623,17 +1623,17 @@ void Database::saveMaps() {
         maps.write<u16>(beatmap->getDifficulties().size());
 
         for(const auto &diff : beatmap->getDifficulties()) {
-            maps.write_string(env->getFileNameFromFilePath(diff->sFilePath).c_str());
+            maps.write_string(env->getFileNameFromFilePath(diff->sFilePath));
             maps.write<i32>(diff->iID);
-            maps.write_string(diff->sTitle.c_str());
-            maps.write_string(diff->sAudioFileName.c_str());
+            maps.write_string(diff->sTitle);
+            maps.write_string(diff->sAudioFileName);
             maps.write<i32>(diff->iLengthMS);
             maps.write<f32>(diff->fStackLeniency);
-            maps.write_string(diff->sArtist.c_str());
-            maps.write_string(diff->sCreator.c_str());
-            maps.write_string(diff->sDifficultyName.c_str());
-            maps.write_string(diff->sSource.c_str());
-            maps.write_string(diff->sTags.c_str());
+            maps.write_string(diff->sArtist);
+            maps.write_string(diff->sCreator);
+            maps.write_string(diff->sDifficultyName);
+            maps.write_string(diff->sSource);
+            maps.write_string(diff->sTags);
             maps.write_hash(diff->getMD5());
             maps.write<f32>(diff->fAR);
             maps.write<f32>(diff->fCS);
@@ -1653,9 +1653,9 @@ void Database::saveMaps() {
             maps.write<i32>(diff->iMostCommonBPM);
             maps.write<u8>(diff->draw_background);
             maps.write<f32>(diff->loudness.load(std::memory_order_acquire));
-            maps.write_string(diff->sTitleUnicode.c_str());
-            maps.write_string(diff->sArtistUnicode.c_str());
-            maps.write_string(diff->sBackgroundImageFileName.c_str());
+            maps.write_string(diff->sTitleUnicode);
+            maps.write_string(diff->sArtistUnicode);
+            maps.write_string(diff->sBackgroundImageFileName);
 
             nb_diffs_saved++;
         }
@@ -1688,7 +1688,7 @@ void Database::saveMaps() {
             maps.write<i32>(override.max_bpm);
             maps.write<i32>(override.avg_bpm);
             maps.write<u8>(override.draw_background);
-            maps.write_string(override.background_image_filename.c_str());
+            maps.write_string(override.background_image_filename);
 
             nb_overrides++;
         }

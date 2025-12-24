@@ -41,7 +41,7 @@ bool OsuEnvInterop::handle_osk(const char *osk_path) {
     auto folder_name = Environment::getFileNameFromFilePath(osk_path);
     folder_name.erase(folder_name.size() - 4);  // remove .osk extension
 
-    cv::skin.setValue(Environment::getFileNameFromFilePath(folder_name).c_str());
+    cv::skin.setValue(Environment::getFileNameFromFilePath(folder_name));
     osu->getOptionsMenu()->updateSkinNameLabel();
 
     return true;
@@ -75,9 +75,9 @@ bool OsuEnvInterop::handle_osz(const char *osz_path) {
     if(set_id < 0) {
         // special case: legacy fallback behavior for invalid beatmapSetID, try to parse the ID from the
         // path
-        auto mapset_name = Environment::getFileNameFromFilePath(osz_path);
+        std::string mapset_name = Environment::getFileNameFromFilePath(osz_path);
         if(!mapset_name.empty() && std::isdigit(static_cast<unsigned char>(mapset_name[0]))) {
-            if(!Parsing::parse(mapset_name.c_str(), &set_id)) {
+            if(!Parsing::parse(mapset_name, &set_id)) {
                 set_id = -1;
             }
         }

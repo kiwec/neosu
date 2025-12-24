@@ -71,8 +71,8 @@ class Archive {
     void initFromMemory(const u8* data, size_t size);
     void initFromFile(const std::string& filePath);
     void cleanup();
-    bool createDirectoryRecursive(const std::string& path);
-    bool isPathSafe(const std::string& path);
+    static bool createDirectoryRecursive(const std::string& path);
+    [[nodiscard]] static bool isPathSafe(const std::string& path);
 
     struct archive* archive;
     std::vector<u8> vMemoryBuffer;  // keep buffer alive for memory-based archives

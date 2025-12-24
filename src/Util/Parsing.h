@@ -141,10 +141,7 @@ bool parse(S str, T arg, Extra... extra)
 {
     const char *begin, *end;
 
-    if constexpr(std::is_same_v<std::decay_t<S>, std::string_view>) {
-        begin = str.data();
-        end = str.data() + str.size();
-    } else if constexpr(std::is_same_v<std::decay_t<S>, std::string>) {
+    if constexpr(std::is_same_v<std::decay_t<S>, std::string_view> || std::is_same_v<std::decay_t<S>, std::string>) {
         begin = str.data();
         end = str.data() + str.size();
     } else if constexpr(std::is_same_v<std::decay_t<S>, const char*>) {
