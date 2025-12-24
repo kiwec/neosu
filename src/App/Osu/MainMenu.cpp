@@ -253,7 +253,10 @@ MainMenu::MainMenu() : OsuScreen() {
 
     this->onlineBeatmapsButton = new UIButtonVertical(0, 0, 0, 0, "", "Online Beatmaps");
     this->onlineBeatmapsButton->setDrawBackground(false);
-    this->onlineBeatmapsButton->setClickCallback([]() { osu->getOsuDirectScreen()->setVisible(true); });
+    this->onlineBeatmapsButton->setClickCallback([]() {
+        osu->getMainMenu()->setVisible(false);
+        osu->getOsuDirectScreen()->setVisible(true);
+    });
     this->addBaseUIElement(this->onlineBeatmapsButton);
 
     this->versionButton = new CBaseUIButton(0, 0, 0, 0, "", "");

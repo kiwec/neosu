@@ -122,6 +122,7 @@ class Database {
     static int getLevelForScore(u64 score, int maxLevel = 120);
 
     inline float getProgress() const { return this->loading_progress.load(std::memory_order_acquire); }
+    inline bool isCancelled() const { return this->load_interrupted.load(std::memory_order_acquire); }
     inline bool isLoading() const {
         float progress = this->getProgress();
         return progress > 0.f && progress < 1.f;

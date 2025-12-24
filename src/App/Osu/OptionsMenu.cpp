@@ -403,7 +403,6 @@ class OptionsMenuResetButton final : public CBaseUIButton {
 };
 
 OptionsMenu::OptionsMenu() : ScreenBackable() {
-    this->bFullscreen = false;
     this->fAnimation = 0.0f;
 
     // convar callbacks
@@ -1804,12 +1803,10 @@ CBaseUIContainer *OptionsMenu::setVisible(bool visible) {
 void OptionsMenu::setVisibleInt(bool visible, bool fromOnBack) {
     if(visible != this->bVisible) {
         // open/close animation
-        if(!this->bFullscreen) {
-            if(!this->bVisible)
-                anim::moveQuartOut(&this->fAnimation, 1.0f, 0.25f * (1.0f - this->fAnimation), true);
-            else
-                anim::moveQuadOut(&this->fAnimation, 0.0f, 0.25f * this->fAnimation, true);
-        }
+        if(!this->bVisible)
+            anim::moveQuartOut(&this->fAnimation, 1.0f, 0.25f * (1.0f - this->fAnimation), true);
+        else
+            anim::moveQuadOut(&this->fAnimation, 0.0f, 0.25f * this->fAnimation, true);
 
         // save even if not closed via onBack(), e.g. if closed via setVisible(false) from outside
         if(!visible && !fromOnBack) {
@@ -1931,15 +1928,10 @@ void OptionsMenu::updateLayout() {
     const float optionsScreenWidthPercent = 0.5f;
     const float categoriesOptionsPercent = 0.135f;
 
-    int optionsWidth = (int)(osu->getVirtScreenWidth() * optionsScreenWidthPercent);
-    if(!this->bFullscreen)
-        optionsWidth = std::min((int)(725.0f * (1.0f - categoriesOptionsPercent)), optionsWidth) * dpiScale;
-
+    const int optionsWidth = std::min((int)(725.0f * (1.0f - categoriesOptionsPercent)), optionsWidth) * dpiScale;
     const int categoriesWidth = optionsWidth * categoriesOptionsPercent;
 
-    this->options->setRelPosX(
-        (!this->bFullscreen ? -1 : osu->getVirtScreenWidth() / 2 - (optionsWidth + categoriesWidth) / 2) +
-        categoriesWidth);
+    this->options->setRelPosX(-1);
     this->options->setSize(optionsWidth, osu->getVirtScreenHeight() + 1);
 
     this->search->setRelPos(this->options->getRelPos());
@@ -2331,13 +2323,8 @@ void OptionsMenu::updateLayout() {
 
 void OptionsMenu::onBack() {
     osu->getNotificationOverlay()->stopWaitingForKey();
-
     this->save();
-
-    if(this->bFullscreen)
-        osu->toggleOptionsMenu();
-    else
-        this->setVisibleInt(false, true);
+    this->setVisibleInt(false, true);
 }
 
 void OptionsMenu::scheduleSearchUpdate() {

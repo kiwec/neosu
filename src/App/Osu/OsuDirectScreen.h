@@ -29,12 +29,16 @@ class OsuDirectScreen final : public ScreenBackable {
 
     CBaseUIContainer* setVisible(bool visible) override;
     void draw() override;
+    bool isVisible() override;
     void mouse_update(bool* propagate_clicks) override;
     void onBack() override;
     void onResolutionChange(vec2 newResolution) override;
 
     void reset();
     void search(std::string_view query, i32 page);
+
+    // Beatmapset to auto-select once download is completed
+    i32 auto_select_set{0};
 
    private:
     CBaseUILabel* title{nullptr};

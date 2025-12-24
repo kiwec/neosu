@@ -257,7 +257,7 @@ bool VolumeOverlay::canChangeVolume() {
     const bool can_scroll =
         this->isBusy() || keyboard->isAltDown() ||                                                           //
         (                                                                                                    //
-            !(osu->getSongBrowser()->isVisible() && db->isFinished() == 1.f) &&                              //
+            !(osu->getSongBrowser()->isVisible() && db->isFinished()) &&                                     //
             !(osu->getOsuDirectScreen()->isVisible()) &&                                                     //
             !(osu->getOptionsMenu()->isVisible()) &&                                                         //
             !(osu->getOptionsMenu()->contextMenu->isVisible()) &&                                            //

@@ -368,7 +368,6 @@ class Osu final : public App, public MouseListener {
     // TODO: this way of doing things is bullshit
     bool bToggleModSelectionScheduled{false};
     bool bToggleOptionsMenuScheduled{false};
-    bool bOptionsMenuFullscreen{true};
     bool bToggleChangelogScheduled{false};
 
     // global resources

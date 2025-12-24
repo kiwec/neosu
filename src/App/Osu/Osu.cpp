@@ -739,11 +739,7 @@ void Osu::update() {
     }
     if(this->bToggleOptionsMenuScheduled) {
         this->bToggleOptionsMenuScheduled = false;
-
-        const bool wasFullscreen = this->optionsMenu->isFullscreen();
-        this->optionsMenu->setFullscreen(false);
         this->optionsMenu->setVisible(!this->optionsMenu->isVisible());
-        if(wasFullscreen) this->mainMenu->setVisible(!this->optionsMenu->isVisible());
     }
     if(this->bToggleChangelogScheduled) {
         this->bToggleChangelogScheduled = false;
@@ -1346,10 +1342,7 @@ void Osu::toggleSongBrowser() {
     this->updateConfineCursor();
 }
 
-void Osu::toggleOptionsMenu() {
-    this->bToggleOptionsMenuScheduled = true;
-    this->bOptionsMenuFullscreen = this->mainMenu->isVisible();
-}
+void Osu::toggleOptionsMenu() { this->bToggleOptionsMenuScheduled = true; }
 
 void Osu::toggleChangelog() { this->bToggleChangelogScheduled = true; }
 

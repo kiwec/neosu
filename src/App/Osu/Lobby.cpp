@@ -157,6 +157,7 @@ CBaseUIContainer* Lobby::setVisible(bool visible) {
 
         if(db->getProgress() == 0.0) {
             // Not having a loaded database causes a bunch of issues in multi
+            // TODO: handle cancellation
             osu->getSongBrowser()->refreshBeatmaps(true);
         }
     } else {

@@ -68,11 +68,28 @@ void OnlineMapListing::onMouseDownInside(bool /*left*/, bool /*right*/) { this->
 
 void OnlineMapListing::onMouseUpInside(bool /*left*/, bool /*right*/) {
     const f32 distance = vec::distance(mouse->getPos(), this->mousedown_coords);
-    if(distance < 5.f && !this->installed) {
+    if(distance < 5.f) {
         this->click_anim = 1.f;
         anim::moveQuadInOut(&this->click_anim, 0.0f, 0.15f, 0.0f, true);
 
-        this->downloading = !this->downloading;
+        if(this->installed) {
+            // Select map, or go to song browser if already selected
+            if(osu->getMapInterface()->getBeatmap()->getSetID() == this->meta.set_id) {
+                this->setVisible(false);
+                osu->toggleSongBrowser();
+            } else {
+                const auto set = db->getBeatmapSet(this->meta.set_id);
+                if(!set) return;  // probably unreachable
+                const auto& diffs = set->getDifficulties();
+                if(diffs.empty()) return;  // surely unreachable
+                osu->getSongBrowser()->onDifficultySelected(diffs[0].get(), false);
+            }
+        } else {
+            this->downloading = !this->downloading;
+            if(this->downloading) {
+                osu->getOsuDirectScreen()->auto_select_set = this->meta.set_id;
+            }
+        }
     }
 
     this->mousedown_coords = {-999.f, -999.f};
@@ -106,14 +123,23 @@ void OnlineMapListing::draw() {
             // To show we're downloading, always draw at least 5%
             download_progress = std::max(0.05f, download_progress);
         } else {
-            // TODO: when downloads fail, they still show up as installed
-            // [Downloader.cpp:84] [`anonymous-namespace'::DownloadManager::startDownloadNow]: Downloading https://osu.akatsuki.gg/d/2286978
-            // [Downloader.cpp:119] [`anonymous-namespace'::DownloadManager::onDownloadComplete]: Failed to download https://osu.akatsuki.gg/d/2286978: network error
-            std::string mapset_path = fmt::format(NEOSU_MAPS_PATH "/{}/", this->meta.set_id);
-            db->addBeatmapSet(mapset_path, this->meta.set_id);
             this->downloading = false;
-            this->installed = true;
             download_progress = 0.f;
+
+            std::string mapset_path = fmt::format(NEOSU_MAPS_PATH "/{}/", this->meta.set_id);
+            const auto set = db->addBeatmapSet(mapset_path, this->meta.set_id);
+            if(set) {
+                this->installed = true;
+
+                if(osu->getOsuDirectScreen()->auto_select_set == this->meta.set_id) {
+                    const auto& diffs = set->getDifficulties();
+                    if(diffs.empty()) return;  // surely unreachable
+                    osu->getSongBrowser()->onDifficultySelected(diffs[0].get(), false);
+                }
+            } else {
+                // TODO: Sometimes, download fails but returns progress == 1.f!
+                this->download_failed = true;
+            }
         }
     }
 
@@ -207,20 +233,13 @@ OsuDirectScreen::OsuDirectScreen() {
 
 CBaseUIContainer* OsuDirectScreen::setVisible(bool visible) {
     if(visible) {
-        if(!BanchoState::is_online()) {
-            osu->getOptionsMenu()->askForLoginDetails();
-            return this;
-        }
-
-        if(db->getProgress() == 0.0) {
+        if(!db->isFinished() || db->isCancelled()) {
             // Ensure database is loaded (same as Lobby screen)
-            // TODO: what happens if we cancel the load? same in lobby...
             osu->getSongBrowser()->refreshBeatmaps(true);
         }
     }
 
     ScreenBackable::setVisible(visible);
-    osu->getMainMenu()->setVisible(!visible);
 
     if(visible) {
         this->search_bar->clear();
@@ -230,6 +249,8 @@ CBaseUIContainer* OsuDirectScreen::setVisible(bool visible) {
 
     return this;
 }
+
+bool OsuDirectScreen::isVisible() { return this->bVisible && !osu->getSongBrowser()->isVisible(); }
 
 void OsuDirectScreen::draw() {
     osu->getBackgroundImageHandler()->draw(osu->getMapInterface()->getBeatmap());
@@ -241,6 +262,7 @@ void OsuDirectScreen::draw() {
 
 void OsuDirectScreen::mouse_update(bool* propagate_clicks) {
     if(!this->isVisible()) return;
+    if(!BanchoState::is_online() || !db->isFinished() || db->isCancelled()) return this->onBack();
     ScreenBackable::mouse_update(propagate_clicks);
 
     if(this->search_bar->hitEnter()) {
@@ -269,7 +291,10 @@ void OsuDirectScreen::mouse_update(bool* propagate_clicks) {
     }
 }
 
-void OsuDirectScreen::onBack() { this->setVisible(false); }
+void OsuDirectScreen::onBack() {
+    this->setVisible(false);
+    osu->getMainMenu()->setVisible(true);
+}
 
 void OsuDirectScreen::onResolutionChange(vec2 newResolution) {
     this->setSize(osu->getVirtScreenSize());  // HACK: don't forget this or else nothing works!
@@ -285,7 +310,6 @@ void OsuDirectScreen::onResolutionChange(vec2 newResolution) {
     this->title->setRelPos(x, y);
     y += this->title->getSize().y;
 
-    // XXX: kinda shit on widescreen
     const f32 results_width = std::min(newResolution.x - 10.f * scale, 1000.f * scale);
     const f32 x_start = osu->getVirtScreenWidth() / 2.f - results_width / 2.f;
     x = x_start;

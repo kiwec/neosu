@@ -53,7 +53,7 @@ bool OsuEnvInterop::handle_osz(const char *osz_path) {
     if(osu->isInPlayMode()) {
         osu->getNotificationOverlay()->addToast(fmt::format("Can't import {} while playing.", osz_path), ERROR_TOAST);
         return false;
-    } else if(!db->isFinished()) {
+    } else if(!db->isFinished() || db->isCancelled()) {
         osu->getNotificationOverlay()->addToast(fmt::format("Can't import {} before songs have been loaded.", osz_path),
                                                 ERROR_TOAST);
         return false;

@@ -50,11 +50,8 @@ class OptionsMenu final : public ScreenBackable, public NotificationOverlayKeyLi
 
     void openAndScrollToSkinSection();
 
-    void setFullscreen(bool fullscreen) { this->bFullscreen = fullscreen; }
-
     void setUsername(UString username);
 
-    [[nodiscard]] inline bool isFullscreen() const { return this->bFullscreen; }
     bool isMouseInside() override;
     bool isBusy() override;
 
@@ -238,7 +235,6 @@ class OptionsMenu final : public ScreenBackable, public NotificationOverlayKeyLi
     std::vector<OPTIONS_ELEMENT *> elemContainers;
 
     // custom
-    bool bFullscreen;
     float fAnimation;
 
     CBaseUICheckbox *fullscreenCheckbox;
