@@ -100,7 +100,7 @@ void OnlineMapListing::onMouseUpOutside(bool /*left*/, bool /*right*/) { this->m
 void OnlineMapListing::onMouseInside() { anim::moveQuadInOut(&this->hover_anim, 0.25f, 0.15f, 0.0f, true); }
 void OnlineMapListing::onMouseOutside() { anim::moveQuadInOut(&this->hover_anim, 0.f, 0.15f, 0.0f, true); }
 
-void OnlineMapListing::onResolutionChange(vec2 newResolution) {
+void OnlineMapListing::onResolutionChange(vec2 /*newResolution*/) {
     this->full_title = fmt::format("{} - {}", this->meta.artist, this->meta.title);
 
     const auto font = resourceManager->getFont("FONT_DEFAULT");

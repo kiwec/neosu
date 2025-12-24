@@ -1928,7 +1928,8 @@ void OptionsMenu::updateLayout() {
     const float optionsScreenWidthPercent = 0.5f;
     const float categoriesOptionsPercent = 0.135f;
 
-    const int optionsWidth = std::min((int)(725.0f * (1.0f - categoriesOptionsPercent)), optionsWidth) * dpiScale;
+    int optionsWidth = (int)(osu->getVirtScreenWidth() * optionsScreenWidthPercent);
+    optionsWidth = std::min((int)(725.0f * (1.0f - categoriesOptionsPercent)), optionsWidth) * dpiScale;
     const int categoriesWidth = optionsWidth * categoriesOptionsPercent;
 
     this->options->setRelPosX(-1);
