@@ -352,11 +352,12 @@ void runloop(const Sync::stop_token& stoken) {
         while(osu->shouldPauseBGThreads() && !stoken.stop_requested()) {
             Timing::sleepMS(100);
         }
-        Timing::sleep(1);
 
         if(stoken.stop_requested()) return;
 
         process_work_item(item, stoken);
+
+        Timing::sleep(0);
     }
 
     // just in case

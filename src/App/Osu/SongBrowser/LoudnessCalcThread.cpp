@@ -61,7 +61,7 @@ struct VolNormalization::LoudnessCalcThread {
             while(osu->shouldPauseBGThreads() && !stoken.stop_requested()) {
                 Timing::sleepMS(100);
             }
-            Timing::sleep(1);
+            Timing::sleep(0);
 
             if(stoken.stop_requested()) return;
             if(map->loudness.load(std::memory_order_acquire) != 0.f) continue;

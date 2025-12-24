@@ -436,10 +436,10 @@ class SoLoudThreadWrapper {
                 task->execute();
                 lock.lock();
 
-                // yield after execution to give other threads time
-                Timing::sleep(0);
+                // small yield to avoid stealing 100% cpu
+                Timing::tinyYield();
             }
-            Timing::sleep(0);
+            Timing::tinyYield();
         }
 
         // cleanup/process remaining tasks before shutdown

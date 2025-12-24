@@ -17,7 +17,31 @@
 #include <thread>
 #include <concepts>
 
+#ifdef _MSC_VER
+#ifndef YieldProcessor
+#define YieldProcessor _mm_pause
+#pragma intrinsic(_mm_pause)
+void _mm_pause(void);
+#endif
+#endif
+
 namespace Timing {
+
+// not a full sched_yield/SwitchToThread
+static forceinline void tinyYield() {
+#ifdef _MSC_VER
+    YieldProcessor();
+#elif defined(__GNUC__) || defined(__clang__)
+#if defined(__arm__) || defined(__aarch64__) || defined(__arm64ec__)
+    __asm__ __volatile__("dmb ishst\n\tyield" : : : "memory");
+#elif defined(__i386__) || defined(__x86_64__)
+    __asm__ __volatile__("rep; nop" : : : "memory");
+#else
+    __asm__ __volatile__("" : : : "memory");
+#endif
+#endif
+}
+
 // conversion constants
 inline constexpr u64 NS_PER_SECOND = 1'000'000'000;
 inline constexpr u64 NS_PER_MS = 1'000'000;

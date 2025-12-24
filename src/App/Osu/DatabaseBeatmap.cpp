@@ -939,7 +939,7 @@ DatabaseBeatmap::LoadError DatabaseBeatmap::calculateSliderTimesClicksTicks(
         // calculate ticks
         int brk = 0;
         // don't generate ticks for NaN timingpoints and infinite values
-        while(!(brk++) && !timingInfo.isNaN && !std::isnan(s.pixelLength) && std::isfinite(s.pixelLength)) {
+        while(!brk++ && !timingInfo.isNaN && !std::isnan(s.pixelLength) && std::isfinite(s.pixelLength)) {
             const float minTickPixelDistanceFromEnd =
                 0.01f * SliderHelper::getSliderVelocity(timingInfo, sliderMultiplier, sliderTickRate);
             const float tickPixelLength =
