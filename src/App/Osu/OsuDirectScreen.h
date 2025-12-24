@@ -10,6 +10,7 @@ class CBaseUILabel;
 class CBaseUIScrollView;
 class CBaseUITextbox;
 class UIButton;
+class OnlineMapListing;
 
 class OsuDirectScreen final : public ScreenBackable {
     NOCOPY_NOMOVE(OsuDirectScreen)
@@ -37,9 +38,6 @@ class OsuDirectScreen final : public ScreenBackable {
     void reset();
     void search(std::string_view query, i32 page);
 
-    // Beatmapset to auto-select once download is completed
-    i32 auto_select_set{0};
-
    private:
     CBaseUILabel* title{nullptr};
     CBaseUITextbox* search_bar{nullptr};
@@ -48,7 +46,13 @@ class OsuDirectScreen final : public ScreenBackable {
     CBaseUIScrollView* results{nullptr};
 
     std::string current_query{"Newest"};
-    i32 current_page{-1};
+
     uSz request_id{1};
     f64 last_search_time{0.0};
+
+    i32 current_page{-1};
+
+    // Beatmapset to auto-select once download is completed
+    friend class OnlineMapListing;
+    i32 auto_select_set{0};
 };

@@ -29,7 +29,7 @@
 
 class OnlineMapListing : public CBaseUIContainer {
    public:
-    OnlineMapListing(Downloader::BeatmapSetMetadata meta);
+    OnlineMapListing(OsuDirectScreen* parent, Downloader::BeatmapSetMetadata meta);
 
     void draw() override;
 
@@ -45,21 +45,27 @@ class OnlineMapListing : public CBaseUIContainer {
     void onMouseOutside() override;
 
    private:
-    bool installed;
-    bool downloading{false};
-    bool download_failed{false};
+    OsuDirectScreen* directScreen;
+    McFont* font;
+
     Downloader::BeatmapSetMetadata meta;
-    vec2 mousedown_coords{-999.f, -999.f};
+
+    // Cache
+    std::string full_title;
+    f32 creator_width{0.f};
 
     f32 hover_anim{0.f};
     f32 click_anim{0.f};
 
-    // Cache
-    std::string full_title;
-    f32 creator_width;
+    vec2 mousedown_coords{-999.f, -999.f};
+
+    bool installed;
+    bool downloading{false};
+    bool download_failed{false};
 };
 
-OnlineMapListing::OnlineMapListing(Downloader::BeatmapSetMetadata meta) : meta(std::move(meta)) {
+OnlineMapListing::OnlineMapListing(OsuDirectScreen* parent, Downloader::BeatmapSetMetadata meta)
+    : directScreen(parent), font(engine->getDefaultFont()), meta(std::move(meta)) {
     this->installed = db->getBeatmapSet(this->meta.set_id) != nullptr;
     this->onResolutionChange(osu->getVirtScreenSize());
 }
@@ -87,7 +93,7 @@ void OnlineMapListing::onMouseUpInside(bool /*left*/, bool /*right*/) {
         } else {
             this->downloading = !this->downloading;
             if(this->downloading) {
-                osu->getOsuDirectScreen()->auto_select_set = this->meta.set_id;
+                this->directScreen->auto_select_set = this->meta.set_id;
             }
         }
     }
@@ -103,8 +109,7 @@ void OnlineMapListing::onMouseOutside() { anim::moveQuadInOut(&this->hover_anim,
 void OnlineMapListing::onResolutionChange(vec2 /*newResolution*/) {
     this->full_title = fmt::format("{} - {}", this->meta.artist, this->meta.title);
 
-    const auto font = resourceManager->getFont("FONT_DEFAULT");
-    this->creator_width = font->getStringWidth(this->meta.creator);
+    this->creator_width = this->font->getStringWidth(this->meta.creator);
 }
 
 void OnlineMapListing::draw() {
@@ -131,7 +136,7 @@ void OnlineMapListing::draw() {
             if(set) {
                 this->installed = true;
 
-                if(osu->getOsuDirectScreen()->auto_select_set == this->meta.set_id) {
+                if(this->directScreen->auto_select_set == this->meta.set_id) {
                     const auto& diffs = set->getDifficulties();
                     if(diffs.empty()) return;  // surely unreachable
                     osu->getSongBrowser()->onDifficultySelected(diffs[0].get(), false);
@@ -143,7 +148,6 @@ void OnlineMapListing::draw() {
         }
     }
 
-    const auto font = resourceManager->getFont("FONT_DEFAULT");
     const f32 padding = 5.f;
     const f32 x = this->getPos().x;
     const f32 y = this->getPos().y;
@@ -179,13 +183,13 @@ void OnlineMapListing::draw() {
         // respect XDG cache directory on linux instead of using ./cache (or currently ./avatars)
 
         g->setColor(0xffffffff);
-        g->translate(padding, padding + font->getHeight());
-        font->drawString(this->full_title);
+        g->translate(padding, padding + this->font->getHeight());
+        this->font->drawString(this->full_title);
 
         g->pushTransform();
         {
             g->translate(width - (this->creator_width + 2 * padding), 0);
-            font->drawString(this->meta.creator);
+            this->font->drawString(this->meta.creator);
         }
         g->popTransform();
 
@@ -266,14 +270,14 @@ void OsuDirectScreen::mouse_update(bool* propagate_clicks) {
     ScreenBackable::mouse_update(propagate_clicks);
 
     if(this->search_bar->hitEnter()) {
-        if(this->current_query == this->search_bar->getText().toUtf8() && this->current_page == -1) {
+        if(this->current_query == this->search_bar->getText().utf8View() && this->current_page == -1) {
             // We're already searching for the current query, don't cancel the request
             // HACK: (this->current_page == -1) not cleanest way to detect if we're in the middle of a request
             return;
         }
 
         this->reset();
-        this->search(this->search_bar->getText().toUtf8(), 0);
+        this->search(this->search_bar->getText().utf8View(), 0);
         return;
     }
 
@@ -337,13 +341,13 @@ void OsuDirectScreen::onResolutionChange(vec2 newResolution) {
         const f32 LISTING_MARGIN = 10.f * scale;
 
         f32 y = LISTING_MARGIN;
-        for(auto elm : this->results->container->getElements()) {
-            elm->setRelPos(LISTING_MARGIN, y);
-            elm->setSize(results_width - 2 * LISTING_MARGIN, 75.f * scale);
-            y += elm->getSize().y + LISTING_MARGIN;
+        for(auto* listing :
+            reinterpret_cast<const std::vector<OnlineMapListing*>&>(this->results->container->getElements())) {
+            listing->setRelPos(LISTING_MARGIN, y);
+            listing->setSize(results_width - 2 * LISTING_MARGIN, 75.f * scale);
+            y += listing->getSize().y + LISTING_MARGIN;
 
             // Update font stuff
-            OnlineMapListing* listing = (OnlineMapListing*)elm;
             listing->onResolutionChange(newResolution);
         }
         this->results->setScrollSizeToContent();
@@ -420,7 +424,7 @@ void OsuDirectScreen::search(std::string_view query, i32 page) {
                     const auto meta = Downloader::parse_beatmapset_metadata(set_lines[i]);
                     if(meta.set_id == 0) continue;
 
-                    this->results->container->addBaseUIElement(new OnlineMapListing(meta));
+                    this->results->container->addBaseUIElement(new OnlineMapListing(this, meta));
                 }
 
                 this->current_page = page;
