@@ -28,7 +28,7 @@ Changelog::Changelog() : ScreenBackable() {
     std::vector<CHANGELOG> changelogs;
 
     CHANGELOG v41_12;
-    v41_12.title = "41.12";
+    v41_12.title = "41.12 (" __DATE__ ")";
     v41_12.changes = {
         R"(- Fixed map backgrounds being drawn in places they shouldn't be)",
     };

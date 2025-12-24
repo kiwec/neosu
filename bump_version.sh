@@ -9,6 +9,7 @@ VERSION="$1"                 # 39.03
 VERSION_RC="${VERSION//./,}" # 39,03
 VERSION_RC="${VERSION_RC//,0/,}" # 39,3 (don't start a group 0)
 VERSION_CL="${VERSION//./_}" # 39_03
+LASTDATE="$(TZ=UTC date +%Y-%m-%d)"
 
 sed -Ei "s/version=\"[0-9]+\.[0-9]+\.0\.0\"/version=\"$VERSION.0.0\"/" assets/neosu.manifest
 
@@ -21,10 +22,13 @@ sed -Ei "2s/[0-9]+\.[0-9]+/$VERSION/" cmake-win/src/CMakeLists.txt
 sed -Ei "2s/[0-9]+\.[0-9]+/$VERSION/" configure.ac
 autoconf
 
+# update previous version
+sed -E -i "s|(.*\.title = .*)(\" __DATE__ \")(.*)|\1$LASTDATE\3|" src/App/Osu/Changelog.cpp
+
 sed -i "/std::vector<CHANGELOG> changelogs;/a\\
 \\
     CHANGELOG v$VERSION_CL;\\
-    v$VERSION_CL.title = \"$VERSION\";\\
+    v$VERSION_CL.title = \"$VERSION (\" __DATE__ \")\";\\
     v$VERSION_CL.changes = {\\
         R\"()\",\\
     };\\
