@@ -57,7 +57,7 @@ const char* parse_str(const char* begin, const char* end, T* arg) {
         long l;
         auto [ptr, ec] = std::from_chars(begin, end, l);
         if(ec != std::errc()) return nullptr;
-        *arg = (l > 0);
+        *arg = (l != 0);
         return ptr;
     } else if constexpr(std::is_same_v<T, u8>) {
         unsigned int b;
@@ -168,6 +168,79 @@ inline char* strtok_x(char d, char** str) {
         (*str)++;
     }
     return old;
+}
+
+// _s for "safe"
+// does not modify "inout" unless parsing succeeded
+template <typename T>
+static inline bool strto_s(std::string_view str, T& inout) {
+    if(unlikely(str.empty())) return false;
+
+    // from cppreference: "leading whitespace is not ignored."
+    // this is different behavior from C strtol, so trim it to have matching/predictable behavior
+    SString::trim_inplace(str);
+
+    // if it was only whitespace, nothing to do
+    if(unlikely(str.empty())) return false;
+
+    T retval = inout;
+
+    std::errc reterr = std::errc::invalid_argument;
+    std::chars_format floatfmt = std::chars_format::general;
+    int base = 10;
+
+    // if we were given hex characters as input, we have to manually change the base to 16
+    // (std::from_chars doesn't do this automatically)
+    // this is not likely across our expected inputs, though, so mark it as such
+    if(size_t len = str.length(); len >= 2 && unlikely(str[0] == '0' && (str[1] == 'x' || str[1] == 'X'))) {
+        // if the string was literally just "0x" and nothing else, the input is malformed
+        if(unlikely(len == 2)) return false;
+
+        base = 16;
+        floatfmt = std::chars_format::hex;
+        str = str.substr(2);
+    }
+
+    const char* begin{str.data()};
+    const char* end{str.data() + str.size()};
+    if constexpr(std::is_same_v<T, bool>) {
+        long temp{};
+        auto [_, ec] = std::from_chars(begin, end, temp, base);
+        retval = (temp != 0) && ec == std::errc();
+        reterr = ec;
+    } else if constexpr(std::is_same_v<T, u8>) {
+        u32 temp{};
+        auto [_, ec] = std::from_chars(begin, end, temp, base);
+        if(ec == std::errc()) {
+            if(temp < 256) {
+                retval = static_cast<u8>(temp);
+            } else {
+                ec = std::errc::result_out_of_range;
+            }
+        }
+        reterr = ec;
+    } else if constexpr(std::is_floating_point_v<std::decay_t<T>>) {
+        auto [_, ec] = std::from_chars(begin, end, retval, floatfmt);
+        reterr = ec;
+    } else {
+        auto [_, ec] = std::from_chars(begin, end, retval, base);
+        reterr = ec;
+    }
+
+    if(reterr == std::errc()) {
+        inout = retval;
+        return true;
+    }
+
+    return false;
+}
+
+// same as e.g. strtol if you never checked errno anyways but supports non-cstrings
+template <typename T>
+static inline T strto(std::string_view str) {
+    T ret{};
+    (void)strto_s(str, ret);
+    return ret;
 }
 
 // this is commonly used in a few places to parse some arbitrary width x height string, might as well make it a function

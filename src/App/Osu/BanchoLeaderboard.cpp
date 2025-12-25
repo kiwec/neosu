@@ -28,27 +28,27 @@ FinishedScore parse_score(const char *score_line) {
     score.server = BanchoState::endpoint;
     score.is_online_score = true;
 
-    auto tokens = SString::split<std::string>(score_line, "|");
+    const std::vector<std::string_view> tokens = SString::split(score_line, '|');
     if(tokens.size() < 16) return score;
 
-    score.bancho_score_id = strtoll(tokens[0].c_str(), nullptr, 10);
-    score.playerName = tokens[1].c_str();
-    score.score = strtoull(tokens[2].c_str(), nullptr, 10);
-    score.comboMax = static_cast<i32>(strtol(tokens[3].c_str(), nullptr, 10));
-    score.num50s = static_cast<i32>(strtol(tokens[4].c_str(), nullptr, 10));
-    score.num100s = static_cast<i32>(strtol(tokens[5].c_str(), nullptr, 10));
-    score.num300s = static_cast<i32>(strtol(tokens[6].c_str(), nullptr, 10));
-    score.numMisses = static_cast<i32>(strtol(tokens[7].c_str(), nullptr, 10));
-    score.numKatus = static_cast<i32>(strtol(tokens[8].c_str(), nullptr, 10));
-    score.numGekis = static_cast<i32>(strtol(tokens[9].c_str(), nullptr, 10));
-    score.perfect = strtoul(tokens[10].c_str(), nullptr, 10) == 1;
-    score.mods = Replay::Mods::from_legacy(static_cast<LegacyFlags>(strtoul(tokens[11].c_str(), nullptr, 10)));
-    score.player_id = static_cast<i32>(strtol(tokens[12].c_str(), nullptr, 10));
-    score.unixTimestamp = strtoull(tokens[14].c_str(), nullptr, 10);
-    score.is_online_replay_available = strtoul(tokens[15].c_str(), nullptr, 10) == 1;
+    score.bancho_score_id = Parsing::strto<i64>(tokens[0]);
+    score.playerName = tokens[1];
+    score.score = Parsing::strto<u64>(tokens[2]);
+    score.comboMax = Parsing::strto<i32>(tokens[3]);
+    score.num50s = Parsing::strto<i32>(tokens[4]);
+    score.num100s = Parsing::strto<i32>(tokens[5]);
+    score.num300s = Parsing::strto<i32>(tokens[6]);
+    score.numMisses = Parsing::strto<i32>(tokens[7]);
+    score.numKatus = Parsing::strto<i32>(tokens[8]);
+    score.numGekis = Parsing::strto<i32>(tokens[9]);
+    score.perfect = Parsing::strto<bool>(tokens[10]);
+    score.mods = Replay::Mods::from_legacy(static_cast<LegacyFlags>(Parsing::strto<u32>(tokens[11])));
+    score.player_id = Parsing::strto<i32>(tokens[12]);
+    score.unixTimestamp = Parsing::strto<u64>(tokens[14]);
+    score.is_online_replay_available = Parsing::strto<bool>(tokens[15]);
 
     if(tokens.size() > 16) {
-        auto mod_bytes = crypto::conv::decode64(tokens[16]);
+        std::vector<u8> mod_bytes = crypto::conv::decode64(tokens[16]);
         Packet mod_packet{
             .memory = mod_bytes.data(),
             .size = mod_bytes.size(),
@@ -61,7 +61,7 @@ FinishedScore parse_score(const char *score_line) {
 
     // Set username for given user id, since we now know both
     UserInfo *user = BANCHO::User::get_user_info(score.player_id);
-    user->name = UString(score.playerName.c_str());
+    user->name = score.playerName;
 
     // Mark as a player. Setting this also makes the has_user_info check pass,
     // which unlocks context menu actions such as sending private messages.
@@ -136,19 +136,19 @@ void process_leaderboard_response(const Packet &response) {
     char *body = (char *)response.memory;
 
     char *ranked_status = Parsing::strtok_x('|', &body);
-    info.ranked_status = static_cast<i32>(strtol(ranked_status, nullptr, 10));
+    info.ranked_status = Parsing::strto<i32>(ranked_status);
 
     char *server_has_osz2 = Parsing::strtok_x('|', &body);
     info.server_has_osz2 = !strcmp(server_has_osz2, "true");
 
     char *beatmap_id = Parsing::strtok_x('|', &body);
-    info.beatmap_id = static_cast<u32>(strtoul(beatmap_id, nullptr, 10));
+    info.beatmap_id = Parsing::strto<u32>(beatmap_id);
 
     char *beatmap_set_id = Parsing::strtok_x('|', &body);
-    info.beatmap_set_id = static_cast<u32>(strtoul(beatmap_set_id, nullptr, 10));
+    info.beatmap_set_id = Parsing::strto<u32>(beatmap_set_id);
 
     char *nb_scores = Parsing::strtok_x('|', &body);
-    info.nb_scores = static_cast<i32>(strtol(nb_scores, nullptr, 10));
+    info.nb_scores = Parsing::strto<i32>(nb_scores);
 
     char *fa_track_id = Parsing::strtok_x('|', &body);
     (void)fa_track_id;
@@ -157,7 +157,7 @@ void process_leaderboard_response(const Packet &response) {
     (void)fa_license_text;
 
     char *online_offset = Parsing::strtok_x('\n', &body);
-    info.online_offset = static_cast<i32>(strtol(online_offset, nullptr, 10));
+    info.online_offset = Parsing::strto<i32>(online_offset);
 
     char *map_name = Parsing::strtok_x('\n', &body);
     (void)map_name;

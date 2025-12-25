@@ -157,10 +157,9 @@ struct McFontImpl final {
 
     McFontImpl(McFont *parent, int fontSize, bool antialiasing, int fontDPI)
         : m_parent(parent),
-          m_vao(
-              g->createVertexArrayObject((Env::cfg(REND::GLES32 | REND::DX11) ? DrawPrimitive::PRIMITIVE_TRIANGLES
-                                                                              : DrawPrimitive::PRIMITIVE_QUADS),
-                                         DrawUsageType::USAGE_DYNAMIC, false)) {
+          m_vao(g->createVertexArrayObject((Env::cfg(REND::GLES32 | REND::DX11) ? DrawPrimitive::PRIMITIVE_TRIANGLES
+                                                                                : DrawPrimitive::PRIMITIVE_QUADS),
+                                           DrawUsageType::USAGE_DYNAMIC, false)) {
         std::vector<char16_t> characters;
         characters.reserve(96);  // reserve space for basic ASCII, load the rest as needed
         for(int i = 32; i < 128; i++) {
@@ -172,10 +171,9 @@ struct McFontImpl final {
 
     McFontImpl(McFont *parent, const std::vector<char16_t> &characters, int fontSize, bool antialiasing, int fontDPI)
         : m_parent(parent),
-          m_vao(
-              g->createVertexArrayObject((Env::cfg(REND::GLES32 | REND::DX11) ? DrawPrimitive::PRIMITIVE_TRIANGLES
-                                                                              : DrawPrimitive::PRIMITIVE_QUADS),
-                                         DrawUsageType::USAGE_DYNAMIC, false)) {
+          m_vao(g->createVertexArrayObject((Env::cfg(REND::GLES32 | REND::DX11) ? DrawPrimitive::PRIMITIVE_TRIANGLES
+                                                                                : DrawPrimitive::PRIMITIVE_QUADS),
+                                           DrawUsageType::USAGE_DYNAMIC, false)) {
         // don't try to find fallbacks if we had an explicitly-passed character set on construction
         m_bTryFindFallbacks = false;
         constructor(characters, fontSize, antialiasing, fontDPI);
@@ -516,10 +514,9 @@ struct McFontImpl final {
             return false;
         }
 
-        if(cv::r_debug_font_unicode.getBool() && fontIndex > 0) {
-            debugLog("Font Info (for font resource {}): Using fallback font #{:d} for character U+{:04X}",
-                     m_parent->getName(), fontIndex, (unsigned int)ch);
-        }
+        logIf(cv::r_debug_font_unicode.getBool() && fontIndex > 0,
+              "Font Info (for font resource {}): Using fallback font #{:d} for character U+{:04X}", m_parent->getName(),
+              fontIndex, (unsigned int)ch);
 
         // load glyph from the selected font face
         if(!loadGlyphFromFace(ch, targetFace, fontIndex)) return false;
@@ -1071,21 +1068,11 @@ void McFont::addToBatch(const UString &text, const vec3 &pos, Color color) {
 }
 void McFont::flushBatch() { return pImpl->flushBatch(); }
 
-float McFont::getGlyphWidth(char16_t character) const {
-    return pImpl->getGlyphWidth(character);
-}
-float McFont::getGlyphHeight(char16_t character) const {
-    return pImpl->getGlyphHeight(character);
-}
-float McFont::getStringWidth(const UString &text) const {
-    return pImpl->getStringWidth(text);
-}
-float McFont::getStringHeight(const UString &text) const {
-    return pImpl->getStringHeight(text);
-}
-std::vector<UString> McFont::wrap(const UString &text, f64 max_width) const {
-    return pImpl->wrap(text, max_width);
-}
+float McFont::getGlyphWidth(char16_t character) const { return pImpl->getGlyphWidth(character); }
+float McFont::getGlyphHeight(char16_t character) const { return pImpl->getGlyphHeight(character); }
+float McFont::getStringWidth(const UString &text) const { return pImpl->getStringWidth(text); }
+float McFont::getStringHeight(const UString &text) const { return pImpl->getStringHeight(text); }
+std::vector<UString> McFont::wrap(const UString &text, f64 max_width) const { return pImpl->wrap(text, max_width); }
 
 ////////////////////////////////////////////////////////////////////////////////////
 // Public passthroughs end
@@ -1100,13 +1087,13 @@ namespace {  // static namespace
 bool loadFallbackFont(const UString &fontPath, bool isSystemFont) {
     FT_Face face{};
     if(FT_New_Face(s_sharedFtLibrary, fontPath.toUtf8(), 0, &face)) {
-        if(cv::r_debug_font_unicode.getBool()) debugLog("Font Warning: Failed to load fallback font: {:s}", fontPath);
+        logIfCV(r_debug_font_unicode, "Font Warning: Failed to load fallback font: {:s}", fontPath);
         return false;
     }
 
     if(FT_Select_Charmap(face, ft_encoding_unicode)) {
-        if(cv::r_debug_font_unicode.getBool())
-            debugLog("Font Warning: Failed to select unicode charmap for fallback font: {:s}", fontPath);
+        logIfCV(r_debug_font_unicode, "Font Warning: Failed to select unicode charmap for fallback font: {:s}",
+                fontPath);
         FT_Done_Face(face);
         return false;
     }
@@ -1168,7 +1155,7 @@ bool McFont::initSharedResources() {
     std::vector<std::string> bundledFallbacks = env->getFilesInFolder(MCENGINE_FONTS_PATH "/");
     for(const auto &fontName : bundledFallbacks) {
         if(loadFallbackFont(UString{fontName}, false)) {
-            if(cv::r_debug_font_unicode.getBool()) debugLog("Font Info: Loaded bundled fallback font: {:s}", fontName);
+            logIfCV(r_debug_font_unicode, "Font Info: Loaded bundled fallback font: {:s}", fontName);
         }
     }
 

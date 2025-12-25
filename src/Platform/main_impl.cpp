@@ -23,6 +23,7 @@
 #include "GPUDriverConfigurator.h"
 #include "Graphics.h"
 #include "SString.h"
+#include "Parsing.h"
 
 SDLMain::SDLMain(const std::unordered_map<std::string, std::optional<std::string>> &argMap,
                  const std::vector<std::string> &argVec)
@@ -488,9 +489,9 @@ bool SDLMain::createWindow() {
 
         // setup antialiasing from -aa command line argument
         if(m_mArgMap["-aa"].has_value()) {
-            auto aaSamples = std::strtoull(m_mArgMap["-aa"].value().c_str(), nullptr, 10);
+            auto aaSamples = Parsing::strto<u64>(m_mArgMap["-aa"].value());
             if(aaSamples > 1) {
-                aaSamples = std::clamp(std::bit_floor(aaSamples), 2ULL, 16ULL);
+                aaSamples = std::clamp(std::bit_floor(aaSamples), (u64)2, (u64)16);
                 SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
                 SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, static_cast<int>(aaSamples));
             }

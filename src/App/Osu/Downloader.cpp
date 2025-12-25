@@ -510,25 +510,25 @@ BeatmapSetMetadata parse_beatmapset_metadata(std::string_view server_response) {
     meta.artist = tokens[1];
     meta.title = tokens[2];
     meta.creator = tokens[3];
-    meta.ranking_status = SString::strto<u8>(tokens[4]);
-    meta.avg_user_rating = SString::strto<f32>(tokens[5]);
-    meta.last_update = SString::strto<u64>(tokens[6]);  // TODO: incorrect?
-    meta.set_id = SString::strto<i32>(tokens[7]);
+    meta.ranking_status = Parsing::strto<u8>(tokens[4]);
+    meta.avg_user_rating = Parsing::strto<f32>(tokens[5]);
+    meta.last_update = Parsing::strto<u64>(tokens[6]);  // TODO: incorrect?
+    meta.set_id = Parsing::strto<i32>(tokens[7]);
 
     if(tokens.size() < 9) return meta;
-    meta.topic_id = SString::strto<i32>(tokens[8]);
+    meta.topic_id = Parsing::strto<i32>(tokens[8]);
 
     if(tokens.size() < 10) return meta;
-    meta.has_video = SString::strto<bool>(tokens[9]);
+    meta.has_video = Parsing::strto<bool>(tokens[9]);
 
     if(tokens.size() < 11) return meta;
-    meta.has_storyboard = SString::strto<bool>(tokens[10]);
+    meta.has_storyboard = Parsing::strto<bool>(tokens[10]);
 
     if(tokens.size() < 12) return meta;
-    meta.osz_filesize = SString::strto<u64>(tokens[11]);
+    meta.osz_filesize = Parsing::strto<u64>(tokens[11]);
 
     if(tokens.size() < 13) return meta;
-    meta.osz_filesize_novideo = SString::strto<u64>(tokens[12]);
+    meta.osz_filesize_novideo = Parsing::strto<u64>(tokens[12]);
 
     if(tokens.size() < 14) return meta;
     const auto maps = SString::split(tokens[13], ',');
@@ -536,7 +536,7 @@ BeatmapSetMetadata parse_beatmapset_metadata(std::string_view server_response) {
         const auto spl = SString::split(map, '@');
         if(spl.size() != 2) continue;
 
-        meta.beatmaps.push_back(BeatmapMetadata{.version{spl[0]}, .mode = SString::strto<u8>(spl[1])});
+        meta.beatmaps.push_back(BeatmapMetadata{.version{spl[0]}, .mode = Parsing::strto<u8>(spl[1])});
     }
 
     return meta;

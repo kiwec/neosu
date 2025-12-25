@@ -3409,7 +3409,7 @@ void BeatmapInterface::write_frame() {
 }
 
 void BeatmapInterface::onModUpdate(bool rebuildSliderVertexBuffers, bool recomputeDrainRate) {
-    if(cv::debug_osu.getBool()) debugLog("onModUpdate() @ {:f}", engine->getTime());
+    logIfCV(debug_osu, "onModUpdate() @ {:f}", engine->getTime());
 
     this->updatePlayfieldMetrics();
     this->updateHitobjectMetrics();
@@ -3459,7 +3459,7 @@ void BeatmapInterface::onModUpdate(bool rebuildSliderVertexBuffers, bool recompu
 }
 
 void BeatmapInterface::resetLiveStarsTasks() {
-    if(cv::debug_osu.getBool()) debugLog("called");
+    logIfCV(debug_osu, "called");
 
     this->ppv2_calc.invalidate();
 }

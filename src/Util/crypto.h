@@ -67,7 +67,7 @@ std::string encode64(const std::array<u8, N>& src) {
     return encode64(src.data(), N);
 }
 
-std::vector<u8> decode64(std::string src);
+std::vector<u8> decode64(std::string_view src);
 
 template <size_t N>
 std::string encodehex(const std::array<u8, N>& src) {

@@ -223,7 +223,7 @@ std::string encode64(const u8* src, size_t len) {
     return "";
 }
 
-std::vector<u8> decode64(std::string srcParam) {
+std::vector<u8> decode64(std::string_view srcParam) {
     const u8* src = (u8*)srcParam.data();
     size_t len = srcParam.length();
 

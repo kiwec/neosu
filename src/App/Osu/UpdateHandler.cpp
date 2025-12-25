@@ -5,6 +5,7 @@
 #include "BanchoNetworking.h"
 #include "Bancho.h"
 #include "OsuConVars.h"
+#include "Parsing.h"
 #include "crypto.h"
 #include "Engine.h"
 #include "File.h"
@@ -79,11 +80,11 @@ void UpdateHandler::onVersionCheckComplete(const std::string &response, bool suc
         return;
     }
 
-    auto lines = SString::split<std::string>(response, '\n');
-    f32 latest_version = strtof(lines[0].c_str(), nullptr);
+    const std::vector<std::string_view> lines = SString::split(response, '\n');
+    f32 latest_version = Parsing::strto<f32>(lines[0]);
     u64 latest_build_tms = 0;
     std::string online_update_hash;
-    if(lines.size() > 1) latest_build_tms = std::strtoull(lines[1].c_str(), nullptr, 10);
+    if(lines.size() > 1) latest_build_tms = Parsing::strto<u64>(lines[1]);
     if(lines.size() > 2) online_update_hash = lines[2];
     if(latest_version == 0.f && latest_build_tms == 0) {
         this->status = force_update ? STATUS_ERROR : STATUS_IDLE;

@@ -22,7 +22,7 @@ void Sound::initAsync() {
         this->doPathFixup();
     }
 
-    if(cv::debug_rm.getBool()) debugLog("Resource Manager: Loading {:s}", this->sFilePath);
+    logIfCV(debug_rm, "Resource Manager: Loading {:s}", this->sFilePath);
 
     // sanity check for malformed audio files
     std::string fileExtensionLowerCase{SString::to_lower(env->getFileExtensionFromFilePath(this->sFilePath))};

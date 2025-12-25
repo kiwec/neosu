@@ -11,6 +11,7 @@
 #include "NotificationOverlay.h"
 #include "Osu.h"
 #include "Environment.h"
+#include "Parsing.h"
 #include "RoomScreen.h"
 #include "SongBrowser/SongBrowser.h"
 #include "TooltipOverlay.h"
@@ -75,7 +76,7 @@ void ChatLink::onMouseUpInside(bool /*left*/, bool /*right*/) {
         // If the password has a space in it, parsing will break, but there's no way around it...
         // osu!stable also considers anything after a space to be part of the lobby title :(
         std::regex_search(link_str, match, std::regex("osump://(\\d+)/(\\S*)"));
-        u32 invite_id = static_cast<u32>(strtoul(match.str(1).c_str(), nullptr, 10));
+        u32 invite_id = Parsing::strto<u32>(match.str(1));
         UString password = match.str(2).c_str();
         osu->getLobby()->joinRoom(invite_id, password);
         return;
@@ -87,7 +88,7 @@ void ChatLink::onMouseUpInside(bool /*left*/, bool /*right*/) {
     user_pattern.append(escaped_endpoint);
     user_pattern.append("/u(sers)?/(\\d+)");
     if(std::regex_search(link_str, match, std::regex(user_pattern.toUtf8()))) {
-        i32 user_id = std::stoi(match.str(3));
+        i32 user_id = Parsing::strto<i32>(match.str(3));
         osu->getUserActions()->open(user_id);
         return;
     }
@@ -98,7 +99,7 @@ void ChatLink::onMouseUpInside(bool /*left*/, bool /*right*/) {
     map_pattern.append(escaped_endpoint);
     map_pattern.append(R"(|osu\.ppy\.sh)/b(eatmaps)?/(\d+))");
     if(std::regex_search(link_str, match, std::regex(map_pattern.toUtf8()))) {
-        i32 map_id = std::stoi(match.str(4));
+        i32 map_id = Parsing::strto<i32>(match.str(4));
         this->open_beatmap_link(map_id, 0);
         return;
     }
@@ -109,10 +110,10 @@ void ChatLink::onMouseUpInside(bool /*left*/, bool /*right*/) {
     set_pattern.append(escaped_endpoint);
     set_pattern.append(R"(|osu\.ppy\.sh)/beatmapsets/(\d+)(#osu/(\d+))?)");
     if(std::regex_search(link_str, match, std::regex(set_pattern.toUtf8()))) {
-        i32 set_id = std::stoi(match.str(3));
+        i32 set_id = Parsing::strto<i32>(match.str(3));
         i32 map_id = 0;
         if(match[5].matched) {
-            map_id = std::stoi(match.str(5));
+            map_id = Parsing::strto<i32>(match.str(5));
         }
 
         this->open_beatmap_link(map_id, set_id);

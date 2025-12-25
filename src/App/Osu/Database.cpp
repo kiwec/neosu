@@ -199,7 +199,7 @@ Database::DatabaseType Database::getDBType(std::string_view db_path) {
 void Database::AsyncDBLoader::init() {
     if(!db) return;  // don't crash when exiting while loading db
 
-    if(cv::debug_db.getBool() || cv::debug_async_db.getBool()) debugLog("(AsyncDBLoader) start");
+    logIf(cv::debug_db.getBool() || cv::debug_async_db.getBool(), "(AsyncDBLoader) start");
 
     if(db->needs_raw_load) {
         db->scheduleLoadRaw();
@@ -213,12 +213,12 @@ void Database::AsyncDBLoader::init() {
         this->setReady(true);
     }
 
-    if(cv::debug_db.getBool() || cv::debug_async_db.getBool()) debugLog("(AsyncDBLoader) done");
+    logIf(cv::debug_db.getBool() || cv::debug_async_db.getBool(), "(AsyncDBLoader) done");
 }
 
 // run immediately on a separate thread when resourceManager->loadResource() is called
 void Database::AsyncDBLoader::initAsync() {
-    if(cv::debug_db.getBool() || cv::debug_async_db.getBool()) debugLog("(AsyncDBLoader) start");
+    logIf(cv::debug_db.getBool() || cv::debug_async_db.getBool(), "(AsyncDBLoader) start");
     assert(db != nullptr);
 
     db->findDatabases();
@@ -254,11 +254,11 @@ void Database::AsyncDBLoader::initAsync() {
 done:
 
     this->setAsyncReady(true);
-    if(cv::debug_db.getBool() || cv::debug_async_db.getBool()) debugLog("(AsyncDBLoader) done");
+    logIf(cv::debug_db.getBool() || cv::debug_async_db.getBool(), "(AsyncDBLoader) done");
 }
 
 void Database::startLoader() {
-    if(cv::debug_db.getBool() || cv::debug_async_db.getBool()) debugLog("start");
+    logIf(cv::debug_db.getBool() || cv::debug_async_db.getBool(), "start");
     this->destroyLoader();
 
     // stop threads that rely on database content
@@ -295,17 +295,17 @@ void Database::startLoader() {
     resourceManager->requestNextLoadAsync();
     resourceManager->loadResource(this->loader);
 
-    if(cv::debug_db.getBool() || cv::debug_async_db.getBool()) debugLog("done");
+    logIf(cv::debug_db.getBool() || cv::debug_async_db.getBool(), "done");
 }
 
 void Database::destroyLoader() {
-    if(cv::debug_db.getBool() || cv::debug_async_db.getBool()) debugLog("start");
+    logIf(cv::debug_db.getBool() || cv::debug_async_db.getBool(), "start");
     directoryWatcher->stop_watching(NEOSU_MAPS_PATH "/");
     if(this->loader) {
         resourceManager->destroyResource(this->loader, ResourceManager::DestroyMode::FORCE_BLOCKING);  // force blocking
         this->loader = nullptr;
     }
-    if(cv::debug_db.getBool() || cv::debug_async_db.getBool()) debugLog("done");
+    logIf(cv::debug_db.getBool() || cv::debug_async_db.getBool(), "done");
 }
 
 Database::Database() : importTimer(std::make_unique<Timer>()) {

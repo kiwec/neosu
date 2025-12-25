@@ -111,7 +111,7 @@ void RenderTarget::draw(int x, int y, int width, int height) {
 
 void RenderTarget::drawRect(int x, int y, int width, int height) {
     if(!this->bReady) {
-        if(cv::debug_rt.getBool()) debugLog("WARNING: RenderTarget is not ready!\n");
+        logIfCV(debug_rt, "WARNING: RenderTarget is not ready!\n");
         return;
     }
 

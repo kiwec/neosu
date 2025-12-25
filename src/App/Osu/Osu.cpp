@@ -385,7 +385,7 @@ Osu::Osu() : App(), MouseListener(), global_osu_(this) {
     // don't auto update if this env var is set to anything other than 0 or empty (if it is set)
     if constexpr(!Env::cfg(BUILD::DEBUG)) {  // don't auto-update debug builds
         const std::string extUpdater = Environment::getEnvVariable("NEOSU_EXTERNAL_UPDATE_PROVIDER");
-        if(cv::auto_update.getBool() && (extUpdater.empty() || strtol(extUpdater.c_str(), nullptr, 10) == 0)) {
+        if(cv::auto_update.getBool() && (extUpdater.empty() || Parsing::strto<bool>(extUpdater) == false)) {
             bool force_update = cv::bleedingedge.getBool() != cv::is_bleedingedge.getBool();
             this->updateHandler->checkForUpdates(force_update);
         }

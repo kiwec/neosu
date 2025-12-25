@@ -21,6 +21,7 @@
 #include "Engine.h"
 #include "File.h"
 #include "Font.h"
+#include "Parsing.h"
 #include "Sound.h"
 #include "RenderTarget.h"
 #include "HUD.h"
@@ -157,10 +158,10 @@ MainMenu::MainMenu() : OsuScreen() {
             u64 buildstamp = 0;
             // get version number
             if(versionFile.canRead() && ((linebuf = versionFile.readLine()) != "") &&
-               ((version = std::strtod(linebuf.c_str(), nullptr)) > 0.)) {
+               ((version = Parsing::strto<f64>(linebuf)) > 0.)) {
                 // get build timestamp
                 if(versionFile.canRead() && ((linebuf = versionFile.readLine()) != "") &&
-                   ((buildstamp = std::strtoull(linebuf.c_str(), nullptr, 10)) > 0)) {
+                   ((buildstamp = Parsing::strto<u64>(linebuf)) > 0)) {
                     // ignore bogus build timestamps (before 2025 or after 2030)
                     if(buildstamp > 30000000 || buildstamp < 25000000) {
                         buildstamp = cv::build_timestamp.getVal<u64>();

@@ -52,7 +52,7 @@ void DirectX11Shader::init() {
             const std::string &desc = parsedVertexShader.descs[i];
             const auto tokens = SString::split(desc, "::");
 
-            if(cv::debug_shaders.getBool()) debugLog("descs[{}] = {:s}", (int)i, desc);
+            logIfCV(debug_shaders, "descs[{}] = {:s}", (int)i, desc);
 
             if(tokens.size() > 4) {
                 const auto descType = tokens[0];

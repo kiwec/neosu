@@ -88,16 +88,16 @@ std::vector<Frame> get_frames(u8* replay_data, uSz replay_size) {
             Frame frame;
 
             char* ms = Parsing::strtok_x('|', &line);
-            frame.milliseconds_since_last_frame = strtol(ms, nullptr, 10);
+            frame.milliseconds_since_last_frame = Parsing::strto<i32>(ms);
 
             char* x = Parsing::strtok_x('|', &line);
-            frame.x = strtof(x, nullptr);
+            frame.x = Parsing::strto<f32>(x);
 
             char* y = Parsing::strtok_x('|', &line);
-            frame.y = strtof(y, nullptr);
+            frame.y = Parsing::strto<f32>(y);
 
             char* flags = Parsing::strtok_x(',', &line);
-            frame.key_flags = static_cast<u8>(strtoul(flags, nullptr, 10));
+            frame.key_flags = Parsing::strto<u8>(flags);
 
             if(frame.milliseconds_since_last_frame != -12345) {
                 cur_music_pos += frame.milliseconds_since_last_frame;

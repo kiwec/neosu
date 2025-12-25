@@ -419,22 +419,22 @@ bool parse_timing_point(std::string_view curLine, DatabaseBeatmap::TIMINGPOINT &
 void parse_hitsamples(std::string_view hitSampleStr, HitSamples &samples) {
     if(hitSampleStr.empty()) return;
 
-    auto parts = SString::split(hitSampleStr, ':');
+    const std::vector<std::string_view> parts = SString::split(hitSampleStr, ':');
 
     // Parse available components, using defaults for missing ones
     // ignore errors, parse as many parts as we can
     if(parts.size() >= 1) {
-        samples.normalSet = SString::strto<u8>(parts[0]);
+        samples.normalSet = Parsing::strto<u8>(parts[0]);
     }
     if(parts.size() >= 2) {
-        samples.additionSet = SString::strto<u8>(parts[1]);
+        samples.additionSet = Parsing::strto<u8>(parts[1]);
     }
     if(parts.size() >= 3) {
-        samples.index = SString::strto<i32>(parts[2]);
+        samples.index = Parsing::strto<i32>(parts[2]);
     }
     if(parts.size() >= 4) {
         i32 volume{};
-        volume = SString::strto<i32>(parts[3]);  // for some reason this can be negative
+        volume = Parsing::strto<i32>(parts[3]);  // for some reason this can be negative
         samples.volume = std::clamp<u8>(volume, 0, 100);
     }
     if(parts.size() >= 5) {
@@ -1335,7 +1335,7 @@ DatabaseBeatmap::LOAD_META_RESULT DatabaseBeatmap::loadMetadata(bool compute_md5
                 .error = {LoadError::LOADMETADATA_ON_BEATMAPSET}};  // we are a beatmapset, not a difficulty
     }
 
-    if(cv::debug_osu.getBool() || cv::debug_db.getBool()) debugLog("loading {:s}", this->sFilePath.c_str());
+    logIf(cv::debug_osu.getBool() || cv::debug_db.getBool(), "loading {:s}", this->sFilePath);
 
     FixedSizeArray<u8> fileBuffer;
     size_t beatmapFileSize{0};
