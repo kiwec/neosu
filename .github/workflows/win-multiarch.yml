@@ -43,10 +43,12 @@ jobs:
       - name: Set up build directory
         run: |
           mkdir -p "$(pwd)"/build-out/build
+          mkdir -p "$(pwd)"/build-out/.ltocache-gcc
+          mkdir -p "$(pwd)"/build-out/.ltocache-clang
           mkdir -p ${{ env.CCACHE_DIR }}
 
       - name: Cache dependency tarballs
-        uses: actions/cache@v4.3.0
+        uses: actions/cache@v5.0.1
         with:
           path: |
             build-aux/cache
@@ -55,7 +57,7 @@ jobs:
             tarballs-win-${{ matrix.arch }}-
 
       - name: Cache built dependencies
-        uses: actions/cache@v4.3.0
+        uses: actions/cache@v5.0.1
         with:
           path: |
             build-out/build/deps
@@ -64,9 +66,12 @@ jobs:
             deps-win-${{ matrix.arch }}-${{ hashFiles('configure.ac', 'Makefile.am') }}
 
       - name: ccache
-        uses: actions/cache@v4.3.0
+        uses: actions/cache@v5.0.1
         with:
-          path: ${{ env.CCACHE_DIR }}
+          path: |
+            ${{ env.CCACHE_DIR }}
+            build-out/.ltocache-gcc
+            build-out/.ltocache-clang
           key: ccache-win-${{ matrix.arch }}-${{ github.sha }}
           restore-keys: |
             ccache-win-${{ matrix.arch }}-
