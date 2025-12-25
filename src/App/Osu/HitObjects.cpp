@@ -245,7 +245,7 @@ void HitObject::drawHitResultAnim(const HITRESULTANIM &hitresultanim) {
     if((hitresultanim.time - cv::hitresult_duration.getFloat()) <
            engine->getTime()  // NOTE: this is written like that on purpose, don't change it ("future" results can be
                               // scheduled with it, e.g. for slider end)
-       && (hitresultanim.time + cv::hitresult_duration_max.getFloat() * (1.0f / osu->getAnimationSpeedMultiplier())) >
+       && (hitresultanim.time + cv::hitresult_duration_max.getFloat() * (1.0f / this->pf->getBaseAnimationSpeed())) >
               engine->getTime()) {
         const auto &skin = this->pf->getSkin();
         {
@@ -270,7 +270,7 @@ void HitObject::drawHitResultAnim(const HITRESULTANIM &hitresultanim) {
             skin->i_hit300k->setAnimationFrameClampUp();
 
             const float animPercentInv =
-                1.0f - (((engine->getTime() - hitresultanim.time) * osu->getAnimationSpeedMultiplier()) /
+                1.0f - (((engine->getTime() - hitresultanim.time) * this->pf->getBaseAnimationSpeed()) /
                         cv::hitresult_duration.getFloat());
 
             drawHitResult(this->pf, this->pf->osuCoords2Pixels(hitresultanim.rawPos), hitresultanim.result,
@@ -286,7 +286,7 @@ void HitObject::update(i32 curPos, f64 /*frame_time*/) {
 
     const auto mods = this->pi->getMods();
 
-    const double animationSpeedMultiplier = mods.speed / osu->getAnimationSpeedMultiplier();
+    const double animationSpeedMultiplier = this->pi->getSpeedAdjustedAnimationSpeed();
     this->iFadeInTime = GameRules::getFadeInTime() * animationSpeedMultiplier;
     this->iApproachTime =
         (this->bUseFadeInTimeAsApproachTime ? this->iFadeInTime : (i32)this->pi->getCachedApproachTimeForUpdate());
@@ -394,8 +394,8 @@ void HitObject::update(i32 curPos, f64 /*frame_time*/) {
             0.0f, 1.0f);
 
         // hittable dim, see https://github.com/ppy/osu/pull/20572
-        if(cv::hitobject_hittable_dim.getBool() && (!flags::has<ModFlags::Mafham>(this->pi->getMods().flags) ||
-                                                    !cv::mod_mafham_ignore_hittable_dim.getBool())) {
+        if(cv::hitobject_hittable_dim.getBool() &&
+           (!flags::has<ModFlags::Mafham>(mods.flags) || !cv::mod_mafham_ignore_hittable_dim.getBool())) {
             const i32 hittableDimFadeStart = this->click_time - (i32)GameRules::getHitWindowMiss();
 
             // yes, this means the un-dim animation cuts into the already clickable range
@@ -450,7 +450,7 @@ void HitObject::addHitResult(LiveScore::HIT result, i32 delta, bool isEndOfCombo
 
     // currently a maximum of 2 simultaneous results are supported (for drawing, per hitobject)
     if(engine->getTime() >
-       this->hitresultanim1.time + cv::hitresult_duration_max.getFloat() * (1.0f / osu->getAnimationSpeedMultiplier()))
+       this->hitresultanim1.time + cv::hitresult_duration_max.getFloat() * (1.0f / this->pf->getBaseAnimationSpeed()))
         this->hitresultanim1 = hitresultanim;
     else
         this->hitresultanim2 = hitresultanim;
@@ -951,7 +951,8 @@ void Circle::onHit(LiveScore::HIT result, i32 delta, float targetDelta, float ta
         this->samples.play(pan, delta, this->click_time);
 
         this->fHitAnimation = 0.001f;  // quickfix for 1 frame missing images
-        anim::moveQuadOut(&this->fHitAnimation, 1.0f, GameRules::getFadeOutTime(), true);
+        anim::moveQuadOut(&this->fHitAnimation, 1.0f, GameRules::getFadeOutTime(this->pi->getBaseAnimationSpeed()),
+                          true);
     }
 
     // add it, and we are finished
@@ -1828,7 +1829,7 @@ void Slider::update(i32 curPos, f64 frame_time) {
 }
 
 void Slider::updateAnimations(i32 curPos) {
-    float animation_multiplier = this->pi->getSpeedMultiplier() / osu->getAnimationSpeedMultiplier();
+    float animation_multiplier = this->pf->getSpeedAdjustedAnimationSpeed();
 
     float fadein_fade_time = cv::slider_followcircle_fadein_fade_time.getFloat() * animation_multiplier;
     float fadeout_fade_time = cv::slider_followcircle_fadeout_fade_time.getFloat() * animation_multiplier;
@@ -2003,14 +2004,17 @@ void Slider::onHit(LiveScore::HIT result, i32 delta, bool startOrEnd, float targ
 
             if(!startOrEnd) {
                 this->fStartHitAnimation = 0.001f;  // quickfix for 1 frame missing images
-                anim::moveQuadOut(&this->fStartHitAnimation, 1.0f, GameRules::getFadeOutTime(), true);
+                anim::moveQuadOut(&this->fStartHitAnimation, 1.0f,
+                                  GameRules::getFadeOutTime(this->pi->getBaseAnimationSpeed()), true);
             } else {
                 if(this->iRepeat % 2 != 0) {
                     this->fEndHitAnimation = 0.001f;  // quickfix for 1 frame missing images
-                    anim::moveQuadOut(&this->fEndHitAnimation, 1.0f, GameRules::getFadeOutTime(), true);
+                    anim::moveQuadOut(&this->fEndHitAnimation, 1.0f,
+                                      GameRules::getFadeOutTime(this->pi->getBaseAnimationSpeed()), true);
                 } else {
                     this->fStartHitAnimation = 0.001f;  // quickfix for 1 frame missing images
-                    anim::moveQuadOut(&this->fStartHitAnimation, 1.0f, GameRules::getFadeOutTime(), true);
+                    anim::moveQuadOut(&this->fStartHitAnimation, 1.0f,
+                                      GameRules::getFadeOutTime(this->pi->getBaseAnimationSpeed()), true);
                 }
             }
         }
@@ -2019,7 +2023,9 @@ void Slider::onHit(LiveScore::HIT result, i32 delta, bool startOrEnd, float targ
         if(this->pf != nullptr && startOrEnd) {
             this->fEndSliderBodyFadeAnimation = 0.001f;  // quickfix for 1 frame missing images
             anim::moveQuadOut(&this->fEndSliderBodyFadeAnimation, 1.0f,
-                              GameRules::getFadeOutTime() * cv::slider_body_fade_out_time_multiplier.getFloat(), true);
+                              GameRules::getFadeOutTime(this->pi->getBaseAnimationSpeed()) *
+                                  cv::slider_body_fade_out_time_multiplier.getFloat(),
+                              true);
             // debugLog("stopping due to end body fadeout");
             this->samples.stop();
         }
@@ -2120,7 +2126,7 @@ void Slider::onRepeatHit(const SLIDERCLICK &click) {
             }
         }
 
-        float animation_multiplier = this->pf->getSpeedMultiplier() / osu->getAnimationSpeedMultiplier();
+        float animation_multiplier = this->pf->getSpeedAdjustedAnimationSpeed();
         float tick_pulse_time = cv::slider_followcircle_tick_pulse_time.getFloat() * animation_multiplier;
 
         this->fFollowCircleTickAnimationScale = 0.0f;
@@ -2128,10 +2134,12 @@ void Slider::onRepeatHit(const SLIDERCLICK &click) {
 
         if(click.sliderend) {
             this->fEndHitAnimation = 0.001f;  // quickfix for 1 frame missing images
-            anim::moveQuadOut(&this->fEndHitAnimation, 1.0f, GameRules::getFadeOutTime(), true);
+            anim::moveQuadOut(&this->fEndHitAnimation, 1.0f,
+                              GameRules::getFadeOutTime(this->pi->getBaseAnimationSpeed()), true);
         } else {
             this->fStartHitAnimation = 0.001f;  // quickfix for 1 frame missing images
-            anim::moveQuadOut(&this->fStartHitAnimation, 1.0f, GameRules::getFadeOutTime(), true);
+            anim::moveQuadOut(&this->fStartHitAnimation, 1.0f,
+                              GameRules::getFadeOutTime(this->pi->getBaseAnimationSpeed()), true);
         }
     }
 
@@ -2198,7 +2206,7 @@ void Slider::onTickHit(const SLIDERCLICK &click) {
             }
         }
 
-        float animation_multiplier = this->pf->getSpeedMultiplier() / osu->getAnimationSpeedMultiplier();
+        float animation_multiplier = this->pf->getSpeedAdjustedAnimationSpeed();
         float tick_pulse_time = cv::slider_followcircle_tick_pulse_time.getFloat() * animation_multiplier;
 
         this->fFollowCircleTickAnimationScale = 0.0f;
@@ -2346,7 +2354,8 @@ Spinner::~Spinner() { this->onReset(0); }
 void Spinner::draw() {
     HitObject::draw();
     const float fadeOutMultiplier = cv::spinner_fade_out_time_multiplier.getFloat();
-    const i32 fadeOutTimeMS = (i32)(GameRules::getFadeOutTime() * 1000.0f * fadeOutMultiplier);
+    const i32 fadeOutTimeMS =
+        (i32)(GameRules::getFadeOutTime(this->pi->getBaseAnimationSpeed()) * 1000.0f * fadeOutMultiplier);
     const i32 deltaEnd = this->iDelta + this->duration;
     if((this->bFinished || !this->bVisible) && (deltaEnd > 0 || (deltaEnd < -fadeOutTimeMS))) return;
 

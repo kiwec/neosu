@@ -6,18 +6,15 @@
 
 void Keyboard::update() {
     // std::vector<char16_t> charEventsConsumed;
-    while(!this->charEventQueue.empty()) {
-        auto event = this->charEventQueue.front();
-        this->charEventQueue.pop();
+    for(auto &event : this->charEventQueue) {
         this->onChar_internal(event);
         // if(event.isConsumed()) {
         //     charEventsConsumed.push_back(event.getCharCode());
         // }
     }
+    this->charEventQueue.clear();
 
-    while(!this->keyEventQueue.empty()) {
-        auto fullEvent = this->keyEventQueue.front();
-        this->keyEventQueue.pop();
+    for(auto &fullEvent : this->keyEventQueue) {
         switch(fullEvent.type) {
             case Type::KEYDOWN:
                 // If we got a char event and something handled it, don't let an associated keyDown event go through.
@@ -46,11 +43,12 @@ void Keyboard::update() {
                 break;
         }
     }
+    this->keyEventQueue.clear();
 }
 
-void Keyboard::onKeyDown(KeyboardEvent event) { this->keyEventQueue.emplace(event, Type::KEYDOWN); }
-void Keyboard::onKeyUp(KeyboardEvent event) { this->keyEventQueue.emplace(event, Type::KEYUP); }
-void Keyboard::onChar(KeyboardEvent event) { this->charEventQueue.emplace(event); }
+void Keyboard::onKeyDown(KeyboardEvent event) { this->keyEventQueue.emplace_back(event, Type::KEYDOWN); }
+void Keyboard::onKeyUp(KeyboardEvent event) { this->keyEventQueue.emplace_back(event, Type::KEYUP); }
+void Keyboard::onChar(KeyboardEvent event) { this->charEventQueue.emplace_back(event); }
 
 void Keyboard::reset() {
     this->controlDown = 0;

@@ -151,9 +151,7 @@ void Mouse::update() {
 
 out:
     // relay collected button/wheel events to listeners (after updating position)
-    while(!this->eventQueue.empty()) {
-        auto fullEvent = this->eventQueue.front();
-        this->eventQueue.pop();
+    for(auto &fullEvent : this->eventQueue) {
         switch(fullEvent.type) {
             case Type::BUTTON:
                 this->onButtonChange_internal(fullEvent.orig);
@@ -166,6 +164,7 @@ out:
                 break;
         }
     }
+    this->eventQueue.clear();
 
     this->resetWheelDelta();
 }
@@ -188,15 +187,15 @@ void Mouse::onPosChange(vec2 pos) {
 }
 
 void Mouse::onWheelVertical(int delta) {
-    this->eventQueue.emplace(FullEvent{.orig = {}, .wheelVDelta = delta, .wheelHDelta = {}, .type = Type::WHEELV});
+    this->eventQueue.emplace_back(FullEvent{.orig = {}, .wheelVDelta = delta, .wheelHDelta = {}, .type = Type::WHEELV});
 }
 
 void Mouse::onWheelHorizontal(int delta) {
-    this->eventQueue.emplace(FullEvent{.orig = {}, .wheelVDelta = {}, .wheelHDelta = delta, .type = Type::WHEELH});
+    this->eventQueue.emplace_back(FullEvent{.orig = {}, .wheelVDelta = {}, .wheelHDelta = delta, .type = Type::WHEELH});
 }
 
 void Mouse::onButtonChange(ButtonEvent ev) {
-    this->eventQueue.emplace(FullEvent{.orig = ev, .wheelVDelta = {}, .wheelHDelta = {}, .type = Type::BUTTON});
+    this->eventQueue.emplace_back(FullEvent{.orig = ev, .wheelVDelta = {}, .wheelHDelta = {}, .type = Type::BUTTON});
 }
 
 void Mouse::onWheelVertical_internal(int delta) {

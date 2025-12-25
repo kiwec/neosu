@@ -1502,7 +1502,7 @@ bool BeatmapInterface::sortHitObjectByEndTimeComp(HitObject const *a, HitObject 
     return false;  // equivalent
 }
 
-i32 BeatmapInterface::getPVS() {
+i32 BeatmapInterface::getPVS() const {
     // this is an approximation with generous boundaries, it doesn't need to be exact (just good enough to filter 10000
     // hitobjects down to a few hundred or so) it will be used in both positive and negative directions (previous and
     // future hitobjects) to speed up loops which iterate over all hitobjects
@@ -2007,7 +2007,7 @@ void BeatmapInterface::drawFollowPoints() {
     // people notice a change after all this time (26.02.2020)
 
     // 0.7x means animation lasts only 0.7 of it's time
-    const f64 animationMultiplier = this->getSpeedMultiplier() / osu->getAnimationSpeedMultiplier();
+    const f64 animationMultiplier = this->getSpeedAdjustedAnimationSpeed();
     const i32 followPointApproachTime =
         animationMultiplier *
         (cv::followpoints_clamp.getBool()
@@ -2802,16 +2802,19 @@ void BeatmapInterface::update2() {
 
         // to avoid recalculating in HitObject::update every call
         this->fCachedApproachTimeForUpdate = this->getApproachTime();
+        this->fBaseAnimationSpeedFactor = osu->getAnimationSpeedMultiplier();
+        this->fSpeedAdjustedAnimationSpeedFactor = this->getSpeedMultiplier() / this->fBaseAnimationSpeedFactor;
 
-        const i32 pvs = !cv::mod_mafham.getBool()
-                            ? this->getPVS()
-                            : (likely(!this->hitobjects.empty())
-                                   ? (this->hitobjects[std::clamp<int>(this->iCurrentHitObjectIndex +
-                                                                           cv::mod_mafham_render_livesize.getInt() + 1,
-                                                                       0, this->hitobjects.size() - 1)]
-                                          ->click_time -
-                                      this->iCurMusicPosWithOffsets + 1500)
-                                   : this->getPVS());
+        const i32 pvs = [&]() -> i32 {
+            if(likely(!cv::mod_mafham.getBool()) || unlikely(this->hitobjects.empty())) {
+                return this->getPVS();
+            }
+            // mafham PVS
+            const i32 objIdx =
+                std::clamp<i32>(this->iCurrentHitObjectIndex + cv::mod_mafham_render_livesize.getInt() + 1, 0,
+                                (i32)this->hitobjects.size() - 1);
+            return this->hitobjects[objIdx]->click_time - this->iCurMusicPosWithOffsets + 1500;
+        }();
         const bool usePVS = cv::pvs.getBool();
 
         const int notelockType = cv::notelock_type.getInt();

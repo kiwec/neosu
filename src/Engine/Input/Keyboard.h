@@ -5,7 +5,6 @@
 #include "KeyBindings.h"
 #include "KeyboardListener.h"
 
-#include <queue>
 #include <vector>
 
 class Keyboard final : public InputDevice {
@@ -42,8 +41,8 @@ class Keyboard final : public InputDevice {
         Type type{Type::KEYDOWN};
     };
 
-    std::queue<FullKeyEvent> keyEventQueue;
-    std::queue<KeyboardEvent> charEventQueue;
+    std::vector<FullKeyEvent> keyEventQueue;
+    std::vector<KeyboardEvent> charEventQueue;
 
     void onKeyDown_internal(KeyboardEvent &event);
     void onKeyUp_internal(KeyboardEvent &event);

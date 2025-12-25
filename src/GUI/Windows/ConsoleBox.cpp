@@ -211,7 +211,6 @@ void ConsoleBox::drawLogOverlay() {
 }
 
 void ConsoleBox::processPendingLogAnimations() {
-    Sync::unique_lock lock(this->logMutex);
     // check if we have pending animation reset from logging thread
     if(this->bLogAnimationResetPending.exchange(false)) {
         // execute animation operations on main thread only
@@ -276,7 +275,7 @@ void ConsoleBox::mouse_update(bool *propagate_clicks) {
     }
 
     // handle suggestions
-    this->suggestion->mouse_update(propagate_clicks);
+    if(this->suggestion->isVisible()) this->suggestion->mouse_update(propagate_clicks);
 
     if(this->bSuggestionAnimateOut) {
         if(this->fSuggestionAnimation <= this->fSuggestionY) {
@@ -312,19 +311,21 @@ void ConsoleBox::mouse_update(bool *propagate_clicks) {
     const bool forceVisible =
         cv::console_overlay_timeout.getFloat() == 0.f /* infinite timeout */ || this->bForceLogVisible.exchange(false);
 
+    bool shouldClear = this->bClearPending;
+
     if(!forceVisible && engine->getTime() > this->fLogTime) {
         if(!anim::isAnimating(&this->fLogYPos) && this->fLogYPos == 0.0f)
             anim::moveQuadInOut(&this->fLogYPos,
                                 this->logFont->getHeight() * (cv::console_overlay_lines.getFloat() + 1), 0.5f);
 
         if(this->fLogYPos == this->logFont->getHeight() * (cv::console_overlay_lines.getInt() + 1)) {
-            Sync::unique_lock logGuard(this->logMutex);
-            this->bClearPending = false;
-            this->log_entries.clear();
+            shouldClear = true;
         }
     }
 
-    if(this->bClearPending) {
+    if(shouldClear) {
+        Sync::unique_lock logGuard(this->logMutex);
+
         this->bClearPending = false;
         this->log_entries.clear();
     }

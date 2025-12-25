@@ -274,21 +274,21 @@ class ConVar {
     }
 
     template <typename T = int>
-    [[nodiscard]] inline T getVal() const {
+    [[nodiscard]] forceinline T getVal() const {
         return static_cast<T>(this->getDouble());
     }
 
-    [[nodiscard]] inline int getInt() const { return static_cast<int>(this->getDouble()); }
-    [[nodiscard]] inline bool getBool() const { return !!static_cast<int>(this->getDouble()); }
-    [[nodiscard]] inline bool get() const { return !!static_cast<int>(this->getDouble()); }
-    [[nodiscard]] inline float getFloat() const { return static_cast<float>(this->getDouble()); }
+    [[nodiscard]] forceinline int getInt() const { return static_cast<int>(this->getDouble()); }
+    [[nodiscard]] forceinline bool getBool() const { return !!static_cast<int>(this->getDouble()); }
+    [[nodiscard]] forceinline bool get() const { return !!static_cast<int>(this->getDouble()); }
+    [[nodiscard]] forceinline float getFloat() const { return static_cast<float>(this->getDouble()); }
 
-    [[nodiscard]] inline const char *getHelpstring() const { return this->sHelpString; }
-    [[nodiscard]] inline const char *getName() const { return this->sName; }
-    [[nodiscard]] inline CONVAR_TYPE getType() const { return this->type; }
-    [[nodiscard]] inline uint8_t getFlags() const { return this->iFlags; }
+    [[nodiscard]] forceinline const char *getHelpstring() const { return this->sHelpString; }
+    [[nodiscard]] forceinline const char *getName() const { return this->sName; }
+    [[nodiscard]] forceinline CONVAR_TYPE getType() const { return this->type; }
+    [[nodiscard]] forceinline uint8_t getFlags() const { return this->iFlags; }
 
-    [[nodiscard]] inline bool canHaveValue() const { return this->bCanHaveValue; }
+    [[nodiscard]] forceinline bool canHaveValue() const { return this->bCanHaveValue; }
 
     [[nodiscard]] inline bool hasAnyCallbacks() const {
         return !std::holds_alternative<std::monostate>(this->callback) ||

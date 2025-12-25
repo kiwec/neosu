@@ -8,7 +8,6 @@
 #include "Vectors.h"
 
 #include <vector>
-#include <queue>
 
 class Mouse final : public InputDevice {
     NOCOPY_NOMOVE(Mouse)
@@ -88,7 +87,7 @@ class Mouse final : public InputDevice {
         Type type;
     };
 
-    std::queue<FullEvent> eventQueue;
+    std::vector<FullEvent> eventQueue;
 
     void onWheelVertical_internal(int delta);
     void onWheelHorizontal_internal(int delta);

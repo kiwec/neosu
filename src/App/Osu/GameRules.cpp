@@ -5,10 +5,10 @@
 #include "Osu.h"
 #include "OsuConVars.h"
 
-float GameRules::getFadeOutTime() {
+float GameRules::getFadeOutTime(float animationSpeedMultiplier) {
     const float fade_out_time = cv::hitobject_fade_out_time.getFloat();
     const float multiplier_min = cv::hitobject_fade_out_time_speed_multiplier_min.getFloat();
-    return fade_out_time * (1.0f / std::max(osu ? osu->getAnimationSpeedMultiplier() : 1.f, multiplier_min));
+    return fade_out_time * (1.0f / std::max(animationSpeedMultiplier, multiplier_min));
 }
 
 i32 GameRules::getFadeInTime() { return (i32)cv::hitobject_fade_in_time.getInt(); }

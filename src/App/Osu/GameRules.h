@@ -20,7 +20,7 @@ class GameRules {
     //************************//
 
     // this scales the fadeout duration with the current speed multiplier
-    static float getFadeOutTime();
+    static float getFadeOutTime(float animationSpeedMultiplier = 1.f);
     static i32 getFadeInTime();
 
     //********************//

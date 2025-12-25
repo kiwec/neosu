@@ -1775,15 +1775,17 @@ DatabaseBeatmap::TIMING_INFO DatabaseBeatmap::getTimingInfoForTimeAndTimingPoint
         int samplePoint = 0;
         int audioPoint = 0;
 
-        for(int i = 0; i < timingpoints.size(); i++) {
-            if(timingpoints[i].offset <= positionMS) {
-                audioPoint = i;
+        for(int i = -1; const auto &tp : timingpoints) {
+            // timingpoints are sorted by offset
+            if(tp.offset > positionMS) break;
+            ++i;
 
-                if(timingpoints[i].uninherited)
-                    point = i;
-                else
-                    samplePoint = i;
-            }
+            audioPoint = i;
+
+            if(tp.uninherited)
+                point = i;
+            else
+                samplePoint = i;
         }
 
         const f32 mult = (allowMultiplier && samplePoint > point && timingpoints[samplePoint].msPerBeat < 0)

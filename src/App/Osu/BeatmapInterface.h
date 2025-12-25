@@ -47,7 +47,7 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
     void update2();  // Used to be Playfield::update()
 
     // Potentially Visible Set gate time size, for optimizing draw() and update() when iterating over all hitobjects
-    i32 getPVS();
+    [[nodiscard]] i32 getPVS() const;
 
     // this should make all the necessary internal updates to hitobjects when legacy osu mods or static mods change
     // live (but also on start)
@@ -60,7 +60,7 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
     bool isLoading();
 
     // Returns true if the local player is loading
-    bool isActuallyLoading() const;
+    [[nodiscard]] bool isActuallyLoading() const;
 
     // returns true if we are actually just in the pause menu doing nothing (but NOT in "continue" screen)
     [[nodiscard]] bool isActuallyPausedAndNotSpectating() const;

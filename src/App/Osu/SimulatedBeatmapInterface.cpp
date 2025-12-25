@@ -224,9 +224,10 @@ u32 SimulatedBeatmapInterface::getLengthPlayable() const {
 }
 
 u32 SimulatedBeatmapInterface::getBreakDurationTotal() const {
-    if (unlikely(!this->beatmap && this->breaks.empty())) return 0;
+    if(unlikely(!this->beatmap && this->breaks.empty())) return 0;
 
-    if (this->beatmap) return this->beatmap->totalBreakDuration;
+    if(this->beatmap)
+        return this->beatmap->totalBreakDuration;
     else {
         u32 breakDurationTotal = 0;
         for(auto i : this->breaks) {
@@ -235,7 +236,6 @@ u32 SimulatedBeatmapInterface::getBreakDurationTotal() const {
 
         return breakDurationTotal;
     }
-
 }
 
 DatabaseBeatmap::BREAK SimulatedBeatmapInterface::getBreakForTimeRange(i32 startMS, i32 positionMS, i32 endMS) const {
@@ -366,7 +366,8 @@ i32 SimulatedBeatmapInterface::getPVS() {
     // this is an approximation with generous boundaries, it doesn't need to be exact (just good enough to filter 10000
     // hitobjects down to a few hundred or so) it will be used in both positive and negative directions (previous and
     // future hitobjects) to speed up loops which iterate over all hitobjects
-    return this->fCachedApproachTimeForUpdate + GameRules::getFadeInTime() + (i32)GameRules::getHitWindowMiss() + 1500;  // sanity
+    return this->fCachedApproachTimeForUpdate + GameRules::getFadeInTime() + (i32)GameRules::getHitWindowMiss() +
+           1500;  // sanity
 }
 
 void SimulatedBeatmapInterface::resetScore() {
@@ -421,6 +422,8 @@ void SimulatedBeatmapInterface::update(f64 frame_time) {
         bool spinner_active = false;
 
         this->fCachedApproachTimeForUpdate = this->getApproachTime();
+        this->fBaseAnimationSpeedFactor = 1.f;
+        this->fSpeedAdjustedAnimationSpeedFactor = this->getSpeedMultiplier() / this->fBaseAnimationSpeedFactor;
 
         const i32 pvs = this->getPVS();
         const int notelockType = this->mods.notelock_type;

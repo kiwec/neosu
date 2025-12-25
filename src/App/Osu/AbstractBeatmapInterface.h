@@ -55,12 +55,16 @@ class AbstractBeatmapInterface {
     i32 iMaxPossibleCombo = 0;
     u32 iScoreV2ComboPortionMaximum = 0;
 
+    // Cache for update loop
+    f32 fCachedApproachTimeForUpdate = 0.f;
+    f32 fSpeedAdjustedAnimationSpeedFactor = 1.f;
+    f32 fBaseAnimationSpeedFactor = 1.f;
+
     // It is assumed these values are set correctly
     u32 nb_hitobjects = 0;
     f32 fHitcircleDiameter = 0.f;
     f32 fRawHitcircleDiameter = 0.f;
     f32 fSliderFollowCircleDiameter = 0.f;
-    f32 fCachedApproachTimeForUpdate = 0.f;
     u8 lastPressedKey = 0;
     bool holding_slider = false;
 
@@ -81,4 +85,8 @@ class AbstractBeatmapInterface {
 
     // for HitObject::update to avoid recalculating for each object every frame
     [[nodiscard]] forceinline f32 getCachedApproachTimeForUpdate() const { return this->fCachedApproachTimeForUpdate; }
+    [[nodiscard]] forceinline f32 getSpeedAdjustedAnimationSpeed() const {
+        return this->fSpeedAdjustedAnimationSpeedFactor;
+    }
+    [[nodiscard]] forceinline f32 getBaseAnimationSpeed() const { return this->fBaseAnimationSpeedFactor; }
 };
