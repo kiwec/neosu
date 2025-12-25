@@ -453,7 +453,7 @@ void Engine::onShutdown() {
     if(this->bShuttingDown || !app->onShutdown()) return;
 
     this->bShuttingDown = true;
-    if(!!soundEngine) soundEngine->shutdown();
+    if(soundEngine) soundEngine->shutdown();
     env->shutdown();
 }
 
