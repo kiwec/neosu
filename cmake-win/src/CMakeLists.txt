@@ -52,6 +52,9 @@ set(PROJECT_URL "https://github.com/kiwec/neosu")
 string(TIMESTAMP BUILD_TIMESTAMP %y%m%d%H%M UTC)
 message(STATUS "Build timestamp: ${BUILD_TIMESTAMP}")
 
+string(TIMESTAMP CHANGELOG_TIMESTAMP %Y-%m-%d UTC)
+message(STATUS "Changelog timestamp: ${CHANGELOG_TIMESTAMP}")
+
 # Platform and feature detection
 set(MCENGINE_PLATFORM_WINDOWS ON)
 set(MCENGINE_FEATURE_DISCORD ON)

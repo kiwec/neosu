@@ -3,4 +3,7 @@
 
 #define BUILD_TIMESTAMP "@BUILD_TIMESTAMP@"
 
+/* YYYY-MM-DD , to use in Changelog.cpp instead of __DATE__ (which is e.g. Dec 25 2025) */
+#define CHANGELOG_TIMESTAMP "@CHANGELOG_TIMESTAMP@"
+
 #endif /* BUILD_TIMESTAMP_H */

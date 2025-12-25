@@ -15,6 +15,8 @@
 #include "Environment.h"
 #include "MakeDelegateWrapper.h"
 
+#include "build_timestamp.h"
+
 Changelog::Changelog() : ScreenBackable() {
     this->setPos(-1, -1);
     this->scrollView = new CBaseUIScrollView(-1, -1, 0, 0, "");
@@ -28,9 +30,10 @@ Changelog::Changelog() : ScreenBackable() {
     std::vector<CHANGELOG> changelogs;
 
     CHANGELOG v41_12;
-    v41_12.title = "41.12 (" __DATE__ ")";
+    v41_12.title = "41.12 (" CHANGELOG_TIMESTAMP ")";
     v41_12.changes = {
         R"(- Fixed map backgrounds being drawn in places they shouldn't be)",
+        R"(- Fixed some 2B drawing issues (e.g. : https://osu.ppy.sh/beatmapsets/613791#osu/1294898))",
     };
     changelogs.push_back(v41_12);
 

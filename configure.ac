@@ -14,6 +14,9 @@ AC_DEFINE_UNQUOTED([NEOSU_VERSION], [PACKAGE_VERSION], [Defined to the version o
 _tstamp=$(TZ=UTC date +%y%m%d%H%M)
 AC_SUBST([BUILD_TIMESTAMP], [$_tstamp])
 
+_changelog_tstamp=$(TZ=UTC date +%Y-%m-%d)
+AC_SUBST([CHANGELOG_TIMESTAMP], [$_changelog_tstamp])
+
 # shut up wine (i need to find what part of configure is doing the "checking if we are cross compiling" check and remove it)
 export DISPLAY= WAYLAND_DISPLAY= WINEDLLOVERRIDES="mscoree=;mshtml=;winex11.drv=;winewayland.drv=" WINEDEBUG=-all
 

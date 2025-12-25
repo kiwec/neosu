@@ -23,12 +23,12 @@ sed -Ei "2s/[0-9]+\.[0-9]+/$VERSION/" configure.ac
 autoconf
 
 # update previous version
-sed -E -i "s|(.*\.title = .*)(\" __DATE__ \")(.*)|\1$LASTDATE\3|" src/App/Osu/Changelog.cpp
+sed -E -i "s|(.*\.title = .*)(\" CHANGELOG_TIMESTAMP \")(.*)|\1$LASTDATE\3|" src/App/Osu/Changelog.cpp
 
 sed -i "/std::vector<CHANGELOG> changelogs;/a\\
 \\
     CHANGELOG v$VERSION_CL;\\
-    v$VERSION_CL.title = \"$VERSION (\" __DATE__ \")\";\\
+    v$VERSION_CL.title = \"$VERSION (\" CHANGELOG_TIMESTAMP \")\";\\
     v$VERSION_CL.changes = {\\
         R\"()\",\\
     };\\

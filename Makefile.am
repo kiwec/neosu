@@ -1061,7 +1061,7 @@ BUILT_SOURCES := \
 	$(DEPS_CACHE)/curl-$(CURL_VERSION)-2/certbundle/cacert.pem
 
 # making sure deps are built before main compile
-$(neosu_OBJECTS): src/config.h $(BUILT_SOURCES) $(EXTRA_BINDEPS)
+$(neosu_OBJECTS): $(BUILT_SOURCES) $(EXTRA_BINDEPS)
 
 # add all paths with sources as an include ("-I") flag
 NEOSU_INCLUDE_FLAGS := $(shell find $(srcdir)/src -not -path '*/.*' -type d -printf "-I%p ")

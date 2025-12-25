@@ -523,9 +523,7 @@ void Osu::draw() {
         this->lobby->draw();
         this->osuDirectScreen->draw();
         this->room->draw();
-
-        if(this->songBrowser != nullptr) this->songBrowser->draw();
-
+        this->songBrowser->draw();
         this->mainMenu->draw();
         this->changelog->draw();
         this->rankingScreen->draw();
@@ -1433,9 +1431,7 @@ void Osu::onPlayEnd(const FinishedScore &score, bool quit, bool /*aborted*/) {
     this->mainMenu->setVisible(false);
     this->modSelector->setVisible(false);
     this->pauseMenu->setVisible(false);
-
-    if(this->songBrowser != nullptr) this->songBrowser->onPlayEnd(quit);
-
+    this->songBrowser->onPlayEnd(quit);
     // When playing in multiplayer, screens are toggled in Room
     if(!BanchoState::is_playing_a_multi_map()) {
         if(quit) {

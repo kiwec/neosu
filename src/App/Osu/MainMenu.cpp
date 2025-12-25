@@ -859,7 +859,6 @@ void MainMenu::draw() {
             anim::moveLinear(&this->mapFadeAnim, 1.f, cv::main_menu_background_fade_duration.getFloat(), true);
         }
 
-        // TODO: don't store references to these in MainMenu
         if(this->lastMap && this->lastMap != this->currentMap) {
             this->drawMapBackground(this->lastMap, 1.f - this->mapFadeAnim);
         }
