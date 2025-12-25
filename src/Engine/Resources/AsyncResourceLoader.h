@@ -36,7 +36,7 @@ class AsyncResourceLoader final {
 
     // status queries
     [[nodiscard]] inline bool isLoading() const { return this->iActiveWorkCount.load(std::memory_order_acquire) > 0; }
-    [[nodiscard]] bool isLoadingResource(Resource *resource) const;
+    [[nodiscard]] bool isLoadingResource(const Resource *resource) const;
     [[nodiscard]] size_t getNumLoadingWork() const { return this->iActiveWorkCount.load(std::memory_order_acquire); }
     [[nodiscard]] size_t getNumActiveThreads() const {
         return this->iActiveThreadCount.load(std::memory_order_acquire);
@@ -104,7 +104,7 @@ class AsyncResourceLoader final {
     mutable Sync::mutex workQueueMutex;
 
     // fast lookup for checking if a resource is being loaded
-    std::unordered_set<Resource *> loadingResourcesSet;
+    std::unordered_set<const Resource *> loadingResourcesSet;
     mutable Sync::mutex loadingResourcesMutex;
 
     // atomic counters for efficient status queries

@@ -327,7 +327,7 @@ void ResourceManager::loadResource(Resource *res, bool load) {
 
 bool ResourceManager::isLoading() const { return pImpl->asyncLoader.isLoading(); }
 
-bool ResourceManager::isLoadingResource(Resource *rs) const { return pImpl->asyncLoader.isLoadingResource(rs); }
+bool ResourceManager::isLoadingResource(const Resource *rs) const { return pImpl->asyncLoader.isLoadingResource(rs); }
 
 size_t ResourceManager::getNumLoadingWork() const { return pImpl->asyncLoader.getNumLoadingWork(); }
 

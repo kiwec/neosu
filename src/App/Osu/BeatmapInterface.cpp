@@ -2159,7 +2159,7 @@ void BeatmapInterface::drawHitObjects() {
         for(auto *obj : this->hitobjectsSortedByEndTimeReversed) {
             // PVS optimization (reversed)
             if(usePVS) {
-                i32 endTime = obj->click_time + obj->duration;
+                const i32 endTime = obj->click_time + obj->duration;
 
                 if(obj->isFinished() && (curPos - pvs > endTime))  // past objects
                     break;
@@ -2169,7 +2169,9 @@ void BeatmapInterface::drawHitObjects() {
                 if(endTime > mostDistantEndTimeDrawn) mostDistantEndTimeDrawn = endTime;
             }
 
-            // draw spinners first
+            // in order to avoid covering circles/sliders with spinner skin elements, draw spinners first
+            // and overlay circles/sliders on top
+            // this logic could be embedded in the sort order itself but i'm lazy to check if that would mess anything else up
             if(obj->type == HitObjectType::SPINNER) {
                 obj->draw();
             } else {
@@ -2182,6 +2184,9 @@ void BeatmapInterface::drawHitObjects() {
             obj->draw();
         }
 
+        // this avoids PVS culling objects which are overlapped before the end of other objects, like circles appearing before
+        // sliders are finished causing the initial slider approach circle to not be drawn
+        // e.g.: the first object of https://osu.ppy.sh/beatmapsets/613791#osu/1294898
         const i32 mostDistantFutureObjectPVS = std::max(mostDistantEndTimeDrawn, curPos + pvs);
 
         // this doesn't need the spinner front-to-back thing because spinners have no draw2
@@ -2652,7 +2657,7 @@ void BeatmapInterface::update2() {
     }
 
     // get timestamp from the previous update cycle
-    const auto lastUpdateTime = this->iLastMusicPosUpdateTime;
+    const u64 lastUpdateTime = this->iLastMusicPosUpdateTime;
 
     // update timing (with offsets)
     this->iCurMusicPosWithOffsets = this->iCurMusicPos;
@@ -2665,7 +2670,7 @@ void BeatmapInterface::update2() {
     }
 
     // update the update timestamp
-    const auto currentUpdateTime = Timing::getTicksNS();
+    const u64 currentUpdateTime = Timing::getTicksNS();
     this->iLastMusicPosUpdateTime = currentUpdateTime;
 
     // update current timingpoint
@@ -2687,19 +2692,18 @@ void BeatmapInterface::update2() {
     // interpolate clicks that occurred between the last update and now
     // (except if we are paused)
     if(!isIdlePaused && !this->is_watching && !BanchoState::spectating && !this->clicks.empty()) {
-        const auto timeSinceLastUpdate = currentUpdateTime - lastUpdateTime;
+        const u64 timeSinceLastUpdate = currentUpdateTime - lastUpdateTime;
 
         if(timeSinceLastUpdate > 0) {
             for(auto &click : this->clicks) {
                 // how long after the last music update did this click occur?
-                const auto clickDeltaSinceLastUpdate = click.timestamp - lastUpdateTime;
-                const auto percent =
-                    std::clamp((double)clickDeltaSinceLastUpdate / (double)timeSinceLastUpdate, 0.0, 1.0);
+                const u64 clickDeltaSinceLastUpdate = click.timestamp - lastUpdateTime;
+                const f64 percent = std::clamp((f64)clickDeltaSinceLastUpdate / (f64)timeSinceLastUpdate, 0.0, 1.0);
 
                 // interpolate between the music position when click was captured and current music position
                 // TODO: aim-between-frames
                 click.music_pos = static_cast<i32>(
-                    std::round(std::lerp((double)click.music_pos, (double)this->iCurMusicPosWithOffsets, percent)));
+                    std::round(std::lerp((f64)click.music_pos, (f64)this->iCurMusicPosWithOffsets, percent)));
             }
         }
     }

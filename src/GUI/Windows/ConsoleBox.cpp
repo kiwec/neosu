@@ -169,7 +169,7 @@ void ConsoleBox::draw() {
 }
 
 void ConsoleBox::drawLogOverlay() {
-    Sync::shared_lock logGuard(this->logMutex);
+    Sync::scoped_lock logGuard(this->logMutex);
 
     const float dpiScale = this->getDPIScale();
 
@@ -324,7 +324,8 @@ void ConsoleBox::mouse_update(bool *propagate_clicks) {
     }
 
     if(shouldClear) {
-        Sync::unique_lock logGuard(this->logMutex);
+        Sync::unique_lock lk(this->logMutex, Sync::try_to_lock);
+        if(!lk.owns_lock()) return;  // we'll wait until we can acquire it without blocking (it's not crucial)
 
         this->bClearPending = false;
         this->log_entries.clear();

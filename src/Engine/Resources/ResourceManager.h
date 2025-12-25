@@ -122,7 +122,7 @@ class ResourceManager final {
     [[nodiscard]] const std::vector<Resource *> &getResources() const;
 
     [[nodiscard]] bool isLoading() const;
-    bool isLoadingResource(Resource *rs) const;
+    [[nodiscard]] bool isLoadingResource(const Resource *rs) const;
     [[nodiscard]] size_t getNumLoadingWork() const;
     [[nodiscard]] size_t getNumActiveThreads() const;
     [[nodiscard]] size_t getNumLoadingWorkAsyncDestroy() const;

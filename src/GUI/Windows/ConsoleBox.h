@@ -98,7 +98,7 @@ class ConsoleBox : public CBaseUIElement {
     int iSelectedHistory{-1};
     bool bClearPending{false};
 
-    Sync::shared_mutex logMutex;
+    Sync::mutex logMutex;
 
     // thread-safe log animation state
     std::atomic<bool> bLogAnimationResetPending{false};

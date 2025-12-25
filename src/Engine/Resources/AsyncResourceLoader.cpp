@@ -314,7 +314,7 @@ void AsyncResourceLoader::reloadResources(const std::vector<Resource *> &resourc
     }
 }
 
-bool AsyncResourceLoader::isLoadingResource(Resource *resource) const {
+bool AsyncResourceLoader::isLoadingResource(const Resource *resource) const {
     Sync::scoped_lock lock(this->loadingResourcesMutex);
     return this->loadingResourcesSet.contains(resource);
 }

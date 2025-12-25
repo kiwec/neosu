@@ -58,7 +58,7 @@ void ScoreButton::draw() {
             // TODO/FIXME: this is bullshit?
             const f32 scale = SongBrowser::getUIScale() / (backgroundImage.scale() * 1.83f);
             g->scale(scale, scale);
-            g->translate(this->vPos.x + 2, (this->vPos.y + this->vSize.y / 2) + 1);
+            g->translate(this->vPos.x + 2, (this->vPos.y + this->vSize.y / 2));
             g->drawImage(backgroundImage, AnchorPoint::LEFT);
         }
         g->popTransform();
