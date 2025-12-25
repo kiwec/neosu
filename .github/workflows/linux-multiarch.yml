@@ -65,7 +65,7 @@ jobs:
           MAKEFLAGS="-j$(nproc)" ../configure \
             ${{ (github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/dev') && '--disable-strip' || '' }} \
             --with-audio="bass,soloud" --host=${{ matrix.host }} && \
-          CCACHE_COMPILERCHECK="none" CCACHE_DIR="${{ env.CCACHE_DIR }}" MAKEFLAGS="-j$(nproc)" make install
+          CCACHE_DIR="${{ env.CCACHE_DIR }}" MAKEFLAGS="-j$(nproc)" make install
 
       - name: Package artifacts (fix symlinks)
         run: |

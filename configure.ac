@@ -525,13 +525,16 @@ AS_IF([test "$host_os" = "linux-gnu"],[
     AC_PATH_PROG([CXX_REAL], [$CXX])
 ])
 
+_cc_real_hash="$(md5sum "${CC_REAL}" | cut -d ' ' -f 1)"
+_cxx_real_hash="$(md5sum "${CXX_REAL}" | cut -d ' ' -f 1)"
+
 install -Dm755 /dev/stdin $PWD/build/cc <<EOF
 #!/bin/bash
-CCACHE_COMPILERTYPE=$_ccache_ctype $CCACHE $CC_REAL "\$@"
+CCACHE_COMPRESS=1 CCACHE_COMPRESSLEVEL=2 CCACHE_COMPILERTYPE=$_ccache_ctype CCACHE_COMPILERCHECK="string:$_cc_real_hash" $CCACHE $CC_REAL "\$@"
 EOF
 install -Dm755 /dev/stdin $PWD/build/cxx <<EOF
 #!/bin/bash
-CCACHE_COMPILERTYPE=$_ccache_ctype $CCACHE $CXX_REAL "\$@"
+CCACHE_COMPRESS=1 CCACHE_COMPRESSLEVEL=2 CCACHE_COMPILERTYPE=$_ccache_ctype CCACHE_COMPILERCHECK="string:$_cxx_real_hash" $CCACHE $CXX_REAL "\$@"
 EOF
 
 export CC="$PWD/build/cc"
