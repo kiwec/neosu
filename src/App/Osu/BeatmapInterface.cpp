@@ -2154,13 +2154,19 @@ void BeatmapInterface::drawHitObjects() {
         static std::vector<HitObject *> non_spinners_to_draw;
         non_spinners_to_draw.clear();
 
+        i32 mostDistantEndTimeDrawn = 0;
+
         for(auto *obj : this->hitobjectsSortedByEndTimeReversed) {
             // PVS optimization (reversed)
             if(usePVS) {
-                if(obj->isFinished() && (curPos - pvs > obj->click_time + obj->duration))  // past objects
+                i32 endTime = obj->click_time + obj->duration;
+
+                if(obj->isFinished() && (curPos - pvs > endTime))  // past objects
                     break;
                 if(obj->click_time > curPos + pvs)  // future objects
                     continue;
+
+                if(endTime > mostDistantEndTimeDrawn) mostDistantEndTimeDrawn = endTime;
             }
 
             // draw spinners first
@@ -2176,6 +2182,8 @@ void BeatmapInterface::drawHitObjects() {
             obj->draw();
         }
 
+        const i32 mostDistantFutureObjectPVS = std::max(mostDistantEndTimeDrawn, curPos + pvs);
+
         // this doesn't need the spinner front-to-back thing because spinners have no draw2
         for(auto *obj : this->hitobjectsSortedByEndTime) {
             // NOTE: to fix mayday simultaneous sliders with increasing endtime getting culled here, would have to
@@ -2183,7 +2191,8 @@ void BeatmapInterface::drawHitObjects() {
             if(usePVS) {
                 if(obj->isFinished() && (curPos - pvs > obj->click_time + obj->duration))  // past objects
                     continue;
-                if(obj->click_time > curPos + pvs)  // future objects
+
+                if((obj->click_time > mostDistantFutureObjectPVS))  // future objects
                     break;
             }
 
