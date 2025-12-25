@@ -33,7 +33,7 @@ Changelog::Changelog() : ScreenBackable() {
     v41_12.title = "41.12 (" CHANGELOG_TIMESTAMP ")";
     v41_12.changes = {
         R"(- Fixed map backgrounds being drawn in places they shouldn't be)",
-        R"(- Fixed some 2B drawing issues (e.g. : https://osu.ppy.sh/beatmapsets/613791#osu/1294898))",
+        R"(- Fixed some 2B drawing issues (e.g. : https://osu.ppy.sh/beatmapsets/613791#osu/1294898 ))",
     };
     changelogs.push_back(v41_12);
 
@@ -119,7 +119,7 @@ Changelog::Changelog() : ScreenBackable() {
     v41_07.title = "41.07 (2025-11-09)";
     v41_07.changes = {
         R"(- Added crash dump generation support (send us the .dmp file next to neosu.exe if the game crashes))",
-        R"(- Added option to use BASSWASAPI event callbacks (similar to https://github.com/ppy/osu-framework/pull/6651))",
+        R"(- Added option to use BASSWASAPI event callbacks (similar to https://github.com/ppy/osu-framework/pull/6651 ))",
         R"(- Added the experimental DirectX11 renderer to the regular build configuration (run with the -dx11 launch option to test))",
         R"(- Center cursor when starting a map with FPoSu)",
         R"(- Improved resampling algorithm for SoLoud (now Catmull-Rom vs linear))",
