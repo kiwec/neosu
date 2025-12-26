@@ -7,6 +7,7 @@
 #include "SliderCurves.h"
 #include "GameRules.h"
 #include "ModFlags.h"
+#include "Sorting.h"
 
 #ifndef BUILD_TOOLS_ONLY
 #include "OsuConVars.h"
@@ -110,9 +111,7 @@ DifficultyHitObject &DifficultyHitObject::operator=(DifficultyHitObject &&dobj) 
     // self-assignment check
     if(this == &dobj) return *this;
 
-    this->scheduledCurveAllocControlPoints.clear();
-
-    // move all data
+    // move everything
     this->type = dobj.type;
     this->pos = dobj.pos;
     this->time = dobj.time;
@@ -122,22 +121,15 @@ DifficultyHitObject &DifficultyHitObject::operator=(DifficultyHitObject &&dobj) 
     this->spanDuration = dobj.spanDuration;
     this->osuSliderCurveType = dobj.osuSliderCurveType;
     this->pixelLength = dobj.pixelLength;
-    this->scoringTimes = std::move(dobj.scoringTimes);
-
-    this->curve = std::move(dobj.curve);
-    this->scheduledCurveAlloc = dobj.scheduledCurveAlloc;
-    this->scheduledCurveAllocControlPoints = std::move(dobj.scheduledCurveAllocControlPoints);
-    this->scheduledCurveAllocStackOffset = dobj.scheduledCurveAllocStackOffset;
     this->repeats = dobj.repeats;
-
     this->stack = dobj.stack;
     this->originalPos = dobj.originalPos;
+    this->scheduledCurveAlloc = dobj.scheduledCurveAlloc;
+    this->scheduledCurveAllocStackOffset = dobj.scheduledCurveAllocStackOffset;
 
-    // completely reset source object to prevent any potential reuse
-    dobj.curve = nullptr;
-    dobj.scheduledCurveAlloc = false;
-    dobj.scheduledCurveAllocControlPoints.clear();
-    dobj.type = TYPE::INVALID;
+    this->scoringTimes = std::move(dobj.scoringTimes);
+    this->scheduledCurveAllocControlPoints = std::move(dobj.scheduledCurveAllocControlPoints);
+    this->curve = std::move(dobj.curve);
 
     return *this;
 }
@@ -1479,7 +1471,7 @@ f64 DifficultyCalculator::DiffObject::calculate_difficulty(const Skills::Skill t
     {
         // new implementation
         // NOTE: lazer does this from highest to lowest, but sorting it in reverse lets the reduced top section loop below have a better average insertion time
-        if(!incremental) std::ranges::sort(highestStrains);
+        if(!incremental) srt::spreadsort(highestStrains);
     }
 
     // new implementation (https://github.com/ppy/osu/pull/13483/)

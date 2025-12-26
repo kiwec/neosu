@@ -17,6 +17,7 @@
 #include "SongBrowser.h"
 #include "AsyncIOHandler.h"
 #include "crypto.h"
+#include "Sorting.h"
 
 #include <cassert>
 #include <algorithm>
@@ -442,13 +443,13 @@ bool sliderScoringTimeComparator(const SLIDER_SCORING_TIME &a, const SLIDER_SCOR
     return false;  // equivalent
 };
 
-bool timingPointSortComparator(DatabaseBeatmap::TIMINGPOINT const &a, DatabaseBeatmap::TIMINGPOINT const &b) {
+bool timingPointSortComparator(const DatabaseBeatmap::TIMINGPOINT &a, const DatabaseBeatmap::TIMINGPOINT &b) {
     if(a.offset != b.offset) return a.offset < b.offset;
 
-    // non-inherited timingpoints go before inherited timingpoints
-    bool a_inherited = a.msPerBeat >= 0;
-    bool b_inherited = b.msPerBeat >= 0;
-    if(a_inherited != b_inherited) return a_inherited;
+    // uninherited timingpoints go before inherited timingpoints
+    const bool a_uninherited = a.msPerBeat >= 0;
+    const bool b_uninherited = b.msPerBeat >= 0;
+    if(a_uninherited != b_uninherited) return a_uninherited;
 
     if(a.sampleSet != b.sampleSet) return a.sampleSet < b.sampleSet;
     if(a.sampleIndex != b.sampleIndex) return a.sampleIndex < b.sampleIndex;
@@ -836,7 +837,7 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjectsFromDa
 
     if(!tempTimingpoints.empty()) {
         // sort timingpoints by time
-        if(tempTimingpoints.size() > 1) std::ranges::sort(tempTimingpoints, timingPointSortComparator);
+        if(tempTimingpoints.size() > 1) srt::spinsort(tempTimingpoints, timingPointSortComparator);
         c.timingpoints = std::move(tempTimingpoints);
     }
 
@@ -992,7 +993,7 @@ DatabaseBeatmap::LoadError DatabaseBeatmap::calculateSliderTimesClicksTicks(
 
         // 5) sort scoringTimes from earliest to latest
         if(s.scoringTimesForStarCalc.size() > 1) {
-            std::ranges::sort(s.scoringTimesForStarCalc, sliderScoringTimeComparator);
+            srt::spinsort(s.scoringTimesForStarCalc, sliderScoringTimeComparator);
         }
     }
 
@@ -1081,18 +1082,18 @@ DatabaseBeatmap::LOAD_DIFFOBJ_RESULT DatabaseBeatmap::loadDifficultyHitObjects(P
         return result;
     }
 
-    // sort hitobjects by time
-    static constexpr auto diffHitObjectSortComparator = [](const DifficultyHitObject &a,
-                                                           const DifficultyHitObject &b) -> bool {
-        if(a.time != b.time) return a.time < b.time;
-        if(a.type != b.type) return static_cast<int>(a.type) < static_cast<int>(b.type);
-        if(a.pos.x != b.pos.x) return a.pos.x < b.pos.x;
-        if(a.pos.y != b.pos.y) return a.pos.y < b.pos.y;
-        return false;  // equivalent
-    };
-
     if(result.diffobjects.size() > 1) {
-        std::ranges::sort(result.diffobjects, diffHitObjectSortComparator);
+        // sort hitobjects by time
+        static constexpr auto diffHitObjectSortComparator = [](const DifficultyHitObject &a,
+                                                            const DifficultyHitObject &b) -> bool {
+            if(a.time != b.time) return a.time < b.time;
+            if(a.type != b.type) return static_cast<int>(a.type) < static_cast<int>(b.type);
+            if(a.pos.x != b.pos.x) return a.pos.x < b.pos.x;
+            if(a.pos.y != b.pos.y) return a.pos.y < b.pos.y;
+            return false;  // equivalent
+        };
+
+        srt::spinsort(result.diffobjects, diffHitObjectSortComparator);
     }
 
     if(dead.stop_requested()) {
@@ -1487,7 +1488,7 @@ DatabaseBeatmap::LOAD_META_RESULT DatabaseBeatmap::loadMetadata(bool compute_md5
     if(this->timingpoints.size() > 0) {
         // sort timingpoints by time
         if(this->timingpoints.size() > 1) {
-            std::ranges::sort(this->timingpoints, timingPointSortComparator);
+            srt::spinsort(this->timingpoints, timingPointSortComparator);
         }
 
         if(this->iMostCommonBPM == 0) {
@@ -1607,8 +1608,10 @@ DatabaseBeatmap::LOAD_GAMEPLAY_RESULT DatabaseBeatmap::loadGameplay(BeatmapDiffi
 
     // sort hitobjects by starttime
     if(result.hitobjects.size() > 1) {
-        std::ranges::sort(result.hitobjects, BeatmapInterface::sortHitObjectByStartTimeComp,
-                          [](const auto &objptr) { return objptr.get(); });
+        static constexpr const auto hobjsorter = [](const auto &a, const auto &b) -> bool {
+            return BeatmapInterface::sortHitObjectByStartTimeComp(a.get(), b.get());
+        };
+        srt::spinsort(result.hitobjects, hobjsorter);
     }
 
     // update beatmap length stat

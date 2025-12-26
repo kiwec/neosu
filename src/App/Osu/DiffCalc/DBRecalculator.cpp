@@ -118,6 +118,10 @@ Sync::mutex results_mutex;
 std::vector<WorkItem> work_queue;
 std::vector<BPMTuple> bpm_calc_buf;
 
+// The order in which the work is run doesn't really make this cache that useful, but just pass it
+// as a star calculation parameter to avoid it needing to reallocate a new cache
+std::unique_ptr<std::vector<DifficultyCalculator::DiffObject>> dummy_diffobj_cache;
+
 // Maps to recalc, copied from start_calc argument for thread-safe access
 std::vector<BeatmapDifficulty*> pending_diffs_to_recalc;
 
@@ -153,7 +157,7 @@ void process_score_group(BeatmapDifficulty* map, const ModParams& params, const 
 
     DifficultyCalculator::DifficultyAttributes attributes{};
 
-    DifficultyCalculator::StarCalcParams star_params{.cachedDiffObjects = {},
+    DifficultyCalculator::StarCalcParams star_params{.cachedDiffObjects = std::move(dummy_diffobj_cache),
                                                      .outAttributes = attributes,
                                                      .beatmapData = diffcalc_data,
                                                      .outAimStrains = nullptr,
@@ -163,6 +167,9 @@ void process_score_group(BeatmapDifficulty* map, const ModParams& params, const 
                                                      .cancelCheck = stoken};
 
     f64 total_stars = DifficultyCalculator::calculateStarDiffForHitObjects(star_params);
+    dummy_diffobj_cache = std::move(star_params.cachedDiffObjects);
+    dummy_diffobj_cache->clear();
+
     if(stoken.stop_requested()) return;
 
     // Calculate PP for each score using shared difficulty attributes
@@ -309,7 +316,7 @@ void process_work_item(WorkItem& item, const Sync::stop_token& stoken) {
 
             DifficultyCalculator::DifficultyAttributes attributes{};
 
-            DifficultyCalculator::StarCalcParams star_params{.cachedDiffObjects = {},
+            DifficultyCalculator::StarCalcParams star_params{.cachedDiffObjects = std::move(dummy_diffobj_cache),
                                                              .outAttributes = attributes,
                                                              .beatmapData = diffcalc_data,
                                                              .outAimStrains = nullptr,
@@ -319,6 +326,9 @@ void process_work_item(WorkItem& item, const Sync::stop_token& stoken) {
                                                              .cancelCheck = stoken};
 
             result.star_rating = static_cast<f32>(DifficultyCalculator::calculateStarDiffForHitObjects(star_params));
+
+            dummy_diffobj_cache = std::move(star_params.cachedDiffObjects);
+            dummy_diffobj_cache->clear();
         }
 
         if(stoken.stop_requested()) return;
@@ -405,6 +415,12 @@ void start_calc() {
     scores_total = 0;
     workqueue_ready = false;
     map_results.clear();
+    if(!dummy_diffobj_cache) {
+        // this will stay alive forever, just make sure its created once
+        dummy_diffobj_cache = std::make_unique<std::vector<DifficultyCalculator::DiffObject>>();
+    } else {
+        dummy_diffobj_cache->clear();
+    }
 
     worker_thread = Sync::jthread(runloop);
 }
@@ -422,6 +438,9 @@ void abort_calc() {
     work_queue.clear();
     map_results.clear();
     pending_diffs_to_recalc.clear();
+    if(dummy_diffobj_cache) {
+        dummy_diffobj_cache->clear();
+    }
 }
 
 u32 get_maps_total() { return maps_total.load(std::memory_order_acquire); }

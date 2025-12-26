@@ -196,6 +196,7 @@ string(REGEX REPLACE "/EH[^ ]*" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 target_compile_options(neosu PRIVATE
     "/utf-8"
     "/Zc:preprocessor"
+    "/Zc:__cplusplus"
     "/GR"
     "/MP"  # multi-processor compilation
     "/D_UNICODE"
