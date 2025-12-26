@@ -46,6 +46,8 @@ struct SLIDER_SCORING_TIME {  // for difficulty calculation things
     f32 time;
 };
 
+// DatabaseBeatmap &operator=(DatabaseBeatmap other) already implements these...
+// NOLINTNEXTLINE(hicpp-special-member-functions, cppcoreguidelines-special-member-functions)
 class DatabaseBeatmap final {
    public:
     enum class BeatmapType : uint8_t {
@@ -63,13 +65,17 @@ class DatabaseBeatmap final {
                     BeatmapType type);  // beatmapset
 
     DatabaseBeatmap(const DatabaseBeatmap &);
-    DatabaseBeatmap &operator=(const DatabaseBeatmap &);
     DatabaseBeatmap(DatabaseBeatmap &&) noexcept;
-    DatabaseBeatmap &operator=(DatabaseBeatmap &&) noexcept;
+    DatabaseBeatmap &operator=(DatabaseBeatmap other) noexcept {
+        swap(*this, other);
+        return *this;
+    }
 
     // for difficulties, compares MD5 hash for equality
     // if both are mapsets, recursively compare their contained difficulties' MD5 hashes
     bool operator==(const DatabaseBeatmap &other) const;
+
+    friend void swap(DatabaseBeatmap &a, DatabaseBeatmap &b) noexcept;
 
     struct LoadError {
        public:

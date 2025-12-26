@@ -9,6 +9,8 @@
 
 using SLIDERCURVETYPE = char;
 
+class SliderCurveBuilder;
+
 //**********************//
 //	 Curve Base Class	//
 //**********************//
@@ -45,6 +47,8 @@ class SliderCurve {
     [[nodiscard]] inline float getPixelLength() const { return this->fPixelLength; }
 
    protected:
+    friend class SliderCurveBuilder;
+
     SliderCurve(std::vector<vec2> controlPoints, float pixelLength);
 
     // original input values

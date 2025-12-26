@@ -1,7 +1,10 @@
 // Copyright (c) 2025, WH, All rights reserved.
 #pragma once
 
-#include "boost/sort/sort.hpp"
+#include "boost/sort/flat_stable_sort/flat_stable_sort.hpp"
+#include "boost/sort/pdqsort/pdqsort.hpp"
+#include "boost/sort/spinsort/spinsort.hpp"
+#include "boost/sort/spreadsort/spreadsort.hpp"
 
 namespace srt {
 // https://github.com/boostorg/sort?tab=readme-ov-file#single-thread-algorithms
@@ -22,6 +25,11 @@ using boost::sort::spreadsort::spreadsort;
 template <typename Range, typename Compare = boost::sort::compare_iter<Range>>
 void spinsort(Range& range, Compare comp = {}) {
     spinsort(std::ranges::begin(range), std::ranges::end(range), std::move(comp));
+}
+
+template <typename Range, typename Compare = boost::sort::compare_iter<Range>>
+void pdqsort(Range& range, Compare comp = {}) {
+    pdqsort(std::ranges::begin(range), std::ranges::end(range), std::move(comp));
 }
 
 }  // namespace srt

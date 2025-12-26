@@ -1710,9 +1710,9 @@ f64 DifficultyCalculator::DiffObject::spacing_weight2(const Skills::Skill diff_t
                             effectiveRatio *= 0.5;
 
                         std::pair<RhythmIsland, int> *islandCount = nullptr;
-                        for(i32 i = 0; i < islandCounts.size(); i++) {
-                            if(islandCounts[i].first.equals(island, deltaDifferenceEpsilon)) {
-                                islandCount = &islandCounts[i];
+                        for(auto &i : islandCounts) {
+                            if(i.first.equals(island, deltaDifferenceEpsilon)) {
+                                islandCount = &i;
                                 break;
                             }
                         }

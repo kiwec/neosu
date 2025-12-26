@@ -7,6 +7,7 @@
 #include "ResourceManager.h"
 #include "Logging.h"
 #include "Image.h"
+#include "Sorting.h"
 
 TextureAtlas::TextureAtlas(int width, int height, bool filtering) : Resource() {
     this->iWidth = width;
@@ -109,7 +110,7 @@ bool TextureAtlas::packRects(std::vector<PackRect> &rects) {
     if(rects.empty()) return true;
 
     // sort rectangles by height (tallest first) for better packing efficiency
-    std::ranges::sort(rects, [](const PackRect &a, const PackRect &b) { return a.height > b.height; });
+    srt::pdqsort(rects, [](const PackRect &a, const PackRect &b) { return a.height > b.height; });
 
     // initialize skyline - start with single segment covering entire width
     std::vector<Skyline> skylines = {{.x = 0, .y = ATLAS_PADDING, .width = this->iWidth}};
