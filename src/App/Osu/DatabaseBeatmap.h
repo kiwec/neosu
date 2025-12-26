@@ -352,11 +352,11 @@ class DatabaseBeatmap final {
 
     using MapFileReadDoneCallback = std::function<void(std::vector<u8>)>;  // == AsyncIOHandler::ReadCallback
     bool getMapFileAsync(MapFileReadDoneCallback data_callback);
-    const std::string &getFullSoundFilePath();
+    [[nodiscard]] inline std::string getFullSoundFilePath() const { return this->sFolder + this->sAudioFileName; }
 
     // redundant data
-    [[nodiscard]] inline const std::string &getFullBackgroundImageFilePath() const {
-        return this->sFullBackgroundImageFilePath;
+    [[nodiscard]] inline std::string getFullBackgroundImageFilePath() const {
+        return this->sFolder + this->sBackgroundImageFileName;
     }
 
     // precomputed data
@@ -406,10 +406,6 @@ class DatabaseBeatmap final {
 
     std::string sFolder;    // path to folder containing .osu file (e.g. "/path/to/beatmapfolder/")
     std::string sFilePath;  // path to .osu file (e.g. "/path/to/beatmapfolder/beatmap.osu")
-    std::string sFullBackgroundImageFilePath;
-
-   private:  // private for lazy-fixing up filename casing with getFullSoundFilePath
-    std::string sFullSoundFilePath;
 
    public:
     // raw metadata
@@ -465,11 +461,10 @@ class DatabaseBeatmap final {
     u8 iVersion{128};  // e.g. "osu file format v12" -> 12
     // u8 iGameMode;  // 0 = osu!standard, 1 = Taiko, 2 = Catch the Beat, 3 = osu!mania
 
-    BeatmapType type{BeatmapType::NEOSU_DIFFICULTY};
-
     mutable std::atomic<bool> md5_init{false};
 
-    bool bSoundFilePathAlreadyFixed{false};
+    BeatmapType type{BeatmapType::NEOSU_DIFFICULTY};
+
     bool bEmptyArtistUnicode{false};
     bool bEmptyTitleUnicode{false};
     bool do_not_store{false};

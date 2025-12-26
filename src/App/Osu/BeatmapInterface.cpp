@@ -1574,7 +1574,7 @@ void BeatmapInterface::handlePreviewPlay() {
 }
 
 void BeatmapInterface::loadMusic(bool reload, bool async) {
-    const std::string &beatmapSoundPath = this->beatmap ? this->beatmap->getFullSoundFilePath() : "";
+    const std::string beatmapSoundPath = this->beatmap ? this->beatmap->getFullSoundFilePath() : "";
     if(beatmapSoundPath.empty()) {
         if(this->beatmap) {
             debugLog("no music file for {}!", this->beatmap->getFilePath());

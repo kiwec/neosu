@@ -1854,14 +1854,14 @@ void Osu::onSkinChange(std::string_view newSkinName) {
 void Osu::updateAnimationSpeed() {
     if(this->skin) {
         float speed = this->getAnimationSpeedMultiplier() / this->map_iface->getSpeedMultiplier();
-        this->skin->anim_speed = (speed >= 0.0f ? speed : 0.0f);
+        this->skin->anim_speed = (speed >= 0.01f ? speed : 0.0f);
     }
 }
 
 void Osu::onAnimationSpeedChange() { this->updateAnimationSpeed(); }
 
 void Osu::onSpeedChange(float speed) {
-    this->map_iface->setMusicSpeed(speed >= 0.0f ? speed : this->map_iface->getSpeedMultiplier());
+    this->map_iface->setMusicSpeed(speed >= 0.01f ? speed : this->map_iface->getSpeedMultiplier());
     this->updateAnimationSpeed();
 
     // Update mod menu UI

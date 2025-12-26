@@ -1032,8 +1032,6 @@ void Database::loadMaps() {
                     diff->iSetID = set_id;
                     diff->sTitle = neosu_maps.read_string();
                     diff->sAudioFileName = neosu_maps.read_string();
-                    diff->sFullSoundFilePath = mapset_path;
-                    diff->sFullSoundFilePath.append(diff->sAudioFileName);
                     diff->iLengthMS = neosu_maps.read<i32>();
                     diff->fStackLeniency = neosu_maps.read<f32>();
                     diff->sArtist = neosu_maps.read_string();
@@ -1433,8 +1431,6 @@ void Database::loadMaps() {
                     map->iPreviewTime = previewTime;
                     map->last_modification_time = lastModificationTime;
 
-                    map->sFullSoundFilePath = beatmapPath;
-                    map->sFullSoundFilePath.append(map->sAudioFileName);
                     map->iNumObjects = numCircles + numSliders + numSpinners;
                     map->iNumCircles = numCircles;
                     map->iNumSliders = numSliders;
@@ -1623,7 +1619,7 @@ void Database::saveMaps() {
         maps.write<u16>(beatmap->getDifficulties().size());
 
         for(const auto &diff : beatmap->getDifficulties()) {
-            maps.write_string(env->getFileNameFromFilePath(diff->sFilePath));
+            maps.write_string(diff->sFolder);
             maps.write<i32>(diff->iID);
             maps.write_string(diff->sTitle);
             maps.write_string(diff->sAudioFileName);

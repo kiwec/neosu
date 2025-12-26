@@ -112,8 +112,6 @@ DatabaseBeatmap::DatabaseBeatmap(const DatabaseBeatmap &other)
       timingpoints(other.timingpoints),
       sFolder(other.sFolder),
       sFilePath(other.sFilePath),
-      sFullBackgroundImageFilePath(other.sFullBackgroundImageFilePath),
-      sFullSoundFilePath(other.sFullSoundFilePath),
       last_modification_time(other.last_modification_time),
       sTitle(other.sTitle),
       sTitleUnicode(other.sTitleUnicode),
@@ -149,9 +147,8 @@ DatabaseBeatmap::DatabaseBeatmap(const DatabaseBeatmap &other)
       loudness(other.loudness.load(std::memory_order_relaxed)),
       totalBreakDuration(other.totalBreakDuration),
       iVersion(other.iVersion),
-      type(other.type),
       md5_init(other.md5_init.load(std::memory_order_relaxed)),
-      bSoundFilePathAlreadyFixed(other.bSoundFilePathAlreadyFixed),
+      type(other.type),
       bEmptyArtistUnicode(other.bEmptyArtistUnicode),
       bEmptyTitleUnicode(other.bEmptyTitleUnicode),
       do_not_store(other.do_not_store),
@@ -172,8 +169,6 @@ DatabaseBeatmap &DatabaseBeatmap::operator=(const DatabaseBeatmap &other) {
     this->timingpoints = other.timingpoints;
     this->sFolder = other.sFolder;
     this->sFilePath = other.sFilePath;
-    this->sFullBackgroundImageFilePath = other.sFullBackgroundImageFilePath;
-    this->sFullSoundFilePath = other.sFullSoundFilePath;
     this->last_modification_time = other.last_modification_time;
     this->sTitle = other.sTitle;
     this->sTitleUnicode = other.sTitleUnicode;
@@ -206,12 +201,11 @@ DatabaseBeatmap &DatabaseBeatmap::operator=(const DatabaseBeatmap &other) {
     this->iNumCircles = other.iNumCircles;
     this->iNumSliders = other.iNumSliders;
     this->iNumSpinners = other.iNumSpinners;
-    this->loudness = other.loudness.load(std::memory_order_relaxed);
+    this->loudness.store(other.loudness.load(std::memory_order_relaxed), std::memory_order_relaxed);
     this->totalBreakDuration = other.totalBreakDuration;
     this->iVersion = other.iVersion;
+    this->md5_init.store(other.md5_init.load(std::memory_order_relaxed), std::memory_order_relaxed);
     this->type = other.type;
-    this->md5_init = other.md5_init.load(std::memory_order_relaxed);
-    this->bSoundFilePathAlreadyFixed = other.bSoundFilePathAlreadyFixed;
     this->bEmptyArtistUnicode = other.bEmptyArtistUnicode;
     this->bEmptyTitleUnicode = other.bEmptyTitleUnicode;
     this->do_not_store = other.do_not_store;
@@ -236,8 +230,6 @@ DatabaseBeatmap::DatabaseBeatmap(DatabaseBeatmap &&other) noexcept
       timingpoints(std::move(other.timingpoints)),
       sFolder(std::move(other.sFolder)),
       sFilePath(std::move(other.sFilePath)),
-      sFullBackgroundImageFilePath(std::move(other.sFullBackgroundImageFilePath)),
-      sFullSoundFilePath(std::move(other.sFullSoundFilePath)),
       last_modification_time(other.last_modification_time),
       sTitle(std::move(other.sTitle)),
       sTitleUnicode(std::move(other.sTitleUnicode)),
@@ -273,9 +265,8 @@ DatabaseBeatmap::DatabaseBeatmap(DatabaseBeatmap &&other) noexcept
       loudness(other.loudness.load(std::memory_order_relaxed)),
       totalBreakDuration(other.totalBreakDuration),
       iVersion(other.iVersion),
-      type(other.type),
       md5_init(other.md5_init.load(std::memory_order_relaxed)),
-      bSoundFilePathAlreadyFixed(other.bSoundFilePathAlreadyFixed),
+      type(other.type),
       bEmptyArtistUnicode(other.bEmptyArtistUnicode),
       bEmptyTitleUnicode(other.bEmptyTitleUnicode),
       do_not_store(other.do_not_store),
@@ -294,8 +285,6 @@ DatabaseBeatmap &DatabaseBeatmap::operator=(DatabaseBeatmap &&other) noexcept {
     other.timingpoints.clear();
     this->sFolder = std::move(other.sFolder);
     this->sFilePath = std::move(other.sFilePath);
-    this->sFullBackgroundImageFilePath = std::move(other.sFullBackgroundImageFilePath);
-    this->sFullSoundFilePath = std::move(other.sFullSoundFilePath);
     this->last_modification_time = other.last_modification_time;
     this->sTitle = std::move(other.sTitle);
     this->sTitleUnicode = std::move(other.sTitleUnicode);
@@ -328,12 +317,11 @@ DatabaseBeatmap &DatabaseBeatmap::operator=(DatabaseBeatmap &&other) noexcept {
     this->iNumCircles = other.iNumCircles;
     this->iNumSliders = other.iNumSliders;
     this->iNumSpinners = other.iNumSpinners;
-    this->loudness = other.loudness.load(std::memory_order_relaxed);
+    this->loudness.store(other.loudness.load(std::memory_order_relaxed), std::memory_order_relaxed);
     this->totalBreakDuration = other.totalBreakDuration;
     this->iVersion = other.iVersion;
+    this->md5_init.store(other.md5_init.load(std::memory_order_relaxed), std::memory_order_relaxed);
     this->type = other.type;
-    this->md5_init = other.md5_init.load(std::memory_order_relaxed);
-    this->bSoundFilePathAlreadyFixed = other.bSoundFilePathAlreadyFixed;
     this->bEmptyArtistUnicode = other.bEmptyArtistUnicode;
     this->bEmptyTitleUnicode = other.bEmptyTitleUnicode;
     this->do_not_store = other.do_not_store;
@@ -1455,11 +1443,6 @@ DatabaseBeatmap::LOAD_META_RESULT DatabaseBeatmap::loadMetadata(bool compute_md5
                     haveFilename = true;
                 }
 
-                if(haveFilename && this->sFullBackgroundImageFilePath.length() < 2) {
-                    this->sFullBackgroundImageFilePath =
-                        fmt::format("{}{}", this->sFolder, this->sBackgroundImageFileName);
-                }
-
                 break;
             }
 
@@ -1495,10 +1478,6 @@ DatabaseBeatmap::LOAD_META_RESULT DatabaseBeatmap::loadMetadata(bool compute_md5
     }
 
     this->timingpoints = std::move(tempTimingpoints);
-
-    // build sound file path
-    this->sFullSoundFilePath = this->sFolder;
-    this->sFullSoundFilePath.append(this->sAudioFileName);
 
     // sort timingpoints and calculate BPM range
     if(this->timingpoints.size() > 0) {
@@ -1778,16 +1757,4 @@ DatabaseBeatmap::TIMING_INFO DatabaseBeatmap::getTimingInfoForTimeAndTimingPoint
     }
 
     return ti;
-}
-
-const std::string &DatabaseBeatmap::getFullSoundFilePath() {
-    if(this->sFullSoundFilePath.empty() || this->bSoundFilePathAlreadyFixed) return this->sFullSoundFilePath;
-
-    this->bSoundFilePathAlreadyFixed = true;
-    // this modifies this->sFullSoundFilePath inplace
-    // only do it once, though
-    void(File::existsCaseInsensitive(this->sFullSoundFilePath) == File::FILETYPE::FILE);
-
-    // return what we have regardless
-    return this->sFullSoundFilePath;
 }

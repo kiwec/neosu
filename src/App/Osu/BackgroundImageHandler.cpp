@@ -291,8 +291,6 @@ const Image *BGImageHandlerImpl::getLoadBackgroundImage(const DatabaseBeatmap *b
         if(entry.image != nullptr && entry.bg_image_filename.length() > 1 &&
            (beatmap->getBackgroundImageFileName().length() < 2 || entry.overwrite_db_entry)) {
             const_cast<DatabaseBeatmap *>(beatmap)->sBackgroundImageFileName = entry.bg_image_filename;
-            const_cast<DatabaseBeatmap *>(beatmap)->sFullBackgroundImageFilePath =
-                fmt::format("{}{}", entry.folder, entry.bg_image_filename);
 
             entry.overwrite_db_entry = false;
 

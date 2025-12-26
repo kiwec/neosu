@@ -1682,6 +1682,8 @@ void PauseButton::draw() {
 };
 
 MainMenu::SongsFolderEnumerator::SongsFolderEnumerator() : Resource() {
+    this->folderPath = Database::getOsuSongsFolder();
+
     resourceManager->requestNextLoadAsync();
     resourceManager->loadResource(this);
 }
@@ -1689,11 +1691,14 @@ MainMenu::SongsFolderEnumerator::SongsFolderEnumerator() : Resource() {
 void MainMenu::SongsFolderEnumerator::rebuild() {
     this->setAsyncReady(false);
     this->setReady(false);
+
+    // update folder path
+    this->folderPath = Database::getOsuSongsFolder();
+
     resourceManager->reloadResource(this, true);
 }
 
 void MainMenu::SongsFolderEnumerator::initAsync() {
-    this->folderPath = Database::getOsuSongsFolder();
     if(env->directoryExists(this->folderPath)) {
         auto peppy_mapsets = env->getFoldersInFolder(this->folderPath);
         auto trimmed_folder = this->folderPath;

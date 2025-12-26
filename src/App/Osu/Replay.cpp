@@ -9,6 +9,8 @@
 #include "OsuConVars.h"
 #include "Osu.h"
 #include "DifficultyCalculator.h"
+#include "ByteBufferedFile.h"
+#include "BanchoPacket.h"
 
 namespace Replay {
 
@@ -298,4 +300,98 @@ void Mods::use(const Mods &mods) {
     // FIXME: this is already called like 5 times from the previous calls
     osu->updateMods();
 }
+
+template <GenericReader R>
+Mods Mods::unpack(R &reader) {
+    Mods mods;
+
+    mods.flags = static_cast<ModFlags>(reader.template read<u64>());
+    mods.speed = reader.template read<f32>();
+    mods.notelock_type = reader.template read<i32>();
+    mods.ar_override = reader.template read<f32>();
+    mods.ar_overridenegative = reader.template read<f32>();
+    mods.cs_override = reader.template read<f32>();
+    mods.cs_overridenegative = reader.template read<f32>();
+    mods.hp_override = reader.template read<f32>();
+    mods.od_override = reader.template read<f32>();
+    using enum ModFlags;
+    if(flags::has<Autopilot>(mods.flags)) {
+        mods.autopilot_lenience = reader.template read<f32>();
+    }
+    if(flags::has<Timewarp>(mods.flags)) {
+        mods.timewarp_multiplier = reader.template read<f32>();
+    }
+    if(flags::has<Minimize>(mods.flags)) {
+        mods.minimize_multiplier = reader.template read<f32>();
+    }
+    if(flags::has<ARTimewarp>(mods.flags)) {
+        mods.artimewarp_multiplier = reader.template read<f32>();
+    }
+    if(flags::has<ARWobble>(mods.flags)) {
+        mods.arwobble_strength = reader.template read<f32>();
+        mods.arwobble_interval = reader.template read<f32>();
+    }
+    if(flags::any<Wobble1 | Wobble2>(mods.flags)) {
+        mods.wobble_strength = reader.template read<f32>();
+        mods.wobble_frequency = reader.template read<f32>();
+        mods.wobble_rotation_speed = reader.template read<f32>();
+    }
+    if(flags::any<Jigsaw1 | Jigsaw2>(mods.flags)) {
+        mods.jigsaw_followcircle_radius_factor = reader.template read<f32>();
+    }
+    if(flags::has<Shirone>(mods.flags)) {
+        mods.shirone_combo = reader.template read<f32>();
+    }
+
+    return mods;
+}
+
+template <GenericWriter W>
+void Mods::pack_and_write(W &writer, const Mods &mods) {
+    writer.template write<u64>(static_cast<u64>(mods.flags));
+    writer.template write<f32>(mods.speed);
+    writer.template write<i32>(mods.notelock_type);
+    writer.template write<f32>(mods.ar_override);
+    writer.template write<f32>(mods.ar_overridenegative);
+    writer.template write<f32>(mods.cs_override);
+    writer.template write<f32>(mods.cs_overridenegative);
+    writer.template write<f32>(mods.hp_override);
+    writer.template write<f32>(mods.od_override);
+    using enum ModFlags;
+    if(flags::has<Autopilot>(mods.flags)) {
+        writer.template write<f32>(mods.autopilot_lenience);
+    }
+    if(flags::has<Timewarp>(mods.flags)) {
+        writer.template write<f32>(mods.timewarp_multiplier);
+    }
+    if(flags::has<Minimize>(mods.flags)) {
+        writer.template write<f32>(mods.minimize_multiplier);
+    }
+    if(flags::has<ARTimewarp>(mods.flags)) {
+        writer.template write<f32>(mods.artimewarp_multiplier);
+    }
+    if(flags::has<ARWobble>(mods.flags)) {
+        writer.template write<f32>(mods.arwobble_strength);
+        writer.template write<f32>(mods.arwobble_interval);
+    }
+    if(flags::any<Wobble1 | Wobble2>(mods.flags)) {
+        writer.template write<f32>(mods.wobble_strength);
+        writer.template write<f32>(mods.wobble_frequency);
+        writer.template write<f32>(mods.wobble_rotation_speed);
+    }
+    if(flags::any<Jigsaw1 | Jigsaw2>(mods.flags)) {
+        writer.template write<f32>(mods.jigsaw_followcircle_radius_factor);
+    }
+    if(flags::has<Shirone>(mods.flags)) {
+        writer.template write<f32>(mods.shirone_combo);
+    }
+}
+
+// explicit instantiations
+template Mods Mods::unpack<ByteBufferedFile::Reader>(ByteBufferedFile::Reader &);
+template Mods Mods::unpack<Packet>(Packet &);
+
+template void Mods::pack_and_write<ByteBufferedFile::Writer>(ByteBufferedFile::Writer &, const Mods &);
+template void Mods::pack_and_write<Packet>(Packet &, const Mods &);
+
 }  // namespace Replay
