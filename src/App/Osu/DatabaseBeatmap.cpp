@@ -408,6 +408,14 @@ bool parse_timing_point(std::string_view curLine, DatabaseBeatmap::TIMINGPOINT &
     return false;
 }
 
+// parse a sample set value with lenient handling, matching lazer behavior:
+// values outside 0-3 default to Normal (1)
+// see: https://github.com/ppy/osu/blob/56ef5eae1409622518fbc19872d5e3477abe90a2/osu.Game/Rulesets/Objects/Legacy/ConvertHitObjectParser.cs#L203
+inline u8 parse_sampleset_value(std::string_view str) {
+    i32 val = Parsing::strto<i32>(str);
+    return (val >= 0 && val <= 3) ? static_cast<u8>(val) : static_cast<u8>(SampleSetType::NORMAL);
+}
+
 // hitSamples are colon-separated optional components (up to 5), and not all 5 have to be specified
 void parse_hitsamples(std::string_view hitSampleStr, HitSamples &samples) {
     if(hitSampleStr.empty()) return;
@@ -415,12 +423,11 @@ void parse_hitsamples(std::string_view hitSampleStr, HitSamples &samples) {
     const std::vector<std::string_view> parts = SString::split(hitSampleStr, ':');
 
     // Parse available components, using defaults for missing ones
-    // ignore errors, parse as many parts as we can
     if(parts.size() >= 1) {
-        samples.normalSet = Parsing::strto<u8>(parts[0]);
+        samples.normalSet = parse_sampleset_value(parts[0]);
     }
     if(parts.size() >= 2) {
-        samples.additionSet = Parsing::strto<u8>(parts[1]);
+        samples.additionSet = parse_sampleset_value(parts[1]);
     }
     if(parts.size() >= 3) {
         samples.index = Parsing::strto<i32>(parts[2]);
@@ -433,8 +440,6 @@ void parse_hitsamples(std::string_view hitSampleStr, HitSamples &samples) {
     if(parts.size() >= 5) {
         samples.filename = parts[4];  // filename can be empty
     }
-
-    return;
 };
 
 bool sliderScoringTimeComparator(const SLIDER_SCORING_TIME &a, const SLIDER_SCORING_TIME &b) {
@@ -750,25 +755,20 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjectsFromDa
 
                     std::vector<std::string_view> edgeSets;
                     if(csvs.size() > 9) edgeSets = SString::split(csvs[9], '|');
-                    upd_last_error((!edgeSets.empty() && (edgeSounds.size() != edgeSets.size())));
 
-                    for(i32 i = 0; !err_line && i < edgeSounds.size(); i++) {
+                    for(i32 i = 0; i < edgeSounds.size(); i++) {
                         HitSamples samples;
-                        upd_last_error(!Parsing::parse(edgeSounds[i], &samples.hitSounds));
+                        // ignore parse errors, default hitSounds to 0
+                        (void)Parsing::parse(edgeSounds[i], &samples.hitSounds);
                         samples.hitSounds &= HitSoundType::VALID_HITSOUNDS;
 
-                        if(!edgeSets.empty()) {
-                            upd_last_error(!Parsing::parse(edgeSets[i], &samples.normalSet, ':', &samples.additionSet));
+                        if(!edgeSets.empty() && i < edgeSets.size()) {
+                            const auto parts = SString::split(edgeSets[i], ':');
+                            if(parts.size() >= 1) samples.normalSet = parse_sampleset_value(parts[0]);
+                            if(parts.size() >= 2) samples.additionSet = parse_sampleset_value(parts[1]);
                         }
-                        if(err_line) break;
 
                         slider.edgeSamples.push_back(samples);
-                    }
-
-                    if(err_line) {
-                        debugLog("File: {} Invalid slider edgeSamples (error on line {}): {}", osuFilePath, err_line,
-                                 curLine);
-                        break;
                     }
 
                     // No start sample specified, use default
@@ -1085,7 +1085,7 @@ DatabaseBeatmap::LOAD_DIFFOBJ_RESULT DatabaseBeatmap::loadDifficultyHitObjects(P
     if(result.diffobjects.size() > 1) {
         // sort hitobjects by time
         static constexpr auto diffHitObjectSortComparator = [](const DifficultyHitObject &a,
-                                                            const DifficultyHitObject &b) -> bool {
+                                                               const DifficultyHitObject &b) -> bool {
             if(a.time != b.time) return a.time < b.time;
             if(a.type != b.type) return static_cast<int>(a.type) < static_cast<int>(b.type);
             if(a.pos.x != b.pos.x) return a.pos.x < b.pos.x;
