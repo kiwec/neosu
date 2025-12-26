@@ -207,7 +207,8 @@ void Database::AsyncDBLoader::init() {
         // signal that we are done
         db->loading_progress = 1.0f;
 
-        DBRecalculator::start_calc(db->maps_to_recalc);
+        // will find maps/scores needing recalc dynamically
+        DBRecalculator::start_calc();
         VolNormalization::start_calc(db->loudness_to_calc);
 
         this->setReady(true);
@@ -276,7 +277,6 @@ void Database::startLoader() {
 
     if(!lastLoadWasRaw || !nextLoadIsRaw) {
         this->loudness_to_calc.clear();
-        this->maps_to_recalc.clear();
         {
             Sync::unique_lock lock(this->beatmap_difficulties_mtx);
             this->beatmap_difficulties.clear();
@@ -332,7 +332,6 @@ Database::~Database() {
     AsyncPPC::set_map(nullptr);
     VolNormalization::abort();
     this->loudness_to_calc.clear();
-    this->maps_to_recalc.clear();
 
     {
         Sync::unique_lock lock(this->beatmap_difficulties_mtx);
@@ -385,18 +384,17 @@ void Database::update() {
 
                 // clang-format off
                 for(auto &diff : this->beatmapsets
-                                // for all diffs within the set with fStarsNomod <= 0.f
+                                // for all diffs within the set with fStarsNomod <= 0.f (peppy difficulties needing recalc)
                                 | std::views::transform([](const auto &set) -> auto & { return *set->difficulties; })
                                 | std::views::join
                                 | std::views::filter([](const auto &diff) { return diff->fStarsNomod <= 0.f; })) {
                     diff->fStarsNomod *= -1.f;
-                    this->maps_to_recalc.push_back(diff.get());
                 }
                 // clang-format on
-
                 this->loading_progress = 1.0f;
 
-                DBRecalculator::start_calc(this->maps_to_recalc);
+                // will find maps/scores needing recalc dynamically
+                DBRecalculator::start_calc();
                 VolNormalization::start_calc(this->loudness_to_calc);
 
                 break;
@@ -727,7 +725,7 @@ Database::PlayerPPScores Database::getPlayerPPScores(const std::string &playerNa
         // for some reason this was originally backwards from sortScoreByPP, so negating it here
         std::ranges::sort(scores, [](const FinishedScore *const a, const FinishedScore *const b) -> bool {
             if(a == b) return false;
-            return !sortScoreByPP(*a, *b);
+            return sortScoreByPP(*b, *a);
         });
     }
 
@@ -1011,15 +1009,65 @@ void Database::loadMaps() {
                 i32 set_id = neosu_maps.read<i32>();
                 u16 nb_diffs = neosu_maps.read<u16>();
 
-                std::string mapset_path = fmt::format(NEOSU_MAPS_PATH "/{}/", set_id);
+                // NOTE: Ignoring mapsets with ID -1, since we most likely saved them in the correct folder,
+                //       but mistakenly set their ID to -1 (because the ID was missing from the .osu file).
+                if(set_id == -1) {
+                    for(u16 j = 0; j < nb_diffs; j++) {
+                        neosu_maps.skip<i32>();
+                        neosu_maps.skip_string();
+                        neosu_maps.skip_string();
+                        neosu_maps.skip<i32>();
+                        neosu_maps.skip<f32>();
+                        neosu_maps.skip_string();
+                        neosu_maps.skip_string();
+                        neosu_maps.skip_string();
+                        neosu_maps.skip_string();
+                        neosu_maps.skip_string();
+                        auto md5hash = neosu_maps.read_hash();
+                        neosu_maps.skip_bytes(sizeof(f32) + sizeof(f32) + sizeof(f32) + sizeof(f32) + sizeof(f64) +
+                                              sizeof(u32) + sizeof(u64) + sizeof(i16) + sizeof(i16) + sizeof(u16) +
+                                              sizeof(u16) + sizeof(u16) + sizeof(f64) + (sizeof(i32) * 3));
+                        if(version < 20240812) {
+                            u32 nb_timing_points = neosu_maps.read<u32>();
+                            neosu_maps.skip_bytes(sizeof(DB_TIMINGPOINT) * nb_timing_points);
+                        }
+                        if(version >= 20240703) {  // draw_background
+                            neosu_maps.skip<u8>();
+                        }
+                        if(version >= 20240812) {  // loudness
+                            neosu_maps.skip<f32>();
+                        }
+                        if(version >= 20250801) {  // unicode title+artist
+                            neosu_maps.skip_string();
+                            neosu_maps.skip_string();
+                        }
+                        if(version >= 20251009) {  // background image filename
+                            neosu_maps.skip_string();
+                        }
+                        if(version >= 20251225) {  // ppv2 version
+                            neosu_maps.skip<u32>();
+                        }
+
+                        logIfCV(debug_db, "skipped iSetID==-1 beatmap with hash {} load idx: {},{}", md5hash.string(),
+                                i, j);
+                    }
+                    continue;
+                }
 
                 auto diffs = std::make_unique<DiffContainer>();
+                std::string mapset_path = fmt::format(NEOSU_MAPS_PATH "/{}/", set_id);
+
                 for(u16 j = 0; j < nb_diffs; j++) {
                     if(this->load_interrupted.load(std::memory_order_acquire)) {  // cancellation point
                         // clean up partially loaded diffs in current set
                         Sync::unique_lock lock(this->beatmap_difficulties_mtx);
                         for(const auto &diff : *diffs) {
                             this->beatmap_difficulties.erase(diff->getMD5());
+
+                            // remove from loudness_to_calc
+                            std::erase_if(this->loudness_to_calc, [diff = diff.get()](const auto &loudness_diff) {
+                                return loudness_diff == diff;
+                            });
                         }
                         diffs.reset();
                         break;
@@ -1106,6 +1154,11 @@ void Database::loadMaps() {
                         diff->sBackgroundImageFileName = neosu_maps.read_string();
                     }
 
+                    // prior versions did not store PPv2 version, so there was no way to know if the maps needed pp recalc
+                    if(version >= 20251225) {
+                        diff->ppv2Version = neosu_maps.read<u32>();
+                    }
+
                     {
                         Sync::unique_lock lock(this->beatmap_difficulties_mtx);
                         this->beatmap_difficulties[diff->getMD5()] = diff.get();
@@ -1114,9 +1167,7 @@ void Database::loadMaps() {
                     nb_neosu_maps++;
                 }
 
-                // NOTE: Ignoring mapsets with ID -1, since we most likely saved them in the correct folder,
-                //       but mistakenly set their ID to -1 (because the ID was missing from the .osu file).
-                if(diffs && !diffs->empty() && set_id != -1) {
+                if(diffs && !diffs->empty()) {
                     auto set =
                         std::make_unique<BeatmapSet>(std::move(diffs), DatabaseBeatmap::BeatmapType::NEOSU_BEATMAPSET);
                     this->temp_loading_beatmapsets.push_back(std::move(set));
@@ -1149,6 +1200,9 @@ void Database::loadMaps() {
                     over.draw_background = neosu_maps.read<u8>();
                     if(version >= 20251009) {
                         over.background_image_filename = neosu_maps.read_string();
+                    }
+                    if(version >= 20251225) {
+                        over.ppv2_version = neosu_maps.read<u32>();
                     }
                     this->peppy_overrides[map_md5] = over;
                 }
@@ -1478,6 +1532,7 @@ void Database::loadMaps() {
                         diffp->iLocalOffset = override.local_offset;
                         diffp->iOnlineOffset = override.online_offset;
                         diffp->fStarsNomod = override.star_rating;
+                        diffp->ppv2Version = override.ppv2_version;
                         diffp->loudness = override.loudness;
                         diffp->draw_background = override.draw_background;
                         diffp->sBackgroundImageFileName = override.background_image_filename;
@@ -1487,7 +1542,6 @@ void Database::loadMaps() {
                     } else {
                         if(nomod_star_rating <= 0.f) {
                             nomod_star_rating *= -1.f;
-                            this->maps_to_recalc.push_back(diffp);
                         }
 
                         diffp->iLocalOffset = localOffset;
@@ -1521,10 +1575,6 @@ void Database::loadMaps() {
                                 // remove from loudness_to_calc
                                 std::erase_if(this->loudness_to_calc, [diff = diff.get()](const auto &loudness_diff) {
                                     return loudness_diff == diff;
-                                });
-                                // remove from maps_to_recalc
-                                std::erase_if(this->maps_to_recalc, [diff = diff.get()](const auto &recalc_diff) {
-                                    return recalc_diff == diff;
                                 });
                             }
                             beatmapSets[i].diffs.reset();
@@ -1579,8 +1629,7 @@ void Database::loadMaps() {
     this->importTimer->update();
     debugLog("peppy+neosu maps: loading took {:f} seconds ({:d} peppy, {:d} neosu, {:d} maps total)",
              this->importTimer->getElapsedTime(), nb_peppy_maps, nb_neosu_maps, nb_peppy_maps + nb_neosu_maps);
-    debugLog("Found {:d} overrides; {:d} maps need star recalc, {:d} maps need loudness recalc", nb_overrides,
-             this->maps_to_recalc.size(), this->loudness_to_calc.size());
+    debugLog("Found {:d} overrides; {:d} maps need loudness recalc", nb_overrides, this->loudness_to_calc.size());
 }
 
 void Database::saveMaps() {
@@ -1656,6 +1705,7 @@ void Database::saveMaps() {
             maps.write_string(diff->sTitleUnicode);
             maps.write_string(diff->sArtistUnicode);
             maps.write_string(diff->sBackgroundImageFileName);
+            maps.write<u32>(diff->ppv2Version);
 
             nb_diffs_saved++;
         }
@@ -1689,6 +1739,7 @@ void Database::saveMaps() {
             maps.write<i32>(override.avg_bpm);
             maps.write<u8>(override.draw_background);
             maps.write_string(override.background_image_filename);
+            maps.write<u32>(override.ppv2_version);
 
             nb_overrides++;
         }

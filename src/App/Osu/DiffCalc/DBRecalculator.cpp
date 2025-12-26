@@ -24,29 +24,45 @@
 namespace DBRecalculator {
 
 struct internal {
-    static void update_score_in_db(const FinishedScore& score, f64 pp, f64 total_stars, f64 aim_stars,
-                                   f64 speed_stars) {
-        Sync::shared_lock readlock(db->scores_mtx);
-        auto it = db->getScoresMutable().find(score.beatmap_hash);
-        if(it == db->getScoresMutable().end()) return;
+    static void update_score_in_db(const FinishedScore& score, f64 pp, f64 total_stars, f64 aim_stars, f64 speed_stars);
+    static std::vector<BeatmapDifficulty*> collect_outdated_db_diffs(const Sync::stop_token& stoken);
+};
 
-        for(auto& dbScore : it->second) {
-            if(dbScore.unixTimestamp == score.unixTimestamp) {
-                readlock.unlock();
-                readlock.release();
-                Sync::unique_lock writelock(db->scores_mtx);
+void internal::update_score_in_db(const FinishedScore& score, f64 pp, f64 total_stars, f64 aim_stars, f64 speed_stars) {
+    Sync::shared_lock readlock(db->scores_mtx);
+    auto it = db->getScoresMutable().find(score.beatmap_hash);
+    if(it == db->getScoresMutable().end()) return;
 
-                dbScore.ppv2_version = DiffCalc::PP_ALGORITHM_VERSION;
-                dbScore.ppv2_score = pp;
-                dbScore.ppv2_total_stars = total_stars;
-                dbScore.ppv2_aim_stars = aim_stars;
-                dbScore.ppv2_speed_stars = speed_stars;
-                db->scores_changed.store(true, std::memory_order_release);
-                return;
+    for(auto& dbScore : it->second) {
+        if(dbScore.unixTimestamp == score.unixTimestamp) {
+            readlock.unlock();
+            readlock.release();
+            Sync::unique_lock writelock(db->scores_mtx);
+
+            dbScore.ppv2_version = DiffCalc::PP_ALGORITHM_VERSION;
+            dbScore.ppv2_score = pp;
+            dbScore.ppv2_total_stars = total_stars;
+            dbScore.ppv2_aim_stars = aim_stars;
+            dbScore.ppv2_speed_stars = speed_stars;
+            db->scores_changed.store(true, std::memory_order_release);
+            return;
+        }
+    }
+}
+
+std::vector<BeatmapDifficulty*> internal::collect_outdated_db_diffs(const Sync::stop_token& stoken) {
+    std::vector<BeatmapDifficulty*> ret;
+    {
+        Sync::shared_lock readlock(db->beatmap_difficulties_mtx);
+        for(const auto& [_, diff] : db->beatmap_difficulties) {
+            if(stoken.stop_requested()) break;
+            if(diff->ppv2Version < DiffCalc::PP_ALGORITHM_VERSION) {
+                ret.push_back(diff);
             }
         }
     }
-};
+    return ret;
+}
 
 namespace {
 
@@ -82,7 +98,7 @@ struct ScoreWork {
 // All work for a single beatmap: optional map recalc + zero or more scores
 struct WorkItem {
     MD5Hash hash;
-    DatabaseBeatmap* map;
+    BeatmapDifficulty* map;
     bool needs_map_calc;
     std::vector<ScoreWork> scores;
 };
@@ -93,6 +109,7 @@ std::atomic<u32> scores_processed{0};
 std::atomic<u32> scores_total{0};
 std::atomic<u32> maps_processed{0};
 std::atomic<u32> maps_total{0};
+std::atomic<bool> workqueue_ready{false};
 
 std::vector<MapResult> map_results;
 Sync::mutex results_mutex;
@@ -102,14 +119,14 @@ std::vector<WorkItem> work_queue;
 std::vector<BPMTuple> bpm_calc_buf;
 
 // Maps to recalc, copied from start_calc argument for thread-safe access
-std::vector<DatabaseBeatmap*> pending_maps_to_recalc;
+std::vector<BeatmapDifficulty*> pending_diffs_to_recalc;
 
 forceinline bool score_needs_recalc(const FinishedScore& score) {
     return score.ppv2_version < DiffCalc::PP_ALGORITHM_VERSION || score.ppv2_score <= 0.f;
 }
 
 // Calculate difficulty and PP for a group of scores sharing mod parameters.
-void process_score_group(DatabaseBeatmap* map, const ModParams& params, const std::vector<const ScoreWork*>& scores,
+void process_score_group(BeatmapDifficulty* map, const ModParams& params, const std::vector<const ScoreWork*>& scores,
                          DatabaseBeatmap::PRIMITIVE_CONTAINER& primitives, const Sync::stop_token& stoken) {
     if(scores.empty()) return;
 
@@ -182,18 +199,22 @@ void process_score_group(DatabaseBeatmap* map, const ModParams& params, const st
 void build_work_queue(const Sync::stop_token& stoken) {
     std::unordered_map<MD5Hash, WorkItem> work_by_hash;
 
-    // add maps needing star rating recalc
-    for(auto* map : pending_maps_to_recalc) {
+    // add maps needing star rating recalc (ppv2 version outdated)
+    pending_diffs_to_recalc = internal::collect_outdated_db_diffs(stoken);
+    if(stoken.stop_requested()) return;
+
+    for(auto* diff : pending_diffs_to_recalc) {
         if(stoken.stop_requested()) return;
-        auto& item = work_by_hash[map->getMD5()];
-        item.hash = map->getMD5();
-        item.map = map;
+        const auto& hash = diff->getMD5();
+        auto& item = work_by_hash[hash];
+        item.hash = hash;
+        item.map = diff;
         item.needs_map_calc = true;
     }
 
-    maps_total.store(static_cast<u32>(pending_maps_to_recalc.size()), std::memory_order_relaxed);
-    pending_maps_to_recalc.clear();
-    pending_maps_to_recalc.shrink_to_fit();
+    maps_total.store(static_cast<u32>(pending_diffs_to_recalc.size()), std::memory_order_relaxed);
+    pending_diffs_to_recalc.clear();
+    pending_diffs_to_recalc.shrink_to_fit();
 
     // find all scores needing PP recalc, grouped by beatmap
     u32 score_count = 0;
@@ -340,9 +361,11 @@ void process_work_item(WorkItem& item, const Sync::stop_token& stoken) {
 
 void runloop(const Sync::stop_token& stoken) {
     McThread::set_current_thread_name(ULITERAL("db_recalc"));
-    McThread::set_current_thread_prio(McThread::Priority::LOW);
+    McThread::set_current_thread_prio(McThread::Priority::NORMAL);
 
     build_work_queue(stoken);
+    workqueue_ready.store(true, std::memory_order_release);
+
     if(stoken.stop_requested()) return;
 
     debugLog("DB recalculator: {} work items ({} maps, {} scores)", work_queue.size(), get_maps_total(),
@@ -373,16 +396,14 @@ void runloop(const Sync::stop_token& stoken) {
 
 }  // namespace
 
-void start_calc(const std::vector<DatabaseBeatmap*>& maps_to_recalc) {
+void start_calc() {
     abort_calc();
-
-    // copy
-    pending_maps_to_recalc = maps_to_recalc;
 
     maps_processed = 0;
     scores_processed = 0;
     maps_total = 0;
     scores_total = 0;
+    workqueue_ready = false;
     map_results.clear();
 
     worker_thread = Sync::jthread(runloop);
@@ -397,9 +418,10 @@ void abort_calc() {
     maps_total = 0;
     maps_processed = 0;
     scores_processed = 0;
+    workqueue_ready = false;
     work_queue.clear();
     map_results.clear();
-    pending_maps_to_recalc.clear();
+    pending_diffs_to_recalc.clear();
 }
 
 u32 get_maps_total() { return maps_total.load(std::memory_order_acquire); }
@@ -410,7 +432,7 @@ u32 get_scores_total() { return scores_total.load(std::memory_order_acquire); }
 
 u32 get_scores_processed() { return scores_processed.load(std::memory_order_acquire); }
 
-bool running() { return worker_thread.joinable(); }
+bool running() { return workqueue_ready.load(std::memory_order_acquire) && worker_thread.joinable(); }
 
 bool scores_finished() {
     const u32 score_total = get_scores_total();
@@ -420,7 +442,7 @@ bool scores_finished() {
 bool is_finished() {
     const u32 processed = get_maps_processed() + get_scores_processed();
     const u32 total = get_maps_total() + get_scores_total();
-    return total > 0 && processed >= total;
+    return workqueue_ready.load(std::memory_order_acquire) && processed >= total;
 }
 
 std::vector<MapResult> get_map_results() {

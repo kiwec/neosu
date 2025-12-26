@@ -26,7 +26,7 @@ struct MapResult {
 
 // Start unified calculation for maps and all scores that need PP recalculation.
 // Groups work by beatmap to load each file only once.
-void start_calc(const std::vector<DatabaseBeatmap*>& maps_to_recalc);
+void start_calc();
 
 void abort_calc();
 

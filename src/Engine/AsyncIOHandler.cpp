@@ -350,7 +350,9 @@ bool AsyncIOHandler::write(std::string_view path, std::vector<u8> data, WriteCal
 }
 
 bool AsyncIOHandler::write(std::string_view path, std::string data, WriteCallback callback) {
-    return m_impl->write(path, std::vector<u8>(data.begin(), data.end()), std::move(callback));
+    return m_impl->write(path,
+                         std::vector<u8>{std::make_move_iterator(data.begin()), std::make_move_iterator(data.end())},
+                         std::move(callback));
 }
 
 bool AsyncIOHandler::write(std::string_view path, const u8* data, size_t amount, WriteCallback callback) {

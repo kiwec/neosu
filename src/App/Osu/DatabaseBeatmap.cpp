@@ -136,6 +136,7 @@ DatabaseBeatmap::DatabaseBeatmap(const DatabaseBeatmap &other)
       fStackLeniency(other.fStackLeniency),
       fSliderTickRate(other.fSliderTickRate),
       fSliderMultiplier(other.fSliderMultiplier),
+      ppv2Version(other.ppv2Version),
       fStarsNomod(other.fStarsNomod),
       iMinBPM(other.iMinBPM),
       iMaxBPM(other.iMaxBPM),
@@ -193,6 +194,7 @@ DatabaseBeatmap &DatabaseBeatmap::operator=(const DatabaseBeatmap &other) {
     this->fStackLeniency = other.fStackLeniency;
     this->fSliderTickRate = other.fSliderTickRate;
     this->fSliderMultiplier = other.fSliderMultiplier;
+    this->ppv2Version = other.ppv2Version;
     this->fStarsNomod = other.fStarsNomod;
     this->iMinBPM = other.iMinBPM;
     this->iMaxBPM = other.iMaxBPM;
@@ -254,6 +256,7 @@ DatabaseBeatmap::DatabaseBeatmap(DatabaseBeatmap &&other) noexcept
       fStackLeniency(other.fStackLeniency),
       fSliderTickRate(other.fSliderTickRate),
       fSliderMultiplier(other.fSliderMultiplier),
+      ppv2Version(other.ppv2Version),
       fStarsNomod(other.fStarsNomod),
       iMinBPM(other.iMinBPM),
       iMaxBPM(other.iMaxBPM),
@@ -309,6 +312,7 @@ DatabaseBeatmap &DatabaseBeatmap::operator=(DatabaseBeatmap &&other) noexcept {
     this->fStackLeniency = other.fStackLeniency;
     this->fSliderTickRate = other.fSliderTickRate;
     this->fSliderMultiplier = other.fSliderMultiplier;
+    this->ppv2Version = other.ppv2Version;
     this->fStarsNomod = other.fStarsNomod;
     this->iMinBPM = other.iMinBPM;
     this->iMaxBPM = other.iMaxBPM;
@@ -1680,6 +1684,7 @@ DatabaseBeatmap::LOAD_GAMEPLAY_RESULT DatabaseBeatmap::loadGameplay(BeatmapDiffi
 
 MapOverrides DatabaseBeatmap::get_overrides() const {
     return {.background_image_filename = this->sBackgroundImageFileName,
+            .ppv2_version = this->ppv2Version,
             .star_rating = this->fStarsNomod,
             .loudness = this->loudness.load(std::memory_order_relaxed),
             .min_bpm = this->iMinBPM,

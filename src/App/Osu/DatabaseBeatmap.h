@@ -441,7 +441,7 @@ class DatabaseBeatmap final {
     float fSliderMultiplier{1.f};
 
     // precomputed data (can-run-without-but-nice-to-have data)
-
+    u32 ppv2Version{0};  // necessary for knowing if stars are up to date
     float fStarsNomod{0.f};
 
     int iMinBPM{0};

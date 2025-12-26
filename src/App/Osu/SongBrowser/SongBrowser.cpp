@@ -852,6 +852,10 @@ bool SongBrowser::selectBeatmapset(i32 set_id) {
     }
 }
 
+namespace DiffCalc {
+extern const u32 PP_ALGORITHM_VERSION;
+}
+
 void SongBrowser::mouse_update(bool *propagate_clicks) {
     if(!this->bVisible) return;
 
@@ -877,12 +881,11 @@ void SongBrowser::mouse_update(bool *propagate_clicks) {
     BottomBar::update(propagate_clicks);
 
     // map star/bpm/other calc
-    if(!db->maps_to_recalc.empty()) {
+    if(DBRecalculator::running()) {
         std::vector<DBRecalculator::MapResult> results;
         if(DBRecalculator::is_finished()) {
             DBRecalculator::abort_calc();  // join thread
             results = DBRecalculator::get_map_results();
-            db->maps_to_recalc.clear();  // we are done
         } else {
             auto maybe_result = DBRecalculator::try_get_map_results();
             if(maybe_result.has_value()) {
@@ -901,7 +904,10 @@ void SongBrowser::mouse_update(bool *propagate_clicks) {
                 map->iMinBPM = res.min_bpm;
                 map->iMaxBPM = res.max_bpm;
                 map->iMostCommonBPM = res.avg_bpm;
-                db->peppy_overrides[map->getMD5()] = map->get_overrides();
+                map->ppv2Version = DiffCalc::PP_ALGORITHM_VERSION;
+                if(map->type == DatabaseBeatmap::BeatmapType::PEPPY_DIFFICULTY) {
+                    db->peppy_overrides[map->getMD5()] = map->get_overrides();
+                }
             }
         }
     } else if(DBRecalculator::running() && DBRecalculator::is_finished()) {

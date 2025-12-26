@@ -36,7 +36,7 @@ class DatabaseBeatmap;
 using BeatmapDifficulty = DatabaseBeatmap;
 using BeatmapSet = DatabaseBeatmap;
 
-#define NEOSU_MAPS_DB_VERSION 20251209
+#define NEOSU_MAPS_DB_VERSION 20251225
 #define NEOSU_SCORE_DB_VERSION 20240725
 
 class Database;
@@ -153,7 +153,6 @@ class Database {
     std::atomic<bool> scores_changed{true};
 
     std::unordered_map<MD5Hash, MapOverrides> peppy_overrides;
-    std::vector<BeatmapDifficulty *> maps_to_recalc;
     std::vector<BeatmapDifficulty *> loudness_to_calc;
 
    private:
