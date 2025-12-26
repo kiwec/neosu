@@ -196,10 +196,8 @@ i32 get_beatmapset_id_from_osu_file(const u8* osu_data, size_t s_osu_data) {
     i32 set_id = -1;
 
     std::string_view file((const char*)osu_data, (const char*)osu_data + s_osu_data);
-    auto lines = SString::split<std::string_view>(file, '\n');
-    for(auto line : lines) {
-        SString::trim_inplace(line);
-        if(line.empty() || line.starts_with("//")) continue;
+    for(const auto line : SString::split_newlines(file)) {
+        if(line.empty() || SString::is_comment(line)) continue;
 
         if(Parsing::parse(line, "BeatmapSetID", ':', &set_id)) {
             return set_id;
@@ -265,7 +263,7 @@ i32 extract_beatmapset_id(const u8* data, size_t data_s) {
         std::string filename = entry.getFilename();
         if(env->getFileExtensionFromFilePath(filename).compare("osu") != 0) continue;
 
-        const auto &osu_data = entry.getUncompressedData();
+        const auto& osu_data = entry.getUncompressedData();
         if(osu_data.empty()) continue;
 
         set_id = get_beatmapset_id_from_osu_file(osu_data.data(), osu_data.size());

@@ -71,6 +71,42 @@ template std::vector<std::string_view> split<std::string_view, char>(std::string
 template std::vector<std::string_view> split<std::string_view, const char*>(std::string_view, const char*);
 template std::vector<std::string_view> split<std::string_view, std::string_view>(std::string_view, std::string_view);
 
+template <typename R, split_ret_enabled_t<R>>
+std::vector<R> split_newlines(std::string_view s) {
+    std::vector<R> r;
+
+    size_t count = std::ranges::count(s, '\n');
+    r.reserve(count + 1);
+
+    size_t i = 0, j = 0;
+    while((j = s.find('\n', i)) != s.npos) {
+        size_t end = j;
+        if(end > i && s[end - 1] == '\r') end--;
+
+        if constexpr(std::is_same_v<std::decay_t<R>, std::string>) {
+            r.emplace_back(s, i, end - i);
+        } else {
+            r.emplace_back(s.substr(i, end - i));
+        }
+        i = j + 1;
+    }
+
+    // remainder after last \n (or entire string if no \n found)
+    size_t end = s.size();
+    if(end > i && s[end - 1] == '\r') end--;
+
+    if constexpr(std::is_same_v<std::decay_t<R>, std::string>) {
+        r.emplace_back(s, i, end - i);
+    } else {
+        r.emplace_back(s.substr(i, end - i));
+    }
+
+    return r;
+}
+
+template std::vector<std::string> split_newlines<std::string>(std::string_view);
+template std::vector<std::string_view> split_newlines<std::string_view>(std::string_view);
+
 template <typename S, split_join_enabled_t<S>>
 std::string join(const std::vector<std::string>& strings, S delim) {
     if(strings.empty()) return {};

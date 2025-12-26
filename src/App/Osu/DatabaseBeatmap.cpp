@@ -536,17 +536,14 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjectsFromDa
 
     using enum BlockId;
 
-    for(auto curLineUnstripped : SString::split(beatmapFile, '\n')) {
+    for(const auto curLine : SString::split_newlines(beatmapFile)) {
         if(dead.stop_requested()) {
             c.error.errc = LoadError::LOAD_INTERRUPTED;
             return c;
         }
 
-        SString::trim_inplace(curLineUnstripped);
         // ignore comments, but only if at the beginning of a line (e.g. allow Artist:DJ'TEKINA//SOMETHING)
-        if(curLineUnstripped.empty() || curLineUnstripped.starts_with("//")) continue;
-
-        const auto curLine = curLineUnstripped;  // don't want to accidentally modify it somewhere later
+        if(curLine.empty() || SString::is_comment(curLine)) continue;
 
         // skip the for loop on the first go-around, the header has to be at the start
         if(curBlock == Sentinel) {
@@ -562,11 +559,6 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjectsFromDa
 
         // we don't care here
         if(curBlock == Metadata) continue;
-
-        if(dead.stop_requested()) {
-            c.error.errc = LoadError::LOAD_INTERRUPTED;
-            return c;
-        }
 
         switch(curBlock) {
             case Sentinel:
@@ -1380,12 +1372,9 @@ DatabaseBeatmap::LOAD_META_RESULT DatabaseBeatmap::loadMetadata(bool compute_md5
 
     using enum BlockId;
 
-    for(auto curLineUnstripped : SString::split(beatmapFile, '\n')) {
-        SString::trim_inplace(curLineUnstripped);
+    for(const auto curLine : SString::split_newlines(beatmapFile)) {
         // ignore comments, but only if at the beginning of a line (e.g. allow Artist:DJ'TEKINA//SOMETHING)
-        if(curLineUnstripped.empty() || curLineUnstripped.starts_with("//")) continue;
-
-        const auto curLine = curLineUnstripped;  // don't want to accidentally modify it somewhere later
+        if(curLine.empty() || SString::is_comment(curLine)) continue;
 
         // skip the for loop on the first go-around, the header has to be at the start
         if(curBlock == Sentinel) {

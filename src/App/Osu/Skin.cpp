@@ -779,13 +779,10 @@ bool Skin::parseSkinINI(std::string filepath) {
     SkinSection curBlock = SkinSection::GENERAL;
     using enum SkinSection;
 
-    for(auto curLineUnstripped : SString::split(fileContent.utf8View(), '\n')) {
-        SString::trim_inplace(curLineUnstripped);
+    for(const auto curLine : SString::split_newlines(fileContent.utf8View())) {
         // ignore comments, but only if at the beginning of a line
-        if(curLineUnstripped.empty() || curLineUnstripped.starts_with("//")) continue;
+        if(curLine.empty() || SString::is_comment(curLine)) continue;
         hasNonEmptyLines = true;
-
-        const auto curLine = curLineUnstripped;  // don't want to accidentally modify it somewhere later
 
         // section detection
         if(curLine.find("[General]") != std::string::npos)

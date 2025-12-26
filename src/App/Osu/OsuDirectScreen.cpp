@@ -400,10 +400,7 @@ void OsuDirectScreen::search(std::string_view query, i32 page) {
             }
 
             if(response.success) {
-                auto set_lines = SString::split(response.body, '\n');
-                if(!set_lines[0].empty() && set_lines[0].back() == '\r') {
-                    set_lines[0].remove_suffix(1);  // remove CR if it somehow had one
-                }
+                const auto set_lines = SString::split_newlines(response.body);
 
                 i32 nb_results{0};
                 auto [ptr, ec] =

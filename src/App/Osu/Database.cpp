@@ -2351,6 +2351,8 @@ std::unique_ptr<BeatmapSet> Database::loadRawBeatmap(const std::string &beatmapP
     logIfCV(debug_db, "beatmap path: {:s}", beatmapPath);
 
     // try loading all diffs
+    DatabaseBeatmap::LoadError lastError;
+
     auto diffs = std::make_unique<DiffContainer>();
 
     std::vector<std::string> beatmapFiles = env->getFilesInFolder(beatmapPath);
@@ -2367,6 +2369,7 @@ std::unique_ptr<BeatmapSet> Database::loadRawBeatmap(const std::string &beatmapP
         if(!res.error.errc) {
             diffs->push_back(std::move(map));
         } else {
+            lastError = res.error;
             logIfCV(debug_db, "Couldn't loadMetadata: {}, deleting object.", res.error.error_string());
         }
     }
@@ -2374,6 +2377,10 @@ std::unique_ptr<BeatmapSet> Database::loadRawBeatmap(const std::string &beatmapP
     std::unique_ptr<BeatmapSet> set{nullptr};
     if(diffs && !diffs->empty()) {
         set = std::make_unique<BeatmapSet>(std::move(diffs), DatabaseBeatmap::BeatmapType::NEOSU_BEATMAPSET);
+    }
+
+    if(!set && lastError.errc) {
+        debugLog("Couldn't load beatmapset {}: {}", beatmapPath, lastError.error_string());
     }
 
     return set;

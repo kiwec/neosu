@@ -2565,7 +2565,7 @@ void OptionsMenu::onResolutionSelect() {
     {
         File customres(MCENGINE_CFG_PATH "/customres.cfg");
         for(auto line = customres.readLine(); customres.canRead(); line = customres.readLine()) {
-            if(line.starts_with("//") || line.starts_with('#')) continue;  // ignore comments
+            if(SString::is_comment(line, "#") || SString::is_comment(line, "//")) continue;  // ignore comments
             auto parsed = Parsing::parse_resolution(line);
             if(parsed.has_value()) {
                 customResolutions.emplace_back(parsed->x, parsed->y);
@@ -3724,7 +3724,7 @@ void OptionsMenu::save() {
         for(auto &line : read_lines) {
             SString::trim_inplace(line);
             if(line.empty()) continue;
-            if(line.starts_with('#') || line.starts_with("//")) {
+            if(SString::is_comment(line, "#") || SString::is_comment(line, "//")) {
                 if(!line.ends_with('\n')) line.push_back('\n');
                 write_lines.append(line);
                 continue;

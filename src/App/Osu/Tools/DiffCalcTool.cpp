@@ -34,9 +34,7 @@ BeatmapSettings parseDifficultySettings(std::string_view osuFilePath) {
     bool inDifficulty = false;
 
     for(auto line = file.readLine(); file.canRead(); line = file.readLine()) {
-        SString::trim_inplace(line);
-
-        if(line.empty() || line.starts_with("//")) continue;
+        if(line.empty() || SString::is_comment(line)) continue;
 
         if(line.contains("[Difficulty]")) {
             inDifficulty = true;

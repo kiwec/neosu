@@ -459,7 +459,7 @@ void MapBGImagePathLoader::initAsync() {
                 std::string_view cur_line = lines[i];
 
                 // ignore comments, but only if at the beginning of a line (e.g. allow Artist:DJ'TEKINA//SOMETHING)
-                if(cur_line.starts_with("//")) continue;
+                if(cur_line.empty() || SString::is_comment(cur_line)) continue;
 
                 if(!is_events_block && cur_line.contains("[Events]")) {
                     is_events_block = true;

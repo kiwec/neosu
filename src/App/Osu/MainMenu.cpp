@@ -1173,7 +1173,8 @@ void MainMenu::selectRandomBeatmap() {
             const auto &mapset_folder = mapset_folders[rand() % mapset_folders.size()];
             auto set = db->loadRawBeatmap(mapset_folder);
             if(set == nullptr) {
-                debugLog("Failed to load beatmap set '{:s}'", mapset_folder.c_str());
+                // loadRawBeatmap will log failure with reason
+                // debugLog("Failed to load beatmap set '{:s}'", mapset_folder.c_str());
                 continue;
             }
 

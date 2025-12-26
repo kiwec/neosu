@@ -80,7 +80,7 @@ void UpdateHandler::onVersionCheckComplete(const std::string &response, bool suc
         return;
     }
 
-    const std::vector<std::string_view> lines = SString::split(response, '\n');
+    const std::vector<std::string_view> lines = SString::split_newlines(response);
     f32 latest_version = Parsing::strto<f32>(lines[0]);
     u64 latest_build_tms = 0;
     std::string online_update_hash;

@@ -7,7 +7,6 @@
 #include <vector>
 #include <type_traits>
 #include <cassert>
-#include <charconv>
 
 // non-UString-related fast and small string manipulation helpers
 
@@ -28,6 +27,10 @@ using split_ret_enabled_t =
 template <typename R = std::string_view, typename S = char, split_ret_enabled_t<R> = true,
           split_join_enabled_t<S> = true>
 std::vector<R> split(std::string_view s, S d);
+
+// split on newlines, handling both \n and \r\n line endings
+template <typename R = std::string_view, split_ret_enabled_t<R> = true>
+std::vector<R> split_newlines(std::string_view s);
 
 // join a vector of std::strings
 template <typename S = char, split_join_enabled_t<S> = true>
@@ -66,6 +69,13 @@ static forceinline bool contains_ncase(const std::string_view haystack, const st
 // empty or whitespace only
 static forceinline bool is_wspace_only(const std::string_view str) {
     return str.empty() || std::ranges::all_of(str, [](unsigned char c) { return std::isspace(c) != 0; });
+}
+
+// check if first non-whitespace sequence matches comment token
+static forceinline bool is_comment(const std::string_view str, const std::string_view token = "//") {
+    size_t start = str.find_first_not_of(" \t\r\n");
+    if(start == std::string_view::npos) return false;
+    return str.substr(start).starts_with(token);
 }
 
 // only really valid for ASCII
