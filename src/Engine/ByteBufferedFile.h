@@ -169,6 +169,8 @@ class ByteBufferedFile {
         [[nodiscard]] constexpr bool good() const { return !this->error_flag; }
         [[nodiscard]] constexpr std::string_view error() const { return this->last_error; }
 
+        bool read_hash(MD5Hash &inout);  // read into a given buffer directly
+        bool read_string(std::string &inout);
         [[nodiscard]] MD5Hash read_hash();
         [[nodiscard]] std::string read_string();
         [[nodiscard]] u32 read_uleb128();

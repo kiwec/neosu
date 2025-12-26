@@ -1328,7 +1328,7 @@ std::vector<std::string> Environment::enumerateDirectory(std::string_view pathTo
 
             if(add_entry) {
                 UString uFilename{wide_filename, static_cast<int>(length)};
-                utf8_entries.emplace_back(uFilename.toUtf8(), static_cast<size_t>(uFilename.lengthUtf8()));
+                utf8_entries.emplace_back(uFilename.utf8View());
             }
         } while(FindNextFileW(handle, &data));
 

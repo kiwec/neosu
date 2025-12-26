@@ -1075,22 +1075,19 @@ void Database::loadMaps() {
 
                     std::string osu_filename = neosu_maps.read_string();
 
-                    std::string map_path = mapset_path;
-                    map_path.append(osu_filename);
-
-                    auto diff = std::make_unique<BeatmapDifficulty>(map_path, mapset_path,
+                    auto diff = std::make_unique<BeatmapDifficulty>(mapset_path + osu_filename, mapset_path,
                                                                     DatabaseBeatmap::BeatmapType::NEOSU_DIFFICULTY);
                     diff->iID = neosu_maps.read<i32>();
                     diff->iSetID = set_id;
-                    diff->sTitle = neosu_maps.read_string();
-                    diff->sAudioFileName = neosu_maps.read_string();
+                    neosu_maps.read_string(diff->sTitle);
+                    neosu_maps.read_string(diff->sAudioFileName);
                     diff->iLengthMS = neosu_maps.read<i32>();
                     diff->fStackLeniency = neosu_maps.read<f32>();
-                    diff->sArtist = neosu_maps.read_string();
-                    diff->sCreator = neosu_maps.read_string();
-                    diff->sDifficultyName = neosu_maps.read_string();
-                    diff->sSource = neosu_maps.read_string();
-                    diff->sTags = neosu_maps.read_string();
+                    neosu_maps.read_string(diff->sArtist);
+                    neosu_maps.read_string(diff->sCreator);
+                    neosu_maps.read_string(diff->sDifficultyName);
+                    neosu_maps.read_string(diff->sSource);
+                    neosu_maps.read_string(diff->sTags);
                     diff->writeMD5(neosu_maps.read_hash());
                     diff->fAR = neosu_maps.read<f32>();
                     diff->fCS = neosu_maps.read<f32>();
@@ -1135,8 +1132,8 @@ void Database::loadMaps() {
                     }
 
                     if(version >= 20250801) {
-                        diff->sTitleUnicode = neosu_maps.read_string();
-                        diff->sArtistUnicode = neosu_maps.read_string();
+                        neosu_maps.read_string(diff->sTitleUnicode);
+                        neosu_maps.read_string(diff->sArtistUnicode);
                     } else {
                         diff->sTitleUnicode = diff->sTitle;
                         diff->sArtistUnicode = diff->sArtist;
@@ -1151,7 +1148,7 @@ void Database::loadMaps() {
 
                     // we cache the background image filename in the database past this version
                     if(version >= 20251009) {
-                        diff->sBackgroundImageFileName = neosu_maps.read_string();
+                        neosu_maps.read_string(diff->sBackgroundImageFileName);
                     }
 
                     // prior versions did not store PPv2 version, so there was no way to know if the maps needed pp recalc
@@ -1199,7 +1196,7 @@ void Database::loadMaps() {
                     }
                     over.draw_background = neosu_maps.read<u8>();
                     if(version >= 20251009) {
-                        over.background_image_filename = neosu_maps.read_string();
+                        neosu_maps.read_string(over.background_image_filename);
                     }
                     if(version >= 20251225) {
                         over.ppv2_version = neosu_maps.read<u32>();
@@ -1221,7 +1218,7 @@ void Database::loadMaps() {
             u32 osu_db_folder_count = dbr.read<u32>();
             dbr.skip<u8>();
             dbr.skip<u64>() /* timestamp */;
-            auto playerName = dbr.read_string();
+            std::string playerName = dbr.read_string();
             this->num_beatmaps_to_load = dbr.read<u32>();
 
             debugLog("Database: version = {:d}, folderCount = {:d}, playerName = {:s}, numDiffs = {:d}", osu_db_version,
@@ -1383,8 +1380,8 @@ void Database::loadMaps() {
                 auto stackLeniency = dbr.read<f32>();
                 auto mode = dbr.read<u8>();
 
-                auto songSource = dbr.read_string();
-                auto songTags = dbr.read_string();
+                std::string songSource = dbr.read_string();
+                std::string songTags = dbr.read_string();
                 SString::trim_inplace(songSource);
                 SString::trim_inplace(songTags);
 
@@ -1396,7 +1393,7 @@ void Database::loadMaps() {
 
                 // somehow, some beatmaps may have spaces at the start/end of their
                 // path, breaking the Windows API (e.g. https://osu.ppy.sh/s/215347)
-                auto path = dbr.read_string();
+                std::string path = dbr.read_string();
                 SString::trim_inplace(path);
 
                 /*i64 lastOnlineCheck = */ dbr.skip<u64>();
@@ -1455,25 +1452,25 @@ void Database::loadMaps() {
                     auto map = std::make_unique<BeatmapDifficulty>(fullFilePath, beatmapPath,
                                                                    DatabaseBeatmap::BeatmapType::PEPPY_DIFFICULTY);
 
-                    map->sTitle = songTitle;
-                    map->sTitleUnicode = songTitleUnicode;
+                    map->sTitle = std::move(songTitle);
+                    map->sTitleUnicode = std::move(songTitleUnicode);
                     if(SString::is_wspace_only(map->sTitleUnicode)) {
                         map->bEmptyTitleUnicode = true;
                     }
-                    map->sAudioFileName = audioFileName;
+                    map->sAudioFileName = std::move(audioFileName);
                     map->iLengthMS = duration;
 
                     map->fStackLeniency = stackLeniency;
 
-                    map->sArtist = artistName;
-                    map->sArtistUnicode = artistNameUnicode;
+                    map->sArtist = std::move(artistName);
+                    map->sArtistUnicode = std::move(artistNameUnicode);
                     if(SString::is_wspace_only(map->sArtistUnicode)) {
                         map->bEmptyArtistUnicode = true;
                     }
-                    map->sCreator = creatorName;
-                    map->sDifficultyName = difficultyName;
-                    map->sSource = songSource;
-                    map->sTags = songTags;
+                    map->sCreator = std::move(creatorName);
+                    map->sDifficultyName = std::move(difficultyName);
+                    map->sSource = std::move(songSource);
+                    map->sTags = std::move(songTags);
                     map->writeMD5(md5hash);
                     map->iID = beatmapID;
                     map->iSetID = beatmapSetID;
@@ -1882,11 +1879,11 @@ void Database::loadScores(std::string_view dbPath) {
             sc.spinner_bonus = dbr.read<u64>();
             sc.unixTimestamp = dbr.read<u64>();
             sc.player_id = dbr.read<i32>();
-            sc.playerName = dbr.read_string();
+            dbr.read_string(sc.playerName);
             sc.grade = (ScoreGrade)dbr.read<u8>();
 
-            sc.client = dbr.read_string();
-            sc.server = dbr.read_string();
+            dbr.read_string(sc.client);
+            dbr.read_string(sc.server);
             sc.bancho_score_id = dbr.read<i64>();
             sc.peppy_replay_tms = dbr.read<u64>();
 
@@ -1963,7 +1960,7 @@ void Database::loadOldMcNeosuScores(std::string_view dbPath) {
                 FinishedScore sc;
 
                 sc.unixTimestamp = dbr.read<u64>();
-                sc.playerName = dbr.read_string();
+                dbr.read_string(sc.playerName);
                 sc.num300s = dbr.read<u16>();
                 sc.num100s = dbr.read<u16>();
                 sc.num50s = dbr.read<u16>();
@@ -1992,7 +1989,7 @@ void Database::loadOldMcNeosuScores(std::string_view dbPath) {
                 sc.numCircles = dbr.read<u32>();
                 sc.bancho_score_id = dbr.read<u32>();
                 sc.client = "neosu-win64-release-35.10";  // we don't know the actual version
-                sc.server = dbr.read_string();
+                dbr.read_string(sc.server);
 
                 std::string experimentalModsConVars = dbr.read_string();
                 auto experimentalMods = SString::split(experimentalModsConVars, ';');
@@ -2248,7 +2245,7 @@ void Database::loadPeppyScores(std::string_view dbPath) {
 
             sc.server = "ppy.sh";
             dbr.skip_string();  // beatmap hash (already have it)
-            sc.playerName = dbr.read_string();
+            dbr.read_string(sc.playerName);
             dbr.skip_string();  // replay hash (unused)
 
             sc.num300s = dbr.read<u16>();

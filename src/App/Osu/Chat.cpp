@@ -141,7 +141,7 @@ void ChatChannel::add_message(ChatMessage msg) {
     // Groups 1, 2 only exist for wiki links
     // Groups 3, 4, 5, 6 only exist for labeled links
     // Group 7 only exists for raw links
-    std::wregex url_regex(L"(\\[\\[(.+?)\\]\\])|(\\[((\\S+)://\\S+) (.+?)\\])|(https?://\\S+)");
+    std::wregex url_regex(LR"((\[\[(.+?)\]\])|(\[((\S+)://\S+) (.+?)\])|(https?://\S+))");
 
     std::wstring msg_text = msg.text.to_wstring();
     std::wsmatch match;

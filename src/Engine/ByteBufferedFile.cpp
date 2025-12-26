@@ -60,15 +60,15 @@ void ByteBufferedFile::Reader::set_error(const std::string &error_msg) {
     }
 }
 
-MD5Hash ByteBufferedFile::Reader::read_hash() {
-    MD5Hash hash;
-
+bool ByteBufferedFile::Reader::read_hash(MD5Hash &inout) {
     if(this->error_flag) {
-        return hash;
+        return false;
     }
 
     u8 empty_check = this->read<u8>();
-    if(empty_check == 0) return hash;
+    if(empty_check == 0) {
+        return false;
+    }
 
     u32 len = this->read_uleb128();
     u32 extra = 0;
@@ -80,35 +80,47 @@ MD5Hash ByteBufferedFile::Reader::read_hash() {
     }
 
     assert(len <= 32);  // shut up gcc PLEASE
-    if(this->read_bytes(reinterpret_cast<u8 *>(hash.data()), len) != len) {
+    if(this->read_bytes(reinterpret_cast<u8 *>(inout.data()), len) != len) {
         // just continue, don't set error flag
         debugLog("WARNING: failed to read {} bytes to obtain hash.", len);
         extra = len;
     }
     this->skip_bytes(extra);
+    return true;
+}
+
+bool ByteBufferedFile::Reader::read_string(std::string &inout) {
+    if(this->error_flag) {
+        return false;
+    }
+
+    u8 empty_check = this->read<u8>();
+    if(empty_check == 0) return false;
+
+    u32 len = this->read_uleb128();
+
+    inout.resize_and_overwrite(
+        len, [this](char *data, uSz size) -> uSz { return this->read_bytes(reinterpret_cast<u8 *>(data), size); });
+
+    if(inout.size() != len) {
+        inout.clear();
+        this->set_error("Failed to read " + std::to_string(len) + " bytes for string");
+        return false;
+    }
+
+    return true;
+}
+
+MD5Hash ByteBufferedFile::Reader::read_hash() {
+    MD5Hash hash;
+    this->read_hash(hash);
     return hash;
 }
 
 std::string ByteBufferedFile::Reader::read_string() {
-    if(this->error_flag) {
-        return {};
-    }
-
-    u8 empty_check = this->read<u8>();
-    if(empty_check == 0) return {};
-
-    u32 len = this->read_uleb128();
-
-    std::string str_out;
-    str_out.resize_and_overwrite(
-        len, [this](char *data, uSz size) -> uSz { return this->read_bytes(reinterpret_cast<u8 *>(data), size); });
-
-    if(str_out.size() != len) {
-        this->set_error("Failed to read " + std::to_string(len) + " bytes for string");
-        return {};
-    }
-
-    return str_out;
+    std::string str;
+    this->read_string(str);
+    return str;
 }
 
 u32 ByteBufferedFile::Reader::read_uleb128() {

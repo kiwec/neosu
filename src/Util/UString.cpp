@@ -33,6 +33,14 @@ UString::UString(std::u16string_view str) noexcept {
     updateUtf8();
 }
 
+#if WCHAR_MAX <= 0xFFFF
+UString::UString(std::wstring_view str) noexcept {
+    if(str.empty()) return;
+    this->sUnicode.assign(reinterpret_cast<std::u16string_view &>(str));
+    updateUtf8();
+}
+#endif
+
 UString::UString(const wchar_t *str) noexcept {
     if(!str) return;
 #if WCHAR_MAX <= 0xFFFF
@@ -102,7 +110,8 @@ UString UString::join(std::span<const UString> strings, std::string_view delim) 
 }
 
 bool UString::isWhitespaceOnly() const noexcept {
-    return this->sUnicode.empty() || std::ranges::all_of(this->sUnicode, [](char16_t c) { return std::iswspace(static_cast<wint_t>(c)) != 0; });
+    return this->sUnicode.empty() ||
+           std::ranges::all_of(this->sUnicode, [](char16_t c) { return std::iswspace(static_cast<wint_t>(c)) != 0; });
 }
 
 size_t UString::numCodepoints() const noexcept {

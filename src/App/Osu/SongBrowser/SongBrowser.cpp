@@ -1456,7 +1456,7 @@ void SongBrowser::addBeatmapSet(BeatmapSet *mapset, bool initialSongBrowserLoad)
         }
 
         if(doBPMCollBtns) {
-            auto bpm = diff->getMostCommonBPM();
+            const int bpm = diff->getMostCommonBPM();
             int index;
             if(bpm < 60) {
                 index = 0;

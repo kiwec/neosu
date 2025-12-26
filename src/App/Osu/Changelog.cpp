@@ -34,6 +34,11 @@ Changelog::Changelog() : ScreenBackable() {
     v41_12.changes = {
         R"(- Fixed map backgrounds being drawn in places they shouldn't be)",
         R"(- Fixed some 2B drawing issues (e.g. : https://osu.ppy.sh/beatmapsets/613791#osu/1294898 ))",
+        R"(- Fixed some edge case map loading issues (e.g. : https://osu.ppy.sh/beatmapsets/1397110/#osu/2883509 ))",
+        R"(- Improved songbrowser performance when song grouping is active)",
+        R"(- Fixed beatmaps being stuck on old PPv2 versions (bumped database version))",
+        R"(- Improved background star/PPv2 calc performance, and lowered memory usage)",
+        R"(- Fixed slightly incorrect PP sorting in the user stats screen)",
     };
     changelogs.push_back(v41_12);
 

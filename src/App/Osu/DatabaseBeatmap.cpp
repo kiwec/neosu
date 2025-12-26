@@ -1324,7 +1324,7 @@ DatabaseBeatmap::LOAD_META_RESULT DatabaseBeatmap::loadMetadata(bool compute_md5
                 if(Parsing::parse(curLine, "osu file format v", &this->iVersion)) {
                     if(this->iVersion > cv::beatmap_version.getInt()) {
                         debugLog("Ignoring unknown/invalid beatmap version {:d}", this->iVersion);
-                        return ret(LoadError::METADATA);
+                        return ret(LoadError::UNKNOWN_VERSION);
                     }
                 }
                 break;
@@ -1335,7 +1335,7 @@ DatabaseBeatmap::LOAD_META_RESULT DatabaseBeatmap::loadMetadata(bool compute_md5
                 u8 gamemode{(u8)-1};
                 if(Parsing::parse(curLine, "Mode", ':', &gamemode) && gamemode != 0) {
                     logIfCV(debug_osu, "ignoring non-std gamemode {} for {}", gamemode, this->sFilePath);
-                    return ret(LoadError::METADATA);
+                    return ret(LoadError::NON_STD_GAMEMODE);
                 }
                 //PARSE_LINE("Mode", ':', &this->iGameMode);
                 PARSE_LINE("AudioFilename", ':', &this->sAudioFileName);
