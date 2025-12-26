@@ -10,6 +10,7 @@
 #include <vector>
 #include <cstring>
 #include <cerrno>
+#include <random>
 
 #ifdef USE_OPENSSL
 #include <openssl/rand.h>
@@ -25,6 +26,24 @@
 #endif
 
 namespace crypto {
+namespace {
+// we will call init() in the Engine ctor which will seed it properly
+// NOLINTNEXTLINE(cert-msc51-cpp, cert-msc32-c)
+std::mt19937_64 rngalg;
+
+std::uniform_int_distribution<i64> rngdist{0, crypto::prng::PRAND_MAX};
+}  // namespace
+
+void init() noexcept {
+    // seed with true random (seed C rand() here as well)
+    srand(crypto::rng::get_rand<u32>());
+    rngalg.seed(crypto::rng::get_rand<u64>());
+}
+
+namespace prng {
+i64 prand() noexcept { return rngdist(rngalg); }
+}  // namespace prng
+
 namespace rng {
 
 void get_bytes(u8* out, std::size_t s_out) {

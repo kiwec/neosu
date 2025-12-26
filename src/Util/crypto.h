@@ -10,6 +10,16 @@ struct MD5Hash;
 
 namespace crypto {
 
+// call once to seed random number generators
+void init() noexcept;
+
+namespace prng {
+// pseudorandom numbers
+inline constexpr const i64 PRAND_MAX{9223372036854775807 /* INT64_MAX */};
+// like C rand() but uses a properly-seeded mt19937_64 under the hood
+i64 prand() noexcept;
+}  // namespace prng
+
 namespace rng {
 void get_bytes(u8* out, size_t s_out);
 
@@ -87,3 +97,6 @@ std::string encodehex(const std::array<u8, N>& src) {
 }  // namespace conv
 
 }  // namespace crypto
+
+using crypto::prng::prand;
+using crypto::prng::PRAND_MAX;

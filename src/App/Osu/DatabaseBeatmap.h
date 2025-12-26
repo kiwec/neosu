@@ -231,14 +231,14 @@ class DatabaseBeatmap final {
         FixedSizeArray<DatabaseBeatmap::TIMINGPOINT> timingpoints{};
         std::vector<Color> combocolors{};
 
-        f32 stackLeniency{};
-        f32 sliderMultiplier{};
-        f32 sliderTickRate{};
+        f32 stackLeniency{.7f};
+        f32 sliderMultiplier{1.f};
+        f32 sliderTickRate{1.f};
 
-        u32 numCircles{};
-        u32 numSliders{};
-        u32 numSpinners{};
-        u32 numHitobjects{};
+        u32 numCircles{0};
+        u32 numSliders{0};
+        u32 numSpinners{0};
+        u32 numHitobjects{0};
 
         u32 totalBreakDuration{0};
 
@@ -246,7 +246,7 @@ class DatabaseBeatmap final {
         // 1 = normal, 2 = soft, 3 = drum
         i32 defaultSampleSet{1};
 
-        i32 version{};
+        i32 version{14};
         LoadError error;
 
         // Set after calculateSliderTimesClicksTicks has populated slider timing data.

@@ -45,8 +45,8 @@ Engine *engine{nullptr};
 Engine::Engine() {
     engine = this;
 
-    // init rng seeding for C rand()
-    srand(crypto::rng::get_rand<u32>());
+    // init crypto/rng seeding
+    crypto::init();
 
     // always keep a dummy App() alive so we don't have to null-check for "app" inside engine code
     app.reset(App::create(true));

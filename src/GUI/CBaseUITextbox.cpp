@@ -19,6 +19,7 @@
 #include "Font.h"
 #include "Graphics.h"
 #include "Environment.h"
+#include "crypto.h"
 
 // #include "Logging.h"
 
@@ -462,7 +463,7 @@ void CBaseUITextbox::onChar(KeyboardEvent &e) {
 
     Sound *sounds[] = {app->getSound(ActionSound::TYPING1), app->getSound(ActionSound::TYPING2),
                        app->getSound(ActionSound::TYPING3), app->getSound(ActionSound::TYPING4)};
-    soundEngine->play(sounds[rand() % 4]);
+    soundEngine->play(sounds[prand() % 4]);
 }
 
 void CBaseUITextbox::handleCaretKeyboardMove() {

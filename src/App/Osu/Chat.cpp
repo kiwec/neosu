@@ -40,6 +40,7 @@
 #include "Timing.h"
 #include "Environment.h"
 #include "MakeDelegateWrapper.h"
+#include "crypto.h"
 
 #include <algorithm>
 #include <cmath>
@@ -759,7 +760,7 @@ void Chat::onKeyDown(KeyboardEvent &key) {
 
             Sound *sounds[] = {osu->getSkin()->s_typing1, osu->getSkin()->s_typing2, osu->getSkin()->s_typing3,
                                osu->getSkin()->s_typing4};
-            soundEngine->play(sounds[rand() % 4]);
+            soundEngine->play(sounds[prand() % 4]);
         }
 
         return;

@@ -1,6 +1,7 @@
 // Copyright (c) 2015, PG, All rights reserved.
 #include "MainMenu.h"
 
+#include <algorithm>
 #include <cmath>
 #include <utility>
 
@@ -998,7 +999,7 @@ void MainMenu::mouse_update(bool *propagate_clicks) {
         if(this->bMainMenuAnimFriendScheduled) this->bMainMenuAnimFriend = true;
         if(this->bMainMenuAnimFadeToFriendForNextAnim) this->bMainMenuAnimFriendScheduled = true;
 
-        this->fMainMenuAnimDuration = 10.0f + (static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * 5.0f;
+        this->fMainMenuAnimDuration = 10.0f + (float)((double)prand() / (double)PRAND_MAX) * 5.0f;
         this->fMainMenuAnimTime = engine->getTime() + this->fMainMenuAnimDuration;
         this->animMainButton();
     }
@@ -1170,7 +1171,7 @@ void MainMenu::selectRandomBeatmap() {
 
         constexpr int RETRY_SETS{10};
         for(int i = 0; i < RETRY_SETS; i++) {
-            const auto &mapset_folder = mapset_folders[rand() % mapset_folders.size()];
+            const auto &mapset_folder = mapset_folders[prand() % mapset_folders.size()];
             auto set = db->loadRawBeatmap(mapset_folder);
             if(set == nullptr) {
                 // loadRawBeatmap will log failure with reason
@@ -1186,7 +1187,7 @@ void MainMenu::selectRandomBeatmap() {
 
             // We're picking a random diff and not the first one, because diffs of the same set
             // can have their own separate sound file.
-            auto &candidate_diff_ = beatmap_diffs[rand() % beatmap_diffs.size()];
+            auto &candidate_diff_ = beatmap_diffs[prand() % beatmap_diffs.size()];
             assert(candidate_diff_);
 
             BeatmapDifficulty *candidate_diff = candidate_diff_.get();
@@ -1391,10 +1392,10 @@ void MainMenu::updateLayout() {
 void MainMenu::animMainButton() {
     this->bInMainMenuRandomAnim = true;
 
-    this->iMainMenuRandomAnimType = (rand() % 4) == 1 ? 1 : 0;
+    this->iMainMenuRandomAnimType = (prand() % 4) == 1 ? 1 : 0;
     if(!this->bMainMenuAnimFadeToFriendForNextAnim && cv::main_menu_friend.getBool() &&
        Env::cfg(OS::WINDOWS))  // NOTE: z buffer bullshit on other platforms >:(
-        this->bMainMenuAnimFadeToFriendForNextAnim = (rand() % 24) == 1;
+        this->bMainMenuAnimFadeToFriendForNextAnim = (prand() % 24) == 1;
 
     this->fMainMenuAnim = 0.0f;
     this->fMainMenuAnim1 = 0.0f;
@@ -1403,16 +1404,16 @@ void MainMenu::animMainButton() {
     if(this->iMainMenuRandomAnimType == 0) {
         this->fMainMenuAnim3 = 1.0f;
 
-        this->fMainMenuAnim1Target = (rand() % 2) == 1 ? 1.0f : -1.0f;
-        this->fMainMenuAnim2Target = (rand() % 2) == 1 ? 1.0f : -1.0f;
-        this->fMainMenuAnim3Target = (rand() % 2) == 1 ? 1.0f : -1.0f;
+        this->fMainMenuAnim1Target = (prand() % 2) == 1 ? 1.0f : -1.0f;
+        this->fMainMenuAnim2Target = (prand() % 2) == 1 ? 1.0f : -1.0f;
+        this->fMainMenuAnim3Target = (prand() % 2) == 1 ? 1.0f : -1.0f;
 
-        const float randomDuration1 = (static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * 3.5f;
-        const float randomDuration2 = (static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * 3.5f;
-        const float randomDuration3 = (static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * 3.5f;
+        const float randomDuration1 = (float)((double)prand() / (double)PRAND_MAX) * 3.5f;
+        const float randomDuration2 = (float)((double)prand() / (double)PRAND_MAX) * 3.5f;
+        const float randomDuration3 = (float)((double)prand() / (double)PRAND_MAX) * 3.5f;
 
         anim::moveQuadOut(&this->fMainMenuAnim, 1.0f,
-                          1.5f + std::max(randomDuration1, std::max(randomDuration2, randomDuration3)));
+                          1.5f + std::max({randomDuration1, randomDuration2, randomDuration3}));
         anim::moveQuadOut(&this->fMainMenuAnim1, this->fMainMenuAnim1Target, 1.5f + randomDuration1);
         anim::moveQuadOut(&this->fMainMenuAnim2, this->fMainMenuAnim2Target, 1.5f + randomDuration2);
         anim::moveQuadOut(&this->fMainMenuAnim3, this->fMainMenuAnim3Target, 1.5f + randomDuration3);

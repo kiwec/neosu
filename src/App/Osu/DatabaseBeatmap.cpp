@@ -490,23 +490,8 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(std::
 DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjectsFromData(FixedSizeArray<u8> fileBuffer,
                                                                                    std::string_view osuFilePath,
                                                                                    const Sync::stop_token &dead) {
-    PRIMITIVE_CONTAINER c{
-        .stackLeniency = 0.7f,
+    PRIMITIVE_CONTAINER c{};
 
-        .sliderMultiplier = 1.0f,
-        .sliderTickRate = 1.0f,
-
-        .numCircles = 0,
-        .numSliders = 0,
-        .numSpinners = 0,
-        .numHitobjects = 0,
-
-        .totalBreakDuration = 0,
-
-        .version = 14,
-
-        .error = {},
-    };
     if(dead.stop_requested()) {
         c.error.errc = LoadError::LOAD_INTERRUPTED;
         return c;

@@ -337,7 +337,7 @@ bool SongBrowser::sort_by_title(SongButton const *a, SongButton const *b) {
     return cmp < 0;
 }
 
-SongBrowser::SongBrowser() : ScreenBackable(), rngalg(crypto::rng::get_rand<u64>()) {
+SongBrowser::SongBrowser() : ScreenBackable() {
     // convar callback
     cv::songbrowser_search_hardcoded_filter.setCallback(
         [](std::string_view /* oldValue */, std::string_view newValue) -> void {
@@ -3373,8 +3373,7 @@ void SongBrowser::selectRandomBeatmap() {
         this->previousRandomBeatmaps.push_back(osu->getMapInterface()->getBeatmap());
     }
 
-    std::uniform_int_distribution<size_t> rng(0, songButtons.size() - 1);
-    size_t randomIndex = rng(this->rngalg);
+    size_t randomIndex = prand() % (songButtons.size() - 1);
 
     auto *songButton = songButtons[randomIndex]->as<SongButton>();
     this->selectSongButton(songButton);

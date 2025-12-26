@@ -3,7 +3,6 @@
 #include "MD5Hash.h"
 #include "ScreenBackable.h"
 
-#include <random>
 #include <memory>
 
 class BeatmapCarousel;
@@ -215,8 +214,6 @@ class SongBrowser final : public ScreenBackable {
     void selectSongButton(CarouselButton *songButton);
     void selectPreviousRandomBeatmap();
     void playSelectedDifficulty();
-
-    std::mt19937_64 rngalg;
 
     GroupType curGroup{GroupType::NO_GROUPING};
     SortType curSortMethod{SortType::ARTIST};

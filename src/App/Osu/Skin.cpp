@@ -20,6 +20,7 @@
 #include "SoundEngine.h"
 #include "VolumeOverlay.h"
 #include "Logging.h"
+#include "crypto.h"
 
 #include <cstring>
 #include <utility>
@@ -221,7 +222,7 @@ void Skin::load() {
 
             if(this->o_random && this->filepaths_for_random_skin.size() > 0) {
                 const int randomIndex =
-                    std::rand() % std::min(this->filepaths_for_random_skin.size(), skinNames.size());
+                    (int)(prand() % std::min(this->filepaths_for_random_skin.size(), skinNames.size()));
 
                 this->name = skinNames[randomIndex];
                 this->file_path = this->filepaths_for_random_skin[randomIndex];
@@ -936,7 +937,7 @@ Color Skin::getComboColorForCounter(int i, int offset) const {
 
 void Skin::randomizeFilePath() {
     if(this->o_random_elements && this->filepaths_for_random_skin.size() > 0)
-        this->file_path = this->filepaths_for_random_skin[rand() % this->filepaths_for_random_skin.size()];
+        this->file_path = this->filepaths_for_random_skin[prand() % this->filepaths_for_random_skin.size()];
 }
 
 SkinImage *Skin::createSkinImage(const std::string &skinElementName, vec2 baseSizeForScaling2x, float osuSize,
