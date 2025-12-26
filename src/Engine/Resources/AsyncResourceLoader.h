@@ -31,7 +31,7 @@ class AsyncResourceLoader final {
     void shutdown();
 
     // resource lifecycle management
-    void scheduleAsyncDestroy(Resource *resource);
+    void scheduleAsyncDestroy(Resource *resource, bool shouldDelete);
     void reloadResources(const std::vector<Resource *> &resources);
 
     // status queries
@@ -116,7 +116,12 @@ class AsyncResourceLoader final {
     Sync::mutex workAvailableMutex;
 
     // async destroy queue
-    std::vector<Resource *> asyncDestroyQueue;
+    struct ToDestroy {
+        Resource *rs;
+        bool shouldDelete;
+    };
+
+    std::vector<ToDestroy> asyncDestroyQueue;
     Sync::mutex asyncDestroyMutex;
 
     // lifecycle flags

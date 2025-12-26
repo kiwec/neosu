@@ -33,6 +33,17 @@ class TextureAtlas;
 class AsyncResourceLoader;
 struct ResourceManagerImpl;
 
+// clang-format off
+enum class ResourceDestroyFlags : uint8_t {
+    RDF_DEFAULT         = 0u,
+    RDF_FORCE_BLOCKING  = 1u << 0,
+    RDF_FORCE_ASYNC     = 1u << 1, // TODO (nontrivial to implement properly)
+    RDF_NODELETE        = 1u << 2, // implies FORCE_BLOCKING
+};
+// clang-format on
+
+MAKE_FLAG_ENUM(ResourceDestroyFlags)
+
 class ResourceManager final {
     NOCOPY_NOMOVE(ResourceManager)
    public:
@@ -43,12 +54,8 @@ class ResourceManager final {
         requestNextLoadUnmanaged();
         loadResource(rs, true);
     }
-    enum class DestroyMode : uint8_t {
-        DEFAULT = 0,
-        FORCE_BLOCKING = 1,
-        FORCE_ASYNC = 2,  // TODO
-    };
-    void destroyResource(Resource *rs, DestroyMode destroyMode = DestroyMode::DEFAULT);
+
+    void destroyResource(Resource *rs, ResourceDestroyFlags flags = ResourceDestroyFlags::RDF_DEFAULT);
     void destroyResources();
 
     // async reload

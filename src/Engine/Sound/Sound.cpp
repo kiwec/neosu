@@ -16,32 +16,40 @@
 #include <utility>
 
 void Sound::initAsync() {
-    if(!this->sRebuildFilePath.empty()) {
-        this->sFilePath = std::move(this->sRebuildFilePath);
+    std::string toLoad;
+    const bool isRebuild = !this->sRebuildFilePath.empty();
+    if(isRebuild) {
+        this->doPathFixup(this->sRebuildFilePath);
+        toLoad = std::move(this->sRebuildFilePath);
         this->sRebuildFilePath.clear();
-        this->doPathFixup();
+    } else {
+        toLoad = this->sFilePath;
     }
 
-    logIfCV(debug_rm, "Resource Manager: Loading {:s}", this->sFilePath);
+    logIfCV(debug_rm, "Resource Manager: Loading {:s}", toLoad);
 
     // sanity check for malformed audio files
-    std::string fileExtensionLowerCase{SString::to_lower(env->getFileExtensionFromFilePath(this->sFilePath))};
+    const std::string fileExtensionLowerCase{SString::to_lower(env->getFileExtensionFromFilePath(toLoad))};
 
-    if(this->sFilePath.empty() || fileExtensionLowerCase.empty()) {
+    if(toLoad.empty() || fileExtensionLowerCase.empty()) {
         this->bIgnored = true;
-    } else if(!this->isValidAudioFile(this->sFilePath, fileExtensionLowerCase)) {
+    } else if(!this->isValidAudioFile(toLoad, fileExtensionLowerCase)) {
         if(!cv::snd_force_load_unknown.getBool()) {
-            debugLog("Sound: Ignoring malformed/corrupt .{:s} file {:s}", fileExtensionLowerCase, this->sFilePath);
+            debugLog("Sound: Ignoring malformed/corrupt .{:s} file {:s}", fileExtensionLowerCase, toLoad);
             this->bIgnored = true;
         } else {
             logIfCV(debug_snd,
                     "Sound: snd_force_load_unknown=true, loading what seems to be a malformed/corrupt .{:s} file "
                     "{:s}",
-                    fileExtensionLowerCase, this->sFilePath);
+                    fileExtensionLowerCase, toLoad);
             this->bIgnored = false;
         }
     } else {
         this->bIgnored = false;
+    }
+
+    if(isRebuild) {
+        this->sFilePath = toLoad;
     }
 }
 

@@ -207,7 +207,7 @@ void BGImageHandlerImpl::update(bool allow_eviction) {
         if(evicted < max_to_evict && consider_evictions && !was_used_last_frame) {
             if(entry.bg_image_path_ldr) {
                 entry.bg_image_path_ldr->interruptLoad();
-                resourceManager->destroyResource(entry.bg_image_path_ldr, ResourceManager::DestroyMode::FORCE_ASYNC);
+                resourceManager->destroyResource(entry.bg_image_path_ldr, ResourceDestroyFlags::RDF_FORCE_ASYNC);
             }
             this->releaseImageRef(entry);
 
@@ -246,7 +246,7 @@ void BGImageHandlerImpl::update(bool allow_eviction) {
                     }
 
                     resourceManager->destroyResource(entry.bg_image_path_ldr,
-                                                     ResourceManager::DestroyMode::FORCE_ASYNC);
+                                                     ResourceDestroyFlags::RDF_FORCE_ASYNC);
                     entry.bg_image_path_ldr = nullptr;
                 }
             }
@@ -387,7 +387,7 @@ void BGImageHandlerImpl::releaseImageRef(ENTRY &entry) {
         if(img_ref.ref_count == 0) {
             if(img_ref.image) {
                 img_ref.image->interruptLoad();
-                resourceManager->destroyResource(img_ref.image, ResourceManager::DestroyMode::FORCE_ASYNC);
+                resourceManager->destroyResource(img_ref.image, ResourceDestroyFlags::RDF_FORCE_ASYNC);
             }
             this->shared_images.erase(it);
         }

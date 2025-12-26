@@ -204,21 +204,40 @@ class Database {
     class AsyncDBLoader final : public Resource {
         NOCOPY_NOMOVE(AsyncDBLoader)
        public:
-        ~AsyncDBLoader() override = default;
         AsyncDBLoader() : Resource() {}
+        ~AsyncDBLoader() override = default;
 
         [[nodiscard]] Type getResType() const override { return APPDEFINED; }
 
        protected:
         void init() override;
         void initAsync() override;
-        void destroy() override { ; }
+        void destroy() override {}
 
        private:
         friend class Database;
     };
 
+    struct AsyncScoreSaver : public Resource {
+        NOCOPY_NOMOVE(AsyncScoreSaver)
+       public:
+        friend class Database;
+        FinishedScore scorecopy;
+
+        AsyncScoreSaver(FinishedScore score) : Resource(), scorecopy(std::move(score)) {}
+        ~AsyncScoreSaver() override = default;
+
+        [[nodiscard]] Type getResType() const override { return APPDEFINED; }
+
+       protected:
+        inline void init() override { this->setReady(true); }
+        void initAsync() override;
+        void destroy() override {}
+    };
+
     friend class AsyncDBLoader;
+    friend struct AsyncScoreSaver;
+
     void startLoader();
     void destroyLoader();
 
@@ -236,7 +255,9 @@ class Database {
     // returns position of existing score in the scores[hash] array if found, -1 otherwise
     int isScoreAlreadyInDB(u64 unix_timestamp, const MD5Hash &map_hash);
 
-    AsyncDBLoader *loader{nullptr};
+    std::unique_ptr<AsyncDBLoader> loader;
+    std::unique_ptr<AsyncScoreSaver> score_saver;
+
     std::unique_ptr<Timing::Timer> importTimer;
     bool is_first_load{true};      // only load differences after first raw load
     bool raw_found_changes{true};  // for total refresh detection of raw loading

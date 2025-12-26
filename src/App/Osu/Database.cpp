@@ -291,9 +291,17 @@ void Database::startLoader() {
                                                       this->extern_db_paths_to_import.cend());
     this->extern_db_paths_to_import.clear();
 
-    this->loader = new AsyncDBLoader();
-    resourceManager->requestNextLoadAsync();
-    resourceManager->loadResource(this->loader);
+    // create initial loader instance
+    if(!this->loader) {
+        this->loader = std::make_unique<AsyncDBLoader>();
+        resourceManager->requestNextLoadAsync();
+        resourceManager->loadResource(this->loader.get());
+    } else {
+        if(!this->loader->isReady()) {
+            resourceManager->destroyResource(this->loader.get(), ResourceDestroyFlags::RDF_NODELETE);
+        }
+        resourceManager->reloadResource(this->loader.get(), true);
+    }
 
     logIf(cv::debug_db.getBool() || cv::debug_async_db.getBool(), "done");
 }
@@ -302,8 +310,7 @@ void Database::destroyLoader() {
     logIf(cv::debug_db.getBool() || cv::debug_async_db.getBool(), "start");
     directoryWatcher->stop_watching(NEOSU_MAPS_PATH "/");
     if(this->loader) {
-        resourceManager->destroyResource(this->loader, ResourceManager::DestroyMode::FORCE_BLOCKING);  // force blocking
-        this->loader = nullptr;
+        resourceManager->destroyResource(this->loader.get(), ResourceDestroyFlags::RDF_NODELETE);  // force blocking
     }
     logIf(cv::debug_db.getBool() || cv::debug_async_db.getBool(), "done");
 }
@@ -316,6 +323,10 @@ Database::Database() : importTimer(std::make_unique<Timer>()) {
 Database::~Database() {
     cv::cmd::save.removeCallback();
     this->destroyLoader();
+    if(this->score_saver) {
+        resourceManager->destroyResource(this->score_saver.get(),
+                                         ResourceDestroyFlags::RDF_NODELETE);  // don't delete a unique_ptr
+    }
 
     DBRecalculator::abort_calc();
     AsyncPPC::set_map(nullptr);
@@ -455,6 +466,32 @@ BeatmapSet *Database::addBeatmapSet(const std::string &beatmapFolderPath, i32 se
     return raw_beatmap;
 }
 
+void Database::AsyncScoreSaver::initAsync() {
+    // fake log label
+    static constexpr const char *func = "AsyncScoreSaver";
+
+    auto compressed_replay = LegacyReplay::compress_frames(this->scorecopy.replay);
+    if(!compressed_replay.empty()) {
+        auto replay_path = fmt::format(NEOSU_REPLAYS_PATH "/{:d}.replay.lzma", this->scorecopy.unixTimestamp);
+        debugLogLambda("Saving replay to {}...", replay_path);
+        io->write(replay_path, std::move(compressed_replay), [replay_path](bool success) {
+            if(success) {
+                debugLogLambda("Replay saved.");
+            } else {
+                debugLogLambda("Failed to save replay to {}!", replay_path);
+            }
+        });
+    }
+
+    if(db && !engine->isShuttingDown() && cv::scores_save_immediately.getBool()) {
+        db->saveScores();
+    }
+
+    this->setAsyncReady(true);
+    // nothing to do in init(), set ready now
+    this->setReady(true);
+}
+
 int Database::addScore(const FinishedScore &score) {
     // if addScoreRaw returns false, it means it wasn't added because we already have the score
     // so just skip everything and return the index
@@ -463,53 +500,20 @@ int Database::addScore(const FinishedScore &score) {
 
         this->scores_changed = true;
 
-        // abusing resourcemanager threadpool super hard here...
-        // should probably make the threadpool api more general and have resourcemanager specialize it,
-        // so we dont make too many threads for no reason
-        static constexpr auto func = __FUNCTION__;
-
-        struct AsyncScoreAdder : public Resource {
-            FinishedScore scorecopy;
-            AsyncScoreAdder(FinishedScore score) : Resource(), scorecopy(std::move(score)) {}
-            [[nodiscard]] Type getResType() const override { return APPDEFINED; }
-
-           protected:
-            void init() override { this->setReady(true); }
-            void initAsync() override {
-                auto compressed_replay = LegacyReplay::compress_frames(this->scorecopy.replay);
-                if(!compressed_replay.empty()) {
-                    auto replay_path =
-                        fmt::format(NEOSU_REPLAYS_PATH "/{:d}.replay.lzma", this->scorecopy.unixTimestamp);
-                    debugLogLambda("Saving replay to {}...", replay_path);
-                    io->write(replay_path, std::move(compressed_replay), [replay_path](bool success) {
-                        if(success) {
-                            debugLogLambda("Replay saved.");
-                        } else {
-                            debugLogLambda("Failed to save replay to {}!", replay_path);
-                        }
-                    });
-                }
-
-                if(db && !engine->isShuttingDown() && cv::scores_save_immediately.getBool()) {
-                    db->saveScores();
-                }
-
-                this->setAsyncReady(true);
-                this->setReady(true);
+        // create initial instance
+        if(!this->score_saver) {
+            this->score_saver = std::make_unique<AsyncScoreSaver>(score);
+            resourceManager->requestNextLoadAsync();
+            resourceManager->loadResource(this->score_saver.get());
+        } else {
+            if(!this->score_saver->isReady()) {  // a previous save attempt is still running
+                // NODELETE implies blocking, so this just waits for a previous instance to finish (but does not delete it)
+                resourceManager->destroyResource(this->score_saver.get(), ResourceDestroyFlags::RDF_NODELETE);
             }
-            void destroy() override {}
-        };
-
-        static std::unique_ptr<AsyncScoreAdder> saver{nullptr};
-        if(saver) {
-            auto *ptr = saver.release();
-            // dynamically allocating it so can block on it with this, because destroyResource "delete"s it.
-            // yeah, need better threadpool API :)
-            resourceManager->destroyResource(ptr, ResourceManager::DestroyMode::FORCE_BLOCKING);
+            // set new score
+            this->score_saver->scorecopy = score;
+            resourceManager->reloadResource(this->score_saver.get(), true);
         }
-        saver = std::make_unique<AsyncScoreAdder>(score);
-        resourceManager->requestNextLoadAsync();
-        resourceManager->loadResource(saver.get());
     }
 
     // @PPV3: use new replay format

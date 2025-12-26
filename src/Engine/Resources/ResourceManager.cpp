@@ -231,7 +231,7 @@ void ResourceManager::update() {
 
 void ResourceManager::destroyResources() {
     while(pImpl->vResources.size() > 0) {
-        destroyResource(pImpl->vResources[0], DestroyMode::FORCE_BLOCKING);
+        destroyResource(pImpl->vResources[0], ResourceDestroyFlags::RDF_FORCE_BLOCKING);
     }
     pImpl->vResources.clear();
     pImpl->vImages.clear();
@@ -244,7 +244,7 @@ void ResourceManager::destroyResources() {
     pImpl->mNameToResourceMap.clear();
 }
 
-void ResourceManager::destroyResource(Resource *rs, DestroyMode destroyMode) {
+void ResourceManager::destroyResource(Resource *rs, ResourceDestroyFlags destflags) {
     const bool debug = cv::debug_rm.getBool();
     if(rs == nullptr) {
         logIf(debug, "ResourceManager Warning: destroyResource(NULL)!");
@@ -263,8 +263,15 @@ void ResourceManager::destroyResource(Resource *rs, DestroyMode destroyMode) {
         }
     }
 
+    using enum ResourceDestroyFlags;
+    const bool shouldDelete = !flags::has<RDF_NODELETE>(destflags);
+    if(!shouldDelete) {
+        // kind of ugly but otherwise race conditions galore if the resource gets used while it's also being destroyed asynchronously
+        destflags |= RDF_FORCE_BLOCKING;
+    }
+
     // check if it's being loaded and schedule async destroy if so
-    // (destroyMode == DestroyMode::FORCE_ASYNC) ||
+    // (!!(flags & ResourceDestroyFlags::RDF_FORCE_ASYNC)) ||
     if(pImpl->asyncLoader.isLoadingResource(rs)) {
         logIf(debug, "Resource Manager: Scheduled async destroy of {:8p} : {:s}", static_cast<const void *>(rs),
               rs->getName());
@@ -272,11 +279,11 @@ void ResourceManager::destroyResource(Resource *rs, DestroyMode destroyMode) {
         // interrupt async load
         rs->interruptLoad();
 
-        pImpl->asyncLoader.scheduleAsyncDestroy(rs);
+        pImpl->asyncLoader.scheduleAsyncDestroy(rs, shouldDelete);
 
         if(isManagedResource) pImpl->removeManagedResource(rs, managedResourceIndex);
 
-        if(destroyMode == DestroyMode::FORCE_BLOCKING) {
+        if(flags::has<RDF_FORCE_BLOCKING>(destflags)) {
             do {
                 this->update();
             } while(pImpl->asyncLoader.isLoadingResource(rs));
@@ -288,7 +295,9 @@ void ResourceManager::destroyResource(Resource *rs, DestroyMode destroyMode) {
     // standard destroy
     if(isManagedResource) pImpl->removeManagedResource(rs, managedResourceIndex);
 
-    SAFE_DELETE(rs);
+    if(shouldDelete) {
+        SAFE_DELETE(rs);
+    }
 }
 
 void ResourceManager::loadResource(Resource *res, bool load) {

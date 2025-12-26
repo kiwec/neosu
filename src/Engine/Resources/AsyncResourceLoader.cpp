@@ -45,7 +45,8 @@ class AsyncResourceLoader::LoaderThread final {
 
         logIfCV(debug_rm, "AsyncResourceLoader: Thread #{} started", this->thread_index);
 
-        const UString loaderThreadName{fmt::format("res_ldr_thr{}", (this->thread_index % this->loader_ptr->iMaxThreads) + 1)};
+        const UString loaderThreadName{
+            fmt::format("res_ldr_thr{}", (this->thread_index % this->loader_ptr->iMaxThreads) + 1)};
         McThread::set_current_thread_name(loaderThreadName);
         McThread::set_current_thread_prio(
             McThread::Priority::NORMAL);  // reset priority (don't inherit from main thread)
@@ -175,8 +176,10 @@ void AsyncResourceLoader::shutdown() {
     }
 
     // cleanup async destroy queue
-    for(auto &rs : this->asyncDestroyQueue) {
-        SAFE_DELETE(rs);
+    for(auto &[rs, del] : this->asyncDestroyQueue) {
+        if(del) {
+            SAFE_DELETE(rs);
+        }
     }
     this->asyncDestroyQueue.clear();
 }
@@ -246,41 +249,44 @@ void AsyncResourceLoader::update(bool lowLatency) {
     }
 
     // process async destroy queue
-    std::vector<Resource *> resourcesReadyForDestroy;
+    std::vector<ToDestroy> resourcesReadyForDestroy;
 
     {
         Sync::scoped_lock lock(this->asyncDestroyMutex);
         for(size_t i = 0; i < this->asyncDestroyQueue.size(); i++) {
             bool canBeDestroyed = true;
+            auto &current = this->asyncDestroyQueue[i];
 
             {
                 Sync::scoped_lock loadingLock(this->loadingResourcesMutex);
-                if(this->loadingResourcesSet.contains(this->asyncDestroyQueue[i])) {
+                if(this->loadingResourcesSet.contains(current.rs)) {
                     canBeDestroyed = false;
                 }
             }
 
             if(canBeDestroyed) {
-                resourcesReadyForDestroy.push_back(this->asyncDestroyQueue[i]);
+                if(current.shouldDelete) {
+                    resourcesReadyForDestroy.push_back(current);
+                }  // don't delete it otherwise, just remove it from the destroy queue (our job of blocking on it to finish is done)
                 this->asyncDestroyQueue.erase(this->asyncDestroyQueue.begin() + i);
                 i--;
             }
         }
     }
 
-    for(Resource *rs : resourcesReadyForDestroy) {
+    for(auto &[rs, deletable] : resourcesReadyForDestroy) {
         logIf(debug, "AsyncResourceLoader: Async destroy of resource {:8p} : {:s}", static_cast<const void *>(rs),
               rs->getName());
-
+        assert(deletable);
         SAFE_DELETE(rs);
     }
 }
 
-void AsyncResourceLoader::scheduleAsyncDestroy(Resource *resource) {
+void AsyncResourceLoader::scheduleAsyncDestroy(Resource *resource, bool shouldDelete) {
     logIfCV(debug_rm, "AsyncResourceLoader: Scheduled async destroy of {:s}", resource->getName());
 
     Sync::scoped_lock lock(this->asyncDestroyMutex);
-    this->asyncDestroyQueue.push_back(resource);
+    this->asyncDestroyQueue.emplace_back(ToDestroy{.rs = resource, .shouldDelete = shouldDelete});
 }
 
 void AsyncResourceLoader::reloadResources(const std::vector<Resource *> &resources) {

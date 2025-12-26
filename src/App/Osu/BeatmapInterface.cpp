@@ -1592,7 +1592,7 @@ void BeatmapInterface::loadMusic(bool reload, bool async) {
         this->music = resourceManager->getSound("BEATMAP_MUSIC");
     }
 
-    const std::string &oldPath = this->music ? this->music->getFilePath() : "";
+    const std::string oldPath = this->music ? this->music->getFilePath() : "";
     const std::string &newPath = beatmapSoundPath;
 
     const bool pathChanged = newPath != oldPath;

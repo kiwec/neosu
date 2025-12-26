@@ -62,7 +62,7 @@ class Resource {
     virtual void init() = 0;
     virtual void initAsync() = 0;
     virtual void destroy() = 0;
-    bool doPathFixup();
+    static bool doPathFixup(std::string &input);
 
     inline void setReady(bool ready) { return this->bReady.store(ready, std::memory_order_release); }
     inline void setAsyncReady(bool ready) { return this->bAsyncReady.store(ready, std::memory_order_release); }
