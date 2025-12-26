@@ -89,7 +89,7 @@ class CarouselButton : public CBaseUIButton {
     inline void setOffsetPercent(float offsetPercent) { this->fOffsetPercent = offsetPercent; }
     inline void setHideIfSelected(bool hideIfSelected) { this->bHideIfSelected = hideIfSelected; }
     inline void setIsSearchMatch(bool isSearchMatch) {
-        this->bIsSearchMatch.store(isSearchMatch, std::memory_order_release);
+        this->bIsSearchMatch.store(isSearchMatch, std::memory_order_relaxed);
     }
 
     [[nodiscard]] vec2 getActualOffset() const;
@@ -104,7 +104,7 @@ class CarouselButton : public CBaseUIButton {
 
     [[nodiscard]] inline bool isSelected() const { return this->bSelected; }
     [[nodiscard]] inline bool isHiddenIfSelected() const { return this->bHideIfSelected; }
-    [[nodiscard]] inline bool isSearchMatch() const { return this->bIsSearchMatch.load(std::memory_order_acquire); }
+    [[nodiscard]] inline bool isSearchMatch() const { return this->bIsSearchMatch.load(std::memory_order_relaxed); }
 
    protected:
     void drawMenuButtonBackground();

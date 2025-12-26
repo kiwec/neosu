@@ -43,20 +43,7 @@ void CollectionButton::draw() {
 
     // draw title
     UString titleString{this->sCollectionName};
-    int numChildren = 0;
-    {
-        for(const auto *c : this->getChildren()) {
-            const auto &childrenChildren = c->getChildren();
-            if(childrenChildren.size() > 0) {
-                for(auto cc : childrenChildren) {
-                    if(cc->isSearchMatch()) numChildren++;
-                }
-            } else if(c->isSearchMatch())
-                numChildren++;
-        }
-    }
-    titleString.append(UString::format((numChildren == 1 ? " (%i map)" : " (%i maps)"), numChildren));
-
+    titleString.append(UString::format((this->numVisibleChildren == 1 ? " (%i map)" : " (%i maps)"), this->numVisibleChildren));
     int textXOffset = size.x * 0.02f;
     float titleScale = (size.y * this->fTitleScale) / this->font->getHeight();
     g->setColor(this->bSelected ? skin->c_song_select_active_text : skin->c_song_select_inactive_text);

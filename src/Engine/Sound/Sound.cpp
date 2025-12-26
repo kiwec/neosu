@@ -49,6 +49,7 @@ void Sound::initAsync() {
     }
 
     if(isRebuild) {
+        // this is technically racy, since sFilePath is not synchronized, and we are probably running async
         this->sFilePath = toLoad;
     }
 }

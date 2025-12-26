@@ -7,8 +7,8 @@ class CollectionButton final : public CarouselButton {
    public:
     DEF_BUTTON_TYPE(CollectionButton, CollectionButton_, CarouselButton)
    public:
-    CollectionButton(UIContextMenu *contextMenu, float xPos, float yPos, float xSize,
-                     float ySize, UString name, const UString &collectionName, std::vector<SongButton *> children);
+    CollectionButton(UIContextMenu *contextMenu, float xPos, float yPos, float xSize, float ySize, UString name,
+                     const UString &collectionName, std::vector<SongButton *> children);
 
     void draw() override;
 
@@ -19,6 +19,9 @@ class CollectionButton final : public CarouselButton {
 
     [[nodiscard]] const std::string &getCollectionName() const { return this->sCollectionName; }
     void setCollectionName(std::string_view newName) { this->sCollectionName = newName; }
+
+    [[nodiscard]] i32 getNumVisibleChildren() const { return this->numVisibleChildren; }
+    void setNumVisibleChildren(i32 numVis) { this->numVisibleChildren = numVis; }
 
    private:
     void onSelected(bool wasSelected, SelOpts opts) override;
@@ -31,4 +34,5 @@ class CollectionButton final : public CarouselButton {
     std::string sCollectionName;
 
     float fTitleScale;
+    i32 numVisibleChildren{0};
 };

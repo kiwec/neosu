@@ -601,6 +601,8 @@ void RankingScreen::setGrade(ScoreGrade grade) {
     this->grade = grade;
 
     const auto &gradeImage = osu->getSkin()->getGradeImageLarge(grade);
+    if(!gradeImage->isReady()) return;
+
     const vec2 hardcodedOsuRankingGradeImageSize = vec2(369, 422) * gradeImage.scale();
     this->rankingGrade->setImage(gradeImage);
 

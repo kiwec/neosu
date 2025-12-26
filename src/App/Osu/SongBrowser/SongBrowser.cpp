@@ -1628,9 +1628,26 @@ void SongBrowser::rebuildSongButtons() {
     // NOTE: currently supports 3 depth layers (collection > beatmap > diffs)
     for(auto &visibleSongButton : this->visibleSongButtons) {
         CarouselButton *button = visibleSongButton;
+
         button->resetAnimations();
 
         if(!(button->isSelected() && button->isHiddenIfSelected())) this->carousel->container->addBaseUIElement(button);
+
+        // if it's a collection button, recount the number of search-matching children
+        // to use as a label
+        if(auto *collBtn = button->as<CollectionButton>(); !!collBtn) {
+            i32 numVisibleDescendants = 0;
+            for(const auto *c : collBtn->getChildren()) {
+                const auto &childrenChildren = c->getChildren();
+                if(childrenChildren.size() > 0) {
+                    for(auto cc : childrenChildren) {
+                        if(cc->isSearchMatch()) numVisibleDescendants++;
+                    }
+                } else if(c->isSearchMatch())
+                    numVisibleDescendants++;
+            }
+            collBtn->setNumVisibleChildren(numVisibleDescendants);
+        }
 
         // children
         if(button->isSelected()) {
@@ -2757,7 +2774,7 @@ void SongBrowser::rebuildSongButtonsAndVisibleSongButtonsWithSearchMatchSupport(
         std::vector<CollectionButton *> *groupButtons = getCollectionButtonsForGroup(this->curGroup);
 
         if(groupButtons != nullptr) {
-            for(const auto &groupButton : *groupButtons) {
+            for(auto *groupButton : *groupButtons) {
                 bool isAnyMatchInGroup = false;
 
                 const auto &children = groupButton->getChildren();
@@ -2769,24 +2786,28 @@ void SongBrowser::rebuildSongButtonsAndVisibleSongButtonsWithSearchMatchSupport(
                                 isAnyMatchInGroup = true;
                                 // also count total matching children while we're here
                                 // break out early if we're not searching, though
-                                if(canBreakEarly)
+                                if(canBreakEarly) {
                                     break;
-                                else
+                                } else {
                                     this->currentVisibleSearchMatches++;
+                                }
                             }
                         }
 
                         if(canBreakEarly && isAnyMatchInGroup) break;
                     } else if(c->isSearchMatch()) {
                         isAnyMatchInGroup = true;
-                        if(canBreakEarly)
+                        if(canBreakEarly) {
                             break;
-                        else
+                        } else {
                             this->currentVisibleSearchMatches++;
+                        }
                     }
                 }
 
-                if(isAnyMatchInGroup || !this->bInSearch) this->visibleSongButtons.push_back(groupButton);
+                if(isAnyMatchInGroup || !this->bInSearch) {
+                    this->visibleSongButtons.push_back(groupButton);
+                }
             }
         }
     }
@@ -3059,18 +3080,18 @@ void SongBrowser::rebuildAfterGroupOrSortChange(GroupType group, const std::opti
             }
         }
     } else {
-        auto *groupButtons = this->getCollectionButtonsForGroup(group);
-        if(groupButtons != nullptr) {
-            this->visibleSongButtons.reserve(groupButtons->size());
-            this->visibleSongButtons.insert(this->visibleSongButtons.end(), groupButtons->begin(), groupButtons->end());
+        std::vector<CollectionButton *> *collBtns = this->getCollectionButtonsForGroup(group);
+        if(collBtns != nullptr) {
+            this->visibleSongButtons.reserve(collBtns->size());
+            this->visibleSongButtons.insert(this->visibleSongButtons.end(), collBtns->begin(), collBtns->end());
 
             // only sort if switching TO this group/sorting method (not from it)
             if(groupingChanged || sortingChanged) {
-                for(auto &groupButton : *groupButtons) {
-                    auto &children = groupButton->getChildren();
+                for(auto *button : *collBtns) {
+                    auto &children = button->getChildren();
                     if(!children.empty()) {
                         std::ranges::sort(children, SORTING_METHODS[this->curSortMethod].comparator);
-                        groupButton->setChildren(children);
+                        button->setChildren(children);
                     }
                 }
             }
