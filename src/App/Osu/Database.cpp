@@ -427,6 +427,8 @@ void Database::save() {
     this->saveScores();
 }
 
+// NOTE: Should currently only be used for neosu beatmapsets! e.g. from maps/ folder
+//       See loadRawBeatmap()
 BeatmapSet *Database::addBeatmapSet(const std::string &beatmapFolderPath, i32 set_id_override) {
     auto beatmap = this->loadRawBeatmap(beatmapFolderPath);
     if(beatmap == nullptr) return nullptr;
@@ -1630,7 +1632,7 @@ void Database::loadMaps() {
 }
 
 void Database::saveMaps() {
-    if(this->beatmapsets.empty() || this->isLoading()) {
+    if(this->beatmapsets.empty() || this->isLoading() || this->isCancelled()) {
         return;
     }
 

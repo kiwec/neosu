@@ -243,7 +243,6 @@ CBaseUIContainer* OsuDirectScreen::setVisible(bool visible) {
 
     if(visible) {
         this->search_bar->clear();
-        this->newest_btn->click();
         this->search_bar->focus();
     }
 

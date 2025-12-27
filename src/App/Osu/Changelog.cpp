@@ -33,6 +33,7 @@ Changelog::Changelog() : ScreenBackable() {
     v41_12.title = "41.12 (" CHANGELOG_TIMESTAMP ")";
     v41_12.changes = {
         R"(- Fixed map backgrounds being drawn in places they shouldn't be)",
+        R"(- Fixed online beatmaps screen not always detecting installed beatmaps)",
         R"(- Fixed some 2B drawing issues (e.g. : https://osu.ppy.sh/beatmapsets/613791#osu/1294898 ))",
         R"(- Fixed some edge case map loading issues (e.g. : https://osu.ppy.sh/beatmapsets/1397110/#osu/2883509 ))",
         R"(- Improved songbrowser performance when song grouping is active)",
