@@ -142,7 +142,6 @@ void OnlineMapListing::draw() {
                     osu->getSongBrowser()->onDifficultySelected(diffs[0].get(), false);
                 }
             } else {
-                // TODO: Sometimes, download fails but returns progress == 1.f!
                 this->download_failed = true;
             }
         }

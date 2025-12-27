@@ -189,13 +189,11 @@ bool AvatarManager::download_avatar(const AvatarIdentifier& id_folder) {
     auto img_url = fmt::format("{:s}a.{}/{:d}", scheme, BanchoState::endpoint, id_folder.first);
     int response_code;
     // TODO: constantly requesting the full download is a bad API, should be a way to just check if it's already downloading
+    // TODO: only download a single (response_code == 404) avatar and share it
     Downloader::download(img_url.c_str(), &progress, this->temp_img_download_data, &response_code);
     if(progress == -1.f) this->id_blacklist.insert(id_folder);
-    if(this->temp_img_download_data.empty()) return false;
 
-    // NOTE: We return true even if progress is -1. Because we still get avatars from a 404!
-    // TODO: only download a single 404 (blacklisted) avatar and share it
-    return true;
+    return (progress == 1.f && !this->temp_img_download_data.empty());
 }
 
 void AvatarManager::clear() {

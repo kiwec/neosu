@@ -30,6 +30,8 @@ class DownloadManager;
 // shared global instance
 std::shared_ptr<DownloadManager> s_download_manager;
 
+// TODO: allow more than 1 download at a time, while still respecting per-domain rate limits
+
 class DownloadManager {
     NOCOPY_NOMOVE(DownloadManager)
    private:
@@ -108,16 +110,10 @@ class DownloadManager {
         // update request with results
         {
             Sync::scoped_lock lock(request->data_mutex);
-            request->response_code.store(static_cast<int>(response.response_code), std::memory_order_release);
-
-            if(response.success && response.response_code == 200) {
+            if(response.success) {
+                request->response_code.store(static_cast<int>(response.response_code), std::memory_order_release);
                 request->data = std::vector<u8>(response.body.begin(), response.body.end());
-                request->progress.store(1.0f, std::memory_order_release);
-                request->completed.store(true, std::memory_order_release);
-            } else {
-                if(!response.success) {
-                    debugLog("Failed to download {:s}: network error", request->url.c_str());
-                }
+
                 if(response.response_code == 429) {
                     // rate limited, retry after 5 seconds
                     // TODO: read headers and if the usual retry-after are set, follow those
@@ -129,9 +125,14 @@ class DownloadManager {
                     Sync::scoped_lock lock(this->queue_mutex);
                     this->download_queue.push(request);
                 } else {
-                    request->progress.store(-1.0f, std::memory_order_release);
+                    request->progress.store(1.f, std::memory_order_release);
                     request->completed.store(true, std::memory_order_release);
                 }
+            } else {
+                // TODO: forward network error message in response
+                debugLog("Failed to download {:s}: network error", request->url.c_str());
+                request->progress.store(-1.f, std::memory_order_release);
+                request->completed.store(true, std::memory_order_release);
             }
         }
 
@@ -235,9 +236,7 @@ void download(const char* url, float* progress, std::vector<u8>& out, int* respo
         Sync::scoped_lock lock(request->data_mutex);
         *progress = 1.f;
         *response_code = request->response_code.load(std::memory_order_acquire);
-        if(*response_code == 200) {
-            out = request->data;
-        }
+        out = request->data;
     }
 }
 
@@ -344,7 +343,13 @@ void download_beatmapset(u32 set_id, float* progress) {
 
     int response_code = 0;
     download(download_url.c_str(), progress, data, &response_code);
-    if(response_code != 200) return;
+    if(response_code == 0 || *progress == -1.f) return;  // still downloading/errored
+
+    // Server returned 404 or other, treat it as an error
+    if(response_code != 200) {
+        *progress = -1.f;
+        return;
+    }
 
     // Download succeeded: save map to disk
     if(!extract_beatmapset(data.data(), data.size(), map_dir)) {

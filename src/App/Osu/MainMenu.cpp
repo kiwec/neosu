@@ -1139,7 +1139,7 @@ void MainMenu::mouse_update(bool *propagate_clicks) {
         std::vector<u8> data;
         int response_code;
         Downloader::download(BanchoState::server_icon_url.c_str(), &progress, data, &response_code);
-        if(progress == -1.f) BanchoState::server_icon_url = "";
+        if(progress == -1.f || response_code != 200) BanchoState::server_icon_url = "";
         if(!data.empty()) {
             io->write(icon_path, data, [icon_path](bool success) {
                 if(success) {
