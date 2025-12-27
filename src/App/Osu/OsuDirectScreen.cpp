@@ -291,14 +291,7 @@ void OsuDirectScreen::mouse_update(bool* propagate_clicks) {
 
     // Fetch next results page once we reached the bottom
     if(this->results->isAtBottom() && this->last_search_time + 1.0 < engine->getTime()) {
-        static uSz pagination_request_id = 0;
-        if(this->loading) {
-            // We're already requesting the next page
-            return;
-        }
-
         this->search(this->current_query, this->current_page + 1);
-        pagination_request_id = this->request_id;
     }
 }
 
