@@ -21,6 +21,7 @@
 #include "OptionsMenu.h"
 #include "Osu.h"
 #include "OsuConVars.h"
+#include "Skin.h"
 #include "SongBrowser/SongBrowser.h"
 #include "SString.h"
 #include "UIButton.h"
@@ -257,7 +258,18 @@ void OsuDirectScreen::draw() {
     osu->getBackgroundImageHandler()->draw(osu->getMapInterface()->getBeatmap());
     ScreenBackable::draw();
 
-    // TODO: loading indicator while stuff is loading
+    if(this->loading) {
+        const f32 spinner_size = (40.f * osu->getUIScale());
+        const f32 scale = spinner_size / osu->getSkin()->i_loading_spinner->getSize().y;
+        g->setColor(0xffffffff);
+        g->pushTransform();
+        g->rotate(engine->getTime() * 180, 0, 0, 1);
+        g->scale(scale, scale);
+        g->translate(this->spinner_pos.x, this->spinner_pos.y);
+        g->drawImage(osu->getSkin()->i_loading_spinner);
+        g->popTransform();
+    }
+
     // TODO: message if no maps were found or server errored
 }
 
@@ -267,9 +279,8 @@ void OsuDirectScreen::mouse_update(bool* propagate_clicks) {
     ScreenBackable::mouse_update(propagate_clicks);
 
     if(this->search_bar->hitEnter()) {
-        if(this->current_query == this->search_bar->getText().utf8View() && this->current_page == -1) {
+        if(this->current_query == this->search_bar->getText().utf8View() && this->loading) {
             // We're already searching for the current query, don't cancel the request
-            // HACK: (this->current_page == -1) not cleanest way to detect if we're in the middle of a request
             return;
         }
 
@@ -281,9 +292,8 @@ void OsuDirectScreen::mouse_update(bool* propagate_clicks) {
     // Fetch next results page once we reached the bottom
     if(this->results->isAtBottom() && this->last_search_time + 1.0 < engine->getTime()) {
         static uSz pagination_request_id = 0;
-        if(pagination_request_id == this->request_id) {
+        if(this->loading) {
             // We're already requesting the next page
-            // HACK: not cleanest way to detect if we're in the middle of a request
             return;
         }
 
@@ -351,12 +361,18 @@ void OsuDirectScreen::onResolutionChange(vec2 newResolution) {
         this->results->container->update_pos();  // sigh...
     }
 
+    const f32 spinner_size = (40.f * scale);
+    const f32 spinner_margin = spinner_size / 2.f;
+    this->spinner_pos.x = x + this->results->getSize().x - (spinner_size / 2.f);
+    this->spinner_pos.y = y + this->results->getSize().y + spinner_margin + (spinner_size / 2.f);
+
     this->update_pos();
 }
 
 void OsuDirectScreen::reset() {
     // "Cancel" current request and immediately allow a new one
     this->request_id++;
+    this->loading = false;
 
     // Clear search results
     this->results->freeElements();
@@ -368,6 +384,7 @@ void OsuDirectScreen::reset() {
 
 void OsuDirectScreen::search(std::string_view query, i32 page) {
     assert(page >= 0);
+    if(this->loading) return;
 
     const i32 filter = RankingStatusFilter::ALL;
     auto scheme = cv::use_https.getBool() ? "https://" : "http://";
@@ -385,10 +402,13 @@ void OsuDirectScreen::search(std::string_view query, i32 page) {
     const auto current_request_id = ++this->request_id;
     this->current_query = query;
     this->last_search_time = engine->getTime();
+    this->loading = true;
 
     networkHandler->httpRequestAsync(
         url,
         [func = __FUNCTION__, current_request_id, page, this](const NeoNet::Response& response) {
+            this->loading = false;
+
             if(current_request_id != this->request_id) {
                 // Request was "cancelled"
                 return;

@@ -32,6 +32,7 @@ Changelog::Changelog() : ScreenBackable() {
     CHANGELOG v41_12;
     v41_12.title = "41.12 (" CHANGELOG_TIMESTAMP ")";
     v41_12.changes = {
+        R"(- Added loading spinner for online beatmap search queries)",
         R"(- Fixed map backgrounds being drawn in places they shouldn't be)",
         R"(- Fixed online beatmaps screen not always detecting installed beatmaps)",
         R"(- Fixed some 2B drawing issues (e.g. : https://osu.ppy.sh/beatmapsets/613791#osu/1294898 ))",

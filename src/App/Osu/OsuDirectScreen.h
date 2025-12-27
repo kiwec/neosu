@@ -47,6 +47,9 @@ class OsuDirectScreen final : public ScreenBackable {
 
     std::string current_query{"Newest"};
 
+    bool loading{false};
+    vec2 spinner_pos;
+
     uSz request_id{1};
     f64 last_search_time{0.0};
 
