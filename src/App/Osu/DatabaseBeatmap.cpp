@@ -55,63 +55,6 @@ u32 DatabaseBeatmap::LOAD_DIFFOBJ_RESULT::getMaxComboAtIndex(uSz index) const {
     return maxComboAtIndex.back();
 }
 
-void swap(DatabaseBeatmap &a, DatabaseBeatmap &b) noexcept {
-    using std::swap;
-    swap(a.sMD5Hash, b.sMD5Hash);
-    swap(a.difficulties, b.difficulties);
-    swap(a.timingpoints, b.timingpoints);
-    swap(a.sFolder, b.sFolder);
-    swap(a.sFilePath, b.sFilePath);
-    swap(a.last_modification_time, b.last_modification_time);
-    swap(a.sTitle, b.sTitle);
-    swap(a.sTitleUnicode, b.sTitleUnicode);
-    swap(a.sArtist, b.sArtist);
-    swap(a.sArtistUnicode, b.sArtistUnicode);
-    swap(a.sCreator, b.sCreator);
-    swap(a.sDifficultyName, b.sDifficultyName);
-    swap(a.sSource, b.sSource);
-    swap(a.sTags, b.sTags);
-    swap(a.sBackgroundImageFileName, b.sBackgroundImageFileName);
-    swap(a.sAudioFileName, b.sAudioFileName);
-    swap(a.iID, b.iID);
-    swap(a.iLengthMS, b.iLengthMS);
-    swap(a.iLocalOffset, b.iLocalOffset);
-    swap(a.iOnlineOffset, b.iOnlineOffset);
-    swap(a.iSetID, b.iSetID);
-    swap(a.iPreviewTime, b.iPreviewTime);
-    swap(a.fAR, b.fAR);
-    swap(a.fCS, b.fCS);
-    swap(a.fHP, b.fHP);
-    swap(a.fOD, b.fOD);
-    swap(a.fStackLeniency, b.fStackLeniency);
-    swap(a.fSliderTickRate, b.fSliderTickRate);
-    swap(a.fSliderMultiplier, b.fSliderMultiplier);
-    swap(a.ppv2Version, b.ppv2Version);
-    swap(a.fStarsNomod, b.fStarsNomod);
-    swap(a.iMinBPM, b.iMinBPM);
-    swap(a.iMaxBPM, b.iMaxBPM);
-    swap(a.iMostCommonBPM, b.iMostCommonBPM);
-    swap(a.iNumObjects, b.iNumObjects);
-    swap(a.iNumCircles, b.iNumCircles);
-    swap(a.iNumSliders, b.iNumSliders);
-    swap(a.iNumSpinners, b.iNumSpinners);
-    swap(a.totalBreakDuration, b.totalBreakDuration);
-    swap(a.iVersion, b.iVersion);
-    swap(a.type, b.type);
-    swap(a.bEmptyArtistUnicode, b.bEmptyArtistUnicode);
-    swap(a.bEmptyTitleUnicode, b.bEmptyTitleUnicode);
-    swap(a.do_not_store, b.do_not_store);
-    swap(a.draw_background, b.draw_background);
-
-    auto tmp_loudness = a.loudness.load(std::memory_order_relaxed);
-    a.loudness.store(b.loudness.load(std::memory_order_relaxed), std::memory_order_relaxed);
-    b.loudness.store(tmp_loudness, std::memory_order_relaxed);
-
-    auto tmp_md5 = a.md5_init.load(std::memory_order_relaxed);
-    a.md5_init.store(b.md5_init.load(std::memory_order_relaxed), std::memory_order_relaxed);
-    b.md5_init.store(tmp_md5, std::memory_order_relaxed);
-}
-
 DatabaseBeatmap::DatabaseBeatmap() = default;
 DatabaseBeatmap::~DatabaseBeatmap() = default;
 
@@ -165,53 +108,55 @@ DatabaseBeatmap::DatabaseBeatmap(std::unique_ptr<DiffContainer> &&difficulties, 
     }
 }
 
+void swap(DatabaseBeatmap &a, DatabaseBeatmap &b) noexcept {
+    // "swap field" temp macro, trying to avoid bloating line count for this file with these ctors/operators
+    // clang-format off
+#define SF(fieldname) std::swap(a.fieldname, b.fieldname);
+    SF(sMD5Hash)           SF(difficulties)  SF(timingpoints)             SF(sFolder)         SF(sFilePath)         SF(last_modification_time)
+    SF(sTitle)             SF(sTitleUnicode) SF(sArtist)                  SF(sArtistUnicode)  SF(sCreator)          SF(sDifficultyName)
+    SF(sSource)            SF(sTags)         SF(sBackgroundImageFileName) SF(sAudioFileName)  SF(iID)               SF(iLengthMS)
+    SF(iLocalOffset)       SF(iOnlineOffset) SF(iSetID)                   SF(iPreviewTime)    SF(fAR)               SF(fCS)
+    SF(fHP)                SF(fOD)           SF(fStackLeniency)           SF(fSliderTickRate) SF(fSliderMultiplier) SF(ppv2Version)
+    SF(fStarsNomod)        SF(iMinBPM)       SF(iMaxBPM)                  SF(iMostCommonBPM)  SF(iNumObjects)       SF(iNumCircles)
+    SF(iNumSliders)        SF(iNumSpinners)  SF(totalBreakDuration)       SF(iVersion)        SF(type)              SF(bEmptyArtistUnicode)
+    SF(bEmptyTitleUnicode) SF(do_not_store)  SF(draw_background)
+#undef SF
+        // clang-format on
+
+        auto tmp_loudness = a.loudness.load(std::memory_order_relaxed);
+    a.loudness.store(b.loudness.load(std::memory_order_relaxed), std::memory_order_relaxed);
+    b.loudness.store(tmp_loudness, std::memory_order_relaxed);
+
+    auto tmp_md5 = a.md5_init.load(std::memory_order_relaxed);
+    a.md5_init.store(b.md5_init.load(std::memory_order_relaxed), std::memory_order_relaxed);
+    b.md5_init.store(tmp_md5, std::memory_order_relaxed);
+}
+
+// temp shorthand macros
+#define COPYOTHER(field) field(other.field)
+#define MOVEOTHER(field) field(std::move(other.field))
+#define ATOMICOTHER(field) field(other.field.load(std::memory_order_relaxed))
+
 DatabaseBeatmap::DatabaseBeatmap(const DatabaseBeatmap &other)
-    : sMD5Hash(other.sMD5Hash),
-      timingpoints(other.timingpoints),
-      sFolder(other.sFolder),
-      sFilePath(other.sFilePath),
-      last_modification_time(other.last_modification_time),
-      sTitle(other.sTitle),
-      sTitleUnicode(other.sTitleUnicode),
-      sArtist(other.sArtist),
-      sArtistUnicode(other.sArtistUnicode),
-      sCreator(other.sCreator),
-      sDifficultyName(other.sDifficultyName),
-      sSource(other.sSource),
-      sTags(other.sTags),
-      sBackgroundImageFileName(other.sBackgroundImageFileName),
-      sAudioFileName(other.sAudioFileName),
-      iID(other.iID),
-      iLengthMS(other.iLengthMS),
-      iLocalOffset(other.iLocalOffset),
-      iOnlineOffset(other.iOnlineOffset),
-      iSetID(other.iSetID),
-      iPreviewTime(other.iPreviewTime),
-      fAR(other.fAR),
-      fCS(other.fCS),
-      fHP(other.fHP),
-      fOD(other.fOD),
-      fStackLeniency(other.fStackLeniency),
-      fSliderTickRate(other.fSliderTickRate),
-      fSliderMultiplier(other.fSliderMultiplier),
-      ppv2Version(other.ppv2Version),
-      fStarsNomod(other.fStarsNomod),
-      iMinBPM(other.iMinBPM),
-      iMaxBPM(other.iMaxBPM),
-      iMostCommonBPM(other.iMostCommonBPM),
-      iNumObjects(other.iNumObjects),
-      iNumCircles(other.iNumCircles),
-      iNumSliders(other.iNumSliders),
-      iNumSpinners(other.iNumSpinners),
-      loudness(other.loudness.load(std::memory_order_relaxed)),
-      totalBreakDuration(other.totalBreakDuration),
-      iVersion(other.iVersion),
-      md5_init(other.md5_init.load(std::memory_order_relaxed)),
-      type(other.type),
-      bEmptyArtistUnicode(other.bEmptyArtistUnicode),
-      bEmptyTitleUnicode(other.bEmptyTitleUnicode),
-      do_not_store(other.do_not_store),
-      draw_background(other.draw_background) {
+    // clang-format off
+    : COPYOTHER(sMD5Hash),            COPYOTHER(timingpoints),             COPYOTHER(sFolder),
+      COPYOTHER(sFilePath),           COPYOTHER(last_modification_time),   COPYOTHER(sTitle),
+      COPYOTHER(sTitleUnicode),       COPYOTHER(sArtist),                  COPYOTHER(sArtistUnicode),
+      COPYOTHER(sCreator),            COPYOTHER(sDifficultyName),          COPYOTHER(sSource),
+      COPYOTHER(sTags),               COPYOTHER(sBackgroundImageFileName), COPYOTHER(sAudioFileName),
+      COPYOTHER(iID),                 COPYOTHER(iLengthMS),                COPYOTHER(iLocalOffset),
+      COPYOTHER(iOnlineOffset),       COPYOTHER(iSetID),                   COPYOTHER(iPreviewTime),
+      COPYOTHER(fAR),                 COPYOTHER(fCS),                      COPYOTHER(fHP),
+      COPYOTHER(fOD),                 COPYOTHER(fStackLeniency),           COPYOTHER(fSliderTickRate),
+      COPYOTHER(fSliderMultiplier),   COPYOTHER(ppv2Version),              COPYOTHER(fStarsNomod),
+      COPYOTHER(iMinBPM),             COPYOTHER(iMaxBPM),                  COPYOTHER(iMostCommonBPM),
+      COPYOTHER(iNumObjects),         COPYOTHER(iNumCircles),              COPYOTHER(iNumSliders),
+      COPYOTHER(iNumSpinners),        ATOMICOTHER(loudness),               COPYOTHER(totalBreakDuration),
+      COPYOTHER(iVersion),            ATOMICOTHER(md5_init),               COPYOTHER(type),
+      COPYOTHER(bEmptyArtistUnicode), COPYOTHER(bEmptyTitleUnicode),       COPYOTHER(do_not_store),
+      COPYOTHER(draw_background) {
+    // clang-format on
+
     if(other.difficulties) {
         this->difficulties = std::make_unique<DiffContainer>();
         for(const auto &diff : *other.difficulties) {
@@ -222,56 +167,32 @@ DatabaseBeatmap::DatabaseBeatmap(const DatabaseBeatmap &other)
 }
 
 DatabaseBeatmap::DatabaseBeatmap(DatabaseBeatmap &&other) noexcept
-    : sMD5Hash(other.sMD5Hash),
-      difficulties(std::move(other.difficulties)),
-      timingpoints(std::move(other.timingpoints)),
-      sFolder(std::move(other.sFolder)),
-      sFilePath(std::move(other.sFilePath)),
-      last_modification_time(other.last_modification_time),
-      sTitle(std::move(other.sTitle)),
-      sTitleUnicode(std::move(other.sTitleUnicode)),
-      sArtist(std::move(other.sArtist)),
-      sArtistUnicode(std::move(other.sArtistUnicode)),
-      sCreator(std::move(other.sCreator)),
-      sDifficultyName(std::move(other.sDifficultyName)),
-      sSource(std::move(other.sSource)),
-      sTags(std::move(other.sTags)),
-      sBackgroundImageFileName(std::move(other.sBackgroundImageFileName)),
-      sAudioFileName(std::move(other.sAudioFileName)),
-      iID(other.iID),
-      iLengthMS(other.iLengthMS),
-      iLocalOffset(other.iLocalOffset),
-      iOnlineOffset(other.iOnlineOffset),
-      iSetID(other.iSetID),
-      iPreviewTime(other.iPreviewTime),
-      fAR(other.fAR),
-      fCS(other.fCS),
-      fHP(other.fHP),
-      fOD(other.fOD),
-      fStackLeniency(other.fStackLeniency),
-      fSliderTickRate(other.fSliderTickRate),
-      fSliderMultiplier(other.fSliderMultiplier),
-      ppv2Version(other.ppv2Version),
-      fStarsNomod(other.fStarsNomod),
-      iMinBPM(other.iMinBPM),
-      iMaxBPM(other.iMaxBPM),
-      iMostCommonBPM(other.iMostCommonBPM),
-      iNumObjects(other.iNumObjects),
-      iNumCircles(other.iNumCircles),
-      iNumSliders(other.iNumSliders),
-      iNumSpinners(other.iNumSpinners),
-      loudness(other.loudness.load(std::memory_order_relaxed)),
-      totalBreakDuration(other.totalBreakDuration),
-      iVersion(other.iVersion),
-      md5_init(other.md5_init.load(std::memory_order_relaxed)),
-      type(other.type),
-      bEmptyArtistUnicode(other.bEmptyArtistUnicode),
-      bEmptyTitleUnicode(other.bEmptyTitleUnicode),
-      do_not_store(other.do_not_store),
-      draw_background(other.draw_background) {
+    // clang-format off
+    : COPYOTHER(sMD5Hash),           MOVEOTHER(difficulties),        MOVEOTHER(timingpoints),
+      MOVEOTHER(sFolder),            MOVEOTHER(sFilePath),           MOVEOTHER(last_modification_time),
+      MOVEOTHER(sTitle),             MOVEOTHER(sTitleUnicode),       MOVEOTHER(sArtist),
+      MOVEOTHER(sArtistUnicode),     MOVEOTHER(sCreator),            MOVEOTHER(sDifficultyName),
+      MOVEOTHER(sSource),            MOVEOTHER(sTags),               MOVEOTHER(sBackgroundImageFileName),
+      MOVEOTHER(sAudioFileName),     COPYOTHER(iID),                 COPYOTHER(iLengthMS),
+      COPYOTHER(iLocalOffset),       COPYOTHER(iOnlineOffset),       COPYOTHER(iSetID),
+      COPYOTHER(iPreviewTime),       COPYOTHER(fAR),                 COPYOTHER(fCS),
+      COPYOTHER(fHP),                COPYOTHER(fOD),                 COPYOTHER(fStackLeniency),
+      COPYOTHER(fSliderTickRate),    COPYOTHER(fSliderMultiplier),   COPYOTHER(ppv2Version),
+      COPYOTHER(fStarsNomod),        COPYOTHER(iMinBPM),             COPYOTHER(iMaxBPM),
+      COPYOTHER(iMostCommonBPM),     COPYOTHER(iNumObjects),         COPYOTHER(iNumCircles),
+      COPYOTHER(iNumSliders),        COPYOTHER(iNumSpinners),        ATOMICOTHER(loudness),
+      COPYOTHER(totalBreakDuration), COPYOTHER(iVersion),            ATOMICOTHER(md5_init),
+      COPYOTHER(type),               COPYOTHER(bEmptyArtistUnicode), COPYOTHER(bEmptyTitleUnicode),
+      COPYOTHER(do_not_store),       COPYOTHER(draw_background) {
+    // clang-format on
+
     other.difficulties.reset();
     other.timingpoints.clear();
 }
+
+#undef COPYOTHER
+#undef ATOMICOTHER
+#undef MOVEOTHER
 
 bool DatabaseBeatmap::operator==(const DatabaseBeatmap &other) const {
     // we are both BeatmapDifficulties
@@ -349,7 +270,7 @@ bool parse_timing_point(std::string_view curLine, DatabaseBeatmap::TIMINGPOINT &
 // parse a sample set value with lenient handling, matching lazer behavior:
 // values outside 0-3 default to Normal (1)
 // see: https://github.com/ppy/osu/blob/56ef5eae1409622518fbc19872d5e3477abe90a2/osu.Game/Rulesets/Objects/Legacy/ConvertHitObjectParser.cs#L203
-inline u8 parse_sampleset_value(std::string_view str) {
+forceinline u8 parse_sampleset_value(std::string_view str) {
     i32 val = Parsing::strto<i32>(str);
     return (val >= 0 && val <= 3) ? static_cast<u8>(val) : static_cast<u8>(SampleSetType::NORMAL);
 }

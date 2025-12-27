@@ -1,7 +1,7 @@
 #ifndef CONVARDEFS_H
 #define CONVARDEFS_H
 
-// DO NOT osu-related convars in this file (put them in OsuConVarDefs.h)
+// DO NOT put osu-related convars in this file (put them in OsuConVarDefs.h)
 
 // ########################################################################################################################
 // # this first part is just to allow for proper code completion when editing this file

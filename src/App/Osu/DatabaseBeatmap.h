@@ -400,8 +400,8 @@ class DatabaseBeatmap final {
     // may be lazy-computed by loadMetadata, or precomputed and loaded off disk from database
     MD5Hash sMD5Hash;
 
-    // if this is null we are a beatmapset, not a difficulty
-    // if this is non-null then it MUST contain at least 1 entry
+    // if this is NULL: we are a BeatmapDifficulty, not a BeatmapSet
+    // if this is non-NULL: it MUST contain at least 1 entry (a BeatmapSet cannot have 0 difficulties)
     // NOTE: this class has ownership of the individual beatmap difficulties, Database owns the top-level beatmapsets
     std::unique_ptr<DiffContainer> difficulties;
 
