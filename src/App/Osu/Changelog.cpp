@@ -29,8 +29,15 @@ Changelog::Changelog() : ScreenBackable() {
 
     std::vector<CHANGELOG> changelogs;
 
+    CHANGELOG v41_13;
+    v41_13.title = "41.13 (" CHANGELOG_TIMESTAMP ")";
+    v41_13.changes = {
+        R"()",
+    };
+    changelogs.push_back(v41_13);
+
     CHANGELOG v41_12;
-    v41_12.title = "41.12 (" CHANGELOG_TIMESTAMP ")";
+    v41_12.title = "41.12 (2025-12-27)";
     v41_12.changes = {
         R"(- Added loading spinner for online beatmap search queries)",
         R"(- Fixed map backgrounds being drawn in places they shouldn't be)",
