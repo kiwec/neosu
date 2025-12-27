@@ -162,7 +162,10 @@ void CarouselButton::updateLayoutEx() {
                 std::abs((this->vPos.y + (this->vSize.y / 2) - carousel->getPos().y - carousel->getSize().y / 2) /
                          (carousel->getSize().y / 2)),
                 0.0f, 1.0f);
-        anim::moveQuadOut(&this->fCenterOffsetAnimation, centerOffsetAnimationTarget, 0.5f, true);
+
+        if(std::abs(this->fCenterOffsetAnimation - centerOffsetAnimationTarget) > 0.0005f) {
+            anim::moveQuadOut(&this->fCenterOffsetAnimation, centerOffsetAnimationTarget, 0.5f, true);
+        }
 
         float centerOffsetVelocityAnimationTarget =
             std::clamp<float>((std::abs(carousel->getVelocity().y)) / 3500.0f, 0.0f, 1.0f);

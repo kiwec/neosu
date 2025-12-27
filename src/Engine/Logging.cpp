@@ -57,7 +57,9 @@
 namespace Logger {
 namespace {  // static
 std::shared_ptr<spdlog::async_logger> g_logger;
+spdlog::async_logger *g_logger_raw_ptr{nullptr};
 std::shared_ptr<spdlog::async_logger> g_raw_logger;
+spdlog::async_logger *g_raw_logger_raw_ptr{nullptr};
 
 #ifdef MCENGINE_PLATFORM_WINDOWS
 bool s_created_console{false};
@@ -80,11 +82,11 @@ bool g_initialized{false};
 
 void log_int(const char *filename, int line, const char *funcname, log_level::level_enum lvl,
              std::string_view str) noexcept {
-    return g_logger->log(spdlog::source_loc{filename, line, funcname}, (spdlog::level::level_enum)lvl, str);
+    return g_logger_raw_ptr->log(spdlog::source_loc{filename, line, funcname}, (spdlog::level::level_enum)lvl, str);
 }
 
 void logRaw_int(log_level::level_enum lvl, std::string_view str) noexcept {
-    return g_raw_logger->log((spdlog::level::level_enum)lvl, str);
+    return g_raw_logger_raw_ptr->log((spdlog::level::level_enum)lvl, str);
 }
 
 }  // namespace _detail
@@ -302,11 +304,13 @@ void init(bool create_console) noexcept {
     g_logger =
         std::make_shared<spdlog::async_logger>(DEFAULT_LOGGER_NAME, main_sinks.begin(), main_sinks.end(),
                                                spdlog::thread_pool(), spdlog::async_overflow_policy::overrun_oldest);
+    g_logger_raw_ptr = g_logger.get();
 
     // create raw async logger with separate stdout + console + optional file sink
     g_raw_logger =
         std::make_shared<spdlog::async_logger>(RAW_LOGGER_NAME, raw_sinks.begin(), raw_sinks.end(),
                                                spdlog::thread_pool(), spdlog::async_overflow_policy::overrun_oldest);
+    g_raw_logger_raw_ptr = g_raw_logger.get();
 
     // set to trace level so we print out all messages
     // TODO: add custom log level support (ConVar callback + build type?)

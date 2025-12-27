@@ -1,5 +1,5 @@
 AC_PREREQ([2.69])
-AC_INIT([neosu], [[41.13]], [], [], [https://github.com/kiwec/neosu]) # don't report bugs to McKay :)
+AC_INIT([neosu], [[41.13]], [], [], [https://github.com/kiwec/neosu])
 AC_CONFIG_SRCDIR([src/Engine/Engine.cpp])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_HEADERS([src/config.h])
@@ -647,7 +647,7 @@ AS_IF([test "$host_cpu" = "x86_64"], [COMMON_FLAGS="$COMMON_FLAGS -mcmodel=small
 
 CPPFLAGS="$CPPFLAGS -D_TIME_BITS=64 -D_FILE_OFFSET_BITS=64"
 COMMON_FLAGS="$COMMON_FLAGS -D_TIME_BITS=64 -D_FILE_OFFSET_BITS=64 -pipe -ffunction-sections -fdata-sections -fwrapv -fno-strict-aliasing -ftls-model=initial-exec -pthread"
-CXXFLAGS="$CXXFLAGS $COMMON_FLAGS -fno-exceptions -fno-unwind-tables" # -fno-rtti
+CXXFLAGS="$CXXFLAGS $COMMON_FLAGS -fno-exceptions" # -fno-unwind-tables -fno-rtti
 CFLAGS="$CFLAGS $COMMON_FLAGS"
 LDFLAGS="$LDFLAGS -static-libstdc++ -static-libgcc -pthread"
 

@@ -197,7 +197,7 @@ void submit_score(FinishedScore score) {
     auto url = fmt::format("{}osu.{}/web/osu-submit-modular-selector.php", scheme, BanchoState::endpoint);
     networkHandler->httpRequestAsync(
         url,
-        [func = __FUNCTION__](NeoNet::Response response) {
+        [func = LOGGER_FUNC](NeoNet::Response response) {
             if(response.success) {
                 // TODO: handle success (pp, etc + error codes)
                 debugLogLambda("Score submit result: {}", response.body);

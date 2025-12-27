@@ -13,7 +13,8 @@
 namespace AnimationHandler {
 namespace {  // static namespace
 
-static constexpr const f32 ANIM_EPSILON_ABS{1e-7f};
+// TODO: fix songbrowser to not rely on this hack to prevent never-settling animations
+static constexpr const f32 ANIM_EPSILON_ABS{5e-7f};
 static constexpr const f32 ANIM_EPSILON_REL{1e-4f};
 enum class ANIMATION_TYPE : uint8_t {
     MOVE_LINEAR,

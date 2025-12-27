@@ -249,7 +249,7 @@ void UIModSelectorModButton::setState(unsigned int state, bool initialState, Con
     }
     this->states[state].cvar = cvar;
     this->states[state].modName = std::move(modName);
-    this->states[state].tooltipTextLines = tooltipText.split("\n");
+    this->states[state].tooltipTextLines = tooltipText.split(ULITERAL("\n"));
     this->states[state].getImageFunc = std::move(getImageFunc);
 
     // set initial state image

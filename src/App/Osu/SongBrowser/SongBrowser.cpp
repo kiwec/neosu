@@ -56,6 +56,8 @@
 #include "RoomScreen.h"
 #include "Chat.h"
 
+#include "Sorting.h"
+
 #include <algorithm>
 #include <memory>
 #include <charconv>
@@ -2060,8 +2062,8 @@ bool SongBrowser::searchMatcher(const DatabaseBeatmap *databaseBeatmap,
 
     // early return here for literal match/contains
     if(hasAnyValidLiteralSearchString) {
-        static constexpr auto findSubstringInDiff = [](const DatabaseBeatmap *diff,
-                                                       std::string_view searchString) -> bool {
+        static constexpr auto findSubstringInDiff =
+            +[](const DatabaseBeatmap *diff, std::string_view searchString) -> bool {
             return (SString::contains_ncase(diff->getTitleLatin(), searchString)) ||
                    (SString::contains_ncase(diff->getArtistLatin(), searchString)) ||
                    (!diff->getTitleUnicode().empty() && diff->getTitleUnicode().contains(searchString)) ||
@@ -3054,7 +3056,7 @@ void SongBrowser::rebuildAfterGroupOrSortChange(GroupType group, const std::opti
 
     if(this->bSongButtonsNeedSorting || sortingChanged) {
         // the master button list should be sorted for all groupings
-        std::ranges::sort(this->parentButtons, SORTING_METHODS[this->curSortMethod].comparator);
+        srt::pdqsort(this->parentButtons, SORTING_METHODS[this->curSortMethod].comparator);
         this->bSongButtonsNeedSorting = false;
     }
 
@@ -3096,7 +3098,7 @@ void SongBrowser::rebuildAfterGroupOrSortChange(GroupType group, const std::opti
                 for(auto *button : *collBtns) {
                     auto &children = button->getChildren();
                     if(!children.empty()) {
-                        std::ranges::sort(children, SORTING_METHODS[this->curSortMethod].comparator);
+                        srt::pdqsort(children, SORTING_METHODS[this->curSortMethod].comparator);
                         button->setChildren(children);
                     }
                 }

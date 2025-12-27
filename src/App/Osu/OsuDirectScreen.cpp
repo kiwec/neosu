@@ -399,7 +399,7 @@ void OsuDirectScreen::search(std::string_view query, i32 page) {
 
     networkHandler->httpRequestAsync(
         url,
-        [func = __FUNCTION__, current_request_id, page, this](const NeoNet::Response& response) {
+        [func = LOGGER_FUNC, current_request_id, page, this](const NeoNet::Response& response) {
             this->loading = false;
 
             if(current_request_id != this->request_id) {

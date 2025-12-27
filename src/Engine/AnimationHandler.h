@@ -8,7 +8,7 @@ namespace AnimationHandler {
 
 // called by engine once per frame, after updating time
 void update();
-void clearAll(); // called when shutting down, for safety
+void clearAll();  // called when shutting down, for safety
 
 // base
 void moveLinear(f32 *base, f32 target, f32 duration, f32 delay, bool overrideExisting = false);

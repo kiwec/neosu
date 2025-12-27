@@ -3690,7 +3690,7 @@ void OptionsMenu::save() {
     debugLog("Osu: Saving user config file ...");
 
     static constexpr const std::string_view cfg_name = NEOSU_CFG_PATH "/osu.cfg"sv;
-    static AsyncIOHandler::WriteCallback wr_callback = [func = __FUNCTION__](bool success) -> void {
+    static AsyncIOHandler::WriteCallback wr_callback = [func = LOGGER_FUNC](bool success) -> void {
         if(!success) {
             if(osu) {
                 osu->getNotificationOverlay()->addToast(ULITERAL("Failed to save osu.cfg"), ERROR_TOAST);
@@ -3702,7 +3702,7 @@ void OptionsMenu::save() {
         }
     };
 
-    static AsyncIOHandler::ReadCallback rd_callback = [func = __FUNCTION__](std::vector<u8> read_data) -> void {
+    static AsyncIOHandler::ReadCallback rd_callback = [func = LOGGER_FUNC](std::vector<u8> read_data) -> void {
         std::vector<std::string> read_lines;
         if(read_data.empty()) {
             if(Environment::fileExists(cfg_name)) {

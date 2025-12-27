@@ -4,24 +4,27 @@
 #include "BaseEnvironment.h"
 
 #include "fmt/format.h"
-#include "fmt/ranges.h"
+#include "fmt/compile.h"
 
 #include <string_view>
 #include <cassert>
 
+#define LOGGER_FUNC __FUNCTION__
+
 #if defined(_MSC_VER) && !defined(_DEBUG)
-#define FUNC_TRIMMED Logger::trim_to_last_scope_internal(static_cast<const char *>(__FUNCTION__))
-#define CAPTURED_FUNC Logger::trim_to_last_scope_internal(func)
+#define LOGGER_FUNC_TRIMMED Logger::trim_to_last_scope_internal(static_cast<const char *>(LOGGER_FUNC))
+#define LOGGER_FUNC_CAPTURED Logger::trim_to_last_scope_internal(func)
 #else
-#define FUNC_TRIMMED static_cast<const char *>(__FUNCTION__)
-#define CAPTURED_FUNC func
+#define LOGGER_FUNC_TRIMMED static_cast<const char *>(LOGGER_FUNC)
+#define LOGGER_FUNC_CAPTURED func
 #endif
 
 // main logging macro
-#define debugLog(str__, ...) Logger::log(__FILE__, __LINE__, FUNC_TRIMMED, str__ __VA_OPT__(, ) __VA_ARGS__)
+#define debugLog(str__, ...) Logger::log(__FILE__, __LINE__, LOGGER_FUNC_TRIMMED, str__ __VA_OPT__(, ) __VA_ARGS__)
 
-// explicitly capture func = __FUNCTION__ in lambda, then use this
-#define debugLogLambda(str__, ...) Logger::log(__FILE__, __LINE__, CAPTURED_FUNC, str__ __VA_OPT__(, ) __VA_ARGS__)
+// explicitly capture func = LOGGER_FUNC in lambda, then use this
+#define debugLogLambda(str__, ...) \
+    Logger::log(__FILE__, __LINE__, LOGGER_FUNC_CAPTURED, str__ __VA_OPT__(, ) __VA_ARGS__)
 
 // log only if condition is true
 #define logIf(cond__, str__, ...) (static_cast<bool>(cond__) ? debugLog(str__ __VA_OPT__(, ) __VA_ARGS__) : void(0))
@@ -48,25 +51,8 @@ namespace _detail {
 
 // copied from spdlog, don't want to include it here
 // (since we are using spdlog header-only, to lower compile time, only including spdlog things in 1 translation unit)
-#define LOGGER_LEVEL_TRACE 0
-#define LOGGER_LEVEL_DEBUG 1
-#define LOGGER_LEVEL_INFO 2
-#define LOGGER_LEVEL_WARN 3
-#define LOGGER_LEVEL_ERROR 4
-#define LOGGER_LEVEL_CRITICAL 5
-#define LOGGER_LEVEL_OFF 6
-
 namespace log_level {
-enum level_enum : int {
-    trace = LOGGER_LEVEL_TRACE,
-    debug = LOGGER_LEVEL_DEBUG,
-    info = LOGGER_LEVEL_INFO,
-    warn = LOGGER_LEVEL_WARN,
-    err = LOGGER_LEVEL_ERROR,
-    critical = LOGGER_LEVEL_CRITICAL,
-    off = LOGGER_LEVEL_OFF,
-    n_levels
-};
+enum level_enum : int { trace = 0, debug = 1, info = 2, warn = 3, err = 4, critical = 5, off = 6, n_levels };
 }
 
 void log_int(const char *filename, int line, const char *funcname, log_level::level_enum lvl,
@@ -87,6 +73,20 @@ void flush() noexcept;
 [[nodiscard]] bool isaTTY() noexcept;
 
 // logging with format strings
+template <typename S, typename... Args>
+inline void log(const char *filename, int line, const char *funcname, S &&fmt, Args &&...args) noexcept
+    requires(std::is_base_of_v<fmt::compiled_string, S> && sizeof...(Args) > 0)
+{
+    // checking for wasInit for the unlikely case that we try to log something through here WHILE initializing/uninitializing
+    if(likely(_detail::g_initialized))
+        _detail::log_int(filename, line, funcname, _detail::log_level::info,
+                         fmt::format(std::forward<S>(fmt), std::forward<Args>(args)...));
+    else
+        printf("%s\n", fmt::format(std::forward<S>(fmt), std::forward<Args>(args)...).c_str());
+}
+
+// not sure what template coaxing needs to be done to avoid duplicating these, but the above works for 
+// compile time format strings (_cf suffixed), but the below doesn't
 template <typename... Args>
 inline void log(const char *filename, int line, const char *funcname, const fmt::format_string<Args...> &fmt,
                 Args &&...args) noexcept
@@ -109,6 +109,16 @@ inline void log(const char *filename, int line, const char *funcname, std::strin
 }
 
 // raw logging without any context
+template <typename S, typename... Args>
+inline void logRaw(S &&fmt, Args &&...args) noexcept
+    requires(std::is_base_of_v<fmt::compiled_string, S> && sizeof...(Args) > 0)
+{
+    if(likely(_detail::g_initialized))
+        _detail::logRaw_int(_detail::log_level::info, fmt::format(std::forward<S>(fmt), std::forward<Args>(args)...));
+    else
+        printf("%s\n", fmt::format(std::forward<S>(fmt), std::forward<Args>(args)...).c_str());
+}
+
 template <typename... Args>
 inline void logRaw(const fmt::format_string<Args...> &fmt, Args &&...args) noexcept
     requires(sizeof...(Args) > 0)
@@ -126,7 +136,7 @@ inline void logRaw(std::string_view str) noexcept {
         printf("%.*s\n", static_cast<int>(str.length()), str.data());
 }
 
-// msvc always adds the full scope to __FUNCTION__, which we don't want for non-debug builds
+// msvc always adds the full scope to LOGGER_FUNC, which we don't want for non-debug builds
 #if defined(_MSC_VER) && !defined(_DEBUG)
 forceinline const char *trim_to_last_scope_internal(std::string_view str) {
     auto pos = str.rfind("::");

@@ -65,7 +65,7 @@ void TextureAtlas::putAt(int x, int y, int width, int height, bool flipHorizonta
     }
 
     // mirror border pixels for padding > 1
-    if(unlikely(ATLAS_PADDING > 1)) {
+    if constexpr(ATLAS_PADDING > 1) {
         // left border
         for(int j = -1; j < height + 1; j++) {
             const int i = 0;

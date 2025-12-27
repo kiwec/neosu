@@ -24,6 +24,7 @@
 #include "SongBrowser/SongBrowser.h"
 #include "Timing.h"
 #include "Logging.h"
+#include "crypto.h"
 #include "score.h"
 #include "Environment.h"
 #include "MakeDelegateWrapper.h"
@@ -1243,7 +1244,6 @@ void Database::loadMaps() {
             for(uSz i = 0; i < this->num_beatmaps_to_load; i++) {
                 if(this->load_interrupted.load(std::memory_order_acquire)) break;  // cancellation point
 
-                logIfCV(debug_db, "Database: Reading beatmap {:d}/{:d} ...", (i + 1), this->num_beatmaps_to_load);
                 // update progress (another thread checks if progress >= 1.f to know when we're done)
                 u32 progress_bytes = this->bytes_processed + dbr.total_pos;
                 f64 progress_float = (f64)progress_bytes / (f64)this->total_bytes;
@@ -1271,6 +1271,10 @@ void Database::loadMaps() {
                 std::string audioFileName = dbr.read_string();
 
                 auto md5hash = dbr.read_hash();
+
+                logIfCV(debug_db, "Reading osu!.db beatmap {:d}/{:d} md5hash {} ...", (i + 1),
+                        this->num_beatmaps_to_load, md5hash.string());
+
                 bool overrides_found = false;
                 MapOverrides override;
                 {
@@ -1435,6 +1439,24 @@ void Database::loadMaps() {
                 beatmapPath.push_back('/');
                 std::string fullFilePath = beatmapPath;
                 fullFilePath.append(osuFileName);
+
+                if(md5hash == MD5Hash{}) {
+                    // avoid hashmap corruption, we somehow fail to read some entries' md5 hashes
+                    // TODO: move this somewhere else or put it in peppy overrides or something
+                    // "temporary" fix (extremely rare edge case so maybe it's not that important)
+                    if(Environment::fileExists(fullFilePath)) {
+                        std::array<u8, 16> md5digest{};
+                        crypto::hash::md5_f(fullFilePath, md5digest.data());
+                        if(md5digest != std::array<u8, 16>{}) {
+                            md5hash = MD5Hash{crypto::conv::encodehex(md5digest).c_str()};
+                            logIfCV(debug_db, "Manually calculated hash {} for {}", md5hash.string(), fullFilePath);
+                        } else {
+                            logIfCV(debug_db, "Failed to recalculate corrupt hash {}", fullFilePath);
+                        }
+                    } else {
+                        logIfCV(debug_db, "Skipped entry {} with no/corrupt md5", fullFilePath);
+                    }
+                }
 
                 // special case: legacy fallback behavior for invalid beatmapSetID, try to parse the ID from the path
                 if(beatmapSetID < 1 && path.length() > 0) {

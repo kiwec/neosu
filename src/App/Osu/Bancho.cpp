@@ -796,7 +796,7 @@ void BanchoState::handle_packet(Packet &packet) {
             auto file_path = map->getFilePath();
 
             DatabaseBeatmap::MapFileReadDoneCallback callback =
-                [url, md5, file_path, func = __FUNCTION__](std::vector<u8> osu_file) -> void {
+                [url, md5, file_path, func = LOGGER_FUNC](std::vector<u8> osu_file) -> void {
                 if(!networkHandler) return;  // quit if we got called while shutting down
 
                 if(osu_file.empty()) {

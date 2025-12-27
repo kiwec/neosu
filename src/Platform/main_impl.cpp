@@ -163,8 +163,8 @@ SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
         size_t logsz =
             std::min(logBuf.size(), static_cast<size_t>(SDL_GetEventDescription(event, logBuf.data(), logBuf.size())));
         if(logsz > 0) {
-            Logger::logRaw(fmt::format("[handleEvent] frame: {}; event: {}"_cf, m_engine->getFrameCount(),
-                                       std::string_view{logBuf.data(), logsz}));
+            Logger::logRaw("[handleEvent] frame: {}; event: {}"_cf, m_engine->getFrameCount(),
+                           std::string_view{logBuf.data(), logsz});
         }
     }
 
@@ -464,19 +464,16 @@ static constexpr auto WINDOW_HEIGHT_MIN = 240;
 bool SDLMain::createWindow() {
     // pre window-creation settings
     if(!m_bUsingDX11) {  // these are only for opengl
-        // we don't need alpha on the window visual
         SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
         SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
         SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
 
+        // we don't need alpha on the window visual, this is only required for making the window itself transparent
+        SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 0);
+
         // work around weird issue with AMD on windows
         if constexpr(Env::cfg(OS::WINDOWS)) {
             SDL_GL_SetAttribute(SDL_GL_FRAMEBUFFER_SRGB_CAPABLE, 1);
-        }
-
-        // alpha context causes trouble when using EGL (so, wayland or forced)
-        if(m_bIsWayland || SDL_GetHintBoolean(SDL_HINT_VIDEO_FORCE_EGL, false)) {
-            SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 0);
         }
 
         SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
@@ -691,7 +688,7 @@ void SDLMain::configureEvents() {
 }
 
 void SDLMain::setupLogging() {
-    static SDL_LogOutputFunction SDLLogCB = [](void *, int category, SDL_LogPriority, const char *message) -> void {
+    static SDL_LogOutputFunction SDLLogCB = +[](void *, int category, SDL_LogPriority, const char *message) -> void {
         const char *catStr = "???";
         switch(category) {
             case SDL_LOG_CATEGORY_APPLICATION:

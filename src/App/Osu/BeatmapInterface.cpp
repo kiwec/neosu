@@ -908,9 +908,13 @@ bool BeatmapInterface::isPreviewMusicPlaying() {
 
 void BeatmapInterface::stop(bool quit) {
     osu->bIsPlayingASelectedBeatmap = false;
+
     soundEngine->stop(this->getSkin()->s_fail);
 
-    if(unlikely(!this->beatmap)) return;
+    if(unlikely(!this->beatmap)) {
+        osu->setShouldPauseBGThreads(false);
+        return;
+    }
 
     this->bIsPlaying = false;
     this->bIsPaused = false;

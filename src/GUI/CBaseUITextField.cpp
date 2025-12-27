@@ -66,8 +66,8 @@ void CBaseUITextField::TextObject::draw() {
     g->setColor(this->textColor);
     g->pushClipRect(McRect(this->vPos.x, this->vPos.y, this->vSize.x, this->vSize.y));
 
-    std::vector<UString> words = this->sText.split(" ");
-    float spaceWidth = this->font->getStringWidth(" ");
+    std::vector<UString> words = this->sText.split(ULITERAL(" "));
+    float spaceWidth = this->font->getStringWidth(ULITERAL(" "));
     int border = 0;
     int lineSpacing = 4;
     float width = 0.0f;
@@ -110,10 +110,10 @@ CBaseUIElement *CBaseUITextField::TextObject::setText(UString text) {
 void CBaseUITextField::TextObject::onResized() {
     if(this->sText.length() < 1) return;
 
-    std::vector<UString> words = this->sText.split(" ");
+    std::vector<UString> words = this->sText.split(ULITERAL(" "));
     if(words.size() < 1) return;
 
-    float spaceWidth = this->font->getStringWidth(" ");
+    float spaceWidth = this->font->getStringWidth(ULITERAL(" "));
     int border = 0;
     float width = 0.0f;
     int lineSpacing = 4;

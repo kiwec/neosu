@@ -39,8 +39,9 @@ float Skin::BasicSkinImage::scale() const {
         this->scale_mul = 1;
         std::string_view path;
         if(this->img && this->img != MISSING_TEXTURE &&
-           (path = this->img->getFilePath()).length() > 7 /* @2x.png == 7 */) {
-            path = path.substr(path.length() - 7);
+            // i don't think @2x jpeg are even supported in osu stable, but doesn't hurt to check here anyways...
+           (path = this->img->getFilePath()).length() > 8 /* @2x.jpeg == 8 */) {
+            path = path.substr(path.length() - 8);
 
             if(path.contains("@2x")) {
                 this->scale_mul = 2;

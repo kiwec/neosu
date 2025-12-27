@@ -515,7 +515,7 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjectsFromDa
                 upd_last_error(!Parsing::parse(csvs[4], &hitSounds));
                 upd_last_error((type & PpyHitObjectType::SLIDER) && (csvs.size() < 8));
                 upd_last_error((type & PpyHitObjectType::SPINNER) && (csvs.size() < 6));
-                upd_last_error((type & (PpyHitObjectType::MANIA_HOLD_NOTE)));
+                upd_last_error((type & PpyHitObjectType::MANIA_HOLD_NOTE));
                 if(err_line) {
                     debugLog("File: {} Invalid hit object (error on line {}): {}", osuFilePath, err_line, curLine);
                     break;
@@ -957,8 +957,8 @@ DatabaseBeatmap::LOAD_DIFFOBJ_RESULT DatabaseBeatmap::loadDifficultyHitObjects(P
 
     if(result.diffobjects.size() > 1) {
         // sort hitobjects by time
-        static constexpr auto diffHitObjectSortComparator = [](const DifficultyHitObject &a,
-                                                               const DifficultyHitObject &b) -> bool {
+        static constexpr auto diffHitObjectSortComparator =
+            +[](const DifficultyHitObject &a, const DifficultyHitObject &b) -> bool {
             if(a.time != b.time) return a.time < b.time;
             if(a.type != b.type) return static_cast<int>(a.type) < static_cast<int>(b.type);
             if(a.pos.x != b.pos.x) return a.pos.x < b.pos.x;
@@ -1364,7 +1364,7 @@ DatabaseBeatmap::LOAD_META_RESULT DatabaseBeatmap::loadMetadata(bool compute_md5
             srt::spinsort(this->timingpoints, timingPointSortComparator);
         }
 
-        if(this->iMostCommonBPM == 0) {
+        if(this->iMostCommonBPM <= 0) {
             logIfCV(debug_osu, "calculating BPM range ...");
             BPMInfo bpm{};
             std::vector<BPMTuple> bpm_calculation_buffer;
@@ -1481,7 +1481,8 @@ DatabaseBeatmap::LOAD_GAMEPLAY_RESULT DatabaseBeatmap::loadGameplay(BeatmapDiffi
 
     // sort hitobjects by starttime
     if(result.hitobjects.size() > 1) {
-        static constexpr const auto hobjsorter = [](const auto &a, const auto &b) -> bool {
+        static constexpr auto hobjsorter =
+            +[](const std::unique_ptr<HitObject> &a, const std::unique_ptr<HitObject> &b) -> bool {
             return BeatmapInterface::sortHitObjectByStartTimeComp(a.get(), b.get());
         };
         srt::spinsort(result.hitobjects, hobjsorter);

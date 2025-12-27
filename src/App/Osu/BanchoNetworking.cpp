@@ -90,7 +90,7 @@ void attempt_logging_in() {
     // TODO: allow user to cancel login attempt
     networkHandler->httpRequestAsync(
         query_url,
-        [func = __FUNCTION__](NeoNet::Response response) {
+        [func = LOGGER_FUNC](NeoNet::Response response) {
             if(!response.success) {
                 auto errmsg = fmt::format("Failed to log in: {}", response.error_msg);
                 osu->getNotificationOverlay()->addToast(errmsg, ERROR_TOAST);
@@ -140,7 +140,7 @@ void send_bancho_packet_http(Packet outgoing) {
 
     networkHandler->httpRequestAsync(
         query_url,
-        [func = __FUNCTION__](NeoNet::Response response) {
+        [func = LOGGER_FUNC](NeoNet::Response response) {
             if(!response.success) {
                 debugLogLambda("Failed to send packet, HTTP error {}", response.response_code);
                 return;

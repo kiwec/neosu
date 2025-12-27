@@ -858,7 +858,7 @@ void Chat::addMessage(UString channel_name, const ChatMessage &msg, bool mark_un
     chatter_is_moderator |= (msg.author_id == 0);  // system message
 
     auto ignore_list = SString::split(cv::chat_ignore_list.getString(), ' ');
-    auto msg_words = msg.text.split(" ");
+    auto msg_words = msg.text.split(ULITERAL(" "));
     if(!chatter_is_moderator) {
         for(auto &word : msg_words) {
             for(const auto ignored : ignore_list) {

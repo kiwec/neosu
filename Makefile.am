@@ -1142,7 +1142,7 @@ neosu_resource.o: $(srcdir)/$(ASSETS_DIR)/resource.rc $(srcdir)/$(ASSETS_DIR)/ne
 neosu_LDADD = neosu_resource.o $(WINPTHREAD_LDFLAGS)
 endif
 
-compile_commands.json: mostlyclean-compile
+bear.cfg:
 	@$(BEAR) --version || { echo bear is unavailable to generate a compile_commands.json, install bear && exit 1; }
 	@(echo '{'; \
 	  echo '"compilation": {'; \
@@ -1151,14 +1151,21 @@ compile_commands.json: mostlyclean-compile
 	  echo '"executable": "emc++"'; \
 	  echo '},'; \
 	  echo '{'; \
+	  echo '"executable": "$(CC_REAL)"'; \
+	  echo '},'; \
+	  echo '{'; \
 	  echo '"executable": "$(CXX_REAL)"'; \
 	  echo '}'; \
 	  echo '],'; \
-	  echo '"compilers_to_exclude": ["$(CXX)"]'; \
+	  echo '"compilers_to_exclude": ["$(CXX)", "$(CC)"]'; \
 	  echo '}'; \
 	  echo '}' ) > bear.cfg
-	$(BEAR) --config bear.cfg --append -- $(MAKE) $(AM_MAKEFLAGS) $(neosu_OBJECTS) $(neosu_DEPENDENCIES) $(EXTRA_neosu_DEPENDENCIES) && \
-	rm -f bear.cfg
+
+# need to manually make sure BUILT_SOURCES (dependencies) are fully built before building the main neosu objects, due to weird
+# interactions with sub-makes and parallel jobs
+compile_commands.json: bear.cfg mostlyclean-compile
+	$(BEAR) --config bear.cfg --append -- $(MAKE) $(AM_MAKEFLAGS) $(BUILT_SOURCES) && \
+	$(BEAR) --config bear.cfg --append -- $(MAKE) $(AM_MAKEFLAGS) $(neosu_OBJECTS) $(neosu_DEPENDENCIES) $(EXTRA_neosu_DEPENDENCIES)
 
 $(abs_top_srcdir)/.clangd: compile_commands.json
 	@if [ -f $@ ]; then \

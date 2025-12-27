@@ -73,8 +73,6 @@
 
 #include <algorithm>
 
-const vec2 Osu::osuBaseResolution{640.0f, 480.0f};
-
 Osu *osu{nullptr};
 
 App *NEOSU_create_app_real() { return new Osu(); }

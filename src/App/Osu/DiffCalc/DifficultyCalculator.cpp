@@ -1371,7 +1371,7 @@ f64 DifficultyCalculator::DiffObject::calculate_difficulty(const Skills::Skill t
         if(type == Skills::SPEED) {
             // calculate relevant speed note count
             // RelevantNoteCount @ https://github.com/ppy/osu/blob/master/osu.Game.Rulesets.Osu/Difficulty/Skills/Speed.cs
-            static constexpr auto compareDiffObjects = [](const DiffObject &x, const DiffObject &y) -> bool {
+            static constexpr auto compareDiffObjects = +[](const DiffObject &x, const DiffObject &y) -> bool {
                 return (x.get_strain(Skills::SPEED) < y.get_strain(Skills::SPEED));
             };
 
@@ -1410,7 +1410,7 @@ f64 DifficultyCalculator::DiffObject::calculate_difficulty(const Skills::Skill t
         } else if(type == Skills::AIM_SLIDERS) {
             // calculate difficult sliders
             // GetDifficultSliders @ https://github.com/ppy/osu/blob/master/osu.Game.Rulesets.Osu/Difficulty/Skills/Aim.cs
-            static constexpr auto compareSliderObjects = [](const DiffObject &x, const DiffObject &y) -> bool {
+            static constexpr auto compareSliderObjects = +[](const DiffObject &x, const DiffObject &y) -> bool {
                 return (x.get_slider_strain(Skills::AIM_SLIDERS) < y.get_slider_strain(Skills::AIM_SLIDERS));
             };
 
@@ -1791,10 +1791,10 @@ f64 DifficultyCalculator::DiffObject::spacing_weight2(const Skills::Skill diff_t
                prev.ho->type == DifficultyHitObject::TYPE::SPINNER)
                 return 0.0;
 
-            static constexpr auto calcWideAngleBonus = [](f64 angle) {
+            static constexpr auto calcWideAngleBonus = +[](f64 angle) {
                 return smoothstep(angle, 40.0 * (PI / 180.0), 140.0 * (PI / 180.0));
             };
-            static constexpr auto calcAcuteAngleBonus = [](f64 angle) {
+            static constexpr auto calcAcuteAngleBonus = +[](f64 angle) {
                 return smoothstep(angle, 140.0 * (PI / 180.0), 40.0 * (PI / 180.0));
             };
 

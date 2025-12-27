@@ -57,7 +57,7 @@ unsigned int SoLoudSoundEngine::getResamplerFromCV() {
 SoLoudSoundEngine::SoLoudSoundEngine() : SoundEngine() {
 #if SOLOUD_VERSION >= 202512
     {
-        static SoLoud::logFunctionType SoLoudLogCB = [](const char *message, void * /*userdata*/) -> void {
+        static SoLoud::logFunctionType SoLoudLogCB = +[](const char *message, void * /*userdata*/) -> void {
             // avoid stray newlines
             size_t end_pos = message ? strlen(message) : 0;
             while(end_pos > 0 && (message[end_pos - 1] == '\r' || message[end_pos - 1] == '\n')) {
@@ -400,7 +400,7 @@ void SoLoudSoundEngine::onFocusLost() {
 }
 
 bool SoLoudSoundEngine::setOutputDeviceInt(const SoundEngine::OUTPUT_DEVICE &desiredDevice, bool force) {
-    auto dumpOutputDevices = [&, func = __FUNCTION__]() {
+    auto dumpOutputDevices = [&, func = LOGGER_FUNC]() {
         const auto &curDev = this->currentOutputDevice;
         debugLogLambda("CURRENT id: {} drv: {} enbl: {} def: {} init: {} name: {}", curDev.id, (u8)curDev.driver,
                        curDev.enabled, curDev.isDefault, curDev.isInit, curDev.name);
