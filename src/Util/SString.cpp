@@ -27,38 +27,56 @@ bool alnum_comp(std::string_view a, std::string_view b) {
     return false;
 }
 
+template <typename R, typename S, split_ret_enabled_t<R>, split_join_enabled_t<S>>
+void split(std::vector<R>& r, std::string_view s, S delim, size_t delim_len) {
+    r.clear();
+
+    if(delim_len == 0) {
+        if constexpr(std::is_same_v<std::decay_t<S>, const char*>) {
+            delim_len = strlen(delim);
+        } else if constexpr(std::is_same_v<std::decay_t<S>, std::string_view>) {
+            delim_len = delim.size();
+        } else {  // single char
+            delim_len = 1;
+        }
+    }
+
+    size_t i = 0, j = 0;
+    if constexpr(std::is_same_v<std::decay_t<R>, std::string>) {
+        while((j = s.find(delim, i)) != s.npos) r.emplace_back(s, i, j - i), i = j + delim_len;
+        r.emplace_back(s, i, s.size() - i);
+    } else {  // string_view
+        while((j = s.find(delim, i)) != s.npos) r.emplace_back(s.substr(i, j - i)), i = j + delim_len;
+        r.emplace_back(s.substr(i));
+    }
+
+    return;
+}
+
 // split a string by a delimiter
 template <typename R, typename S, split_ret_enabled_t<R>, split_join_enabled_t<S>>
 std::vector<R> split(std::string_view s, S delim) {
-    size_t len = 0;
-    if constexpr(std::is_same_v<std::decay_t<S>, const char*>) {
-        len = strlen(delim);
-    } else if constexpr(std::is_same_v<std::decay_t<S>, std::string_view>) {
-        len = delim.size();
-    } else {  // single char
-        len = 1;
-    }
-
     std::vector<R> r;
+
+    size_t delim_len = 0;
+    if constexpr(std::is_same_v<std::decay_t<S>, const char*>) {
+        delim_len = strlen(delim);
+    } else if constexpr(std::is_same_v<std::decay_t<S>, std::string_view>) {
+        delim_len = delim.size();
+    } else {  // single char
+        delim_len = 1;
+    }
 
     // pre-count delimiter occurrences and reserve that amount (to avoid reallocations)
     size_t count = 0;
     if constexpr(std::is_same_v<std::decay_t<S>, char>) {
         count = std::ranges::count(s, delim);
     } else {
-        for(size_t pos = 0; (pos = s.find(delim, pos)) != s.npos; pos += len) count++;
+        for(size_t pos = 0; (pos = s.find(delim, pos)) != s.npos; pos += delim_len) count++;
     }
     r.reserve(count + 1);
 
-    size_t i = 0, j = 0;
-    if constexpr(std::is_same_v<std::decay_t<R>, std::string>) {
-        while((j = s.find(delim, i)) != s.npos) r.emplace_back(s, i, j - i), i = j + len;
-        r.emplace_back(s, i, s.size() - i);
-    } else {  // string_view
-        while((j = s.find(delim, i)) != s.npos) r.emplace_back(s.substr(i, j - i)), i = j + len;
-        r.emplace_back(s.substr(i));
-    }
-
+    split(r, s, delim, delim_len);
     return r;
 }
 
@@ -71,12 +89,20 @@ template std::vector<std::string_view> split<std::string_view, char>(std::string
 template std::vector<std::string_view> split<std::string_view, const char*>(std::string_view, const char*);
 template std::vector<std::string_view> split<std::string_view, std::string_view>(std::string_view, std::string_view);
 
-template <typename R, split_ret_enabled_t<R>>
-std::vector<R> split_newlines(std::string_view s) {
-    std::vector<R> r;
+template void split<std::string, char>(std::vector<std::string>&, std::string_view, char, size_t);
+template void split<std::string, const char*>(std::vector<std::string>&, std::string_view, const char*, size_t);
+template void split<std::string, std::string_view>(std::vector<std::string>&, std::string_view, std::string_view,
+                                                   size_t);
 
-    size_t count = std::ranges::count(s, '\n');
-    r.reserve(count + 1);
+template void split<std::string_view, char>(std::vector<std::string_view>&, std::string_view, char, size_t);
+template void split<std::string_view, const char*>(std::vector<std::string_view>&, std::string_view, const char*,
+                                                   size_t);
+template void split<std::string_view, std::string_view>(std::vector<std::string_view>&, std::string_view,
+                                                        std::string_view, size_t);
+
+template <typename R, split_ret_enabled_t<R>>
+void split_newlines(std::vector<R>& r, std::string_view s) {
+    r.clear();
 
     size_t i = 0, j = 0;
     while((j = s.find('\n', i)) != s.npos) {
@@ -101,11 +127,24 @@ std::vector<R> split_newlines(std::string_view s) {
         r.emplace_back(s.substr(i, end - i));
     }
 
+    return;
+}
+
+template <typename R, split_ret_enabled_t<R>>
+std::vector<R> split_newlines(std::string_view s) {
+    std::vector<R> r;
+    size_t count = std::ranges::count(s, '\n');
+    r.reserve(count + 1);
+
+    split_newlines(r, s);
     return r;
 }
 
 template std::vector<std::string> split_newlines<std::string>(std::string_view);
 template std::vector<std::string_view> split_newlines<std::string_view>(std::string_view);
+
+template void split_newlines<std::string>(std::vector<std::string>&, std::string_view);
+template void split_newlines<std::string_view>(std::vector<std::string_view>&, std::string_view);
 
 template <typename S, split_join_enabled_t<S>>
 std::string join(const std::vector<std::string>& strings, S delim) {

@@ -32,6 +32,17 @@ std::vector<R> split(std::string_view s, S d);
 template <typename R = std::string_view, split_ret_enabled_t<R> = true>
 std::vector<R> split_newlines(std::string_view s);
 
+// same as above, except put the results into an existing std::vector<R> instead of creating a new one
+// NOTE: the given vector will unconditionally be .clear()ed
+// NOTE: delim_len is unnecessary to pass, only used as an internal optimization
+template <typename R = std::string_view, typename S = char, split_ret_enabled_t<R> = true,
+          split_join_enabled_t<S> = true>
+void split(std::vector<R> &ret, std::string_view s, S d, size_t delim_len = 0);
+
+// split on newlines, handling both \n and \r\n line endings
+template <typename R = std::string_view, split_ret_enabled_t<R> = true>
+void split_newlines(std::vector<R> &ret, std::string_view s);
+
 // join a vector of std::strings
 template <typename S = char, split_join_enabled_t<S> = true>
 std::string join(const std::vector<std::string>& strings, S delim = ' ');

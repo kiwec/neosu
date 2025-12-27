@@ -276,10 +276,10 @@ forceinline u8 parse_sampleset_value(std::string_view str) {
 }
 
 // hitSamples are colon-separated optional components (up to 5), and not all 5 have to be specified
-void parse_hitsamples(std::string_view hitSampleStr, HitSamples &samples) {
+void parse_hitsamples(std::vector<std::string_view> &parts, std::string_view hitSampleStr, HitSamples &samples) {
     if(hitSampleStr.empty()) return;
 
-    const std::vector<std::string_view> parts = SString::split(hitSampleStr, ':');
+    SString::split(parts, hitSampleStr, ':');
 
     // Parse available components, using defaults for missing ones
     if(parts.size() >= 1) {
@@ -368,6 +368,9 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjectsFromDa
 
     std::array<std::optional<Color>, 8> tempColors;
     std::vector<DatabaseBeatmap::TIMINGPOINT> tempTimingpoints;
+
+    std::vector<std::string_view> spbuf1, spbuf2, spbuf3, spbuf4, spbuf5,
+        hitsamplebuf;  // to avoid reallocations; "spbuf" == SString::split buffer
 
     // load the actual beatmap
     int hitobjectsWithoutSpinnerCounter = 0;
@@ -501,7 +504,9 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjectsFromDa
                 // this actually should be initialized since we use it unconditionally after trying to parse it
                 u8 type = 0;
 
-                auto csvs = SString::split(curLine, ',');
+                std::vector<std::string_view> &csvs = spbuf1;
+                SString::split(csvs, curLine, ',');
+
                 if(csvs.size() < 5) break;
                 upd_last_error(!Parsing::parse(csvs[0], &x) || !std::isfinite(x) || std::isnan(x));
                 upd_last_error(!Parsing::parse(csvs[1], &y) || !std::isfinite(y) || std::isnan(y));
@@ -544,10 +549,10 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjectsFromDa
 
                     if(csvs.size() > 5) {
                         // ignore errors, use defaults
-                        parse_hitsamples(csvs[5], h.samples);
+                        parse_hitsamples(hitsamplebuf, csvs[5], h.samples);
                     }
 
-                    c.hitcircles.push_back(h);
+                    c.hitcircles.push_back(std::move(h));
                 } else if(type & PpyHitObjectType::SLIDER) {
                     SLIDER slider{};
                     slider.colorCounter = colorCounter;
@@ -555,7 +560,9 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjectsFromDa
                     slider.time = time;
                     slider.hoverSamples.hitSounds = (hitSounds & HitSoundType::VALID_SLIDER_HITSOUNDS);
 
-                    auto curves = SString::split(csvs[5], '|');
+                    std::vector<std::string_view> &curves = spbuf2;
+                    SString::split(curves, csvs[5], '|');
+
                     slider.type = curves[0][0];
                     curves.erase(curves.begin());
                     for(const auto &curvePoints : curves) {
@@ -609,11 +616,17 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjectsFromDa
                     // e.g. https://osu.ppy.sh/beatmapsets/791900#osu/1676490
                     if(slider.points.size() == 1) slider.points.push_back(xy);
 
-                    std::vector<std::string_view> edgeSounds;
-                    if(csvs.size() > 8) edgeSounds = SString::split(csvs[8], '|');
+                    std::vector<std::string_view> &edgeSounds = spbuf3;
+                    if(csvs.size() > 8)
+                        SString::split(edgeSounds, csvs[8], '|');
+                    else
+                        edgeSounds.clear();
 
-                    std::vector<std::string_view> edgeSets;
-                    if(csvs.size() > 9) edgeSets = SString::split(csvs[9], '|');
+                    std::vector<std::string_view> &edgeSets = spbuf4;
+                    if(csvs.size() > 9)
+                        SString::split(edgeSets, csvs[9], '|');
+                    else
+                        edgeSets.clear();
 
                     for(i32 i = 0; i < edgeSounds.size(); i++) {
                         HitSamples samples;
@@ -622,12 +635,13 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjectsFromDa
                         samples.hitSounds &= HitSoundType::VALID_HITSOUNDS;
 
                         if(!edgeSets.empty() && i < edgeSets.size()) {
-                            const auto parts = SString::split(edgeSets[i], ':');
+                            std::vector<std::string_view> &parts = spbuf5;
+                            SString::split(parts, edgeSets[i], ':');
                             if(parts.size() >= 1) samples.normalSet = parse_sampleset_value(parts[0]);
                             if(parts.size() >= 2) samples.additionSet = parse_sampleset_value(parts[1]);
                         }
 
-                        slider.edgeSamples.push_back(samples);
+                        slider.edgeSamples.push_back(std::move(samples));
                     }
 
                     // No start sample specified, use default
@@ -637,7 +651,7 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjectsFromDa
                     if(slider.edgeSamples.size() == 1) slider.edgeSamples.push_back(slider.edgeSamples.front());
 
                     if(csvs.size() > 10) {
-                        parse_hitsamples(csvs[10], slider.hoverSamples);
+                        parse_hitsamples(hitsamplebuf, csvs[10], slider.hoverSamples);
                     }
 
                     slider.x = xy.x;
@@ -645,7 +659,7 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjectsFromDa
                     slider.repeat = std::clamp(slider.repeat, 0, sliderMaxRepeatRange);
                     slider.pixelLength = std::clamp(slider.pixelLength, -sliderSanityRange, sliderSanityRange);
                     slider.number = comboNumber++;
-                    c.sliders.push_back(slider);
+                    c.sliders.push_back(std::move(slider));
                 } else if(type & PpyHitObjectType::SPINNER) {
                     i32 endTime{0};
                     upd_last_error(!Parsing::parse(csvs[5], &endTime));
@@ -662,10 +676,10 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjectsFromDa
                               .samples = {.hitSounds = (u8)(hitSounds & HitSoundType::VALID_HITSOUNDS)}};
 
                     if(csvs.size() > 6) {
-                        parse_hitsamples(csvs[6], s.samples);
+                        parse_hitsamples(hitsamplebuf, csvs[6], s.samples);
                     }
 
-                    c.spinners.push_back(s);
+                    c.spinners.push_back(std::move(s));
                 }
 
                 break;
