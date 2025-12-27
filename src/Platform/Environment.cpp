@@ -315,6 +315,30 @@ const std::string &Environment::getLocalDataPath() const noexcept {
     return m_sProgDataPath;
 }
 
+const std::string &Environment::getCacheDir() const noexcept {
+    if(!m_sCacheDir.empty()) return m_sCacheDir;
+
+    if constexpr(Env::cfg(OS::LINUX) || Env::cfg(OS::MAC)) {
+        // $XDG_CACHE_HOME/neosu
+        const std::string xdg_cache_home = Environment::getEnvVariable("XDG_CACHE_HOME");
+        if(!xdg_cache_home.empty()) {
+            m_sCacheDir = xdg_cache_home + "/neosu";
+            return m_sCacheDir;
+        }
+
+        // $HOME/.cache/neosu
+        const std::string home = Environment::getEnvVariable("HOME");
+        if(!home.empty()) {
+            m_sCacheDir = home + "/.cache/neosu";
+            return m_sCacheDir;
+        }
+    }
+
+    // ./cache
+    m_sCacheDir = MCENGINE_DATA_DIR "cache";
+    return m_sCacheDir;
+}
+
 // modifies the input filename! (checks case insensitively past the last slash)
 bool Environment::fileExists(std::string &filename) noexcept {
     return File::existsCaseInsensitive(filename) == File::FILETYPE::FILE;
@@ -423,7 +447,8 @@ bool Environment::isAbsolutePath(std::string_view filePath) noexcept {
 
     if constexpr(Env::cfg(OS::WINDOWS)) {
         // On Wine, linux paths are also valid, hence the OR
-        is_absolute_path |= ((filePath.find(':') == 1) || (filePath.starts_with(R"(\\?\)") || filePath.starts_with(R"(\\.\)")));
+        is_absolute_path |=
+            ((filePath.find(':') == 1) || (filePath.starts_with(R"(\\?\)") || filePath.starts_with(R"(\\.\)")));
     }
 
     return is_absolute_path;

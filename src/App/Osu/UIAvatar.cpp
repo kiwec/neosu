@@ -4,14 +4,15 @@
 #include "AvatarManager.h"
 #include "Bancho.h"
 #include "Engine.h"
+#include "Environment.h"
 #include "Osu.h"
 #include "UIUserContextMenu.h"
 #include "MakeDelegateWrapper.h"
 
 UIAvatar::UIAvatar(i32 player_id, float xPos, float yPos, float xSize, float ySize)
     : CBaseUIButton(xPos, yPos, xSize, ySize, "avatar", "") {
-    this->player_id_for_endpoint = {player_id,
-                                    fmt::format(NEOSU_AVATARS_PATH "/{}/{}", BanchoState::endpoint, player_id)};
+    this->player_id_for_endpoint = {
+        player_id, fmt::format("{}/avatars/{}/{}", env->getCacheDir(), BanchoState::endpoint, player_id)};
 
     this->setClickCallback(SA::MakeDelegate<&UIAvatar::onAvatarClicked>(this));
 

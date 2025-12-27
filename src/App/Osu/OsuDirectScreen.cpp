@@ -178,9 +178,6 @@ void OnlineMapListing::draw() {
         g->translate(x, y);
 
         // TODO: mapset background image
-        // Requires to save them in a cache folder; while we're at it,
-        // we should have a global cache folder for avatars/server_icons/map_bgs so we can
-        // respect XDG cache directory on linux instead of using ./cache (or currently ./avatars)
 
         g->setColor(0xffffffff);
         g->translate(padding, padding + this->font->getHeight());

@@ -139,7 +139,7 @@ void BanchoState::handle_packet(Packet &packet) {
                 cv::mp_autologin.setValue(true);
                 BanchoState::print_new_channels = true;
 
-                std::string avatar_dir = fmt::format(NEOSU_AVATARS_PATH "/{}", BanchoState::endpoint);
+                std::string avatar_dir = fmt::format("{}/avatars/{}", env->getCacheDir(), BanchoState::endpoint);
                 Environment::createDirectory(avatar_dir);
 
                 std::string replays_dir = fmt::format(NEOSU_REPLAYS_PATH "/{}", BanchoState::endpoint);

@@ -134,6 +134,7 @@ class Environment {
     [[nodiscard]] const UString &getUsername() const noexcept;
     [[nodiscard]] const std::string &getUserDataPath() const noexcept;
     [[nodiscard]] const std::string &getLocalDataPath() const noexcept;
+    [[nodiscard]] const std::string &getCacheDir() const noexcept;
 
     // file IO
     [[nodiscard]] static bool fileExists(std::string &filename) noexcept;  // passthroughs to McFile
@@ -179,7 +180,7 @@ class Environment {
     // window
     void focus();
     void center();
-    bool minimize(); // if it returns false, minimize is not supported
+    bool minimize();  // if it returns false, minimize is not supported
     void maximize();
     void enableFullscreen();
     void disableFullscreen();
@@ -280,6 +281,7 @@ class Environment {
     mutable UString m_sUsername;
     mutable std::string m_sProgDataPath;
     mutable std::string m_sAppDataPath;
+    mutable std::string m_sCacheDir;
 
     // logging
     inline bool envDebug(bool enable) {

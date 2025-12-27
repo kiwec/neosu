@@ -152,8 +152,14 @@ Osu::Osu() : App(), MouseListener(), global_osu_(this) {
     BanchoState::user_agent.append(BanchoState::neosu_version);
     BanchoState::user_agent.append(ULITERAL("; " OS_NAME "; +https://" NEOSU_DOMAIN "/)"));
 
+    // create cache dir, with migration for old versions
+    Environment::createDirectory(env->getCacheDir());
+    if(Environment::directoryExists(NEOSU_DATA_DIR "avatars")) {
+        Environment::renameFile(NEOSU_DATA_DIR "avatars", env->getCacheDir() + "/avatars");
+    }
+    Environment::createDirectory(env->getCacheDir() + "/avatars");
+
     // create directories we will assume already exist later on
-    Environment::createDirectory(NEOSU_AVATARS_PATH);
     Environment::createDirectory(NEOSU_CFG_PATH);
     Environment::createDirectory(NEOSU_MAPS_PATH);
     Environment::createDirectory(NEOSU_REPLAYS_PATH);
