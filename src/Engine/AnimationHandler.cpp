@@ -91,7 +91,7 @@ forceinline bool updateAnimation(BaseAnim<FltType> &anim, FltType frameTime, boo
 
     const FltType diff = std::abs(*anim.fBase - anim.fTarget);
     const FltType absMax = std::max(std::abs(*anim.fBase), std::abs(anim.fTarget));
-    const FltType threshold = std::max(FltType{1e-4}, absMax * FltType{1e-6});
+    const FltType threshold = std::max(FltType{1e-4}, absMax * FltType{1e-7});
 
     if(diff <= threshold) {
         *anim.fBase = anim.fTarget;

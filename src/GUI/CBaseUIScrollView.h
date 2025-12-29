@@ -8,7 +8,7 @@ class CBaseUIContainer;
 class CBaseUIScrollView : public CBaseUIElement {
     NOCOPY_NOMOVE(CBaseUIScrollView)
    public:
-    CBaseUIScrollView(float xPos = 0, float yPos = 0, float xSize = 0, float ySize = 0, const UString &name = "");
+    CBaseUIScrollView(f32 xPos = 0, f32 yPos = 0, f32 xSize = 0, f32 ySize = 0, const UString &name = "");
     ~CBaseUIScrollView() override;
 
     void invalidate();
@@ -87,18 +87,18 @@ class CBaseUIScrollView : public CBaseUIElement {
         return this;
     }  // means: disable scrolling, not scrolling in 'blocks'
 
-    void setScrollMouseWheelMultiplier(float scrollMouseWheelMultiplier) {
+    void setScrollMouseWheelMultiplier(f32 scrollMouseWheelMultiplier) {
         this->fScrollMouseWheelMultiplier = scrollMouseWheelMultiplier;
     }
-    void setScrollbarSizeMultiplier(float scrollbarSizeMultiplier) {
+    void setScrollbarSizeMultiplier(f32 scrollbarSizeMultiplier) {
         this->fScrollbarSizeMultiplier = scrollbarSizeMultiplier;
     }
 
     // get
-    [[nodiscard]] inline float getRelPosY() const { return this->vScrollPos.y; }
-    [[nodiscard]] inline float getRelPosX() const { return this->vScrollPos.x; }
-    [[nodiscard]] inline vec2 getScrollSize() const { return this->vScrollSize; }
-    [[nodiscard]] inline vec2 getVelocity() const { return (this->vScrollPos - this->vVelocity); }
+    [[nodiscard]] inline f64 getRelPosY() const { return this->vScrollPos.y; }
+    [[nodiscard]] inline f64 getRelPosX() const { return this->vScrollPos.x; }
+    [[nodiscard]] inline dvec2 getScrollSize() const { return this->vScrollSize; }
+    [[nodiscard]] inline dvec2 getVelocity() const { return (this->vScrollPos - this->vVelocity); }
 
     [[nodiscard]] inline bool isAtBottom() const { return (this->vSize.y - this->vScrollPos.y) >= this->vScrollSize.y; }
     [[nodiscard]] inline bool isScrolling() const { return this->bScrolling; }
@@ -128,21 +128,21 @@ class CBaseUIScrollView : public CBaseUIElement {
     Color frameDarkColor{0};
     Color scrollbarColor{0xaaffffff};
 
-    vec2 vScrollPos{1.f, 1.f};
-    vec2 vScrollPosBackup{0.f};
+    dvec2 vScrollPos{1.f, 1.f};
+    dvec2 vScrollPosBackup{0.f};
     vec2 vMouseBackup{0.f};
 
-    float fScrollMouseWheelMultiplier{1.f};
-    float fScrollbarSizeMultiplier{1.f};
+    f32 fScrollMouseWheelMultiplier{1.f};
+    f32 fScrollbarSizeMultiplier{1.f};
     McRect verticalScrollbar;
     McRect horizontalScrollbar;
 
     // scroll logic
-    vec2 vScrollSize{1.f, 1.f};
+    dvec2 vScrollSize{1.f, 1.f};
     vec2 vMouseBackup2{0.f};
     vec2 vMouseBackup3{0.f};
-    vec2 vVelocity{0.f, 0.f};
-    vec2 vKineticAverage{0.f};
+    dvec2 vVelocity{0.f, 0.f};
+    dvec2 vKineticAverage{0.f};
 
     int iPrevScrollDeltaX = 0;
     int iScrollResistance;
