@@ -8,14 +8,12 @@
 #include "Logging.h"
 
 #include <algorithm>
+#include <variant>
 #include <vector>
 
 namespace AnimationHandler {
-namespace {  // static namespace
+namespace {
 
-// TODO: fix songbrowser to not rely on this hack to prevent never-settling animations
-static constexpr const f32 ANIM_EPSILON_ABS{5e-7f};
-static constexpr const f32 ANIM_EPSILON_REL{1e-4f};
 enum class ANIMATION_TYPE : uint8_t {
     MOVE_LINEAR,
     MOVE_SMOOTH_END,
@@ -28,39 +26,131 @@ enum class ANIMATION_TYPE : uint8_t {
     MOVE_QUART_OUT
 };
 
-struct Animation {
-    f32 *fBase;
-    f32 fTarget;
-    f32 fDuration;
-
-    f32 fStartValue;
-    f32 fDelay;
-    f32 fElapsedTime;
-    f32 fFactor;
-
+template <typename FltType>
+    requires(std::is_same_v<FltType, f32> || std::is_same_v<FltType, f64>)
+struct BaseAnim {
+    FltType *fBase;
+    FltType fTarget;
+    FltType fDuration;
+    FltType fStartValue;
+    FltType fDelay;
+    FltType fElapsedTime;
+    FltType fFactor;
     ANIMATION_TYPE animType;
     bool bStarted;
 };
 
+using Animation = std::variant<BaseAnim<f32>, BaseAnim<f64>>;
+
 std::vector<Animation> s_animations;
 
-void addAnimation(f32 *base, f32 target, f32 duration, f32 delay, bool overrideExisting, ANIMATION_TYPE type,
-                  f32 smoothFactor = 0.f) {
+template <typename FltType>
+void deleteExistingAnimationImpl(FltType *base) {
+    std::erase_if(s_animations, [base](const Animation &anim) -> bool {
+        if(auto *typed = std::get_if<BaseAnim<FltType>>(&anim)) return typed->fBase == base;
+        return false;
+    });
+}
+
+template <typename FltType>
+void addAnimation(FltType *base, FltType target, FltType duration, FltType delay, bool overrideExisting,
+                  ANIMATION_TYPE type, FltType smoothFactor = FltType{0}) {
     if(base == nullptr) return;
+    if(overrideExisting) deleteExistingAnimationImpl(base);
 
-    if(overrideExisting) deleteExistingAnimation(base);
-
-    s_animations.push_back({
+    s_animations.emplace_back(BaseAnim<FltType>{
         .fBase = base,
         .fTarget = target,
         .fDuration = duration,
         .fStartValue = *base,
         .fDelay = delay,
-        .fElapsedTime = 0.0f,
+        .fElapsedTime = FltType{0},
         .fFactor = smoothFactor,
         .animType = type,
-        .bStarted = (delay == 0.0f),
+        .bStarted = (delay == FltType{0}),
     });
+}
+
+template <typename FltType>
+forceinline bool updateAnimation(BaseAnim<FltType> &anim, FltType frameTime, bool doLogging, int idx) {
+    constexpr FltType zero{0};
+    constexpr FltType half{0.5};
+    constexpr FltType one{1};
+    constexpr FltType two{2};
+
+    if(!anim.bStarted) {
+        anim.fElapsedTime += frameTime;
+        if(anim.fElapsedTime < anim.fDelay) return false;
+
+        anim.fStartValue = *anim.fBase;
+        anim.bStarted = true;
+        anim.fElapsedTime = zero;
+    }
+
+    anim.fElapsedTime += frameTime;
+
+    const FltType diff = std::abs(*anim.fBase - anim.fTarget);
+    const FltType absMax = std::max(std::abs(*anim.fBase), std::abs(anim.fTarget));
+    const FltType threshold = std::max(FltType{1e-4}, absMax * FltType{1e-6});
+
+    if(diff <= threshold) {
+        *anim.fBase = anim.fTarget;
+        logIf(doLogging, "removing animation #{:d} (epsilon completion), elapsed = {:f}", idx, anim.fElapsedTime);
+        return true;
+    }
+
+    FltType percent = std::clamp(anim.fElapsedTime / anim.fDuration, zero, one);
+
+    logIf(doLogging, "animation #{:d}, percent = {:f}", idx, percent);
+
+    if(percent >= one) {
+        *anim.fBase = anim.fTarget;
+        logIf(doLogging, "removing animation #{:d}, elapsed = {:f}", idx, anim.fElapsedTime);
+        return true;
+    }
+
+    using enum ANIMATION_TYPE;
+    switch(anim.animType) {
+        case MOVE_SMOOTH_END:
+            percent = std::clamp(one - std::pow(one - percent, anim.fFactor), zero, one);
+            if(static_cast<int>(percent * (anim.fTarget - anim.fStartValue) + anim.fStartValue) ==
+               static_cast<int>(anim.fTarget))
+                percent = one;
+            break;
+        case MOVE_QUAD_IN:
+            percent = percent * percent;
+            break;
+        case MOVE_QUAD_OUT:
+            percent = -percent * (percent - two);
+            break;
+        case MOVE_QUAD_INOUT:
+            if((percent *= two) < one)
+                percent = half * percent * percent;
+            else {
+                percent -= one;
+                percent = -half * (percent * (percent - two) - one);
+            }
+            break;
+        case MOVE_CUBIC_IN:
+            percent = percent * percent * percent;
+            break;
+        case MOVE_CUBIC_OUT:
+            percent -= one;
+            percent = percent * percent * percent + one;
+            break;
+        case MOVE_QUART_IN:
+            percent = percent * percent * percent * percent;
+            break;
+        case MOVE_QUART_OUT:
+            percent -= one;
+            percent = one - percent * percent * percent * percent;
+            break;
+        default:
+            break;
+    }
+
+    *anim.fBase = anim.fStartValue * (one - percent) + anim.fTarget * percent;
+    return false;
 }
 
 }  // namespace
@@ -68,179 +158,127 @@ void addAnimation(f32 *base, f32 target, f32 duration, f32 delay, bool overrideE
 void clearAll() { s_animations.clear(); }
 
 void update() {
-    const auto frameTime = static_cast<f32>(engine->getFrameTime());
+    const f64 frameTime = engine->getFrameTime();
     const bool doLogging = cv::debug_anim.getBool();
 
-    int idx = 0;
-    for(auto it = s_animations.begin(); it != s_animations.end(); idx++) {
-        Animation &animation = *it;
+    for(uSz i = 0; i < s_animations.size();) {
+        const bool remove = std::visit(
+            [&](auto &anim) {
+                using FltType = std::remove_pointer_t<decltype(anim.fBase)>;
+                return updateAnimation(anim, static_cast<FltType>(frameTime), doLogging, static_cast<int>(i));
+            },
+            s_animations[i]);
 
-        // handle delay before animation starts
-        if(!animation.bStarted) {
-            animation.fElapsedTime += frameTime;
-            if(animation.fElapsedTime < animation.fDelay) {
-                ++it;
-                continue;
-            }
-            // delay has elapsed, capture the current value and start animating
-            animation.fStartValue = *animation.fBase;
-            animation.bStarted = true;
-            animation.fElapsedTime = 0.0f;
+        if(remove) {
+            s_animations[i] = s_animations.back();
+            s_animations.pop_back();
+        } else {
+            ++i;
         }
-
-        // update elapsed time for running animation
-        animation.fElapsedTime += frameTime;
-
-        // check if animation is close enough to target
-        // use relative epsilon for large values, absolute epsilon for small values
-        const f32 diff = std::abs(*animation.fBase - animation.fTarget);
-        const f32 absMax = std::max(std::abs(*animation.fBase), std::abs(animation.fTarget));
-        const f32 threshold = std::max(ANIM_EPSILON_REL, absMax * ANIM_EPSILON_ABS);
-
-        if(diff <= threshold) {
-            *animation.fBase = animation.fTarget;
-
-            logIf(doLogging, "removing animation #{:d} (epsilon completion), elapsed = {:f}", idx,
-                  animation.fElapsedTime);
-
-            it = s_animations.erase(it);
-            continue;
-        }
-
-        // calculate percentage
-        f32 percent = std::clamp<f32>(animation.fElapsedTime / animation.fDuration, 0.0f, 1.0f);
-
-        logIf(doLogging, "animation #{:d}, percent = {:f}", idx, percent);
-
-        // check if finished
-        if(percent >= 1.0f) {
-            *animation.fBase = animation.fTarget;
-
-            logIf(doLogging, "removing animation #{:d}, elapsed = {:f}", idx, animation.fElapsedTime);
-
-            it = s_animations.erase(it);
-            continue;
-        }
-
-        // modify percentage
-        using enum ANIMATION_TYPE;
-        switch(animation.animType) {
-            case MOVE_SMOOTH_END:
-                percent = std::clamp<f32>(1.0f - std::pow(1.0f - percent, animation.fFactor), 0.0f, 1.0f);
-                if((int)(percent * (animation.fTarget - animation.fStartValue) + animation.fStartValue) ==
-                   (int)animation.fTarget)
-                    percent = 1.0f;
-                break;
-
-            case MOVE_QUAD_IN:
-                percent = percent * percent;
-                break;
-
-            case MOVE_QUAD_OUT:
-                percent = -percent * (percent - 2.0f);
-                break;
-
-            case MOVE_QUAD_INOUT:
-                if((percent *= 2.0f) < 1.0f)
-                    percent = 0.5f * percent * percent;
-                else {
-                    percent -= 1.0f;
-                    percent = -0.5f * ((percent) * (percent - 2.0f) - 1.0f);
-                }
-                break;
-
-            case MOVE_CUBIC_IN:
-                percent = percent * percent * percent;
-                break;
-
-            case MOVE_CUBIC_OUT:
-                percent = percent - 1.0f;
-                percent = percent * percent * percent + 1.0f;
-                break;
-
-            case MOVE_QUART_IN:
-                percent = percent * percent * percent * percent;
-                break;
-
-            case MOVE_QUART_OUT:
-                percent = percent - 1.0f;
-                percent = 1.0f - percent * percent * percent * percent;
-                break;
-            default:
-                break;
-        }
-
-        // set new value
-        *animation.fBase = animation.fStartValue * (1.0f - percent) + animation.fTarget * percent;
-
-        ++it;
     }
 
     if(s_animations.size() > 512) {
         debugLog("WARNING: AnimationHandler has {:d} animations!", s_animations.size());
     }
-
-    // printf("AnimStackSize = %i\n", s_animations.size());
 }
 
-void moveLinear(f32 *base, f32 target, f32 duration, f32 delay, bool overrideExisting) {
+template <AnimFloat T>
+void moveLinear(T *base, T target, T duration, T delay, bool overrideExisting) {
     addAnimation(base, target, duration, delay, overrideExisting, ANIMATION_TYPE::MOVE_LINEAR);
 }
 
-void moveQuadIn(f32 *base, f32 target, f32 duration, f32 delay, bool overrideExisting) {
+template <AnimFloat T>
+void moveQuadIn(T *base, T target, T duration, T delay, bool overrideExisting) {
     addAnimation(base, target, duration, delay, overrideExisting, ANIMATION_TYPE::MOVE_QUAD_IN);
 }
 
-void moveQuadOut(f32 *base, f32 target, f32 duration, f32 delay, bool overrideExisting) {
+template <AnimFloat T>
+void moveQuadOut(T *base, T target, T duration, T delay, bool overrideExisting) {
     addAnimation(base, target, duration, delay, overrideExisting, ANIMATION_TYPE::MOVE_QUAD_OUT);
 }
 
-void moveQuadInOut(f32 *base, f32 target, f32 duration, f32 delay, bool overrideExisting) {
+template <AnimFloat T>
+void moveQuadInOut(T *base, T target, T duration, T delay, bool overrideExisting) {
     addAnimation(base, target, duration, delay, overrideExisting, ANIMATION_TYPE::MOVE_QUAD_INOUT);
 }
 
-void moveCubicIn(f32 *base, f32 target, f32 duration, f32 delay, bool overrideExisting) {
+template <AnimFloat T>
+void moveCubicIn(T *base, T target, T duration, T delay, bool overrideExisting) {
     addAnimation(base, target, duration, delay, overrideExisting, ANIMATION_TYPE::MOVE_CUBIC_IN);
 }
 
-void moveCubicOut(f32 *base, f32 target, f32 duration, f32 delay, bool overrideExisting) {
+template <AnimFloat T>
+void moveCubicOut(T *base, T target, T duration, T delay, bool overrideExisting) {
     addAnimation(base, target, duration, delay, overrideExisting, ANIMATION_TYPE::MOVE_CUBIC_OUT);
 }
 
-void moveQuartIn(f32 *base, f32 target, f32 duration, f32 delay, bool overrideExisting) {
+template <AnimFloat T>
+void moveQuartIn(T *base, T target, T duration, T delay, bool overrideExisting) {
     addAnimation(base, target, duration, delay, overrideExisting, ANIMATION_TYPE::MOVE_QUART_IN);
 }
 
-void moveQuartOut(f32 *base, f32 target, f32 duration, f32 delay, bool overrideExisting) {
+template <AnimFloat T>
+void moveQuartOut(T *base, T target, T duration, T delay, bool overrideExisting) {
     addAnimation(base, target, duration, delay, overrideExisting, ANIMATION_TYPE::MOVE_QUART_OUT);
 }
 
-void moveSmoothEnd(f32 *base, f32 target, f32 duration, f32 smoothFactor, f32 delay) {
+template <AnimFloat T>
+void moveSmoothEnd(T *base, T target, T duration, T smoothFactor, T delay) {
     addAnimation(base, target, duration, delay, true, ANIMATION_TYPE::MOVE_SMOOTH_END, smoothFactor);
 }
 
-void deleteExistingAnimation(f32 *base) {
-    std::erase_if(s_animations, [base](const auto &a) -> bool { return a.fBase == base; });
+template <AnimFloat T>
+void deleteExistingAnimation(T *base) {
+    deleteExistingAnimationImpl(base);
 }
 
-f32 getRemainingDuration(f32 *base) {
-    if(const auto &it = std::ranges::find_if(s_animations, [base](const auto &a) -> bool { return a.fBase == base; });
-       it != s_animations.end()) {
-        const auto &animation = *it;
-        if(!animation.bStarted) {
-            // still in delay phase
-            return (animation.fDelay - animation.fElapsedTime) + animation.fDuration;
-        }
-        // in animation phase
-        return std::max(0.0f, animation.fDuration - animation.fElapsedTime);
-    }
+template <AnimFloat T>
+T getRemainingDuration(T *base) {
+    auto it = std::ranges::find_if(s_animations, [base](const Animation &anim) -> bool {
+        if(auto *typed = std::get_if<BaseAnim<T>>(&anim)) return typed->fBase == base;
+        return false;
+    });
+    if(it == s_animations.end()) return T{0};
 
-    return 0.0f;
+    const auto &anim = std::get<BaseAnim<T>>(*it);
+    if(!anim.bStarted) return (anim.fDelay - anim.fElapsedTime) + anim.fDuration;
+    return std::max(T{0}, anim.fDuration - anim.fElapsedTime);
 }
 
-bool isAnimating(f32 *base) {
-    return std::ranges::contains(s_animations, base, [](const auto &a) -> f32 * { return a.fBase; });
+template <AnimFloat T>
+bool isAnimating(T *base) {
+    return std::ranges::any_of(s_animations, [base](const Animation &anim) -> bool {
+        if(auto *typed = std::get_if<BaseAnim<T>>(&anim)) return typed->fBase == base;
+        return false;
+    });
 }
+
+// explicit instantiations
+template void moveLinear(f32 *, f32, f32, f32, bool);
+template void moveQuadIn(f32 *, f32, f32, f32, bool);
+template void moveQuadOut(f32 *, f32, f32, f32, bool);
+template void moveQuadInOut(f32 *, f32, f32, f32, bool);
+template void moveCubicIn(f32 *, f32, f32, f32, bool);
+template void moveCubicOut(f32 *, f32, f32, f32, bool);
+template void moveQuartIn(f32 *, f32, f32, f32, bool);
+template void moveQuartOut(f32 *, f32, f32, f32, bool);
+template void moveSmoothEnd(f32 *, f32, f32, f32, f32);
+template void deleteExistingAnimation(f32 *);
+template f32 getRemainingDuration(f32 *);
+template bool isAnimating(f32 *);
+
+template void moveLinear(f64 *, f64, f64, f64, bool);
+template void moveQuadIn(f64 *, f64, f64, f64, bool);
+template void moveQuadOut(f64 *, f64, f64, f64, bool);
+template void moveQuadInOut(f64 *, f64, f64, f64, bool);
+template void moveCubicIn(f64 *, f64, f64, f64, bool);
+template void moveCubicOut(f64 *, f64, f64, f64, bool);
+template void moveQuartIn(f64 *, f64, f64, f64, bool);
+template void moveQuartOut(f64 *, f64, f64, f64, bool);
+template void moveSmoothEnd(f64 *, f64, f64, f64, f64);
+template void deleteExistingAnimation(f64 *);
+template f64 getRemainingDuration(f64 *);
+template bool isAnimating(f64 *);
 
 uSz getNumActiveAnimations() { return s_animations.size(); }
 

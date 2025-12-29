@@ -328,7 +328,7 @@ void CarouselButton::setMoveAwayState(CarouselButton::MOVE_AWAY_STATE moveAwaySt
             if(!this->isVisible() || !animate)
                 this->fHoverMoveAwayAnimation = 0.0f;
             else
-                anim::moveQuartOut(&this->fHoverMoveAwayAnimation, 0, 0.7f, this->isMouseInside() ? 0.0f : 0.05f,
+                anim::moveQuartOut(&this->fHoverMoveAwayAnimation, 0.f, 0.7f, this->isMouseInside() ? 0.0f : 0.05f,
                                    true);  // add a tiny bit of delay to avoid jerky movement if the cursor is briefly
                                            // between songbuttons while moving
         } break;

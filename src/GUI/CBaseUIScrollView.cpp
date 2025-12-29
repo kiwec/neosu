@@ -245,7 +245,7 @@ void CBaseUIScrollView::mouse_update(bool *propagate_clicks) {
             if(std::round(this->vScrollPos.y) > 1)  // rubber banding, top
             {
                 // debugLog("y rubber banding, top");
-                anim::moveQuadOut(&this->vVelocity.y, 1, 0.05f, 0.0f, true);
+                anim::moveQuadOut(&this->vVelocity.y, 1.0f, 0.05f, 0.0f, true);
                 anim::moveQuadOut(&this->vScrollPos.y, this->vVelocity.y, 0.2f, 0.0f, true);
             } else if(std::round(std::abs(this->vScrollPos.y) + this->vSize.y) > this->vScrollSize.y &&
                       std::round(this->vScrollPos.y) < 1)  // rubber banding, bottom
@@ -269,7 +269,7 @@ void CBaseUIScrollView::mouse_update(bool *propagate_clicks) {
             if(std::round(this->vScrollPos.x) > 1)  // rubber banding, left
             {
                 // debugLog("x rubber banding, left");
-                anim::moveQuadOut(&this->vVelocity.x, 1, 0.05f, 0.0f, true);
+                anim::moveQuadOut(&this->vVelocity.x, 1.0f, 0.05f, 0.0f, true);
                 anim::moveQuadOut(&this->vScrollPos.x, this->vVelocity.x, 0.2f, 0.0f, true);
             } else if(std::round(std::abs(this->vScrollPos.x) + this->vSize.x) > this->vScrollSize.x &&
                       std::round(this->vScrollPos.x) < 1)  // rubber banding, right

@@ -100,7 +100,7 @@ void CBaseUISlider::mouse_update(bool *propagate_clicks) {
                 anim::moveQuadOut(
                     &this->vBlockPos.y,
                     std::clamp<float>(mousepos.y - this->vGrabBackup.y, 0.0f, this->vSize.y - this->vBlockSize.y),
-                    0.10f, 0, true);
+                    0.10f, 0.0f, true);
             } else {
                 this->vBlockPos.y =
                     std::clamp<float>(mousepos.y - this->vGrabBackup.y, 0.0f, this->vSize.y - this->vBlockSize.y);
@@ -113,7 +113,7 @@ void CBaseUISlider::mouse_update(bool *propagate_clicks) {
                 anim::moveQuadOut(
                     &this->vBlockPos.x,
                     std::clamp<float>(mousepos.x - this->vGrabBackup.x, 0.0f, this->vSize.x - this->vBlockSize.x),
-                    0.10f, 0, true);
+                    0.10f, 0.0f, true);
             } else {
                 this->vBlockPos.x =
                     std::clamp<float>(mousepos.x - this->vGrabBackup.x, 0.0f, this->vSize.x - this->vBlockSize.x);
@@ -228,13 +228,13 @@ CBaseUISlider *CBaseUISlider::setValue(float value, bool animate, bool call_call
 
     if(!this->bHorizontal) {
         if(animate)
-            anim::moveQuadOut(&this->vBlockPos.y, (this->vSize.y - this->vBlockSize.y) * (1.0f - percent), 0.2f, 0,
+            anim::moveQuadOut(&this->vBlockPos.y, (this->vSize.y - this->vBlockSize.y) * (1.0f - percent), 0.2f, 0.0f,
                               true);
         else
             this->vBlockPos.y = (this->vSize.y - this->vBlockSize.y) * (1.0f - percent);
     } else {
         if(animate)
-            anim::moveQuadOut(&this->vBlockPos.x, (this->vSize.x - this->vBlockSize.x) * percent, 0.2f, 0, true);
+            anim::moveQuadOut(&this->vBlockPos.x, (this->vSize.x - this->vBlockSize.x) * percent, 0.2f, 0.0f, true);
         else
             this->vBlockPos.x = (this->vSize.x - this->vBlockSize.x) * percent;
     }

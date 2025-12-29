@@ -590,7 +590,7 @@ void ConsoleBox::show() {
 void ConsoleBox::toggle(KeyboardEvent &e) {
     if(this->textbox->isVisible() && !this->bConsoleAnimateIn && !this->bSuggestionAnimateIn) {
         this->bConsoleAnimateOut = true;
-        anim::moveSmoothEnd(&this->fConsoleAnimation, 0, 2.0f * 0.8f);
+        anim::moveSmoothEnd(&this->fConsoleAnimation, 0.0f, 2.0f * 0.8f);
 
         if(this->suggestion->container->getElements().size() > 0) this->bSuggestionAnimateOut = true;
 
