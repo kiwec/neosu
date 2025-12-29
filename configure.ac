@@ -525,8 +525,8 @@ AS_IF([test "$host_os" = "linux-gnu"],[
     AC_PATH_PROG([CXX_REAL], [$CXX])
 ])
 
-_cc_real_hash="$(md5sum "${CC_REAL}" | cut -d ' ' -f 1)"
-_cxx_real_hash="$(md5sum "${CXX_REAL}" | cut -d ' ' -f 1)"
+_cc_real_hash="$($CC --version | md5sum | cut -d ' ' -f 1),$host"
+_cxx_real_hash="$($CXX --version | md5sum | cut -d ' ' -f 1),$host"
 
 install -Dm755 /dev/stdin $PWD/build/cc <<EOF
 #!/bin/bash
@@ -1016,7 +1016,7 @@ SIMDUTF_MIN_VERSION=7.0.0
 SIMDUTF_BUILD_VERSION=7.6.0 # fast and correct utf conversion utilities
 
 # always build these from source if we want to use them
-AC_SUBST([SOLOUD_VERSION], [1.2.4]) # my fork
+AC_SUBST([SOLOUD_VERSION], [b47a96db3d2946c3525aac176cc8d53ae2cb09b6]) # neoloud fork
 #AC_SUBST([SOLOUD_VERSION], [cb174f53804d8ba3fc81a2dfa49879103fbbcb2e])
 AC_SUBST([SOLOUD_PREFIX],[$DEPS_PREFIX])
 AC_SUBST([SOUNDTOUCH_VERSION], [2.4.0])
@@ -1025,7 +1025,10 @@ AC_SUBST([MIMALLOC_VERSION], [4cffd418d73d8abd75c5826c33aaa61a6142f8df])
 AC_SUBST([MIMALLOC_PREFIX],[$DEPS_PREFIX])
 AC_SUBST([GLM_VERSION], [1.0.2])
 
-AC_SUBST([FFMPEG_VERSION], [7.1]) # pre-built, used for soloud
+# pre-built, used for soloud
+# NOTE: the links are not stable across architectures, so this is more of a symbolic version than anything
+# (needs manual url changes in Makefile.am)
+AC_SUBST([FFMPEG_VERSION], [8.0])
 
 AC_SUBST([DISCORDSDK_VERSION], [2.5.6]) # pre-built
 

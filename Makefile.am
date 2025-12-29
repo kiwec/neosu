@@ -143,15 +143,17 @@ $(DEPS_CACHE)/SoundTouch-$(SOUNDTOUCH_VERSION).source:
 #  the build will work without these (they are dlopen/LoadLibrary'd), but it's a nice-to-have
 $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION)/ffmpeg-linuxx86_64.tar.xz:
 	$(MKDIR_P) $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION) && \
-	$(WGET) -qO $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION)/ffmpeg-linuxx86_64.tar.xz "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2025-05-31-14-01/ffmpeg-n$(FFMPEG_VERSION).1-20-g9373b442a6-linux64-gpl-shared-$(FFMPEG_VERSION).tar.xz"
+	$(WGET) -qO $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION)/ffmpeg-linuxx86_64.tar.xz "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2025-11-30-12-53/ffmpeg-n$(FFMPEG_VERSION).1-17-g27a297f186-linux64-lgpl-shared-$(FFMPEG_VERSION).tar.xz"
 
+# NOTE: the yt-dlp repo is no longer building releases, so this is the closest thing
+#   (it's hard to find windows 32-bit builds of new ffmpeg releases)
 $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION)/ffmpeg-windowsi686.zip:
 	$(MKDIR_P) $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION) && \
-	$(WGET) -qO $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION)/ffmpeg-windowsi686.zip "https://github.com/yt-dlp/FFmpeg-Builds/releases/download/autobuild-2025-05-31-15-22/ffmpeg-n$(FFMPEG_VERSION).1-21-gce4392a771-win32-gpl-shared-$(FFMPEG_VERSION).zip"
+	$(WGET) -qO $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION)/ffmpeg-windowsi686.zip "https://github.com/yt-dlp/FFmpeg-Builds/releases/download/autobuild-2025-11-30-14-12/ffmpeg-N-121938-g2456a39581-win32-gpl-shared.zip"
 
 $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION)/ffmpeg-windowsx86_64.zip:
 	$(MKDIR_P) $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION) && \
-	$(WGET) -qO $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION)/ffmpeg-windowsx86_64.zip "https://github.com/yt-dlp/FFmpeg-Builds/releases/download/autobuild-2025-05-31-15-22/ffmpeg-n$(FFMPEG_VERSION).1-21-g2600505ca2-win64-gpl-shared-$(FFMPEG_VERSION).zip"
+	$(WGET) -qO $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION)/ffmpeg-windowsx86_64.zip "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2025-11-30-12-53/ffmpeg-n$(FFMPEG_VERSION).1-17-g27a297f186-win64-lgpl-shared-$(FFMPEG_VERSION).zip"
 
 $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION).source: $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION)/ffmpeg-linuxx86_64.tar.xz $\
 											$(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION)/ffmpeg-windowsi686.zip $\
