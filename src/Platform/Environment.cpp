@@ -939,12 +939,17 @@ int Environment::getMonitor() const {
 }
 
 vec2 Environment::getNativeScreenSize() const {
-    SDL_DisplayID di = SDL_GetDisplayForWindow(m_window);
-    const SDL_DisplayMode *dm = SDL_GetDesktopDisplayMode(di);
+    if(const SDL_DisplayID di = SDL_GetDisplayForWindow(m_window)) {
+        SDL_Rect bounds{};
+        if(SDL_GetDisplayUsableBounds(di, &bounds)) {
+            return {static_cast<float>(bounds.w), static_cast<float>(bounds.h)};
+        }
 
-    if(!dm) return getWindowSize();
-
-    return {static_cast<float>(dm->w), static_cast<float>(dm->h)};
+        if(const SDL_DisplayMode *dm = SDL_GetDesktopDisplayMode(di)) {
+            return {static_cast<float>(dm->w), static_cast<float>(dm->h)};
+        }
+    }
+    return getWindowSize();
 }
 
 McRect Environment::getDesktopRect() const { return {{}, getNativeScreenSize()}; }
