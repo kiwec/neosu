@@ -802,9 +802,11 @@ void Environment::maximize() {
     }
 }
 
-// TODO: implement exclusive fullscreen for dx11 backend
 void Environment::enableFullscreen() {
     // NOTE: "fake" fullscreen since we don't want a videomode change
+
+    // some weird hack that apparently makes this behave better on macos?
+    SDL_SetWindowFullscreenMode(m_window, nullptr);
     if(!SDL_SetWindowFullscreen(m_window, true)) {
         debugLog("Failed to enable fullscreen: {:s}", SDL_GetError());
     }

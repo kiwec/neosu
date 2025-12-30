@@ -89,7 +89,7 @@ const char *get_current_thread_name() {
             return thread_name_buffer;
         }
     }
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__)
     if(pthread_getname_np(pthread_self(), thread_name_buffer, sizeof(thread_name_buffer)) == 0) {
         return thread_name_buffer[0] ? thread_name_buffer : PACKAGE_NAME;
     }
