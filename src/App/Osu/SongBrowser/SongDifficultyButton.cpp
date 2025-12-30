@@ -25,8 +25,7 @@
 SongDifficultyButton::SongDifficultyButton(UIContextMenu* contextMenu, float xPos, float yPos, float xSize, float ySize,
                                            UString name, BeatmapDifficulty* diff, SongButton* parentSongButton,
                                            int numSiblings)
-    : SongButton(contextMenu, xPos, yPos, xSize, ySize, std::move(name)),
-      siblings(reinterpret_cast<const std::vector<SongDifficultyButton*>&>(parentSongButton->getChildren())) {
+    : SongButton(contextMenu, xPos, yPos, xSize, ySize, std::move(name)) {
     // must exist and be a difficulty
     assert(diff && diff->getDifficulties().empty());
 
@@ -250,7 +249,7 @@ bool SongDifficultyButton::isIndependentDiffButton() const {
 
     // check if this is the only visible sibling
     int visibleSiblings = 0;
-    for(const auto* sibling : this->siblings) {
+    for(const auto* sibling : this->getSiblingsAndSelf()) {
         if(sibling->isSearchMatch()) {
             visibleSiblings++;
             if(visibleSiblings > 1) return false;  // early exit

@@ -1181,10 +1181,7 @@ void MainMenu::selectRandomBeatmap() {
             }
 
             auto &beatmap_diffs = set->getDifficulties();
-            if(beatmap_diffs.empty()) {
-                debugLog("Mapset '{:s}' has no difficulties!", set->getFolder());
-                continue;
-            }
+            assert(!beatmap_diffs.empty());
 
             // We're picking a random diff and not the first one, because diffs of the same set
             // can have their own separate sound file.

@@ -281,10 +281,10 @@ void normalizeSlashes(std::string &str, unsigned char oldSlash = '/', unsigned c
 }
 
 UString adjustPath(std::string_view filepath) {
-    static constexpr std::string_view extPrefix = R"(\\?\)";
-    static constexpr std::string_view devicePrefix = R"(\\.\)";
-    static constexpr std::string_view extUncPrefix = R"(\\?\UNC\)";
-    static constexpr std::string_view uncStart = R"(\\)";
+    static constexpr const std::string_view extPrefix{R"(\\?\)"};
+    static constexpr const std::string_view devicePrefix{R"(\\.\)"};
+    static constexpr const std::string_view extUncPrefix{R"(\\?\UNC\)"};
+    static constexpr const std::string_view uncStart{R"(\\)"};
 
     if(filepath.empty()) return UString{};
 
@@ -299,8 +299,15 @@ UString adjustPath(std::string_view filepath) {
 
             LPWSTR dosPath = pwine_get_dos_file_name(path.c_str());  // use original with forward slashes
             if(dosPath) {
-                UString result{extPrefix};
-                result += UString{dosPath, static_cast<int>(wcslen(dosPath))};
+                UString result{dosPath, static_cast<int>(std::wcslen(dosPath))};
+                // not sure if this is necessary or works as intended...
+                // but don't return an extended path unless it's too long
+                // some wine APIs don't work 100% properly with it (like SDL_OpenURL with a file:/// URI)
+
+                if(result.length() > MAX_PATH && !result.startsWith(ULITERAL("\\"))) {
+                    result = UString{extPrefix} + result;
+                }
+
                 HeapFree(GetProcessHeap(), 0, dosPath);
                 return result;
             }
@@ -312,7 +319,7 @@ UString adjustPath(std::string_view filepath) {
     }
 
     // Detect existing prefix type and determine output prefix
-    std::string_view outputPrefix = extPrefix;
+    std::string_view outputPrefix{""};
     size_t stripLen = 0;
     bool resolveAbsolute = false;
 
@@ -332,6 +339,12 @@ UString adjustPath(std::string_view filepath) {
     } else {
         // Regular DOS path needs absolute resolution
         resolveAbsolute = true;
+
+        // Don't prepend anything if we're running under Wine, see the reasoning above (broken interactions with some APIs)
+        // Should work fine for not-long-paths anyways.
+        if(!(filepath.length() < MAX_PATH && (RuntimePlatform::current() & RuntimePlatform::WIN_WINE))) {
+            outputPrefix = extPrefix;
+        }
     }
 
     std::string path{filepath.substr(stripLen)};

@@ -28,7 +28,7 @@ class SongDifficultyButton final : public SongButton {
 
     [[nodiscard]] inline SongButton *getParentSongButton() const { return this->parentSongButton; }
     [[nodiscard]] inline const std::vector<SongDifficultyButton *> &getSiblingsAndSelf() const {
-        return this->siblings;
+        return reinterpret_cast<const std::vector<SongDifficultyButton *> &>(this->parentSongButton->getChildren());
     }
 
     [[nodiscard]] bool isIndependentDiffButton() const;
@@ -37,7 +37,6 @@ class SongDifficultyButton final : public SongButton {
     void onSelected(bool wasSelected, SelOpts opts) override;
 
     SongButton *parentSongButton;
-    const std::vector<SongDifficultyButton *> &siblings;  // ref to parent's children
 
     float fDiffScale;
     float fOffsetPercentAnim;

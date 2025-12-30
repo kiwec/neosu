@@ -72,6 +72,8 @@ DatabaseBeatmap::DatabaseBeatmap(std::unique_ptr<DiffContainer> &&difficulties, 
     auto &diffs = *this->difficulties;
 
     // set representative values for this container (i.e. use values from first difficulty)
+    this->sFolder = diffs[0]->sFolder;
+
     this->sTitle = diffs[0]->sTitle;
     this->sTitleUnicode = diffs[0]->sTitleUnicode;
     this->bEmptyTitleUnicode = diffs[0]->bEmptyTitleUnicode;

@@ -725,16 +725,23 @@ void Environment::openFileBrowser(std::string_view initialpath) const noexcept {
     std::string pathToOpen{initialpath};
     if(pathToOpen.empty())
         pathToOpen = getExeFolder();
-    else
+    else {
         // XXX: On windows you can also open a folder while having a file selected
         //      Would be useful for screenshots, for example
         pathToOpen = getFolderFromFilePath(pathToOpen);
+    }
 
-    namespace fs = std::filesystem;
-    std::string encodedPath =
-        Env::cfg(OS::WINDOWS) ? fmt::format("file:///{}", pathToOpen) : filesystemPathToURI(fs::path{pathToOpen});
+    if(pathToOpen.empty() || pathToOpen == "/") {
+        debugLog("Couldn't parse a path to open from {}!", initialpath);
+        return;
+    }
 
-    if(!SDL_OpenURL(encodedPath.c_str())) debugLog("Failed to open file URI {:s}: {:s}", encodedPath, SDL_GetError());
+    const std::string encodedPath = Env::cfg(OS::WINDOWS) ? fmt::format("file:///{}", manualDirectoryFixup(pathToOpen))
+                                                          : filesystemPathToURI(pathToOpen);
+
+    if(!SDL_OpenURL(encodedPath.c_str())) {
+        debugLog("Failed to open file URI {:s}: {:s}", encodedPath, SDL_GetError());
+    }
 }
 
 void Environment::focus() {

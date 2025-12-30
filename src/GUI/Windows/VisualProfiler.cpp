@@ -12,6 +12,7 @@
 #include "Mouse.h"
 #include "Profiler.h"
 #include "ResourceManager.h"
+#include "RuntimePlatform.h"
 #include "SoundEngine.h"
 #include "Font.h"
 #include "VertexArrayObject.h"
@@ -42,8 +43,8 @@ VisualProfiler::VisualProfiler() : CBaseUIElement(0, 0, 0, 0, "") {
 
     this->font = resourceManager->getFont("FONT_DEFAULT");
     this->fontConsole = resourceManager->getFont("FONT_CONSOLE");
-    this->lineVao = resourceManager->createVertexArrayObject(DrawPrimitive::PRIMITIVE_LINES,
-                                                             DrawUsageType::USAGE_DYNAMIC, true);
+    this->lineVao =
+        resourceManager->createVertexArrayObject(DrawPrimitive::PRIMITIVE_LINES, DrawUsageType::USAGE_DYNAMIC, true);
 
     this->bScheduledForceRebuildLineVao = false;
     this->bRequiresAltShiftKeysToFreeze = false;
@@ -99,6 +100,8 @@ void VisualProfiler::draw() {
                     const double time = engine->getTime();
                     const vec2 envMousePos = env->getMousePos();
 
+                    addTextLine(fmt::format("Platform: {:s}"_cf, RuntimePlatform::current_string()), textFont,
+                                this->textLines);
                     addTextLine(fmt::format("ConVars: {:d}"_cf, cvars().getNumConVars()), textFont, this->textLines);
                     // addTextLine(fmt::format("ConVar KB: {}"_cf, cvars().getTotalMemUsageBytes() / 1024ULL), textFont, this->textLines);
                     addTextLine(fmt::format("Monitor: [{:d}] of {:d}"_cf, env->getMonitor(), env->getMonitors().size()),
