@@ -349,33 +349,28 @@ void RankingScreen::mouse_update(bool *propagate_clicks) {
         osu->getTooltipOverlay()->begin();
         {
             auto &sc = this->storedScore;
-            osu->getTooltipOverlay()->addLine(UString::format("%.2fpp", sc.get_or_calc_pp()));
+            osu->getTooltipOverlay()->addLine(fmt::format("{:.2f}pp", sc.get_or_calc_pp()));
             if(sc.ppv2_total_stars > 0.0) {
-                osu->getTooltipOverlay()->addLine(UString::format(
-                    "Stars: %.2f (%.2f aim, %.2f speed)", sc.ppv2_total_stars, sc.ppv2_aim_stars, sc.ppv2_speed_stars));
+                osu->getTooltipOverlay()->addLine(fmt::format("Stars: {:.2f} ({:.2f} aim, {:.2f} speed)",
+                                                              sc.ppv2_total_stars, sc.ppv2_aim_stars,
+                                                              sc.ppv2_speed_stars));
             }
-            osu->getTooltipOverlay()->addLine(UString::format("Speed: %.3gx", sc.mods.speed));
-            f32 AR = sc.mods.ar_override;
-            if(AR == -1.f) {
-                AR = GameRules::arWithSpeed(sc.map->getAR(), sc.mods.speed);
-            }
-            f32 OD = sc.mods.od_override;
-            if(OD == -1.f) {
-                OD = GameRules::odWithSpeed(sc.map->getOD(), sc.mods.speed);
-            }
-            f32 HP = sc.mods.hp_override;
-            if(HP == -1.f) HP = sc.map->getHP();
-            f32 CS = sc.mods.cs_override;
-            if(CS == -1.f) CS = sc.map->getCS();
-            osu->getTooltipOverlay()->addLine(UString::format("CS:%.2f AR:%.2f OD:%.2f HP:%.2f", CS, AR, OD, HP));
+            osu->getTooltipOverlay()->addLine(fmt::format("Speed: {:.3g}x", sc.mods.speed));
+
+            const f32 AR = GameRules::arWithSpeed(sc.mods.get_naive_ar(sc.map), sc.mods.speed);
+            const f32 OD = GameRules::odWithSpeed(sc.mods.get_naive_od(sc.map), sc.mods.speed);
+            const f32 CS = sc.mods.get_naive_cs(sc.map);
+            const f32 HP = sc.mods.get_naive_hp(sc.map);
+
+            osu->getTooltipOverlay()->addLine(fmt::format("CS:{:.2f} AR:{:.2f} OD:{:.2f} HP:{:.2f}", CS, AR, OD, HP));
 
             if(this->sMods.length() > 0) osu->getTooltipOverlay()->addLine(this->sMods);
 
             if(this->fUnstableRate > 0.f) {
                 osu->getTooltipOverlay()->addLine("Accuracy:");
                 osu->getTooltipOverlay()->addLine(
-                    UString::format("Error: %.2fms - %.2fms avg", this->fHitErrorAvgMin, this->fHitErrorAvgMax));
-                osu->getTooltipOverlay()->addLine(UString::format("Unstable Rate: %.2f", this->fUnstableRate));
+                    fmt::format("Error: {:.2f}ms - {:.2f}ms avg", this->fHitErrorAvgMin, this->fHitErrorAvgMax));
+                osu->getTooltipOverlay()->addLine(fmt::format("Unstable Rate: {:.2f}", this->fUnstableRate));
             }
         }
         osu->getTooltipOverlay()->end();
