@@ -25,7 +25,7 @@ jobs:
         working-directory: .
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6.0.1
 
       - name: Set up build directory
         run: |
@@ -39,9 +39,9 @@ jobs:
         with:
           path: |
             build-aux/cache
-          key: tarballs-linux-${{ matrix.arch }}-${{ github.sha }}
+          key: tarballs
           restore-keys: |
-            tarballs-linux-${{ matrix.arch }}-
+            tarballs
 
       - name: Cache built dependencies
         uses: actions/cache@v5.0.1
@@ -79,7 +79,7 @@ jobs:
           rm -rf dist/*
           mv bin.zip dist/
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6.0.0
         with:
           name: neosu-linux-${{ matrix.arch }}
           path: build-out/dist
