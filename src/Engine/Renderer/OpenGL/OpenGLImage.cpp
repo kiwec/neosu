@@ -44,6 +44,8 @@ void OpenGLImage::init() {
         return;
     }
 
+    logIfCV(debug_image, "loading {}", this->sFilePath.empty() ? this->sName : this->sFilePath);
+
     // rawImage cannot be empty here, if it is, we're screwed
     assert(this->totalBytes() != 0);
 
@@ -193,7 +195,7 @@ void OpenGLImage::setWrapMode(TextureWrapMode wrapMode) {
     {
         switch(wrapMode) {
             case TextureWrapMode::WRAP_MODE_CLAMP:  // NOTE: there is also GL_CLAMP, which works a bit differently
-                                                        // concerning the border color
+                                                    // concerning the border color
                 glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
                 glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
                 break;

@@ -323,7 +323,10 @@ void CarouselButton::setMoveAwayState(CarouselButton::MOVE_AWAY_STATE moveAwaySt
     this->moveAwayState = moveAwayState;
 
     // if we are not visible, destroy possibly existing animation
-    if(!this->isVisible() || !animate) anim::deleteExistingAnimation(&this->fHoverMoveAwayAnimation);
+    if(this->bWasAnimationEverStarted && (!this->isVisible() || !animate)) {
+        anim::deleteExistingAnimation(&this->fHoverMoveAwayAnimation);
+        this->bWasAnimationEverStarted = false;
+    }
 
     // only submit a new animation if we are visible, otherwise we would overwhelm the animationhandler with a shitload
     // of requests every time for every button (if we are not visible then we can just directly set the new value)
@@ -331,24 +334,30 @@ void CarouselButton::setMoveAwayState(CarouselButton::MOVE_AWAY_STATE moveAwaySt
         case MOVE_AWAY_STATE::MOVE_CENTER: {
             if(!this->isVisible() || !animate)
                 this->fHoverMoveAwayAnimation = 0.0f;
-            else
+            else {
+                this->bWasAnimationEverStarted = true;
                 anim::moveQuartOut(&this->fHoverMoveAwayAnimation, 0.f, 0.7f, this->isMouseInside() ? 0.0f : 0.05f,
                                    true);  // add a tiny bit of delay to avoid jerky movement if the cursor is briefly
                                            // between songbuttons while moving
+            }
         } break;
 
         case MOVE_AWAY_STATE::MOVE_UP: {
             if(!this->isVisible() || !animate)
                 this->fHoverMoveAwayAnimation = -1.0f;
-            else
+            else {
+                this->bWasAnimationEverStarted = true;
                 anim::moveQuartOut(&this->fHoverMoveAwayAnimation, -1.0f, 0.7f, true);
+            }
         } break;
 
         case MOVE_AWAY_STATE::MOVE_DOWN: {
             if(!this->isVisible() || !animate)
                 this->fHoverMoveAwayAnimation = 1.0f;
-            else
+            else {
+                this->bWasAnimationEverStarted = true;
                 anim::moveQuartOut(&this->fHoverMoveAwayAnimation, 1.0f, 0.7f, true);
+            }
         } break;
     }
 }

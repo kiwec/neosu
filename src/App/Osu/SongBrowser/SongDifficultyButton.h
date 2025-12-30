@@ -12,7 +12,7 @@ class SongDifficultyButton final : public SongButton {
     // only allow construction through parent song button (as child)
     friend class SongButton;
     SongDifficultyButton(UIContextMenu *contextMenu, float xPos, float yPos, float xSize, float ySize, UString name,
-                         BeatmapDifficulty *diff, SongButton *parentSongButton, bool isSingleDiffOnConstruction);
+                         BeatmapDifficulty *diff, SongButton *parentSongButton, int numSiblings);
 
    public:
     SongDifficultyButton() = delete;
@@ -27,6 +27,9 @@ class SongDifficultyButton final : public SongButton {
     [[nodiscard]] Color getInactiveBackgroundColor() const override;
 
     [[nodiscard]] inline SongButton *getParentSongButton() const { return this->parentSongButton; }
+    [[nodiscard]] inline const std::vector<SongDifficultyButton *> &getSiblingsAndSelf() const {
+        return this->siblings;
+    }
 
     [[nodiscard]] bool isIndependentDiffButton() const;
 
@@ -34,11 +37,12 @@ class SongDifficultyButton final : public SongButton {
     void onSelected(bool wasSelected, SelOpts opts) override;
 
     SongButton *parentSongButton;
+    const std::vector<SongDifficultyButton *> &siblings;  // ref to parent's children
 
     float fDiffScale;
     float fOffsetPercentAnim;
     float fVisibleFor{0.f};
 
-    bool bUpdateGradeScheduled;
     bool bPrevOffsetPercentSelectionState;
+    bool bUpdateGradeScheduled;
 };

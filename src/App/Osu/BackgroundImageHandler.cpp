@@ -185,6 +185,7 @@ void BGImageHandlerImpl::draw(const DatabaseBeatmap *beatmap, f32 alpha) {
 
 void BGImageHandlerImpl::update(bool allow_eviction) {
     if(this->disabled) return;
+    const bool doLogging = cv::debug_bg_loader.getBool();
 
     const bool consider_evictions = !this->frozen && allow_eviction &&
                                     engine->throttledShouldRun(this->eviction_delay_frames) && !env->winMinimized();
@@ -209,6 +210,7 @@ void BGImageHandlerImpl::update(bool allow_eviction) {
                 entry.bg_image_path_ldr->interruptLoad();
                 resourceManager->destroyResource(entry.bg_image_path_ldr, ResourceDestroyFlags::RDF_FORCE_ASYNC);
             }
+            logIf(doLogging, "evicting entry: {}", entry.bg_image_filename);
             this->releaseImageRef(entry);
 
             evicted++;
@@ -224,10 +226,12 @@ void BGImageHandlerImpl::update(bool allow_eviction) {
                     if(entry.bg_image_filename.length() < 2) {
                         // if the backgroundImageFileName is not loaded, then we have to create a full
                         // DatabaseBeatmapBackgroundImagePathLoader
+                        logIf(doLogging, "loading path for entry (scheduled): {}", entry.bg_image_filename);
                         entry.image = nullptr;
                         this->handleLoadPathForEntry(osu_path, entry);
                     } else {
                         // if backgroundImageFileName is already loaded/valid, then we can directly load the image
+                        logIf(doLogging, "loading image for entry (scheduled): {}", entry.bg_image_filename);
                         entry.bg_image_path_ldr = nullptr;
                         this->handleLoadImageForEntry(entry);
                     }
@@ -245,8 +249,9 @@ void BGImageHandlerImpl::update(bool allow_eviction) {
                         entry.ready_but_image_not_found = true;
                     }
 
-                    resourceManager->destroyResource(entry.bg_image_path_ldr,
-                                                     ResourceDestroyFlags::RDF_FORCE_ASYNC);
+                    logIf(doLogging, "loading image for entry (bg path loader finished): {}", entry.bg_image_filename);
+
+                    resourceManager->destroyResource(entry.bg_image_path_ldr, ResourceDestroyFlags::RDF_FORCE_ASYNC);
                     entry.bg_image_path_ldr = nullptr;
                 }
             }
@@ -261,7 +266,7 @@ void BGImageHandlerImpl::update(bool allow_eviction) {
     this->frozen = false;
 
     // DEBUG:
-    // debugLog("cache.size() = {:d}", this->shared_images.size());
+    logIf(cv::debug_bg_loader.getInt() > 1, "shared_images.size() = {:d}", this->shared_images.size());
 }
 
 const Image *BGImageHandlerImpl::getLoadBackgroundImage(const DatabaseBeatmap *beatmap, bool load_immediately,
@@ -277,6 +282,8 @@ const Image *BGImageHandlerImpl::getLoadBackgroundImage(const DatabaseBeatmap *b
 
     const std::string &beatmap_filepath = beatmap->getFilePath();
     this->last_requested_entry = beatmap_filepath;
+
+    logIf(cv::debug_bg_loader.getInt() > 1, "trying to load image for {}", beatmap_filepath);
 
     if(const auto &it = this->cache.find(beatmap_filepath); it != this->cache.end()) {
         // 1) if the path or image is already loaded, return image ref immediately (which may still be NULL) and keep track
@@ -365,6 +372,7 @@ void BGImageHandlerImpl::acquireImageRef(ENTRY &entry) {
 
     auto &img_ref = this->shared_images[full_bg_image_path];
     if(img_ref.image == nullptr) {
+        logIfCV(debug_bg_loader, "fresh-loading image for {}", full_bg_image_path);
         resourceManager->requestNextLoadAsync();
         resourceManager->requestNextLoadUnmanaged();
         img_ref.image = resourceManager->loadImageAbsUnnamed(full_bg_image_path, true);
@@ -398,6 +406,10 @@ void BGImageHandlerImpl::releaseImageRef(ENTRY &entry) {
 }
 
 u32 BGImageHandlerImpl::getMaxEvictions() const {
+    // actually, just avoid evicting anything if we only have <=10 loaded backgrounds
+    // insanely conservative anyways, this is only like 80mb of vram with 1920x1080 backgrounds
+    if(this->shared_images.size() <= 10) return 0;
+
     u32 ret = static_cast<u32>(static_cast<float>(this->shared_images.size()) * (1.f / 4.f));
     if(this->shared_images.size() > this->max_cache_size) {
         ret += static_cast<u32>(

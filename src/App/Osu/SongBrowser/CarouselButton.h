@@ -147,6 +147,7 @@ class CarouselButton : public CBaseUIButton {
     bool bRightClickCheck;
     bool bSelected;
     bool bChildrenNeedSorting{true};
+    bool bWasAnimationEverStarted{false};
 
     MOVE_AWAY_STATE moveAwayState;
 };

@@ -1213,12 +1213,12 @@ void SongBrowser::onPlayEnd(bool quit) {
 }
 
 void SongBrowser::onSelectionChange(CarouselButton *button, bool rebuild) {
-    const bool wasSelected = (this->selectedButton == button);
+    const CarouselButton *lastSelected = this->selectedButton;
     this->selectedButton = button;
     if(button == nullptr) return;
 
     this->contextMenu->setVisible2(false);
-    if(wasSelected && !rebuild) return;
+    if((lastSelected == button) && !rebuild) return;
 
     // keep track and update all selection states
     // I'm still not happy with this, but at least all state update logic is localized in this function instead of
@@ -1230,17 +1230,29 @@ void SongBrowser::onSelectionChange(CarouselButton *button, bool rebuild) {
 
     if(songDiffButtonPointer != nullptr) {
         if(this->selectionPreviousSongDiffButton != nullptr &&
-           this->selectionPreviousSongDiffButton != songDiffButtonPointer)
+           this->selectionPreviousSongDiffButton != songDiffButtonPointer) {
             this->selectionPreviousSongDiffButton->deselect();
+
+            if(&this->selectionPreviousSongDiffButton->getSiblingsAndSelf() ==
+               &songDiffButtonPointer->getSiblingsAndSelf()) {
+                // skip rebuilding if we merely selected a sibling difficulty button
+                // NOTE: pointer comparison should be fine here...
+                rebuild = false;
+            }
+        }
 
         // support individual diffs independent from their parent song button container
         {
+            SongButton *parentSongButton = songDiffButtonPointer->getParentSongButton();
             // if the new diff has a parent song button, then update its selection state (select it to stay consistent)
-            if(!songDiffButtonPointer->getParentSongButton()->isSelected()) {
-                songDiffButtonPointer->getParentSongButton()
-                    ->sortChildren();  // NOTE: workaround for disabled callback firing in select()
-                songDiffButtonPointer->getParentSongButton()->select({.noCallbacks = true});
-                this->onSelectionChange(songDiffButtonPointer->getParentSongButton(), false);  // NOTE: recursive call
+            if(!parentSongButton->isSelected()) {
+                parentSongButton->sortChildren();  // NOTE: workaround for disabled callback firing in select()
+                parentSongButton->select({.noCallbacks = true});
+                this->onSelectionChange(parentSongButton, false);  // NOTE: recursive call
+
+                // reset last-selected button to the diff button after recursion
+                // instead of the parent (which will be hidden)
+                this->selectedButton = songDiffButtonPointer;
             }
         }
 
@@ -1266,7 +1278,9 @@ void SongBrowser::onSelectionChange(CarouselButton *button, bool rebuild) {
         if(isTogglingCollection) this->selectionPreviousCollectionButton = nullptr;
     }
 
-    if(rebuild) this->rebuildSongButtons();
+    if(rebuild) {
+        this->rebuildSongButtons();
+    }
 }
 
 void SongBrowser::onDifficultySelected(DatabaseBeatmap *map, bool play) {
@@ -3504,20 +3518,21 @@ void SongBrowser::recreateCollectionsButtons() {
 
             std::vector<SongButton *> matching_diffs;
 
-            auto *song_button = it->second;
+            SongDifficultyButton *diff_btn = it->second;
 
-            // get parent's children (we always have a parent now)
-            auto *parent = song_button->getParentSongButton();
-            const std::vector<SongButton *> &songButtonChildren = parent->getChildren();
+            // get parent button and siblings
+            SongButton *parent = diff_btn->getParentSongButton();
+            const std::vector<SongDifficultyButton *> &diff_btn_group = diff_btn->getSiblingsAndSelf();
 
             // filter to only diffs in this collection
-            for(SongButton *sbc : songButtonChildren | std::views::filter([&maps](const auto &child) {
-                                      return std::ranges::contains(maps, child->getDatabaseBeatmap()->getMD5());
-                                  })) {
+            for(SongDifficultyButton *sbc : diff_btn_group | std::views::filter([&maps](const auto &child) {
+                                                return std::ranges::contains(maps,
+                                                                             child->getDatabaseBeatmap()->getMD5());
+                                            })) {
                 matching_diffs.push_back(sbc);
             }
 
-            const i32 set_id = song_button->getDatabaseBeatmap()->getSetID();
+            const i32 set_id = diff_btn->getDatabaseBeatmap()->getSetID();
 
             if(!std::ranges::contains(matched_sets, set_id)) {
                 // Mark set as processed so we don't add the diffs from the same set twice
@@ -3527,9 +3542,9 @@ void SongBrowser::recreateCollectionsButtons() {
                 continue;
             }
 
-            if(songButtonChildren.size() == matching_diffs.size()) {
+            if(diff_btn_group.size() == matching_diffs.size()) {
                 // all diffs match: add the set button (user added all diffs of beatmap into collection)
-                folder.push_back(parent);  // fixed: add parent instead of song_button
+                folder.push_back(parent);
             } else {
                 // only add matched diff buttons
                 folder.insert(folder.end(), matching_diffs.begin(), matching_diffs.end());

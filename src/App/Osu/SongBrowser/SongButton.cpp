@@ -42,11 +42,11 @@ SongButton::SongButton(UIContextMenu *contextMenu, float xPos, float yPos, float
     // build and add children
     const auto &diffs = this->databaseBeatmap->getDifficulties();
 
-    const bool isDifficultySingular = diffs.size() == 1;
+    const int numSiblings = static_cast<int>(diffs.size()) - 1; // "number of siblings" excludes the button itself
     this->children.reserve(diffs.size());
     for(auto &diff : diffs) {
         this->children.emplace_back(
-            new SongDifficultyButton(this->contextMenu, 0, 0, 0, 0, "", diff.get(), this, isDifficultySingular));
+            new SongDifficultyButton(this->contextMenu, 0, 0, 0, 0, "", diff.get(), this, numSiblings));
     }
 
     this->updateLayoutEx();

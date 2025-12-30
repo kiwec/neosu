@@ -45,7 +45,7 @@ using Animation = std::variant<BaseAnim<f32>, BaseAnim<f64>>;
 std::vector<Animation> s_animations;
 
 template <typename FltType>
-void deleteExistingAnimationImpl(FltType *base) {
+forceinline void deleteExistingAnimationImpl(FltType *base) {
     std::erase_if(s_animations, [base](const Animation &anim) -> bool {
         if(auto *typed = std::get_if<BaseAnim<FltType>>(&anim)) return typed->fBase == base;
         return false;
@@ -72,7 +72,8 @@ void addAnimation(FltType *base, FltType target, FltType duration, FltType delay
 }
 
 template <typename FltType>
-forceinline bool updateAnimation(BaseAnim<FltType> &anim, FltType frameTime, bool doLogging, int idx) {
+forceinline bool updateAnimation(BaseAnim<FltType> &anim, FltType frameTime, bool doLogging, uSz idx,
+                                 uSz startingNumAnimations) {
     constexpr FltType zero{0};
     constexpr FltType half{0.5};
     constexpr FltType one{1};
@@ -95,17 +96,19 @@ forceinline bool updateAnimation(BaseAnim<FltType> &anim, FltType frameTime, boo
 
     if(diff <= threshold) {
         *anim.fBase = anim.fTarget;
-        logIf(doLogging, "removing animation #{:d} (epsilon completion), elapsed = {:f}", idx, anim.fElapsedTime);
+        logIf(doLogging, "removing animation #{:d}/{:d} (epsilon completion), elapsed = {:f}", idx,
+              startingNumAnimations, anim.fElapsedTime);
         return true;
     }
 
     FltType percent = std::clamp(anim.fElapsedTime / anim.fDuration, zero, one);
 
-    logIf(doLogging, "animation #{:d}, percent = {:f}", idx, percent);
+    logIf(doLogging, "animation #{:d}/{:d}, percent = {:f}", idx, startingNumAnimations, percent);
 
     if(percent >= one) {
         *anim.fBase = anim.fTarget;
-        logIf(doLogging, "removing animation #{:d}, elapsed = {:f}", idx, anim.fElapsedTime);
+        logIf(doLogging, "removing animation #{:d}/{:d}, elapsed = {:f}", idx, startingNumAnimations,
+              anim.fElapsedTime);
         return true;
     }
 
@@ -161,11 +164,12 @@ void update() {
     const f64 frameTime = engine->getFrameTime();
     const bool doLogging = cv::debug_anim.getBool();
 
+    const uSz initialSize = s_animations.size();
     for(uSz i = 0; i < s_animations.size();) {
         const bool remove = std::visit(
             [&](auto &anim) {
                 using FltType = std::remove_pointer_t<decltype(anim.fBase)>;
-                return updateAnimation(anim, static_cast<FltType>(frameTime), doLogging, static_cast<int>(i));
+                return updateAnimation(anim, static_cast<FltType>(frameTime), doLogging, i, initialSize);
             },
             s_animations[i]);
 

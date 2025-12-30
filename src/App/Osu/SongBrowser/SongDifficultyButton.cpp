@@ -24,10 +24,13 @@
 
 SongDifficultyButton::SongDifficultyButton(UIContextMenu* contextMenu, float xPos, float yPos, float xSize, float ySize,
                                            UString name, BeatmapDifficulty* diff, SongButton* parentSongButton,
-                                           bool isSingleDiffOnConstruction)
-    : SongButton(contextMenu, xPos, yPos, xSize, ySize, std::move(name)) {
+                                           int numSiblings)
+    : SongButton(contextMenu, xPos, yPos, xSize, ySize, std::move(name)),
+      siblings(reinterpret_cast<const std::vector<SongDifficultyButton*>&>(parentSongButton->getChildren())) {
     // must exist and be a difficulty
     assert(diff && diff->getDifficulties().empty());
+
+    const bool isSingleDiffOnConstruction = numSiblings == 0;
 
     this->databaseBeatmap = diff;
     this->parentSongButton = parentSongButton;
@@ -36,7 +39,9 @@ SongDifficultyButton::SongDifficultyButton(UIContextMenu* contextMenu, float xPo
     this->fOffsetPercentAnim = isSingleDiffOnConstruction ? 0.f : 1.f;
 
     this->bUpdateGradeScheduled = true;
-    this->bPrevOffsetPercentSelectionState = isSingleDiffOnConstruction;
+
+    // FIXME part 1: very difficult to follow and fragile logic
+    this->bPrevOffsetPercentSelectionState = !this->parentSongButton->isSelected() || isSingleDiffOnConstruction;
 
     // settings
     this->setHideIfSelected(false);
@@ -162,8 +167,11 @@ void SongDifficultyButton::mouse_update(bool* propagate_clicks) {
 
     this->fVisibleFor += engine->getFrameTime();
 
+    // FIXME part 2: very difficult to follow and fragile logic
+
     // dynamic settings (moved from constructor to here)
     const bool newOffsetPercentSelectionState = (this->bSelected || !this->isIndependentDiffButton());
+
     if(newOffsetPercentSelectionState != this->bPrevOffsetPercentSelectionState) {
         this->bPrevOffsetPercentSelectionState = newOffsetPercentSelectionState;
         anim::moveQuadOut(&this->fOffsetPercentAnim, newOffsetPercentSelectionState ? 1.0f : 0.0f,
@@ -189,16 +197,15 @@ void SongDifficultyButton::onClicked(bool left, bool right) {
 void SongDifficultyButton::onSelected(bool wasSelected, SelOpts opts) {
     CarouselButton::onSelected(wasSelected, opts);
 
-    const bool wasParentActuallySelected = (!this->isIndependentDiffButton() && !!this->parentSongButton &&
-                                            !(opts.parentUnselected) && this->parentSongButton->isSelected());
+    const bool wasParentActuallySelected =
+        !this->isIndependentDiffButton() && !(opts.parentUnselected) && this->parentSongButton->isSelected();
 
     this->updateGrade();
 
     // debugLog(
-    //     "wasParentActuallySelected {} isIndependentDiffButton {} parentSongButton {} wasParentSelected {} "
+    //     "wasParentActuallySelected {} isIndependentDiffButton {} parentSongButton {} "
     //     "parentSongButton->isSelected {}",
-    //     wasParentSelected, isIndependentDiffButton(), !!parentSongButton, wasParentSelected,
-    //     parentSongButton->isSelected());
+    //     wasParentActuallySelected, isIndependentDiffButton(), !!parentSongButton, parentSongButton->isSelected());
 
     auto* sb = osu->getSongBrowser();
     if(!wasParentActuallySelected) {
@@ -227,7 +234,7 @@ void SongDifficultyButton::updateGrade() {
         if(score.grade < this->grade) {
             this->grade = score.grade;
 
-            if(this->parentSongButton != nullptr && this->parentSongButton->grade > this->grade) {
+            if(this->parentSongButton->grade > this->grade) {
                 this->parentSongButton->grade = this->grade;
             }
         }
@@ -237,9 +244,13 @@ void SongDifficultyButton::updateGrade() {
 bool SongDifficultyButton::isIndependentDiffButton() const {
     if(!this->parentSongButton->isSelected()) return true;
 
+    // TODO: this logic is very weird and only works "accidentally";
+    // you'd think returning true IFF (sibling->isSearchMatch() && sibling == this) would be enough,
+    // but it doesn't work as expected...
+
     // check if this is the only visible sibling
     int visibleSiblings = 0;
-    for(const auto& sibling : this->parentSongButton->getChildren()) {
+    for(const auto* sibling : this->siblings) {
         if(sibling->isSearchMatch()) {
             visibleSiblings++;
             if(visibleSiblings > 1) return false;  // early exit
