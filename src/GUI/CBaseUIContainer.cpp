@@ -167,11 +167,10 @@ void CBaseUIContainer::mouse_update(bool *propagate_clicks) {
     CBaseUIElement::mouse_update(propagate_clicks);
     if(!this->bVisible) return;
 
-    // we're probably going to have a shitton of elements if we're a scrollview,
-    // so hint to the compiler that it should unroll a lot of them
-
-    MC_UNR_cnt(64) /* clang-format getting confused */
-        for(auto *e : this->vElements) {
+    // NOTE: do NOT use a range-based for loop here, mouse_update might invalidate iterators by changing the container contents...
+    MC_UNROLL
+    for(size_t i = 0; i < this->vElements.size(); i++) {
+        auto *e = this->vElements[i];
         if(e->isVisible()) e->mouse_update(propagate_clicks);
     }
 }
