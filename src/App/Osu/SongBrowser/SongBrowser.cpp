@@ -2102,6 +2102,8 @@ void SongBrowser::updateLayout() {
 
     // topbar left
     this->topbarLeft->setSize(SongBrowser::getUIScale(390.f), SongBrowser::getUIScale(145.f));
+
+    this->songInfo->onResized();  // force update metrics
     this->songInfo->setRelPos(margin, margin);
     this->songInfo->setSize(
         this->topbarLeft->getSize().x - margin,

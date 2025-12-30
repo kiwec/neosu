@@ -160,15 +160,18 @@ class Timer {
 
 #ifdef MCENGINE_PLATFORM_WINDOWS
 #include <ctime>
+#include <cerrno>
 
 // thread-safe versions of gmtime, localtime
 struct tm *gmtime_x(const time_t *timer, struct tm *timebuf);
 struct tm *localtime_x(const time_t *timer, struct tm *timebuf);
+errno_t ctime_x(const time_t *timer, char* buffer);
 
 #else
 
 #define gmtime_x gmtime_r
 #define localtime_x localtime_r
+#define ctime_x ctime_r
 
 #endif
 

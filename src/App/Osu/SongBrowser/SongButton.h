@@ -57,10 +57,6 @@ class SongButton : public CarouselButton {
 
     DatabaseBeatmap *databaseBeatmap{nullptr};
 
-    std::string sTitle;
-    std::string sArtist;
-    std::string sMapper;
-
     // defaults
     float fTextOffset{0.0f};
     float fGradeOffset{0.0f};

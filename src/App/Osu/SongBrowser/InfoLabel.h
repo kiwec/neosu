@@ -1,7 +1,5 @@
 #pragma once
 // Copyright (c) 2016, PG, All rights reserved.
-#include <utility>
-
 #include "CBaseUIButton.h"
 
 class McFont;
@@ -9,54 +7,62 @@ class DatabaseBeatmap;
 
 class InfoLabel final : public CBaseUIButton {
    public:
-    InfoLabel(float xPos, float yPos, float xSize, float ySize, UString name);
+    InfoLabel(f32 xPos, f32 yPos, f32 xSize, f32 ySize, UString name);
 
     void draw() override;
     void mouse_update(bool *propagate_clicks) override;
 
+    void onResized() override;
+
     void setFromBeatmap(const DatabaseBeatmap *map);
 
-    void setArtist(std::string artist) { this->sArtist = std::move(artist); }
-    void setTitle(std::string title) { this->sTitle = std::move(title); }
-    void setDiff(std::string diff) { this->sDiff = std::move(diff); }
-    void setMapper(std::string mapper) { this->sMapper = std::move(mapper); }
+    void setArtist(std::string_view artist);
+    void setTitle(std::string_view title);
+    void setDiff(std::string_view diff);
+    void setMapper(std::string_view mapper);
 
-    void setLengthMS(u32 lengthMS) { this->iLengthMS = lengthMS; }
-    void setBPM(int minBPM, int maxBPM, int mostCommonBPM) {
+    inline void setLengthMS(u32 lengthMS) { this->iLengthMS = lengthMS; }
+    inline void setBPM(i32 minBPM, i32 maxBPM, i32 mostCommonBPM) {
         this->iMinBPM = minBPM;
         this->iMaxBPM = maxBPM;
         this->iMostCommonBPM = mostCommonBPM;
     }
-    void setNumObjects(int numObjects) { this->iNumObjects = numObjects; }
+    inline void setNumObjects(i32 numObjects) { this->iNumObjects = numObjects; }
 
-    void setCS(float CS) { this->fCS = CS; }
-    void setAR(float AR) { this->fAR = AR; }
-    void setOD(float OD) { this->fOD = OD; }
-    void setHP(float HP) { this->fHP = HP; }
-    void setStars(float stars) { this->fStars = stars; }
+    inline void setCS(f32 CS) { this->fCS = CS; }
+    inline void setAR(f32 AR) { this->fAR = AR; }
+    inline void setOD(f32 OD) { this->fOD = OD; }
+    inline void setHP(f32 HP) { this->fHP = HP; }
+    inline void setStars(f32 stars) { this->fStars = stars; }
 
     void setLocalOffset(i32 localOffset) { this->iLocalOffset = localOffset; }
     void setOnlineOffset(i32 onlineOffset) { this->iOnlineOffset = onlineOffset; }
 
-    float getMinimumWidth();
-    float getMinimumHeight();
+    [[nodiscard]] f32 getMinimumWidth() const;
+    [[nodiscard]] f32 getMinimumHeight() const;
 
     [[nodiscard]] i32 getBeatmapID() const { return this->iBeatmapId; }
 
    private:
-    UString buildSongInfoString();
-    UString buildDiffInfoString();
-    UString buildOffsetInfoString();
+    void updateScaling();
+    [[nodiscard]] f32 getTitleFontRatio() const;
 
+    [[nodiscard]] UString buildSongInfoString() const;
+    [[nodiscard]] UString buildDiffInfoString() const;
+    [[nodiscard]] UString buildOffsetInfoString() const;
+
+    McFont *titleFont;
     McFont *font;
 
-    int iMargin;
-    f32 fGlobalScale;
-    f32 fTitleScale;
-    f32 fSubTitleScale;
-    f32 fSongInfoScale;
-    f32 fDiffInfoScale;
-    f32 fOffsetInfoScale;
+    i32 iMargin{8};
+
+    // updated in updateScaling
+    f32 fGlobalScale{1.f};
+    f32 fTitleScale{1.f};
+    f32 fSubTitleScale{1.f};
+    f32 fSongInfoScale{1.f};
+    f32 fDiffInfoScale{1.f};
+    f32 fOffsetInfoScale{1.f};
 
     std::string sArtist;
     std::string sTitle;
@@ -64,16 +70,16 @@ class InfoLabel final : public CBaseUIButton {
     std::string sMapper;
 
     u32 iLengthMS;
-    int iMinBPM;
-    int iMaxBPM;
-    int iMostCommonBPM;
-    int iNumObjects;
+    i32 iMinBPM;
+    i32 iMaxBPM;
+    i32 iMostCommonBPM;
+    i32 iNumObjects;
 
-    float fCS;
-    float fAR;
-    float fOD;
-    float fHP;
-    float fStars;
+    f32 fCS;
+    f32 fAR;
+    f32 fOD;
+    f32 fHP;
+    f32 fStars;
 
     i32 iLocalOffset;
     i32 iOnlineOffset;

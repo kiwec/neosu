@@ -154,6 +154,8 @@ void sleep_ns_precise_internal(u64 ns) noexcept { SDL_DelayPrecise(ns); }
 
 #ifdef MCENGINE_PLATFORM_WINDOWS
 
+static_assert(sizeof(time_t) == 8);
+
 struct tm *gmtime_x(const time_t *timer, struct tm *timebuf) {
     _gmtime64_s(timebuf, timer);
     return timebuf;
@@ -163,5 +165,11 @@ struct tm *localtime_x(const time_t *timer, struct tm *timebuf) {
     _localtime64_s(timebuf, timer);
     return timebuf;
 }
+
+errno_t ctime_x(const time_t *timer, char* buffer) {
+    if (!buffer || !timer || *timer < 0) return EINVAL;
+    return _ctime64_s(buffer, 26, timer);
+}
+
 
 #endif

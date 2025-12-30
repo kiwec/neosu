@@ -12,19 +12,24 @@
 TextureAtlas::TextureAtlas(int width, int height, bool filtering) : Resource() {
     this->iWidth = width;
     this->iHeight = height;
+    this->bFiltered = filtering;
 
     resourceManager->requestNextLoadUnmanaged();
     this->atlasImage.reset(resourceManager->createImage(this->iWidth, this->iHeight, false,
                                                         true /* keep in system memory, for faster reloads */));
-    if(!filtering) {
-        this->atlasImage->setFilterMode(TextureFilterMode::FILTER_MODE_NONE);
-    }  // else linear filtering is default
 }
 
 TextureAtlas::~TextureAtlas() { this->destroy(); }
 
 void TextureAtlas::init() {
     resourceManager->loadResource(this->atlasImage.get());
+
+    if(!this->bFiltered) {
+        this->atlasImage->setFilterMode(TextureFilterMode::FILTER_MODE_NONE);
+    } else {
+        // sanity (this is default)
+        this->atlasImage->setFilterMode(TextureFilterMode::FILTER_MODE_LINEAR);
+    }
 
     this->setReady(true);
 }

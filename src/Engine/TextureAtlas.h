@@ -58,10 +58,12 @@ class TextureAtlas final : public Resource {
     void initAsync() override;
     void destroy() override;
 
+    std::unique_ptr<Image> atlasImage;
+
     int iWidth;
     int iHeight;
 
-    std::unique_ptr<Image> atlasImage;
+    bool bFiltered;
 };
 
 #endif

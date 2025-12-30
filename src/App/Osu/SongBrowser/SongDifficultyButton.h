@@ -33,7 +33,6 @@ class SongDifficultyButton final : public SongButton {
    private:
     void onSelected(bool wasSelected, SelOpts opts) override;
 
-    std::string sDiff;
     SongButton *parentSongButton;
 
     float fDiffScale;

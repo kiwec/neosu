@@ -5,6 +5,7 @@
 #include <utility>
 
 #include "Keyboard.h"
+#include "SString.h"
 #include "SongBrowser.h"
 // ---
 
@@ -24,18 +25,16 @@
 #include "Skin.h"
 #include "TooltipOverlay.h"
 
-InfoLabel::InfoLabel(float xPos, float yPos, float xSize, float ySize, UString name)
+InfoLabel::InfoLabel(f32 xPos, f32 yPos, f32 xSize, f32 ySize, UString name)
     : CBaseUIButton(xPos, yPos, xSize, ySize, std::move(name), "") {
+    // slightly abusing songbrowser font here, but the subtitle font is just too low DPI
+    // and looks bad if it's even slightly upscaled (even at 1080p, we're upscaling it by ~1.4x)
+
+    // the songbrowser font is about 1.5x larger, so it looks sharper due to not needing to be upscaled
+    this->titleFont = osu->getSongBrowserFont();
     this->font = osu->getSubTitleFont();
 
-    this->iMargin = 8;
-
-    this->fGlobalScale = 1.f;
-    this->fTitleScale = 1.f * fGlobalScale;
-    this->fSubTitleScale = 0.65f * fGlobalScale;
-    this->fSongInfoScale = 0.8f * fGlobalScale;
-    this->fDiffInfoScale = 0.65f * fGlobalScale;
-    this->fOffsetInfoScale = 0.65f * fGlobalScale;
+    this->updateScaling();
 
     this->sArtist = "Artist";
     this->sTitle = "Title";
@@ -73,52 +72,52 @@ void InfoLabel::draw() {
     }
 
     // build strings
-    UString titleText = this->sArtist.c_str();
-    titleText.append(" - ");
-    titleText.append(this->sTitle.c_str());
-    titleText.append(" [");
-    titleText.append(this->sDiff.c_str());
-    titleText.append("]");
-    UString subTitleText = "Mapped by ";
-    subTitleText.append(this->sMapper.c_str());
-    const UString songInfoText = this->buildSongInfoString();
-    const UString diffInfoText = this->buildDiffInfoString();
-    const UString offsetInfoText = this->buildOffsetInfoString();
+    const UString titleText{fmt::format("{} - {} [{}]", this->sArtist, this->sTitle, this->sDiff)};
+    const UString subTitleText{fmt::format("Mapped by {}", this->sMapper)};
 
-    const float globalScale = std::max((this->vSize.y / this->getMinimumHeight()) * 0.91f, 1.0f);
+    const UString songInfoText{this->buildSongInfoString()};
+    const UString diffInfoText{this->buildDiffInfoString()};
+    const UString offsetInfoText{this->buildOffsetInfoString()};
 
-    const int shadowOffset = std::round(1.0f * ((float)this->font->getDPI() / 96.0f));  // NOTE: abusing font dpi
+    const f32 globalScale = std::max((this->vSize.y / this->getMinimumHeight()) * 0.91f, 1.0f);
 
-    int yCounter = this->vPos.y;
+    const i32 shadowOffset = std::round(1.0f * ((f32)this->font->getDPI() / 96.0f));  // NOTE: abusing font dpi
+
+    i32 yCounter = this->vPos.y;
 
     // draw title
     g->pushTransform();
     {
-        const float scale = this->fTitleScale * globalScale;
+        const i32 titleShadowOffset =
+            std::round(1.0f * ((f32)this->titleFont->getDPI() / 96.0f));  // NOTE: abusing font dpi
 
-        yCounter += this->font->getHeight() * scale;
+        const f32 scale = this->fTitleScale * globalScale;
+
+        yCounter += this->titleFont->getHeight() * scale;
 
         g->scale(scale, scale);
-        g->translate((int)(this->vPos.x), yCounter);
+        g->translate((i32)(this->vPos.x), yCounter);
 
-        g->translate(shadowOffset, shadowOffset);
+        g->translate(titleShadowOffset, titleShadowOffset);
         g->setColor(0xff000000);
-        g->drawString(this->font, titleText);
-        g->translate(-shadowOffset, -shadowOffset);
+        g->drawString(this->titleFont, titleText);
+        g->translate(-titleShadowOffset, -titleShadowOffset);
         g->setColor(0xffffffff);
-        g->drawString(this->font, titleText);
+        g->drawString(this->titleFont, titleText);
     }
     g->popTransform();
 
     // draw subtitle (mapped by)
     g->pushTransform();
     {
-        const float scale = this->fSubTitleScale * globalScale;
+        const f32 scale = this->fSubTitleScale * globalScale;
+        // account for slightly taller/larger title font glyphs
+        const f32 extraTitleFontMargin = (this->iMargin / 2.f) * this->getTitleFontRatio();
 
-        yCounter += this->font->getHeight() * scale + (this->iMargin / 2) * globalScale * 1.0f;
+        yCounter += this->font->getHeight() * scale + extraTitleFontMargin * globalScale * 1.0f;
 
         g->scale(scale, scale);
-        g->translate((int)(this->vPos.x), yCounter);
+        g->translate((i32)(this->vPos.x), yCounter);
 
         g->translate(shadowOffset, shadowOffset);
         g->setColor(0xff000000);
@@ -135,12 +134,12 @@ void InfoLabel::draw() {
                                      : 0xffffffff);
     g->pushTransform();
     {
-        const float scale = this->fSongInfoScale * globalScale * 0.9f;
+        const f32 scale = this->fSongInfoScale * globalScale * 0.9f;
 
         yCounter += this->font->getHeight() * scale + (this->iMargin / 2) * globalScale * 1.0f;
 
         g->scale(scale, scale);
-        g->translate((int)(this->vPos.x), yCounter);
+        g->translate((i32)(this->vPos.x), yCounter);
 
         g->translate(shadowOffset, shadowOffset);
         g->setColor(0xff000000);
@@ -155,12 +154,12 @@ void InfoLabel::draw() {
     const Color diffInfoColor = osu->getModEZ() ? 0xffadd8e6 : (osu->getModHR() ? 0xffff7f7f : 0xffffffff);
     g->pushTransform();
     {
-        const float scale = this->fDiffInfoScale * globalScale * 0.9f;
+        const f32 scale = this->fDiffInfoScale * globalScale * 0.9f;
 
         yCounter += this->font->getHeight() * scale + this->iMargin * globalScale * 0.85f;
 
         g->scale(scale, scale);
-        g->translate((int)(this->vPos.x), yCounter);
+        g->translate((i32)(this->vPos.x), yCounter);
 
         g->translate(shadowOffset, shadowOffset);
         g->setColor(0xff000000);
@@ -175,12 +174,12 @@ void InfoLabel::draw() {
     if(this->iLocalOffset != 0 || this->iOnlineOffset != 0) {
         g->pushTransform();
         {
-            const float scale = this->fOffsetInfoScale * globalScale * 0.8f;
+            const f32 scale = this->fOffsetInfoScale * globalScale * 0.8f;
 
             yCounter += this->font->getHeight() * scale + this->iMargin * globalScale * 0.85f;
 
             g->scale(scale, scale);
-            g->translate((int)(this->vPos.x), yCounter);
+            g->translate((i32)(this->vPos.x), yCounter);
 
             g->translate(shadowOffset, shadowOffset);
             g->setColor(0xff000000);
@@ -196,28 +195,19 @@ void InfoLabel::draw() {
 void InfoLabel::mouse_update(bool *propagate_clicks) {
     if(!this->bVisible) return;
 
-    auto screen = osu->getVirtScreenSize();
-    bool is_widescreen = ((i32)(std::max(0, (i32)((screen.x - (screen.y * 4.f / 3.f)) / 2.f))) > 0);
-    this->fGlobalScale = screen.x / (is_widescreen ? 1366.f : 1024.f);
-    this->fTitleScale = 1.f * fGlobalScale;
-    this->fSubTitleScale = 0.65f * fGlobalScale;
-    this->fSongInfoScale = 0.8f * fGlobalScale;
-    this->fDiffInfoScale = 0.65f * fGlobalScale;
-    this->fOffsetInfoScale = 0.65f * fGlobalScale;
-
     CBaseUIButton::mouse_update(propagate_clicks);
 
     // detail info tooltip when hovering over diff info
     if(this->isMouseInside() && !osu->getOptionsMenu()->isMouseInside()) {
         const auto &pf = osu->getMapInterface();
 
-        const float speedMultiplierInv = (1.0f / pf->getSpeedMultiplier());
+        const f32 speedMultiplierInv = (1.0f / pf->getSpeedMultiplier());
 
-        const float approachTimeRoundedCompensated = ((int)pf->getApproachTime()) * speedMultiplierInv;
-        const float hitWindow300RoundedCompensated = ((int)pf->getHitWindow300() - 0.5f) * speedMultiplierInv;
-        const float hitWindow100RoundedCompensated = ((int)pf->getHitWindow100() - 0.5f) * speedMultiplierInv;
-        const float hitWindow50RoundedCompensated = ((int)pf->getHitWindow50() - 0.5f) * speedMultiplierInv;
-        const float hitobjectRadiusRoundedCompensated = (GameRules::getRawHitCircleDiameter(pf->getCS()) / 2.0f);
+        const f32 approachTimeRoundedCompensated = ((i32)pf->getApproachTime()) * speedMultiplierInv;
+        const f32 hitWindow300RoundedCompensated = ((i32)pf->getHitWindow300() - 0.5f) * speedMultiplierInv;
+        const f32 hitWindow100RoundedCompensated = ((i32)pf->getHitWindow100() - 0.5f) * speedMultiplierInv;
+        const f32 hitWindow50RoundedCompensated = ((i32)pf->getHitWindow50() - 0.5f) * speedMultiplierInv;
+        const f32 hitobjectRadiusRoundedCompensated = (GameRules::getRawHitCircleDiameter(pf->getCS()) / 2.0f);
 
         const auto *bmDiff2{pf->getBeatmap()};
         const auto &tooltipOverlay{osu->getTooltipOverlay()};
@@ -232,24 +222,24 @@ void InfoLabel::mouse_update(bool *propagate_clicks) {
             tooltipOverlay->addLine(fmt::format("Hit object radius: {:.2f}"_cf, hitobjectRadiusRoundedCompensated));
 
             if(bmDiff2 != nullptr) {
-                int numObjects{bmDiff2->getNumObjects()};
-                int numCircles{bmDiff2->getNumCircles()};
-                int numSliders{bmDiff2->getNumSliders()};
+                i32 numObjects{bmDiff2->getNumObjects()};
+                i32 numCircles{bmDiff2->getNumCircles()};
+                i32 numSliders{bmDiff2->getNumSliders()};
                 u32 lengthMS{bmDiff2->getLengthMS()};
 
-                float opm{0.f}, cpm{0.f}, spm{0.f};
+                f32 opm{0.f}, cpm{0.f}, spm{0.f};
                 if(lengthMS > 0) {
-                    const float durMinutes{(static_cast<float>(lengthMS) / 1000.0f / 60.0f) / pf->getSpeedMultiplier()};
+                    const f32 durMinutes{(static_cast<f32>(lengthMS) / 1000.0f / 60.0f) / pf->getSpeedMultiplier()};
 
-                    opm = static_cast<float>(numObjects) / durMinutes;
-                    cpm = static_cast<float>(numCircles) / durMinutes;
-                    spm = static_cast<float>(numSliders) / durMinutes;
+                    opm = static_cast<f32>(numObjects) / durMinutes;
+                    cpm = static_cast<f32>(numCircles) / durMinutes;
+                    spm = static_cast<f32>(numSliders) / durMinutes;
                 }
 
                 tooltipOverlay->addLine(fmt::format("Circles: {:d}, Sliders: {:d}, Spinners: {:d}"_cf, numCircles,
                                                     numSliders, std::max(0, numObjects - numCircles - numSliders)));
                 tooltipOverlay->addLine(
-                    fmt::format("OPM: {:d}, CPM: {:d}, SPM: {:d}"_cf, (int)opm, (int)cpm, (int)spm));
+                    fmt::format("OPM: {:d}, CPM: {:d}, SPM: {:d}"_cf, (i32)opm, (i32)cpm, (i32)spm));
                 tooltipOverlay->addLine(fmt::format("ID: {:d}, SetID: {:d}"_cf, bmDiff2->getID(), bmDiff2->getSetID()));
                 tooltipOverlay->addLine(fmt::format("MD5: {:s}"_cf, bmDiff2->getMD5().string()));
                 // mostly for debugging
@@ -264,6 +254,34 @@ void InfoLabel::mouse_update(bool *propagate_clicks) {
         tooltipOverlay->end();
     }
 }
+
+// since it took me a while to figure out where to hook into to update this, this is called through:
+// Osu::onResolutionChanged (for all screens) ->
+//   SongBrowser::onResolutionChange ->
+//     ScreenBackable::onResolutionChange ->
+//       SongBrowser::updateLayout ->
+//         this->songInfo->setSize (which is here)
+
+void InfoLabel::onResized() {
+    CBaseUIButton::onResized();
+    this->updateScaling();
+}
+
+void InfoLabel::updateScaling() {
+    // TODO: this seems wrong...
+
+    const auto screen = osu->getVirtScreenSize();
+    const bool is_widescreen = ((i32)(std::max(0, (i32)((screen.x - (screen.y * 4.f / 3.f)) / 2.f))) > 0);
+
+    this->fGlobalScale = screen.x / (is_widescreen ? 1366.f : 1024.f);
+    this->fTitleScale = (1.f * this->fGlobalScale) / this->getTitleFontRatio();
+    this->fSubTitleScale = 0.65f * this->fGlobalScale;
+    this->fSongInfoScale = 0.8f * this->fGlobalScale;
+    this->fDiffInfoScale = 0.65f * this->fGlobalScale;
+    this->fOffsetInfoScale = 0.65f * this->fGlobalScale;
+}
+
+f32 InfoLabel::getTitleFontRatio() const { return (f32)this->titleFont->getSize() / (f32)this->font->getSize(); }
 
 void InfoLabel::setFromBeatmap(const DatabaseBeatmap *map) {
     this->iBeatmapId = map->getID();
@@ -287,19 +305,39 @@ void InfoLabel::setFromBeatmap(const DatabaseBeatmap *map) {
     this->setOnlineOffset(map->getOnlineOffset());
 }
 
-UString InfoLabel::buildSongInfoString() {
-    u32 lengthMS = this->iLengthMS;
-    auto speed = osu->getMapInterface()->getSpeedMultiplier();
+void InfoLabel::setArtist(std::string_view artist) {
+    SString::trim_inplace(artist);
+    this->sArtist.assign(artist);
+}
+
+void InfoLabel::setTitle(std::string_view title) {
+    SString::trim_inplace(title);
+    this->sTitle.assign(title);
+}
+
+void InfoLabel::setDiff(std::string_view diff) {
+    SString::trim_inplace(diff);
+    this->sDiff.assign(diff);
+}
+
+void InfoLabel::setMapper(std::string_view mapper) {
+    SString::trim_inplace(mapper);
+    this->sMapper.assign(mapper);
+}
+
+UString InfoLabel::buildSongInfoString() const {
+    const u32 lengthMS = this->iLengthMS;
+    const f32 speed = osu->getMapInterface()->getSpeedMultiplier();
 
     const u32 fullSeconds = (lengthMS * (1.0 / speed)) / 1000.0;
-    const int minutes = fullSeconds / 60;
-    const int seconds = fullSeconds % 60;
+    const i32 minutes = fullSeconds / 60;
+    const i32 seconds = fullSeconds % 60;
 
-    const int minBPM = this->iMinBPM * speed;
-    const int maxBPM = this->iMaxBPM * speed;
-    const int mostCommonBPM = this->iMostCommonBPM * speed;
+    const i32 minBPM = this->iMinBPM * speed;
+    const i32 maxBPM = this->iMaxBPM * speed;
+    const i32 mostCommonBPM = this->iMostCommonBPM * speed;
 
-    int numObjects = this->iNumObjects;
+    i32 numObjects = this->iNumObjects;
     if(this->iMinBPM == this->iMaxBPM) {
         return UString::format("Length: %02i:%02i BPM: %i Objects: %i", minutes, seconds, maxBPM, numObjects);
     } else {
@@ -308,19 +346,19 @@ UString InfoLabel::buildSongInfoString() {
     }
 }
 
-UString InfoLabel::buildDiffInfoString() {
+UString InfoLabel::buildDiffInfoString() const {
     const auto &pf = osu->getMapInterface();
     const auto *map = pf->getBeatmap();
     if(!map) return "";
 
-    float CS = pf->getCS();
-    float AR = pf->getApproachRateForSpeedMultiplier();
-    float OD = pf->getOverallDifficultyForSpeedMultiplier();
-    float HP = pf->getHP();
+    const f32 CS = pf->getCS();
+    const f32 AR = pf->getApproachRateForSpeedMultiplier();
+    const f32 OD = pf->getOverallDifficultyForSpeedMultiplier();
+    const f32 HP = pf->getHP();
 
-    float stars = this->fStars;
-    float modStars = 0.f;
-    float modPp = 0.f;
+    const f32 nomodStars = this->fStars;
+    f32 modStars = nomodStars;
+    f32 modPp = 0.f;
 
     bool pp_available = false;
 
@@ -334,49 +372,54 @@ UString InfoLabel::buildDiffInfoString() {
         }
     }
 
-    const float starComparisonEpsilon = 0.01f;
-    const bool starsAndModStarsAreEqual = (std::abs(stars - modStars) < starComparisonEpsilon);
+    const f32 starComparisonEpsilon = 0.01f;
+    const bool starsAndModStarsAreEqual = (std::abs(nomodStars - modStars) < starComparisonEpsilon);
 
     UString finalString;
     if(pp_available) {
-        const int clampedModPp = static_cast<int>(
-            std::round<int>((std::isfinite(modPp) && modPp >= static_cast<float>(std::numeric_limits<int>::min()) &&
-                             modPp <= static_cast<float>(std::numeric_limits<int>::max()))
-                                ? static_cast<int>(modPp)
+        const i32 clampedModPp = static_cast<i32>(
+            std::round<i32>((std::isfinite(modPp) && modPp >= static_cast<f32>(std::numeric_limits<i32>::min()) &&
+                             modPp <= static_cast<f32>(std::numeric_limits<i32>::max()))
+                                ? static_cast<i32>(modPp)
                                 : 0));
         if(starsAndModStarsAreEqual) {
-            finalString = UString::format("CS:%.3g AR:%.3g OD:%.3g HP:%.3g Stars:%.3g (%ipp)", CS, AR, OD, HP, stars,
-                                          clampedModPp);
+            finalString = UString::format("CS:%.3g AR:%.3g OD:%.3g HP:%.3g Stars:%.3g (%ipp)", CS, AR, OD, HP,
+                                          nomodStars, clampedModPp);
         } else {
             finalString = UString::format("CS:%.3g AR:%.3g OD:%.3g HP:%.3g Stars:%.3g -> %.3g (%ipp)", CS, AR, OD, HP,
-                                          stars, modStars, clampedModPp);
+                                          nomodStars, modStars, clampedModPp);
         }
     } else {
-        finalString = UString::format("CS:%.3g AR:%.3g OD:%.3g HP:%.3g Stars:%.3g * (??? pp)", CS, AR, OD, HP, stars);
+        finalString =
+            UString::format("CS:%.3g AR:%.3g OD:%.3g HP:%.3g Stars:%.3g * (??? pp)", CS, AR, OD, HP, nomodStars);
     }
 
     return finalString;
 }
 
-UString InfoLabel::buildOffsetInfoString() {
+UString InfoLabel::buildOffsetInfoString() const {
     return fmt::format("Your Offset: {:d} ms / Online Offset: {:d} ms", this->iLocalOffset, this->iOnlineOffset);
 }
 
-float InfoLabel::getMinimumWidth() {
-    float titleWidth = 0;
-    float subTitleWidth = 0;
-    float songInfoWidth = this->font->getStringWidth(this->buildSongInfoString()) * this->fSongInfoScale;
-    float diffInfoWidth = this->font->getStringWidth(this->buildDiffInfoString()) * this->fDiffInfoScale;
-    float offsetInfoWidth = this->font->getStringWidth(this->buildOffsetInfoString()) * this->fOffsetInfoScale;
+f32 InfoLabel::getMinimumWidth() const {
+    const f32 titleWidth = 0;
+    const f32 subTitleWidth = 0;
+    const f32 songInfoWidth = this->font->getStringWidth(this->buildSongInfoString()) * this->fSongInfoScale;
+    const f32 diffInfoWidth = this->font->getStringWidth(this->buildDiffInfoString()) * this->fDiffInfoScale;
+    const f32 offsetInfoWidth = this->font->getStringWidth(this->buildOffsetInfoString()) * this->fOffsetInfoScale;
 
     return std::max({titleWidth, subTitleWidth, songInfoWidth, diffInfoWidth, offsetInfoWidth});
 }
 
-float InfoLabel::getMinimumHeight() {
-    f32 titleHeight = this->font->getHeight() * this->fTitleScale;
-    f32 subTitleHeight = this->font->getHeight() * this->fSubTitleScale;
-    f32 songInfoHeight = this->font->getHeight() * this->fSongInfoScale;
-    f32 diffInfoHeight = this->font->getHeight() * this->fDiffInfoScale;
-    f32 offsetInfoHeight = this->font->getHeight() * this->fOffsetInfoScale;
+f32 InfoLabel::getMinimumHeight() const {
+    const f32 titleFontHeight = this->titleFont->getHeight();
+    const f32 fontHeight = this->font->getHeight();
+
+    const f32 titleHeight = titleFontHeight * this->fTitleScale;
+    const f32 subTitleHeight = fontHeight * this->fSubTitleScale;
+    const f32 songInfoHeight = fontHeight * this->fSongInfoScale;
+    const f32 diffInfoHeight = fontHeight * this->fDiffInfoScale;
+    const f32 offsetInfoHeight = fontHeight * this->fOffsetInfoScale;
+
     return titleHeight + subTitleHeight + songInfoHeight + diffInfoHeight + offsetInfoHeight + this->iMargin * 6;
 }

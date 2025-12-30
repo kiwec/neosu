@@ -32,9 +32,6 @@ SongDifficultyButton::SongDifficultyButton(UIContextMenu* contextMenu, float xPo
     this->databaseBeatmap = diff;
     this->parentSongButton = parentSongButton;
 
-    this->sMapper = this->databaseBeatmap->getCreator();
-    this->sDiff = this->databaseBeatmap->getDifficultyName();
-
     this->fDiffScale = 0.18f;
     this->fOffsetPercentAnim = isSingleDiffOnConstruction ? 0.f : 1.f;
 
@@ -79,9 +76,7 @@ void SongDifficultyButton::draw() {
 
     if(this->grade != ScoreGrade::N) this->drawGrade();
 
-    this->sTitle = this->databaseBeatmap->getTitle();
     this->drawTitle(!isIndependentDiff ? 0.2f : 1.0f);
-    this->sArtist = this->databaseBeatmap->getArtist();
     this->drawSubTitle(!isIndependentDiff ? 0.2f : 1.0f);
 
     // draw diff name
@@ -96,7 +91,7 @@ void SongDifficultyButton::draw() {
                      pos.y + size.y * this->fTextMarginScale + this->font->getHeight() * titleScale +
                          size.y * this->fTextSpacingScale + this->font->getHeight() * subTitleScale * 0.85f +
                          size.y * this->fTextSpacingScale + this->fontBold->getHeight() * diffScale * 0.8f);
-        g->drawString(this->fontBold, this->sDiff);
+        g->drawString(this->fontBold, this->databaseBeatmap->getDifficultyName());
     }
     g->popTransform();
 

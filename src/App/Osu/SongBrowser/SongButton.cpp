@@ -112,10 +112,6 @@ void SongButton::mouse_update(bool *propagate_clicks) {
 
     if(currentRepresentativeBeatmap == nullptr || currentRepresentativeBeatmap != newRepresentativeBeatmap) {
         this->representativeBeatmap = newRepresentativeBeatmap;
-
-        this->sTitle = newRepresentativeBeatmap->getTitle();
-        this->sArtist = newRepresentativeBeatmap->getArtist();
-        this->sMapper = newRepresentativeBeatmap->getCreator();
     }
 }
 
@@ -197,9 +193,12 @@ void SongButton::drawTitle(float deselectedAlpha, bool forceSelectedStyle) {
                                                         : osu->getSkin()->c_song_select_inactive_text);
     if(!(this->bSelected || forceSelectedStyle)) g->setAlpha(deselectedAlpha);
 
+    const UString title{this->representativeBeatmap ? this->representativeBeatmap->getTitle()
+                        : this->databaseBeatmap     ? this->databaseBeatmap->getTitle()
+                                                    : ULITERAL("")};
+
     g->pushTransform();
     {
-        UString title{this->sTitle};
         g->scale(titleScale, titleScale);
         g->translate(pos.x + this->fTextOffset,
                      pos.y + size.y * this->fTextMarginScale + this->font->getHeight() * titleScale);
@@ -219,11 +218,17 @@ void SongButton::drawSubTitle(float deselectedAlpha, bool forceSelectedStyle) {
                                                         : osu->getSkin()->c_song_select_inactive_text);
     if(!(this->bSelected || forceSelectedStyle)) g->setAlpha(deselectedAlpha);
 
+    const std::string &artist{this->representativeBeatmap
+                                  ? this->representativeBeatmap->getTitle()
+                                  : (this->databaseBeatmap ? this->databaseBeatmap->getTitle() : "")};
+
+    const std::string &mapper{this->representativeBeatmap
+                                  ? this->representativeBeatmap->getCreator()
+                                  : (this->databaseBeatmap ? this->databaseBeatmap->getCreator() : "")};
+
     g->pushTransform();
     {
-        UString subTitleString{this->sArtist};
-        subTitleString.append(" // ");
-        subTitleString.append(this->sMapper);
+        const UString subTitleString{fmt::format("{} // {}", artist, mapper)};
 
         g->scale(subTitleScale, subTitleScale);
         g->translate(pos.x + this->fTextOffset,

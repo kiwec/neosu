@@ -57,7 +57,7 @@ class RankingScreen final : public ScreenBackable {
     UIButton *retry_btn;
     UIButton *watch_btn;
 
-    ScoreGrade grade;
+    ScoreGrade grade{ScoreGrade::D};
     float fUnstableRate;
     float fHitErrorAvgMin;
     float fHitErrorAvgMax;
