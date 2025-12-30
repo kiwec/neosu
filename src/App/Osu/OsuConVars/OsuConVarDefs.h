@@ -167,6 +167,12 @@ CONVAR(draw_songbrowser_background_image, true, CLIENT | SKINS | SERVER);
 CONVAR(draw_songbrowser_menu_background_image, true, CLIENT | SKINS | SERVER);
 CONVAR(draw_songbrowser_strain_graph, false, CLIENT | SKINS | SERVER);
 CONVAR(draw_songbrowser_thumbnails, true, CLIENT | SKINS | SERVER);
+CONVAR(songbrowser_button_anim_x_push, false, CLIENT | SKINS,
+       "whether to push songbuttons to the right depending on the vertical scrolling velocity (set this to 0 for "
+       "osu!lazer style carousel)");
+CONVAR(songbrowser_button_anim_y_curve, true, CLIENT | SKINS,
+       "whether to move songbuttons slightly to the right depending on their vertical position, on a vertically "
+       "centered curve");
 CONVAR(songbrowser_background_fade_in_duration, 0.1f, CLIENT | SKINS);
 CONVAR(songbrowser_button_active_color_a, 230, CLIENT | SKINS);
 CONVAR(songbrowser_button_active_color_b, 255, CLIENT | SKINS);

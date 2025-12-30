@@ -5,6 +5,7 @@
 
 #include "BeatmapCarousel.h"
 #include "Font.h"
+#include "Logging.h"
 #include "ScoreButton.h"
 #include "SongBrowser.h"
 // ---
@@ -22,7 +23,8 @@
 #include "SoundEngine.h"
 
 SongDifficultyButton::SongDifficultyButton(UIContextMenu* contextMenu, float xPos, float yPos, float xSize, float ySize,
-                                           UString name, BeatmapDifficulty* diff, SongButton* parentSongButton)
+                                           UString name, BeatmapDifficulty* diff, SongButton* parentSongButton,
+                                           bool isSingleDiffOnConstruction)
     : SongButton(contextMenu, xPos, yPos, xSize, ySize, std::move(name)) {
     // must exist and be a difficulty
     assert(diff && diff->getDifficulties().empty());
@@ -33,13 +35,11 @@ SongDifficultyButton::SongDifficultyButton(UIContextMenu* contextMenu, float xPo
     this->sMapper = this->databaseBeatmap->getCreator();
     this->sDiff = this->databaseBeatmap->getDifficultyName();
 
-    const bool independentDiff = this->isIndependentDiffButton();
-
     this->fDiffScale = 0.18f;
-    this->fOffsetPercentAnim = independentDiff ? 1.0f : 0.f;
+    this->fOffsetPercentAnim = isSingleDiffOnConstruction ? 0.f : 1.f;
 
     this->bUpdateGradeScheduled = true;
-    this->bPrevOffsetPercentSelectionState = independentDiff;
+    this->bPrevOffsetPercentSelectionState = isSingleDiffOnConstruction;
 
     // settings
     this->setHideIfSelected(false);

@@ -276,7 +276,7 @@ bool SongBrowser::sort_by_artist(SongButton const *a, SongButton const *b) {
     const auto &artistB{bPtr->getArtistLatin()};
 
     i32 cmp = strcasecmp(artistA.c_str(), artistB.c_str());
-    if(cmp == 0) return sort_by_difficulty(a, b);
+    if(cmp == 0) return sort_by_title(a, b);  // fall back to sort by title
     return cmp < 0;
 }
 

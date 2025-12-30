@@ -122,6 +122,7 @@ void CBaseUIScrollView::draw() {
 
 void CBaseUIScrollView::mouse_update(bool *propagate_clicks) {
     if(!this->bVisible) return;
+
     this->container->mouse_update(propagate_clicks);
     CBaseUIElement::mouse_update(propagate_clicks);
 
@@ -130,10 +131,10 @@ void CBaseUIScrollView::mouse_update(bool *propagate_clicks) {
         const dvec2 deltaToAdd = (mouse->getPos() - this->vMouseBackup2);
         // debugLog("+ ({})", deltaToAdd);
 
-        anim::moveQuadOut(&this->vKineticAverage.x, deltaToAdd.x,
-                          cv::ui_scrollview_kinetic_approach_time.getDouble(), true);
-        anim::moveQuadOut(&this->vKineticAverage.y, deltaToAdd.y,
-                          cv::ui_scrollview_kinetic_approach_time.getDouble(), true);
+        anim::moveQuadOut(&this->vKineticAverage.x, deltaToAdd.x, cv::ui_scrollview_kinetic_approach_time.getDouble(),
+                          true);
+        anim::moveQuadOut(&this->vKineticAverage.y, deltaToAdd.y, cv::ui_scrollview_kinetic_approach_time.getDouble(),
+                          true);
 
         this->vMouseBackup2 = mouse->getPos();
     }
@@ -480,8 +481,8 @@ void CBaseUIScrollView::scrollToXInt(int scrollPosX, bool animated, bool slow) {
 
 void CBaseUIScrollView::scrollToElement(CBaseUIElement *element, int /*xOffset*/, int yOffset, bool animated) {
     const std::vector<CBaseUIElement *> &elements = this->container->getElements();
-    for(auto i : elements) {
-        if(i == element) {
+    for(auto *e : elements) {
+        if(e == element) {
             this->scrollToY(-element->getRelPos().y + yOffset, animated);
             return;
         }
@@ -494,7 +495,7 @@ void CBaseUIScrollView::updateClipping() {
     const std::vector<CBaseUIElement *> &elements = this->container->getElements();
     const McRect &me{this->getRect()};
 
-    for(auto e : elements) {
+    for(auto *e : elements) {
         const McRect &eRect = e->getRect();  // heh
         const bool eVisible = e->isVisible();
         if(me.intersects(eRect)) {
@@ -568,7 +569,7 @@ CBaseUIScrollView *CBaseUIScrollView::setScrollSizeToContent(int border) {
     this->vScrollSize = {0., 0.};
 
     const std::vector<CBaseUIElement *> &elements = this->container->getElements();
-    for(auto e : elements) {
+    for(auto *e : elements) {
         const f64 x = e->getRelPos().x + e->getSize().x;
         const f64 y = e->getRelPos().y + e->getSize().y;
 

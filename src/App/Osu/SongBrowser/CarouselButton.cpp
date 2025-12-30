@@ -157,20 +157,23 @@ void CarouselButton::updateLayoutEx() {
     if(this->bVisible)  // lag prevention (animationHandler overflow)
     {
         const float centerOffsetAnimationTarget =
-            1.0f -
-            std::clamp<float>(
-                std::abs((this->vPos.y + (this->vSize.y / 2) - carousel->getPos().y - carousel->getSize().y / 2) /
-                         (carousel->getSize().y / 2)),
-                0.0f, 1.0f);
+            ((cv::songbrowser_button_anim_y_curve.getBool() && !sb->isRightClickScrolling())
+                 ? 1.0f - std::clamp<float>(std::abs((this->vPos.y + (this->vSize.y / 2) - carousel->getPos().y -
+                                                      carousel->getSize().y / 2) /
+                                                     (carousel->getSize().y / 2)),
+                                            0.0f, 1.0f)
+                 : 1.f) +
+            (this->bSelected && !cv::songbrowser_button_anim_y_curve.getBool() ? 0.5f : 0.0f);
 
-        if(std::abs(this->fCenterOffsetAnimation - centerOffsetAnimationTarget) > 0.0005f) {
+        if(std::abs(this->fCenterOffsetAnimation - centerOffsetAnimationTarget) > 0.001f) {
             anim::moveQuadOut(&this->fCenterOffsetAnimation, centerOffsetAnimationTarget, 0.5f, true);
         }
 
         float centerOffsetVelocityAnimationTarget =
             std::clamp<float>((std::abs(carousel->getVelocity().y)) / 3500.0f, 0.0f, 1.0f);
 
-        if(sb->isRightClickScrolling()) centerOffsetVelocityAnimationTarget = 0.0f;
+        if(sb->isRightClickScrolling() || !cv::songbrowser_button_anim_x_push.getBool())
+            centerOffsetVelocityAnimationTarget = 0.0f;
 
         if(carousel->isScrolling())
             anim::moveQuadOut(&this->fCenterOffsetVelocityAnimation, 0.0f, 1.0f, true);
@@ -225,7 +228,8 @@ CarouselButton *CarouselButton::setVisible(bool visible) {
         float centerOffsetVelocityAnimationTarget =
             std::clamp<float>((std::abs(osu->getSongBrowser()->getCarousel()->getVelocity().y)) / 3500.0f, 0.0f, 1.0f);
 
-        if(osu->getSongBrowser()->isRightClickScrolling()) centerOffsetVelocityAnimationTarget = 0.0f;
+        if(osu->getSongBrowser()->isRightClickScrolling() || !cv::songbrowser_button_anim_x_push.getBool())
+            centerOffsetVelocityAnimationTarget = 0.0f;
 
         this->fCenterOffsetVelocityAnimation = centerOffsetVelocityAnimationTarget;
 

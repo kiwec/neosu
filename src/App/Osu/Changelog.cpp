@@ -32,7 +32,12 @@ Changelog::Changelog() : ScreenBackable() {
     CHANGELOG v41_13;
     v41_13.title = "41.13 (" CHANGELOG_TIMESTAMP ")";
     v41_13.changes = {
-        R"()",
+        R"(- Improved songbrowser scrolling behavior and performance)",
+        R"(- Merged some nice features from McOsu (from @McKay))",
+        R"(  - Added Options > Songbrowser > "Song Buttons Velocity Animation)",
+        R"(  - Added Options > Songbrowser > "Song Buttons Curved Layout)",
+        R"(  - Updated songbrowser song buttons to have the velocity animation disabled by default)",
+        R"(  - Updated "Sort by Artist" to secondarily sort by title)",
     };
     changelogs.push_back(v41_13);
 

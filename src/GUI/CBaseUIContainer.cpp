@@ -135,7 +135,7 @@ CBaseUIElement *CBaseUIContainer::getBaseUIElement(const UString &name) {
 }
 
 void CBaseUIContainer::draw() {
-    if(!this->isVisible()) return;
+    if(!this->bVisible) return;
 
     MC_UNROLL
     for(auto *e : this->vElements) {
@@ -164,8 +164,8 @@ void CBaseUIContainer::draw_debug() {
 }
 
 void CBaseUIContainer::mouse_update(bool *propagate_clicks) {
-    if(!this->isVisible()) return;
     CBaseUIElement::mouse_update(propagate_clicks);
+    if(!this->bVisible) return;
 
     // we're probably going to have a shitton of elements if we're a scrollview,
     // so hint to the compiler that it should unroll a lot of them
@@ -235,7 +235,7 @@ void CBaseUIContainer::onDisabled() {
 void CBaseUIContainer::onMouseDownOutside(bool /*left*/, bool /*right*/) { this->onFocusStolen(); }
 
 bool CBaseUIContainer::isBusy() {
-    if(!this->isVisible()) return false;
+    if(!this->bVisible) return false;
     MC_UNROLL
     for(auto *elem : this->vElements) {
         if(elem->isBusy()) return true;
@@ -245,7 +245,7 @@ bool CBaseUIContainer::isBusy() {
 }
 
 bool CBaseUIContainer::isActive() {
-    if(!this->isVisible()) return false;
+    if(!this->bVisible) return false;
     MC_UNROLL
     for(auto *elem : this->vElements) {
         if(elem->isActive()) return true;

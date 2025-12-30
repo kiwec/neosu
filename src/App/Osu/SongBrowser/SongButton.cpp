@@ -42,9 +42,11 @@ SongButton::SongButton(UIContextMenu *contextMenu, float xPos, float yPos, float
     // build and add children
     const auto &diffs = this->databaseBeatmap->getDifficulties();
 
+    const bool isDifficultySingular = diffs.size() == 1;
     this->children.reserve(diffs.size());
     for(auto &diff : diffs) {
-        this->children.emplace_back(new SongDifficultyButton(this->contextMenu, 0, 0, 0, 0, "", diff.get(), this));
+        this->children.emplace_back(
+            new SongDifficultyButton(this->contextMenu, 0, 0, 0, 0, "", diff.get(), this, isDifficultySingular));
     }
 
     this->updateLayoutEx();
@@ -57,7 +59,7 @@ SongButton::~SongButton() {
 }
 
 void SongButton::draw() {
-    if(!this->bVisible ) {
+    if(!this->bVisible) {
         return;
     }
 

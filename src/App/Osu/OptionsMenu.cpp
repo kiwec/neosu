@@ -586,6 +586,12 @@ OptionsMenu::OptionsMenu() : ScreenBackable() {
     this->addCheckbox("Draw Strain Graph in Scrubbing Timeline",
                       "Speed strain is red, aim strain is green.\n(See osu_hud_scrubbing_timeline_strains_*)",
                       &cv::draw_scrubbing_timeline_strain_graph);
+    this->addCheckbox("Song Buttons Velocity Animation",
+                      "If enabled, then song buttons are pushed to the right depending on the scrolling velocity.",
+                      &cv::songbrowser_button_anim_x_push);
+    this->addCheckbox("Song Buttons Curved Layout",
+                      "If enabled, then song buttons are positioned on a vertically centered curve.",
+                      &cv::songbrowser_button_anim_y_curve);
 
     this->addSubSection("Window");
     this->addCheckbox("Pause on Focus Loss", "Should the game pause when you switch to another application?",

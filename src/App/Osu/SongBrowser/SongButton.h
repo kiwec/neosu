@@ -15,6 +15,7 @@ class SongButton : public CarouselButton {
     NOCOPY_NOMOVE(SongButton)
    public:
     DEF_BUTTON_TYPE(SongButton, SongButton_, CarouselButton)
+   protected:
     // only for SongDifficultyButton as a passthrough (unnecessary inheritance...?)
     SongButton(UIContextMenu *contextMenu, float xPos, float yPos, float xSize, float ySize, UString name);
 
