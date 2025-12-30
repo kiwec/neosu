@@ -55,7 +55,6 @@ void UIModSelectorModButton::draw() {
             if(draw_inverted_colors) {
                 g->setColorInversion(false);
             }
-
         }
         g->popTransform();
     }
@@ -170,10 +169,6 @@ void UIModSelectorModButton::setOn(bool on, bool silent) {
 
     bool prevState = this->bOn;
     this->bOn = on;
-    float animationDuration = 0.05f;
-    if(silent) {
-        animationDuration = 0.f;
-    }
 
     // Disable all states except current
     for(int i = 0; i < this->states.size(); i++) {
@@ -187,14 +182,33 @@ void UIModSelectorModButton::setOn(bool on, bool silent) {
             }
         }
     }
-    if(!silent) {
-        osu->updateMods();
+
+    if(silent) {
+        // set values directly, without animation
+        anim::deleteExistingAnimation(&this->fRot);
+        anim::deleteExistingAnimation(&this->vScale.x);
+        anim::deleteExistingAnimation(&this->vScale.y);
+
+        if(this->bOn) {
+            this->fRot = this->fEnabledRotationDeg;
+            this->vScale.x = this->vBaseScale.x * this->fEnabledScaleMultiplier;
+            this->vScale.y = this->vBaseScale.y * this->fEnabledScaleMultiplier;
+        } else {
+            this->fRot = 0.0f;
+            this->vScale = this->vBaseScale;
+        }
+        // return early
+        return;
     }
+
+    osu->updateMods();
+
+    constexpr float animationDuration = 0.05f;
 
     if(this->bOn) {
         if(prevState) {
             // swap effect
-            float swapDurationMultiplier = 0.65f;
+            constexpr float swapDurationMultiplier = 0.65f;
             anim::moveLinear(&this->fRot, 0.0f, animationDuration * swapDurationMultiplier, true);
             anim::moveLinear(&this->vScale.x, this->vBaseScale.x, animationDuration * swapDurationMultiplier, true);
             anim::moveLinear(&this->vScale.y, this->vBaseScale.y, animationDuration * swapDurationMultiplier, true);
@@ -215,16 +229,13 @@ void UIModSelectorModButton::setOn(bool on, bool silent) {
                              true);
         }
 
-        if(!silent) {
-            soundEngine->play(osu->getSkin()->s_check_on);
-        }
+        soundEngine->play(osu->getSkin()->s_check_on);
     } else {
         anim::moveLinear(&this->fRot, 0.0f, animationDuration, true);
         anim::moveLinear(&this->vScale.x, this->vBaseScale.x, animationDuration, true);
         anim::moveLinear(&this->vScale.y, this->vBaseScale.y, animationDuration, true);
 
-        if(prevState && !this->bOn && !silent) {
-            // only play sound on specific change
+        if(prevState) {
             soundEngine->play(osu->getSkin()->s_check_off);
         }
     }
