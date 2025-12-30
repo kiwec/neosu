@@ -1549,9 +1549,15 @@ void Osu::onResolutionChanged(vec2 newResolution, ResolutionRequestFlags src) {
         }
     }
 
-    if(vec::any(vec::greaterThan(newResolution, env->getNativeScreenSize()))) {
-        // clamp it to desktop rect
-        newResolution = env->getNativeScreenSize();
+    {
+        const vec2 graphicsRes = g->getResolution();
+        const vec2 nativeScreenSize = env->getNativeScreenSize();
+
+        const vec2 maxRes = vec::max(graphicsRes, nativeScreenSize);
+        if(vec::any(vec::greaterThan(newResolution, maxRes))) {
+            // clamp it to desktop/graphics rect
+            newResolution = maxRes;
+        }
     }
 
     auto res_str = fmt::format("{:d}x{:d}", (i32)newResolution.x, (i32)newResolution.y);
