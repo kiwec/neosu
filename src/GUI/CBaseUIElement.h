@@ -15,6 +15,8 @@
 
 enum class TEXT_JUSTIFICATION : uint8_t { LEFT, CENTERED, RIGHT };
 
+class CBaseUIContainer;
+
 class CBaseUIElement : public KeyboardListener {
     NOCOPY_NOMOVE(CBaseUIElement)
    public:
@@ -158,6 +160,8 @@ class CBaseUIElement : public KeyboardListener {
 
     void dumpElem() const;  // debug
    protected:
+    friend class CBaseUIContainer;
+
     // events
     virtual void onResized() { ; }
     virtual void onMoved() { ; }

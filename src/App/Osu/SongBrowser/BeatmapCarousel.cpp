@@ -25,7 +25,12 @@ void BeatmapCarousel::draw() { CBaseUIScrollView::draw(); }
 
 void BeatmapCarousel::mouse_update(bool *propagate_clicks) {
     CBaseUIScrollView::mouse_update(propagate_clicks);
-    if(!this->isVisible()) return;
+    if(!this->isVisible()) {
+        // just reset this as a precaution
+        this->rightClickScrollRelYVelocity = 0.0;
+        return;
+    }
+
     this->container->update_pos();  // necessary due to constant animations
 
     // handle right click absolute scrolling
@@ -61,6 +66,39 @@ void BeatmapCarousel::mouse_update(bool *propagate_clicks) {
             this->scrollToY(scrollingTo);
         }
     }
+
+    // update right click scrolling relative velocity, as a cache for isActuallyRightClickScrolling
+    f64 curRightClickScrollRelYVelocity = 0.0;
+    do {
+        if(!this->browser_ptr->isRightClickScrolling()) {
+            curRightClickScrollRelYVelocity = 0.0;  // if we are not right click scrolling then there is no velocity
+            break;
+        }
+
+        // this case never seems to be hit for the carousel, not sure why... probably because of the hacky way the
+        // scrollview is used
+        if(this->isScrolling()) {
+            curRightClickScrollRelYVelocity = 1.0;
+            break;
+        }
+
+        const f64 scrollSizeY = std::abs(this->getScrollSize().y);
+        if(scrollSizeY == 0.0) {
+            curRightClickScrollRelYVelocity = 0.0;
+            break;
+        }
+
+        const f64 absYVelocity = std::abs(this->getVelocity().y);
+        if(absYVelocity == 0.0) {
+            curRightClickScrollRelYVelocity = 0.0;
+            break;
+        }
+
+        // we are truly scrolling, calculate the relative velocity
+        curRightClickScrollRelYVelocity = absYVelocity / scrollSizeY;
+    } while(false);
+
+    this->rightClickScrollRelYVelocity = curRightClickScrollRelYVelocity;
 }
 
 void BeatmapCarousel::onKeyUp(KeyboardEvent & /*e*/) { /*this->container->onKeyUp(e);*/ ; }

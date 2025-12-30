@@ -8,6 +8,8 @@
 #include "ScoreButton.h"
 #include "SongBrowser.h"
 #include "SongDifficultyButton.h"
+#include "BeatmapCarousel.h"
+
 // ---
 
 #include "BackgroundImageHandler.h"
@@ -55,16 +57,19 @@ SongButton::~SongButton() {
 }
 
 void SongButton::draw() {
-    if(!this->bVisible || this->vPos.y + this->vSize.y < 0 || this->vPos.y > osu->getVirtScreenHeight()) {
+    if(!this->bVisible ) {
         return;
     }
 
     CarouselButton::draw();
 
-    // draw background image
-    if(this->representativeBeatmap &&
+    const auto &carousel = osu->getSongBrowser()->carousel;
+
+    // don't try to load images while right click scrolling to avoid lag
+    if(!carousel->isActuallyRightClickScrolling() && this->representativeBeatmap &&
        // delay requesting the image itself a bit
        this->fVisibleFor >= ((std::clamp<f32>(cv::background_image_loading_delay.getFloat(), 0.f, 2.f)) / 4.f)) {
+        // draw background image
         this->drawBeatmapBackgroundThumbnail(
             osu->getBackgroundImageHandler()->getLoadBackgroundImage(this->representativeBeatmap));
     }

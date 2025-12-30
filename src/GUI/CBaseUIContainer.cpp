@@ -135,7 +135,7 @@ CBaseUIElement *CBaseUIContainer::getBaseUIElement(const UString &name) {
 }
 
 void CBaseUIContainer::draw() {
-    if(!this->bVisible) return;
+    if(!this->isVisible()) return;
 
     MC_UNROLL
     for(auto *e : this->vElements) {
@@ -164,20 +164,30 @@ void CBaseUIContainer::draw_debug() {
 }
 
 void CBaseUIContainer::mouse_update(bool *propagate_clicks) {
-    if(!this->bVisible) return;
+    if(!this->isVisible()) return;
     CBaseUIElement::mouse_update(propagate_clicks);
 
-    MC_UNROLL
-    for(auto *e : this->vElements) {
+    // we're probably going to have a shitton of elements if we're a scrollview,
+    // so hint to the compiler that it should unroll a lot of them
+
+    MC_UNR_cnt(64) /* clang-format getting confused */
+        for(auto *e : this->vElements) {
         if(e->isVisible()) e->mouse_update(propagate_clicks);
     }
 }
 
 void CBaseUIContainer::update_pos() {
     const vec2 thisPos = this->vPos;
-    MC_UNROLL
-    for(auto *e : this->vElements) {
-        e->setPos(thisPos + e->getRelPos());
+
+    MC_UNR_cnt(64) /* clang-format getting confused */
+        for(auto *e : this->vElements) {
+        // setPos already has this logic, but inline it manually here
+        // to avoid unnecessary indirection
+        const vec2 newPos = thisPos + e->vmPos;
+        if(e->vPos != newPos) {
+            e->vPos = newPos;
+            e->onMoved();
+        }
     }
 }
 
@@ -225,7 +235,7 @@ void CBaseUIContainer::onDisabled() {
 void CBaseUIContainer::onMouseDownOutside(bool /*left*/, bool /*right*/) { this->onFocusStolen(); }
 
 bool CBaseUIContainer::isBusy() {
-    if(!this->bVisible) return false;
+    if(!this->isVisible()) return false;
     MC_UNROLL
     for(auto *elem : this->vElements) {
         if(elem->isBusy()) return true;
@@ -235,7 +245,7 @@ bool CBaseUIContainer::isBusy() {
 }
 
 bool CBaseUIContainer::isActive() {
-    if(!this->bVisible) return false;
+    if(!this->isVisible()) return false;
     MC_UNROLL
     for(auto *elem : this->vElements) {
         if(elem->isActive()) return true;

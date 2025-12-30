@@ -25,6 +25,17 @@ class BeatmapCarousel final : public CBaseUIScrollView {
     void draw() override;
     void mouse_update(bool *propagate_clicks) override;
 
+    // if we are actually right click scrolling at a "noticeable" velocity, so that we can skip
+    // drawing some things for elements which the user will probably not notice anyways (backgrounds)
+
+    // 0.00005 seems to empirically be small enough that it's not noticeable
+    [[nodiscard]] inline bool isActuallyRightClickScrolling(f64 relativeYVelocityThreshold = 0.00005) const {
+        return this->rightClickScrollRelYVelocity > relativeYVelocityThreshold;
+    }
+
    private:
     SongBrowser *browser_ptr;
+
+    // updated at the end of mouse_update
+    f64 rightClickScrollRelYVelocity{0.0};
 };

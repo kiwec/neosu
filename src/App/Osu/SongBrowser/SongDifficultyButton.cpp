@@ -3,6 +3,7 @@
 
 #include <utility>
 
+#include "BeatmapCarousel.h"
 #include "Font.h"
 #include "ScoreButton.h"
 #include "SongBrowser.h"
@@ -50,7 +51,9 @@ SongDifficultyButton::SongDifficultyButton(UIContextMenu* contextMenu, float xPo
 SongDifficultyButton::~SongDifficultyButton() { anim::deleteExistingAnimation(&this->fOffsetPercentAnim); }
 
 void SongDifficultyButton::draw() {
-    if(!this->bVisible || this->vPos.y + this->vSize.y < 0 || this->vPos.y > osu->getVirtScreenHeight()) {
+    // NOTE(spec): we don't need this check because the updateClipping() call in the scrollview already sets visibility
+    /*  || this->vPos.y + this->vSize.y < 0 || this->vPos.y > osu->getVirtScreenHeight() */
+    if(!this->bVisible) {
         return;
     }
     CarouselButton::draw();
@@ -63,9 +66,13 @@ void SongDifficultyButton::draw() {
     const vec2 pos = this->getActualPos();
     const vec2 size = this->getActualSize();
 
-    // draw background image
-    // delay requesting the image itself a bit
-    if(this->fVisibleFor >= ((std::clamp<f32>(cv::background_image_loading_delay.getFloat(), 0.f, 2.f)) / 4.f)) {
+    const auto& carousel = osu->getSongBrowser()->carousel;
+
+    // don't try to load images while right click scrolling to avoid lag
+    if(!carousel->isActuallyRightClickScrolling() &&
+       // delay requesting the image itself a bit
+       this->fVisibleFor >= ((std::clamp<f32>(cv::background_image_loading_delay.getFloat(), 0.f, 2.f)) / 4.f)) {
+        // draw background image
         this->drawBeatmapBackgroundThumbnail(
             osu->getBackgroundImageHandler()->getLoadBackgroundImage(this->databaseBeatmap));
     }
