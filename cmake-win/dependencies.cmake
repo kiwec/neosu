@@ -21,9 +21,9 @@ macro(set_download_name dep_name version url)
     set(${_upper_dep_name}_DL_NAME "${dep_name}-${version}${_temp_ext}")
 endmacro()
 
-set(SDL3_VERSION "a3e5335dbf5fa25d655d922193a0f52e5242f6fa")
+set(SDL3_VERSION "95ac0ff4d644e60345d41923550c2ae841357d00")
 set(SDL3_URL "https://github.com/libsdl-org/SDL/archive/${SDL3_VERSION}.tar.gz")
-set(SDL3_HASH "SHA512=b2e460dc3771e7a0d197d239778792fa7032292e0fddb9cd0ec577ef5c59156d39500cfa845bcb90015e05314cc2f7d42b243bb1dcbc89af46b35618b49b0ca1")
+set(SDL3_HASH "SHA512=a704e003cd06d710cd441fbb382f79cbbb10c198b6064bcaff5c26797e2e2a6359acb7f12877c8fd843658dab4436e31ec28321ab2ab72db8741bb26431271c7")
 set_download_name("sdl3" "${SDL3_VERSION}" "${SDL3_URL}")
 
 set(FREETYPE_VERSION "2.13.3")
@@ -33,19 +33,19 @@ set(FREETYPE_HASH "SHA512=fccfaa15eb79a105981bf634df34ac9ddf1c53550ec0b334903a1b
 set_download_name("freetype" "${FREETYPE_VERSION}" "${FREETYPE_URL}")
 unset(_freetype_ver_temp)
 
-set(LIBJPEG_VERSION "3.1.2")
+set(LIBJPEG_VERSION "3.1.3")
 set(LIBJPEG_URL "https://github.com/libjpeg-turbo/libjpeg-turbo/releases/download/${LIBJPEG_VERSION}/libjpeg-turbo-${LIBJPEG_VERSION}.tar.gz")
-set(LIBJPEG_HASH "SHA512=79271ae4ddc12e3753cc7323dc15617f1d82b2d554ef27b555712f6ab5de603323dd33747620815e3b55663a20e07b292a55172aee9f401f9fd3557145967abe")
+set(LIBJPEG_HASH "SHA512=d3410a072044b4962c1aa08eb144b4e4b959f4f65203dfac4013b14e2fd987b9a6ee9b59f5570980fa691ddf5e9f9d3aa328a63afb487a46c2e76de722f3d693")
 set_download_name("libjpeg" "${LIBJPEG_VERSION}" "${LIBJPEG_URL}")
 
-set(LIBPNG_VERSION "1.6.51")
+set(LIBPNG_VERSION "1.6.53")
 set(LIBPNG_URL "https://github.com/pnggroup/libpng/archive/refs/tags/v${LIBPNG_VERSION}.tar.gz")
-set(LIBPNG_HASH "SHA512=3b9b320b306388d0394404dbd6a978ba115743d913b4dd8d382b7ecf1f4e1979439e9829187058f52553f0aac0f73b274091a354c00286cdc699373b5c727fde")
+set(LIBPNG_HASH "SHA512=e854589401043c5f24e0365a578ccda8fde47766fa5990c7355581e4f0dc67bfefd7f1272fc25c269968135826cf583b1a10d01667af97e2ec4410cfaf2a700c")
 set_download_name("libpng" "${LIBPNG_VERSION}" "${LIBPNG_URL}")
 
-set(ZLIB_VERSION "2.3.1")
+set(ZLIB_VERSION "2.3.2")
 set(ZLIB_URL "https://github.com/zlib-ng/zlib-ng/archive/refs/tags/${ZLIB_VERSION}.tar.gz")
-set(ZLIB_HASH "SHA512=33722bfdd7d4f0b41f4ac99edcfd1a0f26aa52f86b1c16ce2e63962c26f8f8239634acef33051958f96b9593c29b7dedb29b136e710005de88fbb4cf40228a85")
+set(ZLIB_HASH "SHA512=8781ee4bfda7cb8c8c5150c2e6a067d699580616b61af2ea4cf03cbe14c6715b31a29a20b7c3dd97254a9e487c72c5228c9cfa817ff71aa765fe7043ab136f04")
 set_download_name("zlib" "${ZLIB_VERSION}" "${ZLIB_URL}")
 
 set(BZIP2_VERSION "1ea1ac188ad4b9cb662e3f8314673c63df95a589")
@@ -68,14 +68,14 @@ set(GLM_URL "https://github.com/g-truc/glm/archive/refs/tags/${GLM_VERSION}.tar.
 set(GLM_HASH "SHA512=e66e4f192f6579128198c47ed20442dda13c741f371b447722b7449200f05785e1b69386a465febf97f33b437f6eb69b3fb282e1e9eabf6261eb7b57998cd68c")
 set_download_name("glm" "${GLM_VERSION}" "${GLM_URL}")
 
-set(LZMA_VERSION "5.8.1")
+set(LZMA_VERSION "5.8.2")
 set(LZMA_URL "https://github.com/tukaani-project/xz/releases/download/v${LZMA_VERSION}/xz-${LZMA_VERSION}.tar.gz")
-set(LZMA_HASH "SHA512=151b2a47fdf00274c4fd71ceada8fb6c892bdac44070847ebf3259e602b97c95ee5ee88974e03d7aa821ab4f16d5c38e50dfb2baf660cf39c199878a666e19ad")
+set(LZMA_HASH "SHA512=0b808fc8407e7c50da3a7b2db05be732c2fcd41850b92c7f5647181443483848ff359e176c816ce2038c115273f51575877c14f1356417cc9d53845841acb063")
 set_download_name("lzma" "${LZMA_VERSION}" "${LZMA_URL}")
 
-set(LIBARCHIVE_VERSION "3.8.3")
+set(LIBARCHIVE_VERSION "3.8.4")
 set(LIBARCHIVE_URL "https://github.com/libarchive/libarchive/releases/download/v${LIBARCHIVE_VERSION}/libarchive-${LIBARCHIVE_VERSION}.tar.gz")
-set(LIBARCHIVE_HASH "SHA512=bf3d86ef5930a19a4af6454d26d436f0364ca7a57ece269b2a6a594950af0f8bbf5267f638296a4abb1e197794412740c0b80cdd090cd1ea08c1de30e32dc77a")
+set(LIBARCHIVE_HASH "SHA512=f399ea4525744a2727d99899478e6f52abfdc60e607d93673ba7f0602d4817be4e384071bd8f9420ae398e3f2b6b80ffaffb4f9bbfdcd46ac03a6a8965fadafd")
 set_download_name("libarchive" "${LIBARCHIVE_VERSION}" "${LIBARCHIVE_URL}")
 
 set(MPG123_VERSION "fe143d4e9c885ec34596c561481dff96357fd797")
@@ -98,9 +98,9 @@ set(NSYNC_URL "https://github.com/google/nsync/archive/refs/tags/${NSYNC_VERSION
 set(NSYNC_HASH "SHA512=fdcd61eb686ca6d6804d82837fcd33ddee54d6b2aeb7bc20cdff8c5bd2a75f87b724f72c7e835459a1a82ee8bed3d6da5e4c111b3bca22545c6e037f129839f2")
 set_download_name("nsync" "${NSYNC_VERSION}" "${NSYNC_URL}")
 
-set(SIMDUTF_VERSION "7.6.0")
+set(SIMDUTF_VERSION "7.7.1")
 set(SIMDUTF_URL "https://github.com/simdutf/simdutf/archive/refs/tags/v${SIMDUTF_VERSION}.tar.gz")
-set(SIMDUTF_HASH "SHA512=0d1d15f0030b002a6cb865b8876f252d9ad1657b7396248902f3adbe23023ac705a40c57e3f1895c3f66fbab6d490c69b545baecdd6ea7a085b0e5c694e38a42")
+set(SIMDUTF_HASH "SHA512=90d366d6e7f866d9e9bb92f7d40b40d9ca8353b93d2c221ad9333ed87579ba888f54dffd73b27d3ecd2357de8be502c6c2a58c6e64e343246e957d487b872113")
 set_download_name("simdutf" "${SIMDUTF_VERSION}" "${SIMDUTF_URL}")
 
 set(CURL_VERSION "8.17.0")

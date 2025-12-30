@@ -127,12 +127,12 @@ void CBaseUIScrollView::mouse_update(bool *propagate_clicks) {
 
     const bool wasContainerBusyBeforeUpdate = this->container->isBusy();
     if(this->bBusy) {
-        const vec2 deltaToAdd = (mouse->getPos() - this->vMouseBackup2);
+        const dvec2 deltaToAdd = (mouse->getPos() - this->vMouseBackup2);
         // debugLog("+ ({})", deltaToAdd);
 
-        anim::moveQuadOut(&this->vKineticAverage.x, (f64)deltaToAdd.x,
+        anim::moveQuadOut(&this->vKineticAverage.x, deltaToAdd.x,
                           cv::ui_scrollview_kinetic_approach_time.getDouble(), true);
-        anim::moveQuadOut(&this->vKineticAverage.y, (f64)deltaToAdd.y,
+        anim::moveQuadOut(&this->vKineticAverage.y, deltaToAdd.y,
                           cv::ui_scrollview_kinetic_approach_time.getDouble(), true);
 
         this->vMouseBackup2 = mouse->getPos();

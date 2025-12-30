@@ -1261,7 +1261,7 @@ void MainMenu::onButtonChange(ButtonEvent ev) {
         this->bMainMenuAnimFadeToFriendForNextAnim = true;
     }
 
-    animMainButton();
+    this->animMainButton();
     this->fMainMenuAnimDuration = 15.0f;
     this->fMainMenuAnimTime = engine->getTime() + this->fMainMenuAnimDuration;
 }
