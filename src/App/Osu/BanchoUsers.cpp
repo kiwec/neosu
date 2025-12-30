@@ -114,11 +114,11 @@ void logout_user(i32 user_id) {
 }
 
 void logout_all_users() {
-    all_users.clear();
     online_users.clear();
     friends.clear();
     presence_requests.clear();
     stats_requests.clear();
+    all_users.clear();
 }
 
 UserInfo* find_user(const UString& username) {

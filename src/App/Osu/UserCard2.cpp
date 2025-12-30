@@ -170,7 +170,7 @@ void UserCard2::draw() {
     g->popTransform();
 
     // draw status
-    const auto font = resourceManager->getFont("FONT_DEFAULT");
+    const auto font = engine->getDefaultFont();
     const f32 status_scale = this->vSize.y * 0.5f / font->getHeight() * 0.3f;
     yCounter += font->getHeight() * status_scale * 0.1f;
     auto line_width = this->vSize.x - (xCounter + AVATAR_MARGIN);

@@ -27,7 +27,7 @@ void TooltipOverlay::draw() {
     if(this->fAnim > 0.0f) {
         const float dpiScale = Osu::getUIScale();
 
-        McFont* font = resourceManager->getFont("FONT_DEFAULT");
+        McFont* font = engine->getDefaultFont();
 
         const vec2 offset = vec2(10, 10) * dpiScale;
         const int margin = 5 * dpiScale;

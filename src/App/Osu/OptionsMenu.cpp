@@ -1856,7 +1856,7 @@ void OptionsMenu::updateLayout() {
     this->bLayoutUpdateScheduled.store(false, std::memory_order_release);
     this->updating_layout = true;
 
-    bool oauth = this->should_use_oauth_login();
+    const bool oauth = this->should_use_oauth_login();
     this->update_login_button();
 
     // set all elements to the current convar values, and update the reset button states

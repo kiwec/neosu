@@ -2551,7 +2551,7 @@ void Spinner::draw() {
     // draw RPM
     // TODO: draw spinner-rpm if skinned, x = center - 139px, y = 712px, origin = top left
     if(this->iDelta < 0) {
-        McFont *rpmFont = resourceManager->getFont("FONT_DEFAULT");
+        McFont *rpmFont = engine->getDefaultFont();
         const float stringWidth = rpmFont->getStringWidth("RPM: 477");
         g->setColor(Color(0xffffffff)
                         .setA(this->fAlphaWithoutHidden * this->fAlphaWithoutHidden * this->fAlphaWithoutHidden *

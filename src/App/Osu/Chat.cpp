@@ -283,7 +283,7 @@ void ChatChannel::updateLayout(vec2 pos, vec2 size) {
 }
 
 Chat::Chat() : OsuScreen() {
-    chat_font = resourceManager->getFont("FONT_DEFAULT");
+    chat_font = engine->getDefaultFont();
 
     this->ticker = new ChatChannel(nullptr, "");
     this->ticker->ui->setVerticalScrolling(false);
@@ -403,8 +403,7 @@ void Chat::mouse_update(bool *propagate_clicks) {
 
     if(this->user_list->isVisible()) {
         // Request presence & stats for on-screen user cards
-        for(auto elm : this->user_list->container->getElements()) {
-            auto *card = (UserCard2 *)elm;
+        for(auto *card : this->user_list->container->getElements<UserCard2>()) {
             bool is_above_bottom = card->getPos().y <= this->user_list->getPos().y + this->user_list->getSize().y;
             bool is_below_top = card->getPos().y + card->getSize().y >= this->user_list->getPos().y;
             if(is_above_bottom && is_below_top) {

@@ -18,9 +18,10 @@
 #include "Skin.h"
 #include "UIContextMenu.h"
 
-CollectionButton::CollectionButton(UIContextMenu *contextMenu, float xPos, float yPos,
-                                   float xSize, float ySize, UString name, const UString &collectionName,
-                                   std::vector<SongButton *> children)
+using namespace neosu::sbr;
+
+CollectionButton::CollectionButton(UIContextMenu *contextMenu, float xPos, float yPos, float xSize, float ySize,
+                                   UString name, const UString &collectionName, std::vector<SongButton *> children)
     : CarouselButton(contextMenu, xPos, yPos, xSize, ySize, std::move(name)) {
     this->sCollectionName = collectionName.utf8View();
     this->setChildren(std::move(children));
@@ -43,7 +44,8 @@ void CollectionButton::draw() {
 
     // draw title
     UString titleString{this->sCollectionName};
-    titleString.append(UString::format((this->numVisibleChildren == 1 ? " (%i map)" : " (%i maps)"), this->numVisibleChildren));
+    titleString.append(
+        UString::format((this->numVisibleChildren == 1 ? " (%i map)" : " (%i maps)"), this->numVisibleChildren));
     int textXOffset = size.x * 0.02f;
     float titleScale = (size.y * this->fTitleScale) / this->font->getHeight();
     g->setColor(this->bSelected ? skin->c_song_select_active_text : skin->c_song_select_inactive_text);
@@ -59,14 +61,14 @@ void CollectionButton::draw() {
 void CollectionButton::onSelected(bool wasSelected, SelOpts opts) {
     CarouselButton::onSelected(wasSelected, opts);
 
-    osu->getSongBrowser()->onSelectionChange(this, true);
-    osu->getSongBrowser()->scrollToSongButton(this, true);
+    g_songbrowser->onSelectionChange(this, true);
+    g_songbrowser->scrollToSongButton(this, true);
 }
 
 void CollectionButton::onRightMouseUpInside() { this->triggerContextMenu(mouse->getPos()); }
 
 void CollectionButton::triggerContextMenu(vec2 pos) {
-    if(osu->getSongBrowser()->getGroupingMode() != SongBrowser::GroupType::COLLECTIONS) return;
+    if(g_songbrowser->getGroupingMode() != SongBrowser::GroupType::COLLECTIONS) return;
 
     if(this->contextMenu != nullptr) {
         this->contextMenu->setPos(pos);
@@ -141,7 +143,7 @@ void CollectionButton::onContextMenu(const UString &text, int id) {
 void CollectionButton::onRenameCollectionConfirmed(const UString &text, int /*id*/) {
     if(text.lengthUtf8() > 0) {
         // forward it
-        osu->getSongBrowser()->onCollectionButtonContextMenu(this, text, 3);
+        g_songbrowser->onCollectionButtonContextMenu(this, text, 3);
     }
 }
 
@@ -149,7 +151,7 @@ void CollectionButton::onDeleteCollectionConfirmed(const UString & /*text*/, int
     if(id != 2) return;
 
     // just forward it
-    osu->getSongBrowser()->onCollectionButtonContextMenu(this, this->sCollectionName.c_str(), id);
+    g_songbrowser->onCollectionButtonContextMenu(this, this->sCollectionName.c_str(), id);
 }
 
 Color CollectionButton::getActiveBackgroundColor() const {

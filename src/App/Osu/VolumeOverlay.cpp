@@ -146,13 +146,13 @@ void VolumeOverlay::mouse_update(bool *propagate_clicks) {
          this->volumeMusic->isMouseInside()))) {
         this->animate();
 
-        const std::vector<CBaseUIElement *> &elements = this->volumeSliderOverlayContainer->getElements();
+        const auto &elements = this->volumeSliderOverlayContainer->getElements<UIVolumeSlider>();
         for(int i = 0; i < elements.size(); i++) {
-            if(((UIVolumeSlider *)elements[i])->checkWentMouseInside()) {
+            if(elements[i]->checkWentMouseInside()) {
                 for(int c = 0; c < elements.size(); c++) {
-                    if(c != i) ((UIVolumeSlider *)elements[c])->setSelected(false);
+                    if(c != i) elements[c]->setSelected(false);
                 }
-                ((UIVolumeSlider *)elements[i])->setSelected(true);
+                elements[i]->setSelected(true);
             }
         }
     }
@@ -217,24 +217,24 @@ void VolumeOverlay::onKeyDown(KeyboardEvent &key) {
 
     if(this->isVisible() && this->canChangeVolume()) {
         if(key == KEY_LEFT) {
-            const std::vector<CBaseUIElement *> &elements = this->volumeSliderOverlayContainer->getElements();
+            const auto &elements = this->volumeSliderOverlayContainer->getElements<UIVolumeSlider>();
             for(int i = 0; i < elements.size(); i++) {
-                if(((UIVolumeSlider *)elements[i])->isSelected()) {
+                if(elements[i]->isSelected()) {
                     const int nextIndex = (i == elements.size() - 1 ? 0 : i + 1);
-                    ((UIVolumeSlider *)elements[i])->setSelected(false);
-                    ((UIVolumeSlider *)elements[nextIndex])->setSelected(true);
+                    elements[i]->setSelected(false);
+                    elements[nextIndex]->setSelected(true);
                     break;
                 }
             }
             this->animate();
             key.consume();
         } else if(key == KEY_RIGHT) {
-            const std::vector<CBaseUIElement *> &elements = this->volumeSliderOverlayContainer->getElements();
+            const auto &elements = this->volumeSliderOverlayContainer->getElements<UIVolumeSlider>();
             for(int i = 0; i < elements.size(); i++) {
-                if(((UIVolumeSlider *)elements[i])->isSelected()) {
+                if(elements[i]->isSelected()) {
                     const int prevIndex = (i == 0 ? elements.size() - 1 : i - 1);
-                    ((UIVolumeSlider *)elements[i])->setSelected(false);
-                    ((UIVolumeSlider *)elements[prevIndex])->setSelected(true);
+                    elements[i]->setSelected(false);
+                    elements[prevIndex]->setSelected(true);
                     break;
                 }
             }

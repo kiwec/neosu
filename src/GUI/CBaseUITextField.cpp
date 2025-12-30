@@ -49,7 +49,7 @@ CBaseUITextField *CBaseUITextField::append(const UString& text) {
 
 CBaseUITextField::TextObject::TextObject(float xPos, float yPos, float xSize, float ySize, UString text)
     : CBaseUIElement(xPos, yPos, xSize, ySize, "") {
-    this->font = resourceManager->getFont("FONT_DEFAULT");
+    this->font = engine->getDefaultFont();
 
     // colors
     this->textColor = 0xffffffff;

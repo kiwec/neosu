@@ -51,6 +51,13 @@ enum type : i8 {
 };
 };
 
+class SongBrowser;
+
+namespace neosu::sbr {
+extern SongBrowser *g_songbrowser;
+extern BeatmapCarousel *g_carousel;
+}  // namespace neosu::sbr
+
 class SongBrowser final : public ScreenBackable {
     NOCOPY_NOMOVE(SongBrowser)
    private:
@@ -63,7 +70,19 @@ class SongBrowser final : public ScreenBackable {
     static bool sort_by_length(SongButton const *a, SongButton const *b);
     static bool sort_by_title(SongButton const *a, SongButton const *b);
 
+    struct GlobalSongBrowserCtorDtor {
+        NOCOPY_NOMOVE(GlobalSongBrowserCtorDtor)
+       public:
+        GlobalSongBrowserCtorDtor() = delete;
+        GlobalSongBrowserCtorDtor(SongBrowser *sbrptrr);
+        ~GlobalSongBrowserCtorDtor();
+    };
+
+    GlobalSongBrowserCtorDtor global_songbrowser_;
+
    public:
+    using CollBtnContainer = std::vector<std::unique_ptr<CollectionButton>>;
+
     using SortType = SortTypes::type;
     using GroupType = GroupTypes::type;
 
@@ -112,8 +131,7 @@ class SongBrowser final : public ScreenBackable {
 
     void refreshBeatmaps(bool closeAfterLoading = false);
     void addBeatmapSet(BeatmapSet *beatmap, bool initialSongBrowserLoad = false);
-    void addSongButtonToAlphanumericGroup(SongButton *btn, std::vector<CollectionButton *> &group,
-                                          std::string_view name);
+    void addSongButtonToAlphanumericGroup(SongButton *btn, CollBtnContainer &group, std::string_view name);
 
     void requestNextScrollToSongButtonJumpFix(SongDifficultyButton *diffButton);
     bool isButtonVisible(CarouselButton *songButton);
@@ -132,9 +150,7 @@ class SongBrowser final : public ScreenBackable {
 
     SetVisibility getSetVisibility(const SongButton *parent) const;
 
-    [[nodiscard]] inline const std::vector<CollectionButton *> &getCollectionButtons() const {
-        return this->collectionButtons;
-    }
+    [[nodiscard]] inline const CollBtnContainer &getCollectionButtons() const { return this->collectionButtons; }
 
     [[nodiscard]] inline const std::unique_ptr<BeatmapCarousel> &getCarousel() const { return this->carousel; }
 
@@ -269,15 +285,18 @@ class SongBrowser final : public ScreenBackable {
     // beatmap database
     std::vector<SongButton *> parentButtons;
     std::vector<CarouselButton *> visibleSongButtons;
-    std::vector<CollectionButton *> collectionButtons;
-    std::vector<CollectionButton *> artistCollectionButtons;
-    std::vector<CollectionButton *> difficultyCollectionButtons;
-    std::vector<CollectionButton *> bpmCollectionButtons;
-    std::vector<CollectionButton *> creatorCollectionButtons;
-    std::vector<CollectionButton *> dateaddedCollectionButtons;
-    std::vector<CollectionButton *> lengthCollectionButtons;
-    std::vector<CollectionButton *> titleCollectionButtons;
     std::unordered_map<MD5Hash, SongDifficultyButton *> hashToDiffButton;
+
+    CollBtnContainer titleCollectionButtons;
+    CollBtnContainer artistCollectionButtons;
+    CollBtnContainer creatorCollectionButtons;
+    CollBtnContainer difficultyCollectionButtons;
+    CollBtnContainer bpmCollectionButtons;
+    CollBtnContainer lengthCollectionButtons;
+
+    CollBtnContainer collectionButtons;
+    // CollBtnContainer dateaddedCollectionButtons; // not implemented yet
+
     bool bBeatmapRefreshScheduled;
     bool bCloseAfterBeatmapRefreshFinished{false};
     UString sLastOsuFolder;
@@ -312,7 +331,4 @@ class SongBrowser final : public ScreenBackable {
     i32 currentVisibleSearchMatches{0};
     std::optional<GroupType> searchPrevGroup{std::nullopt};
     SongBrowserBackgroundSearchMatcher *backgroundSearchMatcher;
-
-   private:
-    std::vector<CollectionButton *> *getCollectionButtonsForGroup(GroupType group);
 };

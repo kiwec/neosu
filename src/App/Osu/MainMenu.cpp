@@ -999,7 +999,7 @@ void MainMenu::mouse_update(bool *propagate_clicks) {
         if(this->bMainMenuAnimFriendScheduled) this->bMainMenuAnimFriend = true;
         if(this->bMainMenuAnimFadeToFriendForNextAnim) this->bMainMenuAnimFriendScheduled = true;
 
-        this->fMainMenuAnimDuration = 10.0f + (float)((double)prand() / (double)PRAND_MAX) * 5.0f;
+        this->fMainMenuAnimDuration = 10.0f + (float)((double)prand() / (double)RAND_MAX) * 5.0f;
         this->fMainMenuAnimTime = engine->getTime() + this->fMainMenuAnimDuration;
         this->animMainButton();
     }
@@ -1344,7 +1344,7 @@ void MainMenu::updateLayout() {
     this->versionButton->setRelPos(-1, osu->getVirtScreenSize().y - this->versionButton->getSize().y);
 
     {
-        McFont *font = resourceManager->getFont("FONT_DEFAULT");
+        McFont *font = engine->getDefaultFont();
         f32 margin = std::round(3.f * dpiScale);
         f32 ads_y = osu->getVirtScreenSize().y;
         if(cv::draw_fps.getBool()) ads_y -= (font->getHeight() + margin) * 2.f;
@@ -1406,9 +1406,9 @@ void MainMenu::animMainButton() {
         this->fMainMenuAnim2Target = (prand() % 2) == 1 ? 1.0f : -1.0f;
         this->fMainMenuAnim3Target = (prand() % 2) == 1 ? 1.0f : -1.0f;
 
-        const float randomDuration1 = (float)((double)prand() / (double)PRAND_MAX) * 3.5f;
-        const float randomDuration2 = (float)((double)prand() / (double)PRAND_MAX) * 3.5f;
-        const float randomDuration3 = (float)((double)prand() / (double)PRAND_MAX) * 3.5f;
+        const float randomDuration1 = (float)((double)prand() / (double)RAND_MAX) * 3.5f;
+        const float randomDuration2 = (float)((double)prand() / (double)RAND_MAX) * 3.5f;
+        const float randomDuration3 = (float)((double)prand() / (double)RAND_MAX) * 3.5f;
 
         anim::moveQuadOut(&this->fMainMenuAnim, 1.0f,
                           1.5f + std::max({randomDuration1, randomDuration2, randomDuration3}));

@@ -22,6 +22,8 @@ int CarouselButton::marginPixelsX = 9;
 int CarouselButton::marginPixelsY = 9;
 float CarouselButton::lastHoverSoundTime = 0;
 
+using namespace neosu::sbr;
+
 // Color Button::inactiveDifficultyBackgroundColor = argb(255, 0, 150, 236); // blue
 
 CarouselButton::CarouselButton(UIContextMenu *contextMenu, float xPos, float yPos, float xSize, float ySize,
@@ -142,9 +144,6 @@ void CarouselButton::mouse_update(bool *propagate_clicks) {
 }
 
 void CarouselButton::updateLayoutEx() {
-    auto *sb = osu->getSongBrowser();
-    auto &carousel = sb->getCarousel();
-
     const float uiScale = cv::ui_scale.getFloat();
 
     Image *menuButtonBackground = osu->getSkin()->i_menu_button_bg;
@@ -157,10 +156,10 @@ void CarouselButton::updateLayoutEx() {
     if(this->bVisible)  // lag prevention (animationHandler overflow)
     {
         const float centerOffsetAnimationTarget =
-            ((cv::songbrowser_button_anim_y_curve.getBool() && !sb->isRightClickScrolling())
-                 ? 1.0f - std::clamp<float>(std::abs((this->vPos.y + (this->vSize.y / 2) - carousel->getPos().y -
-                                                      carousel->getSize().y / 2) /
-                                                     (carousel->getSize().y / 2)),
+            ((cv::songbrowser_button_anim_y_curve.getBool() && !g_songbrowser->isRightClickScrolling())
+                 ? 1.0f - std::clamp<float>(std::abs((this->vPos.y + (this->vSize.y / 2) - g_carousel->getPos().y -
+                                                      g_carousel->getSize().y / 2) /
+                                                     (g_carousel->getSize().y / 2)),
                                             0.0f, 1.0f)
                  : 1.f) +
             (this->bSelected && !cv::songbrowser_button_anim_y_curve.getBool() ? 0.5f : 0.0f);
@@ -170,12 +169,12 @@ void CarouselButton::updateLayoutEx() {
         }
 
         float centerOffsetVelocityAnimationTarget =
-            std::clamp<float>((std::abs(carousel->getVelocity().y)) / 3500.0f, 0.0f, 1.0f);
+            std::clamp<float>((std::abs(g_carousel->getVelocity().y)) / 3500.0f, 0.0f, 1.0f);
 
-        if(sb->isRightClickScrolling() || !cv::songbrowser_button_anim_x_push.getBool())
+        if(g_songbrowser->isRightClickScrolling() || !cv::songbrowser_button_anim_x_push.getBool())
             centerOffsetVelocityAnimationTarget = 0.0f;
 
-        if(carousel->isScrolling())
+        if(g_carousel->isScrolling())
             anim::moveQuadOut(&this->fCenterOffsetVelocityAnimation, 0.0f, 1.0f, true);
         else
             anim::moveQuadOut(&this->fCenterOffsetVelocityAnimation, centerOffsetVelocityAnimationTarget, 1.25f, true);
@@ -190,25 +189,25 @@ void CarouselButton::updateLayoutEx() {
 
     // this is the minimum offset necessary to not clip into the score scrollview (including all possible max animations
     // which can push us to the left, worst case)
-    float minOffset = carousel->getSize().x * (percentCenterOffsetAnimation + percentHoverOffsetAnimation);
+    float minOffset = g_carousel->getSize().x * (percentCenterOffsetAnimation + percentHoverOffsetAnimation);
     {
         // also respect the width of the button image: push to the right until the edge of the button image can never be
         // visible even if all animations are fully active the 0.85f here heuristically pushes the buttons a bit further
         // to the right than would be necessary, to make animations work better on lower resolutions (would otherwise
         // hit the left edge too early)
-        const float buttonWidthCompensation = std::max(carousel->getSize().x - this->getActualSize().x * 0.85f, 0.0f);
+        const float buttonWidthCompensation = std::max(g_carousel->getSize().x - this->getActualSize().x * 0.85f, 0.0f);
         minOffset += buttonWidthCompensation;
     }
 
     float offsetX =
-        minOffset - carousel->getSize().x *
+        minOffset - g_carousel->getSize().x *
                         (percentCenterOffsetAnimation * this->fCenterOffsetAnimation *
                              (1.0f - this->fCenterOffsetVelocityAnimation) +
                          percentHoverOffsetAnimation * this->fHoverOffsetAnimation -
                          percentVelocityOffsetAnimation * this->fCenterOffsetVelocityAnimation + this->fOffsetPercent);
     offsetX = std::clamp<float>(
         offsetX, 0.0f,
-        carousel->getSize().x -
+        g_carousel->getSize().x -
             this->getActualSize().x * 0.15f);  // WARNING: hardcoded to match 0.85f above for buttonWidthCompensation
 
     this->setRelPosX(offsetX);
@@ -226,9 +225,9 @@ CarouselButton *CarouselButton::setVisible(bool visible) {
         this->fHoverOffsetAnimation = 0.0f;
 
         float centerOffsetVelocityAnimationTarget =
-            std::clamp<float>((std::abs(osu->getSongBrowser()->getCarousel()->getVelocity().y)) / 3500.0f, 0.0f, 1.0f);
+            std::clamp<float>((std::abs(g_carousel->getVelocity().y)) / 3500.0f, 0.0f, 1.0f);
 
-        if(osu->getSongBrowser()->isRightClickScrolling() || !cv::songbrowser_button_anim_x_push.getBool())
+        if(g_songbrowser->isRightClickScrolling() || !cv::songbrowser_button_anim_x_push.getBool())
             centerOffsetVelocityAnimationTarget = 0.0f;
 
         this->fCenterOffsetVelocityAnimation = centerOffsetVelocityAnimationTarget;
@@ -274,8 +273,7 @@ void CarouselButton::onMouseInside() {
     anim::moveQuadOut(&this->fHoverOffsetAnimation, 1.0f, 1.0f * (1.0f - this->fHoverOffsetAnimation), true);
 
     // all elements must be CarouselButtons, at least
-    const auto &elements{reinterpret_cast<const std::vector<CarouselButton *> &>(
-        osu->getSongBrowser()->getCarousel()->container->getElements())};
+    const auto &elements{g_carousel->container->getElements<CarouselButton>()};
 
     // move the rest of the buttons away from hovered-over one
     bool foundCenter = false;
@@ -297,10 +295,8 @@ void CarouselButton::onMouseOutside() {
     // only reset all other elements' state if we still should do so (possible frame delay of onMouseOutside coming
     // together with the next element already getting onMouseInside!)
     if(this->moveAwayState == MOVE_AWAY_STATE::MOVE_CENTER) {
-        const auto &elements{reinterpret_cast<const std::vector<CarouselButton *> &>(
-            osu->getSongBrowser()->getCarousel()->container->getElements())};
-
-        for(auto element : elements) {
+        const auto &elements{g_carousel->container->getElements<CarouselButton>()};
+        for(auto *element : elements) {
             element->setMoveAwayState(MOVE_AWAY_STATE::MOVE_CENTER);
         }
     }

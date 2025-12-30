@@ -35,7 +35,7 @@
 
 HUD::HUD() : OsuScreen() {
     // resources
-    this->tempFont = resourceManager->getFont("FONT_DEFAULT");
+    this->tempFont = engine->getDefaultFont();
     this->cursorTrailShader = resourceManager->createShader(
         env->usingDX11() ? VSH_STRING(DX11_, cursortrail) : VSH_STRING(GL_, cursortrail),
         env->usingDX11() ? FSH_STRING(DX11_, cursortrail) : FSH_STRING(GL_, cursortrail), "cursortrail");

@@ -10,7 +10,7 @@
 
 CBaseUILabel::CBaseUILabel(float xPos, float yPos, float xSize, float ySize, UString name, const UString& text)
     : CBaseUIElement(xPos, yPos, xSize, ySize, std::move(name)) {
-    this->font = resourceManager->getFont("FONT_DEFAULT");
+    this->font = engine->getDefaultFont();
     this->setText(text);
 }
 

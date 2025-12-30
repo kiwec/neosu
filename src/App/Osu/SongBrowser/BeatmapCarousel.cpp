@@ -108,7 +108,7 @@ void BeatmapCarousel::onKeyDown(KeyboardEvent &key) {
     /*this->container->onKeyDown(e);*/
 
     // all elements must be CarouselButtons, at least
-    const auto &elements{reinterpret_cast<const std::vector<CarouselButton *> &>(this->container->getElements())};
+    const auto &elements{this->container->getElements<CarouselButton>()};
 
     // selection move
     if(!keyboard->isAltDown() && key == KEY_DOWN) {

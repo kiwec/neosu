@@ -11,7 +11,7 @@
 
 UISearchOverlay::UISearchOverlay(float xPos, float yPos, float xSize, float ySize, UString name)
     : CBaseUIElement(xPos, yPos, xSize, ySize, std::move(name)) {
-    this->font = resourceManager->getFont("FONT_DEFAULT");
+    this->font = engine->getDefaultFont();
 
     this->iOffsetRight = 0;
     this->bDrawNumResults = true;

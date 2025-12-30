@@ -46,7 +46,13 @@ class CBaseUIContainer : public CBaseUIElement {
 
     void update_pos();
 
-    [[nodiscard]] forceinline const std::vector<CBaseUIElement *> &getElements() const { return this->vElements; }
+    // don't use this blindly, make sure that you haven't added anything that isn't compatible with T to the container!
+    template <typename T = CBaseUIElement>
+    [[nodiscard]] forceinline const std::vector<T *> &getElements() const
+        requires(std::derived_from<T, CBaseUIElement>)
+    {
+        return reinterpret_cast<const std::vector<T *> &>(this->vElements);
+    }
 
    protected:
     std::vector<CBaseUIElement *> vElements;

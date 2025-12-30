@@ -29,7 +29,7 @@ CBaseUITextbox::CBaseUITextbox(float xPos, float yPos, float xSize, float ySize,
 
     this->grabs_clicks = true;
 
-    this->font = resourceManager->getFont("FONT_DEFAULT");
+    this->font = engine->getDefaultFont();
 
     this->textColor = this->frameColor = this->caretColor = 0xffffffff;
     this->backgroundColor = 0xff000000;

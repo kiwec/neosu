@@ -11,7 +11,7 @@
 
 CBaseUIButton::CBaseUIButton(float xPos, float yPos, float xSize, float ySize, UString name, UString text)
     : CBaseUIElement(xPos, yPos, xSize, ySize, std::move(name)) {
-    this->font = resourceManager->getFont("FONT_DEFAULT");
+    this->font = engine->getDefaultFont();
 
     // settings
     this->bDrawFrame = true;

@@ -18,7 +18,7 @@ UIVolumeSlider::UIVolumeSlider(float xPos, float yPos, float xSize, float ySize,
     this->bWentMouseInside = false;
     this->fSelectionAnim = 0.0f;
 
-    this->font = resourceManager->getFont("FONT_DEFAULT");
+    this->font = engine->getDefaultFont();
 
     resourceManager->loadImage("ic_volume_mute_white_48dp.png", "UI_VOLUME_SLIDER_BLOCK_0");
     resourceManager->loadImage("ic_volume_up_white_48dp.png", "UI_VOLUME_SLIDER_BLOCK_1");

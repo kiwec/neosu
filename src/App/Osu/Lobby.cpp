@@ -80,7 +80,7 @@ void RoomUIElement::onRoomJoinButtonClick(CBaseUIButton* /*btn*/) {
 }
 
 Lobby::Lobby() : OsuScreen() {
-    this->font = resourceManager->getFont("FONT_DEFAULT");
+    this->font = engine->getDefaultFont();
 
     auto heading = new CBaseUILabel(50, 30, 300, 40, "", "Multiplayer rooms");
     heading->setFont(osu->getTitleFont());

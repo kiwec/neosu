@@ -121,7 +121,7 @@ void stop() {
 }  // namespace Spectating
 
 SpectatorScreen::SpectatorScreen() {
-    this->font = resourceManager->getFont("FONT_DEFAULT");
+    this->font = engine->getDefaultFont();
     this->lfont = osu->getSubTitleFont();
 
     this->pauseButton = new PauseButton(0, 0, 0, 0, "pause_btn", "");

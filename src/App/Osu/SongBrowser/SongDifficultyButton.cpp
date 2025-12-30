@@ -22,6 +22,8 @@
 #include "Skin.h"
 #include "SoundEngine.h"
 
+using namespace neosu::sbr;
+
 SongDifficultyButton::SongDifficultyButton(UIContextMenu* contextMenu, float xPos, float yPos, float xSize, float ySize,
                                            UString name, BeatmapDifficulty* diff, SongButton* parentSongButton,
                                            int numSiblings)
@@ -67,10 +69,8 @@ void SongDifficultyButton::draw() {
     const vec2 pos = this->getActualPos();
     const vec2 size = this->getActualSize();
 
-    const auto& carousel = osu->getSongBrowser()->carousel;
-
     // don't try to load images while right click scrolling to avoid lag
-    if(!carousel->isActuallyRightClickScrolling() &&
+    if(!g_carousel->isActuallyRightClickScrolling() &&
        // delay requesting the image itself a bit
        this->fVisibleFor >= ((std::clamp<f32>(cv::background_image_loading_delay.getFloat(), 0.f, 2.f)) / 4.f)) {
         // draw background image
@@ -206,16 +206,15 @@ void SongDifficultyButton::onSelected(bool wasSelected, SelOpts opts) {
     //     "parentSongButton->isSelected {}",
     //     wasParentActuallySelected, isIndependentDiffButton(), !!parentSongButton, parentSongButton->isSelected());
 
-    auto* sb = osu->getSongBrowser();
     if(!wasParentActuallySelected) {
         // debugLog("running scroll jump fix for {}",
         //          this->databaseBeatmap ? this->databaseBeatmap->getFilePath() : "???");
-        sb->requestNextScrollToSongButtonJumpFix(this);
+        g_songbrowser->requestNextScrollToSongButtonJumpFix(this);
     }
 
-    sb->onSelectionChange(this, true);
-    sb->onDifficultySelected(this->databaseBeatmap, wasSelected);
-    sb->scrollToSongButton(this);
+    g_songbrowser->onSelectionChange(this, true);
+    g_songbrowser->onDifficultySelected(this->databaseBeatmap, wasSelected);
+    g_songbrowser->scrollToSongButton(this);
 }
 
 void SongDifficultyButton::updateGrade() {

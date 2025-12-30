@@ -41,7 +41,7 @@ VisualProfiler::VisualProfiler() : CBaseUIElement(0, 0, 0, 0, "") {
 
     this->setProfile(&g_profCurrentProfile);  // by default we look at the standard full engine-wide profile
 
-    this->font = resourceManager->getFont("FONT_DEFAULT");
+    this->font = engine->getDefaultFont();
     this->fontConsole = resourceManager->getFont("FONT_CONSOLE");
     this->lineVao =
         resourceManager->createVertexArrayObject(DrawPrimitive::PRIMITIVE_LINES, DrawUsageType::USAGE_DYNAMIC, true);

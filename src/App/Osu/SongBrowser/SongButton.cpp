@@ -25,6 +25,8 @@
 #include "SkinImage.h"
 #include "UIContextMenu.h"
 
+using namespace neosu::sbr;
+
 // passthrough for SongDifficultyButton
 SongButton::SongButton(UIContextMenu *contextMenu, float xPos, float yPos, float xSize, float ySize, UString name)
     : CarouselButton(contextMenu, xPos, yPos, xSize, ySize, std::move(name)) {}
@@ -65,10 +67,8 @@ void SongButton::draw() {
 
     CarouselButton::draw();
 
-    const auto &carousel = osu->getSongBrowser()->carousel;
-
     // don't try to load images while right click scrolling to avoid lag
-    if(!carousel->isActuallyRightClickScrolling() && this->representativeBeatmap &&
+    if(!g_carousel->isActuallyRightClickScrolling() && this->representativeBeatmap &&
        // delay requesting the image itself a bit
        this->fVisibleFor >= ((std::clamp<f32>(cv::background_image_loading_delay.getFloat(), 0.f, 2.f)) / 4.f)) {
         // draw background image
@@ -136,7 +136,7 @@ void SongButton::drawBeatmapBackgroundThumbnail(const Image *image) {
     const vec2 pos = this->getActualPos();
     const vec2 size = this->getActualSize();
 
-    const f32 thumbnailYRatio = osu->getSongBrowser()->thumbnailYRatio;
+    const f32 thumbnailYRatio = g_songbrowser->thumbnailYRatio;
     const f32 beatmapBackgroundScale =
         Osu::getImageScaleToFillResolution(image, vec2(size.y * thumbnailYRatio, size.y)) * 1.05f;
 
@@ -263,7 +263,7 @@ void SongButton::updateLayoutEx() {
     if(osu->getSkin()->version < 2.2f) {
         this->fTextOffset += size.x * 0.02f * 2.0f;
     } else {
-        const f32 thumbnailYRatio = osu->getSongBrowser()->thumbnailYRatio;
+        const f32 thumbnailYRatio = g_songbrowser->thumbnailYRatio;
         this->fTextOffset += size.y * thumbnailYRatio + size.x * 0.02f;
         this->fGradeOffset += size.y * thumbnailYRatio + size.x * 0.0125f;
     }
@@ -276,7 +276,7 @@ void SongButton::onSelected(bool wasSelected, SelOpts opts) {
     if(this->sortChildren()) {
         // update button positions so the resort is actually applied
         // XXX: we shouldn't be updating ALL of the buttons
-        osu->getSongBrowser()->updateSongButtonLayout();
+        g_songbrowser->updateSongButtonLayout();
     }
 
     // update grade on child
@@ -284,7 +284,7 @@ void SongButton::onSelected(bool wasSelected, SelOpts opts) {
         child->updateGrade();
     }
 
-    osu->getSongBrowser()->onSelectionChange(this, false);
+    g_songbrowser->onSelectionChange(this, false);
 
     // now, automatically select the bottom child (hardest diff, assuming default sorting, and respecting the current
     // search matches)
@@ -316,7 +316,7 @@ void SongButton::triggerContextMenu(vec2 pos) {
 
             this->contextMenu->addButtonJustified("[+Set] Add to Collection", TEXT_JUSTIFICATION::LEFT, 2);
 
-            if(osu->getSongBrowser()->getGroupingMode() == SongBrowser::GroupType::COLLECTIONS) {
+            if(g_songbrowser->getGroupingMode() == SongBrowser::GroupType::COLLECTIONS) {
                 CBaseUIButton *spacer = this->contextMenu->addButtonJustified("---", TEXT_JUSTIFICATION::CENTERED);
                 spacer->setEnabled(false);
                 spacer->setTextColor(0xff888888);
@@ -394,7 +394,7 @@ void SongButton::onContextMenu(const UString &text, int id) {
     } else if(id == 3 || id == 4) {
         // 3 = remove map from collection
         // 4 = remove set from collection
-        osu->getSongBrowser()->onSongButtonContextMenu(this, text, id);
+        g_songbrowser->onSongButtonContextMenu(this, text, id);
     }
 }
 
@@ -429,14 +429,14 @@ void SongButton::onAddToCollectionConfirmed(const UString &text, int id) {
         UIContextMenu::clampToBottomScreenEdge(this->contextMenu);
     } else {
         // just forward it
-        osu->getSongBrowser()->onSongButtonContextMenu(this, text, id);
+        g_songbrowser->onSongButtonContextMenu(this, text, id);
     }
 }
 
 void SongButton::onCreateNewCollectionConfirmed(const UString &text, int id) {
     if(id == -2 || id == -4) {
         // just forward it
-        osu->getSongBrowser()->onSongButtonContextMenu(this, text, id);
+        g_songbrowser->onSongButtonContextMenu(this, text, id);
     }
 }
 

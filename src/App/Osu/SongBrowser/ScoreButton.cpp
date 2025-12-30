@@ -35,6 +35,8 @@
 #include "UserStatsScreen.h"
 #include "Logging.h"
 
+using namespace neosu::sbr;
+
 UString ScoreButton::recentScoreIconString;
 
 ScoreButton::ScoreButton(UIContextMenu *contextMenu, float xPos, float yPos, float xSize, float ySize, STYLE style)
@@ -79,7 +81,7 @@ void ScoreButton::draw() {
 
         // Update avatar visibility status
         // NOTE: Not checking horizontal visibility
-        auto m_scoreBrowser = osu->getSongBrowser()->scoreBrowser;
+        auto m_scoreBrowser = g_songbrowser->scoreBrowser;
         bool is_below_top = this->avatar->getPos().y + this->avatar->getSize().y >= m_scoreBrowser->getPos().y;
         bool is_above_bottom = this->avatar->getPos().y <= m_scoreBrowser->getPos().y + m_scoreBrowser->getSize().y;
         this->avatar->on_screen = is_below_top && is_above_bottom;
@@ -157,7 +159,7 @@ void ScoreButton::draw() {
 
     // score | pp | weighted 95% (pp)
     const float scoreScale = 0.5f;
-    McFont *scoreFont = (this->vSize.y < 50 ? resourceManager->getFont("FONT_DEFAULT")
+    McFont *scoreFont = (this->vSize.y < 50 ? engine->getDefaultFont()
                                             : usernameFont);  // HACKHACK: switch font for very low resolutions
     g->pushTransform();
     {
@@ -369,7 +371,7 @@ void ScoreButton::mouse_update(bool *propagate_clicks) {
                 if(const auto &it = db->getOnlineScores().find(sc.beatmap_hash); it != db->getOnlineScores().end()) {
                     for(auto &other : it->second) {
                         if(other.unixTimestamp == sc.unixTimestamp) {
-                            osu->getSongBrowser()->score_resort_scheduled = true;
+                            g_songbrowser->score_resort_scheduled = true;
                             other = this->storedScore;
                             break;
                         }
@@ -380,7 +382,7 @@ void ScoreButton::mouse_update(bool *propagate_clicks) {
                 if(const auto &it = db->getScoresMutable().find(sc.beatmap_hash); it != db->getScoresMutable().end()) {
                     for(auto &other : it->second) {
                         if(other.unixTimestamp == sc.unixTimestamp) {
-                            osu->getSongBrowser()->score_resort_scheduled = true;
+                            g_songbrowser->score_resort_scheduled = true;
                             readlock.unlock();
                             readlock.release();
                             Sync::unique_lock writelock(db->scores_mtx);
@@ -589,8 +591,8 @@ void ScoreButton::onContextMenu(const UString &text, int id) {
     if(osu->getUserStatsScreen()->isVisible()) {
         osu->getUserStatsScreen()->setVisible(false);
 
-        auto song_button = (CarouselButton *)osu->getSongBrowser()->hashToDiffButton[sc.beatmap_hash];
-        osu->getSongBrowser()->selectSongButton(song_button);
+        auto song_button = (CarouselButton *)g_songbrowser->hashToDiffButton[sc.beatmap_hash];
+        g_songbrowser->selectSongButton(song_button);
     }
 
     if(id == 1) {
@@ -649,7 +651,7 @@ void ScoreButton::onDeleteScoreConfirmed(const UString & /*text*/, int id) {
     debugLog("Deleting score");
 
     // absolutely disgusting
-    osu->getSongBrowser()->onScoreContextMenu(this, 2);
+    g_songbrowser->onScoreContextMenu(this, 2);
 
     osu->getUserStatsScreen()->rebuildScoreButtons();
 }

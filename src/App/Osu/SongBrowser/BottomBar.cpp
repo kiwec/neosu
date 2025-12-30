@@ -17,6 +17,7 @@
 #include "Font.h"
 
 namespace BottomBar {
+using namespace neosu::sbr;
 
 static McRect btns[4];
 static f32 hovers[4] = {0.f, 0.f, 0.f, 0.f};
@@ -30,13 +31,13 @@ void press_button(Button btn_index) {
 
     switch(btn_index) {
         case MODE:
-            return osu->getSongBrowser()->onSelectionMode();
+            return g_songbrowser->onSelectionMode();
         case MODS:
-            return osu->getSongBrowser()->onSelectionMods();
+            return g_songbrowser->onSelectionMods();
         case RANDOM:
-            return osu->getSongBrowser()->onSelectionRandom();
+            return g_songbrowser->onSelectionRandom();
         case OPTIONS:
-            return osu->getSongBrowser()->onSelectionOptions();
+            return g_songbrowser->onSelectionOptions();
         default:
             std::unreachable();
             break;
@@ -134,7 +135,7 @@ void draw() {
 
     // don't double-draw the back button
     if(!osu->getOptionsMenu()->isVisible()) {
-        osu->getSongBrowser()->backButton->draw();
+        g_songbrowser->backButton->draw();
     }
 
     // Draw the user card under selection elements, which can cover it for fancy effects
@@ -189,7 +190,7 @@ void draw() {
 
     // background task busy notification
     // XXX: move this to permanent toasts
-    McFont* font = resourceManager->getFont("FONT_DEFAULT");
+    McFont* font = engine->getDefaultFont();
     i32 calcx = osu->getUserButton()->getPos().x + osu->getUserButton()->getSize().x + 20;
     i32 calcy = osu->getUserButton()->getPos().y + 30;
     if(DBRecalculator::get_maps_total() > 0) {
