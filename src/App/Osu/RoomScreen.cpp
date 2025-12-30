@@ -640,6 +640,7 @@ void RoomScreen::on_room_joined(Room room) {
 
     osu->getModSelector()->resetMods();
     osu->getModSelector()->enableModsFromFlags(BanchoState::room.mods);
+    cv::mod_no_pausing.setValue(true);
 }
 
 void RoomScreen::on_room_updated(Room room) {
@@ -696,6 +697,7 @@ void RoomScreen::on_room_updated(Room room) {
     osu->getModSelector()->updateButtons();
     osu->getModSelector()->resetMods();
     osu->getModSelector()->enableModsFromFlags(BanchoState::room.mods | player_slot->mods);
+    cv::mod_no_pausing.setValue(true);
 
     this->updateLayout(osu->getVirtScreenSize());
 }

@@ -336,7 +336,7 @@ CBaseUIContainer *PauseMenu::setVisible(bool visible) {
     const bool wasVisible = this->bVisible;
     this->bVisible = visible;
 
-    const bool can_pause = !cv::mod_no_pausing.getBool() && !BanchoState::is_playing_a_multi_map();
+    const bool can_pause = !cv::mod_no_pausing.getBool();
     if(can_pause) {
         if(visible) {
             if(!osu->getScore()->isDead()) {
