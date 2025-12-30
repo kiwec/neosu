@@ -39,6 +39,8 @@ Changelog::Changelog() : ScreenBackable() {
         R"(  - Added Options > Songbrowser > "Song Buttons Curved Layout)",
         R"(  - Updated songbrowser song buttons to have the velocity animation disabled by default)",
         R"(  - Updated "Sort by Artist" to secondarily sort by title)",
+        R"(- Multiplayer matches now always have the "No Pausing" mod enabled)",
+        R"(- Replay viewer now auto-skips sections that the player has skipped)",
     };
     changelogs.push_back(v41_13);
 

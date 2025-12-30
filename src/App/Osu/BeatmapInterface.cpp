@@ -2726,6 +2726,14 @@ void BeatmapInterface::update2() {
             current_frame = this->spectated_replay[this->current_frame_idx];
             next_frame = this->spectated_replay[this->current_frame_idx + 1];
 
+            // There is a big gap in the replay, it is safe to assume it was made from a neosu client
+            // and that the player skipped an empty section.
+            // We'll "schedule" a skip, which is the same as clicking the skip button, so nothing
+            // would get skipped if it isn't actually a skippable section.
+            if(next_frame.milliseconds_since_last_frame >= cv::skip_time.getInt()) {
+                osu->bSkipScheduled = true;
+            }
+
             this->current_keys = current_frame.key_flags;
 
             // Replays have both K1 and M1 set when K1 is pressed, fix it now
