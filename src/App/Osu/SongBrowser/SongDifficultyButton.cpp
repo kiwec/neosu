@@ -173,15 +173,43 @@ void SongDifficultyButton::mouse_update(bool* propagate_clicks) {
 
     if(newOffsetPercentSelectionState != this->bPrevOffsetPercentSelectionState) {
         this->bPrevOffsetPercentSelectionState = newOffsetPercentSelectionState;
-        anim::moveQuadOut(&this->fOffsetPercentAnim, newOffsetPercentSelectionState ? 1.0f : 0.0f,
-                          0.25f * (1.0f - this->fOffsetPercentAnim), true);
+        const f32 targetAnim = newOffsetPercentSelectionState ? 1.f : 0.f;
+        const auto minmax = std::ranges::minmax_element(this->getSiblingsAndSelf(), {},
+                                                        [](const auto& b) { return b->fOffsetPercentAnim; });
+
+        // try to keep up with sibling elements' animations, even if we were not visible while siblings started animating
+
+        // scenario: parent button is selected, 5+ beatmaps expand upwards, user scrolls up, and the difficulty buttons
+        // which started out invisible start animating out as they come into view
+        if(newOffsetPercentSelectionState) {
+            this->fOffsetPercentAnim = (*minmax.max)->fOffsetPercentAnim;
+        } else {
+            this->fOffsetPercentAnim = (*minmax.min)->fOffsetPercentAnim;
+        }
+
+        if(targetAnim != this->fOffsetPercentAnim) {
+            anim::moveQuadOut(&this->fOffsetPercentAnim, targetAnim, 0.25f * (1.0f - this->fOffsetPercentAnim), true);
+        }
     }
+
     this->setOffsetPercent(std::lerp(0.0f, 0.075f, this->fOffsetPercentAnim));
 
     if(this->bUpdateGradeScheduled) {
         this->bUpdateGradeScheduled = false;
         this->updateGrade();
     }
+}
+
+void SongDifficultyButton::resetAnimations() {
+    CarouselButton::resetAnimations();
+    anim::deleteExistingAnimation(&this->fOffsetPercentAnim);
+
+    // need to force 0 offset here because when switching grouping modes, the buttons which now became individual
+    // difficulty buttons (split from parent) should not be offset out to the left
+
+    this->fOffsetPercentAnim = 0.f;
+    // force recheck in mouse_update (invert the condition)
+    this->bPrevOffsetPercentSelectionState = !(this->bSelected || !this->isIndependentDiffButton());
 }
 
 void SongDifficultyButton::onClicked(bool left, bool right) {

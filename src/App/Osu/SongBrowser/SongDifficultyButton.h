@@ -22,6 +22,8 @@ class SongDifficultyButton final : public SongButton {
     void mouse_update(bool *propagate_clicks) override;
     void onClicked(bool left = true, bool right = false) override;
 
+    void resetAnimations() override;
+
     void updateGrade() override;
 
     [[nodiscard]] Color getInactiveBackgroundColor() const override;

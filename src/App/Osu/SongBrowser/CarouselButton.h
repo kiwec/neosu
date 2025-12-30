@@ -67,24 +67,13 @@ class CarouselButton : public CBaseUIButton {
     void select(SelOpts opts = {false, false, false});
     void deselect();
 
-    void resetAnimations();
+    virtual void resetAnimations();
 
     void setTargetRelPosY(float targetRelPosY);
-    inline void setChildren(std::vector<SongButton *> children) {
-        this->bChildrenNeedSorting = true;
-        this->children = std::move(children);
-    }
 
-    inline void addChild(SongButton *child) {
-        this->bChildrenNeedSorting = true;
-        this->children.push_back(child);
-    }
-
-    inline void addChildren(std::vector<SongButton *> children) {
-        this->bChildrenNeedSorting = true;
-        this->children.insert(this->children.end(), std::make_move_iterator(children.begin()),
-                              std::make_move_iterator(children.end()));
-    }
+    void setChildren(std::vector<SongButton *> children);
+    void addChild(SongButton *child);
+    void addChildren(std::vector<SongButton *> children);
 
     inline void setOffsetPercent(float offsetPercent) { this->fOffsetPercent = offsetPercent; }
     inline void setHideIfSelected(bool hideIfSelected) { this->bHideIfSelected = hideIfSelected; }
