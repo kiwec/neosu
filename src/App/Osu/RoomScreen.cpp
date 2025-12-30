@@ -403,10 +403,12 @@ void RoomScreen::updateSettingsLayout(vec2 newResolution) {
         this->win_condition->setText("Win condition: Score");
     } else if(BanchoState::room.win_condition == ACCURACY) {
         this->win_condition->setText("Win condition: Accuracy");
-    } else if(BanchoState::room.win_condition == COMBO) {
+    } else if(BanchoState::room.win_condition == CURRENT_COMBO) {
         this->win_condition->setText("Win condition: Combo");
     } else if(BanchoState::room.win_condition == SCOREV2) {
         this->win_condition->setText("Win condition: ScoreV2");
+    } else {
+        this->win_condition->setText("Win condition: ???");
     }
     if(is_host) {
         this->change_win_condition_btn->setText(this->win_condition->getText());
@@ -533,6 +535,7 @@ void RoomScreen::updateLayout(vec2 newResolution) {
 void RoomScreen::ragequit(bool play_sound) {
     this->bVisible = false;
     BanchoState::match_started = false;
+    osu->getHUD()->updateScoringMetric();
 
     Packet packet;
     packet.id = EXIT_ROOM;
@@ -709,6 +712,7 @@ void RoomScreen::on_match_started(Room room) {
     if(osu->getMapInterface()->play()) {
         this->bVisible = false;
         BanchoState::match_started = true;
+        osu->getHUD()->updateScoringMetric();
         osu->getChat()->updateVisibility();
 
         soundEngine->play(osu->getSkin()->s_match_start);
@@ -789,6 +793,7 @@ void RoomScreen::on_match_finished() {
     osu->onPlayEnd(this->get_approximate_score(), false, false);
 
     BanchoState::match_started = false;
+    osu->getHUD()->updateScoringMetric();
     osu->getRankingScreen()->setVisible(true);
     osu->getChat()->updateVisibility();
 
@@ -810,6 +815,7 @@ void RoomScreen::on_match_aborted() {
     osu->onPlayEnd(this->get_approximate_score(), false, true);
     this->bVisible = true;
     BanchoState::match_started = false;
+    osu->getHUD()->updateScoringMetric();
 
     // Display room presence instead of map again
     RichPresence::onMultiplayerLobby();
@@ -887,7 +893,7 @@ void RoomScreen::onChangeWinConditionClicked() {
     this->contextMenu->addButton("Score V1", SCOREV1);
     this->contextMenu->addButton("Score V2", SCOREV2);
     this->contextMenu->addButton("Accuracy", ACCURACY);
-    this->contextMenu->addButton("Combo", COMBO);
+    this->contextMenu->addButton("Combo", CURRENT_COMBO);
     this->contextMenu->end(false, false);
     this->contextMenu->setPos(mouse->getPos());
     this->contextMenu->setClickCallback(SA::MakeDelegate<&RoomScreen::onWinConditionSelected>(this));

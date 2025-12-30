@@ -2916,6 +2916,7 @@ void SongBrowser::onSortScoresChange(const UString &text, int /*id*/) {
     this->sortScoresDropdown->setText(text);
     this->rebuildScoreButtons();
     this->scoreBrowser->scrollToTop();
+    osu->getHUD()->updateScoringMetric();
 }
 
 void SongBrowser::onWebClicked(CBaseUIButton * /*button*/) {

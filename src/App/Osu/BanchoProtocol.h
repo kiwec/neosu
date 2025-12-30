@@ -37,8 +37,13 @@ enum Privileges : uint8_t {
 enum WinCondition : uint8_t {
     SCOREV1 = 0,
     ACCURACY = 1,
-    COMBO = 2,
+    CURRENT_COMBO = 2,
     SCOREV2 = 3,
+
+    // neosu-specific, shouldn't be networked
+    MISSES = 4,
+    PP = 5,
+    MAX_COMBO = 6,
 };
 
 enum GameMode : uint8_t {

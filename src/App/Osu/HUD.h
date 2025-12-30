@@ -27,9 +27,12 @@ struct SCORE_ENTRY {
     i32 entry_id = 0;
     i32 player_id = 0;
 
-    int combo;
+    f32 accuracy;
+    f64 pp{0.f};
     u64 score;
-    float accuracy;
+    int currentCombo;
+    int maxCombo;
+    int misses;
     bool dead;
     bool highlight;
 };
@@ -65,6 +68,9 @@ class HUD final : public OsuScreen {
     void drawWarningArrow(vec2 pos, bool flipVertically, bool originLeft = true);
 
     [[nodiscard]] bool shouldDrawScoreboard() const;
+
+    [[nodiscard]] inline u8 getScoringMetric() const { return this->scoring_metric; }
+    void updateScoringMetric();
 
     void resetScoreboard();
     void updateScoreboard(bool animate);
@@ -116,6 +122,7 @@ class HUD final : public OsuScreen {
 
    private:
     std::vector<SCORE_ENTRY> getCurrentScores();
+    u8 scoring_metric{0};
 
     struct HITERROR {
         float time;

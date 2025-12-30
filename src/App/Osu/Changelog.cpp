@@ -33,6 +33,7 @@ Changelog::Changelog() : ScreenBackable() {
     v41_13.title = "41.13 (" CHANGELOG_TIMESTAMP ")";
     v41_13.changes = {
         R"(- Improved songbrowser scrolling behavior and performance)",
+        R"(- In-game scoreboard can now also be sorted by pp, misscount, accuracy or combo))",
         R"(- Merged some nice features from McOsu (from @McKay))",
         R"(  - Added Options > Songbrowser > "Song Buttons Velocity Animation)",
         R"(  - Added Options > Songbrowser > "Song Buttons Curved Layout)",

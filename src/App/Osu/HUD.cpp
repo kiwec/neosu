@@ -283,7 +283,10 @@ void HUD::drawDummy() {
 
     SCORE_ENTRY scoreEntry;
     scoreEntry.name = BanchoState::get_username().c_str();
-    scoreEntry.combo = 420;
+    scoreEntry.currentCombo = 420;
+    scoreEntry.maxCombo = 420;
+    scoreEntry.misses = 0;
+    scoreEntry.pp = 69.f;
     scoreEntry.score = 12345678;
     scoreEntry.accuracy = 1.0f;
     scoreEntry.dead = false;
@@ -302,7 +305,7 @@ void HUD::drawDummy() {
 
     this->drawWarningArrows();
 
-    if(cv::draw_combo.getBool()) this->drawCombo(scoreEntry.combo);
+    if(cv::draw_combo.getBool()) this->drawCombo(scoreEntry.currentCombo);
 
     if(cv::draw_score.getBool()) this->drawScore(scoreEntry.score);
 
@@ -1136,6 +1139,7 @@ std::vector<SCORE_ENTRY> HUD::getCurrentScores() {
                 slot->num50 = (u16)osu->getScore()->getNum50s();
                 slot->num_miss = (u16)osu->getScore()->getNumMisses();
                 slot->current_combo = (u16)osu->getScore()->getCombo();
+                slot->max_combo = (u16)osu->getScore()->getComboMax();
                 slot->total_score = (i32)osu->getScore()->getScore();
                 slot->current_hp = pf->getHealth() * 200;
             }
@@ -1146,10 +1150,15 @@ std::vector<SCORE_ENTRY> HUD::getCurrentScores() {
             scoreEntry.entry_id = slot->player_id;
             scoreEntry.player_id = slot->player_id;
             scoreEntry.name = user_info->name;
-            scoreEntry.combo = slot->current_combo;
+            scoreEntry.currentCombo = slot->current_combo;
+            scoreEntry.maxCombo = slot->max_combo;
+            scoreEntry.misses = slot->num_miss;
             scoreEntry.score = slot->total_score;
             scoreEntry.dead = (slot->current_hp == 0);
             scoreEntry.highlight = (slot->player_id == BanchoState::get_uid());
+
+            // NOTE: not setting scoreEntry.pp since we would have to compute it on-the-fly for each slot
+            //       and "pp" is not a valid win condition for multiplayer matches
 
             if(slot->has_quit()) {
                 slot->current_hp = 0;
@@ -1197,8 +1206,11 @@ std::vector<SCORE_ENTRY> HUD::getCurrentScores() {
                     scoreEntry.entry_id = -(nb_slots + 1);
                     scoreEntry.player_id = score.player_id;
                     scoreEntry.name = score.playerName.c_str();
-                    scoreEntry.combo = score.comboMax;
+                    scoreEntry.currentCombo = score.comboMax;
+                    scoreEntry.maxCombo = score.comboMax;
                     scoreEntry.score = score.score;
+                    scoreEntry.pp = score.ppv2_score;
+                    scoreEntry.misses = score.numMisses;
                     scoreEntry.accuracy =
                         LiveScore::calculateAccuracy(score.num300s, score.num100s, score.num50s, score.numMisses);
                     scoreEntry.dead = false;
@@ -1220,8 +1232,11 @@ std::vector<SCORE_ENTRY> HUD::getCurrentScores() {
             playerScoreEntry.player_id = BanchoState::get_uid();
         }
         playerScoreEntry.entry_id = 0;
-        playerScoreEntry.combo = osu->getScore()->getComboMax();
+        playerScoreEntry.currentCombo = osu->getScore()->getCombo();
+        playerScoreEntry.maxCombo = osu->getScore()->getComboMax();
         playerScoreEntry.score = osu->getScore()->getScore();
+        playerScoreEntry.pp = std::max(0.f, osu->getMapInterface()->live_pp());
+        playerScoreEntry.misses = osu->getScore()->getNumMisses();
         playerScoreEntry.accuracy = osu->getScore()->getAccuracy();
         playerScoreEntry.dead = osu->getScore()->isDead();
         playerScoreEntry.highlight = true;
@@ -1229,15 +1244,18 @@ std::vector<SCORE_ENTRY> HUD::getCurrentScores() {
         nb_slots++;
     }
 
-    WinCondition sorting_type =
-        BanchoState::is_in_a_multi_room() ? (WinCondition)BanchoState::room.win_condition : SCOREV1;
+    const auto sorting_type = this->scoring_metric;
     std::ranges::sort(scores, [sorting_type](const SCORE_ENTRY &a, const SCORE_ENTRY &b) {
-        if(sorting_type == ACCURACY) {
+        if(sorting_type == MISSES) {
+            return a.misses < b.misses;
+        } else if(sorting_type == CURRENT_COMBO) {
+            return a.currentCombo > b.currentCombo;
+        } else if(sorting_type == MAX_COMBO) {
+            return a.maxCombo > b.maxCombo;
+        } else if(sorting_type == PP) {
+            return a.pp > b.pp;
+        } else if(sorting_type == ACCURACY) {
             return a.accuracy > b.accuracy;
-        } else if(sorting_type == COMBO) {
-            // NOTE: I'm aware that 'combo' in SCORE_ENTRY represents the current combo.
-            //       That's how the win condition actually works, though. lol
-            return a.combo > b.combo;
         } else {
             return a.score > b.score;
         }
@@ -2490,4 +2508,23 @@ McRect HUD::getSkipClickRect() {
                   osu->getVirtScreenHeight() - osu->getSkin()->i_play_skip->getSize().y * skipScale,
                   osu->getSkin()->i_play_skip->getSize().x * skipScale,
                   osu->getSkin()->i_play_skip->getSize().y * skipScale);
+}
+
+void HUD::updateScoringMetric() {
+    if(BanchoState::is_playing_a_multi_map()) {
+        this->scoring_metric = BanchoState::room.win_condition;
+    } else {
+        const auto &sortTypeString{cv::songbrowser_scores_sortingtype.getString()};
+        if(sortTypeString == "By accuracy") {
+            this->scoring_metric = ACCURACY;
+        } else if(sortTypeString == "By combo") {
+            this->scoring_metric = MAX_COMBO;
+        } else if(sortTypeString == "By misses") {
+            this->scoring_metric = MISSES;
+        } else if(sortTypeString == "By pp") {
+            this->scoring_metric = PP;
+        } else {
+            this->scoring_metric = SCOREV1;
+        }
+    }
 }

@@ -146,24 +146,51 @@ void ScoreboardSlot::draw() {
     const Color comboAccuracyColor = 0xff5d9ca1;
     const Color comboAccuracyColorHighlight = 0xff99fafe;
     const Color comboAccuracyColorTop = 0xff84dbe0;
-    const float comboScale = 0.26f;
     McFont *scoreFont = osu->getSongBrowserFont();
-    McFont *comboFont = scoreFont;
-    McFont *accFont = comboFont;
+    const f32 comboScale = 0.26f;
+    const f32 scoreScale = (height / scoreFont->getHeight()) * comboScale;
+
+    auto draw_score = [&](const UString &text) {
+        g->pushTransform();
+        {
+            g->scale(scoreScale, scoreScale);
+            g->translate(avatar_width + padding * 1.35f, start_y + height - 2 * padding);
+            if(drawTextShadow) {
+                g->translate(1, 1);
+                g->setColor(Color(textShadowColor).setA(this->fAlpha));
+                g->drawString(scoreFont, text);
+                g->translate(-1, -1);
+            }
+
+            if(this->score.dead) {
+                g->setColor(0xffee0000);
+            } else if(this->score.highlight) {
+                g->setColor(0xffffffff);
+            } else if(this->index == 0) {
+                g->setColor(0xffeeeeee);
+            } else {
+                g->setColor(0xffaaaaaa);
+            }
+
+            g->setAlpha(this->fAlpha);
+            g->drawString(scoreFont, text);
+        }
+        g->popTransform();
+    };
+
+    // draw combo
     g->pushTransform();
     {
-        const float scale = (height / comboFont->getHeight()) * comboScale;
+        UString comboString = UString::format("%ix", this->score.maxCombo);
+        const float stringWidth = scoreFont->getStringWidth(comboString);
 
-        UString comboString = UString::format("%ix", this->score.combo);
-        const float stringWidth = comboFont->getStringWidth(comboString);
-
-        g->scale(scale, scale);
-        g->translate(avatar_width + width - stringWidth * scale - padding * 1.35f, start_y + height - 2 * padding);
+        g->scale(scoreScale, scoreScale);
+        g->translate(avatar_width + width - stringWidth * scoreScale - padding * 1.35f, start_y + height - 2 * padding);
         if(drawTextShadow) {
             g->translate(1, 1);
             g->setColor(Color(textShadowColor).setA(this->fAlpha));
 
-            g->drawString(comboFont, comboString);
+            g->drawString(scoreFont, comboString);
             g->translate(-1, -1);
         }
 
@@ -180,20 +207,18 @@ void ScoreboardSlot::draw() {
     }
     g->popTransform();
 
-    // draw accuracy
-    if(BanchoState::is_playing_a_multi_map() && BanchoState::room.win_condition == ACCURACY) {
-        const float accScale = comboScale;
+    if(osu->getHUD()->getScoringMetric() == ACCURACY) {
+        // draw accuracy
         g->pushTransform();
         {
-            const float scale = (height / accFont->getHeight()) * accScale;
             UString accString = UString::format("%.2f%%", this->score.accuracy * 100.0f);
-            g->scale(scale, scale);
+            g->scale(scoreScale, scoreScale);
             g->translate(avatar_width + padding * 1.35f, start_y + height - 2 * padding);
             {
                 g->translate(1, 1);
                 g->setColor(Color(textShadowColor).setA(this->fAlpha));
 
-                g->drawString(accFont, accString);
+                g->drawString(scoreFont, accString);
                 g->translate(-1, -1);
             }
 
@@ -206,43 +231,19 @@ void ScoreboardSlot::draw() {
             }
 
             g->setAlpha(this->fAlpha);
-            g->drawString(accFont, accString);
+            g->drawString(scoreFont, accString);
         }
 
         g->popTransform();
+    } else if(osu->getHUD()->getScoringMetric() == MISSES) {
+        // draw misses
+        draw_score(fmt::format("{} misses", this->score.misses));
+    } else if(osu->getHUD()->getScoringMetric() == PP) {
+        // draw pp
+        draw_score(UString::format("%.2fpp", this->score.pp));
     } else {
         // draw score
-        const float scoreScale = comboScale;
-        g->pushTransform();
-        {
-            const float scale = (height / scoreFont->getHeight()) * scoreScale;
-
-            UString scoreString = UString::format("%llu", this->score.score);
-
-            g->scale(scale, scale);
-            g->translate(avatar_width + padding * 1.35f, start_y + height - 2 * padding);
-            if(drawTextShadow) {
-                g->translate(1, 1);
-                g->setColor(Color(textShadowColor).setA(this->fAlpha));
-
-                g->drawString(scoreFont, scoreString);
-                g->translate(-1, -1);
-            }
-
-            if(this->score.dead) {
-                g->setColor(0xffee0000);
-            } else if(this->score.highlight) {
-                g->setColor(0xffffffff);
-            } else if(this->index == 0) {
-                g->setColor(0xffeeeeee);
-            } else {
-                g->setColor(0xffaaaaaa);
-            }
-
-            g->setAlpha(this->fAlpha);
-            g->drawString(scoreFont, scoreString);
-        }
-        g->popTransform();
+        draw_score(fmt::format("{}", this->score.score));
     }
 
     g->setBlendMode(DrawBlendMode::BLEND_MODE_ALPHA);

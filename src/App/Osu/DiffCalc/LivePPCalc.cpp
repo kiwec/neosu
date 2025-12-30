@@ -3,9 +3,11 @@
 
 #include "Logging.h"
 
+#include "BanchoProtocol.h"
 #include "Osu.h"
 #include "BeatmapInterface.h"
 #include "DifficultyCalculator.h"
+#include "HUD.h"
 #include "OsuConVars.h"
 #include "uwu.h"
 
@@ -102,7 +104,8 @@ struct LivePPCalc::LivePPCalcImpl {
 
     // designed in a way that most of the heavy lifting is done off-thread (inside the calc_inst invocation)
     void update() {
-        if(!(cv::draw_statistics_pp.getBool() || cv::draw_statistics_livestars.getBool())) {
+        if(!(osu->getHUD()->getScoringMetric() == PP || cv::draw_statistics_pp.getBool() ||
+             cv::draw_statistics_livestars.getBool())) {
             return;
         }
 
