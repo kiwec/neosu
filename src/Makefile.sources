@@ -164,7 +164,6 @@ neosu_SOURCES = \
 	src/GUI/CBaseUILabel.cpp \
 	src/GUI/CBaseUIScrollView.cpp \
 	src/GUI/CBaseUISlider.cpp \
-	src/GUI/CBaseUITextField.cpp \
 	src/GUI/CBaseUITextbox.cpp \
 	src/GUI/CBaseUIWindow.cpp \
 	src/GUI/CWindowManager.cpp \

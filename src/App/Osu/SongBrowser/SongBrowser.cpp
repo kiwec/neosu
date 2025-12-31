@@ -2447,19 +2447,19 @@ void SongBrowser::onDatabaseLoadingFinished() {
 
             // 0-9
             {
-                coll->at(0) = MKCBTN(this->contextMenu, 250, 250, 200, 50, "", "0-9");
+                coll->at(0) = MKCBTN(this->contextMenu, 250.f, 250.f, 200.f, 50.f, "", "0-9");
             }
 
             // A-Z
             for(size_t i = 0; i < 26; i++) {
                 UString collectionName = UString::format("%c", 'A' + i);
 
-                coll->at(i + 1) = MKCBTN(this->contextMenu, 250, 250, 200, 50, "", collectionName);
+                coll->at(i + 1) = MKCBTN(this->contextMenu, 250.f, 250.f, 200.f, 50.f, "", collectionName);
             }
 
             // Other
             {
-                coll->at(27) = MKCBTN(this->contextMenu, 250, 250, 200, 50, "", "Other");
+                coll->at(27) = MKCBTN(this->contextMenu, 250.f, 250.f, 200.f, 50.f, "", "Other");
             }
         }
 
@@ -2476,7 +2476,7 @@ void SongBrowser::onDatabaseLoadingFinished() {
                 else
                     difficultyCollectionName = UString::format(i == 1 ? "%i star" : "%i stars", i);
 
-                diffbtns[i] = MKCBTN(this->contextMenu, 250, 250, 200, 50, "", difficultyCollectionName);
+                diffbtns[i] = MKCBTN(this->contextMenu, 250.f, 250.f, 200.f, 50.f, "", difficultyCollectionName);
             }
         }
 
@@ -2484,12 +2484,12 @@ void SongBrowser::onDatabaseLoadingFinished() {
         {
             auto &bpmbtns = this->bpmCollectionButtons;
             bpmbtns.resize(6);
-            bpmbtns[0] = MKCBTN(this->contextMenu, 250, 250, 200, 50, "", "Under 60 BPM");
-            bpmbtns[1] = MKCBTN(this->contextMenu, 250, 250, 200, 50, "", "Under 120 BPM");
-            bpmbtns[2] = MKCBTN(this->contextMenu, 250, 250, 200, 50, "", "Under 180 BPM");
-            bpmbtns[3] = MKCBTN(this->contextMenu, 250, 250, 200, 50, "", "Under 240 BPM");
-            bpmbtns[4] = MKCBTN(this->contextMenu, 250, 250, 200, 50, "", "Under 300 BPM");
-            bpmbtns[5] = MKCBTN(this->contextMenu, 250, 250, 200, 50, "", "Over 300 BPM");
+            bpmbtns[0] = MKCBTN(this->contextMenu, 250.f, 250.f, 200.f, 50.f, "", "Under 60 BPM");
+            bpmbtns[1] = MKCBTN(this->contextMenu, 250.f, 250.f, 200.f, 50.f, "", "Under 120 BPM");
+            bpmbtns[2] = MKCBTN(this->contextMenu, 250.f, 250.f, 200.f, 50.f, "", "Under 180 BPM");
+            bpmbtns[3] = MKCBTN(this->contextMenu, 250.f, 250.f, 200.f, 50.f, "", "Under 240 BPM");
+            bpmbtns[4] = MKCBTN(this->contextMenu, 250.f, 250.f, 200.f, 50.f, "", "Under 300 BPM");
+            bpmbtns[5] = MKCBTN(this->contextMenu, 250.f, 250.f, 200.f, 50.f, "", "Over 300 BPM");
         }
 
         // dateadded
@@ -2501,13 +2501,13 @@ void SongBrowser::onDatabaseLoadingFinished() {
         {
             auto &lenbtns = this->lengthCollectionButtons;
             lenbtns.resize(7);
-            lenbtns[0] = MKCBTN(this->contextMenu, 250, 250, 200, 50, "", "1 minute or less");
-            lenbtns[1] = MKCBTN(this->contextMenu, 250, 250, 200, 50, "", "2 minutes or less");
-            lenbtns[2] = MKCBTN(this->contextMenu, 250, 250, 200, 50, "", "3 minutes or less");
-            lenbtns[3] = MKCBTN(this->contextMenu, 250, 250, 200, 50, "", "4 minutes or less");
-            lenbtns[4] = MKCBTN(this->contextMenu, 250, 250, 200, 50, "", "5 minutes or less");
-            lenbtns[5] = MKCBTN(this->contextMenu, 250, 250, 200, 50, "", "10 minutes or less");
-            lenbtns[6] = MKCBTN(this->contextMenu, 250, 250, 200, 50, "", "Over 10 minutes");
+            lenbtns[0] = MKCBTN(this->contextMenu, 250.f, 250.f, 200.f, 50.f, "", "1 minute or less");
+            lenbtns[1] = MKCBTN(this->contextMenu, 250.f, 250.f, 200.f, 50.f, "", "2 minutes or less");
+            lenbtns[2] = MKCBTN(this->contextMenu, 250.f, 250.f, 200.f, 50.f, "", "3 minutes or less");
+            lenbtns[3] = MKCBTN(this->contextMenu, 250.f, 250.f, 200.f, 50.f, "", "4 minutes or less");
+            lenbtns[4] = MKCBTN(this->contextMenu, 250.f, 250.f, 200.f, 50.f, "", "5 minutes or less");
+            lenbtns[5] = MKCBTN(this->contextMenu, 250.f, 250.f, 200.f, 50.f, "", "10 minutes or less");
+            lenbtns[6] = MKCBTN(this->contextMenu, 250.f, 250.f, 200.f, 50.f, "", "Over 10 minutes");
         }
 #undef MKCBTN
     }
