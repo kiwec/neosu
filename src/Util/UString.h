@@ -138,7 +138,7 @@ class UString {
 
     // string tests
     [[nodiscard]] constexpr bool endsWith(char ch) const noexcept {
-        return !this->sUnicode.empty() && this->sUtf8.back() == ch;
+        return !this->sUtf8.empty() && this->sUtf8.back() == ch;
     }
     [[nodiscard]] constexpr bool endsWith(char16_t ch) const noexcept {
         return !this->sUnicode.empty() && this->sUnicode.back() == ch;
@@ -151,7 +151,7 @@ class UString {
                std::equal(suffix.sUnicode.begin(), suffix.sUnicode.end(), this->sUnicode.end() - suffixLen);
     }
     [[nodiscard]] constexpr bool startsWith(char ch) const noexcept {
-        return !this->sUnicode.empty() && this->sUtf8.front() == ch;
+        return !this->sUtf8.empty() && this->sUtf8.front() == ch;
     }
     [[nodiscard]] constexpr bool startsWith(char16_t ch) const noexcept {
         return !this->sUnicode.empty() && this->sUnicode.front() == ch;
