@@ -92,7 +92,9 @@ OnlineMapListing::OnlineMapListing(OsuDirectScreen* parent, Downloader::BeatmapS
     this->directScreen->bg_mgr->add_avatar(this->set_id_for_endpoint);
 }
 
-OnlineMapListing::~OnlineMapListing() { this->directScreen->bg_mgr->remove_avatar(this->set_id_for_endpoint); }
+OnlineMapListing::~OnlineMapListing() {
+    if(this->directScreen->bg_mgr) this->directScreen->bg_mgr->remove_avatar(this->set_id_for_endpoint);
+}
 
 void OnlineMapListing::onMouseDownInside(bool /*left*/, bool /*right*/) { this->mousedown_coords = mouse->getPos(); }
 
