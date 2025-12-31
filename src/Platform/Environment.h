@@ -201,6 +201,7 @@ class Environment {
     [[nodiscard]] McRect getDesktopRect() const;
     [[nodiscard]] McRect getWindowRect() const;
     [[nodiscard]] int getDPI() const;
+    [[nodiscard]] float getPixelDensity() const;  // like DPI but more annoying
     [[nodiscard]] inline float getDPIScale() const { return (float)getDPI() / 96.0f; }
 
     [[nodiscard]] bool isPointValid(vec2 point) const;  // whether an x,y coordinate lands on an actual display

@@ -918,7 +918,7 @@ vec2 Environment::getWindowPos() const {
 
 vec2 Environment::getWindowSize() const {
     int width{320}, height{240};
-    if(!SDL_GetWindowSize(m_window, &width, &height)) {
+    if(!SDL_GetWindowSizeInPixels(m_window, &width, &height)) {
         debugLog("Failed to get window size (returning cached {},{}): {:s}", m_vLastKnownWindowSize.x,
                  m_vLastKnownWindowSize.y, SDL_GetError());
     } else {
@@ -940,13 +940,15 @@ int Environment::getMonitor() const {
 
 vec2 Environment::getNativeScreenSize() const {
     if(const SDL_DisplayID di = SDL_GetDisplayForWindow(m_window)) {
+        const float scale = env->getPixelDensity();
+
         SDL_Rect bounds{};
         if(SDL_GetDisplayUsableBounds(di, &bounds)) {
-            return {static_cast<float>(bounds.w), static_cast<float>(bounds.h)};
+            return vec2{static_cast<float>(bounds.w), static_cast<float>(bounds.h)} * scale;
         }
 
         if(const SDL_DisplayMode *dm = SDL_GetDesktopDisplayMode(di)) {
-            return {static_cast<float>(dm->w), static_cast<float>(dm->h)};
+            return vec2{static_cast<float>(dm->w), static_cast<float>(dm->h)} * scale;
         }
     }
     return getWindowSize();
@@ -979,6 +981,10 @@ int Environment::getDPI() const {
     float dpi = SDL_GetWindowDisplayScale(m_window) * 96;
 
     return std::clamp<int>((int)dpi, 96, 96 * 2);  // sanity clamp
+}
+
+float Environment::getPixelDensity() const {
+    return SDL_GetWindowPixelDensity(m_window);
 }
 
 void Environment::setCursor(CURSORTYPE cur) {
