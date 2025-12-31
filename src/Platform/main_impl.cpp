@@ -311,6 +311,7 @@ SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
                     break;
 
                 case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
+                    onDPIChange();  // fallthrough
                 case SDL_EVENT_WINDOW_RESIZED:
                     // don't trust the event coordinates if we're in fullscreen, use the fullscreen size directly
                     if(!winMinimized() && !m_bRestoreFullscreen) {
@@ -328,7 +329,7 @@ SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
                     break;
 
                 case SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED:
-                    m_engine->onDPIChange();
+                    onDPIChange();
                     break;
 
                 case SDL_EVENT_WINDOW_EXPOSED: {
@@ -358,7 +359,7 @@ SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
             updateWindowFlags();
             switch(event->display.type) {
                 case SDL_EVENT_DISPLAY_CONTENT_SCALE_CHANGED:
-                    m_engine->onDPIChange();
+                    onDPIChange();
                     // fallthrough
                 default:
                     // reinit monitors, and update hz in any case
@@ -614,6 +615,10 @@ bool SDLMain::createWindow() {
 
     // initialize window flags
     updateWindowFlags();
+
+    // init dpi
+    m_fDisplayScale = SDL_GetWindowDisplayScale(m_window);
+    m_fPixelDensity = SDL_GetWindowPixelDensity(m_window);
 
     return true;
 }

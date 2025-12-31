@@ -294,6 +294,7 @@ class Environment {
 
     // monitors
     void initMonitors(bool force = false) const;
+
     // mutable due to lazy init
     mutable std::unordered_map<unsigned int, McRect> m_mMonitors;
     mutable McRect m_fullDesktopBoundingBox;
@@ -304,7 +305,10 @@ class Environment {
     // window
     void updateWindowFlags();
     WinFlags m_winflags{};  // initialized when window is created, updated on new window events in the event loop
+    void onDPIChange();
 
+    float m_fPixelDensity{1.f};
+    float m_fDisplayScale{1.f};
     bool m_bDPIOverride;
     inline void onMonitorChange(float oldValue, float newValue) {
         if(oldValue != newValue) setMonitor(static_cast<int>(newValue));

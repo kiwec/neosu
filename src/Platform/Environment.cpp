@@ -978,13 +978,17 @@ int Environment::getDPI() const {
         return 96;
     }
 
-    float dpi = SDL_GetWindowDisplayScale(m_window) * 96;
+    float dpi = m_fDisplayScale * 96;
 
     return std::clamp<int>((int)dpi, 96, 96 * 2);  // sanity clamp
 }
 
 float Environment::getPixelDensity() const {
-    return SDL_GetWindowPixelDensity(m_window);
+    if(m_bDPIOverride) {
+        return 1.f;
+    }
+
+    return m_fPixelDensity;
 }
 
 void Environment::setCursor(CURSORTYPE cur) {
@@ -1126,6 +1130,14 @@ void Environment::listenToTextInput(bool listen) {
 //******************************//
 //	internal helpers/callbacks  //
 //******************************//
+
+void Environment::onDPIChange() {
+    m_fDisplayScale = SDL_GetWindowDisplayScale(m_window);
+    m_fPixelDensity = SDL_GetWindowPixelDensity(m_window);
+    if (m_engine) {
+        m_engine->onDPIChange();
+    }
+}
 
 void Environment::onUseIMEChange(float newValue) {
     const bool enable = !!static_cast<int>(newValue);
