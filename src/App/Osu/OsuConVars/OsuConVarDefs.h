@@ -210,6 +210,9 @@ CONVAR(songbrowser_scores_filteringtype_manual, "unset"sv, CLIENT | SKINS | SERV
 CONVAR(songbrowser_scores_sortingtype, "By pp"sv, CLIENT | SKINS | SERVER);
 CONVAR(songbrowser_sortingtype, "By Date Added"sv, CLIENT | SKINS | SERVER);
 
+// Song browser (the online kind)
+CONVAR(direct_ranking_status_filter, 0, CLIENT | SKINS | SERVER);
+
 // Playfield
 CONVAR(background_alpha, 1.0f, CLIENT | SKINS | SERVER,
        "transparency of all background layers at once, only useful for FPoSu");

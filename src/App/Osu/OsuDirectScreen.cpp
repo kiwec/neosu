@@ -5,6 +5,7 @@
 #include "BanchoApi.h"
 #include "Bancho.h"
 #include "BeatmapInterface.h"
+#include "CBaseUICheckbox.h"
 #include "CBaseUILabel.h"
 #include "CBaseUIScrollView.h"
 #include "CBaseUITextbox.h"
@@ -15,6 +16,7 @@
 #include "Graphics.h"
 #include "Logging.h"
 #include "MainMenu.h"
+#include "MakeDelegateWrapper.h"
 #include "Mouse.h"
 #include "NetworkHandler.h"
 #include "NotificationOverlay.h"
@@ -222,6 +224,13 @@ OsuDirectScreen::OsuDirectScreen() {
     });
     this->addBaseUIElement(this->best_rated_btn);
 
+    this->ranked_only = new CBaseUICheckbox(0, 0, 0, 0, "", "Only show ranked beatmaps");
+    this->ranked_only->setDrawFrame(false);
+    this->ranked_only->setDrawBackground(false);
+    this->ranked_only->setChecked(cv::direct_ranking_status_filter.getInt() == RankingStatusFilter::RANKED);
+    this->ranked_only->setChangeCallback(SA::MakeDelegate<&OsuDirectScreen::onRankedCheckboxChange>(this));
+    this->addBaseUIElement(this->ranked_only);
+
     this->results = new CBaseUIScrollView();
     this->results->setBackgroundColor(0xaa000000);
     this->results->setHorizontalScrolling(false);
@@ -230,6 +239,13 @@ OsuDirectScreen::OsuDirectScreen() {
     this->addBaseUIElement(this->results);
 
     this->onResolutionChange(osu->getVirtScreenSize());
+}
+
+void OsuDirectScreen::onRankedCheckboxChange(CBaseUICheckbox* checkbox) {
+    cv::direct_ranking_status_filter.setValue(checkbox->isChecked() ? RankingStatusFilter::RANKED
+                                                                    : RankingStatusFilter::ALL);
+    this->reset();
+    this->search(this->current_query, 0);
 }
 
 CBaseUIContainer* OsuDirectScreen::setVisible(bool visible) {
@@ -314,7 +330,7 @@ void OsuDirectScreen::onResolutionChange(vec2 newResolution) {
     this->title->setRelPos(x, y);
     y += this->title->getSize().y;
 
-    const f32 results_width = std::min(newResolution.x - 10.f * scale, 1000.f * scale);
+    const f32 results_width = std::min(newResolution.x - 10.f * scale, 1024.f * scale);
     const f32 x_start = osu->getVirtScreenWidth() / 2.f - results_width / 2.f;
     x = x_start;
     y += 50.f * scale;
@@ -330,6 +346,9 @@ void OsuDirectScreen::onResolutionChange(vec2 newResolution) {
     x += this->newest_btn->getSize().x + BUTTONS_MARGIN;
     this->best_rated_btn->setRelPos(x, y);
     this->best_rated_btn->setSize(150.f * scale, this->search_bar->getSize().y);
+    x += this->best_rated_btn->getSize().x + BUTTONS_MARGIN;
+    this->ranked_only->setRelPos(x, y);
+    this->ranked_only->setSize(40.f * scale, 40.f * scale);
     y += this->search_bar->getSize().y;
 
     // Results list
@@ -379,7 +398,7 @@ void OsuDirectScreen::search(std::string_view query, i32 page) {
     assert(page >= 0);
     if(this->loading) return;
 
-    const i32 filter = RankingStatusFilter::ALL;
+    const i32 filter = cv::direct_ranking_status_filter.getInt();
     auto scheme = cv::use_https.getBool() ? "https://" : "http://";
     std::string url = fmt::format("{}osu.{}/web/osu-search.php?m=0&r={}&q={}&p={}", scheme, BanchoState::endpoint,
                                   filter, NeoNet::urlEncode(query), page);

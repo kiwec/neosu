@@ -32,6 +32,7 @@ Changelog::Changelog() : ScreenBackable() {
     CHANGELOG v41_13;
     v41_13.title = "41.13 (" CHANGELOG_TIMESTAMP ")";
     v41_13.changes = {
+        R"(- Added a checkbox to only see ranked beatmaps in the online beatmaps screen)",
         R"(- Improved songbrowser scrolling behavior and performance)",
         R"(- In-game scoreboard can now also be sorted by pp, misscount, accuracy or combo))",
         R"(- Merged some nice features from McOsu (from @McKay))",

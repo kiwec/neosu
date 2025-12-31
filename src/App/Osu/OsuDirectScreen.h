@@ -6,6 +6,7 @@
 // and we might have a download screen in the future, plus we already
 // have "Song Browser", so I'd rather make it obvious.
 
+class CBaseUICheckbox;
 class CBaseUILabel;
 class CBaseUIScrollView;
 class CBaseUITextbox;
@@ -39,10 +40,13 @@ class OsuDirectScreen final : public ScreenBackable {
     void search(std::string_view query, i32 page);
 
    private:
+    void onRankedCheckboxChange(CBaseUICheckbox* checkbox);
+
     CBaseUILabel* title{nullptr};
     CBaseUITextbox* search_bar{nullptr};
     UIButton* newest_btn{nullptr};
     UIButton* best_rated_btn{nullptr};
+    CBaseUICheckbox* ranked_only{nullptr};
     CBaseUIScrollView* results{nullptr};
 
     std::string current_query{"Newest"};
