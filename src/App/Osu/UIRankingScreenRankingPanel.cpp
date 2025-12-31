@@ -94,9 +94,9 @@ void UIRankingScreenRankingPanel::draw() {
     g->pushTransform();
     {
         g->scale(scale, scale);
-        g->translate(
-            this->vPos.x + osu->getSkin()->i_ranking_max_combo->getWidth() * scale * 0.5f + osu->getUIScale(4.0f) * uiScale,
-            this->vPos.y + (osu->getUIScale(row4 - 5 - row4ImageOffset) + globalYOffset) * uiScale);
+        g->translate(this->vPos.x + osu->getSkin()->i_ranking_max_combo->getWidth() * scale * 0.5f +
+                         osu->getUIScale(4.0f) * uiScale,
+                     this->vPos.y + (osu->getUIScale(row4 - 5 - row4ImageOffset) + globalYOffset) * uiScale);
         g->drawImage(osu->getSkin()->i_ranking_max_combo);
     }
     g->popTransform();
@@ -143,9 +143,9 @@ void UIRankingScreenRankingPanel::drawHitImage(SkinImage *img, float /*scale*/, 
     const float uiScale = /*cv::ui_scale.getFloat()*/ 1.0f;  // NOTE: commented for now, doesn't really work due to
                                                              // legacy layout expectations
 
-    /// img->setAnimationFrameForce(0);
+    // img->setAnimationFrameForce(0);
     img->draw(vec2(this->vPos.x + osu->getUIScale(pos.x) * uiScale, this->vPos.y + osu->getUIScale(pos.y) * uiScale),
-              uiScale);
+              uiScale, 0.f, true);
 }
 
 void UIRankingScreenRankingPanel::drawNumHits(int numHits, float scale, vec2 pos) {

@@ -59,9 +59,9 @@ bool SkinImage::load(const std::string& skinElementName, const std::string& anim
     std::string animatedSkinElementStartName = skinElementName;
     animatedSkinElementStartName.append(animationSeparator);
     animatedSkinElementStartName.append("0");
-    if(this->loadImage(animatedSkinElementStartName,
-                       ignoreDefaultSkin))  // try loading the first animated element (if this exists then we continue
-                                            // loading until the first missing frame)
+    if(this->loadImage(animatedSkinElementStartName, ignoreDefaultSkin, true,
+                       true))  // try loading the first animated element (if this exists then we continue
+                               // loading until the first missing frame)
     {
         int frame = 1;
         while(true) {
@@ -69,7 +69,7 @@ bool SkinImage::load(const std::string& skinElementName, const std::string& anim
             currentAnimatedSkinElementFrameName.append(animationSeparator);
             currentAnimatedSkinElementFrameName.append(std::to_string(frame));
 
-            if(!this->loadImage(currentAnimatedSkinElementFrameName, ignoreDefaultSkin))
+            if(!this->loadImage(currentAnimatedSkinElementFrameName, ignoreDefaultSkin, true, true))
                 break;  // stop loading on the first missing frame
 
             frame++;
@@ -80,13 +80,17 @@ bool SkinImage::load(const std::string& skinElementName, const std::string& anim
                 break;
             }
         }
-    } else  // load non-animated skin element
-        this->loadImage(skinElementName, ignoreDefaultSkin);
+        // also try to load non-animated skin element, but don't add it to images
+        this->loadImage(skinElementName, ignoreDefaultSkin, false, false);
+    } else {
+        // load non-animated skin element
+        this->loadImage(skinElementName, ignoreDefaultSkin, false, true);
+    }
 
     return this->images.size() > 0;  // if any image was found
 }
 
-bool SkinImage::loadImage(const std::string& skinElementName, bool ignoreDefaultSkin) {
+bool SkinImage::loadImage(const std::string& skinElementName, bool ignoreDefaultSkin, bool animated, bool addToImages) {
     std::string filepath1 = this->skin->file_path;
     filepath1.append(skinElementName);
     filepath1.append("@2x.png");
@@ -122,7 +126,13 @@ bool SkinImage::loadImage(const std::string& skinElementName, bool ignoreDefault
             image.img = resourceManager->loadImageAbsUnnamed(filepath1, cv::skin_mipmaps.getBool());
             image.scale = 2.0f;
 
-            this->images.push_back(image);
+            if(addToImages) {
+                this->images.push_back(image);
+            }
+
+            if(!animated) {
+                this->nonAnimatedImage = image;
+            }
 
             // export
             {
@@ -147,16 +157,23 @@ bool SkinImage::loadImage(const std::string& skinElementName, bool ignoreDefault
         image.img = resourceManager->loadImageAbsUnnamed(filepath2, cv::skin_mipmaps.getBool());
         image.scale = 1.0f;
 
-        this->images.push_back(image);
-
-        // export
-        {
-            this->filepathsForExport.push_back(filepath2);
-
-            if(existsFilepath1) this->filepathsForExport.push_back(filepath1);
+        if(!animated) {
+            this->nonAnimatedImage = image;
         }
 
-        this->is_2x = false;
+        if(addToImages) {
+            this->images.push_back(image);
+
+            // export
+            {
+                this->filepathsForExport.push_back(filepath2);
+
+                if(existsFilepath1) this->filepathsForExport.push_back(filepath1);
+            }
+
+            this->is_2x = false;
+        }
+
         return true;  // nothing more to do here
     }
 
@@ -176,16 +193,23 @@ bool SkinImage::loadImage(const std::string& skinElementName, bool ignoreDefault
             image.img = resourceManager->loadImageAbsUnnamed(defaultFilePath1, cv::skin_mipmaps.getBool());
             image.scale = 2.0f;
 
-            this->images.push_back(image);
-
-            // export
-            {
-                this->filepathsForExport.push_back(defaultFilePath1);
-
-                if(existsDefaultFilePath2) this->filepathsForExport.push_back(defaultFilePath2);
+            if(!animated) {
+                this->nonAnimatedImage = image;
             }
 
-            this->is_2x = true;
+            if(addToImages) {
+                this->images.push_back(image);
+
+                // export
+                {
+                    this->filepathsForExport.push_back(defaultFilePath1);
+
+                    if(existsDefaultFilePath2) this->filepathsForExport.push_back(defaultFilePath2);
+                }
+
+                this->is_2x = true;
+            }
+
             return true;  // nothing more to do here
         }
     }
@@ -199,16 +223,23 @@ bool SkinImage::loadImage(const std::string& skinElementName, bool ignoreDefault
         image.img = resourceManager->loadImageAbsUnnamed(defaultFilePath2, cv::skin_mipmaps.getBool());
         image.scale = 1.0f;
 
-        this->images.push_back(image);
-
-        // export
-        {
-            this->filepathsForExport.push_back(defaultFilePath2);
-
-            if(existsDefaultFilePath1) this->filepathsForExport.push_back(defaultFilePath1);
+        if(!animated) {
+            this->nonAnimatedImage = image;
         }
 
-        this->is_2x = false;
+        if(addToImages) {
+            this->images.push_back(image);
+
+            // export
+            {
+                this->filepathsForExport.push_back(defaultFilePath2);
+
+                if(existsDefaultFilePath1) this->filepathsForExport.push_back(defaultFilePath1);
+            }
+
+            this->is_2x = false;
+        }
+
         return true;  // nothing more to do here
     }
 
@@ -242,7 +273,7 @@ void SkinImage::drawBrightQuad(VertexArrayObject* vao, float brightness) const {
     g->setBlending(oldBlending);
 }
 
-void SkinImage::draw(vec2 pos, float scale, float brightness) const {
+void SkinImage::draw(vec2 pos, float scale, float brightness, bool tryDrawNonAnimated) const {
     if(this->images.size() < 1) return;
 
     scale *= this->getScale();  // auto scale to current resolution
@@ -252,7 +283,9 @@ void SkinImage::draw(vec2 pos, float scale, float brightness) const {
         g->scale(scale, scale);
         g->translate(pos.x, pos.y);
 
-        Image* img = this->getImageForCurrentFrame().img;
+        Image* img = tryDrawNonAnimated && this->nonAnimatedImage.img != MISSING_TEXTURE
+                         ? this->nonAnimatedImage.img
+                         : this->getImageForCurrentFrame().img;
 
         if(this->fDrawClipWidthPercent == 1.0f && brightness <= 0.f)
             g->drawImage(img);
@@ -294,7 +327,7 @@ void SkinImage::draw(vec2 pos, float scale, float brightness) const {
     g->popTransform();
 }
 
-void SkinImage::drawRaw(vec2 pos, float scale, AnchorPoint anchor, float brightness) const {
+void SkinImage::drawRaw(vec2 pos, float scale, AnchorPoint anchor, float brightness, bool tryDrawNonAnimated) const {
     if(this->images.size() < 1) return;
 
     g->pushTransform();
@@ -302,7 +335,9 @@ void SkinImage::drawRaw(vec2 pos, float scale, AnchorPoint anchor, float brightn
         g->scale(scale, scale);
         g->translate(pos.x, pos.y);
 
-        Image* img = this->getImageForCurrentFrame().img;
+        Image* img = tryDrawNonAnimated && this->nonAnimatedImage.img != MISSING_TEXTURE
+                         ? this->nonAnimatedImage.img
+                         : this->getImageForCurrentFrame().img;
 
         if(this->fDrawClipWidthPercent == 1.0f && brightness <= 0.f) {
             g->drawImage(img, anchor);

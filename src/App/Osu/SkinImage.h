@@ -9,6 +9,7 @@ struct Skin;
 
 class Image;
 
+extern Image* MISSING_TEXTURE;
 class SkinImage final {
     NOCOPY_NOMOVE(SkinImage)
    public:
@@ -24,11 +25,12 @@ class SkinImage final {
 
     // for objects scaled automatically to the current resolution
     // brightness: 0.0 = normal, 1.0 = heavenly
-    void draw(vec2 pos, float scale = 1.0f, float brightness = 0.f) const;
+    void draw(vec2 pos, float scale = 1.0f, float brightness = 0.f, bool tryDrawNonAnimated = false) const;
 
     // for objects which scale depending on external factors
     // (e.g. hitobjects, depending on the diameter defined by the CS)
-    void drawRaw(vec2 pos, float scale, AnchorPoint anchor = AnchorPoint::CENTER, float brightness = 0.f) const;
+    void drawRaw(vec2 pos, float scale, AnchorPoint anchor = AnchorPoint::CENTER, float brightness = 0.f,
+                 bool tryDrawNonAnimated = false) const;
 
     void update(float speedMultiplier, bool useEngineTimeForAnimations = true, i32 curMusicPos = 0);
 
@@ -37,6 +39,7 @@ class SkinImage final {
                                               // relative to curMusicPos where we become visible
     void setAnimationFrameForce(
         int frame);  // force set a frame, before drawing (e.g. for hitresults in UIRankingScreenRankingPanel)
+
     void setAnimationFrameClampUp();  // force stop the animation after the last frame, before drawing
 
     void setDrawClipWidthPercent(float drawClipWidthPercent) { this->fDrawClipWidthPercent = drawClipWidthPercent; }
@@ -76,11 +79,11 @@ class SkinImage final {
 
    private:
     bool load(const std::string& skinElementName, const std::string& animationSeparator, bool ignoreDefaultSkin);
-    bool loadImage(const std::string& skinElementName, bool ignoreDefaultSkin);
+    bool loadImage(const std::string& skinElementName, bool ignoreDefaultSkin, bool animated, bool addToImages);
 
     [[nodiscard]] float getScale() const;
     [[nodiscard]] float getImageScale() const;
-    void drawBrightQuad(VertexArrayObject *vao, float brightness) const;  // helper
+    void drawBrightQuad(VertexArrayObject* vao, float brightness) const;  // helper
 
     Skin* skin;
     bool bReady;
@@ -99,6 +102,8 @@ class SkinImage final {
 
     // raw files
     std::vector<IMAGE> images;
+    IMAGE nonAnimatedImage{.img = MISSING_TEXTURE, .scale = 2.f};
+
     bool bIsMissingTexture;
     bool bIsFromDefaultSkin;
 
