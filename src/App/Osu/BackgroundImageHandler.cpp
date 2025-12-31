@@ -56,7 +56,6 @@ struct BGImageHandlerImpl final {
     BGImageHandlerImpl();
     ~BGImageHandlerImpl();
 
-    void draw(const Image *backgroundImage, f32 alpha = 1.f);
     void draw(const DatabaseBeatmap *beatmap, f32 alpha = 1.f);
     void update(bool allowEviction);
     const Image *getLoadBackgroundImage(const DatabaseBeatmap *beatma, bool load_immediately = false,
@@ -163,7 +162,8 @@ BGImageHandlerImpl::~BGImageHandlerImpl() {
     cv::load_beatmap_background_images.removeCallback();
 }
 
-void BGImageHandlerImpl::draw(const Image *image, f32 alpha) {
+// static method
+void BGImageHandler::draw(const Image *image, f32 alpha) {
     if(!image || !image->isReady()) return;
 
     f32 scale = Osu::getImageScaleToFillResolution(image, osu->getVirtScreenSize());
@@ -180,7 +180,7 @@ void BGImageHandlerImpl::draw(const Image *image, f32 alpha) {
 void BGImageHandlerImpl::draw(const DatabaseBeatmap *beatmap, f32 alpha) {
     if(beatmap == nullptr) return;
     const Image *backgroundImage = this->getLoadBackgroundImage(beatmap);
-    return this->draw(backgroundImage, alpha);
+    return BGImageHandler::draw(backgroundImage, alpha);
 }
 
 void BGImageHandlerImpl::update(bool allow_eviction) {
@@ -563,7 +563,6 @@ bool MapBGImagePathLoader::checkMojibake() {
 BGImageHandler::BGImageHandler() : pImpl() {}
 BGImageHandler::~BGImageHandler() = default;
 
-void BGImageHandler::draw(const Image *backgroundImage, f32 alpha) { return pImpl->draw(backgroundImage, alpha); }
 void BGImageHandler::draw(const DatabaseBeatmap *beatmap, f32 alpha) { return pImpl->draw(beatmap, alpha); }
 void BGImageHandler::update(bool allowEviction) { return pImpl->update(allowEviction); }
 const Image *BGImageHandler::getLoadBackgroundImage(const DatabaseBeatmap *beatmap, bool load_immediately,

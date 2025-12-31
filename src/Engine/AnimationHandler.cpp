@@ -45,7 +45,7 @@ using Animation = std::variant<BaseAnim<f32>, BaseAnim<f64>>;
 std::vector<Animation> s_animations;
 
 template <typename FltType>
-forceinline void deleteExistingAnimationImpl(FltType *base) {
+forceinline void deleteExistingAnimationImpl(FltType *base) noexcept {
     std::erase_if(s_animations, [base](const Animation &anim) -> bool {
         if(auto *typed = std::get_if<BaseAnim<FltType>>(&anim)) return typed->fBase == base;
         return false;
@@ -54,7 +54,7 @@ forceinline void deleteExistingAnimationImpl(FltType *base) {
 
 template <typename FltType>
 void addAnimation(FltType *base, FltType target, FltType duration, FltType delay, bool overrideExisting,
-                  ANIMATION_TYPE type, FltType smoothFactor = FltType{0}) {
+                  ANIMATION_TYPE type, FltType smoothFactor = FltType{0}) noexcept {
     if(base == nullptr) return;
     if(overrideExisting) deleteExistingAnimationImpl(base);
 
@@ -73,7 +73,7 @@ void addAnimation(FltType *base, FltType target, FltType duration, FltType delay
 
 template <typename FltType>
 forceinline bool updateAnimation(BaseAnim<FltType> &anim, FltType frameTime, bool doLogging, uSz idx,
-                                 uSz startingNumAnimations) {
+                                 uSz startingNumAnimations) noexcept {
     constexpr FltType zero{0};
     constexpr FltType half{0.5};
     constexpr FltType one{1};
