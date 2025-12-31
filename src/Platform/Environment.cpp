@@ -940,7 +940,7 @@ int Environment::getMonitor() const {
 
 vec2 Environment::getNativeScreenSize() const {
     if(const SDL_DisplayID di = SDL_GetDisplayForWindow(m_window)) {
-        const float scale = env->getPixelDensity();
+        const float scale = getPixelDensity();
 
         SDL_Rect bounds{};
         if(SDL_GetDisplayUsableBounds(di, &bounds)) {

@@ -2106,10 +2106,14 @@ float Osu::getUIScale() {
     f32 scale = cv::ui_scale.getFloat();
 
     if(cv::ui_scale_to_dpi.getBool()) {
-        f32 w = osu ? osu->getVirtScreenWidth() : engine->getScreenWidth();
-        f32 h = osu ? osu->getVirtScreenHeight() : engine->getScreenHeight();
-        if(w >= cv::ui_scale_to_dpi_minimum_width.getInt() && h >= cv::ui_scale_to_dpi_minimum_height.getInt()) {
+        if(env->getPixelDensity() >= 1.4f /* maybe make it configurable? idk what retina  */) {
             scale *= env->getDPIScale();
+        } else {
+            f32 w = osu ? osu->getVirtScreenWidth() : engine->getScreenWidth();
+            f32 h = osu ? osu->getVirtScreenHeight() : engine->getScreenHeight();
+            if(w >= cv::ui_scale_to_dpi_minimum_width.getInt() && h >= cv::ui_scale_to_dpi_minimum_height.getInt()) {
+                scale *= env->getDPIScale();
+            }
         }
     }
 
