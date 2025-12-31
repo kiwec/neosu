@@ -126,22 +126,22 @@ bool SkinImage::loadImage(const std::string& skinElementName, bool ignoreDefault
             image.img = resourceManager->loadImageAbsUnnamed(filepath1, cv::skin_mipmaps.getBool());
             image.scale = 2.0f;
 
-            if(addToImages) {
-                this->images.push_back(image);
-            }
-
             if(!animated) {
                 this->nonAnimatedImage = image;
             }
 
-            // export
-            {
-                this->filepathsForExport.push_back(filepath1);
+            if(addToImages) {
+                this->images.push_back(image);
 
-                if(existsFilepath2) this->filepathsForExport.push_back(filepath2);
+                // export
+                {
+                    this->filepathsForExport.push_back(filepath1);
+
+                    if(existsFilepath2) this->filepathsForExport.push_back(filepath2);
+                }
+
+                this->is_2x = true;
             }
-
-            this->is_2x = true;
             return true;  // nothing more to do here
         }
     }
