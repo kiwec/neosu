@@ -36,14 +36,17 @@
 
 // FUCK IT WE BALL - CLAUDE CODE WOULD NEVER - HAPPY NEW YEAR!
 class MapBGManager : public AvatarManager {
+    NOCOPY_NOMOVE(MapBGManager)
    public:
-    MapBGManager() { this->url_format = "{:s}assets.{}/beatmaps/{:d}/covers/list@2x.jpg"; }
+    MapBGManager() : AvatarManager() { this->url_format = "{:s}assets.{}/beatmaps/{:d}/covers/list@2x.jpg"; }
+    ~MapBGManager() override = default;
 };
 
 class OnlineMapListing : public CBaseUIContainer {
+    NOCOPY_NOMOVE(OnlineMapListing)
    public:
     OnlineMapListing(OsuDirectScreen* parent, Downloader::BeatmapSetMetadata meta);
-    ~OnlineMapListing();
+    ~OnlineMapListing() override;
 
     void draw() override;
 
@@ -251,9 +254,7 @@ void OnlineMapListing::draw() {
     g->popClipRect();
 }
 
-OsuDirectScreen::OsuDirectScreen() {
-    this->bg_mgr = new MapBGManager();
-
+OsuDirectScreen::OsuDirectScreen() : bg_mgr(std::make_unique<MapBGManager>()) {
     this->title = new CBaseUILabel(0, 0, 0, 0, "", "Online Beatmaps");
     this->title->setDrawFrame(false);
     this->title->setDrawBackground(false);
@@ -300,7 +301,7 @@ void OsuDirectScreen::onRankedCheckboxChange(CBaseUICheckbox* checkbox) {
     cv::direct_ranking_status_filter.setValue(checkbox->isChecked() ? RankingStatusFilter::RANKED
                                                                     : RankingStatusFilter::ALL);
     this->reset();
-    this->search(this->current_query, 0);
+    this->search(this->current_query);
 }
 
 CBaseUIContainer* OsuDirectScreen::setVisible(bool visible) {

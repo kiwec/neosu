@@ -22,7 +22,7 @@ class AvatarManager {
 
    public:
     AvatarManager() { this->load_queue.reserve(128); };
-    ~AvatarManager() { this->clear(); }
+    virtual ~AvatarManager() { this->clear(); }
 
     // this is run during Osu::update(), while not in unpaused gameplay
     void update();

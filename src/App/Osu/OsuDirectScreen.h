@@ -2,6 +2,7 @@
 // Copyright (c) 2025, kiwec, All rights reserved.
 #include "ScreenBackable.h"
 
+#include <memory>
 // "OsuDirectScreen" is a cumbersome name, but "SearchScreen" is too generic,
 // and we might have a download screen in the future, plus we already
 // have "Song Browser", so I'd rather make it obvious.
@@ -43,6 +44,9 @@ class OsuDirectScreen final : public ScreenBackable {
    private:
     void onRankedCheckboxChange(CBaseUICheckbox* checkbox);
 
+    // Cursed
+    std::unique_ptr<MapBGManager> bg_mgr{nullptr};
+
     CBaseUILabel* title{nullptr};
     CBaseUITextbox* search_bar{nullptr};
     UIButton* newest_btn{nullptr};
@@ -52,8 +56,7 @@ class OsuDirectScreen final : public ScreenBackable {
 
     std::string current_query{"Newest"};
 
-    bool loading{false};
-    vec2 spinner_pos;
+    vec2 spinner_pos{1.f, 1.f};  // init on onresolutionchange
 
     uSz request_id{1};
     f64 last_search_time{0.0};
@@ -62,6 +65,5 @@ class OsuDirectScreen final : public ScreenBackable {
     friend class OnlineMapListing;
     i32 auto_select_set{0};
 
-    // Cursed
-    MapBGManager* bg_mgr{nullptr};
+    bool loading{false};
 };
