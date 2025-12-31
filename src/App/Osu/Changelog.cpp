@@ -32,7 +32,6 @@ Changelog::Changelog() : ScreenBackable() {
     CHANGELOG v41_13;
     v41_13.title = "41.13 (" CHANGELOG_TIMESTAMP ")";
     v41_13.changes = {
-        R"(- Added a checkbox to only see ranked beatmaps in the online beatmaps screen)",
         R"(- Improved songbrowser scrolling behavior and performance)",
         R"(- In-game scoreboard can now also be sorted by pp, misscount, accuracy or combo))",
         R"(- Merged some nice features from McOsu (from @McKay))",
@@ -41,6 +40,9 @@ Changelog::Changelog() : ScreenBackable() {
         R"(  - Updated songbrowser song buttons to have the velocity animation disabled by default)",
         R"(  - Updated "Sort by Artist" to secondarily sort by title)",
         R"(- Multiplayer matches now always have the "No Pausing" mod enabled)",
+        R"(- Online Beatmaps screen:)",
+        R"(  - Added a checkbox to only see ranked beatmaps)",
+        R"(  - Added a hoverable icon for each beatmapset difficulty)",
         R"(- Replay viewer now auto-skips sections that the player has skipped)",
     };
     changelogs.push_back(v41_13);

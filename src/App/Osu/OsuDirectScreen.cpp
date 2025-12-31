@@ -14,6 +14,7 @@
 #include "Engine.h"
 #include "Font.h"
 #include "Graphics.h"
+#include "Icons.h"
 #include "Logging.h"
 #include "MainMenu.h"
 #include "MakeDelegateWrapper.h"
@@ -27,6 +28,7 @@
 #include "SongBrowser/SongBrowser.h"
 #include "SString.h"
 #include "UIButton.h"
+#include "UIIcon.h"
 
 #include <charconv>
 
@@ -110,13 +112,32 @@ void OnlineMapListing::onMouseInside() { anim::moveQuadInOut(&this->hover_anim, 
 void OnlineMapListing::onMouseOutside() { anim::moveQuadInOut(&this->hover_anim, 0.f, 0.15f, 0.0f, true); }
 
 void OnlineMapListing::onResolutionChange(vec2 /*newResolution*/) {
-    this->full_title = fmt::format("{} - {}", this->meta.artist, this->meta.title);
+    this->freeElements();
 
+    this->full_title = fmt::format("{} - {}", this->meta.artist, this->meta.title);
     this->creator_width = this->font->getStringWidth(this->meta.creator);
+
+    // TODO: looks like difficulties are not sorted, we should guess the star rating from the diff name
+
+    const f32 scale = osu->getUIScale();
+    f32 x = this->getSize().x - 40.f * scale;
+    f32 y = this->getSize().y - 40.f * scale;
+    for(const auto& diff : this->meta.beatmaps | std::views::reverse) {
+        if(diff.mode != 0) continue;
+
+        auto icon = new UIIcon(Icons::CIRCLE);
+        icon->setPos(x, y);
+        icon->setSize(30.f * scale, 30.f * scale);
+        icon->setTooltipText(diff.version);
+        this->addBaseUIElement(icon);
+        x -= 40.f * scale;
+    }
 }
 
 void OnlineMapListing::draw() {
     // XXX: laggy/slow
+
+    CBaseUIContainer::draw();
 
     f32 download_progress = 0.f;
     if(this->downloading) {
