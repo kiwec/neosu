@@ -8,9 +8,9 @@ class SongBrowser;
 class BeatmapCarousel final : public CBaseUIScrollView {
     NOCOPY_NOMOVE(BeatmapCarousel)
    public:
-    BeatmapCarousel(SongBrowser *browser, float xPos = 0, float yPos = 0, float xSize = 0, float ySize = 0,
+    BeatmapCarousel(float xPos = 0, float yPos = 0, float xSize = 0, float ySize = 0,
                     const UString &name = "")
-        : CBaseUIScrollView(xPos, yPos, xSize, ySize, name), browser_ptr(browser) {
+        : CBaseUIScrollView(xPos, yPos, xSize, ySize, name) {
         this->setDrawBackground(false);
         this->setDrawFrame(false);
         this->setHorizontalScrolling(false);
@@ -34,8 +34,6 @@ class BeatmapCarousel final : public CBaseUIScrollView {
     }
 
    private:
-    SongBrowser *browser_ptr;
-
     // updated at the end of mouse_update
     f64 rightClickScrollRelYVelocity{0.0};
 };

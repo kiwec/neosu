@@ -605,12 +605,8 @@ void Database::deleteScore(const MD5Hash &beatmapMD5Hash, u64 scoreUnixTimestamp
     }
 }
 
-void Database::sortScoresInPlace(std::vector<FinishedScore> &scores, bool lock_scores_mutex) {
+void Database::sortScoresInPlace(std::vector<FinishedScore> &scores) {
     if(scores.size() < 2) return;
-
-    if(lock_scores_mutex) {
-        this->scores_mtx.lock();
-    }
 
     bool found = false;
     const auto &sortTypeString{cv::songbrowser_scores_sortingtype.getString()};
@@ -627,14 +623,14 @@ void Database::sortScoresInPlace(std::vector<FinishedScore> &scores, bool lock_s
         cv::songbrowser_scores_sortingtype.setValue("By pp");
         std::ranges::sort(scores, sortScoreByPP);
     }
-
-    if(lock_scores_mutex) {
-        this->scores_mtx.unlock();
-    }
 }
 
-void Database::sortScoresInt(const MD5Hash &beatmapMD5Hash, bool lock_scores_mutex) {
-    return this->sortScoresInPlace(this->scores[beatmapMD5Hash], lock_scores_mutex);
+void Database::sortScores(const MD5Hash &beatmapMD5Hash) {
+    Sync::unique_lock lk(this->scores_mtx);
+    if(auto it = this->scores.find(beatmapMD5Hash); it != this->scores.end()) {
+        Database::sortScoresInPlace(it->second);
+    }
+    return;
 }
 
 std::vector<UString> Database::getPlayerNamesWithPPScores() {
@@ -996,7 +992,8 @@ void Database::loadMaps() {
             u32 version = neosu_maps.read<u32>();
             if(version < NEOSU_MAPS_DB_VERSION) {
                 // Reading from older database version: backup just in case
-                auto backup_path = fmt::format("{}.{}-{:%F}", neosu_maps_path, version, fmt::gmtime(std::time(nullptr)));
+                auto backup_path =
+                    fmt::format("{}.{}-{:%F}", neosu_maps_path, version, fmt::gmtime(std::time(nullptr)));
                 if(File::copy(neosu_maps_path, backup_path)) {
                     debugLog("older database {} < {}, backed up {} -> {}", version, NEOSU_MAPS_DB_VERSION,
                              neosu_maps_path, backup_path);

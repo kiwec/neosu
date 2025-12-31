@@ -15,6 +15,8 @@
 #include "Mouse.h"
 #include "Keyboard.h"
 
+using namespace neosu::sbr;
+
 BeatmapCarousel::~BeatmapCarousel() {
     // elements are free'd manually/externally by SongBrowser, so invalidate the container to avoid double-free
     // TODO: factor this out from SongBrowser
@@ -35,9 +37,9 @@ void BeatmapCarousel::mouse_update(bool *propagate_clicks) {
 
     // handle right click absolute scrolling
     {
-        if(mouse->isRightDown() && !this->browser_ptr->contextMenu->isMouseInside()) {
-            if(!this->browser_ptr->bSongBrowserRightClickScrollCheck) {
-                this->browser_ptr->bSongBrowserRightClickScrollCheck = true;
+        if(mouse->isRightDown() && !g_songbrowser->contextMenu->isMouseInside()) {
+            if(!g_songbrowser->bSongBrowserRightClickScrollCheck) {
+                g_songbrowser->bSongBrowserRightClickScrollCheck = true;
 
                 bool isMouseInsideAnySongButton = false;
                 {
@@ -51,16 +53,16 @@ void BeatmapCarousel::mouse_update(bool *propagate_clicks) {
                 }
 
                 if(this->isMouseInside() && !osu->getOptionsMenu()->isMouseInside() && !isMouseInsideAnySongButton)
-                    this->browser_ptr->bSongBrowserRightClickScrolling = true;
+                    g_songbrowser->bSongBrowserRightClickScrolling = true;
                 else
-                    this->browser_ptr->bSongBrowserRightClickScrolling = false;
+                    g_songbrowser->bSongBrowserRightClickScrolling = false;
             }
         } else {
-            this->browser_ptr->bSongBrowserRightClickScrollCheck = false;
-            this->browser_ptr->bSongBrowserRightClickScrolling = false;
+            g_songbrowser->bSongBrowserRightClickScrollCheck = false;
+            g_songbrowser->bSongBrowserRightClickScrolling = false;
         }
 
-        if(this->browser_ptr->bSongBrowserRightClickScrolling) {
+        if(g_songbrowser->bSongBrowserRightClickScrolling) {
             const int scrollingTo =
                 -((mouse->getPos().y - 2 - this->getPos().y) / this->getSize().y) * this->getScrollSize().y;
             this->scrollToY(scrollingTo);
@@ -70,7 +72,7 @@ void BeatmapCarousel::mouse_update(bool *propagate_clicks) {
     // update right click scrolling relative velocity, as a cache for isActuallyRightClickScrolling
     f64 curRightClickScrollRelYVelocity = 0.0;
     do {
-        if(!this->browser_ptr->isRightClickScrolling()) {
+        if(!g_songbrowser->isRightClickScrolling()) {
             curRightClickScrollRelYVelocity = 0.0;  // if we are not right click scrolling then there is no velocity
             break;
         }
@@ -165,8 +167,8 @@ void BeatmapCarousel::onKeyDown(KeyboardEvent &key) {
         }
     }
 
-    if(key == KEY_LEFT && !this->browser_ptr->bLeft) {
-        this->browser_ptr->bLeft = true;
+    if(key == KEY_LEFT && !g_songbrowser->bLeft) {
+        g_songbrowser->bLeft = true;
 
         const bool jumpToNextGroup = keyboard->isShiftDown();
 
@@ -181,7 +183,7 @@ void BeatmapCarousel::onKeyDown(KeyboardEvent &key) {
 
             if(foundSelected && button != nullptr && !button->isSelected() &&
                !isSongDifficultyButtonAndNotIndependent && (!jumpToNextGroup || collectionButtonPointer != nullptr)) {
-                this->browser_ptr->bNextScrollToSongButtonJumpFixUseScrollSizeDelta = true;
+                g_songbrowser->bNextScrollToSongButtonJumpFixUseScrollSizeDelta = true;
                 {
                     button->select();
 
@@ -194,7 +196,7 @@ void BeatmapCarousel::onKeyDown(KeyboardEvent &key) {
                         }
                     }
                 }
-                this->browser_ptr->bNextScrollToSongButtonJumpFixUseScrollSizeDelta = false;
+                g_songbrowser->bNextScrollToSongButtonJumpFixUseScrollSizeDelta = false;
 
                 break;
             }
@@ -203,8 +205,8 @@ void BeatmapCarousel::onKeyDown(KeyboardEvent &key) {
         }
     }
 
-    if(key == KEY_RIGHT && !this->browser_ptr->bRight) {
-        this->browser_ptr->bRight = true;
+    if(key == KEY_RIGHT && !g_songbrowser->bRight) {
+        g_songbrowser->bRight = true;
 
         const bool jumpToNextGroup = keyboard->isShiftDown();
 
@@ -245,7 +247,7 @@ void BeatmapCarousel::onKeyDown(KeyboardEvent &key) {
 
             if(collectionButtonPointer != nullptr && button != nullptr && button->isSelected()) {
                 button->select();  // deselect
-                this->browser_ptr->scrollToSongButton(button);
+                g_songbrowser->scrollToSongButton(button);
                 break;
             }
         }
@@ -253,7 +255,7 @@ void BeatmapCarousel::onKeyDown(KeyboardEvent &key) {
 
     // selection select
     if((key == KEY_ENTER || key == KEY_NUMPAD_ENTER) && !keyboard->isShiftDown())
-        this->browser_ptr->playSelectedDifficulty();
+        g_songbrowser->playSelectedDifficulty();
 }
 
 void BeatmapCarousel::onChar(KeyboardEvent & /*e*/) { /*this->container->onChar(e);*/ ; }

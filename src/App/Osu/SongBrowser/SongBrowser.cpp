@@ -356,7 +356,7 @@ SongBrowser::GlobalSongBrowserCtorDtor::~GlobalSongBrowserCtorDtor() {
 
 SongBrowser::SongBrowser() : ScreenBackable(), global_songbrowser_(this) {
     // build carousel first
-    this->carousel = std::make_unique<BeatmapCarousel>(this, 0.f, 0.f, 0.f, 0.f, "Carousel");
+    this->carousel = std::make_unique<BeatmapCarousel>(0.f, 0.f, 0.f, 0.f, "Carousel");
     neosu::sbr::g_carousel = this->carousel.get();
 
     // convar callback
@@ -2340,7 +2340,7 @@ void SongBrowser::rebuildScoreButtons() {
 
     if(numScores > 0) {
         // sort
-        db->sortScoresInPlace(scores, !is_online /* don't lock scores_mtx if we're sorting online scores */);
+        Database::sortScoresInPlace(scores);
     }
 
     // top up cache as necessary

@@ -109,8 +109,8 @@ class Database {
 
     int addScore(const FinishedScore &score);
     void deleteScore(const MD5Hash &beatmapMD5Hash, u64 scoreUnixTimestamp);
-    void sortScoresInPlace(std::vector<FinishedScore> &scores, bool lock_scores_mutex = true);
-    inline void sortScores(const MD5Hash &beatmapMD5Hash) { return this->sortScoresInt(beatmapMD5Hash, true); }
+    static void sortScoresInPlace(std::vector<FinishedScore> &scores);
+    void sortScores(const MD5Hash &beatmapMD5Hash);
 
     std::vector<UString> getPlayerNamesWithPPScores();
     std::vector<UString> getPlayerNamesWithScoresForUserSwitcher();
@@ -250,7 +250,6 @@ class Database {
     void loadPeppyScores(std::string_view dbPath);
     void saveScores();
     bool addScoreRaw(const FinishedScore &score);
-    void sortScoresInt(const MD5Hash &beatmapMD5Hash, bool lock_scores_mutex);
     // returns position of existing score in the scores[hash] array if found, -1 otherwise
     int isScoreAlreadyInDB(u64 unix_timestamp, const MD5Hash &map_hash);
 
