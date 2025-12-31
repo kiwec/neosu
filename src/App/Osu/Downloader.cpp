@@ -535,12 +535,29 @@ BeatmapSetMetadata parse_beatmapset_metadata(std::string_view server_response) {
 
     if(tokens.size() < 14) return meta;
     const auto maps = SString::split(tokens[13], ',');
+
     for(const auto map : maps) {
         const auto spl = SString::split(map, '@');
         if(spl.size() != 2) continue;
-
-        meta.beatmaps.push_back(BeatmapMetadata{.version{spl[0]}, .mode = Parsing::strto<u8>(spl[1])});
+        if(spl[0].contains("★")) {
+            const auto diff_srs = SString::split(spl[0], "★");
+            std::string diffname;
+            // handle a possible case where the diff name itself contains the separator
+            // so only parse the final token as the SR
+            assert(diff_srs.size() >= 2);
+            for(auto tokit = diff_srs.begin(); tokit != diff_srs.end() - 1; tokit++) {
+                diffname += *tokit;
+            }
+            f32 sr = Parsing::strto<f32>(diff_srs.back());
+            meta.beatmaps.push_back(
+                BeatmapMetadata{.diffname = diffname, .star_rating = sr, .mode = Parsing::strto<u8>(spl[1])});
+        } else {
+            meta.beatmaps.push_back(
+                BeatmapMetadata{.diffname{spl[0]}, .star_rating = 0.f, .mode = Parsing::strto<u8>(spl[1])});
+        }
     }
+
+    std::ranges::sort(meta.beatmaps, {}, [](const auto& bm) { return bm.star_rating; });
 
     return meta;
 }

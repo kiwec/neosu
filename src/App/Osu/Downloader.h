@@ -11,8 +11,9 @@ struct Packet;
 namespace Downloader {
 
 struct BeatmapMetadata {
-    std::string version;
-    u8 mode;
+    std::string diffname;
+    float star_rating{0.f};
+    u8 mode{0};
 };
 
 struct BeatmapSetMetadata {

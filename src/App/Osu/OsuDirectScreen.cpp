@@ -149,7 +149,8 @@ void OnlineMapListing::onResolutionChange(vec2 /*newResolution*/) {
         auto icon = new UIIcon(Icons::CIRCLE);
         icon->setPos(x, y);
         icon->setSize(30.f * scale, 30.f * scale);
-        icon->setTooltipText(diff.version);
+        icon->setTooltipText(fmt::format("{}{}", diff.diffname,
+                                         diff.star_rating >= 0.f ? fmt::format(" ({:.2f}★)", diff.star_rating) : ""));
         this->addBaseUIElement(icon);
         x -= 40.f * scale;
     }
