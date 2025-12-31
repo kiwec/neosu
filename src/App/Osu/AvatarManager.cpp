@@ -186,7 +186,7 @@ void AvatarManager::prune_oldest_avatars() {
 bool AvatarManager::download_avatar(const AvatarIdentifier& id_folder) {
     float progress = -1.f;
     auto scheme = cv::use_https.getBool() ? "https://" : "http://";
-    auto img_url = fmt::format("{:s}a.{}/{:d}", scheme, BanchoState::endpoint, id_folder.first);
+    auto img_url = fmt::format(fmt::runtime(this->url_format), scheme, BanchoState::endpoint, id_folder.first);
     int response_code;
     // TODO: constantly requesting the full download is a bad API, should be a way to just check if it's already downloading
     // TODO: only download a single (response_code == 404) avatar and share it

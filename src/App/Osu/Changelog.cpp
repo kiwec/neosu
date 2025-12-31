@@ -42,7 +42,8 @@ Changelog::Changelog() : ScreenBackable() {
         R"(- Multiplayer matches now always have the "No Pausing" mod enabled)",
         R"(- Online Beatmaps screen:)",
         R"(  - Added a checkbox to only see ranked beatmaps)",
-        R"(  - Added a hoverable icon for each beatmapset difficulty)",
+        R"(  - Added a checkbox to only see ranked beatmaps)",
+        R"(  - Added background thumbnails)",
         R"(- Replay viewer now auto-skips sections that the player has skipped)",
     };
     changelogs.push_back(v41_13);

@@ -1,6 +1,7 @@
 #include "OsuDirectScreen.h"
 
 #include "AnimationHandler.h"
+#include "AvatarManager.h"
 #include "BackgroundImageHandler.h"
 #include "BanchoApi.h"
 #include "Bancho.h"
@@ -12,6 +13,7 @@
 #include "Database.h"
 #include "Downloader.h"
 #include "Engine.h"
+#include "Environment.h"
 #include "Font.h"
 #include "Graphics.h"
 #include "Icons.h"
@@ -32,9 +34,16 @@
 
 #include <charconv>
 
+// FUCK IT WE BALL - CLAUDE CODE WOULD NEVER - HAPPY NEW YEAR!
+class MapBGManager : public AvatarManager {
+   public:
+    MapBGManager() { this->url_format = "{:s}assets.{}/beatmaps/{:d}/covers/list@2x.jpg"; }
+};
+
 class OnlineMapListing : public CBaseUIContainer {
    public:
     OnlineMapListing(OsuDirectScreen* parent, Downloader::BeatmapSetMetadata meta);
+    ~OnlineMapListing();
 
     void draw() override;
 
@@ -58,6 +67,7 @@ class OnlineMapListing : public CBaseUIContainer {
     // Cache
     std::string full_title;
     f32 creator_width{0.f};
+    std::pair<i32, std::string> set_id_for_endpoint;
 
     f32 hover_anim{0.f};
     f32 click_anim{0.f};
@@ -73,7 +83,13 @@ OnlineMapListing::OnlineMapListing(OsuDirectScreen* parent, Downloader::BeatmapS
     : directScreen(parent), font(engine->getDefaultFont()), meta(std::move(meta)) {
     this->installed = db->getBeatmapSet(this->meta.set_id) != nullptr;
     this->onResolutionChange(osu->getVirtScreenSize());
+
+    this->set_id_for_endpoint = {this->meta.set_id, fmt::format("{}/thumbs/{}/{}", env->getCacheDir(),
+                                                                BanchoState::endpoint, this->meta.set_id)};
+    this->directScreen->bg_mgr->add_avatar(this->set_id_for_endpoint);
 }
+
+OnlineMapListing::~OnlineMapListing() { this->directScreen->bg_mgr->remove_avatar(this->set_id_for_endpoint); }
 
 void OnlineMapListing::onMouseDownInside(bool /*left*/, bool /*right*/) { this->mousedown_coords = mouse->getPos(); }
 
@@ -181,16 +197,16 @@ void OnlineMapListing::draw() {
 
     // Download progress
     const f32 download_width = width * download_progress;
-    g->setColor(rgb(100, 255, 100));
+    g->setColor(rgb(150, 255, 150));
     g->setAlpha(alpha);
     g->fillRect(x, y, download_width, height);
 
     // Background
     Color color = rgb(255, 255, 255);
     if(this->installed)
-        color = rgb(0, 255, 0);
+        color = rgb(0, 150, 0);
     else if(this->download_failed)
-        color = rgb(255, 0, 0);
+        color = rgb(200, 0, 0);
     g->setColor(color);
     g->setAlpha(alpha);
     g->fillRect(x + download_width, y, width - download_width, height);
@@ -198,28 +214,46 @@ void OnlineMapListing::draw() {
     g->pushClipRect(McRect(x, y, width, height));
     g->pushTransform();
     {
-        g->translate(x, y);
+        const f32 map_bg_size = height;
 
-        // TODO: mapset background image
+        // Map thumbnail placeholder
+        g->setColor(Color(0x55000000));
+        g->fillRect(x, y, map_bg_size, map_bg_size);
 
-        g->setColor(0xffffffff);
-        g->translate(padding, padding + this->font->getHeight());
-        this->font->drawString(this->full_title);
+        // Map thumbnail
+        auto* map_thumbnail = this->directScreen->bg_mgr->get_avatar(this->set_id_for_endpoint);
+        if(map_thumbnail) {
+            g->pushTransform();
+            g->setColor(Color(0xffffffff));
+            g->scale(map_bg_size / map_thumbnail->getWidth(), map_bg_size / map_thumbnail->getHeight());
+            g->translate(x, y);  // needs to be *after* scale
+            g->drawImage(map_thumbnail, AnchorPoint::TOP_LEFT);
+            g->popTransform();
+        }
 
         g->pushTransform();
         {
-            g->translate(width - (this->creator_width + 2 * padding), 0);
-            this->font->drawString(this->meta.creator);
+            g->setColor(0xffffffff);
+            g->translate(x + map_bg_size + padding, y + padding + this->font->getHeight());
+            this->font->drawString(this->full_title);
         }
         g->popTransform();
 
-        // TODO: map difficulties (with their own hover text)
+        g->pushTransform();
+        {
+            g->setColor(0xffffffff);
+            g->translate(x + width - (this->creator_width + 2 * padding), y + padding + this->font->getHeight());
+            this->font->drawString(this->meta.creator);
+        }
+        g->popTransform();
     }
     g->popTransform();
     g->popClipRect();
 }
 
 OsuDirectScreen::OsuDirectScreen() {
+    this->bg_mgr = new MapBGManager();
+
     this->title = new CBaseUILabel(0, 0, 0, 0, "", "Online Beatmaps");
     this->title->setDrawFrame(false);
     this->title->setDrawBackground(false);
@@ -330,6 +364,8 @@ void OsuDirectScreen::mouse_update(bool* propagate_clicks) {
     if(this->results->isAtBottom() && this->last_search_time + 1.0 < engine->getTime()) {
         this->search(this->current_query, this->current_page + 1);
     }
+
+    this->bg_mgr->update();
 }
 
 void OsuDirectScreen::onBack() {

@@ -145,6 +145,9 @@ void BanchoState::handle_packet(Packet &packet) {
                 std::string replays_dir = fmt::format(NEOSU_REPLAYS_PATH "/{}", BanchoState::endpoint);
                 Environment::createDirectory(replays_dir);
 
+                std::string thumbs_dir = fmt::format("{}/thumbs/{}", env->getCacheDir(), BanchoState::endpoint);
+                Environment::createDirectory(thumbs_dir);
+
                 osu->onUserCardChange(BanchoState::username);
                 osu->getSongBrowser()->onFilterScoresChange(ULITERAL("Global"), SongBrowser::LOGIN_STATE_FILTER_ID);
 
@@ -795,8 +798,8 @@ void BanchoState::handle_packet(Packet &packet) {
 
             auto file_path = map->getFilePath();
 
-            DatabaseBeatmap::MapFileReadDoneCallback callback =
-                [url, md5, file_path, func = LOGGER_FUNC](std::vector<u8> osu_file) -> void {
+            DatabaseBeatmap::MapFileReadDoneCallback callback = [url, md5, file_path,
+                                                                 func = LOGGER_FUNC](std::vector<u8> osu_file) -> void {
                 if(!networkHandler) return;  // quit if we got called while shutting down
 
                 if(osu_file.empty()) {

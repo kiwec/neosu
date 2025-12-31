@@ -156,6 +156,7 @@ Osu::Osu() : App(), MouseListener(), global_osu_(this) {
         Environment::renameFile(NEOSU_DATA_DIR "avatars", env->getCacheDir() + "/avatars");
     }
     Environment::createDirectory(env->getCacheDir() + "/avatars");
+    Environment::createDirectory(env->getCacheDir() + "/thumbs");
 
     // create directories we will assume already exist later on
     Environment::createDirectory(NEOSU_CFG_PATH);

@@ -12,6 +12,7 @@ class CBaseUIScrollView;
 class CBaseUITextbox;
 class UIButton;
 class OnlineMapListing;
+class MapBGManager;
 
 class OsuDirectScreen final : public ScreenBackable {
     NOCOPY_NOMOVE(OsuDirectScreen)
@@ -62,4 +63,7 @@ class OsuDirectScreen final : public ScreenBackable {
     // Beatmapset to auto-select once download is completed
     friend class OnlineMapListing;
     i32 auto_select_set{0};
+
+    // Cursed
+    MapBGManager* bg_mgr{nullptr};
 };

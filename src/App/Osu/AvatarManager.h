@@ -17,7 +17,7 @@ struct hash<AvatarIdentifier> {
 };
 }  // namespace std
 
-class AvatarManager final {
+class AvatarManager {
     NOCOPY_NOMOVE(AvatarManager)
 
    public:
@@ -60,4 +60,7 @@ class AvatarManager final {
     std::vector<u8> temp_img_download_data;  // if it has something in it, we just downloaded something
 
     size_t last_checked_queue_element{0};
+
+   protected:
+    std::string url_format{"{:s}a.{}/{:d}"};
 };
