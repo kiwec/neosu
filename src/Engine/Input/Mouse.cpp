@@ -109,6 +109,10 @@ void Mouse::update() {
     // vRawDelta doesn't include sensitivity or clipping, which is useful for fposu
     this->vRawDelta = newRel;
 
+    // correct SDL mouse events to match actual resolution
+    newRel *= env->getPixelDensity();
+    newAbs *= env->getPixelDensity();
+
     if(env->isOSMouseInputRaw()) {
         // only relative input (raw) can have sensitivity
         newRel *= this->fSensitivity;
