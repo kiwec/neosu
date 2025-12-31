@@ -44,6 +44,7 @@ Changelog::Changelog() : ScreenBackable() {
         R"(  - Added a checkbox to only see ranked beatmaps)",
         R"(  - Added a checkbox to only see ranked beatmaps)",
         R"(  - Added background thumbnails)",
+        R"(  - Fixed results after map 100 not getting fetched correctly)",
         R"(- Replay viewer now auto-skips sections that the player has skipped)",
     };
     changelogs.push_back(v41_13);

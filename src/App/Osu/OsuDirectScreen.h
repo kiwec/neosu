@@ -38,7 +38,7 @@ class OsuDirectScreen final : public ScreenBackable {
     void onResolutionChange(vec2 newResolution) override;
 
     void reset();
-    void search(std::string_view query, i32 page);
+    void search(std::string_view query);
 
    private:
     void onRankedCheckboxChange(CBaseUICheckbox* checkbox);
@@ -57,8 +57,6 @@ class OsuDirectScreen final : public ScreenBackable {
 
     uSz request_id{1};
     f64 last_search_time{0.0};
-
-    i32 current_page{-1};
 
     // Beatmapset to auto-select once download is completed
     friend class OnlineMapListing;

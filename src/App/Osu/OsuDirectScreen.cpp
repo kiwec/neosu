@@ -267,7 +267,7 @@ OsuDirectScreen::OsuDirectScreen() {
     this->newest_btn->setColor(0xff88FF00);
     this->newest_btn->setClickCallback([this]() {
         this->reset();
-        this->search("Newest", 0);
+        this->search("Newest");
     });
     this->addBaseUIElement(this->newest_btn);
 
@@ -275,7 +275,7 @@ OsuDirectScreen::OsuDirectScreen() {
     this->best_rated_btn->setColor(0xffFF006A);
     this->best_rated_btn->setClickCallback([this]() {
         this->reset();
-        this->search("Top Rated", 0);
+        this->search("Top Rated");
     });
     this->addBaseUIElement(this->best_rated_btn);
 
@@ -356,13 +356,13 @@ void OsuDirectScreen::mouse_update(bool* propagate_clicks) {
         }
 
         this->reset();
-        this->search(this->search_bar->getText().utf8View(), 0);
+        this->search(this->search_bar->getText().utf8View());
         return;
     }
 
-    // Fetch next results page once we reached the bottom
+    // Fetch next results once we reached the bottom
     if(this->results->isAtBottom() && this->last_search_time + 1.0 < engine->getTime()) {
-        this->search(this->current_query, this->current_page + 1);
+        this->search(this->current_query);
     }
 
     this->bg_mgr->update();
@@ -445,20 +445,19 @@ void OsuDirectScreen::reset() {
 
     // Clear search results
     this->results->freeElements();
-    this->current_page = -1;
 
     // De-focus search bar (since we only reset() on user action)
     this->search_bar->stealFocus();
 }
 
-void OsuDirectScreen::search(std::string_view query, i32 page) {
-    assert(page >= 0);
+void OsuDirectScreen::search(std::string_view query) {
     if(this->loading) return;
 
+    const i32 offset = this->results->container->getElements().size();
     const i32 filter = cv::direct_ranking_status_filter.getInt();
     auto scheme = cv::use_https.getBool() ? "https://" : "http://";
     std::string url = fmt::format("{}osu.{}/web/osu-search.php?m=0&r={}&q={}&p={}", scheme, BanchoState::endpoint,
-                                  filter, NeoNet::urlEncode(query), page);
+                                  filter, NeoNet::urlEncode(query), offset);
     BANCHO::Api::append_auth_params(url);
 
     NeoNet::RequestOptions options;
@@ -467,7 +466,7 @@ void OsuDirectScreen::search(std::string_view query, i32 page) {
     options.follow_redirects = true;
     options.user_agent = "osu!";
 
-    debugLog("Searching for maps matching \"{}\" (page {})", query, page);
+    debugLog("Searching for maps matching \"{}\" (offset {})", query, offset);
     const auto current_request_id = ++this->request_id;
     this->current_query = query;
     this->last_search_time = engine->getTime();
@@ -475,7 +474,7 @@ void OsuDirectScreen::search(std::string_view query, i32 page) {
 
     networkHandler->httpRequestAsync(
         url,
-        [func = LOGGER_FUNC, current_request_id, page, this](const NeoNet::Response& response) {
+        [func = LOGGER_FUNC, current_request_id, this](const NeoNet::Response& response) {
             this->loading = false;
 
             if(current_request_id != this->request_id) {
@@ -510,7 +509,6 @@ void OsuDirectScreen::search(std::string_view query, i32 page) {
                     this->results->container->addBaseUIElement(new OnlineMapListing(this, meta));
                 }
 
-                this->current_page = page;
                 this->onResolutionChange(osu->getVirtScreenSize());
             } else {
                 // TODO: handle failure
