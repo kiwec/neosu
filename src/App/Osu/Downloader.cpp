@@ -557,8 +557,6 @@ BeatmapSetMetadata parse_beatmapset_metadata(std::string_view server_response) {
         }
     }
 
-    std::ranges::sort(meta.beatmaps, {}, [](const auto& bm) { return bm.star_rating; });
-
     return meta;
 }
 

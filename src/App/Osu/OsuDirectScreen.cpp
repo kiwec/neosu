@@ -84,6 +84,11 @@ class OnlineMapListing : public CBaseUIContainer {
 
 OnlineMapListing::OnlineMapListing(OsuDirectScreen* parent, Downloader::BeatmapSetMetadata meta)
     : directScreen(parent), font(engine->getDefaultFont()), meta(std::move(meta)) {
+    if(this->meta.beatmaps.size() > 1) {
+        // reverse
+        std::ranges::sort(this->meta.beatmaps, std::ranges::greater{}, [](const auto& bm) { return bm.star_rating; });
+    }
+
     this->installed = db->getBeatmapSet(this->meta.set_id) != nullptr;
     this->onResolutionChange(osu->getVirtScreenSize());
 
@@ -138,12 +143,10 @@ void OnlineMapListing::onResolutionChange(vec2 /*newResolution*/) {
     this->full_title = fmt::format("{} - {}", this->meta.artist, this->meta.title);
     this->creator_width = this->font->getStringWidth(this->meta.creator);
 
-    // TODO: looks like difficulties are not sorted, we should guess the star rating from the diff name
-
     const f32 scale = osu->getUIScale();
     f32 x = this->getSize().x - 40.f * scale;
     f32 y = this->getSize().y - 40.f * scale;
-    for(const auto& diff : this->meta.beatmaps | std::views::reverse) {
+    for(const auto& diff : this->meta.beatmaps) {
         if(diff.mode != 0) continue;
 
         auto icon = new UIIcon(Icons::CIRCLE);
@@ -320,6 +323,9 @@ CBaseUIContainer* OsuDirectScreen::setVisible(bool visible) {
     if(visible) {
         this->search_bar->clear();
         this->search_bar->focus();
+    } else {
+        // clear search results if we're setting invisible
+        this->reset();
     }
 
     return this;
