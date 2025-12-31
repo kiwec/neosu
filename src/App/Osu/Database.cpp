@@ -29,6 +29,8 @@
 #include "Environment.h"
 #include "MakeDelegateWrapper.h"
 
+#include "fmt/chrono.h"
+
 #include <algorithm>
 #include <unordered_set>
 
@@ -994,7 +996,7 @@ void Database::loadMaps() {
             u32 version = neosu_maps.read<u32>();
             if(version < NEOSU_MAPS_DB_VERSION) {
                 // Reading from older database version: backup just in case
-                auto backup_path = fmt::format("{}.{}", neosu_maps_path, version);
+                auto backup_path = fmt::format("{}.{}-{:%F}", neosu_maps_path, version, fmt::gmtime(std::time(nullptr)));
                 if(File::copy(neosu_maps_path, backup_path)) {
                     debugLog("older database {} < {}, backed up {} -> {}", version, NEOSU_MAPS_DB_VERSION,
                              neosu_maps_path, backup_path);
@@ -1880,7 +1882,7 @@ void Database::loadScores(std::string_view dbPath) {
         return;
     } else if(db_version < NEOSU_SCORE_DB_VERSION) {
         // Reading from older database version: backup just in case
-        auto backup_path = fmt::format("{}.{}", dbPath, db_version);
+        auto backup_path = fmt::format("{}.{}-{:%F}", dbPath, db_version, fmt::gmtime(std::time(nullptr)));
         if(File::copy(dbPath, backup_path)) {
             debugLog("older database {} < {}, backed up {} -> {}", db_version, NEOSU_SCORE_DB_VERSION, dbPath,
                      backup_path);

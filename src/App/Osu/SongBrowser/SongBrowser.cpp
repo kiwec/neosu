@@ -56,13 +56,14 @@
 #include "RoomScreen.h"
 #include "Chat.h"
 
-#include "Sorting.h"
-
 #include <algorithm>
 #include <memory>
 #include <charconv>
 #include <cwctype>
 #include <utility>
+
+#define WANT_PDQSORT
+#include "Sorting.h"
 
 namespace {
 constexpr const Color highlightColor = argb(255, 0, 255, 0);
@@ -3032,7 +3033,6 @@ void SongBrowser::rebuildAfterGroupOrSortChange(GroupType group, const std::opti
             }
         }
     }
-
     this->rebuildSongButtons();
 
     // keep search state consistent between tab changes

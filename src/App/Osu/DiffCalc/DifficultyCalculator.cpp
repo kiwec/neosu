@@ -7,7 +7,6 @@
 #include "SliderCurves.h"
 #include "GameRules.h"
 #include "ModFlags.h"
-#include "Sorting.h"
 
 #ifndef BUILD_TOOLS_ONLY
 #include "OsuConVars.h"
@@ -21,6 +20,9 @@
 #define SLIDER_CURVE_MAX_LENGTH 32768.f
 #define SLIDER_END_INSIDE_CHECK_OFFSET 36.
 #endif
+
+#define WANT_SPREADSORT
+#include "Sorting.h"
 
 namespace DiffCalc {
 // NOTE: bumped version from 20251007 because of a bug in the first implementation with mcosu-imported scores

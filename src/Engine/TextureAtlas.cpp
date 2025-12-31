@@ -7,6 +7,8 @@
 #include "ResourceManager.h"
 #include "Logging.h"
 #include "Image.h"
+
+#define WANT_PDQSORT
 #include "Sorting.h"
 
 TextureAtlas::TextureAtlas(int width, int height, bool filtering) : Resource() {

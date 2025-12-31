@@ -17,12 +17,14 @@
 #include "SongBrowser.h"
 #include "AsyncIOHandler.h"
 #include "crypto.h"
-#include "Sorting.h"
 
 #include <cassert>
 #include <algorithm>
 #include <utility>
 #include <source_location>
+
+#define WANT_SPINSORT
+#include "Sorting.h"
 
 #ifndef BUILD_TOOLS_ONLY
 bool DatabaseBeatmap::prefer_cjk_names() { return cv::prefer_cjk.getBool(); }
