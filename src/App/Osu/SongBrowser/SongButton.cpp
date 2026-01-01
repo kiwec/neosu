@@ -219,8 +219,8 @@ void SongButton::drawSubTitle(float deselectedAlpha, bool forceSelectedStyle) {
     if(!(this->bSelected || forceSelectedStyle)) g->setAlpha(deselectedAlpha);
 
     const std::string &artist{this->representativeBeatmap
-                                  ? this->representativeBeatmap->getTitle()
-                                  : (this->databaseBeatmap ? this->databaseBeatmap->getTitle() : "")};
+                                  ? this->representativeBeatmap->getArtist()
+                                  : (this->databaseBeatmap ? this->databaseBeatmap->getArtist() : "")};
 
     const std::string &mapper{this->representativeBeatmap
                                   ? this->representativeBeatmap->getCreator()

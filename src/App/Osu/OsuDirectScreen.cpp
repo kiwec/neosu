@@ -112,7 +112,7 @@ void OnlineMapListing::onMouseUpInside(bool /*left*/, bool /*right*/) {
         if(this->installed) {
             // Select map, or go to song browser if already selected
             if(osu->getMapInterface()->getBeatmap()->getSetID() == this->meta.set_id) {
-                this->setVisible(false);
+                this->directScreen->setVisible(false);
                 osu->toggleSongBrowser();
             } else {
                 const auto set = db->getBeatmapSet(this->meta.set_id);
