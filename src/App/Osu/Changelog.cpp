@@ -42,9 +42,9 @@ Changelog::Changelog() : ScreenBackable() {
         R"(- Multiplayer matches now always have the "No Pausing" mod enabled)",
         R"(- Online Beatmaps screen:)",
         R"(  - Added a checkbox to only see ranked beatmaps)",
-        R"(  - Added a checkbox to only see ranked beatmaps)",
         R"(  - Added background thumbnails)",
         R"(  - Fixed results after map 100 not getting fetched correctly)",
+        R"(  - Handle difficulty name and star rating parsing on Akatsuki)",
         R"(- Replay viewer now auto-skips sections that the player has skipped)",
     };
     changelogs.push_back(v41_13);
