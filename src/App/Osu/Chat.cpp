@@ -304,7 +304,7 @@ Chat::Chat() : OsuScreen() {
     this->input_box->setBackgroundColor(0xdd000000);
     this->addBaseUIElement(this->input_box);
 
-    this->user_list = new CBaseUIScrollView(0, 0, 0, 0, "");
+    this->user_list = new ChatUIUserList(0, 0, 0, 0, "");
     this->user_list->setDrawFrame(false);
     this->user_list->setDrawBackground(true);
     this->user_list->setBackgroundColor(0xcc000000);
@@ -1129,10 +1129,13 @@ void Chat::updateTickerLayout(vec2 screen) {
 
 void Chat::updateUserList() {
     // We don't want to update while the chat is hidden, to avoid lagspikes during gameplay
-    if(!this->bVisible) {
+    if(!this->bVisible ||
+       this->in_userlist_update /* FIXME: recursively calling updateUserList when creating UserCard2s */) {
         this->layout_update_scheduled = true;
         return;
     }
+
+    this->in_userlist_update = true;
 
     // XXX: don't use SongBrowser::getUIScale
     auto card_size = vec2{SongBrowser::getUIScale(320), SongBrowser::getUIScale(75)};
@@ -1147,6 +1150,7 @@ void Chat::updateUserList() {
     f32 total_y = INITIAL_MARGIN;
 
     // XXX: Optimize so fps doesn't halve when F9 is open
+    //      (still not optimal, but not as bad anymore)
 
     std::vector<const UserInfo *> sorted_users;
     for(const auto &pair : BANCHO::User::online_users) {
@@ -1156,16 +1160,27 @@ void Chat::updateUserList() {
     }
     std::ranges::sort(sorted_users, SString::alnum_comp, [](const UserInfo *ui) { return ui->name; });
 
-    // Intentionally not calling this->user_list->clear(), because that would affect scroll position/animation
-    this->user_list->container->freeElements();
+    // Intentionally not calling this->user_list->invalidate(), because that would affect scroll position/animation
+    auto userCardElemsCopy = this->user_list->getContainedElements<UserCard2>();
+    this->user_list->container->invalidate();  // clear scrollview container elements and rebuild
 
-    for(auto user : sorted_users) {
+    for(sSz addedElemI = 0; const auto *user : sorted_users) {
         if(total_x + card_size.x + MARGIN > size.x) {
             total_x = INITIAL_MARGIN;
             total_y += card_size.y + MARGIN;
         }
 
-        auto card = new UserCard2(user->user_id);
+        UserCard2 *card = nullptr;
+        if(addedElemI < userCardElemsCopy.size()) {
+            card = userCardElemsCopy[addedElemI];
+            card->update_userid(user->user_id);
+
+            // set to null so we don't delete it later (moved into container)
+            userCardElemsCopy[addedElemI] = nullptr;
+        } else {
+            card = new UserCard2(user->user_id);
+        }
+
         card->setSize(card_size);
         card->setPos(total_x, total_y);
         card->setVisible(false);
@@ -1178,8 +1193,19 @@ void Chat::updateUserList() {
             card->setVisible(true);
             total_x += card_size.x + MARGIN * 1.5;  // idk why margin is bogged
         }
+
+        ++addedElemI;
     }
+
     this->user_list->setScrollSizeToContent();
+
+    // delete any excess items in the container
+    for(auto *card : userCardElemsCopy) {
+        SAFE_DELETE(card);
+    }
+
+    // recursion prevention
+    this->in_userlist_update = false;
 }
 
 void Chat::join(const UString &channel_name) {

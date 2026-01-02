@@ -9,6 +9,7 @@ class CBaseUIButton;
 class McFont;
 class Chat;
 class UIButton;
+class UserCard2;
 
 struct ChatMessage final {
     time_t tms;
@@ -81,12 +82,23 @@ class Chat final : public OsuScreen {
     std::vector<ChatChannel *> channels;
     CBaseUIContainer *button_container;
     CBaseUITextbox *input_box;
-    CBaseUIScrollView *user_list;
+
+    class ChatUIUserList : public CBaseUIScrollView {
+        NOCOPY_NOMOVE(ChatUIUserList)
+       public:
+        using CBaseUIScrollView::CBaseUIScrollView;
+        ~ChatUIUserList() override = default;
+
+        friend class Chat;
+    };
+
+    ChatUIUserList *user_list;
 
     float fAnimation = 0.f;
     bool user_wants_chat = false;
     bool visibility_was_forced = false;
     bool layout_update_scheduled = false;
+    bool in_userlist_update = false;
 
     f32 input_box_height = 30.f;
     f32 button_height = 26.f;

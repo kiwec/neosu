@@ -13,14 +13,24 @@
 
 static const u32 AVATAR_MARGIN = 4;
 
-UserCard2::UserCard2(i32 user_id) : CBaseUIButton() {
-    this->info = BANCHO::User::get_user_info(user_id);
-    this->avatar = std::make_unique<UIAvatar>(user_id, 0.f, 0.f, 0.f, 0.f);
-    this->avatar->on_screen = true;
-    this->setClickCallback([user_id] { osu->getUserActions()->open(user_id); });
-}
+UserCard2::UserCard2(i32 user_id) : CBaseUIButton() { this->update_userid(user_id); }
 
 UserCard2::~UserCard2() = default;
+
+void UserCard2::update_userid(i32 new_userid) {
+    UserInfo *new_userinfo = nullptr;
+    i32 old_userid = 0;  // abusing avatar playerid field to avoid needing to store id redundantly
+
+    if(!this->info ||                                                               //
+       (this->info != (new_userinfo = BANCHO::User::get_user_info(new_userid))) ||  //
+       (new_userid != (old_userid = this->avatar->player_id_for_endpoint.first))    //
+    ) {
+        this->info = new_userinfo ? new_userinfo : BANCHO::User::get_user_info(new_userid);  // don't request it twice
+        this->avatar = std::make_unique<UIAvatar>(new_userid, 0.f, 0.f, 0.f, 0.f);
+        this->avatar->on_screen = true;
+        this->setClickCallback([new_userid] { osu->getUserActions()->open(new_userid); });
+    }
+}
 
 void UserCard2::draw() {
     if(!this->bVisible) return;

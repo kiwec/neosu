@@ -22,8 +22,8 @@ UIAvatar::UIAvatar(i32 player_id, float xPos, float yPos, float xSize, float ySi
 
 UIAvatar::~UIAvatar() {
     // remove from load queue
-    if(osu) {
-        osu->getAvatarManager()->remove_avatar(this->player_id_for_endpoint);
+    if(AvatarManager *am = osu && osu->getAvatarManager() ? osu->getAvatarManager().get() : nullptr) {
+        am->remove_avatar(this->player_id_for_endpoint);
     }
 }
 

@@ -148,21 +148,18 @@ void OnlineMapListing::onResolutionChange(vec2 /*newResolution*/) {
     f32 x = this->getSize().x - 40.f * scale;
     f32 y = this->getSize().y - 40.f * scale;
 
-    auto& curIconElems = reinterpret_cast<std::vector<UIIcon*>&>(this->vElements);
+    auto iconElemsCopy = reinterpret_cast<std::vector<UIIcon*>&>(this->vElements);
+    this->invalidate();  // clear this->vElements and rebuild
 
-    sSz addedElemI = 0;
-    for(const auto& diff : this->meta.beatmaps) {
+    for(sSz addedElemI = 0; const auto& diff : this->meta.beatmaps) {
         if(diff.mode != 0) continue;
 
         UIIcon* icon = nullptr;
-        bool newElem = false;
-
-        if(addedElemI < curIconElems.size()) {
-            icon = curIconElems[addedElemI];
-            icon->onResized();  // sigh... classic hack (update string metrics)
+        if(addedElemI < iconElemsCopy.size()) {
+            icon = iconElemsCopy[addedElemI];
+            iconElemsCopy[addedElemI] = nullptr;  // set to null so we don't delete it later
         } else {
             icon = new UIIcon(Icons::CIRCLE);
-            newElem = true;
         }
 
         icon->setPos(x, y);
@@ -170,27 +167,17 @@ void OnlineMapListing::onResolutionChange(vec2 /*newResolution*/) {
         icon->setTooltipText(fmt::format("{}{}", diff.diffname,
                                          diff.star_rating > 0.f ? fmt::format(" ({:.2f} ★)", diff.star_rating) : ""));
 
-        if(newElem) {
-            this->addBaseUIElement(icon);
-        } else {
-            icon->setRelPos(icon->getPos());
-            icon->setPos(this->vPos + icon->getRelPos());
-        }
+        this->addBaseUIElement(icon);
 
         x -= 40.f * scale;
 
         ++addedElemI;
     }
 
-    if(addedElemI < curIconElems.size()) {
-        const std::vector<UIIcon*> toDelete{curIconElems.begin() + addedElemI, curIconElems.end()};
-
-        // remove excess elements from container and delete them manually
-        curIconElems.erase(curIconElems.begin() + addedElemI, curIconElems.end());
-
-        for(auto* icon : toDelete) {
-            SAFE_DELETE(icon);
-        }
+    // delete any excess items in the container (if we somehow rebuilt with fewer than we originally had)
+    // we set the element to NULL if we put it back into the container, so SAFE_DELETE won't delete those
+    for(auto* icon : iconElemsCopy) {
+        SAFE_DELETE(icon);
     }
 }
 

@@ -1,9 +1,8 @@
 #pragma once
 // Copyright (c) 2013, PG, All rights reserved.
-#include "CBaseUIElement.h"
 #include "Color.h"
 
-class CBaseUIContainer;
+#include "CBaseUIContainer.h"
 
 class CBaseUIScrollView : public CBaseUIElement {
     NOCOPY_NOMOVE(CBaseUIScrollView)
@@ -116,9 +115,26 @@ class CBaseUIScrollView : public CBaseUIElement {
     void onDisabled() override;
 
     // main container
-    CBaseUIContainer *container;
+    class CBaseUIScrollViewContainer : public CBaseUIContainer {
+        NOCOPY_NOMOVE(CBaseUIScrollViewContainer)
+       public:
+        using CBaseUIContainer::CBaseUIContainer;
+        ~CBaseUIScrollViewContainer() override = default;
+
+        friend class CBaseUIScrollView;
+    };
+
+    CBaseUIScrollViewContainer *container;
 
    protected:
+    // mutable for derived classes
+    template <typename T = CBaseUIElement>
+    [[nodiscard]] forceinline std::vector<T *> &getContainedElements()
+        requires(std::derived_from<T, CBaseUIElement>)
+    {
+        return reinterpret_cast<std::vector<T *> &>(this->container->vElements);
+    }
+
     void onMoved() override;
 
     // vars

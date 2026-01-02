@@ -4,7 +4,6 @@
 #include "CBaseUIScrollView.h"
 
 #include "AnimationHandler.h"
-#include "CBaseUIContainer.h"
 #include "ConVar.h"
 #include "Engine.h"
 #include "Keyboard.h"
@@ -20,7 +19,7 @@ CBaseUIScrollView::CBaseUIScrollView(f32 xPos, f32 yPos, f32 xSize, f32 ySize, c
 
     this->iScrollResistance = cv::ui_scrollview_resistance.getInt();  // TODO: dpi handling
 
-    this->container = new CBaseUIContainer(xPos, yPos, xSize, ySize, name);
+    this->container = new CBaseUIScrollViewContainer(xPos, yPos, xSize, ySize, name);
 }
 
 CBaseUIScrollView::~CBaseUIScrollView() {
@@ -35,6 +34,8 @@ void CBaseUIScrollView::invalidate() {
 
 void CBaseUIScrollView::freeElements() {
     this->container->freeElements();
+
+    this->bClippingDirty = true;
 
     anim::deleteExistingAnimation(&this->vKineticAverage.x);
     anim::deleteExistingAnimation(&this->vKineticAverage.y);
