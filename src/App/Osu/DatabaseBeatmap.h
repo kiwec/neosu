@@ -160,23 +160,6 @@ class DatabaseBeatmap final {
         std::vector<u32> maxComboAtIndex{0};
     };
 
-    struct LOAD_GAMEPLAY_RESULT {
-        LOAD_GAMEPLAY_RESULT();
-        ~LOAD_GAMEPLAY_RESULT();
-
-        LOAD_GAMEPLAY_RESULT(const LOAD_GAMEPLAY_RESULT &) = delete;
-        LOAD_GAMEPLAY_RESULT &operator=(const LOAD_GAMEPLAY_RESULT &) = delete;
-        LOAD_GAMEPLAY_RESULT(LOAD_GAMEPLAY_RESULT &&) noexcept;
-        LOAD_GAMEPLAY_RESULT &operator=(LOAD_GAMEPLAY_RESULT &&) noexcept;
-
-        std::vector<std::unique_ptr<HitObject>> hitobjects;
-        std::vector<BREAK> breaks;
-        std::vector<Color> combocolors;
-
-        i32 defaultSampleSet{1};
-        LoadError error;
-    };
-
     struct TIMING_INFO {
         i32 offset{0};
 
@@ -263,6 +246,23 @@ class DatabaseBeatmap final {
         bool sliderTimesCalculated{false};
     };
 
+    struct LOAD_GAMEPLAY_RESULT {
+        LOAD_GAMEPLAY_RESULT();
+        ~LOAD_GAMEPLAY_RESULT();
+
+        LOAD_GAMEPLAY_RESULT(const LOAD_GAMEPLAY_RESULT &) = delete;
+        LOAD_GAMEPLAY_RESULT &operator=(const LOAD_GAMEPLAY_RESULT &) = delete;
+        LOAD_GAMEPLAY_RESULT(LOAD_GAMEPLAY_RESULT &&) noexcept;
+        LOAD_GAMEPLAY_RESULT &operator=(LOAD_GAMEPLAY_RESULT &&) noexcept;
+
+        std::vector<std::unique_ptr<HitObject>> hitobjects;
+        std::vector<BREAK> breaks;
+        std::vector<Color> combocolors;
+
+        i32 defaultSampleSet{1};
+        LoadError error;
+    };
+
     static inline const auto alwaysFalseStopPred = Sync::stop_token{};
 
     static LOAD_DIFFOBJ_RESULT loadDifficultyHitObjects(std::string_view osuFilePath, float AR, float CS,
@@ -274,16 +274,20 @@ class DatabaseBeatmap final {
                                                         const Sync::stop_token &dead = alwaysFalseStopPred);
 
     struct LOAD_META_RESULT {
-        FixedSizeArray<u8> fileData;
-        LoadError error;
+        FixedSizeArray<u8> fileData{};
+        LoadError error{DatabaseBeatmap::LoadError::NONE};
 
         explicit operator bool() const { return error.errc != 0; }
     };
 
     LOAD_META_RESULT loadMetadata(bool compute_md5 = true);
 
-    static LOAD_GAMEPLAY_RESULT loadGameplay(BeatmapDifficulty *databaseBeatmap, AbstractBeatmapInterface *beatmap);
-    inline LOAD_GAMEPLAY_RESULT loadGameplay(AbstractBeatmapInterface *beatmap) { return loadGameplay(this, beatmap); }
+    static LOAD_GAMEPLAY_RESULT loadGameplay(BeatmapDifficulty *databaseBeatmap, AbstractBeatmapInterface *beatmap,
+                                             LOAD_META_RESULT preloadedMetadata = {{}, {DatabaseBeatmap::LoadError::NONE}}, PRIMITIVE_CONTAINER *outPrimitivesCopy = nullptr);
+    inline LOAD_GAMEPLAY_RESULT loadGameplay(AbstractBeatmapInterface *beatmap,
+                                             LOAD_META_RESULT preloadedMetadata = {{}, {DatabaseBeatmap::LoadError::NONE}}, PRIMITIVE_CONTAINER *outPrimitivesCopy = nullptr) {
+        return loadGameplay(this, beatmap, std::move(preloadedMetadata), outPrimitivesCopy);
+    }
 
     // for one-off calculations
     // must have loaded metadata already

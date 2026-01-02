@@ -96,35 +96,33 @@ DatabaseBeatmap::DatabaseBeatmap(std::unique_ptr<DiffContainer> &&difficulties, 
 }
 
 void DatabaseBeatmap::updateRepresentativeValues() noexcept {
-    auto &diffs = this->parentSet ? this->parentSet->getDifficulties() : this->getDifficulties();
-    BeatmapSet *set = this->parentSet ? this->parentSet : this;
+    if(this->getDifficulties().empty()) return;  // we are a difficulty
 
-    assert(!diffs.empty());
-    assert(set);
+    auto &diffs = this->getDifficulties();
 
-    set->iLengthMS = 0;
-    set->fCS = 99.f;
-    set->fAR = 0.0f;
-    set->fOD = 0.0f;
-    set->fHP = 0.0f;
-    set->fStarsNomod = 0.0f;
-    set->iMinBPM = 9001;
-    set->iMaxBPM = 0;
-    set->iMostCommonBPM = 0;
-    set->last_modification_time = 0;
+    this->iLengthMS = 0;
+    this->fCS = 99.f;
+    this->fAR = 0.0f;
+    this->fOD = 0.0f;
+    this->fHP = 0.0f;
+    this->fStarsNomod = 0.0f;
+    this->iMinBPM = 9001;
+    this->iMaxBPM = 0;
+    this->iMostCommonBPM = 0;
+    this->last_modification_time = 0;
 
     for(const auto &diff : diffs) {
-        if(diff->getLengthMS() > set->iLengthMS) set->iLengthMS = diff->getLengthMS();
-        if(diff->getCS() < set->fCS) set->fCS = diff->getCS();
-        if(diff->getAR() > set->fAR) set->fAR = diff->getAR();
-        if(diff->getHP() > set->fHP) set->fHP = diff->getHP();
-        if(diff->getOD() > set->fOD) set->fOD = diff->getOD();
-        if(diff->getStarsNomod() > set->fStarsNomod) set->fStarsNomod = diff->getStarsNomod();
-        if(diff->getMinBPM() < set->iMinBPM) set->iMinBPM = diff->getMinBPM();
-        if(diff->getMaxBPM() > set->iMaxBPM) set->iMaxBPM = diff->getMaxBPM();
-        if(diff->getMostCommonBPM() > set->iMostCommonBPM) set->iMostCommonBPM = diff->getMostCommonBPM();
-        if(diff->last_modification_time > set->last_modification_time)
-            set->last_modification_time = diff->last_modification_time;
+        if(diff->getLengthMS() > this->iLengthMS) this->iLengthMS = diff->getLengthMS();
+        if(diff->getCS() < this->fCS) this->fCS = diff->getCS();
+        if(diff->getAR() > this->fAR) this->fAR = diff->getAR();
+        if(diff->getHP() > this->fHP) this->fHP = diff->getHP();
+        if(diff->getOD() > this->fOD) this->fOD = diff->getOD();
+        if(diff->getStarsNomod() > this->fStarsNomod) this->fStarsNomod = diff->getStarsNomod();
+        if(diff->getMinBPM() < this->iMinBPM) this->iMinBPM = diff->getMinBPM();
+        if(diff->getMaxBPM() > this->iMaxBPM) this->iMaxBPM = diff->getMaxBPM();
+        if(diff->getMostCommonBPM() > this->iMostCommonBPM) this->iMostCommonBPM = diff->getMostCommonBPM();
+        if(diff->last_modification_time > this->last_modification_time)
+            this->last_modification_time = diff->last_modification_time;
     }
 }
 
@@ -1402,7 +1400,9 @@ DatabaseBeatmap::LOAD_META_RESULT DatabaseBeatmap::loadMetadata(bool compute_md5
 }
 
 DatabaseBeatmap::LOAD_GAMEPLAY_RESULT DatabaseBeatmap::loadGameplay(BeatmapDifficulty *databaseBeatmap,
-                                                                    AbstractBeatmapInterface *beatmap) {
+                                                                    AbstractBeatmapInterface *beatmap,
+                                                                    LOAD_META_RESULT preloadedMetadata,
+                                                                    PRIMITIVE_CONTAINER *outPrimitivesCopy) {
     LOAD_GAMEPLAY_RESULT result = LOAD_GAMEPLAY_RESULT();
     PRIMITIVE_CONTAINER c;
 
@@ -1410,7 +1410,12 @@ DatabaseBeatmap::LOAD_GAMEPLAY_RESULT DatabaseBeatmap::loadGameplay(BeatmapDiffi
         // NOTE: reload metadata (force ensures that all necessary data is ready for creating hitobjects and playing etc.,
         // also if beatmap file is changed manually in the meantime)
         // XXX: file io, md5 calc, all on main thread!!
-        auto metaRes = databaseBeatmap->loadMetadata();
+        auto metaRes = std::move(preloadedMetadata);
+
+        if(preloadedMetadata.fileData.empty() || preloadedMetadata.error) {
+            metaRes = databaseBeatmap->loadMetadata();
+        }
+
         result.error = metaRes.error;
         if(result.error.errc) {
             return result;
@@ -1418,6 +1423,9 @@ DatabaseBeatmap::LOAD_GAMEPLAY_RESULT DatabaseBeatmap::loadGameplay(BeatmapDiffi
 
         // load primitives, put in temporary container
         c = loadPrimitiveObjectsFromData(std::move(metaRes.fileData), databaseBeatmap->sFilePath, alwaysFalseStopPred);
+        if(outPrimitivesCopy) {
+            *outPrimitivesCopy = c;
+        }
     }
 
     if(c.error.errc) {
@@ -1661,13 +1669,18 @@ DatabaseBeatmap::TIMING_INFO DatabaseBeatmap::getTimingInfoForTimeAndTimingPoint
     return ti;
 }
 
+// TODO: figure out why gameplay needs to be loaded for this to work (songbrowser infolabel etc.)
 bool DatabaseBeatmap::calcNomodStarsSlow(LOAD_META_RESULT metadata) {
-    auto fileData = std::move(metadata.fileData);
-    if(fileData.empty()) return false;
+    auto fakeGameplay = std::make_unique<BeatmapInterface>();
+    auto primitivesOut = std::make_unique<PRIMITIVE_CONTAINER>();
 
-    // load primitive hitobjects
-    auto primitives = DatabaseBeatmap::loadPrimitiveObjectsFromData(fileData, this->sFilePath, alwaysFalseStopPred);
-    if(primitives.error.errc) {
+    // load everything
+    auto gameplayRes = this->loadGameplay(fakeGameplay.get(), std::move(metadata), primitivesOut.get());
+    PRIMITIVE_CONTAINER &primitives = *primitivesOut;
+
+    if(gameplayRes.error.errc || primitives.error.errc) {
+        debugLog("failed to calc {}", gameplayRes.error.errc ? "gameplay" : "primitives",
+                 gameplayRes.error.errc ? gameplayRes.error.error_string() : primitives.error.error_string());
         return false;
     }
 
@@ -1677,12 +1690,12 @@ bool DatabaseBeatmap::calcNomodStarsSlow(LOAD_META_RESULT metadata) {
     const f32 OD = this->fOD;
 
     const f32 speedMultiplier = 1.0f;
-    ModFlags modFlags{};
 
     // load difficulty hitobjects for star calculation
     auto diffResult = DatabaseBeatmap::loadDifficultyHitObjects(primitives, AR, CS, speedMultiplier, false);
 
     if(diffResult.error.errc) {
+        debugLog("failed to load diffresult {}", diffResult.error.error_string());
         return false;
     }
 
@@ -1692,10 +1705,10 @@ bool DatabaseBeatmap::calcNomodStarsSlow(LOAD_META_RESULT metadata) {
                                                            .HP = HP,
                                                            .AR = AR,
                                                            .OD = OD,
-                                                           .hidden = flags::has<ModFlags::Hidden>(modFlags),
-                                                           .relax = flags::has<ModFlags::Relax>(modFlags),
-                                                           .autopilot = flags::has<ModFlags::Autopilot>(modFlags),
-                                                           .touchDevice = flags::has<ModFlags::TouchDevice>(modFlags),
+                                                           .hidden = false,
+                                                           .relax = false,
+                                                           .autopilot = false,
+                                                           .touchDevice = false,
                                                            .speedMultiplier = speedMultiplier,
                                                            .breakDuration = diffResult.totalBreakDuration,
                                                            .playableLength = diffResult.playableLength};
