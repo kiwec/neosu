@@ -542,7 +542,10 @@ BeatmapSetMetadata parse_beatmapset_metadata(std::string_view server_response) {
         const std::string_view raw_diff = map.substr(0, map.find_last_of('@'));
         const std::string_view mode_str = spl.back();
 
-        if(raw_diff.contains("★")) {  // neosu (?)
+        if(raw_diff.contains("★")) {
+            // Mayflower's Hard★3.60@0
+            // used by: catboy.best api
+
             const auto diff_srs = SString::split(raw_diff, "★"sv);
             std::string diffname;
 
@@ -556,8 +559,10 @@ BeatmapSetMetadata parse_beatmapset_metadata(std::string_view server_response) {
             const f32 sr = Parsing::strto<f32>(diff_srs.back());
             meta.beatmaps.push_back(
                 BeatmapMetadata{.diffname = diffname, .star_rating = sr, .mode = Parsing::strto<u8>(mode_str)});
-        } else if(raw_diff.contains("⭐") && raw_diff[0] == '[') {  // akatsuki (?)
-            // e.g. [3.60⭐] Mayflower's Hard {cs: 3.5 / od: 6.0 / ar: 8.0 / hp: 3.5}@0
+        } else if(raw_diff.contains("⭐") && raw_diff[0] == '[') {
+            // [3.60⭐] Mayflower's Hard {cs: 3.5 / od: 6.0 / ar: 8.0 / hp: 3.5}@0
+            // used by: bancho.py, banchus (akatsuki), osu.direct api
+
             // maybe can try parsing beatmap settings in the future
             const uSz star_idx = raw_diff.find("⭐"sv);
             const uSz star_end_idx = star_idx + "⭐"sv.size();
@@ -576,6 +581,8 @@ BeatmapSetMetadata parse_beatmapset_metadata(std::string_view server_response) {
             meta.beatmaps.push_back(
                 BeatmapMetadata{.diffname{diff_text}, .star_rating = sr, .mode = Parsing::strto<u8>(mode_str)});
         } else {
+            // Mayflower's Hard@0
+            // used by: ripple, titanic
             meta.beatmaps.push_back(
                 BeatmapMetadata{.diffname{raw_diff}, .star_rating = 0.f, .mode = Parsing::strto<u8>(mode_str)});
         }
