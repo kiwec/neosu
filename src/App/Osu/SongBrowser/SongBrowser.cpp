@@ -60,6 +60,7 @@
 #include <memory>
 #include <charconv>
 #include <cwctype>
+#include <unordered_set>
 #include <utility>
 
 #define WANT_PDQSORT
@@ -896,9 +897,12 @@ void SongBrowser::mouse_update(bool *propagate_clicks) {
         }
 
         if(!results.empty()) {
+            std::unordered_set<BeatmapSet *> uniqueSetsForDiffs;
+
             Sync::unique_lock lock(db->peppy_overrides_mtx);
             for(const auto &res : results) {
                 auto map = res.map;
+                uniqueSetsForDiffs.emplace(map->getParentSet());
                 map->iNumCircles = res.nb_circles;
                 map->iNumSliders = res.nb_sliders;
                 map->iNumSpinners = res.nb_spinners;
@@ -909,6 +913,11 @@ void SongBrowser::mouse_update(bool *propagate_clicks) {
                 map->ppv2Version = DiffCalc::PP_ALGORITHM_VERSION;
                 if(map->type == DatabaseBeatmap::BeatmapType::PEPPY_DIFFICULTY) {
                     db->peppy_overrides[map->getMD5()] = map->get_overrides();
+                }
+            }
+            for(auto *set : uniqueSetsForDiffs) {
+                if(set) {
+                    set->updateRepresentativeValues();
                 }
             }
         }

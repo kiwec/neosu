@@ -105,7 +105,7 @@ class Database {
     void cancel();
     void save();
 
-    BeatmapSet *addBeatmapSet(const std::string &beatmapFolderPath, i32 set_id_override = -1);
+    BeatmapSet *addBeatmapSet(const std::string &beatmapFolderPath, i32 set_id_override = -1, bool diffcalc_immediately = false);
 
     int addScore(const FinishedScore &score);
     void deleteScore(const MD5Hash &beatmapMD5Hash, u64 scoreUnixTimestamp);
@@ -140,7 +140,7 @@ class Database {
 
     static std::string getOsuSongsFolder();
 
-    std::unique_ptr<BeatmapSet> loadRawBeatmap(const std::string &beatmapPath);  // only used for raw loading without db
+    std::unique_ptr<BeatmapSet> loadRawBeatmap(const std::string &beatmapPath, bool diffcalc_immediately = false);  // only used for raw loading without db
 
     inline void addPathToImport(const std::string &dbPath) { this->extern_db_paths_to_import.push_back(dbPath); }
 

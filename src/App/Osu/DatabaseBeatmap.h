@@ -77,6 +77,9 @@ class DatabaseBeatmap final {
 
     friend void swap(DatabaseBeatmap &a, DatabaseBeatmap &b) noexcept;
 
+    // if we are a beatmapset, update values from difficulties
+    void updateRepresentativeValues() noexcept;
+
     struct LoadError {
        public:
         enum code : u8 {
@@ -282,6 +285,10 @@ class DatabaseBeatmap final {
     static LOAD_GAMEPLAY_RESULT loadGameplay(BeatmapDifficulty *databaseBeatmap, AbstractBeatmapInterface *beatmap);
     inline LOAD_GAMEPLAY_RESULT loadGameplay(AbstractBeatmapInterface *beatmap) { return loadGameplay(this, beatmap); }
 
+    // for one-off calculations
+    // must have loaded metadata already
+    bool calcNomodStarsSlow(LOAD_META_RESULT metadata);
+
     [[nodiscard]] MapOverrides get_overrides() const;
 
     inline void setLocalOffset(i16 localOffset) { this->iLocalOffset = localOffset; }
@@ -299,6 +306,8 @@ class DatabaseBeatmap final {
                    ? empty
                    : reinterpret_cast<const std::vector<std::unique_ptr<T>> &>(*this->difficulties);
     }
+
+    [[nodiscard]] inline BeatmapSet *getParentSet() const { return this->parentSet; }
 
     [[nodiscard]] TIMING_INFO getTimingInfoForTime(i32 positionMS) const;
     static TIMING_INFO getTimingInfoForTimeAndTimingPoints(
@@ -404,6 +413,9 @@ class DatabaseBeatmap final {
     // if this is non-NULL: it MUST contain at least 1 entry (a BeatmapSet cannot have 0 difficulties)
     // NOTE: this class has ownership of the individual beatmap difficulties, Database owns the top-level beatmapsets
     std::unique_ptr<DiffContainer> difficulties;
+
+    // this is XOR difficulties, if we are a difficulty, this points to our parent container beatmapset
+    BeatmapSet *parentSet{nullptr};
 
    public:
     FixedSizeArray<DatabaseBeatmap::TIMINGPOINT> timingpoints;  // necessary for main menu anim

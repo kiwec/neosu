@@ -18,7 +18,6 @@
 #include "Environment.h"
 #include "MakeDelegateWrapper.h"
 #include "Keyboard.h"
-#include "AsyncPPCalculator.h"
 #include "LegacyReplay.h"
 #include "ModSelector.h"
 #include "Mouse.h"

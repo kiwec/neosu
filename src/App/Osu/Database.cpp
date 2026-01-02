@@ -432,8 +432,9 @@ void Database::save() {
 
 // NOTE: Should currently only be used for neosu beatmapsets! e.g. from maps/ folder
 //       See loadRawBeatmap()
-BeatmapSet *Database::addBeatmapSet(const std::string &beatmapFolderPath, i32 set_id_override) {
-    auto beatmap = this->loadRawBeatmap(beatmapFolderPath);
+BeatmapSet *Database::addBeatmapSet(const std::string &beatmapFolderPath, i32 set_id_override,
+                                    bool diffcalc_immediately) {
+    auto beatmap = this->loadRawBeatmap(beatmapFolderPath, diffcalc_immediately);
     if(beatmap == nullptr) return nullptr;
 
     BeatmapSet *raw_beatmap = beatmap.get();
@@ -2434,7 +2435,7 @@ void Database::saveScores() {
     debugLog("Saved {:d} scores in {:f} seconds.", nb_scores, (Timing::getTimeReal() - startTime));
 }
 
-std::unique_ptr<BeatmapSet> Database::loadRawBeatmap(const std::string &beatmapPath) {
+std::unique_ptr<BeatmapSet> Database::loadRawBeatmap(const std::string &beatmapPath, bool diffcalc_immediately) {
     logIfCV(debug_db, "beatmap path: {:s}", beatmapPath);
 
     // try loading all diffs
@@ -2443,6 +2444,7 @@ std::unique_ptr<BeatmapSet> Database::loadRawBeatmap(const std::string &beatmapP
     auto diffs = std::make_unique<DiffContainer>();
 
     std::vector<std::string> beatmapFiles = env->getFilesInFolder(beatmapPath);
+
     for(const auto &beatmapFile : beatmapFiles) {
         std::string ext = env->getFileExtensionFromFilePath(beatmapFile);
         if(ext.compare("osu") != 0) continue;
@@ -2454,6 +2456,9 @@ std::unique_ptr<BeatmapSet> Database::loadRawBeatmap(const std::string &beatmapP
                                                        DatabaseBeatmap::BeatmapType::NEOSU_DIFFICULTY);
         auto res = map->loadMetadata();
         if(!res.error.errc) {
+            if(diffcalc_immediately) {
+                map->calcNomodStarsSlow(std::move(res));
+            }
             diffs->push_back(std::move(map));
         } else {
             lastError = res.error;

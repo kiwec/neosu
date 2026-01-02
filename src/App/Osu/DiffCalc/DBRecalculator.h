@@ -8,13 +8,16 @@
 struct MD5Hash;
 
 class DatabaseBeatmap;
+using BeatmapDifficulty = DatabaseBeatmap;
+using BeatmapSet = DatabaseBeatmap;
+
 struct FinishedScore;
 
 // Recalculates outdated/legacy scores and beatmaps imported from databases asynchronously.
 namespace DBRecalculator {
 
 struct MapResult {
-    DatabaseBeatmap* map{};
+    BeatmapDifficulty* map{};
     u32 nb_circles{};
     u32 nb_sliders{};
     u32 nb_spinners{};

@@ -73,6 +73,11 @@ DatabaseBeatmap::DatabaseBeatmap(std::unique_ptr<DiffContainer> &&difficulties, 
            "DatabaseBeatmap: tried to construct a beatmapset with 0 difficulties");
     auto &diffs = *this->difficulties;
 
+    // set parent for difficulties
+    for(auto &diff : this->getDifficulties()) {
+        diff->parentSet = this;
+    }
+
     // set representative values for this container (i.e. use values from first difficulty)
     this->sFolder = diffs[0]->sFolder;
 
@@ -87,28 +92,39 @@ DatabaseBeatmap::DatabaseBeatmap(std::unique_ptr<DiffContainer> &&difficulties, 
     this->iSetID = diffs[0]->iSetID;
 
     // also calculate largest representative values
-    this->iLengthMS = 0;
-    this->fCS = 99.f;
-    this->fAR = 0.0f;
-    this->fOD = 0.0f;
-    this->fHP = 0.0f;
-    this->fStarsNomod = 0.0f;
-    this->iMinBPM = 9001;
-    this->iMaxBPM = 0;
-    this->iMostCommonBPM = 0;
-    this->last_modification_time = 0;
+    this->updateRepresentativeValues();
+}
+
+void DatabaseBeatmap::updateRepresentativeValues() noexcept {
+    auto &diffs = this->parentSet ? this->parentSet->getDifficulties() : this->getDifficulties();
+    BeatmapSet *set = this->parentSet ? this->parentSet : this;
+
+    assert(!diffs.empty());
+    assert(set);
+
+    set->iLengthMS = 0;
+    set->fCS = 99.f;
+    set->fAR = 0.0f;
+    set->fOD = 0.0f;
+    set->fHP = 0.0f;
+    set->fStarsNomod = 0.0f;
+    set->iMinBPM = 9001;
+    set->iMaxBPM = 0;
+    set->iMostCommonBPM = 0;
+    set->last_modification_time = 0;
+
     for(const auto &diff : diffs) {
-        if(diff->getLengthMS() > this->iLengthMS) this->iLengthMS = diff->getLengthMS();
-        if(diff->getCS() < this->fCS) this->fCS = diff->getCS();
-        if(diff->getAR() > this->fAR) this->fAR = diff->getAR();
-        if(diff->getHP() > this->fHP) this->fHP = diff->getHP();
-        if(diff->getOD() > this->fOD) this->fOD = diff->getOD();
-        if(diff->getStarsNomod() > this->fStarsNomod) this->fStarsNomod = diff->getStarsNomod();
-        if(diff->getMinBPM() < this->iMinBPM) this->iMinBPM = diff->getMinBPM();
-        if(diff->getMaxBPM() > this->iMaxBPM) this->iMaxBPM = diff->getMaxBPM();
-        if(diff->getMostCommonBPM() > this->iMostCommonBPM) this->iMostCommonBPM = diff->getMostCommonBPM();
-        if(diff->last_modification_time > this->last_modification_time)
-            this->last_modification_time = diff->last_modification_time;
+        if(diff->getLengthMS() > set->iLengthMS) set->iLengthMS = diff->getLengthMS();
+        if(diff->getCS() < set->fCS) set->fCS = diff->getCS();
+        if(diff->getAR() > set->fAR) set->fAR = diff->getAR();
+        if(diff->getHP() > set->fHP) set->fHP = diff->getHP();
+        if(diff->getOD() > set->fOD) set->fOD = diff->getOD();
+        if(diff->getStarsNomod() > set->fStarsNomod) set->fStarsNomod = diff->getStarsNomod();
+        if(diff->getMinBPM() < set->iMinBPM) set->iMinBPM = diff->getMinBPM();
+        if(diff->getMaxBPM() > set->iMaxBPM) set->iMaxBPM = diff->getMaxBPM();
+        if(diff->getMostCommonBPM() > set->iMostCommonBPM) set->iMostCommonBPM = diff->getMostCommonBPM();
+        if(diff->last_modification_time > set->last_modification_time)
+            set->last_modification_time = diff->last_modification_time;
     }
 }
 
@@ -116,7 +132,7 @@ void swap(DatabaseBeatmap &a, DatabaseBeatmap &b) noexcept {
     // "swap field" temp macro, trying to avoid bloating line count for this file with these ctors/operators
     // clang-format off
 #define SF(fieldname) std::swap(a.fieldname, b.fieldname);
-    SF(sMD5Hash)           SF(difficulties)  SF(timingpoints)             SF(sFolder)         SF(sFilePath)         SF(last_modification_time)
+    SF(sMD5Hash)           SF(difficulties)  SF(parentSet)                SF(timingpoints)    SF(sFolder)           SF(sFilePath)         SF(last_modification_time)
     SF(sTitle)             SF(sTitleUnicode) SF(sArtist)                  SF(sArtistUnicode)  SF(sCreator)          SF(sDifficultyName)
     SF(sSource)            SF(sTags)         SF(sBackgroundImageFileName) SF(sAudioFileName)  SF(iID)               SF(iLengthMS)
     SF(iLocalOffset)       SF(iOnlineOffset) SF(iSetID)                   SF(iPreviewTime)    SF(fAR)               SF(fCS)
@@ -143,7 +159,7 @@ void swap(DatabaseBeatmap &a, DatabaseBeatmap &b) noexcept {
 
 DatabaseBeatmap::DatabaseBeatmap(const DatabaseBeatmap &other)
     // clang-format off
-    : COPYOTHER(sMD5Hash),            COPYOTHER(timingpoints),             COPYOTHER(sFolder),
+    : COPYOTHER(sMD5Hash),            COPYOTHER(parentSet),                COPYOTHER(timingpoints),             COPYOTHER(sFolder),
       COPYOTHER(sFilePath),           COPYOTHER(last_modification_time),   COPYOTHER(sTitle),
       COPYOTHER(sTitleUnicode),       COPYOTHER(sArtist),                  COPYOTHER(sArtistUnicode),
       COPYOTHER(sCreator),            COPYOTHER(sDifficultyName),          COPYOTHER(sSource),
@@ -172,7 +188,7 @@ DatabaseBeatmap::DatabaseBeatmap(const DatabaseBeatmap &other)
 
 DatabaseBeatmap::DatabaseBeatmap(DatabaseBeatmap &&other) noexcept
     // clang-format off
-    : COPYOTHER(sMD5Hash),           MOVEOTHER(difficulties),        MOVEOTHER(timingpoints),
+    : COPYOTHER(sMD5Hash),           MOVEOTHER(difficulties),        COPYOTHER(parentSet),        MOVEOTHER(timingpoints),
       MOVEOTHER(sFolder),            MOVEOTHER(sFilePath),           MOVEOTHER(last_modification_time),
       MOVEOTHER(sTitle),             MOVEOTHER(sTitleUnicode),       MOVEOTHER(sArtist),
       MOVEOTHER(sArtistUnicode),     MOVEOTHER(sCreator),            MOVEOTHER(sDifficultyName),
@@ -1643,4 +1659,62 @@ DatabaseBeatmap::TIMING_INFO DatabaseBeatmap::getTimingInfoForTimeAndTimingPoint
     }
 
     return ti;
+}
+
+bool DatabaseBeatmap::calcNomodStarsSlow(LOAD_META_RESULT metadata) {
+    auto fileData = std::move(metadata.fileData);
+    if(fileData.empty()) return false;
+
+    // load primitive hitobjects
+    auto primitives = DatabaseBeatmap::loadPrimitiveObjectsFromData(fileData, this->sFilePath, alwaysFalseStopPred);
+    if(primitives.error.errc) {
+        return false;
+    }
+
+    const f32 AR = this->fAR;
+    const f32 CS = this->fCS;
+    const f32 HP = this->fHP;
+    const f32 OD = this->fOD;
+
+    const f32 speedMultiplier = 1.0f;
+    ModFlags modFlags{};
+
+    // load difficulty hitobjects for star calculation
+    auto diffResult = DatabaseBeatmap::loadDifficultyHitObjects(primitives, AR, CS, speedMultiplier, false);
+
+    if(diffResult.error.errc) {
+        return false;
+    }
+
+    // calculate star rating
+    DifficultyCalculator::BeatmapDiffcalcData diffcalcData{.sortedHitObjects = diffResult.diffobjects,
+                                                           .CS = CS,
+                                                           .HP = HP,
+                                                           .AR = AR,
+                                                           .OD = OD,
+                                                           .hidden = flags::has<ModFlags::Hidden>(modFlags),
+                                                           .relax = flags::has<ModFlags::Relax>(modFlags),
+                                                           .autopilot = flags::has<ModFlags::Autopilot>(modFlags),
+                                                           .touchDevice = flags::has<ModFlags::TouchDevice>(modFlags),
+                                                           .speedMultiplier = speedMultiplier,
+                                                           .breakDuration = diffResult.totalBreakDuration,
+                                                           .playableLength = diffResult.playableLength};
+
+    DifficultyCalculator::DifficultyAttributes outAttrs{};
+
+    DifficultyCalculator::StarCalcParams starParams{
+        .cachedDiffObjects = {},
+        .outAttributes = outAttrs,
+        .beatmapData = diffcalcData,
+        .outAimStrains = nullptr,
+        .outSpeedStrains = nullptr,
+        .incremental = nullptr,
+        .upToObjectIndex = -1,
+        .cancelCheck = {},
+    };
+
+    const f64 totalStars = DifficultyCalculator::calculateStarDiffForHitObjects(starParams);
+    this->fStarsNomod = totalStars;
+
+    return true;
 }
