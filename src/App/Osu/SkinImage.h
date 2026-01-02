@@ -25,12 +25,11 @@ class SkinImage final {
 
     // for objects scaled automatically to the current resolution
     // brightness: 0.0 = normal, 1.0 = heavenly
-    void draw(vec2 pos, float scale = 1.0f, float brightness = 0.f, bool tryDrawNonAnimated = false) const;
+    void draw(vec2 pos, float scale = 1.0f, float brightness = 0.f, bool animated = true) const;
 
     // for objects which scale depending on external factors
     // (e.g. hitobjects, depending on the diameter defined by the CS)
-    void drawRaw(vec2 pos, float scale, AnchorPoint anchor = AnchorPoint::CENTER, float brightness = 0.f,
-                 bool tryDrawNonAnimated = false) const;
+    void drawRaw(vec2 pos, float scale, AnchorPoint anchor = AnchorPoint::CENTER, float brightness = 0.f, bool animated = true) const;
 
     void update(float speedMultiplier, bool useEngineTimeForAnimations = true, i32 curMusicPos = 0);
 

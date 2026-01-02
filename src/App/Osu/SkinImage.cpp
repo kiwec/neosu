@@ -279,10 +279,8 @@ void SkinImage::drawBrightQuad(VertexArrayObject* vao, float brightness) const {
     g->setBlending(oldBlending);
 }
 
-void SkinImage::draw(vec2 pos, float scale, float brightness, bool tryDrawNonAnimated) const {
+void SkinImage::draw(vec2 pos, float scale, float brightness, bool animated) const {
     if(this->images.size() < 1) return;
-
-    const bool animated = !(tryDrawNonAnimated && this->bHasNonAnimatedImage);
 
     scale *= this->getScale(animated);  // auto scale to current resolution
 
@@ -333,10 +331,8 @@ void SkinImage::draw(vec2 pos, float scale, float brightness, bool tryDrawNonAni
     g->popTransform();
 }
 
-void SkinImage::drawRaw(vec2 pos, float scale, AnchorPoint anchor, float brightness, bool tryDrawNonAnimated) const {
+void SkinImage::drawRaw(vec2 pos, float scale, AnchorPoint anchor, float brightness, bool animated) const {
     if(this->images.size() < 1) return;
-
-    const bool animated = !(tryDrawNonAnimated && this->bHasNonAnimatedImage);
 
     g->pushTransform();
     {

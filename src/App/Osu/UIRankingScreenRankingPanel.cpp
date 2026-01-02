@@ -145,7 +145,7 @@ void UIRankingScreenRankingPanel::drawHitImage(SkinImage *img, float /*scale*/, 
 
     // img->setAnimationFrameForce(0);
     img->draw(vec2(this->vPos.x + osu->getUIScale(pos.x) * uiScale, this->vPos.y + osu->getUIScale(pos.y) * uiScale),
-              uiScale, 0.f, true);
+              uiScale, 0.f, false /* try non-animated */);
 }
 
 void UIRankingScreenRankingPanel::drawNumHits(int numHits, float scale, vec2 pos) {
