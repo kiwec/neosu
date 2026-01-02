@@ -29,8 +29,15 @@ Changelog::Changelog() : ScreenBackable() {
 
     std::vector<CHANGELOG> changelogs;
 
+    CHANGELOG v41_14;
+    v41_14.title = "41.14 (" CHANGELOG_TIMESTAMP ")";
+    v41_14.changes = {
+        R"()",
+    };
+    changelogs.push_back(v41_14);
+
     CHANGELOG v41_13;
-    v41_13.title = "41.13 (" CHANGELOG_TIMESTAMP ")";
+    v41_13.title = "41.13 (2026-01-02)";
     v41_13.changes = {
         R"(- Song browser:)",
         R"( - Improved scrolling behavior and performance)",
