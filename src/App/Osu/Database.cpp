@@ -1079,45 +1079,41 @@ void Database::loadMaps() {
 
                     std::string osu_filename = neosu_maps.read_string();
 
-                    auto diff = std::make_unique<BeatmapDifficulty>(mapset_path + osu_filename, mapset_path,
-                                                                    DatabaseBeatmap::BeatmapType::NEOSU_DIFFICULTY);
-                    diff->iID = neosu_maps.read<i32>();
-                    diff->iSetID = set_id;
-                    neosu_maps.read_string(diff->sTitle);
-                    neosu_maps.read_string(diff->sAudioFileName);
-                    diff->iLengthMS = neosu_maps.read<i32>();
-                    diff->fStackLeniency = neosu_maps.read<f32>();
-                    neosu_maps.read_string(diff->sArtist);
-                    neosu_maps.read_string(diff->sCreator);
-                    neosu_maps.read_string(diff->sDifficultyName);
-                    neosu_maps.read_string(diff->sSource);
-                    neosu_maps.read_string(diff->sTags);
-                    {
-                        MD5Hash diff_hash;
-                        // TODO: properly validate and skip beatmaps with invalid hashes
-                        if(neosu_maps.read_hash(diff_hash)) {
-                            diff->writeMD5(diff_hash);
-                        }
-                    }
-                    diff->fAR = neosu_maps.read<f32>();
-                    diff->fCS = neosu_maps.read<f32>();
-                    diff->fHP = neosu_maps.read<f32>();
-                    diff->fOD = neosu_maps.read<f32>();
-                    diff->fSliderMultiplier = neosu_maps.read<f64>();
-                    diff->iPreviewTime = neosu_maps.read<u32>();
-                    diff->last_modification_time = neosu_maps.read<u64>();
-                    diff->iLocalOffset = neosu_maps.read<i16>();
-                    diff->iOnlineOffset = neosu_maps.read<i16>();
-                    diff->iNumCircles = neosu_maps.read<u16>();
-                    diff->iNumSliders = neosu_maps.read<u16>();
-                    diff->iNumSpinners = neosu_maps.read<u16>();
-                    diff->iNumObjects = diff->iNumCircles + diff->iNumSliders + diff->iNumSpinners;
-                    diff->fStarsNomod = neosu_maps.read<f64>();
+                    i32 iID = neosu_maps.read<i32>();
+                    i32 iSetID = set_id;
+                    std::string sTitle = neosu_maps.read_string();
+                    std::string sAudioFileName = neosu_maps.read_string();
+                    i32 iLengthMS = neosu_maps.read<i32>();
+                    f32 fStackLeniency = neosu_maps.read<f32>();
+                    std::string sArtist = neosu_maps.read_string();
+                    std::string sCreator = neosu_maps.read_string();
+                    std::string sDifficultyName = neosu_maps.read_string();
+                    std::string sSource = neosu_maps.read_string();
+                    std::string sTags = neosu_maps.read_string();
 
+                    MD5Hash diff_hash;
+                    // TODO: properly validate and skip beatmaps with invalid hashes
+                    (void)neosu_maps.read_hash(diff_hash);
+
+                    f32 fAR = neosu_maps.read<f32>();
+                    f32 fCS = neosu_maps.read<f32>();
+                    f32 fHP = neosu_maps.read<f32>();
+                    f32 fOD = neosu_maps.read<f32>();
+                    f64 fSliderMultiplier = neosu_maps.read<f64>();
+                    u32 iPreviewTime = neosu_maps.read<u32>();
+                    u64 last_modification_time = neosu_maps.read<u64>();
+                    i16 iLocalOffset = neosu_maps.read<i16>();
+                    i16 iOnlineOffset = neosu_maps.read<i16>();
+                    u16 iNumCircles = neosu_maps.read<u16>();
+                    u16 iNumSliders = neosu_maps.read<u16>();
+                    u16 iNumSpinners = neosu_maps.read<u16>();
+                    f64 fStarsNomod = neosu_maps.read<f64>();
+
+                    i32 iMinBPM{-1}, iMaxBPM{-1}, iMostCommonBPM{-1};
                     if(version >= 20251209) {  // prior versions had a rounding bug, force recalc
-                        diff->iMinBPM = neosu_maps.read<i32>();
-                        diff->iMaxBPM = neosu_maps.read<i32>();
-                        diff->iMostCommonBPM = neosu_maps.read<i32>();
+                        iMinBPM = neosu_maps.read<i32>();
+                        iMaxBPM = neosu_maps.read<i32>();
+                        iMostCommonBPM = neosu_maps.read<i32>();
                     } else {
                         neosu_maps.skip_bytes(sizeof(i32) * 3);
                     }
@@ -1127,44 +1123,128 @@ void Database::loadMaps() {
                         neosu_maps.skip_bytes(sizeof(DB_TIMINGPOINT) * nb_timing_points);
                     }
 
+                    bool draw_background = true;
                     if(version >= 20240703) {
-                        diff->draw_background = neosu_maps.read<u8>();
+                        draw_background = neosu_maps.read<u8>();
                     }
 
                     f32 loudness = 0.f;
                     if(version >= 20240812) {
                         loudness = neosu_maps.read<f32>();
                     }
+
+                    std::string sTitleUnicode = sTitle;
+                    std::string sArtistUnicode = sArtist;
+                    if(version >= 20250801) {
+                        neosu_maps.read_string(sTitleUnicode);
+                        neosu_maps.read_string(sArtistUnicode);
+                    }
+
+                    const bool bEmptyTitleUnicode = SString::is_wspace_only(sTitleUnicode);
+                    const bool bEmptyArtistUnicode = SString::is_wspace_only(sArtistUnicode);
+
+                    // we cache the background image filename in the database past this version
+                    std::string sBackgroundImageFileName;
+                    if(version >= 20251009) {
+                        neosu_maps.read_string(sBackgroundImageFileName);
+                    }
+
+                    // prior versions did not store PPv2 version, so there was no way to know if the maps needed pp recalc
+                    u32 ppv2Version = 0;
+                    if(version >= 20251225) {
+                        ppv2Version = neosu_maps.read<u32>();
+                    }
+
+                    // Fixup a bug with certain bleeding edge commits ~December 2025,
+                    // where the osu_filename was saved as just the folder name itself...
+                    if(osu_filename.empty() || osu_filename == mapset_path) {
+                        for(const auto &osufile_nameonly : Environment::getFilesInFolder(mapset_path)) {
+                            if(Environment::getFileExtensionFromFilePath(osufile_nameonly).compare("osu") != 0) {
+                                continue;
+                            }
+                            const std::string osufile_fullpath = mapset_path + osufile_nameonly;
+                            bool inMetadata = false;
+                            i32 tempiID = -1;
+                            {
+                                File file(osufile_fullpath);
+                                for(auto line = file.readLine(); !line.empty() || file.canRead();
+                                    line = file.readLine()) {
+                                    if(line.empty() || SString::is_comment(line)) continue;
+                                    if(line.contains("[Metadata]")) {
+                                        inMetadata = true;
+                                        continue;
+                                    }
+                                    if(line.starts_with('[') && inMetadata) {
+                                        break;
+                                    }
+                                    if(inMetadata) {
+                                        if(Parsing::parse(line, "BeatmapID", ':', &tempiID)) {
+                                            break;
+                                        }
+                                        continue;
+                                    }
+                                }
+                            }
+                            if(tempiID != -1 && tempiID == iID) {
+                                osu_filename = osufile_nameonly;
+                                debugLog("found fixed .osu filename {} iID {} hash {}", osu_filename, iID,
+                                         diff_hash.string());
+                                break;
+                            }
+                        }
+                    }
+
+                    auto diff = std::make_unique<BeatmapDifficulty>(mapset_path + osu_filename, mapset_path,
+                                                                    DatabaseBeatmap::BeatmapType::NEOSU_DIFFICULTY);
+
+                    diff->iID = iID;
+                    diff->iSetID = iSetID;
+                    diff->sTitle = std::move(sTitle);
+                    diff->sAudioFileName = std::move(sAudioFileName);
+                    diff->iLengthMS = iLengthMS;
+                    diff->fStackLeniency = fStackLeniency;
+                    diff->sArtist = std::move(sArtist);
+                    diff->sCreator = std::move(sCreator);
+                    diff->sDifficultyName = std::move(sDifficultyName);
+                    diff->sSource = std::move(sSource);
+                    diff->sTags = std::move(sTags);
+                    diff->writeMD5(diff_hash);
+                    diff->fAR = fAR;
+                    diff->fCS = fCS;
+                    diff->fHP = fHP;
+                    diff->fOD = fOD;
+                    diff->fSliderMultiplier = fSliderMultiplier;
+                    diff->iPreviewTime = iPreviewTime;
+                    diff->last_modification_time = last_modification_time;
+                    diff->iLocalOffset = iLocalOffset;
+                    diff->iOnlineOffset = iOnlineOffset;
+                    diff->iNumCircles = iNumCircles;
+                    diff->iNumSliders = iNumSliders;
+                    diff->iNumSpinners = iNumSpinners;
+                    diff->iNumObjects = iNumCircles + iNumSliders + iNumSpinners;
+                    diff->fStarsNomod = fStarsNomod;
+
+                    diff->iMinBPM = iMinBPM;
+                    diff->iMaxBPM = iMaxBPM;
+                    diff->iMostCommonBPM = iMostCommonBPM;
+
+                    diff->draw_background = draw_background;
+
                     if(loudness == 0.f) {
                         this->loudness_to_calc.push_back(diff.get());
                     } else {
                         diff->loudness = loudness;
                     }
 
-                    if(version >= 20250801) {
-                        neosu_maps.read_string(diff->sTitleUnicode);
-                        neosu_maps.read_string(diff->sArtistUnicode);
-                    } else {
-                        diff->sTitleUnicode = diff->sTitle;
-                        diff->sArtistUnicode = diff->sArtist;
-                    }
+                    diff->sTitleUnicode = std::move(sTitleUnicode);
+                    diff->sArtistUnicode = std::move(sArtistUnicode);
 
-                    if(SString::is_wspace_only(diff->sTitleUnicode)) {
-                        diff->bEmptyTitleUnicode = true;
-                    }
-                    if(SString::is_wspace_only(diff->sArtistUnicode)) {
-                        diff->bEmptyArtistUnicode = true;
-                    }
+                    diff->bEmptyTitleUnicode = bEmptyTitleUnicode;
+                    diff->bEmptyArtistUnicode = bEmptyArtistUnicode;
 
-                    // we cache the background image filename in the database past this version
-                    if(version >= 20251009) {
-                        neosu_maps.read_string(diff->sBackgroundImageFileName);
-                    }
+                    diff->sBackgroundImageFileName = std::move(sBackgroundImageFileName);
 
-                    // prior versions did not store PPv2 version, so there was no way to know if the maps needed pp recalc
-                    if(version >= 20251225) {
-                        diff->ppv2Version = neosu_maps.read<u32>();
-                    }
+                    diff->ppv2Version = ppv2Version;
 
                     {
                         Sync::unique_lock lock(this->beatmap_difficulties_mtx);
