@@ -218,35 +218,11 @@ void OnlineMapListing::draw() {
         }
     }
 
-    const f32 padding = 5.f;
-    const f32 x = this->getPos().x;
-    const f32 y = this->getPos().y;
-    const f32 width = this->getSize().x;
-    const f32 height = this->getSize().y;
+    const f32 map_bg_size = this->getSize().y;
+    f32 x = this->getPos().x;
+    f32 y = this->getPos().y;
 
-    const f32 alpha = std::min(0.25f + this->hover_anim + this->click_anim, 1.f);
-
-    // Download progress
-    const f32 download_width = width * download_progress;
-    g->setColor(rgb(150, 255, 150));
-    g->setAlpha(alpha);
-    g->fillRect(x, y, download_width, height);
-
-    // Background
-    Color color = rgb(255, 255, 255);
-    if(this->installed)
-        color = rgb(0, 150, 0);
-    else if(this->download_failed)
-        color = rgb(200, 0, 0);
-    g->setColor(color);
-    g->setAlpha(alpha);
-    g->fillRect(x + download_width, y, width - download_width, height);
-
-    g->pushClipRect(McRect(x, y, width, height));
-    g->pushTransform();
     {
-        const f32 map_bg_size = height;
-
         // Map thumbnail placeholder
         g->setColor(Color(0x55000000));
         g->fillRect(x, y, map_bg_size, map_bg_size);
@@ -261,11 +237,37 @@ void OnlineMapListing::draw() {
             g->drawImage(map_thumbnail, AnchorPoint::TOP_LEFT);
             g->popTransform();
         }
+    }
+
+    x += map_bg_size;
+
+    const f32 padding = 5.f;
+    const f32 width = this->getSize().x - map_bg_size;
+    const f32 height = this->getSize().y;
+    const f32 alpha = std::min(0.25f + this->hover_anim + this->click_anim, 1.f);
+
+    g->pushClipRect(McRect(x, y, width, height));
+    {
+        // Download progress
+        const f32 download_width = width * download_progress;
+        g->setColor(rgb(150, 255, 150));
+        g->setAlpha(alpha);
+        g->fillRect(x, y, download_width, height);
+
+        // Background
+        Color color = rgb(255, 255, 255);
+        if(this->installed)
+            color = rgb(0, 150, 0);
+        else if(this->download_failed)
+            color = rgb(200, 0, 0);
+        g->setColor(color);
+        g->setAlpha(alpha);
+        g->fillRect(x + download_width, y, width - download_width, height);
 
         g->pushTransform();
         {
             g->setColor(0xffffffff);
-            g->translate(x + map_bg_size + padding, y + padding + this->font->getHeight());
+            g->translate(x + padding, y + padding + this->font->getHeight());
             this->font->drawString(this->full_title);
         }
         g->popTransform();
@@ -278,7 +280,6 @@ void OnlineMapListing::draw() {
         }
         g->popTransform();
     }
-    g->popTransform();
     g->popClipRect();
 }
 
