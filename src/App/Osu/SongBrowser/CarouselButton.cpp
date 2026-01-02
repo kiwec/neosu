@@ -259,6 +259,12 @@ void CarouselButton::onClicked(bool left, bool right) {
 }
 
 void CarouselButton::onMouseInside() {
+    // if the mouse is on the right side of a letterboxed screen, don't jitter between
+    // animating to the left and then animating back out to the left (onMouseOutside())
+    // and hitting the mouse cursor (the invisible right edge of the carousel button),
+    // which is just a feedback loop
+    if(mouse->getPos().x > osu->getVirtScreenRect().getMaxX()) return;
+
     CBaseUIButton::onMouseInside();
 
     // hover sound
