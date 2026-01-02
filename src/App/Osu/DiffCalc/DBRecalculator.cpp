@@ -56,7 +56,7 @@ std::vector<BeatmapDifficulty*> internal::collect_outdated_db_diffs(const Sync::
         Sync::shared_lock readlock(db->beatmap_difficulties_mtx);
         for(const auto& [_, diff] : db->beatmap_difficulties) {
             if(stoken.stop_requested()) break;
-            if(diff->ppv2Version < DiffCalc::PP_ALGORITHM_VERSION) {
+            if(diff->fStarsNomod <= 0.f || diff->ppv2Version < DiffCalc::PP_ALGORITHM_VERSION) {
                 ret.push_back(diff);
             }
         }
