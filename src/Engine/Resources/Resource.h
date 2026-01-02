@@ -9,6 +9,7 @@
 #include <atomic>
 #include <string>
 #include <memory>
+#include <utility>  // unreachable
 #include <optional>
 
 class TextureAtlas;
@@ -169,6 +170,7 @@ class Resource {
             case APPDEFINED:
                 return "APPDEFINED";
         }
+        std::unreachable();
     }
 
    private:
