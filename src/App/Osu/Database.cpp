@@ -1702,7 +1702,7 @@ void Database::saveMaps() {
         maps.write<u16>(beatmap->getDifficulties().size());
 
         for(const auto &diff : beatmap->getDifficulties()) {
-            maps.write_string(diff->sFolder);
+            maps.write_string(env->getFileNameFromFilePath(diff->sFilePath));
             maps.write<i32>(diff->iID);
             maps.write_string(diff->sTitle);
             maps.write_string(diff->sAudioFileName);
