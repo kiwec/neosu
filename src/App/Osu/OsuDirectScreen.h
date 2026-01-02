@@ -19,7 +19,7 @@ class OsuDirectScreen final : public ScreenBackable {
     NOCOPY_NOMOVE(OsuDirectScreen)
    public:
     OsuDirectScreen();
-    ~OsuDirectScreen() override = default;
+    ~OsuDirectScreen() override;
 
     enum RankingStatusFilter : u8 {
         RANKED = 0,

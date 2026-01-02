@@ -98,7 +98,7 @@ OnlineMapListing::OnlineMapListing(OsuDirectScreen* parent, Downloader::BeatmapS
 }
 
 OnlineMapListing::~OnlineMapListing() {
-    if(this->directScreen->bg_mgr) this->directScreen->bg_mgr->remove_avatar(this->set_id_for_endpoint);
+    this->directScreen->bg_mgr->remove_avatar(this->set_id_for_endpoint);
 
     anim::deleteExistingAnimation(&this->click_anim);
     anim::deleteExistingAnimation(&this->hover_anim);
@@ -324,6 +324,10 @@ OsuDirectScreen::OsuDirectScreen() : bg_mgr(std::make_unique<MapBGManager>()) {
     this->addBaseUIElement(this->results);
 
     this->onResolutionChange(osu->getVirtScreenSize());
+}
+
+OsuDirectScreen::~OsuDirectScreen() {
+    this->freeElements();  // destroy children now, while bg_mgr is still valid
 }
 
 void OsuDirectScreen::onRankedCheckboxChange(CBaseUICheckbox* checkbox) {

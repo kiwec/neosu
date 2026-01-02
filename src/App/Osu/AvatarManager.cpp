@@ -133,7 +133,7 @@ void AvatarManager::add_avatar(const AvatarIdentifier& id_folder) {
 
 void AvatarManager::remove_avatar(const AvatarIdentifier& id_folder) {
     const u32 current_refcount = this->avatar_refcount[id_folder].fetch_sub(1, std::memory_order_acq_rel) - 1;
-    logIfCV(debug_avatars, "current refcount for {} is {}", current_refcount, id_folder.first);
+    logIfCV(debug_avatars, "current refcount for {} is {}", id_folder.first, current_refcount);
 
     if(current_refcount == 0) {
         // dequeue if it's waiting to be loaded, that's all
