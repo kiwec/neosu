@@ -99,6 +99,9 @@ OnlineMapListing::OnlineMapListing(OsuDirectScreen* parent, Downloader::BeatmapS
 
 OnlineMapListing::~OnlineMapListing() {
     if(this->directScreen->bg_mgr) this->directScreen->bg_mgr->remove_avatar(this->set_id_for_endpoint);
+
+    anim::deleteExistingAnimation(&this->click_anim);
+    anim::deleteExistingAnimation(&this->hover_anim);
 }
 
 void OnlineMapListing::onMouseDownInside(bool /*left*/, bool /*right*/) { this->mousedown_coords = mouse->getPos(); }
@@ -138,24 +141,56 @@ void OnlineMapListing::onMouseInside() { anim::moveQuadInOut(&this->hover_anim, 
 void OnlineMapListing::onMouseOutside() { anim::moveQuadInOut(&this->hover_anim, 0.f, 0.15f, 0.0f, true); }
 
 void OnlineMapListing::onResolutionChange(vec2 /*newResolution*/) {
-    this->freeElements();
-
     this->full_title = fmt::format("{} - {}", this->meta.artist, this->meta.title);
     this->creator_width = this->font->getStringWidth(this->meta.creator);
 
     const f32 scale = osu->getUIScale();
     f32 x = this->getSize().x - 40.f * scale;
     f32 y = this->getSize().y - 40.f * scale;
+
+    auto& curIconElems = reinterpret_cast<std::vector<UIIcon*>&>(this->vElements);
+
+    sSz addedElemI = 0;
     for(const auto& diff : this->meta.beatmaps) {
         if(diff.mode != 0) continue;
 
-        auto icon = new UIIcon(Icons::CIRCLE);
+        UIIcon* icon = nullptr;
+        bool newElem = false;
+
+        if(addedElemI < curIconElems.size()) {
+            icon = curIconElems[addedElemI];
+            icon->onResized();  // sigh... classic hack (update string metrics)
+        } else {
+            icon = new UIIcon(Icons::CIRCLE);
+            newElem = true;
+        }
+
         icon->setPos(x, y);
         icon->setSize(30.f * scale, 30.f * scale);
         icon->setTooltipText(fmt::format("{}{}", diff.diffname,
                                          diff.star_rating > 0.f ? fmt::format(" ({:.2f} ★)", diff.star_rating) : ""));
-        this->addBaseUIElement(icon);
+
+        if(newElem) {
+            this->addBaseUIElement(icon);
+        } else {
+            icon->setRelPos(icon->getPos());
+            icon->setPos(this->vPos + icon->getRelPos());
+        }
+
         x -= 40.f * scale;
+
+        ++addedElemI;
+    }
+
+    if(addedElemI < curIconElems.size()) {
+        const std::vector<UIIcon*> toDelete{curIconElems.begin() + addedElemI, curIconElems.end()};
+
+        // remove excess elements from container and delete them manually
+        curIconElems.erase(curIconElems.begin() + addedElemI, curIconElems.end());
+
+        for(auto* icon : toDelete) {
+            SAFE_DELETE(icon);
+        }
     }
 }
 

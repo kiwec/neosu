@@ -9,6 +9,9 @@ class UIIcon final : public CBaseUILabel {
     void mouse_update(bool* propagate_clicks) override;
     void setTooltipText(const UString& text);
 
+    // debugging
+    [[nodiscard]] inline UString getTooltipText() const { return UString::join(this->tooltipTextLines, "\n"); }
+
    private:
     void onFocusStolen() override;
 

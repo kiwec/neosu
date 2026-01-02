@@ -68,9 +68,11 @@ CBaseUIContainer *CBaseUIContainer::insertBaseUIElement(CBaseUIElement *element,
 
     element->vmPos = element->vPos;
     element->setPos(this->vPos + element->vmPos);
-    for(size_t i = 0; i < this->vElements.size(); i++) {
+    for(ssize_t i = 0; i < this->vElements.size(); i++) {
         if(this->vElements[i] == index) {
-            this->vElements.insert(this->vElements.begin() + std::clamp<int>(i, 0, this->vElements.size()), element);
+            this->vElements.insert(
+                this->vElements.begin() + std::clamp<ssize_t>(i, 0, static_cast<ssize_t>(this->vElements.size())),
+                element);
             return this;
         }
     }
@@ -85,10 +87,11 @@ CBaseUIContainer *CBaseUIContainer::insertBaseUIElementBack(CBaseUIElement *elem
 
     element->vmPos = element->vPos;
     element->setPos(this->vPos + element->vmPos);
-    for(size_t i = 0; i < this->vElements.size(); i++) {
+    for(ssize_t i = 0; i < this->vElements.size(); i++) {
         if(this->vElements[i] == index) {
-            this->vElements.insert(this->vElements.begin() + std::clamp<int>(i + 1, 0, this->vElements.size()),
-                                   element);
+            this->vElements.insert(
+                this->vElements.begin() + std::clamp<ssize_t>(i + 1, 0, static_cast<ssize_t>(this->vElements.size())),
+                element);
             return this;
         }
     }
@@ -99,7 +102,7 @@ CBaseUIContainer *CBaseUIContainer::insertBaseUIElementBack(CBaseUIElement *elem
 }
 
 CBaseUIContainer *CBaseUIContainer::removeBaseUIElement(CBaseUIElement *element) {
-    for(size_t i = 0; i < this->vElements.size(); i++) {
+    for(ssize_t i = 0; i < this->vElements.size(); i++) {
         if(this->vElements[i] == element) {
             this->vElements.erase(this->vElements.begin() + i);
             return this;
@@ -112,7 +115,7 @@ CBaseUIContainer *CBaseUIContainer::removeBaseUIElement(CBaseUIElement *element)
 }
 
 CBaseUIContainer *CBaseUIContainer::deleteBaseUIElement(CBaseUIElement *element) {
-    for(size_t i = 0; i < this->vElements.size(); i++) {
+    for(ssize_t i = 0; i < this->vElements.size(); i++) {
         if(this->vElements[i] == element) {
             delete element;
             this->vElements.erase(this->vElements.begin() + i);
