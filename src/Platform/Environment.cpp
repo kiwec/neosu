@@ -942,11 +942,17 @@ vec2 Environment::getNativeScreenSize() const {
     if(const SDL_DisplayID di = SDL_GetDisplayForWindow(m_window)) {
         const float scale = getPixelDensity();
 
-        SDL_Rect bounds{};
-        if(SDL_GetDisplayUsableBounds(di, &bounds)) {
-            return vec2{static_cast<float>(bounds.w), static_cast<float>(bounds.h)} * scale;
+        // fullscreen is currently buggy on mac, don't make other platforms shittier just because macos is finnicky
+        const bool useWindowedBounds = Env::cfg(OS::MAC);  // || winFullscreened();
+        if(useWindowedBounds) {
+            // GetDisplayUsableBounds in windowed
+            SDL_Rect bounds{};
+            if(SDL_GetDisplayUsableBounds(di, &bounds)) {
+                return vec2{static_cast<float>(bounds.w), static_cast<float>(bounds.h)} * scale;
+            }
         }
 
+        // GetDesktopDisplayMode should return the actual, full resolution
         if(const SDL_DisplayMode *dm = SDL_GetDesktopDisplayMode(di)) {
             return vec2{static_cast<float>(dm->w), static_cast<float>(dm->h)} * scale;
         }

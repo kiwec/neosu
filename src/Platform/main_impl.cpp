@@ -254,7 +254,7 @@ SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
                         // re-fullscreen once, then set a flag to ignore future minimize requests
                         m_bRestoreFullscreen = false;
                         m_bMinimizeSupported = false;
-                        SDL_SetWindowFullscreen(m_window, true);
+                        enableFullscreen();
                     }
                     m_engine->onFocusGained();
                     setFgFPS();
@@ -292,7 +292,7 @@ SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
                 case SDL_EVENT_WINDOW_RESTORED:
                     if(m_bRestoreFullscreen) {
                         m_bRestoreFullscreen = false;
-                        SDL_SetWindowFullscreen(m_window, true);
+                        enableFullscreen();
                     }
                     m_engine->onRestored();
                     setFgFPS();
@@ -313,6 +313,7 @@ SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
                 case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
                     onDPIChange();  // fallthrough
                 case SDL_EVENT_WINDOW_RESIZED:
+                case SDL_EVENT_WINDOW_SAFE_AREA_CHANGED:
                     // don't trust the event coordinates if we're in fullscreen, use the fullscreen size directly
                     if(!winMinimized() && !m_bRestoreFullscreen) {
                         vec2 resize = winFullscreened() ? getNativeScreenSize()
