@@ -380,7 +380,7 @@ struct curl_blob cert_blob{
 void NetworkImpl::Request::setupCurlHandle() {
     assert(this->easy_handle.get());
 
-    this->easy_handle.setopt(CURLOPT_VERBOSE, cv::debug_network.getVal<long>());
+    this->easy_handle.setopt(CURLOPT_VERBOSE, cv::debug_network.getBool() ? 1L : 0L);
     this->easy_handle.setopt(CURLOPT_URL, this->url.c_str());
     this->easy_handle.setopt(CURLOPT_CONNECTTIMEOUT, this->options.connect_timeout);
     this->easy_handle.setopt(CURLOPT_TIMEOUT, this->options.timeout);

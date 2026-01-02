@@ -63,6 +63,9 @@ struct Packet {
         this->write_bytes((u8 *)&t, sizeof(T));
     }
 
+    // debug helper
+    [[nodiscard]] static std::string_view inpacket_to_string(u16 incoming_packet_id);
+
    private:
     // check for null, if it is, write 0 and return true
     bool write_string_isnull(const char *str);

@@ -138,7 +138,7 @@ void BanchoState::update_online_status(OnlineStatus new_status) {
 }
 
 void BanchoState::handle_packet(Packet &packet) {
-    logIfCV(debug_network, "packet id: {}", packet.id);
+    logIfCV(debug_network, "{} ({})", packet.id, Packet::inpacket_to_string(packet.id));
 
     switch(packet.id) {
         case INP_USER_ID: {
