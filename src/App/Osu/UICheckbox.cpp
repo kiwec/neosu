@@ -36,4 +36,4 @@ void UICheckbox::onFocusStolen() {
     this->bFocusStolenDelay = true;
 }
 
-void UICheckbox::setTooltipText(const UString& text) { this->tooltipTextLines = text.split(ULITERAL("\n")); }
+void UICheckbox::setTooltipText(const UString& text) { this->tooltipTextLines = text.split(US_("\n")); }

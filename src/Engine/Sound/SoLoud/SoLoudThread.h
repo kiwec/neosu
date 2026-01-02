@@ -404,7 +404,7 @@ class SoLoudThreadWrapper {
     }
 
     void worker_loop(const Sync::stop_token &stoken) noexcept {
-        McThread::set_current_thread_name(ULITERAL("soloud_mixer"));
+        McThread::set_current_thread_name(US_("soloud_mixer"));
         McThread::set_current_thread_prio(McThread::Priority::REALTIME);  // raise priority to the max
 
         // initialize SoLoud on the audio thread
@@ -460,7 +460,7 @@ class SoLoudThreadWrapper {
     SoLoud::result init_with_name(unsigned int aFlags, unsigned int aBackend, unsigned int aSamplerate,
                                   unsigned int aBufferSize, unsigned int aChannels) {
         const char *old_thread_name = McThread::get_current_thread_name();
-        McThread::set_current_thread_name(ULITERAL("soloud_output"));
+        McThread::set_current_thread_name(US_("soloud_output"));
         const auto result = this->soloud->init(aFlags, aBackend, aSamplerate, aBufferSize, aChannels);
         McThread::set_current_thread_name(old_thread_name);
         return result;

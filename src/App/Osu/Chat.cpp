@@ -99,8 +99,8 @@ void ChatChannel::add_message(ChatMessage msg) {
 
     struct tm tm;
     localtime_x(&msg.tms, &tm);
-    auto timestamp_str = UString::format("%02d:%02d ", tm.tm_hour, tm.tm_min);
-    if(is_action) timestamp_str.append("*");
+    UString timestamp_str = fmt::format("{:02d}:{:02d} ", tm.tm_hour, tm.tm_min);
+    if(is_action) timestamp_str.append(u'*');
     float time_width = chat_font->getStringWidth(timestamp_str);
     auto *timestamp = new CBaseUILabel(x, this->y_total, time_width, line_height, "", timestamp_str);
     timestamp->setDrawFrame(false);
@@ -168,10 +168,10 @@ void ChatChannel::add_message(ChatMessage msg) {
 
             // Normalize invite links to osump://
             UString link_protocol = match.str(5).c_str();
-            if(link_protocol == "osu") {
+            if(link_protocol == US_("osu")) {
                 // osu:// -> osump://
-                link_url.insert(2, "mp");
-            } else if(link_protocol == "http://osump") {
+                link_url.insert(2, US_("mp"));
+            } else if(link_protocol == US_("http://osump")) {
                 // http://osump:// -> osump://
                 link_url.erase(0, 7);
             }
@@ -179,9 +179,9 @@ void ChatChannel::add_message(ChatMessage msg) {
             // Wiki link
             match_pos = match.position(1);
             match_len = match.length(1);
-            link_url = "https://osu.ppy.sh/wiki/";
+            link_url = US_("https://osu.ppy.sh/wiki/");
             link_url.append(match.str(2).c_str());
-            link_label = "wiki:";
+            link_label = US_("wiki:");
             link_label.append(match.str(2).c_str());
         }
 
@@ -204,7 +204,7 @@ void ChatChannel::add_message(ChatMessage msg) {
     }
     if(is_action) {
         // Only appending now to prevent this character from being included in a link
-        msg.text.append(L"*");
+        msg.text.append(u'*');
         msg_text.append(L"*");
     }
 
@@ -239,7 +239,7 @@ void ChatChannel::add_message(ChatMessage msg) {
                 x = 10;
                 this->y_total += line_height;
                 line_width = x;
-                text_str = "";
+                text_str.clear();
             }
 
             text_str.append(fragment_text[i]);
@@ -445,111 +445,111 @@ void Chat::mouse_update(bool *propagate_clicks) {
 }
 
 void Chat::handle_command(const UString &msg) {
-    if(msg == "/clear") {
+    if(msg == US_("/clear")) {
         this->selected_channel->messages.clear();
         this->updateLayout(osu->getVirtScreenSize());
         return;
     }
 
-    if(msg == "/close" || msg == "/p" || msg == "/part") {
+    if(msg == US_("/close") || msg == US_("/p") || msg == US_("/part")) {
         this->leave(this->selected_channel->name);
         return;
     }
 
-    if(msg == "/help" || msg == "/keys") {
+    if(msg == US_("/help") || msg == US_("/keys")) {
         env->openURLInDefaultBrowser("https://osu.ppy.sh/wiki/en/Client/Interface/Chat_console");
         return;
     }
 
-    if(msg == "/np") {
+    if(msg == US_("/np")) {
         auto map = osu->getMapInterface()->getBeatmap();
         if(map == nullptr) {
             this->addSystemMessage("You are not listening to anything.");
             return;
         }
 
-        UString song_name = UString::format("%s - %s [%s]", map->getArtist().c_str(), map->getTitle().c_str(),
-                                            map->getDifficultyName().c_str());
-        UString song_link = UString::format("[https://osu.%s/beatmaps/%d %s]", BanchoState::endpoint.c_str(),
-                                            map->getID(), song_name.toUtf8());
+        std::string song_name =
+            fmt::format("{:s} - {:s} [{:s}]", map->getArtist(), map->getTitle(), map->getDifficultyName());
+        std::string song_link =
+            fmt::format("[https://osu.{:s}/beatmaps/{:d} {:s}]", BanchoState::endpoint, map->getID(), song_name);
 
-        UString np_msg;
+        std::string np_msg;
         if(osu->isInPlayMode()) {
-            np_msg = UString::format("\001ACTION is playing %s", song_link.toUtf8());
+            np_msg = fmt::format("\001ACTION is playing {:s}", song_link);
 
-            auto mods = osu->getScore()->mods;
+            Replay::Mods mods = osu->getScore()->mods;
             if(mods.speed != 1.f) {
-                auto speed_modifier = UString::format(" x%.1f", mods.speed);
+                std::string speed_modifier = fmt::format(" x{:.1f}", mods.speed);
                 np_msg.append(speed_modifier);
             }
-            auto mod_string = ScoreButton::getModsStringForDisplay(mods);
+            UString mod_string = ScoreButton::getModsStringForDisplay(mods);
             if(mod_string.length() > 0) {
                 np_msg.append(" (+");
-                np_msg.append(mod_string);
+                np_msg.append(mod_string.utf8View());
                 np_msg.append(")");
             }
 
             np_msg.append("\001");
         } else {
-            np_msg = UString::format("\001ACTION is listening to %s\001", song_link.toUtf8());
+            np_msg = fmt::format("\001ACTION is listening to {:s}\001", song_link);
         }
 
         this->send_message(np_msg);
         return;
     }
 
-    if(msg.startsWith("/addfriend ")) {
-        auto friend_name = msg.substr(11);
-        auto *user = BANCHO::User::find_user(friend_name);
+    if(msg.startsWith(US_("/addfriend "))) {
+        auto friend_name = msg.substr<std::string>(11);
+        UserInfo *user = BANCHO::User::find_user(friend_name);
         if(!user) {
-            this->addSystemMessage(UString::format("User '%s' not found. Are they online?", friend_name.toUtf8()));
+            this->addSystemMessage(fmt::format("User '{:s}' not found. Are they online?", friend_name));
             return;
         }
 
         if(user->is_friend()) {
-            this->addSystemMessage(UString::format("You are already friends with %s!", friend_name.toUtf8()));
+            this->addSystemMessage(fmt::format("You are already friends with {:s}!", friend_name));
         } else {
             Packet packet;
-            packet.id = FRIEND_ADD;
+            packet.id = OUTP_FRIEND_ADD;
             packet.write<i32>(user->user_id);
             BANCHO::Net::send_packet(packet);
 
             BANCHO::User::friends.push_back(user->user_id);
 
-            this->addSystemMessage(UString::format("You are now friends with %s.", friend_name.toUtf8()));
+            this->addSystemMessage(fmt::format("You are now friends with {:s}.", friend_name));
         }
 
         return;
     }
 
-    if(msg.startsWith("/bb ")) {
+    if(msg.startsWith(US_("/bb "))) {
         this->addChannel("BanchoBot", true);
         this->send_message(msg.substr(4));
         return;
     }
 
-    if(msg == "/away") {
-        this->away_msg = "";
+    if(msg == US_("/away")) {
+        this->away_msg.clear();
         this->addSystemMessage("Away message removed.");
         return;
     }
-    if(msg.startsWith("/away ")) {
+    if(msg.startsWith(US_("/away "))) {
         this->away_msg = msg.substr(6);
-        this->addSystemMessage(UString::format("Away message set to '%s'.", this->away_msg.toUtf8()));
+        this->addSystemMessage(fmt::format("Away message set to '{:s}'.", this->away_msg));
         return;
     }
 
-    if(msg.startsWith("/delfriend ")) {
+    if(msg.startsWith(US_("/delfriend "))) {
         auto friend_name = msg.substr(11);
-        auto *user = BANCHO::User::find_user(friend_name);
+        auto *user = BANCHO::User::find_user(friend_name.utf8View());
         if(!user) {
-            this->addSystemMessage(UString::format("User '%s' not found. Are they online?", friend_name.toUtf8()));
+            this->addSystemMessage(fmt::format("User '{:s}' not found. Are they online?", friend_name));
             return;
         }
 
         if(user->is_friend()) {
             Packet packet;
-            packet.id = FRIEND_REMOVE;
+            packet.id = OUTP_FRIEND_REMOVE;
             packet.write<i32>(user->user_id);
             BANCHO::Net::send_packet(packet);
 
@@ -558,15 +558,15 @@ void Chat::handle_command(const UString &msg) {
                 BANCHO::User::friends.erase(it);
             }
 
-            this->addSystemMessage(UString::format("You are no longer friends with %s.", friend_name.toUtf8()));
+            this->addSystemMessage(fmt::format("You are no longer friends with {:s}.", friend_name));
         } else {
-            this->addSystemMessage(UString::format("You aren't friends with %s!", friend_name.toUtf8()));
+            this->addSystemMessage(fmt::format("You aren't friends with {:s}!", friend_name));
         }
 
         return;
     }
 
-    if(msg.startsWith("/me ")) {
+    if(msg.startsWith(US_("/me "))) {
         auto new_text = msg.substr(3);
         new_text.insert(0, "\001ACTION");
         new_text.append("\001");
@@ -574,48 +574,47 @@ void Chat::handle_command(const UString &msg) {
         return;
     }
 
-    if(msg.startsWith("/chat ") || msg.startsWith("/msg ") || msg.startsWith("/query ")) {
+    if(msg.startsWith(US_("/chat ")) || msg.startsWith(US_("/msg ")) || msg.startsWith(US_("/query "))) {
         auto username = msg.substr(msg.find(L" "));
         this->addChannel(username, true);
         return;
     }
 
-    if(msg.startsWith("/invite ")) {
+    if(msg.startsWith(US_("/invite "))) {
         if(!BanchoState::is_in_a_multi_room()) {
             this->addSystemMessage("You are not in a multiplayer room!");
             return;
         }
 
         auto username = msg.substr(8);
-        auto invite_msg =
-            UString::format("\001ACTION has invited you to join [osump://%d/%s %s]\001", BanchoState::room.id,
-                            BanchoState::room.password.toUtf8(), BanchoState::room.name.toUtf8());
+        auto invite_msg = fmt::format("\001ACTION has invited you to join [osump://{:d}/{:s} {:s}]\001",
+                                      BanchoState::room.id, BanchoState::room.password, BanchoState::room.name);
 
         Packet packet;
-        packet.id = SEND_PRIVATE_MESSAGE;
-        packet.write_string((char *)BanchoState::get_username().c_str());
-        packet.write_string((char *)invite_msg.toUtf8());
-        packet.write_string((char *)username.toUtf8());
+        packet.id = OUTP_SEND_PRIVATE_MESSAGE;
+        packet.write_string(BanchoState::get_username());
+        packet.write_string(invite_msg);
+        packet.write_string(username.utf8View());
         packet.write<i32>(BanchoState::get_uid());
         BANCHO::Net::send_packet(packet);
 
-        this->addSystemMessage(UString::format("%s has been invited to the game.", username.toUtf8()));
+        this->addSystemMessage(fmt::format("{:s} has been invited to the game.", username));
         return;
     }
 
-    if(msg.startsWith("/j ") || msg.startsWith("/join ")) {
-        auto channel = msg.substr(msg.find(L" "));
+    if(msg.startsWith(US_("/j ")) || msg.startsWith(US_("/join "))) {
+        auto channel = msg.substr(msg.find(u' '));
         this->join(channel);
         return;
     }
 
-    if(msg.startsWith("/p ") || msg.startsWith("/part ")) {
-        auto channel = msg.substr(msg.find(L" "));
+    if(msg.startsWith(US_("/p ")) || msg.startsWith(US_("/part "))) {
+        auto channel = msg.substr(msg.find(u' '));
         this->leave(channel);
         return;
     }
 
-    this->addSystemMessage("This command is not supported.");
+    this->addSystemMessage(US_("This command is not supported."));
 }
 
 void Chat::onKeyDown(KeyboardEvent &key) {
@@ -685,8 +684,8 @@ void Chat::onKeyDown(KeyboardEvent &key) {
             soundEngine->play(osu->getSkin()->s_message_sent);
             this->input_box->clear();
         }
-        this->tab_completion_prefix = "";
-        this->tab_completion_match = "";
+        this->tab_completion_prefix.clear();
+        this->tab_completion_match.clear();
         return;
     }
 
@@ -733,7 +732,7 @@ void Chat::onKeyDown(KeyboardEvent &key) {
         key.consume();
 
         auto text = this->input_box->getText();
-        i32 username_start_idx = text.findLast(" ", 0, this->input_box->iCaretPosition) + 1;
+        i32 username_start_idx = text.findLast(US_(" "), 0, this->input_box->iCaretPosition) + 1;
         i32 username_end_idx = this->input_box->iCaretPosition;
         i32 username_len = username_end_idx - username_start_idx;
 
@@ -744,7 +743,8 @@ void Chat::onKeyDown(KeyboardEvent &key) {
             username_len = username_end_idx - username_start_idx;
         }
 
-        auto *user = BANCHO::User::find_user_starting_with(this->tab_completion_prefix, this->tab_completion_match);
+        auto *user = BANCHO::User::find_user_starting_with(this->tab_completion_prefix.utf8View(),
+                                                           this->tab_completion_match.utf8View());
         if(user) {
             this->tab_completion_match = user->name;
 
@@ -767,8 +767,8 @@ void Chat::onKeyDown(KeyboardEvent &key) {
 
     // Typing in chat: capture keypresses
     if(!keyboard->isAltDown()) {
-        this->tab_completion_prefix = "";
-        this->tab_completion_match = "";
+        this->tab_completion_prefix.clear();
+        this->tab_completion_match.clear();
         this->input_box->onKeyDown(key);
         key.consume();
         return;
@@ -796,7 +796,7 @@ void Chat::mark_as_read(ChatChannel *chan) {
     chan->read = true;
 
     std::string url{"web/osu-markasread.php?"};
-    url.append(fmt::format("channel={}", NeoNet::urlEncode(chan->name.toUtf8())));
+    url.append(fmt::format("channel={:s}", NeoNet::urlEncode(chan->name.utf8View())));
     BANCHO::Api::append_auth_params(url);
 
     BANCHO::Api::Request request;
@@ -836,11 +836,10 @@ void Chat::addChannel(const UString &channel_name, bool switch_to) {
     auto *chan = new ChatChannel(this, channel_name);
     this->channels.push_back(chan);
 
-    if(this->selected_channel == nullptr && this->channels.size() == 1) {
-        this->switchToChannel(chan);
-    } else if(channel_name == "#multiplayer" || channel_name == "#lobby") {
-        this->switchToChannel(chan);
-    } else if(switch_to) {
+    if((switch_to) ||                                                          //
+       (this->selected_channel == nullptr && this->channels.size() == 1) ||    //
+       (channel_name == US_("#multiplayer") || channel_name == US_("#lobby"))  //
+    ) {
         this->switchToChannel(chan);
     }
 
@@ -857,11 +856,11 @@ void Chat::addMessage(UString channel_name, const ChatMessage &msg, bool mark_un
     chatter_is_moderator |= (msg.author_id == 0);  // system message
 
     auto ignore_list = SString::split(cv::chat_ignore_list.getString(), ' ');
-    auto msg_words = msg.text.split(ULITERAL(" "));
+    auto msg_words = msg.text.split(US_(" "));
     if(!chatter_is_moderator) {
         for(auto &word : msg_words) {
             for(const auto ignored : ignore_list) {
-                if(ignored == "") continue;
+                if(ignored.empty()) continue;
 
                 word.lowerCase();
                 if(word.toUtf8() == SString::to_lower(ignored)) {
@@ -875,13 +874,13 @@ void Chat::addMessage(UString channel_name, const ChatMessage &msg, bool mark_un
     bool should_highlight = false;
     auto highlight_list = SString::split(cv::chat_highlight_words.getString(), ' ');
     for(auto &word : msg_words) {
-        if(chatter_is_moderator && word == "@everyone") {
+        if(chatter_is_moderator && word == US_("@everyone")) {
             should_highlight = true;
             break;
         }
 
         for(const auto highlight : highlight_list) {
-            if(highlight == "") continue;
+            if(highlight.empty()) continue;
 
             word.lowerCase();
             if(word.toUtf8() == SString::to_lower(highlight)) {
@@ -920,7 +919,7 @@ void Chat::addMessage(UString channel_name, const ChatMessage &msg, bool mark_un
     mentioned &= msg.author_id != BanchoState::get_uid();
 
     if(mentioned && cv::chat_notify_on_mention.getBool()) {
-        auto notif = UString::format("You were mentioned in %s", channel_name.toUtf8());
+        auto notif = fmt::format("You were mentioned in {:s}", channel_name);
         osu->getNotificationOverlay()->addToast(
             notif, CHAT_TOAST, [channel_name] { osu->getChat()->openChannel(channel_name); }, ToastElement::TYPE::CHAT);
     }
@@ -964,11 +963,11 @@ void Chat::addMessage(UString channel_name, const ChatMessage &msg, bool mark_un
 
     if(is_pm && this->away_msg.length() > 0) {
         Packet packet;
-        packet.id = SEND_PRIVATE_MESSAGE;
+        packet.id = OUTP_SEND_PRIVATE_MESSAGE;
 
-        packet.write_string((char *)BanchoState::get_username().c_str());
-        packet.write_string((char *)this->away_msg.toUtf8());
-        packet.write_string((char *)msg.author_name.toUtf8());
+        packet.write_string(BanchoState::get_username());
+        packet.write_string(this->away_msg.utf8View());
+        packet.write_string(msg.author_name.utf8View());
         packet.write<i32>(BanchoState::get_uid());
         BANCHO::Net::send_packet(packet);
 
@@ -977,7 +976,7 @@ void Chat::addMessage(UString channel_name, const ChatMessage &msg, bool mark_un
                          ChatMessage{
                              .tms = time(nullptr),
                              .author_id = BanchoState::get_uid(),
-                             .author_name = BanchoState::get_username().c_str(),
+                             .author_name = BanchoState::get_username(),
                              .text = this->away_msg,
                          },
                          false);
@@ -988,7 +987,7 @@ void Chat::addSystemMessage(UString msg) {
     this->addMessage(this->selected_channel->name, ChatMessage{
                                                        .tms = time(nullptr),
                                                        .author_id = 0,
-                                                       .author_name = "",
+                                                       .author_name = US_(""),
                                                        .text = std::move(msg),
                                                    });
 }
@@ -1155,7 +1154,7 @@ void Chat::updateUserList() {
             sorted_users.push_back(pair.second);
         }
     }
-    std::ranges::sort(sorted_users, SString::alnum_comp, [](const UserInfo *ui) { return ui->name.toUtf8(); });
+    std::ranges::sort(sorted_users, SString::alnum_comp, [](const UserInfo *ui) { return ui->name; });
 
     // Intentionally not calling this->user_list->clear(), because that would affect scroll position/animation
     this->user_list->container->freeElements();
@@ -1175,7 +1174,7 @@ void Chat::updateUserList() {
 
         // Only display the card if we have presence data
         // (presence data is only fetched *after* UserCard2 is initialized)
-        if(user->has_presence) {
+        if(user->has_presence()) {
             card->setVisible(true);
             total_x += card_size.x + MARGIN * 1.5;  // idk why margin is bogged
         }
@@ -1188,20 +1187,19 @@ void Chat::join(const UString &channel_name) {
     //      Would require a way to signal if a channel is joined or not.
     //      Would allow to keep open the tabs of the channels we got kicked out of.
     Packet packet;
-    packet.id = CHANNEL_JOIN;
-    packet.write_string(channel_name.toUtf8());
+    packet.id = OUTP_CHANNEL_JOIN;
+    packet.write_string(channel_name.utf8View());
     BANCHO::Net::send_packet(packet);
 }
 
 void Chat::leave(const UString &channel_name) {
-    bool send_leave_packet = channel_name[0] == '#';
-    if(channel_name == "#lobby") send_leave_packet = false;
-    if(channel_name == "#multiplayer") send_leave_packet = false;
+    const bool send_leave_packet =
+        (channel_name[0] == u'#') && !(channel_name == US_("#lobby") || channel_name == US_("#multiplayer"));
 
     if(send_leave_packet) {
         Packet packet;
-        packet.id = CHANNEL_PART;
-        packet.write_string(channel_name.toUtf8());
+        packet.id = OUTP_CHANNEL_PART;
+        packet.write_string(channel_name.utf8View());
         BANCHO::Net::send_packet(packet);
     }
 
@@ -1212,11 +1210,11 @@ void Chat::leave(const UString &channel_name) {
 
 void Chat::send_message(const UString &msg) {
     Packet packet;
-    packet.id = this->selected_channel->name[0] == '#' ? SEND_PUBLIC_MESSAGE : SEND_PRIVATE_MESSAGE;
+    packet.id = this->selected_channel->name[0] == u'#' ? OUTP_SEND_PUBLIC_MESSAGE : OUTP_SEND_PRIVATE_MESSAGE;
 
-    packet.write_string((char *)BanchoState::get_username().c_str());
-    packet.write_string((char *)msg.toUtf8());
-    packet.write_string((char *)this->selected_channel->name.toUtf8());
+    packet.write_string(BanchoState::get_username());
+    packet.write_string(msg.utf8View());
+    packet.write_string(this->selected_channel->name.utf8View());
     packet.write<i32>(BanchoState::get_uid());
     BANCHO::Net::send_packet(packet);
 
@@ -1225,7 +1223,7 @@ void Chat::send_message(const UString &msg) {
                      ChatMessage{
                          .tms = time(nullptr),
                          .author_id = BanchoState::get_uid(),
-                         .author_name = BanchoState::get_username().c_str(),
+                         .author_name = BanchoState::get_username(),
                          .text = msg,
                      },
                      false);

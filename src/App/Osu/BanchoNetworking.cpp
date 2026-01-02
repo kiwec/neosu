@@ -79,7 +79,7 @@ void attempt_logging_in() {
     options.timeout = 30;
     options.connect_timeout = 5;
     options.user_agent = "osu!";
-    options.headers["x-mcosu-ver"] = BanchoState::neosu_version.toUtf8();
+    options.headers["x-mcosu-ver"] = BanchoState::neosu_version;
     options.post_data = BanchoState::build_login_packet();
 
     auto scheme = cv::use_https.getBool() ? "https://" : "http://";
@@ -102,7 +102,7 @@ void attempt_logging_in() {
             auto cho_token_it = response.headers.find("cho-token");
             if(cho_token_it != response.headers.end()) {
                 auth_token = cho_token_it->second;
-                BanchoState::cho_token = UString(cho_token_it->second);
+                BanchoState::cho_token = auth_token;
                 use_websockets = cv::prefer_websockets.getBool();
             }
 
@@ -129,7 +129,7 @@ void send_bancho_packet_http(Packet outgoing) {
     options.timeout = 30;
     options.connect_timeout = 5;
     options.user_agent = "osu!";
-    options.headers["x-mcosu-ver"] = BanchoState::neosu_version.toUtf8();
+    options.headers["x-mcosu-ver"] = BanchoState::neosu_version;
     options.headers["osu-token"] = auth_token;
 
     // copy outgoing packet data for POST
@@ -167,7 +167,7 @@ void send_bancho_packet_ws(Packet outgoing) {
 
         NeoNet::WSOptions options;
         options.user_agent = "osu!";
-        options.headers["x-mcosu-ver"] = BanchoState::neosu_version.toUtf8();
+        options.headers["x-mcosu-ver"] = BanchoState::neosu_version;
         options.headers["osu-token"] = auth_token;
 
         auto scheme = cv::use_https.getBool() ? "wss://" : "ws://";
@@ -234,7 +234,7 @@ void update_networking() {
 
     // Handle login and outgoing packet processing
     if(should_ping && outgoing.pos == 0) {
-        outgoing.write<u16>(PING);
+        outgoing.write<u16>(OUTP_PING);
         outgoing.write<u8>(0);
         outgoing.write<u32>(0);
 
@@ -252,7 +252,7 @@ void update_networking() {
 
         // DEBUG: If we're not sending the right amount of bytes, bancho.py just
         // chugs along! To try to detect it faster, we'll send two packets per request.
-        out.write<u16>(PING);
+        out.write<u16>(OUTP_PING);
         out.write<u8>(0);
         out.write<u32>(0);
 
@@ -317,7 +317,7 @@ void BanchoState::disconnect() {
     // This is a blocking call, but we *do* want this to block when quitting the game.
     if(BanchoState::is_online()) {
         Packet packet;
-        packet.write<u16>(LOGOUT);
+        packet.write<u16>(OUTP_LOGOUT);
         packet.write<u8>(0);
         packet.write<u32>(4);
         packet.write<u32>(0);
@@ -327,7 +327,7 @@ void BanchoState::disconnect() {
         options.connect_timeout = 5;
         options.user_agent = "osu!";
         options.post_data = std::string(reinterpret_cast<char *>(packet.memory), packet.pos);
-        options.headers["x-mcosu-ver"] = BanchoState::neosu_version.toUtf8();
+        options.headers["x-mcosu-ver"] = BanchoState::neosu_version;
         options.headers["osu-token"] = BANCHO::Net::auth_token;
         BANCHO::Net::auth_token = "";
 
@@ -399,7 +399,7 @@ void BanchoState::reconnect() {
     };
 
     if(std::ranges::contains(server_blacklist, BanchoState::endpoint)) {
-        osu->getNotificationOverlay()->addToast(ULITERAL("This server does not allow neosu clients."), ERROR_TOAST);
+        osu->getNotificationOverlay()->addToast(US_("This server does not allow neosu clients."), ERROR_TOAST);
         return;
     }
 

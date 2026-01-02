@@ -24,14 +24,14 @@
 namespace RichPresence {
 namespace {  // static
 
-UString last_status = ULITERAL("[neosu]\nWaking up");
-Action last_action = IDLE;
+std::string last_status{"[neosu]\nWaking up"};
+Action last_action = Action::IDLE;
 
-void crop_to(const UString& str, char* output, int max_len) {
-    if(str.lengthUtf8() < max_len) {
-        strcpy(output, str.toUtf8());
+void crop_to(const std::string &str, char* output, int max_len) {
+    if(str.length() < max_len) {
+        strcpy(output, str.c_str());
     } else {
-        strncpy(output, str.toUtf8(), max_len - 4);
+        strncpy(output, str.c_str(), max_len - 4);
         output[max_len - 4] = '.';
         output[max_len - 3] = '.';
         output[max_len - 2] = '.';
@@ -56,7 +56,7 @@ void mapstr(DatabaseBeatmap* map, char* output, bool /*include_difficulty*/) {
         playingInfo.append(diffStr);
     }
 
-    crop_to(playingInfo, output, 128);
+    crop_to(playingInfo.toUtf8(), output, 128);
 }
 
 void set_activity_with_image(struct DiscordActivity* to_set) {
@@ -111,8 +111,8 @@ void setBanchoStatus(const char* info_text, Action action) {
     last_action = action;
 
     Packet packet;
-    packet.id = CHANGE_ACTION;
-    packet.write<u8>(action);
+    packet.id = OUTP_CHANGE_ACTION;
+    packet.write<u8>((u8)action);
     packet.write_string(fancy_text);
     packet.write_hash(map_md5);
     packet.write<LegacyFlags>(osu->getModSelector()->getModFlags());
@@ -132,9 +132,9 @@ void updateBanchoMods() {
     }
 
     Packet packet;
-    packet.id = CHANGE_ACTION;
-    packet.write<u8>(last_action);
-    packet.write_string(last_status.toUtf8());
+    packet.id = OUTP_CHANGE_ACTION;
+    packet.write<u8>((u8)last_action);
+    packet.write_string(last_status);
     packet.write_hash(map_md5);
     packet.write<LegacyFlags>(osu->getModSelector()->getModFlags());
     packet.write<u8>(0);  // osu!std
@@ -150,7 +150,7 @@ void updateBanchoMods() {
 void onMainMenu() {
     bool force_not_afk =
         BanchoState::spectating || (osu->getChat()->isVisible() && osu->getChat()->user_list->isVisible());
-    setBanchoStatus("Main Menu", force_not_afk ? IDLE : AFK);
+    setBanchoStatus("Main Menu", force_not_afk ? Action::IDLE : Action::AFK);
 
     // NOTE: As much as I would like to show "Listening to", the Discord SDK ignores the activity 'type'
     struct DiscordActivity activity{};
@@ -175,13 +175,13 @@ void onSongBrowser() {
     strcpy(activity.details, "Picking a map");
 
     if(osu->getRoom()->isVisible()) {
-        setBanchoStatus("Picking a map", MULTIPLAYER);
+        setBanchoStatus("Picking a map", Action::MULTIPLAYER);
 
         strcpy(activity.state, "Multiplayer");
         activity.party.size.current_size = BanchoState::room.nb_players;
         activity.party.size.max_size = BanchoState::room.nb_open_slots;
     } else {
-        setBanchoStatus("Song selection", IDLE);
+        setBanchoStatus("Song selection", Action::IDLE);
 
         strcpy(activity.state, "Singleplayer");
         activity.party.size.current_size = 0;
@@ -212,24 +212,24 @@ void onPlayStart() {
     mapstr(map, activity.details, true);
 
     if(BanchoState::is_in_a_multi_room()) {
-        setBanchoStatus(activity.details, MULTIPLAYER);
+        setBanchoStatus(activity.details, Action::MULTIPLAYER);
 
         strcpy(activity.state, "Playing in a lobby");
         activity.party.size.current_size = BanchoState::room.nb_players;
         activity.party.size.max_size = BanchoState::room.nb_open_slots;
     } else if(BanchoState::spectating) {
-        setBanchoStatus(activity.details, WATCHING);
+        setBanchoStatus(activity.details, Action::WATCHING);
         activity.party.size.current_size = 0;
         activity.party.size.max_size = 0;
 
         const auto* user = BANCHO::User::get_user_info(BanchoState::spectated_player_id, true);
-        if(user->has_presence) {
-            snprintf(activity.state, 128, "Spectating %s", user->name.toUtf8());
+        if(user->has_presence()) {
+            snprintf(activity.state, 128, "Spectating %s", user->name.c_str());
         } else {
             strcpy(activity.state, "Spectating");
         }
     } else {
-        setBanchoStatus(activity.details, PLAYING);
+        setBanchoStatus(activity.details, Action::PLAYING);
 
         strcpy(activity.state, "Playing Solo");
         activity.party.size.current_size = 0;
@@ -267,7 +267,7 @@ void onPlayEnd(bool quit) {
     // stars
     scoreInfo.append(UString::format(" %.2f*", osu->getScore()->getStarsTomTotal()));
 
-    setBanchoStatus(scoreInfo.toUtf8(), SUBMITTING);
+    setBanchoStatus(scoreInfo.toUtf8(), Action::SUBMITTING);
 }
 
 void onMultiplayerLobby() {
@@ -276,7 +276,7 @@ void onMultiplayerLobby() {
     activity.type = DiscordActivityType_Playing;
 
     crop_to(BanchoState::endpoint.c_str(), activity.state, 128);
-    crop_to(BanchoState::room.name.toUtf8(), activity.details, 128);
+    crop_to(BanchoState::room.name.c_str(), activity.details, 128);
     activity.party.size.current_size = BanchoState::room.nb_players;
     activity.party.size.max_size = BanchoState::room.nb_open_slots;
 

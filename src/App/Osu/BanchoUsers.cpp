@@ -12,6 +12,7 @@
 #include "Timing.h"
 #include "SpectatorScreen.h"
 #include "Logging.h"
+#include "SString.h"
 
 #include <unordered_map>
 #include <algorithm>
@@ -35,13 +36,13 @@ void dequeue_stats_request(const UserInfo* info) {
 }
 
 void enqueue_presence_request(const UserInfo* info) {
-    if(info->has_presence) return;
+    if(info->has_presence()) return;
     if(std::ranges::contains(presence_requests, info)) return;
     presence_requests.push_back(info);
 }
 
 void enqueue_stats_request(const UserInfo* info) {
-    if(info->irc_user) return;
+    if(info->is_irc()) return;
     if(info->stats_tms + 5000 > Timing::getTicksMS()) return;
     if(std::ranges::contains(stats_requests, info)) return;
     stats_requests.push_back(info);
@@ -50,7 +51,7 @@ void enqueue_stats_request(const UserInfo* info) {
 void request_presence_batch() {
     std::vector<i32> actual_requests;
     for(const auto& req : presence_requests) {
-        if(req->has_presence) continue;
+        if(req->has_presence()) continue;
         actual_requests.push_back(req->user_id);
     }
 
@@ -58,7 +59,7 @@ void request_presence_batch() {
     if(actual_requests.empty()) return;
 
     Packet packet;
-    packet.id = USER_PRESENCE_REQUEST;
+    packet.id = OUTP_USER_PRESENCE_REQUEST;
     packet.write<u16>(actual_requests.size());
     for(const auto& user_id : actual_requests) {
         packet.write<i32>(user_id);
@@ -69,7 +70,7 @@ void request_presence_batch() {
 void request_stats_batch() {
     std::vector<i32> actual_requests;
     for(const auto& req : stats_requests) {
-        if(req->irc_user) continue;
+        if(req->is_irc()) continue;
         if(req->stats_tms + 5000 > Timing::getTicksMS()) continue;
         actual_requests.push_back(req->user_id);
     }
@@ -78,7 +79,7 @@ void request_stats_batch() {
     if(actual_requests.empty()) return;
 
     Packet packet;
-    packet.id = USER_STATS_REQUEST;
+    packet.id = OUTP_USER_STATS_REQUEST;
     packet.write<u16>(actual_requests.size());
     for(const auto& user_id : actual_requests) {
         packet.write<i32>(user_id);
@@ -121,7 +122,7 @@ void logout_all_users() {
     all_users.clear();
 }
 
-UserInfo* find_user(const UString& username) {
+UserInfo* find_user(std::string_view username) {
     if(const auto& it = std::ranges::find_if(
            all_users, [&username](const auto& info_pair) { return info_pair.second.name == username; });
        it != all_users.end()) {
@@ -131,10 +132,11 @@ UserInfo* find_user(const UString& username) {
     return nullptr;
 }
 
-UserInfo* find_user_starting_with(UString prefix, const UString& last_match) {
-    if(prefix.isEmpty()) return nullptr;
+UserInfo* find_user_starting_with(std::string_view prefix, std::string_view last_match) {
+    if(prefix.empty()) return nullptr;
 
-    prefix.lowerCase();
+    std::string prefixLower = SString::to_lower(prefix);
+
     // cycle through matches
     bool matched = last_match.length() == 0;
     for(auto& [_, user] : online_users) {
@@ -144,8 +146,10 @@ UserInfo* find_user_starting_with(UString prefix, const UString& last_match) {
             }
             continue;
         }
+        std::string usernameLower = SString::to_lower(user->name);
+
         // if it starts with prefix
-        if(user->name.findIgnoreCase(prefix) == 0) {
+        if(usernameLower.starts_with(prefixLower)) {
             return user;
         }
     }
@@ -153,7 +157,7 @@ UserInfo* find_user_starting_with(UString prefix, const UString& last_match) {
     if(last_match.length() == 0) {
         return nullptr;
     } else {
-        return find_user_starting_with(prefix, "");
+        return find_user_starting_with(prefixLower, "");
     }
 }
 
@@ -179,7 +183,7 @@ UserInfo* get_user_info(i32 user_id, bool wants_presence) {
     std::pair<i32, UserInfo> temp_new_info{user_id, UserInfo{}};
 
     temp_new_info.second.user_id = user_id;
-    temp_new_info.second.name = UString::format("User #%d", user_id);
+    temp_new_info.second.name = fmt::format("User #{:d}", user_id);
     const auto& [inserted_it, successfully_inserted] = all_users.emplace(std::move(temp_new_info));
     assert(successfully_inserted);
     auto* new_info = &inserted_it->second;

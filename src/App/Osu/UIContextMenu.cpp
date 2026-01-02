@@ -51,7 +51,7 @@ void UIContextMenuButton::onMouseDownInside(bool /*left*/, bool /*right*/) {
     soundEngine->play(osu->getSkin()->s_click_button);
 }
 
-void UIContextMenuButton::setTooltipText(const UString &text) { this->tooltipTextLines = text.split(ULITERAL("\n")); }
+void UIContextMenuButton::setTooltipText(const UString &text) { this->tooltipTextLines = text.split(US_("\n")); }
 
 UIContextMenuTextbox::UIContextMenuTextbox(float xPos, float yPos, float xSize, float ySize, UString name, int id)
     : CBaseUITextbox(xPos, yPos, xSize, ySize, std::move(name)) {

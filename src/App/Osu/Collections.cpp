@@ -107,7 +107,7 @@ bool load_peppy(std::string_view peppy_collections_path) {
 
     u32 total_maps = 0;
     u32 nb_collections = peppy_collections.read<u32>();
-    for(int c = 0; std::cmp_less(c, nb_collections); c++) {
+    for(u32 c = 0; c < nb_collections; c++) {
         auto name = peppy_collections.read_string();
         u32 nb_maps = peppy_collections.read<u32>();
         total_maps += nb_maps;
@@ -116,8 +116,10 @@ bool load_peppy(std::string_view peppy_collections_path) {
         collection.maps.reserve(nb_maps);
         collection.peppy_maps.reserve(nb_maps);
 
-        for(uSz m = 0; m < nb_maps; m++) {
-            const auto& map_hash = peppy_collections.read_hash();
+        for(u32 m = 0; m < nb_maps; m++) {
+            MD5Hash map_hash;
+            (void)peppy_collections.read_hash(map_hash);  // TODO: validate
+
             collection.maps.push_back(map_hash);
             collection.peppy_maps.push_back(map_hash);
         }
@@ -148,7 +150,7 @@ bool load_mcneosu(std::string_view neosu_collections_path) {
         return false;
     }
 
-    for(u32 c = 0; std::cmp_less(c, nb_collections); c++) {
+    for(u32 c = 0; c < nb_collections; c++) {
         auto name = neosu_collections.read_string();
         auto& collection = get_or_create_collection(name);
 
@@ -158,8 +160,9 @@ bool load_mcneosu(std::string_view neosu_collections_path) {
         }
 
         collection.deleted_maps.reserve(nb_deleted_maps);
-        for(uSz d = 0; d < nb_deleted_maps; d++) {
-            const auto& map_hash = neosu_collections.read_hash();
+        for(u32 d = 0; d < nb_deleted_maps; d++) {
+            MD5Hash map_hash;
+            (void)neosu_collections.read_hash(map_hash);  // TODO: validate
 
             std::erase_if(collection.maps,
                           [&map_hash](const auto& contained_hash) -> bool { return map_hash == contained_hash; });
@@ -172,8 +175,9 @@ bool load_mcneosu(std::string_view neosu_collections_path) {
         collection.maps.reserve(collection.maps.size() + nb_maps);
         collection.neosu_maps.reserve(nb_maps);
 
-        for(int m = 0; std::cmp_less(m, nb_maps); m++) {
-            const auto& map_hash = neosu_collections.read_hash();
+        for(u32 m = 0; m < nb_maps; m++) {
+            MD5Hash map_hash;
+            (void)neosu_collections.read_hash(map_hash);  // TODO: validate
 
             if(!std::ranges::contains(collection.maps, map_hash)) {
                 collection.maps.push_back(map_hash);

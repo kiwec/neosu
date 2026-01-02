@@ -123,7 +123,7 @@ void UIButton::animateClickColor() {
     anim::moveLinear(&this->fClickAnim, 0.0f, 0.5f, true);
 }
 
-void UIButton::setTooltipText(const UString &text) { this->tooltipTextLines = text.split(ULITERAL("\n")); }
+void UIButton::setTooltipText(const UString &text) { this->tooltipTextLines = text.split(US_("\n")); }
 
 #include "Font.h"
 

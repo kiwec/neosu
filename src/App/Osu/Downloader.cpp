@@ -88,7 +88,7 @@ class DownloadManager {
         NeoNet::RequestOptions options;
         options.timeout = 30;
         options.connect_timeout = 5;
-        options.user_agent = BanchoState::user_agent.toUtf8();
+        options.user_agent = BanchoState::user_agent;
         options.follow_redirects = true;
         options.progress_callback = [request](float progress) {
             request->progress.store(progress, std::memory_order_release);

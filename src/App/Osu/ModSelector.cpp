@@ -1137,7 +1137,7 @@ void ModSelector::resetModsUserInitiated() {
         }
 
         Packet packet;
-        packet.id = MATCH_CHANGE_MODS;
+        packet.id = OUTP_MATCH_CHANGE_MODS;
         packet.write<LegacyFlags>(minimum_mods);
         BANCHO::Net::send_packet(packet);
 

@@ -96,7 +96,7 @@ class UString {
     UString(const std::string &utf8) noexcept;
     inline constexpr UString(std::string_view utf8, std::u16string_view unicode) noexcept
         : sUnicode(unicode), sUtf8(utf8) {}
-#define ULITERAL(str__) \
+#define US_(str__) \
     UString { str__##sv, u##str__##sv }  // is C++ even powerful enough to do this without macros
 
     // member functions
@@ -294,6 +294,10 @@ class UString {
 
     bool operator==(const char *utf8) const noexcept { return this->sUtf8 == utf8; }
     auto operator<=>(const char *utf8) const noexcept { return std::operator<=>(this->sUtf8, utf8); }
+    bool operator==(std::u16string_view sv) const noexcept { return this->sUnicode == sv; }
+    auto operator<=>(std::u16string_view sv) const noexcept {
+        return std::operator<=>(static_cast<const std::u16string_view &>(this->sUnicode), sv);
+    }
     bool operator==(const UString &ustr) const noexcept { return this->sUnicode == ustr.sUnicode; };
     auto operator<=>(const UString &ustr) const noexcept { return std::operator<=>(this->sUnicode, ustr.sUnicode); };
 

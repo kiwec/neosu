@@ -22,6 +22,8 @@ enum KeyFlags : uint8_t;
 }
 using GameplayKeys = LegacyReplay::KeyFlags;
 
+enum class WinCondition : uint8_t;
+
 struct SCORE_ENTRY {
     UString name;
     i32 entry_id = 0;
@@ -69,7 +71,7 @@ class HUD final : public OsuScreen {
 
     [[nodiscard]] bool shouldDrawScoreboard() const;
 
-    [[nodiscard]] inline u8 getScoringMetric() const { return this->scoring_metric; }
+    [[nodiscard]] inline WinCondition getScoringMetric() const { return this->scoring_metric; }
     void updateScoringMetric();
 
     void resetScoreboard();
@@ -122,7 +124,7 @@ class HUD final : public OsuScreen {
 
    private:
     std::vector<SCORE_ENTRY> getCurrentScores();
-    u8 scoring_metric{0};
+    WinCondition scoring_metric{};
 
     struct HITERROR {
         float time;

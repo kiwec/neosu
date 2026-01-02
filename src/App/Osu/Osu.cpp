@@ -146,9 +146,9 @@ Osu::Osu() : App(), MouseListener(), global_osu_(this) {
         BanchoState::neosu_version = fmt::format("release-{:.2f}", cv::version.getFloat());
     }
 
-    BanchoState::user_agent = ULITERAL("Mozilla/5.0 (compatible; neosu/");
+    BanchoState::user_agent = "Mozilla/5.0 (compatible; neosu/";
     BanchoState::user_agent.append(BanchoState::neosu_version);
-    BanchoState::user_agent.append(ULITERAL("; " OS_NAME "; +https://" NEOSU_DOMAIN "/)"));
+    BanchoState::user_agent.append("; " OS_NAME "; +https://" NEOSU_DOMAIN "/)");
 
     // create cache dir, with migration for old versions
     Environment::createDirectory(env->getCacheDir());
@@ -643,7 +643,7 @@ void Osu::update() {
 
                         if(BanchoState::is_playing_a_multi_map()) {
                             Packet packet;
-                            packet.id = MATCH_SKIP_REQUEST;
+                            packet.id = OUTP_MATCH_SKIP_REQUEST;
                             BANCHO::Net::send_packet(packet);
                         }
                     }
@@ -786,7 +786,7 @@ void Osu::update() {
 
                 this->notificationOverlay->addNotification(
                     this->skin->name.length() > 0 ? UString::format("Skin reloaded! (%s)", this->skin->name.c_str())
-                                                  : ULITERAL("Skin reloaded!"),
+                                                  : US_("Skin reloaded!"),
                     0xffffffff, false, 0.75f);
             }
         }
@@ -1328,13 +1328,13 @@ void Osu::toggleSongBrowser() {
         // We didn't select a map; revert to previously selected one
         auto map = this->songBrowser->lastSelectedBeatmap;
         if(map != nullptr) {
-            BanchoState::room.map_name = UString::format("%s - %s [%s]", map->getArtist().c_str(),
-                                                         map->getTitle().c_str(), map->getDifficultyName().c_str());
+            BanchoState::room.map_name =
+                fmt::format("{:s} - {:s} [{:s}]", map->getArtist(), map->getTitle(), map->getDifficultyName());
             BanchoState::room.map_md5 = map->getMD5();
             BanchoState::room.map_id = map->getID();
 
             Packet packet;
-            packet.id = MATCH_CHANGE_SETTINGS;
+            packet.id = OUTP_MATCH_CHANGE_SETTINGS;
             BanchoState::room.pack(packet);
             BANCHO::Net::send_packet(packet);
 

@@ -31,7 +31,7 @@ void submit_score(FinishedScore score) {
     options.timeout = 60;
     options.connect_timeout = 5;
     options.user_agent = "osu!";
-    options.headers["token"] = BanchoState::cho_token.toUtf8();
+    options.headers["token"] = BanchoState::cho_token;
 
     auto quit = fmt::format("{}", score.ragequit ? 1 : 0);
     options.mime_parts.push_back({
@@ -63,15 +63,13 @@ void submit_score(FinishedScore score) {
         .data = {beatmap_hash.begin(), beatmap_hash.end()},
     });
 
-    auto unique_ids =
-        fmt::format("{}|{}", BanchoState::get_install_id().toUtf8(), BanchoState::get_disk_uuid().toUtf8());
+    auto unique_ids = fmt::format("{}|{}", BanchoState::get_install_id(), BanchoState::get_disk_uuid());
     options.mime_parts.push_back({
         .name = "c1",
         .data = {unique_ids.begin(), unique_ids.end()},
     });
 
-    std::string_view password =
-        BanchoState::is_oauth ? BanchoState::cho_token.utf8View() : BanchoState::pw_md5.string();
+    std::string_view password = BanchoState::is_oauth ? BanchoState::cho_token : BanchoState::pw_md5.string();
     options.mime_parts.push_back({
         .name = "pass",
         .data = {password.begin(), password.end()},
@@ -92,8 +90,8 @@ void submit_score(FinishedScore score) {
     {
         size_t s_client_hashes_encrypted = 0;
         u8 *client_hashes_encrypted =
-            BANCHO::AES::encrypt(iv.data(), (u8 *)BanchoState::client_hashes.toUtf8(),
-                                 BanchoState::client_hashes.lengthUtf8(), &s_client_hashes_encrypted);
+            BANCHO::AES::encrypt(iv.data(), (u8 *)BanchoState::client_hashes.c_str(),
+                                 BanchoState::client_hashes.length(), &s_client_hashes_encrypted);
         auto client_hashes_b64 = crypto::conv::encode64(client_hashes_encrypted, s_client_hashes_encrypted);
         options.mime_parts.push_back({
             .name = "s",
@@ -135,7 +133,7 @@ void submit_score(FinishedScore score) {
             idiot_check.append(
                 fmt::format("{}Q{}", static_cast<u32>(score.mods.to_legacy()), score.passed ? "True" : "False"));
             idiot_check.append(fmt::format("0{}{}", OSU_VERSION_DATEONLY, score_time.data()));
-            idiot_check.append(BanchoState::client_hashes.toUtf8());
+            idiot_check.append(BanchoState::client_hashes);
 
             auto idiot_hash = crypto::hash::md5_hex((u8 *)idiot_check.data(), idiot_check.size());
             score_data.append(":");

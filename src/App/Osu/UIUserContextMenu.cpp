@@ -67,7 +67,7 @@ void UIUserContextMenuScreen::open(i32 user_id, bool is_song_browser_button) {
         }
 
         const UserInfo* user_info = BANCHO::User::get_user_info(user_id, true);
-        if(user_info->has_presence) {
+        if(user_info->has_presence()) {
             // Without user info, we don't have the username
             this->menu->addButton("Start Chat", START_CHAT);
 
@@ -119,12 +119,12 @@ void UIUserContextMenuScreen::on_action(const UString& /*text*/, int user_action
 
     if(user_action == UA_TRANSFER_HOST) {
         Packet packet;
-        packet.id = TRANSFER_HOST;
+        packet.id = OUTP_TRANSFER_HOST;
         packet.write<u32>(slot_number);
         BANCHO::Net::send_packet(packet);
     } else if(user_action == KICK) {
         Packet packet;
-        packet.id = MATCH_LOCK;
+        packet.id = OUTP_MATCH_LOCK;
         packet.write<u32>(slot_number);
         BANCHO::Net::send_packet(packet);  // kick by locking the slot
         BANCHO::Net::send_packet(packet);  // unlock the slot
@@ -140,13 +140,13 @@ void UIUserContextMenuScreen::on_action(const UString& /*text*/, int user_action
         env->openURLInDefaultBrowser(url);
     } else if(user_action == UA_ADD_FRIEND) {
         Packet packet;
-        packet.id = FRIEND_ADD;
+        packet.id = OUTP_FRIEND_ADD;
         packet.write<i32>(this->user_id);
         BANCHO::Net::send_packet(packet);
         BANCHO::User::friends.push_back(this->user_id);
     } else if(user_action == UA_REMOVE_FRIEND) {
         Packet packet;
-        packet.id = FRIEND_REMOVE;
+        packet.id = OUTP_FRIEND_REMOVE;
         packet.write<i32>(this->user_id);
         BANCHO::Net::send_packet(packet);
 

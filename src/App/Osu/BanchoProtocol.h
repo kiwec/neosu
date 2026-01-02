@@ -2,9 +2,10 @@
 // Copyright (c) 2023, kiwec, All rights reserved.
 #include "BanchoPacket.h"
 #include "ModFlags.h"
-#include "UString.h"
 
-enum Action : uint8_t {
+#include <string>
+
+enum class Action : uint8_t {
     IDLE = 0,
     AFK = 1,
     PLAYING = 2,
@@ -19,10 +20,10 @@ enum Action : uint8_t {
     TESTING2 = 11,  // Was LOBBY but shows as "Testing" in-game
     MULTIPLAYING = 12,
     OSU_DIRECT = 13,
-    NB_ACTIONS
+    MAX
 };
 
-enum Privileges : uint8_t {
+enum class Privileges : uint8_t {
     PLAYER = 1,
     NOMINATOR = 2,
     SUPPORTER = 4,
@@ -33,8 +34,9 @@ enum Privileges : uint8_t {
     // Made-up flag for convenience
     MODERATOR = NOMINATOR | OWNER | DEVELOPER | TOURNAMENT_STAFF,
 };
+MAKE_FLAG_ENUM(Privileges)
 
-enum WinCondition : uint8_t {
+enum class WinCondition : uint8_t {
     SCOREV1 = 0,
     ACCURACY = 1,
     CURRENT_COMBO = 2,
@@ -46,7 +48,7 @@ enum WinCondition : uint8_t {
     MAX_COMBO = 6,
 };
 
-enum GameMode : uint8_t {
+enum class GameMode : uint8_t {
     STANDARD = 0,
     TAIKO = 1,
     CATCH = 2,
@@ -55,115 +57,115 @@ enum GameMode : uint8_t {
 
 // NOTE: u8 in case packet headers get shortened, even though packet IDs are currently u16
 enum IncomingPackets : uint8_t {
-    USER_ID = 5,
-    RECV_MESSAGE = 7,
-    PONG = 8,
-    USER_STATS = 11,
-    USER_LOGOUT = 12,
-    SPECTATOR_JOINED = 13,
-    SPECTATOR_LEFT = 14,
-    IN_SPECTATE_FRAMES = 15,
-    VERSION_UPDATE = 19,
-    SPECTATOR_CANT_SPECTATE = 22,
-    GET_ATTENTION = 23,
-    NOTIFICATION = 24,
-    ROOM_UPDATED = 26,
-    ROOM_CREATED = 27,
-    ROOM_CLOSED = 28,
-    ROOM_JOIN_SUCCESS = 36,
-    ROOM_JOIN_FAIL = 37,
-    FELLOW_SPECTATOR_JOINED = 42,
-    FELLOW_SPECTATOR_LEFT = 43,
-    MATCH_STARTED = 46,
-    MATCH_SCORE_UPDATED = 48,
-    HOST_CHANGED = 50,
-    MATCH_ALL_PLAYERS_LOADED = 53,
-    MATCH_PLAYER_FAILED = 57,
-    MATCH_FINISHED = 58,
-    MATCH_SKIP = 61,
-    CHANNEL_JOIN_SUCCESS = 64,
-    CHANNEL_INFO = 65,
-    LEFT_CHANNEL = 66,
-    CHANNEL_AUTO_JOIN = 67,
-    PRIVILEGES = 71,
-    FRIENDS_LIST = 72,
-    PROTOCOL_VERSION = 75,
-    MAIN_MENU_ICON = 76,
-    MATCH_PLAYER_SKIPPED = 81,
-    USER_PRESENCE = 83,
-    RESTART = 86,
-    ROOM_INVITE = 88,
-    CHANNEL_INFO_END = 89,
-    ROOM_PASSWORD_CHANGED = 91,
-    SILENCE_END = 92,
-    USER_SILENCED = 94,
-    USER_PRESENCE_SINGLE = 95,
-    USER_PRESENCE_BUNDLE = 96,
-    USER_DM_BLOCKED = 100,
-    TARGET_IS_SILENCED = 101,
-    VERSION_UPDATE_FORCED = 102,
-    SWITCH_SERVER = 103,
-    ACCOUNT_RESTRICTED = 104,
-    MATCH_ABORT = 106,
+    INP_USER_ID = 5,
+    INP_RECV_MESSAGE = 7,
+    INP_PONG = 8,
+    INP_USER_STATS = 11,
+    INP_USER_LOGOUT = 12,
+    INP_SPECTATOR_JOINED = 13,
+    INP_SPECTATOR_LEFT = 14,
+    INP_SPECTATE_FRAMES = 15,
+    INP_VERSION_UPDATE = 19,
+    INP_SPECTATOR_CANT_SPECTATE = 22,
+    INP_GET_ATTENTION = 23,
+    INP_NOTIFICATION = 24,
+    INP_ROOM_UPDATED = 26,
+    INP_ROOM_CREATED = 27,
+    INP_ROOM_CLOSED = 28,
+    INP_ROOM_JOIN_SUCCESS = 36,
+    INP_ROOM_JOIN_FAIL = 37,
+    INP_FELLOW_SPECTATOR_JOINED = 42,
+    INP_FELLOW_SPECTATOR_LEFT = 43,
+    INP_MATCH_STARTED = 46,
+    INP_MATCH_SCORE_UPDATED = 48,
+    INP_HOST_CHANGED = 50,
+    INP_MATCH_ALL_PLAYERS_LOADED = 53,
+    INP_MATCH_PLAYER_FAILED = 57,
+    INP_MATCH_FINISHED = 58,
+    INP_MATCH_SKIP = 61,
+    INP_CHANNEL_JOIN_SUCCESS = 64,
+    INP_CHANNEL_INFO = 65,
+    INP_LEFT_CHANNEL = 66,
+    INP_CHANNEL_AUTO_JOIN = 67,
+    INP_PRIVILEGES = 71,
+    INP_FRIENDS_LIST = 72,
+    INP_PROTOCOL_VERSION = 75,
+    INP_MAIN_MENU_ICON = 76,
+    INP_MATCH_PLAYER_SKIPPED = 81,
+    INP_USER_PRESENCE = 83,
+    INP_RESTART = 86,
+    INP_ROOM_INVITE = 88,
+    INP_CHANNEL_INFO_END = 89,
+    INP_ROOM_PASSWORD_CHANGED = 91,
+    INP_SILENCE_END = 92,
+    INP_USER_SILENCED = 94,
+    INP_USER_PRESENCE_SINGLE = 95,
+    INP_USER_PRESENCE_BUNDLE = 96,
+    INP_USER_DM_BLOCKED = 100,
+    INP_TARGET_IS_SILENCED = 101,
+    INP_VERSION_UPDATE_FORCED = 102,
+    INP_SWITCH_SERVER = 103,
+    INP_ACCOUNT_RESTRICTED = 104,
+    INP_MATCH_ABORT = 106,
 
     // neosu-specific packets (128 is arbitrary number to start at)
-    PROTECT_VARIABLES = 128,
-    UNPROTECT_VARIABLES = 129,
-    FORCE_VALUES = 130,
-    RESET_VALUES = 131,
-    REQUEST_MAP = 132,
+    INP_PROTECT_VARIABLES = 128,
+    INP_UNPROTECT_VARIABLES = 129,
+    INP_FORCE_VALUES = 130,
+    INP_RESET_VALUES = 131,
+    INP_REQUEST_MAP = 132,
 };
 
 // NOTE: u8 in case packet headers get shortened, even though packet IDs are currently u16
 enum OutgoingPackets : uint8_t {
-    CHANGE_ACTION = 0,
-    SEND_PUBLIC_MESSAGE = 1,
-    LOGOUT = 2,
-    PING = 4,
-    START_SPECTATING = 16,
-    STOP_SPECTATING = 17,
-    OUT_SPECTATE_FRAMES = 18,
-    ERROR_REPORT = 20,
-    CANT_SPECTATE = 21,
-    SEND_PRIVATE_MESSAGE = 25,
-    EXIT_ROOM_LIST = 29,
-    JOIN_ROOM_LIST = 30,
-    CREATE_ROOM = 31,
-    JOIN_ROOM = 32,
-    EXIT_ROOM = 33,
-    CHANGE_SLOT = 38,
-    MATCH_READY = 39,
-    MATCH_LOCK = 40,
-    MATCH_CHANGE_SETTINGS = 41,
-    START_MATCH = 44,
-    UPDATE_MATCH_SCORE = 47,
-    FINISH_MATCH = 49,
-    MATCH_CHANGE_MODS = 51,
-    MATCH_LOAD_COMPLETE = 52,
-    MATCH_NO_BEATMAP = 54,
-    MATCH_NOT_READY = 55,
-    MATCH_FAILED = 56,
-    MATCH_HAS_BEATMAP = 59,
-    MATCH_SKIP_REQUEST = 60,
-    CHANNEL_JOIN = 63,
-    BEATMAP_INFO_REQUEST = 68,
-    TRANSFER_HOST = 70,
-    FRIEND_ADD = 73,
-    FRIEND_REMOVE = 74,
-    MATCH_CHANGE_TEAM = 77,
-    CHANNEL_PART = 78,
-    RECEIVE_UPDATES = 79,
-    SET_AWAY_MESSAGE = 82,
-    IRC_ONLY = 84,
-    USER_STATS_REQUEST = 85,
-    MATCH_INVITE = 88,
-    CHANGE_ROOM_PASSWORD = 90,
-    TOURNAMENT_MATCH_INFO_REQUEST = 93,
-    USER_PRESENCE_REQUEST = 97,
-    USER_PRESENCE_REQUEST_ALL = 98,
-    TOGGLE_BLOCK_NON_FRIEND_DMS = 99,
-    TOURNAMENT_JOIN_MATCH_CHANNEL = 108,
-    TOURNAMENT_EXIT_MATCH_CHANNEL = 109,
+    OUTP_CHANGE_ACTION = 0,
+    OUTP_SEND_PUBLIC_MESSAGE = 1,
+    OUTP_LOGOUT = 2,
+    OUTP_PING = 4,
+    OUTP_START_SPECTATING = 16,
+    OUTP_STOP_SPECTATING = 17,
+    OUTP_SPECTATE_FRAMES = 18,
+    OUTP_ERROR_REPORT = 20,
+    OUTP_CANT_SPECTATE = 21,
+    OUTP_SEND_PRIVATE_MESSAGE = 25,
+    OUTP_EXIT_ROOM_LIST = 29,
+    OUTP_JOIN_ROOM_LIST = 30,
+    OUTP_CREATE_ROOM = 31,
+    OUTP_JOIN_ROOM = 32,
+    OUTP_EXIT_ROOM = 33,
+    OUTP_CHANGE_SLOT = 38,
+    OUTP_MATCH_READY = 39,
+    OUTP_MATCH_LOCK = 40,
+    OUTP_MATCH_CHANGE_SETTINGS = 41,
+    OUTP_START_MATCH = 44,
+    OUTP_UPDATE_MATCH_SCORE = 47,
+    OUTP_FINISH_MATCH = 49,
+    OUTP_MATCH_CHANGE_MODS = 51,
+    OUTP_MATCH_LOAD_COMPLETE = 52,
+    OUTP_MATCH_NO_BEATMAP = 54,
+    OUTP_MATCH_NOT_READY = 55,
+    OUTP_MATCH_FAILED = 56,
+    OUTP_MATCH_HAS_BEATMAP = 59,
+    OUTP_MATCH_SKIP_REQUEST = 60,
+    OUTP_CHANNEL_JOIN = 63,
+    OUTP_BEATMAP_INFO_REQUEST = 68,
+    OUTP_TRANSFER_HOST = 70,
+    OUTP_FRIEND_ADD = 73,
+    OUTP_FRIEND_REMOVE = 74,
+    OUTP_MATCH_CHANGE_TEAM = 77,
+    OUTP_CHANNEL_PART = 78,
+    OUTP_RECEIVE_UPDATES = 79,
+    OUTP_SET_AWAY_MESSAGE = 82,
+    OUTP_IRC_ONLY = 84,
+    OUTP_USER_STATS_REQUEST = 85,
+    OUTP_MATCH_INVITE = 88,
+    OUTP_CHANGE_ROOM_PASSWORD = 90,
+    OUTP_TOURNAMENT_MATCH_INFO_REQUEST = 93,
+    OUTP_USER_PRESENCE_REQUEST = 97,
+    OUTP_USER_PRESENCE_REQUEST_ALL = 98,
+    OUTP_TOGGLE_BLOCK_NON_FRIEND_DMS = 99,
+    OUTP_TOURNAMENT_JOIN_MATCH_CHANNEL = 108,
+    OUTP_TOURNAMENT_EXIT_MATCH_CHANNEL = 109,
 };
 
 struct Slot {
@@ -236,14 +238,14 @@ class Room {
     LegacyFlags mods{};
     bool has_password = false;
 
-    UString name{ULITERAL("")};
-    UString password{ULITERAL("")};
-    UString map_name{ULITERAL("")};
+    std::string name;
+    std::string password;
+    std::string map_name;
 
     std::array<Slot, 16> slots{};
 
     u8 mode = 0;
-    u8 win_condition = 0;
+    WinCondition win_condition{};
     u8 team_type = 0;
     u8 freemods = 0;
 
@@ -275,21 +277,21 @@ class Room {
 
 #pragma pack(push, 1)
 struct ScoreFrame {
-    i32 time = 0;
-    u8 slot_id = 0;
-    u16 num300 = 0;
-    u16 num100 = 0;
-    u16 num50 = 0;
-    u16 num_geki = 0;
-    u16 num_katu = 0;
-    u16 num_miss = 0;
-    i32 total_score = 0;
-    u16 max_combo = 0;
-    u16 current_combo = 0;
-    u8 is_perfect = 0;
-    u8 current_hp = 0;
-    u8 tag = 0;
-    u8 is_scorev2 = 0;
+    i32 time{0};
+    u8 slot_id{0};
+    u16 num300{0};
+    u16 num100{0};
+    u16 num50{0};
+    u16 num_geki{0};
+    u16 num_katu{0};
+    u16 num_miss{0};
+    i32 total_score{0};
+    u16 max_combo{0};
+    u16 current_combo{0};
+    u8 is_perfect{0};
+    u8 current_hp{0};
+    u8 tag{0};
+    u8 is_scorev2{0};
 
     static ScoreFrame get();
 };
@@ -305,22 +307,23 @@ struct LiveReplayFrame {
 };
 #pragma pack(pop)
 
-struct LiveReplayBundle {
-    enum Action : uint8_t {
-        NONE = 0,
-        NEW_SONG = 1,
-        SKIP = 2,
-        COMPLETION = 3,
-        FAIL = 4,
-        PAUSE = 5,
-        UNPAUSE = 6,
-        SONG_SELECT = 7,
-        WATCHING_OTHER = 8,
-    };
+enum class LiveReplayAction : uint8_t {
+    NONE = 0,
+    NEW_SONG = 1,
+    SKIP = 2,
+    COMPLETION = 3,
+    FAIL = 4,
+    PAUSE = 5,
+    UNPAUSE = 6,
+    SONG_SELECT = 7,
+    WATCHING_OTHER = 8,
+    MAX_ACTION
+};
 
-    Action action;
-    u16 nb_frames;
-    LiveReplayFrame *frames;
+struct LiveReplayBundle {
+    LiveReplayAction action{LiveReplayAction::NONE};
+    u16 nb_frames{0};
+    LiveReplayFrame *frames{nullptr};
     ScoreFrame score;
-    u16 sequence;
+    u16 sequence{0};
 };

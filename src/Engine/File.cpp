@@ -304,7 +304,7 @@ UString adjustPath(std::string_view filepath) {
                 // but don't return an extended path unless it's too long
                 // some wine APIs don't work 100% properly with it (like SDL_OpenURL with a file:/// URI)
 
-                if(result.length() > MAX_PATH && !result.startsWith(ULITERAL("\\"))) {
+                if(result.length() > MAX_PATH && !result.startsWith(US_("\\"))) {
                     result = UString{extPrefix} + result;
                 }
 

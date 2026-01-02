@@ -57,11 +57,11 @@ void UIPauseMenuButton::onMouseInside() {
     anim::moveLinear(&this->vScale.x, this->vBaseScale.x * this->fScaleMultiplier, animationDuration, true);
     anim::moveLinear(&this->vScale.y, this->vBaseScale.y * this->fScaleMultiplier, animationDuration, true);
 
-    if(this->getName() == ULITERAL("Resume")) {
+    if(this->getName() == US_("Resume")) {
         soundEngine->play(osu->getSkin()->s_hover_pause_continue);
-    } else if(this->getName() == ULITERAL("Retry")) {
+    } else if(this->getName() == US_("Retry")) {
         soundEngine->play(osu->getSkin()->s_hover_pause_retry);
-    } else if(this->getName() == ULITERAL("Quit")) {
+    } else if(this->getName() == US_("Quit")) {
         soundEngine->play(osu->getSkin()->s_hover_pause_back);
     }
 }

@@ -61,12 +61,12 @@ void start(int user_id) {
     Spectating::stop();
 
     Packet packet;
-    packet.id = START_SPECTATING;
+    packet.id = OUTP_START_SPECTATING;
     packet.write<i32>(user_id);
     BANCHO::Net::send_packet(packet);
 
     const UserInfo *user_info = BANCHO::User::get_user_info(user_id, true);
-    auto notif = UString::format("Started spectating %s", user_info->name.toUtf8());
+    auto notif = fmt::format("Started spectating {:s}", user_info->name);
     osu->getNotificationOverlay()->addToast(notif, SUCCESS_TOAST);
 
     BanchoState::spectating = true;
@@ -85,7 +85,7 @@ void start(int user_id) {
 }
 
 void start_by_username(std::string_view username) {
-    auto *user = BANCHO::User::find_user(UString{username.data(), static_cast<int>(username.length())});
+    auto *user = BANCHO::User::find_user(username);
     if(user == nullptr) {
         debugLog("Couldn't find user \"{:s}\"!", username);
         return;
@@ -103,7 +103,7 @@ void stop() {
     }
 
     const UserInfo *user_info = BANCHO::User::get_user_info(BanchoState::spectated_player_id, true);
-    auto notif = UString::format("Stopped spectating %s", user_info->name.toUtf8());
+    auto notif = fmt::format("Stopped spectating {:s}", user_info->name);
     osu->getNotificationOverlay()->addToast(notif, INFO_TOAST);
 
     BanchoState::spectating = false;
@@ -111,7 +111,7 @@ void stop() {
     current_map_id = 0;
 
     Packet packet;
-    packet.id = STOP_SPECTATING;
+    packet.id = OUTP_STOP_SPECTATING;
     BANCHO::Net::send_packet(packet);
 
     osu->getMainMenu()->setVisible(true);
@@ -168,7 +168,7 @@ void SpectatorScreen::mouse_update(bool *propagate_clicks) {
         if(osu->isInPlayMode()) {
             osu->getMapInterface()->stop(true);
         }
-    } else if(user_info->mode == STANDARD && user_info->map_id != current_map_id) {
+    } else if(user_info->mode == GameMode::STANDARD && user_info->map_id != current_map_id) {
         auto beatmap = Downloader::download_beatmap(user_info->map_id, user_info->map_md5, &download_progress);
         if(beatmap != nullptr) {
             current_map_id = user_info->map_id;
@@ -185,34 +185,37 @@ void SpectatorScreen::mouse_update(bool *propagate_clicks) {
         last_player_id = BanchoState::spectated_player_id;
     }
 
-    this->spectating->setText(UString::format("Spectating %s", user_info->name.toUtf8()));
+    this->spectating->setText(fmt::format("Spectating {:s}", user_info->name));
 
-    if(user_info->spec_action == LiveReplayBundle::Action::NONE) {
-        this->status->setText(UString::format("%s is AFK", user_info->name.toUtf8()));
-    } else if(user_info->spec_action == LiveReplayBundle::Action::SONG_SELECT) {
-        this->status->setText(UString::format("%s is picking a map...", user_info->name.toUtf8()));
-    } else if(user_info->spec_action == LiveReplayBundle::Action::WATCHING_OTHER) {
-        this->status->setText(UString::format("%s is spectating someone else", user_info->name.toUtf8()));
+    {
+        using enum LiveReplayAction;
+        if(LiveReplayAction action = user_info->get_spec_action();
+           action == NONE || action == SONG_SELECT || action == WATCHING_OTHER) {
+            std::string_view action_str = action == NONE          ? "AFK"sv
+                                          : action == SONG_SELECT ? "picking a map..."sv
+                                                                  : "spectating someone else"sv;
+            this->status->setText(fmt::format("{:s} is {}", user_info->name, action_str));
+        }
     }
 
-    if(user_info->mode != STANDARD) {
-        this->status->setText(UString::format("%s is playing minigames", user_info->name.toUtf8()));
+    if(user_info->mode != GameMode::STANDARD) {
+        this->status->setText(fmt::format("{:s} is playing minigames", user_info->name));
     } else if(user_info->map_id != -1 && user_info->map_id != 0) {
         if(user_info->map_id != current_map_id) {
             if(download_progress == -1.f) {
-                auto error_str = UString::format("Failed to download Beatmap #%d :(", user_info->map_id);
+                auto error_str = fmt::format("Failed to download Beatmap #{:d} :(", user_info->map_id);
                 this->status->setText(error_str);
 
                 static i32 last_failed_map = 0;
                 if(user_info->map_id != last_failed_map) {
                     Packet packet;
-                    packet.id = CANT_SPECTATE;
+                    packet.id = OUTP_CANT_SPECTATE;
                     BANCHO::Net::send_packet(packet);
 
                     last_failed_map = user_info->map_id;
                 }
             } else {
-                auto text = UString::format("Downloading map... %.2f%%", download_progress * 100.f);
+                auto text = fmt::format("Downloading map... {:.2f}%", download_progress * 100.f);
                 this->status->setText(text);
             }
         }

@@ -102,23 +102,25 @@ void Packet::write_uleb128(u32 num) {
     }
 }
 
-void Packet::write_string(const char *str) {
-    if(!str || str[0] == '\0') {
-        u8 zero = 0;
-        this->write<u8>(zero);
-        return;
-    }
-
-    u8 empty_check = 11;
-    this->write<u8>(empty_check);
-
-    u32 len = strlen(str);
-    this->write_uleb128(len);
-    this->write_bytes((u8 *)str, len);
-}
-
 void Packet::write_hash(const MD5Hash &hash) {
     this->write<u8>(0x0B);
     this->write<u8>(0x20);
     this->write_bytes((u8 *)hash.data(), 32);
+}
+
+bool Packet::write_string_isnull(const char *str) {
+    if(!str || str[0] == '\0') {
+        const u8 zero = 0;
+        this->write<u8>(zero);
+        return true;
+    }
+    return false;
+}
+
+void Packet::write_string_nonnull(const char *str, size_t len) {
+    const u8 empty_check = 11;
+    this->write<u8>(empty_check);
+
+    this->write_uleb128(len);
+    this->write_bytes((u8 *)str, len);
 }

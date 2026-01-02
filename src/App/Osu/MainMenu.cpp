@@ -92,13 +92,13 @@ class MainMenu::MainButton final : public CBaseUIButton {
 
         if(this->mm_ptr->button_sound_cooldown + 0.05f < engine->getTime()) {
             this->mm_ptr->button_sound_cooldown = engine->getTime();
-            if(this->getText() == ULITERAL("Singleplayer")) {
+            if(this->getText() == US_("Singleplayer")) {
                 soundEngine->play(osu->getSkin()->s_hover_sp);
-            } else if(this->getText() == ULITERAL("Multiplayer")) {
+            } else if(this->getText() == US_("Multiplayer")) {
                 soundEngine->play(osu->getSkin()->s_hover_mp);
-            } else if(this->getText() == ULITERAL("Options (CTRL + O)")) {
+            } else if(this->getText() == US_("Options (CTRL + O)")) {
                 soundEngine->play(osu->getSkin()->s_hover_options);
-            } else if(this->getText() == ULITERAL("Exit")) {
+            } else if(this->getText() == US_("Exit")) {
                 soundEngine->play(osu->getSkin()->s_hover_exit);
             }
         }
@@ -1283,10 +1283,10 @@ CBaseUIContainer *MainMenu::setVisible(bool visible) {
 
         if(!BanchoState::spectators.empty()) {
             Packet packet;
-            packet.id = OUT_SPECTATE_FRAMES;
+            packet.id = OUTP_SPECTATE_FRAMES;
             packet.write<i32>(0);
             packet.write<u16>(0);
-            packet.write<u8>(LiveReplayBundle::Action::NONE);
+            packet.write<u8>((u8)LiveReplayAction::NONE);
             packet.write<ScoreFrame>(ScoreFrame::get());
             packet.write<u16>(osu->getMapInterface()->spectator_sequence++);
             BANCHO::Net::send_packet(packet);

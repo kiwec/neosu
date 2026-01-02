@@ -2,7 +2,6 @@
 #include "ScoreboardSlot.h"
 
 #include "AnimationHandler.h"
-#include "Bancho.h"
 #include "BanchoUsers.h"
 #include "OsuConVars.h"
 #include "Engine.h"
@@ -33,6 +32,11 @@ void ScoreboardSlot::draw() {
 
     g->setBlendMode(DrawBlendMode::BLEND_MODE_PREMUL_ALPHA);
 
+    McFont *font_normal = osu->getSongBrowserFont();
+    McFont *font_bold = osu->getSongBrowserFontBold();
+
+    const SlotColEffect cur_slot_color_effect = this->getCurSlotEffect();
+
     const float height = roundf(osu->getVirtScreenHeight() * 0.07f);
     const float width = roundf(height * 2.6f);  // does not include avatar_width
     const float avatar_height = height;
@@ -50,15 +54,8 @@ void ScoreboardSlot::draw() {
     }
 
     // Draw background
-    if(this->score.dead) {
-        g->setColor(0xff660000);
-    } else if(this->score.highlight) {
-        g->setColor(0xff777777);
-    } else if(this->index == 0) {
-        g->setColor(0xff1b6a8c);
-    } else {
-        g->setColor(this->is_friend ? 0xff9C205C : 0xff114459);
-    }
+    g->setColor(slot_colors[BKGND][cur_slot_color_effect]);
+
     g->setAlpha(0.3f * this->fAlpha);
 
     if(cv::hud_scoreboard_use_menubuttonbackground.getBool()) {
@@ -84,25 +81,24 @@ void ScoreboardSlot::draw() {
     // Draw index
     g->pushTransform();
     {
-        McFont *indexFont = osu->getSongBrowserFontBold();
         UString indexString = UString::format("%i", this->index + 1);
-        const float scale = (avatar_height / indexFont->getHeight()) * 0.5f;
+        const float scale = (avatar_height / font_bold->getHeight()) * 0.5f;
 
         g->scale(scale, scale);
 
         // * 0.9f because the returned font height isn't accurate :c
-        g->translate(avatar_width / 2.0f - (indexFont->getStringWidth(indexString) * scale / 2.0f),
-                     start_y + (avatar_height / 2.0f) + indexFont->getHeight() * scale / 2.0f * 0.9f);
+        g->translate(avatar_width / 2.0f - (font_bold->getStringWidth(indexString) * scale / 2.0f),
+                     start_y + (avatar_height / 2.0f) + font_bold->getHeight() * scale / 2.0f * 0.9f);
 
         g->translate(0.5f, 0.5f);
         g->setColor(Color(0xff000000).setA(0.3f * this->fAlpha));
 
-        g->drawString(indexFont, indexString);
+        g->drawString(font_bold, indexString);
 
         g->translate(-0.5f, -0.5f);
         g->setColor(Color(0xffffffff).setA(0.7f * this->fAlpha));
 
-        g->drawString(indexFont, indexString);
+        g->drawString(font_bold, indexString);
     }
     g->popTransform();
 
@@ -110,140 +106,98 @@ void ScoreboardSlot::draw() {
     const bool drawTextShadow = (cv::background_dim.getFloat() < 0.7f);
     const Color textShadowColor = 0x66000000;
     const float nameScale = 0.315f;
+
     g->pushTransform();
     {
-        McFont *nameFont = osu->getSongBrowserFont();
         g->pushClipRect(McRect(avatar_width, start_y, width, height));
 
-        const float scale = (height / nameFont->getHeight()) * nameScale;
+        const float scale = (height / font_normal->getHeight()) * nameScale;
         g->scale(scale, scale);
-        g->translate(avatar_width + padding, start_y + padding + nameFont->getHeight() * scale);
+        g->translate(avatar_width + padding, start_y + padding + font_normal->getHeight() * scale);
         if(drawTextShadow) {
             g->translate(1, 1);
             g->setColor(Color(textShadowColor).setA(this->fAlpha));
 
-            g->drawString(nameFont, this->score.name);
+            g->drawString(font_normal, this->score.name);
             g->translate(-1, -1);
         }
 
-        if(this->score.dead) {
-            g->setColor(0xffee0000);
-        } else if(this->score.highlight) {
-            g->setColor(0xffffffff);
-        } else if(this->index == 0) {
-            g->setColor(0xffeeeeee);
-        } else {
-            g->setColor(0xffaaaaaa);
-        }
+        g->setColor(slot_colors[OTHER][cur_slot_color_effect]);
 
         g->setAlpha(this->fAlpha);
-        g->drawString(nameFont, this->score.name);
+        g->drawString(font_normal, this->score.name);
         g->popClipRect();
     }
     g->popTransform();
 
     // Draw combo
-    const Color comboAccuracyColor = 0xff5d9ca1;
-    const Color comboAccuracyColorHighlight = 0xff99fafe;
-    const Color comboAccuracyColorTop = 0xff84dbe0;
-    McFont *scoreFont = osu->getSongBrowserFont();
     const f32 comboScale = 0.26f;
-    const f32 scoreScale = (height / scoreFont->getHeight()) * comboScale;
-
-    auto draw_score = [&](const UString &text) {
-        g->pushTransform();
-        {
-            g->scale(scoreScale, scoreScale);
-            g->translate(avatar_width + padding * 1.35f, start_y + height - 2 * padding);
-            if(drawTextShadow) {
-                g->translate(1, 1);
-                g->setColor(Color(textShadowColor).setA(this->fAlpha));
-                g->drawString(scoreFont, text);
-                g->translate(-1, -1);
-            }
-
-            if(this->score.dead) {
-                g->setColor(0xffee0000);
-            } else if(this->score.highlight) {
-                g->setColor(0xffffffff);
-            } else if(this->index == 0) {
-                g->setColor(0xffeeeeee);
-            } else {
-                g->setColor(0xffaaaaaa);
-            }
-
-            g->setAlpha(this->fAlpha);
-            g->drawString(scoreFont, text);
-        }
-        g->popTransform();
-    };
+    const f32 scoreScale = (height / font_normal->getHeight()) * comboScale;
 
     // draw combo
     g->pushTransform();
     {
         UString comboString = UString::format("%ix", this->score.maxCombo);
-        const float stringWidth = scoreFont->getStringWidth(comboString);
+        const float stringWidth = font_normal->getStringWidth(comboString);
 
         g->scale(scoreScale, scoreScale);
         g->translate(avatar_width + width - stringWidth * scoreScale - padding * 1.35f, start_y + height - 2 * padding);
+
         if(drawTextShadow) {
             g->translate(1, 1);
             g->setColor(Color(textShadowColor).setA(this->fAlpha));
 
-            g->drawString(scoreFont, comboString);
+            g->drawString(font_normal, comboString);
             g->translate(-1, -1);
         }
 
-        if(this->score.highlight) {
-            g->setColor(comboAccuracyColorHighlight);
-        } else if(this->index == 0) {
-            g->setColor(comboAccuracyColorTop);
-        } else {
-            g->setColor(comboAccuracyColor);
-        }
+        g->setColor(slot_colors[COMBOACC][cur_slot_color_effect]);
 
         g->setAlpha(this->fAlpha);
-        g->drawString(scoreFont, comboString);
+        g->drawString(font_normal, comboString);
     }
     g->popTransform();
 
-    if(osu->getHUD()->getScoringMetric() == ACCURACY) {
-        // draw accuracy
+    // draw win condition score text
+    {
+        UString wincond_based_scoretext;
+        SlotColType wincond_based_coltype = OTHER;
+        switch(osu->getHUD()->getScoringMetric()) {
+            case WinCondition::ACCURACY: {
+                wincond_based_coltype = COMBOACC;
+                wincond_based_scoretext = fmt::format("{:.2f}%", this->score.accuracy * 100.0f);
+            } break;
+            case WinCondition::MISSES: {
+                wincond_based_scoretext = fmt::format("{} misses", this->score.misses);
+            } break;
+            case WinCondition::PP: {
+                wincond_based_scoretext = fmt::format("{:.2f}pp", this->score.pp);
+            } break;
+            // other conditions fall through to scorev1
+            default: {
+                wincond_based_scoretext = fmt::format("{}", this->score.score);
+            } break;
+        }
+
         g->pushTransform();
         {
-            UString accString = UString::format("%.2f%%", this->score.accuracy * 100.0f);
             g->scale(scoreScale, scoreScale);
             g->translate(avatar_width + padding * 1.35f, start_y + height - 2 * padding);
-            {
+
+            if(drawTextShadow) {
                 g->translate(1, 1);
                 g->setColor(Color(textShadowColor).setA(this->fAlpha));
 
-                g->drawString(scoreFont, accString);
+                g->drawString(font_normal, wincond_based_scoretext);
                 g->translate(-1, -1);
             }
 
-            if(this->score.highlight) {
-                g->setColor(comboAccuracyColorHighlight);
-            } else if(this->index == 0) {
-                g->setColor(comboAccuracyColorTop);
-            } else {
-                g->setColor(comboAccuracyColor);
-            }
+            g->setColor(slot_colors[wincond_based_coltype][cur_slot_color_effect]);
 
             g->setAlpha(this->fAlpha);
-            g->drawString(scoreFont, accString);
+            g->drawString(font_normal, wincond_based_scoretext);
         }
-
         g->popTransform();
-    } else if(osu->getHUD()->getScoringMetric() == MISSES) {
-        // draw misses
-        draw_score(fmt::format("{} misses", this->score.misses));
-    } else if(osu->getHUD()->getScoringMetric() == PP) {
-        // draw pp
-        draw_score(UString::format("%.2fpp", this->score.pp));
-    } else {
-        // draw score
-        draw_score(fmt::format("{}", this->score.score));
     }
 
     g->setBlendMode(DrawBlendMode::BLEND_MODE_ALPHA);

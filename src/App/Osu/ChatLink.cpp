@@ -84,9 +84,9 @@ void ChatLink::onMouseUpInside(bool /*left*/, bool /*right*/) {
 
     // Detect user links
     // https:\/\/(osu\.)?akatsuki\.gg\/u(sers)?\/(\d+)
-    UString user_pattern = ULITERAL(R"(https?://(osu\.)?)");
+    UString user_pattern = US_(R"(https?://(osu\.)?)");
     user_pattern.append(escaped_endpoint);
-    user_pattern.append(ULITERAL(R"(/u(sers)?/(\d+))"));
+    user_pattern.append(US_(R"(/u(sers)?/(\d+))"));
     if(std::regex_search(link_str, match, std::regex(user_pattern.toUtf8()))) {
         i32 user_id = Parsing::strto<i32>(match.str(3));
         osu->getUserActions()->open(user_id);
@@ -95,9 +95,9 @@ void ChatLink::onMouseUpInside(bool /*left*/, bool /*right*/) {
 
     // Detect beatmap links
     // https:\/\/((osu\.)?akatsuki\.gg|osu\.ppy\.sh)\/b(eatmaps)?\/(\d+)
-    UString map_pattern = ULITERAL(R"(https?://((osu\.)?)");
+    UString map_pattern = US_(R"(https?://((osu\.)?)");
     map_pattern.append(escaped_endpoint);
-    map_pattern.append(ULITERAL(R"(|osu\.ppy\.sh)/b(eatmaps)?/(\d+))"));
+    map_pattern.append(US_(R"(|osu\.ppy\.sh)/b(eatmaps)?/(\d+))"));
     if(std::regex_search(link_str, match, std::regex(map_pattern.toUtf8()))) {
         i32 map_id = Parsing::strto<i32>(match.str(4));
         this->open_beatmap_link(map_id, 0);
@@ -106,9 +106,9 @@ void ChatLink::onMouseUpInside(bool /*left*/, bool /*right*/) {
 
     // Detect beatmapset links
     // https:\/\/((osu\.)?akatsuki\.gg|osu\.ppy\.sh)\/beatmapsets\/(\d+)(#osu\/(\d+))?
-    UString set_pattern = ULITERAL(R"(https?://((osu\.)?)");
+    UString set_pattern = US_(R"(https?://((osu\.)?)");
     set_pattern.append(escaped_endpoint);
-    set_pattern.append(ULITERAL(R"(|osu\.ppy\.sh)/beatmapsets/(\d+)(#osu/(\d+))?)"));
+    set_pattern.append(US_(R"(|osu\.ppy\.sh)/beatmapsets/(\d+)(#osu/(\d+))?)"));
     if(std::regex_search(link_str, match, std::regex(set_pattern.toUtf8()))) {
         i32 set_id = Parsing::strto<i32>(match.str(3));
         i32 map_id = 0;

@@ -711,7 +711,7 @@ void ScoreButton::setScore(const FinishedScore &newscore, const DatabaseBeatmap 
     this->sScoreAccuracyFC =
         UString::format((sc.perfect ? "PFC %.2f%%" : (fullCombo ? "FC %.2f%%" : "%.2f%%")), accuracy);
     this->sScoreMods = getModsStringForDisplay(sc.mods);
-    this->sCustom = (sc.mods.speed != 1.0f ? UString::format("Spd: %gx", sc.mods.speed) : ULITERAL(""));
+    this->sCustom = (sc.mods.speed != 1.0f ? UString::format("Spd: %gx", sc.mods.speed) : US_(""));
     if(map != nullptr) {
         const LegacyReplay::BEATMAP_VALUES beatmapValuesForModsLegacy = LegacyReplay::getBeatmapValuesForModsLegacy(
             sc.mods.to_legacy(), map->getAR(), map->getCS(), map->getOD(), map->getHP());

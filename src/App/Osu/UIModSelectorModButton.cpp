@@ -47,7 +47,7 @@ void UIModSelectorModButton::draw() {
 
             g->setColor(0xffffffff);
             // HACK: For "Actual Flashlight" mod, I'm too lazy to add a new skin element
-            bool draw_inverted_colors = this->getActiveModName() == ULITERAL("afl");
+            bool draw_inverted_colors = this->getActiveModName() == US_("afl");
             if(draw_inverted_colors) {
                 g->setColorInversion(true);
             }
@@ -102,7 +102,7 @@ void UIModSelectorModButton::onClicked(bool /*left*/, bool /*right*/) {
         this->iState = (this->iState + 1) % this->states.size();
 
         // HACK: In multi, skip "Actual Flashlight" mod
-        if(BanchoState::is_in_a_multi_room() && this->states[0].modName == ULITERAL("fl")) {
+        if(BanchoState::is_in_a_multi_room() && this->states[0].modName == US_("fl")) {
             this->iState = this->iState % this->states.size() - 1;
         }
 
@@ -133,7 +133,7 @@ void UIModSelectorModButton::onClicked(bool /*left*/, bool /*right*/) {
         }
 
         Packet packet;
-        packet.id = MATCH_CHANGE_MODS;
+        packet.id = OUTP_MATCH_CHANGE_MODS;
         packet.write<LegacyFlags>(mod_flags);
         BANCHO::Net::send_packet(packet);
 
@@ -260,7 +260,7 @@ void UIModSelectorModButton::setState(unsigned int state, bool initialState, Con
     }
     this->states[state].cvar = cvar;
     this->states[state].modName = std::move(modName);
-    this->states[state].tooltipTextLines = tooltipText.split(ULITERAL("\n"));
+    this->states[state].tooltipTextLines = tooltipText.split(US_("\n"));
     this->states[state].getImageFunc = std::move(getImageFunc);
 
     // set initial state image

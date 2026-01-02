@@ -370,7 +370,7 @@ void process_work_item(WorkItem& item, const Sync::stop_token& stoken) {
 }
 
 void runloop(const Sync::stop_token& stoken) {
-    McThread::set_current_thread_name(ULITERAL("db_recalc"));
+    McThread::set_current_thread_name(US_("db_recalc"));
     McThread::set_current_thread_prio(McThread::Priority::NORMAL);
 
     build_work_queue(stoken);

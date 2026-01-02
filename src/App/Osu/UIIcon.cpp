@@ -31,4 +31,4 @@ void UIIcon::onFocusStolen() {
     this->bFocusStolenDelay = true;
 }
 
-void UIIcon::setTooltipText(const UString& text) { this->tooltipTextLines = text.split(ULITERAL("\n")); }
+void UIIcon::setTooltipText(const UString& text) { this->tooltipTextLines = text.split(US_("\n")); }

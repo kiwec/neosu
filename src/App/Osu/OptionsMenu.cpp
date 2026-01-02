@@ -2535,7 +2535,7 @@ void OptionsMenu::onSkinSelect() {
             });
         }
     } else {
-        osu->getNotificationOverlay()->addToast(ULITERAL("Error: Couldn't find any skins"), ERROR_TOAST);
+        osu->getNotificationOverlay()->addToast(US_("Error: Couldn't find any skins"), ERROR_TOAST);
         this->options->scrollToTop();
         this->fOsuFolderTextboxInvalidAnim = engine->getTime() + 3.0f;
     }
@@ -3699,7 +3699,7 @@ void OptionsMenu::save() {
     static AsyncIOHandler::WriteCallback wr_callback = [func = LOGGER_FUNC](bool success) -> void {
         if(!success) {
             if(osu) {
-                osu->getNotificationOverlay()->addToast(ULITERAL("Failed to save osu.cfg"), ERROR_TOAST);
+                osu->getNotificationOverlay()->addToast(US_("Failed to save osu.cfg"), ERROR_TOAST);
             } else {
                 debugLogLambda("Failed to save osu.cfg");
             }

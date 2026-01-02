@@ -631,7 +631,7 @@ void RankingScreen::setIndex(int index) {
 UString RankingScreen::getPPString() const {
     f32 pp = this->storedScore.get_pp();
     if(pp == -1.0f) {
-        return ULITERAL("??? pp");
+        return US_("??? pp");
     } else {
         return fmt::format("{:d}pp", (int)std::round(pp));
     }

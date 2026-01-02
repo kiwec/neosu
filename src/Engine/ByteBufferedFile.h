@@ -169,9 +169,8 @@ class ByteBufferedFile {
         [[nodiscard]] constexpr bool good() const { return !this->error_flag; }
         [[nodiscard]] constexpr std::string_view error() const { return this->last_error; }
 
-        bool read_hash(MD5Hash &inout);  // read into a given buffer directly
+        [[nodiscard]] bool read_hash(MD5Hash &inout);  // read into a given buffer directly
         bool read_string(std::string &inout);
-        [[nodiscard]] MD5Hash read_hash();
         [[nodiscard]] std::string read_string();
         [[nodiscard]] u32 read_uleb128();
 
@@ -209,8 +208,15 @@ class ByteBufferedFile {
         void flush();
         void write_bytes(const u8 *bytes, uSz n);
         void write_hash(const MD5Hash &hash);
-        void write_string(const std::string &str);
         void write_uleb128(u32 num);
+        inline void write_string(const char *str) {
+            if(this->write_string_isnull(str)) return;
+            this->write_string_nonnull(str, strlen(str));
+        }
+        inline void write_string(std::string_view strview) {
+            if(this->write_string_isnull(&strview[0])) return;
+            this->write_string_nonnull(strview.data(), strview.length());
+        }
 
         template <typename T>
         void write(T t) {
@@ -218,6 +224,11 @@ class ByteBufferedFile {
         }
 
        private:
+        // check for null, if it is, write 0 and return true
+        bool write_string_isnull(const char *str);
+        // unchecked
+        void write_string_nonnull(const char *str, uSz len);
+
         void set_error(const std::string &error_msg);
 
         std::unique_ptr<u8[]> buffer;

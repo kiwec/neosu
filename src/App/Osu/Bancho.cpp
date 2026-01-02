@@ -63,10 +63,10 @@ Image *BanchoState::server_icon{nullptr};
 
 ServerPolicy BanchoState::score_submission_policy{ServerPolicy::NO_PREFERENCE};
 
-UString BanchoState::neosu_version{ULITERAL("")};
-UString BanchoState::cho_token{ULITERAL("")};
-UString BanchoState::user_agent{ULITERAL("")};
-UString BanchoState::client_hashes{ULITERAL("")};
+std::string BanchoState::neosu_version{""};
+std::string BanchoState::cho_token{""};
+std::string BanchoState::user_agent{""};
+std::string BanchoState::client_hashes{""};
 
 Room BanchoState::room;
 bool BanchoState::match_started{false};
@@ -75,7 +75,7 @@ std::array<Slot, 16> BanchoState::last_scores{};
 sv_unordered_map<BanchoState::Channel *> BanchoState::chat_channels;
 
 bool BanchoState::print_new_channels{true};
-UString BanchoState::disk_uuid;
+std::string BanchoState::disk_uuid;
 
 std::atomic<i32> BanchoState::user_id{0};
 bool BanchoState::was_in_a_multi_room{false};
@@ -128,7 +128,7 @@ void BanchoState::handle_packet(Packet &packet) {
     logIfCV(debug_network, "packet id: {}", packet.id);
 
     switch(packet.id) {
-        case USER_ID: {
+        case INP_USER_ID: {
             i32 new_user_id = packet.read<i32>();
             BanchoState::set_uid(new_user_id);
             BanchoState::is_oauth = !cv::mp_oauth_token.getString().empty();
@@ -149,7 +149,7 @@ void BanchoState::handle_packet(Packet &packet) {
                 Environment::createDirectory(thumbs_dir);
 
                 osu->onUserCardChange(BanchoState::username);
-                osu->getSongBrowser()->onFilterScoresChange(ULITERAL("Global"), SongBrowser::LOGIN_STATE_FILTER_ID);
+                osu->getSongBrowser()->onFilterScoresChange(US_("Global"), SongBrowser::LOGIN_STATE_FILTER_ID);
 
                 // If server sent a score submission policy, update options menu to hide the checkbox
                 osu->getOptionsMenu()->scheduleLayoutUpdate();
@@ -158,37 +158,37 @@ void BanchoState::handle_packet(Packet &packet) {
                 cv::mp_oauth_token.setValue("");
 
                 debugLog("Failed to log in, server returned code {:d}.", BanchoState::get_uid());
-                UString errmsg = fmt::format("Failed to log in: {} (code {})\n", BanchoState::cho_token.toUtf8(),
-                                             BanchoState::get_uid());
+                UString errmsg =
+                    fmt::format("Failed to log in: {} (code {})\n", BanchoState::cho_token, BanchoState::get_uid());
                 if(new_user_id == -1) {
-                    errmsg = ULITERAL("Incorrect username/password.");
+                    errmsg = US_("Incorrect username/password.");
                 } else if(new_user_id == -2) {
-                    errmsg = ULITERAL("Client version is too old to connect to this server.");
+                    errmsg = US_("Client version is too old to connect to this server.");
                 } else if(new_user_id == -3 || new_user_id == -4) {
-                    errmsg = ULITERAL("You are banned from this server.");
+                    errmsg = US_("You are banned from this server.");
                 } else if(new_user_id == -5) {
-                    errmsg = ULITERAL("Server had an error while trying to log you in.");
+                    errmsg = US_("Server had an error while trying to log you in.");
                 } else if(new_user_id == -6) {
-                    errmsg = ULITERAL("You need to buy supporter to connect to this server.");
+                    errmsg = US_("You need to buy supporter to connect to this server.");
                 } else if(new_user_id == -7) {
-                    errmsg = ULITERAL("You need to reset your password to connect to this server.");
+                    errmsg = US_("You need to reset your password to connect to this server.");
                 } else if(new_user_id == -8) {
                     if(BanchoState::is_oauth) {
-                        errmsg = ULITERAL("osu! session expired, please log in again.");
+                        errmsg = US_("osu! session expired, please log in again.");
                     } else {
-                        errmsg = ULITERAL("Open the verification link sent to your email, then log in again.");
+                        errmsg = US_("Open the verification link sent to your email, then log in again.");
                     }
                 } else {
                     if(BanchoState::cho_token == "user-already-logged-in") {
-                        errmsg = ULITERAL("Already logged in on another client.");
+                        errmsg = US_("Already logged in on another client.");
                     } else if(BanchoState::cho_token == "unknown-username") {
                         errmsg = fmt::format("No account by the username '{}' exists.", BanchoState::username);
                     } else if(BanchoState::cho_token == "incorrect-credentials") {
-                        errmsg = ULITERAL("Incorrect username/password.");
+                        errmsg = US_("Incorrect username/password.");
                     } else if(BanchoState::cho_token == "incorrect-password") {
-                        errmsg = ULITERAL("Incorrect password.");
+                        errmsg = US_("Incorrect password.");
                     } else if(BanchoState::cho_token == "contact-staff") {
-                        errmsg = ULITERAL("Please contact an administrator of the server.");
+                        errmsg = US_("Please contact an administrator of the server.");
                     }
                 }
                 osu->getNotificationOverlay()->addToast(errmsg, ERROR_TOAST);
@@ -196,10 +196,10 @@ void BanchoState::handle_packet(Packet &packet) {
             break;
         }
 
-        case RECV_MESSAGE: {
-            UString sender = packet.read_ustring();
-            UString text = packet.read_ustring();
-            UString recipient = packet.read_ustring();
+        case INP_RECV_MESSAGE: {
+            std::string sender = packet.read_stdstring();
+            std::string text = packet.read_stdstring();
+            std::string recipient = packet.read_stdstring();
             i32 sender_id = packet.read<i32>();
 
             auto msg = ChatMessage{
@@ -213,12 +213,12 @@ void BanchoState::handle_packet(Packet &packet) {
             break;
         }
 
-        case PONG: {
+        case INP_PONG: {
             // (nothing to do)
             break;
         }
 
-        case USER_STATS: {
+        case INP_USER_STATS: {
             i32 stats_user_id = packet.read<i32>();
 
             bool is_irc_user = false;
@@ -233,7 +233,8 @@ void BanchoState::handle_packet(Packet &packet) {
             UserInfo *user = BANCHO::User::get_user_info(stats_user_id);
             if(action != user->action) {
                 // TODO @kiwec: i think client is supposed to regularly poll for friend stats
-                if(user->is_friend() && cv::notify_friend_status_change.getBool() && action < NB_ACTIONS) {
+                if(user->is_friend() && cv::notify_friend_status_change.getBool() &&
+                   (size_t)action < (size_t)Action::MAX) {
                     static constexpr auto actions = std::array{
                         "idle"sv,         "afk"sv,           "playing"sv,
                         "editing"sv,      "modding"sv,       "in a multiplayer lobby"sv,
@@ -241,24 +242,24 @@ void BanchoState::handle_packet(Packet &packet) {
                         "submitting"sv,   "pausing"sv,       "testing"sv,
                         "multiplaying"sv, "browsing maps"sv,
                     };
-                    static_assert(NB_ACTIONS == actions.size(), "missing action name");
-                    UString text{fmt::format("{} is now {}", user->name, actions[action])};
+                    static_assert((size_t)Action::MAX == actions.size(), "missing action name");
+                    std::string text{fmt::format("{} is now {}", user->name, actions[(size_t)action])};
                     auto open_dms = [uid = stats_user_id]() -> void {
                         UserInfo *user = BANCHO::User::get_user_info(uid);
                         osu->getChat()->openChannel(user->name);
                     };
 
                     // TODO: figure out what stable does and do that. for now just throttling to avoid endless spam
-                    if(user->stats_tms + 10000 < Timing::getTicksMS() && action != SUBMITTING) {
+                    if(user->stats_tms + 10000 < Timing::getTicksMS() && action != Action::SUBMITTING) {
                         osu->getNotificationOverlay()->addToast(text, STATUS_TOAST, open_dms, ToastElement::TYPE::CHAT);
                     }
                 }
             }
 
-            user->irc_user = is_irc_user;
+            user->set_is_irc(is_irc_user);
             user->stats_tms = Timing::getTicksMS();
             user->action = action;
-            user->info_text = packet.read_ustring();
+            user->info_text = packet.read_stdstring();
             user->map_md5 = packet.read_hash();
             user->mods = packet.read<LegacyFlags>();
             user->mode = (GameMode)packet.read<u8>();
@@ -282,7 +283,7 @@ void BanchoState::handle_packet(Packet &packet) {
             break;
         }
 
-        case USER_LOGOUT: {
+        case INP_USER_LOGOUT: {
             i32 logged_out_id = packet.read<i32>();
             packet.read<u8>();
             if(logged_out_id == BanchoState::get_uid()) {
@@ -294,7 +295,7 @@ void BanchoState::handle_packet(Packet &packet) {
             break;
         }
 
-        case SPECTATOR_JOINED: {
+        case INP_SPECTATOR_JOINED: {
             i32 spectator_id = packet.read<i32>();
             if(std::ranges::find(BanchoState::spectators, spectator_id) == BanchoState::spectators.end()) {
                 debugLog("Spectator joined: user id {:d}", spectator_id);
@@ -304,7 +305,7 @@ void BanchoState::handle_packet(Packet &packet) {
             break;
         }
 
-        case SPECTATOR_LEFT: {
+        case INP_SPECTATOR_LEFT: {
             i32 spectator_id = packet.read<i32>();
             auto it = std::ranges::find(BanchoState::spectators, spectator_id);
             if(it != BanchoState::spectators.end()) {
@@ -315,11 +316,12 @@ void BanchoState::handle_packet(Packet &packet) {
             break;
         }
 
-        case IN_SPECTATE_FRAMES: {
+        case INP_SPECTATE_FRAMES: {
             i32 extra = packet.read<i32>();
             (void)extra;  // this is mania seed or something we can't use
 
             if(BanchoState::spectating) {
+                const auto &map_iface = osu->getMapInterface();
                 UserInfo *info = BANCHO::User::get_user_info(BanchoState::spectated_player_id, true);
 
                 u16 nb_frames = packet.read<u16>();
@@ -330,7 +332,7 @@ void BanchoState::handle_packet(Packet &packet) {
                         debugLog("WEIRD FRAME: time {:d}, x {:f}, y {:f}", frame.time, frame.mouse_x, frame.mouse_y);
                     }
 
-                    osu->getMapInterface()->spectated_replay.push_back(LegacyReplay::Frame{
+                    map_iface->spectated_replay.push_back(LegacyReplay::Frame{
                         .cur_music_pos = frame.time,
                         .milliseconds_since_last_frame = 0,  // fixed below
                         .x = frame.mouse_x,
@@ -340,46 +342,54 @@ void BanchoState::handle_packet(Packet &packet) {
                 }
 
                 // NOTE: Server can send frames in the wrong order. So we're correcting it here.
-                std::ranges::sort(osu->getMapInterface()->spectated_replay,
+                std::ranges::sort(map_iface->spectated_replay,
                                   [](const LegacyReplay::Frame &a, const LegacyReplay::Frame &b) {
                                       return a.cur_music_pos < b.cur_music_pos;
                                   });
-                osu->getMapInterface()->last_frame_ms = 0;
-                for(auto &frame : osu->getMapInterface()->spectated_replay) {
-                    frame.milliseconds_since_last_frame = frame.cur_music_pos - osu->getMapInterface()->last_frame_ms;
-                    osu->getMapInterface()->last_frame_ms = frame.cur_music_pos;
+                map_iface->last_frame_ms = 0;
+                for(auto &frame : map_iface->spectated_replay) {
+                    frame.milliseconds_since_last_frame = frame.cur_music_pos - map_iface->last_frame_ms;
+                    map_iface->last_frame_ms = frame.cur_music_pos;
                 }
 
-                auto action = (LiveReplayBundle::Action)packet.read<u8>();
-                info->spec_action = action;
+                auto action = (LiveReplayAction)packet.read<u8>();
+                info->set_spec_action(action);
 
                 if(osu->isInPlayMode()) {
-                    if(action == LiveReplayBundle::Action::SONG_SELECT) {
-                        info->map_id = 0;
-                        info->map_md5 = MD5Hash();
-                        osu->getMapInterface()->stop(true);
-                    }
-                    if(action == LiveReplayBundle::Action::UNPAUSE) {
-                        osu->getMapInterface()->spectate_pause = false;
-                    }
-                    if(action == LiveReplayBundle::Action::PAUSE) {
-                        osu->getMapInterface()->spectate_pause = true;
-                    }
-                    if(action == LiveReplayBundle::Action::SKIP) {
-                        osu->getMapInterface()->skipEmptySection();
-                    }
-                    if(action == LiveReplayBundle::Action::FAIL) {
-                        osu->getMapInterface()->fail(true);
-                    }
-                    if(action == LiveReplayBundle::Action::NEW_SONG) {
-                        osu->getRankingScreen()->setVisible(false);
-                        osu->getMapInterface()->restart(true);
-                        osu->getMapInterface()->update();
+                    switch(action) {
+                        case LiveReplayAction::NEW_SONG: {
+                            osu->getRankingScreen()->setVisible(false);
+                            map_iface->restart(true);
+                            map_iface->update();
+                        } break;
+                        case LiveReplayAction::SKIP: {
+                            map_iface->skipEmptySection();
+                        } break;
+                        case LiveReplayAction::FAIL: {
+                            map_iface->fail(true);
+                        } break;
+                        case LiveReplayAction::PAUSE: {
+                            map_iface->spectate_pause = true;
+                        } break;
+                        case LiveReplayAction::UNPAUSE: {
+                            map_iface->spectate_pause = false;
+                        } break;
+                        case LiveReplayAction::SONG_SELECT: {
+                            info->map_id = 0;
+                            info->map_md5 = MD5Hash();
+                            map_iface->stop(true);
+                        } break;
+                        // nothing
+                        case LiveReplayAction::NONE:
+                        case LiveReplayAction::COMPLETION:
+                        case LiveReplayAction::WATCHING_OTHER:
+                        case LiveReplayAction::MAX_ACTION:
+                            break;
                     }
                 }
 
                 auto score_frame = packet.read<ScoreFrame>();
-                osu->getMapInterface()->score_frames.push_back(score_frame);
+                map_iface->score_frames.push_back(score_frame);
 
                 auto sequence = packet.read<u16>();
                 (void)sequence;  // don't know how to use this
@@ -388,29 +398,29 @@ void BanchoState::handle_packet(Packet &packet) {
             break;
         }
 
-        case VERSION_UPDATE: {
+        case INP_VERSION_UPDATE: {
             // (nothing to do)
             break;
         }
 
-        case SPECTATOR_CANT_SPECTATE: {
+        case INP_SPECTATOR_CANT_SPECTATE: {
             i32 spectator_id = packet.read<i32>();
             debugLog("Spectator can't spectate: user id {:d}", spectator_id);
             break;
         }
 
-        case GET_ATTENTION: {
+        case INP_GET_ATTENTION: {
             // (nothing to do)
             break;
         }
 
-        case NOTIFICATION: {
-            UString notification = packet.read_ustring();
+        case INP_NOTIFICATION: {
+            std::string notification = packet.read_stdstring();
             osu->getNotificationOverlay()->addToast(notification, INFO_TOAST);
             break;
         }
 
-        case ROOM_UPDATED: {
+        case INP_ROOM_UPDATED: {
             auto room = Room(packet);
             if(osu->getLobby()->isVisible()) {
                 osu->getLobby()->updateRoom(room);
@@ -421,18 +431,18 @@ void BanchoState::handle_packet(Packet &packet) {
             break;
         }
 
-        case ROOM_CREATED: {
+        case INP_ROOM_CREATED: {
             osu->getLobby()->addRoom(std::make_unique<Room>(packet));
             break;
         }
 
-        case ROOM_CLOSED: {
+        case INP_ROOM_CLOSED: {
             i32 room_id = packet.read<i32>();
             osu->getLobby()->removeRoom(room_id);
             break;
         }
 
-        case ROOM_JOIN_SUCCESS: {
+        case INP_ROOM_JOIN_SUCCESS: {
             // Sanity, in case some trolley admins do funny business
             if(BanchoState::spectating) {
                 Spectating::stop();
@@ -447,13 +457,13 @@ void BanchoState::handle_packet(Packet &packet) {
             break;
         }
 
-        case ROOM_JOIN_FAIL: {
-            osu->getNotificationOverlay()->addToast(ULITERAL("Failed to join room."), ERROR_TOAST);
+        case INP_ROOM_JOIN_FAIL: {
+            osu->getNotificationOverlay()->addToast(US_("Failed to join room."), ERROR_TOAST);
             osu->getLobby()->on_room_join_failed();
             break;
         }
 
-        case FELLOW_SPECTATOR_JOINED: {
+        case INP_FELLOW_SPECTATOR_JOINED: {
             i32 spectator_id = packet.read<i32>();
             if(std::ranges::find(BanchoState::fellow_spectators, spectator_id) ==
                BanchoState::fellow_spectators.end()) {
@@ -464,7 +474,7 @@ void BanchoState::handle_packet(Packet &packet) {
             break;
         }
 
-        case FELLOW_SPECTATOR_LEFT: {
+        case INP_FELLOW_SPECTATOR_LEFT: {
             i32 spectator_id = packet.read<i32>();
             auto it = std::ranges::find(BanchoState::fellow_spectators, spectator_id);
             if(it != BanchoState::fellow_spectators.end()) {
@@ -475,85 +485,85 @@ void BanchoState::handle_packet(Packet &packet) {
             break;
         }
 
-        case MATCH_STARTED: {
+        case INP_MATCH_STARTED: {
             auto room = Room(packet);
             osu->getRoom()->on_match_started(room);
             break;
         }
 
-        case MATCH_SCORE_UPDATED: {
+        case INP_MATCH_SCORE_UPDATED: {
             osu->getRoom()->on_match_score_updated(packet);
             break;
         }
 
-        case HOST_CHANGED: {
+        case INP_HOST_CHANGED: {
             // (nothing to do)
             break;
         }
 
-        case MATCH_ALL_PLAYERS_LOADED: {
+        case INP_MATCH_ALL_PLAYERS_LOADED: {
             osu->getMapInterface()->all_players_loaded = true;
             osu->getChat()->updateVisibility();
             break;
         }
 
-        case MATCH_PLAYER_FAILED: {
+        case INP_MATCH_PLAYER_FAILED: {
             i32 slot_id = packet.read<i32>();
             osu->getRoom()->on_player_failed(slot_id);
             break;
         }
 
-        case MATCH_FINISHED: {
+        case INP_MATCH_FINISHED: {
             osu->getRoom()->on_match_finished();
             break;
         }
 
-        case MATCH_SKIP: {
+        case INP_MATCH_SKIP: {
             osu->getMapInterface()->all_players_skipped = true;
             break;
         }
 
-        case CHANNEL_JOIN_SUCCESS: {
-            UString name = packet.read_ustring();
+        case INP_CHANNEL_JOIN_SUCCESS: {
+            std::string name = packet.read_stdstring();
             auto msg = ChatMessage{
                 .tms = time(nullptr),
                 .author_id = 0,
-                .author_name = ULITERAL(""),
-                .text = ULITERAL("Joined channel."),
+                .author_name = US_(""),
+                .text = US_("Joined channel."),
             };
             osu->getChat()->addChannel(name, true);
             osu->getChat()->addMessage(name, msg, false);
             break;
         }
 
-        case CHANNEL_INFO: {
-            UString channel_name = packet.read_ustring();
-            UString channel_topic = packet.read_ustring();
+        case INP_CHANNEL_INFO: {
+            std::string channel_name = packet.read_stdstring();
+            std::string channel_topic = packet.read_stdstring();
             i32 nb_members = packet.read<i32>();
             BanchoState::update_channel(channel_name, channel_topic, nb_members, false);
             break;
         }
 
-        case LEFT_CHANNEL: {
-            UString name = packet.read_ustring();
+        case INP_LEFT_CHANNEL: {
+            std::string name = packet.read_stdstring();
             osu->getChat()->removeChannel(name);
             break;
         }
 
-        case CHANNEL_AUTO_JOIN: {
-            UString channel_name = packet.read_ustring();
-            UString channel_topic = packet.read_ustring();
+        case INP_CHANNEL_AUTO_JOIN: {
+            std::string channel_name = packet.read_stdstring();
+            std::string channel_topic = packet.read_stdstring();
             i32 nb_members = packet.read<i32>();
             BanchoState::update_channel(channel_name, channel_topic, nb_members, true);
             break;
         }
 
-        case PRIVILEGES: {
+        case INP_PRIVILEGES: {
             packet.read<u32>();  // not using it for anything
             break;
         }
 
-        case FRIENDS_LIST: {
+        case INP_FRIENDS_LIST: {
             BANCHO::User::friends.clear();
 
             u16 nb_friends = packet.read<u16>();
@@ -564,16 +574,16 @@ void BanchoState::handle_packet(Packet &packet) {
             break;
         }
 
-        case PROTOCOL_VERSION: {
+        case INP_PROTOCOL_VERSION: {
             int protocol_version = packet.read<i32>();
             if(protocol_version != 19) {
-                osu->getNotificationOverlay()->addToast(
-                    ULITERAL("This server may use an unsupported protocol version."), ERROR_TOAST);
+                osu->getNotificationOverlay()->addToast(US_("This server may use an unsupported protocol version."),
+                                                        ERROR_TOAST);
             }
             break;
         }
 
-        case MAIN_MENU_ICON: {
+        case INP_MAIN_MENU_ICON: {
             std::string icon = packet.read_stdstring();
             auto urls = SString::split(icon, '|');
             if(urls.size() == 2 && ((urls[0].starts_with("http://")) || urls[0].starts_with("https://"))) {
@@ -582,13 +592,13 @@ void BanchoState::handle_packet(Packet &packet) {
             break;
         }
 
-        case MATCH_PLAYER_SKIPPED: {
+        case INP_MATCH_PLAYER_SKIPPED: {
             i32 user_id = packet.read<i32>();
             osu->getRoom()->on_player_skip(user_id);
             break;
         }
 
-        case USER_PRESENCE: {
+        case INP_USER_PRESENCE: {
             i32 presence_user_id = packet.read<i32>();
 
             bool is_irc_user = false;
@@ -599,9 +609,9 @@ void BanchoState::handle_packet(Packet &packet) {
             }
 
             UserInfo *user = BANCHO::User::get_user_info(presence_user_id);
-            user->irc_user = is_irc_user;
-            user->has_presence = true;
-            user->name = packet.read_ustring();
+            user->set_is_irc(is_irc_user);
+            user->set_has_presence(true);
+            user->name = packet.read_stdstring();
             user->utc_offset = packet.read<u8>();
             user->country = packet.read<u8>();
             user->privileges = packet.read<u8>();
@@ -613,15 +623,15 @@ void BanchoState::handle_packet(Packet &packet) {
 
             // Server can decide what username we use
             if(presence_user_id == BanchoState::get_uid()) {
-                BanchoState::username = user->name.toUtf8();
-                osu->onUserCardChange(user->name.utf8View());
+                BanchoState::username = user->name;
+                osu->onUserCardChange(user->name);
             }
 
             osu->getChat()->updateUserList();
             break;
         }
 
-        case RESTART: {
+        case INP_RESTART: {
             // XXX: wait 'ms' milliseconds before reconnecting
             i32 ms = packet.read<i32>();
             (void)ms;
@@ -634,42 +644,42 @@ void BanchoState::handle_packet(Packet &packet) {
             break;
         }
 
-        case ROOM_INVITE: {
+        case INP_ROOM_INVITE: {
             break;
         }
 
-        case CHANNEL_INFO_END: {
+        case INP_CHANNEL_INFO_END: {
             BanchoState::print_new_channels = false;
             break;
         }
 
-        case ROOM_PASSWORD_CHANGED: {
-            UString new_password = packet.read_ustring();
-            debugLog("Room changed password to {:s}", new_password.toUtf8());
+        case INP_ROOM_PASSWORD_CHANGED: {
+            std::string new_password = packet.read_stdstring();
+            debugLog("Room changed password to {:s}", new_password);
             BanchoState::room.password = new_password;
             break;
         }
 
-        case SILENCE_END: {
+        case INP_SILENCE_END: {
             i32 delta = packet.read<i32>();
             debugLog("Silence ends in {:d} seconds.", delta);
             // XXX: Prevent user from sending messages while silenced
             break;
         }
 
-        case USER_SILENCED: {
+        case INP_USER_SILENCED: {
             i32 user_id = packet.read<i32>();
             debugLog("User #{:d} silenced.", user_id);
             break;
         }
 
-        case USER_PRESENCE_SINGLE: {
+        case INP_USER_PRESENCE_SINGLE: {
             i32 user_id = packet.read<i32>();
             BANCHO::User::login_user(user_id);
             break;
         }
 
-        case USER_PRESENCE_BUNDLE: {
+        case INP_USER_PRESENCE_BUNDLE: {
             u16 nb_users = packet.read<u16>();
             for(u16 i = 0; i < nb_users; i++) {
                 i32 user_id = packet.read<i32>();
@@ -678,49 +688,48 @@ void BanchoState::handle_packet(Packet &packet) {
             break;
         }
 
-        case USER_DM_BLOCKED: {
-            packet.read_ustring();
-            packet.read_ustring();
-            UString blocked = packet.read_ustring();
+        case INP_USER_DM_BLOCKED: {
+            packet.read_stdstring();
+            packet.read_stdstring();
+            std::string blocked = packet.read_stdstring();
             packet.read<u32>();
-            debugLog("Blocked {:s}.", blocked.toUtf8());
+            debugLog("Blocked {:s}.", blocked);
             break;
         }
 
-        case TARGET_IS_SILENCED: {
-            packet.read_ustring();
-            packet.read_ustring();
-            UString blocked = packet.read_ustring();
+        case INP_TARGET_IS_SILENCED: {
+            packet.read_stdstring();
+            packet.read_stdstring();
+            std::string blocked = packet.read_stdstring();
             packet.read<u32>();
-            debugLog("Silenced {:s}.", blocked.toUtf8());
+            debugLog("Silenced {:s}.", blocked);
             break;
         }
 
-        case VERSION_UPDATE_FORCED: {
+        case INP_VERSION_UPDATE_FORCED: {
             BanchoState::disconnect();
-            osu->getNotificationOverlay()->addToast(ULITERAL("This server requires a newer client version."),
-                                                    ERROR_TOAST);
+            osu->getNotificationOverlay()->addToast(US_("This server requires a newer client version."), ERROR_TOAST);
             break;
         }
 
-        case SWITCH_SERVER: {
+        case INP_SWITCH_SERVER: {
             break;
         }
 
-        case ACCOUNT_RESTRICTED: {
-            osu->getNotificationOverlay()->addToast(ULITERAL("Account restricted."), ERROR_TOAST);
+        case INP_ACCOUNT_RESTRICTED: {
+            osu->getNotificationOverlay()->addToast(US_("Account restricted."), ERROR_TOAST);
             BanchoState::disconnect();
             break;
         }
 
-        case MATCH_ABORT: {
+        case INP_MATCH_ABORT: {
             osu->getRoom()->on_match_aborted();
             break;
         }
 
             // neosu-specific below
 
-        case PROTECT_VARIABLES: {
+        case INP_PROTECT_VARIABLES: {
             u16 nb_variables = packet.read<u16>();
             for(u16 i = 0; i < nb_variables; i++) {
                 auto name = packet.read_stdstring();
@@ -735,7 +744,7 @@ void BanchoState::handle_packet(Packet &packet) {
             break;
         }
 
-        case UNPROTECT_VARIABLES: {
+        case INP_UNPROTECT_VARIABLES: {
             u16 nb_variables = packet.read<u16>();
             for(u16 i = 0; i < nb_variables; i++) {
                 auto name = packet.read_stdstring();
@@ -750,7 +759,7 @@ void BanchoState::handle_packet(Packet &packet) {
             break;
         }
 
-        case FORCE_VALUES: {
+        case INP_FORCE_VALUES: {
             u16 nb_variables = packet.read<u16>();
             for(u16 i = 0; i < nb_variables; i++) {
                 auto name = packet.read_stdstring();
@@ -767,7 +776,7 @@ void BanchoState::handle_packet(Packet &packet) {
         }
 
         // this should at least be in ConVarHandler...
-        case RESET_VALUES: {
+        case INP_RESET_VALUES: {
             u16 nb_variables = packet.read<u16>();
             for(u16 i = 0; i < nb_variables; i++) {
                 auto name = packet.read_stdstring();
@@ -779,7 +788,7 @@ void BanchoState::handle_packet(Packet &packet) {
             break;
         }
 
-        case REQUEST_MAP: {
+        case INP_REQUEST_MAP: {
             auto md5 = packet.read_hash();
 
             auto map = db->getBeatmapDifficulty(md5);
@@ -886,16 +895,16 @@ std::string BanchoState::build_login_packet() {
 
     // XXX: Should remove '|' from the disk UUID just to be safe
     MD5Hash disk_md5 =
-        crypto::hash::md5_hex((u8 *)BanchoState::get_disk_uuid().toUtf8(), BanchoState::get_disk_uuid().lengthUtf8());
+        crypto::hash::md5_hex((u8 *)BanchoState::get_disk_uuid().c_str(), BanchoState::get_disk_uuid().length());
 
     // XXX: Not implemented, I'm lazy so just reusing disk signature
     MD5Hash install_md5 =
-        crypto::hash::md5_hex((u8 *)BanchoState::get_install_id().toUtf8(), BanchoState::get_install_id().lengthUtf8());
+        crypto::hash::md5_hex((u8 *)BanchoState::get_install_id().c_str(), BanchoState::get_install_id().length());
 
     BanchoState::client_hashes = fmt::format("{:s}:{:s}:{:s}:{:s}:{:s}:", osu_path_md5.string(), adapters,
                                              adapters_md5.string(), install_md5.string(), disk_md5.string());
 
-    req.append(BanchoState::client_hashes.toUtf8());
+    req.append(BanchoState::client_hashes.c_str());
     req.append("|");
 
     // Allow PMs from strangers
@@ -917,28 +926,25 @@ bool BanchoState::can_submit_scores() {
         return false;
     } else if(BanchoState::score_submission_policy == ServerPolicy::NO_PREFERENCE) {
         return cv::submit_scores.getBool();
-    } else if(BanchoState::score_submission_policy == ServerPolicy::YES) {
-        return true;
     } else {
-        return false;
+        return BanchoState::score_submission_policy == ServerPolicy::YES;
     }
 }
 
-void BanchoState::update_channel(const UString &name, const UString &topic, i32 nb_members, bool join) {
+void BanchoState::update_channel(const std::string &name, const std::string &topic, i32 nb_members, bool join) {
     Channel *chan{nullptr};
-    auto name_str = std::string(name.toUtf8());
-    auto it = BanchoState::chat_channels.find(name_str);
+    auto it = BanchoState::chat_channels.find(name);
     if(it == BanchoState::chat_channels.end()) {
         chan = new Channel();
         chan->name = name;
-        BanchoState::chat_channels[name_str] = chan;
+        BanchoState::chat_channels[name] = chan;
 
         if(BanchoState::print_new_channels) {
             auto msg = ChatMessage{
                 .tms = time(nullptr),
                 .author_id = 0,
-                .author_name = ULITERAL(""),
-                .text = UString::format("%s: %s", name.toUtf8(), topic.toUtf8()),
+                .author_name = US_(""),
+                .text = fmt::format("{:s}: {:s}", name, topic),
             };
             osu->getChat()->addMessage(BanchoState::is_oauth ? "#neosu" : "#osu", msg, false);
         }
@@ -958,7 +964,7 @@ void BanchoState::update_channel(const UString &name, const UString &topic, i32 
     }
 }
 
-const UString &BanchoState::get_disk_uuid() {
+const std::string &BanchoState::get_disk_uuid() {
     static bool once = false;
     if(!once) {
         once = true;
@@ -973,8 +979,8 @@ const UString &BanchoState::get_disk_uuid() {
     return BanchoState::disk_uuid;
 }
 
-UString BanchoState::get_disk_uuid_blkid() {
-    UString w_uuid{ULITERAL("error getting disk UUID")};
+std::string BanchoState::get_disk_uuid_blkid() {
+    std::string retuuid{"error getting disk UUID"};
 #ifdef MCENGINE_PLATFORM_LINUX
     using blkid_cache = struct blkid_struct_cache *;
 
@@ -989,7 +995,7 @@ UString BanchoState::get_disk_uuid_blkid() {
     lib_obj *blkid_lib = load_lib("libblkid.so.1");
     if(!blkid_lib) {
         debugLog("error loading blkid for obtaining disk UUID: {}", get_error());
-        return w_uuid;
+        return retuuid;
     }
 
     auto pblkid_devno_to_devname = load_func<blkid_devno_to_devname_t>(blkid_lib, "blkid_devno_to_devname");
@@ -1000,7 +1006,7 @@ UString BanchoState::get_disk_uuid_blkid() {
     if(!(pblkid_devno_to_devname && pblkid_get_cache && pblkid_put_cache && pblkid_get_tag_value)) {
         debugLog("error loading blkid functions for obtaining disk UUID: {}", get_error());
         unload_lib(blkid_lib);
-        return w_uuid;
+        return retuuid;
     }
 
     const std::string &exe_path = Environment::getPathToSelf();
@@ -1009,13 +1015,13 @@ UString BanchoState::get_disk_uuid_blkid() {
     struct stat st{};
     if(stat(exe_path.c_str(), &st) != 0) {
         unload_lib(blkid_lib);
-        return w_uuid;
+        return retuuid;
     }
 
     char *devname = pblkid_devno_to_devname(st.st_dev);
     if(!devname) {
         unload_lib(blkid_lib);
-        return w_uuid;
+        return retuuid;
     }
 
     // get the UUID of that device
@@ -1028,40 +1034,40 @@ UString BanchoState::get_disk_uuid_blkid() {
     }
 
     if(uuid) {
-        w_uuid = UString{uuid};
+        retuuid = uuid;
         free(uuid);
     }
 
     free(devname);
     unload_lib(blkid_lib);
 #endif
-    return w_uuid;
+    return retuuid;
 }
 
-UString BanchoState::get_disk_uuid_win32() {
-    UString w_uuid{ULITERAL("error getting disk UUID")};
+std::string BanchoState::get_disk_uuid_win32() {
+    std::string retuuid{"error getting disk UUID"};
 #ifdef MCENGINE_PLATFORM_WINDOWS
 
     // get the path to the executable
     const std::string &exe_path = Environment::getPathToSelf();
     if(exe_path.empty()) {
-        return w_uuid;
+        return retuuid;
     }
 
     int w_exe_len = MultiByteToWideChar(CP_UTF8, 0, exe_path.c_str(), -1, NULL, 0);
     if(w_exe_len == 0) {
-        return w_uuid;
+        return retuuid;
     }
 
     std::vector<wchar_t> w_exe_path(w_exe_len);
     if(MultiByteToWideChar(CP_UTF8, 0, exe_path.c_str(), -1, w_exe_path.data(), w_exe_len) == 0) {
-        return w_uuid;
+        return retuuid;
     }
 
     // get the volume path for the executable
     std::array<wchar_t, MAX_PATH> volume_path{};
     if(!GetVolumePathNameW(w_exe_path.data(), volume_path.data(), MAX_PATH)) {
-        return w_uuid;
+        return retuuid;
     }
 
     // get volume GUID path
@@ -1078,11 +1084,11 @@ UString BanchoState::get_disk_uuid_win32() {
                 size_t end = volume_guid.find('}');
                 if(start != std::string::npos && end != std::string::npos && end > start) {
                     // return just the GUID part without braces
-                    w_uuid = UString{volume_guid.substr(start + 1, end - start - 1)};
+                    retuuid = volume_guid.substr(start + 1, end - start - 1);
                 } else {
                     // use the entire volume GUID path as a fallback
                     if(volume_guid.length() > 12) {
-                        w_uuid = UString{volume_guid};
+                        retuuid = volume_guid;
                     }
                 }
             }
@@ -1100,11 +1106,11 @@ UString BanchoState::get_disk_uuid_win32() {
                 // format volume serial as hex string
                 std::array<char, 16> serial_buffer{};
                 snprintf(serial_buffer.data(), serial_buffer.size(), "%08x", volume_serial);
-                w_uuid = UString{serial_buffer.data(), static_cast<int>(serial_buffer.size())};
+                retuuid = std::string{serial_buffer.data(), static_cast<int>(serial_buffer.size())};
             }
         }
     }
 
 #endif
-    return w_uuid;
+    return retuuid;
 }

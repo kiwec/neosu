@@ -43,7 +43,7 @@ struct VolNormalization::LoudnessCalcThread {
     Sync::jthread thr;
 
     void run(const Sync::stop_token &stoken) {
-        McThread::set_current_thread_name(ULITERAL("loudness_calc"));
+        McThread::set_current_thread_name(US_("loudness_calc"));
         McThread::set_current_thread_prio(McThread::Priority::LOW);  // reset priority
 
         UString last_song = "";

@@ -1,10 +1,12 @@
 #pragma once
 // Copyright (c) 2024, kiwec, All rights reserved.
 
-#include "BanchoProtocol.h"
 #include "CBaseUIScrollView.h"
 #include "OsuScreen.h"
 #include "score.h"
+
+class Room;
+struct Packet;
 
 class CBaseUICheckbox;
 class CBaseUILabel;
@@ -49,9 +51,9 @@ class RoomScreen final : public OsuScreen {
     void ragequit(bool play_sound = true);
 
     void on_map_change();
-    void on_room_joined(Room room);
-    void on_room_updated(Room room);
-    void on_match_started(Room room);
+    void on_room_joined(const Room &room);
+    void on_room_updated(const Room &room);
+    void on_match_started(const Room &room);
     void on_match_score_updated(Packet& packet);
     void on_player_failed(i32 slot_id);
     void on_match_finished();
@@ -72,33 +74,35 @@ class RoomScreen final : public OsuScreen {
     void set_new_password(const UString& new_password);
     void onFreemodCheckboxChanged(CBaseUICheckbox* checkbox);
 
-    CBaseUILabel* map_label = nullptr;
-    CBaseUILabel* mods_label = nullptr;
-    CBaseUIScrollView* settings = nullptr;
-    CBaseUIScrollView* slotlist = nullptr;
-    CBaseUIScrollView* map = nullptr;
-    CBaseUILabel* host = nullptr;
-    CBaseUILabel* room_name = nullptr;
-    CBaseUILabel* room_name_iptl = nullptr;
-    CBaseUITextbox* room_name_ipt = nullptr;
-    UIButton* change_password_btn = nullptr;
-    CBaseUILabel* win_condition = nullptr;
-    UIButton* change_win_condition_btn = nullptr;
-    CBaseUILabel* map_title = nullptr;
-    CBaseUILabel* map_attributes = nullptr;
-    CBaseUILabel* map_attributes2 = nullptr;
-    CBaseUILabel* map_stars = nullptr;
-    UIButton* select_map_btn = nullptr;
-    UIButton* select_mods_btn = nullptr;
-    UICheckbox* freemod = nullptr;
-    UIModList* mods = nullptr;
-    CBaseUILabel* no_mods_selected = nullptr;
-    UIButton* ready_btn = nullptr;
-    UIContextMenu* contextMenu = nullptr;
+    CBaseUILabel* map_label{nullptr};
+    CBaseUILabel* mods_label{nullptr};
+    CBaseUIScrollView* settings{nullptr};
+    CBaseUIScrollView* slotlist{nullptr};
+    CBaseUIScrollView* map{nullptr};
+    CBaseUILabel* host{nullptr};
+    CBaseUILabel* room_name{nullptr};
+    CBaseUILabel* room_name_iptl{nullptr};
+    CBaseUITextbox* room_name_ipt{nullptr};
+    UIButton* change_password_btn{nullptr};
+    CBaseUILabel* win_condition{nullptr};
+    UIButton* change_win_condition_btn{nullptr};
+    CBaseUILabel* map_title{nullptr};
+    CBaseUILabel* map_attributes{nullptr};
+    CBaseUILabel* map_attributes2{nullptr};
+    CBaseUILabel* map_stars{nullptr};
+    UIButton* select_map_btn{nullptr};
+    UIButton* select_mods_btn{nullptr};
+    UICheckbox* freemod{nullptr};
+    UIModList* mods{nullptr};
+    CBaseUILabel* no_mods_selected{nullptr};
+    UIButton* ready_btn{nullptr};
+    UIContextMenu* contextMenu{nullptr};
 
-    CBaseUILabel* player_list_label = nullptr;
-    PauseButton* pauseButton = nullptr;
-    McFont* font = nullptr;
-    McFont* lfont = nullptr;
+    CBaseUILabel* player_list_label{nullptr};
+    PauseButton* pauseButton{nullptr};
+
+    McFont* font{nullptr};
+    McFont* lfont{nullptr};
+
     time_t last_packet_tms = {0};
 };

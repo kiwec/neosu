@@ -623,7 +623,7 @@ void ConsoleBox::log(const UString &text, Color textColor) {
 
     // add log entry(ies, split on any newlines inside the string)
     if(text.find(u'\n') != -1) {
-        auto stringVec = text.split(ULITERAL("\n"));
+        auto stringVec = text.split(US_("\n"));
         this->log_entries.reserve(this->log_entries.size() + stringVec.size());
         for(const auto &entry : stringVec) {
             auto trimmed = entry.trim();

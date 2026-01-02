@@ -226,7 +226,7 @@ struct NetworkImpl {
 };
 
 void NetworkImpl::threadLoopFunc(const Sync::stop_token& stopToken) {
-    McThread::set_current_thread_name(ULITERAL("net_manager"));
+    McThread::set_current_thread_name(US_("net_manager"));
     McThread::set_current_thread_prio(McThread::Priority::NORMAL);  // reset priority
 
     while(!stopToken.stop_requested()) {

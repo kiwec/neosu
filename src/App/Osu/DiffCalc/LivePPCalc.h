@@ -4,6 +4,7 @@
 #include "noinclude.h"
 #include "StaticPImpl.h"
 
+class LiveScore;
 class BeatmapInterface;
 
 // for live PP/star calc. during gameplay
@@ -20,7 +21,7 @@ struct LivePPCalc {
     ~LivePPCalc();
 
     // call during BeatmapInterface::update
-    void update();
+    void update(LiveScore &score);
 
     // force refresh
     void invalidate();

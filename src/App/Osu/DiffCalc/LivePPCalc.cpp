@@ -3,13 +3,15 @@
 
 #include "Logging.h"
 
-#include "BanchoProtocol.h"
 #include "Osu.h"
 #include "BeatmapInterface.h"
 #include "DifficultyCalculator.h"
-#include "HUD.h"
-#include "OsuConVars.h"
 #include "uwu.h"
+#include "ConVar.h"
+
+namespace cv {
+extern ConVar debug_pp;
+}
 
 struct LivePPCalc::LivePPCalcImpl {
     NOCOPY_NOMOVE(LivePPCalcImpl);
@@ -103,12 +105,7 @@ struct LivePPCalc::LivePPCalcImpl {
     ~LivePPCalcImpl() = default;
 
     // designed in a way that most of the heavy lifting is done off-thread (inside the calc_inst invocation)
-    void update() {
-        if(!(osu->getHUD()->getScoringMetric() == PP || cv::draw_statistics_pp.getBool() ||
-             cv::draw_statistics_livestars.getBool())) {
-            return;
-        }
-
+    void update(LiveScore &score) {
         const i32 cur_hobj = m_bmi->iCurrentHitObjectIndex;
 
         if(!needs_update(cur_hobj)) {
@@ -126,7 +123,6 @@ struct LivePPCalc::LivePPCalcImpl {
 
         update_queued_idx(cur_hobj);
 
-        auto &score = *osu->getScore();
         m_calc_inst.enqueue([p = lazyCalcParams{
                                  .osufile_path = m_bmi->beatmap ? m_bmi->beatmap->getFilePath() : "",  //
                                  .legacyTotalScore = score.getScore(),                                 //
@@ -259,7 +255,7 @@ struct LivePPCalc::LivePPCalcImpl {
 LivePPCalc::LivePPCalc(BeatmapInterface *parent) : pImpl(parent) {}
 LivePPCalc::~LivePPCalc() = default;
 
-void LivePPCalc::update() { return pImpl->update(); }
+void LivePPCalc::update(LiveScore &score) { return pImpl->update(score); }
 void LivePPCalc::invalidate() { return pImpl->invalidate(); }
 
 float LivePPCalc::get_stars() const { return pImpl->m_live_stars; }

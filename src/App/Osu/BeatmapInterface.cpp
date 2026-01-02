@@ -323,10 +323,10 @@ void BeatmapInterface::skipEmptySection() {
         this->broadcast_spectator_frames();
 
         Packet packet;
-        packet.id = OUT_SPECTATE_FRAMES;
+        packet.id = OUTP_SPECTATE_FRAMES;
         packet.write<i32>(0);
         packet.write<u16>(0);
-        packet.write<u8>(LiveReplayBundle::Action::SKIP);
+        packet.write<u8>((u8)LiveReplayAction::SKIP);
         packet.write<ScoreFrame>(ScoreFrame::get());
         packet.write<u16>(this->spectator_sequence++);
         BANCHO::Net::send_packet(packet);
@@ -435,10 +435,10 @@ bool BeatmapInterface::play() {
         RichPresence::onPlayStart();
         if(!BanchoState::spectators.empty()) {
             Packet packet;
-            packet.id = OUT_SPECTATE_FRAMES;
+            packet.id = OUTP_SPECTATE_FRAMES;
             packet.write<i32>(0);
             packet.write<u16>(0);  // 0 frames, we're just signaling map start
-            packet.write<u8>(LiveReplayBundle::Action::NEW_SONG);
+            packet.write<u8>((u8)LiveReplayAction::NEW_SONG);
             packet.write<ScoreFrame>(ScoreFrame::get());
             packet.write<u16>(this->spectator_sequence++);
             BANCHO::Net::send_packet(packet);
@@ -450,7 +450,7 @@ bool BeatmapInterface::play() {
         }
 
         if(BanchoState::can_submit_scores() && !cvars().areAllCvarsSubmittable()) {
-            osu->getNotificationOverlay()->addToast(ULITERAL("Score will not submit with current mods/settings"),
+            osu->getNotificationOverlay()->addToast(US_("Score will not submit with current mods/settings"),
                                                     ERROR_TOAST);
         }
 
@@ -947,7 +947,7 @@ void BeatmapInterface::stop(bool quit) {
         } else {
             osu->getRoom()->onClientScoreChange(true);
             Packet packet;
-            packet.id = FINISH_MATCH;
+            packet.id = OUTP_FINISH_MATCH;
             BANCHO::Net::send_packet(packet);
         }
     } else {
@@ -1090,7 +1090,7 @@ void BeatmapInterface::seekMS(u32 ms) {
 
     if(!this->is_watching && !BanchoState::spectating) {  // score submission already disabled when watching replay
         if(was_submittable && BanchoState::can_submit_scores()) {
-            osu->getNotificationOverlay()->addToast(ULITERAL("Score will not submit due to seeking"), ERROR_TOAST);
+            osu->getNotificationOverlay()->addToast(US_("Score will not submit due to seeking"), ERROR_TOAST);
         }
         this->bTempSeekNF = true;
     }
@@ -1831,7 +1831,7 @@ void BeatmapInterface::draw() {
     // draw spectator pause message
     if(this->spectate_pause) {
         auto info = BANCHO::User::get_user_info(BanchoState::spectated_player_id);
-        auto pause_msg = UString::format("%s has paused", info->name.toUtf8());
+        auto pause_msg = UString::format("%s has paused", info->name.c_str());
         osu->getHUD()->drawLoadingSmall(pause_msg);
     }
 
@@ -2388,7 +2388,7 @@ void BeatmapInterface::update() {
         this->player_loaded = true;
 
         Packet packet;
-        packet.id = MATCH_LOAD_COMPLETE;
+        packet.id = OUTP_MATCH_LOAD_COMPLETE;
         BANCHO::Net::send_packet(packet);
     }
 
@@ -2400,7 +2400,10 @@ void BeatmapInterface::update() {
     }
 
     // @PPV3: also calculate live ppv3
-    this->ppv2_calc.update();
+    if(osu->getHUD()->getScoringMetric() == WinCondition::PP || cv::draw_statistics_pp.getBool() ||
+       cv::draw_statistics_livestars.getBool()) {
+        this->ppv2_calc.update(*osu->getScore());
+    }
 
     // update auto (after having updated the hitobjects)
     if(osu->getModAuto() || osu->getModAutopilot()) this->updateAutoCursorPos();
@@ -2621,7 +2624,7 @@ void BeatmapInterface::update2() {
 
     // handle music loading fail
     if(!this->music->isReady()) {
-        osu->getNotificationOverlay()->addToast(ULITERAL("Couldn't load music file :("), ERROR_TOAST);
+        osu->getNotificationOverlay()->addToast(US_("Couldn't load music file :("), ERROR_TOAST);
         this->stop(true);
         return;
     }
@@ -3346,13 +3349,13 @@ void BeatmapInterface::broadcast_spectator_frames() {
     if(BanchoState::spectators.empty()) return;
 
     Packet packet;
-    packet.id = OUT_SPECTATE_FRAMES;
+    packet.id = OUTP_SPECTATE_FRAMES;
     packet.write<i32>(0);
     packet.write<u16>(this->frame_batch.size());
     for(auto batch : this->frame_batch) {
         packet.write<LiveReplayFrame>(batch);
     }
-    packet.write<u8>(LiveReplayBundle::Action::NONE);
+    packet.write<u8>((u8)LiveReplayAction::NONE);
     packet.write<ScoreFrame>(ScoreFrame::get());
     packet.write<u16>(this->spectator_sequence++);
     BANCHO::Net::send_packet(packet);
@@ -3834,7 +3837,7 @@ FinishedScore BeatmapInterface::saveAndSubmitScore(bool quit) {
 
     FinishedScore score;
 
-    score.client = fmt::format("neosu-" OS_NAME "-{:s}", BanchoState::neosu_version.toUtf8());
+    score.client = fmt::format("neosu-" OS_NAME "-{:s}", BanchoState::neosu_version);
 
     score.unixTimestamp =
         std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
@@ -3893,7 +3896,7 @@ FinishedScore BeatmapInterface::saveAndSubmitScore(bool quit) {
         if(score.passed || cv::save_failed_scores.getBool()) {
             int scoreIndex = db->addScore(score);
             if(scoreIndex == -1) {
-                osu->getNotificationOverlay()->addToast(ULITERAL("Failed saving score!"), ERROR_TOAST);
+                osu->getNotificationOverlay()->addToast(US_("Failed saving score!"), ERROR_TOAST);
             }
         }
     }
@@ -3902,10 +3905,10 @@ FinishedScore BeatmapInterface::saveAndSubmitScore(bool quit) {
         this->broadcast_spectator_frames();
 
         Packet packet;
-        packet.id = OUT_SPECTATE_FRAMES;
+        packet.id = OUTP_SPECTATE_FRAMES;
         packet.write<i32>(0);
         packet.write<u16>(0);
-        packet.write<u8>(isComplete ? LiveReplayBundle::Action::COMPLETION : LiveReplayBundle::Action::FAIL);
+        packet.write<u8>((u8)(isComplete ? LiveReplayAction::COMPLETION : LiveReplayAction::FAIL));
         packet.write<ScoreFrame>(ScoreFrame::get());
         packet.write<u16>(this->spectator_sequence++);
         BANCHO::Net::send_packet(packet);

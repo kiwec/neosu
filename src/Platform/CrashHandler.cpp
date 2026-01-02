@@ -210,21 +210,21 @@ static void invalid_parameter_handler(const wchar_t* expression, const wchar_t* 
     // capture the invalid parameter information for the minidump
     std::array<wchar_t, 16 + 1> lineBuf{};
 
-    UString uText{ULITERAL("Invalid parameter detected:\n")};
+    UString uText{US_("Invalid parameter detected:\n")};
 
     if(expression) {
-        uText += ULITERAL("  Expression: ");
+        uText += US_("  Expression: ");
         uText += expression;
         uText += u'\n';
     }
     if(function) {
-        uText += ULITERAL("  Function: ");
+        uText += US_("  Function: ");
         uText += function;
         uText += u'\n';
     }
     if(file) {
         snwprintf(lineBuf.data(), 16, L"%u", line);
-        uText += ULITERAL("  File: ");
+        uText += US_("  File: ");
         uText += file;
         uText += u':';
         uText += lineBuf.data();

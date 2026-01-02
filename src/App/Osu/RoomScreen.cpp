@@ -222,12 +222,12 @@ RoomScreen::~RoomScreen() {
     SAFE_DELETE(this->select_mods_btn);
     SAFE_DELETE(this->change_win_condition_btn);
     SAFE_DELETE(this->win_condition);
-    SAFE_DELETE(map_label);
+    SAFE_DELETE(this->map_label);
     SAFE_DELETE(this->map_title);
     SAFE_DELETE(this->map_stars);
     SAFE_DELETE(this->map_attributes);
     SAFE_DELETE(this->map_attributes2);
-    SAFE_DELETE(mods_label);
+    SAFE_DELETE(this->mods_label);
     SAFE_DELETE(this->freemod);
     SAFE_DELETE(this->no_mods_selected);
     SAFE_DELETE(this->mods);
@@ -267,7 +267,7 @@ void RoomScreen::draw() {
 
     // Update avatar visibility status
     for(auto elm : this->slotlist->container->getElements()) {
-        if(elm->getName() == ULITERAL("avatar")) {
+        if(elm->getName() == US_("avatar")) {
             // NOTE: Not checking horizontal visibility
             auto avatar = (UIAvatar *)elm;
             bool is_below_top = avatar->getPos().y + avatar->getSize().y >= this->slotlist->getPos().y;
@@ -283,10 +283,10 @@ void RoomScreen::mouse_update(bool *propagate_clicks) {
     const bool room_name_changed = this->room_name_ipt->getText() != BanchoState::room.name;
     if(BanchoState::room.is_host() && room_name_changed) {
         // XXX: should only update 500ms after last input
-        BanchoState::room.name = this->room_name_ipt->getText();
+        BanchoState::room.name = this->room_name_ipt->getText().toUtf8();
 
         Packet packet;
-        packet.id = MATCH_CHANGE_SETTINGS;
+        packet.id = OUTP_MATCH_CHANGE_SETTINGS;
         BanchoState::room.pack(packet);
         BANCHO::Net::send_packet(packet);
 
@@ -384,7 +384,7 @@ void RoomScreen::updateSettingsLayout(vec2 newResolution) {
         UString host_str = "Host: None";
         if(BanchoState::room.host_id != 0) {
             const auto *host = BANCHO::User::get_user_info(BanchoState::room.host_id, true);
-            host_str = UString::format("Host: %s", host->name.toUtf8());
+            host_str = UString::format("Host: %s", host->name.c_str());
         }
         this->host->setText(host_str);
         ADD_ELEMENT(this->host);
@@ -399,13 +399,13 @@ void RoomScreen::updateSettingsLayout(vec2 newResolution) {
     }
 
     // Win condition
-    if(BanchoState::room.win_condition == SCOREV1) {
+    if(BanchoState::room.win_condition == WinCondition::SCOREV1) {
         this->win_condition->setText("Win condition: Score");
-    } else if(BanchoState::room.win_condition == ACCURACY) {
+    } else if(BanchoState::room.win_condition == WinCondition::ACCURACY) {
         this->win_condition->setText("Win condition: Accuracy");
-    } else if(BanchoState::room.win_condition == CURRENT_COMBO) {
+    } else if(BanchoState::room.win_condition == WinCondition::CURRENT_COMBO) {
         this->win_condition->setText("Win condition: Combo");
-    } else if(BanchoState::room.win_condition == SCOREV2) {
+    } else if(BanchoState::room.win_condition == WinCondition::SCOREV2) {
         this->win_condition->setText("Win condition: ScoreV2");
     } else {
         this->win_condition->setText("Win condition: ???");
@@ -463,7 +463,7 @@ void RoomScreen::updateSettingsLayout(vec2 newResolution) {
     if(is_host && is_ready && nb_ready > 1) {
         auto force_start_str = UString::format("Force start (%d/%d)", nb_ready, BanchoState::room.nb_players);
         if(BanchoState::room.all_players_ready()) {
-            force_start_str = ULITERAL("Start game");
+            force_start_str = US_("Start game");
         }
         this->ready_btn->setText(force_start_str);
         this->ready_btn->setColor(0xff00d900);
@@ -499,11 +499,11 @@ void RoomScreen::updateLayout(vec2 newResolution) {
             const auto *user_info = BANCHO::User::get_user_info(slot.player_id, true);
 
             auto color = 0xffffffff;
-            auto username = user_info->name;
+            std::string username = user_info->name;
             if(slot.is_player_playing()) {
-                username = fmt::format("[playing] {}", user_info->name.toUtf8());
+                username = fmt::format("[playing] {}", user_info->name);
             } else if(slot.no_map()) {
-                username = fmt::format("[no map] {}", user_info->name.toUtf8());
+                username = fmt::format("[no map] {}", user_info->name);
             } else if(slot.is_ready()) {
                 color = 0xff00ff00;
             }
@@ -538,7 +538,7 @@ void RoomScreen::ragequit(bool play_sound) {
     osu->getHUD()->updateScoringMetric();
 
     Packet packet;
-    packet.id = EXIT_ROOM;
+    packet.id = OUTP_EXIT_ROOM;
     BANCHO::Net::send_packet(packet);
 
     osu->getModSelector()->resetMods();
@@ -561,7 +561,7 @@ void RoomScreen::on_map_change() {
     if(osu->getRankingScreen()->isVisible()) return;
 
     debugLog("Map changed to ID {:d}, MD5 {:s}: {:s}", BanchoState::room.map_id, BanchoState::room.map_md5.string(),
-             BanchoState::room.map_name.toUtf8());
+             BanchoState::room.map_name);
     this->ready_btn->is_loading = true;
 
     // Deselect current map
@@ -594,11 +594,11 @@ void RoomScreen::on_map_change() {
             this->ready_btn->is_loading = false;
 
             Packet packet;
-            packet.id = MATCH_HAS_BEATMAP;
+            packet.id = OUTP_MATCH_HAS_BEATMAP;
             BANCHO::Net::send_packet(packet);
         } else {
             Packet packet;
-            packet.id = MATCH_NO_BEATMAP;
+            packet.id = OUTP_MATCH_NO_BEATMAP;
             BANCHO::Net::send_packet(packet);
         }
     }
@@ -606,13 +606,13 @@ void RoomScreen::on_map_change() {
     this->updateLayout(osu->getVirtScreenSize());
 }
 
-void RoomScreen::on_room_joined(Room room) {
+void RoomScreen::on_room_joined(const Room &room) {
     BanchoState::room = room;
     debugLog("Joined room #{:d}\nPlayers:", room.id);
     for(auto &slot : room.slots) {
         if(slot.has_player()) {
             const UserInfo *user_info = BANCHO::User::get_user_info(slot.player_id, true);
-            debugLog("- {:s}", user_info->name.toUtf8());
+            debugLog("- {:s}", user_info->name);
         }
     }
 
@@ -632,7 +632,7 @@ void RoomScreen::on_room_joined(Room room) {
     this->updateLayout(osu->getVirtScreenSize());
     this->bVisible = true;
 
-    RichPresence::setBanchoStatus(room.name.toUtf8(), MULTIPLAYER);
+    RichPresence::setBanchoStatus(room.name.c_str(), Action::MULTIPLAYER);
     RichPresence::onMultiplayerLobby();
     osu->getChat()->openChannel("#multiplayer");
 
@@ -643,7 +643,7 @@ void RoomScreen::on_room_joined(Room room) {
     cv::mod_no_pausing.setValue(true);
 }
 
-void RoomScreen::on_room_updated(Room room) {
+void RoomScreen::on_room_updated(const Room &room) {
     if(BanchoState::is_playing_a_multi_map() || !BanchoState::is_in_a_multi_room()) return;
 
     if(BanchoState::room.nb_players < room.nb_players) {
@@ -702,8 +702,8 @@ void RoomScreen::on_room_updated(Room room) {
     this->updateLayout(osu->getVirtScreenSize());
 }
 
-void RoomScreen::on_match_started(Room room) {
-    BanchoState::room = std::move(room);
+void RoomScreen::on_match_started(const Room &room) {
+    BanchoState::room = room;
     if(osu->getMapInterface()->getBeatmap() == nullptr) {
         debugLog("We received MATCH_STARTED without being ready, wtf!");
         return;
@@ -719,7 +719,7 @@ void RoomScreen::on_match_started(Room room) {
 
         soundEngine->play(osu->getSkin()->s_match_start);
     } else {
-        osu->getNotificationOverlay()->addToast(ULITERAL("Failed to load map"), ERROR_TOAST);
+        osu->getNotificationOverlay()->addToast(US_("Failed to load map"), ERROR_TOAST);
         this->ragequit();  // map failed to load
     }
 }
@@ -831,7 +831,7 @@ void RoomScreen::onClientScoreChange(bool force) {
     if(!should_update && !force) return;
 
     Packet packet;
-    packet.id = UPDATE_MATCH_SCORE;
+    packet.id = OUTP_UPDATE_MATCH_SCORE;
     packet.write<ScoreFrame>(ScoreFrame::get());
     BANCHO::Net::send_packet(packet);
 
@@ -854,11 +854,11 @@ void RoomScreen::onReadyButtonClick() {
     }
     if(BanchoState::room.is_host() && is_ready && nb_ready > 1) {
         Packet packet;
-        packet.id = START_MATCH;
+        packet.id = OUTP_START_MATCH;
         BANCHO::Net::send_packet(packet);
     } else {
         Packet packet;
-        packet.id = is_ready ? MATCH_NOT_READY : MATCH_READY;
+        packet.id = is_ready ? OUTP_MATCH_NOT_READY : OUTP_MATCH_READY;
         BANCHO::Net::send_packet(packet);
     }
 }
@@ -875,7 +875,7 @@ void RoomScreen::onSelectMapClicked() {
     soundEngine->play(osu->getSkin()->s_menu_hit);
 
     Packet packet;
-    packet.id = MATCH_CHANGE_SETTINGS;
+    packet.id = OUTP_MATCH_CHANGE_SETTINGS;
     BanchoState::room.map_id = -1;
     BanchoState::room.map_name = "";
     BanchoState::room.map_md5 = "";
@@ -892,10 +892,10 @@ void RoomScreen::onChangePasswordClicked() {
 void RoomScreen::onChangeWinConditionClicked() {
     this->contextMenu->setVisible(false);
     this->contextMenu->begin();
-    this->contextMenu->addButton("Score V1", SCOREV1);
-    this->contextMenu->addButton("Score V2", SCOREV2);
-    this->contextMenu->addButton("Accuracy", ACCURACY);
-    this->contextMenu->addButton("Combo", CURRENT_COMBO);
+    this->contextMenu->addButton("Score V1", (int)WinCondition::SCOREV1);
+    this->contextMenu->addButton("Score V2", (int)WinCondition::SCOREV2);
+    this->contextMenu->addButton("Accuracy", (int)WinCondition::ACCURACY);
+    this->contextMenu->addButton("Combo", (int)WinCondition::CURRENT_COMBO);
     this->contextMenu->end(false, false);
     this->contextMenu->setPos(mouse->getPos());
     this->contextMenu->setClickCallback(SA::MakeDelegate<&RoomScreen::onWinConditionSelected>(this));
@@ -903,10 +903,12 @@ void RoomScreen::onChangeWinConditionClicked() {
 }
 
 void RoomScreen::onWinConditionSelected(const UString & /*win_condition_str*/, int win_condition) {
-    BanchoState::room.win_condition = win_condition;
+    assert(win_condition >= 0 && win_condition <= 255);
+
+    BanchoState::room.win_condition = (WinCondition)win_condition;
 
     Packet packet;
-    packet.id = MATCH_CHANGE_SETTINGS;
+    packet.id = OUTP_MATCH_CHANGE_SETTINGS;
     BanchoState::room.pack(packet);
     BANCHO::Net::send_packet(packet);
 
@@ -914,11 +916,11 @@ void RoomScreen::onWinConditionSelected(const UString & /*win_condition_str*/, i
 }
 
 void RoomScreen::set_new_password(const UString &new_password) {
-    BanchoState::room.has_password = new_password.length() > 0;
-    BanchoState::room.password = new_password;
+    BanchoState::room.has_password = new_password.lengthUtf8() > 0;
+    BanchoState::room.password = new_password.toUtf8();
 
     Packet packet;
-    packet.id = CHANGE_ROOM_PASSWORD;
+    packet.id = OUTP_CHANGE_ROOM_PASSWORD;
     BanchoState::room.pack(packet);
     BANCHO::Net::send_packet(packet);
 }
@@ -929,7 +931,7 @@ void RoomScreen::onFreemodCheckboxChanged(CBaseUICheckbox *checkbox) {
     BanchoState::room.freemods = checkbox->isChecked();
 
     Packet packet;
-    packet.id = MATCH_CHANGE_SETTINGS;
+    packet.id = OUTP_MATCH_CHANGE_SETTINGS;
     BanchoState::room.pack(packet);
     BANCHO::Net::send_packet(packet);
 

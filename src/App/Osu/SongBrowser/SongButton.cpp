@@ -195,7 +195,7 @@ void SongButton::drawTitle(float deselectedAlpha, bool forceSelectedStyle) {
 
     const UString title{this->representativeBeatmap ? this->representativeBeatmap->getTitle()
                         : this->databaseBeatmap     ? this->databaseBeatmap->getTitle()
-                                                    : ULITERAL("")};
+                                                    : US_("")};
 
     g->pushTransform();
     {

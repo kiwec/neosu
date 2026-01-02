@@ -5,6 +5,7 @@
 #include "templates.h"
 
 #include <atomic>
+#include <vector>
 #include <array>
 
 class Image;
@@ -43,18 +44,18 @@ struct BanchoState final {
 
     static ServerPolicy score_submission_policy;
 
-    static UString neosu_version;
-    static UString cho_token;
-    static UString user_agent;
-    static UString client_hashes;
+    static std::string neosu_version;
+    static std::string cho_token;
+    static std::string user_agent;
+    static std::string client_hashes;
 
     static Room room;
     static bool match_started;
     static std::array<Slot, 16> last_scores;
 
     struct Channel {
-        UString name;
-        UString topic;
+        std::string name;
+        std::string topic;
         u32 nb_members;
     };
 
@@ -66,10 +67,10 @@ struct BanchoState final {
     static void update_online_status(OnlineStatus new_status);
 
     // cached uuid
-    [[nodiscard]] static const UString &get_disk_uuid();
+    [[nodiscard]] static const std::string &get_disk_uuid();
 
     // cached install id (currently unimplemented, just returns disk uuid)
-    [[nodiscard]] static inline const UString &get_install_id() { return get_disk_uuid(); }
+    [[nodiscard]] static inline const std::string &get_install_id() { return get_disk_uuid(); }
 
     // Room ID can be 0 on private servers! So we check if the room has players instead.
     [[nodiscard]] static bool is_in_a_multi_room();
@@ -92,10 +93,10 @@ struct BanchoState final {
 
    private:
     // internal helpers
-    static void update_channel(const UString &name, const UString &topic, i32 nb_members, bool join);
+    static void update_channel(const std::string &name, const std::string &topic, i32 nb_members, bool join);
 
-    [[nodiscard]] static UString get_disk_uuid_win32();
-    [[nodiscard]] static UString get_disk_uuid_blkid();
+    [[nodiscard]] static std::string get_disk_uuid_win32();
+    [[nodiscard]] static std::string get_disk_uuid_blkid();
 
     static bool print_new_channels;
 
@@ -103,8 +104,8 @@ struct BanchoState final {
     static std::string username;
 
     // cached on first get
-    static UString disk_uuid;
-    // static UString install_id; // TODO?
+    static std::string disk_uuid;
+    // static std::string install_id; // TODO?
 
     static std::atomic<i32> user_id;
     static OnlineStatus online_status;

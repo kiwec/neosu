@@ -282,7 +282,7 @@ void HUD::drawDummy() {
     if(cv::draw_inputoverlay.getBool()) this->drawInputOverlay(0, 0, 0, 0);
 
     SCORE_ENTRY scoreEntry;
-    scoreEntry.name = BanchoState::get_username().c_str();
+    scoreEntry.name = BanchoState::get_username();
     scoreEntry.currentCombo = 420;
     scoreEntry.maxCombo = 420;
     scoreEntry.misses = 0;
@@ -1162,11 +1162,11 @@ std::vector<SCORE_ENTRY> HUD::getCurrentScores() {
 
             if(slot->has_quit()) {
                 slot->current_hp = 0;
-                scoreEntry.name = UString::format("%s [quit]", user_info->name.toUtf8());
+                scoreEntry.name = UString::format("%s [quit]", user_info->name.c_str());
             } else if(pf->isInSkippableSection() && pf->iCurrentHitObjectIndex < 1) {
                 if(slot->skipped) {
                     // XXX: Draw pretty "Skip" image instead
-                    scoreEntry.name = UString::format("%s [skip]", user_info->name.toUtf8());
+                    scoreEntry.name = UString::format("%s [skip]", user_info->name.c_str());
                 }
             }
 
@@ -1228,7 +1228,7 @@ std::vector<SCORE_ENTRY> HUD::getCurrentScores() {
             playerScoreEntry.name = osu->watched_user_name;
             playerScoreEntry.player_id = osu->watched_user_id;
         } else {
-            playerScoreEntry.name = BanchoState::get_username().c_str();
+            playerScoreEntry.name = BanchoState::get_username();
             playerScoreEntry.player_id = BanchoState::get_uid();
         }
         playerScoreEntry.entry_id = 0;
@@ -1244,17 +1244,17 @@ std::vector<SCORE_ENTRY> HUD::getCurrentScores() {
         nb_slots++;
     }
 
-    const auto sorting_type = this->scoring_metric;
+    const WinCondition sorting_type = this->scoring_metric;
     std::ranges::sort(scores, [sorting_type](const SCORE_ENTRY &a, const SCORE_ENTRY &b) {
-        if(sorting_type == MISSES) {
+        if(sorting_type == WinCondition::MISSES) {
             return a.misses < b.misses;
-        } else if(sorting_type == CURRENT_COMBO) {
+        } else if(sorting_type == WinCondition::CURRENT_COMBO) {
             return a.currentCombo > b.currentCombo;
-        } else if(sorting_type == MAX_COMBO) {
+        } else if(sorting_type == WinCondition::MAX_COMBO) {
             return a.maxCombo > b.maxCombo;
-        } else if(sorting_type == PP) {
+        } else if(sorting_type == WinCondition::PP) {
             return a.pp > b.pp;
-        } else if(sorting_type == ACCURACY) {
+        } else if(sorting_type == WinCondition::ACCURACY) {
             return a.accuracy > b.accuracy;
         } else {
             return a.score > b.score;
@@ -2503,11 +2503,12 @@ void HUD::addCursorTrailPosition(std::vector<CURSORTRAIL> &trail, vec2 pos) {
 void HUD::resetHitErrorBar() { this->hiterrors.clear(); }
 
 McRect HUD::getSkipClickRect() {
-    const float skipScale = cv::hud_scale.getFloat();
-    return McRect(osu->getVirtScreenWidth() - osu->getSkin()->i_play_skip->getSize().x * skipScale,
-                  osu->getVirtScreenHeight() - osu->getSkin()->i_play_skip->getSize().y * skipScale,
-                  osu->getSkin()->i_play_skip->getSize().x * skipScale,
-                  osu->getSkin()->i_play_skip->getSize().y * skipScale);
+    const ivec2 osuScreenInt = osu->getVirtScreenSize();
+    const vec2 skipImageSize = osu->getSkin()->i_play_skip->getSize() * cv::hud_scale.getFloat();
+    return {osuScreenInt.x - skipImageSize.x,  //
+            osuScreenInt.y - skipImageSize.y,  //
+            skipImageSize.x,                   //
+            skipImageSize.y};
 }
 
 void HUD::updateScoringMetric() {
@@ -2516,15 +2517,15 @@ void HUD::updateScoringMetric() {
     } else {
         const auto &sortTypeString{cv::songbrowser_scores_sortingtype.getString()};
         if(sortTypeString == "By accuracy") {
-            this->scoring_metric = ACCURACY;
+            this->scoring_metric = WinCondition::ACCURACY;
         } else if(sortTypeString == "By combo") {
-            this->scoring_metric = MAX_COMBO;
+            this->scoring_metric = WinCondition::MAX_COMBO;
         } else if(sortTypeString == "By misses") {
-            this->scoring_metric = MISSES;
+            this->scoring_metric = WinCondition::MISSES;
         } else if(sortTypeString == "By pp") {
-            this->scoring_metric = PP;
+            this->scoring_metric = WinCondition::PP;
         } else {
-            this->scoring_metric = SCOREV1;
+            this->scoring_metric = WinCondition::SCOREV1;
         }
     }
 }

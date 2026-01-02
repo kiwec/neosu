@@ -135,7 +135,7 @@ struct DirWatcherImpl {
     };
 
     void worker_loop(const Sync::stop_token& stoken) {
-        McThread::set_current_thread_name(ULITERAL("dir_watcher"));
+        McThread::set_current_thread_name(US_("dir_watcher"));
         McThread::set_current_thread_prio(McThread::Priority::LOW);
 
         sv_unordered_map<DirectoryState> active_directories;
@@ -391,7 +391,7 @@ struct DirWatcherImpl {
     };
 
     void worker_loop(const Sync::stop_token& stoken) {
-        McThread::set_current_thread_name(ULITERAL("dir_watcher"));
+        McThread::set_current_thread_name(US_("dir_watcher"));
         McThread::set_current_thread_prio(McThread::Priority::LOW);
 
         // Windows & OSX do not provide APIs that tell you when a file is

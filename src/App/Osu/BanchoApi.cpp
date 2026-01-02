@@ -17,20 +17,20 @@ namespace BANCHO::Api {
 
 static void handle_api_response(const Packet &packet) {
     switch(packet.id) {
-        case GET_BEATMAPSET_INFO: {
+        case RequestType::GET_BEATMAPSET_INFO: {
             Downloader::process_beatmapset_info_response(packet);
             break;
         }
 
-        case GET_MAP_LEADERBOARD: {
+        case RequestType::GET_MAP_LEADERBOARD: {
             BANCHO::Leaderboard::process_leaderboard_response(packet);
             break;
         }
 
-        case GET_REPLAY: {
+        case RequestType::GET_REPLAY: {
             if(packet.size == 0) {
                 // Most likely, 404
-                osu->getNotificationOverlay()->addToast(ULITERAL("Failed to download replay"), ERROR_TOAST);
+                osu->getNotificationOverlay()->addToast(US_("Failed to download replay"), ERROR_TOAST);
                 break;
             }
 
@@ -58,14 +58,14 @@ static void handle_api_response(const Packet &packet) {
                 if(success) {
                     LegacyReplay::load_and_watch(to_watch);
                 } else {
-                    osu->getNotificationOverlay()->addToast(ULITERAL("Failed to save replay"), ERROR_TOAST);
+                    osu->getNotificationOverlay()->addToast(US_("Failed to save replay"), ERROR_TOAST);
                 }
             });
 
             break;
         }
 
-        case MARK_AS_READ: {
+        case RequestType::MARK_AS_READ: {
             // (nothing to do)
             break;
         }
@@ -116,7 +116,7 @@ void append_auth_params(std::string &url, std::string user_param, std::string pw
     std::string user, pw;
     if(BanchoState::is_oauth) {
         user = "$token";
-        pw = BanchoState::cho_token.toUtf8();
+        pw = BanchoState::cho_token;
     } else {
         user = BanchoState::get_username();
         pw = BanchoState::pw_md5.string();

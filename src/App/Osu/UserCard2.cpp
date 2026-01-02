@@ -36,48 +36,49 @@ void UserCard2::draw() {
 
     g->pushClipRect(McRect(this->vPos.x, this->vPos.y, this->vSize.x, this->vSize.y));
 
-    UString status_text = "";
+    UString status_text = US_("");
     switch(this->info->action) {
+        using enum Action;
         case IDLE:
-            status_text = "Idle ";
+            status_text = US_("Idle ");
             break;
         case AFK:
-            status_text = "Afk ";
+            status_text = US_("Afk ");
             break;
         case PLAYING:
-            status_text = "Playing ";
+            status_text = US_("Playing ");
             break;
         case EDITING:
-            status_text = "Editing ";
+            status_text = US_("Editing ");
             break;
         case MODDING:
-            status_text = "Modding ";
+            status_text = US_("Modding ");
             break;
         case MULTIPLAYER:
-            status_text = "Multiplaying ";
+            status_text = US_("Multiplaying ");
             break;
         case WATCHING:
-            status_text = "Watching ";
+            status_text = US_("Watching ");
             break;
         case TESTING:
         case TESTING2:
-            status_text = "Testing ";
+            status_text = US_("Testing ");
             break;
         case SUBMITTING:
-            status_text = "Submitting ";
+            status_text = US_("Submitting ");
             break;
         case PAUSED:
-            status_text = "Paused ";
+            status_text = US_("Paused ");
             break;
         case MULTIPLAYING:
-            status_text = "Multiplaying ";
+            status_text = US_("Multiplaying ");
             break;
         default:
             break;
     }
 
-    if(this->info->irc_user) {
-        status_text = "IRC user";
+    if(this->info->is_irc()) {
+        status_text = US_("IRC user");
     } else {
         status_text.append(this->info->info_text);
     }
@@ -85,6 +86,7 @@ void UserCard2::draw() {
     // Draw background
     // Colors from https://osu.ppy.sh/wiki/en/Client/Interface/Chat_console
     switch(this->info->action) {
+        using enum Action;
         case PLAYING:
         case PAUSED:
             // Grey - Playing a beatmap in solo

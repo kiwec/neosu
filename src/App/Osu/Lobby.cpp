@@ -144,16 +144,16 @@ CBaseUIContainer* Lobby::setVisible(bool visible) {
 
     if(visible) {
         Packet packet;
-        packet.id = JOIN_ROOM_LIST;
+        packet.id = OUTP_JOIN_ROOM_LIST;
         BANCHO::Net::send_packet(packet);
 
         packet = Packet();
-        packet.id = CHANNEL_JOIN;
+        packet.id = OUTP_CHANNEL_JOIN;
         packet.write_string("#lobby");
         BANCHO::Net::send_packet(packet);
 
         // LOBBY presence is broken so we send MULTIPLAYER
-        RichPresence::setBanchoStatus("Looking to play", MULTIPLAYER);
+        RichPresence::setBanchoStatus("Looking to play", Action::MULTIPLAYER);
 
         if(db->getProgress() == 0.0) {
             // Not having a loaded database causes a bunch of issues in multi
@@ -162,11 +162,11 @@ CBaseUIContainer* Lobby::setVisible(bool visible) {
         }
     } else {
         Packet packet;
-        packet.id = EXIT_ROOM_LIST;
+        packet.id = OUTP_EXIT_ROOM_LIST;
         BANCHO::Net::send_packet(packet);
 
         packet = Packet();
-        packet.id = CHANNEL_PART;
+        packet.id = OUTP_CHANNEL_PART;
         packet.write_string("#lobby");
         BANCHO::Net::send_packet(packet);
         this->rooms.clear();
@@ -224,9 +224,9 @@ void Lobby::addRoom(std::unique_ptr<Room> room) {
 
 void Lobby::joinRoom(u32 id, const UString& password) {
     Packet packet;
-    packet.id = JOIN_ROOM;
+    packet.id = OUTP_JOIN_ROOM;
     packet.write<u32>(id);
-    packet.write_string(password.toUtf8());
+    packet.write_string(password.utf8View());
     BANCHO::Net::send_packet(packet);
 
     for(CBaseUIElement* elm : this->list->container->getElements()) {
@@ -272,14 +272,14 @@ void Lobby::on_create_room_clicked() {
 
     if(osu->getMapInterface() && osu->getMapInterface()->getBeatmap()) {
         auto map = osu->getMapInterface()->getBeatmap();
-        BanchoState::room.map_name = UString::format("%s - %s [%s]", map->getArtist().c_str(), map->getTitle().c_str(),
-                                                     map->getDifficultyName().c_str());
+        BanchoState::room.map_name =
+            fmt::format("{:s} - {:s} [{:s}]", map->getArtist(), map->getTitle(), map->getDifficultyName());
         BanchoState::room.map_md5 = map->getMD5();
         BanchoState::room.map_id = map->getID();
     }
 
     Packet packet = {0};
-    packet.id = CREATE_ROOM;
+    packet.id = OUTP_CREATE_ROOM;
     BanchoState::room.pack(packet);
     BANCHO::Net::send_packet(packet);
 

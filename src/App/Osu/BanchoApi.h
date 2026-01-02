@@ -2,7 +2,7 @@
 // Copyright (c) 2025, kiwec, All rights reserved.
 
 #include "types.h"
-#include "UString.h"
+#include <string>
 
 namespace BANCHO::Api {
 
@@ -24,7 +24,7 @@ struct Request {
     std::string path{""};
     u8* extra{nullptr};
     i32 extra_int{0};  // lazy
-    RequestType type{NONE};
+    RequestType type{RequestType::NONE};
 };
 
 void send_request(const Request& request);

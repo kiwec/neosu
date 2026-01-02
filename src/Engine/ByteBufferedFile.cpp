@@ -60,6 +60,7 @@ void ByteBufferedFile::Reader::set_error(const std::string &error_msg) {
     }
 }
 
+// TODO: error handling is wildly incorrect/dubious
 bool ByteBufferedFile::Reader::read_hash(MD5Hash &inout) {
     if(this->error_flag) {
         return false;
@@ -70,6 +71,8 @@ bool ByteBufferedFile::Reader::read_hash(MD5Hash &inout) {
         return false;
     }
 
+    bool success = true;
+
     u32 len = this->read_uleb128();
     u32 extra = 0;
     if(len > 32) {
@@ -77,6 +80,8 @@ bool ByteBufferedFile::Reader::read_hash(MD5Hash &inout) {
         debugLog("WARNING: Expected 32 bytes for hash, got {}!", len);
         extra = len - 32;
         len = 32;
+
+        success = false;
     }
 
     assert(len <= 32);  // shut up gcc PLEASE
@@ -84,9 +89,13 @@ bool ByteBufferedFile::Reader::read_hash(MD5Hash &inout) {
         // just continue, don't set error flag
         debugLog("WARNING: failed to read {} bytes to obtain hash.", len);
         extra = len;
+
+        success = false;
     }
+
     this->skip_bytes(extra);
-    return true;
+
+    return success;
 }
 
 bool ByteBufferedFile::Reader::read_string(std::string &inout) {
@@ -109,12 +118,6 @@ bool ByteBufferedFile::Reader::read_string(std::string &inout) {
     }
 
     return true;
-}
-
-MD5Hash ByteBufferedFile::Reader::read_hash() {
-    MD5Hash hash;
-    this->read_hash(hash);
-    return hash;
 }
 
 std::string ByteBufferedFile::Reader::read_string() {
@@ -206,25 +209,6 @@ void ByteBufferedFile::Writer::write_hash(const MD5Hash &hash) {
     this->write_bytes(reinterpret_cast<const u8 *>(hash.data()), 32);
 }
 
-void ByteBufferedFile::Writer::write_string(const std::string &str) {
-    if(this->error_flag) {
-        return;
-    }
-
-    if(str[0] == '\0') {
-        u8 zero = 0;
-        this->write<u8>(zero);
-        return;
-    }
-
-    u8 empty_check = 11;
-    this->write<u8>(empty_check);
-
-    u32 len = str.length();
-    this->write_uleb128(len);
-    this->write_bytes(reinterpret_cast<const u8 *>(str.c_str()), len);
-}
-
 void ByteBufferedFile::Writer::flush() {
     if(this->error_flag || !this->file.is_open()) {
         return;
@@ -279,4 +263,26 @@ void ByteBufferedFile::Writer::write_uleb128(u32 num) {
         }
         this->write<u8>(next);
     }
+}
+
+bool ByteBufferedFile::Writer::write_string_isnull(const char *str) {
+    if(this->error_flag) {
+        return true;
+    }
+
+    if(!str || str[0] == '\0') {
+        const u8 zero = 0;
+        this->write<u8>(zero);
+        return true;
+    }
+
+    return false;
+}
+
+void ByteBufferedFile::Writer::write_string_nonnull(const char *str, uSz len) {
+    u8 empty_check = 11;
+    this->write<u8>(empty_check);
+
+    this->write_uleb128(len);
+    this->write_bytes(reinterpret_cast<const u8 *>(str), len);
 }

@@ -36,7 +36,7 @@ void handle_neosu_url(const char *url) {
         NeoNet::RequestOptions options;
         options.timeout = 30;
         options.connect_timeout = 5;
-        options.user_agent = BanchoState::user_agent.toUtf8();
+        options.user_agent = BanchoState::user_agent;
         options.follow_redirects = true;
 
         networkHandler->httpRequestAsync(
@@ -47,7 +47,7 @@ void handle_neosu_url(const char *url) {
                     BanchoState::reconnect();
                 } else {
                     BanchoState::update_online_status(OnlineStatus::LOGGED_OUT);
-                    osu->getNotificationOverlay()->addToast(ULITERAL("Login failed."), ERROR_TOAST);
+                    osu->getNotificationOverlay()->addToast(US_("Login failed."), ERROR_TOAST);
                 }
             },
             options);

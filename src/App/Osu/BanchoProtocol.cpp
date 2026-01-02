@@ -10,16 +10,16 @@ Room::Room(Packet &packet) {
     this->in_progress = packet.read<u8>();
     this->match_type = packet.read<u8>();
     this->mods = packet.read<LegacyFlags>();
-    this->name = packet.read_ustring();
+    this->name = packet.read_stdstring();
 
     this->has_password = packet.read<u8>() > 0;
     if(this->has_password) {
         // Discard password. It should be an empty string, but just in case, read it properly.
         packet.pos--;
-        packet.read_ustring();
+        packet.read_stdstring();
     }
 
-    this->map_name = packet.read_ustring();
+    this->map_name = packet.read_stdstring();
     this->map_id = packet.read<i32>();
 
     this->map_md5 = packet.read_hash();
@@ -44,7 +44,7 @@ Room::Room(Packet &packet) {
 
     this->host_id = packet.read<i32>();
     this->mode = packet.read<u8>();
-    this->win_condition = packet.read<u8>();
+    this->win_condition = (WinCondition)packet.read<u8>();
     this->team_type = packet.read<u8>();
     this->freemods = packet.read<u8>();
     if(this->freemods) {
@@ -61,9 +61,9 @@ void Room::pack(Packet &packet) {
     packet.write<u8>(this->in_progress);
     packet.write<u8>(this->match_type);
     packet.write<LegacyFlags>(this->mods);
-    packet.write_string(this->name.toUtf8());
-    packet.write_string(this->password.toUtf8());
-    packet.write_string(this->map_name.toUtf8());
+    packet.write_string(this->name);
+    packet.write_string(this->password);
+    packet.write_string(this->map_name);
     packet.write<i32>(this->map_id);
     packet.write_hash(this->map_md5);
     for(auto &slot : this->slots) {
@@ -80,7 +80,7 @@ void Room::pack(Packet &packet) {
 
     packet.write<i32>(this->host_id);
     packet.write<u8>(this->mode);
-    packet.write<u8>(this->win_condition);
+    packet.write<u8>((u8)this->win_condition);
     packet.write<u8>(this->team_type);
     packet.write<u8>(this->freemods);
     if(this->freemods) {

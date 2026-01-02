@@ -39,13 +39,29 @@ struct Packet {
         }
     }
 
-    void write_bytes(u8 *bytes, size_t n);
     void write_uleb128(u32 num);
-    void write_string(const char *str);
     void write_hash(const MD5Hash &hash);
+
+    inline void write_string(const char *str) {
+        if(this->write_string_isnull(str)) return;
+        this->write_string_nonnull(str, strlen(str));
+    }
+
+    inline void write_string(std::string_view strview) {
+        if(this->write_string_isnull(&strview[0])) return;
+        this->write_string_nonnull(strview.data(), strview.length());
+    }
+
+    void write_bytes(u8 *bytes, size_t n);
 
     template <typename T>
     void write(T t) {
         this->write_bytes((u8 *)&t, sizeof(T));
     }
+
+   private:
+    // check for null, if it is, write 0 and return true
+    bool write_string_isnull(const char *str);
+    // unchecked
+    void write_string_nonnull(const char *str, size_t len);
 };

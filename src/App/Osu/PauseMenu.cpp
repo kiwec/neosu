@@ -355,30 +355,30 @@ CBaseUIContainer *PauseMenu::setVisible(bool visible) {
     if(can_pause) {
         if(visible) {
             if(this->bContinueEnabled) {
-                RichPresence::setBanchoStatus("Taking a break", PAUSED);
+                RichPresence::setBanchoStatus("Taking a break", Action::PAUSED);
 
                 if(!BanchoState::spectators.empty()) {
                     Packet packet;
-                    packet.id = OUT_SPECTATE_FRAMES;
+                    packet.id = OUTP_SPECTATE_FRAMES;
                     packet.write<i32>(0);
                     packet.write<u16>(0);
-                    packet.write<u8>(LiveReplayBundle::Action::PAUSE);
+                    packet.write<u8>((u8)LiveReplayAction::PAUSE);
                     packet.write<ScoreFrame>(ScoreFrame::get());
                     packet.write<u16>(osu->getMapInterface()->spectator_sequence++);
                     BANCHO::Net::send_packet(packet);
                 }
             } else {
-                RichPresence::setBanchoStatus("Failed", SUBMITTING);
+                RichPresence::setBanchoStatus("Failed", Action::SUBMITTING);
             }
         } else {
             RichPresence::onPlayStart();
 
             if(!BanchoState::spectators.empty()) {
                 Packet packet;
-                packet.id = OUT_SPECTATE_FRAMES;
+                packet.id = OUTP_SPECTATE_FRAMES;
                 packet.write<i32>(0);
                 packet.write<u16>(0);
-                packet.write<u8>(LiveReplayBundle::Action::UNPAUSE);
+                packet.write<u8>((u8)LiveReplayAction::UNPAUSE);
                 packet.write<ScoreFrame>(ScoreFrame::get());
                 packet.write<u16>(osu->getMapInterface()->spectator_sequence++);
                 BANCHO::Net::send_packet(packet);

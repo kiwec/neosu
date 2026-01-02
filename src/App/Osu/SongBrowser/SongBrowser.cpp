@@ -844,7 +844,7 @@ bool SongBrowser::selectBeatmapset(i32 set_id) {
     }
 
     if(best_diff == nullptr) {
-        osu->getNotificationOverlay()->addToast(ULITERAL("Beatmapset has no difficulties"), ERROR_TOAST);
+        osu->getNotificationOverlay()->addToast(US_("Beatmapset has no difficulties"), ERROR_TOAST);
         return false;
     } else {
         this->onSelectionChange(this->hashToDiffButton[best_diff->getMD5()], false);
@@ -1303,14 +1303,13 @@ void SongBrowser::onDifficultySelected(DatabaseBeatmap *map, bool play) {
         // start playing
         if(play) {
             if(BanchoState::is_in_a_multi_room()) {
-                BanchoState::room.map_name =
-                    UString::format("%s - %s [%s]", map->getArtistLatin().c_str(), map->getTitleLatin().c_str(),
-                                    map->getDifficultyName().c_str());
+                BanchoState::room.map_name = fmt::format("{:s} - {:s} [{:s}]", map->getArtistLatin(),
+                                                         map->getTitleLatin(), map->getDifficultyName());
                 BanchoState::room.map_md5 = map->getMD5();
                 BanchoState::room.map_id = map->getID();
 
                 Packet packet;
-                packet.id = MATCH_CHANGE_SETTINGS;
+                packet.id = OUTP_MATCH_CHANGE_SETTINGS;
                 BanchoState::room.pack(packet);
                 BANCHO::Net::send_packet(packet);
 
@@ -2448,7 +2447,7 @@ void SongBrowser::onDatabaseLoadingFinished() {
 
             // 0-9
             {
-                coll->at(0) = MKCBTN(ULITERAL("0-9"));
+                coll->at(0) = MKCBTN(US_("0-9"));
             }
 
             // A-Z
@@ -2460,7 +2459,7 @@ void SongBrowser::onDatabaseLoadingFinished() {
 
             // Other
             {
-                coll->at(27) = MKCBTN(ULITERAL("Other"));
+                coll->at(27) = MKCBTN(US_("Other"));
             }
         }
 
@@ -2471,9 +2470,9 @@ void SongBrowser::onDatabaseLoadingFinished() {
             for(size_t i = 0; i < 12; i++) {
                 UString difficultyCollectionName;
                 if(i < 1)
-                    difficultyCollectionName = ULITERAL("Below 1 star");
+                    difficultyCollectionName = US_("Below 1 star");
                 else if(i > 10)
-                    difficultyCollectionName = ULITERAL("Above 10 stars");
+                    difficultyCollectionName = US_("Above 10 stars");
                 else
                     difficultyCollectionName = UString::format(i == 1 ? "%i star" : "%i stars", i);
 
@@ -2485,12 +2484,12 @@ void SongBrowser::onDatabaseLoadingFinished() {
         {
             auto &bpmbtns = this->bpmCollectionButtons;
             bpmbtns.resize(6);
-            bpmbtns[0] = MKCBTN(ULITERAL("Under 60 BPM"));
-            bpmbtns[1] = MKCBTN(ULITERAL("Under 120 BPM"));
-            bpmbtns[2] = MKCBTN(ULITERAL("Under 180 BPM"));
-            bpmbtns[3] = MKCBTN(ULITERAL("Under 240 BPM"));
-            bpmbtns[4] = MKCBTN(ULITERAL("Under 300 BPM"));
-            bpmbtns[5] = MKCBTN(ULITERAL("Over 300 BPM"));
+            bpmbtns[0] = MKCBTN(US_("Under 60 BPM"));
+            bpmbtns[1] = MKCBTN(US_("Under 120 BPM"));
+            bpmbtns[2] = MKCBTN(US_("Under 180 BPM"));
+            bpmbtns[3] = MKCBTN(US_("Under 240 BPM"));
+            bpmbtns[4] = MKCBTN(US_("Under 300 BPM"));
+            bpmbtns[5] = MKCBTN(US_("Over 300 BPM"));
         }
 
         // dateadded
@@ -2502,13 +2501,13 @@ void SongBrowser::onDatabaseLoadingFinished() {
         {
             auto &lenbtns = this->lengthCollectionButtons;
             lenbtns.resize(7);
-            lenbtns[0] = MKCBTN(ULITERAL("1 minute or less"));
-            lenbtns[1] = MKCBTN(ULITERAL("2 minutes or less"));
-            lenbtns[2] = MKCBTN(ULITERAL("3 minutes or less"));
-            lenbtns[3] = MKCBTN(ULITERAL("4 minutes or less"));
-            lenbtns[4] = MKCBTN(ULITERAL("5 minutes or less"));
-            lenbtns[5] = MKCBTN(ULITERAL("10 minutes or less"));
-            lenbtns[6] = MKCBTN(ULITERAL("Over 10 minutes"));
+            lenbtns[0] = MKCBTN(US_("1 minute or less"));
+            lenbtns[1] = MKCBTN(US_("2 minutes or less"));
+            lenbtns[2] = MKCBTN(US_("3 minutes or less"));
+            lenbtns[3] = MKCBTN(US_("4 minutes or less"));
+            lenbtns[4] = MKCBTN(US_("5 minutes or less"));
+            lenbtns[5] = MKCBTN(US_("10 minutes or less"));
+            lenbtns[6] = MKCBTN(US_("Over 10 minutes"));
         }
 #undef MKCBTN
     }
@@ -3045,10 +3044,10 @@ void SongBrowser::rebuildAfterGroupOrSortChange(GroupType group, const std::opti
 void SongBrowser::onSelectionMode() {
     if(cv::mod_fposu.getBool()) {
         cv::mod_fposu.setValue(false);
-        osu->getNotificationOverlay()->addToast(ULITERAL("Disabled FPoSu mode."), INFO_TOAST);
+        osu->getNotificationOverlay()->addToast(US_("Disabled FPoSu mode."), INFO_TOAST);
     } else {
         cv::mod_fposu.setValue(true);
-        osu->getNotificationOverlay()->addToast(ULITERAL("Enabled FPoSu mode."), SUCCESS_TOAST);
+        osu->getNotificationOverlay()->addToast(US_("Enabled FPoSu mode."), SUCCESS_TOAST);
     }
 }
 
