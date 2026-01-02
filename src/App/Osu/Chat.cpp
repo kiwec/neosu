@@ -1160,25 +1160,31 @@ void Chat::updateUserList() {
             sorted_users.push_back(pair.second);
         }
     }
-    std::ranges::sort(sorted_users, SString::alnum_comp, [](const UserInfo *ui) { return ui->name; });
 
     // Intentionally not calling this->user_list->invalidate(), because that would affect scroll position/animation
-    auto userCardElemsCopy = this->user_list->getContainedElements<UserCard2>();
+    auto old_card_elems_copy = this->user_list->getContainedElements<UserCard2>();
     this->user_list->container->invalidate();  // clear scrollview container elements and rebuild
 
-    for(sSz addedElemI = 0; const auto *user : sorted_users) {
+    // FIXME: dumb to sort this every time, can cause pop-in and jarring reshuffling in f9 menu buttons
+    std::ranges::sort(sorted_users, SString::alnum_comp, [](const UserInfo *ui) { return ui->name; });
+
+    for(const auto *user : sorted_users) {
         if(total_x + card_size.x + MARGIN > size.x) {
             total_x = INITIAL_MARGIN;
             total_y += card_size.y + MARGIN;
         }
 
         UserCard2 *card = nullptr;
-        if(addedElemI < userCardElemsCopy.size()) {
-            card = userCardElemsCopy[addedElemI];
+        // super overkill lazy hack
+        if(auto old_card_it =
+               std::ranges::find_if(old_card_elems_copy, [user](const UserCard2 *card) { return card->info == user; });
+           old_card_it != old_card_elems_copy.end()) {
+            card = *old_card_it;
+
             card->update_userid(user->user_id);
 
-            // set to null so we don't delete it later (moved into container)
-            userCardElemsCopy[addedElemI] = nullptr;
+            // remove it so we don't delete it later (moved into container)
+            old_card_elems_copy.erase(old_card_it);
         } else {
             card = new UserCard2(user->user_id);
         }
@@ -1195,14 +1201,12 @@ void Chat::updateUserList() {
             card->setVisible(true);
             total_x += card_size.x + MARGIN * 1.5;  // idk why margin is bogged
         }
-
-        ++addedElemI;
     }
 
     this->user_list->setScrollSizeToContent();
 
     // delete any excess items in the container
-    for(auto *card : userCardElemsCopy) {
+    for(auto *card : old_card_elems_copy) {
         SAFE_DELETE(card);
     }
 
