@@ -53,6 +53,7 @@ struct CurlEasyDeleter {
 
 struct CurlEasy : public std::unique_ptr<CURL, CurlEasyDeleter> {
     [[nodiscard]] operator CURL*() const { return this->get(); }
+
     template <typename Opt, typename... Args>
     auto setopt(Opt&& opt, Args&&... args)
         requires(sizeof...(Args) > 0)
@@ -379,6 +380,7 @@ struct curl_blob cert_blob{
 
 void NetworkImpl::Request::setupCurlHandle() {
     assert(this->easy_handle.get());
+
 
     this->easy_handle.setopt(CURLOPT_VERBOSE, cv::debug_network.getBool() ? 1L : 0L);
     this->easy_handle.setopt(CURLOPT_URL, this->url.c_str());
