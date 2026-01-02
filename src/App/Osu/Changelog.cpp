@@ -32,13 +32,13 @@ Changelog::Changelog() : ScreenBackable() {
     CHANGELOG v41_13;
     v41_13.title = "41.13 (" CHANGELOG_TIMESTAMP ")";
     v41_13.changes = {
-        R"(- Song browser improvements:)",
-        R"( - Improved songbrowser scrolling behavior and performance)",
+        R"(- Song browser:)",
+        R"( - Improved scrolling behavior and performance)",
         R"( - Updated top-left artist/title font for sharper text)",
         R"( - Merged some nice features from McOsu (from @McKay))",
         R"(  - Added Options > Songbrowser > "Song Buttons Velocity Animation)",
         R"(  - Added Options > Songbrowser > "Song Buttons Curved Layout)",
-        R"(  - Updated songbrowser song buttons to have the velocity animation disabled by default)",
+        R"(  - Updated song buttons to have the velocity animation disabled by default)",
         R"(  - Updated "Sort by Artist" to secondarily sort by title)",
         R"(- Score results screen:)",
         R"(  - Better match stable skin behavior for 300/100/50 hiresult images (use non-animated variants if possible))",

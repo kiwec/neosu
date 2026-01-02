@@ -116,8 +116,21 @@ void BanchoState::update_online_status(OnlineStatus new_status) {
 
     // in progress/logged out -> logged in, or logged in -> logged out
     if(old_status != new_status && (new_status == OnlineStatus::LOGGED_OUT || new_status == OnlineStatus::LOGGED_IN)) {
+        // make sure we create these directories once, now that we know the endpoint is valid
+        if(new_status == OnlineStatus::LOGGED_IN) {
+            std::string avatar_dir = fmt::format("{}/avatars/{}", env->getCacheDir(), BanchoState::endpoint);
+            Environment::createDirectory(avatar_dir);
+
+            std::string replays_dir = fmt::format(NEOSU_REPLAYS_PATH "/{}", BanchoState::endpoint);
+            Environment::createDirectory(replays_dir);
+
+            std::string thumbs_dir = fmt::format("{}/thumbs/{}", env->getCacheDir(), BanchoState::endpoint);
+            Environment::createDirectory(thumbs_dir);
+        }
+
         osu->getOptionsMenu()->scheduleLayoutUpdate();
     }
+
     if(async_logout_pending && new_status == OnlineStatus::LOGGED_IN) {
         async_logout_pending = false;
         BanchoState::disconnect();
@@ -138,15 +151,6 @@ void BanchoState::handle_packet(Packet &packet) {
                 debugLog("Logged in as user #{:d}.", new_user_id);
                 cv::mp_autologin.setValue(true);
                 BanchoState::print_new_channels = true;
-
-                std::string avatar_dir = fmt::format("{}/avatars/{}", env->getCacheDir(), BanchoState::endpoint);
-                Environment::createDirectory(avatar_dir);
-
-                std::string replays_dir = fmt::format(NEOSU_REPLAYS_PATH "/{}", BanchoState::endpoint);
-                Environment::createDirectory(replays_dir);
-
-                std::string thumbs_dir = fmt::format("{}/thumbs/{}", env->getCacheDir(), BanchoState::endpoint);
-                Environment::createDirectory(thumbs_dir);
 
                 osu->onUserCardChange(BanchoState::username);
                 osu->getSongBrowser()->onFilterScoresChange(US_("Global"), SongBrowser::LOGIN_STATE_FILTER_ID);
