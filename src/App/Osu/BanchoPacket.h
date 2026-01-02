@@ -48,7 +48,11 @@ struct Packet {
     }
 
     inline void write_string(std::string_view strview) {
-        if(this->write_string_isnull(&strview[0])) return;
+        if(strview.empty()) {
+            const u8 zero = 0;
+            this->write<u8>(zero);
+            return;
+        }
         this->write_string_nonnull(strview.data(), strview.length());
     }
 
