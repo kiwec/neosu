@@ -7,7 +7,7 @@
 #include "Logging.h"
 
 RenderTarget::RenderTarget(int x, int y, int width, int height, MultisampleType multiSampleType)
-    : Resource(),
+    : Resource(RENDERTARGET),
       vao1(g->createVertexArrayObject(DrawPrimitive::PRIMITIVE_TRIANGLES, DrawUsageType::USAGE_STATIC,
                                       false)),
       vao2(g->createVertexArrayObject(DrawPrimitive::PRIMITIVE_TRIANGLES, DrawUsageType::USAGE_STATIC,

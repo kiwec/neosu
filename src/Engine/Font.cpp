@@ -1041,11 +1041,11 @@ struct McFontImpl final {
 ////////////////////////////////////////////////////////////////////////////////////
 
 McFont::McFont(std::string filepath, int fontSize, bool antialiasing, int fontDPI)
-    : Resource(std::move(filepath)), pImpl(this, fontSize, antialiasing, fontDPI) {}
+    : Resource(FONT, std::move(filepath)), pImpl(this, fontSize, antialiasing, fontDPI) {}
 
 McFont::McFont(std::string filepath, const std::vector<char16_t> &characters, int fontSize, bool antialiasing,
                int fontDPI)
-    : Resource(std::move(filepath)), pImpl(this, characters, fontSize, antialiasing, fontDPI) {}
+    : Resource(FONT, std::move(filepath)), pImpl(this, characters, fontSize, antialiasing, fontDPI) {}
 
 McFont::~McFont() { destroy(); }
 

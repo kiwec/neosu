@@ -58,9 +58,6 @@ class VertexArrayObject : public Resource {
 
     virtual void draw() { assert(false); }  // implementation dependent (gl/dx11/etc.)
 
-    // type inspection
-    [[nodiscard]] Type getResType() const final { return VAO; }
-
     VertexArrayObject *asVAO() final { return this; }
     [[nodiscard]] const VertexArrayObject *asVAO() const final { return this; }
 

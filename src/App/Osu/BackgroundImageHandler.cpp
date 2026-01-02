@@ -22,13 +22,11 @@
 class MapBGImagePathLoader final : public Resource {
     NOCOPY_NOMOVE(MapBGImagePathLoader)
    public:
-    MapBGImagePathLoader(const std::string &filePath) : Resource(filePath) {}
+    MapBGImagePathLoader(const std::string &filePath) : Resource(APPDEFINED, filePath) {}
     ~MapBGImagePathLoader() override { destroy(); }
 
     [[nodiscard]] inline const std::string &getParsedBGFileName() const { return this->parsed_bg_filename; }
     [[nodiscard]] inline bool foundBrokenFilenameReplacement() const { return this->found_mojibake_filename; }
-
-    [[nodiscard]] Type getResType() const override { return APPDEFINED; }  // TODO: handle this better?
    protected:
     void init() override {
         // (nothing)

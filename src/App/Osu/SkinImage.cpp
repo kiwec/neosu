@@ -35,6 +35,8 @@ SkinImage::SkinImage(Skin* skin, const std::string& skinElementName, vec2 baseSi
         if(!ignoreDefaultSkin) this->load(skinElementName, animationSeparator, false);
     }
 
+    this->bHasNonAnimatedImage = this->nonAnimatedImage.img != MISSING_TEXTURE;
+
     // if we couldn't load ANYTHING at all, gracefully fallback to missing texture
     if(this->images.size() < 1) {
         this->bIsMissingTexture = true;
@@ -84,6 +86,7 @@ bool SkinImage::load(const std::string& skinElementName, const std::string& anim
         this->loadImage(skinElementName, ignoreDefaultSkin, false, false);
     } else {
         // load non-animated skin element
+        this->bDeleteNonAnimatedImage = false;  // avoid double-delete
         this->loadImage(skinElementName, ignoreDefaultSkin, false, true);
     }
 
@@ -251,6 +254,9 @@ SkinImage::~SkinImage() {
         if(image.img != MISSING_TEXTURE) resourceManager->destroyResource(image.img);
     }
     this->images.clear();
+    if(this->bDeleteNonAnimatedImage && this->nonAnimatedImage.img != MISSING_TEXTURE) {
+        resourceManager->destroyResource(this->nonAnimatedImage.img);
+    }
 
     this->filepathsForExport.clear();
 }
@@ -276,16 +282,16 @@ void SkinImage::drawBrightQuad(VertexArrayObject* vao, float brightness) const {
 void SkinImage::draw(vec2 pos, float scale, float brightness, bool tryDrawNonAnimated) const {
     if(this->images.size() < 1) return;
 
-    scale *= this->getScale();  // auto scale to current resolution
+    const bool animated = !(tryDrawNonAnimated && this->bHasNonAnimatedImage);
+
+    scale *= this->getScale(animated);  // auto scale to current resolution
 
     g->pushTransform();
     {
         g->scale(scale, scale);
         g->translate(pos.x, pos.y);
 
-        Image* img = tryDrawNonAnimated && this->nonAnimatedImage.img != MISSING_TEXTURE
-                         ? this->nonAnimatedImage.img
-                         : this->getImageForCurrentFrame().img;
+        Image* img = this->getImageForCurrentFrame(animated).img;
 
         if(this->fDrawClipWidthPercent == 1.0f && brightness <= 0.f)
             g->drawImage(img);
@@ -330,14 +336,14 @@ void SkinImage::draw(vec2 pos, float scale, float brightness, bool tryDrawNonAni
 void SkinImage::drawRaw(vec2 pos, float scale, AnchorPoint anchor, float brightness, bool tryDrawNonAnimated) const {
     if(this->images.size() < 1) return;
 
+    const bool animated = !(tryDrawNonAnimated && this->bHasNonAnimatedImage);
+
     g->pushTransform();
     {
         g->scale(scale, scale);
         g->translate(pos.x, pos.y);
 
-        Image* img = tryDrawNonAnimated && this->nonAnimatedImage.img != MISSING_TEXTURE
-                         ? this->nonAnimatedImage.img
-                         : this->getImageForCurrentFrame().img;
+        Image* img = this->getImageForCurrentFrame(animated).img;
 
         if(this->fDrawClipWidthPercent == 1.0f && brightness <= 0.f) {
             g->drawImage(img, anchor);
@@ -430,24 +436,28 @@ void SkinImage::setAnimationFrameClampUp() {
         this->iFrameCounter = this->images.size() - 1;
 }
 
-vec2 SkinImage::getSize() const {
+vec2 SkinImage::getSize(bool animated) const {
     if(this->images.size() > 0)
-        return this->getImageForCurrentFrame().img->getSize() * this->getScale();
+        return this->getImageForCurrentFrame(animated).img->getSize() * this->getScale();
     else
         return this->getSizeBase();
 }
 
 vec2 SkinImage::getSizeBase() const { return this->vBaseSizeForScaling2x * this->getResolutionScale(); }
 
-vec2 SkinImage::getSizeBaseRaw() const { return this->vBaseSizeForScaling2x * this->getImageForCurrentFrame().scale; }
+vec2 SkinImage::getSizeBaseRaw(bool animated) const {
+    return this->vBaseSizeForScaling2x * this->getImageForCurrentFrame(animated).scale;
+}
 
-vec2 SkinImage::getImageSizeForCurrentFrame() const { return this->getImageForCurrentFrame().img->getSize(); }
+vec2 SkinImage::getImageSizeForCurrentFrame(bool animated) const {
+    return this->getImageForCurrentFrame(animated).img->getSize();
+}
 
-float SkinImage::getScale() const { return this->getImageScale() * this->getResolutionScale(); }
+float SkinImage::getScale(bool animated) const { return this->getImageScale(animated) * this->getResolutionScale(); }
 
-float SkinImage::getImageScale() const {
+float SkinImage::getImageScale(bool animated) const {
     if(this->images.size() > 0)
-        return this->vBaseSizeForScaling2x.x / this->getSizeBaseRaw().x;  // allow overscale and underscale
+        return this->vBaseSizeForScaling2x.x / this->getSizeBaseRaw(animated).x;  // allow overscale and underscale
     else
         return 1.0f;
 }
@@ -461,18 +471,23 @@ bool SkinImage::isReady() {
         if(resourceManager->isLoadingResource(image.img)) return false;
     }
 
+    if(this->bDeleteNonAnimatedImage && this->nonAnimatedImage.img != MISSING_TEXTURE) {
+        if(resourceManager->isLoadingResource(this->nonAnimatedImage.img)) return false;
+    }
+
     this->bReady = true;
     return this->bReady;
 }
 
-SkinImage::IMAGE SkinImage::getImageForCurrentFrame() const {
+const SkinImage::IMAGE& SkinImage::getImageForCurrentFrame(bool animated) const {
     if(this->images.size() > 0)
-        return this->images[this->iFrameCounter % this->images.size()];
+        return (!animated && this->bHasNonAnimatedImage) ? this->nonAnimatedImage
+                                                         : this->images[this->iFrameCounter % this->images.size()];
     else {
-        IMAGE image;
-
-        image.img = MISSING_TEXTURE;
-        image.scale = 1.0f;
+        static IMAGE image{
+            .img = MISSING_TEXTURE,
+            .scale = 1.f,
+        };
 
         return image;
     }

@@ -1679,7 +1679,7 @@ void PauseButton::draw() {
     if(this->bActive && this->bEnabled) this->drawHoverRect(6);
 };
 
-MainMenu::SongsFolderEnumerator::SongsFolderEnumerator() : Resource() {
+MainMenu::SongsFolderEnumerator::SongsFolderEnumerator() : Resource(APPDEFINED) {
     this->folderPath = Database::getOsuSongsFolder();
 
     resourceManager->requestNextLoadAsync();

@@ -6,6 +6,8 @@
 #include "fmt/format.h"
 #include "fmt/compile.h"
 
+using fmt::literals::operator""_cf;
+
 #include <string_view>
 #include <cassert>
 

@@ -11,7 +11,7 @@
 #define WANT_PDQSORT
 #include "Sorting.h"
 
-TextureAtlas::TextureAtlas(int width, int height, bool filtering) : Resource() {
+TextureAtlas::TextureAtlas(int width, int height, bool filtering) : Resource(TEXTUREATLAS) {
     this->iWidth = width;
     this->iHeight = height;
     this->bFiltered = filtering;

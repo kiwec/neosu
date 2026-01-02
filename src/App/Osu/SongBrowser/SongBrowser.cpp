@@ -88,7 +88,7 @@ vec2 SongBrowser::getSkinDimensions(SkinImage *img) {
 class SongBrowserBackgroundSearchMatcher final : public Resource {
     NOCOPY_NOMOVE(SongBrowserBackgroundSearchMatcher)
    public:
-    SongBrowserBackgroundSearchMatcher() : Resource() {}
+    SongBrowserBackgroundSearchMatcher() : Resource(APPDEFINED) {}
     ~SongBrowserBackgroundSearchMatcher() override { this->destroy(); }
 
     [[nodiscard]] inline bool isDead() const { return this->bDead.load(std::memory_order_acquire); }
@@ -109,8 +109,6 @@ class SongBrowserBackgroundSearchMatcher final : public Resource {
         this->sSearchString.lowerCase();
         this->sHardcodedSearchString = hardcodedSearchString;
     }
-
-    [[nodiscard]] inline Type getResType() const override { return APPDEFINED; }  // TODO: handle this better?
 
    protected:
     inline void init() override { this->setReady(true); }

@@ -202,10 +202,8 @@ class Database {
     class AsyncDBLoader final : public Resource {
         NOCOPY_NOMOVE(AsyncDBLoader)
        public:
-        AsyncDBLoader() : Resource() {}
+        AsyncDBLoader() : Resource(APPDEFINED) {}
         ~AsyncDBLoader() override = default;
-
-        [[nodiscard]] Type getResType() const override { return APPDEFINED; }
 
        protected:
         void init() override;
@@ -219,13 +217,12 @@ class Database {
     struct AsyncScoreSaver : public Resource {
         NOCOPY_NOMOVE(AsyncScoreSaver)
        public:
+        AsyncScoreSaver() = delete;
         friend class Database;
         FinishedScore scorecopy;
 
-        AsyncScoreSaver(FinishedScore score) : Resource(), scorecopy(std::move(score)) {}
+        AsyncScoreSaver(FinishedScore score) : Resource(APPDEFINED), scorecopy(std::move(score)) {}
         ~AsyncScoreSaver() override = default;
-
-        [[nodiscard]] Type getResType() const override { return APPDEFINED; }
 
        protected:
         inline void init() override { this->setReady(true); }

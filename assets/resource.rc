@@ -25,7 +25,7 @@ BEGIN
             VALUE "FileDescription", "neosu"
             VALUE "FileVersion", "41.13.0.0"
             VALUE "InternalName", "neosu"
-            VALUE "LegalCopyright", "Copyright (C) 2025"
+            VALUE "LegalCopyright", "Copyright (C) 2025-2026"
             VALUE "OriginalFilename", "neosu.exe"
             VALUE "ProductName", "neosu"
             VALUE "ProductVersion", "41.13"

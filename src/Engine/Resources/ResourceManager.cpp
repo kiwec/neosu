@@ -62,7 +62,7 @@ struct ResourceManagerImpl final {
         if(auto it = this->mNameToResourceMap.find(resourceName); it != this->mNameToResourceMap.end()) {
             return it->second->as<T>();
         }
-        logIfCV(debug_rm, R"(ResourceManager WARNING: Resource "{:s}" does not exist!)", resourceName);
+        logIfCV(debug_rm, R"(W: Resource with name "{:s}" does not exist!)", resourceName);
         return nullptr;
     }
 
@@ -73,7 +73,7 @@ struct ResourceManagerImpl final {
         if(it == this->mNameToResourceMap.end()) {
             return nullptr;
         }
-        logIfCV(debug_rm, R"(ResourceManager NOTICE: Resource "{:s}" already loaded.)", resourceName);
+        logIfCV(debug_rm, R"(Resource with name "{:s}" already loaded.)", resourceName);
         // handle flags (reset them)
         resetFlags();
         return it->second->as<T>();
@@ -91,7 +91,7 @@ struct ResourceManagerImpl final {
     // add a managed resource to the main resources vector + the name map and typed vectors
     void addManagedResource(Resource *res) {
         if(!res) return;
-        logIfCV(debug_rm, "ResourceManager: Adding managed {}", res->getName());
+        logIfCV(debug_rm, "Adding managed {}", res->getDebugIdentifier());
 
         this->vResources.push_back(res);
 
@@ -102,6 +102,7 @@ struct ResourceManagerImpl final {
     // remove a managed resource from the main resources vector + the name map and typed vectors
     void removeManagedResource(Resource *res, int managedResourceIndex) {
         if(!res) return;
+        logIfCV(debug_rm, "Removing managed {}", res->getDebugIdentifier());
 
         this->vResources.erase(this->vResources.begin() + managedResourceIndex);
 
@@ -247,11 +248,11 @@ void ResourceManager::destroyResources() {
 void ResourceManager::destroyResource(Resource *rs, ResourceDestroyFlags destflags) {
     const bool debug = cv::debug_rm.getBool();
     if(rs == nullptr) {
-        logIf(debug, "ResourceManager Warning: destroyResource(NULL)!");
+        logIf(debug, "W: destroyResource(NULL)!");
         return;
     }
 
-    logIf(debug, "ResourceManager: destroying {:8p} : {:s}", static_cast<const void *>(rs), rs->getName());
+    logIf(debug, "destroying {:s}", rs->getDebugIdentifier());
 
     bool isManagedResource = false;
     int managedResourceIndex = -1;
@@ -273,8 +274,7 @@ void ResourceManager::destroyResource(Resource *rs, ResourceDestroyFlags destfla
     // check if it's being loaded and schedule async destroy if so
     // (!!(flags & ResourceDestroyFlags::RDF_FORCE_ASYNC)) ||
     if(pImpl->asyncLoader.isLoadingResource(rs)) {
-        logIf(debug, "Resource Manager: Scheduled async destroy of {:8p} : {:s}", static_cast<const void *>(rs),
-              rs->getName());
+        logIf(debug, "Scheduled async destroy of {:s}", rs->getDebugIdentifier());
 
         // interrupt async load
         rs->interruptLoad();
@@ -302,7 +302,7 @@ void ResourceManager::destroyResource(Resource *rs, ResourceDestroyFlags destfla
 
 void ResourceManager::loadResource(Resource *res, bool load) {
     if(res == nullptr) {
-        logIfCV(debug_rm, "ResourceManager Warning: loadResource(NULL)!");
+        logIfCV(debug_rm, "W: loadResource(NULL)!");
         pImpl->resetFlags();
         return;
     }
@@ -363,7 +363,7 @@ void ResourceManager::setSyncLoadMaxBatchSize(size_t resourcesToLoad) {
 
 void ResourceManager::reloadResource(Resource *rs, bool async) {
     if(rs == nullptr) {
-        logIfCV(debug_rm, "ResourceManager Warning: reloadResource(NULL)!");
+        logIfCV(debug_rm, "W: reloadResource(NULL)!");
         return;
     }
 
@@ -373,7 +373,7 @@ void ResourceManager::reloadResource(Resource *rs, bool async) {
 
 void ResourceManager::reloadResources(const std::vector<Resource *> &resources, bool async) {
     if(resources.empty()) {
-        logIfCV(debug_rm, "ResourceManager Warning: reloadResources with an empty resources vector!");
+        logIfCV(debug_rm, "W: reloadResources with an empty resources vector!");
         return;
     }
 
@@ -413,17 +413,15 @@ void ResourceManager::reloadResources(const std::vector<Resource *> &resources, 
 
 void ResourceManager::setResourceName(Resource *res, std::string name) {
     if(!res) {
-        logIfCV(debug_rm, "ResourceManager: attempted to set name {:s} on NULL resource!", name);
+        logIfCV(debug_rm, "attempted to set name {:s} on NULL resource!", name);
         return;
     }
 
     std::string currentName = res->getName();
     if(!currentName.empty() && currentName == name) return;  // it's already the same name, nothing to do
 
-    if(name.empty())  // add a default name (mostly for debugging, see Resource constructor)
-        name = fmt::format("{:p}:postinit=y:{:s}", static_cast<const void *>(res), res->getFilePath());
-
     res->setName(name);
+
     // add the new name to the resource map (if it's a managed resource)
     if(pImpl->nextLoadUnmanagedStack.size() < 1 || !pImpl->nextLoadUnmanagedStack.top())
         pImpl->mNameToResourceMap.try_emplace(name, res);

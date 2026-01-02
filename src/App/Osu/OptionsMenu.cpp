@@ -2570,7 +2570,7 @@ void OptionsMenu::onResolutionSelect() {
     std::vector<ivec2> customResolutions;
     {
         File customres(MCENGINE_CFG_PATH "/customres.cfg");
-        for(auto line = customres.readLine(); customres.canRead(); line = customres.readLine()) {
+        for(auto line = customres.readLine(); !line.empty() || customres.canRead(); line = customres.readLine()) {
             if(SString::is_comment(line, "#") || SString::is_comment(line, "//")) continue;  // ignore comments
             auto parsed = Parsing::parse_resolution(line);
             if(parsed.has_value()) {

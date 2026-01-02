@@ -8,7 +8,7 @@ struct Matrix4;
 class Shader : public Resource {
     NOCOPY_NOMOVE(Shader)
    public:
-    Shader() = default;
+    Shader() : Resource(SHADER) {}
     ~Shader() override = default;
 
     virtual void enable() = 0;
@@ -25,9 +25,6 @@ class Shader : public Resource {
     virtual void setUniformMatrix4fv(std::string_view name, const Matrix4 &matrix) = 0;
     virtual void setUniformMatrix4fv(std::string_view name, const float *const v) = 0;
 
-    // type inspection
-    [[nodiscard]] Type getResType() const final { return SHADER; }
-
     Shader *asShader() final { return this; }
     [[nodiscard]] const Shader *asShader() const final { return this; }
 
@@ -42,5 +39,5 @@ class Shader : public Resource {
     };
 
     SHADER_PARSE_RESULT parseShaderFromString(const std::string &graphicsInterfaceAndShaderTypePrefix,
-                                                      const std::string &shaderSource);
+                                              const std::string &shaderSource);
 };

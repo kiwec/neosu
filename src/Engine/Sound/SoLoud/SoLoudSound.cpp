@@ -14,10 +14,13 @@
 #include "File.h"
 #include "ResourceManager.h"
 #include "Logging.h"
-#include "SString.h"
 
 #include "soloud_file.h"
 #include "soloud_wav.h"
+
+SoLoudSound::SoLoudSound(std::string filepath, bool stream, bool overlayable, bool loop)
+    : Sound(std::move(filepath), stream, overlayable, loop) {}
+SoLoudSound::~SoLoudSound() { this->destroy(); }
 
 void SoLoudSound::init() {
     if(this->bIgnored || this->sFilePath.length() < 2 || !(this->isAsyncReady())) return;
@@ -28,21 +31,12 @@ void SoLoudSound::init() {
         this->setReady(true);
 }
 
-SoLoudSound::~SoLoudSound() { this->destroy(); }
-
 void SoLoudSound::initAsync() {
     Sound::initAsync();
     if(this->bIgnored) return;
 
     // clean up any previous instance
-    if(this->audioSource) {
-        if(this->bStream)
-            delete static_cast<SoLoud::SLFXStream *>(this->audioSource);
-        else
-            delete static_cast<SoLoud::Wav *>(this->audioSource);
-
-        this->audioSource = nullptr;
-    }
+    this->audioSource.reset();
 
     // create the appropriate audio source based on streaming flag
     SoLoud::result result = SoLoud::SO_NO_ERROR;
@@ -52,7 +46,7 @@ void SoLoudSound::initAsync() {
         result = stream->load(this->sFilePath.c_str());
 
         if(result == SoLoud::SO_NO_ERROR) {
-            this->audioSource = stream;
+            this->audioSource.reset(stream);
             this->fFrequency = stream->mBaseSamplerate;
 
             this->audioSource->setInaudibleBehavior(
@@ -83,7 +77,7 @@ void SoLoudSound::initAsync() {
         result = wav->loadFile(&df);
 
         if(result == SoLoud::SO_NO_ERROR) {
-            this->audioSource = wav;
+            this->audioSource.reset(wav);
             this->fFrequency = wav->mBaseSamplerate;
 
             this->audioSource->setInaudibleBehavior(
@@ -116,14 +110,7 @@ void SoLoudSound::destroy() {
     }
 
     // clean up audio source
-    if(this->audioSource) {
-        if(this->bStream)
-            delete static_cast<SoLoud::SLFXStream *>(this->audioSource);
-        else
-            delete static_cast<SoLoud::Wav *>(this->audioSource);
-
-        this->audioSource = nullptr;
-    }
+    this->audioSource.reset();
 
     // need to reset this because the soloud handle has been destroyed
     this->fFrequency = 44100.0f;
@@ -176,7 +163,7 @@ void SoLoudSound::setSpeed(float speed) {
 
     speed = std::clamp<float>(speed, 0.05f, 50.0f);
 
-    auto *filteredStream = static_cast<SoLoud::SLFXStream *>(this->audioSource);
+    auto *filteredStream = static_cast<SoLoud::SLFXStream *>(this->audioSource.get());
 
     const float filteredSpeed = filteredStream->getSpeedFactor();
     const float previousSpeed = this->fSpeed;
@@ -218,7 +205,7 @@ void SoLoudSound::setPitch(float pitch) {
 
     pitch = std::clamp<float>(pitch, 0.0f, 2.0f);
 
-    auto *filteredStream = static_cast<SoLoud::SLFXStream *>(this->audioSource);
+    auto *filteredStream = static_cast<SoLoud::SLFXStream *>(this->audioSource.get());
 
     // this should technically be == fPitch, but get it/update it from the source directly just in case
     const float previousPitch = (this->fPitch = filteredStream->getPitchFactor());
@@ -304,8 +291,8 @@ f64 SoLoudSound::getPositionPct() const {
 i32 SoLoudSound::getBASSStreamLatencyCompensation() const {
     if(!this->isReady() || !this->bStream || !this->audioSource || !this->handle) return 0.0f;
 
-    return static_cast<i32>(std::round(static_cast<SoLoud::SLFXStream *>(this->audioSource)->getInternalLatency())) +
-           cv::snd_soloud_hardcoded_offset.getInt();
+    auto *strm = static_cast<SoLoud::SLFXStream *>(this->audioSource.get());
+    return static_cast<i32>(std::round(strm->getInternalLatency())) + cv::snd_soloud_hardcoded_offset.getInt();
 }
 
 u64 SoLoudSound::getPositionUS() const {
@@ -392,9 +379,9 @@ double SoLoudSound::getStreamPositionInSeconds() const {
 double SoLoudSound::getSourceLengthInSeconds() const {
     if(!this->audioSource) return 0.0;
     if(this->bStream)
-        return static_cast<SoLoud::SLFXStream *>(this->audioSource)->getLength();
+        return static_cast<SoLoud::SLFXStream *>(this->audioSource.get())->getLength();
     else
-        return static_cast<SoLoud::Wav *>(this->audioSource)->getLength();
+        return static_cast<SoLoud::Wav *>(this->audioSource.get())->getLength();
 }
 
 bool SoLoudSound::valid_handle_cached() const {

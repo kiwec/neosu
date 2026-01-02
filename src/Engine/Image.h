@@ -44,9 +44,6 @@ class Image : public Resource {
 
     [[nodiscard]] constexpr bool hasAlphaChannel() const { return true; }
 
-    // type inspection
-    [[nodiscard]] Type getResType() const final { return IMAGE; }
-
     Image *asImage() final { return this; }
     [[nodiscard]] const Image *asImage() const final { return this; }
 

@@ -1132,9 +1132,11 @@ void Environment::listenToTextInput(bool listen) {
 //******************************//
 
 void Environment::onDPIChange() {
+    const float oldDispScale = m_fDisplayScale;
+    const float oldPixelDensity = m_fPixelDensity;
     m_fDisplayScale = SDL_GetWindowDisplayScale(m_window);
     m_fPixelDensity = SDL_GetWindowPixelDensity(m_window);
-    if (m_engine) {
+    if(m_engine && ((oldDispScale != m_fDisplayScale) || (oldPixelDensity != m_fPixelDensity))) {
         m_engine->onDPIChange();
     }
 }

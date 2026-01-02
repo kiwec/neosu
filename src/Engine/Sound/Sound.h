@@ -33,7 +33,7 @@ class Sound : public Resource {
 
    public:
     Sound(std::string filepath, bool stream, bool overlayable, bool loop)
-        : Resource(std::move(filepath)), bStream(stream), bIsLooped(loop), bIsOverlayable(overlayable) {
+        : Resource(SOUND, std::move(filepath)), bStream(stream), bIsLooped(loop), bIsOverlayable(overlayable) {
         this->activeHandleCache.reserve(5);
     }
 
@@ -81,9 +81,6 @@ class Sound : public Resource {
     [[nodiscard]] constexpr bool isStream() const { return this->bStream; }
     [[nodiscard]] constexpr bool isLooped() const { return this->bIsLooped; }
     [[nodiscard]] constexpr bool isOverlayable() const { return this->bIsOverlayable; }
-
-    // type inspection
-    [[nodiscard]] Type getResType() const final { return SOUND; }
 
     Sound *asSound() final { return this; }
     [[nodiscard]] const Sound *asSound() const final { return this; }

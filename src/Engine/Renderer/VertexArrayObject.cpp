@@ -4,7 +4,7 @@
 #include "Engine.h"
 
 VertexArrayObject::VertexArrayObject(DrawPrimitive primitive, DrawUsageType usage, bool keepInSystemMemory)
-    : Resource() {
+    : Resource(VAO) {
     this->primitive = primitive;
     this->usage = usage;
     this->bKeepInSystemMemory = keepInSystemMemory;

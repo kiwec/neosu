@@ -43,9 +43,6 @@ class TextureAtlas final : public Resource {
     [[nodiscard]] inline int getHeight() const { return this->iHeight; }
     [[nodiscard]] inline const std::unique_ptr<Image> &getAtlasImage() const { return this->atlasImage; }
 
-    // type inspection
-    [[nodiscard]] Type getResType() const final { return TEXTUREATLAS; }
-
     TextureAtlas *asTextureAtlas() final { return this; }
     [[nodiscard]] const TextureAtlas *asTextureAtlas() const final { return this; }
 

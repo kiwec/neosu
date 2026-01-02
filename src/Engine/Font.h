@@ -53,9 +53,6 @@ class McFont final : public Resource {
     [[nodiscard]] std::vector<UString> wrap(const UString &text, f64 max_width) const;
 
    public:
-    // type inspection
-    [[nodiscard]] Type getResType() const override { return FONT; }
-
     McFont *asFont() override { return this; }
     [[nodiscard]] const McFont *asFont() const override { return this; }
 

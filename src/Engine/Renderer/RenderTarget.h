@@ -8,6 +8,7 @@
 class ConVar;
 
 class RenderTarget : public Resource {
+    NOCOPY_NOMOVE(RenderTarget)
    public:
     RenderTarget(int x, int y, int width, int height,
                  MultisampleType multiSampleType = MultisampleType::MULTISAMPLE_0X);
@@ -50,9 +51,6 @@ class RenderTarget : public Resource {
         if constexpr(Env::cfg(OS::WASM)) return false;
         return this->multiSampleType != MultisampleType::MULTISAMPLE_0X;
     }
-
-    // type inspection
-    [[nodiscard]] Type getResType() const final { return RENDERTARGET; }
 
     RenderTarget *asRenderTarget() final { return this; }
     [[nodiscard]] const RenderTarget *asRenderTarget() const final { return this; }

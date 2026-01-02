@@ -24,12 +24,24 @@ class Resource {
     friend class ResourceManager;
 
    public:
-    enum Type : uint8_t { IMAGE, FONT, RENDERTARGET, SHADER, TEXTUREATLAS, VAO, SOUND, APPDEFINED };
+    enum Type : uint8_t {
+        IMAGE,
+        FONT,
+        RENDERTARGET,
+        SHADER,
+        TEXTUREATLAS,
+        VAO,
+        SOUND,
+        APPDEFINED,
+        LAST_RESTYPE = APPDEFINED
+    };
+
+   protected:
+    Resource(Type resType);
+    Resource(Type resType, std::string filepath);
 
    public:
-    Resource() = default;
-    Resource(std::string filepath);
-
+    Resource() = delete;
     virtual ~Resource() = default;
 
     void load();
@@ -40,6 +52,7 @@ class Resource {
 
     [[nodiscard]] inline const std::string &getName() const { return this->sName; }
     [[nodiscard]] inline const std::string &getFilePath() const { return this->sFilePath; }
+    [[nodiscard]] inline const std::string &getDebugIdentifier() const { return this->sDebugIdentifier; }
 
     [[nodiscard]] forceinline bool isReady() const { return this->bReady.load(std::memory_order_acquire); }
     [[nodiscard]] forceinline bool isAsyncReady() const { return this->bAsyncReady.load(std::memory_order_acquire); }
@@ -70,14 +83,17 @@ class Resource {
     std::optional<SyncLoadCB> onInit;
     std::string sFilePath{};
     std::string sName{};
+    std::string sDebugIdentifier;
 
     std::atomic<bool> bReady{false};
     std::atomic<bool> bAsyncReady{false};
     std::atomic<bool> bInterrupted{false};
 
+    Type resType;
+
    public:
     // type inspection
-    [[nodiscard]] virtual Type getResType() const = 0;
+    [[nodiscard]] constexpr Type getResType() const { return this->resType; }
 
     template <typename T = Resource>
     T *as() {
@@ -132,8 +148,32 @@ class Resource {
     [[nodiscard]] const virtual VertexArrayObject *asVAO() const { return nullptr; }
     [[nodiscard]] const virtual Sound *asSound() const { return nullptr; }
 
+    [[nodiscard]] constexpr std::string_view typeToString() const {
+        static_assert(APPDEFINED == LAST_RESTYPE);
+
+        switch(this->getResType()) {
+            case IMAGE:
+                return "IMAGE";
+            case FONT:
+                return "FONT";
+            case RENDERTARGET:
+                return "RENDERTARGET";
+            case SHADER:
+                return "SHADER";
+            case TEXTUREATLAS:
+                return "TEXTUREATLAS";
+            case VAO:
+                return "VAO";
+            case SOUND:
+                return "SOUND";
+            case APPDEFINED:
+                return "APPDEFINED";
+        }
+    }
+
    private:
-    inline void setName(const std::string &name) { this->sName = name; }
+    // used by resourcemanager
+    void setName(std::string_view name);
 };
 
 #endif

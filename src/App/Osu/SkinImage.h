@@ -46,7 +46,7 @@ class SkinImage final {
 
     // absolute size scaled to the current resolution (depending on the osuSize as defined when
     // loaded in Skin.cpp)
-    [[nodiscard]] vec2 getSize() const;
+    [[nodiscard]] vec2 getSize(bool animated = true) const;
 
     // default assumed size scaled to the current resolution. this is the base resolution which
     // is used for all scaling calculations (to allow skins to overscale or underscale objects)
@@ -54,14 +54,14 @@ class SkinImage final {
 
     // default assumed size UNSCALED. that means that e.g. hitcircles will return either
     // 128x128 or 256x256 depending on the @2x flag in the filename
-    [[nodiscard]] vec2 getSizeBaseRaw() const;
+    [[nodiscard]] vec2 getSizeBaseRaw(bool animated = true) const;
 
     [[nodiscard]] inline vec2 getSizeBaseRawForScaling2x() const { return this->vBaseSizeForScaling2x; }
 
     // width/height of the actual image texture as loaded from disk
-    [[nodiscard]] vec2 getImageSizeForCurrentFrame() const;
+    [[nodiscard]] vec2 getImageSizeForCurrentFrame(bool animated = true) const;
 
-    [[nodiscard]] IMAGE getImageForCurrentFrame() const;
+    [[nodiscard]] const IMAGE &getImageForCurrentFrame(bool animated = true) const;
 
     [[nodiscard]] float getResolutionScale() const;
 
@@ -75,14 +75,15 @@ class SkinImage final {
 
     [[nodiscard]] inline std::vector<std::string> getFilepathsForExport() const { return this->filepathsForExport; }
 
+    // TODO: remove is_2x, it's entirely possible for elements to have mixed non-2x and 2x images for different frames
     bool is_2x{false};
 
    private:
     bool load(const std::string& skinElementName, const std::string& animationSeparator, bool ignoreDefaultSkin);
     bool loadImage(const std::string& skinElementName, bool ignoreDefaultSkin, bool animated, bool addToImages);
 
-    [[nodiscard]] float getScale() const;
-    [[nodiscard]] float getImageScale() const;
+    [[nodiscard]] float getScale(bool animated = true) const;
+    [[nodiscard]] float getImageScale(bool animated = true) const;
     void drawBrightQuad(VertexArrayObject* vao, float brightness) const;  // helper
 
     Skin* skin;
@@ -106,6 +107,10 @@ class SkinImage final {
 
     bool bIsMissingTexture;
     bool bIsFromDefaultSkin;
+
+    // if the nonAnimatedImage is inside the images vector, don't try to delete it twice
+    bool bDeleteNonAnimatedImage{true};
+    bool bHasNonAnimatedImage{false};
 
     // custom
     float fDrawClipWidthPercent;

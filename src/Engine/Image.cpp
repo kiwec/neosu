@@ -342,7 +342,7 @@ void Image::saveToImage(const u8 *data, i32 width, i32 height, u8 channels, std:
     fclose(fp);
 }
 
-Image::Image(std::string filepath, bool mipmapped, bool keepInSystemMemory) : Resource(std::move(filepath)) {
+Image::Image(std::string filepath, bool mipmapped, bool keepInSystemMemory) : Resource(IMAGE, std::move(filepath)) {
     this->bMipmapped = mipmapped;
     this->bKeepInSystemMemory = keepInSystemMemory;
 
@@ -356,7 +356,7 @@ Image::Image(std::string filepath, bool mipmapped, bool keepInSystemMemory) : Re
     this->bCreatedImage = false;
 }
 
-Image::Image(i32 width, i32 height, bool mipmapped, bool keepInSystemMemory) : Resource() {
+Image::Image(i32 width, i32 height, bool mipmapped, bool keepInSystemMemory) : Resource(IMAGE) {
     this->bMipmapped = mipmapped;
     this->bKeepInSystemMemory = keepInSystemMemory;
 

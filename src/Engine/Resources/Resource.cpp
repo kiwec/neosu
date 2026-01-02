@@ -6,17 +6,40 @@
 
 #include <utility>
 
-Resource::Resource(std::string filepath) {
+Resource::Resource(Type resType) : resType(resType) {
+    this->sDebugIdentifier =
+        fmt::format("{:8p}:{:s}:name=<none>:postinit=false:filepath=<none>"_cf, fmt::ptr(this), this->typeToString());
+}
+
+Resource::Resource(Type resType, std::string filepath) : resType(resType) {
     this->sFilePath = std::move(filepath);
 
     const bool exists = this->doPathFixup(this->sFilePath);
 
-    // give it a dummy name for unnamed resources, mainly for debugging purposes
-    this->sName = fmt::format("{:p}:postinit=n:found={}:{:s}", static_cast<const void*>(this), exists, this->sFilePath);
+    // give it a more descriptive debug identifier
+    this->sDebugIdentifier = fmt::format("{:8p}:{:s}:name=<none>:postinit=false:filepath={:s}:found={}"_cf,
+                                         fmt::ptr(this), this->typeToString(), this->sFilePath, exists);
+}
+
+void Resource::setName(std::string_view name) {
+    this->sName.assign(name);
+
+    // update debug identifier with new name
+    // don't re-check filesystem status, for performance, just check if the last debug identifier had found=y
+    // (the debug string doesn't have to be 100% accurate, use a proper debugger for that)
+    if(!this->sFilePath.empty()) {
+        const bool exists = this->sDebugIdentifier.contains("found=true");
+        this->sDebugIdentifier =
+            fmt::format("{:8p}:{:s}:name={:s}:postinit=true:filepath={:s}:found={}"_cf, fmt::ptr(this),
+                        this->typeToString(), this->sName, this->sFilePath, exists);
+    } else {
+        this->sDebugIdentifier = fmt::format("{:8p}:{:s}:name={:s}:postinit=true:filepath=<none>"_cf, fmt::ptr(this),
+                                             this->typeToString(), this->sName);
+    }
 }
 
 // separate helper for possible reload with new path
-bool Resource::doPathFixup(std::string &input) {
+bool Resource::doPathFixup(std::string& input) {
     bool file_found = true;
     if(File::existsCaseInsensitive(input) != File::FILETYPE::FILE)  // modifies the input string if found
     {

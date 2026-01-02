@@ -116,12 +116,7 @@ void Console::execConfigFile(std::string_view filename_view) {
 
         // collect commands first
         std::vector<std::string> cmds;
-        while(true) {
-            std::string line{configFile.readLine()};
-
-            // if canRead() is false after readLine(), we hit EOF
-            if(!configFile.canRead()) break;
-
+        for(auto line = configFile.readLine(); !line.empty() || configFile.canRead(); line = configFile.readLine()) {
             // only process non-empty lines
             if(!line.empty()) {
                 // handle comments - find "//" and remove everything after

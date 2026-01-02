@@ -163,9 +163,6 @@ class MainMenu final : public OsuScreen, public MouseListener {
         [[nodiscard]] inline std::string getFolderPath() const { return this->folderPath; }
         void rebuild();
 
-        // type inspection
-        [[nodiscard]] Type getResType() const final { return APPDEFINED; }
-
        protected:
         void init() override { this->setReady(true); }
         void initAsync() override;
