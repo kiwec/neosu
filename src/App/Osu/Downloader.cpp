@@ -538,9 +538,12 @@ BeatmapSetMetadata parse_beatmapset_metadata(std::string_view server_response) {
 
     for(const auto map : maps) {
         const auto spl = SString::split(map, '@');
-        if(spl.size() != 2) continue;
-        if(spl[0].contains("★")) {  // neosu (?)
-            const auto diff_srs = SString::split(spl[0], "★");
+        if(spl.size() < 2) continue;
+        const std::string_view raw_diff = map.substr(0, map.find_last_of('@'));
+        const std::string_view mode_str = spl.back();
+
+        if(raw_diff.contains("★")) {  // neosu (?)
+            const auto diff_srs = SString::split(raw_diff, "★"sv);
             std::string diffname;
 
             // handle a possible case where the diff name itself contains the separator
@@ -552,29 +555,29 @@ BeatmapSetMetadata parse_beatmapset_metadata(std::string_view server_response) {
 
             const f32 sr = Parsing::strto<f32>(diff_srs.back());
             meta.beatmaps.push_back(
-                BeatmapMetadata{.diffname = diffname, .star_rating = sr, .mode = Parsing::strto<u8>(spl[1])});
-        } else if(spl[0].contains("⭐") && spl[0][0] == '[') {  // akatsuki (?)
+                BeatmapMetadata{.diffname = diffname, .star_rating = sr, .mode = Parsing::strto<u8>(mode_str)});
+        } else if(raw_diff.contains("⭐") && raw_diff[0] == '[') {  // akatsuki (?)
             // e.g. [3.60⭐] Mayflower's Hard {cs: 3.5 / od: 6.0 / ar: 8.0 / hp: 3.5}@0
             // maybe can try parsing beatmap settings in the future
-            const uSz star_idx = spl[0].find("⭐"sv);
+            const uSz star_idx = raw_diff.find("⭐"sv);
             const uSz star_end_idx = star_idx + "⭐"sv.size();
 
             // 1, -1 to remove left bracket
-            const std::string_view sr_text = spl[0].substr(1, star_idx - 1);
-            const uSz bracket_cs_idx = spl[0].find(" {cs:");
+            const std::string_view sr_text = raw_diff.substr(1, star_idx - 1);
+            const uSz bracket_cs_idx = raw_diff.find(" {cs: ");
 
             // + 2 to remove right bracket and space
-            const uSz diffbegin = (star_end_idx + 2 > spl[0].size()) ? star_end_idx : star_end_idx + 2;
+            const uSz diffbegin = (star_end_idx + 2 > raw_diff.size()) ? star_end_idx : star_end_idx + 2;
             const uSz diffend = bracket_cs_idx == std::string::npos ? std::string::npos : bracket_cs_idx - diffbegin;
 
-            const std::string_view diff_text = spl[0].substr(diffbegin, diffend);
+            const std::string_view diff_text = raw_diff.substr(diffbegin, diffend);
 
             const f32 sr = Parsing::strto<f32>(sr_text);
             meta.beatmaps.push_back(
-                BeatmapMetadata{.diffname{diff_text}, .star_rating = sr, .mode = Parsing::strto<u8>(spl[1])});
+                BeatmapMetadata{.diffname{diff_text}, .star_rating = sr, .mode = Parsing::strto<u8>(mode_str)});
         } else {
             meta.beatmaps.push_back(
-                BeatmapMetadata{.diffname{spl[0]}, .star_rating = 0.f, .mode = Parsing::strto<u8>(spl[1])});
+                BeatmapMetadata{.diffname{raw_diff}, .star_rating = 0.f, .mode = Parsing::strto<u8>(mode_str)});
         }
     }
 
