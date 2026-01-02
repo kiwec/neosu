@@ -32,13 +32,18 @@ Changelog::Changelog() : ScreenBackable() {
     CHANGELOG v41_13;
     v41_13.title = "41.13 (" CHANGELOG_TIMESTAMP ")";
     v41_13.changes = {
-        R"(- Improved songbrowser scrolling behavior and performance)",
-        R"(- In-game scoreboard can now also be sorted by pp, misscount, accuracy or combo))",
-        R"(- Merged some nice features from McOsu (from @McKay))",
+        R"(- Song browser improvements:)",
+        R"( - Improved songbrowser scrolling behavior and performance)",
+        R"( - Updated top-left artist/title font for sharper text)",
+        R"( - Merged some nice features from McOsu (from @McKay))",
         R"(  - Added Options > Songbrowser > "Song Buttons Velocity Animation)",
         R"(  - Added Options > Songbrowser > "Song Buttons Curved Layout)",
         R"(  - Updated songbrowser song buttons to have the velocity animation disabled by default)",
         R"(  - Updated "Sort by Artist" to secondarily sort by title)",
+        R"(- Score results screen:)",
+        R"(  - Better match stable skin behavior for 300/100/50 hiresult images (use non-animated variants if possible))",
+        R"(  - Fix incorrect AR/CS/HP/OD being shown for most mod combinations)",
+        R"(- In-game scoreboard can now also be sorted by pp, misscount, accuracy or combo))",
         R"(- Multiplayer matches now always have the "No Pausing" mod enabled)",
         R"(- Online Beatmaps screen:)",
         R"(  - Added a checkbox to only see ranked beatmaps)",
@@ -46,8 +51,9 @@ Changelog::Changelog() : ScreenBackable() {
         R"(  - Added background thumbnails)",
         R"(  - Fixed results after map 100 not getting fetched correctly)",
         R"(  - Improved performance)",
-        R"(- Fixed icons (options menu categories, etc.) being offset when changing DPI)",
         R"(- Replay viewer now auto-skips sections that the player has skipped)",
+        R"(- Fixed issues with mouse scroll events being applied to layered UI elements simultaneously)",
+        R"(- Fixed icons (options menu categories, etc.) being offset when changing DPI)",
     };
     changelogs.push_back(v41_13);
 
