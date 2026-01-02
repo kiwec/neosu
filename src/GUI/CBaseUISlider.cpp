@@ -137,7 +137,7 @@ void CBaseUISlider::mouse_update(bool *propagate_clicks) {
         this->bHasChanged = true;
     } else {
         // handle mouse wheel
-        if(this->bMouseInside && this->bAllowMouseWheel) {
+        if(this->bAllowMouseWheel && this->isMouseInside()) {
             int wheelDelta = mouse->getWheelDeltaVertical();
             if(wheelDelta != 0) {
                 const int multiplier = std::max(1, std::abs(wheelDelta) / 120);

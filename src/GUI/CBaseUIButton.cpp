@@ -44,7 +44,7 @@ void CBaseUIButton::draw() {
     // draw hover rects
     const int hoverRectOffset = std::round(3.f * ((float)this->font->getDPI() / 96.f));  // NOTE: abusing font dpi
     g->setColor(this->frameColor);
-    if(this->bMouseInside && this->bEnabled) {
+    if(this->bEnabled && this->isMouseInside()) {
         if(!this->bActive && !mouse->isLeftDown())
             this->drawHoverRect(hoverRectOffset);
         else if(this->bActive)

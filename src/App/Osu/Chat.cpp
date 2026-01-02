@@ -317,6 +317,8 @@ Chat::Chat() : OsuScreen() {
 }
 
 Chat::~Chat() {
+    anim::deleteExistingAnimation(&this->fAnimation);
+
     for(auto &chan : this->channels) {
         SAFE_DELETE(chan);
     }

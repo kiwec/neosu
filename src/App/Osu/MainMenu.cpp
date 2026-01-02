@@ -1670,7 +1670,7 @@ void PauseButton::draw() {
 
     // draw hover rects
     g->setColor(this->frameColor);
-    if(this->bMouseInside && this->bEnabled) {
+    if(this->bEnabled && this->isMouseInside()) {
         if(!this->bActive && !mouse->isLeftDown())
             this->drawHoverRect(3);
         else if(this->bActive)

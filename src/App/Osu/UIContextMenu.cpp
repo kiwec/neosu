@@ -80,7 +80,6 @@ UIContextMenu::UIContextMenu(float xPos, float yPos, float xSize, float ySize, c
     this->bVisible = true;
 
     this->bBigStyle = false;
-    this->bClampUnderflowAndOverflowAndEnableScrollingIfNecessary = false;
 }
 
 void UIContextMenu::draw() {
@@ -114,11 +113,6 @@ void UIContextMenu::mouse_update(bool *propagate_clicks) {
 
     if(this->containedTextbox != nullptr) {
         if(this->containedTextbox->hitEnter()) this->onHitEnter(this->containedTextbox);
-    }
-
-    // HACKHACK: mouse wheel handling order
-    if(this->bClampUnderflowAndOverflowAndEnableScrollingIfNecessary) {
-        if(this->isMouseInside()) mouse->resetWheelDelta();
     }
 
     if(this->selfDeletionCrashWorkaroundScheduledElementDeleteHack.size() > 0) {
@@ -241,17 +235,20 @@ UIContextMenuTextbox *UIContextMenu::addTextbox(const UString &text, int id) {
     return textbox;
 }
 
-void UIContextMenu::end(bool invertAnimation, bool clampUnderflowAndOverflowAndEnableScrollingIfNecessary) {
+void UIContextMenu::end(bool invertAnimation, EndStyle style) {
     this->bInvertAnimation = invertAnimation;
-    this->bClampUnderflowAndOverflowAndEnableScrollingIfNecessary =
-        clampUnderflowAndOverflowAndEnableScrollingIfNecessary;
+
+    const bool clampTop = !!(style & EndStyle::CLAMP_TOP);
+    const bool clampBot = !!(style & EndStyle::CLAMP_BOT);
+
+    bool enabledScrolling = !!(style & EndStyle::STANDALONE_SCROLL);
 
     const int margin = 9 * Osu::getUIScale();
 
     const std::vector<CBaseUIElement *> &elements = this->container->getElements();
     if(elements.empty()) return;
 
-    for(auto element : elements) {
+    for(auto *element : elements) {
         element->setSizeX(this->iWidthCounter - 2 * margin);
     }
 
@@ -259,24 +256,26 @@ void UIContextMenu::end(bool invertAnimation, bool clampUnderflowAndOverflowAndE
     {
         this->setVerticalScrolling(false);
 
-        if(this->bClampUnderflowAndOverflowAndEnableScrollingIfNecessary) {
-            if(this->vPos.y < 0) {
-                const float underflow = std::abs(this->vPos.y);
+        if(clampTop && this->vPos.y < 0) {
+            enabledScrolling = true;
 
-                this->setRelPosY(this->vPos.y + underflow);
-                this->setPosY(this->vPos.y + underflow);
-                this->setSizeY(this->vSize.y - underflow);
+            const float underflow = std::abs(this->vPos.y);
 
-                this->setVerticalScrolling(true);
-            }
+            this->setRelPosY(this->vPos.y + underflow);
+            this->setPosY(this->vPos.y + underflow);
+            this->setSizeY(this->vSize.y - underflow);
+        }
 
-            if(this->vPos.y + this->vSize.y > osu->getVirtScreenHeight()) {
-                const float overflow = std::abs(this->vPos.y + this->vSize.y - osu->getVirtScreenHeight());
+        if(clampBot && this->vPos.y + this->vSize.y > osu->getVirtScreenHeight()) {
+            enabledScrolling = true;
 
-                this->setSizeY(this->vSize.y - overflow - 1);
+            const float overflow = std::abs(this->vPos.y + this->vSize.y - osu->getVirtScreenHeight());
 
-                this->setVerticalScrolling(true);
-            }
+            this->setSizeY(this->vSize.y - overflow - 1);
+        }
+
+        if(enabledScrolling) {
+            this->setVerticalScrolling(true);
         }
 
         this->setScrollSizeToContent();
@@ -288,6 +287,11 @@ void UIContextMenu::end(bool invertAnimation, bool clampUnderflowAndOverflowAndE
     anim::moveQuartOut(&this->fAnimation, 1.0f, 0.15f, true);
 
     soundEngine->play(osu->getSkin()->s_expand);
+
+    if(this->parent && enabledScrolling) {
+        // steal focus for scroll priority
+        this->parent->stealFocus();
+    }
 }
 
 void UIContextMenu::setVisible2(bool visible2) {

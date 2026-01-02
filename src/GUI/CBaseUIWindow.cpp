@@ -229,7 +229,7 @@ void CBaseUIWindow::mouse_update(bool *propagate_clicks) {
     if(this->fAnimation == 0.0f && this->bVisible) this->setVisible(false);
 
     // window logic comes first
-    if(!this->titleBarContainer->isBusy() && !this->container->isBusy() && this->bMouseInside && this->bEnabled)
+    if(!this->titleBarContainer->isBusy() && !this->container->isBusy() && this->bEnabled && this->isMouseInside())
         this->updateWindowLogic();
 
     // the main two containers

@@ -13,6 +13,16 @@
 // #include "ResourceManager.h"
 // #include "Logging.h"
 
+namespace {
+// UBER hack for "handling" mousewheel events on layered scrollviews
+// much more proper would be to:
+//  - actually track Z order globally and have a defined order of event handling
+//  - stop doing the insane propagate_clicks thing (you can interact with gui elements in more ways than just clicking!!!)
+// but that takes time and this seems to work in practice for now...
+u64 lastScrollFrame{0};
+u32 layeredScrollsHandledInFrame{0};
+}  // namespace
+
 CBaseUIScrollView::CBaseUIScrollView(f32 xPos, f32 yPos, f32 xSize, f32 ySize, const UString &name)
     : CBaseUIElement(xPos, yPos, xSize, ySize, name) {
     this->grabs_clicks = true;
@@ -54,7 +64,7 @@ void CBaseUIScrollView::freeElements() {
 }
 
 void CBaseUIScrollView::draw() {
-    if(!this->bVisible) return;
+    if(!this->isVisible()) return;
 
     // draw background
     if(this->bDrawBackground) {
@@ -122,7 +132,7 @@ void CBaseUIScrollView::draw() {
 }
 
 void CBaseUIScrollView::mouse_update(bool *propagate_clicks) {
-    if(!this->bVisible) return;
+    if(!this->isVisible()) return;
 
     this->container->mouse_update(propagate_clicks);
     CBaseUIElement::mouse_update(propagate_clicks);
@@ -142,7 +152,7 @@ void CBaseUIScrollView::mouse_update(bool *propagate_clicks) {
 
     // scrolling logic
     if(this->bActive && !this->bBlockScrolling && (this->bVerticalScrolling || this->bHorizontalScrolling) &&
-       this->bEnabled) {
+       this->isEnabled()) {
         if(!this->bScrollResistanceCheck) {
             this->bScrollResistanceCheck = true;
             this->vMouseBackup3 = mouse->getPos();
@@ -216,13 +226,31 @@ void CBaseUIScrollView::mouse_update(bool *propagate_clicks) {
         this->bScrollResistanceCheck = false;
 
     // handle mouse wheel scrolling
-    if(!keyboard->isAltDown() && this->bMouseInside && this->bEnabled) {
-        if(mouse->getWheelDeltaVertical() != 0)
-            this->scrollY(mouse->getWheelDeltaVertical() * this->fScrollMouseWheelMultiplier *
-                          cv::ui_scrollview_mousewheel_multiplier.getDouble());
-        if(mouse->getWheelDeltaHorizontal() != 0)
-            this->scrollX(-mouse->getWheelDeltaHorizontal() * this->fScrollMouseWheelMultiplier *
-                          cv::ui_scrollview_mousewheel_multiplier.getDouble());
+    if(!keyboard->isAltDown() && this->isMouseInside() && this->isEnabled()) {
+        const u64 curFrameCount = engine->getFrameCount();
+        if(curFrameCount != lastScrollFrame) {
+            lastScrollFrame = curFrameCount;
+            layeredScrollsHandledInFrame = 0;
+        }
+
+        if(layeredScrollsHandledInFrame == 0) {
+            bool handledThisFrame = false;
+            if(this->bVerticalScrolling && mouse->getWheelDeltaVertical() != 0) {
+                this->scrollY(mouse->getWheelDeltaVertical() * this->fScrollMouseWheelMultiplier *
+                              cv::ui_scrollview_mousewheel_multiplier.getDouble());
+                handledThisFrame = true;
+            }
+
+            if(this->bHorizontalScrolling && mouse->getWheelDeltaHorizontal() != 0) {
+                this->scrollX(-mouse->getWheelDeltaHorizontal() * this->fScrollMouseWheelMultiplier *
+                              cv::ui_scrollview_mousewheel_multiplier.getDouble());
+                handledThisFrame = true;
+            }
+
+            if(handledThisFrame) {
+                ++layeredScrollsHandledInFrame;
+            }
+        }
     }
 
     // handle drag scrolling and rubber banding
@@ -670,5 +698,5 @@ void CBaseUIScrollView::onMoved() {
 }
 
 bool CBaseUIScrollView::isBusy() {
-    return (this->container->isBusy() || this->bScrolling || this->bBusy) && this->bVisible;
+    return (this->container->isBusy() || this->bScrolling || this->bBusy) && this->isVisible();
 }

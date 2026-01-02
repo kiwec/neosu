@@ -1689,7 +1689,12 @@ void OptionsMenu::mouse_update(bool *propagate_clicks) {
 }
 
 void OptionsMenu::onKeyDown(KeyboardEvent &e) {
-    if(!this->bVisible) return;
+    if(!this->bVisible) {
+        // allow closing skins dropdown even when options menu isn't open
+        // this is such a hack...
+        if(this->contextMenu->isVisible()) this->contextMenu->onKeyDown(e);
+        return;
+    }
 
     this->contextMenu->onKeyDown(e);
     if(e.isConsumed()) return;
@@ -2524,7 +2529,13 @@ void OptionsMenu::onSkinSelect() {
             CBaseUIButton *button = this->contextMenu->addButton(skinFolder.c_str());
             if(skinFolder.compare(cv::skin.getString()) == 0) button->setTextBrightColor(0xff00ff00);
         }
-        this->contextMenu->end(false, !this->bVisible);
+        {
+            using enum UIContextMenu::EndStyle;
+            auto flags = !this->bVisible ? CLAMP_BOUNDS | STANDALONE_SCROLL : UIContextMenu::EndStyle{0};
+
+            // we want to be able to scroll the skin dropdown itself
+            this->contextMenu->end(false, flags);
+        }
         this->contextMenu->setClickCallback(SA::MakeDelegate<&OptionsMenu::onSkinSelect2>(this));
 
         if(!this->bVisible) {

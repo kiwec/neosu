@@ -38,7 +38,21 @@ class UIContextMenu final : public CBaseUIScrollView {
     };
     UIContextMenuTextbox *addTextbox(const UString &text, int id = -1);
 
-    void end(bool invertAnimation, bool clampUnderflowAndOverflowAndEnableScrollingIfNecessary);
+    enum class EndStyle : u8 {
+        CLAMP_TOP = (1 << 0),
+        CLAMP_BOT = (1 << 1),
+        STANDALONE_SCROLL = (1 << 2),
+        CLAMP_BOUNDS = CLAMP_TOP | CLAMP_BOT
+    };
+    void end(bool invertAnimation, EndStyle style);
+
+    // compatibility wrapper to avoid messing with a bunch of code
+    inline void end(bool invertAnimation, bool clampUnderflowAndOverflowAndEnableScrollingIfNecessary) {
+        return this->end(invertAnimation,
+                         clampUnderflowAndOverflowAndEnableScrollingIfNecessary
+                             ? (EndStyle)((u8)EndStyle::CLAMP_BOUNDS | (u8)EndStyle::STANDALONE_SCROLL)
+                             : EndStyle{0});
+    }
 
     CBaseUIElement *setVisible(bool visible) override {
         // HACHACK: this->bVisible is always true, since we want to be able to put a context menu in a scrollview.
@@ -73,8 +87,9 @@ class UIContextMenu final : public CBaseUIScrollView {
     bool bInvertAnimation = false;
 
     bool bBigStyle;
-    bool bClampUnderflowAndOverflowAndEnableScrollingIfNecessary;
 };
+
+MAKE_FLAG_ENUM(UIContextMenu::EndStyle)
 
 class UIContextMenuButton final : public CBaseUIButton {
     NOCOPY_NOMOVE(UIContextMenuButton)

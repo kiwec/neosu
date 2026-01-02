@@ -157,10 +157,10 @@ void CBaseUITextbox::mouse_update(bool *propagate_clicks) {
 
     // HACKHACK: should do this with the proper events! this will only work properly though if we can event.consume()
     // charDown's
-    if(!this->bEnabled && this->bActive && mleft && !this->bMouseInside) this->bActive = false;
+    if(!this->bEnabled && this->bActive && mleft && !this->isMouseInside()) this->bActive = false;
 
-    if((this->bMouseInside || (this->bBusy && (mleft || mright))) && (this->bActive || (!mleft && !mright)) &&
-       this->bEnabled)
+    if(this->bEnabled && (this->bActive || (!mleft && !mright)) &&
+       ((this->bBusy && (mleft || mright)) || this->isMouseInside()))
         env->setCursor(CURSORTYPE::CURSOR_TEXT);
 
     // update caret blinking
@@ -183,9 +183,9 @@ void CBaseUITextbox::mouse_update(bool *propagate_clicks) {
 
     // handle mouse input
     {
-        if(!this->bMouseInside && mleft && !this->bActive) this->bBlockMouse = true;
+        if(mleft && !this->bActive && !this->isMouseInside()) this->bBlockMouse = true;
 
-        if(this->bMouseInside && (mleft || mright) && this->bActive) {
+        if((mleft || mright) && this->bActive && this->isMouseInside()) {
             this->bCatchMouse = true;
             this->tickCaret();
 
