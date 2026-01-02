@@ -46,6 +46,7 @@ Changelog::Changelog() : ScreenBackable() {
         R"(  - Added background thumbnails)",
         R"(  - Fixed results after map 100 not getting fetched correctly)",
         R"(  - Improved performance)",
+        R"(- Fixed icons (options menu categories, etc.) being offset when changing DPI)",
         R"(- Replay viewer now auto-skips sections that the player has skipped)",
     };
     changelogs.push_back(v41_13);

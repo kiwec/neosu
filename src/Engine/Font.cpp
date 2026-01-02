@@ -148,6 +148,7 @@ struct McFontImpl final {
     bool m_batchActive;
     bool m_bFreeTypeInitialized;
     bool m_bAntialiasing;
+    bool m_bHeightManuallySet{false};
 
     // should we look for fallbacks for this specific font face
     bool m_bTryFindFallbacks;
@@ -248,11 +249,13 @@ struct McFontImpl final {
         // create atlas and render all glyphs
         if(!createAndPackAtlas(m_vGlyphs)) return;
 
-        // precalculate average/max ASCII glyph height
-        m_fHeight = 0.0f;
-        for(int i = 32; i < 128; i++) {
-            const int curHeight = getGlyphMetrics(static_cast<char16_t>(i)).top;
-            m_fHeight = std::max(m_fHeight, static_cast<float>(curHeight));
+        // precalculate average/max ASCII glyph height (unless it was already set manually)
+        if(!m_bHeightManuallySet && m_fHeight > 0.f) {
+            m_fHeight = 0.0f;
+            for(int i = 32; i < 128; i++) {
+                const int curHeight = getGlyphMetrics(static_cast<char16_t>(i)).top;
+                m_fHeight = std::max(m_fHeight, static_cast<float>(curHeight));
+            }
         }
 
         m_parent->setAsyncReady(true);
@@ -273,7 +276,11 @@ struct McFontImpl final {
         m_vGlyphMetrics.clear();
         m_dynamicSlots.clear();
         m_dynamicSlotMap.clear();
-        m_fHeight = 1.0f;
+
+        if(!m_bHeightManuallySet) {
+            m_fHeight = 1.0f;
+        }
+
         m_atlasNeedsReload = false;
     }
 
@@ -365,7 +372,10 @@ struct McFontImpl final {
 
     void setSize(int fontSize) { m_iFontSize = fontSize; }
     void setDPI(int dpi) { m_iFontDPI = dpi; }
-    void setHeight(float height) { m_fHeight = height; }
+    void setHeight(float height) {
+        m_fHeight = height;
+        m_bHeightManuallySet = true;
+    }
 
     [[nodiscard]] inline int getSize() const { return m_iFontSize; }
     [[nodiscard]] inline int getDPI() const { return m_iFontDPI; }
