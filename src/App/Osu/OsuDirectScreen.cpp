@@ -42,6 +42,8 @@ class MapBGManager : public AvatarManager {
     ~MapBGManager() override = default;
 };
 
+// represents: one single beatmapset element inside the OsuDirectScreen scrollview
+// it's a container because it contains UIIcons with tooltips for difficulties
 class OnlineMapListing : public CBaseUIContainer {
     NOCOPY_NOMOVE(OnlineMapListing)
    public:
@@ -183,6 +185,10 @@ void OnlineMapListing::onResolutionChange(vec2 /*newResolution*/) {
 
 void OnlineMapListing::draw() {
     // XXX: laggy/slow
+    // TODOs:
+    //   - move downloading out of draw()
+    //   - continue downloading even if clipped (not visible)
+    //   - allow concurrent downloads
 
     CBaseUIContainer::draw();
 

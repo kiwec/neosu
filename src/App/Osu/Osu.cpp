@@ -1986,7 +1986,7 @@ void Osu::updateOsuFolder() {
 
     if(this->optionsMenu) {
         this->optionsMenu->osuFolderTextbox->stealFocus();
-        this->optionsMenu->osuFolderTextbox->setText(UString{cv::osu_folder.getString()});
+        this->optionsMenu->osuFolderTextbox->setText(cv::osu_folder.getString());
     }
 }
 

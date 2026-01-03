@@ -524,8 +524,8 @@ CBaseUITextbox *CBaseUITextbox::setFont(McFont *font) {
 }
 
 CBaseUITextbox *CBaseUITextbox::setText(UString text) {
-    this->sText = text;
-    this->iCaretPosition = std::clamp<int>(this->iCaretPosition, 0, text.length());
+    this->sText = std::move(text);
+    this->iCaretPosition = std::clamp<int>(this->iCaretPosition, 0, this->sText.length());
 
     // handle text justification
     this->fTextWidth = this->font->getStringWidth(this->getVisibleText());

@@ -858,9 +858,17 @@ AS_IF([test "x$enable_harden" = "xyes"], [
     ])
 ])
 
+# common flags
+NEOSU_CPPFLAGS="$NEOSU_CPPFLAGS"
+NEOSU_CXXFLAGS="$NEOSU_CXXFLAGS -Wall -Wextra -Wno-sign-compare -Wunused-parameter -Wdeprecated-declarations -Wno-error=deprecated-declarations"
+NEOSU_LDFLAGS="$NEOSU_LDFLAGS -Wl,--gc-sections" # remove unused sections
+AC_SUBST([NEOSU_CPPFLAGS])
+AC_SUBST([NEOSU_CXXFLAGS])
+AC_SUBST([NEOSU_LDFLAGS])
+
+# dont error out on some false positive warnings during LTO
 AS_IF([test "x$enable_werror" != "xno"], [
     werror_flags_temp="-Werror"
-    # dont error out on some false positive warnings during LTO
     AX_CHECK_COMPILE_FLAG([-Wno-error=stringop-overflow -Wno-error=maybe-uninitialized], [
         werror_flags_temp="$werror_flags_temp -Wno-error=stringop-overflow -Wno-error=maybe-uninitialized"
     ])
@@ -869,13 +877,6 @@ AS_IF([test "x$enable_werror" != "xno"], [
     ])
     NEOSU_CXXFLAGS="$werror_flags_temp $NEOSU_CXXFLAGS"
 ])
-
-NEOSU_CPPFLAGS="$NEOSU_CPPFLAGS"
-NEOSU_CXXFLAGS="$NEOSU_CXXFLAGS -Wall -Wextra -Wno-sign-compare -Wunused-parameter -Wdeprecated-declarations -Wno-error=deprecated-declarations"
-NEOSU_LDFLAGS="$NEOSU_LDFLAGS -Wl,--gc-sections" # remove unused sections
-AC_SUBST([NEOSU_CPPFLAGS])
-AC_SUBST([NEOSU_CXXFLAGS])
-AC_SUBST([NEOSU_LDFLAGS])
 
 # sanity check for pre-bundled assets and required files before checking for external dependencies
 AC_MSG_CHECKING([for src/Makefile.sources])

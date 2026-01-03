@@ -292,14 +292,54 @@ class UString {
         return this->sUnicode[std::clamp(index, 0, len - 1)];
     }
 
-    bool operator==(const char *utf8) const noexcept { return this->sUtf8 == utf8; }
-    auto operator<=>(const char *utf8) const noexcept { return std::operator<=>(this->sUtf8, utf8); }
-    bool operator==(std::u16string_view sv) const noexcept { return this->sUnicode == sv; }
-    auto operator<=>(std::u16string_view sv) const noexcept {
-        return std::operator<=>(static_cast<const std::u16string_view &>(this->sUnicode), sv);
+    friend bool operator==(const UString &ustr, const std::string &utf8v) noexcept {
+        return static_cast<const std::string_view &>(ustr.sUtf8) == utf8v;
     }
-    bool operator==(const UString &ustr) const noexcept { return this->sUnicode == ustr.sUnicode; };
-    auto operator<=>(const UString &ustr) const noexcept { return std::operator<=>(this->sUnicode, ustr.sUnicode); };
+    friend auto operator<=>(const UString &ustr, const std::string &utf8v) noexcept {
+        return std::operator<=>(static_cast<const std::string_view &>(ustr.sUtf8), utf8v);
+    }
+    friend bool operator==(const UString &ustr, const std::u16string &utf16v) noexcept {
+        return ustr.sUnicode == utf16v;
+    }
+    friend auto operator<=>(const UString &ustr, const std::u16string &utf16v) noexcept {
+        return std::operator<=>(ustr.sUnicode, utf16v);
+    }
+    friend bool operator==(const std::string &utf8v, const UString &ustr) noexcept {
+        return static_cast<const std::string_view &>(ustr.sUtf8) == utf8v;
+    }
+    friend auto operator<=>(const std::string &utf8v, const UString &ustr) noexcept {
+        return std::operator<=>(static_cast<const std::string_view &>(ustr.sUtf8), utf8v);
+    }
+    friend bool operator==(const std::u16string &utf16v, const UString &ustr) noexcept {
+        return ustr.sUnicode == utf16v;
+    }
+    friend auto operator<=>(const std::u16string &utf16v, const UString &ustr) noexcept {
+        return std::operator<=>(ustr.sUnicode, utf16v);
+    }
+    friend bool operator==(const UString &ustr, std::string_view utf8v) noexcept {
+        return static_cast<const std::string_view &>(ustr.sUtf8) == utf8v;
+    }
+    friend auto operator<=>(const UString &ustr, std::string_view utf8v) noexcept {
+        return std::operator<=>(static_cast<const std::string_view &>(ustr.sUtf8), utf8v);
+    }
+    friend bool operator==(const UString &ustr, std::u16string_view utf16v) noexcept { return ustr.sUnicode == utf16v; }
+    friend auto operator<=>(const UString &ustr, std::u16string_view utf16v) noexcept {
+        return std::operator<=>(static_cast<const std::u16string_view &>(ustr.sUnicode), utf16v);
+    }
+    friend bool operator==(std::string_view utf8v, const UString &ustr) noexcept {
+        return static_cast<const std::string_view &>(ustr.sUtf8) == utf8v;
+    }
+    friend auto operator<=>(std::string_view utf8v, const UString &ustr) noexcept {
+        return std::operator<=>(static_cast<const std::string_view &>(ustr.sUtf8), utf8v);
+    }
+    friend bool operator==(std::u16string_view utf16v, const UString &ustr) noexcept { return ustr.sUnicode == utf16v; }
+    friend auto operator<=>(std::u16string_view utf16v, const UString &ustr) noexcept {
+        return std::operator<=>(static_cast<const std::u16string_view &>(ustr.sUnicode), utf16v);
+    }
+    friend bool operator==(const UString &u1, const UString &u2) noexcept { return u1.sUnicode == u2.sUnicode; };
+    friend auto operator<=>(const UString &u1, const UString &u2) noexcept {
+        return std::operator<=>(u1.sUnicode, u2.sUnicode);
+    };
 
     UString &operator+=(const UString &ustr) noexcept;
     [[nodiscard]] UString operator+(const UString &ustr) const noexcept;
