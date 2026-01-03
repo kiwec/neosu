@@ -17,14 +17,18 @@ class VertexArrayObject : public Resource {
     void addVertex(vec2 v);
     void addVertex(vec3 v);
     void addVertex(float x, float y, float z = 0);
+    void addVertices(std::vector<vec3> vertices);
 
     void addTexcoord(vec2 uv);
     void addTexcoord(float u, float v);
+    void addTexcoords(std::vector<vec2> texcoords);
 
     void addNormal(vec3 normal);
     void addNormal(float x, float y, float z);
+    void addNormals(std::vector<vec3> normals);
 
     void addColor(Color color);
+    void addColors(std::vector<Color> color);
 
     void setVertex(int index, vec2 v);
     void setVertex(int index, vec3 v);

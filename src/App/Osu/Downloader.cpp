@@ -195,13 +195,23 @@ std::unordered_map<i32, i32> beatmap_to_beatmapset;
 
 i32 get_beatmapset_id_from_osu_file(const u8* osu_data, size_t s_osu_data) {
     i32 set_id = -1;
+    bool inMetadata = false;
 
     std::string_view file((const char*)osu_data, (const char*)osu_data + s_osu_data);
     for(const auto line : SString::split_newlines(file)) {
         if(line.empty() || SString::is_comment(line)) continue;
-
-        if(Parsing::parse(line, "BeatmapSetID", ':', &set_id)) {
-            return set_id;
+        if(line.contains("[Metadata]")) {
+            inMetadata = true;
+            continue;
+        }
+        if(line.starts_with('[') && inMetadata) {
+            break;
+        }
+        if(inMetadata) {
+            if(Parsing::parse(line, "BeatmapSetID", ':', &set_id)) {
+                return set_id;
+            }
+            continue;
         }
     }
 

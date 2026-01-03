@@ -41,8 +41,8 @@ HUD::HUD() : OsuScreen() {
         env->usingDX11() ? FSH_STRING(DX11_, cursortrail) : FSH_STRING(GL_, cursortrail), "cursortrail");
 
     this->cursorTrail.reserve(cv::cursor_trail_max_size.getInt() * 2);
-    this->cursorTrailVAO =
-        resourceManager->createVertexArrayObject(DrawPrimitive::PRIMITIVE_QUADS, DrawUsageType::USAGE_DYNAMIC);
+    this->cursorTrailVAO.reset(
+        g->createVertexArrayObject(DrawPrimitive::PRIMITIVE_QUADS, DrawUsageType::USAGE_DYNAMIC, false));
 
     this->fCurFps = 60.0f;
     this->fCurFpsSmooth = 60.0f;
@@ -407,36 +407,35 @@ void HUD::drawCursorTrailInt(Shader *trailShader, std::vector<CURSORTRAIL> &trai
             smoothCursorTrail ? cv::cursor_trail_smooth_length.getFloat() : cv::cursor_trail_length.getFloat();
         int i = trail.size() - 1;
         while(i >= 0) {
-            trail[i].alpha =
-                std::clamp<float>(((trail[i].time - engine->getTime()) / trailLength) * alphaMultiplier, 0.0f, 1.0f) *
+            auto &curTrl = trail[i];
+            curTrl.alpha =
+                std::clamp<float>(((curTrl.time - engine->getTime()) / trailLength) * alphaMultiplier, 0.0f, 1.0f) *
                 cv::cursor_trail_alpha.getFloat();
 
             if(smoothCursorTrail) {
-                const float scaleAnimTrailWidthHalf = (trailWidth / 2) * trail[i].scale;
-                const float scaleAnimTrailHeightHalf = (trailHeight / 2) * trail[i].scale;
+                const float scaleAnimTrailWidthHalf = (trailWidth / 2) * curTrl.scale;
+                const float scaleAnimTrailHeightHalf = (trailHeight / 2) * curTrl.scale;
 
-                const vec3 topLeft = vec3(trail[i].pos.x - scaleAnimTrailWidthHalf,
-                                          trail[i].pos.y - scaleAnimTrailHeightHalf, trail[i].alpha);
-                this->cursorTrailVAO->addVertex(topLeft);
-                this->cursorTrailVAO->addTexcoord(0, 0);
+                const vec3 topLeft{curTrl.pos.x - scaleAnimTrailWidthHalf,  //
+                                   curTrl.pos.y - scaleAnimTrailHeightHalf, curTrl.alpha};
+                const vec3 topRight{curTrl.pos.x + scaleAnimTrailWidthHalf,  //
+                                    curTrl.pos.y - scaleAnimTrailHeightHalf, curTrl.alpha};
+                const vec3 bottomRight{curTrl.pos.x + scaleAnimTrailWidthHalf,  //
+                                       curTrl.pos.y + scaleAnimTrailHeightHalf, curTrl.alpha};
+                const vec3 bottomLeft{curTrl.pos.x - scaleAnimTrailWidthHalf,  //
+                                      curTrl.pos.y + scaleAnimTrailHeightHalf, curTrl.alpha};
 
-                const vec3 topRight = vec3(trail[i].pos.x + scaleAnimTrailWidthHalf,
-                                           trail[i].pos.y - scaleAnimTrailHeightHalf, trail[i].alpha);
-                this->cursorTrailVAO->addVertex(topRight);
-                this->cursorTrailVAO->addTexcoord(1, 0);
+                this->cursorTrailVAO->addVertices({topLeft, topRight, bottomRight, bottomLeft});
+                this->cursorTrailVAO->addTexcoords({
+                    {0, 0},
+                    {1, 0},
+                    {1, 1},
+                    {0, 1},
+                });
 
-                const vec3 bottomRight = vec3(trail[i].pos.x + scaleAnimTrailWidthHalf,
-                                              trail[i].pos.y + scaleAnimTrailHeightHalf, trail[i].alpha);
-                this->cursorTrailVAO->addVertex(bottomRight);
-                this->cursorTrailVAO->addTexcoord(1, 1);
-
-                const vec3 bottomLeft = vec3(trail[i].pos.x - scaleAnimTrailWidthHalf,
-                                             trail[i].pos.y + scaleAnimTrailHeightHalf, trail[i].alpha);
-                this->cursorTrailVAO->addVertex(bottomLeft);
-                this->cursorTrailVAO->addTexcoord(0, 1);
             } else  // old style trail
             {
-                if(trail[i].alpha > 0.0f) this->drawCursorTrailRaw(trail[i].alpha, trail[i].pos);
+                if(curTrl.alpha > 0.0f) this->drawCursorTrailRaw(curTrl.alpha, curTrl.pos);
             }
 
             i--;
@@ -453,7 +452,7 @@ void HUD::drawCursorTrailInt(Shader *trailShader, std::vector<CURSORTRAIL> &trai
                     g->setBlendMode(DrawBlendMode::BLEND_MODE_ADDITIVE);
                     {
                         g->setColor(0xffffffff);
-                        g->drawVAO(this->cursorTrailVAO);
+                        g->drawVAO(this->cursorTrailVAO.get());
                     }
                     g->setBlendMode(DrawBlendMode::BLEND_MODE_ALPHA);
                 }

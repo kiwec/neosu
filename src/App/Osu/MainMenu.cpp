@@ -163,14 +163,15 @@ MainMenu::MainMenu() : OsuScreen() {
                 // get build timestamp
                 if(versionFile.canRead() && ((linebuf = versionFile.readLine()) != "") &&
                    ((buildstamp = Parsing::strto<u64>(linebuf)) > 0)) {
-                    // ignore bogus build timestamps (before 2025 or after 2030)
-                    if(buildstamp > 30000000 || buildstamp < 25000000) {
+                    // ignore bogus build timestamps
+                    if(buildstamp > 4000000000 || buildstamp < 2000000000) {
                         buildstamp = cv::build_timestamp.getVal<u64>();
                     }
                 }
                 // debugLog("versionFile version: {} our version: {}{}", version, cv::version.getFloat(),
                 //           buildstamp > 0.0f ? fmt::format(" build timestamp: {}", buildstamp) : "");
-                if(version < cv::version.getDouble() || buildstamp < cv::build_timestamp.getVal<u64>()) {
+                if(!Env::cfg(BUILD::DEBUG) &&
+                   (version < cv::version.getDouble() || buildstamp < cv::build_timestamp.getVal<u64>())) {
                     this->bDrawVersionNotificationArrow = true;
                 }
 

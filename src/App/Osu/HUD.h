@@ -210,7 +210,7 @@ class HUD final : public OsuScreen {
     std::vector<CURSORTRAIL> cursorTrailSpectator1;
     std::vector<CURSORTRAIL> cursorTrailSpectator2;
     Shader *cursorTrailShader;
-    VertexArrayObject *cursorTrailVAO;
+    std::unique_ptr<VertexArrayObject> cursorTrailVAO;
     std::vector<CURSORRIPPLE> cursorRipples;
 
     // target heatmap

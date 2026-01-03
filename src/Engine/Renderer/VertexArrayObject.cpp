@@ -59,6 +59,12 @@ void VertexArrayObject::addVertex(vec3 v) {
     this->iNumVertices = this->vertices.size();
 }
 
+void VertexArrayObject::addVertices(std::vector<vec3> vertices) {
+    this->vertices.insert(this->vertices.end(), std::make_move_iterator(vertices.begin()),
+                          std::make_move_iterator(vertices.end()));
+    this->iNumVertices = this->vertices.size();
+}
+
 void VertexArrayObject::addTexcoord(float u, float v) {
     this->texcoords.emplace_back(u, v);
     this->bHasTexcoords = true;
@@ -69,11 +75,27 @@ void VertexArrayObject::addTexcoord(vec2 uv) {
     this->bHasTexcoords = true;
 }
 
+void VertexArrayObject::addTexcoords(std::vector<vec2> texcoords) {
+    this->texcoords.insert(this->texcoords.end(), std::make_move_iterator(texcoords.begin()),
+                           std::make_move_iterator(texcoords.end()));
+    this->bHasTexcoords = true;
+}
+
 void VertexArrayObject::addNormal(vec3 normal) { this->normals.push_back(normal); }
 
 void VertexArrayObject::addNormal(float x, float y, float z) { this->normals.emplace_back(x, y, z); }
 
+void VertexArrayObject::addNormals(std::vector<vec3> normals) {
+    this->normals.insert(this->normals.end(), std::make_move_iterator(normals.begin()),
+                         std::make_move_iterator(normals.end()));
+}
+
 void VertexArrayObject::addColor(Color color) { this->colors.push_back(color); }
+
+void VertexArrayObject::addColors(std::vector<Color> color) {
+    this->colors.insert(this->colors.end(), std::make_move_iterator(color.begin()),
+                        std::make_move_iterator(color.end()));
+}
 
 void VertexArrayObject::setVertex(int index, vec2 v) {
     if(index < 0 || index > (this->vertices.size() - 1)) return;
