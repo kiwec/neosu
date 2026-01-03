@@ -313,15 +313,18 @@ SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
                 case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
                     onDPIChange();  // fallthrough
                 case SDL_EVENT_WINDOW_RESIZED:
-                case SDL_EVENT_WINDOW_SAFE_AREA_CHANGED:
-                    // don't trust the event coordinates if we're in fullscreen, use the fullscreen size directly
+                case SDL_EVENT_WINDOW_SAFE_AREA_CHANGED: {  // not really sure what to do with SAFE_AREA_CHANGED
                     if(!winMinimized() && !m_bRestoreFullscreen) {
-                        vec2 resize = winFullscreened() ? getNativeScreenSize()
-                                                        : vec2{(float)event->window.data1, (float)event->window.data2};
-                        m_engine->requestResolutionChange(resize);
+                        // don't trust the event coordinates if we're in fullscreen, use the fullscreen size directly
+                        const vec2 actualResize =
+                            winFullscreened() ? getNativeScreenSize()
+                                              : (event->window.type == SDL_EVENT_WINDOW_RESIZED
+                                                     ? vec2{(float)event->window.data1, (float)event->window.data2}
+                                                     : getWindowSize());
+                        m_engine->requestResolutionChange(actualResize);
                         setFgFPS();
                     }
-                    break;
+                } break;
 
                 case SDL_EVENT_WINDOW_DISPLAY_CHANGED:
                     cv::monitor.setValue(event->window.data1, false);
