@@ -1191,8 +1191,10 @@ std::vector<SCORE_ENTRY> HUD::getCurrentScores() {
             }
 
             // use local if we had no online scores or are not online
+            bool locked_scores_mtx = false;
             if(!scoreVec) {
-                Sync::shared_lock lock(db->scores_mtx);
+                db->scores_mtx.lock_shared();
+                locked_scores_mtx = true;
                 const auto &scoreIt = db->getScores().find(this->beatmap_md5);
                 if(scoreIt != db->getScores().end()) {
                     scoreVec = &scoreIt->second;
@@ -1217,6 +1219,10 @@ std::vector<SCORE_ENTRY> HUD::getCurrentScores() {
                     scores.push_back(std::move(scoreEntry));
                     nb_slots++;
                 }
+            }
+
+            if(locked_scores_mtx) {
+                db->scores_mtx.unlock_shared();
             }
         }
 
