@@ -289,20 +289,19 @@ void process_work_item(WorkItem& item, const Sync::stop_token& stoken) {
 
     // process map calculation (nomod stars, BPM, object counts)
     if(item.needs_map_calc) {
-        MapResult result{.map = item.map,
-                         .nb_circles = primitives.numCircles,
-                         .nb_sliders = primitives.numSliders,
-                         .nb_spinners = primitives.numSpinners};
-
         // first loadDifficultyHitObjects call calculates slider times and sets sliderTimesCalculated
         auto diffres = DatabaseBeatmap::loadDifficultyHitObjects(primitives, item.map->getAR(), item.map->getCS(), 1.f,
                                                                  false, stoken);
 
+        MapResult result{.map = item.map,
+                         .length_ms = diffres.playableLength,
+                         .nb_circles = primitives.numCircles,
+                         .nb_sliders = primitives.numSliders,
+                         .nb_spinners = primitives.numSpinners};
+
         if(stoken.stop_requested()) return;
 
         if(!diffres.error.errc) {
-            result.length_ms = diffres.diffobjects.back().baseEndTime - diffres.diffobjects.front().baseTime;
-
             DifficultyCalculator::BeatmapDiffcalcData diffcalc_data{.sortedHitObjects = diffres.diffobjects,
                                                                     .CS = item.map->getCS(),
                                                                     .HP = item.map->getHP(),

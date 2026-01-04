@@ -1179,6 +1179,10 @@ DatabaseBeatmap::LOAD_DIFFOBJ_RESULT DatabaseBeatmap::loadDifficultyHitObjects(P
         result.maxComboAtIndex.push_back(totalCombo);
     }
 
+    if (result.diffobjects.empty()) {
+        result.error.errc = LoadError::NO_OBJECTS;
+    }
+
     return result;
 }
 
