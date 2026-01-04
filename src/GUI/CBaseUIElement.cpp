@@ -18,16 +18,21 @@ void CBaseUIElement::mouse_update(bool *propagate_clicks) {
     if(unlikely(cv::debug_ui.getBool())) this->dumpElem();
     if(!this->bVisible || !this->bEnabled) return;
 
-    // check if mouse is inside element
-    if(this->getRect().contains(mouse->getPos())) {
-        if(!this->bMouseInside) {
-            this->bMouseInside = true;
-            if(this->bVisible && this->bEnabled) this->onMouseInside();
-        }
-    } else {
-        if(this->bMouseInside) {
-            this->bMouseInside = false;
-            if(this->bVisible && this->bEnabled) this->onMouseOutside();
+    {
+        const bool oldMouseInsideState = this->bMouseInside;
+        const bool mousePosInside = this->getRect().contains(mouse->getPos());
+
+        // check if mouse is inside element
+        this->bMouseInside = mousePosInside;
+        // re-check to account for possible isMouseInside override
+        this->bMouseInside = this->isMouseInside();
+
+        if(oldMouseInsideState != this->bMouseInside && this->bVisible && this->bEnabled) {
+            if(this->bMouseInside) {
+                this->onMouseInside();
+            } else {  // must be 0
+                this->onMouseOutside();
+            }
         }
     }
 

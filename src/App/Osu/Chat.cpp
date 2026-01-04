@@ -304,7 +304,7 @@ Chat::Chat() : OsuScreen() {
     this->input_box->setBackgroundColor(0xdd000000);
     this->addBaseUIElement(this->input_box);
 
-    this->user_list = new ChatUIUserList(0, 0, 0, 0, "");
+    this->user_list = new CBaseUIScrollView(0, 0, 0, 0, "");
     this->user_list->setDrawFrame(false);
     this->user_list->setDrawBackground(true);
     this->user_list->setBackgroundColor(0xcc000000);
@@ -405,10 +405,9 @@ void Chat::mouse_update(bool *propagate_clicks) {
 
     if(this->user_list->isVisible()) {
         // Request presence & stats for on-screen user cards
+        const McRect userlist_rect = this->user_list->getRect();
         for(auto *card : this->user_list->container->getElements<UserCard2>()) {
-            bool is_above_bottom = card->getPos().y <= this->user_list->getPos().y + this->user_list->getSize().y;
-            bool is_below_top = card->getPos().y + card->getSize().y >= this->user_list->getPos().y;
-            if(is_above_bottom && is_below_top) {
+            if(userlist_rect.intersects(card->getRect())) {
                 BANCHO::User::enqueue_presence_request(card->info);
                 BANCHO::User::enqueue_stats_request(card->info);
             }
@@ -1162,7 +1161,7 @@ void Chat::updateUserList() {
     }
 
     // Intentionally not calling this->user_list->invalidate(), because that would affect scroll position/animation
-    auto old_card_elems_copy = this->user_list->getContainedElements<UserCard2>();
+    auto old_card_elems_copy = this->user_list->container->getElements<UserCard2>();
     this->user_list->container->invalidate();  // clear scrollview container elements and rebuild
 
     // FIXME: dumb to sort this every time, can cause pop-in and jarring reshuffling in f9 menu buttons

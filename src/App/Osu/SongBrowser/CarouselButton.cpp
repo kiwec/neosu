@@ -8,7 +8,6 @@
 // ---
 
 #include "AnimationHandler.h"
-#include "CBaseUIContainer.h"
 #include "CBaseUIScrollView.h"
 #include "OsuConVars.h"
 #include "Environment.h"
@@ -17,6 +16,7 @@
 #include "Osu.h"
 #include "Skin.h"
 #include "SoundEngine.h"
+#include "UIContextMenu.h"
 
 int CarouselButton::marginPixelsX = 9;
 int CarouselButton::marginPixelsY = 9;
@@ -26,11 +26,8 @@ using namespace neosu::sbr;
 
 // Color Button::inactiveDifficultyBackgroundColor = argb(255, 0, 150, 236); // blue
 
-CarouselButton::CarouselButton(UIContextMenu *contextMenu, float xPos, float yPos, float xSize, float ySize,
-                               UString name)
+CarouselButton::CarouselButton(float xPos, float yPos, float xSize, float ySize, UString name)
     : CBaseUIButton(xPos, yPos, xSize, ySize, std::move(name), "") {
-    this->contextMenu = contextMenu;
-
     this->font = osu->getSongBrowserFont();
     this->fontBold = osu->getSongBrowserFontBold();
 
@@ -141,6 +138,10 @@ void CarouselButton::mouse_update(bool *propagate_clicks) {
 
     // animations need constant layout updates while visible
     this->updateLayoutEx();
+}
+
+bool CarouselButton::isMouseInside() {
+    return CBaseUIButton::isMouseInside() && !g_songbrowser->contextMenu->isMouseInside();
 }
 
 void CarouselButton::updateLayoutEx() {

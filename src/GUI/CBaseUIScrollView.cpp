@@ -2,6 +2,7 @@
 // TODO: refactor the spaghetti parts, this can be done way more elegantly
 
 #include "CBaseUIScrollView.h"
+#include "CBaseUIContainer.h"
 
 #include "AnimationHandler.h"
 #include "ConVar.h"
@@ -29,7 +30,7 @@ CBaseUIScrollView::CBaseUIScrollView(f32 xPos, f32 yPos, f32 xSize, f32 ySize, c
 
     this->iScrollResistance = cv::ui_scrollview_resistance.getInt();  // TODO: dpi handling
 
-    this->container = new CBaseUIScrollViewContainer(xPos, yPos, xSize, ySize, name);
+    this->container = new CBaseUIContainer(xPos, yPos, xSize, ySize, name);
 }
 
 CBaseUIScrollView::~CBaseUIScrollView() {
@@ -226,7 +227,8 @@ void CBaseUIScrollView::mouse_update(bool *propagate_clicks) {
         this->bScrollResistanceCheck = false;
 
     // handle mouse wheel scrolling
-    if(!keyboard->isAltDown() && this->isMouseInside() && this->isEnabled()) {
+    if(!this->bBlockScrolling && (this->bVerticalScrolling || this->bHorizontalScrolling) && !keyboard->isAltDown() &&
+       this->isMouseInside() && this->isEnabled()) {
         const u64 curFrameCount = engine->getFrameCount();
         if(curFrameCount != lastScrollFrame) {
             lastScrollFrame = curFrameCount;
@@ -510,11 +512,8 @@ void CBaseUIScrollView::scrollToXInt(int scrollPosX, bool animated, bool slow) {
 
 void CBaseUIScrollView::scrollToElement(CBaseUIElement *element, int /*xOffset*/, int yOffset, bool animated) {
     const std::vector<CBaseUIElement *> &elements = this->container->getElements();
-    for(auto *e : elements) {
-        if(e == element) {
-            this->scrollToY(-element->getRelPos().y + yOffset, animated);
-            return;
-        }
+    if(const auto &elemit = std::ranges::find(elements, element); elemit != elements.end()) {
+        this->scrollToY(-(*elemit)->getRelPos().y + yOffset, animated);
     }
 }
 

@@ -7,8 +7,8 @@ class CollectionButton final : public CarouselButton {
    public:
     DEF_BUTTON_TYPE(CollectionButton, CollectionButton_, CarouselButton)
    public:
-    CollectionButton(UIContextMenu *contextMenu, float xPos, float yPos, float xSize, float ySize, UString name,
-                     const UString &collectionName, std::vector<SongButton *> children = {});
+    CollectionButton(float xPos, float yPos, float xSize, float ySize, UString name, const UString &collectionName,
+                     std::vector<SongButton *> children = {});
 
     void draw() override;
 

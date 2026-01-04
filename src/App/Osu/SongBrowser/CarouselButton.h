@@ -47,7 +47,7 @@ class CarouselButton : public CBaseUIButton {
     }
 
    public:
-    CarouselButton(UIContextMenu *contextMenu, float xPos, float yPos, float xSize, float ySize, UString name);
+    CarouselButton(float xPos, float yPos, float xSize, float ySize, UString name);
     ~CarouselButton() override;
     void deleteAnimations();
 
@@ -57,6 +57,8 @@ class CarouselButton : public CBaseUIButton {
     virtual void updateLayoutEx();
 
     CarouselButton *setVisible(bool visible) override;
+
+    bool isMouseInside() override;
 
     // i hate how difficult it is to understand a sequence of unnamed boolean arguments
     struct SelOpts {
@@ -113,8 +115,6 @@ class CarouselButton : public CBaseUIButton {
     static int marginPixelsX;
     static int marginPixelsY;
     static float lastHoverSoundTime;
-
-    UIContextMenu *contextMenu;
 
     McFont *font;
     McFont *fontBold;

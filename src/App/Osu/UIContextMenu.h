@@ -13,8 +13,8 @@ class UIContextMenuTextbox;
 
 class UIContextMenu final : public CBaseUIScrollView {
    public:
-    static void clampToBottomScreenEdge(UIContextMenu *menu);
-    static void clampToRightScreenEdge(UIContextMenu *menu);
+    void clampToBottomScreenEdge();
+    void clampToRightScreenEdge();
 
    public:
     UIContextMenu(float xPos = 0, float yPos = 0, float xSize = 0, float ySize = 0, const UString &name = "",
@@ -70,7 +70,7 @@ class UIContextMenu final : public CBaseUIScrollView {
    private:
     void onMouseDownOutside(bool left = true, bool right = false) override;
 
-    void onClick(CBaseUIButton *button);
+    void onClick(UIContextMenuButton *button);
     void onHitEnter(UIContextMenuTextbox *textbox);
 
     std::vector<CBaseUIElement *> selfDeletionCrashWorkaroundScheduledElementDeleteHack;

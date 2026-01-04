@@ -11,7 +11,7 @@ class SongDifficultyButton final : public SongButton {
    private:
     // only allow construction through parent song button (as child)
     friend class SongButton;
-    SongDifficultyButton(UIContextMenu *contextMenu, float xPos, float yPos, float xSize, float ySize, UString name,
+    SongDifficultyButton(float xPos, float yPos, float xSize, float ySize, UString name,
                          BeatmapDifficulty *diff, SongButton *parentSongButton, int numSiblings);
 
    public:

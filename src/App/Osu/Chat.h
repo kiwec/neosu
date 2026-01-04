@@ -83,16 +83,7 @@ class Chat final : public OsuScreen {
     CBaseUIContainer *button_container;
     CBaseUITextbox *input_box;
 
-    class ChatUIUserList : public CBaseUIScrollView {
-        NOCOPY_NOMOVE(ChatUIUserList)
-       public:
-        using CBaseUIScrollView::CBaseUIScrollView;
-        ~ChatUIUserList() override = default;
-
-        friend class Chat;
-    };
-
-    ChatUIUserList *user_list;
+    CBaseUIScrollView *user_list;
 
     float fAnimation = 0.f;
     bool user_wants_chat = false;

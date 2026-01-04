@@ -17,10 +17,10 @@ class SongButton : public CarouselButton {
     DEF_BUTTON_TYPE(SongButton, SongButton_, CarouselButton)
    protected:
     // only for SongDifficultyButton as a passthrough (unnecessary inheritance...?)
-    SongButton(UIContextMenu *contextMenu, float xPos, float yPos, float xSize, float ySize, UString name);
+    SongButton(float xPos, float yPos, float xSize, float ySize, UString name);
 
    public:
-    SongButton(UIContextMenu *contextMenu, float xPos, float yPos, float xSize, float ySize, UString name,
+    SongButton(float xPos, float yPos, float xSize, float ySize, UString name,
                BeatmapSet *databaseBeatmap);
     SongButton() = delete;
     ~SongButton() override;

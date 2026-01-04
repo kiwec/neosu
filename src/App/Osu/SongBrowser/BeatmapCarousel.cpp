@@ -36,22 +36,22 @@ void BeatmapCarousel::mouse_update(bool *propagate_clicks) {
 
     // handle right click absolute scrolling
     {
-        if(mouse->isRightDown() && !g_songbrowser->contextMenu->isMouseInside()) {
+        if(mouse->isRightDown() && this->isMouseInside()) {
             if(!g_songbrowser->bSongBrowserRightClickScrollCheck) {
                 g_songbrowser->bSongBrowserRightClickScrollCheck = true;
 
                 bool isMouseInsideAnySongButton = false;
                 {
-                    const std::vector<CBaseUIElement *> &elements = this->container->getElements();
-                    for(CBaseUIElement *songButton : elements) {
-                        if(songButton->isMouseInside()) {
+                    const std::vector<CarouselButton *> &buttons = this->container->getElements<CarouselButton>();
+                    for(auto *button : buttons) {
+                        if(button->isMouseInside()) {
                             isMouseInsideAnySongButton = true;
                             break;
                         }
                     }
                 }
 
-                if(this->isMouseInside() && !osu->getOptionsMenu()->isMouseInside() && !isMouseInsideAnySongButton)
+                if(!osu->getOptionsMenu()->isMouseInside() && !isMouseInsideAnySongButton)
                     g_songbrowser->bSongBrowserRightClickScrolling = true;
                 else
                     g_songbrowser->bSongBrowserRightClickScrolling = false;
@@ -100,6 +100,10 @@ void BeatmapCarousel::mouse_update(bool *propagate_clicks) {
     } while(false);
 
     this->rightClickScrollRelYVelocity = curRightClickScrollRelYVelocity;
+}
+
+bool BeatmapCarousel::isMouseInside() {
+    return CBaseUIScrollView::isMouseInside() && !g_songbrowser->contextMenu->isMouseInside();
 }
 
 void BeatmapCarousel::onKeyUp(KeyboardEvent & /*e*/) { /*this->container->onKeyUp(e);*/ ; }

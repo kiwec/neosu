@@ -4,16 +4,18 @@
 
 #include "CBaseUIElement.h"
 #include "Color.h"
+#include "MakeDelegateWrapper.h"
 
 #include <utility>
 
 class McFont;
 
 class CBaseUIButton : public CBaseUIElement {
+    NOCOPY_NOMOVE(CBaseUIButton)
    public:
     CBaseUIButton(float xPos = 0, float yPos = 0, float xSize = 0, float ySize = 0, UString name = "",
                   UString text = "");
-    ~CBaseUIButton() override { ; }
+    ~CBaseUIButton() override = default;
 
     void draw() override;
 
@@ -33,6 +35,24 @@ class CBaseUIButton : public CBaseUIElement {
             this->clickCallback = [cb = std::forward<Callable>(cb)](CBaseUIButton *btn, bool, bool) { cb(btn); };
         } else if constexpr(std::is_invocable_v<CBType>) {
             this->clickCallback = [cb = std::forward<Callable>(cb)](CBaseUIButton *, bool, bool) { cb(); };
+        } else if constexpr(SA::is_delegate_v<CBType>) {
+            using traits = SA::delegate_traits<CBType>;
+            using FirstArg = typename traits::template nth_arg<0>;
+            static_assert(
+                std::is_pointer_v<FirstArg> && std::is_base_of_v<CBaseUIButton, std::remove_pointer_t<FirstArg>>,
+                "Delegate first argument must be a pointer to CBaseUIButton or derived");
+
+            if constexpr(traits::arity == 1) {
+                this->clickCallback = [cb = std::forward<Callable>(cb)](CBaseUIButton *btn, bool, bool) {
+                    cb(static_cast<FirstArg>(btn));
+                };
+            } else if constexpr(traits::arity == 3) {
+                this->clickCallback = [cb = std::forward<Callable>(cb)](CBaseUIButton *btn, bool left, bool right) {
+                    cb(static_cast<FirstArg>(btn), left, right);
+                };
+            } else {
+                static_assert(Env::always_false_v<Callable>, "Unsupported delegate arity for derived button callback");
+            }
         } else {
             static_assert(Env::always_false_v<Callable>, "Programmer Error (bad callback signature)");
         }

@@ -236,6 +236,7 @@ RoomScreen::~RoomScreen() {
 
 void RoomScreen::draw() {
     if(!this->bVisible) return;
+    // TODO: don't download things in draw(), or do any heavy state changing logic like on_map_change
 
     static i32 current_map_id = -1;
     if(BanchoState::room.map_id == -1 || BanchoState::room.map_id == 0) {
@@ -266,13 +267,11 @@ void RoomScreen::draw() {
     OsuScreen::draw();
 
     // Update avatar visibility status
-    for(auto elm : this->slotlist->container->getElements()) {
+    const McRect slotlist_rect = this->slotlist->getRect();
+    for(auto *elm : this->slotlist->container->getElements()) {
         if(elm->getName() == US_("avatar")) {
-            // NOTE: Not checking horizontal visibility
-            auto avatar = (UIAvatar *)elm;
-            bool is_below_top = avatar->getPos().y + avatar->getSize().y >= this->slotlist->getPos().y;
-            bool is_above_bottom = avatar->getPos().y <= this->slotlist->getPos().y + this->slotlist->getSize().y;
-            avatar->on_screen = is_below_top && is_above_bottom;
+            auto *avatar = static_cast<UIAvatar *>(elm);
+            avatar->on_screen = slotlist_rect.intersects(avatar->getRect());
         }
     }
 }

@@ -20,9 +20,9 @@
 
 using namespace neosu::sbr;
 
-CollectionButton::CollectionButton(UIContextMenu *contextMenu, float xPos, float yPos, float xSize, float ySize,
-                                   UString name, const UString &collectionName, std::vector<SongButton *> children)
-    : CarouselButton(contextMenu, xPos, yPos, xSize, ySize, std::move(name)) {
+CollectionButton::CollectionButton(float xPos, float yPos, float xSize, float ySize, UString name,
+                                   const UString &collectionName, std::vector<SongButton *> children)
+    : CarouselButton(xPos, yPos, xSize, ySize, std::move(name)) {
     this->sCollectionName = collectionName.utf8View();
     this->setChildren(std::move(children));
 
@@ -70,72 +70,76 @@ void CollectionButton::onRightMouseUpInside() { this->triggerContextMenu(mouse->
 void CollectionButton::triggerContextMenu(vec2 pos) {
     if(g_songbrowser->getGroupingMode() != SongBrowser::GroupType::COLLECTIONS) return;
 
-    if(this->contextMenu != nullptr) {
-        this->contextMenu->setPos(pos);
-        this->contextMenu->setRelPos(pos);
-        this->contextMenu->begin(0, true);
-        {
-            this->contextMenu->addButton("[...]      Rename Collection", 1);
+    assert(g_songbrowser->contextMenu);
+    auto *cmenu{g_songbrowser->contextMenu};
 
-            CBaseUIButton *spacer = this->contextMenu->addButton("---");
-            spacer->setEnabled(false);
-            spacer->setTextColor(0xff888888);
-            spacer->setTextDarkColor(0xff000000);
+    cmenu->setPos(pos);
+    cmenu->setRelPos(pos);
+    cmenu->begin(0, true);
+    {
+        cmenu->addButton("[...]      Rename Collection", 1);
 
-            this->contextMenu->addButton("[-]         Delete Collection", 2);
-        }
-        this->contextMenu->end(false, false);
-        this->contextMenu->setClickCallback(SA::MakeDelegate<&CollectionButton::onContextMenu>(this));
-        UIContextMenu::clampToRightScreenEdge(this->contextMenu);
-        UIContextMenu::clampToBottomScreenEdge(this->contextMenu);
+        CBaseUIButton *spacer = cmenu->addButton("---");
+        spacer->setEnabled(false);
+        spacer->setTextColor(0xff888888);
+        spacer->setTextDarkColor(0xff000000);
+
+        cmenu->addButton("[-]         Delete Collection", 2);
     }
+    cmenu->end(false, false);
+    cmenu->setClickCallback(SA::MakeDelegate<&CollectionButton::onContextMenu>(this));
+    cmenu->clampToRightScreenEdge();
+    cmenu->clampToBottomScreenEdge();
 }
 
 void CollectionButton::onContextMenu(const UString &text, int id) {
+    assert(g_songbrowser->contextMenu);
+    auto *cmenu{g_songbrowser->contextMenu};
+
     if(id == 1) {
-        this->contextMenu->begin(0, true);
+        cmenu->begin(0, true);
         {
-            CBaseUIButton *label = this->contextMenu->addButton("Enter Collection Name:");
+            CBaseUIButton *label = cmenu->addButton("Enter Collection Name:");
             label->setEnabled(false);
 
-            CBaseUIButton *spacer = this->contextMenu->addButton("---");
+            CBaseUIButton *spacer = cmenu->addButton("---");
             spacer->setEnabled(false);
             spacer->setTextColor(0xff888888);
             spacer->setTextDarkColor(0xff000000);
 
-            this->contextMenu->addTextbox(this->sCollectionName.c_str(), id)->setCursorPosRight();
+            cmenu->addTextbox(this->sCollectionName.c_str(), id)->setCursorPosRight();
 
-            spacer = this->contextMenu->addButton("---");
+            spacer = cmenu->addButton("---");
             spacer->setEnabled(false);
             spacer->setTextColor(0xff888888);
             spacer->setTextDarkColor(0xff000000);
 
-            label = this->contextMenu->addButton("(Press ENTER to confirm.)", id);
+            label = cmenu->addButton("(Press ENTER to confirm.)", id);
             label->setTextColor(0xff555555);
             label->setTextDarkColor(0xff000000);
         }
-        this->contextMenu->end(false, false);
-        this->contextMenu->setClickCallback(SA::MakeDelegate<&CollectionButton::onRenameCollectionConfirmed>(this));
-        UIContextMenu::clampToRightScreenEdge(this->contextMenu);
-        UIContextMenu::clampToBottomScreenEdge(this->contextMenu);
+        cmenu->end(false, false);
+        cmenu->setClickCallback(SA::MakeDelegate<&CollectionButton::onRenameCollectionConfirmed>(this));
+        cmenu->clampToRightScreenEdge();
+        cmenu->clampToBottomScreenEdge();
     } else if(id == 2) {
         if(keyboard->isShiftDown())
             this->onDeleteCollectionConfirmed(text, id);
         else {
-            this->contextMenu->begin(0, true);
+            cmenu->begin(0, true);
             {
-                this->contextMenu->addButton("Really delete collection?")->setEnabled(false);
-                CBaseUIButton *spacer = this->contextMenu->addButton("---");
+                cmenu->addButton("Really delete collection?")->setEnabled(false);
+                CBaseUIButton *spacer = cmenu->addButton("---");
                 spacer->setEnabled(false);
                 spacer->setTextColor(0xff888888);
                 spacer->setTextDarkColor(0xff000000);
-                this->contextMenu->addButton("Yes", 2);
-                this->contextMenu->addButton("No");
+                cmenu->addButton("Yes", 2);
+                cmenu->addButton("No");
             }
-            this->contextMenu->end(false, false);
-            this->contextMenu->setClickCallback(SA::MakeDelegate<&CollectionButton::onDeleteCollectionConfirmed>(this));
-            UIContextMenu::clampToRightScreenEdge(this->contextMenu);
-            UIContextMenu::clampToBottomScreenEdge(this->contextMenu);
+            cmenu->end(false, false);
+            cmenu->setClickCallback(SA::MakeDelegate<&CollectionButton::onDeleteCollectionConfirmed>(this));
+            cmenu->clampToRightScreenEdge();
+            cmenu->clampToBottomScreenEdge();
         }
     }
 }

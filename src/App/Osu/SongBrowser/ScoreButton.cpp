@@ -33,6 +33,7 @@
 #include "UIContextMenu.h"
 #include "UserStatsScreen.h"
 #include "Logging.h"
+#include "SongDifficultyButton.h"
 
 using namespace neosu::sbr;
 
@@ -79,11 +80,7 @@ void ScoreButton::draw() {
         this->avatar->setSize(avatar_width, avatar_width);
 
         // Update avatar visibility status
-        // NOTE: Not checking horizontal visibility
-        auto m_scoreBrowser = g_songbrowser->scoreBrowser;
-        bool is_below_top = this->avatar->getPos().y + this->avatar->getSize().y >= m_scoreBrowser->getPos().y;
-        bool is_above_bottom = this->avatar->getPos().y <= m_scoreBrowser->getPos().y + m_scoreBrowser->getSize().y;
-        this->avatar->on_screen = is_below_top && is_above_bottom;
+        this->avatar->on_screen = g_songbrowser->scoreBrowser->getRect().intersects(this->avatar->getRect());
         this->avatar->draw_avatar(1.f);
     }
     const float indexNumberScale = 0.35f;
@@ -579,8 +576,8 @@ void ScoreButton::onRightMouseUpInside() {
         }
         this->contextMenu->end(false, false);
         this->contextMenu->setClickCallback(SA::MakeDelegate<&ScoreButton::onContextMenu>(this));
-        UIContextMenu::clampToRightScreenEdge(this->contextMenu);
-        UIContextMenu::clampToBottomScreenEdge(this->contextMenu);
+        this->contextMenu->clampToRightScreenEdge();
+        this->contextMenu->clampToBottomScreenEdge();
     }
 }
 
@@ -590,7 +587,7 @@ void ScoreButton::onContextMenu(const UString &text, int id) {
     if(osu->getUserStatsScreen()->isVisible()) {
         osu->getUserStatsScreen()->setVisible(false);
 
-        auto song_button = (CarouselButton *)g_songbrowser->hashToDiffButton[sc.beatmap_hash];
+        auto song_button = g_songbrowser->hashToDiffButton[sc.beatmap_hash];
         g_songbrowser->selectSongButton(song_button);
     }
 
@@ -639,8 +636,8 @@ void ScoreButton::onDeleteScoreClicked() {
         }
         this->contextMenu->end(false, false);
         this->contextMenu->setClickCallback(SA::MakeDelegate<&ScoreButton::onDeleteScoreConfirmed>(this));
-        UIContextMenu::clampToRightScreenEdge(this->contextMenu);
-        UIContextMenu::clampToBottomScreenEdge(this->contextMenu);
+        this->contextMenu->clampToRightScreenEdge();
+        this->contextMenu->clampToBottomScreenEdge();
     }
 }
 

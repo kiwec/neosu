@@ -241,7 +241,7 @@ void UIContextMenu::end(bool invertAnimation, EndStyle style) {
     const bool clampTop = !!(style & EndStyle::CLAMP_TOP);
     const bool clampBot = !!(style & EndStyle::CLAMP_BOT);
 
-    bool enabledScrolling = !!(style & EndStyle::STANDALONE_SCROLL);
+    bool enableScrolling = !!(style & EndStyle::STANDALONE_SCROLL);
 
     const int margin = 9 * Osu::getUIScale();
 
@@ -257,7 +257,7 @@ void UIContextMenu::end(bool invertAnimation, EndStyle style) {
         this->setVerticalScrolling(false);
 
         if(clampTop && this->vPos.y < 0) {
-            enabledScrolling = true;
+            enableScrolling = true;
 
             const float underflow = std::abs(this->vPos.y);
 
@@ -267,14 +267,14 @@ void UIContextMenu::end(bool invertAnimation, EndStyle style) {
         }
 
         if(clampBot && this->vPos.y + this->vSize.y > osu->getVirtScreenHeight()) {
-            enabledScrolling = true;
+            enableScrolling = true;
 
             const float overflow = std::abs(this->vPos.y + this->vSize.y - osu->getVirtScreenHeight());
 
             this->setSizeY(this->vSize.y - overflow - 1);
         }
 
-        if(enabledScrolling) {
+        if(enableScrolling) {
             this->setVerticalScrolling(true);
         }
 
@@ -288,8 +288,8 @@ void UIContextMenu::end(bool invertAnimation, EndStyle style) {
 
     soundEngine->play(osu->getSkin()->s_expand);
 
-    if(this->parent && enabledScrolling) {
-        // steal focus for scroll priority
+    if(enableScrolling && this->parent && this->parent->isVisible()) {
+        // steal focus for scroll handling priority
         this->parent->stealFocus();
     }
 }
@@ -299,21 +299,21 @@ void UIContextMenu::setVisible2(bool visible2) {
 
     if(!this->bVisible2) this->setSize(1, 1);  // reset size
 
-    if(this->parent != nullptr) this->parent->setScrollSizeToContent();  // and update parent scroll size
+    if(this->parent && this->parent->isVisible())
+        this->parent->setScrollSizeToContent();  // and update parent scroll size
 }
 
 void UIContextMenu::onMouseDownOutside(bool /*left*/, bool /*right*/) { this->setVisible2(false); }
 
-void UIContextMenu::onClick(CBaseUIButton *button) {
+void UIContextMenu::onClick(UIContextMenuButton *button) {
     this->setVisible2(false);
+    if(this->clickCallback == nullptr) return;
 
-    if(this->clickCallback != nullptr) {
-        // special case: if text input exists, then override with its text
-        if(this->containedTextbox != nullptr)
-            this->clickCallback(this->containedTextbox->getText(), ((UIContextMenuButton *)button)->getID());
-        else
-            this->clickCallback(button->getName(), ((UIContextMenuButton *)button)->getID());
-    }
+    // special case: if text input exists, then override with its text
+    if(this->containedTextbox != nullptr)
+        this->clickCallback(this->containedTextbox->getText(), button->getID());
+    else
+        this->clickCallback(button->getName(), button->getID());
 }
 
 void UIContextMenu::onHitEnter(UIContextMenuTextbox *textbox) {
@@ -322,18 +322,18 @@ void UIContextMenu::onHitEnter(UIContextMenuTextbox *textbox) {
     if(this->clickCallback != nullptr) this->clickCallback(textbox->getText(), textbox->getID());
 }
 
-void UIContextMenu::clampToBottomScreenEdge(UIContextMenu *menu) {
-    if(menu->getRelPos().y + menu->getSize().y > osu->getVirtScreenHeight()) {
-        int newRelPosY = osu->getVirtScreenHeight() - menu->getSize().y - 1;
-        menu->setRelPosY(newRelPosY);
-        menu->setPosY(newRelPosY);
+void UIContextMenu::clampToBottomScreenEdge() {
+    if(this->getRelPos().y + this->getSize().y > osu->getVirtScreenHeight()) {
+        int newRelPosY = osu->getVirtScreenHeight() - this->getSize().y - 1;
+        this->setRelPosY(newRelPosY);
+        this->setPosY(newRelPosY);
     }
 }
 
-void UIContextMenu::clampToRightScreenEdge(UIContextMenu *menu) {
-    if(menu->getRelPos().x + menu->getSize().x > osu->getVirtScreenWidth()) {
-        const int newRelPosX = osu->getVirtScreenWidth() - menu->getSize().x - 1;
-        menu->setRelPosX(newRelPosX);
-        menu->setPosX(newRelPosX);
+void UIContextMenu::clampToRightScreenEdge() {
+    if(this->getRelPos().x + this->getSize().x > osu->getVirtScreenWidth()) {
+        const int newRelPosX = osu->getVirtScreenWidth() - this->getSize().x - 1;
+        this->setRelPosX(newRelPosX);
+        this->setPosX(newRelPosX);
     }
 }

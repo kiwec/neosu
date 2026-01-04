@@ -1432,8 +1432,7 @@ void SongBrowser::addBeatmapSet(BeatmapSet *mapset, bool initialSongBrowserLoad)
     const bool doLengthCollBtns = initialSongBrowserLoad || likely(this->lengthCollectionButtons.size() == 7);
 
     // always create parent button for the set
-    auto *parentButton =
-        new SongButton(this->contextMenu, 250, 250 + db->getBeatmapSets().size() * 50, 200, 50, "", mapset);
+    auto *parentButton = new SongButton(250.f, 250.f + db->getBeatmapSets().size() * 50.f, 200.f, 50.f, "", mapset);
     this->parentButtons.push_back(parentButton);
 
     // add mapset to all necessary groups
@@ -2446,9 +2445,8 @@ void SongBrowser::onDatabaseLoadingFinished() {
 
     // initialize all collection (grouped) buttons
     {
-#define MKCBTN(name__)                                                                                               \
-    std::make_unique<CollectionButton>(this->contextMenu, 250.f, 250.f, 200.f, 50.f, fmt::format("cbtn-{}", name__), \
-                                       name__)
+#define MKCBTN(name__) \
+    std::make_unique<CollectionButton>(250.f, 250.f, 200.f, 50.f, fmt::format("cbtn-{}", name__), name__)
         // artist, title, creator
         for(auto *coll :
             {&this->artistCollectionButtons, &this->titleCollectionButtons, &this->creatorCollectionButtons}) {
@@ -3465,9 +3463,8 @@ void SongBrowser::recreateCollectionsButtons() {
         }
 
         if(!folder.empty()) {
-            this->collectionButtons.emplace_back(new CollectionButton(this->contextMenu, 250,
-                                                                      250 + db->getBeatmapSets().size() * 50, 200, 50,
-                                                                      "", collection.get_name(), folder));
+            this->collectionButtons.emplace_back(new CollectionButton(250.f, 250.f + db->getBeatmapSets().size() * 50.f,
+                                                                      200.f, 50.f, "", collection.get_name(), folder));
         }
     }
 

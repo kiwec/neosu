@@ -25,6 +25,9 @@ class BeatmapCarousel final : public CBaseUIScrollView {
     void draw() override;
     void mouse_update(bool *propagate_clicks) override;
 
+    // checks for context menu visibility
+    bool isMouseInside() override;
+
     // if we are actually right click scrolling at a "noticeable" velocity, so that we can skip
     // drawing some things for elements which the user will probably not notice anyways (backgrounds)
 
