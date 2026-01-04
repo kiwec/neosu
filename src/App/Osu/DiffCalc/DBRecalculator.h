@@ -18,6 +18,7 @@ namespace DBRecalculator {
 
 struct MapResult {
     BeatmapDifficulty* map{};
+    u32 length_ms{};
     u32 nb_circles{};
     u32 nb_sliders{};
     u32 nb_spinners{};

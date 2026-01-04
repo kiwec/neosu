@@ -198,6 +198,14 @@ Database::DatabaseType Database::getDBType(std::string_view db_path) {
     return INVALID_DB;
 }
 
+bool Database::isOsuDBReadable(std::string_view peppy_db_path) {
+    if(!cv::database_enabled.getBool() || !Environment::fileExists(peppy_db_path)) return false;
+
+    ByteBufferedFile::Reader dbr(peppy_db_path);
+    u32 osu_db_version = (dbr.good() && dbr.total_size > 0) ? dbr.read<u32>() : 0;
+    return osu_db_version > 0;
+}
+
 // run after at least one engine frame (due to resourceManager->update() in Engine::onUpdate())
 void Database::AsyncDBLoader::init() {
     if(!db) return;  // don't crash when exiting while loading db
@@ -272,10 +280,7 @@ void Database::startLoader() {
 
     // only clear diffs/sets for full reloads (only handled for raw re-loading atm)
     const bool lastLoadWasRaw{this->needs_raw_load};
-
-    this->needs_raw_load =
-        (!Environment::fileExists(getDBPath(DatabaseType::STABLE_MAPS)) || !cv::database_enabled.getBool());
-
+    this->needs_raw_load = !isOsuDBReadable(getDBPath(DatabaseType::STABLE_MAPS));
     const bool nextLoadIsRaw{this->needs_raw_load};
 
     if(!lastLoadWasRaw || !nextLoadIsRaw) {
@@ -364,7 +369,11 @@ void Database::update() {
                 fullBeatmapPath.append(curBeatmap);
                 fullBeatmapPath.append("/");
 
-                this->addBeatmapSet(fullBeatmapPath);
+                this->addBeatmapSet(fullBeatmapPath,          //
+                                    -1,                       // no set id override
+                                    false,                    // no diffcalc immediately
+                                    !this->raw_load_is_neosu  // is_peppy
+                );
             }
 
             // update progress
@@ -432,9 +441,10 @@ void Database::save() {
 
 // NOTE: Should currently only be used for neosu beatmapsets! e.g. from maps/ folder
 //       See loadRawBeatmap()
+//       (unless is_peppy is specified, in which case we're loading a raw osu folder and not saving the things we loaded)
 BeatmapSet *Database::addBeatmapSet(const std::string &beatmapFolderPath, i32 set_id_override,
-                                    bool diffcalc_immediately) {
-    auto beatmap = this->loadRawBeatmap(beatmapFolderPath, diffcalc_immediately);
+                                    bool diffcalc_immediately, bool is_peppy) {
+    auto beatmap = this->loadRawBeatmap(beatmapFolderPath, diffcalc_immediately, is_peppy);
     if(beatmap == nullptr) return nullptr;
 
     BeatmapSet *raw_beatmap = beatmap.get();
@@ -907,8 +917,10 @@ void Database::scheduleLoadRaw() {
             foldersInFolder = Environment::getFoldersInFolder(folderToLoadFrom);
 
             debugLog("Loading raw beatmaps from folders in {} (no osu!stable maps found)", folderToLoadFrom);
+            this->raw_load_is_neosu = true;
         } else {
             debugLog("Loading raw beatmaps from folders in {}", folderToLoadFrom);
+            this->raw_load_is_neosu = false;
         }
 
         this->raw_load_osu_song_folder = std::move(folderToLoadFrom);
@@ -1016,6 +1028,7 @@ void Database::loadMaps() {
                 //       but mistakenly set their ID to -1 (because the ID was missing from the .osu file).
                 if(set_id == -1) {
                     for(u16 j = 0; j < nb_diffs; j++) {
+                        neosu_maps.skip_string();
                         neosu_maps.skip<i32>();
                         neosu_maps.skip_string();
                         neosu_maps.skip_string();
@@ -1323,6 +1336,10 @@ void Database::loadMaps() {
                     ERROR_TOAST);
                 should_read_peppy_database = false;
             }
+        }
+        if(!should_read_peppy_database) {
+            debugLog("not loading {}, ver: {} size: {} err: {}", peppy_db_path, osu_db_version, dbr.total_size,
+                     dbr.error());
         }
 
         if(should_read_peppy_database) {
@@ -2515,7 +2532,8 @@ void Database::saveScores() {
     debugLog("Saved {:d} scores in {:f} seconds.", nb_scores, (Timing::getTimeReal() - startTime));
 }
 
-std::unique_ptr<BeatmapSet> Database::loadRawBeatmap(const std::string &beatmapPath, bool diffcalc_immediately) {
+std::unique_ptr<BeatmapSet> Database::loadRawBeatmap(const std::string &beatmapPath, bool diffcalc_immediately,
+                                                     bool is_peppy) {
     logIfCV(debug_db, "beatmap path: {:s}", beatmapPath);
 
     // try loading all diffs
@@ -2532,11 +2550,13 @@ std::unique_ptr<BeatmapSet> Database::loadRawBeatmap(const std::string &beatmapP
         std::string fullFilePath = beatmapPath;
         fullFilePath.append(beatmapFile);
 
-        auto map = std::make_unique<BeatmapDifficulty>(fullFilePath, beatmapPath,
-                                                       DatabaseBeatmap::BeatmapType::NEOSU_DIFFICULTY);
+        auto map = std::make_unique<BeatmapDifficulty>(
+            fullFilePath, beatmapPath,
+            is_peppy ? DatabaseBeatmap::BeatmapType::PEPPY_DIFFICULTY : DatabaseBeatmap::BeatmapType::NEOSU_DIFFICULTY);
         auto res = map->loadMetadata();
         if(!res.error.errc) {
             if(diffcalc_immediately) {
+                // TODO: get rid of this, just use DBRecalculator
                 map->calcNomodStarsSlow(std::move(res));
             }
             diffs->push_back(std::move(map));
@@ -2548,7 +2568,8 @@ std::unique_ptr<BeatmapSet> Database::loadRawBeatmap(const std::string &beatmapP
 
     std::unique_ptr<BeatmapSet> set{nullptr};
     if(diffs && !diffs->empty()) {
-        set = std::make_unique<BeatmapSet>(std::move(diffs), DatabaseBeatmap::BeatmapType::NEOSU_BEATMAPSET);
+        set = std::make_unique<BeatmapSet>(std::move(diffs), is_peppy ? DatabaseBeatmap::BeatmapType::PEPPY_BEATMAPSET
+                                                                      : DatabaseBeatmap::BeatmapType::NEOSU_BEATMAPSET);
     }
 
     if(!set && lastError.errc) {

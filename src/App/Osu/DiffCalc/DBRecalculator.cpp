@@ -301,6 +301,8 @@ void process_work_item(WorkItem& item, const Sync::stop_token& stoken) {
         if(stoken.stop_requested()) return;
 
         if(!diffres.error.errc) {
+            result.length_ms = diffres.diffobjects.back().baseEndTime - diffres.diffobjects.front().baseTime;
+
             DifficultyCalculator::BeatmapDiffcalcData diffcalc_data{.sortedHitObjects = diffres.diffobjects,
                                                                     .CS = item.map->getCS(),
                                                                     .HP = item.map->getHP(),

@@ -31,8 +31,8 @@ class BeatmapCarousel final : public CBaseUIScrollView {
     // if we are actually scrolling at a "noticeable" velocity, so that we can skip
     // drawing some things for elements which the user will probably not notice anyways (backgrounds)
 
-    // 0.00005 seems to empirically be small enough that it's not noticeable
-    [[nodiscard]] inline bool isScrollingFast(f64 relativeYVelocityThreshold = 5e-5) const {
+    // 0.0002 seems to empirically be small enough that it's not noticeable
+    [[nodiscard]] inline bool isScrollingFast(f64 relativeYVelocityThreshold = 0.0002) const {
         return this->currentScrollRelYVelocity > relativeYVelocityThreshold;
     }
 

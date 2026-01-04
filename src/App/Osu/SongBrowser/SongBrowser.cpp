@@ -906,6 +906,8 @@ void SongBrowser::mouse_update(bool *propagate_clicks) {
                 map->iNumCircles = res.nb_circles;
                 map->iNumSliders = res.nb_sliders;
                 map->iNumSpinners = res.nb_spinners;
+                map->iNumObjects = res.nb_circles + res.nb_sliders + res.nb_spinners;
+                map->iLengthMS = std::max(map->iLengthMS, res.length_ms);
                 map->fStarsNomod = res.star_rating;
                 map->iMinBPM = res.min_bpm;
                 map->iMaxBPM = res.max_bpm;

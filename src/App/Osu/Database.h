@@ -105,7 +105,7 @@ class Database {
     void cancel();
     void save();
 
-    BeatmapSet *addBeatmapSet(const std::string &beatmapFolderPath, i32 set_id_override = -1, bool diffcalc_immediately = false);
+    BeatmapSet *addBeatmapSet(const std::string &beatmapFolderPath, i32 set_id_override = -1, bool diffcalc_immediately = false, bool is_peppy = false);
 
     int addScore(const FinishedScore &score);
     void deleteScore(const MD5Hash &beatmapMD5Hash, u64 scoreUnixTimestamp);
@@ -140,7 +140,8 @@ class Database {
 
     static std::string getOsuSongsFolder();
 
-    std::unique_ptr<BeatmapSet> loadRawBeatmap(const std::string &beatmapPath, bool diffcalc_immediately = false);  // only used for raw loading without db
+    // only used for raw loading without db
+    std::unique_ptr<BeatmapSet> loadRawBeatmap(const std::string &beatmapPath, bool diffcalc_immediately = false, bool is_peppy = false);
 
     inline void addPathToImport(const std::string &dbPath) { this->extern_db_paths_to_import.push_back(dbPath); }
 
@@ -186,6 +187,7 @@ class Database {
 
     static std::string getDBPath(DatabaseType db_type);
     static DatabaseType getDBType(std::string_view db_path);
+    static bool isOsuDBReadable(std::string_view db_path); // basic check for size and version > 0
 
     // should only be accessed from database loader thread!
     std::unordered_map<DatabaseType, std::string> database_files;
@@ -283,11 +285,13 @@ class Database {
         .totalScore = 0,
     };
 
-    // raw load
-    bool needs_raw_load{false};
-    bool raw_load_scheduled{false};
-    u32 cur_raw_load_idx{0};
     std::string raw_load_osu_song_folder;
     std::vector<std::string> raw_loaded_beatmap_folders;
     std::vector<std::string> raw_load_beatmap_folders;
+
+    // raw load
+    u32 cur_raw_load_idx{0};
+    bool needs_raw_load{false};
+    bool raw_load_scheduled{false};
+    bool raw_load_is_neosu{false}; // if we're raw loading from the local neosu folder instead of the osu!stable song folder
 };

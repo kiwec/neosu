@@ -74,7 +74,7 @@ DatabaseBeatmap::DatabaseBeatmap(std::unique_ptr<DiffContainer> &&difficulties, 
     auto &diffs = *this->difficulties;
 
     // set parent for difficulties
-    for(auto &diff : this->getDifficulties()) {
+    for(auto &diff : diffs) {
         diff->parentSet = this;
     }
 
