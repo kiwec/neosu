@@ -11,8 +11,8 @@ class SongDifficultyButton final : public SongButton {
    private:
     // only allow construction through parent song button (as child)
     friend class SongButton;
-    SongDifficultyButton(float xPos, float yPos, float xSize, float ySize, UString name,
-                         BeatmapDifficulty *diff, SongButton *parentSongButton, int numSiblings);
+    SongDifficultyButton(float xPos, float yPos, float xSize, float ySize, UString name, BeatmapDifficulty *diff,
+                         SongButton *parentSongButton, int numSiblings);
 
    public:
     SongDifficultyButton() = delete;
@@ -37,6 +37,7 @@ class SongDifficultyButton final : public SongButton {
 
    private:
     void onSelected(bool wasSelected, SelOpts opts) override;
+    void updateOffsetAnimation();
 
     SongButton *parentSongButton;
 
@@ -45,5 +46,6 @@ class SongDifficultyButton final : public SongButton {
     float fVisibleFor{0.f};
 
     bool bPrevOffsetPercentSelectionState;
+    bool bPrevOffsetPercentParentsCollapsedType{true};  // HACKHACK: to remove
     bool bUpdateGradeScheduled;
 };

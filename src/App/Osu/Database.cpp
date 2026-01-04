@@ -1028,19 +1028,20 @@ void Database::loadMaps() {
                 //       but mistakenly set their ID to -1 (because the ID was missing from the .osu file).
                 if(set_id == -1) {
                     for(u16 j = 0; j < nb_diffs; j++) {
-                        neosu_maps.skip_string();
-                        neosu_maps.skip<i32>();
-                        neosu_maps.skip_string();
-                        neosu_maps.skip_string();
-                        neosu_maps.skip<i32>();
-                        neosu_maps.skip<f32>();
-                        neosu_maps.skip_string();
-                        neosu_maps.skip_string();
-                        neosu_maps.skip_string();
-                        neosu_maps.skip_string();
-                        neosu_maps.skip_string();
+                        neosu_maps.skip_string();  // osu_filename
+                        neosu_maps.skip<i32>();    // iID
+                        neosu_maps.skip_string();  // sTitle
+                        neosu_maps.skip_string();  // sAudioFileName
+                        neosu_maps.skip<i32>();    // iLengthMS
+                        neosu_maps.skip<f32>();    // fStackLeniency
+                        neosu_maps.skip_string();  // sArtist
+                        neosu_maps.skip_string();  // sCreator
+                        neosu_maps.skip_string();  // sDifficultyName
+                        neosu_maps.skip_string();  // sSource
+                        neosu_maps.skip_string();  // sTags
                         MD5Hash md5hash;
                         (void)neosu_maps.read_hash(md5hash);  // TODO: validate
+                        // other fixed-sized fields in the middle... try adding new stuff at the end so this doesn't break in the future
                         neosu_maps.skip_bytes(sizeof(f32) + sizeof(f32) + sizeof(f32) + sizeof(f32) + sizeof(f64) +
                                               sizeof(u32) + sizeof(u64) + sizeof(i16) + sizeof(i16) + sizeof(u16) +
                                               sizeof(u16) + sizeof(u16) + sizeof(f64) + (sizeof(i32) * 3));

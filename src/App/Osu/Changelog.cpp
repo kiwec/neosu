@@ -785,9 +785,12 @@ Changelog::Changelog() : ScreenBackable() {
 
 Changelog::~Changelog() { this->changelogs.clear(); }
 
+namespace {
 class ChangelogLabel final : public CBaseUIButton {
+    NOCOPY_NOMOVE(ChangelogLabel)
    public:
-    ChangelogLabel(const UString &text) : CBaseUIButton(0, 0, 0, 0, "", text) { ; }
+    ChangelogLabel(UString text) : CBaseUIButton(0, 0, 0, 0, "", std::move(text)) {}
+    ~ChangelogLabel() override = default;
 
     void draw() override {
         if(this->bVisible && this->isMouseInside()) {
@@ -810,7 +813,12 @@ class ChangelogLabel final : public CBaseUIButton {
         }
         g->popTransform();
     }
+
+    bool isMouseInside() override {
+        return CBaseUIButton::isMouseInside() && !osu->getChangelog()->backButton->isMouseInside();
+    }
 };
+}  // namespace
 
 void Changelog::addAllChangelogs(std::vector<CHANGELOG> &&logtexts) {
     auto changelogs = std::move(logtexts);
@@ -831,11 +839,12 @@ void Changelog::addAllChangelogs(std::vector<CHANGELOG> &&logtexts) {
         this->scrollView->container->addBaseUIElement(changelog.title);
 
         // changes
-        for(int c = 0; c < changelogs[i].changes.size(); c++) {
-            CBaseUIButton *change = new ChangelogLabel(changelogs[i].changes[c]);
+        int first = 0;
+        for(auto &&changeText : changelogs[i].changes) {
+            CBaseUIButton *change = new ChangelogLabel(std::move(changeText));
             change->setClickCallback(SA::MakeDelegate<&Changelog::onChangeClicked>(this));
 
-            if(i > 0) change->setTextColor(0xff888888);
+            if(first++) change->setTextColor(0xff888888);
 
             change->setSizeToContent();
             change->setDrawBackground(false);

@@ -134,9 +134,9 @@ class SongBrowser final : public ScreenBackable {
     void addSongButtonToAlphanumericGroup(SongButton *btn, CollBtnContainer &group, std::string_view name);
 
     void requestNextScrollToSongButtonJumpFix(SongDifficultyButton *diffButton);
-    bool isButtonVisible(CarouselButton *songButton);
-    void scrollToBestButton();
-    void scrollToSongButton(CarouselButton *songButton, bool alignOnTop = false);
+    [[nodiscard]] bool isButtonVisible(CarouselButton *songButton) const;
+    bool scrollToBestButton();  // returns true if a scroll happened
+    void scrollToSongButton(CarouselButton *songButton, bool alignOnTop = false, bool knownVisible = false);
     void rebuildSongButtons();
     void recreateCollectionsButtons();
     void rebuildScoreButtons();
@@ -184,6 +184,17 @@ class SongBrowser final : public ScreenBackable {
                                                                                "No Grouping"}};  //
 
     [[nodiscard]] inline GroupType getGroupingMode() const { return this->curGroup; }
+
+    [[nodiscard]] inline bool isInAlphanumericCollection() const {
+        return this->curGroup == GroupTypes::ARTIST ||   //
+               this->curGroup == GroupTypes::CREATOR ||  //
+               this->curGroup == GroupTypes::TITLE;      //
+    }
+
+    // TODO: get rid of this garbage (all grouping modes should behave in a predictable way)
+    [[nodiscard]] inline bool isInParentsCollapsedMode() const {
+        return this->isInAlphanumericCollection() || this->curGroup == GroupTypes::NO_GROUPING;
+    }
 
     static bool searchMatcher(const DatabaseBeatmap *databaseBeatmap,
                               const std::vector<std::string> &searchStringTokens);

@@ -4,6 +4,7 @@
 #include "UIBackButton.h"
 
 class ScreenBackable : public OsuScreen {
+    NOCOPY_NOMOVE(ScreenBackable)
    public:
     ScreenBackable();
     ~ScreenBackable() override;

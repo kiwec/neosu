@@ -28,7 +28,7 @@ void BeatmapCarousel::mouse_update(bool *propagate_clicks) {
     CBaseUIScrollView::mouse_update(propagate_clicks);
     if(!this->isVisible()) {
         // just reset this as a precaution
-        this->currentScrollRelYVelocity = 0.0;
+        this->bIsScrollingFast = false;
         return;
     }
 
@@ -69,13 +69,20 @@ void BeatmapCarousel::mouse_update(bool *propagate_clicks) {
     }
 
     // update scrolling relative velocity, as a cache for isScrollingFast
-    const f64 scrollSizeY = std::abs(this->getScrollSize().y);
-    if(scrollSizeY == 0.0) {
+    const f64 absYVelocity = std::abs(this->getVelocity().y);
+    if(absYVelocity == 0.0) {
+        // sanity
+        this->bIsScrollingFast = false;
         return;
     }
 
-    const f64 absYVelocity = std::abs(this->getVelocity().y);
-    if(absYVelocity == 0.0) {
+    const auto &elements = this->container->getElements();
+    if(elements.empty()) {
+        return;
+    }
+
+    const f64 elemSizeY = elements[0]->getSize().y;
+    if(elemSizeY == 0) {
         return;
     }
 
@@ -84,8 +91,10 @@ void BeatmapCarousel::mouse_update(bool *propagate_clicks) {
         return;
     }
 
-    // we are truly scrolling, calculate the relative velocity
-    this->currentScrollRelYVelocity = (absYVelocity / scrollSizeY) / sizeY;
+    const f64 wholeElementsScrolled = absYVelocity / elemSizeY;
+
+    // if our velocity is more than 4 vertical screens' worth of items, we are scrolling fast
+    this->bIsScrollingFast = wholeElementsScrolled > ((sizeY / elemSizeY) * 4);
 }
 
 bool BeatmapCarousel::isMouseInside() {

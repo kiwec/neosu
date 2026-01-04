@@ -8,8 +8,7 @@ class SongBrowser;
 class BeatmapCarousel final : public CBaseUIScrollView {
     NOCOPY_NOMOVE(BeatmapCarousel)
    public:
-    BeatmapCarousel(float xPos = 0, float yPos = 0, float xSize = 0, float ySize = 0,
-                    const UString &name = "")
+    BeatmapCarousel(float xPos = 0, float yPos = 0, float xSize = 0, float ySize = 0, const UString &name = "")
         : CBaseUIScrollView(xPos, yPos, xSize, ySize, name) {
         this->setDrawBackground(false);
         this->setDrawFrame(false);
@@ -30,13 +29,9 @@ class BeatmapCarousel final : public CBaseUIScrollView {
 
     // if we are actually scrolling at a "noticeable" velocity, so that we can skip
     // drawing some things for elements which the user will probably not notice anyways (backgrounds)
-
-    // 0.0002 seems to empirically be small enough that it's not noticeable
-    [[nodiscard]] inline bool isScrollingFast(f64 relativeYVelocityThreshold = 0.0002) const {
-        return this->currentScrollRelYVelocity > relativeYVelocityThreshold;
-    }
+    [[nodiscard]] inline bool isScrollingFast() const { return this->bIsScrollingFast; }
 
    private:
     // updated at the end of mouse_update
-    f64 currentScrollRelYVelocity{0.0};
+    bool bIsScrollingFast{false};
 };

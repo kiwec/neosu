@@ -514,7 +514,8 @@ void CBaseUIScrollView::scrollToElement(CBaseUIElement *element, int /*xOffset*/
 }
 
 void CBaseUIScrollView::updateClipping() {
-    bool didSomethingActuallyChangeVisibility = false;
+    u32 numChangedElements = 0;
+    //u32 numVisElements = 0;
 
     const std::vector<CBaseUIElement *> &elements = this->container->getElements();
     const McRect &me{this->getRect()};
@@ -522,18 +523,21 @@ void CBaseUIScrollView::updateClipping() {
     for(auto *e : elements) {
         const McRect &eRect = e->getRect();  // heh
         const bool eVisible = e->isVisible();
+        //numVisElements += eVisible;
+
         if(me.intersects(eRect)) {
             if(!eVisible) {
                 e->setVisible(true);
-                didSomethingActuallyChangeVisibility = true;
+                ++numChangedElements;
             }
         } else if(eVisible) {
             e->setVisible(false);
-            didSomethingActuallyChangeVisibility = true;
+            ++numChangedElements;
         }
     }
 
-    if(!didSomethingActuallyChangeVisibility) {
+    if(!numChangedElements) {
+        //debugLog("got final visible elements {} total {}", numVisElements, elements.size());
         this->bClippingDirty = false;
     }
 }

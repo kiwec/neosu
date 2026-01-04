@@ -1201,9 +1201,6 @@ void MainMenu::selectRandomBeatmap() {
 
             osu->getSongBrowser()->onDifficultySelected(candidate_diff, false);
 
-            // remember for initial songbrowser load
-            BeatmapInterface::loading_reselect_map = candidate_diff->getMD5();
-
             RichPresence::onMainMenu();
 
             this->preloadedMaps.push_back(std::move(set));
