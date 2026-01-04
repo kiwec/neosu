@@ -28,7 +28,7 @@ void BeatmapCarousel::mouse_update(bool *propagate_clicks) {
     CBaseUIScrollView::mouse_update(propagate_clicks);
     if(!this->isVisible()) {
         // just reset this as a precaution
-        this->rightClickScrollRelYVelocity = 0.0;
+        this->currentScrollRelYVelocity = 0.0;
         return;
     }
 
@@ -68,38 +68,24 @@ void BeatmapCarousel::mouse_update(bool *propagate_clicks) {
         }
     }
 
-    // update right click scrolling relative velocity, as a cache for isActuallyRightClickScrolling
-    f64 curRightClickScrollRelYVelocity = 0.0;
-    do {
-        if(!g_songbrowser->isRightClickScrolling()) {
-            curRightClickScrollRelYVelocity = 0.0;  // if we are not right click scrolling then there is no velocity
-            break;
-        }
+    // update scrolling relative velocity, as a cache for isScrollingFast
+    const f64 scrollSizeY = std::abs(this->getScrollSize().y);
+    if(scrollSizeY == 0.0) {
+        return;
+    }
 
-        // this case never seems to be hit for the carousel, not sure why... probably because of the hacky way the
-        // scrollview is used
-        if(this->isScrolling()) {
-            curRightClickScrollRelYVelocity = 1.0;
-            break;
-        }
+    const f64 absYVelocity = std::abs(this->getVelocity().y);
+    if(absYVelocity == 0.0) {
+        return;
+    }
 
-        const f64 scrollSizeY = std::abs(this->getScrollSize().y);
-        if(scrollSizeY == 0.0) {
-            curRightClickScrollRelYVelocity = 0.0;
-            break;
-        }
+    const f64 sizeY = this->getSize().y;
+    if(sizeY == 0.0) {
+        return;
+    }
 
-        const f64 absYVelocity = std::abs(this->getVelocity().y);
-        if(absYVelocity == 0.0) {
-            curRightClickScrollRelYVelocity = 0.0;
-            break;
-        }
-
-        // we are truly scrolling, calculate the relative velocity
-        curRightClickScrollRelYVelocity = absYVelocity / scrollSizeY;
-    } while(false);
-
-    this->rightClickScrollRelYVelocity = curRightClickScrollRelYVelocity;
+    // we are truly scrolling, calculate the relative velocity
+    this->currentScrollRelYVelocity = (absYVelocity / scrollSizeY) / sizeY;
 }
 
 bool BeatmapCarousel::isMouseInside() {

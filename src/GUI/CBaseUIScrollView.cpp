@@ -25,18 +25,14 @@ u32 layeredScrollsHandledInFrame{0};
 }  // namespace
 
 CBaseUIScrollView::CBaseUIScrollView(f32 xPos, f32 yPos, f32 xSize, f32 ySize, const UString &name)
-    : CBaseUIElement(xPos, yPos, xSize, ySize, name) {
+    : CBaseUIElement(xPos, yPos, xSize, ySize, name),
+      container(std::make_unique<CBaseUIContainer>(xPos, yPos, xSize, ySize, name)) {
     this->grabs_clicks = true;
 
     this->iScrollResistance = cv::ui_scrollview_resistance.getInt();  // TODO: dpi handling
-
-    this->container = new CBaseUIContainer(xPos, yPos, xSize, ySize, name);
 }
 
-CBaseUIScrollView::~CBaseUIScrollView() {
-    this->freeElements();
-    SAFE_DELETE(this->container);
-}
+CBaseUIScrollView::~CBaseUIScrollView() { this->freeElements(); }
 
 void CBaseUIScrollView::invalidate() {
     this->container->invalidate();

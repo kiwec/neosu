@@ -3,6 +3,7 @@
 #include "Color.h"
 
 #include "CBaseUIElement.h"
+#include <memory>
 
 class CBaseUIContainer;
 
@@ -117,7 +118,7 @@ class CBaseUIScrollView : public CBaseUIElement {
     void onDisabled() override;
 
     // main container
-    CBaseUIContainer *container;
+    std::unique_ptr<CBaseUIContainer> container;
 
    protected:
     void onMoved() override;

@@ -1239,26 +1239,22 @@ void SongBrowser::onSelectionChange(CarouselButton *button, bool rebuild) {
     // I'm still not happy with this, but at least all state update logic is localized in this function instead of
     // spread across all buttons
 
-    auto *songButtonPointer = button->as<SongButton>();
-    auto *songDiffButtonPointer = button->as<SongDifficultyButton>();
-    auto *collectionButtonPointer = button->as<CollectionButton>();
+    auto *prevSelDiffBtn = this->selectionPreviousSongDiffButton;
+    auto *prevSelSongBtn = this->selectionPreviousSongButton;
+    auto *prevSelColBtn = this->selectionPreviousCollectionButton;
 
-    if(songDiffButtonPointer != nullptr) {
-        if(this->selectionPreviousSongDiffButton != nullptr &&
-           this->selectionPreviousSongDiffButton != songDiffButtonPointer) {
-            this->selectionPreviousSongDiffButton->deselect();
+    auto *songButtonPtr = button->as<SongButton>();
+    auto *diffBtnPtr = button->as<SongDifficultyButton>();
+    auto *colBtnPtr = button->as<CollectionButton>();
 
-            if(&this->selectionPreviousSongDiffButton->getSiblingsAndSelf() ==
-               &songDiffButtonPointer->getSiblingsAndSelf()) {
-                // skip rebuilding if we merely selected a sibling difficulty button
-                // NOTE: pointer comparison should be fine here...
-                rebuild = false;
-            }
+    if(diffBtnPtr) {
+        if(prevSelDiffBtn && prevSelDiffBtn != diffBtnPtr) {
+            prevSelDiffBtn->deselect();
         }
 
         // support individual diffs independent from their parent song button container
         {
-            SongButton *parentSongButton = songDiffButtonPointer->getParentSongButton();
+            SongButton *parentSongButton = diffBtnPtr->getParentSongButton();
             // if the new diff has a parent song button, then update its selection state (select it to stay consistent)
             if(!parentSongButton->isSelected()) {
                 parentSongButton->sortChildren();  // NOTE: workaround for disabled callback firing in select()
@@ -1267,30 +1263,75 @@ void SongBrowser::onSelectionChange(CarouselButton *button, bool rebuild) {
 
                 // reset last-selected button to the diff button after recursion
                 // instead of the parent (which will be hidden)
-                this->selectedButton = songDiffButtonPointer;
+                this->selectedButton = diffBtnPtr;
             }
         }
 
-        this->selectionPreviousSongDiffButton = songDiffButtonPointer;
-    } else if(songButtonPointer != nullptr) {
-        if(this->selectionPreviousSongButton != nullptr && this->selectionPreviousSongButton != songButtonPointer)
-            this->selectionPreviousSongButton->deselect();
-        if(this->selectionPreviousSongDiffButton != nullptr) this->selectionPreviousSongDiffButton->deselect();
+        this->selectionPreviousSongDiffButton = diffBtnPtr;
+    } else if(songButtonPtr) {
+        if(prevSelSongBtn && prevSelSongBtn != songButtonPtr) prevSelSongBtn->deselect();
+        if(prevSelDiffBtn) prevSelDiffBtn->deselect();
 
-        this->selectionPreviousSongButton = songButtonPointer;
-    } else if(collectionButtonPointer != nullptr) {
+        this->selectionPreviousSongButton = songButtonPtr;
+    } else if(colBtnPtr) {
         // TODO: maybe expand this logic with per-group-type last-open-collection memory
 
         // logic for allowing collections to be deselected by clicking on the same button (contrary to how beatmaps
         // work)
-        const bool isTogglingCollection = (this->selectionPreviousCollectionButton != nullptr &&
-                                           this->selectionPreviousCollectionButton == collectionButtonPointer);
+        const bool isTogglingCollection = (prevSelColBtn != nullptr && prevSelColBtn == colBtnPtr);
 
-        if(this->selectionPreviousCollectionButton != nullptr) this->selectionPreviousCollectionButton->deselect();
+        if(prevSelColBtn != nullptr) prevSelColBtn->deselect();
 
-        this->selectionPreviousCollectionButton = collectionButtonPointer;
+        this->selectionPreviousCollectionButton = colBtnPtr;
 
         if(isTogglingCollection) this->selectionPreviousCollectionButton = nullptr;
+    }
+
+    // try to avoid rebuilding by going through some cases we know can be skipped,
+    // in increasingly expensive order (as long as it's still worth it vs rebuilding)
+    int once = 0;
+    while(!once++ && rebuild) {
+        if(colBtnPtr) break;  // no logic for collection buttons, it's not worth it
+        // check old and new difficulty selections
+        if(prevSelDiffBtn && diffBtnPtr) {
+            if(prevSelDiffBtn == diffBtnPtr) {
+                rebuild = false;
+                break;
+            }
+            if(&prevSelDiffBtn->getSiblingsAndSelf() == &diffBtnPtr->getSiblingsAndSelf()) {
+                // NOTE: pointer comparison
+                // skip rebuilding if we merely selected a sibling difficulty button
+                rebuild = false;
+                break;
+            }
+        }
+        // check old and new parent selections
+        // NOTE: using previously selected difficulty because previously selected song button has already been updated at this point...
+        if(prevSelDiffBtn && songButtonPtr) {
+            const SongButton *oldParentPtr = prevSelDiffBtn->getParentSongButton();
+            const SongButton *newParentPtr = !diffBtnPtr ? songButtonPtr : diffBtnPtr->getParentSongButton();
+
+            if(oldParentPtr == newParentPtr) {
+                rebuild = false;
+                break;
+            }
+
+            if(&oldParentPtr->getChildren() == &newParentPtr->getChildren()) {
+                rebuild = false;
+                break;
+            }
+
+            // if we got here, a slightly more expensive check: skip if the visibility of both buttons are the same
+            const SetVisibility oldVis = this->getSetVisibility(oldParentPtr);
+            const SetVisibility newVis = this->getSetVisibility(newParentPtr);
+
+            // when in no grouping, parent buttons are expanded/unexpanded depending on their selection state and how many children they have visible
+            // otherwise we need to rebuild everything (with the current implementation) to un-expand the old parent and expand the new one
+            if(oldVis == newVis && (oldVis != SetVisibility::SHOW_PARENT || this->curGroup != GroupType::NO_GROUPING)) {
+                rebuild = false;
+                break;
+            }
+        }
     }
 
     if(rebuild) {
@@ -1732,7 +1773,7 @@ void SongBrowser::updateSongButtonLayout() {
     bool isSelected = false;
     bool inOpenCollection = false;
     for(auto *carouselButton : elements) {
-        const auto *diffButtonPointer = carouselButton->as<const SongDifficultyButton>();
+        const auto *diffButtonPointer = carouselButton->as<SongDifficultyButton>();
 
         // depending on the object type, layout differently
         const bool isCollectionButton = carouselButton->isType<CollectionButton>();

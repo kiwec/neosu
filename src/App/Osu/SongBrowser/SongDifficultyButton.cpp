@@ -68,10 +68,8 @@ void SongDifficultyButton::draw() {
     const vec2 pos = this->getActualPos();
     const vec2 size = this->getActualSize();
 
-    // don't try to load images while right click scrolling to avoid lag
-    if(!g_carousel->isActuallyRightClickScrolling() &&
-       // delay requesting the image itself a bit
-       this->fVisibleFor >= ((std::clamp<f32>(cv::background_image_loading_delay.getFloat(), 0.f, 2.f)) / 4.f)) {
+    // delay requesting the image itself a bit
+    if(this->fVisibleFor >= ((std::clamp<f32>(cv::background_image_loading_delay.getFloat(), 0.f, 2.f)) / 4.f)) {
         // draw background image
         this->drawBeatmapBackgroundThumbnail(
             osu->getBackgroundImageHandler()->getLoadBackgroundImage(this->databaseBeatmap));
@@ -163,7 +161,11 @@ void SongDifficultyButton::mouse_update(bool* propagate_clicks) {
     }
     CarouselButton::mouse_update(propagate_clicks);
 
-    this->fVisibleFor += engine->getFrameTime();
+    // don't try to load images while scrolling fast to avoid lag
+    if(!g_carousel->isScrollingFast())
+        this->fVisibleFor += engine->getFrameTime();
+    else
+        this->fVisibleFor = 0.f;
 
     // FIXME part 2: very difficult to follow and fragile logic
 

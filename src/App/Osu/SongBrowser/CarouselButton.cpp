@@ -157,7 +157,7 @@ void CarouselButton::updateLayoutEx() {
     if(this->bVisible)  // lag prevention (animationHandler overflow)
     {
         const float centerOffsetAnimationTarget =
-            ((cv::songbrowser_button_anim_y_curve.getBool() && !g_carousel->isActuallyRightClickScrolling())
+            ((cv::songbrowser_button_anim_y_curve.getBool() && !g_carousel->isScrollingFast())
                  ? 1.0f - std::clamp<float>(std::abs((this->vPos.y + (this->vSize.y / 2) - g_carousel->getPos().y -
                                                       g_carousel->getSize().y / 2) /
                                                      (g_carousel->getSize().y / 2)),
@@ -172,7 +172,7 @@ void CarouselButton::updateLayoutEx() {
         float centerOffsetVelocityAnimationTarget =
             std::clamp<float>((std::abs(g_carousel->getVelocity().y)) / 3500.0f, 0.0f, 1.0f);
 
-        if(g_carousel->isActuallyRightClickScrolling() || !cv::songbrowser_button_anim_x_push.getBool())
+        if(g_carousel->isScrollingFast() || !cv::songbrowser_button_anim_x_push.getBool())
             centerOffsetVelocityAnimationTarget = 0.0f;
 
         if(g_carousel->isScrolling())
@@ -228,7 +228,7 @@ CarouselButton *CarouselButton::setVisible(bool visible) {
         float centerOffsetVelocityAnimationTarget =
             std::clamp<float>((std::abs(g_carousel->getVelocity().y)) / 3500.0f, 0.0f, 1.0f);
 
-        if(g_carousel->isActuallyRightClickScrolling() || !cv::songbrowser_button_anim_x_push.getBool())
+        if(g_carousel->isScrollingFast() || !cv::songbrowser_button_anim_x_push.getBool())
             centerOffsetVelocityAnimationTarget = 0.0f;
 
         this->fCenterOffsetVelocityAnimation = centerOffsetVelocityAnimationTarget;
