@@ -1196,7 +1196,7 @@ void Chat::updateUserList() {
 
         // Only display the card if we have presence data
         // (presence data is only fetched *after* UserCard2 is initialized)
-        if(user->has_presence()) {
+        if(user->has_presence) {
             card->setVisible(true);
             total_x += card_size.x + MARGIN * 1.5;  // idk why margin is bogged
         }

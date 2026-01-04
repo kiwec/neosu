@@ -189,7 +189,7 @@ void SpectatorScreen::mouse_update(bool *propagate_clicks) {
 
     {
         using enum LiveReplayAction;
-        if(LiveReplayAction action = user_info->get_spec_action();
+        if(LiveReplayAction action = user_info->spec_action;
            action == NONE || action == SONG_SELECT || action == WATCHING_OTHER) {
             std::string_view action_str = action == NONE          ? "AFK"sv
                                           : action == SONG_SELECT ? "picking a map..."sv

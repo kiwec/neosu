@@ -8,9 +8,7 @@
 #include <string>
 #include <vector>
 
-// TEMP:
-// old: 192 bytes
-// reordered struct: 160 bytes
+// The fields are slightly strangely ordered/packed for struct layout purposes.
 struct UserInfo {
     UserInfo() noexcept = default;
     ~UserInfo() noexcept;
@@ -48,43 +46,12 @@ struct UserInfo {
     u8 country{0};
     u8 privileges{0};
 
-    // lower 6 bits stores spectator action, upper 2 bits store presence + irc state
-    // dumb way to avoid annoying struct padding
-    enum DataBits : u8 { PRESENCE = (1 << 6), IRC = (1 << 7) };
-    u8 extra_data{0};
+    bool has_presence : 1 {false};
+    bool irc_user : 1 {false};
+
+    LiveReplayAction spec_action : 6 {LiveReplayAction::NONE};  // Received when spectating
 
     [[nodiscard]] bool is_friend() const;
-
-    [[nodiscard]] constexpr bool has_presence() const { return this->extra_data & PRESENCE; }
-    [[nodiscard]] constexpr bool is_irc() const { return this->extra_data & IRC; }
-
-    [[nodiscard]] constexpr LiveReplayAction get_spec_action() const {
-        static_assert((u8)LiveReplayAction::MAX_ACTION < 0b00111111);
-        return (LiveReplayAction)(this->extra_data & 0b00111111);
-    }
-
-    inline void set_is_irc(bool isirc) {
-        if(isirc) {
-            this->extra_data |= IRC;
-        } else {
-            this->extra_data &= ~IRC;
-        }
-    }
-
-    inline void set_has_presence(bool presence) {
-        if(presence) {
-            this->extra_data |= PRESENCE;
-        } else {
-            this->extra_data &= ~PRESENCE;
-        }
-    }
-
-    // Received when spectating
-    inline void set_spec_action(LiveReplayAction action) {
-        const u8 new_spec_flag_lobits = (u8)action & 0b00111111;
-        const u8 cur_non_spec_hibits = this->extra_data & 0b11000000;
-        this->extra_data = cur_non_spec_hibits | new_spec_flag_lobits;
-    }
 };
 
 namespace BANCHO::User {

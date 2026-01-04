@@ -260,7 +260,7 @@ void BanchoState::handle_packet(Packet &packet) {
                 }
             }
 
-            user->set_is_irc(is_irc_user);
+            user->irc_user = is_irc_user;
             user->stats_tms = Timing::getTicksMS();
             user->action = action;
             user->info_text = packet.read_stdstring();
@@ -357,7 +357,7 @@ void BanchoState::handle_packet(Packet &packet) {
                 }
 
                 auto action = (LiveReplayAction)packet.read<u8>();
-                info->set_spec_action(action);
+                info->spec_action = action;
 
                 if(osu->isInPlayMode()) {
                     switch(action) {
@@ -613,8 +613,8 @@ void BanchoState::handle_packet(Packet &packet) {
             }
 
             UserInfo *user = BANCHO::User::get_user_info(presence_user_id);
-            user->set_is_irc(is_irc_user);
-            user->set_has_presence(true);
+            user->irc_user = is_irc_user;
+            user->has_presence = true;
             user->name = packet.read_stdstring();
             user->utc_offset = packet.read<u8>();
             user->country = packet.read<u8>();

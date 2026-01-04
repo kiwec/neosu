@@ -67,7 +67,7 @@ void UIUserContextMenuScreen::open(i32 user_id, bool is_song_browser_button) {
         }
 
         const UserInfo* user_info = BANCHO::User::get_user_info(user_id, true);
-        if(user_info->has_presence()) {
+        if(user_info->has_presence) {
             // Without user info, we don't have the username
             this->menu->addButton("Start Chat", START_CHAT);
 

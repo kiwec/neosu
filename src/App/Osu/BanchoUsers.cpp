@@ -36,13 +36,13 @@ void dequeue_stats_request(const UserInfo* info) {
 }
 
 void enqueue_presence_request(const UserInfo* info) {
-    if(info->has_presence()) return;
+    if(info->has_presence) return;
     if(std::ranges::contains(presence_requests, info)) return;
     presence_requests.push_back(info);
 }
 
 void enqueue_stats_request(const UserInfo* info) {
-    if(info->is_irc()) return;
+    if(info->irc_user) return;
     if(info->stats_tms + 5000 > Timing::getTicksMS()) return;
     if(std::ranges::contains(stats_requests, info)) return;
     stats_requests.push_back(info);
@@ -51,7 +51,7 @@ void enqueue_stats_request(const UserInfo* info) {
 void request_presence_batch() {
     std::vector<i32> actual_requests;
     for(const auto& req : presence_requests) {
-        if(req->has_presence()) continue;
+        if(req->has_presence) continue;
         actual_requests.push_back(req->user_id);
     }
 
@@ -70,7 +70,7 @@ void request_presence_batch() {
 void request_stats_batch() {
     std::vector<i32> actual_requests;
     for(const auto& req : stats_requests) {
-        if(req->is_irc()) continue;
+        if(req->irc_user) continue;
         if(req->stats_tms + 5000 > Timing::getTicksMS()) continue;
         actual_requests.push_back(req->user_id);
     }

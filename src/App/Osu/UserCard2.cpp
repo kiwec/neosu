@@ -87,7 +87,7 @@ void UserCard2::draw() {
             break;
     }
 
-    if(this->info->is_irc()) {
+    if(this->info->irc_user) {
         status_text = US_("IRC user");
     } else {
         status_text.append(this->info->info_text);
