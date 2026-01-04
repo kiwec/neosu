@@ -88,7 +88,7 @@ struct BanchoState final {
 
     [[nodiscard]] static const std::string &get_username();
 
-    static void disconnect();
+    static void disconnect(bool shutdown = false);
     static void reconnect();
 
    private:

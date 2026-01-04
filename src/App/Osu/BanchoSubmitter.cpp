@@ -27,10 +27,12 @@ void submit_score(FinishedScore score) {
     std::array<u8, 32> iv;
     crypto::rng::get_rand(iv);
 
-    NeoNet::RequestOptions options;
-    options.timeout = 60;
-    options.connect_timeout = 5;
-    options.user_agent = "osu!";
+    NeoNet::RequestOptions options{
+        .user_agent = "osu!",
+        .timeout = 60,
+        .connect_timeout = 5,
+    };
+
     options.headers["token"] = BanchoState::cho_token;
 
     auto quit = fmt::format("{}", score.ragequit ? 1 : 0);
@@ -193,20 +195,17 @@ void submit_score(FinishedScore score) {
 
     auto scheme = cv::use_https.getBool() ? "https://" : "http://";
     auto url = fmt::format("{}osu.{}/web/osu-submit-modular-selector.php", scheme, BanchoState::endpoint);
-    networkHandler->httpRequestAsync(
-        url,
-        [func = LOGGER_FUNC](NeoNet::Response response) {
-            if(response.success) {
-                // TODO: handle success (pp, etc + error codes)
-                debugLogLambda("Score submit result: {}", response.body);
+    networkHandler->httpRequestAsync(url, std::move(options), [func = LOGGER_FUNC](NeoNet::Response response) {
+        if(response.success) {
+            // TODO: handle success (pp, etc + error codes)
+            debugLogLambda("Score submit result: {}", response.body);
 
-                // Reset leaderboards so new score will appear
-                db->getOnlineScores().clear();
-                osu->getSongBrowser()->rebuildScoreButtons();
-            } else {
-                // TODO: handle failure
-            }
-        },
-        options);
+            // Reset leaderboards so new score will appear
+            db->getOnlineScores().clear();
+            osu->getSongBrowser()->rebuildScoreButtons();
+        } else {
+            // TODO: handle failure
+        }
+    });
 }
 }  // namespace BANCHO::Net

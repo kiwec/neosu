@@ -1819,7 +1819,7 @@ bool Osu::onShutdown() {
     this->optionsMenu->save();
     db->save();
 
-    BanchoState::disconnect();
+    BanchoState::disconnect(true);
 
     return true;
 }

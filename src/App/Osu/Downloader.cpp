@@ -85,22 +85,20 @@ class DownloadManager {
 
         debugLog("Downloading {:s}", request->url.c_str());
 
-        NeoNet::RequestOptions options;
-        options.timeout = 30;
-        options.connect_timeout = 5;
-        options.user_agent = BanchoState::user_agent;
-        options.follow_redirects = true;
-        options.progress_callback = [request](float progress) {
-            request->progress.store(progress, std::memory_order_release);
+        NeoNet::RequestOptions options{
+            .user_agent = BanchoState::user_agent,
+            .progress_callback =
+                [request](float progress) { request->progress.store(progress, std::memory_order_release); },
+            .timeout = 30,
+            .connect_timeout = 5,
+            .follow_redirects = true,
         };
 
         // capture s_download_manager as a copy to keep DownloadManager alive during callback
-        networkHandler->httpRequestAsync(
-            request->url,
-            [self = s_download_manager, request](NeoNet::Response response) {
-                self->onDownloadComplete(request, std::move(response));
-            },
-            options);
+        networkHandler->httpRequestAsync(request->url, std::move(options),
+                                         [self = s_download_manager, request](NeoNet::Response response) {
+                                             self->onDownloadComplete(request, std::move(response));
+                                         });
     }
 
     void onDownloadComplete(const std::shared_ptr<DownloadRequest>& request, NeoNet::Response response) {

@@ -412,6 +412,21 @@ void Chat::mouse_update(bool *propagate_clicks) {
                 BANCHO::User::enqueue_stats_request(card->info);
             }
         }
+        // update userlist immediately
+        // TODO: lag/redundant update prevention
+        if(!this->in_userlist_update) {
+            // if we had a full layout update scheduled, do that, which includes a userlist update
+            if(this->layout_update_scheduled) {
+                this->updateLayout(osu->getVirtScreenSize());
+                this->layout_update_scheduled = false;
+                this->userlist_update_scheduled = false;
+            }
+            // otherwise only update the userlist
+            if(this->userlist_update_scheduled) {
+                this->updateUserList();
+                this->userlist_update_scheduled = false;
+            }
+        }
     }
 
     OsuScreen::mouse_update(propagate_clicks);
@@ -1132,7 +1147,7 @@ void Chat::updateUserList() {
     // We don't want to update while the chat is hidden, to avoid lagspikes during gameplay
     if(!this->bVisible ||
        this->in_userlist_update /* FIXME: recursively calling updateUserList when creating UserCard2s */) {
-        this->layout_update_scheduled = true;
+        this->userlist_update_scheduled = true;
         return;
     }
 

@@ -67,28 +67,25 @@ struct WSInstance {
 
 // async request options
 struct RequestOptions {
-   private:
     friend class NetworkHandler;
     friend struct NetworkImpl;
 
-   public:
     struct MimePart {
         std::string filename{};
         std::string name{};
         std::vector<u8> data{};
     };
 
-    RequestOptions() noexcept { ; }  // = default breaks clang
-    sv_unordered_map<std::string> headers;
-    std::string post_data;
-    std::string user_agent;
-    std::vector<MimePart> mime_parts;
-    std::function<void(float)> progress_callback;  // progress callback for downloads
+    sv_unordered_map<std::string> headers{};
+    std::string post_data{};
+    std::string user_agent{};
+    std::vector<MimePart> mime_parts{};
+    std::function<void(float)> progress_callback{nullptr};  // progress callback for downloads
     long timeout{5};
     long connect_timeout{5};
     bool follow_redirects{false};
 
-   private:
+    // TODO: remove this
     bool is_websocket{false};
 };
 
@@ -120,7 +117,7 @@ class NetworkHandler {
     Response httpRequestSynchronous(std::string_view url, RequestOptions options);
 
     // asynchronous API
-    void httpRequestAsync(std::string_view url, AsyncCallback callback, RequestOptions options = {});
+    void httpRequestAsync(std::string_view url, RequestOptions options, AsyncCallback callback = {});
 
     // websockets
     // TODO: consolidate websocket/http to avoid needing this entirely

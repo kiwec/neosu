@@ -983,12 +983,10 @@ void MainMenu::mouse_update(bool *propagate_clicks) {
     }
 
     // handle delayed shutdown
-    bool shutting_down = false;
     if(this->fShutdownScheduledTime != 0.0f &&
        (engine->getTime() > this->fShutdownScheduledTime || !anim::isAnimating(&this->fCenterOffsetAnim))) {
         engine->shutdown();
         this->fShutdownScheduledTime = 0.0f;
-        shutting_down = true;
     }
 
     // main button autohide + anim
@@ -1131,7 +1129,7 @@ void MainMenu::mouse_update(bool *propagate_clicks) {
     }
 
     // load server icon
-    if(!shutting_down && BanchoState::is_online() && BanchoState::server_icon_url.length() > 0 &&
+    if(!engine->isShuttingDown() && BanchoState::is_online() && BanchoState::server_icon_url.length() > 0 &&
        BanchoState::server_icon == nullptr) {
         const std::string icon_path =
             fmt::format("{}/avatars/{}/server_icon", env->getCacheDir(), BanchoState::endpoint);

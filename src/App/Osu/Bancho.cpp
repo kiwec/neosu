@@ -826,16 +826,17 @@ void BanchoState::handle_packet(Packet &packet) {
                 }
 
                 // Submit map
-                NeoNet::RequestOptions options;
-                options.timeout = 60;
-                options.connect_timeout = 5;
-                options.user_agent = "osu!";
-                options.mime_parts.push_back({
-                    .filename = fmt::format("{}.osu", md5.string()),
-                    .name = "osu_file",
-                    .data = std::move(osu_file),
-                });
-                networkHandler->httpRequestAsync(url, {}, options);
+                NeoNet::RequestOptions options{
+                    .user_agent = "osu!",
+                    .mime_parts{NeoNet::RequestOptions::MimePart{
+                        .filename = fmt::format("{}.osu", md5.string()),
+                        .name = "osu_file",
+                        .data = std::move(osu_file),
+                    }},
+                    .timeout = 60,
+                    .connect_timeout = 5,
+                };
+                networkHandler->httpRequestAsync(url, std::move(options));
             };
 
             // run async callback

@@ -503,11 +503,12 @@ void OsuDirectScreen::search(std::string_view query) {
                                   filter, NeoNet::urlEncode(query), offset);
     BANCHO::Api::append_auth_params(url);
 
-    NeoNet::RequestOptions options;
-    options.timeout = 5;
-    options.connect_timeout = 5;
-    options.follow_redirects = true;
-    options.user_agent = "osu!";
+    NeoNet::RequestOptions options{
+        .user_agent = "osu!",
+        .timeout = 5,
+        .connect_timeout = 5,
+        .follow_redirects = true,
+    };
 
     debugLog("Searching for maps matching \"{}\" (offset {})", query, offset);
     const auto current_request_id = ++this->request_id;
@@ -516,8 +517,7 @@ void OsuDirectScreen::search(std::string_view query) {
     this->loading = true;
 
     networkHandler->httpRequestAsync(
-        url,
-        [func = LOGGER_FUNC, current_request_id, this](const NeoNet::Response& response) {
+        url, std::move(options), [func = LOGGER_FUNC, current_request_id, this](const NeoNet::Response& response) {
             this->loading = false;
 
             if(current_request_id != this->request_id) {
@@ -556,6 +556,5 @@ void OsuDirectScreen::search(std::string_view query) {
             } else {
                 // TODO: handle failure
             }
-        },
-        options);
+        });
 }

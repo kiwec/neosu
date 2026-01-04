@@ -109,8 +109,8 @@ struct NetworkImpl {
     // internal request structure
     struct Request {
         std::string url;
-        AsyncCallback callback;
         RequestOptions options;
+        AsyncCallback callback;
         Response response;
 
         CurlEasy easy_handle;
@@ -121,8 +121,8 @@ struct NetworkImpl {
         bool is_sync{false};
         void* sync_id{nullptr};
 
-        Request(std::string_view url, AsyncCallback cb, RequestOptions opts)
-            : url(url), callback(std::move(cb)), options(std::move(opts)) {}
+        Request(std::string_view url, RequestOptions opts, AsyncCallback cb = {})
+            : url(url), options(std::move(opts)), callback(std::move(cb)) {}
 
         void setupCurlHandle();
 
@@ -183,7 +183,7 @@ struct NetworkImpl {
     Response httpRequestSynchronous(std::string_view url, RequestOptions options);
 
     // asynchronous API
-    void httpRequestAsync(std::string_view url, AsyncCallback callback, RequestOptions options = {});
+    void httpRequestAsync(std::string_view url, RequestOptions options, AsyncCallback callback = {});
 
     // websockets
     std::shared_ptr<WSInstance> initWebsocket(const WSOptions& options);
@@ -381,7 +381,6 @@ struct curl_blob cert_blob{
 void NetworkImpl::Request::setupCurlHandle() {
     assert(this->easy_handle.get());
 
-
     this->easy_handle.setopt(CURLOPT_VERBOSE, cv::debug_network.getBool() ? 1L : 0L);
     this->easy_handle.setopt(CURLOPT_URL, this->url.c_str());
     this->easy_handle.setopt(CURLOPT_CONNECTTIMEOUT, this->options.connect_timeout);
@@ -546,8 +545,8 @@ void NetworkImpl::update() {
     std::erase_if(this->active_websockets, [](const auto& ws) { return ws->status != WSStatus::CONNECTED; });
 }
 
-void NetworkImpl::httpRequestAsync(std::string_view url, AsyncCallback callback, RequestOptions options) {
-    auto request = std::make_unique<Request>(url, std::move(callback), std::move(options));
+void NetworkImpl::httpRequestAsync(std::string_view url, RequestOptions options, AsyncCallback callback) {
+    auto request = std::make_unique<Request>(url, std::move(options), std::move(callback));
 
     Sync::scoped_lock lock{this->request_queue_mutex};
     this->pending_requests.push(std::move(request));
@@ -561,25 +560,21 @@ std::shared_ptr<WSInstance> NetworkImpl::initWebsocket(const WSOptions& options)
     websocket->max_recv = options.max_recv;
     websocket->time_created = engine->getTime();
 
-    RequestOptions httpOptions;
-    httpOptions.headers = options.headers;
-    httpOptions.user_agent = options.user_agent;
-    httpOptions.timeout = options.timeout;
-    httpOptions.connect_timeout = options.connect_timeout;
-    httpOptions.is_websocket = true;
+    RequestOptions httpOptions{.headers = options.headers,
+                               .user_agent = options.user_agent,
+                               .timeout = options.timeout,
+                               .connect_timeout = options.connect_timeout,
+                               .is_websocket = true};
 
-    this->httpRequestAsync(
-        options.url,
-        [this, websocket](const Response& response) {
-            if(response.success) {
-                websocket->handle = response.easy_handle;
-                websocket->status = WSStatus::CONNECTED;
-                this->active_websockets.push_back(websocket);
-            } else {
-                websocket->status = WSStatus::UNSUPPORTED;
-            }
-        },
-        httpOptions);
+    this->httpRequestAsync(options.url, httpOptions, [this, websocket](const Response& response) {
+        if(response.success) {
+            websocket->handle = response.easy_handle;
+            websocket->status = WSStatus::CONNECTED;
+            this->active_websockets.push_back(websocket);
+        } else {
+            websocket->status = WSStatus::UNSUPPORTED;
+        }
+    });
 
     return websocket;
 }
@@ -599,7 +594,7 @@ Response NetworkImpl::httpRequestSynchronous(std::string_view url, RequestOption
     }
 
     // create sync request
-    auto request = std::make_unique<Request>(url, [](const Response&) {}, std::move(options));
+    auto request = std::make_unique<Request>(url, std::move(options));
     request->is_sync = true;
     request->sync_id = sync_id;
 
@@ -636,8 +631,8 @@ Response NetworkHandler::httpRequestSynchronous(std::string_view url, RequestOpt
     return pImpl->httpRequestSynchronous(url, std::move(options));
 }
 
-void NetworkHandler::httpRequestAsync(std::string_view url, AsyncCallback callback, RequestOptions options) {
-    return pImpl->httpRequestAsync(url, std::move(callback), std::move(options));
+void NetworkHandler::httpRequestAsync(std::string_view url, RequestOptions options, AsyncCallback callback) {
+    return pImpl->httpRequestAsync(url, std::move(options), std::move(callback));
 }
 
 std::shared_ptr<WSInstance> NetworkHandler::initWebsocket(const WSOptions& options) {

@@ -86,30 +86,28 @@ void send_request(const Request &request) {
         return;
     }
 
-    NeoNet::RequestOptions options;
-    options.timeout = 60;
-    options.connect_timeout = 5;
-    options.user_agent = "osu!";
+    NeoNet::RequestOptions options{
+        .user_agent = "osu!",
+        .timeout = 60,
+        .connect_timeout = 5,
+    };
 
     auto scheme = cv::use_https.getBool() ? "https://" : "http://";
     auto query_url = fmt::format("{:s}osu.{:s}{:s}", scheme, BanchoState::endpoint, request.path);
 
-    networkHandler->httpRequestAsync(
-        query_url,
-        [request](NeoNet::Response response) {
-            if(response.success) {
-                Packet api_response;
-                api_response.id = request.type;
-                api_response.extra = request.extra;
-                api_response.extra_int = request.extra_int;
-                api_response.size = response.body.length();
-                api_response.memory = (u8 *)response.body.data();
-                handle_api_response(api_response);
-            }
+    networkHandler->httpRequestAsync(query_url, std::move(options), [request](NeoNet::Response response) {
+        if(response.success) {
+            Packet api_response;
+            api_response.id = request.type;
+            api_response.extra = request.extra;
+            api_response.extra_int = request.extra_int;
+            api_response.size = response.body.length();
+            api_response.memory = (u8 *)response.body.data();
+            handle_api_response(api_response);
+        }
 
-            free(request.extra);
-        },
-        options);
+        free(request.extra);
+    });
 }
 
 void append_auth_params(std::string &url, std::string user_param, std::string pw_param) {

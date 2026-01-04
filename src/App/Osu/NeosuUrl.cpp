@@ -33,24 +33,22 @@ void handle_neosu_url(const char *url) {
         auto proof = NeoNet::urlEncode(crypto::conv::encode64(BanchoState::oauth_verifier));
         auto url = fmt::format("https://{}/connect/finish?code={}&proof={}", endpoint, code, proof);
 
-        NeoNet::RequestOptions options;
-        options.timeout = 30;
-        options.connect_timeout = 5;
-        options.user_agent = BanchoState::user_agent;
-        options.follow_redirects = true;
+        NeoNet::RequestOptions options{
+            .user_agent = BanchoState::user_agent,
+            .timeout = 30,
+            .connect_timeout = 5,
+            .follow_redirects = true,
+        };
 
-        networkHandler->httpRequestAsync(
-            url,
-            [](NeoNet::Response response) {
-                if(response.success) {
-                    cv::mp_oauth_token.setValue(response.body);
-                    BanchoState::reconnect();
-                } else {
-                    BanchoState::update_online_status(OnlineStatus::LOGGED_OUT);
-                    osu->getNotificationOverlay()->addToast(US_("Login failed."), ERROR_TOAST);
-                }
-            },
-            options);
+        networkHandler->httpRequestAsync(url, std::move(options), [](NeoNet::Response response) {
+            if(response.success) {
+                cv::mp_oauth_token.setValue(response.body);
+                BanchoState::reconnect();
+            } else {
+                BanchoState::update_online_status(OnlineStatus::LOGGED_OUT);
+                osu->getNotificationOverlay()->addToast(US_("Login failed."), ERROR_TOAST);
+            }
+        });
 
         return;
     }

@@ -75,12 +75,14 @@ void parse_packets(u8 *data, size_t s_data) {
 void attempt_logging_in() {
     assert(!BanchoState::is_online());
 
-    NeoNet::RequestOptions options;
-    options.timeout = 30;
-    options.connect_timeout = 5;
-    options.user_agent = "osu!";
+    NeoNet::RequestOptions options{
+        .post_data = BanchoState::build_login_packet(),
+        .user_agent = "osu!",
+        .timeout = 30,
+        .connect_timeout = 5,
+    };
+
     options.headers["x-mcosu-ver"] = BanchoState::neosu_version;
-    options.post_data = BanchoState::build_login_packet();
 
     auto scheme = cv::use_https.getBool() ? "https://" : "http://";
     auto query_url = fmt::format("{:s}c.{:s}/", scheme, BanchoState::endpoint);
@@ -88,47 +90,46 @@ void attempt_logging_in() {
     last_packet_ms = Timing::getTicksMS();
 
     // TODO: allow user to cancel login attempt
-    networkHandler->httpRequestAsync(
-        query_url,
-        [func = LOGGER_FUNC](NeoNet::Response response) {
-            if(!response.success) {
-                auto errmsg = fmt::format("Failed to log in: {}", response.error_msg);
-                osu->getNotificationOverlay()->addToast(errmsg, ERROR_TOAST);
-                BanchoState::update_online_status(OnlineStatus::LOGGED_OUT);
-                return;
-            }
+    networkHandler->httpRequestAsync(query_url, std::move(options), [func = LOGGER_FUNC](NeoNet::Response response) {
+        if(!response.success) {
+            auto errmsg = fmt::format("Failed to log in: {}", response.error_msg);
+            osu->getNotificationOverlay()->addToast(errmsg, ERROR_TOAST);
+            BanchoState::update_online_status(OnlineStatus::LOGGED_OUT);
+            return;
+        }
 
-            // Update auth token
-            auto cho_token_it = response.headers.find("cho-token");
-            if(cho_token_it != response.headers.end()) {
-                auth_token = cho_token_it->second;
-                BanchoState::cho_token = auth_token;
-                use_websockets = cv::prefer_websockets.getBool();
-            }
+        // Update auth token
+        auto cho_token_it = response.headers.find("cho-token");
+        if(cho_token_it != response.headers.end()) {
+            auth_token = cho_token_it->second;
+            BanchoState::cho_token = auth_token;
+            use_websockets = cv::prefer_websockets.getBool();
+        }
 
-            auto features_it = response.headers.find("x-mcosu-features");
-            if(features_it != response.headers.end()) {
-                if(strstr(features_it->second.c_str(), "submit=0") != nullptr) {
-                    BanchoState::score_submission_policy = ServerPolicy::NO;
-                    debugLogLambda("Server doesn't want score submission. :(");
-                } else if(strstr(features_it->second.c_str(), "submit=1") != nullptr) {
-                    BanchoState::score_submission_policy = ServerPolicy::YES;
-                    debugLogLambda("Server wants score submission! :D");
-                }
+        auto features_it = response.headers.find("x-mcosu-features");
+        if(features_it != response.headers.end()) {
+            if(strstr(features_it->second.c_str(), "submit=0") != nullptr) {
+                BanchoState::score_submission_policy = ServerPolicy::NO;
+                debugLogLambda("Server doesn't want score submission. :(");
+            } else if(strstr(features_it->second.c_str(), "submit=1") != nullptr) {
+                BanchoState::score_submission_policy = ServerPolicy::YES;
+                debugLogLambda("Server wants score submission! :D");
             }
+        }
 
-            parse_packets((u8 *)response.body.data(), response.body.length());
-        },
-        options);
+        parse_packets((u8 *)response.body.data(), response.body.length());
+    });
 }
 
 void send_bancho_packet_http(Packet outgoing) {
     if(auth_token.empty()) return;
 
-    NeoNet::RequestOptions options;
-    options.timeout = 30;
-    options.connect_timeout = 5;
-    options.user_agent = "osu!";
+    NeoNet::RequestOptions options{
+        .user_agent = "osu!",
+        .timeout = 30,
+        .connect_timeout = 5,
+    };
+
     options.headers["x-mcosu-ver"] = BanchoState::neosu_version;
     options.headers["osu-token"] = auth_token;
 
@@ -138,17 +139,14 @@ void send_bancho_packet_http(Packet outgoing) {
     auto scheme = cv::use_https.getBool() ? "https://" : "http://";
     auto query_url = fmt::format("{:s}c.{:s}/", scheme, BanchoState::endpoint);
 
-    networkHandler->httpRequestAsync(
-        query_url,
-        [func = LOGGER_FUNC](NeoNet::Response response) {
-            if(!response.success) {
-                debugLogLambda("Failed to send packet, HTTP error {}", response.response_code);
-                return;
-            }
+    networkHandler->httpRequestAsync(query_url, std::move(options), [func = LOGGER_FUNC](NeoNet::Response response) {
+        if(!response.success) {
+            debugLogLambda("Failed to send packet, HTTP error {}", response.response_code);
+            return;
+        }
 
-            parse_packets((u8 *)response.body.data(), response.body.length());
-        },
-        options);
+        parse_packets((u8 *)response.body.data(), response.body.length());
+    });
 }
 
 void send_bancho_packet_ws(Packet outgoing) {
@@ -310,7 +308,7 @@ void cleanup_networking() {
 
 }  // namespace BANCHO::Net
 
-void BanchoState::disconnect() {
+void BanchoState::disconnect(bool shutdown) {
     cvars().resetServerCvars();
 
     // Logout
@@ -322,11 +320,13 @@ void BanchoState::disconnect() {
         packet.write<u32>(4);
         packet.write<u32>(0);
 
-        NeoNet::RequestOptions options;
-        options.timeout = 5;
-        options.connect_timeout = 5;
-        options.user_agent = "osu!";
-        options.post_data = std::string(reinterpret_cast<char *>(packet.memory), packet.pos);
+        NeoNet::RequestOptions options{
+            .post_data = std::string(reinterpret_cast<char *>(packet.memory), packet.pos),
+            .user_agent = "osu!",
+            .timeout = 5,
+            .connect_timeout = 5,
+        };
+
         options.headers["x-mcosu-ver"] = BanchoState::neosu_version;
         options.headers["osu-token"] = BANCHO::Net::auth_token;
         BANCHO::Net::auth_token = "";
@@ -334,8 +334,12 @@ void BanchoState::disconnect() {
         auto scheme = cv::use_https.getBool() ? "https://" : "http://";
         auto query_url = fmt::format("{:s}c.{:s}/", scheme, BanchoState::endpoint);
 
-        // use sync request for logout to ensure it completes
-        NeoNet::Response response = networkHandler->httpRequestSynchronous(query_url, options);
+        // use sync request for logout on shutdown to make sure it completes
+        if(shutdown) {
+            networkHandler->httpRequestSynchronous(query_url, std::move(options));
+        } else {
+            networkHandler->httpRequestAsync(query_url, std::move(options));
+        }
 
         free(packet.memory);
     } else if(BanchoState::is_logging_in()) {

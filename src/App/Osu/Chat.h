@@ -89,6 +89,7 @@ class Chat final : public OsuScreen {
     bool user_wants_chat = false;
     bool visibility_was_forced = false;
     bool layout_update_scheduled = false;
+    bool userlist_update_scheduled = false;
     bool in_userlist_update = false;
 
     f32 input_box_height = 30.f;
