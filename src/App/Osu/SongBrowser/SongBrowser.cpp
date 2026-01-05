@@ -1740,13 +1740,19 @@ bool SongBrowser::scrollToBestButton() {
 
         if(target) {
             if(target->isSearchMatch()) {
+                bool selectedOrDeselected = false;
                 // deselect previous
                 if(selectedCollection && collectionContainingTarget &&
                    selectedCollection != collectionContainingTarget) {
                     selectedCollection->deselect();
+                    selectedOrDeselected = true;
                 }
                 if(collectionContainingTarget && !collectionContainingTarget->isSelected()) {
                     collectionContainingTarget->select();
+                    selectedOrDeselected = true;
+                }
+                if(auto *targetAsDiff = target->as<SongDifficultyButton>(); targetAsDiff && selectedOrDeselected) {
+                    this->requestNextScrollToSongButtonJumpFix(targetAsDiff);
                 }
                 this->scrollToSongButton(target, false, true);
             }
@@ -2330,12 +2336,9 @@ void SongBrowser::updateLayout() {
     this->updateScoreBrowserLayout();
 
     // song browser
-    this->carousel->setPos(this->topbarLeft->getPos().x + this->topbarLeft->getSize().x + 1,
-                           this->topbarRight->getPos().y + (this->topbarRight->getSize().y * 0.9));
-    this->carousel->setSize(
-        osu->getVirtScreenWidth() - (this->topbarLeft->getPos().x + this->topbarLeft->getSize().x),
-        (osu->getVirtScreenHeight() - this->carousel->getPos().y - (BottomBar::get_min_height() * 0.75f)));
-
+    this->carousel->setPos(this->topbarLeft->getPos().x + this->topbarLeft->getSize().x + 1, 0);
+    this->carousel->setSize(osu->getVirtScreenWidth() - (this->topbarLeft->getPos().x + this->topbarLeft->getSize().x),
+                            osu->getVirtScreenHeight());
     this->updateSongButtonLayout();
 
     this->search->setPos(osu->getVirtScreenWidth() / 2, this->topbarRight->getSize().y + 8 * dpiScale);

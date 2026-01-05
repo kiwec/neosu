@@ -36,7 +36,7 @@ void BeatmapCarousel::mouse_update(bool *propagate_clicks) {
 
     // handle right click absolute scrolling
     {
-        if(mouse->isRightDown() && this->isMouseInside()) {
+        if(mouse->isRightDown() && !g_songbrowser->contextMenu->isMouseInside()) {
             if(!g_songbrowser->bSongBrowserRightClickScrollCheck) {
                 g_songbrowser->bSongBrowserRightClickScrollCheck = true;
 
@@ -51,7 +51,7 @@ void BeatmapCarousel::mouse_update(bool *propagate_clicks) {
                     }
                 }
 
-                if(!osu->getOptionsMenu()->isMouseInside() && !isMouseInsideAnySongButton)
+                if(this->isMouseInside() && !osu->getOptionsMenu()->isMouseInside() && !isMouseInsideAnySongButton)
                     g_songbrowser->bSongBrowserRightClickScrolling = true;
                 else
                     g_songbrowser->bSongBrowserRightClickScrolling = false;
@@ -62,9 +62,13 @@ void BeatmapCarousel::mouse_update(bool *propagate_clicks) {
         }
 
         if(g_songbrowser->bSongBrowserRightClickScrolling) {
-            const int scrollingTo =
-                -((mouse->getPos().y - 2 - this->getPos().y) / this->getSize().y) * this->getScrollSize().y;
-            this->scrollToY(scrollingTo);
+            const f64 mouseYPos = std::abs(mouse->getPos().y - 2.0 - this->getPos().y);
+            const f64 mouseYPct = std::abs(mouseYPos / this->getSize().y);
+            // scroll slightly more towards each extreme, to compensate for upper/lower bounds of the
+            // carousel being possibly hidden behind other elements and very close to the edge of the screen
+            const f64 mouseYPctCompensated = (1.04 * (mouseYPct)) - 0.02;
+            const f64 scrollYAbs = -mouseYPctCompensated * this->getScrollSize().y;
+            this->scrollToY(static_cast<int>(scrollYAbs));
         }
     }
 

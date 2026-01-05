@@ -24,9 +24,7 @@
 #include <cstddef>
 #include <utility>
 #include <cassert>
-#include <unordered_set>
 #include <memory>
-#include <unordered_map>
 
 #include <freetype/freetype.h>
 #include <freetype/ftbitmap.h>
