@@ -9,6 +9,7 @@
 #include "Database.h"
 #include "DatabaseBeatmap.h"
 #include "Osu.h"
+#include "OsuConVars.h"
 #include "DifficultyCalculator.h"
 #include "score.h"
 #include "Timing.h"
@@ -65,6 +66,9 @@ std::vector<BeatmapDifficulty*> internal::collect_outdated_db_diffs(const Sync::
 }
 
 namespace {
+
+#define logFailure(err__, ...) \
+    cv::debug_pp.getBool() ? debugLog("{}: {}", (err__).error_string(), fmt::format(__VA_ARGS__)) : (void)(0)
 
 // Mod parameters that affect difficulty calculation. Scores with identical
 // ModParams on the same beatmap can share star rating calculations.
@@ -138,6 +142,8 @@ void process_score_group(BeatmapDifficulty* map, const ModParams& params, const 
         DatabaseBeatmap::loadDifficultyHitObjects(primitives, params.ar, params.cs, params.speed, false, stoken);
     if(stoken.stop_requested()) return;
     if(diffres.error.errc) {
+        logFailure(diffres.error, "loadDifficultyHitObjects map hash {} map path {}", map->getMD5().string(),
+                   map->getFilePath());
         scores_processed.fetch_add(scores.size(), std::memory_order_relaxed);
         return;
     }
@@ -278,6 +284,8 @@ void process_work_item(WorkItem& item, const Sync::stop_token& stoken) {
     if(stoken.stop_requested()) return;
 
     if(primitives.error.errc) {
+        logFailure(primitives.error, "loadPrimitiveObjects map hash: {} map path: {}", item.map->getMD5().string(),
+                   item.map->sFilePath);
         if(item.needs_map_calc) {
             Sync::scoped_lock lock(results_mutex);
             map_results.push_back(MapResult{.map = item.map});
@@ -330,6 +338,9 @@ void process_work_item(WorkItem& item, const Sync::stop_token& stoken) {
 
             dummy_diffobj_cache = std::move(star_params.cachedDiffObjects);
             dummy_diffobj_cache->clear();
+        } else {
+            logFailure(diffres.error, "loadDifficultyHitObjects map hash: {} map path: {}", item.map->getMD5().string(),
+                       item.map->sFilePath);
         }
 
         if(stoken.stop_requested()) return;

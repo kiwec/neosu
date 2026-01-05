@@ -17,7 +17,7 @@
 #include "Skin.h"
 
 #include "demoji.h"
-
+namespace {
 // background image path parser (from .osu files)
 class MapBGImagePathLoader final : public Resource {
     NOCOPY_NOMOVE(MapBGImagePathLoader)
@@ -27,6 +27,7 @@ class MapBGImagePathLoader final : public Resource {
 
     [[nodiscard]] inline const std::string &getParsedBGFileName() const { return this->parsed_bg_filename; }
     [[nodiscard]] inline bool foundBrokenFilenameReplacement() const { return this->found_mojibake_filename; }
+
    protected:
     void init() override {
         // (nothing)
@@ -46,6 +47,7 @@ class MapBGImagePathLoader final : public Resource {
 };
 
 std::atomic<bool> MapBGImagePathLoader::dont_attempt_mojibake_checks{false};
+}  // namespace
 
 // actual implementation
 struct BGImageHandlerImpl final {
@@ -423,6 +425,7 @@ u32 BGImageHandlerImpl::getMaxEvictions() const {
 
 #include <cassert>
 
+namespace {
 void MapBGImagePathLoader::initAsync() {
     if(this->isInterrupted()) return;
     // sanity
@@ -501,6 +504,7 @@ void MapBGImagePathLoader::initAsync() {
     // NOTE: on purpose. there is nothing to do in init(), so finish 1 frame early
     this->bReady.store(true, std::memory_order_release);
 };
+}  // namespace
 
 bool MapBGImagePathLoader::checkMojibake() {
     bool ret = false;
