@@ -635,33 +635,22 @@ void Chat::handle_command(const UString &msg) {
 
 void Chat::onKeyDown(KeyboardEvent &key) {
     if(!this->bVisible) return;
+    SCANCODE sc = key.getScanCode();
 
-    if(keyboard->isAltDown()) {
-        i32 tab_select = -1;
-        if(key.getScanCode() == KEY_1) tab_select = 0;
-        if(key.getScanCode() == KEY_2) tab_select = 1;
-        if(key.getScanCode() == KEY_3) tab_select = 2;
-        if(key.getScanCode() == KEY_4) tab_select = 3;
-        if(key.getScanCode() == KEY_5) tab_select = 4;
-        if(key.getScanCode() == KEY_6) tab_select = 5;
-        if(key.getScanCode() == KEY_7) tab_select = 6;
-        if(key.getScanCode() == KEY_8) tab_select = 7;
-        if(key.getScanCode() == KEY_9) tab_select = 8;
-        if(key.getScanCode() == KEY_0) tab_select = 9;
+    if(keyboard->isAltDown() && sc >= KEY_1 && sc <= KEY_0) {
+        static_assert((int)KEY_1 + 9 == (int)KEY_0);
 
-        if(tab_select != -1) {
-            if(tab_select >= this->channels.size()) {
-                key.consume();
-                return;
-            }
+        // KEY_1 => tab_select := 0
+        const i32 tab_select = KEY_1 - sc;
 
-            key.consume();
+        key.consume();
+        if(tab_select < this->channels.size()) {
             this->switchToChannel(this->channels[tab_select]);
-            return;
         }
+        return;
     }
 
-    if(key.getScanCode() == KEY_PAGEUP) {
+    if(sc == KEY_PAGEUP) {
         if(this->selected_channel != nullptr) {
             key.consume();
             this->selected_channel->ui->scrollY(this->getSize().y - this->input_box_height);
@@ -669,7 +658,7 @@ void Chat::onKeyDown(KeyboardEvent &key) {
         }
     }
 
-    if(key.getScanCode() == KEY_PAGEDOWN) {
+    if(sc == KEY_PAGEDOWN) {
         if(this->selected_channel != nullptr) {
             key.consume();
             this->selected_channel->ui->scrollY(-(this->getSize().y - this->input_box_height));
@@ -678,7 +667,7 @@ void Chat::onKeyDown(KeyboardEvent &key) {
     }
 
     // Escape: close chat
-    if(key.getScanCode() == KEY_ESCAPE) {
+    if(sc == KEY_ESCAPE) {
         if(this->isVisibilityForced()) return;
 
         key.consume();
@@ -688,7 +677,7 @@ void Chat::onKeyDown(KeyboardEvent &key) {
     }
 
     // Return: send message
-    if(key.getScanCode() == KEY_ENTER || key.getScanCode() == KEY_NUMPAD_ENTER) {
+    if(sc == KEY_ENTER || sc == KEY_NUMPAD_ENTER) {
         key.consume();
         if(this->selected_channel != nullptr && this->input_box->getText().length() > 0) {
             if(this->input_box->getText()[0] == L'/') {
@@ -706,7 +695,7 @@ void Chat::onKeyDown(KeyboardEvent &key) {
     }
 
     // Ctrl+W: Close current channel
-    if(keyboard->isControlDown() && key.getScanCode() == KEY_W) {
+    if(keyboard->isControlDown() && sc == KEY_W) {
         key.consume();
         if(this->selected_channel != nullptr) {
             this->leave(this->selected_channel->name);
@@ -716,7 +705,7 @@ void Chat::onKeyDown(KeyboardEvent &key) {
 
     // Ctrl+Tab: Switch channels
     // KEY_TAB doesn't work on Linux
-    if(keyboard->isControlDown() && (key.getScanCode() == 65056 || key.getScanCode() == KEY_TAB)) {
+    if(keyboard->isControlDown() && (sc == 65056 || sc == KEY_TAB)) {
         key.consume();
         if(this->selected_channel == nullptr) return;
         int chan_index = this->channels.size();
@@ -744,7 +733,7 @@ void Chat::onKeyDown(KeyboardEvent &key) {
 
     // TAB: Complete nickname
     // KEY_TAB doesn't work on Linux
-    if(key.getScanCode() == 65056 || key.getScanCode() == KEY_TAB) {
+    if(sc == 65056 || sc == KEY_TAB) {
         key.consume();
 
         auto text = this->input_box->getText();
@@ -765,6 +754,8 @@ void Chat::onKeyDown(KeyboardEvent &key) {
             this->tab_completion_match = user->name;
 
             // Remove current username, add new username
+            // TODO(spec): these should be internal fields, why are we manipulating them directly like this?
+            //             makes it so much more difficulty to refactor things uniformly...
             this->input_box->sText.erase(this->input_box->iCaretPosition - username_len, username_len);
             this->input_box->iCaretPosition -= username_len;
             this->input_box->sText.insert(this->input_box->iCaretPosition, this->tab_completion_match);
@@ -773,9 +764,7 @@ void Chat::onKeyDown(KeyboardEvent &key) {
             this->input_box->updateTextPos();
             this->input_box->tickCaret();
 
-            Sound *sounds[] = {osu->getSkin()->s_typing1, osu->getSkin()->s_typing2, osu->getSkin()->s_typing3,
-                               osu->getSkin()->s_typing4};
-            soundEngine->play(sounds[prand() % 4]);
+            soundEngine->play(osu->getSound((ActionSound)((prand() % 4) + (size_t)ActionSound::TYPING1)));
         }
 
         return;

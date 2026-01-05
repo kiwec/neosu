@@ -31,11 +31,11 @@ using namespace neosu::sbr;
 SongButton::SongButton(float xPos, float yPos, float xSize, float ySize, UString name)
     : CarouselButton(xPos, yPos, xSize, ySize, std::move(name)) {}
 
-SongButton::SongButton(float xPos, float yPos, float xSize, float ySize, UString name, DatabaseBeatmap *databaseBeatmap)
+SongButton::SongButton(float xPos, float yPos, float xSize, float ySize, UString name, BeatmapSet *beatmapSet)
     : SongButton(xPos, yPos, xSize, ySize, std::move(name)) {
-    assert(databaseBeatmap && !databaseBeatmap->getDifficulties().empty());
+    assert(beatmapSet && !beatmapSet->getDifficulties().empty());
 
-    this->databaseBeatmap = databaseBeatmap;
+    this->databaseBeatmap = beatmapSet;
 
     // settings
     this->setHideIfSelected(true);

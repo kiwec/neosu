@@ -65,6 +65,10 @@ enum Priority : unsigned char;
 extern void set_current_thread_prio(Priority /**/);
 }  // namespace McThread
 
+namespace CBaseUIDebug {
+extern void onDumpElemsChangeCallback(float newvalue);
+}
+
 #else
 #define CONVAR(name, ...) extern ConVar _CV(name)
 #endif
@@ -161,7 +165,7 @@ CONVAR(debug_network, false, CLIENT);
 CONVAR(debug_anim, false, CLIENT);
 CONVAR(debug_box_shadows, false, CLIENT);
 CONVAR(debug_engine, false, CLIENT);
-CONVAR(debug_ui, false, CLIENT);
+CONVAR(debug_ui, false, CLIENT, CFUNC(CBaseUIDebug::onDumpElemsChangeCallback));
 CONVAR(debug_env, false, CLIENT);
 CONVAR(debug_font, false, CLIENT);
 CONVAR(debug_file, false, CLIENT);

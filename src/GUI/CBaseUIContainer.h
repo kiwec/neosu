@@ -20,8 +20,15 @@ class CBaseUIContainer : public CBaseUIElement {
     void onChar(KeyboardEvent &e) override;
 
     CBaseUIContainer *addBaseUIElement(CBaseUIElement *element, float xPos, float yPos);
+    inline CBaseUIContainer *addBaseUIElement(CBaseUIElement *element, vec2 pos) {
+        return this->addBaseUIElement(element, pos.x, pos.y);
+    }
     CBaseUIContainer *addBaseUIElement(CBaseUIElement *element);
+
     CBaseUIContainer *addBaseUIElementBack(CBaseUIElement *element, float xPos, float yPos);
+    inline CBaseUIContainer *addBaseUIElementBack(CBaseUIElement *element, vec2 pos) {
+        return this->addBaseUIElementBack(element, pos.x, pos.y);
+    }
     CBaseUIContainer *addBaseUIElementBack(CBaseUIElement *element);
 
     CBaseUIContainer *insertBaseUIElement(CBaseUIElement *element, CBaseUIElement *index);

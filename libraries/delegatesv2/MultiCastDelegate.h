@@ -1,18 +1,16 @@
 /*
+    Copyright (C) 2017 by Sergey A Kryukov: derived work
+    http://www.SAKryukov.org
+    http://www.codeproject.com/Members/SAKryukov
 
-	Copyright (C) 2017 by Sergey A Kryukov: derived work
-	http://www.SAKryukov.org
-	http://www.codeproject.com/Members/SAKryukov
+    Based on original work by Sergey Ryazanov:
+    "The Impossibly Fast C++ Delegates", 18 Jul 2005
+    https://www.codeproject.com/articles/11015/the-impossibly-fast-c-delegates
 
-	Based on original work by Sergey Ryazanov:
-	"The Impossibly Fast C++ Delegates", 18 Jul 2005
-	https://www.codeproject.com/articles/11015/the-impossibly-fast-c-delegates
+    MIT license:
+    http://en.wikipedia.org/wiki/MIT_License
 
-	MIT license:
-	http://en.wikipedia.org/wiki/MIT_License
-
-	Original publication: https://www.codeproject.com/Articles/1170503/The-Impossibly-Fast-Cplusplus-Delegates-Fixed
-
+    Original publication: https://www.codeproject.com/Articles/1170503/The-Impossibly-Fast-Cplusplus-Delegates-Fixed
 */
 
 #pragma once
@@ -31,11 +29,13 @@ class multicast_delegate<RET(PARAMS...)> final : private delegate_base<RET(PARAM
         invocationList.clear();
     }  //~multicast_delegate
 
-    bool isNull() const { return invocationList.size() < 1; }
+    [[nodiscard]] bool isNull() const { return invocationList.size() < 1; }
+    explicit operator bool() const { return invocationList.size() >= 1; }
+
     bool operator==(void* ptr) const { return (ptr == nullptr) && this->isNull(); }     //operator ==
     bool operator!=(void* ptr) const { return (ptr != nullptr) || (!this->isNull()); }  //operator !=
 
-    size_t size() const { return invocationList.size(); }
+    [[nodiscard]] size_t size() const { return invocationList.size(); }
 
     multicast_delegate& operator=(const multicast_delegate&) = delete;
     multicast_delegate(const multicast_delegate&) = delete;

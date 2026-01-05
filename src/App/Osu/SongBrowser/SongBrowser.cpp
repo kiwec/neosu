@@ -461,8 +461,8 @@ SongBrowser::SongBrowser() : ScreenBackable(), global_songbrowser_(this) {
     this->scoreBrowser->setScrollResistance(15);
     this->scoreBrowser->bHorizontalClipping = false;
     this->scoreBrowserScoresStillLoadingElement = new ScoresStillLoadingElement("Loading...");
-    this->scoreBrowserNoRecordsYetElement = new NoRecordsSetElement("No records set!");
-    this->scoreBrowser->container->addBaseUIElement(this->scoreBrowserNoRecordsYetElement);
+    this->scoreBrowserNoRecordsSetElement = new NoRecordsSetElement("No records set!");
+    this->scoreBrowser->container->addBaseUIElement(this->scoreBrowserNoRecordsSetElement);
 
     // NOTE: we don't add localBestContainer to the screen; we draw and update it manually so that
     //       it can be drawn under skins which overlay the scores list.
@@ -527,7 +527,7 @@ SongBrowser::~SongBrowser() {
     SAFE_DELETE(this->localBestButton);
     SAFE_DELETE(this->localBestLabel);
     SAFE_DELETE(this->scoreBrowserScoresStillLoadingElement);
-    SAFE_DELETE(this->scoreBrowserNoRecordsYetElement);
+    SAFE_DELETE(this->scoreBrowserNoRecordsSetElement);
 
     SAFE_DELETE(this->contextMenu);
     SAFE_DELETE(this->search);
@@ -1408,6 +1408,7 @@ void SongBrowser::refreshBeatmaps(bool closeAfterLoading) {
     osu->reloadMapInterface();
     osu->getMainMenu()->clearPreloadedMaps();
 
+    this->selectedButton = nullptr;
     this->selectionPreviousSongButton = nullptr;
     this->selectionPreviousSongDiffButton = nullptr;
     this->selectionPreviousCollectionButton = nullptr;
@@ -2388,13 +2389,13 @@ void SongBrowser::updateScoreBrowserLayout() {
     this->scoreBrowserScoresStillLoadingElement->setRelPos(
         this->scoreBrowser->getSize().x / 2 - this->scoreBrowserScoresStillLoadingElement->getSize().x / 2,
         (browserHeight / 2) * 0.65f - this->scoreBrowserScoresStillLoadingElement->getSize().y / 2);
-    this->scoreBrowserNoRecordsYetElement->setSize(this->scoreBrowser->getSize().x * 0.9f, scoreHeight * 0.75f);
-    if(elements[0] == this->scoreBrowserNoRecordsYetElement) {
-        this->scoreBrowserNoRecordsYetElement->setRelPos(
+    this->scoreBrowserNoRecordsSetElement->setSize(this->scoreBrowser->getSize().x * 0.9f, scoreHeight * 0.75f);
+    if(elements[0] == this->scoreBrowserNoRecordsSetElement) {
+        this->scoreBrowserNoRecordsSetElement->setRelPos(
             this->scoreBrowser->getSize().x / 2 - this->scoreBrowserScoresStillLoadingElement->getSize().x / 2,
             (browserHeight / 2) * 0.65f - this->scoreBrowserScoresStillLoadingElement->getSize().y / 2);
     } else {
-        this->scoreBrowserNoRecordsYetElement->setRelPos(
+        this->scoreBrowserNoRecordsSetElement->setRelPos(
             this->scoreBrowser->getSize().x / 2 - this->scoreBrowserScoresStillLoadingElement->getSize().x / 2, 45);
     }
     this->localBestContainer->update_pos();
@@ -2446,7 +2447,7 @@ void SongBrowser::rebuildScoreButtons() {
                         // Otherwise, it would be displayed twice
                         SAFE_DELETE(this->localBestButton);
                         this->localBestContainer->addBaseUIElement(this->localBestLabel);
-                        this->localBestContainer->addBaseUIElement(this->scoreBrowserNoRecordsYetElement);
+                        this->localBestContainer->addBaseUIElement(this->scoreBrowserNoRecordsSetElement);
                         this->localBestContainer->setVisible(true);
                     }
                 } else {
@@ -2508,15 +2509,12 @@ void SongBrowser::rebuildScoreButtons() {
 
     // and build the ui
     if(numScores < 1) {
-        if(validBeatmap && is_online) {
-            this->scoreBrowser->container->addBaseUIElement(this->scoreBrowserScoresStillLoadingElement,
-                                                            this->scoreBrowserScoresStillLoadingElement->getRelPos().x,
-                                                            this->scoreBrowserScoresStillLoadingElement->getRelPos().y);
-        } else {
-            this->scoreBrowser->container->addBaseUIElement(this->scoreBrowserNoRecordsYetElement,
-                                                            this->scoreBrowserScoresStillLoadingElement->getRelPos().x,
-                                                            this->scoreBrowserScoresStillLoadingElement->getRelPos().y);
-        }
+        // NOTE(spec): not sure if it was a typo, but the code here was using scoreBrowserScoresStillLoadingElement's position in both cases
+        //             just leaving it like that for now...
+        CBaseUIElement *toAdd = validBeatmap && is_online ? this->scoreBrowserScoresStillLoadingElement
+                                                          : this->scoreBrowserNoRecordsSetElement;
+        this->scoreBrowser->container->addBaseUIElement(toAdd,
+                                                        this->scoreBrowserScoresStillLoadingElement->getRelPos());
     } else {
         // build
         std::vector<ScoreButton *> scoreButtons;
@@ -2541,20 +2539,11 @@ void SongBrowser::rebuildScoreButtons() {
     // layout
     this->updateScoreBrowserLayout();
 
-    // update grades of songbuttons for current map
+    // update grade of difficulty button for current map
     // (weird place for this to be, i think the intent is to update them after you set a score)
-    if(validBeatmap) {
-        for(auto &visibleSongButton : this->visibleSongButtons) {
-            if(visibleSongButton->getDatabaseBeatmap() == map) {
-                auto *songButtonPointer = visibleSongButton->as<SongButton>();
-                if(songButtonPointer != nullptr) {
-                    for(CarouselButton *diffButton : songButtonPointer->getChildren()) {
-                        auto *diffButtonPointer = diffButton->as<SongButton>();
-                        if(diffButtonPointer != nullptr) diffButtonPointer->updateGrade();
-                    }
-                }
-            }
-        }
+    if(!validBeatmap) return;
+    if(const auto &it = this->hashToDiffButton.find(mapHash); it != this->hashToDiffButton.end()) {
+        it->second->updateGrade();
     }
 }
 
@@ -3227,12 +3216,10 @@ void SongBrowser::onSelectionOptions() {
     }
 }
 
-void SongBrowser::onScoreClicked(CBaseUIButton *button) {
-    auto *scoreButton = (ScoreButton *)button;
-
+void SongBrowser::onScoreClicked(ScoreButton *button) {
     // NOTE: the order of these two calls matters
-    osu->getRankingScreen()->setBeatmapInfo(scoreButton->getScore().map);
-    osu->getRankingScreen()->setScore(scoreButton->getScore());
+    osu->getRankingScreen()->setBeatmapInfo(button->getScore().map);
+    osu->getRankingScreen()->setScore(button->getScore());
 
     this->setVisible(false);
     osu->getRankingScreen()->setVisible(true);

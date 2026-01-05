@@ -471,7 +471,7 @@ class ConVar {
         this->invalidateCache();
 
         // run protected value change cb
-        if(this->isProtected() && oldDouble != newDouble && likely(!ConVar::onSetValueProtectedCallback.isNull())) {
+        if(this->isProtected() && oldDouble != newDouble && likely(!!ConVar::onSetValueProtectedCallback)) {
             ConVar::onSetValueProtectedCallback();
         }
 

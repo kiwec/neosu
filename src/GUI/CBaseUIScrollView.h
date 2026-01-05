@@ -146,25 +146,25 @@ class CBaseUIScrollView : public CBaseUIElement {
     dvec2 vVelocity{0.f, 0.f};
     dvec2 vKineticAverage{0.f};
 
-    int iPrevScrollDeltaX = 0;
+    int iPrevScrollDeltaX{0};
     int iScrollResistance;
 
-    unsigned bAutoScrollingX : 1 = false;
-    unsigned bAutoScrollingY : 1 = false;
+    bool bAutoScrollingX{false};
+    bool bAutoScrollingY{false};
 
-    unsigned bScrollResistanceCheck : 1 = false;
-    unsigned bScrolling : 1 = false;
-    unsigned bScrollbarScrolling : 1 = false;
-    unsigned bScrollbarIsVerticalScrolling : 1 = false;
-    unsigned bBlockScrolling : 1 = false;
-    unsigned bHorizontalScrolling : 1 = false;
-    unsigned bVerticalScrolling : 1 = true;
-    unsigned bFirstScrollSizeToContent : 1 = true;
+    bool bScrollResistanceCheck{false};
+    bool bScrolling{false};
+    bool bScrollbarScrolling{false};
+    bool bScrollbarIsVerticalScrolling{false};
+    bool bBlockScrolling{false};
+    bool bHorizontalScrolling{false};
+    bool bVerticalScrolling{true};
+    bool bFirstScrollSizeToContent{true};
 
     // vars
-    unsigned bDrawFrame : 1 = true;
-    unsigned bDrawBackground : 1 = true;
-    unsigned bDrawScrollbars : 1 = true;
+    bool bDrawFrame{true};
+    bool bDrawBackground{true};
+    bool bDrawScrollbars{true};
 
    private:
     void updateClipping();
@@ -177,10 +177,10 @@ class CBaseUIScrollView : public CBaseUIElement {
     // When you scrolled to the bottom, and new content is added, setting this
     // to true makes it so you'll stay at the bottom.
     // Useful in places where you're waiting on new content, like chat logs.
-    unsigned sticky : 1 = false;
+    bool sticky{false};
 
-    unsigned bHorizontalClipping : 1 = true;
-    unsigned bVerticalClipping : 1 = true;
-    unsigned bScrollbarOnLeft : 1 = false;
-    unsigned bClippingDirty : 1 = true;  // start true for initial update
+    bool bHorizontalClipping{true};
+    bool bVerticalClipping{true};
+    bool bScrollbarOnLeft{false};
+    bool bClippingDirty{true};  // start true for initial update
 };

@@ -186,14 +186,14 @@ class SongBrowser final : public ScreenBackable {
     [[nodiscard]] inline GroupType getGroupingMode() const { return this->curGroup; }
 
     [[nodiscard]] inline bool isInAlphanumericCollection() const {
-        return this->curGroup == GroupTypes::ARTIST ||   //
-               this->curGroup == GroupTypes::CREATOR ||  //
-               this->curGroup == GroupTypes::TITLE;      //
+        return this->curGroup == GroupType::ARTIST ||   //
+               this->curGroup == GroupType::CREATOR ||  //
+               this->curGroup == GroupType::TITLE;      //
     }
 
     // TODO: get rid of this garbage (all grouping modes should behave in a predictable way)
     [[nodiscard]] inline bool isInParentsCollapsedMode() const {
-        return this->isInAlphanumericCollection() || this->curGroup == GroupTypes::NO_GROUPING;
+        return this->isInAlphanumericCollection() || this->curGroup == GroupType::NO_GROUPING;
     }
 
     static bool searchMatcher(const DatabaseBeatmap *databaseBeatmap,
@@ -234,7 +234,7 @@ class SongBrowser final : public ScreenBackable {
     void onSelectionRandom();
     void onSelectionOptions();
 
-    void onScoreClicked(CBaseUIButton *button);
+    void onScoreClicked(ScoreButton *button);
 
     void selectSongButton(CarouselButton *songButton);
     void selectPreviousRandomBeatmap();
@@ -267,7 +267,7 @@ class SongBrowser final : public ScreenBackable {
     std::vector<ScoreButton *> scoreButtonCache;
     CBaseUIScrollView *scoreBrowser;
     CBaseUIElement *scoreBrowserScoresStillLoadingElement;
-    CBaseUIElement *scoreBrowserNoRecordsYetElement;
+    CBaseUIElement *scoreBrowserNoRecordsSetElement;
     std::unique_ptr<CBaseUIContainer> localBestContainer{nullptr};
     CBaseUILabel *localBestLabel;
     ScoreButton *localBestButton = nullptr;

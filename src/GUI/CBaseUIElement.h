@@ -8,6 +8,11 @@
 
 #include <utility>
 
+// convar callback to avoid hammering atomic convar reads
+namespace CBaseUIDebug {
+void onDumpElemsChangeCallback(float newvalue);
+}  // namespace CBaseUIDebug
+
 // Guidelines for avoiding hair pulling:
 // - Don't use m_vmSize
 // - When an element is standalone, use getPos/setPos
@@ -33,7 +38,6 @@ class CBaseUIElement : public KeyboardListener {
     // main
     virtual void draw() = 0;
     virtual void mouse_update(bool *propagate_clicks);
-    bool grabs_clicks = false;
 
     // keyboard input
     void onKeyUp(KeyboardEvent &e) override { (void)e; }
@@ -180,7 +184,19 @@ class CBaseUIElement : public KeyboardListener {
     // vars
     UString sName;
 
+    // position and size
+    McRect rect;
+    McRect relRect;
+
+    vec2 &vPos;    // reference to rect.vMin
+    vec2 &vSize;   // reference to rect.vSize
+    vec2 &vmPos;   // reference to relRect.vMin
+    vec2 &vmSize;  // reference to relRect.vSize
+
     // attributes
+   public:
+    bool grabs_clicks = false;  // TODO: remove this (confusing behavior)
+   protected:
     bool bVisible = true;
     bool bActive = false;  // we are doing something, e.g. textbox is blinking and ready to receive input
     bool bBusy = false;    // we demand the focus to be kept on us, e.g. click-drag scrolling in a scrollview
@@ -192,18 +208,9 @@ class CBaseUIElement : public KeyboardListener {
     bool bHandleLeftMouse = true;
     bool bHandleRightMouse = false;
 
-    // position and size
-    McRect rect;
-    McRect relRect;
-
-    vec2 &vPos;    // reference to rect.vMin
-    vec2 &vSize;   // reference to rect.vSize
-    vec2 &vmPos;   // reference to relRect.vMin
-    vec2 &vmSize;  // reference to relRect.vSize
-
    private:
-    mutable uint64_t lastDumpFrame{0}; // for avoiding debug spam
-
     uint8_t mouseInsideCheck{0};
     uint8_t mouseUpCheck{0};
+
+    mutable uint64_t lastDumpFrame{0};  // for avoiding debug spam
 };

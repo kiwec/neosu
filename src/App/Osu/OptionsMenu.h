@@ -5,6 +5,7 @@
 #include "VolumeOverlay.h"
 
 #include <atomic>
+#include <utility>
 
 class UIButton;
 class UISlider;
@@ -77,12 +78,15 @@ class OptionsMenu final : public ScreenBackable, public NotificationOverlayKeyLi
 
    private:
     struct RenderCondition {
+        // allow using either enum equivalence or a custom boolean-returning function/delegate to check if we should render this element
+        using RenderConditionFunc = SA::delegate<bool(void)>;
+
         enum r : uint8_t { NONE, ASIO_ENABLED, WASAPI_ENABLED, SCORE_SUBMISSION_POLICY, PASSWORD_AUTH } rc{NONE};
-        std::function<bool()> shouldrender{nullptr};
+        RenderConditionFunc shouldrender{};
 
         RenderCondition() = default;
         RenderCondition(r rc) : rc(rc) {}
-        RenderCondition(std::function<bool()> shouldrender) : shouldrender(std::move(shouldrender)) {}
+        RenderCondition(RenderConditionFunc shouldrender) : shouldrender(std::move(shouldrender)) {}
 
         ~RenderCondition() = default;
         RenderCondition &operator=(const RenderCondition &) = default;
@@ -90,7 +94,7 @@ class OptionsMenu final : public ScreenBackable, public NotificationOverlayKeyLi
         RenderCondition(const RenderCondition &) = default;
         RenderCondition(RenderCondition &&) = default;
 
-        auto operator()() { return this->shouldrender ? this->shouldrender() : true; }
+        auto operator()() { return this->shouldrender != nullptr ? this->shouldrender() : true; }
 
         bool operator==(const RenderCondition &other) const { return this->rc != NONE && this->rc == other.rc; };
         bool operator==(r cond) const { return this->rc != NONE && this->rc == cond; };
@@ -146,16 +150,11 @@ class OptionsMenu final : public ScreenBackable, public NotificationOverlayKeyLi
     void onRawInputToAbsoluteWindowChange(CBaseUICheckbox *checkbox);
     void openCurrentSkinFolder();
     void onSkinSelect2(const UString &skinName, int id = -1);
-    void onSkinReload();
-    void onSkinRandom();
     void onResolutionSelect();
     void onResolutionSelect2(const UString &resolution, int id = -1);
     void onOutputDeviceSelect();
     void onOutputDeviceSelect2(const UString &outputDeviceName, int id = -1);
-    void onOutputDeviceResetClicked();
-    void onOutputDeviceRestart();
     void onLogInClicked(bool left, bool right);
-    void onCM360CalculatorLinkClicked();
     void onNotelockSelect();
     void onNotelockSelect2(const UString &notelockType, int id = -1);
     void onNotelockSelectResetClicked();
@@ -187,7 +186,6 @@ class OptionsMenu final : public ScreenBackable, public NotificationOverlayKeyLi
     void onLoudnessNormalizationToggle(CBaseUICheckbox *checkbox);
     void onModChangingToggle(CBaseUICheckbox *checkbox);
 
-    void onUseSkinsSoundSamplesChange();
     void onHighQualitySlidersCheckboxChange(CBaseUICheckbox *checkbox);
     void onHighQualitySlidersConVarChange(float newValue);
 
@@ -198,7 +196,6 @@ class OptionsMenu final : public ScreenBackable, public NotificationOverlayKeyLi
     void onResetUpdate(CBaseUIButton *button);
     void onResetClicked(CBaseUIButton *button);
     void onResetEverythingClicked(CBaseUIButton *button);
-    void onImportSettingsFromStable(CBaseUIButton *button);
 
     // categories
     OptionsMenuCategoryButton *addCategory(CBaseUIElement *section, char16_t icon);
@@ -256,7 +253,7 @@ class OptionsMenu final : public ScreenBackable, public NotificationOverlayKeyLi
     CBaseUISlider *statisticsOverlayYOffsetSlider;
     CBaseUISlider *cursorSizeSlider;
     CBaseUILabel *skinLabel;
-    CBaseUIElement *skinSelectLocalButton;
+    CBaseUIButton *skinSelectLocalButton;
     CBaseUIButton *resolutionSelectButton;
     CBaseUILabel *resolutionLabel;
     CBaseUIButton *outputDeviceSelectButton;

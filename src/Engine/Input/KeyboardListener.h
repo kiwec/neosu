@@ -6,7 +6,13 @@
 
 class KeyboardListener {
    public:
+    KeyboardListener() = default;
     virtual ~KeyboardListener() = default;
+
+    KeyboardListener(const KeyboardListener &) = default;
+    KeyboardListener &operator=(const KeyboardListener &) = default;
+    KeyboardListener(KeyboardListener &&) = default;
+    KeyboardListener &operator=(KeyboardListener &&) = default;
 
     virtual void onKeyDown(KeyboardEvent &e) = 0;
     virtual void onKeyUp(KeyboardEvent &e) = 0;

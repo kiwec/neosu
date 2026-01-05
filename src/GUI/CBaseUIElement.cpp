@@ -6,6 +6,13 @@
 #include "ConVar.h"
 #include "Mouse.h"
 
+namespace CBaseUIDebug {
+namespace {
+bool dumpElems{false};
+}
+void onDumpElemsChangeCallback(float newvalue) { dumpElems = !!static_cast<int>(newvalue); }
+}  // namespace CBaseUIDebug
+
 bool CBaseUIElement::isVisibleOnScreen(const McRect &rect) { return engine->getScreenRect().intersects(rect); }
 
 void CBaseUIElement::stealFocus() {
@@ -15,7 +22,7 @@ void CBaseUIElement::stealFocus() {
 }
 
 void CBaseUIElement::mouse_update(bool *propagate_clicks) {
-    if(unlikely(cv::debug_ui.getBool())) this->dumpElem();
+    if(unlikely(CBaseUIDebug::dumpElems)) this->dumpElem();
     if(!this->bVisible || !this->bEnabled) return;
 
     {
@@ -30,7 +37,7 @@ void CBaseUIElement::mouse_update(bool *propagate_clicks) {
         if(oldMouseInsideState != this->bMouseInside && this->bVisible && this->bEnabled) {
             if(this->bMouseInside) {
                 this->onMouseInside();
-            } else {  // must be 0
+            } else {
                 this->onMouseOutside();
             }
         }

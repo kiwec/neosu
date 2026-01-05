@@ -406,7 +406,7 @@ OptionsMenu::OptionsMenu() : ScreenBackable() {
     this->fAnimation = 0.0f;
 
     // convar callbacks
-    cv::skin_use_skin_hitsounds.setCallback(SA::MakeDelegate<&OptionsMenu::onUseSkinsSoundSamplesChange>(this));
+    cv::skin_use_skin_hitsounds.setCallback([]() -> void { osu->reloadSkin(); });
 
     cv::options_slider_quality.setCallback([](float newValue) -> void {
         // wrapper callback
@@ -552,9 +552,10 @@ OptionsMenu::OptionsMenu() : ScreenBackable() {
     this->addLabel("2) osu! > Options > \"Open osu! folder\"")->setTextColor(0xff666666);
     this->addLabel("3) Copy paste the full path into the textbox:")->setTextColor(0xff666666);
     this->addLabel("");
-    this->osuFolderTextbox = this->addTextbox(cv::osu_folder.getString().c_str(), &cv::osu_folder);
+    this->osuFolderTextbox = this->addTextbox(cv::osu_folder.getString(), &cv::osu_folder);
     UIButton *importSettingsButton = this->addButton("Import settings from osu!stable");
-    importSettingsButton->setClickCallback(SA::MakeDelegate<&OptionsMenu::onImportSettingsFromStable>(this));
+    importSettingsButton->setClickCallback(
+        SA::MakeDelegate([]() -> void { PeppyImporter::import_settings_from_osu_stable(); }));
     this->addSpacer();
     this->addCheckbox(
         "Use osu!.db database (read-only)",
@@ -746,7 +747,8 @@ OptionsMenu::OptionsMenu() : ScreenBackable() {
         OPTIONS_ELEMENT *outputDeviceSelect = this->addButton("Select Output Device", "Default", true);
         this->outputDeviceResetButton = outputDeviceSelect->resetButton;
         this->outputDeviceResetButton->setClickCallback(
-            SA::MakeDelegate<&OptionsMenu::onOutputDeviceResetClicked>(this));
+            SA::MakeDelegate([]() -> void { soundEngine->setOutputDevice(soundEngine->getDefaultDevice()); }));
+
         this->outputDeviceSelectButton = (CBaseUIButton *)outputDeviceSelect->baseElems[0];
         this->outputDeviceSelectButton->setClickCallback(SA::MakeDelegate<&OptionsMenu::onOutputDeviceSelect>(this));
 
@@ -792,9 +794,9 @@ OptionsMenu::OptionsMenu() : ScreenBackable() {
             setActiveColors();
 
             MAButton->setClickCallback(
-                [](CBaseUIButton *btn) -> void { cv::snd_soloud_backend.setValue(btn->getName()); });
+                SA::MakeDelegate([](CBaseUIButton *btn) -> void { cv::snd_soloud_backend.setValue(btn->getName()); }));
             SDLButton->setClickCallback(
-                [](CBaseUIButton *btn) -> void { cv::snd_soloud_backend.setValue(btn->getName()); });
+                SA::MakeDelegate([](CBaseUIButton *btn) -> void { cv::snd_soloud_backend.setValue(btn->getName()); }));
 
             // need to use a change callback here because we already have a single-arg callback for the convar...
             cv::snd_soloud_backend.setCallback([](float /**/, float /**/) -> void { setActiveColors(); });
@@ -810,6 +812,8 @@ OptionsMenu::OptionsMenu() : ScreenBackable() {
                 return ret;
             }};
         }
+
+        static auto onOutputDeviceRestartCB = SA::MakeDelegate([]() -> void { soundEngine->restart(); });
 
         // Dirty...
         auto wasapi_idx = this->elemContainers.size();
@@ -843,7 +847,7 @@ OptionsMenu::OptionsMenu() : ScreenBackable() {
             this->wasapiPeriodSizeSlider->setKeyDelta(0.001f);
             this->wasapiPeriodSizeSlider->setAnimated(false);
             UIButton *restartSoundEngine = this->addButton("Restart SoundEngine");
-            restartSoundEngine->setClickCallback(SA::MakeDelegate<&OptionsMenu::onOutputDeviceRestart>(this));
+            restartSoundEngine->setClickCallback(onOutputDeviceRestartCB);
             restartSoundEngine->setColor(0xff003947);
             this->addLabel("");
         }
@@ -866,7 +870,7 @@ OptionsMenu::OptionsMenu() : ScreenBackable() {
             asio_settings_btn->setClickCallback(SA::MakeDelegate<&OptionsMenu::OpenASIOSettings>(this));
             asio_settings_btn->setColor(0xff003947);
             UIButton *restartSoundEngine = this->addButton("Restart SoundEngine");
-            restartSoundEngine->setClickCallback(SA::MakeDelegate<&OptionsMenu::onOutputDeviceRestart>(this));
+            restartSoundEngine->setClickCallback(onOutputDeviceRestartCB);
             restartSoundEngine->setColor(0xff003947);
 
             // FIXME: hacky
@@ -922,28 +926,36 @@ OptionsMenu::OptionsMenu() : ScreenBackable() {
     this->addSubSection("Skin");
     this->addSkinPreview();
     {
-        OPTIONS_ELEMENT skinSelect;
         {
-            skinSelect = *this->addButton("Select Skin", "default");
-            this->skinSelectLocalButton = skinSelect.baseElems[0];
-            this->skinLabel = (CBaseUILabel *)skinSelect.baseElems[1];
+            OPTIONS_ELEMENT *skinSelect = this->addButton("Select Skin", "default");
+            this->skinSelectLocalButton = static_cast<CBaseUIButton *>(skinSelect->baseElems[0]);
+            this->skinLabel = static_cast<CBaseUILabel *>(skinSelect->baseElems[1]);
         }
-        ((CBaseUIButton *)this->skinSelectLocalButton)
-            ->setClickCallback(SA::MakeDelegate<&OptionsMenu::onSkinSelect>(this));
+
+        this->skinSelectLocalButton->setClickCallback(SA::MakeDelegate<&OptionsMenu::onSkinSelect>(this));
 
         this->addButton("Open current Skin folder")
             ->setClickCallback(SA::MakeDelegate<&OptionsMenu::openCurrentSkinFolder>(this));
 
-        OPTIONS_ELEMENT skinReload = *this->addButtonButton("Reload Skin", "Random Skin");
-        ((UIButton *)skinReload.baseElems[0])->setClickCallback(SA::MakeDelegate<&OptionsMenu::onSkinReload>(this));
-        ((UIButton *)skinReload.baseElems[0])->setTooltipText("(CTRL + ALT + S)");
-        ((UIButton *)skinReload.baseElems[1])->setClickCallback(SA::MakeDelegate<&OptionsMenu::onSkinRandom>(this));
-        ((UIButton *)skinReload.baseElems[1])
-            ->setTooltipText(
-                "Temporary, does not change your configured skin (reload to reset).\nUse \"skin_random 1\" to "
-                "randomize on every skin reload.\nUse \"skin_random_elements 1\" to mix multiple skins.\nUse "
-                "\"skin_export\" to export the currently active skin.");
-        ((UIButton *)skinReload.baseElems[1])->setColor(0xff003947);
+        OPTIONS_ELEMENT *skinReload = this->addButtonButton("Reload Skin", "Random Skin");
+        auto *skinReloadBtn = static_cast<UIButton *>(skinReload->baseElems[0]);
+        auto *skinRandomBtn = static_cast<UIButton *>(skinReload->baseElems[1]);
+
+        skinReloadBtn->setClickCallback(SA::MakeDelegate([]() -> void { osu->reloadSkin(); }));
+        skinReloadBtn->setTooltipText("(CTRL + ALT + S)");
+
+        skinRandomBtn->setClickCallback(SA::MakeDelegate([]() -> void {
+            const bool isRandomSkinEnabled = cv::skin_random.getBool();
+            if(!isRandomSkinEnabled) cv::skin_random.setValue(1.0f);
+            osu->reloadSkin();
+            if(!isRandomSkinEnabled) cv::skin_random.setValue(0.0f);
+        }));
+
+        skinRandomBtn->setTooltipText(
+            "Temporary, does not change your configured skin (reload to reset).\nUse \"skin_random 1\" to "
+            "randomize on every skin reload.\nUse \"skin_random_elements 1\" to mix multiple skins.\nUse "
+            "\"skin_export\" to export the currently active skin.");
+        skinRandomBtn->setColor(0xff003947);
     }
     this->addSpacer();
     this->addCheckbox("Sort Skins Alphabetically",
@@ -1332,8 +1344,13 @@ OptionsMenu::OptionsMenu() : ScreenBackable() {
         ->setChangeCallback(SA::MakeDelegate<&OptionsMenu::onSliderChangePercent>(this));
 
     this->addSubSection("FPoSu - Mouse");
+
     UIButton *cm360CalculatorLinkButton = this->addButton("https://www.mouse-sensitivity.com/");
-    cm360CalculatorLinkButton->setClickCallback(SA::MakeDelegate<&OptionsMenu::onCM360CalculatorLinkClicked>(this));
+    cm360CalculatorLinkButton->setClickCallback(SA::MakeDelegate([]() -> void {
+        osu->getNotificationOverlay()->addNotification("Opening browser, please wait ...", 0xffffffff, false, 0.75f);
+        Environment::openURLInDefaultBrowser("https://www.mouse-sensitivity.com/");
+    }));
+
     cm360CalculatorLinkButton->setColor(0xff0e4a59);
     this->addLabel("");
     this->dpiTextbox = this->addTextbox(cv::fposu_mouse_dpi.getString().c_str(), "DPI:", &cv::fposu_mouse_dpi);
@@ -2557,18 +2574,6 @@ void OptionsMenu::onSkinSelect2(const UString &skinName, int /*id*/) {
     this->updateSkinNameLabel();
 }
 
-void OptionsMenu::onSkinReload() { osu->reloadSkin(); }
-
-void OptionsMenu::onSkinRandom() {
-    const bool isRandomSkinEnabled = cv::skin_random.getBool();
-
-    if(!isRandomSkinEnabled) cv::skin_random.setValue(1.0f);
-
-    osu->reloadSkin();
-
-    if(!isRandomSkinEnabled) cv::skin_random.setValue(0.0f);
-}
-
 void OptionsMenu::onResolutionSelect() {
     std::vector<ivec2> resolutions{{800, 600},  // 4:3
                                    {1024, 768},  {1152, 864},  {1280, 960},  {1280, 1024}, {1600, 1200}, {1920, 1440},
@@ -2682,16 +2687,12 @@ void OptionsMenu::onOutputDeviceSelect2(const UString &outputDeviceName, int /*i
     debugLog("SoundEngine::setOutputDevice() couldn't find output device \"{:s}\"!", outputDeviceName.toUtf8());
 }
 
-void OptionsMenu::onOutputDeviceResetClicked() { soundEngine->setOutputDevice(soundEngine->getDefaultDevice()); }
-
 void OptionsMenu::onOutputDeviceResetUpdate() {
     if(this->outputDeviceResetButton != nullptr) {
         this->outputDeviceResetButton->setEnabled(soundEngine->getOutputDeviceName() !=
                                                   soundEngine->getDefaultDevice().name);
     }
 }
-
-void OptionsMenu::onOutputDeviceRestart() { soundEngine->restart(); }
 
 void OptionsMenu::onLogInClicked(bool left, bool right) {
     if(left && BanchoState::is_logging_in()) {
@@ -2725,11 +2726,6 @@ void OptionsMenu::onLogInClicked(bool left, bool right) {
             BanchoState::reconnect();
         }
     }
-}
-
-void OptionsMenu::onCM360CalculatorLinkClicked() {
-    osu->getNotificationOverlay()->addNotification("Opening browser, please wait ...", 0xffffffff, false, 0.75f);
-    env->openURLInDefaultBrowser("https://www.mouse-sensitivity.com/");
 }
 
 void OptionsMenu::onNotelockSelect() {
@@ -3178,8 +3174,6 @@ void OptionsMenu::onModChangingToggle(CBaseUICheckbox *checkbox) {
     osu->updateMods();
 }
 
-void OptionsMenu::onUseSkinsSoundSamplesChange() { osu->reloadSkin(); }
-
 void OptionsMenu::onHighQualitySlidersCheckboxChange(CBaseUICheckbox *checkbox) {
     this->onCheckboxChange(checkbox);
 
@@ -3325,10 +3319,6 @@ void OptionsMenu::onResetEverythingClicked(CBaseUIButton * /*button*/) {
             osu->getNotificationOverlay()->addNotification(
                 UString::format("Press %i more time to confirm!", remainingUntilReset), 0xffffff00);
     }
-}
-
-void OptionsMenu::onImportSettingsFromStable(CBaseUIButton * /*button*/) {
-    PeppyImporter::import_settings_from_osu_stable();
 }
 
 void OptionsMenu::addSpacer() {

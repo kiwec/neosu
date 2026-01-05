@@ -170,16 +170,16 @@ class CBaseUIWindow : public CBaseUIElement {
 
     RESIZETYPE iResizeType : 4;
 
-    unsigned bIsOpen : 1;
-    unsigned bAnimIn : 1;
-    unsigned bResizeable : 1;
-    unsigned bCoherenceMode : 1;
+    bool bIsOpen;
+    bool bAnimIn;
+    bool bResizeable;
+    bool bCoherenceMode;
 
-    unsigned bDrawFrame : 1;
-    unsigned bDrawBackground : 1;
-    unsigned bRoundedRectangle : 1;
-    unsigned bResizing : 1;
+    bool bDrawFrame;
+    bool bDrawBackground;
+    bool bRoundedRectangle;
+    bool bResizing;
 
-    unsigned bDrawTitleBarLine : 1;
-    unsigned bMoving : 1;
+    bool bDrawTitleBarLine;
+    bool bMoving;
 };

@@ -9,9 +9,10 @@
 #include "Delegate.h"
 
 class CBaseUISlider : public CBaseUIElement {
+    NOCOPY_NOMOVE(CBaseUISlider)
    public:
     CBaseUISlider(float xPos = 0, float yPos = 0, float xSize = 0, float ySize = 0, UString name = "");
-    ~CBaseUISlider() override { ; }
+    ~CBaseUISlider() override = default;
 
     void draw() override;
     void mouse_update(bool *propagate_clicks) override;
@@ -35,7 +36,7 @@ class CBaseUISlider : public CBaseUIElement {
 
     // callbacks, either void or with ourself as the argument
     using SliderChangeCallback = SA::delegate<void(CBaseUISlider *)>;
-    CBaseUISlider *setChangeCallback(const SliderChangeCallback& changeCallback) {
+    CBaseUISlider *setChangeCallback(const SliderChangeCallback &changeCallback) {
         this->sliderChangeCallback = changeCallback;
         return this;
     }
@@ -96,11 +97,11 @@ class CBaseUISlider : public CBaseUIElement {
 
     Color frameColor, backgroundColor;
 
-    unsigned bDrawFrame : 1;
-    unsigned bDrawBackground : 1;
-    unsigned bHorizontal : 1;
-    unsigned bHasChanged : 1;
-    unsigned bAnimated : 1;
-    unsigned bLiveUpdate : 1;
-    unsigned bAllowMouseWheel : 1;
+    bool bDrawFrame;
+    bool bDrawBackground;
+    bool bHorizontal;
+    bool bHasChanged;
+    bool bAnimated;
+    bool bLiveUpdate;
+    bool bAllowMouseWheel;
 };

@@ -1,18 +1,16 @@
 /*
+    Copyright (C) 2017 by Sergey A Kryukov: derived work
+    http://www.SAKryukov.org
+    http://www.codeproject.com/Members/SAKryukov
 
-	Copyright (C) 2017 by Sergey A Kryukov: derived work
-	http://www.SAKryukov.org
-	http://www.codeproject.com/Members/SAKryukov
+    Based on original work by Sergey Ryazanov:
+    "The Impossibly Fast C++ Delegates", 18 Jul 2005
+    https://www.codeproject.com/articles/11015/the-impossibly-fast-c-delegates
 
-	Based on original work by Sergey Ryazanov:
-	"The Impossibly Fast C++ Delegates", 18 Jul 2005
-	https://www.codeproject.com/articles/11015/the-impossibly-fast-c-delegates
+    MIT license:
+    http://en.wikipedia.org/wiki/MIT_License
 
-	MIT license:
-	http://en.wikipedia.org/wiki/MIT_License
-
-	Original publication: https://www.codeproject.com/Articles/1170503/The-Impossibly-Fast-Cplusplus-Delegates-Fixed
-
+    Original publication: https://www.codeproject.com/Articles/1170503/The-Impossibly-Fast-Cplusplus-Delegates-Fixed
 */
 
 #pragma once
@@ -35,7 +33,9 @@ class delegate<RET(PARAMS...)> final : private delegate_base<RET(PARAMS...)> {
     delegate(delegate&&) = default;
     delegate& operator=(delegate&&) = default;
 
-    bool isNull() const { return invocation.stub == nullptr; }
+    [[nodiscard]] bool isNull() const { return invocation.stub == nullptr; }
+    explicit operator bool() const { return invocation.stub != nullptr; }
+
     bool operator==(void* ptr) const { return (ptr == nullptr) && this->isNull(); }     //operator ==
     bool operator!=(void* ptr) const { return (ptr != nullptr) || (!this->isNull()); }  //operator !=
 

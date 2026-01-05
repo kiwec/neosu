@@ -523,7 +523,7 @@ void SoLoudSoundEngine::allowInternalCallbacks() {
 }
 
 SoLoudSoundEngine::~SoLoudSoundEngine() {
-    if(!this->restartCBs[0].isNull()) {
+    if(!!this->restartCBs[0]) {
         this->restartCBs[0]();
     }
     if(soloud && this->isReady()) {

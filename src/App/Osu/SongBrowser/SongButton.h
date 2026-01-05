@@ -21,7 +21,7 @@ class SongButton : public CarouselButton {
 
    public:
     SongButton(float xPos, float yPos, float xSize, float ySize, UString name,
-               BeatmapSet *databaseBeatmap);
+               BeatmapSet *beatmapSet);
     SongButton() = delete;
     ~SongButton() override;
 

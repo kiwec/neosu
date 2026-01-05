@@ -413,27 +413,27 @@ struct McFontImpl final {
         std::vector<UString> lines;
         lines.emplace_back();
 
-        UString word = "";
+        UString word{};
         u32 line = 0;
         f64 line_width = 0.0;
         f64 word_width = 0.0;
         for(int i = 0; i < text.length(); i++) {
-            if(text[i] == '\n') {
+            if(text[i] == u'\n') {
                 lines[line].append(word);
                 lines.emplace_back();
                 line++;
                 line_width = 0.0;
-                word = "";
+                word.clear();
                 word_width = 0.0;
                 continue;
             }
 
             f32 char_width = getGlyphWidth(text[i]);
 
-            if(text[i] == ' ') {
+            if(text[i] == u' ') {
                 lines[line].append(word);
                 line_width += word_width;
-                word = "";
+                word.clear();
                 word_width = 0.0;
 
                 if(line_width + char_width > max_width) {
@@ -442,7 +442,7 @@ struct McFontImpl final {
                     line++;
                     line_width = 0.0;
                 } else if(line_width > 0.0) {
-                    lines[line].append(' ');
+                    lines[line].append(u' ');
                     line_width += char_width;
                 }
             } else {
@@ -452,7 +452,7 @@ struct McFontImpl final {
                     lines.emplace_back();
                     line++;
                     line_width = 0.0;
-                    word = "";
+                    word.clear();
                     word_width = 0.0;
                 } else if(line_width + word_width + char_width > max_width) {
                     // Wrap word on new line

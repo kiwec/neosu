@@ -77,7 +77,7 @@ BassSoundEngine::BassSoundEngine() : SoundEngine() {
 }
 
 BassSoundEngine::~BassSoundEngine() {
-    if(!this->restartCBs[0].isNull()) {
+    if(!!this->restartCBs[0]) {
         this->restartCBs[0]();
     }
     BassManager::cleanup();

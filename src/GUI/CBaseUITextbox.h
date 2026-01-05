@@ -6,9 +6,10 @@
 class McFont;
 
 class CBaseUITextbox : public CBaseUIElement {
+    NOCOPY_NOMOVE(CBaseUITextbox)
    public:
     CBaseUITextbox(float xPos = 0.0f, float yPos = 0.0f, float xSize = 0.0f, float ySize = 0.0f, UString name = "");
-    ~CBaseUITextbox() override { ; }
+    ~CBaseUITextbox() override = default;
 
     void draw() override;
     void mouse_update(bool *propagate_clicks) override;
@@ -131,12 +132,12 @@ class CBaseUITextbox : public CBaseUIElement {
     Color caretColor;
     Color backgroundColor;
 
-    unsigned bHitenter : 1;
-    unsigned bContextMouse : 1;
-    unsigned bBlockMouse : 1;
-    unsigned bCatchMouse : 1;
-    unsigned bDrawFrame : 1;
-    unsigned bDrawBackground : 1;
-    unsigned bLine : 1;
-    unsigned bSelectCheck : 1;
+    bool bHitenter;
+    bool bContextMouse;
+    bool bBlockMouse;
+    bool bCatchMouse;
+    bool bDrawFrame;
+    bool bDrawBackground;
+    bool bLine;
+    bool bSelectCheck;
 };
