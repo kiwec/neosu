@@ -8,6 +8,7 @@
 #include "Thread.h"
 #include "SyncMutex.h"
 #include "SyncCV.h"
+#include "UString.h"
 
 #include "SyncJthread.h"
 

@@ -6,6 +6,7 @@
 #include "CBaseUISlider.h"
 #include "DatabaseBeatmap.h"
 #include "GameRules.h"
+#include "ModSelector.h"
 #include "OsuConVars.h"
 #include "Osu.h"
 #include "DifficultyCalculator.h"
@@ -108,48 +109,52 @@ Mods Mods::from_cvars() {
     using enum ModFlags;
     Mods mods;
 
-    if(cv::mod_nofail.getBool()) mods.flags |= NoFail;
-    if(cv::drain_disabled.getBool()) mods.flags |= NoHP;  // Not an actual "mod", it's in the options menu
-    if(cv::mod_easy.getBool()) mods.flags |= Easy;
-    if(cv::mod_autopilot.getBool()) mods.flags |= Autopilot;
-    if(cv::mod_relax.getBool()) mods.flags |= Relax;
-    if(cv::mod_hidden.getBool()) mods.flags |= Hidden;
-    if(cv::mod_hardrock.getBool()) mods.flags |= HardRock;
-    if(cv::mod_flashlight.getBool()) mods.flags |= Flashlight;
-    if(cv::mod_suddendeath.getBool()) mods.flags |= SuddenDeath;
-    if(cv::mod_perfect.getBool()) mods.flags |= Perfect;
-    if(cv::mod_nightmare.getBool()) mods.flags |= Nightmare;
-    if(cv::nightcore_enjoyer.getBool()) mods.flags |= NoPitchCorrection;
-    if(cv::mod_touchdevice.getBool()) mods.flags |= TouchDevice;
-    if(cv::mod_spunout.getBool()) mods.flags |= SpunOut;
-    if(cv::mod_scorev2.getBool()) mods.flags |= ScoreV2;
-    if(cv::mod_fposu.getBool()) mods.flags |= FPoSu;
-    if(cv::mod_target.getBool()) mods.flags |= Target;
-    if(cv::ar_override_lock.getBool()) mods.flags |= AROverrideLock;
-    if(cv::od_override_lock.getBool()) mods.flags |= ODOverrideLock;
-    if(cv::mod_timewarp.getBool()) mods.flags |= Timewarp;
-    if(cv::mod_artimewarp.getBool()) mods.flags |= ARTimewarp;
-    if(cv::mod_minimize.getBool()) mods.flags |= Minimize;
-    if(cv::mod_jigsaw1.getBool()) mods.flags |= Jigsaw1;
-    if(cv::mod_jigsaw2.getBool()) mods.flags |= Jigsaw2;
-    if(cv::mod_wobble.getBool()) mods.flags |= Wobble1;
-    if(cv::mod_wobble2.getBool()) mods.flags |= Wobble2;
-    if(cv::mod_arwobble.getBool()) mods.flags |= ARWobble;
-    if(cv::mod_fullalternate.getBool()) mods.flags |= FullAlternate;
-    if(cv::mod_shirone.getBool()) mods.flags |= Shirone;
-    if(cv::mod_mafham.getBool()) mods.flags |= Mafham;
-    if(cv::mod_halfwindow.getBool()) mods.flags |= HalfWindow;
-    if(cv::mod_halfwindow_allow_300s.getBool()) mods.flags |= HalfWindowAllow300s;
-    if(cv::mod_ming3012.getBool()) mods.flags |= Ming3012;
-    if(cv::mod_no100s.getBool()) mods.flags |= No100s;
-    if(cv::mod_no50s.getBool()) mods.flags |= No50s;
-    if(cv::mod_singletap.getBool()) mods.flags |= Singletap;
-    if(cv::mod_no_keylock.getBool()) mods.flags |= NoKeylock;
-    if(cv::mod_no_pausing.getBool()) mods.flags |= NoPausing;
+#define ADDIFCV(cvar__, mod__) static_cast<bool>(cv::cvar__.getBool()) ? (void)(mods.flags |= (mod__)) : (void)(0)
+
+    ADDIFCV(mod_nofail, NoFail);
+    ADDIFCV(drain_disabled, NoHP);  // Not an actual "mod", it's in the options menu
+    ADDIFCV(mod_easy, Easy);
+    ADDIFCV(mod_autopilot, Autopilot);
+    ADDIFCV(mod_relax, Relax);
+    ADDIFCV(mod_hidden, Hidden);
+    ADDIFCV(mod_hardrock, HardRock);
+    ADDIFCV(mod_flashlight, Flashlight);
+    ADDIFCV(mod_suddendeath, SuddenDeath);
+    ADDIFCV(mod_perfect, Perfect);
+    ADDIFCV(mod_nightmare, Nightmare);
+    ADDIFCV(nightcore_enjoyer, NoPitchCorrection);
+    ADDIFCV(mod_touchdevice, TouchDevice);
+    ADDIFCV(mod_spunout, SpunOut);
+    ADDIFCV(mod_scorev2, ScoreV2);
+    ADDIFCV(mod_fposu, FPoSu);
+    ADDIFCV(mod_target, Target);
+    ADDIFCV(ar_override_lock, AROverrideLock);
+    ADDIFCV(od_override_lock, ODOverrideLock);
+    ADDIFCV(mod_timewarp, Timewarp);
+    ADDIFCV(mod_artimewarp, ARTimewarp);
+    ADDIFCV(mod_minimize, Minimize);
+    ADDIFCV(mod_jigsaw1, Jigsaw1);
+    ADDIFCV(mod_jigsaw2, Jigsaw2);
+    ADDIFCV(mod_wobble, Wobble1);
+    ADDIFCV(mod_wobble2, Wobble2);
+    ADDIFCV(mod_arwobble, ARWobble);
+    ADDIFCV(mod_fullalternate, FullAlternate);
+    ADDIFCV(mod_shirone, Shirone);
+    ADDIFCV(mod_mafham, Mafham);
+    ADDIFCV(mod_halfwindow, HalfWindow);
+    ADDIFCV(mod_halfwindow_allow_300s, HalfWindowAllow300s);
+    ADDIFCV(mod_ming3012, Ming3012);
+    ADDIFCV(mod_no100s, No100s);
+    ADDIFCV(mod_no50s, No50s);
+    ADDIFCV(mod_singletap, Singletap);
+    ADDIFCV(mod_no_keylock, NoKeylock);
+    ADDIFCV(mod_no_pausing, NoPausing);
     if(cv::mod_autoplay.getBool()) {
         mods.flags &= ~(Relax | Autopilot);
         mods.flags |= Autoplay;
     }
+
+#undef ADDIFCV
 
     mods.speed = osu->getMapInterface()->getSpeedMultiplier();
 
@@ -217,60 +222,68 @@ void Mods::use(const Mods &mods) {
     mod_selector->resetMods();
 
     // Set cvars
+#define CVFROMFLAG(cvar__, mod__) cv::cvar__.setValue(flags::has<mod__>(mods.flags))
+#define CVFROMPROP(cvar__, modsetting__) cv::cvar__.setValue(mods.modsetting__)
+
     // FIXME: NoHP should not be changed here, it's a global option
-    cv::drain_disabled.setValue(flags::has<NoHP>(mods.flags));
-    cv::mod_nofail.setValue(flags::has<NoFail>(mods.flags));
-    cv::mod_easy.setValue(flags::has<Easy>(mods.flags));
-    cv::mod_hidden.setValue(flags::has<Hidden>(mods.flags));
-    cv::mod_hardrock.setValue(flags::has<HardRock>(mods.flags));
-    cv::mod_flashlight.setValue(flags::has<Flashlight>(mods.flags));
-    cv::mod_suddendeath.setValue(flags::has<SuddenDeath>(mods.flags));
-    cv::mod_perfect.setValue(flags::has<Perfect>(mods.flags));
-    cv::mod_nightmare.setValue(flags::has<Nightmare>(mods.flags));
-    cv::nightcore_enjoyer.setValue(flags::has<NoPitchCorrection>(mods.flags));
-    cv::mod_touchdevice.setValue(flags::has<TouchDevice>(mods.flags));
-    cv::mod_spunout.setValue(flags::has<SpunOut>(mods.flags));
-    cv::mod_scorev2.setValue(flags::has<ScoreV2>(mods.flags));
-    cv::mod_fposu.setValue(flags::has<FPoSu>(mods.flags));
-    cv::mod_target.setValue(flags::has<Target>(mods.flags));
-    cv::ar_override_lock.setValue(flags::has<AROverrideLock>(mods.flags));
-    cv::od_override_lock.setValue(flags::has<ODOverrideLock>(mods.flags));
-    cv::mod_timewarp.setValue(flags::has<Timewarp>(mods.flags));
-    cv::mod_artimewarp.setValue(flags::has<ARTimewarp>(mods.flags));
-    cv::mod_minimize.setValue(flags::has<Minimize>(mods.flags));
-    cv::mod_jigsaw1.setValue(flags::has<Jigsaw1>(mods.flags));
-    cv::mod_jigsaw2.setValue(flags::has<Jigsaw2>(mods.flags));
-    cv::mod_wobble.setValue(flags::has<Wobble1>(mods.flags));
-    cv::mod_wobble2.setValue(flags::has<Wobble2>(mods.flags));
-    cv::mod_arwobble.setValue(flags::has<ARWobble>(mods.flags));
-    cv::mod_fullalternate.setValue(flags::has<FullAlternate>(mods.flags));
-    cv::mod_shirone.setValue(flags::has<Shirone>(mods.flags));
-    cv::mod_mafham.setValue(flags::has<Mafham>(mods.flags));
-    cv::mod_halfwindow.setValue(flags::has<HalfWindow>(mods.flags));
-    cv::mod_halfwindow_allow_300s.setValue(flags::has<HalfWindowAllow300s>(mods.flags));
-    cv::mod_ming3012.setValue(flags::has<Ming3012>(mods.flags));
-    cv::mod_no100s.setValue(flags::has<No100s>(mods.flags));
-    cv::mod_no50s.setValue(flags::has<No50s>(mods.flags));
-    cv::mod_singletap.setValue(flags::has<Singletap>(mods.flags));
-    cv::mod_no_keylock.setValue(flags::has<NoKeylock>(mods.flags));
-    cv::mod_no_pausing.setValue(flags::has<NoPausing>(mods.flags));
-    cv::notelock_type.setValue(mods.notelock_type);
-    cv::autopilot_lenience.setValue(mods.autopilot_lenience);
-    cv::mod_timewarp_multiplier.setValue(mods.timewarp_multiplier);
-    cv::mod_minimize_multiplier.setValue(mods.minimize_multiplier);
-    cv::mod_artimewarp_multiplier.setValue(mods.artimewarp_multiplier);
-    cv::mod_arwobble_strength.setValue(mods.arwobble_strength);
-    cv::mod_arwobble_interval.setValue(mods.arwobble_interval);
-    cv::mod_wobble_strength.setValue(mods.wobble_strength);
-    cv::mod_wobble_rotation_speed.setValue(mods.wobble_rotation_speed);
-    cv::mod_jigsaw_followcircle_radius_factor.setValue(mods.jigsaw_followcircle_radius_factor);
-    cv::mod_shirone_combo.setValue(mods.shirone_combo);
-    cv::ar_override.setValue(mods.ar_override);
-    cv::ar_overridenegative.setValue(mods.ar_overridenegative);
-    cv::cs_override.setValue(mods.cs_override);
-    cv::cs_overridenegative.setValue(mods.cs_overridenegative);
-    cv::hp_override.setValue(mods.hp_override);
-    cv::od_override.setValue(mods.od_override);
+    CVFROMFLAG(drain_disabled, NoHP);
+    CVFROMFLAG(mod_nofail, NoFail);
+    CVFROMFLAG(mod_easy, Easy);
+    CVFROMFLAG(mod_hidden, Hidden);
+    CVFROMFLAG(mod_hardrock, HardRock);
+    CVFROMFLAG(mod_flashlight, Flashlight);
+    CVFROMFLAG(mod_suddendeath, SuddenDeath);
+    CVFROMFLAG(mod_perfect, Perfect);
+    CVFROMFLAG(mod_nightmare, Nightmare);
+    CVFROMFLAG(nightcore_enjoyer, NoPitchCorrection);
+    CVFROMFLAG(mod_touchdevice, TouchDevice);
+    CVFROMFLAG(mod_spunout, SpunOut);
+    CVFROMFLAG(mod_scorev2, ScoreV2);
+    CVFROMFLAG(mod_fposu, FPoSu);
+    CVFROMFLAG(mod_target, Target);
+    CVFROMFLAG(ar_override_lock, AROverrideLock);
+    CVFROMFLAG(od_override_lock, ODOverrideLock);
+    CVFROMFLAG(mod_timewarp, Timewarp);
+    CVFROMFLAG(mod_artimewarp, ARTimewarp);
+    CVFROMFLAG(mod_minimize, Minimize);
+    CVFROMFLAG(mod_jigsaw1, Jigsaw1);
+    CVFROMFLAG(mod_jigsaw2, Jigsaw2);
+    CVFROMFLAG(mod_wobble, Wobble1);
+    CVFROMFLAG(mod_wobble2, Wobble2);
+    CVFROMFLAG(mod_arwobble, ARWobble);
+    CVFROMFLAG(mod_fullalternate, FullAlternate);
+    CVFROMFLAG(mod_shirone, Shirone);
+    CVFROMFLAG(mod_mafham, Mafham);
+    CVFROMFLAG(mod_halfwindow, HalfWindow);
+    CVFROMFLAG(mod_halfwindow_allow_300s, HalfWindowAllow300s);
+    CVFROMFLAG(mod_ming3012, Ming3012);
+    CVFROMFLAG(mod_no100s, No100s);
+    CVFROMFLAG(mod_no50s, No50s);
+    CVFROMFLAG(mod_singletap, Singletap);
+    CVFROMFLAG(mod_no_keylock, NoKeylock);
+    CVFROMFLAG(mod_no_pausing, NoPausing);
+
+    CVFROMPROP(notelock_type, notelock_type);
+    CVFROMPROP(autopilot_lenience, autopilot_lenience);
+    CVFROMPROP(mod_timewarp_multiplier, timewarp_multiplier);
+    CVFROMPROP(mod_minimize_multiplier, minimize_multiplier);
+    CVFROMPROP(mod_artimewarp_multiplier, artimewarp_multiplier);
+    CVFROMPROP(mod_arwobble_strength, arwobble_strength);
+    CVFROMPROP(mod_arwobble_interval, arwobble_interval);
+    CVFROMPROP(mod_wobble_strength, wobble_strength);
+    CVFROMPROP(mod_wobble_rotation_speed, wobble_rotation_speed);
+    CVFROMPROP(mod_jigsaw_followcircle_radius_factor, jigsaw_followcircle_radius_factor);
+    CVFROMPROP(mod_shirone_combo, shirone_combo);
+    CVFROMPROP(ar_override, ar_override);
+    CVFROMPROP(ar_overridenegative, ar_overridenegative);
+    CVFROMPROP(cs_override, cs_override);
+    CVFROMPROP(cs_overridenegative, cs_overridenegative);
+    CVFROMPROP(hp_override, hp_override);
+    CVFROMPROP(od_override, od_override);
+
+#undef CVFROMPROP
+#undef CVFROMFLAG
+
     if(flags::has<Autoplay>(mods.flags)) {
         cv::mod_autoplay.setValue(true);
         cv::mod_autopilot.setValue(false);

@@ -39,6 +39,7 @@
 #include "OptionsMenu.h"
 #include "NotificationOverlay.h"
 #include "BeatmapInterface.h"
+#include "ModSelector.h"
 #include "BackgroundImageHandler.h"
 #include "MainMenu.h"
 #include "RankingScreen.h"

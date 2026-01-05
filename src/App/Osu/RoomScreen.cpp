@@ -548,7 +548,7 @@ void RoomScreen::ragequit(bool play_sound) {
     osu->getChat()->removeChannel("#multiplayer");
     osu->getChat()->updateVisibility();
 
-    Replay::Mods::use(osu->previous_mods);
+    Replay::Mods::use(*osu->previous_mods);
 
     if(play_sound) {
         soundEngine->play(osu->getSkin()->s_menu_back);
@@ -635,7 +635,7 @@ void RoomScreen::on_room_joined(const Room &room) {
     RichPresence::onMultiplayerLobby();
     osu->getChat()->openChannel("#multiplayer");
 
-    osu->previous_mods = Replay::Mods::from_cvars();
+    *osu->previous_mods = Replay::Mods::from_cvars();
 
     osu->getModSelector()->resetMods();
     osu->getModSelector()->enableModsFromFlags(BanchoState::room.mods);

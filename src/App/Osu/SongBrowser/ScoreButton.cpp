@@ -618,7 +618,7 @@ void ScoreButton::onContextMenu(const UString &text, int id) {
 }
 
 void ScoreButton::onUseModsClicked() {
-    osu->useMods(this->storedScore);
+    Replay::Mods::use(this->storedScore.mods);
     soundEngine->play(osu->getSkin()->s_check_on);
 }
 

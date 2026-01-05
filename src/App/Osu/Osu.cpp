@@ -235,6 +235,9 @@ Osu::Osu() : App(), MouseListener(), global_osu_(this) {
     this->frameBuffer = resourceManager->createRenderTarget(0, 0, 64, 64);
     this->frameBuffer2 = resourceManager->createRenderTarget(0, 0, 64, 64);
 
+    // XXX: out of place
+    this->previous_mods = std::make_unique<Replay::Mods>();
+
     int screenit = 0;
 
     // load a few select subsystems very early

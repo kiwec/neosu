@@ -472,13 +472,13 @@ bool BeatmapInterface::watch(const FinishedScore &score, u32 start_ms) {
     this->bContinueScheduled = false;
     this->unloadObjects();
 
-    osu->previous_mods = Replay::Mods::from_cvars();
+    *osu->previous_mods = Replay::Mods::from_cvars();
 
-    osu->watched_user_name = score.playerName.c_str();
+    osu->watched_user_name = score.playerName;
     osu->watched_user_id = score.player_id;
     this->is_watching = true;
 
-    osu->useMods(score);
+    Replay::Mods::use(score.mods);
 
     if(!this->start()) {
         // Map failed to load
@@ -510,13 +510,13 @@ bool BeatmapInterface::spectate() {
     osu->watched_user_id = BanchoState::spectated_player_id;
     osu->watched_user_name = user_info->name;
 
-    osu->previous_mods = Replay::Mods::from_cvars();
+    *osu->previous_mods = Replay::Mods::from_cvars();
 
     FinishedScore score;
     score.client = "peppy-unknown";
     score.server = BanchoState::endpoint;
     score.mods = Replay::Mods::from_legacy(user_info->mods);
-    osu->useMods(score);
+    Replay::Mods::use(score.mods);
 
     if(!this->start()) {
         // Map failed to load
@@ -930,7 +930,7 @@ void BeatmapInterface::stop(bool quit) {
     }
 
     if(this->is_watching || BanchoState::spectating) {
-        Replay::Mods::use(osu->previous_mods);
+        Replay::Mods::use(*osu->previous_mods);
     }
 
     this->is_watching = false;

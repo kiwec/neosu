@@ -1,9 +1,9 @@
 #pragma once
 // Copyright (c) 2015, PG, All rights reserved.
 #include "App.h"
-#include "ModSelector.h"
 #include "MouseListener.h"
-#include "score.h"
+#include "Rect.h"
+
 #include "OsuConfig.h"
 
 #include <atomic>
@@ -15,6 +15,7 @@ class Image;
 class McFont;
 class RenderTarget;
 
+class ModSelector;
 class VolumeOverlay;
 class UserCard;
 class Chat;
@@ -40,6 +41,17 @@ class HUD;
 class Changelog;
 class ModFPoSu;
 class BeatmapInterface;
+class LiveScore;
+struct FinishedScore;
+
+namespace LegacyReplay {
+enum KeyFlags : uint8_t;
+}
+using GameplayKeys = LegacyReplay::KeyFlags;
+
+namespace Replay {
+struct Mods;
+}
 
 #ifndef CONVAR_H
 enum class CvarEditor : uint8_t;
@@ -238,8 +250,6 @@ class Osu final : public App, public MouseListener {
         const;  // certain mods or actions require Sliders to render dynamically
                 // (e.g. wobble or the CS override slider)
 
-    inline void useMods(const FinishedScore &score) { Replay::Mods::use(score.mods); }
-
     void updateMods();
     void updateCursorVisibility();
     void updateConfineCursor();
@@ -339,8 +349,9 @@ class Osu final : public App, public MouseListener {
     // and make it more annoying to find everywhere its actually changed
 
     // mods
-   public:  // public because of many external access
-    Replay::Mods previous_mods{};
+    // public because of many external access
+   public:
+    std::unique_ptr<Replay::Mods> previous_mods{nullptr};  // XXX: hacky and out of place
     bool bModAutoTemp{false};  // when ctrl+clicking a map, the auto mod should disable itself after the map finishes
 
    private:
@@ -376,7 +387,7 @@ class Osu final : public App, public MouseListener {
 
     // replay
    public:
-    UString watched_user_name;
+    std::string watched_user_name;
     i32 watched_user_id{0};
 
     // custom

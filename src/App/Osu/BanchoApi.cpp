@@ -12,6 +12,7 @@
 #include "Downloader.h"
 #include "NetworkHandler.h"
 #include "NotificationOverlay.h"
+#include "score.h"
 
 namespace BANCHO::Api {
 

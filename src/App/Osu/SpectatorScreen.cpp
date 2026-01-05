@@ -11,6 +11,7 @@
 #include "Changelog.h"
 #include "OsuConVars.h"
 #include "Downloader.h"
+#include "ModSelector.h"
 #include "KeyBindings.h"
 #include "Lobby.h"
 #include "Logging.h"
