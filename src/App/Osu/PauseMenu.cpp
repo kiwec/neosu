@@ -43,11 +43,9 @@ PauseMenu::PauseMenu() : OsuScreen() {
 
     this->setSize(osu->getVirtScreenWidth(), osu->getVirtScreenHeight());
 
-    UIPauseMenuButton *continueButton =
-        this->addButton([]() -> Image * { return osu->getSkin()->i_pause_continue; }, "Resume");
-    UIPauseMenuButton *retryButton =
-        this->addButton([]() -> Image * { return osu->getSkin()->i_pause_retry; }, "Retry");
-    UIPauseMenuButton *backButton = this->addButton([]() -> Image * { return osu->getSkin()->i_pause_back; }, "Quit");
+    UIPauseMenuButton *continueButton = this->addButton(&Skin::i_pause_continue, "Resume");
+    UIPauseMenuButton *retryButton = this->addButton(&Skin::i_pause_retry, "Retry");
+    UIPauseMenuButton *backButton = this->addButton(&Skin::i_pause_back, "Quit");
 
     continueButton->setClickCallback(SA::MakeDelegate<&PauseMenu::onContinueClicked>(this));
     retryButton->setClickCallback(SA::MakeDelegate<&PauseMenu::onRetryClicked>(this));
@@ -415,9 +413,14 @@ void PauseMenu::setContinueEnabled(bool continueEnabled) {
     if(this->buttons.size() > 0) this->buttons[0]->setVisible(this->bContinueEnabled);
 }
 
-UIPauseMenuButton *PauseMenu::addButton(std::function<Image *()> getImageFunc, UString btn_name) {
-    auto *button = new UIPauseMenuButton(std::move(getImageFunc), 0, 0, 0, 0, std::move(btn_name));
+UIPauseMenuButton *PauseMenu::addButton(ImageSkinMember skinMember, UString btn_name) {
+    auto *button = new UIPauseMenuButton(skinMember, 0, 0, 0, 0, std::move(btn_name));
     this->addBaseUIElement(button);
     this->buttons.push_back(button);
     return button;
 }
+
+Image *UIPauseMenuButton::getImage() const {
+    return this->imageMember ? neosu::skin::getImageMember(this->imageMember) : nullptr;
+}
+

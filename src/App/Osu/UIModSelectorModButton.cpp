@@ -30,7 +30,7 @@ UIModSelectorModButton::UIModSelectorModButton(ModSelector *osuModSelector, floa
     this->bAvailable = true;
     this->bOn = false;
 
-    this->getActiveImageFunc = nullptr;
+    this->activeSkinImageMember = nullptr;
 
     this->bFocusStolenDelay = false;
 }
@@ -38,7 +38,9 @@ UIModSelectorModButton::UIModSelectorModButton(ModSelector *osuModSelector, floa
 void UIModSelectorModButton::draw() {
     if(!this->bVisible) return;
 
-    if(this->getActiveImageFunc != nullptr && this->getActiveImageFunc()) {
+    if(SkinImage *activeImage =
+           this->activeSkinImageMember ? neosu::skin::getSkinImageMember(this->activeSkinImageMember) : nullptr;
+       !!activeImage) {
         g->pushTransform();
         {
             g->scale(this->vScale.x, this->vScale.y);
@@ -51,7 +53,7 @@ void UIModSelectorModButton::draw() {
             if(draw_inverted_colors) {
                 g->setColorInversion(true);
             }
-            this->getActiveImageFunc()->draw(this->vPos + this->vSize / 2.f);
+            activeImage->draw(this->vPos + this->vSize / 2.f);
             if(draw_inverted_colors) {
                 g->setColorInversion(false);
             }
@@ -245,29 +247,29 @@ void UIModSelectorModButton::setState(int state) {
     this->iState = state;
 
     // update image
-    if(this->iState < this->states.size() && this->states[this->iState].getImageFunc != nullptr) {
-        this->getActiveImageFunc = this->states[this->iState].getImageFunc;
+    if(this->iState < this->states.size() && this->states[this->iState].skinImageMember != nullptr) {
+        this->activeSkinImageMember = this->states[this->iState].skinImageMember;
     }
 }
 
 void UIModSelectorModButton::setState(unsigned int state, bool initialState, ConVar *cvar, UString modName,
-                                      const UString &tooltipText, std::function<SkinImage *()> getImageFunc) {
+                                      const UString &tooltipText, SkinImageSkinMember skinMember) {
     // dynamically add new state
     while(this->states.size() < state + 1) {
         STATE t{};
-        t.getImageFunc = nullptr;
+        t.skinImageMember = nullptr;
         this->states.push_back(t);
     }
     this->states[state].cvar = cvar;
     this->states[state].modName = std::move(modName);
     this->states[state].tooltipTextLines = tooltipText.split(US_("\n"));
-    this->states[state].getImageFunc = std::move(getImageFunc);
+    this->states[state].skinImageMember = skinMember;
 
     // set initial state image
     if(this->states.size() == 1)
-        this->getActiveImageFunc = this->states[0].getImageFunc;
+        this->activeSkinImageMember = this->states[0].skinImageMember;
     else if(this->iState > -1 && this->iState < this->states.size())  // update current state image
-        this->getActiveImageFunc = this->states[this->iState].getImageFunc;
+        this->activeSkinImageMember = this->states[this->iState].skinImageMember;
 
     // set initial state on (but without firing callbacks)
     if(initialState) {

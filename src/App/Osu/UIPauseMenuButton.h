@@ -3,10 +3,14 @@
 #include "CBaseUIButton.h"
 
 class Image;
+struct Skin;
+struct BasicSkinImage;
 
 class UIPauseMenuButton final : public CBaseUIButton {
    public:
-    UIPauseMenuButton(std::function<Image *()> getImageFunc, float xPos, float yPos, float xSize, float ySize,
+    using ImageSkinMember = BasicSkinImage Skin::*;
+
+    UIPauseMenuButton(ImageSkinMember imageMember, float xPos, float yPos, float xSize, float ySize,
                       UString name);
 
     void draw() override;
@@ -17,7 +21,7 @@ class UIPauseMenuButton final : public CBaseUIButton {
     void setBaseScale(float xScale, float yScale);
     void setAlpha(float alpha) { this->fAlpha = alpha; }
 
-    Image* getImage() { return this->getImageFunc != nullptr ? this->getImageFunc() : nullptr; }
+    [[nodiscard]] Image* getImage() const;
 
    private:
     vec2 vScale{0.f};
@@ -26,5 +30,5 @@ class UIPauseMenuButton final : public CBaseUIButton {
 
     float fAlpha;
 
-    std::function<Image *()> getImageFunc;
+    ImageSkinMember imageMember;
 };

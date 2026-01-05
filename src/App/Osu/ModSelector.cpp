@@ -286,79 +286,75 @@ void ModSelector::updateButtons(bool initial) {
     this->modButtonEasy = this->setModButtonOnGrid(
         0, 0, 0, initial && osu->getModEZ(), &cv::mod_easy, "ez",
         "Reduces overall difficulty - larger circles, more forgiving HP drain, less accuracy required.",
-        []() -> SkinImage * { return osu->getSkin()->i_modselect_ez; });
+        &Skin::i_modselect_ez);
     this->modButtonNofail = this->setModButtonOnGrid(
         1, 0, 0, initial && osu->getModNF(), &cv::mod_nofail, "nf",
         "You can't fail. No matter what.\nNOTE: To disable drain completely:\nOptions > Gameplay > "
         "Mechanics > \"Disable HP Drain\".",
-        []() -> SkinImage * { return osu->getSkin()->i_modselect_nf; });
+        &Skin::i_modselect_nf);
     this->setModButtonOnGrid(4, 0, 0, initial && osu->getModNightmare(), &cv::mod_nightmare, "nightmare",
                              "Unnecessary clicks count as misses.\nMassively reduced slider follow circle radius.",
-                             []() -> SkinImage * { return osu->getSkin()->i_modselect_nightmare; });
+                             &Skin::i_modselect_nightmare);
 
     this->modButtonHardrock = this->setModButtonOnGrid(0, 1, 0, initial && osu->getModHR(), &cv::mod_hardrock, "hr",
-                                                       "Everything just got a bit harder...",
-                                                       []() -> SkinImage * { return osu->getSkin()->i_modselect_hr; });
-    this->modButtonSuddendeath = this->setModButtonOnGrid(
-        1, 1, 0, initial && osu->getModSD(), &cv::mod_suddendeath, "sd", "Miss a note and fail.",
-        []() -> SkinImage * { return osu->getSkin()->i_modselect_sd; });
+                                                       "Everything just got a bit harder...", &Skin::i_modselect_hr);
+    this->modButtonSuddendeath = this->setModButtonOnGrid(1, 1, 0, initial && osu->getModSD(), &cv::mod_suddendeath,
+                                                          "sd", "Miss a note and fail.", &Skin::i_modselect_sd);
     this->setModButtonOnGrid(1, 1, 1, initial && osu->getModSS(), &cv::mod_perfect, "ss", "SS or quit.",
-                             []() -> SkinImage * { return osu->getSkin()->i_modselect_pf; });
+                             &Skin::i_modselect_pf);
 
     if(cv::nightcore_enjoyer.getBool()) {
-        this->modButtonHalftime = this->setModButtonOnGrid(
-            2, 0, 0, initial && cv::mod_halftime_dummy.getBool(), &cv::mod_halftime_dummy, "dc", "A E S T H E T I C",
-            []() -> SkinImage * { return osu->getSkin()->i_modselect_dc; });
-        this->modButtonDoubletime = this->setModButtonOnGrid(
-            2, 1, 0, initial && cv::mod_doubletime_dummy.getBool(), &cv::mod_doubletime_dummy, "nc", "uguuuuuuuu",
-            []() -> SkinImage * { return osu->getSkin()->i_modselect_nc; });
+        this->modButtonHalftime =
+            this->setModButtonOnGrid(2, 0, 0, initial && cv::mod_halftime_dummy.getBool(), &cv::mod_halftime_dummy,
+                                     "dc", "A E S T H E T I C", &Skin::i_modselect_dc);
+        this->modButtonDoubletime =
+            this->setModButtonOnGrid(2, 1, 0, initial && cv::mod_doubletime_dummy.getBool(), &cv::mod_doubletime_dummy,
+                                     "nc", "uguuuuuuuu", &Skin::i_modselect_nc);
     } else {
-        this->modButtonHalftime = this->setModButtonOnGrid(
-            2, 0, 0, initial && cv::mod_halftime_dummy.getBool(), &cv::mod_halftime_dummy, "ht", "Less zoom.",
-            []() -> SkinImage * { return osu->getSkin()->i_modselect_ht; });
-        this->modButtonDoubletime = this->setModButtonOnGrid(
-            2, 1, 0, initial && cv::mod_doubletime_dummy.getBool(), &cv::mod_doubletime_dummy, "dt", "Zoooooooooom.",
-            []() -> SkinImage * { return osu->getSkin()->i_modselect_dt; });
+        this->modButtonHalftime =
+            this->setModButtonOnGrid(2, 0, 0, initial && cv::mod_halftime_dummy.getBool(), &cv::mod_halftime_dummy,
+                                     "ht", "Less zoom.", &Skin::i_modselect_ht);
+        this->modButtonDoubletime =
+            this->setModButtonOnGrid(2, 1, 0, initial && cv::mod_doubletime_dummy.getBool(), &cv::mod_doubletime_dummy,
+                                     "dt", "Zoooooooooom.", &Skin::i_modselect_dt);
     }
 
-    this->modButtonHidden =
-        this->setModButtonOnGrid(3, 1, 0, initial && osu->getModHD(), &cv::mod_hidden, "hd",
-                                 "Play with no approach circles and fading notes for a slight score advantage.",
-                                 []() -> SkinImage * { return osu->getSkin()->i_modselect_hd; });
+    this->modButtonHidden = this->setModButtonOnGrid(
+        3, 1, 0, initial && osu->getModHD(), &cv::mod_hidden, "hd",
+        "Play with no approach circles and fading notes for a slight score advantage.", &Skin::i_modselect_hd);
 
-    this->modButtonFlashlight = this->setModButtonOnGrid(
-        4, 1, 0, initial && osu->getModFlashlight(), &cv::mod_flashlight, "fl", "Restricted view area.",
-        []() -> SkinImage * { return osu->getSkin()->i_modselect_fl; });
+    this->modButtonFlashlight =
+        this->setModButtonOnGrid(4, 1, 0, initial && osu->getModFlashlight(), &cv::mod_flashlight, "fl",
+                                 "Restricted view area.", &Skin::i_modselect_fl);
     this->setModButtonOnGrid(4, 1, 1, initial && cv::mod_actual_flashlight.getBool(), &cv::mod_actual_flashlight, "afl",
-                             "Actual flashlight.", []() -> SkinImage * { return osu->getSkin()->i_modselect_fl; });
+                             "Actual flashlight.", &Skin::i_modselect_fl);
 
     this->modButtonTD = this->setModButtonOnGrid(5, 1, 0, initial && osu->getModTD(), &cv::mod_touchdevice, "nerftd",
                                                  "Simulate pp nerf for touch devices.\nOnly affects pp calculation.",
-                                                 []() -> SkinImage * { return osu->getSkin()->i_modselect_td; });
+                                                 &Skin::i_modselect_td);
     this->getModButtonOnGrid(5, 1)->setAvailable(!cv::mod_touchdevice_always.getBool());
 
     this->modButtonRelax = this->setModButtonOnGrid(
         0, 2, 0, initial && osu->getModRelax(), &cv::mod_relax, "relax",
         "You don't need to click.\nGive your clicking/tapping fingers a break from the heat of things.\n** UNRANKED **",
-        []() -> SkinImage * { return osu->getSkin()->i_modselect_rx; });
-    this->modButtonAutopilot =
-        this->setModButtonOnGrid(1, 2, 0, initial && osu->getModAutopilot(), &cv::mod_autopilot, "autopilot",
-                                 "Automatic cursor movement - just follow the rhythm.\n** UNRANKED **",
-                                 []() -> SkinImage * { return osu->getSkin()->i_modselect_ap; });
-    this->modButtonSpunout = this->setModButtonOnGrid(2, 2, 0, initial && osu->getModSpunout(), &cv::mod_spunout,
-                                                      "spunout", "Spinners will be automatically completed.",
-                                                      []() -> SkinImage * { return osu->getSkin()->i_modselect_so; });
-    this->modButtonAuto = this->setModButtonOnGrid(3, 2, 0, initial && osu->getModAuto(), &cv::mod_autoplay, "auto",
-                                                   "Watch a perfect automated play through the song.",
-                                                   []() -> SkinImage * { return osu->getSkin()->i_modselect_auto; });
+        &Skin::i_modselect_rx);
+    this->modButtonAutopilot = this->setModButtonOnGrid(
+        1, 2, 0, initial && osu->getModAutopilot(), &cv::mod_autopilot, "autopilot",
+        "Automatic cursor movement - just follow the rhythm.\n** UNRANKED **", &Skin::i_modselect_ap);
+    this->modButtonSpunout =
+        this->setModButtonOnGrid(2, 2, 0, initial && osu->getModSpunout(), &cv::mod_spunout, "spunout",
+                                 "Spinners will be automatically completed.", &Skin::i_modselect_so);
+    this->modButtonAuto =
+        this->setModButtonOnGrid(3, 2, 0, initial && osu->getModAuto(), &cv::mod_autoplay, "auto",
+                                 "Watch a perfect automated play through the song.", &Skin::i_modselect_auto);
     this->setModButtonOnGrid(
         4, 2, 0, initial && osu->getModTarget(), &cv::mod_target, "practicetarget",
         "Accuracy is based on the distance to the center of all hitobjects.\n300s still require at "
         "least being in the hit window of a 100 in addition to the rule above.",
-        []() -> SkinImage * { return osu->getSkin()->i_modselect_target; });
-    this->modButtonScoreV2 = this->setModButtonOnGrid(5, 2, 0, initial && osu->getModScorev2(), &cv::mod_scorev2, "v2",
-                                                      "Try the future scoring system.\n** UNRANKED **",
-                                                      []() -> SkinImage * { return osu->getSkin()->i_modselect_sv2; });
+        &Skin::i_modselect_target);
+    this->modButtonScoreV2 =
+        this->setModButtonOnGrid(5, 2, 0, initial && osu->getModScorev2(), &cv::mod_scorev2, "v2",
+                                 "Try the future scoring system.\n** UNRANKED **", &Skin::i_modselect_sv2);
 
     // Enable all mods that we disable conditionally below
     this->getModButtonOnGrid(2, 0)->setAvailable(true);
@@ -827,32 +823,29 @@ void ModSelector::updateLayout() {
                  start.y / 2 - (this->overrideSliders.size() * overrideSliderHeight +
                                 (this->overrideSliders.size() - 1) * overrideSliderOffsetY) /
                                    1.75f);
-        for(int i = 0; i < this->overrideSliders.size(); i++) {
-            this->overrideSliders[i].desc->setSizeToContent(5 * dpiScale, 0);
-            this->overrideSliders[i].desc->setSizeY(overrideSliderHeight);
+        for(int i = -1; const auto &ovsl : this->overrideSliders) {
+            ++i;
 
-            this->overrideSliders[i].slider->setBlockSize(20 * dpiScale, 20 * dpiScale);
-            this->overrideSliders[i].slider->setPos(
-                overrideSliderStart.x, overrideSliderStart.y + i * overrideSliderHeight + i * overrideSliderOffsetY);
-            this->overrideSliders[i].slider->setSize(overrideSliderWidth, overrideSliderHeight);
+            ovsl.desc->setSizeToContent(5 * dpiScale, 0);
+            ovsl.desc->setSizeY(overrideSliderHeight);
 
-            this->overrideSliders[i].desc->setPos(
-                this->overrideSliders[i].slider->getPos().x - this->overrideSliders[i].desc->getSize().x - margin,
-                this->overrideSliders[i].slider->getPos().y);
+            ovsl.slider->setBlockSize(20 * dpiScale, 20 * dpiScale);
+            ovsl.slider->setPos(overrideSliderStart.x,
+                                overrideSliderStart.y + i * overrideSliderHeight + i * overrideSliderOffsetY);
+            ovsl.slider->setSize(overrideSliderWidth, overrideSliderHeight);
 
-            if(this->overrideSliders[i].lock != nullptr && this->overrideSliders.size() > 1) {
-                this->overrideSliders[i].lock->setPos(this->overrideSliders[1].desc->getPos().x -
-                                                          this->overrideSliders[i].lock->getSize().x - margin -
-                                                          3 * dpiScale,
-                                                      this->overrideSliders[i].desc->getPos().y);
-                this->overrideSliders[i].lock->setSizeY(overrideSliderHeight);
+            ovsl.desc->setPos(ovsl.slider->getPos().x - ovsl.desc->getSize().x - margin, ovsl.slider->getPos().y);
+
+            if(ovsl.lock != nullptr && this->overrideSliders.size() > 1) {
+                ovsl.lock->setPos(
+                    this->overrideSliders[1].desc->getPos().x - ovsl.lock->getSize().x - margin - 3 * dpiScale,
+                    ovsl.desc->getPos().y);
+                ovsl.lock->setSizeY(overrideSliderHeight);
             }
 
-            this->overrideSliders[i].label->setPos(
-                this->overrideSliders[i].slider->getPos().x + this->overrideSliders[i].slider->getSize().x + margin,
-                this->overrideSliders[i].slider->getPos().y);
-            this->overrideSliders[i].label->setSizeToContent(0, 0);
-            this->overrideSliders[i].label->setSizeY(overrideSliderHeight);
+            ovsl.label->setPos(ovsl.slider->getPos().x + ovsl.slider->getSize().x + margin, ovsl.slider->getPos().y);
+            ovsl.label->setSizeToContent(0, 0);
+            ovsl.label->setSizeY(overrideSliderHeight);
         }
 
         // action buttons
@@ -864,11 +857,13 @@ void ModSelector::updateLayout() {
             osu->getVirtScreenWidth() / 2.0f - actionSize.x / 2.0f,
             actionMinY + (osu->getVirtScreenHeight() - actionMinY) / 2.0f -
                 (actionSize.y * this->actionButtons.size() + actionOffsetY * (this->actionButtons.size() - 1)) / 2.0f);
-        for(int i = 0; i < this->actionButtons.size(); i++) {
-            this->actionButtons[i]->setVisible(true);
-            this->actionButtons[i]->setPos(actionStart.x, actionStart.y + actionSize.y * i + actionOffsetY * i);
-            this->actionButtons[i]->onResized();  // HACKHACK: framework, setSize*() does not update string metrics
-            this->actionButtons[i]->setSize(actionSize);
+        for(int i = -1; auto *actbtn : this->actionButtons) {
+            ++i;
+
+            actbtn->setVisible(true);
+            actbtn->setPos(actionStart.x, actionStart.y + actionSize.y * i + actionOffsetY * i);
+            actbtn->onResized();  // HACKHACK: framework, setSize*() does not update string metrics
+            actbtn->setSize(actionSize);
         }
 
         // score multiplier info label
@@ -913,35 +908,32 @@ void ModSelector::updateLayout() {
         int overrideSliderHeight = 25 * dpiScale;
         int overrideSliderOffsetY = 5 * dpiScale;
         vec2 overrideSliderStart = vec2(osu->getVirtScreenWidth() / 2 - overrideSliderWidth / 2, 5 * dpiScale);
-        for(int i = 0; i < this->overrideSliders.size(); i++) {
-            this->overrideSliders[i].desc->setSizeToContent(5 * dpiScale, 0);
-            this->overrideSliders[i].desc->setSizeY(overrideSliderHeight);
+        for(int i = -1; const auto &ovsl : this->overrideSliders) {
+            ++i;
 
-            this->overrideSliders[i].slider->setPos(
-                overrideSliderStart.x, overrideSliderStart.y + i * overrideSliderHeight + i * overrideSliderOffsetY);
-            this->overrideSliders[i].slider->setSizeX(overrideSliderWidth);
+            ovsl.desc->setSizeToContent(5 * dpiScale, 0);
+            ovsl.desc->setSizeY(overrideSliderHeight);
 
-            this->overrideSliders[i].desc->setPos(
-                this->overrideSliders[i].slider->getPos().x - this->overrideSliders[i].desc->getSize().x - margin,
-                this->overrideSliders[i].slider->getPos().y);
+            ovsl.slider->setPos(overrideSliderStart.x,
+                                overrideSliderStart.y + i * overrideSliderHeight + i * overrideSliderOffsetY);
+            ovsl.slider->setSizeX(overrideSliderWidth);
 
-            if(this->overrideSliders[i].lock != nullptr && this->overrideSliders.size() > 1) {
-                this->overrideSliders[i].lock->setPos(this->overrideSliders[1].desc->getPos().x -
-                                                          this->overrideSliders[i].lock->getSize().x - margin -
-                                                          3 * dpiScale,
-                                                      this->overrideSliders[i].desc->getPos().y);
-                this->overrideSliders[i].lock->setSizeY(overrideSliderHeight);
+            ovsl.desc->setPos(ovsl.slider->getPos().x - ovsl.desc->getSize().x - margin, ovsl.slider->getPos().y);
+
+            if(ovsl.lock != nullptr && this->overrideSliders.size() > 1) {
+                ovsl.lock->setPos(
+                    this->overrideSliders[1].desc->getPos().x - ovsl.lock->getSize().x - margin - 3 * dpiScale,
+                    ovsl.desc->getPos().y);
+                ovsl.lock->setSizeY(overrideSliderHeight);
             }
 
-            this->overrideSliders[i].label->setPos(
-                this->overrideSliders[i].slider->getPos().x + this->overrideSliders[i].slider->getSize().x + margin,
-                this->overrideSliders[i].slider->getPos().y);
-            this->overrideSliders[i].label->setSizeToContent(0, 0);
-            this->overrideSliders[i].label->setSizeY(overrideSliderHeight);
+            ovsl.label->setPos(ovsl.slider->getPos().x + ovsl.slider->getSize().x + margin, ovsl.slider->getPos().y);
+            ovsl.label->setSizeToContent(0, 0);
+            ovsl.label->setSizeY(overrideSliderHeight);
         }
 
         // action buttons
-        for(auto &actionButton : this->actionButtons) {
+        for(auto *actionButton : this->actionButtons) {
             actionButton->setVisible(false);
         }
 
@@ -1012,11 +1004,11 @@ void ModSelector::updateExperimentalLayout() {
 
 UIModSelectorModButton *ModSelector::setModButtonOnGrid(int x, int y, int state, bool initialState, ConVar *modCvar,
                                                         UString modName, const UString &tooltipText,
-                                                        std::function<SkinImage *()> getImageFunc) {
+                                                        SkinImageSkinMember getSkinImageMember) {
     UIModSelectorModButton *modButton = this->getModButtonOnGrid(x, y);
 
     if(modButton != nullptr) {
-        modButton->setState(state, initialState, modCvar, std::move(modName), tooltipText, std::move(getImageFunc));
+        modButton->setState(state, initialState, modCvar, std::move(modName), tooltipText, getSkinImageMember);
         modButton->setVisible(true);
     }
 

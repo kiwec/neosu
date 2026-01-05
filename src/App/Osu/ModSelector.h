@@ -4,6 +4,7 @@
 #include "OsuScreen.h"
 
 class SkinImage;
+struct Skin;
 class SongBrowser;
 
 class CBaseUIElement;
@@ -71,23 +72,16 @@ class ModSelector final : public OsuScreen {
     CBaseUICheckbox *ARLock;
     CBaseUICheckbox *ODLock;
 
+    using SkinImageSkinMember = SkinImage *Skin::*;
+
    private:
     struct OVERRIDE_SLIDER {
-        OVERRIDE_SLIDER() {
-            this->lock = nullptr;
-            this->desc = nullptr;
-            this->slider = nullptr;
-            this->label = nullptr;
-            this->cvar = nullptr;
-            this->lockCvar = nullptr;
-        }
-
-        CBaseUICheckbox *lock;
-        ModSelectorOverrideSliderDescButton *desc;
-        CBaseUISlider *slider;
-        CBaseUILabel *label;
-        ConVar *cvar;
-        ConVar *lockCvar;
+        CBaseUICheckbox *lock{nullptr};
+        ModSelectorOverrideSliderDescButton *desc{nullptr};
+        CBaseUISlider *slider{nullptr};
+        CBaseUILabel *label{nullptr};
+        ConVar *cvar{nullptr};
+        ConVar *lockCvar{nullptr};
     };
 
     struct EXPERIMENTAL_MOD {
@@ -97,7 +91,7 @@ class ModSelector final : public OsuScreen {
 
     UIModSelectorModButton *setModButtonOnGrid(int x, int y, int state, bool initialState, ConVar *modCvar,
                                                UString modName, const UString &tooltipText,
-                                               std::function<SkinImage *()> getImageFunc);
+                                               SkinImageSkinMember getSkinImageMember);
     UIModSelectorModButton *getModButtonOnGrid(int x, int y);
 
     OVERRIDE_SLIDER addOverrideSlider(UString text, const UString &labelText, ConVar *cvar, float min, float max,

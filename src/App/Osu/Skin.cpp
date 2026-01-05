@@ -34,12 +34,12 @@
 #define NOT_LOOPING false
 #define LOOPING true
 
-float Skin::BasicSkinImage::scale() const {
+float BasicSkinImage::scale() const {
     if(unlikely(this->scale_mul == -1)) {
         this->scale_mul = 1;
         std::string_view path;
         if(this->img && this->img != MISSING_TEXTURE &&
-            // i don't think @2x jpeg are even supported in osu stable, but doesn't hurt to check here anyways...
+           // i don't think @2x jpeg are even supported in osu stable, but doesn't hurt to check here anyways...
            (path = this->img->getFilePath()).length() > 8 /* @2x.jpeg == 8 */) {
             path = path.substr(path.length() - 8);
 
@@ -1148,7 +1148,7 @@ void Skin::loadSound(Sound *&sndRef, const std::string &skinElementName, const s
     this->filepaths_for_export.push_back(sndRef->getFilePath());
 }
 
-const Skin::BasicSkinImage &Skin::getGradeImageLarge(ScoreGrade grade) const {
+const BasicSkinImage &Skin::getGradeImageLarge(ScoreGrade grade) const {
     using enum ScoreGrade;
     switch(grade) {
         case XH:
@@ -1191,3 +1191,23 @@ const SkinImage *Skin::getGradeImageSmall(ScoreGrade grade) const {
             return this->i_ranking_d_small;
     }
 }
+
+namespace neosu::skin {
+
+const BasicSkinImage &getImageMember(BasicSkinImage Skin::*memb) {
+    if(auto *skin = osu->getSkin(); !!skin) {
+        return skin->*memb;
+    }
+
+    static BasicSkinImage def{MISSING_TEXTURE};
+    return def;
+}
+
+SkinImage *getSkinImageMember(SkinImage *Skin::*memb) {
+    if(auto *skin = osu->getSkin(); !!skin) {
+        return skin->*memb;
+    }
+    return nullptr;
+}
+
+}  // namespace neosu::skin

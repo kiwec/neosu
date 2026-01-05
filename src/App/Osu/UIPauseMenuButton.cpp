@@ -10,10 +10,10 @@
 #include "SoundEngine.h"
 #include "Environment.h"
 
-UIPauseMenuButton::UIPauseMenuButton(std::function<Image *()> getImageFunc, float xPos, float yPos, float xSize,
-                                     float ySize, UString name)
+UIPauseMenuButton::UIPauseMenuButton(ImageSkinMember imageMember, float xPos, float yPos, float xSize, float ySize,
+                                     UString name)
     : CBaseUIButton(xPos, yPos, xSize, ySize, std::move(name)) {
-    this->getImageFunc = std::move(getImageFunc);
+    this->imageMember = imageMember;
 
     this->vScale = vec2(1, 1);
     this->fScaleMultiplier = 1.1f;
@@ -25,8 +25,7 @@ void UIPauseMenuButton::draw() {
     if(!this->bVisible) return;
 
     // draw image
-    Image *image = this->getImageFunc();
-    if(image != nullptr) {
+    if(Image *image = this->imageMember ? neosu::skin::getImageMember(this->imageMember) : nullptr; !!image) {
         g->setColor(argb(this->fAlpha, 1.0f, 1.0f, 1.0f));
         g->pushTransform();
         {

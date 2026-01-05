@@ -20,27 +20,27 @@ enum class ScoreGrade : uint8_t;
 
 extern Image *MISSING_TEXTURE;
 
+// for lazy-loading "is @2x" checks, for non-animated skin images (which belong to the SkinImage class)
+struct BasicSkinImage {
+    BasicSkinImage() = default;
+    BasicSkinImage(Image *img) : img(img) {}
+
+    Image *img{MISSING_TEXTURE};
+
+    [[nodiscard]] float scale() const;
+
+    inline Image *operator->() const noexcept { return img; }
+    inline operator Image *() const noexcept { return img; }
+    inline explicit operator bool() const noexcept { return !!img; }
+    inline bool operator==(Image *other) const noexcept { return img == other; }
+
+   private:
+    mutable i8 scale_mul{-1};
+};
+
 struct Skin final {
    private:
     NOCOPY_NOMOVE(Skin)
-
-    // for lazy-loading "is @2x" checks, for non-animated skin images (which belong to the SkinImage class)
-    struct BasicSkinImage {
-        BasicSkinImage() = default;
-        BasicSkinImage(Image *img) : img(img) {}
-
-        Image *img{MISSING_TEXTURE};
-
-        [[nodiscard]] float scale() const;
-
-        inline Image *operator->() const noexcept { return img; }
-        inline operator Image *() const noexcept { return img; }
-        inline explicit operator bool() const noexcept { return !!img; }
-        inline bool operator==(Image *other) const noexcept { return img == other; }
-
-       private:
-        mutable i8 scale_mul{-1};
-    };
 
     // custom
     void randomizeFilePath();
@@ -421,3 +421,9 @@ struct Skin final {
     bool o_ready{false};
     bool o_default;
 };
+
+// Getters for specific members for the currently active (osu) skin (not beatmap skin (not implemented)).
+namespace neosu::skin {
+const BasicSkinImage &getImageMember(BasicSkinImage Skin::*memb);
+SkinImage *getSkinImageMember(SkinImage *Skin::*memb);
+}  // namespace neosu::skin

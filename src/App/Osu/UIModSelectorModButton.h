@@ -5,10 +5,12 @@
 class SkinImage;
 class ModSelector;
 class ConVar;
+struct Skin;
 
 class UIModSelectorModButton final : public CBaseUIButton {
    public:
     UIModSelectorModButton(ModSelector *osuModSelector, float xPos, float yPos, float xSize, float ySize, UString name);
+    using SkinImageSkinMember = SkinImage *Skin::*;
 
     void draw() override;
     void mouse_update(bool *propagate_clicks) override;
@@ -17,8 +19,8 @@ class UIModSelectorModButton final : public CBaseUIButton {
     void resetState();
 
     void setState(int state);
-    void setState(unsigned int state, bool initialState, ConVar *cvar, UString modName, const UString& tooltipText,
-                  std::function<SkinImage *()> getImageFunc);
+    void setState(unsigned int state, bool initialState, ConVar *cvar, UString modName, const UString &tooltipText,
+                  SkinImageSkinMember skinMember);
     void setBaseScale(float xScale, float yScale);
     void setAvailable(bool available) { this->bAvailable = available; }
 
@@ -42,13 +44,13 @@ class UIModSelectorModButton final : public CBaseUIButton {
         ConVar *cvar;
         UString modName;
         std::vector<UString> tooltipTextLines;
-        std::function<SkinImage *()> getImageFunc;
+        SkinImageSkinMember skinImageMember;
     };
     std::vector<STATE> states;
 
     vec2 vScale{0.f};
     float fRot;
-    std::function<SkinImage *()> getActiveImageFunc;
+    SkinImageSkinMember activeSkinImageMember;
 
     bool bFocusStolenDelay;
 };

@@ -6,9 +6,13 @@ class SongBrowser;
 class CBaseUIContainer;
 class UIPauseMenuButton;
 class Image;
+struct Skin;
+struct BasicSkinImage;
 
 class PauseMenu final : public OsuScreen {
    public:
+    using ImageSkinMember = BasicSkinImage Skin::*;
+
     PauseMenu();
 
     void draw() override;
@@ -35,7 +39,7 @@ class PauseMenu final : public OsuScreen {
 
     void scheduleVisibilityChange(bool visible);
 
-    UIPauseMenuButton *addButton(std::function<Image *()> getImageFunc, UString name);
+    UIPauseMenuButton *addButton(ImageSkinMember getImageFunc, UString name);
 
     bool bScheduledVisibilityChange;
     bool bScheduledVisibility;
