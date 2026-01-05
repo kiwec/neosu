@@ -474,7 +474,10 @@ bool SDLMain::createWindow() {
         SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
 
         // we don't need alpha on the window visual, this is only required for making the window itself transparent
-        SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 0);
+        // actually TODO: makes the game overly dark for some reason on windows?
+        if constexpr(!Env::cfg(OS::WINDOWS)) {
+            SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 0);
+        }
 
         // work around weird issue with AMD on windows
         if constexpr(Env::cfg(OS::WINDOWS)) {
