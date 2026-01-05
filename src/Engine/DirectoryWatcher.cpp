@@ -3,7 +3,7 @@
 
 #include "Logging.h"
 #include "Thread.h"
-#include "templates.h"
+#include "Hashing.h"
 #include "Timing.h"
 #include "SyncJthread.h"
 #include "SyncMutex.h"
@@ -89,7 +89,7 @@ struct DirWatcherImpl {
 
         FileChangeCallback cb;
 
-        sv_unordered_map<UnconfirmedEvent> unconfirmed_events{};
+        Hash::stable_stringmap<UnconfirmedEvent> unconfirmed_events{};
 
         struct WinDirState {
             WinDirState() = default;
@@ -138,8 +138,8 @@ struct DirWatcherImpl {
         McThread::set_current_thread_name(US_("dir_watcher"));
         McThread::set_current_thread_prio(McThread::Priority::LOW);
 
-        sv_unordered_map<DirectoryState> active_directories;
-        std::vector<sv_unordered_map<DirectoryState>::iterator> directories_to_init;
+        Hash::stable_stringmap<DirectoryState> active_directories;
+        std::vector<Hash::stable_stringmap<DirectoryState>::iterator> directories_to_init;
 
         // Create manual-reset event for stop signaling
         HANDLE stop_event = CreateEventW(nullptr, TRUE, FALSE, nullptr);
@@ -386,8 +386,8 @@ struct DirWatcherImpl {
         DirectoryState(FileChangeCallback cb) : cb(std::move(cb)) {}
         FileChangeCallback cb;
 
-        sv_unordered_map<UnconfirmedEvent> unconfirmed_events{};
-        sv_unordered_map<fs::file_time_type> files{};
+        Hash::stable_stringmap<UnconfirmedEvent> unconfirmed_events{};
+        Hash::stable_stringmap<fs::file_time_type> files{};
     };
 
     void worker_loop(const Sync::stop_token& stoken) {
@@ -404,9 +404,8 @@ struct DirWatcherImpl {
         // The downside is that this doesn't work recursively, so we can't
         // just monitor the entire Skins/ and Songs/ directories.
 
-        static auto getFileTimes =
-            [](const std::string& dir_path) -> sv_unordered_map<fs::file_time_type> {
-            sv_unordered_map<fs::file_time_type> files;
+        static auto getFileTimes = [](const std::string& dir_path) -> Hash::stable_stringmap<fs::file_time_type> {
+            Hash::stable_stringmap<fs::file_time_type> files;
 
             std::error_code ec;
             for(const auto& entry : fs::directory_iterator(dir_path, ec)) {
@@ -423,8 +422,8 @@ struct DirWatcherImpl {
             return files;
         };
 
-        sv_unordered_map<DirectoryState> active_directories;
-        std::vector<sv_unordered_map<DirectoryState>::iterator> directories_to_init;
+        Hash::stable_stringmap<DirectoryState> active_directories;
+        std::vector<Hash::stable_stringmap<DirectoryState>::iterator> directories_to_init;
 
         while(!stoken.stop_requested()) {
             // Add/remove directories

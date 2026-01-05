@@ -14,7 +14,7 @@
 #ifdef MCENGINE_FEATURE_GLES32
 
 #include "Shader.h"
-#include "templates.h"
+#include "Hashing.h"
 
 class OpenGLES32Shader final : public Shader {
     NOCOPY_NOMOVE(OpenGLES32Shader)
@@ -61,7 +61,7 @@ class OpenGLES32Shader final : public Shader {
 
     int m_iProgramBackup;
 
-    sv_unordered_map<int> m_uniformLocationCache;
+    Hash::unstable_stringmap<int> m_uniformLocationCache;
 };
 
 #endif

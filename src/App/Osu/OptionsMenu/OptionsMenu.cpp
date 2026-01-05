@@ -220,7 +220,7 @@ struct OptionsMenuImpl final {
     CategoryButton *fposuCategoryButton{nullptr};
     std::vector<CategoryButton *> categoryButtons;
     std::vector<OptionsElement> elemContainers;
-    std::unordered_map<CBaseUIElement *, OptionsElement *> elemToContainerMap;
+    Hash::flat::map<CBaseUIElement *, OptionsElement *> elemToContainerMap;
 
     CBaseUICheckbox *fullscreenCheckbox{nullptr};
     CBaseUISlider *backgroundDimSlider{nullptr};
@@ -369,7 +369,7 @@ struct RenderCondition {
 struct OptionsElement {
     OptionsElement(ElementType type) : type(type) {}
 
-    std::unordered_map<CBaseUIElement *, ConVar *> cvars{};
+    Hash::flat::map<CBaseUIElement *, ConVar *> cvars{};
     std::vector<CBaseUIElement *> baseElems{};
 
     UString searchTags;

@@ -996,7 +996,7 @@ void Database::loadMaps() {
         std::unique_ptr<DiffContainer> diffs;
     };
     std::vector<Beatmap_Set> beatmapSets;
-    std::unordered_map<int, size_t> setIDToIndex;
+    Hash::flat::map<int, size_t> setIDToIndex;
 
     // Load neosu map database
     {
@@ -1724,7 +1724,7 @@ void Database::loadMaps() {
                     // beatmapSet.diffs2 ownership transferred to BeatmapSet
                 } else {
                     // set with invalid ID: treat all its diffs separately. we'll group the diffs by title+artist.
-                    sv_unordered_map<std::unique_ptr<DiffContainer>> titleArtistToBeatmap;
+                    Hash::unstable_stringmap<std::unique_ptr<DiffContainer>> titleArtistToBeatmap;
                     for(auto &diff : (*beatmapSet.diffs)) {
                         std::string titleArtist = diff->getTitleLatin();
                         titleArtist.append("|");

@@ -294,7 +294,7 @@ class SongBrowser final : public ScreenBackable {
     // beatmap database
     std::vector<SongButton *> parentButtons;
     std::vector<CarouselButton *> visibleSongButtons;
-    std::unordered_map<MD5Hash, SongDifficultyButton *> hashToDiffButton;
+    Hash::flat::map<MD5Hash, SongDifficultyButton *> hashToDiffButton;
 
     CollBtnContainer titleCollectionButtons;
     CollBtnContainer artistCollectionButtons;

@@ -14,7 +14,7 @@
 #include "Sound.h"
 #include "TextureAtlas.h"
 #include "VertexArrayObject.h"
-#include "templates.h"
+#include "Hashing.h"
 
 #include "SyncMutex.h"
 
@@ -186,7 +186,7 @@ struct ResourceManagerImpl final {
     std::vector<VertexArrayObject *> vVertexArrayObjects;
 
     // lookup map
-    sv_unordered_map<Resource *> mNameToResourceMap;
+    Hash::unstable_stringmap<Resource *> mNameToResourceMap;
 
     // async loading system
     AsyncResourceLoader asyncLoader;
@@ -504,9 +504,8 @@ McFont *ResourceManager::loadFont(std::string filepath, const std::string &resou
     return fnt;
 }
 
-McFont *ResourceManager::loadFont(std::string filepath, const std::string &resourceName,
-                                  const char16_t* characters, size_t numCharacters, int fontSize, bool antialiasing,
-                                  int fontDPI) {
+McFont *ResourceManager::loadFont(std::string filepath, const std::string &resourceName, const char16_t *characters,
+                                  size_t numCharacters, int fontSize, bool antialiasing, int fontDPI) {
     auto res = pImpl->checkIfExistsAndHandle<McFont>(resourceName);
     if(res != nullptr) return res;
 

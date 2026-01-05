@@ -10,7 +10,6 @@
 
 #include <atomic>
 #include <set>
-#include <unordered_map>
 
 namespace Timing {
 class Timer;
@@ -52,7 +51,7 @@ struct alignas(1) DB_TIMINGPOINT {
 };
 #pragma pack(pop)
 
-using HashToScoreMap = std::unordered_map<MD5Hash, std::vector<FinishedScore>>;
+using HashToScoreMap = Hash::flat::map<MD5Hash, std::vector<FinishedScore>>;
 
 class Database {
     NOCOPY_NOMOVE(Database)
@@ -105,7 +104,8 @@ class Database {
     void cancel();
     void save();
 
-    BeatmapSet *addBeatmapSet(const std::string &beatmapFolderPath, i32 set_id_override = -1, bool diffcalc_immediately = false, bool is_peppy = false);
+    BeatmapSet *addBeatmapSet(const std::string &beatmapFolderPath, i32 set_id_override = -1,
+                              bool diffcalc_immediately = false, bool is_peppy = false);
 
     int addScore(const FinishedScore &score);
     void deleteScore(const MD5Hash &beatmapMD5Hash, u64 scoreUnixTimestamp);
@@ -120,28 +120,31 @@ class Database {
     static u64 getRequiredScoreForLevel(int level);
     static int getLevelForScore(u64 score, int maxLevel = 120);
 
-    inline float getProgress() const { return this->loading_progress.load(std::memory_order_acquire); }
-    inline bool isCancelled() const { return this->load_interrupted.load(std::memory_order_acquire); }
-    inline bool isLoading() const {
+    [[nodiscard]] inline float getProgress() const { return this->loading_progress.load(std::memory_order_acquire); }
+    [[nodiscard]] inline bool isCancelled() const { return this->load_interrupted.load(std::memory_order_acquire); }
+    [[nodiscard]] inline bool isLoading() const {
         float progress = this->getProgress();
         return progress > 0.f && progress < 1.f;
     }
-    inline bool isFinished() const { return (this->getProgress() >= 1.0f); }
-    inline bool foundChanges() const { return this->raw_found_changes; }
+    [[nodiscard]] inline bool isFinished() const { return (this->getProgress() >= 1.0f); }
+    [[nodiscard]] inline bool foundChanges() const { return this->raw_found_changes; }
 
     DatabaseBeatmap *getBeatmapDifficulty(const MD5Hash &md5hash);
     DatabaseBeatmap *getBeatmapDifficulty(i32 map_id);
     BeatmapSet *getBeatmapSet(i32 set_id);
-    inline const std::vector<std::unique_ptr<BeatmapSet>> &getBeatmapSets() const { return this->beatmapsets; }
+    [[nodiscard]] inline const std::vector<std::unique_ptr<BeatmapSet>> &getBeatmapSets() const {
+        return this->beatmapsets;
+    }
 
     // WARNING: Before calling getScores(), you need to lock db->scores_mtx!
-    inline const HashToScoreMap &getScores() const { return this->scores; }
+    [[nodiscard]] inline const HashToScoreMap &getScores() const { return this->scores; }
     inline HashToScoreMap &getOnlineScores() { return this->online_scores; }
 
     static std::string getOsuSongsFolder();
 
     // only used for raw loading without db
-    std::unique_ptr<BeatmapSet> loadRawBeatmap(const std::string &beatmapPath, bool diffcalc_immediately = false, bool is_peppy = false);
+    std::unique_ptr<BeatmapSet> loadRawBeatmap(const std::string &beatmapPath, bool diffcalc_immediately = false,
+                                               bool is_peppy = false);
 
     inline void addPathToImport(const std::string &dbPath) { this->extern_db_paths_to_import.push_back(dbPath); }
 
@@ -152,7 +155,7 @@ class Database {
     Sync::shared_mutex scores_mtx;
     std::atomic<bool> scores_changed{true};
 
-    std::unordered_map<MD5Hash, MapOverrides> peppy_overrides;
+    Hash::flat::map<MD5Hash, MapOverrides> peppy_overrides;
     std::vector<BeatmapDifficulty *> loudness_to_calc;
 
    private:
@@ -187,10 +190,10 @@ class Database {
 
     static std::string getDBPath(DatabaseType db_type);
     static DatabaseType getDBType(std::string_view db_path);
-    static bool isOsuDBReadable(std::string_view db_path); // basic check for size and version > 0
+    static bool isOsuDBReadable(std::string_view db_path);  // basic check for size and version > 0
 
     // should only be accessed from database loader thread!
-    std::unordered_map<DatabaseType, std::string> database_files;
+    Hash::flat::map<DatabaseType, std::string> database_files;
     std::set<std::pair<DatabaseType, std::string>> external_databases;
 
     u64 bytes_processed{0};
@@ -268,7 +271,7 @@ class Database {
         temp_loading_beatmapsets;  // only used during loading, contents moved into beatmapsets after
 
     Sync::shared_mutex beatmap_difficulties_mtx;
-    std::unordered_map<MD5Hash, BeatmapDifficulty *> beatmap_difficulties;
+    Hash::flat::map<MD5Hash, BeatmapDifficulty *> beatmap_difficulties;
 
     bool neosu_maps_loaded{false};
 
@@ -293,5 +296,6 @@ class Database {
     u32 cur_raw_load_idx{0};
     bool needs_raw_load{false};
     bool raw_load_scheduled{false};
-    bool raw_load_is_neosu{false}; // if we're raw loading from the local neosu folder instead of the osu!stable song folder
+    bool raw_load_is_neosu{
+        false};  // if we're raw loading from the local neosu folder instead of the osu!stable song folder
 };

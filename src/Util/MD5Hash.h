@@ -5,6 +5,11 @@
 #include <string_view>
 #include <string>
 
+#include "ankerl/unordered_dense.h"
+namespace Hash {
+namespace flat = ankerl::unordered_dense;
+}
+
 class UString;
 
 #if defined(__GNUC__) && !defined(__clang__) && (defined(__MINGW32__) || defined(__MINGW64__))
@@ -45,3 +50,12 @@ struct hash<MD5Hash> {
     size_t operator()(const MD5Hash &md5) const { return std::hash<std::string_view>()(md5.string()); }
 };
 }  // namespace std
+
+template <>
+struct Hash::flat::hash<MD5Hash> {
+    using is_avalanching = void;
+
+    [[nodiscard]] auto operator()(const MD5Hash &md5) const noexcept -> uint64_t {
+        return detail::wyhash::hash(md5.data(), md5.length());
+    }
+};

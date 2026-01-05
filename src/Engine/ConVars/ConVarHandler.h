@@ -1,7 +1,7 @@
 // Copyright (c) 2011, PG & 2025, WH & 2025, kiwec, All rights reserved.
 #pragma once
 #include "BaseEnvironment.h"
-#include "templates.h"
+#include "Hashing.h"
 
 #include <vector>
 #include <string>
@@ -24,7 +24,7 @@ class ConVarHandler {
     ~ConVarHandler() = default;
 
     [[nodiscard]] forceinline const std::vector<ConVar *> &getConVarArray() { return this->vConVarArray; }
-    [[nodiscard]] forceinline const sv_unordered_map<ConVar *> &getConVarMap() { return this->vConVarMap; }
+    [[nodiscard]] forceinline const Hash::unstable_stringmap<ConVar *> &getConVarMap() { return this->vConVarMap; }
     [[nodiscard]] forceinline const ConVar *getConVar(std::string_view name) {
         return static_cast<const ConVar *>(getConVar_int(name));
     }
@@ -55,7 +55,7 @@ class ConVarHandler {
 
     CVSubmittableCriteriaFunc areAllCvarsSubmittableExtraCheck{nullptr};
     std::vector<ConVar *> vConVarArray;
-    sv_unordered_map<ConVar *> vConVarMap;
+    Hash::unstable_stringmap<ConVar *> vConVarMap;
 
     [[nodiscard]] ConVar *getConVar_int(std::string_view name) const;
 };

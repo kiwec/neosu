@@ -2,7 +2,7 @@
 // Copyright (c) 2023, kiwec, All rights reserved.
 
 #include "BanchoProtocol.h"
-#include "templates.h"
+#include "Hashing.h"
 
 #include <atomic>
 #include <vector>
@@ -59,7 +59,7 @@ struct BanchoState final {
         u32 nb_members;
     };
 
-    static sv_unordered_map<BanchoState::Channel *> chat_channels;
+    static Hash::unstable_stringmap<BanchoState::Channel *> chat_channels;
 
     // utils
     static void handle_packet(Packet &packet);

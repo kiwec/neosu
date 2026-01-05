@@ -18,6 +18,7 @@
 #include "Environment.h"
 #include "SyncMutex.h"
 #include "Image.h"
+#include "Hashing.h"
 
 #include <algorithm>
 #include <cstddef>
@@ -72,7 +73,7 @@ struct FallbackFont {
 // global shared freetype resources
 FT_Library s_sharedFtLibrary{nullptr};
 std::vector<FallbackFont> s_sharedFallbackFonts;
-std::unordered_set<char16_t> s_sharedFallbackFaceBlacklist;
+Hash::flat::set<char16_t> s_sharedFallbackFaceBlacklist;
 
 bool s_sharedFtLibraryInitialized{false};
 bool s_sharedFallbacksInitialized{false};
@@ -118,8 +119,8 @@ struct McFontImpl final {
     };
 
     std::vector<char16_t> m_vGlyphs;
-    std::unordered_map<char16_t, bool> m_vGlyphExistence;
-    std::unordered_map<char16_t, GLYPH_METRICS> m_vGlyphMetrics;
+    Hash::flat::map<char16_t, bool> m_vGlyphExistence;
+    Hash::flat::map<char16_t, GLYPH_METRICS> m_vGlyphMetrics;
 
     std::unique_ptr<VertexArrayObject> m_vao;
     TextBatch m_batchQueue;
@@ -141,9 +142,9 @@ struct McFontImpl final {
     int m_dynamicRegionY;      // Y coordinate where dynamic region starts
     int m_slotsPerRow;         // number of slots per row in dynamic region
     std::vector<DynamicSlot> m_dynamicSlots;
-    std::unordered_map<char16_t, int> m_dynamicSlotMap;  // character -> slot index for O(1) lookup
-    uint64_t m_currentTime;                              // for LRU tracking
-    bool m_atlasNeedsReload;                             // flag to batch atlas reloads
+    Hash::flat::map<char16_t, int> m_dynamicSlotMap;  // character -> slot index for O(1) lookup
+    uint64_t m_currentTime;                         // for LRU tracking
+    bool m_atlasNeedsReload;                        // flag to batch atlas reloads
 
     bool m_batchActive;
     bool m_bFreeTypeInitialized;

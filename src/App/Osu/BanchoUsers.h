@@ -56,7 +56,7 @@ struct UserInfo {
 
 namespace BANCHO::User {
 
-extern std::unordered_map<i32, UserInfo *> online_users;
+extern Hash::flat::map<i32, UserInfo *> online_users;
 extern std::vector<i32> friends;
 
 void login_user(i32 user_id);

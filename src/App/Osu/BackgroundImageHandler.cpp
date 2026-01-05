@@ -12,7 +12,7 @@
 #include "ResourceManager.h"
 #include "MakeDelegateWrapper.h"
 #include "Environment.h"
-#include "templates.h"
+#include "Hashing.h"
 
 #include "Skin.h"
 
@@ -114,8 +114,8 @@ struct BGImageHandlerImpl final {
         this->disabled = !enabled;
     }
 
-    sv_unordered_map<ENTRY> cache;
-    sv_unordered_map<ImageRef> shared_images;  // keyed by full image path
+    Hash::unstable_stringmap<ENTRY> cache;
+    Hash::unstable_stringmap<ImageRef> shared_images;  // keyed by full image path
     std::string last_requested_entry;
 
     u32 max_cache_size;

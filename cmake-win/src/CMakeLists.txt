@@ -177,6 +177,7 @@ target_include_directories(neosu PRIVATE
     ${SRC_DIRS}
     ${CMAKE_SOURCE_DIR}/../../libraries/
     ${CMAKE_SOURCE_DIR}/../../libraries/delegatesv2
+    ${CMAKE_SOURCE_DIR}/../../libraries/unordered_dense
     ${BASS_CACHE_DIR}/bass/include
     ${BASS_CACHE_DIR}/bassfx/include
     ${BASS_CACHE_DIR}/bassmix/include

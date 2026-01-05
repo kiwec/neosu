@@ -14,15 +14,14 @@
 #include "Logging.h"
 #include "SString.h"
 
-#include <unordered_map>
 #include <algorithm>
 
 namespace BANCHO::User {
 
-std::unordered_map<i32, UserInfo*> online_users;  // pointers to all_users elements
+Hash::flat::map<i32, UserInfo*> online_users;  // pointers to all_users elements
 std::vector<i32> friends;
 namespace {  // static
-std::unordered_map<i32, UserInfo> all_users;
+std::unordered_map<i32, UserInfo> all_users; // needs pointer stability, so std::unordered is fine
 std::vector<const UserInfo*> presence_requests;
 std::vector<const UserInfo*> stats_requests;
 }  // namespace

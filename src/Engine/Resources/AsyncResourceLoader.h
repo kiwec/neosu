@@ -2,12 +2,11 @@
 
 #include "Resource.h"
 #include "SyncCV.h"
+#include "Hashing.h"
 
 #include <algorithm>
 #include <atomic>
 #include <queue>
-#include <unordered_map>
-#include <unordered_set>
 #include <vector>
 
 class ConVar;
@@ -89,7 +88,7 @@ class AsyncResourceLoader final {
     std::chrono::steady_clock::time_point lastCleanupTime;
 
     // thread pool
-    std::unordered_map<size_t, std::unique_ptr<LoaderThread>> threadpool;  // index to thread
+    Hash::flat::map<size_t, std::unique_ptr<LoaderThread>> threadpool;  // index to thread
     mutable Sync::mutex threadsMutex;
 
     // thread lifecycle tracking
@@ -104,7 +103,7 @@ class AsyncResourceLoader final {
     mutable Sync::mutex workQueueMutex;
 
     // fast lookup for checking if a resource is being loaded
-    std::unordered_set<const Resource *> loadingResourcesSet;
+    Hash::flat::set<const Resource *> loadingResourcesSet;
     mutable Sync::mutex loadingResourcesMutex;
 
     // atomic counters for efficient status queries

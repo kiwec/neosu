@@ -15,7 +15,7 @@
 
 #include "Shader.h"
 
-#include "templates.h"
+#include "Hashing.h"
 
 #include <vector>
 
@@ -166,7 +166,7 @@ class DirectX11Shader final : public Shader {
     std::vector<INPUT_DESC> inputDescs;
     std::vector<BIND_DESC> bindDescs;
 
-    sv_unordered_map<CACHE_ENTRY> uniformLocationCache;
+    Hash::unstable_stringmap<CACHE_ENTRY> uniformLocationCache;
 
     // stats
     unsigned long iStatsNumConstantBufferUploadsPerFrameCounter{0};

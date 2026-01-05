@@ -3,7 +3,7 @@
 #include "noinclude.h"
 #include "types.h"
 #include "StaticPImpl.h"
-#include "templates.h"
+#include "Hashing.h"
 
 #include <string>
 #include <string_view>
@@ -34,7 +34,7 @@ enum class WSStatus : u8 {
 
 struct WSOptions {
     std::string url;
-    sv_unordered_map<std::string> headers;
+    Hash::unstable_stringmap<std::string> headers;
     std::string user_agent;
     long timeout{5};
     long connect_timeout{5};
@@ -76,7 +76,7 @@ struct RequestOptions {
         std::vector<u8> data{};
     };
 
-    sv_unordered_map<std::string> headers{};
+    Hash::unstable_stringmap<std::string> headers{};
     std::string post_data{};
     std::string user_agent{};
     std::vector<MimePart> mime_parts{};
@@ -101,7 +101,7 @@ struct Response {
     long response_code{0};
     std::string body;
     std::string error_msg;
-    sv_unordered_map<std::string> headers;
+    Hash::unstable_stringmap<std::string> headers;
     bool success{false};
 };
 

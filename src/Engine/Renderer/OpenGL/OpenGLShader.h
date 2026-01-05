@@ -9,7 +9,7 @@
 
 #include "Shader.h"
 
-#include "templates.h"
+#include "Hashing.h"
 
 class OpenGLShader final : public Shader {
     NOCOPY_NOMOVE(OpenGLShader)
@@ -54,7 +54,7 @@ class OpenGLShader final : public Shader {
 
     unsigned int iProgramBackup;
 
-    sv_unordered_map<int> uniformLocationCache;
+    Hash::unstable_stringmap<int> uniformLocationCache;
 };
 
 #endif

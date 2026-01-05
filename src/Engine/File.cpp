@@ -9,7 +9,7 @@
 #include "ConVar.h"
 #include "Engine.h"
 #include "UString.h"
-#include "templates.h"
+#include "Hashing.h"
 #include "Logging.h"
 #include "SyncMutex.h"
 
@@ -168,7 +168,7 @@ class DirectoryCache final {
     }
 
     // cache storage
-    sv_unordered_map<DirectoryEntry> cache;
+    Hash::unstable_stringmap<DirectoryEntry> cache;
 
     // thread safety
     Sync::mutex mutex;
