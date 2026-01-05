@@ -26,6 +26,7 @@
 #include "crypto.h"
 
 #include <ctime>
+#include <vector>
 
 // Bancho protocol
 

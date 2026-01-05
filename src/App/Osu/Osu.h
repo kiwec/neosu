@@ -7,6 +7,7 @@
 #include "OsuConfig.h"
 
 #include <atomic>
+#include <vector>
 
 class AvatarManager;
 class CWindowManager;

@@ -767,32 +767,25 @@ bool ModSelector::isCSOverrideSliderActive() { return this->CSSlider->isActive()
 bool ModSelector::isMouseInScrollView() { return this->experimentalContainer->isMouseInside() && this->isVisible(); }
 
 bool ModSelector::isMouseInside() {
-    if(!this->isVisible()) return false;
-
-    bool isMouseInsideAnyModSelectorModButton = false;
-    for(auto &modButton : this->modButtons) {
-        if(modButton->isMouseInside()) {
-            isMouseInsideAnyModSelectorModButton = true;
-            break;
-        }
-    }
-
-    bool isMouseInsideAnyOverrideSliders = false;
-    for(auto &overrideSlider : this->overrideSliders) {
-        if((overrideSlider.lock != nullptr && overrideSlider.lock->isMouseInside()) ||
-           overrideSlider.desc->isMouseInside() || overrideSlider.slider->isMouseInside() ||
-           overrideSlider.label->isMouseInside()) {
-            isMouseInsideAnyOverrideSliders = true;
-            break;
-        }
-    }
-
-    const bool isMouseInsideAnyContainerElements =
-        std::ranges::contains(this->vElements, true, [](const auto &elem) -> bool { return elem->isMouseInside(); });
-
-    return isMouseInsideAnyContainerElements ||
-           (this->experimentalContainer->isMouseInside() || isMouseInsideAnyModSelectorModButton ||
-            isMouseInsideAnyOverrideSliders);
+    return this->isVisible()                                                                                      //
+           &&                                                                                                     //
+           (                                                                                                      //
+               this->experimentalContainer->isMouseInside()                                                       //
+               ||                                                                                                 //
+               std::ranges::contains(this->vElements, true,                                                       //
+                                     [](const auto &elem) -> bool { return elem->isMouseInside(); })              //
+               ||                                                                                                 //
+               std::ranges::contains(this->modButtons, true,                                                      //
+                                     [](const auto &modButton) -> bool { return modButton->isMouseInside(); })    //
+               ||                                                                                                 //
+               std::ranges::contains(this->overrideSliders, true,                                                 //
+                                     [](const auto &overrideSlider) -> bool {                                     //
+                                         return (overrideSlider.lock && overrideSlider.lock->isMouseInside()) ||  //
+                                                overrideSlider.desc->isMouseInside() ||                           //
+                                                overrideSlider.slider->isMouseInside() ||                         //
+                                                overrideSlider.label->isMouseInside();                            //
+                                     })                                                                           //
+           );                                                                                                     //
 }
 
 void ModSelector::updateLayout() {
