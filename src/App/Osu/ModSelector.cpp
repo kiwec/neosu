@@ -220,11 +220,10 @@ ModSelector::ModSelector() : OsuScreen() {
         &cv::fposu_mod_strafing);
     this->addExperimentalCheckbox("Wobble", "Playfield rotates and moves.", &cv::mod_wobble);
     this->addExperimentalCheckbox("AR Wobble", "Approach rate oscillates between -1 and +1.", &cv::mod_arwobble);
-    this->addExperimentalCheckbox(
-        "Approach Different",
-        "Customize the approach circle animation.\nSee mod_approach_different_style.\nSee "
-        "mod_approach_different_initial_size.",
-        &cv::mod_approach_different);
+    this->addExperimentalCheckbox("Approach Different",
+                                  "Customize the approach circle animation.\nSee mod_approach_different_style.\nSee "
+                                  "mod_approach_different_initial_size.",
+                                  &cv::mod_approach_different);
     this->addExperimentalCheckbox("Timewarp", "Speed increases from 100% to 150% over the course of the beatmap.",
                                   &cv::mod_timewarp);
     this->addExperimentalCheckbox(
@@ -768,6 +767,8 @@ bool ModSelector::isCSOverrideSliderActive() { return this->CSSlider->isActive()
 bool ModSelector::isMouseInScrollView() { return this->experimentalContainer->isMouseInside() && this->isVisible(); }
 
 bool ModSelector::isMouseInside() {
+    if(!this->isVisible()) return false;
+
     bool isMouseInsideAnyModSelectorModButton = false;
     for(auto &modButton : this->modButtons) {
         if(modButton->isMouseInside()) {
@@ -786,8 +787,12 @@ bool ModSelector::isMouseInside() {
         }
     }
 
-    return this->isVisible() && (this->experimentalContainer->isMouseInside() || isMouseInsideAnyModSelectorModButton ||
-                                 isMouseInsideAnyOverrideSliders);
+    const bool isMouseInsideAnyContainerElements =
+        std::ranges::contains(this->vElements, true, [](const auto &elem) -> bool { return elem->isMouseInside(); });
+
+    return isMouseInsideAnyContainerElements ||
+           (this->experimentalContainer->isMouseInside() || isMouseInsideAnyModSelectorModButton ||
+            isMouseInsideAnyOverrideSliders);
 }
 
 void ModSelector::updateLayout() {
