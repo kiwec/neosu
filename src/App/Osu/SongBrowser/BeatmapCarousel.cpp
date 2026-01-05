@@ -95,6 +95,11 @@ void BeatmapCarousel::mouse_update(bool *propagate_clicks) {
 
     // if our velocity is more than 4 vertical screens' worth of items, we are scrolling fast
     this->bIsScrollingFast = wholeElementsScrolled > ((sizeY / elemSizeY) * 4);
+
+    // debugLog(
+    //     "bIsScrollingFast: {} absYVelocity: {} elemSize: {} wholeElementsScrolled: {} "
+    //     "sizeY: {}, sizeY / elemSizeY: {}",
+    //     this->bIsScrollingFast, absYVelocity, elemSizeY, wholeElementsScrolled, sizeY, sizeY / elemSizeY);
 }
 
 bool BeatmapCarousel::isMouseInside() {

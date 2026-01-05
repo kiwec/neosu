@@ -839,12 +839,11 @@ void Changelog::addAllChangelogs(std::vector<CHANGELOG> &&logtexts) {
         this->scrollView->container->addBaseUIElement(changelog.title);
 
         // changes
-        int first = 0;
         for(auto &&changeText : changelogs[i].changes) {
             CBaseUIButton *change = new ChangelogLabel(std::move(changeText));
             change->setClickCallback(SA::MakeDelegate<&Changelog::onChangeClicked>(this));
 
-            if(first++) change->setTextColor(0xff888888);
+            if(i > 0) change->setTextColor(0xff888888);
 
             change->setSizeToContent();
             change->setDrawBackground(false);
