@@ -243,7 +243,6 @@ class Osu final : public App, public MouseListener {
     void updateMods();
     void updateCursorVisibility();
     void updateConfineCursor();
-    void updateOsuFolder();
     void updateMouseSettings();
     void updateWindowsKeyDisable();
 
@@ -279,10 +278,6 @@ class Osu final : public App, public MouseListener {
     void onUserCardChange(std::string_view new_username);
 
    private:
-    // internal audio setup
-    void setupBASS();
-    void setupSoloud();
-
     void drawRuntimeInfo();
 
     void globalOnSetValueProtectedCallback();
@@ -399,8 +394,15 @@ class Osu final : public App, public MouseListener {
     friend class BeatmapInterface;
     bool bIsPlayingASelectedBeatmap{false};
 
-   public:  // public due to BassSoundEngine access
+    // internal audio setup
+    void setupAudio();
+    void audioRestartCallbackBefore();
+    void audioRestartCallbackAfter();
+
+    // for audio restart callbacks
     bool music_unpause_scheduled{false};
+    bool music_was_playing{false};
+    u32 music_prev_position_ms{0};
 };
 
 MAKE_FLAG_ENUM(Osu::ResolutionRequestFlags)

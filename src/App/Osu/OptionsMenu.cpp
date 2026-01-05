@@ -1874,6 +1874,8 @@ bool OptionsMenu::isBusy() {
     return (this->backButton->isActive() || this->options->isBusy() || this->categories->isBusy()) && this->isVisible();
 }
 
+void OptionsMenu::scheduleLayoutUpdate() { this->bLayoutUpdateScheduled.store(true, std::memory_order_release); }
+
 void OptionsMenu::updateLayout() {
     this->bLayoutUpdateScheduled.store(false, std::memory_order_release);
     this->updating_layout = true;
@@ -2370,6 +2372,14 @@ void OptionsMenu::askForLoginDetails() {
     this->nameTextbox->focus();
 }
 
+void OptionsMenu::updateOsuFolderTextbox(std::string_view newFolder) {
+    // don't recurse
+    if(this->osuFolderTextbox && this->osuFolderTextbox->getText() != newFolder) {
+        this->osuFolderTextbox->stealFocus();  // what's the point of this stealFocus?
+        this->osuFolderTextbox->setText(newFolder);
+    }
+}
+
 void OptionsMenu::updateFposuDPI() {
     if(this->dpiTextbox == nullptr) return;
 
@@ -2685,6 +2695,14 @@ void OptionsMenu::onOutputDeviceSelect2(const UString &outputDeviceName, int /*i
     }
 
     debugLog("SoundEngine::setOutputDevice() couldn't find output device \"{:s}\"!", outputDeviceName.toUtf8());
+}
+
+void OptionsMenu::onOutputDeviceChange() {
+    if(this->outputDeviceLabel) {
+        this->outputDeviceLabel->setText(soundEngine->getOutputDeviceName());
+    }
+
+    this->onOutputDeviceResetUpdate();
 }
 
 void OptionsMenu::onOutputDeviceResetUpdate() {

@@ -27,7 +27,17 @@
 template <typename T, size_t RealImplSize>
 class StaticPImpl {
    private:
-    alignas(16) unsigned char m_buffer[RealImplSize];
+#if defined(_MSC_VER) && !defined(__clang__)
+// a bunch of common stdlib things are annoyingly way bigger on msvc
+// so just use a flat 1.25x multiplier (since its not even a "real" platform we support)
+#define MSVC_BLOAT_ACCOMODATION_MULTIPLIER 1.25
+#else
+#define MSVC_BLOAT_ACCOMODATION_MULTIPLIER 1
+#endif
+#define PMUL_(real_) (size_t)((real_) * MSVC_BLOAT_ACCOMODATION_MULTIPLIER)
+
+    alignas(16) unsigned char m_buffer[PMUL_(RealImplSize)];
+
     void (*m_destructor)(void *);
 
    public:
@@ -48,7 +58,7 @@ class StaticPImpl {
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init, hicpp-member-init)
     [[nodiscard]] forceinline explicit StaticPImpl(std::in_place_type_t<U> /**/, Args &&...args)
         : m_destructor([](void *ptr) { static_cast<U *>(ptr)->~U(); }) {
-        static_assert(sizeof(U) <= RealImplSize);
+        static_assert(sizeof(U) <= PMUL_(RealImplSize));
         static_assert(alignof(U) <= 16);
         static_assert(std::is_same_v<T, U> || std::is_base_of_v<T, U>);
 
@@ -91,5 +101,8 @@ class StaticPImpl {
         m_destructor = nullptr;
     }
 };
+
+#undef PMUL_
+#undef MSVC_BLOAT_ACCOMODATION_MULTIPLIER
 
 #endif

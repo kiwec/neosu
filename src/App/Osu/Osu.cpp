@@ -106,7 +106,10 @@ bool Osu::globalOnSetValueGameplayCallback(const char *cvarname, CvarEditor sett
     if(osu->isInPlayMode()) {
         debugLog("{} affects gameplay: won't submit score.", cvarname);
     }
-    osu->getScore()->setCheated();
+    // maybe an impossible scenario for this to be NULL here but just checking anyways
+    if(const auto &liveScore = osu->getScore(); !!liveScore) {
+        liveScore->setCheated();
+    }
 
     return true;
 }
@@ -198,7 +201,13 @@ Osu::Osu() : App(), MouseListener(), global_osu_(this) {
     cv::confine_cursor_windowed.setCallback(SA::MakeDelegate<&Osu::updateConfineCursor>(this));
     cv::confine_cursor_fullscreen.setCallback(SA::MakeDelegate<&Osu::updateConfineCursor>(this));
     cv::confine_cursor_never.setCallback(SA::MakeDelegate<&Osu::updateConfineCursor>(this));
-    cv::osu_folder.setCallback(SA::MakeDelegate<&Osu::updateOsuFolder>(this));
+    cv::osu_folder.setCallback([](std::string_view newString) -> void {
+        std::string normalized = Environment::normalizeDirectory(std::string{newString});
+        cv::osu_folder.setValue(normalized, false);
+        if(auto *optMenu = osu && osu->optionsMenu ? osu->optionsMenu : nullptr; !!optMenu) {
+            optMenu->updateOsuFolderTextbox(normalized);
+        }
+    });
 
     // clamp to sane range
     cv::slider_curve_points_separation.setCallback([](float /*oldValue*/, float newValue) -> void {
@@ -257,11 +266,7 @@ Osu::Osu() : App(), MouseListener(), global_osu_(this) {
 
     // Initialize sound here so we can load the preferred device from config
     // Avoids initializing the sound device twice, which can take a while depending on the driver
-    if(Env::cfg(AUD::BASS) && soundEngine->getTypeId() == SoundEngine::BASS) {
-        this->setupBASS();
-    } else if(Env::cfg(AUD::SOLOUD) && soundEngine->getTypeId() == SoundEngine::SOLOUD) {
-        this->setupSoloud();
-    }
+    this->setupAudio();
 
     // Initialize skin after sound engine has started, or else sounds won't load properly
     cv::skin.setCallback(SA::MakeDelegate<&Osu::onSkinChange>(this));
@@ -431,6 +436,10 @@ Osu::~Osu() {
     ConVar::setOnSetValueGameplayCallback({});
     ConVar::setOnGetValueProtectedCallback({});
     ConVar::setOnSetValueProtectedCallback({});
+
+    // remove soundengine callbacks (so it doesnt try to call them after we are destroyed)
+    soundEngine->setDeviceChangeBeforeCallback({});
+    soundEngine->setDeviceChangeAfterCallback({});
 
     DBRecalculator::abort_calc();
     AsyncPPC::set_map(nullptr);
@@ -616,8 +625,8 @@ void Osu::update() {
     }
 
     if(this->music_unpause_scheduled && soundEngine->isReady()) {
-        if(this->map_iface->getMusic() != nullptr) {
-            soundEngine->play(this->map_iface->getMusic());
+        if(Sound *music = this->map_iface->getMusic(); music && !music->isPlaying()) {
+            soundEngine->play(music);
         }
         this->music_unpause_scheduled = false;
     }
@@ -1981,15 +1990,6 @@ void Osu::updateConfineCursor() {
     env->setCursorClip(confine_cursor, clip);
 }
 
-void Osu::updateOsuFolder() {
-    cv::osu_folder.setValue(env->normalizeDirectory(cv::osu_folder.getString()), false);
-
-    if(this->optionsMenu) {
-        this->optionsMenu->osuFolderTextbox->stealFocus();
-        this->optionsMenu->osuFolderTextbox->setText(cv::osu_folder.getString());
-    }
-}
-
 // needs a separate fromMouse parameter, since M1/M2 might be bound to keyboard keys too
 void Osu::onGameplayKey(GameplayKeys key_flag, bool down, u64 timestamp, bool fromMouse) {
     auto held_now = this->map_iface->getKeys();
@@ -2140,8 +2140,54 @@ bool Osu::getModDT() const { return cv::mod_doubletime_dummy.getBool(); }
 bool Osu::getModNC() const { return cv::mod_doubletime_dummy.getBool() && cv::nightcore_enjoyer.getBool(); }
 bool Osu::getModHT() const { return cv::mod_halftime_dummy.getBool(); }
 
-void Osu::setupBASS() {
-    {
+// part 1 of callback
+void Osu::audioRestartCallbackBefore() {
+    // abort loudness calc
+    VolNormalization::abort();
+
+    Sound *map_music = nullptr;
+    if(this->map_iface && (map_music = this->map_iface->getMusic())) {
+        this->music_was_playing = map_music->isPlaying();
+        this->music_prev_position_ms = map_music->getPositionMS();
+    } else {
+        this->music_was_playing = false;
+        this->music_prev_position_ms = 0;
+    }
+}
+
+// the actual reset will be sandwiched between these during restart
+// part 2 of callback
+void Osu::audioRestartCallbackAfter() {
+    if(this->optionsMenu && this->skin) {
+        this->optionsMenu->onOutputDeviceChange();
+        this->skin->reloadSounds();
+
+        // start playing music again after audio device changed
+        Sound *map_music = nullptr;
+        if(this->map_iface && (map_music = this->map_iface->getMusic())) {
+            // TODO(spec): is this even right? why do we only unload music after already destroying/restarting soundengine
+            this->map_iface->unloadMusic();
+            this->map_iface->loadMusic();
+            if((map_music = this->map_iface->getMusic())) {  // need to get new music after loading
+                map_music->setLoop(!this->isInPlayMode());
+                map_music->setPositionMS(this->music_prev_position_ms);
+            }
+        }
+
+        if(this->music_was_playing) {
+            this->music_unpause_scheduled = true;
+        }
+        this->optionsMenu->scheduleLayoutUpdate();
+    }
+
+    // resume loudness calc (only implemented for bass currently)
+    if(db && Env::cfg(AUD::BASS) && soundEngine->getTypeId() == SoundEngine::BASS) {
+        VolNormalization::start_calc(db->loudness_to_calc);
+    }
+}
+
+void Osu::setupAudio() {
+    if(Env::cfg(AUD::BASS) && soundEngine->getTypeId() == SoundEngine::BASS) {
         soundEngine->updateOutputDevices(true);
         soundEngine->initializeOutputDevice(soundEngine->getWantedDevice());
         cv::snd_output_device.setValue(soundEngine->getOutputDeviceName());
@@ -2154,127 +2200,17 @@ void Osu::setupBASS() {
             SA::MakeDelegate<&SoundEngine::onParamChanged>(soundEngine.get()));
         cv::asio_buffer_size.setCallback(SA::MakeDelegate<&SoundEngine::onParamChanged>(soundEngine.get()));
         cv::snd_output_device.setCallback(
-            []() -> void { osu && osu->getOptionsMenu() ? osu->getOptionsMenu()->scheduleLayoutUpdate() : (void)0; });
+            []() -> void { osu && osu->optionsMenu ? osu->optionsMenu->scheduleLayoutUpdate() : (void)0; });
     }
-    // restart callbacks
-    {
-        static bool was_playing = false;
-        static u32 prev_position_ms = 0;
 
-        static auto output_changed_before_cb = []() -> void {
-            // abort loudness calc
-            VolNormalization::abort();
+    soundEngine->setDeviceChangeBeforeCallback(SA::MakeDelegate<&Osu::audioRestartCallbackBefore>(this));
+    soundEngine->setDeviceChangeAfterCallback(SA::MakeDelegate<&Osu::audioRestartCallbackAfter>(this));
 
-            Sound *map_music = nullptr;
-            if(osu && osu->getMapInterface() && (map_music = osu->getMapInterface()->getMusic())) {
-                was_playing = map_music->isPlaying();
-                prev_position_ms = map_music->getPositionMS();
-            } else {
-                was_playing = false;
-                prev_position_ms = 0;
-            }
-        };
-
-        // the actual reset will be sandwiched between these during restart
-        static auto output_changed_after_cb = []() -> void {
-            // part 2 of callback
-            if(osu && osu->optionsMenu && osu->optionsMenu->outputDeviceLabel && osu->skin) {
-                osu->optionsMenu->outputDeviceLabel->setText(soundEngine->getOutputDeviceName());
-                osu->skin->reloadSounds();
-                osu->optionsMenu->onOutputDeviceResetUpdate();
-
-                // start playing music again after audio device changed
-                Sound *map_music = nullptr;
-                const auto &map_iface = osu->getMapInterface();
-                if(map_iface && (map_music = map_iface->getMusic())) {
-                    if(osu->isInPlayMode()) {
-                        map_iface->unloadMusic();
-                        map_iface->loadMusic();
-                        if((map_music = map_iface->getMusic())) {  // need to get new music after loading
-                            map_music->setLoop(false);
-                            map_music->setPositionMS(prev_position_ms);
-                        }
-                    } else {
-                        map_iface->unloadMusic();
-                        map_iface->selectBeatmap();
-                        if((map_music = map_iface->getMusic())) {
-                            map_music->setPositionMS(prev_position_ms);
-                        }
-                    }
-                }
-
-                if(was_playing) {
-                    osu->music_unpause_scheduled = true;
-                }
-                osu->optionsMenu->scheduleLayoutUpdate();
-            }
-
-            // resume loudness calc
-            if(db) {
-                VolNormalization::start_calc(db->loudness_to_calc);
-            }
-        };
-
-        soundEngine->setDeviceChangeBeforeCallback(output_changed_before_cb);
-        soundEngine->setDeviceChangeAfterCallback(output_changed_after_cb);
+    if(Env::cfg(AUD::SOLOUD) && soundEngine->getTypeId() == SoundEngine::SOLOUD) {  // bass works differently
+        // this sets convar callbacks for things that require a soundengine reinit, do it
+        // only after init so config files don't restart it over and over again
+        soundEngine->allowInternalCallbacks();
     }
-}
-
-void Osu::setupSoloud() {
-    // need to save this state somewhere to share data between callback stages
-    static bool was_playing = false;
-    static u32 prev_position_ms = 0;
-
-    static auto output_changed_before_cb = []() -> void {
-        Sound *map_music = nullptr;
-        if(osu && osu->getMapInterface() && (map_music = osu->getMapInterface()->getMusic())) {
-            was_playing = map_music->isPlaying();
-            prev_position_ms = map_music->getPositionMS();
-        } else {
-            was_playing = false;
-            prev_position_ms = 0;
-        }
-    };
-    // the actual reset will be sandwiched between these during restart
-    static auto output_changed_after_cb = []() -> void {
-        // part 2 of callback
-        if(osu && osu->optionsMenu && osu->optionsMenu->outputDeviceLabel && osu->skin) {
-            osu->optionsMenu->outputDeviceLabel->setText(soundEngine->getOutputDeviceName());
-            osu->skin->reloadSounds();
-            osu->optionsMenu->onOutputDeviceResetUpdate();
-
-            // start playing music again after audio device changed
-            Sound *map_music = nullptr;
-            const auto &map_iface = osu->getMapInterface();
-            if(map_iface && (map_music = map_iface->getMusic())) {
-                if(osu->isInPlayMode()) {
-                    map_iface->unloadMusic();
-                    map_iface->loadMusic();
-                    if((map_music = map_iface->getMusic())) {  // need to get new music after loading
-                        map_music->setLoop(false);
-                        map_music->setPositionMS(prev_position_ms);
-                    }
-                } else {
-                    map_iface->unloadMusic();
-                    map_iface->selectBeatmap();
-                    if((map_music = map_iface->getMusic())) {
-                        map_music->setPositionMS(prev_position_ms);
-                    }
-                }
-            }
-
-            if(was_playing) {
-                osu->music_unpause_scheduled = true;
-            }
-            osu->optionsMenu->scheduleLayoutUpdate();
-        }
-    };
-    soundEngine->setDeviceChangeBeforeCallback(output_changed_before_cb);
-    soundEngine->setDeviceChangeAfterCallback(output_changed_after_cb);
-
-    // this sets convar callbacks for things that require a soundengine reinit, do it
-    // only after init so config files don't restart it over and over again
-    soundEngine->allowInternalCallbacks();
 }
 
 bool Osu::shouldDrawRuntimeInfo() const {
@@ -2326,8 +2262,8 @@ void Osu::drawRuntimeInfo() {
         // shadow
         g->setColor(rgba(0, 0, 0, 100));
 
-        g->translate(osu->getVirtScreenWidth() - infoStringWidth + shadowOffset,
-                     osu->getVirtScreenHeight() - fontHeight + shadowOffset + 6);
+        g->translate(this->getVirtScreenWidth() - infoStringWidth + shadowOffset,
+                     this->getVirtScreenHeight() - fontHeight + shadowOffset + 6);
         g->drawString(font, infoString);
 
         // text

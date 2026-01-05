@@ -1584,7 +1584,7 @@ void BeatmapInterface::loadMusic(bool reload, bool async) {
         }
         // pause previously playing music, if any
         // only if we are not waiting for reload
-        if(loading_reselect_map == MD5Hash{}) {
+        if(loading_reselect_map.empty()) {
             soundEngine->pause(this->music);
         }
         return;

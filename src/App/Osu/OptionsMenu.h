@@ -56,14 +56,16 @@ class OptionsMenu final : public ScreenBackable, public NotificationOverlayKeyLi
     bool isMouseInside() override;
     bool isBusy() override;
 
-    // "illegal", used by BassSoundEngine, can easily be turned into callbacks like for SoLoud instead
-    void scheduleLayoutUpdate() { this->bLayoutUpdateScheduled.store(true, std::memory_order_release); }
-    void onOutputDeviceResetUpdate();
-    CBaseUISlider *asioBufferSizeSlider = nullptr;
-    CBaseUILabel *outputDeviceLabel;
+    void scheduleLayoutUpdate();
 
-    // used by Osu
+    // used by Osu for global skin select keybind
     void onSkinSelect();
+
+    // used by Osu for audio restart callback
+    void onOutputDeviceChange();
+
+    // used by Osu for osu_folder callback
+    void updateOsuFolderTextbox(std::string_view newFolder);
 
     // used by Chat
     void askForLoginDetails();
@@ -73,8 +75,6 @@ class OptionsMenu final : public ScreenBackable, public NotificationOverlayKeyLi
 
     // used by WindowsMain for osk handling (this needs to be moved...)
     void updateSkinNameLabel();
-
-    CBaseUITextbox *osuFolderTextbox;
 
    private:
     struct RenderCondition {
@@ -152,6 +152,7 @@ class OptionsMenu final : public ScreenBackable, public NotificationOverlayKeyLi
     void onSkinSelect2(const UString &skinName, int id = -1);
     void onResolutionSelect();
     void onResolutionSelect2(const UString &resolution, int id = -1);
+    void onOutputDeviceResetUpdate();
     void onOutputDeviceSelect();
     void onOutputDeviceSelect2(const UString &outputDeviceName, int id = -1);
     void onLogInClicked(bool left, bool right);
@@ -257,9 +258,11 @@ class OptionsMenu final : public ScreenBackable, public NotificationOverlayKeyLi
     CBaseUIButton *resolutionSelectButton;
     CBaseUILabel *resolutionLabel;
     CBaseUIButton *outputDeviceSelectButton;
+    CBaseUILabel *outputDeviceLabel;
     OptionsMenuResetButton *outputDeviceResetButton;
     CBaseUISlider *wasapiBufferSizeSlider;
     CBaseUISlider *wasapiPeriodSizeSlider;
+    CBaseUISlider *asioBufferSizeSlider = nullptr;
     OptionsMenuResetButton *asioBufferSizeResetButton;
     OptionsMenuResetButton *wasapiBufferSizeResetButton;
     OptionsMenuResetButton *wasapiPeriodSizeResetButton;
@@ -286,6 +289,8 @@ class OptionsMenu final : public ScreenBackable, public NotificationOverlayKeyLi
     CBaseUITextbox *nameTextbox;
     CBaseUITextbox *passwordTextbox;
     UIButton *logInButton;
+
+    CBaseUITextbox *osuFolderTextbox;
 
     ConVar *waitingKey = nullptr;
 

@@ -1547,7 +1547,7 @@ void Database::loadMaps() {
                 std::string fullFilePath = beatmapPath;
                 fullFilePath.append(osuFileName);
 
-                if(md5hash == MD5Hash{}) {
+                if(md5hash.empty()) {
                     // avoid hashmap corruption, we somehow fail to read some entries' md5 hashes
                     // TODO: move this somewhere else or put it in peppy overrides or something
                     // "temporary" fix (extremely rare edge case so maybe it's not that important)
