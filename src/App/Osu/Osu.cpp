@@ -331,7 +331,8 @@ Osu::Osu() : App(), MouseListener(), global_osu_(this) {
             Environment::renameFile(oldIconFontPath, newIconFontPath);
         }
     }
-    this->fontIcons = resourceManager->loadFont("forkawesome.ttf", "FONT_OSU_ICONS", Icons::icons, 26, true, newDPI);
+    this->fontIcons = resourceManager->loadFont("forkawesome.ttf", "FONT_OSU_ICONS", Icons::icons.data(),
+                                                Icons::icons.size(), 26, true, newDPI);
 
     this->fonts.push_back(defaultFont);
     this->fonts.push_back(this->titleFont);

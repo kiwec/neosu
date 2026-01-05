@@ -36,7 +36,6 @@ neosu_SOURCES = \
 	src/App/Osu/HUD.cpp \
 	src/App/Osu/HitObjects.cpp \
 	src/App/Osu/HitSounds.cpp \
-	src/App/Osu/Icons.cpp \
 	src/App/Osu/LegacyReplay.cpp \
 	src/App/Osu/Lobby.cpp \
 	src/App/Osu/MainMenu.cpp \
@@ -44,7 +43,7 @@ neosu_SOURCES = \
 	src/App/Osu/ModSelector.cpp \
 	src/App/Osu/NeosuUrl.cpp \
 	src/App/Osu/NotificationOverlay.cpp \
-	src/App/Osu/OptionsMenu.cpp \
+	src/App/Osu/OptionsMenu/OptionsMenu.cpp \
 	src/App/Osu/Osu.cpp \
 	src/App/Osu/OsuConVars/OsuConVars.cpp \
 	src/App/Osu/OsuDirectScreen.cpp \

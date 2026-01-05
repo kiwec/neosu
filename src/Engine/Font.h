@@ -23,7 +23,7 @@ class McFont final : public Resource {
     NOCOPY_NOMOVE(McFont)
    public:
     McFont(std::string filepath, int fontSize = 16, bool antialiasing = true, int fontDPI = 96);
-    McFont(std::string filepath, const std::vector<char16_t> &characters, int fontSize = 16, bool antialiasing = true,
+    McFont(std::string filepath, const char16_t* characters, size_t numCharacters, int fontSize = 16, bool antialiasing = true,
            int fontDPI = 96);
     ~McFont() override;
 

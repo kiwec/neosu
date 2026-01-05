@@ -8,6 +8,7 @@
 
 #include <atomic>
 #include <vector>
+#include <array>
 
 class AvatarManager;
 class CWindowManager;

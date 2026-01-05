@@ -260,7 +260,7 @@ bool VolumeOverlay::canChangeVolume() {
             !(osu->getSongBrowser()->isVisible() && db->isFinished()) &&                                     //
             !(osu->getOsuDirectScreen()->isVisible()) &&                                                     //
             !(osu->getOptionsMenu()->isVisible()) &&                                                         //
-            !(osu->getOptionsMenu()->contextMenu->isVisible()) &&                                            //
+            !(osu->getOptionsMenu()->getContextMenu()->isVisible()) &&                                       //
             !(osu->getChangelog()->isVisible()) &&                                                           //
             !(osu->getRankingScreen()->isVisible()) &&                                                       //
             !(osu->getModSelector()->isMouseInScrollView()) &&                                               //

@@ -167,20 +167,21 @@ struct McFontImpl final {
             characters.push_back(static_cast<char16_t>(i));
         }
         m_bTryFindFallbacks = true;
-        constructor(characters, fontSize, antialiasing, fontDPI);
+        constructor(characters.data(), characters.size(), fontSize, antialiasing, fontDPI);
     }
 
-    McFontImpl(McFont *parent, const std::vector<char16_t> &characters, int fontSize, bool antialiasing, int fontDPI)
+    McFontImpl(McFont *parent, const char16_t *characters, size_t numCharacters, int fontSize, bool antialiasing,
+               int fontDPI)
         : m_parent(parent),
           m_vao(g->createVertexArrayObject((Env::cfg(REND::GLES32 | REND::DX11) ? DrawPrimitive::PRIMITIVE_TRIANGLES
                                                                                 : DrawPrimitive::PRIMITIVE_QUADS),
                                            DrawUsageType::USAGE_DYNAMIC, false)) {
         // don't try to find fallbacks if we had an explicitly-passed character set on construction
         m_bTryFindFallbacks = false;
-        constructor(characters, fontSize, antialiasing, fontDPI);
+        constructor(characters, numCharacters, fontSize, antialiasing, fontDPI);
     }
 
-    void constructor(const std::vector<char16_t> &characters, int fontSize, bool antialiasing, int fontDPI) {
+    void constructor(const char16_t *characters, size_t numCharacters, int fontSize, bool antialiasing, int fontDPI) {
         m_iFontSize = fontSize;
         m_bAntialiasing = antialiasing;
         m_iFontDPI = fontDPI;
@@ -214,9 +215,9 @@ struct McFontImpl final {
                         .fontIndex = 0};
 
         // pre-allocate space for initial glyphs
-        m_vGlyphs.reserve(characters.size());
-        for(char16_t ch : characters) {
-            addGlyph(ch);
+        m_vGlyphs.reserve(numCharacters);
+        for(int i = 0; i < numCharacters; ++i) {
+            addGlyph(characters[i]);
         }
     }
 
@@ -1053,9 +1054,9 @@ struct McFontImpl final {
 McFont::McFont(std::string filepath, int fontSize, bool antialiasing, int fontDPI)
     : Resource(FONT, std::move(filepath)), pImpl(this, fontSize, antialiasing, fontDPI) {}
 
-McFont::McFont(std::string filepath, const std::vector<char16_t> &characters, int fontSize, bool antialiasing,
+McFont::McFont(std::string filepath, const char16_t *characters, size_t numCharacters, int fontSize, bool antialiasing,
                int fontDPI)
-    : Resource(FONT, std::move(filepath)), pImpl(this, characters, fontSize, antialiasing, fontDPI) {}
+    : Resource(FONT, std::move(filepath)), pImpl(this, characters, numCharacters, fontSize, antialiasing, fontDPI) {}
 
 McFont::~McFont() { destroy(); }
 
