@@ -274,7 +274,7 @@ class DatabaseBeatmap final {
                                                         const Sync::stop_token &dead = alwaysFalseStopPred);
 
     struct LOAD_META_RESULT {
-        FixedSizeArray<u8> fileData{};
+        std::vector<u8> fileData{};
         LoadError error{DatabaseBeatmap::LoadError::NONE};
 
         explicit operator bool() const { return error.errc != 0; }
@@ -283,9 +283,13 @@ class DatabaseBeatmap final {
     LOAD_META_RESULT loadMetadata(bool compute_md5 = true);
 
     static LOAD_GAMEPLAY_RESULT loadGameplay(BeatmapDifficulty *databaseBeatmap, AbstractBeatmapInterface *beatmap,
-                                             LOAD_META_RESULT preloadedMetadata = {{}, {DatabaseBeatmap::LoadError::NONE}}, PRIMITIVE_CONTAINER *outPrimitivesCopy = nullptr);
+                                             LOAD_META_RESULT preloadedMetadata = {{},
+                                                                                   {DatabaseBeatmap::LoadError::NONE}},
+                                             PRIMITIVE_CONTAINER *outPrimitivesCopy = nullptr);
     inline LOAD_GAMEPLAY_RESULT loadGameplay(AbstractBeatmapInterface *beatmap,
-                                             LOAD_META_RESULT preloadedMetadata = {{}, {DatabaseBeatmap::LoadError::NONE}}, PRIMITIVE_CONTAINER *outPrimitivesCopy = nullptr) {
+                                             LOAD_META_RESULT preloadedMetadata = {{},
+                                                                                   {DatabaseBeatmap::LoadError::NONE}},
+                                             PRIMITIVE_CONTAINER *outPrimitivesCopy = nullptr) {
         return loadGameplay(this, beatmap, std::move(preloadedMetadata), outPrimitivesCopy);
     }
 
@@ -499,7 +503,7 @@ class DatabaseBeatmap final {
 
     static PRIMITIVE_CONTAINER loadPrimitiveObjects(std::string_view osuFilePath,
                                                     const Sync::stop_token &dead = alwaysFalseStopPred);
-    static PRIMITIVE_CONTAINER loadPrimitiveObjectsFromData(FixedSizeArray<u8> fileData, std::string_view osuFilePath,
+    static PRIMITIVE_CONTAINER loadPrimitiveObjectsFromData(const std::vector<u8> &fileData, std::string_view osuFilePath,
                                                             const Sync::stop_token &dead);
     static LoadError calculateSliderTimesClicksTicks(int beatmapVersion, std::vector<SLIDER> &sliders,
                                                      FixedSizeArray<DatabaseBeatmap::TIMINGPOINT> &timingpoints,

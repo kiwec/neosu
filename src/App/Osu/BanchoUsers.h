@@ -56,15 +56,15 @@ struct UserInfo {
 
 namespace BANCHO::User {
 
-extern Hash::flat::map<i32, UserInfo *> online_users;
-extern std::vector<i32> friends;
+extern Hash::flat::map<i32, const UserInfo*> online_users;
+extern Hash::flat::set<i32> friends;
 
 void login_user(i32 user_id);
 void logout_user(i32 user_id);
 void logout_all_users();
 
 UserInfo *find_user(std::string_view username);
-UserInfo *find_user_starting_with(std::string_view prefix, std::string_view last_match);
+const UserInfo *find_user_starting_with(std::string_view prefix, std::string_view last_match);
 UserInfo *try_get_user_info(i32 user_id, bool wants_presence = false);
 UserInfo *get_user_info(i32 user_id, bool wants_presence = false);
 

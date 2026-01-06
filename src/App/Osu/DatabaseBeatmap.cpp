@@ -345,24 +345,24 @@ bool timingPointSortComparator(const DatabaseBeatmap::TIMINGPOINT &a, const Data
 DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(std::string_view osuFilePath,
                                                                            const Sync::stop_token &dead) {
     // open osu file for parsing
-    FixedSizeArray<u8> fileBuffer;
+    std::vector<u8> fileBuffer;
     uSz beatmapFileSize = 0;
     {
         File file(osuFilePath);
         if(file.canRead()) {
             beatmapFileSize = file.getFileSize();
-            fileBuffer = FixedSizeArray{file.takeFileBuffer(), beatmapFileSize};
+            file.readToVector(fileBuffer);
         }
-        if(!file.canRead() || !beatmapFileSize || fileBuffer.empty()) {
+        if(!beatmapFileSize || fileBuffer.empty()) {
             beatmapFileSize = 0;
         }
         // close the file here
     }
 
-    return loadPrimitiveObjectsFromData(std::move(fileBuffer), osuFilePath, dead);
+    return loadPrimitiveObjectsFromData(fileBuffer, osuFilePath, dead);
 }
 
-DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjectsFromData(FixedSizeArray<u8> fileBuffer,
+DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjectsFromData(const std::vector<u8> &fileBuffer,
                                                                                    std::string_view osuFilePath,
                                                                                    const Sync::stop_token &dead) {
     PRIMITIVE_CONTAINER c{};
@@ -376,8 +376,8 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjectsFromDa
         return c;
     }
 
-    std::string_view beatmapFile = {reinterpret_cast<char *>(fileBuffer.data()),
-                                    reinterpret_cast<char *>(fileBuffer.data() + fileBuffer.size())};
+    std::string_view beatmapFile = {reinterpret_cast<const char *>(fileBuffer.data()),
+                                    reinterpret_cast<const char *>(fileBuffer.data() + fileBuffer.size())};
 
     const float sliderSanityRange = cv::slider_curve_max_length.getFloat();  // infinity sanity check, same as before
     const int sliderMaxRepeatRange =
@@ -397,6 +397,8 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjectsFromDa
     int comboNumber = 1;
     BlockId curBlock{BlockId::Sentinel};
 
+    std::vector<MetadataBlock> blocksUnseen{metadataBlocks.begin(), metadataBlocks.end()};
+
     using enum BlockId;
 
     for(const auto curLine : SString::split_newlines(beatmapFile)) {
@@ -412,11 +414,10 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjectsFromDa
         if(curBlock == Sentinel) {
             curBlock = Header;
         } else {
-            for(const auto &[blockStr, id] : metadataBlocks) {
-                if(curLine.contains(blockStr)) {
-                    curBlock = id;
-                    break;
-                }
+            if(auto it = std::ranges::find(blocksUnseen, curLine, [](const auto &block) { return block.str; });
+               it != blocksUnseen.end()) {
+                curBlock = it->id;
+                blocksUnseen.erase(it);
             }
         }
 
@@ -1179,7 +1180,7 @@ DatabaseBeatmap::LOAD_DIFFOBJ_RESULT DatabaseBeatmap::loadDifficultyHitObjects(P
         result.maxComboAtIndex.push_back(totalCombo);
     }
 
-    if (result.diffobjects.empty()) {
+    if(result.diffobjects.empty()) {
         result.error.errc = LoadError::NO_OBJECTS;
     }
 
@@ -1202,7 +1203,7 @@ DatabaseBeatmap::LOAD_META_RESULT DatabaseBeatmap::loadMetadata(bool compute_md5
 
     logIf(cv::debug_osu.getBool() || cv::debug_db.getBool(), "loading {:s}", this->sFilePath);
 
-    FixedSizeArray<u8> fileBuffer;
+    std::vector<u8> fileBuffer;
     size_t beatmapFileSize{0};
     std::string_view beatmapFile;
 
@@ -1210,12 +1211,16 @@ DatabaseBeatmap::LOAD_META_RESULT DatabaseBeatmap::loadMetadata(bool compute_md5
         File file(this->sFilePath);
         if(file.canRead()) {
             beatmapFileSize = file.getFileSize();
-            fileBuffer = FixedSizeArray{file.takeFileBuffer(), beatmapFileSize};
-            beatmapFile = {reinterpret_cast<char *>(fileBuffer.data()),
-                           reinterpret_cast<char *>(fileBuffer.data() + beatmapFileSize)};
+            file.readToVector(fileBuffer);
+        }
+        if(!beatmapFileSize || fileBuffer.empty()) {
+            beatmapFileSize = 0;
         }
         // close the file here
     }
+
+    beatmapFile = {reinterpret_cast<char *>(fileBuffer.data()),
+                   reinterpret_cast<char *>(fileBuffer.data() + beatmapFileSize)};
 
     const auto ret = [&](LoadError::code retcode) -> DatabaseBeatmap::LOAD_META_RESULT {
         return {.fileData = std::move(fileBuffer), .error = {retcode}};
@@ -1242,6 +1247,7 @@ DatabaseBeatmap::LOAD_META_RESULT DatabaseBeatmap::loadMetadata(bool compute_md5
     bool foundAR = false;
 
     BlockId curBlock{BlockId::Sentinel};
+    std::vector<MetadataBlock> blocksUnseen{metadataBlocks.begin(), metadataBlocks.end()};
 
     using enum BlockId;
 
@@ -1253,11 +1259,10 @@ DatabaseBeatmap::LOAD_META_RESULT DatabaseBeatmap::loadMetadata(bool compute_md5
         if(curBlock == Sentinel) {
             curBlock = Header;
         } else {
-            for(const auto &[blockStr, id] : metadataBlocks) {
-                if(curLine.contains(blockStr)) {
-                    curBlock = id;
-                    break;
-                }
+            if(auto it = std::ranges::find(blocksUnseen, curLine, [](const auto &block) { return block.str; });
+               it != blocksUnseen.end()) {
+                curBlock = it->id;
+                blocksUnseen.erase(it);
             }
         }
 

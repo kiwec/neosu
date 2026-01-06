@@ -15,6 +15,7 @@
 #include <filesystem>
 #include <fstream>
 #include <memory>
+#include <vector>
 
 class ConVar;
 class DirectoryCache;
@@ -51,6 +52,8 @@ class File {
 
     // moves the file buffer out, allowing immediate destruction of the file object
     [[nodiscard]] std::unique_ptr<u8[]> &&takeFileBuffer();
+
+    void readToVector(std::vector<u8> &out);
 
     [[nodiscard]] constexpr uSz getFileSize() const { return this->iFileSize; }
     [[nodiscard]] inline std::string_view getPath() const { return this->sFilePath; }

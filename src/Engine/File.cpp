@@ -631,3 +631,33 @@ std::unique_ptr<u8[]> &&File::takeFileBuffer() {
     this->vFullBuffer.reset();
     return std::move(this->vFullBuffer);
 }
+
+void File::readToVector(std::vector<u8> &out) {
+    logIfCV(debug_file, "{:s} (canRead: {})", this->sFilePath, this->bReady && canRead());
+
+    // if buffer is already populated, copy that
+    if(!!this->vFullBuffer) {
+        out.resize(this->iFileSize);
+        std::memcpy(out.data(), this->vFullBuffer.get(), this->iFileSize * sizeof(u8));
+        return;
+    }
+
+    if(!this->bReady || !this->canRead()) {
+        out.clear();
+        return;
+    }
+
+    // allocate buffer for file contents
+    out.resize(this->iFileSize);
+
+    // read entire file
+    this->ifstream->seekg(0, std::ios::beg);
+    if(this->ifstream->read(reinterpret_cast<char *>(out.data()), static_cast<std::streamsize>(this->iFileSize))
+           .good()) {
+        return;
+    }
+
+    // read failed, clear buffer and return empty vector
+    out.clear();
+    return;
+}

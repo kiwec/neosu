@@ -1572,6 +1572,7 @@ f64 DifficultyCalculator::DiffObject::calculate_difficulty(const Skills::Skill t
     return difficulty;
 }
 
+thread_local std::vector<std::pair<DifficultyCalculator::RhythmIsland, int>> DifficultyCalculator::islandCounts;
 // new implementation, Xexxar, (ppv2.1), see https://github.com/ppy/osu/blob/master/osu.Game.Rulesets.Osu/Difficulty/Skills/
 f64 DifficultyCalculator::DiffObject::spacing_weight2(const Skills::Skill diff_type, const DiffObject &prev,
                                                       const DiffObject *next, f64 hitWindow300, bool autopilotNerf) {
@@ -1629,7 +1630,7 @@ f64 DifficultyCalculator::DiffObject::spacing_weight2(const Skills::Skill diff_t
             RhythmIsland island{INT_MAX, 0};
             RhythmIsland previousIsland{INT_MAX, 0};
 
-            std::vector<std::pair<RhythmIsland, int>> islandCounts;
+            DifficultyCalculator::islandCounts.clear();
 
             f64 startRatio = 0.0;  // store the ratio of the current start of an island to buff for tighter rhythms
 
@@ -1712,7 +1713,7 @@ f64 DifficultyCalculator::DiffObject::spacing_weight2(const Skills::Skill diff_t
                             effectiveRatio *= 0.5;
 
                         std::pair<RhythmIsland, int> *islandCount = nullptr;
-                        for(auto &i : islandCounts) {
+                        for(auto &i : DifficultyCalculator::islandCounts) {
                             if(i.first.equals(island, deltaDifferenceEpsilon)) {
                                 islandCount = &i;
                                 break;
@@ -1729,7 +1730,7 @@ f64 DifficultyCalculator::DiffObject::spacing_weight2(const Skills::Skill diff_t
                             effectiveRatio *=
                                 std::min(3.0 / islandCount->second, std::pow(1.0 / islandCount->second, power));
                         } else {
-                            islandCounts.emplace_back(island, 1);
+                            DifficultyCalculator::islandCounts.emplace_back(island, 1);
                         }
 
                         // scale down the difficulty if the object is doubletappable
@@ -1775,6 +1776,7 @@ f64 DifficultyCalculator::DiffObject::spacing_weight2(const Skills::Skill diff_t
             rhythm = (std::sqrt(4.0 + rhythmComplexitySum * rhythm_overall_multiplier) / 2.0) *
                      (1.0 - get_doubletapness(get_next(0), hitWindow300));
 
+            DifficultyCalculator::islandCounts.clear();
             return raw_speed_strain;
         } break;
 
@@ -1793,12 +1795,10 @@ f64 DifficultyCalculator::DiffObject::spacing_weight2(const Skills::Skill diff_t
                prev.ho->type == DifficultyHitObject::TYPE::SPINNER)
                 return 0.0;
 
-            static constexpr auto calcWideAngleBonus = +[](f64 angle) {
-                return smoothstep(angle, 40.0 * (PI / 180.0), 140.0 * (PI / 180.0));
-            };
-            static constexpr auto calcAcuteAngleBonus = +[](f64 angle) {
-                return smoothstep(angle, 140.0 * (PI / 180.0), 40.0 * (PI / 180.0));
-            };
+            static constexpr auto calcWideAngleBonus =
+                +[](f64 angle) { return smoothstep(angle, 40.0 * (PI / 180.0), 140.0 * (PI / 180.0)); };
+            static constexpr auto calcAcuteAngleBonus =
+                +[](f64 angle) { return smoothstep(angle, 140.0 * (PI / 180.0), 40.0 * (PI / 180.0)); };
 
             const DiffObject *prevPrev = get_previous(1);
             const DiffObject *prev2 = get_previous(2);

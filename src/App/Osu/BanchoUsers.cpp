@@ -18,40 +18,35 @@
 
 namespace BANCHO::User {
 
-Hash::flat::map<i32, UserInfo*> online_users;  // pointers to all_users elements
-std::vector<i32> friends;
-namespace {  // static
-std::unordered_map<i32, UserInfo> all_users; // needs pointer stability, so std::unordered is fine
-std::vector<const UserInfo*> presence_requests;
-std::vector<const UserInfo*> stats_requests;
+Hash::flat::map<i32, const UserInfo*> online_users;  // pointers to all_users elements
+Hash::flat::set<i32> friends;
+namespace {                                   // static
+std::unordered_map<i32, UserInfo> all_users;  // needs pointer stability, so std::unordered is fine
+Hash::flat::set<const UserInfo*> presence_requests;
+Hash::flat::set<const UserInfo*> stats_requests;
 }  // namespace
 
-void dequeue_presence_request(const UserInfo* info) {
-    std::erase_if(presence_requests, [info](const UserInfo* uinfo) { return uinfo == info; });
-}
-
-void dequeue_stats_request(const UserInfo* info) {
-    std::erase_if(stats_requests, [info](const UserInfo* uinfo) { return uinfo == info; });
-}
+void dequeue_presence_request(const UserInfo* info) { presence_requests.erase(info); }
+void dequeue_stats_request(const UserInfo* info) { stats_requests.erase(info); }
 
 void enqueue_presence_request(const UserInfo* info) {
     if(info->has_presence) return;
-    if(std::ranges::contains(presence_requests, info)) return;
-    presence_requests.push_back(info);
+    if(presence_requests.contains(info)) return;
+    presence_requests.insert(info);
 }
 
 void enqueue_stats_request(const UserInfo* info) {
     if(info->irc_user) return;
     if(info->stats_tms + 5000 > Timing::getTicksMS()) return;
-    if(std::ranges::contains(stats_requests, info)) return;
-    stats_requests.push_back(info);
+    if(stats_requests.contains(info)) return;
+    stats_requests.insert(info);
 }
 
 void request_presence_batch() {
-    std::vector<i32> actual_requests;
-    for(const auto& req : presence_requests) {
+    Hash::flat::set<i32> actual_requests;
+    for(const auto* req : presence_requests) {
         if(req->has_presence) continue;
-        actual_requests.push_back(req->user_id);
+        actual_requests.insert(req->user_id);
     }
 
     presence_requests.clear();
@@ -60,18 +55,18 @@ void request_presence_batch() {
     Packet packet;
     packet.id = OUTP_USER_PRESENCE_REQUEST;
     packet.write<u16>(actual_requests.size());
-    for(const auto& user_id : actual_requests) {
+    for(i32 user_id : actual_requests) {
         packet.write<i32>(user_id);
     }
     BANCHO::Net::send_packet(packet);
 }
 
 void request_stats_batch() {
-    std::vector<i32> actual_requests;
-    for(const auto& req : stats_requests) {
+    Hash::flat::set<i32> actual_requests;
+    for(const auto* req : stats_requests) {
         if(req->irc_user) continue;
         if(req->stats_tms + 5000 > Timing::getTicksMS()) continue;
-        actual_requests.push_back(req->user_id);
+        actual_requests.insert(req->user_id);
     }
 
     stats_requests.clear();
@@ -80,7 +75,7 @@ void request_stats_batch() {
     Packet packet;
     packet.id = OUTP_USER_STATS_REQUEST;
     packet.write<u16>(actual_requests.size());
-    for(const auto& user_id : actual_requests) {
+    for(i32 user_id : actual_requests) {
         packet.write<i32>(user_id);
     }
     BANCHO::Net::send_packet(packet);
@@ -131,7 +126,7 @@ UserInfo* find_user(std::string_view username) {
     return nullptr;
 }
 
-UserInfo* find_user_starting_with(std::string_view prefix, std::string_view last_match) {
+const UserInfo* find_user_starting_with(std::string_view prefix, std::string_view last_match) {
     if(prefix.empty()) return nullptr;
 
     std::string prefixLower = SString::to_lower(prefix);
@@ -206,4 +201,4 @@ UserInfo::~UserInfo() {
     dequeue_stats_request(this);
 }
 
-bool UserInfo::is_friend() const { return std::ranges::contains(friends, this->user_id); }
+bool UserInfo::is_friend() const { return friends.contains(this->user_id); }

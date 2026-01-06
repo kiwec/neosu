@@ -355,6 +355,7 @@ class DifficultyCalculator {
             return std::abs(delta - other.delta) < deltaDifferenceEpsilon && deltaCount == other.deltaCount;
         }
     };
+    static thread_local std::vector<std::pair<RhythmIsland, int>> islandCounts;
 
    private:
     // Skill values calculation

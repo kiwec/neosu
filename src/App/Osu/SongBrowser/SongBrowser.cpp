@@ -903,7 +903,7 @@ void SongBrowser::mouse_update(bool *propagate_clicks) {
             Sync::unique_lock lock(db->peppy_overrides_mtx);
             for(const auto &res : results) {
                 auto map = res.map;
-                uniqueSetsForDiffs.emplace(map->getParentSet());
+                uniqueSetsForDiffs.insert(map->getParentSet());
                 map->iNumCircles = res.nb_circles;
                 map->iNumSliders = res.nb_sliders;
                 map->iNumSpinners = res.nb_spinners;

@@ -132,9 +132,11 @@ class AsyncIOHandler::InternalIOContext final {
         }
 
         i64 readSize = SDL_GetAsyncIOSize(handle);
-        if(readSize < 0 || readSize > (2ULL * 1024 * 1024 * 1024)) {
+        if(readSize <= 0 || readSize > (2ULL * 1024 * 1024 * 1024)) {
             if(readSize < 0) {
                 debugLog("ERROR: failed to open {} for reading: {}", pathStr, SDL_GetError());
+            } else if(readSize == 0) {
+                logIfCV(debug_file, "WARNING: {} has size 0!", pathStr);
             } else {
                 // arbitrary size limit sanity check
                 debugLog("ERROR: failed to open {} for reading, over 2GB in size!", pathStr);

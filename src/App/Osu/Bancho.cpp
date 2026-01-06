@@ -573,7 +573,7 @@ void BanchoState::handle_packet(Packet &packet) {
             u16 nb_friends = packet.read<u16>();
             for(u16 i = 0; i < nb_friends; i++) {
                 i32 friend_id = packet.read<i32>();
-                BANCHO::User::friends.push_back(friend_id);
+                BANCHO::User::friends.insert(friend_id);
             }
             break;
         }

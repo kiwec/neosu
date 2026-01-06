@@ -530,7 +530,7 @@ void Chat::handle_command(const UString &msg) {
             packet.write<i32>(user->user_id);
             BANCHO::Net::send_packet(packet);
 
-            BANCHO::User::friends.push_back(user->user_id);
+            BANCHO::User::friends.insert(user->user_id);
 
             this->addSystemMessage(fmt::format("You are now friends with {:s}.", friend_name));
         }
@@ -748,8 +748,8 @@ void Chat::onKeyDown(KeyboardEvent &key) {
             username_len = username_end_idx - username_start_idx;
         }
 
-        auto *user = BANCHO::User::find_user_starting_with(this->tab_completion_prefix.utf8View(),
-                                                           this->tab_completion_match.utf8View());
+        const auto *user = BANCHO::User::find_user_starting_with(this->tab_completion_prefix.utf8View(),
+                                                                 this->tab_completion_match.utf8View());
         if(user) {
             this->tab_completion_match = user->name;
 

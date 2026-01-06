@@ -20,7 +20,6 @@
 
 #include <atomic>
 #include <memory>
-#include <unordered_map>
 
 namespace DBRecalculator {
 
@@ -81,8 +80,8 @@ struct ModParams {
 };
 
 struct ModParamsHash {
-    size_t operator()(const ModParams& p) const {
-        size_t h = std::hash<f32>{}(p.ar);
+    uSz operator()(const ModParams& p) const {
+        uSz h = std::hash<f32>{}(p.ar);
         h ^= std::hash<f32>{}(p.cs) << 1;
         h ^= std::hash<f32>{}(p.od) << 2;
         h ^= std::hash<f32>{}(p.speed) << 3;
@@ -106,6 +105,9 @@ struct WorkItem {
     bool needs_map_calc;
     std::vector<ScoreWork> scores;
 };
+
+Timing::Timer recalc_timer;
+u32 errored_count{0};
 
 Sync::jthread worker_thread;
 
@@ -142,9 +144,11 @@ void process_score_group(BeatmapDifficulty* map, const ModParams& params, const 
         DatabaseBeatmap::loadDifficultyHitObjects(primitives, params.ar, params.cs, params.speed, false, stoken);
     if(stoken.stop_requested()) return;
     if(diffres.error.errc) {
+        const u32 item_failed_scores = scores.size();
+        errored_count += item_failed_scores;
         logFailure(diffres.error, "loadDifficultyHitObjects map hash {} map path {}", map->getMD5().string(),
                    map->getFilePath());
-        scores_processed.fetch_add(scores.size(), std::memory_order_relaxed);
+        scores_processed.fetch_add(item_failed_scores, std::memory_order_relaxed);
         return;
     }
 
@@ -200,9 +204,11 @@ void process_score_group(BeatmapDifficulty* map, const ModParams& params, const 
                                                         .legacyTotalScore = (u32)score.score};
 
         // mcosu scores use a different scorev1 algorithm
-        f64 pp = DifficultyCalculator::calculatePPv2(ppv2params, score.is_mcosu_imported());
+        const f64 pp = DifficultyCalculator::calculatePPv2(ppv2params, score.is_mcosu_imported());
         internal::update_score_in_db(score, pp, total_stars, attributes.AimDifficulty, attributes.SpeedDifficulty);
-
+        if(pp <= 0.f) {
+            ++errored_count;
+        }
         scores_processed.fetch_add(1, std::memory_order_relaxed);
     }
 }
@@ -210,7 +216,7 @@ void process_score_group(BeatmapDifficulty* map, const ModParams& params, const 
 // Build work queue on worker thread to avoid blocking main thread.
 // Iterating over 100k+ scores with score_needs_recalc() checks is O(n).
 void build_work_queue(const Sync::stop_token& stoken) {
-    std::unordered_map<MD5Hash, WorkItem> work_by_hash;
+    Hash::flat::map<MD5Hash, WorkItem> work_by_hash;
 
     // add maps needing star rating recalc (ppv2 version outdated)
     pending_diffs_to_recalc = internal::collect_outdated_db_diffs(stoken);
@@ -239,21 +245,21 @@ void build_work_queue(const Sync::stop_token& stoken) {
             for(const auto& score : scores) {
                 if(!score_needs_recalc(score)) continue;
 
-                auto* map = db->getBeatmapDifficulty(hash);
-                if(!map) continue;
+                auto* diff = db->getBeatmapDifficulty(hash);
+                if(!diff) continue;
 
                 auto& item = work_by_hash[hash];
                 if(item.map == nullptr) {
                     item.hash = hash;
-                    item.map = map;
+                    item.map = diff;
                 }
 
                 ScoreWork sw;
                 sw.score = score;
-                sw.params.ar = score.mods.get_naive_ar(map);
-                sw.params.cs = score.mods.get_naive_cs(map);
-                sw.params.od = score.mods.get_naive_od(map);
-                sw.params.hp = score.mods.get_naive_hp(map);
+                sw.params.ar = score.mods.get_naive_ar(diff);
+                sw.params.cs = score.mods.get_naive_cs(diff);
+                sw.params.od = score.mods.get_naive_od(diff);
+                sw.params.hp = score.mods.get_naive_hp(diff);
                 sw.params.speed = score.mods.speed;
                 sw.params.hd = score.mods.has(ModFlags::Hidden);
                 sw.params.rx = score.mods.has(ModFlags::Relax);
@@ -277,21 +283,27 @@ void build_work_queue(const Sync::stop_token& stoken) {
 }
 
 void process_work_item(WorkItem& item, const Sync::stop_token& stoken) {
-    if(!item.map) return;
+    if(!item.map) {
+        ++errored_count;
+        return;
+    }
 
     // load primitive objects once for this beatmap
     auto primitives = DatabaseBeatmap::loadPrimitiveObjects(item.map->sFilePath, stoken);
     if(stoken.stop_requested()) return;
 
     if(primitives.error.errc) {
+        const u32 item_failed_scores = item.scores.size();
+        errored_count += item_failed_scores;
         logFailure(primitives.error, "loadPrimitiveObjects map hash: {} map path: {}", item.map->getMD5().string(),
                    item.map->sFilePath);
         if(item.needs_map_calc) {
+            ++errored_count;
             Sync::scoped_lock lock(results_mutex);
             map_results.push_back(MapResult{.map = item.map});
             maps_processed.fetch_add(1, std::memory_order_relaxed);
         }
-        scores_processed.fetch_add(static_cast<u32>(item.scores.size()), std::memory_order_relaxed);
+        scores_processed.fetch_add(item_failed_scores, std::memory_order_relaxed);
         return;
     }
 
@@ -338,7 +350,12 @@ void process_work_item(WorkItem& item, const Sync::stop_token& stoken) {
 
             dummy_diffobj_cache = std::move(star_params.cachedDiffObjects);
             dummy_diffobj_cache->clear();
+
+            if(result.star_rating <= 0.f) {
+                ++errored_count;
+            }
         } else {
+            ++errored_count;
             logFailure(diffres.error, "loadDifficultyHitObjects map hash: {} map path: {}", item.map->getMD5().string(),
                        item.map->sFilePath);
         }
@@ -365,7 +382,7 @@ void process_work_item(WorkItem& item, const Sync::stop_token& stoken) {
     // process score calculations, grouped by mod parameters to share difficulty calc
     // subsequent loadDifficultyHitObjects calls skip slider timing (sliderTimesCalculated == true)
     if(!item.scores.empty()) {
-        std::unordered_map<ModParams, std::vector<const ScoreWork*>, ModParamsHash> score_groups;
+        Hash::flat::map<ModParams, std::vector<const ScoreWork*>, ModParamsHash> score_groups;
         for(const auto& sw : item.scores) {
             score_groups[sw.params].push_back(&sw);
         }
@@ -385,12 +402,17 @@ void runloop(const Sync::stop_token& stoken) {
     McThread::set_current_thread_name(US_("db_recalc"));
     McThread::set_current_thread_prio(McThread::Priority::NORMAL);
 
+    errored_count = 0;
+    recalc_timer.reset();
+
     build_work_queue(stoken);
     workqueue_ready.store(true, std::memory_order_release);
 
     if(stoken.stop_requested()) return;
 
-    debugLog("DB recalculator: {} work items ({} maps, {} scores)", work_queue.size(), get_maps_total(),
+    const u32 initial_workqueue_size = work_queue.size();
+
+    debugLog("DB recalculator: {} work items ({} maps, {} scores)", initial_workqueue_size, get_maps_total(),
              get_scores_total());
 
     for(auto& item : work_queue) {
@@ -404,6 +426,13 @@ void runloop(const Sync::stop_token& stoken) {
 
         Timing::sleep(0);
     }
+
+    if(!stoken.stop_requested() && errored_count < initial_workqueue_size) {
+        recalc_timer.update();
+        debugLog("DB recalculator: took {} seconds, failed to recalculate {}/{}.", recalc_timer.getDelta(),
+                 errored_count, initial_workqueue_size);
+    }
+    errored_count = 0;
 
     // just in case
     maps_processed.store(get_maps_total(), std::memory_order_release);

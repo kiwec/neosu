@@ -143,7 +143,7 @@ void UIUserContextMenuScreen::on_action(const UString& /*text*/, int user_action
         packet.id = OUTP_FRIEND_ADD;
         packet.write<i32>(this->user_id);
         BANCHO::Net::send_packet(packet);
-        BANCHO::User::friends.push_back(this->user_id);
+        BANCHO::User::friends.insert(this->user_id);
     } else if(user_action == UA_REMOVE_FRIEND) {
         Packet packet;
         packet.id = OUTP_FRIEND_REMOVE;
