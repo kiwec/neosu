@@ -400,7 +400,7 @@ void Engine::onFocusLost() {
     // auto minimize on certain conditions
     if(env->winFullscreened() && (cv::minimize_on_focus_lost_if_borderless_windowed_fullscreen.getBool() ||
                                   cv::minimize_on_focus_lost_if_fullscreen.getBool())) {
-        env->minimize();
+        env->minimizeWindow();
     }
 }
 
@@ -499,9 +499,9 @@ void Engine::restart() {
     env->restart();
 }
 
-void Engine::focus() { env->focus(); }
+void Engine::focus() { env->restoreWindow(); }
 
-void Engine::center() { env->center(); }
+void Engine::center() { env->centerWindow(); }
 
 void Engine::toggleFullscreen() {
     if(env->winFullscreened())
@@ -582,8 +582,8 @@ void _errortest() {
 }
 
 void _restart() { engine->restart(); }
-void _minimize() { env->minimize(); }
-void _maximize() { env->maximize(); }
+void _minimize() { env->minimizeWindow(); }
+void _maximize() { env->maximizeWindow(); }
 void _toggleresizable() { env->setWindowResizable(!env->winResizable()); }
 void _focus() { engine->focus(); }
 void _center() { engine->center(); }

@@ -6,6 +6,7 @@
 #include "MakeDelegateWrapper.h"
 #include "Mouse.h"
 #include "File.h"
+#include "RuntimePlatform.h"
 #include "SString.h"
 #include "Timing.h"
 #include "Logging.h"
@@ -158,9 +159,6 @@ Environment::Environment(const std::unordered_map<std::string, std::optional<std
     m_mMonitors = {};
     // lazy init (with initMonitors)
     m_fullDesktopBoundingBox = McRect{};
-
-    m_vLastKnownWindowPos = vec2{};
-    m_vLastKnownWindowSize = vec2{320, 240};
 
     m_sdldriver = SDL_GetCurrentVideoDriver();
     m_bIsX11 = (m_sdldriver == "x11");
@@ -744,18 +742,17 @@ void Environment::openFileBrowser(std::string_view initialpath) const noexcept {
     }
 }
 
-void Environment::focus() {
-    if(winMinimized()) {
-        if(!SDL_RestoreWindow(m_window)) {
-            debugLog("Failed to restore window: {:s}", SDL_GetError());
-        }
+void Environment::restoreWindow() {
+    if(!SDL_RestoreWindow(m_window)) {
+        debugLog("Failed to restore window: {:s}", SDL_GetError());
     }
     if(!SDL_RaiseWindow(m_window)) {
         debugLog("Failed to focus window: {:s}", SDL_GetError());
     }
+    syncWindow();
 }
 
-void Environment::center() {
+void Environment::centerWindow() {
     syncWindow();
     const SDL_DisplayID di = SDL_GetDisplayForWindow(m_window);
     if(!di) {
@@ -765,16 +762,24 @@ void Environment::center() {
     setWindowPos(SDL_WINDOWPOS_CENTERED_DISPLAY(di), SDL_WINDOWPOS_CENTERED_DISPLAY(di));
 }
 
-bool Environment::minimize() {
+bool Environment::minimizeWindow() {
     // see SDL3/test/testautomation_video.c
     // if SDL is hardcoding not running tests on certain setups then i give up
-    if(m_bMinimizeSupported && (m_bIsWayland || m_bIsX11)) {
-        if(auto desktop = getEnvVariable("XDG_CURRENT_DESKTOP"); !desktop.empty()) {
-            if(desktop == "sway" || desktop == "i3" || desktop == "i3wm") {
-                logIf(m_bEnvDebug, "Disabled minimize support due to XDG_CURRENT_DESKTOP: {}", desktop);
-                m_bMinimizeSupported = false;
-            }
+
+    // TODO: make minimize-on-focus-lost an option in options menu and stop trying to be smart about it,
+    // i don't think it's possible to cover all edge cases automatically
+    static bool hardcodedBrokenDesktopChecked{false};
+    if(m_bMinimizeSupported && !hardcodedBrokenDesktopChecked &&
+       ((m_bIsWayland || m_bIsX11) || (RuntimePlatform::current() & RuntimePlatform::WIN_WINE))) {
+        auto desktop = getEnvVariable("XDG_CURRENT_DESKTOP");
+        if(desktop.empty() && (RuntimePlatform::current() & RuntimePlatform::WIN_WINE)) {
+            desktop = getEnvVariable("WINE_HOST_XDG_CURRENT_DESKTOP");
         }
+        if(!desktop.empty() && (desktop == "sway" || desktop == "i3" || desktop == "i3wm")) {
+            logIf(m_bEnvDebug, "Disabled minimize support due to XDG_CURRENT_DESKTOP: {}", desktop);
+            m_bMinimizeSupported = false;
+        }
+        hardcodedBrokenDesktopChecked = true;
     }
 
     static int brokenMinimizeRepeatedSpamWorkaroundCounter{0};
@@ -807,7 +812,7 @@ bool Environment::minimize() {
     return true;
 }
 
-void Environment::maximize() {
+void Environment::maximizeWindow() {
     if(!SDL_MaximizeWindow(m_window)) {
         debugLog("Failed to maximize window: {:s}", SDL_GetError());
     }
@@ -816,6 +821,8 @@ void Environment::maximize() {
 void Environment::enableFullscreen() {
     // NOTE: "fake" fullscreen since we don't want a videomode change
 
+    // some weird hack that apparently makes this behave better on macos?
+    SDL_SetWindowFullscreenMode(m_window, nullptr);
     if(!SDL_SetWindowFullscreen(m_window, true)) {
         debugLog("Failed to enable fullscreen: {:s}", SDL_GetError());
     }
@@ -848,7 +855,7 @@ void Environment::setWindowResizable(bool resizable) {
 }
 
 void Environment::setMonitor(int monitor) {
-    if(monitor == 0 || monitor == getMonitor()) return center();
+    if(monitor == 0 || monitor == getMonitor()) return centerWindow();
 
     bool success = false;
 
@@ -873,7 +880,7 @@ void Environment::setMonitor(int monitor) {
     } else
         debugLog("WARNING: tried to setMonitor({:d}) to invalid monitor, centering instead", monitor);
 
-    if(!success) center();
+    if(!success) centerWindow();
 
     cv::monitor.setValue(getMonitor(), false);
 }
@@ -936,7 +943,7 @@ vec2 Environment::getWindowSize() const {
     return m_vLastKnownWindowSize;
 }
 
-const std::unordered_map<unsigned int, McRect> &Environment::getMonitors() {
+const std::unordered_map<unsigned int, McRect> &Environment::getMonitors() const {
     if(m_mMonitors.size() < 1)  // lazy init
         initMonitors();
     return m_mMonitors;
@@ -947,6 +954,7 @@ int Environment::getMonitor() const {
     return display == 0 ? -1 : display;  // 0 == invalid, according to SDL
 }
 
+// TODO: cache this
 vec2 Environment::getNativeScreenSize() const {
     if(const SDL_DisplayID di = SDL_GetDisplayForWindow(m_window)) {
         const float scale = getPixelDensity();
@@ -957,16 +965,21 @@ vec2 Environment::getNativeScreenSize() const {
             // GetDisplayUsableBounds in windowed
             SDL_Rect bounds{};
             if(SDL_GetDisplayUsableBounds(di, &bounds)) {
-                return vec2{static_cast<float>(bounds.w), static_cast<float>(bounds.h)} * scale;
+                m_vLastKnownNativeScreenSize = vec2{static_cast<float>(bounds.w), static_cast<float>(bounds.h)} * scale;
+                return m_vLastKnownNativeScreenSize;
             }
         }
 
         // GetDesktopDisplayMode should return the actual, full resolution
         if(const SDL_DisplayMode *dm = SDL_GetDesktopDisplayMode(di)) {
-            return vec2{static_cast<float>(dm->w), static_cast<float>(dm->h)} * scale;
+            m_vLastKnownNativeScreenSize = vec2{static_cast<float>(dm->w), static_cast<float>(dm->h)} * scale;
+            return m_vLastKnownNativeScreenSize;
         }
     }
-    return getWindowSize();
+
+    // fallback
+    m_vLastKnownNativeScreenSize = getWindowSize();
+    return m_vLastKnownNativeScreenSize;
 }
 
 McRect Environment::getDesktopRect() const { return {{}, getNativeScreenSize()}; }
@@ -1173,6 +1186,38 @@ void Environment::onUseIMEChange(float newValue) {
 void Environment::updateWindowFlags() {
     assert(m_window);
     m_winflags = static_cast<WinFlags>(SDL_GetWindowFlags(m_window));
+}
+
+std::string Environment::windowFlagsDbgStr() const {
+    std::string ret;
+    using enum WinFlags;
+    if(!!(m_winflags & F_FULLSCREEN)) ret += "FULLSCREEN;";
+    if(!!(m_winflags & F_OPENGL)) ret += "OPENGL;";
+    if(!!(m_winflags & F_OCCLUDED)) ret += "OCCLUDED;";
+    if(!!(m_winflags & F_HIDDEN)) ret += "HIDDEN;";
+    if(!!(m_winflags & F_BORDERLESS)) ret += "BORDERLESS;";
+    if(!!(m_winflags & F_RESIZABLE)) ret += "RESIZABLE;";
+    if(!!(m_winflags & F_MINIMIZED)) ret += "MINIMIZED;";
+    if(!!(m_winflags & F_MAXIMIZED)) ret += "MAXIMIZED;";
+    if(!!(m_winflags & F_MOUSE_GRABBED)) ret += "MOUSE_GRABBED;";
+    if(!!(m_winflags & F_INPUT_FOCUS)) ret += "INPUT_FOCUS;";
+    if(!!(m_winflags & F_MOUSE_FOCUS)) ret += "MOUSE_FOCUS;";
+    if(!!(m_winflags & F_EXTERNAL)) ret += "EXTERNAL;";
+    if(!!(m_winflags & F_MODAL)) ret += "MODAL;";
+    if(!!(m_winflags & F_HIGH_PIXEL_DENSITY)) ret += "HIGH_PIXEL_DENSITY;";
+    if(!!(m_winflags & F_MOUSE_CAPTURE)) ret += "MOUSE_CAPTURE;";
+    if(!!(m_winflags & F_MOUSE_RELATIVE_MODE)) ret += "MOUSE_RELATIVE_MODE;";
+    if(!!(m_winflags & F_ALWAYS_ON_TOP)) ret += "ALWAYS_ON_TOP;";
+    if(!!(m_winflags & F_UTILITY)) ret += "UTILITY;";
+    if(!!(m_winflags & F_TOOLTIP)) ret += "TOOLTIP;";
+    if(!!(m_winflags & F_POPUP_MENU)) ret += "POPUP_MENU;";
+    if(!!(m_winflags & F_KEYBOARD_GRABBED)) ret += "KEYBOARD_GRABBED;";
+    if(!!(m_winflags & F_VULKAN)) ret += "VULKAN;";
+    if(!!(m_winflags & F_METAL)) ret += "METAL;";
+    if(!!(m_winflags & F_TRANSPARENT)) ret += "TRANSPARENT;";
+    if(!!(m_winflags & F_NOT_FOCUSABLE)) ret += "NOT_FOCUSABLE;";
+    if(!ret.empty()) ret.pop_back();
+    return ret;
 }
 
 // convar callback

@@ -245,10 +245,14 @@ SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
                     }
                 } break;
 
-                case SDL_EVENT_WINDOW_FOCUS_GAINED:
+                case SDL_EVENT_WINDOW_FOCUS_GAINED: {
                     // add these window flags now to make env->winFocused() return true after this
                     m_winflags |= (WinFlags::F_MOUSE_FOCUS | WinFlags::F_INPUT_FOCUS);
-                    if(!winMinimized() && m_bRestoreFullscreen) {
+                    // this check seems flaky and not required on windows, as far as i can tell
+                    if(!Env::cfg(OS::WINDOWS) && (m_bRestoreFullscreen && !winMinimized())) {
+                        debugLog(
+                            "DEBUG: window not minimized while in restore fullscreen state, ignoring future minimize "
+                            "requests.");
                         // we can get into this state if the current window manager doesn't support minimizing
                         // (i.e. re-gaining focus without first being restored, after we unfullscreened and tried to minimize the window)
                         // re-fullscreen once, then set a flag to ignore future minimize requests
@@ -258,7 +262,7 @@ SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
                     }
                     m_engine->onFocusGained();
                     setFgFPS();
-                    break;
+                } break;
 
                 case SDL_EVENT_WINDOW_FOCUS_LOST:
                     // remove these window flags now to avoid env->winFocused() returning true immediately
@@ -313,16 +317,23 @@ SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
                 case SDL_EVENT_WINDOW_RESIZED:
                 case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
                 case SDL_EVENT_WINDOW_SAFE_AREA_CHANGED: {  // not really sure what to do with SAFE_AREA_CHANGED
+                    // ignore these events if we are minimized or waiting to be restored to fullscreen
                     if(!winMinimized() && !m_bRestoreFullscreen) {
-                        onDPIChange();
                         const SDL_EventType type = event->window.type;
-                        // don't trust the event coordinates if we're in fullscreen, use the fullscreen size directly
-                        const vec2 actualResize =
-                            winFullscreened()
-                                ? getNativeScreenSize()
-                                : (type == SDL_EVENT_WINDOW_RESIZED || type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED
-                                       ? vec2{(float)event->window.data1, (float)event->window.data2}
-                                       : getWindowSize());
+                        vec2 actualResize{};
+                        if(type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED) {
+                            onDPIChange();  // TODO: look into this (not sure if its correct)
+                        }
+                        // SAFE_AREA_CHANGED doesn't have data1/data2 filled
+                        if(type == SDL_EVENT_WINDOW_SAFE_AREA_CHANGED) {
+                            if(winFullscreened()) {
+                                actualResize = getNativeScreenSize();
+                            } else {
+                                actualResize = getWindowSize();
+                            }
+                        } else {
+                            actualResize = vec2{(float)event->window.data1, (float)event->window.data2};
+                        }
                         m_engine->requestResolutionChange(actualResize);
                         setFgFPS();
                     }
@@ -353,6 +364,9 @@ SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
                     if(m_bEnvDebug)
                         debugLog("DEBUG: unhandled SDL window event {}", static_cast<int>(event->window.type));
                     break;
+            }
+            if(m_bEnvDebug) {  // print out current window flags after
+                Logger::logRaw(fmt::format("[handleEvent] current window flags: {}", windowFlagsDbgStr()));
             }
             break;
 

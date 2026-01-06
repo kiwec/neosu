@@ -178,10 +178,10 @@ class Environment {
     void openFileBrowser(std::string_view initialpath) const noexcept;
 
     // window
-    void focus();
-    void center();
-    bool minimize();  // if it returns false, minimize is not supported
-    void maximize();
+    void restoreWindow();
+    void centerWindow();
+    bool minimizeWindow();  // if it returns false, minimize is not supported
+    void maximizeWindow();
     void enableFullscreen();
     void disableFullscreen();
     void syncWindow();
@@ -196,7 +196,7 @@ class Environment {
     [[nodiscard]] vec2 getWindowPos() const;
     [[nodiscard]] vec2 getWindowSize() const;
     [[nodiscard]] int getMonitor() const;
-    [[nodiscard]] const std::unordered_map<unsigned int, McRect> &getMonitors();
+    [[nodiscard]] const std::unordered_map<unsigned int, McRect> &getMonitors() const;
     [[nodiscard]] vec2 getNativeScreenSize() const;
     [[nodiscard]] McRect getDesktopRect() const;
     [[nodiscard]] McRect getWindowRect() const;
@@ -304,6 +304,7 @@ class Environment {
 
     // window
     void updateWindowFlags();
+    std::string windowFlagsDbgStr() const;
     WinFlags m_winflags{};  // initialized when window is created, updated on new window events in the event loop
     void onDPIChange();
 
@@ -315,8 +316,9 @@ class Environment {
     }
 
     // save the last position obtained from SDL so that we can return something sensible if the SDL API fails
-    mutable vec2 m_vLastKnownWindowSize{0.f};
-    mutable vec2 m_vLastKnownWindowPos{0.f};
+    mutable vec2 m_vLastKnownWindowSize{320.f, 240.f};
+    mutable vec2 m_vLastKnownWindowPos{};
+    mutable vec2 m_vLastKnownNativeScreenSize{320.f, 240.f};
 
     // mouse
     friend class Mouse;

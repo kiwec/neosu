@@ -445,7 +445,7 @@ void CBaseUIWindow::open() {
 }
 
 void CBaseUIWindow::minimize() {
-    if(this->bCoherenceMode) env->minimize();
+    if(this->bCoherenceMode) env->minimizeWindow();
 }
 
 CBaseUIWindow *CBaseUIWindow::setSizeToContent(int horizontalBorderSize, int verticalBorderSize) {

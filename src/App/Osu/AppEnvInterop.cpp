@@ -308,7 +308,7 @@ bool sdl_windows_message_hook(void *userdata, MSG *msg) {
     }
 
     // focus current window
-    interop->env_p->focus();
+    interop->env_p->restoreWindow();
 
     return false;  // we already processed everything, don't fallthrough to sdl
 }
@@ -424,10 +424,10 @@ void OsuEnvInterop::setup_system_integrations() {
 void NEOSU_handle_existing_window(int argc, char *argv[]) {
     // if a neosu instance is already running, send it a message then quit
     HWND existing_window = FindWindow(TEXT(PACKAGE_NAME), nullptr);
-    if(existing_window && argc > 1) {  // only send if we have more than just the exe name as args
-
+    if(existing_window) {
+        // send even if we only have the exe name as args, just use it as a request to focus the existing window
         size_t total_size = 0;
-        for(int i = 1; i < argc; i++) {         // skip exe name
+        for(int i = 0; i < argc; i++) {
             total_size += strlen(argv[i]) + 1;  // +1 for null terminator
         }
 
@@ -458,7 +458,7 @@ void NEOSU_handle_existing_window(int argc, char *argv[]) {
                     char *current = data;
 
                     // pack arguments with null separators, so we can split them easily
-                    for(int i = 1; i < argc; i++) {
+                    for(int i = 0; i < argc; i++) {
                         size_t len = strlen(argv[i]);
                         memcpy(current, argv[i], len);
                         current[len] = '\0';

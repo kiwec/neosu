@@ -954,7 +954,7 @@ void Osu::onKeyDown(KeyboardEvent &key) {
 
     // boss key (minimize + mute)
     if(key == cv::BOSS_KEY.getVal<SCANCODE>()) {
-        if(env->minimize()) {
+        if(env->minimizeWindow()) {
             this->bWasBossKeyPaused = this->map_iface->isPreviewMusicPlaying();
             this->map_iface->pausePreviewMusic(false);
         }
@@ -1727,7 +1727,7 @@ void Osu::onWindowedResolutionChanged(std::string_view args) {
     debugLog("{}x{}", width, height);
 
     env->setWindowSize(width, height);
-    env->center();
+    env->centerWindow();
 }
 
 void Osu::onFSResChanged(std::string_view args) {
