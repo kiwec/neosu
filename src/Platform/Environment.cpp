@@ -766,6 +766,17 @@ void Environment::center() {
 }
 
 bool Environment::minimize() {
+    // see SDL3/test/testautomation_video.c
+    // if SDL is hardcoding not running tests on certain setups then i give up
+    if(m_bMinimizeSupported && (m_bIsWayland || m_bIsX11)) {
+        if(auto desktop = getEnvVariable("XDG_CURRENT_DESKTOP"); !desktop.empty()) {
+            if(desktop == "sway" || desktop == "i3" || desktop == "i3wm") {
+                logIf(m_bEnvDebug, "Disabled minimize support due to XDG_CURRENT_DESKTOP: {}", desktop);
+                m_bMinimizeSupported = false;
+            }
+        }
+    }
+
     static int brokenMinimizeRepeatedSpamWorkaroundCounter{0};
     // a (harmless but wasteful of CPU) feedback loop can occur when alt tabbing for the first time and
     // calling SDL_SetWindowFullscreen(false)/SDL_SetWindowBordered(false), if they don't do anything
@@ -805,8 +816,6 @@ void Environment::maximize() {
 void Environment::enableFullscreen() {
     // NOTE: "fake" fullscreen since we don't want a videomode change
 
-    // some weird hack that apparently makes this behave better on macos?
-    SDL_SetWindowFullscreenMode(m_window, nullptr);
     if(!SDL_SetWindowFullscreen(m_window, true)) {
         debugLog("Failed to enable fullscreen: {:s}", SDL_GetError());
     }
