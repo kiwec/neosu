@@ -111,7 +111,7 @@ Engine::Engine() {
 
         resourceManager = std::make_unique<ResourceManager>();
         this->runtime_assert(!!resourceManager, "Resource manager menu failed to initialize!");
-        resourceManager->setSyncLoadMaxBatchSize(512);
+        resourceManager->setSyncLoadMaxBatchSize(512);  // this decays back down to a small number quickly by itself
 
         soundEngine.reset(SoundEngine::initialize());
         this->runtime_assert(!!soundEngine && soundEngine->succeeded(), "Sound engine failed to initialize!");
@@ -234,8 +234,6 @@ void Engine::loadApp() {
 #ifndef BUILD_TOOLS_ONLY
         app.reset(App::create(false));
         this->runtime_assert(!!app, "App failed to initialize!");
-
-        resourceManager->resetSyncLoadMaxBatchSize();
 #endif
 
         // start listening to the default keyboard input

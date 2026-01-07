@@ -162,7 +162,7 @@ class Timer {
 #include <ctime>
 #include <cerrno>
 
-// thread-safe versions of gmtime, localtime
+// thread-safe versions of gmtime, localtime, ctime
 struct tm *gmtime_x(const time_t *timer, struct tm *timebuf);
 struct tm *localtime_x(const time_t *timer, struct tm *timebuf);
 errno_t ctime_x(const time_t *timer, char* buffer);

@@ -21,6 +21,9 @@ VisualProfiler *vprof = nullptr;
 
 VisualProfiler::VisualProfiler() : CBaseUIElement(0, 0, 0, 0, "") {
     vprof = this;
+    this->textLines.reserve(128);
+    this->engineTextLines.reserve(128);
+    this->appTextLines.reserve(128);
 
     this->spike.node.depth = -1;
     this->spike.node.node = nullptr;

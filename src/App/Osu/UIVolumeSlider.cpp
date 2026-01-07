@@ -10,6 +10,9 @@
 #include "Font.h"
 #include "Image.h"
 
+UIVolumeSlider::Resources UIVolumeSlider::imageResources{};  // shared
+bool UIVolumeSlider::resourcesReady = false;
+
 UIVolumeSlider::UIVolumeSlider(float xPos, float yPos, float xSize, float ySize, UString name)
     : CBaseUISlider(xPos, yPos, xSize, ySize, std::move(name)) {
     this->type = TYPE::MASTER;
@@ -19,30 +22,40 @@ UIVolumeSlider::UIVolumeSlider(float xPos, float yPos, float xSize, float ySize,
     this->fSelectionAnim = 0.0f;
 
     this->font = engine->getDefaultFont();
-
-    resourceManager->loadImage("ic_volume_mute_white_48dp.png", "UI_VOLUME_SLIDER_BLOCK_0");
-    resourceManager->loadImage("ic_volume_up_white_48dp.png", "UI_VOLUME_SLIDER_BLOCK_1");
-    resourceManager->loadImage("ic_music_off_48dp.png", "UI_VOLUME_SLIDER_MUSIC_0");
-    resourceManager->loadImage("ic_music_48dp.png", "UI_VOLUME_SLIDER_MUSIC_1");
-    resourceManager->loadImage("ic_effects_off_48dp.png", "UI_VOLUME_SLIDER_EFFECTS_0");
-    resourceManager->loadImage("ic_effects_48dp.png", "UI_VOLUME_SLIDER_EFFECTS_1");
+    if(!imageResources.disabled[0]) {  // init all at once, once
+        for(auto& [res, fileName, resourceName] : std::array{
+                std::tuple{&imageResources.disabled[0], "ic_volume_mute_white_48dp.png", "UI_VOLUME_SLIDER_BLOCK_0"},
+                std::tuple{&imageResources.enabled[0], "ic_volume_up_white_48dp.png", "UI_VOLUME_SLIDER_BLOCK_1"},
+                std::tuple{&imageResources.disabled[1], "ic_music_off_48dp.png", "UI_VOLUME_SLIDER_MUSIC_0"},
+                std::tuple{&imageResources.enabled[1], "ic_music_48dp.png", "UI_VOLUME_SLIDER_MUSIC_1"},
+                std::tuple{&imageResources.disabled[2], "ic_effects_off_48dp.png", "UI_VOLUME_SLIDER_EFFECTS_0"},
+                std::tuple{&imageResources.enabled[2], "ic_effects_48dp.png", "UI_VOLUME_SLIDER_EFFECTS_1"}}) {
+            resourceManager->requestNextLoadAsync();
+            *res = resourceManager->loadImage(fileName, resourceName);
+        }
+    }
 
     this->setFrameColor(0xff7f7f7f);
 }
 
 void UIVolumeSlider::drawBlock() {
+    if(!resourcesReady) {
+        for(const auto& type : std::array{imageResources.disabled, imageResources.enabled}) {
+            for(const auto* image : type) {
+                if(!image || !image->isReady()) {
+                    return;
+                }
+            }
+        }
+        resourcesReady = true;
+    }
+
     // draw icon
     Image* img = nullptr;
     if(this->getFloat() < 0.01f)
-        img = resourceManager->getImage(
-            this->type == TYPE::MASTER
-                ? "UI_VOLUME_SLIDER_BLOCK_0"
-                : (this->type == TYPE::MUSIC ? "UI_VOLUME_SLIDER_MUSIC_0" : "UI_VOLUME_SLIDER_EFFECTS_0"));
+        img = imageResources.disabled[(size_t)this->type];
     else
-        img = resourceManager->getImage(
-            this->type == TYPE::MASTER
-                ? "UI_VOLUME_SLIDER_BLOCK_1"
-                : (this->type == TYPE::MUSIC ? "UI_VOLUME_SLIDER_MUSIC_1" : "UI_VOLUME_SLIDER_EFFECTS_1"));
+        img = imageResources.enabled[(size_t)this->type];
 
     g->pushTransform();
     {

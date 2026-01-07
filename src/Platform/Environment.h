@@ -370,9 +370,6 @@ class Environment {
     // static callbacks/helpers
     static void sdlFileDialogCallback(void *userdata, const char *const *filelist, int filter) noexcept;
 
-    // for getting files in folder/ folders in folder
-    static std::vector<std::string> enumerateDirectory(std::string_view pathToEnum,
-                                                       /* enum SDL_PathType */ unsigned int type) noexcept;
     static std::string getThingFromPathHelper(
         std::string_view path,
         bool folder) noexcept;  // code sharing for getFolderFromFilePath/getFileNameFromFilePath

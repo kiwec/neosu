@@ -67,8 +67,8 @@ void AvatarManager::update() {
         auto id_folder = this->load_queue[i];
 
         bool exists_on_disk = false;
-        struct stat attr;
-        if(stat(id_folder.second.c_str(), &attr) == 0) {
+        struct stat64 attr;
+        if(File::stat_c(id_folder.second.c_str(), &attr) == 0) {
             time_t now = time(nullptr);
             struct tm expiration_date;
             localtime_x(&attr.st_mtime, &expiration_date);

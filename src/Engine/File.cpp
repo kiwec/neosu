@@ -13,16 +13,20 @@
 #include "Logging.h"
 #include "SyncMutex.h"
 
+#define WANT_PDQSORT
+#include "Sorting.h"
+
 #include <algorithm>
 #include <cassert>
 #include <chrono>
 #include <filesystem>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 #include <cstdio>
 
 namespace fs = std::filesystem;
+namespace chrono = std::chrono;
+
 namespace {  // static namespace
 //------------------------------------------------------------------------------
 // encapsulation of directory caching logic
@@ -62,7 +66,7 @@ class DirectoryCache final {
     };
 
     template <typename T>
-    using sv_ncase_unordered_map = std::unordered_map<std::string, T, StringHashNcase, StringEqualNcase>;
+    using sv_ncase_unordered_map = Hash::flat::map<std::string, T, StringHashNcase, StringEqualNcase>;
 
    public:
     DirectoryCache() = default;
@@ -70,7 +74,7 @@ class DirectoryCache final {
     // directory entry type
     struct DirectoryEntry {
         sv_ncase_unordered_map<std::pair<std::string, File::FILETYPE>> files;
-        std::chrono::steady_clock::time_point lastAccess;
+        chrono::steady_clock::time_point lastCacheAccess;
         fs::file_time_type lastModified;
     };
 
@@ -102,7 +106,7 @@ class DirectoryCache final {
 
             // build new cache entry
             DirectoryEntry newEntry;
-            newEntry.lastAccess = std::chrono::steady_clock::now();
+            newEntry.lastCacheAccess = chrono::steady_clock::now();
 
             std::error_code ec;
             newEntry.lastModified = fs::last_write_time(dirPath, ec);
@@ -131,7 +135,7 @@ class DirectoryCache final {
         if(!entry) return {{}, File::FILETYPE::NONE};
 
         // update last access time
-        entry->lastAccess = std::chrono::steady_clock::now();
+        entry->lastCacheAccess = chrono::steady_clock::now();
 
         // find the case-insensitive match
         auto fileIt = entry->files.find(filename);
@@ -154,14 +158,14 @@ class DirectoryCache final {
         }
 
         // collect entries with their access times
-        std::vector<std::pair<std::chrono::steady_clock::time_point, decltype(this->cache)::iterator>> entries;
+        std::vector<std::pair<chrono::steady_clock::time_point, decltype(this->cache)::iterator>> entries;
         entries.reserve(this->cache.size());
 
         for(auto it = this->cache.begin(); it != this->cache.end(); ++it)
-            entries.emplace_back(it->second.lastAccess, it);
+            entries.emplace_back(it->second.lastCacheAccess, it);
 
         // sort by access time (oldest first)
-        std::ranges::sort(entries, [](const auto &a, const auto &b) { return a.first < b.first; });
+        srt::pdqsort(entries, [](const auto &a, const auto &b) { return a.first < b.first; });
 
         // remove the oldest entries
         for(uSz i = 0; i < entriesToRemove; ++i) this->cache.erase(entries[i].second);
@@ -176,8 +180,149 @@ class DirectoryCache final {
 
 // init static directory cache
 // this is only actually used outside of windows, should be optimized out in other cases
-[[maybe_unused]] DirectoryCache s_directoryCache{};
+[[maybe_unused]] DirectoryCache &getDirectoryCache() {
+    static DirectoryCache s_directoryCache{};
+    return s_directoryCache;
+}
+
 }  // namespace
+
+//------------------------------------------------------------------------------
+// directory queries
+//------------------------------------------------------------------------------
+
+#if (defined(MCENGINE_PLATFORM_LINUX) && defined(_GNU_SOURCE)) || \
+    ((defined(_POSIX_C_SOURCE) && (_POSIX_C_SOURCE >= 200809L)) || defined(_ATFILE_SOURCE))
+
+#include <dirent.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
+bool File::getDirectoryEntries(const std::string &pathToEnum, bool wantDirectories,
+                               std::vector<std::string> &utf8NamesOut) noexcept {
+    const int fd = openat64(AT_FDCWD, pathToEnum.c_str(), O_RDONLY | O_CLOEXEC | O_DIRECTORY);
+    if(fd == -1) {
+        debugLog("openat64 failed on {}: {}", pathToEnum, strerror(errno));
+        return false;
+    }
+
+    DIR *dir = fdopendir(fd);
+    if(!dir) {
+        debugLog("fdopendir failed on {}: {}", pathToEnum, strerror(errno));
+        close(fd);
+        return false;
+    }
+
+    utf8NamesOut.reserve(512);
+
+    struct dirent64 *entry;
+    while((entry = readdir64(dir)) != nullptr) {
+        const char *name = &entry->d_name[0];
+
+        // skip . and .. for directories
+        if(wantDirectories && name[0] == '.' && (name[1] == '\0' || (name[1] == '.' && name[2] == '\0'))) {
+            continue;
+        }
+
+        // d_type is supported on most linux filesystems (ext4, xfs, btrfs, etc)
+        // but may be DT_UNKNOWN on network filesystems
+        bool is_dir;
+        if(entry->d_type != DT_UNKNOWN) {
+            is_dir = (entry->d_type == DT_DIR);
+        } else {
+            // fallback for filesystems that don't populate d_type
+            struct stat64 st;
+            is_dir = (fstatat64(fd, name, &st, 0) == 0 && S_ISDIR(st.st_mode));
+        }
+
+        if(wantDirectories == is_dir) {
+            utf8NamesOut.emplace_back(name);
+        }
+    }
+
+    closedir(dir);  // also closes fd
+
+    return true;
+}
+
+#elif defined(MCENGINE_PLATFORM_WINDOWS)  // the win32 api is just WAY faster for this than std::filesystem
+#include "WinDebloatDefs.h"
+#include <fileapi.h>
+
+#ifndef INVALID_HANDLE_VALUE
+#define INVALID_HANDLE_VALUE ((HANDLE)(LONG_PTR) - 1)
+#endif
+
+bool File::getDirectoryEntries(const std::string &pathToEnum, bool wantDirectories,
+                               std::vector<std::string> &utf8NamesOut) noexcept {
+    // Since we want to avoid wide strings in the codebase as much as possible,
+    // we convert wide paths to UTF-8 (as they fucking should be).
+    // We can't just use FindFirstFileA, because then any path with unicode
+    // characters will fail to open!
+    // Keep in mind that windows can't handle the way too modern 1993 UTF-8, so
+    // you have to use std::filesystem::u8path() or convert it back to a wstring
+    // before using the windows API.
+
+    UString folder{pathToEnum};
+    folder.append(US_("*.*"));
+
+    WIN32_FIND_DATAW data{};
+    HANDLE handle = FindFirstFileW(folder.wchar_str(), &data);
+    if(handle != INVALID_HANDLE_VALUE) {
+        utf8NamesOut.reserve(512);
+
+        do {
+            const wchar_t *wide_filename = &data.cFileName[0];
+            const size_t length = std::wcslen(wide_filename);
+            if(length == 0) continue;
+
+            const bool add_entry =
+                (!wantDirectories ||
+                 !(wide_filename[0] == L'.' &&
+                   (wide_filename[1] == L'\0' || (wide_filename[1] == L'.' && wide_filename[2] == L'\0')))) &&
+                (wantDirectories == !!(data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY));
+
+            if(add_entry) {
+                UString uFilename{wide_filename, static_cast<int>(length)};
+                utf8NamesOut.emplace_back(uFilename.utf8View());
+            }
+        } while(FindNextFileW(handle, &data));
+
+        FindClose(handle);
+    }
+
+    return true;
+}
+
+#else
+
+// for getting files in folder/ folders in folder
+bool File::getDirectoryEntries(const std::string &pathToEnum, bool wantDirectories,
+                               std::vector<std::string> &utf8NamesOut) noexcept {
+    utf8NamesOut.reserve(512);
+
+    std::error_code ec;
+    const bool wantFiles = !wantDirectories;
+
+    for(const auto &entry : fs::directory_iterator(pathToEnum, ec)) {
+        if(ec) continue;
+        auto fileType = entry.status(ec).type();
+
+        if((wantFiles && fileType == fs::file_type::regular) ||
+           (wantDirectories && fileType == fs::file_type::directory)) {
+            contents.emplace_back(entry.path().filename().generic_string());
+        }
+    }
+
+    if(ec && contents.empty()) {
+        debugLog("Failed to enumerate directory: {}", ec.message());
+        return false;
+    }
+
+    return true;
+}
+
+#endif  // MCENGINE_PLATFORM_WINDOWS
 
 //------------------------------------------------------------------------------
 // path resolution methods
@@ -219,7 +364,7 @@ File::FILETYPE File::existsCaseInsensitive(std::string &filePath, fs::path &path
 
     // try case-insensitive lookup using cache
     auto [resolvedName, fileType] =
-        s_directoryCache.lookup(parentPath, {path.filename().string()});  // takes the bare filename
+        getDirectoryCache().lookup(parentPath, {path.filename().string()});  // takes the bare filename
 
     if(fileType == File::FILETYPE::NONE) return File::FILETYPE::NONE;  // no match, even case-insensitively
 
@@ -379,6 +524,8 @@ UString adjustPath(std::string_view filepath) {
 
 }  // namespace
 
+#else
+#define adjustPath(dummy__) dummy__
 #endif
 
 fs::path File::getFsPath(std::string_view utf8path) {
@@ -392,13 +539,26 @@ fs::path File::getFsPath(std::string_view utf8path) {
 }
 
 FILE *File::fopen_c(const char *__restrict utf8filename, const char *__restrict modes) {
-    if(utf8filename == nullptr || utf8filename[0] == '\0') return nullptr;
 #ifdef MCENGINE_PLATFORM_WINDOWS
+    if(utf8filename == nullptr || utf8filename[0] == '\0') return nullptr;
     const UString wideFilename{adjustPath(utf8filename)};
     const UString wideModes{modes};
     return _wfopen(wideFilename.wchar_str(), wideModes.wchar_str());
 #else
     return fopen(utf8filename, modes);
+#endif
+}
+
+int File::stat_c(const char *__restrict utf8filename, struct stat64 *__restrict buffer) {
+#ifdef MCENGINE_PLATFORM_WINDOWS
+    if(utf8filename == nullptr || utf8filename[0] == '\0' || buffer == nullptr) {
+        errno = EINVAL;
+        return -1;
+    }
+    const UString wideFilename{adjustPath(utf8filename)};
+    return _wstat64(wideFilename.wchar_str(), buffer);
+#else
+    return stat64(utf8filename, buffer);
 #endif
 }
 
@@ -425,7 +585,7 @@ bool File::copy(std::string_view fromPath, std::string_view toPath) {
 // File implementation
 //------------------------------------------------------------------------------
 File::File(std::string_view filePath, MODE mode)
-    : sFilePath(filePath), fsPath(getFsPath(this->sFilePath)), iFileSize(0), fileMode(mode), bReady(false) {
+    : sFilePath(filePath), fsPath(getFsPath(filePath)), fileMode(mode), bReady(false) {
     logIfCV(debug_file, "Opening {:s}", this->sFilePath);
 
     if(mode == MODE::READ) {
@@ -438,14 +598,21 @@ File::File(std::string_view filePath, MODE mode)
 }
 
 bool File::openForReading() {
-    // resolve the file path (handles case-insensitive matching)
-    auto fileType = File::existsCaseInsensitive(this->sFilePath, this->fsPath);
+    {
+        // lazy redundant conversion
+        std::string tempStdStr{this->sFilePath.utf8View()};
 
-    if(fileType != File::FILETYPE::FILE) {
-        // usually the caller handles logging this sort of basic error
-        logIfCV(debug_file, "File Error: Path {:s} {:s}", this->sFilePath,
-                fileType == File::FILETYPE::NONE ? "doesn't exist" : "is not a file");
-        return false;
+        // resolve the file path (handles case-insensitive matching)
+        FILETYPE fileType = File::existsCaseInsensitive(tempStdStr, this->fsPath);
+
+        this->sFilePath = tempStdStr;
+
+        if(fileType != File::FILETYPE::FILE) {
+            // usually the caller handles logging this sort of basic error
+            logIfCV(debug_file, "File Error: Path {:s} {:s}", this->sFilePath,
+                    fileType == File::FILETYPE::NONE ? "doesn't exist" : "is not a file");
+            return false;
+        }
     }
 
     // create and open input file stream
@@ -458,19 +625,25 @@ bool File::openForReading() {
         return false;
     }
 
-    // get file size
-    std::error_code ec;
-    this->iFileSize = fs::file_size(this->fsPath, ec);
+    // get file stats
+    int ret = -1;
+    // not using the stat_c helper because that would do redundant path conversion/validation
+#ifdef MCENGINE_PLATFORM_WINDOWS
+    ret = _wstat64(this->sFilePath.wchar_str(), &this->fsstat);
+#else
+    ret = stat64(this->sFilePath.toUtf8(), &this->fsstat);
+#endif
 
-    if(ec) {
-        debugLog("File Error: Couldn't get file size for {:s}", this->sFilePath);
+    if(ret != 0) {
+        debugLog("File Error: Couldn't get file size for {:s}", this->sFilePath,
+                 std::generic_category().message(errno));
         return false;
     }
 
     // validate file size
-    if(this->iFileSize == 0) {  // empty file is valid
+    if(this->getFileSize() == 0) {  // empty file is valid
         return true;
-    } else if(std::cmp_greater(this->iFileSize, 1024 * 1024 * cv::file_size_max.getInt())) {  // size sanity check
+    } else if(std::cmp_greater(this->getFileSize(), 1024 * 1024 * cv::file_size_max.getInt())) {  // size sanity check
         debugLog("File Error: FileSize of {:s} is > {} MB!!!", this->sFilePath, cv::file_size_max.getInt());
         return false;
     }
@@ -554,15 +727,15 @@ uSz File::readBytes(uSz start, uSz amount, std::unique_ptr<u8[]> &out) {
     if(!canRead()) return 0;
     assert(out.get() != this->vFullBuffer.get() && "can't overwrite own buffer");
 
-    if(start > this->iFileSize) {
+    if(start > this->getFileSize()) {
         logIfCV(debug_file, "tried to read {} starting from {}, but total size is only {}", this->sFilePath, start,
-                this->iFileSize);
+                this->getFileSize());
         return 0;
     }
 
     uSz end = (start + amount);
-    if(end > this->iFileSize) {
-        end = this->iFileSize;
+    if(end > this->getFileSize()) {
+        end = this->getFileSize();
     }
 
     const uSz toRead = end - start;
@@ -591,12 +764,12 @@ const std::unique_ptr<u8[]> &File::readFile() {
     }
 
     // allocate buffer for file contents
-    this->vFullBuffer = std::make_unique_for_overwrite<u8[]>(this->iFileSize);
+    this->vFullBuffer = std::make_unique_for_overwrite<u8[]>(this->getFileSize());
 
     // read entire file
     this->ifstream->seekg(0, std::ios::beg);
     if(this->ifstream
-           ->read(reinterpret_cast<char *>(this->vFullBuffer.get()), static_cast<std::streamsize>(this->iFileSize))
+           ->read(reinterpret_cast<char *>(this->vFullBuffer.get()), static_cast<std::streamsize>(this->getFileSize()))
            .good()) {
         return this->vFullBuffer;
     }
@@ -617,12 +790,12 @@ std::unique_ptr<u8[]> &&File::takeFileBuffer() {
     }
 
     // allocate buffer for file contents
-    this->vFullBuffer = std::make_unique_for_overwrite<u8[]>(this->iFileSize);
+    this->vFullBuffer = std::make_unique_for_overwrite<u8[]>(this->getFileSize());
 
     // read entire file
     this->ifstream->seekg(0, std::ios::beg);
     if(this->ifstream
-           ->read(reinterpret_cast<char *>(this->vFullBuffer.get()), static_cast<std::streamsize>(this->iFileSize))
+           ->read(reinterpret_cast<char *>(this->vFullBuffer.get()), static_cast<std::streamsize>(this->getFileSize()))
            .good()) {
         return std::move(this->vFullBuffer);
     }
@@ -637,8 +810,8 @@ void File::readToVector(std::vector<u8> &out) {
 
     // if buffer is already populated, copy that
     if(!!this->vFullBuffer) {
-        out.resize(this->iFileSize);
-        std::memcpy(out.data(), this->vFullBuffer.get(), this->iFileSize * sizeof(u8));
+        out.resize(this->getFileSize());
+        std::memcpy(out.data(), this->vFullBuffer.get(), this->getFileSize() * sizeof(u8));
         return;
     }
 
@@ -648,11 +821,11 @@ void File::readToVector(std::vector<u8> &out) {
     }
 
     // allocate buffer for file contents
-    out.resize(this->iFileSize);
+    out.resize(this->getFileSize());
 
     // read entire file
     this->ifstream->seekg(0, std::ios::beg);
-    if(this->ifstream->read(reinterpret_cast<char *>(out.data()), static_cast<std::streamsize>(this->iFileSize))
+    if(this->ifstream->read(reinterpret_cast<char *>(out.data()), static_cast<std::streamsize>(this->getFileSize()))
            .good()) {
         return;
     }

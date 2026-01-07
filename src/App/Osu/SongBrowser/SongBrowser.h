@@ -176,7 +176,7 @@ class SongBrowser final : public ScreenBackable {
     static constexpr std::array<std::string_view, GroupType::MAX> GROUP_NAMES{{"By Artist",      //
                                                                                "By BPM",         //
                                                                                "By Creator",     //
-                                                                               "By Date",        // not yet possible
+                                                                               "By Date",        //
                                                                                "By Difficulty",  //
                                                                                "By Length",      //
                                                                                "By Title",       //
@@ -299,12 +299,13 @@ class SongBrowser final : public ScreenBackable {
     CollBtnContainer titleCollectionButtons;
     CollBtnContainer artistCollectionButtons;
     CollBtnContainer creatorCollectionButtons;
+
+    CollBtnContainer dateaddedCollectionButtons; // not implemented yet
     CollBtnContainer difficultyCollectionButtons;
     CollBtnContainer bpmCollectionButtons;
     CollBtnContainer lengthCollectionButtons;
 
     CollBtnContainer collectionButtons;
-    // CollBtnContainer dateaddedCollectionButtons; // not implemented yet
 
     bool bBeatmapRefreshScheduled;
     bool bCloseAfterBeatmapRefreshFinished{false};

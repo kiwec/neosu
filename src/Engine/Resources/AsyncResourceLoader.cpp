@@ -92,13 +92,7 @@ class AsyncResourceLoader::LoaderThread final {
             } else {
                 work->state.store(WorkState::ASYNC_IN_PROGRESS, std::memory_order_release);
 
-                // prevent child threads from inheriting the name
-                McThread::set_current_thread_name(fmt::format("res_{}", work->workId));
-
                 resource->loadAsync();
-
-                // restore loader thread name
-                McThread::set_current_thread_name(loaderThreadName);
 
                 logIf(debug, "Thread #{} finished async loading {:s}", this->thread_index, debugName);
 
@@ -123,7 +117,7 @@ class AsyncResourceLoader::LoaderThread final {
 
 AsyncResourceLoader::AsyncResourceLoader()
     : iMaxThreads(std::clamp<size_t>(McThread::get_logical_cpu_count() - 1, 1, HARD_THREADCOUNT_LIMIT)),
-      iLoadsPerUpdate(static_cast<size_t>(std::ceil(static_cast<double>(this->iMaxThreads) * (3. / 4.)))),
+      iLoadsPerUpdate(static_cast<size_t>(std::ceil(static_cast<double>(this->iMaxThreads) * (1. / 4.)))),
       lastCleanupTime(chrono::steady_clock::now()) {
     // pre-create at least a single thread for better startup responsiveness
     Sync::scoped_lock lock(this->threadsMutex);
@@ -217,7 +211,7 @@ void AsyncResourceLoader::update(bool lowLatency) {
             // decay back to default
             this->iLoadsPerUpdate =
                 static_cast<size_t>(std::max(std::floor(static_cast<double>(this->iLoadsPerUpdate) * (15. / 16.)),
-                                             std::ceil(static_cast<double>(this->iMaxThreads) * (3. / 4.))));
+                                             std::ceil(static_cast<double>(this->iMaxThreads) * (1. / 4.))));
             break;
         }
 

@@ -405,12 +405,17 @@ std::string manualDirectoryFixup(std::string_view input) {
 }
 }  // namespace
 
+// passthroughs, with some extra validation
 std::vector<std::string> Environment::getFilesInFolder(std::string_view folder) noexcept {
-    return enumerateDirectory(manualDirectoryFixup(folder), SDL_PATHTYPE_FILE);
+    std::vector<std::string> out;
+    File::getDirectoryEntries(manualDirectoryFixup(folder), false, out);
+    return out;
 }
 
 std::vector<std::string> Environment::getFoldersInFolder(std::string_view folder) noexcept {
-    return enumerateDirectory(manualDirectoryFixup(folder), SDL_PATHTYPE_DIRECTORY);
+    std::vector<std::string> out;
+    File::getDirectoryEntries(manualDirectoryFixup(folder), true, out);
+    return out;
 }
 
 std::string Environment::normalizeDirectory(std::string dirPath) noexcept {
@@ -1424,129 +1429,3 @@ std::string Environment::getThingFromPathHelper(std::string_view path, bool fold
 
     return retPath;
 }
-
-#ifdef MCENGINE_PLATFORM_WINDOWS  // the win32 api is just WAY faster for this
-
-std::vector<std::string> Environment::enumerateDirectory(std::string_view pathToEnum,
-                                                         /* enum SDL_PathType */ unsigned int type) noexcept {
-    // Since we want to avoid wide strings in the codebase as much as possible,
-    // we convert wide paths to UTF-8 (as they fucking should be).
-    // We can't just use FindFirstFileA, because then any path with unicode
-    // characters will fail to open!
-    // Keep in mind that windows can't handle the way too modern 1993 UTF-8, so
-    // you have to use std::filesystem::u8path() or convert it back to a wstring
-    // before using the windows API.
-    std::vector<std::string> utf8_entries;
-
-    const bool want_dirs = (type == SDL_PATHTYPE_DIRECTORY);
-
-    UString folder{pathToEnum};
-    folder.append("*.*");
-
-    WIN32_FIND_DATAW data{};
-    HANDLE handle = FindFirstFileW(folder.wchar_str(), &data);
-    if(handle != INVALID_HANDLE_VALUE) {
-        utf8_entries.reserve(512);
-
-        do {
-            const wchar_t *wide_filename = &data.cFileName[0];
-            const size_t length = std::wcslen(wide_filename);
-            if(length == 0) continue;
-
-            const bool add_entry =
-                (!want_dirs ||
-                 !(wide_filename[0] == L'.' &&
-                   (wide_filename[1] == L'\0' || (wide_filename[1] == L'.' && wide_filename[2] == L'\0')))) &&
-                (want_dirs == !!(data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY));
-
-            if(add_entry) {
-                UString uFilename{wide_filename, static_cast<int>(length)};
-                utf8_entries.emplace_back(uFilename.utf8View());
-            }
-        } while(FindNextFileW(handle, &data));
-
-        FindClose(handle);
-    }
-
-    return utf8_entries;
-}
-
-#elif defined(MCENGINE_PLATFORM_LINUX)
-
-#include <dirent.h>
-#include <sys/stat.h>
-
-std::vector<std::string> Environment::enumerateDirectory(std::string_view pathToEnum,
-                                                         /* enum SDL_PathType */ unsigned int type) noexcept {
-    std::vector<std::string> utf8_entries;
-
-    const bool want_dirs = (type == SDL_PATHTYPE_DIRECTORY);
-
-    DIR *dir = opendir(std::string(pathToEnum).c_str());
-    if(!dir) return utf8_entries;
-
-    utf8_entries.reserve(512);
-
-    struct dirent *entry;
-    while((entry = readdir(dir)) != nullptr) {
-        const char *name = &entry->d_name[0];
-
-        // skip . and .. for directories
-        if(want_dirs && name[0] == '.' && (name[1] == '\0' || (name[1] == '.' && name[2] == '\0'))) {
-            continue;
-        }
-
-        // d_type is supported on most linux filesystems (ext4, xfs, btrfs, etc)
-        // but may be DT_UNKNOWN on network filesystems
-        bool is_dir;
-        if(entry->d_type != DT_UNKNOWN) {
-            is_dir = (entry->d_type == DT_DIR);
-        } else {
-            // fallback for filesystems that don't populate d_type
-            struct stat st;
-            is_dir = (stat(fmt::format("{}/{}", pathToEnum, name).c_str(), &st) == 0 && S_ISDIR(st.st_mode));
-        }
-
-        const bool add_entry = (want_dirs == is_dir);
-
-        if(add_entry) {
-            utf8_entries.emplace_back(name);
-        }
-    }
-
-    closedir(dir);
-
-    return utf8_entries;
-}
-
-#else
-
-// for getting files in folder/ folders in folder
-std::vector<std::string> Environment::enumerateDirectory(std::string_view pathToEnum,
-                                                         /* enum SDL_PathType */ unsigned int type) noexcept {
-    namespace fs = std::filesystem;
-
-    std::vector<std::string> contents;
-    contents.reserve(512);
-
-    std::error_code ec;
-    const bool wantFiles = (type == SDL_PATHTYPE_FILE);
-    const bool wantDirs = (type == SDL_PATHTYPE_DIRECTORY);
-
-    for(const auto &entry : fs::directory_iterator(pathToEnum, ec)) {
-        if(ec) continue;
-        auto fileType = entry.status(ec).type();
-
-        if((wantFiles && fileType == fs::file_type::regular) || (wantDirs && fileType == fs::file_type::directory)) {
-            contents.emplace_back(entry.path().filename().generic_string());
-        }
-    }
-
-    if(ec && contents.empty()) {
-        debugLog("Failed to enumerate directory: {}", ec.message());
-    }
-
-    return contents;
-}
-
-#endif  // MCENGINE_PLATFORM_WINDOWS

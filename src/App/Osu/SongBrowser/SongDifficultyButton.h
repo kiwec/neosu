@@ -12,7 +12,7 @@ class SongDifficultyButton final : public SongButton {
     // only allow construction through parent song button (as child)
     friend class SongButton;
     SongDifficultyButton(float xPos, float yPos, float xSize, float ySize, UString name, BeatmapDifficulty *diff,
-                         SongButton *parentSongButton, int numSiblings);
+                         SongButton *parentSongButton);
 
    public:
     SongDifficultyButton() = delete;
@@ -45,7 +45,7 @@ class SongDifficultyButton final : public SongButton {
     float fOffsetPercentAnim;
     float fVisibleFor{0.f};
 
-    bool bPrevOffsetPercentSelectionState;
-    bool bPrevOffsetPercentParentsCollapsedType{true};  // HACKHACK: to remove
+    enum class OffsetState : u8 { UNINITIALIZED, SELECTED, DESELECTED };
+    OffsetState lastOffsetState{OffsetState::UNINITIALIZED};
     bool bUpdateGradeScheduled;
 };

@@ -976,6 +976,10 @@ void Database::scheduleLoadRaw() {
 
     this->is_first_load = false;
 }
+namespace {
+constexpr i64 TICKS_PER_SECOND = 10'000'000;
+constexpr i64 UNIX_EPOCH_TICKS = 621'355'968'000'000'000;  // ticks from 0001-01-01 to 1970-01-01
+}  // namespace
 
 void Database::loadMaps() {
     const auto &peppy_db_path = this->database_files[DatabaseType::STABLE_MAPS];
@@ -1115,7 +1119,14 @@ void Database::loadMaps() {
                     f32 fOD = neosu_maps.read<f32>();
                     f64 fSliderMultiplier = neosu_maps.read<f64>();
                     u32 iPreviewTime = neosu_maps.read<u32>();
-                    u64 last_modification_time = neosu_maps.read<u64>();
+                    const i64 maybe_dotnettime = neosu_maps.read<i64>();
+                    i64 last_modification_time = maybe_dotnettime;
+                    // convert .NET timestamp to unix timestamp (mtime)
+                    // we don't really need to update db format for this because it was only used for sorting
+                    // so just fix it up here
+                    if(maybe_dotnettime > 1'000'000'000'000'000 /* 100% .net timestamp from non-updated db */) {
+                        last_modification_time = (maybe_dotnettime - UNIX_EPOCH_TICKS) / TICKS_PER_SECOND;
+                    }
                     i16 iLocalOffset = neosu_maps.read<i16>();
                     i16 iOnlineOffset = neosu_maps.read<i16>();
                     u16 iNumCircles = neosu_maps.read<u16>();
@@ -1397,7 +1408,10 @@ void Database::loadMaps() {
                 auto numCircles = dbr.read<u16>();
                 auto numSliders = dbr.read<u16>();
                 auto numSpinners = dbr.read<u16>();
-                i64 lastModificationTime = dbr.read<u64>();
+                const i64 modification_time_dotnet_ticks = dbr.read<i64>();
+                // convert to unix time (peppy db 100% stores these in .NET timestamp form)
+                const i64 last_modification_time =
+                    (modification_time_dotnet_ticks - UNIX_EPOCH_TICKS) / TICKS_PER_SECOND;
 
                 f32 AR, CS, HP, OD;
                 if(osu_db_version < 20140609) {
@@ -1615,7 +1629,7 @@ void Database::loadMaps() {
                     // map->sBackgroundImageFileName = "";
 
                     map->iPreviewTime = previewTime;
-                    map->last_modification_time = lastModificationTime;
+                    map->last_modification_time = last_modification_time;
 
                     map->iNumObjects = numCircles + numSliders + numSpinners;
                     map->iNumCircles = numCircles;
@@ -1628,19 +1642,15 @@ void Database::loadMaps() {
 
                     // now, search if the current set (to which this diff would belong) already exists and add it there, or
                     // if it doesn't exist then create the set
-                    const auto result = setIDToIndex.find(beatmapSetID);
-                    const bool beatmapSetExists = (result != setIDToIndex.end());
-                    bool diff_already_added = false;
-                    if(beatmapSetExists) {
-                        for(const auto &existing_diff : *beatmapSets[result->second].diffs) {
-                            if(existing_diff->getMD5() == map->getMD5()) {
-                                diff_already_added = true;
-                                break;
-                            }
-                        }
-                        if(!diff_already_added) {
+                    if(const auto &existingit = setIDToIndex.find(beatmapSetID); existingit != setIDToIndex.end()) {
+                        const auto &[_, idx] = *existingit;
+                        assert(beatmapSets[idx].diffs);
+                        DiffContainer &existingDiffs = *beatmapSets[idx].diffs;
+                        // if a diff with a the same md5hash hasn't already been added here
+                        if(!std::ranges::contains(existingDiffs, md5hash,
+                                                  [](const auto &existingdiff) { return existingdiff->getMD5(); })) {
                             diffp = map.get();
-                            beatmapSets[result->second].diffs->push_back(std::move(map));
+                            existingDiffs.push_back(std::move(map));
                         }
                     } else {
                         diffp = map.get();
@@ -1726,9 +1736,8 @@ void Database::loadMaps() {
                     // set with invalid ID: treat all its diffs separately. we'll group the diffs by title+artist.
                     Hash::unstable_stringmap<std::unique_ptr<DiffContainer>> titleArtistToBeatmap;
                     for(auto &diff : (*beatmapSet.diffs)) {
-                        std::string titleArtist = diff->getTitleLatin();
-                        titleArtist.append("|");
-                        titleArtist.append(diff->getArtistLatin());
+                        const std::string titleArtist =
+                            fmt::format("{}|{}", diff->getTitleLatin(), diff->getArtistLatin());
 
                         auto it = titleArtistToBeatmap.find(titleArtist);
                         if(it == titleArtistToBeatmap.end()) {
@@ -1743,9 +1752,6 @@ void Database::loadMaps() {
                                                                 DatabaseBeatmap::BeatmapType::PEPPY_BEATMAPSET);
                         this->temp_loading_beatmapsets.push_back(std::move(set));
                     }
-
-                    // clean up the original diffs2 vector (ownership of diffs transferred to new vectors)
-                    beatmapSet.diffs.reset();
                 }
             }
         }
@@ -1818,7 +1824,7 @@ void Database::saveMaps() {
             maps.write<f32>(diff->fOD);
             maps.write<f64>(diff->fSliderMultiplier);
             maps.write<u32>(diff->iPreviewTime);
-            maps.write<u64>(diff->last_modification_time);
+            maps.write<i64>(diff->last_modification_time);
             maps.write<i16>(diff->iLocalOffset);
             maps.write<i16>(diff->iOnlineOffset);
             maps.write<u16>(diff->iNumCircles);

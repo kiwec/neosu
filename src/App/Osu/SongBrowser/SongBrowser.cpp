@@ -514,7 +514,7 @@ SongBrowser::~SongBrowser() {
     this->bpmCollectionButtons.clear();
     this->difficultyCollectionButtons.clear();
     this->creatorCollectionButtons.clear();
-    // this->dateaddedCollectionButtons.clear();
+    this->dateaddedCollectionButtons.clear();
     this->lengthCollectionButtons.clear();
     this->titleCollectionButtons.clear();
 
@@ -1429,7 +1429,7 @@ void SongBrowser::refreshBeatmaps(bool closeAfterLoading) {
     this->bpmCollectionButtons.clear();
     this->difficultyCollectionButtons.clear();
     this->creatorCollectionButtons.clear();
-    // this->dateaddedCollectionButtons.clear();
+    this->dateaddedCollectionButtons.clear();
     this->lengthCollectionButtons.clear();
     this->titleCollectionButtons.clear();
 

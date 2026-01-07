@@ -198,7 +198,6 @@ bool Skin::isReady() {
 }
 
 void Skin::load() {
-    resourceManager->setSyncLoadMaxBatchSize(512);
     // random skins
     {
         this->filepaths_for_random_skin.clear();
@@ -731,8 +730,6 @@ void Skin::load() {
         osu->getNotificationOverlay()->addNotification("Error: Couldn't load skin.ini!", 0xffff0000);
     else if(!parseSkinIni2Status)
         osu->getNotificationOverlay()->addNotification("Error: Couldn't load DEFAULT skin.ini!!!", 0xffff0000);
-
-    resourceManager->resetSyncLoadMaxBatchSize();
 }
 
 void Skin::loadBeatmapOverride(const std::string & /*filepath*/) {

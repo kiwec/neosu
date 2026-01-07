@@ -251,7 +251,8 @@ Osu::Osu() : App(), MouseListener(), global_osu_(this) {
     this->fposu = std::make_unique<ModFPoSu>();
 
     // load main menu icon before skin
-    resourceManager->loadImage("neosu.png", "NEOSU_LOGO");
+    resourceManager->requestNextLoadAsync();
+    resourceManager->loadImage("neosu.png", "NEOSU_LOGO", true /* mipmapped */);
 
     // exec the main config file (this must be right here!)
     Console::execConfigFile("underride");  // same as override, but for defaults

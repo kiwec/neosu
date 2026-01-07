@@ -5,9 +5,8 @@
 
 #include "BeatmapCarousel.h"
 #include "Font.h"
-#include "Logging.h"
-#include "ScoreButton.h"
 #include "SongBrowser.h"
+// #include "Logging.h"
 // ---
 
 #include "AnimationHandler.h"
@@ -25,23 +24,18 @@
 using namespace neosu::sbr;
 
 SongDifficultyButton::SongDifficultyButton(float xPos, float yPos, float xSize, float ySize, UString name,
-                                           BeatmapDifficulty* diff, SongButton* parentSongButton, int numSiblings)
+                                           BeatmapDifficulty* diff, SongButton* parentSongButton)
     : SongButton(xPos, yPos, xSize, ySize, std::move(name)) {
     // must exist and be a difficulty
     assert(diff && diff->getDifficulties().empty());
-
-    const bool isSingleDiffOnConstruction = numSiblings == 0;
 
     this->databaseBeatmap = diff;
     this->parentSongButton = parentSongButton;
 
     this->fDiffScale = 0.18f;
-    this->fOffsetPercentAnim = isSingleDiffOnConstruction ? 0.f : 1.f;
+    this->fOffsetPercentAnim = 0.f;
 
     this->bUpdateGradeScheduled = true;
-
-    // FIXME part 1: very difficult to follow and fragile logic
-    this->bPrevOffsetPercentSelectionState = !this->parentSongButton->isSelected() || isSingleDiffOnConstruction;
 
     // settings
     this->setHideIfSelected(false);
@@ -167,13 +161,12 @@ void SongDifficultyButton::mouse_update(bool* propagate_clicks) {
     else
         this->fVisibleFor = 0.f;
 
-    // FIXME part 2: very difficult to follow and fragile logic
-
     // dynamic settings (moved from constructor to here)
     const bool newOffsetPercentSelectionState = (this->bSelected || !this->isIndependentDiffButton());
 
-    if(newOffsetPercentSelectionState != this->bPrevOffsetPercentSelectionState) {
-        this->bPrevOffsetPercentSelectionState = newOffsetPercentSelectionState;
+    if(this->lastOffsetState == OffsetState::UNINITIALIZED ||
+       newOffsetPercentSelectionState != (this->lastOffsetState == OffsetState::SELECTED)) {
+        this->lastOffsetState = newOffsetPercentSelectionState ? OffsetState::SELECTED : OffsetState::DESELECTED;
         const f32 targetAnim = newOffsetPercentSelectionState ? 1.f : 0.f;
 
         if(targetAnim != this->fOffsetPercentAnim) {
@@ -192,13 +185,12 @@ void SongDifficultyButton::mouse_update(bool* propagate_clicks) {
 void SongDifficultyButton::resetAnimations() {
     CarouselButton::resetAnimations();
 
-    if(bool newMode = g_songbrowser->isInParentsCollapsedMode();
-       newMode != this->bPrevOffsetPercentParentsCollapsedType) {
-        this->bPrevOffsetPercentParentsCollapsedType = newMode;
+    if(this->fOffsetPercentAnim != 1.f && this->fOffsetPercentAnim != 0.f) {
         anim::deleteExistingAnimation(&this->fOffsetPercentAnim);
-        this->fOffsetPercentAnim = 0.f;
-        this->bPrevOffsetPercentSelectionState = !(this->bSelected || !this->isIndependentDiffButton());
     }
+    // force reanimate in mouse_update
+    this->lastOffsetState = OffsetState::UNINITIALIZED;
+    this->fOffsetPercentAnim = 0.f;
 }
 
 void SongDifficultyButton::onClicked(bool left, bool right) {

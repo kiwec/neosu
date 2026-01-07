@@ -145,7 +145,9 @@ MainMenu::MainMenu() : OsuScreen() {
     this->fUpdateButtonAnimTime = 0.0f;
     this->bHasClickedUpdate = false;
 
-    this->logo_img = resourceManager->loadImage("neosu.png", "NEOSU_LOGO", true /* mipmapped */);
+    // loaded in Osu:: ctor, async
+    this->logo_img = resourceManager->getImage("NEOSU_LOGO");
+    assert(this->logo_img);
     // background_shader = resourceManager->loadShader("main_menu_bg.vsh", "main_menu_bg.fsh");
 
     // check if the user has never clicked the changelog for this update
@@ -540,10 +542,12 @@ void MainMenu::drawFriend(const McRect &mainButtonRect, float pulse, bool haveTi
 }
 
 void MainMenu::drawLogoImage(const McRect &mainButtonRect) {
-    auto logo = this->logo_img;
-    if(BanchoState::server_icon != nullptr && BanchoState::server_icon->isReady() &&
-       cv::main_menu_use_server_logo.getBool()) {
+    auto *logo = this->logo_img;
+    if(cv::main_menu_use_server_logo.getBool() && BanchoState::server_icon != nullptr &&
+       BanchoState::server_icon->isReady()) {
         logo = BanchoState::server_icon;
+    } else if(!logo->isReady()) {
+        return;
     }
 
     float alpha = (1.0f - this->fMainMenuAnimFriendPercent) * (1.0f - this->fMainMenuAnimFriendPercent) *

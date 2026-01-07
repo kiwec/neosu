@@ -22,6 +22,7 @@
 #include <algorithm>
 #include <utility>
 #include <source_location>
+#include <sys/stat.h>
 
 #define WANT_SPINSORT
 #include "Sorting.h"
@@ -1205,7 +1206,6 @@ DatabaseBeatmap::LOAD_META_RESULT DatabaseBeatmap::loadMetadata(bool compute_md5
 
     std::vector<u8> fileBuffer;
     size_t beatmapFileSize{0};
-    std::string_view beatmapFile;
 
     {
         File file(this->sFilePath);
@@ -1216,11 +1216,17 @@ DatabaseBeatmap::LOAD_META_RESULT DatabaseBeatmap::loadMetadata(bool compute_md5
         if(!beatmapFileSize || fileBuffer.empty()) {
             beatmapFileSize = 0;
         }
+
+        // should already be non-zero if the map was added from db,
+        // but if we're adding a new beatmap then it will be 0
+        if(beatmapFileSize > 0 && this->last_modification_time <= 0) {
+            this->last_modification_time = file.getModificationTime();
+        }
         // close the file here
     }
 
-    beatmapFile = {reinterpret_cast<char *>(fileBuffer.data()),
-                   reinterpret_cast<char *>(fileBuffer.data() + beatmapFileSize)};
+    std::string_view beatmapFile = {reinterpret_cast<char *>(fileBuffer.data()),
+                                    reinterpret_cast<char *>(fileBuffer.data() + beatmapFileSize)};
 
     const auto ret = [&](LoadError::code retcode) -> DatabaseBeatmap::LOAD_META_RESULT {
         return {.fileData = std::move(fileBuffer), .error = {retcode}};
@@ -1431,7 +1437,7 @@ DatabaseBeatmap::LOAD_GAMEPLAY_RESULT DatabaseBeatmap::loadGameplay(BeatmapDiffi
         }
 
         // load primitives, put in temporary container
-        c = loadPrimitiveObjectsFromData(std::move(metaRes.fileData), databaseBeatmap->sFilePath, alwaysFalseStopPred);
+        c = loadPrimitiveObjectsFromData(metaRes.fileData, databaseBeatmap->sFilePath, alwaysFalseStopPred);
         if(outPrimitivesCopy) {
             *outPrimitivesCopy = c;
         }

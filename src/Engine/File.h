@@ -11,11 +11,17 @@
 
 #include "noinclude.h"
 #include "types.h"
+#include "UString.h"
 
 #include <filesystem>
 #include <fstream>
 #include <memory>
 #include <vector>
+#include <sys/stat.h>
+
+#ifdef MCENGINE_PLATFORM_WINDOWS
+#define stat64 __stat64
+#endif
 
 class ConVar;
 class DirectoryCache;
@@ -55,13 +61,21 @@ class File {
 
     void readToVector(std::vector<u8> &out);
 
-    [[nodiscard]] constexpr uSz getFileSize() const { return this->iFileSize; }
-    [[nodiscard]] inline std::string_view getPath() const { return this->sFilePath; }
+    [[nodiscard]] inline std::string_view getPath() const { return this->sFilePath.utf8View(); }
+
+    // in bytes
+    [[nodiscard]] forceinline uSz getFileSize() const { return this->fsstat.st_size; }
+    // unix timestamp in seconds (64-bit time_t)
+    [[nodiscard]] forceinline i64 getModificationTime() const { return this->fsstat.st_mtime; }
 
     // public path resolution methods
     // modifies the input path with the actual found path
     [[nodiscard]] static File::FILETYPE existsCaseInsensitive(std::string &filePath);
     [[nodiscard]] static File::FILETYPE exists(std::string_view filePath);
+
+    // only returns true if succeeded, appends to the input vector
+    static bool getDirectoryEntries(const std::string &toEnumerate, bool wantDirectories,
+                                    std::vector<std::string> &utf8NamesOut) noexcept;
 
     // fs::path works differently depending on the type of string it was constructed with
     // so use this to get a unicode-constructed path on windows (convert), utf8 otherwise (passthrough)
@@ -69,6 +83,9 @@ class File {
 
     // passthrough to "_wfopen" on Windows, "fopen" otherwise
     [[nodiscard]] static FILE *fopen_c(const char *__restrict utf8filename, const char *__restrict modes);
+
+    // passthrough to "_wstat64" on Windows, "stat64" otherwise
+    [[nodiscard]] static int stat_c(const char *__restrict utf8filename, struct stat64 *__restrict buffer);
 
     // copy file from source to destination, overwriting if exists
     [[nodiscard]] static bool copy(std::string_view fromPath, std::string_view toPath);
@@ -82,7 +99,7 @@ class File {
     [[nodiscard]] static File::FILETYPE existsCaseInsensitive(std::string &filePath, std::filesystem::path &path);
     [[nodiscard]] static File::FILETYPE exists(std::string_view filePath, const std::filesystem::path &path);
 
-    std::string sFilePath;
+    UString sFilePath;
     std::filesystem::path fsPath;
 
     // file streams
@@ -92,7 +109,7 @@ class File {
     // buffer for full file reading
     std::unique_ptr<u8[]> vFullBuffer;
 
-    uSz iFileSize;
+    struct stat64 fsstat{};
 
     MODE fileMode;
     bool bReady;
