@@ -635,15 +635,21 @@ void CBaseUIScrollView::updateClipping() {
     const uSz prevTotalSize = this->previousClippingTotalElements;
     this->previousClippingTotalElements = elements.size();
 
-    const bool useCache = elements.size() > 0 && prevVisibleSize > 0 && prevVisibleSize == visibleElements->size() &&
-                          prevTotalSize == elements.size();
+    const bool useCache = this->bVerticalScrolling &&                                          //
+                          elements.size() > 0 &&                                               //
+                          prevVisibleSize > 0 &&                                               //
+                          prevVisibleSize == visibleElements->size() &&                        //
+                          prevTotalSize == elements.size() &&                                  //
+                          !(2.f * this->vSize.y >= -this->vScrollPos.y ||                      // overscroll, top
+                            2.f * this->vSize.y >= this->vScrollPos.y + this->vScrollSize.y);  // overscroll, bottom
+    // don't use cached clipping near top/bottom bounds because we might have set some elements as invisible without replacing them
+
     bool foundDifferent = !useCache;
 
     if(useCache) {
         for(auto *e : *visibleElements) {
             const McRect &eRect = e->getRect();
             const bool eVisible = e->isVisible();
-
             if(!eVisible || !expandedMe.intersects(eRect)) {
                 foundDifferent = true;
                 break;
