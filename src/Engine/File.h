@@ -22,6 +22,9 @@
 #ifdef MCENGINE_PLATFORM_WINDOWS
 #define stat64 __stat64
 #endif
+#ifdef __APPLE__
+#define stat64 stat
+#endif
 
 class ConVar;
 class DirectoryCache;

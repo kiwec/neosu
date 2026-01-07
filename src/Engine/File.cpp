@@ -310,11 +310,11 @@ bool File::getDirectoryEntries(const std::string &pathToEnum, bool wantDirectori
 
         if((wantFiles && fileType == fs::file_type::regular) ||
            (wantDirectories && fileType == fs::file_type::directory)) {
-            contents.emplace_back(entry.path().filename().generic_string());
+            utf8NamesOut.emplace_back(entry.path().filename().generic_string());
         }
     }
 
-    if(ec && contents.empty()) {
+    if(ec && utf8NamesOut.empty()) {
         debugLog("Failed to enumerate directory: {}", ec.message());
         return false;
     }
