@@ -18,6 +18,7 @@
 #include "AsyncPPCalculator.h"
 #include "Mouse.h"
 #include "NotificationOverlay.h"
+#include "File.h"
 #include "OptionsMenu.h"
 #include "Osu.h"
 #include "Font.h"
@@ -348,7 +349,7 @@ UString InfoLabel::buildSongInfoString() const {
 
 UString InfoLabel::buildDiffInfoString() const {
     const auto &pf = osu->getMapInterface();
-    const auto *map = pf->getBeatmap();
+    auto *map = pf->getBeatmap();
     if(!map) return "";
 
     const f32 CS = pf->getCS();
@@ -392,6 +393,16 @@ UString InfoLabel::buildDiffInfoString() const {
     } else {
         finalString =
             UString::format("CS:%.3g AR:%.3g OD:%.3g HP:%.3g Stars:%.3g * (??? pp)", CS, AR, OD, HP, nomodStars);
+    }
+
+    // also fix up modification time for improperly stored beatmaps while we're here
+    // should be cheap
+    // TODO: don't do this here, probably inherently racy somehow
+    if(map->last_modification_time <= 0 && !map->sFilePath.empty()) {
+        struct stat64 attr;
+        if(File::stat_c(map->sFilePath.c_str(), &attr) == 0) {
+            map->last_modification_time = attr.st_mtime;
+        }
     }
 
     return finalString;

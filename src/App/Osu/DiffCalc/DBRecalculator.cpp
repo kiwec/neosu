@@ -25,7 +25,7 @@ namespace DBRecalculator {
 
 struct internal {
     static void update_score_in_db(const FinishedScore& score, f64 pp, f64 total_stars, f64 aim_stars, f64 speed_stars);
-    static std::vector<BeatmapDifficulty*> collect_outdated_db_diffs(const Sync::stop_token& stoken);
+    static void collect_outdated_db_diffs(const Sync::stop_token& stoken, std::vector<BeatmapDifficulty*>& outdiffs);
 };
 
 void internal::update_score_in_db(const FinishedScore& score, f64 pp, f64 total_stars, f64 aim_stars, f64 speed_stars) {
@@ -50,18 +50,15 @@ void internal::update_score_in_db(const FinishedScore& score, f64 pp, f64 total_
     }
 }
 
-std::vector<BeatmapDifficulty*> internal::collect_outdated_db_diffs(const Sync::stop_token& stoken) {
-    std::vector<BeatmapDifficulty*> ret;
-    {
-        Sync::shared_lock readlock(db->beatmap_difficulties_mtx);
-        for(const auto& [_, diff] : db->beatmap_difficulties) {
-            if(stoken.stop_requested()) break;
-            if(diff->fStarsNomod <= 0.f || diff->ppv2Version < DiffCalc::PP_ALGORITHM_VERSION) {
-                ret.push_back(diff);
-            }
+void internal::collect_outdated_db_diffs(const Sync::stop_token& stoken, std::vector<BeatmapDifficulty*>& outdiffs) {
+    Sync::shared_lock readlock(db->beatmap_difficulties_mtx);
+    for(const auto& [_, diff] : db->beatmap_difficulties) {
+        if(stoken.stop_requested()) break;
+        if(diff->fStarsNomod <= 0.f || diff->ppv2Version < DiffCalc::PP_ALGORITHM_VERSION) {
+            outdiffs.push_back(diff);
         }
     }
-    return ret;
+    return;
 }
 
 namespace {
@@ -127,9 +124,6 @@ std::vector<BPMTuple> bpm_calc_buf;
 // The order in which the work is run doesn't really make this cache that useful, but just pass it
 // as a star calculation parameter to avoid it needing to reallocate a new cache
 std::unique_ptr<std::vector<DifficultyCalculator::DiffObject>> dummy_diffobj_cache;
-
-// Maps to recalc, copied from start_calc argument for thread-safe access
-std::vector<BeatmapDifficulty*> pending_diffs_to_recalc;
 
 forceinline bool score_needs_recalc(const FinishedScore& score) {
     return score.ppv2_version < DiffCalc::PP_ALGORITHM_VERSION || score.ppv2_score <= 0.f;
@@ -217,9 +211,10 @@ void process_score_group(BeatmapDifficulty* map, const ModParams& params, const 
 // Iterating over 100k+ scores with score_needs_recalc() checks is O(n).
 void build_work_queue(const Sync::stop_token& stoken) {
     Hash::flat::map<MD5Hash, WorkItem> work_by_hash;
+    std::vector<BeatmapDifficulty*> pending_diffs_to_recalc;
 
     // add maps needing star rating recalc (ppv2 version outdated)
-    pending_diffs_to_recalc = internal::collect_outdated_db_diffs(stoken);
+    internal::collect_outdated_db_diffs(stoken, pending_diffs_to_recalc);
     if(stoken.stop_requested()) return;
 
     for(auto* diff : pending_diffs_to_recalc) {
@@ -232,8 +227,6 @@ void build_work_queue(const Sync::stop_token& stoken) {
     }
 
     maps_total.store(static_cast<u32>(pending_diffs_to_recalc.size()), std::memory_order_relaxed);
-    pending_diffs_to_recalc.clear();
-    pending_diffs_to_recalc.shrink_to_fit();
 
     // find all scores needing PP recalc, grouped by beatmap
     u32 score_count = 0;
@@ -478,7 +471,6 @@ void abort_calc() {
     workqueue_ready = false;
     work_queue.clear();
     map_results.clear();
-    pending_diffs_to_recalc.clear();
     if(dummy_diffobj_cache) {
         dummy_diffobj_cache->clear();
     }

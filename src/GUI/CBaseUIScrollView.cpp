@@ -93,7 +93,11 @@ void ScrollContainer::draw() {
 
     MC_UNROLL
     for(auto *e : *this->vVisibleElements) {
-        e->draw();
+        // check actual screen visibility since we clipped "lazily"
+        // shouldn't be too expensive since we're no longer iterating over hundreds of thousands of elements here
+        if(e->isVisibleOnScreen()) {
+            e->draw();
+        }
         // programmer error (don't do this in draw(), ever)
         assert(!this->invalidateUpdate);
     }
@@ -352,7 +356,7 @@ void CBaseUIScrollView::mouse_update(bool *propagate_clicks) {
         if(this->bHorizontalScrolling)
             this->vScrollPos.x = this->vScrollPosBackup.x + (mouse->getPos().x - this->vMouseBackup.x);
 
-        this->container->setPos(dvec2{this->vPos} + this->vScrollPos);
+        this->container->setPos(vec::round(dvec2{this->vPos} + this->vScrollPos));
     } else  // no longer scrolling, smooth the remaining velocity
     {
         this->vKineticAverage = {0., 0.};
@@ -436,8 +440,7 @@ void CBaseUIScrollView::mouse_update(bool *propagate_clicks) {
     if(animating) {
         this->bClippingDirty = true;
         // debugLog("hit first condition, frame: {}", engine->getFrameCount());
-        this->container->setPos(this->vPos.x + std::round(this->vScrollPos.x),
-                                this->vPos.y + std::round(this->vScrollPos.y));
+        this->container->setPos(vec::round(dvec2{this->vPos} + this->vScrollPos));
     }
 
     // update scrollbars
@@ -448,10 +451,9 @@ void CBaseUIScrollView::mouse_update(bool *propagate_clicks) {
     }
 
     // HACKHACK: if an animation was started and ended before any setpos could get fired, manually update the position
-    if(this->container->getPos() !=
-       (this->vPos + vec2(std::round(this->vScrollPos.x), std::round(this->vScrollPos.y)))) {
-        this->container->setPos(this->vPos.x + std::round(this->vScrollPos.x),
-                                this->vPos.y + std::round(this->vScrollPos.y));
+    if(const dvec2 roundedPos = vec::round(dvec2{this->vPos} + this->vScrollPos);
+       roundedPos != vec::round(dvec2{this->container->getPos()})) {
+        this->container->setPos(roundedPos);
         this->bClippingDirty = true;
         // debugLog("hit third condition, frame: {}", engine->getFrameCount());
         this->updateScrollbars();
