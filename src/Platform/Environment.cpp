@@ -1259,6 +1259,20 @@ std::pair<vec2, vec2> Environment::consumeMousePositionCache() {
     SDL_GetRelativeMouseState(&xRel, &yRel);
     SDL_GetMouseState(&x, &y);
 
+    // these pen events are manually tracked and updated in our event loop
+    if(m_vLastAbsPenPos != m_vCurrentAbsPenPos) {
+        // if SDL's relative pen motion tracking isn't working for whatever reason, and we had pen motion events, then use that
+        // otherwise trust what SDL is giving to us
+        if(xRel == yRel && xRel == 0.f) {
+            xRel = (m_vCurrentAbsPenPos.x - m_vLastAbsMousePos.x);
+            yRel = (m_vCurrentAbsPenPos.y - m_vLastAbsMousePos.y);
+        }
+
+        // reset
+        m_vLastAbsPenPos.x = m_vCurrentAbsPenPos.x;
+        m_vLastAbsPenPos.y = m_vCurrentAbsPenPos.y;
+    }
+
     // <rel, abs>
     return {{xRel, yRel}, {x, y}};
 }

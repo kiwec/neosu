@@ -433,7 +433,8 @@ SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
                                                           : -120 * std::abs(static_cast<int>(event->wheel.y)));
             break;
 
-        case SDL_EVENT_PEN_MOTION:  // ignored, see comment in configureEvents
+        case SDL_EVENT_PEN_MOTION:
+            m_vCurrentAbsPenPos = vec2{event->pmotion.x, event->pmotion.y};
             break;
 
         default:
@@ -536,8 +537,11 @@ bool SDLMain::createWindow() {
     i32 windowCreateHeight = WINDOW_HEIGHT;
     SDL_DisplayID initDisplayID = SDL_GetPrimaryDisplay();
 
-    // start on the highest refresh rate monitor for kmsdrm
-    if(m_bIsKMSDRM) {
+    // start on the highest refresh rate monitor for kmsdrm (or if the primary display couldn't be found)
+    if(m_bIsKMSDRM || !initDisplayID) {
+        if(!m_bIsKMSDRM) {
+            debugLog("NOTICE: Couldn't get primary display: {}", SDL_GetError());
+        }
         int dispCount = 0;
         float maxHz = 0;
         SDL_DisplayID *ids = SDL_GetDisplays(&dispCount);
@@ -552,14 +556,10 @@ bool SDLMain::createWindow() {
         }
         SDL_free(ids);
     } else {
-        if(!initDisplayID) {
-            debugLog("NOTICE: Couldn't get primary display: {}", SDL_GetError());
-        } else {
-            const SDL_DisplayMode *dm = SDL_GetDesktopDisplayMode(initDisplayID);
-            if(dm) {
-                if(dm->w < windowCreateWidth) windowCreateWidth = dm->w;
-                if(dm->h < windowCreateHeight) windowCreateHeight = dm->h;
-            }
+        const SDL_DisplayMode *dm = SDL_GetDesktopDisplayMode(initDisplayID);
+        if(dm) {
+            if(dm->w < windowCreateWidth) windowCreateWidth = dm->w;
+            if(dm->h < windowCreateHeight) windowCreateHeight = dm->h;
         }
     }
 
@@ -693,11 +693,11 @@ void SDLMain::configureEvents() {
     SDL_SetEventEnabled(SDL_EVENT_PEN_BUTTON_DOWN, false);
     SDL_SetEventEnabled(SDL_EVENT_PEN_BUTTON_UP, false);
     SDL_SetEventEnabled(SDL_EVENT_PEN_AXIS, false);
-    // we don't actually have to handle it in the event handler ourselves, but SDL_GetMouseState does not include pen motion events if it's disabled
-    // this is weird because SDL_EVENT_MOUSE_MOTION does not work this way... whatever
+
+    // use pen motion events to track absolute cursor position
     SDL_SetEventEnabled(SDL_EVENT_PEN_MOTION, true);
 
-    // allow callback to enable/disable too
+    // allow callback to enable/disable pen input handling
     cv::pen_input.setCallback(
         [](float on) -> void { SDL_SetEventEnabled(SDL_EVENT_PEN_MOTION, !!static_cast<int>(on)); });
 

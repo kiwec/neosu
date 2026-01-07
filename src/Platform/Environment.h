@@ -329,7 +329,13 @@ class Environment {
     // the difference between setOSMousePos and this is that it doesn't actually warp the OS cursor
     inline void updateCachedMousePos(const vec2 &pos) { m_vLastAbsMousePos = pos; }
 
-    vec2 m_vLastAbsMousePos{0.f};
+    // is used to track relative tablet motion, is zeroed after consumeMousePositionCache
+    // on some platforms, SDL automatically tracks relative motion deltas from absolute pen motion, but not others...
+    // so we'll do it manually in that case
+    vec2 m_vCurrentAbsPenPos{0.f, 0.f};
+    vec2 m_vLastAbsPenPos{0.f, 0.f};
+
+    vec2 m_vLastAbsMousePos{0.f, 0.f};
     bool m_bIsCursorInsideWindow;
     bool m_bCursorClipped;
     bool m_bHideCursorPending;

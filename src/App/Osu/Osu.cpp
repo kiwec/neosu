@@ -396,8 +396,8 @@ Osu::Osu() : App(), MouseListener(), global_osu_(this) {
         BanchoState::reconnect();
     }
 
-    // don't auto update if this env var is set to anything other than 0 or empty (if it is set)
     if constexpr(!Env::cfg(BUILD::DEBUG)) {  // don't auto-update debug builds
+        // don't auto update if this env var is set to anything other than 0 or empty (if it is set)
         const std::string extUpdater = Environment::getEnvVariable("NEOSU_EXTERNAL_UPDATE_PROVIDER");
         if(cv::auto_update.getBool() && (extUpdater.empty() || Parsing::strto<bool>(extUpdater) == false)) {
             bool force_update = cv::bleedingedge.getBool() != cv::is_bleedingedge.getBool();
@@ -1709,11 +1709,6 @@ void Osu::updateWindowsKeyDisable() {
 }
 
 void Osu::onWindowedResolutionChanged(std::string_view args) {
-    // ignore if we're still loading or not in fullscreen
-    this->last_res_change_req_src |= R_CV_WINDOWED_RESOLUTION;
-
-    if(env->winFullscreened() || !this->bScreensReady) return;
-
     auto parsed = Parsing::parse_resolution(args);
     if(!parsed.has_value()) {
         debugLog(
@@ -1723,8 +1718,18 @@ void Osu::onWindowedResolutionChanged(std::string_view args) {
         return;
     }
 
+    if(env->getWindowSize() == vec2{parsed->x, parsed->y}) {
+        return;
+    }
+
+    // ignore if we're still loading, not in fullscreen, or the requested resolution is the same as the current window resolution
+    this->last_res_change_req_src |= R_CV_WINDOWED_RESOLUTION;
+
     i32 width{parsed->x}, height{parsed->y};
     debugLog("{}x{}", width, height);
+
+    // if we were still loading then we'll retry after we're finished
+    if(env->winFullscreened() || !this->bScreensReady) return;
 
     env->setWindowSize(width, height);
     env->centerWindow();
