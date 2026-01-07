@@ -1,10 +1,7 @@
 #pragma once
 // Copyright (c) 2018, PG, All rights reserved.
 #include "CBaseUIButton.h"
-
-class Image;
-struct Skin;
-struct BasicSkinImage;
+#include "Skin.h"
 
 class UIPauseMenuButton final : public CBaseUIButton {
    public:
@@ -30,5 +27,5 @@ class UIPauseMenuButton final : public CBaseUIButton {
 
     float fAlpha;
 
-    ImageSkinMember imageMember;
+    ImageSkinMember imageMember{nullptr};
 };

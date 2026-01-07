@@ -1,11 +1,11 @@
 #pragma once
 // Copyright (c) 2016, PG, All rights reserved.
 #include "CBaseUIButton.h"
+#include "Skin.h"
 
 class SkinImage;
 class ModSelector;
 class ConVar;
-struct Skin;
 
 class UIModSelectorModButton final : public CBaseUIButton {
    public:
@@ -44,13 +44,13 @@ class UIModSelectorModButton final : public CBaseUIButton {
         ConVar *cvar;
         UString modName;
         std::vector<UString> tooltipTextLines;
-        SkinImageSkinMember skinImageMember;
+        SkinImageSkinMember skinImageMember{nullptr};
     };
     std::vector<STATE> states;
 
     vec2 vScale{0.f};
     float fRot;
-    SkinImageSkinMember activeSkinImageMember;
+    SkinImageSkinMember activeSkinImageMember{nullptr};
 
     bool bFocusStolenDelay;
 };

@@ -2,9 +2,8 @@
 // Copyright (c) 2015, PG, All rights reserved.
 #include "ModFlags.h"
 #include "OsuScreen.h"
+#include "Skin.h"
 
-class SkinImage;
-struct Skin;
 class SongBrowser;
 
 class CBaseUIElement;

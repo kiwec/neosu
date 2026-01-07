@@ -3717,7 +3717,7 @@ OptionsElement *OptionsMenuImpl::addButton(const UString &text, const UString &l
 
     auto e = std::make_unique<OptionsElement>(BTN);
     if(withResetButton) {
-        e->resetButton = std::make_unique<ResetButton>(e.get(), 0, 0, 35, 50, "", "");
+        e->resetButton = std::make_unique<ResetButton>(e.get(), 0.f, 0.f, 35.f, 50.f, "", "");
     }
     e->baseElems.emplace_back(button);
     e->baseElems.emplace_back(label);
@@ -3768,7 +3768,7 @@ OptionsElement *OptionsMenuImpl::addButtonButtonLabel(const UString &text1, cons
 
     auto e = std::make_unique<OptionsElement>(BTN);
     if(withResetButton) {
-        e->resetButton = std::make_unique<ResetButton>(e.get(), 0, 0, 35, 50, "", "");
+        e->resetButton = std::make_unique<ResetButton>(e.get(), 0.f, 0.f, 35.f, 50.f, "", "");
     }
     e->baseElems.emplace_back(button);
     e->baseElems.emplace_back(button2);
@@ -3836,7 +3836,7 @@ CBaseUICheckbox *OptionsMenuImpl::addCheckbox(const UString &text, const UString
 
     auto e = std::make_unique<OptionsElement>(CBX);
     if(cvar != nullptr) {
-        e->resetButton = std::make_unique<ResetButton>(e.get(), 0, 0, 35, 50, "", "");
+        e->resetButton = std::make_unique<ResetButton>(e.get(), 0.f, 0.f, 35.f, 50.f, "", "");
         e->resetButton->setClickCallback(SA::MakeDelegate<&OptionsMenuImpl::onResetClicked>(this));
     }
     e->baseElems.emplace_back(checkbox);
@@ -3901,7 +3901,7 @@ UISlider *OptionsMenuImpl::addSlider(const UString &text, float min, float max, 
 
     auto e = std::make_unique<OptionsElement>(SLDR);
     if(cvar != nullptr) {
-        e->resetButton = std::make_unique<ResetButton>(e.get(), 0, 0, 35, 50, "", "");
+        e->resetButton = std::make_unique<ResetButton>(e.get(), 0.f, 0.f, 35.f, 50.f, "", "");
         e->resetButton->setClickCallback(SA::MakeDelegate<&OptionsMenuImpl::onResetClicked>(this));
     }
     e->baseElems.emplace_back(label1);
