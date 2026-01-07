@@ -105,13 +105,11 @@ struct FixedSizeArray {
     [[nodiscard]] constexpr inline const T *data() const noexcept { return data_.get(); }
     [[nodiscard]] constexpr inline const T &operator[](size_t i) const noexcept {
         assert(!!data_ && "const T &operator[](size_t i) const: !data_");
-        assert(i >= 0 && "const T &operator[](size_t i) const: i < 0");
         assert(i < size_ && "const T &operator[](size_t i) const: i >= size_");
         return data_[i];
     }
     [[nodiscard]] constexpr inline T &operator[](size_t i) noexcept {
         assert(!!data_ && "T &operator[](size_t i): !data_");
-        assert(i >= 0 && "T &operator[](size_t i): i < 0");
         assert(i < size_ && "T &operator[](size_t i): i >= size_");
         return data_[i];
     }

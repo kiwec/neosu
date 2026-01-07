@@ -2,10 +2,8 @@
 // Copyright (c) 2013, PG, All rights reserved.
 #include "Color.h"
 
-#include "CBaseUIElement.h"
+#include "CBaseUIContainer.h"
 #include <memory>
-
-class CBaseUIContainer;
 
 class CBaseUIScrollView : public CBaseUIElement {
     NOCOPY_NOMOVE(CBaseUIScrollView)
@@ -118,7 +116,40 @@ class CBaseUIScrollView : public CBaseUIElement {
     void onDisabled() override;
 
     // main container
-    std::unique_ptr<CBaseUIContainer> container;
+    class CBaseUIScrollViewContainer : public CBaseUIContainer {
+        NOCOPY_NOMOVE(CBaseUIScrollViewContainer)
+       public:
+        using CBaseUIContainer::CBaseUIContainer;
+        CBaseUIScrollViewContainer(float xPos = 0, float yPos = 0, float xSize = 0, float ySize = 0, UString name = "");
+        CBaseUIScrollViewContainer() = delete;
+        ~CBaseUIScrollViewContainer() override;
+
+        // delete these so that vVisibleElements can't go out of sync
+        CBaseUIContainer *removeBaseUIElement(CBaseUIElement *element) = delete;
+        CBaseUIContainer *deleteBaseUIElement(CBaseUIElement *element) = delete;
+
+        void freeElements() override;
+        void invalidate() override;
+
+        void mouse_update(bool *propagate_clicks) override;
+        void draw() override;
+
+        bool isBusy() override;
+
+       private:
+        friend class CBaseUIScrollView;
+
+        struct VisibleSet;  // avoiding transitive includes
+
+        // these elements must correspond to items in the superclass' vElements container!
+        std::unique_ptr<VisibleSet> vVisibleElements{nullptr};
+
+        // we need to break out of mouse_update if the container we're iterating through has been cleared
+        bool invalidateUpdate{false};
+        bool inIllegalToInvalidateIteration{false};  // for debug
+    };
+
+    std::unique_ptr<CBaseUIScrollViewContainer> container;
 
    protected:
     void onMoved() override;
@@ -145,6 +176,9 @@ class CBaseUIScrollView : public CBaseUIElement {
     vec2 vMouseBackup3{0.f};
     dvec2 vVelocity{0.f, 0.f};
     dvec2 vKineticAverage{0.f};
+
+    uSz previousClippingVisibleElements{0};
+    uSz previousClippingTotalElements{0};
 
     int iPrevScrollDeltaX{0};
     int iScrollResistance;

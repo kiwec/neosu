@@ -14,10 +14,10 @@ CBaseUIContainer::~CBaseUIContainer() { this->freeElements(); }
 
 // free memory from children
 void CBaseUIContainer::freeElements() {
-    for(size_t i = 0; i < this->vElements.size(); i++) {
+    for(ssize_t i = static_cast<ssize_t>(this->vElements.size()) - 1; i >= 0; --i) {
         delete this->vElements[i];
+        this->vElements.erase(this->vElements.begin() + i);
     }
-    this->vElements.clear();
 }
 
 // invalidate children without freeing memory
@@ -182,13 +182,16 @@ void CBaseUIContainer::mouse_update(bool *propagate_clicks) {
 void CBaseUIContainer::update_pos() {
     const vec2 thisPos = this->vPos;
 
+    float xtemp{thisPos.x}, ytemp{thisPos.y};
     MC_UNR_cnt(64) /* clang-format getting confused */
         for(auto *e : this->vElements) {
         // setPos already has this logic, but inline it manually here
         // to avoid unnecessary indirection
-        const vec2 newPos = thisPos + e->vmPos;
-        if(e->vPos != newPos) {
-            e->vPos = newPos;
+        ytemp = thisPos.y + e->vmPos.y;
+        xtemp = thisPos.x + e->vmPos.x;
+        if(e->vPos.y != ytemp || e->vPos.x != xtemp) {
+            e->vPos.y = ytemp;
+            e->vPos.x = xtemp;
             e->onMoved();
         }
     }

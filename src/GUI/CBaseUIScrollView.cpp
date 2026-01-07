@@ -2,7 +2,6 @@
 // TODO: refactor the spaghetti parts, this can be done way more elegantly
 
 #include "CBaseUIScrollView.h"
-#include "CBaseUIContainer.h"
 
 #include "AnimationHandler.h"
 #include "ConVar.h"
@@ -10,6 +9,7 @@
 #include "Keyboard.h"
 #include "Mouse.h"
 #include "Graphics.h"
+#include "Hashing.h"  // IWYU pragma: keep
 
 // #include "ResourceManager.h"
 // #include "Logging.h"
@@ -22,11 +22,105 @@ namespace {
 // but that takes time and this seems to work in practice for now...
 u64 lastScrollFrame{0};
 u32 layeredScrollsHandledInFrame{0};
+
+using ScrollContainer = CBaseUIScrollView::CBaseUIScrollView::CBaseUIScrollViewContainer;
 }  // namespace
+
+// unordered_dense sets allow for fast iteration speed (internal storage is a vector),
+// and relatively much faster insertion/deletion (of arbitrary elements) than a std::vector
+// so this is kind of a hack to avoid iterating over a bunch of not-visible elements
+struct ScrollContainer::VisibleSet : public Hash::flat::set<CBaseUIElement *> {};
+
+CBaseUIScrollView::CBaseUIScrollView::CBaseUIScrollViewContainer::CBaseUIScrollViewContainer(float Xpos, float Ypos,
+                                                                                             float Xsize, float Ysize,
+                                                                                             UString name)
+    : CBaseUIContainer(Xpos, Ypos, Xsize, Ysize, std::move(name)),
+      vVisibleElements(std::make_unique<ScrollContainer::VisibleSet>()) {}
+
+CBaseUIScrollView::CBaseUIScrollView::CBaseUIScrollViewContainer::~CBaseUIScrollViewContainer() = default;
+
+void ScrollContainer::freeElements() {
+    if(this->inIllegalToInvalidateIteration) {
+        fubar_abort();  // for debugging, so you get an actual backtrace
+    }
+
+    this->invalidateUpdate = true;
+
+    if(this->vVisibleElements) this->vVisibleElements->clear();
+    CBaseUIContainer::freeElements();
+}
+
+void ScrollContainer::invalidate() {
+    if(this->inIllegalToInvalidateIteration) {
+        fubar_abort();
+    }
+
+    this->invalidateUpdate = true;
+
+    if(this->vVisibleElements) this->vVisibleElements->clear();
+    CBaseUIContainer::invalidate();
+}
+
+void ScrollContainer::mouse_update(bool *propagate_clicks) {
+    if(!this->vVisibleElements) {
+        CBaseUIContainer::mouse_update(propagate_clicks);
+        return;
+    }
+    // intentionally not calling parent
+    CBaseUIElement::mouse_update(propagate_clicks);
+    if(!this->bVisible) return;
+
+    this->invalidateUpdate = false;
+
+    MC_UNROLL
+    for(auto *e : *this->vVisibleElements) {
+        e->mouse_update(propagate_clicks);
+        if(this->invalidateUpdate) {
+            // iterators have been invalidated!
+            // try again next time.
+            break;
+        }
+    }
+
+    this->invalidateUpdate = false;
+}
+
+void ScrollContainer::draw() {
+    if(!this->vVisibleElements) return;
+    if(!this->bVisible) return;
+
+    this->inIllegalToInvalidateIteration = true;
+
+    MC_UNROLL
+    for(auto *e : *this->vVisibleElements) {
+        e->draw();
+        // programmer error (don't do this in draw(), ever)
+        assert(!this->invalidateUpdate);
+    }
+
+    this->inIllegalToInvalidateIteration = false;
+}
+
+bool ScrollContainer::isBusy() {
+    if(!this->vVisibleElements) return false;
+    if(!this->bVisible) return false;
+
+    this->inIllegalToInvalidateIteration = true;
+
+    MC_UNROLL
+    for(auto *e : *this->vVisibleElements) {
+        // programmer error (don't do this in isBusy(), ever)
+        assert(!this->invalidateUpdate);
+        if(e->isBusy()) return true;
+    }
+
+    this->inIllegalToInvalidateIteration = false;
+    return false;
+}
 
 CBaseUIScrollView::CBaseUIScrollView(f32 xPos, f32 yPos, f32 xSize, f32 ySize, const UString &name)
     : CBaseUIElement(xPos, yPos, xSize, ySize, name),
-      container(std::make_unique<CBaseUIContainer>(xPos, yPos, xSize, ySize, name)) {
+      container(std::make_unique<CBaseUIScrollViewContainer>(xPos, yPos, xSize, ySize, name)) {
     this->grabs_clicks = true;
 
     this->iScrollResistance = cv::ui_scrollview_resistance.getInt();  // TODO: dpi handling
@@ -517,24 +611,76 @@ void CBaseUIScrollView::updateClipping() {
     u32 numChangedElements = 0;
     //u32 numVisElements = 0;
 
+    // weird nested constructor order makes this possible to be null briefly somehow idk
+    auto *visibleElements = this->container->vVisibleElements.get();
+    if(!visibleElements) return;
+
     const std::vector<CBaseUIElement *> &elements = this->container->getElements();
-    const McRect &me{this->getRect()};
 
-    for(auto *e : elements) {
-        const McRect &eRect = e->getRect();  // heh
-        const bool eVisible = e->isVisible();
-        //numVisElements += eVisible;
+    // poor man's PVS
+    // this makes us a bit less strict about which elements are "visible", but it shouldn't be too significant
+    // just prevents cutting off of new elements before old elements have completely scrolled off screen
+    // there could be a "smarter" way to handle this "slack" but this is good enough for a noticeable improvement
+    McRect expandedMe = this->getRect();
+    {
+        const vec2 oldPos = expandedMe.getPos();
+        const vec2 oldSize = expandedMe.getSize();
+        const vec2 newSize = oldSize * 1.15;
+        const vec2 newPos = oldPos - ((newSize - oldSize) / 2.f);
+        expandedMe.setSize(newSize);
+        expandedMe.setPos(newPos);
+    }
 
-        if(me.intersects(eRect)) {
-            if(!eVisible) {
-                e->setVisible(true);
-                ++numChangedElements;
+    const uSz prevVisibleSize = this->previousClippingVisibleElements;
+    const uSz prevTotalSize = this->previousClippingTotalElements;
+    this->previousClippingTotalElements = elements.size();
+
+    const bool useCache = elements.size() > 0 && prevVisibleSize > 0 && prevVisibleSize == visibleElements->size() &&
+                          prevTotalSize == elements.size();
+    bool foundDifferent = !useCache;
+
+    if(useCache) {
+        for(auto *e : *visibleElements) {
+            const McRect &eRect = e->getRect();
+            const bool eVisible = e->isVisible();
+
+            if(!eVisible || !expandedMe.intersects(eRect)) {
+                foundDifferent = true;
+                break;
             }
-        } else if(eVisible) {
-            e->setVisible(false);
-            ++numChangedElements;
         }
     }
+
+    if(foundDifferent) {
+        for(auto *e : elements) {
+            const McRect &eRect = e->getRect();
+            const bool eVisible = e->isVisible();
+            //numVisElements += eVisible;
+            bool nowVisible = eVisible;
+
+            if(expandedMe.intersects(eRect)) {
+                if(!eVisible) {
+                    e->setVisible(true);
+                    // need to call isVisible instead of just directly setting "true" because
+                    // it may be overridden
+                    nowVisible = e->isVisible();
+                    ++numChangedElements;
+                }
+            } else if(eVisible) {
+                e->setVisible(false);
+                nowVisible = e->isVisible();
+                ++numChangedElements;
+            }
+
+            if(nowVisible) {
+                visibleElements->insert(e);
+            } else {
+                visibleElements->erase(e);
+            }
+        }
+    }
+
+    this->previousClippingVisibleElements = visibleElements->size();
 
     if(!numChangedElements) {
         //debugLog("got final visible elements {} total {}", numVisElements, elements.size());
