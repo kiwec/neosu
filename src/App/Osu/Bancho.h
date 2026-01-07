@@ -33,6 +33,7 @@ struct BanchoState final {
     static std::array<u8, 32> oauth_challenge;
     static std::array<u8, 32> oauth_verifier;
     static bool is_oauth;
+    static bool fully_supports_neosu;
 
     static bool spectating;
     static i32 spectated_player_id;
@@ -65,6 +66,7 @@ struct BanchoState final {
     static void handle_packet(Packet &packet);
     static std::string build_login_packet();
     static void update_online_status(OnlineStatus new_status);
+    static void initialize_neosu_server_session();
 
     // cached uuid
     [[nodiscard]] static const std::string &get_disk_uuid();

@@ -1,15 +1,21 @@
 // Copyright (c) 2023, kiwec, All rights reserved.
 
 #ifdef _WIN32
+
 #include "WinDebloatDefs.h"
 #include <windows.h>
 #include <cinttypes>
 
+#elif __APPLE__
+// nothing
 #else
+
 #include <linux/limits.h>
 #include <sys/stat.h>
 #include "dynutils.h"
+
 #endif
+
 
 #include <algorithm>
 #include <cstdio>
@@ -50,6 +56,7 @@ std::string BanchoState::username;
 MD5Hash BanchoState::pw_md5;
 
 bool BanchoState::is_oauth{false};
+bool BanchoState::fully_supports_neosu{false};
 std::array<u8, 32> BanchoState::oauth_challenge{};
 std::array<u8, 32> BanchoState::oauth_verifier{};
 
@@ -134,6 +141,60 @@ void BanchoState::update_online_status(OnlineStatus new_status) {
     if(async_logout_pending && new_status == OnlineStatus::LOGGED_IN) {
         async_logout_pending = false;
         BanchoState::disconnect();
+    }
+}
+
+void BanchoState::initialize_neosu_server_session() {
+    // Because private servers don't give a shit about neosu,
+    // and we want to be able to move fast without backwards
+    // compatibility being in the way, we'll just roll with
+    // a custom protocol.
+    //
+    // Not only that, we expect the server implementation
+    // to fully support all neosu-specific features.
+    //
+    // This might get relaxed in the future if someone else
+    // chooses to add support for neosu clients. But as of
+    // now it wouldn't make sense to cater to imaginary servers.
+    BanchoState::fully_supports_neosu = true;
+
+    // Here are some defaults that the server used to be sent
+    // in handshake packets - let's save some bandwidth while
+    // we're at it.
+    cv::sv_allow_speed_override.setValue(1, true, CvarEditor::SERVER);
+    cv::sv_has_irc_users.setValue(0, true, CvarEditor::SERVER);
+
+    // clang-format off
+    const auto to_unprotect = {
+        "ar_override", "ar_override_lock", "ar_overridenegative",
+        "cs_override", "cs_overridenegative",
+        "hp_override",
+        "mod_actual_flashlight",
+        "mod_nightmare",
+        "mod_artimewarp", "mod_artimewarp_multiplier",
+        "mod_arwobble", "mod_arwobble_interval", "mod_arwobble_strength",
+        "mod_fadingcursor",
+        "mod_fposu", "mod_fposu_sound_panning",
+        "mod_fps", "mod_fps_sound_panning",
+        "mod_hd_circle_fadein_end_percent", "mod_hd_circle_fadein_start_percent",
+        "mod_jigsaw1", "mod_jigsaw2", "mod_jigsaw_followcircle_radius_factor",
+        "mod_mafham", "mod_mafham_ignore_hittable_dim",
+        "mod_mafham_render_chunksize", "mod_mafham_render_livesize",
+        "mod_millhioref",
+        "mod_minimize", "mod_minimize_multiplier",
+        "mod_reverse_sliders",
+        "mod_shirone", "mod_shirone_combo",
+        "mod_strict_tracking",
+        "mod_timewarp", "mod_timewarp_multiplier",
+        "mod_wobble", "mod_wobble2",
+        "mod_wobble_frequency", "mod_wobble_rotation_speed", "mod_wobble_strength",
+        "mod_fullalternate", "mod_singletap", "mod_no_keylock", "notelock_type"
+    };
+    // clang-format on
+
+    for(auto name : to_unprotect) {
+        auto cvar = cvars().getConVarByName(name);
+        cvar->setServerProtected(CvarProtection::UNPROTECTED);
     }
 }
 
@@ -580,9 +641,12 @@ void BanchoState::handle_packet(Packet &packet) {
 
         case INP_PROTOCOL_VERSION: {
             int protocol_version = packet.read<i32>();
-            if(protocol_version != 19) {
-                osu->getNotificationOverlay()->addToast(US_("This server may use an unsupported protocol version."),
-                                                        ERROR_TOAST);
+            if(protocol_version == 128) {
+                BanchoState::initialize_neosu_server_session();
+            } else if(protocol_version != 19) {
+                std::string text{
+                    fmt::format("This server may use an unsupported protocol version ({}).", protocol_version)};
+                osu->getNotificationOverlay()->addToast(text, ERROR_TOAST);
             }
             break;
         }

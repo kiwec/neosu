@@ -355,6 +355,7 @@ void BanchoState::disconnect(bool shutdown) {
     osu->getUserButton()->setID(0);
 
     BanchoState::is_oauth = false;
+    BanchoState::fully_supports_neosu = false;
     BanchoState::endpoint = "";
     BanchoState::spectating = false;
     BanchoState::spectated_player_id = 0;
