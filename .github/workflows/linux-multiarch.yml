@@ -42,16 +42,17 @@ jobs:
           key: tarballs-linux-${{ matrix.arch }}
           restore-keys: |
             tarballs-linux-
-            tarballs-
 
       - name: Cache built dependencies
         uses: actions/cache@v5.0.1
         with:
           path: |
-            build-out/build/deps
+            build-aux/cache/*.gz
+            build-aux/cache/*.xz
+            build-aux/cache/*.zip
           key: deps-linux-${{ matrix.arch }}-${{ hashFiles('configure.ac', 'Makefile.am') }}
           restore-keys: |
-            deps-linux-${{ matrix.arch }}-${{ hashFiles('configure.ac', 'Makefile.am') }}
+            deps-linux-${{ matrix.arch }}-
 
       - name: ccache
         uses: actions/cache@v5.0.1
@@ -60,9 +61,9 @@ jobs:
             ${{ env.CCACHE_DIR }}
             build-out/.ltocache-gcc
             build-out/.ltocache-clang
-          key: ccache-linux-${{ matrix.arch }}-${{ github.sha }}
+          key: ccache-linux-${{ matrix.arch }}
           restore-keys: |
-            ccache-linux-${{ matrix.arch }}-
+            ccache-linux-
 
       - name: Building neosu
         run: |

@@ -32,112 +32,96 @@ CLEANFILES = \
 # SOURCE (to-build) dependencies (conditionally downloaded depending on build configuration)
 
 # always needed (if not on host)
-$(DEPS_CACHE)/SDL3-$(SDL3_VERSION).source:
+
+$(DEPS_CACHE)/SDL3-$(SDL3_VERSION).tar.gz:
 	$(MKDIR_P) $(DEPS_CACHE)
-	$(WGET) -qO $(DEPS_CACHE)/SDL3-$(SDL3_VERSION).tar.gz "https://github.com/libsdl-org/SDL/archive/$(SDL3_VERSION).tar.gz" && \
-	touch $@
+	$(CURLBIN) -fsSLo $@ "https://github.com/libsdl-org/SDL/archive/$(SDL3_VERSION).tar.gz" || { rm -f $@; exit 1; }
 
 # always needed (if not on host)
-$(DEPS_CACHE)/libjpeg-$(LIBJPEG_VERSION).source:
+$(DEPS_CACHE)/libjpeg-$(LIBJPEG_VERSION).tar.gz:
 	$(MKDIR_P) $(DEPS_CACHE)
-	$(WGET) -qO $(DEPS_CACHE)/libjpeg-$(LIBJPEG_VERSION).tar.gz "https://github.com/libjpeg-turbo/libjpeg-turbo/releases/download/$(LIBJPEG_VERSION)/libjpeg-turbo-$(LIBJPEG_VERSION).tar.gz" && \
-	touch $@
+	$(CURLBIN) -fsSLo $@ "https://github.com/libjpeg-turbo/libjpeg-turbo/releases/download/$(LIBJPEG_VERSION)/libjpeg-turbo-$(LIBJPEG_VERSION).tar.gz" || { rm -f $@; exit 1; }
 
 # always needed (if not on host)
-$(DEPS_CACHE)/glm-$(GLM_VERSION).source:
+$(DEPS_CACHE)/glm-$(GLM_VERSION).tar.gz:
 	$(MKDIR_P) $(DEPS_CACHE)
-	$(WGET) -qO $(DEPS_CACHE)/glm-$(GLM_VERSION).tar.gz "https://github.com/g-truc/glm/archive/refs/tags/$(GLM_VERSION).tar.gz" && \
-	touch $@
+	$(CURLBIN) -fsSLo $@ "https://github.com/g-truc/glm/archive/refs/tags/$(GLM_VERSION).tar.gz" || { rm -f $@; exit 1; }
 
 # always needed (if not on host)
-$(DEPS_CACHE)/libpng-$(LIBPNG_VERSION).source:
+$(DEPS_CACHE)/libpng-$(LIBPNG_VERSION).tar.gz:
 	$(MKDIR_P) $(DEPS_CACHE)
-	$(WGET) -qO $(DEPS_CACHE)/libpng-$(LIBPNG_VERSION).tar.gz "https://github.com/pnggroup/libpng/archive/refs/tags/v$(LIBPNG_VERSION).tar.gz" && \
-	touch $@
+	$(CURLBIN) -fsSLo $@ "https://github.com/pnggroup/libpng/archive/refs/tags/v$(LIBPNG_VERSION).tar.gz" || { rm -f $@; exit 1; }
 
 # always needed (if not on host)
-$(DEPS_CACHE)/bzip2-$(BZIP2_VERSION).source:
+$(DEPS_CACHE)/bzip2-$(BZIP2_VERSION).tar.gz:
 	$(MKDIR_P) $(DEPS_CACHE)
-	$(WGET) -qO $(DEPS_CACHE)/bzip2-$(BZIP2_VERSION).tar.gz "https://github.com/libarchive/bzip2/archive/refs/tags/bzip2-$(BZIP2_VERSION).tar.gz" && \
-	touch $@
+	$(CURLBIN) -fsSLo $@ "https://github.com/libarchive/bzip2/archive/refs/tags/bzip2-$(BZIP2_VERSION).tar.gz" || { rm -f $@; exit 1; }
 
 # always needed (if not on host)
-$(DEPS_CACHE)/zlib-$(ZLIB_VERSION).source:
+$(DEPS_CACHE)/zlib-$(ZLIB_VERSION).tar.gz:
 	$(MKDIR_P) $(DEPS_CACHE)
-	$(WGET) -qO $(DEPS_CACHE)/zlib-$(ZLIB_VERSION).tar.gz "https://github.com/zlib-ng/zlib-ng/archive/refs/tags/$(ZLIB_VERSION).tar.gz" && \
-	touch $@
+	$(CURLBIN) -fsSLo $@ "https://github.com/zlib-ng/zlib-ng/archive/refs/tags/$(ZLIB_VERSION).tar.gz" || { rm -f $@; exit 1; }
 
 # always needed (if not on host)
-$(DEPS_CACHE)/FMT-$(FMT_VERSION).source:
+$(DEPS_CACHE)/fmt-$(FMT_VERSION).tar.gz:
 	$(MKDIR_P) $(DEPS_CACHE)
-	$(WGET) -qO $(DEPS_CACHE)/fmt-$(FMT_VERSION).tar.gz "https://github.com/fmtlib/fmt/archive/$(FMT_VERSION).tar.gz" && \
-	touch $@
+	$(CURLBIN) -fsSLo $@ "https://github.com/fmtlib/fmt/archive/$(FMT_VERSION).tar.gz" || { rm -f $@; exit 1; }
 
 # always needed (if not on host)
-$(DEPS_CACHE)/spdlog-$(SPDLOG_VERSION).source:
+$(DEPS_CACHE)/spdlog-$(SPDLOG_VERSION).tar.gz:
 	$(MKDIR_P) $(DEPS_CACHE)
-	$(WGET) -qO $(DEPS_CACHE)/spdlog-$(SPDLOG_VERSION).tar.gz "https://github.com/gabime/spdlog/archive/$(SPDLOG_VERSION).tar.gz" && \
-	touch $@
+	$(CURLBIN) -fsSLo $@ "https://github.com/gabime/spdlog/archive/$(SPDLOG_VERSION).tar.gz" || { rm -f $@; exit 1; }
 
 # always needed (if not on host)
-$(DEPS_CACHE)/FREETYPE2-$(FREETYPE2_VERSION).source:
+$(DEPS_CACHE)/freetype-$(FREETYPE2_VERSION).tar.gz:
 	$(MKDIR_P) $(DEPS_CACHE)
-	$(WGET) -qO $(DEPS_CACHE)/freetype-$(FREETYPE2_VERSION).tar.gz "https://nongnu.askapache.com/freetype/freetype-$(FREETYPE2_VERSION).tar.gz" && \
-	touch $@
+	$(CURLBIN) -fsSLo $@ "https://nongnu.askapache.com/freetype/freetype-$(FREETYPE2_VERSION).tar.gz" || { rm -f $@; exit 1; }
 
 # always needed (if not on host)
-$(DEPS_CACHE)/liblzma-$(LZMA_VERSION).source:
+$(DEPS_CACHE)/liblzma-$(LZMA_VERSION).tar.gz:
 	$(MKDIR_P) $(DEPS_CACHE)
-	$(WGET) -qO $(DEPS_CACHE)/liblzma-$(LZMA_VERSION).tar.gz "https://github.com/tukaani-project/xz/releases/download/v$(LZMA_VERSION)/xz-$(LZMA_VERSION).tar.gz" && \
-	touch $@
+	$(CURLBIN) -fsSLo $@ "https://github.com/tukaani-project/xz/releases/download/v$(LZMA_VERSION)/xz-$(LZMA_VERSION).tar.gz" || { rm -f $@; exit 1; }
 
 # always needed (if not on host)
-$(DEPS_CACHE)/simdutf-$(SIMDUTF_VERSION).source:
+$(DEPS_CACHE)/simdutf-$(SIMDUTF_VERSION).tar.gz:
 	$(MKDIR_P) $(DEPS_CACHE)
-	$(WGET) -qO $(DEPS_CACHE)/simdutf-$(SIMDUTF_VERSION).tar.gz "https://github.com/simdutf/simdutf/archive/refs/tags/v$(SIMDUTF_VERSION).tar.gz" && \
-	touch $@
+	$(CURLBIN) -fsSLo $@ "https://github.com/simdutf/simdutf/archive/refs/tags/v$(SIMDUTF_VERSION).tar.gz" || { rm -f $@; exit 1; }
 
 # always needed (if not on host)
-$(DEPS_CACHE)/libarchive-$(LIBARCHIVE_VERSION).source:
+$(DEPS_CACHE)/libarchive-$(LIBARCHIVE_VERSION).tar.gz:
 	$(MKDIR_P) $(DEPS_CACHE)
-	$(WGET) -qO $(DEPS_CACHE)/libarchive-$(LIBARCHIVE_VERSION).tar.gz "https://github.com/libarchive/libarchive/releases/download/v$(LIBARCHIVE_VERSION)/libarchive-$(LIBARCHIVE_VERSION).tar.gz" && \
-	touch $@
+	$(CURLBIN) -fsSLo $@ "https://github.com/libarchive/libarchive/releases/download/v$(LIBARCHIVE_VERSION)/libarchive-$(LIBARCHIVE_VERSION).tar.gz" || { rm -f $@; exit 1; }
 
 # needed for libarchive on linux (if not on host)
-$(DEPS_CACHE)/libacl-$(LIBACL_VERSION).source:
+$(DEPS_CACHE)/libacl-$(LIBACL_VERSION).tar.xz:
 	$(MKDIR_P) $(DEPS_CACHE)
-	$(WGET) -qO $(DEPS_CACHE)/libacl-$(LIBACL_VERSION).tar.xz "https://download.savannah.nongnu.org/releases/acl/acl-$(LIBACL_VERSION).tar.xz" && \
-	touch $@
+	$(CURLBIN) -fsSLo $@ "https://download.savannah.nongnu.org/releases/acl/acl-$(LIBACL_VERSION).tar.xz" || \
+		$(CURLBIN) -fsSLo $@ "http://mirror.netcologne.de/savannah/acl/acl-$(LIBACL_VERSION).tar.xz" || { rm -f $@; exit 1; }
 
 # --with-nsync
-$(DEPS_CACHE)/nsync-$(NSYNC_VERSION).source:
+$(DEPS_CACHE)/nsync-$(NSYNC_VERSION).tar.gz:
 	$(MKDIR_P) $(DEPS_CACHE)
-	$(WGET) -qO $(DEPS_CACHE)/nsync-$(NSYNC_VERSION).tar.gz "https://github.com/google/nsync/archive/refs/tags/$(NSYNC_VERSION).tar.gz" && \
-	touch $@
+	$(CURLBIN) -fsSLo $@ "https://github.com/google/nsync/archive/refs/tags/$(NSYNC_VERSION).tar.gz" || { rm -f $@; exit 1; }
 
 # --with-mimalloc
-$(DEPS_CACHE)/mimalloc-$(MIMALLOC_VERSION).source:
+$(DEPS_CACHE)/mimalloc-$(MIMALLOC_VERSION).tar.gz:
 	$(MKDIR_P) $(DEPS_CACHE)
-	$(WGET) -qO $(DEPS_CACHE)/mimalloc-$(MIMALLOC_VERSION).tar.gz "https://github.com/microsoft/mimalloc/archive/$(MIMALLOC_VERSION).tar.gz" && \
-	touch $@
+	$(CURLBIN) -fsSLo $@ "https://github.com/microsoft/mimalloc/archive/$(MIMALLOC_VERSION).tar.gz" || { rm -f $@; exit 1; }
 
 # --with-audio=soloud
-$(DEPS_CACHE)/SoLoud-$(SOLOUD_VERSION).source:
+$(DEPS_CACHE)/SoLoud-$(SOLOUD_VERSION).tar.gz:
 	$(MKDIR_P) $(DEPS_CACHE)
-	$(WGET) -qO $(DEPS_CACHE)/SoLoud-$(SOLOUD_VERSION).tar.gz "https://github.com/whrvt/neoloud/archive/$(SOLOUD_VERSION).tar.gz"
-	touch $@
+	$(CURLBIN) -fsSLo $@ "https://github.com/whrvt/neoloud/archive/$(SOLOUD_VERSION).tar.gz" || { rm -f $@; exit 1; }
 
 # --with-audio=soloud (mp3 decoding)
-$(DEPS_CACHE)/mpg123-$(MPG123_VERSION).source:
+$(DEPS_CACHE)/mpg123-$(MPG123_VERSION).tar.gz:
 	$(MKDIR_P) $(DEPS_CACHE)
-	$(WGET) -qO $(DEPS_CACHE)/mpg123-$(MPG123_VERSION).tar.gz "https://github.com/madebr/mpg123/archive/$(MPG123_VERSION).tar.gz"
-	touch $@
+	$(CURLBIN) -fsSLo $@ "https://github.com/madebr/mpg123/archive/$(MPG123_VERSION).tar.gz" || { rm -f $@; exit 1; }
 
 # --with-audio=soloud (pitch shifting, currently done in-engine instead of in SoLoud itself)
-$(DEPS_CACHE)/SoundTouch-$(SOUNDTOUCH_VERSION).source:
+$(DEPS_CACHE)/SoundTouch-$(SOUNDTOUCH_VERSION).tar.gz:
 	$(MKDIR_P) $(DEPS_CACHE)
-	$(WGET) -qO $(DEPS_CACHE)/SoundTouch-$(SOUNDTOUCH_VERSION).tar.gz "https://codeberg.org/soundtouch/soundtouch/archive/$(SOUNDTOUCH_VERSION).tar.gz"
-	touch $@
+	$(CURLBIN) -fsSLo $@ "https://codeberg.org/soundtouch/soundtouch/archive/$(SOUNDTOUCH_VERSION).tar.gz" || { rm -f $@; exit 1; }
 
 ## BINARY (pre-built) dependencies (conditional depending on build configuration)
 
@@ -145,17 +129,17 @@ $(DEPS_CACHE)/SoundTouch-$(SOUNDTOUCH_VERSION).source:
 #  the build will work without these (they are dlopen/LoadLibrary'd), but it's a nice-to-have
 $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION)/ffmpeg-linuxx86_64.tar.xz:
 	$(MKDIR_P) $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION) && \
-	$(WGET) -qO $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION)/ffmpeg-linuxx86_64.tar.xz "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2025-11-30-12-53/ffmpeg-n$(FFMPEG_VERSION).1-17-g27a297f186-linux64-lgpl-shared-$(FFMPEG_VERSION).tar.xz"
+	$(CURLBIN) -fsSLo $@ "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2025-11-30-12-53/ffmpeg-n$(FFMPEG_VERSION).1-17-g27a297f186-linux64-lgpl-shared-$(FFMPEG_VERSION).tar.xz" || { rm -f $@; exit 1; }
 
 # NOTE: the yt-dlp repo is no longer building releases, so this is the closest thing
 #   (it's hard to find windows 32-bit builds of new ffmpeg releases)
 $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION)/ffmpeg-windowsi686.zip:
 	$(MKDIR_P) $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION) && \
-	$(WGET) -qO $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION)/ffmpeg-windowsi686.zip "https://github.com/yt-dlp/FFmpeg-Builds/releases/download/autobuild-2025-11-30-14-12/ffmpeg-N-121938-g2456a39581-win32-gpl-shared.zip"
+	$(CURLBIN) -fsSLo $@ "https://github.com/yt-dlp/FFmpeg-Builds/releases/download/autobuild-2025-11-30-14-12/ffmpeg-N-121938-g2456a39581-win32-gpl-shared.zip" || { rm -f $@; exit 1; }
 
 $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION)/ffmpeg-windowsx86_64.zip:
 	$(MKDIR_P) $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION) && \
-	$(WGET) -qO $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION)/ffmpeg-windowsx86_64.zip "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2025-11-30-12-53/ffmpeg-n$(FFMPEG_VERSION).1-17-g27a297f186-win64-lgpl-shared-$(FFMPEG_VERSION).zip"
+	$(CURLBIN) -fsSLo $@ "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2025-11-30-12-53/ffmpeg-n$(FFMPEG_VERSION).1-17-g27a297f186-win64-lgpl-shared-$(FFMPEG_VERSION).zip" || { rm -f $@; exit 1; }
 
 $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION).source: $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION)/ffmpeg-linuxx86_64.tar.xz $\
 											$(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION)/ffmpeg-windowsi686.zip $\
@@ -173,43 +157,43 @@ $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION).source: $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VER
 # just download the windows versions as well even on linux, because we need them for headers, no point in adding a bunch of complexity to avoid that
 $(DEPS_CACHE)/bass-$(BASS_VERSION)/bass.zip:
 	$(MKDIR_P) $(DEPS_CACHE)/bass-$(BASS_VERSION) && \
-	$(WGET) -qO $(DEPS_CACHE)/bass-$(BASS_VERSION)/bass.zip "https://archive.org/download/BASS-libs-$(BASS_VERSION)/bass.zip"
+	$(CURLBIN) -fsSLo $@ "https://archive.org/download/BASS-libs-$(BASS_VERSION)/bass.zip" || { rm -f $@; exit 1; }
 $(DEPS_CACHE)/bass-$(BASS_VERSION)/bass-linux.zip:
 	$(MKDIR_P) $(DEPS_CACHE)/bass-$(BASS_VERSION) && \
-	$(WGET) -qO $(DEPS_CACHE)/bass-$(BASS_VERSION)/bass-linux.zip "https://archive.org/download/BASS-libs-$(BASS_VERSION)/bass-linux.zip"
+	$(CURLBIN) -fsSLo $@ "https://archive.org/download/BASS-libs-$(BASS_VERSION)/bass-linux.zip" || { rm -f $@; exit 1; }
 $(DEPS_CACHE)/bass-$(BASS_VERSION)/bassflac24.zip:
 	$(MKDIR_P) $(DEPS_CACHE)/bass-$(BASS_VERSION) && \
-	$(WGET) -qO $(DEPS_CACHE)/bass-$(BASS_VERSION)/bassflac24.zip "https://archive.org/download/BASS-libs-$(BASS_VERSION)/bassflac24.zip"
+	$(CURLBIN) -fsSLo $@ "https://archive.org/download/BASS-libs-$(BASS_VERSION)/bassflac24.zip" || { rm -f $@; exit 1; }
 $(DEPS_CACHE)/bass-$(BASS_VERSION)/bassflac24-linux.zip:
 	$(MKDIR_P) $(DEPS_CACHE)/bass-$(BASS_VERSION) && \
-	$(WGET) -qO $(DEPS_CACHE)/bass-$(BASS_VERSION)/bassflac24-linux.zip "https://archive.org/download/BASS-libs-$(BASS_VERSION)/bassflac24-linux.zip"
+	$(CURLBIN) -fsSLo $@ "https://archive.org/download/BASS-libs-$(BASS_VERSION)/bassflac24-linux.zip" || { rm -f $@; exit 1; }
 $(DEPS_CACHE)/bass-$(BASS_VERSION)/bass_fx.zip:
 	$(MKDIR_P) $(DEPS_CACHE)/bass-$(BASS_VERSION) && \
-	$(WGET) -qO $(DEPS_CACHE)/bass-$(BASS_VERSION)/bass_fx.zip "https://archive.org/download/BASS-libs-$(BASS_VERSION)/bass_fx.zip"
+	$(CURLBIN) -fsSLo $@ "https://archive.org/download/BASS-libs-$(BASS_VERSION)/bass_fx.zip" || { rm -f $@; exit 1; }
 $(DEPS_CACHE)/bass-$(BASS_VERSION)/bass_fx-linux.zip:
 	$(MKDIR_P) $(DEPS_CACHE)/bass-$(BASS_VERSION) && \
-	$(WGET) -qO $(DEPS_CACHE)/bass-$(BASS_VERSION)/bass_fx-linux.zip "https://archive.org/download/BASS-libs-$(BASS_VERSION)/bass_fx-linux.zip"
+	$(CURLBIN) -fsSLo $@ "https://archive.org/download/BASS-libs-$(BASS_VERSION)/bass_fx-linux.zip" || { rm -f $@; exit 1; }
 $(DEPS_CACHE)/bass-$(BASS_VERSION)/bassmix.zip:
 	$(MKDIR_P) $(DEPS_CACHE)/bass-$(BASS_VERSION) && \
-	$(WGET) -qO $(DEPS_CACHE)/bass-$(BASS_VERSION)/bassmix.zip "https://archive.org/download/BASS-libs-$(BASS_VERSION)/bassmix.zip"
+	$(CURLBIN) -fsSLo $@ "https://archive.org/download/BASS-libs-$(BASS_VERSION)/bassmix.zip" || { rm -f $@; exit 1; }
 $(DEPS_CACHE)/bass-$(BASS_VERSION)/bassmix-linux.zip:
 	$(MKDIR_P) $(DEPS_CACHE)/bass-$(BASS_VERSION) && \
-	$(WGET) -qO $(DEPS_CACHE)/bass-$(BASS_VERSION)/bassmix-linux.zip "https://archive.org/download/BASS-libs-$(BASS_VERSION)/bassmix-linux.zip"
+	$(CURLBIN) -fsSLo $@ "https://archive.org/download/BASS-libs-$(BASS_VERSION)/bassmix-linux.zip" || { rm -f $@; exit 1; }
 $(DEPS_CACHE)/bass-$(BASS_VERSION)/bassloud.zip:
 	$(MKDIR_P) $(DEPS_CACHE)/bass-$(BASS_VERSION) && \
-	$(WGET) -qO $(DEPS_CACHE)/bass-$(BASS_VERSION)/bassloud.zip "https://archive.org/download/BASS-libs-$(BASS_VERSION)/bassloud.zip"
+	$(CURLBIN) -fsSLo $@ "https://archive.org/download/BASS-libs-$(BASS_VERSION)/bassloud.zip" || { rm -f $@; exit 1; }
 $(DEPS_CACHE)/bass-$(BASS_VERSION)/bassloud-linux.zip:
 	$(MKDIR_P) $(DEPS_CACHE)/bass-$(BASS_VERSION) && \
-	$(WGET) -qO $(DEPS_CACHE)/bass-$(BASS_VERSION)/bassloud-linux.zip "https://archive.org/download/BASS-libs-$(BASS_VERSION)/bassloud-linux.zip"
+	$(CURLBIN) -fsSLo $@ "https://archive.org/download/BASS-libs-$(BASS_VERSION)/bassloud-linux.zip" || { rm -f $@; exit 1; }
 $(DEPS_CACHE)/bass-$(BASS_VERSION)/basswasapi.zip:
 	$(MKDIR_P) $(DEPS_CACHE)/bass-$(BASS_VERSION) && \
-	$(WGET) -qO $(DEPS_CACHE)/bass-$(BASS_VERSION)/basswasapi.zip "https://archive.org/download/BASS-libs-$(BASS_VERSION)/basswasapi.zip"
+	$(CURLBIN) -fsSLo $@ "https://archive.org/download/BASS-libs-$(BASS_VERSION)/basswasapi.zip" || { rm -f $@; exit 1; }
 $(DEPS_CACHE)/bass-$(BASS_VERSION)/basswasapi24-header.zip:
 	$(MKDIR_P) $(DEPS_CACHE)/bass-$(BASS_VERSION) && \
-	$(WGET) -qO $(DEPS_CACHE)/bass-$(BASS_VERSION)/basswasapi24-header.zip "https://archive.org/download/BASS-libs-$(BASS_VERSION)/basswasapi24-header.zip"
+	$(CURLBIN) -fsSLo $@ "https://archive.org/download/BASS-libs-$(BASS_VERSION)/basswasapi24-header.zip" || { rm -f $@; exit 1; }
 $(DEPS_CACHE)/bass-$(BASS_VERSION)/bassasio.zip:
 	$(MKDIR_P) $(DEPS_CACHE)/bass-$(BASS_VERSION) && \
-	$(WGET) -qO $(DEPS_CACHE)/bass-$(BASS_VERSION)/bassasio.zip "https://archive.org/download/BASS-libs-$(BASS_VERSION)/bassasio.zip"
+	$(CURLBIN) -fsSLo $@ "https://archive.org/download/BASS-libs-$(BASS_VERSION)/bassasio.zip" || { rm -f $@; exit 1; }
 
 $(DEPS_CACHE)/bass-$(BASS_VERSION).source: $(DEPS_CACHE)/bass-$(BASS_VERSION)/bass.zip $(DEPS_CACHE)/bass-$(BASS_VERSION)/bass-linux.zip $\
 										$(DEPS_CACHE)/bass-$(BASS_VERSION)/bassflac24.zip $(DEPS_CACHE)/bass-$(BASS_VERSION)/bassflac24-linux.zip $\
@@ -253,7 +237,8 @@ $(DEPS_CACHE)/bass-$(BASS_VERSION).source: $(DEPS_CACHE)/bass-$(BASS_VERSION)/ba
 
 $(DEPS_CACHE)/discordsdk-$(DISCORDSDK_VERSION)/discordsdk.zip:
 	$(MKDIR_P) $(DEPS_CACHE)/discordsdk-$(DISCORDSDK_VERSION) && \
-	$(WGET) -qO $(DEPS_CACHE)/discordsdk-$(DISCORDSDK_VERSION)/discordsdk.zip "https://web.archive.org/web/20250505113314/https://dl-game-sdk.discordapp.net/$(DISCORDSDK_VERSION)/discord_game_sdk.zip"
+	$(CURLBIN) -fsSLo $@ "https://web.archive.org/web/20250505113314/https://dl-game-sdk.discordapp.net/$(DISCORDSDK_VERSION)/discord_game_sdk.zip" || \
+		$(CURLBIN) -fsSLo $@ "https://dl-game-sdk.discordapp.net/$(DISCORDSDK_VERSION)/discord_game_sdk.zip" || { rm -f $@; exit 1; }
 
 $(DEPS_CACHE)/discordsdk-$(DISCORDSDK_VERSION).source: $(DEPS_CACHE)/discordsdk-$(DISCORDSDK_VERSION)/discordsdk.zip
 	cd $(DEPS_CACHE)/discordsdk-$(DISCORDSDK_VERSION) && \
@@ -266,21 +251,21 @@ $(DEPS_CACHE)/discordsdk-$(DISCORDSDK_VERSION).source: $(DEPS_CACHE)/discordsdk-
 	mv lib/linux/x86_64/discord_game_sdk.so lib/linux/x86_64/libdiscord_game_sdk.so && \
 	touch $@
 
-$(DEPS_CACHE)/curl-$(CURL_VERSION)-2/certbundle/cacert.pem:
-	$(MKDIR_P) $(DEPS_CACHE)/curl-$(CURL_VERSION)-2/certbundle && \
-	$(WGET) -qO $(DEPS_CACHE)/curl-$(CURL_VERSION)-2/certbundle/cacert.pem "https://curl.se/ca/cacert.pem"
+$(DEPS_CACHE)/curl-$(CURL_VERSION)/certbundle/cacert.pem:
+	$(MKDIR_P) $(DEPS_CACHE)/curl-$(CURL_VERSION)/certbundle && \
+	$(CURLBIN) -fsSLo $@ "https://curl.se/ca/cacert.pem" || { rm -f $@; exit 1; }
 
-$(DEPS_CACHE)/curl-$(CURL_VERSION)-2/curl-windowsi686.tar.xz:
-	$(MKDIR_P) $(DEPS_CACHE)/curl-$(CURL_VERSION)-2 && \
-	$(WGET) -qO $(DEPS_CACHE)/curl-$(CURL_VERSION)-2/curl-windowsi686.tar.xz "https://github.com/whrvt/static-curl/releases/download/$(CURL_VERSION)/curl-windows-i686-dev-$(CURL_VERSION).tar.xz"
+$(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-windowsi686.tar.xz:
+	$(MKDIR_P) $(DEPS_CACHE)/curl-$(CURL_VERSION) && \
+	$(CURLBIN) -fsSLo $@ "https://github.com/whrvt/static-curl/releases/download/$(CURL_VERSION)/curl-windows-i686-dev-$(CURL_VERSION).tar.xz" || { rm -f $@; exit 1; }
 
-$(DEPS_CACHE)/curl-$(CURL_VERSION)-2/curl-windowsx86_64.tar.xz:
-	$(MKDIR_P) $(DEPS_CACHE)/curl-$(CURL_VERSION)-2 && \
-	$(WGET) -qO $(DEPS_CACHE)/curl-$(CURL_VERSION)-2/curl-windowsx86_64.tar.xz "https://github.com/whrvt/static-curl/releases/download/$(CURL_VERSION)/curl-windows-x86_64-dev-$(CURL_VERSION).tar.xz"
+$(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-windowsx86_64.tar.xz:
+	$(MKDIR_P) $(DEPS_CACHE)/curl-$(CURL_VERSION) && \
+	$(CURLBIN) -fsSLo $@ "https://github.com/whrvt/static-curl/releases/download/$(CURL_VERSION)/curl-windows-x86_64-dev-$(CURL_VERSION).tar.xz" || { rm -f $@; exit 1; }
 
-$(DEPS_CACHE)/curl-$(CURL_VERSION)-2-windows-binary.source: $(DEPS_CACHE)/curl-$(CURL_VERSION)-2/curl-windowsi686.tar.xz $\
-											$(DEPS_CACHE)/curl-$(CURL_VERSION)-2/curl-windowsx86_64.tar.xz
-	cd $(DEPS_CACHE)/curl-$(CURL_VERSION)-2 && \
+$(DEPS_CACHE)/curl-$(CURL_VERSION)-windows-binary.source: $(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-windowsi686.tar.xz $\
+											$(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-windowsx86_64.tar.xz
+	cd $(DEPS_CACHE)/curl-$(CURL_VERSION) && \
 	rm -rf windowsi686 && \
 	$(MKDIR_P) windowsi686 && $(TAR) xf curl-windowsi686.tar.xz -C windowsi686 --strip-components=1 --wildcards --no-anchored \
 		include lib/'*'.a lib/pkgconfig/'*'ssl'*' lib/pkgconfig/'*'crypto'*' && \
@@ -291,17 +276,17 @@ $(DEPS_CACHE)/curl-$(CURL_VERSION)-2-windows-binary.source: $(DEPS_CACHE)/curl-$
 	rm -rf windows*/lib/*zlib*.a && \
 	touch $@
 
-$(DEPS_CACHE)/curl-$(CURL_VERSION)-2/curl-linuxi686.tar.xz:
-	$(MKDIR_P) $(DEPS_CACHE)/curl-$(CURL_VERSION)-2 && \
-	$(WGET) -qO $(DEPS_CACHE)/curl-$(CURL_VERSION)-2/curl-linuxi686.tar.xz "https://github.com/whrvt/static-curl/releases/download/$(CURL_VERSION)/curl-linux-i686-dev-$(CURL_VERSION).tar.xz"
+$(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-linuxi686.tar.xz:
+	$(MKDIR_P) $(DEPS_CACHE)/curl-$(CURL_VERSION) && \
+	$(CURLBIN) -fsSLo $@ "https://github.com/whrvt/static-curl/releases/download/$(CURL_VERSION)/curl-linux-i686-dev-$(CURL_VERSION).tar.xz" || { rm -f $@; exit 1; }
 
-$(DEPS_CACHE)/curl-$(CURL_VERSION)-2/curl-linuxx86_64.tar.xz:
-	$(MKDIR_P) $(DEPS_CACHE)/curl-$(CURL_VERSION)-2 && \
-	$(WGET) -qO $(DEPS_CACHE)/curl-$(CURL_VERSION)-2/curl-linuxx86_64.tar.xz "https://github.com/whrvt/static-curl/releases/download/$(CURL_VERSION)/curl-linux-x86_64-dev-$(CURL_VERSION).tar.xz"
+$(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-linuxx86_64.tar.xz:
+	$(MKDIR_P) $(DEPS_CACHE)/curl-$(CURL_VERSION) && \
+	$(CURLBIN) -fsSLo $@ "https://github.com/whrvt/static-curl/releases/download/$(CURL_VERSION)/curl-linux-x86_64-dev-$(CURL_VERSION).tar.xz" || { rm -f $@; exit 1; }
 
-$(DEPS_CACHE)/curl-$(CURL_VERSION)-2-linux-binary.source: $(DEPS_CACHE)/curl-$(CURL_VERSION)-2/curl-linuxi686.tar.xz $\
-														$(DEPS_CACHE)/curl-$(CURL_VERSION)-2/curl-linuxx86_64.tar.xz
-	cd $(DEPS_CACHE)/curl-$(CURL_VERSION)-2 && \
+$(DEPS_CACHE)/curl-$(CURL_VERSION)-linux-binary.source: $(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-linuxi686.tar.xz $\
+														$(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-linuxx86_64.tar.xz
+	cd $(DEPS_CACHE)/curl-$(CURL_VERSION) && \
 	rm -rf linuxx86_64 && \
 	$(MKDIR_P) linuxx86_64 && $(TAR) xf curl-linuxx86_64.tar.xz -C linuxx86_64 --strip-components=1 --wildcards --no-anchored \
 		include lib/'*'.a lib64/'*'.a lib64/pkgconfig/'*' && \
@@ -320,7 +305,7 @@ $(DEPS_CACHE)/curl-$(CURL_VERSION)-2-linux-binary.source: $(DEPS_CACHE)/curl-$(C
 ## BEGIN EXTERNAL DEPENDENCY BUILD/SETUP SECTION
 #####################################################################################################################################################
 
-CACERT_INCDIR := $(DEPS_CACHE)/curl-$(CURL_VERSION)-2/certbundle/
+CACERT_INCDIR := $(DEPS_CACHE)/curl-$(CURL_VERSION)/certbundle/
 INCBIN_FLAGS += -I$(CACERT_INCDIR)
 
 PKG_CONFIG_PLUS_BUNDLED_OSSL = $(PKG_CONFIG)
@@ -332,8 +317,8 @@ lbq := '('
 rb := )
 rbq := ')'
 
-CURL_INCLUDEDIR := $(DEPS_CACHE)/curl-$(CURL_VERSION)-2/$(SYSNAME)$(host_cpu)/include
-CURL_LIBDIR := $(DEPS_CACHE)/curl-$(CURL_VERSION)-2/$(SYSNAME)$(host_cpu)/lib
+CURL_INCLUDEDIR := $(DEPS_CACHE)/curl-$(CURL_VERSION)/$(SYSNAME)$(host_cpu)/include
+CURL_LIBDIR := $(DEPS_CACHE)/curl-$(CURL_VERSION)/$(SYSNAME)$(host_cpu)/lib
 CURL_CFLAGS += -I$(CURL_INCLUDEDIR) -DWITH_GZFILEOP -DCURL_STATICLIB
 CURL_LIBS += -L$(CURL_LIBDIR) $(shell find $(CURL_LIBDIR) -mindepth 1 -maxdepth 1 -type f -not $(lbq) -name '*dll*' $(rbq) -execdir printf '%s ' '{''}' ';' | $(SED) -e 's|./lib|-l|g' -e 's|\.a||g' -e 's|-lcurl|-l:libcurl.a|g')
 
@@ -346,20 +331,20 @@ CURL_LIBS += -lws2_32 -lwldap32 -lcrypt32 -lsecur32 -liphlpapi
 if !WIN32_PLATFORM
 CURL_LIBS += -lbcrypt
 endif
-$(DEPS_PREFIX)/curl-$(CURL_VERSION)-2.built: $(DEPS_CACHE)/curl-$(CURL_VERSION)-2-windows-binary.source
+$(DEPS_PREFIX)/curl-$(CURL_VERSION).built: $(DEPS_CACHE)/curl-$(CURL_VERSION)-windows-binary.source
 	$(MKDIR_P) $(DEPS_PREFIX)
 	touch $@
 else
 
 CURL_LIBS += -ldl -pthread
-$(DEPS_PREFIX)/curl-$(CURL_VERSION)-2.built: $(DEPS_CACHE)/curl-$(CURL_VERSION)-2-linux-binary.source
+$(DEPS_PREFIX)/curl-$(CURL_VERSION).built: $(DEPS_CACHE)/curl-$(CURL_VERSION)-linux-binary.source
 	$(MKDIR_P) $(DEPS_PREFIX)
 	touch $@
 endif
 else # from host
 CURL_CFLAGS += $(OPENSSL_CFLAGS)
 CURL_LIBS += $(OPENSSL_LIBS)
-$(DEPS_PREFIX)/curl-$(CURL_VERSION)-2.built:
+$(DEPS_PREFIX)/curl-$(CURL_VERSION).built:
 	$(MKDIR_P) $(DEPS_PREFIX)
 	touch $@
 endif # BUILD_CURL
@@ -376,7 +361,7 @@ MIMALLOC_DYNAMIC_LIBS :=
 MIMALLOC_OBJ := $(DEPS_PREFIX)/lib/mimalloc$(if $(ENABLE_ASAN),-asan-debug,$(if $(ENABLE_DEBUG),-debug,)).o
 MIMALLOC_OVERRIDE_DEP :=
 endif
-$(DEPS_PREFIX)/mimalloc-$(MIMALLOC_VERSION).built: $(DEPS_CACHE)/mimalloc-$(MIMALLOC_VERSION).source $(DEPS_PREFIX)/winpthread-noversion.built
+$(DEPS_PREFIX)/mimalloc-$(MIMALLOC_VERSION).built: $(DEPS_CACHE)/mimalloc-$(MIMALLOC_VERSION).tar.gz $(DEPS_PREFIX)/winpthread-noversion.built
 	rm -rf $(DEPS_PREFIX)/mimalloc
 	$(MKDIR_P) $(DEPS_PREFIX)/mimalloc $(DEPS_PREFIX)/lib && \
 	$(TAR) xf $(DEPS_CACHE)/mimalloc-$(MIMALLOC_VERSION).tar.gz -C $(DEPS_PREFIX)/mimalloc --strip-components=1 && \
@@ -423,7 +408,7 @@ endif # BUILD_MIMALLOC
 if BUILD_SDL3
 SDL3_CFLAGS += $(shell $(PKG_CONFIG) --cflags sdl3)
 SDL3_LIBS += $(shell $(PKG_CONFIG) --libs sdl3)
-$(DEPS_PREFIX)/SDL3-$(SDL3_VERSION).built: $(DEPS_CACHE)/SDL3-$(SDL3_VERSION).source $(DEPS_PREFIX)/FREETYPE2-$(FREETYPE2_VERSION).built
+$(DEPS_PREFIX)/SDL3-$(SDL3_VERSION).built: $(DEPS_CACHE)/SDL3-$(SDL3_VERSION).tar.gz $(DEPS_PREFIX)/freetype-$(FREETYPE2_VERSION).built
 	rm -rf $(DEPS_PREFIX)/SDL3
 	$(MKDIR_P) $(DEPS_PREFIX)/SDL3 $(DEPS_PREFIX)/lib/pkgconfig
 	$(TAR) xf $(DEPS_CACHE)/SDL3-$(SDL3_VERSION).tar.gz -C $(DEPS_PREFIX)/SDL3 --strip-components=1 && \
@@ -478,7 +463,7 @@ endif # BUILD_SDL3
 if BUILD_MPG123
 MPG123_CFLAGS += $(shell $(PKG_CONFIG) --cflags libmpg123)
 MPG123_LIBS += $(shell $(PKG_CONFIG) --libs libmpg123)
-$(DEPS_PREFIX)/mpg123-$(MPG123_VERSION).built: $(DEPS_CACHE)/mpg123-$(MPG123_VERSION).source
+$(DEPS_PREFIX)/mpg123-$(MPG123_VERSION).built: $(DEPS_CACHE)/mpg123-$(MPG123_VERSION).tar.gz
 	rm -rf $(DEPS_PREFIX)/mpg123
 	$(MKDIR_P) $(DEPS_PREFIX) $(DEPS_PREFIX)/include $(DEPS_PREFIX)/lib/pkgconfig $(DEPS_PREFIX)/mpg123/build
 	$(TAR) xf $(DEPS_CACHE)/mpg123-$(MPG123_VERSION).tar.gz -C $(DEPS_PREFIX)/mpg123 --strip-components=1 && \
@@ -506,7 +491,7 @@ AUDIO_LIBS += $(shell $(PKG_CONFIG) --libs soloud) $(shell $(PKG_CONFIG) --libs 
 FFMPEG_INSTALL_LIBS := `find $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION)/$(SYSNAME)$(host_cpu)/lib '(' -name '*avutil*' -o -name '*avcodec*' -o -name '*avformat*' -o -name '*swresample*' ')' -printf '%p '`
 FFMPEG_INCDIR := $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION)/$(SYSNAME)$(host_cpu)/include
 
-$(DEPS_PREFIX)/SoLoud-$(SOLOUD_VERSION).built: $(DEPS_CACHE)/SoLoud-$(SOLOUD_VERSION).source $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION).source $(DEPS_PREFIX)/SDL3-$(SDL3_VERSION).built $(DEPS_PREFIX)/mpg123-$(MPG123_VERSION).built
+$(DEPS_PREFIX)/SoLoud-$(SOLOUD_VERSION).built: $(DEPS_CACHE)/SoLoud-$(SOLOUD_VERSION).tar.gz $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION).source $(DEPS_PREFIX)/SDL3-$(SDL3_VERSION).built $(DEPS_PREFIX)/mpg123-$(MPG123_VERSION).built
 	rm -rf $(DEPS_PREFIX)/SoLoud
 	$(MKDIR_P) $(DEPS_PREFIX) $(DEPS_PREFIX)/include $(DEPS_PREFIX)/lib/pkgconfig $(DEPS_PREFIX)/SoLoud/build
 	$(TAR) xf $(DEPS_CACHE)/SoLoud-$(SOLOUD_VERSION).tar.gz -C $(DEPS_PREFIX)/SoLoud --strip-components=1 && \
@@ -532,7 +517,7 @@ $(DEPS_PREFIX)/SoLoud-$(SOLOUD_VERSION).built: $(DEPS_CACHE)/SoLoud-$(SOLOUD_VER
 	$(PKG_CONFIG) --env-only --modversion --print-errors soloud # since we never accept system SoLoud, use --modversion instead of --exists to find sdl3/mpg123 from the system
 	touch $@
 
-$(DEPS_PREFIX)/SoundTouch-$(SOUNDTOUCH_VERSION).built: $(DEPS_CACHE)/SoundTouch-$(SOUNDTOUCH_VERSION).source
+$(DEPS_PREFIX)/SoundTouch-$(SOUNDTOUCH_VERSION).built: $(DEPS_CACHE)/SoundTouch-$(SOUNDTOUCH_VERSION).tar.gz
 	rm -rf $(DEPS_PREFIX)/SoundTouch
 	$(MKDIR_P) $(DEPS_PREFIX) $(DEPS_PREFIX)/include $(DEPS_PREFIX)/lib/pkgconfig $(DEPS_PREFIX)/SoundTouch/build
 	$(TAR) xf $(DEPS_CACHE)/SoundTouch-$(SOUNDTOUCH_VERSION).tar.gz -C $(DEPS_PREFIX)/SoundTouch --strip-components=1 && \
@@ -607,7 +592,7 @@ endif # USE_BASS
 if BUILD_LIBJPEG
 LIBJPEG_CFLAGS += $(shell $(PKG_CONFIG) --cflags libturbojpeg)
 LIBJPEG_LIBS += $(shell $(PKG_CONFIG) --libs libturbojpeg)
-$(DEPS_PREFIX)/libjpeg-$(LIBJPEG_VERSION).built: $(DEPS_CACHE)/libjpeg-$(LIBJPEG_VERSION).source
+$(DEPS_PREFIX)/libjpeg-$(LIBJPEG_VERSION).built: $(DEPS_CACHE)/libjpeg-$(LIBJPEG_VERSION).tar.gz
 	rm -rf $(DEPS_PREFIX)/libjpeg
 	$(MKDIR_P) $(DEPS_PREFIX)/libjpeg/build $(DEPS_PREFIX)/lib/pkgconfig
 	$(TAR) xf $(DEPS_CACHE)/libjpeg-$(LIBJPEG_VERSION).tar.gz -C $(DEPS_PREFIX)/libjpeg --strip-components=1 && \
@@ -645,7 +630,7 @@ endif # BUILD_LIBJPEG
 GLM_CFLAGS += -fms-extensions -DGLM_FORCE_INTRINSICS -DGLM_ENABLE_EXPERIMENTAL -DGLM_FORCE_INLINE -DGLM_ENABLE_LANG_EXTENSIONS -DGLM_ENABLE_CXX_20
 if BUILD_GLM
 GLM_CFLAGS += -I$(DEPS_PREFIX)/include
-$(DEPS_PREFIX)/glm-$(GLM_VERSION).built: $(DEPS_CACHE)/glm-$(GLM_VERSION).source
+$(DEPS_PREFIX)/glm-$(GLM_VERSION).built: $(DEPS_CACHE)/glm-$(GLM_VERSION).tar.gz
 	rm -rf $(DEPS_PREFIX)/glm
 	$(MKDIR_P) $(DEPS_PREFIX)/glm/build $(DEPS_PREFIX)/include
 	$(TAR) xf $(DEPS_CACHE)/glm-$(GLM_VERSION).tar.gz -C $(DEPS_PREFIX)/glm --strip-components=1 && \
@@ -675,7 +660,7 @@ endif # BUILD_GLM
 if BUILD_LIBPNG
 LIBPNG_CFLAGS += $(shell $(PKG_CONFIG) --cflags libpng)
 LIBPNG_LIBS += $(shell $(PKG_CONFIG) --libs libpng)
-$(DEPS_PREFIX)/libpng-$(LIBPNG_VERSION).built: $(DEPS_PREFIX)/zlib-$(ZLIB_VERSION).built $(DEPS_CACHE)/libpng-$(LIBPNG_VERSION).source
+$(DEPS_PREFIX)/libpng-$(LIBPNG_VERSION).built: $(DEPS_PREFIX)/zlib-$(ZLIB_VERSION).built $(DEPS_CACHE)/libpng-$(LIBPNG_VERSION).tar.gz
 	rm -rf $(DEPS_PREFIX)/libpng
 	$(MKDIR_P) $(DEPS_PREFIX)/libpng/build $(DEPS_PREFIX)/lib/pkgconfig
 	$(TAR) xf $(DEPS_CACHE)/libpng-$(LIBPNG_VERSION).tar.gz -C $(DEPS_PREFIX)/libpng --strip-components=1 && \
@@ -697,7 +682,7 @@ endif # BUILD_LIBPNG
 if BUILD_BZIP2
 BZIP2_CFLAGS += $(shell $(PKG_CONFIG) --cflags bzip2)
 BZIP2_LIBS += $(shell $(PKG_CONFIG) --libs bzip2)
-$(DEPS_PREFIX)/bzip2-$(BZIP2_VERSION).built: $(DEPS_CACHE)/bzip2-$(BZIP2_VERSION).source
+$(DEPS_PREFIX)/bzip2-$(BZIP2_VERSION).built: $(DEPS_CACHE)/bzip2-$(BZIP2_VERSION).tar.gz
 	rm -rf $(DEPS_PREFIX)/bzip2
 	$(MKDIR_P) $(DEPS_PREFIX)/bzip2/build $(DEPS_PREFIX)/lib/pkgconfig $(DEPS_PREFIX)/include
 	$(TAR) xf $(DEPS_CACHE)/bzip2-$(BZIP2_VERSION).tar.gz -C $(DEPS_PREFIX)/bzip2 --strip-components=1 && \
@@ -728,7 +713,7 @@ endif # BUILD_BZIP2
 if BUILD_ZLIB
 ZLIB_CFLAGS += $(shell $(PKG_CONFIG) --cflags zlib)
 ZLIB_LIBS += $(shell $(PKG_CONFIG) --libs zlib)
-$(DEPS_PREFIX)/zlib-$(ZLIB_VERSION).built: $(DEPS_CACHE)/zlib-$(ZLIB_VERSION).source
+$(DEPS_PREFIX)/zlib-$(ZLIB_VERSION).built: $(DEPS_CACHE)/zlib-$(ZLIB_VERSION).tar.gz
 	rm -rf $(DEPS_PREFIX)/zlib
 	$(MKDIR_P) $(DEPS_PREFIX)/zlib/build $(DEPS_PREFIX)/lib/pkgconfig
 	$(TAR) xf $(DEPS_CACHE)/zlib-$(ZLIB_VERSION).tar.gz -C $(DEPS_PREFIX)/zlib --strip-components=1 && \
@@ -747,11 +732,11 @@ endif # BUILD_ZLIB
 if BUILD_FMT
 FMT_CFLAGS += $(shell $(PKG_CONFIG) --cflags fmt)
 FMT_LIBS += $(shell $(PKG_CONFIG) --libs fmt)
-$(DEPS_PREFIX)/FMT-$(FMT_VERSION).built: $(DEPS_CACHE)/FMT-$(FMT_VERSION).source
-	rm -rf $(DEPS_PREFIX)/FMT
-	$(MKDIR_P) $(DEPS_PREFIX)/FMT/build $(DEPS_PREFIX)/lib/pkgconfig
-	$(TAR) xf $(DEPS_CACHE)/fmt-$(FMT_VERSION).tar.gz -C $(DEPS_PREFIX)/FMT --strip-components=1 && \
-	cd $(DEPS_PREFIX)/FMT && \
+$(DEPS_PREFIX)/fmt-$(FMT_VERSION).built: $(DEPS_CACHE)/fmt-$(FMT_VERSION).tar.gz
+	rm -rf $(DEPS_PREFIX)/fmt
+	$(MKDIR_P) $(DEPS_PREFIX)/fmt/build $(DEPS_PREFIX)/lib/pkgconfig
+	$(TAR) xf $(DEPS_CACHE)/fmt-$(FMT_VERSION).tar.gz -C $(DEPS_PREFIX)/fmt --strip-components=1 && \
+	cd $(DEPS_PREFIX)/fmt && \
 	PKG_CONFIG="$(PKG_CONFIG)" LDFLAGS="$(LDFLAGS) $(if $(findstring yes,$(CLANG)),,-fno-lto)" \
 	$(CMAKE) -S . -B build -G "$(CMAKE_GEN)" \
 		-DCMAKE_BUILD_TYPE="$(if $(ENABLE_DEBUG),Debug,Release)" \
@@ -783,7 +768,7 @@ $(DEPS_PREFIX)/FMT-$(FMT_VERSION).built: $(DEPS_CACHE)/FMT-$(FMT_VERSION).source
 	$(PKG_CONFIG) --exists --print-errors fmt
 	touch $@
 else
-$(DEPS_PREFIX)/FMT-$(FMT_VERSION).built:
+$(DEPS_PREFIX)/fmt-$(FMT_VERSION).built:
 	$(MKDIR_P) $(DEPS_PREFIX) && touch $@
 endif # BUILD_FMT
 
@@ -792,7 +777,7 @@ if WIN_PLATFORM
 SPDLOG_CFLAGS += -DSPDLOG_WCHAR_TO_UTF8_SUPPORT -DSPDLOG_UTF8_TO_WCHAR_CONSOLE
 endif
 if BUILD_SPDLOG
-$(DEPS_PREFIX)/spdlog-$(SPDLOG_VERSION).built: $(DEPS_CACHE)/spdlog-$(SPDLOG_VERSION).source
+$(DEPS_PREFIX)/spdlog-$(SPDLOG_VERSION).built: $(DEPS_CACHE)/spdlog-$(SPDLOG_VERSION).tar.gz
 	rm -rf $(DEPS_PREFIX)/spdlog $(DEPS_PREFIX)/include/spdlog $(DEPS_PREFIX)/lib/cmake/spdlog $(DEPS_PREFIX)/lib/pkgconfig/spdlog.pc
 	$(MKDIR_P) $(DEPS_PREFIX)/include/ $(DEPS_PREFIX)/spdlog
 	$(TAR) xf $(DEPS_CACHE)/spdlog-$(SPDLOG_VERSION).tar.gz -C $(DEPS_PREFIX)/spdlog --strip-components=1 && \
@@ -809,7 +794,7 @@ NSYNC_LIBS =
 if BUILD_NSYNC
 NSYNC_CFLAGS += -I$(DEPS_PREFIX)/include
 NSYNC_LIBS += -L$(DEPS_PREFIX)/lib -lnsync_cpp
-$(DEPS_PREFIX)/nsync-$(NSYNC_VERSION).built: $(DEPS_CACHE)/nsync-$(NSYNC_VERSION).source
+$(DEPS_PREFIX)/nsync-$(NSYNC_VERSION).built: $(DEPS_CACHE)/nsync-$(NSYNC_VERSION).tar.gz
 	rm -rf $(DEPS_PREFIX)/nsync
 	$(MKDIR_P) $(DEPS_PREFIX)/nsync/build $(DEPS_PREFIX)/lib/pkgconfig
 	$(TAR) xf $(DEPS_CACHE)/nsync-$(NSYNC_VERSION).tar.gz -C $(DEPS_PREFIX)/nsync --strip-components=1 && \
@@ -850,11 +835,11 @@ endif # BUILD_NSYNC
 if BUILD_FREETYPE2
 FREETYPE2_CFLAGS += $(shell $(PKG_CONFIG) --cflags freetype2)
 FREETYPE2_LIBS += $(shell $(PKG_CONFIG) --libs freetype2)
-$(DEPS_PREFIX)/FREETYPE2-$(FREETYPE2_VERSION).built: $(DEPS_PREFIX)/libpng-$(LIBPNG_VERSION).built $(DEPS_PREFIX)/bzip2-$(BZIP2_VERSION).built $(DEPS_PREFIX)/zlib-$(ZLIB_VERSION).built $(DEPS_CACHE)/FREETYPE2-$(FREETYPE2_VERSION).source
-	rm -rf $(DEPS_PREFIX)/FREETYPE2
-	$(MKDIR_P) $(DEPS_PREFIX)/FREETYPE2/build $(DEPS_PREFIX)/lib/pkgconfig
-	$(TAR) xf $(DEPS_CACHE)/freetype-$(FREETYPE2_VERSION).tar.gz -C $(DEPS_PREFIX)/FREETYPE2 --strip-components=1 && \
-	cd $(DEPS_PREFIX)/FREETYPE2 && \
+$(DEPS_PREFIX)/freetype-$(FREETYPE2_VERSION).built: $(DEPS_PREFIX)/libpng-$(LIBPNG_VERSION).built $(DEPS_PREFIX)/bzip2-$(BZIP2_VERSION).built $(DEPS_PREFIX)/zlib-$(ZLIB_VERSION).built $(DEPS_CACHE)/freetype-$(FREETYPE2_VERSION).tar.gz
+	rm -rf $(DEPS_PREFIX)/freetype
+	$(MKDIR_P) $(DEPS_PREFIX)/freetype/build $(DEPS_PREFIX)/lib/pkgconfig
+	$(TAR) xf $(DEPS_CACHE)/freetype-$(FREETYPE2_VERSION).tar.gz -C $(DEPS_PREFIX)/freetype --strip-components=1 && \
+	cd $(DEPS_PREFIX)/freetype && \
 	$(SED) -i 's|TOP_DIR :=.*||' builds/unix/unix-def.in && \
 	patch -Np1<$(BUILD_MISCDIR)/freetype-win.patch && \
 	PKG_CONFIG="$(PKG_CONFIG)" \
@@ -867,7 +852,7 @@ $(DEPS_PREFIX)/FREETYPE2-$(FREETYPE2_VERSION).built: $(DEPS_PREFIX)/libpng-$(LIB
 	$(PKG_CONFIG) --exists --print-errors freetype2
 	touch $@
 else
-$(DEPS_PREFIX)/FREETYPE2-$(FREETYPE2_VERSION).built:
+$(DEPS_PREFIX)/freetype-$(FREETYPE2_VERSION).built:
 	$(MKDIR_P) $(DEPS_PREFIX) && touch $@
 endif # BUILD_FREETYPE2
 
@@ -875,7 +860,7 @@ SIMDUTF_CFLAGS += $(if $(ENABLE_DEBUG),,-DNDEBUG)
 if BUILD_SIMDUTF
 SIMDUTF_CFLAGS += $(shell $(PKG_CONFIG) --cflags simdutf)
 SIMDUTF_LIBS += $(shell $(PKG_CONFIG) --libs simdutf)
-$(DEPS_PREFIX)/simdutf-$(SIMDUTF_VERSION).built: $(DEPS_CACHE)/simdutf-$(SIMDUTF_VERSION).source
+$(DEPS_PREFIX)/simdutf-$(SIMDUTF_VERSION).built: $(DEPS_CACHE)/simdutf-$(SIMDUTF_VERSION).tar.gz
 	rm -rf $(DEPS_PREFIX)/simdutf
 	$(MKDIR_P) $(DEPS_PREFIX)/simdutf/build $(DEPS_PREFIX)/lib/pkgconfig
 	$(TAR) xf $(DEPS_CACHE)/simdutf-$(SIMDUTF_VERSION).tar.gz -C $(DEPS_PREFIX)/simdutf --strip-components=1 && \
@@ -917,7 +902,7 @@ endif # BUILD_SIMDUTF
 if BUILD_LZMA
 LZMA_CFLAGS += $(shell $(PKG_CONFIG) --cflags liblzma)
 LZMA_LIBS += $(shell $(PKG_CONFIG) --libs liblzma)
-$(DEPS_PREFIX)/liblzma-$(LZMA_VERSION).built: $(DEPS_CACHE)/liblzma-$(LZMA_VERSION).source
+$(DEPS_PREFIX)/liblzma-$(LZMA_VERSION).built: $(DEPS_CACHE)/liblzma-$(LZMA_VERSION).tar.gz
 	rm -rf $(DEPS_PREFIX)/liblzma
 	$(MKDIR_P) $(DEPS_PREFIX)/liblzma/build $(DEPS_PREFIX)/lib/pkgconfig
 	$(TAR) xf $(DEPS_CACHE)/liblzma-$(LZMA_VERSION).tar.gz -C $(DEPS_PREFIX)/liblzma --strip-components=1 && \
@@ -964,7 +949,7 @@ if BUILD_LIBARCHIVE
 if BUILD_LIBACL
 LIBACL_CFLAGS += $(shell $(PKG_CONFIG) --cflags libacl)
 LIBACL_LIBS += $(shell $(PKG_CONFIG) --libs libacl)
-$(DEPS_PREFIX)/libacl-$(LIBACL_VERSION).built: $(DEPS_CACHE)/libacl-$(LIBACL_VERSION).source
+$(DEPS_PREFIX)/libacl-$(LIBACL_VERSION).built: $(DEPS_CACHE)/libacl-$(LIBACL_VERSION).tar.xz
 	rm -rf $(DEPS_PREFIX)/libacl
 	$(MKDIR_P) $(DEPS_PREFIX)/libacl/build $(DEPS_PREFIX)/lib/pkgconfig
 	$(TAR) xf $(DEPS_CACHE)/libacl-$(LIBACL_VERSION).tar.xz -C $(DEPS_PREFIX)/libacl --strip-components=1 && \
@@ -986,7 +971,7 @@ endif # BUILD_LIBACL
 # ugly hack to make pkg-config/libarchive find the bundled openssl libs
 LIBARCHIVE_CFLAGS += $(shell $(PKG_CONFIG_PLUS_BUNDLED_OSSL) --cflags libarchive)
 LIBARCHIVE_LIBS += $(shell $(PKG_CONFIG_PLUS_BUNDLED_OSSL) --libs libarchive)
-$(DEPS_PREFIX)/libarchive-$(LIBARCHIVE_VERSION).built: $(DEPS_CACHE)/libarchive-$(LIBARCHIVE_VERSION).source $(DEPS_PREFIX)/curl-$(CURL_VERSION)-2.built $\
+$(DEPS_PREFIX)/libarchive-$(LIBARCHIVE_VERSION).built: $(DEPS_CACHE)/libarchive-$(LIBARCHIVE_VERSION).tar.gz $(DEPS_PREFIX)/curl-$(CURL_VERSION).built $\
 											$(DEPS_PREFIX)/libacl-$(LIBACL_VERSION).built $(DEPS_PREFIX)/liblzma-$(LZMA_VERSION).built $\
 											$(DEPS_PREFIX)/bzip2-$(BZIP2_VERSION).built $(DEPS_PREFIX)/zlib-$(ZLIB_VERSION).built
 	rm -rf $(DEPS_PREFIX)/libarchive
@@ -1045,13 +1030,13 @@ BUILT_SOURCES := \
 	$(DEPS_PREFIX)/SDL3-$(SDL3_VERSION).built \
 	$(DEPS_PREFIX)/bass-$(BASS_VERSION).built \
 	$(DEPS_PREFIX)/libjpeg-$(LIBJPEG_VERSION).built \
-	$(DEPS_PREFIX)/FMT-$(FMT_VERSION).built \
+	$(DEPS_PREFIX)/fmt-$(FMT_VERSION).built \
 	$(DEPS_PREFIX)/spdlog-$(SPDLOG_VERSION).built \
 	$(DEPS_PREFIX)/nsync-$(NSYNC_VERSION).built \
 	$(DEPS_PREFIX)/libpng-$(LIBPNG_VERSION).built \
 	$(DEPS_PREFIX)/bzip2-$(BZIP2_VERSION).built \
 	$(DEPS_PREFIX)/zlib-$(ZLIB_VERSION).built \
-	$(DEPS_PREFIX)/FREETYPE2-$(FREETYPE2_VERSION).built \
+	$(DEPS_PREFIX)/freetype-$(FREETYPE2_VERSION).built \
 	$(DEPS_PREFIX)/glm-$(GLM_VERSION).built \
 	$(DEPS_PREFIX)/SoLoud-$(SOLOUD_VERSION).built \
 	$(DEPS_PREFIX)/SoundTouch-$(SOUNDTOUCH_VERSION).built \
@@ -1061,8 +1046,8 @@ BUILT_SOURCES := \
 	$(DEPS_PREFIX)/libarchive-$(LIBARCHIVE_VERSION).built \
 	$(DEPS_PREFIX)/simdutf-$(SIMDUTF_VERSION).built \
 	$(DEPS_PREFIX)/libacl-$(LIBACL_VERSION).built \
-	$(DEPS_PREFIX)/curl-$(CURL_VERSION)-2.built \
-	$(DEPS_CACHE)/curl-$(CURL_VERSION)-2/certbundle/cacert.pem
+	$(DEPS_PREFIX)/curl-$(CURL_VERSION).built \
+	$(DEPS_CACHE)/curl-$(CURL_VERSION)/certbundle/cacert.pem
 
 # making sure deps are built before main compile
 $(neosu_OBJECTS): $(BUILT_SOURCES) $(EXTRA_BINDEPS)

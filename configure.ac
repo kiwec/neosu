@@ -55,6 +55,12 @@ AC_DEFUN([AC_PROG_WGET], [
         AC_MSG_ERROR([wget not found - required for downloading dependencies])
     fi
 ])
+AC_DEFUN([AC_PROG_CURLBIN], [
+    AC_CHECK_PROG([CURLBIN], [curl], [curl])
+    if test -z "$CURLBIN"; then
+        AC_MSG_ERROR([curl not found - required for downloading dependencies])
+    fi
+])
 AC_DEFUN([AC_PROG_GIT], [
     AC_CHECK_PROG([GIT], [git], [git])
     if test -z "$GIT"; then
@@ -112,7 +118,8 @@ AC_DEFUN([AC_PROG_NASM], [
 ])
 
 # needed for dep resolver
-AC_PROG_WGET
+#AC_PROG_WGET
+AC_PROG_CURLBIN
 #AC_PROG_GIT
 AC_PROG_TAR
 AC_PROG_PKGCONF
@@ -530,11 +537,11 @@ _cxx_real_hash="$($CXX --version | md5sum | cut -d ' ' -f 1),$host"
 
 install -Dm755 /dev/stdin $PWD/build/cc <<EOF
 #!/bin/bash
-CCACHE_COMPRESS=1 CCACHE_COMPRESSLEVEL=2 CCACHE_COMPILERTYPE=$_ccache_ctype CCACHE_COMPILERCHECK="string:$_cc_real_hash" $CCACHE $CC_REAL "\$@"
+CCACHE_COMPRESS=1 CCACHE_COMPRESSLEVEL=4 CCACHE_COMPILERTYPE=$_ccache_ctype CCACHE_COMPILERCHECK="string:$_cc_real_hash" $CCACHE $CC_REAL "\$@"
 EOF
 install -Dm755 /dev/stdin $PWD/build/cxx <<EOF
 #!/bin/bash
-CCACHE_COMPRESS=1 CCACHE_COMPRESSLEVEL=2 CCACHE_COMPILERTYPE=$_ccache_ctype CCACHE_COMPILERCHECK="string:$_cxx_real_hash" $CCACHE $CXX_REAL "\$@"
+CCACHE_COMPRESS=1 CCACHE_COMPRESSLEVEL=4 CCACHE_COMPILERTYPE=$_ccache_ctype CCACHE_COMPILERCHECK="string:$_cxx_real_hash" $CCACHE $CXX_REAL "\$@"
 EOF
 
 export CC="$PWD/build/cc"
@@ -1005,7 +1012,7 @@ LIBARCHIVE_BUILD_VERSION=3.8.4
 LIBACL_MIN_VERSION=2.3.1
 LIBACL_BUILD_VERSION=2.3.2
 CURL_MIN_VERSION=8.16.0 # due to websocket things, only very recent curl works
-CURL_BUILD_VERSION=8.17.0
+CURL_BUILD_VERSION=8.18.0
 OPENSSL_MIN_VERSION=3.0.0 # only for --enable-system-deps
 MPG123_MIN_VERSION=1.30.0
 MPG123_BUILD_VERSION=fe143d4e9c885ec34596c561481dff96357fd797 # git mirror, latest as of Oct 12th, 2025 (next version after 1.33.2)

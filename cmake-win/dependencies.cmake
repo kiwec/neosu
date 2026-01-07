@@ -21,9 +21,9 @@ macro(set_download_name dep_name version url)
     set(${_upper_dep_name}_DL_NAME "${dep_name}-${version}${_temp_ext}")
 endmacro()
 
-set(SDL3_VERSION "cd313811850c4f474ee5dec7bd1842e2cb4c2043")
+set(SDL3_VERSION "7931321cffa27d4168738ddbe2251966f243afc9")
 set(SDL3_URL "https://github.com/libsdl-org/SDL/archive/${SDL3_VERSION}.tar.gz")
-set(SDL3_HASH "SHA512=08140a7d12c268040869adc2928c73cfee7b08e4b914b3edfb704ea25a53a9525484af208ed32512fab32e78d4ddc57f08ccc24cfdd0c6427e0a83809075eac2")
+set(SDL3_HASH "SHA512=e5f75bbae39e46ff6e818d0c67c39805e41089ca543f79d3aa25882ba6436b23f857eff868c391ec6c19f32283422f567fe501ab44a4ff7ee1ff63457c558550")
 set_download_name("sdl3" "${SDL3_VERSION}" "${SDL3_URL}")
 
 set(FREETYPE_VERSION "2.13.3")
@@ -103,10 +103,10 @@ set(SIMDUTF_URL "https://github.com/simdutf/simdutf/archive/refs/tags/v${SIMDUTF
 set(SIMDUTF_HASH "SHA512=90d366d6e7f866d9e9bb92f7d40b40d9ca8353b93d2c221ad9333ed87579ba888f54dffd73b27d3ecd2357de8be502c6c2a58c6e64e343246e957d487b872113")
 set_download_name("simdutf" "${SIMDUTF_VERSION}" "${SIMDUTF_URL}")
 
-set(CURL_VERSION "8.17.0")
+set(CURL_VERSION "8.18.0")
 string(REPLACE "." "_" _curl_ver_temp "${CURL_VERSION}")
 set(CURL_URL "https://github.com/curl/curl/releases/download/curl-${_curl_ver_temp}/curl-${CURL_VERSION}.tar.gz")
-set(CURL_HASH "SHA512=88ab4b7aac12b26a6ad32fb0e1a9675288a45894438cb031102ef5d4ab6b33c2bc99cae0c70b71bdfa12eb49762827e2490555114c5eb4a6876b95e1f2a4eb74")
+set(CURL_HASH "SHA512=84f193f28369ccb7fba0d8933cfc24f5fbb282b046e7e8c2c1a0da35db8ec13d17e6407c240ce3a12cf4dccac62e5919bd98f3add77065408c6259cfe1071575")
 set_download_name("curl" "${CURL_VERSION}" "${CURL_URL}")
 unset(_curl_ver_temp)
 

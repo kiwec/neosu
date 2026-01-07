@@ -33,7 +33,7 @@ jobs:
           pacman -Syu --noconfirm libx11 libxi glu \
             libjpeg-turbo libglvnd sdl3 zlib wget \
             cmake meson nasm git autoconf automake libtool autoconf-archive \
-            mingw-w64-gcc ccache unzip wine freetype2
+            mingw-w64-gcc ccache unzip wine freetype2 curl
           if [[ "${{ matrix.arch }}" == "x64" ]]; then
             mkdir -p /opt/llvm-mingw && \
             wget -qO /opt/llvm-mingw/llvm-mingw.tar.xz "https://github.com/mstorsjo/llvm-mingw/releases/download/${{ env.LLVM_MINGW_VERSION }}/llvm-mingw-${{ env.LLVM_MINGW_VERSION }}-ucrt-ubuntu-22.04-x86_64.tar.xz" && \
@@ -51,11 +51,12 @@ jobs:
         uses: actions/cache@v5.0.1
         with:
           path: |
-            build-aux/cache
+            build-aux/cache/*.gz
+            build-aux/cache/*.xz
+            build-aux/cache/*.zip
           key: tarballs-win-${{ matrix.arch }}
           restore-keys: |
             tarballs-win-
-            tarballs-
 
       - name: Cache built dependencies
         uses: actions/cache@v5.0.1
@@ -64,7 +65,7 @@ jobs:
             build-out/build/deps
           key: deps-win-${{ matrix.arch }}-${{ hashFiles('configure.ac', 'Makefile.am') }}
           restore-keys: |
-            deps-win-${{ matrix.arch }}-${{ hashFiles('configure.ac', 'Makefile.am') }}
+            deps-win-${{ matrix.arch }}-
 
       - name: ccache
         uses: actions/cache@v5.0.1
@@ -73,9 +74,9 @@ jobs:
             ${{ env.CCACHE_DIR }}
             build-out/.ltocache-gcc
             build-out/.ltocache-clang
-          key: ccache-win-${{ matrix.arch }}-${{ github.sha }}
+          key: ccache-win-${{ matrix.arch }}
           restore-keys: |
-            ccache-win-${{ matrix.arch }}-
+            ccache-win-
 
       - name: Building neosu
         run: |

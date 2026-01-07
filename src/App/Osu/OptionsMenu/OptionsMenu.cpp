@@ -180,7 +180,7 @@ struct OptionsMenuImpl final {
     void onHighQualitySlidersConVarChange(float newValue);
 
     // categories
-    void onCategoryClicked(CBaseUIButton *button);
+    void onCategoryClicked(CategoryButton *button);
 
     // reset
     void onResetUpdate(ResetButton *button);
@@ -2698,8 +2698,8 @@ void OptionsMenuImpl::updateFposuDPI() {
     const UString &text = this->dpiTextbox->getText();
     UString value;
     for(int i = 0; i < text.length(); i++) {
-        if(text[i] == L',')
-            value.append(L'.');
+        if(text[i] == u',')
+            value.append(u'.');
         else
             value.append(text[i]);
     }
@@ -2714,8 +2714,8 @@ void OptionsMenuImpl::updateFposuCMper360() {
     const UString &text = this->cm360Textbox->getText();
     UString value;
     for(int i = 0; i < text.length(); i++) {
-        if(text[i] == L',')
-            value.append(L'.');
+        if(text[i] == u',')
+            value.append(u'.');
         else
             value.append(text[i]);
     }
@@ -3547,15 +3547,13 @@ void OptionsMenuImpl::onHighQualitySlidersConVarChange(float newValue) {
     }
 }
 
-void OptionsMenuImpl::onCategoryClicked(CBaseUIButton *button) {
+void OptionsMenuImpl::onCategoryClicked(CategoryButton *button) {
     // reset search
     this->sSearchString.clear();
     this->scheduleSearchUpdate();
 
     // scroll to category
-    auto *categoryButton = dynamic_cast<CategoryButton *>(button);
-    if(categoryButton != nullptr)
-        this->options->scrollToElement(categoryButton->getSection(), 0, 100 * Osu::getUIScale());
+    this->options->scrollToElement(button->getSection(), 0, 100 * Osu::getUIScale());
 }
 
 void OptionsMenuImpl::onResetUpdate(ResetButton *resbtn) {
