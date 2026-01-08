@@ -24,7 +24,7 @@
 // basically, so you don't have to declare things inside of a class which are meaningless outside of its own implementation details
 // helps reduce compile time by decreasing the size of public headers and transitive includes, without the downside of
 // needing to have dynamically allocated objects scattered around the heap just to support that ("that" being forward-declared class members)
-template <typename T, size_t RealImplSize>
+template <typename T, size_t RealImplSize, size_t BufferAlignment = 2 * sizeof(void *)>
 class StaticPImpl {
    private:
 #if defined(_MSC_VER) && !defined(__clang__)
@@ -35,8 +35,7 @@ class StaticPImpl {
 #define MSVC_BLOAT_ACCOMODATION_MULTIPLIER 1
 #endif
 #define PMUL_(real_) (size_t)((real_) * MSVC_BLOAT_ACCOMODATION_MULTIPLIER)
-
-    alignas(16) unsigned char m_buffer[PMUL_(RealImplSize)];
+    alignas(BufferAlignment) unsigned char m_buffer[PMUL_(RealImplSize)];
 
     void (*m_destructor)(void *);
 
@@ -59,7 +58,7 @@ class StaticPImpl {
     [[nodiscard]] forceinline explicit StaticPImpl(std::in_place_type_t<U> /**/, Args &&...args)
         : m_destructor([](void *ptr) { static_cast<U *>(ptr)->~U(); }) {
         static_assert(sizeof(U) <= PMUL_(RealImplSize));
-        static_assert(alignof(U) <= 16);
+        static_assert(alignof(U) <= BufferAlignment);
         static_assert(std::is_same_v<T, U> || std::is_base_of_v<T, U>);
 
         new(m_buffer) U(std::forward<Args>(args)...);

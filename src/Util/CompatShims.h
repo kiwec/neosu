@@ -1,6 +1,8 @@
 // Copyright (c) 2025, WH, All rights reserved.
 #pragma once
 
+#include "config.h"
+
 #include <atomic>
 #include <memory>
 

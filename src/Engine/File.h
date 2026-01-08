@@ -8,6 +8,7 @@
 #pragma once
 #ifndef FILE_H
 #define FILE_H
+#include "config.h"
 
 #include "noinclude.h"
 #include "types.h"

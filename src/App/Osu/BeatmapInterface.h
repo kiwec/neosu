@@ -22,7 +22,6 @@ class DatabaseBeatmap;
 class SimulatedBeatmapInterface;
 struct LiveReplayFrame;
 struct ScoreFrame;
-struct LivePPCalc;
 
 struct Click {
     u64 timestamp;  // Timing::getTicksNS() when the event occurred

@@ -12,6 +12,7 @@
 #include "Hashing.h"
 #include "Logging.h"
 #include "SyncMutex.h"
+#include "SyncOnce.h"
 
 #define WANT_PDQSORT
 #include "Sorting.h"
@@ -405,16 +406,19 @@ File::FILETYPE File::exists(std::string_view filePath, const fs::path &path) {
 #include <fileapi.h>
 #include <libloaderapi.h>
 #include <heapapi.h>
+#include <errhandlingapi.h>
 
 #include <string>
 
 namespace {
+Sync::once_flag long_path_check;
+bool std_filesystem_supports_long_paths{true};
 
 using wine_get_dos_file_name_t = LPWSTR CDECL(LPCSTR);
 wine_get_dos_file_name_t *pwine_get_dos_file_name{nullptr};
 bool tried_load_wine_func{false};
 
-void normalizeSlashes(std::string &str, unsigned char oldSlash = '/', unsigned char newSlash = '\\') {
+void normalizeSlashes(std::string &str, unsigned char oldSlash = '/', unsigned char newSlash = '\\') noexcept {
     std::ranges::replace(str, oldSlash, newSlash);
 
     bool prev = false;
@@ -425,7 +429,7 @@ void normalizeSlashes(std::string &str, unsigned char oldSlash = '/', unsigned c
     });
 }
 
-UString adjustPath(std::string_view filepath) {
+forceinline UString adjustPath_(std::string_view filepath) noexcept {
     static constexpr const std::string_view extPrefix{R"(\\?\)"};
     static constexpr const std::string_view devicePrefix{R"(\\.\)"};
     static constexpr const std::string_view extUncPrefix{R"(\\?\UNC\)"};
@@ -498,11 +502,18 @@ UString adjustPath(std::string_view filepath) {
     if(resolveAbsolute) {
         UString widePath{path};
         DWORD len = GetFullPathNameW(widePath.wchar_str(), 0, nullptr, nullptr);
-        if(len == 0) return UString{filepath};
+        if(len == 0) {
+            logIfCV(debug_file, "GetFullPathNameW({}, 0, NULL, NULL): {:d}", widePath, GetLastError());
+            return UString{filepath};
+        }
 
         std::wstring buf(len, L'\0');
         len = GetFullPathNameW(widePath.wchar_str(), len, buf.data(), nullptr);
-        if(len == 0) return UString{filepath};
+        if(len == 0) {
+            logIfCV(debug_file, "GetFullPathNameW({}, {}, {}, NULL): {:d}", widePath, len, UString{buf},
+                    GetLastError());
+            return UString{filepath};
+        }
         buf.resize(len);
 
         // GetFullPathNameW may return an already-prefixed path if CWD has an extended prefix
@@ -520,6 +531,42 @@ UString adjustPath(std::string_view filepath) {
     }
 
     return UString{outputPrefix} + UString{path};
+}
+
+UString adjustPath(std::string_view filepath) noexcept {
+    if(!std_filesystem_supports_long_paths) return filepath;
+
+    Sync::call_once(long_path_check, []() {
+        std::array<wchar_t, MAX_PATH + 1> buf{};
+        int length = static_cast<int>(GetModuleFileNameW(nullptr, buf.data(), MAX_PATH));
+        if(length == 0) {
+            std_filesystem_supports_long_paths = false;
+            return;
+        }
+
+        UString uPath{buf.data(), length};
+        uPath = adjustPath_(uPath.utf8View());
+
+        if(uPath.length() == 0) {
+            std_filesystem_supports_long_paths = false;
+            return;
+        }
+
+        fs::path tempfs{uPath.plat_str()};
+        std::error_code ec;
+
+        auto status = fs::status(tempfs, ec);
+        if(ec || status.type() == fs::file_type::not_found) {
+            std_filesystem_supports_long_paths = false;
+        }
+    });
+
+    if(!std_filesystem_supports_long_paths) {
+        debugLog("NOTE: current std::filesystem implementation does not support long paths, disabling.");
+        return filepath;
+    }
+
+    return adjustPath_(filepath);
 }
 
 }  // namespace
@@ -608,9 +655,17 @@ bool File::openForReading() {
         this->sFilePath = tempStdStr;
 
         if(fileType != File::FILETYPE::FILE) {
-            // usually the caller handles logging this sort of basic error
-            logIfCV(debug_file, "File Error: Path {:s} {:s}", this->sFilePath,
-                    fileType == File::FILETYPE::NONE ? "doesn't exist" : "is not a file");
+            if(cv::debug_file.getBool()) {
+                UString converted;
+                if constexpr(Env::cfg(OS::WINDOWS)) {
+                    converted = this->fsPath.wstring().c_str();
+                } else {
+                    converted = this->fsPath.string().c_str();
+                }
+                // usually the caller handles logging this sort of basic error
+                debugLog("File Error: Path {:s} (fsPath: {:s}) {:s}", this->sFilePath, converted,
+                         fileType == File::FILETYPE::NONE ? "doesn't exist" : "is not a file");
+            }
             return false;
         }
     }

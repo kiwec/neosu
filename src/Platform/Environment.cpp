@@ -28,6 +28,8 @@
 #if defined(MCENGINE_PLATFORM_WINDOWS)
 #include "WinDebloatDefs.h"
 #include <lmcons.h>
+#include <libloaderapi.h>
+#include <winbase.h>
 #elif defined(__APPLE__) || defined(MCENGINE_PLATFORM_LINUX)
 #include <pwd.h>
 #include <unistd.h>

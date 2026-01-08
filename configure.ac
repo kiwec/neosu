@@ -709,7 +709,7 @@ AS_IF([test -n "$CUSTOMPDBPATH"], [ # alias override
     SRCREMAP="$CUSTOMPDBPATH"
 ])
 
-AS_IF([test "$SRCREMAP" != "no" && test "$host_os" = "mingw32" && test "x$enable_clang" = "xyes"], [
+AS_IF([test "$SRCREMAP" != "no" && test "$host_os" = "mingw32" && { test -n "$SRCREMAP" || test "x$enable_clang" = "xyes" ; }], [
     # so that the source folder can be mapped to a virtual drive like X:\ and be debugged under windows more easily
 
     # this seems to be the only way i can get visual studio to find the source paths automatically,
@@ -725,7 +725,7 @@ AS_IF([test "$SRCREMAP" != "no" && test "$host_os" = "mingw32" && test "x$enable
 ])
 
 # this is currently extremely broken with mingw-gcc
-AS_IF([test "$host_os" = "mingw32" && test "x$enable_clang" = "xyes"], [
+AS_IF([test "$host_os" = "mingw32" && { test -n "$SRCREMAP" || test "x$enable_clang" = "xyes" ; } ], [
     cxxflags_save="$CXXFLAGS"
     cflags_save="$CFLAGS"
     AX_CHECK_COMPILE_FLAG([-gcodeview], [
@@ -759,13 +759,17 @@ AS_IF([test "x$enable_debug" = "xyes"], [
         # make the exe open with a console window
         AS_IF([test "x$enable_clang" = "xyes"], [
             NEOSU_LDFLAGS="$NEOSU_LDFLAGS -Wl,--subsystem,console:${win_subsystem_ver}"
+
+            CXXFLAGS="$CXXFLAGS -g3 -Og"
+            CFLAGS="$CFLAGS -g3 -Og"
         ], [
             NEOSU_CXXFLAGS="$NEOSU_CXXFLAGS -mconsole"
             NEOSU_LDFLAGS="$NEOSU_LDFLAGS -mconsole -Wl,--subsystem,console:${win_subsystem_ver}"
-        ])
 
-        CXXFLAGS="$CXXFLAGS -g3 -Og"
-        CFLAGS="$CFLAGS -g3 -Og"
+            CPPFLAGS="$CPPFLAGS -D_GLIBCXX_DEBUG"
+            CXXFLAGS="$CXXFLAGS -D_GLIBCXX_DEBUG -g3 -ggdb3 -gdwarf-5 -Og"
+            CFLAGS="$CFLAGS -g3 -ggdb3 -gdwarf-5 -Og"
+        ])
     ], [
         # don't remap paths, the source should correspond to the real source location on linux
         # non-mingw
@@ -1084,6 +1088,13 @@ AS_IF([test -z "$ubercompat" && test "x$with_nsync" != "xno"], [
     AC_DEFINE([USE_NSYNC], [1], [Defined if nsync sync primitives are available.])
 ], [
     have_nsync=unsupported
+])
+
+AS_IF([test -n "$ubercompat"], [
+    AC_SEARCH_LIBS(_set_abort_behavior, [], [], [msvcrt_build=yes])
+    AS_IF([test "x$msvcrt_build" = "xyes"], [
+        AC_DEFINE([MCENGINE_PLATFORM_WINDOWS_MSVCRT], [1], [Defined if building against the MSVCRT library instead of UCRT.])
+    ])
 ])
 
 AS_IF([test "x$have_sdl3" != "xyes"], [have_sdl3="build from source"])

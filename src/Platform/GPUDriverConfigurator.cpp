@@ -9,7 +9,7 @@
 #include <cstring>
 #include <cwchar>
 
-#ifdef MCENGINE_PLATFORM_WINDOWS
+#if defined(MCENGINE_PLATFORM_WINDOWS) && defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x602
 extern "C" {  // switch to the high performance gpu in multi-gpu systems (mostly laptops)
 __declspec(dllexport) DWORD NvOptimusEnablement =
     0x00000001;  // http://developer.download.nvidia.com/devzone/devcenter/gamegraphics/files/OptimusRenderingPolicies.pdf

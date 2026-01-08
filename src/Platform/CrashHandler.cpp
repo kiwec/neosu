@@ -262,10 +262,12 @@ void init() {
     SetUnhandledExceptionFilter(unhandled_exception_handler);
 
     // prevent CRT from removing our exception filter when abort() is called
+#ifndef MCENGINE_PLATFORM_WINDOWS_MSVCRT
 #ifndef _DEBUG
     _set_abort_behavior(0, _WRITE_ABORT_MSG | _CALL_REPORTFAULT);
 #else
     _set_abort_behavior(0, _CALL_REPORTFAULT);  // keep the message in debug builds
+#endif
 #endif
 
     signal(SIGABRT, abort_handler);

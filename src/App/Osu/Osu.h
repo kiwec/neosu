@@ -299,13 +299,17 @@ class Osu final : public App, public MouseListener {
 
     // NOTE: unique_ptrs are destroyed in reverse order of declaration in header
 
+   public:
+    std::unique_ptr<Replay::Mods> previous_mods{nullptr};  // XXX: hacky and out of place
+
+   private:
     // interfaces (other)
+    std::unique_ptr<BeatmapInterface> map_iface{nullptr};
     std::unique_ptr<UpdateHandler> updateHandler{nullptr};
     std::unique_ptr<AvatarManager> avatarManager{nullptr};
     std::unique_ptr<UserCard> userButton{nullptr};
     std::unique_ptr<BGImageHandler> backgroundImageHandler{nullptr};
     std::unique_ptr<Skin> skin{nullptr};
-    std::unique_ptr<BeatmapInterface> map_iface{nullptr};
     std::unique_ptr<LiveScore> score{nullptr};
     std::unique_ptr<ModFPoSu> fposu{nullptr};
 
@@ -353,7 +357,6 @@ class Osu final : public App, public MouseListener {
     // mods
     // public because of many external access
    public:
-    std::unique_ptr<Replay::Mods> previous_mods{nullptr};  // XXX: hacky and out of place
     bool bModAutoTemp{false};  // when ctrl+clicking a map, the auto mod should disable itself after the map finishes
 
    private:

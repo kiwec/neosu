@@ -131,7 +131,12 @@ bool Osu::globalOnAreAllCvarsSubmittableCallback() {
 Osu::GlobalOsuCtorDtorThing::GlobalOsuCtorDtorThing(Osu *optr) { osu = optr; }
 Osu::GlobalOsuCtorDtorThing::~GlobalOsuCtorDtorThing() { osu = nullptr; }
 
-Osu::Osu() : App(), MouseListener(), global_osu_(this) {
+Osu::Osu()
+    : App(),
+      MouseListener(),
+      global_osu_(this),
+      previous_mods(std::make_unique<Replay::Mods>()),
+      map_iface(std::make_unique<BeatmapInterface>()) {
     // global cvar callbacks will be removed in destructor
     ConVar::setOnSetValueProtectedCallback(SA::MakeDelegate<&Osu::globalOnSetValueProtectedCallback>(this));
 
@@ -235,14 +240,10 @@ Osu::Osu() : App(), MouseListener(), global_osu_(this) {
     this->frameBuffer = resourceManager->createRenderTarget(0, 0, 64, 64);
     this->frameBuffer2 = resourceManager->createRenderTarget(0, 0, 64, 64);
 
-    // XXX: out of place
-    this->previous_mods = std::make_unique<Replay::Mods>();
-
     int screenit = 0;
 
     // load a few select subsystems very early
     db = std::make_unique<Database>();  // global database instance
-    this->map_iface = std::make_unique<BeatmapInterface>();
     this->screens[screenit++] = this->notificationOverlay = new NotificationOverlay();
     this->score = std::make_unique<LiveScore>(false);
     this->updateHandler = std::make_unique<UpdateHandler>();
@@ -258,10 +259,6 @@ Osu::Osu() : App(), MouseListener(), global_osu_(this) {
     Console::execConfigFile("underride");  // same as override, but for defaults
     Console::execConfigFile("osu");
     Console::execConfigFile("override");  // used for quickfixing live builds without redeploying/recompiling
-
-    // clear screen in case cfg switched to fullscreen mode
-    // (loading the rest of the app can take a bit of time)
-    engine->onPaint();
 
     // if we don't have an osu.cfg, import
     if(!Environment::fileExists(MCENGINE_CFG_PATH "/osu.cfg")) {
@@ -588,8 +585,7 @@ void Osu::draw() {
         // draw a scaled version from the buffer to the screen
         this->backBuffer->disable();
 
-        vec2 offset = vec2(g->getResolution().x / 2 - this->internalRect.getWidth() / 2,
-                           g->getResolution().y / 2 - this->internalRect.getHeight() / 2);
+        const vec2 offset{vec2{g->getResolution() - this->internalRect.getSize()} * 0.5f};
         g->setBlending(false);
         if(cv::letterboxing.getBool()) {
             this->backBuffer->draw(offset.x * (1.0f + cv::letterboxing_offset_x.getFloat()),
@@ -1710,6 +1706,11 @@ void Osu::updateWindowsKeyDisable() {
 }
 
 void Osu::onWindowedResolutionChanged(std::string_view args) {
+    // ignore if we're still loading or not in fullscreen
+    this->last_res_change_req_src |= R_CV_WINDOWED_RESOLUTION;
+
+    if(env->winFullscreened() || !this->bScreensReady) return;
+
     auto parsed = Parsing::parse_resolution(args);
     if(!parsed.has_value()) {
         debugLog(
@@ -1719,18 +1720,8 @@ void Osu::onWindowedResolutionChanged(std::string_view args) {
         return;
     }
 
-    if(env->getWindowSize() == vec2{parsed->x, parsed->y}) {
-        return;
-    }
-
-    // ignore if we're still loading, not in fullscreen, or the requested resolution is the same as the current window resolution
-    this->last_res_change_req_src |= R_CV_WINDOWED_RESOLUTION;
-
     i32 width{parsed->x}, height{parsed->y};
     debugLog("{}x{}", width, height);
-
-    // if we were still loading then we'll retry after we're finished
-    if(env->winFullscreened() || !this->bScreensReady) return;
 
     env->setWindowSize(width, height);
     env->centerWindow();
