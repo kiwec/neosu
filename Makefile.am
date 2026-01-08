@@ -31,97 +31,98 @@ CLEANFILES = \
 
 # SOURCE (to-build) dependencies (conditionally downloaded depending on build configuration)
 
-# always needed (if not on host)
+CURLCOMMAND = $(CURLBIN) -fsSLo $@ --retry 3 --retry-delay 5 --retry-all-errors --connect-timeout 30 --max-time 300
 
+# always needed (if not on host)
 $(DEPS_CACHE)/SDL3-$(SDL3_VERSION).tar.gz:
 	$(MKDIR_P) $(DEPS_CACHE)
-	$(CURLBIN) -fsSLo $@ "https://github.com/libsdl-org/SDL/archive/$(SDL3_VERSION).tar.gz" || { rm -f $@; exit 1; }
+	$(CURLCOMMAND) "https://github.com/libsdl-org/SDL/archive/$(SDL3_VERSION).tar.gz" || { rm -f $@; exit 1; }
 
 # always needed (if not on host)
 $(DEPS_CACHE)/libjpeg-$(LIBJPEG_VERSION).tar.gz:
 	$(MKDIR_P) $(DEPS_CACHE)
-	$(CURLBIN) -fsSLo $@ "https://github.com/libjpeg-turbo/libjpeg-turbo/releases/download/$(LIBJPEG_VERSION)/libjpeg-turbo-$(LIBJPEG_VERSION).tar.gz" || { rm -f $@; exit 1; }
+	$(CURLCOMMAND) "https://github.com/libjpeg-turbo/libjpeg-turbo/releases/download/$(LIBJPEG_VERSION)/libjpeg-turbo-$(LIBJPEG_VERSION).tar.gz" || { rm -f $@; exit 1; }
 
 # always needed (if not on host)
 $(DEPS_CACHE)/glm-$(GLM_VERSION).tar.gz:
 	$(MKDIR_P) $(DEPS_CACHE)
-	$(CURLBIN) -fsSLo $@ "https://github.com/g-truc/glm/archive/refs/tags/$(GLM_VERSION).tar.gz" || { rm -f $@; exit 1; }
+	$(CURLCOMMAND) "https://github.com/g-truc/glm/archive/refs/tags/$(GLM_VERSION).tar.gz" || { rm -f $@; exit 1; }
 
 # always needed (if not on host)
 $(DEPS_CACHE)/libpng-$(LIBPNG_VERSION).tar.gz:
 	$(MKDIR_P) $(DEPS_CACHE)
-	$(CURLBIN) -fsSLo $@ "https://github.com/pnggroup/libpng/archive/refs/tags/v$(LIBPNG_VERSION).tar.gz" || { rm -f $@; exit 1; }
+	$(CURLCOMMAND) "https://github.com/pnggroup/libpng/archive/refs/tags/v$(LIBPNG_VERSION).tar.gz" || { rm -f $@; exit 1; }
 
 # always needed (if not on host)
 $(DEPS_CACHE)/bzip2-$(BZIP2_VERSION).tar.gz:
 	$(MKDIR_P) $(DEPS_CACHE)
-	$(CURLBIN) -fsSLo $@ "https://github.com/libarchive/bzip2/archive/refs/tags/bzip2-$(BZIP2_VERSION).tar.gz" || { rm -f $@; exit 1; }
+	$(CURLCOMMAND) "https://github.com/libarchive/bzip2/archive/refs/tags/bzip2-$(BZIP2_VERSION).tar.gz" || { rm -f $@; exit 1; }
 
 # always needed (if not on host)
 $(DEPS_CACHE)/zlib-$(ZLIB_VERSION).tar.gz:
 	$(MKDIR_P) $(DEPS_CACHE)
-	$(CURLBIN) -fsSLo $@ "https://github.com/zlib-ng/zlib-ng/archive/refs/tags/$(ZLIB_VERSION).tar.gz" || { rm -f $@; exit 1; }
+	$(CURLCOMMAND) "https://github.com/zlib-ng/zlib-ng/archive/refs/tags/$(ZLIB_VERSION).tar.gz" || { rm -f $@; exit 1; }
 
 # always needed (if not on host)
 $(DEPS_CACHE)/fmt-$(FMT_VERSION).tar.gz:
 	$(MKDIR_P) $(DEPS_CACHE)
-	$(CURLBIN) -fsSLo $@ "https://github.com/fmtlib/fmt/archive/$(FMT_VERSION).tar.gz" || { rm -f $@; exit 1; }
+	$(CURLCOMMAND) "https://github.com/fmtlib/fmt/archive/$(FMT_VERSION).tar.gz" || { rm -f $@; exit 1; }
 
 # always needed (if not on host)
 $(DEPS_CACHE)/spdlog-$(SPDLOG_VERSION).tar.gz:
 	$(MKDIR_P) $(DEPS_CACHE)
-	$(CURLBIN) -fsSLo $@ "https://github.com/gabime/spdlog/archive/$(SPDLOG_VERSION).tar.gz" || { rm -f $@; exit 1; }
+	$(CURLCOMMAND) "https://github.com/gabime/spdlog/archive/$(SPDLOG_VERSION).tar.gz" || { rm -f $@; exit 1; }
 
 # always needed (if not on host)
 $(DEPS_CACHE)/freetype-$(FREETYPE2_VERSION).tar.gz:
 	$(MKDIR_P) $(DEPS_CACHE)
-	$(CURLBIN) -fsSLo $@ "https://nongnu.askapache.com/freetype/freetype-$(FREETYPE2_VERSION).tar.gz" || { rm -f $@; exit 1; }
+	$(CURLCOMMAND) "https://nongnu.askapache.com/freetype/freetype-$(FREETYPE2_VERSION).tar.gz" || { rm -f $@; exit 1; }
 
 # always needed (if not on host)
 $(DEPS_CACHE)/liblzma-$(LZMA_VERSION).tar.gz:
 	$(MKDIR_P) $(DEPS_CACHE)
-	$(CURLBIN) -fsSLo $@ "https://github.com/tukaani-project/xz/releases/download/v$(LZMA_VERSION)/xz-$(LZMA_VERSION).tar.gz" || { rm -f $@; exit 1; }
+	$(CURLCOMMAND) "https://github.com/tukaani-project/xz/releases/download/v$(LZMA_VERSION)/xz-$(LZMA_VERSION).tar.gz" || { rm -f $@; exit 1; }
 
 # always needed (if not on host)
 $(DEPS_CACHE)/simdutf-$(SIMDUTF_VERSION).tar.gz:
 	$(MKDIR_P) $(DEPS_CACHE)
-	$(CURLBIN) -fsSLo $@ "https://github.com/simdutf/simdutf/archive/refs/tags/v$(SIMDUTF_VERSION).tar.gz" || { rm -f $@; exit 1; }
+	$(CURLCOMMAND) "https://github.com/simdutf/simdutf/archive/refs/tags/v$(SIMDUTF_VERSION).tar.gz" || { rm -f $@; exit 1; }
 
 # always needed (if not on host)
 $(DEPS_CACHE)/libarchive-$(LIBARCHIVE_VERSION).tar.gz:
 	$(MKDIR_P) $(DEPS_CACHE)
-	$(CURLBIN) -fsSLo $@ "https://github.com/libarchive/libarchive/releases/download/v$(LIBARCHIVE_VERSION)/libarchive-$(LIBARCHIVE_VERSION).tar.gz" || { rm -f $@; exit 1; }
+	$(CURLCOMMAND) "https://github.com/libarchive/libarchive/releases/download/v$(LIBARCHIVE_VERSION)/libarchive-$(LIBARCHIVE_VERSION).tar.gz" || { rm -f $@; exit 1; }
 
 # needed for libarchive on linux (if not on host)
 $(DEPS_CACHE)/libacl-$(LIBACL_VERSION).tar.xz:
 	$(MKDIR_P) $(DEPS_CACHE)
-	$(CURLBIN) -fsSLo $@ "https://download.savannah.nongnu.org/releases/acl/acl-$(LIBACL_VERSION).tar.xz" || \
-		$(CURLBIN) -fsSLo $@ "http://mirror.netcologne.de/savannah/acl/acl-$(LIBACL_VERSION).tar.xz" || { rm -f $@; exit 1; }
+	$(CURLCOMMAND) "https://download.savannah.nongnu.org/releases/acl/acl-$(LIBACL_VERSION).tar.xz" || \
+			$(CURLCOMMAND) "http://mirror.netcologne.de/savannah/acl/acl-$(LIBACL_VERSION).tar.xz" || { rm -f $@; exit 1; }
 
 # --with-nsync
 $(DEPS_CACHE)/nsync-$(NSYNC_VERSION).tar.gz:
 	$(MKDIR_P) $(DEPS_CACHE)
-	$(CURLBIN) -fsSLo $@ "https://github.com/google/nsync/archive/refs/tags/$(NSYNC_VERSION).tar.gz" || { rm -f $@; exit 1; }
+	$(CURLCOMMAND) "https://github.com/google/nsync/archive/refs/tags/$(NSYNC_VERSION).tar.gz" || { rm -f $@; exit 1; }
 
 # --with-mimalloc
 $(DEPS_CACHE)/mimalloc-$(MIMALLOC_VERSION).tar.gz:
 	$(MKDIR_P) $(DEPS_CACHE)
-	$(CURLBIN) -fsSLo $@ "https://github.com/microsoft/mimalloc/archive/$(MIMALLOC_VERSION).tar.gz" || { rm -f $@; exit 1; }
+	$(CURLCOMMAND) "https://github.com/microsoft/mimalloc/archive/$(MIMALLOC_VERSION).tar.gz" || { rm -f $@; exit 1; }
 
 # --with-audio=soloud
 $(DEPS_CACHE)/SoLoud-$(SOLOUD_VERSION).tar.gz:
 	$(MKDIR_P) $(DEPS_CACHE)
-	$(CURLBIN) -fsSLo $@ "https://github.com/whrvt/neoloud/archive/$(SOLOUD_VERSION).tar.gz" || { rm -f $@; exit 1; }
+	$(CURLCOMMAND) "https://github.com/whrvt/neoloud/archive/$(SOLOUD_VERSION).tar.gz" || { rm -f $@; exit 1; }
 
 # --with-audio=soloud (mp3 decoding)
 $(DEPS_CACHE)/mpg123-$(MPG123_VERSION).tar.gz:
 	$(MKDIR_P) $(DEPS_CACHE)
-	$(CURLBIN) -fsSLo $@ "https://github.com/madebr/mpg123/archive/$(MPG123_VERSION).tar.gz" || { rm -f $@; exit 1; }
+	$(CURLCOMMAND) "https://github.com/madebr/mpg123/archive/$(MPG123_VERSION).tar.gz" || { rm -f $@; exit 1; }
 
 # --with-audio=soloud (pitch shifting, currently done in-engine instead of in SoLoud itself)
 $(DEPS_CACHE)/SoundTouch-$(SOUNDTOUCH_VERSION).tar.gz:
 	$(MKDIR_P) $(DEPS_CACHE)
-	$(CURLBIN) -fsSLo $@ "https://codeberg.org/soundtouch/soundtouch/archive/$(SOUNDTOUCH_VERSION).tar.gz" || { rm -f $@; exit 1; }
+	$(CURLCOMMAND) "https://codeberg.org/soundtouch/soundtouch/archive/$(SOUNDTOUCH_VERSION).tar.gz" || { rm -f $@; exit 1; }
 
 ## BINARY (pre-built) dependencies (conditional depending on build configuration)
 
@@ -129,17 +130,17 @@ $(DEPS_CACHE)/SoundTouch-$(SOUNDTOUCH_VERSION).tar.gz:
 #  the build will work without these (they are dlopen/LoadLibrary'd), but it's a nice-to-have
 $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION)/ffmpeg-linuxx86_64.tar.xz:
 	$(MKDIR_P) $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION) && \
-	$(CURLBIN) -fsSLo $@ "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2025-11-30-12-53/ffmpeg-n$(FFMPEG_VERSION).1-17-g27a297f186-linux64-lgpl-shared-$(FFMPEG_VERSION).tar.xz" || { rm -f $@; exit 1; }
+	$(CURLCOMMAND) "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2025-11-30-12-53/ffmpeg-n$(FFMPEG_VERSION).1-17-g27a297f186-linux64-lgpl-shared-$(FFMPEG_VERSION).tar.xz" || { rm -f $@; exit 1; }
 
 # NOTE: the yt-dlp repo is no longer building releases, so this is the closest thing
 #   (it's hard to find windows 32-bit builds of new ffmpeg releases)
 $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION)/ffmpeg-windowsi686.zip:
 	$(MKDIR_P) $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION) && \
-	$(CURLBIN) -fsSLo $@ "https://github.com/yt-dlp/FFmpeg-Builds/releases/download/autobuild-2025-11-30-14-12/ffmpeg-N-121938-g2456a39581-win32-gpl-shared.zip" || { rm -f $@; exit 1; }
+	$(CURLCOMMAND) "https://github.com/yt-dlp/FFmpeg-Builds/releases/download/autobuild-2025-11-30-14-12/ffmpeg-N-121938-g2456a39581-win32-gpl-shared.zip" || { rm -f $@; exit 1; }
 
 $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION)/ffmpeg-windowsx86_64.zip:
 	$(MKDIR_P) $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION) && \
-	$(CURLBIN) -fsSLo $@ "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2025-11-30-12-53/ffmpeg-n$(FFMPEG_VERSION).1-17-g27a297f186-win64-lgpl-shared-$(FFMPEG_VERSION).zip" || { rm -f $@; exit 1; }
+	$(CURLCOMMAND) "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2025-11-30-12-53/ffmpeg-n$(FFMPEG_VERSION).1-17-g27a297f186-win64-lgpl-shared-$(FFMPEG_VERSION).zip" || { rm -f $@; exit 1; }
 
 $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION).source: $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION)/ffmpeg-linuxx86_64.tar.xz $\
 											$(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION)/ffmpeg-windowsi686.zip $\
@@ -157,43 +158,43 @@ $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VERSION).source: $(DEPS_CACHE)/ffmpeg-$(FFMPEG_VER
 # just download the windows versions as well even on linux, because we need them for headers, no point in adding a bunch of complexity to avoid that
 $(DEPS_CACHE)/bass-$(BASS_VERSION)/bass.zip:
 	$(MKDIR_P) $(DEPS_CACHE)/bass-$(BASS_VERSION) && \
-	$(CURLBIN) -fsSLo $@ "https://archive.org/download/BASS-libs-$(BASS_VERSION)/bass.zip" || { rm -f $@; exit 1; }
+	$(CURLCOMMAND) "https://archive.org/download/BASS-libs-$(BASS_VERSION)/bass.zip" || { rm -f $@; exit 1; }
 $(DEPS_CACHE)/bass-$(BASS_VERSION)/bass-linux.zip:
 	$(MKDIR_P) $(DEPS_CACHE)/bass-$(BASS_VERSION) && \
-	$(CURLBIN) -fsSLo $@ "https://archive.org/download/BASS-libs-$(BASS_VERSION)/bass-linux.zip" || { rm -f $@; exit 1; }
+	$(CURLCOMMAND) "https://archive.org/download/BASS-libs-$(BASS_VERSION)/bass-linux.zip" || { rm -f $@; exit 1; }
 $(DEPS_CACHE)/bass-$(BASS_VERSION)/bassflac24.zip:
 	$(MKDIR_P) $(DEPS_CACHE)/bass-$(BASS_VERSION) && \
-	$(CURLBIN) -fsSLo $@ "https://archive.org/download/BASS-libs-$(BASS_VERSION)/bassflac24.zip" || { rm -f $@; exit 1; }
+	$(CURLCOMMAND) "https://archive.org/download/BASS-libs-$(BASS_VERSION)/bassflac24.zip" || { rm -f $@; exit 1; }
 $(DEPS_CACHE)/bass-$(BASS_VERSION)/bassflac24-linux.zip:
 	$(MKDIR_P) $(DEPS_CACHE)/bass-$(BASS_VERSION) && \
-	$(CURLBIN) -fsSLo $@ "https://archive.org/download/BASS-libs-$(BASS_VERSION)/bassflac24-linux.zip" || { rm -f $@; exit 1; }
+	$(CURLCOMMAND) "https://archive.org/download/BASS-libs-$(BASS_VERSION)/bassflac24-linux.zip" || { rm -f $@; exit 1; }
 $(DEPS_CACHE)/bass-$(BASS_VERSION)/bass_fx.zip:
 	$(MKDIR_P) $(DEPS_CACHE)/bass-$(BASS_VERSION) && \
-	$(CURLBIN) -fsSLo $@ "https://archive.org/download/BASS-libs-$(BASS_VERSION)/bass_fx.zip" || { rm -f $@; exit 1; }
+	$(CURLCOMMAND) "https://archive.org/download/BASS-libs-$(BASS_VERSION)/bass_fx.zip" || { rm -f $@; exit 1; }
 $(DEPS_CACHE)/bass-$(BASS_VERSION)/bass_fx-linux.zip:
 	$(MKDIR_P) $(DEPS_CACHE)/bass-$(BASS_VERSION) && \
-	$(CURLBIN) -fsSLo $@ "https://archive.org/download/BASS-libs-$(BASS_VERSION)/bass_fx-linux.zip" || { rm -f $@; exit 1; }
+	$(CURLCOMMAND) "https://archive.org/download/BASS-libs-$(BASS_VERSION)/bass_fx-linux.zip" || { rm -f $@; exit 1; }
 $(DEPS_CACHE)/bass-$(BASS_VERSION)/bassmix.zip:
 	$(MKDIR_P) $(DEPS_CACHE)/bass-$(BASS_VERSION) && \
-	$(CURLBIN) -fsSLo $@ "https://archive.org/download/BASS-libs-$(BASS_VERSION)/bassmix.zip" || { rm -f $@; exit 1; }
+	$(CURLCOMMAND) "https://archive.org/download/BASS-libs-$(BASS_VERSION)/bassmix.zip" || { rm -f $@; exit 1; }
 $(DEPS_CACHE)/bass-$(BASS_VERSION)/bassmix-linux.zip:
 	$(MKDIR_P) $(DEPS_CACHE)/bass-$(BASS_VERSION) && \
-	$(CURLBIN) -fsSLo $@ "https://archive.org/download/BASS-libs-$(BASS_VERSION)/bassmix-linux.zip" || { rm -f $@; exit 1; }
+	$(CURLCOMMAND) "https://archive.org/download/BASS-libs-$(BASS_VERSION)/bassmix-linux.zip" || { rm -f $@; exit 1; }
 $(DEPS_CACHE)/bass-$(BASS_VERSION)/bassloud.zip:
 	$(MKDIR_P) $(DEPS_CACHE)/bass-$(BASS_VERSION) && \
-	$(CURLBIN) -fsSLo $@ "https://archive.org/download/BASS-libs-$(BASS_VERSION)/bassloud.zip" || { rm -f $@; exit 1; }
+	$(CURLCOMMAND) "https://archive.org/download/BASS-libs-$(BASS_VERSION)/bassloud.zip" || { rm -f $@; exit 1; }
 $(DEPS_CACHE)/bass-$(BASS_VERSION)/bassloud-linux.zip:
 	$(MKDIR_P) $(DEPS_CACHE)/bass-$(BASS_VERSION) && \
-	$(CURLBIN) -fsSLo $@ "https://archive.org/download/BASS-libs-$(BASS_VERSION)/bassloud-linux.zip" || { rm -f $@; exit 1; }
+	$(CURLCOMMAND) "https://archive.org/download/BASS-libs-$(BASS_VERSION)/bassloud-linux.zip" || { rm -f $@; exit 1; }
 $(DEPS_CACHE)/bass-$(BASS_VERSION)/basswasapi.zip:
 	$(MKDIR_P) $(DEPS_CACHE)/bass-$(BASS_VERSION) && \
-	$(CURLBIN) -fsSLo $@ "https://archive.org/download/BASS-libs-$(BASS_VERSION)/basswasapi.zip" || { rm -f $@; exit 1; }
+	$(CURLCOMMAND) "https://archive.org/download/BASS-libs-$(BASS_VERSION)/basswasapi.zip" || { rm -f $@; exit 1; }
 $(DEPS_CACHE)/bass-$(BASS_VERSION)/basswasapi24-header.zip:
 	$(MKDIR_P) $(DEPS_CACHE)/bass-$(BASS_VERSION) && \
-	$(CURLBIN) -fsSLo $@ "https://archive.org/download/BASS-libs-$(BASS_VERSION)/basswasapi24-header.zip" || { rm -f $@; exit 1; }
+	$(CURLCOMMAND) "https://archive.org/download/BASS-libs-$(BASS_VERSION)/basswasapi24-header.zip" || { rm -f $@; exit 1; }
 $(DEPS_CACHE)/bass-$(BASS_VERSION)/bassasio.zip:
 	$(MKDIR_P) $(DEPS_CACHE)/bass-$(BASS_VERSION) && \
-	$(CURLBIN) -fsSLo $@ "https://archive.org/download/BASS-libs-$(BASS_VERSION)/bassasio.zip" || { rm -f $@; exit 1; }
+	$(CURLCOMMAND) "https://archive.org/download/BASS-libs-$(BASS_VERSION)/bassasio.zip" || { rm -f $@; exit 1; }
 
 $(DEPS_CACHE)/bass-$(BASS_VERSION).source: $(DEPS_CACHE)/bass-$(BASS_VERSION)/bass.zip $(DEPS_CACHE)/bass-$(BASS_VERSION)/bass-linux.zip $\
 										$(DEPS_CACHE)/bass-$(BASS_VERSION)/bassflac24.zip $(DEPS_CACHE)/bass-$(BASS_VERSION)/bassflac24-linux.zip $\
@@ -237,8 +238,8 @@ $(DEPS_CACHE)/bass-$(BASS_VERSION).source: $(DEPS_CACHE)/bass-$(BASS_VERSION)/ba
 
 $(DEPS_CACHE)/discordsdk-$(DISCORDSDK_VERSION)/discordsdk.zip:
 	$(MKDIR_P) $(DEPS_CACHE)/discordsdk-$(DISCORDSDK_VERSION) && \
-	$(CURLBIN) -fsSLo $@ "https://web.archive.org/web/20250505113314/https://dl-game-sdk.discordapp.net/$(DISCORDSDK_VERSION)/discord_game_sdk.zip" || \
-		$(CURLBIN) -fsSLo $@ "https://dl-game-sdk.discordapp.net/$(DISCORDSDK_VERSION)/discord_game_sdk.zip" || { rm -f $@; exit 1; }
+	$(CURLCOMMAND) "https://web.archive.org/web/20250505113314/https://dl-game-sdk.discordapp.net/$(DISCORDSDK_VERSION)/discord_game_sdk.zip" || \
+			$(CURLCOMMAND) "https://dl-game-sdk.discordapp.net/$(DISCORDSDK_VERSION)/discord_game_sdk.zip" || { rm -f $@; exit 1; }
 
 $(DEPS_CACHE)/discordsdk-$(DISCORDSDK_VERSION).source: $(DEPS_CACHE)/discordsdk-$(DISCORDSDK_VERSION)/discordsdk.zip
 	cd $(DEPS_CACHE)/discordsdk-$(DISCORDSDK_VERSION) && \
@@ -253,15 +254,15 @@ $(DEPS_CACHE)/discordsdk-$(DISCORDSDK_VERSION).source: $(DEPS_CACHE)/discordsdk-
 
 $(DEPS_CACHE)/curl-$(CURL_VERSION)/certbundle/cacert.pem:
 	$(MKDIR_P) $(DEPS_CACHE)/curl-$(CURL_VERSION)/certbundle && \
-	$(CURLBIN) -fsSLo $@ "https://curl.se/ca/cacert.pem" || { rm -f $@; exit 1; }
+	$(CURLCOMMAND) "https://curl.se/ca/cacert.pem" || { rm -f $@; exit 1; }
 
 $(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-windowsi686.tar.xz:
 	$(MKDIR_P) $(DEPS_CACHE)/curl-$(CURL_VERSION) && \
-	$(CURLBIN) -fsSLo $@ "https://github.com/whrvt/static-curl/releases/download/$(CURL_VERSION)/curl-windows-i686-dev-$(CURL_VERSION).tar.xz" || { rm -f $@; exit 1; }
+	$(CURLCOMMAND) "https://github.com/whrvt/static-curl/releases/download/$(CURL_VERSION)/curl-windows-i686-dev-$(CURL_VERSION).tar.xz" || { rm -f $@; exit 1; }
 
 $(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-windowsx86_64.tar.xz:
 	$(MKDIR_P) $(DEPS_CACHE)/curl-$(CURL_VERSION) && \
-	$(CURLBIN) -fsSLo $@ "https://github.com/whrvt/static-curl/releases/download/$(CURL_VERSION)/curl-windows-x86_64-dev-$(CURL_VERSION).tar.xz" || { rm -f $@; exit 1; }
+	$(CURLCOMMAND) "https://github.com/whrvt/static-curl/releases/download/$(CURL_VERSION)/curl-windows-x86_64-dev-$(CURL_VERSION).tar.xz" || { rm -f $@; exit 1; }
 
 $(DEPS_CACHE)/curl-$(CURL_VERSION)-windows-binary.source: $(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-windowsi686.tar.xz $\
 											$(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-windowsx86_64.tar.xz
@@ -278,11 +279,11 @@ $(DEPS_CACHE)/curl-$(CURL_VERSION)-windows-binary.source: $(DEPS_CACHE)/curl-$(C
 
 $(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-linuxi686.tar.xz:
 	$(MKDIR_P) $(DEPS_CACHE)/curl-$(CURL_VERSION) && \
-	$(CURLBIN) -fsSLo $@ "https://github.com/whrvt/static-curl/releases/download/$(CURL_VERSION)/curl-linux-i686-dev-$(CURL_VERSION).tar.xz" || { rm -f $@; exit 1; }
+	$(CURLCOMMAND) "https://github.com/whrvt/static-curl/releases/download/$(CURL_VERSION)/curl-linux-i686-dev-$(CURL_VERSION).tar.xz" || { rm -f $@; exit 1; }
 
 $(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-linuxx86_64.tar.xz:
 	$(MKDIR_P) $(DEPS_CACHE)/curl-$(CURL_VERSION) && \
-	$(CURLBIN) -fsSLo $@ "https://github.com/whrvt/static-curl/releases/download/$(CURL_VERSION)/curl-linux-x86_64-dev-$(CURL_VERSION).tar.xz" || { rm -f $@; exit 1; }
+	$(CURLCOMMAND) "https://github.com/whrvt/static-curl/releases/download/$(CURL_VERSION)/curl-linux-x86_64-dev-$(CURL_VERSION).tar.xz" || { rm -f $@; exit 1; }
 
 $(DEPS_CACHE)/curl-$(CURL_VERSION)-linux-binary.source: $(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-linuxi686.tar.xz $\
 														$(DEPS_CACHE)/curl-$(CURL_VERSION)/curl-linuxx86_64.tar.xz
