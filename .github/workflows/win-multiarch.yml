@@ -54,7 +54,10 @@ jobs:
             build-aux/cache/*.gz
             build-aux/cache/*.xz
             build-aux/cache/*.zip
-            build-aux/cache/*.pem
+            build-aux/cache/**/*.gz
+            build-aux/cache/**/*.xz
+            build-aux/cache/**/*.zip
+            build-aux/cache/**/*.pem
           key: tarballs-win-${{ matrix.arch }}
           restore-keys: |
             tarballs-win-
