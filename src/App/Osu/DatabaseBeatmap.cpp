@@ -1427,7 +1427,10 @@ DatabaseBeatmap::LOAD_GAMEPLAY_RESULT DatabaseBeatmap::loadGameplay(BeatmapDiffi
         // XXX: file io, md5 calc, all on main thread!!
         auto metaRes = std::move(preloadedMetadata);
 
-        if(preloadedMetadata.fileData.empty() || preloadedMetadata.error) {
+        if(metaRes.fileData.empty() || metaRes.error) {
+            logIf(cv::debug_osu.getBool() || cv::debug_db.getBool(), "reloading metadata for {} because {}",
+                  databaseBeatmap->sFilePath,
+                  metaRes.fileData.empty() ? "metadata file data was empty" : metaRes.error.error_string());
             metaRes = databaseBeatmap->loadMetadata();
         }
 

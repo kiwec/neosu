@@ -821,18 +821,27 @@ void SongBrowser::draw() {
     }
 }
 
+// FIXME: this should not be a public function
 bool SongBrowser::selectBeatmapset(i32 set_id) {
+    if(db->isLoading()) {
+        debugLog("Can't select a beatmapset while database is loading!");
+        return false;
+    }
+
     auto beatmapset = db->getBeatmapSet(set_id);
     if(beatmapset == nullptr) {
         // Pasted from Downloader::download_beatmap
         auto mapset_path = fmt::format(NEOSU_MAPS_PATH "/{}/", set_id);
-        db->addBeatmapSet(mapset_path);
+        beatmapset = db->addBeatmapSet(mapset_path);
         debugLog("Finished loading beatmapset {:d}.", set_id);
-
-        beatmapset = db->getBeatmapSet(set_id);
     }
 
     if(beatmapset == nullptr) {
+        return false;
+    }
+
+    if(!this->bInitializedBeatmaps) {
+        BeatmapInterface::loading_reselect_map = beatmapset->getDifficulties()[0]->getMD5();
         return false;
     }
 
@@ -1160,6 +1169,9 @@ CBaseUIContainer *SongBrowser::setVisible(bool visible) {
     if(this->bVisible) {
         soundEngine->play(osu->getSkin()->s_expand);
         RichPresence::onSongBrowser();
+        if(this->bSongButtonsNeedSorting) {
+            this->rebuildAfterGroupOrSortChange(this->curGroup);
+        }
 
         this->updateLayout();
 
@@ -1397,6 +1409,8 @@ void SongBrowser::onDifficultySelected(DatabaseBeatmap *map, bool play) {
 void SongBrowser::refreshBeatmaps(bool closeAfterLoading) {
     if(osu->isInPlayMode()) return;
 
+    this->bInitializedBeatmaps = false;
+
     // remember for initial songbrowser load
     if(BeatmapDifficulty *map = osu->getMapInterface()->getBeatmap(); !!map && map->getMD5() != MD5Hash{}) {
         BeatmapInterface::loading_reselect_map = map->getMD5();
@@ -1464,7 +1478,13 @@ void SongBrowser::refreshBeatmaps(bool closeAfterLoading) {
     }
 }
 
+// this is an insane hack to be calling from places that don't even use songbrowser
 void SongBrowser::addBeatmapSet(BeatmapSet *mapset, bool initialSongBrowserLoad) {
+    if(!this->bInitializedBeatmaps && !initialSongBrowserLoad) {
+        this->bSongButtonsNeedSorting = true;
+        return;
+    }
+
     // NOTE: BeatmapSets must always be created with at least itself as a difficulty.
     assert(!mapset->getDifficulties().empty());
 
@@ -2569,6 +2589,78 @@ void SongBrowser::checkHandleKillBackgroundSearchMatcher() {
     }
 }
 
+void SongBrowser::initializeGroupingButtons() {
+#define MKCBTN(name__) \
+    std::make_unique<CollectionButton>(250.f, 250.f, 200.f, 50.f, fmt::format("cbtn-{}", name__), name__)
+    // artist, title, creator
+    for(auto *coll : {&this->artistCollectionButtons, &this->titleCollectionButtons, &this->creatorCollectionButtons}) {
+        if(coll->size() == 28) continue;
+        coll->resize(28);
+
+        // 0-9
+        {
+            coll->at(0) = MKCBTN(US_("0-9"));
+        }
+
+        // A-Z
+        for(size_t i = 0; i < 26; i++) {
+            UString collectionName = UString::format("%c", 'A' + i);
+
+            coll->at(i + 1) = MKCBTN(collectionName);
+        }
+
+        // Other
+        {
+            coll->at(27) = MKCBTN(US_("Other"));
+        }
+    }
+
+    // difficulty
+    if(auto &diffbtns = this->difficultyCollectionButtons; diffbtns.size() != 12) {
+        diffbtns.resize(12);
+        for(size_t i = 0; i < 12; i++) {
+            UString difficultyCollectionName;
+            if(i < 1)
+                difficultyCollectionName = US_("Below 1 star");
+            else if(i > 10)
+                difficultyCollectionName = US_("Above 10 stars");
+            else
+                difficultyCollectionName = UString::format(i == 1 ? "%i star" : "%i stars", i);
+
+            diffbtns[i] = MKCBTN(difficultyCollectionName);
+        }
+    }
+
+    // bpm
+    if(auto &bpmbtns = this->bpmCollectionButtons; bpmbtns.size() != 6) {
+        bpmbtns.resize(6);
+        bpmbtns[0] = MKCBTN(US_("Under 60 BPM"));
+        bpmbtns[1] = MKCBTN(US_("Under 120 BPM"));
+        bpmbtns[2] = MKCBTN(US_("Under 180 BPM"));
+        bpmbtns[3] = MKCBTN(US_("Under 240 BPM"));
+        bpmbtns[4] = MKCBTN(US_("Under 300 BPM"));
+        bpmbtns[5] = MKCBTN(US_("Over 300 BPM"));
+    }
+
+    // dateadded
+    {
+        // TODO: annoying
+    }
+
+    // length
+    if(auto &lenbtns = this->lengthCollectionButtons; lenbtns.size() != 7) {
+        lenbtns.resize(7);
+        lenbtns[0] = MKCBTN(US_("1 minute or less"));
+        lenbtns[1] = MKCBTN(US_("2 minutes or less"));
+        lenbtns[2] = MKCBTN(US_("3 minutes or less"));
+        lenbtns[3] = MKCBTN(US_("4 minutes or less"));
+        lenbtns[4] = MKCBTN(US_("5 minutes or less"));
+        lenbtns[5] = MKCBTN(US_("10 minutes or less"));
+        lenbtns[6] = MKCBTN(US_("Over 10 minutes"));
+    }
+#undef MKCBTN
+}
+
 void SongBrowser::onDatabaseLoadingFinished() {
     // Extract oszs from neosu's maps/ directory now
     auto oszs = env->getFilesInFolder(NEOSU_MAPS_PATH "/");
@@ -2585,80 +2677,7 @@ void SongBrowser::onDatabaseLoadingFinished() {
     debugLog("Loading {} beatmapsets from database.", db->getBeatmapSets().size());
 
     // initialize all collection (grouped) buttons
-    {
-#define MKCBTN(name__) \
-    std::make_unique<CollectionButton>(250.f, 250.f, 200.f, 50.f, fmt::format("cbtn-{}", name__), name__)
-        // artist, title, creator
-        for(auto *coll :
-            {&this->artistCollectionButtons, &this->titleCollectionButtons, &this->creatorCollectionButtons}) {
-            coll->resize(28);
-
-            // 0-9
-            {
-                coll->at(0) = MKCBTN(US_("0-9"));
-            }
-
-            // A-Z
-            for(size_t i = 0; i < 26; i++) {
-                UString collectionName = UString::format("%c", 'A' + i);
-
-                coll->at(i + 1) = MKCBTN(collectionName);
-            }
-
-            // Other
-            {
-                coll->at(27) = MKCBTN(US_("Other"));
-            }
-        }
-
-        // difficulty
-        {
-            auto &diffbtns = this->difficultyCollectionButtons;
-            diffbtns.resize(12);
-            for(size_t i = 0; i < 12; i++) {
-                UString difficultyCollectionName;
-                if(i < 1)
-                    difficultyCollectionName = US_("Below 1 star");
-                else if(i > 10)
-                    difficultyCollectionName = US_("Above 10 stars");
-                else
-                    difficultyCollectionName = UString::format(i == 1 ? "%i star" : "%i stars", i);
-
-                diffbtns[i] = MKCBTN(difficultyCollectionName);
-            }
-        }
-
-        // bpm
-        {
-            auto &bpmbtns = this->bpmCollectionButtons;
-            bpmbtns.resize(6);
-            bpmbtns[0] = MKCBTN(US_("Under 60 BPM"));
-            bpmbtns[1] = MKCBTN(US_("Under 120 BPM"));
-            bpmbtns[2] = MKCBTN(US_("Under 180 BPM"));
-            bpmbtns[3] = MKCBTN(US_("Under 240 BPM"));
-            bpmbtns[4] = MKCBTN(US_("Under 300 BPM"));
-            bpmbtns[5] = MKCBTN(US_("Over 300 BPM"));
-        }
-
-        // dateadded
-        {
-            // TODO: annoying
-        }
-
-        // length
-        {
-            auto &lenbtns = this->lengthCollectionButtons;
-            lenbtns.resize(7);
-            lenbtns[0] = MKCBTN(US_("1 minute or less"));
-            lenbtns[1] = MKCBTN(US_("2 minutes or less"));
-            lenbtns[2] = MKCBTN(US_("3 minutes or less"));
-            lenbtns[3] = MKCBTN(US_("4 minutes or less"));
-            lenbtns[4] = MKCBTN(US_("5 minutes or less"));
-            lenbtns[5] = MKCBTN(US_("10 minutes or less"));
-            lenbtns[6] = MKCBTN(US_("Over 10 minutes"));
-        }
-#undef MKCBTN
-    }
+    this->initializeGroupingButtons();
 
     // add all beatmaps (build buttons)
     {
@@ -2677,6 +2696,8 @@ void SongBrowser::onDatabaseLoadingFinished() {
 
     // build collections
     this->recreateCollectionsButtons();
+
+    this->bInitializedBeatmaps = true;
 
     this->onSortChange(cv::songbrowser_sortingtype.getString().c_str());
     this->onSortScoresChange(cv::songbrowser_scores_sortingtype.getString().c_str());
@@ -3104,7 +3125,7 @@ void SongBrowser::rebuildAfterGroupOrSortChange(GroupType group, const std::opti
     const bool sortingChanged = this->curSortMethod != sortMethod.value_or(this->curSortMethod);
     const bool groupingChanged = this->curGroup != group;
 
-    if(!sortingChanged && !groupingChanged && !this->visibleSongButtons.empty()) {
+    if(!this->bSongButtonsNeedSorting && !sortingChanged && !groupingChanged && !this->visibleSongButtons.empty()) {
         return;
     }
 
@@ -3462,7 +3483,7 @@ void SongBrowser::selectRandomBeatmap() {
         this->previousRandomBeatmaps.push_back(osu->getMapInterface()->getBeatmap());
     }
 
-    size_t randomIndex = prand() % (songButtons.size() - 1);
+    size_t randomIndex = songButtons.size() == 1 ? 0 : (prand() % (songButtons.size() - 1));
 
     auto *songButton = songButtons[randomIndex]->as<SongButton>();
     this->selectSongButton(songButton);

@@ -199,7 +199,7 @@ Database::DatabaseType Database::getDBType(std::string_view db_path) {
 }
 
 bool Database::isOsuDBReadable(std::string_view peppy_db_path) {
-    if(!cv::database_enabled.getBool() || !Environment::fileExists(peppy_db_path)) return false;
+    if(!Environment::fileExists(peppy_db_path)) return false;
 
     ByteBufferedFile::Reader dbr(peppy_db_path);
     u32 osu_db_version = (dbr.good() && dbr.total_size > 0) ? dbr.read<u32>() : 0;
@@ -280,7 +280,10 @@ void Database::startLoader() {
 
     // only clear diffs/sets for full reloads (only handled for raw re-loading atm)
     const bool lastLoadWasRaw{this->needs_raw_load};
-    this->needs_raw_load = !isOsuDBReadable(getDBPath(DatabaseType::STABLE_MAPS));
+    // TODO: raw loading from other folders
+    this->needs_raw_load = !cv::database_enabled.getBool() &&  // TODO: new cvar like "force raw load"
+                           Environment::directoryExists(Database::getOsuSongsFolder()) &&
+                           !isOsuDBReadable(getDBPath(DatabaseType::STABLE_MAPS));
     const bool nextLoadIsRaw{this->needs_raw_load};
 
     if(!lastLoadWasRaw || !nextLoadIsRaw) {
@@ -444,40 +447,37 @@ void Database::save() {
 //       (unless is_peppy is specified, in which case we're loading a raw osu folder and not saving the things we loaded)
 BeatmapSet *Database::addBeatmapSet(const std::string &beatmapFolderPath, i32 set_id_override,
                                     bool diffcalc_immediately, bool is_peppy) {
-    auto beatmap = this->loadRawBeatmap(beatmapFolderPath, diffcalc_immediately, is_peppy);
-    if(beatmap == nullptr) return nullptr;
+    std::unique_ptr<BeatmapSet> mapset = this->loadRawBeatmap(beatmapFolderPath, diffcalc_immediately, is_peppy);
+    if(mapset == nullptr) return nullptr;
 
-    BeatmapSet *raw_beatmap = beatmap.get();
+    BeatmapSet *raw_mapset = mapset.get();
 
     // Some beatmaps don't provide beatmap/beatmapset IDs in the .osu files
     // But we know the beatmapset ID because we just downloaded it!
     if(set_id_override != -1) {
-        beatmap->iSetID = set_id_override;
-        for(auto &diff : beatmap->getDifficulties()) {
+        mapset->iSetID = set_id_override;
+        for(auto &diff : mapset->getDifficulties()) {
             diff->iSetID = set_id_override;
         }
     }
 
     {
         Sync::unique_lock lock(this->beatmap_difficulties_mtx);
-        for(const auto &diff : beatmap->getDifficulties()) {
+        for(const auto &diff : mapset->getDifficulties()) {
             this->beatmap_difficulties[diff->getMD5()] = diff.get();
         }
     }
 
     // do not add to songbrowser yet unless we are finished loading
     if(this->isFinished()) {
-        this->beatmapsets.push_back(std::move(beatmap));
+        this->beatmapsets.push_back(std::move(mapset));
 
-        osu->getSongBrowser()->addBeatmapSet(raw_beatmap);
-
-        // XXX: Very slow
-        osu->getSongBrowser()->onSortChange(cv::songbrowser_sortingtype.getString());
+        osu->getSongBrowser()->addBeatmapSet(raw_mapset);
     } else {
-        this->temp_loading_beatmapsets.push_back(std::move(beatmap));
+        this->temp_loading_beatmapsets.push_back(std::move(mapset));
     }
 
-    return raw_beatmap;
+    return raw_mapset;
 }
 
 void Database::AsyncScoreSaver::initAsync() {
@@ -909,10 +909,11 @@ std::string Database::getOsuSongsFolder() {
 void Database::scheduleLoadRaw() {
     {
         std::string folderToLoadFrom = Database::getOsuSongsFolder();
-        std::vector<std::string> foldersInFolder;
+        std::vector<std::string> foldersInFolder = Environment::getFoldersInFolder(folderToLoadFrom);
 
-        if(!(File::exists(folderToLoadFrom) == File::FILETYPE::FOLDER) ||  //
-           (foldersInFolder = Environment::getFoldersInFolder(folderToLoadFrom)).empty()) {
+        // TODO
+        if(false && (!(File::exists(folderToLoadFrom) == File::FILETYPE::FOLDER) ||  //
+                     foldersInFolder.empty())) {
             folderToLoadFrom = NEOSU_MAPS_PATH "/";
             foldersInFolder = Environment::getFoldersInFolder(folderToLoadFrom);
 
@@ -1790,9 +1791,15 @@ void Database::saveMaps() {
 
     // collect neosu-only sets here
     std::vector<BeatmapSet *> temp_neosu_sets;
+    Hash::flat::set<std::string> folders_already_added;
     for(const auto &beatmap : this->beatmapsets) {
         if(beatmap->type == DatabaseBeatmap::BeatmapType::NEOSU_BEATMAPSET) {
-            temp_neosu_sets.push_back(beatmap.get());
+            // don't add duplicate entries
+            // kind of a hack, we shouldn't have added duplicates to beatmapsets in the first place
+            // this happens because addBeatmapSet doesn't check if we already have it
+            if(auto [_, newly_inserted] = folders_already_added.insert(beatmap->getFolder()); newly_inserted) {
+                temp_neosu_sets.push_back(beatmap.get());
+            }
         }
     }
 

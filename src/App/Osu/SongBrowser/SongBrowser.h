@@ -207,6 +207,7 @@ class SongBrowser final : public ScreenBackable {
     void scheduleSearchUpdate(bool immediately = false);
     void checkHandleKillBackgroundSearchMatcher();
 
+    void initializeGroupingButtons();
     void onDatabaseLoadingFinished();
 
     void onSearchUpdate();
@@ -281,6 +282,7 @@ class SongBrowser final : public ScreenBackable {
     bool bNextScrollToSongButtonJumpFixScheduled;
     bool bNextScrollToSongButtonJumpFixUseScrollSizeDelta;
     bool scheduled_scroll_to_selected_button = false;
+    bool bInitializedBeatmaps{false};
     bool bSongButtonsNeedSorting{false};
     float fNextScrollToSongButtonJumpFixOldRelPosY;
     float fNextScrollToSongButtonJumpFixOldScrollSizeY;
@@ -300,7 +302,7 @@ class SongBrowser final : public ScreenBackable {
     CollBtnContainer artistCollectionButtons;
     CollBtnContainer creatorCollectionButtons;
 
-    CollBtnContainer dateaddedCollectionButtons; // not implemented yet
+    CollBtnContainer dateaddedCollectionButtons;  // not implemented yet
     CollBtnContainer difficultyCollectionButtons;
     CollBtnContainer bpmCollectionButtons;
     CollBtnContainer lengthCollectionButtons;
