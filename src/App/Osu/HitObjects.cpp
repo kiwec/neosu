@@ -92,43 +92,45 @@ void HitObject::drawHitResult(const Skin *skin, float hitcircleDiameter, float r
         bool doScaleOrRotateAnim = true;
         bool hasParticle = true;
         float hitImageScale = 1.0f;
+
         switch(result) {
-            case LiveScore::HIT::HIT_MISS:
+            using enum LiveScore::HIT;
+            case HIT_MISS:
                 doScaleOrRotateAnim = skin->i_hit0->getNumImages() == 1;
                 hitImageScale = (rawHitcircleDiameter / skin->i_hit0->getSizeBaseRaw().x) * osuCoordScaleMultiplier;
                 break;
 
-            case LiveScore::HIT::HIT_50:
+            case HIT_50:
                 doScaleOrRotateAnim = skin->i_hit50->getNumImages() == 1;
                 hasParticle = skin->i_particle50 != MISSING_TEXTURE;
                 hitImageScale = (rawHitcircleDiameter / skin->i_hit50->getSizeBaseRaw().x) * osuCoordScaleMultiplier;
                 break;
 
-            case LiveScore::HIT::HIT_100:
+            case HIT_100:
                 doScaleOrRotateAnim = skin->i_hit100->getNumImages() == 1;
                 hasParticle = skin->i_particle100 != MISSING_TEXTURE;
                 hitImageScale = (rawHitcircleDiameter / skin->i_hit100->getSizeBaseRaw().x) * osuCoordScaleMultiplier;
                 break;
 
-            case LiveScore::HIT::HIT_300:
+            case HIT_300:
                 doScaleOrRotateAnim = skin->i_hit300->getNumImages() == 1;
                 hasParticle = skin->i_particle300 != MISSING_TEXTURE;
                 hitImageScale = (rawHitcircleDiameter / skin->i_hit300->getSizeBaseRaw().x) * osuCoordScaleMultiplier;
                 break;
 
-            case LiveScore::HIT::HIT_100K:
+            case HIT_100K:
                 doScaleOrRotateAnim = skin->i_hit100k->getNumImages() == 1;
                 hasParticle = skin->i_particle100 != MISSING_TEXTURE;
                 hitImageScale = (rawHitcircleDiameter / skin->i_hit100k->getSizeBaseRaw().x) * osuCoordScaleMultiplier;
                 break;
 
-            case LiveScore::HIT::HIT_300K:
+            case HIT_300K:
                 doScaleOrRotateAnim = skin->i_hit300k->getNumImages() == 1;
                 hasParticle = skin->i_particle300 != MISSING_TEXTURE;
                 hitImageScale = (rawHitcircleDiameter / skin->i_hit300k->getSizeBaseRaw().x) * osuCoordScaleMultiplier;
                 break;
 
-            case LiveScore::HIT::HIT_300G:
+            case HIT_300G:
                 doScaleOrRotateAnim = skin->i_hit300g->getNumImages() == 1;
                 hasParticle = skin->i_particle300 != MISSING_TEXTURE;
                 hitImageScale = (rawHitcircleDiameter / skin->i_hit300g->getSizeBaseRaw().x) * osuCoordScaleMultiplier;
@@ -163,7 +165,9 @@ void HitObject::drawHitResult(const Skin *skin, float hitcircleDiameter, float r
         }
 
         switch(result) {
-            case LiveScore::HIT::HIT_MISS: {
+            using enum LiveScore::HIT;
+
+            case HIT_MISS: {
                 // special case: animated misses don't move down, and skins with version <= 1 also don't move down
                 vec2 downAnim{0.f};
                 if(skin->i_hit0->getNumImages() < 2 && skin->version > 1.0f)
@@ -182,36 +186,36 @@ void HitObject::drawHitResult(const Skin *skin, float hitcircleDiameter, float r
                                                              cv::hitresult_scale.getFloat());
             } break;
 
-            case LiveScore::HIT::HIT_50:
+            case HIT_50:
                 skin->i_hit50->drawRaw(
                     rawPos, (doScaleOrRotateAnim ? scale : 1.0f) * hitImageScale * cv::hitresult_scale.getFloat());
                 break;
 
-            case LiveScore::HIT::HIT_100:
+            case HIT_100:
                 skin->i_hit100->drawRaw(
                     rawPos, (doScaleOrRotateAnim ? scale : 1.0f) * hitImageScale * cv::hitresult_scale.getFloat());
                 break;
 
-            case LiveScore::HIT::HIT_300:
+            case HIT_300:
                 if(cv::hitresult_draw_300s.getBool()) {
                     skin->i_hit300->drawRaw(
                         rawPos, (doScaleOrRotateAnim ? scale : 1.0f) * hitImageScale * cv::hitresult_scale.getFloat());
                 }
                 break;
 
-            case LiveScore::HIT::HIT_100K:
+            case HIT_100K:
                 skin->i_hit100k->drawRaw(
                     rawPos, (doScaleOrRotateAnim ? scale : 1.0f) * hitImageScale * cv::hitresult_scale.getFloat());
                 break;
 
-            case LiveScore::HIT::HIT_300K:
+            case HIT_300K:
                 if(cv::hitresult_draw_300s.getBool()) {
                     skin->i_hit300k->drawRaw(
                         rawPos, (doScaleOrRotateAnim ? scale : 1.0f) * hitImageScale * cv::hitresult_scale.getFloat());
                 }
                 break;
 
-            case LiveScore::HIT::HIT_300G:
+            case HIT_300G:
                 if(cv::hitresult_draw_300s.getBool()) {
                     skin->i_hit300g->drawRaw(
                         rawPos, (doScaleOrRotateAnim ? scale : 1.0f) * hitImageScale * cv::hitresult_scale.getFloat());

@@ -860,46 +860,48 @@ OptionsMenuImpl::OptionsMenuImpl(OptionsMenu *parent) : parent(parent) {
     importSettingsButton->setClickCallback(
         SA::MakeDelegate([]() -> void { PeppyImporter::import_settings_from_osu_stable(); }));
     this->addSpacer();
-    this->addCheckbox_(
+    this->addCheckboxTooltip_(
         "Use osu!.db database (read-only)",
         "If you have an existing osu! installation,\nthen this will speed up the initial loading process.",
         &cv::database_enabled);
-    this->addCheckbox_(
+    this->addCheckboxTooltip_(
         "Load osu! collection.db (read-only)",
         "If you have an existing osu! installation,\nalso load and display your created collections from there.",
         &cv::collections_legacy_enabled);
 
     this->addSpacer();
-    this->addCheckbox_(
+    this->addCheckboxTooltip_(
         "Include Relax/Autopilot for total weighted pp/acc",
         "NOTE: osu! does not allow this (since these mods are unranked).\nShould relax/autopilot scores be "
         "included in the weighted pp/acc calculation?",
         &cv::user_include_relax_and_autopilot_for_stats);
-    this->addCheckbox_("Show pp instead of score in scorebrowser", "Only neosu scores will show pp.",
-                       &cv::scores_sort_by_pp);
-    this->addCheckbox_("Always enable touch device pp nerf mod",
-                       "Keep touch device pp nerf mod active even when resetting all mods.",
-                       &cv::mod_touchdevice_always);
+    this->addCheckboxTooltip_("Show pp instead of score in scorebrowser", "Only neosu scores will show pp.",
+                              &cv::scores_sort_by_pp);
+    this->addCheckboxTooltip_("Always enable touch device pp nerf mod",
+                              "Keep touch device pp nerf mod active even when resetting all mods.",
+                              &cv::mod_touchdevice_always);
 
     this->addSubSection_("Songbrowser");
     this->addCheckbox_("Prefer metadata in original language", &cv::prefer_cjk);
-    this->addCheckbox_("Draw Strain Graph in Songbrowser",
-                       "Hold either SHIFT/CTRL to show only speed/aim strains.\nSpeed strain is red, aim strain is "
-                       "green.\n(See osu_hud_scrubbing_timeline_strains_*)",
-                       &cv::draw_songbrowser_strain_graph);
-    this->addCheckbox_("Draw Strain Graph in Scrubbing Timeline",
-                       "Speed strain is red, aim strain is green.\n(See osu_hud_scrubbing_timeline_strains_*)",
-                       &cv::draw_scrubbing_timeline_strain_graph);
-    this->addCheckbox_("Song Buttons Velocity Animation",
-                       "If enabled, then song buttons are pushed to the right depending on the scrolling velocity.",
-                       &cv::songbrowser_button_anim_x_push);
-    this->addCheckbox_("Song Buttons Curved Layout",
-                       "If enabled, then song buttons are positioned on a vertically centered curve.",
-                       &cv::songbrowser_button_anim_y_curve);
+    this->addCheckboxTooltip_(
+        "Draw Strain Graph in Songbrowser",
+        "Hold either SHIFT/CTRL to show only speed/aim strains.\nSpeed strain is red, aim strain is "
+        "green.\n(See osu_hud_scrubbing_timeline_strains_*)",
+        &cv::draw_songbrowser_strain_graph);
+    this->addCheckboxTooltip_("Draw Strain Graph in Scrubbing Timeline",
+                              "Speed strain is red, aim strain is green.\n(See osu_hud_scrubbing_timeline_strains_*)",
+                              &cv::draw_scrubbing_timeline_strain_graph);
+    this->addCheckboxTooltip_(
+        "Song Buttons Velocity Animation",
+        "If enabled, then song buttons are pushed to the right depending on the scrolling velocity.",
+        &cv::songbrowser_button_anim_x_push);
+    this->addCheckboxTooltip_("Song Buttons Curved Layout",
+                              "If enabled, then song buttons are positioned on a vertically centered curve.",
+                              &cv::songbrowser_button_anim_y_curve);
 
     this->addSubSection_("Window");
-    this->addCheckbox_("Pause on Focus Loss", "Should the game pause when you switch to another application?",
-                       &cv::pause_on_focus_loss);
+    this->addCheckboxTooltip_("Pause on Focus Loss", "Should the game pause when you switch to another application?",
+                              &cv::pause_on_focus_loss);
 
     this->addSubSection_("Alerts");
     this->addCheckbox_("Notify when friends change status", &cv::notify_friend_status_change);
@@ -923,7 +925,7 @@ OptionsMenuImpl::OptionsMenuImpl(OptionsMenu *parent) : parent(parent) {
     this->addCheckbox_("Show spectator list", &cv::draw_spectator_list);
     this->addCheckbox_("Share currently played map with spectators", &cv::spec_share_map);
     if constexpr(Env::cfg(FEAT::DISCORD)) {
-        this->addCheckbox_(
+        this->addCheckboxTooltip_(
             "Enable Discord Rich Presence",
             "Shows your current game state in your friends' friendslists.\ne.g.: Playing Gavin G - Reach Out "
             "[Cherry Blossom's Insane]",
@@ -945,17 +947,17 @@ OptionsMenuImpl::OptionsMenuImpl(OptionsMenu *parent) : parent(parent) {
     CBaseUIElement *sectionGraphics = this->addSection_("Graphics");
 
     this->addSubSection_("Renderer");
-    this->addCheckbox_("VSync", "If enabled: plz enjoy input lag.", &cv::vsync);
+    this->addCheckboxTooltip_("VSync", "If enabled: plz enjoy input lag.", &cv::vsync);
 
-    this->addCheckbox_("High Priority", "Sets the game process priority to high", &cv::win_processpriority);
+    this->addCheckboxTooltip_("High Priority", "Sets the game process priority to high", &cv::win_processpriority);
 
     this->addCheckbox_("Show FPS Counter", &cv::draw_fps);
 
     CBaseUISlider *prerenderedFramesSlider =
-        addSlider("Max Queued Frames", 1.0f, 3.0f, &cv::r_sync_max_frames, -1.0f, true);
+        this->addSlider_("Max Queued Frames", 1.0f, 3.0f, &cv::r_sync_max_frames, -1.0f, true);
     prerenderedFramesSlider->setChangeCallback(SA::MakeDelegate<&OptionsMenuImpl::onSliderChangeInt>(this));
     prerenderedFramesSlider->setKeyDelta(1);
-    addLabel("Raise for higher fps, decrease for lower latency")->setTextColor(0xff666666);
+    this->addLabel_("Raise for higher fps, decrease for lower latency")->setTextColor(0xff666666);
 
     this->addSpacer();
 
@@ -975,11 +977,12 @@ OptionsMenuImpl::OptionsMenuImpl(OptionsMenu *parent) : parent(parent) {
     this->resolutionLabel = (CBaseUILabel *)resolutionSelect->baseElems[1].get();
     this->fullscreenCheckbox = this->addCheckbox_("Fullscreen");
     this->fullscreenCheckbox->setChangeCallback(SA::MakeDelegate<&OptionsMenuImpl::onFullscreenChange>(this));
-    this->addCheckbox_("Keep Aspect Ratio",
-                       "Black borders instead of a stretched image.\nOnly relevant if fullscreen is enabled, and "
-                       "letterboxing is disabled.\nUse the two position sliders below to move the viewport around.",
-                       &cv::resolution_keep_aspect_ratio);
-    this->addCheckbox_(
+    this->addCheckboxTooltip_(
+        "Keep Aspect Ratio",
+        "Black borders instead of a stretched image.\nOnly relevant if fullscreen is enabled, and "
+        "letterboxing is disabled.\nUse the two position sliders below to move the viewport around.",
+        &cv::resolution_keep_aspect_ratio);
+    this->addCheckboxTooltip_(
         "Letterboxing",
         "Useful to get the low latency of fullscreen with a smaller game resolution.\nUse the two position "
         "sliders below to move the viewport around.",
@@ -1008,34 +1011,37 @@ OptionsMenuImpl::OptionsMenuImpl(OptionsMenu *parent) : parent(parent) {
     this->uiScaleSlider->setAnimated(false);
 
     this->addSubSection_("Detail Settings");
-    this->addCheckbox_("Animate scoreboard", "Use fancy animations for the in-game scoreboard",
-                       &cv::scoreboard_animations);
-    this->addCheckbox_(
+    this->addCheckboxTooltip_("Animate scoreboard", "Use fancy animations for the in-game scoreboard",
+                              &cv::scoreboard_animations);
+    this->addCheckboxTooltip_(
         "Avoid flashing elements",
         "Disables cosmetic flash effects\nDisables dimming when holding silders with Flashlight mod enabled",
         &cv::avoid_flashes);
-    this->addCheckbox_(
+    this->addCheckboxTooltip_(
         "Mipmaps",
         "Reload your skin to apply! (CTRL + ALT + S)\nGenerate mipmaps for each skin element, at the cost of "
         "VRAM.\nProvides smoother visuals on lower resolutions for @2x-only skins.",
         &cv::skin_mipmaps);
     this->addSpacer();
-    this->addCheckbox_(
+    this->addCheckboxTooltip_(
         "Snaking in sliders",
         "\"Growing\" sliders.\nSliders gradually snake out from their starting point while fading in.\nHas no "
         "impact on performance whatsoever.",
         &cv::snaking_sliders);
-    this->addCheckbox_("Snaking out sliders",
-                       "\"Shrinking\" sliders.\nSliders will shrink with the sliderball while sliding.\nCan improve "
-                       "performance a tiny bit, since there will be less to draw overall.",
-                       &cv::slider_shrink);
+    this->addCheckboxTooltip_(
+        "Snaking out sliders",
+        "\"Shrinking\" sliders.\nSliders will shrink with the sliderball while sliding.\nCan improve "
+        "performance a tiny bit, since there will be less to draw overall.",
+        &cv::slider_shrink);
     this->addSpacer();
-    this->addCheckbox_("Legacy Slider Renderer (!)",
-                       "WARNING: Only try enabling this on shitty old computers!\nMay or may not improve fps while few "
-                       "sliders are visible.\nGuaranteed lower fps while many sliders are visible!",
-                       &cv::force_legacy_slider_renderer);
-    this->addCheckbox_("Higher Quality Sliders (!)", "Disable this if your fps drop too low while sliders are visible.",
-                       &cv::options_high_quality_sliders)
+    this->addCheckboxTooltip_(
+        "Legacy Slider Renderer (!)",
+        "WARNING: Only try enabling this on shitty old computers!\nMay or may not improve fps while few "
+        "sliders are visible.\nGuaranteed lower fps while many sliders are visible!",
+        &cv::force_legacy_slider_renderer);
+    this->addCheckboxTooltip_("Higher Quality Sliders (!)",
+                              "Disable this if your fps drop too low while sliders are visible.",
+                              &cv::options_high_quality_sliders)
         ->setChangeCallback(SA::MakeDelegate<&OptionsMenuImpl::onHighQualitySlidersCheckboxChange>(this));
 
     this->sliderQualitySlider = this->addSlider_("Slider Quality", 0.0f, 1.0f, &cv::options_slider_quality);
@@ -1105,7 +1111,7 @@ OptionsMenuImpl::OptionsMenuImpl(OptionsMenu *parent) : parent(parent) {
             // need to use a change callback here because we already have a single-arg callback for the convar...
             cv::snd_soloud_backend.setCallback([](float /**/, float /**/) -> void { setActiveColors(); });
 
-            this->addCheckbox_(
+            this->addCheckboxTooltip_(
                 "Auto-disable exclusive mode",
                 "Toggle exclusive mode off/on\nwhen losing/gaining focus, if already\nin exclusive mode.",
                 &cv::snd_disable_exclusive_unfocused);
@@ -1125,10 +1131,10 @@ OptionsMenuImpl::OptionsMenuImpl(OptionsMenu *parent) : parent(parent) {
         {
             this->addSubSection_("WASAPI");
 
-            this->addCheckbox_("Low-latency Callbacks",
-                               "Run BASSWASAPI in callback mode to potentially further decrease "
-                               "latency.\n(period/buffer size are ignored)",
-                               &cv::win_snd_wasapi_event_callbacks);
+            this->addCheckboxTooltip_("Low-latency Callbacks",
+                                      "Run BASSWASAPI in callback mode to potentially further decrease "
+                                      "latency.\n(period/buffer size are ignored)",
+                                      &cv::win_snd_wasapi_event_callbacks);
 
             this->wasapiBufferSizeSlider =
                 this->addSlider_("Buffer Size:", 0.000f, 0.050f, &cv::win_snd_wasapi_buffer_size);
@@ -1140,7 +1146,7 @@ OptionsMenuImpl::OptionsMenuImpl(OptionsMenu *parent) : parent(parent) {
             this->addLabel_("Windows 10: Start at 1 ms,")->setTextColor(0xff666666);
             this->addLabel_("and if crackling: increment until fixed.")->setTextColor(0xff666666);
             this->addLabel_("(lower is better, non-wasapi has ~40 ms minimum)")->setTextColor(0xff666666);
-            this->addCheckbox_(
+            this->addCheckboxTooltip_(
                 "Exclusive Mode",
                 "Dramatically reduces latency, but prevents other applications from capturing/playing audio.",
                 &cv::win_snd_wasapi_exclusive);
@@ -1215,16 +1221,17 @@ OptionsMenuImpl::OptionsMenuImpl(OptionsMenu *parent) : parent(parent) {
     offsetSlider->setKeyDelta(1);
 
     this->addSubSection_("Gameplay");
-    this->addCheckbox_("Boost hitsound volume", "Apply a small logarithmic multiplier to non-sliderslide hitsounds.",
-                       &cv::snd_boost_hitsound_volume);
+    this->addCheckboxTooltip_("Boost hitsound volume",
+                              "Apply a small logarithmic multiplier to non-sliderslide hitsounds.",
+                              &cv::snd_boost_hitsound_volume);
     this->addCheckbox_("Change hitsound pitch based on accuracy", &cv::snd_pitch_hitsounds);
     this->addCheckbox_("Prefer Nightcore over Double Time", &cv::nightcore_enjoyer)
         ->setChangeCallback(SA::MakeDelegate<&OptionsMenuImpl::onModChangingToggle>(this));
 
     this->addSubSection_("Songbrowser");
-    this->addCheckbox_("Apply speed/pitch mods while browsing",
-                       "Whether to always apply all mods, or keep the preview music normal.",
-                       &cv::beatmap_preview_mods_live);
+    this->addCheckboxTooltip_("Apply speed/pitch mods while browsing",
+                              "Whether to always apply all mods, or keep the preview music normal.",
+                              &cv::beatmap_preview_mods_live);
 
     //**************************************************************************************************************************//
 
@@ -1265,9 +1272,10 @@ OptionsMenuImpl::OptionsMenuImpl(OptionsMenu *parent) : parent(parent) {
         skinRandomBtn->setColor(0xff003947);
     }
     this->addSpacer();
-    this->addCheckbox_("Sort Skins Alphabetically",
-                       "Less like stable, but useful if you don't\nlike obnoxious skin names floating to the top.",
-                       &cv::sort_skins_cleaned);
+    this->addCheckboxTooltip_(
+        "Sort Skins Alphabetically",
+        "Less like stable, but useful if you don't\nlike obnoxious skin names floating to the top.",
+        &cv::sort_skins_cleaned);
     CBaseUISlider *numberScaleSlider =
         this->addSlider_("Number Scale:", 0.01f, 3.0f, &cv::number_scale_multiplier, 135.0f);
     numberScaleSlider->setChangeCallback(SA::MakeDelegate<&OptionsMenuImpl::onSliderChangePercent>(this));
@@ -1281,48 +1289,49 @@ OptionsMenuImpl::OptionsMenuImpl(OptionsMenu *parent) : parent(parent) {
     this->addCheckbox_("Instafade Circles", &cv::instafade);
     this->addCheckbox_("Instafade Sliders", &cv::instafade_sliders);
     this->addSpacer();
-    this->addCheckbox_(
+    this->addCheckboxTooltip_(
         "Ignore Beatmap Sample Volume",
         "Ignore beatmap timingpoint effect volumes.\nQuiet hitsounds can destroy accuracy and concentration, "
         "enabling this will fix that.",
         &cv::ignore_beatmap_sample_volume);
     this->addCheckbox_("Ignore Beatmap Combo Colors", &cv::ignore_beatmap_combo_colors);
-    this->addCheckbox_("Use skin's sound samples",
-                       "If this is not selected, then the default skin hitsounds will be used.",
-                       &cv::skin_use_skin_hitsounds);
-    this->addCheckbox_("Load HD @2x",
-                       "On very low resolutions (below 1600x900) you can disable this to get smoother visuals.",
-                       &cv::skin_hd);
+    this->addCheckboxTooltip_("Use skin's sound samples",
+                              "If this is not selected, then the default skin hitsounds will be used.",
+                              &cv::skin_use_skin_hitsounds);
+    this->addCheckboxTooltip_("Load HD @2x",
+                              "On very low resolutions (below 1600x900) you can disable this to get smoother visuals.",
+                              &cv::skin_hd);
     this->addSpacer();
     this->addCheckbox_("Draw Cursor Trail", &cv::draw_cursor_trail);
-    this->addCheckbox_(
+    this->addCheckboxTooltip_(
         "Force Smooth Cursor Trail",
         "Usually, the presence of the cursormiddle.png skin image enables smooth cursortrails.\nThis option "
         "allows you to force enable smooth cursortrails for all skins.",
         &cv::cursor_trail_smooth_force);
-    this->addCheckbox_("Always draw Cursor Trail", "Draw the cursor trail even when the cursor isn't moving",
-                       &cv::always_render_cursor_trail);
+    this->addCheckboxTooltip_("Always draw Cursor Trail", "Draw the cursor trail even when the cursor isn't moving",
+                              &cv::always_render_cursor_trail);
     this->addSlider_("Cursor trail spacing:", 0.f, 30.f, &cv::cursor_trail_spacing, -1.f, true)
         ->setAnimated(false)
         ->setKeyDelta(0.01f);
     this->cursorSizeSlider = this->addSlider_("Cursor Size:", 0.01f, 5.0f, &cv::cursor_scale, -1.0f, true);
     this->cursorSizeSlider->setAnimated(false);
     this->cursorSizeSlider->setKeyDelta(0.01f);
-    this->addCheckbox_("Automatic Cursor Size", "Cursor size will adjust based on the CS of the current beatmap.",
-                       &cv::automatic_cursor_size);
+    this->addCheckboxTooltip_("Automatic Cursor Size",
+                              "Cursor size will adjust based on the CS of the current beatmap.",
+                              &cv::automatic_cursor_size);
     this->addSpacer();
     this->sliderPreviewElement = this->addSliderPreview();
     this->addSlider_("Slider Border Size", 0.0f, 9.0f, &cv::slider_border_size_multiplier)->setKeyDelta(0.01f);
     this->addSlider_("Slider Opacity", 0.0f, 1.0f, &cv::slider_alpha_multiplier, 200.0f);
     this->addSlider_("Slider Body Opacity", 0.0f, 1.0f, &cv::slider_body_alpha_multiplier, 200.0f, true);
     this->addSlider_("Slider Body Saturation", 0.0f, 1.0f, &cv::slider_body_color_saturation, 200.0f, true);
-    this->addCheckbox_(
+    this->addCheckboxTooltip_(
         "Use slidergradient.png",
         "Enabling this will improve performance,\nbut also block all dynamic slider (color/border) features.",
         &cv::slider_use_gradient_image);
-    this->addCheckbox_("Use osu!lazer Slider Style",
-                       "Only really looks good if your skin doesn't \"SliderTrackOverride\" too dark.",
-                       &cv::slider_osu_next_style);
+    this->addCheckboxTooltip_("Use osu!lazer Slider Style",
+                              "Only really looks good if your skin doesn't \"SliderTrackOverride\" too dark.",
+                              &cv::slider_osu_next_style);
     this->addCheckbox_("Use combo color as tint for slider ball", &cv::slider_ball_tint_combo_color);
     this->addCheckbox_("Use combo color as tint for slider border", &cv::slider_border_tint_combo_color);
     this->addCheckbox_("Draw Slider End Circle", &cv::slider_draw_endcircle);
@@ -1348,14 +1357,15 @@ OptionsMenuImpl::OptionsMenuImpl(OptionsMenu *parent) : parent(parent) {
         this->elemContainers.back()->render_condition = sensWarningCondition;
     }
 
-    this->addCheckbox_("Raw Mouse Input", "Not recommended if you're using a tablet.", &cv::mouse_raw_input);
+    this->addCheckboxTooltip_("Raw Mouse Input", "Not recommended if you're using a tablet.", &cv::mouse_raw_input);
     this->addCheckbox_("Confine Cursor (Windowed)", &cv::confine_cursor_windowed);
     this->addCheckbox_("Confine Cursor (Fullscreen)", &cv::confine_cursor_fullscreen);
-    this->addCheckbox_("Confine Cursor (NEVER)", "Overrides automatic cursor clipping during gameplay.",
-                       &cv::confine_cursor_never);
+    this->addCheckboxTooltip_("Confine Cursor (NEVER)", "Overrides automatic cursor clipping during gameplay.",
+                              &cv::confine_cursor_never);
     this->addCheckbox_("Disable Mouse Wheel in Play Mode", &cv::disable_mousewheel);
     this->addCheckbox_("Disable Mouse Buttons in Play Mode", &cv::disable_mousebuttons);
-    this->addCheckbox_("Cursor ripples", "The cursor will ripple outwards on clicking.", &cv::draw_cursor_ripples);
+    this->addCheckboxTooltip_("Cursor ripples", "The cursor will ripple outwards on clicking.",
+                              &cv::draw_cursor_ripples);
 
     this->addSpacer();
     const UString keyboardSectionTags{US_("keyboard keys key bindings binds keybinds keybindings")};
@@ -1363,7 +1373,7 @@ OptionsMenuImpl::OptionsMenuImpl(OptionsMenu *parent) : parent(parent) {
     if constexpr(Env::cfg(OS::WINDOWS)) {
         this->addCheckbox_("Raw Keyboard Input", &cv::keyboard_raw_input);
         if(cv::win_global_media_hotkeys.getDefaultDouble() != -1.) {  // it's set to -1 if it doesn't work
-            this->addCheckbox_(
+            this->addCheckboxTooltip_(
                 "Global Media Hotkeys",
                 "Allows controlling main menu music with\nkeyboard media shortcuts, even while alt-tabbed",
                 &cv::win_global_media_hotkeys);
@@ -1434,29 +1444,31 @@ OptionsMenuImpl::OptionsMenuImpl(OptionsMenu *parent) : parent(parent) {
     this->backgroundBrightnessSlider->setChangeCallback(
         SA::MakeDelegate<&OptionsMenuImpl::onSliderChangePercent>(this));
     this->addSpacer();
-    this->addCheckbox_("Don't change dim level during breaks",
-                       "Makes the background basically impossible to see during breaks.\nNot recommended.",
-                       &cv::background_dont_fade_during_breaks);
+    this->addCheckboxTooltip_("Don't change dim level during breaks",
+                              "Makes the background basically impossible to see during breaks.\nNot recommended.",
+                              &cv::background_dont_fade_during_breaks);
     this->addCheckbox_("Show approach circle on first \"Hidden\" object",
                        &cv::show_approach_circle_on_first_hidden_object);
-    this->addCheckbox_("SuddenDeath restart on miss", "Skips the failing animation, and instantly restarts like SS/PF.",
-                       &cv::mod_suddendeath_restart);
-    this->addCheckbox_("Show Skip Button during Intro", "Skip intro to first hitobject.", &cv::skip_intro_enabled);
-    this->addCheckbox_("Show Skip Button during Breaks", "Skip breaks in the middle of beatmaps.",
-                       &cv::skip_breaks_enabled);
+    this->addCheckboxTooltip_("SuddenDeath restart on miss",
+                              "Skips the failing animation, and instantly restarts like SS/PF.",
+                              &cv::mod_suddendeath_restart);
+    this->addCheckboxTooltip_("Show Skip Button during Intro", "Skip intro to first hitobject.",
+                              &cv::skip_intro_enabled);
+    this->addCheckboxTooltip_("Show Skip Button during Breaks", "Skip breaks in the middle of beatmaps.",
+                              &cv::skip_breaks_enabled);
     // FIXME: broken
-    // this->addCheckbox_("Save Failed Scores", "Allow failed scores to be saved as F ranks.",
+    // this->addCheckboxTooltip_("Save Failed Scores", "Allow failed scores to be saved as F ranks.",
     //                   &cv::save_failed_scores);
     this->addSpacer();
     this->addSubSection_("Mechanics", "health drain notelock lock block blocking noteblock");
-    this->addCheckbox_(
+    this->addCheckboxTooltip_(
         "Kill Player upon Failing",
         "Enabled: Singleplayer default. You die upon failing and the beatmap stops.\nDisabled: Multiplayer "
         "default. Allows you to keep playing even after failing.",
         &cv::drain_kill);
-    this->addCheckbox_("Disable HP drain",
-                       "Like NF, but entirely disables HP mechanics. Will block online score submission.",
-                       &cv::drain_disabled)
+    this->addCheckboxTooltip_("Disable HP drain",
+                              "Like NF, but entirely disables HP mechanics. Will block online score submission.",
+                              &cv::drain_disabled)
         ->setChangeCallback(SA::MakeDelegate<&OptionsMenuImpl::onModChangingToggle>(this));
 
     this->addSpacer();
@@ -1482,21 +1494,22 @@ OptionsMenuImpl::OptionsMenuImpl(OptionsMenu *parent) : parent(parent) {
     this->addCheckbox_("Load Background Images (!)", "NOTE: Disabling this will disable ALL beatmap images everywhere!",
                        &cv::load_beatmap_background_images);
     this->addCheckbox_("Draw Background in Beatmap", &cv::draw_beatmap_background_image);
-    this->addCheckbox_("Draw Background in SongBrowser",
-                       "NOTE: You can disable this if you always want menu-background.",
-                       &cv::draw_songbrowser_background_image);
+    this->addCheckboxTooltip_("Draw Background in SongBrowser",
+                              "NOTE: You can disable this if you always want menu-background.",
+                              &cv::draw_songbrowser_background_image);
     this->addCheckbox_("Draw Background Thumbnails in SongBrowser", &cv::draw_songbrowser_thumbnails);
     this->addCheckbox_("Draw Background in Ranking/Results Screen", &cv::draw_rankingscreen_background_image);
     this->addCheckbox_("Draw menu-background in Menu", &cv::draw_menu_background);
-    this->addCheckbox_("Draw menu-background in SongBrowser",
-                       "NOTE: Only applies if \"Draw Background in SongBrowser\" is disabled.",
-                       &cv::draw_songbrowser_menu_background_image);
+    this->addCheckboxTooltip_("Draw menu-background in SongBrowser",
+                              "NOTE: Only applies if \"Draw Background in SongBrowser\" is disabled.",
+                              &cv::draw_songbrowser_menu_background_image);
     this->addSpacer();
     // addCheckbox("Show pp on ranking screen", &cv::rankingscreen_pp);
 
     this->addSubSection_("HUD");
-    this->addCheckbox_("Draw HUD", "NOTE: You can also press SHIFT + TAB while playing to toggle this.", &cv::draw_hud);
-    this->addCheckbox_(
+    this->addCheckboxTooltip_("Draw HUD", "NOTE: You can also press SHIFT + TAB while playing to toggle this.",
+                              &cv::draw_hud);
+    this->addCheckboxTooltip_(
         "SHIFT + TAB toggles everything",
         "Enabled: neosu default (toggle \"Draw HUD\")\nDisabled: osu! default (always show hiterrorbar + key overlay)",
         &cv::hud_shift_tab_toggles_everything);
@@ -1506,9 +1519,9 @@ OptionsMenuImpl::OptionsMenuImpl(OptionsMenu *parent) : parent(parent) {
     this->addCheckbox_("Draw Accuracy", &cv::draw_accuracy);
     this->addCheckbox_("Draw ProgressBar", &cv::draw_progressbar);
     this->addCheckbox_("Draw HitErrorBar", &cv::draw_hiterrorbar);
-    this->addCheckbox_("Draw HitErrorBar UR", "Unstable Rate", &cv::draw_hiterrorbar_ur);
-    this->addCheckbox_("Draw ScoreBar", "Health/HP Bar.", &cv::draw_scorebar);
-    this->addCheckbox_(
+    this->addCheckboxTooltip_("Draw HitErrorBar UR", "Unstable Rate", &cv::draw_hiterrorbar_ur);
+    this->addCheckboxTooltip_("Draw ScoreBar", "Health/HP Bar.", &cv::draw_scorebar);
+    this->addCheckboxTooltip_(
         "Draw ScoreBar-bg",
         "Some skins abuse this as the playfield background image.\nIt is actually just the background image "
         "for the Health/HP Bar.",
@@ -1519,35 +1532,39 @@ OptionsMenuImpl::OptionsMenuImpl(OptionsMenu *parent) : parent(parent) {
     this->addCheckbox_("Draw Scrubbing Timeline", &cv::draw_scrubbing_timeline);
     this->addCheckbox_("Draw Miss Window on HitErrorBar", &cv::hud_hiterrorbar_showmisswindow);
     this->addSpacer();
-    this->addCheckbox_(
+    this->addCheckboxTooltip_(
         "Draw Stats: pp",
         "Realtime pp counter.\nDynamically calculates earned pp by incrementally updating the star rating.",
         &cv::draw_statistics_pp);
-    this->addCheckbox_("Draw Stats: pp (SS)", "Max possible total pp for active mods (full combo + perfect acc).",
-                       &cv::draw_statistics_perfectpp);
-    this->addCheckbox_("Draw Stats: Misses", "Number of misses.", &cv::draw_statistics_misses);
-    this->addCheckbox_("Draw Stats: SliderBreaks", "Number of slider breaks.", &cv::draw_statistics_sliderbreaks);
+    this->addCheckboxTooltip_("Draw Stats: pp (SS)",
+                              "Max possible total pp for active mods (full combo + perfect acc).",
+                              &cv::draw_statistics_perfectpp);
+    this->addCheckboxTooltip_("Draw Stats: Misses", "Number of misses.", &cv::draw_statistics_misses);
+    this->addCheckboxTooltip_("Draw Stats: SliderBreaks", "Number of slider breaks.",
+                              &cv::draw_statistics_sliderbreaks);
     this->addCheckbox_("Draw Stats: Max Possible Combo", &cv::draw_statistics_maxpossiblecombo);
-    this->addCheckbox_("Draw Stats: Stars*** (Until Now)",
-                       "Incrementally updates the star rating (aka \"realtime stars\").",
-                       &cv::draw_statistics_livestars);
-    this->addCheckbox_("Draw Stats: Stars* (Total)", "Total stars for active mods.", &cv::draw_statistics_totalstars);
+    this->addCheckboxTooltip_("Draw Stats: Stars*** (Until Now)",
+                              "Incrementally updates the star rating (aka \"realtime stars\").",
+                              &cv::draw_statistics_livestars);
+    this->addCheckboxTooltip_("Draw Stats: Stars* (Total)", "Total stars for active mods.",
+                              &cv::draw_statistics_totalstars);
     this->addCheckbox_("Draw Stats: BPM", &cv::draw_statistics_bpm);
     this->addCheckbox_("Draw Stats: AR", &cv::draw_statistics_ar);
     this->addCheckbox_("Draw Stats: CS", &cv::draw_statistics_cs);
     this->addCheckbox_("Draw Stats: OD", &cv::draw_statistics_od);
     this->addCheckbox_("Draw Stats: HP", &cv::draw_statistics_hp);
-    this->addCheckbox_("Draw Stats: 300 hitwindow", "Timing window for hitting a 300 (e.g. +-25ms).",
-                       &cv::draw_statistics_hitwindow300);
-    this->addCheckbox_("Draw Stats: Notes Per Second", "How many clicks per second are currently required.",
-                       &cv::draw_statistics_nps);
-    this->addCheckbox_("Draw Stats: Note Density", "How many objects are visible at the same time.",
-                       &cv::draw_statistics_nd);
+    this->addCheckboxTooltip_("Draw Stats: 300 hitwindow", "Timing window for hitting a 300 (e.g. +-25ms).",
+                              &cv::draw_statistics_hitwindow300);
+    this->addCheckboxTooltip_("Draw Stats: Notes Per Second", "How many clicks per second are currently required.",
+                              &cv::draw_statistics_nps);
+    this->addCheckboxTooltip_("Draw Stats: Note Density", "How many objects are visible at the same time.",
+                              &cv::draw_statistics_nd);
     this->addCheckbox_("Draw Stats: Unstable Rate", &cv::draw_statistics_ur);
-    this->addCheckbox_("Draw Stats: Accuracy Error",
-                       "Average hit error delta (e.g. -5ms +15ms).\nSee \"hud_statistics_hitdelta_chunksize 30\",\nit "
-                       "defines how many recent hit deltas are averaged.",
-                       &cv::draw_statistics_hitdelta);
+    this->addCheckboxTooltip_(
+        "Draw Stats: Accuracy Error",
+        "Average hit error delta (e.g. -5ms +15ms).\nSee \"hud_statistics_hitdelta_chunksize 30\",\nit "
+        "defines how many recent hit deltas are averaged.",
+        &cv::draw_statistics_hitdelta);
     this->addSpacer();
     this->hudSizeSlider = this->addSlider_("HUD Scale:", 0.01f, 3.0f, &cv::hud_scale, 165.0f);
     this->hudSizeSlider->setChangeCallback(SA::MakeDelegate<&OptionsMenuImpl::onSliderChangePercent>(this));
@@ -1606,8 +1623,8 @@ OptionsMenuImpl::OptionsMenuImpl(OptionsMenu *parent) : parent(parent) {
 
     this->addSubSection_("Playfield");
     this->addCheckbox_("Draw FollowPoints", &cv::draw_followpoints);
-    this->addCheckbox_("Draw Playfield Border", "Correct border relative to the current Circle Size.",
-                       &cv::draw_playfield_border);
+    this->addCheckboxTooltip_("Draw Playfield Border", "Correct border relative to the current Circle Size.",
+                              &cv::draw_playfield_border);
     this->addSpacer();
     this->playfieldBorderSizeSlider =
         this->addSlider_("Playfield Border Size:", 0.0f, 500.0f, &cv::hud_playfield_border_size);
@@ -1615,7 +1632,7 @@ OptionsMenuImpl::OptionsMenuImpl(OptionsMenu *parent) : parent(parent) {
     this->playfieldBorderSizeSlider->setKeyDelta(1.0f);
 
     this->addSubSection_("Hitobjects");
-    this->addCheckbox_(
+    this->addCheckboxTooltip_(
         "Use Fast Hidden Fading Sliders (!)",
         "NOTE: osu! doesn't do this, so don't enable it for serious practicing.\nIf enabled: Fade out sliders "
         "with the same speed as circles.",
@@ -1626,10 +1643,11 @@ OptionsMenuImpl::OptionsMenuImpl(OptionsMenu *parent) : parent(parent) {
     CBaseUIElement *sectionFposu = this->addSection_("FPoSu (3D)");
 
     this->addSubSection_("FPoSu - General");
-    this->addCheckbox_("FPoSu",
-                       "The real 3D FPS mod.\nPlay from a first person shooter perspective in a 3D environment.\nThis "
-                       "is only intended for mouse! (Enable \"Tablet/Absolute Mode\" for tablets.)",
-                       &cv::mod_fposu);
+    this->addCheckboxTooltip_(
+        "FPoSu",
+        "The real 3D FPS mod.\nPlay from a first person shooter perspective in a 3D environment.\nThis "
+        "is only intended for mouse! (Enable \"Tablet/Absolute Mode\" for tablets.)",
+        &cv::mod_fposu);
     this->addLabel_("");
     this->addLabel_("NOTE: Use CTRL + O during gameplay to get here!")->setTextColor(0xff555555);
     this->addLabel_("");
@@ -1637,8 +1655,8 @@ OptionsMenuImpl::OptionsMenuImpl(OptionsMenu *parent) : parent(parent) {
     this->addLabel_("");
     CBaseUISlider *fposuDistanceSlider = this->addSlider_("Distance:", 0.01f, 5.0f, &cv::fposu_distance, -1.0f, true);
     fposuDistanceSlider->setKeyDelta(0.01f);
-    this->addCheckbox_("Vertical FOV", "If enabled: Vertical FOV.\nIf disabled: Horizontal FOV (default).",
-                       &cv::fposu_vertical_fov);
+    this->addCheckboxTooltip_("Vertical FOV", "If enabled: Vertical FOV.\nIf disabled: Horizontal FOV (default).",
+                              &cv::fposu_vertical_fov);
     CBaseUISlider *fovSlider = this->addSlider_("FOV:", 10.0f, 160.0f, &cv::fposu_fov, -1.0f, true, true);
     fovSlider->setChangeCallback(SA::MakeDelegate<&OptionsMenuImpl::onSliderChangeTwoDecimalPlaces>(this));
     fovSlider->setKeyDelta(0.01f);
@@ -1646,13 +1664,15 @@ OptionsMenuImpl::OptionsMenuImpl(OptionsMenu *parent) : parent(parent) {
         this->addSlider_("FOV (Zoom):", 10.0f, 160.0f, &cv::fposu_zoom_fov, -1.0f, true, true);
     zoomedFovSlider->setChangeCallback(SA::MakeDelegate<&OptionsMenuImpl::onSliderChangeTwoDecimalPlaces>(this));
     zoomedFovSlider->setKeyDelta(0.01f);
-    this->addCheckbox_("Zoom Key Toggle", "Enabled: Zoom key toggles zoom.\nDisabled: Zoom while zoom key is held.",
-                       &cv::fposu_zoom_toggle);
+    this->addCheckboxTooltip_("Zoom Key Toggle",
+                              "Enabled: Zoom key toggles zoom.\nDisabled: Zoom while zoom key is held.",
+                              &cv::fposu_zoom_toggle);
     this->addSubSection_("FPoSu - Playfield");
     this->addCheckbox_("Curved play area", &cv::fposu_curved);
     this->addCheckbox_("Background cube", &cv::fposu_cube);
-    this->addCheckbox_("Skybox", "NOTE: Overrides \"Background cube\".\nSee skybox_example.png for cubemap layout.",
-                       &cv::fposu_skybox);
+    this->addCheckboxTooltip_("Skybox",
+                              "NOTE: Overrides \"Background cube\".\nSee skybox_example.png for cubemap layout.",
+                              &cv::fposu_skybox);
     this->addSlider_("Background Opacity", 0.0f, 1.0f, &cv::background_alpha)
         ->setChangeCallback(SA::MakeDelegate<&OptionsMenuImpl::onSliderChangePercent>(this));
 
@@ -1672,10 +1692,10 @@ OptionsMenuImpl::OptionsMenuImpl(OptionsMenu *parent) : parent(parent) {
     this->addLabel_("");
     this->addCheckbox_("Invert Vertical", &cv::fposu_invert_vertical);
     this->addCheckbox_("Invert Horizontal", &cv::fposu_invert_horizontal);
-    this->addCheckbox_("Tablet/Absolute Mode (!)",
-                       "Don't enable this if you are using a mouse.\nIf this is enabled, then DPI and cm per "
-                       "360 will be ignored!",
-                       &cv::fposu_absolute_mode);
+    this->addCheckboxTooltip_("Tablet/Absolute Mode (!)",
+                              "Don't enable this if you are using a mouse.\nIf this is enabled, then DPI and cm per "
+                              "360 will be ignored!",
+                              &cv::fposu_absolute_mode);
 
     //**************************************************************************************************************************//
 

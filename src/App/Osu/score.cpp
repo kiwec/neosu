@@ -22,8 +22,8 @@ LiveScore::LiveScore(bool simulating) {
 }
 
 void LiveScore::reset() {
-    this->hitresults = std::vector<HIT>();
-    this->hitdeltas = std::vector<int>();
+    this->hitresults.clear();
+    this->hitdeltas.clear();
 
     this->grade = ScoreGrade::N;
     if(!this->simulating) {
@@ -73,7 +73,7 @@ void LiveScore::reset() {
     this->onScoreChange();
 }
 
-f64 LiveScore::getScoreMultiplier() { return this->mods.get_scorev1_multiplier(); }
+f64 LiveScore::getScoreMultiplier() const { return this->mods.get_scorev1_multiplier(); }
 
 void LiveScore::addHitResult(AbstractBeatmapInterface *beatmap, HitObject * /*hitObject*/, HIT hit, i32 delta,
                              bool ignoreOnHitErrorBar, bool hitErrorBarOnly, bool ignoreCombo, bool ignoreScore) {
@@ -332,46 +332,46 @@ double LiveScore::getHealthIncrease(AbstractBeatmapInterface *beatmap, HIT hit) 
 
 double LiveScore::getHealthIncrease(LiveScore::HIT hit, double HP, double hpMultiplierNormal,
                                     double hpMultiplierComboEnd, double hpBarMaximumForNormalization) {
+    using enum LiveScore::HIT;
+
     switch(hit) {
-        case LiveScore::HIT::HIT_MISS:
+        case HIT_MISS:
             return (GameRules::mapDifficultyRange(HP, -6.0, -25.0, -40.0) / hpBarMaximumForNormalization);
 
-        case LiveScore::HIT::HIT_50:
+        case HIT_50:
             return (hpMultiplierNormal * GameRules::mapDifficultyRange(HP, 0.4 * 8.0, 0.4, 0.4) /
                     hpBarMaximumForNormalization);
 
-        case LiveScore::HIT::HIT_100:
+        case HIT_100:
             return (hpMultiplierNormal * GameRules::mapDifficultyRange(HP, 2.2 * 8.0, 2.2, 2.2) /
                     hpBarMaximumForNormalization);
 
-        case LiveScore::HIT::HIT_300:
+        case HIT_300:
             return (hpMultiplierNormal * 6.0 / hpBarMaximumForNormalization);
 
-        case LiveScore::HIT::HIT_MISS_SLIDERBREAK:
+        case HIT_MISS_SLIDERBREAK:
             return (GameRules::mapDifficultyRange(HP, -4.0, -15.0, -28.0) / hpBarMaximumForNormalization);
 
-        case LiveScore::HIT::HIT_MU:
+        case HIT_MU:
             return (hpMultiplierComboEnd * 6.0 / hpBarMaximumForNormalization);
 
-        case LiveScore::HIT::HIT_100K:
+        case HIT_100K:  // fallthrough (TODO: is this correct?)
+        case HIT_300K:
             return (hpMultiplierComboEnd * 10.0 / hpBarMaximumForNormalization);
 
-        case LiveScore::HIT::HIT_300K:
-            return (hpMultiplierComboEnd * 10.0 / hpBarMaximumForNormalization);
-
-        case LiveScore::HIT::HIT_300G:
+        case HIT_300G:
             return (hpMultiplierComboEnd * 14.0 / hpBarMaximumForNormalization);
 
-        case LiveScore::HIT::HIT_SLIDER10:
+        case HIT_SLIDER10:
             return (hpMultiplierNormal * 3.0 / hpBarMaximumForNormalization);
 
-        case LiveScore::HIT::HIT_SLIDER30:
+        case HIT_SLIDER30:
             return (hpMultiplierNormal * 4.0 / hpBarMaximumForNormalization);
 
-        case LiveScore::HIT::HIT_SPINNERSPIN:
+        case HIT_SPINNERSPIN:
             return (hpMultiplierNormal * 1.7 / hpBarMaximumForNormalization);
 
-        case LiveScore::HIT::HIT_SPINNERBONUS:
+        case HIT_SPINNERBONUS:
             return (hpMultiplierNormal * 2.0 / hpBarMaximumForNormalization);
 
         default:
@@ -379,24 +379,26 @@ double LiveScore::getHealthIncrease(LiveScore::HIT hit, double HP, double hpMult
     }
 }
 
-int LiveScore::getKeyCount(int key) {
-    switch(key) {
-        case 1:
+int LiveScore::getKeyCount(GameplayKeys key_flag) const {
+    switch(key_flag) {
+        case GameplayKeys::K1:
             return this->iNumK1;
-        case 2:
+        case GameplayKeys::K2:
             return this->iNumK2;
-        case 3:
+        case GameplayKeys::M1:
             return this->iNumM1;
-        case 4:
+        case GameplayKeys::M2:
             return this->iNumM2;
+        default:
+            std::unreachable();
+            break;
     }
-
-    return 0;
+    std::unreachable();
 }
 
-LegacyFlags LiveScore::getModsLegacy() { return this->mods.to_legacy(); }
+LegacyFlags LiveScore::getModsLegacy() const { return this->mods.to_legacy(); }
 
-UString LiveScore::getModsStringForRichPresence() {
+UString LiveScore::getModsStringForRichPresence() const {
     UString modsString;
 
     if(osu->getModNF()) modsString.append("NF");

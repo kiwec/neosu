@@ -200,13 +200,13 @@ class LiveScore {
     static double getHealthIncrease(LiveScore::HIT hit, double HP = 5.0f, double hpMultiplierNormal = 1.0f,
                                     double hpMultiplierComboEnd = 1.0f, double hpBarMaximumForNormalization = 200.0f);
 
-    int getKeyCount(int key);
-    LegacyFlags getModsLegacy();
-    UString getModsStringForRichPresence();
+    [[nodiscard]] int getKeyCount(GameplayKeys key_flag) const;
+    [[nodiscard]] LegacyFlags getModsLegacy() const;
+    [[nodiscard]] UString getModsStringForRichPresence() const;
     Replay::Mods mods;
     bool simulating;
 
-    f64 getScoreMultiplier();
+    [[nodiscard]] f64 getScoreMultiplier() const;
     void onScoreChange();
 
     std::vector<HIT> hitresults;

@@ -81,8 +81,9 @@ void HUD::draw() {
         if(cv::draw_inputoverlay.getBool()) {
             const bool isAutoClicking = (osu->getModAuto() || osu->getModRelax());
             if(!isAutoClicking)
-                this->drawInputOverlay(osu->getScore()->getKeyCount(1), osu->getScore()->getKeyCount(2),
-                                       osu->getScore()->getKeyCount(3), osu->getScore()->getKeyCount(4));
+                this->drawInputOverlay(
+                    osu->getScore()->getKeyCount(GameplayKeys::K1), osu->getScore()->getKeyCount(GameplayKeys::K2),
+                    osu->getScore()->getKeyCount(GameplayKeys::M1), osu->getScore()->getKeyCount(GameplayKeys::M2));
         }
 
         if(this->shouldDrawScoreboard()) {
@@ -170,8 +171,9 @@ void HUD::draw() {
         if(cv::draw_inputoverlay.getBool()) {
             const bool isAutoClicking = (osu->getModAuto() || osu->getModRelax());
             if(!isAutoClicking)
-                this->drawInputOverlay(osu->getScore()->getKeyCount(1), osu->getScore()->getKeyCount(2),
-                                       osu->getScore()->getKeyCount(3), osu->getScore()->getKeyCount(4));
+                this->drawInputOverlay(
+                    osu->getScore()->getKeyCount(GameplayKeys::K1), osu->getScore()->getKeyCount(GameplayKeys::K2),
+                    osu->getScore()->getKeyCount(GameplayKeys::M1), osu->getScore()->getKeyCount(GameplayKeys::M2));
         }
 
         // NOTE: moved to draw behind hitobjects in Beatmap::draw()

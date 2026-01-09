@@ -82,6 +82,8 @@ class MainMenu::MainButton final : public CBaseUIButton {
     MainButton(MainMenu *parent, float xPos, float yPos, float xSize, float ySize, UString name, UString text)
         : CBaseUIButton(xPos, yPos, xSize, ySize, std::move(name), std::move(text)), mm_ptr(parent) {}
 
+    bool isMouseInside() override { return CBaseUIButton::isMouseInside() && !this->mm_ptr->cube->isMouseInside(); }
+
     void onMouseDownInside(bool left = true, bool right = false) override {
         if(this->mm_ptr->cube->isMouseInside()) return;
         CBaseUIButton::onMouseDownInside(left, right);
@@ -1008,11 +1010,9 @@ void MainMenu::mouse_update(bool *propagate_clicks) {
     }
 
     if(this->bInMainMenuRandomAnim && this->iMainMenuRandomAnimType == 1 && anim::isAnimating(&this->fMainMenuAnim)) {
-        vec2 mouseDelta = (this->cube->getPos() + this->cube->getSize() / 2.f) - mouse->getPos();
-        mouseDelta.x = std::clamp<float>(mouseDelta.x, -engine->getScreenSize().x / 2, engine->getScreenSize().x / 2);
-        mouseDelta.y = std::clamp<float>(mouseDelta.y, -engine->getScreenSize().y / 2, engine->getScreenSize().y / 2);
-        mouseDelta.x /= engine->getScreenSize().x;
-        mouseDelta.y /= engine->getScreenSize().y;
+        const vec2 mouseDelta = vec::clamp((this->cube->getPos() + this->cube->getSize() / 2.f) - mouse->getPos(),
+                                           -osu->getVirtScreenSize() / 2.f, osu->getVirtScreenSize() / 2.f) /
+                                osu->getVirtScreenSize();
 
         const float decay = std::clamp<float>((1.0f - this->fMainMenuAnim - 0.075f) / 0.025f, 0.0f, 1.0f);
 
@@ -1036,11 +1036,9 @@ void MainMenu::mouse_update(bool *propagate_clicks) {
         if(this->bMainMenuAnimFriend) this->fMainMenuAnimFriendPercent = 1.0f;
         if(!this->bMainMenuAnimFriendScheduled) this->fMainMenuAnimFriendPercent = 0.0f;
 
-        vec2 mouseDelta = (this->cube->getPos() + this->cube->getSize() / 2.f) - mouse->getPos();
-        mouseDelta.x = std::clamp<float>(mouseDelta.x, -engine->getScreenSize().x / 2, engine->getScreenSize().x / 2);
-        mouseDelta.y = std::clamp<float>(mouseDelta.y, -engine->getScreenSize().y / 2, engine->getScreenSize().y / 2);
-        mouseDelta.x /= engine->getScreenSize().x;
-        mouseDelta.y /= engine->getScreenSize().y;
+        const vec2 mouseDelta = vec::clamp((this->cube->getPos() + this->cube->getSize() / 2.f) - mouse->getPos(),
+                                           -osu->getVirtScreenSize() / 2.f, osu->getVirtScreenSize() / 2.f) /
+                                osu->getVirtScreenSize();
 
         const vec2 pushAngle = vec2(mouseDelta.x, mouseDelta.y) * 0.1f;
 

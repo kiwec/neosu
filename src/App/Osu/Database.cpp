@@ -2419,7 +2419,7 @@ void Database::loadPeppyScores(std::string_view dbPath) {
             dbr.skip_string();  // hp graph
 
             u64 full_tms = dbr.read<u64>();
-            sc.unixTimestamp = (full_tms - 621355968000000000) / 10000000;
+            sc.unixTimestamp = (full_tms - UNIX_EPOCH_TICKS) / TICKS_PER_SECOND;
             sc.peppy_replay_tms = full_tms - 504911232000000000;
 
             // Always -1, but let's skip it properly just in case

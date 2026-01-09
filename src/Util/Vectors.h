@@ -47,6 +47,7 @@ using glm::normalize;
 using glm::round;
 using glm::floor;
 using glm::ceil;
+using glm::clamp;
 
 template <typename T, typename V>
     requires(std::is_floating_point_v<V>) &&

@@ -116,7 +116,6 @@ class CarouselButton : public CBaseUIButton {
     static int marginPixelsY;
     static float lastHoverSoundTime;
 
-    McFont *font;
     McFont *fontBold;
 
     std::vector<SongButton *> children;
