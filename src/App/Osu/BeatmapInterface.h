@@ -328,6 +328,7 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
     // these are non-owning views of "hitobjects" in different arrangements
     std::vector<HitObject *> hitobjectsSortedByEndTime;          // for hitObject->draw2()
     std::vector<HitObject *> hitobjectsSortedByEndTimeReversed;  // for hitObject->draw()
+    std::vector<HitObject *> nonSpinnerObjectsToDraw;            // for drawHitObjects, temp buffer
     std::vector<HitObject *> misaimObjects;
 
     // statistics

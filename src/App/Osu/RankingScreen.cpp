@@ -346,34 +346,34 @@ void RankingScreen::mouse_update(bool *propagate_clicks) {
 
     // tooltip (pp + accuracy + unstable rate)
     if(!osu->getOptionsMenu()->isMouseInside() && mouse->getPos().x < osu->getVirtScreenWidth() * 0.5f) {
-        osu->getTooltipOverlay()->begin();
+        auto *tto = osu->getTooltipOverlay();
+        tto->begin();
         {
             auto &sc = this->storedScore;
-            osu->getTooltipOverlay()->addLine(fmt::format("{:.2f}pp", sc.get_or_calc_pp()));
+            tto->addLine(fmt::format("{:.2f}pp", sc.get_or_calc_pp()));
             if(sc.ppv2_total_stars > 0.0) {
-                osu->getTooltipOverlay()->addLine(fmt::format("Stars: {:.2f} ({:.2f} aim, {:.2f} speed)",
-                                                              sc.ppv2_total_stars, sc.ppv2_aim_stars,
-                                                              sc.ppv2_speed_stars));
+                tto->addLine(fmt::format("Stars: {:.2f} ({:.2f} aim, {:.2f} speed)", sc.ppv2_total_stars,
+                                         sc.ppv2_aim_stars, sc.ppv2_speed_stars));
             }
-            osu->getTooltipOverlay()->addLine(fmt::format("Speed: {:.3g}x", sc.mods.speed));
+            tto->addLine(fmt::format("Speed: {:.3g}x", sc.mods.speed));
 
             const f32 AR = GameRules::arWithSpeed(sc.mods.get_naive_ar(sc.map), sc.mods.speed);
             const f32 OD = GameRules::odWithSpeed(sc.mods.get_naive_od(sc.map), sc.mods.speed);
             const f32 CS = sc.mods.get_naive_cs(sc.map);
             const f32 HP = sc.mods.get_naive_hp(sc.map);
 
-            osu->getTooltipOverlay()->addLine(fmt::format("CS:{:.2f} AR:{:.2f} OD:{:.2f} HP:{:.2f}", CS, AR, OD, HP));
+            tto->addLine(fmt::format("CS:{:.2f} AR:{:.2f} OD:{:.2f} HP:{:.2f}", CS, AR, OD, HP));
 
-            if(this->sMods.length() > 0) osu->getTooltipOverlay()->addLine(this->sMods);
+            if(this->sMods.length() > 0) tto->addLine(this->sMods);
 
             if(this->fUnstableRate > 0.f) {
-                osu->getTooltipOverlay()->addLine("Accuracy:");
-                osu->getTooltipOverlay()->addLine(
+                tto->addLine("Accuracy:");
+                tto->addLine(
                     fmt::format("Error: {:.2f}ms - {:.2f}ms avg", this->fHitErrorAvgMin, this->fHitErrorAvgMax));
-                osu->getTooltipOverlay()->addLine(fmt::format("Unstable Rate: {:.2f}", this->fUnstableRate));
+                tto->addLine(fmt::format("Unstable Rate: {:.2f}", this->fUnstableRate));
             }
         }
-        osu->getTooltipOverlay()->end();
+        tto->end();
     }
 }
 

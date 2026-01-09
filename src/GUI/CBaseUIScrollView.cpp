@@ -115,7 +115,10 @@ bool ScrollContainer::isBusy() {
     for(auto *e : *this->vVisibleElements) {
         // programmer error (don't do this in isBusy(), ever)
         assert(!this->invalidateUpdate);
-        if(e->isBusy()) return true;
+        if(e->isBusy()) {
+            this->inIllegalToInvalidateIteration = false;
+            return true;
+        }
     }
 
     this->inIllegalToInvalidateIteration = false;

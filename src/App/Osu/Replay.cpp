@@ -12,6 +12,7 @@
 #include "DifficultyCalculator.h"
 #include "ByteBufferedFile.h"
 #include "BanchoPacket.h"
+#include "Logging.h"
 
 namespace Replay {
 
@@ -48,11 +49,17 @@ LegacyFlags Mods::to_legacy() const {
 }
 
 f32 Mods::get_naive_ar(const DatabaseBeatmap *map) const {
+    f32 baseAR = 5.0;
+    if(!map) {
+        debugLog("WARNING: NULL beatmap!!!");
+    } else {
+        baseAR = map->getAR();
+    }
     float ARdifficultyMultiplier = 1.0f;
     if((this->has(ModFlags::HardRock))) ARdifficultyMultiplier = 1.4f;
     if((this->has(ModFlags::Easy))) ARdifficultyMultiplier = 0.5f;
 
-    f32 AR = std::clamp<f32>(map->getAR() * ARdifficultyMultiplier, 0.0f, 10.0f);
+    f32 AR = std::clamp<f32>(baseAR * ARdifficultyMultiplier, 0.0f, 10.0f);
     if(this->ar_override >= 0.0f) AR = this->ar_override;
     if(this->ar_overridenegative < 0.0f) AR = this->ar_overridenegative;
 
@@ -64,11 +71,17 @@ f32 Mods::get_naive_ar(const DatabaseBeatmap *map) const {
 }
 
 f32 Mods::get_naive_cs(const DatabaseBeatmap *map) const {
+    f32 baseCS = 5.0;
+    if(!map) {
+        debugLog("WARNING: NULL beatmap!!!");
+    } else {
+        baseCS = map->getCS();
+    }
     f32 CSdifficultyMultiplier = 1.0f;
     if((this->has(ModFlags::HardRock))) CSdifficultyMultiplier = 1.3f;  // different!
     if((this->has(ModFlags::Easy))) CSdifficultyMultiplier = 0.5f;
 
-    f32 CS = std::clamp<f32>(map->getCS() * CSdifficultyMultiplier, 0.0f, 10.0f);
+    f32 CS = std::clamp<f32>(baseCS * CSdifficultyMultiplier, 0.0f, 10.0f);
     if(this->cs_override >= 0.0f) CS = this->cs_override;
     if(this->cs_overridenegative < 0.0f) CS = this->cs_overridenegative;
 
@@ -76,22 +89,34 @@ f32 Mods::get_naive_cs(const DatabaseBeatmap *map) const {
 }
 
 f32 Mods::get_naive_hp(const DatabaseBeatmap *map) const {
+    f32 baseHP = 5.0;
+    if(!map) {
+        debugLog("WARNING: NULL beatmap!!!");
+    } else {
+        baseHP = map->getHP();
+    }
     f32 HPdifficultyMultiplier = 1.0f;
     if((this->has(ModFlags::HardRock))) HPdifficultyMultiplier = 1.4f;
     if((this->has(ModFlags::Easy))) HPdifficultyMultiplier = 0.5f;
 
-    f32 HP = std::clamp<f32>(map->getHP() * HPdifficultyMultiplier, 0.0f, 10.0f);
+    f32 HP = std::clamp<f32>(baseHP * HPdifficultyMultiplier, 0.0f, 10.0f);
     if(this->hp_override >= 0.0f) HP = this->hp_override;
 
     return HP;
 }
 
 f32 Mods::get_naive_od(const DatabaseBeatmap *map) const {
+    f32 baseOD = 5.0;
+    if(!map) {
+        debugLog("WARNING: NULL beatmap!!!");
+    } else {
+        baseOD = map->getOD();
+    }
     f32 ODdifficultyMultiplier = 1.0f;
     if((this->has(ModFlags::HardRock))) ODdifficultyMultiplier = 1.4f;
     if((this->has(ModFlags::Easy))) ODdifficultyMultiplier = 0.5f;
 
-    f32 OD = std::clamp<f32>(map->getOD() * ODdifficultyMultiplier, 0.0f, 10.0f);
+    f32 OD = std::clamp<f32>(baseOD * ODdifficultyMultiplier, 0.0f, 10.0f);
     if(this->od_override >= 0.0f) OD = this->od_override;
 
     if(this->has(ModFlags::ODOverrideLock)) {

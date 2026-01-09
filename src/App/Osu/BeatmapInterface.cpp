@@ -1937,8 +1937,8 @@ void BeatmapInterface::drawFlashlight(FLType type) {
 }
 
 void BeatmapInterface::drawSmoke() {
-    Image *smoke = this->getSkin()->i_cursor_smoke;
-    if(smoke == MISSING_TEXTURE) return;
+    const BasicSkinImage &smoke_img = this->getSkin()->i_cursor_smoke;
+    if(smoke_img == MISSING_TEXTURE) return;
 
     // We're not using this->iCurMusicPos, because we want the user to be able
     // to draw while the music is loading / before the map starts.
@@ -1966,8 +1966,8 @@ void BeatmapInterface::drawSmoke() {
         }
     }
 
-    const f32 scale = (osu->getHUD()->getCursorScaleFactor() / this->getSkin()->i_cursor_smoke.scale())  //
-                      * cv::cursor_scale.getFloat()                                                      //
+    const f32 scale = (osu->getHUD()->getCursorScaleFactor() / smoke_img.scale())  //
+                      * cv::cursor_scale.getFloat()                                //
                       * cv::smoke_scale.getFloat();
 
     const u64 time_visible = cv::smoke_trail_duration.getFloat() * 1000.f;
@@ -1988,7 +1988,7 @@ void BeatmapInterface::drawSmoke() {
             const auto pos = this->osuCoords2Pixels(sm.pos);
             g->scale(scale, scale);
             g->translate(pos.x, pos.y);
-            g->drawImage(smoke);
+            g->drawImage(smoke_img);
         }
         g->popTransform();
     }
@@ -2154,8 +2154,7 @@ void BeatmapInterface::drawHitObjects() {
     const bool usePVS = cv::pvs.getBool();
 
     if(!cv::mod_mafham.getBool()) {
-        static std::vector<HitObject *> non_spinners_to_draw;
-        non_spinners_to_draw.clear();
+        this->nonSpinnerObjectsToDraw.clear();
 
         i32 mostDistantEndTimeDrawn = 0;
 
@@ -2178,12 +2177,12 @@ void BeatmapInterface::drawHitObjects() {
             if(obj->type == HitObjectType::SPINNER) {
                 obj->draw();
             } else {
-                non_spinners_to_draw.push_back(obj);
+                this->nonSpinnerObjectsToDraw.push_back(obj);
             }
         }
 
         // draw non-spinners after
-        for(auto *obj : non_spinners_to_draw) {
+        for(auto *obj : this->nonSpinnerObjectsToDraw) {
             obj->draw();
         }
 
