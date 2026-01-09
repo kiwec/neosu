@@ -38,15 +38,10 @@ jobs:
         uses: actions/cache@v5.0.1
         with:
           path: |
-            build-aux/cache/*.gz
-            build-aux/cache/*.xz
-            build-aux/cache/*.zip
-            build-aux/cache/**/*.gz
-            build-aux/cache/**/*.xz
-            build-aux/cache/**/*.zip
-            build-aux/cache/**/*.pem
-          key: tarballs-linux-${{ matrix.arch }}
+            build-aux/cache
+          key: tarballs-linux-${{ matrix.arch }}-${{ hashFiles('configure.ac', 'Makefile.am') }}
           restore-keys: |
+            tarballs-linux-${{ matrix.arch }}-
             tarballs-linux-
 
       - name: Cache built dependencies
