@@ -447,6 +447,8 @@ void Database::save() {
 //       (unless is_peppy is specified, in which case we're loading a raw osu folder and not saving the things we loaded)
 BeatmapSet *Database::addBeatmapSet(const std::string &beatmapFolderPath, i32 set_id_override,
                                     bool diffcalc_immediately, bool is_peppy) {
+    // TODO: deduplication logic
+    // needs to handle different loading states that we might be in currently
     std::unique_ptr<BeatmapSet> mapset = this->loadRawBeatmap(beatmapFolderPath, diffcalc_immediately, is_peppy);
     if(mapset == nullptr) return nullptr;
 
@@ -474,6 +476,7 @@ BeatmapSet *Database::addBeatmapSet(const std::string &beatmapFolderPath, i32 se
 
         osu->getSongBrowser()->addBeatmapSet(raw_mapset);
     } else {
+        // FIXME: this is just completely wrong, this vector cant just be appended to like that here
         this->temp_loading_beatmapsets.push_back(std::move(mapset));
     }
 
