@@ -1409,6 +1409,11 @@ void SongBrowser::onDifficultySelected(DatabaseBeatmap *map, bool play) {
 void SongBrowser::refreshBeatmaps(bool closeAfterLoading) {
     if(osu->isInPlayMode()) return;
 
+    if(this->bInitializedBeatmaps) {
+        // we need to save beatmaps we added this session
+        db->save();
+    }
+
     this->bInitializedBeatmaps = false;
 
     // remember for initial songbrowser load
