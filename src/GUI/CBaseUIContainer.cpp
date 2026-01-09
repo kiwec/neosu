@@ -15,8 +15,9 @@ CBaseUIContainer::~CBaseUIContainer() { this->freeElements(); }
 // free memory from children
 void CBaseUIContainer::freeElements() {
     for(ssize_t i = static_cast<ssize_t>(this->vElements.size()) - 1; i >= 0; --i) {
-        delete this->vElements[i];
+        CBaseUIElement *toDelete = this->vElements[i];
         this->vElements.erase(this->vElements.begin() + i);
+        delete toDelete;
     }
 }
 
