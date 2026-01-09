@@ -6,6 +6,7 @@
 #include "Engine.h"
 #include "Environment.h"
 #include "Osu.h"
+#include "UI.h"
 #include "UIUserContextMenu.h"
 #include "MakeDelegateWrapper.h"
 
@@ -61,5 +62,5 @@ void UIAvatar::onAvatarClicked(CBaseUIButton * /*btn*/) {
         return;
     }
 
-    osu->getUserActions()->open(this->player_id_for_endpoint.first);
+    ui->getUserActions()->open(this->player_id_for_endpoint.first);
 }

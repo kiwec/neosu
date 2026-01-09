@@ -15,6 +15,7 @@
 #include "RoomScreen.h"
 #include "SongBrowser/SongBrowser.h"
 #include "TooltipOverlay.h"
+#include "UI.h"
 #include "UIUserContextMenu.h"
 
 ChatLink::ChatLink(float xPos, float yPos, float xSize, float ySize, const UString& link, const UString& label)
@@ -29,9 +30,9 @@ void ChatLink::mouse_update(bool* propagate_clicks) {
     CBaseUILabel::mouse_update(propagate_clicks);
 
     if(this->isMouseInside()) {
-        osu->getTooltipOverlay()->begin();
-        osu->getTooltipOverlay()->addLine(UString::format("link: %s", this->link.toUtf8()));
-        osu->getTooltipOverlay()->end();
+        ui->getTooltipOverlay()->begin();
+        ui->getTooltipOverlay()->addLine(UString::format("link: %s", this->link.toUtf8()));
+        ui->getTooltipOverlay()->end();
 
         this->setBackgroundColor(0xff3d48ac);
     } else {
@@ -40,13 +41,13 @@ void ChatLink::mouse_update(bool* propagate_clicks) {
 }
 
 void ChatLink::open_beatmap_link(i32 map_id, i32 set_id) {
-    if(osu->getSongBrowser()->isVisible()) {
-        osu->getSongBrowser()->map_autodl = map_id;
-        osu->getSongBrowser()->set_autodl = set_id;
-    } else if(osu->getMainMenu()->isVisible()) {
+    if(ui->getSongBrowser()->isVisible()) {
+        ui->getSongBrowser()->map_autodl = map_id;
+        ui->getSongBrowser()->set_autodl = set_id;
+    } else if(ui->getMainMenu()->isVisible()) {
         osu->toggleSongBrowser();
-        osu->getSongBrowser()->map_autodl = map_id;
-        osu->getSongBrowser()->set_autodl = set_id;
+        ui->getSongBrowser()->map_autodl = map_id;
+        ui->getSongBrowser()->set_autodl = set_id;
     } else {
         env->openURLInDefaultBrowser(this->link.toUtf8());
     }
@@ -68,8 +69,8 @@ void ChatLink::onMouseUpInside(bool /*left*/, bool /*right*/) {
 
     // Detect multiplayer invite links
     if(this->link.startsWith("osump://")) {
-        if(osu->getRoom()->isVisible()) {
-            osu->getNotificationOverlay()->addNotification("You are already in a multiplayer room.");
+        if(ui->getRoom()->isVisible()) {
+            ui->getNotificationOverlay()->addNotification("You are already in a multiplayer room.");
             return;
         }
 
@@ -78,7 +79,7 @@ void ChatLink::onMouseUpInside(bool /*left*/, bool /*right*/) {
         std::regex_search(link_str, match, std::regex(R"(osump://(\d+)/(\S*))"));
         u32 invite_id = Parsing::strto<u32>(match.str(1));
         UString password = match.str(2).c_str();
-        osu->getLobby()->joinRoom(invite_id, password);
+        ui->getLobby()->joinRoom(invite_id, password);
         return;
     }
 
@@ -89,7 +90,7 @@ void ChatLink::onMouseUpInside(bool /*left*/, bool /*right*/) {
     user_pattern.append(US_(R"(/u(sers)?/(\d+))"));
     if(std::regex_search(link_str, match, std::regex(user_pattern.toUtf8()))) {
         i32 user_id = Parsing::strto<i32>(match.str(3));
-        osu->getUserActions()->open(user_id);
+        ui->getUserActions()->open(user_id);
         return;
     }
 

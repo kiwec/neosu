@@ -14,6 +14,7 @@
 #include "ModSelector.h"
 #include "Parsing.h"
 #include "SongBrowser/SongBrowser.h"
+#include "UI.h"
 #include "crypto.h"
 #include "Logging.h"
 
@@ -110,7 +111,7 @@ void fetch_online_scores(const DatabaseBeatmap *beatmap) {
     url.append(fmt::format("&i={}", beatmap->getSetID()));
 
     // Some servers use mod flags, even without any leaderboard filter active (e.g. for relax)
-    url.append(fmt::format("&mods={}", static_cast<u32>(osu->getModSelector()->getModFlags())));
+    url.append(fmt::format("&mods={}", static_cast<u32>(ui->getModSelector()->getModFlags())));
 
     // Auth (uses different params than default)
     BANCHO::Api::append_auth_params(url, "us", "ha");
@@ -189,6 +190,6 @@ void process_leaderboard_response(const Packet &response) {
     }
 
     db->getOnlineScores()[beatmap_hash] = std::move(scores);
-    osu->getSongBrowser()->rebuildScoreButtons();
+    ui->getSongBrowser()->rebuildScoreButtons();
 }
 }  // namespace BANCHO::Leaderboard

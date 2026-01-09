@@ -11,6 +11,7 @@
 #include "Osu.h"
 #include "Skin.h"
 #include "SongBrowser/SongBrowser.h"
+#include "UI.h"
 #include "UIAvatar.h"
 #include "UIUserContextMenu.h"
 #include "UserStatsScreen.h"
@@ -31,7 +32,7 @@ UserCard::UserCard(i32 user_id) : CBaseUIButton() {
     // We do not pass mouse events to this->avatar
     this->setClickCallback([](CBaseUIButton *btn) {
         auto card = (UserCard *)btn;
-        osu->getUserActions()->open(card->user_id, card == osu->getUserButton().get());
+        ui->getUserActions()->open(card->user_id, card == osu->getUserButton().get());
     });
 }
 
@@ -69,7 +70,7 @@ void UserCard::draw() {
     }
 
     // draw username
-    McFont *usernameFont = osu->getSongBrowserFont();
+    McFont *usernameFont = ui->getSongBrowser()->getFont();
     const float usernameScale = 0.4f;
     float usernamePaddingLeft = 0.0f;
     g->pushClipRect(McRect(this->vPos.x, this->vPos.y, this->vSize.x, iconHeight));

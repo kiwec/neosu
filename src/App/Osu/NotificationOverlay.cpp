@@ -13,6 +13,7 @@
 #include "Graphics.h"
 #include "PauseMenu.h"
 #include "Logging.h"
+#include "UI.h"
 
 NotificationOverlay::NotificationOverlay() : UIOverlay() {
     this->bWaitForKey = false;
@@ -84,7 +85,7 @@ void ToastElement::updateLayout() {
 void NotificationOverlay::mouse_update(bool *propagate_clicks) {
     bool chat_toasts_visible = cv::notify_during_gameplay.getBool();
     chat_toasts_visible |= !osu->isInPlayMode();
-    chat_toasts_visible |= osu->getPauseMenu()->isVisible();
+    chat_toasts_visible |= ui->getPauseMenu()->isVisible();
 
     bool a_toast_is_hovered = false;
     const vec2 &screen{osu->getVirtScreenSize()};
@@ -123,7 +124,7 @@ void NotificationOverlay::mouse_update(bool *propagate_clicks) {
 void NotificationOverlay::draw() {
     bool chat_toasts_visible = cv::notify_during_gameplay.getBool();
     chat_toasts_visible |= !osu->isInPlayMode();
-    chat_toasts_visible |= osu->getPauseMenu()->isVisible();
+    chat_toasts_visible |= ui->getPauseMenu()->isVisible();
 
     for(const auto &t : this->toasts) {
         if(t->type == ToastElement::TYPE::CHAT && !chat_toasts_visible) continue;

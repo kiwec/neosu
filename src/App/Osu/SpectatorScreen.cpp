@@ -24,6 +24,7 @@
 #include "Skin.h"
 #include "SongBrowser.h"
 #include "SoundEngine.h"
+#include "UI.h"
 #include "UIButton.h"
 #include "UserCard.h"
 #include "Engine.h"
@@ -68,19 +69,19 @@ void start(int user_id) {
 
     const UserInfo *user_info = BANCHO::User::get_user_info(user_id, true);
     auto notif = fmt::format("Started spectating {:s}", user_info->name);
-    osu->getNotificationOverlay()->addToast(notif, SUCCESS_TOAST);
+    ui->getNotificationOverlay()->addToast(notif, SUCCESS_TOAST);
 
     BanchoState::spectating = true;
     BanchoState::spectated_player_id = user_id;
     current_map_id = 0;
 
-    osu->getPromptScreen()->setVisible(false);
-    osu->getModSelector()->setVisible(false);
-    osu->getSongBrowser()->setVisible(false);
-    osu->getLobby()->setVisible(false);
-    osu->getChangelog()->setVisible(false);
-    osu->getMainMenu()->setVisible(false);
-    if(osu->getRoom()->isVisible()) osu->getRoom()->ragequit(false);
+    ui->getPromptScreen()->setVisible(false);
+    ui->getModSelector()->setVisible(false);
+    ui->getSongBrowser()->setVisible(false);
+    ui->getLobby()->setVisible(false);
+    ui->getChangelog()->setVisible(false);
+    ui->getMainMenu()->setVisible(false);
+    if(ui->getRoom()->isVisible()) ui->getRoom()->ragequit(false);
 
     soundEngine->play(osu->getSkin()->s_menu_hit);
 }
@@ -105,7 +106,7 @@ void stop() {
 
     const UserInfo *user_info = BANCHO::User::get_user_info(BanchoState::spectated_player_id, true);
     auto notif = fmt::format("Stopped spectating {:s}", user_info->name);
-    osu->getNotificationOverlay()->addToast(notif, INFO_TOAST);
+    ui->getNotificationOverlay()->addToast(notif, INFO_TOAST);
 
     BanchoState::spectating = false;
     BanchoState::spectated_player_id = 0;
@@ -115,7 +116,7 @@ void stop() {
     packet.id = OUTP_STOP_SPECTATING;
     BANCHO::Net::send_packet(packet);
 
-    osu->getMainMenu()->setVisible(true);
+    ui->getMainMenu()->setVisible(true);
     soundEngine->play(osu->getSkin()->s_menu_back);
 }
 
@@ -126,7 +127,7 @@ SpectatorScreen::SpectatorScreen() {
     this->lfont = osu->getSubTitleFont();
 
     this->pauseButton = new PauseButton(0, 0, 0, 0, "pause_btn", "");
-    this->pauseButton->setClickCallback(SA::MakeDelegate<&MainMenu::onPausePressed>(osu->getMainMenu()));
+    this->pauseButton->setClickCallback([]() { ui->getMainMenu()->onPausePressed(); });
     this->addBaseUIElement(this->pauseButton);
 
     this->background = new CBaseUIScrollView(0, 0, 0, 0, "spectator_bg");
@@ -173,8 +174,8 @@ void SpectatorScreen::mouse_update(bool *propagate_clicks) {
         auto beatmap = Downloader::download_beatmap(user_info->map_id, user_info->map_md5, &download_progress);
         if(beatmap != nullptr) {
             current_map_id = user_info->map_id;
-            osu->getRankingScreen()->setVisible(false);
-            osu->getSongBrowser()->onDifficultySelected(beatmap, false);
+            ui->getRankingScreen()->setVisible(false);
+            ui->getSongBrowser()->onDifficultySelected(beatmap, false);
             osu->getMapInterface()->spectate();
         }
     }

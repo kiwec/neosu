@@ -18,6 +18,7 @@
 #include "SString.h"
 #include "SkinImage.h"
 #include "SoundEngine.h"
+#include "UI.h"
 #include "VolumeOverlay.h"
 #include "Logging.h"
 #include "crypto.h"
@@ -164,7 +165,7 @@ void Skin::update() {
         this->o_ready = true;
 
         // force effect volume update
-        osu->getVolumeOverlay()->updateEffectVolume(this);
+        ui->getVolumeOverlay()->updateEffectVolume(this);
     }
 
     // shitty check to not animate while paused with hitobjects in background
@@ -727,9 +728,9 @@ void Skin::load() {
 
     // delayed error notifications due to resource loading potentially blocking engine time
     if(!parseSkinIni1Status && parseSkinIni2Status && cv::skin.getString() != "default")
-        osu->getNotificationOverlay()->addNotification("Error: Couldn't load skin.ini!", 0xffff0000);
+        ui->getNotificationOverlay()->addNotification("Error: Couldn't load skin.ini!", 0xffff0000);
     else if(!parseSkinIni2Status)
-        osu->getNotificationOverlay()->addNotification("Error: Couldn't load DEFAULT skin.ini!!!", 0xffff0000);
+        ui->getNotificationOverlay()->addNotification("Error: Couldn't load DEFAULT skin.ini!!!", 0xffff0000);
 }
 
 void Skin::loadBeatmapOverride(const std::string & /*filepath*/) {

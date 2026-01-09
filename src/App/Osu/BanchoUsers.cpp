@@ -8,11 +8,11 @@
 #include "OsuConVars.h"
 #include "Engine.h"
 #include "NotificationOverlay.h"
-#include "Osu.h"
-#include "Timing.h"
 #include "SpectatorScreen.h"
-#include "Logging.h"
 #include "SString.h"
+#include "Timing.h"
+#include "UI.h"
+#include "Logging.h"
 
 #include <algorithm>
 
@@ -98,13 +98,13 @@ void logout_user(i32 user_id) {
 
         if(user_info->is_friend() && cv::notify_friend_status_change.getBool()) {
             auto text = fmt::format("{} is now offline", user_info->name);
-            osu->getNotificationOverlay()->addToast(text, STATUS_TOAST, {}, ToastElement::TYPE::CHAT);
+            ui->getNotificationOverlay()->addToast(text, STATUS_TOAST, {}, ToastElement::TYPE::CHAT);
         }
 
         online_users.erase(it);
         dequeue_presence_request(user_info);
         dequeue_stats_request(user_info);
-        osu->getChat()->updateUserList();
+        ui->getChat()->updateUserList();
     }
 }
 
@@ -182,7 +182,7 @@ UserInfo* get_user_info(i32 user_id, bool wants_presence) {
     assert(successfully_inserted);
     auto* new_info = &inserted_it->second;
 
-    osu->getChat()->updateUserList();
+    ui->getChat()->updateUserList();
 
     if(wants_presence) {
         enqueue_presence_request(new_info);

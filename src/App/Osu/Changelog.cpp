@@ -15,6 +15,7 @@
 #include "Graphics.h"
 #include "Environment.h"
 #include "MakeDelegateWrapper.h"
+#include "UI.h"
 
 #include "build_timestamp.h"
 
@@ -836,7 +837,7 @@ class ChangelogLabel final : public CBaseUIButton {
     }
 
     bool isMouseInside() override {
-        return CBaseUIButton::isMouseInside() && !osu->getChangelog()->backButton->isMouseInside();
+        return CBaseUIButton::isMouseInside() && !ui->getChangelog()->backButton->isMouseInside();
     }
 };
 }  // namespace
@@ -936,7 +937,7 @@ void Changelog::onChangeClicked(CBaseUIButton *button) {
 
         debugLog("url = {:s}", url.toUtf8());
 
-        osu->getNotificationOverlay()->addNotification("Opening browser, please wait ...", 0xffffffff, false, 0.75f);
+        ui->getNotificationOverlay()->addNotification("Opening browser, please wait ...", 0xffffffff, false, 0.75f);
         env->openURLInDefaultBrowser(url.toUtf8());
     }
 }

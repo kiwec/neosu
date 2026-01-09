@@ -11,6 +11,7 @@
 #include "Skin.h"
 #include "SkinImage.h"
 #include "SoundEngine.h"
+#include "UI.h"
 
 UIBackButton::UIBackButton(float xPos, float yPos, float xSize, float ySize, UString name)
     : CBaseUIButton(xPos, yPos, xSize, ySize, std::move(name), "") {
@@ -67,15 +68,19 @@ void UIBackButton::onMouseOutside() {
 
 void UIBackButton::updateLayout() {
     const SkinImage *backimg = osu->getSkin()->i_menu_back2;
-    OptionsMenu *optmenu = osu->getOptionsMenu();
+    this->bUseDefaultBack = false;
 
-    if(optmenu && optmenu->isVisible() && backimg->getSize().y > (optmenu->getSize().y / 4) &&
+    if(!ui) {
+        this->setSize(backimg->getSize());
+        return;
+    }
+
+    OptionsMenu *optmenu = ui->getOptionsMenu();
+    if(optmenu->isVisible() && backimg->getSize().y > (optmenu->getSize().y / 4) &&
        (osu->getSkin()->i_menu_back2_DEFAULTSKIN && osu->getSkin()->i_menu_back2_DEFAULTSKIN->isReady())) {
         // always show default back button when options menu is showing, if its height is > 1/4 the options menu height
         backimg = osu->getSkin()->i_menu_back2_DEFAULTSKIN;
         this->bUseDefaultBack = true;
-    } else {
-        this->bUseDefaultBack = false;
     }
 
     this->setSize(backimg->getSize());

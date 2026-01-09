@@ -15,6 +15,7 @@
 #include "NotificationOverlay.h"
 #include "Osu.h"
 #include "SpectatorScreen.h"
+#include "UI.h"
 #include "UIContextMenu.h"
 #include "UserCard.h"
 #include "UserStatsScreen.h"
@@ -52,7 +53,7 @@ void UIUserContextMenuScreen::open(i32 user_id, bool is_song_browser_button) {
     this->menu->begin(is_song_browser_button ? osu->getUserButton()->getSize().x : 0);
 
     const bool is_online = (user_id > 0) || (user_id < -10000);
-    if(!osu->getUserStatsScreen()->isVisible() && (!is_online || (user_id == BanchoState::get_uid()))) {
+    if(!ui->getUserStatsScreen()->isVisible() && (!is_online || (user_id == BanchoState::get_uid()))) {
         this->menu->addButton("View top plays", VIEW_TOP_PLAYS);
     }
 
@@ -129,14 +130,14 @@ void UIUserContextMenuScreen::on_action(const UString& /*text*/, int user_action
         BANCHO::Net::send_packet(packet);  // kick by locking the slot
         BANCHO::Net::send_packet(packet);  // unlock the slot
     } else if(user_action == START_CHAT) {
-        osu->getChat()->openChannel(user_info->name);
+        ui->getChat()->openChannel(user_info->name);
     } else if(user_action == VIEW_PROFILE) {
         // Fallback in case we're offline
         auto endpoint = BanchoState::endpoint;
         if(endpoint == "") endpoint = "ppy.sh";
 
         auto url = fmt::format("https://osu.{}/u/{}", endpoint, this->user_id);
-        osu->getNotificationOverlay()->addNotification("Opening browser, please wait ...", 0xffffffff, false, 0.75f);
+        ui->getNotificationOverlay()->addNotification("Opening browser, please wait ...", 0xffffffff, false, 0.75f);
         env->openURLInDefaultBrowser(url);
     } else if(user_action == UA_ADD_FRIEND) {
         Packet packet;
@@ -161,7 +162,7 @@ void UIUserContextMenuScreen::on_action(const UString& /*text*/, int user_action
             Spectating::start(this->user_id);
         }
     } else if(user_action == VIEW_TOP_PLAYS) {
-        osu->getUserStatsScreen()->setVisible(true);
+        ui->getUserStatsScreen()->setVisible(true);
     }
 
     this->menu->setVisible(false);
@@ -174,4 +175,4 @@ UIUserLabel::UIUserLabel(i32 user_id, const UString& username) : CBaseUILabel() 
     this->setDrawBackground(false);
 }
 
-void UIUserLabel::onMouseUpInside(bool /*left*/, bool /*right*/) { osu->getUserActions()->open(this->user_id); }
+void UIUserLabel::onMouseUpInside(bool /*left*/, bool /*right*/) { ui->getUserActions()->open(this->user_id); }

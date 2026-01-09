@@ -39,6 +39,7 @@
 #include "SongBrowser/SongButton.h"
 #include "SoundEngine.h"
 #include "SpectatorScreen.h"
+#include "UI.h"
 #include "UIAvatar.h"
 #include "UIButton.h"
 #include "UICheckbox.h"
@@ -136,7 +137,7 @@ RoomScreen::RoomScreen() : UIOverlay() {
     this->lfont = osu->getSubTitleFont();
 
     this->pauseButton = new PauseButton(0, 0, 0, 0, "pause_btn", "");
-    this->pauseButton->setClickCallback(SA::MakeDelegate<&MainMenu::onPausePressed>(osu->getMainMenu()));
+    this->pauseButton->setClickCallback([]() { ui->getMainMenu()->onPausePressed(); });
     this->addBaseUIElement(this->pauseButton);
 
     this->settings = new CBaseUIScrollView(0, 0, 0, 0, "room_settings");
@@ -279,7 +280,7 @@ void RoomScreen::draw() {
 }
 
 void RoomScreen::mouse_update(bool *propagate_clicks) {
-    if(!this->bVisible || osu->getSongBrowser()->isVisible()) return;
+    if(!this->bVisible || ui->getSongBrowser()->isVisible()) return;
 
     const bool room_name_changed = this->room_name_ipt->getText() != BanchoState::room.name;
     if(BanchoState::room.is_host() && room_name_changed) {
@@ -301,7 +302,7 @@ void RoomScreen::mouse_update(bool *propagate_clicks) {
     if(!*propagate_clicks) return;
 
     // HACK: disable "slotlist" scrollview when options menu is open, because it somehow takes priority
-    if(osu->getOptionsMenu()->isVisible()) {
+    if(ui->getOptionsMenu()->isVisible()) {
         this->settings->mouse_update(propagate_clicks);
     } else {
         UIOverlay::mouse_update(propagate_clicks);
@@ -309,7 +310,7 @@ void RoomScreen::mouse_update(bool *propagate_clicks) {
 }
 
 void RoomScreen::onKeyDown(KeyboardEvent &key) {
-    if(!this->bVisible || osu->getOptionsMenu()->isVisible() || osu->getSongBrowser()->isVisible()) return;
+    if(!this->bVisible || ui->getOptionsMenu()->isVisible() || ui->getSongBrowser()->isVisible()) return;
 
     if(key.getScanCode() == KEY_ESCAPE) {
         key.consume();
@@ -317,8 +318,8 @@ void RoomScreen::onKeyDown(KeyboardEvent &key) {
         static f64 last_escape_press = 0.0;
         if(last_escape_press + 1.0 < engine->getTime()) {
             last_escape_press = engine->getTime();
-            osu->getNotificationOverlay()->addNotification("Hit 'Escape' once more to exit this multiplayer match.",
-                                                           0xffffffff, false, 0.75f);
+            ui->getNotificationOverlay()->addNotification("Hit 'Escape' once more to exit this multiplayer match.",
+                                                          0xffffffff, false, 0.75f);
         } else {
             this->ragequit();
         }
@@ -329,8 +330,8 @@ void RoomScreen::onKeyDown(KeyboardEvent &key) {
     if(key.getScanCode() == KEY_F1) {
         key.consume();
         if(BanchoState::room.freemods || BanchoState::room.is_host()) {
-            osu->getModSelector()->setVisible(!osu->getModSelector()->isVisible());
-            this->bVisible = !osu->getModSelector()->isVisible();
+            ui->getModSelector()->setVisible(!ui->getModSelector()->isVisible());
+            this->bVisible = !ui->getModSelector()->isVisible();
         }
         return;
     }
@@ -339,12 +340,12 @@ void RoomScreen::onKeyDown(KeyboardEvent &key) {
 }
 
 void RoomScreen::onKeyUp(KeyboardEvent &key) {
-    if(!this->bVisible || osu->getSongBrowser()->isVisible()) return;
+    if(!this->bVisible || ui->getSongBrowser()->isVisible()) return;
     UIOverlay::onKeyUp(key);
 }
 
 void RoomScreen::onChar(KeyboardEvent &key) {
-    if(!this->bVisible || osu->getSongBrowser()->isVisible()) return;
+    if(!this->bVisible || ui->getSongBrowser()->isVisible()) return;
     UIOverlay::onChar(key);
 }
 
@@ -536,19 +537,19 @@ void RoomScreen::updateLayout(vec2 newResolution) {
 void RoomScreen::ragequit(bool play_sound) {
     this->bVisible = false;
     BanchoState::match_started = false;
-    osu->getHUD()->updateScoringMetric();
+    ui->getHUD()->updateScoringMetric();
 
     Packet packet;
     packet.id = OUTP_EXIT_ROOM;
     BANCHO::Net::send_packet(packet);
 
-    osu->getModSelector()->resetMods();
-    osu->getModSelector()->updateButtons();
+    ui->getModSelector()->resetMods();
+    ui->getModSelector()->updateButtons();
 
     BanchoState::room = Room();
-    osu->getMainMenu()->setVisible(true);
-    osu->getChat()->removeChannel("#multiplayer");
-    osu->getChat()->updateVisibility();
+    ui->getMainMenu()->setVisible(true);
+    ui->getChat()->removeChannel("#multiplayer");
+    ui->getChat()->updateVisibility();
 
     Replay::Mods::use(*osu->previous_mods);
 
@@ -559,7 +560,7 @@ void RoomScreen::ragequit(bool play_sound) {
 
 void RoomScreen::on_map_change() {
     // Results screen has map background and such showing, so prevent map from changing while we're on it.
-    if(osu->getRankingScreen()->isVisible()) return;
+    if(ui->getRankingScreen()->isVisible()) return;
 
     debugLog("Map changed to ID {:d}, MD5 {:s}: {:s}", BanchoState::room.map_id, BanchoState::room.map_md5.string(),
              BanchoState::room.map_name);
@@ -576,7 +577,7 @@ void RoomScreen::on_map_change() {
     } else {
         auto beatmap = db->getBeatmapDifficulty(BanchoState::room.map_md5);
         if(beatmap != nullptr) {
-            osu->getSongBrowser()->onDifficultySelected(beatmap, false);
+            ui->getSongBrowser()->onDifficultySelected(beatmap, false);
             this->map_title->setText(BanchoState::room.map_name);
             this->map_title->setSizeToContent(0, 0);
             auto attributes = UString::format("AR: %.1f, CS: %.1f, HP: %.1f, OD: %.1f", beatmap->getAR(),
@@ -624,23 +625,23 @@ void RoomScreen::on_room_joined(const Room &room) {
     if(osu->isInPlayMode()) {
         osu->getMapInterface()->stop(true);
     }
-    osu->getRankingScreen()->setVisible(false);
-    osu->getSongBrowser()->setVisible(false);
-    osu->getChangelog()->setVisible(false);
-    osu->getMainMenu()->setVisible(false);
-    osu->getLobby()->setVisible(false);
+    ui->getRankingScreen()->setVisible(false);
+    ui->getSongBrowser()->setVisible(false);
+    ui->getChangelog()->setVisible(false);
+    ui->getMainMenu()->setVisible(false);
+    ui->getLobby()->setVisible(false);
 
     this->updateLayout(osu->getVirtScreenSize());
     this->bVisible = true;
 
     RichPresence::setBanchoStatus(room.name.c_str(), Action::MULTIPLAYER);
     RichPresence::onMultiplayerLobby();
-    osu->getChat()->openChannel("#multiplayer");
+    ui->getChat()->openChannel("#multiplayer");
 
     *osu->previous_mods = Replay::Mods::from_cvars();
 
-    osu->getModSelector()->resetMods();
-    osu->getModSelector()->enableModsFromFlags(BanchoState::room.mods);
+    ui->getModSelector()->resetMods();
+    ui->getModSelector()->enableModsFromFlags(BanchoState::room.mods);
     cv::mod_no_pausing.setValue(true);
 }
 
@@ -691,13 +692,13 @@ void RoomScreen::on_room_updated(const Room &room) {
         }
     }
 
-    if(osu->getModSelector()->isVisible() && !BanchoState::room.is_host() && !BanchoState::room.freemods) {
+    if(ui->getModSelector()->isVisible() && !BanchoState::room.is_host() && !BanchoState::room.freemods) {
         // Force close mod menu if host disabled freemods
-        osu->getModSelector()->setVisible(false);
+        ui->getModSelector()->setVisible(false);
     }
-    osu->getModSelector()->updateButtons();
-    osu->getModSelector()->resetMods();
-    osu->getModSelector()->enableModsFromFlags(BanchoState::room.mods | player_slot->mods);
+    ui->getModSelector()->updateButtons();
+    ui->getModSelector()->resetMods();
+    ui->getModSelector()->enableModsFromFlags(BanchoState::room.mods | player_slot->mods);
     cv::mod_no_pausing.setValue(true);
 
     this->updateLayout(osu->getVirtScreenSize());
@@ -715,12 +716,12 @@ void RoomScreen::on_match_started(const Room &room) {
     if(osu->getMapInterface()->play()) {
         this->bVisible = false;
         BanchoState::match_started = true;
-        osu->getHUD()->updateScoringMetric();
-        osu->getChat()->updateVisibility();
+        ui->getHUD()->updateScoringMetric();
+        ui->getChat()->updateVisibility();
 
         soundEngine->play(osu->getSkin()->s_match_start);
     } else {
-        osu->getNotificationOverlay()->addToast(US_("Failed to load map"), ERROR_TOAST);
+        ui->getNotificationOverlay()->addToast(US_("Failed to load map"), ERROR_TOAST);
         this->ragequit();  // map failed to load
     }
 }
@@ -750,7 +751,7 @@ void RoomScreen::on_match_score_updated(Packet &packet) {
         slot->sv2_bonus = packet.read<f64>();
     }
 
-    osu->getHUD()->updateScoreboard(true);
+    ui->getHUD()->updateScoreboard(true);
 }
 
 void RoomScreen::on_player_failed(i32 slot_id) {
@@ -796,9 +797,9 @@ void RoomScreen::on_match_finished() {
     osu->onPlayEnd(this->get_approximate_score(), false, false);
 
     BanchoState::match_started = false;
-    osu->getHUD()->updateScoringMetric();
-    osu->getRankingScreen()->setVisible(true);
-    osu->getChat()->updateVisibility();
+    ui->getHUD()->updateScoringMetric();
+    ui->getRankingScreen()->setVisible(true);
+    ui->getChat()->updateVisibility();
 
     // Display room presence instead of map again
     RichPresence::onMultiplayerLobby();
@@ -818,7 +819,7 @@ void RoomScreen::on_match_aborted() {
     osu->onPlayEnd(this->get_approximate_score(), false, true);
     this->bVisible = true;
     BanchoState::match_started = false;
-    osu->getHUD()->updateScoringMetric();
+    ui->getHUD()->updateScoringMetric();
 
     // Display room presence instead of map again
     RichPresence::onMultiplayerLobby();
@@ -866,7 +867,7 @@ void RoomScreen::onReadyButtonClick() {
 
 void RoomScreen::onSelectModsClicked() {
     soundEngine->play(osu->getSkin()->s_menu_hit);
-    osu->getModSelector()->setVisible(true);
+    ui->getModSelector()->setVisible(true);
     this->bVisible = false;
 }
 
@@ -883,11 +884,11 @@ void RoomScreen::onSelectMapClicked() {
     BanchoState::room.pack(packet);
     BANCHO::Net::send_packet(packet);
 
-    osu->getSongBrowser()->setVisible(true);
+    ui->getSongBrowser()->setVisible(true);
 }
 
 void RoomScreen::onChangePasswordClicked() {
-    osu->getPromptScreen()->prompt("New password:", SA::MakeDelegate<&RoomScreen::set_new_password>(this));
+    ui->getPromptScreen()->prompt("New password:", SA::MakeDelegate<&RoomScreen::set_new_password>(this));
 }
 
 void RoomScreen::onChangeWinConditionClicked() {

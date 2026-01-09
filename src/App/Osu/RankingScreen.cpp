@@ -36,6 +36,7 @@
 #include "SoundEngine.h"
 #include "SpectatorScreen.h"
 #include "TooltipOverlay.h"
+#include "UI.h"
 #include "UIButton.h"
 #include "UIBackButton.h"
 #include "UIRankingScreenInfoLabel.h"
@@ -185,7 +186,6 @@ RankingScreen::RankingScreen() : ScreenBackable() {
     this->rankingIndex = new RankingScreenIndexLabel();
     this->rankingIndex->setDrawFrame(false);
     this->rankingIndex->setTextJustification(TEXT_JUSTIFICATION::CENTERED);
-    this->rankingIndex->setFont(osu->getSongBrowserFont());
     this->rankingIndex->setTextColor(0xffffcb21);
     this->rankings->container->addBaseUIElement(this->rankingIndex);
 
@@ -346,8 +346,8 @@ void RankingScreen::mouse_update(bool *propagate_clicks) {
     ScreenBackable::mouse_update(propagate_clicks);
 
     // tooltip (pp + accuracy + unstable rate)
-    if(!osu->getOptionsMenu()->isMouseInside() && mouse->getPos().x < osu->getVirtScreenWidth() * 0.5f) {
-        auto *tto = osu->getTooltipOverlay();
+    if(!ui->getOptionsMenu()->isMouseInside() && mouse->getPos().x < osu->getVirtScreenWidth() * 0.5f) {
+        auto *tto = ui->getTooltipOverlay();
         tto->begin();
         {
             auto &sc = this->storedScore;
@@ -392,13 +392,13 @@ CBaseUIContainer *RankingScreen::setVisible(bool visible) {
 
         if(BanchoState::is_in_a_multi_room()) {
             // We backed out of the ranking screen, display the room again
-            osu->getRoom()->setVisible(true);
-            osu->getChat()->updateVisibility();
+            ui->getRoom()->setVisible(true);
+            ui->getChat()->updateVisibility();
 
             // Since we prevented on_map_change() from running while the ranking screen was visible, run it now.
-            osu->getRoom()->on_map_change();
+            ui->getRoom()->on_map_change();
         } else {
-            osu->getSongBrowser()->setVisible(true);
+            ui->getSongBrowser()->setVisible(true);
         }
     }
 
@@ -408,7 +408,7 @@ CBaseUIContainer *RankingScreen::setVisible(bool visible) {
 void RankingScreen::onRetryClicked() {
     this->setVisible(false);
     if(osu->getMapInterface()->play()) {
-        osu->getSongBrowser()->setVisible(false);
+        ui->getSongBrowser()->setVisible(false);
     }
 }
 
@@ -577,6 +577,7 @@ void RankingScreen::updateLayout() {
         std::max(hardcodedOsuRankingPanelImageSize.y * this->rankingPanel->getScale().y,
                  this->rankingPanel->getImage()->getHeight() * this->rankingPanel->getScale().y));
 
+    this->rankingIndex->setFont(ui->getSongBrowser()->getFont());
     this->rankingIndex->setSize(this->rankings->getSize().x + 2, osu->getVirtScreenHeight() * 0.07f * uiScale);
     this->rankingIndex->setBackgroundColor(0xff745e13);
     this->rankingIndex->setRelPosY(this->rankings->getSize().y + 1);

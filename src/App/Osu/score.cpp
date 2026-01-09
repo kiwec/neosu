@@ -15,6 +15,7 @@
 #include "RoomScreen.h"
 #include "AsyncPPCalculator.h"
 #include "Logging.h"
+#include "UI.h"
 
 LiveScore::LiveScore(bool simulating) {
     this->simulating = simulating;
@@ -85,17 +86,17 @@ void LiveScore::addHitResult(AbstractBeatmapInterface *beatmap, HitObject * /*hi
 
         if(!this->simulating && !ignoreOnHitErrorBar && cv::hiterrorbar_misses.getBool() &&
            delta <= (i32)beatmap->getHitWindow50()) {
-            osu->getHUD()->addHitError(delta, true);
+            ui->getHUD()->addHitError(delta, true);
         }
     } else {
         if(!ignoreOnHitErrorBar) {
             this->hitdeltas.push_back((int)delta);
-            if(!this->simulating) osu->getHUD()->addHitError(delta);
+            if(!this->simulating) ui->getHUD()->addHitError(delta);
         }
 
         if(!ignoreCombo) {
             this->iCombo++;
-            if(!this->simulating) osu->getHUD()->animateCombo();
+            if(!this->simulating) ui->getHUD()->animateCombo();
         }
     }
 
@@ -425,16 +426,16 @@ UString LiveScore::getModsStringForRichPresence() const {
 }
 
 void LiveScore::onScoreChange() {
-    if(this->simulating || !osu->getRoom()) return;
+    if(this->simulating || !ui) return;
 
-    osu->getRoom()->onClientScoreChange();
+    ui->getRoom()->onClientScoreChange();
 
     // only used to block local scores for people who think they are very clever by quickly disabling auto just before
     // the end of a beatmap
     this->bIsUnranked |= (osu->getModAuto() || (osu->getModAutopilot() && osu->getModRelax()));
 
     if(osu->isInPlayMode()) {
-        osu->getHUD()->updateScoreboard(true);
+        ui->getHUD()->updateScoreboard(true);
     }
 }
 

@@ -166,6 +166,9 @@ class SongBrowser final : public ScreenBackable {
     [[nodiscard]] inline bool isInSearch() const { return this->bInSearch; }
     [[nodiscard]] inline bool isRightClickScrolling() const { return this->bSongBrowserRightClickScrolling; }
 
+    [[nodiscard]] inline McFont *getFont() const { return this->font; }
+    [[nodiscard]] inline McFont *getFontBold() const { return this->fontBold; }
+
     inline InfoLabel *getInfoLabel() { return this->songInfo; }
     SongDifficultyButton *getDiffButtonByHash(const MD5Hash &diff_hash) const;
 
@@ -358,4 +361,8 @@ class SongBrowser final : public ScreenBackable {
     i32 currentVisibleSearchMatches{0};
     std::optional<GroupType> searchPrevGroup{std::nullopt};
     SongBrowserBackgroundSearchMatcher *backgroundSearchMatcher;
+
+    // fonts
+    McFont *font{nullptr};
+    McFont *fontBold{nullptr};
 };

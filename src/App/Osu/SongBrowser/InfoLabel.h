@@ -7,7 +7,7 @@ class DatabaseBeatmap;
 
 class InfoLabel final : public CBaseUIButton {
    public:
-    InfoLabel(f32 xPos, f32 yPos, f32 xSize, f32 ySize, UString name);
+    InfoLabel(f32 xPos, f32 yPos, f32 xSize, f32 ySize, UString name, McFont *sbFont);
 
     void draw() override;
     void mouse_update(bool *propagate_clicks) override;

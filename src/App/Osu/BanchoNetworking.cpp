@@ -22,6 +22,7 @@
 #include "SongBrowser.h"
 #include "Timing.h"
 #include "UserCard.h"
+#include "UI.h"
 #include "Logging.h"
 #include "crypto.h"
 
@@ -94,7 +95,7 @@ void attempt_logging_in() {
     networkHandler->httpRequestAsync(query_url, std::move(options), [func = LOGGER_FUNC](NeoNet::Response response) {
         if(!response.success) {
             auto errmsg = fmt::format("Failed to log in: {}", response.error_msg);
-            osu->getNotificationOverlay()->addToast(errmsg, ERROR_TOAST);
+            ui->getNotificationOverlay()->addToast(errmsg, ERROR_TOAST);
             BanchoState::update_online_status(OnlineStatus::LOGGED_OUT);
             return;
         }
@@ -211,7 +212,7 @@ void update_networking() {
     }
 
     // Set ping timeout
-    if(osu && osu->getLobby()->isVisible()) seconds_between_pings = 1;
+    if(osu && ui->getLobby()->isVisible()) seconds_between_pings = 1;
     if(BanchoState::spectating) seconds_between_pings = 1;
     if(BanchoState::is_in_a_multi_room() && seconds_between_pings > 3) seconds_between_pings = 3;
     if(use_websockets) seconds_between_pings = 30;
@@ -370,8 +371,8 @@ void BanchoState::disconnect(bool shutdown) {
     BanchoState::score_submission_policy = ServerPolicy::NO_PREFERENCE;
 
     BANCHO::User::logout_all_users();
-    osu->getChat()->onDisconnect();
-    osu->getSongBrowser()->onFilterScoresChange("Local", SongBrowser::LOGIN_STATE_FILTER_ID);
+    ui->getChat()->onDisconnect();
+    ui->getSongBrowser()->onFilterScoresChange("Local", SongBrowser::LOGIN_STATE_FILTER_ID);
 
     Downloader::abort_downloads();
 }
@@ -405,7 +406,7 @@ void BanchoState::reconnect() {
     };
 
     if(std::ranges::contains(server_blacklist, BanchoState::endpoint)) {
-        osu->getNotificationOverlay()->addToast(US_("This server does not allow neosu clients."), ERROR_TOAST);
+        ui->getNotificationOverlay()->addToast(US_("This server does not allow neosu clients."), ERROR_TOAST);
         return;
     }
 

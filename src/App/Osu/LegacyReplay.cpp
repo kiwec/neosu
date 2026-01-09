@@ -19,6 +19,7 @@
 #include "score.h"
 #include "Parsing.h"
 #include "Logging.h"
+#include "UI.h"
 
 #include <cstdlib>
 #include <string>
@@ -285,7 +286,7 @@ void load_and_watch(FinishedScore score) {
         if(!load_from_disk(score, true)) {
             if(score.server.c_str() != BanchoState::endpoint) {
                 auto msg = fmt::format("Please connect to {} to view this replay!", score.server);
-                osu->getNotificationOverlay()->addToast(msg, ERROR_TOAST);
+                ui->getNotificationOverlay()->addToast(msg, ERROR_TOAST);
             }
 
             // Need to allocate with calloc since BANCHO::Api::Requests free() the .extra
@@ -302,24 +303,24 @@ void load_and_watch(FinishedScore score) {
             request.extra = (u8*)score_cpy;
             BANCHO::Api::send_request(request);
 
-            osu->getNotificationOverlay()->addNotification(u"Downloading replay...");
+            ui->getNotificationOverlay()->addNotification(u"Downloading replay...");
             return;
         }
     }
 
     // We tried loading from memory, we tried loading from file, we tried loading from server... RIP
     if(score.replay.empty()) {
-        osu->getNotificationOverlay()->addToast(US_("Failed to load replay"), ERROR_TOAST);
+        ui->getNotificationOverlay()->addToast(US_("Failed to load replay"), ERROR_TOAST);
         return;
     }
 
     auto map = db->getBeatmapDifficulty(score.beatmap_hash);
     if(map == nullptr) {
         // XXX: Auto-download beatmap
-        osu->getNotificationOverlay()->addToast(US_("Missing beatmap for this replay"), ERROR_TOAST);
+        ui->getNotificationOverlay()->addToast(US_("Missing beatmap for this replay"), ERROR_TOAST);
     } else {
-        osu->getSongBrowser()->onDifficultySelected(map, false);
-        osu->getSongBrowser()->selectSelectedBeatmapSongButton();
+        ui->getSongBrowser()->onDifficultySelected(map, false);
+        ui->getSongBrowser()->selectSelectedBeatmapSongButton();
         osu->getMapInterface()->watch(score, 0);
     }
 }

@@ -22,6 +22,7 @@
 #include "RichPresence.h"
 #include "Skin.h"
 #include "SoundEngine.h"
+#include "UI.h"
 #include "UIPauseMenuButton.h"
 
 PauseMenu::PauseMenu() : UIOverlay() {
@@ -104,10 +105,10 @@ void PauseMenu::draw() {
 
         g->setColor(Color(arrowColor).setA(this->fWarningArrowsAnimAlpha * this->fDimAnim));
 
-        osu->getHUD()->drawWarningArrow(vec2(this->fWarningArrowsAnimX, this->fWarningArrowsAnimY) +
+        ui->getHUD()->drawWarningArrow(vec2(this->fWarningArrowsAnimX, this->fWarningArrowsAnimY) +
                                             vec2(0, this->selectedButton->getSize().y / 2) - vec2(offset, 0),
                                         false, false);
-        osu->getHUD()->drawWarningArrow(
+        ui->getHUD()->drawWarningArrow(
             vec2(osu->getVirtScreenWidth() - this->fWarningArrowsAnimX, this->fWarningArrowsAnimY) +
                 vec2(0, this->selectedButton->getSize().y / 2) + vec2(offset, 0),
             true, false);
@@ -385,7 +386,7 @@ CBaseUIContainer *PauseMenu::setVisible(bool visible) {
     }
 
     // HACKHACK: force disable mod selection screen in case it was open and the beatmap ended/failed
-    osu->getModSelector()->setVisible(false);
+    ui->getModSelector()->setVisible(false);
 
     // reset
     this->selectedButton = nullptr;
@@ -404,7 +405,7 @@ CBaseUIContainer *PauseMenu::setVisible(bool visible) {
             &this->fDimAnim, (this->bVisible ? 1.0f : 0.0f),
             cv::pause_anim_duration.getFloat() * (this->bVisible ? 1.0f - this->fDimAnim : this->fDimAnim), true);
     }
-    osu->getChat()->updateVisibility();
+    ui->getChat()->updateVisibility();
     return this;
 }
 

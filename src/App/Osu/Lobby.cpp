@@ -26,6 +26,7 @@
 #include "Skin.h"
 #include "SongBrowser/SongBrowser.h"
 #include "SoundEngine.h"
+#include "UI.h"
 #include "UIButton.h"
 #include "Logging.h"
 #include "Environment.h"
@@ -72,8 +73,8 @@ RoomUIElement::RoomUIElement(Lobby* multi, const Room& room, float x, float y, f
 void RoomUIElement::onRoomJoinButtonClick(CBaseUIButton* /*btn*/) {
     if(this->has_password) {
         this->multi->room_to_join = this->room_id;
-        osu->getPromptScreen()->prompt("Room password:",
-                                       SA::MakeDelegate<&Lobby::on_room_join_with_password>(this->multi));
+        ui->getPromptScreen()->prompt("Room password:",
+                                      SA::MakeDelegate<&Lobby::on_room_join_with_password>(this->multi));
     } else {
         this->multi->joinRoom(this->room_id, "");
     }
@@ -111,7 +112,7 @@ void Lobby::onKeyDown(KeyboardEvent& key) {
     if(key.getScanCode() == KEY_ESCAPE) {
         key.consume();
         this->setVisible(false);
-        osu->getMainMenu()->setVisible(true);
+        ui->getMainMenu()->setVisible(true);
         soundEngine->play(osu->getSkin()->s_menu_back);
         return;
     }
@@ -135,7 +136,7 @@ void Lobby::onResolutionChange(vec2 newResolution) { this->updateLayout(newResol
 
 bool Lobby::isVisible() {
     // Hide lobby & chat UI while database is loading
-    return this->bVisible && !osu->getSongBrowser()->isVisible();
+    return this->bVisible && !ui->getSongBrowser()->isVisible();
 }
 
 CBaseUIContainer* Lobby::setVisible(bool visible) {
@@ -158,7 +159,7 @@ CBaseUIContainer* Lobby::setVisible(bool visible) {
         if(db->getProgress() == 0.0) {
             // Not having a loaded database causes a bunch of issues in multi
             // TODO: handle cancellation
-            osu->getSongBrowser()->refreshBeatmaps(true);
+            ui->getSongBrowser()->refreshBeatmaps(true);
         }
     } else {
         Packet packet;
@@ -172,7 +173,7 @@ CBaseUIContainer* Lobby::setVisible(bool visible) {
         this->rooms.clear();
     }
 
-    osu->getChat()->updateVisibility();
+    ui->getChat()->updateVisibility();
     return this;
 }
 
@@ -238,7 +239,7 @@ void Lobby::joinRoom(u32 id, const UString& password) {
     }
 
     debugLog("Joining room #{:d} with password '{:s}'", id, password.toUtf8());
-    osu->getNotificationOverlay()->addNotification("Joining room...");
+    ui->getNotificationOverlay()->addNotification("Joining room...");
 }
 
 void Lobby::updateRoom(const Room& room) {
@@ -283,7 +284,7 @@ void Lobby::on_create_room_clicked() {
     BanchoState::room.pack(packet);
     BANCHO::Net::send_packet(packet);
 
-    osu->getNotificationOverlay()->addNotification("Creating room...");
+    ui->getNotificationOverlay()->addNotification("Creating room...");
 }
 
 void Lobby::on_room_join_with_password(const UString& password) { this->joinRoom(this->room_to_join, password); }

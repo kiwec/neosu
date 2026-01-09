@@ -7,6 +7,7 @@
 #include "Skin.h"
 #include "SkinImage.h"
 #include "score.h"
+#include "UI.h"
 
 UIRankingScreenRankingPanel::UIRankingScreenRankingPanel() : CBaseUIImage("", 0, 0, 0, 0, "") {
     this->setImage(osu->getSkin()->i_ranking_panel);
@@ -45,7 +46,7 @@ void UIRankingScreenRankingPanel::draw() {
         g->translate(this->vPos.x + osu->getUIScale(111.0f) * uiScale,
                      this->vPos.y + (osu->getSkin()->i_scores[0]->getHeight() / 2) * scale +
                          (osu->getUIScale(11.0f) + globalYOffset) * uiScale);
-        osu->getHUD()->drawScoreNumber(this->iScore, scale);
+        ui->getHUD()->drawScoreNumber(this->iScore, scale);
     }
     g->popTransform();
 
@@ -84,7 +85,7 @@ void UIRankingScreenRankingPanel::draw() {
         g->translate(this->vPos.x + osu->getUIScale(15.0f) * uiScale,
                      this->vPos.y + (osu->getSkin()->i_scores[0]->getHeight() / 2.f) * scale +
                          (osu->getUIScale(row4 + 10) + globalYOffset) * uiScale);
-        osu->getHUD()->drawComboSimple(this->iCombo, scale);
+        ui->getHUD()->drawComboSimple(this->iCombo, scale);
     }
     g->popTransform();
 
@@ -109,7 +110,7 @@ void UIRankingScreenRankingPanel::draw() {
         g->translate(this->vPos.x + osu->getUIScale(195.0f) * uiScale,
                      this->vPos.y + (osu->getSkin()->i_scores[0]->getHeight() / 2) * scale +
                          (osu->getUIScale(row4 + 10) + globalYOffset) * uiScale);
-        osu->getHUD()->drawAccuracySimple(this->fAccuracy * 100.0f, scale);
+        ui->getHUD()->drawAccuracySimple(this->fAccuracy * 100.0f, scale);
     }
     g->popTransform();
 
@@ -158,7 +159,7 @@ void UIRankingScreenRankingPanel::drawNumHits(int numHits, float scale, vec2 pos
         g->translate(
             this->vPos.x + osu->getUIScale(pos.x) * uiScale,
             this->vPos.y + (osu->getSkin()->i_scores[0]->getHeight() / 2) * scale + osu->getUIScale(pos.y) * uiScale);
-        osu->getHUD()->drawComboSimple(numHits, scale);
+        ui->getHUD()->drawComboSimple(numHits, scale);
     }
     g->popTransform();
 }

@@ -7,8 +7,10 @@
 #include "Engine.h"
 #include "Font.h"
 #include "Osu.h"
+#include "SongBrowser/SongBrowser.h"
 #include "Skin.h"
 #include "SkinImage.h"
+#include "UI.h"
 
 ScoreboardSlot::ScoreboardSlot(const SCORE_ENTRY &score, int index) {
     this->avatar = std::make_unique<UIAvatar>(score.player_id, 0.f, 0.f, 0.f, 0.f);
@@ -32,8 +34,8 @@ void ScoreboardSlot::draw() {
 
     g->setBlendMode(DrawBlendMode::BLEND_MODE_PREMUL_ALPHA);
 
-    McFont *font_normal = osu->getSongBrowserFont();
-    McFont *font_bold = osu->getSongBrowserFontBold();
+    McFont *font_normal = ui->getSongBrowser()->getFont();
+    McFont *font_bold = ui->getSongBrowser()->getFontBold();
 
     const SlotColEffect cur_slot_color_effect = this->getCurSlotEffect();
 
@@ -162,7 +164,7 @@ void ScoreboardSlot::draw() {
     {
         UString wincond_based_scoretext;
         SlotColType wincond_based_coltype = OTHER;
-        switch(osu->getHUD()->getScoringMetric()) {
+        switch(ui->getHUD()->getScoringMetric()) {
             case WinCondition::ACCURACY: {
                 wincond_based_coltype = COMBOACC;
                 wincond_based_scoretext = fmt::format("{:.2f}%", this->score.accuracy * 100.0f);
@@ -206,7 +208,7 @@ void ScoreboardSlot::draw() {
 }
 
 void ScoreboardSlot::updateIndex(int new_index, bool is_player, bool animate) {
-    int player_idx = osu->getHUD()->player_slot->index;
+    int player_idx = ui->getHUD()->player_slot->index;
     if(is_player) {
         if(animate && new_index < this->index) {
             this->fFlash = 1.f;

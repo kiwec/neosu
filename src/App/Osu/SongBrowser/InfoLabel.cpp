@@ -25,14 +25,15 @@
 #include "ResourceManager.h"
 #include "Skin.h"
 #include "TooltipOverlay.h"
+#include "UI.h"
 
-InfoLabel::InfoLabel(f32 xPos, f32 yPos, f32 xSize, f32 ySize, UString name)
+InfoLabel::InfoLabel(f32 xPos, f32 yPos, f32 xSize, f32 ySize, UString name, McFont *sbFont)
     : CBaseUIButton(xPos, yPos, xSize, ySize, std::move(name), "") {
     // slightly abusing songbrowser font here, but the subtitle font is just too low DPI
     // and looks bad if it's even slightly upscaled (even at 1080p, we're upscaling it by ~1.4x)
 
     // the songbrowser font is about 1.5x larger, so it looks sharper due to not needing to be upscaled
-    this->titleFont = osu->getSongBrowserFont();
+    this->titleFont = sbFont;
     this->font = osu->getSubTitleFont();
 
     this->updateScaling();
@@ -199,7 +200,7 @@ void InfoLabel::mouse_update(bool *propagate_clicks) {
     CBaseUIButton::mouse_update(propagate_clicks);
 
     // detail info tooltip when hovering over diff info
-    if(this->isMouseInside() && !osu->getOptionsMenu()->isMouseInside()) {
+    if(this->isMouseInside() && !ui->getOptionsMenu()->isMouseInside()) {
         const auto &pf = osu->getMapInterface();
 
         const f32 speedMultiplierInv = (1.0f / pf->getSpeedMultiplier());
@@ -211,7 +212,7 @@ void InfoLabel::mouse_update(bool *propagate_clicks) {
         const f32 hitobjectRadiusRoundedCompensated = (GameRules::getRawHitCircleDiameter(pf->getCS()) / 2.0f);
 
         const auto *bmDiff2{pf->getBeatmap()};
-        const auto &tooltipOverlay{osu->getTooltipOverlay()};
+        const auto &tooltipOverlay{ui->getTooltipOverlay()};
         tooltipOverlay->begin();
         {
             tooltipOverlay->addLine(fmt::format("Approach time: {:.2f}ms"_cf, approachTimeRoundedCompensated));

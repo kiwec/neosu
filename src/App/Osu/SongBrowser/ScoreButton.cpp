@@ -29,6 +29,7 @@
 #include "SoundEngine.h"
 #include "Font.h"
 #include "TooltipOverlay.h"
+#include "UI.h"
 #include "UIAvatar.h"
 #include "UIContextMenu.h"
 #include "UserStatsScreen.h"
@@ -85,7 +86,7 @@ void ScoreButton::draw() {
     }
     const float indexNumberScale = 0.35f;
     const float indexNumberWidthPercent = (this->style == STYLE::TOP_RANKS ? 0.075f : 0.15f);
-    McFont *indexNumberFont = osu->getSongBrowserFontBold();
+    McFont *indexNumberFont = ui->getSongBrowser()->getFontBold();
     g->pushTransform();
     {
         UString indexNumberString = UString::format("%i", this->iScoreIndexNumber);
@@ -128,7 +129,7 @@ void ScoreButton::draw() {
 
     // username | (artist + songName + diffName)
     const float usernameScale = (this->style == STYLE::TOP_RANKS ? 0.6f : 0.7f);
-    McFont *usernameFont = osu->getSongBrowserFont();
+    McFont *usernameFont = ui->getSongBrowser()->getFont();
     g->pushClipRect(McRect(this->vPos.x, this->vPos.y, this->vSize.x, this->vSize.y));
     g->pushTransform();
     {
@@ -399,7 +400,7 @@ void ScoreButton::mouse_update(bool *propagate_clicks) {
     }
 
     // dumb hack to avoid taking focus and drawing score button tooltips over options menu
-    if(osu->getOptionsMenu()->isVisible()) {
+    if(ui->getOptionsMenu()->isVisible()) {
         return;
     }
 
@@ -430,7 +431,7 @@ void ScoreButton::mouse_update(bool *propagate_clicks) {
     if(this->isMouseInside()) {
         if(!this->isContextMenuVisible()) {
             if(this->fIndexNumberAnim > 0.0f) {
-                const auto &tooltipOverlay{osu->getTooltipOverlay()};
+                const auto &tooltipOverlay{ui->getTooltipOverlay()};
                 tooltipOverlay->begin();
                 {
                     for(const auto &tooltipLine : this->tooltipLines) {
@@ -584,8 +585,8 @@ void ScoreButton::onRightMouseUpInside() {
 void ScoreButton::onContextMenu(const UString &text, int id) {
     auto &sc = this->storedScore;
 
-    if(osu->getUserStatsScreen()->isVisible()) {
-        osu->getUserStatsScreen()->setVisible(false);
+    if(ui->getUserStatsScreen()->isVisible()) {
+        ui->getUserStatsScreen()->setVisible(false);
 
         SongDifficultyButton *song_button = g_songbrowser->getDiffButtonByHash(sc.beatmap_hash);
         g_songbrowser->selectSongButton(song_button);
@@ -649,7 +650,7 @@ void ScoreButton::onDeleteScoreConfirmed(const UString & /*text*/, int id) {
     // absolutely disgusting
     g_songbrowser->onScoreContextMenu(this, 2);
 
-    osu->getUserStatsScreen()->rebuildScoreButtons();
+    ui->getUserStatsScreen()->rebuildScoreButtons();
 }
 
 void ScoreButton::setScore(const FinishedScore &newscore, const DatabaseBeatmap *map, int index,
@@ -855,7 +856,7 @@ UString ScoreButton::getModsStringForDisplay(const Replay::Mods &mods) {
     if(flags::has<ScoreV2>(mods.flags)) modsString.append("v2,");
     if(flags::has<Target>(mods.flags)) modsString.append("Target,");
     if(flags::has<Nightmare>(mods.flags)) modsString.append("Nightmare,");
-    if(flags::any<MirrorHorizontal | MirrorVertical>(mods.flags)) modsString.append("Mirror,");
+    if(flags::any < MirrorHorizontal | MirrorVertical > (mods.flags)) modsString.append("Mirror,");
     if(flags::has<FPoSu>(mods.flags)) modsString.append("FPoSu,");
     if(flags::has<Singletap>(mods.flags)) modsString.append("1K,");
     if(flags::has<NoKeylock>(mods.flags)) modsString.append("4K,");

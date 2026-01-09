@@ -11,8 +11,8 @@
 #include "File.h"
 #include "NetworkHandler.h"
 #include "SString.h"
+#include "UI.h"
 #include "OptionsMenu.h"
-#include "Osu.h"
 #include "Logging.h"
 #include "Environment.h"
 #include "MakeDelegateWrapper.h"
@@ -65,9 +65,10 @@ void UpdateHandler::checkForUpdates(bool force_update) {
     };
 
     this->status = STATUS_CHECKING_FOR_UPDATE;
-    networkHandler->httpRequestAsync(versionUrl, std::move(options), [this, force_update](const NeoNet::Response &response) {
-        this->onVersionCheckComplete(response.body, response.success, force_update);
-    });
+    networkHandler->httpRequestAsync(versionUrl, std::move(options),
+                                     [this, force_update](const NeoNet::Response &response) {
+                                         this->onVersionCheckComplete(response.body, response.success, force_update);
+                                     });
 }
 
 void UpdateHandler::onVersionCheckComplete(const std::string &response, bool success, bool force_update) {
@@ -134,9 +135,10 @@ void UpdateHandler::onVersionCheckComplete(const std::string &response, bool suc
     };
 
     this->status = STATUS_DOWNLOADING_UPDATE;
-    networkHandler->httpRequestAsync(update_url, std::move(options), [this, online_update_hash](const NeoNet::Response &response) {
-        this->onDownloadComplete(response.body, response.success, online_update_hash);
-    });
+    networkHandler->httpRequestAsync(update_url, std::move(options),
+                                     [this, online_update_hash](const NeoNet::Response &response) {
+                                         this->onDownloadComplete(response.body, response.success, online_update_hash);
+                                     });
 }
 
 void UpdateHandler::onDownloadComplete(const std::string &data, bool success, std::string hash) {
@@ -239,7 +241,7 @@ void UpdateHandler::installUpdate() {
     }
 
     cv::is_bleedingedge.setValue(cv::bleedingedge.getBool());
-    osu->getOptionsMenu()->save();
+    ui->getOptionsMenu()->save();
 
     // we're done updating; restart the game, since the user already clicked to update
     engine->restart();

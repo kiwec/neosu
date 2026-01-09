@@ -3,10 +3,10 @@
 
 #include "BanchoUsers.h"
 #include "Engine.h"
-#include "Osu.h"
 #include "ResourceManager.h"
 #include "Skin.h"
 #include "SongBrowser/SongBrowser.h"
+#include "UI.h"
 #include "UIAvatar.h"
 #include "UIUserContextMenu.h"
 #include "Font.h"
@@ -28,7 +28,7 @@ void UserCard2::update_userid(i32 new_userid) {
         this->info = new_userinfo ? new_userinfo : BANCHO::User::get_user_info(new_userid);  // don't request it twice
         this->avatar = std::make_unique<UIAvatar>(new_userid, 0.f, 0.f, 0.f, 0.f);
         this->avatar->on_screen = true;
-        this->setClickCallback([new_userid] { osu->getUserActions()->open(new_userid); });
+        this->setClickCallback([new_userid] { ui->getUserActions()->open(new_userid); });
     }
 }
 
@@ -159,7 +159,7 @@ void UserCard2::draw() {
     f32 yCounter = 0;
     g->pushTransform();
     {
-        McFont *usernameFont = osu->getSongBrowserFont();
+        McFont *usernameFont = ui->getSongBrowser()->getFont();
         const f32 usernameScale = 0.4f;
         const f32 height = this->vSize.y * 0.5f;
         const f32 paddingTopPercent = (1.0f - usernameScale) * 0.1f;
