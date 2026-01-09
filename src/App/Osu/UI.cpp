@@ -83,10 +83,16 @@ UI::~UI() {
 }
 
 void UI::update() {
+    bool updated_active_screen = false;
     bool propagate_clicks = true;
     for(auto *screen : this->overlays) {
         screen->mouse_update(&propagate_clicks);
+        if(screen == ui->getScreen()) updated_active_screen = true;
         if(!propagate_clicks) break;
+    }
+
+    if(!updated_active_screen && ui->getScreen() != nullptr) {
+        ui->getScreen()->mouse_update(&propagate_clicks);
     }
 }
 
@@ -156,16 +162,11 @@ void UI::draw() {
         if(cv::debug_draw_timingpoints.getBool()) osu->getMapInterface()->drawDebug();
 
     } else {  // if we are not playing
-        this->spectatorScreen->draw();
 
-        this->lobby->draw();
-        this->osuDirectScreen->draw();
-        this->room->draw();
-        this->songBrowser->draw();
-        this->mainMenu->draw();
-        this->changelog->draw();
-        this->rankingScreen->draw();
-        this->userStats->draw();
+        if(this->active_screen != nullptr) {
+            this->active_screen->draw();
+        }
+
         this->chat->draw();
         this->user_actions->draw();
         this->optionsMenu->draw();
@@ -282,4 +283,16 @@ void UI::stealFocus() {
     for(auto *screen : this->overlays) {
         screen->stealFocus();
     }
+}
+
+void UI::setScreen(UIOverlay *screen) {
+    if(this->active_screen && this->active_screen->isVisible()) {
+        this->active_screen->setVisible(false);
+
+        // Close any "temporary" overlays
+        ui->getPromptScreen()->setVisible(false);
+    }
+
+    this->active_screen = screen;
+    this->active_screen->setVisible(true);
 }

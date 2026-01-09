@@ -238,7 +238,8 @@ RoomScreen::~RoomScreen() {
 }
 
 void RoomScreen::draw() {
-    if(!this->bVisible) return;
+    if(!BanchoState::is_in_a_multi_room() || osu->isInPlayMode()) return;
+
     // TODO: don't download things in draw(), or do any heavy state changing logic like on_map_change
 
     static i32 current_map_id = -1;
@@ -280,7 +281,7 @@ void RoomScreen::draw() {
 }
 
 void RoomScreen::mouse_update(bool *propagate_clicks) {
-    if(!this->bVisible || ui->getSongBrowser()->isVisible()) return;
+    if(!BanchoState::is_in_a_multi_room() || osu->isInPlayMode()) return;
 
     const bool room_name_changed = this->room_name_ipt->getText() != BanchoState::room.name;
     if(BanchoState::room.is_host() && room_name_changed) {
@@ -310,7 +311,7 @@ void RoomScreen::mouse_update(bool *propagate_clicks) {
 }
 
 void RoomScreen::onKeyDown(KeyboardEvent &key) {
-    if(!this->bVisible || ui->getOptionsMenu()->isVisible() || ui->getSongBrowser()->isVisible()) return;
+    if(!this->bVisible || ui->getOptionsMenu()->isVisible()) return;
 
     if(key.getScanCode() == KEY_ESCAPE) {
         key.consume();
@@ -330,8 +331,7 @@ void RoomScreen::onKeyDown(KeyboardEvent &key) {
     if(key.getScanCode() == KEY_F1) {
         key.consume();
         if(BanchoState::room.freemods || BanchoState::room.is_host()) {
-            ui->getModSelector()->setVisible(!ui->getModSelector()->isVisible());
-            this->bVisible = !ui->getModSelector()->isVisible();
+            ui->setScreen(ui->getModSelector());
         }
         return;
     }
@@ -340,12 +340,12 @@ void RoomScreen::onKeyDown(KeyboardEvent &key) {
 }
 
 void RoomScreen::onKeyUp(KeyboardEvent &key) {
-    if(!this->bVisible || ui->getSongBrowser()->isVisible()) return;
+    if(!this->bVisible) return;
     UIOverlay::onKeyUp(key);
 }
 
 void RoomScreen::onChar(KeyboardEvent &key) {
-    if(!this->bVisible || ui->getSongBrowser()->isVisible()) return;
+    if(!this->bVisible) return;
     UIOverlay::onChar(key);
 }
 
@@ -361,6 +361,7 @@ CBaseUIContainer *RoomScreen::setVisible(bool visible) {
         soundEngine->play(osu->getSkin()->s_menu_back);
     }
 
+    ui->getChat()->updateVisibility();
     return this;
 }
 
@@ -535,7 +536,6 @@ void RoomScreen::updateLayout(vec2 newResolution) {
 
 // Exit to main menu
 void RoomScreen::ragequit(bool play_sound) {
-    this->bVisible = false;
     BanchoState::match_started = false;
     ui->getHUD()->updateScoringMetric();
 
@@ -547,7 +547,7 @@ void RoomScreen::ragequit(bool play_sound) {
     ui->getModSelector()->updateButtons();
 
     BanchoState::room = Room();
-    ui->getMainMenu()->setVisible(true);
+    ui->setScreen(ui->getLobby());
     ui->getChat()->removeChannel("#multiplayer");
     ui->getChat()->updateVisibility();
 
@@ -625,14 +625,9 @@ void RoomScreen::on_room_joined(const Room &room) {
     if(osu->isInPlayMode()) {
         osu->getMapInterface()->stop(true);
     }
-    ui->getRankingScreen()->setVisible(false);
-    ui->getSongBrowser()->setVisible(false);
-    ui->getChangelog()->setVisible(false);
-    ui->getMainMenu()->setVisible(false);
-    ui->getLobby()->setVisible(false);
 
     this->updateLayout(osu->getVirtScreenSize());
-    this->bVisible = true;
+    ui->setScreen(this);
 
     RichPresence::setBanchoStatus(room.name.c_str(), Action::MULTIPLAYER);
     RichPresence::onMultiplayerLobby();
@@ -693,8 +688,8 @@ void RoomScreen::on_room_updated(const Room &room) {
     }
 
     if(ui->getModSelector()->isVisible() && !BanchoState::room.is_host() && !BanchoState::room.freemods) {
-        // Force close mod menu if host disabled freemods
-        ui->getModSelector()->setVisible(false);
+        // Force close mod selector if host disabled freemods
+        ui->setScreen(this);
     }
     ui->getModSelector()->updateButtons();
     ui->getModSelector()->resetMods();
@@ -714,7 +709,6 @@ void RoomScreen::on_match_started(const Room &room) {
     this->last_packet_tms = time(nullptr);
 
     if(osu->getMapInterface()->play()) {
-        this->bVisible = false;
         BanchoState::match_started = true;
         ui->getHUD()->updateScoringMetric();
         ui->getChat()->updateVisibility();
@@ -798,8 +792,6 @@ void RoomScreen::on_match_finished() {
 
     BanchoState::match_started = false;
     ui->getHUD()->updateScoringMetric();
-    ui->getRankingScreen()->setVisible(true);
-    ui->getChat()->updateVisibility();
 
     // Display room presence instead of map again
     RichPresence::onMultiplayerLobby();
@@ -817,9 +809,9 @@ void RoomScreen::on_player_skip(i32 user_id) {
 void RoomScreen::on_match_aborted() {
     if(!BanchoState::is_playing_a_multi_map()) return;
     osu->onPlayEnd(this->get_approximate_score(), false, true);
-    this->bVisible = true;
     BanchoState::match_started = false;
     ui->getHUD()->updateScoringMetric();
+    ui->setScreen(this);
 
     // Display room presence instead of map again
     RichPresence::onMultiplayerLobby();
@@ -866,14 +858,14 @@ void RoomScreen::onReadyButtonClick() {
 }
 
 void RoomScreen::onSelectModsClicked() {
+    ui->setScreen(ui->getModSelector());
     soundEngine->play(osu->getSkin()->s_menu_hit);
-    ui->getModSelector()->setVisible(true);
-    this->bVisible = false;
 }
 
 void RoomScreen::onSelectMapClicked() {
     if(!BanchoState::room.is_host()) return;
 
+    ui->setScreen(ui->getSongBrowser());
     soundEngine->play(osu->getSkin()->s_menu_hit);
 
     Packet packet;
@@ -883,8 +875,6 @@ void RoomScreen::onSelectMapClicked() {
     BanchoState::room.map_md5 = "";
     BanchoState::room.pack(packet);
     BANCHO::Net::send_packet(packet);
-
-    ui->getSongBrowser()->setVisible(true);
 }
 
 void RoomScreen::onChangePasswordClicked() {

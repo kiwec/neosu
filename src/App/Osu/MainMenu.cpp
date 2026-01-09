@@ -11,6 +11,7 @@
 #include "Bancho.h"
 #include "BanchoNetworking.h"
 #include "BeatmapInterface.h"
+#include "Changelog.h"
 #include "CBaseUIButton.h"
 #include "CBaseUIContainer.h"
 #include "OsuConVars.h"
@@ -262,10 +263,7 @@ MainMenu::MainMenu() : UIOverlay() {
     this->onlineBeatmapsButton = new UIButtonVertical(0, 0, 0, 0, "", "Online Beatmaps");
     this->onlineBeatmapsButton->setFont(osu->getSubTitleFont());
     this->onlineBeatmapsButton->setDrawBackground(false);
-    this->onlineBeatmapsButton->setClickCallback([]() {
-        ui->getMainMenu()->setVisible(false);
-        ui->getOsuDirectScreen()->setVisible(true);
-    });
+    this->onlineBeatmapsButton->setClickCallback([]() { ui->setScreen(ui->getOsuDirectScreen()); });
     this->addBaseUIElement(this->onlineBeatmapsButton);
 
     this->versionButton = new CBaseUIButton(0, 0, 0, 0, "", "");
@@ -1551,7 +1549,8 @@ void MainMenu::onPlayButtonPressed() {
     this->bMainMenuAnimFadeToFriendForNextAnim = false;
     this->bMainMenuAnimFriendScheduled = false;
 
-    osu->toggleSongBrowser();
+    ui->getOptionsMenu()->setVisible(false);
+    ui->setScreen(ui->getSongBrowser());
 
     soundEngine->play(osu->getSkin()->s_menu_hit);
     soundEngine->play(osu->getSkin()->s_click_sp);
@@ -1563,16 +1562,13 @@ void MainMenu::onMultiplayerButtonPressed() {
         return;
     }
 
-    this->setVisible(false);
-    ui->getLobby()->setVisible(true);
-
+    ui->setScreen(ui->getLobby());
     soundEngine->play(osu->getSkin()->s_menu_hit);
     soundEngine->play(osu->getSkin()->s_click_mp);
 }
 
 void MainMenu::onOptionsButtonPressed() {
-    if(!ui->getOptionsMenu()->isVisible()) osu->toggleOptionsMenu();
-
+    ui->getOptionsMenu()->setVisible(true);
     soundEngine->play(osu->getSkin()->s_click_options);
 }
 
@@ -1609,7 +1605,7 @@ void MainMenu::onUpdatePressed() {
 void MainMenu::onVersionPressed() {
     this->bDrawVersionNotificationArrow = false;
     this->writeVersionFile();
-    osu->toggleChangelog();
+    ui->setScreen(ui->getChangelog());
 }
 
 void PauseButton::draw() {

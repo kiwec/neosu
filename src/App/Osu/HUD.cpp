@@ -766,20 +766,6 @@ void HUD::drawLoadingSmall(const UString &text) {
     g->popTransform();
 }
 
-void HUD::drawBeatmapImportSpinner() {
-    const float scale = Osu::getImageScale(osu->getSkin()->i_beatmap_import_spinner, 100);
-
-    g->setColor(0xffffffff);
-    g->pushTransform();
-    {
-        g->rotate(engine->getTime() * 180, 0, 0, 1);
-        g->scale(scale, scale);
-        g->translate(osu->getVirtScreenWidth() / 2, osu->getVirtScreenHeight() / 2);
-        g->drawImage(osu->getSkin()->i_beatmap_import_spinner);
-    }
-    g->popTransform();
-}
-
 void HUD::drawComboOrScoreDigits(u64 number, float scale, bool drawLeadingZeroes, bool combo /* false for score */) {
     u64 divisor = 1;
     u64 temp = number;

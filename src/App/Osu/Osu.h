@@ -124,16 +124,9 @@ class Osu final : public App, public MouseListener {
 
     void onPlayEnd(const FinishedScore &score, bool quit = true, bool aborted = false);
 
-    void toggleModSelection(bool waitForF1KeyUp = false);
-    void toggleSongBrowser();
-    void toggleOptionsMenu();
-    void toggleChangelog();
-
-    void saveScreenshot();
-
-    inline void reloadSkin() { this->onSkinReload(); }
-
     void reloadMapInterface();
+    void reloadSkin() { this->onSkinReload(); }
+    void saveScreenshot();
 
     // threading-related
     [[nodiscard]] bool isInPlayModeAndNotPaused() const;
@@ -302,12 +295,6 @@ class Osu final : public App, public MouseListener {
     u32 iQuickSaveMS{0};
 
    private:
-    // async toggles
-    // TODO: this way of doing things is bullshit
-    bool bToggleModSelectionScheduled{false};
-    bool bToggleOptionsMenuScheduled{false};
-    bool bToggleChangelogScheduled{false};
-
     // global resources
     std::vector<McFont *> fonts;
     McFont *titleFont{nullptr};

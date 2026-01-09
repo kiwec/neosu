@@ -142,8 +142,6 @@ ModSelector::ModSelector() : UIOverlay() {
     this->experimentalContainer->setDrawFrame(false);
     this->experimentalContainer->setDrawBackground(false);
 
-    this->bWaitForF1KeyUp = false;
-
     this->bWaitForCSChangeFinished = false;
     this->bWaitForSpeedChangeFinished = false;
     this->bWaitForHPChangeFinished = false;
@@ -680,7 +678,7 @@ void ModSelector::onKeyDown(KeyboardEvent &key) {
 
     if(key == KEY_1) this->resetModsUserInitiated();
 
-    if(((key == KEY_F1 || key == cv::TOGGLE_MODSELECT.getVal<SCANCODE>()) && !this->bWaitForF1KeyUp) || key == KEY_2 ||
+    if(key == KEY_F1 || key == cv::TOGGLE_MODSELECT.getVal<SCANCODE>() || key == KEY_2 ||
        key == cv::GAME_PAUSE.getVal<SCANCODE>() || key == KEY_ESCAPE || key == KEY_ENTER || key == KEY_NUMPAD_ENTER)
         this->close();
 
@@ -700,12 +698,6 @@ void ModSelector::onKeyDown(KeyboardEvent &key) {
     if(key == cv::MOD_DOUBLETIME.getVal<SCANCODE>()) this->modButtonDoubletime->click();
 
     key.consume();
-}
-
-void ModSelector::onKeyUp(KeyboardEvent &key) {
-    if(!this->bVisible) return;
-
-    if(key == KEY_F1 || key == cv::TOGGLE_MODSELECT.getVal<SCANCODE>()) this->bWaitForF1KeyUp = false;
 }
 
 CBaseUIContainer *ModSelector::setVisible(bool visible) {
@@ -1218,7 +1210,14 @@ void ModSelector::enableModsFromFlags(LegacyFlags flags) {
 
 void ModSelector::close() {
     this->closeButton->animateClickColor();
-    osu->toggleModSelection();
+
+    if(osu->isInPlayMode()) {
+        // do nothing
+    } else if(BanchoState::is_in_a_multi_room()) {
+        ui->setScreen(ui->getRoom());
+    } else {
+        ui->setScreen(ui->getSongBrowser());
+    }
 }
 
 void ModSelector::onOverrideSliderChange(CBaseUISlider *slider) {

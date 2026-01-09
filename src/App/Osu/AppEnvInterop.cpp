@@ -56,7 +56,7 @@ bool OsuEnvInterop::handle_osz(const char *osz_path) {
         return false;
     } else if(!db->isFinished() || db->isCancelled()) {
         ui->getNotificationOverlay()->addToast(fmt::format("Can't import {} before songs have been loaded.", osz_path),
-                                                ERROR_TOAST);
+                                               ERROR_TOAST);
         return false;
     }
 
@@ -133,7 +133,8 @@ bool OsuEnvInterop::handle_cmdline_args(const std::vector<std::string> &args) {
     }
 
     if(need_to_reload_database) {
-        ui->getSongBrowser()->refreshBeatmaps();
+        // TODO: bug prone since it can be called from any state...
+        ui->getSongBrowser()->refreshBeatmaps(ui->getScreen());
     }
 
     return need_to_reload_database;

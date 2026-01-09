@@ -453,7 +453,7 @@ bool BeatmapInterface::play() {
 
         if(BanchoState::can_submit_scores() && !cvars().areAllCvarsSubmittable()) {
             ui->getNotificationOverlay()->addToast(US_("Score will not submit with current mods/settings"),
-                                                    ERROR_TOAST);
+                                                   ERROR_TOAST);
         }
 
         return true;
@@ -488,8 +488,6 @@ bool BeatmapInterface::watch(const FinishedScore &score, u32 start_ms) {
     }
 
     this->spectated_replay = score.replay;
-
-    ui->getSongBrowser()->setVisible(false);
 
     // Don't seek to beginning, since that would skip waiting time
     if(start_ms > 0) {
@@ -528,11 +526,11 @@ bool BeatmapInterface::spectate() {
     this->spectated_replay.clear();
     this->score_frames.clear();
 
-    ui->getSongBrowser()->setVisible(false);
-
     score.mods.flags |= ModFlags::NoFail;
     this->sim = std::make_unique<SimulatedBeatmapInterface>(this->beatmap, score.mods);
     this->sim->spectated_replay.clear();
+
+    ui->setScreen(ui->getSpectatorScreen());
 
     return true;
 }
@@ -550,17 +548,10 @@ bool BeatmapInterface::start() {
 
     osu->updateMods();
 
-    // mp hack
-    {
-        ui->getMainMenu()->setVisible(false);
-        ui->getModSelector()->setVisible(false);
-        ui->getOptionsMenu()->setVisible(false);
-        ui->getPauseMenu()->setVisible(false);
-
-        this->all_players_loaded = false;
-        this->all_players_skipped = false;
-        this->player_loaded = false;
-    }
+    // multiplayer
+    this->all_players_loaded = false;
+    this->all_players_skipped = false;
+    this->player_loaded = false;
 
     // HACKHACK: stuck key quickfix
     const auto keys_held = this->current_keys & ~GameplayKeys::Smoke;
@@ -984,7 +975,7 @@ void BeatmapInterface::fail(bool force_death) {
         if(cv::drain_kill_notification_duration.getFloat() > 0.0f) {
             if(!osu->getScore()->hasDied())
                 ui->getNotificationOverlay()->addNotification("You have failed, but you can keep playing!", 0xffffffff,
-                                                               false, cv::drain_kill_notification_duration.getFloat());
+                                                              false, cv::drain_kill_notification_duration.getFloat());
         }
     }
 
@@ -1969,7 +1960,7 @@ void BeatmapInterface::drawSmoke() {
     }
 
     const f32 scale = (ui->getHUD()->getCursorScaleFactor() / smoke_img.scale())  //
-                      * cv::cursor_scale.getFloat()                                //
+                      * cv::cursor_scale.getFloat()                               //
                       * cv::smoke_scale.getFloat();
 
     const u64 time_visible = cv::smoke_trail_duration.getFloat() * 1000.f;
@@ -4532,6 +4523,6 @@ bool BeatmapInterface::isActuallyPausedAndNotSpectating() const {
     if(BanchoState::spectating) return false;
 
     return (this->isPaused() && ui->getPauseMenu()->isVisible())  //
-           && (this->music && !this->music->isPlaying())           //
+           && (this->music && !this->music->isPlaying())          //
            && !(this->bIsWaiting || this->isActuallyLoading());
 }

@@ -45,7 +45,7 @@ void ChatLink::open_beatmap_link(i32 map_id, i32 set_id) {
         ui->getSongBrowser()->map_autodl = map_id;
         ui->getSongBrowser()->set_autodl = set_id;
     } else if(ui->getMainMenu()->isVisible()) {
-        osu->toggleSongBrowser();
+        ui->setScreen(ui->getSongBrowser());
         ui->getSongBrowser()->map_autodl = map_id;
         ui->getSongBrowser()->set_autodl = set_id;
     } else {

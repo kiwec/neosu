@@ -60,7 +60,6 @@ CBaseUIContainer *UserStatsScreen::setVisible(bool visible) {
     if(visible == this->isVisible()) return this;
 
     ScreenBackable::setVisible(visible);
-    osu->toggleSongBrowser();
 
     if(this->isVisible()) {
         rebuildScoreButtons();
@@ -71,7 +70,7 @@ CBaseUIContainer *UserStatsScreen::setVisible(bool visible) {
     return this;
 }
 
-void UserStatsScreen::onBack() { setVisible(false); }
+void UserStatsScreen::onBack() { ui->setScreen(ui->getSongBrowser()); }
 
 void UserStatsScreen::rebuildScoreButtons() {
     // hard reset (delete)
@@ -105,7 +104,7 @@ void UserStatsScreen::rebuildScoreButtons() {
         button->setClickCallback([](CBaseUIButton *button) {
             auto btnsc = ((ScoreButton *)button)->getScore();
             auto song_button = (CarouselButton *)ui->getSongBrowser()->hashToDiffButton[btnsc.beatmap_hash];
-            ui->getUserStatsScreen()->setVisible(false);
+            ui->setScreen(ui->getSongBrowser());
             ui->getSongBrowser()->selectSongButton(song_button);
             ui->getSongBrowser()->highlightScore(btnsc.unixTimestamp);
         });

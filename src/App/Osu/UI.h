@@ -1,5 +1,6 @@
 #pragma once
 // Copyright (c) 2026, kiwec, All rights reserved.
+
 #include <memory>
 #include "OsuConfig.h"
 #include "Vectors.h"
@@ -46,6 +47,9 @@ struct UI final {
     void rebuildRenderTargets();
     void stealFocus();
 
+    [[nodiscard]] inline UIOverlay *getScreen() { return this->active_screen; }
+    void setScreen(UIOverlay *screen);
+
     [[nodiscard]] inline Changelog *getChangelog() { return this->changelog; }
     [[nodiscard]] inline Chat *getChat() { return this->chat; }
     [[nodiscard]] inline HUD *getHUD() { return this->hud; }
@@ -73,6 +77,7 @@ struct UI final {
    private:
     static constexpr auto NUM_OVERLAYS{19};  // make sure to update this if adding/removing overlays
     std::array<UIOverlay *, NUM_OVERLAYS> overlays{};
+    UIOverlay *active_screen{nullptr};
 
     // UIOverlays, manually created + added to the "overlays" array and destroyed in reverse order in dtor
     Changelog *changelog{nullptr};

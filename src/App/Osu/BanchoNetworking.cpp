@@ -15,6 +15,7 @@
 #include "File.h"
 #include "Image.h"
 #include "Lobby.h"
+#include "MainMenu.h"
 #include "NeosuUrl.h"
 #include "NetworkHandler.h"
 #include "OptionsMenu.h"
@@ -373,6 +374,13 @@ void BanchoState::disconnect(bool shutdown) {
     BANCHO::User::logout_all_users();
     ui->getChat()->onDisconnect();
     ui->getSongBrowser()->onFilterScoresChange("Local", SongBrowser::LOGIN_STATE_FILTER_ID);
+
+    // Exit out of any online-only screens
+    const auto s = ui->getScreen();
+    if(s == (UIOverlay *)ui->getSpectatorScreen() || s == (UIOverlay *)ui->getLobby() ||
+       s == (UIOverlay *)ui->getOsuDirectScreen() || s == (UIOverlay *)ui->getRoom()) {
+        ui->setScreen(ui->getMainMenu());
+    }
 
     Downloader::abort_downloads();
 }

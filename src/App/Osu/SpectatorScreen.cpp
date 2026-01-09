@@ -75,14 +75,7 @@ void start(int user_id) {
     BanchoState::spectated_player_id = user_id;
     current_map_id = 0;
 
-    ui->getPromptScreen()->setVisible(false);
-    ui->getModSelector()->setVisible(false);
-    ui->getSongBrowser()->setVisible(false);
-    ui->getLobby()->setVisible(false);
-    ui->getChangelog()->setVisible(false);
-    ui->getMainMenu()->setVisible(false);
-    if(ui->getRoom()->isVisible()) ui->getRoom()->ragequit(false);
-
+    ui->setScreen(ui->getSpectatorScreen());
     soundEngine->play(osu->getSkin()->s_menu_hit);
 }
 
@@ -116,7 +109,7 @@ void stop() {
     packet.id = OUTP_STOP_SPECTATING;
     BANCHO::Net::send_packet(packet);
 
-    ui->getMainMenu()->setVisible(true);
+    ui->setScreen(ui->getMainMenu());
     soundEngine->play(osu->getSkin()->s_menu_back);
 }
 
@@ -174,7 +167,7 @@ void SpectatorScreen::mouse_update(bool *propagate_clicks) {
         auto beatmap = Downloader::download_beatmap(user_info->map_id, user_info->map_md5, &download_progress);
         if(beatmap != nullptr) {
             current_map_id = user_info->map_id;
-            ui->getRankingScreen()->setVisible(false);
+            ui->setScreen(this);
             ui->getSongBrowser()->onDifficultySelected(beatmap, false);
             osu->getMapInterface()->spectate();
         }
@@ -271,14 +264,6 @@ void SpectatorScreen::draw() {
     }
 
     UIOverlay::draw();
-}
-
-bool SpectatorScreen::isVisible() { return BanchoState::spectating && !osu->isInPlayMode(); }
-
-CBaseUIElement *SpectatorScreen::setVisible(bool /*visible*/) {
-    engine->showMessageError("Programmer Error", "Idiot tried to control spectator screen visibility");
-    fubar_abort();
-    return this;
 }
 
 void SpectatorScreen::onKeyDown(KeyboardEvent &key) {

@@ -111,8 +111,7 @@ void Lobby::onKeyDown(KeyboardEvent& key) {
 
     if(key.getScanCode() == KEY_ESCAPE) {
         key.consume();
-        this->setVisible(false);
-        ui->getMainMenu()->setVisible(true);
+        ui->setScreen(ui->getMainMenu());
         soundEngine->play(osu->getSkin()->s_menu_back);
         return;
     }
@@ -134,11 +133,6 @@ void Lobby::onChar(KeyboardEvent& /*key*/) {
 
 void Lobby::onResolutionChange(vec2 newResolution) { this->updateLayout(newResolution); }
 
-bool Lobby::isVisible() {
-    // Hide lobby & chat UI while database is loading
-    return this->bVisible && !ui->getSongBrowser()->isVisible();
-}
-
 CBaseUIContainer* Lobby::setVisible(bool visible) {
     if(visible == this->bVisible) return this;
     this->bVisible = visible;
@@ -156,10 +150,10 @@ CBaseUIContainer* Lobby::setVisible(bool visible) {
         // LOBBY presence is broken so we send MULTIPLAYER
         RichPresence::setBanchoStatus("Looking to play", Action::MULTIPLAYER);
 
-        if(db->getProgress() == 0.0) {
+        if(!db->isFinished()) {
             // Not having a loaded database causes a bunch of issues in multi
-            // TODO: handle cancellation
-            ui->getSongBrowser()->refreshBeatmaps(true);
+            ui->getSongBrowser()->refreshBeatmaps(this);
+            return this;
         }
     } else {
         Packet packet;
