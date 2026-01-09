@@ -93,7 +93,8 @@ struct McFontImpl final {
         unsigned int sizePixelsX, sizePixelsY;
         int left, top, width, rows;
         float advance_x;
-        int fontIndex;  // which font this glyph came from (0 = primary, >0 = fallback)
+        FT_Face face;  // source font face (nullptr if glyph not supported)
+        bool inAtlas;  // whether UV coordinates are valid (glyph is rendered in atlas)
     };
 
     struct BatchEntry {
@@ -143,6 +144,9 @@ struct McFontImpl final {
     Hash::flat::map<char16_t, int> m_dynamicSlotMap;  // character -> slot index for O(1) lookup
     uint64_t m_currentTime;                           // for LRU tracking
     bool m_bAtlasNeedsReload;                         // flag to batch atlas reloads
+
+    // face size tracking to avoid redundant setFaceSize calls
+    FT_Face m_lastSizedFace;
 
     bool m_bBatchActive;
     bool m_bFreeTypeInitialized;
@@ -210,20 +214,25 @@ struct McFontImpl final {
 
     [[nodiscard]] const GLYPH_METRICS &getGlyphMetrics(char16_t ch) const;
 
-    bool loadGlyphDynamic(char16_t ch);
+    // if existingFace is not nullptr, we had metrics already for this glyph (evicted)
+    bool loadGlyphDynamic(char16_t ch, FT_Face existingFace);
     bool loadGlyphMetrics(char16_t ch);
 
     std::unique_ptr<Color[]> createExpandedBitmapData(const FT_Bitmap &bitmap);
 
-    void renderGlyphToAtlas(char16_t ch, int x, int y, FT_Face face = nullptr, bool isDynamicSlot = false);
+    // loads glyph from face and converts to bitmap. Returns nullptr on failure.
+    // if storeMetrics is true, stores metrics in m_mGlyphMetrics[ch].
+    // caller is responsible for calling FT_Done_Glyph on returned glyph.
+    FT_BitmapGlyph loadBitmapGlyph(char16_t ch, FT_Face face, bool storeMetrics);
+
+    // renders bitmap to atlas at specified position. updates UV coords and sets inAtlas.
+    void renderBitmapToAtlas(char16_t ch, int x, int y, const FT_Bitmap &bitmap, bool isDynamicSlot);
 
     // for initial glyphs, packed
     bool initializeAtlas();
 
     // fallback font management
-    FT_Face getFontFaceForGlyph(char16_t ch, int &fontIndex);
-
-    bool loadGlyphFromFace(char16_t ch, FT_Face face, int fontIndex);
+    FT_Face getFontFaceForGlyph(char16_t ch);
 
     void buildGlyphGeometry(const GLYPH_METRICS &gm, const vec3 &basePos, float advanceX, size_t &vertexCount);
     void buildStringGeometry(const UString &text, size_t &vertexCount);
@@ -321,6 +330,7 @@ void McFontImpl::constructor(const char16_t *characters, size_t numCharacters, i
     m_slotsPerRow = 0;
     m_currentTime = 0;
     m_bAtlasNeedsReload = false;
+    m_lastSizedFace = nullptr;
 
     // setup error glyph
     m_errorGlyph = {.character = UNKNOWN_CHAR,
@@ -333,7 +343,8 @@ void McFontImpl::constructor(const char16_t *characters, size_t numCharacters, i
                     .width = 10,
                     .rows = 1,
                     .advance_x = 0,
-                    .fontIndex = 0};
+                    .face = nullptr,
+                    .inAtlas = true};
 
     // pre-allocate space for initial glyphs
     m_vInitialGlyphs.reserve(numCharacters);
@@ -592,12 +603,15 @@ std::vector<UString> McFontImpl::wrap(const UString &text, f64 max_width) const 
 // Internal helper methods
 
 const McFontImpl::GLYPH_METRICS &McFontImpl::getGlyphMetrics(char16_t ch) const {
+    FT_Face existingFace = nullptr;
     auto it = m_mGlyphMetrics.find(ch);
-    if(it != m_mGlyphMetrics.end()) return it->second;
+    if(it != m_mGlyphMetrics.end()) {
+        if(it->second.inAtlas) return it->second;
+        existingFace = it->second.face;
+    }
 
-    // attempt dynamic loading for unicode characters
-    if(m_bTryFindFallbacks && const_cast<McFontImpl *>(this)->loadGlyphDynamic(ch)) {
-        // .at must be safe at this point
+    // either no metrics, or metrics exist but glyph was evicted from atlas
+    if(m_bTryFindFallbacks && const_cast<McFontImpl *>(this)->loadGlyphDynamic(ch, existingFace)) {
         return m_mGlyphMetrics.at(ch);
     }
 
@@ -609,68 +623,73 @@ const McFontImpl::GLYPH_METRICS &McFontImpl::getGlyphMetrics(char16_t ch) const 
     return m_errorGlyph;
 }
 
-bool McFontImpl::loadGlyphDynamic(char16_t ch) {
-    if(!m_bFreeTypeInitialized) return false;
-    if(m_mGlyphMetrics.contains(ch)) return true;
+bool McFontImpl::loadGlyphDynamic(char16_t ch, FT_Face existingFace) {
+    assert(m_bFreeTypeInitialized);
 
-    int fontIndex = 0;
-    FT_Face targetFace = getFontFaceForGlyph(ch, fontIndex);
-
-    if(!targetFace) {
-        if(cv::r_debug_font_unicode.getBool()) {
-            // character not supported by any available font
-            const char *charRange = FontTypeMap::getCharacterRangeName(ch);
-            if(charRange)
-                debugLog("Font Warning: Character U+{:04X} ({:s}) not supported by any font", (unsigned int)ch,
-                         charRange);
-            else
-                debugLog("Font Warning: Character U+{:04X} not supported by any font", (unsigned int)ch);
-        }
-        return false;
+    std::string debugstr;
+    if(cv::r_debug_font_unicode.getBool()) {
+        const char16_t charray[]{ch, u'\0'};
+        debugstr = fmt::format("{:s} (U+{:04X})", UString{&charray[0]}, (u16)ch);
     }
 
-    logIf(cv::r_debug_font_unicode.getBool() && fontIndex > 0,
-          "Font Info (for font resource {}): Using fallback font #{:d} for character U+{:04X}", m_parent->getName(),
-          fontIndex, (unsigned int)ch);
+    FT_Face face = existingFace;
+    const bool needMetrics = !face;
 
-    // load glyph from the selected font face
-    if(!loadGlyphFromFace(ch, targetFace, fontIndex)) return false;
+    if(needMetrics) {
+        face = getFontFaceForGlyph(ch);
+        if(!face) {
+            if(cv::r_debug_font_unicode.getBool()) {
+                const char *charRange = FontTypeMap::getCharacterRangeName(ch);
+                if(charRange)
+                    debugLog("Font Warning: Character {} ({:s}) not supported by any font", debugstr, charRange);
+                else
+                    debugLog("Font Warning: Character {} not supported by any font", debugstr);
+            }
+            return false;
+        }
 
-    const auto &metrics = m_mGlyphMetrics[ch];
+        logIf(cv::r_debug_font_unicode.getBool() && face != m_ftFace,
+              "Font Info (for font resource {}): Using fallback font for character {}", m_parent->getName(),
+              debugstr);
+    }
 
-    // check if we need atlas space for non-empty glyphs
-    if(metrics.sizePixelsX > 0 && metrics.sizePixelsY > 0) {
-        // allocate dynamic slot (always fits, will clip if necessary)
+    // ensure face size is set
+    if(face != m_lastSizedFace) {
+        setFaceSize(face);
+        m_lastSizedFace = face;
+    }
+
+    // load glyph once - store metrics only if this is a new glyph
+    FT_BitmapGlyph bitmapGlyph = loadBitmapGlyph(ch, face, needMetrics);
+    if(!bitmapGlyph) return false;
+
+    const auto &bitmap = bitmapGlyph->bitmap;
+
+    if(bitmap.width > 0 && bitmap.rows > 0) {
         int slotIndex = allocateDynamicSlot(ch);
         const DynamicSlot &slot = m_dynamicSlots[slotIndex];
 
-        // warn about clipping if glyph is oversized
         const int maxSlotContent = DYNAMIC_SLOT_SIZE - 2 * TextureAtlas::ATLAS_PADDING;
-        if(metrics.sizePixelsX > maxSlotContent || metrics.sizePixelsY > maxSlotContent) {
+        if(bitmap.width > maxSlotContent || bitmap.rows > maxSlotContent) {
             if(cv::r_debug_font_unicode.getBool()) {
-                debugLog("Font Info: Clipping oversized glyph U+{:04X} ({}x{}) to fit dynamic slot ({}x{})", (u32)ch,
-                         metrics.sizePixelsX, metrics.sizePixelsY, maxSlotContent, maxSlotContent);
+                debugLog("Font Info: Clipping oversized glyph {} ({}x{}) to fit dynamic slot ({}x{})", debugstr,
+                         bitmap.width, bitmap.rows, maxSlotContent, maxSlotContent);
             }
         }
 
-        // render glyph to slot (with padding, will clip if necessary)
-        renderGlyphToAtlas(ch, slot.x + TextureAtlas::ATLAS_PADDING, slot.y + TextureAtlas::ATLAS_PADDING, targetFace,
-                           true /*dynamic*/);
-
-        // update metrics with slot position
-        GLYPH_METRICS &glyphMetrics = m_mGlyphMetrics[ch];
-        glyphMetrics.uvPixelsX = static_cast<u32>(slot.x + TextureAtlas::ATLAS_PADDING);
-        glyphMetrics.uvPixelsY = static_cast<u32>(slot.y + TextureAtlas::ATLAS_PADDING);
-
-        // flag that atlas needs reload
-        m_bAtlasNeedsReload = true;
+        renderBitmapToAtlas(ch, slot.x + TextureAtlas::ATLAS_PADDING, slot.y + TextureAtlas::ATLAS_PADDING, bitmap,
+                            true /*dynamic*/);
 
         if(cv::r_debug_font_unicode.getBool()) {
-            debugLog("Font Info: Placed glyph U+{:04X} in dynamic slot {} at ({}, {})", (u32)ch, slotIndex, slot.x,
-                     slot.y);
+            debugLog("Font Info: Placed glyph {} in dynamic slot {} at ({}, {})", debugstr, slotIndex,
+                     slot.x, slot.y);
         }
+    } else {
+        // empty glyph (e.g. space) - mark as valid without atlas rendering
+        m_mGlyphMetrics[ch].inAtlas = true;
     }
 
+    FT_Done_Glyph(reinterpret_cast<FT_Glyph>(bitmapGlyph));
     return true;
 }
 
@@ -704,18 +723,13 @@ int McFontImpl::allocateDynamicSlot(char16_t ch) {
     // evict the LRU slot
     auto &dynamicLRUSlot = m_dynamicSlots[lruIndex];
     if(dynamicLRUSlot.character != 0) {
-        // remove evicted character from slot map
         m_dynamicSlotMap.erase(dynamicLRUSlot.character);
 
-        // HACK: clear the slot content area to remove leftover pixels from previous glyph
-        // this should not be necessary (perf), but otherwise, a single-pixel border can appear on the right and bottom sides of the glyph rect
-        const int maxSlotContent = DYNAMIC_SLOT_SIZE - 2 * TextureAtlas::ATLAS_PADDING;
-        m_textureAtlas->clearRegion(dynamicLRUSlot.x + TextureAtlas::ATLAS_PADDING,
-                                    dynamicLRUSlot.y + TextureAtlas::ATLAS_PADDING, maxSlotContent, maxSlotContent,
-                                    false, true);
-
-        // remove evicted character from metrics
-        m_mGlyphMetrics.erase(dynamicLRUSlot.character);
+        // mark evicted glyph as no longer in atlas, but preserve metrics for fast re-rendering
+        auto it = m_mGlyphMetrics.find(dynamicLRUSlot.character);
+        if(it != m_mGlyphMetrics.end()) {
+            it->second.inAtlas = false;
+        }
     }
 
     dynamicLRUSlot.character = ch;
@@ -791,12 +805,15 @@ bool McFontImpl::initializeFreeType() {
 bool McFontImpl::loadGlyphMetrics(char16_t ch) {
     if(!m_bFreeTypeInitialized) return false;
 
-    int fontIndex = 0;
-    FT_Face face = getFontFaceForGlyph(ch, fontIndex);
-
+    FT_Face face = getFontFaceForGlyph(ch);
     if(!face) return false;
 
-    return loadGlyphFromFace(ch, face, fontIndex);
+    // for initial load, we need metrics but not the bitmap yet (will render later after packing)
+    FT_BitmapGlyph glyph = loadBitmapGlyph(ch, face, true /*storeMetrics*/);
+    if(!glyph) return false;
+
+    FT_Done_Glyph(reinterpret_cast<FT_Glyph>(glyph));
+    return true;
 }
 
 std::unique_ptr<Color[]> McFontImpl::createExpandedBitmapData(const FT_Bitmap &bitmap) {
@@ -819,69 +836,61 @@ std::unique_ptr<Color[]> McFontImpl::createExpandedBitmapData(const FT_Bitmap &b
     return expandedData;
 }
 
-void McFontImpl::renderGlyphToAtlas(char16_t ch, int x, int y, FT_Face face, bool isDynamicSlot) {
-    if(!face) {
-        // fall back to getting the face again if not provided
-        int fontIndex = 0;
-        face = getFontFaceForGlyph(ch, fontIndex);
-        if(!face) return;
-    } else if(face != m_ftFace) {
-        // make sure fallback face has the correct size for this font instance
-        setFaceSize(face);
+void McFontImpl::renderBitmapToAtlas(char16_t ch, int x, int y, const FT_Bitmap &bitmap, bool isDynamicSlot) {
+    if(bitmap.width == 0 || bitmap.rows == 0) return;
+
+    const int atlasWidth = m_textureAtlas->getWidth();
+    const int atlasHeight = m_textureAtlas->getHeight();
+
+    int renderWidth = std::min(static_cast<int>(bitmap.width), atlasWidth - x);
+    int renderHeight = std::min(static_cast<int>(bitmap.rows), atlasHeight - y);
+
+    if(isDynamicSlot) {
+        const int maxSlotContent = DYNAMIC_SLOT_SIZE - 2 * TextureAtlas::ATLAS_PADDING;
+        renderWidth = std::min(renderWidth, maxSlotContent);
+        renderHeight = std::min(renderHeight, maxSlotContent);
     }
 
-    if(FT_Load_Glyph(face, FT_Get_Char_Index(face, ch), m_bAntialiasing ? FT_LOAD_TARGET_NORMAL : FT_LOAD_TARGET_MONO))
-        return;
+    auto expandedData = createExpandedBitmapData(bitmap);
 
-    FT_Glyph glyph{};
-    if(FT_Get_Glyph(face->glyph, &glyph)) return;
-
-    FT_Glyph_To_Bitmap(&glyph, m_bAntialiasing ? FT_RENDER_MODE_NORMAL : FT_RENDER_MODE_MONO, nullptr, 1);
-
-    auto bitmapGlyph = reinterpret_cast<FT_BitmapGlyph>(glyph);
-    auto &bitmap = bitmapGlyph->bitmap;
-
-    if(bitmap.width > 0 && bitmap.rows > 0) {
-        const int atlasWidth = m_textureAtlas->getWidth();
-        const int atlasHeight = m_textureAtlas->getHeight();
-
-        int availableWidth = std::min(static_cast<int>(bitmap.width), atlasWidth - x);
-        int availableHeight = std::min(static_cast<int>(bitmap.rows), atlasHeight - y);
-
-        // only apply slot size clipping for dynamic glyphs
-        // TODO: consolidate the logic for this, it's checked in too many places
-        // doing redundant work to create expanded then clipped instead of just all in 1 go
-        if(isDynamicSlot) {
-            const int maxSlotContent = DYNAMIC_SLOT_SIZE - 2 * TextureAtlas::ATLAS_PADDING;
-            availableWidth = std::min(availableWidth, maxSlotContent);
-            availableHeight = std::min(availableHeight, maxSlotContent);
-        }
-
-        auto expandedData = createExpandedBitmapData(bitmap);
-
-        // if clipping is needed, create clipped data
-        if(std::cmp_less(availableWidth, bitmap.width) || std::cmp_less(availableHeight, bitmap.rows)) {
-            auto clippedData =
-                std::make_unique_for_overwrite<Color[]>(static_cast<size_t>(availableWidth) * availableHeight);
-            for(i32 row = 0; row < availableHeight; row++) {
-                for(i32 col = 0; col < availableWidth; col++) {
-                    const u32 srcIdx = row * bitmap.width + col;
-                    const u32 dstIdx = row * availableWidth + col;
-                    clippedData[dstIdx] = expandedData[srcIdx];
-                }
+    // if clipping is needed, create clipped data
+    if(std::cmp_less(renderWidth, bitmap.width) || std::cmp_less(renderHeight, bitmap.rows)) {
+        auto clippedData = std::make_unique_for_overwrite<Color[]>(static_cast<size_t>(renderWidth) * renderHeight);
+        for(i32 row = 0; row < renderHeight; row++) {
+            for(i32 col = 0; col < renderWidth; col++) {
+                const u32 srcIdx = row * bitmap.width + col;
+                const u32 dstIdx = row * renderWidth + col;
+                clippedData[dstIdx] = expandedData[srcIdx];
             }
-            m_textureAtlas->putAt(x, y, availableWidth, availableHeight, false, true, clippedData.get());
-        } else {
-            m_textureAtlas->putAt(x, y, bitmap.width, bitmap.rows, false, true, expandedData.get());
         }
-
-        // update metrics with atlas coordinates
-        GLYPH_METRICS &metrics = m_mGlyphMetrics[ch];
-        metrics.uvPixelsX = static_cast<u32>(x);
-        metrics.uvPixelsY = static_cast<u32>(y);
+        m_textureAtlas->putAt(x, y, renderWidth, renderHeight, false, true, clippedData.get());
+    } else {
+        m_textureAtlas->putAt(x, y, bitmap.width, bitmap.rows, false, true, expandedData.get());
     }
 
-    FT_Done_Glyph(glyph);
+    // clear 1-pixel border on right and bottom edges for texture filtering.
+    // without this, linear filtering bleeds into adjacent/old glyph data.
+    if(isDynamicSlot) {
+        const int rightEdgeX = x + renderWidth;
+        const int bottomEdgeY = y + renderHeight;
+
+        if(rightEdgeX < atlasWidth) {
+            m_textureAtlas->clearRegion(rightEdgeX, y, 1, renderHeight, false, false);
+        }
+        if(bottomEdgeY < atlasHeight) {
+            m_textureAtlas->clearRegion(x, bottomEdgeY, renderWidth + 1, 1, false, false);
+        }
+    }
+
+    // update metrics with atlas coordinates
+    GLYPH_METRICS &metrics = m_mGlyphMetrics[ch];
+    metrics.uvPixelsX = static_cast<u32>(x);
+    metrics.uvPixelsY = static_cast<u32>(y);
+    metrics.inAtlas = true;
+
+    if(isDynamicSlot) {
+        m_bAtlasNeedsReload = true;
+    }
 }
 
 bool McFontImpl::initializeAtlas() {
@@ -937,12 +946,29 @@ bool McFontImpl::initializeAtlas() {
     // render all packed glyphs to static region
     for(const auto &rect : packRects) {
         const char16_t ch = rectsToChars[rect.id];
+        const auto &metrics = m_mGlyphMetrics[ch];
+        if(metrics.face) {
+            // ensure face size is set
+            if(metrics.face != m_lastSizedFace) {
+                setFaceSize(metrics.face);
+                m_lastSizedFace = metrics.face;
+            }
 
-        // get the correct font face for this glyph
-        int fontIndex = 0;
-        FT_Face face = getFontFaceForGlyph(ch, fontIndex);
+            // load bitmap (metrics already stored, so don't overwrite)
+            FT_BitmapGlyph bitmapGlyph = loadBitmapGlyph(ch, metrics.face, false /*storeMetrics*/);
+            if(bitmapGlyph) {
+                renderBitmapToAtlas(ch, rect.x, rect.y, bitmapGlyph->bitmap, false /*not dynamic*/);
+                FT_Done_Glyph(reinterpret_cast<FT_Glyph>(bitmapGlyph));
+            }
+        }
+    }
 
-        renderGlyphToAtlas(ch, rect.x, rect.y, face, false /*not dynamic*/);
+    // mark all initial glyphs as in atlas (including zero-size glyphs like space)
+    for(char16_t ch : m_vInitialGlyphs) {
+        auto it = m_mGlyphMetrics.find(ch);
+        if(it != m_mGlyphMetrics.end()) {
+            it->second.inAtlas = true;
+        }
     }
 
     // initialize dynamic region after static glyphs are placed
@@ -952,9 +978,7 @@ bool McFontImpl::initializeAtlas() {
 }
 
 // fallback font management
-FT_Face McFontImpl::getFontFaceForGlyph(char16_t ch, int &fontIndex) {
-    fontIndex = 0;
-
+FT_Face McFontImpl::getFontFaceForGlyph(char16_t ch) {
     // quick blacklist check
     if(m_bTryFindFallbacks && m_parent->isAsyncReady()) {  // skip blacklisting during initial load
         Sync::shared_lock<Sync::shared_mutex> lock(s_sharedResourcesMutex);
@@ -963,7 +987,7 @@ FT_Face McFontImpl::getFontFaceForGlyph(char16_t ch, int &fontIndex) {
         }
     }
 
-    // then check primary font
+    // check primary font first
     FT_UInt glyphIndex = FT_Get_Char_Index(m_ftFace, ch);
     if(glyphIndex != 0) return m_ftFace;
     if(!m_bTryFindFallbacks) return nullptr;
@@ -972,27 +996,20 @@ FT_Face McFontImpl::getFontFaceForGlyph(char16_t ch, int &fontIndex) {
     FT_Face foundFace = nullptr;
     {
         Sync::shared_lock<Sync::shared_mutex> lock(s_sharedResourcesMutex);
-        for(size_t i = 0; i < s_sharedFallbackFonts.size(); ++i) {
-            glyphIndex = FT_Get_Char_Index(s_sharedFallbackFonts[i].face, ch);
+        for(auto &fallback : s_sharedFallbackFonts) {
+            glyphIndex = FT_Get_Char_Index(fallback.face, ch);
             if(glyphIndex != 0) {
-                fontIndex = static_cast<int>(i + 1);
-                foundFace = s_sharedFallbackFonts[i].face;
+                foundFace = fallback.face;
                 break;
             }
         }
     }
 
-    if(foundFace) {
-        // note: setFaceSize() and subsequent FT operations on shared faces
-        // may need additional synchronization depending on usage patterns
-        setFaceSize(foundFace);
-        return foundFace;
-    }
+    if(foundFace) return foundFace;
 
     // character not found in any font, add to blacklist
-    // NOTE: skip blacklisting during initial load
-    // this is to allow us to more lazily synchronize with other fonts that may be loading simultaneously
-    // i.e. only add to blacklist when we actually try to draw a string with this glyph
+    // NOTE: skip blacklisting during initial load to allow lazier synchronization
+    // with other fonts that may be loading simultaneously
     if(m_parent->isAsyncReady()) {
         Sync::unique_lock<Sync::shared_mutex> lock(s_sharedResourcesMutex);
         s_sharedFallbackFaceBlacklist.insert(ch);
@@ -1001,41 +1018,42 @@ FT_Face McFontImpl::getFontFaceForGlyph(char16_t ch, int &fontIndex) {
     return nullptr;
 }
 
-bool McFontImpl::loadGlyphFromFace(char16_t ch, FT_Face face, int fontIndex) {
+FT_BitmapGlyph McFontImpl::loadBitmapGlyph(char16_t ch, FT_Face face, bool storeMetrics) {
     if(FT_Load_Glyph(face, FT_Get_Char_Index(face, ch),
                      m_bAntialiasing ? FT_LOAD_TARGET_NORMAL : FT_LOAD_TARGET_MONO)) {
-        debugLog("Font Error: Failed to load glyph for character {:d} from font index {:d}", (wint_t)ch, fontIndex);
-        return false;
+        debugLog("Font Error: Failed to load glyph for character U+{:04X}", (unsigned int)ch);
+        return nullptr;
     }
 
     FT_Glyph glyph{};
     if(FT_Get_Glyph(face->glyph, &glyph)) {
-        debugLog("Font Error: Failed to get glyph for character {:d} from font index {:d}", (wint_t)ch, fontIndex);
-        return false;
+        debugLog("Font Error: Failed to get glyph for character U+{:04X}", (unsigned int)ch);
+        return nullptr;
     }
 
     FT_Glyph_To_Bitmap(&glyph, m_bAntialiasing ? FT_RENDER_MODE_NORMAL : FT_RENDER_MODE_MONO, nullptr, 1);
 
     auto bitmapGlyph = reinterpret_cast<FT_BitmapGlyph>(glyph);
 
-    // store metrics for the character
-    GLYPH_METRICS &metrics = m_mGlyphMetrics[ch];
-    metrics.character = ch;
-    metrics.left = bitmapGlyph->left;
-    metrics.top = bitmapGlyph->top;
-    metrics.width = bitmapGlyph->bitmap.width;
-    metrics.rows = bitmapGlyph->bitmap.rows;
-    metrics.advance_x = static_cast<float>(face->glyph->advance.x >> 6);
-    metrics.fontIndex = fontIndex;
+    if(storeMetrics) {
+        GLYPH_METRICS &metrics = m_mGlyphMetrics[ch];
+        metrics.character = ch;
+        metrics.left = bitmapGlyph->left;
+        metrics.top = bitmapGlyph->top;
+        metrics.width = bitmapGlyph->bitmap.width;
+        metrics.rows = bitmapGlyph->bitmap.rows;
+        metrics.advance_x = static_cast<float>(face->glyph->advance.x >> 6);
 
-    // initialize texture coordinates (will be updated when rendered to atlas)
-    metrics.uvPixelsX = 0;
-    metrics.uvPixelsY = 0;
-    metrics.sizePixelsX = bitmapGlyph->bitmap.width;
-    metrics.sizePixelsY = bitmapGlyph->bitmap.rows;
+        // to be updated when rendered to texture atlas
+        metrics.inAtlas = false;
+        metrics.face = face;
+        metrics.uvPixelsX = 0;
+        metrics.uvPixelsY = 0;
+        metrics.sizePixelsX = bitmapGlyph->bitmap.width;
+        metrics.sizePixelsY = bitmapGlyph->bitmap.rows;
+    }
 
-    FT_Done_Glyph(glyph);
-    return true;
+    return bitmapGlyph;
 }
 
 void McFontImpl::buildGlyphGeometry(const GLYPH_METRICS &gm, const vec3 &basePos, float advanceX, size_t &vertexCount) {

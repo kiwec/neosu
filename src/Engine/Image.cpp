@@ -531,11 +531,14 @@ Color Image::getPixel(i32 x, i32 y) const {
 }
 
 void Image::setPixel(i32 x, i32 y, Color color) {
-    if(unlikely(x < 0 || y < 0 || this->totalBytes() < 1)) return;
+    assert(!(x < 0 || y < 0 || this->totalBytes() < 1) && "setPixel: out of bounds");
 
+#ifdef _DEBUG
     const u64 indexEnd = static_cast<u64>(Image::NUM_CHANNELS) * y * this->rawImage.getX() +
                          static_cast<u64>(Image::NUM_CHANNELS) * x + Image::NUM_CHANNELS;
-    if(unlikely(indexEnd > this->totalBytes())) return;
+    assert(!(indexEnd > this->totalBytes()) && "setPixel: out of bounds");
+#endif
+
     const u64 indexBegin =
         static_cast<u64>(Image::NUM_CHANNELS) * y * this->rawImage.getX() + static_cast<u64>(Image::NUM_CHANNELS) * x;
 
