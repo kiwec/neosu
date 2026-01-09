@@ -15,9 +15,13 @@ i32 HitSamples::getNormalSet(i32 play_time) {
     if(this->normalSet != 0) return this->normalSet;
 
     const auto& map_iface = osu->getMapInterface();
+    if(unlikely(!map_iface)) return 0;  // sanity
+
+    const BeatmapDifficulty* beatmap = map_iface->getBeatmap();
+
     // Fallback to timing point sample set
-    const i32 tp_sampleset = play_time != -1 ? map_iface->getBeatmap()->getTimingInfoForTime(play_time).sampleSet
-                                             : map_iface->getCurrentTimingInfo().sampleSet;
+    const i32 tp_sampleset = (play_time != -1 && beatmap) ? beatmap->getTimingInfoForTime(play_time).sampleSet
+                                                          : map_iface->getCurrentTimingInfo().sampleSet;
     if(tp_sampleset != 0) return tp_sampleset;
 
     // ...Fallback to beatmap sample set
@@ -59,10 +63,10 @@ f32 HitSamples::getVolume(i32 hitSoundType, bool is_sliderslide, i32 play_time) 
     if(!cv::ignore_beatmap_sample_volume.getBool()) {
         if(this->volume > 0) {
             volume *= (f32)this->volume / 100.0f;
-        } else {
-            const auto& map_iface = osu->getMapInterface();
-            const auto mapTimingPointVol = play_time != -1
-                                               ? map_iface->getBeatmap()->getTimingInfoForTime(play_time).volume
+        } else if(const auto& map_iface = osu->getMapInterface(); likely(!!map_iface)) {
+            const DatabaseBeatmap* beatmap = map_iface->getBeatmap();
+            const auto mapTimingPointVol = (play_time != -1 && beatmap)
+                                               ? beatmap->getTimingInfoForTime(play_time).volume
                                                : map_iface->getCurrentTimingInfo().volume;
             volume *= (f32)mapTimingPointVol / 100.0f;
         }
@@ -136,8 +140,14 @@ static constexpr auto SOUND_METHODS =  //
 #undef A_
 
 std::vector<HitSamples::Set_Slider_Hit> HitSamples::play(f32 pan, i32 delta, i32 play_time, bool is_sliderslide) {
+    const auto& map_iface = osu->getMapInterface();
+    if(unlikely(!map_iface)) return {};  // sanity
+
     // Don't play hitsounds when seeking
-    if(osu->getMapInterface()->bWasSeekFrame) return {};
+    if(unlikely(map_iface->bWasSeekFrame)) return {};
+
+    const Skin* skin = map_iface->getSkin();
+    if(unlikely(!skin)) return {};  // sanity
 
     if(!cv::sound_panning.getBool() || (cv::mod_fposu.getBool() && !cv::mod_fposu_sound_panning.getBool()) ||
        (cv::mod_fps.getBool() && !cv::mod_fps_sound_panning.getBool())) {
@@ -148,11 +158,9 @@ std::vector<HitSamples::Set_Slider_Hit> HitSamples::play(f32 pan, i32 delta, i32
 
     f32 pitch = 0.f;
     if(cv::snd_pitch_hitsounds.getBool()) {
-        f32 range = osu->getMapInterface()->getHitWindow100();
+        f32 range = map_iface->getHitWindow100();
         pitch = (f32)delta / range * cv::snd_pitch_hitsounds_factor.getFloat();
     }
-
-    const auto* skin = osu->getMapInterface()->getSkin();
 
     Set_Slider_Hit potentially_played;
     std::vector<Set_Slider_Hit> played_list;
@@ -247,13 +255,16 @@ std::vector<HitSamples::Set_Slider_Hit> HitSamples::play(f32 pan, i32 delta, i32
 
 void HitSamples::stop(const std::vector<Set_Slider_Hit>& specific_sets) {
     // TODO @kiwec: map hitsounds are not supported
-    const auto* skin = osu->getMapInterface()->getSkin();
+    const auto& map_iface = osu->getMapInterface();
+    if(unlikely(!map_iface)) return;  // sanity
+    const Skin* skin = map_iface->getSkin();
+    if(unlikely(!skin)) return;  // sanity
 
     // stop specified previously played sounds, otherwise stop everything
     if(!specific_sets.empty()) {
         for(const auto& triple : specific_sets) {
             assert(SOUND_METHODS[triple.set][triple.slider][triple.hit]);
-            const auto& to_stop = skin->*SOUND_METHODS[triple.set][triple.slider][triple.hit];
+            Sound* to_stop = skin->*SOUND_METHODS[triple.set][triple.slider][triple.hit];
 
             if(to_stop && to_stop->isPlaying()) {
                 // debugLog("stopping specific set {} {} {} {}", triple.set, triple.slider, triple.hit,
@@ -273,7 +284,7 @@ void HitSamples::stop(const std::vector<Set_Slider_Hit>& specific_sets) {
         const auto& slider_sounds = sample_set[SLIDER_IDX];
         for(const auto& slider_snd_ptr : slider_sounds) {
             if(slider_snd_ptr == nullptr) continue;  // ugly
-            const auto& snd_memb = skin->*slider_snd_ptr;
+            Sound* snd_memb = skin->*slider_snd_ptr;
             if(snd_memb != nullptr && snd_memb->isPlaying()) {
                 // debugLog("stopping {}", snd_memb->getFilePath());
                 soundEngine->stop(snd_memb);

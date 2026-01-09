@@ -304,12 +304,12 @@ class Osu final : public App, public MouseListener {
 
    private:
     // interfaces (other)
+    std::unique_ptr<Skin> skin{nullptr};
     std::unique_ptr<BeatmapInterface> map_iface{nullptr};
     std::unique_ptr<UpdateHandler> updateHandler{nullptr};
     std::unique_ptr<AvatarManager> avatarManager{nullptr};
     std::unique_ptr<UserCard> userButton{nullptr};
     std::unique_ptr<BGImageHandler> backgroundImageHandler{nullptr};
-    std::unique_ptr<Skin> skin{nullptr};
     std::unique_ptr<LiveScore> score{nullptr};
     std::unique_ptr<ModFPoSu> fposu{nullptr};
 

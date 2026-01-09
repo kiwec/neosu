@@ -327,7 +327,7 @@ class Environment {
     std::pair<vec2, vec2> consumeMousePositionCache();
     // allow Mouse to update the cached environment position post-sensitivity/clipping
     // the difference between setOSMousePos and this is that it doesn't actually warp the OS cursor
-    inline void updateCachedMousePos(const vec2 &pos) { m_vLastAbsMousePos = pos; }
+    inline void updateCachedMousePos(vec2 pos) { m_vLastAbsMousePos = pos; }
 
     // is used to track relative tablet motion, is zeroed after consumeMousePositionCache
     // on some platforms, SDL automatically tracks relative motion deltas from absolute pen motion, but not others...

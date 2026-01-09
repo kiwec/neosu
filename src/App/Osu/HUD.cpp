@@ -383,17 +383,17 @@ void HUD::drawCursorTrail(vec2 pos, float alphaMultiplier, bool secondTrail) {
                              alphaMultiplier, fposuTrailJumpFix);
 }
 
-void HUD::drawCursorTrailInt(Shader *trailShader, std::vector<CURSORTRAIL> &trail, vec2 pos, float alphaMultiplier,
+void HUD::drawCursorTrailInt(Shader *trailShader, std::vector<CURSORTRAIL> &trail, vec2 pos, f32 alphaMultiplier,
                              bool emptyTrailFrame) {
     const auto &trailImage = osu->getSkin()->i_cursor_trail;
+    const f64 timeNow = engine->getTime();
 
     if(cv::draw_cursor_trail.getBool() && trailImage->isReady()) {
         const bool smoothCursorTrail =
             osu->getSkin()->useSmoothCursorTrail() || cv::cursor_trail_smooth_force.getBool();
 
-        const float trailWidth =
-            trailImage->getWidth() * this->getCursorTrailScaleFactor() * cv::cursor_scale.getFloat();
-        const float trailHeight =
+        const f32 trailWidth = trailImage->getWidth() * this->getCursorTrailScaleFactor() * cv::cursor_scale.getFloat();
+        const f32 trailHeight =
             trailImage->getHeight() * this->getCursorTrailScaleFactor() * cv::cursor_scale.getFloat();
 
         if(smoothCursorTrail) this->cursorTrailVAO->clear();
@@ -403,49 +403,55 @@ void HUD::drawCursorTrailInt(Shader *trailShader, std::vector<CURSORTRAIL> &trai
 
         // this loop draws the old style trail, and updates the alpha values for each segment, and fills the vao for the
         // new style trail
-        const float trailLength =
+        const f32 alphaScaleOpt = cv::cursor_trail_alpha.getFloat();
+        const f32 trailLength =
             smoothCursorTrail ? cv::cursor_trail_smooth_length.getFloat() : cv::cursor_trail_length.getFloat();
-        int i = trail.size() - 1;
-        while(i >= 0) {
-            auto &curTrl = trail[i];
-            curTrl.alpha =
-                std::clamp<float>(((curTrl.time - engine->getTime()) / trailLength) * alphaMultiplier, 0.0f, 1.0f) *
-                cv::cursor_trail_alpha.getFloat();
+        sSz i = static_cast<sSz>(trail.size()) - 1;
 
-            if(smoothCursorTrail) {
-                const float scaleAnimTrailWidthHalf = (trailWidth / 2) * curTrl.scale;
-                const float scaleAnimTrailHeightHalf = (trailHeight / 2) * curTrl.scale;
+        if(smoothCursorTrail) {
+            VertexArrayObject &vao = *this->cursorTrailVAO;
 
-                const vec3 topLeft{curTrl.pos.x - scaleAnimTrailWidthHalf,  //
-                                   curTrl.pos.y - scaleAnimTrailHeightHalf, curTrl.alpha};
-                const vec3 topRight{curTrl.pos.x + scaleAnimTrailWidthHalf,  //
-                                    curTrl.pos.y - scaleAnimTrailHeightHalf, curTrl.alpha};
-                const vec3 bottomRight{curTrl.pos.x + scaleAnimTrailWidthHalf,  //
-                                       curTrl.pos.y + scaleAnimTrailHeightHalf, curTrl.alpha};
-                const vec3 bottomLeft{curTrl.pos.x - scaleAnimTrailWidthHalf,  //
-                                      curTrl.pos.y + scaleAnimTrailHeightHalf, curTrl.alpha};
+            const f32 scaleMulX = trailWidth / 2;
+            const f32 scaleMulY = trailHeight / 2;
 
-                this->cursorTrailVAO->addVertices({topLeft, topRight, bottomRight, bottomLeft});
-                this->cursorTrailVAO->addTexcoords({
-                    {0, 0},
-                    {1, 0},
-                    {1, 1},
-                    {0, 1},
-                });
+            while(i >= 0) {
+                CURSORTRAIL &curTrl = trail[i];
+                const f32 realWidth = scaleMulX * curTrl.scale;
+                const f32 realHeight = scaleMulY * curTrl.scale;
+                curTrl.alpha = std::clamp<f32>(((curTrl.time - timeNow) / trailLength) * alphaMultiplier, 0.0f, 1.0f) *
+                               alphaScaleOpt;
 
-            } else  // old style trail
-            {
-                if(curTrl.alpha > 0.0f) this->drawCursorTrailRaw(curTrl.alpha, curTrl.pos);
+                vao.addVertex(vec3{curTrl.pos.x - realWidth,  // topLeft
+                                   curTrl.pos.y - realHeight, curTrl.alpha});
+                vao.addVertex(vec3{curTrl.pos.x + realWidth,  // topRight
+                                   curTrl.pos.y - realHeight, curTrl.alpha});
+                vao.addVertex(vec3{curTrl.pos.x + realWidth,  // bottomRight
+                                   curTrl.pos.y + realHeight, curTrl.alpha});
+                vao.addVertex(vec3{curTrl.pos.x - realWidth,  // bottomLeft
+                                   curTrl.pos.y + realHeight, curTrl.alpha});
+
+                vao.addTexcoord(vec2{0, 0});
+                vao.addTexcoord(vec2{1, 0});
+                vao.addTexcoord(vec2{1, 1});
+                vao.addTexcoord(vec2{0, 1});
+                i--;
             }
+        } else {  // old style trail
+            while(i >= 0) {
+                CURSORTRAIL &curTrl = trail[i];
+                curTrl.alpha = std::clamp<f32>(((curTrl.time - timeNow) / trailLength) * alphaMultiplier, 0.0f, 1.0f) *
+                               alphaScaleOpt;
 
-            i--;
+                if(curTrl.alpha > 0.0f) this->drawCursorTrailRaw(curTrl.alpha, curTrl.pos);
+                i--;
+            }
         }
 
         // draw new style continuous smooth trail
         if(smoothCursorTrail) {
             trailShader->enable();
             {
-                // trailShader->setUniform1f("time", engine->getTime());
+                // trailShader->setUniform1f("time", timeNow);
 
                 trailImage->bind();
                 {
@@ -463,17 +469,17 @@ void HUD::drawCursorTrailInt(Shader *trailShader, std::vector<CURSORTRAIL> &trai
     }
 
     // trail cleanup
-    while((trail.size() > 1 && engine->getTime() > trail[0].time) ||
+    while((trail.size() > 1 && timeNow > trail[0].time) ||
           trail.size() > cv::cursor_trail_max_size.getInt())  // always leave at least 1 previous entry in there
     {
         trail.erase(trail.begin());
     }
 }
 
-void HUD::drawCursorTrailRaw(float alpha, vec2 pos) {
+void HUD::drawCursorTrailRaw(f32 alpha, vec2 pos) {
     const auto &trailImage = osu->getSkin()->i_cursor_trail;
-    const float scale = this->getCursorTrailScaleFactor();
-    const float animatedScale =
+    const f32 scale = this->getCursorTrailScaleFactor();
+    const f32 animatedScale =
         scale *
         (osu->getSkin()->o_cursor_expand && cv::cursor_trail_expand.getBool() ? this->fCursorExpandAnim : 1.0f) *
         cv::cursor_trail_scale.getFloat();
