@@ -11,39 +11,18 @@
 #include <array>
 
 class AvatarManager;
-class CWindowManager;
 class ConVar;
 class Image;
 class McFont;
 class RenderTarget;
 
-class ModSelector;
-class VolumeOverlay;
-class UserCard;
-class Chat;
-class Lobby;
-class RoomScreen;
-class PromptScreen;
-class UIUserContextMenuScreen;
-class MainMenu;
-class PauseMenu;
-class OptionsMenu;
-class SongBrowser;
-class SpectatorScreen;
-class BGImageHandler;
-class OsuDirectScreen;
-class RankingScreen;
-class UserStatsScreen;
-class UpdateHandler;
-class NotificationOverlay;
-class TooltipOverlay;
-class UIOverlay;
 struct Skin;
-class HUD;
-class Changelog;
+class BGImageHandler;
 class ModFPoSu;
 class BeatmapInterface;
 class LiveScore;
+class UpdateHandler;
+class UserCard;
 struct FinishedScore;
 
 namespace LegacyReplay {
@@ -171,45 +150,21 @@ class Osu final : public App, public MouseListener {
     [[nodiscard]] inline int getVirtScreenWidth() const { return (int)this->internalRect.getWidth(); }
     [[nodiscard]] inline int getVirtScreenHeight() const { return (int)this->internalRect.getHeight(); }
 
-    [[nodiscard]] inline OptionsMenu *getOptionsMenu() { return this->optionsMenu; }
-    [[nodiscard]] inline SongBrowser *getSongBrowser() { return this->songBrowser; }
-    [[nodiscard]] inline Changelog *getChangelog() { return this->changelog; }
     [[nodiscard]] inline const std::unique_ptr<UserCard> &getUserButton() const { return this->userButton; }
-    [[nodiscard]] inline Lobby *getLobby() { return this->lobby; }
-    [[nodiscard]] inline SpectatorScreen *getSpectatorScreen() { return this->spectatorScreen; }
     [[nodiscard]] inline const std::unique_ptr<BGImageHandler> &getBackgroundImageHandler() const {
         return this->backgroundImageHandler;
     }
-    [[nodiscard]] inline HUD *getHUD() { return this->hud; }
-    [[nodiscard]] inline TooltipOverlay *getTooltipOverlay() { return this->tooltipOverlay; }
-    [[nodiscard]] inline ModSelector *getModSelector() { return this->modSelector; }
+
     [[nodiscard]] inline const std::unique_ptr<ModFPoSu> &getFPoSu() const { return this->fposu; }
-    [[nodiscard]] inline PauseMenu *getPauseMenu() { return this->pauseMenu; }
-    [[nodiscard]] inline Chat *getChat() { return this->chat; }
-    [[nodiscard]] inline PromptScreen *getPromptScreen() { return this->prompt; }
-    [[nodiscard]] inline UIUserContextMenuScreen *getUserActions() { return this->user_actions; }
-    [[nodiscard]] inline RoomScreen *getRoom() { return this->room; }
-    [[nodiscard]] inline NotificationOverlay *getNotificationOverlay() { return this->notificationOverlay; }
-    [[nodiscard]] inline VolumeOverlay *getVolumeOverlay() { return this->volumeOverlay; }
-    [[nodiscard]] inline MainMenu *getMainMenu() { return this->mainMenu; }
-    [[nodiscard]] inline OsuDirectScreen *getOsuDirectScreen() { return this->osuDirectScreen; }
-    [[nodiscard]] inline RankingScreen *getRankingScreen() { return this->rankingScreen; }
     [[nodiscard]] inline const std::unique_ptr<LiveScore> &getScore() const { return this->score; }
-    [[nodiscard]] inline UserStatsScreen *getUserStatsScreen() { return this->userStats; }
     [[nodiscard]] inline const std::unique_ptr<UpdateHandler> &getUpdateHandler() const { return this->updateHandler; }
     [[nodiscard]] inline const std::unique_ptr<BeatmapInterface> &getMapInterface() const { return this->map_iface; }
     [[nodiscard]] inline const std::unique_ptr<AvatarManager> &getAvatarManager() const { return this->avatarManager; }
 
-    [[nodiscard]] inline RenderTarget *getBackBuffer() const { return this->backBuffer; }
-    [[nodiscard]] inline RenderTarget *getPlayfieldBuffer() const { return this->playfieldBuffer; }
-    [[nodiscard]] inline RenderTarget *getSliderFrameBuffer() const { return this->sliderFrameBuffer; }
-    [[nodiscard]] inline RenderTarget *getAAFrameBuffer() const { return this->AAFrameBuffer; }
     [[nodiscard]] inline RenderTarget *getFrameBuffer() const { return this->frameBuffer; }
     [[nodiscard]] inline RenderTarget *getFrameBuffer2() const { return this->frameBuffer2; }
     [[nodiscard]] inline McFont *getTitleFont() const { return this->titleFont; }
     [[nodiscard]] inline McFont *getSubTitleFont() const { return this->subTitleFont; }
-    [[nodiscard]] inline McFont *getSongBrowserFont() const { return this->songBrowserFont; }
-    [[nodiscard]] inline McFont *getSongBrowserFontBold() const { return this->songBrowserFontBold; }
     [[nodiscard]] inline McFont *getFontIcons() const { return this->fontIcons; }
     [[nodiscard]] inline const Skin *getSkin() const { return this->skin.get(); }
     [[nodiscard]] inline Skin *getSkinMutable() { return this->skin.get(); }
@@ -290,8 +245,6 @@ class Osu final : public App, public MouseListener {
     void onUserCardChange(std::string_view new_username);
 
    private:
-    void drawRuntimeInfo();
-
     void globalOnSetValueProtectedCallback();
     static bool globalOnGetValueProtectedCallback(const char *cvarname);
     static bool globalOnSetValueGameplayCallback(const char *cvarname, CvarEditor setterkind);
@@ -313,38 +266,7 @@ class Osu final : public App, public MouseListener {
     std::unique_ptr<LiveScore> score{nullptr};
     std::unique_ptr<ModFPoSu> fposu{nullptr};
 
-    // interfaces ("UIOverlay"s), manually created + added to the "screens" array and destroyed in reverse order in dtor
-    VolumeOverlay *volumeOverlay{nullptr};
-    PromptScreen *prompt{nullptr};
-    ModSelector *modSelector{nullptr};
-    UIUserContextMenuScreen *user_actions{nullptr};
-    RoomScreen *room{nullptr};
-    NotificationOverlay *notificationOverlay{nullptr};
-    Chat *chat{nullptr};
-    OptionsMenu *optionsMenu{nullptr};
-    OsuDirectScreen *osuDirectScreen{nullptr};
-    RankingScreen *rankingScreen{nullptr};
-    UserStatsScreen *userStats{nullptr};
-    SpectatorScreen *spectatorScreen{nullptr};
-    PauseMenu *pauseMenu{nullptr};
-    HUD *hud{nullptr};
-    SongBrowser *songBrowser{nullptr};
-    Lobby *lobby{nullptr};
-    Changelog *changelog{nullptr};
-    MainMenu *mainMenu{nullptr};
-    TooltipOverlay *tooltipOverlay{nullptr};
-
-    static constexpr auto NUM_SCREENS{19};  // make sure to update this if adding/removing screens
-    std::array<UIOverlay *, NUM_SCREENS> screens{};
-
-    // interfaces (debugging)
-    std::unique_ptr<CWindowManager> windowManager{nullptr};
-
     // rendering
-    RenderTarget *backBuffer{nullptr};
-    RenderTarget *playfieldBuffer{nullptr};
-    RenderTarget *sliderFrameBuffer{nullptr};
-    RenderTarget *AAFrameBuffer{nullptr};
     RenderTarget *frameBuffer{nullptr};
     RenderTarget *frameBuffer2{nullptr};
 
@@ -359,17 +281,22 @@ class Osu final : public App, public MouseListener {
    public:
     bool bModAutoTemp{false};  // when ctrl+clicking a map, the auto mod should disable itself after the map finishes
 
+    // XXX: dirty
+    void drawRuntimeInfo();
+    float fQuickRetryTime{0.f};
+    bool bQuickRetryDown{false};
+    bool bSkinLoadScheduled{false};
+    Skin *skinScheduledToLoad{nullptr};
+
    private:
     bool bF1{false};
     bool bUIToggleCheck{false};
     bool bScoreboardToggleCheck{false};
     bool bSkipScheduled{false};
-    bool bQuickRetryDown{false};
     bool bSeekKey{false};
     bool bSeeking{false};
     bool bClickedSkipButton{false};
     float fPrevSeekMousePosX{-1.f};
-    float fQuickRetryTime{0.f};
 
    public:  // public due to BeatmapInterface access
     u32 iQuickSaveMS{0};
@@ -385,10 +312,7 @@ class Osu final : public App, public MouseListener {
     std::vector<McFont *> fonts;
     McFont *titleFont{nullptr};
     McFont *subTitleFont{nullptr};
-    McFont *songBrowserFont{nullptr};
-    McFont *songBrowserFontBold{nullptr};
     McFont *fontIcons{nullptr};
-    Skin *skinScheduledToLoad{nullptr};
 
     // replay
    public:
@@ -401,10 +325,8 @@ class Osu final : public App, public MouseListener {
     std::atomic<bool> pause_bg_threads{false};
     bool bScheduleEndlessModNextBeatmap{false};
     bool bWasBossKeyPaused{false};
-    bool bSkinLoadScheduled{false};
     bool bSkinLoadWasReload{false};
     bool bFontReloadScheduled{false};
-    bool bScreensReady{false};
     bool bDrawBuildInfo{true};
 
     friend class BeatmapInterface;

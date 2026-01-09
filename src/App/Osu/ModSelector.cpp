@@ -33,6 +33,7 @@
 #include "SongBrowser/SongBrowser.h"
 #include "SoundEngine.h"
 #include "TooltipOverlay.h"
+#include "UI.h"
 #include "UIButton.h"
 #include "UICheckbox.h"
 #include "UIModSelectorModButton.h"
@@ -48,11 +49,11 @@ class ModSelectorOverrideSliderDescButton final : public CBaseUIButton {
         CBaseUIButton::mouse_update(propagate_clicks);
 
         if(this->isMouseInside() && this->sTooltipText.length() > 0) {
-            osu->getTooltipOverlay()->begin();
+            ui->getTooltipOverlay()->begin();
             {
-                osu->getTooltipOverlay()->addLine(this->sTooltipText);
+                ui->getTooltipOverlay()->addLine(this->sTooltipText);
             }
-            osu->getTooltipOverlay()->end();
+            ui->getTooltipOverlay()->end();
         }
     }
 
@@ -582,11 +583,11 @@ void ModSelector::mouse_update(bool *propagate_clicks) {
     if(this->nonSubmittableWarning->isVisible() && this->nonSubmittableWarning->isMouseInside()) {
         auto nonSubmittableCvars = cvars().getNonSubmittableCvars();
         if(!nonSubmittableCvars.empty()) {
-            osu->getTooltipOverlay()->begin();
+            ui->getTooltipOverlay()->begin();
             for(const auto &cvar : nonSubmittableCvars) {
-                osu->getTooltipOverlay()->addLine(cvar->getName());
+                ui->getTooltipOverlay()->addLine(cvar->getName());
             }
-            osu->getTooltipOverlay()->end();
+            ui->getTooltipOverlay()->end();
         }
     }
 
@@ -597,11 +598,11 @@ void ModSelector::mouse_update(bool *propagate_clicks) {
         if(this->bShowOverrideSliderALTHint) {
             for(auto &overrideSlider : this->overrideSliders) {
                 if(overrideSlider.slider->isBusy()) {
-                    osu->getTooltipOverlay()->begin();
+                    ui->getTooltipOverlay()->begin();
                     {
-                        osu->getTooltipOverlay()->addLine("Hold [ALT] to slide in 0.01 increments.");
+                        ui->getTooltipOverlay()->addLine("Hold [ALT] to slide in 0.01 increments.");
                     }
-                    osu->getTooltipOverlay()->end();
+                    ui->getTooltipOverlay()->end();
 
                     if(keyboard->isAltDown()) this->bShowOverrideSliderALTHint = false;
                 }

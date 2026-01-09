@@ -13,6 +13,7 @@
 #include "SString.h"
 #include "Font.h"
 #include "Timing.h"
+#include "UI.h"
 
 UIRankingScreenInfoLabel::UIRankingScreenInfoLabel(f32 xPos, f32 yPos, f32 xSize, f32 ySize, UString name)
     : CBaseUIElement(xPos, yPos, xSize, ySize, std::move(name)) {

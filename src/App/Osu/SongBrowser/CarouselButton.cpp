@@ -16,6 +16,7 @@
 #include "Osu.h"
 #include "Skin.h"
 #include "SoundEngine.h"
+#include "UI.h"
 #include "UIContextMenu.h"
 
 int CarouselButton::marginPixelsX = 9;
@@ -28,8 +29,8 @@ using namespace neosu::sbr;
 
 CarouselButton::CarouselButton(float xPos, float yPos, float xSize, float ySize, UString name)
     : CBaseUIButton(xPos, yPos, xSize, ySize, std::move(name), "") {
-    this->font = osu->getSongBrowserFont();
-    this->fontBold = osu->getSongBrowserFontBold();
+    this->font = ui->getSongBrowser()->getFont();
+    this->fontBold = ui->getSongBrowser()->getFontBold();
 
     this->bVisible = false;
     this->bSelected = false;

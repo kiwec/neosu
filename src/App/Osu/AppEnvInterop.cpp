@@ -13,6 +13,7 @@
 #include "Parsing.h"
 #include "Skin.h"
 #include "SongBrowser/SongBrowser.h"
+#include "UI.h"
 #include "Logging.h"
 
 struct OsuEnvInterop : public Environment::Interop {
@@ -42,7 +43,7 @@ bool OsuEnvInterop::handle_osk(const char *osk_path) {
     folder_name.erase(folder_name.size() - 4);  // remove .osk extension
 
     cv::skin.setValue(Environment::getFileNameFromFilePath(folder_name));
-    osu->getOptionsMenu()->updateSkinNameLabel();
+    ui->getOptionsMenu()->updateSkinNameLabel();
 
     return true;
 }
@@ -51,10 +52,10 @@ bool OsuEnvInterop::handle_osz(const char *osz_path) {
     if(!osu) return false;
 
     if(osu->isInPlayMode()) {
-        osu->getNotificationOverlay()->addToast(fmt::format("Can't import {} while playing.", osz_path), ERROR_TOAST);
+        ui->getNotificationOverlay()->addToast(fmt::format("Can't import {} while playing.", osz_path), ERROR_TOAST);
         return false;
     } else if(!db->isFinished() || db->isCancelled()) {
-        osu->getNotificationOverlay()->addToast(fmt::format("Can't import {} before songs have been loaded.", osz_path),
+        ui->getNotificationOverlay()->addToast(fmt::format("Can't import {} before songs have been loaded.", osz_path),
                                                 ERROR_TOAST);
         return false;
     }
@@ -65,7 +66,7 @@ bool OsuEnvInterop::handle_osz(const char *osz_path) {
         uSz osz_filesize = osz.getFileSize();
         osz_data = FixedSizeArray{osz.takeFileBuffer(), osz_filesize};
         if(!osz.canRead() || !osz_filesize || !osz_data.data()) {
-            osu->getNotificationOverlay()->addToast(fmt::format("Failed to import {}", osz_path), ERROR_TOAST);
+            ui->getNotificationOverlay()->addToast(fmt::format("Failed to import {}", osz_path), ERROR_TOAST);
             return false;
         }
     }
@@ -82,25 +83,25 @@ bool OsuEnvInterop::handle_osz(const char *osz_path) {
         }
     }
     if(set_id == -1) {
-        osu->getNotificationOverlay()->addToast(US_("Beatmapset doesn't have a valid ID."), ERROR_TOAST);
+        ui->getNotificationOverlay()->addToast(US_("Beatmapset doesn't have a valid ID."), ERROR_TOAST);
         return false;
     }
 
     std::string mapset_dir = fmt::format(NEOSU_MAPS_PATH "/{}/", set_id);
     Environment::createDirectory(mapset_dir);
     if(!Downloader::extract_beatmapset(osz_data.data(), osz_data.size(), mapset_dir)) {
-        osu->getNotificationOverlay()->addToast(US_("Failed to extract beatmapset"), ERROR_TOAST);
+        ui->getNotificationOverlay()->addToast(US_("Failed to extract beatmapset"), ERROR_TOAST);
         return false;
     }
 
     BeatmapSet *set = db->addBeatmapSet(mapset_dir, set_id, true);
     if(!set) {
-        osu->getNotificationOverlay()->addToast(US_("Failed to import beatmapset"), ERROR_TOAST);
+        ui->getNotificationOverlay()->addToast(US_("Failed to import beatmapset"), ERROR_TOAST);
         return false;
     }
 
     // FIXME: dont call this here
-    osu->getSongBrowser()->selectBeatmapset(set_id);
+    ui->getSongBrowser()->selectBeatmapset(set_id);
 
     return true;
 }
@@ -132,7 +133,7 @@ bool OsuEnvInterop::handle_cmdline_args(const std::vector<std::string> &args) {
     }
 
     if(need_to_reload_database) {
-        osu->getSongBrowser()->refreshBeatmaps();
+        ui->getSongBrowser()->refreshBeatmaps();
     }
 
     return need_to_reload_database;

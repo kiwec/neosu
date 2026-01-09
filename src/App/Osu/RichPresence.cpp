@@ -18,6 +18,7 @@
 #include "SongBrowser/SongBrowser.h"
 #include "Sound.h"
 #include "score.h"
+#include "UI.h"
 
 #include <chrono>
 
@@ -115,7 +116,7 @@ void setBanchoStatus(const char* info_text, Action action) {
     packet.write<u8>((u8)action);
     packet.write_string(fancy_text);
     packet.write_hash(map_md5);
-    packet.write<LegacyFlags>(osu->getModSelector()->getModFlags());
+    packet.write<LegacyFlags>(ui->getModSelector()->getModFlags());
     packet.write<u8>(0);  // osu!std
     packet.write<i32>(map_id);
     BANCHO::Net::send_packet(packet);
@@ -136,7 +137,7 @@ void updateBanchoMods() {
     packet.write<u8>((u8)last_action);
     packet.write_string(last_status);
     packet.write_hash(map_md5);
-    packet.write<LegacyFlags>(osu->getModSelector()->getModFlags());
+    packet.write<LegacyFlags>(ui->getModSelector()->getModFlags());
     packet.write<u8>(0);  // osu!std
     packet.write<i32>(map_id);
     BANCHO::Net::send_packet(packet);
@@ -144,12 +145,12 @@ void updateBanchoMods() {
     // Servers like akatsuki send different leaderboards based on what mods
     // you have selected. Reset leaderboard when switching mods.
     db->getOnlineScores().clear();
-    osu->getSongBrowser()->rebuildScoreButtons();
+    ui->getSongBrowser()->rebuildScoreButtons();
 }
 
 void onMainMenu() {
     bool force_not_afk =
-        BanchoState::spectating || (osu->getChat()->isVisible() && osu->getChat()->user_list->isVisible());
+        BanchoState::spectating || (ui->getChat()->isVisible() && ui->getChat()->user_list->isVisible());
     setBanchoStatus("Main Menu", force_not_afk ? Action::IDLE : Action::AFK);
 
     // NOTE: As much as I would like to show "Listening to", the Discord SDK ignores the activity 'type'
@@ -174,7 +175,7 @@ void onSongBrowser() {
     activity.type = DiscordActivityType_Playing;
     strcpy(activity.details, "Picking a map");
 
-    if(osu->getRoom()->isVisible()) {
+    if(ui->getRoom()->isVisible()) {
         setBanchoStatus("Picking a map", Action::MULTIPLAYER);
 
         strcpy(activity.state, "Multiplayer");

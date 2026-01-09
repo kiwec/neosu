@@ -8,9 +8,9 @@
 #include "NetworkHandler.h"
 #include "NotificationOverlay.h"
 #include "OptionsMenu.h"
-#include "Osu.h"
 #include "Environment.h"
 #include "SString.h"
+#include "UI.h"
 #include "Logging.h"
 
 void handle_neosu_url(const char *url) {
@@ -46,7 +46,7 @@ void handle_neosu_url(const char *url) {
                 BanchoState::reconnect();
             } else {
                 BanchoState::update_online_status(OnlineStatus::LOGGED_OUT);
-                osu->getNotificationOverlay()->addToast(US_("Login failed."), ERROR_TOAST);
+                ui->getNotificationOverlay()->addToast(US_("Login failed."), ERROR_TOAST);
             }
         });
 

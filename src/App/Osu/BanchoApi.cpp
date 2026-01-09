@@ -5,7 +5,6 @@
 #include "OsuConVars.h"
 #include "Logging.h"
 
-#include "Osu.h"
 #include "LegacyReplay.h"
 #include "Bancho.h"
 #include "BanchoLeaderboard.h"
@@ -13,6 +12,7 @@
 #include "NetworkHandler.h"
 #include "NotificationOverlay.h"
 #include "score.h"
+#include "UI.h"
 
 namespace BANCHO::Api {
 
@@ -31,7 +31,7 @@ static void handle_api_response(const Packet &packet) {
         case RequestType::GET_REPLAY: {
             if(packet.size == 0) {
                 // Most likely, 404
-                osu->getNotificationOverlay()->addToast(US_("Failed to download replay"), ERROR_TOAST);
+                ui->getNotificationOverlay()->addToast(US_("Failed to download replay"), ERROR_TOAST);
                 break;
             }
 
@@ -59,7 +59,7 @@ static void handle_api_response(const Packet &packet) {
                 if(success) {
                     LegacyReplay::load_and_watch(to_watch);
                 } else {
-                    osu->getNotificationOverlay()->addToast(US_("Failed to save replay"), ERROR_TOAST);
+                    ui->getNotificationOverlay()->addToast(US_("Failed to save replay"), ERROR_TOAST);
                 }
             });
 

@@ -13,6 +13,7 @@
 #include "Skin.h"
 #include "SkinImage.h"
 #include "SongBrowser.h"
+#include "UI.h"
 #include "UserCard.h"
 #include "Font.h"
 
@@ -134,7 +135,7 @@ void draw() {
     g->popTransform();
 
     // don't double-draw the back button
-    if(!osu->getOptionsMenu()->isVisible()) {
+    if(!ui->getOptionsMenu()->isVisible()) {
         g_songbrowser->backButton->draw();
     }
 

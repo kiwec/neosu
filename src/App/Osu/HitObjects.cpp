@@ -23,6 +23,7 @@
 #include "SliderRenderer.h"
 #include "SoundEngine.h"
 #include "Logging.h"
+#include "UI.h"
 
 using namespace flags::operators;
 
@@ -438,7 +439,7 @@ void HitObject::addHitResult(LiveScore::HIT result, i32 delta, bool isEndOfCombo
         else
             result = LiveScore::HIT::HIT_MISS;
 
-        osu->getHUD()->addTarget(targetDelta, targetAngle);
+        ui->getHUD()->addTarget(targetDelta, targetAngle);
     }
 
     const LiveScore::HIT returnedHit = this->pi->addHitResult(this, result, delta, isEndOfCombo, ignoreOnHitErrorBar,

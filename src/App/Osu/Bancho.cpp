@@ -48,6 +48,7 @@
 #include "Timing.h"
 #include "Logging.h"
 #include "UserCard.h"
+#include "UI.h"
 
 // defs
 // some of these are atomic due to multithreaded access
@@ -116,7 +117,7 @@ void BanchoState::update_online_status(OnlineStatus new_status) {
     const OnlineStatus old_status = online_status;
     online_status = new_status;
 
-    osu->getOptionsMenu()->update_login_button(new_status == OnlineStatus::LOGGED_IN);
+    ui->getOptionsMenu()->update_login_button(new_status == OnlineStatus::LOGGED_IN);
 
     // login failed, no update layout necessary
     if(old_status == OnlineStatus::LOGIN_IN_PROGRESS && new_status != OnlineStatus::LOGGED_IN) return;
@@ -135,7 +136,7 @@ void BanchoState::update_online_status(OnlineStatus new_status) {
             Environment::createDirectory(thumbs_dir);
         }
 
-        osu->getOptionsMenu()->scheduleLayoutUpdate();
+        ui->getOptionsMenu()->scheduleLayoutUpdate();
     }
 
     if(async_logout_pending && new_status == OnlineStatus::LOGGED_IN) {
@@ -145,22 +146,20 @@ void BanchoState::update_online_status(OnlineStatus new_status) {
 }
 
 void BanchoState::initialize_neosu_server_session() {
-    // Because private servers don't give a shit about neosu,
-    // and we want to be able to move fast without backwards
-    // compatibility being in the way, we'll just roll with
-    // a custom protocol.
+    // Because private servers don't give a shit about neosu, and we want to
+    // be able to move fast without backwards compatibility being in the way,
+    // we'll just roll with a custom protocol.
     //
-    // Not only that, we expect the server implementation
-    // to fully support all neosu-specific features.
+    // Not only that, we expect the server implementation to fully support all
+    // neosu-specific features.
     //
-    // This might get relaxed in the future if someone else
-    // chooses to add support for neosu clients. But as of
-    // now it wouldn't make sense to cater to imaginary servers.
+    // This might get relaxed in the future if someone else chooses to add
+    // support for neosu clients. But as of now it wouldn't make sense to
+    // cater to imaginary servers.
     BanchoState::fully_supports_neosu = true;
 
-    // Here are some defaults that the server used to be sent
-    // in handshake packets - let's save some bandwidth while
-    // we're at it.
+    // Here are some defaults that the server used to send in handshake
+    // packets - let's save some bandwidth while we're at it.
     cv::sv_allow_speed_override.setValue(1, true, CvarEditor::SERVER);
     cv::sv_has_irc_users.setValue(0, true, CvarEditor::SERVER);
 
@@ -214,10 +213,10 @@ void BanchoState::handle_packet(Packet &packet) {
                 BanchoState::print_new_channels = true;
 
                 osu->onUserCardChange(BanchoState::username);
-                osu->getSongBrowser()->onFilterScoresChange(US_("Global"), SongBrowser::LOGIN_STATE_FILTER_ID);
+                ui->getSongBrowser()->onFilterScoresChange(US_("Global"), SongBrowser::LOGIN_STATE_FILTER_ID);
 
                 // If server sent a score submission policy, update options menu to hide the checkbox
-                osu->getOptionsMenu()->scheduleLayoutUpdate();
+                ui->getOptionsMenu()->scheduleLayoutUpdate();
             } else {
                 cv::mp_autologin.setValue(false);
                 cv::mp_oauth_token.setValue("");
@@ -256,7 +255,7 @@ void BanchoState::handle_packet(Packet &packet) {
                         errmsg = US_("Please contact an administrator of the server.");
                     }
                 }
-                osu->getNotificationOverlay()->addToast(errmsg, ERROR_TOAST);
+                ui->getNotificationOverlay()->addToast(errmsg, ERROR_TOAST);
             }
             break;
         }
@@ -273,7 +272,7 @@ void BanchoState::handle_packet(Packet &packet) {
                 .author_name = sender,
                 .text = text,
             };
-            osu->getChat()->addMessage(recipient, msg, true);
+            ui->getChat()->addMessage(recipient, msg, true);
 
             break;
         }
@@ -311,12 +310,12 @@ void BanchoState::handle_packet(Packet &packet) {
                     std::string text{fmt::format("{} is now {}", user->name, actions[(size_t)action])};
                     auto open_dms = [uid = stats_user_id]() -> void {
                         UserInfo *user = BANCHO::User::get_user_info(uid);
-                        osu->getChat()->openChannel(user->name);
+                        ui->getChat()->openChannel(user->name);
                     };
 
                     // TODO: figure out what stable does and do that. for now just throttling to avoid endless spam
                     if(user->stats_tms + 10000 < Timing::getTicksMS() && action != Action::SUBMITTING) {
-                        osu->getNotificationOverlay()->addToast(text, STATUS_TOAST, open_dms, ToastElement::TYPE::CHAT);
+                        ui->getNotificationOverlay()->addToast(text, STATUS_TOAST, open_dms, ToastElement::TYPE::CHAT);
                     }
                 }
             }
@@ -340,10 +339,10 @@ void BanchoState::handle_packet(Packet &packet) {
                 osu->getUserButton()->updateUserStats();
             }
             if(stats_user_id == BanchoState::spectated_player_id) {
-                osu->getSpectatorScreen()->userCard->updateUserStats();
+                ui->getSpectatorScreen()->userCard->updateUserStats();
             }
 
-            osu->getChat()->updateUserList();
+            ui->getChat()->updateUserList();
 
             break;
         }
@@ -423,7 +422,7 @@ void BanchoState::handle_packet(Packet &packet) {
                 if(osu->isInPlayMode()) {
                     switch(action) {
                         case LiveReplayAction::NEW_SONG: {
-                            osu->getRankingScreen()->setVisible(false);
+                            ui->getRankingScreen()->setVisible(false);
                             map_iface->restart(true);
                             map_iface->update();
                         } break;
@@ -481,29 +480,29 @@ void BanchoState::handle_packet(Packet &packet) {
 
         case INP_NOTIFICATION: {
             std::string notification = packet.read_stdstring();
-            osu->getNotificationOverlay()->addToast(notification, INFO_TOAST);
+            ui->getNotificationOverlay()->addToast(notification, INFO_TOAST);
             break;
         }
 
         case INP_ROOM_UPDATED: {
             auto room = Room(packet);
-            if(osu->getLobby()->isVisible()) {
-                osu->getLobby()->updateRoom(room);
+            if(ui->getLobby()->isVisible()) {
+                ui->getLobby()->updateRoom(room);
             } else if(room.id == BanchoState::room.id) {
-                osu->getRoom()->on_room_updated(room);
+                ui->getRoom()->on_room_updated(room);
             }
 
             break;
         }
 
         case INP_ROOM_CREATED: {
-            osu->getLobby()->addRoom(std::make_unique<Room>(packet));
+            ui->getLobby()->addRoom(std::make_unique<Room>(packet));
             break;
         }
 
         case INP_ROOM_CLOSED: {
             i32 room_id = packet.read<i32>();
-            osu->getLobby()->removeRoom(room_id);
+            ui->getLobby()->removeRoom(room_id);
             break;
         }
 
@@ -517,14 +516,14 @@ void BanchoState::handle_packet(Packet &packet) {
             }
 
             auto room = Room(packet);
-            osu->getRoom()->on_room_joined(room);
+            ui->getRoom()->on_room_joined(room);
 
             break;
         }
 
         case INP_ROOM_JOIN_FAIL: {
-            osu->getNotificationOverlay()->addToast(US_("Failed to join room."), ERROR_TOAST);
-            osu->getLobby()->on_room_join_failed();
+            ui->getNotificationOverlay()->addToast(US_("Failed to join room."), ERROR_TOAST);
+            ui->getLobby()->on_room_join_failed();
             break;
         }
 
@@ -552,12 +551,12 @@ void BanchoState::handle_packet(Packet &packet) {
 
         case INP_MATCH_STARTED: {
             auto room = Room(packet);
-            osu->getRoom()->on_match_started(room);
+            ui->getRoom()->on_match_started(room);
             break;
         }
 
         case INP_MATCH_SCORE_UPDATED: {
-            osu->getRoom()->on_match_score_updated(packet);
+            ui->getRoom()->on_match_score_updated(packet);
             break;
         }
 
@@ -568,18 +567,18 @@ void BanchoState::handle_packet(Packet &packet) {
 
         case INP_MATCH_ALL_PLAYERS_LOADED: {
             osu->getMapInterface()->all_players_loaded = true;
-            osu->getChat()->updateVisibility();
+            ui->getChat()->updateVisibility();
             break;
         }
 
         case INP_MATCH_PLAYER_FAILED: {
             i32 slot_id = packet.read<i32>();
-            osu->getRoom()->on_player_failed(slot_id);
+            ui->getRoom()->on_player_failed(slot_id);
             break;
         }
 
         case INP_MATCH_FINISHED: {
-            osu->getRoom()->on_match_finished();
+            ui->getRoom()->on_match_finished();
             break;
         }
 
@@ -596,8 +595,8 @@ void BanchoState::handle_packet(Packet &packet) {
                 .author_name = US_(""),
                 .text = US_("Joined channel."),
             };
-            osu->getChat()->addChannel(name, true);
-            osu->getChat()->addMessage(name, msg, false);
+            ui->getChat()->addChannel(name, true);
+            ui->getChat()->addMessage(name, msg, false);
             break;
         }
 
@@ -611,7 +610,7 @@ void BanchoState::handle_packet(Packet &packet) {
 
         case INP_LEFT_CHANNEL: {
             std::string name = packet.read_stdstring();
-            osu->getChat()->removeChannel(name);
+            ui->getChat()->removeChannel(name);
             break;
         }
 
@@ -646,7 +645,7 @@ void BanchoState::handle_packet(Packet &packet) {
             } else if(protocol_version != 19) {
                 std::string text{
                     fmt::format("This server may use an unsupported protocol version ({}).", protocol_version)};
-                osu->getNotificationOverlay()->addToast(text, ERROR_TOAST);
+                ui->getNotificationOverlay()->addToast(text, ERROR_TOAST);
             }
             break;
         }
@@ -662,7 +661,7 @@ void BanchoState::handle_packet(Packet &packet) {
 
         case INP_MATCH_PLAYER_SKIPPED: {
             i32 user_id = packet.read<i32>();
-            osu->getRoom()->on_player_skip(user_id);
+            ui->getRoom()->on_player_skip(user_id);
             break;
         }
 
@@ -695,7 +694,7 @@ void BanchoState::handle_packet(Packet &packet) {
                 osu->onUserCardChange(user->name);
             }
 
-            osu->getChat()->updateUserList();
+            ui->getChat()->updateUserList();
             break;
         }
 
@@ -776,7 +775,7 @@ void BanchoState::handle_packet(Packet &packet) {
 
         case INP_VERSION_UPDATE_FORCED: {
             BanchoState::disconnect();
-            osu->getNotificationOverlay()->addToast(US_("This server requires a newer client version."), ERROR_TOAST);
+            ui->getNotificationOverlay()->addToast(US_("This server requires a newer client version."), ERROR_TOAST);
             break;
         }
 
@@ -785,13 +784,13 @@ void BanchoState::handle_packet(Packet &packet) {
         }
 
         case INP_ACCOUNT_RESTRICTED: {
-            osu->getNotificationOverlay()->addToast(US_("Account restricted."), ERROR_TOAST);
+            ui->getNotificationOverlay()->addToast(US_("Account restricted."), ERROR_TOAST);
             BanchoState::disconnect();
             break;
         }
 
         case INP_MATCH_ABORT: {
-            osu->getRoom()->on_match_aborted();
+            ui->getRoom()->on_match_aborted();
             break;
         }
 
@@ -1015,14 +1014,14 @@ void BanchoState::update_channel(const std::string &name, const std::string &top
                 .author_name = US_(""),
                 .text = fmt::format("{:s}: {:s}", name, topic),
             };
-            osu->getChat()->addMessage(BanchoState::is_oauth ? "#neosu" : "#osu", msg, false);
+            ui->getChat()->addMessage(BanchoState::is_oauth ? "#neosu" : "#osu", msg, false);
         }
     } else {
         chan = it->second;
     }
 
     if(join) {
-        osu->getChat()->join(name);
+        ui->getChat()->join(name);
     }
 
     if(chan) {

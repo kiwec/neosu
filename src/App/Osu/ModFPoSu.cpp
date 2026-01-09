@@ -18,6 +18,7 @@
 #include "Osu.h"
 #include "ResourceManager.h"
 #include "Skin.h"
+#include "UI.h"
 #include "Logging.h"
 #include "MakeDelegateWrapper.h"
 
@@ -176,12 +177,12 @@ void ModFPoSu::draw() {
 
             g->setWorldMatrixMul(worldMatrix);
             {
-                osu->getPlayfieldBuffer()->bind();
+                ui->getPlayfieldBuffer()->bind();
                 {
                     g->setColor(0xffffffff);
                     g->drawVAO(this->vao);
                 }
-                osu->getPlayfieldBuffer()->unbind();
+                ui->getPlayfieldBuffer()->unbind();
             }
 
             if(isTransparent) g->setBlendMode(DrawBlendMode::BLEND_MODE_ALPHA);
@@ -207,7 +208,7 @@ void ModFPoSu::update() {
     {
         this->modelMatrix.scale(
             1.0f,
-            (osu->getPlayfieldBuffer()->getHeight() / osu->getPlayfieldBuffer()->getWidth()) * (this->fCircumLength),
+            (ui->getPlayfieldBuffer()->getHeight() / ui->getPlayfieldBuffer()->getWidth()) * (this->fCircumLength),
             1.0f);
 
         // rotate around center
@@ -433,7 +434,7 @@ void ModFPoSu::handleInputOverrides(bool rawDeltasRequired) {
     if(env->isOSMouseInputRaw() != rawDeltasRequired) {
         if(rawDeltasRequired && !this->bAlreadyWarnedAboutRawInputOverride) {
             this->bAlreadyWarnedAboutRawInputOverride = true;
-            osu->getNotificationOverlay()->addToast(
+            ui->getNotificationOverlay()->addToast(
                 R"(Forced raw input. Enable "Tablet/Absolute Mode" if you're using a tablet!)", INFO_TOAST);
         }
         env->setRawMouseInput(rawDeltasRequired);

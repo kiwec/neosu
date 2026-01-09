@@ -26,6 +26,7 @@
 #include "Osu.h"
 #include "Skin.h"
 #include "SongBrowser/SongBrowser.h"
+#include "UI.h"
 #include "UIButton.h"
 #include "UIContextMenu.h"
 #include "UISearchOverlay.h"
@@ -414,11 +415,11 @@ class ResetButton final : public CBaseUIButton {
         CBaseUIButton::mouse_update(propagate_clicks);
 
         if(this->isMouseInside()) {
-            osu->getTooltipOverlay()->begin();
+            ui->getTooltipOverlay()->begin();
             {
-                osu->getTooltipOverlay()->addLine("Reset");
+                ui->getTooltipOverlay()->addLine("Reset");
             }
-            osu->getTooltipOverlay()->end();
+            ui->getTooltipOverlay()->end();
         }
     }
 
@@ -522,7 +523,7 @@ class SkinPreviewElement final : public CBaseUIElement {
                 g->pushTransform();
                 g->scale(scoreScale, scoreScale);
                 g->translate(pos.x - skin->i_scores[0]->getWidth() * scoreScale, pos.y);
-                osu->getHUD()->drawScoreNumber(i - 1, 1.0f);
+                ui->getHUD()->drawScoreNumber(i - 1, 1.0f);
                 g->popTransform();
             }
         }
@@ -758,8 +759,6 @@ OptionsMenuImpl::OptionsMenuImpl(OptionsMenu *parent) : parent(parent) {
 
     cv::options_high_quality_sliders.setCallback(
         SA::MakeDelegate<&OptionsMenuImpl::onHighQualitySlidersConVarChange>(this));
-
-    osu->getNotificationOverlay()->addKeyListener(parent);
 
     this->notelockTypes.push_back(US_("None"));
     this->notelockTypes.push_back(US_("McOsu"));
@@ -1680,7 +1679,7 @@ OptionsMenuImpl::OptionsMenuImpl(OptionsMenu *parent) : parent(parent) {
 
     UIButton *cm360CalculatorLinkButton = this->addButton_("https://www.mouse-sensitivity.com/");
     cm360CalculatorLinkButton->setClickCallback(SA::MakeDelegate([]() -> void {
-        osu->getNotificationOverlay()->addNotification("Opening browser, please wait ...", 0xffffffff, false, 0.75f);
+        ui->getNotificationOverlay()->addNotification("Opening browser, please wait ...", 0xffffffff, false, 0.75f);
         Environment::openURLInDefaultBrowser("https://www.mouse-sensitivity.com/");
     }));
 
@@ -1767,7 +1766,7 @@ void OptionsMenuImpl::draw() {
     this->sliderPreviewElement->setDrawSliderHack(!isAnimating);
 
     if(isAnimating) {
-        osu->getSliderFrameBuffer()->enable();
+        ui->getSliderFrameBuffer()->enable();
 
         g->setBlendMode(DrawBlendMode::BLEND_MODE_PREMUL_ALPHA);
     }
@@ -1804,9 +1803,9 @@ void OptionsMenuImpl::draw() {
        this->hudScoreBoardScaleSlider->isActive() || this->hudInputoverlayScaleSlider->isActive() ||
        this->statisticsOverlayScaleSlider->isActive() || this->statisticsOverlayXOffsetSlider->isActive() ||
        this->statisticsOverlayYOffsetSlider->isActive()) {
-        if(!isPlayingBeatmap) osu->getHUD()->drawDummy();
+        if(!isPlayingBeatmap) ui->getHUD()->drawDummy();
     } else if(this->playfieldBorderSizeSlider->isActive()) {
-        osu->getHUD()->drawPlayfieldBorder(GameRules::getPlayfieldCenter(), GameRules::getPlayfieldSize(), 100);
+        ui->getHUD()->drawPlayfieldBorder(GameRules::getPlayfieldCenter(), GameRules::getPlayfieldSize(), 100);
     }
 
     parent->ScreenBackable::draw();
@@ -1823,7 +1822,7 @@ void OptionsMenuImpl::draw() {
 
         g->setBlendMode(DrawBlendMode::BLEND_MODE_ALPHA);
 
-        osu->getSliderFrameBuffer()->disable();
+        ui->getSliderFrameBuffer()->disable();
 
         g->push3DScene(McRect(0, 0, this->options->getSize().x, this->options->getSize().y));
         {
@@ -1831,8 +1830,8 @@ void OptionsMenuImpl::draw() {
             g->translate3DScene(-(1.0f - this->fAnimation) * this->options->getSize().x * 1.25f, 0,
                                 -(1.0f - this->fAnimation) * 700);
 
-            osu->getSliderFrameBuffer()->setColor(argb(this->fAnimation, 1.0f, 1.0f, 1.0f));
-            osu->getSliderFrameBuffer()->draw(0, 0);
+            ui->getSliderFrameBuffer()->setColor(argb(this->fAnimation, 1.0f, 1.0f, 1.0f));
+            ui->getSliderFrameBuffer()->draw(0, 0);
         }
         g->pop3DScene();
     }
@@ -1897,7 +1896,7 @@ void OptionsMenuImpl::mouse_update(bool *propagate_clicks) {
         this->osuFolderTextbox->setBackgroundColor(0xff000000);
 
     // hack to avoid entering search text while binding keys
-    if(osu->getNotificationOverlay()->isVisible() && osu->getNotificationOverlay()->isWaitingForKey())
+    if(ui->getNotificationOverlay()->isVisible() && ui->getNotificationOverlay()->isWaitingForKey())
         this->fSearchOnCharKeybindHackTime = engine->getTime() + 0.1f;
 
     // highlight active category depending on scroll position
@@ -2166,13 +2165,13 @@ void OptionsMenuImpl::setVisibleInt(bool visible, bool fromOnBack) {
 
         // save even if not closed via onBack(), e.g. if closed via setVisible(false) from outside
         if(!visible && !fromOnBack) {
-            osu->getNotificationOverlay()->stopWaitingForKey();
+            ui->getNotificationOverlay()->stopWaitingForKey();
             this->save();
         }
     }
 
     parent->bVisible = visible;
-    osu->getChat()->updateVisibility();
+    ui->getChat()->updateVisibility();
 
     if(visible) {
         this->updateLayout();
@@ -2683,7 +2682,7 @@ void OptionsMenuImpl::updateLayout() {
 UIContextMenu *OptionsMenuImpl::getContextMenu() { return this->contextMenu; }
 
 void OptionsMenuImpl::onBack() {
-    osu->getNotificationOverlay()->stopWaitingForKey();
+    ui->getNotificationOverlay()->stopWaitingForKey();
     this->save();
     this->setVisibleInt(false, true);
 }
@@ -2892,7 +2891,7 @@ void OptionsMenuImpl::onSkinSelect() {
             });
         }
     } else {
-        osu->getNotificationOverlay()->addToast(US_("Error: Couldn't find any skins"), ERROR_TOAST);
+        ui->getNotificationOverlay()->addToast(US_("Error: Couldn't find any skins"), ERROR_TOAST);
         this->options->scrollToTop();
         this->fOsuFolderTextboxInvalidAnim = engine->getTime() + 3.0f;
     }
@@ -3006,7 +3005,7 @@ void OptionsMenuImpl::onOutputDeviceSelect2(const UString &outputDeviceName, int
         soundEngine->setOutputDevice(device);
         if((soundEngine->getOutputDriverType() == SoundEngine::OutputDriver::SOLOUD_MA)) {
             if(device.name.find("(Exclusive)") != -1 && soundEngine->getOutputDeviceName().find("(Exclusive)") == -1) {
-                osu->getNotificationOverlay()->addToast("Tried to enable exclusive mode, but couldn't :(", ERROR_TOAST);
+                ui->getNotificationOverlay()->addToast("Tried to enable exclusive mode, but couldn't :(", ERROR_TOAST);
             }
         }
         if(this->outputDeviceLabel != nullptr) this->outputDeviceLabel->setText(soundEngine->getOutputDeviceName());
@@ -3299,8 +3298,8 @@ void OptionsMenuImpl::onKeyBindingButtonPressed(CBaseUIButton *button) {
             notificationText.append(":");
 
             const bool waitForKey = true;
-            osu->getNotificationOverlay()->addNotification(notificationText, 0xffffffff, waitForKey);
-            osu->getNotificationOverlay()->setDisallowWaitForKeyLeftClick(
+            ui->getNotificationOverlay()->addNotification(notificationText, 0xffffffff, waitForKey);
+            ui->getNotificationOverlay()->setDisallowWaitForKeyLeftClick(
                 !(dynamic_cast<KeyBindButton *>(button)->isLeftMouseClickBindingAllowed()));
         }
     }
@@ -3331,13 +3330,13 @@ void OptionsMenuImpl::onKeyBindingsResetAllPressed(CBaseUIButton * /*button*/) {
             bind->setValue(bind->getDefaultFloat());
         }
 
-        osu->getNotificationOverlay()->addNotification("All key bindings have been reset.", 0xff00ff00);
+        ui->getNotificationOverlay()->addNotification("All key bindings have been reset.", 0xff00ff00);
     } else {
         if(remainingUntilReset > 1)
-            osu->getNotificationOverlay()->addNotification(
+            ui->getNotificationOverlay()->addNotification(
                 UString::format("Press %i more times to confirm.", remainingUntilReset));
         else
-            osu->getNotificationOverlay()->addNotification(
+            ui->getNotificationOverlay()->addNotification(
                 UString::format("Press %i more time to confirm!", remainingUntilReset), 0xffffff00);
     }
 }
@@ -3514,7 +3513,7 @@ void OptionsMenuImpl::onLoudnessNormalizationToggle(CBaseUICheckbox *checkbox) {
 
 void OptionsMenuImpl::onModChangingToggle(CBaseUICheckbox *checkbox) {
     this->onCheckboxChange(checkbox);
-    osu->getModSelector()->updateButtons();
+    ui->getModSelector()->updateButtons();
     osu->updateMods();
 }
 
@@ -3646,13 +3645,13 @@ void OptionsMenuImpl::onResetEverythingClicked(CBaseUIButton * /*button*/) {
             bind->setValue(bind->getDefaultFloat());
         }
 
-        osu->getNotificationOverlay()->addNotification("All settings have been reset.", 0xff00ff00);
+        ui->getNotificationOverlay()->addNotification("All settings have been reset.", 0xff00ff00);
     } else {
         if(remainingUntilReset > 1)
-            osu->getNotificationOverlay()->addNotification(
+            ui->getNotificationOverlay()->addNotification(
                 UString::format("Press %i more times to confirm.", remainingUntilReset));
         else
-            osu->getNotificationOverlay()->addNotification(
+            ui->getNotificationOverlay()->addNotification(
                 UString::format("Press %i more time to confirm!", remainingUntilReset), 0xffffff00);
     }
 }
@@ -4041,7 +4040,7 @@ void OptionsMenuImpl::save() {
     static AsyncIOHandler::WriteCallback wr_callback = [func = LOGGER_FUNC](bool success) -> void {
         if(!success) {
             if(osu) {
-                osu->getNotificationOverlay()->addToast(US_("Failed to save osu.cfg"), ERROR_TOAST);
+                ui->getNotificationOverlay()->addToast(US_("Failed to save osu.cfg"), ERROR_TOAST);
             } else {
                 debugLogLambda("Failed to save osu.cfg");
             }

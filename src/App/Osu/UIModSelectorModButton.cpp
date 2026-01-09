@@ -16,6 +16,7 @@
 #include "SkinImage.h"
 #include "SoundEngine.h"
 #include "TooltipOverlay.h"
+#include "UI.h"
 
 UIModSelectorModButton::UIModSelectorModButton(ModSelector *osuModSelector, float xPos, float yPos, float xSize,
                                                float ySize, UString name)
@@ -81,11 +82,11 @@ void UIModSelectorModButton::mouse_update(bool *propagate_clicks) {
 
     // handle tooltips
     if(this->isMouseInside() && this->bAvailable && this->states.size() > 0 && !this->bFocusStolenDelay) {
-        osu->getTooltipOverlay()->begin();
+        ui->getTooltipOverlay()->begin();
         for(const auto &tooltipTextLine : this->states[this->iState].tooltipTextLines) {
-            osu->getTooltipOverlay()->addLine(tooltipTextLine);
+            ui->getTooltipOverlay()->addLine(tooltipTextLine);
         }
-        osu->getTooltipOverlay()->end();
+        ui->getTooltipOverlay()->end();
     }
 
     this->bFocusStolenDelay = false;
@@ -141,7 +142,7 @@ void UIModSelectorModButton::onClicked(bool /*left*/, bool /*right*/) {
         BANCHO::Net::send_packet(packet);
 
         // Don't wait on server response to update UI
-        osu->getRoom()->on_room_updated(BanchoState::room);
+        ui->getRoom()->on_room_updated(BanchoState::room);
     }
 
     if(BanchoState::is_online()) {

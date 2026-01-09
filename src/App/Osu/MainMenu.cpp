@@ -40,6 +40,7 @@
 #include "SkinImage.h"
 #include "SongBrowser/SongBrowser.h"
 #include "SoundEngine.h"
+#include "UI.h"
 #include "UIButton.h"
 #include "UIButtonWithIcon.h"
 #include "UpdateHandler.h"
@@ -225,7 +226,7 @@ MainMenu::MainMenu() : UIOverlay() {
                 }
 
                 if(shouldSave) {
-                    osu->getOptionsMenu()->save();
+                    ui->getOptionsMenu()->save();
                 }
             } else {
                 this->bDrawVersionNotificationArrow = true;
@@ -262,8 +263,8 @@ MainMenu::MainMenu() : UIOverlay() {
     this->onlineBeatmapsButton->setFont(osu->getSubTitleFont());
     this->onlineBeatmapsButton->setDrawBackground(false);
     this->onlineBeatmapsButton->setClickCallback([]() {
-        osu->getMainMenu()->setVisible(false);
-        osu->getOsuDirectScreen()->setVisible(true);
+        ui->getMainMenu()->setVisible(false);
+        ui->getOsuDirectScreen()->setVisible(true);
     });
     this->addBaseUIElement(this->onlineBeatmapsButton);
 
@@ -631,7 +632,7 @@ void MainMenu::drawMainButton() {
     float inset = 0.0f;
     if(drawing_full_cube) {
         inset = (1.0f - 0.5f * this->fMainMenuAnimFriendPercent);
-        osu->getAAFrameBuffer()->enable();
+        ui->getAAFrameBuffer()->enable();
 
         g->setBlendMode(DrawBlendMode::BLEND_MODE_PREMUL_ALPHA);
 
@@ -800,8 +801,8 @@ void MainMenu::drawMainButton() {
 
         g->setBlendMode(DrawBlendMode::BLEND_MODE_ALPHA);
 
-        osu->getAAFrameBuffer()->disable();
-        osu->getAAFrameBuffer()->draw(0, 0);
+        ui->getAAFrameBuffer()->disable();
+        ui->getAAFrameBuffer()->draw(0, 0);
     }
 }
 
@@ -1153,8 +1154,8 @@ void MainMenu::mouse_update(bool *propagate_clicks) {
 }
 
 void MainMenu::selectRandomBeatmap() {
-    if(db->isFinished() && !db->getBeatmapSets().empty() && !osu->getSongBrowser()->parentButtons.empty()) {
-        osu->getSongBrowser()->selectRandomBeatmap();
+    if(db->isFinished() && !db->getBeatmapSets().empty() && !ui->getSongBrowser()->parentButtons.empty()) {
+        ui->getSongBrowser()->selectRandomBeatmap();
         RichPresence::onMainMenu();
     } else {
         // Database is not loaded yet, load a random map and select it
@@ -1201,7 +1202,7 @@ void MainMenu::selectRandomBeatmap() {
             set->do_not_store = true;  // don't store in songbrowser f2 history
             candidate_diff->do_not_store = true;
 
-            osu->getSongBrowser()->onDifficultySelected(candidate_diff, false);
+            ui->getSongBrowser()->onDifficultySelected(candidate_diff, false);
 
             RichPresence::onMainMenu();
 
@@ -1218,9 +1219,9 @@ void MainMenu::onKeyDown(KeyboardEvent &e) {
     UIOverlay::onKeyDown(e);  // only used for options menu
     if(!this->bVisible || e.isConsumed()) return;
 
-    if(!osu->getOptionsMenu()->isMouseInside()) {
+    if(!ui->getOptionsMenu()->isMouseInside()) {
         if(e == KEY_PREV || e == KEY_LEFT) {
-            osu->getSongBrowser()->selectPreviousRandomBeatmap();
+            ui->getSongBrowser()->selectPreviousRandomBeatmap();
             RichPresence::onMainMenu();
         }
         if(e == KEY_NEXT || e == KEY_RIGHT || e == KEY_F2) {
@@ -1558,19 +1559,19 @@ void MainMenu::onPlayButtonPressed() {
 
 void MainMenu::onMultiplayerButtonPressed() {
     if(!BanchoState::is_online()) {
-        osu->getOptionsMenu()->askForLoginDetails();
+        ui->getOptionsMenu()->askForLoginDetails();
         return;
     }
 
     this->setVisible(false);
-    osu->getLobby()->setVisible(true);
+    ui->getLobby()->setVisible(true);
 
     soundEngine->play(osu->getSkin()->s_menu_hit);
     soundEngine->play(osu->getSkin()->s_click_mp);
 }
 
 void MainMenu::onOptionsButtonPressed() {
-    if(!osu->getOptionsMenu()->isVisible()) osu->toggleOptionsMenu();
+    if(!ui->getOptionsMenu()->isVisible()) osu->toggleOptionsMenu();
 
     soundEngine->play(osu->getSkin()->s_click_options);
 }

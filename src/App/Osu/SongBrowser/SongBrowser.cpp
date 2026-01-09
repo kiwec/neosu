@@ -50,6 +50,7 @@
 #include "CollectionButton.h"
 #include "UserCard.h"
 #include "InfoLabel.h"
+#include "UI.h"
 #include "UIContextMenu.h"
 #include "UISearchOverlay.h"
 #include "ScoreButton.h"
@@ -182,7 +183,7 @@ class ScoresStillLoadingElement final : public CBaseUILabel {
 
         // draw text
         const float textScale = 0.4f;
-        McFont *textFont = osu->getSongBrowserFont();
+        McFont *textFont = ui->getSongBrowser()->getFont();
         g->pushTransform();
         {
             const float stringWidth = textFont->getStringWidth(this->sText);
@@ -230,7 +231,7 @@ class NoRecordsSetElement final : public CBaseUILabel {
 
         // draw text
         const float textScale = 0.6f;
-        McFont *textFont = osu->getSongBrowserFont();
+        McFont *textFont = ui->getSongBrowser()->getFont();
         g->pushTransform();
         {
             const float stringWidth = textFont->getStringWidth(this->sText);
@@ -359,6 +360,12 @@ SongBrowser::SongBrowser() : ScreenBackable(), global_songbrowser_(this) {
     this->carousel = std::make_unique<BeatmapCarousel>(0.f, 0.f, 0.f, 0.f, "Carousel");
     neosu::sbr::g_carousel = this->carousel.get();
 
+    // load fonts
+    const int baseDPI = 96;
+    const int newDPI = Osu::getUIScale() * baseDPI;
+    this->font = resourceManager->loadFont("SourceSansPro-Regular.otf", "FONT_OSU_SONGBROWSER", 35, true, newDPI);
+    this->fontBold = resourceManager->loadFont("SourceSansPro-Bold.otf", "FONT_OSU_SONGBROWSER_BOLD", 30, true, newDPI);
+
     // convar callback
     cv::songbrowser_search_hardcoded_filter.setCallback(
         [](std::string_view /* oldValue */, std::string_view newValue) -> void {
@@ -389,7 +396,7 @@ SongBrowser::SongBrowser() : ScreenBackable(), global_songbrowser_(this) {
 
     // build topbar left
     this->topbarLeft = new CBaseUIContainer(0, 0, 0, 0, "");
-    this->songInfo = new InfoLabel(0, 0, 0, 0, "");
+    this->songInfo = new InfoLabel(0, 0, 0, 0, "", this->font);
     this->topbarLeft->addBaseUIElement(this->songInfo);
 
     this->filterScoresDropdown = new CBaseUIButton(0, 0, 0, 0, "", "Local");
@@ -558,7 +565,7 @@ void SongBrowser::draw() {
         }
         g->popTransform();
 
-        osu->getHUD()->drawBeatmapImportSpinner();
+        ui->getHUD()->drawBeatmapImportSpinner();
         return;
     }
 
@@ -855,7 +862,7 @@ bool SongBrowser::selectBeatmapset(i32 set_id) {
     }
 
     if(best_diff == nullptr) {
-        osu->getNotificationOverlay()->addToast(US_("Beatmapset has no difficulties"), ERROR_TOAST);
+        ui->getNotificationOverlay()->addToast(US_("Beatmapset has no difficulties"), ERROR_TOAST);
         return false;
     } else {
         this->onSelectionChange(this->hashToDiffButton[best_diff->getMD5()], false);
@@ -944,13 +951,13 @@ void SongBrowser::mouse_update(bool *propagate_clicks) {
         auto beatmap = Downloader::download_beatmap(this->map_autodl, this->set_autodl, &progress);
         if(progress == -1.f) {
             auto error_str = UString::format("Failed to download Beatmap #%d :(", this->map_autodl);
-            osu->getNotificationOverlay()->addToast(error_str, ERROR_TOAST);
+            ui->getNotificationOverlay()->addToast(error_str, ERROR_TOAST);
             this->map_autodl = 0;
             this->set_autodl = 0;
         } else if(progress < 1.f) {
             // TODO @kiwec: this notification format is jank & laggy
             auto text = UString::format("Downloading... %.2f%%", progress * 100.f);
-            osu->getNotificationOverlay()->addNotification(text);
+            ui->getNotificationOverlay()->addNotification(text);
         } else if(beatmap != nullptr) {
             this->onDifficultySelected(beatmap, false);
             this->selectSelectedBeatmapSongButton();
@@ -966,13 +973,13 @@ void SongBrowser::mouse_update(bool *propagate_clicks) {
             Downloader::download_beatmapset(this->set_autodl, &progress);
             if(progress == -1.f) {
                 auto error_str = UString::format("Failed to download Beatmapset #%d :(", this->set_autodl);
-                osu->getNotificationOverlay()->addToast(error_str, ERROR_TOAST);
+                ui->getNotificationOverlay()->addToast(error_str, ERROR_TOAST);
                 this->map_autodl = 0;
                 this->set_autodl = 0;
             } else if(progress < 1.f) {
                 // TODO @kiwec: this notification format is jank & laggy
                 auto text = UString::format("Downloading... %.2f%%", progress * 100.f);
-                osu->getNotificationOverlay()->addNotification(text);
+                ui->getNotificationOverlay()->addNotification(text);
             } else {
                 this->selectBeatmapset(this->set_autodl);
 
@@ -1005,7 +1012,7 @@ void SongBrowser::mouse_update(bool *propagate_clicks) {
     // but only if the context menu is currently not visible (since we don't want move things while e.g. managing
     // collections etc.)
     // NOTE: it's very slow, so only run it every 10 vsync frames
-    if(engine->throttledShouldRun(10) && !osu->getOptionsMenu()->isVisible() &&
+    if(engine->throttledShouldRun(10) && !ui->getOptionsMenu()->isVisible() &&
        mouse->getPos().x < osu->getVirtScreenWidth() * 0.1f && !this->contextMenu->isVisible()) {
         this->scheduled_scroll_to_selected_button = true;
     }
@@ -1122,7 +1129,7 @@ void SongBrowser::onKeyDown(KeyboardEvent &key) {
     //if (key.isConsumed()) return;
 
     // toggle auto
-    if(key == KEY_A && keyboard->isControlDown()) osu->getModSelector()->toggleAuto();
+    if(key == KEY_A && keyboard->isControlDown()) ui->getModSelector()->toggleAuto();
 
     key.consume();
 }
@@ -1203,7 +1210,7 @@ CBaseUIContainer *SongBrowser::setVisible(bool visible) {
         this->contextMenu->setVisible2(false);
     }
 
-    osu->getChat()->updateVisibility();
+    ui->getChat()->updateVisibility();
     return this;
 }
 
@@ -1378,14 +1385,14 @@ void SongBrowser::onDifficultySelected(DatabaseBeatmap *map, bool play) {
                 BanchoState::room.pack(packet);
                 BANCHO::Net::send_packet(packet);
 
-                osu->getRoom()->on_map_change();
+                ui->getRoom()->on_map_change();
 
                 this->setVisible(false);
             } else {
                 // CTRL + click = auto
                 if(keyboard->isControlDown()) {
                     osu->bModAutoTemp = true;
-                    osu->getModSelector()->enableAuto();
+                    ui->getModSelector()->enableAuto();
                 }
 
                 if(osu->getMapInterface()->play()) {
@@ -1426,7 +1433,7 @@ void SongBrowser::refreshBeatmaps(bool closeAfterLoading) {
 
     // clear beatmap interface to lose any potential stale references
     osu->reloadMapInterface();
-    osu->getMainMenu()->clearPreloadedMaps();
+    ui->getMainMenu()->clearPreloadedMaps();
 
     this->selectedButton = nullptr;
     this->selectionPreviousSongButton = nullptr;
@@ -3002,13 +3009,13 @@ void SongBrowser::onSortScoresChange(const UString &text, int /*id*/) {
     this->sortScoresDropdown->setText(text);
     this->rebuildScoreButtons();
     this->scoreBrowser->scrollToTop();
-    osu->getHUD()->updateScoringMetric();
+    ui->getHUD()->updateScoringMetric();
 }
 
 void SongBrowser::onWebClicked(CBaseUIButton * /*button*/) {
     if(this->songInfo->getBeatmapID() > 0) {
         env->openURLInDefaultBrowser(fmt::format("https://osu.ppy.sh/b/{}", this->songInfo->getBeatmapID()));
-        osu->getNotificationOverlay()->addNotification("Opening browser, please wait ...", 0xffffffff, false, 0.75f);
+        ui->getNotificationOverlay()->addNotification("Opening browser, please wait ...", 0xffffffff, false, 0.75f);
     }
 }
 
@@ -3207,10 +3214,10 @@ void SongBrowser::rebuildAfterGroupOrSortChange(GroupType group, const std::opti
 void SongBrowser::onSelectionMode() {
     if(cv::mod_fposu.getBool()) {
         cv::mod_fposu.setValue(false);
-        osu->getNotificationOverlay()->addToast(US_("Disabled FPoSu mode."), INFO_TOAST);
+        ui->getNotificationOverlay()->addToast(US_("Disabled FPoSu mode."), INFO_TOAST);
     } else {
         cv::mod_fposu.setValue(true);
-        osu->getNotificationOverlay()->addToast(US_("Enabled FPoSu mode."), SUCCESS_TOAST);
+        ui->getNotificationOverlay()->addToast(US_("Enabled FPoSu mode."), SUCCESS_TOAST);
     }
 }
 
@@ -3248,11 +3255,11 @@ void SongBrowser::onSelectionOptions() {
 
 void SongBrowser::onScoreClicked(ScoreButton *button) {
     // NOTE: the order of these two calls matters
-    osu->getRankingScreen()->setBeatmapInfo(button->getScore().map);
-    osu->getRankingScreen()->setScore(button->getScore());
+    ui->getRankingScreen()->setBeatmapInfo(button->getScore().map);
+    ui->getRankingScreen()->setScore(button->getScore());
 
     this->setVisible(false);
-    osu->getRankingScreen()->setVisible(true);
+    ui->getRankingScreen()->setVisible(true);
 
     soundEngine->play(osu->getSkin()->s_menu_hit);
 }

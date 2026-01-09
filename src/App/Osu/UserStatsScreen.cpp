@@ -17,6 +17,7 @@
 #include "SongBrowser/ScoreButton.h"
 #include "SongBrowser/SongBrowser.h"
 #include "SoundEngine.h"
+#include "UI.h"
 #include "UIContextMenu.h"
 #include "UserCard.h"
 
@@ -103,10 +104,10 @@ void UserStatsScreen::rebuildScoreButtons() {
         button->setScore(*score, map, ++i, title, weight);
         button->setClickCallback([](CBaseUIButton *button) {
             auto btnsc = ((ScoreButton *)button)->getScore();
-            auto song_button = (CarouselButton *)osu->getSongBrowser()->hashToDiffButton[btnsc.beatmap_hash];
-            osu->getUserStatsScreen()->setVisible(false);
-            osu->getSongBrowser()->selectSongButton(song_button);
-            osu->getSongBrowser()->highlightScore(btnsc.unixTimestamp);
+            auto song_button = (CarouselButton *)ui->getSongBrowser()->hashToDiffButton[btnsc.beatmap_hash];
+            ui->getUserStatsScreen()->setVisible(false);
+            ui->getSongBrowser()->selectSongButton(song_button);
+            ui->getSongBrowser()->highlightScore(btnsc.unixTimestamp);
         });
 
         m_scoreButtons.push_back(button);

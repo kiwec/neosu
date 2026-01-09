@@ -29,6 +29,7 @@
 #include "Skin.h"
 #include "SongBrowser/SongBrowser.h"
 #include "SString.h"
+#include "UI.h"
 #include "UIButton.h"
 #include "UIIcon.h"
 
@@ -124,7 +125,7 @@ void OnlineMapListing::onMouseUpInside(bool /*left*/, bool /*right*/) {
                 if(!set) return;  // probably unreachable
                 const auto& diffs = set->getDifficulties();
                 if(diffs.empty()) return;  // surely unreachable
-                osu->getSongBrowser()->onDifficultySelected(diffs[0].get(), false);
+                ui->getSongBrowser()->onDifficultySelected(diffs[0].get(), false);
             }
         } else {
             this->downloading = !this->downloading;
@@ -216,7 +217,7 @@ void OnlineMapListing::draw() {
                 if(this->directScreen->auto_select_set == this->meta.set_id) {
                     const auto& diffs = set->getDifficulties();
                     if(diffs.empty()) return;  // surely unreachable
-                    osu->getSongBrowser()->onDifficultySelected(diffs[0].get(), false);
+                    ui->getSongBrowser()->onDifficultySelected(diffs[0].get(), false);
                 }
             } else {
                 this->download_failed = true;
@@ -347,7 +348,7 @@ CBaseUIContainer* OsuDirectScreen::setVisible(bool visible) {
     if(visible) {
         if(!db->isFinished() || db->isCancelled()) {
             // Ensure database is loaded (same as Lobby screen)
-            osu->getSongBrowser()->refreshBeatmaps(true);
+            ui->getSongBrowser()->refreshBeatmaps(true);
         }
     }
 
@@ -364,7 +365,7 @@ CBaseUIContainer* OsuDirectScreen::setVisible(bool visible) {
     return this;
 }
 
-bool OsuDirectScreen::isVisible() { return this->bVisible && !osu->getSongBrowser()->isVisible(); }
+bool OsuDirectScreen::isVisible() { return this->bVisible && !ui->getSongBrowser()->isVisible(); }
 
 void OsuDirectScreen::draw() {
     if(!this->isVisible()) return;
@@ -413,7 +414,7 @@ void OsuDirectScreen::mouse_update(bool* propagate_clicks) {
 
 void OsuDirectScreen::onBack() {
     this->setVisible(false);
-    osu->getMainMenu()->setVisible(true);
+    ui->getMainMenu()->setVisible(true);
 }
 
 void OsuDirectScreen::onResolutionChange(vec2 newResolution) {
@@ -538,7 +539,7 @@ void OsuDirectScreen::search(std::string_view query) {
 
                     if(nb_results == -1 && set_lines.size() >= 2) {
                         // Relay server's error message to the player
-                        osu->getNotificationOverlay()->addToast(set_lines[1], ERROR_TOAST);
+                        ui->getNotificationOverlay()->addToast(set_lines[1], ERROR_TOAST);
                     }
 
                     return;

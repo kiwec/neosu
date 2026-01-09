@@ -21,6 +21,7 @@
 #include "SongBrowser/SongBrowser.h"
 #include "Sound.h"
 #include "SoundEngine.h"
+#include "UI.h"
 #include "UIContextMenu.h"
 #include "UIVolumeSlider.h"
 #include "UserStatsScreen.h"
@@ -255,18 +256,18 @@ bool VolumeOverlay::isVisible() { return engine->getTime() < this->fVolumeChange
 
 bool VolumeOverlay::canChangeVolume() {
     const bool can_scroll =
-        this->isBusy() || keyboard->isAltDown() ||                                                           //
-        (                                                                                                    //
-            !(osu->getSongBrowser()->isVisible() && db->isFinished()) &&                                     //
-            !(osu->getOsuDirectScreen()->isVisible()) &&                                                     //
-            !(osu->getOptionsMenu()->isVisible()) &&                                                         //
-            !(osu->getOptionsMenu()->getContextMenu()->isVisible()) &&                                       //
-            !(osu->getChangelog()->isVisible()) &&                                                           //
-            !(osu->getRankingScreen()->isVisible()) &&                                                       //
-            !(osu->getModSelector()->isMouseInScrollView()) &&                                               //
-            !(osu->getChat()->isMouseInChat()) &&                                                            //
-            !(osu->getUserStatsScreen()->isVisible()) &&                                                     //
-            !(osu->isInPlayMode() && cv::disable_mousewheel.getBool() && !osu->getPauseMenu()->isVisible())  //
+        this->isBusy() || keyboard->isAltDown() ||                                                          //
+        (                                                                                                   //
+            !(ui->getSongBrowser()->isVisible() && db->isFinished()) &&                                     //
+            !(ui->getOsuDirectScreen()->isVisible()) &&                                                     //
+            !(ui->getOptionsMenu()->isVisible()) &&                                                         //
+            !(ui->getOptionsMenu()->getContextMenu()->isVisible()) &&                                       //
+            !(ui->getChangelog()->isVisible()) &&                                                           //
+            !(ui->getRankingScreen()->isVisible()) &&                                                       //
+            !(ui->getModSelector()->isMouseInScrollView()) &&                                               //
+            !(ui->getChat()->isMouseInChat()) &&                                                            //
+            !(ui->getUserStatsScreen()->isVisible()) &&                                                     //
+            !(osu->isInPlayMode() && cv::disable_mousewheel.getBool() && !ui->getPauseMenu()->isVisible())  //
         );
 
     return can_scroll;

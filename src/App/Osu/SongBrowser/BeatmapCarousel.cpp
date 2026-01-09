@@ -1,13 +1,13 @@
 // Copyright (c) 2025, WH, All rights reserved.
 
 #include "Logging.h"
-#include "Osu.h"
 #include "BeatmapCarousel.h"
 #include "CollectionButton.h"
 #include "SongBrowser.h"
 #include "CarouselButton.h"
 #include "SongButton.h"
 #include "SongDifficultyButton.h"
+#include "UI.h"
 #include "UIContextMenu.h"
 #include "OptionsMenu.h"
 #include "Engine.h"
@@ -51,7 +51,7 @@ void BeatmapCarousel::mouse_update(bool *propagate_clicks) {
                     }
                 }
 
-                if(this->isMouseInside() && !osu->getOptionsMenu()->isMouseInside() && !isMouseInsideAnySongButton)
+                if(this->isMouseInside() && !ui->getOptionsMenu()->isMouseInside() && !isMouseInsideAnySongButton)
                     g_songbrowser->bSongBrowserRightClickScrolling = true;
                 else
                     g_songbrowser->bSongBrowserRightClickScrolling = false;

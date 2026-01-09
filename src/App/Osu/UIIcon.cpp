@@ -3,6 +3,7 @@
 
 #include "Osu.h"
 #include "TooltipOverlay.h"
+#include "UI.h"
 
 UIIcon::UIIcon(char16_t icon) : CBaseUILabel(0.f, 0.f, 0.f, 0.f, "", UString(&icon, 1)) {
     this->setFont(osu->getFontIcons());
@@ -15,11 +16,11 @@ void UIIcon::mouse_update(bool* propagate_clicks) {
     CBaseUILabel::mouse_update(propagate_clicks);
 
     if(this->isMouseInside() && this->tooltipTextLines.size() > 0 && !this->bFocusStolenDelay) {
-        osu->getTooltipOverlay()->begin();
+        ui->getTooltipOverlay()->begin();
         for(const auto& tooltipTextLine : this->tooltipTextLines) {
-            osu->getTooltipOverlay()->addLine(tooltipTextLine);
+            ui->getTooltipOverlay()->addLine(tooltipTextLine);
         }
-        osu->getTooltipOverlay()->end();
+        ui->getTooltipOverlay()->end();
     }
 
     this->bFocusStolenDelay = false;

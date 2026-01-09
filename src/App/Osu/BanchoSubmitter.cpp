@@ -9,11 +9,11 @@
 #include "DatabaseBeatmap.h"
 #include "Engine.h"
 #include "NetworkHandler.h"
-#include "Osu.h"
 #include "SongBrowser/SongBrowser.h"
 #include "crypto.h"
 #include "Logging.h"
 #include "Timing.h"
+#include "UI.h"
 
 #include <cstdlib>
 #include <cstring>
@@ -202,7 +202,7 @@ void submit_score(FinishedScore score) {
 
             // Reset leaderboards so new score will appear
             db->getOnlineScores().clear();
-            osu->getSongBrowser()->rebuildScoreButtons();
+            ui->getSongBrowser()->rebuildScoreButtons();
         } else {
             // TODO: handle failure
         }

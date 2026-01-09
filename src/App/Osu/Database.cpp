@@ -16,13 +16,13 @@
 #include "File.h"
 #include "LegacyReplay.h"
 #include "NotificationOverlay.h"
-#include "Osu.h"
 #include "ResourceManager.h"
 #include "AsyncPPCalculator.h"
 #include "SongBrowser/LoudnessCalcThread.h"
 #include "DiffCalc/DBRecalculator.h"
 #include "SongBrowser/SongBrowser.h"
 #include "Timing.h"
+#include "UI.h"
 #include "Logging.h"
 #include "crypto.h"
 #include "score.h"
@@ -472,7 +472,7 @@ BeatmapSet *Database::addBeatmapSet(const std::string &beatmapFolderPath, i32 se
     if(this->isFinished()) {
         this->beatmapsets.push_back(std::move(mapset));
 
-        osu->getSongBrowser()->addBeatmapSet(raw_mapset);
+        ui->getSongBrowser()->addBeatmapSet(raw_mapset);
     } else {
         // FIXME: this is just completely wrong, this vector cant just be appended to like that here
         this->temp_loading_beatmapsets.push_back(std::move(mapset));
@@ -908,12 +908,12 @@ void Database::scheduleLoadRaw() {
 
         this->raw_found_changes = this->num_beatmaps_to_load > 0;
         if(this->raw_found_changes)
-            osu->getNotificationOverlay()->addNotification(
+            ui->getNotificationOverlay()->addNotification(
                 UString::format(this->num_beatmaps_to_load == 1 ? "Adding %i new beatmap." : "Adding %i new beatmaps.",
                                 this->num_beatmaps_to_load),
                 0xff00ff00);
         else
-            osu->getNotificationOverlay()->addNotification(
+            ui->getNotificationOverlay()->addNotification(
                 UString::format("No new beatmaps detected.", this->num_beatmaps_to_load), 0xff00ff00);
     }
 
@@ -1298,7 +1298,7 @@ void Database::loadMaps() {
 
             // hard cap upper db version
             if(osu_db_version > cv::database_version.getVal<u32>() && !cv::database_ignore_version.getBool()) {
-                osu->getNotificationOverlay()->addToast(
+                ui->getNotificationOverlay()->addToast(
                     UString::format("osu!.db version unknown (%i), osu!stable maps will not get loaded.",
                                     osu_db_version),
                     ERROR_TOAST);
@@ -1943,7 +1943,7 @@ void Database::loadScores(std::string_view dbPath) {
     u32 nb_neosu_scores = 0;
     u8 magic_bytes[6] = {0};
     if(dbr.read_bytes(magic_bytes, 5) != 5 || memcmp(magic_bytes, "NEOSC", 5) != 0) {
-        osu->getNotificationOverlay()->addToast(US_("Failed to load neosu_scores.db!"), ERROR_TOAST);
+        ui->getNotificationOverlay()->addToast(US_("Failed to load neosu_scores.db!"), ERROR_TOAST);
         this->bytes_processed += dbr.total_size;
         return;
     }

@@ -34,6 +34,7 @@
 #include "SoundEngine.h"
 #include "SString.h"
 #include "SpectatorScreen.h"
+#include "UI.h"
 #include "UIButton.h"
 #include "UIUserContextMenu.h"
 #include "UserCard2.h"
@@ -335,7 +336,7 @@ void Chat::draw() {
 
     if(isAnimating) {
         // XXX: Setting BLEND_MODE_PREMUL_ALPHA is not enough, transparency is still incorrect
-        osu->getSliderFrameBuffer()->enable();
+        ui->getSliderFrameBuffer()->enable();
         g->setBlendMode(DrawBlendMode::BLEND_MODE_PREMUL_ALPHA);
     }
 
@@ -356,7 +357,7 @@ void Chat::draw() {
     }
 
     if(isAnimating) {
-        osu->getSliderFrameBuffer()->disable();
+        ui->getSliderFrameBuffer()->disable();
 
         g->setBlendMode(DrawBlendMode::BLEND_MODE_ALPHA);
         g->push3DScene(McRect(0, 0, this->getSize().x, this->getSize().y));
@@ -365,8 +366,8 @@ void Chat::draw() {
             g->translate3DScene(0, -(1.0f - this->fAnimation) * this->getSize().y * 1.25f,
                                 -(1.0f - this->fAnimation) * 700);
 
-            osu->getSliderFrameBuffer()->setColor(argb(this->fAnimation, 1.0f, 1.0f, 1.0f));
-            osu->getSliderFrameBuffer()->draw(0, 0);
+            ui->getSliderFrameBuffer()->setColor(argb(this->fAnimation, 1.0f, 1.0f, 1.0f));
+            ui->getSliderFrameBuffer()->draw(0, 0);
         }
         g->pop3DScene();
     }
@@ -386,17 +387,17 @@ void Chat::drawTicker() {
     }
 
     // XXX: Setting BLEND_MODE_PREMUL_ALPHA is not enough, transparency is still incorrect
-    osu->getSliderFrameBuffer()->enable();
+    ui->getSliderFrameBuffer()->enable();
     g->setBlendMode(DrawBlendMode::BLEND_MODE_PREMUL_ALPHA);
     this->ticker->ui->draw();
-    osu->getSliderFrameBuffer()->disable();
+    ui->getSliderFrameBuffer()->disable();
 
     g->setBlendMode(DrawBlendMode::BLEND_MODE_ALPHA);
     g->push3DScene(McRect(0, 0, ticker_size.x, ticker_size.y));
     {
         g->rotate3DScene(this->fAnimation * 90, 0, 0);
-        osu->getSliderFrameBuffer()->setColor(argb(a * (1.f - this->fAnimation), 1.f, 1.f, 1.f));
-        osu->getSliderFrameBuffer()->draw(0, 0);
+        ui->getSliderFrameBuffer()->setColor(argb(a * (1.f - this->fAnimation), 1.f, 1.f, 1.f));
+        ui->getSliderFrameBuffer()->draw(0, 0);
     }
     g->pop3DScene();
 }
@@ -898,8 +899,8 @@ void Chat::addMessage(UString channel_name, const ChatMessage &msg, bool mark_un
     if(should_highlight) {
         // TODO: highlight message
         auto notif = fmt::format("{} mentioned you in {}", msg.author_name, channel_name);
-        osu->getNotificationOverlay()->addToast(
-            notif, CHAT_TOAST, [channel_name] { osu->getChat()->openChannel(channel_name); }, ToastElement::TYPE::CHAT);
+        ui->getNotificationOverlay()->addToast(
+            notif, CHAT_TOAST, [channel_name] { ui->getChat()->openChannel(channel_name); }, ToastElement::TYPE::CHAT);
     }
 
     bool is_pm =
@@ -910,8 +911,8 @@ void Chat::addMessage(UString channel_name, const ChatMessage &msg, bool mark_un
 
         if(cv::chat_notify_on_dm.getBool()) {
             auto notif = fmt::format("{} sent you a message", msg.author_name);
-            osu->getNotificationOverlay()->addToast(
-                notif, CHAT_TOAST, [channel_name] { osu->getChat()->openChannel(channel_name); },
+            ui->getNotificationOverlay()->addToast(
+                notif, CHAT_TOAST, [channel_name] { ui->getChat()->openChannel(channel_name); },
                 ToastElement::TYPE::CHAT);
         }
         if(cv::chat_ping_on_mention.getBool()) {
@@ -926,8 +927,8 @@ void Chat::addMessage(UString channel_name, const ChatMessage &msg, bool mark_un
 
     if(mentioned && cv::chat_notify_on_mention.getBool()) {
         auto notif = fmt::format("You were mentioned in {:s}", channel_name);
-        osu->getNotificationOverlay()->addToast(
-            notif, CHAT_TOAST, [channel_name] { osu->getChat()->openChannel(channel_name); }, ToastElement::TYPE::CHAT);
+        ui->getNotificationOverlay()->addToast(
+            notif, CHAT_TOAST, [channel_name] { ui->getChat()->openChannel(channel_name); }, ToastElement::TYPE::CHAT);
     }
     if(mentioned && cv::chat_ping_on_mention.getBool()) {
         // Yes, osu! really does use "match-start.wav" for when you get pinged
@@ -1285,10 +1286,10 @@ void Chat::onDisconnect() {
 void Chat::onResolutionChange(vec2 newResolution) { this->updateLayout(newResolution); }
 
 bool Chat::isSmallChat() {
-    if(osu->getRoom() == nullptr || osu->getLobby() == nullptr || osu->getSongBrowser() == nullptr) return false;
+    if(ui->getRoom() == nullptr || ui->getLobby() == nullptr || ui->getSongBrowser() == nullptr) return false;
     bool sitting_in_room =
-        osu->getRoom()->isVisible() && !osu->getSongBrowser()->isVisible() && !BanchoState::is_playing_a_multi_map();
-    bool sitting_in_lobby = osu->getLobby()->isVisible();
+        ui->getRoom()->isVisible() && !ui->getSongBrowser()->isVisible() && !BanchoState::is_playing_a_multi_map();
+    bool sitting_in_lobby = ui->getLobby()->isVisible();
     return sitting_in_room || sitting_in_lobby;
 }
 
@@ -1306,12 +1307,12 @@ void Chat::updateVisibility() {
     bool can_skip = osu->getMapInterface()->isInSkippableSection();
     bool is_spectating = cv::mod_autoplay.getBool() || (cv::mod_autopilot.getBool() && cv::mod_relax.getBool()) ||
                          osu->getMapInterface()->is_watching || BanchoState::spectating;
-    bool is_clicking_circles = osu->isInPlayMode() && !can_skip && !is_spectating && !osu->getPauseMenu()->isVisible();
+    bool is_clicking_circles = osu->isInPlayMode() && !can_skip && !is_spectating && !ui->getPauseMenu()->isVisible();
     if(BanchoState::is_playing_a_multi_map() && !osu->getMapInterface()->all_players_loaded) {
         is_clicking_circles = false;
     }
     is_clicking_circles &= cv::chat_auto_hide.getBool();
-    bool force_hide = osu->getOptionsMenu()->isVisible() || osu->getModSelector()->isVisible() || is_clicking_circles;
+    bool force_hide = ui->getOptionsMenu()->isVisible() || ui->getModSelector()->isVisible() || is_clicking_circles;
     if(!BanchoState::is_online()) force_hide = true;
 
     if(force_hide) {
@@ -1329,13 +1330,13 @@ CBaseUIContainer *Chat::setVisible(bool visible) {
     soundEngine->play(osu->getSkin()->s_click_button);
 
     if(visible && !BanchoState::is_online()) {
-        osu->getOptionsMenu()->askForLoginDetails();
+        ui->getOptionsMenu()->askForLoginDetails();
         return this;
     }
 
     this->bVisible = visible;
     if(visible) {
-        osu->getOptionsMenu()->setVisible(false);
+        ui->getOptionsMenu()->setVisible(false);
         anim::moveQuartOut(&this->fAnimation, 1.0f, 0.25f * (1.0f - this->fAnimation), true);
 
         if(this->selected_channel != nullptr && !this->selected_channel->read) {
@@ -1360,6 +1361,6 @@ bool Chat::isMouseInChat() {
 
 void Chat::askWhatChannelToJoin(CBaseUIButton * /*btn*/) {
     // XXX: Could display nicer UI with full channel list (chat_channels in Bancho.cpp)
-    osu->getPromptScreen()->prompt("Type in the channel you want to join (e.g. '#osu'):",
+    ui->getPromptScreen()->prompt("Type in the channel you want to join (e.g. '#osu'):",
                                    SA::MakeDelegate<&Chat::join>(this));
 }
