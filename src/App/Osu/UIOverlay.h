@@ -4,9 +4,9 @@
 
 class KeyboardEvent;
 
-class OsuScreen : public CBaseUIContainer {
+class UIOverlay : public CBaseUIContainer {
    public:
-    OsuScreen() { this->bVisible = false; }
+    UIOverlay() { this->bVisible = false; }
 
     virtual void onResolutionChange(vec2 newResolution) { (void)newResolution; }
 };

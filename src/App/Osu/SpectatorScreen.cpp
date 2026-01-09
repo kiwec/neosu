@@ -258,7 +258,7 @@ void SpectatorScreen::mouse_update(bool *propagate_clicks) {
 
     // Handle spectator screen UI input
     if(this->isVisible()) {
-        OsuScreen::mouse_update(propagate_clicks);
+        UIOverlay::mouse_update(propagate_clicks);
     }
 }
 
@@ -269,7 +269,7 @@ void SpectatorScreen::draw() {
         osu->getBackgroundImageHandler()->draw(osu->getMapInterface()->getBeatmap());
     }
 
-    OsuScreen::draw();
+    UIOverlay::draw();
 }
 
 bool SpectatorScreen::isVisible() { return BanchoState::spectating && !osu->isInPlayMode(); }
@@ -289,7 +289,7 @@ void SpectatorScreen::onKeyDown(KeyboardEvent &key) {
         return;
     }
 
-    OsuScreen::onKeyDown(key);
+    UIOverlay::onKeyDown(key);
 }
 
 void SpectatorScreen::onStopSpectatingClicked() { Spectating::stop(); }

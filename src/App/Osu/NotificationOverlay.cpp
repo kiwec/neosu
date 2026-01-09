@@ -14,7 +14,7 @@
 #include "PauseMenu.h"
 #include "Logging.h"
 
-NotificationOverlay::NotificationOverlay() : OsuScreen() {
+NotificationOverlay::NotificationOverlay() : UIOverlay() {
     this->bWaitForKey = false;
     this->bWaitForKeyDisallowsLeftClick = false;
     this->bConsumeNextChar = false;

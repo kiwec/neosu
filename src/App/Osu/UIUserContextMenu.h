@@ -2,7 +2,7 @@
 // Copyright (c) 2024, kiwec, All rights reserved.
 
 #include "CBaseUILabel.h"
-#include "OsuScreen.h"
+#include "UIOverlay.h"
 
 class UIContextMenu;
 
@@ -18,7 +18,7 @@ enum UserActions : uint8_t {
     VIEW_TOP_PLAYS,
 };
 
-class UIUserContextMenuScreen final : public OsuScreen {
+class UIUserContextMenuScreen final : public UIOverlay {
    public:
     UIUserContextMenuScreen();
 

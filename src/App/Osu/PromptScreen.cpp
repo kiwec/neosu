@@ -10,7 +10,7 @@
 #include "UIButton.h"
 #include "MakeDelegateWrapper.h"
 
-PromptScreen::PromptScreen() : OsuScreen() {
+PromptScreen::PromptScreen() : UIOverlay() {
     this->prompt_label = new CBaseUILabel(0, 0, 0, 0, "", "");
     this->prompt_label->setDrawFrame(false);
     this->prompt_label->setDrawBackground(false);
@@ -53,13 +53,13 @@ void PromptScreen::draw() {
     g->setColor(argb(200, 0, 0, 0));
     g->fillRect(0, 0, this->getSize().x, this->getSize().y);
 
-    OsuScreen::draw();
+    UIOverlay::draw();
 }
 
 void PromptScreen::mouse_update(bool *propagate_clicks) {
     if(!this->bVisible) return;
 
-    OsuScreen::mouse_update(propagate_clicks);
+    UIOverlay::mouse_update(propagate_clicks);
     *propagate_clicks = false;
 }
 

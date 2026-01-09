@@ -110,7 +110,7 @@ class MainMenu::MainButton final : public CBaseUIButton {
     MainMenu *mm_ptr;
 };
 
-MainMenu::MainMenu() : OsuScreen() {
+MainMenu::MainMenu() : UIOverlay() {
     // engine settings
     mouse->addListener(this);
 
@@ -921,7 +921,7 @@ void MainMenu::draw() {
     }
 
     // draw container
-    OsuScreen::draw();
+    UIOverlay::draw();
 
     // draw update check button
     if(this->updateAvailableButton != nullptr) {
@@ -969,7 +969,7 @@ void MainMenu::mouse_update(bool *propagate_clicks) {
     this->updateLayout();
 
     // update and focus handling
-    OsuScreen::mouse_update(propagate_clicks);
+    UIOverlay::mouse_update(propagate_clicks);
 
     if(this->updateAvailableButton != nullptr) {
         this->updateAvailableButton->mouse_update(propagate_clicks);
@@ -1215,7 +1215,7 @@ void MainMenu::selectRandomBeatmap() {
 }
 
 void MainMenu::onKeyDown(KeyboardEvent &e) {
-    OsuScreen::onKeyDown(e);  // only used for options menu
+    UIOverlay::onKeyDown(e);  // only used for options menu
     if(!this->bVisible || e.isConsumed()) return;
 
     if(!osu->getOptionsMenu()->isMouseInside()) {

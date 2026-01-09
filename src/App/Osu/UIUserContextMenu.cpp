@@ -19,7 +19,7 @@
 #include "UserCard.h"
 #include "UserStatsScreen.h"
 
-UIUserContextMenuScreen::UIUserContextMenuScreen() : OsuScreen() {
+UIUserContextMenuScreen::UIUserContextMenuScreen() : UIOverlay() {
     this->bVisible = true;
     this->menu = new UIContextMenu();
     this->addBaseUIElement(this->menu);
@@ -27,11 +27,11 @@ UIUserContextMenuScreen::UIUserContextMenuScreen() : OsuScreen() {
 
 void UIUserContextMenuScreen::onResolutionChange(vec2 newResolution) {
     this->setSize(newResolution);
-    OsuScreen::onResolutionChange(newResolution);
+    UIOverlay::onResolutionChange(newResolution);
 }
 
 void UIUserContextMenuScreen::stealFocus() {
-    OsuScreen::stealFocus();
+    UIOverlay::stealFocus();
     this->close();
 }
 

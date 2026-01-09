@@ -131,7 +131,7 @@ bool UIModList::isVisible() { return !!*this->flags; }
         settings_y += x * osu->getUIScale(); \
     } while(0)
 
-RoomScreen::RoomScreen() : OsuScreen() {
+RoomScreen::RoomScreen() : UIOverlay() {
     this->font = engine->getDefaultFont();
     this->lfont = osu->getSubTitleFont();
 
@@ -266,7 +266,7 @@ void RoomScreen::draw() {
 
     // XXX: Add convar for toggling room backgrounds
     osu->getBackgroundImageHandler()->draw(osu->getMapInterface()->getBeatmap());
-    OsuScreen::draw();
+    UIOverlay::draw();
 
     // Update avatar visibility status
     const McRect slotlist_rect = this->slotlist->getRect();
@@ -304,7 +304,7 @@ void RoomScreen::mouse_update(bool *propagate_clicks) {
     if(osu->getOptionsMenu()->isVisible()) {
         this->settings->mouse_update(propagate_clicks);
     } else {
-        OsuScreen::mouse_update(propagate_clicks);
+        UIOverlay::mouse_update(propagate_clicks);
     }
 }
 
@@ -335,17 +335,17 @@ void RoomScreen::onKeyDown(KeyboardEvent &key) {
         return;
     }
 
-    OsuScreen::onKeyDown(key);
+    UIOverlay::onKeyDown(key);
 }
 
 void RoomScreen::onKeyUp(KeyboardEvent &key) {
     if(!this->bVisible || osu->getSongBrowser()->isVisible()) return;
-    OsuScreen::onKeyUp(key);
+    UIOverlay::onKeyUp(key);
 }
 
 void RoomScreen::onChar(KeyboardEvent &key) {
     if(!this->bVisible || osu->getSongBrowser()->isVisible()) return;
-    OsuScreen::onChar(key);
+    UIOverlay::onChar(key);
 }
 
 void RoomScreen::onResolutionChange(vec2 newResolution) { this->updateLayout(newResolution); }

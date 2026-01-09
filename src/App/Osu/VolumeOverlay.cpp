@@ -25,7 +25,7 @@
 #include "UIVolumeSlider.h"
 #include "UserStatsScreen.h"
 
-VolumeOverlay::VolumeOverlay() : OsuScreen() {
+VolumeOverlay::VolumeOverlay() : UIOverlay() {
     cv::volume_master.setCallback(SA::MakeDelegate<&VolumeOverlay::onMasterVolumeChange>(this));
     cv::volume_effects.setCallback(SA::MakeDelegate<&VolumeOverlay::onEffectVolumeChange>(this));
     cv::volume_music.setCallback(SA::MakeDelegate<&VolumeOverlay::onMusicVolumeChange>(this));

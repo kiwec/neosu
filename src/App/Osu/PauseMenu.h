@@ -1,13 +1,13 @@
 #pragma once
 // Copyright (c) 2016, PG, All rights reserved.
-#include "OsuScreen.h"
+#include "UIOverlay.h"
 #include "Skin.h"
 
 class SongBrowser;
 class CBaseUIContainer;
 class UIPauseMenuButton;
 
-class PauseMenu final : public OsuScreen {
+class PauseMenu final : public UIOverlay {
    public:
     using ImageSkinMember = BasicSkinImage Skin::*;
 
