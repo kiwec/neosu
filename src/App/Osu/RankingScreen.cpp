@@ -389,37 +389,31 @@ CBaseUIContainer *RankingScreen::setVisible(bool visible) {
     } else {
         // Stop applause sound
         soundEngine->stop(osu->getSkin()->s_applause);
-
-        if(BanchoState::is_in_a_multi_room()) {
-            // We backed out of the ranking screen, display the room again
-            ui->getRoom()->setVisible(true);
-            ui->getChat()->updateVisibility();
-
-            // Since we prevented on_map_change() from running while the ranking screen was visible, run it now.
-            ui->getRoom()->on_map_change();
-        } else {
-            ui->getSongBrowser()->setVisible(true);
-        }
     }
 
     return this;
 }
 
 void RankingScreen::onRetryClicked() {
-    this->setVisible(false);
-    if(osu->getMapInterface()->play()) {
-        ui->getSongBrowser()->setVisible(false);
-    }
+    ui->setScreen(ui->getSongBrowser());
+    osu->getMapInterface()->play();
 }
 
-void RankingScreen::onWatchClicked() {
-    this->setVisible(false);
-    LegacyReplay::load_and_watch(this->storedScore);
-}
+void RankingScreen::onWatchClicked() { LegacyReplay::load_and_watch(this->storedScore); }
 
 void RankingScreen::setScore(const FinishedScore &newscore) {
     this->storedScore = newscore;
     auto &sc = this->storedScore;
+
+    this->songInfo->setFromBeatmap(sc.map);
+    this->storedScore.map = sc.map;
+
+    const std::string scorePlayer =
+        this->storedScore.playerName.empty() ? BanchoState::get_username() : this->storedScore.playerName;
+
+    this->songInfo->setPlayer(this->bIsUnranked ? "neosu" : scorePlayer);
+    // @PPV3: update m_score.ppv3_score, this->score.ppv3_aim_stars, this->score.ppv3_speed_stars,
+    //        m_fHitErrorAvgMin, this->fHitErrorAvgMax, this->fUnstableRate
 
     bool is_same_player = !sc.playerName.compare(BanchoState::get_username());
     this->retry_btn->bVisible2 = is_same_player && !BanchoState::is_in_a_multi_room();
@@ -520,18 +514,6 @@ void RankingScreen::setScore(const FinishedScore &newscore) {
     if(flags::has<NoHP>(sc.mods.flags)) this->extraMods.push_back(&cv::drain_disabled);
 }
 
-void RankingScreen::setBeatmapInfo(const DatabaseBeatmap *map) {
-    this->songInfo->setFromBeatmap(map);
-    this->storedScore.map = map;
-
-    const std::string scorePlayer =
-        this->storedScore.playerName.empty() ? BanchoState::get_username() : this->storedScore.playerName;
-
-    this->songInfo->setPlayer(this->bIsUnranked ? "neosu" : scorePlayer);
-    // @PPV3: update m_score.ppv3_score, this->score.ppv3_aim_stars, this->score.ppv3_speed_stars,
-    //        m_fHitErrorAvgMin, this->fHitErrorAvgMax, this->fUnstableRate
-}
-
 void RankingScreen::updateLayout() {
     ScreenBackable::updateLayout();
 
@@ -592,7 +574,16 @@ void RankingScreen::updateLayout() {
     this->rankings->setScrollSizeToContent(0);
 }
 
-void RankingScreen::onBack() { this->setVisible(false); }
+void RankingScreen::onBack() {
+    if(BanchoState::is_in_a_multi_room()) {
+        ui->setScreen(ui->getRoom());
+
+        // Since we prevented on_map_change() from running while the ranking screen was visible, run it now.
+        ui->getRoom()->on_map_change();
+    } else {
+        ui->setScreen(ui->getSongBrowser());
+    }
+}
 
 void RankingScreen::setGrade(ScoreGrade grade) {
     this->grade = grade;

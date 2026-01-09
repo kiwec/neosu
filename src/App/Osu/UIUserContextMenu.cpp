@@ -162,7 +162,7 @@ void UIUserContextMenuScreen::on_action(const UString& /*text*/, int user_action
             Spectating::start(this->user_id);
         }
     } else if(user_action == VIEW_TOP_PLAYS) {
-        ui->getUserStatsScreen()->setVisible(true);
+        ui->setScreen(ui->getUserStatsScreen());
     }
 
     this->menu->setVisible(false);

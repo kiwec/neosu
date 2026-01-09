@@ -58,7 +58,6 @@ class HUD final : public UIOverlay {
     void drawPlayfieldBorder(vec2 playfieldCenter, vec2 playfieldSize, float hitcircleDiameter);
     void drawPlayfieldBorder(vec2 playfieldCenter, vec2 playfieldSize, float hitcircleDiameter, float borderSize);
     void drawLoadingSmall(const UString &text);
-    void drawBeatmapImportSpinner();
     inline void drawScoreNumber(u64 number, float scale = 1.0f, bool drawLeadingZeroes = false) {
         return this->drawComboOrScoreDigits(number, scale, drawLeadingZeroes, false);
     }

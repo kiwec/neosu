@@ -16,7 +16,6 @@
 
 #endif
 
-
 #include <algorithm>
 #include <cstdio>
 #include <cstdlib>
@@ -422,7 +421,6 @@ void BanchoState::handle_packet(Packet &packet) {
                 if(osu->isInPlayMode()) {
                     switch(action) {
                         case LiveReplayAction::NEW_SONG: {
-                            ui->getRankingScreen()->setVisible(false);
                             map_iface->restart(true);
                             map_iface->update();
                         } break;

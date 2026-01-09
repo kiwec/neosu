@@ -118,8 +118,7 @@ void OnlineMapListing::onMouseUpInside(bool /*left*/, bool /*right*/) {
         if(this->installed) {
             // Select map, or go to song browser if already selected
             if(osu->getMapInterface()->getBeatmap()->getSetID() == this->meta.set_id) {
-                this->directScreen->setVisible(false);
-                osu->toggleSongBrowser();
+                ui->setScreen(ui->getSongBrowser());
             } else {
                 const auto set = db->getBeatmapSet(this->meta.set_id);
                 if(!set) return;  // probably unreachable
@@ -348,7 +347,8 @@ CBaseUIContainer* OsuDirectScreen::setVisible(bool visible) {
     if(visible) {
         if(!db->isFinished() || db->isCancelled()) {
             // Ensure database is loaded (same as Lobby screen)
-            ui->getSongBrowser()->refreshBeatmaps(true);
+            ui->getSongBrowser()->refreshBeatmaps(this);
+            return this;
         }
     }
 
@@ -364,8 +364,6 @@ CBaseUIContainer* OsuDirectScreen::setVisible(bool visible) {
 
     return this;
 }
-
-bool OsuDirectScreen::isVisible() { return this->bVisible && !ui->getSongBrowser()->isVisible(); }
 
 void OsuDirectScreen::draw() {
     if(!this->isVisible()) return;
@@ -412,10 +410,7 @@ void OsuDirectScreen::mouse_update(bool* propagate_clicks) {
     this->bg_mgr->update();
 }
 
-void OsuDirectScreen::onBack() {
-    this->setVisible(false);
-    ui->getMainMenu()->setVisible(true);
-}
+void OsuDirectScreen::onBack() { ui->setScreen(ui->getMainMenu()); }
 
 void OsuDirectScreen::onResolutionChange(vec2 newResolution) {
     this->setSize(osu->getVirtScreenSize());  // HACK: don't forget this or else nothing works!

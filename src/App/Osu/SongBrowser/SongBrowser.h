@@ -140,7 +140,7 @@ class SongBrowser final : public ScreenBackable {
         this->playSelectedDifficulty();
     }
 
-    void refreshBeatmaps(bool closeAfterLoading = false);
+    void refreshBeatmaps(UIOverlay *next_screen);
     void addBeatmapSet(BeatmapSet *beatmap, bool initialSongBrowserLoad = false);
     void addSongButtonToAlphanumericGroup(SongButton *btn, CollBtnContainer &group, std::string_view name);
 
@@ -327,8 +327,6 @@ class SongBrowser final : public ScreenBackable {
 
     CollBtnContainer collectionButtons;
 
-    bool bBeatmapRefreshScheduled;
-    bool bCloseAfterBeatmapRefreshFinished{false};
     UString sLastOsuFolder;
 
     // keys

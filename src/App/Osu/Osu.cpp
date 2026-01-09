@@ -344,7 +344,7 @@ Osu::Osu()
         this->onWindowedResolutionChanged(cv::windowed_resolution.getString());
     }
 
-    ui->getMainMenu()->setVisible(true);
+    ui->setScreen(ui->getMainMenu());
 
     // update mod settings
     this->updateMods();
@@ -364,11 +364,7 @@ Osu::Osu()
     }
 
     // now handle commandline arguments after we have loaded everything
-    bool reloading_db = env->getEnvInterop().handle_cmdline_args();
-    if(!reloading_db && cv::load_db_immediately.getBool()) {
-        // Start loading db early
-        ui->getSongBrowser()->refreshBeatmaps();
-    }
+    env->getEnvInterop().handle_cmdline_args();
 
     // extract osks & watch for osks to extract
     {
@@ -550,29 +546,6 @@ void Osu::update() {
     // NOTE: must be before the asynchronous ui toggles due to potential 1-frame unloads after invisible songbrowser
     this->backgroundImageHandler->update(ui->getSongBrowser()->isVisible());
 
-    // asynchronous ui toggles
-    // TODO: this is cancer, why did I even write this section
-    if(this->bToggleModSelectionScheduled) {
-        this->bToggleModSelectionScheduled = false;
-        ui->getModSelector()->setVisible(!ui->getModSelector()->isVisible());
-
-        if(BanchoState::is_in_a_multi_room()) {
-            ui->getRoom()->setVisible(!ui->getModSelector()->isVisible());
-        } else if(!this->isInPlayMode() && ui->getSongBrowser() != nullptr) {
-            ui->getSongBrowser()->setVisible(!ui->getModSelector()->isVisible());
-        }
-    }
-    if(this->bToggleOptionsMenuScheduled) {
-        this->bToggleOptionsMenuScheduled = false;
-        ui->getOptionsMenu()->setVisible(!ui->getOptionsMenu()->isVisible());
-    }
-    if(this->bToggleChangelogScheduled) {
-        this->bToggleChangelogScheduled = false;
-
-        ui->getMainMenu()->setVisible(!ui->getMainMenu()->isVisible());
-        ui->getChangelog()->setVisible(!ui->getMainMenu()->isVisible());
-    }
-
     this->updateCursorVisibility();
 
     // endless mod
@@ -658,7 +631,7 @@ void Osu::onKeyDown(KeyboardEvent &key) {
 
     // global hotkey
     if(key == KEY_O && keyboard->isControlDown()) {
-        this->toggleOptionsMenu();
+        ui->getOptionsMenu()->setVisible(!ui->getOptionsMenu()->isVisible());
         key.consume();
         return;
     }
@@ -867,7 +840,7 @@ void Osu::onKeyDown(KeyboardEvent &key) {
                !BanchoState::is_playing_a_multi_map())  // only if not failed though
             {
                 this->bF1 = true;
-                this->toggleModSelection(true);
+                ui->getModSelector()->setVisible(!ui->getModSelector()->isVisible());
             }
 
             // quick save/load
@@ -1094,59 +1067,6 @@ void Osu::showNotification(const NotificationInfo &info) {
     return;
 }
 
-void Osu::toggleModSelection(bool waitForF1KeyUp) {
-    this->bToggleModSelectionScheduled = true;
-    ui->getModSelector()->setWaitForF1KeyUp(waitForF1KeyUp);
-}
-
-void Osu::toggleSongBrowser() {
-    if(BanchoState::spectating) return;
-
-    if(ui->getMainMenu()->isVisible() && ui->getOptionsMenu()->isVisible()) ui->getOptionsMenu()->setVisible(false);
-
-    const bool nextVisible = !ui->getSongBrowser()->isVisible();
-
-    // disable mainmenu visibility BEFORE songbrowser and potentially loading beatmaps
-    // otherwise during the next update/draw tick we might try to draw images in MainMenu::draw() from stale/deleted beatmaps
-    // since clearPreloadedMaps only runs after it's finished (1 frame later)
-    // TODO: don't store potentially rugpull-able pointers to beatmaps in MainMenu
-    if(!BanchoState::is_in_a_multi_room()) {
-        ui->getMainMenu()->setVisible(!nextVisible);
-    }
-
-    ui->getSongBrowser()->setVisible(nextVisible);
-
-    // try refreshing if we have no beatmaps and are not already refreshing
-    if(nextVisible && ui->getSongBrowser()->parentButtons.size() == 0 &&
-       !ui->getSongBrowser()->bBeatmapRefreshScheduled) {
-        ui->getSongBrowser()->refreshBeatmaps();
-    }
-
-    if(BanchoState::is_in_a_multi_room()) {
-        // We didn't select a map; revert to previously selected one
-        auto map = ui->getSongBrowser()->lastSelectedBeatmap;
-        if(map != nullptr) {
-            BanchoState::room.map_name =
-                fmt::format("{:s} - {:s} [{:s}]", map->getArtist(), map->getTitle(), map->getDifficultyName());
-            BanchoState::room.map_md5 = map->getMD5();
-            BanchoState::room.map_id = map->getID();
-
-            Packet packet;
-            packet.id = OUTP_MATCH_CHANGE_SETTINGS;
-            BanchoState::room.pack(packet);
-            BANCHO::Net::send_packet(packet);
-
-            ui->getRoom()->on_map_change();
-        }
-    }
-
-    this->updateConfineCursor();
-}
-
-void Osu::toggleOptionsMenu() { this->bToggleOptionsMenuScheduled = true; }
-
-void Osu::toggleChangelog() { this->bToggleChangelogScheduled = true; }
-
 void Osu::reloadMapInterface() { this->map_iface = std::make_unique<BeatmapInterface>(); }
 
 void Osu::saveScreenshot() {
@@ -1220,31 +1140,18 @@ void Osu::saveScreenshot() {
 void Osu::onPlayEnd(const FinishedScore &score, bool quit, bool /*aborted*/) {
     cv::snd_change_check_interval.setValue(cv::snd_change_check_interval.getDefaultFloat());
 
+    if(!quit && cv::mod_endless.getBool()) {
+        this->bScheduleEndlessModNextBeatmap = true;
+        return;  // nothing more to do here
+    }
+
     if(!quit) {
-        if(!cv::mod_endless.getBool()) {
-            // NOTE: the order of these two calls matters
-            ui->getRankingScreen()->setBeatmapInfo(score.map);
-            ui->getRankingScreen()->setScore(score);
-
-            soundEngine->play(this->skin->s_applause);
-        } else {
-            this->bScheduleEndlessModNextBeatmap = true;
-            return;  // nothing more to do here
-        }
+        ui->getRankingScreen()->setScore(score);
+        ui->setScreen(ui->getRankingScreen());
+        soundEngine->play(this->skin->s_applause);
     }
 
-    ui->getMainMenu()->setVisible(false);
-    ui->getModSelector()->setVisible(false);
-    ui->getPauseMenu()->setVisible(false);
     ui->getSongBrowser()->onPlayEnd(quit);
-    // When playing in multiplayer, screens are toggled in Room
-    if(!BanchoState::is_playing_a_multi_map()) {
-        if(quit) {
-            this->toggleSongBrowser();
-        } else {
-            ui->getRankingScreen()->setVisible(true);
-        }
-    }
 
     this->updateConfineCursor();
     this->updateWindowsKeyDisable();

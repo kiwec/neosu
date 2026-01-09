@@ -50,6 +50,7 @@
 #include "CollectionButton.h"
 #include "UserCard.h"
 #include "InfoLabel.h"
+#include "LoadingScreen.h"
 #include "UI.h"
 #include "UIContextMenu.h"
 #include "UISearchOverlay.h"
@@ -487,9 +488,6 @@ SongBrowser::SongBrowser() : ScreenBackable(), global_songbrowser_(this) {
 
     this->thumbnailYRatio = cv::draw_songbrowser_thumbnails.getBool() ? 1.333333f : 0.f;
 
-    // beatmap database
-    this->bBeatmapRefreshScheduled = false;
-
     // behaviour
     this->fPulseAnimation = 0.0f;
     this->fBackgroundFadeInTime = 0.0f;
@@ -554,24 +552,6 @@ void SongBrowser::draw() {
     // draw background
     g->setColor(0xff000000);
     g->fillRect(0, 0, osu->getVirtScreenWidth(), osu->getVirtScreenHeight());
-
-    // refreshing (blocks every other call in draw() below it!)
-    if(this->bBeatmapRefreshScheduled) {
-        UString loadingMessage = UString::format("Loading beatmaps ... (%i %%)", (int)(db->getProgress() * 100.0f));
-
-        g->setColor(0xffffffff);
-        g->pushTransform();
-        {
-            g->translate(
-                (int)(osu->getVirtScreenWidth() / 2 - osu->getSubTitleFont()->getStringWidth(loadingMessage) / 2),
-                osu->getVirtScreenHeight() - 15);
-            g->drawString(osu->getSubTitleFont(), loadingMessage);
-        }
-        g->popTransform();
-
-        ui->getHUD()->drawBeatmapImportSpinner();
-        return;
-    }
 
     // draw background image
     if(cv::draw_songbrowser_background_image.getBool()) {
@@ -793,7 +773,7 @@ void SongBrowser::draw() {
     UIOverlay::draw();
 
     // no beatmaps found (osu folder is probably invalid)
-    if(db->getBeatmapSets().size() == 0 && !this->bBeatmapRefreshScheduled) {
+    if(db->getBeatmapSets().size() == 0) {
         UString errorMessage1 = "Invalid osu! folder (or no beatmaps found): ";
         errorMessage1.append(this->sLastOsuFolder);
         UString errorMessage2 = "Go to Options -> osu!folder";
@@ -889,18 +869,6 @@ extern const u32 PP_ALGORITHM_VERSION;
 
 void SongBrowser::mouse_update(bool *propagate_clicks) {
     if(!this->bVisible) return;
-
-    // refresh logic (blocks every other call in the update() function below it!)
-    if(this->bBeatmapRefreshScheduled) {
-        db->update();  // raw load logic
-        // check if we are finished loading
-        if(db->isFinished()) {
-            this->bBeatmapRefreshScheduled = false;
-            this->onDatabaseLoadingFinished();
-        } else {
-            return;
-        }
-    }
 
     this->localBestContainer->mouse_update(propagate_clicks);
     ScreenBackable::mouse_update(propagate_clicks);
@@ -1054,15 +1022,6 @@ void SongBrowser::onKeyDown(KeyboardEvent &key) {
     UIOverlay::onKeyDown(key);  // only used for options menu
     if(!this->bVisible || key.isConsumed()) return;
 
-    if(this->bVisible && this->bBeatmapRefreshScheduled &&
-       (key == KEY_ESCAPE || key == cv::GAME_PAUSE.getVal<SCANCODE>())) {
-        db->cancel();
-        key.consume();
-        return;
-    }
-
-    if(this->bBeatmapRefreshScheduled) return;
-
     // context menu
     this->contextMenu->onKeyDown(key);
     if(key.isConsumed()) return;
@@ -1104,7 +1063,7 @@ void SongBrowser::onKeyDown(KeyboardEvent &key) {
         }
     } else if(!this->contextMenu->isVisible()) {
         if(key == KEY_ESCAPE)  // can't support GAME_PAUSE hotkey here because of text searching
-            osu->toggleSongBrowser();
+            this->onBack();
     }
 
     // paste clipboard support
@@ -1134,7 +1093,7 @@ void SongBrowser::onKeyDown(KeyboardEvent &key) {
         BottomBar::press_button(BottomBar::OPTIONS);
     }
 
-    if(key == KEY_F5) this->refreshBeatmaps();
+    if(key == KEY_F5) this->refreshBeatmaps(this);
 
     this->carousel->onKeyDown(key);
     //if (key.isConsumed()) return;
@@ -1164,9 +1123,7 @@ void SongBrowser::onChar(KeyboardEvent &e) {
     this->contextMenu->onChar(e);
     if(e.isConsumed()) return;
 
-    if(e.getCharCode() < 32 || !this->bVisible || this->bBeatmapRefreshScheduled ||
-       (keyboard->isControlDown() && !keyboard->isAltDown()))
-        return;
+    if(e.getCharCode() < 32 || !this->bVisible || (keyboard->isControlDown() && !keyboard->isAltDown())) return;
     if(this->bF1Pressed || this->bF2Pressed || this->bF3Pressed) return;
 
     // handle searching
@@ -1180,6 +1137,12 @@ void SongBrowser::onResolutionChange(vec2 newResolution) { ScreenBackable::onRes
 CBaseUIContainer *SongBrowser::setVisible(bool visible) {
     if(BanchoState::spectating && visible) return this;  // don't allow song browser to be visible while spectating
     if(visible == this->bVisible) return this;
+
+    // Load DB if we haven't attempted yet
+    if(visible && this->parentButtons.size() == 0 && !db->isFinished()) {
+        this->refreshBeatmaps(this);
+        return this;
+    }
 
     this->bVisible = visible;
     this->bShiftPressed = false;  // seems to get stuck sometimes otherwise
@@ -1222,6 +1185,7 @@ CBaseUIContainer *SongBrowser::setVisible(bool visible) {
     }
 
     ui->getChat()->updateVisibility();
+    osu->updateConfineCursor();  // was in toggleSongBrowser - not sure if still needed
     return this;
 }
 
@@ -1397,8 +1361,6 @@ void SongBrowser::onDifficultySelected(DatabaseBeatmap *map, bool play) {
                 BANCHO::Net::send_packet(packet);
 
                 ui->getRoom()->on_map_change();
-
-                this->setVisible(false);
             } else {
                 // CTRL + click = auto
                 if(keyboard->isControlDown()) {
@@ -1406,9 +1368,7 @@ void SongBrowser::onDifficultySelected(DatabaseBeatmap *map, bool play) {
                     ui->getModSelector()->enableAuto();
                 }
 
-                if(osu->getMapInterface()->play()) {
-                    this->setVisible(false);
-                }
+                osu->getMapInterface()->play();
             }
         }
     }
@@ -1424,8 +1384,16 @@ void SongBrowser::onDifficultySelected(DatabaseBeatmap *map, bool play) {
     this->webButton->setVisible(this->songInfo->getBeatmapID() > 0);
 }
 
-void SongBrowser::refreshBeatmaps(bool closeAfterLoading) {
+void SongBrowser::refreshBeatmaps(UIOverlay *next_screen) {
     if(osu->isInPlayMode()) return;
+
+    {
+        auto loading_screen = dynamic_cast<LoadingScreen *>(ui->getScreen());
+        if(loading_screen != nullptr) {
+            // We are already refreshing beatmaps!
+            return;
+        }
+    }
 
     if(this->bInitializedBeatmaps) {
         // we need to save beatmaps we added this session
@@ -1490,15 +1458,27 @@ void SongBrowser::refreshBeatmaps(bool closeAfterLoading) {
     }
 
     // start loading
-    this->bBeatmapRefreshScheduled = true;
-    this->bCloseAfterBeatmapRefreshFinished = closeAfterLoading;
     db->load();
 
-    // show loading progress
-    // should be *after* this->bBeatmapRefreshScheduled = true
-    if(!this->bVisible && !cv::load_db_immediately.getBool()) {
-        osu->toggleSongBrowser();
-    }
+    auto loading_screen = new LoadingScreen(
+        next_screen,
+        [this]() {
+            db->update();  // raw load logic
+
+            if(db->isFinished()) {
+                this->onDatabaseLoadingFinished();
+
+                // Close/delete the loading screen, and open next_screen
+                ui->getScreen()->setVisible(false);
+            }
+
+            return db->getProgress();
+        },
+        []() {
+            db->cancel();
+            // db->isFinished() will now return true, so we don't need to do anything else
+        });
+    ui->setScreen(loading_screen);
 }
 
 // this is an insane hack to be calling from places that don't even use songbrowser
@@ -2388,7 +2368,29 @@ void SongBrowser::updateLayout() {
     this->search->setSize(osu->getVirtScreenWidth() / 2, 20 * dpiScale);
 }
 
-void SongBrowser::onBack() { osu->toggleSongBrowser(); }
+void SongBrowser::onBack() {
+    if(BanchoState::is_in_a_multi_room()) {
+        ui->setScreen(ui->getRoom());
+
+        // We didn't select a map; revert to previously selected one
+        auto map = this->lastSelectedBeatmap;
+        if(map != nullptr) {
+            BanchoState::room.map_name =
+                fmt::format("{:s} - {:s} [{:s}]", map->getArtist(), map->getTitle(), map->getDifficultyName());
+            BanchoState::room.map_md5 = map->getMD5();
+            BanchoState::room.map_id = map->getID();
+
+            Packet packet;
+            packet.id = OUTP_MATCH_CHANGE_SETTINGS;
+            BanchoState::room.pack(packet);
+            BANCHO::Net::send_packet(packet);
+
+            ui->getRoom()->on_map_change();
+        }
+    } else {
+        ui->setScreen(ui->getMainMenu());
+    }
+}
 
 void SongBrowser::updateScoreBrowserLayout() {
     const float dpiScale = Osu::getUIScale();
@@ -2761,10 +2763,6 @@ void SongBrowser::onDatabaseLoadingFinished() {
     if(Sound *music = osu->getMapInterface()->getMusic()) {
         // make sure we loop the music, since if we're carrying over from main menu it was set to not-loop
         music->setLoop(cv::beatmap_preview_music_loop.getBool());
-    }
-
-    if(this->bCloseAfterBeatmapRefreshFinished) {
-        this->setVisible(false);
     }
 
     t.update();
@@ -3233,8 +3231,8 @@ void SongBrowser::onSelectionMode() {
 }
 
 void SongBrowser::onSelectionMods() {
+    ui->setScreen(ui->getModSelector());
     soundEngine->play(osu->getSkin()->s_expand);
-    osu->toggleModSelection(this->bF1Pressed);
 }
 
 void SongBrowser::onSelectionRandom() {
@@ -3265,13 +3263,8 @@ void SongBrowser::onSelectionOptions() {
 }
 
 void SongBrowser::onScoreClicked(ScoreButton *button) {
-    // NOTE: the order of these two calls matters
-    ui->getRankingScreen()->setBeatmapInfo(button->getScore().map);
     ui->getRankingScreen()->setScore(button->getScore());
-
-    this->setVisible(false);
-    ui->getRankingScreen()->setVisible(true);
-
+    ui->setScreen(ui->getRankingScreen());
     soundEngine->play(osu->getSkin()->s_menu_hit);
 }
 

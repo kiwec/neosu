@@ -61,7 +61,6 @@ CBaseUIContainer *UserStatsScreen::setVisible(bool visible) {
     if(visible == this->isVisible()) return this;
 
     ScreenBackable::setVisible(visible);
-    osu->toggleSongBrowser();
 
     if(this->isVisible()) {
         rebuildScoreButtons();
@@ -72,7 +71,7 @@ CBaseUIContainer *UserStatsScreen::setVisible(bool visible) {
     return this;
 }
 
-void UserStatsScreen::onBack() { setVisible(false); }
+void UserStatsScreen::onBack() { ui->setScreen(ui->getSongBrowser()); }
 
 void UserStatsScreen::rebuildScoreButtons() {
     // hard reset (delete)
@@ -106,7 +105,7 @@ void UserStatsScreen::rebuildScoreButtons() {
         button->setClickCallback(SA::MakeDelegate([](ScoreButton *button) -> void {
             const FinishedScore &btnsc = button->getScore();
             SongDifficultyButton *diff_btn = ui->getSongBrowser()->getDiffButtonByHash(btnsc.beatmap_hash);
-            ui->getUserStatsScreen()->setVisible(false);
+            ui->setScreen(ui->getSongBrowser());
             ui->getSongBrowser()->selectSongButton(diff_btn);
             ui->getSongBrowser()->highlightScore(btnsc.unixTimestamp);
         }));

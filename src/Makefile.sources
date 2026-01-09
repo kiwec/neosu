@@ -37,6 +37,7 @@ neosu_SOURCES = \
 	src/App/Osu/HitObjects.cpp \
 	src/App/Osu/HitSounds.cpp \
 	src/App/Osu/LegacyReplay.cpp \
+	src/App/Osu/LoadingScreen.cpp \
 	src/App/Osu/Lobby.cpp \
 	src/App/Osu/MainMenu.cpp \
 	src/App/Osu/ModFPoSu.cpp \

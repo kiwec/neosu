@@ -31,8 +31,6 @@ class ModSelector final : public UIOverlay {
     void mouse_update(bool *propagate_clicks) override;
 
     void onKeyDown(KeyboardEvent &key) override;
-    void onKeyUp(KeyboardEvent &key) override;
-
     void onResolutionChange(vec2 newResolution) override;
 
     CBaseUIContainer *setVisible(bool visible) override;
@@ -43,8 +41,6 @@ class ModSelector final : public UIOverlay {
     void resetMods();
     LegacyFlags getModFlags();
     void enableModsFromFlags(LegacyFlags flags);
-
-    void setWaitForF1KeyUp(bool waitForF1KeyUp) { this->bWaitForF1KeyUp = waitForF1KeyUp; }
 
     bool isInCompactMode();
     bool isCSOverrideSliderActive();
@@ -115,8 +111,6 @@ class ModSelector final : public UIOverlay {
     bool bExperimentalVisible;
     CBaseUIContainer *overrideSliderContainer;
     CBaseUIScrollView *experimentalContainer;
-
-    bool bWaitForF1KeyUp;
 
     bool bWaitForCSChangeFinished;
     bool bWaitForSpeedChangeFinished;

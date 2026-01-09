@@ -8,6 +8,7 @@
 #include "Engine.h"
 #include "HUD.h"
 #include "Logging.h"
+#include "MainMenu.h"
 #include "NotificationOverlay.h"
 #include "UIBackButton.h"
 #include "Osu.h"
@@ -880,11 +881,6 @@ void Changelog::addAllChangelogs(std::vector<CHANGELOG> &&logtexts) {
     }
 }
 
-void Changelog::mouse_update(bool *propagate_clicks) {
-    if(!this->bVisible) return;
-    ScreenBackable::mouse_update(propagate_clicks);
-}
-
 CBaseUIContainer *Changelog::setVisible(bool visible) {
     ScreenBackable::setVisible(visible);
 
@@ -925,7 +921,7 @@ void Changelog::updateLayout() {
     this->scrollView->setScrollSizeToContent(15 * dpiScale);
 }
 
-void Changelog::onBack() { osu->toggleChangelog(); }
+void Changelog::onBack() { ui->setScreen(ui->getMainMenu()); }
 
 void Changelog::onChangeClicked(CBaseUIButton *button) {
     const UString &changeTextMaybeContainingClickableURL = button->getText();

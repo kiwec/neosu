@@ -4114,7 +4114,7 @@ void OptionsMenuImpl::save() {
 
 void OptionsMenuImpl::openAndScrollToSkinSection() {
     const bool wasVisible = parent->isVisible();
-    if(!wasVisible) osu->toggleOptionsMenu();
+    if(!wasVisible) parent->setVisible(true);
 
     if(!this->skinSelectLocalButton->isVisible() || !wasVisible)
         this->options->scrollToElement(this->skinSection, 0, 100 * Osu::getUIScale());

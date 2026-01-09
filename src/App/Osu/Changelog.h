@@ -14,8 +14,6 @@ class Changelog final : public ScreenBackable {
     Changelog();
     ~Changelog() override;
 
-    void mouse_update(bool *propagate_clicks) override;
-
     CBaseUIContainer *setVisible(bool visible) override;
 
    private:
