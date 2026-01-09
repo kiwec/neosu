@@ -1,5 +1,7 @@
 .vs/
 *.sln
+*.sublime-project
+*.sublime-workspace
 *.vcxproj.filters
 *.vcxproj.user
 
