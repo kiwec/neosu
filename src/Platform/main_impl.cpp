@@ -811,6 +811,7 @@ bool SDLMain::resizeCallback(void *userdata, SDL_Event *event) {
         return false;  // return value is ignored from AddEventWatch
     }
     assert(main_ptr->m_engine);
+    main_ptr->updateWindowSizeCache();
 
     main_ptr->m_engine->requestResolutionChange(main_ptr->getWindowSize());
     main_ptr->iterate();

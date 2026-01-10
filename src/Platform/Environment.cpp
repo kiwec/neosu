@@ -1144,6 +1144,17 @@ void Environment::onUseIMEChange(float newValue) {
 }
 
 // called by event loop on display or window events
+void Environment::updateWindowSizeCache() {
+    int width{320}, height{240};
+    if(!SDL_GetWindowSizeInPixels(m_window, &width, &height)) {
+        debugLog("Failed to get window size (returning cached {},{}): {:s}", m_vLastKnownWindowSize.x,
+                 m_vLastKnownWindowSize.y, SDL_GetError());
+    } else {
+        m_vLastKnownWindowSize = vec2{static_cast<float>(width), static_cast<float>(height)};
+    }
+}
+
+// called by event loop on display or window events
 void Environment::updateWindowStateCache() {
     // update window flags
     assert(m_window);
@@ -1160,16 +1171,8 @@ void Environment::updateWindowStateCache() {
         }
     }
 
-    // update window size
-    {
-        int width{320}, height{240};
-        if(!SDL_GetWindowSizeInPixels(m_window, &width, &height)) {
-            debugLog("Failed to get window size (returning cached {},{}): {:s}", m_vLastKnownWindowSize.x,
-                     m_vLastKnownWindowSize.y, SDL_GetError());
-        } else {
-            m_vLastKnownWindowSize = vec2{static_cast<float>(width), static_cast<float>(height)};
-        }
-    }
+    // update window size (separated out for live resize callback)
+    updateWindowSizeCache();
 
     // update display rect
     {

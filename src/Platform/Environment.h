@@ -315,6 +315,7 @@ class Environment {
     // updates m_winflags, m_vLastKnownWindowSize, m_vLastKnownWindowPos, m_vLastKnownNativeScreenSize
     // to be called during event collection on window/display events, to avoid expensive API calls
     void updateWindowStateCache();
+    void updateWindowSizeCache();  // only updates window size (separated out for live resize callback)
 
     std::string windowFlagsDbgStr() const;
     void onDPIChange();
