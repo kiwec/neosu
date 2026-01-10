@@ -1,4 +1,5 @@
-#pragma once
+#ifndef UTIL_MD5HASH_H
+#define UTIL_MD5HASH_H
 
 #include <cstring>
 #include <array>
@@ -63,4 +64,6 @@ struct Hash::flat::hash<MD5Hash> {
         return detail::wyhash::hash(md5.data(), md5.length());
     }
 };
+#endif
+
 #endif

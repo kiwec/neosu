@@ -32,10 +32,14 @@ class ConVar;
 
 class SongBrowserBackgroundSearchMatcher;
 
+#ifndef UTIL_MD5HASH_H
+
 #if defined(__GNUC__) && !defined(__clang__) && (defined(__MINGW32__) || defined(__MINGW64__))
 struct MD5Hash;
 #else
 struct alignas(16) MD5Hash;
+#endif
+
 #endif
 
 namespace SortTypes {

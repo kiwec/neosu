@@ -19,10 +19,7 @@
 #include "SoundEngine.h"
 #include "UIContextMenu.h"
 #include "UserCard.h"
-
-class CarouselButton : public CBaseUIButton {};
-class SongButton : public CarouselButton {};
-class SongDifficultyButton : public SongButton {};
+#include "SongDifficultyButton.h"
 
 UserStatsScreen::UserStatsScreen() : ScreenBackable() {
     this->m_userCard = new UserCard(0);
