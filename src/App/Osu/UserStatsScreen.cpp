@@ -20,6 +20,10 @@
 #include "UIContextMenu.h"
 #include "UserCard.h"
 
+class CarouselButton : public CBaseUIButton {};
+class SongButton : public CarouselButton {};
+class SongDifficultyButton : public SongButton {};
+
 UserStatsScreen::UserStatsScreen() : ScreenBackable() {
     this->m_userCard = new UserCard(0);
     this->addBaseUIElement(this->m_userCard);
@@ -101,13 +105,13 @@ void UserStatsScreen::rebuildScoreButtons() {
 
         auto *button = new ScoreButton(this->m_contextMenu.get(), 0, 0, 300, 100, ScoreButton::STYLE::TOP_RANKS);
         button->setScore(*score, map, ++i, title, weight);
-        button->setClickCallback([](CBaseUIButton *button) {
-            auto btnsc = ((ScoreButton *)button)->getScore();
-            auto song_button = (CarouselButton *)osu->getSongBrowser()->hashToDiffButton[btnsc.beatmap_hash];
+        button->setClickCallback(SA::MakeDelegate([](ScoreButton *button) -> void {
+            const FinishedScore &btnsc = button->getScore();
+            SongDifficultyButton *diff_btn = osu->getSongBrowser()->getDiffButtonByHash(btnsc.beatmap_hash);
             osu->getUserStatsScreen()->setVisible(false);
-            osu->getSongBrowser()->selectSongButton(song_button);
+            osu->getSongBrowser()->selectSongButton(diff_btn);
             osu->getSongBrowser()->highlightScore(btnsc.unixTimestamp);
-        });
+        }));
 
         m_scoreButtons.push_back(button);
         m_scores->container->addBaseUIElement(button);

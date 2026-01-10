@@ -37,6 +37,7 @@
 #include "SpectatorScreen.h"
 #include "TooltipOverlay.h"
 #include "UIButton.h"
+#include "UIBackButton.h"
 #include "UIRankingScreenInfoLabel.h"
 #include "UIRankingScreenRankingPanel.h"
 #include "score.h"

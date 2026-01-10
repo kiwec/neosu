@@ -7,6 +7,7 @@
 class ConVar;
 class CBaseUIContainer;
 class CBaseUIScrollView;
+class CBaseUIButton;
 class UIContextMenu;
 class UserCard;
 class ScoreButton;

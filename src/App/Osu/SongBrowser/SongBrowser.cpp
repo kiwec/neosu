@@ -67,6 +67,8 @@
 #define WANT_PDQSORT
 #include "Sorting.h"
 
+struct SongBrowser::MD5HashMap : public Hash::flat::map<MD5Hash, SongDifficultyButton *> {};
+
 namespace {
 constexpr const Color highlightColor = argb(255, 0, 255, 0);
 constexpr const Color defaultColor = argb(255, 255, 255, 255);
@@ -359,6 +361,8 @@ SongBrowser::SongBrowser() : ScreenBackable(), global_songbrowser_(this) {
     this->carousel = std::make_unique<BeatmapCarousel>(0.f, 0.f, 0.f, 0.f, "Carousel");
     neosu::sbr::g_carousel = this->carousel.get();
 
+    this->hashToDiffButton = std::make_unique<MD5HashMap>();
+
     // convar callback
     cv::songbrowser_search_hardcoded_filter.setCallback(
         [](std::string_view /* oldValue */, std::string_view newValue) -> void {
@@ -502,7 +506,7 @@ SongBrowser::~SongBrowser() {
     resourceManager->destroyResource(this->backgroundSearchMatcher);
     this->backgroundSearchMatcher = nullptr;
 
-    this->hashToDiffButton.clear();
+    this->hashToDiffButton->clear();
     for(auto &songButton : this->parentButtons) {
         delete songButton;
     }
@@ -821,6 +825,13 @@ void SongBrowser::draw() {
     }
 }
 
+SongDifficultyButton *SongBrowser::getDiffButtonByHash(const MD5Hash &diff_hash) const {
+    if(const auto &it = this->hashToDiffButton->find(diff_hash); it != this->hashToDiffButton->end()) {
+        return it->second;
+    }
+    return nullptr;
+}
+
 // FIXME: this should not be a public function
 bool SongBrowser::selectBeatmapset(i32 set_id) {
     if(db->isLoading()) {
@@ -858,7 +869,7 @@ bool SongBrowser::selectBeatmapset(i32 set_id) {
         osu->getNotificationOverlay()->addToast(US_("Beatmapset has no difficulties"), ERROR_TOAST);
         return false;
     } else {
-        this->onSelectionChange(this->hashToDiffButton[best_diff->getMD5()], false);
+        this->onSelectionChange((*this->hashToDiffButton)[best_diff->getMD5()], false);
         this->onDifficultySelected(best_diff, false);
         this->selectSelectedBeatmapSongButton();
         return true;
@@ -1209,10 +1220,10 @@ CBaseUIContainer *SongBrowser::setVisible(bool visible) {
 
 void SongBrowser::selectSelectedBeatmapSongButton() {
     DatabaseBeatmap *map = nullptr;
-    if(this->hashToDiffButton.empty() || !(map = osu->getMapInterface()->getBeatmap())) return;
+    if(this->hashToDiffButton->empty() || !(map = osu->getMapInterface()->getBeatmap())) return;
 
-    auto it = this->hashToDiffButton.find(map->getMD5());
-    if(it == this->hashToDiffButton.end()) {
+    auto it = this->hashToDiffButton->find(map->getMD5());
+    if(it == this->hashToDiffButton->end()) {
         debugLog("No song button found for currently selected beatmap...");
         return;
     }
@@ -1436,7 +1447,7 @@ void SongBrowser::refreshBeatmaps(bool closeAfterLoading) {
     // delete local database and UI
     this->carousel->invalidate();
 
-    this->hashToDiffButton.clear();
+    this->hashToDiffButton->clear();
     for(auto &songButton : this->parentButtons) {
         delete songButton;
     }
@@ -1524,7 +1535,7 @@ void SongBrowser::addBeatmapSet(BeatmapSet *mapset, bool initialSongBrowserLoad)
         assert(diff);  // we just added it
 
         // map each difficulty hash to its button
-        this->hashToDiffButton[diff->getMD5()] = diff_btn;
+        (*this->hashToDiffButton)[diff->getMD5()] = diff_btn;
 
         if(doDiffCollBtns) {
             const float stars_tmp = diff->getStarsNomod();
@@ -2571,7 +2582,7 @@ void SongBrowser::rebuildScoreButtons() {
     // update grade of difficulty button for current map
     // (weird place for this to be, i think the intent is to update them after you set a score)
     if(!validBeatmap) return;
-    if(const auto &it = this->hashToDiffButton.find(mapHash); it != this->hashToDiffButton.end()) {
+    if(const auto &it = this->hashToDiffButton->find(mapHash); it != this->hashToDiffButton->end()) {
         it->second->updateGrade();
     }
 }
@@ -2692,7 +2703,7 @@ void SongBrowser::onDatabaseLoadingFinished() {
             numDiffs += mapset->getDifficulties().size();
         }
         this->parentButtons.reserve(numSets);
-        this->hashToDiffButton.reserve(numDiffs);
+        this->hashToDiffButton->reserve(numDiffs);
         for(const auto &mapset : db->getBeatmapSets()) {
             this->addBeatmapSet(mapset.get(), true /* initial songbrowser load flag (skip some checks) */);
         }
@@ -3578,8 +3589,8 @@ void SongBrowser::recreateCollectionsButtons() {
         std::vector<u32> matched_sets;
 
         for(const auto &map : maps) {
-            auto it = this->hashToDiffButton.find(map);
-            if(it == this->hashToDiffButton.end()) continue;
+            auto it = this->hashToDiffButton->find(map);
+            if(it == this->hashToDiffButton->end()) continue;
 
             std::vector<SongButton *> matching_diffs;
 

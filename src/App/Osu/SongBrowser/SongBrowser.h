@@ -1,7 +1,7 @@
 #pragma once
 // Copyright (c) 2016, PG & 2023-2025, kiwec & 2025, WH, All rights reserved.
-#include "MD5Hash.h"
 #include "ScreenBackable.h"
+#include "types.h"
 
 #include <memory>
 
@@ -32,6 +32,12 @@ class ConVar;
 
 class SongBrowserBackgroundSearchMatcher;
 
+#if defined(__GNUC__) && !defined(__clang__) && (defined(__MINGW32__) || defined(__MINGW64__))
+struct MD5Hash;
+#else
+struct alignas(16) MD5Hash;
+#endif
+
 namespace SortTypes {
 enum type : i8 { ARTIST, BPM, CREATOR, DATEADDED, DIFFICULTY, LENGTH, TITLE, RANKACHIEVED, MAX };
 };
@@ -58,6 +64,7 @@ extern SongBrowser *g_songbrowser;
 extern BeatmapCarousel *g_carousel;
 }  // namespace neosu::sbr
 
+// TODO: make more of the stuff in here private and have an actual exposed public API surface
 class SongBrowser final : public ScreenBackable {
     NOCOPY_NOMOVE(SongBrowser)
    private:
@@ -156,6 +163,7 @@ class SongBrowser final : public ScreenBackable {
     [[nodiscard]] inline bool isRightClickScrolling() const { return this->bSongBrowserRightClickScrolling; }
 
     inline InfoLabel *getInfoLabel() { return this->songInfo; }
+    SongDifficultyButton *getDiffButtonByHash(const MD5Hash &diff_hash) const;
 
     using SORTING_COMPARATOR = bool (*)(const SongButton *a, const SongButton *b);
     struct SORTING_METHOD {
@@ -296,7 +304,10 @@ class SongBrowser final : public ScreenBackable {
     // beatmap database
     std::vector<SongButton *> parentButtons;
     std::vector<CarouselButton *> visibleSongButtons;
-    Hash::flat::map<MD5Hash, SongDifficultyButton *> hashToDiffButton;
+
+    // to avoid transitive includes
+    struct MD5HashMap;
+    std::unique_ptr<MD5HashMap> hashToDiffButton;
 
     CollBtnContainer titleCollectionButtons;
     CollBtnContainer artistCollectionButtons;

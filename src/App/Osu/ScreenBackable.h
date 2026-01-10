@@ -1,7 +1,10 @@
 #pragma once
 // Copyright (c) 2016, PG, All rights reserved.
 #include "OsuScreen.h"
-#include "UIBackButton.h"
+
+#include <memory>
+
+class UIBackButton;
 
 class ScreenBackable : public OsuScreen {
     NOCOPY_NOMOVE(ScreenBackable)
@@ -16,5 +19,5 @@ class ScreenBackable : public OsuScreen {
     virtual void onBack() = 0;
     virtual void updateLayout();
 
-    UIBackButton *backButton;
+    std::unique_ptr<UIBackButton> backButton;
 };

@@ -6,6 +6,7 @@ class CBaseUIContainer;
 class CBaseUIScrollView;
 class CBaseUIImage;
 class CBaseUILabel;
+class CBaseUIButton;
 
 class Changelog final : public ScreenBackable {
     NOCOPY_NOMOVE(Changelog)

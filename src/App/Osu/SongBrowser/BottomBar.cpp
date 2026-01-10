@@ -8,6 +8,7 @@
 #include "DBRecalculator.h"
 #include "Mouse.h"
 #include "OptionsMenu.h"
+#include "UIBackButton.h"
 #include "Osu.h"
 #include "ResourceManager.h"
 #include "Skin.h"

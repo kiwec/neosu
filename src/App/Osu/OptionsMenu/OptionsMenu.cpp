@@ -30,6 +30,7 @@
 #include "UIContextMenu.h"
 #include "UISearchOverlay.h"
 #include "UISlider.h"
+#include "UIBackButton.h"
 
 #include "LoudnessCalcThread.h"
 #include "NetworkHandler.h"

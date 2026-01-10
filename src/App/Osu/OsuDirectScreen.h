@@ -2,6 +2,8 @@
 // Copyright (c) 2025, kiwec, All rights reserved.
 #include "ScreenBackable.h"
 
+#include "types.h"
+
 #include <memory>
 // "OsuDirectScreen" is a cumbersome name, but "SearchScreen" is too generic,
 // and we might have a download screen in the future, plus we already

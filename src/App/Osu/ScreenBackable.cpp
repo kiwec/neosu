@@ -10,14 +10,13 @@
 #include "UIBackButton.h"
 #include "MakeDelegateWrapper.h"
 
-ScreenBackable::ScreenBackable() : OsuScreen() {
-    this->backButton = new UIBackButton(-1, 0, 0, 0, "");
+ScreenBackable::ScreenBackable() : OsuScreen(), backButton(std::make_unique<UIBackButton>(-1.f, 0.f, 0.f, 0.f, "")) {
     this->backButton->setClickCallback(SA::MakeDelegate<&ScreenBackable::onBack>(this));
 
     this->updateLayout();
 }
 
-ScreenBackable::~ScreenBackable() { SAFE_DELETE(this->backButton); }
+ScreenBackable::~ScreenBackable() = default;
 
 void ScreenBackable::draw() {
     if(!this->bVisible) return;

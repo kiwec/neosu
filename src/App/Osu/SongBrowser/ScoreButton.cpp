@@ -587,7 +587,7 @@ void ScoreButton::onContextMenu(const UString &text, int id) {
     if(osu->getUserStatsScreen()->isVisible()) {
         osu->getUserStatsScreen()->setVisible(false);
 
-        auto song_button = g_songbrowser->hashToDiffButton[sc.beatmap_hash];
+        SongDifficultyButton *song_button = g_songbrowser->getDiffButtonByHash(sc.beatmap_hash);
         g_songbrowser->selectSongButton(song_button);
     }
 
