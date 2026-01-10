@@ -1,15 +1,62 @@
 #pragma once
 // Copyright (c) 2020, PG, All rights reserved.
-
+#if __has_include("config.h")
 #include "config.h"
+#endif
+
+#include "types.h"
 #include "noinclude.h"
-#include "HitSounds.h"
-#include "Color.h"
-#include "Overrides.h"
 #include "Vectors.h"
-#include "MD5Hash.h"
-#include "SyncStoptoken.h"
 #include "FixedSizeArray.h"
+
+// TODO: make these utilities available without all of these ifdefs (move all diffcalc things to a lightweight separate directory)
+#ifndef BUILD_TOOLS_ONLY
+
+#include "Overrides.h"
+#include "MD5Hash.h"
+#include "Color.h"
+#include "HitSounds.h"
+#include "SyncStoptoken.h"
+
+#else
+
+using Color = uint32_t;
+
+// re-defining these to avoid needing to compile HitSounds.cpp (only need the definitions for diffcalc)
+namespace SampleSetType {
+enum {
+    NORMAL = 1,
+    SOFT = 2,
+    DRUM = 3,
+};
+}
+
+namespace HitSoundType {
+enum {
+    NORMAL = (1 << 0),
+    WHISTLE = (1 << 1),
+    FINISH = (1 << 2),
+    CLAP = (1 << 3),
+
+    VALID_HITSOUNDS = NORMAL | WHISTLE | FINISH | CLAP,
+    VALID_SLIDER_HITSOUNDS = NORMAL | WHISTLE,
+};
+}
+
+struct HitSamples {
+    u8 hitSounds = 0;
+    u8 normalSet = 0;
+    u8 additionSet = 0;
+    u8 volume = 0;
+    i32 index = 0;
+    std::string filename = "";
+};
+
+#include <stop_token>
+namespace Sync {
+using std::stop_token;
+}
+#endif
 
 #include <atomic>
 #include <string_view>
@@ -35,51 +82,12 @@ using BeatmapDifficulty = DatabaseBeatmap;
 using BeatmapSet = DatabaseBeatmap;
 using DiffContainer = std::vector<std::unique_ptr<BeatmapDifficulty>>;
 
-struct SLIDER_SCORING_TIME {  // for difficulty calculation things
-    enum class TYPE : u8 {
-        TICK,
-        REPEAT,
-        END,
-    };
-
-    TYPE type;
-    f32 time;
-};
+struct SLIDER_SCORING_TIME;  // for diffcalc things
 
 // DatabaseBeatmap &operator=(DatabaseBeatmap other) already implements these...
 // NOLINTNEXTLINE(hicpp-special-member-functions, cppcoreguidelines-special-member-functions)
 class DatabaseBeatmap final {
    public:
-    enum class BeatmapType : uint8_t {
-        NEOSU_BEATMAPSET,
-        PEPPY_BEATMAPSET,
-        NEOSU_DIFFICULTY,
-        PEPPY_DIFFICULTY,
-    };
-
-    DatabaseBeatmap();
-    ~DatabaseBeatmap();
-
-    DatabaseBeatmap(std::string filePath, std::string folder, BeatmapType type);  // beatmap difficulty
-    DatabaseBeatmap(std::unique_ptr<DiffContainer> &&difficulties,
-                    BeatmapType type);  // beatmapset
-
-    DatabaseBeatmap(const DatabaseBeatmap &);
-    DatabaseBeatmap(DatabaseBeatmap &&) noexcept;
-    DatabaseBeatmap &operator=(DatabaseBeatmap other) noexcept {
-        swap(*this, other);
-        return *this;
-    }
-
-    // for difficulties, compares MD5 hash for equality
-    // if both are mapsets, recursively compare their contained difficulties' MD5 hashes
-    bool operator==(const DatabaseBeatmap &other) const;
-
-    friend void swap(DatabaseBeatmap &a, DatabaseBeatmap &b) noexcept;
-
-    // if we are a beatmapset, update values from difficulties
-    void updateRepresentativeValues() noexcept;
-
     struct LoadError {
        public:
         enum code : u8 {
@@ -114,6 +122,33 @@ class DatabaseBeatmap final {
             "cannot load non-standard gamemode",      //
             "unknown beatmap version"};
     };
+
+    enum class BlockId : i8 {
+        Sentinel = -2,  // for skipping the first string scan, header must come first
+        Header = -1,
+        General = 0,
+        Metadata = 1,
+        Difficulty = 2,
+        Events = 3,
+        TimingPoints = 4,
+        Colours = 5,
+        HitObjects = 6,
+    };
+
+    struct MetadataBlock {
+        std::string_view str;
+        BlockId id;
+    };
+
+    static constexpr const std::array<MetadataBlock, 7> metadataBlocks{
+        MetadataBlock{.str = "[General]", .id = BlockId::General},
+        MetadataBlock{.str = "[Metadata]", .id = BlockId::Metadata},
+        MetadataBlock{.str = "[Difficulty]", .id = BlockId::Difficulty},
+        MetadataBlock{.str = "[Events]", .id = BlockId::Events},
+        MetadataBlock{.str = "[TimingPoints]", .id = BlockId::TimingPoints},
+        MetadataBlock{.str = "[Colours]", .id = BlockId::Colours},
+        MetadataBlock{.str = "[HitObjects]", .id = BlockId::HitObjects}};
+    static inline const auto alwaysFalseStopPred = Sync::stop_token{};
 
     // raw structs (not editable, we're following db format directly)
     struct TIMINGPOINT {
@@ -246,6 +281,75 @@ class DatabaseBeatmap final {
         bool sliderTimesCalculated{false};
     };
 
+#ifndef BUILD_TOOLS_ONLY  // pass data/primitives directly for tools build
+    static LOAD_DIFFOBJ_RESULT loadDifficultyHitObjects(std::string_view osuFilePath, float AR, float CS,
+                                                        float speedMultiplier, bool calculateStarsInaccurately = false,
+                                                        const Sync::stop_token &dead = alwaysFalseStopPred);
+
+    static PRIMITIVE_CONTAINER loadPrimitiveObjects(std::string_view osuFilePath,
+                                                    const Sync::stop_token &dead = alwaysFalseStopPred);
+#endif
+
+    static LOAD_DIFFOBJ_RESULT loadDifficultyHitObjects(PRIMITIVE_CONTAINER &c, float AR, float CS,
+                                                        float speedMultiplier, bool calculateStarsInaccurately,
+                                                        const Sync::stop_token &dead = alwaysFalseStopPred);
+
+    static PRIMITIVE_CONTAINER loadPrimitiveObjectsFromData(const std::vector<u8> &fileData,
+                                                            std::string_view osuFilePath,
+                                                            const Sync::stop_token &dead = alwaysFalseStopPred);
+    static LoadError calculateSliderTimesClicksTicks(int beatmapVersion, std::vector<SLIDER> &sliders,
+                                                     FixedSizeArray<DatabaseBeatmap::TIMINGPOINT> &timingpoints,
+                                                     float sliderMultiplier, float sliderTickRate);
+    static LoadError calculateSliderTimesClicksTicks(int beatmapVersion, std::vector<SLIDER> &sliders,
+                                                     FixedSizeArray<DatabaseBeatmap::TIMINGPOINT> &timingpoints,
+                                                     float sliderMultiplier, float sliderTickRate,
+                                                     const Sync::stop_token &dead);
+
+    static TIMING_INFO getTimingInfoForTimeAndTimingPoints(
+        i32 positionMS, const FixedSizeArray<DatabaseBeatmap::TIMINGPOINT> &timingpoints);
+
+#ifndef BUILD_TOOLS_ONLY
+
+   public:
+    enum class BeatmapType : uint8_t {
+        NEOSU_BEATMAPSET,
+        PEPPY_BEATMAPSET,
+        NEOSU_DIFFICULTY,
+        PEPPY_DIFFICULTY,
+    };
+
+    DatabaseBeatmap();
+    ~DatabaseBeatmap();
+
+    DatabaseBeatmap(std::string filePath, std::string folder, BeatmapType type);  // beatmap difficulty
+    DatabaseBeatmap(std::unique_ptr<DiffContainer> &&difficulties,
+                    BeatmapType type);  // beatmapset
+
+    DatabaseBeatmap(const DatabaseBeatmap &);
+    DatabaseBeatmap(DatabaseBeatmap &&) noexcept;
+    DatabaseBeatmap &operator=(DatabaseBeatmap other) noexcept {
+        swap(*this, other);
+        return *this;
+    }
+
+    // for difficulties, compares MD5 hash for equality
+    // if both are mapsets, recursively compare their contained difficulties' MD5 hashes
+    bool operator==(const DatabaseBeatmap &other) const;
+
+    friend void swap(DatabaseBeatmap &a, DatabaseBeatmap &b) noexcept;
+
+    // if we are a beatmapset, update values from difficulties
+    void updateRepresentativeValues() noexcept;
+
+    struct LOAD_META_RESULT {
+        std::vector<u8> fileData{};
+        LoadError error{DatabaseBeatmap::LoadError::NONE};
+
+        explicit operator bool() const { return error.errc != 0; }
+    };
+
+    LOAD_META_RESULT loadMetadata(bool compute_md5 = true);
+
     struct LOAD_GAMEPLAY_RESULT {
         LOAD_GAMEPLAY_RESULT();
         ~LOAD_GAMEPLAY_RESULT();
@@ -262,25 +366,6 @@ class DatabaseBeatmap final {
         i32 defaultSampleSet{1};
         LoadError error;
     };
-
-    static inline const auto alwaysFalseStopPred = Sync::stop_token{};
-
-    static LOAD_DIFFOBJ_RESULT loadDifficultyHitObjects(std::string_view osuFilePath, float AR, float CS,
-                                                        float speedMultiplier, bool calculateStarsInaccurately = false,
-                                                        const Sync::stop_token &dead = alwaysFalseStopPred);
-
-    static LOAD_DIFFOBJ_RESULT loadDifficultyHitObjects(PRIMITIVE_CONTAINER &c, float AR, float CS,
-                                                        float speedMultiplier, bool calculateStarsInaccurately,
-                                                        const Sync::stop_token &dead = alwaysFalseStopPred);
-
-    struct LOAD_META_RESULT {
-        std::vector<u8> fileData{};
-        LoadError error{DatabaseBeatmap::LoadError::NONE};
-
-        explicit operator bool() const { return error.errc != 0; }
-    };
-
-    LOAD_META_RESULT loadMetadata(bool compute_md5 = true);
 
     static LOAD_GAMEPLAY_RESULT loadGameplay(BeatmapDifficulty *databaseBeatmap, AbstractBeatmapInterface *beatmap,
                                              LOAD_META_RESULT preloadedMetadata = {{},
@@ -318,8 +403,8 @@ class DatabaseBeatmap final {
     [[nodiscard]] inline BeatmapSet *getParentSet() const { return this->parentSet; }
 
     [[nodiscard]] TIMING_INFO getTimingInfoForTime(i32 positionMS) const;
-    static TIMING_INFO getTimingInfoForTimeAndTimingPoints(
-        i32 positionMS, const FixedSizeArray<DatabaseBeatmap::TIMINGPOINT> &timingpoints);
+
+    static bool prefer_cjk_names();
 
     // raw metadata
 
@@ -500,46 +585,6 @@ class DatabaseBeatmap final {
 
     friend class Database;
     friend class BGImageHandler;
-
-    static PRIMITIVE_CONTAINER loadPrimitiveObjects(std::string_view osuFilePath,
-                                                    const Sync::stop_token &dead = alwaysFalseStopPred);
-    static PRIMITIVE_CONTAINER loadPrimitiveObjectsFromData(const std::vector<u8> &fileData, std::string_view osuFilePath,
-                                                            const Sync::stop_token &dead);
-    static LoadError calculateSliderTimesClicksTicks(int beatmapVersion, std::vector<SLIDER> &sliders,
-                                                     FixedSizeArray<DatabaseBeatmap::TIMINGPOINT> &timingpoints,
-                                                     float sliderMultiplier, float sliderTickRate);
-    static LoadError calculateSliderTimesClicksTicks(int beatmapVersion, std::vector<SLIDER> &sliders,
-                                                     FixedSizeArray<DatabaseBeatmap::TIMINGPOINT> &timingpoints,
-                                                     float sliderMultiplier, float sliderTickRate,
-                                                     const Sync::stop_token &dead);
-
-    static bool prefer_cjk_names();
-
-    enum class BlockId : i8 {
-        Sentinel = -2,  // for skipping the first string scan, header must come first
-        Header = -1,
-        General = 0,
-        Metadata = 1,
-        Difficulty = 2,
-        Events = 3,
-        TimingPoints = 4,
-        Colours = 5,
-        HitObjects = 6,
-    };
-
-    struct MetadataBlock {
-        std::string_view str;
-        BlockId id;
-    };
-
-    static constexpr const std::array<MetadataBlock, 7> metadataBlocks{
-        MetadataBlock{.str = "[General]", .id = BlockId::General},
-        MetadataBlock{.str = "[Metadata]", .id = BlockId::Metadata},
-        MetadataBlock{.str = "[Difficulty]", .id = BlockId::Difficulty},
-        MetadataBlock{.str = "[Events]", .id = BlockId::Events},
-        MetadataBlock{.str = "[TimingPoints]", .id = BlockId::TimingPoints},
-        MetadataBlock{.str = "[Colours]", .id = BlockId::Colours},
-        MetadataBlock{.str = "[HitObjects]", .id = BlockId::HitObjects}};
 };
 
 struct BPMInfo {
@@ -621,3 +666,8 @@ BPMInfo getBPM(const T &timing_points, std::vector<BPMTuple> &bpm_buffer)
         .most_common = mostCommonBPM,
     };
 }
+
+#else
+};
+
+#endif  // BUILD_TOOLS_ONLY

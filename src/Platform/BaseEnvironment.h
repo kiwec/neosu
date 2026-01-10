@@ -145,9 +145,6 @@ consteval Not<T> operator!(T value) {
     return Not<T>(value);
 }
 
-template <typename T>
-constexpr bool always_false_v = false;
-
 // check if a specific config mask matches current config
 template <typename T>
 consteval bool matchesCurrentConfig(T mask) {

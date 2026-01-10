@@ -253,10 +253,10 @@ void build_work_queue(const Sync::stop_token& stoken) {
 
                 ScoreWork sw;
                 sw.score = score;
-                sw.params.ar = score.mods.get_naive_ar(diff);
-                sw.params.cs = score.mods.get_naive_cs(diff);
-                sw.params.od = score.mods.get_naive_od(diff);
-                sw.params.hp = score.mods.get_naive_hp(diff);
+                sw.params.ar = score.mods.get_naive_ar(diff->getAR());
+                sw.params.cs = score.mods.get_naive_cs(diff->getCS());
+                sw.params.od = score.mods.get_naive_od(diff->getOD());
+                sw.params.hp = score.mods.get_naive_hp(diff->getHP());
                 sw.params.speed = score.mods.speed;
                 sw.params.hd = score.mods.has(ModFlags::Hidden);
                 sw.params.rx = score.mods.has(ModFlags::Relax);

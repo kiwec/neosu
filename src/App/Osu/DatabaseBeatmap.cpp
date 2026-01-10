@@ -2,16 +2,21 @@
 #include "DatabaseBeatmap.h"
 #include "DifficultyCalculator.h"
 
-#include "SString.h"
+#include "GameRules.h"
+#include "Parsing.h"
+
+#include <source_location>
+#include <utility>
+
+#ifndef BUILD_TOOLS_ONLY
+
 #include "BeatmapInterface.h"
 #include "OsuConVars.h"
 #include "Engine.h"
 #include "File.h"
-#include "GameRules.h"
 #include "HitObjects.h"
 #include "Environment.h"
 #include "Osu.h"
-#include "Parsing.h"
 #include "Skin.h"
 #include "Logging.h"
 #include "SongBrowser.h"
@@ -20,18 +25,56 @@
 
 #include <cassert>
 #include <algorithm>
-#include <utility>
-#include <source_location>
 #include <sys/stat.h>
 
 #define WANT_SPINSORT
 #include "Sorting.h"
 
-#ifndef BUILD_TOOLS_ONLY
-bool DatabaseBeatmap::prefer_cjk_names() { return cv::prefer_cjk.getBool(); }
+#define BEATMAP_MAX_NUM_HITOBJECTS cv::beatmap_max_num_hitobjects.getVal<u32>()
+#define BEATMAP_MAX_NUM_SLIDER_SCORINGTIMES cv::beatmap_max_num_slider_scoringtimes.getInt()
+#define SLIDER_CURVE_MAX_LENGTH cv::slider_curve_max_length.getFloat()
+#define SLIDER_END_INSIDE_CHECK_OFFSET cv::slider_end_inside_check_offset.getInt()
+#define SLIDER_MAX_REPEATS cv::slider_max_repeats.getInt()
+#define SLIDER_MAX_TICKS cv::slider_max_ticks.getInt()
+#define STARS_STACKING cv::stars_stacking.getBool()
+
+#define SPINSORT_RANGE srt::spinsort
+
 #else
-bool DatabaseBeatmap::prefer_cjk_names() { return false; }
-#endif
+
+#include <print>
+#define debugLog(...) std::println(__VA_ARGS__)
+
+#define SPINSORT_RANGE std::ranges::sort
+
+enum class HitObjectType : uint8_t {
+    CIRCLE,
+    SLIDER,
+    SPINNER,
+};
+
+namespace PpyHitObjectType {
+enum {
+    CIRCLE = (1 << 0),
+    SLIDER = (1 << 1),
+    NEW_COMBO = (1 << 2),
+    SPINNER = (1 << 3),
+    // 4, 5, 6: 3-bit integer specifying how many combo colors to skip (if NEW_COMBO is set)
+    MANIA_HOLD_NOTE = (1 << 7),
+};
+}
+
+#define BEATMAP_MAX_NUM_HITOBJECTS (u32)40000
+#define BEATMAP_MAX_NUM_SLIDER_SCORINGTIMES (i32)32768
+#define SLIDER_CURVE_MAX_LENGTH (65536.f / 2.f)
+#define SLIDER_END_INSIDE_CHECK_OFFSET (i32)36
+#define SLIDER_MAX_REPEATS (i32)9000
+#define SLIDER_MAX_TICKS (i32)2048
+#define STARS_STACKING true
+
+#define rgb(r, g, b) ((Color)((((255) & 0xff) << 24) | (((r) & 0xff) << 16) | (((g) & 0xff) << 8) | ((b) & 0xff)))
+
+#endif  // BUILD_TOOLS_ONLY
 
 // defined here to avoid including diffcalc things in DatabaseBeatmap.h
 DatabaseBeatmap::LOAD_DIFFOBJ_RESULT::LOAD_DIFFOBJ_RESULT() = default;
@@ -41,14 +84,6 @@ DatabaseBeatmap::LOAD_DIFFOBJ_RESULT::LOAD_DIFFOBJ_RESULT(DatabaseBeatmap::LOAD_
 DatabaseBeatmap::LOAD_DIFFOBJ_RESULT &DatabaseBeatmap::LOAD_DIFFOBJ_RESULT::operator=(
     DatabaseBeatmap::LOAD_DIFFOBJ_RESULT &&) noexcept = default;
 
-DatabaseBeatmap::LOAD_GAMEPLAY_RESULT::LOAD_GAMEPLAY_RESULT() = default;
-DatabaseBeatmap::LOAD_GAMEPLAY_RESULT::~LOAD_GAMEPLAY_RESULT() = default;
-
-DatabaseBeatmap::LOAD_GAMEPLAY_RESULT::LOAD_GAMEPLAY_RESULT(DatabaseBeatmap::LOAD_GAMEPLAY_RESULT &&) noexcept =
-    default;
-DatabaseBeatmap::LOAD_GAMEPLAY_RESULT &DatabaseBeatmap::LOAD_GAMEPLAY_RESULT::operator=(
-    DatabaseBeatmap::LOAD_GAMEPLAY_RESULT &&) noexcept = default;
-
 u32 DatabaseBeatmap::LOAD_DIFFOBJ_RESULT::getMaxComboAtIndex(uSz index) const {
     assert(maxComboAtIndex.size() > 0);
     if(index < maxComboAtIndex.size()) {
@@ -57,6 +92,18 @@ u32 DatabaseBeatmap::LOAD_DIFFOBJ_RESULT::getMaxComboAtIndex(uSz index) const {
     // otherwise return total
     return maxComboAtIndex.back();
 }
+
+#ifndef BUILD_TOOLS_ONLY
+
+bool DatabaseBeatmap::prefer_cjk_names() { return cv::prefer_cjk.getBool(); }
+
+DatabaseBeatmap::LOAD_GAMEPLAY_RESULT::LOAD_GAMEPLAY_RESULT() = default;
+DatabaseBeatmap::LOAD_GAMEPLAY_RESULT::~LOAD_GAMEPLAY_RESULT() = default;
+
+DatabaseBeatmap::LOAD_GAMEPLAY_RESULT::LOAD_GAMEPLAY_RESULT(DatabaseBeatmap::LOAD_GAMEPLAY_RESULT &&) noexcept =
+    default;
+DatabaseBeatmap::LOAD_GAMEPLAY_RESULT &DatabaseBeatmap::LOAD_GAMEPLAY_RESULT::operator=(
+    DatabaseBeatmap::LOAD_GAMEPLAY_RESULT &&) noexcept = default;
 
 DatabaseBeatmap::DatabaseBeatmap() = default;
 DatabaseBeatmap::~DatabaseBeatmap() = default;
@@ -242,6 +289,8 @@ bool DatabaseBeatmap::operator==(const DatabaseBeatmap &other) const {
     return false;
 }
 
+#endif  // BUILD_TOOLS_ONLY
+
 namespace {  // internal helpers
 
 bool parse_timing_point(std::string_view curLine, DatabaseBeatmap::TIMINGPOINT &out) {
@@ -343,6 +392,7 @@ bool timingPointSortComparator(const DatabaseBeatmap::TIMINGPOINT &a, const Data
 
 }  // namespace
 
+#ifndef BUILD_TOOLS_ONLY
 DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(std::string_view osuFilePath,
                                                                            const Sync::stop_token &dead) {
     // open osu file for parsing
@@ -363,6 +413,8 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjects(std::
     return loadPrimitiveObjectsFromData(fileBuffer, osuFilePath, dead);
 }
 
+#endif  // BUILD_TOOLS_ONLY
+
 DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjectsFromData(const std::vector<u8> &fileBuffer,
                                                                                    std::string_view osuFilePath,
                                                                                    const Sync::stop_token &dead) {
@@ -380,10 +432,10 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjectsFromDa
     std::string_view beatmapFile = {reinterpret_cast<const char *>(fileBuffer.data()),
                                     reinterpret_cast<const char *>(fileBuffer.data() + fileBuffer.size())};
 
-    const float sliderSanityRange = cv::slider_curve_max_length.getFloat();  // infinity sanity check, same as before
+    const float sliderSanityRange = SLIDER_CURVE_MAX_LENGTH;  // infinity sanity check, same as before
     const int sliderMaxRepeatRange =
-        cv::slider_max_repeats.getInt();  // NOTE: osu! will refuse to play any beatmap which has sliders with more than
-                                          // 9000 repeats, here we just clamp it instead
+        SLIDER_MAX_REPEATS;  // NOTE: osu! will refuse to play any beatmap which has sliders with more than
+                             // 9000 repeats, here we just clamp it instead
 
     std::array<std::optional<Color>, 8> tempColors;
     std::vector<DatabaseBeatmap::TIMINGPOINT> tempTimingpoints;
@@ -712,7 +764,7 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjectsFromDa
     c.numSliders = c.sliders.size();
     c.numSpinners = c.spinners.size();
     c.numHitobjects = c.numCircles + c.numSliders + c.numSpinners;
-    if(c.numHitobjects > cv::beatmap_max_num_hitobjects.getVal<u32>()) {
+    if(c.numHitobjects > BEATMAP_MAX_NUM_HITOBJECTS) {
         c.error.errc = LoadError::TOOMANY_HITOBJECTS;
         return c;
     }
@@ -730,7 +782,7 @@ DatabaseBeatmap::PRIMITIVE_CONTAINER DatabaseBeatmap::loadPrimitiveObjectsFromDa
 
     if(!tempTimingpoints.empty()) {
         // sort timingpoints by time
-        if(tempTimingpoints.size() > 1) srt::spinsort(tempTimingpoints, timingPointSortComparator);
+        if(tempTimingpoints.size() > 1) SPINSORT_RANGE(tempTimingpoints, timingPointSortComparator);
         c.timingpoints = std::move(tempTimingpoints);
     }
 
@@ -814,7 +866,7 @@ DatabaseBeatmap::LoadError DatabaseBeatmap::calculateSliderTimesClicksTicks(
 
             const float tickDurationPercentOfSliderLength =
                 tickPixelLength / (s.pixelLength == 0.0f ? 1.0f : s.pixelLength);
-            const int max_ticks = cv::slider_max_ticks.getInt();
+            const int max_ticks = SLIDER_MAX_TICKS;
             const int tickCount = std::min((int)std::ceil(s.pixelLength / tickPixelLength) - 1,
                                            max_ticks);  // NOTE: hard sanity limit number of ticks per slider
 
@@ -833,7 +885,7 @@ DatabaseBeatmap::LoadError DatabaseBeatmap::calculateSliderTimesClicksTicks(
         }
 
         // bail if too many predicted heuristic scoringTimes would run out of memory and crash
-        if((size_t)std::abs(s.repeat) * s.ticks.size() > (size_t)cv::beatmap_max_num_slider_scoringtimes.getInt()) {
+        if((size_t)std::abs(s.repeat) * s.ticks.size() > (size_t)BEATMAP_MAX_NUM_SLIDER_SCORINGTIMES) {
             r.errc = LoadError::TOOMANY_HITOBJECTS;
             return r;
         }
@@ -841,7 +893,7 @@ DatabaseBeatmap::LoadError DatabaseBeatmap::calculateSliderTimesClicksTicks(
         // calculate s.scoringTimesForStarCalc, which should include every point in time where the cursor must be within
         // the followcircle radius and at least one key must be pressed: see
         // https://github.com/ppy/osu/blob/master/osu.Game.Rulesets.Osu/Difficulty/Preprocessing/OsuDifficultyHitObject.cs
-        const i32 osuSliderEndInsideCheckOffset = (i32)cv::slider_end_inside_check_offset.getInt();
+        const i32 osuSliderEndInsideCheckOffset = (i32)SLIDER_END_INSIDE_CHECK_OFFSET;
 
         // 1) "skip the head circle"
 
@@ -886,12 +938,14 @@ DatabaseBeatmap::LoadError DatabaseBeatmap::calculateSliderTimesClicksTicks(
 
         // 5) sort scoringTimes from earliest to latest
         if(s.scoringTimesForStarCalc.size() > 1) {
-            srt::spinsort(s.scoringTimesForStarCalc, sliderScoringTimeComparator);
+            SPINSORT_RANGE(s.scoringTimesForStarCalc, sliderScoringTimeComparator);
         }
     }
 
     return r;
 }
+
+#ifndef BUILD_TOOLS_ONLY
 
 DatabaseBeatmap::LOAD_DIFFOBJ_RESULT DatabaseBeatmap::loadDifficultyHitObjects(std::string_view osuFilePath, float AR,
                                                                                float CS, float speedMultiplier,
@@ -901,6 +955,8 @@ DatabaseBeatmap::LOAD_DIFFOBJ_RESULT DatabaseBeatmap::loadDifficultyHitObjects(s
     PRIMITIVE_CONTAINER c = loadPrimitiveObjects(osuFilePath, dead);
     return loadDifficultyHitObjects(c, AR, CS, speedMultiplier, calculateStarsInaccurately, dead);
 }
+
+#endif
 
 DatabaseBeatmap::LOAD_DIFFOBJ_RESULT DatabaseBeatmap::loadDifficultyHitObjects(PRIMITIVE_CONTAINER &c, float AR,
                                                                                float CS, float speedMultiplier,
@@ -986,7 +1042,7 @@ DatabaseBeatmap::LOAD_DIFFOBJ_RESULT DatabaseBeatmap::loadDifficultyHitObjects(P
             return false;  // equivalent
         };
 
-        srt::spinsort(result.diffobjects, diffHitObjectSortComparator);
+        SPINSORT_RANGE(result.diffobjects, diffHitObjectSortComparator);
     }
 
     if(dead.stop_requested()) {
@@ -998,8 +1054,7 @@ DatabaseBeatmap::LOAD_DIFFOBJ_RESULT DatabaseBeatmap::loadDifficultyHitObjects(P
     // see Beatmap.cpp
     // NOTE: this must be done before the speed multiplier is applied!
     // HACKHACK: code duplication ffs
-    if(cv::stars_stacking.getBool() &&
-       !calculateStarsInaccurately)  // NOTE: ignore stacking when calculating inaccurately
+    if(STARS_STACKING && !calculateStarsInaccurately)  // NOTE: ignore stacking when calculating inaccurately
     {
         const float finalAR = AR;
         const float finalCS = CS;
@@ -1187,6 +1242,70 @@ DatabaseBeatmap::LOAD_DIFFOBJ_RESULT DatabaseBeatmap::loadDifficultyHitObjects(P
 
     return result;
 }
+
+DatabaseBeatmap::TIMING_INFO DatabaseBeatmap::getTimingInfoForTimeAndTimingPoints(
+    i32 positionMS, const FixedSizeArray<DatabaseBeatmap::TIMINGPOINT> &timingpoints) {
+    static TIMING_INFO default_info{
+        .offset = 0,
+        .beatLengthBase = 1,
+        .beatLength = 1,
+        .sampleSet = 0,
+        .sampleIndex = 0,
+        .volume = 100,
+        .isNaN = false,
+    };
+
+    if(timingpoints.size() < 1) return default_info;
+
+    TIMING_INFO ti{default_info};
+
+    // initial values
+    ti.offset = timingpoints[0].offset;
+    ti.volume = timingpoints[0].volume;
+    ti.sampleSet = timingpoints[0].sampleSet;
+    ti.sampleIndex = timingpoints[0].sampleIndex;
+
+    // new (peppy's algorithm)
+    // (correctly handles aspire & NaNs)
+    {
+        const bool allowMultiplier = true;
+
+        int point = 0;
+        int samplePoint = 0;
+        int audioPoint = 0;
+
+        for(int i = -1; const auto &tp : timingpoints) {
+            // timingpoints are sorted by offset
+            if(tp.offset > positionMS) break;
+            ++i;
+
+            audioPoint = i;
+
+            if(tp.uninherited)
+                point = i;
+            else
+                samplePoint = i;
+        }
+
+        const f32 mult = (allowMultiplier && samplePoint > point && timingpoints[samplePoint].msPerBeat < 0)
+                             ? std::clamp<f32>((f32)-timingpoints[samplePoint].msPerBeat, 10.0f, 1000.0f) / 100.0f
+                             : 1.f;
+
+        ti.beatLengthBase = timingpoints[point].msPerBeat;
+        ti.offset = timingpoints[point].offset;
+
+        ti.isNaN = std::isnan(timingpoints[samplePoint].msPerBeat) || std::isnan(timingpoints[point].msPerBeat);
+        ti.beatLength = ti.beatLengthBase * mult;
+
+        ti.volume = timingpoints[audioPoint].volume;
+        ti.sampleSet = timingpoints[audioPoint].sampleSet;
+        ti.sampleIndex = timingpoints[audioPoint].sampleIndex;
+    }
+
+    return ti;
+}
+
+#ifndef BUILD_TOOLS_ONLY
 
 bool DatabaseBeatmap::getMapFileAsync(MapFileReadDoneCallback data_callback) {
     // don't want to include AsyncIOHandler.h in DatabaseBeatmap.h
@@ -1394,7 +1513,7 @@ DatabaseBeatmap::LOAD_META_RESULT DatabaseBeatmap::loadMetadata(bool compute_md5
     if(this->timingpoints.size() > 0) {
         // sort timingpoints by time
         if(this->timingpoints.size() > 1) {
-            srt::spinsort(this->timingpoints, timingPointSortComparator);
+            SPINSORT_RANGE(this->timingpoints, timingPointSortComparator);
         }
 
         if(this->iMostCommonBPM <= 0) {
@@ -1531,7 +1650,7 @@ DatabaseBeatmap::LOAD_GAMEPLAY_RESULT DatabaseBeatmap::loadGameplay(BeatmapDiffi
             +[](const std::unique_ptr<HitObject> &a, const std::unique_ptr<HitObject> &b) -> bool {
             return BeatmapInterface::sortHitObjectByStartTimeComp(a.get(), b.get());
         };
-        srt::spinsort(result.hitobjects, hobjsorter);
+        SPINSORT_RANGE(result.hitobjects, hobjsorter);
     }
 
     // update beatmap length stat
@@ -1625,68 +1744,6 @@ DatabaseBeatmap::TIMING_INFO DatabaseBeatmap::getTimingInfoForTime(i32 positionM
     return getTimingInfoForTimeAndTimingPoints(positionMS, this->timingpoints);
 }
 
-DatabaseBeatmap::TIMING_INFO DatabaseBeatmap::getTimingInfoForTimeAndTimingPoints(
-    i32 positionMS, const FixedSizeArray<DatabaseBeatmap::TIMINGPOINT> &timingpoints) {
-    static TIMING_INFO default_info{
-        .offset = 0,
-        .beatLengthBase = 1,
-        .beatLength = 1,
-        .sampleSet = 0,
-        .sampleIndex = 0,
-        .volume = 100,
-        .isNaN = false,
-    };
-
-    if(timingpoints.size() < 1) return default_info;
-
-    TIMING_INFO ti{default_info};
-
-    // initial values
-    ti.offset = timingpoints[0].offset;
-    ti.volume = timingpoints[0].volume;
-    ti.sampleSet = timingpoints[0].sampleSet;
-    ti.sampleIndex = timingpoints[0].sampleIndex;
-
-    // new (peppy's algorithm)
-    // (correctly handles aspire & NaNs)
-    {
-        const bool allowMultiplier = true;
-
-        int point = 0;
-        int samplePoint = 0;
-        int audioPoint = 0;
-
-        for(int i = -1; const auto &tp : timingpoints) {
-            // timingpoints are sorted by offset
-            if(tp.offset > positionMS) break;
-            ++i;
-
-            audioPoint = i;
-
-            if(tp.uninherited)
-                point = i;
-            else
-                samplePoint = i;
-        }
-
-        const f32 mult = (allowMultiplier && samplePoint > point && timingpoints[samplePoint].msPerBeat < 0)
-                             ? std::clamp<f32>((f32)-timingpoints[samplePoint].msPerBeat, 10.0f, 1000.0f) / 100.0f
-                             : 1.f;
-
-        ti.beatLengthBase = timingpoints[point].msPerBeat;
-        ti.offset = timingpoints[point].offset;
-
-        ti.isNaN = std::isnan(timingpoints[samplePoint].msPerBeat) || std::isnan(timingpoints[point].msPerBeat);
-        ti.beatLength = ti.beatLengthBase * mult;
-
-        ti.volume = timingpoints[audioPoint].volume;
-        ti.sampleSet = timingpoints[audioPoint].sampleSet;
-        ti.sampleIndex = timingpoints[audioPoint].sampleIndex;
-    }
-
-    return ti;
-}
-
 // TODO: figure out why gameplay needs to be loaded for this to work (songbrowser infolabel etc.)
 bool DatabaseBeatmap::calcNomodStarsSlow(LOAD_META_RESULT metadata) {
     auto fakeGameplay = std::make_unique<BeatmapInterface>();
@@ -1749,3 +1806,5 @@ bool DatabaseBeatmap::calcNomodStarsSlow(LOAD_META_RESULT metadata) {
 
     return true;
 }
+
+#endif  // BUILD_TOOLS_ONLY

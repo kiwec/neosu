@@ -5,10 +5,12 @@
 #include <string_view>
 #include <string>
 
+#ifndef BUILD_TOOLS_ONLY
 #include "ankerl/unordered_dense.h"
 namespace Hash {
 namespace flat = ankerl::unordered_dense;
 }
+#endif
 
 class UString;
 
@@ -51,6 +53,8 @@ struct hash<MD5Hash> {
 };
 }  // namespace std
 
+
+#ifndef BUILD_TOOLS_ONLY
 template <>
 struct Hash::flat::hash<MD5Hash> {
     using is_avalanching = void;
@@ -59,3 +63,4 @@ struct Hash::flat::hash<MD5Hash> {
         return detail::wyhash::hash(md5.data(), md5.length());
     }
 };
+#endif

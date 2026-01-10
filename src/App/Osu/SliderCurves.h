@@ -1,7 +1,9 @@
 #pragma once
 // Copyright (c) 2015, PG & Jeffrey Han (opsu!), All rights reserved.
-
+#if __has_include("config.h")
 #include "config.h"
+#endif
+
 #include "Vectors.h"
 
 #include <vector>

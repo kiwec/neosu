@@ -1,22 +1,95 @@
 // Copyright (c) 2016, PG, All rights reserved.
 #include "Replay.h"
 
+#include "GameRules.h"
+#include "DifficultyCalculator.h"
+
+#ifndef BUILD_TOOLS_ONLY
 #include "BeatmapInterface.h"
 #include "CBaseUICheckbox.h"
 #include "CBaseUISlider.h"
 #include "DatabaseBeatmap.h"
-#include "GameRules.h"
 #include "ModSelector.h"
 #include "OsuConVars.h"
 #include "Osu.h"
-#include "DifficultyCalculator.h"
 #include "ByteBufferedFile.h"
 #include "BanchoPacket.h"
 #include "Logging.h"
+#else
+#include <algorithm>
+#endif
 
 using namespace flags::operators;
 
 namespace Replay {
+
+f32 Mods::get_naive_ar(f32 baseAR) const {
+    f32 AR = this->ar_override;
+    if(AR < 0.f) {
+        if(this->ar_overridenegative < 0.0f) {
+            AR = this->ar_overridenegative;
+        } else {
+            AR = std::clamp<f32>(baseAR * (this->has(ModFlags::HardRock) ? 1.4f
+                                           : this->has(ModFlags::Easy)   ? 0.5f
+                                                                         : 1.0f),
+                                 0.0f, 10.0f);
+        }
+    }
+
+    if(this->has(ModFlags::AROverrideLock)) {
+        AR = GameRules::arWithSpeed(AR, 1.f / this->speed);
+    }
+
+    return AR;
+}
+
+f32 Mods::get_naive_cs(f32 baseCS) const {
+    f32 CS = this->cs_override;
+    if(CS < 0.f) {
+        if(this->cs_overridenegative < 0.0f) {
+            CS = this->cs_overridenegative;
+        } else {
+            CS = std::clamp<f32>(baseCS * (this->has(ModFlags::HardRock) ? 1.3f  // different!
+                                           : this->has(ModFlags::Easy)   ? 0.5f
+                                                                         : 1.0f),
+                                 0.0f, 10.0f);
+        }
+    }
+
+    return CS;
+}
+
+f32 Mods::get_naive_hp(f32 baseHP) const {
+    f32 HP = this->hp_override;
+    if(HP < 0.f) {
+        HP = std::clamp<f32>(baseHP * (this->has(ModFlags::HardRock) ? 1.4f
+                                       : this->has(ModFlags::Easy)   ? 0.5f
+                                                                     : 1.0f),
+                             0.0f, 10.0f);
+    }
+
+    return HP;
+}
+
+f32 Mods::get_naive_od(f32 baseOD) const {
+    f32 OD = this->od_override;
+    if(OD < 0.f) {
+        OD = std::clamp<f32>(baseOD * (this->has(ModFlags::HardRock) ? 1.4f
+                                       : this->has(ModFlags::Easy)   ? 0.5f
+                                                                     : 1.0f),
+                             0.0f, 10.0f);
+    }
+
+    if(this->has(ModFlags::ODOverrideLock)) {
+        OD = GameRules::odWithSpeed(OD, 1.f / this->speed);
+    }
+
+    return OD;
+}
+
+f64 Mods::get_scorev1_multiplier() const {
+    return DifficultyCalculator::getScoreV1ScoreMultiplier(this->flags, this->speed);
+}
 
 LegacyFlags Mods::to_legacy() const {
     LegacyFlags legacy_flags{};
@@ -50,6 +123,44 @@ LegacyFlags Mods::to_legacy() const {
     return legacy_flags;
 }
 
+Mods Mods::from_legacy(LegacyFlags legacy_flags) {
+    ModFlags neoflags{};
+    if(flags::has<LegacyFlags::NoFail>(legacy_flags)) neoflags |= ModFlags::NoFail;
+    if(flags::has<LegacyFlags::Easy>(legacy_flags)) neoflags |= ModFlags::Easy;
+    if(flags::has<LegacyFlags::TouchDevice>(legacy_flags)) neoflags |= ModFlags::TouchDevice;
+    if(flags::has<LegacyFlags::Hidden>(legacy_flags)) neoflags |= ModFlags::Hidden;
+    if(flags::has<LegacyFlags::HardRock>(legacy_flags)) neoflags |= ModFlags::HardRock;
+    if(flags::has<LegacyFlags::SuddenDeath>(legacy_flags)) neoflags |= ModFlags::SuddenDeath;
+    if(flags::has<LegacyFlags::Relax>(legacy_flags)) neoflags |= ModFlags::Relax;
+    if(flags::has<LegacyFlags::Nightcore>(legacy_flags)) neoflags |= ModFlags::NoPitchCorrection;
+    if(flags::has<LegacyFlags::Flashlight>(legacy_flags)) neoflags |= ModFlags::Flashlight;
+    if(flags::has<LegacyFlags::SpunOut>(legacy_flags)) neoflags |= ModFlags::SpunOut;
+    if(flags::has<LegacyFlags::Autopilot>(legacy_flags)) neoflags |= ModFlags::Autopilot;
+    if(flags::has<LegacyFlags::Perfect>(legacy_flags)) neoflags |= ModFlags::Perfect;
+    if(flags::has<LegacyFlags::Target>(legacy_flags)) neoflags |= ModFlags::Target;
+    if(flags::has<LegacyFlags::ScoreV2>(legacy_flags)) neoflags |= ModFlags::ScoreV2;
+    if(flags::has<LegacyFlags::Nightmare>(legacy_flags)) neoflags |= ModFlags::Nightmare;
+    if(flags::has<LegacyFlags::FPoSu>(legacy_flags)) neoflags |= ModFlags::FPoSu;
+    if(flags::has<LegacyFlags::Mirror>(legacy_flags)) {
+        // NOTE: We don't know whether the original score was only horizontal, only vertical, or both
+        neoflags |= (ModFlags::MirrorHorizontal | ModFlags::MirrorVertical);
+    }
+    if(flags::has<LegacyFlags::Autoplay>(legacy_flags)) {
+        neoflags &= ~(ModFlags::Relax | ModFlags::Autopilot);
+        neoflags |= ModFlags::Autoplay;
+    }
+
+    Mods mods;
+    mods.flags = neoflags;
+    if(flags::has<LegacyFlags::DoubleTime>(legacy_flags))
+        mods.speed = 1.5f;
+    else if(flags::has<LegacyFlags::HalfTime>(legacy_flags))
+        mods.speed = 0.75f;
+    return mods;
+}
+
+#ifndef BUILD_TOOLS_ONLY
+
 f32 Mods::get_naive_ar(const DatabaseBeatmap *map) const {
     f32 baseAR = 5.0;
     if(!map) {
@@ -57,19 +168,7 @@ f32 Mods::get_naive_ar(const DatabaseBeatmap *map) const {
     } else {
         baseAR = map->getAR();
     }
-    float ARdifficultyMultiplier = 1.0f;
-    if((this->has(ModFlags::HardRock))) ARdifficultyMultiplier = 1.4f;
-    if((this->has(ModFlags::Easy))) ARdifficultyMultiplier = 0.5f;
-
-    f32 AR = std::clamp<f32>(baseAR * ARdifficultyMultiplier, 0.0f, 10.0f);
-    if(this->ar_override >= 0.0f) AR = this->ar_override;
-    if(this->ar_overridenegative < 0.0f) AR = this->ar_overridenegative;
-
-    if(this->has(ModFlags::AROverrideLock)) {
-        AR = GameRules::arWithSpeed(AR, 1.f / this->speed);
-    }
-
-    return AR;
+    return get_naive_ar(baseAR);
 }
 
 f32 Mods::get_naive_cs(const DatabaseBeatmap *map) const {
@@ -79,15 +178,7 @@ f32 Mods::get_naive_cs(const DatabaseBeatmap *map) const {
     } else {
         baseCS = map->getCS();
     }
-    f32 CSdifficultyMultiplier = 1.0f;
-    if((this->has(ModFlags::HardRock))) CSdifficultyMultiplier = 1.3f;  // different!
-    if((this->has(ModFlags::Easy))) CSdifficultyMultiplier = 0.5f;
-
-    f32 CS = std::clamp<f32>(baseCS * CSdifficultyMultiplier, 0.0f, 10.0f);
-    if(this->cs_override >= 0.0f) CS = this->cs_override;
-    if(this->cs_overridenegative < 0.0f) CS = this->cs_overridenegative;
-
-    return CS;
+    return get_naive_cs(baseCS);
 }
 
 f32 Mods::get_naive_hp(const DatabaseBeatmap *map) const {
@@ -97,14 +188,7 @@ f32 Mods::get_naive_hp(const DatabaseBeatmap *map) const {
     } else {
         baseHP = map->getHP();
     }
-    f32 HPdifficultyMultiplier = 1.0f;
-    if((this->has(ModFlags::HardRock))) HPdifficultyMultiplier = 1.4f;
-    if((this->has(ModFlags::Easy))) HPdifficultyMultiplier = 0.5f;
-
-    f32 HP = std::clamp<f32>(baseHP * HPdifficultyMultiplier, 0.0f, 10.0f);
-    if(this->hp_override >= 0.0f) HP = this->hp_override;
-
-    return HP;
+    return get_naive_hp(baseHP);
 }
 
 f32 Mods::get_naive_od(const DatabaseBeatmap *map) const {
@@ -114,22 +198,7 @@ f32 Mods::get_naive_od(const DatabaseBeatmap *map) const {
     } else {
         baseOD = map->getOD();
     }
-    f32 ODdifficultyMultiplier = 1.0f;
-    if((this->has(ModFlags::HardRock))) ODdifficultyMultiplier = 1.4f;
-    if((this->has(ModFlags::Easy))) ODdifficultyMultiplier = 0.5f;
-
-    f32 OD = std::clamp<f32>(baseOD * ODdifficultyMultiplier, 0.0f, 10.0f);
-    if(this->od_override >= 0.0f) OD = this->od_override;
-
-    if(this->has(ModFlags::ODOverrideLock)) {
-        OD = GameRules::odWithSpeed(OD, 1.f / this->speed);
-    }
-
-    return OD;
-}
-
-f64 Mods::get_scorev1_multiplier() const {
-    return DifficultyCalculator::getScoreV1ScoreMultiplier(this->flags, this->speed);
+    return get_naive_od(baseOD);
 }
 
 Mods Mods::from_cvars() {
@@ -203,42 +272,6 @@ Mods Mods::from_cvars() {
     mods.jigsaw_followcircle_radius_factor = cv::mod_jigsaw_followcircle_radius_factor.getFloat();
     mods.shirone_combo = cv::mod_shirone_combo.getFloat();
 
-    return mods;
-}
-
-Mods Mods::from_legacy(LegacyFlags legacy_flags) {
-    ModFlags neoflags{};
-    if(flags::has<LegacyFlags::NoFail>(legacy_flags)) neoflags |= ModFlags::NoFail;
-    if(flags::has<LegacyFlags::Easy>(legacy_flags)) neoflags |= ModFlags::Easy;
-    if(flags::has<LegacyFlags::TouchDevice>(legacy_flags)) neoflags |= ModFlags::TouchDevice;
-    if(flags::has<LegacyFlags::Hidden>(legacy_flags)) neoflags |= ModFlags::Hidden;
-    if(flags::has<LegacyFlags::HardRock>(legacy_flags)) neoflags |= ModFlags::HardRock;
-    if(flags::has<LegacyFlags::SuddenDeath>(legacy_flags)) neoflags |= ModFlags::SuddenDeath;
-    if(flags::has<LegacyFlags::Relax>(legacy_flags)) neoflags |= ModFlags::Relax;
-    if(flags::has<LegacyFlags::Nightcore>(legacy_flags)) neoflags |= ModFlags::NoPitchCorrection;
-    if(flags::has<LegacyFlags::Flashlight>(legacy_flags)) neoflags |= ModFlags::Flashlight;
-    if(flags::has<LegacyFlags::SpunOut>(legacy_flags)) neoflags |= ModFlags::SpunOut;
-    if(flags::has<LegacyFlags::Autopilot>(legacy_flags)) neoflags |= ModFlags::Autopilot;
-    if(flags::has<LegacyFlags::Perfect>(legacy_flags)) neoflags |= ModFlags::Perfect;
-    if(flags::has<LegacyFlags::Target>(legacy_flags)) neoflags |= ModFlags::Target;
-    if(flags::has<LegacyFlags::ScoreV2>(legacy_flags)) neoflags |= ModFlags::ScoreV2;
-    if(flags::has<LegacyFlags::Nightmare>(legacy_flags)) neoflags |= ModFlags::Nightmare;
-    if(flags::has<LegacyFlags::FPoSu>(legacy_flags)) neoflags |= ModFlags::FPoSu;
-    if(flags::has<LegacyFlags::Mirror>(legacy_flags)) {
-        // NOTE: We don't know whether the original score was only horizontal, only vertical, or both
-        neoflags |= (ModFlags::MirrorHorizontal | ModFlags::MirrorVertical);
-    }
-    if(flags::has<LegacyFlags::Autoplay>(legacy_flags)) {
-        neoflags &= ~(ModFlags::Relax | ModFlags::Autopilot);
-        neoflags |= ModFlags::Autoplay;
-    }
-
-    Mods mods;
-    mods.flags = neoflags;
-    if(flags::has<LegacyFlags::DoubleTime>(legacy_flags))
-        mods.speed = 1.5f;
-    else if(flags::has<LegacyFlags::HalfTime>(legacy_flags))
-        mods.speed = 0.75f;
     return mods;
 }
 
@@ -433,5 +466,7 @@ template Mods Mods::unpack<Packet>(Packet &);
 
 template void Mods::pack_and_write<ByteBufferedFile::Writer>(ByteBufferedFile::Writer &, const Mods &);
 template void Mods::pack_and_write<Packet>(Packet &, const Mods &);
+
+#endif  // BUILD_TOOLS_ONLY
 
 }  // namespace Replay

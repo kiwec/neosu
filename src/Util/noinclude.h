@@ -96,6 +96,11 @@ inline bool isInt(float f) { return (f == static_cast<float>(static_cast<int>(f)
 #define MC_ASSUME(expr) __assume(expr)
 #endif
 
+namespace Env {
+template <typename T>
+constexpr bool always_false_v = false;
+}
+
 #define MAKE_FLAG_ENUM(Enum_name__) \
     inline constexpr bool is_flag(Enum_name__) { return true; }
 

@@ -1,18 +1,71 @@
 // standalone PP/SR calculator for .osu files
+#if __has_include("config.h")
+#include "config.h"
+#endif
+
+#ifndef BUILD_TOOLS_ONLY
 #include "DiffCalcTool.h"
+#endif
 
 #include "DatabaseBeatmap.h"
 #include "DifficultyCalculator.h"
 #include "ModFlags.h"
-#include "File.h"
 #include "SString.h"
 #include "Parsing.h"
 
 #include <iostream>
+#include <fstream>
 #include <charconv>
 #include <string>
+#include <string_view>
 
 namespace {  // static
+
+struct LiteFile {
+    std::ifstream m_ifstream;
+    size_t m_filesize;
+
+    LiteFile(const std::string &path) : m_ifstream() {
+        m_ifstream.open(path, std::ios::in | std::ios::binary);
+        if(canRead()) {
+            std::streampos fsize = 0;
+            fsize = m_ifstream.tellg();
+            m_ifstream.seekg(0, std::ios::end);
+            fsize = m_ifstream.tellg() - fsize;
+            m_ifstream.seekg(0, std::ios::beg);
+            m_filesize = fsize;
+        }
+    }
+
+    [[nodiscard]] bool canRead() const { return m_ifstream.good(); }
+    [[nodiscard]] size_t getFileSize() const { return m_filesize; }
+
+    [[nodiscard]] std::string readLine() {
+        if(!canRead()) return "";
+        std::string line;
+        if(std::getline(m_ifstream, line)) {
+            if(!line.empty() && line.back() == '\r') {
+                line.pop_back();
+            }
+            return line;
+        }
+        return "";
+    }
+
+    void readToVector(std::vector<uint8_t> &out) {
+        if(!canRead()) {
+            out.clear();
+            return;
+        }
+        out.resize(m_filesize);
+        m_ifstream.seekg(0, std::ios::beg);
+        if(m_ifstream.read(reinterpret_cast<char *>(out.data()), static_cast<std::streamsize>(m_filesize)).good()) {
+            return;
+        }
+        out.clear();
+        return;
+    }
+};
 
 struct BeatmapSettings {
     float AR = 5.0f;
@@ -21,14 +74,8 @@ struct BeatmapSettings {
     float HP = 5.0f;
 };
 
-BeatmapSettings parseDifficultySettings(std::string_view osuFilePath) {
+BeatmapSettings parseDifficultySettings(LiteFile &file) {
     BeatmapSettings settings;
-
-    File file(osuFilePath);
-    if(!file.canRead() || (file.getFileSize() == 0)) {
-        std::cerr << "warning: could not read file for difficulty parsing, using defaults\n";
-        return settings;
-    }
 
     bool foundAR = false;
     bool inDifficulty = false;
@@ -103,19 +150,47 @@ std::string modsStringFromMods(ModFlags mods, float speed) {
 
 }  // namespace
 
-int NEOSU_run_diffcalc(int argc, char* argv[]) {
+#ifdef BUILD_TOOLS_ONLY
+#define entrypoint main
+#else
+#define entrypoint NEOSU_run_diffcalc
+#endif
+
+int entrypoint(int argc_, char *argv_[]) {
+    auto argv = std::vector<std::string>(argv_, argv_ + argc_);
+
+#ifdef BUILD_TOOLS_ONLY
+    // lazy
+    argv.insert(argv.begin() + 1, "-");
+    constexpr std::string_view usage = "<osu_file> [speed] [mod flags bitmask (0xHEX)]";
+#else
+    constexpr std::string_view usage = "-diffcalc <osu_file> [speed] [mod flags bitmask (0xHEX)]";
+#endif
+
+    size_t argc = argv.size();
+
     if(argc < 3) {
-        std::cerr << "usage: " << argv[0] << "-diffcalc <osu_file> [speed] [mod flags bitmask (0xHEX)]\n";
+        std::cerr << "usage: " << argv[0] << usage << '\n';
         return 1;
     }
 
     std::string osuFilePath = argv[2];
 
+    LiteFile file(osuFilePath);
+    if(!file.canRead() || (file.getFileSize() == 0)) {
+        std::cerr << "error: could not read file" << osuFilePath << '\n';
+        return 1;
+    }
+
     // parse difficulty settings from file
-    auto settings = parseDifficultySettings(osuFilePath);
+    BeatmapSettings settings = parseDifficultySettings(file);
+
+    std::vector<uint8_t> fileBuffer;
+    file.readToVector(fileBuffer);
 
     // load primitive hitobjects
-    auto primitives = DatabaseBeatmap::loadPrimitiveObjects(osuFilePath);
+    DatabaseBeatmap::PRIMITIVE_CONTAINER primitives =
+        DatabaseBeatmap::loadPrimitiveObjectsFromData(fileBuffer, osuFilePath);
     if(primitives.error.errc) {
         std::cerr << "error loading beatmap primitives: " << primitives.error.error_string() << '\n';
         return 1;
@@ -132,18 +207,18 @@ int NEOSU_run_diffcalc(int argc, char* argv[]) {
     ModFlags modFlags = {};
     if(argc > 4) {
         int base = 10;
-        ModFlags flagsTemp = {};
+        uint64_t flagsValue = 0;
         std::string_view cur{argv[4]};
         if(cur.starts_with("0x")) {
             base = 16;
             cur = cur.substr(2);
         }
-        auto [ptr, ec] = std::from_chars(cur.data(), cur.data() + cur.size(), (u64&)flagsTemp, base);
-        if(ec == std::errc()) modFlags = flagsTemp;
+        auto [ptr, ec] = std::from_chars(cur.data(), cur.data() + cur.size(), flagsValue, base);
+        if(ec == std::errc()) modFlags = static_cast<ModFlags>(flagsValue);
     }
 
     // load difficulty hitobjects for star calculation
-    auto diffResult =
+    DatabaseBeatmap::LOAD_DIFFOBJ_RESULT diffResult =
         DatabaseBeatmap::loadDifficultyHitObjects(primitives, settings.AR, settings.CS, speedMultiplier, false);
 
     if(diffResult.error.errc) {
@@ -178,10 +253,10 @@ int NEOSU_run_diffcalc(int argc, char* argv[]) {
         .cancelCheck = {},
     };
 
-    f64 totalStars = DifficultyCalculator::calculateStarDiffForHitObjects(starParams);
+    const double totalStars = DifficultyCalculator::calculateStarDiffForHitObjects(starParams);
 
-    f64 aim = outAttrs.AimDifficulty;
-    f64 speed = outAttrs.SpeedDifficulty;
+    const double aim = outAttrs.AimDifficulty;
+    const double speed = outAttrs.SpeedDifficulty;
 
     // calculate PP for SS play
     DifficultyCalculator::PPv2CalcParams ppParams{.attributes = outAttrs,
@@ -189,11 +264,11 @@ int NEOSU_run_diffcalc(int argc, char* argv[]) {
                                                   .timescale = speedMultiplier,
                                                   .ar = settings.AR,
                                                   .od = settings.OD,
-                                                  .numHitObjects = static_cast<i32>(primitives.numHitobjects),
-                                                  .numCircles = static_cast<i32>(primitives.numCircles),
-                                                  .numSliders = static_cast<i32>(primitives.numSliders),
-                                                  .numSpinners = static_cast<i32>(primitives.numSpinners),
-                                                  .maxPossibleCombo = static_cast<i32>(diffResult.getTotalMaxCombo()),
+                                                  .numHitObjects = static_cast<int>(primitives.numHitobjects),
+                                                  .numCircles = static_cast<int>(primitives.numCircles),
+                                                  .numSliders = static_cast<int>(primitives.numSliders),
+                                                  .numSpinners = static_cast<int>(primitives.numSpinners),
+                                                  .maxPossibleCombo = static_cast<int>(diffResult.getTotalMaxCombo()),
                                                   .combo = -1,
                                                   .misses = 0,
                                                   .c300 = -1,
@@ -201,7 +276,7 @@ int NEOSU_run_diffcalc(int argc, char* argv[]) {
                                                   .c50 = 0,
                                                   .legacyTotalScore = 0};
 
-    f64 pp = DifficultyCalculator::calculatePPv2(ppParams);
+    const double pp = DifficultyCalculator::calculatePPv2(ppParams);
 
     // output results
     std::cout << "star rating: " << totalStars << '\n';

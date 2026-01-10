@@ -1,12 +1,13 @@
 // Copyright (c) 2019, PG & Francesco149 & Khangaroo & Givikap120, All rights reserved.
 #include "DifficultyCalculator.h"
 
-#include <numbers>
-
-#include "DatabaseBeatmap.h"
 #include "SliderCurves.h"
 #include "GameRules.h"
 #include "ModFlags.h"
+
+#include <numbers>
+#include <utility>
+#include <cstring>
 
 #ifndef BUILD_TOOLS_ONLY
 #include "OsuConVars.h"
@@ -14,15 +15,28 @@
 #define IGNORE_CLAMPED_SLIDERS cv::stars_ignore_clamped_sliders.getBool()
 #define SLIDER_CURVE_MAX_LENGTH cv::slider_curve_max_length.getFloat()
 #define SLIDER_END_INSIDE_CHECK_OFFSET (f64) cv::slider_end_inside_check_offset.getInt()
+
+#define FORMAT_STRING_ fmt::format
+
+#define WANT_SPREADSORT
+#include "Sorting.h"
+
+#define SPREADSORT_RANGE srt::spreadsort
+
 #else
+
 #define STARS_SLIDER_CURVE_POINTS_SEPARATION 20.f
 #define IGNORE_CLAMPED_SLIDERS true
 #define SLIDER_CURVE_MAX_LENGTH 32768.f
 #define SLIDER_END_INSIDE_CHECK_OFFSET 36.
-#endif
 
-#define WANT_SPREADSORT
-#include "Sorting.h"
+#include <print>
+#include <algorithm>
+#define FORMAT_STRING_ std::format
+
+#define SPREADSORT_RANGE std::ranges::sort
+
+#endif
 
 namespace DiffCalc {
 // NOTE: bumped version from 20251007 because of a bug in the first implementation with mcosu-imported scores
@@ -1473,7 +1487,7 @@ f64 DifficultyCalculator::DiffObject::calculate_difficulty(const Skills::Skill t
     {
         // new implementation
         // NOTE: lazer does this from highest to lowest, but sorting it in reverse lets the reduced top section loop below have a better average insertion time
-        if(!incremental) srt::spreadsort(highestStrains);
+        if(!incremental) SPREADSORT_RANGE(highestStrains);
     }
 
     // new implementation (https://github.com/ppy/osu/pull/13483/)
@@ -1902,7 +1916,7 @@ f64 DifficultyCalculator::DiffObject::get_doubletapness(const DifficultyCalculat
 
 std::string DifficultyCalculator::PPv2CalcParamsToString(const PPv2CalcParams &pars) {
     const auto &attrs = pars.attributes;
-    return fmt::format(R"(pars.attrs.AimDifficulty: {}
+    return FORMAT_STRING_(R"(pars.attrs.AimDifficulty: {}
 attrs.AimDifficultSliderCount: {}
 attrs.SpeedDifficulty: {}
 attrs.SpeedNoteCount: {}
@@ -1932,12 +1946,12 @@ c300: {}
 c100: {}
 c50: {}
 legacyTotalScore: {})",
-                       attrs.AimDifficulty, attrs.AimDifficultSliderCount, attrs.SpeedDifficulty, attrs.SpeedNoteCount,
-                       attrs.SliderFactor, attrs.AimTopWeightedSliderFactor, attrs.SpeedTopWeightedSliderFactor,
-                       attrs.AimDifficultStrainCount, attrs.SpeedDifficultStrainCount, attrs.NestedScorePerObject,
-                       attrs.LegacyScoreBaseMultiplier, attrs.SliderCount, attrs.MaximumLegacyComboScore,
-                       attrs.ApproachRate, attrs.OverallDifficulty, (u64)pars.modFlags, pars.timescale, pars.ar,
-                       pars.od, pars.numHitObjects, pars.numCircles, pars.numSliders, pars.numSpinners,
-                       pars.maxPossibleCombo, pars.combo, pars.misses, pars.c300, pars.c100, pars.c50,
-                       pars.legacyTotalScore);
+                          attrs.AimDifficulty, attrs.AimDifficultSliderCount, attrs.SpeedDifficulty,
+                          attrs.SpeedNoteCount, attrs.SliderFactor, attrs.AimTopWeightedSliderFactor,
+                          attrs.SpeedTopWeightedSliderFactor, attrs.AimDifficultStrainCount,
+                          attrs.SpeedDifficultStrainCount, attrs.NestedScorePerObject, attrs.LegacyScoreBaseMultiplier,
+                          attrs.SliderCount, attrs.MaximumLegacyComboScore, attrs.ApproachRate, attrs.OverallDifficulty,
+                          (u64)pars.modFlags, pars.timescale, pars.ar, pars.od, pars.numHitObjects, pars.numCircles,
+                          pars.numSliders, pars.numSpinners, pars.maxPossibleCombo, pars.combo, pars.misses, pars.c300,
+                          pars.c100, pars.c50, pars.legacyTotalScore);
 }

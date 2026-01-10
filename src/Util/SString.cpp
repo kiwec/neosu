@@ -10,11 +10,11 @@ bool alnum_comp(std::string_view a, std::string_view b) {
     int i = 0;
     int j = 0;
     while(i < a.length() && j < b.length()) {
-        if(!isalnum((uint8_t)a[i])) {
+        if(!isalnum((unsigned char)a[i])) {
             i++;
             continue;
         }
-        if(!isalnum((uint8_t)b[j])) {
+        if(!isalnum((unsigned char)b[j])) {
             j++;
             continue;
         }

@@ -6,6 +6,8 @@ class DatabaseBeatmap;
 
 namespace Replay {
 
+#ifndef BUILD_TOOLS_ONLY
+
 template <typename T>
 concept GenericReader = requires(T &t) {
     t.template read<u64>();
@@ -19,6 +21,8 @@ concept GenericWriter = requires(T &t) {
     t.template write<f32>(f32{});
     t.template write<i32>(i32{});
 };
+
+#endif
 
 struct Mods {
     ModFlags flags{};
@@ -51,9 +55,19 @@ struct Mods {
     }
 
     [[nodiscard]] LegacyFlags to_legacy() const;
+    static Mods from_legacy(LegacyFlags legacy_flags);
 
     // Get AR/CS/OD, ignoring mods which change it over time
     // Used for ppv2 calculations.
+
+    // if you know the beatmap's base values you can use these directly
+    [[nodiscard]] f32 get_naive_ar(f32 baseAR) const;
+    [[nodiscard]] f32 get_naive_cs(f32 baseCS) const;
+    [[nodiscard]] f32 get_naive_hp(f32 baseHP) const;
+    [[nodiscard]] f32 get_naive_od(f32 baseOD) const;
+
+#ifndef BUILD_TOOLS_ONLY
+    // these just wrap the above with map->getAR() map->getCS() etc.
     [[nodiscard]] f32 get_naive_ar(const DatabaseBeatmap *map) const;
     [[nodiscard]] f32 get_naive_cs(const DatabaseBeatmap *map) const;
     [[nodiscard]] f32 get_naive_hp(const DatabaseBeatmap *map) const;
@@ -62,7 +76,6 @@ struct Mods {
     [[nodiscard]] f64 get_scorev1_multiplier() const;
 
     static Mods from_cvars();
-    static Mods from_legacy(LegacyFlags legacy_flags);
     static void use(const Mods &mods);
 
     // templated for either Packet or ByteBufferdFile::Reader/Writer
@@ -72,6 +85,7 @@ struct Mods {
 
     template <GenericWriter W>
     static void pack_and_write(W &writer, const Replay::Mods &mods);
+#endif
 };
 
 }  // namespace Replay

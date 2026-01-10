@@ -1,11 +1,23 @@
 #pragma once
 // Copyright (c) 2019, PG & Francesco149 & Khangaroo & Givikap120, All rights reserved.
 
+#if __has_include("config.h")
 #include "config.h"
+#endif
+
 #include "noinclude.h"
 #include "types.h"
 #include "Vectors.h"
+
+#ifndef BUILD_TOOLS_ONLY
 #include "SyncStoptoken.h"
+#else
+
+#include <stop_token>
+namespace Sync {
+using std::stop_token;
+}
+#endif
 
 #include <vector>
 #include <array>
@@ -20,7 +32,17 @@ class AbstractBeatmapInterface;
 class DatabaseBeatmap;
 
 struct FinishedScore;
-struct SLIDER_SCORING_TIME;
+
+struct SLIDER_SCORING_TIME {
+    enum class TYPE : u8 {
+        TICK,
+        REPEAT,
+        END,
+    };
+
+    TYPE type;
+    f32 time;
+};
 
 class DifficultyHitObject {
    public:
