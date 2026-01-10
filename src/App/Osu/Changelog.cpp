@@ -32,12 +32,19 @@ Changelog::Changelog() : ScreenBackable() {
     CHANGELOG v41_14;
     v41_14.title = "41.14 (" CHANGELOG_TIMESTAMP ")";
     v41_14.changes = {
-        R"(- Updated song browser to scroll to the currently selected beatmap when changing collection/grouping mode)",
-        R"(- Added detection for corrupt osu!.db beatmap databases and fixed some other database save/load issues)",
-        R"(- Improved more incorrect/unexpected UI behavior in general (e.g. right click context menu focus for song buttons))",
+        R"(- Song browser:)",
+        R"(  - Fixed carousel buttons being cut off when using skins with a transparent top/bottom bar)",
+        R"(  - Updated carousel to scroll to the currently selected beatmap when changing collection/grouping mode)",
+        R"(  - Improved performance further, especially with "Prefer metadata in original language" enabled)",
+        R"(- Database/beatmap importing:)",
+        R"(  - Added detection for corrupt osu!.db beatmap databases and fixed some other database save/load issues)",
+        R"(  - Fixed newly-imported beatmaps not being saved if the database is reloaded (with F5))",
+        R"(  - Fixed duplicate neosu_maps.db entries being saved)",
+        R"(  - Fixed a crash that occurred when only a single beatmap is installed)",
+        R"(  - Fixed an issue causing "Alphanumeric group wasn't initialized!" logs to show up when auto-importing .osz files)",
         R"(- Fixed issues causing fullscreen to not work properly in some cases)",
+        R"(- Improved more incorrect/unexpected UI behavior in general (e.g. right click context menu focus for song buttons))",
         R"(- Fixed tablet motion being ignored with raw input enabled)",
-        R"(- Fixed song browser buttons being cut off when using skins with a transparent top/bottom bar)",
         R"(- Fixed mod selector reset/close buttons no longer working)",
     };
     changelogs.push_back(v41_14);
