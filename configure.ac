@@ -144,7 +144,7 @@ AC_ARG_ENABLE([native],
 AC_ARG_ENABLE([debug],
     AS_HELP_STRING([--enable-debug], [Enable debug build (default: no)]))
 AC_ARG_ENABLE([harden],
-    AS_HELP_STRING([--enable-harden], [Make a hardened build (GCC+Linux only) (default: no)]))
+    AS_HELP_STRING([--enable-harden], [Make a hardened build (default: no)]))
 AC_ARG_ENABLE([strip],
     AS_HELP_STRING([--enable-strip], [Strip the final binary (default: no for debug, yes otherwise)]))
 AC_ARG_ENABLE([asan],
@@ -866,6 +866,23 @@ AS_IF([test "x$enable_harden" = "xyes"], [
         CXXFLAGS="$CXXFLAGS -fhardened"
         CFLAGS="$CFLAGS -fhardened"
         hardened_build=yes
+    ], [
+        _hardening_cflags="-Wformat -Wformat=2 -Wformat-security -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=3 -D_GLIBCXX_ASSERTIONS -fstrict-flex-arrays=3 -fstack-clash-protection -fstack-protector-strong"
+        AX_CHECK_COMPILE_FLAG([$_hardening_cflags], [
+            CXXFLAGS="$CXXFLAGS $_hardening_cflags"
+            CFLAGS="$CFLAGS $_hardening_cflags"
+            hardened_build=yes
+            # also check some more target-specific linker flags
+            AX_CHECK_LINK_FLAG([-Wl,-z,noexecstack], [
+                LDFLAGS="$LDFLAGS -Wl,-z,noexecstack"
+            ])
+            AX_CHECK_LINK_FLAG([-Wl,-z,relro -Wl,-z,now], [
+                LDFLAGS="$LDFLAGS -Wl,-z,relro -Wl,-z,now"
+            ])
+            AX_CHECK_LINK_FLAG([-Wl,--as-needed -Wl,--no-copy-dt-needed-entries], [
+                LDFLAGS="$LDFLAGS -Wl,--as-needed -Wl,--no-copy-dt-needed-entries"
+            ])
+        ])
     ])
 ])
 
