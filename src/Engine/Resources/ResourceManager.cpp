@@ -246,6 +246,8 @@ void ResourceManager::destroyResources() {
 }
 
 void ResourceManager::destroyResource(Resource *rs, ResourceDestroyFlags destflags) {
+    using namespace flags::operators;
+
     const bool debug = cv::debug_rm.getBool();
     if(rs == nullptr) {
         logIf(debug, "W: destroyResource(NULL)!");

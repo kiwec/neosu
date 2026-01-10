@@ -28,11 +28,9 @@
 #include "score.h"
 #include "Environment.h"
 #include "MakeDelegateWrapper.h"
+#include "Hashing.h"
 
 #include "fmt/chrono.h"
-
-#include <algorithm>
-#include <unordered_set>
 
 #include <algorithm>
 #include <cstring>
@@ -645,52 +643,6 @@ void Database::sortScores(const MD5Hash &beatmapMD5Hash) {
         Database::sortScoresInPlace(it->second);
     }
     return;
-}
-
-std::vector<UString> Database::getPlayerNamesWithPPScores() {
-    std::vector<UString> names;
-    {
-        Sync::shared_lock lock(this->scores_mtx);
-
-        for(const auto &[hash, scoreVec] : this->scores) {
-            for(const auto &name : scoreVec | std::views::transform([](const auto &score) -> auto {
-                                       return score.playerName;
-                                   }) | std::views::filter([](const auto &name) -> bool { return !name.empty(); })) {
-                names.emplace_back(name);
-            }
-        }
-    }
-
-    // always add local user, even if there were no scores
-    names.emplace_back(BanchoState::get_username());
-
-    return names;
-}
-
-std::vector<UString> Database::getPlayerNamesWithScoresForUserSwitcher() {
-    std::unordered_set<std::string> tempNames;
-
-    {
-        Sync::shared_lock lock(this->scores_mtx);
-        for(const auto &[hash, _] : this->scores) {
-            for(const auto &name : this->scores[hash] | std::views::transform([](const auto &score) -> auto {
-                                       return score.playerName;
-                                   })) {
-                tempNames.insert(name);
-            }
-        }
-    }
-
-    // always add local user, even if there were no scores
-    tempNames.insert(BanchoState::get_username());
-
-    std::vector<UString> names;
-    names.reserve(tempNames.size());
-    for(const auto &name : tempNames) {
-        if(name.length() > 0) names.emplace_back(name);
-    }
-
-    return names;
 }
 
 Database::PlayerPPScores Database::getPlayerPPScores(const std::string &playerName) {
@@ -1795,13 +1747,13 @@ void Database::saveMaps() {
     // collect neosu-only sets here
     std::vector<BeatmapSet *> temp_neosu_sets;
     Hash::flat::set<std::string> folders_already_added;
-    for(const auto &beatmap : this->beatmapsets) {
-        if(beatmap->type == DatabaseBeatmap::BeatmapType::NEOSU_BEATMAPSET) {
+    for(const auto &mapset : this->beatmapsets) {
+        if(mapset->type == DatabaseBeatmap::BeatmapType::NEOSU_BEATMAPSET) {
             // don't add duplicate entries
             // kind of a hack, we shouldn't have added duplicates to beatmapsets in the first place
             // this happens because addBeatmapSet doesn't check if we already have it
-            if(auto [_, newly_inserted] = folders_already_added.insert(beatmap->getFolder()); newly_inserted) {
-                temp_neosu_sets.push_back(beatmap.get());
+            if(auto [_, newly_inserted] = folders_already_added.insert(mapset->getFolder()); newly_inserted) {
+                temp_neosu_sets.push_back(mapset.get());
             }
         }
     }
@@ -2143,6 +2095,7 @@ void Database::loadOldMcNeosuScores(std::string_view dbPath) {
                 std::string experimentalModsConVars = dbr.read_string();
                 auto experimentalMods = SString::split(experimentalModsConVars, ';');
                 for(const auto mod : experimentalMods) {
+                    using namespace flags::operators;
                     // clang-format off
                     if(mod == "") continue;
                     else if(mod == "fposu_mod_strafing") sc.mods.flags |= ModFlags::FPoSu_Strafing;
@@ -2312,6 +2265,7 @@ void Database::loadOldMcNeosuScores(std::string_view dbPath) {
                     sc.numHitObjects = numHitObjects;
                     sc.numCircles = numCircles;
                     for(const auto mod : experimentalMods) {
+                        using namespace flags::operators;
                         // clang-format off
                         if(mod == "") continue;
                         else if(mod == "fposu_mod_strafing") sc.mods.flags |= ModFlags::FPoSu_Strafing;

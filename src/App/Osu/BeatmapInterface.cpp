@@ -54,6 +54,7 @@
 
 #include "shaders.h"
 
+using namespace flags::operators;
 BeatmapInterface::BeatmapInterface() : AbstractBeatmapInterface(), ppv2_calc(this) {
     // vars
     this->bIsPlaying = false;

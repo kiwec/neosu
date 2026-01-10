@@ -42,6 +42,8 @@
 
 #include <SDL3/SDL.h>
 
+using namespace flags::operators;
+
 namespace {  // static
 SDL_Environment *s_sdlenv{nullptr};
 }

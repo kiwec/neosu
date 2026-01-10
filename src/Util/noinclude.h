@@ -319,5 +319,3 @@ constexpr typename detail::enable_if<detail::is_flag_enum<decltype(mask)>::value
 // NOLINTEND(modernize-use-constraints)
 
 }  // namespace flags
-
-using namespace flags::operators;

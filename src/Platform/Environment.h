@@ -209,6 +209,7 @@ class Environment {
     // window state queries
     [[nodiscard]] constexpr bool winFullscreened() const {
         using enum WinFlags;
+        using namespace flags::operators;
         // we do not use "real" fullscreen mode, so maximized+borderless+unoccluded is the same as fullscreen
         // also return true if we are pending a re-fullscreen, to avoid issues related to that and event ordering on alt-tab
         return m_bRestoreFullscreen || flags::has<F_FULLSCREEN>(m_winflags) ||
@@ -216,6 +217,7 @@ class Environment {
     }
     [[nodiscard]] constexpr bool winResizable() const { return flags::has<WinFlags::F_RESIZABLE>(m_winflags); }
     [[nodiscard]] constexpr bool winFocused() const {
+        using namespace flags::operators;
         return flags::any<WinFlags::F_MOUSE_FOCUS | WinFlags::F_INPUT_FOCUS>(m_winflags);
     }
     [[nodiscard]] constexpr bool winMinimized() const { return flags::has<WinFlags::F_MINIMIZED>(m_winflags); }

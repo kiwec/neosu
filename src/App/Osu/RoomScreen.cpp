@@ -46,6 +46,8 @@
 #include "UIUserContextMenu.h"
 #include "Logging.h"
 
+using namespace flags::operators;
+
 void UIModList::draw() {
     std::vector<SkinImage *> mods;
 

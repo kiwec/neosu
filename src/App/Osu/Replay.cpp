@@ -14,6 +14,8 @@
 #include "BanchoPacket.h"
 #include "Logging.h"
 
+using namespace flags::operators;
+
 namespace Replay {
 
 LegacyFlags Mods::to_legacy() const {

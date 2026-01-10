@@ -219,6 +219,8 @@ void Mouse::onWheelHorizontal_internal(int delta) {
 }
 
 void Mouse::onButtonChange_internal(ButtonEvent &ev) {
+    using namespace flags::operators;
+
     if(!ev.btn || ev.btn >= MouseButtonFlags::MF_COUNT) return;
 
     if(ev.down) {

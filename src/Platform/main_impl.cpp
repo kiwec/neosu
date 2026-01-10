@@ -158,6 +158,8 @@ static_assert(SDL_EVENT_WINDOW_FIRST == SDL_EVENT_WINDOW_SHOWN);
 static_assert(SDL_EVENT_WINDOW_LAST == SDL_EVENT_WINDOW_HDR_STATE_CHANGED);
 
 SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
+    using namespace flags::operators;
+
     if(m_bEnvDebug) {
         static std::array<char, 512> logBuf{};
         size_t logsz =

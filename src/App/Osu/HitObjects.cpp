@@ -24,6 +24,8 @@
 #include "SoundEngine.h"
 #include "Logging.h"
 
+using namespace flags::operators;
+
 void HitObject::drawHitResult(BeatmapInterface *pf, vec2 rawPos, LiveScore::HIT result, float animPercentInv,
                               float hitDeltaRangePercent) {
     drawHitResult(pf->getSkin(), pf->fHitcircleDiameter, pf->fRawHitcircleDiameter, rawPos, result, animPercentInv,

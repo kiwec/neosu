@@ -236,6 +236,8 @@ UIContextMenuTextbox *UIContextMenu::addTextbox(const UString &text, int id) {
 }
 
 void UIContextMenu::end(bool invertAnimation, EndStyle style) {
+    using namespace flags::operators;
+
     this->bInvertAnimation = invertAnimation;
 
     const bool clampTop = !!(style & EndStyle::CLAMP_TOP);

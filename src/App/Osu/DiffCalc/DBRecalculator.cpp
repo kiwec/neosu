@@ -9,7 +9,7 @@
 #include "Database.h"
 #include "DatabaseBeatmap.h"
 #include "Osu.h"
-#include "OsuConVars.h"
+#include "ConVar.h"
 #include "DifficultyCalculator.h"
 #include "score.h"
 #include "Timing.h"
@@ -20,6 +20,10 @@
 
 #include <atomic>
 #include <memory>
+
+namespace cv {
+extern ConVar debug_pp;
+}
 
 namespace DBRecalculator {
 

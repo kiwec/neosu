@@ -111,8 +111,6 @@ class Database {
     void deleteScore(const MD5Hash &beatmapMD5Hash, u64 scoreUnixTimestamp);
     static void sortScoresInPlace(std::vector<FinishedScore> &scores);
 
-    std::vector<UString> getPlayerNamesWithPPScores();
-    std::vector<UString> getPlayerNamesWithScoresForUserSwitcher();
     PlayerPPScores getPlayerPPScores(const std::string &playerName);
     PlayerStats calculatePlayerStats(const std::string &playerName);
     static float getWeightForIndex(int i);

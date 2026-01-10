@@ -65,6 +65,7 @@ BeatmapSettings parseDifficultySettings(std::string_view osuFilePath) {
 
 std::string modsStringFromMods(ModFlags mods, float speed) {
     using enum ModFlags;
+    using namespace flags::operators;
 
     std::string modsString;
 

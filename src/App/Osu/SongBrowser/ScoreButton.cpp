@@ -829,6 +829,7 @@ bool ScoreButton::isContextMenuVisible() { return (this->contextMenu != nullptr 
 
 UString ScoreButton::getModsStringForDisplay(const Replay::Mods &mods) {
     using enum ModFlags;
+    using namespace flags::operators;
 
     UString modsString;
 

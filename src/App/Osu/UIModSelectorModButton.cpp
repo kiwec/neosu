@@ -98,6 +98,7 @@ void UIModSelectorModButton::resetState() {
 
 void UIModSelectorModButton::onClicked(bool /*left*/, bool /*right*/) {
     if(!this->bAvailable) return;
+    using namespace flags::operators;
 
     // increase state, wrap around, switch on and off
     if(this->bOn) {

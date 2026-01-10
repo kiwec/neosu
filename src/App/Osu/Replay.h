@@ -45,7 +45,10 @@ struct Mods {
 
     bool operator==(const Mods &) const = default;
 
-    [[nodiscard]] inline bool has(ModFlags flag) const { return (this->flags & flag) == flag; }
+    [[nodiscard]] inline bool has(ModFlags flag) const {
+        using namespace flags::operators;
+        return (this->flags & flag) == flag;
+    }
 
     [[nodiscard]] LegacyFlags to_legacy() const;
 

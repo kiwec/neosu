@@ -47,6 +47,7 @@
 #include <regex>
 #include <utility>
 
+using namespace flags::operators;
 static McFont *chat_font = nullptr;
 
 ChatChannel::ChatChannel(Chat *chat, UString name_arg) {

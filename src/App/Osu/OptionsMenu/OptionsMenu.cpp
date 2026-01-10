@@ -2875,6 +2875,7 @@ void OptionsMenuImpl::onSkinSelect() {
             if(skinFolder.compare(cv::skin.getString()) == 0) button->setTextBrightColor(0xff00ff00);
         }
         {
+            using namespace flags::operators;
             using enum UIContextMenu::EndStyle;
             auto flags = !parent->bVisible ? CLAMP_BOUNDS | STANDALONE_SCROLL : UIContextMenu::EndStyle{0};
 

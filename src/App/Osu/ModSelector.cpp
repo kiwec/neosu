@@ -1114,6 +1114,8 @@ UICheckbox *ModSelector::addExperimentalCheckbox(const UString &text, const UStr
 }
 
 void ModSelector::resetModsUserInitiated() {
+    using namespace flags::operators;
+
     this->resetMods();
 
     soundEngine->play(osu->getSkin()->s_check_off);
@@ -1178,6 +1180,8 @@ LegacyFlags ModSelector::getModFlags() {
 }
 
 void ModSelector::enableModsFromFlags(LegacyFlags flags) {
+    using namespace flags::operators;
+
     if(flags::any<LegacyFlags::DoubleTime | LegacyFlags::Nightcore>(flags)) {
         cv::speed_override.setValue(1.5f);
     } else if(flags::has<LegacyFlags::HalfTime>(flags)) {

@@ -73,6 +73,8 @@
 
 #include <algorithm>
 
+using namespace flags::operators;
+
 Osu *osu{nullptr};
 
 App *NEOSU_create_app_real() { return new Osu(); }
