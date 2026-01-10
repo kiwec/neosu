@@ -73,9 +73,9 @@ jobs:
             ${{ env.CCACHE_DIR }}
             build-out/.ltocache-gcc
             build-out/.ltocache-clang
-          key: ccache-win-${{ matrix.arch }}
+          key: ccache-win-${{ matrix.arch }}-${{ github.sha }}
           restore-keys: |
-            ccache-win-
+            ccache-win-${{ matrix.arch }}-
 
       - name: Building neosu
         run: |

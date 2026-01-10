@@ -29,8 +29,15 @@ Changelog::Changelog() : ScreenBackable() {
 
     std::vector<CHANGELOG> changelogs;
 
+    CHANGELOG v41_15;
+    v41_15.title = "41.15 (" CHANGELOG_TIMESTAMP ")";
+    v41_15.changes = {
+        R"()",
+    };
+    changelogs.push_back(v41_15);
+
     CHANGELOG v41_14;
-    v41_14.title = "41.14 (" CHANGELOG_TIMESTAMP ")";
+    v41_14.title = "41.14 (2026-01-10)";
     v41_14.changes = {
         R"(- Song browser:)",
         R"(  - Fixed carousel buttons being cut off when using skins with a transparent top/bottom bar)",
