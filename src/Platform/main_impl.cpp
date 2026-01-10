@@ -123,12 +123,14 @@ SDL_AppResult SDLMain::initialize() {
 
     syncWindow();
 
-    updateWindowFlags();
+    updateWindowStateCache();
 
     // clear spurious window minimize/unfocus events accumulated during startup
     SDL_PumpEvents();
     SDL_FlushEvent(SDL_EVENT_WINDOW_MINIMIZED);
     SDL_FlushEvent(SDL_EVENT_WINDOW_FOCUS_LOST);
+
+    updateWindowStateCache();
 
     // initialize mouse position
     {
@@ -237,7 +239,9 @@ SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
         case SDL_EVENT_WINDOW_ENTER_FULLSCREEN:		 case SDL_EVENT_WINDOW_LEAVE_FULLSCREEN:  case SDL_EVENT_WINDOW_DESTROYED:
         case SDL_EVENT_WINDOW_HDR_STATE_CHANGED:
             // clang-format on
-            updateWindowFlags();  // update our window flags enum from current SDL window flags
+            // just do this on any window/display event, who knows which events really change which state
+            // it's not too expensive anyways since we shouldn't be getting these events spammed all the time
+            updateWindowStateCache();
             switch(event->window.type) {
                 case SDL_EVENT_WINDOW_CLOSE_REQUESTED: {
                     SDL_Window *source = SDL_GetWindowFromEvent(event);
@@ -378,7 +382,7 @@ SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
         case SDL_EVENT_DISPLAY_MOVED:				  case SDL_EVENT_DISPLAY_DESKTOP_MODE_CHANGED: case SDL_EVENT_DISPLAY_CURRENT_MODE_CHANGED:
         case SDL_EVENT_DISPLAY_CONTENT_SCALE_CHANGED:
             // clang-format on
-            updateWindowFlags();
+            updateWindowStateCache();
             switch(event->display.type) {
                 case SDL_EVENT_DISPLAY_CONTENT_SCALE_CHANGED:
                     onDPIChange();
@@ -638,8 +642,8 @@ bool SDLMain::createWindow() {
         cv::fps_max_menu.setValue(hz);
     }
 
-    // initialize window flags
-    updateWindowFlags();
+    // initialize window flags and state
+    updateWindowStateCache();
 
     // init dpi
     m_fDisplayScale = SDL_GetWindowDisplayScale(m_window);

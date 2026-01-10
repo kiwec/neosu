@@ -930,28 +930,6 @@ HWND Environment::getHwnd() const {
     return hwnd;
 }
 
-vec2 Environment::getWindowPos() const {
-    int x{0}, y{0};
-    if(!SDL_GetWindowPosition(m_window, &x, &y)) {
-        debugLog("Failed to get window position (returning cached {},{}): {:s}", m_vLastKnownWindowPos.x,
-                 m_vLastKnownWindowPos.y, SDL_GetError());
-    } else {
-        m_vLastKnownWindowPos = vec2{static_cast<float>(x), static_cast<float>(y)};
-    }
-    return m_vLastKnownWindowPos;
-}
-
-vec2 Environment::getWindowSize() const {
-    int width{320}, height{240};
-    if(!SDL_GetWindowSizeInPixels(m_window, &width, &height)) {
-        debugLog("Failed to get window size (returning cached {},{}): {:s}", m_vLastKnownWindowSize.x,
-                 m_vLastKnownWindowSize.y, SDL_GetError());
-    } else {
-        m_vLastKnownWindowSize = vec2{static_cast<float>(width), static_cast<float>(height)};
-    }
-    return m_vLastKnownWindowSize;
-}
-
 const std::unordered_map<unsigned int, McRect> &Environment::getMonitors() const {
     if(m_mMonitors.size() < 1)  // lazy init
         initMonitors();
@@ -961,34 +939,6 @@ const std::unordered_map<unsigned int, McRect> &Environment::getMonitors() const
 int Environment::getMonitor() const {
     const int display = static_cast<int>(SDL_GetDisplayForWindow(m_window));
     return display == 0 ? -1 : display;  // 0 == invalid, according to SDL
-}
-
-// TODO: cache this
-vec2 Environment::getNativeScreenSize() const {
-    if(const SDL_DisplayID di = SDL_GetDisplayForWindow(m_window)) {
-        const float scale = getPixelDensity();
-
-        // fullscreen is currently buggy on mac, don't make other platforms shittier just because macos is finnicky
-        const bool useWindowedBounds = Env::cfg(OS::MAC);  // || winFullscreened();
-        if(useWindowedBounds) {
-            // GetDisplayUsableBounds in windowed
-            SDL_Rect bounds{};
-            if(SDL_GetDisplayUsableBounds(di, &bounds)) {
-                m_vLastKnownNativeScreenSize = vec2{static_cast<float>(bounds.w), static_cast<float>(bounds.h)} * scale;
-                return m_vLastKnownNativeScreenSize;
-            }
-        }
-
-        // GetDesktopDisplayMode should return the actual, full resolution
-        if(const SDL_DisplayMode *dm = SDL_GetDesktopDisplayMode(di)) {
-            m_vLastKnownNativeScreenSize = vec2{static_cast<float>(dm->w), static_cast<float>(dm->h)} * scale;
-            return m_vLastKnownNativeScreenSize;
-        }
-    }
-
-    // fallback
-    m_vLastKnownNativeScreenSize = getWindowSize();
-    return m_vLastKnownNativeScreenSize;
 }
 
 McRect Environment::getDesktopRect() const { return {{}, getNativeScreenSize()}; }
@@ -1057,8 +1007,9 @@ done:
         // release grab if we enabled raw input
         SDL_SetWindowMouseGrab(m_window, false);
     }
-    // to update MOUSE_RELATIVE_MODE
-    updateWindowFlags();
+
+    // update MOUSE_RELATIVE_MODE flags
+    m_winflags = static_cast<WinFlags>(SDL_GetWindowFlags(m_window));
 }
 
 void Environment::setRawKeyboardInput(bool raw) {
@@ -1192,9 +1143,58 @@ void Environment::onUseIMEChange(float newValue) {
     listenToTextInput(enable && m_bShouldListenToTextInput);
 }
 
-void Environment::updateWindowFlags() {
+// called by event loop on display or window events
+void Environment::updateWindowStateCache() {
+    // update window flags
     assert(m_window);
     m_winflags = static_cast<WinFlags>(SDL_GetWindowFlags(m_window));
+
+    // update window pos
+    {
+        int x{0}, y{0};
+        if(!SDL_GetWindowPosition(m_window, &x, &y)) {
+            debugLog("Failed to get window position (cached {},{}): {:s}", m_vLastKnownWindowPos.x,
+                     m_vLastKnownWindowPos.y, SDL_GetError());
+        } else {
+            m_vLastKnownWindowPos = vec2{static_cast<float>(x), static_cast<float>(y)};
+        }
+    }
+
+    // update window size
+    {
+        int width{320}, height{240};
+        if(!SDL_GetWindowSizeInPixels(m_window, &width, &height)) {
+            debugLog("Failed to get window size (returning cached {},{}): {:s}", m_vLastKnownWindowSize.x,
+                     m_vLastKnownWindowSize.y, SDL_GetError());
+        } else {
+            m_vLastKnownWindowSize = vec2{static_cast<float>(width), static_cast<float>(height)};
+        }
+    }
+
+    // update display rect
+    {
+        if(const SDL_DisplayID di = SDL_GetDisplayForWindow(m_window)) {
+            const float scale = getPixelDensity();
+            // fullscreen is currently buggy on mac, don't make other platforms shittier just because macos is finnicky
+            const bool useWindowedBounds = Env::cfg(OS::MAC);  // || winFullscreened();
+            if(useWindowedBounds) {
+                // GetDisplayUsableBounds in windowed
+                SDL_Rect bounds{};
+                if(SDL_GetDisplayUsableBounds(di, &bounds)) {
+                    m_vLastKnownNativeScreenSize =
+                        vec2{static_cast<float>(bounds.w), static_cast<float>(bounds.h)} * scale;
+                }
+            }
+
+            // GetDesktopDisplayMode should return the actual, full resolution
+            if(const SDL_DisplayMode *dm = SDL_GetDesktopDisplayMode(di)) {
+                m_vLastKnownNativeScreenSize = vec2{static_cast<float>(dm->w), static_cast<float>(dm->h)} * scale;
+            }
+        }
+
+        // fallback
+        m_vLastKnownNativeScreenSize = getWindowSize();
+    }
 }
 
 std::string Environment::windowFlagsDbgStr() const {
@@ -1259,7 +1259,7 @@ vec2 Environment::getAsyncMousePos() const {
     return {x, y};
 }
 
-std::pair<vec2, vec2> Environment::consumeMousePositionCache() {
+Environment::CursorPosition Environment::consumeCursorPositionCache() {
     float xRel{0.f}, yRel{0.f};
     float x{m_vLastAbsMousePos.x}, y{m_vLastAbsMousePos.y};
 
@@ -1268,22 +1268,33 @@ std::pair<vec2, vec2> Environment::consumeMousePositionCache() {
     SDL_GetRelativeMouseState(&xRel, &yRel);
     SDL_GetMouseState(&x, &y);
 
+    vec2 newRel = {xRel, yRel};
+    vec2 newAbs = {x, y};
+
+    const bool hadRelative = vec::length(newRel) != 0.f;
+    if(hadRelative) {
+        m_bForceAbsCursor = false;
+    }
+
     // these pen events are manually tracked and updated in our event loop
     if(m_vLastAbsPenPos != m_vCurrentAbsPenPos) {
         // if SDL's relative pen motion tracking isn't working for whatever reason, and we had pen motion events, then use that
         // otherwise trust what SDL is giving to us
-        if(xRel == yRel && xRel == 0.f) {
-            xRel = (m_vCurrentAbsPenPos.x - m_vLastAbsPenPos.x);
-            yRel = (m_vCurrentAbsPenPos.y - m_vLastAbsPenPos.y);
+        if(!hadRelative) {
+            m_bForceAbsCursor = true;
+            newRel = m_vCurrentAbsPenPos - m_vLastAbsPenPos;
+            newAbs = m_vCurrentAbsPenPos;
         }
 
         // reset
-        m_vLastAbsPenPos.x = m_vCurrentAbsPenPos.x;
-        m_vLastAbsPenPos.y = m_vCurrentAbsPenPos.y;
+        m_vLastAbsPenPos = m_vCurrentAbsPenPos;
     }
 
-    // <rel, abs>
-    return {{xRel, yRel}, {x, y}};
+    const float scaleFactor = m_bForceAbsCursor ? 1.f : m_fPixelDensity;
+    // if we're in raw input or forcing absolute cursor then SDL isn't clipping the motion for us
+    const bool needsClipping = m_bForceAbsCursor || isOSMouseInputRaw();
+
+    return CursorPosition{.rel = newRel, .abs = newAbs, .scale = scaleFactor, .needsClipping = needsClipping};
 }
 
 void Environment::initCursors() {

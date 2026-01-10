@@ -102,26 +102,28 @@ void Mouse::update() {
     this->vDelta = {0.f, 0.f};
     this->vRawDelta = {0.f, 0.f};
 
-    // <rel, abs> pair
-    auto [newRel, newAbs] = env->consumeMousePositionCache();
+    auto [newRel, newAbs, pixelScale, needsClipping] = env->consumeCursorPositionCache();
     if(vec::length(newRel) <= 0.f) goto out;  // early return for no motion
 
     // vRawDelta doesn't include sensitivity or clipping, which is useful for fposu
     this->vRawDelta = newRel;
 
     // correct SDL mouse events to match actual resolution
-    newRel *= env->getPixelDensity();
-    newAbs *= env->getPixelDensity();
+    // TODO: this is fishy
+    newRel *= pixelScale;
+    newAbs *= pixelScale;
 
     if(env->isOSMouseInputRaw()) {
         // only relative input (raw) can have sensitivity
         newRel *= this->fSensitivity;
         // we only base the absolute position off of the relative motion for raw input
         newAbs = this->vPosWithoutOffsets + newRel;
+    }
 
+    if(needsClipping) {
         // apply clipping manually for rawinput, because it only clips the absolute position
         // which is decoupled from the relative position in relative mode
-        // check this after applying sensitivity
+        // do this after applying sensitivity (if applicable)
         McRect clipRect;
         bool doClip = false;
         if(env->isCursorClipped()) {

@@ -190,16 +190,22 @@ class Environment {
     bool setWindowSize(int width, int height);
     void setWindowResizable(bool resizable);
     void setMonitor(int monitor);
+
+    [[nodiscard]] HWND getHwnd() const;
+
     [[nodiscard]] constexpr float getDisplayRefreshRate() const { return m_fDisplayHz; }
     [[nodiscard]] constexpr float getDisplayRefreshTime() const { return m_fDisplayHzSecs; }
-    [[nodiscard]] HWND getHwnd() const;
-    [[nodiscard]] vec2 getWindowPos() const;
-    [[nodiscard]] vec2 getWindowSize() const;
+
+    [[nodiscard]] inline vec2 getWindowPos() const { return m_vLastKnownWindowPos; }
+    [[nodiscard]] inline vec2 getWindowSize() const { return m_vLastKnownWindowSize; }
+    [[nodiscard]] McRect getWindowRect() const;
+
     [[nodiscard]] int getMonitor() const;
     [[nodiscard]] const std::unordered_map<unsigned int, McRect> &getMonitors() const;
-    [[nodiscard]] vec2 getNativeScreenSize() const;
+
+    [[nodiscard]] inline vec2 getNativeScreenSize() const { return m_vLastKnownNativeScreenSize; }
     [[nodiscard]] McRect getDesktopRect() const;
-    [[nodiscard]] McRect getWindowRect() const;
+
     [[nodiscard]] int getDPI() const;
     [[nodiscard]] float getPixelDensity() const;  // like DPI but more annoying
     [[nodiscard]] inline float getDPIScale() const { return (float)getDPI() / 96.0f; }
@@ -231,7 +237,7 @@ class Environment {
     [[nodiscard]] constexpr const McRect &getCursorClip() const { return m_cursorClipRect; }
     [[nodiscard]] constexpr CURSORTYPE getCursor() const { return m_cursorType; }
     [[nodiscard]] constexpr bool isOSMouseInputRaw() const {
-        return flags::has<WinFlags::F_MOUSE_RELATIVE_MODE>(m_winflags);
+        return !m_bForceAbsCursor && flags::has<WinFlags::F_MOUSE_RELATIVE_MODE>(m_winflags);
     }
     [[nodiscard]] constexpr bool isMouseInputGrabbed() const {
         return flags::has<WinFlags::F_MOUSE_GRABBED>(m_winflags);
@@ -305,10 +311,15 @@ class Environment {
     float m_fDisplayHzSecs;
 
     // window
-    void updateWindowFlags();
+
+    // updates m_winflags, m_vLastKnownWindowSize, m_vLastKnownWindowPos, m_vLastKnownNativeScreenSize
+    // to be called during event collection on window/display events, to avoid expensive API calls
+    void updateWindowStateCache();
+
     std::string windowFlagsDbgStr() const;
-    WinFlags m_winflags{};  // initialized when window is created, updated on new window events in the event loop
     void onDPIChange();
+
+    WinFlags m_winflags{};  // initialized when window is created, updated on new window events in the event loop
 
     float m_fPixelDensity{1.f};
     float m_fDisplayScale{1.f};
@@ -318,15 +329,29 @@ class Environment {
     }
 
     // save the last position obtained from SDL so that we can return something sensible if the SDL API fails
-    mutable vec2 m_vLastKnownWindowSize{320.f, 240.f};
-    mutable vec2 m_vLastKnownWindowPos{};
-    mutable vec2 m_vLastKnownNativeScreenSize{320.f, 240.f};
+    vec2 m_vLastKnownWindowSize{320.f, 240.f};
+    vec2 m_vLastKnownWindowPos{};
+    vec2 m_vLastKnownNativeScreenSize{320.f, 240.f};
 
     // mouse
     friend class Mouse;
     [[nodiscard]] vec2 getAsyncMousePos() const;  // debug
-    // <rel, abs>
-    std::pair<vec2, vec2> consumeMousePositionCache();
+
+    struct CursorPosition {
+        vec2 rel;     // relative *since last call*
+        vec2 abs;     // mouse absolute
+        float scale;  // unscaled from pixel density (seems macOS specific?) (TODO: must be a better way to do this...)
+        // if the cursor is already clipped to the clip rectangle or if it needs to be clipped manually
+        // (TODO: very ugly to be putting this here)
+        bool needsClipping;
+    };
+
+    // enabled if we had pen events and no relative motion reported from SDL
+    // disabled once we receive relative motion events from SDL again
+    bool m_bForceAbsCursor{false};
+
+    CursorPosition consumeCursorPositionCache();
+
     // allow Mouse to update the cached environment position post-sensitivity/clipping
     // the difference between setOSMousePos and this is that it doesn't actually warp the OS cursor
     inline void updateCachedMousePos(vec2 pos) { m_vLastAbsMousePos = pos; }
