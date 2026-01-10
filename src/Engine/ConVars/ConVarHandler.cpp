@@ -381,7 +381,7 @@ void ConVarHandler::ConVarBuiltins::dumpcommands(void) {
     </p>)",
                             fmt::gmtime(std::time(nullptr)), cv::version.getDouble()));
 
-    std::string marker = "{{CONVARS_HERE}}";
+    constexpr std::string_view marker = "{{CONVARS_HERE}}"sv;
     size_t pos = html_template.find(marker);
     html_template.replace(pos, marker.length(), html);
 
