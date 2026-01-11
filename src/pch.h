@@ -1,5 +1,10 @@
 #pragma once
 
+// local headers which transitively include a lot of other stuff but don't change often themselves
+#include "BaseEnvironment.h"
+#include "UString.h"
+#include "MakeDelegateWrapper.h"
+
 // glm, header only, template-heavy
 #include "glm/geometric.hpp"
 #include "glm/gtc/constants.hpp"
@@ -29,13 +34,22 @@
 #include "boost/sort/spinsort/spinsort.hpp"
 #include "boost/sort/spreadsort/spreadsort.hpp"
 
-
-
+// commonly-included stdlib includes
+#include <algorithm>
+#include <cassert>
+#include <charconv>
 #include <cstdint>
 #include <cstring>
 #include <memory>
-#include <string>
+#include <ranges>
+#include <span>
 #include <string_view>
-#include <vector>
-#include <algorithm>
+#include <string>
 #include <utility>
+#include <vector>
+#include <type_traits>
+
+// i have no idea where these come from but they seem to be transitively included through some stdlib header,
+// and they're so ridiculously slow to compile that it's worth putting them here as well
+#include <print>
+#include <format>

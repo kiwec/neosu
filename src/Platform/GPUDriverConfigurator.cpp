@@ -198,7 +198,7 @@ NvApiState &getNvAPIState() noexcept {
 
     state.initialized = true;
 
-    if constexpr(Env::cfg(BUILD::DEBUG | BUILD::EDGE)) {
+    if constexpr(Env::cfg(BUILD::DEBUG)) {
         s_init_info = "NvAPI initialized";
     }
 
@@ -274,7 +274,7 @@ bool setNvidiaThreadedOpts(bool enable) noexcept {
             return false;
         }
 
-        if constexpr(Env::cfg(BUILD::DEBUG | BUILD::EDGE)) {
+        if constexpr(Env::cfg(BUILD::DEBUG)) {
             debugLog("created new NvAPI profile for {}", PACKAGE_NAME);
         }
 
@@ -318,7 +318,7 @@ bool setNvidiaThreadedOpts(bool enable) noexcept {
 
     state.destroySession(sessionHandle);
 
-    if constexpr(Env::cfg(BUILD::DEBUG | BUILD::EDGE)) {
+    if constexpr(Env::cfg(BUILD::DEBUG)) {
         debugLog("nvidia threaded optimizations {}", enable ? "enabled" : "disabled");
     }
     return true;

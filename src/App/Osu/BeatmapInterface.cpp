@@ -650,13 +650,13 @@ bool BeatmapInterface::start() {
     // the drawing order is different from the playing/input order.
     // for drawing, if multiple hitobjects occupy the exact same time (duration) then they get drawn on top of the
     // active hitobject
-    this->hitobjectsSortedByEndTime =
-        this->hitobjects | std::views::transform([](const auto &hobjUniquePtr) { return hobjUniquePtr.get(); }) |
-        std::ranges::to<std::vector>();
-    std::ranges::sort(this->hitobjectsSortedByEndTime, BeatmapInterface::sortHitObjectByEndTimeComp);
+    this->hitobjectsSortedByEndTime.clear();
+    this->hitobjectsSortedByEndTime.reserve(this->hitobjects.size());
+    for(const auto &unq : this->hitobjects) {
+        this->hitobjectsSortedByEndTime.push_back(unq.get());
+    }
 
-    this->hitobjectsSortedByEndTimeReversed =
-        this->hitobjectsSortedByEndTime | std::views::reverse | std::ranges::to<std::vector>();
+    std::ranges::sort(this->hitobjectsSortedByEndTime, BeatmapInterface::sortHitObjectByEndTimeComp);
 
     // after the hitobjects have been loaded we can calculate the stacks
     this->calculateStacks();
@@ -1686,7 +1686,6 @@ void BeatmapInterface::unloadObjects() {
     this->currentHitObject = nullptr;
     this->hitobjects.clear();
     this->hitobjectsSortedByEndTime.clear();
-    this->hitobjectsSortedByEndTimeReversed.clear();
     this->misaimObjects.clear();
     this->breaks.clear();
     this->clicks.clear();
@@ -2150,8 +2149,9 @@ void BeatmapInterface::drawHitObjects() {
 
         i32 mostDistantEndTimeDrawn = 0;
 
-        for(auto *obj : this->hitobjectsSortedByEndTimeReversed) {
+        for(sSz i = static_cast<sSz>(this->hitobjectsSortedByEndTime.size()) - 1; i >= 0; i--) {
             // PVS optimization (reversed)
+            HitObject *obj = this->hitobjectsSortedByEndTime[i];
             if(usePVS) {
                 const i32 endTime = obj->click_time + obj->duration;
 

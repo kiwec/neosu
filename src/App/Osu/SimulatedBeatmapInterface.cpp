@@ -94,9 +94,12 @@ bool SimulatedBeatmapInterface::start() {
     this->breaks = std::move(result.breaks);
 
     // sort hitobjects by endtime
-    this->hitobjectsSortedByEndTime =
-        this->hitobjects | std::views::transform([](const auto &hobjUniquePtr) { return hobjUniquePtr.get(); }) |
-        std::ranges::to<std::vector>();
+    this->hitobjectsSortedByEndTime.clear();
+    this->hitobjectsSortedByEndTime.reserve(this->hitobjects.size());
+    for(const auto &unq : this->hitobjects) {
+        this->hitobjectsSortedByEndTime.push_back(unq.get());
+    }
+
     std::ranges::sort(this->hitobjectsSortedByEndTime, BeatmapInterface::sortHitObjectByEndTimeComp);
 
     // after the hitobjects have been loaded we can calculate the stacks

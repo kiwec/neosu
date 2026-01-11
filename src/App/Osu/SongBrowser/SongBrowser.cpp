@@ -929,13 +929,13 @@ void SongBrowser::update() {
         float progress = -1.f;
         auto beatmap = Downloader::download_beatmap(this->map_autodl, this->set_autodl, &progress);
         if(progress == -1.f) {
-            auto error_str = UString::format("Failed to download Beatmap #%d :(", this->map_autodl);
+            auto error_str = fmt::format("Failed to download Beatmap #{:d} :(", this->map_autodl);
             ui->getNotificationOverlay()->addToast(error_str, ERROR_TOAST);
             this->map_autodl = 0;
             this->set_autodl = 0;
         } else if(progress < 1.f) {
             // TODO @kiwec: this notification format is jank & laggy
-            auto text = UString::format("Downloading... %.2f%%", progress * 100.f);
+            auto text = fmt::format("Downloading... {:.2f}%", progress * 100.f);
             ui->getNotificationOverlay()->addNotification(text);
         } else if(beatmap != nullptr) {
             this->onDifficultySelected(beatmap, false);
@@ -951,13 +951,13 @@ void SongBrowser::update() {
             float progress = -1.f;
             Downloader::download_beatmapset(this->set_autodl, &progress);
             if(progress == -1.f) {
-                auto error_str = UString::format("Failed to download Beatmapset #%d :(", this->set_autodl);
+                auto error_str = fmt::format("Failed to download Beatmap #{:d} :(", this->map_autodl);
                 ui->getNotificationOverlay()->addToast(error_str, ERROR_TOAST);
                 this->map_autodl = 0;
                 this->set_autodl = 0;
             } else if(progress < 1.f) {
                 // TODO @kiwec: this notification format is jank & laggy
-                auto text = UString::format("Downloading... %.2f%%", progress * 100.f);
+                auto text = fmt::format("Downloading... {:.2f}%", progress * 100.f);
                 ui->getNotificationOverlay()->addNotification(text);
             } else {
                 this->selectBeatmapset(this->set_autodl);
@@ -2629,9 +2629,7 @@ void SongBrowser::initializeGroupingButtons() {
 
         // A-Z
         for(size_t i = 0; i < 26; i++) {
-            UString collectionName = UString::format("%c", 'A' + i);
-
-            coll->at(i + 1) = MKCBTN(collectionName);
+            coll->at(i + 1) = MKCBTN(fmt::format("{:c}", 'A' + i));
         }
 
         // Other
@@ -2650,7 +2648,7 @@ void SongBrowser::initializeGroupingButtons() {
             else if(i > 10)
                 difficultyCollectionName = US_("Above 10 stars");
             else
-                difficultyCollectionName = UString::format(i == 1 ? "%i star" : "%i stars", i);
+                difficultyCollectionName = fmt::format("{:d} star{:s}", i, i == 1 ? "" : "s");
 
             diffbtns[i] = MKCBTN(difficultyCollectionName);
         }
@@ -3188,15 +3186,9 @@ void SongBrowser::rebuildAfterGroupOrSortChange(GroupType group, const std::opti
         }
     } else {
         if(auto *collBtns = getCollectionButtonsForGroup(group)) {
-            {
-                std::vector<CollectionButton *> rawBtns =
-                    *collBtns | std::views::transform([](const auto &unq) -> auto * { return unq.get(); }) |
-                    std::ranges::to<std::vector>();
-
-                this->visibleSongButtons.reserve(rawBtns.size());
-                this->visibleSongButtons.insert(this->visibleSongButtons.end(),
-                                                std::make_move_iterator(rawBtns.begin()),
-                                                std::make_move_iterator(rawBtns.end()));
+            this->visibleSongButtons.reserve(collBtns->size());
+            for(const auto &unq : *collBtns) {
+                this->visibleSongButtons.push_back(unq.get());
             }
 
             // only sort if switching TO this group/sorting method (not from it)

@@ -76,7 +76,7 @@ consteval OS getOS() {
 
 consteval BUILD getBuildType() {
     return
-#if defined(CI_DEVBUILD)  // not used!
+#if defined(CI_DEVBUILD)  // not used atm
         BUILD::EDGE |
 #endif
 #if defined(_DEBUG)

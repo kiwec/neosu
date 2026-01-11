@@ -5,9 +5,10 @@ AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_HEADERS([src/config.h])
 AC_PREFIX_DEFAULT([dist]) # default `make install`s to ./dist/bin/ (modify with --prefix=)
 
-AS_IF([test "$CI_DEVBUILD" = "1"], [
-    AC_DEFINE([CI_DEVBUILD], [1], [Defined if this is an in-between-releases build.])
-])
+CI="${CI:-"${GITHUB_ACTIONS}"}"
+# AS_IF([test "$CI_DEVBUILD" = "1"], [
+#     AC_DEFINE([CI_DEVBUILD], [1], [Defined if this is an in-between-releases build.])
+# ])
 
 AC_DEFINE_UNQUOTED([NEOSU_VERSION], [PACKAGE_VERSION], [Defined to the version of neosu being built.])
 
@@ -1261,6 +1262,10 @@ AM_CONDITIONAL([CLANG_BUILD], [test "$CLANG" = "yes"])
 
 AM_CONDITIONAL([STRIPBINS], [test "x$enable_strip" != "xno" && ! { test "$SYSNAME" = "windows" && test "$host_cpu" = "i686" ; } ])
 
+# to avoid building pch files redundantly in CI (not really worth it)
+AS_IF([test "$CI" = "true"], [using_pch=no], [using_pch=yes])
+AM_CONDITIONAL([BUILDING_IN_CI], [test "$CI" = "true"])
+
 # copy winpthread dll to install directory
 AS_IF([test "$SYSNAME" = "windows" && test "x$enable_static" != "xyes"], [
     WINSHARED_DLLS="$($CC -print-search-dirs | grep '^programs:' | sed 's/programs: =//' | tr ':' '\n' | while read dir; do
@@ -1292,6 +1297,7 @@ neosu build configuration:
     ccache:             ${CCACHE-no}
     clang:              ${CLANG-no}
     mold:               ${using_mold-no}
+    PCH:                ${using_pch}
     C++ compiler:       ${CXX}
     C++ flags:          ${CXXFLAGS}
     C compiler:         ${CC}

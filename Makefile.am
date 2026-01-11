@@ -1013,7 +1013,7 @@ else
 $(DEPS_PREFIX)/winpthread-noversion.built:
 	$(MKDIR_P) $(DEPS_PREFIX)
 	touch $@
-endif
+endif # BUILD_WINPTHREAD_NOVERSION
 
 #####################################################################################################################################################
 ## END EXTERNAL DEPENDENCY BUILD/SETUP SECTION
@@ -1050,6 +1050,9 @@ BUILT_SOURCES := \
 	$(DEPS_PREFIX)/curl-$(CURL_VERSION).built \
 	$(DEPS_CACHE)/curl-$(CURL_VERSION)/certbundle/cacert.pem
 
+# we dont cache the pch in CI atm so there's no point
+if !BUILDING_IN_CI
+
 # build precompiled headers
 PCH_SOURCE := $(srcdir)/src/pch.h
 PCH_OUTPUT := $(builddir)/pch.h.gch
@@ -1057,11 +1060,11 @@ PCH_DEPS := $(builddir)/pch.h.d
 PCH_FLAGS := -Winvalid-pch -Wno-error=invalid-pch -include $(builddir)/pch.h
 
 if CLANG_BUILD
-PCH_BUILD_FLAGS := -Xclang -fno-pch-timestamp
+PCH_BUILD_FLAGS := -Xclang -fno-pch-timestamp -Xclang -fpch-instantiate-templates
 else
 PCH_BUILD_FLAGS :=
 PCH_FLAGS += -fpch-preprocess
-endif
+endif # CLANG_BUILD
 
 $(PCH_OUTPUT): $(PCH_SOURCE) $(BUILT_SOURCES)
 	@rm -f $(PCH_OUTPUT) # remove possibly existing-but-outdated pch to avoid recursively including it (sanity)
@@ -1073,6 +1076,13 @@ $(PCH_OUTPUT): $(PCH_SOURCE) $(BUILT_SOURCES)
 -include $(PCH_DEPS)
 
 CLEANFILES += $(PCH_OUTPUT) $(PCH_DEPS)
+else
+
+# nothing
+PCH_OUTPUT := 
+PCH_FLAGS := 
+
+endif # !BUILDING_IN_CI
 
 # making sure deps are built before main compile
 $(neosu_OBJECTS): $(BUILT_SOURCES) $(EXTRA_BINDEPS) $(PCH_OUTPUT)
@@ -1084,6 +1094,8 @@ NEOSU_INCLUDE_FLAGS := $(shell find $(srcdir)/src -not -path '*/.*' -type d -pri
 neosu_CPPFLAGS := $(NEOSU_CPPFLAGS) -DCACERT_INCDIR=\"$(CACERT_INCDIR)\" -DSHADERS_INCDIR=\"$(SHADERS_INCDIR)\" -DMISC_INCDIR=\"$(MISC_INCDIR)\"
 
 neosu_CXXFLAGS := \
+	-I$(builddir) \
+	-I$(builddir)/src \
 	$(PCH_FLAGS) \
 	$(INCBIN_FLAGS) \
 	-I$(DEPS_PREFIX)/include \
