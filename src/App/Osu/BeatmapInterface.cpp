@@ -1760,7 +1760,7 @@ void BeatmapInterface::draw() {
         if(this->isBuffering()) {
             f32 leeway = std::clamp<i32>(this->last_frame_ms - this->iCurMusicPos, 0, cv::spec_buffer.getInt());
             f32 pct = leeway / (cv::spec_buffer.getFloat()) * 100.f;
-            auto loadingMessage = UString::format("Buffering ... (%.2f%%)", pct);
+            auto loadingMessage = fmt::format("Buffering ... ({:.2f}%)", pct);
             ui->getHUD()->drawLoadingSmall(loadingMessage);
 
             // draw the rest of the playfield while buffering/paused
@@ -1822,7 +1822,7 @@ void BeatmapInterface::draw() {
     // draw spectator pause message
     if(this->spectate_pause) {
         auto info = BANCHO::User::get_user_info(BanchoState::spectated_player_id);
-        auto pause_msg = UString::format("%s has paused", info->name.c_str());
+        auto pause_msg = fmt::format("{} has paused", info->name.c_str());
         ui->getHUD()->drawLoadingSmall(pause_msg);
     }
 

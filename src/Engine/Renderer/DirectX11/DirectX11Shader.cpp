@@ -710,7 +710,7 @@ bool DirectX11Shader::compile(const std::string &vertexShader, const std::string
 
             if(byteWidth % 16 != 0) {
                 engine->showMessageError("DirectX11Shader Error",
-                                         UString::format("Invalid byteWidth %i for \"%s\" (must be a multiple of 16)",
+                                         fmt::format("Invalid byteWidth {} for \"{}\" (must be a multiple of 16)",
                                                          (int)byteWidth, name.c_str()));
                 return false;
             }
@@ -727,7 +727,7 @@ bool DirectX11Shader::compile(const std::string &vertexShader, const std::string
             ID3D11Buffer *buffer = nullptr;
             hr1 = dx11->getDevice()->CreateBuffer(&bufferDesc, nullptr, &buffer);
             if(FAILED(hr1) || buffer == nullptr) {
-                engine->showMessageError("DirectX11Shader Error", UString::format("Couldn't CreateBuffer(%ld, %x, %x)!",
+                engine->showMessageError("DirectX11Shader Error", fmt::format("Couldn't CreateBuffer({}, {:x}, {:x})!",
                                                                                   hr1, hr1, MAKE_DXGI_HRESULT(hr1)));
                 return false;
             }
@@ -735,7 +735,7 @@ bool DirectX11Shader::compile(const std::string &vertexShader, const std::string
             this->constantBuffers.push_back(buffer);
         } else {
             engine->showMessageError("DirectX11Shader Error",
-                                     UString::format("Invalid descType \"%s\"", descType.c_str()));
+                                     fmt::format("Invalid descType \"{}\"", descType.c_str()));
             return false;
         }
     }

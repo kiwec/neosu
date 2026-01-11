@@ -151,24 +151,20 @@ void UISearchOverlay::draw() {
                 g->drawString(searchTextFont, searchingText2);
             } else {
                 g->setColor(0xff000000);
-                g->drawString(
-                    searchTextFont,
-                    this->iNumFoundResults > -1
-                        ? (this->iNumFoundResults > 0
-                               ? UString::format(this->iNumFoundResults == 1 ? "%i match found!" : "%i matches found!",
-                                                 this->iNumFoundResults)
-                               : noMatchesFoundText1)
-                        : noMatchesFoundText2);
+                g->drawString(searchTextFont, this->iNumFoundResults > -1
+                                                  ? (this->iNumFoundResults > 0
+                                                         ? fmt::format("{:d} match{:s} found!", this->iNumFoundResults,
+                                                                       this->iNumFoundResults == 1 ? "" : "es")
+                                                         : noMatchesFoundText1)
+                                                  : noMatchesFoundText2);
                 g->translate(-1, -1);
                 g->setColor(0xffffffff);
-                g->drawString(
-                    searchTextFont,
-                    this->iNumFoundResults > -1
-                        ? (this->iNumFoundResults > 0
-                               ? UString::format(this->iNumFoundResults == 1 ? "%i match found!" : "%i matches found!",
-                                                 this->iNumFoundResults)
-                               : noMatchesFoundText1)
-                        : noMatchesFoundText2);
+                g->drawString(searchTextFont, this->iNumFoundResults > -1
+                                                  ? (this->iNumFoundResults > 0
+                                                         ? fmt::format("{:d} match{:s} found!", this->iNumFoundResults,
+                                                                       this->iNumFoundResults == 1 ? "" : "es")
+                                                         : noMatchesFoundText1)
+                                                  : noMatchesFoundText2);
             }
         }
     }

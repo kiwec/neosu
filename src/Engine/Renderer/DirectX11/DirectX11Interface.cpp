@@ -335,16 +335,16 @@ void DirectX11Interface::beginScene() {
         }
 
         int shaderCounter = 0;
-        vprof->addInfoBladeEngineTextLine(UString::format("Draw Calls: %i", numDrawCallsPrevFrame));
-        vprof->addInfoBladeEngineTextLine(UString::format("Active Shaders: %i", numActiveShaders));
+        vprof->addInfoBladeEngineTextLine(fmt::format("Draw Calls: {}", numDrawCallsPrevFrame));
+        vprof->addInfoBladeEngineTextLine(fmt::format("Active Shaders: {}", numActiveShaders));
         vprof->addInfoBladeEngineTextLine(
-            UString::format("shader[%i]: shaderTexturedGeneric: %ic", shaderCounter++,
+            fmt::format("shader[{}]: shaderTexturedGeneric: {}c", shaderCounter++,
                             (int)this->shaderTexturedGeneric->getStatsNumConstantBufferUploadsPerFrame()));
         for(const Resource *shader : resourceManager->getShaders()) {
             const auto *dx11Shader = static_cast<const DirectX11Shader *>(shader);
             if(dx11Shader->getStatsNumConstantBufferUploadsPerFrameEngineFrameCount() == (engine->getFrameCount() - 1))
                 vprof->addInfoBladeEngineTextLine(
-                    UString::format("shader[%i]: %s: %ic", shaderCounter++, shader->getName().c_str(),
+                    fmt::format("shader[{}]: {}: {}c", shaderCounter++, shader->getName().c_str(),
                                     (int)dx11Shader->getStatsNumConstantBufferUploadsPerFrame()));
         }
     }
@@ -1164,7 +1164,7 @@ std::vector<u8> DirectX11Interface::getScreenshot(bool /*withAlpha*/) {
 UString DirectX11Interface::getVendor() {
     DXGI_ADAPTER_DESC desc;
     if(this->dxgiAdapter && SUCCEEDED(this->dxgiAdapter->GetDesc(&desc))) {
-        return UString::format("0x%x", desc.VendorId);
+        return fmt::format("0x{:x}", desc.VendorId);
     }
 
     return "<UNKNOWN>";
@@ -1183,7 +1183,7 @@ UString DirectX11Interface::getModel() {
 UString DirectX11Interface::getVersion() {
     DXGI_ADAPTER_DESC desc;
     if(this->dxgiAdapter && SUCCEEDED(this->dxgiAdapter->GetDesc(&desc))) {
-        return UString::format("0x%x/%x/%x", desc.DeviceId, desc.SubSysId, desc.Revision);
+        return fmt::format("0x{:x}/{:x}/{:x}", desc.DeviceId, desc.SubSysId, desc.Revision);
     }
 
     return "<UNKNOWN>";

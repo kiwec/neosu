@@ -877,7 +877,7 @@ std::vector<u8> OpenGLES32Interface::getScreenshot(bool withAlpha) {
 
     error = glGetError();
     if(error != GL_NO_ERROR) {
-        engine->showMessageError("Screenshot Error", UString::format("glReadPixels failed with error code: %d", error));
+        engine->showMessageError("Screenshot Error", fmt::format("glReadPixels failed with error code: {}", error));
 
         glPixelStorei(GL_PACK_ALIGNMENT, previousAlignment);
         glBindFramebuffer(GL_FRAMEBUFFER, currentFramebuffer);

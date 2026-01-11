@@ -33,7 +33,7 @@ void LoadingScreen::draw() {
 
     // progress message
     g->setColor(0xffffffff);
-    UString loadingMessage = UString::format("Loading ... (%i %%)", (int)(this->get_progress_fn() * 100.0f));
+    UString loadingMessage = fmt::format("Loading ... ({} %)", (int)(this->get_progress_fn() * 100.0f));
     g->pushTransform();
     {
         g->translate((int)(osu->getVirtScreenWidth() / 2 - osu->getSubTitleFont()->getStringWidth(loadingMessage) / 2),

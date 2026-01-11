@@ -83,7 +83,7 @@ void ScoreboardSlot::draw() {
     // Draw index
     g->pushTransform();
     {
-        UString indexString = UString::format("%i", this->index + 1);
+        UString indexString = fmt::format("{}", this->index + 1);
         const float scale = (avatar_height / font_bold->getHeight()) * 0.5f;
 
         g->scale(scale, scale);
@@ -139,7 +139,7 @@ void ScoreboardSlot::draw() {
     // draw combo
     g->pushTransform();
     {
-        UString comboString = UString::format("%ix", this->score.maxCombo);
+        UString comboString = fmt::format("{}x", this->score.maxCombo);
         const float stringWidth = font_normal->getStringWidth(comboString);
 
         g->scale(scoreScale, scoreScale);

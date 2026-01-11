@@ -125,10 +125,10 @@ std::vector<u8> compress_frames(const std::vector<Frame>& frames) {
     }
 
     std::string replay_string;
-    for(auto frame : frames) {
-        auto frame_str = UString::format("%lld|%.4f|%.4f|%hhu,", frame.milliseconds_since_last_frame, frame.x, frame.y,
+    for(Frame frame : frames) {
+        std::string frame_str = fmt::format("{}|{:.4f}|{:.4f}|{},", frame.milliseconds_since_last_frame, frame.x, frame.y,
                                          frame.key_flags);
-        replay_string.append(frame_str.toUtf8(), frame_str.lengthUtf8());
+        replay_string.append(frame_str.c_str(), frame_str.length());
     }
 
     // osu!stable doesn't consider a replay valid unless it ends with this

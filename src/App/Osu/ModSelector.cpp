@@ -387,7 +387,7 @@ void ModSelector::updateScoreMultiplierLabelText() {
     else
         this->scoreMultiplierLabel->setTextColor(argb(alpha, 255, 69, 00));
 
-    this->scoreMultiplierLabel->setText(UString::format("Score Multiplier: %.2fX", scoreMultiplier));
+    this->scoreMultiplierLabel->setText(fmt::format("Score Multiplier: {:.2f}X", scoreMultiplier));
 }
 
 void ModSelector::updateExperimentalButtons() {
@@ -1412,9 +1412,9 @@ UString ModSelector::getOverrideSliderLabelText(const ModSelector::OVERRIDE_SLID
             {
                 {
                     if(!active)
-                        newLabelText.append(UString::format(" %.4g", beatmapValue));
+                        newLabelText.append(fmt::format(" {:.4g}", beatmapValue));
                     else
-                        newLabelText.append(UString::format(" %.4g -> %.4g", beatmapValue, convarValue));
+                        newLabelText.append(fmt::format(" {:.4g} -> {:.4g}", beatmapValue, convarValue));
                 }
 
                 newLabelText.append("  (BPM: ");
@@ -1427,14 +1427,14 @@ UString ModSelector::getOverrideSliderLabelText(const ModSelector::OVERRIDE_SLID
                 int newMostCommonBPM = mostCommonBPM * osu->getMapInterface()->getSpeedMultiplier();
                 if(!active || osu->getMapInterface()->getSpeedMultiplier() == 1.0f) {
                     if(minBPM == maxBPM)
-                        newLabelText.append(UString::format("%i", newMaxBPM));
+                        newLabelText.append(fmt::format("{}", newMaxBPM));
                     else
-                        newLabelText.append(UString::format("%i-%i (%i)", newMinBPM, newMaxBPM, newMostCommonBPM));
+                        newLabelText.append(fmt::format("{}-{} ({})", newMinBPM, newMaxBPM, newMostCommonBPM));
                 } else {
                     if(minBPM == maxBPM)
-                        newLabelText.append(UString::format("%i -> %i", maxBPM, newMaxBPM));
+                        newLabelText.append(fmt::format("{} -> {}", maxBPM, newMaxBPM));
                     else
-                        newLabelText.append(UString::format("%i-%i (%i) -> %i-%i (%i)", minBPM, maxBPM, mostCommonBPM,
+                        newLabelText.append(fmt::format("{}-{} ({}) -> {}-{} ({})", minBPM, maxBPM, mostCommonBPM,
                                                             newMinBPM, newMaxBPM, newMostCommonBPM));
                 }
 
@@ -1454,9 +1454,9 @@ UString ModSelector::getOverrideSliderLabelText(const ModSelector::OVERRIDE_SLID
         // update label
         if(!wasSpeedSlider) {
             if(!active)
-                newLabelText.append(UString::format(" %.4g", beatmapValue));
+                newLabelText.append(fmt::format(" {:.4g}", beatmapValue));
             else
-                newLabelText.append(UString::format(" %.4g -> %.4g", beatmapValue, convarValue));
+                newLabelText.append(fmt::format(" {:.4g} -> {:.4g}", beatmapValue, convarValue));
         }
     }
 

@@ -909,12 +909,11 @@ void Database::scheduleLoadRaw() {
         this->raw_found_changes = this->num_beatmaps_to_load > 0;
         if(this->raw_found_changes)
             ui->getNotificationOverlay()->addNotification(
-                UString::format(this->num_beatmaps_to_load == 1 ? "Adding %i new beatmap." : "Adding %i new beatmaps.",
-                                this->num_beatmaps_to_load),
+                fmt::format("Adding {:d} new beatmap{}.", this->num_beatmaps_to_load,
+                            this->num_beatmaps_to_load == 1 ? "" : "s"),
                 0xff00ff00);
         else
-            ui->getNotificationOverlay()->addNotification(
-                UString::format("No new beatmaps detected.", this->num_beatmaps_to_load), 0xff00ff00);
+            ui->getNotificationOverlay()->addNotification(US_("No new beatmaps detected."), 0xff00ff00);
     }
 
     debugLog("Database: Building beatmap database ...");
@@ -1299,8 +1298,7 @@ void Database::loadMaps() {
             // hard cap upper db version
             if(osu_db_version > cv::database_version.getVal<u32>() && !cv::database_ignore_version.getBool()) {
                 ui->getNotificationOverlay()->addToast(
-                    UString::format("osu!.db version unknown (%i), osu!stable maps will not get loaded.",
-                                    osu_db_version),
+                    fmt::format("osu!.db version unknown ({:d}), osu!stable maps will not get loaded.", osu_db_version),
                     ERROR_TOAST);
                 should_read_peppy_database = false;
             }

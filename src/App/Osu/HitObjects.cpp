@@ -2569,7 +2569,7 @@ void Spinner::draw() {
             g->translate((int)(osu->getVirtScreenWidth() / 2 - stringWidth / 2),
                          (int)(osu->getVirtScreenHeight() - 5 +
                                (5 + rpmFont->getHeight()) * (1.0f - this->fAlphaWithoutHidden)));
-            g->drawString(rpmFont, UString::format("RPM: %i", (int)(this->fRPM + 0.4f)));
+            g->drawString(rpmFont, fmt::format("RPM: {}", (int)(this->fRPM + 0.4f)));
         }
         g->popTransform();
     }

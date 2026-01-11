@@ -580,7 +580,7 @@ void Osu::update() {
                 this->bSkinLoadWasReload = false;
 
                 ui->getNotificationOverlay()->addNotification(
-                    this->skin->name.length() > 0 ? UString::format("Skin reloaded! (%s)", this->skin->name.c_str())
+                    this->skin->name.length() > 0 ? fmt::format("Skin reloaded! ({})", this->skin->name.c_str())
                                                   : US_("Skin reloaded!"),
                     0xffffffff, false, 0.75f);
             }
@@ -1101,7 +1101,7 @@ void Osu::saveScreenshot() {
     const f32 innerHeight = this->internalRect.getHeight();
 
     soundEngine->play(this->skin->s_shutter);
-    ui->getNotificationOverlay()->addToast(UString::format("Saved screenshot to %s", screenshotFilename.c_str()),
+    ui->getNotificationOverlay()->addToast(fmt::format("Saved screenshot to {}", screenshotFilename.c_str()),
                                            CHAT_TOAST,
                                            [screenshotFilename] { env->openFileBrowser(screenshotFilename); });
 

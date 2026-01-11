@@ -98,7 +98,7 @@ void DirectX11Image::init() {
                          MAKE_DXGI_HRESULT(hr), this->sFilePath);
                 engine->showMessageError(
                     "Image Error",
-                    UString::format("DirectX Image error, couldn't CreateTexture2D(%ld, %x, %x) on file %s", hr, hr,
+                    fmt::format("DirectX Image error, couldn't CreateTexture2D({}, {:x}, {:x}) on file {}", hr, hr,
                                     MAKE_DXGI_HRESULT(hr), this->sFilePath));
                 return;
             }
@@ -129,7 +129,7 @@ void DirectX11Image::init() {
                      MAKE_DXGI_HRESULT(hr), this->sFilePath);
             engine->showMessageError(
                 "Image Error",
-                UString::format("DirectX Image error, couldn't CreateShaderResourceView(%ld, %x, %x) on file %s", hr,
+                fmt::format("DirectX Image error, couldn't CreateShaderResourceView({}, {:x}, {:x}) on file {}", hr,
                                 hr, MAKE_DXGI_HRESULT(hr), this->sFilePath));
 
             return;
@@ -182,7 +182,7 @@ void DirectX11Image::init() {
         if(this->samplerState == nullptr) {
             debugLog("DirectX Image Error: Couldn't CreateSamplerState() on file {:s}!", this->sFilePath);
             engine->showMessageError("Image Error",
-                                     UString::format("Couldn't CreateSamplerState() on file %s!", this->sFilePath));
+                                     fmt::format("Couldn't CreateSamplerState() on file {}!", this->sFilePath));
             return;
         }
     }

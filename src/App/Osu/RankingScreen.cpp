@@ -612,7 +612,7 @@ void RankingScreen::setIndex(int index) {
     if(!cv::scores_enabled.getBool()) index = -1;
 
     if(index > -1) {
-        this->rankingIndex->setText(UString::format("You achieved the #%i score on local rankings!", (index + 1)));
+        this->rankingIndex->setText(fmt::format("You achieved the #{} score on local rankings!", (index + 1)));
         this->rankingIndex->setVisible2(true);
         this->rankingBottom->setVisible2(true);
     } else {

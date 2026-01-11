@@ -83,7 +83,7 @@ void Mouse::drawDebug() {
     g->drawRect(pos.x - rectSize.x / 2.0f, pos.y - rectSize.y / 2.0f, rectSize.x, rectSize.y);
 
     McFont *posFont = engine->getDefaultFont();
-    UString posString = UString::format("[%i, %i]", (int)pos.x, (int)pos.y);
+    UString posString = fmt::format("[{}, {}]", (int)pos.x, (int)pos.y);
     float stringWidth = posFont->getStringWidth(posString);
     float stringHeight = posFont->getHeight();
     vec2 textOffset = vec2(
@@ -94,7 +94,7 @@ void Mouse::drawDebug() {
 
     g->pushTransform();
     g->translate(pos.x + textOffset.x, pos.y + textOffset.y);
-    g->drawString(posFont, UString::format("[%i, %i]", (int)pos.x, (int)pos.y));
+    g->drawString(posFont, fmt::format("[{}, {}]", (int)pos.x, (int)pos.y));
     g->popTransform();
 }
 

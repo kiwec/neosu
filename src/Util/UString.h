@@ -377,12 +377,6 @@ struct hash<UString> {
 };
 }  // namespace std
 
-// for printf-style formatting (legacy McEngine style, should convert over to fmt::format because it's nicer)
-template <typename... Args>
-UString UString::format(std::string_view fmt, Args &&...args) noexcept {
-    return UString(fmt::sprintf(fmt, std::forward<Args>(args)...));
-}
-
 // forward decls to avoid including simdutf here
 namespace simdutf {
 extern size_t utf8_length_from_utf16le(const char16_t *input, size_t length) noexcept;

@@ -246,7 +246,7 @@ void HUD::draw() {
         BanchoState::spectating ? BanchoState::fellow_spectators.size() : BanchoState::spectators.size();
     if(nb_spectators > 0 && cv::draw_spectator_list.getBool()) {
         // XXX: maybe draw player names? avatars?
-        const UString str = UString::format("%d spectators", nb_spectators);
+        const UString str = fmt::format("{} spectators", nb_spectators);
 
         g->pushTransform();
         McFont *font = ui->getSongBrowser()->getFont();
@@ -571,7 +571,7 @@ void HUD::drawFps() {
     }
 
     fps = std::round(fps);
-    const UString fpsString = UString::format("%i fps", (int)(fps));
+    const UString fpsString = fmt::format("{} fps", (int)(fps));
 
     const double frametime_ms = old_worst_frametime * 1000.0;
     const UString msString = fmt::format("{:.{}f} ms", frametime_ms, frametime_ms < 0.1 ? 2 : 1);
@@ -1156,11 +1156,11 @@ std::vector<SCORE_ENTRY> HUD::getCurrentScores() {
 
             if(slot->has_quit()) {
                 slot->current_hp = 0;
-                scoreEntry.name = UString::format("%s [quit]", user_info->name.c_str());
+                scoreEntry.name = fmt::format("{} [quit]", user_info->name.c_str());
             } else if(pf->isInSkippableSection() && pf->iCurrentHitObjectIndex < 1) {
                 if(slot->skipped) {
                     // XXX: Draw pretty "Skip" image instead
-                    scoreEntry.name = UString::format("%s [skip]", user_info->name.c_str());
+                    scoreEntry.name = fmt::format("{} [skip]", user_info->name.c_str());
                 }
             }
 
@@ -1593,7 +1593,7 @@ void HUD::drawHitErrorBarInt2(vec2 center, int ur) {
     if(cv::draw_hiterrorbar_ur.getBool()) {
         g->pushTransform();
         {
-            UString urText = UString::format("%i UR", ur);
+            UString urText = fmt::format("{} UR", ur);
             McFont *urTextFont = ui->getSongBrowser()->getFont();
 
             const float hitErrorBarScale = cv::hud_scale.getFloat() * cv::hud_hiterrorbar_scale.getFloat();
@@ -2049,7 +2049,7 @@ void HUD::drawScrubbingTimeline(u32 beatmapTime, u32 beatmapLengthPlayable, u32 
     g->popTransform();
 
     // current time text
-    UString currentTimeText = UString::format("%i:%02i", (beatmapTime / 1000) / 60, (beatmapTime / 1000) % 60);
+    UString currentTimeText = fmt::format("{}:{:02d}", (beatmapTime / 1000) / 60, (beatmapTime / 1000) % 60);
     g->pushTransform();
     {
         g->translate(std::clamp<f32>(triangleTip.x - timeFont->getStringWidth(currentTimeText) / 2.0f,
@@ -2070,7 +2070,7 @@ void HUD::drawScrubbingTimeline(u32 beatmapTime, u32 beatmapLengthPlayable, u32 
 
     // start time text
     UString startTimeText =
-        UString::format("(%i:%02i)", (beatmapStartTimePlayable / 1000) / 60, (beatmapStartTimePlayable / 1000) % 60);
+        fmt::format("({}:{:02d})", (beatmapStartTimePlayable / 1000) / 60, (beatmapStartTimePlayable / 1000) % 60);
     g->pushTransform();
     {
         g->translate((i32)(startAndEndTimeTextOffset + 1),
@@ -2086,7 +2086,7 @@ void HUD::drawScrubbingTimeline(u32 beatmapTime, u32 beatmapLengthPlayable, u32 
     g->popTransform();
 
     // end time text
-    UString endTimeText = UString::format("%i:%02i", (endTimeMS / 1000) / 60, (endTimeMS / 1000) % 60);
+    UString endTimeText = fmt::format("{}:{:02d}", (endTimeMS / 1000) / 60, (endTimeMS / 1000) % 60);
     g->pushTransform();
     {
         g->translate(
@@ -2122,7 +2122,7 @@ void HUD::drawScrubbingTimeline(u32 beatmapTime, u32 beatmapLengthPlayable, u32 
 
         // end time text
         u32 quickSaveTimeMS = osu->getQuickSaveTimeMS();
-        UString endTimeText = UString::format("%i:%02i", (quickSaveTimeMS / 1000) / 60, (quickSaveTimeMS / 1000) % 60);
+        UString endTimeText = fmt::format("{}:{:02d}", (quickSaveTimeMS / 1000) / 60, (quickSaveTimeMS / 1000) % 60);
         g->pushTransform();
         {
             g->translate((i32)(std::clamp<f32>(triangleTip.x - timeFont->getStringWidth(currentTimeText) / 2.0f,
@@ -2147,7 +2147,7 @@ void HUD::drawScrubbingTimeline(u32 beatmapTime, u32 beatmapLengthPlayable, u32 
 
     // current time hover text
     u32 hoverTimeMS = std::clamp<f32>((cursorPos.x / (f32)osu->getVirtScreenWidth()), 0.0f, 1.0f) * endTimeMS;
-    UString hoverTimeText = UString::format("%i:%02i", (hoverTimeMS / 1000) / 60, (hoverTimeMS / 1000) % 60);
+    UString hoverTimeText = fmt::format("{}:{:02d}", (hoverTimeMS / 1000) / 60, (hoverTimeMS / 1000) % 60);
     triangleTip = vec2(cursorPos.x, cursorPos.y);
     g->pushTransform();
     {

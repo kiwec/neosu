@@ -38,6 +38,10 @@
 
 using namespace neosu::sbr;
 
+namespace {
+inline std::string_view comboBasedSuffix(bool perfect, bool FC) { return perfect ? " PFC" : (FC ? " FC" : ""); }
+}  // namespace
+
 UString ScoreButton::recentScoreIconString;
 
 ScoreButton::ScoreButton(UIContextMenu *contextMenu, float xPos, float yPos, float xSize, float ySize, STYLE style)
@@ -89,7 +93,7 @@ void ScoreButton::draw() {
     McFont *indexNumberFont = ui->getSongBrowser()->getFontBold();
     g->pushTransform();
     {
-        UString indexNumberString = UString::format("%i", this->iScoreIndexNumber);
+        UString indexNumberString = fmt::format("{}", this->iScoreIndexNumber);
         const float scale = (this->vSize.y / indexNumberFont->getHeight()) * indexNumberScale;
 
         g->scale(scale, scale);
@@ -389,9 +393,8 @@ void ScoreButton::update() {
                     }
                 }
             }
-            this->sScoreScorePP = UString::format(
-                (sc.perfect ? "PP: %ipp (%ix PFC)" : (fullCombo ? "PP: %ipp (%ix FC)" : "PP: %ipp (%ix)")),
-                (int)std::round(sc.get_pp()), sc.comboMax);
+            this->sScoreScorePP = fmt::format("PP: {}pp ({}x{:s})", (int)std::round(sc.get_pp()), sc.comboMax,
+                                              comboBasedSuffix(sc.perfect, fullCombo));
         }
     }
 
@@ -493,15 +496,15 @@ void ScoreButton::updateElapsedTimeString() {
 
         if(deltaInHours < 96 || this->style == STYLE::TOP_RANKS) {
             if(deltaInDays > 364)
-                this->sScoreTime = UString::format("%iy", (int)(deltaInYears));
+                this->sScoreTime = fmt::format("{}y", (int)(deltaInYears));
             else if(deltaInHours > 47)
-                this->sScoreTime = UString::format("%id", (int)(deltaInDays));
+                this->sScoreTime = fmt::format("{}d", (int)(deltaInDays));
             else if(deltaInHours >= 1)
-                this->sScoreTime = UString::format("%ih", (int)(deltaInHours));
+                this->sScoreTime = fmt::format("{}h", (int)(deltaInHours));
             else if(deltaInMinutes > 0)
-                this->sScoreTime = UString::format("%im", (int)(deltaInMinutes));
+                this->sScoreTime = fmt::format("{}m", (int)(deltaInMinutes));
             else
-                this->sScoreTime = UString::format("%is", (int)(deltaInSeconds));
+                this->sScoreTime = fmt::format("{}s", (int)(deltaInSeconds));
         } else {
             this->iScoreUnixTimestamp = 0;
 
@@ -688,26 +691,22 @@ void ScoreButton::setScore(const FinishedScore &newscore, const DatabaseBeatmap 
     }
 
     // display
+    const std::string_view comboSuffix = comboBasedSuffix(sc.perfect, fullCombo);
+
     this->scoreGrade = sc.calculate_grade();
     this->sScoreUsername = UString(sc.playerName.c_str());
-    this->sScoreScore = UString::format(
-        (sc.perfect ? "Score: %llu (%ix PFC)" : (fullCombo ? "Score: %llu (%ix FC)" : "Score: %llu (%ix)")), sc.score,
-        sc.comboMax);
+    this->sScoreScore = fmt::format("Score: {} ({}x{:s})", sc.score, sc.comboMax, comboSuffix);
 
     if(sc.get_pp() == -1.0) {
-        this->sScoreScorePP = UString::format(
-            (sc.perfect ? "PP: ??? (%ix PFC)" : (fullCombo ? "PP: ??? (%ix FC)" : "PP: ??? (%ix)")), sc.comboMax);
+        this->sScoreScorePP = fmt::format("PP: ??? ({}x{:s})", sc.comboMax, comboSuffix);
     } else {
-        this->sScoreScorePP =
-            UString::format((sc.perfect ? "PP: %ipp (%ix PFC)" : (fullCombo ? "PP: %ipp (%ix FC)" : "PP: %ipp (%ix)")),
-                            (int)std::round(sc.get_pp()), sc.comboMax);
+        this->sScoreScorePP = fmt::format("PP: {}pp ({}x{:s})", (int)std::round(sc.get_pp()), sc.comboMax, comboSuffix);
     }
 
-    this->sScoreAccuracy = UString::format("%.2f%%", accuracy);
-    this->sScoreAccuracyFC =
-        UString::format((sc.perfect ? "PFC %.2f%%" : (fullCombo ? "FC %.2f%%" : "%.2f%%")), accuracy);
+    this->sScoreAccuracy = fmt::format("{:.2f}%", accuracy);
+    this->sScoreAccuracyFC = fmt::format("{}{:.2f}%", sc.perfect ? "PFC " : (fullCombo ? "FC" : ""), accuracy);
     this->sScoreMods = getModsStringForDisplay(sc.mods);
-    this->sCustom = (sc.mods.speed != 1.0f ? UString::format("Spd: %gx", sc.mods.speed) : US_(""));
+    this->sCustom = (sc.mods.speed != 1.0f ? fmt::format("Spd: {:g}x", sc.mods.speed) : US_(""));
     if(map != nullptr) {
         const LegacyReplay::BEATMAP_VALUES beatmapValuesForModsLegacy = LegacyReplay::getBeatmapValuesForModsLegacy(
             sc.mods.to_legacy(), map->getAR(), map->getCS(), map->getOD(), map->getHP());
@@ -722,25 +721,25 @@ void ScoreButton::setScore(const FinishedScore &newscore, const DatabaseBeatmap 
         if(beatmapValuesForModsLegacy.CS != CS) {
             if(this->sCustom.length() > 0) this->sCustom.append(", ");
 
-            this->sCustom.append(UString::format("CS:%.4g", CS));
+            this->sCustom.append(fmt::format("CS:{:.4g}", CS));
         }
 
         if(beatmapValuesForModsLegacy.AR != AR) {
             if(this->sCustom.length() > 0) this->sCustom.append(", ");
 
-            this->sCustom.append(UString::format("AR:%.4g", AR));
+            this->sCustom.append(fmt::format("AR:{:.4g}", AR));
         }
 
         if(beatmapValuesForModsLegacy.OD != OD) {
             if(this->sCustom.length() > 0) this->sCustom.append(", ");
 
-            this->sCustom.append(UString::format("OD:%.4g", OD));
+            this->sCustom.append(fmt::format("OD:{:.4g}", OD));
         }
 
         if(beatmapValuesForModsLegacy.HP != HP) {
             if(this->sCustom.length() > 0) this->sCustom.append(", ");
 
-            this->sCustom.append(UString::format("HP:%.4g", HP));
+            this->sCustom.append(fmt::format("HP:{:.4g}", HP));
         }
     }
 
@@ -761,10 +760,10 @@ void ScoreButton::setScore(const FinishedScore &newscore, const DatabaseBeatmap 
     this->tooltipLines.clear();
     this->tooltipLines.push_back(achievedOn);
 
-    this->tooltipLines.push_back(UString::format("300:%i 100:%i 50:%i Miss:%i SBreak:%i", sc.num300s, sc.num100s,
-                                                 sc.num50s, sc.numMisses, sc.numSliderBreaks));
+    this->tooltipLines.emplace_back(fmt::format("300:{} 100:{} 50:{} Miss:{} SBreak:{}", sc.num300s, sc.num100s,
+                                                sc.num50s, sc.numMisses, sc.numSliderBreaks));
 
-    this->tooltipLines.push_back(UString::format("Accuracy: %.2f%%", accuracy));
+    this->tooltipLines.emplace_back(fmt::format("Accuracy: {:.2f}%", accuracy));
 
     UString tooltipMods = "Mods: ";
     if(this->sScoreMods.length() > 0)
@@ -807,18 +806,17 @@ void ScoreButton::setScore(const FinishedScore &newscore, const DatabaseBeatmap 
         const int ppWeightedRounded = std::round(sc.get_pp() * weight);
 
         this->sScoreTitle = titleString;
-        this->sScoreScorePPWeightedPP = UString::format("%ipp", (int)std::round(sc.get_pp()));
-        this->sScoreScorePPWeightedWeight =
-            UString::format("     weighted %i%% (%ipp)", weightRounded, ppWeightedRounded);
-        this->sScoreWeight = UString::format("weighted %i%%", weightRounded);
+        this->sScoreScorePPWeightedPP = fmt::format("{}pp", (int)std::round(sc.get_pp()));
+        this->sScoreScorePPWeightedWeight = fmt::format("     weighted {}% ({}pp)", weightRounded, ppWeightedRounded);
+        this->sScoreWeight = fmt::format("weighted {}%", weightRounded);
 
-        this->tooltipLines.push_back(UString::format("Stars: %.2f (%.2f aim, %.2f speed)", sc.ppv2_total_stars,
-                                                     sc.ppv2_aim_stars, sc.ppv2_speed_stars));
-        this->tooltipLines.push_back(UString::format("Speed: %.3gx", sc.mods.speed));
-        this->tooltipLines.push_back(UString::format("CS:%.4g AR:%.4g OD:%.4g HP:%.4g", CS, AR, OD, HP));
-        this->tooltipLines.push_back(
-            UString::format("Error: %.2fms - %.2fms avg", sc.hitErrorAvgMin, sc.hitErrorAvgMax));
-        this->tooltipLines.push_back(UString::format("Unstable Rate: %.2f", sc.unstableRate));
+        this->tooltipLines.emplace_back(fmt::format("Stars: {:.2f} ({:.2f} aim, {:.2f} speed)", sc.ppv2_total_stars,
+                                                    sc.ppv2_aim_stars, sc.ppv2_speed_stars));
+        this->tooltipLines.emplace_back(fmt::format("Speed: {:.3g}x", sc.mods.speed));
+        this->tooltipLines.emplace_back(fmt::format("CS:{:.4g} AR:{:.4g} OD:{:.4g} HP:{:.4g}", CS, AR, OD, HP));
+        this->tooltipLines.emplace_back(
+            fmt::format("Error: {:.2f}ms - {:.2f}ms avg", sc.hitErrorAvgMin, sc.hitErrorAvgMax));
+        this->tooltipLines.emplace_back(fmt::format("Unstable Rate: {:.2f}", sc.unstableRate));
     }
 
     // custom

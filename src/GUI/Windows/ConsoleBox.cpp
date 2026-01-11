@@ -467,18 +467,18 @@ void ConsoleBox::onChar(KeyboardEvent &e) {
             if(suggestion->canHaveValue()) {
                 switch(suggestion->getType()) {
                     case ConVar::CONVAR_TYPE::BOOL:
-                        suggestionText.append(UString::format(" %i", (int)suggestion->getBool()));
-                        // suggestionText.append(UString::format(" ( def. \"%i\" )",
+                        suggestionText.append(fmt::format(" {}", (int)suggestion->getBool()));
+                        // suggestionText.append(fmt::format(" ( def. \"{}\" )",
                         // (int)(suggestions[i]->getDefaultFloat() > 0)));
                         break;
                     case ConVar::CONVAR_TYPE::INT:
-                        suggestionText.append(UString::format(" %i", suggestion->getInt()));
-                        // suggestionText.append(UString::format(" ( def. \"%i\" )",
+                        suggestionText.append(fmt::format(" {}", suggestion->getInt()));
+                        // suggestionText.append(fmt::format(" ( def. \"{}\" )",
                         // (int)suggestions[i]->getDefaultFloat()));
                         break;
                     case ConVar::CONVAR_TYPE::FLOAT:
-                        suggestionText.append(UString::format(" %g", suggestion->getFloat()));
-                        // suggestionText.append(UString::format(" ( def. \"%g\" )",
+                        suggestionText.append(fmt::format(" {:g}", suggestion->getFloat()));
+                        // suggestionText.append(fmt::format(" ( def. \"{:g}\" )",
                         // suggestions[i]->getDefaultFloat()));
                         break;
                     case ConVar::CONVAR_TYPE::STRING:

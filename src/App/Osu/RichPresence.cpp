@@ -47,17 +47,14 @@ void mapstr(DatabaseBeatmap* map, char* output, bool /*include_difficulty*/) {
         return;
     }
 
-    UString playingInfo;
-    playingInfo.append(map->getArtist().c_str());
-    playingInfo.append(" - ");
-    playingInfo.append(map->getTitle().c_str());
+    std::string playingInfo = fmt::format("{} - {}", map->getArtist(), map->getTitle());
 
-    auto diffStr = UString::format(" [%s]", map->getDifficultyName().c_str());
-    if(playingInfo.lengthUtf8() + diffStr.lengthUtf8() < 128) {
+    std::string diffStr = fmt::format(" [{}]", map->getDifficultyName());
+    if(playingInfo.length() + diffStr.length() < 128) {
         playingInfo.append(diffStr);
     }
 
-    crop_to(playingInfo.toUtf8(), output, 128);
+    crop_to(playingInfo.c_str(), output, 128);
 }
 
 void set_activity_with_image(struct DiscordActivity* to_set) {
@@ -238,7 +235,7 @@ void onPlayStart() {
     }
 
     // also update window title
-    auto windowTitle = UString::format("neosu - %s", activity.details);
+    auto windowTitle = fmt::format("neosu - {}", activity.details);
     env->setWindowTitle(windowTitle);
 
     set_activity_with_image(&activity);
@@ -250,13 +247,13 @@ void onPlayEnd(bool quit) {
     // e.g.: 230pp 900x 95.50% HDHRDT 6*
 
     // pp
-    UString scoreInfo = UString::format("%ipp", (int)(std::round(osu->getScore()->getPPv2())));
+    UString scoreInfo = fmt::format("{}pp", (int)(std::round(osu->getScore()->getPPv2())));
 
     // max combo
-    scoreInfo.append(UString::format(" %ix", osu->getScore()->getComboMax()));
+    scoreInfo.append(fmt::format(" {}x", osu->getScore()->getComboMax()));
 
     // accuracy
-    scoreInfo.append(UString::format(" %.2f%%", osu->getScore()->getAccuracy() * 100.0f));
+    scoreInfo.append(fmt::format(" {:.2f}%", osu->getScore()->getAccuracy() * 100.0f));
 
     // mods
     UString mods = osu->getScore()->getModsStringForRichPresence();
@@ -266,7 +263,7 @@ void onPlayEnd(bool quit) {
     }
 
     // stars
-    scoreInfo.append(UString::format(" %.2f*", osu->getScore()->getStarsTomTotal()));
+    scoreInfo.append(fmt::format(" {:.2f}*", osu->getScore()->getStarsTomTotal()));
 
     setBanchoStatus(scoreInfo.toUtf8(), Action::SUBMITTING);
 }

@@ -480,7 +480,7 @@ Image *ResourceManager::createImage(i32 width, i32 height, bool mipmapped, bool 
     if(width > 8192 || height > 8192) {
         engine->showMessageError(
             "Resource Manager Error",
-            UString::format("Invalid parameters in createImage(%i, %i, %i)!", width, height, (int)mipmapped));
+            fmt::format("Invalid parameters in createImage({}, {}, {})!", width, height, (int)mipmapped));
         return nullptr;
     }
 
@@ -601,7 +601,7 @@ Shader *ResourceManager::createShader(std::string vertexShader, std::string frag
 RenderTarget *ResourceManager::createRenderTarget(int x, int y, int width, int height,
                                                   MultisampleType multiSampleType) {
     RenderTarget *rt = g->createRenderTarget(x, y, width, height, multiSampleType);
-    setResourceName(rt, UString::format("_RT_%ix%i", width, height).toUtf8());
+    setResourceName(rt, fmt::format("_RT_{:d}x{:d}", width, height));
 
     loadResource(rt, true);
 
@@ -614,7 +614,7 @@ RenderTarget *ResourceManager::createRenderTarget(int width, int height, Multisa
 
 TextureAtlas *ResourceManager::createTextureAtlas(int width, int height, bool filtering) {
     auto *ta = new TextureAtlas(width, height, filtering);
-    setResourceName(ta, UString::format("_TA_%ix%i", width, height).toUtf8());
+    setResourceName(ta, fmt::format("_TA_{:d}x{:d}", width, height));
 
     loadResource(ta, false);
 

@@ -59,7 +59,7 @@ void DirectX11RenderTarget::init() {
     if(FAILED(hr)) {
         engine->showMessageErrorFatal(
             "RenderTarget Error",
-            UString::format("Couldn't color CreateTexture2D(%ld, %x, %x)!", hr, hr, MAKE_DXGI_HRESULT(hr)));
+            fmt::format("Couldn't color CreateTexture2D({}, {:x}, {:x})!", hr, hr, MAKE_DXGI_HRESULT(hr)));
         return;
     }
 
@@ -82,7 +82,7 @@ void DirectX11RenderTarget::init() {
     if(FAILED(hr)) {
         engine->showMessageErrorFatal(
             "RenderTarget Error",
-            UString::format("Couldn't depthStencil CreateTexture2D(%ld, %x, %x)!", hr, hr, MAKE_DXGI_HRESULT(hr)));
+            fmt::format("Couldn't depthStencil CreateTexture2D({}, {:x}, {:x})!", hr, hr, MAKE_DXGI_HRESULT(hr)));
         return;
     }
 
@@ -97,7 +97,7 @@ void DirectX11RenderTarget::init() {
     if(FAILED(hr)) {
         engine->showMessageErrorFatal(
             "RenderTarget Error",
-            UString::format("Couldn't CreateRenderTargetView(%ld, %x, %x)!", hr, hr, MAKE_DXGI_HRESULT(hr)));
+            fmt::format("Couldn't CreateRenderTargetView({}, {:x}, {:x})!", hr, hr, MAKE_DXGI_HRESULT(hr)));
         return;
     }
 
@@ -113,7 +113,7 @@ void DirectX11RenderTarget::init() {
     if(FAILED(hr)) {
         engine->showMessageErrorFatal(
             "RenderTarget Error",
-            UString::format("Couldn't CreateDepthStencilView(%ld, %x, %x)!", hr, hr, MAKE_DXGI_HRESULT(hr)));
+            fmt::format("Couldn't CreateDepthStencilView({}, {:x}, {:x})!", hr, hr, MAKE_DXGI_HRESULT(hr)));
         return;
     }
 
@@ -129,7 +129,7 @@ void DirectX11RenderTarget::init() {
     if(FAILED(hr)) {
         engine->showMessageErrorFatal(
             "RenderTarget Error",
-            UString::format("Couldn't CreateShaderResourceView(%ld, %x, %x)!", hr, hr, MAKE_DXGI_HRESULT(hr)));
+            fmt::format("Couldn't CreateShaderResourceView({}, {:x}, {:x})!", hr, hr, MAKE_DXGI_HRESULT(hr)));
         return;
     }
 

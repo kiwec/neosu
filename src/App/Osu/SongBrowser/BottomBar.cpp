@@ -196,7 +196,7 @@ void draw() {
     i32 calcx = osu->getUserButton()->getPos().x + osu->getUserButton()->getSize().x + 20;
     i32 calcy = osu->getUserButton()->getPos().y + 30;
     if(DBRecalculator::get_maps_total() > 0) {
-        UString msg = UString::format("Calculating stars (%i/%i) ...", DBRecalculator::get_maps_processed(),
+        UString msg = fmt::format("Calculating stars ({}/{}) ...", DBRecalculator::get_maps_processed(),
                                       DBRecalculator::get_maps_total());
         g->setColor(0xff333333);
         g->pushTransform();
@@ -207,7 +207,7 @@ void draw() {
     }
     if(cv::normalize_loudness.getBool() && VolNormalization::get_total() > 0 &&
        VolNormalization::get_computed() < VolNormalization::get_total()) {
-        UString msg = UString::format("Computing loudness (%i/%i) ...", VolNormalization::get_computed(),
+        UString msg = fmt::format("Computing loudness ({}/{}) ...", VolNormalization::get_computed(),
                                       VolNormalization::get_total());
         g->setColor(0xff333333);
         g->pushTransform();
@@ -219,7 +219,7 @@ void draw() {
     const auto calc_total = DBRecalculator::get_scores_total();
     const auto calc_computed = DBRecalculator::get_scores_processed();
     if(calc_total > 0 && calc_computed < calc_total) {
-        UString msg = UString::format("Converting scores (%i/%i) ...", calc_computed, calc_total);
+        UString msg = fmt::format("Converting scores ({}/{}) ...", calc_computed, calc_total);
         g->setColor(0xff333333);
         g->pushTransform();
         g->translate(calcx, calcy);

@@ -32,7 +32,7 @@ void CWindowManager::draw() {
     /*
     for (size_t i=0; i<m_windows.size(); i++)
     {
-            UString text = UString::format(" -%i-  ", i);
+            UString text = fmt::format(" -{}-  ", i);
             text.append(this->windows[i]->getName());
             g->pushTransform();
                     g->translate(20, i*40+350);
@@ -42,8 +42,8 @@ void CWindowManager::draw() {
 
     g->pushTransform();
     g->translate(20, 500);
-    g->drawString(engine->getDefaultFont();, UString::format("currentEnabled = %i,
-    lastEnabled = %i, topIndex = %i", this->iCurrentEnabledWindow, this->iLastEnabledWindow, getTopMouseWindowIndex()));
+    g->drawString(engine->getDefaultFont();, fmt::format("currentEnabled = {},
+    lastEnabled = {}, topIndex = {}", this->iCurrentEnabledWindow, this->iLastEnabledWindow, getTopMouseWindowIndex()));
     g->popTransform();
     */
 }

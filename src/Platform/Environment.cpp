@@ -491,10 +491,10 @@ std::vector<UString> Environment::getLogicalDrives() {
         {
             if(dwDrives & (1 << i)) {
                 char driveLetter = 'A' + i;
-                UString drivePath = UString::format("%c:/", driveLetter);
+                UString drivePath = fmt::format("{:c}:/", driveLetter);
 
                 SDL_PathInfo info;
-                UString testPath = UString::format("%c:\\", driveLetter);
+                UString testPath = fmt::format("{:c}:\\", driveLetter);
 
                 if(SDL_GetPathInfo(testPath.toUtf8(), &info)) drives.emplace_back(drivePath);
             }
@@ -1076,11 +1076,11 @@ void Environment::setOSMousePos(vec2 pos) {
 UString Environment::keyCodeToString(SCANCODE keyCode) const {
     const char *name = SDL_GetScancodeName((SDL_Scancode)keyCode);
     if(name == nullptr)
-        return UString::format("%lu", keyCode);
+        return fmt::format("{}", keyCode);
     else {
         UString uName = UString(name);
         if(uName.length() < 1)
-            return UString::format("%lu", keyCode);
+            return fmt::format("{}", keyCode);
         else
             return uName;
     }

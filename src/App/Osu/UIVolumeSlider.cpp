@@ -77,10 +77,10 @@ void UIVolumeSlider::drawBlock() {
                      (int)(this->vPos.y + this->vSize.y / 2 + this->font->getHeight() / 2));
         g->setColor(0xff000000);
         g->translate(1, 1);
-        g->drawString(this->font, UString::format("%i%%", (int)(std::round(this->getFloat() * 100.0f))));
+        g->drawString(this->font, fmt::format("{}%", (int)(std::round(this->getFloat() * 100.0f))));
         g->setColor(0xffffffff);
         g->translate(-1, -1);
-        g->drawString(this->font, UString::format("%i%%", (int)(std::round(this->getFloat() * 100.0f))));
+        g->drawString(this->font, fmt::format("{}%", (int)(std::round(this->getFloat() * 100.0f))));
     }
     g->popTransform();
 }

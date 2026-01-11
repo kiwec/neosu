@@ -31,7 +31,7 @@ void ChatLink::update() {
 
     if(this->isMouseInside()) {
         ui->getTooltipOverlay()->begin();
-        ui->getTooltipOverlay()->addLine(UString::format("link: %s", this->link.toUtf8()));
+        ui->getTooltipOverlay()->addLine(fmt::format("link: {}", this->link.toUtf8()));
         ui->getTooltipOverlay()->end();
 
         this->setBackgroundColor(0xff3d48ac);

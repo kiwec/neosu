@@ -106,7 +106,7 @@ void BassSoundEngine::updateOutputDevices(bool /*printInfo*/) {
                     foundDuplicateName = true;
 
                     soundDevice.name = deviceInfo.name;
-                    soundDevice.name.append(UString::format(" (%i)", duplicateNameCounter));
+                    soundDevice.name.append(fmt::format(" ({})", duplicateNameCounter));
 
                     duplicateNameCounter++;
 
@@ -142,7 +142,7 @@ void BassSoundEngine::updateOutputDevices(bool /*printInfo*/) {
                     foundDuplicateName = true;
 
                     soundDevice.name = deviceInfo.name;
-                    soundDevice.name.append(UString::format(" (%i)", duplicateNameCounter));
+                    soundDevice.name.append(fmt::format(" ({})", duplicateNameCounter));
 
                     duplicateNameCounter++;
 
@@ -182,7 +182,7 @@ void BassSoundEngine::updateOutputDevices(bool /*printInfo*/) {
                     foundDuplicateName = true;
 
                     soundDevice.name = wasapiDeviceInfo.name;
-                    soundDevice.name.append(UString::format(" (%i)", duplicateNameCounter));
+                    soundDevice.name.append(fmt::format(" ({})", duplicateNameCounter));
 
                     duplicateNameCounter++;
 

@@ -361,7 +361,7 @@ void VisualProfiler::draw() {
                     g->pushTransform();
                     {
                         g->translate((int)(xPos + margin), (int)(yPos - 2 * margin));
-                        /// drawStringWithShadow(UString::format("[%s] = %g ms", this->spike.node.node->getName(),
+                        /// drawStringWithShadow(fmt::format("[{:s}] = {:g} ms", this->spike.node.node->getName(),
                         /// m_spike.timeLastFrame * 1000.0), this->groups[m_spike.node.node->getGroupID()].color);
                         g->drawString(this->font,
                                       fmt::format("Spike = {:g} ms"_cf, this->spike.timeLastFrame * 1000.0));

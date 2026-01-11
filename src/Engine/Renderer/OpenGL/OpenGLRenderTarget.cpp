@@ -179,7 +179,7 @@ void OpenGLRenderTarget::init() {
         if(status != GL_FRAMEBUFFER_COMPLETE) {
             engine->showMessageError(
                 "RenderTarget Error",
-                UString::format("!GL_FRAMEBUFFER_COMPLETE, size = (%ix%i), multisampled = %i, status = %u",
+                fmt::format("!GL_FRAMEBUFFER_COMPLETE, size = ({}x{}), multisampled = {}, status = {}",
                                 (int)this->vSize.x, (int)this->vSize.y, (int)isMultiSampled(), status));
             return;
         }

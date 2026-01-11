@@ -622,7 +622,7 @@ void SoLoudSoundEngine::updateOutputDevices(bool printInfo) {
                     if(existingDevice.name == soundDevice.name) {
                         foundDuplicateName = true;
                         soundDevice.name = originalDeviceName;
-                        soundDevice.name.append(UString::format(" (%i)", duplicateNameCounter));
+                        soundDevice.name.append(fmt::format(" ({})", duplicateNameCounter));
                         duplicateNameCounter++;
                         break;
                     }
@@ -715,7 +715,7 @@ bool SoLoudSoundEngine::initializeOutputDevice(const OUTPUT_DEVICE &device) {
 
     if(result != SoLoud::SO_NO_ERROR) {
         this->bReady = false;
-        engine->showMessageError("Sound Error", UString::format("SoLoud::Soloud::init() failed (%i)!", result));
+        engine->showMessageError("Sound Error", fmt::format("SoLoud::Soloud::init() failed ({})!", result));
         return false;
     }
 

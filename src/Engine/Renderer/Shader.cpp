@@ -53,7 +53,7 @@ Shader::SHADER_PARSE_RESULT Shader::parseShaderFromString(
 
     if(!foundGraphicsInterfaceAndShaderTypePrefixAtLeastOnce)
         engine->showMessageError(
-            "Shader Error", UString::format("Missing \"%s\" in shader %s", graphicsInterfaceAndShaderTypePrefix.c_str(),
+            "Shader Error", fmt::format("Missing \"{}\" in shader {}", graphicsInterfaceAndShaderTypePrefix.c_str(),
                                             shaderSource.c_str()));
 
     return result;

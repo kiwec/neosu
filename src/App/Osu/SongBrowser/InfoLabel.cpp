@@ -341,9 +341,9 @@ UString InfoLabel::buildSongInfoString() const {
 
     i32 numObjects = this->iNumObjects;
     if(this->iMinBPM == this->iMaxBPM) {
-        return UString::format("Length: %02i:%02i BPM: %i Objects: %i", minutes, seconds, maxBPM, numObjects);
+        return fmt::format("Length: {:02d}:{:02d} BPM: {} Objects: {}", minutes, seconds, maxBPM, numObjects);
     } else {
-        return UString::format("Length: %02i:%02i BPM: %i-%i (%i) Objects: %i", minutes, seconds, minBPM, maxBPM,
+        return fmt::format("Length: {:02d}:{:02d} BPM: {}-{} ({}) Objects: {}", minutes, seconds, minBPM, maxBPM,
                                mostCommonBPM, numObjects);
     }
 }
@@ -385,15 +385,15 @@ UString InfoLabel::buildDiffInfoString() const {
                                 ? static_cast<i32>(modPp)
                                 : 0));
         if(starsAndModStarsAreEqual) {
-            finalString = UString::format("CS:%.3g AR:%.3g OD:%.3g HP:%.3g Stars:%.3g (%ipp)", CS, AR, OD, HP,
+            finalString = fmt::format("CS:{:.3g} AR:{:.3g} OD:{:.3g} HP:{:.3g} Stars:{:.3g} ({}pp)", CS, AR, OD, HP,
                                           nomodStars, clampedModPp);
         } else {
-            finalString = UString::format("CS:%.3g AR:%.3g OD:%.3g HP:%.3g Stars:%.3g -> %.3g (%ipp)", CS, AR, OD, HP,
+            finalString = fmt::format("CS:{:.3g} AR:{:.3g} OD:{:.3g} HP:{:.3g} Stars:{:.3g} -> {:.3g} ({}pp)", CS, AR, OD, HP,
                                           nomodStars, modStars, clampedModPp);
         }
     } else {
         finalString =
-            UString::format("CS:%.3g AR:%.3g OD:%.3g HP:%.3g Stars:%.3g * (??? pp)", CS, AR, OD, HP, nomodStars);
+            fmt::format("CS:{:.3g} AR:{:.3g} OD:{:.3g} HP:{:.3g} Stars:{:.3g} * (??? pp)", CS, AR, OD, HP, nomodStars);
     }
 
     // also fix up modification time for improperly stored beatmaps while we're here

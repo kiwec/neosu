@@ -676,7 +676,7 @@ class OptionsMenuKeyBindLabel final : public CBaseUILabel {
 
         // succ
         UString labelText = env->keyCodeToString(this->keyCode);
-        if(labelText.find("?") != -1) labelText.append(UString::format("  (%i)", this->key->getInt()));
+        if(labelText.find("?") != -1) labelText.append(fmt::format("  ({})", this->key->getInt()));
 
         // handle bound/unbound
         if(this->keyCode == 0) {
@@ -971,7 +971,7 @@ OptionsMenuImpl::OptionsMenuImpl(OptionsMenu *parent) : parent(parent) {
 
     this->addSubSection_("Layout");
     OptionsElement *resolutionSelect = this->addButton(
-        US_("Select Resolution"), UString::format("%ix%i", osu->getVirtScreenWidth(), osu->getVirtScreenHeight()));
+        US_("Select Resolution"), fmt::format("{}x{}", osu->getVirtScreenWidth(), osu->getVirtScreenHeight()));
     this->resolutionSelectButton = (CBaseUIButton *)resolutionSelect->baseElems[0].get();
     this->resolutionSelectButton->setClickCallback(SA::MakeDelegate<&OptionsMenuImpl::onResolutionSelect>(this));
     this->resolutionLabel = (CBaseUILabel *)resolutionSelect->baseElems[1].get();
@@ -1001,8 +1001,8 @@ OptionsMenuImpl::OptionsMenuImpl(OptionsMenu *parent) : parent(parent) {
     this->addSubSection_("UI Scaling");
     this->addCheckbox_(
             "DPI Scaling",
-            UString::format("Automatically scale to the DPI of your display: %i DPI.\nScale factor = %i / 96 = %.2gx",
-                            env->getDPI(), env->getDPI(), env->getDPIScale()),
+            fmt::format("Automatically scale to the DPI of your display: {} DPI.\nScale factor = {} / 96 = {:.2g}x",
+                        env->getDPI(), env->getDPI(), env->getDPIScale()),
             &cv::ui_scale_to_dpi)
         ->setChangeCallback(SA::MakeDelegate<&OptionsMenuImpl::onDPIScalingChange>(this));
     this->uiScaleSlider = this->addSlider_("UI Scale:", 1.0f, 1.5f, &cv::ui_scale, 0.f, false, true);
@@ -2140,7 +2140,7 @@ void OptionsMenuImpl::onResolutionChange(vec2 newResolution) {
     }
 
     if(this->resolutionLabel != nullptr)
-        this->resolutionLabel->setText(UString::format("%ix%i", (int)newResolution.x, (int)newResolution.y));
+        this->resolutionLabel->setText(fmt::format("{}x{}", (int)newResolution.x, (int)newResolution.y));
 }
 
 void OptionsMenuImpl::onKey(KeyboardEvent &e) {
@@ -3205,7 +3205,7 @@ void OptionsMenuImpl::onSliderChangeOneDecimalPlaceMeters(CBaseUISlider *slider)
 
             if(element->baseElems.size() == 3) {
                 auto *labelPointer = dynamic_cast<CBaseUILabel *>(element->baseElems[2].get());
-                labelPointer->setText(UString::format("%.1f m", cv->getFloat()));
+                labelPointer->setText(fmt::format("{:.1f} m", cv->getFloat()));
             }
         }
         this->onResetUpdate(element->resetButton.get());
@@ -3258,7 +3258,7 @@ void OptionsMenuImpl::onSliderChangeFloatMS(CBaseUISlider *slider) {
 
             if(element->baseElems.size() == 3) {
                 auto *labelPointer = dynamic_cast<CBaseUILabel *>(element->baseElems[2].get());
-                UString text = UString::format("%i", (int)std::round(cv->getFloat() * 1000.0f));
+                UString text = fmt::format("{}", (int)std::round(cv->getFloat() * 1000.0f));
                 text.append(" ms");
                 labelPointer->setText(text);
             }
@@ -3279,7 +3279,7 @@ void OptionsMenuImpl::onSliderChangePercent(CBaseUISlider *slider) {
                 int percent = std::round(cv->getFloat() * 100.0f);
 
                 auto *labelPointer = dynamic_cast<CBaseUILabel *>(element->baseElems[2].get());
-                labelPointer->setText(UString::format("%i%%", percent));
+                labelPointer->setText(fmt::format("{}%", percent));
             }
         }
         this->onResetUpdate(element->resetButton.get());
@@ -3335,10 +3335,10 @@ void OptionsMenuImpl::onKeyBindingsResetAllPressed(CBaseUIButton * /*button*/) {
     } else {
         if(remainingUntilReset > 1)
             ui->getNotificationOverlay()->addNotification(
-                UString::format("Press %i more times to confirm.", remainingUntilReset));
+                fmt::format("Press {} more times to confirm.", remainingUntilReset));
         else
             ui->getNotificationOverlay()->addNotification(
-                UString::format("Press %i more time to confirm!", remainingUntilReset), 0xffffff00);
+                fmt::format("Press {} more time to confirm!", remainingUntilReset), 0xffffff00);
     }
 }
 
@@ -3354,8 +3354,7 @@ void OptionsMenuImpl::onSliderChangeSliderQuality(CBaseUISlider *slider) {
             auto *labelPointer = dynamic_cast<CBaseUILabel *>(element->baseElems[2].get());
 
             int percent = std::round((slider->getPercent()) * 100.0f);
-            UString text = UString::format(percent > 49 ? "%i !" : "%i", percent);
-            labelPointer->setText(text);
+            labelPointer->setText(fmt::format("{}{}", percent, percent > 49 ? " !" : ""));
         }
 
         this->onResetUpdate(element->resetButton.get());
@@ -3374,7 +3373,7 @@ void OptionsMenuImpl::onSliderChangeLetterboxingOffset(CBaseUISlider *slider) {
             const int percent = std::round(newValue * 100.0f);
 
             auto *labelPointer = dynamic_cast<CBaseUILabel *>(element->baseElems[2].get());
-            labelPointer->setText(UString::format("%i%%", percent));
+            labelPointer->setText(fmt::format("{}%", percent));
         }
 
         this->letterboxingOffsetResetButton = element->resetButton.get();  // HACKHACK: disgusting
@@ -3395,7 +3394,7 @@ void OptionsMenuImpl::onSliderChangeUIScale(CBaseUISlider *slider) {
             const int percent = std::round(newValue * 100.0f);
 
             auto *labelPointer = dynamic_cast<CBaseUILabel *>(element->baseElems[2].get());
-            labelPointer->setText(UString::format("%i%%", percent));
+            labelPointer->setText(fmt::format("{}%", percent));
         }
 
         this->uiScaleResetButton = element->resetButton.get();  // HACKHACK: disgusting
@@ -3448,7 +3447,7 @@ void OptionsMenuImpl::onASIOBufferChange([[maybe_unused]] CBaseUISlider *slider)
         if(element->baseElems.size() == 3) {
             auto *labelPointer = dynamic_cast<CBaseUILabel *>(element->baseElems[2].get());
             if(labelPointer) {
-                UString text = UString::format("%.1f ms", latency);
+                UString text = fmt::format("{:.1f} ms", latency);
                 labelPointer->setText(text);
             }
         }
@@ -3467,7 +3466,7 @@ void OptionsMenuImpl::onWASAPIBufferChange(CBaseUISlider *slider) {
         if(element->baseElems.size() == 3) {
             auto *labelPointer = dynamic_cast<CBaseUILabel *>(element->baseElems[2].get());
             if(labelPointer) {
-                UString text = UString::format("%i", (int)std::round(slider->getFloat() * 1000.0f));
+                UString text = fmt::format("{}", (int)std::round(slider->getFloat() * 1000.0f));
                 text.append(" ms");
                 labelPointer->setText(text);
             }
@@ -3486,7 +3485,7 @@ void OptionsMenuImpl::onWASAPIPeriodChange(CBaseUISlider *slider) {
         if(element->baseElems.size() == 3) {
             auto *labelPointer = dynamic_cast<CBaseUILabel *>(element->baseElems[2].get());
             if(labelPointer) {
-                UString text = UString::format("%i", (int)std::round(slider->getFloat() * 1000.0f));
+                UString text = fmt::format("{}", (int)std::round(slider->getFloat() * 1000.0f));
                 text.append(" ms");
                 labelPointer->setText(text);
             }
@@ -3650,10 +3649,10 @@ void OptionsMenuImpl::onResetEverythingClicked(CBaseUIButton * /*button*/) {
     } else {
         if(remainingUntilReset > 1)
             ui->getNotificationOverlay()->addNotification(
-                UString::format("Press %i more times to confirm.", remainingUntilReset));
+                fmt::format("Press {} more times to confirm.", remainingUntilReset));
         else
             ui->getNotificationOverlay()->addNotification(
-                UString::format("Press %i more time to confirm!", remainingUntilReset), 0xffffff00);
+                fmt::format("Press {} more time to confirm!", remainingUntilReset), 0xffffff00);
     }
 }
 

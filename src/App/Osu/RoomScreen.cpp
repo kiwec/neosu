@@ -251,13 +251,13 @@ void RoomScreen::draw() {
         float progress = -1.f;
         auto beatmap = Downloader::download_beatmap(BanchoState::room.map_id, BanchoState::room.map_md5, &progress);
         if(progress == -1.f) {
-            auto error_str = UString::format("Failed to download Beatmap #%d :(", BanchoState::room.map_id);
+            std::string error_str = fmt::format("Failed to download Beatmap #{:d} :(", BanchoState::room.map_id);
             this->map_title->setText(error_str);
             this->map_title->setSizeToContent(0, 0);
             this->ready_btn->is_loading = true;
         } else if(progress < 1.f) {
-            auto text = UString::format("Downloading... %.2f%%", progress * 100.f);
-            this->map_title->setText(text.toUtf8());
+            std::string text = fmt::format("Downloading... {:.2f}%", progress * 100.f);
+            this->map_title->setText(text);
             this->map_title->setSizeToContent(0, 0);
             this->ready_btn->is_loading = true;
         } else if(beatmap != nullptr) {
@@ -387,7 +387,7 @@ void RoomScreen::updateSettingsLayout(vec2 newResolution) {
         UString host_str = "Host: None";
         if(BanchoState::room.host_id != 0) {
             const auto *host = BANCHO::User::get_user_info(BanchoState::room.host_id, true);
-            host_str = UString::format("Host: %s", host->name.c_str());
+            host_str = fmt::format("Host: {}", host->name.c_str());
         }
         this->host->setText(host_str);
         ADD_ELEMENT(this->host);
@@ -464,10 +464,10 @@ void RoomScreen::updateSettingsLayout(vec2 newResolution) {
         }
     }
     if(is_host && is_ready && nb_ready > 1) {
-        auto force_start_str = UString::format("Force start (%d/%d)", nb_ready, BanchoState::room.nb_players);
-        if(BanchoState::room.all_players_ready()) {
-            force_start_str = US_("Start game");
-        }
+        const std::string force_start_str =
+            BanchoState::room.all_players_ready()
+                ? "Start game"
+                : fmt::format("Force start ({:d}/{:d})", nb_ready, BanchoState::room.nb_players);
         this->ready_btn->setText(force_start_str);
         this->ready_btn->setColor(0xff00d900);
     } else {
@@ -580,17 +580,17 @@ void RoomScreen::on_map_change() {
             ui->getSongBrowser()->onDifficultySelected(beatmap, false);
             this->map_title->setText(BanchoState::room.map_name);
             this->map_title->setSizeToContent(0, 0);
-            auto attributes = UString::format("AR: %.1f, CS: %.1f, HP: %.1f, OD: %.1f", beatmap->getAR(),
-                                              beatmap->getCS(), beatmap->getHP(), beatmap->getOD());
+            auto attributes = fmt::format("AR: {:.1f}, CS: {:.1f}, HP: {:.1f}, OD: {:.1f}", beatmap->getAR(), beatmap->getCS(),
+                                           beatmap->getHP(), beatmap->getOD());
             this->map_attributes->setText(attributes);
             this->map_attributes->setSizeToContent(0, 0);
-            auto attributes2 = UString::format("Length: %d seconds, BPM: %d (%d - %d)", beatmap->getLengthMS() / 1000,
-                                               beatmap->getMostCommonBPM(), beatmap->getMinBPM(), beatmap->getMaxBPM());
+            auto attributes2 = fmt::format("Length: {} seconds, BPM: {} ({} - {})", beatmap->getLengthMS() / 1000,
+                                            beatmap->getMostCommonBPM(), beatmap->getMinBPM(), beatmap->getMaxBPM());
             this->map_attributes2->setText(attributes2);
             this->map_attributes2->setSizeToContent(0, 0);
 
             // TODO @kiwec: calc actual star rating on the fly and update
-            auto stars = UString::format("Star rating: %.2f*", beatmap->getStarsNomod());
+            auto stars = fmt::format("Star rating: {:.2f}*", beatmap->getStarsNomod());
             this->map_stars->setText(stars);
             this->map_stars->setSizeToContent(0, 0);
             this->ready_btn->is_loading = false;

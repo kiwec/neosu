@@ -99,8 +99,8 @@ void UserCard::draw() {
         const float performanceScale = 0.3f;
         g->pushTransform();
         {
-            UString performanceString = UString::format("Performance:%ipp", (int)std::round(this->fPP));
-            UString accuracyString = UString::format("Accuracy:%.2f%%", this->fAcc * 100.0f);
+            UString performanceString = fmt::format("Performance:{}pp", (int)std::round(this->fPP));
+            UString accuracyString = fmt::format("Accuracy:{:.2f}%", this->fAcc * 100.0f);
 
             const float height = this->vSize.y * 0.5f;
             const float paddingTopPercent = (1.0f - performanceScale) * 0.2f;
@@ -128,7 +128,7 @@ void UserCard::draw() {
         const float scoreScale = 0.3f;
         g->pushTransform();
         {
-            UString scoreString = UString::format("Lv%i", this->iLevel);
+            UString scoreString = fmt::format("Lv{}", this->iLevel);
 
             const float height = this->vSize.y * 0.5f;
             const float paddingTopPercent = (1.0f - scoreScale) * 0.2f;
@@ -166,7 +166,7 @@ void UserCard::draw() {
         McFont *deltaFont = performanceFont;
         const float deltaScale = 0.4f;
         if(this->fPPDeltaAnim > 0.0f) {
-            UString performanceDeltaString = UString::format("%.1fpp", this->fPPDelta);
+            UString performanceDeltaString = fmt::format("{:.1f}pp", this->fPPDelta);
             if(this->fPPDelta > 0.0f) performanceDeltaString.insert(0, L'+');
 
             const float border = 1.f;
