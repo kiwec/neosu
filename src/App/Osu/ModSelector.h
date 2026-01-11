@@ -1,7 +1,7 @@
 #pragma once
 // Copyright (c) 2015, PG, All rights reserved.
 #include "ModFlags.h"
-#include "OsuScreen.h"
+#include "UIOverlay.h"
 #include "Skin.h"
 
 class SongBrowser;
@@ -21,7 +21,7 @@ class UICheckbox;
 
 class ConVar;
 
-class ModSelector final : public OsuScreen {
+class ModSelector final : public UIOverlay {
     NOCOPY_NOMOVE(ModSelector)
    public:
     ModSelector();

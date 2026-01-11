@@ -10,7 +10,7 @@
 #include "Font.h"
 #include "Graphics.h"
 
-TooltipOverlay::TooltipOverlay() : OsuScreen() {
+TooltipOverlay::TooltipOverlay() : UIOverlay() {
     this->fAnim = 0.0f;
     this->bDelayFadeout = false;
 }

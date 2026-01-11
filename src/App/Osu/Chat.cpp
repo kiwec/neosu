@@ -283,7 +283,7 @@ void ChatChannel::updateLayout(vec2 pos, vec2 size) {
     }
 }
 
-Chat::Chat() : OsuScreen() {
+Chat::Chat() : UIOverlay() {
     chat_font = engine->getDefaultFont();
 
     this->ticker = new ChatChannel(nullptr, "");
@@ -351,7 +351,7 @@ void Chat::draw() {
         g->setColor(argb(150, 0, 0, 0));
         g->fillRect(0, chat_y, chat_w, chat_h);
     } else {
-        OsuScreen::draw();
+        UIOverlay::draw();
         this->selected_channel->ui->draw();
     }
 
@@ -430,7 +430,7 @@ void Chat::mouse_update(bool *propagate_clicks) {
         }
     }
 
-    OsuScreen::mouse_update(propagate_clicks);
+    UIOverlay::mouse_update(propagate_clicks);
 
     // XXX: don't let mouse click through the buttons area
     this->button_container->mouse_update(propagate_clicks);

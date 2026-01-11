@@ -1,7 +1,7 @@
 #pragma once
 // Copyright (c) 2024, kiwec, All rights reserved.
 
-#include "OsuScreen.h"
+#include "UIOverlay.h"
 #include "Delegate.h"
 
 class CBaseUILabel;
@@ -9,7 +9,7 @@ class CBaseUITextbox;
 class Graphics;
 class UIButton;
 
-class PromptScreen final : public OsuScreen {
+class PromptScreen final : public UIOverlay {
    public:
     PromptScreen();
     void onResolutionChange(vec2 newResolution) override;

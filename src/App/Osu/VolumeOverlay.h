@@ -1,5 +1,5 @@
 #pragma once
-#include "OsuScreen.h"
+#include "UIOverlay.h"
 
 #include <memory>
 
@@ -7,7 +7,7 @@ class CBaseUIContainer;
 class UIVolumeSlider;
 struct Skin;
 
-class VolumeOverlay final : public OsuScreen {
+class VolumeOverlay final : public UIOverlay {
    public:
     VolumeOverlay();
 

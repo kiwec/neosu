@@ -10,7 +10,7 @@
 #include "UIBackButton.h"
 #include "MakeDelegateWrapper.h"
 
-ScreenBackable::ScreenBackable() : OsuScreen(), backButton(std::make_unique<UIBackButton>(-1.f, 0.f, 0.f, 0.f, "")) {
+ScreenBackable::ScreenBackable() : UIOverlay(), backButton(std::make_unique<UIBackButton>(-1.f, 0.f, 0.f, 0.f, "")) {
     this->backButton->setClickCallback(SA::MakeDelegate<&ScreenBackable::onBack>(this));
 
     this->updateLayout();
@@ -20,7 +20,7 @@ ScreenBackable::~ScreenBackable() = default;
 
 void ScreenBackable::draw() {
     if(!this->bVisible) return;
-    OsuScreen::draw();
+    UIOverlay::draw();
     this->backButton->draw();
 }
 
@@ -28,11 +28,11 @@ void ScreenBackable::mouse_update(bool *propagate_clicks) {
     if(!this->bVisible) return;
     this->backButton->mouse_update(propagate_clicks);
     if(!*propagate_clicks) return;
-    OsuScreen::mouse_update(propagate_clicks);
+    UIOverlay::mouse_update(propagate_clicks);
 }
 
 void ScreenBackable::onKeyDown(KeyboardEvent &e) {
-    OsuScreen::onKeyDown(e);
+    UIOverlay::onKeyDown(e);
     if(!this->bVisible || e.isConsumed()) return;
 
     if(e == KEY_ESCAPE || e == cv::GAME_PAUSE.getVal<SCANCODE>()) {

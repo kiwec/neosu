@@ -126,7 +126,7 @@ class ModSelectorOverrideSliderLockButton final : public CBaseUICheckbox {
     float fAnim;
 };
 
-ModSelector::ModSelector() : OsuScreen() {
+ModSelector::ModSelector() : UIOverlay() {
     this->fAnimation = 0.0f;
     this->fExperimentalAnimation = 0.0f;
     this->bScheduledHide = false;
@@ -439,7 +439,7 @@ void ModSelector::draw() {
             g->setColor(backgroundColor);
             g->fillRect(modGridButtonsStart.x - margin, modGridButtonsStart.y - margin,
                         modGridButtonsSize.x + 2 * margin, modGridButtonsSize.y + 2 * margin);
-            OsuScreen::draw();
+            UIOverlay::draw();
         }
         g->popTransform();
     } else if(this->isInCompactMode()) {
@@ -481,7 +481,7 @@ void ModSelector::draw() {
             g->setColor(backgroundColor);
             g->fillRect(modGridButtonsStart.x - margin, modGridButtonsStart.y - margin,
                         modGridButtonsSize.x + 2 * margin, modGridButtonsSize.y + 2 * margin);
-            OsuScreen::draw();
+            UIOverlay::draw();
         }
         g->popTransform();
 
@@ -535,7 +535,7 @@ void ModSelector::draw() {
             g->popTransform();
         }
 
-        OsuScreen::draw();
+        UIOverlay::draw();
         this->overrideSliderContainer->draw();
     }
 
@@ -576,7 +576,7 @@ void ModSelector::mouse_update(bool *propagate_clicks) {
     }
 
     // update
-    OsuScreen::mouse_update(propagate_clicks);
+    UIOverlay::mouse_update(propagate_clicks);
 
     this->nonSubmittableWarning->setVisible(BanchoState::can_submit_scores() && !cvars().areAllCvarsSubmittable());
     if(this->nonSubmittableWarning->isVisible() && this->nonSubmittableWarning->isMouseInside()) {
@@ -672,7 +672,7 @@ void ModSelector::mouse_update(bool *propagate_clicks) {
 }
 
 void ModSelector::onKeyDown(KeyboardEvent &key) {
-    OsuScreen::onKeyDown(key);  // only used for options menu
+    UIOverlay::onKeyDown(key);  // only used for options menu
     if(!this->bVisible || key.isConsumed()) return;
 
     this->overrideSliderContainer->onKeyDown(key);

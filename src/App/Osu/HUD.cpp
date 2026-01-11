@@ -33,7 +33,7 @@
 
 #include "shaders.h"
 
-HUD::HUD() : OsuScreen() {
+HUD::HUD() : UIOverlay() {
     // resources
     this->tempFont = engine->getDefaultFont();
     this->cursorTrailShader = resourceManager->createShader(

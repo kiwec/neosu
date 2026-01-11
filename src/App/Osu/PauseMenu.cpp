@@ -24,7 +24,7 @@
 #include "SoundEngine.h"
 #include "UIPauseMenuButton.h"
 
-PauseMenu::PauseMenu() : OsuScreen() {
+PauseMenu::PauseMenu() : UIOverlay() {
     this->bScheduledVisibility = false;
     this->bScheduledVisibilityChange = false;
 
@@ -91,7 +91,7 @@ void PauseMenu::draw() {
     for(auto &button : this->buttons) {
         button->setAlpha(1.0f - (1.0f - this->fDimAnim) * (1.0f - this->fDimAnim) * (1.0f - this->fDimAnim));
     }
-    OsuScreen::draw();
+    UIOverlay::draw();
 
     // draw selection arrows
     if(this->selectedButton != nullptr) {
@@ -121,7 +121,7 @@ void PauseMenu::mouse_update(bool *propagate_clicks) {
     this->buttons[1]->setVisible(!BanchoState::is_playing_a_multi_map());
 
     // update and focus handling
-    OsuScreen::mouse_update(propagate_clicks);
+    UIOverlay::mouse_update(propagate_clicks);
 
     if(this->bScheduledVisibilityChange) {
         this->bScheduledVisibilityChange = false;
@@ -178,7 +178,7 @@ void PauseMenu::onSelectionChange() {
 }
 
 void PauseMenu::onKeyDown(KeyboardEvent &e) {
-    OsuScreen::onKeyDown(e);  // only used for options menu
+    UIOverlay::onKeyDown(e);  // only used for options menu
     if(!this->bVisible || e.isConsumed()) return;
 
     if(e == cv::LEFT_CLICK.getVal<SCANCODE>() || e == cv::RIGHT_CLICK.getVal<SCANCODE>() ||

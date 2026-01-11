@@ -783,7 +783,7 @@ void SongBrowser::draw() {
 
     // NOTE: Intentionally not calling ScreenBackable::draw() here, since we're already drawing
     //       the back button in draw_bottombar().
-    OsuScreen::draw();
+    UIOverlay::draw();
 
     // no beatmaps found (osu folder is probably invalid)
     if(db->getBeatmapSets().size() == 0 && !this->bBeatmapRefreshScheduled) {
@@ -1044,7 +1044,7 @@ void SongBrowser::mouse_update(bool *propagate_clicks) {
 }
 
 void SongBrowser::onKeyDown(KeyboardEvent &key) {
-    OsuScreen::onKeyDown(key);  // only used for options menu
+    UIOverlay::onKeyDown(key);  // only used for options menu
     if(!this->bVisible || key.isConsumed()) return;
 
     if(this->bVisible && this->bBeatmapRefreshScheduled &&

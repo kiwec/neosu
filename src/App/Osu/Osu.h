@@ -37,7 +37,7 @@ class UserStatsScreen;
 class UpdateHandler;
 class NotificationOverlay;
 class TooltipOverlay;
-class OsuScreen;
+class UIOverlay;
 struct Skin;
 class HUD;
 class Changelog;
@@ -313,7 +313,7 @@ class Osu final : public App, public MouseListener {
     std::unique_ptr<LiveScore> score{nullptr};
     std::unique_ptr<ModFPoSu> fposu{nullptr};
 
-    // interfaces ("OsuScreen"s), manually created + added to the "screens" array and destroyed in reverse order in dtor
+    // interfaces ("UIOverlay"s), manually created + added to the "screens" array and destroyed in reverse order in dtor
     VolumeOverlay *volumeOverlay{nullptr};
     PromptScreen *prompt{nullptr};
     ModSelector *modSelector{nullptr};
@@ -335,7 +335,7 @@ class Osu final : public App, public MouseListener {
     TooltipOverlay *tooltipOverlay{nullptr};
 
     static constexpr auto NUM_SCREENS{19};  // make sure to update this if adding/removing screens
-    std::array<OsuScreen *, NUM_SCREENS> screens{};
+    std::array<UIOverlay *, NUM_SCREENS> screens{};
 
     // interfaces (debugging)
     std::unique_ptr<CWindowManager> windowManager{nullptr};

@@ -1,6 +1,6 @@
 #pragma once
 // Copyright (c) 2016, PG, All rights reserved.
-#include "OsuScreen.h"
+#include "UIOverlay.h"
 #include "MD5Hash.h"
 #include "types.h"
 #include "UString.h"
@@ -39,7 +39,7 @@ struct SCORE_ENTRY {
     bool highlight;
 };
 
-class HUD final : public OsuScreen {
+class HUD final : public UIOverlay {
     NOCOPY_NOMOVE(HUD)
    public:
     HUD();
