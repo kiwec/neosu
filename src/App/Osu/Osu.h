@@ -122,7 +122,7 @@ class Osu final : public App, public MouseListener {
 
     void onResolutionChanged(vec2 newResolution, ResolutionRequestFlags src);
 
-    void onPlayEnd(const FinishedScore &score, bool quit = true, bool aborted = false);
+    void onPlayEnd(const FinishedScore &score, bool quit = true);
 
     void reloadMapInterface();
     void reloadSkin() { this->onSkinReload(); }

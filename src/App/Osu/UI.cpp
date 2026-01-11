@@ -87,12 +87,12 @@ void UI::update() {
     bool propagate_clicks = true;
     for(auto *screen : this->overlays) {
         screen->mouse_update(&propagate_clicks);
-        if(screen == ui->getScreen()) updated_active_screen = true;
+        if(screen == this->active_screen) updated_active_screen = true;
         if(!propagate_clicks) break;
     }
 
-    if(!updated_active_screen && ui->getScreen() != nullptr) {
-        ui->getScreen()->mouse_update(&propagate_clicks);
+    if(!updated_active_screen && this->active_screen != nullptr) {
+        this->active_screen->mouse_update(&propagate_clicks);
     }
 }
 
@@ -294,5 +294,7 @@ void UI::setScreen(UIOverlay *screen) {
     }
 
     this->active_screen = screen;
-    this->active_screen->setVisible(true);
+    if(this->active_screen != nullptr) {
+        this->active_screen->setVisible(true);
+    }
 }

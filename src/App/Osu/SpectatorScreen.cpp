@@ -146,13 +146,13 @@ SpectatorScreen::SpectatorScreen() {
     this->stop_btn->setUseDefaultSkin();
     this->stop_btn->setClickCallback(SA::MakeDelegate<&SpectatorScreen::onStopSpectatingClicked>(this));
     this->addBaseUIElement(this->stop_btn);
-
-    // isVisible() is overridden
-    this->bVisible = true;
 }
 
 // NOTE: We use this to control client state, even when the spectator screen isn't visible.
 void SpectatorScreen::mouse_update(bool *propagate_clicks) {
+    // HACK: "spectator screen" is just an overlay with higher priority than most screens
+    this->bVisible = BanchoState::spectating && !osu->isInPlayMode() && !ui->getRankingScreen()->isVisible();
+
     if(!BanchoState::spectating) return;
 
     // Control client state

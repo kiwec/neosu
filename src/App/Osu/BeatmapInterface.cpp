@@ -530,8 +530,6 @@ bool BeatmapInterface::spectate() {
     this->sim = std::make_unique<SimulatedBeatmapInterface>(this->beatmap, score.mods);
     this->sim->spectated_replay.clear();
 
-    ui->setScreen(ui->getSpectatorScreen());
-
     return true;
 }
 
@@ -713,6 +711,7 @@ bool BeatmapInterface::start() {
 
     osu->iQuickSaveMS = 0;  // reset
 
+    ui->setScreen(nullptr);
     osu->updateConfineCursor();
     osu->updateWindowsKeyDisable();
 

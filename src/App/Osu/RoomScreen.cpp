@@ -788,7 +788,7 @@ void RoomScreen::on_match_finished() {
     if(!BanchoState::is_playing_a_multi_map()) return;
     BanchoState::last_scores = BanchoState::room.slots;
 
-    osu->onPlayEnd(this->get_approximate_score(), false, false);
+    osu->onPlayEnd(this->get_approximate_score(), false);
 
     BanchoState::match_started = false;
     ui->getHUD()->updateScoringMetric();
@@ -808,7 +808,7 @@ void RoomScreen::on_player_skip(i32 user_id) {
 
 void RoomScreen::on_match_aborted() {
     if(!BanchoState::is_playing_a_multi_map()) return;
-    osu->onPlayEnd(this->get_approximate_score(), false, true);
+    osu->onPlayEnd(this->get_approximate_score(), false);
     BanchoState::match_started = false;
     ui->getHUD()->updateScoringMetric();
     ui->setScreen(this);

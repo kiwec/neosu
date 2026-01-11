@@ -1137,7 +1137,7 @@ void Osu::saveScreenshot() {
                        screenshotChannels, screenshotFilename);
 }
 
-void Osu::onPlayEnd(const FinishedScore &score, bool quit, bool /*aborted*/) {
+void Osu::onPlayEnd(const FinishedScore &score, bool quit) {
     cv::snd_change_check_interval.setValue(cv::snd_change_check_interval.getDefaultFloat());
 
     if(!quit && cv::mod_endless.getBool()) {
@@ -1145,7 +1145,9 @@ void Osu::onPlayEnd(const FinishedScore &score, bool quit, bool /*aborted*/) {
         return;  // nothing more to do here
     }
 
-    if(!quit) {
+    if(quit) {
+        ui->setScreen(ui->getSongBrowser());
+    } else {
         ui->getRankingScreen()->setScore(score);
         ui->setScreen(ui->getRankingScreen());
         soundEngine->play(this->skin->s_applause);
