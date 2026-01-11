@@ -4,7 +4,7 @@
 
 #include "Vectors.h"
 
-#include <glm/trigonometric.hpp>
+#include "glm/trigonometric.hpp"
 
 struct Matrix4;
 struct Matrix3;

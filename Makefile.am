@@ -1050,8 +1050,32 @@ BUILT_SOURCES := \
 	$(DEPS_PREFIX)/curl-$(CURL_VERSION).built \
 	$(DEPS_CACHE)/curl-$(CURL_VERSION)/certbundle/cacert.pem
 
+# build precompiled headers
+PCH_SOURCE := $(srcdir)/src/pch.h
+PCH_OUTPUT := $(builddir)/pch.h.gch
+PCH_DEPS := $(builddir)/pch.h.d
+PCH_FLAGS := -Winvalid-pch -Wno-error=invalid-pch -include $(builddir)/pch.h
+
+if CLANG_BUILD
+PCH_BUILD_FLAGS := -Xclang -fno-pch-timestamp
+else
+PCH_BUILD_FLAGS :=
+PCH_FLAGS += -fpch-preprocess
+endif
+
+$(PCH_OUTPUT): $(PCH_SOURCE) $(BUILT_SOURCES)
+	@rm -f $(PCH_OUTPUT) # remove possibly existing-but-outdated pch to avoid recursively including it (sanity)
+	@$(MKDIR_P) $(dir $@)
+	$(CXX) -x c++-header -MMD -MF $(PCH_DEPS) $(PCH_BUILD_FLAGS) \
+		$(CPPFLAGS) $(neosu_CPPFLAGS) $(CXXFLAGS) $(neosu_CXXFLAGS) \
+		-o $@ $(PCH_SOURCE)
+
+-include $(PCH_DEPS)
+
+CLEANFILES += $(PCH_OUTPUT) $(PCH_DEPS)
+
 # making sure deps are built before main compile
-$(neosu_OBJECTS): $(BUILT_SOURCES) $(EXTRA_BINDEPS)
+$(neosu_OBJECTS): $(BUILT_SOURCES) $(EXTRA_BINDEPS) $(PCH_OUTPUT)
 
 # add all paths with sources as an include ("-I") flag
 NEOSU_INCLUDE_FLAGS := $(shell find $(srcdir)/src -not -path '*/.*' -type d -printf "-I%p ")
@@ -1060,6 +1084,7 @@ NEOSU_INCLUDE_FLAGS := $(shell find $(srcdir)/src -not -path '*/.*' -type d -pri
 neosu_CPPFLAGS := $(NEOSU_CPPFLAGS) -DCACERT_INCDIR=\"$(CACERT_INCDIR)\" -DSHADERS_INCDIR=\"$(SHADERS_INCDIR)\" -DMISC_INCDIR=\"$(MISC_INCDIR)\"
 
 neosu_CXXFLAGS := \
+	$(PCH_FLAGS) \
 	$(INCBIN_FLAGS) \
 	-I$(DEPS_PREFIX)/include \
 	$(BUNDLED_INCLUDES) \
@@ -1132,7 +1157,8 @@ endif
 
 bear.cfg:
 	@$(BEAR) --version || { echo bear is unavailable to generate a compile_commands.json, install bear && exit 1; }
-	@(echo '{'; \
+	@if [ `$(BEAR) --version | cut -d' ' -f2 | cut -d'.' -f1` -le 3 ]; then { \
+	  echo '{'; \
 	  echo '"compilation": {'; \
 	  echo '"compilers_to_recognize": ['; \
 	  echo '{'; \
@@ -1147,7 +1173,22 @@ bear.cfg:
 	  echo '],'; \
 	  echo '"compilers_to_exclude": ["$(CXX)", "$(CC)"]'; \
 	  echo '}'; \
-	  echo '}' ) > bear.cfg
+	  echo '}' ; } > bear.cfg; else { echo "bear 4.0 support is broken, downgrade to bear 3.x" && exit 1; }; fi
+
+# bear 4.0 is BROKEN and i have no idea what the hell it wants
+# this is what i had for future reference when it becomes unbroken
+#	  echo 'schema: "4.0"'; \
+#	  echo 'compilers:'; \
+#	  echo '  - path: $(CXX)'; \
+#	  echo '    ignore: true'; \
+#	  echo '  - path: $(CC)'; \
+#	  echo '    ignore: true'; \
+#	  echo '  - path: $(CXX_REAL)'; \
+#	  echo '    ignore: false'; \
+#	  echo '    as: $(if $(findstring yes,$(CLANG)),clang,gcc)'; \
+#	  echo '  - path: $(CC_REAL)'; \
+#	  echo '    ignore: false'; \
+#	  echo '    as: $(if $(findstring yes,$(CLANG)),clang,gcc)' ; } > bear.cfg; fi
 
 # need to manually make sure BUILT_SOURCES (dependencies) are fully built before building the main neosu objects, due to weird
 # interactions with sub-makes and parallel jobs
@@ -1325,6 +1366,7 @@ dist-hook:
 
 # TODO: distribution package files
 EXTRA_DIST := \
+	src/pch.h \
 	$(ASSETS_DIR)/fonts \
 	$(ASSETS_DIR)/materials \
 	$(ASSETS_DIR)/icon.ico \

@@ -222,7 +222,7 @@ int entrypoint(int argc_, char *argv_[]) {
         DatabaseBeatmap::loadDifficultyHitObjects(primitives, settings.AR, settings.CS, speedMultiplier, false);
 
     if(diffResult.error.errc) {
-        std::cerr << "error loading difficulty objects: " << diffResult.error.errc << '\n';
+        std::cerr << "error loading difficulty objects: " << diffResult.error.error_string() << '\n';
         return 1;
     }
 

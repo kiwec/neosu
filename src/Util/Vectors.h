@@ -1,23 +1,23 @@
 // Copyright (c) 2025, WH, All rights reserved.
 #pragma once
 
-#include <glm/geometric.hpp>
-#include <glm/gtc/constants.hpp>
-#include <glm/vec2.hpp>
-#include <glm/vec3.hpp>
-#include <glm/vec4.hpp>
+#include "glm/geometric.hpp"
+#include "glm/gtc/constants.hpp"
+#include "glm/vec2.hpp"
+#include "glm/vec3.hpp"
+#include "glm/vec4.hpp"
 
-#ifndef BUILD_TOOLS_ONLY
+#ifndef BUILD_TOOLS_ONLY  // avoid an unnecessary dependency on fmt when building tools only
 #include "fmt/format.h"
 #include "fmt/compile.h"
 #endif
 
-using glm::vec2;
-using glm::vec3;
-using glm::vec4;
 using glm::dvec2;
 using glm::dvec3;
 using glm::dvec4;
+using glm::vec2;
+using glm::vec3;
+using glm::vec4;
 using ivec2 = glm::i32vec2;
 using ivec3 = glm::i32vec3;
 using ivec4 = glm::i32vec4;
@@ -32,10 +32,13 @@ inline constexpr auto DOUBLE_NORMALIZE_EPSILON = FLOAT_NORMALIZE_EPSILON / 10e6;
 
 using glm::all;
 using glm::any;
+using glm::ceil;
+using glm::clamp;
 using glm::cross;
 using glm::distance;
 using glm::dot;
 using glm::equal;
+using glm::floor;
 using glm::greaterThan;
 using glm::greaterThanEqual;
 using glm::length;
@@ -45,9 +48,6 @@ using glm::max;
 using glm::min;
 using glm::normalize;
 using glm::round;
-using glm::floor;
-using glm::ceil;
-using glm::clamp;
 
 template <typename T, typename V>
     requires(std::is_floating_point_v<V>) &&

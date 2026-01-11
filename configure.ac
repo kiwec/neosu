@@ -537,11 +537,15 @@ _cxx_real_hash="$($CXX --version | md5sum | cut -d ' ' -f 1),$host"
 
 install -Dm755 /dev/stdin $PWD/build/cc <<EOF
 #!/bin/bash
-CCACHE_COMPRESS=1 CCACHE_COMPRESSLEVEL=4 CCACHE_COMPILERTYPE=$_ccache_ctype CCACHE_COMPILERCHECK="string:$_cc_real_hash" $CCACHE $CC_REAL "\$@"
+CCACHE_SLOPPINESS=pch_defines,time_macros,include_file_mtime,include_file_ctime \\
+CCACHE_COMPRESS=1 CCACHE_COMPRESSLEVEL=4 CCACHE_COMPILERTYPE=$_ccache_ctype CCACHE_COMPILERCHECK="string:$_cc_real_hash" \\
+$CCACHE $CC_REAL "\$@"
 EOF
 install -Dm755 /dev/stdin $PWD/build/cxx <<EOF
 #!/bin/bash
-CCACHE_COMPRESS=1 CCACHE_COMPRESSLEVEL=4 CCACHE_COMPILERTYPE=$_ccache_ctype CCACHE_COMPILERCHECK="string:$_cxx_real_hash" $CCACHE $CXX_REAL "\$@"
+CCACHE_SLOPPINESS=pch_defines,time_macros,include_file_mtime,include_file_ctime \\
+CCACHE_COMPRESS=1 CCACHE_COMPRESSLEVEL=4 CCACHE_COMPILERTYPE=$_ccache_ctype CCACHE_COMPILERCHECK="string:$_cxx_real_hash" \\
+$CCACHE $CXX_REAL "\$@"
 EOF
 
 export CC="$PWD/build/cc"
@@ -1253,6 +1257,7 @@ AM_CONDITIONAL([USE_SOLOUD], [test "$with_soloud" = "yes"])
 AM_CONDITIONAL([USE_DISCORDSDK], [test "$with_discord" = "yes"])
 AM_CONDITIONAL([WIN_PLATFORM], [test "$SYSNAME" = "windows"])
 AM_CONDITIONAL([WIN32_PLATFORM], [test "$SYSNAME" = "windows" && test "$host_cpu" = "i686"])
+AM_CONDITIONAL([CLANG_BUILD], [test "$CLANG" = "yes"])
 
 AM_CONDITIONAL([STRIPBINS], [test "x$enable_strip" != "xno" && ! { test "$SYSNAME" = "windows" && test "$host_cpu" = "i686" ; } ])
 
