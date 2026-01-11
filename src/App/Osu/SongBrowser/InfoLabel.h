@@ -10,7 +10,7 @@ class InfoLabel final : public CBaseUIButton {
     InfoLabel(f32 xPos, f32 yPos, f32 xSize, f32 ySize, UString name, McFont *sbFont);
 
     void draw() override;
-    void mouse_update(bool *propagate_clicks) override;
+    void update() override;
 
     void onResized() override;
 

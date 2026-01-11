@@ -356,7 +356,7 @@ void ScoreButton::draw() {
     }
 }
 
-void ScoreButton::mouse_update(bool *propagate_clicks) {
+void ScoreButton::update() {
     // Update pp
     auto &sc = this->storedScore;
     if(sc.get_pp() == -1.0) {
@@ -405,11 +405,11 @@ void ScoreButton::mouse_update(bool *propagate_clicks) {
     }
 
     if(this->avatar) {
-        this->avatar->mouse_update(propagate_clicks);
-        if(!*propagate_clicks) return;
+        this->avatar->update();
+        if(!mouse->propagate_clicks) return;
     }
 
-    CBaseUIButton::mouse_update(propagate_clicks);
+    CBaseUIButton::update();
 
     // HACKHACK: this should really be part of the UI base
     // right click detection

@@ -14,7 +14,7 @@ class PauseMenu final : public UIOverlay {
     PauseMenu();
 
     void draw() override;
-    void mouse_update(bool *propagate_clicks) override;
+    void update() override;
 
     void onKeyDown(KeyboardEvent &e) override;
     void onKeyUp(KeyboardEvent &e) override;

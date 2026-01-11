@@ -44,9 +44,9 @@ class ModSelectorOverrideSliderDescButton final : public CBaseUIButton {
     ModSelectorOverrideSliderDescButton(float xPos, float yPos, float xSize, float ySize, UString name, UString text)
         : CBaseUIButton(xPos, yPos, xSize, ySize, std::move(name), std::move(text)) {}
 
-    void mouse_update(bool *propagate_clicks) override {
+    void update() override {
         if(!this->bVisible) return;
-        CBaseUIButton::mouse_update(propagate_clicks);
+        CBaseUIButton::update();
 
         if(this->isMouseInside() && this->sTooltipText.length() > 0) {
             ui->getTooltipOverlay()->begin();
@@ -554,12 +554,12 @@ void ModSelector::draw() {
     }
 }
 
-void ModSelector::mouse_update(bool *propagate_clicks) {
+void ModSelector::update() {
     // HACKHACK: updating while invisible is stupid, but the only quick solution for still animating otherwise stuck
     // sliders while closed
     if(!this->bVisible) {
         for(auto &overrideSlider : this->overrideSliders) {
-            if(overrideSlider.slider->hasChanged()) overrideSlider.slider->mouse_update(propagate_clicks);
+            if(overrideSlider.slider->hasChanged()) overrideSlider.slider->update();
         }
         if(this->bScheduledHide) {
             if(this->fAnimation == 0.0f) {
@@ -571,11 +571,11 @@ void ModSelector::mouse_update(bool *propagate_clicks) {
 
     // update experimental mods, they take focus precedence over everything else
     if(this->bExperimentalVisible) {
-        this->experimentalContainer->mouse_update(propagate_clicks);
+        this->experimentalContainer->update();
     }
 
     // update
-    UIOverlay::mouse_update(propagate_clicks);
+    UIOverlay::update();
 
     this->nonSubmittableWarning->setVisible(BanchoState::can_submit_scores() && !cvars().areAllCvarsSubmittable());
     if(this->nonSubmittableWarning->isVisible() && this->nonSubmittableWarning->isMouseInside()) {
@@ -590,7 +590,7 @@ void ModSelector::mouse_update(bool *propagate_clicks) {
     }
 
     if(!BanchoState::is_in_a_multi_room()) {
-        this->overrideSliderContainer->mouse_update(propagate_clicks);
+        this->overrideSliderContainer->update();
 
         // override slider tooltips (ALT)
         if(this->bShowOverrideSliderALTHint) {
@@ -1175,7 +1175,7 @@ LegacyFlags ModSelector::getModFlags() {
 void ModSelector::enableModsFromFlags(LegacyFlags flags) {
     using namespace flags::operators;
 
-    if(flags::any<LegacyFlags::DoubleTime | LegacyFlags::Nightcore>(flags)) {
+    if(flags::any < LegacyFlags::DoubleTime | LegacyFlags::Nightcore > (flags)) {
         cv::speed_override.setValue(1.5f);
     } else if(flags::has<LegacyFlags::HalfTime>(flags)) {
         cv::speed_override.setValue(0.75f);

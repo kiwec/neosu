@@ -45,7 +45,7 @@ class Chat final : public UIOverlay {
 
     void draw() override;
     void drawTicker();
-    void mouse_update(bool *propagate_clicks) override;
+    void update() override;
     void onKeyDown(KeyboardEvent &e) override;
     void onKeyUp(KeyboardEvent &e) override;
     void onChar(KeyboardEvent &e) override;
@@ -103,4 +103,3 @@ class Chat final : public UIOverlay {
     f64 ticker_tms = 0.0;
     f64 last_sort_time = 0.0;
 };
-

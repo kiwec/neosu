@@ -14,7 +14,7 @@ class SpectatorScreen final : public UIOverlay {
    public:
     SpectatorScreen();
 
-    void mouse_update(bool* propagate_clicks) override;
+    void update() override;
     void draw() override;
     void onKeyDown(KeyboardEvent& e) override;
     void onStopSpectatingClicked();

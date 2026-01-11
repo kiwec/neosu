@@ -13,7 +13,7 @@ class UIModSelectorModButton final : public CBaseUIButton {
     using SkinImageSkinMember = SkinImage *Skin::*;
 
     void draw() override;
-    void mouse_update(bool *propagate_clicks) override;
+    void update() override;
     void onClicked(bool left = true, bool right = false) override;
 
     void resetState();

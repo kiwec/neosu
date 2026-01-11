@@ -83,8 +83,8 @@ void CBaseUISlider::drawBlock() {
                 argb(255, 255, 255, 255), argb(255, 255, 255, 255));
 }
 
-void CBaseUISlider::mouse_update(bool *propagate_clicks) {
-    CBaseUIElement::mouse_update(propagate_clicks);
+void CBaseUISlider::update() {
+    CBaseUIElement::update();
     if(!this->bVisible) return;
 
     vec2 mousepos{mouse->getPos()};
@@ -246,7 +246,7 @@ CBaseUISlider *CBaseUISlider::setValue(float value, bool animate, bool call_call
 
         const float audioPlayTimeAfter{this->fLastSoundPlayTime};
 
-        if (audioPlayTimeBefore != audioPlayTimeAfter) {
+        if(audioPlayTimeBefore != audioPlayTimeAfter) {
             // avoid duplicated audio playback (callback might setValue)
             playAudio = false;
         }

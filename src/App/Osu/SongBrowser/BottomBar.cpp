@@ -60,7 +60,7 @@ f32 get_height() {
     return std::max(get_min_height(), max);
 }
 
-void update(bool* propagate_clicks) {
+void update() {
     static bool mouse_was_down = false;
 
     auto mousePos = mouse->getPos();
@@ -88,7 +88,7 @@ void update(bool* propagate_clicks) {
     osu->getUserButton()->setSize(SongBrowser::getUIScale(320.f), SongBrowser::getUIScale(75.f));
     osu->getUserButton()->setPos(btns[OPTIONS].getX() + SongBrowser::getUIScale(160.f),
                                  osu->getVirtScreenHeight() - osu->getUserButton()->getSize().y);
-    osu->getUserButton()->mouse_update(propagate_clicks);
+    osu->getUserButton()->update();
 
     // Yes, the order looks whack. That's the correct order.
     Button new_hover = NONE;
@@ -115,8 +115,8 @@ void update(bool* propagate_clicks) {
         hovered_btn = new_hover;
     }
 
-    if(clicked && *propagate_clicks) {
-        *propagate_clicks = false;
+    if(clicked && mouse->propagate_clicks) {
+        mouse->propagate_clicks = false;
         press_button(hovered_btn);
     }
 

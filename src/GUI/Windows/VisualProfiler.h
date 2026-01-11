@@ -18,7 +18,7 @@ class VisualProfiler : public CBaseUIElement {
     ~VisualProfiler() override;
 
     void draw() override;
-    void mouse_update(bool *propagate_clicks) override;
+    void update() override;
 
     void incrementInfoBladeDisplayMode();
     void decrementInfoBladeDisplayMode();
@@ -107,7 +107,7 @@ class VisualProfiler : public CBaseUIElement {
     bool bRequiresAltShiftKeysToFreeze;
 
     std::vector<TEXT_LINE> textLines;
-	std::vector<UString> engineTextLines;
+    std::vector<UString> engineTextLines;
     std::vector<UString> appTextLines;
 };
 

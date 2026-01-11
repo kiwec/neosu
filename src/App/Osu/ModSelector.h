@@ -28,7 +28,7 @@ class ModSelector final : public UIOverlay {
     ~ModSelector() override;
 
     void draw() override;
-    void mouse_update(bool *propagate_clicks) override;
+    void update() override;
 
     void onKeyDown(KeyboardEvent &key) override;
     void onResolutionChange(vec2 newResolution) override;

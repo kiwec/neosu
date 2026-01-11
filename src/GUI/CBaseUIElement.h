@@ -37,7 +37,7 @@ class CBaseUIElement : public KeyboardListener {
 
     // main
     virtual void draw() = 0;
-    virtual void mouse_update(bool *propagate_clicks);
+    virtual void update();
 
     // keyboard input
     void onKeyUp(KeyboardEvent &e) override { (void)e; }

@@ -3,6 +3,7 @@
 
 #include "CBaseUIWindow.h"
 #include "Engine.h"
+#include "Mouse.h"
 #include "UString.h"
 
 // #include "ResourceManager.h"
@@ -47,13 +48,13 @@ void CWindowManager::draw() {
     */
 }
 
-void CWindowManager::mouse_update(bool *propagate_clicks) {
+void CWindowManager::update() {
     if(!this->bVisible || this->windows.size() == 0) return;
 
     // update all windows, detect depth changes
     for(auto &window : this->windows) {
-        window->mouse_update(propagate_clicks);
-        if(!*propagate_clicks) break;
+        window->update();
+        if(!mouse->propagate_clicks) break;
     }
     int topMouseWindowIndex = this->getTopMouseWindowIndex();
 

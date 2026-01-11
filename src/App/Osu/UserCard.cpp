@@ -207,7 +207,7 @@ void UserCard::draw() {
     }
 }
 
-void UserCard::mouse_update(bool *propagate_clicks) {
+void UserCard::update() {
     if(!this->bVisible) return;
 
     const bool is_online = (this->user_id > 0) || (this->user_id < -10000);
@@ -229,7 +229,7 @@ void UserCard::mouse_update(bool *propagate_clicks) {
     // to recalculate local user stats
     this->updateUserStats();
 
-    CBaseUIButton::mouse_update(propagate_clicks);
+    CBaseUIButton::update();
 }
 
 void UserCard::updateUserStats() {

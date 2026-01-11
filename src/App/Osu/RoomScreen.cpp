@@ -280,7 +280,7 @@ void RoomScreen::draw() {
     }
 }
 
-void RoomScreen::mouse_update(bool *propagate_clicks) {
+void RoomScreen::update() {
     if(!BanchoState::is_in_a_multi_room() || osu->isInPlayMode()) return;
 
     const bool room_name_changed = this->room_name_ipt->getText() != BanchoState::room.name;
@@ -299,14 +299,14 @@ void RoomScreen::mouse_update(bool *propagate_clicks) {
 
     this->pauseButton->setPaused(!osu->getMapInterface()->isPreviewMusicPlaying());
 
-    this->contextMenu->mouse_update(propagate_clicks);
-    if(!*propagate_clicks) return;
+    this->contextMenu->update();
+    if(!mouse->propagate_clicks) return;
 
     // HACK: disable "slotlist" scrollview when options menu is open, because it somehow takes priority
     if(ui->getOptionsMenu()->isVisible()) {
-        this->settings->mouse_update(propagate_clicks);
+        this->settings->update();
     } else {
-        UIOverlay::mouse_update(propagate_clicks);
+        UIOverlay::update();
     }
 }
 

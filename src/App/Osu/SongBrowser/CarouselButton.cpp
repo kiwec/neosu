@@ -101,7 +101,7 @@ void CarouselButton::drawMenuButtonBackground() {
     g->popTransform();
 }
 
-void CarouselButton::mouse_update(bool *propagate_clicks) {
+void CarouselButton::update() {
     if(!this->bVisible) return;
 
     // HACKHACK: absolutely disgusting
@@ -113,7 +113,7 @@ void CarouselButton::mouse_update(bool *propagate_clicks) {
         this->vPos = this->getActualPos();
         this->vSize = this->getActualSize();
         {
-            CBaseUIButton::mouse_update(propagate_clicks);
+            CBaseUIButton::update();
         }
         this->vPos = posBackup;
         this->vSize = sizeBackup;

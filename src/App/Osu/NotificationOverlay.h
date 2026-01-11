@@ -48,7 +48,7 @@ class NotificationOverlay final : public UIOverlay {
     NotificationOverlay();
     ~NotificationOverlay() override;
 
-    void mouse_update(bool *propagate_clicks) override;
+    void update() override;
     void draw() override;
     void onResolutionChange(vec2 newResolution) override;
 

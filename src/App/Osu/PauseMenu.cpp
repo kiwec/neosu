@@ -106,8 +106,8 @@ void PauseMenu::draw() {
         g->setColor(Color(arrowColor).setA(this->fWarningArrowsAnimAlpha * this->fDimAnim));
 
         ui->getHUD()->drawWarningArrow(vec2(this->fWarningArrowsAnimX, this->fWarningArrowsAnimY) +
-                                            vec2(0, this->selectedButton->getSize().y / 2) - vec2(offset, 0),
-                                        false, false);
+                                           vec2(0, this->selectedButton->getSize().y / 2) - vec2(offset, 0),
+                                       false, false);
         ui->getHUD()->drawWarningArrow(
             vec2(osu->getVirtScreenWidth() - this->fWarningArrowsAnimX, this->fWarningArrowsAnimY) +
                 vec2(0, this->selectedButton->getSize().y / 2) + vec2(offset, 0),
@@ -115,14 +115,14 @@ void PauseMenu::draw() {
     }
 }
 
-void PauseMenu::mouse_update(bool *propagate_clicks) {
+void PauseMenu::update() {
     if(!this->bVisible) return;
 
     // hide retry button in multiplayer
     this->buttons[1]->setVisible(!BanchoState::is_playing_a_multi_map());
 
     // update and focus handling
-    UIOverlay::mouse_update(propagate_clicks);
+    UIOverlay::update();
 
     if(this->bScheduledVisibilityChange) {
         this->bScheduledVisibilityChange = false;
@@ -424,4 +424,3 @@ UIPauseMenuButton *PauseMenu::addButton(ImageSkinMember skinMember, UString btn_
 Image *UIPauseMenuButton::getImage() const {
     return this->imageMember ? neosu::skin::getImageMember(this->imageMember) : nullptr;
 }
-

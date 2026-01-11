@@ -8,7 +8,7 @@ class UIButton : public CBaseUIButton {
         : CBaseUIButton(xPos, yPos, xSize, ySize, std::move(name), std::move(text)) {}
 
     void draw() override;
-    void mouse_update(bool* propagate_clicks) override;
+    void update() override;
 
     void setColor(Color color) { this->color = color; }
     void setUseDefaultSkin() { this->bDefaultSkin = true; }

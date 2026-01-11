@@ -341,9 +341,9 @@ void RankingScreen::drawModImage(SkinImage *image, vec2 &pos, vec2 &max) {
     if(pos.y + image->getSize().y / 2 > max.y) max.y = pos.y + image->getSize().y / 2;
 }
 
-void RankingScreen::mouse_update(bool *propagate_clicks) {
+void RankingScreen::update() {
     if(!this->bVisible) return;
-    ScreenBackable::mouse_update(propagate_clicks);
+    ScreenBackable::update();
 
     // tooltip (pp + accuracy + unstable rate)
     if(!ui->getOptionsMenu()->isMouseInside() && mouse->getPos().x < osu->getVirtScreenWidth() * 0.5f) {

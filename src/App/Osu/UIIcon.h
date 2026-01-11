@@ -6,7 +6,7 @@ class UIIcon final : public CBaseUILabel {
    public:
     UIIcon(char16_t icon);
 
-    void mouse_update(bool* propagate_clicks) override;
+    void update() override;
     void setTooltipText(const UString& text);
 
     // debugging

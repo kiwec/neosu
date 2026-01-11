@@ -21,7 +21,7 @@ void CBaseUIElement::stealFocus() {
     this->onFocusStolen();
 }
 
-void CBaseUIElement::mouse_update(bool *propagate_clicks) {
+void CBaseUIElement::update() {
     if(unlikely(CBaseUIDebug::dumpElems)) this->dumpElem();
     if(!this->bVisible || !this->bEnabled) return;
 
@@ -46,10 +46,10 @@ void CBaseUIElement::mouse_update(bool *propagate_clicks) {
     const u8 buttonMask = (u8)((this->bHandleLeftMouse && mouse->isLeftDown()) << 1) |
                           (u8)(this->bHandleRightMouse && mouse->isRightDown());
 
-    if(buttonMask && *propagate_clicks) {
+    if(buttonMask && mouse->propagate_clicks) {
         this->mouseUpCheck |= buttonMask;
         if(this->bMouseInside) {
-            *propagate_clicks = !this->grabs_clicks;
+            mouse->propagate_clicks = !this->grabs_clicks;
         }
 
         // onMouseDownOutside

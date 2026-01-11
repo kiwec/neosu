@@ -386,10 +386,10 @@ void OsuDirectScreen::draw() {
     // TODO: message if no maps were found or server errored
 }
 
-void OsuDirectScreen::mouse_update(bool* propagate_clicks) {
+void OsuDirectScreen::update() {
     if(!this->isVisible()) return;
     if(!BanchoState::is_online() || !db->isFinished() || db->isCancelled()) return this->onBack();
-    ScreenBackable::mouse_update(propagate_clicks);
+    ScreenBackable::update();
 
     if(this->search_bar->hitEnter()) {
         if(this->current_query == this->search_bar->getText().utf8View() && this->loading) {

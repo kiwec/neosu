@@ -15,7 +15,7 @@ class CBaseUIScrollView : public CBaseUIElement {
     void freeElements();
 
     void draw() override;
-    void mouse_update(bool *propagate_clicks) override;
+    void update() override;
 
     void onKeyUp(KeyboardEvent &e) override;
     void onKeyDown(KeyboardEvent &e) override;
@@ -131,7 +131,7 @@ class CBaseUIScrollView : public CBaseUIElement {
         void freeElements() override;
         void invalidate() override;
 
-        void mouse_update(bool *propagate_clicks) override;
+        void update() override;
         void draw() override;
 
         bool isBusy() override;
@@ -144,7 +144,7 @@ class CBaseUIScrollView : public CBaseUIElement {
         // these elements must correspond to items in the superclass' vElements container!
         std::unique_ptr<VisibleSet> vVisibleElements{nullptr};
 
-        // we need to break out of mouse_update if the container we're iterating through has been cleared
+        // we need to break out of update() if the container we're iterating through has been cleared
         bool invalidateUpdate{false};
         bool inIllegalToInvalidateIteration{false};  // for debug
     };

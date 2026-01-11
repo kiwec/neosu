@@ -9,6 +9,7 @@
 #include "SoundEngine.h"
 #include "UIBackButton.h"
 #include "MakeDelegateWrapper.h"
+#include "Mouse.h"
 
 ScreenBackable::ScreenBackable() : UIOverlay(), backButton(std::make_unique<UIBackButton>(-1.f, 0.f, 0.f, 0.f, "")) {
     this->backButton->setClickCallback(SA::MakeDelegate<&ScreenBackable::onBack>(this));
@@ -24,11 +25,11 @@ void ScreenBackable::draw() {
     this->backButton->draw();
 }
 
-void ScreenBackable::mouse_update(bool *propagate_clicks) {
+void ScreenBackable::update() {
     if(!this->bVisible) return;
-    this->backButton->mouse_update(propagate_clicks);
-    if(!*propagate_clicks) return;
-    UIOverlay::mouse_update(propagate_clicks);
+    this->backButton->update();
+    if(!mouse->propagate_clicks) return;
+    UIOverlay::update();
 }
 
 void ScreenBackable::onKeyDown(KeyboardEvent &e) {

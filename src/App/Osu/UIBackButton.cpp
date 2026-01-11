@@ -37,9 +37,9 @@ void UIBackButton::draw() {
     this->bFocusStolenDelay = false;
 }
 
-void UIBackButton::mouse_update(bool *propagate_clicks) {
+void UIBackButton::update() {
     if(!this->bVisible) return;
-    CBaseUIButton::mouse_update(propagate_clicks);
+    CBaseUIButton::update();
 }
 
 void UIBackButton::onMouseDownInside(bool left, bool right) {

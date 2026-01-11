@@ -26,8 +26,8 @@ ChatLink::ChatLink(float xPos, float yPos, float xSize, float ySize, const UStri
     this->setBackgroundColor(0xff2e3784);
 }
 
-void ChatLink::mouse_update(bool* propagate_clicks) {
-    CBaseUILabel::mouse_update(propagate_clicks);
+void ChatLink::update() {
+    CBaseUILabel::update();
 
     if(this->isMouseInside()) {
         ui->getTooltipOverlay()->begin();

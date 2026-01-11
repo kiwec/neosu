@@ -46,7 +46,7 @@ ToastElement::ToastElement(const UString &text, Color borderColor_arg, ToastElem
 }
 
 void ToastElement::onClicked(bool left, bool right) {
-    // Set creationTime to -10 so toast is deleted in NotificationOverlay::mouse_update
+    // Set creationTime to -10 so toast is deleted in NotificationOverlay::update
     this->creationTime = -10.0;
 
     CBaseUIButton::onClicked(left, right);
@@ -82,7 +82,7 @@ void ToastElement::updateLayout() {
     this->setSize(TOAST_WIDTH, (this->font->getHeight() * 1.5 * this->lines.size()) + (TOAST_INNER_Y_MARGIN * 2.0));
 }
 
-void NotificationOverlay::mouse_update(bool *propagate_clicks) {
+void NotificationOverlay::update() {
     bool chat_toasts_visible = cv::notify_during_gameplay.getBool();
     chat_toasts_visible |= !osu->isInPlayMode();
     chat_toasts_visible |= ui->getPauseMenu()->isVisible();
@@ -95,7 +95,7 @@ void NotificationOverlay::mouse_update(bool *propagate_clicks) {
 
         bottom_y -= TOAST_OUTER_Y_MARGIN + t->getSize().y;
         t->setPos(screen.x - (TOAST_SCREEN_RIGHT_MARGIN + TOAST_WIDTH), bottom_y);
-        t->mouse_update(propagate_clicks);
+        t->update();
         a_toast_is_hovered |= t->isMouseInside();
     }
 

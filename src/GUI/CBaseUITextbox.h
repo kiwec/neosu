@@ -12,7 +12,7 @@ class CBaseUITextbox : public CBaseUIElement {
     ~CBaseUITextbox() override = default;
 
     void draw() override;
-    void mouse_update(bool *propagate_clicks) override;
+    void update() override;
     void onFocusStolen() override;
     void onResized() override;
 

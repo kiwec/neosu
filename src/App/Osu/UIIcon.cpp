@@ -11,9 +11,9 @@ UIIcon::UIIcon(char16_t icon) : CBaseUILabel(0.f, 0.f, 0.f, 0.f, "", UString(&ic
     this->setDrawFrame(false);
 }
 
-void UIIcon::mouse_update(bool* propagate_clicks) {
+void UIIcon::update() {
     if(!this->bVisible) return;
-    CBaseUILabel::mouse_update(propagate_clicks);
+    CBaseUILabel::update();
 
     if(this->isMouseInside() && this->tooltipTextLines.size() > 0 && !this->bFocusStolenDelay) {
         ui->getTooltipOverlay()->begin();

@@ -52,7 +52,7 @@ class CarouselButton : public CBaseUIButton {
     void deleteAnimations();
 
     void draw() override;
-    void mouse_update(bool *propagate_clicks) override;
+    void update() override;
 
     virtual void updateLayoutEx();
 

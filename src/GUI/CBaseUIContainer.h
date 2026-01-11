@@ -13,7 +13,7 @@ class CBaseUIContainer : public CBaseUIElement {
 
     void draw_debug();
     void draw() override;
-    void mouse_update(bool *propagate_clicks) override;
+    void update() override;
 
     void onKeyUp(KeyboardEvent &e) override;
     void onKeyDown(KeyboardEvent &e) override;

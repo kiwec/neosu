@@ -942,7 +942,7 @@ void MainMenu::draw() {
     this->drawMainButton();
 }
 
-void MainMenu::mouse_update(bool *propagate_clicks) {
+void MainMenu::update() {
     if(!this->bVisible) return;
 
     if(cv::is_bleedingedge.getBool()) {
@@ -968,10 +968,10 @@ void MainMenu::mouse_update(bool *propagate_clicks) {
     this->updateLayout();
 
     // update and focus handling
-    UIOverlay::mouse_update(propagate_clicks);
+    UIOverlay::update();
 
     if(this->updateAvailableButton != nullptr) {
-        this->updateAvailableButton->mouse_update(propagate_clicks);
+        this->updateAvailableButton->update();
     }
 
     // handle automatic menu closing

@@ -21,7 +21,7 @@ class ScoreButton final : public CBaseUIButton {
     ~ScoreButton() override;
 
     void draw() override;
-    void mouse_update(bool *propagate_clicks) override;
+    void update() override;
 
     void highlight();
     void resetHighlight();

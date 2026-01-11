@@ -167,16 +167,16 @@ void CBaseUIContainer::draw_debug() {
     }
 }
 
-void CBaseUIContainer::mouse_update(bool *propagate_clicks) {
-    CBaseUIElement::mouse_update(propagate_clicks);
+void CBaseUIContainer::update() {
+    CBaseUIElement::update();
     if(!this->bVisible) return;
 
-    // NOTE 1: do NOT use a range-based for loop here, mouse_update might invalidate iterators by changing the container contents...
+    // NOTE 1: do NOT use a range-based for loop here, update() might invalidate iterators by changing the container contents...
     // NOTE 2: iterating backwards for proper event ordering, things should be drawn front-to-back, but the last drawn (on top) element should handle events first
     MC_UNROLL
     for(ssize_t i = static_cast<ssize_t>(this->vElements.size()) - 1; i >= 0; --i) {
         auto *e = this->vElements[i];
-        if(e->isVisible()) e->mouse_update(propagate_clicks);
+        if(e->isVisible()) e->update();
     }
 }
 

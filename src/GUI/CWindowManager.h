@@ -15,7 +15,7 @@ class CWindowManager : public KeyboardListener {
     ~CWindowManager() override;
 
     void draw();
-    virtual void mouse_update(bool *propagate_clicks);
+    virtual void update();
 
     void onKeyDown(KeyboardEvent &e) override;
     void onKeyUp(KeyboardEvent &e) override;

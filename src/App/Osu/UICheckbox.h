@@ -6,7 +6,7 @@ class UICheckbox final : public CBaseUICheckbox {
    public:
     UICheckbox(float xPos, float yPos, float xSize, float ySize, UString name, UString text);
 
-    void mouse_update(bool *propagate_clicks) override;
+    void update() override;
 
     void setTooltipText(const UString& text);
 

@@ -23,7 +23,7 @@ class RankingScreen final : public ScreenBackable {
     RankingScreen();
 
     void draw() override;
-    void mouse_update(bool *propagate_clicks) override;
+    void update() override;
 
     CBaseUIContainer *setVisible(bool visible) override;
 

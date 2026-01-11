@@ -21,7 +21,7 @@ class UIContextMenu final : public CBaseUIScrollView {
                   CBaseUIScrollView *parent = nullptr);
 
     void draw() override;
-    void mouse_update(bool *propagate_clicks) override;
+    void update() override;
 
     void onKeyUp(KeyboardEvent &e) override;
     void onKeyDown(KeyboardEvent &e) override;
@@ -48,10 +48,9 @@ class UIContextMenu final : public CBaseUIScrollView {
 
     // compatibility wrapper to avoid messing with a bunch of code
     inline void end(bool invertAnimation, bool clampUnderflowAndOverflowAndEnableScrollingIfNecessary) {
-        return this->end(invertAnimation,
-                         clampUnderflowAndOverflowAndEnableScrollingIfNecessary
-                             ? (EndStyle)((u8)EndStyle::CLAMP_BOUNDS | (u8)EndStyle::STANDALONE_SCROLL)
-                             : EndStyle{0});
+        return this->end(invertAnimation, clampUnderflowAndOverflowAndEnableScrollingIfNecessary
+                                              ? (EndStyle)((u8)EndStyle::CLAMP_BOUNDS | (u8)EndStyle::STANDALONE_SCROLL)
+                                              : EndStyle{0});
     }
 
     CBaseUIElement *setVisible(bool visible) override {
@@ -97,7 +96,7 @@ class UIContextMenuButton final : public CBaseUIButton {
     UIContextMenuButton(float xPos, float yPos, float xSize, float ySize, UString name, UString text, int id);
     ~UIContextMenuButton() override { ; }
 
-    void mouse_update(bool *propagate_clicks) override;
+    void update() override;
 
     void onMouseInside() override;
     void onMouseDownInside(bool left = true, bool right = false) override;

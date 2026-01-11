@@ -15,7 +15,7 @@ class OptionsMenu final : public ScreenBackable, public NotificationOverlayKeyLi
     ~OptionsMenu() override;
 
     void draw() override;
-    void mouse_update(bool *propagate_clicks) override;
+    void update() override;
 
     void onKeyDown(KeyboardEvent &e) override;
     void onChar(KeyboardEvent &e) override;

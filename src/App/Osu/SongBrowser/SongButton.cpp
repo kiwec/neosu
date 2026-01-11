@@ -76,7 +76,7 @@ void SongButton::draw() {
     this->drawSubTitle();
 }
 
-void SongButton::mouse_update(bool *propagate_clicks) {
+void SongButton::update() {
     if(!this->bVisible) {
         this->fVisibleFor = 0.f;
         return;
@@ -88,7 +88,7 @@ void SongButton::mouse_update(bool *propagate_clicks) {
     else
         this->fVisibleFor = 0.f;
 
-    CarouselButton::mouse_update(propagate_clicks);
+    CarouselButton::update();
 
     if(this->children.empty()) return;
 

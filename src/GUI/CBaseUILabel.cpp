@@ -63,7 +63,7 @@ void CBaseUILabel::drawText() {
     }
 }
 
-void CBaseUILabel::mouse_update(bool* propagate_clicks) { CBaseUIElement::mouse_update(propagate_clicks); }
+void CBaseUILabel::update() { CBaseUIElement::update(); }
 
 void CBaseUILabel::updateStringMetrics() {
     if(this->font != nullptr) {

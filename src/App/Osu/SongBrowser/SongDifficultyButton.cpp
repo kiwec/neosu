@@ -148,12 +148,12 @@ void SongDifficultyButton::draw() {
     }
 }
 
-void SongDifficultyButton::mouse_update(bool* propagate_clicks) {
+void SongDifficultyButton::update() {
     if(!this->bVisible) {
         this->fVisibleFor = 0.f;
         return;
     }
-    CarouselButton::mouse_update(propagate_clicks);
+    CarouselButton::update();
 
     // don't try to load images while scrolling fast to avoid lag
     if(!g_carousel->isScrollingFast())
@@ -188,7 +188,7 @@ void SongDifficultyButton::resetAnimations() {
     if(this->fOffsetPercentAnim != 1.f && this->fOffsetPercentAnim != 0.f) {
         anim::deleteExistingAnimation(&this->fOffsetPercentAnim);
     }
-    // force reanimate in mouse_update
+    // force reanimate in update()
     this->lastOffsetState = OffsetState::UNINITIALIZED;
     this->fOffsetPercentAnim = 0.f;
 }

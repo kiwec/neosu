@@ -39,7 +39,7 @@ class RoomScreen final : public UIOverlay {
     ~RoomScreen() override;
 
     void draw() override;
-    void mouse_update(bool* propagate_clicks) override;
+    void update() override;
     void onKeyDown(KeyboardEvent& e) override;
     void onKeyUp(KeyboardEvent& e) override;
     void onChar(KeyboardEvent& e) override;
@@ -51,9 +51,9 @@ class RoomScreen final : public UIOverlay {
     void ragequit(bool play_sound = true);
 
     void on_map_change();
-    void on_room_joined(const Room &room);
-    void on_room_updated(const Room &room);
-    void on_match_started(const Room &room);
+    void on_room_joined(const Room& room);
+    void on_room_updated(const Room& room);
+    void on_match_started(const Room& room);
     void on_match_score_updated(Packet& packet);
     void on_player_failed(i32 slot_id);
     void on_match_finished();

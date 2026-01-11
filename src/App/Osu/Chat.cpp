@@ -402,7 +402,7 @@ void Chat::drawTicker() {
     g->pop3DScene();
 }
 
-void Chat::mouse_update(bool *propagate_clicks) {
+void Chat::update() {
     if(!this->bVisible) return;
 
     if(this->user_list->isVisible()) {
@@ -431,12 +431,12 @@ void Chat::mouse_update(bool *propagate_clicks) {
         }
     }
 
-    UIOverlay::mouse_update(propagate_clicks);
+    UIOverlay::update();
 
     // XXX: don't let mouse click through the buttons area
-    this->button_container->mouse_update(propagate_clicks);
+    this->button_container->update();
     if(this->selected_channel) {
-        this->selected_channel->ui->mouse_update(propagate_clicks);
+        this->selected_channel->ui->update();
     }
 
     // HACKHACK: MOUSE3 handling
@@ -1362,5 +1362,5 @@ bool Chat::isMouseInChat() {
 void Chat::askWhatChannelToJoin(CBaseUIButton * /*btn*/) {
     // XXX: Could display nicer UI with full channel list (chat_channels in Bancho.cpp)
     ui->getPromptScreen()->prompt("Type in the channel you want to join (e.g. '#osu'):",
-                                   SA::MakeDelegate<&Chat::join>(this));
+                                  SA::MakeDelegate<&Chat::join>(this));
 }

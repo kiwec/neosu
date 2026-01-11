@@ -19,7 +19,7 @@ class SongDifficultyButton final : public SongButton {
     ~SongDifficultyButton() override;
 
     void draw() override;
-    void mouse_update(bool *propagate_clicks) override;
+    void update() override;
     void onClicked(bool left = true, bool right = false) override;
 
     void resetAnimations() override;

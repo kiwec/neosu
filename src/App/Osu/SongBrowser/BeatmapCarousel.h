@@ -22,7 +22,7 @@ class BeatmapCarousel final : public CBaseUIScrollView {
     void onChar(KeyboardEvent &e) override;
 
     void draw() override;
-    void mouse_update(bool *propagate_clicks) override;
+    void update() override;
 
     // checks for context menu visibility
     bool isMouseInside() override;
@@ -32,6 +32,6 @@ class BeatmapCarousel final : public CBaseUIScrollView {
     [[nodiscard]] inline bool isScrollingFast() const { return this->bIsScrollingFast; }
 
    private:
-    // updated at the end of mouse_update
+    // updated at the end of update()
     bool bIsScrollingFast{false};
 };

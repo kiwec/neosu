@@ -102,7 +102,7 @@ struct OptionsMenuImpl final {
     ~OptionsMenuImpl();
 
     void draw();
-    void mouse_update(bool *propagate_clicks);
+    void update();
     void onKeyDown(KeyboardEvent &e);
     void onChar(KeyboardEvent &e);
     void onResolutionChange(vec2 newResolution);
@@ -338,7 +338,7 @@ OptionsMenu::OptionsMenu() : ScreenBackable(), NotificationOverlayKeyListener(),
 OptionsMenu::~OptionsMenu() = default;
 
 void OptionsMenu::draw() { return pImpl->draw(); }
-void OptionsMenu::mouse_update(bool *propagate_clicks) { return pImpl->mouse_update(propagate_clicks); }
+void OptionsMenu::update() { return pImpl->update(); }
 void OptionsMenu::onKeyDown(KeyboardEvent &e) { return pImpl->onKeyDown(e); }
 void OptionsMenu::onChar(KeyboardEvent &e) { return pImpl->onChar(e); }
 void OptionsMenu::onResolutionChange(vec2 newResolution) { return pImpl->onResolutionChange(newResolution); }
@@ -411,9 +411,9 @@ class ResetButton final : public CBaseUIButton {
         g->fillGradient(this->vPos.x, this->vPos.y, fullColorBlockSize, this->vSize.y, left, middle, left, middle);
     }
 
-    void mouse_update(bool *propagate_clicks) override {
+    void update() override {
         if(!this->bVisible || !this->bEnabled) return;
-        CBaseUIButton::mouse_update(propagate_clicks);
+        CBaseUIButton::update();
 
         if(this->isMouseInside()) {
             ui->getTooltipOverlay()->begin();
@@ -665,9 +665,9 @@ class OptionsMenuKeyBindLabel final : public CBaseUILabel {
         this->textColorUnbound = 0xffbb0000;
     }
 
-    void mouse_update(bool *propagate_clicks) override {
+    void update() override {
         if(!this->bVisible) return;
-        CBaseUILabel::mouse_update(propagate_clicks);
+        CBaseUILabel::update();
 
         const auto newKeyCode = (SCANCODE)this->key->getInt();
         if(this->keyCode == newKeyCode) return;
@@ -1849,7 +1849,7 @@ void OptionsMenuImpl::update_login_button(bool loggedIn) {
     this->logInButton->is_loading = BanchoState::is_logging_in();
 }
 
-void OptionsMenuImpl::mouse_update(bool *propagate_clicks) {
+void OptionsMenuImpl::update() {
     if(this->bLayoutUpdateScheduled.load(std::memory_order_relaxed)) {
         this->updateLayout();
     }
@@ -1861,8 +1861,8 @@ void OptionsMenuImpl::mouse_update(bool *propagate_clicks) {
     const bool onlyContextMenuVisible = contextMenuVisible && !optionsMenuVisible;
 
     // force context menu click handling focus
-    this->contextMenu->mouse_update(propagate_clicks);
-    if(!*propagate_clicks) return;
+    this->contextMenu->update();
+    if(!mouse->propagate_clicks) return;
     if(onlyContextMenuVisible) return;  // HACK: not returning early if options menu is hidden, for skins menu dropdown
 
     // force context menu mouse-inside focus
@@ -1873,8 +1873,8 @@ void OptionsMenuImpl::mouse_update(bool *propagate_clicks) {
         parent->backButton->stealFocus();
     }
 
-    parent->ScreenBackable::mouse_update(propagate_clicks);
-    if(!*propagate_clicks) return;
+    parent->ScreenBackable::update();
+    if(!mouse->propagate_clicks) return;
 
     if(contextMenuVisible) {
         // eyes are bleeding...

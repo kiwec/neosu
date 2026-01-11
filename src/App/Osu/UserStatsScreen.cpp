@@ -47,14 +47,11 @@ void UserStatsScreen::draw() {
     m_contextMenu->draw();
 }
 
-void UserStatsScreen::mouse_update(bool *propagate_clicks) {
+void UserStatsScreen::update() {
     if(!this->isVisible()) return;
 
-    m_contextMenu->mouse_update(propagate_clicks);
-    ScreenBackable::mouse_update(propagate_clicks);
-
-    // prevent clicks from affecting lower screens (sorry if this fucked you over)
-    *propagate_clicks = false;
+    m_contextMenu->update();
+    ScreenBackable::update();
 }
 
 CBaseUIContainer *UserStatsScreen::setVisible(bool visible) {

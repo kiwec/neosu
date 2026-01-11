@@ -140,10 +140,10 @@ void CBaseUITextbox::drawText() {
     g->popTransform();
 }
 
-void CBaseUITextbox::mouse_update(bool *propagate_clicks) {
+void CBaseUITextbox::update() {
     if(!this->bVisible) return;
     bool was_active = this->bActive;
-    CBaseUIElement::mouse_update(propagate_clicks);
+    CBaseUIElement::update();
 
     // Steal focus from all other Textboxes
     if(!was_active && this->bActive) {

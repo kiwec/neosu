@@ -25,7 +25,7 @@ class ConsoleBox : public CBaseUIElement {
 
     void draw() override;
     void drawLogOverlay();
-    void mouse_update(bool *propagate_clicks) override;
+    void update() override;
 
     void onKeyDown(KeyboardEvent &e) override;
     void onChar(KeyboardEvent &e) override;

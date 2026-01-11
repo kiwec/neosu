@@ -221,9 +221,9 @@ void CBaseUIWindow::draw() {
     }
 }
 
-void CBaseUIWindow::mouse_update(bool *propagate_clicks) {
+void CBaseUIWindow::update() {
     if(!this->bVisible) return;
-    CBaseUIElement::mouse_update(propagate_clicks);
+    CBaseUIElement::update();
 
     // after the close animation is finished, set invisible
     if(this->fAnimation == 0.0f && this->bVisible) this->setVisible(false);
@@ -233,8 +233,8 @@ void CBaseUIWindow::mouse_update(bool *propagate_clicks) {
         this->updateWindowLogic();
 
     // the main two containers
-    this->titleBarContainer->mouse_update(propagate_clicks);
-    this->container->mouse_update(propagate_clicks);
+    this->titleBarContainer->update();
+    this->container->update();
 
     // moving
     if(this->bMoving) this->setPos(this->vLastPos + (mouse->getPos() - this->vMousePosBackup));
@@ -480,8 +480,7 @@ CBaseUIWindow *CBaseUIWindow::enableCoherenceMode() {
 
 void CBaseUIWindow::onMouseDownInside(bool /*left*/, bool /*right*/) {
     this->bBusy = true;
-    bool wtf = true;
-    this->titleBarContainer->mouse_update(&wtf);  // why is this called here lol?
+    this->titleBarContainer->update();  // why is this called here lol?
     if(!this->titleBarContainer->isBusy()) this->udpateResizeAndMoveLogic(true);
 }
 

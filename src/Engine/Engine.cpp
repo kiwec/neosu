@@ -350,9 +350,8 @@ void Engine::onUpdate() {
 
         {
             VPROF_BUDGET("GUI::update", VPROF_BUDGETGROUP_UPDATE);
-            // update gui
-            bool propagate_clicks = true;
-            if(this->guiContainer) this->guiContainer->mouse_update(&propagate_clicks);
+            mouse->propagate_clicks = true;
+            if(this->guiContainer) this->guiContainer->update();
         }
 
         {

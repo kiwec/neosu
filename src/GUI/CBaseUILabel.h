@@ -12,7 +12,7 @@ class CBaseUILabel : public CBaseUIElement {
     ~CBaseUILabel() override { ; }
 
     void draw() override;
-    void mouse_update(bool *propagate_clicks) override;
+    void update() override;
 
     // cancer
     void setRelSizeX(float x) { this->vmSize.x = x; }

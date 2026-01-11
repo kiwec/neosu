@@ -108,12 +108,12 @@ void VolumeOverlay::draw() {
     if(this->fVolumeChangeFade != 1.0f) g->pop3DScene();
 }
 
-void VolumeOverlay::mouse_update(bool *propagate_clicks) {
+void VolumeOverlay::update() {
     this->volumeMaster->setEnabled(this->fVolumeChangeTime > engine->getTime());
     this->volumeEffects->setEnabled(this->volumeMaster->isEnabled());
     this->volumeMusic->setEnabled(this->volumeMaster->isEnabled());
     this->volumeSliderOverlayContainer->setSize(osu->getVirtScreenSize());
-    this->volumeSliderOverlayContainer->mouse_update(propagate_clicks);
+    this->volumeSliderOverlayContainer->update();
 
     if(!this->volumeMaster->isBusy())
         this->volumeMaster->setValue(cv::volume_master.getFloat(), false);
@@ -167,7 +167,7 @@ void VolumeOverlay::mouse_update(bool *propagate_clicks) {
         if(this->fVolumeInactiveToActiveAnim == 1.0f) this->bVolumeInactiveToActiveScheduled = false;
     }
 
-    // scroll wheel events (should be separate from mouse_update events, but... oh well...)
+    // scroll wheel events (should be separate from update(), but... oh well...)
     const int wheelDelta = mouse->getWheelDeltaVertical() / 120;
     if(this->canChangeVolume() && wheelDelta != 0) {
         if(wheelDelta > 0) {

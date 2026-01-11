@@ -69,9 +69,9 @@ void UIButton::draw() {
     }
 }
 
-void UIButton::mouse_update(bool *propagate_clicks) {
+void UIButton::update() {
     if(!this->bVisible || !this->bVisible2) return;
-    CBaseUIButton::mouse_update(propagate_clicks);
+    CBaseUIButton::update();
 
     if(this->isMouseInside() && this->tooltipTextLines.size() > 0 && !this->bFocusStolenDelay) {
         ui->getTooltipOverlay()->begin();

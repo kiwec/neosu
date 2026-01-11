@@ -390,9 +390,9 @@ void VisualProfiler::drawStringWithShadow(McFont *font, const UString &string, C
     }
 }
 
-void VisualProfiler::mouse_update(bool *propagate_clicks) {
+void VisualProfiler::update() {
     VPROF_BUDGET("VisualProfiler::update", VPROF_BUDGETGROUP_UPDATE);
-    CBaseUIElement::mouse_update(propagate_clicks);
+    CBaseUIElement::update();
     if(!cv::vprof.getBool() || !this->bVisible) return;
 
     const bool isFrozen = (keyboard->isShiftDown() && (!this->bRequiresAltShiftKeysToFreeze || keyboard->isAltDown()));

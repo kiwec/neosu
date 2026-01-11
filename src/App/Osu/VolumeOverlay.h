@@ -13,7 +13,7 @@ class VolumeOverlay final : public UIOverlay {
 
     void animate();
     void draw() override;
-    void mouse_update(bool* propagate_clicks) override;
+    void update() override;
     void onResolutionChange(vec2 newResolution) override;
     void onKeyDown(KeyboardEvent& key) override;
     void updateLayout();

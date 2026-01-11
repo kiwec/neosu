@@ -61,20 +61,20 @@ void ScrollContainer::invalidate() {
     CBaseUIContainer::invalidate();
 }
 
-void ScrollContainer::mouse_update(bool *propagate_clicks) {
+void ScrollContainer::update() {
     if(!this->vVisibleElements) {
-        CBaseUIContainer::mouse_update(propagate_clicks);
+        CBaseUIContainer::update();
         return;
     }
     // intentionally not calling parent
-    CBaseUIElement::mouse_update(propagate_clicks);
+    CBaseUIElement::update();
     if(!this->bVisible) return;
 
     this->invalidateUpdate = false;
 
     MC_UNROLL
     for(auto *e : *this->vVisibleElements) {
-        e->mouse_update(propagate_clicks);
+        e->update();
         if(this->invalidateUpdate) {
             // iterators have been invalidated!
             // try again next time.
@@ -229,11 +229,11 @@ void CBaseUIScrollView::draw() {
     }
 }
 
-void CBaseUIScrollView::mouse_update(bool *propagate_clicks) {
+void CBaseUIScrollView::update() {
     if(!this->isVisible()) return;
 
-    this->container->mouse_update(propagate_clicks);
-    CBaseUIElement::mouse_update(propagate_clicks);
+    this->container->update();
+    CBaseUIElement::update();
 
     const bool wasContainerBusyBeforeUpdate = this->container->isBusy();
     if(this->bBusy) {

@@ -19,7 +19,7 @@ class UserStatsScreen final : public ScreenBackable {
     ~UserStatsScreen() override = default;
 
     void draw() override;
-    void mouse_update(bool *propagate_clicks) override;
+    void update() override;
 
     CBaseUIContainer *setVisible(bool visible) override;
 

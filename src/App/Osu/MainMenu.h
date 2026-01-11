@@ -40,7 +40,7 @@ class MainMenu final : public UIOverlay, public MouseListener {
     ~MainMenu() override;
 
     void draw() override;
-    void mouse_update(bool *propagate_clicks) override;
+    void update() override;
 
     void clearPreloadedMaps();
     void selectRandomBeatmap();

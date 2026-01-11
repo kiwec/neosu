@@ -220,8 +220,8 @@ void ConsoleBox::processPendingLogAnimations() {
     }
 }
 
-void ConsoleBox::mouse_update(bool *propagate_clicks) {
-    CBaseUIElement::mouse_update(propagate_clicks);
+void ConsoleBox::update() {
+    CBaseUIElement::update();
 
     // handle pending animation operations from logging threads
     processPendingLogAnimations();
@@ -231,7 +231,7 @@ void ConsoleBox::mouse_update(bool *propagate_clicks) {
     if(mleft && this->textbox->isMouseInside() && this->textbox->isVisible()) this->textbox->setActive(true);
 
     // handle consolebox
-    this->textbox->mouse_update(propagate_clicks);
+    this->textbox->update();
 
     if(this->textbox->hitEnter()) {
         this->processCommand(this->textbox->getText().toUtf8());
@@ -275,7 +275,7 @@ void ConsoleBox::mouse_update(bool *propagate_clicks) {
     }
 
     // handle suggestions
-    if(this->suggestion->isVisible()) this->suggestion->mouse_update(propagate_clicks);
+    if(this->suggestion->isVisible()) this->suggestion->update();
 
     if(this->bSuggestionAnimateOut) {
         if(this->fSuggestionAnimation <= this->fSuggestionY) {
@@ -317,7 +317,7 @@ void ConsoleBox::mouse_update(bool *propagate_clicks) {
                                 this->logFont->getHeight() * (cv::console_overlay_lines.getFloat() + 1), 0.5f);
 
         if(!this->bClearPending &&
-            this->fLogYPos >= this->logFont->getHeight() * (cv::console_overlay_lines.getInt() + 1)) {
+           this->fLogYPos >= this->logFont->getHeight() * (cv::console_overlay_lines.getInt() + 1)) {
             this->bClearPending = true;
         }
     }

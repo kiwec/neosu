@@ -20,13 +20,12 @@ class SongButton : public CarouselButton {
     SongButton(float xPos, float yPos, float xSize, float ySize, UString name);
 
    public:
-    SongButton(float xPos, float yPos, float xSize, float ySize, UString name,
-               BeatmapSet *beatmapSet);
+    SongButton(float xPos, float yPos, float xSize, float ySize, UString name, BeatmapSet *beatmapSet);
     SongButton() = delete;
     ~SongButton() override;
 
     void draw() override;
-    void mouse_update(bool *propagate_clicks) override;
+    void update() override;
 
     void triggerContextMenu(vec2 pos);
 

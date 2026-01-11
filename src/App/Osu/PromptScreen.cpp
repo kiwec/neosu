@@ -9,6 +9,7 @@
 #include "Graphics.h"
 #include "UIButton.h"
 #include "MakeDelegateWrapper.h"
+#include "Mouse.h"
 
 PromptScreen::PromptScreen() : UIOverlay() {
     this->prompt_label = new CBaseUILabel(0, 0, 0, 0, "", "");
@@ -56,11 +57,11 @@ void PromptScreen::draw() {
     UIOverlay::draw();
 }
 
-void PromptScreen::mouse_update(bool *propagate_clicks) {
+void PromptScreen::update() {
     if(!this->bVisible) return;
 
-    UIOverlay::mouse_update(propagate_clicks);
-    *propagate_clicks = false;
+    UIOverlay::update();
+    mouse->propagate_clicks = false;
 }
 
 void PromptScreen::onKeyDown(KeyboardEvent &e) {

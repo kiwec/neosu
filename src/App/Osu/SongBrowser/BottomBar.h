@@ -11,7 +11,7 @@ class Graphics;
 namespace BottomBar {
 enum Button : i8 { NONE = -1, MODE = 0, MODS = 1, RANDOM = 2, OPTIONS = 3 };
 
-void update(bool* propagate_clicks);
+void update();
 void draw();
 void press_button(Button btn);
 [[nodiscard]] f32 get_height();
