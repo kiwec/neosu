@@ -1767,7 +1767,7 @@ void OptionsMenuImpl::draw() {
     this->sliderPreviewElement->setDrawSliderHack(!isAnimating);
 
     if(isAnimating) {
-        ui->getSliderFrameBuffer()->enable();
+        osu->getSliderFrameBuffer()->enable();
 
         g->setBlendMode(DrawBlendMode::BLEND_MODE_PREMUL_ALPHA);
     }
@@ -1823,7 +1823,7 @@ void OptionsMenuImpl::draw() {
 
         g->setBlendMode(DrawBlendMode::BLEND_MODE_ALPHA);
 
-        ui->getSliderFrameBuffer()->disable();
+        osu->getSliderFrameBuffer()->disable();
 
         g->push3DScene(McRect(0, 0, this->options->getSize().x, this->options->getSize().y));
         {
@@ -1831,8 +1831,8 @@ void OptionsMenuImpl::draw() {
             g->translate3DScene(-(1.0f - this->fAnimation) * this->options->getSize().x * 1.25f, 0,
                                 -(1.0f - this->fAnimation) * 700);
 
-            ui->getSliderFrameBuffer()->setColor(argb(this->fAnimation, 1.0f, 1.0f, 1.0f));
-            ui->getSliderFrameBuffer()->draw(0, 0);
+            osu->getSliderFrameBuffer()->setColor(argb(this->fAnimation, 1.0f, 1.0f, 1.0f));
+            osu->getSliderFrameBuffer()->draw(0, 0);
         }
         g->pop3DScene();
     }

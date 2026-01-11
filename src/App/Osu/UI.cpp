@@ -33,53 +33,59 @@
 #include "SpectatorScreen.h"
 #include "TooltipOverlay.h"
 #include "UIUserContextMenu.h"
+#include "UIContextMenu.h"
 #include "UserStatsScreen.h"
 #include "VolumeOverlay.h"
 
 std::unique_ptr<UI> ui = nullptr;
 
+#define X_(enumid__, type__, shortname__) /*                                                          */ \
+    type__ *UI::get##shortname__() { return static_cast<type__ *>(this->overlays[(size_t)(OverlayKind::enumid__)]); }
+ALL_OVERLAYS_(X_)
+#undef X_
+
+NotificationOverlay *UI::getNotificationOverlay() {
+    return static_cast<NotificationOverlay *>(this->overlays[OV_NOTIFICATIONOVERLAY]);
+}
+
+class UI::NullScreen final : public UIOverlay {
+    NOCOPY_NOMOVE(NullScreen)
+   public:
+    NullScreen() : UIOverlay() {}
+    ~NullScreen() final = default;
+
+    forceinline CBaseUIElement *setVisible(bool /*visible*/) final {
+        this->bVisible = false;
+        return this;
+    }
+    forceinline bool isVisible() final { return false; }
+};
+
 UI::UI() {
-    this->backBuffer = resourceManager->createRenderTarget(0, 0, osu->getVirtScreenWidth(), osu->getVirtScreenHeight());
-    this->playfieldBuffer = resourceManager->createRenderTarget(0, 0, 64, 64);
-    this->sliderFrameBuffer =
-        resourceManager->createRenderTarget(0, 0, osu->getVirtScreenWidth(), osu->getVirtScreenHeight());
-    this->AAFrameBuffer = resourceManager->createRenderTarget(
-        0, 0, osu->getVirtScreenWidth(), osu->getVirtScreenHeight(), MultisampleType::MULTISAMPLE_4X);
-
-    int overlayit = 0;
-    this->overlays[overlayit++] = this->notificationOverlay = new NotificationOverlay();
-    this->overlays[overlayit++] = this->volumeOverlay = new VolumeOverlay();
-    this->overlays[overlayit++] = this->prompt = new PromptScreen();
-    this->overlays[overlayit++] = this->modSelector = new ModSelector();
-    this->overlays[overlayit++] = this->user_actions = new UIUserContextMenuScreen();
-    this->overlays[overlayit++] = this->room = new RoomScreen();
-    this->overlays[overlayit++] = this->chat = new Chat();
-    this->overlays[overlayit++] = this->optionsMenu = new OptionsMenu();
-    this->overlays[overlayit++] = this->rankingScreen = new RankingScreen();
-    this->overlays[overlayit++] = this->userStats = new UserStatsScreen();
-    this->overlays[overlayit++] = this->spectatorScreen = new SpectatorScreen();
-    this->overlays[overlayit++] = this->pauseMenu = new PauseMenu();
-    this->overlays[overlayit++] = this->hud = new HUD();
-    this->overlays[overlayit++] = this->songBrowser = new SongBrowser();
-    this->overlays[overlayit++] = this->osuDirectScreen = new OsuDirectScreen();
-    this->overlays[overlayit++] = this->lobby = new Lobby();
-    this->overlays[overlayit++] = this->changelog = new Changelog();
-    this->overlays[overlayit++] = this->mainMenu = new MainMenu();
-    this->overlays[overlayit++] = this->tooltipOverlay = new TooltipOverlay();
-    assert(overlayit == NUM_OVERLAYS);
-
-    this->notificationOverlay->addKeyListener(this->optionsMenu);
-
-    // debug
-    this->windowManager = std::make_unique<CWindowManager>();
+    this->overlays[OV_NULLSCREEN] = this->active_screen = new NullScreen();
+    this->overlays[OV_NOTIFICATIONOVERLAY] = new NotificationOverlay();
 }
 
 UI::~UI() {
     // destroy screens in reverse order
-    for(auto *screen : this->overlays | std::views::reverse) {
+    for(auto &screen : this->overlays | std::views::reverse) {
         SAFE_DELETE(screen);
     }
     this->overlays = {};
+}
+
+bool UI::init() {
+#define X_(enumid__, type__, shortname__) /*                                                          */ \
+    this->overlays[(size_t)(OverlayKind::enumid__)] = new type__();
+    ALL_OVERLAYS_(X_)
+#undef X_
+
+    this->getNotificationOverlay()->addKeyListener(this->getOptionsMenu());
+    this->active_screen = this->getMainMenu();
+
+    // debug
+    // this->windowManager = std::make_unique<CWindowManager>();
+    return true;
 }
 
 void UI::update() {
@@ -90,7 +96,7 @@ void UI::update() {
         if(!mouse->propagate_clicks) break;
     }
 
-    if(!updated_active_screen && mouse->propagate_clicks && this->active_screen != nullptr) {
+    if(!updated_active_screen && mouse->propagate_clicks) {
         this->active_screen->update();
     }
 }
@@ -99,7 +105,7 @@ void UI::draw() {
     // if we are not using the native window resolution, draw into the buffer
     const bool isBufferedDraw = (g->getResolution() != osu->getVirtScreenSize());
     if(isBufferedDraw) {
-        this->backBuffer->enable();
+        osu->backBuffer->enable();
     }
 
     f32 fadingCursorAlpha = 1.f;
@@ -107,12 +113,12 @@ void UI::draw() {
 
     // draw everything in the correct order
     if(osu->isInPlayMode()) {  // if we are playing a beatmap
-        if(isFPoSu) this->playfieldBuffer->enable();
+        if(isFPoSu) osu->playfieldBuffer->enable();
 
         // draw playfield (incl. flashlight/smoke etc.)
-        osu->getMapInterface()->draw();
+        osu->map_iface->draw();
 
-        if(!isFPoSu) this->hud->draw();
+        if(!isFPoSu) this->getHUD()->draw();
 
         // quick retry fadeout overlay
         if(osu->fQuickRetryTime != 0.0f && osu->bQuickRetryDown) {
@@ -123,81 +129,76 @@ void UI::draw() {
             g->fillRect(0, 0, osu->getVirtScreenWidth(), osu->getVirtScreenHeight());
         }
 
-        this->pauseMenu->draw();
-        this->modSelector->draw();
-        this->chat->draw();
-        this->user_actions->draw();
-        this->optionsMenu->draw();
+        this->getPauseMenu()->draw();
+        this->getModSelector()->draw();
+        this->getChat()->draw();
+        this->getUserActions()->draw();
+        this->getOptionsMenu()->draw();
 
         if(!isFPoSu) {
-            this->hud->drawFps();
+            this->getHUD()->drawFps();
         }
 
-        this->windowManager->draw();
+        // this->windowManager->draw();
 
-        if(isFPoSu && cv::draw_cursor_ripples.getBool()) this->hud->drawCursorRipples();
+        if(isFPoSu && cv::draw_cursor_ripples.getBool()) this->getHUD()->drawCursorRipples();
 
         // draw FPoSu cursor trail
         fadingCursorAlpha =
-            1.0f -
-            std::clamp<float>((float)osu->getScore()->getCombo() / cv::mod_fadingcursor_combo.getFloat(), 0.0f, 1.0f);
-        if(this->pauseMenu->isVisible() || osu->getMapInterface()->isContinueScheduled() ||
+            1.0f - std::clamp<float>((float)osu->score->getCombo() / cv::mod_fadingcursor_combo.getFloat(), 0.0f, 1.0f);
+        if(this->getPauseMenu()->isVisible() || osu->map_iface->isContinueScheduled() ||
            !cv::mod_fadingcursor.getBool())
             fadingCursorAlpha = 1.0f;
         if(isFPoSu && cv::fposu_draw_cursor_trail.getBool()) {
-            const vec2 trailpos =
-                osu->getMapInterface()->isPaused() ? mouse->getPos() : osu->getMapInterface()->getCursorPos();
-            this->hud->drawCursorTrail(trailpos, fadingCursorAlpha);
+            const vec2 trailpos = osu->map_iface->isPaused() ? mouse->getPos() : osu->map_iface->getCursorPos();
+            this->getHUD()->drawCursorTrail(trailpos, fadingCursorAlpha);
         }
 
         if(isFPoSu) {
-            this->playfieldBuffer->disable();
-            osu->getFPoSu()->draw();
-            this->hud->draw();
-            this->hud->drawFps();
+            osu->playfieldBuffer->disable();
+            osu->fposu->draw();
+            this->getHUD()->draw();
+            this->getHUD()->drawFps();
         }
 
         // draw debug info on top of everything else
-        if(cv::debug_draw_timingpoints.getBool()) osu->getMapInterface()->drawDebug();
+        if(cv::debug_draw_timingpoints.getBool()) osu->map_iface->drawDebug();
 
     } else {  // if we are not playing
 
-        if(this->active_screen != nullptr) {
-            this->active_screen->draw();
-        }
+        this->active_screen->draw();
+        this->getChat()->draw();
+        this->getUserActions()->draw();
+        this->getOptionsMenu()->draw();
+        this->getModSelector()->draw();
+        this->getPromptScreen()->draw();
 
-        this->chat->draw();
-        this->user_actions->draw();
-        this->optionsMenu->draw();
-        this->modSelector->draw();
-        this->prompt->draw();
+        this->getHUD()->drawFps();
 
-        this->hud->drawFps();
-
-        this->windowManager->draw();
+        // this->windowManager->draw();
     }
 
-    this->tooltipOverlay->draw();
-    this->notificationOverlay->draw();
-    this->volumeOverlay->draw();
+    this->getTooltipOverlay()->draw();
+    this->getNotificationOverlay()->draw();
+    this->getVolumeOverlay()->draw();
 
     // loading spinner for some async tasks
     if((osu->bSkinLoadScheduled && osu->getSkin() != osu->skinScheduledToLoad)) {
-        this->hud->drawLoadingSmall("");
+        this->getHUD()->drawLoadingSmall("");
     }
 
     if(osu->isInPlayMode()) {
         // draw cursor (gameplay)
-        const bool paused = osu->getMapInterface()->isPaused();
-        const vec2 cursorPos = isFPoSu ? (osu->getVirtScreenSize() / 2.0f)
-                                       : (paused ? mouse->getPos() : osu->getMapInterface()->getCursorPos());
+        const bool paused = osu->map_iface->isPaused();
+        const vec2 cursorPos =
+            isFPoSu ? (osu->getVirtScreenSize() / 2.0f) : (paused ? mouse->getPos() : osu->map_iface->getCursorPos());
         const bool drawSecondTrail = !paused && (cv::mod_autoplay.getBool() || cv::mod_autopilot.getBool() ||
-                                                 osu->getMapInterface()->is_watching || BanchoState::spectating);
+                                                 osu->map_iface->is_watching || BanchoState::spectating);
         const bool updateAndDrawTrail = !isFPoSu;
-        this->hud->drawCursor(cursorPos, fadingCursorAlpha, drawSecondTrail, updateAndDrawTrail);
+        this->getHUD()->drawCursor(cursorPos, fadingCursorAlpha, drawSecondTrail, updateAndDrawTrail);
     } else {
         // draw cursor (menus)
-        this->hud->drawCursor(mouse->getPos());
+        this->getHUD()->drawCursor(mouse->getPos());
     }
 
     osu->drawRuntimeInfo();
@@ -205,26 +206,26 @@ void UI::draw() {
     // if we are not using the native window resolution
     if(isBufferedDraw) {
         // draw a scaled version from the buffer to the screen
-        this->backBuffer->disable();
+        osu->backBuffer->disable();
 
         const vec2 offset{vec2{g->getResolution() - osu->getVirtScreenSize()} * 0.5f};
         g->setBlending(false);
         if(cv::letterboxing.getBool()) {
-            this->backBuffer->draw(offset.x * (1.0f + cv::letterboxing_offset_x.getFloat()),
-                                   offset.y * (1.0f + cv::letterboxing_offset_y.getFloat()), osu->getVirtScreenWidth(),
-                                   osu->getVirtScreenHeight());
+            osu->backBuffer->draw(offset.x * (1.0f + cv::letterboxing_offset_x.getFloat()),
+                                  offset.y * (1.0f + cv::letterboxing_offset_y.getFloat()), osu->getVirtScreenWidth(),
+                                  osu->getVirtScreenHeight());
         } else {
             if(cv::resolution_keep_aspect_ratio.getBool()) {
-                const float scale = osu->getImageScaleToFitResolution(this->backBuffer->getSize(), g->getResolution());
-                const float scaledWidth = this->backBuffer->getWidth() * scale;
-                const float scaledHeight = this->backBuffer->getHeight() * scale;
-                this->backBuffer->draw(std::max(0.0f, g->getResolution().x / 2.0f - scaledWidth / 2.0f) *
-                                           (1.0f + cv::letterboxing_offset_x.getFloat()),
-                                       std::max(0.0f, g->getResolution().y / 2.0f - scaledHeight / 2.0f) *
-                                           (1.0f + cv::letterboxing_offset_y.getFloat()),
-                                       scaledWidth, scaledHeight);
+                const float scale = Osu::getImageScaleToFitResolution(osu->backBuffer->getSize(), g->getResolution());
+                const float scaledWidth = osu->backBuffer->getWidth() * scale;
+                const float scaledHeight = osu->backBuffer->getHeight() * scale;
+                osu->backBuffer->draw(std::max(0.0f, g->getResolution().x / 2.0f - scaledWidth / 2.0f) *
+                                          (1.0f + cv::letterboxing_offset_x.getFloat()),
+                                      std::max(0.0f, g->getResolution().y / 2.0f - scaledHeight / 2.0f) *
+                                          (1.0f + cv::letterboxing_offset_y.getFloat()),
+                                      scaledWidth, scaledHeight);
             } else {
-                this->backBuffer->draw(0, 0, g->getResolution().x, g->getResolution().y);
+                osu->backBuffer->draw(0, 0, g->getResolution().x, g->getResolution().y);
             }
         }
         g->setBlending(true);
@@ -264,28 +265,18 @@ void UI::onResolutionChange(vec2 newResolution) {
     }
 }
 
-void UI::rebuildRenderTargets() {
-    const i32 w = osu->getVirtScreenWidth();
-    const i32 h = osu->getVirtScreenHeight();
-
-    if(cv::mod_fposu.getBool())
-        this->playfieldBuffer->rebuild(0, 0, w, h);
-    else
-        this->playfieldBuffer->rebuild(0, 0, 64, 64);
-
-    this->backBuffer->rebuild(0, 0, w, h);
-    this->sliderFrameBuffer->rebuild(0, 0, w, h, MultisampleType::MULTISAMPLE_0X);
-    this->AAFrameBuffer->rebuild(0, 0, w, h, MultisampleType::MULTISAMPLE_4X);
-}
-
 void UI::stealFocus() {
     for(auto *screen : this->overlays) {
         screen->stealFocus();
     }
 }
 
+void UI::hide() { this->active_screen->setVisible(false); }
+
+void UI::show() { this->active_screen->setVisible(true); }
+
 void UI::setScreen(UIOverlay *screen) {
-    if(this->active_screen && this->active_screen->isVisible()) {
+    if(this->active_screen->isVisible()) {
         this->active_screen->setVisible(false);
 
         // Close any "temporary" overlays
@@ -293,7 +284,5 @@ void UI::setScreen(UIOverlay *screen) {
     }
 
     this->active_screen = screen;
-    if(this->active_screen != nullptr) {
-        this->active_screen->setVisible(true);
-    }
+    this->show();
 }

@@ -711,7 +711,7 @@ bool BeatmapInterface::start() {
 
     osu->iQuickSaveMS = 0;  // reset
 
-    ui->setScreen(nullptr);
+    ui->hide();
     osu->updateConfineCursor();
     osu->updateWindowsKeyDisable();
 
@@ -2641,6 +2641,7 @@ void BeatmapInterface::update2() {
 
         const bool hasAnyHitObjects = (likely(!this->hitobjects.empty()));
         const bool isTimePastLastHitObjectPlusLenience =
+            !this->hitobjectsSortedByEndTime.empty() &&
             (this->iCurMusicPos >
              (this->hitobjectsSortedByEndTime.back()->click_time + this->hitobjectsSortedByEndTime.back()->duration +
               (i32)cv::end_delay_time.getInt()));

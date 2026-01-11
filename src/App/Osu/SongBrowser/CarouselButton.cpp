@@ -29,8 +29,8 @@ using namespace neosu::sbr;
 
 CarouselButton::CarouselButton(float xPos, float yPos, float xSize, float ySize, UString name)
     : CBaseUIButton(xPos, yPos, xSize, ySize, std::move(name), "") {
-    this->font = ui->getSongBrowser()->getFont();
-    this->fontBold = ui->getSongBrowser()->getFontBold();
+    this->font = osu->getSongBrowserFont();
+    this->fontBold = osu->getSongBrowserFontBold();
 
     this->bVisible = false;
     this->bSelected = false;

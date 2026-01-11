@@ -559,7 +559,7 @@ void RankingScreen::updateLayout() {
         std::max(hardcodedOsuRankingPanelImageSize.y * this->rankingPanel->getScale().y,
                  this->rankingPanel->getImage()->getHeight() * this->rankingPanel->getScale().y));
 
-    this->rankingIndex->setFont(ui->getSongBrowser()->getFont());
+    this->rankingIndex->setFont(osu->getSongBrowserFont());
     this->rankingIndex->setSize(this->rankings->getSize().x + 2, osu->getVirtScreenHeight() * 0.07f * uiScale);
     this->rankingIndex->setBackgroundColor(0xff745e13);
     this->rankingIndex->setRelPosY(this->rankings->getSize().y + 1);

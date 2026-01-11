@@ -7,6 +7,7 @@
 #include "Skin.h"
 #include "SongBrowser/SongBrowser.h"
 #include "UI.h"
+#include "Osu.h"
 #include "UIAvatar.h"
 #include "UIUserContextMenu.h"
 #include "Font.h"
@@ -159,7 +160,7 @@ void UserCard2::draw() {
     f32 yCounter = 0;
     g->pushTransform();
     {
-        McFont *usernameFont = ui->getSongBrowser()->getFont();
+        McFont *usernameFont = osu->getSongBrowserFont();
         const f32 usernameScale = 0.4f;
         const f32 height = this->vSize.y * 0.5f;
         const f32 paddingTopPercent = (1.0f - usernameScale) * 0.1f;

@@ -90,7 +90,7 @@ void ScoreButton::draw() {
     }
     const float indexNumberScale = 0.35f;
     const float indexNumberWidthPercent = (this->style == STYLE::TOP_RANKS ? 0.075f : 0.15f);
-    McFont *indexNumberFont = ui->getSongBrowser()->getFontBold();
+    McFont *indexNumberFont = osu->getSongBrowserFontBold();
     g->pushTransform();
     {
         UString indexNumberString = fmt::format("{}", this->iScoreIndexNumber);
@@ -133,7 +133,7 @@ void ScoreButton::draw() {
 
     // username | (artist + songName + diffName)
     const float usernameScale = (this->style == STYLE::TOP_RANKS ? 0.6f : 0.7f);
-    McFont *usernameFont = ui->getSongBrowser()->getFont();
+    McFont *usernameFont = osu->getSongBrowserFont();
     g->pushClipRect(McRect(this->vPos.x, this->vPos.y, this->vSize.x, this->vSize.y));
     g->pushTransform();
     {

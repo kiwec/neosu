@@ -177,12 +177,12 @@ void ModFPoSu::draw() {
 
             g->setWorldMatrixMul(worldMatrix);
             {
-                ui->getPlayfieldBuffer()->bind();
+                osu->getPlayfieldBuffer()->bind();
                 {
                     g->setColor(0xffffffff);
                     g->drawVAO(this->vao);
                 }
-                ui->getPlayfieldBuffer()->unbind();
+                osu->getPlayfieldBuffer()->unbind();
             }
 
             if(isTransparent) g->setBlendMode(DrawBlendMode::BLEND_MODE_ALPHA);
@@ -208,7 +208,7 @@ void ModFPoSu::update() {
     {
         this->modelMatrix.scale(
             1.0f,
-            (ui->getPlayfieldBuffer()->getHeight() / ui->getPlayfieldBuffer()->getWidth()) * (this->fCircumLength),
+            (osu->getPlayfieldBuffer()->getHeight() / osu->getPlayfieldBuffer()->getWidth()) * (this->fCircumLength),
             1.0f);
 
         // rotate around center

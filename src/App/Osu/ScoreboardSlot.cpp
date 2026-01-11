@@ -34,8 +34,8 @@ void ScoreboardSlot::draw() {
 
     g->setBlendMode(DrawBlendMode::BLEND_MODE_PREMUL_ALPHA);
 
-    McFont *font_normal = ui->getSongBrowser()->getFont();
-    McFont *font_bold = ui->getSongBrowser()->getFontBold();
+    McFont *font_normal = osu->getSongBrowserFont();
+    McFont *font_bold = osu->getSongBrowserFontBold();
 
     const SlotColEffect cur_slot_color_effect = this->getCurSlotEffect();
 

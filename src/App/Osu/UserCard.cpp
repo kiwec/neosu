@@ -70,7 +70,7 @@ void UserCard::draw() {
     }
 
     // draw username
-    McFont *usernameFont = ui->getSongBrowser()->getFont();
+    McFont *usernameFont = osu->getSongBrowserFont();
     const float usernameScale = 0.4f;
     float usernamePaddingLeft = 0.0f;
     g->pushClipRect(McRect(this->vPos.x, this->vPos.y, this->vSize.x, iconHeight));

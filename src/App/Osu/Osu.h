@@ -38,6 +38,9 @@ struct Mods;
 enum class CvarEditor : uint8_t;
 #endif
 
+struct UI;
+extern std::unique_ptr<UI> ui;
+
 class Osu final : public App, public MouseListener {
     NOCOPY_NOMOVE(Osu)
    protected:
@@ -154,10 +157,16 @@ class Osu final : public App, public MouseListener {
     [[nodiscard]] inline const std::unique_ptr<BeatmapInterface> &getMapInterface() const { return this->map_iface; }
     [[nodiscard]] inline const std::unique_ptr<AvatarManager> &getAvatarManager() const { return this->avatarManager; }
 
+    [[nodiscard]] inline RenderTarget *getBackBuffer() const { return this->backBuffer; }
+    [[nodiscard]] inline RenderTarget *getPlayfieldBuffer() const { return this->playfieldBuffer; }
+    [[nodiscard]] inline RenderTarget *getSliderFrameBuffer() const { return this->sliderFrameBuffer; }
+    [[nodiscard]] inline RenderTarget *getAAFrameBuffer() const { return this->AAFrameBuffer; }
     [[nodiscard]] inline RenderTarget *getFrameBuffer() const { return this->frameBuffer; }
     [[nodiscard]] inline RenderTarget *getFrameBuffer2() const { return this->frameBuffer2; }
     [[nodiscard]] inline McFont *getTitleFont() const { return this->titleFont; }
     [[nodiscard]] inline McFont *getSubTitleFont() const { return this->subTitleFont; }
+    [[nodiscard]] inline McFont *getSongBrowserFont() const { return this->songBrowserFont; }
+    [[nodiscard]] inline McFont *getSongBrowserFontBold() const { return this->songBrowserFontBold; }
     [[nodiscard]] inline McFont *getFontIcons() const { return this->fontIcons; }
     [[nodiscard]] inline const Skin *getSkin() const { return this->skin.get(); }
     [[nodiscard]] inline Skin *getSkinMutable() { return this->skin.get(); }
@@ -249,6 +258,10 @@ class Osu final : public App, public MouseListener {
     std::unique_ptr<Replay::Mods> previous_mods{nullptr};  // XXX: hacky and out of place
 
    private:
+    friend struct UI;
+    bool bUILoaded{false};
+    [[nodiscard]] inline bool UIReady() const { return !!ui && this->bUILoaded; };
+
     // interfaces (other)
     std::unique_ptr<Skin> skin{nullptr};
     std::unique_ptr<BeatmapInterface> map_iface{nullptr};
@@ -260,6 +273,10 @@ class Osu final : public App, public MouseListener {
     std::unique_ptr<ModFPoSu> fposu{nullptr};
 
     // rendering
+    RenderTarget *backBuffer{nullptr};
+    RenderTarget *playfieldBuffer{nullptr};
+    RenderTarget *sliderFrameBuffer{nullptr};
+    RenderTarget *AAFrameBuffer{nullptr};
     RenderTarget *frameBuffer{nullptr};
     RenderTarget *frameBuffer2{nullptr};
 
@@ -300,6 +317,8 @@ class Osu final : public App, public MouseListener {
     McFont *titleFont{nullptr};
     McFont *subTitleFont{nullptr};
     McFont *fontIcons{nullptr};
+    McFont *songBrowserFont{nullptr};
+    McFont *songBrowserFontBold{nullptr};
 
     // replay
    public:

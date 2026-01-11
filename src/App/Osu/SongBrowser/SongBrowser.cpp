@@ -186,7 +186,7 @@ class ScoresStillLoadingElement final : public CBaseUILabel {
 
         // draw text
         const float textScale = 0.4f;
-        McFont *textFont = ui->getSongBrowser()->getFont();
+        McFont *textFont = osu->getSongBrowserFont();
         g->pushTransform();
         {
             const float stringWidth = textFont->getStringWidth(this->sText);
@@ -234,7 +234,7 @@ class NoRecordsSetElement final : public CBaseUILabel {
 
         // draw text
         const float textScale = 0.6f;
-        McFont *textFont = ui->getSongBrowser()->getFont();
+        McFont *textFont = osu->getSongBrowserFont();
         g->pushTransform();
         {
             const float stringWidth = textFont->getStringWidth(this->sText);
@@ -365,12 +365,6 @@ SongBrowser::SongBrowser() : ScreenBackable(), global_songbrowser_(this) {
 
     this->hashToDiffButton = std::make_unique<MD5HashMap>();
 
-    // load fonts
-    const int baseDPI = 96;
-    const int newDPI = Osu::getUIScale() * baseDPI;
-    this->font = resourceManager->loadFont("SourceSansPro-Regular.otf", "FONT_OSU_SONGBROWSER", 35, true, newDPI);
-    this->fontBold = resourceManager->loadFont("SourceSansPro-Bold.otf", "FONT_OSU_SONGBROWSER_BOLD", 30, true, newDPI);
-
     // convar callback
     cv::songbrowser_search_hardcoded_filter.setCallback(
         [](std::string_view /* oldValue */, std::string_view newValue) -> void {
@@ -401,7 +395,7 @@ SongBrowser::SongBrowser() : ScreenBackable(), global_songbrowser_(this) {
 
     // build topbar left
     this->topbarLeft = new CBaseUIContainer(0, 0, 0, 0, "");
-    this->songInfo = new InfoLabel(0, 0, 0, 0, "", this->font);
+    this->songInfo = new InfoLabel(0, 0, 0, 0, "", osu->getSongBrowserFont());
     this->topbarLeft->addBaseUIElement(this->songInfo);
 
     this->filterScoresDropdown = new CBaseUIButton(0, 0, 0, 0, "", "Local");

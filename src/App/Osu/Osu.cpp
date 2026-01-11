@@ -211,7 +211,7 @@ Osu::Osu()
     cv::osu_folder.setCallback([](std::string_view newString) -> void {
         std::string normalized = Environment::normalizeDirectory(std::string{newString});
         cv::osu_folder.setValue(normalized, false);
-        if(ui != nullptr) ui->getOptionsMenu()->updateOsuFolderTextbox(normalized);
+        if(osu && osu->UIReady()) ui->getOptionsMenu()->updateOsuFolderTextbox(normalized);
     });
 
     // clamp to sane range
@@ -226,11 +226,20 @@ Osu::Osu()
 
     // renderer
     this->internalRect = engine->getScreenRect();
+
+    this->backBuffer =
+        resourceManager->createRenderTarget(0, 0, this->getVirtScreenWidth(), this->getVirtScreenHeight());
+    this->playfieldBuffer = resourceManager->createRenderTarget(0, 0, 64, 64);
+    this->sliderFrameBuffer =
+        resourceManager->createRenderTarget(0, 0, this->getVirtScreenWidth(), this->getVirtScreenHeight());
+    this->AAFrameBuffer = resourceManager->createRenderTarget(
+        0, 0, this->getVirtScreenWidth(), this->getVirtScreenHeight(), MultisampleType::MULTISAMPLE_4X);
     this->frameBuffer = resourceManager->createRenderTarget(0, 0, 64, 64);
     this->frameBuffer2 = resourceManager->createRenderTarget(0, 0, 64, 64);
 
     // load a few select subsystems very early
     db = std::make_unique<Database>();  // global database instance
+    ui = std::make_unique<UI>();        // global ui singleton
     this->score = std::make_unique<LiveScore>(false);
     this->updateHandler = std::make_unique<UpdateHandler>();
     this->avatarManager = std::make_unique<AvatarManager>();
@@ -281,19 +290,19 @@ Osu::Osu()
         if(!cv::mod_fullalternate.getBool()) return;
         cv::mod_no_keylock.setValue(false);
         cv::mod_singletap.setValue(false);
-        ui->getModSelector()->updateExperimentalButtons();
+        osu && osu->UIReady() ? ui->getModSelector()->updateExperimentalButtons() : (void)0;
     });
     cv::mod_singletap.setCallback([] {
         if(!cv::mod_singletap.getBool()) return;
         cv::mod_fullalternate.setValue(false);
         cv::mod_no_keylock.setValue(false);
-        ui->getModSelector()->updateExperimentalButtons();
+        osu && osu->UIReady() ? ui->getModSelector()->updateExperimentalButtons() : (void)0;
     });
     cv::mod_no_keylock.setCallback([] {
         if(!cv::mod_no_keylock.getBool()) return;
         cv::mod_fullalternate.setValue(false);
         cv::mod_singletap.setValue(false);
-        ui->getModSelector()->updateExperimentalButtons();
+        osu && osu->UIReady() ? ui->getModSelector()->updateExperimentalButtons() : (void)0;
     });
 
     // load global resources
@@ -303,6 +312,10 @@ Osu::Osu()
     McFont *defaultFont = resourceManager->loadFont("weblysleekuisb.ttf", "FONT_DEFAULT", 15, true, newDPI);
     this->titleFont = resourceManager->loadFont("SourceSansPro-Semibold.otf", "FONT_OSU_TITLE", 60, true, newDPI);
     this->subTitleFont = resourceManager->loadFont("SourceSansPro-Semibold.otf", "FONT_OSU_SUBTITLE", 21, true, newDPI);
+    this->songBrowserFont =
+        resourceManager->loadFont("SourceSansPro-Regular.otf", "FONT_OSU_SONGBROWSER", 35, true, newDPI);
+    this->songBrowserFontBold =
+        resourceManager->loadFont("SourceSansPro-Bold.otf", "FONT_OSU_SONGBROWSER_BOLD", 30, true, newDPI);
 
     {
         const std::string newIconFontPath = MCENGINE_FONTS_PATH "/forkawesome.ttf";
@@ -317,6 +330,8 @@ Osu::Osu()
     this->fonts.push_back(defaultFont);
     this->fonts.push_back(this->titleFont);
     this->fonts.push_back(this->subTitleFont);
+    this->fonts.push_back(this->songBrowserFont);
+    this->fonts.push_back(this->songBrowserFontBold);
     this->fonts.push_back(this->fontIcons);
 
     float averageIconHeight = 0.0f;
@@ -335,16 +350,16 @@ Osu::Osu()
 
     // load ui
     this->userButton = std::make_unique<UserCard>(BanchoState::get_uid());
-    ui = std::make_unique<UI>();  // global ui singleton
-    this->fonts.push_back(ui->getSongBrowser()->getFont());
-    this->fonts.push_back(ui->getSongBrowser()->getFontBold());
+
+    this->bUILoaded = ui->init();
 
     // do this after reading configs if we wanted to set a windowed resolution
     if(this->last_res_change_req_src & R_CV_WINDOWED_RESOLUTION) {
         this->onWindowedResolutionChanged(cv::windowed_resolution.getString());
     }
 
-    ui->setScreen(ui->getMainMenu());
+    // show screen
+    ui->show();
 
     // update mod settings
     this->updateMods();
@@ -404,6 +419,7 @@ Osu::~Osu() {
     VolNormalization::shutdown();
     BANCHO::Net::cleanup_networking();
 
+    ui.reset();  // destroy ui layers
     db.reset();  // shutdown db
 
     // "osu" will be set to null when global_osu_ is deleted (at the end of all automatically deleted members)
@@ -414,7 +430,7 @@ void Osu::draw() {
     {
         g->setColor(0xff000000);
         g->fillRect(0, 0, this->getVirtScreenWidth(), this->getVirtScreenHeight());
-        if(ui->getMainMenu() && this->backgroundImageHandler && this->map_iface->getBeatmap()) {
+        if(ui && ui->getMainMenu() && this->backgroundImageHandler && this->map_iface->getBeatmap()) {
             // try at least drawing background image during early loading
             ui->getMainMenu()->draw();
         }
@@ -425,6 +441,7 @@ void Osu::draw() {
 }
 
 void Osu::update() {
+    if(unlikely(!this->UIReady())) return;  // TODO: guarantee that this can't happen
     if(this->skin.get()) this->skin->update();
 
     this->fposu->update();
@@ -979,9 +996,9 @@ void Osu::onKeyUp(KeyboardEvent &key) {
     this->fposu->onKeyUp(key);
 }
 
-void Osu::stealFocus() { ui->stealFocus(); }
+void Osu::stealFocus() { this->UIReady() ? ui->stealFocus() : (void)0; }
 
-void Osu::onChar(KeyboardEvent &e) { ui->onChar(e); }
+void Osu::onChar(KeyboardEvent &e) { this->UIReady() ? ui->onChar(e) : (void)0; }
 
 void Osu::onButtonChange(ButtonEvent ev) {
     using enum MouseButtonFlags;
@@ -1015,27 +1032,29 @@ Sound *Osu::getSound(ActionSound action) const {
 }
 
 void Osu::showNotification(const NotificationInfo &info) {
-    if(!ui->getNotificationOverlay()) {
+    NotificationOverlay *noverlay = ui && ui->getNotificationOverlay() ? ui->getNotificationOverlay() : nullptr;
+    if(noverlay) {
         debugLog(info.text);
+        return;
     }
 
     if(info.nclass == NotificationClass::TOAST) {
         using enum NotificationPreset;
         switch(info.preset) {
             case CUSTOM:
-                ui->getNotificationOverlay()->addToast(info.text, info.custom_color, info.callback);
+                noverlay->addToast(info.text, info.custom_color, info.callback);
                 return;
             case INFO:
-                ui->getNotificationOverlay()->addToast(info.text, INFO_TOAST, info.callback);
+                noverlay->addToast(info.text, INFO_TOAST, info.callback);
                 return;
             case ERROR:
-                ui->getNotificationOverlay()->addToast(info.text, ERROR_TOAST, info.callback);
+                noverlay->addToast(info.text, ERROR_TOAST, info.callback);
                 return;
             case SUCCESS:
-                ui->getNotificationOverlay()->addToast(info.text, SUCCESS_TOAST, info.callback);
+                noverlay->addToast(info.text, SUCCESS_TOAST, info.callback);
                 return;
             case STATUS:
-                ui->getNotificationOverlay()->addToast(info.text, STATUS_TOAST, info.callback);
+                noverlay->addToast(info.text, STATUS_TOAST, info.callback);
                 return;
         }
         std::unreachable();
@@ -1044,19 +1063,19 @@ void Osu::showNotification(const NotificationInfo &info) {
         // NOTE: currently abusing toast colors
         switch(info.preset) {
             case CUSTOM:
-                ui->getNotificationOverlay()->addNotification(info.text, info.custom_color, false, info.duration);
+                noverlay->addNotification(info.text, info.custom_color, false, info.duration);
                 return;
             case INFO:
-                ui->getNotificationOverlay()->addNotification(info.text, INFO_TOAST, false, info.duration);
+                noverlay->addNotification(info.text, INFO_TOAST, false, info.duration);
                 return;
             case ERROR:
-                ui->getNotificationOverlay()->addNotification(info.text, ERROR_TOAST, false, info.duration);
+                noverlay->addNotification(info.text, ERROR_TOAST, false, info.duration);
                 return;
             case SUCCESS:
-                ui->getNotificationOverlay()->addNotification(info.text, SUCCESS_TOAST, false, info.duration);
+                noverlay->addNotification(info.text, SUCCESS_TOAST, false, info.duration);
                 return;
             case STATUS:
-                ui->getNotificationOverlay()->addNotification(info.text, STATUS_TOAST, false, info.duration);
+                noverlay->addNotification(info.text, STATUS_TOAST, false, info.duration);
                 return;
         }
         std::unreachable();
@@ -1290,7 +1309,7 @@ void Osu::onResolutionChanged(vec2 newResolution, ResolutionRequestFlags src) {
     // NOTE: when only changing DPI, "prevUIScale" is already the new UI scale!
     const float prevUIScale = getUIScale();
 
-    const bool resolution_changed = (ui->getSliderFrameBuffer()->getSize() != newResolution);  // HACK
+    const bool resolution_changed = (osu->getSliderFrameBuffer()->getSize() != newResolution);  // HACK
     this->internalRect = {vec2{}, newResolution};
 
     // update dpi specific engine globals
@@ -1330,7 +1349,17 @@ void Osu::onDPIChanged() {
 void Osu::rebuildRenderTargets() {
     debugLog("{}x{}", this->internalRect.getWidth(), this->internalRect.getHeight());
 
-    ui->rebuildRenderTargets();
+    this->backBuffer->rebuild(0, 0, this->internalRect.getWidth(), this->internalRect.getHeight());
+
+    if(cv::mod_fposu.getBool())
+        this->playfieldBuffer->rebuild(0, 0, this->internalRect.getWidth(), this->internalRect.getHeight());
+    else
+        this->playfieldBuffer->rebuild(0, 0, 64, 64);
+
+    this->sliderFrameBuffer->rebuild(0, 0, this->internalRect.getWidth(), this->internalRect.getHeight(),
+                                     MultisampleType::MULTISAMPLE_0X);
+
+    this->AAFrameBuffer->rebuild(0, 0, this->internalRect.getWidth(), this->internalRect.getHeight());
 
     if(cv::mod_mafham.getBool()) {
         this->frameBuffer->rebuild(0, 0, this->internalRect.getWidth(), this->internalRect.getHeight());
@@ -1394,7 +1423,7 @@ void Osu::onWindowedResolutionChanged(std::string_view args) {
     // ignore if we're still loading or not in fullscreen
     this->last_res_change_req_src |= R_CV_WINDOWED_RESOLUTION;
 
-    if(env->winFullscreened()) return;
+    if(env->winFullscreened() || !this->UIReady()) return;
 
     auto parsed = Parsing::parse_resolution(args);
     if(!parsed.has_value()) {
@@ -1425,11 +1454,13 @@ void Osu::onFSResChanged(std::string_view args) {
     // clamp requested internal resolution to current renderer resolution
     // however, this could happen while we are transitioning into fullscreen. therefore only clamp when not in
     // fullscreen or not in fullscreen transition
-    bool isTransitioningIntoFullscreenHack =
-        g->getResolution().x < env->getNativeScreenSize().x || g->getResolution().y < env->getNativeScreenSize().y;
-    if(!env->winFullscreened() || !isTransitioningIntoFullscreenHack) {
-        if(newRes.x > g->getResolution().x) newRes.x = g->getResolution().x;
-        if(newRes.y > g->getResolution().y) newRes.y = g->getResolution().y;
+    if(this->UIReady()) {
+        bool isTransitioningIntoFullscreenHack =
+            g->getResolution().x < env->getNativeScreenSize().x || g->getResolution().y < env->getNativeScreenSize().y;
+        if(!env->winFullscreened() || !isTransitioningIntoFullscreenHack) {
+            if(newRes.x > g->getResolution().x) newRes.x = g->getResolution().x;
+            if(newRes.y > g->getResolution().y) newRes.y = g->getResolution().y;
+        }
     }
 
     std::string res_str = fmt::format("{:.0f}x{:.0f}", newRes.x, newRes.y);
@@ -1451,12 +1482,13 @@ void Osu::onFSLetterboxedResChanged(std::string_view args) {
 
     vec2 newRes = parsed.value();
     debugLog("{:.0f}x{:.0f}", newRes.x, newRes.y);
-
-    bool isTransitioningIntoFullscreenHack =
-        g->getResolution().x < env->getNativeScreenSize().x || g->getResolution().y < env->getNativeScreenSize().y;
-    if(!env->winFullscreened() || !isTransitioningIntoFullscreenHack) {
-        if(newRes.x > g->getResolution().x) newRes.x = g->getResolution().x;
-        if(newRes.y > g->getResolution().y) newRes.y = g->getResolution().y;
+    if(this->UIReady()) {
+        bool isTransitioningIntoFullscreenHack =
+            g->getResolution().x < env->getNativeScreenSize().x || g->getResolution().y < env->getNativeScreenSize().y;
+        if(!env->winFullscreened() || !isTransitioningIntoFullscreenHack) {
+            if(newRes.x > g->getResolution().x) newRes.x = g->getResolution().x;
+            if(newRes.y > g->getResolution().y) newRes.y = g->getResolution().y;
+        }
     }
 
     std::string res_str = fmt::format("{:.0f}x{:.0f}", newRes.x, newRes.y);
@@ -1882,7 +1914,7 @@ void Osu::setupAudio() {
             SA::MakeDelegate<&SoundEngine::onParamChanged>(soundEngine.get()));
         cv::asio_buffer_size.setCallback(SA::MakeDelegate<&SoundEngine::onParamChanged>(soundEngine.get()));
         cv::snd_output_device.setCallback(
-            []() -> void { ui ? ui->getOptionsMenu()->scheduleLayoutUpdate() : (void)0; });
+            []() -> void { osu && osu->UIReady() ? ui->getOptionsMenu()->scheduleLayoutUpdate() : (void)0; });
     }
 
     soundEngine->setDeviceChangeBeforeCallback(SA::MakeDelegate<&Osu::audioRestartCallbackBefore>(this));

@@ -249,7 +249,7 @@ void HUD::draw() {
         const UString str = fmt::format("{} spectators", nb_spectators);
 
         g->pushTransform();
-        McFont *font = ui->getSongBrowser()->getFont();
+        McFont *font = osu->getSongBrowserFont();
         const float height = roundf(osu->getVirtScreenHeight() * 0.07f);
         const float scale = (height / font->getHeight()) * 0.315f;
         g->scale(scale, scale);
@@ -1594,7 +1594,7 @@ void HUD::drawHitErrorBarInt2(vec2 center, int ur) {
         g->pushTransform();
         {
             UString urText = fmt::format("{} UR", ur);
-            McFont *urTextFont = ui->getSongBrowser()->getFont();
+            McFont *urTextFont = osu->getSongBrowserFont();
 
             const float hitErrorBarScale = cv::hud_scale.getFloat() * cv::hud_hiterrorbar_scale.getFloat();
             const float urTextScale = hitErrorBarScale * cv::hud_hiterrorbar_ur_scale.getFloat() * 0.5f;
@@ -2213,11 +2213,11 @@ void HUD::drawInputOverlay(int numK1, int numK2, int numM1, int numM2) {
         const Color colorKeyboard = argb(255, 255, 222, 0);
         const Color colorMouse = argb(255, 248, 0, 158);
 
-        McFont *textFont = ui->getSongBrowser()->getFont();
-        McFont *textFontBold = ui->getSongBrowser()->getFontBold();
+        McFont *textFont = osu->getSongBrowserFont();
+        McFont *textFontBold = osu->getSongBrowserFontBold();
 
         for(int i = 0; i < 4; i++) {
-            textFont = ui->getSongBrowser()->getFont();  // reset
+            textFont = osu->getSongBrowserFont();  // reset
 
             UString text;
             Color color = colorIdle;

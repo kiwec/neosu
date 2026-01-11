@@ -336,7 +336,7 @@ void Chat::draw() {
 
     if(isAnimating) {
         // XXX: Setting BLEND_MODE_PREMUL_ALPHA is not enough, transparency is still incorrect
-        ui->getSliderFrameBuffer()->enable();
+        osu->getSliderFrameBuffer()->enable();
         g->setBlendMode(DrawBlendMode::BLEND_MODE_PREMUL_ALPHA);
     }
 
@@ -357,7 +357,7 @@ void Chat::draw() {
     }
 
     if(isAnimating) {
-        ui->getSliderFrameBuffer()->disable();
+        osu->getSliderFrameBuffer()->disable();
 
         g->setBlendMode(DrawBlendMode::BLEND_MODE_ALPHA);
         g->push3DScene(McRect(0, 0, this->getSize().x, this->getSize().y));
@@ -366,8 +366,8 @@ void Chat::draw() {
             g->translate3DScene(0, -(1.0f - this->fAnimation) * this->getSize().y * 1.25f,
                                 -(1.0f - this->fAnimation) * 700);
 
-            ui->getSliderFrameBuffer()->setColor(argb(this->fAnimation, 1.0f, 1.0f, 1.0f));
-            ui->getSliderFrameBuffer()->draw(0, 0);
+            osu->getSliderFrameBuffer()->setColor(argb(this->fAnimation, 1.0f, 1.0f, 1.0f));
+            osu->getSliderFrameBuffer()->draw(0, 0);
         }
         g->pop3DScene();
     }
@@ -387,17 +387,17 @@ void Chat::drawTicker() {
     }
 
     // XXX: Setting BLEND_MODE_PREMUL_ALPHA is not enough, transparency is still incorrect
-    ui->getSliderFrameBuffer()->enable();
+    osu->getSliderFrameBuffer()->enable();
     g->setBlendMode(DrawBlendMode::BLEND_MODE_PREMUL_ALPHA);
     this->ticker->ui->draw();
-    ui->getSliderFrameBuffer()->disable();
+    osu->getSliderFrameBuffer()->disable();
 
     g->setBlendMode(DrawBlendMode::BLEND_MODE_ALPHA);
     g->push3DScene(McRect(0, 0, ticker_size.x, ticker_size.y));
     {
         g->rotate3DScene(this->fAnimation * 90, 0, 0);
-        ui->getSliderFrameBuffer()->setColor(argb(a * (1.f - this->fAnimation), 1.f, 1.f, 1.f));
-        ui->getSliderFrameBuffer()->draw(0, 0);
+        osu->getSliderFrameBuffer()->setColor(argb(a * (1.f - this->fAnimation), 1.f, 1.f, 1.f));
+        osu->getSliderFrameBuffer()->draw(0, 0);
     }
     g->pop3DScene();
 }

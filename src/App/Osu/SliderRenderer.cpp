@@ -216,7 +216,7 @@ void draw(const std::vector<vec2> &points, const std::vector<vec2> &alwaysPoints
     g->setDepthBuffer(true);
     g->setBlending(false);
     {
-        ui->getSliderFrameBuffer()->enable();
+        osu->getSliderFrameBuffer()->enable();
         {
             const bool useGradientImage = cv::slider_use_gradient_image.getBool();
             preDrawColorSetup(useGradientImage, sliderTimeForRainbow, colorRGBMultiplier, undimmedColor);
@@ -234,7 +234,7 @@ void draw(const std::vector<vec2> &points, const std::vector<vec2> &alwaysPoints
                 s_BLEND_SHADER->disable();
             }
         }
-        ui->getSliderFrameBuffer()->disable();
+        osu->getSliderFrameBuffer()->disable();
     }
     g->setBlending(true);
     g->setDepthBuffer(false);
@@ -246,8 +246,8 @@ void draw(const std::vector<vec2> &points, const std::vector<vec2> &alwaysPoints
     s_fBoundingBoxMinY -= pixelFudge;
     s_fBoundingBoxMaxY += pixelFudge;
 
-    ui->getSliderFrameBuffer()->setColor(argb(alpha * cv::slider_alpha_multiplier.getFloat(), 1.0f, 1.0f, 1.0f));
-    ui->getSliderFrameBuffer()->drawRect(s_fBoundingBoxMinX, s_fBoundingBoxMinY,
+    osu->getSliderFrameBuffer()->setColor(argb(alpha * cv::slider_alpha_multiplier.getFloat(), 1.0f, 1.0f, 1.0f));
+    osu->getSliderFrameBuffer()->drawRect(s_fBoundingBoxMinX, s_fBoundingBoxMinY,
                                          s_fBoundingBoxMaxX - s_fBoundingBoxMinX,
                                          s_fBoundingBoxMaxY - s_fBoundingBoxMinY);
 }
@@ -271,7 +271,7 @@ void draw(VertexArrayObject *vao, const std::vector<vec2> &alwaysPoints, vec2 tr
     g->setDepthBuffer(true);
     g->setBlending(false);
     {
-        if(doEnableRenderTarget) ui->getSliderFrameBuffer()->enable();
+        if(doEnableRenderTarget) osu->getSliderFrameBuffer()->enable();
 
         // render
         {
@@ -300,14 +300,14 @@ void draw(VertexArrayObject *vao, const std::vector<vec2> &alwaysPoints, vec2 tr
             }
         }
 
-        if(doDisableRenderTarget) ui->getSliderFrameBuffer()->disable();
+        if(doDisableRenderTarget) osu->getSliderFrameBuffer()->disable();
     }
     g->setBlending(true);
     g->setDepthBuffer(false);
 
     if(doDrawSliderFrameBufferToScreen) {
-        ui->getSliderFrameBuffer()->setColor(argb(alpha * cv::slider_alpha_multiplier.getFloat(), 1.0f, 1.0f, 1.0f));
-        ui->getSliderFrameBuffer()->draw(0, 0);
+        osu->getSliderFrameBuffer()->setColor(argb(alpha * cv::slider_alpha_multiplier.getFloat(), 1.0f, 1.0f, 1.0f));
+        osu->getSliderFrameBuffer()->draw(0, 0);
     }
 }
 
