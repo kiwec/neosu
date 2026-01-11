@@ -29,7 +29,8 @@ class SkinImage final {
 
     // for objects which scale depending on external factors
     // (e.g. hitobjects, depending on the diameter defined by the CS)
-    void drawRaw(vec2 pos, float scale, AnchorPoint anchor = AnchorPoint::CENTER, float brightness = 0.f, bool animated = true) const;
+    void drawRaw(vec2 pos, float scale, AnchorPoint anchor = AnchorPoint::CENTER, float brightness = 0.f,
+                 bool animated = true) const;
 
     void update(float speedMultiplier, bool useEngineTimeForAnimations = true, i32 curMusicPos = 0);
 
@@ -60,7 +61,7 @@ class SkinImage final {
     // width/height of the actual image texture as loaded from disk
     [[nodiscard]] vec2 getImageSizeForCurrentFrame(bool animated = true) const;
 
-    [[nodiscard]] const IMAGE &getImageForCurrentFrame(bool animated = true) const;
+    [[nodiscard]] const IMAGE& getImageForCurrentFrame(bool animated = true) const;
 
     [[nodiscard]] float getResolutionScale() const;
 

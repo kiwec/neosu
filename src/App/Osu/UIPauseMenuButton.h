@@ -7,8 +7,7 @@ class UIPauseMenuButton final : public CBaseUIButton {
    public:
     using ImageSkinMember = BasicSkinImage Skin::*;
 
-    UIPauseMenuButton(ImageSkinMember imageMember, float xPos, float yPos, float xSize, float ySize,
-                      UString name);
+    UIPauseMenuButton(ImageSkinMember imageMember, float xPos, float yPos, float xSize, float ySize, UString name);
 
     void draw() override;
 

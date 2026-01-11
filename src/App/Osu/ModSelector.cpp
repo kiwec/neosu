@@ -1175,7 +1175,7 @@ LegacyFlags ModSelector::getModFlags() {
 void ModSelector::enableModsFromFlags(LegacyFlags flags) {
     using namespace flags::operators;
 
-    if(flags::any < LegacyFlags::DoubleTime | LegacyFlags::Nightcore > (flags)) {
+    if(flags::any<LegacyFlags::DoubleTime | LegacyFlags::Nightcore>(flags)) {
         cv::speed_override.setValue(1.5f);
     } else if(flags::has<LegacyFlags::HalfTime>(flags)) {
         cv::speed_override.setValue(0.75f);

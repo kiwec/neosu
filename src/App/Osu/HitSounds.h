@@ -38,8 +38,7 @@ struct HitSamples {
         i32 hit;
     };
 
-    std::vector<Set_Slider_Hit> play(f32 pan, i32 delta, i32 play_time = -1,
-                                     bool is_sliderslide = false);
+    std::vector<Set_Slider_Hit> play(f32 pan, i32 delta, i32 play_time = -1, bool is_sliderslide = false);
     void stop(const std::vector<Set_Slider_Hit> &specific_sets = {});
 
     i32 getAdditionSet(i32 play_time = -1);

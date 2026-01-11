@@ -42,8 +42,7 @@ void TooltipOverlay::draw() {
         const int height =
             font->getHeight() * this->lines.size() + lineSpacing * (this->lines.size() - 1) + 3 * dpiScale;
 
-        const bool isPlayingFPoSu =
-            (cv::mod_fposu.getBool() && osu->isInPlayMode());
+        const bool isPlayingFPoSu = (cv::mod_fposu.getBool() && osu->isInPlayMode());
 
         vec2 cursorPos = isPlayingFPoSu ? osu->getVirtScreenRect().getCenter() : mouse->getPos();
         if(!isPlayingFPoSu) {

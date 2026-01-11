@@ -5,6 +5,6 @@ SpaceBeforeParens: Never
 SortIncludes: Never           # Otherwise breakage ensues when headers must be included in a specific order
 DerivePointerAlignment: True  # some files are already right-aligned
 PointerAlignment: Left
-ReflowComments: False
+ReflowComments: Never
 BraceWrapping: # exclude extern "C" things
   AfterExternBlock: false

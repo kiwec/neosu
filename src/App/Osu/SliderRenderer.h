@@ -12,7 +12,7 @@ class VertexArrayObject;
 
 namespace SliderRenderer {
 std::unique_ptr<VertexArrayObject> generateVAO(const std::vector<vec2> &points, float hitcircleDiameter,
-                               vec3 translation = vec3(0, 0, 0), bool skipOOBPoints = true);
+                                               vec3 translation = vec3(0, 0, 0), bool skipOOBPoints = true);
 
 void draw(const std::vector<vec2> &points, const std::vector<vec2> &alwaysPoints, float hitcircleDiameter,
           float from = 0.0f, float to = 1.0f, Color undimmedColor = 0xffffffff, float colorRGBMultiplier = 1.0f,

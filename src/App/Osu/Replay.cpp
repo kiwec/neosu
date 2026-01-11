@@ -405,12 +405,12 @@ Mods Mods::unpack(R &reader) {
         mods.arwobble_strength = reader.template read<f32>();
         mods.arwobble_interval = reader.template read<f32>();
     }
-    if(flags::any < Wobble1 | Wobble2 > (mods.flags)) {
+    if(flags::any<Wobble1 | Wobble2>(mods.flags)) {
         mods.wobble_strength = reader.template read<f32>();
         mods.wobble_frequency = reader.template read<f32>();
         mods.wobble_rotation_speed = reader.template read<f32>();
     }
-    if(flags::any < Jigsaw1 | Jigsaw2 > (mods.flags)) {
+    if(flags::any<Jigsaw1 | Jigsaw2>(mods.flags)) {
         mods.jigsaw_followcircle_radius_factor = reader.template read<f32>();
     }
     if(flags::has<Shirone>(mods.flags)) {
@@ -448,12 +448,12 @@ void Mods::pack_and_write(W &writer, const Mods &mods) {
         writer.template write<f32>(mods.arwobble_strength);
         writer.template write<f32>(mods.arwobble_interval);
     }
-    if(flags::any < Wobble1 | Wobble2 > (mods.flags)) {
+    if(flags::any<Wobble1 | Wobble2>(mods.flags)) {
         writer.template write<f32>(mods.wobble_strength);
         writer.template write<f32>(mods.wobble_frequency);
         writer.template write<f32>(mods.wobble_rotation_speed);
     }
-    if(flags::any < Jigsaw1 | Jigsaw2 > (mods.flags)) {
+    if(flags::any<Jigsaw1 | Jigsaw2>(mods.flags)) {
         writer.template write<f32>(mods.jigsaw_followcircle_radius_factor);
     }
     if(flags::has<Shirone>(mods.flags)) {

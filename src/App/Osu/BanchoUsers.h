@@ -56,7 +56,7 @@ struct UserInfo {
 
 namespace BANCHO::User {
 
-extern Hash::flat::map<i32, const UserInfo*> online_users;
+extern Hash::flat::map<i32, const UserInfo *> online_users;
 extern Hash::flat::set<i32> friends;
 
 void login_user(i32 user_id);

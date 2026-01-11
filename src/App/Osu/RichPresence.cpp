@@ -28,7 +28,7 @@ namespace {  // static
 std::string last_status{"[neosu]\nWaking up"};
 Action last_action = Action::IDLE;
 
-void crop_to(const std::string &str, char* output, int max_len) {
+void crop_to(const std::string& str, char* output, int max_len) {
     if(str.length() < max_len) {
         strcpy(output, str.c_str());
     } else {
