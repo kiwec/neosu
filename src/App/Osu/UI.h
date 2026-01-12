@@ -57,7 +57,8 @@ extern std::unique_ptr<UI> ui;
     X(OV_TOOLTIPOVERLAY, TooltipOverlay, TooltipOverlay)
 
 struct UI final {
-    NOCOPY_NOMOVE(UI)
+    NOCOPY_NOMOVE(UI);
+
    private:
     class NullScreen;
 
