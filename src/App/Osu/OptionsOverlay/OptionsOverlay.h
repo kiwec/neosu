@@ -6,13 +6,13 @@
 #include "StaticPImpl.h"
 
 class UIContextMenu;
-struct OptionsMenuImpl;
+struct OptionsOverlayImpl;
 
-class OptionsMenu final : public ScreenBackable, public NotificationOverlayKeyListener {
-    NOCOPY_NOMOVE(OptionsMenu)
+class OptionsOverlay final : public ScreenBackable, public NotificationOverlayKeyListener {
+    NOCOPY_NOMOVE(OptionsOverlay)
    public:
-    OptionsMenu();
-    ~OptionsMenu() override;
+    OptionsOverlay();
+    ~OptionsOverlay() override;
 
     void draw() override;
     void update() override;
@@ -62,6 +62,6 @@ class OptionsMenu final : public ScreenBackable, public NotificationOverlayKeyLi
     void updateLayout() override;
     void onBack() override;
 
-    friend struct OptionsMenuImpl;
-    StaticPImpl<OptionsMenuImpl, 1000> pImpl;
+    friend struct OptionsOverlayImpl;
+    StaticPImpl<OptionsOverlayImpl, 1000> pImpl;
 };

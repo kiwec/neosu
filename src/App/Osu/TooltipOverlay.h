@@ -1,8 +1,8 @@
 #pragma once
 // Copyright (c) 2016, PG, All rights reserved.
-#include "UIOverlay.h"
+#include "UIScreen.h"
 
-class TooltipOverlay final : public UIOverlay {
+class TooltipOverlay final : public UIScreen {
     NOCOPY_NOMOVE(TooltipOverlay)
    public:
     TooltipOverlay();

@@ -12,10 +12,10 @@
 #include "Keyboard.h"
 #include "ModSelector.h"
 #include "Mouse.h"
-#include "OptionsMenu.h"
+#include "OptionsOverlay.h"
 #include "Osu.h"
 #include "MakeDelegateWrapper.h"
-#include "PauseMenu.h"
+#include "PauseOverlay.h"
 #include "RankingScreen.h"
 #include "Skin.h"
 #include "SongBrowser/SongBrowser.h"
@@ -26,7 +26,7 @@
 #include "UIVolumeSlider.h"
 #include "UserStatsScreen.h"
 
-VolumeOverlay::VolumeOverlay() : UIOverlay() {
+VolumeOverlay::VolumeOverlay() : UIScreen() {
     cv::volume_master.setCallback(SA::MakeDelegate<&VolumeOverlay::onMasterVolumeChange>(this));
     cv::volume_effects.setCallback(SA::MakeDelegate<&VolumeOverlay::onEffectVolumeChange>(this));
     cv::volume_music.setCallback(SA::MakeDelegate<&VolumeOverlay::onMusicVolumeChange>(this));
@@ -260,14 +260,14 @@ bool VolumeOverlay::canChangeVolume() {
         (                                                                                                   //
             !(ui->getSongBrowser()->isVisible() && db->isFinished()) &&                                     //
             !(ui->getOsuDirectScreen()->isVisible()) &&                                                     //
-            !(ui->getOptionsMenu()->isVisible()) &&                                                         //
-            !(ui->getOptionsMenu()->getContextMenu()->isVisible()) &&                                       //
+            !(ui->getOptionsOverlay()->isVisible()) &&                                                         //
+            !(ui->getOptionsOverlay()->getContextMenu()->isVisible()) &&                                       //
             !(ui->getChangelog()->isVisible()) &&                                                           //
             !(ui->getRankingScreen()->isVisible()) &&                                                       //
             !(ui->getModSelector()->isMouseInScrollView()) &&                                               //
             !(ui->getChat()->isMouseInChat()) &&                                                            //
             !(ui->getUserStatsScreen()->isVisible()) &&                                                     //
-            !(osu->isInPlayMode() && cv::disable_mousewheel.getBool() && !ui->getPauseMenu()->isVisible())  //
+            !(osu->isInPlayMode() && cv::disable_mousewheel.getBool() && !ui->getPauseOverlay()->isVisible())  //
         );
 
     return can_scroll;

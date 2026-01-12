@@ -33,9 +33,9 @@
 #include "ModSelector.h"
 #include "Mouse.h"
 #include "NotificationOverlay.h"
-#include "OptionsMenu.h"
+#include "OptionsOverlay.h"
 #include "Osu.h"
-#include "PauseMenu.h"
+#include "PauseOverlay.h"
 #include "ResourceManager.h"
 #include "RichPresence.h"
 #include "RoomScreen.h"
@@ -3283,14 +3283,14 @@ void BeatmapInterface::update2() {
     // handle fail animation
     if(this->bFailed) {
         if(this->fFailAnim <= 0.0f) {
-            if(this->music->isPlaying() || !ui->getPauseMenu()->isVisible()) {
+            if(this->music->isPlaying() || !ui->getPauseOverlay()->isVisible()) {
                 soundEngine->pause(this->music);
                 this->bIsPaused = true;
 
                 if(BanchoState::spectating) {
                     osu->bIsPlayingASelectedBeatmap = false;
                 } else {
-                    ui->getPauseMenu()->setVisible(true);
+                    ui->getPauseOverlay()->setVisible(true);
                     osu->updateConfineCursor();
                 }
             }
@@ -4522,7 +4522,7 @@ bool BeatmapInterface::isActuallyPausedAndNotSpectating() const {
     // (see while(next_frame.cur_music_pos <= this->iCurMusicPosWithOffsets) ... in update2())
     if(BanchoState::spectating) return false;
 
-    return (this->isPaused() && ui->getPauseMenu()->isVisible())  //
+    return (this->isPaused() && ui->getPauseOverlay()->isVisible())  //
            && (this->music && !this->music->isPlaying())          //
            && !(this->bIsWaiting || this->isActuallyLoading());
 }

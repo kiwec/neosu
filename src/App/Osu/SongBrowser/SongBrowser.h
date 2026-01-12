@@ -4,6 +4,7 @@
 #include "types.h"
 
 #include <memory>
+#include <optional>
 
 class BeatmapCarousel;
 class Database;
@@ -140,7 +141,8 @@ class SongBrowser final : public ScreenBackable {
         this->playSelectedDifficulty();
     }
 
-    void refreshBeatmaps(UIOverlay *next_screen);
+    void refreshBeatmaps();
+    void refreshBeatmaps(UIScreen *next_screen);
     void addBeatmapSet(BeatmapSet *beatmap, bool initialSongBrowserLoad = false);
     void addSongButtonToAlphanumericGroup(SongButton *btn, CollBtnContainer &group, std::string_view name);
 
@@ -308,6 +310,8 @@ class SongBrowser final : public ScreenBackable {
     // beatmap database
     std::vector<SongButton *> parentButtons;
     std::vector<CarouselButton *> visibleSongButtons;
+
+    UIOverlay *loadingOverlay;
 
     // to avoid transitive includes
     struct MD5HashMap;

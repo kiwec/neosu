@@ -2,7 +2,7 @@
 // Copyright (c) 2016, PG, All rights reserved.
 #include "CBaseUIButton.h"
 #include "KeyboardEvent.h"
-#include "UIOverlay.h"
+#include "UIScreen.h"
 
 #include <memory>
 
@@ -42,7 +42,7 @@ class NotificationOverlayKeyListener {
     virtual void onKey(KeyboardEvent &e) = 0;
 };
 
-class NotificationOverlay final : public UIOverlay {
+class NotificationOverlay final : public UIScreen {
     NOCOPY_NOMOVE(NotificationOverlay)
    public:
     NotificationOverlay();

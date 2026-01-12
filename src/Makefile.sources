@@ -44,14 +44,14 @@ neosu_SOURCES = \
 	src/App/Osu/ModSelector.cpp \
 	src/App/Osu/NeosuUrl.cpp \
 	src/App/Osu/NotificationOverlay.cpp \
-	src/App/Osu/OptionsMenu/OptionsMenu.cpp \
+	src/App/Osu/OptionsOverlay/OptionsOverlay.cpp \
 	src/App/Osu/Osu.cpp \
 	src/App/Osu/OsuConVars/OsuConVars.cpp \
 	src/App/Osu/OsuDirectScreen.cpp \
 	src/App/Osu/OsuKeyBinds.cpp \
-	src/App/Osu/PauseMenu.cpp \
+	src/App/Osu/PauseOverlay.cpp \
 	src/App/Osu/PeppyImporter.cpp \
-	src/App/Osu/PromptScreen.cpp \
+	src/App/Osu/PromptOverlay.cpp \
 	src/App/Osu/RankingScreen.cpp \
 	src/App/Osu/Replay.cpp \
 	src/App/Osu/RichPresence.cpp \
@@ -88,6 +88,7 @@ neosu_SOURCES = \
 	src/App/Osu/UIPauseMenuButton.cpp \
 	src/App/Osu/UIRankingScreenInfoLabel.cpp \
 	src/App/Osu/UIRankingScreenRankingPanel.cpp \
+	src/App/Osu/UIScreen.cpp \
 	src/App/Osu/UISearchOverlay.cpp \
 	src/App/Osu/UISlider.cpp \
 	src/App/Osu/UIUserContextMenu.cpp \

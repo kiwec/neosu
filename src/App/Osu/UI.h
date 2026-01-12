@@ -1,17 +1,19 @@
 #pragma once
 // Copyright (c) 2026, kiwec, All rights reserved.
 
-#include <memory>
-
 #include "config.h"
 #include "noinclude.h"
 
 #include "OsuConfig.h"
 #include "Vectors.h"
 
+#include <memory>
+#include <set>
+
 class CWindowManager;
 class KeyboardEvent;
 class RenderTarget;
+class UIScreen;
 class UIOverlay;
 
 class Changelog;
@@ -21,10 +23,10 @@ class Lobby;
 class MainMenu;
 class ModSelector;
 class NotificationOverlay;
-class OptionsMenu;
+class OptionsOverlay;
 class OsuDirectScreen;
-class PauseMenu;
-class PromptScreen;
+class PauseOverlay;
+class PromptOverlay;
 class RankingScreen;
 class RoomScreen;
 class SongBrowser;
@@ -36,45 +38,15 @@ class VolumeOverlay;
 
 // global for convenience, created in osu constructor, destroyed in osu constructor
 struct UI;
-extern std::unique_ptr<UI> ui;
+extern UI* ui;
 
-// UIOverlays, manually created + added to the "overlays" array and destroyed in reverse order in dtor
-// (enum, typename, "short name" for getter)
-#define ALL_OVERLAYS_(X)                                                \
-    X(OV_VOLUMEOVERLAY, VolumeOverlay, VolumeOverlay)                   \
-    X(OV_PROMPTSCREEN, PromptScreen, PromptScreen)                      \
-    X(OV_MODSELECTOR, ModSelector, ModSelector)                         \
-    X(OV_UIUSERCONTEXTMENUSCREEN, UIUserContextMenuScreen, UserActions) \
-    X(OV_ROOMSCREEN, RoomScreen, Room)                                  \
-    X(OV_CHAT, Chat, Chat)                                              \
-    X(OV_OPTIONSMENU, OptionsMenu, OptionsMenu)                         \
-    X(OV_RANKINGSCREEN, RankingScreen, RankingScreen)                   \
-    X(OV_USERSTATSSCREEN, UserStatsScreen, UserStatsScreen)             \
-    X(OV_SPECTATORSCREEN, SpectatorScreen, SpectatorScreen)             \
-    X(OV_PAUSEMENU, PauseMenu, PauseMenu)                               \
-    X(OV_HUD, HUD, HUD)                                                 \
-    X(OV_SONGBROWSER, SongBrowser, SongBrowser)                         \
-    X(OV_OSUDIRECTSCREEN, OsuDirectScreen, OsuDirectScreen)             \
-    X(OV_LOBBY, Lobby, Lobby)                                           \
-    X(OV_CHANGELOG, Changelog, Changelog)                               \
-    X(OV_MAINMENU, MainMenu, MainMenu)                                  \
-    X(OV_TOOLTIPOVERLAY, TooltipOverlay, TooltipOverlay)
+// UIScreens, manually created + added to the "overlays" array and destroyed in reverse order in dtor
 
 struct UI final {
     NOCOPY_NOMOVE(UI)
 
    private:
     class NullScreen;
-
-    enum OverlayKind : uint8_t {
-        OV_NULLSCREEN,                   /* created early */
-        OV_NOTIFICATIONOVERLAY,          /* created early */
-#define X_(enumid__, type__, shortname_) /*                                                                       */ \
-    enumid__,
-        ALL_OVERLAYS_(X_) /*                                                                                      */
-        OV_MAX
-#undef X_
-    };
 
    public:
     UI();
@@ -86,29 +58,83 @@ struct UI final {
 
     void update();
     void draw();
-    void onKeyDown(KeyboardEvent &key);
-    void onKeyUp(KeyboardEvent &key);
-    void onChar(KeyboardEvent &e);
+    void onKeyDown(KeyboardEvent& key);
+    void onKeyUp(KeyboardEvent& key);
+    void onChar(KeyboardEvent& e);
     void onResolutionChange(vec2 newResolution);
     void stealFocus();
 
-    [[nodiscard]] inline UIOverlay *getScreen() { return this->active_screen; }
+    [[nodiscard]] inline UIScreen* getActiveScreen() { return this->active_screen; }
     inline void setScreen(std::nullptr_t) { this->hide(); }
-    void setScreen(UIOverlay *screen);
+    void setScreen(UIScreen* screen);
 
-    [[nodiscard]] NotificationOverlay *getNotificationOverlay();  // created early, in ctor, for error notifications
+    // queryable with peekOverlay or removable with popOverlay
+    // when pushed, the pushed overlay is set visible (but the parent is not set invisible)
+    UIOverlay* pushOverlay(std::unique_ptr<UIOverlay> overlay);
 
-#define X_(enumid__, type__, shortname__) /*                                                          */ \
-    [[nodiscard]] type__ *get##shortname__();
+    // returns false if overlay has been destroyed
+    [[nodiscard]] bool peekOverlay(UIOverlay* overlay) const;
 
-    ALL_OVERLAYS_(X_)
-#undef X_
+    // when popped, the parent is set visible/active
+    std::unique_ptr<UIOverlay> popOverlay(UIOverlay* overlay);
+
+    // created early, in ctor, for error notifications
+    [[nodiscard]] inline NotificationOverlay* getNotificationOverlay() { return this->notificationOverlay; }
+
+    // rest are created on init()
+    [[nodiscard]] inline VolumeOverlay* getVolumeOverlay() { return this->volumeOverlay; }
+    [[nodiscard]] inline PromptOverlay* getPromptOverlay() { return this->promptOverlay; }
+    [[nodiscard]] inline ModSelector* getModSelector() { return this->modSelector; }
+    [[nodiscard]] inline UIUserContextMenuScreen* getUserActions() { return this->userActions; }
+    [[nodiscard]] inline RoomScreen* getRoom() { return this->room; }
+    [[nodiscard]] inline Chat* getChat() { return this->chat; }
+    [[nodiscard]] inline OptionsOverlay* getOptionsOverlay() { return this->optionsOverlay; }
+    [[nodiscard]] inline RankingScreen* getRankingScreen() { return this->rankingScreen; }
+    [[nodiscard]] inline UserStatsScreen* getUserStatsScreen() { return this->userStatsScreen; }
+    [[nodiscard]] inline SpectatorScreen* getSpectatorScreen() { return this->spectatorScreen; }
+    [[nodiscard]] inline PauseOverlay* getPauseOverlay() { return this->pauseOverlay; }
+    [[nodiscard]] inline HUD* getHUD() { return this->hud; }
+    [[nodiscard]] inline SongBrowser* getSongBrowser() { return this->songBrowser; }
+    [[nodiscard]] inline OsuDirectScreen* getOsuDirectScreen() { return this->osuDirectScreen; }
+    [[nodiscard]] inline Lobby* getLobby() { return this->lobby; }
+    [[nodiscard]] inline Changelog* getChangelog() { return this->changelog; }
+    [[nodiscard]] inline MainMenu* getMainMenu() { return this->mainMenu; }
+    [[nodiscard]] inline TooltipOverlay* getTooltipOverlay() { return this->tooltipOverlay; }
 
    private:
-    static constexpr const size_t EARLY_OVERLAYS{2};  // dummy+notificationOverlay
+    friend UIScreen;
+    NullScreen* dummy;
+    NotificationOverlay* notificationOverlay;
+    static constexpr const size_t EARLY_SCREENS{2};  // dummy+notificationOverlay
 
-    std::array<UIOverlay *, OV_MAX> overlays{};
-    UIOverlay *active_screen;
+    VolumeOverlay* volumeOverlay{nullptr};
+    PromptOverlay* promptOverlay{nullptr};
+    ModSelector* modSelector{nullptr};
+    UIUserContextMenuScreen* userActions{nullptr};
+    RoomScreen* room{nullptr};
+    Chat* chat{nullptr};
+    OptionsOverlay* optionsOverlay{nullptr};
+    RankingScreen* rankingScreen{nullptr};
+    UserStatsScreen* userStatsScreen{nullptr};
+    SpectatorScreen* spectatorScreen{nullptr};
+    PauseOverlay* pauseOverlay{nullptr};
+    HUD* hud{nullptr};
+    SongBrowser* songBrowser{nullptr};
+    OsuDirectScreen* osuDirectScreen{nullptr};
+    Lobby* lobby{nullptr};
+    Changelog* changelog{nullptr};
+    MainMenu* mainMenu{nullptr};
+    TooltipOverlay* tooltipOverlay{nullptr};
+
+    static constexpr const size_t NUM_SCREENS{20};  // update this when adding screens
+
+    UIScreen* active_screen{nullptr};
+
+    // "always-alive" screens
+    std::array<UIScreen*, NUM_SCREENS> screens{};
+
+    // additional overlays added by pushOverlay (owned by UI)
+    std::set<UIOverlay*> extra_overlays;
 
     // interfaces (debugging)
     // std::unique_ptr<CWindowManager> windowManager{nullptr};

@@ -39,7 +39,7 @@ enum class CvarEditor : uint8_t;
 #endif
 
 struct UI;
-extern std::unique_ptr<UI> ui;
+extern UI *ui;
 
 class Osu final : public App, public MouseListener {
     NOCOPY_NOMOVE(Osu)
@@ -258,9 +258,12 @@ class Osu final : public App, public MouseListener {
     std::unique_ptr<Replay::Mods> previous_mods{nullptr};  // XXX: hacky and out of place
 
    private:
+    // user interface
     friend struct UI;
+    std::unique_ptr<UI> ui_memb{nullptr};
+
     bool bUILoaded{false};
-    [[nodiscard]] inline bool UIReady() const { return !!ui && this->bUILoaded; };
+    [[nodiscard]] inline bool UIReady() const { return !!this->ui_memb && this->bUILoaded; };
 
     // interfaces (other)
     std::unique_ptr<Skin> skin{nullptr};

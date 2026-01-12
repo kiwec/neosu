@@ -8,7 +8,7 @@
 #include "File.h"
 #include "FixedSizeArray.h"
 #include "NeosuUrl.h"
-#include "OptionsMenu.h"
+#include "OptionsOverlay.h"
 #include "Osu.h"
 #include "Parsing.h"
 #include "Skin.h"
@@ -43,7 +43,7 @@ bool OsuEnvInterop::handle_osk(const char *osk_path) {
     folder_name.erase(folder_name.size() - 4);  // remove .osk extension
 
     cv::skin.setValue(Environment::getFileNameFromFilePath(folder_name));
-    ui->getOptionsMenu()->updateSkinNameLabel();
+    ui->getOptionsOverlay()->updateSkinNameLabel();
 
     return true;
 }
@@ -134,7 +134,7 @@ bool OsuEnvInterop::handle_cmdline_args(const std::vector<std::string> &args) {
 
     if(need_to_reload_database) {
         // TODO: bug prone since it can be called from any state...
-        ui->getSongBrowser()->refreshBeatmaps(ui->getScreen());
+        ui->getSongBrowser()->refreshBeatmaps(ui->getActiveScreen());
     }
 
     return need_to_reload_database;

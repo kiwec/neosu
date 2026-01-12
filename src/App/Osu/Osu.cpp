@@ -39,13 +39,13 @@
 #include "ModSelector.h"
 #include "Mouse.h"
 #include "NotificationOverlay.h"
-#include "OptionsMenu.h"
+#include "OptionsOverlay.h"
 #include "OsuDirectScreen.h"
 #include "Parsing.h"
-#include "PauseMenu.h"
+#include "PauseOverlay.h"
 #include "PeppyImporter.h"
 #include "Profiler.h"
-#include "PromptScreen.h"
+#include "PromptOverlay.h"
 #include "RankingScreen.h"
 #include "RenderTarget.h"
 #include "ResourceManager.h"
@@ -211,7 +211,7 @@ Osu::Osu()
     cv::osu_folder.setCallback([](std::string_view newString) -> void {
         std::string normalized = Environment::normalizeDirectory(std::string{newString});
         cv::osu_folder.setValue(normalized, false);
-        if(osu && osu->UIReady()) ui->getOptionsMenu()->updateOsuFolderTextbox(normalized);
+        if(osu && osu->UIReady()) ui->getOptionsOverlay()->updateOsuFolderTextbox(normalized);
     });
 
     // clamp to sane range
@@ -239,7 +239,7 @@ Osu::Osu()
 
     // load a few select subsystems very early
     db = std::make_unique<Database>();  // global database instance
-    ui = std::make_unique<UI>();        // global ui singleton
+    this->ui_memb = std::make_unique<UI>();
     this->score = std::make_unique<LiveScore>(false);
     this->updateHandler = std::make_unique<UpdateHandler>();
     this->avatarManager = std::make_unique<AvatarManager>();
@@ -419,7 +419,8 @@ Osu::~Osu() {
     VolNormalization::shutdown();
     BANCHO::Net::cleanup_networking();
 
-    ui.reset();  // destroy ui layers
+    this->ui_memb.reset();  // destroy ui layers
+    ui = nullptr;
     db.reset();  // shutdown db
 
     // "osu" will be set to null when global_osu_ is deleted (at the end of all automatically deleted members)
@@ -554,7 +555,7 @@ void Osu::update() {
             if(!BanchoState::is_playing_a_multi_map()) {
                 this->map_iface->restart(true);
                 this->map_iface->update();
-                ui->getPauseMenu()->setVisible(false);
+                ui->getPauseOverlay()->setVisible(false);
             }
         }
     }
@@ -648,7 +649,7 @@ void Osu::onKeyDown(KeyboardEvent &key) {
 
     // global hotkey
     if(key == KEY_O && keyboard->isControlDown()) {
-        ui->getOptionsMenu()->setVisible(!ui->getOptionsMenu()->isVisible());
+        ui->getOptionsOverlay()->setVisible(!ui->getOptionsOverlay()->isVisible());
         key.consume();
         return;
     }
@@ -677,7 +678,7 @@ void Osu::onKeyDown(KeyboardEvent &key) {
     }
 
     if(key == cv::OPEN_SKIN_SELECT_MENU.getVal<SCANCODE>()) {
-        ui->getOptionsMenu()->onSkinSelect();
+        ui->getOptionsOverlay()->onSkinSelect();
         key.consume();
         return;
     }
@@ -709,10 +710,10 @@ void Osu::onKeyDown(KeyboardEvent &key) {
     // F8 toggle chat
     if(key == cv::TOGGLE_CHAT.getVal<SCANCODE>()) {
         if(!BanchoState::is_online()) {
-            ui->getOptionsMenu()->askForLoginDetails();
-        } else if(ui->getOptionsMenu()->isVisible()) {
+            ui->getOptionsOverlay()->askForLoginDetails();
+        } else if(ui->getOptionsOverlay()->isVisible()) {
             // When options menu is open, instead of toggling chat, always open chat
-            ui->getOptionsMenu()->setVisible(false);
+            ui->getOptionsOverlay()->setVisible(false);
             ui->getChat()->user_wants_chat = true;
             ui->getChat()->updateVisibility();
         } else {
@@ -724,10 +725,10 @@ void Osu::onKeyDown(KeyboardEvent &key) {
     // F9 toggle extended chat
     if(key == cv::TOGGLE_EXTENDED_CHAT.getVal<SCANCODE>()) {
         if(!BanchoState::is_online()) {
-            ui->getOptionsMenu()->askForLoginDetails();
-        } else if(ui->getOptionsMenu()->isVisible()) {
+            ui->getOptionsOverlay()->askForLoginDetails();
+        } else if(ui->getOptionsOverlay()->isVisible()) {
             // When options menu is open, instead of toggling extended chat, always enable it
-            ui->getOptionsMenu()->setVisible(false);
+            ui->getOptionsOverlay()->setVisible(false);
             ui->getChat()->user_wants_chat = true;
             ui->getChat()->user_list->setVisible(true);
             ui->getChat()->updateVisibility();
@@ -762,7 +763,7 @@ void Osu::onKeyDown(KeyboardEvent &key) {
     // local hotkeys (and gameplay keys)
 
     // while playing (and not in options)
-    if(this->isInPlayMode() && !ui->getOptionsMenu()->isVisible() && !ui->getChat()->isVisible()) {
+    if(this->isInPlayMode() && !ui->getOptionsOverlay()->isVisible() && !ui->getChat()->isVisible()) {
         // instant replay
         if((this->map_iface->isPaused() || this->map_iface->hasFailed())) {
             if(!key.isConsumed() && key == cv::INSTANT_REPLAY.getVal<SCANCODE>()) {
@@ -924,12 +925,12 @@ void Osu::onKeyDown(KeyboardEvent &key) {
             this->map_iface->pause();
             if(!this->isInPlayMode()) break;  // if we exit due to the "pause", don't do anything else
 
-            if(ui->getPauseMenu()->isVisible() && this->map_iface->hasFailed()) {
+            if(ui->getPauseOverlay()->isVisible() && this->map_iface->hasFailed()) {
                 // quit if we try to 'escape' the pause menu when dead (satisfying ragequit mechanic)
                 this->map_iface->stop(true);
             } else {
                 // else just toggle the pause menu
-                ui->getPauseMenu()->setVisible(!ui->getPauseMenu()->isVisible());
+                ui->getPauseOverlay()->setVisible(!ui->getPauseOverlay()->isVisible());
             }
         }
 
@@ -1516,7 +1517,7 @@ void Osu::onFocusLost() {
     if(this->isInPlayMode() && !this->map_iface->isPaused() && cv::pause_on_focus_loss.getBool()) {
         if(!BanchoState::is_playing_a_multi_map() && !this->map_iface->is_watching && !BanchoState::spectating) {
             this->map_iface->pause(false);
-            ui->getPauseMenu()->setVisible(true);
+            ui->getPauseOverlay()->setVisible(true);
             ui->getModSelector()->setVisible(false);
         }
     }
@@ -1539,7 +1540,7 @@ bool Osu::onShutdown() {
     }
 
     // save everything
-    ui->getOptionsMenu()->save();
+    ui->getOptionsOverlay()->save();
     db->save();
 
     BanchoState::disconnect(true);
@@ -1682,10 +1683,10 @@ void Osu::updateConfineCursor() {
     // we need relative mode (rawinput) for fposu without absolute mode
     const bool playing_fposu_nonabs = (playing && cv::mod_fposu.getBool() && !cv::fposu_absolute_mode.getBool());
 
-    const bool might_confine = (playing_fposu_nonabs) ||                                               //
-                               (is_fullscreen && cv::confine_cursor_fullscreen.getBool()) ||           //
-                               (!is_fullscreen && cv::confine_cursor_windowed.getBool()) ||            //
-                               (playing && !(ui->getPauseMenu() && ui->getPauseMenu()->isVisible()));  //
+    const bool might_confine = (playing_fposu_nonabs) ||                                                     //
+                               (is_fullscreen && cv::confine_cursor_fullscreen.getBool()) ||                 //
+                               (!is_fullscreen && cv::confine_cursor_windowed.getBool()) ||                  //
+                               (playing && !(ui->getPauseOverlay() && ui->getPauseOverlay()->isVisible()));  //
 
     const bool force_no_confine = !env->winFocused() ||                                             //
                                   (!playing_fposu_nonabs && cv::confine_cursor_never.getBool()) ||  //
@@ -1759,7 +1760,7 @@ void Osu::onLetterboxingOffsetChange() {
 
 void Osu::onUserCardChange(std::string_view new_username) {
     // NOTE: force update options textbox to avoid shutdown inconsistency
-    ui->getOptionsMenu()->setUsername(UString{new_username.data(), static_cast<int>(new_username.length())});
+    ui->getOptionsOverlay()->setUsername(UString{new_username.data(), static_cast<int>(new_username.length())});
     this->userButton->setID(BanchoState::get_uid());
 }
 
@@ -1873,7 +1874,7 @@ void Osu::audioRestartCallbackBefore() {
 // part 2 of callback
 void Osu::audioRestartCallbackAfter() {
     if(ui && this->skin) {
-        ui->getOptionsMenu()->onOutputDeviceChange();
+        ui->getOptionsOverlay()->onOutputDeviceChange();
         this->skin->reloadSounds();
 
         // start playing music again after audio device changed
@@ -1891,7 +1892,7 @@ void Osu::audioRestartCallbackAfter() {
         if(this->music_was_playing) {
             this->music_unpause_scheduled = true;
         }
-        ui->getOptionsMenu()->scheduleLayoutUpdate();
+        ui->getOptionsOverlay()->scheduleLayoutUpdate();
     }
 
     // resume loudness calc (only implemented for bass currently)
@@ -1914,7 +1915,7 @@ void Osu::setupAudio() {
             SA::MakeDelegate<&SoundEngine::onParamChanged>(soundEngine.get()));
         cv::asio_buffer_size.setCallback(SA::MakeDelegate<&SoundEngine::onParamChanged>(soundEngine.get()));
         cv::snd_output_device.setCallback(
-            []() -> void { osu && osu->UIReady() ? ui->getOptionsMenu()->scheduleLayoutUpdate() : (void)0; });
+            []() -> void { osu && osu->UIReady() ? ui->getOptionsOverlay()->scheduleLayoutUpdate() : (void)0; });
     }
 
     soundEngine->setDeviceChangeBeforeCallback(SA::MakeDelegate<&Osu::audioRestartCallbackBefore>(this));

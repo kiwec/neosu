@@ -21,10 +21,10 @@
 #include "Lobby.h"
 #include "ModSelector.h"
 #include "Mouse.h"
-#include "OptionsMenu.h"
+#include "OptionsOverlay.h"
 #include "Osu.h"
-#include "PauseMenu.h"
-#include "PromptScreen.h"
+#include "PauseOverlay.h"
+#include "PromptOverlay.h"
 #include "RenderTarget.h"
 #include "ResourceManager.h"
 #include "RoomScreen.h"
@@ -284,7 +284,7 @@ void ChatChannel::updateLayout(vec2 pos, vec2 size) {
     }
 }
 
-Chat::Chat() : UIOverlay() {
+Chat::Chat() : UIScreen() {
     chat_font = engine->getDefaultFont();
 
     this->ticker = new ChatChannel(nullptr, "");
@@ -352,7 +352,7 @@ void Chat::draw() {
         g->setColor(argb(150, 0, 0, 0));
         g->fillRect(0, chat_y, chat_w, chat_h);
     } else {
-        UIOverlay::draw();
+        UIScreen::draw();
         this->selected_channel->ui->draw();
     }
 
@@ -431,7 +431,7 @@ void Chat::update() {
         }
     }
 
-    UIOverlay::update();
+    UIScreen::update();
 
     // XXX: don't let mouse click through the buttons area
     this->button_container->update();
@@ -1307,12 +1307,12 @@ void Chat::updateVisibility() {
     bool can_skip = osu->getMapInterface()->isInSkippableSection();
     bool is_spectating = cv::mod_autoplay.getBool() || (cv::mod_autopilot.getBool() && cv::mod_relax.getBool()) ||
                          osu->getMapInterface()->is_watching || BanchoState::spectating;
-    bool is_clicking_circles = osu->isInPlayMode() && !can_skip && !is_spectating && !ui->getPauseMenu()->isVisible();
+    bool is_clicking_circles = osu->isInPlayMode() && !can_skip && !is_spectating && !ui->getPauseOverlay()->isVisible();
     if(BanchoState::is_playing_a_multi_map() && !osu->getMapInterface()->all_players_loaded) {
         is_clicking_circles = false;
     }
     is_clicking_circles &= cv::chat_auto_hide.getBool();
-    bool force_hide = ui->getOptionsMenu()->isVisible() || ui->getModSelector()->isVisible() || is_clicking_circles;
+    bool force_hide = ui->getOptionsOverlay()->isVisible() || ui->getModSelector()->isVisible() || is_clicking_circles;
     if(!BanchoState::is_online()) force_hide = true;
 
     if(force_hide) {
@@ -1330,13 +1330,13 @@ CBaseUIContainer *Chat::setVisible(bool visible) {
     soundEngine->play(osu->getSkin()->s_click_button);
 
     if(visible && !BanchoState::is_online()) {
-        ui->getOptionsMenu()->askForLoginDetails();
+        ui->getOptionsOverlay()->askForLoginDetails();
         return this;
     }
 
     this->bVisible = visible;
     if(visible) {
-        ui->getOptionsMenu()->setVisible(false);
+        ui->getOptionsOverlay()->setVisible(false);
         anim::moveQuartOut(&this->fAnimation, 1.0f, 0.25f * (1.0f - this->fAnimation), true);
 
         if(this->selected_channel != nullptr && !this->selected_channel->read) {
@@ -1361,6 +1361,6 @@ bool Chat::isMouseInChat() {
 
 void Chat::askWhatChannelToJoin(CBaseUIButton * /*btn*/) {
     // XXX: Could display nicer UI with full channel list (chat_channels in Bancho.cpp)
-    ui->getPromptScreen()->prompt("Type in the channel you want to join (e.g. '#osu'):",
+    ui->getPromptOverlay()->prompt("Type in the channel you want to join (e.g. '#osu'):",
                                   SA::MakeDelegate<&Chat::join>(this));
 }

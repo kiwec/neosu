@@ -10,7 +10,7 @@
 #include "Font.h"
 #include "Graphics.h"
 
-TooltipOverlay::TooltipOverlay() : UIOverlay() {
+TooltipOverlay::TooltipOverlay() : UIScreen() {
     this->fAnim = 0.0f;
     this->bDelayFadeout = false;
 }

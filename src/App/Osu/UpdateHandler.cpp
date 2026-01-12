@@ -12,7 +12,7 @@
 #include "NetworkHandler.h"
 #include "SString.h"
 #include "UI.h"
-#include "OptionsMenu.h"
+#include "OptionsOverlay.h"
 #include "Logging.h"
 #include "Environment.h"
 #include "MakeDelegateWrapper.h"
@@ -241,7 +241,7 @@ void UpdateHandler::installUpdate() {
     }
 
     cv::is_bleedingedge.setValue(cv::bleedingedge.getBool());
-    ui->getOptionsMenu()->save();
+    ui->getOptionsOverlay()->save();
 
     // we're done updating; restart the game, since the user already clicked to update
     engine->restart();

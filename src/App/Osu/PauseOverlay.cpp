@@ -1,5 +1,5 @@
 // Copyright (c) 2016, PG, All rights reserved.
-#include "PauseMenu.h"
+#include "PauseOverlay.h"
 
 #include <cmath>
 #include <utility>
@@ -16,7 +16,7 @@
 #include "HUD.h"
 #include "Keyboard.h"
 #include "ModSelector.h"
-#include "OptionsMenu.h"
+#include "OptionsOverlay.h"
 #include "Osu.h"
 #include "ResourceManager.h"
 #include "RichPresence.h"
@@ -25,7 +25,7 @@
 #include "UI.h"
 #include "UIPauseMenuButton.h"
 
-PauseMenu::PauseMenu() : UIOverlay() {
+PauseOverlay::PauseOverlay() : UIScreen() {
     this->bScheduledVisibility = false;
     this->bScheduledVisibilityChange = false;
 
@@ -48,14 +48,14 @@ PauseMenu::PauseMenu() : UIOverlay() {
     UIPauseMenuButton *retryButton = this->addButton(&Skin::i_pause_retry, "Retry");
     UIPauseMenuButton *backButton = this->addButton(&Skin::i_pause_back, "Quit");
 
-    continueButton->setClickCallback(SA::MakeDelegate<&PauseMenu::onContinueClicked>(this));
-    retryButton->setClickCallback(SA::MakeDelegate<&PauseMenu::onRetryClicked>(this));
-    backButton->setClickCallback(SA::MakeDelegate<&PauseMenu::onBackClicked>(this));
+    continueButton->setClickCallback(SA::MakeDelegate<&PauseOverlay::onContinueClicked>(this));
+    retryButton->setClickCallback(SA::MakeDelegate<&PauseOverlay::onRetryClicked>(this));
+    backButton->setClickCallback(SA::MakeDelegate<&PauseOverlay::onBackClicked>(this));
 
     this->updateLayout();
 }
 
-void PauseMenu::draw() {
+void PauseOverlay::draw() {
     const bool isAnimating = anim::isAnimating(&this->fDimAnim);
     if(!this->bVisible && !isAnimating) return;
 
@@ -92,7 +92,7 @@ void PauseMenu::draw() {
     for(auto &button : this->buttons) {
         button->setAlpha(1.0f - (1.0f - this->fDimAnim) * (1.0f - this->fDimAnim) * (1.0f - this->fDimAnim));
     }
-    UIOverlay::draw();
+    UIScreen::draw();
 
     // draw selection arrows
     if(this->selectedButton != nullptr) {
@@ -115,14 +115,14 @@ void PauseMenu::draw() {
     }
 }
 
-void PauseMenu::update() {
+void PauseOverlay::update() {
     if(!this->bVisible) return;
 
     // hide retry button in multiplayer
     this->buttons[1]->setVisible(!BanchoState::is_playing_a_multi_map());
 
     // update and focus handling
-    UIOverlay::update();
+    UIScreen::update();
 
     if(this->bScheduledVisibilityChange) {
         this->bScheduledVisibilityChange = false;
@@ -132,7 +132,7 @@ void PauseMenu::update() {
     if(anim::isAnimating(&this->fWarningArrowsAnimX)) this->fWarningArrowsAnimStartTime = engine->getTime();
 }
 
-void PauseMenu::onContinueClicked() {
+void PauseOverlay::onContinueClicked() {
     if(!this->bContinueEnabled) return;
     if(anim::isAnimating(&this->fDimAnim)) return;
 
@@ -142,7 +142,7 @@ void PauseMenu::onContinueClicked() {
     this->scheduleVisibilityChange(false);
 }
 
-void PauseMenu::onRetryClicked() {
+void PauseOverlay::onRetryClicked() {
     if(BanchoState::is_playing_a_multi_map()) return;  // sanity
     if(anim::isAnimating(&this->fDimAnim)) return;
 
@@ -152,7 +152,7 @@ void PauseMenu::onRetryClicked() {
     this->scheduleVisibilityChange(false);
 }
 
-void PauseMenu::onBackClicked() {
+void PauseOverlay::onBackClicked() {
     if(anim::isAnimating(&this->fDimAnim)) return;
 
     soundEngine->play(osu->getSkin()->s_click_pause_back);
@@ -161,7 +161,7 @@ void PauseMenu::onBackClicked() {
     this->scheduleVisibilityChange(false);
 }
 
-void PauseMenu::onSelectionChange() {
+void PauseOverlay::onSelectionChange() {
     if(this->selectedButton != nullptr) {
         if(this->bInitialWarningArrowFlyIn) {
             this->bInitialWarningArrowFlyIn = false;
@@ -178,8 +178,8 @@ void PauseMenu::onSelectionChange() {
     }
 }
 
-void PauseMenu::onKeyDown(KeyboardEvent &e) {
-    UIOverlay::onKeyDown(e);  // only used for options menu
+void PauseOverlay::onKeyDown(KeyboardEvent &e) {
+    UIScreen::onKeyDown(e);  // only used for options menu
     if(!this->bVisible || e.isConsumed()) return;
 
     if(e == cv::LEFT_CLICK.getVal<SCANCODE>() || e == cv::RIGHT_CLICK.getVal<SCANCODE>() ||
@@ -268,19 +268,19 @@ void PauseMenu::onKeyDown(KeyboardEvent &e) {
         e.consume();
 }
 
-void PauseMenu::onKeyUp(KeyboardEvent &e) {
+void PauseOverlay::onKeyUp(KeyboardEvent &e) {
     if(e == cv::LEFT_CLICK.getVal<SCANCODE>() || e == cv::LEFT_CLICK_2.getVal<SCANCODE>()) this->bClick1Down = false;
 
     if(e == cv::RIGHT_CLICK.getVal<SCANCODE>() || e == cv::RIGHT_CLICK_2.getVal<SCANCODE>()) this->bClick2Down = false;
 }
 
-void PauseMenu::onChar(KeyboardEvent &e) {
+void PauseOverlay::onChar(KeyboardEvent &e) {
     if(!this->bVisible) return;
 
     e.consume();
 }
 
-void PauseMenu::scheduleVisibilityChange(bool visible) {
+void PauseOverlay::scheduleVisibilityChange(bool visible) {
     if(visible != this->bVisible) {
         this->bScheduledVisibilityChange = true;
         this->bScheduledVisibility = visible;
@@ -290,7 +290,7 @@ void PauseMenu::scheduleVisibilityChange(bool visible) {
     if(!visible) this->setContinueEnabled(true);
 }
 
-void PauseMenu::updateLayout() {
+void PauseOverlay::updateLayout() {
     const float height = (osu->getVirtScreenHeight() / (float)this->buttons.size());
     const float half = (this->buttons.size() - 1) / 2.0f;
 
@@ -326,12 +326,12 @@ void PauseMenu::updateLayout() {
     this->onSelectionChange();
 }
 
-void PauseMenu::onResolutionChange(vec2 newResolution) {
+void PauseOverlay::onResolutionChange(vec2 newResolution) {
     this->setSize(newResolution);
     this->updateLayout();
 }
 
-CBaseUIContainer *PauseMenu::setVisible(bool visible) {
+CBaseUIContainer *PauseOverlay::setVisible(bool visible) {
     const bool wasVisible = this->bVisible;
     this->bVisible = visible;
 
@@ -409,12 +409,12 @@ CBaseUIContainer *PauseMenu::setVisible(bool visible) {
     return this;
 }
 
-void PauseMenu::setContinueEnabled(bool continueEnabled) {
+void PauseOverlay::setContinueEnabled(bool continueEnabled) {
     this->bContinueEnabled = continueEnabled;
     if(this->buttons.size() > 0) this->buttons[0]->setVisible(this->bContinueEnabled);
 }
 
-UIPauseMenuButton *PauseMenu::addButton(ImageSkinMember skinMember, UString btn_name) {
+UIPauseMenuButton *PauseOverlay::addButton(ImageSkinMember skinMember, UString btn_name) {
     auto *button = new UIPauseMenuButton(skinMember, 0, 0, 0, 0, std::move(btn_name));
     this->addBaseUIElement(button);
     this->buttons.push_back(button);

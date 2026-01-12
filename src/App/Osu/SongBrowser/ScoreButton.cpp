@@ -1,7 +1,7 @@
 // Copyright (c) 2018, PG, All rights reserved.
 #include "ScoreButton.h"
 
-#include "OptionsMenu.h"
+#include "OptionsOverlay.h"
 #include "SongBrowser.h"
 // ---
 
@@ -403,7 +403,7 @@ void ScoreButton::update() {
     }
 
     // dumb hack to avoid taking focus and drawing score button tooltips over options menu
-    if(ui->getOptionsMenu()->isVisible()) {
+    if(ui->getOptionsOverlay()->isVisible()) {
         return;
     }
 

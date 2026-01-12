@@ -23,7 +23,7 @@
 #include "Mouse.h"
 #include "NetworkHandler.h"
 #include "NotificationOverlay.h"
-#include "OptionsMenu.h"
+#include "OptionsOverlay.h"
 #include "Osu.h"
 #include "OsuConVars.h"
 #include "Skin.h"

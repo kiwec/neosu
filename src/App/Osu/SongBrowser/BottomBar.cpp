@@ -7,7 +7,7 @@
 #include "LoudnessCalcThread.h"
 #include "DBRecalculator.h"
 #include "Mouse.h"
-#include "OptionsMenu.h"
+#include "OptionsOverlay.h"
 #include "UIBackButton.h"
 #include "Osu.h"
 #include "ResourceManager.h"
@@ -136,7 +136,7 @@ void draw() {
     g->popTransform();
 
     // don't double-draw the back button
-    if(!ui->getOptionsMenu()->isVisible()) {
+    if(!ui->getOptionsOverlay()->isVisible()) {
         g_songbrowser->backButton->draw();
     }
 

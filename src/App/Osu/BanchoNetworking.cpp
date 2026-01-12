@@ -18,7 +18,7 @@
 #include "MainMenu.h"
 #include "NeosuUrl.h"
 #include "NetworkHandler.h"
-#include "OptionsMenu.h"
+#include "OptionsOverlay.h"
 #include "ResourceManager.h"
 #include "SongBrowser.h"
 #include "Timing.h"
@@ -376,9 +376,9 @@ void BanchoState::disconnect(bool shutdown) {
     ui->getSongBrowser()->onFilterScoresChange("Local", SongBrowser::LOGIN_STATE_FILTER_ID);
 
     // Exit out of any online-only screens
-    const auto s = ui->getScreen();
-    if(s == (UIOverlay *)ui->getSpectatorScreen() || s == (UIOverlay *)ui->getLobby() ||
-       s == (UIOverlay *)ui->getOsuDirectScreen() || s == (UIOverlay *)ui->getRoom()) {
+    if(UIScreen *s = ui->getActiveScreen();
+       (s == (UIScreen *)ui->getSpectatorScreen()) || (s == (UIScreen *)ui->getLobby()) ||
+       (s == (UIScreen *)ui->getOsuDirectScreen()) || (s == (UIScreen *)ui->getRoom())) {
         ui->setScreen(ui->getMainMenu());
     }
 

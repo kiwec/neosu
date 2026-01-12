@@ -36,7 +36,7 @@
 #include "RichPresence.h"
 
 #include "HUD.h"
-#include "OptionsMenu.h"
+#include "OptionsOverlay.h"
 #include "NotificationOverlay.h"
 #include "BeatmapInterface.h"
 #include "ModSelector.h"
@@ -764,7 +764,7 @@ void SongBrowser::draw() {
 
     // NOTE: Intentionally not calling ScreenBackable::draw() here, since we're already drawing
     //       the back button in draw_bottombar().
-    UIOverlay::draw();
+    UIScreen::draw();
 
     // no beatmaps found (osu folder is probably invalid)
     if(db->getBeatmapSets().size() == 0) {
@@ -985,7 +985,7 @@ void SongBrowser::update() {
     // but only if the context menu is currently not visible (since we don't want move things while e.g. managing
     // collections etc.)
     // NOTE: it's very slow, so only run it every 10 vsync frames
-    if(engine->throttledShouldRun(10) && !ui->getOptionsMenu()->isVisible() &&
+    if(engine->throttledShouldRun(10) && !ui->getOptionsOverlay()->isVisible() &&
        mouse->getPos().x < osu->getVirtScreenWidth() * 0.1f && !this->contextMenu->isVisible()) {
         this->scheduled_scroll_to_selected_button = true;
     }
@@ -1013,7 +1013,7 @@ void SongBrowser::update() {
 }
 
 void SongBrowser::onKeyDown(KeyboardEvent &key) {
-    UIOverlay::onKeyDown(key);  // only used for options menu
+    UIScreen::onKeyDown(key);  // only used for options menu
     if(!this->bVisible || key.isConsumed()) return;
 
     // context menu
@@ -1087,7 +1087,7 @@ void SongBrowser::onKeyDown(KeyboardEvent &key) {
         BottomBar::press_button(BottomBar::OPTIONS);
     }
 
-    if(key == KEY_F5) this->refreshBeatmaps(this);
+    if(key == KEY_F5) this->refreshBeatmaps();
 
     this->carousel->onKeyDown(key);
     //if (key.isConsumed()) return;
@@ -1134,7 +1134,7 @@ CBaseUIContainer *SongBrowser::setVisible(bool visible) {
 
     // Load DB if we haven't attempted yet
     if(visible && this->parentButtons.size() == 0 && !db->isFinished()) {
-        this->refreshBeatmaps(this);
+        this->refreshBeatmaps();
         return this;
     }
 
@@ -1143,7 +1143,7 @@ CBaseUIContainer *SongBrowser::setVisible(bool visible) {
 
     if(this->bVisible) {
         soundEngine->play(osu->getSkin()->s_expand);
-        RichPresence::onSongBrowser();
+
         if(this->bSongButtonsNeedSorting) {
             this->rebuildAfterGroupOrSortChange(this->curGroup);
         }
@@ -1174,12 +1174,13 @@ CBaseUIContainer *SongBrowser::setVisible(bool visible) {
             // make sure we loop the music, since if we're carrying over from main menu it was set to not-loop
             music->setLoop(cv::beatmap_preview_music_loop.getBool());
         }
+
+        RichPresence::onSongBrowser();
     } else {
         this->contextMenu->setVisible2(false);
     }
 
     ui->getChat()->updateVisibility();
-    osu->updateConfineCursor();  // was in toggleSongBrowser - not sure if still needed
     return this;
 }
 
@@ -1378,15 +1379,14 @@ void SongBrowser::onDifficultySelected(DatabaseBeatmap *map, bool play) {
     this->webButton->setVisible(this->songInfo->getBeatmapID() > 0);
 }
 
-void SongBrowser::refreshBeatmaps(UIOverlay *next_screen) {
+void SongBrowser::refreshBeatmaps() { return this->refreshBeatmaps(this); }
+
+void SongBrowser::refreshBeatmaps(UIScreen *next_screen) {
     if(osu->isInPlayMode()) return;
 
-    {
-        auto loading_screen = dynamic_cast<LoadingScreen *>(ui->getScreen());
-        if(loading_screen != nullptr) {
-            // We are already refreshing beatmaps!
-            return;
-        }
+    if(!!this->loadingOverlay) {
+        // We are already refreshing beatmaps!
+        return;
     }
 
     if(this->bInitializedBeatmaps) {
@@ -1454,25 +1454,37 @@ void SongBrowser::refreshBeatmaps(UIOverlay *next_screen) {
     // start loading
     db->load();
 
-    auto loading_screen = new LoadingScreen(
+    auto loading_screen = std::make_unique<LoadingScreen>(
         next_screen,
-        [this]() {
-            db->update();  // raw load logic
-
-            if(db->isFinished()) {
-                this->onDatabaseLoadingFinished();
-
-                // Close/delete the loading screen, and open next_screen
-                ui->getScreen()->setVisible(false);
+        (LoadingProgressFn)[](LoadingScreen * /*ldscr*/) {
+            if(!db->isFinished()) {
+                db->update();  // raw load logic
             }
-
             return db->getProgress();
         },
-        []() {
-            db->cancel();
-            // db->isFinished() will now return true, so we don't need to do anything else
+        (LoadingFinishedFn)[](LoadingScreen * ldscr) {
+            if(!db->isFinished()) {
+                db->cancel();
+            }
+
+            assert(db->isFinished());
+
+            SongBrowser *sb = ui->getSongBrowser();
+            assert(sb && sb->loadingOverlay &&
+                   "LoadingScreen::cancel_fn: canceled while SongBrowser was in an invalid state");
+
+            sb->loadingOverlay = nullptr;
+
+            sb->onDatabaseLoadingFinished();
+
+            // kill ourselves
+            ui->popOverlay(ldscr);
         });
-    ui->setScreen(loading_screen);
+
+    this->loadingOverlay = ui->pushOverlay(std::move(loading_screen));
+
+    // make sure whatever was visible is hidden until loading finishes
+    ui->hide();
 }
 
 // this is an insane hack to be calling from places that don't even use songbrowser

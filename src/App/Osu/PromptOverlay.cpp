@@ -1,5 +1,5 @@
 // Copyright (c) 2024, kiwec, All rights reserved.
-#include "PromptScreen.h"
+#include "PromptOverlay.h"
 
 #include "CBaseUILabel.h"
 #include "CBaseUITextbox.h"
@@ -11,7 +11,7 @@
 #include "MakeDelegateWrapper.h"
 #include "Mouse.h"
 
-PromptScreen::PromptScreen() : UIOverlay() {
+PromptOverlay::PromptOverlay() : UIScreen() {
     this->prompt_label = new CBaseUILabel(0, 0, 0, 0, "", "");
     this->prompt_label->setDrawFrame(false);
     this->prompt_label->setDrawBackground(false);
@@ -23,17 +23,17 @@ PromptScreen::PromptScreen() : UIOverlay() {
     this->ok_btn = new UIButton(0, 0, 110, 35, "ok_btn", "OK");
     this->ok_btn->setColor(0xff00d900);
     this->ok_btn->setUseDefaultSkin();
-    this->ok_btn->setClickCallback(SA::MakeDelegate<&PromptScreen::on_ok>(this));
+    this->ok_btn->setClickCallback(SA::MakeDelegate<&PromptOverlay::on_ok>(this));
     this->addBaseUIElement(this->ok_btn);
 
     this->cancel_btn = new UIButton(0, 0, 110, 35, "cancel_btn", "Cancel");
     this->cancel_btn->setColor(0xff0c7c99);
     this->cancel_btn->setUseDefaultSkin();
-    this->cancel_btn->setClickCallback(SA::MakeDelegate<&PromptScreen::on_cancel>(this));
+    this->cancel_btn->setClickCallback(SA::MakeDelegate<&PromptOverlay::on_cancel>(this));
     this->addBaseUIElement(this->cancel_btn);
 }
 
-void PromptScreen::onResolutionChange(vec2 newResolution) {
+void PromptOverlay::onResolutionChange(vec2 newResolution) {
     const float xmiddle = newResolution.x / 2;
     const float ymiddle = newResolution.y / 2;
 
@@ -48,23 +48,23 @@ void PromptScreen::onResolutionChange(vec2 newResolution) {
     this->cancel_btn->setPos(xmiddle + 10, ymiddle + 50);
 }
 
-void PromptScreen::draw() {
+void PromptOverlay::draw() {
     if(!this->bVisible) return;
 
     g->setColor(argb(200, 0, 0, 0));
     g->fillRect(0, 0, this->getSize().x, this->getSize().y);
 
-    UIOverlay::draw();
+    UIScreen::draw();
 }
 
-void PromptScreen::update() {
+void PromptOverlay::update() {
     if(!this->bVisible) return;
 
-    UIOverlay::update();
+    UIScreen::update();
     mouse->propagate_clicks = false;
 }
 
-void PromptScreen::onKeyDown(KeyboardEvent &e) {
+void PromptOverlay::onKeyDown(KeyboardEvent &e) {
     if(!this->bVisible) return;
 
     if(e == KEY_ENTER || e == KEY_NUMPAD_ENTER) {
@@ -83,19 +83,19 @@ void PromptScreen::onKeyDown(KeyboardEvent &e) {
     e.consume();
 }
 
-void PromptScreen::onKeyUp(KeyboardEvent &e) {
+void PromptOverlay::onKeyUp(KeyboardEvent &e) {
     if(!this->bVisible) return;
     this->prompt_input->onKeyUp(e);
     e.consume();
 }
 
-void PromptScreen::onChar(KeyboardEvent &e) {
+void PromptOverlay::onChar(KeyboardEvent &e) {
     if(!this->bVisible) return;
     this->prompt_input->onChar(e);
     e.consume();
 }
 
-void PromptScreen::prompt(const UString &msg, const PromptResponseCallback &callback) {
+void PromptOverlay::prompt(const UString &msg, const PromptResponseCallback &callback) {
     this->prompt_label->setText(msg);
     this->prompt_input->setText("");
     this->prompt_input->focus();
@@ -105,9 +105,9 @@ void PromptScreen::prompt(const UString &msg, const PromptResponseCallback &call
     this->onResolutionChange(osu->getVirtScreenSize());
 }
 
-void PromptScreen::on_ok() {
+void PromptOverlay::on_ok() {
     this->bVisible = false;
     this->callback(this->prompt_input->getText());
 }
 
-void PromptScreen::on_cancel() { this->bVisible = false; }
+void PromptOverlay::on_cancel() { this->bVisible = false; }

@@ -31,7 +31,7 @@
 #include "Keyboard.h"
 #include "Lobby.h"
 #include "Mouse.h"
-#include "OptionsMenu.h"
+#include "OptionsOverlay.h"
 #include "Osu.h"
 #include "OsuDirectScreen.h"
 #include "OsuKeyBinds.h"
@@ -112,7 +112,7 @@ class MainMenu::MainButton final : public CBaseUIButton {
     MainMenu *mm_ptr;
 };
 
-MainMenu::MainMenu() : UIOverlay() {
+MainMenu::MainMenu() : UIScreen() {
     // engine settings
     mouse->addListener(this);
 
@@ -227,7 +227,7 @@ MainMenu::MainMenu() : UIOverlay() {
                 }
 
                 if(shouldSave) {
-                    ui->getOptionsMenu()->save();
+                    ui->getOptionsOverlay()->save();
                 }
             } else {
                 this->bDrawVersionNotificationArrow = true;
@@ -920,7 +920,7 @@ void MainMenu::draw() {
     }
 
     // draw container
-    UIOverlay::draw();
+    UIScreen::draw();
 
     // draw update check button
     if(this->updateAvailableButton != nullptr) {
@@ -968,7 +968,7 @@ void MainMenu::update() {
     this->updateLayout();
 
     // update and focus handling
-    UIOverlay::update();
+    UIScreen::update();
 
     if(this->updateAvailableButton != nullptr) {
         this->updateAvailableButton->update();
@@ -1214,10 +1214,10 @@ void MainMenu::selectRandomBeatmap() {
 }
 
 void MainMenu::onKeyDown(KeyboardEvent &e) {
-    UIOverlay::onKeyDown(e);  // only used for options menu
+    UIScreen::onKeyDown(e);  // only used for options menu
     if(!this->bVisible || e.isConsumed()) return;
 
-    if(!ui->getOptionsMenu()->isMouseInside()) {
+    if(!ui->getOptionsOverlay()->isMouseInside()) {
         if(e == KEY_PREV || e == KEY_LEFT) {
             ui->getSongBrowser()->selectPreviousRandomBeatmap();
             RichPresence::onMainMenu();
@@ -1549,7 +1549,7 @@ void MainMenu::onPlayButtonPressed() {
     this->bMainMenuAnimFadeToFriendForNextAnim = false;
     this->bMainMenuAnimFriendScheduled = false;
 
-    ui->getOptionsMenu()->setVisible(false);
+    ui->getOptionsOverlay()->setVisible(false);
     ui->setScreen(ui->getSongBrowser());
 
     soundEngine->play(osu->getSkin()->s_menu_hit);
@@ -1558,7 +1558,7 @@ void MainMenu::onPlayButtonPressed() {
 
 void MainMenu::onMultiplayerButtonPressed() {
     if(!BanchoState::is_online()) {
-        ui->getOptionsMenu()->askForLoginDetails();
+        ui->getOptionsOverlay()->askForLoginDetails();
         return;
     }
 
@@ -1568,7 +1568,7 @@ void MainMenu::onMultiplayerButtonPressed() {
 }
 
 void MainMenu::onOptionsButtonPressed() {
-    ui->getOptionsMenu()->setVisible(true);
+    ui->getOptionsOverlay()->setVisible(true);
     soundEngine->play(osu->getSkin()->s_click_options);
 }
 

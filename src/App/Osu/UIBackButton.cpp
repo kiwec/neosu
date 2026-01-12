@@ -6,7 +6,7 @@
 #include "AnimationHandler.h"
 #include "OsuConVars.h"
 #include "Engine.h"
-#include "OptionsMenu.h"
+#include "OptionsOverlay.h"
 #include "Osu.h"
 #include "Skin.h"
 #include "SkinImage.h"
@@ -69,7 +69,7 @@ void UIBackButton::onMouseOutside() {
 void UIBackButton::updateLayout() {
     const SkinImage *backimg = osu->getSkin()->i_menu_back2;
 
-    if(OptionsMenu *optmenu = ui ? ui->getOptionsMenu() : nullptr;
+    if(OptionsOverlay *optmenu = ui ? ui->getOptionsOverlay() : nullptr;
        optmenu && optmenu->isVisible() && backimg->getSize().y > (optmenu->getSize().y / 4) &&
        (osu->getSkin()->i_menu_back2_DEFAULTSKIN && osu->getSkin()->i_menu_back2_DEFAULTSKIN->isReady())) {
         // always show default back button when options menu is showing, if its height is > 1/4 the options menu height

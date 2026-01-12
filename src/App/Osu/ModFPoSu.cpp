@@ -14,7 +14,7 @@
 #include "ModSelector.h"
 #include "ModFPoSu3DModels.h"
 #include "Mouse.h"
-#include "OptionsMenu.h"
+#include "OptionsOverlay.h"
 #include "Osu.h"
 #include "ResourceManager.h"
 #include "Skin.h"

@@ -1,17 +1,17 @@
 #pragma once
 // Copyright (c) 2016, PG, All rights reserved.
-#include "UIOverlay.h"
+#include "UIScreen.h"
 #include "Skin.h"
 
 class SongBrowser;
 class CBaseUIContainer;
 class UIPauseMenuButton;
 
-class PauseMenu final : public UIOverlay {
+class PauseOverlay final : public UIScreen {
    public:
     using ImageSkinMember = BasicSkinImage Skin::*;
 
-    PauseMenu();
+    PauseOverlay();
 
     void draw() override;
     void update() override;

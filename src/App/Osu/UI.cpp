@@ -1,7 +1,5 @@
 #include "UI.h"
 
-#include <ranges>
-
 #include "noinclude.h"
 #include "Bancho.h"
 #include "BeatmapInterface.h"
@@ -14,7 +12,7 @@
 #include "OsuConVars.h"
 #include "RenderTarget.h"
 #include "ResourceManager.h"
-#include "UIOverlay.h"
+#include "UIScreen.h"
 
 #include "Changelog.h"
 #include "Chat.h"
@@ -23,10 +21,10 @@
 #include "MainMenu.h"
 #include "ModSelector.h"
 #include "NotificationOverlay.h"
-#include "OptionsMenu.h"
+#include "OptionsOverlay.h"
 #include "OsuDirectScreen.h"
-#include "PauseMenu.h"
-#include "PromptScreen.h"
+#include "PauseOverlay.h"
+#include "PromptOverlay.h"
 #include "RankingScreen.h"
 #include "RoomScreen.h"
 #include "SongBrowser/SongBrowser.h"
@@ -37,21 +35,12 @@
 #include "UserStatsScreen.h"
 #include "VolumeOverlay.h"
 
-std::unique_ptr<UI> ui = nullptr;
+#include <ranges>
 
-#define X_(enumid__, type__, shortname__) /*                                                          */ \
-    type__ *UI::get##shortname__() { return static_cast<type__ *>(this->overlays[(size_t)(OverlayKind::enumid__)]); }
-ALL_OVERLAYS_(X_)
-#undef X_
-
-NotificationOverlay *UI::getNotificationOverlay() {
-    return static_cast<NotificationOverlay *>(this->overlays[OV_NOTIFICATIONOVERLAY]);
-}
-
-class UI::NullScreen final : public UIOverlay {
+class UI::NullScreen final : public UIScreen {
     NOCOPY_NOMOVE(NullScreen)
    public:
-    NullScreen() : UIOverlay() {}
+    NullScreen() : UIScreen() {}
     ~NullScreen() final = default;
 
     forceinline CBaseUIElement *setVisible(bool /*visible*/) final {
@@ -61,27 +50,49 @@ class UI::NullScreen final : public UIOverlay {
     forceinline bool isVisible() final { return false; }
 };
 
+UI *ui{nullptr};
+
 UI::UI() {
-    this->overlays[OV_NULLSCREEN] = this->active_screen = new NullScreen();
-    this->overlays[OV_NOTIFICATIONOVERLAY] = new NotificationOverlay();
+    ui = this;
+    this->screens[0] = this->active_screen = this->dummy = new NullScreen();
+    this->screens[1] = this->notificationOverlay = new NotificationOverlay();
 }
 
 UI::~UI() {
+    this->extra_overlays.clear();
     // destroy screens in reverse order
-    for(auto &screen : this->overlays | std::views::reverse) {
+    for(auto &screen : this->screens | std::views::reverse) {
         SAFE_DELETE(screen);
     }
-    this->overlays = {};
+    this->screens = {};
+    // ui = nullptr in ~Osu
 }
 
 bool UI::init() {
-#define X_(enumid__, type__, shortname__) /*                                                          */ \
-    this->overlays[(size_t)(OverlayKind::enumid__)] = new type__();
-    ALL_OVERLAYS_(X_)
-#undef X_
+    int screenit = EARLY_SCREENS;
+    this->screens[screenit++] = this->volumeOverlay = new VolumeOverlay();
+    this->screens[screenit++] = this->promptOverlay = new PromptOverlay();
+    this->screens[screenit++] = this->modSelector = new ModSelector();
+    this->screens[screenit++] = this->userActions = new UIUserContextMenuScreen();
+    this->screens[screenit++] = this->room = new RoomScreen();
+    this->screens[screenit++] = this->chat = new Chat();
+    this->screens[screenit++] = this->optionsOverlay = new OptionsOverlay();
+    this->screens[screenit++] = this->rankingScreen = new RankingScreen();
+    this->screens[screenit++] = this->userStatsScreen = new UserStatsScreen();
+    this->screens[screenit++] = this->spectatorScreen = new SpectatorScreen();
+    this->screens[screenit++] = this->pauseOverlay = new PauseOverlay();
+    this->screens[screenit++] = this->hud = new HUD();
+    this->screens[screenit++] = this->songBrowser = new SongBrowser();
+    this->screens[screenit++] = this->osuDirectScreen = new OsuDirectScreen();
+    this->screens[screenit++] = this->lobby = new Lobby();
+    this->screens[screenit++] = this->changelog = new Changelog();
+    this->screens[screenit++] = this->mainMenu = new MainMenu();
+    this->screens[screenit++] = this->tooltipOverlay = new TooltipOverlay();
+    assert(screenit == NUM_SCREENS);
 
-    this->getNotificationOverlay()->addKeyListener(this->getOptionsMenu());
-    this->active_screen = this->getMainMenu();
+    this->notificationOverlay->addKeyListener(this->optionsOverlay);
+
+    this->active_screen = this->mainMenu;
 
     // debug
     // this->windowManager = std::make_unique<CWindowManager>();
@@ -89,8 +100,13 @@ bool UI::init() {
 }
 
 void UI::update() {
+    for(auto *overlay : this->extra_overlays) {
+        overlay->update();
+        if(!mouse->propagate_clicks) return;
+    }
+
     bool updated_active_screen = false;
-    for(auto *screen : this->overlays) {
+    for(auto *screen : this->screens) {
         screen->update();
         if(screen == this->active_screen) updated_active_screen = true;
         if(!mouse->propagate_clicks) break;
@@ -108,6 +124,13 @@ void UI::draw() {
         osu->backBuffer->enable();
     }
 
+    // draw any extra overlays (TODO: draw order, this shouldn't be hardcoded at the start)
+    for(auto *overlay : this->extra_overlays) {
+        overlay->draw();
+    }
+
+    this->active_screen->draw();
+
     f32 fadingCursorAlpha = 1.f;
     const bool isFPoSu = (cv::mod_fposu.getBool());
 
@@ -118,7 +141,7 @@ void UI::draw() {
         // draw playfield (incl. flashlight/smoke etc.)
         osu->map_iface->draw();
 
-        if(!isFPoSu) this->getHUD()->draw();
+        if(!isFPoSu) this->hud->draw();
 
         // quick retry fadeout overlay
         if(osu->fQuickRetryTime != 0.0f && osu->bQuickRetryDown) {
@@ -129,36 +152,35 @@ void UI::draw() {
             g->fillRect(0, 0, osu->getVirtScreenWidth(), osu->getVirtScreenHeight());
         }
 
-        this->getPauseMenu()->draw();
-        this->getModSelector()->draw();
-        this->getChat()->draw();
-        this->getUserActions()->draw();
-        this->getOptionsMenu()->draw();
+        this->pauseOverlay->draw();
+        this->modSelector->draw();
+        this->chat->draw();
+        this->userActions->draw();
+        this->optionsOverlay->draw();
 
         if(!isFPoSu) {
-            this->getHUD()->drawFps();
+            this->hud->drawFps();
         }
 
         // this->windowManager->draw();
 
-        if(isFPoSu && cv::draw_cursor_ripples.getBool()) this->getHUD()->drawCursorRipples();
+        if(isFPoSu && cv::draw_cursor_ripples.getBool()) this->hud->drawCursorRipples();
 
         // draw FPoSu cursor trail
         fadingCursorAlpha =
             1.0f - std::clamp<float>((float)osu->score->getCombo() / cv::mod_fadingcursor_combo.getFloat(), 0.0f, 1.0f);
-        if(this->getPauseMenu()->isVisible() || osu->map_iface->isContinueScheduled() ||
-           !cv::mod_fadingcursor.getBool())
+        if(this->pauseOverlay->isVisible() || osu->map_iface->isContinueScheduled() || !cv::mod_fadingcursor.getBool())
             fadingCursorAlpha = 1.0f;
         if(isFPoSu && cv::fposu_draw_cursor_trail.getBool()) {
             const vec2 trailpos = osu->map_iface->isPaused() ? mouse->getPos() : osu->map_iface->getCursorPos();
-            this->getHUD()->drawCursorTrail(trailpos, fadingCursorAlpha);
+            this->hud->drawCursorTrail(trailpos, fadingCursorAlpha);
         }
 
         if(isFPoSu) {
             osu->playfieldBuffer->disable();
             osu->fposu->draw();
-            this->getHUD()->draw();
-            this->getHUD()->drawFps();
+            this->hud->draw();
+            this->hud->drawFps();
         }
 
         // draw debug info on top of everything else
@@ -166,25 +188,24 @@ void UI::draw() {
 
     } else {  // if we are not playing
 
-        this->active_screen->draw();
-        this->getChat()->draw();
-        this->getUserActions()->draw();
-        this->getOptionsMenu()->draw();
-        this->getModSelector()->draw();
-        this->getPromptScreen()->draw();
+        this->chat->draw();
+        this->userActions->draw();
+        this->optionsOverlay->draw();
+        this->modSelector->draw();
+        this->promptOverlay->draw();
 
-        this->getHUD()->drawFps();
+        this->hud->drawFps();
 
         // this->windowManager->draw();
     }
 
-    this->getTooltipOverlay()->draw();
-    this->getNotificationOverlay()->draw();
-    this->getVolumeOverlay()->draw();
+    this->tooltipOverlay->draw();
+    this->notificationOverlay->draw();
+    this->volumeOverlay->draw();
 
     // loading spinner for some async tasks
     if((osu->bSkinLoadScheduled && osu->getSkin() != osu->skinScheduledToLoad)) {
-        this->getHUD()->drawLoadingSmall("");
+        this->hud->drawLoadingSmall("");
     }
 
     if(osu->isInPlayMode()) {
@@ -195,10 +216,10 @@ void UI::draw() {
         const bool drawSecondTrail = !paused && (cv::mod_autoplay.getBool() || cv::mod_autopilot.getBool() ||
                                                  osu->map_iface->is_watching || BanchoState::spectating);
         const bool updateAndDrawTrail = !isFPoSu;
-        this->getHUD()->drawCursor(cursorPos, fadingCursorAlpha, drawSecondTrail, updateAndDrawTrail);
+        this->hud->drawCursor(cursorPos, fadingCursorAlpha, drawSecondTrail, updateAndDrawTrail);
     } else {
         // draw cursor (menus)
-        this->getHUD()->drawCursor(mouse->getPos());
+        this->hud->drawCursor(mouse->getPos());
     }
 
     osu->drawRuntimeInfo();
@@ -235,38 +256,61 @@ void UI::draw() {
 void UI::onKeyDown(KeyboardEvent &key) {
     if(key.isConsumed()) return;
 
-    for(auto *screen : this->overlays) {
+    for(auto *overlay : this->extra_overlays) {
+        overlay->onKeyDown(key);
+        if(key.isConsumed()) return;
+    }
+
+    for(auto *screen : this->screens) {
         screen->onKeyDown(key);
-        if(key.isConsumed()) break;
+        if(key.isConsumed()) return;
     }
 }
 
 void UI::onKeyUp(KeyboardEvent &key) {
     if(key.isConsumed()) return;
 
-    for(auto *screen : this->overlays) {
+    for(auto *overlay : this->extra_overlays) {
+        overlay->onKeyUp(key);
+        if(key.isConsumed()) return;
+    }
+
+    for(auto *screen : this->screens) {
         screen->onKeyUp(key);
-        if(key.isConsumed()) break;
+        if(key.isConsumed()) return;
     }
 }
 
 void UI::onChar(KeyboardEvent &e) {
     if(e.isConsumed()) return;
 
-    for(auto *screen : this->overlays) {
+    for(auto *overlay : this->extra_overlays) {
+        overlay->onChar(e);
+        if(e.isConsumed()) return;
+    }
+
+    for(auto *screen : this->screens) {
         screen->onChar(e);
-        if(e.isConsumed()) break;
+        if(e.isConsumed()) return;
     }
 }
 
 void UI::onResolutionChange(vec2 newResolution) {
-    for(auto *screen : this->overlays) {
+    for(auto *overlay : this->extra_overlays) {
+        overlay->onResolutionChange(newResolution);
+    }
+
+    for(auto *screen : this->screens) {
         screen->onResolutionChange(newResolution);
     }
 }
 
 void UI::stealFocus() {
-    for(auto *screen : this->overlays) {
+    for(auto *overlay : this->extra_overlays) {
+        overlay->stealFocus();
+    }
+
+    for(auto *screen : this->screens) {
         screen->stealFocus();
     }
 }
@@ -275,14 +319,52 @@ void UI::hide() { this->active_screen->setVisible(false); }
 
 void UI::show() { this->active_screen->setVisible(true); }
 
-void UI::setScreen(UIOverlay *screen) {
-    if(this->active_screen->isVisible()) {
+void UI::setScreen(UIScreen *screen) {
+    assert(screen);
+
+    if(screen != this->active_screen && this->active_screen->isVisible()) {
         this->active_screen->setVisible(false);
 
         // Close any "temporary" overlays
-        ui->getPromptScreen()->setVisible(false);
+        this->promptOverlay->setVisible(false);
     }
 
     this->active_screen = screen;
     this->show();
+}
+
+UIOverlay *UI::pushOverlay(std::unique_ptr<UIOverlay> overlay) {
+    assert(overlay);
+
+    UIOverlay *raw = overlay.release();
+    auto [it, added] = this->extra_overlays.insert(raw);
+    assert(added);
+
+    // set the overlay visible immediately
+    (*it)->setVisible(true);
+    return *it;
+}
+
+bool UI::peekOverlay(UIOverlay *overlay) const {
+    if(auto it = this->extra_overlays.find(overlay); it != this->extra_overlays.end()) {
+        return true;
+    }
+    return false;
+}
+
+std::unique_ptr<UIOverlay> UI::popOverlay(UIOverlay *overlay) {
+    if(auto it = this->extra_overlays.find(overlay); it != this->extra_overlays.end()) {
+        std::unique_ptr<UIOverlay> overlay_out;
+        overlay_out.reset(*it);
+
+        // remove it
+        this->extra_overlays.erase(it);
+        UIScreen *parent = overlay->getParent();
+        this->setScreen(parent);
+
+        return overlay_out;
+    } else {
+        assert(false && "UI::popOverlay: double-popped overlay");
+    }
+    std::unreachable();
 }

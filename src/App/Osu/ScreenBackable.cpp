@@ -11,7 +11,7 @@
 #include "MakeDelegateWrapper.h"
 #include "Mouse.h"
 
-ScreenBackable::ScreenBackable() : UIOverlay(), backButton(std::make_unique<UIBackButton>(-1.f, 0.f, 0.f, 0.f, "")) {
+ScreenBackable::ScreenBackable() : UIScreen(), backButton(std::make_unique<UIBackButton>(-1.f, 0.f, 0.f, 0.f, "")) {
     this->backButton->setClickCallback(SA::MakeDelegate<&ScreenBackable::onBack>(this));
 
     this->updateLayout();
@@ -21,7 +21,7 @@ ScreenBackable::~ScreenBackable() = default;
 
 void ScreenBackable::draw() {
     if(!this->bVisible) return;
-    UIOverlay::draw();
+    UIScreen::draw();
     this->backButton->draw();
 }
 
@@ -29,11 +29,11 @@ void ScreenBackable::update() {
     if(!this->bVisible) return;
     this->backButton->update();
     if(!mouse->propagate_clicks) return;
-    UIOverlay::update();
+    UIScreen::update();
 }
 
 void ScreenBackable::onKeyDown(KeyboardEvent &e) {
-    UIOverlay::onKeyDown(e);
+    UIScreen::onKeyDown(e);
     if(!this->bVisible || e.isConsumed()) return;
 
     if(e == KEY_ESCAPE || e == cv::GAME_PAUSE.getVal<SCANCODE>()) {

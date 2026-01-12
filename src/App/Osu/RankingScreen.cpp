@@ -23,7 +23,7 @@
 #include "MakeDelegateWrapper.h"
 #include "ModSelector.h"
 #include "Mouse.h"
-#include "OptionsMenu.h"
+#include "OptionsOverlay.h"
 #include "Osu.h"
 #include "ResourceManager.h"
 #include "Timing.h"
@@ -346,7 +346,7 @@ void RankingScreen::update() {
     ScreenBackable::update();
 
     // tooltip (pp + accuracy + unstable rate)
-    if(!ui->getOptionsMenu()->isMouseInside() && mouse->getPos().x < osu->getVirtScreenWidth() * 0.5f) {
+    if(!ui->getOptionsOverlay()->isMouseInside() && mouse->getPos().x < osu->getVirtScreenWidth() * 0.5f) {
         auto *tto = ui->getTooltipOverlay();
         tto->begin();
         {

@@ -27,9 +27,9 @@
 #include "ModSelector.h"
 #include "Mouse.h"
 #include "NotificationOverlay.h"
-#include "OptionsMenu.h"
+#include "OptionsOverlay.h"
 #include "Osu.h"
-#include "PromptScreen.h"
+#include "PromptOverlay.h"
 #include "RankingScreen.h"
 #include "ResourceManager.h"
 #include "RichPresence.h"
@@ -132,7 +132,7 @@ bool UIModList::isVisible() { return !!*this->flags; }
         settings_y += x * osu->getUIScale(); \
     } while(0)
 
-RoomScreen::RoomScreen() : UIOverlay() {
+RoomScreen::RoomScreen() : UIScreen() {
     this->font = engine->getDefaultFont();
     this->lfont = osu->getSubTitleFont();
 
@@ -268,7 +268,7 @@ void RoomScreen::draw() {
 
     // XXX: Add convar for toggling room backgrounds
     osu->getBackgroundImageHandler()->draw(osu->getMapInterface()->getBeatmap());
-    UIOverlay::draw();
+    UIScreen::draw();
 
     // Update avatar visibility status
     const McRect slotlist_rect = this->slotlist->getRect();
@@ -303,15 +303,15 @@ void RoomScreen::update() {
     if(!mouse->propagate_clicks) return;
 
     // HACK: disable "slotlist" scrollview when options menu is open, because it somehow takes priority
-    if(ui->getOptionsMenu()->isVisible()) {
+    if(ui->getOptionsOverlay()->isVisible()) {
         this->settings->update();
     } else {
-        UIOverlay::update();
+        UIScreen::update();
     }
 }
 
 void RoomScreen::onKeyDown(KeyboardEvent &key) {
-    if(!this->bVisible || ui->getOptionsMenu()->isVisible()) return;
+    if(!this->bVisible || ui->getOptionsOverlay()->isVisible()) return;
 
     if(key.getScanCode() == KEY_ESCAPE) {
         key.consume();
@@ -336,17 +336,17 @@ void RoomScreen::onKeyDown(KeyboardEvent &key) {
         return;
     }
 
-    UIOverlay::onKeyDown(key);
+    UIScreen::onKeyDown(key);
 }
 
 void RoomScreen::onKeyUp(KeyboardEvent &key) {
     if(!this->bVisible) return;
-    UIOverlay::onKeyUp(key);
+    UIScreen::onKeyUp(key);
 }
 
 void RoomScreen::onChar(KeyboardEvent &key) {
     if(!this->bVisible) return;
-    UIOverlay::onChar(key);
+    UIScreen::onChar(key);
 }
 
 void RoomScreen::onResolutionChange(vec2 newResolution) { this->updateLayout(newResolution); }
@@ -627,7 +627,7 @@ void RoomScreen::on_room_joined(const Room &room) {
     }
 
     this->updateLayout(osu->getVirtScreenSize());
-    ui->setScreen(this);
+    ui->setScreen(ui->getRoom());
 
     RichPresence::setBanchoStatus(room.name.c_str(), Action::MULTIPLAYER);
     RichPresence::onMultiplayerLobby();
@@ -689,7 +689,7 @@ void RoomScreen::on_room_updated(const Room &room) {
 
     if(ui->getModSelector()->isVisible() && !BanchoState::room.is_host() && !BanchoState::room.freemods) {
         // Force close mod selector if host disabled freemods
-        ui->setScreen(this);
+        ui->setScreen(ui->getRoom());
     }
     ui->getModSelector()->updateButtons();
     ui->getModSelector()->resetMods();
@@ -811,7 +811,7 @@ void RoomScreen::on_match_aborted() {
     osu->onPlayEnd(this->get_approximate_score(), false);
     BanchoState::match_started = false;
     ui->getHUD()->updateScoringMetric();
-    ui->setScreen(this);
+    ui->setScreen(ui->getRoom());
 
     // Display room presence instead of map again
     RichPresence::onMultiplayerLobby();
@@ -878,7 +878,7 @@ void RoomScreen::onSelectMapClicked() {
 }
 
 void RoomScreen::onChangePasswordClicked() {
-    ui->getPromptScreen()->prompt("New password:", SA::MakeDelegate<&RoomScreen::set_new_password>(this));
+    ui->getPromptOverlay()->prompt("New password:", SA::MakeDelegate<&RoomScreen::set_new_password>(this));
 }
 
 void RoomScreen::onChangeWinConditionClicked() {

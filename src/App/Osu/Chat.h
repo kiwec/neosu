@@ -3,7 +3,7 @@
 
 #include "CBaseUIScrollView.h"
 #include "CBaseUITextbox.h"
-#include "UIOverlay.h"
+#include "UIScreen.h"
 
 class CBaseUIButton;
 class McFont;
@@ -37,7 +37,7 @@ struct ChatChannel final {
     void onChannelButtonClick(CBaseUIButton *btn);
 };
 
-class Chat final : public UIOverlay {
+class Chat final : public UIScreen {
     NOCOPY_NOMOVE(Chat)
    public:
     Chat();

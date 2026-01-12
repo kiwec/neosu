@@ -2,7 +2,7 @@
 // Copyright (c) 2024, kiwec, All rights reserved.
 
 #include "CBaseUIScrollView.h"
-#include "UIOverlay.h"
+#include "UIScreen.h"
 #include "score.h"
 
 class Room;
@@ -32,7 +32,7 @@ class UIModList final : public CBaseUIContainer {
     void setSizeToContent(int /*a*/, int /*b*/) {}
 };
 
-class RoomScreen final : public UIOverlay {
+class RoomScreen final : public UIScreen {
     NOCOPY_NOMOVE(RoomScreen)
    public:
     RoomScreen();

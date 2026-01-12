@@ -1,12 +1,12 @@
 #pragma once
 // Copyright (c) 2016, PG, All rights reserved.
-#include "UIOverlay.h"
+#include "UIScreen.h"
 
 #include <memory>
 
 class UIBackButton;
 
-class ScreenBackable : public UIOverlay {
+class ScreenBackable : public UIScreen {
     NOCOPY_NOMOVE(ScreenBackable)
    public:
     ScreenBackable();

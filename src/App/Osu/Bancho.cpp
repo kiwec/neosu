@@ -36,7 +36,7 @@
 #include "crypto.h"
 #include "NetworkHandler.h"
 #include "NotificationOverlay.h"
-#include "OptionsMenu.h"
+#include "OptionsOverlay.h"
 #include "Osu.h"
 #include "RankingScreen.h"
 #include "RoomScreen.h"
@@ -116,7 +116,7 @@ void BanchoState::update_online_status(OnlineStatus new_status) {
     const OnlineStatus old_status = online_status;
     online_status = new_status;
 
-    ui->getOptionsMenu()->update_login_button(new_status == OnlineStatus::LOGGED_IN);
+    ui->getOptionsOverlay()->update_login_button(new_status == OnlineStatus::LOGGED_IN);
 
     // login failed, no update layout necessary
     if(old_status == OnlineStatus::LOGIN_IN_PROGRESS && new_status != OnlineStatus::LOGGED_IN) return;
@@ -135,7 +135,7 @@ void BanchoState::update_online_status(OnlineStatus new_status) {
             Environment::createDirectory(thumbs_dir);
         }
 
-        ui->getOptionsMenu()->scheduleLayoutUpdate();
+        ui->getOptionsOverlay()->scheduleLayoutUpdate();
     }
 
     if(async_logout_pending && new_status == OnlineStatus::LOGGED_IN) {
@@ -215,7 +215,7 @@ void BanchoState::handle_packet(Packet &packet) {
                 ui->getSongBrowser()->onFilterScoresChange(US_("Global"), SongBrowser::LOGIN_STATE_FILTER_ID);
 
                 // If server sent a score submission policy, update options menu to hide the checkbox
-                ui->getOptionsMenu()->scheduleLayoutUpdate();
+                ui->getOptionsOverlay()->scheduleLayoutUpdate();
             } else {
                 cv::mp_autologin.setValue(false);
                 cv::mp_oauth_token.setValue("");

@@ -18,7 +18,7 @@
 #include "MakeDelegateWrapper.h"
 #include "MainMenu.h"
 #include "NotificationOverlay.h"
-#include "PromptScreen.h"
+#include "PromptOverlay.h"
 #include "RankingScreen.h"
 #include "RoomScreen.h"
 #include "Skin.h"
@@ -167,7 +167,7 @@ void SpectatorScreen::update() {
         auto beatmap = Downloader::download_beatmap(user_info->map_id, user_info->map_md5, &download_progress);
         if(beatmap != nullptr) {
             current_map_id = user_info->map_id;
-            ui->setScreen(this);
+            ui->setScreen(ui->getSpectatorScreen());
             ui->getSongBrowser()->onDifficultySelected(beatmap, false);
             osu->getMapInterface()->spectate();
         }
@@ -252,7 +252,7 @@ void SpectatorScreen::update() {
 
     // Handle spectator screen UI input
     if(this->isVisible()) {
-        UIOverlay::update();
+        UIScreen::update();
     }
 }
 
@@ -263,7 +263,7 @@ void SpectatorScreen::draw() {
         osu->getBackgroundImageHandler()->draw(osu->getMapInterface()->getBeatmap());
     }
 
-    UIOverlay::draw();
+    UIScreen::draw();
 }
 
 void SpectatorScreen::onKeyDown(KeyboardEvent &key) {
@@ -275,7 +275,7 @@ void SpectatorScreen::onKeyDown(KeyboardEvent &key) {
         return;
     }
 
-    UIOverlay::onKeyDown(key);
+    UIScreen::onKeyDown(key);
 }
 
 void SpectatorScreen::onStopSpectatingClicked() { Spectating::stop(); }

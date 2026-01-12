@@ -1,7 +1,7 @@
 #pragma once
 // Copyright (c) 2024, kiwec, All rights reserved.
 
-#include "UIOverlay.h"
+#include "UIScreen.h"
 
 class McFont;
 class PauseButton;
@@ -10,7 +10,7 @@ class UserCard;
 class CBaseUIScrollView;
 class UIButton;
 
-class SpectatorScreen final : public UIOverlay {
+class SpectatorScreen final : public UIScreen {
    public:
     SpectatorScreen();
 

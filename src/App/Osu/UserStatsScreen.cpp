@@ -10,7 +10,7 @@
 #include "Engine.h"
 #include "HUD.h"
 #include "ModSelector.h"
-#include "OptionsMenu.h"
+#include "OptionsOverlay.h"
 #include "Osu.h"
 #include "Replay.h"
 #include "Skin.h"

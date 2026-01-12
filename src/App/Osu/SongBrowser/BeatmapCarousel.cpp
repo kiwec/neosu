@@ -9,7 +9,7 @@
 #include "SongDifficultyButton.h"
 #include "UI.h"
 #include "UIContextMenu.h"
-#include "OptionsMenu.h"
+#include "OptionsOverlay.h"
 #include "Engine.h"
 #include "Mouse.h"
 #include "Keyboard.h"
@@ -51,7 +51,7 @@ void BeatmapCarousel::update() {
                     }
                 }
 
-                if(this->isMouseInside() && !ui->getOptionsMenu()->isMouseInside() && !isMouseInsideAnySongButton)
+                if(this->isMouseInside() && !ui->getOptionsOverlay()->isMouseInside() && !isMouseInsideAnySongButton)
                     g_songbrowser->bSongBrowserRightClickScrolling = true;
                 else
                     g_songbrowser->bSongBrowserRightClickScrolling = false;

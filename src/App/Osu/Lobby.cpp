@@ -20,7 +20,7 @@
 #include "MainMenu.h"
 #include "NotificationOverlay.h"
 #include "Osu.h"
-#include "PromptScreen.h"
+#include "PromptOverlay.h"
 #include "ResourceManager.h"
 #include "RichPresence.h"
 #include "Skin.h"
@@ -73,14 +73,14 @@ RoomUIElement::RoomUIElement(Lobby* multi, const Room& room, float x, float y, f
 void RoomUIElement::onRoomJoinButtonClick(CBaseUIButton* /*btn*/) {
     if(this->has_password) {
         this->multi->room_to_join = this->room_id;
-        ui->getPromptScreen()->prompt("Room password:",
-                                      SA::MakeDelegate<&Lobby::on_room_join_with_password>(this->multi));
+        ui->getPromptOverlay()->prompt("Room password:",
+                                       SA::MakeDelegate<&Lobby::on_room_join_with_password>(this->multi));
     } else {
         this->multi->joinRoom(this->room_id, "");
     }
 }
 
-Lobby::Lobby() : UIOverlay() {
+Lobby::Lobby() : UIScreen() {
     this->font = engine->getDefaultFont();
 
     auto heading = new CBaseUILabel(50, 30, 300, 40, "", "Multiplayer rooms");

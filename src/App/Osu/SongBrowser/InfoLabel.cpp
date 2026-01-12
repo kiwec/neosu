@@ -19,7 +19,7 @@
 #include "Mouse.h"
 #include "NotificationOverlay.h"
 #include "File.h"
-#include "OptionsMenu.h"
+#include "OptionsOverlay.h"
 #include "Osu.h"
 #include "Font.h"
 #include "ResourceManager.h"
@@ -200,7 +200,7 @@ void InfoLabel::update() {
     CBaseUIButton::update();
 
     // detail info tooltip when hovering over diff info
-    if(this->isMouseInside() && !ui->getOptionsMenu()->isMouseInside()) {
+    if(this->isMouseInside() && !ui->getOptionsOverlay()->isMouseInside()) {
         const auto &pf = osu->getMapInterface();
 
         const f32 speedMultiplierInv = (1.0f / pf->getSpeedMultiplier());

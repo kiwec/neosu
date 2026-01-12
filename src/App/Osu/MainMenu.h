@@ -4,7 +4,7 @@
 
 #include "CBaseUIButton.h"
 #include "MouseListener.h"
-#include "UIOverlay.h"
+#include "UIScreen.h"
 #include "Resource.h"
 #include "ResourceManager.h"
 
@@ -30,7 +30,7 @@ class PauseButton final : public CBaseUIButton {
     bool bIsPaused{true};
 };
 
-class MainMenu final : public UIOverlay, public MouseListener {
+class MainMenu final : public UIScreen, public MouseListener {
     NOCOPY_NOMOVE(MainMenu)
    public:
     void onPausePressed();

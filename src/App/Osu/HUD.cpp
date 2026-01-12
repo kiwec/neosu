@@ -34,7 +34,7 @@
 
 #include "shaders.h"
 
-HUD::HUD() : UIOverlay() {
+HUD::HUD() : UIScreen() {
     // resources
     this->tempFont = engine->getDefaultFont();
     this->cursorTrailShader = resourceManager->createShader(

@@ -8,7 +8,7 @@
 
 #include "BanchoProtocol.h"
 #include "CBaseUIScrollView.h"
-#include "UIOverlay.h"
+#include "UIScreen.h"
 
 #include <memory>
 
@@ -31,7 +31,7 @@ struct RoomUIElement : CBaseUIScrollView {
     void onRoomJoinButtonClick(CBaseUIButton* btn);
 };
 
-class Lobby final : public UIOverlay {
+class Lobby final : public UIScreen {
    public:
     Lobby();
 

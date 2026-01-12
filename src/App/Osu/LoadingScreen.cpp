@@ -10,30 +10,29 @@
 #include "Skin.h"
 #include "UI.h"
 
-LoadingScreen::LoadingScreen(UIOverlay* parent, std::function<f32()> get_progress_fn, std::function<void()> cancel_fn) {
-    assert(parent != nullptr);
-    this->parent = parent;
-    this->cancel_fn = cancel_fn;
-    this->get_progress_fn = get_progress_fn;
-}
+#include <utility>
 
-CBaseUIContainer* LoadingScreen::setVisible(bool visible) {
-    UIOverlay::setVisible(visible);
-    if(visible) return this;
+void LoadingScreen::update() {
+    if(!this->isVisible()) {
+        return;
+    }
 
-    ui->setScreen(this->parent);
-    delete this;
-    return nullptr;
+    this->progress = this->get_progress_fn(this);
+    if(this->progress >= 1.f) {
+        this->finish();
+    }
 }
 
 void LoadingScreen::draw() {
+    if(!this->isVisible()) return;
+
     // background
     g->setColor(0xff000000);
     g->fillRect(0, 0, osu->getVirtScreenWidth(), osu->getVirtScreenHeight());
 
     // progress message
     g->setColor(0xffffffff);
-    UString loadingMessage = fmt::format("Loading ... ({} %)", (int)(this->get_progress_fn() * 100.0f));
+    UString loadingMessage = fmt::format("Loading ... ({} %)", (int)(this->progress * 100.0f));
     g->pushTransform();
     {
         g->translate((int)(osu->getVirtScreenWidth() / 2 - osu->getSubTitleFont()->getStringWidth(loadingMessage) / 2),
@@ -55,10 +54,22 @@ void LoadingScreen::draw() {
 }
 
 void LoadingScreen::onKeyDown(KeyboardEvent& e) {
+    if(this->isFinished()) return;
     if(e.isConsumed()) return;
 
     if(e == KEY_ESCAPE || e == cv::GAME_PAUSE.getVal<SCANCODE>()) {
         e.consume();
-        this->cancel_fn();
+        this->finish();
     }
+}
+
+void LoadingScreen::finish() {
+    if(!this->on_finished_fn) return;
+    auto finishfunc = std::move(this->on_finished_fn);
+
+    this->progress = 1.f;
+    this->get_progress_fn = {};
+    this->on_finished_fn = {};
+
+    finishfunc(this);
 }

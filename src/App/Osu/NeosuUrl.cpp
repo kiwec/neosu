@@ -7,7 +7,7 @@
 #include "Engine.h"
 #include "NetworkHandler.h"
 #include "NotificationOverlay.h"
-#include "OptionsMenu.h"
+#include "OptionsOverlay.h"
 #include "Environment.h"
 #include "SString.h"
 #include "UI.h"
