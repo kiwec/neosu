@@ -1032,8 +1032,8 @@ Sound *Osu::getSound(ActionSound action) const {
 }
 
 void Osu::showNotification(const NotificationInfo &info) {
-    NotificationOverlay *noverlay = ui && ui->getNotificationOverlay() ? ui->getNotificationOverlay() : nullptr;
-    if(noverlay) {
+    NotificationOverlay *noverlay = ui ? ui->getNotificationOverlay() : nullptr;
+    if(!noverlay) {
         debugLog(info.text);
         return;
     }
