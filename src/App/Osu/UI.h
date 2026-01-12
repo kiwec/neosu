@@ -2,6 +2,10 @@
 // Copyright (c) 2026, kiwec, All rights reserved.
 
 #include <memory>
+
+#include "config.h"
+#include "noinclude.h"
+
 #include "OsuConfig.h"
 #include "Vectors.h"
 
@@ -57,7 +61,7 @@ extern std::unique_ptr<UI> ui;
     X(OV_TOOLTIPOVERLAY, TooltipOverlay, TooltipOverlay)
 
 struct UI final {
-    NOCOPY_NOMOVE(UI);
+    NOCOPY_NOMOVE(UI)
 
    private:
     class NullScreen;
