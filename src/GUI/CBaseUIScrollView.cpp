@@ -235,9 +235,11 @@ void CBaseUIScrollView::update(CBaseUIEventCtx &c) {
     this->container->update(c);
     CBaseUIElement::update(c);
 
+    const dvec2 curMousePos = mouse->getPos();
+
     const bool wasContainerBusyBeforeUpdate = this->container->isBusy();
     if(this->bBusy) {
-        const dvec2 deltaToAdd = (mouse->getPos() - this->vMouseBackup2);
+        const dvec2 deltaToAdd = (curMousePos - this->vMouseBackup2);
         // debugLog("+ ({})", deltaToAdd);
 
         anim::moveQuadOut(&this->vKineticAverage.x, deltaToAdd.x, cv::ui_scrollview_kinetic_approach_time.getDouble(),
@@ -245,7 +247,7 @@ void CBaseUIScrollView::update(CBaseUIEventCtx &c) {
         anim::moveQuadOut(&this->vKineticAverage.y, deltaToAdd.y, cv::ui_scrollview_kinetic_approach_time.getDouble(),
                           true);
 
-        this->vMouseBackup2 = mouse->getPos();
+        this->vMouseBackup2 = curMousePos;
     }
 
     // scrolling logic
@@ -253,35 +255,34 @@ void CBaseUIScrollView::update(CBaseUIEventCtx &c) {
        this->isEnabled()) {
         if(!this->bScrollResistanceCheck) {
             this->bScrollResistanceCheck = true;
-            this->vMouseBackup3 = mouse->getPos();
+            this->vMouseBackup3 = curMousePos;
         }
 
         // get pull strength
-        int diff = std::abs(mouse->getPos().x - this->vMouseBackup3.x);
-        if(std::abs(mouse->getPos().y - this->vMouseBackup3.y) > diff)
-            diff = std::abs(mouse->getPos().y - this->vMouseBackup3.y);
+        int diff = std::abs(curMousePos.x - this->vMouseBackup3.x);
+        if(std::abs(curMousePos.y - this->vMouseBackup3.y) > diff)
+            diff = std::abs(curMousePos.y - this->vMouseBackup3.y);
 
         // if we are above our resistance, try to steal the focus and enable scrolling for us
         if(this->container->isActive() && diff > this->iScrollResistance && !this->container->isBusy())
             this->container->stealFocus();
 
         // handle scrollbar scrolling start
-        if(this->verticalScrollbar.contains(mouse->getPos()) && !this->bScrollbarScrolling && !this->bScrolling) {
+        if(this->verticalScrollbar.contains(curMousePos) && !this->bScrollbarScrolling && !this->bScrolling) {
             // NOTE: scrollbar dragging always force steals focus
             if(!wasContainerBusyBeforeUpdate) {
                 this->container->stealFocus();
 
-                this->vMouseBackup.y = mouse->getPos().y - this->verticalScrollbar.getMaxY();
+                this->vMouseBackup.y = curMousePos.y - this->verticalScrollbar.getMaxY();
                 this->bScrollbarScrolling = true;
                 this->bScrollbarIsVerticalScrolling = true;
             }
-        } else if(this->horizontalScrollbar.contains(mouse->getPos()) && !this->bScrollbarScrolling &&
-                  !this->bScrolling) {
+        } else if(this->horizontalScrollbar.contains(curMousePos) && !this->bScrollbarScrolling && !this->bScrolling) {
             // NOTE: scrollbar dragging always force steals focus
             if(!wasContainerBusyBeforeUpdate) {
                 this->container->stealFocus();
 
-                this->vMouseBackup.x = mouse->getPos().x - this->horizontalScrollbar.getMaxX();
+                this->vMouseBackup.x = curMousePos.x - this->horizontalScrollbar.getMaxX();
                 this->bScrollbarScrolling = true;
                 this->bScrollbarIsVerticalScrolling = false;
             }
@@ -291,8 +292,8 @@ void CBaseUIScrollView::update(CBaseUIEventCtx &c) {
                 // if we have successfully stolen the focus or the container is no longer busy, start scrolling
                 this->bScrollbarIsVerticalScrolling = false;
 
-                this->vMouseBackup = mouse->getPos();
-                this->vScrollPosBackup = this->vScrollPos + dvec2{mouse->getPos() - this->vMouseBackup3};
+                this->vMouseBackup = curMousePos;
+                this->vScrollPosBackup = this->vScrollPos;
                 this->bScrolling = true;
                 this->bAutoScrollingX = false;
                 this->bAutoScrollingY = false;
@@ -355,9 +356,9 @@ void CBaseUIScrollView::update(CBaseUIEventCtx &c) {
     // handle drag scrolling and rubber banding
     if(this->bScrolling && this->bActive) {
         if(this->bVerticalScrolling)
-            this->vScrollPos.y = this->vScrollPosBackup.y + (mouse->getPos().y - this->vMouseBackup.y);
+            this->vScrollPos.y = this->vScrollPosBackup.y + (curMousePos.y - this->vMouseBackup.y);
         if(this->bHorizontalScrolling)
-            this->vScrollPos.x = this->vScrollPosBackup.x + (mouse->getPos().x - this->vMouseBackup.x);
+            this->vScrollPos.x = this->vScrollPosBackup.x + (curMousePos.x - this->vMouseBackup.x);
 
         this->container->setPos(vec::round(dvec2{this->vPos} + this->vScrollPos));
     } else  // no longer scrolling, smooth the remaining velocity
@@ -421,7 +422,7 @@ void CBaseUIScrollView::update(CBaseUIEventCtx &c) {
         this->vVelocity.x = this->vVelocity.y = 0;
         if(this->bScrollbarIsVerticalScrolling) {
             // debugLog("scrollbar scrolling movement vertical");
-            const f64 percent = std::clamp<f64>((mouse->getPos().y - this->vPos.y - this->verticalScrollbar.getWidth() -
+            const f64 percent = std::clamp<f64>((curMousePos.y - this->vPos.y - this->verticalScrollbar.getWidth() -
                                                  this->verticalScrollbar.getHeight() - this->vMouseBackup.y - 1.0) /
                                                     (this->vSize.y - 2.0 * this->verticalScrollbar.getWidth()),
                                                 0.0, 1.0);
@@ -429,11 +430,10 @@ void CBaseUIScrollView::update(CBaseUIEventCtx &c) {
         } else {
             // debugLog("scrollbar scrolling movement not vertical scrolling");
 
-            const f64 percent =
-                std::clamp<f64>((mouse->getPos().x - this->vPos.x - this->horizontalScrollbar.getHeight() -
-                                 this->horizontalScrollbar.getWidth() - this->vMouseBackup.x - 1.0) /
-                                    (this->vSize.x - 2.0 * this->horizontalScrollbar.getHeight()),
-                                0.0, 1.0);
+            const f64 percent = std::clamp<f64>((curMousePos.x - this->vPos.x - this->horizontalScrollbar.getHeight() -
+                                                 this->horizontalScrollbar.getWidth() - this->vMouseBackup.x - 1.0) /
+                                                    (this->vSize.x - 2.0 * this->horizontalScrollbar.getHeight()),
+                                                0.0, 1.0);
             this->scrollToXInt(-this->vScrollSize.x * percent, true, false);
         }
     }

@@ -66,7 +66,7 @@ void BeatmapCarousel::update(CBaseUIEventCtx &c) {
             const f64 mouseYPct = std::abs(mouseYPos / this->getSize().y);
             // scroll slightly more towards each extreme, to compensate for upper/lower bounds of the
             // carousel being possibly hidden behind other elements and very close to the edge of the screen
-            const f64 mouseYPctCompensated = (1.04 * (mouseYPct)) - 0.02;
+            const f64 mouseYPctCompensated = (mouseYPct * 1.25) - 0.125;
             const f64 scrollYAbs = -mouseYPctCompensated * this->getScrollSize().y;
             this->scrollToY(static_cast<int>(scrollYAbs));
         }

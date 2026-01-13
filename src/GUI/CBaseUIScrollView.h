@@ -161,9 +161,9 @@ class CBaseUIScrollView : public CBaseUIElement {
     Color frameDarkColor{0};
     Color scrollbarColor{0xaaffffff};
 
-    dvec2 vScrollPos{1.f, 1.f};
-    dvec2 vScrollPosBackup{0.f};
-    vec2 vMouseBackup{0.f};
+    dvec2 vScrollPos{1., 1.};
+    dvec2 vScrollPosBackup{0.};
+    dvec2 vMouseBackup{0.};
 
     f32 fScrollMouseWheelMultiplier{1.f};
     f32 fScrollbarSizeMultiplier{1.f};
@@ -171,11 +171,11 @@ class CBaseUIScrollView : public CBaseUIElement {
     McRect horizontalScrollbar;
 
     // scroll logic
-    dvec2 vScrollSize{1.f, 1.f};
-    vec2 vMouseBackup2{0.f};
-    vec2 vMouseBackup3{0.f};
-    dvec2 vVelocity{0.f, 0.f};
-    dvec2 vKineticAverage{0.f};
+    dvec2 vScrollSize{1., 1.};
+    dvec2 vMouseBackup2{0.};
+    dvec2 vMouseBackup3{0.};
+    dvec2 vVelocity{0., 0.};
+    dvec2 vKineticAverage{0.};
 
     uSz previousClippingVisibleElements{0};
     uSz previousClippingTotalElements{0};
