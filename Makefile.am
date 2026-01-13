@@ -1064,8 +1064,8 @@ BUILT_SOURCES := \
 	$(DEPS_PREFIX)/curl-$(CURL_VERSION).built \
 	$(DEPS_CACHE)/curl-$(CURL_VERSION)/certbundle/cacert.pem
 
-# we dont cache the pch in CI atm so there's no point
-if !BUILDING_IN_CI
+# (this is also disabled in CI by default, because we dont cache the pch there, so there's no point)
+if BUILD_PCH
 
 # build precompiled headers
 PCH_SOURCE := $(srcdir)/src/pch.h
@@ -1096,7 +1096,7 @@ else
 PCH_OUTPUT := 
 PCH_FLAGS := 
 
-endif # !BUILDING_IN_CI
+endif # BUILD_PCH
 
 # making sure deps are built before main compile
 $(neosu_OBJECTS): $(BUILT_SOURCES) $(EXTRA_BINDEPS) $(PCH_OUTPUT)

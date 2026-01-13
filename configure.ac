@@ -168,6 +168,8 @@ AC_ARG_ENABLE([static],
     AS_HELP_STRING([--enable-static], [Enable static linking where possible (default: yes, --disable-static implies shared)]))
 AC_ARG_ENABLE([werror],
     AS_HELP_STRING([--enable-werror], [Build with -Werror (default: yes)]))
+AC_ARG_ENABLE([pch],
+    AS_HELP_STRING([--enable-pch], [Build and use a pre-compiled header to speed up rebuild time (default: yes)]))
 
 AC_ARG_WITH([renderer],
     AS_HELP_STRING([--with-renderer={opengl,dx11,opengles}], [The (comma separated list of) renderer backend(s) to build with (default: opengl)]))
@@ -1272,8 +1274,9 @@ AM_CONDITIONAL([CLANG_BUILD], [test "$CLANG" = "yes"])
 AM_CONDITIONAL([STRIPBINS], [test "x$enable_strip" != "xno" && ! { test "$SYSNAME" = "windows" && test "$host_cpu" = "i686" ; } ])
 
 # to avoid building pch files redundantly in CI (not really worth it)
-AS_IF([test "$CI" = "true"], [using_pch=no], [using_pch=yes])
+AS_IF([test "$CI" = "true" || test x"$enable_pch" = "xno"], [using_pch=no], [using_pch=yes])
 AM_CONDITIONAL([BUILDING_IN_CI], [test "$CI" = "true"])
+AM_CONDITIONAL([BUILD_PCH], [test "$using_pch" = "yes"])
 
 # copy winpthread dll to install directory
 AS_IF([test "$SYSNAME" = "windows" && test "x$enable_static" != "xyes"], [
